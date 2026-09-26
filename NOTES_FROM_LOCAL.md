@@ -37,3 +37,8 @@
   2. **升级到 6.0.2**：保留 `drawer: 'canvas'` 即可避开 WebGL。风险较大：6.0 重写了瓦片与缓存管线，`_getLevelsInterval`、`_needsUpdate` 等内部字段可能改名或语义变化，清晰度档位和加载进度需要重写并在 TT 里重测。
   - 建议顺序：先在 iPhone 的 TT 里实测当前版本；有问题先试 4.1.1（改动最小，可以直接回退），6.0.2 等有空再做。
 - 来源：https://github.com/openseadragon/openseadragon/issues/2667 、https://github.com/openseadragon/openseadragon/issues/2705 、https://github.com/openseadragon/openseadragon/blob/master/changelog.txt
+
+### 4. npm 发布准备 —— 已完成（没有发布）
+- `bash tools/pack_npm.sh`：把 viewer.html、tavern/eden-map.js、data/*.json、vendor/、art/*.dzi 与瓦片目录、首屏缩略图拷到临时目录，生成 package.json（`tiancheng-map-assets`，版本跟 VERSION，`files` 白名单，`repository` 指向 GitHub），跑 `npm pack --dry-run`。当前：844 个文件，压缩后 12.6 MB（解包 13.5 MB）。`--keep` 保留临时目录，本机发布时进去 `npm publish`。
+- **需要你决定**：仓库没有 LICENSE 文件，package.json 的 `license` 暂填 `SEE LICENSE IN README.md`；另外 VERSION 现在是 0.6.1（CHANGELOG 已写到 0.8.0），发布前请把 VERSION 改对。
+- `eden-map.js` 的 `LINES` 里预留了 `npm` 线路（npmmirror，`https://registry.npmmirror.com/tiancheng-map-assets/<版本>/files/map/`），`enabled: false`，列表里被过滤掉，界面上看不到；首次发布并验证后改成 `true`。版本号从脚本自己的地址里取（gh 的 `@map-v<版本>` 或 npm 路径）；取不到版本时 npm 线路退回原地址。gh 两条线路知道版本时也改为按模板拼地址（结果与原来的「只换域名」相同）。
