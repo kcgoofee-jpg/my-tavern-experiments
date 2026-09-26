@@ -13,6 +13,7 @@
   "planned": "制作中", "planned_paren": "（制作中）", "enter": "进入{name} →", "goto": "前往{title}",
   "you": "你", "minor": "中小国", "sep": " · ",
   "lang_title": "界面语言", "theme_auto": "◐ 自动", "theme_light": "☀ 浅色", "theme_dark": "☾ 深色", "theme_title": "界面主题：自动跟随系统 / 浅色 / 深色",
+  "settings_title": "设置", "auto_here": "打开地图时自动跳到当前地点", "auto_here_hint": "庄园房间直达对应楼层；地标、层、世界地名各自落到对应的图",
   "estate.loading": "加载 {title}…", "estate.fail": "庄园页面加载失败", "estate.slow": "三维库加载较慢（需要能访问 jsDelivr）…",
   "layers.keys": "PageUp / PageDown 或 [ ] 切换上下层", "layers.planned": "制作中", "layers.here": "当前地点在这一层", "layers.events": "{n} 起未解除的事态",
   "tier_auto": "自动", "tier_auto_on": "自动 · {px}px", "tier_auto_title": "按当前缩放自动选清晰度：放大时升档、缩小时不降；手机与省流网络最高到标准", "tier_status_auto": "{title} · 自动 · 清晰度上限 {px}px",
