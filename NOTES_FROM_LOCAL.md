@@ -214,3 +214,15 @@
 "league_club":       { "name": "庄园主联盟会所", "name_en": "Estate Lords' League Club", "sub": "品鉴宴会场", "sub_en": "Tasting banquets", "tag": "inf", "src": "推断：联盟品鉴宴（《天城视觉规范》请柬样例）", "alias": ["联盟会所", "会所", "品鉴宴"] },
 "aether_institute":  { "name": "以太研究院", "name_en": "Aether Institute", "sub": "气候塔旁", "sub_en": "Beside the climate tower", "tag": "inf", "src": "推断：以太魔法一轨的研究机构", "alias": ["以太研究院", "研究院"] }
 ```
+
+### 任务 7 · 2 审阅（本机 Opus 版 three.js，v0）—— 四位 Opus 审阅完成，架构师在汇总
+- 分数：建筑师 5、室内设计 4.5、顶奢营销 5、交互与性能 6.5。全文在 `map/estate/reviews/v0/`。截图 `docs/drafts/estate_v0_*.jpg`（headless Chromium + SwiftShader；three.js 走本地拦截，CDN 证书在云端代理后面不稳定）。
+- 共同结论：
+  - 外观方向对，体量与柱式不合设定（76 × 26 长条、爱奥尼亚、檐部太薄）。
+  - 室内缺马桶与毛巾（用户点名的两项目前是零分），整体像新样板间，缺传承细节。
+  - 首屏没拍到中轴。
+  - 性能底子好（82–94 draw calls），但 three.js 只走 CDN、首帧前建完全部楼层、没有降级档。
+- 下一步（第 3 步）：按汇总的 `map/estate/REFIT_PLAN.md` 分三个互不重叠的工作包并行重做（建筑与总平面 / 室内与材质 / 交互性能呈现），每轮截图后同一组审阅再打分。
+### 任务 7 · 4 Blender 同步 —— 草稿完成
+- `eden_manor.py` 已按新设定 §4 / §8 同步（房间表、楼梯厅 + 笼式电梯、仆役楼梯、主人通道位置、科林斯柱廊、家徽、屋顶出口亭、盥洗室洁具与毛巾）；岛上附属建筑与园林在 `tc_estates.build_eden`。
+- 草稿：`docs/drafts/estate_blender_{ext,f1…f5}.jpg`。
