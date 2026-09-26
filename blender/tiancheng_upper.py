@@ -270,6 +270,7 @@ flush_trees(); tick('islands + trees')
 # ---------------- 光照与相机 ----------------
 sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = 3.2; sun.angle = math.radians(1.2); sun.color = (1, .96, .9)
 so = bpy.data.objects.new('sun', sun); col_main.objects.link(so); so.rotation_euler = tc.SUN_ROT   # 三层共用的太阳方向
+if BELOW == 'clouds': __import__('tc_clouds').build_cloud_sea(layer, islands, so)   # 云海与岛影（blender/tc_clouds.py，--clouds toon|soft）
 # 标记与岛屿轮廓（归一化图像坐标，左上原点）：查看器用来放标记、画结界圈和航线
 def export(co):
     norm = lambda p: tc.norm(sc, co, p)
