@@ -2,7 +2,7 @@
 """把一张大图切成 Deep Zoom（DZI）瓦片金字塔，供 OpenSeadragon 按需加载。
 
 用法：
-  python3 tools/make_dzi.py <源图> <输出前缀> [--tile 256] [--format jpg|png] [--quality 82]
+  python3 tools/make_dzi.py <源图> <输出前缀> [--tile 512] [--format jpg|png] [--quality 82]
 输出：<前缀>.dzi 与 <前缀>_files/<层级>/<列>_<行>.<格式>。依赖 Pillow（pip3 install --user pillow）。
 """
 import argparse, math, os, shutil
@@ -14,8 +14,8 @@ Image.MAX_IMAGE_PIXELS = None
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('src'); ap.add_argument('out')
-    ap.add_argument('--tile', type=int, default=256); ap.add_argument('--overlap', type=int, default=1)
-    ap.add_argument('--format', default='jpg', choices=['jpg', 'png']); ap.add_argument('--quality', type=int, default=82)
+    ap.add_argument('--tile', type=int, default=512); ap.add_argument('--overlap', type=int, default=1)
+    ap.add_argument('--format', default='jpg', choices=['jpg', 'png']); ap.add_argument('--quality', type=int, default=80)
     a = ap.parse_args()
     img = Image.open(a.src).convert('RGBA' if a.format == 'png' else 'RGB')
     W, H = img.size
