@@ -143,7 +143,7 @@ class Isle:
         v = n * amp
         for kind, cx, cy, rr, hh in self.spots:
             dd = math.hypot(lx - cx, ly - cy)
-            if kind == 'plateau': v += hh * smooth(rr + .035 * max(self.F, .4), rr, dd)
+            if kind == 'plateau': v += hh * smooth(rr + .07 * max(self.F, .4), rr, dd)             # 缓坡（不露岩），边上另有挡土石墙
             elif kind == 'bump': v += hh * math.exp(-(dd / rr) ** 2)
             elif kind == 'dip': v -= hh * smooth(rr, rr * .6, dd)
         if self.rim == 'cliff': v -= (.05 + .05 * self.F) * smooth(.88, 1.0, s) ** 1.6 * (1 + .4 * math.sin(5 * th + 1.3))
@@ -199,6 +199,10 @@ class Isle:
         if self.terrain == 'terrace':
             a = R.uniform(0, 2 * math.pi); d = R.uniform(0, .25) * self.F
             self.spots.append(('plateau', math.cos(a) * d, math.sin(a) * d, R.uniform(.28, .42) * self.F, R.uniform(.025, .045)))
+        for kind, cx, cy, rr, hh in self.spots:                                                    # 台地挡土墙（石砌，一圈）
+            if kind == 'plateau':
+                pts = [(cx + math.cos(t) * (rr + .01), cy + math.sin(t) * (rr + .01)) for t in np.linspace(0, 2 * math.pi, 40, endpoint=False)]
+                self.wall_line('stone', pts, .006, .012, closed=True, dz=-.004)
         if self.terrain == 'crag':
             for _ in range(int(R.integers(2, 5))):
                 a = R.uniform(0, 2 * math.pi); s = R.uniform(.6, .85); rr = R.uniform(.07, .13) * max(self.F, .4)
@@ -310,7 +314,7 @@ class Isle:
 
     # 首相府：对称官邸（中央楼 + 两翼围出荣誉庭院）+ 旗帜广场 + 公务飞艇坪 + 岗亭
     def role_pm_residence(self):
-        F = max(self.F, .5); L = .5 * F; lx, ly, a, P = self._frame(L * .9)
+        F = max(self.F, .5); L = .85 * F; lx, ly, a, P = self._frame(L * .9)
         self.house('marble', *P(0, 0), L, L * .22, .06, a, ROOF_SLATE, ridge=L * .07)
         self.house('marble', *P(0, -L * .12), L * .22, L * .16, .075, a, ROOF_SLATE, ridge=L * .09)          # 中央凸出楼
         for sx in (-1, 1): self.house('marble', *P(sx * L * .45, -L * .28), L * .14, L * .42, .05, a, ROOF_SLATE, ridge=L * .05)
@@ -326,7 +330,7 @@ class Isle:
 
     # 将军官邸：堡垒化别墅（角堡）+ 阅兵场 + 装甲机库 + 瞭望塔
     def role_general_residence(self):
-        F = max(self.F, .5); L = .32 * F; lx, ly, a, P = self._frame(L * 1.1)
+        F = max(self.F, .5); L = .55 * F; lx, ly, a, P = self._frame(L * 1.1)
         self.house('stone', *P(0, 0), L, L * .6, .05, a, (.22, .24, .22), ridge=L * .1)
         pts = [P(dx * L * .85, dy * L * .6) for dx, dy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
         self.wall_line('stone', pts, .012, .02, closed=True)
@@ -344,8 +348,8 @@ class Isle:
 
     # 财团家族庄园：玻璃塔楼别墅 + 叠落白色平台 + 无边泳池 + 私人飞艇港（科技一轨）
     def role_zaibatsu_estate(self):
-        F = max(self.F, .5); L = .35 * F; lx, ly, a, P = self._frame(L)
-        self.box('glass', *P(0, 0), .07, .07, .28, a); self.box('pad', *P(0, 0), .08, .08, .006, a, dz=.28)     # 塔楼
+        F = max(self.F, .5); L = .6 * F; lx, ly, a, P = self._frame(L)
+        self.box('glass', *P(0, 0), L * .22, L * .22, .32, a); self.box('pad', *P(0, 0), L * .24, L * .24, .006, a, dz=.32)     # 塔楼
         for k in range(3): self.box('whitewall', *P(L * (.15 + .12 * k), -L * .05 * k), L * .5, L * .3, .02, a, dz=k * .02)   # 叠落平台
         self.box('water_l', *P(L * .55, -L * .35), L * .8, .03, .004, a)                                  # 无边泳池
         p = self.spot(.12 * F, smax=.85)
@@ -359,7 +363,7 @@ class Isle:
 
     # 大主教府邸：十字形礼拜堂（中殿 + 横厅 + 交叉处穹顶 + 钟楼）+ 回廊庭院（以太一轨）
     def role_archbishop_palace(self):
-        F = max(self.F, .5); L = .4 * F; lx, ly, a, P = self._frame(L * .9)
+        F = max(self.F, .5); L = .7 * F; lx, ly, a, P = self._frame(L * .9)
         self.house('marble', *P(0, 0), L, L * .22, .06, a, ROOF_SLATE, ridge=L * .1)                       # 中殿
         self.house('marble', *P(L * .15, 0), L * .22, L * .6, .055, a, ROOF_SLATE, ridge=L * .1)          # 横厅
         X, Y = self.world(*P(L * .15, 0)); z0 = self.Z(*P(L * .15, 0))
@@ -373,7 +377,7 @@ class Isle:
 
     # 庄园主联盟会所：宴会厅（玻璃顶长厅）+ 环形车道与喷泉 + 停靠平台 + 花架露台（品鉴宴在此）
     def role_league_club(self):
-        F = max(self.F, .5); L = .42 * F; lx, ly, a, P = self._frame(L * .8)
+        F = max(self.F, .5); L = .7 * F; lx, ly, a, P = self._frame(L * .8)
         self.house('marble', *P(0, 0), L, L * .3, .05, a, ROOF_MANSARD, ridge=L * .06)
         self.box('glass', *P(0, 0), L * .6, L * .12, .012, a, dz=.05)
         c = P(0, -L * .55); self.disc('gravel', c[0], c[1], L * .32, L * .32, dz=.002, seg=48); self.disc('lawn', c[0], c[1], L * .2, L * .2, dz=.0025, seg=48)
@@ -384,7 +388,7 @@ class Isle:
 
     # 以太研究院：中央尖塔 + 发光以太晶簇 + 环形法阵广场 + 放射状实验楼 + 三座晶柱
     def role_aether_institute(self):
-        F = max(self.F, .5); L = .3 * F; lx, ly, a, P = self._frame(L * 1.2)
+        F = max(self.F, .5); L = .45 * F; lx, ly, a, P = self._frame(L * 1.2)
         for k in range(4): self.disc('stone' if k % 2 else 'gravel', lx, ly, L * (1 - k * .2), L * (1 - k * .2), dz=.002 + k * .0004, seg=64)   # 法阵同心环
         self.cyl('marble', lx, ly, .03, .2, 12, r2=.008)                                            # 尖塔
         for k in range(7):
