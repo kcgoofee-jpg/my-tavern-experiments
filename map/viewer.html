@@ -9,8 +9,22 @@
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/maps.json">
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/world_markers.json">
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/derived.json">
+<link rel="preload" as="fetch" href="art/world.dzi"><link rel="preload" as="fetch" href="art/borders.dzi">
+<link rel="preload" as="image" href="art/world_1k.jpg">
 <script src="vendor/openseadragon/openseadragon.min.js"></script>
 <style>
+  /* 每层界面配色取自《天城视觉规范》：上层夜墨琥珀、中层夜紫霓虹（唯一允许发光）、下层井黑磷光绿（等宽字） */
+  body[data-map="tc_upper"] { --bg: #101418; --panel: rgba(16,20,24,.92); --gold: #d9a441; --muted: #7d8a96; --ink: #cfd8e0; }
+  body[data-map="tc_mid"] { --bg: #120a1f; --panel: rgba(18,10,31,.9); --gold: #ff3d9a; --muted: #a99bc0; --ink: #f3e6ff; }
+  body[data-map="tc_mid"] #crumbs b, body[data-map="tc_mid"] #layers button.on { text-shadow: -1px 0 #3de0ff, 1px 0 #ff3d9a, 0 0 10px rgba(255,61,154,.7); }
+  body[data-map="tc_mid"] #prog i { box-shadow: 0 0 8px #ff3d9a; }
+  body[data-map="tc_low"] { --bg: #0b0b0b; --panel: rgba(11,11,11,.92); --gold: #9fe870; --muted: #5a8a3c; --ink: #d8e8cc; }
+  body[data-map="tc_low"] #crumbs, body[data-map="tc_low"] #layers, body[data-map="tc_low"] #tierState { font-family: ui-monospace, Menlo, monospace; }
+  header, #layers button, #card { transition: background .3s, color .3s, border-color .3s; }
+  /* 档位旁的加载状态：切换清晰度后看得到有没有在加载、加载完了没有 */
+  #tierState { font-size: 12px; color: var(--muted); min-width: 5.5em; white-space: nowrap; }
+  #tierState.busy { color: var(--gold); }
+  #tierState.ok { color: #7bd88f; }
   :root { --bg: #14171c; --panel: rgba(20,23,28,.88); --line: rgba(255,255,255,.14); --ink: #eef1f4; --muted: #9aa3ad; --gold: #e6c36a; --inf: #ffb347; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif; }
   #app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; }
@@ -51,11 +65,13 @@
   #layers button.on { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold); }
   #layers button:disabled { opacity: .45; cursor: default; }
   /* 加载进度：顶部细条 + 首屏居中提示 */
-  #prog { position: absolute; left: 0; right: 0; top: 0; height: 3px; z-index: 7; background: rgba(255,255,255,.08); }
+  #prog { position: absolute; left: 0; right: 0; top: 0; height: 4px; z-index: 7; background: rgba(255,255,255,.08); }
   #prog[hidden] { display: none; }
   #prog i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .2s; }
   #loading { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: var(--bg); color: var(--muted); font-size: 14px; transition: opacity .3s; }
   #loading.done { opacity: 0; pointer-events: none; }
+  /* 世界图首屏：瓦片还没到时先铺一张 1200px 缩略图（压暗 + 模糊），不再是一片黑 */
+  #loading.thumb { background: linear-gradient(rgba(10,12,16,.55), rgba(10,12,16,.55)), url(art/world_1k.jpg) center / cover; color: #eef1f4; text-shadow: 0 1px 4px #000; }
   .barriers ellipse { fill: rgba(120,220,255,.06); stroke: rgba(140,230,255,.75); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
   .barriers ellipse.eden { stroke: var(--gold); stroke-width: 2; fill: rgba(230,195,106,.08); }
   .barriers.proj ellipse { fill: rgba(0,0,0,.12); stroke: rgba(190,205,230,.5); stroke-width: 1; stroke-dasharray: 5 4; }
@@ -122,7 +138,7 @@
 <div id="app">
   <header>
     <nav id="crumbs"></nav>
-    <div class="seg" id="tiers"></div>
+    <div class="seg" id="tiers"></div><span id="tierState" aria-live="polite"></span>
     <label class="tg" id="tgOverlay"><input type="checkbox" id="tgBorders" checked><span>国界</span></label>
     <label class="tg"><input type="checkbox" id="tgLabels" checked>地名</label>
     <label class="tg"><input type="checkbox" id="tgMarkers" checked>标记</label>
@@ -150,7 +166,9 @@ try { tier = localStorage.getItem(TIER_KEY) || 'save'; } catch (e) {}
 if (!TIERS.some(t => t.key === tier)) tier = 'save';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-let narrow = false;   // 手机 / 窄面板：隐藏小地图（信息卡的底部抽屉由 CSS 媒体查询处理）
+let narrow = false;
+// 触屏或低内存设备：瓦片缓存减半（约 30 MB），避免手机 WebView 因内存被回收
+const coarse = matchMedia('(pointer: coarse)').matches || (navigator.deviceMemory || 8) <= 4;   // 手机 / 窄面板：隐藏小地图（信息卡的底部抽屉由 CSS 媒体查询处理）
 const post = msg => { if (window.top !== window) parent.postMessage(msg, '*'); };
 // 数据文件只取一次：切换地图、面板休眠后唤醒都不再重复请求
 const jsonCache = new Map();
@@ -175,7 +193,7 @@ async function main() {
   viewer = OpenSeadragon({
     element: $('#osd'), drawer: 'canvas', prefixUrl: 'vendor/openseadragon/images/',
     showNavigator: !narrow, showFullPageControl: false, navigatorPosition: 'BOTTOM_RIGHT', visibilityRatio: 1, constrainDuringPan: true, homeFillsViewer: true, minZoomImageRatio: 1,
-    maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: 16, maxImageCacheCount: 60,   /* 512px 瓦片：并发拉取，缓存约 60 MB */ minPixelRatio: TIERS.find(t => t.key === tier).ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true },
+    maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: 16, maxImageCacheCount: coarse ? 30 : 60,   /* 512px 瓦片：并发拉取，缓存约 60 MB */ minPixelRatio: TIERS.find(t => t.key === tier).ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true }, gestureSettingsTouch: { pinchRotate: false, flickEnabled: true },
     smoothTileEdgesMinZoom: Infinity,   // 瓦片有 1px 重叠，不需要放大时整屏再画一遍去接缝
   });
   viewer.addHandler('open', onOpen);
@@ -223,7 +241,7 @@ async function warmOthers() {
 // ---------------- 地图切换 ----------------
 async function go(id) {
   const m = REG.maps[id]; if (!m || m.status === 'planned' || id === cur) return;
-  cur = id; userMoved = false; closeCard();
+  cur = id; userMoved = false; closeCard(); document.body.dataset.map = id;
   // 叠加层可以取别的地图的数据（overlay.from），例如中层的「上层投影」用上层的岛屿轮廓
   const ovSrc = m.overlay?.from && REG.maps[m.overlay.from]?.data;
   const [cd, od] = await Promise.all([m.data ? getJSON(m.data) : null, ovSrc ? getJSON(ovSrc) : null]);
@@ -231,7 +249,7 @@ async function go(id) {
   curData = cd; ovData = ovSrc ? od : cd;
   renderNav();
   $('#tgOverlay span').textContent = m.overlay?.label || '叠加层'; $('#tgOverlay').hidden = !m.overlay;
-  $('#loading').classList.remove('done'); $('#loading span').textContent = `加载 ${m.title}…`;
+  $('#loading').classList.remove('done'); $('#loading').classList.toggle('thumb', id === 'world'); $('#loading span').textContent = `加载 ${m.title}…`;
   const srcs = [{ tileSource: m.base }];
   if (m.overlay?.type === 'dzi') srcs.push({ tileSource: m.overlay.src, opacity: $('#tgBorders').checked ? 1 : 0 });
   viewer.open(srcs);
@@ -251,12 +269,15 @@ document.addEventListener('click', e => { const a = e.target.closest('[data-go]'
 
 // ---------------- 加载进度：已完成 / (已完成 + 正在加载) ----------------
 function initProgress() {
-  let done = 0, hideT = 0;
+  let done = 0, hideT = 0, tsT = 0;
+  const ts = $('#tierState');
   const upd = () => {
     let busy = 0; for (let i = 0; i < viewer.world.getItemCount(); i++) busy += viewer.world.getItemAt(i)._tilesLoading || 0;
     const pct = busy ? Math.round(done / (done + busy) * 100) : 100;
     $('#prog').hidden = !busy; $('#prog i').style.width = pct + '%';
     if (!$('#loading').classList.contains('done')) $('#loading span').textContent = `加载 ${REG.maps[cur].title}… ${pct}%`;
+    if (busy) { clearTimeout(tsT); ts.textContent = `加载中 ${pct}%`; ts.className = 'busy'; }
+    else if (ts.className === 'busy') { ts.textContent = '✓ 已加载'; ts.className = 'ok'; clearTimeout(tsT); tsT = setTimeout(() => { ts.textContent = ''; ts.className = ''; }, 2500); }
     clearTimeout(hideT); if (!busy) { if (done) $('#loading').classList.add('done'); hideT = setTimeout(() => { done = 0; $('#prog').hidden = true; }, 200); }
   };
   viewer.addHandler('open', () => { done = 0; upd(); });
@@ -287,6 +308,10 @@ function setTier(key) {
     it.minPixelRatio = t.ratio; it._needsUpdate = true; it._needsDraw = true;
   }
   viewer.forceRedraw();
+  // 切档后如果没有新瓦片要拉（降档或已缓存），也给一个明确的「已加载」
+  const ts = $('#tierState'); ts.textContent = '切换中…'; ts.className = 'busy';
+  setTimeout(() => { let busy = 0; for (let i = 0; i < viewer.world.getItemCount(); i++) busy += viewer.world.getItemAt(i)._tilesLoading || 0;
+    if (!busy && ts.textContent === '切换中…') { ts.textContent = '✓ 已加载'; ts.className = 'ok'; setTimeout(() => { if (ts.className === 'ok') { ts.textContent = ''; ts.className = ''; } }, 2500); } }, 900);
   $('#status').textContent = `${REG.maps[cur].title} · 清晰度上限 ${Math.min(t.cap, base.source.dimensions.x)}px`;
 }
 function onOpen() {
