@@ -46,7 +46,8 @@ par = city['parent']; inband |= np.where(par >= 0, inband[np.maximum(par, 0)], F
 keep &= ~inband
 Bk, Kk, Dk = B[keep], city['kind'][keep], city['district'][keep]
 
-# ---------------- 城市：夜间配色（楼顶暗色）----------------
+# ---------------- 城市：夜间配色（楼顶暗色）+ 楼体部件 ----------------
+import tc_detail as td
 n = len(Bk); cols = np.empty((n, 3), np.float32)
 g = R.uniform(.06, .13, n).astype(np.float32)                       # 楼顶：暗灰，略带冷暖差
 tint = R.choice(np.array([[1, 1, 1.08], [1.05, 1, .95], [.95, 1, 1.05], [1, .98, 1]], np.float32), n)
@@ -54,58 +55,74 @@ cols[:] = g[:, None] * tint
 cols[Kk == tc.K_GROUND] = (.035, .035, .04)
 cols[Kk == tc.K_PARK] = (.02, .035, .02)
 eq = Kk == tc.K_EQUIP; cols[eq] *= 1.3
-tc.road_plane((.008, .008, .01))
-tc.box_mesh('city', Bk, cols, tc.vcol_mat('citymat', .55, .15))
-trees = Batch('trees', mat('treen', (.01, .018, .01), .9), smooth=True)
-for x, y, z, r in city['trees']:
-    if tc.keep_mask({'boxes': np.array([[x, y, 0, 0, 0, 0]], np.float32), 'parent': np.array([-1])}, zones)[0]: trees.ico(x, y, z + r * .55, r, .8)
-trees.done(); tick('city (night)')
+tc.road_plane(None, m=td.asphalt_mat('road', (.02, .02, .022)))
+cmat = td.city_mat('citymat', .55, metal=.15)
+tc.box_mesh('city', Bk, cols, cmat)
+bi = np.where(Kk == tc.K_BUILDING)[0]
+kit = td.building_kit(Bk[bi], cols[bi], R, 'night', cap=.18)          # 女儿墙、退台塔楼、设备（塔楼顶在悬浮轨道以下）
+td.build_kit('city', kit, cmat, td.city_mat('roofmat', .5))
+T = np.array([(x, y, 0, 0, 0, 0) for x, y, z in ((t[0], t[1], 0) for t in city['trees'])], np.float32).reshape(-1, 6)
+tk = tc.keep_mask({'boxes': T, 'parent': np.full(len(T), -1)}, zones)
+tc.ico_mesh('trees', [(x, y, z + r * .55, r) for (x, y, z, r), k in zip(city['trees'], tk) if k], mat('treen', (.01, .018, .01), .9)); tick('city (night)')
 
-# ---------------- 路灯：主干道两侧一盏盏的灯（暖白，弱），不是连续光带 ----------------
+# ---------------- 街道：路灯、标线、车流（车头白、车尾红）----------------
 lamps = []
 for x, y, w, d, rot in tc.road_lines(city, .012):
     L = max(w, d); ux, uy = (-math.sin(rot), math.cos(rot)) if d > w else (1, 0)
     for s in (-1, 1):                                                  # 双侧
-        ox, oy = .07 * s * uy, -.07 * s * ux
+        ox, oy = .09 * s * uy, -.09 * s * ux
         for t in np.arange(-L / 2, L / 2, .12):
-            lamps.append((x + ux * t + ox, y + uy * t + oy, .012, .012, ZG + .004, ZG + .006))
+            lamps.append((x + ux * t + ox, y + uy * t + oy, .01, .01, ZG + .004, ZG + .006))
 tc.box_mesh('streetlight', lamps, np.tile(srgb('#ffe0b0'), (len(lamps), 1)), emit_mat('streetglow', None, 3.0 * GLOW))
-# ---------------- 霓虹：楼顶边缘灯带 + 外墙挑出的招牌 + 楼顶全息广告 ----------------
-bi = np.where(Kk == tc.K_BUILDING)[0]
-strips, scol, signs, sigc, holo, holc = [], [], [], [], [], []
+mb, mc = td.road_marks(city, ZG + .0002, color=(.3, .3, .28)); tc.box_mesh('road_marks', mb, mc, td.city_mat('markmat', .6, ao=0))
+
+# 商业街：挑几条主干道作「霓虹走廊」，霓虹、全息广告、车流、溢光都向它们聚集（真实城市的夜景是一条条亮街，不是均匀撒点）
+xs_, ys_ = city['xs'], city['ys']
+near_av = lambda arr, idx, v: float(arr[min(idx, key=lambda k: abs(arr[k] - v))])
+CX = [near_av(xs_, city['AX'], v) for v in (-11, -4, 5, 9)]             # 穿过四个高楼核心的南北向商业街
+CY = [near_av(ys_, city['AY'], v) for v in (-5.5, 1.8, 4.5)]
+def corridor(x, y): return max(math.exp(-min(abs(x - v) for v in CX) / .28), math.exp(-min(abs(y - v) for v in CY) / .28))
+def glow_w(x, y): return corridor(x, y) * (.6 + .4 * tc.district(x, y))
+cars, crot, cdir, ccol = td.traffic(city, R, ZG, 3.2, jam=lambda x, y: .08 + .92 * glow_w(x, y))   # 商业街车多，其余街道稀疏
+tc.box_mesh('cars', cars, ccol * .35, tc.vcol_mat('carmat', .25, .6), rot=crot)
+hb, tb = td.car_lights(cars, cdir)
+tc.box_mesh('headlights', hb, np.tile(srgb('#fff4e0'), (len(hb), 1)), emit_mat('head', None, 6.0 * GLOW))
+tc.box_mesh('taillights', tb, np.tile(srgb('#ff2a1a'), (len(tb), 1)), emit_mat('tail', None, 5.0 * GLOW))
+tick(f'street: lamps {len(lamps)}, cars {len(cars)}, corridors x={CX} y={CY}')
+
+# ---------------- 霓虹：沿商业街聚集的挑出招牌、楼顶轮廓灯、塔楼全息广告 ----------------
+strips, scol, signs, sigc, holo, holc, spill = [], [], [], [], [], [], []
 for i in bi:
-    x, y, w, d, z0, top = Bk[i]; dist = Dk[i]
-    c = NEON[R.choice(4, p=NEON_P)]
-    if R.random() < .02 + .07 * dist:                                   # 楼顶边缘灯带（高楼区更密）
-        for e in R.choice(4, size=1, replace=False):
-            if e == 0: strips.append((x, y + d / 2 - .004, w * .9, .007, top, top + .004))
-            elif e == 1: strips.append((x, y - d / 2 + .004, w * .9, .007, top, top + .004))
-            elif e == 2: strips.append((x + w / 2 - .004, y, .007, d * .9, top, top + .004))
-            else: strips.append((x - w / 2 + .004, y, .007, d * .9, top, top + .004))
-            scol.append(c)
-    if R.random() < .03 + .07 * dist and top > -3.0:                   # 外墙挑出的招牌：从墙面水平伸出，俯视能在楼缝里看到
-        for _ in range(R.integers(1, 4)):
-            e = R.integers(4); L = R.uniform(.018, .04); s = R.uniform(.025, .07); z = R.uniform(max(ZG + .3, top - 1.2), top - .05)
-            if e == 0: signs.append((x + R.uniform(-.3, .3) * w, y + d / 2 + L / 2, s, L, z, z + .004))
-            elif e == 1: signs.append((x + R.uniform(-.3, .3) * w, y - d / 2 - L / 2, s, L, z, z + .004))
-            elif e == 2: signs.append((x + w / 2 + L / 2, y + R.uniform(-.3, .3) * d, L, s, z, z + .004))
-            else: signs.append((x - w / 2 - L / 2, y + R.uniform(-.3, .3) * d, L, s, z, z + .004))
-            sigc.append(NEON[R.choice(4, p=NEON_P)])
-    if top > -1.3 and w * d > .012 and R.random() < .03 + .07 * dist:  # 全息广告：高楼楼顶上方的发光平面
-        holo.append((x, y, w * .82, d * .82, top + .03, top + .031)); holc.append(NEON[R.choice(3, p=[.4, .4, .2])])
+    x, y, w, d, z0, top = Bk[i]; wgt = glow_w(x, y)
+    pal = [NEON[R.choice(4, p=NEON_P)] for _ in range(2)]                  # 一栋楼的招牌一两种颜色
+    if R.random() < .03 + .75 * wgt:                                   # 挑出招牌：朝最近商业街的那一面
+        dxs = min(CX, key=lambda v: abs(x - v)); dys = min(CY, key=lambda v: abs(y - v))
+        face = ('x', 1 if dxs > x else -1) if abs(x - dxs) < abs(y - dys) else ('y', 1 if dys > y else -1)
+        for _ in range(R.integers(2, 7)):
+            L = R.uniform(.012, .03); sz = R.uniform(.02, .06); z = R.uniform(max(ZG + .05, top - .9), max(ZG + .06, top - .03))
+            if face[0] == 'x': signs.append((x + face[1] * (w / 2 + L / 2), y + R.uniform(-.4, .4) * d, L, sz, z, z + .003))
+            else: signs.append((x + R.uniform(-.4, .4) * w, y + face[1] * (d / 2 + L / 2), sz, L, z, z + .003))
+            sigc.append(pal[R.integers(2)])
+        if R.random() < .5: spill.append((signs[-1][0], signs[-1][1], signs[-1][5] + .05, sigc[-1]))
+    if R.random() < .02 + .3 * wgt and w > .04 and d > .04:           # 临街一侧的楼顶灯带（只一条边，不画整圈）
+        t = .004; e = R.integers(4)
+        bx_ = ((x, y + d / 2 - t, w * .9, t), (x, y - d / 2 + t, w * .9, t), (x + w / 2 - t, y, t, d * .9), (x - w / 2 + t, y, t, d * .9))[e]
+        strips.append((*bx_, top + .006, top + .009)); scol.append(pal[0])
+    if top > -1.2 and w * d > .01 and R.random() < .02 + .35 * wgt:   # 全息广告：楼顶上方的大块发光平面（扫描线纹理）
+        holo.append((x, y, w * .8, d * .8, top + .03, top + .031)); holc.append(NEON[R.choice(3, p=[.4, .4, .2])])
+for v in CX:                                                           # 商业街的彩色溢光：沿街一串点光，染亮路面与低层楼顶
+    for t in np.arange(-H * .55, H * .55, .22): spill.append((v + R.uniform(-.06, .06), t, ZG + .25, NEON[R.choice(3)]))
+for v in CY:
+    for t in np.arange(-W * .55, W * .55, .22): spill.append((t, v + R.uniform(-.06, .06), ZG + .25, NEON[R.choice(3)]))
 tc.box_mesh('neon_strips', strips, scol, emit_mat('neon', None, 5.0 * GLOW))
-tc.box_mesh('neon_signs', signs, sigc, emit_mat('signs', None, 3.0 * GLOW))
-tc.box_mesh('holo_ads', holo, np.array(holc) * .9, emit_mat('holo', None, .7 * GLOW, stripes=60, alpha=.6))
-# 楼顶小灯（设备、天窗透光）：暖白点
-eqi = np.where(eq)[0]; eqi = eqi[R.random(len(eqi)) < .18]
-dots = [(Bk[i, 0], Bk[i, 1], .01, .01, Bk[i, 5], Bk[i, 5] + .002) for i in eqi]
-tc.box_mesh('roof_dots', dots, np.tile(srgb('#ffd9a0'), (len(dots), 1)), emit_mat('dots', None, 2.0 * GLOW))
-spill = []
-for (x, y, w, d, z0, z1), c in list(zip(signs, sigc)) + list(zip(strips, scol)):
-    if R.random() < .15: spill.append((x, y, z1 + .06, c))
-tc.point_lights('neon_spill', spill, .08 * GLOW)
-tick(f'neon spill {len(spill)}')
-tick(f'neon strips {len(strips)} signs {len(signs)} holo {len(holo)}')
+tc.box_mesh('neon_signs', signs, sigc, emit_mat('signs', None, 4.0 * GLOW))
+tc.box_mesh('holo_ads', holo, np.array(holc).reshape(-1, 3) * .9, emit_mat('holo', None, .8 * GLOW, stripes=60, alpha=.6))
+lampsR = np.array(kit['lamps'], np.float32).reshape(-1, 3)             # 楼顶小灯、天窗透光
+tc.box_mesh('roof_dots', [(x, y, .008, .008, z, z + .002) for x, y, z in lampsR], np.tile(srgb('#ffd9a0'), (len(lampsR), 1)), emit_mat('dots', None, 2.5 * GLOW))
+warn = [(x, y, .008, .008, z, z + .003) for x, y, w, d, z in kit['towers'] if z > -.4]   # 高塔顶的航空障碍灯（红）
+tc.box_mesh('aviation_lights', warn, np.tile(srgb('#ff2020'), (len(warn), 1)), emit_mat('aviation', None, 8.0 * GLOW))
+tc.point_lights('neon_spill', spill, .15 * GLOW)
+tick(f'neon: signs {len(signs)}, roof strips {len(strips)}, holo {len(holo)}, spill {len(spill)}, aviation {len(warn)}')
 
 # ---------------- 天桥：相邻高楼之间的连廊（「层层叠叠」）----------------
 tall = [i for i in bi if Bk[i, 5] > -1.4]
@@ -322,17 +339,14 @@ cw_.done()
 layer.marker('council', (x, y, 0), .9)
 tick('landmarks')
 
-# ---------------- 头顶浮岛的投影：暗色、低对比的椭圆轮廓 ----------------
-fill = Batch('isle_shade', tc.shade_mat('isle_shade', (0, 0, 0), .42))
-rim = Batch('isle_rim', tc.shade_mat('isle_rim', (0, 0, 0), .9))
-# 影子按三层共用的太阳方向偏移（与上层底图里岛影的位置一致），不是画在岛的正下方；岛的正上方位置由查看器的「上层投影」叠加层给出
+# ---------------- 头顶浮岛的投影：夜里没有日照，挡住的是上方漫射下来的天光，所以影子在岛的正下方、边缘很虚 ----------------
+# 用三层逐渐缩小的半透明暗面叠出柔和的边（不画描边）。岛的轮廓由查看器的「上层投影」叠加层给出。
+soft = [Batch(f'isle_shade{k}', tc.shade_mat(f'isle_shade{k}', (0, 0, 0), a)) for k, a in enumerate((.1, .12, .14))]
 for iid, ix, iy, rx, ry, rot, alt in tc.upper_islands():
-    dx, dy = tc.shadow_offset((alt - 700) / 100 + .1)          # 岛底到中层楼顶的高差
-    sx, sy = ix + dx, iy + dy
-    bm = fill.bm; ret = bmesh.ops.create_circle(bm, cap_ends=True, segments=64, radius=1)
-    bmesh.ops.transform(bm, verts=ret['verts'], matrix=Matrix.Translation((sx, sy, .6)) @ Matrix.Rotation(rot, 4, 'Z') @ Matrix.Diagonal((rx, ry, 1, 1)))
-    rim.ring(sx, sy, .61, 1, .09, .002, 64, rx, ry, rot)
-for o in (fill.done(), rim.done()): o.visible_shadow = False
+    for k, sc_ in enumerate((1.2, 1.0, .78)):
+        bm = soft[k].bm; ret = bmesh.ops.create_circle(bm, cap_ends=True, segments=64, radius=1)
+        bmesh.ops.transform(bm, verts=ret['verts'], matrix=Matrix.Translation((ix, iy, .6 + k * .01)) @ Matrix.Rotation(rot, 4, 'Z') @ Matrix.Diagonal((rx * sc_, ry * sc_, 1, 1)))
+for b_ in soft: b_.done().visible_shadow = False
 tick('island shadows')
 
 # ---------------- 环境光：没有日照，只剩上层漏下来的一点冷色天光 ----------------
