@@ -86,6 +86,14 @@ for mid, m in maps.items():
             if (dx * dx + dy * dy) ** .5 > .02: err(f"{mid}.{i} 与 {l['map']}.{l['marker']} 在平面上没对齐（偏差 {(dx * dx + dy * dy) ** .5:.3f} 图宽）")
 ext = {tuple(d.get('extent_m', [])) for d in data.values() if d.get('extent_m')}
 if len(ext) > 1: err(f'各层 extent_m 不一致：{ext}')
+# 外部事件数据源（map/events.js 定时拉取）：feeds: [{label, url, every}]
+feeds = reg.get('feeds', [])
+if not isinstance(feeds, list): err('feeds 应为列表')
+else:
+    for j, f in enumerate(feeds):
+        if not isinstance(f, dict) or not str(f.get('url', '')).startswith(('https://', 'http://', './', 'data/')): err(f'feeds[{j}].url 应为 https:// 地址或相对 map/ 的路径'); continue
+        if not f.get('label'): warn(f'feeds[{j}] 没有 label（地点卡里的「来源」会空着）')
+        if 'every' in f and not (isinstance(f['every'], (int, float)) and f['every'] >= 60): err(f'feeds[{j}].every 应为 ≥ 60 的秒数')
 
 for w in warns: print('警告', w)
 for e in errors: print('错误', e)
