@@ -131,7 +131,7 @@ const TIER_KEY = 'edenMapTierV2';   // 换了键名：旧版存下的「标准�
 // 世界图：代码地图坐标（1600×1000）→ 底图归一化坐标（相机裁切：宽 98.5%、高 97%）
 const toImg = (x, y) => [(x / 1600 - .0075) / .985, (y / 1000 - .015) / .97];
 
-let viewer, aspect = 1, M, REG, cur = null, curData = null, ovData = null, tier = 'save', sleeping = null;
+let viewer, aspect = 1, M, REG, cur = null, curData = null, ovData = null, tier = 'save', sleeping = null, pendingFocus = null;
 try { tier = localStorage.getItem(TIER_KEY) || 'save'; } catch (e) {}
 if (!TIERS.some(t => t.key === tier)) tier = 'save';
 const $ = s => document.querySelector(s);
@@ -208,7 +208,7 @@ function renderNav() {
   if (g) nav.innerHTML = g.layers.map(k => { const L = REG.maps[k], planned = L.status === 'planned';
     return `<button data-go="${k}" class="${k === cur ? 'on' : ''}" ${planned ? 'disabled title="制作中"' : ''}>${esc(L.layer.name)}<small>${esc(planned ? '制作中' : L.layer.alt)}</small></button>`; }).join('');
 }
-document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a && !a.disabled) { e.preventDefault(); go(a.dataset.go); } });
+document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a && !a.disabled) { e.preventDefault(); pendingFocus = a.dataset.focus || null; go(a.dataset.go); } });
 
 // ---------------- 加载进度：已完成 / (已完成 + 正在加载) ----------------
 function initProgress() {
@@ -254,6 +254,8 @@ function onOpen() {
   setTier(tier); viewer.clearOverlays();
   if (REG.maps[cur].kind === 'world') worldOverlays(); else pointOverlays();
   applyOverlayToggle(); markHere($('#here').value); focusStart(true);
+  if (pendingFocus) { const el = [...document.querySelectorAll('.mk')].find(e => e.dataset.name === REG.maps[cur].markers?.[pendingFocus]?.name);
+    pendingFocus = null; el?._open(); }
 }
 function applyOverlayToggle() {
   const on = $('#tgBorders').checked, m = REG.maps[cur];
@@ -270,7 +272,8 @@ function markerEl({ name, sub, cls = '', tag = 'set', src, extra = '', alias }) 
   const el = document.createElement('div'); el.className = 'mk ' + cls + (tag === 'inf' ? ' inf' : '');
   el.innerHTML = `<div class="lab">${esc(name)}${sub ? '<small> · ' + esc(sub) + '</small>' : ''}</div><div class="pin"></div>`;
   el.dataset.name = name; if (alias) el.dataset.alias = alias.join('|');
-  new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => showCard(el, name, tag, src, extra) });
+  el._open = () => showCard(el, name, tag, src, extra);
+  new OpenSeadragon.MouseTracker({ element: el, clickHandler: el._open });
   return el;
 }
 function marker(o) { const el = markerEl(o); place(el, o.x, o.y); return el; }
@@ -315,8 +318,11 @@ function pointOverlays() {
     svg.style.pointerEvents = 'none';
     viewer.addOverlay({ element: svg, location: new OpenSeadragon.Rect(0, 0, 1, aspect) });
   }
+  // link：跨层通道（如中层检查点 ↔ 下层 7 号井），地点卡里给一个直达链接
+  const linkHtml = l => l && REG.maps[l.map] && REG.maps[l.map].status !== 'planned'
+    ? `<p><a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}">${esc(l.label || '前往' + REG.maps[l.map].title)} →</a></p>` : '';
   for (const k of d.markers || []) { const meta = m.markers?.[k.id]; if (!meta) continue;
-    placeN(markerEl({ ...meta, sub: (meta.sub || '').replace('{{user}}', '你') }), k.nx, k.ny); }
+    placeN(markerEl({ ...meta, sub: (meta.sub || '').replace('{{user}}', '你'), extra: linkHtml(meta.link) }), k.nx, k.ny); }
 }
 
 // ---------------- 初始视角与当前地点 ----------------
@@ -331,7 +337,7 @@ function focusStart(immediately) {
     [nx, ny] = toImg(p.x, p.y); w = .34;
   } else {
     const here = document.querySelector('.mk.here')?.dataset.name, mk = curData?.markers || [];
-    const id = Object.entries(m.markers || {}).find(([, v]) => v.name === here)?.[0] || m.focus;
+    const id = pendingFocus || Object.entries(m.markers || {}).find(([, v]) => v.name === here)?.[0] || m.focus;
     const k = mk.find(q => q.id === id) || { nx: .5, ny: .5 }; nx = k.nx; ny = k.ny; w = .3;
   }
   w = Math.min(w, aspect * .8 * cs.x / cs.y); const h = w * cs.y / cs.x;   // 竖屏时按高度收窄，避免视框比地图还高

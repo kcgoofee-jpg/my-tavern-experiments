@@ -1,6 +1,7 @@
 # 天城 · 中层（钢铁霓虹区，约 700 m 以下）· Blender 正俯视写实渲染（夜景草稿）
-# 用法：Blender -b -P tiancheng_mid.py -- [--res 1600] [--samples 64] [--out path.png] [--crop x0,y0,x1,y1]
-#       或 python3 tiancheng_mid.py -- ...（pip 装的 bpy）
+# 用法：Blender -b -P tiancheng_mid.py -- [--res 1600] [--samples 64] [--out path.png] [--crop x0,y0,x1,y1] [--preview] [--data-only]
+#       [--glow 1]（所有发光的倍数）[--ambient .7]（天光）
+#       或 python3 tiancheng_mid.py -- ...（pip 装的 bpy）。参数与导出格式三层一致，见 docs/tiancheng-maps.md
 # 与上层同一相机、同一平面坐标、同一片城市（tc_common.city_blocks，同一随机种子）。
 # 设定：「层层叠叠的立体建筑群」「全息广告覆盖外墙」「日照被上层遮住，靠人造光」「悬浮轨道是主要公共交通工具，四通八达」。
 # 画面：楼顶暗色，霓虹（粉 / 青 / 紫）散布在楼顶边缘与外墙挑出的招牌上，全息广告是楼顶上方的发光平面；
@@ -14,19 +15,14 @@ import numpy as np
 from mathutils import Matrix
 from mathutils.kdtree import KDTree
 
-HERE = tc.HERE
-opt = tc.parse_args({'--res': '1600', '--samples': '64', '--out': os.path.join(HERE, '..', 'map', 'art', 'tc_mid_preview.png'), '--glow': '1'})
-RES, SAMPLES, OUT, GLOW = int(opt['--res']), int(opt['--samples']), os.path.abspath(opt['--out']), float(opt['--glow'])
-rng, sc, col_main = tc.setup()
-city = tc.city_blocks(rng)                     # 必须是第一个随机调用：街道与楼的位置与上层、下层一致
-R = np.random.default_rng(7001); random.seed(7001)   # 本层自己的随机（霓虹、广告、轨道），不影响城市布局
+layer = tc.Layer('tc_mid', seed=7001, bounces=4)   # 城市在这里生成（第一个随机调用）；本层自己的随机另起种子，不影响城市布局
+sc, col_main, city, R, GLOW = layer.sc, layer.col, layer.city, layer.rng, layer.f('--glow', 1)
 
 def srgb(h):                                   # '#ff3d9a' → 线性 RGB
     c = [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]
     return tuple(v / 12.92 if v <= .04045 else ((v + .055) / 1.055) ** 2.4 for v in c)
 PINK, CYAN, VIOLET, AMBER, ICE = srgb('#ff3d9a'), srgb('#3de0ff'), srgb('#9a4dff'), srgb('#ffa640'), srgb('#cfe6ff')
 NEON = [PINK, CYAN, VIOLET, AMBER]; NEON_P = [.36, .34, .22, .08]
-markers = []
 
 # ---------------- 地标位置（全部为推断，除非设定写明）----------------
 HQ = (-3.5, 1.5)            # 天城执法局总局：中层核心区（高楼核心之一）
@@ -210,7 +206,7 @@ hw = Batch('hq_white', emit_mat('hq_white', ICE, 3.0 * GLOW))
 hw.ring(x, y + .2, ZG + 3.72, .1, .008, .003, 24)              # 楼顶停机坪
 lamp_ring(hw, x, y - .45, ZG + .01, .35, .15, 14)
 hw.done()
-markers.append({'id': 'enforcement_hq', 'pos': (x, y + .2, 0)})
+layer.marker('enforcement_hq', (x, y + .2, 0), .9)
 
 # 辉光大教堂：十字形平面、双塔西立面、东端半圆后殿、中央穹顶；金色辉光（区别于霓虹）
 x, y = CATH; gold = srgb('#ffc56b')
@@ -230,7 +226,7 @@ for sy in (-1, 1): cg.box(x - .62, y + sy * .13, ZG + 3.72, .05, .05, .003)
 lamp_ring(cg, x - 1.0, y, ZG + .01, .28, .5, 18)                # 前广场灯
 cg.done()
 ground(x - 1.0, y, .6, 1.1, (.12, .11, .09))                    # 前广场石面（比街区亮）
-markers.append({'id': 'radiance_cathedral', 'pos': (x + .1, y, 0)})
+layer.marker('radiance_cathedral', (x + .1, y, 0), 1.0)
 
 # 圣铁摇篮：独立院落——高墙、四面回廊、中庭训练场、小礼拜堂；灯光稀少
 x, y = CRADLE
@@ -245,7 +241,7 @@ cl = Batch('cradle_lights', emit_mat('cradle_warm', srgb('#ffcf8a'), 2.2 * GLOW)
 lamp_ring(cl, x, y, ZG + .01, .28, .21, 12, .01)
 for sx in (-1, 1): cl.box(x + sx * .7, y, ZG + .5, .006, 1.1, .002)
 cl.done()
-markers.append({'id': 'iron_cradle', 'pos': (x, y, 0)})
+layer.marker('iron_cradle', (x, y, 0), .7)
 
 # 环城军营带：沿西缘的一段环带——营房长楼、操场、双层围墙、探照灯塔
 bm_ = Batch('barracks', mat('barracks_roof', (.07, .08, .07), .6, .3))
@@ -267,7 +263,7 @@ for i in range(N):
     elif seg == 8:                                             # 探照灯塔
         px, py, _ = ring_pt((t0 + t1) / 2, 0); bm_.cyl(px, py, ZG, .03, 1.6, 12); bl.box(px, py, ZG + 1.6, .05, .05, .003)
 bm_.done(); bl.done(); yard.done()
-markers.append({'id': 'barracks_ring', 'pos': (*ring_pt(.5)[:2], 0)})
+layer.marker('barracks_ring', (*ring_pt(.5)[:2], 0), 1.0)
 
 # 星渊大学：草坪方庭、图书馆玻璃穹顶、天文台；路灯暖白
 x, y = UNIV
@@ -291,7 +287,7 @@ for dx in np.linspace(-1.05, 1.0, 12):
 for dy in np.linspace(-.8, .7, 8):
     ul.box(x - .05, y + dy, ZG + .01, .01, .01, .003)
 ul.done()
-markers.append({'id': 'starabyss_univ', 'pos': (x - .05, y - .08, 0)})
+layer.marker('starabyss_univ', (x - .05, y - .08, 0), 1.4)
 
 # 层间检查点：中层 C 区 → 下层 7 号井通道——竖井口、闸口、排队通道；琥珀 / 红色警示灯
 x, y = CHECK
@@ -308,7 +304,7 @@ cw.done()
 cr_ = Batch('ck_red', emit_mat('ck_red', srgb('#ff3030'), 3.0 * GLOW))
 for k in range(6): cr_.box(x - .25 + k * .1, y - .66, ZG + .1, .06, .008, .003)   # 栏杆红灯
 cr_.done()
-markers.append({'id': 'checkpoint_c', 'pos': (x, y, 0)})
+layer.marker('checkpoint_c', (x, y, 0), .6)
 # 天城议会：半圆形议事厅 + 扁穹顶 + 前庭；暖白灯，比周围的霓虹安静
 x, y = COUNCIL
 ground(x, y - .2, 1.9, 1.4, (.06, .06, .06))
@@ -323,24 +319,21 @@ cw_ = Batch('council_glow', emit_mat('council_warm', srgb('#fff0d0'), 2.6 * GLOW
 cw_.ring(x, y, ZG + 3.53, .2, .008, .003, 36)
 lamp_ring(cw_, x, y - .75, ZG + .01, .4, .16, 14)
 cw_.done()
-markers.append({'id': 'council', 'pos': (x, y, 0)})
+layer.marker('council', (x, y, 0), .9)
 tick('landmarks')
 
 # ---------------- 头顶浮岛的投影：暗色、低对比的椭圆轮廓 ----------------
 fill = Batch('isle_shade', tc.shade_mat('isle_shade', (0, 0, 0), .42))
 rim = Batch('isle_rim', tc.shade_mat('isle_rim', (0, 0, 0), .9))
+# 影子按三层共用的太阳方向偏移（与上层底图里岛影的位置一致），不是画在岛的正下方；岛的正上方位置由查看器的「上层投影」叠加层给出
 for iid, ix, iy, rx, ry, rot, alt in tc.upper_islands():
+    dx, dy = tc.shadow_offset((alt - 700) / 100 + .1)          # 岛底到中层楼顶的高差
+    sx, sy = ix + dx, iy + dy
     bm = fill.bm; ret = bmesh.ops.create_circle(bm, cap_ends=True, segments=64, radius=1)
-    bmesh.ops.transform(bm, verts=ret['verts'], matrix=Matrix.Translation((ix, iy, .6)) @ Matrix.Rotation(rot, 4, 'Z') @ Matrix.Diagonal((rx, ry, 1, 1)))
-    rim.ring(ix, iy, .61, 1, .09, .002, 64, rx, ry, rot)
+    bmesh.ops.transform(bm, verts=ret['verts'], matrix=Matrix.Translation((sx, sy, .6)) @ Matrix.Rotation(rot, 4, 'Z') @ Matrix.Diagonal((rx, ry, 1, 1)))
+    rim.ring(sx, sy, .61, 1, .09, .002, 64, rx, ry, rot)
 for o in (fill.done(), rim.done()): o.visible_shadow = False
 tick('island shadows')
 
 # ---------------- 环境光：没有日照，只剩上层漏下来的一点冷色天光 ----------------
-world = bpy.data.worlds.new('sky'); sc.world = world; world.use_nodes = True
-bg = world.node_tree.nodes['Background']; bg.inputs['Color'].default_value = (.35, .42, .6, 1); bg.inputs['Strength'].default_value = float(opt.get('--ambient', .7))
-co = tc.camera_and_render(sc, RES, SAMPLES, OUT, opt)
-sc.cycles.light_sampling_threshold = .01
-tc.glare(sc, threshold=.9, size=6, mix=-.55)
-tc.write_data('tc_mid', sc, co, markers)
-tc.render(sc, OUT, f'markers {len(markers)}')
+layer.finish(world=((.35, .42, .6), layer.f('--ambient', .7)), glare_opts=dict(threshold=.9, size=6, mix=-.55))

@@ -1,5 +1,6 @@
 # 天城 · 上层（悬浮庄园区，离地 800–1500 m）· Blender 正俯视写实渲染（第二版：可读性优先）
-# 用法：Blender -b -P tiancheng_upper.py -- [--res 1600] [--samples 64] [--out path.png] [--haze .25] [--crop x0,y0,x1,y1]
+# 用法：Blender -b -P tiancheng_upper.py -- [--res 1600] [--samples 64] [--out path.png] [--haze .25] [--crop x0,y0,x1,y1] [--preview] [--data-only]
+#       或 python3 tiancheng_upper.py -- ...（pip 装的 bpy）。参数与导出格式三层一致，见 docs/tiancheng-maps.md
 # 1 单位 = 100 m。z=0 为中层楼顶（约 700 m），岛屿 z = (海拔 - 700) / 100。
 # 思路（见 ROADMAP P1）：正俯视、白天；中层城市压在半透明霾层之下作远景，岛屿投影落在城市上；
 # 结界穹顶、航线、巡逻线不烘进底图，只导出坐标给查看器做可开关的叠加层。
@@ -9,10 +10,8 @@ import tc_common as tc
 from tc_common import W, H, mat, noise_mat, tick
 from mathutils import Vector, Matrix
 
-HERE = tc.HERE
-opt = tc.parse_args({'--res': '1600', '--samples': '64', '--out': os.path.join(HERE, '..', 'map', 'art', 'tc_upper_preview.png'), '--haze': '.25'})
-RES, SAMPLES, OUT, HAZE = int(opt['--res']), int(opt['--samples']), os.path.abspath(opt['--out']), float(opt['--haze'])
-rng, sc, col_main = tc.setup()                 # W × H = 3 km × 1.875 km，三层共用这套平面坐标与随机种子
+layer = tc.Layer('tc_upper')                        # 解析参数、清空场景、生成城市（第一个随机调用）；岛屿沿用同一种子的 random 序列
+sc, col_main, city, HAZE = layer.sc, layer.col, layer.city, layer.f('--haze', .25)
 
 # ---------------- 材质 ----------------
 M = {
@@ -61,7 +60,6 @@ def flush_trees():
 
 # ---------------- 中层楼顶（远景，白天无霓虹；楼顶约在 z=-2.2…0）----------------
 # 城市生成在 tc_common：必须先于其他随机调用（岛屿、树），三层才对得上
-city = tc.city_blocks(rng)
 tc.road_plane((.09, .09, .10))                              # 路面：主干道与空地露出的地面（比楼顶暗）
 tc.box_mesh('city', city['boxes'], city['colors'], tc.vcol_mat('citymat', .7))
 for t in city['trees']: tree(*t)                            # 公园里的树
@@ -75,7 +73,7 @@ nt.links.new(tr.outputs['BSDF'], mx.inputs[1]); nt.links.new(df.outputs['BSDF'],
 haze.data.materials.append(hm); haze.visible_shadow = False
 
 # ---------------- 悬浮岛 ----------------
-markers, islands = [], []
+markers, islands = layer.markers, []
 def island(x, y, z, rx, ry, rot=0, style='neo', name=None, trees=True):
     bm = bmesh.new(); bmesh.ops.create_circle(bm, cap_ends=True, segments=64, radius=1)
     me = bpy.data.meshes.new('top'); bm.to_mesh(me); bm.free()
@@ -106,7 +104,7 @@ def island(x, y, z, rx, ry, rot=0, style='neo', name=None, trees=True):
         lawn = bpy.context.active_object; lawn.scale = (rx * .55, ry * .55, 1); lawn.rotation_euler[2] = rot; link(lawn, M['lawn'])
     if style != 'none': building(x, y, z, rx, ry, rot, style)
     islands.append({'id': name or f'isle{len(islands)}', 'x': x, 'y': y, 'z': z, 'rx': rx, 'ry': ry, 'rot': rot})
-    if name: markers.append({'id': name, 'pos': (x, y, z)})
+    if name: markers.append({'id': name, 'pos': (x, y, z), 'r': max(rx, ry)})
 def building(x, y, z, rx, ry, rot, style):
     s = min(rx, ry); c, si = math.cos(rot), math.sin(rot); z += .012
     at = lambda dx, dy: (x + dx * c - dy * si, y + dx * si + dy * c)
@@ -189,18 +187,15 @@ while len(placed) < 34 and tries < 8000:                   # 数十座：约 30 
     placed.append((x, y, rx))
 cyl(*TOWER, -7, .12, 9.2, M['stone'], 32)
 for k in range(5): cyl(*TOWER, .3 + k * .42, .17, .03, M['pad'], 32)
-markers.append({'id': 'climate_tower', 'pos': (*TOWER, 2.2)})
+markers.append({'id': 'climate_tower', 'pos': (*TOWER, 2.2), 'r': .2})
 flush_trees(); tick('islands + trees')
 
 # ---------------- 光照与相机 ----------------
-world = bpy.data.worlds.new('sky'); sc.world = world; world.use_nodes = True
-bg = world.node_tree.nodes['Background']; bg.inputs['Color'].default_value = (.55, .65, .8, 1); bg.inputs['Strength'].default_value = .35
 sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = 3.2; sun.angle = math.radians(1.2); sun.color = (1, .96, .9)
-so = bpy.data.objects.new('sun', sun); col_main.objects.link(so); so.rotation_euler = (math.radians(40), 0, math.radians(215))
-co = tc.camera_and_render(sc, RES, SAMPLES, OUT, opt)
+so = bpy.data.objects.new('sun', sun); col_main.objects.link(so); so.rotation_euler = tc.SUN_ROT   # 三层共用的太阳方向
 # 标记与岛屿轮廓（归一化图像坐标，左上原点）：查看器用来放标记、画结界圈和航线
-norm = lambda p: tc.norm(sc, co, p)
-tc.write_data('tc_upper', sc, co, markers, {
-    'islands': [dict(id=i['id'], nx=norm((i['x'], i['y'], i['z']))[0], ny=norm((i['x'], i['y'], i['z']))[1],
-                     rx=round(i['rx'] / W, 4), ry=round(i['ry'] / H, 4), rot=round(i['rot'], 3), alt_m=round(700 + i['z'] * 100)) for i in islands]})
-tc.render(sc, OUT, f'islands {len(islands)}')
+def export(co):
+    norm = lambda p: tc.norm(sc, co, p)
+    return {'islands': [dict(id=i['id'], nx=norm((i['x'], i['y'], i['z']))[0], ny=norm((i['x'], i['y'], i['z']))[1],
+                             rx=round(i['rx'] / W, 4), ry=round(i['ry'] / H, 4), rot=round(i['rot'], 3), alt_m=round(700 + i['z'] * 100)) for i in islands]}
+layer.finish(world=((.55, .65, .8), .35), extra=export, label=f'islands {len(islands)}')
