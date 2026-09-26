@@ -36,7 +36,8 @@ function SUB(k, tag) {
   if (!tag) return k; const b = k.b; if (!b.sub) return k;
   const n = new Kit(wrapB(b.sub(tag)), 0, 0, 0); n.T = k.T.clone(); return n;
 }
-const FINE = (k) => SUB(k, 'fine');
+// 近景细件：hi 子批次里的细件跟着 hi 走（否则远墙隐藏时细件会悬空）
+const FINE = (k) => { const b = k.b && (k.b.__base || k.b); const t = b && b.tag; return t && t.startsWith('hi') ? k : SUB(k, 'fine'); };
 // 局部子坐标系：平移 (x, y, z)、绕 y 转 ry、再绕 x 转 rx，可带缩放
 function loc(k, x, z, ry = 0, y = 0, rx = 0, sc) {
   const n = new Kit(k.b, 0, 0, 0); const m = mat4(x, y, z, 1, 1, 1, ry, rx);
@@ -91,7 +92,7 @@ export function chair(k, fab = 'enamel:#6e1f1b', wood = 'mahogany') {
   k.box(wood, 0, 1.02, -0.25, 0.5, 0.055, 0.045, 0, -0.08);
   k.box(wood, 0, 0.62, -0.228, 0.1, 0.3, 0.012, 0, -0.08); f.geo(wood, SPLAT(), 0, 0.72, -0.226, 1.1, 1.1, 1, 0, -0.08);
   f.box('brass', 0, 0.445, 0.245, 0.46, 0.012, 0.004);
-  k.blob(0, 0, 0.8, 0.8);
+  k.blob(0, 0, 0.8, 0.8, 0.03);
 }
 // 路易十六式扶手椅（镀金或桃花心木框、丝绒面）
 export function armchair(k, fab = 'fabSage', frame = 'mahogany') {
@@ -103,7 +104,7 @@ export function armchair(k, fab = 'fabSage', frame = 'mahogany') {
   sl(k, frame, 0, 1.04, -0.35, 0.7, 0.06, 0.07, 0.03, 0, -0.1);
   for (const sx of [-1, 1]) { sl(k, fab, sx * 0.34, 0.52, 0.0, 0.1, 0.18, 0.62, 0.04); sl(k, frame, sx * 0.35, 0.63, 0.02, 0.07, 0.05, 0.62, 0.025); k.cyl(frame, sx * 0.35, 0.3, 0.3, 0.025, 0.33, 6); }
   f.box('gold', 0, 0.32, 0.365, 0.7, 0.02, 0.01);
-  k.blob(0, 0, 1.1, 1.1);
+  k.blob(0, 0, 1.1, 1.1, 0.03);
 }
 export function sofa(k, fab = 'fabCream', w = 2.2, cush = 3, frame = 'mahogany') {
   k = wk(k); const f = FINE(k);
@@ -118,7 +119,7 @@ export function sofa(k, fab = 'fabCream', w = 2.2, cush = 3, frame = 'mahogany')
   pillowAt(k, 'fab:#F7F4EE', -w / 2 + 0.42, 0.66, -0.16, 0.4, 0.14, 0.36, -0.35);
   pillowAt(k, 'velvet:#CDB58A', w / 2 - 0.42, 0.66, -0.16, 0.4, 0.14, 0.36, -0.35);
   f.box('gold', 0, 0.29, 0.425, w - 0.1, 0.02, 0.01);
-  k.blob(0, 0, w + 0.5, 1.3);
+  k.blob(0, 0, w + 0.5, 1.3, 0.03);
 }
 // 切斯特菲尔德（皮面、滚臂、同高靠背；fine 里加拉扣）
 export function chesterfield(k, w = 2.2, fab = 'enamel:#4a1d16') {
@@ -130,7 +131,7 @@ export function chesterfield(k, w = 2.2, fab = 'enamel:#4a1d16') {
   for (const sx of [-1, 1]) { sl(k, fab, sx * (w / 2 - 0.1), 0.56, 0, 0.2, 0.36, 0.92, 0.06); k.geo(fab, G.cyl(12), sx * (w / 2 - 0.1), 0.78, 0.0, 0.13, 0.94, 0.13, 0, H); }
   cx_(k, fab, 0, 0.84, -0.38, 0.1, w, 12);
   for (let i = 0; i < 9; i++) for (let j = 0; j < 2; j++) f.sph('enamel:#2a0f0c', -w / 2 + 0.3 + i * (w - 0.6) / 8, 0.58 + j * 0.14, -0.285, 0.012, 0.012, 0.008, 6, 4);
-  k.blob(0, 0, w + 0.5, 1.3);
+  k.blob(0, 0, w + 0.5, 1.3, 0.03);
 }
 function pillowG() {
   return G.custom('pillow', () => {
@@ -149,7 +150,7 @@ export function coffeeTable(k, w = 1.3, d = 0.7, top = 'marbleW') {
   k.bx('mahogany', 0, 0.1, 0, w - 0.12, 0.025, d - 0.12);
   const f = FINE(k); f.bx('books', -w / 4, 0.445, 0, 0.3, 0.06, 0.22); f.bx('books', -w / 4 + 0.02, 0.505, 0.01, 0.24, 0.045, 0.18, 0.2);
   f.geo('porcelain', G.lathe('bowl', [[0, 0], [0.05, 0], [0.1, 0.04], [0.13, 0.08], [0.12, 0.085]], 14), w / 4, 0.445, 0);
-  k.blob(0, 0, w + 0.4, d + 0.4);
+  k.blob(0, 0, w + 0.4, d + 0.4, 0.03);
 }
 export function sideTable(k, lamp = true) {
   k = wk(k);
@@ -166,13 +167,13 @@ export function tableLamp(k, shade = 'fab:#EEE7D8') {
 }
 export function floorLamp(k, shade = 'fab:#EEE7D8') {
   k = wk(k); k.cyl('ormolu', 0, 0, 0, 0.16, 0.03, 12); k.cyl('ormolu', 0, 0.03, 0, 0.015, 1.45, 6);
-  k.geo(shade, G.cyl(16, 0.6, true), 0, 1.6, 0, 0.22, 0.28, 0.22); k.cyl('glow', 0, 1.5, 0, 0.06, 0.06, 8); k.blob(0, 0, 0.6, 0.6);
+  k.geo(shade, G.cyl(16, 0.6, true), 0, 1.6, 0, 0.22, 0.28, 0.22); k.cyl('glow', 0, 1.5, 0, 0.06, 0.06, 8); k.blob(0, 0, 0.6, 0.6, 0.03);
 }
 export function roundTable(k, r = 0.6, top = 'mahogany', h = 0.75) {
   k = wk(k);
   k.geo('mahogany', G.lathe('rtped', [[0, 0], [0.45, 0], [0.45, 0.05], [0.14, 0.1], [0.09, 0.3], [0.13, 0.5], [0.08, 0.62], [0.12, 0.9], [0, 0.9]], 12), 0, 0, 0, r, h / 0.9 * 0.93, r);
   k.cyl(top, 0, h - 0.04, 0, r, 0.04, 28); k.geo('ormolu', G.tor(PI * 2, 4, 28, 0.06), 0, h - 0.035, 0, r + 0.005, 0.05, r + 0.005);
-  k.blob(0, 0, r * 2.4, r * 2.4);
+  k.blob(0, 0, r * 2.4, r * 2.4, 0.03);
 }
 export function teaSet(k, y = 0.75) {
   k = FINE(wk(k)); const f = k;
@@ -191,7 +192,7 @@ export function vase(k, h = 1.4) {
   k = wk(k); const s = h / 1.4;
   k.geo('porcelain', G.lathe('bwvase', [[0, 0], [0.2, 0], [0.24, 0.06], [0.36, 0.45], [0.38, 0.7], [0.3, 0.95], [0.16, 1.12], [0.14, 1.28], [0.19, 1.4], [0, 1.4]], 20), 0, 0, 0, s, s, s);
   for (const [y, r] of [[0.3, 0.33], [0.7, 0.385], [1.2, 0.15]]) k.geo('enamel:#1F3F8F', G.cyl(20, 1, true), 0, y * s, 0, r * s * 1.01, 0.12 * s, r * s * 1.01);
-  k.blob(0, 0, 0.9 * s, 0.9 * s);
+  k.blob(0, 0, 0.9 * s, 0.9 * s, 0.03);
 }
 export function diningTable(k, len = 11, wid = 1.6, chairFab = 'enamel:#6e1f1b', o = {}) {
   k = wk(k); const f = FINE(k);
@@ -209,7 +210,7 @@ export function diningTable(k, len = 11, wid = 1.6, chairFab = 'enamel:#6e1f1b',
   if (!o.noEnds) { chair(loc(k, len / 2 + 0.4, 0, -H), chairFab); if (!o.hostChair) chair(loc(k, -len / 2 - 0.4, 0, H), chairFab); }
   const nc = o.candles || 3;
   for (let i = 0; i < nc; i++) { const x = -len / 2 + len * (i + 0.5) / nc; if (i % 2 === 1 && nc > 2) { flowers(loc(k, x, 0), 0.755, 0.22, [COL.rose, COL.linen, COL.champ]); continue; } candelabra(loc(k, x, 0, 0, 0.755)); }
-  k.blob(0, 0, len + 1.6, wid + 1.8);
+  k.blob(0, 0, len + 1.6, wid + 1.8, 0.03);
 }
 export function candelabra(k, h = 0.55, arms = 4) {
   k = FINE(wk(k));
@@ -225,7 +226,7 @@ export function sideboard(k, w = 2.4, mat = 'mahogany', top = 'marbleW') {
   for (let i = 0; i < n; i++) { const x = -w / 2 + w * (i + 0.5) / n; panelDoor(f, x, 0.22, 0.26, w / n - 0.06, 0.62); k.sph('brass', x, 0.56, 0.275, 0.018, 0.018, 0.014, 8, 6); }
   f.box('ormolu', 0, 0.86, 0.262, w - 0.04, 0.025, 0.008);
   flowers(loc(k, -w / 3, 0), 0.94, 0.16); candelabra(loc(k, w / 3, 0, 0, 0.94), 0.4, 3);
-  k.blob(0, 0.1, w + 0.4, 0.9);
+  k.blob(0, 0.1, w + 0.4, 0.9, 0.03);
 }
 // 镶板门：1 cm 框线（写入 fine）
 function panelDoor(f, x, y0, z, w, h, mat = 'mahogany') {
@@ -265,12 +266,12 @@ export function piano(k) {
   k.bx('porcelain', 0, 0.9, 0.42, 1.36, 0.035, 0.18); for (let i = 0; i < 18; i++) k.bx('piano', -0.62 + i * 0.075, 0.935, 0.37, 0.03, 0.02, 0.1);
   k.bx('piano', 0, 0.94, 0.32, 1.1, 0.25, 0.02);
   const b = loc(k, 0, 0.95); legs(b, 0.72, 0.34, 0.45, 0.025, 'piano', 0.04, 'turn'); b.bx('piano', 0, 0.42, 0, 0.8, 0.06, 0.38); sl(b, 'enamel:#1a1a1a', 0, 0.5, 0, 0.76, 0.05, 0.34, 0.02);
-  k.blob(0, -0.6, 2.2, 3.0);
+  k.blob(0, -0.6, 2.2, 3.0, 0.03);
 }
 export function uprightPiano(k) {
   k = wk(k); k.bx('walnut', 0, 0, 0, 1.5, 1.3, 0.6); k.bx('walnut', 0, 0.7, 0.3, 1.46, 0.06, 0.25); k.bx('porcelain', 0, 0.74, 0.34, 1.3, 0.02, 0.16);
   for (let i = 0; i < 18; i++) k.bx('ebony', -0.6 + i * 0.07, 0.76, 0.31, 0.025, 0.02, 0.09); for (const sx of [-1, 1]) candelabra(loc(k, sx * 0.55, 0.05, 0, 1.3), 0.25, 1);
-  const b = loc(k, 0, 0.9); legs(b, 0.7, 0.34, 0.45, 0.025, 'walnut', 0.04); b.bx('walnut', 0, 0.42, 0, 0.76, 0.05, 0.36); k.blob(0, 0.2, 1.8, 1.5);
+  const b = loc(k, 0, 0.9); legs(b, 0.7, 0.34, 0.45, 0.025, 'walnut', 0.04); b.bx('walnut', 0, 0.42, 0, 0.76, 0.05, 0.36); k.blob(0, 0.2, 1.8, 1.5, 0.03);
 }
 // 吊灯：y 为灯体高度（相对地面），arms 总臂数，按层分配；水晶坠写入 fine
 export function chandelier(k, y, r = 1.0, tiers = 2, ceil = 1.2, arms) {
@@ -323,18 +324,18 @@ export function sconce(k, o = {}) {
 // 立式烛台灯柱（楼梯脚、音乐厅）
 export function torchere(k, h = 1.8) {
   k = wk(k); k.geo('ormolu', G.lathe('torch', [[0, 0], [0.22, 0], [0.22, 0.05], [0.08, 0.12], [0.05, 0.5], [0.07, 0.55], [0.035, 0.95], [0.06, 1], [0, 1]], 10), 0, 0, 0, 1, h - 0.3, 1);
-  candelabra(loc(k, 0, 0, 0, h - 0.3), 0.3, 5); k.blob(0, 0, 0.7, 0.7);
+  candelabra(loc(k, 0, 0, 0, h - 0.3), 0.3, 5); k.blob(0, 0, 0.7, 0.7, 0.03);
 }
 export function bench(k, len = 2.0, fab = 'fabBurg', frame = 'mahogany') {
   k = wk(k); const f = FINE(k);
   legs(k, len, 0.48, 0.34, 0.03, frame, 0.07, 'turn'); k.bx(frame, 0, 0.3, 0, len, 0.07, 0.48); sl(k, fab, 0, 0.42, 0, len - 0.04, 0.1, 0.46, 0.035);
-  f.box('gold', 0, 0.33, 0.245, len - 0.1, 0.02, 0.008); k.blob(0, 0, len + 0.4, 0.9);
+  f.box('gold', 0, 0.33, 0.245, len - 0.1, 0.02, 0.008); k.blob(0, 0, len + 0.4, 0.9, 0.03);
 }
-export function stool(k, fab = 'velvet:#CDB58A', w = 0.5, d = 0.4) { k = wk(k); legs(k, w, d, 0.4, 0.022, 'mahogany', 0.04, 'turn'); k.bx('mahogany', 0, 0.36, 0, w, 0.05, d); sl(k, fab, 0, 0.44, 0, w - 0.02, 0.09, d - 0.02, 0.03); k.blob(0, 0, w + 0.3, d + 0.3); }
+export function stool(k, fab = 'velvet:#CDB58A', w = 0.5, d = 0.4) { k = wk(k); legs(k, w, d, 0.4, 0.022, 'mahogany', 0.04, 'turn'); k.bx('mahogany', 0, 0.36, 0, w, 0.05, d); sl(k, fab, 0, 0.44, 0, w - 0.02, 0.09, d - 0.02, 0.03); k.blob(0, 0, w + 0.3, d + 0.3, 0.03); }
 export function chaise(k, fab = 'velvet:#CDB58A', len = 1.8) {
   k = wk(k); legs(k, len, 0.66, 0.18, 0.028, 'mahogany', 0.06, 'turn'); sl(k, 'mahogany', 0, 0.24, 0, len, 0.1, 0.7, 0.03);
   sl(k, fab, 0, 0.36, 0.02, len - 0.04, 0.16, 0.64, 0.05); k.geo(fab, G.cyl(12), -len / 2 + 0.12, 0.62, 0, 0.16, 0.66, 0.16, 0, H); sl(k, fab, -len / 2 + 0.08, 0.5, 0, 0.12, 0.5, 0.66, 0.05);
-  sl(k, fab, -0.2, 0.62, -0.28, len * 0.7, 0.42, 0.1, 0.04, 0, -0.12); pillowAt(k, 'fab:#EEE7D8', -len / 2 + 0.35, 0.52, 0, 0.36, 0.14, 0.4, 0, H * 0.9); k.blob(0, 0, len + 0.4, 1.1);
+  sl(k, fab, -0.2, 0.62, -0.28, len * 0.7, 0.42, 0.1, 0.04, 0, -0.12); pillowAt(k, 'fab:#EEE7D8', -len / 2 + 0.35, 0.52, 0, 0.36, 0.14, 0.4, 0, H * 0.9); k.blob(0, 0, len + 0.4, 1.1, 0.03);
 }
 export function plant(k, h = 1.6, pot = 'urn') {
   k = wk(k);
@@ -344,21 +345,21 @@ export function plant(k, h = 1.6, pot = 'urn') {
   k.cyl('bark', 0, top, 0, 0.04, h * 0.55, 5, 0.6);
   for (let i = 0; i < 7; i++) { const a = i * 0.9; k.sph('foliage', Math.sin(a) * 0.32, top + h * 0.55 - 0.02, Math.cos(a) * 0.32, 0.12, 0.05, 0.5, 6, 4); }
   for (let i = 0; i < 7; i++) { const a = i * 0.9 + 0.45; const g = loc(k, 0, 0, a, top + h * 0.55); g.box('foliage', 0, 0.02, 0.35, 0.16, 0.03, 0.72, 0, 0.45); }
-  k.blob(0, 0, 1.0, 1.0);
+  k.blob(0, 0, 1.0, 1.0, 0.03);
 }
 // 柑橘 / 月桂盆栽（球冠）
 export function citrus(k, h = 1.5) {
   k = wk(k); k.bx('paintIvory', 0, 0, 0, 0.6, 0.55, 0.6); for (const sx of [-1, 1]) for (const sz of [-1, 1]) k.sph('ormolu', sx * 0.29, 0.6, sz * 0.29, 0.04, 0.04, 0.04, 6, 4);
   k.cyl('bark', 0, 0.55, 0, 0.035, h * 0.45, 5); k.inst('ball', 0, 0.55 + h * 0.62, 0, 0.45, 0.42, 0.45, 0, '#5d7f3e');
   for (let i = 0; i < 9; i++) { const a = i * 2.3; k.sph('enamel:#E39A2B', Math.sin(a) * 0.36, 0.55 + h * 0.6 + (i % 3 - 1) * 0.14, Math.cos(a) * 0.36, 0.035, 0.035, 0.035, 6, 4); }
-  k.blob(0, 0, 1.0, 1.0);
+  k.blob(0, 0, 1.0, 1.0, 0.03);
 }
 export function topiaryPot(k, h = 1.2) {
   k = wk(k);
   k.bx('paint', 0, 0, 0, 0.8, 0.7, 0.8); for (const sx of [-1, 1]) for (const sz of [-1, 1]) { k.bx('paintSage', sx * 0.38, 0, sz * 0.38, 0.1, 0.8, 0.1); k.sph('gold', sx * 0.38, 0.84, sz * 0.38, 0.06, 0.06, 0.06, 6, 4); }
   k.cyl('bark', 0, 0.7, 0, 0.05, h * 0.5, 5); k.inst('ball', 0, 0.7 + h * 0.55 + 0.35, 0, 0.55, 0.5, 0.55, 0, '#6f8f4e');
   for (let i = 0; i < 6; i++) { const a = i * 1.05; k.sph('fabGold', Math.sin(a) * 0.45, 0.7 + h * 0.55 + 0.3 + (i % 2) * 0.2, Math.cos(a) * 0.45, 0.06, 0.06, 0.06, 5, 4); }
-  k.blob(0, 0, 1.3, 1.3);
+  k.blob(0, 0, 1.3, 1.3, 0.03);
 }
 // 书柜；o.hk 给出时，1.2 m 以上写入 hk（远墙升高时才显示）
 export function bookshelf(k, w = 2.0, h = 2.5, d = 0.42, o = {}) {
@@ -371,7 +372,7 @@ export function bookshelf(k, w = 2.0, h = 2.5, d = 0.42, o = {}) {
   for (let i = 0; i < rows; i++) { const y = 0.12 + i * 0.38; const kk = hk && y + 0.36 > 1.2 ? hk : k; kk.bx(wood, 0, y, 0, w - 0.08, 0.03, d - 0.02); kk.box('books', 0, y + 0.18, 0.02, w - 0.12, 0.3, d - 0.12); }
   if (o.rail) { const kk = hk || k; cx_(kk, 'brass', 0, h - 0.35, d / 2 + 0.06, 0.012, w, 8); }
   f.box(wood, 0, h - 0.1, d / 2 + 0.03, w + 0.08, 0.03, 0.01);
-  k.blob(0, 0.05, w + 0.3, d + 0.4);
+  k.blob(0, 0.05, w + 0.3, d + 0.4, 0.03);
 }
 // 图书梯（黄铜滑轨）
 export function libraryLadder(k, h = 2.8) { k = wk(k); for (const sx of [-1, 1]) rod(k, 'walnut', [sx * 0.22, 0, 0.55], [sx * 0.2, h, 0.05], 0.022, 5); for (let i = 1; i < 8; i++) { const t = i / 8; cx_(k, 'walnut', 0, t * h, 0.55 - t * 0.5, 0.016, 0.42, 5); } k.cyl('brass', -0.2, h - 0.05, 0.05, 0.02, 0.06, 6); k.cyl('brass', 0.2, h - 0.05, 0.05, 0.02, 0.06, 6); }
@@ -382,7 +383,7 @@ export function desk(k, w = 1.9, d = 0.95, chairFab = 'leather', o = {}) {
   k.bx('linen', -0.1, 0.774, 0.1, 0.3, 0.008, 0.22); k.box('brass', 0.3, 0.8, -0.2, 0.2, 0.05, 0.1);
   bankerLamp(loc(k, -w / 2 + 0.3, -d / 2 + 0.25, 0, 0.77));
   if (chairFab) armchair(loc(k, 0, -d / 2 - 0.55, 0), chairFab);
-  k.blob(0, 0, w + 0.4, d + 0.4);
+  k.blob(0, 0, w + 0.4, d + 0.4, 0.03);
 }
 function bankerLamp(k, arms = 1) {
   k.cyl('brass', 0, 0, 0, 0.08, 0.02, 12); k.cyl('brass', 0, 0.02, 0, 0.012, 0.32, 6);
@@ -393,7 +394,7 @@ export function globe(k, r = 0.4) {
   for (let i = 0; i < 3; i++) { const a = i * 2.09; k.box('walnut', Math.sin(a) * 0.22 * s, 0.32 * s, Math.cos(a) * 0.22 * s, 0.04 * s, 0.66 * s, 0.04 * s, a, 0.3); }
   k.geo('walnut', G.tor(PI * 2, 5, 28, 0.1), 0, 0.64 * s, 0, 0.44 * s, 0.44 * s, 0.44 * s);
   k.sph('enamel:#C9B98A', 0, 1.02 * s, 0, r, r, r, 20, 14); k.geo('brass', new THREE.TorusGeometry(1, 0.025, 4, 32), 0, 1.02 * s, 0, r + 0.03, r + 0.03, r + 0.03, 0.4);
-  k.blob(0, 0, 1.0 * s, 1.0 * s);
+  k.blob(0, 0, 1.0 * s, 1.0 * s, 0.03);
 }
 export function nightstand(k, wood = 'mahogany') {
   k = wk(k); const f = FINE(k);
@@ -409,7 +410,7 @@ export function wardrobe(k, w = 1.6, mat = 'mahogany', h = 2.2) {
   for (const sx of [-1, 1]) panelDoor(f, sx * w / 4, 0.25, 0.315, w / 2 - 0.08, h - 0.45, mat);
   k.bx(mat, 0, 0.2, 0.318, 0.03, h - 0.3, 0.01);
   for (const sx of [-1, 1]) k.box('brass', sx * 0.06, h * 0.52, 0.335, 0.025, 0.14, 0.02);
-  k.blob(0, 0.05, w + 0.4, 1.0);
+  k.blob(0, 0.05, w + 0.4, 1.0, 0.03);
 }
 export function chest(k, w = 1.2, mat = 'mahogany') {
   k = wk(k); const f = FINE(k); legs(k, w, 0.5, 0.12, 0.03, mat, 0.05); k.bx(mat, 0, 0.1, 0, w, 0.8, 0.5); k.bx('marbleW', 0, 0.9, 0, w + 0.04, 0.03, 0.54);
@@ -425,13 +426,13 @@ export function vanity(k, o = {}) {
   k.cyl('crystal', -0.4, 0.775, 0.08, 0.03, 0.1, 8, 0.5); k.cyl('crystal', -0.33, 0.775, 0.1, 0.025, 0.08, 8, 0.6); f.sph('gold', -0.4, 0.89, 0.08, 0.018, 0.018, 0.018, 6, 4);
   k.bx('gold', 0.35, 0.775, 0.08, 0.2, 0.012, 0.14);
   stool(loc(k, 0, 0.58), o.fab || 'velvet:#C99A93', 0.46, 0.36);
-  k.blob(0, 0.2, 1.5, 1.2);
+  k.blob(0, 0.2, 1.5, 1.2, 0.03);
 }
 // 穿衣镜（落地转镜，鎏金框）
 export function chevalMirror(k, h = 1.8) {
   k = wk(k); for (const sx of [-1, 1]) { k.box('gold', sx * 0.36, h / 2, 0, 0.04, h, 0.04); k.bx('gold', sx * 0.36, 0, 0, 0.05, 0.03, 0.4); }
   const m = loc(k, 0, 0, 0, h * 0.52, -0.06); m.bx('gold', 0, -h * 0.42, 0, 0.62, h * 0.84, 0.04); m.bx('mirror', 0, -h * 0.4, 0.022, 0.54, h * 0.8, 0.006); m.geo('gold', G.seg(), 0, h * 0.42, 0, 0.31, 0.12, 0.04);
-  k.blob(0, 0, 0.9, 0.6);
+  k.blob(0, 0, 0.9, 0.6, 0.03);
 }
 export function cabinetGlass(k, w = 1.5, wood = 'mahogany', h = 2.1) {
   k = wk(k); const f = FINE(k);
@@ -440,7 +441,7 @@ export function cabinetGlass(k, w = 1.5, wood = 'mahogany', h = 2.1) {
   for (const sx of [-1, 1]) k.bx(wood, sx * (w / 2 - 0.02), 0.85, 0.1, 0.04, h - 0.85, 0.04);
   k.bx('glass', 0, 0.9, 0.206, w - 0.1, h - 0.95, 0.008); k.bx(wood, 0, 0.9, 0.212, 0.03, h - 0.95, 0.01);
   panelDoor(f, -w / 4, 0.1, 0.228, w / 2 - 0.06, 0.65, wood); panelDoor(f, w / 4, 0.1, 0.228, w / 2 - 0.06, 0.65, wood);
-  k.blob(0, 0.05, w + 0.3, 0.8);
+  k.blob(0, 0.05, w + 0.3, 0.8, 0.03);
 }
 // 展柜（乌木框玻璃平柜，珍藏室）
 export function vitrine(k, w = 1.6) {
@@ -448,13 +449,13 @@ export function vitrine(k, w = 1.6) {
   k.bx('fab:#2C3E63', 0, 0.87, 0, w - 0.06, 0.005, 0.64); k.bx('glass', 0, 0.87, 0, w - 0.02, 0.22, 0.66);
   for (let i = 0; i < 4; i++) k.bx(['enamel:#d8c69a', 'brass', 'enamel:#b9a57a', 'gold'][i], -w / 2 + 0.25 + i * (w - 0.5) / 3, 0.875, 0, 0.18, 0.02, 0.24);
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) k.box('ebony', sx * (w / 2 - 0.01), 0.98, sz * 0.33, 0.02, 0.22, 0.02); k.bx('ebony', 0, 1.09, 0, w, 0.02, 0.7);
-  k.blob(0, 0, w + 0.3, 1.0);
+  k.blob(0, 0, w + 0.3, 1.0, 0.03);
 }
 export function screenFold(k, fab = 'fabSage') {
   k = wk(k);
   for (let i = 0; i < 4; i++) { const x = -0.75 + i * 0.5, a = (i % 2 ? 0.35 : -0.35); k.box('mahogany', x, 0.95, 0, 0.5, 1.8, 0.04, a); k.box(fab, x, 1.0, 0, 0.42, 1.55, 0.05, a); }
 }
-export function filing(k, n = 3, mat = 'mahogany') { k = wk(k); for (let i = 0; i < n; i++) { const x = (i - (n - 1) / 2) * 0.56; k.bx(mat, x, 0, 0, 0.52, 1.3, 0.6); for (let j = 0; j < 4; j++) { k.bx(mat, x, 0.1 + j * 0.3, 0.301, 0.46, 0.26, 0.01); k.box('brass', x, 0.28 + j * 0.3, 0.31, 0.1, 0.02, 0.02); } } k.blob(0, 0, n * 0.56 + 0.3, 0.9); }
+export function filing(k, n = 3, mat = 'mahogany') { k = wk(k); for (let i = 0; i < n; i++) { const x = (i - (n - 1) / 2) * 0.56; k.bx(mat, x, 0, 0, 0.52, 1.3, 0.6); for (let j = 0; j < 4; j++) { k.bx(mat, x, 0.1 + j * 0.3, 0.301, 0.46, 0.26, 0.01); k.box('brass', x, 0.28 + j * 0.3, 0.31, 0.1, 0.02, 0.02); } } k.blob(0, 0, n * 0.56 + 0.3, 0.9, 0.03); }
 // 布草架（毛巾叠放在格里）
 export function rack(k, w = 3.0, tiers = 4, towels = true) {
   k = wk(k);
@@ -464,12 +465,12 @@ export function rack(k, w = 3.0, tiers = 4, towels = true) {
     if (!towels) continue;
     for (let j = 0; j < 5; j++) { const x = -w / 2 + 0.34 + j * (w - 0.68) / 4, n = 3 + ((i + j) % 3), c = cols[(i + j) % 5];
       k.geo('towel:' + c, G.slab(0.42, n * 0.05, 0.34, 0.02, 0.01, 1), x, y + 0.03 + n * 0.025, 0.02); for (let m = 1; m < n; m++) FINE(k).box('towel:' + shadeHex(c, 0.8), x, y + 0.03 + m * 0.05, 0.19, 0.4, 0.004, 0.002); } }
-  k.blob(0, 0, w + 0.3, 0.9);
+  k.blob(0, 0, w + 0.3, 0.9, 0.03);
 }
-export function workTable(k, w = 2.6, d = 1.1, top = 'marbleW') { k = wk(k); legs(k, w, d, 0.85, 0.04, 'paintIvory', 0.08, 'plain'); k.bx('paintIvory', 0, 0.75, 0, w - 0.1, 0.1, d - 0.1); k.bx(top, 0, 0.85, 0, w, 0.05, d); k.bx('paintIvory', 0, 0.15, 0, w - 0.2, 0.03, d - 0.2); k.blob(0, 0, w + 0.4, d + 0.4); }
+export function workTable(k, w = 2.6, d = 1.1, top = 'marbleW') { k = wk(k); legs(k, w, d, 0.85, 0.04, 'paintIvory', 0.08, 'plain'); k.bx('paintIvory', 0, 0.75, 0, w - 0.1, 0.1, d - 0.1); k.bx(top, 0, 0.85, 0, w, 0.05, d); k.bx('paintIvory', 0, 0.15, 0, w - 0.2, 0.03, d - 0.2); k.blob(0, 0, w + 0.4, d + 0.4, 0.03); }
 export function counter(k, w = 4, d = 0.65, top = 'marbleW') { k = wk(k); k.bx('paintIvory', 0, 0, 0, w, 0.85, d); k.bx(top, 0, 0.85, 0.02, w + 0.04, 0.05, d + 0.04); for (let i = 0; i < Math.floor(w / 0.6); i++) { const x = -w / 2 + 0.3 + i * 0.6; k.bx('paintSage', x, 0.08, d / 2 + 0.005, 0.54, 0.68, 0.01); k.box('brass', x, 0.62, d / 2 + 0.015, 0.1, 0.02, 0.02); } }
-export function washTub(k) { k = wk(k); k.cyl('woodMid', 0, 0, 0, 0.45, 0.7, 14, 1.12); k.geo('iron', G.tor(PI * 2, 4, 20, 0.04), 0, 0.2, 0, 0.47, 0.47, 0.47); k.geo('iron', G.tor(PI * 2, 4, 20, 0.04), 0, 0.55, 0, 0.5, 0.5, 0.5); k.geo('water', G.cyl(14), 0, 0.62, 0, 0.44, 0.01, 0.44); k.blob(0, 0, 1.3, 1.3); }
-export function serverRack(k) { k = wk(k); k.bx('walnut', 0, 0, 0, 0.62, 2.0, 0.9); for (let i = 0; i < 10; i++) { k.bx('cap', 0, 0.15 + i * 0.18, 0.451, 0.54, 0.14, 0.01); k.bx('led', -0.2 + (i % 3) * 0.05, 0.2 + i * 0.18, 0.456, 0.03, 0.02, 0.01); } k.blob(0, 0, 0.9, 1.2); }
+export function washTub(k) { k = wk(k); k.cyl('woodMid', 0, 0, 0, 0.45, 0.7, 14, 1.12); k.geo('iron', G.tor(PI * 2, 4, 20, 0.04), 0, 0.2, 0, 0.47, 0.47, 0.47); k.geo('iron', G.tor(PI * 2, 4, 20, 0.04), 0, 0.55, 0, 0.5, 0.5, 0.5); k.geo('water', G.cyl(14), 0, 0.62, 0, 0.44, 0.01, 0.44); k.blob(0, 0, 1.3, 1.3, 0.03); }
+export function serverRack(k) { k = wk(k); k.bx('walnut', 0, 0, 0, 0.62, 2.0, 0.9); for (let i = 0; i < 10; i++) { k.bx('cap', 0, 0.15 + i * 0.18, 0.451, 0.54, 0.14, 0.01); k.bx('led', -0.2 + (i % 3) * 0.05, 0.2 + i * 0.18, 0.456, 0.03, 0.02, 0.01); } k.blob(0, 0, 0.9, 1.2, 0.03); }
 // 以太监视墙（黄铜框）
 export function monitorWall(k, w = 6, rows = 3) {
   k = wk(k); k.bx('walnut', 0, 0.75, 0, w, rows * 0.72 + 0.3, 0.12); const n = Math.floor(w / 1.4);
@@ -486,7 +487,7 @@ export function monitorDesk(k, R = 3.4, n = 5) {
 export function cardTable(k, fab = 'fabGold') {
   k = wk(k); legs(k, 0.9, 0.9, 0.72, 0.03, 'mahogany', 0.05, 'turn'); k.bx('mahogany', 0, 0.68, 0, 0.92, 0.06, 0.92); k.bx('fab:#2f5a3e', 0, 0.741, 0, 0.8, 0.004, 0.8);
   for (let i = 0; i < 4; i++) chair(loc(k, Math.sin(i * H) * 0.8, Math.cos(i * H) * 0.8, i * H + PI), fab);
-  k.blob(0, 0, 2.4, 2.4);
+  k.blob(0, 0, 2.4, 2.4, 0.03);
 }
 // 镀金边桌（大理石台面）；o.mk 为镜子的 Kit（远墙 hi 子批次），o.mirror 为镜高
 export function consoleT(k, w = 1.6, mirror = true, o = {}) {
@@ -498,13 +499,13 @@ export function consoleT(k, w = 1.6, mirror = true, o = {}) {
   if (mirror) { const m = o.mk ? wk(o.mk) : k, mh = o.mirror || 1.2, y0 = 0.9;
     m.bx('gold', 0, y0, -0.19, w * 0.85, mh, 0.05); m.bx('mirror', 0, y0 + 0.08, -0.162, w * 0.85 - 0.16, mh - 0.16, 0.006);
     m.geo('gold', G.seg(), 0, y0 + mh, -0.19, w * 0.43, 0.32, 0.05); m.sph('gold', 0, y0 + mh + 0.36, -0.18, 0.14, 0.1, 0.03, 10, 6); }
-  k.blob(0, 0, w + 0.4, 0.8);
+  k.blob(0, 0, w + 0.4, 0.8, 0.03);
 }
 export function telescope(k) {
   k = wk(k);
   for (let i = 0; i < 3; i++) { const a = i * 2.09; k.box('walnut', Math.sin(a) * 0.3, 0.6, Math.cos(a) * 0.3, 0.035, 1.25, 0.035, a, 0.25); }
   k.geo('brass', G.cyl(12), 0, 1.35, 0.1, 0.07, 1.5, 0.07, 0, -1.2); k.geo('brass', G.cyl(12), 0, 1.66, 0.72, 0.1, 0.25, 0.1, 0, -1.2);
-  k.blob(0, 0, 1.2, 1.2);
+  k.blob(0, 0, 1.2, 1.2, 0.03);
 }
 export function billiard(k) {
   k = wk(k); const f = FINE(k);
@@ -514,7 +515,7 @@ export function billiard(k) {
   for (const x of [-1.45, 0, 1.45]) for (const sz of [-1, 1]) f.cyl('ebony', x, 0.8, sz * 0.74, 0.045, 0.03, 10);
   for (const [x, z, c] of [[0.6, 0, '#f4efe0'], [0.9, 0.1, '#b01e1e'], [-0.8, -0.2, '#f0d060']]) k.sph('enamel:' + c, x, 0.822, z, 0.027, 0.027, 0.027, 10, 8);
   rod(k, 'walnut', [-0.4, 0.83, 0.2], [0.9, 0.9, 0.5], 0.008, 5);
-  k.blob(0, 0, 3.8, 2.4);
+  k.blob(0, 0, 3.8, 2.4, 0.03);
 }
 export function cueRack(k) { k = wk(k); k.bx('mahogany', 0, 0.3, 0, 0.8, 1.2, 0.1); for (let i = 0; i < 6; i++) rod(k, 'walnut', [-0.3 + i * 0.12, 0.35, 0.08], [-0.3 + i * 0.12, 1.75, 0.07], 0.008, 5); }
 // 铃板（36 个铃，黄铜牌、以太指示灯）
@@ -523,13 +524,13 @@ export function bellBoard(k, n = 36, w = 2.0) {
   const cols = 9, rows = Math.ceil(n / cols);
   for (let i = 0; i < n; i++) { const x = -w / 2 + 0.15 + (i % cols) * (w - 0.3) / (cols - 1), y = 1.3 + Math.floor(i / cols) * 0.2; k.box('brass', x, y + 0.08, 0.04, 0.16, 0.05, 0.01); k.sph(i % 7 === 3 ? 'glow' : 'led', x, y + 0.02, 0.04, 0.02, 0.02, 0.01, 6, 4); }
 }
-export function coatStand(k) { k = wk(k); k.cyl('mahogany', 0, 0, 0, 0.22, 0.04, 10); k.cyl('mahogany', 0, 0.04, 0, 0.025, 1.8, 6); for (let i = 0; i < 6; i++) { const a = i * PI / 3; rod(k, 'brass', [0, 1.62, 0], [Math.sin(a) * 0.16, 1.72, Math.cos(a) * 0.16], 0.008, 4); } k.sph('brass', 0, 1.86, 0, 0.03, 0.03, 0.03, 6, 4); k.blob(0, 0, 0.6, 0.6); }
+export function coatStand(k) { k = wk(k); k.cyl('mahogany', 0, 0, 0, 0.22, 0.04, 10); k.cyl('mahogany', 0, 0.04, 0, 0.025, 1.8, 6); for (let i = 0; i < 6; i++) { const a = i * PI / 3; rod(k, 'brass', [0, 1.62, 0], [Math.sin(a) * 0.16, 1.72, Math.cos(a) * 0.16], 0.008, 4); } k.sph('brass', 0, 1.86, 0, 0.03, 0.03, 0.03, 6, 4); k.blob(0, 0, 0.6, 0.6, 0.03); }
 export function umbrellaStand(k) { k = wk(k); k.cyl('brass', 0, 0, 0, 0.14, 0.6, 12, 1, 1, 1, true); for (let i = 0; i < 4; i++) rod(k, ['enamel:#1a1a1a', 'walnut', 'enamel:#23402F', 'ebony'][i], [(i - 1.5) * 0.04, 0.1, 0], [(i - 1.5) * 0.08, 0.95, (i % 2) * 0.05], 0.012, 5); }
-export function windsor(k) { k = wk(k); legs(k, 0.44, 0.42, 0.44, 0.02, 'oak', 0.05, 'turn'); sl(k, 'oak', 0, 0.46, 0, 0.46, 0.04, 0.44, 0.015); k.geo('oak', G.tor(PI, 4, 12, 0.08), 0, 0.5, -0.1, 0.22, 0.6, 0.22, 0, -H); for (let i = 0; i < 7; i++) rod(k, 'oak', [-0.18 + i * 0.06, 0.48, -0.18], [-0.18 + i * 0.06, 0.62 + Math.sin((i + 0.5) / 7 * PI) * 0.35, -0.2], 0.008, 4); k.blob(0, 0, 0.7, 0.7); }
+export function windsor(k) { k = wk(k); legs(k, 0.44, 0.42, 0.44, 0.02, 'oak', 0.05, 'turn'); sl(k, 'oak', 0, 0.46, 0, 0.46, 0.04, 0.44, 0.015); k.geo('oak', G.tor(PI, 4, 12, 0.08), 0, 0.5, -0.1, 0.22, 0.6, 0.22, 0, -H); for (let i = 0; i < 7; i++) rod(k, 'oak', [-0.18 + i * 0.06, 0.48, -0.18], [-0.18 + i * 0.06, 0.62 + Math.sin((i + 0.5) / 7 * PI) * 0.35, -0.2], 0.008, 4); k.blob(0, 0, 0.7, 0.7, 0.03); }
 export function gramophone(k) {
   k = wk(k); legs(k, 0.6, 0.5, 0.2, 0.025, 'walnut', 0.04); k.bx('walnut', 0, 0.2, 0, 0.6, 0.62, 0.5); k.cyl('enamel:#1a1a1a', 0, 0.82, 0, 0.16, 0.01, 20);
   rod(k, 'brass', [0.18, 0.84, -0.15], [0.12, 1.0, -0.1], 0.02, 6); k.geo('brass', G.cyl(20, 1, true), 0.05, 1.14, 0.05, 0.03, 0.4, 0.03, 0, -0.6); k.geo('brass', G.cyl(20, 12, true), -0.02, 1.35, 0.25, 0.022, 0.25, 0.022, 0, -1.0);
-  k.blob(0, 0, 0.9, 0.8);
+  k.blob(0, 0, 0.9, 0.8, 0.03);
 }
 export function chessTable(k) {
   k = wk(k); legs(k, 0.6, 0.6, 0.7, 0.025, 'ebony', 0.05, 'turn'); k.bx('ebony', 0, 0.66, 0, 0.64, 0.06, 0.64);
@@ -542,7 +543,7 @@ export function chafing(k) { k = wk(k); for (let i = 0; i < 3; i++) { const x = 
 // 以太悬浮天城仪
 export function isleModel(k) {
   k = wk(k); k.geo('brass', G.lathe('isped', [[0, 0], [0.22, 0], [0.18, 0.08], [0.06, 0.12], [0.05, 0.85], [0.12, 0.9], [0, 0.9]], 12), 0, 0, 0); k.cyl('glow', 0, 0.9, 0, 0.1, 0.02, 12);
-  k.geo('rock', G.cone(10), 0, 1.02, 0, 0.18, 0.18, 0.18, 0, PI); k.cyl('grass', 0, 1.1, 0, 0.19, 0.012, 14); k.bx('trim', 0, 1.112, 0, 0.05, 0.03, 0.04); k.blob(0, 0, 0.6, 0.6);
+  k.geo('rock', G.cone(10), 0, 1.02, 0, 0.18, 0.18, 0.18, 0, PI); k.cyl('grass', 0, 1.1, 0, 0.19, 0.012, 14); k.bx('trim', 0, 1.112, 0, 0.05, 0.03, 0.04); k.blob(0, 0, 0.6, 0.6, 0.03);
 }
 
 /* ================================================================
@@ -596,7 +597,7 @@ export function toilet(k, o = {}) {
   // 纸巾架（落地铜柱）
   if (o.paper !== false) { const px = 0.46, pz = zb - 0.05; k.cyl(trim, px, 0, pz, 0.06, 0.015, 12); k.cyl(trim, px, 0.015, pz, 0.012, 0.72, 8); k.sph(trim, px, 0.75, pz, 0.02, 0.02, 0.02, 8, 6);
     cx_(k, trim, px - 0.07, 0.66, pz, 0.006, 0.14, 6); k.geo('linen', G.cyl(16), px - 0.085, 0.66, pz, 0.055, 0.105, 0.055, 0, 0, H); f.geo('linen', G.cyl(12), px - 0.085, 0.6, pz + 0.03, 0.001, 0.105, 0.05, 0, 0, H); }
-  k.blob(0, zb - 0.1, 0.7, 0.95);
+  k.blob(0, zb - 0.1, 0.7, 0.95, 0.03);
 }
 // 毛巾折层（y-z 剖面圆角 = 厚度一半 → 前后折边是圆柱）
 const foldG = (w, t, d) => G.slab(w, t, d, t * 0.5, Math.min(0.009, t * 0.35), 3);
@@ -630,7 +631,7 @@ function panelG(w, drop, t, side, col = COL.towel) {
     for (let i = 0; i <= nf; i++) pts.push([w / 2 - r - (w - 2 * r) * i / nf, -r, 0, -1]);
     for (let i = 1; i < nr; i++) { const a = -PI / 2 - PI * i / nr; pts.push([-w / 2 + r + Math.cos(a) * r, Math.sin(a) * r, Math.cos(a), Math.sin(a)]); }
     const n = pts.length, pos = [], idx = [];
-    const base = new THREE.Color(col), cols = [], VS = [0, 0.14, 0.28, 0.42, 0.56, 0.7, 0.82, 0.83, 0.9, 0.91, 0.935, 0.94, 0.955, 0.96, 1], band = (v) => (v >= 0.83 && v <= 0.9) || (v >= 0.94 && v <= 0.955) ? 0.8 : 1;
+    const base = new THREE.Color(col), cols = [], VS = [0, 0.2, 0.42, 0.64, 0.82, 0.83, 0.9, 0.91, 0.94, 0.955, 1], band = (v) => (v >= 0.83 && v <= 0.9) || (v >= 0.94 && v <= 0.955) ? 0.8 : 1;
     for (const vv of VS) { const y = -drop * vv, s = Math.pow(Math.sin(PI * Math.min(1, vv * 1.03)), 0.7);
       for (const [x, z, nx, nz] of pts) { const u = x / (w / 2), wave = Math.sin(u * PI * 2.2 + 0.7), dz = side * (0.012 * s + 0.007 * s * wave - 0.008 * Math.pow(Math.abs(u), 4) * s);
         pos.push(x * (1 - 0.02 * s), y, z + dz); const f = band(vv) * (0.9 + 0.1 * (0.5 + 0.5 * wave * side * Math.sign(nz || 1))) * (1 - 0.08 * (1 - s)); cols.push(base.r * f, base.g * f, base.b * f); } }
@@ -661,7 +662,7 @@ export function towelRail(k, w = 0.6, h = 1.1, bars = 5, trim = 'brass') {
     f.geo(trim, G.cyl(8), x, h - 0.08, -0.05, 0.01, 0.1, 0.01, 0, H); f.geo(trim, G.cyl(10), x, h - 0.08, -0.1, 0.03, 0.01, 0.03, 0, H); }
   const ys = []; for (let i = 0; i < bars; i++) { const y = h - 0.04 - i * (h * 0.6) / Math.max(1, bars - 1); ys.push(y); cx_(k, trim, 0, y, 0, 0.011, w, 10); }
   f.cyl('enamel:#E8E2D4', w / 2 - 0.02, 0.08, 0.03, 0.008, 0.02, 8);
-  k.blob(0, 0, w + 0.3, 0.4);
+  k.blob(0, 0, w + 0.3, 0.4, 0.03);
   return ys;
 }
 // 华夫格浴袍（挂在铜钩上）：局部原点 = 墙面上的钩位（hy 为钩高），袍子挂在 +z 前方
@@ -685,7 +686,7 @@ export function basket(k, r = 0.2, h = 0.34) {
   k.geo('rattan', G.tor(PI * 2, 5, 24, 0.08), 0, h, 0, r, r, r * 0.8);
   for (const sx of [-1, 1]) k.geo('rattan', G.tor(PI, 4, 10, 0.12), sx * r, h, 0, 0.07, 0.07, 0.07, H * sx, -H);
   k.geo('towel:' + COL.towel, pillowG(), 0.03, h - 0.02, 0.02, r * 0.8, 0.07, r * 0.55, 0.4, 0.3); k.geo('towel:#EDE6D6', pillowG(), -0.05, h + 0.02, -0.03, r * 0.6, 0.06, r * 0.4, -0.5, -0.4);
-  k.blob(0, 0, r * 2.6, r * 2.2);
+  k.blob(0, 0, r * 2.6, r * 2.2, 0.03);
 }
 // 洗手台：桃花心木柜（镶板门）＋ marbleGold 台面（带挡水）＋ 台下椭圆盆 ＋ 鹅颈龙头与十字把手；o.mk = 镜子/壁灯所在 Kit
 export function basins(k, w = 2.6, o = {}) {
@@ -718,7 +719,7 @@ export function basins(k, w = 2.6, o = {}) {
     const mk = o.mk === false ? null : o.mk ? wk(o.mk) : k;
     if (mk) { mirrorOval(loc(mk, x, -d / 2 + 0.005, 0, 1.62), 0.62, 0.86, o.frame); for (const s of [-1, 1]) sconce(loc(mk, x + s * 0.48, -d / 2 + 0.005, 0, 1.68), { arms: 1, mat: trim === 'nickel' ? 'nickel' : 'ormolu' }); }
   }
-  k.blob(0, 0.05, w + 0.4, 1.0);
+  k.blob(0, 0.05, w + 0.4, 1.0, 0.03);
   return xs;
 }
 // 椭圆鎏金镜：局部原点 = 镜心，墙面 z=0，面朝 +z
@@ -772,7 +773,7 @@ export function tub(k, o = {}) {
   f.geo('porcelain', G.cyl(10), fx - 0.02, y0 + 0.99, 0.2, 0.019, 0.05, 0.019, 0, H);
   for (let i = 0; i < 8; i++) { const t = i / 7; f.geo(trim, G.sph(5, 4), fx - 0.02 + Math.sin(t * PI) * 0.05, y0 + 0.97 - Math.sin(t * PI) * 0.35, 0.14 - t * 0.06, 0.012, 0.012, 0.012); }
   f.cyl(trim, -len / 2 + 0.28, y0 + fh + 0.12 * lowH, 0, 0.025, 0.004, 10);
-  k.blob(0, 0, len + 0.8, wid + 0.6, y0 + 0.015);
+  k.blob(0, 0, len + 0.8, wid + 0.6, y0 + 0.03);
 }
 // 淋浴间：玻璃 + 黄铜框，顶上大花洒
 export function shower(k, w = 2.4, d = 2.4, h = 2.3, trim = 'brass') {
@@ -834,8 +835,8 @@ export function bed(k, w = 1.9, l = 2.2, o = {}) {
   const drapeCol = o.drape || '#EDE3CC', dk = 'fab:' + drapeCol;
   if (o.canopy === 'poster') {
     for (const sx of [-1, 1]) for (const z of [0.05, l + 0.1]) { k.geo(wood, G.lathe('bpost', [[0, 0], [0.07, 0], [0.07, 0.2], [0.05, 0.25], [0.045, 0.4], [0.06, 0.45], [0.035, 0.95], [0.045, 1], [0, 1.02]], 8), sx * (w / 2 + 0.12), 0, z, 1, 2.3, 1); k.sph('ormolu', sx * (w / 2 + 0.12), 2.37, z, 0.05, 0.07, 0.05, 8, 6); }
-    for (const sx of [-1, 1]) { k.bx(wood, sx * (w / 2 + 0.12), 2.24, l / 2 + 0.07, 0.07, 0.1, l + 0.1); k.bx(dk, sx * (w / 2 + 0.16), 1.98, l / 2 + 0.07, 0.02, 0.28, l + 0.2); }
-    for (const z of [0.05, l + 0.1]) { k.bx(wood, 0, 2.24, z, w + 0.3, 0.1, 0.07); k.bx(dk, 0, 1.98, z + (z > 1 ? 0.04 : -0.02), w + 0.34, 0.28, 0.02); }
+    for (const sx of [-1, 1]) { k.bx(wood, sx * (w / 2 + 0.12), 2.24, l / 2 + 0.07, 0.07, 0.1, l + 0.1); k.bx(fab, sx * (w / 2 + 0.16), 1.98, l / 2 + 0.07, 0.02, 0.28, l + 0.2); }
+    for (const z of [0.05, l + 0.1]) { k.bx(wood, 0, 2.24, z, w + 0.3, 0.1, 0.07); k.bx(fab, 0, 1.98, z + (z > 1 ? 0.04 : -0.02), w + 0.34, 0.28, 0.02); }
     f.box('gold', 0, 1.99, l + 0.16, w + 0.34, 0.03, 0.01); for (const sx of [-1, 1]) f.box('gold', sx * (w / 2 + 0.175), 1.99, l / 2 + 0.07, 0.01, 0.03, l + 0.2);
     for (const sx of [-1, 1]) for (const z of [0.1, l + 0.05]) for (let i = 0; i < 3; i++) { const x = sx * (w / 2 + 0.2 - i * 0.06); rod(k, dk, [x, 1.96, z + (i - 1) * 0.05], [sx * (w / 2 + 0.22), 1.0, z], 0.045, 6); rod(k, dk, [sx * (w / 2 + 0.22), 1.0, z], [x + sx * 0.05, 0.02, z + (i - 1) * 0.08], 0.05, 6); }
   } else if (o.canopy === 'crown') {
@@ -851,7 +852,7 @@ export function bed(k, w = 1.9, l = 2.2, o = {}) {
     for (const sx of [-1, 1]) panel([[sx * 0.36, cy - 0.05, cz + 0.2, 0.22], [sx * (w / 2 + 0.3), 1.25, 0.5, 0.12], [sx * (w / 2 + 0.42), 0.02, 0.75, 0.42]]);
     for (const sx of [-1, 1]) { k.geo('gold', G.tor(PI * 2, 4, 14, 0.25), sx * (w / 2 + 0.3), 1.25, 0.5, 0.1, 0.12, 0.1); f.geo('gold', G.cone(6), sx * (w / 2 + 0.3), 1.08, 0.53, 0.035, 0.14, 0.035); }
   }
-  k.blob(0, l / 2, w + 0.9, l + 0.7);
+  k.blob(0, l / 2, w + 0.9, l + 0.7, 0.03);
 }
 // 窗帘：局部原点 = 窗中心底（地面），墙面 z=0；每侧 8 条褶交替错开 ±3 cm，0.45 高处金流苏系带，上方鎏金帘盒
 export function drapes(k, w, h, o = {}) {
@@ -866,7 +867,7 @@ export function drapes(k, w, h, o = {}) {
   }
   const pw = w + 0.9;
   if (o.pelmet !== false) { k.bx('gold', 0, top, 0.1, pw, 0.3, 0.16); k.bx('gold', 0, top + 0.28, 0.11, pw + 0.06, 0.05, 0.2); f.box('ormolu', 0, top + 0.15, 0.185, pw - 0.1, 0.03, 0.008);
-    if (!lo) for (let i = 0; i < Math.round(pw / 0.22); i++) f.geo(key, G.hemi(8), -pw / 2 + 0.11 + i * 0.22, top, 0.17, 0.1, -0.08, 0.02); }
+    if (!lo) for (let i = 0; i < Math.round(pw / 0.22); i++) f.geo(key, G.hemi(8), -pw / 2 + 0.11 + i * 0.22, top, 0.17, 0.1, 0.08, 0.02, 0, PI); }
 }
 // 罗马帘（浴室）
 export function romanBlind(k, w, h, o = {}) {
@@ -935,7 +936,7 @@ export const PROP = {
     for (const sx of [-1, 1]) { k.cyl('ormolu', sx * 0.24, yh + 0.06, 0.15, 0.02, 0.54 * s, 8); f.box('ormolu', sx * 0.24, yh + 0.06 + 0.55 * s, 0.15, 0.05, 0.03, 0.05); }
     const yt = yh + 0.06 + 0.56 * s; k.bx(W, 0, yt, 0, 0.62, 0.06, 0.36); k.geo(W, G.seg(), 0, yt + 0.06, 0, 0.3, 0.2, 0.34);
     for (const x of [-0.26, 0, 0.26]) { k.cyl('ormolu', x, yt + (x ? 0.08 : 0.24), 0.02, 0.035, 0.05, 8); k.sph('ormolu', x, yt + (x ? 0.16 : 0.33), 0.02, 0.04, 0.05, 0.04, 8, 6); k.geo('ormolu', G.cone(6), x, yt + (x ? 0.24 : 0.42), 0.02, 0.018, 0.1, 0.018); }
-    k.blob(0, 0, 0.9, 0.7);
+    k.blob(0, 0, 0.9, 0.7, 0.03);
   },
   // 胸像台座（空座只留铜牌）
   bust(k, o = {}) {
@@ -1008,7 +1009,7 @@ export const PROP = {
     // 高背酒红皮转椅
     { const c = loc(k, 0, -1.05); c.cyl('walnut', 0, 0, 0, 0.3, 0.05, 5); c.cyl('brass', 0, 0.05, 0, 0.035, 0.36, 8); sl(c, 'enamel:#5a1717', 0, 0.48, 0, 0.62, 0.12, 0.58, 0.05); sl(c, 'enamel:#5a1717', 0, 0.95, -0.3, 0.62, 0.86, 0.14, 0.06, 0, -0.08); for (const sx of [-1, 1]) sl(c, 'enamel:#5a1717', sx * 0.32, 0.64, 0, 0.1, 0.18, 0.5, 0.04); }
     for (const sx of [-1, 1]) armchair(loc(k, sx * 0.6, 1.2, PI + sx * 0.15), 'enamel:#5a1717');
-    k.blob(0, 0, 3.6, 2.2);
+    k.blob(0, 0, 3.6, 2.2, 0.03);
   },
   // 主位家徽椅：更高的椅背，背板雕家徽
   crestChair(k) {
@@ -1018,7 +1019,7 @@ export const PROP = {
     sl(k, 'mahogany', 0, 1.36, -0.285, 0.58, 0.1, 0.05, 0.02, 0, -0.06); k.geo('mahogany', G.seg(), 0, 1.41, -0.285, 0.29, 0.1, 0.05);
     k.box('mahogany', 0, 0.98, -0.268, 0.44, 0.62, 0.02, 0, -0.06);
     PROP.crest(loc(k, 0, -0.25, 0, 0.72, -0.06), { w: 0.38, supporters: false });
-    k.blob(0, 0, 0.9, 0.9);
+    k.blob(0, 0, 0.9, 0.9, 0.03);
   },
   // 管风琴（贴金外壳）：背靠 −z，面朝 +z
   organ(k, o = {}) {
@@ -1039,7 +1040,7 @@ export const PROP = {
       k.bx('walnut', x, y0 + 0.12, -0.5, tw + 0.1, th, 0.3); };
     tower(0, 2.0, h - 3.6, lo ? 7 : 11, true); for (const s of [-1, 1]) { tower(s * 2.1, 1.8, h - 4.8, lo ? 6 : 10, false); tower(s * 3.7, 1.3, h - 4.0, lo ? 5 : 7, true); }
     for (const s of [-1, 1]) { k.bx('gold', s * (w / 2 - 0.1), 2.55, -0.2, 0.2, h - 3.6, 0.9); f.box('gold', s * (w / 2 - 0.1), 3.5, 0.26, 0.08, h - 5.6, 0.02); }
-    k.blob(0, 0, w + 1, 2.4);
+    k.blob(0, 0, w + 1, 2.4, 0.03);
   },
   // 浑天仪：底座 + 子午圈、地平圈、赤道圈、黄道圈、极轴
   armillary(k, o = {}) {
@@ -1173,7 +1174,7 @@ function ctx(b, room, F) {
   const R = { b, room, id: room.id, y, h, x0, x1, z0, z1, cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, w: x1 - x0, d: z1 - z0 };
   R.K = (x, z, ry = 0, dy = 0) => new Kit(b, x, y + dy, z, ry);
   R.A = (fn, x, z, ry = 0, ...a) => fn(new Kit(b, x, y, z, ry), ...a);
-  R.rug = (key, x, z, w, d, ry = 0) => rugPlane(b, key, x, y + 0.012, z, w, d, ry);
+  R.rug = (key, x, z, w, d, ry = 0) => rugPlane(b, key, x, y + 0.032, z, w, d, ry);
   R.ext = (s) => isExt(room, s);
   R.tall = (s) => R.ext(s) || (room.tall || []).includes(s);
   // 靠墙：返回 [x, z, ry]（背靠该墙、面朝房间）；t 为沿墙的世界坐标
@@ -1190,7 +1191,7 @@ function ctx(b, room, F) {
 }
 // 地面黑金花饰带 + 黄铜细线
 function floorBand(R, inset, wid) {
-  const y = R.y + 0.006, [x0, x1, z0, z1] = [R.x0 + inset, R.x1 - inset, R.z0 + inset, R.z1 - inset], b = R.b;
+  const y = R.y + 0.028, [x0, x1, z0, z1] = [R.x0 + inset, R.x1 - inset, R.z0 + inset, R.z1 - inset], b = R.b;
   const put = (key, a, c, d, e, yy = y) => b.add(key, G.box, mat4((a + c) / 2, yy, (d + e) / 2, c - a, 0.006, e - d));
   put('marbleBlack', x0, x1, z0, z0 + wid); put('marbleBlack', x0, x1, z1 - wid, z1); put('marbleBlack', x0, x0 + wid, z0 + wid, z1 - wid); put('marbleBlack', x1 - wid, x1, z0 + wid, z1 - wid);
   const f = FINE(R.K(0, 0)).b, i = wid + 0.04;
@@ -1219,11 +1220,12 @@ const inset = (r, e) => [r[0] + e, r[1] - e, r[2] + e, r[3] - e];
 function bedroomArea(R, rect, o = {}) {
   const side = o.head || pickSide(R, rect, 'ext', true), F = frame(R, R.inset(rect), side), { L, D } = F;
   const bw = o.bw || 2.0, bl = o.bl || 2.1;
-  const rugK = F.at(0, 0.2 + bl / 2 + 0.3); { const e = rugK.T.elements; rugPlane(R.b, o.rug || 'rugAubIvory', e[12], R.y + 0.012, e[14], Math.min(2 * L - 0.6, bw + 2.6), Math.min(2 * D - 0.5, bl + 2.2), F.ry); }
+  const rugK = F.at(0, 0.2 + bl / 2 + 0.3); { const e = rugK.T.elements; rugPlane(R.b, o.rug || 'rugAubIvory', e[12], R.y + 0.032, e[14], Math.min(2 * L - 0.6, bw + 2.6), Math.min(2 * D - 0.5, bl + 2.2), F.ry); }
   bed(F.at(0, 0.02), bw, bl, { fab: o.fab, canopy: o.canopy || 'poster', pillows: o.pillows || 4, deco: o.deco ?? 2, crest: o.crest, drape: o.drape, duvet: o.duvet, throwCol: o.throwCol, decoCol: o.decoCol });
   for (const s of [-1, 1]) nightstand(F.at(s * (bw / 2 + 0.45), 0.3));
   bench(F.at(0, bl + 0.75), Math.min(1.5, bw - 0.3), o.fab || 'fabGold');
   const hk = F.hk(0, -1, 0, 0.02, 1.7); if (hk && o.art !== false) PROP.portraitFrame(loc(hk, 0, 0, 0, 0.55), { w: 0.62, h: 0.5, cell: o.bedArt ?? 7, lamp: false });
+  if (hk) for (const s of [-1, 1]) sconce(loc(hk, s * (bw / 2 + 0.45), 0, 0, 0.05), { arms: 1, shade: o.drape || COL.ivory });
   if (L > 3.2) {
     const fx = L - 0.1; fireplace(F.at(fx - 0.2, D, -H), 1.5, { stone: o.stone || 'marbleW', mirror: 0.9 });
     armchair(F.at(fx - 1.6, D + 0.8, -H - 0.5), o.chairFab || 'fabCream'); stool(F.at(fx - 1.3, D + 1.5), o.chairFab || 'fabCream', 0.46, 0.36);
@@ -1240,8 +1242,10 @@ function dressArea(R, rect, o = {}) {
   chevalMirror(F.at(L - 0.5, D + 0.5, -H)); coatStand(F.at(-L + 0.35, 2 * D - 0.4)); R.rug('rugSavIvory', F.at(0, D).T.elements[12], F.at(0, D).T.elements[14], 1.4, 1.0, F.ry);
 }
 // 客房浴室：铸铁卷边缸、台盆、马桶、电热毛巾架（2 浴巾）、台面叠手巾与面巾、小凳上叠浴袍
+function bathFloor(R, rect, key = 'marbleGold') { const r = R.inset(rect, -0.01); R.b.add(key, G.box, mat4((r[0] + r[1]) / 2, R.y + 0.029, (r[2] + r[3]) / 2, r[1] - r[0], 0.006, r[3] - r[2])); }
 function bathArea(R, rect, o = {}) {
   const side = pickSide(R, rect, 'ext'), F = frame(R, R.inset(rect), side), { L, D } = F, trim = o.trim || 'brass';
+  bathFloor(R, rect);
   const tubLen = Math.min(1.8, 2 * L - 1.7);
   tub(F.at(-L + tubLen / 2 + 0.45, 0.5), { kind: 'roll', len: tubLen, col: o.col || COL.azure, trim });
   toilet(F.at(L - 0.55, 0.0), { type: o.wcType || 'low', seat: o.seat || 'mahogany', trim });
@@ -1260,7 +1264,7 @@ function bathArea(R, rect, o = {}) {
   // 浴缸边小凳 + 叠好的华夫格浴袍
   const sk = F.at(-L + tubLen + 0.8, 0.45); stool(sk, 'fab:' + (o.stool || '#E7DDC8'), 0.46, 0.36); towelStack(loc(sk, 0, 0, 0.1, 0.49), 2, 0.4, 0.3, { t: 0.055, col: '#F6F2E8', crest: false, seed: 7 });
   basket(F.at(-L + tubLen + 0.8, 1.15), 0.17, 0.3);
-  { const e = F.at(-L + tubLen / 2 + 0.45, 1.45).T.elements; rugPlane(R.b, 'rugSavIvory', e[12], R.y + 0.012, e[14], 1.1, 0.65, F.ry); }
+  { const e = F.at(-L + tubLen / 2 + 0.45, 1.45).T.elements; rugPlane(R.b, 'rugSavIvory', e[12], R.y + 0.034, e[14], 1.1, 0.65, F.ry); }
   { const e = F.at(0, D).T.elements; lantern(R.K(e[12], e[14]), R.h - 1.2, 0.8, 0.7, trim); }
 }
 function suite(R, o) {
@@ -1302,7 +1306,7 @@ const ROOMFN = {
   /* ---------------- F1 ---------------- */
   '101'(R) {
     R.band(0.35, 0.6);
-    const c = her('crest', '101') || { x: 0, z: 12 }; PROP.crest(R.K(c.x, c.z, 0, 0.004), { inlay: true, w: 4 });
+    const c = her('crest', '101') || { x: 0, z: 12 }; PROP.crest(R.K(c.x, c.z, 0, 0.027), { inlay: true, w: 4 });
     R.rug('rugAubAzure', 0, R.z1 - 3.1, 6, 4);
     const lc = her('longcaseClock', '101') || { x: -11.3, z: 16, ry: H }; PROP.longcaseClock(R.K(lc.x, lc.z, lc.ry ?? H));
     for (const sx of [-1, 1]) { const [x, z] = R.wall('-z', sx * 4.6, 0.4); R.A(consoleT, x, z, 0, 1.9, true, { mk: R.tall('-z') ? SUB(R.K(x, z), 'hi-z') : null, mirror: 2.3 }); }
@@ -1551,7 +1555,7 @@ const ROOMFN = {
     const t = her('tub', '316') || { x: cx, z: cz }; const tk = R.K(t.x, t.z, t.ry ?? 0);
     tub(tk, { kind: 'slipper', len: 2.0, dais: 3.2 });
     lantern(R.K(t.x, t.z), 2.35, R.h - 0.3 - 2.35 - 0.7, 0.75);
-    PROP.crest(R.K(cx, R.z1 - 1.9, 0, 0.006), { inlay: true, w: 1.3 });
+    PROP.crest(R.K(cx, R.z1 - 1.9, 0, 0.027), { inlay: true, w: 1.3 });
     // 马桶间
     const wc = (R.room.parts && R.room.parts.wc) || [R.x0, R.x0 + 3, R.z0, R.z0 + 3];
     { const F = frame(R, R.inset(wc), '-z'); toilet(F.at(-0.2, 0.0), { type: 'low', seat: 'mahogany', trim: 'brass', lid: 'marbleW' });
@@ -1574,7 +1578,7 @@ const ROOMFN = {
     // 三折化妆镜梳妆台、丝绒扶手椅、屏风
     R.W(vanity, '+x', cz + 1.6, 0.35, { wood: 'satinwood', fab: 'velvet:' + COL.champ });
     R.A(armchair, R.x1 - 1.7, R.z1 - 1.4, PI + 0.6, 'velvet:' + COL.champ);
-    R.A(screenFold, wc[1] + 0.6, wc[3] + 0.7, H, 'fab:' + COL.ivory);
+    R.A(screenFold, R.x1 - 3.6, R.z1 - 0.8, 0.3, 'fab:' + COL.ivory);
     R.rug('rugSavIvory', t.x, t.z + 2.1, 1.5, 0.8);
     R.chand(cx, cz + 3.0, 0.45, 8, 1);
   },
@@ -1591,12 +1595,12 @@ const ROOMFN = {
     const P = R.room.parts || {}; const bath = P.bath;
     const bedR = bath ? [R.x0, bath[0], R.z0, R.z1] : R.room.r;
     bedroomArea(R, bedR, { fab: 'fab:#CBBFA8', canopy: 'none', pillows: 4, deco: 2, chairFab: 'fab:' + COL.ivory, arms: 8 });
-    if (bath) { const F = frame(R, R.inset(bath), pickSide(R, bath, 'ext')), { L, D } = F; toilet(F.at(-L + 0.6, 0), { type: 'low', seat: 'white', trim: 'nickel' }); const bk = F.at(L - 0.02, D, -H); basins(bk, 0.9, { n: 1, trim: 'nickel', top: 'marbleW', cab: 'paintIvory' }); const rk = F.at(L - 0.6, 2 * D - 0.2, PI); const ys = towelRail(rk, 0.5, 1.0, 4, 'nickel'); towelHang(loc(rk, 0, 0, 0, ys[0]), 0.34, 0.5, { col: '#FBF9F4', crest: false }); }
+    if (bath) { bathFloor(R, bath); const F = frame(R, R.inset(bath), pickSide(R, bath, 'ext')), { L, D } = F; toilet(F.at(-L + 0.6, 0), { type: 'low', seat: 'white', trim: 'nickel' }); const bk = F.at(L - 0.02, D, -H); basins(bk, 0.9, { n: 1, trim: 'nickel', top: 'marbleW', cab: 'paintIvory' }); const rk = F.at(L - 0.6, 2 * D - 0.2, PI); const ys = towelRail(rk, 0.5, 1.0, 4, 'nickel'); towelHang(loc(rk, 0, 0, 0, ys[0]), 0.34, 0.5, { col: '#FBF9F4', crest: false }); }
   },
   /* ---------------- F4 ---------------- */
   '401'(R) { R.rug('rugHeriz', R.cx, R.cz, 4.5, 4); R.A(desk, R.cx, R.cz + 0.8, PI, 1.8, 0.9, 'enamel:#3a2a22'); R.A(chair, R.cx - 0.7, R.cz - 0.8, 0, 'enamel:#5E1B18'); R.A(chair, R.cx + 0.7, R.cz - 0.8, 0, 'enamel:#5E1B18'); R.W(filing, '-x', R.cz, 0.35, 3); R.W(cabinetGlass, '+x', R.cz, 0.3, 1.6); R.W(fireplace, '-z', R.cx, 0.2, 1.3, { clock: true, candles: false }); { const hk = R.WH('+z', R.cx, 1.8, 0.08); if (hk) { hk.bx('walnut', 0, 0, 0, 1.6, 0.9, 0.05); hk.bx('linen', 0, 0.05, 0.03, 1.5, 0.8, 0.004); for (let i = 0; i < 12; i++) FINE(hk).box('brass', -0.6 + (i % 6) * 0.24, 0.2 + (i >> 1 & 1) * 0.35, 0.04, 0.02, 0.05, 0.005); } } pendant(R.K(R.cx, R.cz), R.h - 0.6, 0.8); },
   '402'(R) { const P = R.room.parts || {}; R.A(bed, R.x0 + 2.0, R.z1 - 0.4, PI, 1.1, 2.0, { fab: 'fab:' + COL.duck, canopy: 'none', pillows: 2, deco: 0 }); R.A(nightstand, R.x0 + 3.2, R.z1 - 0.6, PI); R.W(wardrobe, '-x', R.cz - 1, 0.45, 1.4); R.W(desk, '+z', R.cx + 1.4, 0.8, 1.2, 0.6, 'fab:' + COL.duck); R.A(armchair, R.cx, R.cz, 0.4, 'fab:' + COL.duck); pendant(R.K(R.cx - 1, R.cz + 1), R.h - 0.6, 0.8);
-    if (P.bath) { const F = frame(R, R.inset(P.bath), pickSide(R, P.bath, 'ext')), { L, D } = F; toilet(F.at(-L + 0.55, 0), { type: 'low', seat: 'white', trim: 'nickel' }); const bk = F.at(L - 0.02, D, -H); basins(bk, 0.8, { n: 1, trim: 'nickel', top: 'marbleW', cab: 'paintIvory', mk: false }); const rk = F.at(0.4, 2 * D - 0.15, PI); const ys = towelRail(rk, 0.46, 0.95, 4, 'nickel'); towelHang(loc(rk, 0, 0, 0, ys[0]), 0.3, 0.45, { col: '#FBF9F4', crest: false }); } },
+    if (P.bath) { bathFloor(R, P.bath, 'marbleW'); const F = frame(R, R.inset(P.bath), pickSide(R, P.bath, 'ext')), { L, D } = F; toilet(F.at(-L + 0.55, 0), { type: 'low', seat: 'white', trim: 'nickel' }); const bk = F.at(L - 0.02, D, -H); basins(bk, 0.8, { n: 1, trim: 'nickel', top: 'marbleW', cab: 'paintIvory', mk: false }); const rk = F.at(0.4, 2 * D - 0.15, PI); const ys = towelRail(rk, 0.46, 0.95, 4, 'nickel'); towelHang(loc(rk, 0, 0, 0, ys[0]), 0.3, 0.45, { col: '#FBF9F4', crest: false }); } },
   '403'(R) {
     // 中性房间：长桌、椅子、储物柜、书架、吸顶灯
     R.A(workTable, R.cx, R.cz, 0, 4.0, 1.2, 'oak'); for (let i = 0; i < 4; i++) for (const s of [-1, 1]) R.A(chair, R.cx - 1.5 + i, R.cz + s * 0.95, s > 0 ? PI : 0, 'fab:#8a8f86', 'oak');
@@ -1613,7 +1617,7 @@ const ROOMFN = {
   '413'(R) { R.W(rack, '-x', R.cz, 0.35, 3.2); R.W(rack, '+x', R.cz, 0.35, 3.2); pendant(R.K(R.cx, R.cz), R.h - 0.6, 0.8); },
   /* ---------------- F5 ---------------- */
   '501'(R) {
-    const lounger = (x, z, ry) => { const k = R.K(x, z, ry); legs(k, 0.7, 1.9, 0.28, 0.025, 'oak', 0.04, 'plain'); k.bx('oak', 0, 0.25, 0.2, 0.72, 0.05, 1.3); sl(k, 'fab:' + COL.ivory, 0, 0.34, 0.2, 0.66, 0.08, 1.28, 0.03); k.box('oak', 0, 0.55, -0.72, 0.72, 0.06, 0.8, 0, -0.75); sl(k, 'fab:' + COL.ivory, 0, 0.6, -0.68, 0.66, 0.08, 0.78, 0.03, 0, -0.75); pillowAt(k, 'fab:#F7F4EE', 0, 0.84, -0.95, 0.4, 0.12, 0.26, -0.75); k.blob(0, 0, 1.1, 2.4); };
+    const lounger = (x, z, ry) => { const k = R.K(x, z, ry); legs(k, 0.7, 1.9, 0.28, 0.025, 'oak', 0.04, 'plain'); k.bx('oak', 0, 0.25, 0.2, 0.72, 0.05, 1.3); sl(k, 'fab:' + COL.ivory, 0, 0.34, 0.2, 0.66, 0.08, 1.28, 0.03); k.box('oak', 0, 0.55, -0.72, 0.72, 0.06, 0.8, 0, -0.75); sl(k, 'fab:' + COL.ivory, 0, 0.6, -0.68, 0.66, 0.08, 0.78, 0.03, 0, -0.75); pillowAt(k, 'fab:#F7F4EE', 0, 0.84, -0.95, 0.4, 0.12, 0.26, -0.75); k.blob(0, 0, 1.1, 2.4, 0.03); };
     for (const x of [-11, -8.4, -5.8, 5.8, 8.4, 11]) lounger(x, 16.8, PI);
     for (const s of [-1, 1]) { R.A(sideTable, s * 7.1, 15.6, 0, false); R.A(citrus, s * 17.5, 19.5, 0, 1.4); R.A(citrus, s * 17.5, -2, 0, 1.5); }
     R.A(roundTable, 0, 15, 0, 0.7, 'marbleW'); flowers(R.K(0, 15), 0.75, 0.22);
