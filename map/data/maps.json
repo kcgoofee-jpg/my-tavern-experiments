@@ -1,10 +1,17 @@
 {
-  "_说明": "地图注册表。base = 底图 DZI；parent = 上一级地图（面包屑）；group = 同组多层（天城三层）；alt = 同一张图的另一版底图（查看器里一个开关，只换底图）；credit = 数据署名（查看器右上角显示）；view = 尺度与默认缩放（focus 初始聚焦的标记、width_m 初始可见宽度、min_width_m 最大放大时的可见宽度、extent_m 整张图的实际宽高，单位米）；overlay = 可开关叠加层（from = 取另一张地图的数据，如中层的「上层投影」取上层岛屿）；status=planned 表示制作中（切换器里置灰）。markers 里的 nx/ny 由渲染脚本导出的数据文件提供，这里只写名称、设定出处和当前地点别名；link = 跨层通道（点开地点卡可直接去另一张图的对应地点）。字段说明见 docs/tiancheng-maps.md，改完跑 python3 tools/check_maps.py。",
+  "_说明": "地图注册表。base = 底图 DZI；parent = 上一级地图（面包屑）；group = 同组多层（天城三层）；alt = 同一张图的另一版底图（查看器里一个开关，只换底图）；credit = 数据署名（查看器右上角显示）；view = 尺度与默认缩放（focus 初始聚焦的标记、width_m 初始可见宽度、min_width_m 最大放大时的可见宽度、extent_m 整张图的实际宽高，单位米）；overlay = 可开关叠加层（from = 取另一张地图的数据，如中层的「上层投影」取上层岛屿）；status=planned 表示制作中（切换器里置灰）。kind=estate 是三维庄园剖面（不用瓦片）：src = 嵌入页面（相对 map/），查看器把它放进 iframe，并用 estate:room 消息按 alias 高亮房间。markers 里的 nx/ny 由渲染脚本导出的数据文件提供，这里只写名称、设定出处和当前地点别名；link = 跨层通道（点开地点卡可直接去另一张图的对应地点）。字段说明见 docs/tiancheng-maps.md，改完跑 python3 tools/check_maps.py。",
   "start": "world",
   "groups": {
-    "tiancheng": { "title": "天城", "layers": ["tc_upper", "tc_mid", "tc_low"] }
+    "tiancheng": { "title": "天城", "layers": ["eden_estate", "tc_upper", "tc_mid", "tc_low"] }
   },
   "maps": {
+    "eden_estate": {
+      "title": "伊甸庄园", "parent": "tc_upper", "group": "tiancheng", "kind": "estate",
+      "layer": { "name": "伊甸庄园", "sub": "庄园剖面", "alt": "上层 · 庄园" },
+      "src": "estate/demo.html",
+      "src_note": "三维结构示例（three.js，楼层 F1–F5 与房间骨架），接入流程用；正式版会替换这个页面，接口见 estate/demo.html 顶部注释与 docs/tiancheng-maps.md",
+      "alias": ["伊甸庄园", "伊甸", "庄园", "书房", "主卧", "大厅", "门厅", "餐厅", "会客厅", "客房", "寝", "浴室", "前庭", "后庭", "花园", "停靠平台", "起居室", "茶室", "露台", "值班室", "监控室", "女仆长办公室", "洗衣房", "储藏室", "人工湖", "喷泉"]
+    },
     "world": {
       "view": { "focus": "tiancheng", "width_m": 4000000, "min_width_m": 700000, "extent_m": [12000000, 7500000] },
       "title": "世界", "kind": "world", "base": "art/world.dzi",
@@ -19,7 +26,7 @@
       "overlay": { "type": "barriers", "label": "结界" },
       "focus": "eden",
       "markers": {
-        "eden": { "name": "伊甸庄园", "sub": "{{user}} 的庄园", "cls": "capital", "tag": "set",
+        "eden": { "name": "伊甸庄园", "sub": "{{user}} 的庄园", "cls": "capital", "tag": "set", "link": { "map": "eden_estate", "label": "进入伊甸庄园" },
           "src": "庄园布局：位于天城上层悬浮区，独占一座悬浮岛屿；新古典主义白色石材建筑；前庭喷泉、后庭人工湖、访客停靠平台；全域结界",
           "alias": ["伊甸", "庄园", "书房", "主卧", "大厅", "餐厅", "会客厅", "客房", "寝", "浴室", "后庭", "前庭", "花园", "停靠平台"] },
         "silver_crown": { "name": "银冠堡", "sub": "议会骑士团总部", "tag": "set",

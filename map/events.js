@@ -52,7 +52,7 @@ const TCEvents = (() => {
     else if (Array.isArray(d.list)) { const m = await mod(); if (!m) return;
       floor = d.last || 0; items = m.collect(d.list.map(o => ({ floor: o.mes ?? floor, text: tagText(o) })), floor); }
     if (d.fly) flyId = d.fly;
-    await loadMarkers(); render(); renderBar();
+    await loadMarkers(); render(); renderBar(); badges();
     if (flyId && cur && viewer.world.getItemCount() && flyTo(flyId)) flyId = null;
   }
   const tagText = o => `<span data-tcmap="${Object.entries(o).filter(([k]) => k !== 'mes' && k !== 'src').map(([k, v]) => `${k}=${String(v).replace(/[;"]/g, ' ')}`).join(';')}"></span>`;
@@ -64,7 +64,7 @@ const TCEvents = (() => {
     const got = await Promise.all(feeds.map(f => fetch(f.url, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null)
       .then(d => (d?.events || []).flatMap(o => m.parseMarks(tagText(o)).map(e => ({ ...e, id: 'feed:' + (e.code || m.hash(e.cat + e.place + e.text)),
         key: e.code || e.cat + e.place, first: floor, last: floor, count: 1, closed: e.lvl === 0, tier: e.lvl === 0 ? 'after' : 'live', src: e.src || f.label, feed: true }))))));
-    feedItems = got.flat(); await loadMarkers(); render(); renderBar();
+    feedItems = got.flat(); await loadMarkers(); render(); renderBar(); badges();
     setTimeout(pollFeeds, Math.max(60, Math.min(...feeds.map(f => f.every || 300))) * 1000);
   }
 
@@ -73,6 +73,7 @@ const TCEvents = (() => {
   function render() {
     if (!viewer || !cur || !viewer.world.getItemCount()) return;
     for (const el of layerEls) viewer.removeOverlay(el); layerEls = [];
+    if (REG.maps[cur]?.kind === 'estate') return;   // 庄园剖面（iframe）不画事态点
     if (REG.maps[cur]?.kind === 'world') { worldBadge(); applyGlitch(); updateToggle(); return; }
     const here = all().filter(e => mapOf(e) === cur && e.tier !== 'fade').slice(0, 50);    // 手机上叠加层不超过 50 个
     const seen = {};
@@ -231,5 +232,8 @@ const TCEvents = (() => {
     $('#evbar ol').addEventListener('click', e => { const li = e.target.closest('li'); if (li) flyTo(li.dataset.id); });
     if (coarse) document.body.classList.add('coarse');
   }
-  return { init, set, render: afterOpen, pollFeeds, flyTo, get events() { return all(); } };
+  // 层切换器上的事态数：某张地图上未解除的事件条数（查看器的 updateLayerBadges 读取）
+  const countOn = id => all().filter(e => mapOf(e) === id && live(e)).length;
+  const badges = () => { if (typeof updateLayerBadges === 'function') updateLayerBadges(); };
+  return { init, set, render: afterOpen, pollFeeds, flyTo, countOn, get events() { return all(); } };
 })();
