@@ -116,6 +116,7 @@ def box_mesh(name, boxes, colors=None, m=None, rot=None):
     me = bpy.data.meshes.new(name); me.vertices.add(n * 8); me.vertices.foreach_set('co', V.ravel())
     me.loops.add(F.size); me.loops.foreach_set('vertex_index', F.ravel())
     me.polygons.add(len(F)); me.polygons.foreach_set('loop_start', np.arange(0, F.size, 4, dtype=np.int32)); me.polygons.foreach_set('loop_total', np.full(len(F), 4, np.int32))
+    me.polygons.foreach_set('use_smooth', np.zeros(len(me.polygons), bool))   # Blender 4.1+ 新建网格默认平滑着色：楼顶四周发暗、侧面斜向渐变，改回平直
     me.update(calc_edges=True)
     if colors is not None:
         ca = me.color_attributes.new('col', 'FLOAT_COLOR', 'CORNER')
