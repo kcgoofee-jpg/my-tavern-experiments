@@ -59,7 +59,7 @@ const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
 pmrem.dispose();
-L.initMaterials(null, MAT_TIER); if (typeof L.initProtos === 'function') L.initProtos();
+const TB = { env: performance.now() - T0 }; { const t0 = performance.now(); L.initMaterials(null, MAT_TIER); if (typeof L.initProtos === 'function') L.initProtos(); TB.mats = performance.now() - t0; }
 for (const m of Object.values(L.MATS)) if (m && m.envMapIntensity === 1) m.envMapIntensity = 0.6;
 // 室外淡暖雾：常驻（切换 fog 会重编译着色器），楼层模式把距离推远等于关闭
 const FOG_ON = [880, 2500], FOG_OFF = [1e5, 1e5 + 1];
@@ -81,8 +81,8 @@ function fitShadow(tight) {
   sun.target.updateMatrixWorld(); renderer.shadowMap.needsUpdate = true;
 }
 // 每层一盏 + 焦点光（T0 2 / T1 1 / T2 0）；数量全程不变，只调强度（灯数变化会让所有着色器重编译）
-const WARM = '#ffcf8a', FLOOR_I = 38, FOCUS_I = 26;
-const floorLights = FLOORS.map((f) => { const l = new THREE.PointLight(WARM, 0, 70, 1.2); l.position.set(0, f.y + 3.2, EXT.cz); scene.add(l); return l; });
+const WARM = '#ffcf8a', FLOOR_I = 12, FOCUS_I = 6, LIGHT_UP = 10;   // 剖切视图没有顶棚：灯放高一点，整层均匀微暖，不出亮斑
+const floorLights = FLOORS.map((f) => { const l = new THREE.PointLight(WARM, 0, 110, 1.2); l.position.set(0, f.y + LIGHT_UP, EXT.cz); scene.add(l); return l; });
 const focusLights = Array.from({ length: [2, 1, 0][MAT_TIER] }, () => { const l = new THREE.PointLight(WARM, 0, 26, 1.2); scene.add(l); return l; });
 
 /* ---------------- 相机与控制 ---------------- */
@@ -124,7 +124,6 @@ function projExtent(w, d, h, theta, phi) {
 const NEWAPI = typeof BLD.buildCut === 'function';
 if (typeof BLD.setRooms === 'function') BLD.setRooms((fi) => ROOMS.filter((r) => r.floor === fi));
 const full = FLOORS.map((f, i) => new L.Batch('full' + i)), cut = FLOORS.map((f, i) => new L.Batch('cut' + i)), site = new L.Batch('site', { tile: Q.has('tile') ? +Q.get('tile') : 128 });
-const TB = {};
 let t = performance.now();
 if (NEWAPI) BLD.buildHouse(full, site); else { BLD.buildHouse(full, cut, site); if (typeof BLD.buildWings === 'function') BLD.buildWings(site); }
 TB.house = performance.now() - t; t = performance.now();
@@ -297,11 +296,11 @@ function parseFloor(f) {
 }
 // 室内暖光：只调强度
 function lightsFor() {
-  floorLights.forEach((l, i) => { l.intensity = mode === i ? FLOOR_I : mode === 'all' ? FLOOR_I * 0.55 : 0; });
+  floorLights.forEach((l, i) => { l.intensity = mode === i ? FLOOR_I : mode === 'all' ? FLOOR_I * 0.4 : 0; });
   const tgt = pinned && (pinned.kind === 'room' || (pinned.kind === 'heritage' && pinned.floor != null)) ? pinned : null;
   focusLights.forEach((l, k) => {
     if (!tgt || k > 0) { l.intensity = 0; return; }
-    const f = FLOORS[tgt.floor], hh = Math.min((f.h || 4.5) - 0.6, 3.4);
+    const f = FLOORS[tgt.floor], hh = 6;
     l.position.set(tgt.cx, f.y + hh + offs[tgt.floor], tgt.cz); l.userData.floor = tgt.floor; l.userData.dy = f.y + hh; l.intensity = FOCUS_I;
   });
 }
@@ -343,11 +342,12 @@ function cullLabels() {
 let subKey = '';
 function updateSubs(visW) {
   const dx = camera.position.x - controls.target.x, dz = camera.position.z - controls.target.z;
-  const fineOn = (typeof mode === 'number' && visW < 60) || !!(pinned && pinned.floor != null && typeof mode === 'number' && pinned.floor === mode);
+  const fineOn = (mode !== 'all' && visW < 60) || !!(pinned && pinned.floor != null && typeof mode === 'number' && pinned.floor === mode);
   const detailOn = visW <= 300;
   const key = `${dx > 0}${dz > 0}${fineOn}${detailOn}${mode}`;
   if (!subDirty && key === subKey) return; subKey = key; subDirty = false;
-  if (fineOn && typeof mode === 'number') for (const g of [cutG[mode], furnG[mode]]) if (g && g.userData.pending && g.userData.pending.fine) { const sg = L.buildPending?.(g, 'fine'); if (sg && tier >= 1) sg.traverse((o) => { o.castShadow = false; }); }
+  const fineG = typeof mode === 'number' ? [cutG[mode], furnG[mode], ...fullG.slice(0, mode), siteG] : mode === 'ext' ? [siteG, ...fullG, furnG[4]] : [];
+  if (fineOn) for (const g of fineG) if (g && g.userData.pending && g.userData.pending.fine) { const sg = L.buildPending?.(g, 'fine'); if (sg && tier >= 1) sg.traverse((o) => { o.castShadow = false; }); }
   for (const g of SUBS) {
     const s = g.userData.subs; if (!s) continue;
     if (s['hi-z']) s['hi-z'].visible = dz > 0;
@@ -694,7 +694,7 @@ function loop(now) {
   if (!tween) targetY = tg.y;
   // 楼层展开动画
   let anim = false;
-  floorG.forEach((g, i) => { const d = offTarget[i] - offs[i]; if (Math.abs(d) > 0.01) { offs[i] += d * 0.18; anim = true; } else offs[i] = offTarget[i]; g.position.y = offs[i]; floorLights[i].position.y = FLOORS[i].y + 3.2 + offs[i]; });
+  floorG.forEach((g, i) => { const d = offTarget[i] - offs[i]; if (Math.abs(d) > 0.01) { offs[i] += d * 0.18; anim = true; } else offs[i] = offTarget[i]; g.position.y = offs[i]; floorLights[i].position.y = FLOORS[i].y + LIGHT_UP + offs[i]; });
   if (anim) { renderer.shadowMap.needsUpdate = true; for (const l of focusLights) if (l.userData.floor != null) l.position.y = l.userData.dy + offs[l.userData.floor]; }
   const visW = (camera.right - camera.left) / camera.zoom;
   fitShadow(visW < 300);

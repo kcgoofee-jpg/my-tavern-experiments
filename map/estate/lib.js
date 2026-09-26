@@ -28,7 +28,7 @@ function slabGeom(w, h, d, r, re, seg) {
   s.moveTo(x0 + r, y0); s.lineTo(x1 - r, y0); s.absarc(x1 - r, y0 + r, r, -Hh, 0, false); s.lineTo(x1, y1 - r); s.absarc(x1 - r, y1 - r, r, 0, Hh, false);
   s.lineTo(x0 + r, y1); s.absarc(x0 + r, y1 - r, r, Hh, P, false); s.lineTo(x0, y0 + r); s.absarc(x0 + r, y0 + r, r, P, P * 1.5, false);
   const depth = Math.max(0.0002, w - 2 * re);
-  const g = new THREE.ExtrudeGeometry(s, re > 0 ? { depth, bevelEnabled: true, bevelThickness: re, bevelSize: re, bevelOffset: -re, bevelSegments: 2, curveSegments: seg } : { depth, bevelEnabled: false, curveSegments: seg });
+  const g = new THREE.ExtrudeGeometry(s, re > 0 ? { depth, bevelEnabled: true, bevelThickness: re, bevelSize: re, bevelOffset: -re, bevelSegments: seg >= 4 ? 2 : 1, curveSegments: seg } : { depth, bevelEnabled: false, curveSegments: seg });
   g.translate(0, 0, -depth / 2); g.rotateY(Math.PI / 2);
   return smooth(g);
 }
