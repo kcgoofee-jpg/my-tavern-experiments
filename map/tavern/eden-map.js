@@ -47,6 +47,8 @@
   #${ID} .em-fab.prep::before { border: 0; background: conic-gradient(#e6c36a calc(var(--p, 0) * 1%), rgba(230,195,106,.18) 0);
     -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px)); }
   #${ID} .em-fab.ready::before { border-color: rgba(123,216,143,.8); animation: em-fade 1.8s forwards; }
+  /* 预加载失败：红色虚线环（不画满，不像成功），点开重试 */
+  #${ID} .em-fab.fail::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px dashed rgba(255,122,122,.85); }
   @keyframes em-spin { to { transform: rotate(360deg); } }
   @keyframes em-fade { to { opacity: 0; } }
   #${ID} .em-badge { position: absolute; left: -4px; top: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #f08a24; color: #111; font: 700 11px/18px system-ui, sans-serif; text-align: center; box-shadow: 0 0 0 2px #0d1117; }
@@ -161,19 +163,33 @@
   }
   // 预加载：在看不见的面板里把地图程序、数据和首屏瓦片加载一遍（进浏览器缓存），然后休眠释放内存。点按钮时基本秒开
   let ghost = false, ghostT = 0;
+  // 省流：系统省流（saveData）、2g / 3g、内存 ≤ 4 GB 时，后台只取地图程序（viewer.html）和启动 JSON，不开幽灵面板、不拉瓦片（E4 N02）
+  const lean = () => { const c = navigator.connection || {}; return !!c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || '') || (navigator.deviceMemory || 8) <= 4; };
   async function preload() {
     if (!panel.hidden || alive) return;
     fab.classList.add('prep'); fab.title = '地图预加载中…';
-    if (!(await autoLine())) { fab.classList.remove('prep'); fab.title = '地图线路都连不上，点开手动选择'; return; }
+    if (!(await autoLine())) { fab.classList.remove('prep'); fab.classList.add('fail'); fab.title = '地图线路都连不上，点开手动选择'; return; }
     if (!panel.hidden || alive) { fab.classList.remove('prep'); return; }   // 测速期间用户已经点开了
+    if (lean()) {
+      htmlProg = f => fab.style.setProperty('--p', Math.round(f * 80));
+      try { await fetchHtml(); await Promise.all(['data/maps.json', 'data/world_markers.json', 'data/derived.json'].map(u => fetch(BASE + u).catch(() => null)));
+        fab.classList.remove('prep'); fab.title = '世界地图'; }
+      catch (e) { fab.classList.remove('prep'); fab.classList.add('fail'); fab.title = '地图预加载失败，点开重试'; }
+      finally { htmlProg = null; }
+      return;
+    }
     ghost = true; panel.classList.add('em-ghost'); panel.hidden = false;
     ghostT = setTimeout(() => endGhost(false), 25000);   // 网络太慢也不无限挂着
     loadViewer();
   }
   function endGhost(ok) {
-    if (!ghost) return; ghost = false; clearTimeout(ghostT); endProg();
+    if (!ghost) return; ghost = false; clearTimeout(ghostT);
+    // 失败不画满进度环（之前 endProg 会 setProg(100)，看起来像成功了，E4 N06）
+    if (ok) endProg(); else { clearInterval(watchT); loadEl.hidden = true; }
     panel.hidden = true; panel.classList.remove('em-ghost'); sleepViewer();
-    fab.classList.remove('prep'); fab.title = '世界地图'; if (ok) { fab.classList.add('ready'); setTimeout(() => fab.classList.remove('ready'), 2000); }
+    fab.classList.remove('prep'); fab.title = '世界地图';
+    if (ok) { fab.classList.add('ready'); setTimeout(() => fab.classList.remove('ready'), 2000); }
+    else { fab.classList.add('fail'); fab.title = '地图预加载失败，点开重试'; }
   }
   let html = null, here = '', alive = false, sent = null, killT = 0;
   // 统一加载进度：地图程序 0–20%、启动 20–50%、首屏图块 50–100%。只增不减；8 秒没进展提示网络慢，20 秒提示卡住
@@ -219,7 +235,7 @@
     startProg(); htmlProg = f => setProg(f * 20);
     let doc;
     try { doc = await fetchHtml(); setProg(20); }
-    catch (e) { hintEl.textContent = '地图程序下载失败'; actsEl.hidden = false; clearInterval(watchT); return; }
+    catch (e) { hintEl.textContent = '地图程序下载失败，可以重试或换一条线路'; actsEl.hidden = false; clearInterval(watchT); if (ghost) endGhost(false); return; }
     finally { htmlProg = null; }
     if (panel.hidden) return;   // 取页面期间面板又被关了
     frame.onload = () => push();
@@ -239,6 +255,7 @@
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
     if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
     if (e.data?.type === 'eden-map:state') titleEl.textContent = `新历 2088 · ${e.data.title}`;
+    if (e.data?.type === 'eden-map:esc') close();   // 地图里没有可关的卡片 / 列表时，Esc 关闭面板
   };
   window.parent.addEventListener('message', onMsg);
   function getHere() {
@@ -254,7 +271,8 @@
     here = getHere();
     hereEl.textContent = here ? `当前地点：${userName(here)}` : '';
     fab.classList.toggle('here', !!here);
-    if (!panel.hidden && alive && here !== sent) { sent = here; post({ type: 'eden-map:here', value: here }); }
+    // bg：后台预加载中（面板不可见），地图据此不自动进庄园（E4 N03）
+    if (!panel.hidden && alive && here !== sent) { sent = here; post({ type: 'eden-map:here', value: here, bg: ghost }); }
   }
   let pushT = 0;
   const pushSoon = (ms = 150) => { clearTimeout(pushT); pushT = setTimeout(push, ms); };
@@ -332,7 +350,8 @@
 
   const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; sleepViewer(); };
   fab.addEventListener('click', async () => { if (dragged) return;
-    if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); sendEvents(); return; }   // 预加载中被点开：直接显示
+    if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); sent = null; push(); sendEvents(); return; }   // 预加载中被点开：直接显示，重新推一次地点（这次可以进庄园）
+    fab.classList.remove('fail');
     if (!panel.hidden) return close(); panel.hidden = false; await loadViewer(); });
   root.querySelector('.em-close').addEventListener('click', close);
   pdoc.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });

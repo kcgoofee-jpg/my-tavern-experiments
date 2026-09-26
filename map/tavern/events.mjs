@@ -9,9 +9,11 @@
 // 事件体系 v2：9 个大类（地图图例 9 种颜色，v2 加「人物」），具体类型靠图标字区分。稀有度：1 常见、2 少见、3 罕见、4 传说。完整设计见 docs/event-taxonomy.md
 // v1（8 类）的类型名全部保留，旧标签照常解析；v1 查看器里用过的旧名（结界事故、空域巡查、执法管控……）在 ALIAS_CAT 里。
 export const GROUPS = {
-  空防: '#d9a441', 气候: '#7fd6ff', 治安: '#3d7dff', 政治: '#6f9be0', 媒体: '#3de0ff', 民生: '#e8d08a', 军事: '#a3b18a', 灾害: '#ff5a2a', 人物: '#d7a6e8', 其他: '#cfd8e0',
+  空防: '#d9a441', 气候: '#7fd6ff', 治安: '#3d7dff', 政治: '#6f9be0', 媒体: '#d03ca8', 民生: '#e8d08a', 军事: '#a3b18a', 灾害: '#ff5a2a', 人物: '#d7a6e8', 其他: '#cfd8e0',
 };
 export const GROUP_ORDER = ['空防', '气候', '治安', '政治', '媒体', '民生', '军事', '灾害', '人物'];   // 图例顺序（「其他」不进图例）
+// 大类形状（色弱也分得清：地图点、图例、列表的小色块都用它）。媒体原为 #3de0ff，与气候在绿色弱下同色，改品红（E4 N30）
+export const SHAPES = { 空防: 'hex', 气候: 'circle', 治安: 'square', 政治: 'penta', 媒体: 'diamond', 民生: 'octa', 军事: 'tri-down', 灾害: 'tri', 人物: 'ring', 其他: 'square' };
 const T = (g, ch, src, rare) => ({ g, ch, src, rare });
 export const CATS = {   // 具体类型 → 大类、图标字、默认发布方、稀有度
   巡空令: T('空防', '巡', '议会骑士团', 1), 结界警报: T('空防', '结', '庄园结界系统', 2), 空域临检: T('空防', '检', '议会骑士团', 2), 宴会加警: T('空防', '宴', '议会骑士团', 2),
@@ -150,6 +152,10 @@ export function collect(msgs, now) {
       } else if (e.lvl > 0) {
         if (cur) done.push(cur);
         open.set(key, { id: hash(key + '#' + floor), key, ...e, first: floor, last: floor, count: 1, closed: false });
+      } else {
+        // 第一次出现就是已解除（「快讯：XX 已被控制」这种一次写完的通报）：记为已解除，不丢
+        if (cur) { done.push(cur); open.delete(key); }
+        done.push({ id: hash(key + '#' + floor), key, ...e, first: floor, last: floor, count: 1, closed: true });
       }
     }
   }

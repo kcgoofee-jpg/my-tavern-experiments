@@ -15,7 +15,7 @@
   "lang_title": "界面语言", "theme_auto": "◐ 自动", "theme_light": "☀ 浅色", "theme_dark": "☾ 深色", "theme_title": "界面主题：自动跟随系统 / 浅色 / 深色",
   "routes": "航线", "routes_title": "上层航线（金色虚线）与银冠堡巡逻环（淡蓝点划线）",
   "settings_title": "设置", "auto_here": "打开地图时自动跳到当前地点", "auto_here_hint": "庄园房间直达对应楼层；地标、层、世界地名各自落到对应的图",
-  "estate.loading": "加载 {title}…", "estate.fail": "庄园页面加载失败", "estate.slow": "三维库加载较慢（需要能访问 jsDelivr）…",
+  "estate.loading": "加载 {title}…", "estate.fail": "庄园页面加载失败", "estate.slow": "庄园三维模型加载较慢…可以继续等，或先看平面图",
   "layers.keys": "PageUp / PageDown 或 [ ] 切换上下层", "layers.planned": "制作中", "layers.here": "当前地点在这一层", "layers.events": "{n} 起未解除的事态",
   "tier_auto": "自动", "tier_auto_on": "自动 · {px}px", "tier_auto_title": "按当前缩放自动选清晰度：放大时升档、缩小时不降；手机与省流网络最高到标准", "tier_status_auto": "{title} · 自动 · 清晰度上限 {px}px",
   "ev.filtered": "已隐藏 {n} 类", "ev.legend_hint": "点大类可隐藏 / 显示",
@@ -25,5 +25,13 @@
   "ev.floor": "第 {n} 楼", "ev.tag": "天城事态", "ev.f_cat": "分类：{grp} · {cat}", "ev.rare3": "（罕见）",
   "ev.rare4": "（传说级）", "ev.f_place": "地点：{place}", "ev.approx": "（位置不详，按所在层大致标出）", "ev.f_lvl": "等级：{bars}　状态：{st}",
   "ev.f_time": "时间：{v}", "ev.f_code": "编号：{v}", "ev.f_src_feed": "来源：{src}", "ev.feed_default": "外部数据源",
-  "ev.f_src": "来源：{src} · 聊天第 {n} 楼", "ev.unsigned": "未署名", "ev.updates": "起，更新 {n} 次"
+  "ev.f_src": "来源：{src} · 聊天第 {n} 楼", "ev.unsigned": "未署名", "ev.updates": "起，更新 {n} 次",
+  "estate.failed": "庄园三维模型加载失败：当前网络连不上三维库",
+  "estate.retry": "重试",
+  "estate.plan": "看平面图",
+  "no_fx": "关闭花屏特效",
+  "no_fx_hint": "网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字",
+  "close": "关闭",
+  "more": "更多",
+  "ev.sr_new": "新增 {n} 起事态："
 }
