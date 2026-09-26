@@ -14,7 +14,7 @@ import numpy as np
 from mathutils import Matrix
 from mathutils.kdtree import KDTree
 
-layer = tc.Layer('tc_low', seed=9001, bounces=4)   # 城市在这里生成（第一个随机调用）：街道位置与上层、中层一致
+layer = tc.Layer('tc_low', seed=9001, bounces=4, city='low')   # 城市在这里生成（第一个随机调用）：街道位置与上层、中层一致
 sc, col_main, city, R, GLOW, LAMP = layer.sc, layer.col, layer.city, layer.rng, layer.f('--glow', 1), layer.f('--lamp', .3)
 
 def srgb(h):
@@ -33,7 +33,7 @@ OUTPOST = (-12.3, -6.6)      # 防卫军前沿哨所
 AMC = (10.6, 5.6)            # 资产管理委员会下层设施：只画有围墙的大型管理设施（中性外观）
 # 铁路：取 OSM 的地面铁路；货运站放在铁路上离 7 号井不远的一段（「老旧地面轨道、货运通道」）
 RP = np.concatenate(city.rail) if city.rail else np.array([[-2.5, -7.8], [0, -7.2]], np.float32)
-yi = int(np.argmin(np.hypot(RP[:, 0] + 2.0, RP[:, 1] + 7.6))); YARD = (float(RP[yi, 0]), float(RP[yi, 1]))
+yi = int(np.argmin(np.hypot(RP[:, 0] + 9.0, RP[:, 1] - 5.0))); YARD = (float(RP[yi, 0]), float(RP[yi, 1]))   # 工业带（鲁尔区）的铁路编组场附近
 nb_ = RP[max(0, yi - 3):yi + 4]; YROT = math.atan2(nb_[-1, 1] - nb_[0, 1], nb_[-1, 0] - nb_[0, 0]) if len(nb_) > 1 else 0.0
 # 巨大支柱：均匀网格（约 300 m 间距），避开地标
 PILLARS = [(float(px), float(py)) for px in np.arange(-13.5, 13.6, 3.0) for py in np.arange(-7.5, 7.6, 3.0)]
@@ -50,11 +50,10 @@ zones = [z for z in LM if z[:2] != YARD] + [(px, py, .34, .34) for px, py in PIL
 city.clip_roads(zones)
 keep = city.keep(zones)
 
-# ---------------- 片区：工业 / 贫民窟 / 旧城（按楼的位置分，片区是连成片的噪声）----------------
-def industrial(x, y): return math.sin(x * .35 + .7) * math.cos(y * .4 - 1.2) + .5 * math.sin(x * .13 + y * .2 + 1) > .45
-def slum(x, y, n): return not industrial(x, y) and n < .62 and math.sin(x * .5 - 1) * math.sin(y * .6 + .3) + .3 * math.cos(x * .21 - y * .17) > -.15
+# ---------------- 片区：按参考城市分（tc_city.DISTRICTS['low']）----------------
+# 工业带（鲁尔区）：大轮廓 → 厂房，小轮廓 → 工人住宅（旧城）；城中村（深圳 + 九龙城寨的密度）：握手楼，屋顶极密
 def blackout(x, y): return math.sin(x * .41 + 2.1) * math.cos(y * .37 + .4) + .4 * math.sin(x * .9 - y * .7) > .75   # 断电的片区
-ZONE = np.array([1 if industrial(b['cx'], b['cy']) else 2 if slum(b['cx'], b['cy'], b['n']) else 0 for b in city.b], np.int8)
+ZONE = np.array([2 if b['dk'] == 'village' else 1 if b['a'] > .015 else 0 for b in city.b], np.int8)   # 0 工人住宅 1 厂房 2 城中村
 
 # 地面：水泥与泥地；路面沥青；荒掉的公园是泥地；水面发黑
 tc.road_plane((.075, .07, .065), z=0, m=td.city_mat('lowground', .9, ao=.02, grime=1.4))
@@ -90,21 +89,23 @@ for i, t in zip(ind, top_ind):
 tc.box_mesh('skylights', sky, np.tile((.4, .42, .42), (len(sky), 1)), tc.vcol_mat('skym', .15, .6), rot=np.array(skr, np.float32))
 tick(f'old buildings {len(old)}, industrial sheds {len(ind)}')
 
-# 贫民窟：楼的轮廓里塞满铁皮棚屋，留出一米来宽的窄巷（锈红、蓝色篷布、灰铁皮）
+# 城中村：握手楼的轮廓挤出（压低到 6–18 m），屋顶极密——水箱、搭出来的铁皮房、蓝色篷布；七号井一带按九龙城寨的密度更高、更乱
+vil = np.where(keep & (ZONE == 2))[0]
+VIL = np.array([(.3, .29, .27), (.24, .23, .22), (.34, .3, .26), (.28, .16, .1), (.2, .21, .22)], np.float32)   # 水泥、瓷砖、锈、深灰
+top_v = np.array([(.1 if city.b[i].get('dense') else .06) + city.b[i]['h'] / 45 * .08 for i in vil], np.float32)
+c_v = VIL[R.integers(len(VIL), size=len(vil))] * R.uniform(.75, 1.15, (len(vil), 1))
+city.buildings_mesh('village', vil, 0, top_v, c_v, td.city_mat('villagemat', .85, .012, 1.6))
 SHACK = np.array([(.3, .14, .08), (.36, .2, .12), (.1, .16, .26), (.3, .3, .28), (.22, .2, .17), (.16, .2, .12)], np.float32)
-shacks, shc2, shr = [], [], []
-for i in np.where(keep & (ZONE == 2))[0]:
+shacks, shc2, shr, vtanks = [], [], [], []
+for i, t in zip(vil, top_v):
     b = city.b[i]; x, y, w, d, rot = b['obb']; cs, sn = math.cos(rot), math.sin(rot)
-    for v in np.arange(-d / 2 + .015, d / 2 - .01, .045):
-        u = -w / 2 + R.uniform(0, .01)
-        while u < w / 2 - .012:
-            sw, sd = R.uniform(.016, .045), R.uniform(.022, .036)
-            px, py = x + (u + sw / 2) * cs - v * sn, y + (u + sw / 2) * sn + v * cs
-            if R.random() > .06 and point_in_poly(px, py, b['p']):
-                shacks.append((px, py, sw, sd, 0, R.uniform(.01, .035))); shc2.append(SHACK[R.integers(len(SHACK))] * R.uniform(.7, 1.2)); shr.append(rot + R.normal(0, .05))
-            u += sw + R.uniform(0, .004)
+    for _ in range(int(R.integers(1, 5 if b.get('dense') else 3))):        # 屋顶加建的铁皮房、篷布
+        u, v = R.uniform(-.3, .3) * w, R.uniform(-.3, .3) * d; sw, sd = R.uniform(.02, .05), R.uniform(.02, .04)
+        shacks.append((x + u * cs - v * sn, y + u * sn + v * cs, sw, sd, t, t + R.uniform(.006, .02))); shc2.append(SHACK[R.integers(len(SHACK))] * R.uniform(.7, 1.2)); shr.append(rot + R.normal(0, .08))
+    if R.random() < .6: vtanks.append((x + R.uniform(-.3, .3) * w, y + R.uniform(-.3, .3) * d, t, .008, .012))   # 屋顶水箱
 tc.box_mesh('shacks', shacks, shc2, td.corrugated_mat('shackroof', .6, .35, 1500, 1.4), rot=np.array(shr, np.float32))
-tick(f'slum shacks {len(shacks)}')
+tc.cyl_mesh('roof_tanks', vtanks, td.city_mat('rooftank', .5, .004, 1.2, .4), 10)
+tick(f'village: {len(vil)} buildings, {len(shacks)} rooftop shacks, {len(vtanks)} water tanks')
 
 # ---------------- 储罐与管道：管道从工业区通向最近的支柱（物资顺着支柱里的货梯往上送）----------------
 for P in city.parks:                                                   # 荒掉的公园：一部分变成罐区
@@ -113,6 +114,8 @@ for P in city.parks:                                                   # 荒掉�
         for dx in (-.06, .06):
             for dy in (-.06, .06):
                 if point_in_poly(cx + dx, cy + dy, P): TK.append((cx + dx, cy + dy, 0, R.uniform(.035, .05), R.uniform(.06, .12)))
+for P in city.tanks:                                                   # OSM 里标出来的储罐 / 筒仓（鲁尔区）
+    cx, cy = P.mean(0); TK.append((float(cx), float(cy), 0, float(np.hypot(*(P - (cx, cy)).T).mean()), float(R.uniform(.12, .25))))
 tc.cyl_mesh('tanks', TK, td.city_mat('tank', .45, .01, 1.3, .5), 24)
 pipes = Batch('pipes', mat('pipe', (.3, .22, .15), .5, .7), smooth=True)
 def pipe_run(x0, y0, x1, y1, z, r):
