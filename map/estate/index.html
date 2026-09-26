@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>伊甸庄园 · 剖切模型</title>
+<!--
+  伊甸庄园 · 交互式剖切模型（three.js 0.160，程序生成，无外部模型 / 图片）
+  入口：map/estate/index.html；模块：main.js（场景与交互）、plan.js（楼层 / 房间 / 室外区域数据）、building.js、site.js、furniture.js、lib.js
+
+  ── 嵌入协议（查看器 map/viewer.html 用 fetch + <base href> + iframe.srcdoc 加载本页；直接 iframe src 也可以）──
+  URL 参数：?embed=1 隐藏标题与提示、背景透明（srcdoc 载入时自动视为嵌入）；?lang=en；?theme=light|dark；?floor=ext|all|F1..F5；?stats=1 显示帧率 / draw call
+  父 → 本页（window.postMessage）：
+    { type: 'estate:room',  name }      按房间名 / 别名 / 英文名（优先具体房间、其次最长匹配）切到所在楼层、高亮并拉近；name 为空或匹配不到 → 取消高亮
+    { type: 'estate:floor', floor }     'ext' | 'all' | 'F1'..'F5' | 1..5（也接受 '外观' / '全部' / '1F'）
+    { type: 'estate:inset', left }      左侧留白 px（楼层条避让查看器的层切换器）
+    { type: 'estate:lang',  lang }      'zh' | 'en'：楼层条、房间名、房间卡切换语言
+    { type: 'estate:theme', theme }     'dark' | 'light'：背景（非嵌入时）与 UI 面板配色
+  本页 → 父：
+    { type: 'estate:ready', floors: ['F1'..'F5'], rooms: [{ name, en, floor, alias }] }   第一帧画完（外观先出，室内在空闲时补建）
+    { type: 'estate:key', key }         本页获得焦点时按下 PageUp / PageDown / [ / ]，交给查看器切层（非嵌入时本页自己切层）
+    { type: 'estate:select', name, floor }   用户点选 / 双击了某个房间或区域（查看器可忽略）
+  调试：window.__estate（setMode / focus / stats）
+-->
+<style>
+  :root { --inset: 12px; --paper: #101418; --ink: #e9e4d8; --muted: #8e98a2; --gold: #e6c36a; --panel: rgba(16,20,24,.84); --line: rgba(230,195,106,.22); --btn: rgba(255,255,255,.04); --lbl: rgba(12,15,18,.62); --lblink: #f3eee2; }
+  :root[data-theme="light"] { --paper: #f6f7f5; --ink: #14171a; --muted: #6b7178; --gold: #8f6f2e; --panel: rgba(255,255,255,.9); --line: rgba(143,111,46,.28); --btn: rgba(20,23,26,.04); --lbl: rgba(255,255,255,.84); --lblink: #14171a; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; color: var(--ink); font: 13px/1.45 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body:not(.embed) { background: radial-gradient(120% 90% at 50% 30%, #1d252d 0%, #12171c 55%, #0b0e11 100%); }
+  :root[data-theme="light"] body:not(.embed) { background: radial-gradient(120% 90% at 50% 30%, #ffffff 0%, #f1f2ef 55%, #e4e6e1 100%); }
+  #app { position: fixed; inset: 0; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  #app canvas { display: block; outline: none; }
+  #labels { position: absolute; inset: 0; pointer-events: none; }
+  .lbl { pointer-events: none; }
+  .lbl span { display: inline-block; padding: 2px 7px 2px; border-radius: 3px; background: var(--lbl); color: var(--lblink); font-size: 11.5px; letter-spacing: .06em; white-space: nowrap; border: 1px solid transparent; transition: opacity .18s; box-shadow: 0 1px 6px rgba(0,0,0,.18); }
+  .lbl.area span { font-size: 12px; letter-spacing: .12em; border-color: var(--line); }
+  .lbl.floor span { background: var(--panel); color: var(--gold); font-size: 12px; letter-spacing: .16em; border-color: var(--line); }
+  .lbl.hide span { opacity: 0; }
+  .lbl.hot span { border-color: var(--gold); color: var(--gold); background: var(--panel); opacity: 1; }
+  #title { position: absolute; left: 18px; top: 14px; pointer-events: none; }
+  #title h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: .32em; color: var(--ink); font-family: "Songti SC", "STSong", "Noto Serif SC", serif; }
+  #title p { margin: 2px 0 0; font-size: 11px; letter-spacing: .18em; color: var(--muted); }
+  #title i { display: block; width: 36px; height: 1px; background: var(--gold); margin: 8px 0 0; }
+  #floors { position: absolute; left: var(--inset); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 2px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 5px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  #floors button { all: unset; cursor: pointer; display: flex; align-items: baseline; gap: 7px; min-width: 52px; padding: 6px 9px; border-radius: 5px; color: var(--ink); font-size: 12.5px; letter-spacing: .08em; opacity: .78; }
+  #floors button small { font-size: 10.5px; color: var(--muted); letter-spacing: .04em; }
+  #floors button:hover { background: var(--btn); opacity: 1; }
+  #floors button.on { background: var(--gold); color: #17130a; opacity: 1; }
+  :root[data-theme="light"] #floors button.on { color: #fff; }
+  #floors button.on small { color: inherit; opacity: .75; }
+  #floors hr { border: 0; border-top: 1px solid var(--line); margin: 3px 2px; }
+  #floors button.tog { font-size: 11.5px; }
+  #floors button.tog b { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 1px; background: linear-gradient(90deg, #C98A40 33%, #4C8C99 33% 66%, #7A5FA0 66%); opacity: .5; }
+  #floors button.tog.act b { opacity: 1; }
+  #zoom { position: absolute; right: 12px; bottom: 14px; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  #zoom button { all: unset; cursor: pointer; width: 34px; height: 32px; display: grid; place-items: center; color: var(--ink); font-size: 17px; }
+  #zoom button + button { border-top: 1px solid var(--line); }
+  #zoom button:hover { background: var(--btn); }
+  #zoom svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  #card { position: absolute; z-index: 5; pointer-events: none; max-width: 270px; background: var(--panel); border: 1px solid var(--line); border-left: 2px solid var(--gold); border-radius: 6px; padding: 10px 13px 10px; box-shadow: 0 10px 30px rgba(0,0,0,.28); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); opacity: 0; transform: translateY(4px); transition: opacity .15s, transform .15s; }
+  #card.on { opacity: 1; transform: none; }
+  #card h3 { margin: 0 0 1px; font-size: 14.5px; font-weight: 600; letter-spacing: .1em; font-family: "Songti SC", "STSong", "Noto Serif SC", serif; }
+  #card .sub { font-size: 11px; color: var(--muted); letter-spacing: .06em; margin-bottom: 6px; }
+  #card .row { font-size: 12px; margin: 2px 0; }
+  #card .row em { font-style: normal; color: var(--muted); margin-right: 6px; }
+  #card .src { margin-top: 7px; font-size: 11px; color: var(--muted); }
+  #card .src b { font-weight: 500; font-size: 10.5px; padding: 1px 6px; border-radius: 9px; margin-right: 5px; border: 1px solid; }
+  #card .src b.s0 { color: var(--gold); border-color: var(--gold); }
+  #card .src b.s1 { color: #8fb3c9; border-color: #8fb3c9; }
+  #card .src b.s2 { color: var(--muted); border-color: var(--muted); }
+  #hint { position: absolute; left: 18px; bottom: 12px; font-size: 11px; color: var(--muted); letter-spacing: .06em; pointer-events: none; }
+  #stats { position: absolute; right: 56px; bottom: 14px; font: 11px/1.4 ui-monospace, Menlo, monospace; color: var(--muted); background: var(--panel); padding: 5px 8px; border-radius: 5px; white-space: pre; display: none; }
+  #loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); letter-spacing: .2em; font-size: 12px; transition: opacity .4s; pointer-events: none; }
+  #loading.done { opacity: 0; }
+  body.embed #title, body.embed #hint { display: none; }
+  @media (max-width: 640px) {
+    #title { left: 12px; top: 10px; } #title h1 { font-size: 16px; } #title p { display: none; }
+    #floors { padding: 3px; } #floors button { min-width: 0; padding: 6px 7px; font-size: 12px; } #floors button small { display: none; }
+    #card { left: 10px !important; right: 10px; top: 10px !important; bottom: auto; max-width: none; }   /* 查看器的层切换器在左下角，卡片放顶部 */
+    #hint { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="app"><div id="labels"></div></div>
+<div id="title"><h1>伊甸庄园</h1><p>新古典主义府邸 · 剖切模型</p><i></i></div>
+<nav id="floors"></nav>
+<div id="zoom"><button id="zin" title="放大">+</button><button id="zout" title="缩小">−</button><button id="zreset" title="复位"><svg viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 1 0 1.7-4"/><path d="M2 2.5v3h3"/></svg></button></div>
+<div id="card"></div>
+<div id="hint"></div>
+<div id="stats"></div>
+<div id="loading">加载中…</div>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module" src="main.js"></script>
+</body>
+</html>
