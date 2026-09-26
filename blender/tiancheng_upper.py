@@ -3,42 +3,18 @@
 # 1 单位 = 100 m。z=0 为中层楼顶（约 700 m），岛屿 z = (海拔 - 700) / 100。
 # 思路（见 ROADMAP P1）：正俯视、白天；中层城市压在半透明霾层之下作远景，岛屿投影落在城市上；
 # 结界穹顶、航线、巡逻线不烘进底图，只导出坐标给查看器做可开关的叠加层。
-import bpy, bmesh, json, math, os, sys, random, time
-T0 = time.time()
-def tick(msg): print(f'[{time.time() - T0:6.1f}s] {msg}', flush=True)
-import numpy as np
-from bpy_extras.object_utils import world_to_camera_view
+import bpy, bmesh, json, math, os, sys, random
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tc_common as tc
+from tc_common import W, H, mat, noise_mat, tick
 from mathutils import Vector, Matrix
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-args = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
-opt = {'--res': '1600', '--samples': '64', '--out': os.path.join(HERE, '..', 'map', 'art', 'tc_upper_preview.png'), '--haze': '.25'}
-for i in range(0, len(args) - 1, 2): opt[args[i]] = args[i + 1]
+HERE = tc.HERE
+opt = tc.parse_args({'--res': '1600', '--samples': '64', '--out': os.path.join(HERE, '..', 'map', 'art', 'tc_upper_preview.png'), '--haze': '.25'})
 RES, SAMPLES, OUT, HAZE = int(opt['--res']), int(opt['--samples']), os.path.abspath(opt['--out']), float(opt['--haze'])
-W, H = 30.0, 18.75                              # 3 km × 1.875 km 的上层核心片区（三层共用这套平面坐标）
-rng = np.random.default_rng(2088); random.seed(2088)
-
-bpy.ops.wm.read_factory_settings(use_empty=True)
-sc = bpy.context.scene
-col_main = sc.collection
+rng, sc, col_main = tc.setup()                 # W × H = 3 km × 1.875 km，三层共用这套平面坐标与随机种子
 
 # ---------------- 材质 ----------------
-def mat(name, color, rough=.8, metal=0, spec=.5):
-    m = bpy.data.materials.new(name); m.use_nodes = True
-    b = m.node_tree.nodes['Principled BSDF']
-    b.inputs['Base Color'].default_value = (*color, 1); b.inputs['Roughness'].default_value = rough
-    b.inputs['Metallic'].default_value = metal; b.inputs['Specular IOR Level'].default_value = spec
-    return m
-def noise_mat(name, c1, c2, scale=40, rough=.9, bump=.2):
-    m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']
-    nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = scale; nz.inputs['Detail'].default_value = 8
-    ramp = nt.nodes.new('ShaderNodeValToRGB'); ramp.color_ramp.elements[0].color = (*c1, 1); ramp.color_ramp.elements[1].color = (*c2, 1)
-    nt.links.new(nz.outputs['Fac'], ramp.inputs['Fac']); nt.links.new(ramp.outputs['Color'], b.inputs['Base Color'])
-    bp = nt.nodes.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = bump
-    nt.links.new(nz.outputs['Fac'], bp.inputs['Height']); nt.links.new(bp.outputs['Normal'], b.inputs['Normal'])
-    b.inputs['Roughness'].default_value = rough
-    return m
-
 M = {
     'grass': noise_mat('grass', (.07, .13, .04), (.15, .24, .07), 22, .9, .35),
     'grass2': noise_mat('grass2', (.09, .15, .05), (.18, .27, .09), 26, .9, .3),
@@ -84,70 +60,12 @@ def flush_trees():
         me = bpy.data.meshes.new(k); bm.to_mesh(me); bm.free(); o = bpy.data.objects.new(k, me); col_main.objects.link(o); o.data.materials.append(M[k])
 
 # ---------------- 中层楼顶（远景，白天无霓虹；楼顶约在 z=-2.2…0）----------------
-def district(x, y):                                           # 0…1 的低频「城区强度」：几个高楼核心 + 起伏
-    v = .5 + .25 * math.sin(x * .23 + 1.3) * math.cos(y * .31 - .4) + .2 * math.sin(x * .07 - y * .11)
-    for hx, hy, r in ((-4, 2, 5), (9, 4, 4), (-11, -3, 3.5), (5, -6, 3)):   # 高楼核心（推断）
-        v += .55 * math.exp(-((x - hx) ** 2 + (y - hy) ** 2) / (2 * r * r))
-    return min(1, max(0, v))
-ROOF = [(.30, .29, .27), (.42, .41, .38), (.15, .155, .17), (.28, .17, .12), (.21, .24, .28), (.52, .52, .50), (.24, .22, .18), (.16, .21, .12)]
-ROOF_W = [.22, .18, .16, .1, .12, .08, .1, .04]
-def city_blocks():
-    # 所有楼体先收集成 (x, y, w, d, z0, z1, r, g, b)，最后用 numpy 一次性建网格（比逐个 bmesh 建快一个数量级）
-    S = .24; boxes = []
-    box = lambda x, y, w, d, z0, z1, c: boxes.append((x, y, w, d, z0, z1, *c))
-    def avenues(n):                                              # 主干道间隔不等（4–9 格），避免棋盘感
-        out, k = set(), 0
-        while k < n: out.add(k); k += int(rng.integers(4, 10))
-        return out
-    xs, ys = np.arange(-W * .56, W * .56, S), np.arange(-H * .58, H * .58, S)
-    AX, AY = avenues(len(xs)), avenues(len(ys))
-    for ix, x0 in enumerate(xs):
-        for iy, y0 in enumerate(ys):
-            if ix in AX or iy in AY: continue                     # 主干道
-            if abs(x0 - y0 * 1.3 - 2) < .16 or abs(x0 + y0 * .8 + 6) < .16: continue   # 两条斜向大道（推断）
-            n = district(x0, y0)
-            park = math.sin(x0 * .9 + 2) * math.sin(y0 * 1.1 - 1) + .4 * math.sin(x0 * .3 + y0 * .5)
-            if park > 1.05 and n < .75:                           # 城市公园：地面 + 树
-                box(x0, y0, S, S, -3.6, -3.58, (.10, .16, .07))
-                for _ in range(rng.integers(3, 8)): tree(x0 + rng.uniform(-.1, .1), y0 + rng.uniform(-.1, .1), -3.58, rng.uniform(.02, .04))
-                continue
-            box(x0, y0, S * .9, S * .9, -3.6, -3.595, (.20, .20, .19))   # 街区地面（人行道、内院），比马路亮
-            if rng.random() < .04 + .08 * (1 - n): continue       # 空地、小广场
-            if rng.random() < .04:                                # 大体量建筑（商场、车站、厂房）占满一格
-                parts = [(x0, y0, S * .92, S * .92, -2.2 + n * 1.2 + rng.random() * .3)]
-            else:
-                parts = [(x0 + rng.uniform(-.04, .04), y0 + rng.uniform(-.04, .04), rng.uniform(.08, .19), rng.uniform(.08, .19),
-                          -2.2 + n ** 2 * 1.4 + rng.random() ** 4 * (.4 + 1.5 * n)) for _ in range(rng.integers(1, 4))]
-            for x, y, w, d, top in parts:
-                top = min(top, .1); c = ROOF[rng.choice(len(ROOF), p=ROOF_W)]
-                c = tuple(min(1, ch * rng.uniform(.85, 1.15)) for ch in c)
-                box(x, y, w, d, -3.6, top, c)
-                if w * d > .005:                                  # 楼顶设备 / 水箱 / 天窗
-                    for _ in range(rng.integers(1, 4)):
-                        k = rng.uniform(.012, .03); cc = tuple(min(1, ch * rng.uniform(.7, 1.4)) for ch in c)
-                        box(x + rng.uniform(-w, w) * .35, y + rng.uniform(-d, d) * .35, k, k * rng.uniform(.6, 1.6), top, top + rng.uniform(.004, .015), cc)
-    B = np.array(boxes, dtype=np.float32); n = len(B)
-    sx = np.array([-.5, .5, .5, -.5] * 2, np.float32); sy = np.array([-.5, -.5, .5, .5] * 2, np.float32); top = np.array([0] * 4 + [1] * 4, np.float32)
-    V = np.empty((n, 8, 3), np.float32)
-    V[:, :, 0] = B[:, :1] + sx * B[:, 2:3]; V[:, :, 1] = B[:, 1:2] + sy * B[:, 3:4]; V[:, :, 2] = B[:, 4:5] + top * (B[:, 5:6] - B[:, 4:5])
-    F = np.array([[4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]], np.int32)   # 顶面 + 四个侧面（底面看不到）
-    F = (F[None] + (np.arange(n, dtype=np.int32) * 8)[:, None, None]).reshape(-1, 4)
-    me = bpy.data.meshes.new('city'); me.vertices.add(n * 8); me.vertices.foreach_set('co', V.ravel())
-    me.loops.add(F.size); me.loops.foreach_set('vertex_index', F.ravel())
-    me.polygons.add(len(F)); me.polygons.foreach_set('loop_start', np.arange(0, F.size, 4, dtype=np.int32)); me.polygons.foreach_set('loop_total', np.full(len(F), 4, np.int32))
-    me.update(calc_edges=True)
-    ca = me.color_attributes.new('col', 'FLOAT_COLOR', 'CORNER')
-    C = np.concatenate([B[:, 6:9], np.ones((n, 1), np.float32)], 1)
-    ca.data.foreach_set('color', np.repeat(C, 20, axis=0).ravel())
-    o = bpy.data.objects.new('city', me); col_main.objects.link(o); print('city boxes', n); return o
-# 路面：主干道与空地露出的地面（比楼顶暗）
-bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, -3.6)); road = bpy.context.active_object; road.scale = (W * 1.2, H * 1.25, 1)
-road.data.materials.append(mat('road', (.09, .09, .10), .8))
-cm = bpy.data.materials.new('citymat'); cm.use_nodes = True; nt = cm.node_tree; b = nt.nodes['Principled BSDF']
-vc = nt.nodes.new('ShaderNodeVertexColor'); vc.layer_name = 'col'                        # 每栋楼自己的屋顶色
-nt.links.new(vc.outputs['Color'], b.inputs['Base Color'])
-b.inputs['Roughness'].default_value = .7
-city_blocks().data.materials.append(cm); tick('city')
+# 城市生成在 tc_common：必须先于其他随机调用（岛屿、树），三层才对得上
+city = tc.city_blocks(rng)
+tc.road_plane((.09, .09, .10))                              # 路面：主干道与空地露出的地面（比楼顶暗）
+tc.box_mesh('city', city['boxes'], city['colors'], tc.vcol_mat('citymat', .7))
+for t in city['trees']: tree(*t)                            # 公园里的树
+tick('city')
 # 霾层：上层与中层之间的一张半透明平面（比体积雾好控，不投影）
 bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, .4)); haze = bpy.context.active_object; haze.scale = (W * 1.3, H * 1.3, 1)
 hm = bpy.data.materials.new('haze'); hm.use_nodes = True; nt = hm.node_tree; out = nt.nodes['Material Output']; nt.nodes.remove(nt.nodes['Principled BSDF'])
@@ -279,29 +197,10 @@ world = bpy.data.worlds.new('sky'); sc.world = world; world.use_nodes = True
 bg = world.node_tree.nodes['Background']; bg.inputs['Color'].default_value = (.55, .65, .8, 1); bg.inputs['Strength'].default_value = .35
 sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = 3.2; sun.angle = math.radians(1.2); sun.color = (1, .96, .9)
 so = bpy.data.objects.new('sun', sun); col_main.objects.link(so); so.rotation_euler = (math.radians(40), 0, math.radians(215))
-cam = bpy.data.cameras.new('cam'); cam.type = 'ORTHO'; cam.ortho_scale = W; cam.clip_end = 200
-co = bpy.data.objects.new('cam', cam); col_main.objects.link(co); sc.camera = co; co.location = (0, 0, 60)
-sc.render.resolution_x = RES; sc.render.resolution_y = int(round(RES * H / W))
-sc.render.engine = 'CYCLES'
-try:
-    prefs = bpy.context.preferences.addons['cycles'].preferences; prefs.compute_device_type = 'METAL'; prefs.get_devices()
-    for d in prefs.devices: d.use = True
-    sc.cycles.device = 'GPU'
-except Exception as e: print('GPU fallback', e)
-sc.cycles.samples = SAMPLES; sc.cycles.use_denoising = True
-sc.view_settings.view_transform = 'Standard'; sc.view_settings.look = 'None'; sc.view_settings.exposure = 0
-if '--crop' in opt:                                     # 只渲染一块区域（归一化 x0,y0,x1,y1，左上原点），用于在最终分辨率下检查细节
-    x0, y0, x1, y1 = map(float, opt['--crop'].split(','))
-    sc.render.use_border = True; sc.render.use_crop_to_border = True
-    sc.render.border_min_x, sc.render.border_max_x, sc.render.border_min_y, sc.render.border_max_y = x0, x1, 1 - y1, 1 - y0
-sc.render.image_settings.file_format = 'PNG'; os.makedirs(os.path.dirname(OUT), exist_ok=True); sc.render.filepath = OUT
-bpy.context.view_layer.update()
+co = tc.camera_and_render(sc, RES, SAMPLES, OUT, opt)
 # 标记与岛屿轮廓（归一化图像坐标，左上原点）：查看器用来放标记、画结界圈和航线
-def norm(p): v = world_to_camera_view(sc, co, Vector(p)); return round(v.x, 4), round(1 - v.y, 4)
-data = {'extent_m': [W * 100, H * 100],
-        'markers': [dict(id=m['id'], **dict(zip(('nx', 'ny'), norm(m['pos'])))) for m in markers],
-        'islands': [dict(id=i['id'], nx=norm((i['x'], i['y'], i['z']))[0], ny=norm((i['x'], i['y'], i['z']))[1],
-                         rx=round(i['rx'] / W, 4), ry=round(i['ry'] / H, 4), rot=round(i['rot'], 3), alt_m=round(700 + i['z'] * 100)) for i in islands]}
-json.dump(data, open(os.path.join(HERE, '..', 'map', 'data', 'tc_upper.json'), 'w'), ensure_ascii=False, indent=1)
-tick('render start'); bpy.ops.render.render(write_still=True); tick('render done')
-print('WROTE', OUT, sc.render.resolution_x, sc.render.resolution_y, 'islands', len(islands))
+norm = lambda p: tc.norm(sc, co, p)
+tc.write_data('tc_upper', sc, co, markers, {
+    'islands': [dict(id=i['id'], nx=norm((i['x'], i['y'], i['z']))[0], ny=norm((i['x'], i['y'], i['z']))[1],
+                     rx=round(i['rx'] / W, 4), ry=round(i['ry'] / H, 4), rot=round(i['rot'], 3), alt_m=round(700 + i['z'] * 100)) for i in islands]})
+tc.render(sc, OUT, f'islands {len(islands)}')

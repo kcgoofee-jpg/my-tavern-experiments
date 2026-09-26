@@ -1,5 +1,5 @@
 {
-  "_说明": "地图注册表。base = 底图 DZI；parent = 上一级地图（面包屑）；group = 同组多层（天城三层）；overlay = 可开关叠加层；status=planned 表示制作中（切换器里置灰）。markers 里的 nx/ny 由渲染脚本导出的数据文件提供，这里只写名称、设定出处和当前地点别名。",
+  "_说明": "地图注册表。base = 底图 DZI；parent = 上一级地图（面包屑）；group = 同组多层（天城三层）；overlay = 可开关叠加层（from = 取另一张地图的数据，如中层的「上层投影」取上层岛屿）；status=planned 表示制作中（切换器里置灰）。markers 里的 nx/ny 由渲染脚本导出的数据文件提供，这里只写名称、设定出处和当前地点别名。",
   "start": "world",
   "groups": {
     "tiancheng": { "title": "天城", "layers": ["tc_upper", "tc_mid", "tc_low"] }
@@ -28,12 +28,60 @@
       }
     },
     "tc_mid": {
-      "title": "天城 · 中层", "parent": "world", "group": "tiancheng", "status": "planned",
-      "layer": { "name": "中层", "sub": "钢铁霓虹区", "alt": "约 700 m 以下" }
+      "title": "天城 · 中层", "parent": "world", "group": "tiancheng",
+      "layer": { "name": "中层", "sub": "钢铁霓虹区", "alt": "约 700 m 以下" },
+      "kind": "points", "base": "art/tc_mid.dzi", "data": "data/tc_mid.json",
+      "overlay": { "type": "barriers", "label": "上层投影", "from": "tc_upper" },
+      "focus": "enforcement_hq",
+      "markers": {
+        "enforcement_hq": { "name": "天城执法局总局", "sub": "中层核心区", "cls": "capital", "tag": "set",
+          "src": "天城·中层：天城执法局总局位于中层核心区（在核心区内的具体位置为推断）",
+          "alias": ["执法局总局", "执法局", "总局"] },
+        "radiance_cathedral": { "name": "辉光大教堂", "sub": "圣光教会总部", "tag": "set",
+          "src": "天城·中层：圣光教会总部辉光大教堂，位于中层高区（具体位置为推断）",
+          "alias": ["辉光大教堂", "大教堂", "教堂", "圣光教会"] },
+        "iron_cradle": { "name": "圣铁摇篮", "sub": "战斗修女修道院", "tag": "set",
+          "src": "天城·中层：战斗修女的修道院「圣铁摇篮」，中层高区的独立院落（具体位置为推断）",
+          "alias": ["圣铁摇篮", "修道院", "战斗修女"] },
+        "barracks_ring": { "name": "环城军营带", "sub": "天城防卫军驻地", "tag": "set",
+          "src": "天城·中层：天城防卫军驻扎在中层外围的环城军营带（图上是沿片区西缘的一段，走向为推断）",
+          "alias": ["环城军营带", "军营", "防卫军驻地", "防卫军"] },
+        "starabyss_univ": { "name": "星渊大学", "sub": "天城第一学府", "tag": "set",
+          "src": "天城·中层：星渊大学，天城第一学府（位置为推断）",
+          "alias": ["星渊大学", "星渊", "大学"] },
+        "checkpoint_c": { "name": "层间检查点", "sub": "C 区 → 下层 7 号井", "tag": "set",
+          "src": "天城·中层：中层 C 区的层间检查点，通往下层 7 号井的通道（检查点的具体位置为推断；下层 7 号井画在同一平面位置）",
+          "alias": ["层间检查点", "检查点", "C区", "C 区"] }
+      }
     },
     "tc_low": {
-      "title": "天城 · 下层", "parent": "world", "group": "tiancheng", "status": "planned",
-      "layer": { "name": "下层", "sub": "地基区", "alt": "地面" }
+      "title": "天城 · 下层", "parent": "world", "group": "tiancheng",
+      "layer": { "name": "下层", "sub": "地基区", "alt": "地面" },
+      "kind": "points", "base": "art/tc_low.dzi", "data": "data/tc_low.json",
+      "focus": "well7",
+      "markers": {
+        "well7": { "name": "7 号井黑市", "sub": "只收灰票", "cls": "capital", "tag": "set",
+          "src": "天城·下层：「地基区 7 号井 · 只收灰票」；中层 C 区检查点的通道落在这里（井口与市集布局为推断）",
+          "alias": ["7号井", "7 号井", "七号井", "黑市", "灰票"] },
+        "blood_mill": { "name": "血肉磨坊", "sub": "黑拳场", "tag": "set",
+          "src": "天城·下层：黑拳场「血肉磨坊」（位置与形制为推断）",
+          "alias": ["血肉磨坊", "黑拳场", "拳场"] },
+        "enforcement_low": { "name": "执法局下层分局", "sub": "名义六个，实际运转三个", "tag": "set",
+          "src": "天城·下层：执法局下层分局名义上有六个，实际运转的只有三个（图上只画一个，位置为推断）",
+          "alias": ["下层分局", "执法局分局", "分局"] },
+        "soup_kitchen": { "name": "圣光教会施粥站", "sub": "下层教区", "tag": "set",
+          "src": "天城·下层：圣光教会在下层有三个教区，教堂多半荒废，靠施粥站维持（图上画一处，位置为推断）",
+          "alias": ["施粥站", "粥站", "下层教区"] },
+        "outpost": { "name": "防卫军前沿哨所", "tag": "set",
+          "src": "天城·下层：天城防卫军的前沿哨所（位置为推断）",
+          "alias": ["前沿哨所", "哨所"] },
+        "amc_facility": { "name": "资产管理委员会下层设施", "tag": "set",
+          "src": "天城·下层：资产管理委员会的下层设施（图上只画有围墙的建筑外观；位置为推断）",
+          "alias": ["委员会设施", "资产管理委员会", "委员会"] },
+        "freight_yard": { "name": "货运站", "sub": "旧地面轨道枢纽", "tag": "inf",
+          "src": "天城·下层：「老旧地面轨道、货运通道、步行为主」；货运站与轨道枢纽的位置为推断",
+          "alias": ["货运站", "货运", "铁路", "轨道枢纽"] }
+      }
     }
   }
 }
