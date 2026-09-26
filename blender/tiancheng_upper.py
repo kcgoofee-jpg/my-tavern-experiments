@@ -8,7 +8,7 @@ from bpy_extras.object_utils import world_to_camera_view
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 args = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
-opt = {'--res': '1600', '--samples': '64', '--out': os.path.join(HERE, '..', 'map', 'art', 'tc_upper_preview.png'), '--tilt': '35'}
+opt = {'--res': '1600', '--samples': '64', '--out': os.path.join(HERE, '..', 'map', 'art', 'tc_upper_preview.png'), '--tilt': '25'}
 for i in range(0, len(args) - 1, 2): opt[args[i]] = args[i + 1]
 RES, SAMPLES, OUT, TILT = int(opt['--res']), int(opt['--samples']), os.path.abspath(opt['--out']), float(opt['--tilt'])
 W, H = 12.0, 7.5                                # 1.2 km × 0.75 km 的上层片区
@@ -98,8 +98,8 @@ def city_blocks():
             for _ in range(rng.integers(1, 4)):
                 w, d = rng.uniform(.05, .13), rng.uniform(.05, .13)
                 x, y = x0 + rng.uniform(-.05, .05), y0 + rng.uniform(-.05, .05)
-                top = -1.2 + rng.random() ** 1.7 * 1.3                 # 大多低于楼顶线，少数高塔
-                bot = -7.0
+                top = -2.2 + rng.random() ** 3.5 * 2.4                 # 大多是低矮街区，少数巨塔接近 700 m
+                bot = -3.6
                 r = bmesh.ops.create_cube(bm, size=1)['verts']
                 for v in r: v.co.x = x + v.co.x * w; v.co.y = y + v.co.y * d; v.co.z = bot + (v.co.z + .5) * (top - bot)
                 if rng.random() < .35:                                 # 楼顶 / 外墙霓虹
@@ -108,13 +108,21 @@ def city_blocks():
                     for v in q: v.co.x = x + v.co.x * ww; v.co.y = y - d / 2 - .002 + v.co.y * .004; v.co.z = top - .05 - rng.random() * .3 + v.co.z * hh
     for name, b_, m in (('city', bm, 'citymat'), ('cityneon', neon, 'neonmat')):
         me = bpy.data.meshes.new(name); b_.to_mesh(me); b_.free(); o = bpy.data.objects.new(name, me); col_main.objects.link(o); yield o
-cm = noise_mat('citymat', (.16, .16, .17), (.30, .29, .28), 8, .7, .3)
+cm = bpy.data.materials.new('citymat'); cm.use_nodes = True; nt = cm.node_tree; b = nt.nodes['Principled BSDF']
+# 楼体：按物体坐标的格子噪声给每栋楼不同色调；立面加细窗格发光
+vor = nt.nodes.new('ShaderNodeTexVoronoi'); vor.inputs['Scale'].default_value = 9
+ramp = nt.nodes.new('ShaderNodeValToRGB'); ramp.color_ramp.elements[0].color = (.07, .075, .085, 1); ramp.color_ramp.elements[1].color = (.24, .22, .2, 1)
+nt.links.new(vor.outputs['Distance'], ramp.inputs['Fac']); nt.links.new(ramp.outputs['Color'], b.inputs['Base Color'])
+wave = nt.nodes.new('ShaderNodeTexWave'); wave.wave_type = 'BANDS'; wave.bands_direction = 'Z'; wave.inputs['Scale'].default_value = 60
+win = nt.nodes.new('ShaderNodeValToRGB'); win.color_ramp.elements[0].position = .85; win.color_ramp.elements[0].color = (0, 0, 0, 1); win.color_ramp.elements[1].color = (1, .78, .45, 1)
+nt.links.new(wave.outputs['Fac'], win.inputs['Fac']); nt.links.new(win.outputs['Color'], b.inputs['Emission Color'])
+b.inputs['Emission Strength'].default_value = .15; b.inputs['Roughness'].default_value = .6
 nm = mat('neonmat', (1, .3, .7), .3, emit=(1, .35, .75), emit_str=18)
 for o, m in zip(city_blocks(), (cm, nm)): o.data.materials.append(m)
 # 大气雾霾：上层与中层之间
 bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, -2.5)); haze = bpy.context.active_object; haze.scale = (W * 2, H * 3, 6)
 hm = bpy.data.materials.new('haze'); hm.use_nodes = True; nt = hm.node_tree; nt.nodes.remove(nt.nodes['Principled BSDF'])
-vs = nt.nodes.new('ShaderNodeVolumePrincipled'); vs.inputs['Density'].default_value = .09; vs.inputs['Color'].default_value = (.72, .80, .92, 1)
+vs = nt.nodes.new('ShaderNodeVolumePrincipled'); vs.inputs['Density'].default_value = .06; vs.inputs['Color'].default_value = (.55, .65, .85, 1)
 nt.links.new(vs.outputs['Volume'], nt.nodes['Material Output'].inputs['Volume']); haze.data.materials.append(hm)
 
 # ---------------- 悬浮岛 ----------------
@@ -248,7 +256,7 @@ try: sky.sun_elevation = math.radians(52); sky.sun_rotation = math.radians(200);
 except Exception: pass
 world.node_tree.links.new(sky.outputs['Color'], world.node_tree.nodes['Background'].inputs['Color'])
 world.node_tree.nodes['Background'].inputs['Strength'].default_value = .3
-sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = 3.2; sun.angle = math.radians(1.2); sun.color = (1, .96, .9)
+sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = 2.6; sun.angle = math.radians(1.2); sun.color = (1, .96, .9)
 so = bpy.data.objects.new('sun', sun); col_main.objects.link(so); so.rotation_euler = (math.radians(38), 0, math.radians(200))
 cam = bpy.data.cameras.new('cam'); cam.type = 'ORTHO'; cam.ortho_scale = W
 co = bpy.data.objects.new('cam', cam); col_main.objects.link(co); sc.camera = co
@@ -261,7 +269,7 @@ try:
     sc.cycles.device = 'GPU'
 except Exception as e: print('GPU fallback', e)
 sc.cycles.samples = SAMPLES; sc.cycles.use_denoising = True
-sc.view_settings.view_transform = 'AgX'; sc.view_settings.look = 'AgX - Medium High Contrast'; sc.view_settings.exposure = -.4
+sc.view_settings.view_transform = 'Standard'; sc.view_settings.look = 'None'; sc.view_settings.exposure = -1.2
 sc.render.image_settings.file_format = 'PNG'; os.makedirs(os.path.dirname(OUT), exist_ok=True); sc.render.filepath = OUT
 bpy.context.view_layer.update()
 # 标记坐标（归一化图像坐标，左上原点）供查看器使用
