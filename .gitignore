@@ -11,3 +11,8 @@ map/art/tc_upper_8k.png
 map/art/tc_*_full.png
 map/art/tc_upper_8k.png
 __pycache__/
+
+# OSM 原始数据（python3 blender/tc_osm.py fetch 重新下载；处理后的 city.json 进 git）
+blender/data/osm/raw/
+# CC0 贴图（bash tools/fetch_textures.sh 下载）
+blender/data/tex/

@@ -13,8 +13,6 @@ SEED = 2088
 T0 = time.time()
 def tick(msg): print(f'[{time.time() - T0:6.1f}s] {msg}', flush=True)
 
-# 城市里每个盒子的类别（mid / low 按类别重新配色）
-K_GROUND, K_PARK, K_BUILDING, K_EQUIP = 0, 1, 2, 3
 
 FLAGS = ('--data-only', '--preview')              # 不带值的开关
 def parse_args(defaults):
@@ -153,7 +151,7 @@ class Batch:
         if self.m: o.data.materials.append(self.m)
         return o
 
-# ---------------- 城市（三层共用的平面布局） ----------------
+# ---------------- 城市（骨架来自 OSM，见 tc_city.py；这里只放三层共用的常量）----------------
 def district(x, y):                                           # 0…1 的低频「城区强度」：几个高楼核心 + 起伏
     v = .5 + .25 * math.sin(x * .23 + 1.3) * math.cos(y * .31 - .4) + .2 * math.sin(x * .07 - y * .11)
     for hx, hy, r in ((-4, 2, 5), (9, 4, 4), (-11, -3, 3.5), (5, -6, 3)):   # 高楼核心（推断）
@@ -163,123 +161,9 @@ def district(x, y):                                           # 0…1 的低频�
 ROOF = [(.30, .29, .27), (.42, .41, .38), (.14, .14, .15), (.56, .56, .54), (.27, .25, .21), (.2, .21, .22), (.3, .24, .2), (.2, .22, .19)]
 ROOF_W = [.22, .16, .18, .08, .12, .12, .07, .05]
 Z_GROUND = -3.6                                               # 中层地面（上层视角下，中层楼顶约在 z=-2.2…0）
-CELL = .24                                                    # 街区格（24 m）
-def diag_road(x, y): return abs(x - y * 1.3 - 2) < .16 or abs(x + y * .8 + 6) < .16   # 两条斜向大道（推断）
-def city_blocks(rng):
-    """生成城市（三层共用的平面布局）。只用传入的 rng（numpy），不碰 random；树只记坐标，由调用方种下。
-    结构（按真实城市的肌理）：主干道把城市切成 70–200 m 的街坊；街坊四边按 6–40 m 的面宽切成地块，
-    楼沿街贴建（相邻常常共墙），内院有低矮加建、停车场或树；高楼区偶尔几块地合并成塔楼；整块公园、整块大体量建筑。
-    返回 dict：boxes (n,6)、colors (n,3)、kind (n,)、parent (n,)（设备所在楼的下标）、cell (n,2)（所在网格格，供各层分区）、
-    district (n,)、block (n,)（所在街坊序号）、trees [(x, y, z, r)]、xs、ys、AX、AY（主干道所在的格序号）。"""
-    S = CELL; boxes, cols, kinds, parents, dist, blocks, trees = [], [], [], [], [], [], []
-    def box(x, y, w, d, z0, z1, c, k, n, blk, par=-1):
-        boxes.append((x, y, w, d, z0, z1)); cols.append(c); kinds.append(k); parents.append(par); dist.append(n); blocks.append(blk)
-        return len(boxes) - 1
-    def avenues(n):                                              # 主干道间隔不等（4–9 格），避免棋盘感
-        out, k = set(), 0
-        while k < n: out.add(k); k += int(rng.integers(4, 10))
-        return out
-    xs, ys = np.arange(-W * .56, W * .56, S), np.arange(-H * .58, H * .58, S)
-    AX, AY = avenues(len(xs)), avenues(len(ys))
-    def spans(coords, av):                                       # 相邻两条主干道之间的街坊范围
-        idx = sorted(av) + [len(coords)]; out = []
-        for a, b in zip(idx[:-1], idx[1:]):
-            if b - a > 1: out.append((coords[a] + S / 2, coords[b - 1] + S / 2 if b == len(coords) else coords[b] - S / 2))
-        return out
-    def blocked(x0, y0, x1, y1): return any(diag_road(x, y) for x in (x0, x1, (x0 + x1) / 2) for y in (y0, y1, (y0 + y1) / 2))
-    def roof_color(pal):
-        c = ROOF[pal[0] if rng.random() < .55 else pal[1] if rng.random() < .5 else rng.choice(len(ROOF), p=ROOF_W)]
-        return tuple(min(1, ch * rng.uniform(.85, 1.15)) for ch in c)
-    def height(n, low=False):
-        if low: return -3.6 + rng.uniform(.08, .35)
-        return min(.1, -2.2 + n ** 2 * 1.4 + rng.random() ** 4 * (.4 + 1.5 * n))
-    def building(x, y, w, d, top, pal, n, blk):
-        if blocked(x - w / 2, y - d / 2, x + w / 2, y + d / 2) or w < .02 or d < .02: return
-        c = roof_color(pal); bi = box(x, y, w, d, Z_GROUND, top, c, K_BUILDING, n, blk)
-        if w * d > .004:                                          # 楼顶设备 / 水箱 / 电梯机房
-            for _ in range(rng.integers(1, 4)):
-                k = rng.uniform(.01, .026); cc = tuple(min(1, ch * rng.uniform(.7, 1.4)) for ch in c)
-                box(x + rng.uniform(-w, w) * .32, y + rng.uniform(-d, d) * .32, k, k * rng.uniform(.6, 1.6), top, top + rng.uniform(.004, .015), cc, K_EQUIP, n, blk, bi)
-    blk = 0
-    for X0, X1 in spans(xs, AX):
-        for Y0, Y1 in spans(ys, AY):
-            blk += 1; cx, cy = (X0 + X1) / 2, (Y0 + Y1) / 2; n = district(cx, cy); bw, bh = X1 - X0, Y1 - Y0
-            # 街坊地面（人行道 + 内院）：斜向大道穿过的街坊按格铺，好把大道让出来
-            if blocked(X0, Y0, X1, Y1):
-                for gx in np.arange(X0 + S / 2, X1, S):
-                    for gy in np.arange(Y0 + S / 2, Y1, S):
-                        if not diag_road(gx, gy): box(gx, gy, min(S, X1 - gx + S / 2), min(S, Y1 - gy + S / 2), Z_GROUND, Z_GROUND + .005, (.2, .2, .19), K_GROUND, n, blk)
-            else: box(cx, cy, bw - .006, bh - .006, Z_GROUND, Z_GROUND + .005, (.2, .2, .19), K_GROUND, n, blk)
-            park = math.sin(cx * .9 + 2) * math.sin(cy * 1.1 - 1) + .4 * math.sin(cx * .3 + cy * .5)
-            if park > 1.0 and n < .75:                            # 整块城市公园：草地 + 树
-                box(cx, cy, bw - .03, bh - .03, Z_GROUND, Z_GROUND + .02, (.10, .16, .07), K_PARK, n, blk)
-                for _ in range(int(bw * bh * 140)):
-                    trees.append((cx + rng.uniform(-.47, .47) * bw, cy + rng.uniform(-.47, .47) * bh, Z_GROUND + .02, rng.uniform(.015, .035)))
-                continue
-            pal = (rng.choice(len(ROOF), p=ROOF_W), rng.choice(len(ROOF), p=ROOF_W))   # 同一街坊的楼色调相近
-            m = .028                                              # 人行道宽约 3 m
-            x0, x1, y0, y1 = X0 + m, X1 - m, Y0 + m, Y1 - m
-            if rng.random() < .03 + .04 * n:                      # 整块大体量建筑（商场、车站、厂房）
-                building(cx, cy, x1 - x0, y1 - y0, min(.1, -2.2 + n * 1.2 + rng.random() * .3), pal, n, blk); continue
-            D = min(rng.uniform(.13, .24) * (1 + .6 * n), .46 * min(x1 - x0, y1 - y0))   # 地块进深
-            def row(a0, a1, along_x, fixed, inward):
-                t = a0
-                while t < a1 - .03:
-                    tower = rng.random() < .07 * n ** 2
-                    f = rng.uniform(.25, .42) if tower else rng.uniform(.06, .15) * (1 + 1.3 * n)
-                    f = min(f, a1 - t)
-                    if a1 - t - f < .05: f = a1 - t                     # 不留下太窄的边角
-                    if rng.random() > .04:                                # 偶尔空一块：小广场、拆迁空地
-                        g0 = 0 if rng.random() < .55 else rng.uniform(.002, .008); g1 = 0 if rng.random() < .55 else rng.uniform(.002, .008)
-                        dd = D * (rng.uniform(1.1, 1.5) if tower else rng.uniform(.7, 1.0)); dd = min(dd, .46 * min(x1 - x0, y1 - y0) * (1.6 if tower else 1))
-                        sb = rng.uniform(0, .008)                         # 临街退让
-                        top = height(n) if not tower else min(.1, -2.2 + n * 1.6 + rng.uniform(.2, .6))
-                        if along_x: building(t + g0 + (f - g0 - g1) / 2, fixed + inward * (sb + dd / 2), f - g0 - g1, dd, top, pal, n, blk)
-                        else: building(fixed + inward * (sb + dd / 2), t + g0 + (f - g0 - g1) / 2, dd, f - g0 - g1, top, pal, n, blk)
-                    t += f
-            row(x0, x1, True, y1, -1); row(x0, x1, True, y0, 1)          # 南北两边通长
-            row(y0 + D, y1 - D, False, x0, 1); row(y0 + D, y1 - D, False, x1, -1)   # 东西两边夹在中间
-            ix0, ix1, iy0, iy1 = x0 + D + .01, x1 - D - .01, y0 + D + .01, y1 - D - .01   # 内院
-            if ix1 - ix0 > .06 and iy1 - iy0 > .06:
-                r = rng.random()
-                if r < .4:                                        # 内院加建：低矮的库房、车库
-                    for _ in range(rng.integers(1, 4)):
-                        w, d = rng.uniform(.04, .6) * (ix1 - ix0), rng.uniform(.04, .6) * (iy1 - iy0)
-                        building(rng.uniform(ix0 + w / 2, ix1 - w / 2), rng.uniform(iy0 + d / 2, iy1 - d / 2), w, d, height(n, True), pal, n, blk)
-                elif r < .6:                                      # 停车场 / 硬地
-                    box((ix0 + ix1) / 2, (iy0 + iy1) / 2, ix1 - ix0, iy1 - iy0, Z_GROUND, Z_GROUND + .006, (.13, .13, .13), K_GROUND, n, blk)
-                else:                                             # 内院树
-                    for _ in range(int((ix1 - ix0) * (iy1 - iy0) * 90)):
-                        trees.append((rng.uniform(ix0, ix1), rng.uniform(iy0, iy1), Z_GROUND + .005, rng.uniform(.012, .025)))
-    B = np.array(boxes, np.float32)
-    cell = np.stack([np.clip(np.rint((B[:, 0] - xs[0]) / S), 0, len(xs) - 1), np.clip(np.rint((B[:, 1] - ys[0]) / S), 0, len(ys) - 1)], 1).astype(np.int32)
-    city = dict(boxes=B, colors=np.array(cols, np.float32), kind=np.array(kinds, np.int8),
-                parent=np.array(parents, np.int32), cell=cell, district=np.array(dist, np.float32), block=np.array(blocks, np.int32),
-                trees=trees, xs=xs, ys=ys, AX=sorted(AX), AY=sorted(AY))
-    tick(f'city: {blk} blocks, {int((city["kind"] == K_BUILDING).sum())} buildings, {len(boxes)} boxes, {len(trees)} trees')
-    return city
-def keep_mask(city, zones):
-    """zones: [(x, y, rx, ry)] 椭圆（或 ('rect', x0, y0, x1, y1)）——落在其中的盒子去掉，给地标腾地方。只做过滤，不消耗随机数。"""
-    B = city['boxes']; keep = np.ones(len(B), bool)
-    for z in zones:
-        if z[0] == 'rect':
-            _, x0, y0, x1, y1 = z; keep &= ~((B[:, 0] > x0) & (B[:, 0] < x1) & (B[:, 1] > y0) & (B[:, 1] < y1))
-        else:
-            x, y, rx, ry = z; keep &= ((B[:, 0] - x) / rx) ** 2 + ((B[:, 1] - y) / ry) ** 2 > 1
-    par = city['parent']; keep &= np.where(par >= 0, keep[np.maximum(par, 0)], True)   # 楼去掉了，楼顶设备也去掉
-    return keep
 def road_plane(color, z=Z_GROUND, m=None):
     bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, z)); road = bpy.context.active_object; road.scale = (W * 1.2, H * 1.25, 1)
     road.data.materials.append(m or mat('road', color, .8)); return road
-def road_lines(city, width=.07):
-    """主干道与斜向大道的中心线（盒子），用于路灯光带、铁轨等。返回 [(x, y, w, d, rot)]。"""
-    xs, ys, out = city['xs'], city['ys'], []
-    for ix in city['AX']: out.append((xs[ix], 0, width, H * 1.16, 0))
-    for iy in city['AY']: out.append((0, ys[iy], W * 1.12, width, 0))
-    for a, b in ((1.3, 2), (-.8, -6)):                           # x = a*y + b
-        L = H * 1.3 * math.hypot(1, a); out.append((b, 0, width, L, -math.atan(a)))
-    return out
-
 def upper_islands():
     """上层岛屿（map/data/tc_upper.json）换回平面坐标：[(id, x, y, rx, ry, rot, alt_m)]。"""
     d = json.load(open(os.path.join(HERE, '..', 'map', 'data', 'tc_upper.json')))
@@ -386,7 +270,8 @@ class Layer:
         self.res, self.samples, self.out = int(self.opt['--res']), int(self.opt['--samples']), os.path.abspath(self.opt['--out'])
         self.data_only = bool(self.opt.get('--data-only'))
         rng, self.sc, self.col = setup()
-        self.city = city_blocks(rng)                        # 必须是第一个随机调用：三层的街道与楼对得上
+        import tc_city
+        self.city = tc_city.City(rng)                       # OSM 城市骨架；必须是第一个随机调用（缺高度的楼按同一随机序列补），三层才对得上
         self.city_rng = rng                                 # 上层沿用这条随机序列（保持旧版布局不变）
         if seed is None: self.rng = rng                     # 不另起种子：沿用 SEED（上层）
         else: self.rng = np.random.default_rng(seed); random.seed(seed)
