@@ -15,6 +15,11 @@
   window.__applyTheme = () => d.classList.toggle('light', window.__theme === 'light' || (window.__theme === 'auto' && mq.matches));
   window.__applyTheme(); mq.addEventListener && mq.addEventListener('change', window.__applyTheme);
   window.__i18n = fetch('i18n/' + lg + '.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));   // 和启动数据并行取
+  // 首图一定是世界图（独立打开、没有 ?map= / ?here=）时才预取世界底图的描述文件与 1200px 缩略图；嵌入酒馆时首图由当前地点决定，不预取（省流，E4 N04）
+  // dzi 带 crossorigin：凭据模式与 OSD 的请求一致，预取的结果才用得上
+  window.__worldFirst = window.top === window && !q.get('map') && !q.get('here');
+  if (window.__worldFirst) for (const [h, as, co] of [['art/world.dzi', 'fetch', 1], ['art/borders.dzi', 'fetch', 1], ['art/world_1k.jpg', 'image', 0]]) {
+    const l = document.createElement('link'); l.rel = 'preload'; l.as = as; l.href = h; if (co) l.crossOrigin = 'anonymous'; document.head.appendChild(l); }
 })();
 </script>
 <!-- OpenSeadragon 5.0.1（BSD-3，见 vendor/openseadragon/LICENSE.txt），随仓库版本固定 -->
@@ -22,11 +27,10 @@
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/maps.json">
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/world_markers.json">
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/derived.json">
-<link rel="preload" as="fetch" href="art/world.dzi"><link rel="preload" as="fetch" href="art/borders.dzi">
-<link rel="preload" as="image" href="art/world_1k.jpg">
-<script src="vendor/openseadragon/openseadragon.min.js"></script>
-<script src="events.js"></script>
-<script>if (window.top !== window) parent.postMessage({ type: 'eden-map:boot', pct: .6 }, '*');   // 地图库已下载（启动进度 60%）</script>
+<!-- defer：地图库（277 KB）不再挡住首帧，慢网下先出加载提示与世界缩略图（E4 N07）；main() 等 DOMContentLoaded（此时两个脚本都已执行） -->
+<script defer src="vendor/openseadragon/openseadragon.min.js"></script>
+<script defer src="events.js"></script>
+<script>document.addEventListener('DOMContentLoaded', () => { if (window.top !== window) parent.postMessage({ type: 'eden-map:boot', pct: .6 }, '*'); });   // 地图库已下载（启动进度 60%）</script>
 <style>
   /* 每层界面配色取自《天城视觉规范》：上层夜墨琥珀、中层夜紫霓虹（唯一允许发光）、下层井黑磷光绿（等宽字） */
   body[data-map="tc_upper"], body[data-map="eden_estate"] { --bg: #101418; --panel: rgba(16,20,24,.92); --gold: #d9a441; --muted: #7d8a96; --ink: #cfd8e0; }
@@ -51,7 +55,6 @@
   html.light body[data-map="tc_low"] { --bg: #f4f1e8; --panel: rgba(244,241,232,.95); --gold: #3f7a22; --muted: #5a6b4c; --ink: #1b2414; }
   html.light body[data-map="tc_mid"] #crumbs b, html.light body[data-map="tc_mid"] #layers button.on { text-shadow: none; }
   html.light body[data-map="tc_mid"] #prog i { box-shadow: none; }
-  html.light #status { color: rgba(255,255,255,.8); }
   #langSeg button { padding: 6px 9px; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif; }
   #app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; }
@@ -62,8 +65,8 @@
   .seg button, .btn { background: transparent; color: var(--ink); border: 0; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
   .seg button + button { border-left: 1px solid var(--line); }
   .seg button.on { background: var(--gold); color: var(--on-gold); font-weight: 700; }
-  .btn { border: 1px solid var(--line); border-radius: 8px; }
-  label.tg { font-size: 13px; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; cursor: pointer; }
+  .btn { border: 1px solid var(--line); border-radius: 8px; flex: none; white-space: nowrap; }   /* 不换行、不被挤扁（手机上「◐ 自动」曾被挤成竖排三行） */
+  label.tg { font-size: 13px; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; cursor: pointer; flex: none; white-space: nowrap; }
   .where { margin-left: auto; display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
   .where input { background: var(--field); border: 1px solid var(--line); color: var(--ink); border-radius: 6px; padding: 5px 8px; width: 150px; font: inherit; }
   #stage { position: relative; min-height: 0; }
@@ -75,7 +78,7 @@
   #crumbs .sep { color: var(--muted); }
   #crumbs b { font-weight: 700; }
   /* 同组多层切换器（天城上 / 中 / 下层）：左侧竖排，像电梯按钮 */
-  #layers { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 6; display: flex; flex-direction: column; gap: 6px; }
+  #layers { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 9;   /* 浮在加载遮罩（8）之上：庄园加载失败或很慢时也能切层 */ display: flex; flex-direction: column; gap: 6px; }
   #layers[hidden], .tg[hidden] { display: none; }
   #layers button { min-width: 92px; white-space: nowrap; transition: border-color .15s, background .15s, transform .08s; text-align: left; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; line-height: 1.3; }
   #layers button small { display: block; font-size: 11px; color: var(--muted); }
@@ -138,11 +141,13 @@
   .mk.drill .lab { background: rgba(230,195,106,.92); color: #1a1406; font-weight: 800; }
   .mk.here .pin { background: #ff5a5a; }
   .mk.here::after { content: ''; position: absolute; bottom: -6px; left: 50%; width: 22px; height: 22px; margin-left: -13px; border-radius: 50%; border: 2px solid #ff5a5a; animation: pulse 1.4s infinite; will-change: transform, opacity; }
+  @media (prefers-reduced-motion: reduce) { .mk.here::after { animation: none; transform: scale(1.2); opacity: .6; } }
   .mk.active .lab { outline: 2px solid var(--gold); }
   @keyframes pulse { 0% { transform: scale(.4); opacity: .9; } 100% { transform: scale(1.8); opacity: 0; } }
   .realm { transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; text-align: center; white-space: nowrap; color: #fff;
     text-shadow: 0 0 6px #000, 0 0 3px #000, 0 2px 8px #000c; }
   /* 字号随地图实际显示比例缩放（--rs = 屏幕像素 / 地图单位 × 1600 / 1100） */
+  .realm b, .realm span { -webkit-text-stroke: 3px rgba(0,0,0,.72); paint-order: stroke fill; }   /* 描边：雪地、亮海面上也读得清（E4 N31） */
   .realm b { display: block; font-size: clamp(13px, calc(30px * var(--rs, 1)), 40px); letter-spacing: calc(12px * min(var(--rs, 1), 1)); font-weight: 900; }
   .realm span { font-size: clamp(10px, calc(13px * var(--rs, 1)), 15px); letter-spacing: 2px; opacity: .9; }
   body.tiny .realm span, body.tiny .minor { display: none; }
@@ -151,11 +156,12 @@
   .realm.oren b { font-family: "PingFang SC", sans-serif; color: #ffe2a8; }
   .realm.fed b { font-family: "Songti SC", "STSong", serif; color: #cfe3ff; }
   .realm.xl b { font-family: "Kaiti SC", "STKaiti", serif; color: #e6d6ff; }
-  .minor { transform: translate(-50%, -50%); font-size: 12px; color: #fff; opacity: .8; text-shadow: 0 0 4px #000, 0 0 2px #000; white-space: nowrap; }
+  .minor { transform: translate(-50%, -50%); font-size: 12px; color: #fff; text-shadow: 0 0 4px #000, 0 0 2px #000; -webkit-text-stroke: 2.5px rgba(0,0,0,.7); paint-order: stroke fill; white-space: nowrap; }
   body.nolabels .realm, body.nolabels .minor { display: none; }
   body.nomarkers .mk { display: none; }
   body.embed .where { display: none; }
-  body.far .mk:not(.capital):not(.here):not(.active) .lab { display: none; }
+  /* 缩远：不再整体隐藏地标名，而是按优先级避让（labelDeclutter，只隐藏和更重要的标签重叠的那些）；副标题收起 */
+  .mk.lhide .lab { visibility: hidden; }
   body.far .mk:not(.active) .lab small { display: none; }
   /* 信息卡 */
   #card { position: fixed; right: 14px; top: calc(var(--hdr, 50px) + 14px); width: 320px; max-width: calc(100vw - 28px); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.65; z-index: 10; }
@@ -173,7 +179,7 @@
   #card h2 { margin: 6px 0 4px; font-size: 17px; }
   #card .src { color: var(--src); white-space: pre-line; }
   #card .src[data-note]::before { content: attr(data-note); display: block; font-size: 11px; color: var(--muted); }
-  #card .x { position: absolute; right: 8px; top: 6px; background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; }
+  #card .x { position: absolute; right: 8px; top: 6px; background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; min-width: 32px; min-height: 32px; }
   #card a { color: var(--gold); }
   /* 窄屏：工具栏压缩成一行可横向滑动，信息卡改为底部抽屉 */
   @media (max-width: 640px) {
@@ -182,11 +188,12 @@
     .where { display: none; }
     #crumbs { font-size: 13px; flex: none; }
     /* 手机：一列紧凑小按钮，只显示层名 */
-    #layers { left: 6px; top: auto; bottom: 30px; transform: none; gap: 4px; }
-    #layers button { min-width: 0; padding: 4px 7px; font-size: 12px; }
+    #layers { left: 6px; top: auto; bottom: 30px; transform: none; gap: 8px; }
+    #layers button { min-width: 0; padding: 4px 9px; font-size: 12px; min-height: 36px; }
     #layers button small { display: none; }
     .seg button { padding: 7px 10px; }
     label.tg { flex: none; font-size: 12px; }
+    #tierState { min-width: 0; }
     label.tg input { width: 16px; height: 16px; margin: 0; }
     #card { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-width: none; max-height: 45%; overflow-y: auto; border-radius: 12px 12px 0 0; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
     #card .x { font-size: 24px; padding: 4px 8px; }
@@ -195,11 +202,53 @@
   }
   #credit { position: absolute; right: 8px; top: 6px; z-index: 4; font-size: 10px; color: rgba(255,255,255,.55); text-shadow: 0 0 3px #000; pointer-events: none; }
   #credit:empty { display: none; }
-  #build { position: absolute; left: 6px; bottom: 6px; z-index: 4; font: 10px/1.4 ui-monospace, Menlo, monospace; color: rgba(255,255,255,.4); background: none; border: 0; padding: 2px 4px; cursor: pointer; }
-  #build:hover { color: rgba(255,255,255,.85); }
+  /* 左下角：版本号在最下，状态行在它上方（原来两者叠在一起）；都加面板底，地图亮处也读得清（E4 N28） */
+  #build { position: absolute; left: 6px; bottom: 6px; z-index: 4; font: 11px/1.4 ui-monospace, Menlo, monospace; color: var(--muted); background: var(--panel); border: 0; border-radius: 4px; padding: 1px 5px; cursor: pointer; }
+  #build:hover { color: var(--ink); }
   #build:active { transform: translateY(1px); }
   #build:empty { display: none; }
-  #status { position: fixed; left: 14px; bottom: 12px; font-size: 12px; color: var(--muted); z-index: 5; text-shadow: 0 0 3px #000; }
+  #status { position: fixed; left: 6px; bottom: 30px; font-size: 12px; color: var(--ink); background: var(--panel); border-radius: 4px; padding: 1px 6px; z-index: 5; }
+  #status:empty { display: none; }
+  body.estate #build { display: none; }
+  /* ---------- E4「现在修」：焦点、读屏、触控、菜单、庄园失败 ---------- */
+  :root { --focus: #63b4be; } html.light { --focus: #2d6c75; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .mk:focus-visible, .ev:focus-visible { outline: none; }
+  .mk:focus-visible .lab { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  #card h2:focus { outline: none; }
+  #card h2:focus-visible { outline: 2px solid var(--focus); }
+  [data-go][role="button"] { cursor: pointer; }
+  /* 庄园加载失败 / 太慢：出路按钮（重试、看平面图） */
+  #loading .acts { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+  #loading .acts[hidden] { display: none; }
+  #loading .acts button { font: inherit; font-size: 13px; padding: 8px 14px; min-height: 40px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+  #loading .acts button:hover { border-color: var(--gold); }
+  #loading.over .acts, #loading.over span { pointer-events: auto; }
+  #loading > div { text-align: center; }
+  /* 「⋯」菜单（窄屏）：工具栏放不下的档位、开关、语言、主题、版本号都搬进设置弹层 */
+  #setPop .more { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+  #setPop .more:empty { display: none; }
+  #setPop [hidden] { display: none !important; }   /* 搬进菜单的开关里，本图用不到的（如世界图没有「显示下方城市」）照样隐藏 */
+  input[type="checkbox"] { accent-color: var(--gold); }
+  #setPop .more > * { align-self: flex-start; }
+  #setPop .more #build { position: static; }
+  #setPop .row { margin-top: 10px; }
+  /* 触屏与窄屏：触控目标 ≥ 44 px，用透明扩展热区，尽量不改视觉（E4 N25） */
+  @media (pointer: coarse), (max-width: 640px) {
+    #layers button { position: relative; }
+    #layers button::before { content: ''; position: absolute; inset: -4px -4px; }
+    label.tg { min-height: 44px; padding: 0 4px; }
+    #setPop label { min-height: 44px; align-items: center; }
+    #setPop input { margin: 0; }
+    #setPop small { margin-top: -8px; }
+    #card .x { min-width: 44px; min-height: 44px; right: 2px; top: 2px; }
+    #card a[data-go] { display: inline-flex; align-items: center; min-height: 44px; }
+    #crumbs a { position: relative; }
+    #crumbs a::before { content: ''; position: absolute; inset: -13px -8px; }
+    .seg button, .btn { min-height: 40px; }
+    #langSeg button { min-width: 44px; }
+  }
 </style>
 </head>
 <body>
@@ -217,10 +266,13 @@
     <button type="button" class="btn" id="setBtn" data-i18n-title="settings_title" title="设置" aria-expanded="false" aria-controls="setPop">⚙</button>
     <div class="where"><span data-i18n="here">当前地点</span> <input id="here" data-i18n-ph="here_ph" placeholder="模拟 MVU：世界.当前地点" value="旷野高地"></div>
   </header>
-  <div id="stage"><div id="osd"></div><div id="credit"></div><button id="build" data-i18n-title="build_title" title="版本编码，点击复制诊断信息"></button><nav id="layers" hidden></nav><div id="prog" hidden><i></i></div><div id="loading"><span data-i18n="loading">加载中…</span></div></div>
+  <div id="stage"><div id="osd"></div><div id="credit"></div><button id="build" data-i18n-title="build_title" title="版本编码，点击复制诊断信息"></button><nav id="layers" hidden></nav><div id="prog" hidden><i></i></div><div id="loading"><div><span data-i18n="loading">加载中…</span><div class="acts" hidden><button type="button" id="estRetry" data-i18n="estate.retry">重试</button><button type="button" id="estPlan" data-i18n="estate.plan">看平面图</button></div></div></div></div>
+  <script>if (window.__worldFirst) document.getElementById('loading').classList.add('thumb');</script>
 </div>
-<div id="setPop" hidden role="dialog"><label><input type="checkbox" id="optAutoHere" checked><span data-i18n="auto_here">打开地图时自动跳到当前地点</span></label><small data-i18n="auto_here_hint">庄园房间直达对应楼层；地标、层、世界地名各自落到对应的图</small></div>
-<div id="card" hidden><button class="x" id="cardX">×</button><span class="tag"></span><h2></h2><div class="src"></div><div class="extra"></div></div>
+<div id="setPop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置"><div class="more"></div><label><input type="checkbox" id="optAutoHere" checked><span data-i18n="auto_here">打开地图时自动跳到当前地点</span></label><small data-i18n="auto_here_hint">庄园房间直达对应楼层；地标、层、世界地名各自落到对应的图</small>
+  <label class="row"><input type="checkbox" id="optNoFx"><span data-i18n="no_fx">关闭花屏特效</span></label><small data-i18n="no_fx_hint">网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字</small></div>
+<div id="card" hidden role="dialog" aria-labelledby="cardTitle"><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭">×</button><span class="tag"></span><h2 id="cardTitle" tabindex="-1"></h2><div class="src"></div><div class="extra"></div></div>
+<div id="sr" class="sr-only" aria-live="polite"></div>
 <div id="status">加载中…</div>
 <script>
 // 多地图查看器：地图注册表 data/maps.json（世界 → 天城三层 → 以后的庄园剖面……）。
@@ -252,6 +304,11 @@ const coarse = matchMedia('(pointer: coarse)').matches || (navigator.deviceMemor
 const autoMax = () => { const c = navigator.connection || {};
   return coarse || /Android|iPhone|iPad|iPod|Mobile/.test(navigator.userAgent) || c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || '') ? 'std' : 'hd'; };
 const post = msg => { if (window.top !== window) parent.postMessage(msg, '*'); };
+// 省流模式：系统省流（saveData）、2g / 3g、内存 ≤ 4 GB、或手动选了「省流」档：不在后台预热别的地图的瓦片，只取 HTML 与 JSON（E4 N02）
+const lean = () => { const c = navigator.connection || {};
+  return !!c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || '') || (navigator.deviceMemory || 8) <= 4 || tier === 'save'; };
+// 读屏播报（aria-live）：新事态、花屏开始
+function announce(msg) { const el = $('#sr'); if (!el || !msg) return; el.textContent = ''; setTimeout(() => { el.textContent = msg; }, 60); }
 // 数据文件只取一次：切换地图、面板休眠后唤醒都不再重复请求
 const jsonCache = new Map();
 const getJSON = url => { if (!jsonCache.has(url)) jsonCache.set(url, fetch(url).then(r => r.ok ? r.json() : null).catch(() => null)); return jsonCache.get(url); };
@@ -268,9 +325,11 @@ function applyI18n() {
   document.querySelectorAll('[data-i18n]').forEach(e => e.textContent = t(e.dataset.i18n));
   document.querySelectorAll('[data-i18n-title]').forEach(e => e.title = t(e.dataset.i18nTitle));
   document.querySelectorAll('[data-i18n-ph]').forEach(e => e.placeholder = t(e.dataset.i18nPh));
+  document.querySelectorAll('[data-i18n-aria]').forEach(e => e.setAttribute('aria-label', t(e.dataset.i18nAria)));
   tierLabels();
-  document.querySelectorAll('#langSeg button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
+  document.querySelectorAll('#langSeg button').forEach(b => { b.classList.toggle('on', b.dataset.lang === LANG); b.setAttribute('aria-pressed', b.dataset.lang === LANG); });
   $('#themeBtn').textContent = t('theme_' + window.__theme);
+  $('#setBtn').setAttribute('aria-label', t(narrowNow() ? 'more' : 'settings_title'));
 }
 async function setLang(l) {
   if (l === LANG) return;
@@ -303,7 +362,16 @@ async function main() {
   const seg = $('#tiers');
   for (const x of [{ key: 'auto' }, ...TIERS]) { const b = document.createElement('button'); b.dataset.k = x.key;
     b.onclick = () => setTier(x.key); seg.appendChild(b); }
+  layoutHeader(); addEventListener('resize', layoutHeader);
   applyI18n(); $('#status').textContent = t('loading');
+  $('#estRetry').onclick = retryEstate; $('#estPlan').onclick = estatePlan;
+  // Tab 到视野外的地标 / 事件点：浏览器会去滚动 OSD 的容器（overflow:hidden），这里撤掉滚动、改为平移地图把它带进视野
+  $('#osd').addEventListener('focusin', e => { const el = e.target.closest?.('.mk, .ev, .realm'); if (!el) return;
+    const unscroll = () => { for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) { if (n.scrollTop) n.scrollTop = 0; if (n.scrollLeft) n.scrollLeft = 0; } };
+    unscroll(); requestAnimationFrame(unscroll);
+    const ov = viewer.getOverlayById(el), p = ov?.location; if (!p || p.width !== undefined) return;
+    const b = viewer.viewport.getBounds(true), mx = b.width * .08, my = b.height * .08;
+    if (p.x < b.x + mx || p.x > b.x + b.width - mx || p.y < b.y + my || p.y > b.y + b.height - my) viewer.viewport.panTo(new OpenSeadragon.Point(p.x, p.y)); });
   // 工具栏换行（英文更宽、窄窗口）时，信息卡跟着工具栏的实际高度往下挪，不压住第二行
   const hdr = $('header'); new ResizeObserver(() => document.documentElement.style.setProperty('--hdr', hdr.offsetHeight + 'px')).observe(hdr);
   document.querySelectorAll('#langSeg button').forEach(b => b.onclick = () => setLang(b.dataset.lang));
@@ -332,6 +400,7 @@ async function main() {
     document.body.classList.toggle('far', px < 1700); document.body.classList.toggle('tiny', px < 800); }); };
   viewer.addHandler('animation', rescale); viewer.addHandler('resize', rescale); viewer.addHandler('open', () => setTimeout(rescale, 0));
   viewer.addHandler('animation-finish', autoTier); viewer.addHandler('resize', autoTier);
+  viewer.addHandler('animation-finish', declutter); viewer.addHandler('resize', () => { homeMode(); declutter(); });
   initProgress();
   $('#tgBorders').onchange = applyOverlayToggle;
   $('#tgAltBox').onchange = e => { try { localStorage.setItem(ALT_KEY + cur, e.target.checked ? '1' : '0'); } catch (err) {} swapBase(); };
@@ -344,7 +413,7 @@ async function main() {
   $('#here').oninput = () => markHere($('#here').value);
   $('#here').onchange = () => jumpHere($('#here').value, true);   // 单独打开查看器时：输入框改完（回车 / 失焦）= 模拟 MVU 地点更新
   initSettings();
-  $('#cardX').onclick = closeCard;
+  $('#cardX').onclick = () => closeCard(true);
   const qs = new URLSearchParams(location.search), q = qs.get('map');
   if (qs.get('here')) $('#here').value = qs.get('here');   // 调试：?here=主卧
   if (REG.maps[q] && REG.maps[q].status !== 'planned') go(q);
@@ -354,11 +423,26 @@ async function main() {
   // 首张地图画出来后，空闲时预热其他地图：描述文件、点位数据、最粗的几层瓦片（切过去立刻有模糊版）
   viewer.addOnceHandler('tile-drawn', () => setTimeout(warmOthers, 1500));
 }
+// ---------------- 窄屏工具栏：放不下的都搬进「⋯」菜单（原 ⚙ 设置弹层），不再横向滚动（E4 N27） ----------------
+const moreEls = () => [$('#tiers'), $('#tgOverlay'), $('#tgAlt'), $('#tgRoutes'), $('#tgLabels').closest('label'), $('#tgMarkers').closest('label'), $('#tgEvents'), $('#langSeg'), $('#themeBtn'), $('#build')].filter(Boolean);
+function layoutHeader() {
+  const nar = narrowNow(), box = $('#setPop .more');
+  for (const el of moreEls()) {
+    if (nar && el.parentElement !== box) { el._ph ??= document.createComment('slot'); el.before(el._ph); box.appendChild(el); }
+    else if (!nar && el.parentElement === box) {
+      if (el._ph?.isConnected) el._ph.replaceWith(el);
+      else $('#tgMarkers').closest('label').after(el);   // 在菜单里才创建的「事态」开关：回到「标记」后面
+    }
+  }
+  $('#setBtn').textContent = nar ? '⋯' : '⚙';
+  $('#setBtn').setAttribute('aria-label', t(nar ? 'more' : 'settings_title'));
+}
 // 面板收起（休眠）时的慢速预取：把另一版底图（如上层「显示下方城市」）按当前清晰度上限一张一张取进缓存，
 // 每张间隔 250ms、同时只取 1 张，不和聊天抢带宽；面板打开就停，下次收起从没取过的继续
 let slowStop = true;
 const slowDone = new Set();
 async function slowWarmAlt() {
+  if (lean()) return;   // 省流：后台不拉另一版底图
   slowStop = false;
   for (const m of Object.values(REG.maps)) {
     if (!m.alt?.base || m.status === 'planned') continue;
@@ -406,10 +490,12 @@ $('#build').addEventListener('click', () => {
 });
 const getText = url => { if (!textCache.has(url)) textCache.set(url, fetch(url).then(r => r.text())); return textCache.get(url); };
 async function warmOthers() {
+  const thin = lean();   // 省流：只取 JSON 与庄园页 HTML，不取 dzi、不取瓦片
   for (const [id, m] of Object.entries(REG.maps)) {
     if (m.kind === 'estate' && m.src && id !== cur) { getText(new URL(m.src, document.baseURI).href).catch(() => {}); continue; }   // 庄园页面文本（三维库本身不预取）
     if (id === cur || m.status === 'planned' || !m.base) continue;
     if (m.data) getJSON(m.data);
+    if (thin) continue;
     try {
       const x = await fetch(m.base).then(r => r.text());
       const T = +x.match(/TileSize="(\d+)"/)[1], f = x.match(/Format="(\w+)"/)[1];
@@ -458,7 +544,7 @@ async function go(id) {
   const m = REG.maps[id]; if (!m || m.status === 'planned' || id === cur) return;
   const prev = cur && REG.maps[cur], fromEstate = prev?.kind === 'estate';
   saveView();
-  cur = id; userMoved = false; closeCard(); document.body.dataset.map = id;
+  cur = id; userMoved = false; closeCard(); TCEvents.collapse?.(); document.body.dataset.map = id;
   if (m.kind === 'estate') return openEstate(id, m, !!prev);
   // 离开庄园：iframe 留到新底图画出来再淡出
   const oldFrame = leaveEstate();
@@ -490,38 +576,73 @@ function mapChrome(m) {
 // 嵌入接口（换版时保持）：maps.json 的 src 指向页面（相对 map/）。这里 fetch 页面文本、在 <head> 后插入 <base href="页面所在目录">、
 // 用 iframe.srcdoc 显示（查看器本身也是 srcdoc + <base> 加载的；jsDelivr 的 gh 线路把 .html 当纯文本返回，不能直接 iframe src）。
 //   查看器 → 庄园：{ type: 'estate:room', name }（当前地点；庄园按房间名 / 别名高亮，匹配不到就取消高亮）、{ type: 'estate:inset', left }（左侧留白 px）
-//   庄园 → 查看器：{ type: 'estate:ready' }（第一帧画完）、{ type: 'estate:key', key }（PageUp / PageDown / [ / ] 交给查看器切层）
+//   庄园 → 查看器：{ type: 'estate:ready' }（第一帧画完）、{ type: 'estate:key', key }（PageUp / PageDown / [ / ] 交给查看器切层）、
+//                 { type: 'estate:fail', reason }（三维库或页面脚本加载失败）
+// 三维库（three 0.160.0）随仓库放在 map/estate/vendor/，庄园页的 importmap 用相对路径，跟着 <base>（当前线路）走，没梯子也能加载。
+// 兜底：旧版庄园页 importmap 里若还写着 jsDelivr / jsdmirror 的 npm 地址，注入 srcdoc 前改写成同一线路下的 estate/vendor/（E4 N01）。
 let est = null;   // { id, frame, ready }
+// 本次会话里庄园三维加载失败过：之后「自动跳到当前地点」不再进庄园，改落上层的伊甸地标（记在会话存储，重试成功后清掉）
+const EST_FAIL_KEY = 'edenMapEstateFail';
+let estFail = (() => { try { return sessionStorage.getItem(EST_FAIL_KEY) === '1'; } catch (e) { return false; } })();
+const setEstFail = on => { estFail = on; try { on ? sessionStorage.setItem(EST_FAIL_KEY, '1') : sessionStorage.removeItem(EST_FAIL_KEY); } catch (e) {} };
+// 庄园的「平面替身」：链接到它的那个地标（上层的「伊甸庄园」）
+function estateStandIn(eid) {
+  for (const [k, L] of Object.entries(REG.maps)) for (const [mk, v] of Object.entries(L.markers || {})) if (v.link?.map === eid && L.status !== 'planned') return { map: k, marker: mk };
+  return null;
+}
+const THREE_CDN = /https:\/\/cdn\.(?:jsdelivr\.net|jsdmirror\.com)\/npm\/three@0\.160\.0\//g;
+// 注入庄园页的小脚本：模块脚本（main.js 或它 import 的三维库）加载失败时回传 estate:fail
+const EST_HOOK = `<script>(function(){var f=0;function fail(r){if(f)return;f=1;try{parent.postMessage({type:'estate:fail',reason:r},'*')}catch(e){}}` +
+  `addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='SCRIPT')fail('script')},true);` +
+  `addEventListener('unhandledrejection',function(e){var m=String(e.reason&&e.reason.message||e.reason||'');if(/import|module|fetch/i.test(m))fail('import')})})()<\/script>`;
+function estateActs(state) {   // state: '' 隐藏；'slow' 仍在加载；'fail' 失败
+  const ld = $('#loading'), acts = ld.querySelector('.acts'), ti = nm(REG.maps[cur] || {}, 'title');
+  acts.hidden = !state;
+  if (state === 'slow') ld.querySelector('span').textContent = tx('estate.slow', '庄园三维模型加载较慢…可以继续等，或先看平面图');
+  if (state === 'fail') { ld.querySelector('span').textContent = tx('estate.failed', '庄园三维模型加载失败：当前网络连不上三维库'); ld.classList.remove('done'); }
+  if (state) { ld.classList.add('over'); announce(ld.querySelector('span').textContent); }
+}
+function retryEstate() { const id = cur, m = REG.maps[id]; if (m?.kind !== 'estate') return; setEstFail(false); est?.frame.remove(); est = null; openEstate(id, m, true); }
+function estatePlan() {   // 看平面图：回上层并聚焦伊甸（打开它的地点卡）；本次会话不再自动进庄园（庄园挂起时每次都会再等 12 秒）
+  const s = estateStandIn(cur); if (!s) return; setEstFail(true); pendingFocus = s.marker; go(s.map);
+}
 async function openEstate(id, m, hadPrev) {
   document.body.classList.add('estate'); renderNav();
   $('#credit').textContent = nm(m, 'credit');
-  const ld = $('#loading'), ti = nm(m, 'title'); ld.classList.remove('done', 'thumb'); ld.classList.toggle('over', hadPrev);
+  const ld = $('#loading'), ti = nm(m, 'title'); ld.classList.remove('done', 'thumb'); ld.classList.toggle('over', hadPrev); estateActs('');
   ld.querySelector('span').textContent = tx('estate.loading', `加载 ${ti}…`, { title: ti });
   post({ type: 'eden-map:state', map: id, title: ti, lang: LANG });
   const url = new URL(m.src, document.baseURI).href;
   let html;
   try { html = await getText(url); } catch (e) { textCache.delete(url); html = null; }
   if (cur !== id) return;
-  if (!html) { ld.querySelector('span').textContent = tx('estate.fail', '庄园页面加载失败'); return; }
+  if (!html) { estateActs('fail'); ld.querySelector('span').textContent = tx('estate.fail', '庄园页面加载失败'); return; }
   const old = est?.frame; if (old && old.parentNode) old.remove();
   const f = document.createElement('iframe'); f.id = 'estate'; f.title = nm(m, 'title');
-  f.srcdoc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">`);
+  const vend = new URL('vendor/', url).href;
+  f.srcdoc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">${EST_HOOK}`)
+    .replace(/(["'])https:\/\/cdn\.(?:jsdelivr\.net|jsdmirror\.com)\/npm\/three@0\.160\.0\/build\/three\.module(?:\.min)?\.js\1/g, `$1${vend}three.module.min.js$1`)
+    .replace(new RegExp(THREE_CDN.source + 'examples\\/jsm\\/', 'g'), vend + 'jsm/');
   f.addEventListener('load', () => { if (est?.frame === f) estateLook(); });   // 首帧前就带上语言与主题，少闪一下
   $('#stage').appendChild(f);
   est = { id, frame: f, ready: false };
-  setTimeout(() => { if (est?.frame === f && !f.isConnected) return; if (est?.frame === f && !est.ready) ld.querySelector('span').textContent = tx('estate.slow', '三维库加载较慢（需要能访问 jsDelivr）…'); }, 12000);
+  // 12 秒还没画出第一帧：给出路（重试 / 看平面图），庄园继续在后台加载，画好了照常切过去
+  setTimeout(() => { if (est?.frame === f && f.isConnected && !est.ready && !est.failed) estateActs('slow'); }, 12000);
+}
+function onEstateFail() {
+  if (!est || est.ready) return; est.failed = true; setEstFail(true); estateActs('fail');
 }
 function onEstateReady() {
-  const f = est.frame; est.ready = true;
-  f.classList.add('on'); $('#loading').classList.add('done');
+  const f = est.frame; est.ready = true; if (estFail) setEstFail(false);
+  f.classList.add('on'); estateActs(''); $('#loading').classList.add('done');
   estateLook(); estateInset(); estateRoom();
   post({ type: 'eden-map:loaded' });
   // 庄园淡入完成后再关掉瓦片地图（释放解码内存）
-  setTimeout(() => { if (est?.frame === f && REG.maps[cur]?.kind === 'estate') { viewer.close(); viewer.clearOverlays(); } }, 240);
+  setTimeout(() => { if (est?.frame === f && REG.maps[cur]?.kind === 'estate') { viewer.close(); untrackAll(); viewer.clearOverlays(); } }, 240);
 }
 // 离开庄园：返回 iframe，由调用方在新底图画出来后淡出移除
 function leaveEstate() {
-  document.body.classList.remove('estate');
+  document.body.classList.remove('estate'); estateActs('');
   if (!est) return null;
   const f = est.frame, ready = est.ready; est = null;
   if (!ready) { f.remove(); return null; }
@@ -543,6 +664,7 @@ function estateRoom() { if (est?.ready) est.frame.contentWindow?.postMessage({ t
 window.addEventListener('message', e => {
   if (!est || e.source !== est.frame.contentWindow) return;
   if (e.data?.type === 'estate:ready') onEstateReady();
+  if (e.data?.type === 'estate:fail') onEstateFail();
   if (e.data?.type === 'estate:key') stepLayer({ PageUp: -1, '[': -1, PageDown: 1, ']': 1 }[e.data.key] || 0);
 });
 addEventListener('resize', () => estateInset());
@@ -551,12 +673,12 @@ function renderNav() {
   const m = REG.maps[cur], chain = [];
   for (let k = cur; k; k = REG.maps[k].parent) chain.unshift(k);
   $('#crumbs').innerHTML = chain.map((k, i) => { const ti = nm(REG.maps[k], 'title');
-    return i < chain.length - 1 ? `<a data-go="${k}">${esc(ti)}</a><span class="sep">›</span>` : `<b>${esc(ti)}</b>`; }).join('');
+    return i < chain.length - 1 ? `<a data-go="${k}" role="button" tabindex="0">${esc(ti)}</a><span class="sep" aria-hidden="true">›</span>` : `<b aria-current="page">${esc(ti)}</b>`; }).join('');
   const g = m.group && REG.groups[m.group], nav = $('#layers');
   nav.hidden = !g;
   nav.title = tx('layers.keys', 'PageUp / PageDown 或 [ ] 切换上下层');
   if (g) nav.innerHTML = g.layers.map(k => { const L = REG.maps[k], planned = L.status === 'planned';
-    return `<button data-go="${k}" class="${k === cur ? 'on' : ''}" ${planned ? `disabled title="${esc(tx('layers.planned', '制作中'))}"` : ''}>${esc(nm(L.layer))}<i class="hd" title="${esc(tx('layers.here', '当前地点在这一层'))}"></i><em class="evn"></em><small>${esc(planned ? tx('layers.planned', '制作中') : nm(L.layer, 'alt'))}</small></button>`; }).join('');
+    return `<button type="button" data-go="${k}" class="${k === cur ? 'on' : ''}" ${k === cur ? 'aria-current="page"' : ''} ${planned ? `disabled title="${esc(tx('layers.planned', '制作中'))}"` : ''}>${esc(nm(L.layer))}<i class="hd" title="${esc(tx('layers.here', '当前地点在这一层'))}"></i><em class="evn"></em><small>${esc(planned ? tx('layers.planned', '制作中') : nm(L.layer, 'alt'))}</small></button>`; }).join('');
   updateLayerBadges();
 }
 // 当前地点在同组的哪一层：各层地标名 / 别名、庄园的房间别名里最长的匹配；匹配不到再看有没有写「上层 / 中层 / 下层」
@@ -576,6 +698,7 @@ function updateLayerBadges() {
     b.classList.toggle('here', k === hk);
     b.querySelector('.evn').textContent = n ? (n > 9 ? '9+' : n) : '';
     b.querySelector('.evn').title = n ? tx('layers.events', `${n} 起未解除的事态`, { n }) : '';
+    b.setAttribute('aria-label', [b.firstChild?.textContent || '', k === hk ? tx('layers.here', '当前地点在这一层') : '', n ? tx('layers.events', `${n} 起未解除的事态`, { n }) : ''].filter(Boolean).join('，'));
   });
 }
 // 键盘切层：PageUp / [ 往上，PageDown / ] 往下（跳过制作中的层）
@@ -585,7 +708,17 @@ function stepLayer(d) {
     if (REG.maps[g.layers[j]].status !== 'planned') { pendingFocus = null; go(g.layers[j]); return; }
 }
 document.addEventListener('keydown', e => {
+  // Esc 逐层关闭：设置 / 「⋯」菜单 → 事态列表 → 卡片；都没开时交给酒馆（关闭面板）（E4 N20）
+  if (e.key === 'Escape') {
+    if (!$('#setPop').hidden) { showSet(false); $('#setBtn').focus(); }
+    else if (TCEvents.isOpen?.()) { TCEvents.collapse(); $('#evbar > button')?.focus(); }
+    else if (!$('#card').hidden) closeCard(true);
+    else post({ type: 'eden-map:esc' });
+    e.preventDefault(); return;
+  }
   if (e.target.closest?.('input, textarea, select, [contenteditable]') || e.ctrlKey || e.metaKey || e.altKey) return;
+  // 站内跳转（面包屑、「进入上层」、跨层通道）是 role=button 的链接：Enter / 空格触发
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-go][role="button"]')) { e.preventDefault(); e.target.click(); return; }
   const d = { PageUp: -1, '[': -1, PageDown: 1, ']': 1 }[e.key];
   if (d) { e.preventDefault(); stepLayer(d); }
 }, true);
@@ -597,15 +730,18 @@ function initProgress() {
   const ts = $('#tierState');
   const upd = () => {
     let busy = 0; for (let i = 0; i < viewer.world.getItemCount(); i++) busy += viewer.world.getItemAt(i)._tilesLoading || 0;
+    // 还没有任何瓦片请求（done = 0、busy = 0）时不报 100%：慢网下曾经先显示 100% 再掉回 9%（E4 N05）
+    if (!busy && !done) { $('#prog').hidden = true; return; }
     const pct = busy ? Math.round(done / (done + busy) * 100) : 100;
     $('#prog').hidden = !busy; $('#prog i').style.width = pct + '%';
-    if (!$('#loading').classList.contains('done')) $('#loading span').textContent = t('loading_pct', { title: nm(REG.maps[cur], 'title'), pct });
+    if (!$('#loading').classList.contains('done') && REG.maps[cur]?.kind !== 'estate') $('#loading span').textContent = t('loading_pct', { title: nm(REG.maps[cur], 'title'), pct });
     if (!firstLoaded) post({ type: 'eden-map:progress', pct });
     if (busy) { clearTimeout(tsT); ts.textContent = t('busy_pct', { pct }); ts.className = 'busy'; }
     else if (ts.className === 'busy') { ts.textContent = t('loaded'); ts.className = 'ok'; clearTimeout(tsT); tsT = setTimeout(() => { ts.textContent = ''; ts.className = ''; }, 2500); }
     // 当前地图首屏瓦片都到了：告诉酒馆（后台预加载据此收尾）
     if (!busy && done && !firstLoaded) { firstLoaded = true; post({ type: 'eden-map:loaded' }); }
-    clearTimeout(hideT); if (!busy) { if (done) setTimeout(() => $('#loading').classList.add('done'), 350); /* 在 100% 停一下再淡出 */ hideT = setTimeout(() => { done = 0; $('#prog').hidden = true; }, 200); }
+    // 在 100% 停一下再淡出；期间换了地图（例如跳去庄园）就不撤，免得撤掉庄园的遮罩（E4 N08）
+    clearTimeout(hideT); if (!busy) { if (done) { const at = cur; setTimeout(() => { if (cur === at && REG.maps[cur]?.kind !== 'estate') $('#loading').classList.add('done'); }, 350); } hideT = setTimeout(() => { done = 0; $('#prog').hidden = true; }, 200); }
   };
   viewer.addHandler('open', () => { done = 0; upd(); });
   viewer.addHandler('tile-loaded', () => { done++; lastTile = Date.now(); upd(); });
@@ -641,7 +777,7 @@ function setTier(key) {
 }
 function tierLabels() {
   const tt = effTier(), base = viewer?.world.getItemAt(0), px = base ? Math.min(tt.cap, base.source.dimensions.x) : tt.cap;
-  document.querySelectorAll('#tiers button').forEach(b => { b.classList.toggle('on', b.dataset.k === tier);
+  document.querySelectorAll('#tiers button').forEach(b => { b.classList.toggle('on', b.dataset.k === tier); b.setAttribute('aria-pressed', b.dataset.k === tier);
     b.textContent = b.dataset.k === 'auto' && tier === 'auto' ? t('tier_auto_on', { px }) : t('tier_' + b.dataset.k);
     b.title = b.dataset.k === 'auto' ? t('tier_auto_title') : ''; });
   if (cur && REG?.maps[cur]) $('#status').textContent = t(tier === 'auto' ? 'tier_status_auto' : 'tier_status', { title: nm(REG.maps[cur], 'title'), px });
@@ -677,17 +813,38 @@ function applyTier() {
 function onOpen() {
   if (REG.maps[cur]?.kind === 'estate') return;   // 打开旧底图期间已经切去庄园
   const it = viewer.world.getItemAt(0), sz = it.getContentSize(); aspect = sz.y / sz.x;
-  applyTier(); applyZoomLimit(); drawOverlays(); focusStart(true); autoTier();
+  applyTier(); applyZoomLimit(); homeMode(); drawOverlays(); focusStart(true); autoTier();
   if (pendingFocus) { const el = [...document.querySelectorAll('.mk')].find(e => e.dataset.name === REG.maps[cur].markers?.[pendingFocus]?.name);
     pendingFocus = null; el?._open(); }
 }
 // 叠加层（标记、结界圈、事件）：打开地图时画；切换语言时重画
 function drawOverlays() {
-  viewer.clearOverlays();
+  untrackAll(); viewer.clearOverlays();
   if (REG.maps[cur].kind === 'world') worldOverlays(); else pointOverlays();
   TCEvents.render();   // 事件层（events.js）：聊天前端里的事件标签、外部数据源
-  applyOverlayToggle(); markHere($('#here').value);
+  applyOverlayToggle(); markHere($('#here').value); tabOrder(); declutter();
 }
+// 竖屏（手机）：允许缩到整张图横向放进屏幕（上下留边），不再只能看到半张图（E4 N13）
+function homeMode() { const cs = viewer.viewport.getContainerSize(); viewer.viewport.homeFillsViewer = !(cs.y > cs.x); }
+// Tab 顺序 = 空间顺序：叠加层按「先上后下、同一行先左后右」重新排列 DOM（位置由 OSD 的 style 决定，不受 DOM 顺序影响）
+function tabOrder() {
+  const box = viewer.overlaysContainer || viewer.canvas; if (!box) return;
+  const row = aspect * .08, items = [];
+  for (const el of box.querySelectorAll('.mk, .ev, .realm')) { const p = viewer.getOverlayById(el)?.location; if (p && p.width === undefined) items.push([Math.round(p.y / row), p.x, el.parentElement === box ? el : el.parentElement]); }
+  items.sort((a, b) => a[0] - b[0] || a[1] - b[1]); for (const [, , w] of items) box.appendChild(w);   // OSD 把每个叠加层包在一个 wrapper 里，移动 wrapper
+}
+// 地标名避让：按优先级（当前地点 / 选中 > 首府、钻入 > 本层默认聚焦 > 有跨层通道 > 其余）保留，和更重要的标签重叠的才隐藏（E4 N13）
+let declT = 0;
+function declutter() { clearTimeout(declT); declT = setTimeout(() => {
+  const els = [...document.querySelectorAll('.mk')]; if (!els.length) return;
+  const rank = e => e.classList.contains('here') || e.classList.contains('active') ? 0 : e.classList.contains('capital') ? 1 : e.dataset.focus ? 2 : e.dataset.link ? 3 : 4;
+  els.forEach(e => e.classList.remove('lhide'));
+  const kept = [];
+  for (const e of els.sort((a, b) => rank(a) - rank(b))) {
+    const r = e.querySelector('.lab')?.getBoundingClientRect(); if (!r || !r.width) continue;
+    if (kept.some(k => r.left < k.right + 4 && r.right > k.left - 4 && r.top < k.bottom + 2 && r.bottom > k.top - 2)) e.classList.add('lhide'); else kept.push(r);
+  }
+}, 80); }
 function applyOverlayToggle() {
   const on = $('#tgBorders').checked, m = REG.maps[cur];
   if (m?.overlay?.type === 'dzi') viewer.world.getItemAt(1)?.setOpacity(on ? 1 : 0);
@@ -699,13 +856,26 @@ function placeN(el, nx, ny, placement = OpenSeadragon.Placement.TOP_LEFT) {
   viewer.addOverlay({ element: el, location: new OpenSeadragon.Point(nx, ny * aspect), placement });
 }
 function place(el, x, y, placement) { const [nx, ny] = toImg(x, y); placeN(el, nx, ny, placement); }
+// 叠加层的点击追踪器：OSD 的 MouseTracker 要显式 destroy，否则元素移走后监听还在（切层 20 轮监听 792 → 9065，E4 N11）。
+// 同时让它可以用键盘操作：Tab 聚焦、Enter / 空格打开（E4 N18）
+let trackers = [];
+function trackEl(el, onOpen, label) {
+  const tk = new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => { cardFrom = el; onOpen(); } });
+  trackers.push(tk); el._tk = tk;
+  el.tabIndex = 0; el.setAttribute('role', 'button'); if (label) el.setAttribute('aria-label', label);
+  el.addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault(); e.stopPropagation(); cardFrom = el; onOpen(); $('#cardTitle').focus({ preventScroll: true }); });
+  return tk;
+}
+function untrack(el) { const tk = el?._tk; if (!tk) return; el._tk = null; trackers = trackers.filter(x => x !== tk); tk.destroy(); }
+function untrackAll() { const all = trackers; trackers = []; for (const tk of all) { if (tk.element) tk.element._tk = null; tk.destroy(); } }
+let cardFrom = null;   // 打开卡片的元素：卡片关闭后焦点回到这里
 function markerEl({ name, sub, cls = '', tag = 'set', src, extra = '', alias, name_en, sub_en }) {
   const el = document.createElement('div'); el.className = 'mk ' + cls + (tag === 'inf' ? ' inf' : '');
   const dn = LANG === 'en' ? name_en || tr(name) : name, ds = sub && (LANG === 'en' ? sub_en || tr(sub) : sub);   // 显示名随语言；dataset.name 保持中文（当前地点匹配用）
   el.innerHTML = `<div class="lab">${esc(dn)}${ds ? '<small> · ' + esc(ds) + '</small>' : ''}</div><div class="pin"></div>`;
   el.dataset.name = name; if (alias) el.dataset.alias = alias.join('|');
   el._open = () => showCard(el, dn, tag, src, extra);
-  new OpenSeadragon.MouseTracker({ element: el, clickHandler: el._open });
+  trackEl(el, el._open, dn + (ds ? ' · ' + ds : ''));
   return el;
 }
 function marker(o) { const el = markerEl(o); place(el, o.x, o.y); return el; }
@@ -716,20 +886,27 @@ function showCard(el, name, tag, src, extra) {
   const sv = c.querySelector('.src'); c.querySelector('h2').textContent = name; sv.textContent = src;
   if (LANG === 'en' && /[\u4e00-\u9fff]/.test(src || '') && t('src_note')) sv.dataset.note = t('src_note'); else delete sv.dataset.note;   // 英文界面：设定原文保持中文，加一行说明
   c.querySelector('.extra').innerHTML = extra || '';
+  declutter();
 }
-function closeCard() { $('#card').hidden = true; document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); }
+// user = 用户主动关闭（× / Esc）：焦点回到打开卡片的元素
+function closeCard(user) {
+  const c = $('#card'), had = !c.hidden, inCard = c.contains(document.activeElement);
+  c.hidden = true; document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active'));
+  if (had && (user === true || inCard) && cardFrom?.isConnected) cardFrom.focus({ preventScroll: true });
+  if (had) declutter();
+}
 function worldOverlays() {
   for (const r of M.realms) { const el = document.createElement('div'); el.className = 'realm ' + r.id;
     el.innerHTML = `<b>${esc(tr(r.name))}</b><span>${esc(tr(r.sub))}</span>`;
-    new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => showCard(null, tr(r.name), r.tag, r.src) });
+    trackEl(el, () => showCard(null, tr(r.name), r.tag, r.src), tr(r.name));
     const off = { oren: -95, fed: -150, xl: -110 }[r.id]; place(el, r.c[0], r.c[1] + off, OpenSeadragon.Placement.CENTER); }
   for (const m of M.minors) { if (m.n < 600) continue; const el = document.createElement('div'); el.className = 'minor'; el.textContent = t('minor');
     place(el, m.c[0], m.c[1], OpenSeadragon.Placement.CENTER); }
   { const el = document.createElement('div'); el.className = 'realm'; el.innerHTML = `<b style="font-size:20px;letter-spacing:${LANG === 'en' ? 2 : 6}px">${esc(tr('海外诸地'))}</b><span>${esc(tr('稀有矿物 · 异域人员输出地'))}</span>`;
-    new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => showCard(null, tr('海外诸地'), 'inf', '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）；陆块形状与位置为推断') });
+    trackEl(el, () => showCard(null, tr('海外诸地'), 'inf', '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）；陆块形状与位置为推断'), tr('海外诸地'));
     place(el, M.overseas[0], M.overseas[1], OpenSeadragon.Placement.CENTER); }
   const enter = id => { const g = REG.groups.tiancheng; return `<p>${g.layers.map(k => { const L = REG.maps[k];
-    return L.status === 'planned' ? `<span style="opacity:.5">${esc(nm(L.layer))}${esc(t('planned_paren'))}</span>` : `<a data-go="${k}">${esc(t('enter', { name: nm(L.layer) }))}</a>`; }).join(' · ')}</p>`; };
+    return L.status === 'planned' ? `<span style="opacity:.5">${esc(nm(L.layer))}${esc(t('planned_paren'))}</span>` : `<a data-go="${k}" role="button" tabindex="0">${esc(t('enter', { name: nm(L.layer) }))}</a>`; }).join(' · ')}</p>`; };
   for (const p of M.places) {
     if (p.type === 'capital') marker({ name: p.name, sub: p.sub, cls: 'capital' + (p.id === 'tiancheng' ? ' drill' : ''), tag: p.tag, src: p.src, x: p.x, y: p.y,
       extra: p.id === 'tiancheng' ? enter() : '' });
@@ -782,9 +959,11 @@ function pointOverlays() {
   }
   // link：跨层通道（如中层检查点 ↔ 下层 7 号井），地点卡里给一个直达链接
   const linkHtml = l => l && REG.maps[l.map] && REG.maps[l.map].status !== 'planned'
-    ? `<p><a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}">${esc(nm(l, 'label') || t('goto', { title: nm(REG.maps[l.map], 'title') }))} →</a></p>` : '';
+    ? `<p><a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}" role="button" tabindex="0">${esc(nm(l, 'label') || t('goto', { title: nm(REG.maps[l.map], 'title') }))} →</a></p>` : '';
   for (const k of d.markers || []) { const meta = m.markers?.[k.id]; if (!meta) continue;
-    placeN(markerEl({ ...meta, sub: (meta.sub || '').replace(/\{\{user\}\}\s*/g, t('you')), extra: linkHtml(meta.link) }), k.nx, k.ny); }
+    const el = markerEl({ ...meta, sub: (meta.sub || '').replace(/\{\{user\}\}\s*/g, t('you')), extra: linkHtml(meta.link) });
+    if (k.id === (m.view?.focus || m.focus)) el.dataset.focus = '1'; if (meta.link) el.dataset.link = '1';   // 标签避让的优先级
+    placeN(el, k.nx, k.ny); }
 }
 
 // ---------------- 初始视角与当前地点 ----------------
@@ -799,7 +978,17 @@ function focusStart(immediately) {
   // 同组切层：沿用上一层的视野（跨层通道 link 带 pendingFocus 时仍然聚焦到目标地点）
   const gv = m.group && m.kind === 'points' && groupView[m.group];
   const home = pendingHome; pendingHome = false;
-  if (gv && immediately && !pendingFocus && !home) { viewer.viewport.fitBounds(gv, true); userMoved = true; return; }
+  if (gv && immediately && !pendingFocus && !home) {
+    viewer.viewport.fitBounds(gv, true); userMoved = true;
+    // 沿用的视野里一个地标都没有（切过去一片空）：平移到离视野中心最近的地标，缩放不变（E4 N12）
+    const b = viewer.viewport.getBounds(true), c = b.getCenter(), mk = (curData?.markers || []).filter(k => m.markers?.[k.id]);
+    const inView = k => k.nx > b.x + b.width * .1 && k.nx < b.x + b.width * .9 && k.ny * aspect > b.y + b.height * .1 && k.ny * aspect < b.y + b.height * .9;
+    if (mk.length && !mk.some(inView)) {
+      const d = k => Math.hypot(k.nx - c.x, k.ny * aspect - c.y), k = mk.reduce((a, x) => d(x) < d(a) ? x : a);
+      viewer.viewport.panTo(new OpenSeadragon.Point(k.nx, k.ny * aspect), true);
+    }
+    return;
+  }
   let nx, ny, w;
   if (m.kind === 'world') {
     const el = document.querySelector('.mk.here') || [...document.querySelectorAll('.mk')].find(e => e.dataset.name === '天城');
@@ -837,15 +1026,17 @@ function markHere(v) {
 // ---------------- 自动跳到当前地点（map/here.mjs 六级落点；设置里可关，默认开） ----------------
 // 庄园房间 / 区域 → 庄园（房间由 estate:room 高亮，切楼层由庄园页自己做）；地标 → 该层并打开地点卡；层 / 大区 / 天城 → 该层默认视野；世界地名 → 世界图；匹配不到不动。
 // 打开面板（或唤醒）后的第一条地点一定跳；之后只有地点变了才跳，不打断用户自己在别的图上浏览。
-let HX = null, hereIdx = null, lastJump = null, hereFresh = true;
+let HX = null, hereIdx = null, lastJump = null, hereFresh = true, bgMode = false;   // bgMode：酒馆在后台预加载（面板不可见）
 const AUTO_KEY = 'edenMapAutoHere';
 const autoHere = () => { try { return localStorage.getItem(AUTO_KEY) !== '0'; } catch (e) { return true; } };
 const hereRes = v => (HX && hereIdx ? HX.resolveHere(v, hereIdx) : null);
 function jumpHere(v, force) {
-  const r = hereRes(v);
+  let r = hereRes(v);
   if (!r || !autoHere() || !REG?.maps[r.map] || REG.maps[r.map].status === 'planned') return false;
   if (!force && v === lastJump) return false;
-  lastJump = v;
+  // 后台预加载时、或本次会话庄园三维加载失败过：不自动进庄园，落到它的平面替身（上层的伊甸地标）（E4 N01、N03）
+  if (REG.maps[r.map].kind === 'estate' && (bgMode || estFail)) { const sub = estateStandIn(r.map); if (sub) r = { ...r, map: sub.map, marker: sub.marker }; }
+  if (!bgMode) lastJump = v;   // 后台那次不算「已经跳过」：用户真正打开面板时还会跳
   if (r.map !== cur) { pendingFocus = r.marker || null; pendingHome = !r.marker && !r.place; go(r.map); return true; }
   if ((r.marker || r.place) && viewer?.world.getItemCount()) { userMoved = false; markHere(v); focusStart(false); }   // 同一张图：飞到地标 / 世界地名
   return true;
@@ -854,26 +1045,32 @@ function initSettings() {
   const btn = $('#setBtn'), pop = $('#setPop'), box = $('#optAutoHere');
   box.checked = autoHere();
   box.onchange = () => { try { localStorage.setItem(AUTO_KEY, box.checked ? '1' : '0'); } catch (e) {} if (box.checked) jumpHere($('#here').value, true); };
-  const show = on => { pop.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); };
-  btn.onclick = e => { e.stopPropagation(); show(pop.hidden); };
-  document.addEventListener('click', e => { if (!pop.hidden && !pop.contains(e.target) && e.target !== btn) show(false); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') show(false); });
+  showSet = on => { pop.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); };
+  btn.onclick = e => { e.stopPropagation(); showSet(pop.hidden); };
+  document.addEventListener('click', e => { if (!pop.hidden && !pop.contains(e.target) && e.target !== btn) showSet(false); });
+  // 关闭花屏特效：只停动画和滤镜，「⚠ 数据链路受扰」文字照常显示；系统开了「减少动态效果」时默认勾上（E4 N24）
+  const fx = $('#optNoFx'); let nofx = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  try { const v = localStorage.getItem('edenMapNoFx'); if (v !== null) nofx = v === '1'; } catch (e) {}
+  fx.checked = nofx; document.body.classList.toggle('nofx', nofx);
+  fx.onchange = () => { document.body.classList.toggle('nofx', fx.checked); try { localStorage.setItem('edenMapNoFx', fx.checked ? '1' : '0'); } catch (e) {} };
 }
+let showSet = () => {};
 // 嵌入酒馆（悬浮按钮面板）的消息接口：
 //   酒馆 → 地图：eden-map:here {value}（当前地点）、eden-map:open {map}（直接打开某张地图）
 //   地图 → 酒馆：eden-map:ready（可以撤掉加载遮罩）、eden-map:state {map, title}（当前地图，用于面板标题）
 if (window.top !== window) {
   document.body.classList.add('embed');
   window.addEventListener('message', e => {
-    if (e.data?.type === 'eden-map:here') { $('#here').value = e.data.value || ''; markHere(e.data.value); if (!jumpHere(e.data.value || '', hereFresh)) focusStart(false); hereFresh = false; }
+    // bg = 酒馆在后台预加载（面板不可见）：不进庄园，也不消耗「打开后第一次一定跳」的资格
+    if (e.data?.type === 'eden-map:here') { bgMode = !!e.data.bg; $('#here').value = e.data.value || ''; markHere(e.data.value); if (!jumpHere(e.data.value || '', hereFresh)) focusStart(false); if (!bgMode) hereFresh = false; }
     if (e.data?.type === 'eden-map:open') go(e.data.map);
     if (e.data?.type === 'eden-map:events') TCEvents.set(e.data);   // 卡内脚本从聊天里解析、合并好的事态 {items, floor, fly}
     // 面板关闭时休眠：关掉底图（释放已解码的瓦片），脚本与数据留着；再打开时唤醒，重新打开当前地图
-    if (e.data?.type === 'eden-map:sleep' && viewer) { saveView(); sleeping = cur; cur = null; est?.frame.remove(); est = null; document.body.classList.remove('estate'); viewer.close(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }
+    if (e.data?.type === 'eden-map:sleep' && viewer) { saveView(); sleeping = cur; cur = null; est?.frame.remove(); est = null; document.body.classList.remove('estate'); viewer.close(); untrackAll(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }
     if (e.data?.type === 'eden-map:wake' && sleeping) { slowStop = true; const id = sleeping; sleeping = null; hereFresh = true; go(id); }
   });
 }
-main();
+document.addEventListener('DOMContentLoaded', main);   // 两个 defer 脚本（地图库、事态层）执行完之后
 </script>
 </body>
 </html>

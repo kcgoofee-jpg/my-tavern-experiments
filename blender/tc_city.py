@@ -52,7 +52,8 @@ _MSEAM = [(round(mid_seam_x(y), 4), round(float(y), 4)) for y in np.linspace(-3.
 DISTRICTS = {
     'mid': [
         dict(kind='core', region='manhattan', offset=(4.5, 3.05), k=1.25,         # 核心区与高区：曼哈顿中城
-             poly=[(F, -3.5), (F, G)] + _MSEAM[::-1]),                               # 西边界是斜向起伏的交界大道（mid_seam_x）
+             poly=[(F, -3.5), (F, G)] + _MSEAM[::-1],                                # 西边界是斜向起伏的交界大道（mid_seam_x）
+             geom='real3d'),                                                         # A5：楼换成纽约 3D 建筑模型的真实几何（tc_real3d，hybrid；上层远景共用）
         dict(kind='commercial', region='kowloon', offset=(0, -5.2), k=3.0,         # 商业区：九龙旺角最密的一段（C 区检查点在这里）
              poly=[(-9, -G), (F, -G), (F, -3.5), (-9, -3.5)]),
         dict(kind='outer', region='brooklyn', offset=(-10.5, 0), k=1.6,            # 外围居住区：布鲁克林联排住宅与旧仓库
@@ -163,6 +164,8 @@ class City:
             for _ in range(int(a * 160)):
                 x, y = rng.uniform(x0, x1), rng.uniform(y0, y1)
                 if point_in_poly(x, y, P_): self.trees.append((float(x), float(y), float(rng.uniform(.012, .03))))
+        for D in self.districts:                                      # 真实几何（A5）：OSM 循环、撒树之后再换楼，独立随机，不动城市序列
+            if D.get('geom') == 'real3d': self.real3d(D)
         from collections import Counter
         tick(f'city ({layer}): {len(self.b)} buildings {dict(Counter(b["dk"] for b in self.b))}, {len(self.roads)} roads, '
              f'{len(self.parks)} parks, {len(self.rail)} rail, {len(self.tanks)} tanks, {len(self.trees)} trees')
@@ -217,6 +220,44 @@ class City:
                                            k=D['k'], dk=D['kind'], di=self.districts.index(D), synth=True, dense=dense))
         tick(f'village: {len(self.b) - n0} handshake buildings generated')
 
+    def real3d(self, D):
+        """把城区 D 的 OSM 楼换成 data/real3d/<region>.npz 的真实楼（纽约 3D 建筑模型，见 docs/real-3d-buildings.md）。
+        过滤规则与 OSM 楼一致：让出交界大道、过渡带密度渐变（独立随机 4401）、压在车行道上的去掉（drop_on_roads）。
+        每栋真实楼：p = 地面轮廓，obb = 地面轮廓的外接矩形，top_p / tobb = 最高一级（够大的）屋面轮廓与外接矩形，
+        h = 最高屋面高度（米，不含天线尖顶），tz = 最高一级屋面高度 / h，real = npz 里的楼号，tiers = 各级屋面 [(轮廓, 高度米)]。
+        self.roof 同步：留下的楼保持原色，新楼按同一套屋顶色另起随机（4405）。"""
+        import tc_real3d
+        RD = real_data(D['region']); P = D['P']; ox, oy = D['offset']; di = self.districts.index(D)
+        rr = np.random.default_rng(4401)
+        keep = [i for i, b in enumerate(self.b) if b['dk'] != D['kind']]; n_old = len(self.b) - len(keep)
+        new = []
+        for i in range(len(RD['BH'])):
+            Q = (RD['BP'][i] + (ox, oy)).astype(np.float32)
+            if len(Q) < 3: continue
+            if poly_area(Q) < 0: Q = Q[::-1]
+            a = float(poly_area(Q))
+            if a < .0004: continue
+            cx, cy = map(float, Q.mean(0))
+            if abs(cx) > W / 2 + .3 or abs(cy) > H / 2 + .3: continue
+            dd = sdist(cx, cy, P)
+            if dd < .12 or min(sdist(qx, qy, P) for qx, qy in Q[::max(1, len(Q) // 6)]) < .05: continue
+            if dd < BAND and rr.random() > .35 + .65 * (dd - .12) / (BAND - .12): continue
+            T = (RD['TP'][i] + (ox, oy)).astype(np.float32)
+            if len(T) < 3 or abs(poly_area(T)) < 1e-5: T = Q
+            elif poly_area(T) < 0: T = T[::-1]
+            rh = float(max(RD['RH'][i], 3.0))
+            new.append(dict(p=Q, cx=cx, cy=cy, a=a, h=rh, n=tc.district(cx, cy), obb=obb(Q), top_p=T, tobb=obb(T), tz=float(min(1.0, RD['TZ'][i] / rh)),
+                            k=D['k'], dk=D['kind'], di=di, real=i, region=D['region'], off=(ox, oy), tiers=[(t + (ox, oy), z) for t, z in RD['tiers'][i]]))
+        n_new = len(new); new = drop_on_roads(new, self.roads)
+        rc = np.random.default_rng(4405)
+        C = np.array([tc.ROOF[j] for j in rc.choice(len(tc.ROOF), size=len(new), p=tc.ROOF_W)], np.float32).reshape(-1, 3)
+        C = C * rc.uniform(.85, 1.15, (len(new), 1)).astype(np.float32)
+        self.b = [self.b[i] for i in keep] + new
+        self.roof = np.concatenate([self.roof[keep], C]).astype(np.float32)
+        assert len(self.roof) == len(self.b)
+        self.credit += '; NYC 3-D Building Model (City of New York, NYC Open Data)'
+        tick(f'real3d ({D["kind"]}): OSM {n_old} → NYC 3D model {len(new)} (drop_on_roads removed {n_new - len(new)})')
+
     # ---------- 选择 ----------
     def keep(self, zones):
         """去掉落在地标区（椭圆 (x, y, rx, ry) 或 ('rect', x0, y0, x1, y1)）里的楼。返回布尔数组。"""
@@ -253,8 +294,13 @@ class City:
 
     # ---------- 网格 ----------
     def buildings_mesh(self, name, idx, z0, z1, colors, m):
-        """idx 中的楼按轮廓挤出：顶面 n 边形 + 侧面四边形。z0 / z1 为每栋楼的底 / 顶（数组或常数）。"""
-        return poly_prisms(name, [self.b[i]['p'] for i in idx], np.broadcast_to(z0, len(idx)), np.broadcast_to(z1, len(idx)), colors, m)
+        """idx 中的楼按轮廓挤出：顶面 n 边形 + 侧面四边形。z0 / z1 为每栋楼的底 / 顶（数组或常数）。
+        真实楼（'real' in b）不挤出，走 real_mesh（原始屋面与外墙，按 z1 等比缩放），网格名加 _real。"""
+        idx = np.asarray(idx, np.int64); z0 = np.broadcast_to(z0, len(idx)); z1 = np.broadcast_to(z1, len(idx)); colors = np.asarray(colors, np.float32).reshape(-1, 3)
+        real = np.array(['real' in self.b[i] for i in idx], bool)
+        o = poly_prisms(name, [self.b[i]['p'] for i in idx[~real]], z0[~real], z1[~real], colors[~real], m)
+        if real.any(): real_mesh(name + '_real', [self.b[i] for i in idx[real]], z0[real], z1[real], colors[real], m)
+        return o
     def roads_mesh(self, name, z, m, classes=None, widen=1.0, color=(.09, .09, .1)):
         """道路：每段一个四边形 + 每个节点一个八边形（补转角的缝）。"""
         quads, discs = [], []
@@ -355,6 +401,71 @@ class City:
 CAR_COLORS = [(.6, .6, .62), (.08, .08, .09), (.75, .75, .74), (.35, .05, .04), (.1, .15, .3), (.45, .45, .47), (.2, .22, .2)]
 def td_car_color(rng): return CAR_COLORS[rng.integers(len(CAR_COLORS))]
 
+# ---------------- 真实几何（A5，见 docs/real-3d-buildings.md）----------------
+_REAL = {}
+def real_data(region):
+    """tc_real3d.load(region)，按区域缓存；另算每栋楼的各级屋面 tiers = [(轮廓 (n, 2) 平面单位, 高度米)]（面积 ≥ 40 m² 的屋顶面）。"""
+    if region not in _REAL:
+        import tc_real3d
+        RD = tc_real3d.load(region); BF = RD['BF'].astype(np.int64); FS = RD['FS']; tiers = []
+        for i in range(len(RD['BH'])):
+            t = []
+            for f in range(BF[i], BF[i + 1]):
+                if RD['FT'][f] != 1: continue
+                Vf = RD['Vf'][RD['FI'][FS[f]:FS[f + 1]]]; P = Vf[:, :2].astype(np.float32)
+                ar = poly_area(P)
+                if abs(ar) < .004: continue
+                t.append((P if ar > 0 else P[::-1], float(np.median(Vf[:, 2]))))
+            tiers.append(t)
+        RD['tiers'] = tiers; _REAL[region] = RD
+    return _REAL[region]
+Z_CLIP = tc.Z_GROUND + 3.79                                     # 真实楼的尖顶、天线（高于最高屋面的部分）截在悬浮轨道以下
+REAL_TONES = [(.62, .62, .66), (.9, .86, .8), (1.22, 1.21, 1.18), (.74, .79, .84)]   # 沥青卷材、碎石、浅色防水膜、金属——乘在楼的屋顶色上
+REAL_TONE_P = [.34, .3, .2, .16]
+def real_scale(b, z0, z1):
+    """真实楼：米 → 平面单位的竖向缩放（最高屋面对到 z1）。"""
+    return (float(z1) - float(z0)) / max(float(b['h']), 1e-3)
+def roof_top(b, top, zbase=None):
+    """楼顶部件、楼冠灯带该放的高度：OSM 楼就是 top；真实楼是最高一级（够大的）屋面 = 底 + (top - 底) × tz。"""
+    zb = tc.Z_GROUND if zbase is None else zbase
+    return zb + (top - zb) * b.get('tz', 1.0)
+def top_obb(b): return b.get('tobb', b['obb'])
+def real_mesh(name, blist, z0, z1, colors, m):
+    """真实楼的原始屋面与外墙（一个网格）：竖向按 real_scale 等比；屋面按楼、按每一级退台换一种屋面色调（REAL_TONES），
+    再按高度压暗（低的退台暗、最高一级亮一些，但整体压在楼的屋顶色附近，不像白模）；外墙压暗。平直着色。"""
+    co, loops, totals, fcol = [], [], [], []; base = 0
+    for b, a0, a1, c in zip(blist, z0, z1, colors):
+        RD = real_data(b['region'])
+        i = b['real']; BF = RD['BF']; FS = RD['FS']; f0, f1 = int(BF[i]), int(BF[i + 1])
+        fidx = [RD['FI'][FS[f]:FS[f + 1]] for f in range(f0, f1)]
+        used = np.unique(np.concatenate(fidx)); remap = np.full(int(used.max()) + 1, -1, np.int64); remap[used] = np.arange(len(used))
+        Vb = RD['Vf'][used]; s = real_scale(b, a0, a1); ox, oy = b['off']
+        co.append(np.c_[Vb[:, 0] + ox, Vb[:, 1] + oy, np.minimum(float(a0) + Vb[:, 2] * s, max(Z_CLIP, float(a1)))])
+        fr = np.random.default_rng(4402 + 7919 * i); c = np.asarray(c, np.float32); tone = {}
+        for f, F in zip(range(f0, f1), fidx):
+            loops.append(remap[F] + base); totals.append(len(F))
+            if RD['FT'][f] == 1:
+                zm = float(np.median(RD['Vf'][F, 2])); key = round(zm * 2)
+                if key not in tone: tone[key] = np.array(REAL_TONES[fr.choice(4, p=REAL_TONE_P)], np.float32) * fr.uniform(.88, 1.12)
+                k = c * tone[key] * (.62 + .38 * min(1.0, zm / max(b['h'], 1.0)))
+            else: k = c * .55
+            fcol.append((*np.clip(k, 0, 1).tolist(), 1.0))
+        base += len(Vb)
+    if not totals: return None
+    co = np.concatenate(co).astype(np.float32); L = np.concatenate(loops).astype(np.int32); T = np.array(totals, np.int32)
+    S = np.concatenate([[0], np.cumsum(T)[:-1]]).astype(np.int32)
+    me = bpy.data.meshes.new(name); me.vertices.add(len(co)); me.vertices.foreach_set('co', co.ravel())
+    me.loops.add(len(L)); me.loops.foreach_set('vertex_index', L)
+    me.polygons.add(len(T)); me.polygons.foreach_set('loop_start', S); me.polygons.foreach_set('loop_total', T)
+    me.polygons.foreach_set('use_smooth', np.zeros(len(T), bool))   # 平直着色（复杂 n 边形屋面平滑着色会出现褶皱状明暗）
+    me.update(calc_edges=True)
+    ca = me.color_attributes.new('col', 'FLOAT_COLOR', 'CORNER'); ca.data.foreach_set('color', np.repeat(np.array(fcol, np.float32), T, axis=0).ravel())
+    me.validate(clean_customdata=False)
+    o = bpy.data.objects.new(name, me); bpy.context.scene.collection.objects.link(o)
+    if m: o.data.materials.append(m)
+    tick(f'{name}: {len(blist)} real buildings, {len(T)} faces, {len(co)} verts')
+    return o
+
 def poly_prisms(name, polys, z0, z1, colors, m=None):
     """一批多边形挤出成一个网格（顶面 + 侧面，底面看不到）。colors: (n, 3) 写进颜色属性 col。"""
     co, loops, totals, fcol = [], [], [], []
@@ -387,10 +498,17 @@ STYLE = {
     'low':   dict(tower=.0, pitch=.35, solar=0, green=0, glass=0, hvac=.4, parapet=1.15, lamps=0,
                   tiles=[(.3, .15, .09), (.2, .2, .2), (.26, .22, .17)]),
 }
-def roof_kit(city, idx, tops, cols, rng, style, cap=.3, tall=1.2, zbase=None):
+def roof_kit(city, idx, tops, cols, rng, style, cap=.3, tall=1.2, zbase=None, real='hybrid'):
     """idx 里每栋楼的女儿墙（沿轮廓的每条边）、退台塔楼（轮廓向中心收缩后再挤出）、设备、太阳能板、屋顶花园、天窗；
-    下层的小楼改坡顶。返回 dict：box / brot / bcol、tower_polys / tz0 / tz1 / tcol、prisms / pcols、towers（塔顶 (x, y, z)）、lamps。"""
+    下层的小楼改坡顶。返回 dict：box / brot / bcol、tower_polys / tz0 / tz1 / tcol、prisms / pcols、towers（塔顶 (x, y, z)）、lamps。
+    真实楼（'real' in b）另算（real_kit，自己的随机，不消耗 rng）：real='hybrid' 时不加假的退台塔楼，女儿墙与设备放在真实屋面上；
+    real=None 时真实楼什么都不加。"""
     S = STYLE[style]; o = dict(box=[], brot=[], bcol=[], tower_polys=[], tz0=[], tz1=[], tcol=[], prisms=[], pcols=[], towers=[], lamps=[])
+    idx = np.asarray(idx); tops = np.asarray(tops); cols = np.asarray(cols)
+    isr = np.array(['real' in city.b[i] for i in idx], bool).reshape(-1)
+    if isr.any():
+        if real == 'hybrid': real_kit(o, city, idx[isr], tops[isr], cols[isr], S, zbase)
+        idx, tops, cols = idx[~isr], tops[~isr], cols[~isr]
     def box(x, y, w, d, z0, z1, rot, c): o['box'].append((x, y, w, d, z0, z1)); o['brot'].append(rot); o['bcol'].append(c)
     def parapet(P, z, c):
         k = tuple(min(1, v * S['parapet']) for v in c)
@@ -433,6 +551,58 @@ def roof_kit(city, idx, tops, cols, rng, style, cap=.3, tall=1.2, zbase=None):
                         tuple(min(1, v * rng.uniform(1.2, 1.6)) for v in c))
         if rng.random() < S['lamps']: o['lamps'].append((*at(rng.uniform(-.3, .3) * w, rng.uniform(-.3, .3) * d), zt + .002))
     return o
+SOLAR = (.03, .034, .04)                                        # 太阳能板（审阅：原来的 (.04, .06, .1) 偏亮偏蓝，是全图最抢眼的地方）
+def real_kit(o, city, idx, tops, cols, S, zbase=None):
+    """真实楼的楼顶部件（hybrid）：
+    - 最高一级屋面（top_p / tobb，高度 roof_top）：女儿墙、太阳能板（压暗、降饱和）/ 屋顶花园 / 天窗、冷却塔 / 水箱，航空障碍灯；
+    - 其余各级退台（tiers，面积 ≥ 40 m²）：一圈细女儿墙（屋面与街道分得开），约一半放一两组设备（位置在退台轮廓里随机取）；
+    不加退台塔楼（数据里已有真实的退台、机房、塔冠）。随机 4404，不动城市与层的随机序列。"""
+    rr = np.random.default_rng(4404); zb = tc.Z_GROUND if zbase is None else zbase
+    def box(x, y, w, d, z0, z1, rot, c): o['box'].append((x, y, w, d, z0, z1)); o['brot'].append(rot); o['bcol'].append(c)
+    def parapet(P, z, c, th=.003, hh=.006):
+        k = tuple(min(1, v * S['parapet']) for v in c)
+        for a, b in zip(P, np.roll(P, -1, 0)):
+            d = b - a; L = float(np.hypot(*d))
+            if L < .008: continue
+            nrm = np.array([-d[1], d[0]]) / L; m_ = (a + b) / 2 + nrm * th / 2
+            box(m_[0], m_[1], L, th, z, z + hh, math.atan2(d[1], d[0]), k)
+    def inside(P, n):
+        x0, y0 = P.min(0); x1, y1 = P.max(0); out = []
+        for _ in range(n * 6):
+            x, y = rr.uniform(x0, x1), rr.uniform(y0, y1)
+            if point_in_poly(x, y, P): out.append((x, y))
+            if len(out) >= n: break
+        return out
+    def hvac(x, y, w, d, rot, z, c):
+        cs, sn = math.cos(rot), math.sin(rot); at = lambda u, v: (x + u * cs - v * sn, y + u * sn + v * cs)
+        nx, ny = int(rr.integers(1, 4)), int(rr.integers(1, 3)); s_ = rr.uniform(.007, .012)
+        ou, ov = rr.uniform(-.25, .25) * w, rr.uniform(-.25, .25) * d
+        for ii in range(nx):
+            for jj in range(ny):
+                box(*at(ou + (ii - (nx - 1) / 2) * s_ * 1.5, ov + (jj - (ny - 1) / 2) * s_ * 1.5), s_, s_, z, z + rr.uniform(.004, .009), rot,
+                    tuple(min(1, v * rr.uniform(1.1, 1.5)) for v in c))
+    for i, top, c in zip(idx, tops, cols):
+        b = city.b[i]; c = tuple(float(v) for v in c); x, y, w, d, rot = b['tobb']; P = b['top_p']
+        zt = roof_top(b, float(top), zb); s = (float(top) - zb) / max(b['h'], 1e-3)
+        if b['a'] < .0015: continue
+        parapet(P, zt, c)
+        cs, sn = math.cos(rot), math.sin(rot); at = lambda u, v: (x + u * cs - v * sn, y + u * sn + v * cs)
+        r = rr.random(); iw, idp = w * .7, d * .7
+        if r < S['solar'] and iw * idp > .003:
+            for k in np.arange(-idp / 2 + .006, idp / 2 - .004, .013): box(*at(0, k), iw, .008, zt, zt + .003, rot, SOLAR)
+        elif r < S['solar'] + S['green']: box(x, y, iw, idp, zt, zt + .002, rot, (.06, .1, .05))
+        elif r < S['solar'] + S['green'] + S['glass'] and iw * idp > .002:
+            box(x, y, iw * .5, idp * .5, zt, zt + .003, rot, (.28, .34, .38)); o['lamps'].append((x, y, zt + .003))
+        if rr.random() < S['hvac'] and w * d > .002: hvac(x, y, w, d, rot, zt, c)
+        if zt - zb > 1.2 and rr.random() < .6: o['towers'].append((x, y, zt))          # 航空障碍灯：最高一级的中心
+        if rr.random() < S['lamps']: o['lamps'].append((*at(rr.uniform(-.3, .3) * w, rr.uniform(-.3, .3) * d), zt + .002))
+        for T, zm in b.get('tiers', ()):                                               # 其余各级退台
+            z = zb + zm * s
+            if z > zt - .004 or z - zb < .02: continue
+            parapet(T, z, c, .002, .004)
+            if rr.random() < .5:
+                for px, py in inside(T, int(rr.integers(1, 3))):
+                    ob = obb(T); hvac(px, py, min(ob[2], .04) * .5, min(ob[3], .04) * .5, ob[4], z, c)
 def build_roof_kit(prefix, kit, m_box, m_roof, prism_fn=None):
     if kit['box']: tc.box_mesh(prefix + '_parts', kit['box'], kit['bcol'], m_box, rot=np.array(kit['brot'], np.float32))
     if kit['tower_polys']: poly_prisms(prefix + '_towers', kit['tower_polys'], kit['tz0'], kit['tz1'], kit['tcol'], m_box)
@@ -461,4 +631,9 @@ def tops_mid(city, cap=.1):
         if s is None: break
         if b['dk'] == 'core' and s < 1.5: h[i] *= .4 + .6 * _ss(s / 1.5)          # 核心一侧：离外围越近越矮
         elif b['dk'] == 'outer' and s > -.8: h[i] *= 1 + .6 * (1 - _ss(-s / .8))  # 外围一侧：贴着核心的略高
-    return np.minimum(cap, tc.Z_GROUND + np.clip(h / 100, .12, 3.7))
+    x = np.clip(h / 100, .12, 3.7)
+    real = np.array(['real' in b for b in city.b], bool)
+    if real.any():                                                                  # 真实楼（A5）：不在 3.7 一刀截平（300 m 以上的楼全一样高），
+        K, L = 2.6, 3.76                                                            # 2.6 以上平滑压缩到 3.76 以内，超高层之间仍分得出高低
+        hr = np.maximum(h[real] / 100, .12); x[real] = np.where(hr < K, hr, K + (L - K) * np.tanh((hr - K) / (L - K)))
+    return np.minimum(cap, tc.Z_GROUND + x)

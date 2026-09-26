@@ -259,3 +259,18 @@
   - 树冠低模 + 栏杆远景用贴片，压三角形。
   - 首帧前不建家具，压到 ≤ 2 s。
 - 协议没变（`estate:*` 与 URL 参数照旧），查看器不用改。`map/estate/closet/` 没动。
+
+## 2026-09-27 本机：E4 面板 UI 审计 → 庄园页要配合的几条（`docs/ui-audit.md`）
+五个人设（手机、桌面剧情、视觉、无障碍、弱网）实测后汇总在 `docs/ui-audit.md`，查看器侧的「现在修」已提交。庄园页（`map/estate/`，云端）请配合下面几条：
+1. **三维库路径**：主页面已经用 `./vendor/`（相对路径）了，很好，本机就不再另放 `map/vendor/three/`。`closet/index.html` 仍写死 `cdn.jsdelivr.net/npm/three@0.160.0`，合并进主模型（C6）时请一起改成相对路径（它还用到 RoundedBoxGeometry、RectAreaLightUniformsLib、Reflector、BufferGeometryUtils，要补进 `estate/vendor/jsm/`）。
+2. **回传失败**：页面自己的 `fail(why)`（8 秒超时、脚本 error、unhandledrejection）里加一句 `parent.postMessage({ type: 'estate:fail', reason: String(why) }, '*')`（嵌入时）。查看器收到后立刻显示「重试 / 看平面图」，并在本次会话里不再自动跳庄园。查看器现在也在 srcdoc 里注入了一段兜底监听，只能抓到模块脚本加载失败；超时和运行时错误要靠页面自己回传。
+3. **viewport**：去掉 `maximum-scale=1, user-scalable=no`（axe critical，WCAG 1.4.4）。捏合已经由 `touch-action: none` 加 `preventDefault` 接管，不会冲突。
+4. **焦点框**：`#floors button`、`#zoom button`、`#tour button`、`#loading .fail button` 都用了 `all: unset`，把焦点环也清掉了。请补 `:focus-visible { outline: 2px solid #63b4be; outline-offset: 2px }`（浅色 `#2d6c75`），或者不用 `all: unset`。
+5. **减少动效**：`main.js` 已经读 `REDUCED`，请确认楼层飞行补间在 reduce 时时长为 0（无障碍报告实测 reduce 下补间照常）。
+6. 顺手的几条（排到 E5 也行）：
+   - 房间卡去掉「世界书 alias」一行，只在 `?debug=1` 下显示
+   - 在庄园里 PageUp / PageDown 换庄园楼层，Shift + PageUp / PageDown（或 `[ ]`）再交给查看器切天城层
+   - 画布加 `role="img"` 和 `aria-label`；加一个「本层房间」按钮列表，给键盘和读屏用
+   - 加载完把 `#loading` 设为 `hidden`
+   - 低端机：像素比上限 1.5，阴影用 Basic 或关闭（弱网报告在 SwiftShader 下测到主线程长任务 17–45 s）
+7. **E5 视觉统一**：规范 v1 在 `docs/ui-audit.md` 第三部分，里面有 `map/ui/tokens.css` 的草案。庄园页的对齐方式见 3.5：变量改名、楼层条改纵向分段、房间卡和标签的规格。E5 开工时本机会再发 NOTES。

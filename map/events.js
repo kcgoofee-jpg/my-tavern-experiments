@@ -19,8 +19,11 @@ const TCEvents = (() => {
   const look = c => LOOK[c] || LOOK.其他;
   const lk = e => e.ch && e.color ? [e.ch, e.color] : look(e.cat);   // events.mjs 给的图标字与大类颜色优先（v2：9 个大类 = 9 种颜色）
   // 图例与筛选（v2）：9 个大类的颜色；点一个大类 = 在地图、列表、层计数里隐藏它（记在本机）。大类表在 events.mjs 加载后取，加载前用这份
-  let GROUPS = { 空防: '#d9a441', 气候: '#7fd6ff', 治安: '#3d7dff', 政治: '#6f9be0', 媒体: '#3de0ff', 民生: '#e8d08a', 军事: '#a3b18a', 灾害: '#ff5a2a', 人物: '#d7a6e8' };
+  let GROUPS = { 空防: '#d9a441', 气候: '#7fd6ff', 治安: '#3d7dff', 政治: '#6f9be0', 媒体: '#d03ca8', 民生: '#e8d08a', 军事: '#a3b18a', 灾害: '#ff5a2a', 人物: '#d7a6e8' };
   let ORDER = Object.keys(GROUPS);
+  // 大类形状（色弱也分得清，E4 N30）：与 events.mjs 的 SHAPES 一致，模块加载后以模块为准
+  let SHAPES = { 空防: 'hex', 气候: 'circle', 治安: 'square', 政治: 'penta', 媒体: 'diamond', 民生: 'octa', 军事: 'tri-down', 灾害: 'tri', 人物: 'ring', 其他: 'square' };
+  const shp = g => 'sh-' + (SHAPES[g] || 'square');
   const OFF_KEY = 'edenMapEvOff';
   const off = new Set((() => { try { return JSON.parse(localStorage.getItem(OFF_KEY)) || []; } catch (e) { return []; } })());
   const grpOf = e => e.grp || '其他';
@@ -32,7 +35,8 @@ const TCEvents = (() => {
     tc_low: [[/7号井|七号井|井口/, 4.6, -6.9], [/工业|工厂|货运|铁路|厂/, 7, -7.5], [/贫民|棚户|城寨|城中村/, -6, 1], [/哨所|前沿/, -12.3, -6.6], [/施粥|旧教堂/, 8.4, .5], [/拳场|磨坊/, -5.8, -3.3], [/地基/, 0, 0]],
     tc_upper: [],
   };
-  let items = [], floor = 0, feedItems = [], shown = true, flyId = null, open = false, EVM = null;
+  let items = [], floor = 0, feedItems = [], shown = true, flyId = null, open = false, EVM = null, lastFly = null, glitchLv = 0;
+  const said = new Set();   // 已经播报过的新事件（读屏）
   const markersOf = {};                                    // 地图 id → 点位数据（按需加载）
   const hash = s => { let h = 2166136261; for (const c of String(s)) h = Math.imul(h ^ c.codePointAt(0), 16777619); return (h >>> 0) / 4294967296; };
   const all = () => items.concat(feedItems);
@@ -41,8 +45,19 @@ const TCEvents = (() => {
   const live = e => !e.closed && e.tier !== 'fade';
 
   // 地点 → 坐标：①显式坐标 ②该层地图的地标名 / 别名（最长匹配）③城区关键词 ④只知道层：按地点哈希放在中部一圈，标成「位置不详」
+  // 天城外（世界图）的地名 → 世界图坐标：地点、封地、国名里最长的匹配（E4 N15）
+  function worldPos(place) {
+    if (!place || typeof M === 'undefined' || !M) return null;
+    let best = null;
+    const see = (name, x, y) => { if (name && (place.includes(name) || (name.length >= 2 && name.includes(place))) && (!best || name.length > best.len)) best = { len: name.length, x, y }; };
+    for (const p of [...(M.places || []), ...(M.fiefs || [])]) see(p.name, p.x, p.y);
+    for (const r of M.realms || []) see(r.name, r.c?.[0], r.c?.[1]);
+    if (!best || best.x == null) return null;
+    const [nx, ny] = toImg(best.x, best.y); return { nx, ny, marker: true };
+  }
   function pos(e) {
     const mid = mapOf(e), m = REG.maps[mid];
+    if (m?.kind === 'world') return worldPos(e.place) || { nx: .5, ny: .5, approx: true, none: true };
     const xy = (e.xy || '').split(/[,，]/).map(Number);
     if (xy.length === 2 && xy.every(v => v >= 0 && v <= 1)) return { nx: xy[0], ny: xy[1] };
     let best = null;
@@ -61,10 +76,15 @@ const TCEvents = (() => {
   // ---------- 输入 ----------
   // 卡内脚本发来：{ items, floor, fly }（旧版云端协议 { list, last } 也兼容：交给 events.mjs 重新解析）
   async function set(d) {
+    const before = new Set(all().map(e => e.id));
     if (Array.isArray(d.items)) { items = d.items; floor = d.floor || 0; }
     else if (Array.isArray(d.list)) { const m = await mod(); if (!m) return;
       floor = d.last || 0; items = m.collect(d.list.map(o => ({ floor: o.mes ?? floor, text: tagText(o) })), floor); }
     if (d.fly) flyId = d.fly;
+    // 读屏播报：新出现的进行中事件（每条只播一次）
+    const fresh = all().filter(e => live(e) && (e.isNew || (before.size && !before.has(e.id))) && !said.has(e.id));
+    for (const e of fresh) said.add(e.id);
+    if (fresh.length && typeof announce === 'function') announce(T('ev.sr_new', '新增 {n} 起事态：', { n: fresh.length }) + fresh.slice(0, 3).map(e => `${tn(e.cat)}·${e.text || ''}（${where(e)}）`).join('；'));
     await loadMarkers(); render(); renderBar(); badges();
     if (flyId && cur && viewer.world.getItemCount() && flyTo(flyId)) flyId = null;
   }
@@ -86,24 +106,29 @@ const TCEvents = (() => {
   let layerEls = [];
   function render() {
     if (!viewer || !cur || !viewer.world.getItemCount()) return;
-    for (const el of layerEls) viewer.removeOverlay(el); layerEls = [];
+    for (const el of layerEls) { if (typeof untrack === 'function') untrack(el); viewer.removeOverlay(el); } layerEls = [];   // 追踪器先 destroy，不留监听（E4 N11）
     if (REG.maps[cur]?.kind === 'estate') return;   // 庄园剖面（iframe）不画事态点
-    if (REG.maps[cur]?.kind === 'world') { worldBadge(); applyGlitch(); updateToggle(); return; }
-    const here = vis().filter(e => mapOf(e) === cur && e.tier !== 'fade').slice(0, 50);    // 手机上叠加层不超过 50 个
+    const world = REG.maps[cur]?.kind === 'world';
+    if (world) worldBadge();
+    // 正在飞往的那一条即使已淡出也画出来，落点上不会空（E4 N17）；世界图只画天城外的事件（E4 N15）
+    const here = vis().filter(e => mapOf(e) === cur && (e.tier !== 'fade' || e.id === lastFly)).slice(0, 50);    // 手机上叠加层不超过 50 个
     const seen = {};
     for (const e of here) {
-      const p = pos(e), k = `${p.nx.toFixed(3)},${p.ny.toFixed(3)}`, n = seen[k] = (seen[k] || 0) + 1;   // 同一地点多条：绕一小圈错开
+      const p = pos(e); if (p.none) continue;
+      const k = `${p.nx.toFixed(3)},${p.ny.toFixed(3)}`, n = seen[k] = (seen[k] || 0) + 1;   // 同一地点多条：绕一小圈错开
       const a = n * 2.4, r = n > 1 ? .006 * Math.sqrt(n) : 0, [ch, color] = lk(e);
       const el = document.createElement('div');
-      el.className = `ev ${e.closed ? 'ev-cleared' : 'ev-active'} sev${Math.max(1, e.lvl)} tier-${e.tier}${p.approx ? ' approx' : ''}${e.isNew && live(e) ? ' ev-new' : ''}`;
+      el.className = `ev ${shp(grpOf(e))} ${e.closed ? 'ev-cleared' : 'ev-active'} sev${Math.max(1, e.lvl)} tier-${e.tier}${p.approx ? ' approx' : ''}${e.isNew && live(e) ? ' ev-new' : ''}`;
       el.style.setProperty('--c', color); el.dataset.ev = e.id;
-      el.innerHTML = `<i>${esc(ch)}</i><b>${esc(e.text || e.cat)}</b>`;
+      el.innerHTML = `<i aria-hidden="true">${esc(ch)}</i><b>${esc(e.text || e.cat)}</b>`;
       el.title = `${tn(e.cat)} · ${e.place || tn(e.layer)}`;
-      new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => card(e, el) });
+      const label = `${tn(e.cat)}${e.closed ? '（' + T('ev.cleared', '已解除') + '）' : ''} · ${e.text || ''} · ${where(e)}`;
+      if (typeof trackEl === 'function') trackEl(el, () => card(e, el), label); else new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => card(e, el) });
       placeN(el, p.nx + Math.cos(a) * r, p.ny + Math.sin(a) * r * 1.6, OpenSeadragon.Placement.CENTER); layerEls.push(el);
     }
     document.body.classList.toggle('noevents', !shown);
     updateToggle(); applyGlitch();
+    if (typeof tabOrder === 'function') tabOrder();
   }
   function card(e, el) {
     document.querySelectorAll('.ev.hot').forEach(x => x.classList.remove('hot')); el?.classList.add('hot');
@@ -122,11 +147,21 @@ const TCEvents = (() => {
   }
   function flyTo(id) {
     const e = all().find(x => x.id === id), mid = e && mapOf(e);
-    if (!e || !REG.maps[mid] || REG.maps[mid].status === 'planned' || REG.maps[mid].kind === 'world') return !!e;
+    if (!e || !REG.maps[mid] || REG.maps[mid].status === 'planned') return !!e;
+    // 飞之前收起列表、关掉卡片：落点不被挡住（E4 N14）
+    if (open) { open = false; renderBar(); }
+    if (typeof closeCard === 'function') closeCard();
+    lastFly = id;
     if (mid !== cur) { flyId = id; go(mid); return false; }
-    const p = pos(e), w = .22, h = w * ($('#osd').clientHeight / Math.max(1, $('#osd').clientWidth));
+    const p = pos(e);
+    if (p.none) { card(e, null); return true; }   // 世界图上认不出的地名：只开卡片
+    if (!document.querySelector(`.ev[data-ev="${CSS.escape(id)}"]`)) render();   // 已淡出的事件：补画出来
+    const W = Math.max(1, $('#osd').clientWidth), H = $('#osd').clientHeight, w = REG.maps[mid].kind === 'world' ? .3 : .22, h = w * (H / W);
+    // 落点放在「卡片以外的可见区域」中心：桌面扣掉右侧卡片，手机扣掉底部抽屉（约 45%），再扣掉底部横条
+    const nar = innerWidth <= 640, occR = nar ? 0 : Math.min(334, W * .5), occB = nar ? H * .45 : 44;
+    const ox = occR / 2 / W * w, oy = occB / 2 / H * h;
     userMoved = true;
-    const vp = viewer.viewport, target = new OpenSeadragon.Rect(p.nx - w / 2, p.ny * aspect - h / 2, w, h), now = vp.getBounds(true);
+    const vp = viewer.viewport, target = new OpenSeadragon.Rect(p.nx + ox - w / 2, p.ny * aspect + oy - h / 2, w, h), now = vp.getBounds(true);
     // 飞行：离得远就先拉远（把起点和目标一起框进来），再俯冲下去；近的直接平移。落地时雷达扫描 + 定位环收缩
     const far = Math.hypot(now.x + now.width / 2 - p.nx, now.y + now.height / 2 - p.ny * aspect) > Math.max(now.width, w) * .9;
     clearTimeout(flyT);
@@ -138,7 +173,8 @@ const TCEvents = (() => {
     return true;
   }
   let flyT = 0;
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rmq = matchMedia('(prefers-reduced-motion: reduce)');
+  let reduce = rmq.matches; rmq.addEventListener?.('change', () => { reduce = rmq.matches; });   // 系统设置中途改了也生效（E4 N24）
   function land(e, p) {
     card(e, document.querySelector(`.ev[data-ev="${CSS.escape(e.id)}"]`));
     if (reduce) return;
@@ -154,16 +190,17 @@ const TCEvents = (() => {
   function renderBar() {
     const bar = $('#evbar'), every = all().filter(e => REG.maps[mapOf(e)]), list = every.filter(e => !off.has(grpOf(e)));
     bar.hidden = !every.length || !shown; if (bar.hidden) return;
-    if (!grpLoaded) { grpLoaded = true; mod().then(m => { if (m?.GROUPS) { GROUPS = m.GROUPS; ORDER = m.GROUP_ORDER || Object.keys(m.GROUPS).filter(g => g !== '其他'); renderBar(); } }); }   // 有事件时才取大类表
+    if (!grpLoaded) { grpLoaded = true; mod().then(m => { if (m?.GROUPS) { GROUPS = m.GROUPS; ORDER = m.GROUP_ORDER || Object.keys(m.GROUPS).filter(g => g !== '其他'); if (m.SHAPES) SHAPES = m.SHAPES; renderBar(); } }); }   // 有事件时才取大类表
     const n = list.filter(live).length, fresh = list.filter(e => e.isNew).length, hid = ORDER.filter(g => off.has(g)).length + (off.has('其他') ? 1 : 0);
+    bar.querySelector('button').setAttribute('aria-expanded', open ? 'true' : 'false');
     bar.querySelector('button').innerHTML = `<i class="dot"></i><span>${esc(n ? T('ev.bar_live', '{n} 起进行中', { n }) : T('ev.bar_none', '暂无进行中'))} · ${esc(T('ev.bar_total', '共 {n} 起事态', { n: list.length }))}${hid ? ' · ' + esc(T('ev.filtered', '已隐藏 {n} 类', { n: hid })) : ''}</span>${fresh ? `<span class="new">${esc(T('ev.bar_new', '{n} 条新', { n: fresh }))}</span>` : ''}<span class="tog">${esc(open ? T('ev.collapse', '收起 ▾') : T('ev.expand', '展开 ▴'))}</span>`;
     bar.dataset.open = open ? '1' : '0';
     // 图例：9 个大类都列出（没有事件的变淡），数字 = 该类条数；点一下隐藏 / 恢复
     const cnt = {}; for (const e of every) cnt[grpOf(e)] = (cnt[grpOf(e)] || 0) + 1;
     const gs = ORDER.concat(cnt.其他 ? ['其他'] : []);
-    bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${GROUPS[g] || '#cfd8e0'}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join('')
+    bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${GROUPS[g] || '#cfd8e0'}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i class="shp ${shp(g)}"></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join('')
       + `<small>${esc(T('ev.legend_hint', '点大类可隐藏 / 显示'))}</small>`;
-    bar.querySelector('ol').innerHTML = list.map(e => `<li data-id="${esc(e.id)}" class="tier-${e.tier}${e.isNew ? ' isnew' : ''}" style="--c:${lk(e)[1]}"><i></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(T('ev.cleared', '已解除')) : ''} <em>${esc(where(e))}</em></b><em>${esc(e.feed ? T('ev.feed', '数据源') : T('ev.floor', '第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${e.src ? ' —— ' + esc(e.src) : ''}</small></li>`).join('');
+    bar.querySelector('ol').innerHTML = list.map(e => `<li data-id="${esc(e.id)}" tabindex="0" role="button" class="tier-${e.tier}${e.isNew ? ' isnew' : ''}${e.closed ? ' closed' : ''}" style="--c:${lk(e)[1]}"><i class="shp ${shp(grpOf(e))}"></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(T('ev.cleared', '已解除')) : ''} <em>${esc(where(e))}</em></b><em>${esc(e.feed ? T('ev.feed', '数据源') : T('ev.floor', '第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${e.src ? ' —— ' + esc(e.src) : ''}</small></li>`).join('');
   }
   function updateToggle() {
     let tg = document.getElementById('tgEvents');
@@ -183,6 +220,8 @@ const TCEvents = (() => {
       (/全城|天城/.test(e.scope) || mapOf(e) === cur || (e.scope && MAP_OF[e.scope.replace(/\s/g, '').slice(0, 2)] === cur))).map(e => Math.max(1, e.lvl)));
     document.body.dataset.glitch = lv || '';
     $('#glitchNote').hidden = !lv; $('#glitchNote').textContent = T('ev.glitch', '⚠ 数据链路受扰');
+    if (lv && !glitchLv && typeof announce === 'function') announce(T('ev.glitch', '⚠ 数据链路受扰').replace(/^⚠\s*/, ''));   // 花屏开始时播报一次
+    glitchLv = lv;
   }
   // 世界图：天城内部未解除的事件汇成天城标记上的一个数字角标
   function worldBadge() {
@@ -192,14 +231,31 @@ const TCEvents = (() => {
   }
 
   const css = `
-  .ev{--c:#fff;display:flex;align-items:center;gap:4px;transform:translate(-11px,-11px);pointer-events:auto;cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
-  .ev i{width:20px;height:20px;border-radius:5px;transform:rotate(0);display:grid;place-items:center;font:700 11px/1 'PingFang SC',sans-serif;font-style:normal;color:#0b0b0b;
-    background:linear-gradient(145deg,#fff 0,var(--c) 45%,color-mix(in srgb,var(--c) 60%,#000) 100%);box-shadow:0 0 0 2px rgba(0,0,0,.55),0 0 8px var(--c);position:relative}
+  .ev{--c:#fff;position:relative;display:flex;align-items:center;gap:4px;transform:translate(-11px,-11px);pointer-events:auto;cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
+  /* 图标 = 大类色的形状底（i::before，按大类裁成圆 / 方 / 菱 / 三角……，色弱也分得清）+ 类型字；描边和光晕在 i 上，不被裁掉 */
+  .ev i{width:20px;height:20px;display:grid;place-items:center;font:700 11px/1 'PingFang SC',sans-serif;font-style:normal;color:#0b0b0b;position:relative;z-index:0;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 4px var(--c))}
+  .ev i::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:4px;background:linear-gradient(145deg,#fff 0,var(--c) 45%,color-mix(in srgb,var(--c) 60%,#000) 100%)}
   .ev.sev2 i{width:22px;height:22px}.ev.sev3 i{width:25px;height:25px;font-size:13px}
+  .ev.sh-circle i::before,.ev.sh-ring i::before,i.shp.sh-circle,i.shp.sh-ring{border-radius:50%}
+  .ev.sh-ring i::before{box-shadow:inset 0 0 0 2.5px rgba(0,0,0,.55)} i.shp.sh-ring{box-shadow:inset 0 0 0 2px rgba(0,0,0,.6)}
+  .ev.sh-square i::before,i.shp.sh-square{border-radius:3px}
+  .ev.sh-diamond i::before,i.shp.sh-diamond{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);inset:-3px}
+  .ev.sh-tri i::before,i.shp.sh-tri{clip-path:polygon(50% 0,100% 100%,0 100%);inset:-5px -4px -1px}
+  .ev.sh-tri i{place-items:end center;padding-bottom:1px;box-sizing:border-box}
+  .ev.sh-tri-down i::before,i.shp.sh-tri-down{clip-path:polygon(0 0,100% 0,50% 100%);inset:-1px -4px -5px}
+  .ev.sh-tri-down i{place-items:start center;padding-top:1px;box-sizing:border-box}
+  .ev.sh-hex i::before,i.shp.sh-hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);inset:0 -3px}
+  .ev.sh-octa i::before,i.shp.sh-octa{clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}
+  .ev.sh-penta i::before,i.shp.sh-penta{clip-path:polygon(0 0,100% 0,100% 62%,50% 100%,0 62%);inset:0 0 -3px}
+  .ev.sh-penta i{place-items:start center;padding-top:3px;box-sizing:border-box}
+  body:not([data-map="tc_mid"]) .ev i{filter:drop-shadow(0 0 1px #000) drop-shadow(0 1px 1px rgba(0,0,0,.6))}   /* 光晕只在中层（规范 3.4） */
+  /* 触屏：图标周围 44×44 的透明热区（E4 N25） */
+  @media (pointer:coarse),(max-width:640px){.ev::before{content:'';position:absolute;left:-12px;top:50%;width:44px;height:44px;margin-top:-22px}
+    #evbar>button{min-height:44px} #evbar li{min-height:40px} .evleg button{padding:8px 10px}}
   .ev b{font:600 11px/1.3 'PingFang SC',sans-serif;color:#fff;background:rgba(8,10,14,.78);padding:1px 6px;border-radius:3px;border-left:2px solid var(--c);white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis}
   .ev-new i::after{content:'';position:absolute;inset:-5px;border-radius:7px;border:2px solid var(--c);animation:evpulse 1.6s ease-out 5;will-change:transform,opacity}
   .ev-new.sev3 i::after{animation-duration:.9s;animation-iteration-count:9}
-  .ev.tier-after{opacity:.6}.ev-cleared{opacity:.45}.ev-cleared i{background:#777;box-shadow:0 0 0 2px rgba(0,0,0,.55)}
+  .ev.tier-after{opacity:.6}.ev-cleared{opacity:.45}.ev-cleared i::before{background:#777}.ev-cleared i{filter:drop-shadow(0 0 1px #000)}
   .ev.approx i{outline:1px dashed rgba(255,255,255,.6);outline-offset:3px}
   .ev.hot i{outline:2px solid #fff;outline-offset:3px}
   body.far .ev b{display:none} body.noevents .ev{display:none}
@@ -213,27 +269,29 @@ const TCEvents = (() => {
   @keyframes evradar{0%{transform:scale(.1);opacity:.9}100%{transform:scale(1);opacity:0}}
   @keyframes evlock{0%{transform:scale(2.4) rotate(45deg);opacity:0}60%{opacity:1}100%{transform:scale(.45) rotate(0);opacity:0}}
   @keyframes evpulse{from{transform:scale(1);opacity:.9}to{transform:scale(2.2);opacity:0}}
-  #evbar{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:6;max-width:min(460px,calc(100% - 16px));width:max-content;background:rgba(13,17,23,.92);border:1px solid rgba(240,138,36,.6);border-radius:12px;font-size:12px;color:#e6edf3;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+  /* 横条跟随主题与层：底、字、次要字、分隔线用查看器的变量（E4 N29 最小修正；橙色描边与「新」留到 E5） */
+  #evbar{--ev-muted:var(--muted,#8b949e);position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:6;max-width:min(460px,calc(100% - 16px));width:max-content;background:var(--panel,rgba(13,17,23,.92));border:1px solid rgba(240,138,36,.6);border-radius:12px;font-size:12px;color:var(--ink,#e6edf3);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+  #evbar>button:focus-visible,#evbar li:focus-visible{outline:2px solid var(--focus,#63b4be);outline-offset:-2px;border-radius:8px}
   #evbar[hidden]{display:none}
   #evbar>button{all:unset;box-sizing:border-box;display:flex;gap:8px;align-items:center;width:100%;padding:6px 12px;cursor:pointer}
   #evbar>button:active{opacity:.7}
   #evbar .dot{width:8px;height:8px;transform:rotate(45deg);background:#f08a24;flex:none}
-  #evbar .new{color:#f08a24;font-weight:700;white-space:nowrap} #evbar .tog{margin-left:auto;color:#8b949e;white-space:nowrap}
+  #evbar .new{color:#f08a24;font-weight:700;white-space:nowrap} #evbar .tog{margin-left:auto;color:var(--ev-muted);white-space:nowrap}
   #evbar ol{list-style:none;margin:0;padding:0 6px 6px;max-height:38vh;overflow-y:auto}
   #evbar[data-open="0"] ol,#evbar[data-open="0"] .evleg{display:none}
   .evleg{display:flex;flex-wrap:wrap;gap:4px;padding:2px 8px 6px;align-items:center}
-  .evleg button{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:10px;border:1px solid rgba(255,255,255,.14);font-size:11px;line-height:16px;cursor:pointer;color:#e6edf3;white-space:nowrap}
-  .evleg button i{width:8px;height:8px;border-radius:2px;background:var(--c);flex:none}
-  .evleg button em{font-style:normal;color:#8b949e}
+  .evleg button{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:10px;border:1px solid var(--line,rgba(255,255,255,.14));font-size:11px;line-height:16px;cursor:pointer;color:var(--ink,#e6edf3);white-space:nowrap}
+  .evleg button i{width:9px;height:9px;border-radius:2px;background:var(--c);flex:none}
+  .evleg button em{font-style:normal;color:var(--ev-muted)}
   .evleg button.none{opacity:.45}.evleg button.off{opacity:.35;text-decoration:line-through}.evleg button.off i{background:transparent;box-shadow:inset 0 0 0 1px var(--c)}
   .evleg button:hover{border-color:var(--c)}.evleg button:active{opacity:.6}.evleg button:focus-visible{outline:2px solid var(--c);outline-offset:1px}
-  .evleg small{color:#8b949e;font-size:10.5px;margin-left:2px}
-  #evbar li{display:grid;grid-template-columns:12px 1fr auto;gap:2px 8px;align-items:baseline;padding:6px;border-top:1px solid rgba(255,255,255,.08);cursor:pointer}
-  #evbar li:hover{background:rgba(255,255,255,.05)} #evbar li:active{opacity:.6}
-  #evbar li i{width:8px;height:8px;transform:rotate(45deg);background:var(--c);align-self:center}
-  #evbar li b{font-weight:600} #evbar li small{color:#8b949e;font-size:11px;grid-column:2/-1}
-  #evbar li.tier-fade{opacity:.5} #evbar li.isnew b::after{content:' NEW';color:#f08a24;font-size:10px}
-  #evbar li em{font-style:normal;color:#8b949e;font-size:11px}
+  .evleg small{color:var(--ev-muted);font-size:11px;margin-left:2px}
+  #evbar li{display:grid;grid-template-columns:12px 1fr auto;gap:2px 8px;align-items:baseline;padding:6px;border-top:1px solid var(--line,rgba(255,255,255,.08));cursor:pointer}
+  #evbar li:hover{background:var(--hover,rgba(255,255,255,.05))} #evbar li:active{opacity:.6}
+  #evbar li i{width:10px;height:10px;background:var(--c);align-self:center} #evbar li.closed i{background:#888}
+  #evbar li b{font-weight:600} #evbar li small{color:var(--ev-muted);font-size:11px;grid-column:2/-1}
+  #evbar li.tier-fade{opacity:.5} #evbar li.isnew b::after{content:' NEW';color:#f08a24;font-size:11px}
+  #evbar li em{font-style:normal;color:var(--ev-muted);font-size:11px}
   @media (max-width:640px){body #evbar{left:96px;right:8px;transform:none;width:auto;max-width:none;bottom:calc(8px + env(safe-area-inset-bottom));z-index:9} body #evbar ol{max-height:34vh}}
   #glitchNote{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;padding:3px 10px;border-radius:6px;background:rgba(6,20,26,.85);border:1px solid #3de0ff;color:#3de0ff;font:600 12px/1.5 ui-monospace,Menlo,monospace;text-shadow:-1px 0 #ff3d9a,1px 0 #3de0ff;pointer-events:none}
   #glitchNote[hidden]{display:none}
@@ -252,7 +310,10 @@ const TCEvents = (() => {
   @keyframes glshift{0%,80%,100%{transform:none}82%{transform:translate(-6px,1px)}86%{transform:translate(4px,-2px) skewX(-2deg)}90%{transform:translate(-2px,0)}}
   @keyframes gltear{0%,78%{opacity:0}80%{opacity:1;background-position:0 0,0 10%}86%{opacity:1;background-position:0 3px,0 55%}92%{opacity:1;background-position:0 1px,0 85%}96%,100%{opacity:0}}
   @keyframes glmask{0%,80%{opacity:0}82%{opacity:.4;-webkit-mask-position:0 0;mask-position:0 0}90%{opacity:.4;-webkit-mask-position:0 40%;mask-position:0 40%}94%,100%{opacity:0}}
-  @media (prefers-reduced-motion:reduce){body[data-glitch] #osd,body[data-glitch] #stage::after,body[data-glitch] #stage::before,.ev-new i::after{animation:none}}`;
+  /* 减少动态效果 / 设置里「关闭花屏特效」：花屏动画与滤镜全停（!important：原规则优先级更高，之前 reduce 只停掉了马赛克，E4 N24），文字提示照常 */
+  @media (prefers-reduced-motion:reduce){body[data-glitch] #osd,body[data-glitch] #stage::after,body[data-glitch] #stage::before,.ev-new i::after{animation:none!important}body[data-glitch] #osd{filter:none!important}}
+  body.nofx[data-glitch] #osd,body.nofx[data-glitch] #stage::after,body.nofx[data-glitch] #stage::before{animation:none!important;filter:none!important}
+  body.nofx[data-glitch] .mk .lab{text-shadow:none}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
   function init() {
@@ -261,12 +322,15 @@ const TCEvents = (() => {
     $('#evbar .evleg').addEventListener('click', e => { const b = e.target.closest('button[data-g]'); if (!b) return;
       const g = b.dataset.g; off.has(g) ? off.delete(g) : off.add(g); try { localStorage.setItem(OFF_KEY, JSON.stringify([...off])); } catch (err) {}
       render(); renderBar(); badges(); });
+    $('#evbar > button').setAttribute('aria-controls', 'evlist'); $('#evbar ol').id = 'evlist';
     $('#evbar > button').addEventListener('click', () => { open = !open; renderBar(); });
     $('#evbar ol').addEventListener('click', e => { const li = e.target.closest('li'); if (li) flyTo(li.dataset.id); });
+    $('#evbar ol').addEventListener('keydown', e => { const li = e.target.closest('li'); if (li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); flyTo(li.dataset.id); } });
     if (coarse) document.body.classList.add('coarse');
   }
   // 层切换器上的事态数：某张地图上未解除的事件条数（查看器的 updateLayerBadges 读取）
   const countOn = id => vis().filter(e => mapOf(e) === id && live(e)).length;
   const badges = () => { if (typeof updateLayerBadges === 'function') updateLayerBadges(); };
-  return { init, set, render: afterOpen, pollFeeds, flyTo, countOn, get events() { return all(); } };
+  const collapse = () => { if (!open) return; open = false; if ($('#evbar')) renderBar(); };
+  return { init, set, render: afterOpen, pollFeeds, flyTo, countOn, collapse, isOpen: () => open && !$('#evbar')?.hidden, get events() { return all(); } };
 })();

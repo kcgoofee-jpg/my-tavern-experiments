@@ -97,9 +97,10 @@ tc_city.build_roof_kit('city', kit, cmat, td.city_mat('roofmat', .5))
 TWR = {(round(tx, 3), round(ty, 3)): tz for tx, ty, tz in kit['towers']}
 EQ, EQC, EQR, WT, WTC, GARD, GRR, GTR, PADS, PADR, PADL = [], [], [], [], [], [], [], [], [], [], []
 for j, (i, top) in enumerate(zip(idx, tops)):
-    b = city.b[i]; x, y, w, d, rot = b['obb']; hgt = top - ZG; a = b['a']; wc = float(bw_core[j])
+    b = city.b[i]; x, y, w, d, rot = tc_city.top_obb(b); hgt = top - ZG; a = b['a'] if 'real' not in b else w * d; wc = float(bw_core[j])
     if a < .002: continue
-    zt = TWR.get((round(b['cx'], 3), round(b['cy'], 3))); inner = .2 if zt is not None else .32; zt = top if zt is None else zt
+    zt = TWR.get((round(b['cx'], 3), round(b['cy'], 3))); inner = .2 if zt is not None else .32
+    top = tc_city.roof_top(b, top); zt = top if zt is None else zt       # 真实楼：放在最高一级（够大的）屋面上
     cs, sn = math.cos(rot), math.sin(rot); at = lambda u, v: (x + u * cs - v * sn, y + u * sn + v * cs)
     base = np.array(cols[j]) * 1.0
     def spot(fw, fd): return at(_srng.uniform(-inner, inner) * w * (1 - fw), _srng.uniform(-inner, inner) * d * (1 - fd))
@@ -192,6 +193,8 @@ tick(f'street: lamps {len(lamps)}, cars {len(cars)}')
 strips, srot, scol, signs, sgrot, sigc, holo, hrot, holc, spill = [], [], [], [], [], [], [], [], [], []
 for i, top in zip(idx, tops):
     b = city.b[i]; x, y, w, d, rot = b['obb']; wgt = glow_w(b['cx'], b['cy']); nd = dval(b['cx'], b['cy'], NEON_DF)   # nd：城区的霓虹底数（外围几乎为零）
+    rtop = tc_city.roof_top(b, top)
+    if 'real' in b: top = ZG + (top - ZG) * .3                        # 真实楼：招牌只挂在退台以下的外墙上（上面几级往里收，挂出去会悬空）
     u = np.array([math.cos(rot), math.sin(rot)]); v = np.array([-u[1], u[0]]); c0 = np.array([x, y])
     (px, py, _), _d = corr_near(b['cx'], b['cy']); to = np.array([px - x, py - y]); to /= (np.linalg.norm(to) + 1e-9)
     faces = [(u, w / 2, v, d), (-u, w / 2, v, d), (v, d / 2, u, w), (-v, d / 2, u, w)]      # (外法线, 半宽, 切向, 面长)
@@ -205,7 +208,12 @@ for i, top in zip(idx, tops):
             signs.append((p[0], p[1], sz, L, z, z + .003)); sgrot.append(ta); sigc.append(pal[R.integers(2)])
         if R.random() < .2: spill.append((signs[-1][0], signs[-1][1], signs[-1][5] + .05, sigc[-1]))
     if R.random() < .02 * nd + .3 * wgt and flen > .04:                # 临街一侧的楼顶灯带
-        p = c0 + nrm * (half - .004); strips.append((p[0], p[1], flen * .9, .004, top + .006, top + .009)); srot.append(ta); scol.append(pal[0])
+        if 'real' in b:                                                 # 真实楼：贴着最高一级屋面临街那条边（tobb），高度是该级屋面
+            tx, ty, tw, td_, tr = b['tobb']; tu = np.array([math.cos(tr), math.sin(tr)]); tv = np.array([-tu[1], tu[0]])
+            tn, th_, tt, tl = max([(tu, tw / 2, tv, td_), (-tu, tw / 2, tv, td_), (tv, td_ / 2, tu, tw), (-tv, td_ / 2, tu, tw)], key=lambda f: float(f[0] @ to))
+            p = np.array([tx, ty]) + tn * (th_ - .004); strips.append((p[0], p[1], tl * .9, .004, rtop + .006, rtop + .009)); srot.append(math.atan2(tt[1], tt[0])); scol.append(pal[0])
+        else:
+            p = c0 + nrm * (half - .004); strips.append((p[0], p[1], flen * .9, .004, top + .006, top + .009)); srot.append(ta); scol.append(pal[0])
     if b['dk'] == 'commercial' and top > -1.9 and w * d > .006 and R.random() < .02 + .35 * wgt:   # 全息广告：只在商业区，楼顶竖立的窄屏（扫描线纹理）
         holo.append((x, y, w * .5, .004, top + .01, top + .07)); hrot.append(rot); holc.append((PINK, CYAN)[R.integers(2)])
 for x, y, *_ in city.along(.35, CORR):                                 # 商业街的彩色溢光：沿街一串点光，染亮路面与低层楼顶
@@ -233,7 +241,17 @@ for i, top in zip(idx, tops):
     wc = tc_city.core_w(city, b['cx'], b['cy'])
     if wc < .03: continue
     x, y, w, d, rot = b['obb']; u = np.array([math.cos(rot), math.sin(rot)]); v = np.array([-u[1], u[0]]); c0 = np.array([x, y])
-    if _crng.random() < .55 * wc:
+    if 'real' in b:                                                    # 真实楼（A5）：灯带沿最高一级屋面的真实轮廓，贴在该级屋面上（不按外接矩形、不悬空），
+        rz = tc_city.roof_top(b, top); P_ = b['top_p']; tw_, td2 = b['tobb'][2:4]   # 每条边一段连续的暗线（审阅：断续的亮框像选中框）
+        if _crng.random() < .5 * wc and tw_ * td2 > .002:
+            kb = wc * _crng.uniform(.08, .2); th = _crng.uniform(.002, .003)   # 草稿 1：.25–.6 仍像一圈选中框，再压暗、只亮一部分边
+            for a_, b_ in zip(P_, np.roll(P_, -1, 0)):
+                e_ = b_ - a_; L = float(np.hypot(*e_))
+                if L < .012 or _crng.random() < .55: continue
+                nin = np.array([-e_[1], e_[0]]) / L; p = (a_ + b_) / 2 + nin * .0015      # 压在女儿墙顶上（real_kit 的女儿墙高 .006）
+                crown.append((p[0], p[1], L * .92, th, rz + .006, rz + .0075)); crot_.append(math.atan2(e_[1], e_[0])); ccol_.append(CROWN * kb * _crng.uniform(.8, 1.05))
+        x, y = b['tobb'][:2]; w, d = b['tobb'][2:4]; top = rz
+    elif _crng.random() < .55 * wc:
         kb = wc * _crng.uniform(.4, 1.1)                               # 这栋楼的亮度
         th = _crng.uniform(.0025, .0055)                               # 灯带粗细
         for nrm, half, flen, ang, tan_ in ((v, d / 2, w, rot, u), (-v, d / 2, w, rot, u), (u, w / 2, d, rot + math.pi / 2, v), (-u, w / 2, d, rot + math.pi / 2, v)):

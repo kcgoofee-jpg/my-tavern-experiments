@@ -36,7 +36,9 @@ def main():
     if len(a.urls) == 1: content = f"import '{a.urls[0]}';\n"
     else:   # 依次尝试：前一个线路连不上（例如没梯子时的官方 CDN）就换下一个
         content = ("// 地图脚本：依次尝试各线路，加载成功就停\n(async () => {\n  for (const u of " + json.dumps(a.urls) +
-                   ") {\n    try { await import(u); return; } catch (e) { console.warn('[地图] 线路不可用，换下一个', u); }\n  }\n})();\n")
+                   ") {\n    try { await import(u); return; } catch (e) { console.warn('[地图] 线路不可用，换下一个', u); }\n  }\n"
+                   "  // 全部线路都失败：给一个提示，而不是悄悄没有悬浮按钮\n"
+                   "  try { (window.toastr || window.parent.toastr).warning('地图加载失败（网络连不上 CDN），稍后刷新重试', '世界地图'); } catch (e) {}\n})();\n")
     entry = {
         'type': 'script', 'enabled': True, 'name': a.name, 'id': str(uuid.uuid4()),
         'content': content, 'info': a.info,

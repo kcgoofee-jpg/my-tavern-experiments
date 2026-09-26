@@ -1,6 +1,6 @@
 // node tests/events.test.mjs —— 天城事态解析器单测
 import assert from 'node:assert/strict';
-import { parseMarks, collect, summarize, layerOf, tierOf, CATS, GROUPS, GROUP_ORDER, catOf, EXAMPLES } from '../map/tavern/events.mjs';
+import { parseMarks, collect, summarize, layerOf, tierOf, CATS, GROUPS, GROUP_ORDER, SHAPES, catOf, EXAMPLES } from '../map/tavern/events.mjs';
 
 const span = s => `<htm1fenge><div>…</div><span style="display:none">${s}</span></htm1fenge>`;
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
@@ -166,5 +166,30 @@ t('v2 上层府邸地名推断到上层', () => {
   for (const p of ['首相府', '将军官邸', '财团家族庄园', '大主教府邸', '庄园主联盟会所', '以太研究院']) {
     assert.equal(parseMarks(`⌖公开行程｜${p}｜1｜到访`)[0].layer, '上层', p); assert.equal(layerOf(p), '上层', p);
   }
+});
+t('首次出现就是已解除：记为已解除（灰色余波），不丢（E4 N16）', () => {
+  const tag = o => `<span style="display:none" data-tcmap="${o}"></span>`;
+  const items = collect([
+    { floor: 20, text: tag('类型=骚乱;地点=血肉磨坊;标题=拳场骚乱已控制;状态=已控制') },
+    { floor: 21, text: '⌖爆炸｜下层·货运站｜0｜货运站爆燃已扑灭' },
+    { floor: 22, text: '⌖火灾｜中层·霓虹街｜2｜起火' },
+  ], 22);
+  assert.equal(items.length, 3);
+  const riot = items.find(e => e.cat === '骚乱'), boom = items.find(e => e.cat === '爆炸');
+  assert.equal(riot.closed, true); assert.equal(riot.lvl, 0); assert.equal(riot.tier, 'after'); assert.equal(riot.count, 1); assert.equal(riot.first, 20);
+  assert.equal(boom.closed, true); assert.equal(boom.text, '货运站爆燃已扑灭');
+  assert.equal(items.find(e => e.cat === '火灾').closed, false);
+  // 之后同一地点再「发生中」= 新的一条进行中事件，已解除的那条保留
+  const again = collect([{ floor: 20, text: '⌖骚乱｜下层·血肉磨坊｜0｜已控制' }, { floor: 23, text: '⌖骚乱｜下层·血肉磨坊｜2｜再起冲突' }], 23);
+  assert.equal(again.length, 2); assert.deepEqual(again.map(e => e.closed), [false, true]);
+  // 老化规则不变：40 楼以前的已解除事件丢弃
+  assert.equal(collect([{ floor: 1, text: '⌖骚乱｜下层·血肉磨坊｜0｜已控制' }], 50).length, 0);
+  // 注入给模型的一句话不含已解除事件
+  assert.equal(summarize(items, '下层'), '');
+});
+t('色弱：媒体与气候拉开颜色，9 个大类各有形状（E4 N30）', () => {
+  assert.equal(GROUPS.媒体, '#d03ca8'); assert.notEqual(GROUPS.媒体, GROUPS.气候);
+  for (const g of GROUP_ORDER) assert.ok(SHAPES[g], g);
+  assert.equal(new Set(GROUP_ORDER.map(g => SHAPES[g])).size, GROUP_ORDER.length);
 });
 console.log(`\n${n} passed`);
