@@ -11,7 +11,7 @@
   - 中层、下层：未开始。
 - **发布流程**
   - 改 `VERSION` 和 `CHANGELOG.md` → 提交 → `git tag map-vX.Y.Z` 并推送 → 运行 `tools/build_card.sh`。
-  - 生成的卡覆盖 `~/Downloads/酒馆/角色卡/母畜庄园·地图版.png`。
+  - 生成 `~/Downloads/酒馆/角色卡/母畜庄园·地图版 v<版本>.png`，并删掉旧版本的卡。
 
 ## 经验
 1. **代码画出来的图元就是卡通风**：SVG/Canvas 画的「美术」两次被否。代码只做交互层，美术只来自渲染（Blender）或绘图工具。
