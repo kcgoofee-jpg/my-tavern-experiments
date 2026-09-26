@@ -225,9 +225,11 @@ def write_data(name, sc, co, markers, extra=None):
 def render(sc, OUT, label=''):
     tick('render start'); bpy.ops.render.render(write_still=True); tick('render done')
     print('WROTE', OUT, sc.render.resolution_x, sc.render.resolution_y, label)
-def glare(sc, threshold=1.0, size=7, mix=-.6):
+def glare(sc, threshold=1.0, size=7, mix=-.6, tight=None):
     """合成器光晕（Fog Glow）：发光体周围一圈柔光，夜景的真实感主要靠它。
     size 沿用 Blender 4 的含义（光晕半径约 2^size 像素，按 2000px 宽折算）；mix 为 4 的混合（-1 只要原图，0 各半）。
+    tight=(threshold, size, strength)：仅 Blender 5+，在大光晕之前先叠一层贴着发光体的小光晕（Bloom 型；霓虹灯管边缘的溢光），默认不加。
+    注意：Blender 5 的 Fog Glow 在 Size 小于约 0.3（即 size < 9.2）时几乎不向外扩散，要看得见光晕需要 size ≥ 9；Bloom 在小 Size 下就有贴边的光晕。
     Blender ≥ 5：合成器是节点组（scene.compositing_node_group），输出用组输出节点，Glare 的参数变成输入口。
     任何一步失败都只跳过光晕，不中断渲染。"""
     try:
@@ -239,7 +241,13 @@ def glare(sc, threshold=1.0, size=7, mix=-.6):
             gl.inputs['Threshold'].default_value = threshold
             gl.inputs['Size'].default_value = min(1.0, 2 ** size / 2000)   # 5 里是相对图宽的比例，与分辨率无关
             gl.inputs['Strength'].default_value = (mix + 1) / 2 * 2          # 4 的 mix → 5 的叠加强度（按样张目测对齐）
-            ng.links.new(rl.outputs['Image'], gl.inputs['Image']); ng.links.new(gl.outputs['Image'], out.inputs[0])
+            src = rl.outputs['Image']
+            if tight:
+                g2 = ng.nodes.new('CompositorNodeGlare'); g2.inputs['Type'].default_value = 'Bloom'; g2.inputs['Quality'].default_value = 'High'
+                g2.inputs['Threshold'].default_value = tight[0]; g2.inputs['Size'].default_value = min(1.0, 2 ** tight[1] / 2000)
+                g2.inputs['Strength'].default_value = tight[2]
+                ng.links.new(src, g2.inputs['Image']); src = g2.outputs['Image']
+            ng.links.new(src, gl.inputs['Image']); ng.links.new(gl.outputs['Image'], out.inputs[0])
             sc.compositing_node_group = ng
         else:                                                  # Blender 3.x / 4.x
             sc.use_nodes = True; nt = sc.node_tree
@@ -334,8 +342,8 @@ def ico_mesh(name, P, m=None, sz=.8, sub=1):
     o = bpy.data.objects.new(name, me); bpy.context.scene.collection.objects.link(o)
     if m: o.data.materials.append(m)
     return o
-def cyl_mesh(name, C, m=None, seg=20):
-    """C: (n, 5) = x, y, z0, r, h。批量圆柱（储罐、柱子），侧面 + 顶面（底面看不到）。"""
+def cyl_mesh(name, C, m=None, seg=20, colors=None):
+    """C: (n, 5) = x, y, z0, r, h。批量圆柱（储罐、柱子），侧面 + 顶面（底面看不到）。colors: (n, 3) 写入颜色属性 col（city_mat 读它）。"""
     C = np.asarray(C, np.float32).reshape(-1, 5); n = len(C)
     if n == 0: return None
     a = np.linspace(0, 2 * np.pi, seg, endpoint=False).astype(np.float32); ca, sa = np.cos(a), np.sin(a)
@@ -354,6 +362,10 @@ def cyl_mesh(name, C, m=None, seg=20):
     me.polygons.add(len(totals)); me.polygons.foreach_set('loop_start', starts); me.polygons.foreach_set('loop_total', totals)
     sm = np.tile(np.concatenate([np.ones(seg, bool), [False]]), n); me.polygons.foreach_set('use_smooth', sm)
     me.update(calc_edges=True)
+    if colors is not None:                                  # 每个圆柱 seg 个侧面（4 角）+ 顶面（seg 角）= 5·seg 个角
+        ca = me.color_attributes.new('col', 'FLOAT_COLOR', 'CORNER')
+        C4 = np.concatenate([np.broadcast_to(np.asarray(colors, np.float32).reshape(-1, 3), (n, 3)), np.ones((n, 1), np.float32)], 1)
+        ca.data.foreach_set('color', np.repeat(C4, 5 * seg, axis=0).ravel())
     o = bpy.data.objects.new(name, me); bpy.context.scene.collection.objects.link(o)
     if m: o.data.materials.append(m)
     return o

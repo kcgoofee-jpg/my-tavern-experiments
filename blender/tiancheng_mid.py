@@ -43,6 +43,7 @@ def in_ring(x, y):                                     # 环带内（军营）
     return abs(rr - 1) * RING['a'] < RING['w'] / 2 + .05 and RING['a0'] < ang < RING['a1']
 ZONES = zones + [in_ring]
 city.clip_roads(ZONES)                                 # 地标院落里的小路去掉，大路照常穿过
+city.clip_roads([(*CHECK, .45, .45)], keep_major=False)  # 检查点井口一圈连大路也断开（车不从井口上穿过）
 keep = city.keep(ZONES); idx = np.where(keep)[0]
 
 # ---------------- 城市：OSM 轮廓挤出，夜间配色（楼顶暗色）+ 楼顶部件 ----------------
@@ -70,49 +71,59 @@ CORR = {'trunk', 'primary', 'secondary', 'tertiary'}
 kd_c = city.road_kd(CORR)
 def corr_near(x, y): co_, _, d = kd_c.find((x, y, 0)); return co_, d
 # 城区决定夜景气质：核心区（曼哈顿中城）霓虹克制、楼里透出暖光；商业区（旺角）霓虹最密；外围（布鲁克林）几乎没有霓虹
-NEON_DF = {'core': .12, 'commercial': 1.0, 'outer': .3}
+NEON_DF = {'core': .12, 'commercial': 1.0, 'outer': .012}
 TRAFFIC_DF = {'core': .9, 'commercial': 1.0, 'outer': .35}
+# 交界不一刀切：按到各城区多边形的有向距离做 smoothstep 权重（交界处各半，往里 75 m 渐变到纯色），按位置缓存
+from functools import lru_cache
+def _ss(t): t = min(1, max(0, t)); return t * t * (3 - 2 * t)
+@lru_cache(maxsize=None)
+def _dmix(xk, yk):
+    x, y = xk * .02, yk * .02; w_ = [(D['kind'], _ss(tc_city.sdist(x, y, D['P']) / .75 + .5)) for D in city.districts]
+    s_ = sum(v for _, v in w_) or 1; return tuple((k, v / s_) for k, v in w_)
+def dmix(x, y): return _dmix(round(x / .02), round(y / .02))
+def dval(x, y, tab): return sum(v * tab[k] for k, v in dmix(x, y))
 def corr_w(x, y): return math.exp(-corr_near(x, y)[1] / .2)
-def glow_w(x, y): return corr_w(x, y) * (.55 + .45 * tc.district(x, y)) * NEON_DF[city.district_at(x, y)]
+def glow_w(x, y): return corr_w(x, y) * (.55 + .45 * tc.district(x, y)) * dval(x, y, NEON_DF)
 
 # ---------------- 街道：路灯（商业街亮、背街暗）、标线、车流（车头白、车尾红）----------------
-lamps = [(x, y, .01, .01, ZG + .006, ZG + .008) for x, y, *_ in city.along(.12, CAR, side_offset=.008)]
-lw = np.array([max(glow_w(l[0], l[1]), .5 if city.district_at(l[0], l[1]) == 'core' else 0) for l in lamps])   # 核心区的街灯也亮
+lamps = [(x, y, .01, .01, ZG + .006, ZG + .008) for x, y, *_ in city.along(.12, CAR, side_offset=.008, jitter=.25, rng=R)]
+lamps = [l for l in lamps if R.random() >= .15]                      # 间距不齐、偶尔缺一盏，不成等距的珠链
+lw = np.array([max(glow_w(l[0], l[1]), .5 * dval(l[0], l[1], {'core': 1, 'commercial': 0, 'outer': 0})) for l in lamps])   # 核心区的街灯也亮
 tc.box_mesh('streetlight_main', [l for l, w in zip(lamps, lw) if w > .35], np.tile(srgb('#ffe0b0'), (int((lw > .35).sum()), 1)), emit_mat('streetglow', None, 3.5 * GLOW))
 tc.box_mesh('streetlight_back', [l for l, w in zip(lamps, lw) if w <= .35], np.tile(srgb('#ffd0a0'), (int((lw <= .35).sum()), 1)), emit_mat('streetglow2', None, 1.2 * GLOW))
 mb, mr, mc = city.road_marks(ZG + .0045, color=(.3, .3, .28)); tc.box_mesh('road_marks', mb, mc, td.city_mat('markmat', .6, ao=0), rot=mr)
-cars, crot, cdir, ccol = city.traffic(R, ZG + .004, 3.2, weight=lambda x, y: .08 + .92 * corr_w(x, y) * TRAFFIC_DF[city.district_at(x, y)])   # 主干道车多，外围稀疏
+cars, crot, cdir, ccol = city.traffic(R, ZG + .004, 3.2, weight=lambda x, y: .08 + .92 * corr_w(x, y) * dval(x, y, TRAFFIC_DF), platoon=True)   # 主干道车多，外围稀疏；车成队
 tc.box_mesh('cars', cars, ccol * .35, tc.vcol_mat('carmat', .25, .6), rot=crot)
 hb, tb, lr = td.car_lights(cars, cdir)
-tc.box_mesh('headlights', hb, np.tile(srgb('#fff4e0'), (len(hb), 1)), emit_mat('head', None, 6.0 * GLOW), rot=lr)
-tc.box_mesh('taillights', tb, np.tile(srgb('#ff2a1a'), (len(tb), 1)), emit_mat('tail', None, 5.0 * GLOW), rot=lr)
+tc.box_mesh('headlights', hb, np.tile(srgb('#fff4e0'), (len(hb), 1)), emit_mat('head', None, 3.5 * GLOW), rot=lr)
+tc.box_mesh('taillights', tb, np.tile(srgb('#ff2a1a'), (len(tb), 1)), emit_mat('tail', None, 3.0 * GLOW), rot=lr)
 tick(f'street: lamps {len(lamps)}, cars {len(cars)}')
 
 # ---------------- 霓虹：朝商业街那一面的挑出招牌、临街楼顶灯带、塔楼全息广告 ----------------
 strips, srot, scol, signs, sgrot, sigc, holo, hrot, holc, spill = [], [], [], [], [], [], [], [], [], []
 for i, top in zip(idx, tops):
-    b = city.b[i]; x, y, w, d, rot = b['obb']; wgt = glow_w(b['cx'], b['cy'])
+    b = city.b[i]; x, y, w, d, rot = b['obb']; wgt = glow_w(b['cx'], b['cy']); nd = dval(b['cx'], b['cy'], NEON_DF)   # nd：城区的霓虹底数（外围几乎为零）
     u = np.array([math.cos(rot), math.sin(rot)]); v = np.array([-u[1], u[0]]); c0 = np.array([x, y])
     (px, py, _), _d = corr_near(b['cx'], b['cy']); to = np.array([px - x, py - y]); to /= (np.linalg.norm(to) + 1e-9)
     faces = [(u, w / 2, v, d), (-u, w / 2, v, d), (v, d / 2, u, w), (-v, d / 2, u, w)]      # (外法线, 半宽, 切向, 面长)
     nrm, half, tan_, flen = max(faces, key=lambda f: float(f[0] @ to))
     pal = [NEON[R.choice(4, p=NEON_P)] for _ in range(2)]                                   # 一栋楼的招牌一两种颜色
     ta = math.atan2(tan_[1], tan_[0])
-    if R.random() < .03 + .75 * wgt:                                   # 挑出招牌：从临街外墙水平伸出，俯视能在楼缝里看到
+    if R.random() < .03 * nd + .75 * wgt:                              # 挑出招牌：从临街外墙水平伸出，俯视能在楼缝里看到
         for _ in range(R.integers(2, 7)):
             L = R.uniform(.012, .03); sz = R.uniform(.02, .06); z = R.uniform(max(ZG + .05, top - .9), max(ZG + .06, top - .03))
             p = c0 + nrm * (half + L / 2) + tan_ * R.uniform(-.4, .4) * flen
             signs.append((p[0], p[1], sz, L, z, z + .003)); sgrot.append(ta); sigc.append(pal[R.integers(2)])
         if R.random() < .2: spill.append((signs[-1][0], signs[-1][1], signs[-1][5] + .05, sigc[-1]))
-    if R.random() < .02 + .3 * wgt and flen > .04:                     # 临街一侧的楼顶灯带
+    if R.random() < .02 * nd + .3 * wgt and flen > .04:                # 临街一侧的楼顶灯带
         p = c0 + nrm * (half - .004); strips.append((p[0], p[1], flen * .9, .004, top + .006, top + .009)); srot.append(ta); scol.append(pal[0])
-    if top > -1.9 and w * d > .006 and R.random() < .02 + .35 * wgt:   # 全息广告：楼顶上方的大块发光平面（扫描线纹理）
-        holo.append((x, y, w * .8, d * .8, top + .03, top + .031)); hrot.append(rot); holc.append(NEON[R.choice(3, p=[.4, .4, .2])])
+    if b['dk'] == 'commercial' and top > -1.9 and w * d > .006 and R.random() < .02 + .35 * wgt:   # 全息广告：只在商业区，楼顶竖立的窄屏（扫描线纹理）
+        holo.append((x, y, w * .5, .004, top + .01, top + .07)); hrot.append(rot); holc.append((PINK, CYAN)[R.integers(2)])
 for x, y, *_ in city.along(.35, CORR):                                 # 商业街的彩色溢光：沿街一串点光，染亮路面与低层楼顶
     if glow_w(x, y) > .6: spill.append((x + R.uniform(-.04, .04), y + R.uniform(-.04, .04), ZG + .25, NEON[R.choice(3)]))
 tc.box_mesh('neon_strips', strips, scol, emit_mat('neon', None, 5.0 * GLOW), rot=np.array(srot, np.float32))
 tc.box_mesh('neon_signs', signs, sigc, emit_mat('signs', None, 4.0 * GLOW), rot=np.array(sgrot, np.float32))
-tc.box_mesh('holo_ads', holo, np.array(holc).reshape(-1, 3) * .9, emit_mat('holo', None, .55 * GLOW, stripes=220, alpha=.4), rot=np.array(hrot, np.float32))
+tc.box_mesh('holo_ads', holo, np.array(holc).reshape(-1, 3) * .9, emit_mat('holo', None, .55 * GLOW, stripes=220, alpha=.25), rot=np.array(hrot, np.float32))
 lampsR = np.array(kit['lamps'], np.float32).reshape(-1, 3)             # 楼顶小灯、天窗透光
 tc.box_mesh('roof_dots', [(x, y, .008, .008, z, z + .002) for x, y, z in lampsR], np.tile(srgb('#ffd9a0'), (len(lampsR), 1)), emit_mat('dots', None, 2.5 * GLOW))
 warn = [(x, y, .008, .008, z, z + .003) for x, y, z in kit['towers'] if z > -.6 and R.random() < .6]   # 最高的塔顶才有航空障碍灯（红）
@@ -121,19 +132,34 @@ if len(spill) > 1600:                                                  # 点光�
     keep_s = R.choice(len(spill), 1600, replace=False); boost = len(spill) / 1600; spill = [spill[i] for i in keep_s]
 else: boost = 1
 tc.point_lights('neon_spill', spill, .15 * GLOW * min(boost, 1.6))
-# 核心区：楼内透出的暖光——高楼顶冠的一圈金色灯带（装饰艺术风格的楼冠）、退台上的暖光、少量暖色溢光
-crown, crot_, warm = [], [], []
+# 核心区：楼内透出的暖光——高楼顶冠的金色灯带（装饰艺术风格的楼冠）、退台上的暖光、少量暖色溢光
+# 不是一圈统一粗细的描边：每条边是否亮、亮几段、段长、粗细、亮度各不相同；出现的概率和亮度按核心区权重（tc_city.core_w）
+# 从核心区往外围逐渐减弱（交界两侧各 100 m），不按城区二选一。单独的随机，不动 R。
+_crng = np.random.default_rng(7103)
+crown, crot_, ccol_, warm = [], [], [], []
+CROWN = np.array(srgb('#ffd9a0'))
 for i, top in zip(idx, tops):
     b = city.b[i]
-    if b['dk'] != 'core' or top < -2.6: continue                       # 约 80 m 以上的楼
+    if b['dk'] not in ('core', 'outer') or top < -2.6: continue        # 约 80 m 以上的楼
+    wc = tc_city.core_w(city, b['cx'], b['cy'])
+    if wc < .03: continue
     x, y, w, d, rot = b['obb']; u = np.array([math.cos(rot), math.sin(rot)]); v = np.array([-u[1], u[0]]); c0 = np.array([x, y])
-    if R.random() < .55:
-        for nrm, half, flen, ang in ((v, d / 2, w, rot), (-v, d / 2, w, rot), (u, w / 2, d, rot + math.pi / 2), (-u, w / 2, d, rot + math.pi / 2)):
-            p = c0 + nrm * (half - .003); crown.append((p[0], p[1], flen * .92, .004, top + .002, top + .005)); crot_.append(ang)
-    if R.random() < .25: warm.append((x + R.uniform(-.3, .3) * w, y + R.uniform(-.3, .3) * d, top - R.uniform(.1, .5), srgb('#ffcf8f')))
-tc.box_mesh('core_crowns', crown, np.tile(srgb('#ffd9a0'), (len(crown), 1)), emit_mat('crown', None, 3.0 * GLOW), rot=np.array(crot_, np.float32))
+    if _crng.random() < .55 * wc:
+        kb = wc * _crng.uniform(.4, 1.1)                               # 这栋楼的亮度
+        th = _crng.uniform(.0025, .0055)                               # 灯带粗细
+        for nrm, half, flen, ang, tan_ in ((v, d / 2, w, rot, u), (-v, d / 2, w, rot, u), (u, w / 2, d, rot + math.pi / 2, v), (-u, w / 2, d, rot + math.pi / 2, v)):
+            if _crng.random() < .3: continue                           # 这一面不亮（灯坏了 / 背面没装）
+            t = -.46 * flen + _crng.uniform(0, .08) * flen
+            while t < .46 * flen:                                      # 一段段的，中间断开
+                L = min(_crng.uniform(.15, .6) * flen, .46 * flen - t)
+                if L > .004:
+                    p = c0 + nrm * (half - .003) + tan_ * (t + L / 2)
+                    crown.append((p[0], p[1], L, th, top + .002, top + .005)); crot_.append(ang); ccol_.append(CROWN * kb * _crng.uniform(.55, 1.1))
+                t += L + _crng.uniform(.04, .22) * flen
+    if _crng.random() < .25 * wc: warm.append((x + _crng.uniform(-.3, .3) * w, y + _crng.uniform(-.3, .3) * d, top - _crng.uniform(.1, .5), srgb('#ffcf8f')))
+tc.box_mesh('core_crowns', crown, np.array(ccol_, np.float32).reshape(-1, 3), emit_mat('crown', None, 4.0 * GLOW), rot=np.array(crot_, np.float32))
 tc.point_lights('core_warm', warm, .25 * GLOW, .05)
-tick(f'core warm light: crowns {len(crown) // 4}, spill {len(warm)}')
+tick(f'core warm light: crown segments {len(crown)}, spill {len(warm)}')
 tick(f'neon: signs {len(signs)}, roof strips {len(strips)}, holo {len(holo)}, spill {len(spill)}, aviation {len(warn)}')
 
 # ---------------- 天桥：相邻高楼之间的连廊（「层层叠叠」）----------------
@@ -209,72 +235,108 @@ tc.box_mesh('train_windows', [(x, y, w * .8, .012, z1, z1 + .002) for x, y, w, d
 tick('maglev')
 
 # ---------------- 地标 ----------------
-def lamp_ring(b, x, y, z, rx, ry, n, s=.012, rot=0):
-    for k in range(n):
-        a = k / n * 2 * math.pi; px, py = rx * math.cos(a), ry * math.sin(a)
-        b.box(x + px * math.cos(rot) - py * math.sin(rot), y + px * math.sin(rot) + py * math.cos(rot), z, s, s, .003)
-def ground(x, y, w, d, c, rot=0, z=ZG + .006):
-    b = Batch('pl', mat('pl', c, .7)); b.box(x, y, z - .006, w, d, .006, rot); return b.done()
+# 原则：地标靠建筑体量（坡屋顶、穹顶、塔楼的高度差）和被灯照亮的屋面来认，不靠灯点摆出的圈、线、十字。
+# 灯：位置有抖动、亮度各不相同、会缺几盏；全部收进一个网格（亮度写在颜色里）。地标的随机单独起种子，不动 R。
+LR = np.random.default_rng(7102)
+LMP = []                                                        # (x, y, z, 尺寸, 颜色)
+def lamp(x, y, z, c, s=.01, k=1.0, jit=0.0, miss=0.0):
+    if LR.random() < miss: return
+    LMP.append((x + LR.normal(0, jit) if jit else x, y + LR.normal(0, jit) if jit else y, z, s * LR.uniform(.75, 1.25), np.array(c) * k * LR.uniform(.3, 1.0)))
+def lamps_along(x0, y0, x1, y1, z, c, n, s=.01, k=1.0, miss=.3):
+    """沿一条线的几盏灯：间距不等、亮度不等、有缺。"""
+    for t in np.sort(LR.uniform(0, 1, n)): lamp(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, z, c, s, k, .006, miss)
+def lamps_scatter(x, y, rx, ry, z, c, n, s=.01, k=1.0, miss=.2):
+    """一片区域里随手立的灯（广场、院子）：不成圈。"""
+    for _ in range(n):
+        a, r = LR.uniform(0, 2 * math.pi), math.sqrt(LR.uniform(.05, 1))
+        lamp(x + rx * r * math.cos(a), y + ry * r * math.sin(a), z, c, s, k, 0, miss)
+def ground(x, y, w, d, c=(.026, .026, .028), rot=0, z=ZG + .006):   # 地标底板：默认与路面同色、带沥青斑驳，不像一块面板
+    b = Batch('pl', td.asphalt_mat('pl', c, 1.3)); b.box(x, y, z - .006, w, d, .006, rot); return b.done()
+def stone(name, c1, c2, rough=.7, scale=60): return tc.noise_mat(name, c1, c2, scale, rough, .15)   # 石材 / 铅皮：带斑驳的底色
+ROOFS, ROOFC = [], []                                           # 地标的坡屋顶（td.prism_mesh）：(x, y, 长, 宽, 檐口高, 屋脊高, 朝向)
+RIDGE = []                                                      # 屋脊压条（铅皮 / 石材的脊瓦）：俯视时坡屋顶中间那道折线
+def gable(x, y, L, wd, z, rh, rot, c):
+    ROOFS.append((x, y, L, wd, z, rh, rot)); ROOFC.append(tuple(v * LR.uniform(.9, 1.1) for v in c))
+    RIDGE.append((x, y, L * .99, max(.008, wd * .045), z + rh - .01, z + rh + .004, rot))
+FLOOD, KEY = [], []                                             # 照亮屋面的投光（从周围楼顶打过来，位置不对称）；KEY 是贴着一侧的主投光，照出坡面、穹顶的明暗面
 
 # 执法局总局：总部大楼 + 前广场 + 围墙；冷白 + 执法蓝灯
 x, y = HQ; blue = srgb('#4f8dff')
-ground(x, y, 1.9, 1.5, (.04, .042, .05))
+ground(x, y, 1.9, 1.5)
 hq = Batch('hq', mat('hq_roof', (.07, .075, .085), .4, .5))
 hq.box(x, y + .15, ZG, 1.05, .62, 3.3)                          # 裙楼
 hq.box(x, y + .2, ZG, .5, .44, 3.72)                            # 主楼（顶在 z≈.12）
 for dx in (-.4, .4): hq.box(x + dx, y + .2, ZG, .16, .38, 3.55)
 for sx in (-1, 1):                                              # 围墙
     hq.box(x + sx * .92, y, ZG, .03, 1.42, .25); hq.box(x, y + sx * .72, ZG, 1.86, .03, .25)
+hq.box(x + .06, y + .24, ZG + 3.72, .2, .2, .004)               # 楼顶停机坪（比屋面略浅的一块，不画灯圈）
+hq.box(x - .14, y + .08, ZG + 3.72, .08, .06, .03); hq.box(x + .17, y + .05, ZG + 3.72, .05, .09, .02)   # 楼顶机房
 hq.done()
-hl = Batch('hq_lights', emit_mat('hq_blue', blue, 4.0 * GLOW))
-for sx in (-1, 1):
-    hl.box(x + sx * .92, y, ZG + .25, .01, 1.38, .003); hl.box(x, y + sx * .72, ZG + .25, 1.82, .01, .003)
-hl.box(x, y + .2 + .22, ZG + 3.72, .48, .008, .003); hl.box(x, y + .2 - .22, ZG + 3.72, .48, .008, .003)
-hl.done()
-hw = Batch('hq_white', emit_mat('hq_white', ICE, 3.0 * GLOW))
-hw.ring(x, y + .2, ZG + 3.72, .1, .008, .003, 24)              # 楼顶停机坪
-lamp_ring(hw, x, y - .45, ZG + .01, .35, .15, 14)
-hw.done()
+for sx in (-1, 1):                                              # 围墙上的灯：不等距、有缺
+    lamps_along(x + sx * .92, y - .6, x + sx * .92, y + .6, ZG + .25, blue, 5, .012, 1.4); lamps_along(x - .8, y + sx * .72, x + .8, y + sx * .72, ZG + .25, blue, 6, .012, 1.4)
+lamp(x - .2, y + .38, ZG + 3.72, srgb('#ff2020'), .012, 1.6); lamp(x + .21, y + .01, ZG + 3.72, srgb('#ff2020'), .012, 1.6)   # 航空障碍灯（两角，不对称）
+for _ in range(3): lamp(x + .06 + LR.uniform(-.1, .1), y + .24 + LR.choice([-.1, .1]), ZG + 3.73, ICE, .008, 1.0)            # 停机坪边上几盏
+lamps_scatter(x, y - .45, .45, .16, ZG + .01, ICE, 9, .011, 1.2)  # 前广场的灯杆
+FLOOD += [(x - .5, y - .3, ZG + 4.2, ICE), (x + .35, y + .55, ZG + 4.1, ICE)]
 layer.marker('enforcement_hq', (x, y + .2, 0), .9)
 
-# 辉光大教堂：十字形平面、双塔西立面、东端半圆后殿、中央穹顶；金色辉光（区别于霓虹）
+# 辉光大教堂：拉丁十字平面——中殿与耳堂是铅皮坡屋顶，两侧低矮的侧廊，飞扶壁，交叉处鼓座 + 穹顶，东端半圆后殿与放射状小礼拜堂，
+# 西立面双塔 + 八角尖塔。「辉光」只在穹顶采光亭和被投光照亮的屋面上，不画灯串。
 x, y = CATH; gold = srgb('#ffc56b')
-ground(x - .2, y, 2.1, 1.5, (.07, .065, .06))
-ca = Batch('cathedral', mat('cath_stone', (.36, .34, .31), .55))
-ca.box(x, y, ZG, 1.35, .32, 3.35)                               # 中殿
-ca.box(x + .2, y, ZG, .3, .9, 3.35)                             # 耳堂
-ca.cyl(x + .68, y, ZG, .16, 3.3, 32)                            # 后殿
-for sy in (-1, 1): ca.box(x - .62, y + sy * .13, ZG, .15, .15, 3.72)   # 西立面双塔
-ca.cyl(x + .2, y, ZG + 3.35, .14, .14, 32, r2=.06)              # 穹顶
-for k in range(7): ca.box(x - .5 + k * .16, y, ZG, .03, .44, 3.2)       # 飞扶壁
+ground(x - .2, y, 2.1, 1.5)
+ground(x - .98, y, .5, .95, (.075, .07, .062))                  # 西侧前广场（石铺，比街区略亮）
+ca = Batch('cathedral', stone('cath_stone', (.24, .22, .2), (.4, .37, .33)))
+EAVE, AISLE = ZG + 3.0, ZG + 2.78
+ca.box(x - .06, y, ZG, 1.12, .3, 3.0)                           # 中殿墙体（檐口 EAVE）
+ca.box(x + .14, y, ZG, .28, .86, 3.0)                           # 耳堂墙体
+for sy in (-1, 1):
+    ca.box(x - .25, y + sy * .22, ZG, .74, .14, 2.78)           # 侧廊（低一截）
+    for k in range(6):                                          # 扶壁墩 + 飞扶壁（跨过侧廊顶，搭到中殿墙上）
+        bx = x - .56 + k * .125
+        ca.box(bx, y + sy * .305, ZG, .045, .05, 2.93)
+        ca.box(bx, y + sy * .23, AISLE + .06, .022, .16, .035)
+ca.cyl(x + .5, y, ZG, .15, 2.96, 24)                            # 后殿（半圆，一半埋在中殿里）
+for a in (-1.0, 0, 1.0):                                        # 放射状小礼拜堂
+    ca.cyl(x + .5 + .17 * math.cos(a), y + .17 * math.sin(a), ZG, .055, 2.7, 16)
+for sy in (-1, 1): ca.box(x - .68, y + sy * .12, ZG, .15, .15, 3.4)   # 西立面双塔
+ca.box(x - .68, y, ZG, .1, .12, 3.05)                           # 双塔之间的山墙门廊
+ca.cyl(x + .14, y, EAVE, .115, .2, 24)                          # 交叉处鼓座
 ca.done()
-cg = Batch('cath_glow', emit_mat('cath_gold', gold, 3.2 * GLOW))
-cg.box(x, y, ZG + 3.35, 1.3, .008, .003); cg.box(x + .2, y, ZG + 3.35, .008, .86, .003)   # 屋脊金线
-cg.ring(x + .2, y, ZG + 3.49, .075, .01, .003, 32)              # 穹顶灯环
-for sy in (-1, 1): cg.box(x - .62, y + sy * .13, ZG + 3.72, .05, .05, .003)
-lamp_ring(cg, x - 1.0, y, ZG + .01, .28, .5, 18)                # 前广场灯
-cg.done()
-ground(x - 1.0, y, .6, 1.1, (.12, .11, .09))                    # 前广场石面（比街区亮）
+roofm = td.city_mat('cath_roofm', .45, .01, 1.6, .5)
+LEAD = (.12, .13, .13)
+gable(x - .06, y, 1.12, .32, EAVE, .2, 0, LEAD)                # 中殿坡顶（屋脊东西向）
+gable(x + .14, y, .88, .3, EAVE, .2, math.pi / 2, LEAD)        # 耳堂坡顶（屋脊南北向）
+for sy in (-1, 1): gable(x - .25, y + sy * .22, .74, .14, AISLE, .03, 0, (.14, .14, .13))   # 侧廊的低坡顶
+td.prism_mesh('cath_roofs', ROOFS[-4:], ROOFC[-4:], roofm)
+sp = Batch('cath_spires', stone('cath_spire', (.1, .11, .11), (.2, .21, .2), .5))
+sp.cyl(x + .5, y, ZG + 2.96, .15, .12, 24, r2=.02)              # 后殿的锥形屋顶
+for a in (-1.0, 0, 1.0): sp.cyl(x + .5 + .17 * math.cos(a), y + .17 * math.sin(a), ZG + 2.7, .055, .06, 16, r2=.01)
+for sy in (-1, 1): sp.cyl(x - .68, y + sy * .12, ZG + 3.4, .075, .38, 8, r2=.004)   # 八角尖塔
+sp.done()
+dm = Batch('cath_dome', stone('cath_dome', (.1, .15, .13), (.2, .26, .22), .45, 40), smooth=True)   # 铜绿穹顶
+dm.ico(x + .14, y, EAVE + .2, .115, .85, 3); dm.cyl(x + .14, y, EAVE + .3, .028, .06, 12)
+dm.done()
+lan = Batch('cath_lantern', emit_mat('cath_gold', gold, .7 * GLOW)); lan.cyl(x + .14, y, EAVE + .36, .012, .004, 12); lan.done()   # 采光亭里透出的一点金光
+FLOOD += [(x + .55, y + .5, ZG + 3.8, gold), (x - .95, y + .3, ZG + 3.5, gold)]
+KEY += [(x - .3, y - .45, EAVE + .06, gold), (x + .35, y - .5, EAVE + .1, gold)]
+lamps_scatter(x - .98, y, .22, .42, ZG + .01, gold, 9, .011, 1.1)   # 前广场的灯杆
 layer.marker('radiance_cathedral', (x + .1, y, 0), 1.0)
 
 # 圣铁摇篮：独立院落——高墙、四面回廊、中庭训练场、小礼拜堂；灯光稀少
 x, y = CRADLE
-ground(x, y, 1.45, 1.2, (.05, .05, .052))
+ground(x, y, 1.45, 1.2)
 cr = Batch('cradle', mat('cradle_roof', (.09, .09, .1), .5, .6))
 for sx in (-1, 1): cr.box(x + sx * .7, y, ZG, .05, 1.2, .5); cr.box(x, y + sx * .58, ZG, 1.45, .05, .5)
 for sx in (-1, 1): cr.box(x + sx * .45, y, ZG, .2, .8, 1.2); cr.box(x, y + sx * .36, ZG, .7, .16, 1.2)   # 回廊四翼
 cr.box(x + .52, y - .45, ZG, .22, .12, 1.8); cr.cyl(x - .52, y - .45, ZG, .07, 1.9, 16)             # 礼拜堂、钟楼
 cr.done()
 ground(x, y, .66, .52, (.16, .13, .09))                          # 中庭训练场（沙地）
-cl = Batch('cradle_lights', emit_mat('cradle_warm', srgb('#ffcf8a'), 2.2 * GLOW))
-lamp_ring(cl, x, y, ZG + .01, .28, .21, 12, .01)
-for sx in (-1, 1): cl.box(x + sx * .7, y, ZG + .5, .006, 1.1, .002)
-cl.done()
+lamps_scatter(x, y, .3, .22, ZG + .01, srgb('#ffcf8a'), 7, .01, .9)
+for sx in (-1, 1): lamps_along(x + sx * .7, y - .5, x + sx * .7, y + .5, ZG + .5, srgb('#ffcf8a'), 4, .01, .9)
 layer.marker('iron_cradle', (x, y, 0), .7)
 
 # 环城军营带：沿西缘的一段环带——营房长楼、操场、双层围墙、探照灯塔
 bm_ = Batch('barracks', mat('barracks_roof', (.07, .08, .07), .6, .3))
-bl = Batch('barracks_lights', emit_mat('barracks_white', ICE, 3.5 * GLOW))
 yard = Batch('barracks_yard', mat('yard', (.06, .062, .06), .8))
 N = 90
 for i in range(N):
@@ -282,7 +344,7 @@ for i in range(N):
     x0, y0, _ = ring_pt(t0); x1, y1, _ = ring_pt(t1); a = math.atan2(y1 - y0, x1 - x0); L = math.hypot(x1 - x0, y1 - y0) * 1.04
     for off in (-RING['w'] / 2, RING['w'] / 2):                 # 围墙（内外两道）
         px, py, _ = ring_pt((t0 + t1) / 2, off); bm_.box(px, py, ZG, L, .03, .3, a)
-        if i % 6 == 0: bl.box(px, py, ZG + .3, .02, .02, .003)
+        if LR.random() < .14: lamp(px, py, ZG + .3, ICE, .02, 1.3)   # 墙灯：不等距、亮度不一
     px, py, _ = ring_pt((t0 + t1) / 2); yard.box(px, py, ZG, L, RING['w'] * .95, .006, a)
     seg = i % 10
     if seg < 7:                                                # 营房：垂直于环带的长条楼
@@ -290,66 +352,112 @@ for i in range(N):
             if seg % 2 == 0:
                 px, py, _ = ring_pt((t0 + t1) / 2, off); bm_.box(px, py, ZG, .07, .3, R.uniform(.9, 1.3), a)
     elif seg == 8:                                             # 探照灯塔
-        px, py, _ = ring_pt((t0 + t1) / 2, 0); bm_.cyl(px, py, ZG, .03, 1.6, 12); bl.box(px, py, ZG + 1.6, .05, .05, .003)
-bm_.done(); bl.done(); yard.done()
+        px, py, _ = ring_pt((t0 + t1) / 2, 0); bm_.cyl(px, py, ZG, .03, 1.6, 12); lamp(px, py, ZG + 1.6, ICE, .045, 1.4, 0, .2)
+bm_.done(); yard.done()
 layer.marker('barracks_ring', (*ring_pt(.5)[:2], 0), 1.0)
 
-# 星渊大学：草坪方庭、图书馆玻璃穹顶、天文台；路灯暖白
+# 星渊大学：草坪方庭、坡顶的学院楼（长短、朝向略有出入，不是对称的方框）、图书馆的深色玻璃穹顶、天文台；庭院里的树；路灯暖白
 x, y = UNIV
-ground(x, y, 3.0, 2.1, (.02, .028, .02))
+ground(x, y, 3.0, 2.1)
 lawn = Batch('univ_lawn', mat('univ_lawn', (.02, .045, .02), .9))
-for dx, dy in ((-.6, .3), (.5, .3), (-.6, -.45), (.5, -.45)): lawn.box(x + dx, y + dy, ZG + .006, .7, .5, .004)
+LAWNS = [(x + dx + LR.uniform(-.04, .04), y + dy + LR.uniform(-.03, .03), .7 * LR.uniform(.85, 1.05), .5 * LR.uniform(.85, 1.05)) for dx, dy in ((-.6, .3), (.5, .3), (-.6, -.45), (.5, -.45))]
+for lx, ly, lw2, ld2 in LAWNS: lawn.box(lx, ly, ZG + .006, lw2, ld2, .004)
 lawn.done()
-un = Batch('univ', mat('univ_roof', (.13, .11, .09), .6))
-for dx in (-1.25, 1.2):
-    for dy in (-.8, -.2, .5): un.box(x + dx, y + dy, ZG, .28, .42, 2.4)
-for dx in (-.6, .5): un.box(x + dx, y + .78, ZG, .7, .16, 2.6); un.box(x + dx, y - .9, ZG, .7, .14, 2.4)
-un.cyl(x - .05, y - .08, ZG, .22, 2.8, 32)                       # 图书馆
+un = Batch('univ', stone('univ_wall', (.1, .085, .07), (.17, .14, .11)))
+n0 = len(ROOFS); SLATE = (.11, .1, .1)
+for dx in (-1.25, 1.2):                                         # 东西两排学院楼（南北向长楼，坡顶）
+    for dy in (-.8, -.2, .5):
+        L2 = .42 * LR.uniform(.75, 1.15); ww = .26 * LR.uniform(.85, 1.1); hh = LR.uniform(2.1, 2.6); cx_ = x + dx + LR.uniform(-.05, .05)
+        un.box(cx_, y + dy, ZG, ww, L2, hh); gable(cx_, y + dy, L2, ww + .02, ZG + hh, ww * .35, math.pi / 2, SLATE)
+for dx in (-.6, .5):                                            # 南北两排（东西向长楼）
+    for dy, hh in ((.78, 2.6), (-.9, 2.4)):
+        L2 = .7 * LR.uniform(.8, 1.05); ww = .15 * LR.uniform(.9, 1.15); cx_ = x + dx + LR.uniform(-.06, .06)
+        un.box(cx_, y + dy, ZG, L2, ww, hh); gable(cx_, y + dy, L2, ww + .02, ZG + hh, ww * .4, 0, SLATE)
+un.cyl(x - .05, y - .08, ZG, .22, 2.6, 32)                       # 图书馆（圆形阅览室的鼓座）
 un.done()
-dome = Batch('univ_dome', emit_mat('univ_dome_glow', srgb('#7fc8ff'), 1.2 * GLOW))
-dome.cyl(x - .05, y - .08, ZG + 2.8, .18, .02, 32)
-dome.done()
-obs = Batch('observatory', mat('obs', (.3, .31, .33), .3, .8)); obs.cyl(x + 1.2, y + .95, ZG, .1, 3.0, 24); obs.ico(x + 1.2, y + .95, ZG + 3.0, .1, .8); obs.done()
-ul = Batch('univ_lights', emit_mat('univ_warm', srgb('#ffe2b0'), 2.2 * GLOW))
-for dx in np.linspace(-1.05, 1.0, 12):
-    ul.box(x + dx, y - .08, ZG + .01, .01, .01, .003)
-for dy in np.linspace(-.8, .7, 8):
-    ul.box(x - .05, y + dy, ZG + .01, .01, .01, .003)
-ul.done()
+td.prism_mesh('univ_roofs', ROOFS[n0:], ROOFC[n0:], td.city_mat('univ_roofm', .55, .01, 1.5, .2))
+gl_ = mat('univ_glass', (.025, .03, .035), .1, .9)              # 玻璃穹顶：深色、反光（映出投光），不自发光
+dome = Batch('univ_dome', gl_, smooth=True); dome.ico(x - .05, y - .08, ZG + 2.6, .2, .6, 3); dome.done()
+obs = Batch('observatory', mat('obs', (.3, .31, .33), .3, .8), smooth=True); obs.cyl(x + 1.2, y + .95, ZG, .1, 3.0, 24); obs.ico(x + 1.2, y + .95, ZG + 3.0, .1, .8, 2); obs.done()
+tk_u = []                                                       # 庭院里的树：沿草坪边缘多、中间少
+for lx, ly, lw2, ld2 in LAWNS:
+    for _ in range(int(LR.integers(5, 11))):
+        u_, v_ = LR.uniform(-.5, .5), LR.uniform(-.5, .5)
+        if abs(u_) < .35 and abs(v_) < .35 and LR.random() < .7: continue
+        r_ = LR.uniform(.02, .04); tk_u.append((lx + u_ * lw2, ly + v_ * ld2, ZG + .01 + r_ * .55, r_))
+tc.ico_mesh('univ_trees', tk_u, mat('treeu', (.03, .05, .025), .9))
+lamps_along(x - 1.05, y - .12, x - .3, y - .12, ZG + .01, srgb('#ffe2b0'), 5, .01, 1.1)   # 草坪之间的步道灯（不等距、有缺）
+lamps_along(x + .22, y - .1, x + 1.0, y - .05, ZG + .01, srgb('#ffe2b0'), 5, .01, 1.1)
+lamps_along(x - .07, y - .8, x - .03, y - .35, ZG + .01, srgb('#ffe2b0'), 3, .01, 1.1)
+lamps_along(x - .05, y + .2, x - .09, y + .7, ZG + .01, srgb('#ffe2b0'), 3, .01, 1.1)
+FLOOD += [(x - .5, y + .3, ZG + 3.2, srgb('#ffe2b0'))]
+KEY += [(x - .4, y - .45, ZG + 2.75, srgb('#ffe2b0'))]
 layer.marker('starabyss_univ', (x - .05, y - .08, 0), 1.4)
 
 # 层间检查点：中层 C 区 → 下层 7 号井通道——竖井口、闸口、排队通道；琥珀 / 红色警示灯
 x, y = CHECK
-ground(x, y, 1.6, 1.2, (.05, .05, .045))
+ground(x, y - .1, 1.6, 1.4)
 ck = Batch('checkpoint', mat('ck', (.1, .1, .1), .5, .5))
-ck.ring(x, y, ZG, .34, .06, .35, 48)                            # 井口围墙
+ck.ring(x, y, ZG, .34, .06, .35, 28)                            # 井口围墙（圆形混凝土井圈）
+ck.box(x - .02, y + .36, ZG, .3, .13, .52)                      # 井口北侧的提升机房（跨在井圈上）
+ck.box(x + .27, y + .2, ZG, .09, .12, .42); ck.box(x - .3, y + .12, ZG, .07, .09, .4)   # 井圈边的配电房、值班室
 for sx in (-1, 1): ck.box(x + sx * .55, y - .1, ZG, .22, .55, .7)          # 两侧闸楼
-for k in range(5): ck.box(x - .2 + k * .1, y - .5, ZG, .012, .3, .1)      # 排队通道隔栏
+nl = int(R.integers(6, 9)); lw_ = .06; x0 = x - nl * lw_ / 2         # 排队闸道：6–8 条平行
+for k in range(nl + 1): ck.box(x0 + k * lw_, y - .58, ZG, .006, .26, .05)  # 闸道隔栏
+for k in range(nl): ck.box(x0 + (k + .5) * lw_, y - .43, ZG, .04, .04, .06)   # 闸道头的岗亭
 ck.done()
-void = Batch('shaft', mat('shaft', (.0, .0, .0), 1)); void.cyl(x, y, ZG - 2, .32, 2.01, 48); void.done()
-cw = Batch('ck_warn', emit_mat('ck_amber', AMBER, 3.0 * GLOW)); cw.ring(x, y, ZG + .35, .34, .012, .003, 48)
-for sx in (-1, 1): cw.box(x + sx * .55, y - .1, ZG + .7, .2, .01, .003)
-cw.done()
-cr_ = Batch('ck_red', emit_mat('ck_red', srgb('#ff3030'), 3.0 * GLOW))
-for k in range(6): cr_.box(x - .25 + k * .1, y - .66, ZG + .1, .06, .008, .003)   # 栏杆红灯
-cr_.done()
+cn = Batch('ck_canopy', mat('ck_canopy', (.14, .14, .13), .6, .5)); cn.box(x, y - .25, ZG + .37, .9, .35, .012); cn.done()   # 井口南侧的半边雨棚
+eq = []                                                         # 闸楼屋顶设备
+for sx in (-1, 1):
+    for _ in range(int(R.integers(3, 6))):
+        eq.append((x + sx * .55 + R.uniform(-.07, .07), y - .1 + R.uniform(-.22, .22), R.uniform(.02, .045), R.uniform(.02, .04), ZG + .7, ZG + .7 + R.uniform(.01, .03)))
+tc.box_mesh('ck_roof_eq', eq, np.full((len(eq), 3), .16), tc.vcol_mat('ck_eqm', .6, .4))
+void = Batch('shaft', mat('shaft', (.0, .0, .0), 1)); void.cyl(x, y, ZG - 2, .3, 2.01, 28); void.done()
+ck_l = []
+for k in range(nl):                                             # 闸道头的琥珀灯、闸道尾的红灯：亮度不一，个别不亮
+    lx, ly = x0 + (k + .5) * lw_, y - .43; lamp(lx, ly, ZG + .06, AMBER, .01, 1.1, .002, .15); ck_l.append((lx, ly, ZG + .1, AMBER))
+    lamp(lx, y - .71, ZG + .05, srgb('#ff3030'), .01, 1.1, .002, .25)
+lamp(x + .55 + .07, y - .28, ZG + .7, AMBER, .012, .8); lamp(x - .55 - .04, y + .05, ZG + .7, AMBER, .012, .5)   # 闸楼顶的两盏工作灯（不对称）
+tc.point_lights('ck_lamps', ck_l, .08 * GLOW, .01)
+FLOOD += [(x + .25, y - .75, ZG + 1.2, AMBER), (x - .6, y + .45, ZG + 1.4, ICE)]
 layer.marker('checkpoint_c', (x, y, 0), .6)
-# 天城议会：半圆形议事厅 + 扁穹顶 + 前庭；暖白灯，比周围的霓虹安静
+
+# 天城议会：H 形的政府大楼——主楼中央鼓座 + 穹顶 + 采光亭，南面柱廊门廊与台阶，两翼坡顶，后面两个内院；暖白投光，比周围的霓虹安静
 x, y = COUNCIL
-ground(x, y - .2, 1.9, 1.4, (.06, .06, .06))
-cc = Batch('council', mat('council_stone', (.3, .29, .27), .5))
-cc.cyl(x, y, ZG, .42, 3.45, 48)                                  # 议事厅（圆形主体）
-cc.cyl(x, y, ZG + 3.45, .34, .08, 48, r2=.12)                    # 扁穹顶
-for sx in (-1, 1): cc.box(x + sx * .6, y - .05, ZG, .3, .5, 3.2)  # 两翼办公楼
-for k in range(9): cc.box(x - .32 + k * .08, y - .47, ZG, .02, .02, 3.3)   # 柱廊
+ground(x, y - .2, 1.9, 1.4)
+ground(x, y - .74, .9, .38, (.075, .07, .064))                   # 前庭石面
+cc = Batch('council', stone('council_stone', (.22, .21, .2), (.36, .34, .31)))
+MAIN = ZG + 3.1
+cc.box(x, y + .05, ZG, 1.2, .36, 3.1)                           # 主楼
+for sx in (-1, 1):
+    cc.box(x + sx * .62, y + .02, ZG, .3, .86, 3.0)             # 两翼（南北向）
+    cc.box(x + sx * .3, y + .38, ZG, .08, .32, 2.9)             # 后部连廊（围出两个内院）
+cc.box(x, y + .47, ZG, 1.0, .12, 2.9)                           # 后楼
+cc.cyl(x, y + .05, MAIN, .19, .13, 32)                          # 鼓座
+for k in range(9): cc.box(x - .2 + k * .05, y - .24, ZG, .022, .022, 2.95)   # 门廊柱子
+for k, (w_, d_) in enumerate(((.62, .07), (.54, .06), (.46, .05))): cc.box(x, y - .33 - k * .045, ZG, w_, d_, .015 * (3 - k))   # 台阶
 cc.done()
-ground(x, y - .75, .9, .4, (.14, .13, .11))                      # 前庭石面
-cw_ = Batch('council_glow', emit_mat('council_warm', srgb('#fff0d0'), 2.6 * GLOW))
-cw_.ring(x, y, ZG + 3.53, .2, .008, .003, 36)
-lamp_ring(cw_, x, y - .75, ZG + .01, .4, .16, 14)
-cw_.done()
+gable(x, y + .05, 1.2, .38, MAIN, .11, 0, (.15, .15, .14))      # 主楼坡顶
+for sx in (-1, 1): gable(x + sx * .62, y + .02, .86, .32, ZG + 3.0, .1, math.pi / 2, (.15, .15, .14))
+gable(x, y + .47, 1.0, .14, ZG + 2.9, .04, 0, (.15, .15, .14))
+gable(x, y - .25, .16, .5, ZG + 2.95, .07, math.pi / 2, (.3, .29, .27))   # 门廊山花（石材）
+td.prism_mesh('council_roofs', ROOFS[-5:], ROOFC[-5:], td.city_mat('council_roofm', .5, .01, 1.5, .3))
+cd = Batch('council_dome', stone('council_dome', (.13, .14, .14), (.24, .25, .24), .4, 40), smooth=True)
+cd.ico(x, y + .05, MAIN + .13, .18, .7, 3); cd.cyl(x, y + .05, MAIN + .24, .03, .06, 12); cd.done()
+cl_ = Batch('council_lantern', emit_mat('council_warm', srgb('#fff0d0'), .3 * GLOW)); cl_.cyl(x, y + .05, MAIN + .3, .012, .004, 12); cl_.done()
+lamps_scatter(x, y - .74, .4, .15, ZG + .01, srgb('#fff0d0'), 8, .011, 1.0)   # 前庭灯杆
+FLOOD += [(x + .45, y - .65, ZG + 3.7, srgb('#fff0d0')), (x + .7, y + .7, ZG + 3.6, srgb('#ffe2b0'))]
+KEY_SOFT = [(x - .3, y - .75, MAIN + .08, srgb('#fff0d0')), (x + .35, y - .7, MAIN + .15, srgb('#fff0d0'))]   # 议会：投光弱一些（石材浅，容易过曝）
 layer.marker('council', (x, y, 0), .9)
-tick('landmarks')
+
+L_ = [l for l in LMP]
+tc.box_mesh('landmark_lamps', [(x, y, s, s, z, z + .003) for x, y, z, s, c in L_], np.array([c for *_, c in L_], np.float32).reshape(-1, 3), emit_mat('lm_lamp', None, 3.2 * GLOW))
+RG = np.array(RIDGE, np.float32).reshape(-1, 7)
+tc.box_mesh('landmark_ridges', RG[:, :6], np.tile((.22, .22, .21), (len(RG), 1)), td.city_mat('ridgem', .5, 0, 1.2, .4), rot=RG[:, 6])
+tc.point_lights('landmark_flood', FLOOD, 1.2 * GLOW, .15)       # 补光
+tc.point_lights('landmark_key', KEY, 14.0 * GLOW, .08)
+tc.point_lights('landmark_key_soft', KEY_SOFT, 6.0 * GLOW, .08)            # 主投光：把屋面照出明暗（坡面、穹顶的受光面与背光面）
+tick(f'landmarks: lamps {len(L_)}, flood {len(FLOOD)}')
 
 # ---------------- 头顶浮岛的投影：夜里没有日照，挡住的是上方漫射下来的天光，所以影子在岛的正下方、边缘很虚 ----------------
 # 用三层逐渐缩小的半透明暗面叠出柔和的边（不画描边）。岛的轮廓由查看器的「上层投影」叠加层给出。
@@ -362,4 +470,5 @@ for b_ in soft: b_.done().visible_shadow = False
 tick('island shadows')
 
 # ---------------- 环境光：没有日照，只剩上层漏下来的一点冷色天光 ----------------
-layer.finish(world=((.35, .42, .6), layer.f('--ambient', .7)), glare_opts=dict(threshold=.9, size=6, mix=-.55))
+# 光晕两层：贴着灯管的小光晕（Bloom：霓虹、车灯边缘的溢光）+ 大范围的雾光（Fog Glow 半径加大到真正会扩散的尺度，强度略降，不整体过曝）
+layer.finish(world=((.35, .42, .6), layer.f('--ambient', .7)), glare_opts=dict(threshold=.7, size=9.5, mix=-.6, tight=(.55, 7, .55)))
