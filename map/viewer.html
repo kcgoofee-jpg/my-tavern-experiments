@@ -131,19 +131,23 @@ const TIER_KEY = 'edenMapTierV2';   // 换了键名：旧版存下的「标准�
 // 世界图：代码地图坐标（1600×1000）→ 底图归一化坐标（相机裁切：宽 98.5%、高 97%）
 const toImg = (x, y) => [(x / 1600 - .0075) / .985, (y / 1000 - .015) / .97];
 
-let viewer, aspect = 1, M, REG, cur = null, curData = null, ovData = null, tier = 'save';
+let viewer, aspect = 1, M, REG, cur = null, curData = null, ovData = null, tier = 'save', sleeping = null;
 try { tier = localStorage.getItem(TIER_KEY) || 'save'; } catch (e) {}
 if (!TIERS.some(t => t.key === tier)) tier = 'save';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 let narrow = false;   // 手机 / 窄面板：隐藏小地图（信息卡的底部抽屉由 CSS 媒体查询处理）
 const post = msg => { if (window.top !== window) parent.postMessage(msg, '*'); };
+// 数据文件只取一次：切换地图、面板休眠后唤醒都不再重复请求
+const jsonCache = new Map();
+const getJSON = url => { if (!jsonCache.has(url)) jsonCache.set(url, fetch(url).then(r => r.ok ? r.json() : null).catch(() => null)); return jsonCache.get(url); };
 
 async function main() {
-  [REG, M] = await Promise.all([fetch('data/maps.json').then(r => r.json()), fetch('data/world_markers.json').then(r => r.json())]);
+  // 三个启动文件并行取（之前 derived.json 要等前两个取完才开始）
+  let d;
+  [REG, M, d] = await Promise.all([getJSON('data/maps.json'), getJSON('data/world_markers.json'), getJSON('data/derived.json')]);
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点
-  try { const d = await fetch('data/derived.json').then(r => r.ok ? r.json() : null);
-    if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland); } catch (e) {}
+  if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland);
   // 世界图上，天城各层地图里的地点（执法局、7 号井……）都归到「天城」
   for (const k of REG.groups.tiancheng?.layers || []) for (const v of Object.values(REG.maps[k].markers || {})) ALIAS['天城'].push(...(v.alias || []));
   narrow = innerWidth <= 640;   // 等 iframe 布局完成后再判断，脚本刚执行时宽度可能还是 0
@@ -181,11 +185,11 @@ async function main() {
 async function go(id) {
   const m = REG.maps[id]; if (!m || m.status === 'planned' || id === cur) return;
   cur = id; userMoved = false; closeCard();
-  curData = m.data ? await fetch(m.data).then(r => r.json()).catch(() => null) : null;
   // 叠加层可以取别的地图的数据（overlay.from），例如中层的「上层投影」用上层的岛屿轮廓
   const ovSrc = m.overlay?.from && REG.maps[m.overlay.from]?.data;
-  ovData = ovSrc ? await fetch(ovSrc).then(r => r.json()).catch(() => null) : curData;
+  const [cd, od] = await Promise.all([m.data ? getJSON(m.data) : null, ovSrc ? getJSON(ovSrc) : null]);
   if (id !== cur) return;   // 加载期间又切换了地图
+  curData = cd; ovData = ovSrc ? od : cd;
   renderNav();
   $('#tgOverlay span').textContent = m.overlay?.label || '叠加层'; $('#tgOverlay').hidden = !m.overlay;
   $('#loading').classList.remove('done'); $('#loading span').textContent = `加载 ${m.title}…`;
@@ -349,6 +353,9 @@ if (window.top !== window) {
   window.addEventListener('message', e => {
     if (e.data?.type === 'eden-map:here') { $('#here').value = e.data.value || ''; markHere(e.data.value); focusStart(false); }
     if (e.data?.type === 'eden-map:open') go(e.data.map);
+    // 面板关闭时休眠：关掉底图（释放已解码的瓦片），脚本与数据留着；再打开时唤醒，重新打开当前地图
+    if (e.data?.type === 'eden-map:sleep' && viewer) { sleeping = cur; cur = null; viewer.close(); viewer.clearOverlays(); }
+    if (e.data?.type === 'eden-map:wake' && sleeping) { const id = sleeping; sleeping = null; go(id); }
   });
 }
 main();

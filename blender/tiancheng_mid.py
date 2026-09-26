@@ -33,6 +33,7 @@ HQ = (-3.5, 1.5)            # 天城执法局总局：中层核心区（高楼�
 CATH = (6.6, 3.6)           # 辉光大教堂：中层高区（东侧高楼核心旁）
 CRADLE = (10.9, 6.6)        # 圣铁摇篮：中层高区的独立院落
 UNIV = (-8.2, 6.4)          # 星渊大学
+COUNCIL = (.6, -2.3)        # 天城议会（路线图列为中层地标；位置为推断）
 CHECK = (4.6, -6.9)         # 层间检查点：中层 C 区 → 下层 7 号井（下层 7 号井在同一平面位置）
 RING = dict(cx=0, cy=0, a=14.0, b=9.3, a0=math.radians(148), a1=math.radians(212), w=.95)   # 环城军营带：沿片区西缘的一段环带
 def ring_pt(t, off=0):      # t ∈ [0,1] 沿环带；off 为径向偏移（0 = 中线）
@@ -40,7 +41,7 @@ def ring_pt(t, off=0):      # t ∈ [0,1] 沿环带；off 为径向偏移（0 = 
     return RING['cx'] + (RING['a'] + off) * math.cos(a), RING['cy'] + (RING['b'] + off * RING['b'] / RING['a']) * math.sin(a), a
 
 zones = [(*HQ, 1.0, .8), (*CATH, 1.15, .85), ('rect', CRADLE[0] - .75, CRADLE[1] - .62, CRADLE[0] + .75, CRADLE[1] + .62),
-         (*UNIV, 1.6, 1.15), (*CHECK, .85, .65)]
+         (*UNIV, 1.6, 1.15), (*CHECK, .85, .65), (*COUNCIL, 1.05, .8)]
 B = city['boxes']; keep = tc.keep_mask(city, zones)
 # 环带：去掉落在带内的盒子
 ex, ey = B[:, 0] / RING['a'], B[:, 1] / RING['b']; rr = np.hypot(ex, ey); ang = np.arctan2(B[:, 1], B[:, 0]) % (2 * math.pi)
@@ -79,8 +80,8 @@ strips, scol, signs, sigc, holo, holc = [], [], [], [], [], []
 for i in bi:
     x, y, w, d, z0, top = Bk[i]; dist = Dk[i]
     c = NEON[R.choice(4, p=NEON_P)]
-    if R.random() < .03 + .12 * dist:                                   # 楼顶边缘灯带（高楼区更密）
-        for e in R.choice(4, size=R.integers(1, 3), replace=False):
+    if R.random() < .02 + .07 * dist:                                   # 楼顶边缘灯带（高楼区更密）
+        for e in R.choice(4, size=1, replace=False):
             if e == 0: strips.append((x, y + d / 2 - .004, w * .9, .007, top, top + .004))
             elif e == 1: strips.append((x, y - d / 2 + .004, w * .9, .007, top, top + .004))
             elif e == 2: strips.append((x + w / 2 - .004, y, .007, d * .9, top, top + .004))
@@ -308,15 +309,30 @@ cr_ = Batch('ck_red', emit_mat('ck_red', srgb('#ff3030'), 3.0 * GLOW))
 for k in range(6): cr_.box(x - .25 + k * .1, y - .66, ZG + .1, .06, .008, .003)   # 栏杆红灯
 cr_.done()
 markers.append({'id': 'checkpoint_c', 'pos': (x, y, 0)})
+# 天城议会：半圆形议事厅 + 扁穹顶 + 前庭；暖白灯，比周围的霓虹安静
+x, y = COUNCIL
+ground(x, y - .2, 1.9, 1.4, (.06, .06, .06))
+cc = Batch('council', mat('council_stone', (.3, .29, .27), .5))
+cc.cyl(x, y, ZG, .42, 3.45, 48)                                  # 议事厅（圆形主体）
+cc.cyl(x, y, ZG + 3.45, .34, .08, 48, r2=.12)                    # 扁穹顶
+for sx in (-1, 1): cc.box(x + sx * .6, y - .05, ZG, .3, .5, 3.2)  # 两翼办公楼
+for k in range(9): cc.box(x - .32 + k * .08, y - .47, ZG, .02, .02, 3.3)   # 柱廊
+cc.done()
+ground(x, y - .75, .9, .4, (.14, .13, .11))                      # 前庭石面
+cw_ = Batch('council_glow', emit_mat('council_warm', srgb('#fff0d0'), 2.6 * GLOW))
+cw_.ring(x, y, ZG + 3.53, .2, .008, .003, 36)
+lamp_ring(cw_, x, y - .75, ZG + .01, .4, .16, 14)
+cw_.done()
+markers.append({'id': 'council', 'pos': (x, y, 0)})
 tick('landmarks')
 
 # ---------------- 头顶浮岛的投影：暗色、低对比的椭圆轮廓 ----------------
-fill = Batch('isle_shade', tc.shade_mat('isle_shade', (0, 0, 0), .3))
-rim = Batch('isle_rim', tc.shade_mat('isle_rim', (0, 0, 0), .75))
+fill = Batch('isle_shade', tc.shade_mat('isle_shade', (0, 0, 0), .42))
+rim = Batch('isle_rim', tc.shade_mat('isle_rim', (0, 0, 0), .9))
 for iid, ix, iy, rx, ry, rot, alt in tc.upper_islands():
     bm = fill.bm; ret = bmesh.ops.create_circle(bm, cap_ends=True, segments=64, radius=1)
     bmesh.ops.transform(bm, verts=ret['verts'], matrix=Matrix.Translation((ix, iy, .6)) @ Matrix.Rotation(rot, 4, 'Z') @ Matrix.Diagonal((rx, ry, 1, 1)))
-    rim.ring(ix, iy, .61, 1, .06, .002, 64, rx, ry, rot)
+    rim.ring(ix, iy, .61, 1, .09, .002, 64, rx, ry, rot)
 for o in (fill.done(), rim.done()): o.visible_shadow = False
 tick('island shadows')
 
