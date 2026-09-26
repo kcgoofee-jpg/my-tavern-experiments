@@ -10,7 +10,8 @@
   - 跨层对齐：link 两端的地点在平面上应当重合（同一套平面坐标），偏差超过 2% 图宽报错
   - 三层数据的 extent_m 一致
   - 岛轮廓 islands[].outline（可选）：至少 8 个点，坐标在 0…1
-  - kind=estate（三维庄园剖面，iframe 嵌入）：不要底图 / 点位数据；src 页面存在、有 parent、alias 为非空列表
+  - kind=estate（三维庄园剖面，iframe 嵌入）：不要底图 / 点位数据；src 页面存在、有 parent、alias 为非空列表；rooms / areas（可选）是字符串列表且不重叠
+  - points 地图的 districts（可选）：大区叫法，字符串列表
 """
 import json, os, sys
 
@@ -37,6 +38,10 @@ for mid, m in maps.items():
         if not m.get('parent'): err(f'{mid}: estate 地图要有 parent（面包屑回到哪一层）')
         if not isinstance(m.get('alias'), list) or not m['alias']: err(f'{mid}: alias 应为非空列表（当前地点匹配房间用）')
         if m.get('group') and not (m.get('layer') or {}).get('name'): err(f'{mid}: 在 group 里要有 layer.name（层切换器显示）')
+        for f in ('rooms', 'rooms_en', 'areas', 'areas_en'):   # 当前地点 → 庄园房间 / 室外区域（map/here.mjs）
+            if f in m and not (isinstance(m[f], list) and all(isinstance(w, str) and w for w in m[f])): err(f'{mid}.{f} 应为非空字符串列表')
+        both = set(m.get('rooms', [])) & set(m.get('areas', []))
+        if both: err(f'{mid}: {sorted(both)} 同时在 rooms 与 areas 里（当前地点会落到哪里不确定）')
         continue
     base = m.get('base')
     if not base: err(f'{mid} 没有 base'); continue
@@ -48,6 +53,7 @@ for mid, m in maps.items():
     if ov.get('type') == 'dzi' and not os.path.exists(os.path.join(ROOT, ov.get('src', ''))): err(f"{mid}: 缺叠加层 {ov.get('src')}")
     if ov.get('from') and ov['from'] not in maps: err(f"{mid}.overlay.from → {ov['from']} 不存在")
     if m.get('kind') != 'points': continue
+    if 'districts' in m and not (isinstance(m['districts'], list) and all(isinstance(w, str) and w for w in m['districts'])): err(f'{mid}.districts 应为非空字符串列表（当前地点只写到大区时落到这一层）')
     if not m.get('data'): err(f'{mid}: points 地图没有 data'); continue
     p = os.path.join(ROOT, m['data'])
     if not os.path.exists(p): err(f"{mid}: 缺数据 {m['data']}"); continue
