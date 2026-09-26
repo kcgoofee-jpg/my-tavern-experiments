@@ -75,20 +75,20 @@
 <div id="card" hidden><button class="x" id="cardX">×</button><span class="tag"></span><h2></h2><div class="src"></div><div class="extra"></div></div>
 <div id="status">加载中…</div>
 <script>
-// 底图三档（与 v4.3 做法一致：单张大图，按清晰度切换）
-// 性能：默认低清；国界叠加层按档位用对应尺寸（解码内存：1200px≈6MB，2000px≈16MB，4000px≈63MB，8000px≈157MB）
+// 底图是 DZI 瓦片金字塔（8000px 原图切 256px 瓦片），只加载屏幕里看得见的部分。
+// 解码内存由屏幕大小和瓦片缓存上限决定，不再随原图变大；档位只控制「够不够清晰才换更细的瓦片」（minPixelRatio）。
 const TIERS = [
-  { key: 'mini', name: '省流', url: 'art/world_1k.jpg', borders: 'art/borders_1200.png' },
-  { key: 'low', name: '低清', url: 'art/world_2k.jpg', borders: 'art/borders_2000.png' },
-  { key: 'hd', name: '高清', url: 'art/world_4k.jpg', borders: 'art/borders_4000.png' },
-  { key: 'uhd', name: '超清', url: 'art/world_8k.jpg', borders: 'art/borders_4000.png' },
+  { key: 'save', name: '省流', ratio: 1.8 },
+  { key: 'std', name: '标准', ratio: .9 },
+  { key: 'hd', name: '清晰', ratio: .5 },
 ];
-const TIER_KEY = 'edenMapTier';
+const TIER_KEY = 'edenMapQuality';
 // 代码地图坐标（1600×1000）→ 底图归一化坐标（相机裁切：宽 98.5%、高 97%）
 const toImg = (x, y) => [(x / 1600 - .0075) / .985, (y / 1000 - .015) / .97];
 
-let viewer, aspect = 1, M, tier = 'low';
-try { tier = localStorage.getItem(TIER_KEY) || 'low'; } catch (e) {}
+let viewer, aspect = 1, M, tier = 'std';
+try { tier = localStorage.getItem(TIER_KEY) || 'std'; } catch (e) {}
+if (!TIERS.some(t => t.key === tier)) tier = 'std';
 const $ = s => document.querySelector(s);
 
 async function main() {
@@ -98,11 +98,11 @@ async function main() {
     if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland); } catch (e) {}
   const seg = $('#tiers');
   for (const t of TIERS) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.k = t.key;
-    b.onclick = () => openTier(t.key); seg.appendChild(b); }
+    b.onclick = () => setTier(t.key); seg.appendChild(b); }
   viewer = OpenSeadragon({
     element: $('#osd'), prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5/build/openseadragon/images/',
     showNavigator: true, navigatorPosition: 'BOTTOM_RIGHT', visibilityRatio: 1, constrainDuringPan: true, homeFillsViewer: true, minZoomImageRatio: 1,
-    maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: true, imageLoaderLimit: 2, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true },
+    maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: 4, maxImageCacheCount: 120, minPixelRatio: TIERS.find(t => t.key === tier).ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true },
   });
   viewer.addHandler('open', onOpen);
   viewer.addHandler('canvas-drag', () => userMoved = true); viewer.addHandler('canvas-scroll', () => userMoved = true); viewer.addHandler('canvas-pinch', () => userMoved = true);
@@ -114,23 +114,25 @@ async function main() {
     document.documentElement.style.setProperty('--rs', rs.toFixed(3));
     document.body.classList.toggle('far', px < 1700); document.body.classList.toggle('tiny', px < 800); }); };
   viewer.addHandler('animation', rescale); viewer.addHandler('resize', rescale); viewer.addHandler('open', () => setTimeout(rescale, 0));
-  openTier(tier);
+  setTier(tier);
+  viewer.open([{ tileSource: 'art/world.dzi' }, { tileSource: 'art/borders.dzi', opacity: $('#tgBorders').checked ? 1 : 0 }]);
   $('#tgBorders').onchange = e => { const it = viewer.world.getItemAt(1); if (it) it.setOpacity(e.target.checked ? 1 : 0); };
   $('#tgLabels').onchange = e => document.body.classList.toggle('nolabels', !e.target.checked);
   $('#tgMarkers').onchange = e => document.body.classList.toggle('nomarkers', !e.target.checked);
   $('#here').oninput = () => markHere($('#here').value);
   $('#cardX').onclick = () => { $('#card').hidden = true; document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); };
 }
-function openTier(key) {
+// 切换清晰度不重开地图，只改各图层换细瓦片的阈值
+function setTier(key) {
   tier = key; try { localStorage.setItem(TIER_KEY, key); } catch (e) {}
   document.querySelectorAll('#tiers button').forEach(b => b.classList.toggle('on', b.dataset.k === key));
-  const t = TIERS.find(t => t.key === key);
-  $('#status').textContent = `加载 ${t.name}地图…`;
-  viewer.open([{ type: 'image', url: t.url, buildPyramid: false }, { type: 'image', url: t.borders, buildPyramid: false, opacity: $('#tgBorders').checked ? 1 : 0 }]);
+  const r = TIERS.find(t => t.key === key).ratio;
+  for (let i = 0; i < viewer.world.getItemCount(); i++) viewer.world.getItemAt(i).minPixelRatio = r;
+  viewer.forceRedraw();
 }
 function onOpen() {
   const it = viewer.world.getItemAt(0), sz = it.getContentSize(); aspect = sz.y / sz.x;
-  $('#status').textContent = `${TIERS.find(t => t.key === tier).name}地图 · ${sz.x}×${sz.y}`;
+  $('#status').textContent = `瓦片地图 · ${sz.x}×${sz.y}`;
   viewer.clearOverlays(); addOverlays(); markHere($('#here').value); focusStart(true);
 }
 function place(el, x, y, placement = OpenSeadragon.Placement.TOP_LEFT) {
