@@ -27,6 +27,13 @@
   #${ID} .em-bar .em-here { color: #9aa3ad; margin-left: auto; }
   #${ID} .em-bar button { background: none; border: 0; color: #9aa3ad; font-size: 20px; cursor: pointer; line-height: 1; }
   #${ID} iframe { width: 100%; height: 100%; border: 0; background: #14171c; }
+  /* 手机：面板全屏，关闭按钮加大 */
+  @media (max-width: 640px) {
+    #${ID} .em-panel { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
+    #${ID} .em-bar { padding: calc(4px + env(safe-area-inset-top)) 8px 4px; font-size: 12px; }
+    #${ID} .em-bar .em-here { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    #${ID} .em-bar button { font-size: 28px; padding: 0 6px; }
+  }
 </style>
 <button class="em-fab" title="世界地图" aria-label="打开世界地图">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>
@@ -61,8 +68,27 @@
     if (!panel.hidden) frame.contentWindow?.postMessage({ type: 'eden-map:here', value: here }, '*');
   }
 
+  // 悬浮按钮可拖动（避开酒馆输入栏等位置），位置按屏幕比例记住；轻点才打开面板
+  const POS_KEY = 'edenMapFabPos';
+  const placeFab = (fx, fy) => {
+    const x = Math.min(Math.max(fx, 0), 1), y = Math.min(Math.max(fy, 0), 1);
+    fab.style.left = `calc(${x} * (100vw - 48px))`; fab.style.top = `calc(${y} * (100dvh - 48px))`;
+    return [x, y];
+  };
+  try { const p = JSON.parse(localStorage.getItem(POS_KEY)); if (p) placeFab(p[0], p[1]); } catch (e) {}
+  let drag = null, dragged = false;
+  fab.addEventListener('pointerdown', e => { const r = fab.getBoundingClientRect(); drag = { dx: e.clientX - r.left, dy: e.clientY - r.top, x0: e.clientX, y0: e.clientY };
+    dragged = false; fab.setPointerCapture(e.pointerId); });
+  fab.addEventListener('pointermove', e => { if (!drag) return;
+    if (!dragged && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 6) return; dragged = true;
+    const vw = window.parent.innerWidth, vh = window.parent.innerHeight;
+    placeFab((e.clientX - drag.dx) / (vw - 48), (e.clientY - drag.dy) / (vh - 48)); });
+  fab.addEventListener('pointerup', e => { if (!drag) return; drag = null;
+    if (dragged) { const r = fab.getBoundingClientRect(), vw = window.parent.innerWidth, vh = window.parent.innerHeight;
+      const p = placeFab(r.left / (vw - 48), r.top / (vh - 48)); try { localStorage.setItem(POS_KEY, JSON.stringify(p)); } catch (err) {} } });
+
   const close = () => { if (panel.hidden) return; panel.hidden = true; unloadViewer(); };
-  fab.addEventListener('click', async () => { if (!panel.hidden) return close(); panel.hidden = false; await loadViewer(); });
+  fab.addEventListener('click', async () => { if (dragged) return; if (!panel.hidden) return close(); panel.hidden = false; await loadViewer(); });
   root.querySelector('.em-close').addEventListener('click', close);
   pdoc.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
