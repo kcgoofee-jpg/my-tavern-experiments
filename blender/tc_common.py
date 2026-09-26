@@ -258,9 +258,9 @@ class Layer:
         layer = tc.Layer('tc_mid', defaults={...}, seed=7001, bounces=4)   # 解析参数、清空场景、生成城市（第一个随机调用）
         ... 用 layer.city / layer.rng / layer.opt 建本层内容；layer.marker(id, (x, y, z), r) 登记地标 ...
         layer.finish(world=(颜色, 强度), glare={...}, extra={...})          # 相机 → 导出 map/data/<name>.json → 渲染
-    命令行（所有层一致）：--city mid|low（分城区版城市，默认整片九龙）--res N --samples N --out 路径 --crop x0,y0,x1,y1 --preview（800px / 8 采样）--data-only（只导出点位，不渲染）
+    命令行（所有层一致）：--res N --samples N --out 路径 --crop x0,y0,x1,y1 --preview（800px / 8 采样）--data-only（只导出点位，不渲染）
     """
-    def __init__(self, name, defaults=None, seed=None, bounces=None):
+    def __init__(self, name, defaults=None, seed=None, bounces=None, city='mid'):
         self.name, self.bounces = name, bounces
         d = {'--res': '1600', '--samples': '64', '--out': os.path.join(HERE, '..', 'map', 'art', f'{name}_preview.png')}
         d.update(defaults or {})
@@ -271,7 +271,7 @@ class Layer:
         self.data_only = bool(self.opt.get('--data-only'))
         rng, self.sc, self.col = setup()
         import tc_city
-        self.city = tc_city.City(rng, self.opt.get('--city'))                       # OSM 城市骨架；必须是第一个随机调用（缺高度的楼按同一随机序列补），三层才对得上
+        self.city = tc_city.City(rng, city)           # city：取哪一层的城区拼接（mid / low / upper）                       # OSM 城市骨架；必须是第一个随机调用（缺高度的楼按同一随机序列补），三层才对得上
         self.city_rng = rng                                 # 上层沿用这条随机序列（保持旧版布局不变）
         if seed is None: self.rng = rng                     # 不另起种子：沿用 SEED（上层）
         else: self.rng = np.random.default_rng(seed); random.seed(seed)

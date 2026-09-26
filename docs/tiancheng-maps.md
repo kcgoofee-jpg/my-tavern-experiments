@@ -36,9 +36,9 @@ blender/
   tc_common.py        共用：参数解析、材质、批量网格（box_mesh / ico_mesh / cyl_mesh / Batch）、城市生成、相机与导出、Layer 运行器
   tc_city.py          城市骨架：OSM 的道路、建筑轮廓、公园、水面、铁路 → 轮廓挤出、道路网格、沿路取点、路面标线、
                       车流、楼顶部件（女儿墙、退台塔楼、坡顶、设备、太阳能板、屋顶花园）
-  tc_osm.py           OSM 下载与处理（纯 Python）：fetch → data/osm/raw/*.osm（不进 git），build → data/osm/city.json
+  tc_osm.py           OSM 下载与处理（纯 Python）：区域配置 REGIONS；fetch → data/osm/raw/<区域>/（不进 git），build → data/osm/<区域>.json
   tc_detail.py        材质（带 AO 与污渍的城市材质、波纹铁皮、沥青）、坡屋顶网格、车灯
-  data/osm/city.json  城市骨架数据（© OpenStreetMap contributors，ODbL）
+  data/osm/<区域>.json  各参考区域的城市骨架数据（kowloon / manhattan / brooklyn / ruhr / shenzhen；© OpenStreetMap contributors，ODbL）
   data/tc_islands.json  上层浮岛布局（数据，可手改；不依赖随机序列）
   tiancheng_upper.py  上层：白天，浮岛与庄园，中层楼顶压在霾下作远景
   tiancheng_mid.py    中层：夜景霓虹，悬浮轨道，浮岛投影，地标
@@ -65,7 +65,18 @@ layer.marker('checkpoint_c', (x, y, 0), r=.6)     # 登记地标：平面坐标 
 layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/data/tc_mid.json → 渲染
 ```
 
-城市骨架（`tc_city.City`）：取自 OpenStreetMap 的真实路网与建筑轮廓——香港九龙油麻地—旺角—太子一带（南北约 3 km），整块旋转 90° 放进 3 km × 1.875 km 的片区，不保留任何名称（天城是虚构城市，地标另按设定叠加）。选这里而不是重庆渝中：OSM 在这里的建筑轮廓非常完整、约一半带层数或高度，而且是世界上最密的高层街区之一。缺高度的楼按城区强度随机补。三层用同一套轮廓与道路：上层俯视远景（或云海）、中层把楼高放大成垂直超大城市、下层压低并按片区换成厂房 / 棚户 / 旧城。此前用过两版合成网格（24 m 棋盘、街坊地块），都一眼能看出是程序生成的。
+城市骨架（`tc_city.City`，**云端初版，未出草稿；2026-09-27 起由本机接手调整**）：按城区拼接不同的真实城市肌理（OpenStreetMap，© OpenStreetMap contributors），各区域旋转、平移后放进 3 km × 1.875 km 的片区，不保留任何名称：
+
+| 层 / 城区 | 参考（`blender/data/osm/<区域>.json`） | 画面 |
+|---|---|---|
+| 中层 · 核心区与高区（执法局总局、议会、辉光大教堂、圣铁摇篮） | 纽约曼哈顿中城（`manhattan`） | 规整街区、高楼退台；夜里楼冠一圈暖金色灯、霓虹克制 |
+| 中层 · 商业区（C 区检查点） | 九龙旺角一带（`kowloon`） | 窄街高密度，霓虹、全息广告、车流最密 |
+| 中层 · 外围居住区（环城军营带、星渊大学） | 纽约布鲁克林 Park Slope—Gowanus（`brooklyn`） | 低矮联排住宅、运河边旧仓库、宽街，几乎没有霓虹 |
+| 下层 · 工业带（货运站、血肉磨坊、哨所） | 德国鲁尔区杜伊斯堡北部（`ruhr`） | 钢厂、编组场与货运铁路、储罐 |
+| 下层 · 城中村（7 号井、施粥站、委员会设施） | 深圳白石洲一带的道路骨架（`shenzhen`）+ 握手楼 | OSM 里城中村的楼几乎没画，按握手楼尺度生成（楼宽 10–15 m、楼距 1–3 m）；7 号井周围按九龙城寨的密度 |
+| 上层 · 悬浮庄园 | 英国乡村庄园、法国城堡规整花园为主，少量苏州 / 岭南园林 | `blender/data/tc_islands.json` 的 `estate_style`；伊甸庄园保持新古典白石 |
+
+城区多边形与偏移在 `tc_city.DISTRICTS`。交界处铺一条林荫大道（两侧城区的路都接到它上面），楼从交界往里 75 m 内密度渐变，看不出拼缝；压在车行道中线上的「楼」（OSM 里偶尔有的地下通道、高架关系）自动去掉。缺高度的楼按城区补：商业区、核心区按城区强度，外围与城中村按低层。
 
 规则：
 - **城市（OSM）载入必须是第一个随机调用**（缺高度的楼、屋顶颜色按这个序列补），由 `Layer` 保证。各层只能在生成之后按 `kind` 重新配色、压低或删除（`tc.keep_mask`），不能再消耗城市的随机序列。
