@@ -85,9 +85,11 @@ def prism_mesh(name, P, colors, m=None):
     return o
 
 def car_lights(cars, dirs):
-    """夜景车灯：车头白、车尾红（沿行驶方向的两个小发光块）。返回 (head, tail) 盒子与各自的朝向角。"""
+    """夜景车灯：车头白、车尾红，各是左右两个小点（横向 ±.005），不连成一条光带。返回 (head, tail) 盒子与朝向角（两者一一对应）。"""
     head, tail, rot = [], [], []
     for (x, y, w, d, z0, z1), (dx, dy) in zip(cars, dirs):
-        a = math.atan2(dy, dx); rot.append(a)
-        head.append((x + dx * .021, y + dy * .021, .006, .016, z1, z1 + .001)); tail.append((x - dx * .021, y - dy * .021, .006, .016, z1, z1 + .001))
+        a = math.atan2(dy, dx); nx, ny = -dy, dx
+        for s in (-.005, .005):
+            rot.append(a)
+            head.append((x + dx * .021 + nx * s, y + dy * .021 + ny * s, .005, .005, z1, z1 + .001)); tail.append((x - dx * .021 + nx * s, y - dy * .021 + ny * s, .005, .005, z1, z1 + .001))
     return np.array(head, np.float32).reshape(-1, 6), np.array(tail, np.float32).reshape(-1, 6), np.array(rot, np.float32)

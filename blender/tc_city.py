@@ -38,6 +38,11 @@ def point_in_poly(x, y, P):
 # poly：天城平面上的城区多边形；region：data/osm/<region>.json；offset：区域原点放在天城平面的哪里；
 # k：中层楼高倍数（真实楼高 × k / 100 = 平面单位）；kind：各层按它决定配色、霓虹、片区肌理。
 F = 15.3; G = 9.55                                              # 片区外框（比 ±15 × ±9.375 略大，边上不留空）
+def low_seam_x(y):
+    """下层工业带 / 城中村的交界：不是 x = 1 的直线，而是随 y 起伏的一条线（确定性的三层正弦，不消耗随机）。
+    平均仍在 x = 1，起伏约 ±70 m，交界大道沿它走。"""
+    return 1 + .42 * math.sin(y * 1.3 + .7) + .22 * math.sin(y * 3.1 + 2.0) + .09 * math.sin(y * 7.3 + .4)
+_SEAM = [(round(low_seam_x(y), 4), round(float(y), 4)) for y in np.linspace(-G, G, 64)]
 DISTRICTS = {
     'mid': [
         dict(kind='core', region='manhattan', offset=(4.5, 3.05), k=1.25,         # 核心区与高区：曼哈顿中城
@@ -49,9 +54,9 @@ DISTRICTS = {
     ],
     'low': [
         dict(kind='industrial', region='ruhr', offset=(-7, 0), k=1.0,              # 工业带：鲁尔区钢厂、货运铁路、储罐
-             poly=[(-F, -G), (1, -G), (1, G), (-F, G)]),
+             poly=[(-F, -G)] + _SEAM + [(-F, G)]),                                  # 东边界是起伏的交界线（low_seam_x）
         dict(kind='village', region='shenzhen', offset=(8, 0), k=1.0, synth=True,  # 城中村：深圳的道路骨架 + 按握手楼尺度生成的楼（7 号井一带按九龙城寨的密度）
-             poly=[(1, -G), (F, -G), (F, G), (1, G)]),
+             poly=[(F, -G), (F, G)] + _SEAM[::-1]),
     ],
 }
 DISTRICTS['upper'] = DISTRICTS['mid']                           # 上层俯视的下方城市就是中层
@@ -192,12 +197,13 @@ class City:
                         g = (round(x / .09), round(y / .09))
                         if g in occ or sdist(x, y, P) < .14: continue
                         _, ri, rd = kd.find((x, y, 0))
-                        if rd < half[ri] + bw * .75 + .01: continue          # 离路太近
+                        if rd < half[ri] + bw * .5 + .01: continue           # 离路太近（城中村贴着路盖；synth 只有下层用）
                         if any(b0[0] - .05 < x < b0[2] + .05 and b0[1] - .05 < y < b0[3] + .05 and point_in_poly(x, y, q) for q, b0 in areas): continue
                         _, bi, bd = kb.find((x, y, 0))
                         if bi is not None and bi < n0 and bd < .12: continue   # OSM 已经画了的楼
                         occ.add(g)
-                        w_, d_ = bw * rng.uniform(.85, 1.1), bw * rng.uniform(.8, 1.2)
+                        ds = 1.12 if dense else 1.0                                       # 城寨一带楼挨楼（只放大轮廓，不多取随机）
+                        w_, d_ = bw * rng.uniform(.85, 1.1) * ds, bw * rng.uniform(.8, 1.2) * ds
                         Q = np.array([(x + (-w_ / 2) * cs - (-d_ / 2) * sn, y + (-w_ / 2) * sn + (-d_ / 2) * cs), (x + (w_ / 2) * cs - (-d_ / 2) * sn, y + (w_ / 2) * sn + (-d_ / 2) * cs),
                                       (x + (w_ / 2) * cs - (d_ / 2) * sn, y + (w_ / 2) * sn + (d_ / 2) * cs), (x + (-w_ / 2) * cs - (d_ / 2) * sn, y + (-w_ / 2) * sn + (d_ / 2) * cs)], np.float32)
                         h = float(rng.uniform(36, 45) if dense else rng.uniform(18, 32))   # 握手楼 6–10 层；城寨一带 12–14 层
@@ -301,8 +307,10 @@ class City:
                     for off in (-.003, .003):
                         p = (a + b) / 2 + nrm * off; boxes.append((p[0], p[1], L - .12, .0015, z, z + .0006)); rot.append(ang); cols.append(yellow)
         return np.array(boxes, np.float32).reshape(-1, 6), np.array(rot, np.float32), np.array(cols, np.float32).reshape(-1, 3)
-    def traffic(self, rng, z, density=2.5, weight=None):
-        """车流：每条能走车的路两个方向各一条车道。返回 cars (n, 6)、rot、方向 (n, 2)、颜色。density = 每条车道每 100 m 车数。"""
+    def traffic(self, rng, z, density=2.5, weight=None, platoon=False):
+        """车流：每条能走车的路两个方向各一条车道。返回 cars (n, 6)、rot、方向 (n, 2)、颜色。density = 每条车道每 100 m 车数。
+        platoon=True（中层）：车 2–5 辆一队（红绿灯放出来的一串），队内间距 5–7 m，队与队之间按指数分布拉开，车在车道里左右略有偏；
+        默认关，保持上层的随机序列不变。"""
         cars, rots, dirs, cols = [], [], [], []
         for r in self.roads:
             if r['c'] not in CAR or r['c'] == 'service': continue
@@ -314,6 +322,15 @@ class City:
                 for s in (1, -1):                                          # 靠左 / 右两个方向
                     k = weight((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) if weight else .5
                     t = rng.uniform(0, .1)
+                    if platoon:
+                        while t < L - .03:
+                            for _ in range(int(rng.integers(2, 6))):
+                                if t >= L - .03: break
+                                p = a + u * t + nrm * s * (w / 4 + rng.uniform(-w / 10, w / 10))
+                                cars.append((p[0], p[1], .046, .02, z, z + .015)); rots.append(ang); dirs.append(u * s); cols.append(td_car_color(rng))
+                                t += rng.uniform(.05, .07)
+                            t += max(.055, rng.exponential(3 / (density * (.3 + 1.4 * k))))
+                        continue
                     while t < L - .03:
                         p = a + u * t + nrm * s * w / 4
                         cars.append((p[0], p[1], .046, .02, z, z + .015)); rots.append(ang); dirs.append(u * s)
@@ -415,7 +432,26 @@ def build_roof_kit(prefix, kit, m_box, m_roof, prism_fn=None):
     if kit['prisms'] and prism_fn: prism_fn(prefix + '_roofs', kit['prisms'], kit['pcols'], m_roof)
     tick(f'{prefix}: {len(kit["box"])} roof parts, {len(kit["tower_polys"])} tower tiers, {len(kit["prisms"])} pitched roofs')
 
+def _ss(t): t = min(1.0, max(0.0, t)); return t * t * (3 - 2 * t)
+def core_w(city, x, y, band=1.0):
+    """核心区 ↔ 外围居住区的风格权重（1 = 纯核心，0 = 纯外围）：按到外围多边形的有向距离，交界两侧各 band（默认 100 m）内平滑过渡。
+    与商业区的交界不受影响（远离外围时恒为 1）。没有外围城区的层返回 1。"""
+    s = _core_s(city, x, y)
+    return 1.0 if s is None else _ss((s + band) / (2 * band))
+def _core_s(city, x, y):
+    """有向距离：在核心区里为「离外围多远」（正），在外围里为「离核心多远」的相反数（负）。只量两区之间，不量片区外框。"""
+    Po = next((D['P'] for D in city.districts if D['kind'] == 'outer' and 'P' in D), None)
+    Pc = next((D['P'] for D in city.districts if D['kind'] == 'core' and 'P' in D), None)
+    if Po is None or Pc is None: return None
+    return max(0.0, -sdist(x, y, Po)) - max(0.0, -sdist(x, y, Pc))
 def tops_mid(city, cap=.1):
-    """中层城市（上层远景与中层夜景共用）：楼顶高度 = 中层地面 + 真实楼高 × 城区倍数 k（旺角放大成垂直超大城市，曼哈顿本来就高），封顶在悬浮轨道以下。"""
+    """中层城市（上层远景与中层夜景共用）：楼顶高度 = 中层地面 + 真实楼高 × 城区倍数 k（旺角放大成垂直超大城市，曼哈顿本来就高），封顶在悬浮轨道以下。
+    核心区与外围交界：天际线不是一级台阶——核心一侧 150 m 内的楼逐渐压低，外围一侧 80 m 内的楼略微加高（按距离，不取随机）。"""
     h = np.array([b['h'] * b.get('k', 3.0) for b in city.b], np.float32)
+    for i, b in enumerate(city.b):
+        if b['dk'] not in ('core', 'outer'): continue
+        s = _core_s(city, b['cx'], b['cy'])
+        if s is None: break
+        if b['dk'] == 'core' and s < 1.5: h[i] *= .4 + .6 * _ss(s / 1.5)          # 核心一侧：离外围越近越矮
+        elif b['dk'] == 'outer' and s > -.8: h[i] *= 1 + .6 * (1 - _ss(-s / .8))  # 外围一侧：贴着核心的略高
     return np.minimum(cap, tc.Z_GROUND + np.clip(h / 100, .12, 3.7))
