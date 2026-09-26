@@ -12,6 +12,8 @@
   - 岛轮廓 islands[].outline（可选）：至少 8 个点，坐标在 0…1
   - kind=estate（三维庄园剖面，iframe 嵌入）：不要底图 / 点位数据；src 页面存在、有 parent、alias 为非空列表；rooms / areas（可选）是字符串列表且不重叠
   - points 地图的 districts（可选）：大区叫法，字符串列表
+  - 事件大类 / 类型（events.mjs）在 en.json 的 names 里都有英文
+  - 上层 routes（航线折线、巡逻环）：kind 已知、至少 2 个点、坐标在 0…1
 """
 import json, os, sys
 
@@ -70,6 +72,14 @@ for mid, m in maps.items():
         if v.get('tag') not in ('set', 'inf'): err(f"{mid}.{i}: tag 应为 set 或 inf，现在是 {v.get('tag')}")
         if not isinstance(v.get('alias'), list) or not v['alias']: err(f'{mid}.{i}: alias 应为非空列表')
     if m.get('focus') and m['focus'] not in meta: err(f"{mid}.focus → {m['focus']} 不是本图的标记")
+    # 航线叠加层（查看器按 routes 画：lane = 航线、patrol / patrol_city = 骑士团巡逻环）
+    for j, rt in enumerate(d.get('routes', []) or []):
+        if not isinstance(rt, dict): err(f'{mid}.routes[{j}] 应为对象'); continue
+        if rt.get('kind') not in ('lane', 'patrol', 'patrol_city'): warn(f"{mid}.routes[{j}].kind={rt.get('kind')!r} 查看器不认识（按航线画）")
+        pts = rt.get('pts')
+        if not isinstance(pts, list) or len(pts) < 2: err(f'{mid}.routes[{j}]: pts 至少 2 个点'); continue
+        bad = [q for q in pts if not (isinstance(q, (list, tuple)) and len(q) == 2 and all(isinstance(v, (int, float)) and 0 <= v <= 1 for v in q))]
+        if bad: err(f'{mid}.routes[{j}]: {len(bad)} 个点不是 0…1 内的 [x, y]（如 {bad[0]}）')
     # 岛轮廓（查看器的结界 / 上层投影叠加层按它画平滑闭合曲线；没有时画椭圆）：归一化 [x, y] 列表，至少 8 个点，坐标在 0…1
     for isl in d.get('islands', []):
         if 'outline' not in isl: continue
@@ -124,6 +134,16 @@ for lg in ('zh', 'en'):
     i18n[lg] = json.load(open(fp, encoding='utf-8'))
 if len(i18n) == 2:
     for k in (set(i18n['zh']) ^ set(i18n['en'])) - {'names'}: err(f'i18n：键 {k} 只在一种语言里有')
+    # 事件体系（map/tavern/events.mjs 的 GROUPS / CATS）：每个大类、每种类型在 en.json 的 names 里要有英文（英文界面的图例、事件卡用）
+    import subprocess
+    try:
+        js = "import('./map/tavern/events.mjs').then(m=>console.log(JSON.stringify([...Object.keys(m.GROUPS),...Object.keys(m.CATS)])))"
+        r = subprocess.run(['node', '-e', js], capture_output=True, text=True, cwd=os.path.join(ROOT, '..'), timeout=30)
+        names = set(json.loads(r.stdout)) if r.returncode == 0 else None
+    except (OSError, ValueError, subprocess.TimeoutExpired): names = None
+    if names is None: warn('没有 node，跳过事件类型英文名检查')
+    else:
+        for k in sorted(names - set(i18n['en'].get('names', {}))): err(f'i18n：事件大类 / 类型「{k}」在 en.json 的 names 里没有英文')
 # 外部事件数据源（map/events.js 定时拉取）：feeds: [{label, url, every}]
 feeds = reg.get('feeds', [])
 if not isinstance(feeds, list): err('feeds 应为列表')

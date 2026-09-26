@@ -247,10 +247,12 @@
       return _.get(d, 'stat_data.世界.当前地点', '') || '';
     } catch (e) { return ''; }
   }
+  // 标题栏显示用：{{user}} 换成酒馆里的用户名，取不到就去掉（发给地图的仍是原值，地图自己处理）
+  const userName = s => { let n = ''; try { n = SillyTavern.getContext().name1 || ''; } catch (e) {} return String(s).replace(/\{\{user\}\}/g, n).trim(); };
   // MVU 变量在流式输出时会连续更新：合并成一次，地点没变就不打扰地图
   function push() {
     here = getHere();
-    hereEl.textContent = here ? `当前地点：${here}` : '';
+    hereEl.textContent = here ? `当前地点：${userName(here)}` : '';
     fab.classList.toggle('here', !!here);
     if (!panel.hidden && alive && here !== sent) { sent = here; post({ type: 'eden-map:here', value: here }); }
   }

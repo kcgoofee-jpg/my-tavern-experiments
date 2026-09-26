@@ -17,7 +17,14 @@ const TCEvents = (() => {
     政策: ['政', '#6f9be0'], 公共直播: ['播', '#e0182d'], 民生: ['民', '#e8d08a'], 军事调动: ['军', '#a3b18a'], 急救: ['救', '#37c5b0'], 其他: ['!', '#cfd8e0'],
   };
   const look = c => LOOK[c] || LOOK.其他;
-  const lk = e => e.ch && e.color ? [e.ch, e.color] : look(e.cat);   // events.mjs 给的图标字与大类颜色优先（8 个大类 = 8 种颜色）
+  const lk = e => e.ch && e.color ? [e.ch, e.color] : look(e.cat);   // events.mjs 给的图标字与大类颜色优先（v2：9 个大类 = 9 种颜色）
+  // 图例与筛选（v2）：9 个大类的颜色；点一个大类 = 在地图、列表、层计数里隐藏它（记在本机）。大类表在 events.mjs 加载后取，加载前用这份
+  let GROUPS = { 空防: '#d9a441', 气候: '#7fd6ff', 治安: '#3d7dff', 政治: '#6f9be0', 媒体: '#3de0ff', 民生: '#e8d08a', 军事: '#a3b18a', 灾害: '#ff5a2a', 人物: '#d7a6e8' };
+  let ORDER = Object.keys(GROUPS);
+  const OFF_KEY = 'edenMapEvOff';
+  const off = new Set((() => { try { return JSON.parse(localStorage.getItem(OFF_KEY)) || []; } catch (e) { return []; } })());
+  const grpOf = e => e.grp || '其他';
+  let grpLoaded = false;
   const MAP_OF = { 上层: 'tc_upper', 中层: 'tc_mid', 下层: 'tc_low', 天城外: 'world' };
   // 城区关键词 → 平面坐标（x ∈ [-15, 15]、y ∈ [-9.375, 9.375]，与 Blender 同一平面；位置为推断）
   const ZONES = {
@@ -29,6 +36,7 @@ const TCEvents = (() => {
   const markersOf = {};                                    // 地图 id → 点位数据（按需加载）
   const hash = s => { let h = 2166136261; for (const c of String(s)) h = Math.imul(h ^ c.codePointAt(0), 16777619); return (h >>> 0) / 4294967296; };
   const all = () => items.concat(feedItems);
+  const vis = () => all().filter(e => !off.has(grpOf(e)));   // 筛选后看得见的
   const mapOf = e => MAP_OF[e.layer] || 'tc_mid';
   const live = e => !e.closed && e.tier !== 'fade';
 
@@ -61,7 +69,8 @@ const TCEvents = (() => {
     if (flyId && cur && viewer.world.getItemCount() && flyTo(flyId)) flyId = null;
   }
   const tagText = o => `<span data-tcmap="${Object.entries(o).filter(([k]) => k !== 'mes' && k !== 'src').map(([k, v]) => `${k}=${String(v).replace(/[;"]/g, ' ')}`).join(';')}"></span>`;
-  const mod = () => EVM ? Promise.resolve(EVM) : import('./tavern/events.mjs').then(m => (EVM = m)).catch(() => null);
+  // 按文档的 <base> 解析（srcdoc 里的内联 / 经典脚本做 import() 时 Chrome 会按宿主页地址解析相对路径，取到 tavern/tavern/…）
+  const mod = () => EVM ? Promise.resolve(EVM) : import(new URL('tavern/events.mjs', document.baseURI).href).then(m => (EVM = m)).catch(() => null);
   // 外部数据源：maps.json 顶层 feeds: [{label, url, every}]（url 返回 {events: [与标签相同的中文字段]}）；状态改成已解除前一直显示
   async function pollFeeds() {
     const feeds = REG?.feeds || []; if (!feeds.length) return;
@@ -80,7 +89,7 @@ const TCEvents = (() => {
     for (const el of layerEls) viewer.removeOverlay(el); layerEls = [];
     if (REG.maps[cur]?.kind === 'estate') return;   // 庄园剖面（iframe）不画事态点
     if (REG.maps[cur]?.kind === 'world') { worldBadge(); applyGlitch(); updateToggle(); return; }
-    const here = all().filter(e => mapOf(e) === cur && e.tier !== 'fade').slice(0, 50);    // 手机上叠加层不超过 50 个
+    const here = vis().filter(e => mapOf(e) === cur && e.tier !== 'fade').slice(0, 50);    // 手机上叠加层不超过 50 个
     const seen = {};
     for (const e of here) {
       const p = pos(e), k = `${p.nx.toFixed(3)},${p.ny.toFixed(3)}`, n = seen[k] = (seen[k] || 0) + 1;   // 同一地点多条：绕一小圈错开
@@ -143,11 +152,17 @@ const TCEvents = (() => {
 
   // ---------- 事态列表（底部横条，点开是列表） ----------
   function renderBar() {
-    const bar = $('#evbar'), list = all().filter(e => REG.maps[mapOf(e)]);
-    bar.hidden = !list.length || !shown; if (bar.hidden) return;
-    const n = list.filter(live).length, fresh = list.filter(e => e.isNew).length;
-    bar.querySelector('button').innerHTML = `<i class="dot"></i><span>${esc(n ? T('ev.bar_live', '{n} 起进行中', { n }) : T('ev.bar_none', '暂无进行中'))} · ${esc(T('ev.bar_total', '共 {n} 起事态', { n: list.length }))}</span>${fresh ? `<span class="new">${esc(T('ev.bar_new', '{n} 条新', { n: fresh }))}</span>` : ''}<span class="tog">${esc(open ? T('ev.collapse', '收起 ▾') : T('ev.expand', '展开 ▴'))}</span>`;
+    const bar = $('#evbar'), every = all().filter(e => REG.maps[mapOf(e)]), list = every.filter(e => !off.has(grpOf(e)));
+    bar.hidden = !every.length || !shown; if (bar.hidden) return;
+    if (!grpLoaded) { grpLoaded = true; mod().then(m => { if (m?.GROUPS) { GROUPS = m.GROUPS; ORDER = m.GROUP_ORDER || Object.keys(m.GROUPS).filter(g => g !== '其他'); renderBar(); } }); }   // 有事件时才取大类表
+    const n = list.filter(live).length, fresh = list.filter(e => e.isNew).length, hid = ORDER.filter(g => off.has(g)).length + (off.has('其他') ? 1 : 0);
+    bar.querySelector('button').innerHTML = `<i class="dot"></i><span>${esc(n ? T('ev.bar_live', '{n} 起进行中', { n }) : T('ev.bar_none', '暂无进行中'))} · ${esc(T('ev.bar_total', '共 {n} 起事态', { n: list.length }))}${hid ? ' · ' + esc(T('ev.filtered', '已隐藏 {n} 类', { n: hid })) : ''}</span>${fresh ? `<span class="new">${esc(T('ev.bar_new', '{n} 条新', { n: fresh }))}</span>` : ''}<span class="tog">${esc(open ? T('ev.collapse', '收起 ▾') : T('ev.expand', '展开 ▴'))}</span>`;
     bar.dataset.open = open ? '1' : '0';
+    // 图例：9 个大类都列出（没有事件的变淡），数字 = 该类条数；点一下隐藏 / 恢复
+    const cnt = {}; for (const e of every) cnt[grpOf(e)] = (cnt[grpOf(e)] || 0) + 1;
+    const gs = ORDER.concat(cnt.其他 ? ['其他'] : []);
+    bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${GROUPS[g] || '#cfd8e0'}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join('')
+      + `<small>${esc(T('ev.legend_hint', '点大类可隐藏 / 显示'))}</small>`;
     bar.querySelector('ol').innerHTML = list.map(e => `<li data-id="${esc(e.id)}" class="tier-${e.tier}${e.isNew ? ' isnew' : ''}" style="--c:${lk(e)[1]}"><i></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(T('ev.cleared', '已解除')) : ''} <em>${esc(where(e))}</em></b><em>${esc(e.feed ? T('ev.feed', '数据源') : T('ev.floor', '第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${e.src ? ' —— ' + esc(e.src) : ''}</small></li>`).join('');
   }
   function updateToggle() {
@@ -158,7 +173,7 @@ const TCEvents = (() => {
       tg.querySelector('input').onchange = ev => { shown = ev.target.checked; document.body.classList.toggle('noevents', !shown); renderBar(); applyGlitch(); };
       document.getElementById('tgMarkers')?.closest('label')?.after(tg);
     }
-    const act = all().filter(e => mapOf(e) === cur && live(e)).length;
+    const act = vis().filter(e => mapOf(e) === cur && live(e)).length;
     tg.querySelector('span').textContent = act ? T('ev.toggle_n', '事态 {n}', { n: act }) : T('ev.toggle', '事态');
     tg.hidden = !all().length;
   }
@@ -171,7 +186,7 @@ const TCEvents = (() => {
   }
   // 世界图：天城内部未解除的事件汇成天城标记上的一个数字角标
   function worldBadge() {
-    const n = all().filter(e => live(e) && mapOf(e) !== 'world').length;
+    const n = vis().filter(e => live(e) && mapOf(e) !== 'world').length;
     const lab = [...document.querySelectorAll('.mk')].find(x => x.dataset.name === '天城')?.querySelector('.lab');
     if (lab) { if (n) lab.dataset.ev = n; else delete lab.dataset.ev; }
   }
@@ -205,7 +220,14 @@ const TCEvents = (() => {
   #evbar .dot{width:8px;height:8px;transform:rotate(45deg);background:#f08a24;flex:none}
   #evbar .new{color:#f08a24;font-weight:700;white-space:nowrap} #evbar .tog{margin-left:auto;color:#8b949e;white-space:nowrap}
   #evbar ol{list-style:none;margin:0;padding:0 6px 6px;max-height:38vh;overflow-y:auto}
-  #evbar[data-open="0"] ol{display:none}
+  #evbar[data-open="0"] ol,#evbar[data-open="0"] .evleg{display:none}
+  .evleg{display:flex;flex-wrap:wrap;gap:4px;padding:2px 8px 6px;align-items:center}
+  .evleg button{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:10px;border:1px solid rgba(255,255,255,.14);font-size:11px;line-height:16px;cursor:pointer;color:#e6edf3;white-space:nowrap}
+  .evleg button i{width:8px;height:8px;border-radius:2px;background:var(--c);flex:none}
+  .evleg button em{font-style:normal;color:#8b949e}
+  .evleg button.none{opacity:.45}.evleg button.off{opacity:.35;text-decoration:line-through}.evleg button.off i{background:transparent;box-shadow:inset 0 0 0 1px var(--c)}
+  .evleg button:hover{border-color:var(--c)}.evleg button:active{opacity:.6}.evleg button:focus-visible{outline:2px solid var(--c);outline-offset:1px}
+  .evleg small{color:#8b949e;font-size:10.5px;margin-left:2px}
   #evbar li{display:grid;grid-template-columns:12px 1fr auto;gap:2px 8px;align-items:baseline;padding:6px;border-top:1px solid rgba(255,255,255,.08);cursor:pointer}
   #evbar li:hover{background:rgba(255,255,255,.05)} #evbar li:active{opacity:.6}
   #evbar li i{width:8px;height:8px;transform:rotate(45deg);background:var(--c);align-self:center}
@@ -235,13 +257,16 @@ const TCEvents = (() => {
 
   function init() {
     const stage = $('#stage');
-    if (!$('#evbar')) stage.insertAdjacentHTML('beforeend', '<div id="evbar" hidden data-open="0"><button type="button"></button><ol></ol></div><div id="glitchNote" hidden></div>');
+    if (!$('#evbar')) stage.insertAdjacentHTML('beforeend', '<div id="evbar" hidden data-open="0"><button type="button"></button><div class="evleg"></div><ol></ol></div><div id="glitchNote" hidden></div>');
+    $('#evbar .evleg').addEventListener('click', e => { const b = e.target.closest('button[data-g]'); if (!b) return;
+      const g = b.dataset.g; off.has(g) ? off.delete(g) : off.add(g); try { localStorage.setItem(OFF_KEY, JSON.stringify([...off])); } catch (err) {}
+      render(); renderBar(); badges(); });
     $('#evbar > button').addEventListener('click', () => { open = !open; renderBar(); });
     $('#evbar ol').addEventListener('click', e => { const li = e.target.closest('li'); if (li) flyTo(li.dataset.id); });
     if (coarse) document.body.classList.add('coarse');
   }
   // 层切换器上的事态数：某张地图上未解除的事件条数（查看器的 updateLayerBadges 读取）
-  const countOn = id => all().filter(e => mapOf(e) === id && live(e)).length;
+  const countOn = id => vis().filter(e => mapOf(e) === id && live(e)).length;
   const badges = () => { if (typeof updateLayerBadges === 'function') updateLayerBadges(); };
   return { init, set, render: afterOpen, pollFeeds, flyTo, countOn, get events() { return all(); } };
 })();

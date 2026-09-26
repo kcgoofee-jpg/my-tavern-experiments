@@ -60,9 +60,8 @@ t('6 匹配不到 → null', () => {
   assert.equal(resolveHere('主卧', null), null);
 });
 t('优先级：更长的别处地标压过「庄园」二字', () => {
-  const reg = J('data/maps.json');
-  reg.maps.tc_upper.markers.zaibatsu = { name: '财团家族庄园', tag: 'inf', src: '测试', alias: ['财团家族庄园'] };
-  const r = resolveHere('财团家族庄园的书房', buildIndex(reg));
-  assert.equal(r.level, 3); assert.equal(r.marker, 'zaibatsu');
+  const r = R('财团家族庄园的书房');
+  assert.equal(r.level, 3); assert.equal(r.marker, 'zaibatsu_estate');
+  is('首相府', 3, 'tc_upper', { marker: 'pm_residence' }); is('大主教府邸', 3, 'tc_upper', { marker: 'archbishop_palace' });
 });
 console.log(`\n${n} passed`);
