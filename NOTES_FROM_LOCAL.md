@@ -20,3 +20,25 @@
 - 许可：© OpenStreetMap contributors（ODbL），写进 maps.json 的 `credit`、README、ROADMAP。
 - 实现：`blender/tc_city.py`（OSM 城市：轮廓挤出、道路网格、沿路取点、路面标线、车流、楼顶部件）；`tc_common.city_blocks` 的网格生成已删除。三层共用同一套轮廓与道路。
 - 上层新参数 `--below clouds|city`；`render_all.sh` 默认渲 `upper`（云海）与 `upper_city`（带城市）两份。
+
+### 2. 上层默认云海 —— 已完成，**可以重跑：上层（`upper` 与 `upper_city` 两份）**
+- `tiancheng_upper.py --below clouds|city`（默认 clouds）；`bash tools/render_all.sh upper upper_city --res 8000 --samples 64`。
+- maps.json：`tc_upper.alt = {label: 显示下方城市, base: art/tc_upper_city.dzi}`；三层加 `credit`。
+- viewer.html：有 `alt` 的地图显示「显示下方城市」开关，默认关，状态记在 localStorage（`edenMapAlt:<地图>`）；切换只换底图、视角不变；`tc_upper_city.dzi` 还没渲染时开关会提示「这版底图还没渲染」并自动关掉。右上角显示 credit。
+- 注意：仓库里现在的 `tc_upper.dzi` 是旧的「带城市」版，重渲后它变成云海，城市版放 `tc_upper_city`。
+
+### 3. OpenSeadragon 5.0.1 手机端问题 —— 核实结论（没有替换任何文件，等本机确认）
+- **#2667「Mobile performance in collections 4.1.0 vs. 5.0.0+」**：仍是 open，没有维护者回复、没有关联的修复 PR。现象是 iPhone 上 5.0.1 很卡、偶尔页面崩溃，退回 4.1.0 立刻正常。报告里**没说用的是哪个 drawer**，而 5.0 的默认 drawer 是 WebGL（不支持时才退回 canvas）；按 5.0.1–6.0 的改动看，嫌疑最大的是 WebGL drawer（上下文丢失、纹理内存）。
+- **#2705「OSD lagging on mobile devices after sometime」**：也是 open、没有修复 PR。现象是长时间使用后越来越卡，报告人自己试了 canvas drawer 但撞上跨域污染画布（`getImageData` 报错），最后靠「手动从 world 里移除旧图片」控制内存。这是他们反复往 world 里加图导致的内存累积，和我们的用法（每张地图 `viewer.open` 一次、缓存有上限）不同。
+- **官方后续**：6.0.0 起默认 drawer 改成 `auto`（按设备在 WebGL 与 canvas 间选）；WebGL 上下文丢失后会恢复或改用 canvas；更好的 WebGL 支持检测；「Improved performance on mobile」；缓存系统整体重写。6.0.1、6.0.2 是小修（多图加载、TypeScript 类型）。
+- **对我们的影响**：`viewer.html` 一直显式用 `drawer: 'canvas'`（v0.6.0 起，为了修 WebGL 下国界线的白块），不走 WebGL 路径，所以 #2667 最可能的原因不影响我们；#2705 的跨域问题我们也没有（瓦片与页面同源，或走 CORS 的 jsDelivr，并且不读像素）。已有的缓解：`maxImageCacheCount` 60（触屏 30）、DPR 上限、关闭面板时释放瓦片。**结论：不需要降级或升级，先保持 5.0.1 + canvas。**
+- **如果本机在 iPhone 上仍然实测卡顿**，两个选项：
+  1. **降级到 4.1.1**：4.x 没有 `drawer` 选项（只有 canvas，传了也会被忽略）；我们包装的内部方法 `TiledImage._getLevelsInterval`（清晰度档位上限）和 `_tilesLoading`（加载进度）在 4.1 里都存在，改动只是换 `map/vendor/openseadragon/`。风险：4.x 的触屏手势与 5.0 修过的若干 bug（页面缩放后图消失等）会回来。
+  2. **升级到 6.0.2**：保留 `drawer: 'canvas'` 即可避开 WebGL。风险较大：6.0 重写了瓦片与缓存管线，`_getLevelsInterval`、`_needsUpdate` 等内部字段可能改名或语义变化，清晰度档位和加载进度需要重写并在 TT 里重测。
+  - 建议顺序：先在 iPhone 的 TT 里实测当前版本；有问题先试 4.1.1（改动最小，可以直接回退），6.0.2 等有空再做。
+- 来源：https://github.com/openseadragon/openseadragon/issues/2667 、https://github.com/openseadragon/openseadragon/issues/2705 、https://github.com/openseadragon/openseadragon/blob/master/changelog.txt
+
+### 4. npm 发布准备 —— 已完成（没有发布）
+- `bash tools/pack_npm.sh`：把 viewer.html、tavern/eden-map.js、data/*.json、vendor/、art/*.dzi 与瓦片目录、首屏缩略图拷到临时目录，生成 package.json（`tiancheng-map-assets`，版本跟 VERSION，`files` 白名单，`repository` 指向 GitHub），跑 `npm pack --dry-run`。当前：844 个文件，压缩后 12.6 MB（解包 13.5 MB）。`--keep` 保留临时目录，本机发布时进去 `npm publish`。
+- **需要你决定**：仓库没有 LICENSE 文件，package.json 的 `license` 暂填 `SEE LICENSE IN README.md`；另外 VERSION 现在是 0.6.1（CHANGELOG 已写到 0.8.0），发布前请把 VERSION 改对。
+- `eden-map.js` 的 `LINES` 里预留了 `npm` 线路（npmmirror，`https://registry.npmmirror.com/tiancheng-map-assets/<版本>/files/map/`），`enabled: false`，列表里被过滤掉，界面上看不到；首次发布并验证后改成 `true`。版本号从脚本自己的地址里取（gh 的 `@map-v<版本>` 或 npm 路径）；取不到版本时 npm 线路退回原地址。gh 两条线路知道版本时也改为按模板拼地址（结果与原来的「只换域名」相同）。
