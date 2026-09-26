@@ -1,5 +1,5 @@
 {
-  "_说明": "地图注册表。base = 底图 DZI；parent = 上一级地图（面包屑）；group = 同组多层（天城三层）；alt = 同一张图的另一版底图（查看器里一个开关，只换底图）；credit = 数据署名（查看器右上角显示）；view = 尺度与默认缩放（focus 初始聚焦的标记、width_m 初始可见宽度、min_width_m 最大放大时的可见宽度、extent_m 整张图的实际宽高，单位米）；overlay = 可开关叠加层（from = 取另一张地图的数据，如中层的「上层投影」取上层岛屿）；status=planned 表示制作中（切换器里置灰）。kind=estate 是三维庄园剖面（不用瓦片）：src = 嵌入页面（相对 map/），查看器把它放进 iframe，并用 estate:room 消息按 alias 高亮房间。markers 里的 nx/ny 由渲染脚本导出的数据文件提供，这里只写名称、设定出处和当前地点别名；link = 跨层通道（点开地点卡可直接去另一张图的对应地点）。字段说明见 docs/tiancheng-maps.md，改完跑 python3 tools/check_maps.py。",
+  "_说明": "地图注册表。base = 底图 DZI；parent = 上一级地图（面包屑）；group = 同组多层（天城三层）；alt = 同一张图的另一版底图（查看器里一个开关，只换底图）；credit = 数据署名（查看器右上角显示）；view = 尺度与默认缩放（focus 初始聚焦的标记、width_m 初始可见宽度、min_width_m 最大放大时的可见宽度、extent_m 整张图的实际宽高，单位米）；overlay = 可开关叠加层（from = 取另一张地图的数据，如中层的「上层投影」取上层岛屿）；status=planned 表示制作中（切换器里置灰）。kind=estate 是三维庄园剖面（不用瓦片）：src = 嵌入页面（相对 map/），查看器把它放进 iframe，并用 estate:room 消息按 alias 高亮房间；rooms / areas（及 _en）= 庄园房间 / 室外区域的叫法，当前地点按它判断直达庄园哪里（map/here.mjs）。districts = 该层的大区叫法（当前地点只写到大区时落到这一层）。markers 里的 nx/ny 由渲染脚本导出的数据文件提供，这里只写名称、设定出处和当前地点别名；link = 跨层通道（点开地点卡可直接去另一张图的对应地点）。字段说明见 docs/tiancheng-maps.md，改完跑 python3 tools/check_maps.py。",
   "start": "world",
   "groups": {
     "tiancheng": { "title": "天城", "title_en": "Tiancheng", "layers": ["eden_estate", "tc_upper", "tc_mid", "tc_low"] }
@@ -10,6 +10,10 @@
       "layer": { "name": "伊甸庄园", "sub": "庄园剖面", "alt": "上层 · 庄园", "name_en": "Eden Manor", "sub_en": "Estate cutaway", "alt_en": "Upper · Estate" },
       "src": "estate/index.html",
       "src_note": "三维结构示例（three.js，楼层 F1–F5 与房间骨架），接入流程用；正式版会替换这个页面，接口见 estate/demo.html 顶部注释与 docs/tiancheng-maps.md",
+      "rooms": ["大厅", "门厅", "玄关", "楼梯厅", "会客厅", "客厅", "沙龙", "餐厅", "饭厅", "备餐间", "厨房", "值班室", "仆从值班室", "茶室", "起居室", "客房", "书房", "图书室", "廊厅", "主卧", "主卧室", "卧室", "寝室", "寝", "更衣室", "衣帽间", "浴室", "浴池", "盥洗室", "私人房间", "小客厅", "仆役厅", "员工餐厅", "女仆长办公室", "附属用房", "洗衣房", "储藏室", "监控室", "安保室", "露台", "观景露台", "电梯厅", "私人电梯厅"],
+      "rooms_en": ["Grand Hall", "Stair Hall", "Drawing Room", "Dining Room", "Servery", "Staff Duty Room", "Morning Room", "Tea Room", "Guest Room", "Library", "Gallery Hall", "Master Bedroom", "Bedroom", "Dressing Room", "Bathroom", "Private Room", "Small Parlour", "Servants' Hall", "Head Maid's Office", "Ancillary Room", "Laundry", "Security Room", "Roof Terrace", "Private Lift Hall"],
+      "areas": ["前庭", "喷泉", "前院", "后庭", "人工湖", "湖", "后院", "停靠平台", "停机坪", "码头", "花园", "庭园", "花坛", "水榭", "凉亭", "树篱迷宫", "迷宫", "玫瑰园", "温室", "橘园", "菜园", "厨房花园", "机库", "马车房", "车库", "仆役楼", "仆人楼", "主楼"],
+      "areas_en": ["Forecourt", "Fountain", "Rear Court", "Lake", "Landing Platform", "Gardens", "Garden", "Water Pavilion", "Hedge Maze", "Maze", "Rose Garden", "Orangery", "Kitchen Garden", "Hangar", "Carriage House", "Staff Wing", "Main House"],
       "alias": ["伊甸庄园", "伊甸", "庄园", "书房", "主卧", "大厅", "门厅", "餐厅", "会客厅", "客房", "寝", "浴室", "前庭", "后庭", "花园", "停靠平台", "起居室", "茶室", "露台", "值班室", "监控室", "女仆长办公室", "洗衣房", "储藏室", "人工湖", "喷泉"]
     },
     "world": {
@@ -25,6 +29,7 @@
       "alt": { "label": "显示下方城市", "label_en": "Show city below", "base": "art/tc_upper_city.dzi" }, "credit": "城市骨架 © OpenStreetMap contributors (ODbL)", "credit_en": "City layout © OpenStreetMap contributors (ODbL)",
       "overlay": { "type": "barriers", "label": "结界", "label_en": "Wards" },
       "focus": "eden",
+      "districts": ["悬浮庄园区", "悬浮区", "悬浮岛", "浮岛", "上城", "Floating Estates"],
       "markers": {
         "eden": { "name": "伊甸庄园", "sub": "{{user}} 的庄园", "name_en": "Eden Manor", "sub_en": "Your estate", "cls": "capital", "tag": "set", "link": { "map": "eden_estate", "label": "进入伊甸庄园", "label_en": "Enter Eden Manor" },
           "src": "庄园布局：位于天城上层悬浮区，独占一座悬浮岛屿；新古典主义白色石材建筑；前庭喷泉、后庭人工湖、访客停靠平台；全域结界",
@@ -44,6 +49,7 @@
       "kind": "points", "base": "art/tc_mid.dzi", "credit": "城市骨架 © OpenStreetMap contributors (ODbL)", "credit_en": "City layout © OpenStreetMap contributors (ODbL)", "data": "data/tc_mid.json",
       "overlay": { "type": "barriers", "label": "上层投影", "label_en": "Upper-tier footprint", "from": "tc_upper" },
       "focus": "enforcement_hq",
+      "districts": ["钢铁霓虹区", "钢铁霓虹", "商业区", "霓虹街", "核心区", "高区", "外围", "居住区", "中城", "Steel & Neon", "Neon Street", "Commercial District"],
       "markers": {
         "enforcement_hq": { "name": "天城执法局总局", "sub": "中层核心区", "name_en": "Enforcement Bureau HQ", "sub_en": "Middle Tier core", "cls": "capital", "tag": "set",
           "src": "天城·中层：天城执法局总局位于中层核心区（在核心区内的具体位置为推断）",
@@ -74,6 +80,7 @@
       "layer": { "name": "下层", "sub": "地基区", "alt": "地面", "name_en": "Lower", "sub_en": "Foundations", "alt_en": "Ground" },
       "kind": "points", "base": "art/tc_low.dzi", "credit": "城市骨架 © OpenStreetMap contributors (ODbL)", "credit_en": "City layout © OpenStreetMap contributors (ODbL)", "data": "data/tc_low.json",
       "focus": "well7",
+      "districts": ["地基区", "地基", "贫民区", "棚户", "城寨", "工业区", "下城", "Foundations", "Slums"],
       "markers": {
         "well7": { "name": "7 号井黑市", "sub": "只收灰票", "name_en": "Well 7 Black Market", "sub_en": "Grey scrip only", "cls": "capital", "tag": "set", "link": { "map": "tc_mid", "marker": "checkpoint_c", "label": "上到中层 · C 区检查点", "label_en": "Up to Zone C Checkpoint · Middle" },
           "src": "天城·下层：「地基区 7 号井 · 只收灰票」；中层 C 区检查点的通道落在这里（井口与市集布局为推断）",

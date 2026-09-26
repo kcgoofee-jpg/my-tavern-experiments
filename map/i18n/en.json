@@ -133,6 +133,7 @@
     "海外诸地": "Overseas Lands",
     "稀有矿物 · 异域人员输出地": "Rare minerals · overseas trade"
   },
+  "settings_title": "Settings", "auto_here": "Jump to your current location when the map opens", "auto_here_hint": "Manor rooms open on their floor; landmarks, tiers and world places open on their own map",
   "estate.loading": "Loading {title}…", "estate.fail": "Failed to load the estate page", "estate.slow": "The 3D library is loading slowly (needs access to jsDelivr)…",
   "layers.keys": "PageUp / PageDown or [ ] to switch floors", "layers.planned": "In progress", "layers.here": "Your current location is on this level", "layers.events": "{n} active incidents",
   "tier_auto": "Auto", "tier_auto_on": "Auto · {px}px", "tier_auto_title": "Pick detail automatically for the current zoom: steps up when you zoom in, never down; phones and data-saver networks stop at Standard", "tier_status_auto": "{title} · auto · detail cap {px}px",
