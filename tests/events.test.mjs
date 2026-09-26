@@ -1,6 +1,6 @@
 // node tests/events.test.mjs —— 天城事态解析器单测
 import assert from 'node:assert/strict';
-import { parseMarks, collect, summarize, layerOf, tierOf } from '../map/tavern/events.mjs';
+import { parseMarks, collect, summarize, layerOf, tierOf, CATS, GROUPS, GROUP_ORDER, catOf, EXAMPLES } from '../map/tavern/events.mjs';
 
 const span = s => `<htm1fenge><div>…</div><span style="display:none">${s}</span></htm1fenge>`;
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
@@ -98,5 +98,73 @@ t('世界书视觉样例的 8 条示范标签原文不上图', () => {
   // 8 条一起出现在同一楼（样例卡原样复述）也不产生事件；改一个字段就照常解析
   assert.equal(collect([{ floor: 9, text: span(EX8.map(x => `<span data-tcmap="${x}"></span>`).join('')) }], 9).length, 0);
   assert.equal(parseMarks(`<span data-tcmap="${EX8[2].replace('等级=2', '等级=3')}"></span>`).length, 1);
+});
+
+// ---------- 事件体系 v2（docs/event-taxonomy.md：9 大类；表里实际列了 66 种）----------
+const V2 = {
+  空防: { 巡空令: '巡', 结界警报: '结', 空域临检: '检', 宴会加警: '宴', 以太信标失准: '标', 锚泊校正: '锚' },
+  气候: { 塔体保养: '塔', 气候故障: '候', 以太潮汐: '潮', 结界过载: '过', 气压异常: '压', 人工极光: '光' },
+  治安: { 检查点管控: '管', 盗窃: '盗', 抢劫: '劫', 通缉: '缉', 黑市查抄: '抄', 持械: '械', 资产纠纷: '产', 灰票造假: '票', 以太走私: '私', 非法义体: '义', 凶案: '凶' },
+  政治: { 政策: '策', 通行税: '税', 议会质询: '议', 评级复核: '评', 议席改选: '席', 联盟内讧: '盟' },
+  媒体: { 舆情: '传', 公共直播: '播', 名流八卦: '闻', 网络攻击: '网', 数据泄露: '泄', 广告劫持: '屏', 直播事故: '播' },
+  民生: { 施粥告急: '粥', 教会仪式: '祷', 以太配给: '配', 兑价波动: '兑', 急救: '救', 骚乱: '乱', 修女出巡: '铁' },
+  军事: { 哨所换防: '防', 军事调动: '调', 魔导装甲调动: '甲', 联合演习: '演', 边境警戒: '境' },
+  灾害: { 火灾: '火', 停电: '电', 交通事故: '撞', 轨道故障: '轨', 以太泄漏: '漏', 爆炸: '爆', 结构坍塌: '塌' },
+  人物: { 公开行程: '程', 首相出席: '相', 将军阅兵: '阅', 名门晚宴: '筵', 大主教弥撒: '弥', 修女授勋: '勋', 丑闻曝光: '丑', 债务违约: '债', 继承之争: '继', 失势罢免: '罢', 以太觉醒: '觉' },
+};
+t('v2：9 个大类、颜色与图例顺序', () => {
+  assert.deepEqual(GROUP_ORDER, Object.keys(V2));
+  assert.equal(GROUPS.人物, '#d7a6e8'); assert.equal(GROUPS.空防, '#d9a441'); assert.equal(GROUPS.灾害, '#ff5a2a');
+  for (const g of GROUP_ORDER) assert.match(GROUPS[g], /^#[0-9a-f]{6}$/);
+});
+t('v2：每一种类型都能解析到正确大类、图标字、颜色（两种写法）', () => {
+  let k = 0;
+  for (const [g, types] of Object.entries(V2)) for (const [c, ch] of Object.entries(types)) {
+    const [a] = parseMarks(`⌖${c}｜中层·商业区｜2｜测试${k}`);
+    assert.equal(a.cat, c, c); assert.equal(a.grp, g, c); assert.equal(a.ch, ch, c); assert.equal(a.color, GROUPS[g], c);
+    const [b] = parseMarks(`<span style="display:none" data-tcmap="类型=${c};地点=下层 7号井;标题=测试${k};等级=1"></span>`);
+    assert.equal(b.cat, c, c); assert.equal(b.grp, g, c);
+    assert.ok(CATS[c].rare >= 1 && CATS[c].rare <= 4, c); k++;
+  }
+  assert.equal(k, Object.keys(CATS).length - 1);   // 表里的类型 = CATS 里除「其他」外的全部
+});
+t('v2：新类型的近义词', () => {
+  const S = { 信标: '以太信标失准', 以太潮: '以太潮汐', 走私: '以太走私', 义体: '非法义体', 改选: '议席改选', 绯闻: '名流八卦', 配给: '以太配给', 魔导: '魔导装甲调动',
+    泄漏: '以太泄漏', 行程: '公开行程', 首相: '首相出席', 阅兵: '将军阅兵', 晚宴: '名门晚宴', 弥撒: '大主教弥撒', 授勋: '修女授勋', 丑闻: '丑闻曝光', 违约: '债务违约',
+    继承: '继承之争', 罢免: '失势罢免', 觉醒: '以太觉醒' };
+  for (const [w, c] of Object.entries(S)) assert.equal(catOf(w), c, w);
+  // 最长匹配：「装甲部队调动」不被短的「调动」抢走；泄露 / 泄漏 分开
+  assert.equal(catOf('装甲部队调动'), '魔导装甲调动'); assert.equal(catOf('以太泄漏事故'), '以太泄漏'); assert.equal(catOf('客户数据泄露'), '数据泄露');
+  assert.equal(catOf('直播事故'), '直播事故'); assert.equal(catOf('首相出席晚宴'), '首相出席');
+});
+t('v1 旧标签兼容：8 类 46 种原名 + 旧查看器 / 旧文档用过的名字', () => {
+  const V1 = ['巡空令', '结界警报', '锚泊校正', '空域临检', '宴会加警', '塔体保养', '气候故障', '结界过载', '气压异常', '人工极光', '黑市查抄', '检查点管控', '通缉', '持械', '凶案',
+    '抢劫', '盗窃', '资产纠纷', '灰票造假', '政策', '议会质询', '联盟内讧', '通行税', '评级复核', '网络攻击', '数据泄露', '广告劫持', '直播事故', '公共直播', '舆情',
+    '施粥告急', '教会仪式', '修女出巡', '急救', '兑价波动', '骚乱', '军事调动', '哨所换防', '联合演习', '边境警戒', '火灾', '爆炸', '交通事故', '停电', '轨道故障', '结构坍塌'];
+  assert.equal(V1.length, 46);
+  for (const c of V1) { const [e] = parseMarks(`⌖${c}｜下层·7号井｜2｜旧标签`); assert.equal(e.cat, c, c); assert.notEqual(e.grp, '人物'); }
+  const OLD = { 结界事故: '结界警报', 空域巡查: '巡空令', 执法管控: '检查点管控', 执法: '检查点管控', 封锁: '检查点管控', 枪击: '持械', 天气: '气候故障', 民生: '施粥告急',
+    交通: '交通事故', 军事: '军事调动', 结界: '结界警报', 信号干扰: '网络攻击', 起火: '火灾', 断电: '停电' };
+  for (const [w, c] of Object.entries(OLD)) assert.equal(parseMarks(`<span data-tcmap="类型=${w};地点=中层 商业区;标题=旧写法${w}"></span>`)[0].cat, c, w);
+});
+t('只写大类名：类型记「其他」，颜色按大类；认不出的仍是其他', () => {
+  const [a] = parseMarks('⌖人物｜上层·银冠堡｜1｜某位将军现身');
+  assert.equal(a.cat, '其他'); assert.equal(a.grp, '人物'); assert.equal(a.color, GROUPS.人物); assert.equal(a.ch, '!');
+  const [b] = parseMarks('⌖流星雨｜上层·伊甸庄园｜1｜夜空里一串蓝光'); assert.equal(b.grp, '其他');
+  assert.equal(parseMarks('⌖治安｜中层·商业区｜1｜巡逻')[0].color, GROUPS.治安);
+});
+t('v2 人物类仍受内容硬边界约束；示范原文仍被忽略', () => {
+  assert.equal(parseMarks('⌖丑闻曝光｜上层·银冠堡｜3｜将军与项圈').length, 0);
+  assert.equal(parseMarks('<span data-tcmap="类型=公开行程;地点=中层 天城议会;标题=某千金被调教;等级=1"></span>').length, 0);
+  assert.equal(parseMarks('⌖首相出席｜中层·天城议会｜2｜首相出席浮空港落成礼').length, 1);
+  for (const x of EXAMPLES) {
+    const raw = x.startsWith('⌖') ? span(x) : `<span style="display:none" data-tcmap="${x}"></span>`;
+    assert.equal(parseMarks(raw).length, 0, x);
+  }
+});
+t('v2 上层府邸地名推断到上层', () => {
+  for (const p of ['首相府', '将军官邸', '财团家族庄园', '大主教府邸', '庄园主联盟会所', '以太研究院']) {
+    assert.equal(parseMarks(`⌖公开行程｜${p}｜1｜到访`)[0].layer, '上层', p); assert.equal(layerOf(p), '上层', p);
+  }
 });
 console.log(`\n${n} passed`);

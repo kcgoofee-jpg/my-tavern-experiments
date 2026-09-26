@@ -118,6 +118,14 @@
   .barriers .eden { stroke: var(--gold); stroke-width: 2; fill: rgba(230,195,106,.08); }
   .barriers.proj :is(ellipse, path) { fill: rgba(0,0,0,.12); stroke: rgba(190,205,230,.5); stroke-width: 1; stroke-dasharray: 5 4; }
   .barriers.proj .eden { stroke: rgba(230,195,106,.7); fill: rgba(0,0,0,.12); }
+  /* 上层航线叠加层（data 的 routes）：航线 = 细金色虚线，骑士团巡逻环 = 淡蓝点划线；non-scaling-stroke 让线宽与虚线节奏不随缩放变；底下一道暗色描边，手机上也看得清 */
+  .routes { pointer-events: none; overflow: visible; }
+  .routes path { fill: none; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
+  .routes .halo { stroke: rgba(8,10,14,.28); stroke-width: 2.8; }
+  .routes .lane { stroke: #e6c36a; stroke-width: 1.4; stroke-dasharray: 7 5; opacity: .9; }
+  .routes .patrol, .routes .patrol_city { stroke: #a8d8ff; stroke-width: 1.4; stroke-dasharray: 10 4 2 4; opacity: .85; }
+  .routes .patrol_city { opacity: .6; }
+  body.noroutes .routes { visibility: hidden; }   /* OSD 给叠加层写内联 display，所以用 visibility */
   /* 标记 */
   .mk { position: relative; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none; }
   /* OSD 会给叠加层写内联 display:block，flex 居中失效，所以针脚自己居中 */
@@ -201,6 +209,7 @@
     <div class="seg" id="tiers"></div><span id="tierState" aria-live="polite"></span>
     <label class="tg" id="tgOverlay"><input type="checkbox" id="tgBorders" checked><span>国界</span></label>
     <label class="tg" id="tgAlt" hidden data-i18n-title="alt_title" title="高级：换成带下方城市的底图（图更大）"><input type="checkbox" id="tgAltBox"><span>显示下方城市</span></label>
+    <label class="tg" id="tgRoutes" hidden data-i18n-title="routes_title" title="上层航线（金色虚线）与银冠堡巡逻环（淡蓝点划线）"><input type="checkbox" id="tgRoutesBox" checked><span data-i18n="routes">航线</span></label>
     <label class="tg"><input type="checkbox" id="tgLabels" checked><span data-i18n="labels">地名</span></label>
     <label class="tg"><input type="checkbox" id="tgMarkers" checked><span data-i18n="markers">标记</span></label>
     <div class="seg" id="langSeg" data-i18n-title="lang_title" title="界面语言"><button type="button" data-lang="zh">中</button><button type="button" data-lang="en">EN</button></div>
@@ -327,6 +336,10 @@ async function main() {
   $('#tgBorders').onchange = applyOverlayToggle;
   $('#tgAltBox').onchange = e => { try { localStorage.setItem(ALT_KEY + cur, e.target.checked ? '1' : '0'); } catch (err) {} swapBase(); };
   $('#tgLabels').onchange = e => document.body.classList.toggle('nolabels', !e.target.checked);
+  // 航线开关：记在本机（默认开）；没有 routes 的图上隐藏开关
+  { let on = true; try { on = localStorage.getItem('edenMapRoutes') !== '0'; } catch (e) {}
+    $('#tgRoutesBox').checked = on; document.body.classList.toggle('noroutes', !on);
+    $('#tgRoutesBox').onchange = e => { document.body.classList.toggle('noroutes', !e.target.checked); try { localStorage.setItem('edenMapRoutes', e.target.checked ? '1' : '0'); } catch (err) {} }; }
   $('#tgMarkers').onchange = e => document.body.classList.toggle('nomarkers', !e.target.checked);
   $('#here').oninput = () => markHere($('#here').value);
   $('#here').onchange = () => jumpHere($('#here').value, true);   // 单独打开查看器时：输入框改完（回车 / 失焦）= 模拟 MVU 地点更新
@@ -455,6 +468,7 @@ async function go(id) {
   if (id !== cur) return;   // 加载期间又切换了地图
   curData = cd; ovData = ovSrc ? od : cd;
   renderNav(); mapChrome(m); if (m.alt) $('#tgAltBox').checked = altOn(id);
+  $('#tgRoutes').hidden = !(cd?.routes?.length);
   // 从别的地图切过来（有旧画面或庄园盖着）：不上整屏遮罩，只看顶部进度条；首次打开才显示遮罩
   const snap = !fromEstate && prev ? snapshot() : null, quiet = !!(snap || oldFrame);
   $('#loading').classList.remove('done', 'over'); $('#loading').classList.toggle('thumb', id === 'world'); $('#loading span').textContent = t('loading_map', { title: nm(m, 'title') });
@@ -754,6 +768,16 @@ function pointOverlays() {
       if (i.id === 'eden') e.classList.add('eden');
       svg.appendChild(e); }
     svg.style.pointerEvents = 'none';
+    viewer.addOverlay({ element: svg, location: new OpenSeadragon.Rect(0, 0, 1, aspect) });
+  }
+  // 航线与巡逻环（上层数据的 routes：[{kind: lane | patrol | patrol_city, from, to, pts: [[nx, ny] …]}]）
+  if (d.routes?.length) {
+    const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg'), VW = 1000, VH = 1000 * aspect;
+    svg.setAttribute('viewBox', `0 0 ${VW} ${VH}`); svg.setAttribute('preserveAspectRatio', 'none'); svg.classList.add('routes');
+    const dOf = r => r.pts.map(([x, y], j) => `${j ? 'L' : 'M'}${(x * VW).toFixed(1)},${(y * VH).toFixed(1)}`).join('') + (r.kind !== 'lane' && r.from === r.to ? 'Z' : '');
+    for (const pass of ['halo', 'line']) for (const r of d.routes) { if (!(r.pts?.length > 1)) continue;
+      const e = document.createElementNS(ns, 'path'); e.setAttribute('d', dOf(r));
+      e.setAttribute('class', pass === 'halo' ? 'halo' : ['lane', 'patrol', 'patrol_city'].includes(r.kind) ? r.kind : 'lane'); svg.appendChild(e); }
     viewer.addOverlay({ element: svg, location: new OpenSeadragon.Rect(0, 0, 1, aspect) });
   }
   // link：跨层通道（如中层检查点 ↔ 下层 7 号井），地点卡里给一个直达链接
