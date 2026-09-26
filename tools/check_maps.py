@@ -86,6 +86,21 @@ for mid, m in maps.items():
             if (dx * dx + dy * dy) ** .5 > .02: err(f"{mid}.{i} 与 {l['map']}.{l['marker']} 在平面上没对齐（偏差 {(dx * dx + dy * dy) ** .5:.3f} 图宽）")
 ext = {tuple(d.get('extent_m', [])) for d in data.values() if d.get('extent_m')}
 if len(ext) > 1: err(f'各层 extent_m 不一致：{ext}')
+# 英文界面（map/i18n）：地图标题、层名、地标都要有英文名（没有时查看器显示中文原文）
+for mid, m in maps.items():
+    if m.get('status') == 'planned': continue
+    if not m.get('title_en'): warn(f'{mid}: 没有 title_en（英文界面显示中文标题）')
+    if m.get('layer') and not m['layer'].get('name_en'): warn(f'{mid}.layer: 没有 name_en')
+    for i, v in (m.get('markers') or {}).items():
+        if not v.get('name_en'): warn(f'{mid}.{i}: 没有 name_en（英文界面显示中文名）')
+        if v.get('sub') and not v.get('sub_en'): warn(f'{mid}.{i}: 有 sub 没有 sub_en')
+i18n = {}
+for lg in ('zh', 'en'):
+    fp = os.path.join(ROOT, 'i18n', f'{lg}.json')
+    if not os.path.exists(fp): err(f'缺界面语言文件 map/i18n/{lg}.json'); continue
+    i18n[lg] = json.load(open(fp, encoding='utf-8'))
+if len(i18n) == 2:
+    for k in set(i18n['zh']) ^ set(i18n['en']) - {'names'}: err(f'i18n：键 {k} 只在一种语言里有')
 # 外部事件数据源（map/events.js 定时拉取）：feeds: [{label, url, every}]
 feeds = reg.get('feeds', [])
 if not isinstance(feeds, list): err('feeds 应为列表')
