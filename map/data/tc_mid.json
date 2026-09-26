@@ -1,0 +1,38 @@
+{
+ "extent_m": [
+  3000.0,
+  1875.0
+ ],
+ "markers": [
+  {
+   "id": "enforcement_hq",
+   "nx": 0.3833,
+   "ny": 0.4093
+  },
+  {
+   "id": "radiance_cathedral",
+   "nx": 0.7233,
+   "ny": 0.308
+  },
+  {
+   "id": "iron_cradle",
+   "nx": 0.8633,
+   "ny": 0.148
+  },
+  {
+   "id": "barracks_ring",
+   "nx": 0.0333,
+   "ny": 0.5
+  },
+  {
+   "id": "starabyss_univ",
+   "nx": 0.225,
+   "ny": 0.1629
+  },
+  {
+   "id": "checkpoint_c",
+   "nx": 0.6533,
+   "ny": 0.868
+  }
+ ]
+}

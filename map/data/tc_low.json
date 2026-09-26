@@ -1,0 +1,43 @@
+{
+ "extent_m": [
+  3000.0,
+  1875.0
+ ],
+ "markers": [
+  {
+   "id": "freight_yard",
+   "nx": 0.2467,
+   "ny": 0.2352
+  },
+  {
+   "id": "well7",
+   "nx": 0.6533,
+   "ny": 0.868
+  },
+  {
+   "id": "blood_mill",
+   "nx": 0.3067,
+   "ny": 0.676
+  },
+  {
+   "id": "enforcement_low",
+   "nx": 0.4367,
+   "ny": 0.3293
+  },
+  {
+   "id": "soup_kitchen",
+   "nx": 0.78,
+   "ny": 0.4707
+  },
+  {
+   "id": "outpost",
+   "nx": 0.09,
+   "ny": 0.852
+  },
+  {
+   "id": "amc_facility",
+   "nx": 0.85,
+   "ny": 0.196
+  }
+ ]
+}
