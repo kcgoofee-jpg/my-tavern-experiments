@@ -16,12 +16,20 @@ def tick(msg): print(f'[{time.time() - T0:6.1f}s] {msg}', flush=True)
 # 城市里每个盒子的类别（mid / low 按类别重新配色）
 K_GROUND, K_PARK, K_BUILDING, K_EQUIP = 0, 1, 2, 3
 
+FLAGS = ('--data-only', '--preview')              # 不带值的开关
 def parse_args(defaults):
-    """Blender -b -P x.py -- --res 1600 ...，或 python3 x.py -- ...（pip 装的 bpy）。"""
+    """Blender -b -P x.py -- --res 1600 ...，或 python3 x.py -- ...（pip 装的 bpy）。
+    --键 值 成对出现；FLAGS 里的开关不带值。未知的键照样收下，由层脚本用 opt.get 读取。"""
     args = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
-    opt = dict(defaults)
-    for i in range(0, len(args) - 1, 2): opt[args[i]] = args[i + 1]
+    opt, i = dict(defaults), 0
+    while i < len(args):
+        k = args[i]
+        if k in FLAGS or i + 1 >= len(args) or args[i + 1].startswith('--') and not _num(args[i + 1]): opt[k] = True; i += 1
+        else: opt[k] = args[i + 1]; i += 2
     return opt
+def _num(s):
+    try: float(s); return True
+    except ValueError: return False
 
 def setup():
     """清空场景并设定随机种子；返回 (rng, 场景, 主集合)。"""
@@ -228,7 +236,7 @@ def upper_islands():
     return [(i['id'], (i['nx'] - .5) * W, (.5 - i['ny']) * H, i['rx'] * W, i['ry'] * H, i['rot'], i.get('alt_m', 1000)) for i in d['islands']]
 
 # ---------------- 相机、渲染、导出 ----------------
-def camera_and_render(sc, RES, SAMPLES, OUT, opt, view='Standard', exposure=0.0):
+def camera_and_render(sc, RES, SAMPLES, OUT, opt, view='Standard', exposure=0.0, bounces=None):
     cam = bpy.data.cameras.new('cam'); cam.type = 'ORTHO'; cam.ortho_scale = W; cam.clip_end = 200
     co = bpy.data.objects.new('cam', cam); sc.collection.objects.link(co); sc.camera = co; co.location = (0, 0, 60)
     sc.render.resolution_x = RES; sc.render.resolution_y = int(round(RES * H / W))
@@ -247,6 +255,11 @@ def camera_and_render(sc, RES, SAMPLES, OUT, opt, view='Standard', exposure=0.0)
     except Exception as e: print('GPU probe failed', e)
     sc.cycles.device = 'GPU' if gpu else 'CPU'; print('device', sc.cycles.device)
     sc.cycles.samples = SAMPLES
+    if bounces:                                             # 夜景：光主要来自近处的灯，少几次反弹几乎看不出，渲染快很多
+        c = sc.cycles; c.max_bounces = bounces; c.diffuse_bounces = min(bounces, 2); c.glossy_bounces = min(bounces, 2)
+        c.transmission_bounces = min(bounces, 2); c.volume_bounces = 0; c.transparent_max_bounces = 8
+        c.caustics_reflective = c.caustics_refractive = False
+    sc.cycles.use_auto_tile = True; sc.cycles.tile_size = 2048   # 8000px 时分块渲染，内存不随分辨率平方涨
     import _cycles
     sc.cycles.use_denoising = bool(getattr(_cycles, 'with_openimagedenoise', True)) or gpu
     if not sc.cycles.use_denoising: print('no OpenImageDenoise in this build: denoising off')
@@ -263,7 +276,8 @@ def norm(sc, co, p):
     v = world_to_camera_view(sc, co, Vector(p)); return round(v.x, 4), round(1 - v.y, 4)
 def write_data(name, sc, co, markers, extra=None):
     data = {'extent_m': [W * 100, H * 100],
-            'markers': [dict(id=m['id'], **dict(zip(('nx', 'ny'), norm(sc, co, m['pos'])))) for m in markers]}
+            'markers': [dict(id=m['id'], **dict(zip(('nx', 'ny'), norm(sc, co, m['pos']))), **({'r': round(m['r'] / W, 4)} if 'r' in m else {}))
+                        for m in markers]}
     if extra: data.update(extra)
     json.dump(data, open(os.path.join(HERE, '..', 'map', 'data', f'{name}.json'), 'w'), ensure_ascii=False, indent=1)
 def render(sc, OUT, label=''):
@@ -285,3 +299,56 @@ def point_lights(name, pts, power, radius=.02):
         if key not in datas:
             L = bpy.data.lights.new(f'{name}{len(datas)}', 'POINT'); L.energy = power; L.color = key; L.shadow_soft_size = radius; datas[key] = L
         o = bpy.data.objects.new(name, datas[key]); o.location = (x, y, z); bpy.context.scene.collection.objects.link(o)
+
+
+# ---------------- 层运行器：三层脚本的统一骨架 ----------------
+class Layer:
+    """每层脚本的统一结构（接口见 docs/tiancheng-maps.md）：
+        layer = tc.Layer('tc_mid', defaults={...}, seed=7001, bounces=4)   # 解析参数、清空场景、生成城市（第一个随机调用）
+        ... 用 layer.city / layer.rng / layer.opt 建本层内容；layer.marker(id, (x, y, z), r) 登记地标 ...
+        layer.finish(world=(颜色, 强度), glare={...}, extra={...})          # 相机 → 导出 map/data/<name>.json → 渲染
+    命令行（所有层一致）：--res N --samples N --out 路径 --crop x0,y0,x1,y1 --preview（800px / 8 采样）--data-only（只导出点位，不渲染）
+    """
+    def __init__(self, name, defaults=None, seed=None, bounces=None):
+        self.name, self.bounces = name, bounces
+        d = {'--res': '1600', '--samples': '64', '--out': os.path.join(HERE, '..', 'map', 'art', f'{name}_preview.png')}
+        d.update(defaults or {})
+        given = parse_args({})
+        if given.get('--preview'): d.update({'--res': '800', '--samples': '8'})   # 快速预览；显式给的 --res / --samples 仍然优先
+        self.opt = parse_args(d)
+        self.res, self.samples, self.out = int(self.opt['--res']), int(self.opt['--samples']), os.path.abspath(self.opt['--out'])
+        self.data_only = bool(self.opt.get('--data-only'))
+        rng, self.sc, self.col = setup()
+        self.city = city_blocks(rng)                        # 必须是第一个随机调用：三层的街道与楼对得上
+        self.city_rng = rng                                 # 上层沿用这条随机序列（保持旧版布局不变）
+        if seed is None: self.rng = rng                     # 不另起种子：沿用 SEED（上层）
+        else: self.rng = np.random.default_rng(seed); random.seed(seed)
+        self.markers = []
+    def f(self, key, default):                              # 读数值参数：layer.f('--glow', 1)
+        return float(self.opt.get(key, default))
+    def marker(self, id, pos, r=.3):
+        """登记地标：pos 为平面坐标 (x, y, z)，r 为占地半径（平面单位，导出时归一化到图宽）。"""
+        self.markers.append({'id': id, 'pos': tuple(pos), 'r': r})
+    def finish(self, world=None, glare_opts=None, extra=None, label=''):
+        if world:
+            w = bpy.data.worlds.new('sky'); self.sc.world = w; w.use_nodes = True; bg = w.node_tree.nodes['Background']
+            bg.inputs['Color'].default_value = (*world[0], 1); bg.inputs['Strength'].default_value = world[1]
+        co = camera_and_render(self.sc, self.res, self.samples, self.out, self.opt, bounces=self.bounces)
+        if glare_opts and not self.opt.get('--preview'): glare(self.sc, **glare_opts)
+        ex = {'layer': self.name}
+        ex.update(extra(co) if callable(extra) else (extra or {}))
+        write_data(self.name, self.sc, co, self.markers, ex)
+        tick(f'data map/data/{self.name}.json ({len(self.markers)} markers)')
+        if self.data_only: print('DATA-ONLY', self.name); return co
+        render(self.sc, self.out, label or f'markers {len(self.markers)}')
+        return co
+
+# ---------------- 太阳：三层共用一个方向（上层的岛影、中层的投影都按它偏移）----------------
+SUN_ROT = (math.radians(40), 0, math.radians(215))
+def sun_dir():
+    """太阳光的传播方向（单位向量，朝下）。"""
+    from mathutils import Euler
+    v = Vector((0, 0, -1)); v.rotate(Euler(SUN_ROT)); return v
+def shadow_offset(height):
+    """高 height（平面单位）处的物体，影子落在其下方平面上时的水平偏移 (dx, dy)。"""
+    d = sun_dir(); t = height / -d.z; return d.x * t, d.y * t

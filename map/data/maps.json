@@ -1,5 +1,5 @@
 {
-  "_说明": "地图注册表。base = 底图 DZI；parent = 上一级地图（面包屑）；group = 同组多层（天城三层）；overlay = 可开关叠加层（from = 取另一张地图的数据，如中层的「上层投影」取上层岛屿）；status=planned 表示制作中（切换器里置灰）。markers 里的 nx/ny 由渲染脚本导出的数据文件提供，这里只写名称、设定出处和当前地点别名。",
+  "_说明": "地图注册表。base = 底图 DZI；parent = 上一级地图（面包屑）；group = 同组多层（天城三层）；overlay = 可开关叠加层（from = 取另一张地图的数据，如中层的「上层投影」取上层岛屿）；status=planned 表示制作中（切换器里置灰）。markers 里的 nx/ny 由渲染脚本导出的数据文件提供，这里只写名称、设定出处和当前地点别名；link = 跨层通道（点开地点卡可直接去另一张图的对应地点）。字段说明见 docs/tiancheng-maps.md，改完跑 python3 tools/check_maps.py。",
   "start": "world",
   "groups": {
     "tiancheng": { "title": "天城", "layers": ["tc_upper", "tc_mid", "tc_low"] }
@@ -52,7 +52,7 @@
         "council": { "name": "天城议会", "tag": "inf",
           "src": "路线图把议会列为中层地标（银冠堡是议会直属骑士团的总部）；位置与形制为推断",
           "alias": ["议会", "议事厅"] },
-        "checkpoint_c": { "name": "层间检查点", "sub": "C 区 → 下层 7 号井", "tag": "set",
+        "checkpoint_c": { "name": "层间检查点", "sub": "C 区 → 下层 7 号井", "tag": "set", "link": { "map": "tc_low", "marker": "well7", "label": "下到下层 · 7 号井" },
           "src": "天城·中层：中层 C 区的层间检查点，通往下层 7 号井的通道（检查点的具体位置为推断；下层 7 号井画在同一平面位置）",
           "alias": ["层间检查点", "检查点", "C区", "C 区"] }
       }
@@ -63,7 +63,7 @@
       "kind": "points", "base": "art/tc_low.dzi", "data": "data/tc_low.json",
       "focus": "well7",
       "markers": {
-        "well7": { "name": "7 号井黑市", "sub": "只收灰票", "cls": "capital", "tag": "set",
+        "well7": { "name": "7 号井黑市", "sub": "只收灰票", "cls": "capital", "tag": "set", "link": { "map": "tc_mid", "marker": "checkpoint_c", "label": "上到中层 · C 区检查点" },
           "src": "天城·下层：「地基区 7 号井 · 只收灰票」；中层 C 区检查点的通道落在这里（井口与市集布局为推断）",
           "alias": ["7号井", "7 号井", "七号井", "黑市", "灰票"] },
         "blood_mill": { "name": "血肉磨坊", "sub": "黑拳场", "tag": "set",

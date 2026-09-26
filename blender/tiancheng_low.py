@@ -1,6 +1,7 @@
 # 天城 · 下层（地基区，地面）· Blender 正俯视写实渲染（夜景草稿）
-# 用法：Blender -b -P tiancheng_low.py -- [--res 1600] [--samples 64] [--out path.png] [--crop x0,y0,x1,y1]
-#       或 python3 tiancheng_low.py -- ...（pip 装的 bpy）
+# 用法：Blender -b -P tiancheng_low.py -- [--res 1600] [--samples 64] [--out path.png] [--crop x0,y0,x1,y1] [--preview] [--data-only]
+#       [--glow 1]（发光体倍数）[--lamp .3]（钠灯功率）[--ambient .12]（天光）
+#       或 python3 tiancheng_low.py -- ...（pip 装的 bpy）。参数与导出格式三层一致，见 docs/tiancheng-maps.md
 # 与上层、中层同一相机、同一平面坐标、同一张街道网（tc_common.city_blocks，同一随机种子）：
 # 楼的平面位置沿用城市布局，只压低高度、按片区换成厂房 / 旧楼；贫民窟格子里的楼换成密集的铁皮棚屋。
 # 设定：「工厂、资源处理设施」「老旧地面轨道、货运通道、步行为主」「几乎没有自然光，黑市与帮派活跃」。
@@ -12,18 +13,13 @@ from tc_common import W, H, Z_GROUND as ZG, tick, mat, emit_mat, Batch
 import numpy as np
 from mathutils import Matrix
 
-HERE = tc.HERE
-opt = tc.parse_args({'--res': '1600', '--samples': '64', '--out': os.path.join(HERE, '..', 'map', 'art', 'tc_low_preview.png'), '--glow': '1'})
-RES, SAMPLES, OUT, GLOW = int(opt['--res']), int(opt['--samples']), os.path.abspath(opt['--out']), float(opt['--glow'])
-rng, sc, col_main = tc.setup()
-city = tc.city_blocks(rng)                     # 必须是第一个随机调用：街道位置与上层、中层一致
-R = np.random.default_rng(9001); random.seed(9001)
+layer = tc.Layer('tc_low', seed=9001, bounces=4)   # 城市在这里生成（第一个随机调用）：街道位置与上层、中层一致
+sc, col_main, city, R, GLOW, LAMP = layer.sc, layer.col, layer.city, layer.rng, layer.f('--glow', 1), layer.f('--lamp', .3)
 
 def srgb(h):
     c = [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]
     return tuple(v / 12.92 if v <= .04045 else ((v + .055) / 1.055) ** 2.4 for v in c)
 SODIUM, SODIUM2, PHOS, WHITE, BLUE, RED = srgb('#f0a040'), srgb('#ff8c2a'), srgb('#9fe870'), srgb('#e8eeff'), srgb('#5a8cff'), srgb('#ff3a2a')
-markers = []
 S = tc.CELL; xs, ys, AX, AY = city['xs'], city['ys'], city['AX'], city['AY']
 near = lambda arr, idx, v: min(idx, key=lambda k: abs(arr[k] - v))
 
@@ -149,7 +145,7 @@ for gx in (x - .8, x + .5):
     crane.box(gx, y, .12, .05, 1.2, .03)                             # 龙门吊横梁
     for sy in (-1, 1): crane.box(gx, y + sy * .58, 0, .06, .04, .15)
 crane.done()
-markers.append({'id': 'freight_yard', 'pos': (x, y, 0)})
+layer.marker('freight_yard', (x, y, 0), 1.6)
 tc.box_mesh('freight_cars', cars, carc, tc.vcol_mat('carm', .6, .4), rot=np.array(carr))
 ballast.done(); rails.done(); tick('rail')
 
@@ -175,14 +171,14 @@ for px, py in PILLARS:                                               # 柱基上
         a = k / 6 * 2 * math.pi; lamp_lights.append((px + .34 * math.cos(a), py + .34 * math.sin(a), .1, SODIUM))
         lamp_heads.append((px + .31 * math.cos(a), py + .31 * math.sin(a), .012, .012, .05, .053))
 tc.box_mesh('lamp_heads', lamp_heads, np.tile(srgb('#ffc070'), (len(lamp_heads), 1)), emit_mat('lamphead', None, 6.0 * GLOW))
-tc.point_lights('sodium', lamp_lights, float(opt.get('--lamp', .3)) * GLOW, .01)
+tc.point_lights('sodium', lamp_lights, LAMP * GLOW, .01)
 # 棚屋区：昏暗的暖光与磷光绿（霉菌灯、黑市招牌）
 glim, gdots = [], []
 for x, y, w, d, z0, z1 in shacks:
     r = R.random()
     if r < .04: glim.append((x, y, z1 + .04, SODIUM2)); gdots.append((x, y, .008, .008, z1, z1 + .002, *SODIUM2))
     elif r < .055: glim.append((x, y, z1 + .04, PHOS)); gdots.append((x, y, .01, .006, z1, z1 + .002, *PHOS))
-tc.point_lights('slum_light', glim, float(opt.get('--lamp', .3)) * .4 * GLOW, .01)
+tc.point_lights('slum_light', glim, LAMP * .4 * GLOW, .01)
 gd = np.array(gdots, np.float32)
 tc.box_mesh('slum_dots', gd[:, :6], gd[:, 6:], emit_mat('slumdot', None, 4.0 * GLOW))
 tick(f'lights {len(lamp_lights) + len(glim)}')
@@ -200,7 +196,8 @@ def lights_ring(x, y, z, rx, ry, n, c):
 x, y = WELL7
 ground(x, y, 1.6, 1.6, (.08, .07, .06))
 wl = Batch('well7', mat('well_metal', (.18, .18, .19), .4, .8))
-wl.cyl(x, y, 0, .32, 2.4, 48)                                         # 竖井筒（从中层 C 区检查点垂下来）
+wl.ring(x, y, .3, .32, .05, 2.1, 48)                                  # 竖井筒（从中层 C 区检查点垂下来，中空）
+wl.box(x, y, .3, .5, .06, .04, .7); wl.box(x, y, .3, .06, .5, .04, .7)  # 井筒里的升降平台支架
 wl.ring(x, y, 0, .36, .03, .08, 48)
 wl.done()
 stalls, stc = [], []
@@ -210,11 +207,14 @@ for _ in range(260):
     stalls.append((x + r * math.cos(a), y + r * math.sin(a), R.uniform(.025, .045), R.uniform(.02, .035), 0, R.uniform(.01, .02))); stc.append(TARP[R.integers(5)] * R.uniform(.8, 1.3))
 tc.box_mesh('stalls', stalls, stc, tc.vcol_mat('tarp', .8))
 wg = Batch('well_glow', emit_mat('well_sodium', SODIUM, 5.0 * GLOW)); lamp_ring(wg, x, y, 2.4, .3, .3, 16); wg.done()
-wp = Batch('well_phos', emit_mat('well_phos', PHOS, 4.0 * GLOW))
+# 竖井漏下来的一束冷色天光：整个下层唯一的自然光（参考米德加板下的「天窗」）
+shaft = bpy.data.lights.new('shaft_sky', 'AREA'); shaft.shape = 'DISK'; shaft.size = .55; shaft.energy = 18 * GLOW * LAMP / .3
+shaft.color = srgb('#cfe0ff'); so_ = bpy.data.objects.new('shaft_sky', shaft); so_.location = (x, y, 2.3); col_main.objects.link(so_)
+wp = Batch('well_phos', emit_mat('well_phos', PHOS, 2.5 * GLOW))
 for rr_ in (.5, .7): lamp_ring(wp, x, y, .03, rr_, rr_, 28, .008)
 wp.done()
-lights_ring(x, y, .1, .5, .5, 10, SODIUM); lights_ring(x, y, .1, .7, .7, 12, PHOS)
-markers.append({'id': 'well7', 'pos': (x, y, 0)})
+lights_ring(x, y, .1, .5, .5, 10, SODIUM); lights_ring(x, y, .1, .7, .7, 6, PHOS)
+layer.marker('well7', (x, y, 0), .8)
 
 # 血肉磨坊：椭圆形地下拳场——锈铁外壳、阶梯看台、中央沙坑；刺眼的白光照着坑
 x, y = MILL
@@ -227,7 +227,7 @@ pit = Batch('pit', mat('pit', (.2, .09, .06), .95)); pit.cyl(0, 0, 0, 1, .006, 4
 po.scale = (.27, .18, 1); po.location = (x, y, 0)                  # 中央沙坑（椭圆）
 mg = Batch('mill_glow', emit_mat('mill_white', WHITE, 4.0 * GLOW)); lamp_ring(mg, x, y, .125, .5, .38, 12); mg.done()
 extra_lights += [(x + dx, y + dy, .25, WHITE) for dx, dy in ((-.15, 0), (.15, 0), (0, .1), (0, -.1))]
-markers.append({'id': 'blood_mill', 'pos': (x, y, 0)})
+layer.marker('blood_mill', (x, y, 0), .5)
 
 # 执法局下层分局：围墙院落、方形主楼、车库；冷白 + 执法蓝
 x, y = ENF
@@ -241,7 +241,7 @@ eb = Batch('enf_blue', emit_mat('enf_blue', BLUE, 5.0 * GLOW))
 for sx in (-1, 1): eb.box(x + sx * .6, y, .06, .006, .96, .002); eb.box(x, y + sx * .5, .06, 1.16, .006, .002)
 eb.done()
 lights_ring(x, y, .2, .55, .45, 8, WHITE)
-markers.append({'id': 'enforcement_low', 'pos': (x - .1, y + .1, 0)})
+layer.marker('enforcement_low', (x - .1, y + .1, 0), .6)
 
 # 施粥站：半荒废的旧教堂（中殿屋顶塌了一段）+ 前院长桌与排队人流；暖光
 x, y = SOUP
@@ -260,7 +260,7 @@ for k in range(80): q.append((x - .45 + k * .011 + R.normal(0, .002), y - .36 + 
 tc.box_mesh('queue', q, qc, tc.vcol_mat('queuem', .9))
 sg = Batch('soup_glow', emit_mat('soup_warm', srgb('#ffd08a'), 4.0 * GLOW)); lamp_ring(sg, x - .05, y - .22, .03, .35, .08, 10); sg.done()
 lights_ring(x - .05, y - .22, .12, .3, .1, 5, srgb('#ffd08a'))
-markers.append({'id': 'soup_kitchen', 'pos': (x, y + .05, 0)})
+layer.marker('soup_kitchen', (x, y + .05, 0), .55)
 
 # 防卫军前沿哨所：沙袋墙、四角岗楼、车辆与停机坪；白色探照灯
 x, y = OUTPOST
@@ -278,7 +278,7 @@ for sx in (-1, 1):
     for sy in (-1, 1): ow.box(x + sx * .6, y + sy * .52, .16, .03, .03, .003)
 ow.ring(x + .35, y - .2, .008, .12, .006, .002, 24); ow.done()
 extra_lights += [(x + sx * .55, y + sy * .47, .3, WHITE) for sx in (-1, 1) for sy in (-1, 1)]
-markers.append({'id': 'outpost', 'pos': (x, y, 0)})
+layer.marker('outpost', (x, y, 0), .7)
 
 # 资产管理委员会下层设施：有围墙的大型管理设施——只做中性的建筑外观
 x, y = AMC
@@ -293,7 +293,7 @@ for t in np.linspace(-1.1, 1.1, 16): aw.box(x + t, y + .8, .1, .015, .015, .003)
 for t in np.linspace(-.75, .75, 10): aw.box(x + 1.15, y + t, .1, .015, .015, .003); aw.box(x - 1.15, y + t, .1, .015, .015, .003)
 aw.done()
 extra_lights += [(x + t, y + s * .85, .2, WHITE) for t in np.linspace(-1, 1, 6) for s in (-1, 1)]
-markers.append({'id': 'amc_facility', 'pos': (x - .1, y + .1, 0)})
+layer.marker('amc_facility', (x - .1, y + .1, 0), 1.2)
 
 # 货运站的照明塔
 x, y = YARD
@@ -301,14 +301,8 @@ yl = Batch('yard_glow', emit_mat('yard_sodium', SODIUM, 5.0 * GLOW))
 for gx in np.linspace(x - 1.4, x + 1.4, 6):
     for sy in (-1, 1): yl.box(gx, y + sy * .52, .3, .03, .03, .003); extra_lights.append((gx, y + sy * .5, .35, SODIUM))
 yl.done()
-tc.point_lights('landmark_light', extra_lights, float(opt.get('--lamp', .3)) * 2.5 * GLOW, .02)
+tc.point_lights('landmark_light', extra_lights, LAMP * 2.5 * GLOW, .02)
 tick('landmarks')
 
 # ---------------- 环境：几乎没有天光（中层底面反射下来的一点暗橙）----------------
-world = bpy.data.worlds.new('sky'); sc.world = world; world.use_nodes = True
-bg = world.node_tree.nodes['Background']; bg.inputs['Color'].default_value = (.5, .38, .25, 1); bg.inputs['Strength'].default_value = float(opt.get('--ambient', .12))
-co = tc.camera_and_render(sc, RES, SAMPLES, OUT, opt)
-sc.cycles.light_sampling_threshold = .01
-tc.glare(sc, threshold=.9, size=6, mix=-.6)
-tc.write_data('tc_low', sc, co, markers)
-tc.render(sc, OUT, f'markers {len(markers)}')
+layer.finish(world=((.5, .38, .25), layer.f('--ambient', .12)), glare_opts=dict(threshold=.9, size=6, mix=-.7))
