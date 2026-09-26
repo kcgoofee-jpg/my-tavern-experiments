@@ -4,7 +4,12 @@
 // 一条事件（events.mjs 的输出）：{ id, key, cat, layer, place, lvl, text, src, code, time, scope, dur, xy, status, first, last, count, closed, tier, isNew }
 // 本文件只负责：落点（地名 → 坐标）、图标、事态列表、飞过去、网络攻击花屏、世界图角标。设计见 docs/map-events.md。
 // 读查看器的全局变量：viewer、REG、cur、curData、aspect、getJSON、placeN、showCard、esc、go、coarse、$。
+// 界面文字走查看器的 window.I18N（键在 i18n/*.json 的 ev.*）；类别、大类、层、状态名英文在 en.json 的 names。事件标题、地点、发布方是剧情原文，不翻译。
 const TCEvents = (() => {
+  const T = (k, zh, v = {}) => { const r = window.I18N?.t?.(k, v); if (r && r !== k) return r;
+    return Object.entries(v).reduce((s, [a, b]) => s.split('{' + a + '}').join(b), zh); };
+  const tn = z => (z && window.I18N?.tr?.(z)) || z || '';
+  const where = e => tn(e.layer) + (e.place ? '·' + e.place : '');
   const LOOK = {   // 类别 → 图标字、颜色（真实事件地图的惯例：火警红橙、警务蓝、治安紫、基础设施灰、网络青）
     火灾: ['火', '#ff5a2a'], 爆炸: ['爆', '#ff2a2a'], 持械: ['警', '#e0182d'], 凶案: ['案', '#c2263a'], 抢劫: ['劫', '#c23bd6'], 盗窃: ['盗', '#9a5cff'],
     通缉: ['缉', '#3d7dff'], 检查点管控: ['管', '#f08a24'], 黑市查抄: ['查', '#9fe870'], 骚乱: ['乱', '#e08a24'], 交通事故: ['轨', '#f0c020'],
@@ -84,7 +89,7 @@ const TCEvents = (() => {
       el.className = `ev ${e.closed ? 'ev-cleared' : 'ev-active'} sev${Math.max(1, e.lvl)} tier-${e.tier}${p.approx ? ' approx' : ''}${e.isNew && live(e) ? ' ev-new' : ''}`;
       el.style.setProperty('--c', color); el.dataset.ev = e.id;
       el.innerHTML = `<i>${esc(ch)}</i><b>${esc(e.text || e.cat)}</b>`;
-      el.title = `${e.cat} · ${e.place || e.layer}`;
+      el.title = `${tn(e.cat)} · ${e.place || tn(e.layer)}`;
       new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => card(e, el) });
       placeN(el, p.nx + Math.cos(a) * r, p.ny + Math.sin(a) * r * 1.6, OpenSeadragon.Placement.CENTER); layerEls.push(el);
     }
@@ -93,15 +98,18 @@ const TCEvents = (() => {
   }
   function card(e, el) {
     document.querySelectorAll('.ev.hot').forEach(x => x.classList.remove('hot')); el?.classList.add('hot');
-    const p = pos(e), st = e.closed ? '已解除' : e.status || '发生中';
-    showCard(null, `${e.cat} · ${e.text || ''}`, 'inf', [
-      e.grp && `分类：${e.grp} · ${e.cat}${e.rare >= 3 ? (e.rare >= 4 ? '（传说级）' : '（罕见）') : ''}`,
-      `地点：${e.layer}${e.place ? '·' + e.place : ''}${p.approx ? '（位置不详，按所在层大致标出）' : ''}`,
-      `等级：${'▮'.repeat(Math.max(1, e.lvl))}${'▯'.repeat(3 - Math.max(1, e.lvl))}　状态：${st}`,
-      e.time && `时间：${e.time}`, e.code && `编号：${e.code}`,
-      e.feed ? `来源：${e.src || '外部数据源'}` : `来源：${e.src || '未署名'} · 聊天第 ${e.first} 楼${e.count > 1 ? `起，更新 ${e.count - 1} 次` : ''}`,
+    const p = pos(e), st = e.closed ? T('ev.cleared', '已解除') : tn(e.status) || T('ev.ongoing', '发生中');
+    const rare = e.rare >= 4 ? T('ev.rare4', '（传说级）') : e.rare >= 3 ? T('ev.rare3', '（罕见）') : '';
+    showCard(null, `${tn(e.cat)} · ${e.text || ''}`, 'inf', [
+      e.grp && T('ev.f_cat', '分类：{grp} · {cat}', { grp: tn(e.grp), cat: tn(e.cat) }) + rare,
+      T('ev.f_place', '地点：{place}', { place: where(e) }) + (p.approx ? T('ev.approx', '（位置不详，按所在层大致标出）') : ''),
+      T('ev.f_lvl', '等级：{bars}　状态：{st}', { bars: '▮'.repeat(Math.max(1, e.lvl)) + '▯'.repeat(3 - Math.max(1, e.lvl)), st }),
+      e.time && T('ev.f_time', '时间：{v}', { v: e.time }), e.code && T('ev.f_code', '编号：{v}', { v: e.code }),
+      e.feed ? T('ev.f_src_feed', '来源：{src}', { src: e.src || T('ev.feed_default', '外部数据源') })
+        : T('ev.f_src', '来源：{src} · 聊天第 {n} 楼', { src: e.src || T('ev.unsigned', '未署名'), n: e.first }) + (e.count > 1 ? T('ev.updates', '起，更新 {n} 次', { n: e.count - 1 }) : ''),
     ].filter(Boolean).join('\n'));
-    const t = document.querySelector('#card .tag'); t.textContent = '天城事态'; t.style.background = lk(e)[1]; t.style.color = '#111';
+    const t = document.querySelector('#card .tag'); t.textContent = T('ev.tag', '天城事态'); t.style.background = lk(e)[1]; t.style.color = '#111';
+    delete document.querySelector('#card .src').dataset.note;   // 事态卡不是设定原文，不加「原文（中文）」说明
   }
   function flyTo(id) {
     const e = all().find(x => x.id === id), mid = e && mapOf(e);
@@ -131,27 +139,27 @@ const TCEvents = (() => {
     setTimeout(() => viewer.removeOverlay(el), 2200);
   }
   // 打开某张图之后（onOpen 里调用）：画点；如果有待飞的事件，飞过去
-  function afterOpen() { render(); if (flyId && flyTo(flyId)) flyId = null; }
+  function afterOpen() { render(); renderBar(); if (flyId && flyTo(flyId)) flyId = null; }
 
   // ---------- 事态列表（底部横条，点开是列表） ----------
   function renderBar() {
     const bar = $('#evbar'), list = all().filter(e => REG.maps[mapOf(e)]);
     bar.hidden = !list.length || !shown; if (bar.hidden) return;
     const n = list.filter(live).length, fresh = list.filter(e => e.isNew).length;
-    bar.querySelector('button').innerHTML = `<i class="dot"></i><span>${n ? `${n} 起进行中` : '暂无进行中'} · 共 ${list.length} 起事态</span>${fresh ? `<span class="new">${fresh} 条新</span>` : ''}<span class="tog">${open ? '收起 ▾' : '展开 ▴'}</span>`;
+    bar.querySelector('button').innerHTML = `<i class="dot"></i><span>${esc(n ? T('ev.bar_live', '{n} 起进行中', { n }) : T('ev.bar_none', '暂无进行中'))} · ${esc(T('ev.bar_total', '共 {n} 起事态', { n: list.length }))}</span>${fresh ? `<span class="new">${esc(T('ev.bar_new', '{n} 条新', { n: fresh }))}</span>` : ''}<span class="tog">${esc(open ? T('ev.collapse', '收起 ▾') : T('ev.expand', '展开 ▴'))}</span>`;
     bar.dataset.open = open ? '1' : '0';
-    bar.querySelector('ol').innerHTML = list.map(e => `<li data-id="${esc(e.id)}" class="tier-${e.tier}${e.isNew ? ' isnew' : ''}" style="--c:${lk(e)[1]}"><i></i><b>${esc(e.cat)}${e.closed ? ' · 已解除' : ''} <em>${esc(e.layer)}${e.place ? '·' + esc(e.place) : ''}</em></b><em>${e.feed ? '数据源' : `第 ${e.last} 楼`}</em><small>${esc(e.text || '')}${e.src ? ' —— ' + esc(e.src) : ''}</small></li>`).join('');
+    bar.querySelector('ol').innerHTML = list.map(e => `<li data-id="${esc(e.id)}" class="tier-${e.tier}${e.isNew ? ' isnew' : ''}" style="--c:${lk(e)[1]}"><i></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(T('ev.cleared', '已解除')) : ''} <em>${esc(where(e))}</em></b><em>${esc(e.feed ? T('ev.feed', '数据源') : T('ev.floor', '第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${e.src ? ' —— ' + esc(e.src) : ''}</small></li>`).join('');
   }
   function updateToggle() {
     let tg = document.getElementById('tgEvents');
     if (!tg) {
       tg = document.createElement('label'); tg.className = 'tg'; tg.id = 'tgEvents';
-      tg.innerHTML = '<input type="checkbox" checked><span>事态</span>';
+      tg.innerHTML = '<input type="checkbox" checked><span></span>';
       tg.querySelector('input').onchange = ev => { shown = ev.target.checked; document.body.classList.toggle('noevents', !shown); renderBar(); applyGlitch(); };
       document.getElementById('tgMarkers')?.closest('label')?.after(tg);
     }
     const act = all().filter(e => mapOf(e) === cur && live(e)).length;
-    tg.querySelector('span').textContent = act ? `事态 ${act}` : '事态';
+    tg.querySelector('span').textContent = act ? T('ev.toggle_n', '事态 {n}', { n: act }) : T('ev.toggle', '事态');
     tg.hidden = !all().length;
   }
   // 网络攻击：受影响的层（或全城）在持续期内「花屏」：间歇的色散、横向撕裂、马赛克块，强度随等级；配 ⚠ 与「数据链路受扰」，一看就知道是剧情
@@ -159,7 +167,7 @@ const TCEvents = (() => {
     const lv = !shown ? 0 : Math.max(0, ...all().filter(e => e.cat === '网络攻击' && !e.closed && (e.feed || floor - e.last <= (e.dur || 3)) &&
       (/全城|天城/.test(e.scope) || mapOf(e) === cur || (e.scope && MAP_OF[e.scope.replace(/\s/g, '').slice(0, 2)] === cur))).map(e => Math.max(1, e.lvl)));
     document.body.dataset.glitch = lv || '';
-    $('#glitchNote').hidden = !lv;
+    $('#glitchNote').hidden = !lv; $('#glitchNote').textContent = T('ev.glitch', '⚠ 数据链路受扰');
   }
   // 世界图：天城内部未解除的事件汇成天城标记上的一个数字角标
   function worldBadge() {
@@ -195,7 +203,7 @@ const TCEvents = (() => {
   #evbar>button{all:unset;box-sizing:border-box;display:flex;gap:8px;align-items:center;width:100%;padding:6px 12px;cursor:pointer}
   #evbar>button:active{opacity:.7}
   #evbar .dot{width:8px;height:8px;transform:rotate(45deg);background:#f08a24;flex:none}
-  #evbar .new{color:#f08a24;font-weight:700} #evbar .tog{margin-left:auto;color:#8b949e}
+  #evbar .new{color:#f08a24;font-weight:700;white-space:nowrap} #evbar .tog{margin-left:auto;color:#8b949e;white-space:nowrap}
   #evbar ol{list-style:none;margin:0;padding:0 6px 6px;max-height:38vh;overflow-y:auto}
   #evbar[data-open="0"] ol{display:none}
   #evbar li{display:grid;grid-template-columns:12px 1fr auto;gap:2px 8px;align-items:baseline;padding:6px;border-top:1px solid rgba(255,255,255,.08);cursor:pointer}
@@ -227,7 +235,7 @@ const TCEvents = (() => {
 
   function init() {
     const stage = $('#stage');
-    if (!$('#evbar')) stage.insertAdjacentHTML('beforeend', '<div id="evbar" hidden data-open="0"><button type="button"></button><ol></ol></div><div id="glitchNote" hidden>⚠ 数据链路受扰</div>');
+    if (!$('#evbar')) stage.insertAdjacentHTML('beforeend', '<div id="evbar" hidden data-open="0"><button type="button"></button><ol></ol></div><div id="glitchNote" hidden></div>');
     $('#evbar > button').addEventListener('click', () => { open = !open; renderBar(); });
     $('#evbar ol').addEventListener('click', e => { const li = e.target.closest('li'); if (li) flyTo(li.dataset.id); });
     if (coarse) document.body.classList.add('coarse');
