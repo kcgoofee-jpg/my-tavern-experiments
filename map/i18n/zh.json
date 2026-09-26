@@ -14,5 +14,13 @@
   "you": "你", "minor": "中小国", "sep": " · ",
   "lang_title": "界面语言", "theme_auto": "◐ 自动", "theme_light": "☀ 浅色", "theme_dark": "☾ 深色", "theme_title": "界面主题：自动跟随系统 / 浅色 / 深色",
   "estate.loading": "加载 {title}…", "estate.fail": "庄园页面加载失败", "estate.slow": "三维库加载较慢（需要能访问 jsDelivr）…",
-  "layers.keys": "PageUp / PageDown 或 [ ] 切换上下层", "layers.planned": "制作中", "layers.here": "当前地点在这一层", "layers.events": "{n} 起未解除的事态"
+  "layers.keys": "PageUp / PageDown 或 [ ] 切换上下层", "layers.planned": "制作中", "layers.here": "当前地点在这一层", "layers.events": "{n} 起未解除的事态",
+  "tier_auto": "自动", "tier_auto_on": "自动 · {px}px", "tier_auto_title": "按当前缩放自动选清晰度：放大时升档、缩小时不降；手机与省流网络最高到标准", "tier_status_auto": "{title} · 自动 · 清晰度上限 {px}px",
+  "ev.toggle": "事态", "ev.toggle_n": "事态 {n}", "ev.glitch": "⚠ 数据链路受扰", "ev.bar_live": "{n} 起进行中",
+  "ev.bar_none": "暂无进行中", "ev.bar_total": "共 {n} 起事态", "ev.bar_new": "{n} 条新", "ev.collapse": "收起 ▾",
+  "ev.expand": "展开 ▴", "ev.cleared": "已解除", "ev.ongoing": "发生中", "ev.feed": "数据源",
+  "ev.floor": "第 {n} 楼", "ev.tag": "天城事态", "ev.f_cat": "分类：{grp} · {cat}", "ev.rare3": "（罕见）",
+  "ev.rare4": "（传说级）", "ev.f_place": "地点：{place}", "ev.approx": "（位置不详，按所在层大致标出）", "ev.f_lvl": "等级：{bars}　状态：{st}",
+  "ev.f_time": "时间：{v}", "ev.f_code": "编号：{v}", "ev.f_src_feed": "来源：{src}", "ev.feed_default": "外部数据源",
+  "ev.f_src": "来源：{src} · 聊天第 {n} 楼", "ev.unsigned": "未署名", "ev.updates": "起，更新 {n} 次"
 }

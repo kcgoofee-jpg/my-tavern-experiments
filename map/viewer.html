@@ -114,10 +114,10 @@
   #loading.over span { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; color: var(--ink); text-shadow: none; }
   /* 世界图首屏：瓦片还没到时先铺一张 1200px 缩略图（压暗 + 模糊），不再是一片黑 */
   #loading.thumb { background: linear-gradient(rgba(10,12,16,.55), rgba(10,12,16,.55)), url(art/world_1k.jpg) center / cover; color: #eef1f4; text-shadow: 0 1px 4px #000; }
-  .barriers ellipse { fill: rgba(120,220,255,.06); stroke: rgba(140,230,255,.75); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
-  .barriers ellipse.eden { stroke: var(--gold); stroke-width: 2; fill: rgba(230,195,106,.08); }
-  .barriers.proj ellipse { fill: rgba(0,0,0,.12); stroke: rgba(190,205,230,.5); stroke-width: 1; stroke-dasharray: 5 4; }
-  .barriers.proj ellipse.eden { stroke: rgba(230,195,106,.7); fill: rgba(0,0,0,.12); }
+  .barriers :is(ellipse, path) { fill: rgba(120,220,255,.06); stroke: rgba(140,230,255,.75); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+  .barriers .eden { stroke: var(--gold); stroke-width: 2; fill: rgba(230,195,106,.08); }
+  .barriers.proj :is(ellipse, path) { fill: rgba(0,0,0,.12); stroke: rgba(190,205,230,.5); stroke-width: 1; stroke-dasharray: 5 4; }
+  .barriers.proj .eden { stroke: rgba(230,195,106,.7); fill: rgba(0,0,0,.12); }
   /* 标记 */
   .mk { position: relative; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none; }
   /* OSD 会给叠加层写内联 display:block，flex 居中失效，所以针脚自己居中 */
@@ -206,19 +206,22 @@
 <script>
 // 多地图查看器：地图注册表 data/maps.json（世界 → 天城三层 → 以后的庄园剖面……）。
 // 底图都是 DZI 瓦片金字塔，只加载屏幕里看得见的部分；解码内存由屏幕大小和瓦片缓存上限决定。
-// 档位 = 清晰度上限：最多加载到相当于 cap 像素宽的那一层瓦片（放大后差别明显），默认省流。
+// 档位 = 清晰度上限：最多加载到相当于 cap 像素宽的那一层瓦片（放大后差别明显）。
+// 默认「自动」：按当前缩放下屏幕实际需要的像素选刚好够用的一档，放大时升、缩小时不降（已加载的瓦片不浪费）；手动选的档位照旧生效。
 const TIERS = [   // 名称在 i18n/*.json 的 tier_<key>
   { key: 'save', cap: 2000, ratio: 1, dpr: 1.25 },
   { key: 'std', cap: 4000, ratio: .8, dpr: 2 },
   { key: 'hd', cap: 8000, ratio: .5, dpr: 3 },
 ];
-const TIER_KEY = 'edenMapTierV2';   // 换了键名：旧版存下的「标准」不再沿用，统一从省流开始
+const TIER_KEY = 'edenMapTierV2';   // 存过档位（省流 / 标准 / 清晰 / 自动）的继续沿用；没存过的默认自动
 // 世界图：代码地图坐标（1600×1000）→ 底图归一化坐标（相机裁切：宽 98.5%、高 97%）
 const toImg = (x, y) => [(x / 1600 - .0075) / .985, (y / 1000 - .015) / .97];
 
-let viewer, aspect = 1, M, REG, cur = null, curData = null, ovData = null, tier = 'save', sleeping = null, pendingFocus = null;
-try { tier = localStorage.getItem(TIER_KEY) || 'save'; } catch (e) {}
-if (!TIERS.some(t => t.key === tier)) tier = 'save';
+let viewer, aspect = 1, M, REG, cur = null, curData = null, ovData = null, tier = 'auto', sleeping = null, pendingFocus = null;
+try { tier = localStorage.getItem(TIER_KEY) || 'auto'; } catch (e) {}
+if (tier !== 'auto' && !TIERS.some(t => t.key === tier)) tier = 'auto';
+let autoKey = 'save';   // 自动档当前实际用的一档（只升不降）
+const effTier = () => TIERS.find(x => x.key === (tier === 'auto' ? autoKey : tier));
 const $ = s => document.querySelector(s);
 // 界面文字：有 window.I18N（英文 / 浅色界面分支）时走 I18N.t(键)，否则用这里的中文
 const tx = (key, zh, vars) => { const r = window.I18N?.t?.(key, vars); return r && r !== key ? r : zh; };
@@ -226,6 +229,9 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 let narrow = false;
 // 触屏或低内存设备：瓦片缓存减半（约 30 MB），避免手机 WebView 因内存被回收
 const coarse = matchMedia('(pointer: coarse)').matches || (navigator.deviceMemory || 8) <= 4;   // 手机 / 窄面板：隐藏小地图（信息卡的底部抽屉由 CSS 媒体查询处理）
+// 自动档的上限：手机、低内存（≤ 4 GB）、省流模式或 2g / 3g 网络最高只到「标准」
+const autoMax = () => { const c = navigator.connection || {};
+  return coarse || /Android|iPhone|iPad|iPod|Mobile/.test(navigator.userAgent) || c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || '') ? 'std' : 'hd'; };
 const post = msg => { if (window.top !== window) parent.postMessage(msg, '*'); };
 // 数据文件只取一次：切换地图、面板休眠后唤醒都不再重复请求
 const jsonCache = new Map();
@@ -243,7 +249,7 @@ function applyI18n() {
   document.querySelectorAll('[data-i18n]').forEach(e => e.textContent = t(e.dataset.i18n));
   document.querySelectorAll('[data-i18n-title]').forEach(e => e.title = t(e.dataset.i18nTitle));
   document.querySelectorAll('[data-i18n-ph]').forEach(e => e.placeholder = t(e.dataset.i18nPh));
-  document.querySelectorAll('#tiers button').forEach(b => b.textContent = t('tier_' + b.dataset.k));
+  tierLabels();
   document.querySelectorAll('#langSeg button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
   $('#themeBtn').textContent = t('theme_' + window.__theme);
 }
@@ -253,7 +259,7 @@ async function setLang(l) {
   LANG = l; DICT = dict; document.documentElement.lang = l === 'en' ? 'en' : 'zh-CN';
   try { localStorage.setItem('edenMapLang', l); } catch (e) {}
   applyI18n(); closeCard();
-  if (cur) { mapChrome(REG.maps[cur]); renderNav(); if (viewer.world.getItemCount()) { drawOverlays(); setTier(tier); } post({ type: 'eden-map:state', map: cur, title: nm(REG.maps[cur], 'title'), lang: LANG }); }
+  if (cur) { mapChrome(REG.maps[cur]); renderNav(); if (viewer.world.getItemCount()) { drawOverlays(); applyTier(); } post({ type: 'eden-map:state', map: cur, title: nm(REG.maps[cur], 'title'), lang: LANG }); }
 }
 function cycleTheme() {
   const order = ['auto', 'light', 'dark']; window.__theme = order[(order.indexOf(window.__theme) + 1) % 3];
@@ -274,7 +280,7 @@ async function main() {
     for (const v of Object.values(REG.maps[k].markers || {})) ALIAS['天城'].push(...(v.alias || [])); }
   narrow = innerWidth <= 640;   // 等 iframe 布局完成后再判断，脚本刚执行时宽度可能还是 0
   const seg = $('#tiers');
-  for (const x of TIERS) { const b = document.createElement('button'); b.dataset.k = x.key;
+  for (const x of [{ key: 'auto' }, ...TIERS]) { const b = document.createElement('button'); b.dataset.k = x.key;
     b.onclick = () => setTier(x.key); seg.appendChild(b); }
   applyI18n(); $('#status').textContent = t('loading');
   // 工具栏换行（英文更宽、窄窗口）时，信息卡跟着工具栏的实际高度往下挪，不压住第二行
@@ -283,12 +289,13 @@ async function main() {
   $('#themeBtn').onclick = cycleTheme;
   // 画布像素密度随档位封顶：高分屏（手机 3x）上省流只画 1.25x，填充的像素少一半以上，选瓦片的层级也跟着降
   const devDpr = OpenSeadragon.getCurrentPixelDensityRatio;
-  OpenSeadragon.getCurrentPixelDensityRatio = () => Math.min(devDpr(), TIERS.find(t => t.key === tier).dpr);
+  OpenSeadragon.getCurrentPixelDensityRatio = () => Math.min(devDpr(), effTier().dpr);
+  window.__devDpr = devDpr;
   OpenSeadragon.pixelDensityRatio = OpenSeadragon.getCurrentPixelDensityRatio();
   viewer = OpenSeadragon({
     element: $('#osd'), drawer: 'canvas', prefixUrl: 'vendor/openseadragon/images/',
     showNavigator: !narrow, showFullPageControl: false, navigatorPosition: 'BOTTOM_RIGHT', visibilityRatio: 1, constrainDuringPan: true, homeFillsViewer: true, minZoomImageRatio: 1,
-    maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: 16, maxImageCacheCount: coarse ? 30 : 60,   /* 512px 瓦片：并发拉取，缓存约 60 MB */ minPixelRatio: TIERS.find(t => t.key === tier).ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true }, gestureSettingsTouch: { pinchRotate: false, flickEnabled: true },
+    maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: 16, maxImageCacheCount: coarse ? 30 : 60,   /* 512px 瓦片：并发拉取，缓存约 60 MB */ minPixelRatio: effTier().ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true }, gestureSettingsTouch: { pinchRotate: false, flickEnabled: true },
     smoothTileEdgesMinZoom: Infinity,   // 瓦片有 1px 重叠，不需要放大时整屏再画一遍去接缝
   });
   viewer.addHandler('open', onOpen);
@@ -302,6 +309,7 @@ async function main() {
     document.documentElement.style.setProperty('--rs', rs.toFixed(3));
     document.body.classList.toggle('far', px < 1700); document.body.classList.toggle('tiny', px < 800); }); };
   viewer.addHandler('animation', rescale); viewer.addHandler('resize', rescale); viewer.addHandler('open', () => setTimeout(rescale, 0));
+  viewer.addHandler('animation-finish', autoTier); viewer.addHandler('resize', autoTier);
   initProgress();
   $('#tgBorders').onchange = applyOverlayToggle;
   $('#tgAltBox').onchange = e => { try { localStorage.setItem(ALT_KEY + cur, e.target.checked ? '1' : '0'); } catch (err) {} swapBase(); };
@@ -328,7 +336,7 @@ async function slowWarmAlt() {
       const x = await getText(m.alt.base);
       const T = +x.match(/TileSize="(\d+)"/)[1], f = x.match(/Format="(\w+)"/)[1];
       const W = +x.match(/Width="(\d+)"/)[1], H = +x.match(/Height="(\d+)"/)[1], top = Math.ceil(Math.log2(Math.max(W, H)));
-      const cap = TIERS.find(t => t.key === tier).cap, maxL = Math.min(top, Math.ceil(Math.log2(W * Math.min(1, cap / W))));
+      const cap = effTier().cap, maxL = Math.min(top, Math.ceil(Math.log2(W * Math.min(1, cap / W))));
       const dir = m.alt.base.replace(/\.dzi$/, '_files/');
       for (let L = 8; L <= maxL; L++) {
         const s2 = 2 ** (top - L), w = Math.ceil(W / s2), h = Math.ceil(H / s2);
@@ -361,7 +369,7 @@ fetch('data/build.json').then(r => r.ok ? r.json() : null).then(b => {
   $('#build').textContent = buildCode;
 }).catch(() => {});
 $('#build').addEventListener('click', () => {
-  const d = [buildCode, 'map=' + (cur || sleeping), 'tier=' + tier, 'dpr=' + devicePixelRatio,
+  const d = [buildCode, 'map=' + (cur || sleeping), 'tier=' + tier + (tier === 'auto' ? ':' + autoKey : ''), 'dpr=' + devicePixelRatio,
     'view=' + innerWidth + 'x' + innerHeight, 'base=' + document.baseURI, 'ua=' + navigator.userAgent].join('\n');
   const done = () => { const b = $('#build'); b.textContent = t('copied'); setTimeout(() => b.textContent = buildCode, 1500); };
   (navigator.clipboard ? navigator.clipboard.writeText(d) : Promise.reject()).then(done).catch(() => { prompt(t('copy_prompt'), d); });
@@ -394,7 +402,7 @@ const altOn = id => { try { return localStorage.getItem(ALT_KEY + id) === '1'; }
 const baseOf = id => { const m = REG.maps[id]; return m.alt && altOn(id) ? m.alt.base : m.base; };
 function swapBase() {
   const id = cur, old = viewer.world.getItemAt(0); if (!old) return;
-  viewer.addTiledImage({ tileSource: baseOf(id), index: 0, success: () => { if (cur !== id) return; viewer.world.removeItem(old); setTier(tier); },
+  viewer.addTiledImage({ tileSource: baseOf(id), index: 0, success: () => { if (cur !== id) return; viewer.world.removeItem(old); applyTier(); },
     error: () => { try { localStorage.removeItem(ALT_KEY + id); } catch (e) {} $('#tgAltBox').checked = false; $('#tierState').textContent = t('alt_missing'); } });
 }
 // 同组（天城）各层平面坐标对齐：切层时沿用同一个归一化视野（中心 + 缩放），只有第一次进入这一组时才按 view.focus 定位
@@ -587,11 +595,34 @@ function capLevels(it) {
   const orig = it._getLevelsInterval.bind(it);
   it._getLevelsInterval = () => { const r = orig(); r.highestLevel = Math.min(r.highestLevel, it._capLevel ?? 99); r.lowestLevel = Math.min(r.lowestLevel, r.highestLevel); return r; };
 }
+// setTier：用户选档（记下来）；applyTier：按实际生效的一档设上限（自动档升档时只调它，不改存档）
 function setTier(key) {
   tier = key; try { localStorage.setItem(TIER_KEY, key); } catch (e) {}
-  document.querySelectorAll('#tiers button').forEach(b => b.classList.toggle('on', b.dataset.k === key));
+  if (key === 'auto') { autoTier(true); if (viewer?.world.getItemAt(0)) return; }
+  applyTier();
+}
+function tierLabels() {
+  const tt = effTier(), base = viewer?.world.getItemAt(0), px = base ? Math.min(tt.cap, base.source.dimensions.x) : tt.cap;
+  document.querySelectorAll('#tiers button').forEach(b => { b.classList.toggle('on', b.dataset.k === tier);
+    b.textContent = b.dataset.k === 'auto' && tier === 'auto' ? t('tier_auto_on', { px }) : t('tier_' + b.dataset.k);
+    b.title = b.dataset.k === 'auto' ? t('tier_auto_title') : ''; });
+  if (cur && REG?.maps[cur]) $('#status').textContent = t(tier === 'auto' ? 'tier_status_auto' : 'tier_status', { title: nm(REG.maps[cur], 'title'), px });
+}
+// 自动档：屏幕实际需要的像素 = 视口宽 × devicePixelRatio ÷ 可见部分占图宽的比例，取刚好够用的一档；只升不降
+function autoTier(force) {
+  if (tier !== 'auto' || !viewer) return;
+  const base = viewer.world.getItemAt(0); if (!base) return;
+  const vis = Math.min(1, viewer.viewport.getBounds(true).width);   // 可见宽度 / 图宽（图宽 = 1）
+  const need = viewer.viewport.getContainerSize().x * (window.__devDpr?.() || devicePixelRatio || 1) / Math.max(vis, 1e-3);
+  const max = TIERS.findIndex(x => x.key === autoMax());
+  let j = TIERS.findIndex(x => x.cap >= need * .9); if (j < 0) j = TIERS.length - 1;
+  j = Math.max(Math.min(j, max), TIERS.findIndex(x => x.key === autoKey));
+  if (TIERS[j].key !== autoKey || force === true) { autoKey = TIERS[j].key; applyTier(); }
+}
+function applyTier() {
+  tierLabels();
   viewer?._updatePixelDensityRatio?.();   // 新档位的像素密度上限（变了会自动重设画布）
-  const tt = TIERS.find(x => x.key === key), base = viewer.world.getItemAt(0);
+  const tt = effTier(), base = viewer?.world.getItemAt(0);
   if (!base) return;
   const scale = Math.min(1, tt.cap / base.source.dimensions.x);   // 相对底图原始宽度；叠加层按同比例
   for (let i = 0; i < viewer.world.getItemCount(); i++) {
@@ -604,12 +635,11 @@ function setTier(key) {
   const ts = $('#tierState'); ts.textContent = t('switching'); ts.className = 'busy';
   setTimeout(() => { let busy = 0; for (let i = 0; i < viewer.world.getItemCount(); i++) busy += viewer.world.getItemAt(i)._tilesLoading || 0;
     if (!busy && ts.textContent === t('switching')) { ts.textContent = t('loaded'); ts.className = 'ok'; setTimeout(() => { if (ts.className === 'ok') { ts.textContent = ''; ts.className = ''; } }, 2500); } }, 900);
-  $('#status').textContent = t('tier_status', { title: nm(REG.maps[cur], 'title'), px: Math.min(tt.cap, base.source.dimensions.x) });
 }
 function onOpen() {
   if (REG.maps[cur]?.kind === 'estate') return;   // 打开旧底图期间已经切去庄园
   const it = viewer.world.getItemAt(0), sz = it.getContentSize(); aspect = sz.y / sz.x;
-  setTier(tier); applyZoomLimit(); drawOverlays(); focusStart(true);
+  applyTier(); applyZoomLimit(); drawOverlays(); focusStart(true); autoTier();
   if (pendingFocus) { const el = [...document.querySelectorAll('.mk')].find(e => e.dataset.name === REG.maps[cur].markers?.[pendingFocus]?.name);
     pendingFocus = null; el?._open(); }
 }
@@ -646,7 +676,8 @@ function showCard(el, name, tag, src, extra) {
   const c = $('#card'); c.hidden = false;
   c.querySelector('.tag').textContent = t(tag === 'inf' ? 'tag_inf' : 'tag_set'); c.querySelector('.tag').className = 'tag' + (tag === 'inf' ? ' inf' : '');
   const sv = c.querySelector('.src'); c.querySelector('h2').textContent = name; sv.textContent = src;
-  if (LANG === 'en' && /[\u4e00-\u9fff]/.test(src || '') && t('src_note')) sv.dataset.note = t('src_note'); else delete sv.dataset.note;   // 英文界面：设定原文保持中文，加一行说明 c.querySelector('.extra').innerHTML = extra || '';
+  if (LANG === 'en' && /[\u4e00-\u9fff]/.test(src || '') && t('src_note')) sv.dataset.note = t('src_note'); else delete sv.dataset.note;   // 英文界面：设定原文保持中文，加一行说明
+  c.querySelector('.extra').innerHTML = extra || '';
 }
 function closeCard() { $('#card').hidden = true; document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); }
 function worldOverlays() {
@@ -668,6 +699,15 @@ function worldOverlays() {
   }
   for (const f of M.fiefs) marker({ name: f.name, tag: f.tag, src: f.src, x: f.x, y: f.y });
 }
+// 闭合多边形 → 平滑闭合曲线（Catmull-Rom 转三次贝塞尔，曲线经过每个顶点）
+function smoothPath(P) {
+  const n = P.length, f = v => v.toFixed(1); let d = `M${f(P[0][0])},${f(P[0][1])}`;
+  for (let k = 0; k < n; k++) {
+    const p0 = P[(k - 1 + n) % n], p1 = P[k], p2 = P[(k + 1) % n], p3 = P[(k + 2) % n];
+    d += `C${f(p1[0] + (p2[0] - p0[0]) / 6)},${f(p1[1] + (p2[1] - p0[1]) / 6)} ${f(p2[0] - (p3[0] - p1[0]) / 6)},${f(p2[1] - (p3[1] - p1[1]) / 6)} ${f(p2[0])},${f(p2[1])}`;
+  }
+  return d + 'Z';
+}
 // 渲染脚本导出的点位地图（天城各层）：标记 + 结界圈（或别的地图的岛屿轮廓，如中层的「上层投影」）
 function pointOverlays() {
   const m = REG.maps[cur], d = curData || { markers: [], islands: [] }, od = ovData || {};
@@ -675,9 +715,18 @@ function pointOverlays() {
     const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg'), VW = 1000, VH = 1000 * aspect;
     svg.setAttribute('viewBox', `0 0 ${VW} ${VH}`); svg.setAttribute('preserveAspectRatio', 'none'); svg.classList.add('barriers');
     if (m.overlay.from) svg.classList.add('proj');
-    for (const i of od.islands) { const e = document.createElementNS(ns, 'ellipse');
-      e.setAttribute('cx', i.nx * VW); e.setAttribute('cy', i.ny * VH); e.setAttribute('rx', i.rx * VW * 1.08); e.setAttribute('ry', i.ry * VH * 1.08);
-      e.setAttribute('transform', `rotate(${-i.rot * 180 / Math.PI} ${i.nx * VW} ${i.ny * VH})`);
+    // 有 outline（渲染脚本导出的岛轮廓，归一化、左上原点）就按轮廓画平滑闭合曲线；没有时退回椭圆
+    // 结界比岛缘略向外扩（5%），投影就是岛本身的轮廓
+    const grow = m.overlay.from ? 1 : 1.05;
+    for (const i of od.islands) { let e;
+      if (Array.isArray(i.outline) && i.outline.length >= 8) {
+        e = document.createElementNS(ns, 'path');
+        e.setAttribute('d', smoothPath(i.outline.map(([x, y]) => [(i.nx + (x - i.nx) * grow) * VW, (i.ny + (y - i.ny) * grow) * VH])));
+      } else {
+        e = document.createElementNS(ns, 'ellipse');
+        e.setAttribute('cx', i.nx * VW); e.setAttribute('cy', i.ny * VH); e.setAttribute('rx', i.rx * VW * 1.08); e.setAttribute('ry', i.ry * VH * 1.08);
+        e.setAttribute('transform', `rotate(${-i.rot * 180 / Math.PI} ${i.nx * VW} ${i.ny * VH})`);
+      }
       if (i.id === 'eden') e.classList.add('eden');
       svg.appendChild(e); }
     svg.style.pointerEvents = 'none';
