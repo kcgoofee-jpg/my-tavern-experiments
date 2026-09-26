@@ -9,6 +9,7 @@
   - 标记字段：name、tag（set / inf）、src 必填；alias 为非空列表
   - 跨层对齐：link 两端的地点在平面上应当重合（同一套平面坐标），偏差超过 2% 图宽报错
   - 三层数据的 extent_m 一致
+  - 岛轮廓 islands[].outline（可选）：至少 8 个点，坐标在 0…1
   - kind=estate（三维庄园剖面，iframe 嵌入）：不要底图 / 点位数据；src 页面存在、有 parent、alias 为非空列表
 """
 import json, os, sys
@@ -63,6 +64,13 @@ for mid, m in maps.items():
         if v.get('tag') not in ('set', 'inf'): err(f"{mid}.{i}: tag 应为 set 或 inf，现在是 {v.get('tag')}")
         if not isinstance(v.get('alias'), list) or not v['alias']: err(f'{mid}.{i}: alias 应为非空列表')
     if m.get('focus') and m['focus'] not in meta: err(f"{mid}.focus → {m['focus']} 不是本图的标记")
+    # 岛轮廓（查看器的结界 / 上层投影叠加层按它画平滑闭合曲线；没有时画椭圆）：归一化 [x, y] 列表，至少 8 个点，坐标在 0…1
+    for isl in d.get('islands', []):
+        if 'outline' not in isl: continue
+        o, iid = isl['outline'], isl.get('id', '?')
+        if not isinstance(o, list) or len(o) < 8: err(f'{mid}.islands.{iid}: outline 至少要 8 个点（现在 {len(o) if isinstance(o, list) else type(o).__name__}）'); continue
+        bad = [q for q in o if not (isinstance(q, (list, tuple)) and len(q) == 2 and all(isinstance(v, (int, float)) and 0 <= v <= 1 for v in q))]
+        if bad: err(f'{mid}.islands.{iid}: outline 有 {len(bad)} 个点不是 0…1 内的 [x, y]（如 {bad[0]}）')
 # view：尺度与默认缩放
 wm = json.load(open(os.path.join(ROOT, 'data', 'world_markers.json')))
 place_ids = {p.get('id') for p in wm.get('places', [])}
