@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # 渲染天城各层底图并切成瓦片（本机跑，不消耗 Claude 额度）。
 # 用法：bash tools/render_all.sh [层 ...] [--res 8000] [--samples 64] [--data-only] [--bpy] [-- 其他参数原样传给层脚本]
-#   层：upper mid low（默认全部；脚本不存在的层自动跳过）
+#   层：upper upper_city mid low（默认全部；脚本不存在的层自动跳过）
+#       upper = 上层默认底图（岛屿下方是云海，tc_upper）；upper_city = 下方显示中层城市的版本（tc_upper_city，查看器里的「显示下方城市」开关）
 #   例：bash tools/render_all.sh upper --res 2000 --samples 16   # 快速草稿
 #       bash tools/render_all.sh --data-only                      # 只重新导出点位（几秒），不渲染、不切瓦片
 #       bash tools/render_all.sh low -- --lamp .4 --ambient .1    # 调层参数
@@ -21,7 +22,7 @@ while [ $# -gt 0 ]; do
     *) LAYERS+=("$1"); shift ;;
   esac
 done
-[ ${#LAYERS[@]} -eq 0 ] && LAYERS=(upper mid low)
+[ ${#LAYERS[@]} -eq 0 ] && LAYERS=(upper upper_city mid low)
 BL=${BLENDER:-}
 [ -z "$BL" ] && [ -x /Applications/Blender.app/Contents/MacOS/Blender ] && BL=/Applications/Blender.app/Contents/MacOS/Blender
 [ -z "$BL" ] && BL=$(command -v blender || true)
@@ -31,18 +32,23 @@ if [ "$USE_BPY" = 1 ] || [ -z "$BL" ]; then
   USE_BPY=1; echo "使用 bpy 模块：$($PY -c 'import bpy; print(bpy.app.version_string)' 2>/dev/null | tail -1)"
 fi
 for L in "${LAYERS[@]}"; do
-  SCRIPT="blender/tiancheng_${L}.py"
+  SCRIPT="blender/tiancheng_${L}.py"; LARGS=()
+  case "$L" in
+    upper) LARGS=(--below clouds) ;;
+    upper_city) SCRIPT="blender/tiancheng_upper.py"; LARGS=(--below city) ;;
+  esac
   [ -f "$SCRIPT" ] || { echo "跳过 $L（没有 $SCRIPT）"; continue; }
   if [ "$USE_BPY" = 1 ]; then RUN=("$PY" "$SCRIPT"); else RUN=("$BL" -b -P "$SCRIPT"); fi
   T0=$SECONDS
   if [ "$DATA_ONLY" = 1 ]; then
+    [ "$L" = upper_city ] && continue                      # 与 upper 共用同一份点位
     "${RUN[@]}" -- --data-only ${EXTRA[@]+"${EXTRA[@]}"} 2>&1 | grep -E "DATA-ONLY|Error|Traceback" || true
     continue
   fi
   OUT="$PWD/map/art/tc_${L}_full.png"
   echo "== 渲染 $L：${RES}px，${SAMPLES} 采样"
   rm -f "$OUT"
-  "${RUN[@]}" -- --res "$RES" --samples "$SAMPLES" --out "$OUT" ${EXTRA[@]+"${EXTRA[@]}"} 2>&1 | grep -E "^\[|WROTE|Error|Traceback" || true
+  "${RUN[@]}" -- --res "$RES" --samples "$SAMPLES" --out "$OUT" ${LARGS[@]+"${LARGS[@]}"} ${EXTRA[@]+"${EXTRA[@]}"} 2>&1 | grep -E "^\[|WROTE|Error|Traceback" || true
   [ -f "$OUT" ] || { echo "$L 渲染失败"; exit 1; }
   python3 tools/make_dzi.py "$OUT" "map/art/tc_${L}"
   echo "   $L 用时 $((SECONDS - T0)) 秒"
