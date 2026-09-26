@@ -1,15 +1,17 @@
 {
-  "_说明": "地图注册表。base = 底图 DZI；parent = 上一级地图（面包屑）；group = 同组多层（天城三层）；alt = 同一张图的另一版底图（查看器里一个开关，只换底图）；credit = 数据署名（查看器右上角显示）；overlay = 可开关叠加层（from = 取另一张地图的数据，如中层的「上层投影」取上层岛屿）；status=planned 表示制作中（切换器里置灰）。markers 里的 nx/ny 由渲染脚本导出的数据文件提供，这里只写名称、设定出处和当前地点别名；link = 跨层通道（点开地点卡可直接去另一张图的对应地点）。字段说明见 docs/tiancheng-maps.md，改完跑 python3 tools/check_maps.py。",
+  "_说明": "地图注册表。base = 底图 DZI；parent = 上一级地图（面包屑）；group = 同组多层（天城三层）；alt = 同一张图的另一版底图（查看器里一个开关，只换底图）；credit = 数据署名（查看器右上角显示）；view = 尺度与默认缩放（focus 初始聚焦的标记、width_m 初始可见宽度、min_width_m 最大放大时的可见宽度、extent_m 整张图的实际宽高，单位米）；overlay = 可开关叠加层（from = 取另一张地图的数据，如中层的「上层投影」取上层岛屿）；status=planned 表示制作中（切换器里置灰）。markers 里的 nx/ny 由渲染脚本导出的数据文件提供，这里只写名称、设定出处和当前地点别名；link = 跨层通道（点开地点卡可直接去另一张图的对应地点）。字段说明见 docs/tiancheng-maps.md，改完跑 python3 tools/check_maps.py。",
   "start": "world",
   "groups": {
     "tiancheng": { "title": "天城", "layers": ["tc_upper", "tc_mid", "tc_low"] }
   },
   "maps": {
     "world": {
+      "view": { "focus": "tiancheng", "width_m": 4000000, "min_width_m": 700000, "extent_m": [12000000, 7500000] },
       "title": "世界", "kind": "world", "base": "art/world.dzi",
       "overlay": { "type": "dzi", "src": "art/borders.dzi", "label": "国界" }
     },
     "tc_upper": {
+      "view": { "focus": "eden", "width_m": 800, "min_width_m": 60, "extent_m": [3000, 1875] },
       "title": "天城 · 上层", "parent": "world", "group": "tiancheng",
       "layer": { "name": "上层", "sub": "悬浮庄园区", "alt": "800–1500 m" },
       "kind": "points", "base": "art/tc_upper.dzi", "data": "data/tc_upper.json",
@@ -29,6 +31,7 @@
       }
     },
     "tc_mid": {
+      "view": { "focus": "enforcement_hq", "width_m": 800, "min_width_m": 60, "extent_m": [3000, 1875] },
       "title": "天城 · 中层", "parent": "world", "group": "tiancheng",
       "layer": { "name": "中层", "sub": "钢铁霓虹区", "alt": "≤ 700 m" },
       "kind": "points", "base": "art/tc_mid.dzi", "credit": "城市骨架 © OpenStreetMap contributors (ODbL)", "data": "data/tc_mid.json",
@@ -59,6 +62,7 @@
       }
     },
     "tc_low": {
+      "view": { "focus": "well7", "width_m": 800, "min_width_m": 60, "extent_m": [3000, 1875] },
       "title": "天城 · 下层", "parent": "world", "group": "tiancheng",
       "layer": { "name": "下层", "sub": "地基区", "alt": "地面" },
       "kind": "points", "base": "art/tc_low.dzi", "credit": "城市骨架 © OpenStreetMap contributors (ODbL)", "data": "data/tc_low.json",

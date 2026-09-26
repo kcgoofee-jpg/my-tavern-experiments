@@ -351,7 +351,7 @@ function setTier(key) {
 }
 function onOpen() {
   const it = viewer.world.getItemAt(0), sz = it.getContentSize(); aspect = sz.y / sz.x;
-  setTier(tier); viewer.clearOverlays();
+  setTier(tier); applyZoomLimit(); viewer.clearOverlays();
   if (REG.maps[cur].kind === 'world') worldOverlays(); else pointOverlays();
   applyOverlayToggle(); markHere($('#here').value); focusStart(true);
   if (pendingFocus) { const el = [...document.querySelectorAll('.mk')].find(e => e.dataset.name === REG.maps[cur].markers?.[pendingFocus]?.name);
@@ -427,19 +427,26 @@ function pointOverlays() {
 
 // ---------------- 初始视角与当前地点 ----------------
 let userMoved = false;
+// 地图的实际尺度（maps.json 的 view.extent_m）：米 → 占图宽的比例
+const viewNorm = (m, key) => { const v = m.view; return v?.[key] && v.extent_m?.[0] ? v[key] / v.extent_m[0] : null; };
+// 最大放大：按 view.min_width_m（最大放大时还能看见多宽）；没有 view 的图沿用全局的 maxZoomPixelRatio
+function applyZoomLimit() { const mw = viewNorm(REG.maps[cur], 'min_width_m'); viewer.viewport.maxZoomLevel = mw ? 1 / mw : null; }
 function focusStart(immediately) {
   if (userMoved || !viewer || !viewer.world.getItemCount()) return;
   const m = REG.maps[cur], cs = viewer.viewport.getContainerSize();
   let nx, ny, w;
   if (m.kind === 'world') {
     const el = document.querySelector('.mk.here') || [...document.querySelectorAll('.mk')].find(e => e.dataset.name === '天城');
-    const p = el && M.places.find(q => q.name === el.dataset.name) || M.fiefs.find(q => q.name === el?.dataset.name) || M.places[0];
+    const p = el && M.places.find(q => q.name === el.dataset.name) || M.fiefs.find(q => q.name === el?.dataset.name) || M.places.find(q => q.id === m.view?.focus) || M.places[0];
     [nx, ny] = toImg(p.x, p.y); w = .34;
   } else {
     const here = document.querySelector('.mk.here')?.dataset.name, mk = curData?.markers || [];
-    const id = pendingFocus || Object.entries(m.markers || {}).find(([, v]) => v.name === here)?.[0] || m.focus;
+    const id = pendingFocus || Object.entries(m.markers || {}).find(([, v]) => v.name === here)?.[0] || m.view?.focus || m.focus;
     const k = mk.find(q => q.id === id) || { nx: .5, ny: .5 }; nx = k.nx; ny = k.ny; w = .3;
   }
+  // view：初始可见宽度按米给（每张图自己的尺度）；竖屏时让可见「高度」等于这个宽度，手机上不会一打开就缩得很小
+  const vw = viewNorm(m, 'width_m');
+  if (vw) w = cs.y > cs.x ? vw * cs.x / cs.y : vw;
   w = Math.min(w, aspect * .8 * cs.x / cs.y); const h = w * cs.y / cs.x;   // 竖屏时按高度收窄，避免视框比地图还高
   viewer.viewport.fitBounds(new OpenSeadragon.Rect(nx - w / 2, ny * aspect - h / 2, w, h), immediately);
 }

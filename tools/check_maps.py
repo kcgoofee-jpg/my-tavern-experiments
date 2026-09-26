@@ -54,6 +54,24 @@ for mid, m in maps.items():
         if v.get('tag') not in ('set', 'inf'): err(f"{mid}.{i}: tag 应为 set 或 inf，现在是 {v.get('tag')}")
         if not isinstance(v.get('alias'), list) or not v['alias']: err(f'{mid}.{i}: alias 应为非空列表')
     if m.get('focus') and m['focus'] not in meta: err(f"{mid}.focus → {m['focus']} 不是本图的标记")
+# view：尺度与默认缩放
+wm = json.load(open(os.path.join(ROOT, 'data', 'world_markers.json')))
+place_ids = {p.get('id') for p in wm.get('places', [])}
+for mid, m in maps.items():
+    v = m.get('view')
+    if v is None:
+        if m.get('status') != 'planned': warn(f'{mid}: 没有 view（初始缩放沿用查看器的默认值）')
+        continue
+    ext = v.get('extent_m')
+    if not (isinstance(ext, list) and len(ext) == 2 and all(isinstance(x, (int, float)) and x > 0 for x in ext)): err(f'{mid}.view.extent_m 应为 [宽, 高]（米）'); continue
+    wv, mn = v.get('width_m'), v.get('min_width_m')
+    if not isinstance(wv, (int, float)) or not 0 < wv <= ext[0]: err(f'{mid}.view.width_m 应在 0 与 extent_m 宽度之间')
+    if not isinstance(mn, (int, float)) or not 0 < mn <= (wv or 0): err(f'{mid}.view.min_width_m 应大于 0 且不超过 width_m')
+    f = v.get('focus')
+    if f and m.get('kind') == 'points' and f not in (m.get('markers') or {}): err(f'{mid}.view.focus → {f} 不是本图的标记')
+    if f and m.get('kind') == 'world' and f not in place_ids: err(f'{mid}.view.focus → {f} 不是世界图的地点 id')
+    de = data.get(mid, {}).get('extent_m')
+    if de and [round(x) for x in de] != [round(x) for x in ext]: err(f'{mid}.view.extent_m {ext} 与渲染数据的 extent_m {de} 不一致')
 # 跨层通道
 for mid, m in maps.items():
     for i, v in (m.get('markers') or {}).items():
