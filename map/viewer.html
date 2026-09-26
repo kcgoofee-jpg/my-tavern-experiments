@@ -36,8 +36,18 @@
   /* 同组多层切换器（天城上 / 中 / 下层）：左侧竖排，像电梯按钮 */
   #layers { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 6; display: flex; flex-direction: column; gap: 6px; }
   #layers[hidden], .tg[hidden] { display: none; }
-  #layers button { width: 92px; text-align: left; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; line-height: 1.3; }
+  #layers button { min-width: 92px; white-space: nowrap; transition: border-color .15s, background .15s, transform .08s; text-align: left; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; line-height: 1.3; }
   #layers button small { display: block; font-size: 11px; color: var(--muted); }
+  #layers button:not(:disabled):hover { border-color: rgba(230,195,106,.7); }
+  #layers button:not(:disabled):active { transform: scale(.96); }
+  /* 站内跳转链接（进入某层、跨层通道）没有 href，要手动给手指光标和点击反馈 */
+  [data-go] { cursor: pointer; user-select: none; }
+  #card a[data-go], #crumbs a { transition: opacity .1s; }
+  #card a[data-go]:hover, #crumbs a:hover { text-decoration: underline; }
+  #card a[data-go]:active, #crumbs a:active { opacity: .6; }
+  .seg button { transition: background .15s; }
+  .seg button:not(.on):hover { background: rgba(255,255,255,.08); }
+  .seg button:active { opacity: .7; }
   #layers button.on { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold); }
   #layers button:disabled { opacity: .45; cursor: default; }
   /* 加载进度：顶部细条 + 首屏居中提示 */
@@ -96,7 +106,7 @@
     #crumbs { font-size: 13px; flex: none; }
     #layers button small { font-size: 10px; }
     #layers { left: 6px; top: auto; bottom: 12px; transform: none; }
-    #layers button { width: 76px; padding: 5px 8px; font-size: 12px; }
+    #layers button { min-width: 76px; padding: 5px 8px; font-size: 12px; }
     .seg button { padding: 7px 10px; }
     label.tg { flex: none; font-size: 12px; }
     label.tg input { width: 16px; height: 16px; margin: 0; }
@@ -127,9 +137,9 @@
 // 底图都是 DZI 瓦片金字塔，只加载屏幕里看得见的部分；解码内存由屏幕大小和瓦片缓存上限决定。
 // 档位 = 清晰度上限：最多加载到相当于 cap 像素宽的那一层瓦片（放大后差别明显），默认省流。
 const TIERS = [
-  { key: 'save', name: '省流', cap: 2000, ratio: 1 },
-  { key: 'std', name: '标准', cap: 4000, ratio: .8 },
-  { key: 'hd', name: '清晰', cap: 8000, ratio: .5 },
+  { key: 'save', name: '省流', cap: 2000, ratio: 1, dpr: 1.25 },
+  { key: 'std', name: '标准', cap: 4000, ratio: .8, dpr: 2 },
+  { key: 'hd', name: '清晰', cap: 8000, ratio: .5, dpr: 3 },
 ];
 const TIER_KEY = 'edenMapTierV2';   // 换了键名：旧版存下的「标准」不再沿用，统一从省流开始
 // 世界图：代码地图坐标（1600×1000）→ 底图归一化坐标（相机裁切：宽 98.5%、高 97%）
@@ -158,10 +168,15 @@ async function main() {
   const seg = $('#tiers');
   for (const t of TIERS) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.k = t.key;
     b.onclick = () => setTier(t.key); seg.appendChild(b); }
+  // 画布像素密度随档位封顶：高分屏（手机 3x）上省流只画 1.25x，填充的像素少一半以上，选瓦片的层级也跟着降
+  const devDpr = OpenSeadragon.getCurrentPixelDensityRatio;
+  OpenSeadragon.getCurrentPixelDensityRatio = () => Math.min(devDpr(), TIERS.find(t => t.key === tier).dpr);
+  OpenSeadragon.pixelDensityRatio = OpenSeadragon.getCurrentPixelDensityRatio();
   viewer = OpenSeadragon({
     element: $('#osd'), drawer: 'canvas', prefixUrl: 'vendor/openseadragon/images/',
     showNavigator: !narrow, showFullPageControl: false, navigatorPosition: 'BOTTOM_RIGHT', visibilityRatio: 1, constrainDuringPan: true, homeFillsViewer: true, minZoomImageRatio: 1,
     maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: 16, maxImageCacheCount: 60,   /* 512px 瓦片：并发拉取，缓存约 60 MB */ minPixelRatio: TIERS.find(t => t.key === tier).ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true },
+    smoothTileEdgesMinZoom: Infinity,   // 瓦片有 1px 重叠，不需要放大时整屏再画一遍去接缝
   });
   viewer.addHandler('open', onOpen);
   viewer.addHandler('open-failed', e => { $('#loading span').textContent = '地图加载失败：' + (e.message || ''); });
@@ -262,6 +277,7 @@ function capLevels(it) {
 function setTier(key) {
   tier = key; try { localStorage.setItem(TIER_KEY, key); } catch (e) {}
   document.querySelectorAll('#tiers button').forEach(b => b.classList.toggle('on', b.dataset.k === key));
+  viewer?._updatePixelDensityRatio?.();   // 新档位的像素密度上限（变了会自动重设画布）
   const t = TIERS.find(t => t.key === key), base = viewer.world.getItemAt(0);
   if (!base) return;
   const scale = Math.min(1, t.cap / base.source.dimensions.x);   // 相对底图原始宽度；叠加层按同比例
