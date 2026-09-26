@@ -91,19 +91,20 @@
 <div id="status">加载中…</div>
 <script>
 // 底图是 DZI 瓦片金字塔（8000px 原图切 256px 瓦片），只加载屏幕里看得见的部分。
-// 解码内存由屏幕大小和瓦片缓存上限决定，不再随原图变大；档位只控制「够不够清晰才换更细的瓦片」（minPixelRatio）。
+// 解码内存由屏幕大小和瓦片缓存上限决定，不再随原图变大。
+// 档位 = 清晰度上限：最多加载到相当于 cap 像素宽的那一层瓦片（放大后差别明显），默认省流。
 const TIERS = [
-  { key: 'save', name: '省流', ratio: 1.8 },
-  { key: 'std', name: '标准', ratio: .9 },
-  { key: 'hd', name: '清晰', ratio: .5 },
+  { key: 'save', name: '省流', cap: 2000, ratio: 1 },
+  { key: 'std', name: '标准', cap: 4000, ratio: .8 },
+  { key: 'hd', name: '清晰', cap: 8000, ratio: .5 },
 ];
-const TIER_KEY = 'edenMapQuality';
+const TIER_KEY = 'edenMapTierV2';   // 换了键名：旧版存下的「标准」不再沿用，统一从省流开始
 // 代码地图坐标（1600×1000）→ 底图归一化坐标（相机裁切：宽 98.5%、高 97%）
 const toImg = (x, y) => [(x / 1600 - .0075) / .985, (y / 1000 - .015) / .97];
 
-let viewer, aspect = 1, M, tier = 'std';
-try { tier = localStorage.getItem(TIER_KEY) || 'std'; } catch (e) {}
-if (!TIERS.some(t => t.key === tier)) tier = 'std';
+let viewer, aspect = 1, M, tier = 'save';
+try { tier = localStorage.getItem(TIER_KEY) || 'save'; } catch (e) {}
+if (!TIERS.some(t => t.key === tier)) tier = 'save';
 const $ = s => document.querySelector(s);
 let narrow = false;   // 手机 / 窄面板：隐藏小地图（信息卡的底部抽屉由 CSS 媒体查询处理）
 
@@ -139,18 +140,28 @@ async function main() {
   $('#here').oninput = () => markHere($('#here').value);
   $('#cardX').onclick = () => { $('#card').hidden = true; document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); };
 }
-// 切换清晰度不重开地图，只改各图层换细瓦片的阈值
+// 切换清晰度不重开地图：限制各图层最多用到哪一层瓦片（按原图宽度换算），并调整换细瓦片的阈值。
+// 不能改 source.maxLevel（OSD 会按它重算每层比例，请求不存在的瓦片），所以包一层选层函数（OSD 5.0.1 内部方法，已随仓库固定版本）。
+function capLevels(it) {
+  if (it._capWrapped) return; it._capWrapped = true;
+  const orig = it._getLevelsInterval.bind(it);
+  it._getLevelsInterval = () => { const r = orig(); r.highestLevel = Math.min(r.highestLevel, it._capLevel ?? 99); r.lowestLevel = Math.min(r.lowestLevel, r.highestLevel); return r; };
+}
 function setTier(key) {
   tier = key; try { localStorage.setItem(TIER_KEY, key); } catch (e) {}
   document.querySelectorAll('#tiers button').forEach(b => b.classList.toggle('on', b.dataset.k === key));
-  const r = TIERS.find(t => t.key === key).ratio;
-  for (let i = 0; i < viewer.world.getItemCount(); i++) viewer.world.getItemAt(i).minPixelRatio = r;
+  const t = TIERS.find(t => t.key === key), scale = Math.min(1, t.cap / 8000);   // 相对底图 8000px；国界层按同比例
+  for (let i = 0; i < viewer.world.getItemCount(); i++) {
+    const it = viewer.world.getItemAt(i); capLevels(it);
+    it._capLevel = Math.min(it.source.maxLevel, Math.ceil(Math.log2(it.source.dimensions.x * scale)));
+    it.minPixelRatio = t.ratio; it._needsUpdate = true; it._needsDraw = true;
+  }
   viewer.forceRedraw();
+  if (viewer.world.getItemCount()) $('#status').textContent = `瓦片地图 · 清晰度上限 ${t.cap}px`;
 }
 function onOpen() {
   const it = viewer.world.getItemAt(0), sz = it.getContentSize(); aspect = sz.y / sz.x;
-  $('#status').textContent = `瓦片地图 · ${sz.x}×${sz.y}`;
-  viewer.clearOverlays(); addOverlays(); markHere($('#here').value); focusStart(true);
+  setTier(tier); viewer.clearOverlays(); addOverlays(); markHere($('#here').value); focusStart(true);
 }
 function place(el, x, y, placement = OpenSeadragon.Placement.TOP_LEFT) {
   const [nx, ny] = toImg(x, y); viewer.addOverlay({ element: el, location: new OpenSeadragon.Point(nx, ny * aspect), placement });
