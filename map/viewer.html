@@ -12,6 +12,7 @@
 <link rel="preload" as="fetch" href="art/world.dzi"><link rel="preload" as="fetch" href="art/borders.dzi">
 <link rel="preload" as="image" href="art/world_1k.jpg">
 <script src="vendor/openseadragon/openseadragon.min.js"></script>
+<script>if (window.top !== window) parent.postMessage({ type: 'eden-map:boot', pct: .6 }, '*');   // 地图库已下载（启动进度 60%）</script>
 <style>
   /* 每层界面配色取自《天城视觉规范》：上层夜墨琥珀、中层夜紫霓虹（唯一允许发光）、下层井黑磷光绿（等宽字） */
   body[data-map="tc_upper"] { --bg: #101418; --panel: rgba(16,20,24,.92); --gold: #d9a441; --muted: #7d8a96; --ink: #cfd8e0; }
@@ -25,6 +26,7 @@
   #tierState { font-size: 12px; color: var(--muted); min-width: 5.5em; white-space: nowrap; }
   #tierState.busy { color: var(--gold); }
   #tierState.ok { color: #7bd88f; }
+  #tierState.stuck { color: #ff7a7a; cursor: pointer; text-decoration: underline; }
   :root { --bg: #14171c; --panel: rgba(20,23,28,.88); --line: rgba(255,255,255,.14); --ink: #eef1f4; --muted: #9aa3ad; --gold: #e6c36a; --inf: #ffb347; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif; }
   #app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; }
@@ -70,6 +72,9 @@
   #prog i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .2s; }
   #loading { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: var(--bg); color: var(--muted); font-size: 14px; transition: opacity .3s; }
   #loading.done { opacity: 0; pointer-events: none; }
+  /* 第一张图块画出来后：遮罩变透明、进度变成浮动卡片，直到 100% 才淡出（不论快慢都看得到进度） */
+  #loading.over { background: transparent; pointer-events: none; }
+  #loading.over span { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; color: var(--ink); text-shadow: none; }
   /* 世界图首屏：瓦片还没到时先铺一张 1200px 缩略图（压暗 + 模糊），不再是一片黑 */
   #loading.thumb { background: linear-gradient(rgba(10,12,16,.55), rgba(10,12,16,.55)), url(art/world_1k.jpg) center / cover; color: #eef1f4; text-shadow: 0 1px 4px #000; }
   .barriers ellipse { fill: rgba(120,220,255,.06); stroke: rgba(140,230,255,.75); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
@@ -178,6 +183,7 @@ async function main() {
   // 三个启动文件并行取（之前 derived.json 要等前两个取完才开始）
   let d;
   [REG, M, d] = await Promise.all([getJSON('data/maps.json'), getJSON('data/world_markers.json'), getJSON('data/derived.json')]);
+  post({ type: 'eden-map:boot', pct: .9 });   // 数据文件已到
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点
   if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland);
   // 世界图上，天城各层地图里的地点（执法局、7 号井……）都归到「天城」
@@ -249,7 +255,7 @@ async function go(id) {
   curData = cd; ovData = ovSrc ? od : cd;
   renderNav();
   $('#tgOverlay span').textContent = m.overlay?.label || '叠加层'; $('#tgOverlay').hidden = !m.overlay;
-  $('#loading').classList.remove('done'); $('#loading').classList.toggle('thumb', id === 'world'); $('#loading span').textContent = `加载 ${m.title}…`;
+  $('#loading').classList.remove('done', 'over'); $('#loading').classList.toggle('thumb', id === 'world'); $('#loading span').textContent = `加载 ${m.title}…`;
   const srcs = [{ tileSource: m.base }];
   if (m.overlay?.type === 'dzi') srcs.push({ tileSource: m.overlay.src, opacity: $('#tgBorders').checked ? 1 : 0 });
   viewer.open(srcs);
@@ -275,19 +281,31 @@ function initProgress() {
     let busy = 0; for (let i = 0; i < viewer.world.getItemCount(); i++) busy += viewer.world.getItemAt(i)._tilesLoading || 0;
     const pct = busy ? Math.round(done / (done + busy) * 100) : 100;
     $('#prog').hidden = !busy; $('#prog i').style.width = pct + '%';
-    if (!$('#loading').classList.contains('done')) $('#loading span').textContent = `加载 ${REG.maps[cur].title}… ${pct}%`;
+    if (!$('#loading').classList.contains('done')) $('#loading span').textContent = `加载 ${REG.maps[cur].title} ${pct}%`;
+    if (!firstLoaded) post({ type: 'eden-map:progress', pct });
     if (busy) { clearTimeout(tsT); ts.textContent = `加载中 ${pct}%`; ts.className = 'busy'; }
     else if (ts.className === 'busy') { ts.textContent = '✓ 已加载'; ts.className = 'ok'; clearTimeout(tsT); tsT = setTimeout(() => { ts.textContent = ''; ts.className = ''; }, 2500); }
     // 当前地图首屏瓦片都到了：告诉酒馆（后台预加载据此收尾）
     if (!busy && done && !firstLoaded) { firstLoaded = true; post({ type: 'eden-map:loaded' }); }
-    clearTimeout(hideT); if (!busy) { if (done) $('#loading').classList.add('done'); hideT = setTimeout(() => { done = 0; $('#prog').hidden = true; }, 200); }
+    clearTimeout(hideT); if (!busy) { if (done) setTimeout(() => $('#loading').classList.add('done'), 350); /* 在 100% 停一下再淡出 */ hideT = setTimeout(() => { done = 0; $('#prog').hidden = true; }, 200); }
   };
   viewer.addHandler('open', () => { done = 0; upd(); });
-  viewer.addHandler('tile-loaded', () => { done++; upd(); });
+  viewer.addHandler('tile-loaded', () => { done++; lastTile = Date.now(); upd(); });
+  // 卡住提示：还有图块在加载，但 8 秒没有新图块到达 → 网络慢；20 秒 → 可点击重试（重新请求当前地图的图块）
+  let lastTile = Date.now();
+  setInterval(() => {
+    let busy = 0; for (let i = 0; i < viewer.world.getItemCount(); i++) busy += viewer.world.getItemAt(i)._tilesLoading || 0;
+    const idle = (Date.now() - lastTile) / 1000;
+    if (!busy) { lastTile = Date.now(); return; }
+    if (idle > 20) { ts.textContent = '卡住了？点此重试'; ts.className = 'busy stuck'; }
+    else if (idle > 8 && !ts.classList.contains('stuck')) { ts.textContent = `网络较慢… ${ts.textContent.match(/\d+%/)?.[0] || ''}`; }
+  }, 1000);
+  ts.addEventListener('click', () => { if (!ts.classList.contains('stuck')) return; ts.className = 'busy'; lastTile = Date.now();
+    viewer.world.resetItems(); for (let i = 0; i < viewer.world.getItemCount(); i++) viewer.world.getItemAt(i)._needsUpdate = true; viewer.forceRedraw(); });
   viewer.addHandler('tile-load-failed', () => { done++; upd(); });
   viewer.addHandler('update-viewport', () => { if (!$('#prog').hidden || viewer.world.getItemAt(0)?._tilesLoading) upd(); });
   // 首屏：第一张瓦片画出来就撤掉遮罩（模糊版先出，随后变清晰）
-  viewer.addHandler('tile-drawn', () => $('#loading').classList.add('done'));
+  viewer.addHandler('tile-drawn', () => $('#loading').classList.add('over'));
 }
 
 // ---------------- 清晰度上限 ----------------
