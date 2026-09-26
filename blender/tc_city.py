@@ -35,8 +35,11 @@ def point_in_poly(x, y, P):
     return inside
 
 class City:
-    def __init__(self, rng):
-        d = json.load(open(os.path.join(HERE, 'data', 'osm', 'city.json')))
+    def __init__(self, rng, src=None):
+        # src：None / 'kowloon' 用 city.json（整片九龙）；'mid' / 'low' 用 tc_districts.py 拼出的分城区版 city_<src>.json
+        fn = 'city.json' if src in (None, '', 'kowloon') else f'city_{src}.json'
+        d = json.load(open(os.path.join(HERE, 'data', 'osm', fn)))
+        self.zones = d.get('zones', ['kowloon'])
         self.credit = d['credit']
         B = []
         for b in d['buildings']:
@@ -49,8 +52,10 @@ class City:
             if abs(cx) > W / 2 + .3 or abs(cy) > H / 2 + .3: continue
             h = b['h'] or (b['lv'] * 3.2 if b['lv'] else None)
             n = tc.district(cx, cy)
-            if not h: h = float(rng.uniform(20, 70) * (.6 + .8 * n))  # 缺高度：按城区强度随机（旺角一带多为 15–25 层）
-            B.append(dict(p=P, cx=float(cx), cy=float(cy), a=float(a), h=float(h), n=n, obb=obb(P)))
+            if not h:
+                if b.get('hd'): h = float(rng.uniform(*b['hd']))           # 分城区版：按取材城市的典型层高
+                else: h = float(rng.uniform(20, 70) * (.6 + .8 * n))  # 缺高度：按城区强度随机（旺角一带多为 15–25 层）
+            B.append(dict(p=P, cx=float(cx), cy=float(cy), a=float(a), h=float(h), n=n, obb=obb(P), z=b.get('z', 'kowloon'), k=b.get('k')))
         self.b = B
         self.roads = [dict(c=r['c'], w=r['w'], p=np.array(r['p'], np.float32), br=r.get('br', 0)) for r in d['roads']]
         self.parks = [np.array(p['p'], np.float32) for p in d['parks']]
