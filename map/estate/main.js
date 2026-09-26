@@ -135,13 +135,31 @@ if (typeof BLD.setRooms === 'function') BLD.setRooms((fi) => ROOMS.filter((r) =>
 // T1 用更粗的分块、子批次不分块，控制 draw call（≤ 150）
 const TILE = Q.has('tile') ? +Q.get('tile') : tier >= 1 ? 256 : 128;
 const full = FLOORS.map((f, i) => new L.Batch('full' + i)), cut = FLOORS.map((f, i) => new L.Batch('cut' + i)), site = new L.Batch('site', { tile: TILE, subTile: tier >= 1 ? 0 : 256 });
+// 预热着色器：趁 JS 建几何的时候，让 GPU 进程先链接每个材质的程序（链接状态到首帧才查询，不阻塞这里）
+const warmed = new Set();
+function keysOf(b, out = { mats: new Set(), protos: new Set() }) {
+  for (const k of b.parts.keys()) out.mats.add(k);
+  for (const k of b.insts.keys()) out.protos.add(k);
+  if (b.subs) for (const [tag, sb] of b.subs) if (tag !== 'fine') keysOf(sb, out);
+  return out;
+}
+function prewarmKeys(bs) {
+  if (Q.get('pw') === '0') return;   // 只预热首屏会用到的材质（外观 + 岛），多了反而拖慢 GPU 进程
+  const t0 = performance.now(), ks = { mats: new Set(), protos: new Set() }; for (const b of bs) keysOf(b, ks);
+  const g = new THREE.Group(), geo = new THREE.BufferGeometry(), f3 = () => new THREE.BufferAttribute(new Float32Array(9), 3);
+  geo.setAttribute('position', f3()); geo.setAttribute('normal', f3()); geo.setAttribute('color', f3()); geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(6), 2));
+  for (const k of ks.mats) { const m = L.MATS[k]; if (!m || warmed.has(m)) continue; warmed.add(m); const me = new THREE.Mesh(geo, m); me.receiveShadow = !m.transparent; g.add(me); }
+  for (const pk of ks.protos) { const P_ = (L.PROTO || {})[pk]; if (!P_) continue; for (const k of [].concat(P_.mat)) { const m = L.MATS[k]; if (!m || warmed.has('i' + k)) continue; warmed.add('i' + k); for (const col of [false, true]) { const im = new THREE.InstancedMesh(geo, m, 1); if (col) im.setColorAt(0, new THREE.Color()); im.receiveShadow = true; g.add(im); } } }
+  try { renderer.compile(g, camera, scene); } catch (e) { }
+  TB.prewarm = (TB.prewarm || 0) + performance.now() - t0;
+}
 kick('house'); await yieldUI();
 let t = performance.now();
 if (NEWAPI) BLD.buildHouse(full, site); else { BLD.buildHouse(full, cut, site); if (typeof BLD.buildWings === 'function') BLD.buildWings(site); }
-TB.house = performance.now() - t; kick('site'); await yieldUI(); t = performance.now();
+TB.house = performance.now() - t; prewarmKeys([...full.slice(0, 4), site]); kick('site'); await yieldUI(); t = performance.now();
 if (typeof SITE.buildIsland === 'function') SITE.buildIsland(scene, site);
 if (typeof SITE.buildGardens === 'function') SITE.buildGardens(site);
-TB.site = performance.now() - t; kick('merge'); await yieldUI(); t = performance.now();
+TB.site = performance.now() - t; prewarmKeys([site]); kick('merge'); await yieldUI(); t = performance.now();
 const SUBS = [];   // 所有带子批次的组：按相机方位 / 可见宽度切换
 const reg = (g) => { if (g && g.userData && g.userData.subs) SUBS.push(g); return g; };
 const siteG = reg(site.build({ defer: ['fine'] })); scene.add(siteG);
@@ -451,11 +469,13 @@ function updateSubs(visW) {
   renderer.shadowMap.needsUpdate = true;
 }
 // 「全部」模式：远在屏幕外的楼层隐藏家具
+// 拉远时（m/px > 0.12）只留悬停 / 钉住那层的家具，控制「全部」视图的 draw call
 function cullFurnAll() {
   if (mode !== 'all') return;
+  const mpp = (camera.right - camera.left) / camera.zoom / Math.max(1, innerWidth), keep = (hover && hover.floor) ?? (pinned && pinned.floor);
   furnG.forEach((g, i) => {
     if (!g) return; _v.set(0, FLOORS[i].y + offs[i], EXT.cz).project(camera);
-    g.visible = Math.abs(_v.x) < 1.6 && Math.abs(_v.y) < 1.6;
+    g.visible = Math.abs(_v.x) < 1.6 && Math.abs(_v.y) < 1.6 && (mpp < 0.12 || i === keep);
   });
 }
 
