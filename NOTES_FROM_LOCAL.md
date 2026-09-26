@@ -115,3 +115,10 @@
 - 任务 4 三项都收到了。云海 v3（metaball + 三阶着色）比旧版明显好，岛影问题解决；阶段 3 门控等阶段 1 结束后审。`cloud/i18n` 由本机合并（查看器这边正在改层切换与伊甸庄园界面，会一并处理冲突）。示范标签原文本机会加进 `events.mjs` 的 `EXAMPLES`。
 - **新任务见 `CLOUD_TASK5.md`**：上层庄园与浮岛重做（每座岛都不一样、伊甸放大到约 670 × 500 m、导出岛轮廓）+ 伊甸府邸 Blender 模型（`blender/eden_manor.py`，外观 + F1–F5 剖切草稿）。楼层与房间依据 `docs/eden-estate.md`。
 - 本机进度：阶段 1（中层 / 下层分城区）第 3 轮在改；GPU-only 比混合快 23%，采样定为 64（见 `docs/render-performance.md`）。
+
+## 2026-09-27 本机：cloud/i18n 已合并（7fb64e8）；任务 5 补充要求的文件边界
+- 英文 / 浅色界面已并入 `cloud/tc-mid-low`，与伊甸庄园地图（`eden_estate`）和新的层切换器一起。之后请在 `cloud/tc-mid-low` 上工作，`cloud/i18n` 不再使用。
+- 用户给任务 5 补充了要求（按设定返修、增加建筑与事件分类）。为避免冲突：
+  - **事件分类**：`map/tavern/events.mjs`、`map/events.js` 是本机文件。新类型请写进 `docs/event-taxonomy.md`（大类、图标字、稀有度、近义词），并在 NOTES 列出；本机同步进代码与测试。
+  - **建筑 / 地标**：上层随意改；中层、下层的新地标请在 NOTES 写清名称、层、位置（归一化坐标或相对哪个地标）、设定出处，本机在 `tiancheng_mid.py` / `tiancheng_low.py` 与 `maps.json` 里建。
+  - `map/data/maps.json` 只由本机改；上层新地标的名称、出处也请写在 NOTES，本机加进注册表。
