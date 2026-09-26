@@ -54,6 +54,7 @@ def mats():
         'roots': nm('rk_roots', (.10, .08, .05), (.18, .15, .09), 60, .95, .6),          # 岛缘垂根 / 藤
         'boulder': nm('rock_boulder', (.36, .34, .31), (.52, .49, .45), 20, .95, .6),    # 裸岩、假山石（也不投影到云上）
         'car': m('bl_car', (.10, .11, .14), .2, metal=.8),
+        'roof_lead': m('bl_roof_lead', (.40, .42, .45), .5, metal=.3),
         'aether': tc.emit_mat('bl_aether', (.45, .9, 1.0), 4.0),                                    # 以太晶簇（自发光青）
         'tree1': m('tr_oak', (.05, .12, .04), .9), 'tree2': m('tr_lime', (.085, .17, .05), .9),
         'tree3': m('tr_bamboo', (.13, .23, .07), .9), 'tree4': m('tr_banyan', (.03, .085, .03), .9),
@@ -664,7 +665,8 @@ def build_eden(isle, layer):
         e.disc('water', lc[0] + dx, lc[1] + dy, A, Bb, t, dz=.003, seg=64)
     e.water.append((lc[0], lc[1], .8, .34, 0))
     e.cyl('stone', lc[0] + .05, lc[1] + .02, .05, .004, 24, dz=.003); e.cyl('marble', lc[0] + .05, lc[1] + .02, .028, .015, 16, dz=.007); e.cyl('marble', lc[0] + .05, lc[1] + .02, .03, .01, 16, dz=.022, r2=.004)
-    e.box('marble', 0, .72, .5, .08, .004); e.house('marble', .62, 1.15, .1, .05, .012, 0, ROOF_SLATE, ridge=.015)
+    e.box('marble', 0, .72, .5, .08, .004)
+    e.box('stone', .62, 1.18, .16, .10, .012); e.cyl('marble', .62, 1.18, .05, .06, 8, dz=.012); e.cyl('roof_lead', .62, 1.18, .07, .02, 8, dz=.072, r2=.01)   # J 水榭（石台 + 敞亭）
     # 两侧：设计过的大草坪（以后加建用地）—— 绿篱框、四角雕像、十字步道
     for sx in (-1, 1):
         cx_, cy_ = sx * 1.75, .15; w, d = 1.05, .95
@@ -679,12 +681,52 @@ def build_eden(isle, layer):
     kg = (1.45, 1.35); e.wall_line('brick', [(kg[0] - .35, kg[1] - .25), (kg[0] + .35, kg[1] - .25), (kg[0] + .35, kg[1] + .25), (kg[0] - .35, kg[1] + .25)], .006, .01, closed=True)
     for i in range(6):
         for j in range(4): e.box('beds' if (i + j) % 2 else 'flowers', kg[0] - .29 + i * .116, kg[1] - .18 + j * .12, .1, .1, .002)
-    e.box('glass', kg[0], kg[1] + .23, .6, .03, .014); e.claim(*kg, .42)
-    st = (-1.5, 1.3)
-    for dx, dy, w, d, a_ in ((0, -.12, .4, .07, 0), (0, .12, .4, .07, 0), (-.2, 0, .07, .3, 0)):
-        e.house('stone', st[0] + dx, st[1] + dy, w, d, .02, a_, ROOF_SLATE, ridge=.02)
-    e.box('pad', st[0] + .45, st[1], .3, .25, .003); X, Y = e.world(st[0] + .45, st[1]); B('car', True).ico(X, Y, e.Z(*st) + .012, .03, sz=.4)
-    e.claim(*st, .45)
+    e.box('stone', kg[0], kg[1] + .22, .48, .1, .07); e.box('glass', kg[0], kg[1] + .21, .44, .09, .002, dz=.07)   # 橘园：石柱 + 玻璃屋（48 × 10 × 7 m）
+    e.claim(*kg, .42)
+    # 西北服务区（docs/eden-estate.md §2.2 E–H）：仆役楼、马车房、工坊、机坪 + 机库；用树团挡住
+    e.house('stone', -1.5, 1.18, .44, .14, .09, 0, ROOF_SLATE, ridge=.04)                            # E 仆役楼（2 层 + 阁楼）
+    e.house('stone', -1.5, 1.42, .40, .10, .05, 0, ROOF_SLATE, ridge=.03)                            # F 马车房 / 马厩
+    e.house('stone', -1.7, 1.30, .08, .30, .04, 0, (.3, .31, .33), ridge=.015)                       # G 工坊
+    e.box('pad', -1.05, 1.30, .30, .26, .003); X, Y = e.world(-1.05, 1.3); B('car', True).ico(X, Y, e.Z(-1.05, 1.3) + .012, .03, sz=.4)
+    e.house('dark', -1.07, 1.55, .30, .20, .09, 0, (.22, .23, .25), ridge=.03)                       # H 机库（30 × 20 × 9 m）
+    e.claim(-1.4, 1.35, .5)
+    # 帕拉第奥五段式的两端：C 图书馆塔亭（西，八角塔身 + 铅皮小穹顶 + 金色浑天仪）、D 音乐厅亭（东，筒拱 + 北端半圆后殿），各有一段爱奥尼亚柱廊连到两翼
+    e.house('marble', -.9, .25, .24, .24, .10, 0, ROOF_SLATE, ridge=.03)
+    e.cyl('marble', -.9, .25, .06, .28, 8); e.cyl('roof_lead', -.9, .25, .065, .04, 8, dz=.28, r2=.01); X, Y = e.world(-.9, .25); B('gold', True).ico(X, Y, e.Z(-.9, .25) + .33, .012, sub=2)
+    e.house('marble', .9, .25, .24, .32, .11, 0, ROOF_SLATE, ridge=.05); e.cyl('marble', .9, .41, .08, .09, 24)
+    for sx in (-1, 1):
+        e.box('marble', sx * .66, .25, .24, .06, .003)
+        for k in range(8): e.cyl('marble', sx * (.555 + k * .03), .22, .004, .055, 8)
+        e.box('roof_lead', sx * .66, .25, .24, .06, .006, dz=.055)
+    e.claim(-.9, .25, .2); e.claim(.9, .25, .22); e.claim(-.66, .25, .06); e.claim(.66, .25, .06)
+    # M 岛缘观景台 ×3（后轴一座半圆台，东西各一座小圆亭）、N 结界锚碑 ×4（方尖碑，碑顶嵌以太晶）
+    for (px, py, r_) in ((0, 2.3, .1), (3.05, 0, .04), (-3.05, 0, .04)):
+        if e.inside(px, py, .98): e.cyl('marble', px, py, r_, .004, 24); e.cyl('marble', px, py, r_ * .4, .05, 8); e.cyl('roof_lead', px, py, r_ * .5, .015, 8, dz=.05, r2=.004); e.claim(px, py, r_ + .03)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            px, py = sx * 2.35, sy * 1.65
+            if e.inside(px, py, .95):
+                e.box('stone', px, py, .03, .03, .01); e.cyl('marble', px, py, .012, .09, 4, dz=.01, r2=.003)
+                X, Y = e.world(px, py); B('aether', True).ico(X, Y, e.Z(px, py) + .105, .008, sz=1.6, sub=1); e.claim(px, py, .04)
+    # 玫瑰园（东前，圆形下沉园 + 放射小径 + 铁艺凉亭 + 蔷薇拱廊）、迷园（西前，紫杉同心环 + 日晷）、果园（东北，梅花形）
+    rc = (.95, -.45)
+    e.disc('lawn', rc[0], rc[1], .24, .24, dz=.0022, seg=64)
+    for k in range(4): e.box('gravel', rc[0], rc[1], .46, .012, .0026, k * math.pi / 4)
+    for k in range(40): t = k / 40 * 2 * math.pi; e.disc('flowers', rc[0] + math.cos(t) * .18, rc[1] + math.sin(t) * .18, .016, .016, dz=.003, seg=10)
+    for k in range(24): t = k / 24 * 2 * math.pi; e.box('dark', rc[0] + math.cos(t) * .235, rc[1] + math.sin(t) * .235, .004, .004, .02, t)
+    e.cyl('dark', rc[0], rc[1], .02, .02, 8); e.claim(*rc, .27)
+    mc = (-.95, -.45)
+    for k, rr in enumerate((.22, .17, .12, .07)):
+        gap = k * 1.3
+        pts = [(mc[0] + math.cos(t) * rr, mc[1] + math.sin(t) * rr) for t in np.linspace(gap + .35, gap + 2 * math.pi - .1, 48)]
+        e.wall_line('hedge', pts, .012, .014)
+    e.cyl('stone', *mc, .012, .012, 12); e.claim(*mc, .25)
+    oc = (2.15, 1.05)
+    for i in range(-3, 4):
+        for j in range(-3, 4):
+            px, py = oc[0] + i * .07 + (.035 if j % 2 else 0), oc[1] + j * .06
+            if e.inside(px, py, .9): e.tree(px, py, .018, 'tree5' if (i + j) % 3 == 0 else 'tree2')
+    e.claim(*oc, .28)
     # 岛缘石栏（整圈）+ 林带
     pts = e.outline(.975, 240); e.wall_line('marble', pts, .01, .014, closed=True)
     for i in range(0, len(pts), 6): e.box('marble', pts[i][0], pts[i][1], .018, .018, .022)
