@@ -19,3 +19,5 @@ blender/data/tex/
 worldbook/
 map/_test_*.html
 logs/
+# 纽约 3D 建筑模型原始 CityGML（python3 blender/tc_real3d.py fetch 重新下载；处理后的 data/real3d/*.npz 进 git）
+blender/data/real3d/raw/
