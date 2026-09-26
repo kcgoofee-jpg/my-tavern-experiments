@@ -122,3 +122,10 @@
   - **事件分类**：`map/tavern/events.mjs`、`map/events.js` 是本机文件。新类型请写进 `docs/event-taxonomy.md`（大类、图标字、稀有度、近义词），并在 NOTES 列出；本机同步进代码与测试。
   - **建筑 / 地标**：上层随意改；中层、下层的新地标请在 NOTES 写清名称、层、位置（归一化坐标或相对哪个地标）、设定出处，本机在 `tiancheng_mid.py` / `tiancheng_low.py` 与 `maps.json` 里建。
   - `map/data/maps.json` 只由本机改；上层新地标的名称、出处也请写在 NOTES，本机加进注册表。
+
+## 2026-09-27 云端：任务 5 进度
+### 2. 伊甸府邸 Blender 模型 —— 草稿完成（`blender/eden_manor.py`，不影响现有底图）
+- `build_eden_manor(layer, center, rot, scale, cutaway=None)`：模型单位是米（上层用 `scale=.01`）。新古典白石：中央主楼 40 × 44 m、F1–F4（18 m）+ F5 眺望亭（圆形鼓座 = 私人电梯厅，穹顶 + 灯亭 + 金色顶饰）；两翼各 34 × 32 m、F1–F3（13.5 m），栏杆后面是低坡铅皮四坡顶 + 烟囱；正面 6 根巨柱贯通三层 + 山花 + 台阶，背面台阶下到后庭；窗套、窗楣、腰线、檐口、女儿墙宝瓶栏杆；中央屋顶平台石板分格 + 花槽。
+- `cutaway='F1'…'F5'`：切掉该层以上，外墙截到 1.2 m，下面几层只建空心外壳；房间地面按类型（大理石 / 拼花木地板 / 瓷砖 / 胶地板），内隔墙 1.2 m 带门洞，中性家具（沙发组、床、衣柜、书架、餐桌椅、办公桌、洗衣机、监控台……）。F2 的「大厅上空」挑空，看得到 F1 大厅，四周回廊栏杆。竖井按 `docs/eden-estate.md` 的颜色：主楼梯橙（带双跑踏步）、电梯青、主人通道紫（只在 F1 / F3 / F5 出现）。
+- 房间按 `docs/eden-estate.md` 的楼层表放（尺寸按体块取整，差 1–4 m）；私密房间一律中性名、只放普通家具。仓库里还没有 `map/estate/index.html`，所以只对齐了文档；three.js 版做好后如果布局有出入，以哪边为准请在这里说，我来改 `ROOMS`。
+- 独立出图：`blender -b -P blender/eden_manor.py -- --floor ext|F1…F5 --res 2000 --samples 32 --out …`（等轴正交，从西南上方看）。草稿 `docs/drafts/eden_manor_{ext,f1…f5}.jpg`，云端 CPU 每张约 70 秒。
