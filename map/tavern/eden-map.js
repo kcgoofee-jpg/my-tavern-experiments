@@ -39,14 +39,15 @@
 
   const fab = root.querySelector('.em-fab'), panel = root.querySelector('.em-panel'), frame = root.querySelector('.em-frame');
   const hereEl = root.querySelector('.em-here');
-  let loaded = false, here = '';
+  let html = null, here = '';
 
+  // 打开时才创建地图，关闭时销毁（释放已解码的大图内存）；页面 HTML 只取一次
   async function loadViewer() {
-    const html = await fetch(BASE + 'viewer.html').then(r => r.text());
-    frame.srcdoc = html.replace('<head>', `<head><base href="${BASE}">`);
+    html ??= (await fetch(BASE + 'viewer.html').then(r => r.text())).replace('<head>', `<head><base href="${BASE}">`);
     frame.onload = () => push();
-    loaded = true;
+    frame.srcdoc = html;
   }
+  function unloadViewer() { frame.onload = null; frame.removeAttribute('srcdoc'); frame.src = 'about:blank'; }
   function getHere() {
     try {
       const d = Mvu.getMvuData({ type: 'message', message_id: 'latest' });
@@ -57,16 +58,13 @@
     here = getHere();
     hereEl.textContent = here ? `当前地点：${here}` : '';
     fab.classList.toggle('here', !!here);
-    frame.contentWindow?.postMessage({ type: 'eden-map:here', value: here }, '*');
+    if (!panel.hidden) frame.contentWindow?.postMessage({ type: 'eden-map:here', value: here }, '*');
   }
 
-  fab.addEventListener('click', async () => {
-    panel.hidden = !panel.hidden;
-    if (!panel.hidden && !loaded) await loadViewer();
-    if (!panel.hidden) push();
-  });
-  root.querySelector('.em-close').addEventListener('click', () => { panel.hidden = true; });
-  pdoc.addEventListener('keydown', e => { if (e.key === 'Escape') panel.hidden = true; });
+  const close = () => { if (panel.hidden) return; panel.hidden = true; unloadViewer(); };
+  fab.addEventListener('click', async () => { if (!panel.hidden) return close(); panel.hidden = false; await loadViewer(); });
+  root.querySelector('.em-close').addEventListener('click', close);
+  pdoc.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
   (async () => {
     try { await waitGlobalInitialized('Mvu'); eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, () => setTimeout(push, 0)); } catch (e) {}
