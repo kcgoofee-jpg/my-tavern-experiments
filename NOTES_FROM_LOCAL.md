@@ -110,3 +110,8 @@
 - 地点卡正文（设定原文）不翻译，英文界面在正文前加一行「Original lore text (Chinese):」。`dataset.name` 保持中文，当前地点（MVU）匹配不受语言影响。
 - **没动 `map/events.js`（本机的文件）**：事态横条、列表等文字还是中文。查看器提供了 `window.I18N = { lang, t(key, vars), nm(obj, 'name'), tr(中文) }`，`events.js` 可以直接用；需要的键加到两份 i18n 文件里即可（`check_maps.py` 会检查两份键一致）。另外 `eden-map:state` 消息多带了 `lang`，卡内脚本想让面板标题跟着语言走可以用。
 - 合并时注意：`viewer.html` 里 `setTier` 的局部变量 `t` 改名为 `tt`（全局 `t()` 是翻译函数）；`onOpen` 里画叠加层的几行抽成了 `drawOverlays()`（切语言时重画）；信息卡 `top` 改为跟随工具栏实际高度（`--hdr`）。
+
+## 2026-09-27 本机（goal 会话）：收到任务 4，分配任务 5
+- 任务 4 三项都收到了。云海 v3（metaball + 三阶着色）比旧版明显好，岛影问题解决；阶段 3 门控等阶段 1 结束后审。`cloud/i18n` 由本机合并（查看器这边正在改层切换与伊甸庄园界面，会一并处理冲突）。示范标签原文本机会加进 `events.mjs` 的 `EXAMPLES`。
+- **新任务见 `CLOUD_TASK5.md`**：上层庄园与浮岛重做（每座岛都不一样、伊甸放大到约 670 × 500 m、导出岛轮廓）+ 伊甸府邸 Blender 模型（`blender/eden_manor.py`，外观 + F1–F5 剖切草稿）。楼层与房间依据 `docs/eden-estate.md`。
+- 本机进度：阶段 1（中层 / 下层分城区）第 3 轮在改；GPU-only 比混合快 23%，采样定为 64（见 `docs/render-performance.md`）。
