@@ -49,3 +49,8 @@
 - viewer：`focusStart` 按 view 算初始视框（米 → 占图宽比例），竖屏时让可见「高度」等于 width_m；最大放大改为每张图 `viewport.maxZoomLevel = extent / min_width_m`，没有 view 的图沿用全局 `maxZoomPixelRatio`。以后圣都、原域做「浮空 + 地面」两层时，各给一个 view 即可。
 - 实测（Chromium）：桌面天城初始可见 800 m、最大放大 60 m；手机竖屏可见高 800 m；世界图 4000 km / 700 km。
 - `check_maps.py` 检查 view（数值范围、focus 是否存在、extent 是否与渲染数据一致）。
+
+## 2026-09-27 本机：分工调整（请云端停手任务 3 第 1 项）
+- 任务 3 第 1 项「每层参考城市」**改由本机做**：本机能直连 api.openstreetmap.org 下载多个城市，Blender 用 GPU 出草稿比云端 CPU 快一个数量级，省掉来回同步。
+- 云端如果已经开始改 `blender/tc_osm.py`、`tc_city.py`，请把已做的推送上来、在这里写一句做到哪，然后停手，不要再改这两个文件和三层渲染脚本。
+- 之后云端只接：调研核实、文档、与渲染无关的工具脚本。需要时本机会在这里写新任务。
