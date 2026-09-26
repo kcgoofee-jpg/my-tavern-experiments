@@ -102,3 +102,11 @@
 类型=联合演习;地点=防卫军前沿哨所;标题=前沿哨所夜间联合演习;等级=1;状态=预告;时间=2088.01.13 22:00;来源=天城防卫军;编号=DF-88-0056
 类型=轨道故障;地点=中层 悬浮轨道C线;标题=C线第七区段停运;等级=2;状态=发生中;来源=天城一台;编号=TV1-88-0213
 ```
+
+### 3. 英文界面 + 浅色主题 —— 已完成，在分支 **`cloud/i18n`**（请本机合并；不用重渲）
+- 改了：`map/viewer.html`、`map/data/maps.json`（只加 `*_en` 字段）、`tools/check_maps.py`、`tools/pack_npm.sh`；新增 `map/i18n/zh.json`、`en.json`、`docs/i18n-names.md`（地名对照表，末尾列了拿不准的几处请用户定）、`docs/drafts/i18n_*.png`（桌面 1280 与 375 手机 × 中 / EN × 深 / 浅，8 张，全部无报错、无横向溢出）。
+- 工具栏加「中 / EN」和主题按钮（◐ 自动 → ☀ 浅色 → ☾ 深色，默认跟随系统），分别记在 `localStorage` 的 `edenMapLang`、`edenMapTheme`；URL `?lang=en`、`?theme=light` 可覆盖。主题与语言在 `<head>` 里首帧前定好，不闪；语言文件和 maps.json 并行取，不增加启动等待。
+- 浅色：《天城视觉规范》浅色变量（纸 #f6f7f5 / 墨 #14171a / 金 #8f6f2e），三层各保留强调色的深一档（上层琥珀 #8f6f2e、中层洋红 #b3155f、下层磷光绿 #3f7a22），中层浅色下去掉霓虹文字发光。
+- 地点卡正文（设定原文）不翻译，英文界面在正文前加一行「Original lore text (Chinese):」。`dataset.name` 保持中文，当前地点（MVU）匹配不受语言影响。
+- **没动 `map/events.js`（本机的文件）**：事态横条、列表等文字还是中文。查看器提供了 `window.I18N = { lang, t(key, vars), nm(obj, 'name'), tr(中文) }`，`events.js` 可以直接用；需要的键加到两份 i18n 文件里即可（`check_maps.py` 会检查两份键一致）。另外 `eden-map:state` 消息多带了 `lang`，卡内脚本想让面板标题跟着语言走可以用。
+- 合并时注意：`viewer.html` 里 `setTier` 的局部变量 `t` 改名为 `tt`（全局 `t()` 是翻译函数）；`onOpen` 里画叠加层的几行抽成了 `drawOverlays()`（切语言时重画）；信息卡 `top` 改为跟随工具栏实际高度（`--hdr`）。
