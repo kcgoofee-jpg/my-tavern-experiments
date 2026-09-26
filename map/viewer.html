@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>世界地图</title>
-<script src="https://cdn.jsdelivr.net/npm/openseadragon@5/build/openseadragon/openseadragon.min.js"></script>
+<!-- OpenSeadragon 5.0.1（BSD-3，见 vendor/openseadragon/LICENSE.txt），随仓库版本固定 -->
+<script src="vendor/openseadragon/openseadragon.min.js"></script>
 <style>
   :root { --bg: #14171c; --panel: rgba(20,23,28,.88); --line: rgba(255,255,255,.14); --ink: #eef1f4; --muted: #9aa3ad; --gold: #e6c36a; --inf: #ffb347; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif; }
@@ -22,8 +23,9 @@
   #osd { position: relative; }
   /* 标记 */
   .mk { position: relative; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none; }
-  .mk .pin { width: 14px; height: 14px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #4dabf7; border: 2px solid #fff; box-shadow: 0 1px 4px #000a; }
-  .mk .lab { margin-bottom: 4px; padding: 2px 8px; border-radius: 10px; background: rgba(12,14,18,.78); border: 1px solid rgba(255,255,255,.25); font-size: 12px; white-space: nowrap; color: #fff; }
+  /* OSD 会给叠加层写内联 display:block，flex 居中失效，所以针脚自己居中 */
+  .mk .pin { margin: 0 auto; width: 14px; height: 14px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #4dabf7; border: 2px solid #fff; box-shadow: 0 1px 4px #000a; }
+  .mk .lab { width: max-content; margin: 0 auto 4px; padding: 2px 8px; border-radius: 10px; background: rgba(12,14,18,.78); border: 1px solid rgba(255,255,255,.25); font-size: 12px; white-space: nowrap; color: #fff; }
   .mk.capital .pin { background: var(--gold); width: 16px; height: 16px; }
   .mk.capital .lab { font-size: 14px; font-weight: 800; border-color: var(--gold); }
   .mk.inf .pin { background: var(--inf); }
@@ -57,6 +59,19 @@
   #card .src { color: #c9d1d9; }
   #card .x { position: absolute; right: 8px; top: 6px; background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; }
   #card a { color: var(--gold); }
+  /* 窄屏：工具栏压缩成一行可横向滑动，信息卡改为底部抽屉 */
+  @media (max-width: 640px) {
+    header { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 6px 8px; scrollbar-width: none; }
+    header::-webkit-scrollbar { display: none; }
+    header h1, .where { display: none; }
+    .seg button { padding: 7px 10px; }
+    label.tg { flex: none; font-size: 12px; }
+    label.tg input { width: 16px; height: 16px; margin: 0; }
+    #card { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-width: none; max-height: 45%; overflow-y: auto; border-radius: 12px 12px 0 0; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+    #card .x { font-size: 24px; padding: 4px 8px; }
+    .mk .lab { font-size: 11px; }
+    #status { display: none; }
+  }
   #status { position: fixed; left: 14px; bottom: 12px; font-size: 12px; color: var(--muted); z-index: 5; text-shadow: 0 0 3px #000; }
 </style>
 </head>
@@ -90,18 +105,20 @@ let viewer, aspect = 1, M, tier = 'std';
 try { tier = localStorage.getItem(TIER_KEY) || 'std'; } catch (e) {}
 if (!TIERS.some(t => t.key === tier)) tier = 'std';
 const $ = s => document.querySelector(s);
+let narrow = false;   // 手机 / 窄面板：隐藏小地图（信息卡的底部抽屉由 CSS 媒体查询处理）
 
 async function main() {
   M = await fetch('data/world_markers.json').then(r => r.json());
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点
   try { const d = await fetch('data/derived.json').then(r => r.ok ? r.json() : null);
     if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland); } catch (e) {}
+  narrow = innerWidth <= 640;   // 等 iframe 布局完成后再判断，脚本刚执行时宽度可能还是 0
   const seg = $('#tiers');
   for (const t of TIERS) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.k = t.key;
     b.onclick = () => setTier(t.key); seg.appendChild(b); }
   viewer = OpenSeadragon({
-    element: $('#osd'), prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5/build/openseadragon/images/',
-    showNavigator: true, navigatorPosition: 'BOTTOM_RIGHT', visibilityRatio: 1, constrainDuringPan: true, homeFillsViewer: true, minZoomImageRatio: 1,
+    element: $('#osd'), drawer: 'canvas', prefixUrl: 'vendor/openseadragon/images/',
+    showNavigator: !narrow, showFullPageControl: false, navigatorPosition: 'BOTTOM_RIGHT', visibilityRatio: 1, constrainDuringPan: true, homeFillsViewer: true, minZoomImageRatio: 1,
     maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: 4, maxImageCacheCount: 120, minPixelRatio: TIERS.find(t => t.key === tier).ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true },
   });
   viewer.addHandler('open', onOpen);
@@ -174,7 +191,8 @@ function focusStart(immediately) {
   if (userMoved || !viewer || !viewer.world.getItemCount()) return;
   const el = document.querySelector('.mk.here') || [...document.querySelectorAll('.mk')].find(e => e.dataset.name === '天城');
   const p = el && M.places.find(q => q.name === el.dataset.name) || M.fiefs.find(q => q.name === el?.dataset.name) || M.places[0];
-  const [nx, ny] = toImg(p.x, p.y), w = .34, h = w * viewer.viewport.getContainerSize().y / viewer.viewport.getContainerSize().x;
+  const cs = viewer.viewport.getContainerSize(), [nx, ny] = toImg(p.x, p.y);
+  const w = Math.min(.34, aspect * .8 * cs.x / cs.y), h = w * cs.y / cs.x;   // 竖屏时按高度收窄，避免视框比地图还高
   viewer.viewport.fitBounds(new OpenSeadragon.Rect(nx - w / 2, ny * aspect - h / 2, w, h), immediately);
 }
 // 当前地点高亮（由 MVU 变量「世界.当前地点」驱动）
