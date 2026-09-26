@@ -3,7 +3,18 @@
 // 注入酒馆页面：右下角悬浮按钮 + 地图面板；面板内用 srcdoc 加载 viewer.html（<base> 指回仓库，相对资源照常加载）。
 // 当前地点取 MVU 变量「世界.当前地点」，变量更新 / 切换聊天时推送给地图高亮。
 (() => {
-  const BASE = new URL('../', import.meta.url).href;            // .../map/
+  const SELF = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
+  // 线路：地图的图片和数据可以走不同的 CDN 节点（路径格式相同，只换域名）。本地测试地址不换
+  const LINES = [
+    { key: 'vpn', name: '有梯子', sub: '官方 CDN · jsDelivr', host: 'cdn.jsdelivr.net' },
+    { key: 'cn', name: '没梯子', sub: '国内镜像 · jsdmirror', host: 'cdn.jsdmirror.com' },
+  ];
+  const LINE_KEY = 'edenMapLine';
+  const swappable = /(^|\.)(jsdelivr\.net|jsdmirror\.com)$/.test(new URL(SELF).host);
+  let line = null; try { line = localStorage.getItem(LINE_KEY); } catch (e) {}
+  if (!LINES.some(l => l.key === line)) line = null;
+  const baseFor = key => { if (!swappable || !key) return SELF; const u = new URL(SELF); u.host = LINES.find(l => l.key === key).host; return u.href; };
+  let BASE = baseFor(line);
   const pdoc = window.parent.document;
   const ID = 'eden-map-root';
   pdoc.getElementById(ID)?.remove();
@@ -32,6 +43,22 @@
   /* 地图程序就绪前的加载遮罩（就绪后由地图自己显示瓦片进度） */
   #${ID} .em-load { position: absolute; inset: 0; display: grid; place-items: center; background: #14171c; color: #9aa3ad; font-size: 14px; }
   #${ID} .em-load[hidden] { display: none; }
+  /* 线路选择（首次使用时弹出；标题栏「线路」可重新选） */
+  #${ID} .em-pick { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; background: #14171c; color: #eef1f4; padding: 16px; }
+  #${ID} .em-pick[hidden] { display: none; }
+  #${ID} .em-pick h3 { margin: 0 0 6px; font-size: 18px; text-align: center; }
+  #${ID} .em-pick p { margin: 0 0 16px; color: #9aa3ad; font-size: 13px; text-align: center; }
+  #${ID} .em-pick .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  #${ID} .em-pick button { width: 200px; padding: 14px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: #1c2027; color: #eef1f4;
+    font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, background .15s, transform .08s; }
+  #${ID} .em-pick button:hover { border-color: #e6c36a; background: #232830; }
+  #${ID} .em-pick button:active { transform: scale(.97); }
+  #${ID} .em-pick button b { display: block; font-size: 16px; }
+  #${ID} .em-pick button small { display: block; color: #9aa3ad; font-size: 12px; margin-top: 2px; }
+  #${ID} .em-pick button .ms { display: block; margin-top: 8px; font-size: 12px; color: #9aa3ad; }
+  #${ID} .em-pick button .ms.ok { color: #7bd88f; } #${ID} .em-pick button .ms.bad { color: #ff7a7a; }
+  #${ID} .em-bar .em-line { font-size: 12px; padding: 3px 8px; border: 1px solid rgba(255,255,255,.18); border-radius: 6px; color: #9aa3ad; }
+  #${ID} .em-bar .em-line:hover { color: #e6c36a; border-color: #e6c36a; }
   #${ID} .em-load i { display: block; width: 160px; height: 3px; margin-top: 10px; border-radius: 2px; background: linear-gradient(90deg, transparent, #e6c36a, transparent) 0 0 / 50% 100% no-repeat, rgba(255,255,255,.1); animation: em-slide 1s linear infinite; }
   @keyframes em-slide { from { background-position: -80px 0, 0 0; } to { background-position: 160px 0, 0 0; } }
   /* 手机：面板全屏，关闭按钮加大 */
@@ -46,23 +73,49 @@
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>
 </button>
 <div class="em-panel" hidden>
-  <div class="em-bar"><b class="em-title">新历 2088 · 地图</b><span class="em-here"></span><button class="em-close" aria-label="关闭">×</button></div>
-  <div class="em-body"><iframe class="em-frame" title="地图"></iframe><div class="em-load" hidden><div>正在加载地图程序…<i></i></div></div></div>
+  <div class="em-bar"><b class="em-title">新历 2088 · 地图</b><span class="em-here"></span><button class="em-line" title="切换加载线路"></button><button class="em-close" aria-label="关闭">×</button></div>
+  <div class="em-body"><iframe class="em-frame" title="地图"></iframe><div class="em-load" hidden><div>正在加载地图程序…<i></i></div></div>
+    <div class="em-pick" hidden><div><h3>选择加载线路</h3><p>地图图片较多，按你的网络选一条更快的线路；之后可以点标题栏的「线路」切换</p><div class="row"></div></div></div></div>
 </div>`;
   pdoc.body.appendChild(root);
 
   const fab = root.querySelector('.em-fab'), panel = root.querySelector('.em-panel'), frame = root.querySelector('.em-frame');
   const hereEl = root.querySelector('.em-here'), loadEl = root.querySelector('.em-load'), titleEl = root.querySelector('.em-title');
+  const pickEl = root.querySelector('.em-pick'), lineBtn = root.querySelector('.em-line');
+  lineBtn.hidden = !swappable;
+  const showLine = () => { lineBtn.textContent = `线路：${LINES.find(l => l.key === line)?.name || '未选'}`; };
+  showLine();
+  // 线路选择：每条线路现场测一次延迟（取一个小文件），连不上的标红
+  function showPicker() {
+    const row = pickEl.querySelector('.row'); row.innerHTML = '';
+    for (const l of LINES) {
+      const b = pdoc.createElement('button'); b.innerHTML = `<b>${l.name}</b><small>${l.sub}</small><span class="ms">测速中…</span>`;
+      b.onclick = () => chooseLine(l.key); row.appendChild(b);
+      const ms = b.querySelector('.ms'), t0 = performance.now(), ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
+      fetch(baseFor(l.key) + 'data/maps.json', { cache: 'no-store', signal: ctl.signal })
+        .then(r => { if (!r.ok) throw 0; const t = (performance.now() - t0) / 1000; ms.textContent = `延迟 ${t.toFixed(1)} 秒`; ms.className = 'ms ' + (t < 3 ? 'ok' : ''); })
+        .catch(() => { ms.textContent = '连不上'; ms.className = 'ms bad'; });
+    }
+    pickEl.hidden = false; loadEl.hidden = true;
+  }
+  function chooseLine(key) {
+    const changed = key !== line; line = key; try { localStorage.setItem(LINE_KEY, key); } catch (e) {}
+    showLine(); pickEl.hidden = true;
+    if (changed) { BASE = baseFor(key); html = null; unloadViewer(); }
+    loadViewer();
+  }
+  lineBtn.addEventListener('click', showPicker);
   let html = null, here = '', alive = false, sent = null, killT = 0;
   const SLEEP_MS = 3 * 60 * 1000;   // 关闭后地图程序保留 3 分钟：期间再打开秒开；超时才整个销毁
 
   // 页面 HTML 只取一次；脚本加载后空闲时预取，第一次打开少等一个请求
   const fetchHtml = () => html ??= fetch(BASE + 'viewer.html').then(r => r.text()).then(t => t.replace('<head>', `<head><base href="${BASE}">`))
     .catch(e => { html = null; throw e; });
-  (window.parent.requestIdleCallback || (f => setTimeout(f, 2000)))(() => fetchHtml().catch(() => {}));
+  if (line || !swappable) (window.parent.requestIdleCallback || (f => setTimeout(f, 2000)))(() => fetchHtml().catch(() => {}));
   // 打开：休眠中的地图直接唤醒；否则创建。关闭：先休眠（地图关掉底图、释放瓦片内存，脚本和数据留着），超时再销毁
   async function loadViewer() {
     clearTimeout(killT);
+    if (swappable && !line) return showPicker();   // 还没选线路：先选
     if (alive) { post({ type: 'eden-map:wake' }); sent = null; push(); return; }
     loadEl.hidden = false;
     let doc;
@@ -133,6 +186,7 @@
     eventOn(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     eventOn(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
     push();
+    if (swappable && !line) { panel.hidden = false; showPicker(); }   // 第一次使用：直接弹出线路选择
   })();
 
   // 脚本被关闭或重载时清理注入的元素

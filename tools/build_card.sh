@@ -12,3 +12,4 @@ python3 tools/add_script_to_card.py "$SRC" "$OUT" --name "【地图】世界地�
 # 只保留当前版本：删掉旧版本生成的卡（包括早期不带版本号的）
 for f in "$DIR"/母畜庄园·地图版*.png; do [ "$f" != "$OUT" ] && rm -v "$f"; done
 curl -s -o /dev/null -w "jsDelivr %{http_code}\n" "$URL"
+bash tools/warm_cdn.sh "$TAG"   # 发版后把全部地图文件预热进 CDN

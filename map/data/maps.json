@@ -29,7 +29,7 @@
     },
     "tc_mid": {
       "title": "天城 · 中层", "parent": "world", "group": "tiancheng",
-      "layer": { "name": "中层", "sub": "钢铁霓虹区", "alt": "约 700 m 以下" },
+      "layer": { "name": "中层", "sub": "钢铁霓虹区", "alt": "≤ 700 m" },
       "kind": "points", "base": "art/tc_mid.dzi", "data": "data/tc_mid.json",
       "overlay": { "type": "barriers", "label": "上层投影", "from": "tc_upper" },
       "focus": "enforcement_hq",
