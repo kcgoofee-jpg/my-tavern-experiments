@@ -44,6 +44,8 @@
   #loading.done { opacity: 0; pointer-events: none; }
   .barriers ellipse { fill: rgba(120,220,255,.06); stroke: rgba(140,230,255,.75); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
   .barriers ellipse.eden { stroke: var(--gold); stroke-width: 2; fill: rgba(230,195,106,.08); }
+  .barriers.proj ellipse { fill: rgba(0,0,0,.12); stroke: rgba(190,205,230,.5); stroke-width: 1; stroke-dasharray: 5 4; }
+  .barriers.proj ellipse.eden { stroke: rgba(230,195,106,.7); fill: rgba(0,0,0,.12); }
   /* 标记 */
   .mk { position: relative; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none; }
   /* OSD 会给叠加层写内联 display:block，flex 居中失效，所以针脚自己居中 */
@@ -129,7 +131,7 @@ const TIER_KEY = 'edenMapTierV2';   // 换了键名：旧版存下的「标准�
 // 世界图：代码地图坐标（1600×1000）→ 底图归一化坐标（相机裁切：宽 98.5%、高 97%）
 const toImg = (x, y) => [(x / 1600 - .0075) / .985, (y / 1000 - .015) / .97];
 
-let viewer, aspect = 1, M, REG, cur = null, curData = null, tier = 'save';
+let viewer, aspect = 1, M, REG, cur = null, curData = null, ovData = null, tier = 'save';
 try { tier = localStorage.getItem(TIER_KEY) || 'save'; } catch (e) {}
 if (!TIERS.some(t => t.key === tier)) tier = 'save';
 const $ = s => document.querySelector(s);
@@ -142,6 +144,8 @@ async function main() {
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点
   try { const d = await fetch('data/derived.json').then(r => r.ok ? r.json() : null);
     if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland); } catch (e) {}
+  // 世界图上，天城各层地图里的地点（执法局、7 号井……）都归到「天城」
+  for (const k of REG.groups.tiancheng?.layers || []) for (const v of Object.values(REG.maps[k].markers || {})) ALIAS['天城'].push(...(v.alias || []));
   narrow = innerWidth <= 640;   // 等 iframe 布局完成后再判断，脚本刚执行时宽度可能还是 0
   const seg = $('#tiers');
   for (const t of TIERS) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.k = t.key;
@@ -178,6 +182,10 @@ async function go(id) {
   const m = REG.maps[id]; if (!m || m.status === 'planned' || id === cur) return;
   cur = id; userMoved = false; closeCard();
   curData = m.data ? await fetch(m.data).then(r => r.json()).catch(() => null) : null;
+  // 叠加层可以取别的地图的数据（overlay.from），例如中层的「上层投影」用上层的岛屿轮廓
+  const ovSrc = m.overlay?.from && REG.maps[m.overlay.from]?.data;
+  ovData = ovSrc ? await fetch(ovSrc).then(r => r.json()).catch(() => null) : curData;
+  if (id !== cur) return;   // 加载期间又切换了地图
   renderNav();
   $('#tgOverlay span').textContent = m.overlay?.label || '叠加层'; $('#tgOverlay').hidden = !m.overlay;
   $('#loading').classList.remove('done'); $('#loading span').textContent = `加载 ${m.title}…`;
@@ -288,13 +296,14 @@ function worldOverlays() {
   }
   for (const f of M.fiefs) marker({ name: f.name, tag: f.tag, src: f.src, x: f.x, y: f.y });
 }
-// 渲染脚本导出的点位地图（天城各层）：标记 + 结界圈
+// 渲染脚本导出的点位地图（天城各层）：标记 + 结界圈（或别的地图的岛屿轮廓，如中层的「上层投影」）
 function pointOverlays() {
-  const m = REG.maps[cur], d = curData || { markers: [], islands: [] };
-  if (m.overlay?.type === 'barriers' && d.islands?.length) {
+  const m = REG.maps[cur], d = curData || { markers: [], islands: [] }, od = ovData || {};
+  if (m.overlay?.type === 'barriers' && od.islands?.length) {
     const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg'), VW = 1000, VH = 1000 * aspect;
     svg.setAttribute('viewBox', `0 0 ${VW} ${VH}`); svg.setAttribute('preserveAspectRatio', 'none'); svg.classList.add('barriers');
-    for (const i of d.islands) { const e = document.createElementNS(ns, 'ellipse');
+    if (m.overlay.from) svg.classList.add('proj');
+    for (const i of od.islands) { const e = document.createElementNS(ns, 'ellipse');
       e.setAttribute('cx', i.nx * VW); e.setAttribute('cy', i.ny * VH); e.setAttribute('rx', i.rx * VW * 1.08); e.setAttribute('ry', i.ry * VH * 1.08);
       e.setAttribute('transform', `rotate(${-i.rot * 180 / Math.PI} ${i.nx * VW} ${i.ny * VH})`);
       if (i.id === 'eden') e.classList.add('eden');
