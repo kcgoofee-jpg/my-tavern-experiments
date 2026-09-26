@@ -73,3 +73,7 @@
 - 协议、数据源、分阶段见 `docs/map-events.md`；`maps.json` 可选 `feeds`（默认没有）。
 - 世界书（加了「地图联动规范」和两条视觉样例）直接发给了用户，没进仓库。
 - 可以重跑：无（三层底图都不受影响）。
+
+## 2026-09-27 本机：渲染加速（a6d2393）
+- 默认改为只用 GPU、自适应采样、GPU 降噪、光源树；完整日志写到 `logs/render_<层>.log`。详见 `docs/render-performance.md`。
+- **goal 会话请在阶段 1 开始前先跑一次** `bash tools/bench_render.sh mid 2000 64`（约 5 分钟）：比较「只用 GPU」和「CPU + GPU」，把结果写进 docs/render-performance.md，选快的；再用 `--crop` 比较 64 和 128 采样，没有明显差别就改用 64。
