@@ -146,7 +146,7 @@ def building_kit(B, C, rng, style='day', cap=.3, ztop_min=None):
                 bx((tx, ty, tw * .45, td * .45, tz, tz + .003)); bc((.28, .34, .38))
                 out['lamps'].append((tx, ty, tz + .003))
             if rng.random() < S['hvac'] and tw * td > .003: hvac(tx, ty, tw, td, tz, roof_c)
-            if rng.random() < .15: out['lamps'].append((tx + rng.uniform(-.3, .3) * tw, ty + rng.uniform(-.3, .3) * td, tz + .002))
+            if rng.random() < .06: out['lamps'].append((tx + rng.uniform(-.3, .3) * tw, ty + rng.uniform(-.3, .3) * td, tz + .002))
     return out
 def build_kit(prefix, kit, m_box, m_roof):
     tc.box_mesh(prefix + '_parts', kit['boxes'], kit['cols'], m_box)

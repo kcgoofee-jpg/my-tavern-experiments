@@ -73,7 +73,6 @@ for x, y, w, d, rot in tc.road_lines(city, .012):
         ox, oy = .09 * s * uy, -.09 * s * ux
         for t in np.arange(-L / 2, L / 2, .12):
             lamps.append((x + ux * t + ox, y + uy * t + oy, .01, .01, ZG + .004, ZG + .006))
-tc.box_mesh('streetlight', lamps, np.tile(srgb('#ffe0b0'), (len(lamps), 1)), emit_mat('streetglow', None, 3.0 * GLOW))
 mb, mc = td.road_marks(city, ZG + .0002, color=(.3, .3, .28)); tc.box_mesh('road_marks', mb, mc, td.city_mat('markmat', .6, ao=0))
 
 # 商业街：挑几条主干道作「霓虹走廊」，霓虹、全息广告、车流、溢光都向它们聚集（真实城市的夜景是一条条亮街，不是均匀撒点）
@@ -88,6 +87,10 @@ tc.box_mesh('cars', cars, ccol * .35, tc.vcol_mat('carmat', .25, .6), rot=crot)
 hb, tb = td.car_lights(cars, cdir)
 tc.box_mesh('headlights', hb, np.tile(srgb('#fff4e0'), (len(hb), 1)), emit_mat('head', None, 6.0 * GLOW))
 tc.box_mesh('taillights', tb, np.tile(srgb('#ff2a1a'), (len(tb), 1)), emit_mat('tail', None, 5.0 * GLOW))
+# 路灯按离商业街的远近分亮暗：商业街亮，背街暗（整张图才有「几条亮街」的层次）
+lw = np.array([glow_w(x, y) for x, y, *_ in lamps])
+tc.box_mesh('streetlight_main', [l for l, w in zip(lamps, lw) if w > .35], np.tile(srgb('#ffe0b0'), (int((lw > .35).sum()), 1)), emit_mat('streetglow', None, 3.5 * GLOW))
+tc.box_mesh('streetlight_back', [l for l, w in zip(lamps, lw) if w <= .35], np.tile(srgb('#ffd0a0'), (int((lw <= .35).sum()), 1)), emit_mat('streetglow2', None, 1.2 * GLOW))
 tick(f'street: lamps {len(lamps)}, cars {len(cars)}, corridors x={CX} y={CY}')
 
 # ---------------- 霓虹：沿商业街聚集的挑出招牌、楼顶轮廓灯、塔楼全息广告 ----------------
@@ -116,10 +119,10 @@ for v in CY:
     for t in np.arange(-W * .55, W * .55, .22): spill.append((t, v + R.uniform(-.06, .06), ZG + .25, NEON[R.choice(3)]))
 tc.box_mesh('neon_strips', strips, scol, emit_mat('neon', None, 5.0 * GLOW))
 tc.box_mesh('neon_signs', signs, sigc, emit_mat('signs', None, 4.0 * GLOW))
-tc.box_mesh('holo_ads', holo, np.array(holc).reshape(-1, 3) * .9, emit_mat('holo', None, .8 * GLOW, stripes=60, alpha=.6))
+tc.box_mesh('holo_ads', holo, np.array(holc).reshape(-1, 3) * .9, emit_mat('holo', None, .55 * GLOW, stripes=220, alpha=.4))
 lampsR = np.array(kit['lamps'], np.float32).reshape(-1, 3)             # 楼顶小灯、天窗透光
 tc.box_mesh('roof_dots', [(x, y, .008, .008, z, z + .002) for x, y, z in lampsR], np.tile(srgb('#ffd9a0'), (len(lampsR), 1)), emit_mat('dots', None, 2.5 * GLOW))
-warn = [(x, y, .008, .008, z, z + .003) for x, y, w, d, z in kit['towers'] if z > -.4]   # 高塔顶的航空障碍灯（红）
+warn = [(x, y, .008, .008, z, z + .003) for x, y, w, d, z in kit['towers'] if z > -.05 and R.random() < .5]   # 最高的塔顶才有航空障碍灯（红）
 tc.box_mesh('aviation_lights', warn, np.tile(srgb('#ff2020'), (len(warn), 1)), emit_mat('aviation', None, 8.0 * GLOW))
 tc.point_lights('neon_spill', spill, .15 * GLOW)
 tick(f'neon: signs {len(signs)}, roof strips {len(strips)}, holo {len(holo)}, spill {len(spill)}, aviation {len(warn)}')
@@ -132,7 +135,7 @@ kd.balance()
 bridges, blines, brot = [], [], []
 for j, i in enumerate(tall):
     if R.random() > .35: continue
-    for (co_, k, dd) in kd.find_range((Bk[i, 0], Bk[i, 1], 0), .7):
+    for (co_, k, dd) in kd.find_range((Bk[i, 0], Bk[i, 1], 0), .45):
         if k <= j or dd < .2: continue
         o = tall[k]; z = min(Bk[i, 5], Bk[o, 5]) - R.uniform(.1, .6)
         mx, my = (Bk[i, 0] + Bk[o, 0]) / 2, (Bk[i, 1] + Bk[o, 1]) / 2; rot = math.atan2(Bk[o, 1] - Bk[i, 1], Bk[o, 0] - Bk[i, 0])
@@ -140,7 +143,7 @@ for j, i in enumerate(tall):
         break
 if bridges:
     tc.box_mesh('skybridges', bridges, np.full((len(bridges), 3), .05), tc.vcol_mat('bridgemat', .4, .6), rot=np.array(brot))
-    tc.box_mesh('skybridge_lines', blines, np.array([CYAN if R.random() < .6 else PINK for _ in blines]), emit_mat('bridgeglow', None, 3.0 * GLOW), rot=np.array(brot))
+    tc.box_mesh('skybridge_lines', blines, np.array([CYAN if R.random() < .6 else PINK for _ in blines]), emit_mat('bridgeglow', None, 1.2 * GLOW), rot=np.array(brot))
 tick(f'skybridges {len(bridges)}')
 
 # ---------------- 悬浮轨道：贯穿全片区的发光曲线 ----------------
