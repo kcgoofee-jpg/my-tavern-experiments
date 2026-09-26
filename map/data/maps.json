@@ -8,7 +8,7 @@
     "eden_estate": {
       "title": "伊甸庄园", "title_en": "Eden Manor", "parent": "tc_upper", "group": "tiancheng", "kind": "estate",
       "layer": { "name": "伊甸庄园", "sub": "庄园剖面", "alt": "上层 · 庄园", "name_en": "Eden Manor", "sub_en": "Estate cutaway", "alt_en": "Upper · Estate" },
-      "src": "estate/demo.html",
+      "src": "estate/index.html",
       "src_note": "三维结构示例（three.js，楼层 F1–F5 与房间骨架），接入流程用；正式版会替换这个页面，接口见 estate/demo.html 顶部注释与 docs/tiancheng-maps.md",
       "alias": ["伊甸庄园", "伊甸", "庄园", "书房", "主卧", "大厅", "门厅", "餐厅", "会客厅", "客房", "寝", "浴室", "前庭", "后庭", "花园", "停靠平台", "起居室", "茶室", "露台", "值班室", "监控室", "女仆长办公室", "洗衣房", "储藏室", "人工湖", "喷泉"]
     },

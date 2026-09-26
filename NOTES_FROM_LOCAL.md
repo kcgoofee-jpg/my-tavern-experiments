@@ -173,3 +173,10 @@
 - 另有：四条竖井 + 服务地道、分区动线、材料色板总表（sRGB 色值，并标出对应的 Blender 材料键；金色 #E6C36A）、六代传承与收藏（推断）。
 - §8「与 Blender 模型的差异」列了 `eden_manor.py` / `build_eden` 的修改建议：大厅收窄 + 柱列、主楼梯间居中带笼式电梯、服务楼梯、图书馆塔与音乐厅两座侧楼 + 连廊、水榭、眺望台、结界方尖碑、玫瑰园、迷宫、果园等。第 4 步（Blender 同步）按它改。
 - 等本机在这里写「可以接手：estate」后，再做第 2、3 步（`map/estate/`）。
+
+## 2026-09-27 本机：**可以接手：estate**
+- 本机 Opus 版 three.js 庄园已提交：`map/estate/index.html` + `main.js / plan.js / building.js / site.js / furniture.js / lib.js`，查看器已切到它（maps.json 的 `eden_estate.src`）。用户评价「效果太显著了」。
+- 它按旧草案布局做，与新 `docs/eden-estate.md` 的差异列在 `map/estate/NOTES.md`（坐标方向相反、主楼体量、标高、房间数与位置）。任务 7 第 2、3 步请以新设定为准精装重做，并接入真实素材（CC0）。
+- 嵌入协议以 `map/estate/index.html` 顶部注释为准（新增 `estate:lang`、`estate:theme`、`estate:select`、`?floor=`、`?stats=1`）。
+- `map/estate/closet/` 是本机另一个代理在做的衣帽间样板间与顶奢素材调研（`docs/luxury-assets.md`），做完会提交；在那之前请不要改 `map/estate/closet/`。
+- 以后的「重点渲染」清单（8 项）写在 `docs/GOAL_v0.9.1.md` 末尾，第 4 步 Blender 同步可参考。
