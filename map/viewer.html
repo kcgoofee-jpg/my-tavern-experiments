@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>天城地图</title>
 <!-- OpenSeadragon 5.0.1（BSD-3，见 vendor/openseadragon/LICENSE.txt），随仓库版本固定 -->
+<!-- 启动文件和地图库并行开始下载（CDN 每个请求约 1 秒延迟，串行等待是打开慢的主因） -->
+<link rel="preload" as="fetch" crossorigin="anonymous" href="data/maps.json">
+<link rel="preload" as="fetch" crossorigin="anonymous" href="data/world_markers.json">
+<link rel="preload" as="fetch" crossorigin="anonymous" href="data/derived.json">
 <script src="vendor/openseadragon/openseadragon.min.js"></script>
 <style>
   :root { --bg: #14171c; --panel: rgba(20,23,28,.88); --line: rgba(255,255,255,.14); --ink: #eef1f4; --muted: #9aa3ad; --gold: #e6c36a; --inf: #ffb347; }
@@ -157,7 +161,7 @@ async function main() {
   viewer = OpenSeadragon({
     element: $('#osd'), drawer: 'canvas', prefixUrl: 'vendor/openseadragon/images/',
     showNavigator: !narrow, showFullPageControl: false, navigatorPosition: 'BOTTOM_RIGHT', visibilityRatio: 1, constrainDuringPan: true, homeFillsViewer: true, minZoomImageRatio: 1,
-    maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: 4, maxImageCacheCount: 120, minPixelRatio: TIERS.find(t => t.key === tier).ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true },
+    maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: 16, maxImageCacheCount: 60,   /* 512px 瓦片：并发拉取，缓存约 60 MB */ minPixelRatio: TIERS.find(t => t.key === tier).ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true },
   });
   viewer.addHandler('open', onOpen);
   viewer.addHandler('open-failed', e => { $('#loading span').textContent = '地图加载失败：' + (e.message || ''); });
@@ -179,6 +183,26 @@ async function main() {
   const q = new URLSearchParams(location.search).get('map');
   go(REG.maps[q] && REG.maps[q].status !== 'planned' ? q : REG.start);
   post({ type: 'eden-map:ready' });
+  // 首张地图画出来后，空闲时预热其他地图：描述文件、点位数据、最粗的几层瓦片（切过去立刻有模糊版）
+  viewer.addOnceHandler('tile-drawn', () => setTimeout(warmOthers, 1500));
+}
+async function warmOthers() {
+  for (const [id, m] of Object.entries(REG.maps)) {
+    if (id === cur || m.status === 'planned' || !m.base) continue;
+    if (m.data) getJSON(m.data);
+    try {
+      const x = await fetch(m.base).then(r => r.text());
+      const T = +x.match(/TileSize="(\d+)"/)[1], f = x.match(/Format="(\w+)"/)[1];
+      const W = +x.match(/Width="(\d+)"/)[1], H = +x.match(/Height="(\d+)"/)[1], top = Math.ceil(Math.log2(Math.max(W, H)));
+      const dir = m.base.replace(/\.dzi$/, '_files/');
+      for (let L = 8; L <= Math.min(top, 10); L++) {                 // 最粗几层：总共几张瓦片
+        const s = 2 ** (top - L), w = Math.ceil(W / s), h = Math.ceil(H / s);
+        for (let c = 0; c < Math.ceil(w / T); c++) for (let r = 0; r < Math.ceil(h / T); r++) {
+          const img = new Image(); img.crossOrigin = 'anonymous'; img.src = `${dir}${L}/${c}_${r}.${f}`;   // 与 OSD 的跨域方式一致，才能命中缓存
+        }
+      }
+    } catch (e) {}
+  }
 }
 
 // ---------------- 地图切换 ----------------
