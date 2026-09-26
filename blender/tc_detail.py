@@ -33,9 +33,18 @@ def city_mat(name, rough=.75, ao=.018, grime=1.0, metal=0.0, layer='col'):
     rr = noise(160, rough - .15, min(1, rough + .15)); nt.links.new(rr, b.inputs['Roughness'])
     tc.set_in(b, 'Metallic', metal)
     return m
-def corrugated_mat(name, rough=.55, metal=.45, scale=900, rust=1.0, layer='col'):
-    """波纹铁皮：颜色属性 × 锈斑，加一层平行波纹的凹凸（俯视时是细密的明暗条）。"""
+def corrugated_mat(name, rough=.55, metal=.45, scale=900, rust=1.0, layer='col', patch=0):
+    """波纹铁皮：颜色属性 × 锈斑，加一层平行波纹的凹凸（俯视时是细密的明暗条）。
+    patch > 0：再叠一层几米大小的斑块（换过的新板、锈穿的旧板、油污），深浅差约 ±30%——大屋面平直着色后不再是一整块匀净的灰。"""
     m = city_mat(name, rough, .012, rust, metal, layer); nt = m.node_tree; b = tc.bsdf_of(m)
+    if patch:
+        tco_ = next(n for n in nt.nodes if n.type == 'TEX_COORD')
+        vr = nt.nodes.new('ShaderNodeTexVoronoi'); vr.inputs['Scale'].default_value = patch; nt.links.new(tco_.outputs['Object'], vr.inputs['Vector'])
+        mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['To Min'].default_value = .62; mr.inputs['To Max'].default_value = 1.3
+        nt.links.new(vr.outputs['Color'], mr.inputs['Value'])
+        mx = nt.nodes.new('ShaderNodeMixRGB'); mx.blend_type = 'MULTIPLY'; mx.inputs['Fac'].default_value = 1
+        link = b.inputs['Base Color'].links[0]; nt.links.new(link.from_socket, mx.inputs['Color1']); nt.links.new(mr.outputs['Result'], mx.inputs['Color2'])
+        nt.links.new(mx.outputs['Color'], b.inputs['Base Color'])
     wv = nt.nodes.new('ShaderNodeTexWave'); wv.inputs['Scale'].default_value = scale; wv.wave_profile = 'SIN'
     tco = next(n for n in nt.nodes if n.type == 'TEX_COORD'); nt.links.new(tco.outputs['Object'], wv.inputs['Vector'])
     bp = nt.nodes.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = .35
@@ -75,6 +84,7 @@ def prism_mesh(name, P, colors, m=None):
     me = bpy.data.meshes.new(name); me.vertices.add(n * 6); me.vertices.foreach_set('co', V.ravel())
     me.loops.add(len(loops)); me.loops.foreach_set('vertex_index', loops)
     me.polygons.add(len(totals)); me.polygons.foreach_set('loop_start', starts); me.polygons.foreach_set('loop_total', totals)
+    me.polygons.foreach_set('use_smooth', np.zeros(len(me.polygons), bool))   # Blender 4.1+ 新建网格默认平滑着色：楼顶四周发暗、侧面斜向渐变，改回平直
     me.update(calc_edges=True)
     C = np.concatenate([np.asarray(colors, np.float32).reshape(-1, 3), np.ones((n, 1), np.float32)], 1)
     per_face = np.concatenate([np.repeat(C, 2, 0).reshape(n, 2, 4).reshape(-1, 4), np.repeat(C, 2, 0)])   # 坡面、山墙同色
