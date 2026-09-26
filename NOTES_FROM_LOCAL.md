@@ -180,3 +180,49 @@
 - 嵌入协议以 `map/estate/index.html` 顶部注释为准（新增 `estate:lang`、`estate:theme`、`estate:select`、`?floor=`、`?stats=1`）。
 - `map/estate/closet/` 是本机另一个代理在做的衣帽间样板间与顶奢素材调研（`docs/luxury-assets.md`），做完会提交；在那之前请不要改 `map/estate/closet/`。
 - 以后的「重点渲染」清单（8 项）写在 `docs/GOAL_v0.9.1.md` 末尾，第 4 步 Blender 同步可参考。
+
+### 任务 5 · 1 上层浮岛与庄园 —— **可以审阅：upper**（本机渲 8K：`bash tools/render_all.sh upper --res 8000 --samples 64`；upper_city 也要重渲，因为岛变了）
+- 4 轮（第 4 轮是用户要求的「按设定返修」），过程与自评见 `docs/upper-estates.md`。
+- 草稿：
+  - 全图：`docs/drafts/upper_v4_r1…r4.jpg`。
+  - 8K 局部：`upper_v4_8k_{english,chateau,suzhou,lingnan}_{1,2}.jpg`、`upper_v4_8k_eden.jpg`。
+  - 并排：`upper_v4_lineup_{english,chateau}.jpg`、`upper_v4_landmarks.jpg`，第 3 轮的并排另存为 `upper_v4_r3_*`。
+- `tc_upper.json` 已提交最终导出，每座岛新增：
+  - `outline`：36 点归一化多边形，与 `nx/ny` 同坐标系。
+  - `shape / rim / terrain`。
+  - `role`：只有 6 座地标岛有。
+  - 顶层新增 `routes`：航线 lane、银冠堡巡逻环 patrol、骑士团大环线 patrol_city。
+- **请本机做**：
+  1. 结界圈与中层「上层投影」改用 `outline` 多边形。
+  2. 航线叠加层（可开关）。
+  3. `maps.json` 给六座地标加标记与名称：
+     - isle6 `pm_residence` 首相府
+     - isle29 `general_residence` 将军官邸
+     - isle30 `zaibatsu_estate` 财团家族庄园
+     - isle2 `archbishop_palace` 大主教府邸
+     - isle9 `league_club` 庄园主联盟会所
+     - isle25 `aether_institute` 以太研究院
+
+     这些 id 目前只在 `islands[].role` 里，不在 markers 里；要进 markers 请告诉我，我在导出里加。
+  4. 中层重渲（投影变了）。
+- 补：六座地标已作为 markers 导出（id 就是 role），`check_maps` 暂时有 6 条「没有名称」警告，等本机在 `maps.json` 的 `tc_upper.markers` 里加上即可，建议：
+```json
+"pm_residence":      { "name": "首相府", "name_en": "Prime Minister's Residence", "sub": "执政厅首脑官邸", "sub_en": "Official residence", "tag": "inf", "src": "推断：设定只提到执政厅与议会；首相官邸位置为推断", "alias": ["首相府", "首相官邸"] },
+"general_residence": { "name": "将军官邸", "name_en": "General's Residence", "sub": "防卫军统帅", "sub_en": "Defense Force command", "tag": "inf", "src": "推断：紧邻银冠堡", "alias": ["将军官邸", "将军府"] },
+"zaibatsu_estate":   { "name": "财团家族庄园", "name_en": "Zaibatsu Family Estate", "sub": "私人飞艇港", "sub_en": "Private airship port", "tag": "inf", "src": "推断", "alias": ["财团庄园", "财阀庄园"] },
+"archbishop_palace": { "name": "大主教府邸", "name_en": "Archbishop's Palace", "sub": "圣光教会", "sub_en": "Church of Holy Light", "tag": "inf", "src": "推断：圣光教会在上层的府邸", "alias": ["大主教府邸", "大主教"] },
+"league_club":       { "name": "庄园主联盟会所", "name_en": "Estate Lords' League Club", "sub": "品鉴宴会场", "sub_en": "Tasting banquets", "tag": "inf", "src": "推断：联盟品鉴宴（《天城视觉规范》请柬样例）", "alias": ["联盟会所", "会所", "品鉴宴"] },
+"aether_institute":  { "name": "以太研究院", "name_en": "Aether Institute", "sub": "气候塔旁", "sub_en": "Beside the climate tower", "tag": "inf", "src": "推断：以太魔法一轨的研究机构", "alias": ["以太研究院", "研究院"] }
+```
+
+### 任务 7 · 2 审阅（本机 Opus 版 three.js，v0）—— 四位 Opus 审阅完成，架构师在汇总
+- 分数：建筑师 5、室内设计 4.5、顶奢营销 5、交互与性能 6.5。全文在 `map/estate/reviews/v0/`。截图 `docs/drafts/estate_v0_*.jpg`（headless Chromium + SwiftShader；three.js 走本地拦截，CDN 证书在云端代理后面不稳定）。
+- 共同结论：
+  - 外观方向对，体量与柱式不合设定（76 × 26 长条、爱奥尼亚、檐部太薄）。
+  - 室内缺马桶与毛巾（用户点名的两项目前是零分），整体像新样板间，缺传承细节。
+  - 首屏没拍到中轴。
+  - 性能底子好（82–94 draw calls），但 three.js 只走 CDN、首帧前建完全部楼层、没有降级档。
+- 下一步（第 3 步）：按汇总的 `map/estate/REFIT_PLAN.md` 分三个互不重叠的工作包并行重做（建筑与总平面 / 室内与材质 / 交互性能呈现），每轮截图后同一组审阅再打分。
+### 任务 7 · 4 Blender 同步 —— 草稿完成
+- `eden_manor.py` 已按新设定 §4 / §8 同步（房间表、楼梯厅 + 笼式电梯、仆役楼梯、主人通道位置、科林斯柱廊、家徽、屋顶出口亭、盥洗室洁具与毛巾）；岛上附属建筑与园林在 `tc_estates.build_eden`。
+- 草稿：`docs/drafts/estate_blender_{ext,f1…f5}.jpg`。
