@@ -31,7 +31,7 @@
   #crumbs b { font-weight: 700; }
   /* 同组多层切换器（天城上 / 中 / 下层）：左侧竖排，像电梯按钮 */
   #layers { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 6; display: flex; flex-direction: column; gap: 6px; }
-  #layers[hidden] { display: none; }
+  #layers[hidden], .tg[hidden] { display: none; }
   #layers button { width: 92px; text-align: left; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; line-height: 1.3; }
   #layers button small { display: block; font-size: 11px; color: var(--muted); }
   #layers button.on { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold); }
