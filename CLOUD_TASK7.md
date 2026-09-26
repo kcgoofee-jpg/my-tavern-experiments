@@ -43,6 +43,13 @@
   - 手机 375px 下 30 fps 以上；pixelRatio 上限 2。
 - 每轮在 375px 与桌面各截图，放 `docs/drafts/estate_v*_*.png`，由第 2 步的审阅团再打分；四位都 ≥ 8 或满 3 轮后，在 NOTES 写「可以审阅：estate」，本机做最终门控并出预览。
 
+## 3a. 真实素材与参考（用户 2026-09-27 建议：用开放许可的真实数据，不要全靠程序几何）
+- **家具、卫浴、灯具、织物、石材木材**：优先用 CC0 素材——Poly Haven（polyhaven.com，模型 + 扫描材质，glTF / 贴图，可进公开仓库、three.js 直接用）；Sketchfab 上标 CC0 / CC-BY 的模型（CC-BY 在 `docs/eden-estate.md` 与页面 credit 里署名）。马桶、浴缸、洗手台、毛巾、床品、吊灯、座钟、雕像这类「近看要有质感」的东西都走这条路。
+- **不要用**：许可不允许再分发原文件的素材库（如 BlenderKit 免费档、各类商用素材站）——它们最多只能用在 Blender 渲染里，不能进 `map/estate/` 或仓库。
+- **结构与比例**：参考公有领域的历史府邸平面与立面（帕拉第奥别墅、英国乡村庄园、法国城堡），在 `docs/eden-estate.md` 写明参考了哪几座、借了什么（比例、房间序列、立面构成）。
+- **不整栋照搬真实建筑的扫描模型**：伊甸是虚构的，扫描只有外壳、没有室内、文件太大；只可作远景或参考。
+- 素材统一放 `map/estate/assets/`，每个文件在 `map/estate/assets/CREDITS.md` 记来源、作者、许可；贴图压成 KTX2、模型用 meshopt / Draco，遵守第 3 步的体积上限。
+
 ## 4.（可选）Blender 同步
 `blender/eden_manor.py` 按新的 `docs/eden-estate.md` 同步外观与剖切（同一套材料色板），出 `docs/drafts/estate_blender_*.jpg`。这是以后「重点渲染」的来源，本任务只要草稿。
 
