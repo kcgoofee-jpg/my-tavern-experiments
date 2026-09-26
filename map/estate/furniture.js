@@ -564,11 +564,11 @@ export function toilet(k, o = {}) {
   k.geo('porcelain', G.lathe2('wcBowl', WC_BOWL, 20), 0, yb, zb, 1, 1, 1.3);
   k.geo('porcelain', G.lathe2('wcIn', WC_IN, 20), 0, yb, zb, 1, 1, 1.3);
   k.geo('porcelain', G.tor(PI * 2, 5, 28, 0.12), 0, yb + 0.132, zb, 0.205, 0.1, 0.268);
-  k.geo('water', G.cyl(20), 0, yb + 0.05, zb + 0.02, 0.1, 0.004, 0.13);
+  k.geo('enamel:#c9dcde', G.cyl(20), 0, yb + 0.05, zb + 0.02, 0.1, 0.004, 0.13);
   // 座圈（3 cm）＋ 盖（大一圈、掀起 8°）＋ 两个铜合页
   const ys = yb + 0.132 + 0.012 + 0.015;
   k.geo(seat, G.tor(PI * 2, 6, 28, 0.25), 0, ys, zb + 0.01, 0.18, 0.06, 0.235);
-  const zh = zb - 0.27, yh = ys + 0.012, a = 8 * PI / 180, L = 0.29;
+  const zh = zb - 0.27, yh = ys + 0.012, a = 10 * PI / 180, L = 0.29;
   k.geo(seat, G.cyl(28), 0, yh + Math.sin(a) * L + 0.009, zh + Math.cos(a) * L, 0.232, 0.02, L + 0.01, 0, -a);
   k.geo(seat, G.cyl(20), 0, yh + Math.sin(a) * (L + 0.01) + 0.022, zh + Math.cos(a) * (L + 0.01), 0.2, 0.012, L - 0.03, 0, -a);
   for (const sx of [-1, 1]) { cx_(k, trim, sx * 0.1, yh, zh + 0.01, 0.013, 0.06, 8); k.box(trim, sx * 0.1, yh - 0.004, zh + 0.04, 0.05, 0.006, 0.05); }
@@ -621,6 +621,23 @@ export function towelStack(k, n, w, d, o = {}) {
   }
   return y;
 }
+// 垂挂的一片毛巾：竖直的厚片，截面是跑道形；中段微鼓，纵向两道软褶，两侧边略向后卷（顶、底被搭杆包边和滚边盖住）
+function panelG(w, drop, t, side, col = COL.towel) {
+  return G.custom(`tpanel${w}_${drop}_${t}_${side}_${col}`, () => {
+    const nf = 7, nr = 3, r = t / 2, pts = [];
+    for (let i = 0; i <= nf; i++) pts.push([-w / 2 + r + (w - 2 * r) * i / nf, r, 0, 1]);
+    for (let i = 1; i < nr; i++) { const a = PI / 2 - PI * i / nr; pts.push([w / 2 - r + Math.cos(a) * r, Math.sin(a) * r, Math.cos(a), Math.sin(a)]); }
+    for (let i = 0; i <= nf; i++) pts.push([w / 2 - r - (w - 2 * r) * i / nf, -r, 0, -1]);
+    for (let i = 1; i < nr; i++) { const a = -PI / 2 - PI * i / nr; pts.push([-w / 2 + r + Math.cos(a) * r, Math.sin(a) * r, Math.cos(a), Math.sin(a)]); }
+    const n = pts.length, pos = [], idx = [];
+    const base = new THREE.Color(col), cols = [], VS = [0, 0.14, 0.28, 0.42, 0.56, 0.7, 0.82, 0.83, 0.9, 0.91, 0.935, 0.94, 0.955, 0.96, 1], band = (v) => (v >= 0.83 && v <= 0.9) || (v >= 0.94 && v <= 0.955) ? 0.8 : 1;
+    for (const vv of VS) { const y = -drop * vv, s = Math.pow(Math.sin(PI * Math.min(1, vv * 1.03)), 0.7);
+      for (const [x, z, nx, nz] of pts) { const u = x / (w / 2), wave = Math.sin(u * PI * 2.2 + 0.7), dz = side * (0.012 * s + 0.007 * s * wave - 0.008 * Math.pow(Math.abs(u), 4) * s);
+        pos.push(x * (1 - 0.02 * s), y, z + dz); const f = band(vv) * (0.9 + 0.1 * (0.5 + 0.5 * wave * side * Math.sign(nz || 1))) * (1 - 0.08 * (1 - s)); cols.push(base.r * f, base.g * f, base.b * f); } }
+    const R2 = VS.length;
+    for (let j = 0; j < R2 - 1; j++) for (let i = 0; i < n; i++) { const a = j * n + i, b = j * n + (i + 1) % n, c = a + n, d = b + n; idx.push(a, c, b, b, c, d); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3)); g.setIndex(idx); g.computeVertexNormals(); return g; });
+}
 // 搭挂毛巾：对折搭在杆上（杆轴沿局部 x，在原点），两片之间留 gap，下缘圆滚边
 export function towelHang(k, w, drop, o = {}) {
   k = wk(k); const f = FINE(k); const gap = o.gap ?? 0.04, t = o.t || 0.012, col = o.col || COL.towel, key = 'towel:' + col;
@@ -629,14 +646,12 @@ export function towelHang(k, w, drop, o = {}) {
     const g = new THREE.ExtrudeGeometry(s, { depth: w, bevelEnabled: false, curveSegments: 10 }); g.translate(0, 0, -w / 2); g.rotateY(H); return g; });
   k.geo(key, wrap, 0, 0, 0);
   const dF = drop, dB = drop * (o.back ?? 0.93);
-  sl(k, key, 0, -dF / 2, zc, w, dF, t, t * 0.45, 0, 0.012, 0, 0.004, 2);
-  sl(k, key, 0, -dB / 2, -zc, w, dB, t, t * 0.45, 0, -0.01, 0, 0.004, 2);
-  cx_(k, key, 0, -dF + 0.004, zc + 0.012 * dF * 0.5, 0.0125, w - 0.004, 10);
-  cx_(k, key, 0, -dB + 0.004, -zc - 0.01 * dB * 0.5, 0.0125, w - 0.004, 10);
+  k.geo('towel', panelG(w, dF, t, 1, col), 0, 0, zc); k.geo('towel', panelG(w, dB, t, -1, col), 0, 0, -zc);
+  cx_(k, key, 0, -dF + 0.004, zc, 0.0125, w - 0.004, 10);
+  cx_(k, key, 0, -dB + 0.004, -zc, 0.0125, w - 0.004, 10);
   if (o.plain) return;
-  const zf = zc + t / 2 + 0.012 * dF * 0.5 + 0.001, band = 'towel:' + shadeHex(col, 0.86);
-  f.box(band, 0, -dF + 0.075, zf - 0.001, w - 0.004, 0.05, 0.002);
-  f.box('gold', 0, -dF + 0.11, zf, w - 0.02, 0.01, 0.002);
+  const zf = zc + t / 2 + 0.0045, band = 'towel:' + shadeHex(col, 0.86);
+  f.box('gold', 0, -dF + 0.105, zf, w - 0.02, 0.008, 0.002);
   if (o.crest !== false) { vdisc(f, 'gold', 0, -dF + 0.18, zf, 0.015, 0.015, 0.002, 14); vdisc(f, 'enamel:' + COL.crestBlue, 0, -dF + 0.18, zf + 0.0012, 0.0095, 0.0095, 0.0012, 12); }
 }
 // 电热毛巾架（梯形，默认 5 根横杆）；返回各杆高度
@@ -677,7 +692,7 @@ export function basins(k, w = 2.6, o = {}) {
   if (typeof o === 'number') o = { n: o };
   k = wk(k); const f = FINE(k);
   const n = o.n || (w >= 1.8 ? 2 : 1), top = o.top || 'marbleGold', trim = o.trim || 'brass', cab = o.cab || 'mahogany', d = 0.56, Ht = 0.86;
-  k.bx(cab, 0, 0, 0.0, w - 0.06, 0.1, d - 0.08); k.bx(cab, 0, 0.1, 0, w, 0.72, d); k.bx(cab, 0, 0.8, 0.01, w + 0.02, 0.03, d + 0.01);
+  k.bx(cab, 0, 0, 0.0, w - 0.06, 0.1, d - 0.08); k.bx(cab, 0, 0.1, 0, w, 0.56, d); for (const sx of [-1, 1]) k.bx(cab, sx * (w / 2 - 0.02), 0.66, 0, 0.04, 0.17, d); k.bx(cab, 0, 0.66, d / 2 - 0.02, w, 0.17, 0.04); k.bx(cab, 0, 0.66, -d / 2 + 0.02, w, 0.17, 0.04); k.bx(cab, 0, 0.8, d / 2 - 0.005, w + 0.02, 0.03, 0.03);
   const xs = []; for (let i = 0; i < n; i++) xs.push(n === 1 ? 0 : (i - (n - 1) / 2) * (w / n) * 1.05);
   const nd = Math.max(2, Math.round(w / 0.55));
   for (let i = 0; i < nd; i++) { const x = -w / 2 + w * (i + 0.5) / nd; panelDoor(f, x, 0.14, d / 2 + 0.004, w / nd - 0.04, 0.62, cab); k.sph(trim, x + (i % 2 ? -1 : 1) * (w / nd / 2 - 0.07), 0.46, d / 2 + 0.014, 0.014, 0.014, 0.012, 8, 6); }
@@ -737,7 +752,7 @@ export function tub(k, o = {}) {
   if (kind !== 'slipper') k.geo('enamel:' + (o.col || COL.azure), G.custom(`tubout_${kind}_${len}`, () => { const g = skin.clone(); const p = g.attributes.position, nn = g.attributes.normal; const idx = g.index.array, keep = [];
       for (let t = 0; t < idx.length; t += 3) { let out = true; for (let j = 0; j < 3; j++) { const v = idx[t + j]; if (nn.getY(v) > 0.25 || nn.getX(v) * p.getX(v) / (len * len) + nn.getZ(v) * p.getZ(v) / (wid * wid) <= 0) out = false; } if (out) keep.push(idx[t], idx[t + 1], idx[t + 2]); }
       g.setIndex(keep); return g; }), 0, y0 + fh, 0);
-  k.geo('water', G.cyl(28), 0, y0 + fh + lowH * 0.62, 0, len / 2 * 0.84, 0.004, wid / 2 * 0.8);
+  k.geo('enamel:#bcd5d8', G.cyl(28), 0, y0 + fh + lowH * 0.55, 0, len / 2 * 0.82, 0.004, wid / 2 * 0.78);
   // 爪足：球 + 三趾 + 兽腿
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const x = sx * len * 0.34, z = sz * wid * 0.3, a = Math.atan2(sx, sz);
     rod(k, 'ormolu', [x, y0 + 0.05, z], [x * 0.94, y0 + fh + 0.06, z * 0.9], 0.032, 8); k.sph('ormolu', x, y0 + 0.045, z, 0.045, 0.045, 0.045, 8, 6);
@@ -1082,7 +1097,7 @@ export function dressWalls(b, room, o = {}) {
       const km = new Kit(b, fr.ox, y, fr.oz, fr.ry), kh = tall.has(side) ? SUB(km, 'hi' + side) : null, kf = FINE(km);
       const ext = tall.has(side) && !inTall.has(side);
       // 开口 → 沿墙区间
-      const gaps = ops.filter((p) => p.side === side).map((p) => { let a = fr.t(p.a), c = fr.t(p.b); if (a > c) [a, c] = [c, a]; return { a: Math.max(0, a), b: Math.min(fr.L, c), top: p.top > h + 0.01 ? p.top - y : (p.top || 2.4) }; }).filter((g) => g.b > g.a + 0.05).sort((p, q) => p.a - q.a);
+      const gaps = ops.filter((p) => p.side === side && p.kind !== 'blind' && p.kind !== 'secret').map((p) => { let a = fr.t(p.a), c = fr.t(p.b); if (a > c) [a, c] = [c, a]; return { a: Math.max(0, a), b: Math.min(fr.L, c), top: p.top > h + 0.01 ? p.top - y : (p.top || 2.4), bot: p.bot || 0, kind: p.kind || 'window' }; }).filter((g) => g.b > g.a + 0.05).sort((p, q) => p.a - q.a);
       const segs = []; let t0 = 0; for (const g of gaps) { if (g.a > t0 + 0.02) segs.push([t0, g.a]); t0 = Math.max(t0, g.b); } if (fr.L > t0 + 0.02) segs.push([t0, fr.L]);
       const band = (kk, key, a, c, y0, y1, d, z = 0) => { if (c - a < 0.01 || y1 - y0 < 0.005) return; kk.box(key, (a + c) / 2, (y0 + y1) / 2, z + d / 2, c - a, y1 - y0, d); };
       for (const [a, c] of segs) {
@@ -1110,13 +1125,14 @@ export function dressWalls(b, room, o = {}) {
       // 门套 / 窗套；外墙窗挂窗帘
       for (const g of gaps) {
         const w = g.b - g.a, cx = (g.a + g.b) / 2, gt = Math.min(g.top, top - 0.05);
+        if (g.kind === 'window' && g.bot > 0.3) { band(km, skirtM, g.a, g.b, 0, sk, 0.025); if (rank < 3 && !isBath) { const wn = isPanel ? wall : (WAINS[wall] || 'paintIvory'); band(km, wn, g.a, g.b, sk, Math.min(g.bot, 0.9), 0.012); if (g.bot > 0.95) { band(km, isPanel ? skirtM : 'trim', g.a, g.b, 0.88, 0.94, 0.035); band(km, wall, g.a, g.b, 0.94, Math.min(1.2, g.bot), 0.01); } } else if (isBath) band(km, wall, g.a, g.b, sk, Math.min(1.2, g.bot), 0.012); band(km, 'marbleW', g.a - 0.05, g.b + 0.05, g.bot - 0.04, g.bot, 0.06); }
         if (!ext) {
           for (const u of [g.a - 0.07, g.b + 0.07]) band(km, 'trim', u - 0.07, u + 0.07, 0, Math.min(1.2, gt + 0.12), 0.04);
           if (kh) { for (const u of [g.a - 0.07, g.b + 0.07]) band(kh, 'trim', u - 0.07, u + 0.07, 1.2, gt + 0.12, 0.04); band(kh, 'trim', g.a - 0.14, g.b + 0.14, gt, gt + 0.14, 0.04);
             if (rank === 1) { band(kh, 'trim', g.a - 0.2, g.b + 0.2, gt + 0.14, gt + 0.4, 0.03); band(kh, 'trim', g.a - 0.28, g.b + 0.28, gt + 0.4, gt + 0.5, 0.1); band(kh, 'ormolu', g.a - 0.1, g.b + 0.1, gt + 0.26, gt + 0.28, 0.034); } }
         } else if (kh) {
           for (const u of [g.a - 0.06, g.b + 0.06]) band(kh, 'trim', u - 0.06, u + 0.06, 1.2, gt + 0.1, 0.03); band(kh, 'trim', g.a - 0.12, g.b + 0.12, gt, gt + 0.12, 0.03);
-          if (rank < 3 && w < 4.2 && w > 0.6) { const dk = loc(kh, cx, 0.04); if (isBath) romanBlind(dk, w, gt + 0.05); else drapes(dk, w, gt + 0.12, { col: drapeCol(room), velvet: rank === 1 && !['silkIvory', 'silkDuck', 'chinoiserie'].includes(wall) }); }
+          if (rank < 3 && g.kind === 'window' && w < 4.2 && w > 0.6) { const dk = loc(kh, cx, 0.04); if (isBath) romanBlind(dk, w, gt + 0.05); else drapes(dk, w, gt + 0.12, { col: drapeCol(room), velvet: rank === 1 && !['silkIvory', 'silkDuck', 'chinoiserie'].includes(wall) }); }
         }
       }
       // 远墙壁灯（rank 1：窗间墙中央）
@@ -1540,7 +1556,7 @@ const ROOMFN = {
     const wc = (R.room.parts && R.room.parts.wc) || [R.x0, R.x0 + 3, R.z0, R.z0 + 3];
     { const F = frame(R, R.inset(wc), '-z'); toilet(F.at(-0.2, 0.0), { type: 'low', seat: 'mahogany', trim: 'brass', lid: 'marbleW' });
       const hk = F.hk(0, -1, 0, 0, 0); if (hk) sconce(loc(hk, 0.55, 0, 0, 1.7), { arms: 1 });
-      const sk = F.at(F.L - 0.25, F.D * 0.9, -H); sk.bx('mahogany', 0, 0, 0, 0.7, 1.1, 0.26); for (let i = 0; i < 3; i++) sk.bx('mahogany', 0, 0.1 + i * 0.34, 0, 0.66, 0.02, 0.24); sk.box('books', 0, 0.62, 0.02, 0.6, 0.26, 0.16); sk.box('books', 0, 0.28, 0.02, 0.6, 0.26, 0.16); }
+      const sk = F.at(F.L - 0.16, F.D * 0.9, -H); bookshelf(sk, 0.7, 1.1, 0.26, { wood: 'mahogany' }); }
     // 双台盆（−x 外墙），镜与壁灯挂在远墙
     const vz = cz - 0.6, [bx0, bz0] = R.wall('-x', vz, 0.45), bk = R.K(bx0, bz0, H), hkx = R.tall('-x') ? SUB(R.K(bx0, bz0, H), 'hi-x') : bk;
     basins(bk, 3.0, { n: 2, top: 'marbleGold', mk: hkx });

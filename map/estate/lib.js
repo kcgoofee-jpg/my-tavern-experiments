@@ -111,16 +111,12 @@ function marbleCanvas(W, base, vein, n, cloudA = 0.06, lw = [0.6, 2.2]) {
   clouds(g, W, W, 10, vein, cloudA); veins(g, W, W, n, vein, 0.18, 0.5, lw[0], lw[1]); veins(g, W, W, n, vein, 0.06, 0.16, lw[1], lw[1] * 3);
   return [c, g];
 }
-// 像素后处理：去饱和 + 磨损噪点
+// 后处理：去饱和 + 磨损噪点 + 中央踩踏褪色（只用合成模式，不回读像素：getImageData 会让 GPU 画布强制回读，首帧卡数秒）
 function wear(c, desat = 0.15, noise = 10, fade = 0) {
-  const g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, c.height), p = d.data, W = c.width, Hh = c.height;
-  for (let i = 0; i < p.length; i += 4) {
-    const px = (i / 4) % W, py = ((i / 4) / W) | 0;
-    const l = 0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2], n = (R() - 0.5) * noise;
-    let f = 0; if (fade) { const dx = (px / W - 0.5) * 2, dy = (py / Hh - 0.5) * 2; f = fade * Math.max(0, 1 - Math.sqrt(dx * dx * 1.6 + dy * dy)); }
-    for (let k = 0; k < 3; k++) { let v = p[i + k] + (l - p[i + k]) * desat + n; v = v + (200 - v) * f; p[i + k] = Math.max(0, Math.min(255, v)); }
-  }
-  g.putImageData(d, 0, 0);
+  const g = c.getContext('2d'), W = c.width, Hh = c.height;
+  g.save(); g.globalCompositeOperation = 'saturation'; g.fillStyle = `rgba(128,128,128,${desat})`; g.fillRect(0, 0, W, Hh); g.restore();
+  if (noise) speck(g, W, Hh, (W * Hh) / 40, [`rgba(0,0,0,${noise / 255})`, `rgba(255,255,255,${noise / 300})`], 1, 1.6);
+  if (fade) { const gr = g.createRadialGradient(W / 2, Hh / 2, 0, W / 2, Hh / 2, Math.max(W, Hh) * 0.5); gr.addColorStop(0, `rgba(214,200,176,${fade})`); gr.addColorStop(1, 'rgba(214,200,176,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, Hh); }
 }
 function woodGrain(g, W, H, base, dark, light, rows = 40, dir = 0) {
   g.fillStyle = base; g.fillRect(0, 0, W, H);

@@ -813,7 +813,7 @@ function roofLevel(b, cutMode) {
   balustrade(b, X, -Z, X, Z, by, 1.1, { posts: 4, urns: 2 });
   // 光井天窗
   b.bb('trim', 8.3, y, -20.2, 12.2, y + 0.45, -7.8); b.put('glass', G.prism(), 10.25, y + 0.45, -14, 3.8, 0.9, 12.2);
-  for (let z = -20; z <= -8; z += 2) b.put('frame', G.prism(), 10.25, y + 0.46, z, 3.9, 0.92, 0.05);
+  b.bb('trim', 10.19, y + 1.3, -20.1, 10.31, y + 1.38, -7.9);
   // 出口亭
   for (const k of KIOSKS) {
     const [x0, x1, z0, z1] = k.r, walls = kioskWalls(k);
@@ -835,7 +835,8 @@ function roofLevel(b, cutMode) {
       for (const s of [-1.3, 1.3]) { b.put('trim', G.cyl(10), x + nx * s, y + 1.3, z + nz * s, 0.13, 2.6, 0.13); }
       b.put(mk('walnut'), G.box, x, y + 2.68, z, 3.2 * Math.abs(nx) + 0.12 * Math.abs(ux), 0.14, 3.2 * Math.abs(nz) + 0.12 * Math.abs(uz)); }
     for (const s of [-1.3, 1.3]) b.put(mk('walnut'), G.box, (xa + xb) / 2 + nx * s, y + 2.56, (za + zb) / 2 + nz * s, L * Math.abs(ux) + 0.12, 0.12, L * Math.abs(uz) + 0.12);
-    b.put('hedge', G.box, (xa + xb) / 2, y + 2.86, (za + zb) / 2, L * Math.abs(ux) + 2.6 * Math.abs(nx) + 0.4, 0.28, L * Math.abs(uz) + 2.6 * Math.abs(nz) + 0.4);
+    for (let i = 0; i < n; i++) { const t = (i + 0.5) / n, x = xa + (xb - xa) * t, z = za + (zb - za) * t, sz = L / n * 0.7;
+      b.put('hedge', G.sph(8, 5), x, y + 2.86, z, (sz * Math.abs(ux) + 2.2 * Math.abs(nx)) / 2, 0.3, (sz * Math.abs(uz) + 2.2 * Math.abs(nz)) / 2); }
     const f = SUB(b, 'fine'), R0 = (xa * 7 + za * 13) | 0;
     for (let i = 0; i < n * 6; i++) { const t = ((i * 0.618 + R0) % 1), s = ((i * 0.381) % 1) * 2.6 - 1.3;
       f.put('trim', tint(G.cone(6), i % 3 ? '#9C86C8' : '#B9A6DC'), xa + (xb - xa) * t + nx * s, y + 2.45, za + (zb - za) * t + nz * s, 0.13, 0.5, 0.13, 0, PI, 0); }
@@ -1081,6 +1082,7 @@ export function buildHouse(full, a, c) {
   libraryTop(full[1]);
   musicHall(full[0], null);
   links(full[0], null);
+  for (const id of ['101', '108']) { const r = ROOMS.find((q) => q.id === id); if (r) full[0].bb(mk(r.mat), r.r[0], FLOORS[0].y, r.r[2], r.r[1], FLOORS[0].y + 0.02, r.r[3]); }
   roofLevel(full[4], false);
   drumAndDome(full[4], false);
   podium(site);

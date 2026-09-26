@@ -200,7 +200,7 @@ export function buildGardens(b) {
   const stripe = tint(G.box, '#e3ead6');   // 割草条纹：隔条略暗（对比度减半）
   for (let z = 72; z < 268; z += 12.5) for (const sx of [-1, 1]) b.put('grass', stripe, sx * 14, 0.015, z + 3.125, 21.2, 0.03, 6.25);
   for (const sx of [-1, 1]) {
-    for (let z = 134; z <= 262; z += 8) tree(b, sx * 7, z, 0.72, 'crown', '#5c7c44');
+    for (let z = 74; z <= 262; z += 8) tree(b, sx * 7, z, z < 130 ? 0.6 : 0.72, 'crown', '#5c7c44');
     for (let z = 70; z <= 126; z += 8) pedestal(b, sx * 4.5, z, sx > 0 ? -PI / 2 : PI / 2);
     for (let z = 136; z <= 262; z += 16) lamp(b, sx * 4.2, z, 0.9);
     hedgeLine(b, sx * 25.5, 72, sx * 25.5, 262, 0.7, 0.7);
@@ -493,7 +493,7 @@ function serviceZone(b) {
     for (const v of rows) for (let x = x0 + 2; x < x1 - 1; x += opt.bay || 3.6) b.bb('glass', x - 0.55, v, face, x + 0.55, v + 1.5, face + 0.04);
   };
   // 仆役楼 x −172…−128，z −86…−100（2 层 + 阁楼）
-  house(-172, -128, -100, -86, 7.4, 3.6, { rows: [1.0, 4.4] });
+  house(-172, -128, -100, -86, 7.4, 2.8, { rows: [1.0, 4.4] });
   for (const x of [-164, -150, -136]) { b.bb('stone', x - 0.7, 7.4, -94, x + 0.7, 12.2, -92); b.bb('trim', x - 0.85, 12.2, -94.15, x + 0.85, 12.45, -91.85); }
   // 马车房 x −170…−130，z −112…−122（1 层 + 草料阁），5 樘拱门朝南
   house(-170, -130, -122, -112, 5.2, 2.8, {});
@@ -503,7 +503,7 @@ function serviceZone(b) {
   house(-182, -174, -120, -90, 5, 2.2, {});
   for (const z of [-96, -103]) b.put(mk2('brass'), G.cyl(16), -186.5, 1.4, z, 1.1, 2.8, 1.1);
   // 机库 x −122…−92，z −120…−140，高 9，筒拱屋面，大门朝南对机坪
-  house(-122, -92, -140, -120, 7.2, 3.2, { barrel: true });
+  house(-122, -92, -140, -120, 6.8, 2.6, { barrel: true });
   b.bb(mk2('walnut'), -116, 0, -119.98, -98, 6.6, -119.9); for (let x = -116; x <= -98; x += 3) b.bb('iron', x - 0.05, 0, -119.9, x + 0.05, 6.6, -119.85);
   // 机坪 x −120…−90，z −92…−118
   b.bb('pavers', -120, 0, -118, -90, 0.06, -92);
@@ -511,8 +511,10 @@ function serviceZone(b) {
   for (let i = 0; i < 4; i++) { const a = i * PI / 2; b.put('gold', G.box, -105 + Math.sin(a) * 5, 0.07, -105 + Math.cos(a) * 5, 0.3, 0.01, 2.2, a); }
   for (const [x, z] of [[-119, -93], [-91, -93], [-119, -117], [-91, -117]]) DT(b).inst('bollard', mat4(x, 0.06, z, 1, 1, 1));
   // 遮挡：东侧与南侧高绿篱 + 树团（从主轴方向看不见）
-  hedgeLine(b, -84, -80, -84, -148, 1.4, 3.2); hedgeLine(b, -186, -79, -84, -79, 1.4, 3.2);
-  for (let i = 0; i < 70; i++) { const t = R(); const onE = R() < 0.55; const x = onE ? -78 + R() * 10 : -186 + t * 104, z = onE ? -78 - t * 72 : -72 + R() * 10; if (inIsland(x, z, 10)) tree(b, x, z, 0.95 + R() * 0.4, R() < 0.3 ? 'cone' : 'crown2'); }
+  hedgeLine(b, -84, -80, -84, -148, 1.6, 4.2); hedgeLine(b, -186, -79, -84, -79, 1.6, 4.2);
+  for (let i = 0; i < 110; i++) { const t = R(); const onE = R() < 0.5; const x = onE ? -80 + R() * 9 : -188 + t * 106, z = onE ? -74 - t * 78 : -75 + R() * 8; if (inIsland(x, z, 10)) tree(b, x, z, 1.25 + R() * 0.45, R() < 0.25 ? 'cone' : 'crown2'); }
+  for (let x = -186; x <= -88; x += 4.6) tree(b, x + R() * 1.5, -82.5 + R() * 1.5, 1.55 + R() * 0.3, 'crown2');   // 紧贴建筑前的一排大树
+  for (let z = -86; z >= -146; z -= 4.6) tree(b, -86.5 + R() * 1.2, z, 1.5 + R() * 0.3, 'crown2');
   for (let i = 0; i < 30; i++) { const x = -190 - R() * 30, z = -80 - R() * 70; if (inIsland(x, z, 12) && free(x, z, 1)) tree(b, x, z, 0.9 + R() * 0.3); }
   // 紫藤廊：主人通道暗门（后露台 x −9.4）→ 西行 → 北折到机坪
   const pts = [[-25, -26], [-80, -26], [-80, -108], [-90, -108]];
@@ -557,8 +559,9 @@ function dock(b) {
   rect(-20, 256, 20, 300);
   b.bb('pavers', -12, 0, 256, 12, 0.08, 268);
   b.put('trim', G.cyl(48), PX, (y - 1.6) / 2, PZ, PR, y + 1.6, PR); b.put('pavers', G.cyl(48), PX, y + 0.015, PZ, PR - 0.3, 0.03, PR - 0.3);
-  // 挑出部分的托架
-  for (let i = 0; i < 9; i++) { const a = PI * 0.12 + i * PI * 0.095; const x = PX + Math.cos(a) * (PR - 1.5), z = PZ + Math.sin(a) * (PR - 1.5); b.put('trimShade', G.box, x, -4, z, 1.1, 5, 1.1, -a); b.put('trimShade', G.box, (x + PX) / 2, -7.5, (z + PZ - 6) / 2 + 3, 0.9, 1.0, PR, -a + PI / 2, 0.6); }
+  // 挑出部分：倒台状石托 + 一圈托檐
+  b.put('trimShade', G.cyl(48, 2.2), PX, -4.6, PZ, PR / 2.2, 6, PR / 2.2);
+  b.put('trim', G.cyl(48), PX, -1.75, PZ, PR + 0.25, 0.3, PR + 0.25);
   // 铜绿栏杆（外沿，南侧留登艇口）
   const rail = tint(G.box, VERDI), post = tint(G.cyl(8), VERDI);
   const seg = 40;
