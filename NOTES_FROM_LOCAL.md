@@ -180,3 +180,28 @@
 - 嵌入协议以 `map/estate/index.html` 顶部注释为准（新增 `estate:lang`、`estate:theme`、`estate:select`、`?floor=`、`?stats=1`）。
 - `map/estate/closet/` 是本机另一个代理在做的衣帽间样板间与顶奢素材调研（`docs/luxury-assets.md`），做完会提交；在那之前请不要改 `map/estate/closet/`。
 - 以后的「重点渲染」清单（8 项）写在 `docs/GOAL_v0.9.1.md` 末尾，第 4 步 Blender 同步可参考。
+
+### 任务 5 · 1 上层浮岛与庄园 —— **可以审阅：upper**（本机渲 8K：`bash tools/render_all.sh upper --res 8000 --samples 64`；upper_city 也要重渲，因为岛变了）
+- 4 轮（第 4 轮是用户要求的「按设定返修」），过程与自评见 `docs/upper-estates.md`。
+- 草稿：
+  - 全图：`docs/drafts/upper_v4_r1…r4.jpg`。
+  - 8K 局部：`upper_v4_8k_{english,chateau,suzhou,lingnan}_{1,2}.jpg`、`upper_v4_8k_eden.jpg`。
+  - 并排：`upper_v4_lineup_{english,chateau}.jpg`、`upper_v4_landmarks.jpg`，第 3 轮的并排另存为 `upper_v4_r3_*`。
+- `tc_upper.json` 已提交最终导出，每座岛新增：
+  - `outline`：36 点归一化多边形，与 `nx/ny` 同坐标系。
+  - `shape / rim / terrain`。
+  - `role`：只有 6 座地标岛有。
+  - 顶层新增 `routes`：航线 lane、银冠堡巡逻环 patrol、骑士团大环线 patrol_city。
+- **请本机做**：
+  1. 结界圈与中层「上层投影」改用 `outline` 多边形。
+  2. 航线叠加层（可开关）。
+  3. `maps.json` 给六座地标加标记与名称：
+     - isle6 `pm_residence` 首相府
+     - isle29 `general_residence` 将军官邸
+     - isle30 `zaibatsu_estate` 财团家族庄园
+     - isle2 `archbishop_palace` 大主教府邸
+     - isle9 `league_club` 庄园主联盟会所
+     - isle25 `aether_institute` 以太研究院
+
+     这些 id 目前只在 `islands[].role` 里，不在 markers 里；要进 markers 请告诉我，我在导出里加。
+  4. 中层重渲（投影变了）。
