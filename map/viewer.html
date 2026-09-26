@@ -29,9 +29,10 @@
   .mk.inf .pin { background: var(--inf); }
   .mk.inf .lab { color: #ffd9a8; }
   .mk.drill .lab { background: rgba(230,195,106,.92); color: #1a1406; font-weight: 800; }
-  .mk.here .pin { background: #ff5a5a; animation: pulse 1.4s infinite; }
+  .mk.here .pin { background: #ff5a5a; }
+  .mk.here::after { content: ''; position: absolute; bottom: -6px; left: 50%; width: 22px; height: 22px; margin-left: -13px; border-radius: 50%; border: 2px solid #ff5a5a; animation: pulse 1.4s infinite; will-change: transform, opacity; }
   .mk.active .lab { outline: 2px solid var(--gold); }
-  @keyframes pulse { 0% { box-shadow: 0 0 0 0 #ff5a5acc; } 100% { box-shadow: 0 0 0 16px #ff5a5a00; } }
+  @keyframes pulse { 0% { transform: scale(.4); opacity: .9; } 100% { transform: scale(1.8); opacity: 0; } }
   .realm { transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; text-align: center; white-space: nowrap; color: #fff;
     text-shadow: 0 0 6px #000, 0 0 3px #000, 0 2px 8px #000c; }
   /* 字号随地图实际显示比例缩放（--rs = 屏幕像素 / 地图单位 × 1600 / 1100） */
@@ -48,7 +49,7 @@
   body.far .mk:not(.capital):not(.here):not(.active) .lab { display: none; }
   body.far .mk:not(.active) .lab small { display: none; }
   /* 信息卡 */
-  #card { position: fixed; right: 14px; top: 64px; width: 320px; max-width: calc(100vw - 28px); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.65; z-index: 10; backdrop-filter: blur(6px); }
+  #card { position: fixed; right: 14px; top: 64px; width: 320px; max-width: calc(100vw - 28px); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.65; z-index: 10; }
   #card[hidden] { display: none; }
   #card .tag { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 4px; background: #2f6f4f; }
   #card .tag.inf { background: #b06000; }
@@ -75,17 +76,19 @@
 <div id="status">加载中…</div>
 <script>
 // 底图三档（与 v4.3 做法一致：单张大图，按清晰度切换）
+// 性能：默认低清；国界叠加层按档位用对应尺寸（解码内存：1200px≈6MB，2000px≈16MB，4000px≈63MB，8000px≈157MB）
 const TIERS = [
-  { key: 'low', name: '低清', url: 'art/world_2k.jpg' },
-  { key: 'hd', name: '高清', url: 'art/world_4k.jpg' },
-  { key: 'uhd', name: '超清', url: 'art/world_8k.jpg' },
+  { key: 'mini', name: '省流', url: 'art/world_1k.jpg', borders: 'art/borders_1200.png' },
+  { key: 'low', name: '低清', url: 'art/world_2k.jpg', borders: 'art/borders_2000.png' },
+  { key: 'hd', name: '高清', url: 'art/world_4k.jpg', borders: 'art/borders_4000.png' },
+  { key: 'uhd', name: '超清', url: 'art/world_8k.jpg', borders: 'art/borders_4000.png' },
 ];
-const BORDERS = 'art/borders.png';
+const TIER_KEY = 'edenMapTier';
 // 代码地图坐标（1600×1000）→ 底图归一化坐标（相机裁切：宽 98.5%、高 97%）
 const toImg = (x, y) => [(x / 1600 - .0075) / .985, (y / 1000 - .015) / .97];
 
-let viewer, aspect = 1, M, tier = 'hd';
-try { tier = localStorage.getItem('mapTier') || 'hd'; } catch (e) {}
+let viewer, aspect = 1, M, tier = 'low';
+try { tier = localStorage.getItem(TIER_KEY) || 'low'; } catch (e) {}
 const $ = s => document.querySelector(s);
 
 async function main() {
@@ -94,18 +97,21 @@ async function main() {
   try { const d = await fetch('data/derived.json').then(r => r.ok ? r.json() : null);
     if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland); } catch (e) {}
   const seg = $('#tiers');
-  for (const t of TIERS) { const b = document.createElement('button'); b.textContent = t.name + '地图'; b.dataset.k = t.key;
+  for (const t of TIERS) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.k = t.key;
     b.onclick = () => openTier(t.key); seg.appendChild(b); }
   viewer = OpenSeadragon({
     element: $('#osd'), prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5/build/openseadragon/images/',
     showNavigator: true, navigatorPosition: 'BOTTOM_RIGHT', visibilityRatio: 1, constrainDuringPan: true,
-    maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true },
+    maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: true, imageLoaderLimit: 2, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true },
   });
   viewer.addHandler('open', onOpen);
-  const rescale = () => { if (!viewer.world.getItemCount()) return;
+  let lastRs = 0, queued = false;
+  const rescale = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false;
+    if (!viewer.world.getItemCount()) return;
     const px = viewer.viewport.getContainerSize().x * viewer.viewport.getZoom(true);   // 整张图的屏幕宽度
-    const rs = px / 1100; document.documentElement.style.setProperty('--rs', rs.toFixed(3));
-    document.body.classList.toggle('far', px < 1700); document.body.classList.toggle('tiny', px < 800); };
+    const rs = px / 1100; if (Math.abs(rs - lastRs) / (lastRs || 1) < .04) return; lastRs = rs;
+    document.documentElement.style.setProperty('--rs', rs.toFixed(3));
+    document.body.classList.toggle('far', px < 1700); document.body.classList.toggle('tiny', px < 800); }); };
   viewer.addHandler('animation', rescale); viewer.addHandler('resize', rescale); viewer.addHandler('open', () => setTimeout(rescale, 0));
   openTier(tier);
   $('#tgBorders').onchange = e => { const it = viewer.world.getItemAt(1); if (it) it.setOpacity(e.target.checked ? 1 : 0); };
@@ -115,11 +121,11 @@ async function main() {
   $('#cardX').onclick = () => { $('#card').hidden = true; document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); };
 }
 function openTier(key) {
-  tier = key; try { localStorage.setItem('mapTier', key); } catch (e) {}
+  tier = key; try { localStorage.setItem(TIER_KEY, key); } catch (e) {}
   document.querySelectorAll('#tiers button').forEach(b => b.classList.toggle('on', b.dataset.k === key));
   const t = TIERS.find(t => t.key === key);
   $('#status').textContent = `加载 ${t.name}地图…`;
-  viewer.open([{ type: 'image', url: t.url }, { type: 'image', url: BORDERS, opacity: $('#tgBorders').checked ? 1 : 0 }]);
+  viewer.open([{ type: 'image', url: t.url, buildPyramid: false }, { type: 'image', url: t.borders, buildPyramid: false, opacity: $('#tgBorders').checked ? 1 : 0 }]);
 }
 function onOpen() {
   const it = viewer.world.getItemAt(0), sz = it.getContentSize(); aspect = sz.y / sz.x;
