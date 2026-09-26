@@ -43,14 +43,20 @@ def low_seam_x(y):
     平均仍在 x = 1，起伏约 ±70 m，交界大道沿它走。"""
     return 1 + .42 * math.sin(y * 1.3 + .7) + .22 * math.sin(y * 3.1 + 2.0) + .09 * math.sin(y * 7.3 + .4)
 _SEAM = [(round(low_seam_x(y), 4), round(float(y), 4)) for y in np.linspace(-G, G, 64)]
+def mid_seam_x(y):
+    """中层核心区（曼哈顿）/ 外围（布鲁克林）的交界（A3）：不再是 x = -6 的竖线，而是一条斜着走的起伏林荫大道——
+    北端偏东、南端偏西（斜度介于曼哈顿的竖向街网与布鲁克林约 60° 的街网之间），叠两层确定性正弦（不消耗随机），起伏约 ±45 m。
+    平均仍在 x ≈ -6。"""
+    return -6 + .1 * (y - 3) + .3 * math.sin(y * .9 + .4) + .12 * math.sin(y * 2.3 + 1.9) + .05 * math.sin(y * 5.9 + .8)
+_MSEAM = [(round(mid_seam_x(y), 4), round(float(y), 4)) for y in np.linspace(-3.5, G, 40)]   # 南 → 北
 DISTRICTS = {
     'mid': [
         dict(kind='core', region='manhattan', offset=(4.5, 3.05), k=1.25,         # 核心区与高区：曼哈顿中城
-             poly=[(-6, -3.5), (F, -3.5), (F, G), (-6, G)]),
+             poly=[(F, -3.5), (F, G)] + _MSEAM[::-1]),                               # 西边界是斜向起伏的交界大道（mid_seam_x）
         dict(kind='commercial', region='kowloon', offset=(0, -5.2), k=3.0,         # 商业区：九龙旺角最密的一段（C 区检查点在这里）
              poly=[(-9, -G), (F, -G), (F, -3.5), (-9, -3.5)]),
         dict(kind='outer', region='brooklyn', offset=(-10.5, 0), k=1.6,            # 外围居住区：布鲁克林联排住宅与旧仓库
-             poly=[(-F, -G), (-9, -G), (-9, -3.5), (-6, -3.5), (-6, G), (-F, G)]),
+             poly=[(-F, -G), (-9, -G), (-9, -3.5)] + _MSEAM + [(-F, G)]),
     ],
     'low': [
         dict(kind='industrial', region='ruhr', offset=(-7, 0), k=1.0,              # 工业带：鲁尔区钢厂、货运铁路、储罐
@@ -367,6 +373,7 @@ def poly_prisms(name, polys, z0, z1, colors, m=None):
     L = np.array(loops, np.int32); T = np.array(totals, np.int32); S = np.concatenate([[0], np.cumsum(T)[:-1]]).astype(np.int32)
     me.loops.add(len(L)); me.loops.foreach_set('vertex_index', L)
     me.polygons.add(len(T)); me.polygons.foreach_set('loop_start', S); me.polygons.foreach_set('loop_total', T)
+    me.polygons.foreach_set('use_smooth', np.zeros(len(me.polygons), bool))   # Blender 4.1+ 新建网格默认平滑着色：楼顶四周发暗、侧面斜向渐变，改回平直
     me.update(calc_edges=True)
     ca = me.color_attributes.new('col', 'FLOAT_COLOR', 'CORNER'); ca.data.foreach_set('color', np.repeat(np.array(fcol, np.float32), T, axis=0).ravel())
     o = bpy.data.objects.new(name, me); bpy.context.scene.collection.objects.link(o)
