@@ -9,6 +9,7 @@
   - 标记字段：name、tag（set / inf）、src 必填；alias 为非空列表
   - 跨层对齐：link 两端的地点在平面上应当重合（同一套平面坐标），偏差超过 2% 图宽报错
   - 三层数据的 extent_m 一致
+  - kind=estate（三维庄园剖面，iframe 嵌入）：不要底图 / 点位数据；src 页面存在、有 parent、alias 为非空列表
 """
 import json, os, sys
 
@@ -28,6 +29,14 @@ for mid, m in maps.items():
     if m.get('parent') and m['parent'] not in maps: err(f"{mid}.parent → {m['parent']} 不存在")
     if m.get('group') and m['group'] not in reg.get('groups', {}): err(f"{mid}.group → {m['group']} 不存在")
     if m.get('status') == 'planned': continue
+    if m.get('kind') not in ('world', 'points', 'estate'): err(f"{mid}.kind 应为 world / points / estate，现在是 {m.get('kind')}")
+    if m.get('kind') == 'estate':
+        src = m.get('src', '')
+        if not src or not os.path.exists(os.path.join(ROOT, src)): err(f'{mid}: 缺庄园页面 src {src!r}')
+        if not m.get('parent'): err(f'{mid}: estate 地图要有 parent（面包屑回到哪一层）')
+        if not isinstance(m.get('alias'), list) or not m['alias']: err(f'{mid}: alias 应为非空列表（当前地点匹配房间用）')
+        if m.get('group') and not (m.get('layer') or {}).get('name'): err(f'{mid}: 在 group 里要有 layer.name（层切换器显示）')
+        continue
     base = m.get('base')
     if not base: err(f'{mid} 没有 base'); continue
     if not os.path.exists(os.path.join(ROOT, base)): err(f'{mid}: 缺底图 {base}')
@@ -60,7 +69,7 @@ place_ids = {p.get('id') for p in wm.get('places', [])}
 for mid, m in maps.items():
     v = m.get('view')
     if v is None:
-        if m.get('status') != 'planned': warn(f'{mid}: 没有 view（初始缩放沿用查看器的默认值）')
+        if m.get('status') != 'planned' and m.get('kind') != 'estate': warn(f'{mid}: 没有 view（初始缩放沿用查看器的默认值）')
         continue
     ext = v.get('extent_m')
     if not (isinstance(ext, list) and len(ext) == 2 and all(isinstance(x, (int, float)) and x > 0 for x in ext)): err(f'{mid}.view.extent_m 应为 [宽, 高]（米）'); continue

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>伊甸庄园 · 结构示例</title>
+<style>
+  /* 嵌入查看器（map/viewer.html）用：背景与天城上层的查看器配色一致；左侧紧凑楼层条（深色面板 + 金色选中边） */
+  :root { --bg:#101418; --panel:rgba(16,20,24,.92); --line:rgba(255,255,255,.14); --ink:#cfd8e0; --muted:#7d8a96; --gold:#d9a441; --inset:14px; }
+  html, body { margin:0; padding:0; width:100%; height:100%; background:var(--bg); overflow:hidden;
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif; color:var(--ink); }
+  #app { position:relative; width:100%; height:100%; touch-action:none; }
+  canvas { display:block; }
+  #floors { position:absolute; left:var(--inset); top:12px; z-index:10; display:flex; flex-direction:column; gap:5px; }
+  #floors button { min-width:74px; text-align:left; padding:5px 9px; border-radius:8px; border:1px solid var(--line); background:var(--panel); color:var(--ink);
+    font:inherit; font-size:13px; line-height:1.25; cursor:pointer; white-space:nowrap; transition:border-color .15s, transform .08s; }
+  #floors button small { display:block; font-size:10px; color:var(--muted); }
+  #floors button:hover { border-color:rgba(217,164,65,.7); }
+  #floors button:active { transform:scale(.96); }
+  #floors button.on { border-color:var(--gold); box-shadow:inset 3px 0 0 var(--gold); }
+  #legend { position:absolute; right:10px; bottom:8px; z-index:10; font-size:11px; color:var(--muted); display:flex; gap:10px; pointer-events:none; }
+  #legend i { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; vertical-align:0; }
+  #info { position:absolute; z-index:20; pointer-events:none; background:rgba(10,13,16,.94); border:1px solid var(--gold); border-radius:8px;
+    padding:8px 12px; font-size:12px; line-height:1.6; color:#efe9dc; max-width:260px; display:none; box-shadow:0 6px 18px rgba(0,0,0,.5); }
+  #info.pinned { left:auto !important; top:12px !important; right:12px; }
+  #info .name { font-size:14px; color:#f1e6c8; margin-bottom:2px; font-weight:600; }
+  #info .k { color:#8a9db0; margin-right:6px; }
+  #info .src { color:var(--gold); font-size:11px; margin-top:4px; }
+  #err { position:absolute; inset:0; display:none; place-items:center; color:var(--muted); font-size:14px; }
+  .room-label { color:#f0ead9; font-size:11px; padding:1px 5px; background:rgba(10,12,15,.6); border-radius:3px; white-space:nowrap; pointer-events:none; }
+  .room-label.hot { background:var(--gold); color:#1a1406; font-weight:700; }
+  @media (max-width:640px) {
+    #floors { left:6px; top:8px; gap:4px; }
+    #floors button { min-width:0; padding:4px 7px; font-size:12px; }
+    #floors button small { display:none; }
+    #info.pinned { left:calc(var(--inset) + 52px) !important; right:8px; top:8px !important; max-width:none; } /* 底部留给查看器的层切换器 */
+    #legend { display:none; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <nav id="floors" aria-label="楼层"></nav>
+  <div id="legend"><span><i style="background:#e08a2e"></i>主楼梯</span><span><i style="background:#3de0ff"></i>电梯井</span><span><i style="background:#b06bd9"></i>主人通道</span></div>
+  <div id="info"></div>
+  <div id="err">三维库加载失败（需要能访问 jsDelivr）</div>
+</div>
+
+<!-- three.js：页面从国内镜像（jsdmirror）加载时，库也走同一镜像；其余走 jsDelivr。importmap 必须在任何模块脚本之前插入 -->
+<script>
+(() => {
+  const h = /jsdmirror\.com/.test(document.baseURI) ? 'cdn.jsdmirror.com' : 'cdn.jsdelivr.net', v = 'three@0.160.0';
+  const s = document.createElement('script'); s.type = 'importmap';
+  s.textContent = JSON.stringify({ imports: { three: `https://${h}/npm/${v}/build/three.module.js`, 'three/addons/': `https://${h}/npm/${v}/examples/jsm/` } });
+  document.currentScript.after(s);
+  window.addEventListener('error', e => { if (/three|import/i.test(String(e.message || e.filename || ''))) document.getElementById('err').style.display = 'grid'; }, true);
+})();
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+
+/* ------------------------------------------------------------------
+ * 伊甸庄园结构示例 —— 数据部分
+ * 出处标记：世界书 / ROADMAP / 推断（见配套 estate_structure.md）
+ * ------------------------------------------------------------------ */
+
+const FLOOR_H = 4.5; // 层高（推断）
+const HALL_EXTRA = 2.5; // 大厅挑高附加（推断）
+const WALL_H = 1.2; // 剖切矮墙高度
+
+const FLOORS = [
+  {
+    id: "F1", label: "1F 门厅层", y0: 0, h: FLOOR_H + HALL_EXTRA,
+    rooms: [
+      { name: "大厅 / 门厅", key: true, alias: ["大厅", "门厅", "玄关"], x: 0, z: -22, w: 26, d: 20, color: 0xdccb8f, src: "世界书：alias 大厅",
+        furniture: [{ t: "bench", x: 0, z: -26 }, { t: "console", x: 0, z: -14 }] },
+      { name: "餐厅", alias: ["餐厅"], x: 24, z: -18, w: 22, d: 22, color: 0xc9a765, src: "世界书：alias 餐厅",
+        furniture: [{ t: "diningTable", x: 24, z: -18 }] },
+      { name: "会客厅", alias: ["会客厅", "会客室", "客厅"], x: -24, z: -18, w: 22, d: 22, color: 0xb99ac0, src: "世界书：alias 会客厅",
+        furniture: [{ t: "sofa", x: -26, z: -14 }, { t: "table", x: -20, z: -20 }] },
+      { name: "仆从值班室", alias: ["值班室"], x: -24, z: 6, w: 16, d: 12, color: 0x7d8a96, src: "推断（据排班样例需要值班位置）",
+        furniture: [{ t: "desk", x: -24, z: 6 }] },
+      { name: "楼梯 / 电梯前厅", alias: ["楼梯", "电梯"], x: 4, z: 6, w: 14, d: 12, color: 0x8b8f95, src: "推断",
+        furniture: [] },
+    ],
+  },
+  {
+    id: "F2", label: "2F 日常层", y0: FLOOR_H + HALL_EXTRA, h: FLOOR_H,
+    rooms: [
+      { name: "书房", key: true, alias: ["书房"], x: 20, z: -18, w: 20, d: 16, color: 0x8fae7c, src: "世界书：alias 书房",
+        furniture: [{ t: "desk", x: 24, z: -22 }, { t: "shelf", x: 14, z: -14 }] },
+      { name: "客房 A", alias: ["客房", "客房A", "客房 A"], x: -20, z: -18, w: 18, d: 15, color: 0xa7c1cf, src: "世界书：alias 客房",
+        furniture: [{ t: "bed", x: -22, z: -20 }, { t: "wardrobe", x: -14, z: -14 }] },
+      { name: "客房 B", alias: ["客房B", "客房 B"], x: -20, z: 4, w: 18, d: 15, color: 0xa7c1cf, src: "世界书：alias 客房",
+        furniture: [{ t: "bed", x: -22, z: 2 }, { t: "wardrobe", x: -14, z: 8 }] },
+      { name: "起居 / 茶室", alias: ["起居室", "茶室"], x: 20, z: 4, w: 18, d: 14, color: 0xd8c08a, src: "推断",
+        furniture: [{ t: "sofa", x: 20, z: 6 }] },
+    ],
+  },
+  {
+    id: "F3", label: "3F 私人层", y0: (FLOOR_H + HALL_EXTRA) + FLOOR_H, h: FLOOR_H,
+    rooms: [
+      { name: "主卧套间", key: true, alias: ["主卧", "卧室", "寝", "浴室", "更衣室"], x: -6, z: -16, w: 34, d: 22, color: 0xd6b6c8, src: "世界书：alias 主卧 / 浴室",
+        furniture: [{ t: "bed", x: -16, z: -20 }, { t: "wardrobe", x: 6, z: -22 }, { t: "vanity", x: 8, z: -10 }] },
+      { name: "私人房间 A", alias: ["私人房间"], x: 18, z: 10, w: 18, d: 15, color: 0x8f97a3,
+        src: "推断：用途未设定，按普通私人房间处理（只放床 / 衣柜）",
+        furniture: [{ t: "bed", x: 20, z: 12 }, { t: "wardrobe", x: 12, z: 6 }] },
+      { name: "廊厅", alias: ["廊厅"], x: -6, z: 8, w: 14, d: 12, color: 0x9a9d9f, src: "推断", furniture: [] },
+    ],
+  },
+  {
+    id: "F4", label: "4F 服务层", y0: (FLOOR_H + HALL_EXTRA) + FLOOR_H * 2, h: FLOOR_H,
+    rooms: [
+      { name: "女仆长办公室", key: true, alias: ["女仆长办公室", "办公室"], x: -22, z: -18, w: 16, d: 14, color: 0x7d8a96, src: "推断（据排表样例『女仆长』职务）",
+        furniture: [{ t: "desk", x: -22, z: -20 }] },
+      { name: "附属用房", alias: ["附属用房"], x: 4, z: -18, w: 18, d: 16, color: 0x8f97a3,
+        src: "推断：用途未设定，按普通附属用房处理（只放床 / 衣柜）",
+        furniture: [{ t: "bed", x: 0, z: -22 }, { t: "wardrobe", x: 10, z: -14 }] },
+      { name: "洗衣 / 储藏", alias: ["洗衣房", "储藏室"], x: -22, z: 4, w: 16, d: 14, color: 0x9a8f7a, src: "推断",
+        furniture: [{ t: "shelf", x: -22, z: 4 }] },
+      { name: "监控室", alias: ["监控室"], x: 22, z: 4, w: 14, d: 12, color: 0x6f8fae, src: "ROADMAP：监控叠加层对应实体房间（位置推断）",
+        furniture: [{ t: "console", x: 22, z: 4 }] },
+    ],
+  },
+  {
+    id: "F5", label: "5F 眺望层", y0: (FLOOR_H + HALL_EXTRA) + FLOOR_H * 3, h: FLOOR_H,
+    rooms: [
+      { name: "观景露台", key: true, alias: ["露台", "观景台", "眺望"], x: -6, z: -10, w: 34, d: 24, color: 0xcfd8e0, src: "推断",
+        furniture: [{ t: "bench", x: -16, z: -18 }] },
+      { name: "私人电梯厅", alias: ["电梯厅"], x: 16, z: 12, w: 12, d: 10, color: 0xb06bd9, src: "推断（主人通道顶端出口）",
+        furniture: [] },
+    ],
+  },
+];
+
+// 垂直交通竖井：贯穿全部楼层，颜色区分（推断位置）
+const SHAFTS = [
+  { name: "主楼梯", x: 4, z: 2, w: 6, d: 5, color: 0xe08a2e, src: "推断" },
+  { name: "电梯井", x: 12, z: 2, w: 4, d: 4, color: 0x3de0ff, src: "推断" },
+  { name: "主人通道", x: -12, z: -2, w: 4, d: 4, color: 0xb06bd9, src: "ROADMAP：主人通道叠加层构想，走线推断" },
+];
+
+const TOTAL_H = FLOORS[FLOORS.length - 1].y0 + FLOORS[FLOORS.length - 1].h;
+
+// 悬浮岛（新尺寸：约 rx 3.35 / ry 2.5 单位 = 335m / 250m 半轴，用户本次要求放大）
+const ISLAND = { rx: 335, ry: 250, coneDepth: 150 };
+
+/* ------------------------------------------------------------------
+ * 场景搭建
+ * ------------------------------------------------------------------ */
+
+const app = document.getElementById("app");
+
+const scene = new THREE.Scene();
+scene.background = null; // 透明：背景取页面的 --bg（与查看器一致）
+scene.fog = new THREE.Fog(0x101418, 600, 1400);
+
+// 正交相机，默认等轴角度
+const aspect = window.innerWidth / window.innerHeight;
+const frustumSize = 150;
+// 竖屏（手机）按宽度取景（约 0.75 × frustumSize 米，建筑本体占满宽度），横屏按高度取景
+const halfWH = (a) => (a < 1 ? [frustumSize * 0.38, (frustumSize * 0.38) / a] : [(frustumSize * a) / 2, frustumSize / 2]);
+const [hw0, hh0] = halfWH(aspect);
+const camera = new THREE.OrthographicCamera(-hw0, hw0, hh0, -hh0, 1, 4000);
+const isoDir = new THREE.Vector3(1, 1, 1).normalize();
+camera.position.copy(isoDir.clone().multiplyScalar(560));
+camera.lookAt(0, 12, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+app.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(window.innerWidth, window.innerHeight);
+labelRenderer.domElement.style.position = "absolute";
+labelRenderer.domElement.style.top = "0px";
+labelRenderer.domElement.style.pointerEvents = "none";
+app.appendChild(labelRenderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 12, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.update();
+
+// 灯光
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const sun = new THREE.DirectionalLight(0xfff2d8, 0.9);
+sun.position.set(300, 500, 200);
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x8fb0d8, 0.35);
+fill.position.set(-300, 200, -300);
+scene.add(fill);
+
+// hover 检测辅助（提前声明，供下面的室外物件注册使用）
+const extraHoverTargets = [];
+const outdoor = []; // 室外可匹配的地点（前庭、后庭、停靠平台、花园）
+function registerHoverTarget(mesh, name, size, src, alias = []) {
+  mesh.userData = { isRoom: true, name, size, src, floorLabel: "室外", alias };
+  extraHoverTargets.push(mesh);
+  outdoor.push({ mesh, name, alias });
+}
+
+/* --- 悬浮岛：倒锥岩基 + 顶面花园 --- */
+const islandGroup = new THREE.Group();
+scene.add(islandGroup);
+
+{
+  const coneGeo = new THREE.CylinderGeometry(ISLAND.rx * 0.15, ISLAND.rx, ISLAND.coneDepth, 32, 1, true);
+  const coneMat = new THREE.MeshStandardMaterial({ color: 0x4a4038, roughness: 0.95, side: THREE.DoubleSide });
+  const cone = new THREE.Mesh(coneGeo, coneMat);
+  cone.position.y = -ISLAND.coneDepth / 2;
+  cone.scale.z = ISLAND.ry / ISLAND.rx; // 椭圆化
+  islandGroup.add(cone);
+
+  const gardenGeo = new THREE.CylinderGeometry(ISLAND.rx, ISLAND.rx, 6, 48);
+  const gardenMat = new THREE.MeshStandardMaterial({ color: 0x4f6b3f, roughness: 0.9 });
+  const garden = new THREE.Mesh(gardenGeo, gardenMat);
+  garden.position.y = -3;
+  garden.scale.z = ISLAND.ry / ISLAND.rx;
+  islandGroup.add(garden);
+  registerHoverTarget(garden, "花园", "覆盖岛顶大部分区域（布局推断）", "世界书：alias 花园", ["花园", "草坪"]);
+}
+
+// 前庭喷泉（世界书出处）
+{
+  const courtyard = new THREE.Group();
+  const baseGeo = new THREE.CylinderGeometry(16, 16, 1, 24);
+  const baseMat = new THREE.MeshStandardMaterial({ color: 0xd7d2c4 });
+  const base = new THREE.Mesh(baseGeo, baseMat);
+  base.position.set(0, 0.5, -60);
+  courtyard.add(base);
+  const fountain = new THREE.Mesh(new THREE.CylinderGeometry(4, 5, 5, 16), new THREE.MeshStandardMaterial({ color: 0xbfd6e0 }));
+  fountain.position.set(0, 3, -60);
+  courtyard.add(fountain);
+  islandGroup.add(courtyard);
+  registerHoverTarget(base, "前庭（喷泉广场）", "16m 半径圆形广场（推断尺寸）", "世界书：alias 前庭", ["前庭", "喷泉"]);
+}
+
+// 后庭人工湖（世界书出处）
+{
+  const lakeGeo = new THREE.CylinderGeometry(22, 22, 0.6, 32);
+  const lakeMat = new THREE.MeshStandardMaterial({ color: 0x2f5f73, roughness: 0.2, metalness: 0.1 });
+  const lake = new THREE.Mesh(lakeGeo, lakeMat);
+  lake.position.set(0, 0.4, 90);
+  islandGroup.add(lake);
+  registerHoverTarget(lake, "后庭人工湖", "22m 半径（推断尺寸）", "世界书：alias 后庭", ["后庭", "人工湖", "湖边"]);
+}
+
+// 访客停靠平台（世界书出处，位于岛缘）
+{
+  const dockGeo = new THREE.BoxGeometry(40, 1.5, 24);
+  const dockMat = new THREE.MeshStandardMaterial({ color: 0x9aa0a6 });
+  const dock = new THREE.Mesh(dockGeo, dockMat);
+  dock.position.set(-ISLAND.rx * 0.72, 0.75, -ISLAND.ry * 0.55);
+  islandGroup.add(dock);
+  registerHoverTarget(dock, "访客停靠平台", "40×24m（推断尺寸），位于岛缘", "世界书：alias 停靠平台", ["停靠平台", "停机坪", "码头"]);
+}
+
+/* --- 建筑：楼层与房间 --- */
+const buildingGroup = new THREE.Group();
+scene.add(buildingGroup);
+
+const roomMeshes = []; // 用于 hover 检测
+const roomLabels = [];
+const floorVisualGroups = []; // 每层一个 group，方便整体显隐
+
+function addFurniture(parent, item, floorY) {
+  const c = 0xe7e0d2;
+  const mat = new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 });
+  let mesh;
+  switch (item.t) {
+    case "bed": {
+      const g = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.6, 3.6), mat);
+      base.position.y = 0.3;
+      const pillow = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.3, 3.2), new THREE.MeshStandardMaterial({ color: 0xf3ede0 }));
+      pillow.position.set(-2.1, 0.75, 0);
+      g.add(base, pillow);
+      mesh = g;
+      break;
+    }
+    case "wardrobe":
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.0, 1.0), mat);
+      mesh.position.y = 1.0;
+      break;
+    case "sofa": {
+      const g = new THREE.Group();
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.8, 1.6), mat);
+      seat.position.y = 0.4;
+      const back = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.8, 0.3), mat);
+      back.position.set(0, 0.9, -0.65);
+      g.add(seat, back);
+      mesh = g;
+      break;
+    }
+    case "desk":
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.75, 1.2), mat);
+      mesh.position.y = 0.4;
+      break;
+    case "table":
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 1.0), mat);
+      mesh.position.y = 0.3;
+      break;
+    case "diningTable": {
+      const g = new THREE.Group();
+      const top = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.5, 2.4), mat);
+      top.position.y = 0.5;
+      g.add(top);
+      for (const dx of [-2, 2]) for (const dz of [-0.9, 0.9]) {
+        const chair = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.9, 0.6), mat);
+        chair.position.set(dx, 0.45, dz);
+        g.add(chair);
+      }
+      mesh = g;
+      break;
+    }
+    case "shelf":
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.2, 0.5), mat);
+      mesh.position.y = 1.1;
+      break;
+    case "vanity":
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.0, 0.8), mat);
+      mesh.position.y = 0.5;
+      break;
+    case "console":
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.9, 0.6), mat);
+      mesh.position.y = 0.45;
+      break;
+    case "bench":
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.5, 0.7), mat);
+      mesh.position.y = 0.25;
+      break;
+    default:
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat);
+      mesh.position.y = 0.5;
+  }
+  mesh.position.x += item.x;
+  mesh.position.z += item.z;
+  mesh.position.y += floorY;
+  parent.add(mesh);
+}
+
+function buildRoomWalls(group, room, floorY) {
+  // 矮墙（剖切高度），四边各留一个门洞（简单地在南墙留缺口）
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0xece6d8, roughness: 0.85 });
+  const t = 0.4;
+  const halfW = room.w / 2, halfD = room.d / 2;
+  const doorGap = Math.min(3.0, room.w * 0.3);
+
+  // 北墙、东墙、西墙整段；南墙留门洞（拆两段）
+  const segments = [
+    { x: room.x, z: room.z - halfD, w: room.w, d: t }, // 北
+    { x: room.x + halfW, z: room.z, w: t, d: room.d }, // 东
+    { x: room.x - halfW, z: room.z, w: t, d: room.d }, // 西
+    { x: room.x - (room.w - doorGap) / 4 - doorGap / 4, z: room.z + halfD, w: (room.w - doorGap) / 2, d: t }, // 南-左段
+    { x: room.x + (room.w - doorGap) / 4 + doorGap / 4, z: room.z + halfD, w: (room.w - doorGap) / 2, d: t }, // 南-右段
+  ];
+  for (const s of segments) {
+    if (s.w <= 0 || s.d <= 0) continue;
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(s.w, WALL_H, s.d), wallMat);
+    wall.position.set(s.x, floorY + WALL_H / 2, s.z);
+    group.add(wall);
+  }
+}
+
+FLOORS.forEach((floor, fi) => {
+  const fg = new THREE.Group();
+  fg.name = floor.id;
+  buildingGroup.add(fg);
+  floorVisualGroups.push(fg);
+
+  floor.rooms.forEach((room) => {
+    const floorMat = new THREE.MeshStandardMaterial({ color: room.color, roughness: 0.9 });
+    const floorMesh = new THREE.Mesh(new THREE.BoxGeometry(room.w, 0.4, room.d), floorMat);
+    floorMesh.position.set(room.x, floor.y0 + 0.2, room.z);
+    floorMesh.userData = {
+      isRoom: true,
+      name: room.name,
+      size: `${room.w}×${room.d} m`,
+      src: room.src,
+      floorLabel: floor.label,
+      baseColor: room.color,
+      floorId: floor.id,
+      alias: room.alias || [],
+    };
+    fg.add(floorMesh);
+    roomMeshes.push(floorMesh);
+
+    buildRoomWalls(fg, room, floor.y0);
+
+    (room.furniture || []).forEach((item) => addFurniture(fg, item, floor.y0 + 0.4));
+
+    // CSS2D 房间名标签
+    const div = document.createElement("div");
+    div.className = "room-label";
+    div.textContent = room.name;
+    const label = new CSS2DObject(div);
+    label.position.set(room.x, floor.y0 + WALL_H + 1.2, room.z);
+    fg.add(label);
+    roomLabels.push({ label, floorIndex: fi, key: !!room.key, mesh: floorMesh });
+  });
+});
+
+// 竖井：贯穿全部楼层
+const shaftGroup = new THREE.Group();
+scene.add(shaftGroup);
+SHAFTS.forEach((s) => {
+  const mat = new THREE.MeshStandardMaterial({ color: s.color, transparent: true, opacity: 0.55 });
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(s.w, TOTAL_H, s.d), mat);
+  mesh.position.set(s.x, TOTAL_H / 2, s.z);
+  mesh.userData = { isRoom: true, name: s.name + "（竖井）", size: `${s.w}×${s.d} m，贯穿 1F–5F`, src: s.src, floorLabel: "全部楼层" };
+  shaftGroup.add(mesh);
+  roomMeshes.push(mesh);
+});
+
+/* ------------------------------------------------------------------
+ * 楼层切换 + 房间标签 + 信息卡 + 与查看器的消息接口
+ *
+ * 嵌入接口（map/viewer.html 按 maps.json 里 kind=estate 的 src 加载本页；换版时保持这些即可）：
+ *   加载方式：父页面 fetch 本文件文本，在 <head> 后插入 <base href="本文件所在目录">，用 iframe.srcdoc 显示
+ *            （jsDelivr 的 gh 线路把 .html 当纯文本返回，不能直接 iframe src）。单独打开本文件也能用。
+ *   父 → 本页：{ type: 'estate:room', name }   按房间名 / 别名（最长匹配）切到所在楼层并高亮；name 为空或匹配不到则取消高亮
+ *              { type: 'estate:inset', left }  左侧留白（px），楼层条避开查看器的层切换器
+ *   本页 → 父：{ type: 'estate:ready', floors: ['F1', …] }   三维场景第一帧画完
+ *              { type: 'estate:key', key }  本页获得焦点时按下的 PageUp / PageDown / [ / ]，交给查看器切层
+ * ------------------------------------------------------------------ */
+
+const floorsEl = document.getElementById("floors");
+const buttons = [];
+function makeBtn(label, sub, value) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.innerHTML = label + (sub ? `<small>${sub}</small>` : "");
+  b.addEventListener("click", () => setActiveFloor(value, true));
+  floorsEl.appendChild(b);
+  buttons.push({ el: b, value });
+}
+makeBtn("全部", "剖切总览", "ALL");
+FLOORS.forEach((f) => makeBtn(f.id, f.label.replace(/^\dF\s*/, ""), f.id));
+
+let activeFloor = "ALL";
+let pinned = null; // 被父页面点名（estate:room）或手机轻点选中的房间
+
+const floorIdx = (v) => (v === "ALL" ? FLOORS.length - 1 : FLOORS.findIndex((f) => f.id === v));
+function setActiveFloor(value, user) {
+  activeFloor = value;
+  buttons.forEach((b) => b.el.classList.toggle("on", b.value === value));
+  const idx = floorIdx(value);
+  floorVisualGroups.forEach((fg, i) => { fg.visible = i <= idx; }); // 选中层及以下显示，以上隐藏，形成剖切
+  // 镜头目标跟到该层高度
+  const f = FLOORS[idx];
+  if (value !== "ALL") controls.target.y = f.y0 + 1; else controls.target.y = 12;
+  if (user && pinned) { const ud = pinned.userData; if (ud.floorId && floorIdx(ud.floorId) > idx) unpin(); }
+  updateLabels();
+}
+
+// 标签：「全部」只显示每层的关键房间（key），并且缩得较小时连关键房间也只留 F1 / F3；单层视图只显示该层的房间。被高亮的房间始终显示
+function updateLabels() {
+  const idx = floorIdx(activeFloor), z = camera.zoom;
+  roomLabels.forEach(({ label, floorIndex, key, mesh }) => {
+    let v;
+    if (activeFloor === "ALL") v = key && (z >= 0.8 || floorIndex % 2 === 0);
+    else v = floorIndex === idx && (z >= 0.7 || key);
+    if (pinned === mesh) v = floorIndex <= idx;
+    // CSS2DRenderer 每帧按 CSS2DObject.visible 重设 display，所以切 visible 本身
+    label.visible = v;
+    label.element.classList.toggle("hot", pinned === mesh);
+  });
+}
+let lastZoom = camera.zoom;
+controls.addEventListener("change", () => { if (Math.abs(camera.zoom - lastZoom) > 0.02) { lastZoom = camera.zoom; updateLabels(); } });
+setActiveFloor("ALL");
+
+/* --- 信息卡：鼠标悬停跟随；手机轻点 / 父页面点名时固定在角落 --- */
+const infoEl = document.getElementById("info");
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let hovered = null;
+const HOVER = 0x554011, PIN = 0x7a5a10;
+
+function cardHtml(d) {
+  return `<div class="name">${d.name}</div>` +
+    `<div><span class="k">楼层</span>${d.floorLabel}</div>` +
+    `<div><span class="k">尺寸</span>${d.size}</div>` +
+    `<div class="src">${d.src}</div>`;
+}
+// 花园是整个岛面：不发光（否则整座岛都变色），只显示信息卡
+function setEmissive(mesh, hex) { if (mesh?.material?.emissive && mesh.userData.name !== "花园") mesh.material.emissive.setHex(hex); }
+function showPinned() {
+  if (!pinned) { infoEl.style.display = "none"; return; }
+  infoEl.className = "pinned"; infoEl.innerHTML = cardHtml(pinned.userData); infoEl.style.display = "block";
+}
+function pin(mesh) {
+  if (pinned && pinned !== mesh) setEmissive(pinned, 0);
+  pinned = mesh; setEmissive(mesh, PIN); showPinned(); updateLabels();
+}
+function unpin() { if (pinned) setEmissive(pinned, 0); pinned = null; showPinned(); updateLabels(); }
+
+function pick(clientX, clientY) {
+  const r = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((clientX - r.left) / r.width) * 2 - 1;
+  pointer.y = -((clientY - r.top) / r.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const targets = roomMeshes.concat(extraHoverTargets).filter((m) => {
+    for (let o = m; o; o = o.parent) if (o.visible === false) return false; // 只与可见对象求交
+    return true;
+  });
+  return raycaster.intersectObjects(targets, false)[0]?.object || null;
+}
+function clearHover() { if (hovered && hovered !== pinned) setEmissive(hovered, 0); hovered = null; }
+
+renderer.domElement.addEventListener("pointermove", (e) => {
+  if (e.pointerType !== "mouse" || e.buttons) return;
+  const mesh = pick(e.clientX, e.clientY);
+  if (mesh !== hovered) { clearHover(); hovered = mesh; if (mesh && mesh !== pinned) setEmissive(mesh, HOVER); }
+  if (!mesh) { showPinned(); return; }
+  infoEl.className = ""; infoEl.innerHTML = cardHtml(mesh.userData); infoEl.style.display = "block";
+  const w = infoEl.offsetWidth, h = infoEl.offsetHeight;
+  infoEl.style.left = Math.min(e.clientX + 16, innerWidth - w - 8) + "px";
+  infoEl.style.top = Math.min(e.clientY + 16, innerHeight - h - 8) + "px";
+});
+renderer.domElement.addEventListener("pointerleave", () => { clearHover(); showPinned(); });
+// 轻点（手指移动 < 8px）：选中 / 取消；鼠标点击同样可以固定信息卡
+let down = null;
+renderer.domElement.addEventListener("pointerdown", (e) => { down = { x: e.clientX, y: e.clientY }; });
+renderer.domElement.addEventListener("pointerup", (e) => {
+  if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) { down = null; return; }
+  down = null;
+  const mesh = pick(e.clientX, e.clientY);
+  if (mesh && mesh !== pinned) pin(mesh); else unpin();
+  if (e.pointerType === "mouse") { clearHover(); }
+});
+
+/* --- 房间名 / 别名匹配（最长匹配） --- */
+function findRoom(text) {
+  text = String(text || "").replace("{{user}}", "").trim();
+  if (!text) return null;
+  let best = null;
+  const cand = roomMeshes.filter((m) => m.userData.floorId).map((m) => ({ mesh: m, words: [m.userData.name.replace(/\s/g, ""), ...m.userData.alias] }))
+    .concat(outdoor.map((o) => ({ mesh: o.mesh, words: [o.name, ...o.alias] })));
+  const t = text.replace(/\s/g, "");
+  for (const c of cand) for (const w of c.words) {
+    const ww = String(w).replace(/\s/g, "");
+    if (ww && (t.includes(ww) || ww === t) && (!best || ww.length > best.len)) best = { mesh: c.mesh, len: ww.length };
+  }
+  return best?.mesh || null;
+}
+function focusRoom(text) {
+  const mesh = findRoom(text);
+  if (!mesh) { unpin(); return false; }
+  const fid = mesh.userData.floorId;
+  setActiveFloor(fid || "F1");
+  const p = mesh.position;
+  controls.target.set(p.x, fid ? p.y : 1, p.z);
+  pin(mesh);
+  return true;
+}
+
+const toParent = (msg) => { if (window.parent !== window) window.parent.postMessage(msg, "*"); };
+window.addEventListener("message", (e) => {
+  if (e.source !== window.parent) return;
+  const d = e.data || {};
+  if (d.type === "estate:room") focusRoom(d.name);
+  if (d.type === "estate:inset" && Number.isFinite(d.left)) document.documentElement.style.setProperty("--inset", Math.max(6, d.left) + "px");
+});
+window.addEventListener("keydown", (e) => {
+  if (["PageUp", "PageDown", "[", "]"].includes(e.key)) { e.preventDefault(); toParent({ type: "estate:key", key: e.key }); }
+});
+window.__estate = { focusRoom, setActiveFloor, FLOORS }; // 调试用
+
+/* ------------------------------------------------------------------
+ * 窗口尺寸 / 渲染循环
+ * ------------------------------------------------------------------ */
+
+window.addEventListener("resize", () => {
+  const a = window.innerWidth / window.innerHeight;
+  const [hw, hh] = halfWH(a);
+  camera.left = -hw; camera.right = hw; camera.top = hh; camera.bottom = -hh;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  labelRenderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+let first = true;
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+  if (first) { first = false; toParent({ type: "estate:ready", floors: FLOORS.map((f) => f.id) }); }
+}
+animate();
+
+</script>
+</body>
+</html>
