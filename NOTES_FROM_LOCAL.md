@@ -65,3 +65,11 @@
 - 上层：`blender/data/tc_islands.json` 每座岛加 `estate_style`（english 14、chateau 12、suzhou 3、lingnan 2；伊甸 neoclassical、银冠堡 fortress；相邻岛尽量不同）；`tiancheng_upper.py` 按风格建庄园（英式：L 形石头主楼 + 蛇形湖 + 成团的树 + 弯车道；法式：U 形主楼 + 角楼 + 绿篱方格花坛 + 中轴水渠 + 林荫道；苏州：粉墙黛瓦围合 + 不规则水池 + 假山 + 九曲桥 + 厅堂；岭南：青砖院落群 + 鱼池 + 水榭 + 浓密的榕树），导出 `estate_style` 到 tc_upper.json 的 islands。8000px 局部样张看过英式、法式、岭南三种，已把园子整体放大 1.5 倍（岛上空草坪太多）。
 - **没做**：2000px 草稿（中层 v3 渲到一半停了）、`docs/drafts/` 的 v3 对比图。仓库里的 `map/data/tc_*.json` 保持你那边的版本，没有提交云端重新生成的。
 - 调试图（拼接后的平面）可以用这段看：`python3 -c "import sys; sys.path.insert(0,'blender'); import numpy as np, tc_city; c = tc_city.City(np.random.default_rng(1), 'mid')"`（需要 bpy 的 mathutils）。
+
+## 2026-09-27 云端：地图事件联动（用户新需求）—— **不用重渲**（只改查看器、卡内脚本和文档）
+- 新文件 `map/events.js`（`viewer.html` 在 OpenSeadragon 之后引入）；`viewer.html` 只加了四处挂钩：`onOpen` 里 `TCEvents.render()`、消息 `eden-map:events`、启动时 `TCEvents.pollFeeds()`、地点卡 `.src` 换行样式。本机改 `viewer.html` 前请先拉取。
+- `map/tavern/eden-map.js`：扫描聊天里的 `data-tcmap="类型=…;地点=…;标题=…"` 隐藏标签，悬浮按钮显示事件数，发给查看器。
+- `tools/pack_npm.sh` 的白名单加了 `map/events.js`（查看器现在依赖它）。
+- 协议、数据源、分阶段见 `docs/map-events.md`；`maps.json` 可选 `feeds`（默认没有）。
+- 世界书（加了「地图联动规范」和两条视觉样例）直接发给了用户，没进仓库。
+- 可以重跑：无（三层底图都不受影响）。
