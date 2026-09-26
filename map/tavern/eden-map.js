@@ -28,6 +28,14 @@
     border: 1px solid rgba(230,195,106,.7); background: rgba(20,23,28,.9); color: #e6c36a; cursor: pointer;
     box-shadow: 0 4px 14px rgba(0,0,0,.45); display: grid; place-items: center; touch-action: none; }
   #${ID} .em-fab svg { width: 24px; height: 24px; }
+  /* 后台预加载：面板照常排版但不可见、不接收点击，地图在里面把首屏加载进缓存 */
+  #${ID} .em-panel.em-ghost { visibility: hidden; pointer-events: none; }
+  /* 悬浮按钮上的预加载进度环；完成后短暂显示一圈绿色 */
+  #${ID} .em-fab.prep::before, #${ID} .em-fab.ready::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid transparent; }
+  #${ID} .em-fab.prep::before { border-top-color: #e6c36a; border-right-color: rgba(230,195,106,.4); animation: em-spin 1s linear infinite; }
+  #${ID} .em-fab.ready::before { border-color: rgba(123,216,143,.8); animation: em-fade 1.8s forwards; }
+  @keyframes em-spin { to { transform: rotate(360deg); } }
+  @keyframes em-fade { to { opacity: 0; } }
   #${ID} .em-fab.here::after { content: ''; position: absolute; right: 4px; top: 4px; width: 9px; height: 9px; border-radius: 50%; background: #ff5a5a; }
   #${ID} .em-panel { position: fixed; z-index: 30001; left: 50vw; top: 50dvh; transform: translate(-50%, -50%);
     width: min(1200px, 94vw); height: min(820px, 88vh); background: #14171c; border: 1px solid rgba(255,255,255,.16);
@@ -102,12 +110,44 @@
     pickEl.hidden = false; loadEl.hidden = true;
   }
   function chooseLine(key) {
-    const changed = key !== line; line = key; try { localStorage.setItem(LINE_KEY, key); } catch (e) {}
+    const changed = key !== line; line = key; try { localStorage.setItem(LINE_KEY, key); localStorage.setItem(LINE_KEY + 'Manual', '1'); } catch (e) {}
     showLine(); pickEl.hidden = true;
     if (changed) { BASE = baseFor(key); html = null; unloadViewer(); }
     loadViewer();
   }
   lineBtn.addEventListener('click', showPicker);
+
+  // 自动选线：所有线路同时取一个小文件，最先成功的就是最快的。用户手动选过就尊重手动选择
+  function probe(key) {
+    const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 6000);
+    return fetch(baseFor(key) + 'data/maps.json', { cache: 'no-store', signal: ctl.signal })
+      .then(r => { if (!r.ok) throw 0; return key; }).finally(() => clearTimeout(to));
+  }
+  async function autoLine() {
+    if (!swappable) return true;
+    let manual = false; try { manual = localStorage.getItem(LINE_KEY + 'Manual') === '1'; } catch (e) {}
+    if (manual && line) return true;
+    const key = await Promise.any(LINES.map(l => probe(l.key))).catch(() => null);
+    if (!key) return false;
+    if (key !== line) { line = key; BASE = baseFor(key); html = null; try { localStorage.setItem(LINE_KEY, key); } catch (e) {} showLine(); }
+    return true;
+  }
+  // 预加载：在看不见的面板里把地图程序、数据和首屏瓦片加载一遍（进浏览器缓存），然后休眠释放内存。点按钮时基本秒开
+  let ghost = false, ghostT = 0;
+  async function preload() {
+    if (!panel.hidden || alive) return;
+    fab.classList.add('prep'); fab.title = '地图预加载中…';
+    if (!(await autoLine())) { fab.classList.remove('prep'); fab.title = '地图线路都连不上，点开手动选择'; return; }
+    if (!panel.hidden || alive) { fab.classList.remove('prep'); return; }   // 测速期间用户已经点开了
+    ghost = true; panel.classList.add('em-ghost'); panel.hidden = false;
+    ghostT = setTimeout(() => endGhost(false), 25000);   // 网络太慢也不无限挂着
+    loadViewer();
+  }
+  function endGhost(ok) {
+    if (!ghost) return; ghost = false; clearTimeout(ghostT);
+    panel.hidden = true; panel.classList.remove('em-ghost'); sleepViewer();
+    fab.classList.remove('prep'); fab.title = '世界地图'; if (ok) { fab.classList.add('ready'); setTimeout(() => fab.classList.remove('ready'), 2000); }
+  }
   let html = null, here = '', alive = false, sent = null, killT = 0;
   const SLEEP_MS = 3 * 60 * 1000;   // 关闭后地图程序保留 3 分钟：期间再打开秒开；超时才整个销毁
 
@@ -138,6 +178,7 @@
   const onMsg = e => {
     if (e.source !== frame.contentWindow) return;
     if (e.data?.type === 'eden-map:ready') { alive = true; loadEl.hidden = true; sent = null; push(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:loaded' && ghost) endGhost(true);
     if (e.data?.type === 'eden-map:state') titleEl.textContent = `新历 2088 · ${e.data.title}`;
   };
   window.parent.addEventListener('message', onMsg);
@@ -179,8 +220,10 @@
     if (dragged) { const r = fab.getBoundingClientRect(), vw = window.parent.innerWidth, vh = window.parent.innerHeight;
       const p = placeFab(r.left / (vw - 48), r.top / (vh - 48)); try { localStorage.setItem(POS_KEY, JSON.stringify(p)); } catch (err) {} } });
 
-  const close = () => { if (panel.hidden) return; panel.hidden = true; sleepViewer(); };
-  fab.addEventListener('click', async () => { if (dragged) return; if (!panel.hidden) return close(); panel.hidden = false; await loadViewer(); });
+  const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; sleepViewer(); };
+  fab.addEventListener('click', async () => { if (dragged) return;
+    if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); return; }   // 预加载中被点开：直接显示
+    if (!panel.hidden) return close(); panel.hidden = false; await loadViewer(); });
   root.querySelector('.em-close').addEventListener('click', close);
   pdoc.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
@@ -189,7 +232,7 @@
     eventOn(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     eventOn(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
     push();
-    if (swappable && !line) { panel.hidden = false; showPicker(); }   // 第一次使用：直接弹出线路选择
+    (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => preload());   // 打开聊天后空闲时：测速选线 + 预加载
   })();
 
   // 脚本被关闭或重载时清理注入的元素
