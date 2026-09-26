@@ -125,6 +125,12 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   if (e.pointerType === 'mouse' || !downXY) return; const moved = Math.hypot(e.clientX - downXY[0], e.clientY - downXY[1]); if (moved > 12 || performance.now() - downXY[2] > 300) return;
   const now = performance.now(); if (now - lastTap < 320 && tapXY && Math.hypot(e.clientX - tapXY[0], e.clientY - tapXY[1]) < 30) { zoomAt(e.clientX, e.clientY); lastTap = 0; } else { lastTap = now; tapXY = [e.clientX, e.clientY]; }
 });
+// 双指轻点：两指都在 250 ms 内抬起、位移 < 10 px → 以两指中点拉近
+const touches = new Map(); let twoTap = null;
+renderer.domElement.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') return; touches.set(e.pointerId, [e.clientX, e.clientY]); if (touches.size === 2) { const p = [...touches.values()]; twoTap = { t: performance.now(), p: p.map(q => q.slice()), n: 0, ok: true }; } else if (touches.size > 2) twoTap = null; });
+renderer.domElement.addEventListener('pointermove', (e) => { if (!twoTap || !touches.has(e.pointerId)) return; const i = [...touches.keys()].indexOf(e.pointerId); const p0 = twoTap.p[i]; if (p0 && Math.hypot(e.clientX - p0[0], e.clientY - p0[1]) > 10) twoTap.ok = false; });
+const endTouch = (e) => { if (!touches.has(e.pointerId)) return; touches.delete(e.pointerId); if (twoTap && ++twoTap.n === 2) { if (twoTap.ok && performance.now() - twoTap.t < 250) { const [a1, b1] = twoTap.p; zoomAt((a1[0] + b1[0]) / 2, (a1[1] + b1[1]) / 2); } twoTap = null; } };
+renderer.domElement.addEventListener('pointerup', endTouch); renderer.domElement.addEventListener('pointercancel', endTouch);
 renderer.domElement.addEventListener('wheel', (e) => { e.preventDefault(); kick(); }, { passive: false });
 controls.addEventListener('change', kick);
 addEventListener('keydown', (e) => { if (e.key === '+' || e.key === '=') dolly(0.7); else if (e.key === '-') dolly(1.4); else if (e.key === '0') goView('overview'); else if (e.key === 'a' || e.key === 'A') setMode(MODE === 'A' ? 'B' : 'A'); });
