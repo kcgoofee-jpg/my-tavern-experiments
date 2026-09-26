@@ -1,0 +1,39 @@
+{
+  "_说明": "地图注册表。base = 底图 DZI；parent = 上一级地图（面包屑）；group = 同组多层（天城三层）；overlay = 可开关叠加层；status=planned 表示制作中（切换器里置灰）。markers 里的 nx/ny 由渲染脚本导出的数据文件提供，这里只写名称、设定出处和当前地点别名。",
+  "start": "world",
+  "groups": {
+    "tiancheng": { "title": "天城", "layers": ["tc_upper", "tc_mid", "tc_low"] }
+  },
+  "maps": {
+    "world": {
+      "title": "世界", "kind": "world", "base": "art/world.dzi",
+      "overlay": { "type": "dzi", "src": "art/borders.dzi", "label": "国界" }
+    },
+    "tc_upper": {
+      "title": "天城 · 上层", "parent": "world", "group": "tiancheng",
+      "layer": { "name": "上层", "sub": "悬浮庄园区", "alt": "800–1500 m" },
+      "kind": "points", "base": "art/tc_upper.dzi", "data": "data/tc_upper.json",
+      "overlay": { "type": "barriers", "label": "结界" },
+      "focus": "eden",
+      "markers": {
+        "eden": { "name": "伊甸庄园", "sub": "{{user}} 的庄园", "cls": "capital", "tag": "set",
+          "src": "庄园布局：位于天城上层悬浮区，独占一座悬浮岛屿；新古典主义白色石材建筑；前庭喷泉、后庭人工湖、访客停靠平台；全域结界",
+          "alias": ["伊甸", "庄园", "书房", "主卧", "大厅", "餐厅", "会客厅", "客房", "寝", "浴室", "后庭", "前庭", "花园", "停靠平台"] },
+        "silver_crown": { "name": "银冠堡", "sub": "议会骑士团总部", "tag": "set",
+          "src": "军事与治安：议会直属骑士团总部位于上层与中层交界的悬浮要塞「银冠堡」；负责上层悬浮区空域巡防",
+          "alias": ["银冠堡", "骑士团"] },
+        "climate_tower": { "name": "以太气候调节塔", "tag": "inf",
+          "src": "天城：气候由以太气候调节塔人工维持（塔的位置为推断）",
+          "alias": ["气候调节塔", "气候塔"] }
+      }
+    },
+    "tc_mid": {
+      "title": "天城 · 中层", "parent": "world", "group": "tiancheng", "status": "planned",
+      "layer": { "name": "中层", "sub": "钢铁霓虹区", "alt": "约 700 m 以下" }
+    },
+    "tc_low": {
+      "title": "天城 · 下层", "parent": "world", "group": "tiancheng", "status": "planned",
+      "layer": { "name": "下层", "sub": "地基区", "alt": "地面" }
+    }
+  }
+}

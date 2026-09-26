@@ -26,7 +26,13 @@
     border-bottom: 1px solid rgba(255,255,255,.12); }
   #${ID} .em-bar .em-here { color: #9aa3ad; margin-left: auto; }
   #${ID} .em-bar button { background: none; border: 0; color: #9aa3ad; font-size: 20px; cursor: pointer; line-height: 1; }
-  #${ID} iframe { width: 100%; height: 100%; border: 0; background: #14171c; }
+  #${ID} .em-body { position: relative; min-height: 0; }
+  #${ID} iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #14171c; }
+  /* 地图程序就绪前的加载遮罩（就绪后由地图自己显示瓦片进度） */
+  #${ID} .em-load { position: absolute; inset: 0; display: grid; place-items: center; background: #14171c; color: #9aa3ad; font-size: 14px; }
+  #${ID} .em-load[hidden] { display: none; }
+  #${ID} .em-load i { display: block; width: 160px; height: 3px; margin-top: 10px; border-radius: 2px; background: linear-gradient(90deg, transparent, #e6c36a, transparent) 0 0 / 50% 100% no-repeat, rgba(255,255,255,.1); animation: em-slide 1s linear infinite; }
+  @keyframes em-slide { from { background-position: -80px 0, 0 0; } to { background-position: 160px 0, 0 0; } }
   /* 手机：面板全屏，关闭按钮加大 */
   @media (max-width: 640px) {
     #${ID} .em-panel { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
@@ -39,22 +45,31 @@
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>
 </button>
 <div class="em-panel" hidden>
-  <div class="em-bar"><b>新历 2088 · 世界地图</b><span class="em-here"></span><button class="em-close" aria-label="关闭">×</button></div>
-  <iframe class="em-frame" title="世界地图"></iframe>
+  <div class="em-bar"><b class="em-title">新历 2088 · 地图</b><span class="em-here"></span><button class="em-close" aria-label="关闭">×</button></div>
+  <div class="em-body"><iframe class="em-frame" title="地图"></iframe><div class="em-load" hidden><div>正在加载地图程序…<i></i></div></div></div>
 </div>`;
   pdoc.body.appendChild(root);
 
   const fab = root.querySelector('.em-fab'), panel = root.querySelector('.em-panel'), frame = root.querySelector('.em-frame');
-  const hereEl = root.querySelector('.em-here');
+  const hereEl = root.querySelector('.em-here'), loadEl = root.querySelector('.em-load'), titleEl = root.querySelector('.em-title');
   let html = null, here = '';
 
   // 打开时才创建地图，关闭时销毁（释放已解码的大图内存）；页面 HTML 只取一次
   async function loadViewer() {
-    html ??= (await fetch(BASE + 'viewer.html').then(r => r.text())).replace('<head>', `<head><base href="${BASE}">`);
+    loadEl.hidden = false;
+    try { html ??= (await fetch(BASE + 'viewer.html').then(r => r.text())).replace('<head>', `<head><base href="${BASE}">`); }
+    catch (e) { loadEl.firstElementChild.textContent = '地图加载失败，请检查网络后重新打开'; return; }
     frame.onload = () => push();
     frame.srcdoc = html;
   }
-  function unloadViewer() { frame.onload = null; frame.removeAttribute('srcdoc'); frame.src = 'about:blank'; }
+  function unloadViewer() { frame.onload = null; frame.removeAttribute('srcdoc'); frame.src = 'about:blank'; titleEl.textContent = '新历 2088 · 地图'; }
+  // 地图 → 酒馆：ready 撤掉遮罩；state 更新面板标题。只接受来自本面板 iframe 的消息
+  const onMsg = e => {
+    if (e.source !== frame.contentWindow) return;
+    if (e.data?.type === 'eden-map:ready') { loadEl.hidden = true; push(); }
+    if (e.data?.type === 'eden-map:state') titleEl.textContent = `新历 2088 · ${e.data.title}`;
+  };
+  window.parent.addEventListener('message', onMsg);
   function getHere() {
     try {
       const d = Mvu.getMvuData({ type: 'message', message_id: 'latest' });
@@ -100,5 +115,5 @@
   })();
 
   // 脚本被关闭或重载时清理注入的元素
-  window.addEventListener('pagehide', () => root.remove());
+  window.addEventListener('pagehide', () => { root.remove(); window.parent.removeEventListener('message', onMsg); });
 })();
