@@ -409,6 +409,7 @@ function cullLabels() {
     let ok = true;
     if (it.rank === 3 && !hot) ok = false;                                   // 服务用房 / 服务区：只在悬停时显示
     if (it.kind === 'room' && it.rank === 2 && visW >= 120 && !hot) ok = false;
+    if (it.kind === 'room' && mode === 'all' && !hot && (it.rank !== 1 || visW > 150 && it.w * it.dd < 200)) ok = false;   // 「全部」只留大的卖点房间
     if (it.kind === 'area' && !hot && !(HERO.has(it.d.name) || (it.d.pri ?? 5) >= 10) && camera.zoom < extZoom0 * 1.4) ok = false;   // 首屏只留七个主标签
     if (it.kind === 'area' && visW < 60 && (it.d.pri ?? 5) < 10 && !hot) ok = false;
     if (ok) {
@@ -540,7 +541,7 @@ function makeCloseups(fi) {
     const th = (x, z) => { const [cx, cz] = center(x, z), dx = cx - x, dz = cz - z; return Math.hypot(dx, dz) < 0.4 ? AZ : Math.atan2(dx, dz); };
     const list = [];
     clusters(pr.wc.filter(inR), 0.7).filter((c) => c.n >= 2).forEach((c) => list.push({ kind: 'wc', x: c.x, y: f.y + 0.45, z: c.z, H: 2.2, theta: th(c.x, c.z), phi: 1.0 }));
-    clusters(pr.towel.filter(inR), 1.0).sort((a, b) => b.n - a.n).slice(0, 2).forEach((c) => list.push({ kind: 'towel', x: c.x, y: f.y + Math.min(1.1, c.y), z: c.z, H: 1.8, theta: th(c.x, c.z), phi: 1.0 }));
+    clusters(pr.towel.filter(inR), 1.0).sort((a, b) => b.n - a.n).slice(0, 2).forEach((c) => list.push({ kind: 'towel', x: c.x, y: f.y + Math.min(1.1, c.y), z: c.z, H: 1.8, theta: th(c.x, c.z), phi: 0.85 }));
     if (list.length) it.close = list; else delete it.close;
   }
 }
