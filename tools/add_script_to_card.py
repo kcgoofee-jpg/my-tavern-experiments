@@ -25,16 +25,21 @@ def chunk(typ, body):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('src'); ap.add_argument('dst')
-    ap.add_argument('--name', required=True); ap.add_argument('--import', dest='url', required=True)
+    ap.add_argument('--name', required=True); ap.add_argument('--import', dest='urls', action='append', required=True,
+                                                     help='可重复：按顺序尝试，前一个加载失败再换下一个（例如官方 CDN → 国内镜像）')
     ap.add_argument('--info', default='')
     ap.add_argument('--version', default='', help='写入 character_version：原版本号 + "+map<版本>"')
     a = ap.parse_args()
     if a.src == a.dst:
         sys.exit('输出不能覆盖源文件')
     chunks = read_chunks(open(a.src, 'rb').read())
+    if len(a.urls) == 1: content = f"import '{a.urls[0]}';\n"
+    else:   # 依次尝试：前一个线路连不上（例如没梯子时的官方 CDN）就换下一个
+        content = ("// 地图脚本：依次尝试各线路，加载成功就停\n(async () => {\n  for (const u of " + json.dumps(a.urls) +
+                   ") {\n    try { await import(u); return; } catch (e) { console.warn('[地图] 线路不可用，换下一个', u); }\n  }\n})();\n")
     entry = {
         'type': 'script', 'enabled': True, 'name': a.name, 'id': str(uuid.uuid4()),
-        'content': f"import '{a.url}';\n", 'info': a.info,
+        'content': content, 'info': a.info,
         'button': {'enabled': False, 'buttons': []}, 'data': {}, 'export_with': {'button': True, 'data': True},
     }
     out, touched = [], 0
@@ -60,7 +65,7 @@ def main():
     with open(a.dst, 'wb') as f:
         f.write(b'\x89PNG\r\n\x1a\n')
         for typ, body in out: f.write(chunk(typ, body))
-    print(f'写入 {a.dst}：更新了 {touched} 个元数据块，脚本「{a.name}」→ {a.url}')
+    print(f'写入 {a.dst}：更新了 {touched} 个元数据块，脚本「{a.name}」→ {" → ".join(a.urls)}')
 
 
 if __name__ == '__main__':
