@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>世界全景 · 草稿 2</title>
+<style>
+  :root { --ink: #2b2a28; --muted: #6f6b63; --paper: #efe9dc; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif; }
+  .wrap { position: relative; width: 2060px; height: 1000px; margin: 0 auto; }
+  canvas { position: absolute; left: 0; top: 0; }
+  svg.overlay { position: absolute; left: 0; top: 0; width: 2060px; height: 1000px; }
+  .draft { position: absolute; left: 16px; top: 12px; font-size: 13px; color: #e8eef2; text-shadow: 0 1px 2px #0008; }
+  .draft b { color: #ffb4a8; }
+  svg text { paint-order: stroke; stroke-linejoin: round; }
+  .lbl { stroke: rgba(246,241,230,.9); stroke-width: 3px; }
+  /* 三大帝国各自的字体风格 */
+  .r-oren { font: 900 34px "PingFang SC", sans-serif; letter-spacing: 14px; fill: #4a2a0c; stroke: #f3dfb4; stroke-width: 5px; }
+  .r-fed  { font: 900 34px "Songti SC", "STSong", serif; letter-spacing: 8px; fill: #14315c; stroke: #e6eef6; stroke-width: 5px; }
+  .r-xl   { font: 700 36px "Kaiti SC", "STKaiti", serif; letter-spacing: 10px; fill: #35195c; stroke: #efe8fb; stroke-width: 6px; }
+  .r-ov   { font: 700 22px "PingFang SC", sans-serif; letter-spacing: 6px; fill: #1f5a3a; stroke: #eaf4ea; stroke-width: 4px; }
+  .rs-oren { font: 600 13px "PingFang SC", sans-serif; fill: #6b4214; stroke: #f3dfb4; stroke-width: 3px; letter-spacing: 2px; }
+  .rs-fed  { font: 600 13px "Songti SC", serif; fill: #24487a; stroke: #e6eef6; stroke-width: 3px; letter-spacing: 1px; }
+  .rs-xl   { font: 600 14px "Kaiti SC", serif; fill: #4c2f78; stroke: #efe8fb; stroke-width: 3px; }
+  .cap { font-size: 17px; font-weight: 800; stroke: rgba(250,246,238,.95); stroke-width: 4px; }
+  .cap-sub { font-size: 11px; fill: #4d4940; stroke: rgba(250,246,238,.9); stroke-width: 3px; }
+  .small { font-size: 11px; fill: #3f3b35; stroke: rgba(246,241,230,.85); stroke-width: 3px; }
+  .inf { fill: #9a5200; }
+  .legend text { stroke: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="land" width="1600" height="1000"></canvas>
+  <canvas id="mist" width="1600" height="1000"></canvas>
+  <svg class="overlay" id="ov" viewBox="0 0 2060 1000">
+    <defs>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bcd9f0"/><stop offset="1" stop-color="#f4ead2"/></linearGradient>
+      <linearGradient id="mid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3c355c"/><stop offset="1" stop-color="#15121f"/></linearGradient>
+      <linearGradient id="low" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d2620"/><stop offset="1" stop-color="#0e0b09"/></linearGradient>
+      <radialGradient id="dome" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="#e8f6ff" stop-opacity=".05"/><stop offset="1" stop-color="#9fd6ff" stop-opacity=".35"/></radialGradient>
+    </defs>
+  </svg>
+  <div class="draft"><b>草稿 2 · 立体地形</b>　示意图，无比例　|　橙色字 = 推断（设定未给）　|　悬停可看出处</div>
+</div>
+<script type="module">
+import * as D from './data/world.js';
+
+// ---------- 随机与噪声（种子固定，结果可复现） ----------
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const rnd = mulberry32(D.SEED);
+const PERM = new Uint8Array(512); { const p = [...Array(256).keys()];
+  for (let i = 255; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
+  for (let i = 0; i < 512; i++) PERM[i] = p[i & 255]; }
+const fade = t => t * t * t * (t * (t * 6 - 15) + 10);
+function grad(h, x, y) { const u = (h & 1) ? x : -x, v = (h & 2) ? y : -y; return (h & 4) ? u + v : u - v * 0.5; }
+function perlin(x, y) { const X = Math.floor(x) & 255, Y = Math.floor(y) & 255; x -= Math.floor(x); y -= Math.floor(y);
+  const u = fade(x), v = fade(y), a = PERM[X] + Y, b = PERM[X + 1] + Y;
+  const l1 = grad(PERM[a], x, y) + u * (grad(PERM[b], x - 1, y) - grad(PERM[a], x, y));
+  const l2 = grad(PERM[a + 1], x, y - 1) + u * (grad(PERM[b + 1], x - 1, y - 1) - grad(PERM[a + 1], x, y - 1));
+  return l1 + v * (l2 - l1); }
+function fbm(x, y, oct = 5) { let s = 0, a = 0.5, f = 1; for (let i = 0; i < oct; i++) { s += a * perlin(x * f, y * f); a *= 0.5; f *= 2; } return s; }
+const hash = (x, y) => { let h = Math.imul(x, 374761393) + Math.imul(y, 668265263); h = Math.imul(h ^ h >>> 13, 1274126177); return ((h ^ h >>> 16) >>> 0) / 4294967296; };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+// ---------- 高度场、归属、海拔 ----------
+const C = 2, GW = D.W / C, GH = D.H / C, N = GW * GH;
+const height = new Float32Array(N), owner = new Int16Array(N).fill(-1), elev = new Float32Array(N);
+for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {
+  const x = gx * C, y = gy * C; let m = 0;
+  for (const b of D.LAND_BLOBS) { const dx = (x - b.x) / b.rx, dy = (y - b.y) / b.ry; m = Math.max(m, b.w * (1 - Math.sqrt(dx * dx + dy * dy))); }
+  height[gy * GW + gx] = m * 1.1 + fbm(x / 260, y / 260) * 0.55 + fbm(x / 60, y / 60, 3) * 0.12 - 0.05;
+}
+const SEA = 0.12, isLand = i => height[i] > SEA;
+for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {
+  const i = gy * GW + gx; if (!isLand(i)) continue;
+  const x = gx * C + fbm(gx / 36, gy / 36, 3) * 90, y = gy * C + fbm(gx / 36 + 50, gy / 36, 3) * 90;
+  let best = -1, bd = 1e9;
+  D.SEEDS.forEach((s, k) => { const d = Math.hypot(x - s.x, y - s.y) / s.w; if (d < bd) { bd = d; best = k; } });
+  owner[i] = best;
+}
+// 各地貌性格：mt = 山地强度，hill = 丘陵起伏
+const TERRAIN = {
+  'oren-core': { mt: .35, hill: .55 }, 'oren-prov': { mt: .5, hill: .45 },
+  'fed-core': { mt: .12, hill: .45 }, 'fed-knight': { mt: .28, hill: .5 },
+  'xl': { mt: 1.0, hill: .3 }, 'minor': { mt: .4, hill: .4 }, 'overseas': { mt: .55, hill: .4 },
+};
+for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {
+  const i = gy * GW + gx; if (owner[i] < 0) continue;
+  const t = TERRAIN[D.SEEDS[owner[i]].kind], x = gx * C, y = gy * C;
+  const inland = clamp((height[i] - SEA) * 5, 0, 1);
+  const ridge = Math.pow(clamp(1 - Math.abs(perlin(x / 120 + 7.3, y / 120 + 3.1)), 0, 1), 5);
+  elev[i] = (height[i] - SEA) * t.hill + ridge * t.mt * inland * 0.9 + fbm(x / 40, y / 40, 2) * 0.02 * inland;
+}
+// 平滑两次，去掉种子交界处的高差断崖
+for (let pass = 0; pass < 2; pass++) { const tmp = elev.slice(); for (let gy = 1; gy < GH - 1; gy++) for (let gx = 1; gx < GW - 1; gx++) { const i = gy * GW + gx; if (owner[i] < 0) continue;
+  elev[i] = (tmp[i] * 4 + tmp[i - 1] + tmp[i + 1] + tmp[i - GW] + tmp[i + GW]) / 8; } }
+const K = 70;                         // 斜投影抬升：每单位海拔上移的像素
+const eAt = (x, y) => { const gx = clamp(Math.round(x / C), 0, GW - 1), gy = clamp(Math.round(y / C), 0, GH - 1); return elev[gy * GW + gx]; };
+const proj = (x, y) => [x, y - eAt(x, y) * K];
+
+// ---------- 每个势力的地貌配色（低 → 中 → 高 → 雪） ----------
+const hex = s => [1, 3, 5].map(k => parseInt(s.slice(k, k + 2), 16));
+const PAL = {
+  'oren-core':  ['#d3a865', '#b98a4b', '#8e6537', '#efe3c8'],   // 赭金平原与高原：铁血帝国的干燥腹地
+  'oren-prov':  ['#e2c794', '#c9a978', '#9c8058', '#f1e7d2'],
+  'fed-core':   ['#7fa39a', '#5b8579', '#3f6259', '#e3ebea'],   // 温带阔叶林：蓝绿
+  'fed-knight': ['#98bba6', '#739d86', '#52745f', '#e8efea'],
+  'xl':         ['#a99bc0', '#86789f', '#5d5076', '#f1edf6'],   // 灰紫岩山：神权与薄雾
+  'minor':      ['#d2cfbd', '#b6b29c', '#8f8a74', '#efede5'],
+  'overseas':   ['#86c08e', '#56996a', '#34704c', '#e2efe2'],   // 异域湿润丛林
+}; for (const k in PAL) PAL[k] = PAL[k].map(hex);
+const BORDER = { oren: hex('#6b3a0e'), fed: hex('#16407e'), xl: hex('#4a2378'), n: hex('#6a6454') };
+const lerp3 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+function landColor(kind, e) { const p = PAL[kind], t = clamp(e / 0.75, 0, 1);
+  let c = t < .5 ? lerp3(p[0], p[1], t * 2) : lerp3(p[1], p[2], (t - .5) * 2);
+  if (e > .62 && TERRAIN[kind].mt > .45) c = lerp3(c, p[3], clamp((e - .62) * 5, 0, 1));
+  return c; }
+const groupOf = k => { if (k < 0) return 'sea'; const kd = D.SEEDS[k].kind;
+  return kd.startsWith('oren') ? 'oren' : kd.startsWith('fed') ? 'fed' : kd === 'xl' ? 'xl' : 'n' + k; };
+const styleOf = g => (g === 'oren' || g === 'fed' || g === 'xl') ? g : 'n';
+
+// ---------- 光栅化：从后往前逐行画，陆地按海拔抬升并画出侧面 ----------
+const cv = document.getElementById('land'), ctx = cv.getContext('2d');
+const img = ctx.createImageData(D.W, D.H), buf = new Uint32Array(img.data.buffer);
+const pack = c => (255 << 24) | (clamp(c[2] | 0, 0, 255) << 16) | (clamp(c[1] | 0, 0, 255) << 8) | clamp(c[0] | 0, 0, 255);
+const SEA_SHALLOW = hex('#bcd6e0'), SEA_DEEP = hex('#6f97b2'), SHORE = hex('#d9e9ee');
+for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {
+  const i = gy * GW + gx, px = gx * C, base = gy * C;
+  let top, side;
+  if (owner[i] < 0) {
+    const d = clamp((SEA - height[i]) / 0.7, 0, 1) ** 0.7, w = perlin(gx / 3, gy / 14) * 0.03;
+    top = height[i] > SEA - 0.035 ? SHORE : lerp3(SEA_SHALLOW, SEA_DEEP, clamp(d + w, 0, 1));
+    const c = pack(top); for (let y = base; y < base + C; y++) for (let x = px; x < px + C; x++) buf[y * D.W + x] = c;
+    continue;
+  }
+  const kind = D.SEEDS[owner[i]].kind, e = elev[i], topY = Math.round(base - e * K);
+  // 山体明暗：西北光
+  const gxL = Math.max(gx - 1, 0), gxR = Math.min(gx + 1, GW - 1), gyU = Math.max(gy - 1, 0), gyD = Math.min(gy + 1, GH - 1);
+  const shade = clamp(1 + ((elev[gy * GW + gxL] - elev[gy * GW + gxR]) + (elev[gyU * GW + gx] - elev[gyD * GW + gx])) * 9, .55, 1.35);
+  top = landColor(kind, e).map(v => v * shade);
+  // 风格纹理：联邦阔叶林斑点；奥伦平原田畴条纹；海外丛林斑点
+  const hv = hash(gx, gy);
+  if (kind.startsWith('fed') && e < .45 && hv < .22) top = top.map(v => v * .8);
+  if (kind === 'overseas' && hv < .3) top = top.map(v => v * .84);
+  if (kind.startsWith('oren') && e < .3 && ((gx + (gy >> 3)) % 9 === 0)) top = top.map(v => v * .93);
+  // 边界：帝国之间粗线（各自风格色），同一帝国内部分区细线
+  const g = groupOf(owner[i]); let bd = 0;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [-2, 0], [0, 2], [0, -2]]) {
+    const j = clamp(gy + dy, 0, GH - 1) * GW + clamp(gx + dx, 0, GW - 1); if (owner[j] < 0) continue;
+    if (groupOf(owner[j]) !== g) { bd = 2; break; } if (owner[j] !== owner[i] && Math.abs(dx + dy) === 1) bd = Math.max(bd, 1); }
+  if (bd === 2) { const st = styleOf(g);
+    const dotted = st === 'xl' && ((gx + gy) % 4 === 0);           // 虚灵古派：虚点国界
+    if (!dotted) top = lerp3(top, BORDER[st], st === 'n' ? .7 : .9); }
+  else if (bd === 1) top = lerp3(top, BORDER[styleOf(g)], .35);
+  side = top.map(v => v * .6);
+  const ct = pack(top), cs = pack(side);
+  for (let y = Math.max(topY, 0); y < base + C; y++) { const c = y < topY + C ? ct : cs; for (let x = px; x < px + C; x++) buf[y * D.W + x] = c; }
+}
+ctx.putImageData(img, 0, 0);
+
+// ---------- 虚灵古派的以太薄雾 ----------
+{ const m = document.getElementById('mist').getContext('2d'); m.filter = 'blur(10px)';
+  const xlCells = []; for (let i = 0; i < N; i++) if (owner[i] >= 0 && D.SEEDS[owner[i]].kind === 'xl') xlCells.push(i);
+  for (let k = 0; k < 160; k++) { const i = xlCells[Math.floor(rnd() * xlCells.length)]; const [x, y] = proj((i % GW) * C, Math.floor(i / GW) * C);
+    const r = 25 + rnd() * 55, g = m.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, 'rgba(245,240,255,.33)'); g.addColorStop(1, 'rgba(245,240,255,0)'); m.fillStyle = g; m.fillRect(x - r, y - r, r * 2, r * 2); } }
+
+// ---------- SVG 叠加层 ----------
+const NS = 'http://www.w3.org/2000/svg', ov = document.getElementById('ov');
+function el(tag, attrs, parent = ov, text) { const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; parent.appendChild(e); return e; }
+function tip(e, item) { el('title', {}, e, `${item.tag === 'inf' ? '【推断】' : '【设定】'}${item.src}`); }
+const G = n => el('g', { id: n });
+const gLines = G('lines'), gDots = G('dots'), gMark = G('marks'), gModel = G('models'), gLabel = G('labels'), gLegend = G('legend'), gSec = G('section');
+function centroid(pred) { let sx = 0, sy = 0, n = 0;
+  for (let i = 0; i < N; i++) if (owner[i] >= 0 && pred(D.SEEDS[owner[i]])) { sx += (i % GW) * C; sy += Math.floor(i / GW) * C; n++; }
+  return n ? [sx / n, sy / n] : null; }
+// 沿地形走的折线（管道、中枢线随地势起伏）
+function terrainPath(a, b, bend = 0, n = 40) { const pts = [];
+  for (let k = 0; k <= n; k++) { const t = k / n, mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2 - bend;
+    const x = (1 - t) ** 2 * a[0] + 2 * t * (1 - t) * mx + t * t * b[0], y = (1 - t) ** 2 * a[1] + 2 * t * (1 - t) * my + t * t * b[1];
+    pts.push(proj(x, y)); } return pts; }
+const toD = pts => 'M' + pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' L');
+
+// 旷野高地：奥伦境内、离天城 180 以外的最高点
+{ const hl = D.PLACES.find(p => p.autoHighest); let bi = -1, bh = -9;
+  for (let i = 0; i < N; i++) if (owner[i] >= 0 && D.SEEDS[owner[i]].kind.startsWith('oren') && elev[i] > bh && Math.hypot((i % GW) * C - 720, Math.floor(i / GW) * C - 470) > 180) { bh = elev[i]; bi = i; }
+  hl.x = (bi % GW) * C; hl.y = Math.floor(bi / GW) * C; }
+const byId = Object.fromEntries(D.PLACES.map(p => [p.id, p]));
+
+// 奥伦：天城向各行省的中枢线（「所有外围行省与附属邦国均直接对天城中枢负责」）
+for (const s of D.SEEDS.filter(s => s.kind === 'oren-prov')) {
+  const c = centroid(t => t === s); const p = el('path', { d: toD(terrainPath([720, 470], c, 0, 30)), fill: 'none', stroke: '#8a5a12', 'stroke-width': 1.4, opacity: .75 }, gLines);
+  tip(p, D.REALMS[0]); }
+// 跨城管道：发光青线
+for (const t of D.TUBES) { const a = byId[t.a], b = byId[t.b], pts = terrainPath([a.x, a.y], [b.x, b.y], 40);
+  el('path', { d: toD(pts), fill: 'none', stroke: '#0b3b4a', 'stroke-width': 5, opacity: .5 }, gLines);
+  const p = el('path', { d: toD(pts), fill: 'none', stroke: '#35d0ff', 'stroke-width': 2.2, filter: 'url(#glow)' }, gLines); tip(p, t);
+  const q = pts[12]; el('text', { x: q[0], y: q[1] - 8, 'text-anchor': 'middle', class: 'small inf' }, gLines, '跨城高速运输管道'); }
+// 海外航线
+for (const r of D.SEA_ROUTES) { const p = el('path', { d: 'M' + r.pts.map(p => proj(...p).join(',')).join(' L'), fill: 'none', stroke: '#e8f2f7', 'stroke-width': 1.6, 'stroke-dasharray': '4 5' }, gLines); tip(p, r);
+  const [x, y] = r.pts[2]; el('text', { x, y: y + 18, 'text-anchor': 'middle', class: 'small inf' }, gLines, '海外输入航线'); }
+
+// 赤潮据点：红色菱形，联邦境内加密
+{ const land = []; for (let i = 0; i < N; i++) if (owner[i] >= 0) land.push(i);
+  let placed = 0, guard = 0;
+  while (placed < D.RED_TIDE.count && guard++ < 50000) {
+    const i = land[Math.floor(rnd() * land.length)], kd = D.SEEDS[owner[i]].kind;
+    if (!kd.startsWith('fed') && rnd() > 1 / D.RED_TIDE.fedBoost) continue;
+    const [x, y] = proj((i % GW) * C, Math.floor(i / GW) * C);
+    const d = el('path', { d: `M${x},${y - 4} l3,4 l-3,4 l-3,-4 Z`, fill: '#d22b2b', stroke: '#fff', 'stroke-width': .6, opacity: .9 }, gDots); tip(d, D.RED_TIDE); placed++; } }
+// 虚灵古派：注册教会（小尖塔）
+{ let n = 0, guard = 0; while (n < D.CHURCHES.count && guard++ < 20000) {
+  const i = Math.floor(rnd() * N); if (owner[i] < 0 || D.SEEDS[owner[i]].kind !== 'xl') continue;
+  const x0 = (i % GW) * C, y0 = Math.floor(i / GW) * C; if (Math.hypot(x0 - byId.yuanyu.x, y0 - byId.yuanyu.y) < 70) continue;
+  const [x, y] = proj(x0, y0), g = el('g', {}, gMark); tip(g, D.CHURCHES);
+  el('rect', { x: x - 3, y: y - 8, width: 6, height: 8, fill: '#e9e4f2', stroke: '#3a2160', 'stroke-width': .8 }, g);
+  el('path', { d: `M${x - 3.5},${y - 8} L${x},${y - 19} L${x + 3.5},${y - 8} Z`, fill: '#4a2a78' }, g);
+  el('circle', { cx: x, cy: y - 21, r: 1.4, fill: '#ffd86b' }, g); n++; } }
+// 圆桌封地：骑士盾徽 + 小城堡
+for (const f of D.FIEFS) { const [x, y] = proj(f.x, f.y), g = el('g', {}, gMark); tip(g, f);
+  el('rect', { x: x - 8, y: y - 10, width: 16, height: 10, fill: '#d8d4c8', stroke: '#3b3a36', 'stroke-width': .8 }, g);
+  for (const dx of [-8, 4]) el('rect', { x: x + dx, y: y - 15, width: 4, height: 5, fill: '#d8d4c8', stroke: '#3b3a36', 'stroke-width': .8 }, g);
+  el('path', { d: `M${x - 6},${y - 30} h12 v7 q0,7 -6,10 q-6,-3 -6,-10 Z`, fill: '#f5f1e4', stroke: '#16407e', 'stroke-width': 1.6 }, g);
+  el('path', { d: `M${x},${y - 28} v12 M${x - 4},${y - 23} h8`, stroke: '#16407e', 'stroke-width': 1.4 }, g);
+  el('text', { x: x + 10, y: y - 2, class: 'small inf' }, g, f.name); }
+
+// ---------- 首都等轴小模型 ----------
+// 等轴盒子：以 (cx,cy) 为地面中心，a×b 占地，高 h；画可见的顶面、左前面、右前面
+function box(g, cx, cy, a, b, h, top, left, right) {
+  const P = (x, y, z) => [cx + (x - y), cy + (x + y) / 2 - z];
+  const poly = pts => pts.map(p => p.join(',')).join(' ');
+  el('polygon', { points: poly([P(-a, b, 0), P(a, b, 0), P(a, b, h), P(-a, b, h)]), fill: left }, g);
+  el('polygon', { points: poly([P(a, -b, 0), P(a, b, 0), P(a, b, h), P(a, -b, h)]), fill: right }, g);
+  el('polygon', { points: poly([P(-a, -b, h), P(a, -b, h), P(a, b, h), P(-a, b, h)]), fill: top }, g);
+  return P; }
+function floatIsle(g, x, y, r, gold) {
+  el('path', { d: `M${x - r},${y} Q${x - r * .4},${y + r * 1.3} ${x},${y + r * 1.6} Q${x + r * .4},${y + r * 1.3} ${x + r},${y} Z`, fill: gold ? '#9c7a45' : '#6f6a73' }, g);
+  el('ellipse', { cx: x, cy: y, rx: r, ry: r * .38, fill: gold ? '#f2d27a' : '#a9c19a', stroke: gold ? '#7a5a10' : '#58704f', 'stroke-width': .8 }, g);
+  if (gold) el('rect', { x: x - 3, y: y - 6, width: 6, height: 5, fill: '#fff', stroke: '#7a5a10', 'stroke-width': .6 }, g); }
+
+// 天城：垂直城市——霓虹塔群 + 上空悬浮岛 + 以太气候调节塔
+function modelTiancheng(cx, cy) { const g = el('g', {}, gModel); tip(g, byId.tiancheng);
+  el('ellipse', { cx, cy: cy + 4, rx: 46, ry: 16, fill: '#000', opacity: .18 }, g);
+  const towers = [[-26, 8, 26], [-14, -6, 40], [16, -8, 46], [0, 0, 70], [24, 10, 30], [-6, 14, 34], [10, 16, 24], [-24, -12, 22]];
+  towers.sort((p, q) => (p[0] + p[1]) - (q[0] + q[1]));
+  for (const [dx, dy, h] of towers) { const P = box(g, cx + (dx - dy) * .5, cy + (dx + dy) * .25, 5, 5, h, '#5a5f7a', '#2c2f45', '#3c4060');
+    for (let z = 6; z < h - 3; z += 6) { const a = P(-5, 5, z), b = P(5, 5, z);
+      el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: z % 12 ? '#ff4fb0' : '#3ee6ff', 'stroke-width': .9, opacity: .9 }, g); } }
+  el('rect', { x: cx + 38, y: cy - 88, width: 4, height: 92, fill: '#6fd3e6', opacity: .85 }, g);   // 气候调节塔
+  el('circle', { cx: cx + 40, cy: cy - 90, r: 4, fill: '#bff4ff', filter: 'url(#glow)' }, g);
+  floatIsle(g, cx - 30, cy - 104, 9); floatIsle(g, cx + 8, cy - 122, 8); floatIsle(g, cx + 30, cy - 100, 7);
+  floatIsle(g, cx - 6, cy - 96, 10, true);                                                           // 伊甸庄园
+  el('text', { x: cx + 6, y: cy - 90, 'font-size': 9, fill: '#7a5a10', class: 'lbl' }, g, '伊甸庄园'); }
+
+// 圣都：环形大竞技场 + 黑曜石联合会大厦 + 白石议事殿 + 以太穹顶 + 霓虹广告
+function modelKavalierki(cx, cy) { const g = el('g', {}, gModel); tip(g, byId.kavalierki);
+  el('ellipse', { cx, cy: cy + 4, rx: 50, ry: 18, fill: '#000', opacity: .18 }, g);
+  el('ellipse', { cx: cx - 12, cy: cy + 2, rx: 24, ry: 11, fill: '#8b8578' }, g);                   // 竞技场外环
+  el('ellipse', { cx: cx - 12, cy: cy - 3, rx: 24, ry: 11, fill: '#d9d2c2', stroke: '#6f6758', 'stroke-width': 1 }, g);
+  el('ellipse', { cx: cx - 12, cy: cy - 3, rx: 15, ry: 6.5, fill: '#7faa6a' }, g);
+  box(g, cx + 20, cy - 2, 7, 7, 78, '#3a3f4a', '#12141a', '#23262f');                                // 联合会大厦
+  el('line', { x1: cx + 20, y1: cy + 5, x2: cx + 20, y2: cy - 80, stroke: '#7fe8ff', 'stroke-width': .8, opacity: .8 }, g);
+  const P = box(g, cx - 34, cy + 12, 8, 5, 10, '#f6f3ea', '#cfc9b8', '#e2ddcf');                     // 圆桌骑士议事殿
+  const r = P(0, 0, 10); el('path', { d: `M${r[0] - 13},${r[1] + 2} L${r[0]},${r[1] - 8} L${r[0] + 13},${r[1] + 2} Z`, fill: '#bdb6a3' }, g);
+  el('rect', { x: cx + 30, y: cy - 38, width: 10, height: 14, fill: '#ff3fa4', opacity: .9, filter: 'url(#glow)' }, g);   // 全息广告
+  el('path', { d: `M${cx - 52},${cy + 6} Q${cx - 50},${cy - 60} ${cx},${cy - 62} Q${cx + 50},${cy - 60} ${cx + 48},${cy + 6}`, fill: 'url(#dome)', stroke: '#9fd6ff', 'stroke-width': 1, opacity: .9 }, g); }
+
+// 原域：悬浮圣山（诸神殿）+ 哥特尖塔群 + 煤气灯雾
+function modelYuanyu(cx, cy) { const g = el('g', {}, gModel); tip(g, byId.yuanyu);
+  el('ellipse', { cx, cy: cy + 4, rx: 46, ry: 15, fill: '#000', opacity: .15 }, g);
+  const spires = [[-30, 4, 30], [-18, -4, 42], [22, -2, 38], [32, 6, 26], [-8, 10, 24], [12, 12, 28]];
+  for (const [dx, dy, h] of spires) { const x = cx + dx, y = cy + dy;
+    el('rect', { x: x - 3, y: y - h * .6, width: 6, height: h * .6, fill: '#d9d4e2', stroke: '#4a3a66', 'stroke-width': .7 }, g);
+    el('path', { d: `M${x - 3.5},${y - h * .6} L${x},${y - h} L${x + 3.5},${y - h * .6} Z`, fill: '#3d2a5e' }, g);
+    el('circle', { cx: x + 5, cy: y - 3, r: 1.3, fill: '#ffd27a', filter: 'url(#glow)' }, g); }
+  const my = cy - 70;                                                                                   // 悬浮圣山
+  el('path', { d: `M${cx - 26},${my} Q${cx - 14},${my + 34} ${cx},${my + 48} Q${cx + 14},${my + 34} ${cx + 26},${my} Z`, fill: '#5e5570' }, g);
+  el('path', { d: `M${cx - 26},${my} Q${cx - 10},${my - 24} ${cx},${my - 30} Q${cx + 12},${my - 22} ${cx + 26},${my} Z`, fill: '#9a90b0' }, g);
+  box(g, cx, my - 26, 7, 5, 8, '#fbf8ef', '#d8d0bd', '#e9e3d4');
+  el('path', { d: `M${cx - 7},${my - 34} A7,7 0 0 1 ${cx + 7},${my - 34} Z`, fill: '#e7c15a', stroke: '#8a6a10', 'stroke-width': .6 }, g);   // 巴洛克金穹顶
+  el('ellipse', { cx, cy: my + 20, rx: 40, ry: 8, fill: '#f3eefc', opacity: .45, filter: 'url(#glow)' }, g); }
+
+for (const p of D.PLACES) { const [x, y] = proj(p.x, p.y);
+  if (p.id === 'tiancheng') modelTiancheng(x, y); if (p.id === 'kavalierki') modelKavalierki(x, y); if (p.id === 'yuanyu') modelYuanyu(x, y);
+  const g = el('g', {}, gLabel); tip(g, p);
+  if (p.type === 'capital') {
+    const col = p.id === 'tiancheng' ? '#4a2a0c' : p.id === 'kavalierki' ? '#14315c' : '#35195c';
+    el('text', { x, y: y + 30, 'text-anchor': 'middle', class: 'cap', fill: col }, g, p.name);
+    el('text', { x, y: y + 45, 'text-anchor': 'middle', class: 'cap-sub' }, g, p.sub);
+  } else {
+    el('path', { d: `M${x},${y - 14} l8,14 h-16 Z`, fill: '#b05a00', stroke: '#fff', 'stroke-width': 1 }, g);
+    el('text', { x: x + 11, y: y - 2, class: 'small inf' }, g, `${p.name}（${p.sub}）`);
+  } }
+
+// ---------- 帝国大字 + 徽记 ----------
+function emblem(g, id, x, y) {
+  if (id === 'oren') {        // 镇国之柱徽章：环绕撕裂风暴的锋锐长剑
+    el('circle', { cx: x, cy: y, r: 15, fill: '#3a2308', stroke: '#e6b85c', 'stroke-width': 2 }, g);
+    for (let k = 0; k < 3; k++) { const a = k * 2.094; el('path', { d: `M${x + Math.cos(a) * 11},${y + Math.sin(a) * 11} A11,11 0 0 1 ${x + Math.cos(a + 1.5) * 6},${y + Math.sin(a + 1.5) * 6}`, fill: 'none', stroke: '#e6b85c', 'stroke-width': 1.5 }, g); }
+    el('path', { d: `M${x},${y - 12} L${x + 2},${y + 6} L${x},${y + 10} L${x - 2},${y + 6} Z M${x - 6},${y + 4} h12`, fill: '#fff4d8', stroke: '#fff4d8', 'stroke-width': 1.2 }, g);
+  } else if (id === 'fed') {  // 骑士盾
+    el('path', { d: `M${x - 13},${y - 15} h26 v12 q0,14 -13,19 q-13,-5 -13,-19 Z`, fill: '#16407e', stroke: '#d9c27a', 'stroke-width': 2 }, g);
+    el('path', { d: `M${x},${y - 11} v22 M${x - 8},${y - 3} h16`, stroke: '#f0e6c8', 'stroke-width': 2.4 }, g);
+  } else {                    // 神权光环
+    for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; el('line', { x1: x + Math.cos(a) * 10, y1: y + Math.sin(a) * 10, x2: x + Math.cos(a) * 17, y2: y + Math.sin(a) * 17, stroke: '#e7c15a', 'stroke-width': 1.4 }, g); }
+    el('circle', { cx: x, cy: y, r: 9, fill: '#35195c', stroke: '#e7c15a', 'stroke-width': 1.5 }, g);
+    el('ellipse', { cx: x, cy: y, rx: 5, ry: 3, fill: '#f1ecfa' }, g); el('circle', { cx: x, cy: y, r: 1.8, fill: '#35195c' }, g);
+  } }
+const LABEL_OFF = { oren: [0, -125], fed: [-10, -135], xl: [0, -120] };
+for (const r of D.REALMS) { const c = centroid(s => r.kinds.includes(s.kind)); const [ox, oy] = LABEL_OFF[r.id];
+  const [x, y] = [c[0] + ox, c[1] + oy], g = el('g', {}, gLabel); tip(g, r);
+  el('text', { x, y, 'text-anchor': 'middle', class: 'r-' + r.id }, g, r.name);
+  el('text', { x, y: y + 20, 'text-anchor': 'middle', class: 'rs-' + r.id }, g, r.sub);
+  emblem(g, r.id, x - (r.id === 'oren' ? 138 : r.id === 'xl' ? 125 : 112), y - 12); }
+// 中小国、海外
+D.SEEDS.forEach((s, k) => { if (s.kind !== 'minor') return;
+  const n = owner.reduce((a, o) => a + (o === k), 0); if (n < 160) return;
+  const [x, y] = proj(...centroid(t => t === s));
+  const t = el('text', { x, y, 'text-anchor': 'middle', class: 'small inf' }, gLabel, '中小国');
+  el('title', {}, t, '【设定】世界观：星球上众多中小国林立（国名、数量、位置设定未给，此处为 12 个示意）'); });
+{ const [x, y] = proj(...centroid(s => s.kind === 'overseas')); const g = el('g', {}, gLabel);
+  el('text', { x, y: y - 10, 'text-anchor': 'middle', class: 'r-ov' }, g, '海外诸地');
+  el('text', { x, y: y + 8, 'text-anchor': 'middle', class: 'cap-sub' }, g, '稀有矿物 · 异域人员输出地（推断形状）');
+  el('title', {}, g, '【设定】货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）；陆块形状与位置为推断'); }
+
+// ---------- 图例 ----------
+{ const x0 = 20, y0 = 690, g = gLegend; el('rect', { x: x0, y: y0, width: 290, height: 295, rx: 6, fill: 'rgba(250,247,240,.92)', stroke: '#b9b1a0' }, g);
+  let y = y0 + 24; el('text', { x: x0 + 12, y, 'font-size': 14, 'font-weight': 700 }, g, '图例 · 各区域风格');
+  const rows = [
+    ['oren-core', '奥伦本土：赭金平原与高原，田畴条纹'], ['oren-prov', '奥伦行省与附属邦国'],
+    ['fed-core', '联邦·联合会核心：温带阔叶林'], ['fed-knight', '联邦·骑士领地（盾徽 = 圆桌封地）'],
+    ['xl', '虚灵古派：灰紫岩山 + 以太薄雾，虚点国界'], ['minor', '中小国'], ['overseas', '海外诸地：异域丛林'] ];
+  for (const [k, t] of rows) { y += 21; const c = PAL[k][1]; el('rect', { x: x0 + 12, y: y - 12, width: 18, height: 13, fill: `rgb(${c})`, stroke: '#555', 'stroke-width': .5 }, g);
+    el('text', { x: x0 + 38, y, 'font-size': 12 }, g, t); }
+  y += 24; el('path', { d: `M${x0 + 21},${y - 13} l4,5 l-4,5 l-4,-5 Z`, fill: '#d22b2b' }, g); el('text', { x: x0 + 38, y, 'font-size': 12 }, g, '赤潮分据点（总部：未知）');
+  y += 21; el('path', { d: `M${x0 + 17},${y - 4} L${x0 + 21},${y - 15} L${x0 + 25},${y - 4} Z`, fill: '#4a2a78' }, g); el('text', { x: x0 + 38, y, 'font-size': 12 }, g, '虚灵古派注册教会');
+  y += 21; el('line', { x1: x0 + 12, y1: y - 4, x2: x0 + 30, y2: y - 4, stroke: '#35d0ff', 'stroke-width': 3 }, g); el('text', { x: x0 + 38, y, 'font-size': 12 }, g, '跨城高速运输管道');
+  y += 21; el('line', { x1: x0 + 12, y1: y - 4, x2: x0 + 30, y2: y - 4, stroke: '#8a5a12', 'stroke-width': 1.5 }, g); el('text', { x: x0 + 38, y, 'font-size': 12 }, g, '奥伦中枢线（行省直属天城）');
+}
+
+// ---------- 天城纵剖面：三层三种风格 ----------
+{ const sx = 1625, sy = 20, sw = 425, sh = 960, [lo, hi] = D.SECTION.range, R = mulberry32(88);
+  const Y = h => sy + 30 + (hi - h) / (hi - lo) * (sh - 50);
+  const g = el('g', { class: 'section' }, gSec);
+  el('rect', { x: sx, y: sy, width: sw, height: sh, rx: 6, fill: '#faf6ec', stroke: '#9c9484' }, g);
+  el('text', { x: sx + 12, y: sy + 20, 'font-size': 14, 'font-weight': 800 }, g, '天城纵剖面');
+  const px = sx + 58, pw = sw - 70, fills = { 800: 'url(#sky)', 50: 'url(#mid)', '-200': 'url(#low)' };
+  for (const b of D.SECTION.bands) { const r = el('rect', { x: px, y: Y(b.to), width: pw, height: Y(b.from) - Y(b.to), fill: fills[b.from] }, g); tip(r, b); }
+  // 中层：层叠楼群 + 霓虹窗带 + 悬浮轨道
+  for (let k = 0; k < 26; k++) { const w = 10 + R() * 18, x = px + R() * (pw - w), top = 120 + R() * 640;
+    el('rect', { x, y: Y(top), width: w, height: Y(0) - Y(top), fill: R() < .5 ? '#231f36' : '#2d2845', stroke: '#15121f', 'stroke-width': .5 }, g);
+    for (let h = 60; h < top - 20; h += 28 + R() * 30) el('rect', { x: x + 2, y: Y(h), width: w - 4, height: 1.6, fill: ['#ff4fb0', '#3ee6ff', '#ffd23f'][Math.floor(R() * 3)], opacity: .75 }, g); }
+  for (const h of [180, 340, 520, 690]) el('line', { x1: px, y1: Y(h), x2: px + pw, y2: Y(h), stroke: '#3ee6ff', 'stroke-width': 1.2, opacity: .55, filter: 'url(#glow)' }, g);
+  el('text', { x: px + 6, y: Y(346), 'font-size': 9, fill: '#7feaff', stroke: 'none' }, g, '悬浮轨道');
+  // 下层：工厂、烟囱、管道
+  for (let k = 0; k < 9; k++) { const x = px + 8 + k * (pw - 20) / 9, w = 22 + R() * 14, h = 20 + R() * 30;
+    el('rect', { x, y: Y(0) + 4, width: w, height: h * .5, fill: '#3a3027' }, g);
+    el('rect', { x: x + w * .7, y: Y(0) + 4 - h * .4, width: 4, height: h * .4, fill: '#4a3d31' }, g); }
+  for (const h of [-110, -175]) el('line', { x1: px, y1: Y(h), x2: px + pw, y2: Y(h), stroke: '#6b5a44', 'stroke-width': 3, opacity: .7 }, g);
+  // 上层：悬浮岛与日光
+  for (let k = 0; k < 11; k++) { const cx = px + 22 + k * (pw - 44) / 10, cy = Y(930 + ((k * 211) % 520)); floatIsle(g, cx, cy, 11); }
+  el('circle', { cx: px + pw - 34, cy: Y(1440), r: 16, fill: '#fff2c4', filter: 'url(#glow)' }, g);
+  // 层名
+  for (const b of D.SECTION.bands) el('text', { x: px + 6, y: Y(b.to) + 16, 'font-size': 13, 'font-weight': 800, fill: b.from >= 800 ? '#1f3550' : '#f2eefc', stroke: b.from >= 800 ? '#eef6fb' : '#15121f', 'stroke-width': 3 }, g, b.name);
+  // 刻度
+  for (const h of [-200, 0, 50, 400, 800, 1200, 1500]) { el('line', { x1: px - 5, y1: Y(h), x2: px, y2: Y(h), stroke: '#555' }, g);
+    el('text', { x: px - 8, y: Y(h) + 4, 'text-anchor': 'end', 'font-size': 10, fill: '#555', stroke: 'none' }, g, h + 'm'); }
+  el('line', { x1: px, y1: Y(0), x2: px + pw, y2: Y(0), stroke: '#c9b48a', 'stroke-width': 2 }, g);
+  for (const l of D.SECTION.lines) { const ln = el('line', { x1: px, y1: Y(l.at), x2: px + pw, y2: Y(l.at), stroke: '#ffcf33', 'stroke-width': 2, 'stroke-dasharray': '6 3' }, g); tip(ln, l);
+    el('text', { x: px + pw - 4, y: Y(l.at) + 14, 'text-anchor': 'end', 'font-size': 10, fill: '#ffcf33', stroke: '#15121f', 'stroke-width': 3 }, g, l.name); }
+  for (let k = 0; k <= 18; k++) { const h = 50 + k * (750 / 18); el('line', { x1: px + pw - 8, y1: Y(h), x2: px + pw, y2: Y(h), stroke: '#b9b0de' }, g); }
+  el('text', { x: px + pw - 12, y: Y(735), 'text-anchor': 'end', 'font-size': 9, fill: '#d4ccf2', stroke: '#15121f', 'stroke-width': 2 }, g, '执法局 18 辖区（按高度）');
+  // 气候调节塔
+  { const tx = px + pw * 0.08, tw = el('g', {}, g); tip(tw, D.SECTION.towers);
+    el('rect', { x: tx - 3, y: Y(900), width: 6, height: Y(0) - Y(900), fill: '#6fd3e6', opacity: .85 }, tw);
+    el('circle', { cx: tx, cy: Y(905), r: 5, fill: '#bff4ff', filter: 'url(#glow)' }, tw);
+    el('text', { x: tx + 8, y: Y(880), 'font-size': 10, fill: '#9a5200', stroke: '#eef6fb', 'stroke-width': 3 }, tw, '以太气候调节塔（推断）'); }
+  // 条目
+  for (const it of D.SECTION.items) { const x = px + it.x * pw, y = Y(it.at), gi = el('g', {}, g); tip(gi, it);
+    const up = it.at >= 800 && it.kind !== 'fort';
+    const col = it.kind === 'eden' ? '#8a5a00' : it.tag === 'inf' ? (up ? '#9a5200' : '#ffb347') : up ? '#1f3550' : '#ffffff';
+    if (it.kind === 'eden') floatIsle(gi, x, y, 20, true);
+    else if (it.kind === 'fort') { el('path', { d: `M${x - 22},${y - 2} h44 l-8,12 h-28 Z`, fill: '#7d858f' }, gi);
+      box(gi, x, y - 4, 8, 5, 10, '#d7dde3', '#9aa3ad', '#b8c0c8'); }
+    else el('circle', { cx: x, cy: y, r: 3.5, fill: col, stroke: '#15121f', 'stroke-width': 1 }, gi);
+    el('text', { x: x + (it.x > 0.6 ? -9 : 9), y: y - 8, 'text-anchor': it.x > 0.6 ? 'end' : 'start', 'font-size': 11, 'font-weight': it.kind === 'eden' ? 800 : 500,
+      fill: col, stroke: up || it.kind === 'eden' ? '#eef6fb' : '#15121f', 'stroke-width': 3 }, gi, it.name); }
+}
+</script>
+</body>
+</html>

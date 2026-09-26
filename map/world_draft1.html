@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>世界全景 · 草稿 1</title>
+<style>
+  :root { --ink: #2b2a28; --muted: #6f6b63; --paper: #f4f1ea; --sea: #dde7ee; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif; }
+  .wrap { position: relative; width: 2060px; height: 1000px; margin: 0 auto; }
+  canvas { position: absolute; left: 0; top: 0; } svg.overlay { position: absolute; left: 0; top: 0; width: 2060px; height: 1000px; }
+  .draft { position: absolute; left: 16px; top: 12px; font-size: 13px; color: var(--muted); }
+  .draft b { color: #b3261e; }
+  svg text { paint-order: stroke; stroke: rgba(244,241,234,.85); stroke-width: 3px; stroke-linejoin: round; }
+  .realm { font-size: 30px; font-weight: 700; letter-spacing: 6px; fill: #3a332a; }
+  .realm-sub { font-size: 13px; fill: #5a5247; letter-spacing: 1px; }
+  .cap { font-size: 16px; font-weight: 700; }
+  .cap-sub { font-size: 11px; fill: var(--muted); }
+  .small { font-size: 11px; fill: #4a463f; }
+  .inf { fill: #9a5b00; }
+  .legend text, .section text { stroke: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="land" width="1600" height="1000"></canvas>
+  <svg class="overlay" id="ov" viewBox="0 0 2060 1000"></svg>
+  <div class="draft"><b>草稿 1 · 线稿级</b>　示意图，无比例　|　橙色字 = 推断（设定未给）　|　悬停可看出处</div>
+</div>
+<script type="module">
+import * as D from './data/world.js';
+
+// ---------- 随机与噪声（种子固定，结果可复现） ----------
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const rnd = mulberry32(D.SEED);
+const PERM = new Uint8Array(512); { const p = [...Array(256).keys()];
+  for (let i = 255; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
+  for (let i = 0; i < 512; i++) PERM[i] = p[i & 255]; }
+const fade = t => t * t * t * (t * (t * 6 - 15) + 10);
+function grad(h, x, y) { const u = (h & 1) ? x : -x, v = (h & 2) ? y : -y; return (h & 4) ? u + v : u - v * 0.5; }
+function perlin(x, y) { const X = Math.floor(x) & 255, Y = Math.floor(y) & 255; x -= Math.floor(x); y -= Math.floor(y);
+  const u = fade(x), v = fade(y), a = PERM[X] + Y, b = PERM[X + 1] + Y;
+  const l1 = grad(PERM[a], x, y) + u * (grad(PERM[b], x - 1, y) - grad(PERM[a], x, y));
+  const l2 = grad(PERM[a + 1], x, y - 1) + u * (grad(PERM[b + 1], x - 1, y - 1) - grad(PERM[a + 1], x, y - 1));
+  return l1 + v * (l2 - l1); }
+function fbm(x, y, oct = 5) { let s = 0, a = 0.5, f = 1; for (let i = 0; i < oct; i++) { s += a * perlin(x * f, y * f); a *= 0.5; f *= 2; } return s; }
+
+// ---------- 高度场与陆地 ----------
+const CELL = 4, GW = D.W / CELL, GH = D.H / CELL;
+const height = new Float32Array(GW * GH), owner = new Int16Array(GW * GH).fill(-1);
+for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {
+  const x = gx * CELL, y = gy * CELL;
+  let m = 0;
+  for (const b of D.LAND_BLOBS) { const dx = (x - b.x) / b.rx, dy = (y - b.y) / b.ry;
+    m = Math.max(m, b.w * (1 - Math.sqrt(dx * dx + dy * dy))); }
+  height[gy * GW + gx] = m * 1.1 + fbm(x / 260, y / 260) * 0.55 + fbm(x / 60, y / 60, 3) * 0.12 - 0.05;
+}
+const isLand = i => height[i] > 0.12;
+
+// 势力归属：扰动坐标后的加权最近种子
+for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {
+  const i = gy * GW + gx; if (!isLand(i)) continue;
+  const x = gx * CELL + fbm(gx / 18, gy / 18, 3) * 90, y = gy * CELL + fbm(gx / 18 + 50, gy / 18, 3) * 90;
+  let best = -1, bd = 1e9;
+  D.SEEDS.forEach((s, k) => { const d = Math.hypot(x - s.x, y - s.y) / s.w; if (d < bd) { bd = d; best = k; } });
+  owner[i] = best;
+}
+
+// ---------- 绘制：平涂 + 边界 ----------
+const ctx = document.getElementById('land').getContext('2d');
+ctx.fillStyle = '#dde7ee'; ctx.fillRect(0, 0, D.W, D.H);
+for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {
+  const i = gy * GW + gx; if (owner[i] < 0) continue;
+  ctx.fillStyle = D.KIND_STYLE[D.SEEDS[owner[i]].kind].fill; ctx.fillRect(gx * CELL, gy * CELL, CELL, CELL);
+}
+const realmOf = k => { if (k < 0) return 'sea'; const kd = D.SEEDS[k].kind;
+  return kd.startsWith('oren') ? 'oren' : kd.startsWith('fed') ? 'fed' : kd === 'xl' ? 'xl' : 'n' + k; };
+function edge(i, j, horiz, x, y) {
+  const a = owner[i], b = owner[j]; if (a === b) return;
+  if (a < 0 || b < 0) { ctx.strokeStyle = '#5d6f7c'; ctx.lineWidth = 1.2; }            // 海岸线
+  else if (realmOf(a) !== realmOf(b)) { ctx.strokeStyle = '#3a2f25'; ctx.lineWidth = 2; } // 国界
+  else { ctx.strokeStyle = 'rgba(58,47,37,.35)'; ctx.lineWidth = 1; }                   // 帝国内部分区
+  ctx.beginPath(); if (horiz) { ctx.moveTo(x, y); ctx.lineTo(x + CELL, y); } else { ctx.moveTo(x, y); ctx.lineTo(x, y + CELL); } ctx.stroke();
+}
+for (let gy = 1; gy < GH; gy++) for (let gx = 1; gx < GW; gx++) {
+  const i = gy * GW + gx; edge(i, i - GW, true, gx * CELL, gy * CELL); edge(i, i - 1, false, gx * CELL, gy * CELL);
+}
+
+// ---------- SVG 叠加层 ----------
+const NS = 'http://www.w3.org/2000/svg', ov = document.getElementById('ov');
+function el(tag, attrs, parent = ov, text) { const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; parent.appendChild(e); return e; }
+function tip(e, item) { el('title', {}, e, `${item.tag === 'inf' ? '【推断】' : item.tag === 'warn' ? '【设定矛盾】' : '【设定】'}${item.src}`); }
+const G = n => el('g', { id: n });
+const gTube = G('tubes'), gRoute = G('routes'), gDots = G('dots'), gMark = G('marks'), gLabel = G('labels'), gLegend = G('legend'), gSec = G('section');
+
+// 各势力格子质心（放大字标注）
+function centroid(pred) { let sx = 0, sy = 0, n = 0;
+  for (let i = 0; i < owner.length; i++) if (owner[i] >= 0 && pred(D.SEEDS[owner[i]])) { sx += (i % GW) * CELL; sy += Math.floor(i / GW) * CELL; n++; }
+  return n ? [sx / n, sy / n] : null; }
+for (const r of D.REALMS) {
+  const c = centroid(s => r.kinds.includes(s.kind));
+  const off = r.id === 'oren' ? -95 : r.id === 'fed' ? -120 : -80;
+  const g = el('g', {}, gLabel); tip(g, r);
+  el('text', { x: c[0], y: c[1] + off, 'text-anchor': 'middle', class: 'realm' }, g, r.name);
+  el('text', { x: c[0], y: c[1] + off + 20, 'text-anchor': 'middle', class: 'realm-sub' }, g, r.sub + (r.tag === 'warn' ? '（⚠️ 又称灵枢秘派）' : ''));
+}
+// 中小国 / 海外
+D.SEEDS.forEach((s, k) => {
+  if (s.kind !== 'minor' && s.kind !== 'overseas') return;
+  const n = owner.reduce((a, o) => a + (o === k), 0); if (n < 40) return;
+  const c = centroid(t => t === s);
+  const t = el('text', { x: c[0], y: c[1], 'text-anchor': 'middle', class: 'small inf' }, gLabel, s.kind === 'minor' ? '中小国' : '');
+  el('title', {}, t, '【设定】世界观：星球上众多中小国林立（国名、数量、位置设定未给，此处为 12 个示意）');
+});
+{ const c = centroid(s => s.kind === 'overseas'); const g = el('g', {}, gLabel);
+  el('text', { x: c[0], y: c[1] - 10, 'text-anchor': 'middle', class: 'cap' }, g, '海外诸地');
+  el('text', { x: c[0], y: c[1] + 6, 'text-anchor': 'middle', class: 'cap-sub' }, g, '稀有矿物 · 异域人员输出地');
+  el('title', {}, g, '【设定】货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）；陆块形状与位置为推断'); }
+
+// 旷野高地：取奥伦本土+行省中最高的格子
+{ const hl = D.PLACES.find(p => p.autoHighest); let bi = -1, bh = -9;
+  for (let i = 0; i < owner.length; i++) if (owner[i] >= 0 && D.SEEDS[owner[i]].kind.startsWith('oren') && height[i] > bh && Math.hypot((i % GW) * CELL - 720, Math.floor(i / GW) * CELL - 470) > 180) { bh = height[i]; bi = i; }
+  hl.x = (bi % GW) * CELL; hl.y = Math.floor(bi / GW) * CELL; }
+
+const byId = Object.fromEntries(D.PLACES.map(p => [p.id, p]));
+// 管道
+for (const t of D.TUBES) { const a = byId[t.a], b = byId[t.b], mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 - 40;
+  const p = el('path', { d: `M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}`, fill: 'none', stroke: '#1d6f8a', 'stroke-width': 3, 'stroke-dasharray': '10 5' }, gTube); tip(p, t);
+  const lx = 0.49 * a.x + 0.42 * mx + 0.09 * b.x, ly = 0.49 * a.y + 0.42 * my + 0.09 * b.y; el('text', { x: lx, y: ly - 8, 'text-anchor': 'middle', class: 'small inf' }, gTube, '跨城高速运输管道'); }
+// 海外航线
+for (const r of D.SEA_ROUTES) { const d = 'M' + r.pts.map(p => p.join(',')).join(' L');
+  const p = el('path', { d, fill: 'none', stroke: '#35607a', 'stroke-width': 1.6, 'stroke-dasharray': '3 5' }, gRoute); tip(p, r);
+  const [x, y] = r.pts[2]; el('text', { x, y: y + 18, 'text-anchor': 'middle', class: 'small inf' }, gRoute, '海外输入航线'); }
+
+// 赤潮据点：在陆地上撒点，联邦境内加密
+{ const land = []; for (let i = 0; i < owner.length; i++) if (owner[i] >= 0) land.push(i);
+  let placed = 0, guard = 0;
+  while (placed < D.RED_TIDE.count && guard++ < 20000) {
+    const i = land[Math.floor(rnd() * land.length)], kd = D.SEEDS[owner[i]].kind;
+    if (!kd.startsWith('fed') && rnd() > 1 / D.RED_TIDE.fedBoost) continue;
+    const c = el('circle', { cx: (i % GW) * CELL, cy: Math.floor(i / GW) * CELL, r: 2.6, fill: '#c62828', opacity: .8 }, gDots); tip(c, D.RED_TIDE); placed++;
+  } }
+// 虚灵古派教会
+{ let n = 0, guard = 0; while (n < D.CHURCHES.count && guard++ < 5000) {
+  const i = Math.floor(rnd() * owner.length); if (owner[i] < 0 || D.SEEDS[owner[i]].kind !== 'xl') continue;
+  const x = (i % GW) * CELL, y = Math.floor(i / GW) * CELL;
+  if (Math.hypot(x - byId.yuanyu.x, y - byId.yuanyu.y) < 50) continue;
+  const g = el('g', {}, gMark); tip(g, D.CHURCHES);
+  el('path', { d: `M${x},${y - 9} L${x + 4},${y} L${x - 4},${y} Z`, fill: '#5b3f86' }, g); n++; } }
+// 圆桌封地
+for (const f of D.FIEFS) { const g = el('g', {}, gMark); tip(g, f);
+  el('path', { d: `M${f.x - 7},${f.y - 8} h14 v7 q0,8 -7,11 q-7,-3 -7,-11 Z`, fill: '#f3f0e6', stroke: '#284b73', 'stroke-width': 1.5 }, g);
+  el('text', { x: f.x + 10, y: f.y + 4, class: 'small inf' }, g, f.name); }
+// 首都与开局地点
+for (const p of D.PLACES) { const g = el('g', {}, gMark); tip(g, p);
+  if (p.type === 'capital') {
+    el('circle', { cx: p.x, cy: p.y, r: 9, fill: '#fff', stroke: '#2b2a28', 'stroke-width': 2.5 }, g);
+    el('circle', { cx: p.x, cy: p.y, r: 4, fill: '#2b2a28' }, g);
+    el('text', { x: p.x, y: p.y + 26, 'text-anchor': 'middle', class: 'cap' }, g, p.name);
+    el('text', { x: p.x, y: p.y + 41, 'text-anchor': 'middle', class: 'cap-sub' }, g, p.sub);
+  } else {
+    el('path', { d: `M${p.x},${p.y - 12} l7,12 h-14 Z`, fill: '#9a5b00' }, g);
+    el('text', { x: p.x + 10, y: p.y + 2, class: 'small inf' }, g, `${p.name}（${p.sub}）`);
+  } }
+
+// ---------- 图例 ----------
+{ const x0 = 20, y0 = 725; el('rect', { x: x0, y: y0, width: 250, height: 262, fill: 'rgba(255,255,255,.82)', stroke: '#bbb' }, gLegend);
+  let y = y0 + 24; el('text', { x: x0 + 12, y, 'font-size': 14, 'font-weight': 700 }, gLegend, '图例');
+  for (const k in D.KIND_STYLE) { y += 20; el('rect', { x: x0 + 12, y: y - 11, width: 16, height: 12, fill: D.KIND_STYLE[k].fill, stroke: '#666', 'stroke-width': .5 }, gLegend);
+    el('text', { x: x0 + 36, y, 'font-size': 12 }, gLegend, D.KIND_STYLE[k].name); }
+  y += 22; el('circle', { cx: x0 + 20, cy: y - 4, r: 3, fill: '#c62828' }, gLegend); el('text', { x: x0 + 36, y, 'font-size': 12 }, gLegend, '赤潮分据点（总部：未知）');
+  y += 20; el('path', { d: `M${x0 + 20},${y - 13} l4,9 h-8 Z`, fill: '#5b3f86' }, gLegend); el('text', { x: x0 + 36, y, 'font-size': 12 }, gLegend, '虚灵古派注册教会');
+  y += 20; el('line', { x1: x0 + 12, y1: y - 4, x2: x0 + 30, y2: y - 4, stroke: '#1d6f8a', 'stroke-width': 3, 'stroke-dasharray': '6 3' }, gLegend); el('text', { x: x0 + 36, y, 'font-size': 12 }, gLegend, '跨城高速运输管道');
+}
+
+// ---------- 天城纵剖面（骨架） ----------
+{ const sx = 1625, sy = 20, sw = 425, sh = 960, [lo, hi] = D.SECTION.range;
+  const Y = h => sy + 30 + (hi - h) / (hi - lo) * (sh - 50);
+  const g = el('g', { class: 'section' }, gSec);
+  el('rect', { x: sx, y: sy, width: sw, height: sh, fill: '#fff', stroke: '#888' }, g);
+  el('text', { x: sx + 12, y: sy + 20, 'font-size': 14, 'font-weight': 700 }, g, '天城纵剖面（骨架）');
+  const px = sx + 58, pw = sw - 70;
+  for (const b of D.SECTION.bands) { const r = el('rect', { x: px, y: Y(b.to), width: pw, height: Y(b.from) - Y(b.to), fill: b.fill }, g); tip(r, b);
+    el('text', { x: px + 6, y: Y(b.to) + 15, 'font-size': 12, 'font-weight': 700, fill: b.from >= 800 ? '#234' : '#eee' }, g, b.name); }
+  for (const h of [-200, 0, 50, 400, 800, 1200, 1500]) { el('line', { x1: px - 5, y1: Y(h), x2: px, y2: Y(h), stroke: '#555' }, g);
+    el('text', { x: px - 8, y: Y(h) + 4, 'text-anchor': 'end', 'font-size': 10, fill: '#555' }, g, h + 'm'); }
+  el('line', { x1: px, y1: Y(0), x2: px + pw, y2: Y(0), stroke: '#c9b48a', 'stroke-width': 2 }, g);
+  el('text', { x: px + pw - 4, y: Y(0) - 3, 'text-anchor': 'end', 'font-size': 10, fill: '#c9b48a' }, g, '地面');
+  for (const l of D.SECTION.lines) { const ln = el('line', { x1: px, y1: Y(l.at), x2: px + pw, y2: Y(l.at), stroke: '#e0a800', 'stroke-width': 2, 'stroke-dasharray': '6 3' }, g); tip(ln, l);
+    el('text', { x: px + pw - 4, y: Y(l.at) + 13, 'text-anchor': 'end', 'font-size': 10, fill: '#e0a800' }, g, l.name); }
+  // 执法局 18 辖区刻度
+  for (let k = 0; k <= 18; k++) { const h = 50 + k * (750 / 18); el('line', { x1: px + pw - 8, y1: Y(h), x2: px + pw, y2: Y(h), stroke: '#8f86b0' }, g); }
+  el('text', { x: px + pw - 12, y: Y(760), 'text-anchor': 'end', 'font-size': 9, fill: '#bdb4dd' }, g, '执法局 18 辖区（按高度）');
+  // 其他悬浮岛
+  for (let k = 0; k < 9; k++) { const cx = px + 20 + k * (pw - 40) / 8, cy = Y(950 + ((k * 137) % 450));
+    el('ellipse', { cx, cy, rx: 13, ry: 4, fill: '#9fb5c9' }, g); el('path', { d: `M${cx - 13},${cy} L${cx},${cy + 12} L${cx + 13},${cy} Z`, fill: '#8a9aa8' }, g); }
+  // 条目
+  for (const it of D.SECTION.items) { const x = px + it.x * pw, y = Y(it.at), gi = el('g', {}, g); tip(gi, it);
+    const col = it.kind === 'eden' ? '#b8860b' : it.kind === 'start' || it.tag === 'inf' ? '#e08a00' : it.at >= 800 ? '#234' : '#fff';
+    if (it.kind === 'eden') { el('ellipse', { cx: x, cy: y, rx: 20, ry: 6, fill: '#f5d77a', stroke: '#8a6500', 'stroke-width': 1.5 }, gi);
+      el('path', { d: `M${x - 20},${y} L${x},${y + 18} L${x + 20},${y} Z`, fill: '#a58b5a' }, gi); }
+    else if (it.kind === 'fort') el('rect', { x: x - 16, y: y - 8, width: 32, height: 12, fill: '#c0c6cc', stroke: '#555' }, gi);
+    else el('circle', { cx: x, cy: y, r: 3.5, fill: col }, gi);
+    el('text', { x: x + (it.x > 0.6 ? -8 : 8), y: y - 7, 'text-anchor': it.x > 0.6 ? 'end' : 'start', 'font-size': 11, 'font-weight': it.kind === 'eden' ? 700 : 400, fill: col }, gi, it.name); }
+  // 气候调节塔（推断）
+  const tx = px + pw * 0.08, tw = el('g', {}, g); tip(tw, D.SECTION.towers);
+  el('rect', { x: tx - 3, y: Y(900), width: 6, height: Y(0) - Y(900), fill: '#6fb7c9', opacity: .8 }, tw);
+  el('text', { x: tx + 6, y: Y(880), 'font-size': 10, fill: '#e08a00' }, tw, '以太气候调节塔（推断）');
+}
+</script>
+</body>
+</html>

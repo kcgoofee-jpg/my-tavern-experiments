@@ -1,0 +1,5 @@
+.DS_Store
+blender/data/*.f32
+blender/data/*.i16
+map/art/world_test.png
+*.blend1
