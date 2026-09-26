@@ -69,15 +69,19 @@ tc.ico_mesh('trees', [(x, y, ZG + .004 + r * .55, r) for x, y, r in tk], mat('tr
 CORR = {'trunk', 'primary', 'secondary', 'tertiary'}
 kd_c = city.road_kd(CORR)
 def corr_near(x, y): co_, _, d = kd_c.find((x, y, 0)); return co_, d
-def glow_w(x, y): return math.exp(-corr_near(x, y)[1] / .2) * (.55 + .45 * tc.district(x, y))
+# 城区决定夜景气质：核心区（曼哈顿中城）霓虹克制、楼里透出暖光；商业区（旺角）霓虹最密；外围（布鲁克林）几乎没有霓虹
+NEON_DF = {'core': .12, 'commercial': 1.0, 'outer': .3}
+TRAFFIC_DF = {'core': .9, 'commercial': 1.0, 'outer': .35}
+def corr_w(x, y): return math.exp(-corr_near(x, y)[1] / .2)
+def glow_w(x, y): return corr_w(x, y) * (.55 + .45 * tc.district(x, y)) * NEON_DF[city.district_at(x, y)]
 
 # ---------------- 街道：路灯（商业街亮、背街暗）、标线、车流（车头白、车尾红）----------------
 lamps = [(x, y, .01, .01, ZG + .006, ZG + .008) for x, y, *_ in city.along(.12, CAR, side_offset=.008)]
-lw = np.array([glow_w(l[0], l[1]) for l in lamps])
+lw = np.array([max(glow_w(l[0], l[1]), .5 if city.district_at(l[0], l[1]) == 'core' else 0) for l in lamps])   # 核心区的街灯也亮
 tc.box_mesh('streetlight_main', [l for l, w in zip(lamps, lw) if w > .35], np.tile(srgb('#ffe0b0'), (int((lw > .35).sum()), 1)), emit_mat('streetglow', None, 3.5 * GLOW))
 tc.box_mesh('streetlight_back', [l for l, w in zip(lamps, lw) if w <= .35], np.tile(srgb('#ffd0a0'), (int((lw <= .35).sum()), 1)), emit_mat('streetglow2', None, 1.2 * GLOW))
 mb, mr, mc = city.road_marks(ZG + .0045, color=(.3, .3, .28)); tc.box_mesh('road_marks', mb, mc, td.city_mat('markmat', .6, ao=0), rot=mr)
-cars, crot, cdir, ccol = city.traffic(R, ZG + .004, 3.2, weight=lambda x, y: .08 + .92 * glow_w(x, y))   # 商业街车多，其余街道稀疏
+cars, crot, cdir, ccol = city.traffic(R, ZG + .004, 3.2, weight=lambda x, y: .08 + .92 * corr_w(x, y) * TRAFFIC_DF[city.district_at(x, y)])   # 主干道车多，外围稀疏
 tc.box_mesh('cars', cars, ccol * .35, tc.vcol_mat('carmat', .25, .6), rot=crot)
 hb, tb, lr = td.car_lights(cars, cdir)
 tc.box_mesh('headlights', hb, np.tile(srgb('#fff4e0'), (len(hb), 1)), emit_mat('head', None, 6.0 * GLOW), rot=lr)
@@ -117,6 +121,19 @@ if len(spill) > 1600:                                                  # 点光�
     keep_s = R.choice(len(spill), 1600, replace=False); boost = len(spill) / 1600; spill = [spill[i] for i in keep_s]
 else: boost = 1
 tc.point_lights('neon_spill', spill, .15 * GLOW * min(boost, 1.6))
+# 核心区：楼内透出的暖光——高楼顶冠的一圈金色灯带（装饰艺术风格的楼冠）、退台上的暖光、少量暖色溢光
+crown, crot_, warm = [], [], []
+for i, top in zip(idx, tops):
+    b = city.b[i]
+    if b['dk'] != 'core' or top < -2.6: continue                       # 约 80 m 以上的楼
+    x, y, w, d, rot = b['obb']; u = np.array([math.cos(rot), math.sin(rot)]); v = np.array([-u[1], u[0]]); c0 = np.array([x, y])
+    if R.random() < .55:
+        for nrm, half, flen, ang in ((v, d / 2, w, rot), (-v, d / 2, w, rot), (u, w / 2, d, rot + math.pi / 2), (-u, w / 2, d, rot + math.pi / 2)):
+            p = c0 + nrm * (half - .003); crown.append((p[0], p[1], flen * .92, .004, top + .002, top + .005)); crot_.append(ang)
+    if R.random() < .25: warm.append((x + R.uniform(-.3, .3) * w, y + R.uniform(-.3, .3) * d, top - R.uniform(.1, .5), srgb('#ffcf8f')))
+tc.box_mesh('core_crowns', crown, np.tile(srgb('#ffd9a0'), (len(crown), 1)), emit_mat('crown', None, 3.0 * GLOW), rot=np.array(crot_, np.float32))
+tc.point_lights('core_warm', warm, .25 * GLOW, .05)
+tick(f'core warm light: crowns {len(crown) // 4}, spill {len(warm)}')
 tick(f'neon: signs {len(signs)}, roof strips {len(strips)}, holo {len(holo)}, spill {len(spill)}, aviation {len(warn)}')
 
 # ---------------- 天桥：相邻高楼之间的连廊（「层层叠叠」）----------------

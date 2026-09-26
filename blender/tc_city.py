@@ -34,37 +34,176 @@ def point_in_poly(x, y, P):
         j = i
     return inside
 
+# ---------------- 城区拼接：每层按城区取不同的参考城市 ----------------
+# poly：天城平面上的城区多边形；region：data/osm/<region>.json；offset：区域原点放在天城平面的哪里；
+# k：中层楼高倍数（真实楼高 × k / 100 = 平面单位）；kind：各层按它决定配色、霓虹、片区肌理。
+F = 15.3; G = 9.55                                              # 片区外框（比 ±15 × ±9.375 略大，边上不留空）
+DISTRICTS = {
+    'mid': [
+        dict(kind='core', region='manhattan', offset=(4.5, 3.05), k=1.25,         # 核心区与高区：曼哈顿中城
+             poly=[(-6, -3.5), (F, -3.5), (F, G), (-6, G)]),
+        dict(kind='commercial', region='kowloon', offset=(0, -5.2), k=3.0,         # 商业区：九龙旺角最密的一段（C 区检查点在这里）
+             poly=[(-9, -G), (F, -G), (F, -3.5), (-9, -3.5)]),
+        dict(kind='outer', region='brooklyn', offset=(-10.5, 0), k=1.6,            # 外围居住区：布鲁克林联排住宅与旧仓库
+             poly=[(-F, -G), (-9, -G), (-9, -3.5), (-6, -3.5), (-6, G), (-F, G)]),
+    ],
+    'low': [
+        dict(kind='industrial', region='ruhr', offset=(-7, 0), k=1.0,              # 工业带：鲁尔区钢厂、货运铁路、储罐
+             poly=[(-F, -G), (1, -G), (1, G), (-F, G)]),
+        dict(kind='village', region='shenzhen', offset=(8, 0), k=1.0, synth=True,  # 城中村：深圳的道路骨架 + 按握手楼尺度生成的楼（7 号井一带按九龙城寨的密度）
+             poly=[(1, -G), (F, -G), (F, G), (1, G)]),
+    ],
+}
+DISTRICTS['upper'] = DISTRICTS['mid']                           # 上层俯视的下方城市就是中层
+BAND = .75                                                      # 城区交界的过渡带（75 m）：楼的密度从交界处往里渐变
+BLVD_W = .16                                                    # 交界处的林荫大道宽度
+
+def sdist(x, y, P):
+    """到多边形边界的距离，在内为正、在外为负。"""
+    d = min(seg_dist(x, y, P[i], P[(i + 1) % len(P)]) for i in range(len(P)))
+    return d if point_in_poly(x, y, P) else -d
+def seg_dist(x, y, a, b):
+    ax, ay = a; bx, by = b; dx, dy = bx - ax, by - ay; L2 = dx * dx + dy * dy
+    t = 0 if L2 == 0 else max(0, min(1, ((x - ax) * dx + (y - ay) * dy) / L2))
+    return math.hypot(x - ax - t * dx, y - ay - t * dy)
+def inner_edges(dists):
+    """城区之间的交界线（去掉片区外框上的边），用来铺林荫大道。"""
+    out = []
+    for D in dists:
+        P = D['poly']
+        for a, b in zip(P, P[1:] + P[:1]):
+            if (abs(a[0]) >= F and abs(b[0]) >= F and a[0] == b[0]) or (abs(a[1]) >= G and abs(b[1]) >= G and a[1] == b[1]): continue
+            key = tuple(sorted((a, b)))
+            if key not in [tuple(sorted(e)) for e in out]: out.append((a, b))
+    return out
+
+def drop_on_roads(B, roads):
+    """去掉压在车行道中线上的「楼」：OSM 里偶尔有跨好几个街区的建筑关系（地下通道、高架之类），当楼画出来就是一条横穿街区的长带。"""
+    from mathutils.kdtree import KDTree
+    pts = []
+    for r in roads:
+        if r['c'] not in CAR or r['c'] == 'service': continue
+        Q = r['p']
+        for u, v in zip(Q[:-1], Q[1:]):
+            n = max(1, int(float(np.hypot(*(v - u))) / .04))
+            for t in range(n + 1): pts.append(u + (v - u) * t / n)
+    if not pts: return B
+    kd = KDTree(len(pts))
+    for i, p in enumerate(pts): kd.insert((p[0], p[1], 0), i)
+    kd.balance(); out = []
+    for b in B:
+        x, y, w, d, rot = b['obb']
+        hits = sum(1 for co_, i, dd in kd.find_range((b['cx'], b['cy'], 0), max(w, d) / 2 + .01) if point_in_poly(co_[0], co_[1], b['p']))
+        if hits < 3: out.append(b)
+    return out
+
 class City:
-    def __init__(self, rng):
-        d = json.load(open(os.path.join(HERE, 'data', 'osm', 'city.json')))
-        self.credit = d['credit']
-        B = []
-        for b in d['buildings']:
-            P = np.array(b['p'], np.float32)
-            if len(P) < 3: continue
-            if poly_area(P) < 0: P = P[::-1]                          # 统一逆时针
-            a = poly_area(P)
-            if a < .0004: continue                                    # 小于 4 m² 的碎片
-            cx, cy = P.mean(0)
-            if abs(cx) > W / 2 + .3 or abs(cy) > H / 2 + .3: continue
-            h = b['h'] or (b['lv'] * 3.2 if b['lv'] else None)
-            n = tc.district(cx, cy)
-            if not h: h = float(rng.uniform(20, 70) * (.6 + .8 * n))  # 缺高度：按城区强度随机（旺角一带多为 15–25 层）
-            B.append(dict(p=P, cx=float(cx), cy=float(cy), a=float(a), h=float(h), n=n, obb=obb(P)))
-        self.b = B
-        self.roads = [dict(c=r['c'], w=r['w'], p=np.array(r['p'], np.float32), br=r.get('br', 0)) for r in d['roads']]
-        self.parks = [np.array(p['p'], np.float32) for p in d['parks']]
-        self.water = [np.array(p['p'], np.float32) for p in d['water']]
-        self.rail = [np.array(p['p'], np.float32) for p in d['rail']]
-        C = np.array([tc.ROOF[i] for i in rng.choice(len(tc.ROOF), size=len(B), p=tc.ROOF_W)], np.float32)
-        self.roof = C * rng.uniform(.85, 1.15, (len(B), 1)).astype(np.float32)
+    def __init__(self, rng, layer='mid'):
+        self.layer = layer; self.districts = DISTRICTS[layer]; self.credit = '© OpenStreetMap contributors (ODbL)'
+        B, roads, parks, water, rail, tanks, ind = [], [], [], [], [], [], []
+        cache = {}
+        for di, D in enumerate(self.districts):
+            P = [tuple(map(float, v)) for v in D['poly']]; D['P'] = P; ox, oy = D['offset']
+            if D['region'] not in cache: cache[D['region']] = json.load(open(os.path.join(HERE, 'data', 'osm', D['region'] + '.json')))
+            d = cache[D['region']]
+            for b in d['buildings']:
+                Q = np.array(b['p'], np.float32) + (ox, oy)
+                if len(Q) < 3: continue
+                if poly_area(Q) < 0: Q = Q[::-1]
+                a = poly_area(Q)
+                if a < .0004: continue                                # 小于 4 m² 的碎片
+                cx, cy = Q.mean(0)
+                if abs(cx) > W / 2 + .3 or abs(cy) > H / 2 + .3: continue
+                dd = sdist(cx, cy, P)
+                if dd < .12 or min(sdist(qx, qy, P) for qx, qy in Q[::max(1, len(Q) // 6)]) < .05: continue   # 让出交界大道
+                if dd < BAND and rng.random() > .35 + .65 * (dd - .12) / (BAND - .12): continue          # 过渡带：密度渐变
+                ob = obb(Q)
+                if a > .3 and ob[2] / max(ob[3], 1e-3) > 8: continue  # 细长的巨型多边形（地下通道、高架之类的关系），不当楼画
+                h = b['h'] or (b['lv'] * 3.2 if b['lv'] else None)
+                n = tc.district(cx, cy)
+                if not h: h = float(rng.uniform(20, 70) * (.6 + .8 * n)) if D['kind'] in ('commercial', 'core') else float(rng.uniform(8, 20))
+                B.append(dict(p=Q, cx=float(cx), cy=float(cy), a=float(a), h=float(h), n=n, obb=ob, k=D['k'], dk=D['kind'], di=di))
+            for r in d['roads']:                                      # 道路：交界大道以内的段
+                Q = np.array(r['p'], np.float32) + (ox, oy); seg = [Q[0]]
+                for u, v in zip(Q[:-1], Q[1:]):
+                    if sdist(*((u + v) / 2), P) > BLVD_W / 2 - .02: seg.append(v)
+                    else:
+                        if len(seg) > 1: roads.append(dict(c=r['c'], w=r['w'], p=np.array(seg), br=r.get('br', 0), dk=D['kind']))
+                        seg = [v]
+                if len(seg) > 1: roads.append(dict(c=r['c'], w=r['w'], p=np.array(seg), br=r.get('br', 0), dk=D['kind']))
+            for key, lst in (('parks', parks), ('water', water), ('tanks', tanks), ('industrial', ind)):
+                for q in d.get(key, []):
+                    Q = np.array(q['p'], np.float32) + (ox, oy)
+                    if len(Q) > 2 and sdist(*Q.mean(0), P) > .12: lst.append(Q)
+            for q in d.get('rail', []):
+                Q = np.array(q['p'], np.float32) + (ox, oy); keep_ = [p for p in Q if sdist(*p, P) > .1]
+                if len(keep_) > 1: rail.append(np.array(keep_))
+        for a, b in inner_edges(self.districts):                      # 交界处的林荫大道：两侧城区的路都接到它上面
+            roads.append(dict(c='secondary', w=BLVD_W, p=np.array([a, b], np.float32), br=0, dk='boulevard'))
+        B = drop_on_roads(B, roads)
+        self.b, self.roads, self.parks, self.water, self.rail, self.tanks, self.industrial = B, roads, parks, water, rail, tanks, ind
+        for D in self.districts:
+            if D.get('synth'): self.synth_village(D, rng)
+        C = np.array([tc.ROOF[i] for i in rng.choice(len(tc.ROOF), size=len(self.b), p=tc.ROOF_W)], np.float32)
+        self.roof = C * rng.uniform(.85, 1.15, (len(self.b), 1)).astype(np.float32)
         self.trees = []
-        for P in self.parks:                                          # 公园里的树：按面积撒点
-            x0, y0 = P.min(0); x1, y1 = P.max(0); a = abs(poly_area(P))
+        for P_ in self.parks:                                         # 公园里的树：按面积撒点
+            x0, y0 = P_.min(0); x1, y1 = P_.max(0); a = abs(poly_area(P_))
             for _ in range(int(a * 160)):
                 x, y = rng.uniform(x0, x1), rng.uniform(y0, y1)
-                if point_in_poly(x, y, P): self.trees.append((float(x), float(y), float(rng.uniform(.012, .03))))
-        tick(f'osm city: {len(B)} buildings, {len(self.roads)} roads, {len(self.parks)} parks, {len(self.trees)} trees')
+                if point_in_poly(x, y, P_): self.trees.append((float(x), float(y), float(rng.uniform(.012, .03))))
+        from collections import Counter
+        tick(f'city ({layer}): {len(self.b)} buildings {dict(Counter(b["dk"] for b in self.b))}, {len(self.roads)} roads, '
+             f'{len(self.parks)} parks, {len(self.rail)} rail, {len(self.tanks)} tanks, {len(self.trees)} trees')
+    def district_at(self, x, y):
+        for D in self.districts:
+            if point_in_poly(x, y, D['P']): return D['kind']
+        return self.districts[0]['kind']
+
+    def synth_village(self, D, rng, dense_at=(4.6, -6.9), dense_r=1.8):
+        """城中村：OSM 里城中村的楼几乎没画，按握手楼的真实尺度生成——楼宽 10–15 m、楼距 1–3 m，沿最近的道路方向排成一片片；
+        dense_at 附近（7 号井）按九龙城寨的密度：楼距几乎为零、楼更高。"""
+        from mathutils.kdtree import KDTree
+        P = D['P']; pts, half = [], []
+        for r in self.roads:
+            Q = r['p']
+            for u, v in zip(Q[:-1], Q[1:]):
+                L = float(np.hypot(*(v - u))); n = max(1, int(L / .03))
+                for t in range(n + 1): pts.append(u + (v - u) * t / n); half.append(r['w'] / 2)
+        kd = KDTree(len(pts))
+        for i, p in enumerate(pts): kd.insert((p[0], p[1], 0), i)
+        kd.balance()
+        kb = KDTree(max(1, len(self.b)))
+        for i, b in enumerate(self.b): kb.insert((b['cx'], b['cy'], 0), i)
+        kb.balance()
+        occ = set(); n0 = len(self.b)
+        areas = [(q, (*q.min(0), *q.max(0))) for q in self.parks + self.water]   # 公园、水面里不盖楼
+        xs = [p[0] for p in P]; ys = [p[1] for p in P]
+        for px in np.arange(min(xs), max(xs), 1.2):
+            for py in np.arange(min(ys), max(ys), 1.2):
+                co_, i, _ = kd.find((px, py, 0)); j = min(i + 1, len(pts) - 1)
+                ang = math.atan2(pts[j][1] - pts[i][1], pts[j][0] - pts[i][0]) + rng.normal(0, .05)   # 片区朝向跟最近的路
+                cs, sn = math.cos(ang), math.sin(ang)
+                dense = math.hypot(px - dense_at[0], py - dense_at[1]) < dense_r
+                bw, gap = rng.uniform(.1, .15), (rng.uniform(.004, .012) if dense else rng.uniform(.012, .03))
+                for u in np.arange(-.65, .65, bw + gap):
+                    for v in np.arange(-.65, .65, bw + gap):
+                        x, y = px + u * cs - v * sn, py + u * sn + v * cs
+                        g = (round(x / .09), round(y / .09))
+                        if g in occ or sdist(x, y, P) < .14: continue
+                        _, ri, rd = kd.find((x, y, 0))
+                        if rd < half[ri] + bw * .75 + .01: continue          # 离路太近
+                        if any(b0[0] - .05 < x < b0[2] + .05 and b0[1] - .05 < y < b0[3] + .05 and point_in_poly(x, y, q) for q, b0 in areas): continue
+                        _, bi, bd = kb.find((x, y, 0))
+                        if bi is not None and bi < n0 and bd < .12: continue   # OSM 已经画了的楼
+                        occ.add(g)
+                        w_, d_ = bw * rng.uniform(.85, 1.1), bw * rng.uniform(.8, 1.2)
+                        Q = np.array([(x + (-w_ / 2) * cs - (-d_ / 2) * sn, y + (-w_ / 2) * sn + (-d_ / 2) * cs), (x + (w_ / 2) * cs - (-d_ / 2) * sn, y + (w_ / 2) * sn + (-d_ / 2) * cs),
+                                      (x + (w_ / 2) * cs - (d_ / 2) * sn, y + (w_ / 2) * sn + (d_ / 2) * cs), (x + (-w_ / 2) * cs - (d_ / 2) * sn, y + (-w_ / 2) * sn + (d_ / 2) * cs)], np.float32)
+                        h = float(rng.uniform(36, 45) if dense else rng.uniform(18, 32))   # 握手楼 6–10 层；城寨一带 12–14 层
+                        self.b.append(dict(p=Q, cx=float(x), cy=float(y), a=float(w_ * d_), h=h, n=tc.district(x, y), obb=(float(x), float(y), w_, d_, ang),
+                                           k=D['k'], dk=D['kind'], di=self.districts.index(D), synth=True, dense=dense))
+        tick(f'village: {len(self.b) - n0} handshake buildings generated')
 
     # ---------- 选择 ----------
     def keep(self, zones):
@@ -276,7 +415,7 @@ def build_roof_kit(prefix, kit, m_box, m_roof, prism_fn=None):
     if kit['prisms'] and prism_fn: prism_fn(prefix + '_roofs', kit['prisms'], kit['pcols'], m_roof)
     tick(f'{prefix}: {len(kit["box"])} roof parts, {len(kit["tower_polys"])} tower tiers, {len(kit["prisms"])} pitched roofs')
 
-def tops_mid(city, k=3.0, cap=.1):
-    """中层城市（上层远景与中层夜景共用）：楼顶高度 = 中层地面 + 真实楼高 × k（垂直超大城市比旺角更高），封顶在悬浮轨道以下。"""
-    h = np.array([b['h'] for b in city.b], np.float32)
-    return np.minimum(cap, tc.Z_GROUND + np.clip(h * k / 100, .25, 3.7))
+def tops_mid(city, cap=.1):
+    """中层城市（上层远景与中层夜景共用）：楼顶高度 = 中层地面 + 真实楼高 × 城区倍数 k（旺角放大成垂直超大城市，曼哈顿本来就高），封顶在悬浮轨道以下。"""
+    h = np.array([b['h'] * b.get('k', 3.0) for b in city.b], np.float32)
+    return np.minimum(cap, tc.Z_GROUND + np.clip(h / 100, .12, 3.7))
