@@ -138,6 +138,7 @@ for d in ISLES:
     else: e.build_estate()
     islands.append({'id': d['id'], 'x': e.x, 'y': e.y, 'z': e.z, 'rx': e.rx, 'ry': e.ry, 'rot': e.rot, 'estate_style': e.style, 'isle': e})
     if d['id'] in ('eden', 'silver_crown'): markers.append({'id': d['id'], 'pos': (e.x, e.y, e.z), 'r': max(e.rx, e.ry)})
+    if d.get('role'): markers.append({'id': d['role'], 'pos': (e.x, e.y, e.z), 'r': max(e.rx, e.ry)})   # 地标府邸（首相府、将军官邸……），名称在 maps.json
 TOWER = (8.5, -5.0)                                         # 以太气候调节塔：从中层伸到约 900 m
 cyl(*TOWER, -7, .12, 9.2, M['stone'], 32)
 for k in range(5): cyl(*TOWER, .3 + k * .42, .17, .03, M['pad'], 32)
