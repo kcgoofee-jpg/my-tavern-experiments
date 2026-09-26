@@ -16,7 +16,7 @@ trap '[ "$KEEP" = 1 ] || rm -rf "$TMP"' EXIT
 # 白名单：查看器页面与事件模块、卡内脚本、数据、第三方库、底图瓦片（dzi + _files/）与首屏缩略图
 mkdir -p "$TMP/map/art" "$TMP/map/data" "$TMP/map/tavern"
 cp map/viewer.html map/events.js "$TMP/map/"
-cp map/tavern/eden-map.js "$TMP/map/tavern/"
+cp map/tavern/eden-map.js map/tavern/events.mjs "$TMP/map/tavern/"
 cp map/data/*.json "$TMP/map/data/"
 cp -R map/vendor "$TMP/map/"
 [ -f map/art/world_1k.jpg ] && cp map/art/world_1k.jpg "$TMP/map/art/"

@@ -230,7 +230,7 @@ async function main() {
   $('#cardX').onclick = closeCard;
   const q = new URLSearchParams(location.search).get('map');
   go(REG.maps[q] && REG.maps[q].status !== 'planned' ? q : REG.start);
-  TCEvents.pollFeeds();   // 外部事件数据源（maps.json 的 feeds，默认没有）
+  TCEvents.init(); TCEvents.pollFeeds();   // 事态横条与花屏提示；外部事件数据源（maps.json 的 feeds，默认没有）
   post({ type: 'eden-map:ready' });
   // 首张地图画出来后，空闲时预热其他地图：描述文件、点位数据、最粗的几层瓦片（切过去立刻有模糊版）
   viewer.addOnceHandler('tile-drawn', () => setTimeout(warmOthers, 1500));
@@ -524,7 +524,7 @@ if (window.top !== window) {
   window.addEventListener('message', e => {
     if (e.data?.type === 'eden-map:here') { $('#here').value = e.data.value || ''; markHere(e.data.value); focusStart(false); }
     if (e.data?.type === 'eden-map:open') go(e.data.map);
-    if (e.data?.type === 'eden-map:events') TCEvents.set(e.data.list, e.data.last);   // 卡内脚本从聊天里扫出来的事件标签
+    if (e.data?.type === 'eden-map:events') TCEvents.set(e.data);   // 卡内脚本从聊天里解析、合并好的事态 {items, floor, fly}
     // 面板关闭时休眠：关掉底图（释放已解码的瓦片），脚本与数据留着；再打开时唤醒，重新打开当前地图
     if (e.data?.type === 'eden-map:sleep' && viewer) { sleeping = cur; cur = null; viewer.close(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }
     if (e.data?.type === 'eden-map:wake' && sleeping) { slowStop = true; const id = sleeping; sleeping = null; go(id); }

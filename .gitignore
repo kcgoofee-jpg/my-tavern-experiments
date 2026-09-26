@@ -16,3 +16,5 @@ __pycache__/
 blender/data/osm/raw/
 # CC0 贴图（bash tools/fetch_textures.sh 下载）
 blender/data/tex/
+worldbook/
+map/_test_*.html
