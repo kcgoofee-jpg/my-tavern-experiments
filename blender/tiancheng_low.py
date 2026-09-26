@@ -2,8 +2,8 @@
 # 用法：Blender -b -P tiancheng_low.py -- [--res 1600] [--samples 64] [--out path.png] [--crop x0,y0,x1,y1] [--preview] [--data-only]
 #       [--glow 1]（发光体倍数）[--lamp .3]（钠灯功率）[--ambient .12]（天光）
 #       或 python3 tiancheng_low.py -- ...（pip 装的 bpy）。参数与导出格式三层一致，见 docs/tiancheng-maps.md
-# 与上层、中层同一相机、同一平面坐标、同一张街道网（tc_common.city_blocks，同一随机种子）：
-# 楼的平面位置沿用城市布局，只压低高度、按片区换成厂房 / 旧楼；贫民窟格子里的楼换成密集的铁皮棚屋。
+# 与上层、中层同一相机、同一平面坐标、同一套 OSM 路网与建筑轮廓（tc_city，© OpenStreetMap contributors）：
+# 楼的轮廓沿用，只压低高度、按片区换成厂房 / 旧楼；贫民窟里的楼轮廓内塞满铁皮棚屋。
 # 设定：「工厂、资源处理设施」「老旧地面轨道、货运通道、步行为主」「几乎没有自然光，黑市与帮派活跃」。
 # 光：几乎没有天光；钠灯橙黄点光为主，少量磷光绿。头顶是中层结构，巨大支柱的柱基均匀分布。
 import bpy, bmesh, math, os, sys, random
@@ -12,6 +12,7 @@ import tc_common as tc
 from tc_common import W, H, Z_GROUND as ZG, tick, mat, emit_mat, Batch
 import numpy as np
 from mathutils import Matrix
+from mathutils.kdtree import KDTree
 
 layer = tc.Layer('tc_low', seed=9001, bounces=4)   # 城市在这里生成（第一个随机调用）：街道位置与上层、中层一致
 sc, col_main, city, R, GLOW, LAMP = layer.sc, layer.col, layer.city, layer.rng, layer.f('--glow', 1), layer.f('--lamp', .3)
@@ -20,8 +21,8 @@ def srgb(h):
     c = [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]
     return tuple(v / 12.92 if v <= .04045 else ((v + .055) / 1.055) ** 2.4 for v in c)
 SODIUM, SODIUM2, PHOS, WHITE, BLUE, RED = srgb('#f0a040'), srgb('#ff8c2a'), srgb('#9fe870'), srgb('#e8eeff'), srgb('#5a8cff'), srgb('#ff3a2a')
-S = tc.CELL; xs, ys, AX, AY = city['xs'], city['ys'], city['AX'], city['AY']
-near = lambda arr, idx, v: min(idx, key=lambda k: abs(arr[k] - v))
+import tc_detail as td, tc_city
+from tc_city import CAR, point_in_poly
 
 # ---------------- 地标位置（全部为推断）----------------
 WELL7 = (4.6, -6.9)          # 7 号井黑市：正对中层 C 区检查点的竖井下方
@@ -30,115 +31,88 @@ ENF = (-1.8, 3.1)            # 执法局下层分局（名义六个、实际运�
 SOUP = (8.4, .5)             # 圣光教会施粥站（下层教区的旧教堂）
 OUTPOST = (-12.3, -6.6)      # 防卫军前沿哨所
 AMC = (10.6, 5.6)            # 资产管理委员会下层设施：只画有围墙的大型管理设施（中性外观）
-RAIL_Y = [ys[near(ys, AY, 5.2)], ys[near(ys, AY, -2.4)]]   # 两条东西向货运铁路：沿主干道
-RAIL_X = [xs[near(xs, AX, 1.0)]]                             # 一条南北向
-YARD = (-7.6, RAIL_Y[0])     # 货运站 / 旧地面轨道枢纽：铁路汇入处
+# 铁路：取 OSM 的地面铁路；货运站放在铁路上离 7 号井不远的一段（「老旧地面轨道、货运通道」）
+RP = np.concatenate(city.rail) if city.rail else np.array([[-2.5, -7.8], [0, -7.2]], np.float32)
+yi = int(np.argmin(np.hypot(RP[:, 0] + 2.0, RP[:, 1] + 7.6))); YARD = (float(RP[yi, 0]), float(RP[yi, 1]))
+nb_ = RP[max(0, yi - 3):yi + 4]; YROT = math.atan2(nb_[-1, 1] - nb_[0, 1], nb_[-1, 0] - nb_[0, 0]) if len(nb_) > 1 else 0.0
 # 巨大支柱：均匀网格（约 300 m 间距），避开地标
-PILLARS = [(px, py) for px in np.arange(-13.5, 13.6, 3.0) for py in np.arange(-7.5, 7.6, 3.0)]
-LM = [(*WELL7, .85, .85), (*MILL, .7, .55), (*ENF, .75, .6), (*SOUP, .7, .55), (*OUTPOST, .8, .7), (*AMC, 1.25, .9), (*YARD, 1.7, .6)]
+PILLARS = [(float(px), float(py)) for px in np.arange(-13.5, 13.6, 3.0) for py in np.arange(-7.5, 7.6, 3.0)]
+LM = [(*WELL7, .85, .85), (*MILL, .7, .55), (*ENF, .75, .6), (*SOUP, .7, .55), (*OUTPOST, .8, .7), (*AMC, 1.25, .9), (*YARD, 1.7, 1.7)]
 PILLARS = [p for p in PILLARS if all(((p[0] - x) / (rx + .4)) ** 2 + ((p[1] - y) / (ry + .4)) ** 2 > 1 for x, y, rx, ry in LM)]
-zones = LM + [(px, py, .34, .34) for px, py in PILLARS]
-zones += [('rect', -20, y - .09, 20, y + .09) for y in RAIL_Y] + [('rect', x - .09, -12, x + .09, 12) for x in RAIL_X]
-B = city['boxes']; keep = tc.keep_mask(city, zones)
+def in_yard(x, y):                                                     # 货运站：沿铁路方向的长方形
+    c, s_ = math.cos(YROT), math.sin(YROT); u = (x - YARD[0]) * c + (y - YARD[1]) * s_; v = -(x - YARD[0]) * s_ + (y - YARD[1]) * c
+    return abs(u) < 1.7 and abs(v) < .6
+kd_rail = KDTree(max(1, len(RP)))
+for i_, (x, y) in enumerate(RP): kd_rail.insert((x, y, 0), i_)
+kd_rail.balance()
+def on_rail(x, y): return len(RP) > 0 and kd_rail.find((x, y, 0))[2] < .06
+zones = [z for z in LM if z[:2] != YARD] + [(px, py, .34, .34) for px, py in PILLARS] + [in_yard, on_rail]
+city.clip_roads(zones)
+keep = city.keep(zones)
 
-# ---------------- 片区：按街坊分成工业 / 贫民窟 / 旧城 ----------------
-# 地基区沿用同一张街道网与街坊划分；每个街坊整体是一种肌理（真实城市里工业区、棚户区都是成片的，不是楼挨楼混着）
-import tc_detail as td
+# ---------------- 片区：工业 / 贫民窟 / 旧城（按楼的位置分，片区是连成片的噪声）----------------
 def industrial(x, y): return math.sin(x * .35 + .7) * math.cos(y * .4 - 1.2) + .5 * math.sin(x * .13 + y * .2 + 1) > .45
 def slum(x, y, n): return not industrial(x, y) and n < .62 and math.sin(x * .5 - 1) * math.sin(y * .6 + .3) + .3 * math.cos(x * .21 - y * .17) > -.15
 def blackout(x, y): return math.sin(x * .41 + 2.1) * math.cos(y * .37 + .4) + .4 * math.sin(x * .9 - y * .7) > .75   # 断电的片区
-kind, par, dist, blk = city['kind'], city['parent'], city['district'], city['block']
-nblk = int(blk.max()) + 1; BB = np.tile(np.array([1e9, 1e9, -1e9, -1e9], np.float32), (nblk, 1))
-for (x, y, w, d, z0, z1), k, b_ in zip(B, kind, blk):                   # 街坊范围：由地面盒子拼出
-    if k in (tc.K_GROUND, tc.K_PARK):
-        BB[b_] = (min(BB[b_, 0], x - w / 2), min(BB[b_, 1], y - d / 2), max(BB[b_, 2], x + w / 2), max(BB[b_, 3], y + d / 2))
-ZONE = np.zeros(nblk, np.int8)                                         # 0 旧城 1 工业 2 贫民窟
-for i in range(1, nblk):
-    if BB[i, 0] > 1e8: continue
-    x, y = (BB[i, 0] + BB[i, 2]) / 2, (BB[i, 1] + BB[i, 3]) / 2
-    ZONE[i] = 1 if industrial(x, y) else 2 if slum(x, y, tc.district(x, y)) else 0
-Zb = ZONE[blk]
-def keep_boxes(boxes):                                                 # 新加的东西也要避开地标、柱基、铁路
-    A = np.asarray(boxes, np.float32).reshape(-1, 6)
-    return tc.keep_mask({'boxes': A, 'parent': np.full(len(A), -1)}, zones) if len(A) else np.zeros(0, bool)
+ZONE = np.array([1 if industrial(b['cx'], b['cy']) else 2 if slum(b['cx'], b['cy'], b['n']) else 0 for b in city.b], np.int8)
 
-# 地面：旧城水泥、工业区硬地、棚户区泥地；公园早已荒成泥地或堆场
-gnd = ((kind == tc.K_GROUND) | (kind == tc.K_PARK)) & keep
-Bg = B[gnd].copy(); Bg[:, 4] = 0; Bg[:, 5] = .004
-cg = np.array([(.075, .07, .065), (.1, .098, .095), (.07, .058, .045)], np.float32)[Zb[gnd]]
-cg[kind[gnd] == tc.K_PARK] = (.09, .075, .05)
-tc.road_plane(None, z=0, m=td.asphalt_mat('road', (.035, .033, .03), 1.3))
-gmat = td.city_mat('lowground', .9, ao=.02, grime=1.4)
-tc.box_mesh('ground', Bg, cg, gmat)
+# 地面：水泥与泥地；路面沥青；荒掉的公园是泥地；水面发黑
+tc.road_plane((.075, .07, .065), z=0, m=td.city_mat('lowground', .9, ao=.02, grime=1.4))
+city.flat_polys('water', city.water, .002, (.01, .012, .012), mat('water_l', (.01, .012, .012), .1, spec=.6))
+city.flat_polys('mud', city.parks, .002, (.09, .075, .05), td.city_mat('mud', .95, .01, 1.5))
+city.roads_mesh('roads', .004, td.asphalt_mat('road', (.035, .033, .03), 1.3))
 
-# 旧城：沿用地块，高度压到 3–25 m；女儿墙、坡顶、屋顶水箱
-old_b = (kind == tc.K_BUILDING) & keep & (Zb == 0)
-Bb = B[old_b].copy(); h = (Bb[:, 5] - ZG) / 3.7; Bb[:, 4] = 0; Bb[:, 5] = .03 + .22 * np.clip(h, 0, 1) ** 1.4
-top_of = np.zeros(len(B), np.float32); top_of[old_b] = Bb[:, 5]
-eqp = (kind == tc.K_EQUIP) & keep & old_b[np.maximum(par, 0)] & (par >= 0)
-Be = B[eqp].copy(); pt = top_of[par[eqp]]; Be[:, 5] = pt + (Be[:, 5] - Be[:, 4]) * 1.5; Be[:, 4] = pt
+# 旧城：沿用 OSM 轮廓，高度压到 3–25 m；女儿墙、坡顶、设备
+old = np.where(keep & (ZONE == 0))[0]
+h_old = np.array([city.b[i]['h'] for i in old], np.float32); top_old = .03 + .22 * np.clip(h_old / 80, 0, 1) ** 1.2
 OLD = np.array([(.22, .2, .18), (.18, .17, .16), (.26, .22, .18), (.2, .19, .2), (.28, .16, .1)], np.float32)   # 水泥、焦油、锈红
-cb = OLD[R.integers(len(OLD), size=len(Bb))] * R.uniform(.75, 1.15, (len(Bb), 1))
+c_old = OLD[R.integers(len(OLD), size=len(old))] * R.uniform(.75, 1.15, (len(old), 1))
 omat = td.city_mat('oldcity', .8, grime=1.5)
-tc.box_mesh('buildings', Bb, cb, omat)
-tc.box_mesh('equipment', Be, np.tile((.22, .21, .2), (len(Be), 1)) * R.uniform(.7, 1.3, (len(Be), 1)), omat)
-kit = td.building_kit(Bb, cb, R, 'low', cap=.3)
-td.build_kit('old', kit, omat, td.corrugated_mat('oldroof', .7, .2, 1400))
+city.buildings_mesh('buildings', old, 0, top_old, c_old, omat)
+kit = tc_city.roof_kit(city, old, top_old, c_old, R, 'low', cap=.3, zbase=0)
+tc_city.build_roof_kit('old', kit, omat, td.corrugated_mat('oldroof', .7, .2, 1400), prism_fn=td.prism_mesh)
 
-# 工业区：整个街坊是一到三座大厂房（锯齿采光带、波纹钢板），剩下的是罐区和堆场
-sheds, shc, sky, tanks_ = [], [], [], []
+# 工业区：同一轮廓的低矮大厂房（锯齿采光带、波纹钢板），院子里有储罐
+ind = np.where(keep & (ZONE == 1))[0]
+top_ind = R.uniform(.07, .16, len(ind)).astype(np.float32)
 METAL = np.array([(.3, .3, .3), (.24, .25, .26), (.34, .26, .18), (.2, .21, .2), (.28, .2, .14)], np.float32)
-for i in np.where(ZONE == 1)[0]:
-    x0, y0, x1, y1 = BB[i] + np.array([.035, .035, -.035, -.035], np.float32)
-    if x1 - x0 < .1 or y1 - y0 < .1: continue
-    long_x = (x1 - x0) >= (y1 - y0); L0, L1 = (x0, x1) if long_x else (y0, y1)
-    cuts = sorted(R.uniform(L0 + .15, L1 - .15, R.integers(0, 3))) if L1 - L0 > .4 else []
-    edges = [L0] + list(cuts) + [L1]
-    for k, (a0, a1) in enumerate(zip(edges[:-1], edges[1:])):
-        a0 += .015; a1 -= .015
-        if a1 - a0 < .06: continue
-        if k == len(edges) - 2 and R.random() < .35:                  # 最后一段做罐区
-            for tx in np.arange(a0 + .05, a1 - .03, .1):
-                for ty in np.arange((y0 if long_x else x0) + .05, (y1 if long_x else x1) - .03, .1):
-                    tanks_.append((tx, ty) if long_x else (ty, tx))
-            continue
-        cx_, cy_ = ((a0 + a1) / 2, (y0 + y1) / 2) if long_x else ((x0 + x1) / 2, (a0 + a1) / 2)
-        w_, d_ = (a1 - a0, y1 - y0) if long_x else (x1 - x0, a1 - a0)
-        hgt = R.uniform(.07, .16); sheds.append((cx_, cy_, w_, d_, 0, hgt)); shc.append(METAL[R.integers(len(METAL))] * R.uniform(.85, 1.1))
-        if w_ >= d_:                                                   # 采光带垂直于长边
-            for t in np.arange(-w_ / 2 + .02, w_ / 2 - .01, .028): sky.append((cx_ + t, cy_, .007, d_ * .88, hgt, hgt + .005))
-        else:
-            for t in np.arange(-d_ / 2 + .02, d_ / 2 - .01, .028): sky.append((cx_, cy_ + t, w_ * .88, .007, hgt, hgt + .005))
-ks = keep_boxes(sheds); sheds = [b_ for b_, k in zip(sheds, ks) if k]; shc = [c for c, k in zip(shc, ks) if k]
-sky = [b_ for b_, k in zip(sky, keep_boxes(sky)) if k]
-tc.box_mesh('sheds', sheds, shc, td.corrugated_mat('shedroof', .5, .5, 1100, 1.2))
-tc.box_mesh('skylights', sky, np.tile((.4, .42, .42), (len(sky), 1)), tc.vcol_mat('skym', .15, .6))
-tick(f'old buildings {len(Bb)}, industrial sheds {len(sheds)}')
+c_ind = METAL[R.integers(len(METAL), size=len(ind))] * R.uniform(.85, 1.1, (len(ind), 1))
+city.buildings_mesh('sheds', ind, 0, top_ind, c_ind, td.corrugated_mat('shedroof', .5, .5, 1100, 1.2))
+sky, skr, TK = [], [], []
+for i, t in zip(ind, top_ind):
+    x, y, w, d, rot = city.b[i]['obb']
+    if w * d < .004: continue
+    u = (math.cos(rot), math.sin(rot))
+    for k in np.arange(-w / 2 + .02, w / 2 - .01, .028): sky.append((x + u[0] * k, y + u[1] * k, .007, d * .85, t, t + .005)); skr.append(rot)
+    if R.random() < .25:                                               # 厂房旁的储罐
+        v = (-u[1], u[0]); o = d / 2 + .05
+        for k in range(int(R.integers(1, 4))): TK.append((x + v[0] * o + u[0] * (k - 1) * .08, y + v[1] * o + u[1] * (k - 1) * .08, 0, R.uniform(.025, .04), R.uniform(.05, .1)))
+tc.box_mesh('skylights', sky, np.tile((.4, .42, .42), (len(sky), 1)), tc.vcol_mat('skym', .15, .6), rot=np.array(skr, np.float32))
+tick(f'old buildings {len(old)}, industrial sheds {len(ind)}')
 
-# 贫民窟：整片铁皮棚屋，留出一米来宽的窄巷（锈红、蓝色篷布、灰铁皮）
+# 贫民窟：楼的轮廓里塞满铁皮棚屋，留出一米来宽的窄巷（锈红、蓝色篷布、灰铁皮）
 SHACK = np.array([(.3, .14, .08), (.36, .2, .12), (.1, .16, .26), (.3, .3, .28), (.22, .2, .17), (.16, .2, .12)], np.float32)
 shacks, shc2, shr = [], [], []
-for i in np.where(ZONE == 2)[0]:
-    x0, y0, x1, y1 = BB[i] + np.array([.03, .03, -.03, -.03], np.float32)
-    for yy in np.arange(y0 + .02, y1 - .015, .05):                    # 一行行棚屋，行间是窄巷
-        xx = x0 + R.uniform(0, .01)
-        while xx < x1 - .015:
-            w, d = R.uniform(.018, .05), R.uniform(.025, .04)
-            if R.random() > .06:                                       # 偶尔空一块：水井、垃圾堆、小空地
-                shacks.append((xx + w / 2, yy + R.uniform(-.004, .004), w, d, 0, R.uniform(.01, .035)))
-                shc2.append(SHACK[R.integers(len(SHACK))] * R.uniform(.7, 1.2)); shr.append(R.normal(0, .05))
-            xx += w + R.uniform(0, .004)
-ks = keep_boxes(shacks)
-shacks = [b_ for b_, k in zip(shacks, ks) if k]; shc2 = [c for c, k in zip(shc2, ks) if k]; shr = [r for r, k in zip(shr, ks) if k]
-tc.box_mesh('shacks', shacks, shc2, td.corrugated_mat('shackroof', .6, .35, 1500, 1.4), rot=np.array(shr))
-tick(f'slum blocks {(ZONE == 2).sum()}, shacks {len(shacks)}')
+for i in np.where(keep & (ZONE == 2))[0]:
+    b = city.b[i]; x, y, w, d, rot = b['obb']; cs, sn = math.cos(rot), math.sin(rot)
+    for v in np.arange(-d / 2 + .015, d / 2 - .01, .045):
+        u = -w / 2 + R.uniform(0, .01)
+        while u < w / 2 - .012:
+            sw, sd = R.uniform(.016, .045), R.uniform(.022, .036)
+            px, py = x + (u + sw / 2) * cs - v * sn, y + (u + sw / 2) * sn + v * cs
+            if R.random() > .06 and point_in_poly(px, py, b['p']):
+                shacks.append((px, py, sw, sd, 0, R.uniform(.01, .035))); shc2.append(SHACK[R.integers(len(SHACK))] * R.uniform(.7, 1.2)); shr.append(rot + R.normal(0, .05))
+            u += sw + R.uniform(0, .004)
+tc.box_mesh('shacks', shacks, shc2, td.corrugated_mat('shackroof', .6, .35, 1500, 1.4), rot=np.array(shr, np.float32))
+tick(f'slum shacks {len(shacks)}')
 
 # ---------------- 储罐与管道：管道从工业区通向最近的支柱（物资顺着支柱里的货梯往上送）----------------
-T_ = np.array([(x, y, 0, 0, 0, 0) for x, y in tanks_], np.float32).reshape(-1, 6); kt = keep_boxes(T_)
-TK = [(x, y, 0, R.uniform(.03, .045), R.uniform(.06, .12)) for (x, y), k in zip(tanks_, kt) if k]
-for i in np.where((kind == tc.K_PARK) & keep)[0]:                      # 荒掉的公园：一部分变成罐区
-    if R.random() < .4:
-        TK += [(B[i, 0] + dx, B[i, 1] + dy, 0, R.uniform(.035, .05), R.uniform(.06, .12)) for dx in (-.06, .06) for dy in (-.06, .06)]
+for P in city.parks:                                                   # 荒掉的公园：一部分变成罐区
+    if R.random() < .3 and abs(tc_city.poly_area(P)) > .02:
+        cx, cy = P.mean(0)
+        for dx in (-.06, .06):
+            for dy in (-.06, .06):
+                if point_in_poly(cx + dx, cy + dy, P): TK.append((cx + dx, cy + dy, 0, R.uniform(.035, .05), R.uniform(.06, .12)))
 tc.cyl_mesh('tanks', TK, td.city_mat('tank', .45, .01, 1.3, .5), 24)
 pipes = Batch('pipes', mat('pipe', (.3, .22, .15), .5, .7), smooth=True)
 def pipe_run(x0, y0, x1, y1, z, r):
@@ -146,75 +120,69 @@ def pipe_run(x0, y0, x1, y1, z, r):
     if L < 1e-3: return
     bmesh.ops.create_cone(pipes.bm, cap_ends=True, segments=10, radius1=r, radius2=r, depth=L,
                           matrix=Matrix.Translation(((x0 + x1) / 2, (y0 + y1) / 2, z)) @ Matrix.Rotation(a, 4, 'Z') @ Matrix.Rotation(math.pi / 2, 4, 'Y'))
-for i in np.where(ZONE == 1)[0]:                                       # 每个工业街坊一束管道，沿街走到最近的支柱
-    x, y = (BB[i, 0] + BB[i, 2]) / 2, (BB[i, 1] + BB[i, 3]) / 2
-    px, py = min(PILLARS, key=lambda p: math.hypot(p[0] - x, p[1] - y))
-    yr = y + (BB[i, 3] - BB[i, 1]) / 2 + .1                             # 先沿街坊北侧的街走
-    for o in (0, .018):
-        pipe_run(x, yr + o, px, yr + o, .14 + o * .3, .007); pipe_run(px + o, yr, px + o, py, .15, .007)
-pipes.done(); tick('tanks + pipes')
+for i in ind[::4]:                                                     # 每四座厂房一束管道，走到最近的支柱
+    x, y = city.b[i]['cx'], city.b[i]['cy']; px, py = min(PILLARS, key=lambda p: math.hypot(p[0] - x, p[1] - y))
+    for o in (0, .018): pipe_run(x, y + o, px, y + o, .17 + o * .3, .007); pipe_run(px + o, y, px + o, py, .18, .007)
+pipes.done(); tick(f'tanks {len(TK)} + pipes')
 
-# ---------------- 货运铁路 ----------------
+# ---------------- 货运铁路：OSM 地面铁路 + 货运站 ----------------
 ballast = Batch('ballast', mat('ballast', (.17, .15, .12), .95))
 rails = Batch('rails', mat('rail', (.5, .48, .45), .25, 1))
 def track(x0, y0, x1, y1):
     L = math.hypot(x1 - x0, y1 - y0); a = math.atan2(y1 - y0, x1 - x0); mx, my = (x0 + x1) / 2, (y0 + y1) / 2
-    ballast.box(mx, my, 0, L, .045, .006, a)
-    for o in (-.008, .008): rails.box(mx - o * math.sin(a), my + o * math.cos(a), .006, L, .0025, .003, a)
-for y in RAIL_Y:
-    for o in (-.04, .04): track(-W * .6, y + o, W * .6, y + o)
-for x in RAIL_X:
-    for o in (-.04, .04): track(x + o, -H * .6, x + o, H * .6)
+    if L < 1e-4: return
+    ballast.box(mx, my, 0, L * 1.02, .045, .006, a)
+    for o in (-.008, .008): rails.box(mx - o * math.sin(a), my + o * math.cos(a), .006, L * 1.02, .0025, .003, a)
 cars, carc, carr = [], [], []
 CARC = np.array([(.32, .12, .07), (.1, .16, .24), (.24, .23, .2), (.2, .24, .14)], np.float32)
-def train(x, y, a, n):
-    for k in range(n):
-        cars.append((x + math.cos(a) * k * .065, y + math.sin(a) * k * .065, .06, .026, .006, .03)); carc.append(CARC[R.integers(4)] * R.uniform(.8, 1.2)); carr.append(a)
-for y in RAIL_Y: train(R.uniform(-12, 8), y + .04, 0, R.integers(8, 16))
-for x in RAIL_X: train(x - .04, R.uniform(-8, 4), math.pi / 2, R.integers(8, 14))
-
-# 货运站：一片平行股道 + 集装箱 + 龙门吊
-x, y = YARD
-ballast.box(x, y, 0, 3.3, 1.1, .005)
-for k in range(11): track(x - 1.6, y - .45 + k * .09, x + 1.6, y - .45 + k * .09)
+for P in city.rail:
+    for a_, b_ in zip(P[:-1], P[1:]): track(a_[0], a_[1], b_[0], b_[1])
+    if len(P) > 4 and R.random() < .5:                                 # 一列停着的货车
+        k0 = int(R.integers(0, len(P) - 3))
+        for a_, b_ in zip(P[k0:k0 + 3], P[k0 + 1:k0 + 4]):
+            L = math.hypot(*(b_ - a_)); ang = math.atan2(b_[1] - a_[1], b_[0] - a_[0])
+            for t in np.arange(0, L, .065): cars.append((a_[0] + math.cos(ang) * t, a_[1] + math.sin(ang) * t, .06, .026, .006, .03)); carc.append(CARC[R.integers(4)] * R.uniform(.8, 1.2)); carr.append(ang)
+# 货运站：沿铁路方向的一片平行股道 + 集装箱 + 龙门吊
+x, y = YARD; cu, su = math.cos(YROT), math.sin(YROT)
+at = lambda u, v: (x + u * cu - v * su, y + u * su + v * cu)
+ballast.box(x, y, 0, 3.3, 1.1, .005, YROT)
 for k in range(11):
-    if R.random() < .7: train(x - 1.5 + R.uniform(0, 1.2), y - .45 + k * .09, 0, R.integers(6, 20))
+    v = -.45 + k * .09; track(*at(-1.6, v), *at(1.6, v))
+    if R.random() < .7:
+        u0 = R.uniform(-1.5, .3)
+        for j in range(int(R.integers(6, 20))): cars.append((*at(u0 + j * .065, v), .06, .026, .006, .03)); carc.append(CARC[R.integers(4)] * R.uniform(.8, 1.2)); carr.append(YROT)
 crane = Batch('cranes', mat('crane', (.45, .3, .08), .5, .6))
-for gx in (x - .8, x + .5):
-    crane.box(gx, y, .12, .05, 1.2, .03)                             # 龙门吊横梁
-    for sy in (-1, 1): crane.box(gx, y + sy * .58, 0, .06, .04, .15)
+for gu in (-.8, .5):
+    crane.box(*at(gu, 0), .12, .05, 1.2, .03, YROT)                  # 龙门吊横梁
+    for sv in (-1, 1): crane.box(*at(gu, sv * .58), 0, .06, .04, .15, YROT)
 crane.done()
 layer.marker('freight_yard', (x, y, 0), 1.6)
-tc.box_mesh('freight_cars', cars, carc, tc.vcol_mat('carm', .6, .4), rot=np.array(carr))
+tc.box_mesh('freight_cars', cars, carc, tc.vcol_mat('carm', .6, .4), rot=np.array(carr, np.float32))
 ballast.done(); rails.done(); tick('rail')
 
 # ---------------- 中层支柱的柱基 ----------------
-pil = Batch('pillars', mat('pillar', (.2, .195, .19), .85))
+tc.cyl_mesh('pillar_base', [(px, py, 0, .3, .05) for px, py in PILLARS], td.city_mat('pillar0', .85, .02, 1.2), 48)
+tc.cyl_mesh('pillars', [(px, py, 0, .22, 2.5) for px, py in PILLARS], td.city_mat('pillar', .85, .02, 1.2), 48)   # 柱身（俯视只看到柱顶的圆面）
+pil = Batch('pillar_buttress', mat('pillarb', (.2, .195, .19), .85))
 for px, py in PILLARS:
-    pil.cyl(px, py, 0, .3, .05, 48)                                 # 柱基
-    pil.cyl(px, py, 0, .22, 2.5, 48)                                # 柱身（俯视只看到柱顶的圆面）
     for k in range(4): a = k * math.pi / 2 + math.pi / 4; pil.box(px + .24 * math.cos(a), py + .24 * math.sin(a), 0, .08, .08, .5, a)   # 扶壁
 pil.done()
 
 # ---------------- 光：钠灯 + 少量磷光绿 ----------------
 lamp_heads, lamp_lights, extra_flood = [], [], []
-for x, y, w, d, rot in tc.road_lines(city, .012):
-    if rot: continue                                                 # 斜向大道在地基区没有（只是上层的路）
-    L = max(w, d); ux, uy = (0, 1) if d > w else (1, 0)
-    for t in np.arange(-L / 2, L / 2, .3):
-        s = 1 if R.random() < .5 else -1; px, py = x + ux * t + uy * .07 * s, y + uy * t - ux * .07 * s
-        if R.random() < (.85 if blackout(px, py) else .2): continue  # 坏掉的路灯；断电片区几乎全黑
-        lamp_heads.append((px, py, .012, .012, .07, .073))
-        if len(lamp_heads) % 2 == 0: lamp_lights.append((px, py, .09, SODIUM if R.random() < .7 else SODIUM2))   # 一半灯头投光（功率加倍补回），渲染快一倍
+for x, y, ang, c, w in city.along(.3, CAR - {'service'}, side_offset=.008, both=False):
+    if R.random() < (.85 if blackout(x, y) else .2): continue          # 坏掉的路灯；断电片区几乎全黑
+    lamp_heads.append((x, y, .012, .012, .07, .073))
+    if len(lamp_heads) % 2 == 0: lamp_lights.append((x, y, .09, SODIUM if R.random() < .7 else SODIUM2))   # 一半灯头投光（功率加倍补回）
 for px, py in PILLARS:                                               # 柱基上的一圈钠灯
     for k in range(6):
         a = k / 6 * 2 * math.pi; lamp_lights.append((px + .34 * math.cos(a), py + .34 * math.sin(a), .1, SODIUM))
         lamp_heads.append((px + .31 * math.cos(a), py + .31 * math.sin(a), .012, .012, .05, .053))
-tc.box_mesh('lamp_heads', lamp_heads, np.tile(srgb('#ffc070'), (len(lamp_heads), 1)), emit_mat('lamphead', None, 6.0 * GLOW))
-for i in np.where(ZONE == 1)[0]:                                       # 工业区的高杆泛光灯：偏白、更亮，成片照亮厂区
-    if BB[i, 0] > 1e8 or R.random() < .3: continue
-    x, y = (BB[i, 0] + BB[i, 2]) / 2 + R.uniform(-.2, .2), (BB[i, 1] + BB[i, 3]) / 2 + R.uniform(-.2, .2)
+for i in ind:                                                          # 工业区的高杆泛光灯：偏白、更亮，成片照亮厂区
+    if R.random() < .7: continue
+    b = city.b[i]; x, y = b['cx'] + R.uniform(-.1, .1), b['cy'] + R.uniform(-.1, .1)
     lamp_heads.append((x, y, .02, .02, .35, .353)); extra_flood.append((x, y, .4, srgb('#ffd7a0')))
+tc.box_mesh('lamp_heads', lamp_heads, np.tile(srgb('#ffc070'), (len(lamp_heads), 1)), emit_mat('lamphead', None, 6.0 * GLOW))
 tc.point_lights('sodium', lamp_lights, LAMP * 2 * GLOW, .01)
 # 棚屋区：昏暗的暖光与磷光绿（霉菌灯、黑市招牌）
 glim, gdots = [], []
@@ -223,7 +191,7 @@ for x, y, w, d, z0, z1 in shacks:
     if r < .04: glim.append((x, y, z1 + .04, SODIUM2)); gdots.append((x, y, .008, .008, z1, z1 + .002, *SODIUM2))
     elif r < .055: glim.append((x, y, z1 + .04, PHOS)); gdots.append((x, y, .01, .006, z1, z1 + .002, *PHOS))
 tc.point_lights('slum_light', glim, LAMP * .4 * GLOW, .01)
-gd = np.array(gdots, np.float32)
+gd = np.array(gdots, np.float32).reshape(-1, 9)
 tc.box_mesh('slum_dots', gd[:, :6], gd[:, 6:], emit_mat('slumdot', None, 4.0 * GLOW))
 tc.point_lights('flood', extra_flood, LAMP * 6 * GLOW, .03)
 tick(f'lights {len(lamp_lights) + len(glim) + len(extra_flood)}')
@@ -348,8 +316,9 @@ layer.marker('amc_facility', (x - .1, y + .1, 0), 1.2)
 # 货运站的照明塔
 x, y = YARD
 yl = Batch('yard_glow', emit_mat('yard_sodium', SODIUM, 5.0 * GLOW))
-for gx in np.linspace(x - 1.4, x + 1.4, 6):
-    for sy in (-1, 1): yl.box(gx, y + sy * .52, .3, .03, .03, .003); extra_lights.append((gx, y + sy * .5, .35, SODIUM))
+for gu in np.linspace(-1.4, 1.4, 6):                                    # 沿铁路方向两排
+    for sv in (-1, 1):
+        px, py = at(gu, sv * .52); yl.box(px, py, .3, .03, .03, .003, YROT); extra_lights.append((*at(gu, sv * .5), .35, SODIUM))
 yl.done()
 tc.point_lights('landmark_light', extra_lights, LAMP * 2.5 * GLOW, .02)
 tick('landmarks')

@@ -1,8 +1,10 @@
 # 天城 · 上层（悬浮庄园区，离地 800–1500 m）· Blender 正俯视写实渲染（第二版：可读性优先）
-# 用法：Blender -b -P tiancheng_upper.py -- [--res 1600] [--samples 64] [--out path.png] [--haze .25] [--crop x0,y0,x1,y1] [--preview] [--data-only]
+# 用法：Blender -b -P tiancheng_upper.py -- [--res 1600] [--samples 64] [--out path.png] [--below clouds|city] [--haze .25] [--crop x0,y0,x1,y1] [--preview] [--data-only]
+#       --below clouds（默认）：岛屿下方是一片云海，看不到中层城市；图小、加载快。
+#       --below city：下方是中层城市（OSM 真实路网与建筑轮廓，© OpenStreetMap contributors），压在一层霾下作远景。
 #       或 python3 tiancheng_upper.py -- ...（pip 装的 bpy）。参数与导出格式三层一致，见 docs/tiancheng-maps.md
 # 1 单位 = 100 m。z=0 为中层楼顶（约 700 m），岛屿 z = (海拔 - 700) / 100。
-# 思路（见 ROADMAP P1）：正俯视、白天；中层城市压在半透明霾层之下作远景，岛屿投影落在城市上；
+# 思路（见 ROADMAP P1）：正俯视、白天；岛屿投影落在下方的云海（或城市）上；
 # 结界穹顶、航线、巡逻线不烘进底图，只导出坐标给查看器做可开关的叠加层。
 import bpy, bmesh, json, math, os, sys, random
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -12,6 +14,7 @@ from mathutils import Vector, Matrix
 
 layer = tc.Layer('tc_upper')                        # 解析参数、清空场景、生成城市（第一个随机调用）；岛屿沿用同一种子的 random 序列
 sc, col_main, city, HAZE = layer.sc, layer.col, layer.city, layer.f('--haze', .25)
+BELOW = str(layer.opt.get('--below', 'clouds'))
 
 # ---------------- 材质 ----------------
 M = {
@@ -55,30 +58,60 @@ def tree(x, y, z, r, kind=None):
 def flush_trees():
     for k, pts in TREES.items(): tc.ico_mesh(k, pts, M[k])
 
-# ---------------- 中层楼顶（远景，白天无霓虹；楼顶约在 z=-2.2…0）----------------
-# 城市生成在 tc_common：必须先于其他随机调用（岛屿、树），三层才对得上
-# 细节层用自己的随机序列（不碰城市的 rng，也不碰岛屿用的 random），布局与 v0.7.0 一致
-import numpy as np, tc_detail as td
-D = np.random.default_rng(5501)
+# ---------------- 岛屿下方：云海（默认）或中层城市 ----------------
+import numpy as np, tc_detail as td, tc_city
+D = np.random.default_rng(5501)                           # 细节层自己的随机（不碰岛屿用的 random），岛屿布局不变
 ZG = tc.Z_GROUND
-tc.road_plane(None, m=td.asphalt_mat('road', (.09, .09, .10)))    # 路面：沥青颗粒、补丁（比楼顶暗）
-cmat = td.city_mat('citymat', .7)
-tc.box_mesh('city', city['boxes'], city['colors'], cmat)
-bi = city['kind'] == tc.K_BUILDING
-kit = td.building_kit(city['boxes'][bi], city['colors'][bi], D, 'day', cap=.3)   # 女儿墙、退台、坡顶、设备、太阳能板、屋顶花园
-td.build_kit('city', kit, cmat, td.city_mat('roofmat', .6, grime=.8))
-mb, mc = td.road_marks(city, ZG + .0002); tc.box_mesh('road_marks', mb, mc, td.city_mat('markmat', .6, ao=0, grime=1.5))
-cars, crot, cdir, ccol = td.traffic(city, D, ZG, 2.2, jam=lambda x, y: tc.district(x, y))
-tc.box_mesh('cars', cars, ccol, tc.vcol_mat('carmat', .25, .6), rot=crot); tick(f'details: marks {len(mb)}, cars {len(cars)}')
-for t in city['trees']: tree(*t)                            # 公园里的树
-tick('city')
-# 霾层：上层与中层之间的一张半透明平面（比体积雾好控，不投影）
-bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, .4)); haze = bpy.context.active_object; haze.scale = (W * 1.3, H * 1.3, 1)
-hm = bpy.data.materials.new('haze'); hm.use_nodes = True; nt = hm.node_tree; out = nt.nodes['Material Output']; nt.nodes.remove(nt.nodes['Principled BSDF'])
-tr = nt.nodes.new('ShaderNodeBsdfTransparent'); df = nt.nodes.new('ShaderNodeBsdfDiffuse'); df.inputs['Color'].default_value = (.46, .52, .62, 1)
-mx = nt.nodes.new('ShaderNodeMixShader'); mx.inputs['Fac'].default_value = HAZE
-nt.links.new(tr.outputs['BSDF'], mx.inputs[1]); nt.links.new(df.outputs['BSDF'], mx.inputs[2]); nt.links.new(mx.outputs['Shader'], out.inputs['Surface'])
-haze.data.materials.append(hm); haze.visible_shadow = False
+def below_city():
+    """中层楼顶远景（白天无霓虹）：OSM 轮廓挤出、楼顶部件、路面标线与车流，压在一层霾下。"""
+    tc.road_plane((.2, .2, .19), m=td.city_mat('ground', .85, .02, 1.2))    # 人行道、地块内的硬地（比路亮）
+    city.flat_polys('water', city.water, ZG + .002, (.03, .07, .09), mat('water_low', (.03, .07, .09), .05, spec=.8))
+    city.flat_polys('parks', city.parks, ZG + .002, (.09, .15, .06), td.city_mat('parkmat', .9, .01, 1.3))
+    city.roads_mesh('roads', ZG + .004, td.asphalt_mat('road', (.09, .09, .10)))
+    tops = tc_city.tops_mid(city, cap=.3); idx = np.arange(len(city.b))
+    cmat = td.city_mat('citymat', .7)
+    city.buildings_mesh('city', idx, ZG, tops, city.roof, cmat)
+    kit = tc_city.roof_kit(city, idx, tops, city.roof, D, 'day', cap=.3)
+    tc_city.build_roof_kit('city', kit, cmat, td.city_mat('roofmat', .6, grime=.8))
+    mb, mr, mc = city.road_marks(ZG + .0045); tc.box_mesh('road_marks', mb, mc, td.city_mat('markmat', .6, ao=0, grime=1.5), rot=mr)
+    cars, crot, cdir, ccol = city.traffic(D, ZG + .004, 2.2, weight=lambda x, y: tc.district(x, y))
+    tc.box_mesh('cars', cars, ccol, tc.vcol_mat('carmat', .25, .6), rot=crot)
+    tc.ico_mesh('park_trees', [(x, y, ZG + .004 + r * .55, r) for x, y, r in city.trees], M['tree2'])
+    tick(f'city below: {len(city.b)} buildings, marks {len(mb)}, cars {len(cars)}')
+    # 霾层：上层与中层之间的一张半透明平面（比体积雾好控，不投影）
+    bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, .4)); haze = bpy.context.active_object; haze.scale = (W * 1.3, H * 1.3, 1)
+    haze.data.materials.append(tc.shade_mat('haze', (.46, .52, .62), HAZE)); haze.visible_shadow = False
+def below_clouds():
+    """云海：两层噪声遮罩的白色平面——下层厚、几乎不透明，起伏靠凹凸；上层是零散的薄云。岛屿的影子落在云上。
+    不用体积云：8000px 下体积的噪点和渲染时间都不划算，平面 + 凹凸在正俯视下足够像。"""
+    for z, scale, lo, hi, bump, name in ((-.6, .9, .4, .52, 1.4, 'cloud_floor'), (.25, 2.3, .52, .7, .5, 'cloud_wisps')):
+        bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, z)); o = bpy.context.active_object; o.name = name; o.scale = (W * 1.3, H * 1.3, 1)
+        m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; out = next(n for n in nt.nodes if n.type == 'OUTPUT_MATERIAL')
+        nt.nodes.remove(tc.bsdf_of(m))
+        tco = nt.nodes.new('ShaderNodeTexCoord'); nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = scale
+        nz.inputs['Detail'].default_value = 12; nz.inputs['Roughness'].default_value = .62; nt.links.new(tco.outputs['Object'], nz.inputs['Vector'])
+        mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['From Min'].default_value = lo; mr.inputs['From Max'].default_value = hi
+        nt.links.new(nz.outputs['Fac'], mr.inputs['Value'])
+        df = nt.nodes.new('ShaderNodeBsdfDiffuse')
+        n2 = nt.nodes.new('ShaderNodeTexNoise'); n2.inputs['Scale'].default_value = scale * 6; n2.inputs['Detail'].default_value = 8
+        nt.links.new(tco.outputs['Object'], n2.inputs['Vector'])
+        hsum = nt.nodes.new('ShaderNodeMath'); hsum.operation = 'MULTIPLY_ADD'; hsum.inputs[1].default_value = .35
+        nt.links.new(n2.outputs['Fac'], hsum.inputs[0]); nt.links.new(nz.outputs['Fac'], hsum.inputs[2])     # 大起伏 + 小团块
+        cr = nt.nodes.new('ShaderNodeValToRGB'); cr.color_ramp.elements[0].position = .55; cr.color_ramp.elements[1].position = 1.0
+        cr.color_ramp.elements[0].color = (.42, .46, .53, 1); cr.color_ramp.elements[1].color = (.8, .81, .84, 1)   # 云谷偏灰蓝、云顶偏白
+        nt.links.new(hsum.outputs['Value'], cr.inputs['Fac']); nt.links.new(cr.outputs['Color'], df.inputs['Color'])
+        bp = nt.nodes.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = bump; bp.inputs['Distance'].default_value = .8
+        nt.links.new(hsum.outputs['Value'], bp.inputs['Height']); nt.links.new(bp.outputs['Normal'], df.inputs['Normal'])
+        tr = nt.nodes.new('ShaderNodeBsdfTransparent'); mx = nt.nodes.new('ShaderNodeMixShader')
+        if name == 'cloud_floor':                          # 下层：云缝里透出一点灰蓝（下方是看不见的城市），不透明
+            gap = nt.nodes.new('ShaderNodeBsdfDiffuse'); gap.inputs['Color'].default_value = (.32, .36, .42, 1)
+            nt.links.new(mr.outputs['Result'], mx.inputs['Fac']); nt.links.new(gap.outputs['BSDF'], mx.inputs[1]); nt.links.new(df.outputs['BSDF'], mx.inputs[2])
+        else:
+            nt.links.new(mr.outputs['Result'], mx.inputs['Fac']); nt.links.new(tr.outputs['BSDF'], mx.inputs[1]); nt.links.new(df.outputs['BSDF'], mx.inputs[2])
+        nt.links.new(mx.outputs['Shader'], out.inputs['Surface']); o.data.materials.append(m)
+        if name == 'cloud_wisps': o.visible_shadow = False
+    tick('clouds below')
+below_city() if BELOW == 'city' else below_clouds()
 
 # ---------------- 悬浮岛 ----------------
 markers, islands = layer.markers, []

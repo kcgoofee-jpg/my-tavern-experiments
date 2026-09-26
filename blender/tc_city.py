@@ -1,0 +1,282 @@
+# 天城城市骨架（OpenStreetMap 真实路网与建筑轮廓，见 tc_osm.py）——三层共用。
+# 数据 © OpenStreetMap contributors（ODbL）。
+# 各层只决定：楼的高度怎么映射（中层楼高 / 下层压低）、配色、灯光；轮廓、道路、公园、铁路完全一致，三层天然对位。
+import bpy, json, math, os
+import numpy as np
+import tc_common as tc
+from tc_common import W, H, tick
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+CAR = {'motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'unclassified', 'residential', 'motorway_link', 'trunk_link',
+       'primary_link', 'secondary_link', 'tertiary_link', 'living_street', 'service'}
+MAJOR = {'motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'motorway_link', 'trunk_link', 'primary_link', 'secondary_link'}
+
+def poly_area(P): x, y = P[:, 0], P[:, 1]; return .5 * (np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1)))
+def obb(P):
+    """最小外接矩形（按边方向枚举）：返回 (cx, cy, w, d, rot)，w 为长边。"""
+    best = None
+    for i in range(len(P)):
+        e = P[(i + 1) % len(P)] - P[i]; L = math.hypot(*e)
+        if L < 1e-6: continue
+        a = math.atan2(e[1], e[0]); c, s = math.cos(a), math.sin(a)
+        u = P @ np.array([c, s]); v = P @ np.array([-s, c])
+        ar = (u.max() - u.min()) * (v.max() - v.min())
+        if best is None or ar < best[0]: best = (ar, a, u.min(), u.max(), v.min(), v.max())
+    _, a, u0, u1, v0, v1 = best; c, s = math.cos(a), math.sin(a); uc, vc = (u0 + u1) / 2, (v0 + v1) / 2
+    w, d = u1 - u0, v1 - v0
+    if d > w: w, d, a = d, w, a + math.pi / 2
+    return uc * c - vc * s, uc * s + vc * c, w, d, a
+def point_in_poly(x, y, P):
+    inside = False; n = len(P); j = n - 1
+    for i in range(n):
+        xi, yi = P[i]; xj, yj = P[j]
+        if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi + 1e-12) + xi: inside = not inside
+        j = i
+    return inside
+
+class City:
+    def __init__(self, rng):
+        d = json.load(open(os.path.join(HERE, 'data', 'osm', 'city.json')))
+        self.credit = d['credit']
+        B = []
+        for b in d['buildings']:
+            P = np.array(b['p'], np.float32)
+            if len(P) < 3: continue
+            if poly_area(P) < 0: P = P[::-1]                          # 统一逆时针
+            a = poly_area(P)
+            if a < .0004: continue                                    # 小于 4 m² 的碎片
+            cx, cy = P.mean(0)
+            if abs(cx) > W / 2 + .3 or abs(cy) > H / 2 + .3: continue
+            h = b['h'] or (b['lv'] * 3.2 if b['lv'] else None)
+            n = tc.district(cx, cy)
+            if not h: h = float(rng.uniform(20, 70) * (.6 + .8 * n))  # 缺高度：按城区强度随机（旺角一带多为 15–25 层）
+            B.append(dict(p=P, cx=float(cx), cy=float(cy), a=float(a), h=float(h), n=n, obb=obb(P)))
+        self.b = B
+        self.roads = [dict(c=r['c'], w=r['w'], p=np.array(r['p'], np.float32), br=r.get('br', 0)) for r in d['roads']]
+        self.parks = [np.array(p['p'], np.float32) for p in d['parks']]
+        self.water = [np.array(p['p'], np.float32) for p in d['water']]
+        self.rail = [np.array(p['p'], np.float32) for p in d['rail']]
+        C = np.array([tc.ROOF[i] for i in rng.choice(len(tc.ROOF), size=len(B), p=tc.ROOF_W)], np.float32)
+        self.roof = C * rng.uniform(.85, 1.15, (len(B), 1)).astype(np.float32)
+        self.trees = []
+        for P in self.parks:                                          # 公园里的树：按面积撒点
+            x0, y0 = P.min(0); x1, y1 = P.max(0); a = abs(poly_area(P))
+            for _ in range(int(a * 160)):
+                x, y = rng.uniform(x0, x1), rng.uniform(y0, y1)
+                if point_in_poly(x, y, P): self.trees.append((float(x), float(y), float(rng.uniform(.012, .03))))
+        tick(f'osm city: {len(B)} buildings, {len(self.roads)} roads, {len(self.parks)} parks, {len(self.trees)} trees')
+
+    # ---------- 选择 ----------
+    def keep(self, zones):
+        """去掉落在地标区（椭圆 (x, y, rx, ry) 或 ('rect', x0, y0, x1, y1)）里的楼。返回布尔数组。"""
+        k = np.ones(len(self.b), bool)
+        for i, b in enumerate(self.b):
+            for z in zones:
+                if callable(z):
+                    if z(b['cx'], b['cy']): k[i] = False
+                elif z[0] == 'rect':
+                    if z[1] < b['cx'] < z[3] and z[2] < b['cy'] < z[4]: k[i] = False
+                elif ((b['cx'] - z[0]) / z[2]) ** 2 + ((b['cy'] - z[1]) / z[3]) ** 2 < 1: k[i] = False
+        return k
+    def clip_roads(self, zones, keep_major=True):
+        """地标区里的小路去掉（大路保留，穿过去更真实）。"""
+        def inz(x, y):
+            for z in zones:
+                if callable(z):
+                    if z(x, y): return True
+                elif z[0] == 'rect':
+                    if z[1] < x < z[3] and z[2] < y < z[4]: return True
+                elif ((x - z[0]) / z[2]) ** 2 + ((y - z[1]) / z[3]) ** 2 < 1: return True
+            return False
+        out = []
+        for r in self.roads:
+            if keep_major and r['c'] in MAJOR: out.append(r); continue
+            P = r['p']; seg = [P[0]]
+            for a, b in zip(P[:-1], P[1:]):
+                if inz(*(a + b) / 2):
+                    if len(seg) > 1: out.append(dict(r, p=np.array(seg)))
+                    seg = [b]
+                else: seg.append(b)
+            if len(seg) > 1: out.append(dict(r, p=np.array(seg)))
+        self.roads = out
+
+    # ---------- 网格 ----------
+    def buildings_mesh(self, name, idx, z0, z1, colors, m):
+        """idx 中的楼按轮廓挤出：顶面 n 边形 + 侧面四边形。z0 / z1 为每栋楼的底 / 顶（数组或常数）。"""
+        return poly_prisms(name, [self.b[i]['p'] for i in idx], np.broadcast_to(z0, len(idx)), np.broadcast_to(z1, len(idx)), colors, m)
+    def roads_mesh(self, name, z, m, classes=None, widen=1.0, color=(.09, .09, .1)):
+        """道路：每段一个四边形 + 每个节点一个八边形（补转角的缝）。"""
+        quads, discs = [], []
+        for r in self.roads:
+            if classes and r['c'] not in classes: continue
+            P, w = r['p'], r['w'] * widen
+            for a, b in zip(P[:-1], P[1:]):
+                d = b - a; L = float(np.hypot(*d))
+                if L < 1e-5: continue
+                quads.append(((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, L, w, math.atan2(d[1], d[0])))
+            for p in P: discs.append((float(p[0]), float(p[1]), w / 2))
+        Q = np.array(quads, np.float32)
+        o1 = tc.box_mesh(name, np.c_[Q[:, :4], np.full(len(Q), z - .0005), np.full(len(Q), z)], np.tile(color, (len(Q), 1)), m, rot=Q[:, 4])
+        D = np.array(discs, np.float32)
+        o2 = tc.cyl_mesh(name + '_joints', np.c_[D[:, :2], np.full(len(D), z - .0005), D[:, 2], np.full(len(D), .0005)], m, 8)
+        return o1, o2
+    def flat_polys(self, name, polys, z, color, m):
+        return poly_prisms(name, polys, np.full(len(polys), z - .001), np.full(len(polys), z), np.tile(color, (len(polys), 1)), m)
+
+    # ---------- 沿路的东西 ----------
+    def along(self, spacing, classes=None, side_offset=None, both=True, jitter=0.0, rng=None):
+        """沿道路等距取点：[(x, y, 方向角, 道路等级, 宽度)]；side_offset=None 时取路中线，否则取两侧（偏移 = 半宽 + side_offset）。"""
+        out = []
+        for r in self.roads:
+            if classes and r['c'] not in classes: continue
+            P = r['p']; carry = 0.0
+            for a, b in zip(P[:-1], P[1:]):
+                d = b - a; L = float(np.hypot(*d))
+                if L < 1e-5: continue
+                u = d / L; nrm = np.array([-u[1], u[0]]); ang = math.atan2(u[1], u[0])
+                t = carry
+                while t < L:
+                    p = a + u * t
+                    if side_offset is None: out.append((float(p[0]), float(p[1]), ang, r['c'], r['w']))
+                    else:
+                        for s in ((-1, 1) if both else (1,)):
+                            q = p + nrm * s * (r['w'] / 2 + side_offset)
+                            out.append((float(q[0]), float(q[1]), ang, r['c'], r['w']))
+                    t += spacing * (1 + (rng.uniform(-jitter, jitter) if rng is not None and jitter else 0))
+                carry = t - L
+        return out
+    def road_marks(self, z, color=(.7, .7, .66), dash=.03, gap=.035):
+        """车道虚线（宽路）与中央双黄线（主干道）。返回 (boxes, rot, cols)。"""
+        boxes, rot, cols = [], [], []; yellow = (.62, .5, .16)
+        for r in self.roads:
+            if r['c'] not in CAR or r['w'] < .12: continue
+            P, w = r['p'], r['w']
+            for a, b in zip(P[:-1], P[1:]):
+                d = b - a; L = float(np.hypot(*d))
+                if L < .05: continue
+                u = d / L; nrm = np.array([-u[1], u[0]]); ang = math.atan2(u[1], u[0])
+                for t in np.arange(.06, L - .06, dash + gap):              # 车道虚线（离路口留一段）
+                    for off in (-w / 4, w / 4):
+                        p = a + u * (t + dash / 2) + nrm * off; boxes.append((p[0], p[1], dash, .0015, z, z + .0006)); rot.append(ang); cols.append(color)
+                if r['c'] in ('primary', 'trunk', 'secondary') and L > .14:  # 中央双黄线
+                    for off in (-.003, .003):
+                        p = (a + b) / 2 + nrm * off; boxes.append((p[0], p[1], L - .12, .0015, z, z + .0006)); rot.append(ang); cols.append(yellow)
+        return np.array(boxes, np.float32).reshape(-1, 6), np.array(rot, np.float32), np.array(cols, np.float32).reshape(-1, 3)
+    def traffic(self, rng, z, density=2.5, weight=None):
+        """车流：每条能走车的路两个方向各一条车道。返回 cars (n, 6)、rot、方向 (n, 2)、颜色。density = 每条车道每 100 m 车数。"""
+        cars, rots, dirs, cols = [], [], [], []
+        for r in self.roads:
+            if r['c'] not in CAR or r['c'] == 'service': continue
+            P, w = r['p'], r['w']
+            for a, b in zip(P[:-1], P[1:]):
+                d = b - a; L = float(np.hypot(*d))
+                if L < .06: continue
+                u = d / L; nrm = np.array([-u[1], u[0]]); ang = math.atan2(u[1], u[0])
+                for s in (1, -1):                                          # 靠左 / 右两个方向
+                    k = weight((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) if weight else .5
+                    t = rng.uniform(0, .1)
+                    while t < L - .03:
+                        p = a + u * t + nrm * s * w / 4
+                        cars.append((p[0], p[1], .046, .02, z, z + .015)); rots.append(ang); dirs.append(u * s)
+                        cols.append(td_car_color(rng))
+                        t += max(.055, rng.exponential(1 / (density * (.3 + 1.4 * k))))
+        return (np.array(cars, np.float32).reshape(-1, 6), np.array(rots, np.float32), np.array(dirs, np.float32).reshape(-1, 2),
+                np.array(cols, np.float32).reshape(-1, 3))
+    def road_kd(self, classes):
+        """道路采样点的 KD 树：用来算「离某类道路多远」（商业街权重、地标避让）。"""
+        from mathutils.kdtree import KDTree
+        pts = [(x, y) for x, y, *_ in self.along(.04, classes)]
+        kd = KDTree(max(1, len(pts)))
+        for i, (x, y) in enumerate(pts): kd.insert((x, y, 0), i)
+        kd.balance(); return kd
+
+CAR_COLORS = [(.6, .6, .62), (.08, .08, .09), (.75, .75, .74), (.35, .05, .04), (.1, .15, .3), (.45, .45, .47), (.2, .22, .2)]
+def td_car_color(rng): return CAR_COLORS[rng.integers(len(CAR_COLORS))]
+
+def poly_prisms(name, polys, z0, z1, colors, m=None):
+    """一批多边形挤出成一个网格（顶面 + 侧面，底面看不到）。colors: (n, 3) 写进颜色属性 col。"""
+    co, loops, totals, fcol = [], [], [], []
+    base = 0
+    for P, a, b, c in zip(polys, z0, z1, colors):
+        k = len(P); c4 = (float(c[0]), float(c[1]), float(c[2]), 1.0)
+        for x, y in P: co.append((x, y, a))
+        for x, y in P: co.append((x, y, b))
+        loops.extend(range(base + k, base + 2 * k)); totals.append(k); fcol.append(c4)       # 顶面
+        if b - a > 1e-4:
+            for i in range(k):
+                j = (i + 1) % k; loops.extend((base + i, base + j, base + k + j, base + k + i)); totals.append(4); fcol.append(c4)
+        base += 2 * k
+    if not totals: return None
+    me = bpy.data.meshes.new(name); me.vertices.add(len(co)); me.vertices.foreach_set('co', np.array(co, np.float32).ravel())
+    L = np.array(loops, np.int32); T = np.array(totals, np.int32); S = np.concatenate([[0], np.cumsum(T)[:-1]]).astype(np.int32)
+    me.loops.add(len(L)); me.loops.foreach_set('vertex_index', L)
+    me.polygons.add(len(T)); me.polygons.foreach_set('loop_start', S); me.polygons.foreach_set('loop_total', T)
+    me.update(calc_edges=True)
+    ca = me.color_attributes.new('col', 'FLOAT_COLOR', 'CORNER'); ca.data.foreach_set('color', np.repeat(np.array(fcol, np.float32), T, axis=0).ravel())
+    o = bpy.data.objects.new(name, me); bpy.context.scene.collection.objects.link(o)
+    if m: o.data.materials.append(m)
+    return o
+
+# ---------------- 楼顶部件（多边形版）----------------
+STYLE = {
+    'day':   dict(tower=.5, pitch=.0, solar=.12, green=.1, glass=.06, hvac=.75, parapet=1.2, lamps=.0),
+    'night': dict(tower=.6, pitch=.0, solar=.04, green=.02, glass=.1, hvac=.8, parapet=1.3, lamps=.06),
+    'low':   dict(tower=.0, pitch=.35, solar=0, green=0, glass=0, hvac=.4, parapet=1.15, lamps=0,
+                  tiles=[(.3, .15, .09), (.2, .2, .2), (.26, .22, .17)]),
+}
+def roof_kit(city, idx, tops, cols, rng, style, cap=.3, tall=1.2, zbase=None):
+    """idx 里每栋楼的女儿墙（沿轮廓的每条边）、退台塔楼（轮廓向中心收缩后再挤出）、设备、太阳能板、屋顶花园、天窗；
+    下层的小楼改坡顶。返回 dict：box / brot / bcol、tower_polys / tz0 / tz1 / tcol、prisms / pcols、towers（塔顶 (x, y, z)）、lamps。"""
+    S = STYLE[style]; o = dict(box=[], brot=[], bcol=[], tower_polys=[], tz0=[], tz1=[], tcol=[], prisms=[], pcols=[], towers=[], lamps=[])
+    def box(x, y, w, d, z0, z1, rot, c): o['box'].append((x, y, w, d, z0, z1)); o['brot'].append(rot); o['bcol'].append(c)
+    def parapet(P, z, c):
+        k = tuple(min(1, v * S['parapet']) for v in c)
+        for a, b in zip(P, np.roll(P, -1, 0)):
+            d = b - a; L = float(np.hypot(*d))
+            if L < .008: continue
+            nrm = np.array([-d[1], d[0]]) / L; m_ = (a + b) / 2 + nrm * .0015      # 往里收半个墙厚（轮廓逆时针，左法线朝里）
+            box(m_[0], m_[1], L, .003, z, z + .006, math.atan2(d[1], d[0]), k)
+    for i, top, c in zip(idx, tops, cols):
+        b = city.b[i]; P = b['p']; c = tuple(float(v) for v in c); x, y, w, d, rot = b['obb']
+        h = top - (zbase if zbase is not None else tc.Z_GROUND)
+        if b['a'] < .0015: continue
+        cs, sn = math.cos(rot), math.sin(rot)
+        at = lambda u, v: (x + u * cs - v * sn, y + u * sn + v * cs)
+        if style == 'low' and b['a'] < .02 and rng.random() < S['pitch']:   # 坡顶（屋脊沿长边）
+            t = S['tiles'][rng.integers(len(S['tiles']))]; t = tuple(v * rng.uniform(.8, 1.15) for v in t)
+            o['prisms'].append((x, y, w, d, top, min(w, d) * rng.uniform(.25, .4), rot)); o['pcols'].append(t); continue
+        parapet(P, top, c); zt = top
+        if h > tall and b['a'] > .006 and rng.random() < S['tower']:         # 退台塔楼：1–2 级
+            Q = P; cen = np.array([b['cx'], b['cy']], np.float32)
+            for _ in range(int(rng.integers(1, 3))):
+                s = rng.uniform(.55, .78); Q = cen + (Q - cen) * s
+                zn = min(cap, zt + h * rng.uniform(.08, .22))
+                if zn - zt < .02: break
+                tcol = tuple(v * rng.uniform(.9, 1.15) for v in c)
+                o['tower_polys'].append(Q); o['tz0'].append(zt); o['tz1'].append(zn); o['tcol'].append(tcol); parapet(Q, zn, c); zt = zn
+            o['towers'].append((b['cx'], b['cy'], zt)); w, d = w * s, d * s
+        r = rng.random(); iw, idp = w * .7, d * .7
+        if r < S['solar'] and iw * idp > .003:
+            for k in np.arange(-idp / 2 + .006, idp / 2 - .004, .013): box(*at(0, k), iw, .008, zt, zt + .003, rot, (.04, .06, .1))
+        elif r < S['solar'] + S['green']: box(x, y, iw, idp, zt, zt + .002, rot, (.07, .13, .05))
+        elif r < S['solar'] + S['green'] + S['glass'] and iw * idp > .002:
+            box(x, y, iw * .5, idp * .5, zt, zt + .003, rot, (.28, .34, .38)); o['lamps'].append((x, y, zt + .003))
+        if rng.random() < S['hvac'] and w * d > .002:                         # 屋顶设备：一小片冷却塔 / 水箱
+            nx, ny = int(rng.integers(1, 4)), int(rng.integers(1, 3)); s_ = rng.uniform(.007, .012)
+            ou, ov = rng.uniform(-.25, .25) * w, rng.uniform(-.25, .25) * d
+            for ii in range(nx):
+                for jj in range(ny):
+                    box(*at(ou + (ii - (nx - 1) / 2) * s_ * 1.5, ov + (jj - (ny - 1) / 2) * s_ * 1.5), s_, s_, zt, zt + rng.uniform(.004, .009), rot,
+                        tuple(min(1, v * rng.uniform(1.2, 1.6)) for v in c))
+        if rng.random() < S['lamps']: o['lamps'].append((*at(rng.uniform(-.3, .3) * w, rng.uniform(-.3, .3) * d), zt + .002))
+    return o
+def build_roof_kit(prefix, kit, m_box, m_roof, prism_fn=None):
+    if kit['box']: tc.box_mesh(prefix + '_parts', kit['box'], kit['bcol'], m_box, rot=np.array(kit['brot'], np.float32))
+    if kit['tower_polys']: poly_prisms(prefix + '_towers', kit['tower_polys'], kit['tz0'], kit['tz1'], kit['tcol'], m_box)
+    if kit['prisms'] and prism_fn: prism_fn(prefix + '_roofs', kit['prisms'], kit['pcols'], m_roof)
+    tick(f'{prefix}: {len(kit["box"])} roof parts, {len(kit["tower_polys"])} tower tiers, {len(kit["prisms"])} pitched roofs')
+
+def tops_mid(city, k=3.0, cap=.1):
+    """中层城市（上层远景与中层夜景共用）：楼顶高度 = 中层地面 + 真实楼高 × k（垂直超大城市比旺角更高），封顶在悬浮轨道以下。"""
+    h = np.array([b['h'] for b in city.b], np.float32)
+    return np.minimum(cap, tc.Z_GROUND + np.clip(h * k / 100, .25, 3.7))
