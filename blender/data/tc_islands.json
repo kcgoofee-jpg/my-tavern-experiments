@@ -1,5 +1,5 @@
 {
- "_说明": "天城上层的浮岛（平面坐标，1 单位 = 100 m；z = (海拔 - 700) / 100；rot 为弧度；style：neo 新古典 / glass 现代玻璃 / gothic 哥特 / dome 金顶 / villa 红顶别墅 / none 由专门的函数建，如伊甸庄园、银冠堡）。由 v0.7.0 的随机布局固定下来，可以直接改；改完跑 tools/render_all.sh upper --data-only 更新点位。",
+ "_说明": "天城上层的浮岛（平面坐标，1 单位 = 100 m；z = (海拔 - 700) / 100；rot 为弧度；estate_style：english 英国乡村庄园 / chateau 法国城堡与规整花园 / suzhou 苏州园林 / lingnan 岭南园林 / neoclassical 新古典（伊甸庄园，设定原文）/ fortress 要塞（银冠堡）；style 是 v0.7 的旧字段，已不用）。由 v0.7.0 的随机布局固定下来，可以直接改；改完跑 tools/render_all.sh upper --data-only 更新点位。",
  "islands": [
   {
    "id": "eden",
@@ -9,7 +9,8 @@
    "rx": 1.656,
    "ry": 1.242,
    "rot": 0,
-   "style": "none"
+   "style": "none",
+   "estate_style": "neoclassical"
   },
   {
    "id": "silver_crown",
@@ -19,7 +20,8 @@
    "rx": 1.5,
    "ry": 1.0,
    "rot": 0.2,
-   "style": "none"
+   "style": "none",
+   "estate_style": "fortress"
   },
   {
    "id": "isle2",
@@ -29,7 +31,8 @@
    "rx": 0.71183,
    "ry": 0.63951,
    "rot": 2.65899,
-   "style": "neo"
+   "style": "neo",
+   "estate_style": "english"
   },
   {
    "id": "isle3",
@@ -39,7 +42,8 @@
    "rx": 0.30964,
    "ry": 0.24088,
    "rot": 0.63658,
-   "style": "gothic"
+   "style": "gothic",
+   "estate_style": "suzhou"
   },
   {
    "id": "isle4",
@@ -49,7 +53,8 @@
    "rx": 0.8844,
    "ry": 0.68184,
    "rot": 0.8315,
-   "style": "dome"
+   "style": "dome",
+   "estate_style": "chateau"
   },
   {
    "id": "isle5",
@@ -59,7 +64,8 @@
    "rx": 0.97929,
    "ry": 0.73494,
    "rot": 2.30698,
-   "style": "dome"
+   "style": "dome",
+   "estate_style": "english"
   },
   {
    "id": "isle6",
@@ -69,7 +75,8 @@
    "rx": 0.99845,
    "ry": 0.84375,
    "rot": 1.39023,
-   "style": "neo"
+   "style": "neo",
+   "estate_style": "english"
   },
   {
    "id": "isle7",
@@ -79,7 +86,8 @@
    "rx": 0.6782,
    "ry": 0.58084,
    "rot": 2.58276,
-   "style": "villa"
+   "style": "villa",
+   "estate_style": "english"
   },
   {
    "id": "isle8",
@@ -89,7 +97,8 @@
    "rx": 0.30615,
    "ry": 0.25545,
    "rot": 0.62988,
-   "style": "dome"
+   "style": "dome",
+   "estate_style": "english"
   },
   {
    "id": "isle9",
@@ -99,7 +108,8 @@
    "rx": 0.75315,
    "ry": 0.52791,
    "rot": 2.04772,
-   "style": "glass"
+   "style": "glass",
+   "estate_style": "chateau"
   },
   {
    "id": "isle10",
@@ -109,7 +119,8 @@
    "rx": 0.69292,
    "ry": 0.51177,
    "rot": 1.86817,
-   "style": "dome"
+   "style": "dome",
+   "estate_style": "english"
   },
   {
    "id": "isle11",
@@ -119,7 +130,8 @@
    "rx": 0.4512,
    "ry": 0.35948,
    "rot": 2.20197,
-   "style": "glass"
+   "style": "glass",
+   "estate_style": "chateau"
   },
   {
    "id": "isle12",
@@ -129,7 +141,8 @@
    "rx": 0.8007,
    "ry": 0.62417,
    "rot": 2.70321,
-   "style": "dome"
+   "style": "dome",
+   "estate_style": "chateau"
   },
   {
    "id": "isle13",
@@ -139,7 +152,8 @@
    "rx": 0.426,
    "ry": 0.37556,
    "rot": 0.25917,
-   "style": "glass"
+   "style": "glass",
+   "estate_style": "chateau"
   },
   {
    "id": "isle14",
@@ -149,7 +163,8 @@
    "rx": 0.43861,
    "ry": 0.31255,
    "rot": 0.56862,
-   "style": "glass"
+   "style": "glass",
+   "estate_style": "lingnan"
   },
   {
    "id": "isle15",
@@ -159,7 +174,8 @@
    "rx": 0.40171,
    "ry": 0.25808,
    "rot": 2.94452,
-   "style": "glass"
+   "style": "glass",
+   "estate_style": "english"
   },
   {
    "id": "isle16",
@@ -169,7 +185,8 @@
    "rx": 0.31119,
    "ry": 0.28383,
    "rot": 2.30086,
-   "style": "dome"
+   "style": "dome",
+   "estate_style": "chateau"
   },
   {
    "id": "isle17",
@@ -179,7 +196,8 @@
    "rx": 0.30097,
    "ry": 0.20108,
    "rot": 1.38292,
-   "style": "villa"
+   "style": "villa",
+   "estate_style": "chateau"
   },
   {
    "id": "isle18",
@@ -189,7 +207,8 @@
    "rx": 0.4588,
    "ry": 0.38567,
    "rot": 2.70728,
-   "style": "gothic"
+   "style": "gothic",
+   "estate_style": "english"
   },
   {
    "id": "isle19",
@@ -199,7 +218,8 @@
    "rx": 0.41589,
    "ry": 0.2678,
    "rot": 0.28812,
-   "style": "villa"
+   "style": "villa",
+   "estate_style": "lingnan"
   },
   {
    "id": "isle20",
@@ -209,7 +229,8 @@
    "rx": 0.33098,
    "ry": 0.26166,
    "rot": 0.76027,
-   "style": "dome"
+   "style": "dome",
+   "estate_style": "english"
   },
   {
    "id": "isle21",
@@ -219,7 +240,8 @@
    "rx": 0.33483,
    "ry": 0.20904,
    "rot": 0.88241,
-   "style": "gothic"
+   "style": "gothic",
+   "estate_style": "suzhou"
   },
   {
    "id": "isle22",
@@ -229,7 +251,8 @@
    "rx": 0.77745,
    "ry": 0.6129,
    "rot": 1.44289,
-   "style": "neo"
+   "style": "neo",
+   "estate_style": "english"
   },
   {
    "id": "isle23",
@@ -239,7 +262,8 @@
    "rx": 0.57617,
    "ry": 0.39902,
    "rot": 2.9791,
-   "style": "glass"
+   "style": "glass",
+   "estate_style": "english"
   },
   {
    "id": "isle24",
@@ -249,7 +273,8 @@
    "rx": 0.32325,
    "ry": 0.24582,
    "rot": 2.89061,
-   "style": "dome"
+   "style": "dome",
+   "estate_style": "chateau"
   },
   {
    "id": "isle25",
@@ -259,7 +284,8 @@
    "rx": 0.76993,
    "ry": 0.72569,
    "rot": 1.59113,
-   "style": "glass"
+   "style": "glass",
+   "estate_style": "english"
   },
   {
    "id": "isle26",
@@ -269,7 +295,8 @@
    "rx": 0.54832,
    "ry": 0.40509,
    "rot": 0.93446,
-   "style": "gothic"
+   "style": "gothic",
+   "estate_style": "chateau"
   },
   {
    "id": "isle27",
@@ -279,7 +306,8 @@
    "rx": 0.54922,
    "ry": 0.44863,
    "rot": 1.74969,
-   "style": "gothic"
+   "style": "gothic",
+   "estate_style": "suzhou"
   },
   {
    "id": "isle28",
@@ -289,7 +317,8 @@
    "rx": 0.30045,
    "ry": 0.2777,
    "rot": 1.8728,
-   "style": "gothic"
+   "style": "gothic",
+   "estate_style": "chateau"
   },
   {
    "id": "isle29",
@@ -299,7 +328,8 @@
    "rx": 0.71724,
    "ry": 0.49173,
    "rot": 1.27028,
-   "style": "gothic"
+   "style": "gothic",
+   "estate_style": "english"
   },
   {
    "id": "isle30",
@@ -309,7 +339,8 @@
    "rx": 0.87461,
    "ry": 0.80739,
    "rot": 0.26866,
-   "style": "glass"
+   "style": "glass",
+   "estate_style": "chateau"
   },
   {
    "id": "isle31",
@@ -319,7 +350,8 @@
    "rx": 0.32973,
    "ry": 0.2827,
    "rot": 2.39317,
-   "style": "glass"
+   "style": "glass",
+   "estate_style": "chateau"
   },
   {
    "id": "isle32",
@@ -329,7 +361,8 @@
    "rx": 0.41663,
    "ry": 0.3273,
    "rot": 0.72262,
-   "style": "glass"
+   "style": "glass",
+   "estate_style": "english"
   }
  ]
 }
