@@ -32,7 +32,8 @@
   #${ID} .em-panel.em-ghost { visibility: hidden; pointer-events: none; }
   /* 悬浮按钮上的预加载进度环；完成后短暂显示一圈绿色 */
   #${ID} .em-fab.prep::before, #${ID} .em-fab.ready::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid transparent; }
-  #${ID} .em-fab.prep::before { border-top-color: #e6c36a; border-right-color: rgba(230,195,106,.4); animation: em-spin 1s linear infinite; }
+  #${ID} .em-fab.prep::before { border: 0; background: conic-gradient(#e6c36a calc(var(--p, 0) * 1%), rgba(230,195,106,.18) 0);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px)); }
   #${ID} .em-fab.ready::before { border-color: rgba(123,216,143,.8); animation: em-fade 1.8s forwards; }
   @keyframes em-spin { to { transform: rotate(360deg); } }
   @keyframes em-fade { to { opacity: 0; } }
@@ -68,7 +69,17 @@
   #${ID} .em-pick button .ms.ok { color: #7bd88f; } #${ID} .em-pick button .ms.bad { color: #ff7a7a; }
   #${ID} .em-bar .em-line { font-size: 12px; padding: 3px 8px; border: 1px solid rgba(255,255,255,.18); border-radius: 6px; color: #9aa3ad; }
   #${ID} .em-bar .em-line:hover { color: #e6c36a; border-color: #e6c36a; }
-  #${ID} .em-load i { display: block; width: 160px; height: 3px; margin-top: 10px; border-radius: 2px; background: linear-gradient(90deg, transparent, #e6c36a, transparent) 0 0 / 50% 100% no-repeat, rgba(255,255,255,.1); animation: em-slide 1s linear infinite; }
+  #${ID} .em-load > div { text-align: center; }
+  #${ID} .em-load .bar { width: 200px; height: 4px; margin: 10px auto 0; border-radius: 2px; background: rgba(255,255,255,.12); overflow: hidden; }
+  #${ID} .em-load .bar i { display: block; height: 100%; width: 0; background: #e6c36a; transition: width .25s; }
+  #${ID} .em-load .hint { margin-top: 8px; font-size: 12px; color: #e6c36a; min-height: 1em; }
+  #${ID} .em-load .acts { margin-top: 8px; display: flex; gap: 8px; justify-content: center; }
+  #${ID} .em-load .acts[hidden] { display: none; }
+  #${ID} .em-load .acts button { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,.25); background: #1c2027; color: #eef1f4; cursor: pointer; }
+  #${ID} .em-load .acts button:hover { border-color: #e6c36a; }
+  /* 地图程序就绪后遮罩变半透明：先看到模糊地图，进度卡片浮在上面 */
+  #${ID} .em-load.over { background: transparent; pointer-events: none; }
+  #${ID} .em-load.over > div { background: rgba(20,23,28,.88); padding: 12px 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); pointer-events: auto; }
   @keyframes em-slide { from { background-position: -80px 0, 0 0; } to { background-position: 160px 0, 0 0; } }
   /* 手机：面板全屏，关闭按钮加大 */
   @media (max-width: 640px) {
@@ -83,7 +94,7 @@
 </button>
 <div class="em-panel" hidden>
   <div class="em-bar"><b class="em-title">新历 2088 · 地图</b><span class="em-here"></span><button class="em-line" title="切换加载线路"></button><button class="em-close" aria-label="关闭">×</button></div>
-  <div class="em-body"><iframe class="em-frame" title="地图"></iframe><div class="em-load" hidden><div>正在加载地图程序…<i></i></div></div>
+  <div class="em-body"><iframe class="em-frame" title="地图"></iframe><div class="em-load" hidden><div><span class="txt">加载地图 0%</span><div class="bar"><i></i></div><div class="hint"></div><div class="acts" hidden><button class="retry">重试</button><button class="swap">换线路</button></div></div></div>
     <div class="em-pick" hidden><div><h3>选择加载线路</h3><p>地图图片较多，按你的网络选一条更快的线路；之后可以点标题栏的「线路」切换</p><div class="row"></div></div></div></div>
 </div>`;
   pdoc.body.appendChild(root);
@@ -144,26 +155,56 @@
     loadViewer();
   }
   function endGhost(ok) {
-    if (!ghost) return; ghost = false; clearTimeout(ghostT);
+    if (!ghost) return; ghost = false; clearTimeout(ghostT); endProg();
     panel.hidden = true; panel.classList.remove('em-ghost'); sleepViewer();
     fab.classList.remove('prep'); fab.title = '世界地图'; if (ok) { fab.classList.add('ready'); setTimeout(() => fab.classList.remove('ready'), 2000); }
   }
   let html = null, here = '', alive = false, sent = null, killT = 0;
+  // 统一加载进度：地图程序 0–20%、启动 20–50%、首屏图块 50–100%。只增不减；8 秒没进展提示网络慢，20 秒提示卡住
+  const txtEl = loadEl.querySelector('.txt'), barEl = loadEl.querySelector('.bar i'), hintEl = loadEl.querySelector('.hint'), actsEl = loadEl.querySelector('.acts');
+  let pct = 0, lastMove = 0, watchT = 0, quietT = 0;
+  function startProg() {
+    pct = 0; lastMove = Date.now(); setProg(0); hintEl.textContent = ''; actsEl.hidden = true;
+    loadEl.classList.remove('over'); loadEl.hidden = false;   // 不论快慢都显示进度
+    clearInterval(watchT); watchT = setInterval(() => {
+      const idle = (Date.now() - lastMove) / 1000;
+      if (idle > 20) { hintEl.textContent = '好像卡住了：可以重试，或换一条线路'; actsEl.hidden = false; }
+      else if (idle > 8) { hintEl.textContent = '网络较慢，仍在加载…'; actsEl.hidden = !swappable; }
+    }, 1000);
+  }
+  function setProg(p) {
+    p = Math.max(pct, Math.min(100, Math.round(p)));
+    if (p > pct) { lastMove = Date.now(); hintEl.textContent = ''; actsEl.hidden = true; }
+    pct = p; txtEl.textContent = `加载地图 ${pct}%`; barEl.style.width = pct + '%'; fab.style.setProperty('--p', pct);
+  }
+  function endProg() { clearInterval(watchT); setProg(100); clearTimeout(quietT); quietT = setTimeout(() => { loadEl.hidden = true; loadEl.classList.remove('over'); }, 350); }   // 在 100% 停一下再收起
+  loadEl.querySelector('.retry').addEventListener('click', () => { html = null; unloadViewer(); loadViewer(); });
+  loadEl.querySelector('.swap').addEventListener('click', () => { endProg(); showPicker(); });
   const SLEEP_MS = 3 * 60 * 1000;   // 关闭后地图程序保留 3 分钟：期间再打开秒开；超时才整个销毁
 
   // 页面 HTML 只取一次；脚本加载后空闲时预取，第一次打开少等一个请求
-  const fetchHtml = () => html ??= fetch(BASE + 'viewer.html').then(r => r.text()).then(t => t.replace('<head>', `<head><base href="${BASE}">`))
-    .catch(e => { html = null; throw e; });
+  let htmlProg = null;   // 当前这次打开的进度回调（预取和打开共用一个请求）
+  const fetchHtml = () => html ??= (async () => {
+    const r = await fetch(BASE + 'viewer.html'); if (!r.ok) throw new Error(r.status);
+    const total = +r.headers.get('content-length') || 0; let t;
+    if (r.body && total) {   // 按已收字节算进度
+      const rd = r.body.getReader(), parts = []; let n = 0;
+      for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); n += value.length; htmlProg?.(n / total); }
+      t = new TextDecoder().decode(await new Blob(parts).arrayBuffer());
+    } else t = await r.text();
+    return t.replace('<head>', `<head><base href="${BASE}">`);
+  })().catch(e => { html = null; throw e; });
   if (line || !swappable) (window.parent.requestIdleCallback || (f => setTimeout(f, 2000)))(() => fetchHtml().catch(() => {}));
   // 打开：休眠中的地图直接唤醒；否则创建。关闭：先休眠（地图关掉底图、释放瓦片内存，脚本和数据留着），超时再销毁
   async function loadViewer() {
     clearTimeout(killT);
     if (swappable && !line) return showPicker();   // 还没选线路：先选
     if (alive) { post({ type: 'eden-map:wake' }); sent = null; push(); return; }
-    loadEl.hidden = false;
+    startProg(); htmlProg = f => setProg(f * 20);
     let doc;
-    try { doc = await fetchHtml(); }
-    catch (e) { loadEl.firstElementChild.textContent = '地图加载失败，请检查网络后重新打开'; return; }
+    try { doc = await fetchHtml(); setProg(20); }
+    catch (e) { hintEl.textContent = '地图程序下载失败'; actsEl.hidden = false; clearInterval(watchT); return; }
+    finally { htmlProg = null; }
     if (panel.hidden) return;   // 取页面期间面板又被关了
     frame.onload = () => push();
     frame.srcdoc = doc;
@@ -177,8 +218,10 @@
   // 地图 → 酒馆：ready 撤掉遮罩；state 更新面板标题。只接受来自本面板 iframe 的消息
   const onMsg = e => {
     if (e.source !== frame.contentWindow) return;
-    if (e.data?.type === 'eden-map:ready') { alive = true; loadEl.hidden = true; sent = null; push(); if (panel.hidden) sleepViewer(); }
-    if (e.data?.type === 'eden-map:loaded' && ghost) endGhost(true);
+    if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
+    if (e.data?.type === 'eden-map:ready') { alive = true; setProg(50); loadEl.classList.add('over'); sent = null; push(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
+    if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
     if (e.data?.type === 'eden-map:state') titleEl.textContent = `新历 2088 · ${e.data.title}`;
   };
   window.parent.addEventListener('message', onMsg);
