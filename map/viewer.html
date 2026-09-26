@@ -138,6 +138,10 @@
   }
   #credit { position: absolute; right: 8px; top: 6px; z-index: 4; font-size: 10px; color: rgba(255,255,255,.55); text-shadow: 0 0 3px #000; pointer-events: none; }
   #credit:empty { display: none; }
+  #build { position: absolute; left: 6px; bottom: 6px; z-index: 4; font: 10px/1.4 ui-monospace, Menlo, monospace; color: rgba(255,255,255,.4); background: none; border: 0; padding: 2px 4px; cursor: pointer; }
+  #build:hover { color: rgba(255,255,255,.85); }
+  #build:active { transform: translateY(1px); }
+  #build:empty { display: none; }
   #status { position: fixed; left: 14px; bottom: 12px; font-size: 12px; color: var(--muted); z-index: 5; text-shadow: 0 0 3px #000; }
 </style>
 </head>
@@ -152,7 +156,7 @@
     <label class="tg"><input type="checkbox" id="tgMarkers" checked>标记</label>
     <div class="where">当前地点 <input id="here" placeholder="模拟 MVU：世界.当前地点" value="旷野高地"></div>
   </header>
-  <div id="stage"><div id="osd"></div><div id="credit"></div><nav id="layers" hidden></nav><div id="prog" hidden><i></i></div><div id="loading"><span>加载中…</span></div></div>
+  <div id="stage"><div id="osd"></div><div id="credit"></div><button id="build" title="版本编码，点击复制诊断信息"></button><nav id="layers" hidden></nav><div id="prog" hidden><i></i></div><div id="loading"><span>加载中…</span></div></div>
 </div>
 <div id="card" hidden><button class="x" id="cardX">×</button><span class="tag"></span><h2></h2><div class="src"></div><div class="extra"></div></div>
 <div id="status">加载中…</div>
@@ -258,6 +262,27 @@ async function slowWarmAlt() {
   }
 }
 const textCache = new Map();
+// 版本编码：data/build.json 的 code（赛季-版本-通道-构建号，发版脚本写入）+ 运行时识别的客户端尾号。
+// 尾号：I = iOS/iPadOS，A = 安卓，M = macOS，W = Windows，S = 其他。
+function clientTail() {
+  const u = navigator.userAgent, p = navigator.platform || '';
+  if (/iPhone|iPad|iPod/.test(u) || (p === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'I';
+  if (/Android/.test(u)) return 'A';
+  if (/Mac/.test(p)) return 'M';
+  if (/Win/.test(p)) return 'W';
+  return 'S';
+}
+let buildCode = '';
+fetch('data/build.json').then(r => r.ok ? r.json() : null).then(b => {
+  buildCode = ((b && b.code) || 'S0-0000-D-0000') + '-' + clientTail();
+  $('#build').textContent = buildCode;
+}).catch(() => {});
+$('#build').addEventListener('click', () => {
+  const d = [buildCode, 'map=' + (cur || sleeping), 'tier=' + tier, 'dpr=' + devicePixelRatio,
+    'view=' + innerWidth + 'x' + innerHeight, 'base=' + document.baseURI, 'ua=' + navigator.userAgent].join('\n');
+  const done = () => { const b = $('#build'); b.textContent = '已复制诊断信息'; setTimeout(() => b.textContent = buildCode, 1500); };
+  (navigator.clipboard ? navigator.clipboard.writeText(d) : Promise.reject()).then(done).catch(() => { prompt('复制诊断信息', d); });
+});
 const getText = url => { if (!textCache.has(url)) textCache.set(url, fetch(url).then(r => r.text())); return textCache.get(url); };
 async function warmOthers() {
   for (const [id, m] of Object.entries(REG.maps)) {
