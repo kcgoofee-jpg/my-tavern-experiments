@@ -3,3 +3,6 @@ blender/data/*.f32
 blender/data/*.i16
 map/art/world_test.png
 *.blend1
+.claude/
+map/art/world_8k.png
+map/tavern/test-*.html
