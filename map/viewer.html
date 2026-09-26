@@ -131,7 +131,7 @@ function place(el, x, y, placement = OpenSeadragon.Placement.TOP_LEFT) {
 }
 function marker({ name, sub, cls = '', tag = 'set', src, x, y, extra = '' }) {
   const el = document.createElement('div'); el.className = 'mk ' + cls + (tag === 'inf' ? ' inf' : '');
-  el.innerHTML = `<div class="lab">${name}${sub ? ' · <small>' + sub + '</small>' : ''}</div><div class="pin"></div>`;
+  el.innerHTML = `<div class="lab">${name}${sub ? '<small> · ' + sub + '</small>' : ''}</div><div class="pin"></div>`;
   el.dataset.name = name;
   new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => showCard(el, name, tag, src, extra) });
   place(el, x, y); return el;
