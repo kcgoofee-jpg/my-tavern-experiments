@@ -32,6 +32,8 @@ for mid, m in maps.items():
     if not base: err(f'{mid} 没有 base'); continue
     if not os.path.exists(os.path.join(ROOT, base)): err(f'{mid}: 缺底图 {base}')
     if base.endswith('.dzi') and not os.path.isdir(os.path.join(ROOT, base[:-4] + '_files')): err(f'{mid}: 缺瓦片目录 {base[:-4]}_files/')
+    alt = m.get('alt') or {}
+    if alt and not os.path.exists(os.path.join(ROOT, alt.get('base', ''))): warn(f"{mid}: alt 底图 {alt.get('base')} 还没渲染（查看器里的开关会提示并自动关掉）")
     ov = m.get('overlay') or {}
     if ov.get('type') == 'dzi' and not os.path.exists(os.path.join(ROOT, ov.get('src', ''))): err(f"{mid}: 缺叠加层 {ov.get('src')}")
     if ov.get('from') and ov['from'] not in maps: err(f"{mid}.overlay.from → {ov['from']} 不存在")

@@ -131,6 +131,8 @@
     .mk .lab { font-size: 11px; }
     #status { display: none; }
   }
+  #credit { position: absolute; right: 8px; top: 6px; z-index: 4; font-size: 10px; color: rgba(255,255,255,.55); text-shadow: 0 0 3px #000; pointer-events: none; }
+  #credit:empty { display: none; }
   #status { position: fixed; left: 14px; bottom: 12px; font-size: 12px; color: var(--muted); z-index: 5; text-shadow: 0 0 3px #000; }
 </style>
 </head>
@@ -140,11 +142,12 @@
     <nav id="crumbs"></nav>
     <div class="seg" id="tiers"></div><span id="tierState" aria-live="polite"></span>
     <label class="tg" id="tgOverlay"><input type="checkbox" id="tgBorders" checked><span>国界</span></label>
+    <label class="tg" id="tgAlt" hidden title="高级：换成带下方城市的底图（图更大）"><input type="checkbox" id="tgAltBox"><span>显示下方城市</span></label>
     <label class="tg"><input type="checkbox" id="tgLabels" checked>地名</label>
     <label class="tg"><input type="checkbox" id="tgMarkers" checked>标记</label>
     <div class="where">当前地点 <input id="here" placeholder="模拟 MVU：世界.当前地点" value="旷野高地"></div>
   </header>
-  <div id="stage"><div id="osd"></div><nav id="layers" hidden></nav><div id="prog" hidden><i></i></div><div id="loading"><span>加载中…</span></div></div>
+  <div id="stage"><div id="osd"></div><div id="credit"></div><nav id="layers" hidden></nav><div id="prog" hidden><i></i></div><div id="loading"><span>加载中…</span></div></div>
 </div>
 <div id="card" hidden><button class="x" id="cardX">×</button><span class="tag"></span><h2></h2><div class="src"></div><div class="extra"></div></div>
 <div id="status">加载中…</div>
@@ -209,6 +212,7 @@ async function main() {
   viewer.addHandler('animation', rescale); viewer.addHandler('resize', rescale); viewer.addHandler('open', () => setTimeout(rescale, 0));
   initProgress();
   $('#tgBorders').onchange = applyOverlayToggle;
+  $('#tgAltBox').onchange = e => { try { localStorage.setItem(ALT_KEY + cur, e.target.checked ? '1' : '0'); } catch (err) {} swapBase(); };
   $('#tgLabels').onchange = e => document.body.classList.toggle('nolabels', !e.target.checked);
   $('#tgMarkers').onchange = e => document.body.classList.toggle('nomarkers', !e.target.checked);
   $('#here').oninput = () => markHere($('#here').value);
@@ -239,6 +243,15 @@ async function warmOthers() {
 }
 
 // ---------------- 地图切换 ----------------
+// alt：同一张图的另一版底图（上层默认云海，开关后显示下方城市）。只换底图，视角、标记、叠加层都不动；开关状态按地图记住
+const ALT_KEY = 'edenMapAlt:';
+const altOn = id => { try { return localStorage.getItem(ALT_KEY + id) === '1'; } catch (e) { return false; } };
+const baseOf = id => { const m = REG.maps[id]; return m.alt && altOn(id) ? m.alt.base : m.base; };
+function swapBase() {
+  const id = cur, old = viewer.world.getItemAt(0); if (!old) return;
+  viewer.addTiledImage({ tileSource: baseOf(id), index: 0, success: () => { if (cur !== id) return; viewer.world.removeItem(old); setTier(tier); },
+    error: () => { try { localStorage.removeItem(ALT_KEY + id); } catch (e) {} $('#tgAltBox').checked = false; $('#tierState').textContent = '这版底图还没渲染'; } });
+}
 async function go(id) {
   const m = REG.maps[id]; if (!m || m.status === 'planned' || id === cur) return;
   cur = id; userMoved = false; closeCard(); document.body.dataset.map = id;
@@ -249,8 +262,10 @@ async function go(id) {
   curData = cd; ovData = ovSrc ? od : cd;
   renderNav();
   $('#tgOverlay span').textContent = m.overlay?.label || '叠加层'; $('#tgOverlay').hidden = !m.overlay;
+  $('#tgAlt').hidden = !m.alt; if (m.alt) { $('#tgAlt span').textContent = m.alt.label || '另一版底图'; $('#tgAltBox').checked = altOn(id); }
+  $('#credit').textContent = m.credit || '';
   $('#loading').classList.remove('done'); $('#loading').classList.toggle('thumb', id === 'world'); $('#loading span').textContent = `加载 ${m.title}…`;
-  const srcs = [{ tileSource: m.base }];
+  const srcs = [{ tileSource: baseOf(id) }];
   if (m.overlay?.type === 'dzi') srcs.push({ tileSource: m.overlay.src, opacity: $('#tgBorders').checked ? 1 : 0 });
   viewer.open(srcs);
   post({ type: 'eden-map:state', map: id, title: m.title });

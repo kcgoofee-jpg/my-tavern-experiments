@@ -20,3 +20,9 @@
 - 许可：© OpenStreetMap contributors（ODbL），写进 maps.json 的 `credit`、README、ROADMAP。
 - 实现：`blender/tc_city.py`（OSM 城市：轮廓挤出、道路网格、沿路取点、路面标线、车流、楼顶部件）；`tc_common.city_blocks` 的网格生成已删除。三层共用同一套轮廓与道路。
 - 上层新参数 `--below clouds|city`；`render_all.sh` 默认渲 `upper`（云海）与 `upper_city`（带城市）两份。
+
+### 2. 上层默认云海 —— 已完成，**可以重跑：上层（`upper` 与 `upper_city` 两份）**
+- `tiancheng_upper.py --below clouds|city`（默认 clouds）；`bash tools/render_all.sh upper upper_city --res 8000 --samples 64`。
+- maps.json：`tc_upper.alt = {label: 显示下方城市, base: art/tc_upper_city.dzi}`；三层加 `credit`。
+- viewer.html：有 `alt` 的地图显示「显示下方城市」开关，默认关，状态记在 localStorage（`edenMapAlt:<地图>`）；切换只换底图、视角不变；`tc_upper_city.dzi` 还没渲染时开关会提示「这版底图还没渲染」并自动关掉。右上角显示 credit。
+- 注意：仓库里现在的 `tc_upper.dzi` 是旧的「带城市」版，重渲后它变成云海，城市版放 `tc_upper_city`。
