@@ -48,7 +48,9 @@ for L in "${LAYERS[@]}"; do
   OUT="$PWD/map/art/tc_${L}_full.png"
   echo "== 渲染 $L：${RES}px，${SAMPLES} 采样"
   rm -f "$OUT"
-  "${RUN[@]}" -- --res "$RES" --samples "$SAMPLES" --out "$OUT" ${LARGS[@]+"${LARGS[@]}"} ${EXTRA[@]+"${EXTRA[@]}"} 2>&1 | grep -E "^\[|WROTE|Error|Traceback" || true
+  mkdir -p logs; LOG="logs/render_${L}.log"
+  echo "   完整日志：$LOG（看进度：tail -f $LOG | grep -E 'Tiles|Sample|^\\['）"
+  "${RUN[@]}" -- --res "$RES" --samples "$SAMPLES" --out "$OUT" ${LARGS[@]+"${LARGS[@]}"} ${EXTRA[@]+"${EXTRA[@]}"} 2>&1 | tee "$LOG" | grep --line-buffered -E "^\[|WROTE|Error|Traceback" || true
   [ -f "$OUT" ] || { echo "$L 渲染失败"; exit 1; }
   python3 tools/make_dzi.py "$OUT" "map/art/tc_${L}"
   echo "   $L 用时 $((SECONDS - T0)) 秒"

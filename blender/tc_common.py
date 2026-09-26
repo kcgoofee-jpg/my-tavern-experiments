@@ -184,11 +184,19 @@ def camera_and_render(sc, RES, SAMPLES, OUT, opt, view='Standard', exposure=0.0,
             prefs.get_devices()
             devs = [d for d in prefs.devices if d.type != 'CPU']
             if devs:
-                for d in prefs.devices: d.use = True
+                # 设备：默认只用 GPU。CPU + GPU 混合在 M 系列上 CPU 占满 5–6 核，实测未必更快（见 docs/render-performance.md，用 tools/bench_render.sh 验证）
+                hybrid = str(opt.get('--devices', os.environ.get('TC_DEVICES', 'gpu'))) == 'hybrid'
+                for d in prefs.devices: d.use = hybrid or d.type != 'CPU'
                 gpu = True; break
     except Exception as e: print('GPU probe failed', e)
     sc.cycles.device = 'GPU' if gpu else 'CPU'; print('device', sc.cycles.device)
     sc.cycles.samples = SAMPLES
+    # 自适应采样：干净的区域提前停；阈值可调（--noise 0.02 更快，0.01 默认更干净）
+    sc.cycles.use_adaptive_sampling = True; sc.cycles.adaptive_threshold = float(opt.get('--noise', os.environ.get('TC_NOISE', .015)))
+    try: sc.cycles.denoising_use_gpu = gpu                   # Blender 4.1+：降噪也放到 GPU 上（8K 时 CPU 降噪要好几分钟）
+    except AttributeError: pass
+    try: sc.cycles.use_light_tree = True                    # 夜景几千盏小灯：光源树按重要性采样，噪点少、收敛快
+    except AttributeError: pass
     if bounces:                                             # 夜景：光主要来自近处的灯，少几次反弹几乎看不出，渲染快很多
         c = sc.cycles; c.max_bounces = bounces; c.diffuse_bounces = min(bounces, 2); c.glossy_bounces = min(bounces, 2)
         c.transmission_bounces = min(bounces, 2); c.volume_bounces = 0; c.transparent_max_bounces = 8
