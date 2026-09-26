@@ -78,3 +78,12 @@
 - 默认改为只用 GPU、自适应采样、GPU 降噪、光源树；完整日志写到 `logs/render_<层>.log`。详见 `docs/render-performance.md`。
 - **goal 会话请在阶段 1 开始前先跑一次** `bash tools/bench_render.sh mid 2000 64`（约 5 分钟）：比较「只用 GPU」和「CPU + GPU」，把结果写进 docs/render-performance.md，选快的；再用 `--crop` 比较 64 和 128 采样，没有明显差别就改用 64。
 - 本机 8K 中间版底图已提交（c0716ac）。下层的问题：中层支柱在地面的投影是一片规整的黑圆点，很假，请在阶段 1 里一起处理（按城区疏密、打乱排列，或改用柱基而不是圆形暗斑）。**本机会话到此停手**，之后仓库由 goal 会话负责。
+
+## 2026-09-26 云端：任务 4 进度
+### 1. 上层云海重做 —— 已完成，**可以重跑：upper**（`bash tools/render_all.sh upper --res 8000 --samples 128`）
+- 新文件 `blender/tc_clouds.py`（`build_cloud_sea(layer, islands, sun)`）；`tiancheng_upper.py` 只加了一行调用（在建主太阳之后，`--below clouds` 时）。旧的 `below_clouds()` 平面由它删掉，没改岛与庄园的代码。
+- 做法：metaball 融合的积云团 + 按主太阳方向烘进底色的三阶明暗（《部落冲突》式），云缝下 250 m 是暗灰蓝底云；伊甸外圈一环亮云（云台）。
+- 怪影的根因与修法：①岛下倒锥岩体在投水滴形的影 → 带 `rock` 材质的物体 `visible_shadow = False`；②主太阳天顶角 40° 让影子偏出 100–700 m → 云只接收一盏「云用太阳」（灯光链接；方位角同 `SUN_ROT` 215°，天顶角 14°，圆盘角 5°），主太阳照岛不照云。影子与岛同形、就近、越高越虚。
+- 草稿：`docs/drafts/clouds_v1_*`、`clouds_v2_*`（toon / soft 对比）、`clouds_v3_toon.jpg`（选定）、`clouds_v3_toon_8k_crop.jpg`、`clouds_old_vs_v3.jpg`。调研与三轮自评见 `docs/clouds.md`。
+- 8K：metaball 网格分辨率随 `--res` 自动取 0.035（约 220 万顶点，生成约 70 秒，CPU）；材质只是漫反射，GPU 渲染时间基本不变。可选参数：`--clouds soft`（写实对照）、`--cloud-light`、`--cloud-res`。
+- 注意：渲染会覆盖 `map/data/tc_upper.json`（和以前一样）；云端草稿后已还原，没提交。
