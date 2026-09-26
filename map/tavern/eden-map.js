@@ -56,6 +56,7 @@
   #${ID} .em-pick button b { display: block; font-size: 16px; }
   #${ID} .em-pick button small { display: block; color: #9aa3ad; font-size: 12px; margin-top: 2px; }
   #${ID} .em-pick button .ms { display: block; margin-top: 8px; font-size: 12px; color: #9aa3ad; }
+  #${ID} .em-pick button .ms .rec { color: #e6c36a; display: inline; font-size: 12px; }
   #${ID} .em-pick button .ms.ok { color: #7bd88f; } #${ID} .em-pick button .ms.bad { color: #ff7a7a; }
   #${ID} .em-bar .em-line { font-size: 12px; padding: 3px 8px; border: 1px solid rgba(255,255,255,.18); border-radius: 6px; color: #9aa3ad; }
   #${ID} .em-bar .em-line:hover { color: #e6c36a; border-color: #e6c36a; }
@@ -93,7 +94,9 @@
       b.onclick = () => chooseLine(l.key); row.appendChild(b);
       const ms = b.querySelector('.ms'), t0 = performance.now(), ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
       fetch(baseFor(l.key) + 'data/maps.json', { cache: 'no-store', signal: ctl.signal })
-        .then(r => { if (!r.ok) throw 0; const t = (performance.now() - t0) / 1000; ms.textContent = `延迟 ${t.toFixed(1)} 秒`; ms.className = 'ms ' + (t < 3 ? 'ok' : ''); })
+        .then(r => { if (!r.ok) throw 0; const t = (performance.now() - t0) / 1000; ms.textContent = `延迟 ${t.toFixed(1)} 秒`; ms.className = 'ms ' + (t < 3 ? 'ok' : '');
+          // 先测完的就是更快的线路：标「推荐」
+          if (!row.querySelector('.rec')) ms.insertAdjacentHTML('beforeend', ' · <b class="rec">推荐</b>'); })
         .catch(() => { ms.textContent = '连不上'; ms.className = 'ms bad'; });
     }
     pickEl.hidden = false; loadEl.hidden = true;
