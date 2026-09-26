@@ -268,20 +268,20 @@ async function setLang(l) {
   const dict = await getJSON('i18n/' + l + '.json'); if (!dict) return;
   LANG = l; DICT = dict; document.documentElement.lang = l === 'en' ? 'en' : 'zh-CN';
   try { localStorage.setItem('edenMapLang', l); } catch (e) {}
-  applyI18n(); closeCard();
+  applyI18n(); closeCard(); estateLook();
   if (cur) { mapChrome(REG.maps[cur]); renderNav(); if (viewer.world.getItemCount()) { drawOverlays(); applyTier(); } post({ type: 'eden-map:state', map: cur, title: nm(REG.maps[cur], 'title'), lang: LANG }); }
 }
 function cycleTheme() {
   const order = ['auto', 'light', 'dark']; window.__theme = order[(order.indexOf(window.__theme) + 1) % 3];
   try { localStorage.setItem('edenMapTheme', window.__theme); } catch (e) {}
-  window.__applyTheme(); applyI18n();
+  window.__applyTheme(); applyI18n(); estateLook();
 }
 
 async function main() {
   // 三个启动文件并行取（之前 derived.json 要等前两个取完才开始）
   let d, enDict;
   [REG, M, d, DICT, HX, enDict] = await Promise.all([getJSON('data/maps.json'), getJSON('data/world_markers.json'), getJSON('data/derived.json'), window.__i18n,
-    import('./here.mjs').catch(() => null), LANG === 'en' ? window.__i18n : getJSON('i18n/en.json')]);
+    import(new URL('here.mjs', document.baseURI).href).catch(() => null), LANG === 'en' ? window.__i18n : getJSON('i18n/en.json')]);
   DICT = DICT || {}; jsonCache.set('i18n/' + LANG + '.json', Promise.resolve(DICT));
   if (HX) hereIdx = HX.buildIndex(REG, M, enDict?.names);   // 当前地点 → 落点的词表（中英都认）
   post({ type: 'eden-map:boot', pct: .9 });   // 数据文件已到
@@ -299,6 +299,7 @@ async function main() {
   const hdr = $('header'); new ResizeObserver(() => document.documentElement.style.setProperty('--hdr', hdr.offsetHeight + 'px')).observe(hdr);
   document.querySelectorAll('#langSeg button').forEach(b => b.onclick = () => setLang(b.dataset.lang));
   $('#themeBtn').onclick = cycleTheme;
+  matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => setTimeout(estateLook, 0));   // 自动主题跟随系统切换时
   // 画布像素密度随档位封顶：高分屏（手机 3x）上省流只画 1.25x，填充的像素少一半以上，选瓦片的层级也跟着降
   const devDpr = OpenSeadragon.getCurrentPixelDensityRatio;
   OpenSeadragon.getCurrentPixelDensityRatio = () => Math.min(devDpr(), effTier().dpr);
@@ -491,6 +492,7 @@ async function openEstate(id, m, hadPrev) {
   const old = est?.frame; if (old && old.parentNode) old.remove();
   const f = document.createElement('iframe'); f.id = 'estate'; f.title = nm(m, 'title');
   f.srcdoc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">`);
+  f.addEventListener('load', () => { if (est?.frame === f) estateLook(); });   // 首帧前就带上语言与主题，少闪一下
   $('#stage').appendChild(f);
   est = { id, frame: f, ready: false };
   setTimeout(() => { if (est?.frame === f && !f.isConnected) return; if (est?.frame === f && !est.ready) ld.querySelector('span').textContent = tx('estate.slow', '三维库加载较慢（需要能访问 jsDelivr）…'); }, 12000);
@@ -498,7 +500,7 @@ async function openEstate(id, m, hadPrev) {
 function onEstateReady() {
   const f = est.frame; est.ready = true;
   f.classList.add('on'); $('#loading').classList.add('done');
-  estateInset(); estateRoom();
+  estateLook(); estateInset(); estateRoom();
   post({ type: 'eden-map:loaded' });
   // 庄园淡入完成后再关掉瓦片地图（释放解码内存）
   setTimeout(() => { if (est?.frame === f && REG.maps[cur]?.kind === 'estate') { viewer.close(); viewer.clearOverlays(); } }, 240);
@@ -517,6 +519,12 @@ function estateInset() {
   est.frame.contentWindow?.postMessage({ type: 'estate:inset', left: r ? Math.round(r.right - st.left + 8) : 6 }, '*');
 }
 const narrowNow = () => innerWidth <= 640;
+// 庄园页的语言与主题跟着查看器（庄园页在 srcdoc 里读不到 URL 参数，所以载入后与切换时发消息）
+function estateLook() {
+  const w = est?.frame.contentWindow; if (!w) return;
+  w.postMessage({ type: 'estate:lang', lang: LANG }, '*');
+  w.postMessage({ type: 'estate:theme', theme: document.documentElement.classList.contains('light') ? 'light' : 'dark' }, '*');
+}
 function estateRoom() { if (est?.ready) est.frame.contentWindow?.postMessage({ type: 'estate:room', name: ($('#here').value || '').replace('{{user}}', '') }, '*'); }
 window.addEventListener('message', e => {
   if (!est || e.source !== est.frame.contentWindow) return;
@@ -752,7 +760,7 @@ function pointOverlays() {
   const linkHtml = l => l && REG.maps[l.map] && REG.maps[l.map].status !== 'planned'
     ? `<p><a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}">${esc(nm(l, 'label') || t('goto', { title: nm(REG.maps[l.map], 'title') }))} →</a></p>` : '';
   for (const k of d.markers || []) { const meta = m.markers?.[k.id]; if (!meta) continue;
-    placeN(markerEl({ ...meta, sub: (meta.sub || '').replace('{{user}}', t('you')), extra: linkHtml(meta.link) }), k.nx, k.ny); }
+    placeN(markerEl({ ...meta, sub: (meta.sub || '').replace(/\{\{user\}\}\s*/g, t('you')), extra: linkHtml(meta.link) }), k.nx, k.ny); }
 }
 
 // ---------------- 初始视角与当前地点 ----------------
