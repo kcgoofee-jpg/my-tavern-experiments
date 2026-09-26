@@ -245,12 +245,17 @@ wl.ring(x, y, .3, .32, .05, 2.1, 48)                                  # 竖井�
 wl.box(x, y, .3, .5, .06, .04, .7); wl.box(x, y, .3, .06, .5, .04, .7)  # 井筒里的升降平台支架
 wl.ring(x, y, 0, .36, .03, .08, 48)
 wl.done()
-stalls, stc = [], []
+stalls, stc, strot = [], [], []
 TARP = np.array([(.4, .12, .08), (.12, .22, .36), (.36, .3, .12), (.18, .3, .16), (.3, .3, .3)], np.float32)
-for _ in range(260):
-    a = R.uniform(0, 2 * math.pi); r = R.uniform(.42, .78)
-    stalls.append((x + r * math.cos(a), y + r * math.sin(a), R.uniform(.025, .045), R.uniform(.02, .035), 0, R.uniform(.01, .02))); stc.append(TARP[R.integers(5)] * R.uniform(.8, 1.3))
-tc.box_mesh('stalls', stalls, stc, tc.vcol_mat('tarp', .8))
+for rr_ in np.arange(.43, .8, .065):                                    # 一圈圈摊位，圈与圈之间是走道；每隔一段留一条放射状通道
+    n_ = int(2 * math.pi * rr_ / .034)
+    for k in range(n_):
+        a = k / n_ * 2 * math.pi
+        if (k % 14) in (0, 1): continue
+        if R.random() < .08: continue
+        stalls.append((x + rr_ * math.cos(a), y + rr_ * math.sin(a), R.uniform(.026, .032), R.uniform(.03, .042), 0, R.uniform(.01, .018)))
+        stc.append(TARP[R.integers(5)] * R.uniform(.8, 1.3)); strot.append(a)
+tc.box_mesh('stalls', stalls, stc, td.city_mat('tarp', .85, .008, 1.2), rot=np.array(strot))
 wg = Batch('well_glow', emit_mat('well_sodium', SODIUM, 5.0 * GLOW)); lamp_ring(wg, x, y, 2.4, .3, .3, 16); wg.done()
 # 竖井漏下来的一束冷色天光：整个下层唯一的自然光（参考米德加板下的「天窗」）
 shaft = bpy.data.lights.new('shaft_sky', 'AREA'); shaft.shape = 'DISK'; shaft.size = .55; shaft.energy = 18 * GLOW * LAMP / .3
