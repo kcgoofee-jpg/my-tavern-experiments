@@ -42,3 +42,10 @@
 - `bash tools/pack_npm.sh`：把 viewer.html、tavern/eden-map.js、data/*.json、vendor/、art/*.dzi 与瓦片目录、首屏缩略图拷到临时目录，生成 package.json（`tiancheng-map-assets`，版本跟 VERSION，`files` 白名单，`repository` 指向 GitHub），跑 `npm pack --dry-run`。当前：844 个文件，压缩后 12.6 MB（解包 13.5 MB）。`--keep` 保留临时目录，本机发布时进去 `npm publish`。
 - **需要你决定**：仓库没有 LICENSE 文件，package.json 的 `license` 暂填 `SEE LICENSE IN README.md`；另外 VERSION 现在是 0.6.1（CHANGELOG 已写到 0.8.0），发布前请把 VERSION 改对。
 - `eden-map.js` 的 `LINES` 里预留了 `npm` 线路（npmmirror，`https://registry.npmmirror.com/tiancheng-map-assets/<版本>/files/map/`），`enabled: false`，列表里被过滤掉，界面上看不到；首次发布并验证后改成 `true`。版本号从脚本自己的地址里取（gh 的 `@map-v<版本>` 或 npm 路径）；取不到版本时 npm 线路退回原地址。gh 两条线路知道版本时也改为按模板拼地址（结果与原来的「只换域名」相同）。
+
+## 2026-09-27 云端：任务 3 进度
+### 2. 各地图默认缩放 —— 已完成（不用重渲，只改了查看器和注册表）
+- maps.json 每张图加 `view: {focus, width_m, min_width_m, extent_m}`：世界 4000 km / 最大放大到 700 km / 全图按 12000 × 7500 km 算（世界的实际尺度设定没给，是推断）；天城三层 800 m / 60 m / 3000 × 1875 m。
+- viewer：`focusStart` 按 view 算初始视框（米 → 占图宽比例），竖屏时让可见「高度」等于 width_m；最大放大改为每张图 `viewport.maxZoomLevel = extent / min_width_m`，没有 view 的图沿用全局 `maxZoomPixelRatio`。以后圣都、原域做「浮空 + 地面」两层时，各给一个 view 即可。
+- 实测（Chromium）：桌面天城初始可见 800 m、最大放大 60 m；手机竖屏可见高 800 m；世界图 4000 km / 700 km。
+- `check_maps.py` 检查 view（数值范围、focus 是否存在、extent 是否与渲染数据一致）。
