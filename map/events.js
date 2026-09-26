@@ -61,7 +61,8 @@ const TCEvents = (() => {
     if (flyId && cur && viewer.world.getItemCount() && flyTo(flyId)) flyId = null;
   }
   const tagText = o => `<span data-tcmap="${Object.entries(o).filter(([k]) => k !== 'mes' && k !== 'src').map(([k, v]) => `${k}=${String(v).replace(/[;"]/g, ' ')}`).join(';')}"></span>`;
-  const mod = () => EVM ? Promise.resolve(EVM) : import('./tavern/events.mjs').then(m => (EVM = m)).catch(() => null);
+  // 按文档的 <base> 解析（srcdoc 里的内联 / 经典脚本做 import() 时 Chrome 会按宿主页地址解析相对路径，取到 tavern/tavern/…）
+  const mod = () => EVM ? Promise.resolve(EVM) : import(new URL('tavern/events.mjs', document.baseURI).href).then(m => (EVM = m)).catch(() => null);
   // 外部数据源：maps.json 顶层 feeds: [{label, url, every}]（url 返回 {events: [与标签相同的中文字段]}）；状态改成已解除前一直显示
   async function pollFeeds() {
     const feeds = REG?.feeds || []; if (!feeds.length) return;
