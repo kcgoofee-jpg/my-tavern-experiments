@@ -17,6 +17,42 @@
    "r": 0.05
   },
   {
+   "id": "archbishop_palace",
+   "nx": 0.7003,
+   "ny": 0.1425,
+   "r": 0.0237
+  },
+  {
+   "id": "pm_residence",
+   "nx": 0.9541,
+   "ny": 0.5527,
+   "r": 0.0333
+  },
+  {
+   "id": "league_club",
+   "nx": 0.1916,
+   "ny": 0.1954,
+   "r": 0.0251
+  },
+  {
+   "id": "aether_institute",
+   "nx": 0.862,
+   "ny": 0.7376,
+   "r": 0.0257
+  },
+  {
+   "id": "general_residence",
+   "nx": 0.3306,
+   "ny": 0.8427,
+   "r": 0.0239
+  },
+  {
+   "id": "zaibatsu_estate",
+   "nx": 0.9536,
+   "ny": 0.3287,
+   "r": 0.0292
+  },
+  {
    "id": "climate_tower",
    "nx": 0.7833,
    "ny": 0.7667,

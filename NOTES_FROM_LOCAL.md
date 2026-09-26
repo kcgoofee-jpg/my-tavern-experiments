@@ -205,3 +205,12 @@
 
      这些 id 目前只在 `islands[].role` 里，不在 markers 里；要进 markers 请告诉我，我在导出里加。
   4. 中层重渲（投影变了）。
+- 补：六座地标已作为 markers 导出（id 就是 role），`check_maps` 暂时有 6 条「没有名称」警告，等本机在 `maps.json` 的 `tc_upper.markers` 里加上即可，建议：
+```json
+"pm_residence":      { "name": "首相府", "name_en": "Prime Minister's Residence", "sub": "执政厅首脑官邸", "sub_en": "Official residence", "tag": "inf", "src": "推断：设定只提到执政厅与议会；首相官邸位置为推断", "alias": ["首相府", "首相官邸"] },
+"general_residence": { "name": "将军官邸", "name_en": "General's Residence", "sub": "防卫军统帅", "sub_en": "Defense Force command", "tag": "inf", "src": "推断：紧邻银冠堡", "alias": ["将军官邸", "将军府"] },
+"zaibatsu_estate":   { "name": "财团家族庄园", "name_en": "Zaibatsu Family Estate", "sub": "私人飞艇港", "sub_en": "Private airship port", "tag": "inf", "src": "推断", "alias": ["财团庄园", "财阀庄园"] },
+"archbishop_palace": { "name": "大主教府邸", "name_en": "Archbishop's Palace", "sub": "圣光教会", "sub_en": "Church of Holy Light", "tag": "inf", "src": "推断：圣光教会在上层的府邸", "alias": ["大主教府邸", "大主教"] },
+"league_club":       { "name": "庄园主联盟会所", "name_en": "Estate Lords' League Club", "sub": "品鉴宴会场", "sub_en": "Tasting banquets", "tag": "inf", "src": "推断：联盟品鉴宴（《天城视觉规范》请柬样例）", "alias": ["联盟会所", "会所", "品鉴宴"] },
+"aether_institute":  { "name": "以太研究院", "name_en": "Aether Institute", "sub": "气候塔旁", "sub_en": "Beside the climate tower", "tag": "inf", "src": "推断：以太魔法一轨的研究机构", "alias": ["以太研究院", "研究院"] }
+```
