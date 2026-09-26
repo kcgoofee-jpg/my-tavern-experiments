@@ -159,18 +159,21 @@ def district(x, y):                                           # 0…1 的低频�
     for hx, hy, r in ((-4, 2, 5), (9, 4, 4), (-11, -3, 3.5), (5, -6, 3)):   # 高楼核心（推断）
         v += .55 * math.exp(-((x - hx) ** 2 + (y - hy) ** 2) / (2 * r * r))
     return min(1, max(0, v))
-ROOF = [(.30, .29, .27), (.42, .41, .38), (.15, .155, .17), (.28, .17, .12), (.21, .24, .28), (.52, .52, .50), (.24, .22, .18), (.16, .21, .12)]
-ROOF_W = [.22, .18, .16, .1, .12, .08, .1, .04]
+# 屋顶材料：水泥、浅色水泥、沥青卷材、白色防水膜、砾石、深灰金属、旧砖红、灰绿（低饱和，真实航拍里屋顶几乎都是灰）
+ROOF = [(.30, .29, .27), (.42, .41, .38), (.14, .14, .15), (.56, .56, .54), (.27, .25, .21), (.2, .21, .22), (.3, .24, .2), (.2, .22, .19)]
+ROOF_W = [.22, .16, .18, .08, .12, .12, .07, .05]
 Z_GROUND = -3.6                                               # 中层地面（上层视角下，中层楼顶约在 z=-2.2…0）
 CELL = .24                                                    # 街区格（24 m）
 def diag_road(x, y): return abs(x - y * 1.3 - 2) < .16 or abs(x + y * .8 + 6) < .16   # 两条斜向大道（推断）
 def city_blocks(rng):
-    """生成城市。只用传入的 rng（numpy），不碰 random；公园里的树只记坐标，由调用方按顺序种下。
-    返回 dict：boxes (n,6)、colors (n,3)、kind (n,)、parent (n,)（设备所在楼的下标）、cell (n,2)、district (n,)、
-    trees [(x, y, z, r)]、xs、ys、AX、AY（主干道所在的格序号）。"""
-    S = CELL; boxes, cols, kinds, parents, cells, dist, trees = [], [], [], [], [], [], []
-    def box(x, y, w, d, z0, z1, c, k, cell, n, par=-1):
-        boxes.append((x, y, w, d, z0, z1)); cols.append(c); kinds.append(k); parents.append(par); cells.append(cell); dist.append(n)
+    """生成城市（三层共用的平面布局）。只用传入的 rng（numpy），不碰 random；树只记坐标，由调用方种下。
+    结构（按真实城市的肌理）：主干道把城市切成 70–200 m 的街坊；街坊四边按 6–40 m 的面宽切成地块，
+    楼沿街贴建（相邻常常共墙），内院有低矮加建、停车场或树；高楼区偶尔几块地合并成塔楼；整块公园、整块大体量建筑。
+    返回 dict：boxes (n,6)、colors (n,3)、kind (n,)、parent (n,)（设备所在楼的下标）、cell (n,2)（所在网格格，供各层分区）、
+    district (n,)、block (n,)（所在街坊序号）、trees [(x, y, z, r)]、xs、ys、AX、AY（主干道所在的格序号）。"""
+    S = CELL; boxes, cols, kinds, parents, dist, blocks, trees = [], [], [], [], [], [], []
+    def box(x, y, w, d, z0, z1, c, k, n, blk, par=-1):
+        boxes.append((x, y, w, d, z0, z1)); cols.append(c); kinds.append(k); parents.append(par); dist.append(n); blocks.append(blk)
         return len(boxes) - 1
     def avenues(n):                                              # 主干道间隔不等（4–9 格），避免棋盘感
         out, k = set(), 0
@@ -178,35 +181,82 @@ def city_blocks(rng):
         return out
     xs, ys = np.arange(-W * .56, W * .56, S), np.arange(-H * .58, H * .58, S)
     AX, AY = avenues(len(xs)), avenues(len(ys))
-    for ix, x0 in enumerate(xs):
-        for iy, y0 in enumerate(ys):
-            if ix in AX or iy in AY: continue                     # 主干道
-            if diag_road(x0, y0): continue
-            n = district(x0, y0)
-            park = math.sin(x0 * .9 + 2) * math.sin(y0 * 1.1 - 1) + .4 * math.sin(x0 * .3 + y0 * .5)
-            if park > 1.05 and n < .75:                           # 城市公园：地面 + 树
-                box(x0, y0, S, S, Z_GROUND, Z_GROUND + .02, (.10, .16, .07), K_PARK, (ix, iy), n)
-                for _ in range(rng.integers(3, 8)): trees.append((x0 + rng.uniform(-.1, .1), y0 + rng.uniform(-.1, .1), Z_GROUND + .02, rng.uniform(.02, .04)))
+    def spans(coords, av):                                       # 相邻两条主干道之间的街坊范围
+        idx = sorted(av) + [len(coords)]; out = []
+        for a, b in zip(idx[:-1], idx[1:]):
+            if b - a > 1: out.append((coords[a] + S / 2, coords[b - 1] + S / 2 if b == len(coords) else coords[b] - S / 2))
+        return out
+    def blocked(x0, y0, x1, y1): return any(diag_road(x, y) for x in (x0, x1, (x0 + x1) / 2) for y in (y0, y1, (y0 + y1) / 2))
+    def roof_color(pal):
+        c = ROOF[pal[0] if rng.random() < .55 else pal[1] if rng.random() < .5 else rng.choice(len(ROOF), p=ROOF_W)]
+        return tuple(min(1, ch * rng.uniform(.85, 1.15)) for ch in c)
+    def height(n, low=False):
+        if low: return -3.6 + rng.uniform(.08, .35)
+        return min(.1, -2.2 + n ** 2 * 1.4 + rng.random() ** 4 * (.4 + 1.5 * n))
+    def building(x, y, w, d, top, pal, n, blk):
+        if blocked(x - w / 2, y - d / 2, x + w / 2, y + d / 2) or w < .02 or d < .02: return
+        c = roof_color(pal); bi = box(x, y, w, d, Z_GROUND, top, c, K_BUILDING, n, blk)
+        if w * d > .004:                                          # 楼顶设备 / 水箱 / 电梯机房
+            for _ in range(rng.integers(1, 4)):
+                k = rng.uniform(.01, .026); cc = tuple(min(1, ch * rng.uniform(.7, 1.4)) for ch in c)
+                box(x + rng.uniform(-w, w) * .32, y + rng.uniform(-d, d) * .32, k, k * rng.uniform(.6, 1.6), top, top + rng.uniform(.004, .015), cc, K_EQUIP, n, blk, bi)
+    blk = 0
+    for X0, X1 in spans(xs, AX):
+        for Y0, Y1 in spans(ys, AY):
+            blk += 1; cx, cy = (X0 + X1) / 2, (Y0 + Y1) / 2; n = district(cx, cy); bw, bh = X1 - X0, Y1 - Y0
+            # 街坊地面（人行道 + 内院）：斜向大道穿过的街坊按格铺，好把大道让出来
+            if blocked(X0, Y0, X1, Y1):
+                for gx in np.arange(X0 + S / 2, X1, S):
+                    for gy in np.arange(Y0 + S / 2, Y1, S):
+                        if not diag_road(gx, gy): box(gx, gy, min(S, X1 - gx + S / 2), min(S, Y1 - gy + S / 2), Z_GROUND, Z_GROUND + .005, (.2, .2, .19), K_GROUND, n, blk)
+            else: box(cx, cy, bw - .006, bh - .006, Z_GROUND, Z_GROUND + .005, (.2, .2, .19), K_GROUND, n, blk)
+            park = math.sin(cx * .9 + 2) * math.sin(cy * 1.1 - 1) + .4 * math.sin(cx * .3 + cy * .5)
+            if park > 1.0 and n < .75:                            # 整块城市公园：草地 + 树
+                box(cx, cy, bw - .03, bh - .03, Z_GROUND, Z_GROUND + .02, (.10, .16, .07), K_PARK, n, blk)
+                for _ in range(int(bw * bh * 140)):
+                    trees.append((cx + rng.uniform(-.47, .47) * bw, cy + rng.uniform(-.47, .47) * bh, Z_GROUND + .02, rng.uniform(.015, .035)))
                 continue
-            box(x0, y0, S * .9, S * .9, Z_GROUND, Z_GROUND + .005, (.20, .20, .19), K_GROUND, (ix, iy), n)   # 街区地面（人行道、内院），比马路亮
-            if rng.random() < .04 + .08 * (1 - n): continue       # 空地、小广场
-            if rng.random() < .04:                                # 大体量建筑（商场、车站、厂房）占满一格
-                parts = [(x0, y0, S * .92, S * .92, -2.2 + n * 1.2 + rng.random() * .3)]
-            else:
-                parts = [(x0 + rng.uniform(-.04, .04), y0 + rng.uniform(-.04, .04), rng.uniform(.08, .19), rng.uniform(.08, .19),
-                          -2.2 + n ** 2 * 1.4 + rng.random() ** 4 * (.4 + 1.5 * n)) for _ in range(rng.integers(1, 4))]
-            for x, y, w, d, top in parts:
-                top = min(top, .1); c = ROOF[rng.choice(len(ROOF), p=ROOF_W)]
-                c = tuple(min(1, ch * rng.uniform(.85, 1.15)) for ch in c)
-                bi = box(x, y, w, d, Z_GROUND, top, c, K_BUILDING, (ix, iy), n)
-                if w * d > .005:                                  # 楼顶设备 / 水箱 / 天窗
+            pal = (rng.choice(len(ROOF), p=ROOF_W), rng.choice(len(ROOF), p=ROOF_W))   # 同一街坊的楼色调相近
+            m = .028                                              # 人行道宽约 3 m
+            x0, x1, y0, y1 = X0 + m, X1 - m, Y0 + m, Y1 - m
+            if rng.random() < .03 + .04 * n:                      # 整块大体量建筑（商场、车站、厂房）
+                building(cx, cy, x1 - x0, y1 - y0, min(.1, -2.2 + n * 1.2 + rng.random() * .3), pal, n, blk); continue
+            D = min(rng.uniform(.13, .24) * (1 + .6 * n), .46 * min(x1 - x0, y1 - y0))   # 地块进深
+            def row(a0, a1, along_x, fixed, inward):
+                t = a0
+                while t < a1 - .03:
+                    tower = rng.random() < .07 * n ** 2
+                    f = rng.uniform(.25, .42) if tower else rng.uniform(.06, .15) * (1 + 1.3 * n)
+                    f = min(f, a1 - t)
+                    if a1 - t - f < .05: f = a1 - t                     # 不留下太窄的边角
+                    if rng.random() > .04:                                # 偶尔空一块：小广场、拆迁空地
+                        g0 = 0 if rng.random() < .55 else rng.uniform(.002, .008); g1 = 0 if rng.random() < .55 else rng.uniform(.002, .008)
+                        dd = D * (rng.uniform(1.1, 1.5) if tower else rng.uniform(.7, 1.0)); dd = min(dd, .46 * min(x1 - x0, y1 - y0) * (1.6 if tower else 1))
+                        sb = rng.uniform(0, .008)                         # 临街退让
+                        top = height(n) if not tower else min(.1, -2.2 + n * 1.6 + rng.uniform(.2, .6))
+                        if along_x: building(t + g0 + (f - g0 - g1) / 2, fixed + inward * (sb + dd / 2), f - g0 - g1, dd, top, pal, n, blk)
+                        else: building(fixed + inward * (sb + dd / 2), t + g0 + (f - g0 - g1) / 2, dd, f - g0 - g1, top, pal, n, blk)
+                    t += f
+            row(x0, x1, True, y1, -1); row(x0, x1, True, y0, 1)          # 南北两边通长
+            row(y0 + D, y1 - D, False, x0, 1); row(y0 + D, y1 - D, False, x1, -1)   # 东西两边夹在中间
+            ix0, ix1, iy0, iy1 = x0 + D + .01, x1 - D - .01, y0 + D + .01, y1 - D - .01   # 内院
+            if ix1 - ix0 > .06 and iy1 - iy0 > .06:
+                r = rng.random()
+                if r < .4:                                        # 内院加建：低矮的库房、车库
                     for _ in range(rng.integers(1, 4)):
-                        k = rng.uniform(.012, .03); cc = tuple(min(1, ch * rng.uniform(.7, 1.4)) for ch in c)
-                        box(x + rng.uniform(-w, w) * .35, y + rng.uniform(-d, d) * .35, k, k * rng.uniform(.6, 1.6), top, top + rng.uniform(.004, .015), cc, K_EQUIP, (ix, iy), n, bi)
-    city = dict(boxes=np.array(boxes, np.float32), colors=np.array(cols, np.float32), kind=np.array(kinds, np.int8),
-                parent=np.array(parents, np.int32), cell=np.array(cells, np.int32), district=np.array(dist, np.float32),
+                        w, d = rng.uniform(.04, .6) * (ix1 - ix0), rng.uniform(.04, .6) * (iy1 - iy0)
+                        building(rng.uniform(ix0 + w / 2, ix1 - w / 2), rng.uniform(iy0 + d / 2, iy1 - d / 2), w, d, height(n, True), pal, n, blk)
+                elif r < .6:                                      # 停车场 / 硬地
+                    box((ix0 + ix1) / 2, (iy0 + iy1) / 2, ix1 - ix0, iy1 - iy0, Z_GROUND, Z_GROUND + .006, (.13, .13, .13), K_GROUND, n, blk)
+                else:                                             # 内院树
+                    for _ in range(int((ix1 - ix0) * (iy1 - iy0) * 90)):
+                        trees.append((rng.uniform(ix0, ix1), rng.uniform(iy0, iy1), Z_GROUND + .005, rng.uniform(.012, .025)))
+    B = np.array(boxes, np.float32)
+    cell = np.stack([np.clip(np.rint((B[:, 0] - xs[0]) / S), 0, len(xs) - 1), np.clip(np.rint((B[:, 1] - ys[0]) / S), 0, len(ys) - 1)], 1).astype(np.int32)
+    city = dict(boxes=B, colors=np.array(cols, np.float32), kind=np.array(kinds, np.int8),
+                parent=np.array(parents, np.int32), cell=cell, district=np.array(dist, np.float32), block=np.array(blocks, np.int32),
                 trees=trees, xs=xs, ys=ys, AX=sorted(AX), AY=sorted(AY))
-    tick(f'city boxes {len(boxes)}')
+    tick(f'city: {blk} blocks, {int((city["kind"] == K_BUILDING).sum())} buildings, {len(boxes)} boxes, {len(trees)} trees')
     return city
 def keep_mask(city, zones):
     """zones: [(x, y, rx, ry)] 椭圆（或 ('rect', x0, y0, x1, y1)）——落在其中的盒子去掉，给地标腾地方。只做过滤，不消耗随机数。"""
@@ -352,3 +402,48 @@ def sun_dir():
 def shadow_offset(height):
     """高 height（平面单位）处的物体，影子落在其下方平面上时的水平偏移 (dx, dy)。"""
     d = sun_dir(); t = height / -d.z; return d.x * t, d.y * t
+
+# ---------------- 批量球体（树冠）：一次建网格，比逐个 bmesh 快两个数量级 ----------------
+_ICO = None
+def ico_mesh(name, P, m=None, sz=.8, sub=1):
+    """P: (n, 4) = x, y, z, r（z 为球心高度）；sz 为竖向压扁系数。平滑着色。"""
+    global _ICO
+    P = np.asarray(P, np.float32).reshape(-1, 4); n = len(P)
+    if n == 0: return None
+    if _ICO is None:
+        bm = bmesh.new(); bmesh.ops.create_icosphere(bm, subdivisions=sub, radius=1)
+        v = np.array([p.co[:] for p in bm.verts], np.float32); f = np.array([[x.index for x in fc.verts] for fc in bm.faces], np.int32); bm.free()
+        _ICO = (v, f)
+    v, f = _ICO; nv, nf = len(v), len(f)
+    V = v[None] * np.array([1, 1, sz], np.float32) * P[:, 3:4, None] + P[:, None, :3]
+    F = (f[None] + (np.arange(n, dtype=np.int32) * nv)[:, None, None]).reshape(-1, 3)
+    me = bpy.data.meshes.new(name); me.vertices.add(n * nv); me.vertices.foreach_set('co', V.ravel())
+    me.loops.add(F.size); me.loops.foreach_set('vertex_index', F.ravel())
+    me.polygons.add(len(F)); me.polygons.foreach_set('loop_start', np.arange(0, F.size, 3, dtype=np.int32)); me.polygons.foreach_set('loop_total', np.full(len(F), 3, np.int32))
+    me.polygons.foreach_set('use_smooth', np.ones(len(F), bool)); me.update(calc_edges=True)
+    o = bpy.data.objects.new(name, me); bpy.context.scene.collection.objects.link(o)
+    if m: o.data.materials.append(m)
+    return o
+def cyl_mesh(name, C, m=None, seg=20):
+    """C: (n, 5) = x, y, z0, r, h。批量圆柱（储罐、柱子），侧面 + 顶面（底面看不到）。"""
+    C = np.asarray(C, np.float32).reshape(-1, 5); n = len(C)
+    if n == 0: return None
+    a = np.linspace(0, 2 * np.pi, seg, endpoint=False).astype(np.float32); ca, sa = np.cos(a), np.sin(a)
+    V = np.empty((n, 2 * seg, 3), np.float32)
+    V[:, :seg, 0] = C[:, :1] + ca * C[:, 3:4]; V[:, :seg, 1] = C[:, 1:2] + sa * C[:, 3:4]; V[:, :seg, 2] = C[:, 2:3]
+    V[:, seg:, :2] = V[:, :seg, :2]; V[:, seg:, 2] = C[:, 2:3] + C[:, 4:5]
+    k = np.arange(seg, dtype=np.int32); side = np.stack([k, (k + 1) % seg, (k + 1) % seg + seg, k + seg], 1)   # (seg, 4)
+    off = (np.arange(n, dtype=np.int32) * 2 * seg)
+    S_ = (side[None] + off[:, None, None]).reshape(-1)
+    T_ = (np.arange(seg, 2 * seg, dtype=np.int32)[None] + off[:, None]).reshape(-1)
+    per = np.concatenate([np.full(seg, 4, np.int32), [seg]]).astype(np.int32)
+    loops = np.concatenate([np.concatenate([(side + o).reshape(-1), np.arange(seg, 2 * seg, dtype=np.int32) + o]) for o in off])
+    totals = np.tile(per, n); starts = np.concatenate([[0], np.cumsum(totals)[:-1]]).astype(np.int32)
+    me = bpy.data.meshes.new(name); me.vertices.add(n * 2 * seg); me.vertices.foreach_set('co', V.ravel())
+    me.loops.add(len(loops)); me.loops.foreach_set('vertex_index', loops)
+    me.polygons.add(len(totals)); me.polygons.foreach_set('loop_start', starts); me.polygons.foreach_set('loop_total', totals)
+    sm = np.tile(np.concatenate([np.ones(seg, bool), [False]]), n); me.polygons.foreach_set('use_smooth', sm)
+    me.update(calc_edges=True)
+    o = bpy.data.objects.new(name, me); bpy.context.scene.collection.objects.link(o)
+    if m: o.data.materials.append(m)
+    return o

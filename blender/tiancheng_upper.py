@@ -48,20 +48,28 @@ def sphere(x, y, z, r, m, seg=16):
     bpy.ops.mesh.primitive_uv_sphere_add(segments=seg, ring_count=seg // 2, radius=r, location=(x, y, z)); o = bpy.context.active_object
     bpy.ops.object.shade_smooth(); return link(o, m)
 
-# 树：全部写进两张 bmesh，最后各生成一个物体
-TREES = {'tree1': bmesh.new(), 'tree2': bmesh.new()}
+# 树：先收集坐标，最后各用 numpy 一次建网格（random 的调用次数与顺序不变，岛屿布局不受影响）
+TREES = {'tree1': [], 'tree2': []}
 def tree(x, y, z, r, kind=None):
-    bm = TREES[kind or ('tree1' if random.random() < .5 else 'tree2')]
-    bmesh.ops.create_icosphere(bm, subdivisions=1, radius=r, matrix=Matrix.Translation((x, y, z + r * .55)) @ Matrix.Diagonal((1, 1, .8, 1)))
+    TREES[kind or ('tree1' if random.random() < .5 else 'tree2')].append((x, y, z + r * .55, r))
 def flush_trees():
-    for k, bm in TREES.items():
-        for f in bm.faces: f.smooth = True
-        me = bpy.data.meshes.new(k); bm.to_mesh(me); bm.free(); o = bpy.data.objects.new(k, me); col_main.objects.link(o); o.data.materials.append(M[k])
+    for k, pts in TREES.items(): tc.ico_mesh(k, pts, M[k])
 
 # ---------------- 中层楼顶（远景，白天无霓虹；楼顶约在 z=-2.2…0）----------------
 # 城市生成在 tc_common：必须先于其他随机调用（岛屿、树），三层才对得上
-tc.road_plane((.09, .09, .10))                              # 路面：主干道与空地露出的地面（比楼顶暗）
-tc.box_mesh('city', city['boxes'], city['colors'], tc.vcol_mat('citymat', .7))
+# 细节层用自己的随机序列（不碰城市的 rng，也不碰岛屿用的 random），布局与 v0.7.0 一致
+import numpy as np, tc_detail as td
+D = np.random.default_rng(5501)
+ZG = tc.Z_GROUND
+tc.road_plane(None, m=td.asphalt_mat('road', (.09, .09, .10)))    # 路面：沥青颗粒、补丁（比楼顶暗）
+cmat = td.city_mat('citymat', .7)
+tc.box_mesh('city', city['boxes'], city['colors'], cmat)
+bi = city['kind'] == tc.K_BUILDING
+kit = td.building_kit(city['boxes'][bi], city['colors'][bi], D, 'day', cap=.3)   # 女儿墙、退台、坡顶、设备、太阳能板、屋顶花园
+td.build_kit('city', kit, cmat, td.city_mat('roofmat', .6, grime=.8))
+mb, mc = td.road_marks(city, ZG + .0002); tc.box_mesh('road_marks', mb, mc, td.city_mat('markmat', .6, ao=0, grime=1.5))
+cars, crot, cdir, ccol = td.traffic(city, D, ZG, 2.2, jam=lambda x, y: tc.district(x, y))
+tc.box_mesh('cars', cars, ccol, tc.vcol_mat('carmat', .25, .6), rot=crot); tick(f'details: marks {len(mb)}, cars {len(cars)}')
 for t in city['trees']: tree(*t)                            # 公园里的树
 tick('city')
 # 霾层：上层与中层之间的一张半透明平面（比体积雾好控，不投影）
@@ -168,23 +176,13 @@ def silver_crown(x, y, z):
         a = k / 6 * 2 * math.pi; cyl(x + math.cos(a) * 1.07, y + math.sin(a) * .7, z, .07, .2, M['stone'], 16)
     cube(x, y, z, .5, .35, .25, M['stone']); cyl(x, y, z + .25, .12, .2, M['stone']); cube(x + .5, y - .2, z, .35, .2, .006, M['pad'])
 
-EDEN = (1.5, .8, 4.5)                                      # 伊甸庄园约 1150 m，放在片区中央偏右
-eden(*EDEN)
-SILVER = (-9.5, -5.5, 1.0)
-silver_crown(*SILVER)
-placed = [(EDEN[0], EDEN[1], 2.2), (SILVER[0], SILVER[1], 1.6)]
+# 浮岛布局是数据（blender/data/tc_islands.json），不再依赖随机序列：改城市、加细节都不会挪动岛屿，也可以直接手改
+ISLES = json.load(open(os.path.join(tc.HERE, 'data', 'tc_islands.json')))['islands']
+for i in ISLES:
+    if i['id'] == 'eden': eden(i['x'], i['y'], i['z'])                  # 伊甸庄园约 1150 m，片区中央偏右
+    elif i['id'] == 'silver_crown': silver_crown(i['x'], i['y'], i['z'])   # 银冠堡：上层与中层交界（800 m）
+    else: island(i['x'], i['y'], i['z'], i['rx'], i['ry'], i['rot'], i['style'])
 TOWER = (8.5, -5.0)                                         # 以太气候调节塔：从中层伸到约 900 m
-placed.append((*TOWER, .5))
-styles = ['neo', 'glass', 'gothic', 'dome', 'villa']
-tries = 0
-while len(placed) < 34 and tries < 8000:                   # 数十座：约 30 座其他庄园
-    tries += 1
-    rx = .3 + random.random() ** 2 * .7;   # 其他庄园最大约 1.0，伊甸约 1.66
-    ry = rx * (.6 + random.random() * .35)
-    x, y = random.uniform(-W / 2 + 1, W / 2 - 1), random.uniform(-H / 2 + 1, H / 2 - 1)
-    if any(math.hypot(x - px, y - py) < rx + pr + .9 for px, py, pr in placed): continue
-    island(x, y, 1.3 + random.random() * 6.5, rx, ry, random.random() * math.pi, random.choice(styles))
-    placed.append((x, y, rx))
 cyl(*TOWER, -7, .12, 9.2, M['stone'], 32)
 for k in range(5): cyl(*TOWER, .3 + k * .42, .17, .03, M['pad'], 32)
 markers.append({'id': 'climate_tower', 'pos': (*TOWER, 2.2), 'r': .2})
