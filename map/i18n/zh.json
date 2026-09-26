@@ -1,0 +1,16 @@
+{
+  "_说明": "查看器界面文字（中文）。键名与 en.json 一致；{x} 是占位符。地名的英文在 maps.json 的 name_en / sub_en / title_en，世界图地名在 en.json 的 names。",
+  "page_title": "天城地图",
+  "tier_save": "省流", "tier_std": "标准", "tier_hd": "清晰",
+  "borders": "国界", "overlay": "叠加层", "alt_base": "另一版底图", "alt_title": "高级：换成带下方城市的底图（图更大）",
+  "labels": "地名", "markers": "标记",
+  "here": "当前地点", "here_ph": "模拟 MVU：世界.当前地点",
+  "loading": "加载中…", "loading_map": "加载 {title}…", "loading_pct": "加载 {title} {pct}%", "load_failed": "地图加载失败：{msg}",
+  "busy_pct": "加载中 {pct}%", "loaded": "✓ 已加载", "switching": "切换中…", "slow": "网络较慢… {pct}", "stuck": "卡住了？点此重试",
+  "tier_status": "{title} · 清晰度上限 {px}px", "alt_missing": "这版底图还没渲染",
+  "build_title": "版本编码，点击复制诊断信息", "copied": "已复制诊断信息", "copy_prompt": "复制诊断信息",
+  "tag_inf": "推断", "tag_set": "设定原文", "src_note": "",
+  "planned": "制作中", "planned_paren": "（制作中）", "enter": "进入{name} →", "goto": "前往{title}",
+  "you": "你", "minor": "中小国", "sep": " · ",
+  "lang_title": "界面语言", "theme_auto": "◐ 自动", "theme_light": "☀ 浅色", "theme_dark": "☾ 深色", "theme_title": "界面主题：自动跟随系统 / 浅色 / 深色"
+}

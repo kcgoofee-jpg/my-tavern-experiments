@@ -4,6 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>天城地图</title>
+<script>
+// 主题（默认跟随系统）与界面语言（中 / EN）：首帧之前定好，避免先闪一下深色或中文。?theme=light|dark|auto、?lang=en 可覆盖
+(function () {
+  const q = new URLSearchParams(location.search), d = document.documentElement; let th = 'auto', lg = 'zh';
+  try { th = q.get('theme') || localStorage.getItem('edenMapTheme') || 'auto'; lg = q.get('lang') || localStorage.getItem('edenMapLang') || 'zh'; } catch (e) {}
+  if (!['auto', 'light', 'dark'].includes(th)) th = 'auto'; if (!['zh', 'en'].includes(lg)) lg = 'zh';
+  const mq = matchMedia('(prefers-color-scheme: light)');
+  window.__theme = th; window.__lang = lg; d.lang = lg === 'en' ? 'en' : 'zh-CN';
+  window.__applyTheme = () => d.classList.toggle('light', window.__theme === 'light' || (window.__theme === 'auto' && mq.matches));
+  window.__applyTheme(); mq.addEventListener && mq.addEventListener('change', window.__applyTheme);
+  window.__i18n = fetch('i18n/' + lg + '.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));   // 和启动数据并行取
+})();
+</script>
 <!-- OpenSeadragon 5.0.1（BSD-3，见 vendor/openseadragon/LICENSE.txt），随仓库版本固定 -->
 <!-- 启动文件和地图库并行开始下载（CDN 每个请求约 1 秒延迟，串行等待是打开慢的主因） -->
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/maps.json">
@@ -26,9 +39,20 @@
   /* 档位旁的加载状态：切换清晰度后看得到有没有在加载、加载完了没有 */
   #tierState { font-size: 12px; color: var(--muted); min-width: 5.5em; white-space: nowrap; }
   #tierState.busy { color: var(--gold); }
-  #tierState.ok { color: #7bd88f; }
-  #tierState.stuck { color: #ff7a7a; cursor: pointer; text-decoration: underline; }
+  #tierState.ok { color: var(--ok); }
+  #tierState.stuck { color: var(--bad); cursor: pointer; text-decoration: underline; }
   :root { --bg: #14171c; --panel: rgba(20,23,28,.88); --line: rgba(255,255,255,.14); --ink: #eef1f4; --muted: #9aa3ad; --gold: #e6c36a; --inf: #ffb347; }
+  :root { --on-gold: #1a1406; --field: rgba(255,255,255,.06); --hover: rgba(255,255,255,.08); --track: rgba(255,255,255,.08); --src: #c9d1d9; --ok: #7bd88f; --bad: #ff7a7a; }
+  /* 浅色主题：取《天城视觉规范》的浅色变量（纸面 #f6f7f5、墨 #14171a、金 #8f6f2e）；每层保留自己的强调色，换成在浅底上读得清的深一档 */
+  html.light { --bg: #e9ebe8; --panel: rgba(246,247,245,.94); --line: rgba(20,23,26,.16); --ink: #14171a; --muted: #5d666b; --gold: #8f6f2e; --inf: #b06000;
+    --on-gold: #fff; --field: rgba(20,23,26,.05); --hover: rgba(20,23,26,.06); --track: rgba(20,23,26,.1); --src: #3b4247; --ok: #2e8b4a; --bad: #c0392b; }
+  html.light body[data-map="tc_upper"] { --bg: #efeae0; --panel: rgba(246,243,236,.94); --gold: #8f6f2e; --muted: #6b665c; --ink: #1b1a17; }
+  html.light body[data-map="tc_mid"] { --bg: #f1ecf7; --panel: rgba(247,244,251,.94); --gold: #b3155f; --muted: #6d5a86; --ink: #1d1230; }
+  html.light body[data-map="tc_low"] { --bg: #f4f1e8; --panel: rgba(244,241,232,.95); --gold: #3f7a22; --muted: #5a6b4c; --ink: #1b2414; }
+  html.light body[data-map="tc_mid"] #crumbs b, html.light body[data-map="tc_mid"] #layers button.on { text-shadow: none; }
+  html.light body[data-map="tc_mid"] #prog i { box-shadow: none; }
+  html.light #status { color: rgba(255,255,255,.8); }
+  #langSeg button { padding: 6px 9px; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif; }
   #app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; }
   header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
@@ -37,11 +61,11 @@
   .seg button { white-space: nowrap; }
   .seg button, .btn { background: transparent; color: var(--ink); border: 0; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
   .seg button + button { border-left: 1px solid var(--line); }
-  .seg button.on { background: var(--gold); color: #1a1406; font-weight: 700; }
+  .seg button.on { background: var(--gold); color: var(--on-gold); font-weight: 700; }
   .btn { border: 1px solid var(--line); border-radius: 8px; }
   label.tg { font-size: 13px; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; cursor: pointer; }
   .where { margin-left: auto; display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
-  .where input { background: rgba(255,255,255,.06); border: 1px solid var(--line); color: var(--ink); border-radius: 6px; padding: 5px 8px; width: 200px; font: inherit; }
+  .where input { background: var(--field); border: 1px solid var(--line); color: var(--ink); border-radius: 6px; padding: 5px 8px; width: 150px; font: inherit; }
   #stage { position: relative; min-height: 0; }
   #osd { position: absolute; inset: 0; }
   /* 面包屑：世界 › 天城 · 上层 */
@@ -63,12 +87,12 @@
   #card a[data-go]:hover, #crumbs a:hover { text-decoration: underline; }
   #card a[data-go]:active, #crumbs a:active { opacity: .6; }
   .seg button { transition: background .15s; }
-  .seg button:not(.on):hover { background: rgba(255,255,255,.08); }
+  .seg button:not(.on):hover { background: var(--hover); }
   .seg button:active { opacity: .7; }
   #layers button.on { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold); }
   #layers button:disabled { opacity: .45; cursor: default; }
   /* 加载进度：顶部细条 + 首屏居中提示 */
-  #prog { position: absolute; left: 0; right: 0; top: 0; height: 4px; z-index: 7; background: rgba(255,255,255,.08); }
+  #prog { position: absolute; left: 0; right: 0; top: 0; height: 4px; z-index: 7; background: var(--track); }
   #prog[hidden] { display: none; }
   #prog i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .2s; }
   #loading { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: var(--bg); color: var(--muted); font-size: 14px; transition: opacity .3s; }
@@ -102,6 +126,8 @@
   .realm b { display: block; font-size: clamp(13px, calc(30px * var(--rs, 1)), 40px); letter-spacing: calc(12px * min(var(--rs, 1), 1)); font-weight: 900; }
   .realm span { font-size: clamp(10px, calc(13px * var(--rs, 1)), 15px); letter-spacing: 2px; opacity: .9; }
   body.tiny .realm span, body.tiny .minor { display: none; }
+  html[lang="en"] .realm b { letter-spacing: calc(3px * min(var(--rs, 1), 1)); }   /* 拉丁字母不能用中文的大字距 */
+  html[lang="en"] .realm span { letter-spacing: .5px; }
   .realm.oren b { font-family: "PingFang SC", sans-serif; color: #ffe2a8; }
   .realm.fed b { font-family: "Songti SC", "STSong", serif; color: #cfe3ff; }
   .realm.xl b { font-family: "Kaiti SC", "STKaiti", serif; color: #e6d6ff; }
@@ -112,12 +138,13 @@
   body.far .mk:not(.capital):not(.here):not(.active) .lab { display: none; }
   body.far .mk:not(.active) .lab small { display: none; }
   /* 信息卡 */
-  #card { position: fixed; right: 14px; top: 64px; width: 320px; max-width: calc(100vw - 28px); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.65; z-index: 10; }
+  #card { position: fixed; right: 14px; top: calc(var(--hdr, 50px) + 14px); width: 320px; max-width: calc(100vw - 28px); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.65; z-index: 10; }
   #card[hidden] { display: none; }
-  #card .tag { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 4px; background: #2f6f4f; }
+  #card .tag { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 4px; background: #2f6f4f; color: #fff; }
   #card .tag.inf { background: #b06000; }
   #card h2 { margin: 6px 0 4px; font-size: 17px; }
-  #card .src { color: #c9d1d9; white-space: pre-line; }
+  #card .src { color: var(--src); white-space: pre-line; }
+  #card .src[data-note]::before { content: attr(data-note); display: block; font-size: 11px; color: var(--muted); }
   #card .x { position: absolute; right: 8px; top: 6px; background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; }
   #card a { color: var(--gold); }
   /* 窄屏：工具栏压缩成一行可横向滑动，信息卡改为底部抽屉 */
@@ -152,12 +179,14 @@
     <nav id="crumbs"></nav>
     <div class="seg" id="tiers"></div><span id="tierState" aria-live="polite"></span>
     <label class="tg" id="tgOverlay"><input type="checkbox" id="tgBorders" checked><span>国界</span></label>
-    <label class="tg" id="tgAlt" hidden title="高级：换成带下方城市的底图（图更大）"><input type="checkbox" id="tgAltBox"><span>显示下方城市</span></label>
-    <label class="tg"><input type="checkbox" id="tgLabels" checked>地名</label>
-    <label class="tg"><input type="checkbox" id="tgMarkers" checked>标记</label>
-    <div class="where">当前地点 <input id="here" placeholder="模拟 MVU：世界.当前地点" value="旷野高地"></div>
+    <label class="tg" id="tgAlt" hidden data-i18n-title="alt_title" title="高级：换成带下方城市的底图（图更大）"><input type="checkbox" id="tgAltBox"><span>显示下方城市</span></label>
+    <label class="tg"><input type="checkbox" id="tgLabels" checked><span data-i18n="labels">地名</span></label>
+    <label class="tg"><input type="checkbox" id="tgMarkers" checked><span data-i18n="markers">标记</span></label>
+    <div class="seg" id="langSeg" data-i18n-title="lang_title" title="界面语言"><button type="button" data-lang="zh">中</button><button type="button" data-lang="en">EN</button></div>
+    <button type="button" class="btn" id="themeBtn" data-i18n-title="theme_title" title="界面主题"></button>
+    <div class="where"><span data-i18n="here">当前地点</span> <input id="here" data-i18n-ph="here_ph" placeholder="模拟 MVU：世界.当前地点" value="旷野高地"></div>
   </header>
-  <div id="stage"><div id="osd"></div><div id="credit"></div><button id="build" title="版本编码，点击复制诊断信息"></button><nav id="layers" hidden></nav><div id="prog" hidden><i></i></div><div id="loading"><span>加载中…</span></div></div>
+  <div id="stage"><div id="osd"></div><div id="credit"></div><button id="build" data-i18n-title="build_title" title="版本编码，点击复制诊断信息"></button><nav id="layers" hidden></nav><div id="prog" hidden><i></i></div><div id="loading"><span data-i18n="loading">加载中…</span></div></div>
 </div>
 <div id="card" hidden><button class="x" id="cardX">×</button><span class="tag"></span><h2></h2><div class="src"></div><div class="extra"></div></div>
 <div id="status">加载中…</div>
@@ -165,10 +194,10 @@
 // 多地图查看器：地图注册表 data/maps.json（世界 → 天城三层 → 以后的庄园剖面……）。
 // 底图都是 DZI 瓦片金字塔，只加载屏幕里看得见的部分；解码内存由屏幕大小和瓦片缓存上限决定。
 // 档位 = 清晰度上限：最多加载到相当于 cap 像素宽的那一层瓦片（放大后差别明显），默认省流。
-const TIERS = [
-  { key: 'save', name: '省流', cap: 2000, ratio: 1, dpr: 1.25 },
-  { key: 'std', name: '标准', cap: 4000, ratio: .8, dpr: 2 },
-  { key: 'hd', name: '清晰', cap: 8000, ratio: .5, dpr: 3 },
+const TIERS = [   // 名称在 i18n/*.json 的 tier_<key>
+  { key: 'save', cap: 2000, ratio: 1, dpr: 1.25 },
+  { key: 'std', cap: 4000, ratio: .8, dpr: 2 },
+  { key: 'hd', cap: 8000, ratio: .5, dpr: 3 },
 ];
 const TIER_KEY = 'edenMapTierV2';   // 换了键名：旧版存下的「标准」不再沿用，统一从省流开始
 // 世界图：代码地图坐标（1600×1000）→ 底图归一化坐标（相机裁切：宽 98.5%、高 97%）
@@ -187,10 +216,41 @@ const post = msg => { if (window.top !== window) parent.postMessage(msg, '*'); }
 const jsonCache = new Map();
 const getJSON = url => { if (!jsonCache.has(url)) jsonCache.set(url, fetch(url).then(r => r.ok ? r.json() : null).catch(() => null)); return jsonCache.get(url); };
 
+// ---------------- 界面语言（中 / EN）与主题（自动 / 浅色 / 深色）----------------
+// 界面文字在 i18n/zh.json、en.json；地名的英文在 maps.json 的 *_en 字段，世界图地名在 en.json 的 names。设定原文（地点卡正文）不翻译。
+let LANG = window.__lang || 'zh', DICT = {};
+const t = (k, v) => { let s = DICT[k] ?? k; for (const [a, b] of Object.entries(v || {})) s = s.split('{' + a + '}').join(b); return s; };
+const tr = z => LANG === 'en' ? (DICT.names?.[z] || z) : z;
+const nm = (o, k = 'name') => { const z = o?.[k] ?? ''; return LANG === 'en' ? (o?.[k + '_en'] || tr(z)) : z; };
+window.I18N = { get lang() { return LANG; }, t, nm, tr };   // 给 events.js 等其他脚本用
+function applyI18n() {
+  document.title = t('page_title');
+  document.querySelectorAll('[data-i18n]').forEach(e => e.textContent = t(e.dataset.i18n));
+  document.querySelectorAll('[data-i18n-title]').forEach(e => e.title = t(e.dataset.i18nTitle));
+  document.querySelectorAll('[data-i18n-ph]').forEach(e => e.placeholder = t(e.dataset.i18nPh));
+  document.querySelectorAll('#tiers button').forEach(b => b.textContent = t('tier_' + b.dataset.k));
+  document.querySelectorAll('#langSeg button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
+  $('#themeBtn').textContent = t('theme_' + window.__theme);
+}
+async function setLang(l) {
+  if (l === LANG) return;
+  const dict = await getJSON('i18n/' + l + '.json'); if (!dict) return;
+  LANG = l; DICT = dict; document.documentElement.lang = l === 'en' ? 'en' : 'zh-CN';
+  try { localStorage.setItem('edenMapLang', l); } catch (e) {}
+  applyI18n(); closeCard();
+  if (cur) { mapChrome(REG.maps[cur]); renderNav(); if (viewer.world.getItemCount()) { drawOverlays(); setTier(tier); } post({ type: 'eden-map:state', map: cur, title: nm(REG.maps[cur], 'title'), lang: LANG }); }
+}
+function cycleTheme() {
+  const order = ['auto', 'light', 'dark']; window.__theme = order[(order.indexOf(window.__theme) + 1) % 3];
+  try { localStorage.setItem('edenMapTheme', window.__theme); } catch (e) {}
+  window.__applyTheme(); applyI18n();
+}
+
 async function main() {
   // 三个启动文件并行取（之前 derived.json 要等前两个取完才开始）
   let d;
-  [REG, M, d] = await Promise.all([getJSON('data/maps.json'), getJSON('data/world_markers.json'), getJSON('data/derived.json')]);
+  [REG, M, d, DICT] = await Promise.all([getJSON('data/maps.json'), getJSON('data/world_markers.json'), getJSON('data/derived.json'), window.__i18n]);
+  DICT = DICT || {}; jsonCache.set('i18n/' + LANG + '.json', Promise.resolve(DICT));
   post({ type: 'eden-map:boot', pct: .9 });   // 数据文件已到
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点
   if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland);
@@ -198,8 +258,13 @@ async function main() {
   for (const k of REG.groups.tiancheng?.layers || []) for (const v of Object.values(REG.maps[k].markers || {})) ALIAS['天城'].push(...(v.alias || []));
   narrow = innerWidth <= 640;   // 等 iframe 布局完成后再判断，脚本刚执行时宽度可能还是 0
   const seg = $('#tiers');
-  for (const t of TIERS) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.k = t.key;
-    b.onclick = () => setTier(t.key); seg.appendChild(b); }
+  for (const x of TIERS) { const b = document.createElement('button'); b.dataset.k = x.key;
+    b.onclick = () => setTier(x.key); seg.appendChild(b); }
+  applyI18n(); $('#status').textContent = t('loading');
+  // 工具栏换行（英文更宽、窄窗口）时，信息卡跟着工具栏的实际高度往下挪，不压住第二行
+  const hdr = $('header'); new ResizeObserver(() => document.documentElement.style.setProperty('--hdr', hdr.offsetHeight + 'px')).observe(hdr);
+  document.querySelectorAll('#langSeg button').forEach(b => b.onclick = () => setLang(b.dataset.lang));
+  $('#themeBtn').onclick = cycleTheme;
   // 画布像素密度随档位封顶：高分屏（手机 3x）上省流只画 1.25x，填充的像素少一半以上，选瓦片的层级也跟着降
   const devDpr = OpenSeadragon.getCurrentPixelDensityRatio;
   OpenSeadragon.getCurrentPixelDensityRatio = () => Math.min(devDpr(), TIERS.find(t => t.key === tier).dpr);
@@ -211,7 +276,7 @@ async function main() {
     smoothTileEdgesMinZoom: Infinity,   // 瓦片有 1px 重叠，不需要放大时整屏再画一遍去接缝
   });
   viewer.addHandler('open', onOpen);
-  viewer.addHandler('open-failed', e => { $('#loading span').textContent = '地图加载失败：' + (e.message || ''); });
+  viewer.addHandler('open-failed', e => { $('#loading span').textContent = t('load_failed', { msg: e.message || '' }); });
   viewer.addHandler('canvas-drag', () => userMoved = true); viewer.addHandler('canvas-scroll', () => userMoved = true); viewer.addHandler('canvas-pinch', () => userMoved = true);
   let lastRs = 0, queued = false;
   const rescale = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false;
@@ -282,8 +347,8 @@ fetch('data/build.json').then(r => r.ok ? r.json() : null).then(b => {
 $('#build').addEventListener('click', () => {
   const d = [buildCode, 'map=' + (cur || sleeping), 'tier=' + tier, 'dpr=' + devicePixelRatio,
     'view=' + innerWidth + 'x' + innerHeight, 'base=' + document.baseURI, 'ua=' + navigator.userAgent].join('\n');
-  const done = () => { const b = $('#build'); b.textContent = '已复制诊断信息'; setTimeout(() => b.textContent = buildCode, 1500); };
-  (navigator.clipboard ? navigator.clipboard.writeText(d) : Promise.reject()).then(done).catch(() => { prompt('复制诊断信息', d); });
+  const done = () => { const b = $('#build'); b.textContent = t('copied'); setTimeout(() => b.textContent = buildCode, 1500); };
+  (navigator.clipboard ? navigator.clipboard.writeText(d) : Promise.reject()).then(done).catch(() => { prompt(t('copy_prompt'), d); });
 });
 const getText = url => { if (!textCache.has(url)) textCache.set(url, fetch(url).then(r => r.text())); return textCache.get(url); };
 async function warmOthers() {
@@ -313,7 +378,7 @@ const baseOf = id => { const m = REG.maps[id]; return m.alt && altOn(id) ? m.alt
 function swapBase() {
   const id = cur, old = viewer.world.getItemAt(0); if (!old) return;
   viewer.addTiledImage({ tileSource: baseOf(id), index: 0, success: () => { if (cur !== id) return; viewer.world.removeItem(old); setTier(tier); },
-    error: () => { try { localStorage.removeItem(ALT_KEY + id); } catch (e) {} $('#tgAltBox').checked = false; $('#tierState').textContent = '这版底图还没渲染'; } });
+    error: () => { try { localStorage.removeItem(ALT_KEY + id); } catch (e) {} $('#tgAltBox').checked = false; $('#tierState').textContent = t('alt_missing'); } });
 }
 async function go(id) {
   const m = REG.maps[id]; if (!m || m.status === 'planned' || id === cur) return;
@@ -323,25 +388,29 @@ async function go(id) {
   const [cd, od] = await Promise.all([m.data ? getJSON(m.data) : null, ovSrc ? getJSON(ovSrc) : null]);
   if (id !== cur) return;   // 加载期间又切换了地图
   curData = cd; ovData = ovSrc ? od : cd;
-  renderNav();
-  $('#tgOverlay span').textContent = m.overlay?.label || '叠加层'; $('#tgOverlay').hidden = !m.overlay;
-  $('#tgAlt').hidden = !m.alt; if (m.alt) { $('#tgAlt span').textContent = m.alt.label || '另一版底图'; $('#tgAltBox').checked = altOn(id); }
-  $('#credit').textContent = m.credit || '';
-  $('#loading').classList.remove('done', 'over'); $('#loading').classList.toggle('thumb', id === 'world'); $('#loading span').textContent = `加载 ${m.title}…`;
+  renderNav(); mapChrome(m); if (m.alt) $('#tgAltBox').checked = altOn(id);
+  $('#credit').textContent = nm(m, 'credit');
+  $('#loading').classList.remove('done', 'over'); $('#loading').classList.toggle('thumb', id === 'world'); $('#loading span').textContent = t('loading_map', { title: nm(m, 'title') });
   const srcs = [{ tileSource: baseOf(id) }];
   if (m.overlay?.type === 'dzi') srcs.push({ tileSource: m.overlay.src, opacity: $('#tgBorders').checked ? 1 : 0 });
   viewer.open(srcs);
-  post({ type: 'eden-map:state', map: id, title: m.title });
+  post({ type: 'eden-map:state', map: id, title: nm(m, 'title'), lang: LANG });
+}
+// 随地图变的工具栏文字（叠加层、另一版底图的开关名）
+function mapChrome(m) {
+  $('#credit').textContent = nm(m, 'credit');
+  $('#tgOverlay span').textContent = m.overlay ? nm(m.overlay, 'label') || t('overlay') : t('overlay'); $('#tgOverlay').hidden = !m.overlay;
+  $('#tgAlt').hidden = !m.alt; if (m.alt) $('#tgAlt span').textContent = nm(m.alt, 'label') || t('alt_base');
 }
 function renderNav() {
   const m = REG.maps[cur], chain = [];
   for (let k = cur; k; k = REG.maps[k].parent) chain.unshift(k);
-  $('#crumbs').innerHTML = chain.map((k, i) => { const t = REG.maps[k].title;
-    return i < chain.length - 1 ? `<a data-go="${k}">${esc(t)}</a><span class="sep">›</span>` : `<b>${esc(t)}</b>`; }).join('');
+  $('#crumbs').innerHTML = chain.map((k, i) => { const ti = nm(REG.maps[k], 'title');
+    return i < chain.length - 1 ? `<a data-go="${k}">${esc(ti)}</a><span class="sep">›</span>` : `<b>${esc(ti)}</b>`; }).join('');
   const g = m.group && REG.groups[m.group], nav = $('#layers');
   nav.hidden = !g;
   if (g) nav.innerHTML = g.layers.map(k => { const L = REG.maps[k], planned = L.status === 'planned';
-    return `<button data-go="${k}" class="${k === cur ? 'on' : ''}" ${planned ? 'disabled title="制作中"' : ''}>${esc(L.layer.name)}<small>${esc(planned ? '制作中' : L.layer.alt)}</small></button>`; }).join('');
+    return `<button data-go="${k}" class="${k === cur ? 'on' : ''}" ${planned ? `disabled title="${esc(t('planned'))}"` : ''}>${esc(nm(L.layer))}<small>${esc(planned ? t('planned') : nm(L.layer, 'alt'))}</small></button>`; }).join('');
 }
 document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a && !a.disabled) { e.preventDefault(); pendingFocus = a.dataset.focus || null; go(a.dataset.go); } });
 
@@ -353,10 +422,10 @@ function initProgress() {
     let busy = 0; for (let i = 0; i < viewer.world.getItemCount(); i++) busy += viewer.world.getItemAt(i)._tilesLoading || 0;
     const pct = busy ? Math.round(done / (done + busy) * 100) : 100;
     $('#prog').hidden = !busy; $('#prog i').style.width = pct + '%';
-    if (!$('#loading').classList.contains('done')) $('#loading span').textContent = `加载 ${REG.maps[cur].title} ${pct}%`;
+    if (!$('#loading').classList.contains('done')) $('#loading span').textContent = t('loading_pct', { title: nm(REG.maps[cur], 'title'), pct });
     if (!firstLoaded) post({ type: 'eden-map:progress', pct });
-    if (busy) { clearTimeout(tsT); ts.textContent = `加载中 ${pct}%`; ts.className = 'busy'; }
-    else if (ts.className === 'busy') { ts.textContent = '✓ 已加载'; ts.className = 'ok'; clearTimeout(tsT); tsT = setTimeout(() => { ts.textContent = ''; ts.className = ''; }, 2500); }
+    if (busy) { clearTimeout(tsT); ts.textContent = t('busy_pct', { pct }); ts.className = 'busy'; }
+    else if (ts.className === 'busy') { ts.textContent = t('loaded'); ts.className = 'ok'; clearTimeout(tsT); tsT = setTimeout(() => { ts.textContent = ''; ts.className = ''; }, 2500); }
     // 当前地图首屏瓦片都到了：告诉酒馆（后台预加载据此收尾）
     if (!busy && done && !firstLoaded) { firstLoaded = true; post({ type: 'eden-map:loaded' }); }
     clearTimeout(hideT); if (!busy) { if (done) setTimeout(() => $('#loading').classList.add('done'), 350); /* 在 100% 停一下再淡出 */ hideT = setTimeout(() => { done = 0; $('#prog').hidden = true; }, 200); }
@@ -369,8 +438,8 @@ function initProgress() {
     let busy = 0; for (let i = 0; i < viewer.world.getItemCount(); i++) busy += viewer.world.getItemAt(i)._tilesLoading || 0;
     const idle = (Date.now() - lastTile) / 1000;
     if (!busy) { lastTile = Date.now(); return; }
-    if (idle > 20) { ts.textContent = '卡住了？点此重试'; ts.className = 'busy stuck'; }
-    else if (idle > 8 && !ts.classList.contains('stuck')) { ts.textContent = `网络较慢… ${ts.textContent.match(/\d+%/)?.[0] || ''}`; }
+    if (idle > 20) { ts.textContent = t('stuck'); ts.className = 'busy stuck'; }
+    else if (idle > 8 && !ts.classList.contains('stuck')) { ts.textContent = t('slow', { pct: ts.textContent.match(/\d+%/)?.[0] || '' }); }
   }, 1000);
   ts.addEventListener('click', () => { if (!ts.classList.contains('stuck')) return; ts.className = 'busy'; lastTile = Date.now();
     viewer.world.resetItems(); for (let i = 0; i < viewer.world.getItemCount(); i++) viewer.world.getItemAt(i)._needsUpdate = true; viewer.forceRedraw(); });
@@ -391,29 +460,33 @@ function setTier(key) {
   tier = key; try { localStorage.setItem(TIER_KEY, key); } catch (e) {}
   document.querySelectorAll('#tiers button').forEach(b => b.classList.toggle('on', b.dataset.k === key));
   viewer?._updatePixelDensityRatio?.();   // 新档位的像素密度上限（变了会自动重设画布）
-  const t = TIERS.find(t => t.key === key), base = viewer.world.getItemAt(0);
+  const tt = TIERS.find(x => x.key === key), base = viewer.world.getItemAt(0);
   if (!base) return;
-  const scale = Math.min(1, t.cap / base.source.dimensions.x);   // 相对底图原始宽度；叠加层按同比例
+  const scale = Math.min(1, tt.cap / base.source.dimensions.x);   // 相对底图原始宽度；叠加层按同比例
   for (let i = 0; i < viewer.world.getItemCount(); i++) {
     const it = viewer.world.getItemAt(i); capLevels(it);
     it._capLevel = Math.min(it.source.maxLevel, Math.ceil(Math.log2(it.source.dimensions.x * scale)));
-    it.minPixelRatio = t.ratio; it._needsUpdate = true; it._needsDraw = true;
+    it.minPixelRatio = tt.ratio; it._needsUpdate = true; it._needsDraw = true;
   }
   viewer.forceRedraw();
   // 切档后如果没有新瓦片要拉（降档或已缓存），也给一个明确的「已加载」
-  const ts = $('#tierState'); ts.textContent = '切换中…'; ts.className = 'busy';
+  const ts = $('#tierState'); ts.textContent = t('switching'); ts.className = 'busy';
   setTimeout(() => { let busy = 0; for (let i = 0; i < viewer.world.getItemCount(); i++) busy += viewer.world.getItemAt(i)._tilesLoading || 0;
-    if (!busy && ts.textContent === '切换中…') { ts.textContent = '✓ 已加载'; ts.className = 'ok'; setTimeout(() => { if (ts.className === 'ok') { ts.textContent = ''; ts.className = ''; } }, 2500); } }, 900);
-  $('#status').textContent = `${REG.maps[cur].title} · 清晰度上限 ${Math.min(t.cap, base.source.dimensions.x)}px`;
+    if (!busy && ts.textContent === t('switching')) { ts.textContent = t('loaded'); ts.className = 'ok'; setTimeout(() => { if (ts.className === 'ok') { ts.textContent = ''; ts.className = ''; } }, 2500); } }, 900);
+  $('#status').textContent = t('tier_status', { title: nm(REG.maps[cur], 'title'), px: Math.min(tt.cap, base.source.dimensions.x) });
 }
 function onOpen() {
   const it = viewer.world.getItemAt(0), sz = it.getContentSize(); aspect = sz.y / sz.x;
-  setTier(tier); applyZoomLimit(); viewer.clearOverlays();
-  if (REG.maps[cur].kind === 'world') worldOverlays(); else pointOverlays();
-  TCEvents.render();   // 事件层（events.js）：聊天前端里的事件标签、外部数据源
-  applyOverlayToggle(); markHere($('#here').value); focusStart(true);
+  setTier(tier); applyZoomLimit(); drawOverlays(); focusStart(true);
   if (pendingFocus) { const el = [...document.querySelectorAll('.mk')].find(e => e.dataset.name === REG.maps[cur].markers?.[pendingFocus]?.name);
     pendingFocus = null; el?._open(); }
+}
+// 叠加层（标记、结界圈、事件）：打开地图时画；切换语言时重画
+function drawOverlays() {
+  viewer.clearOverlays();
+  if (REG.maps[cur].kind === 'world') worldOverlays(); else pointOverlays();
+  TCEvents.render();   // 事件层（events.js）：聊天前端里的事件标签、外部数据源
+  applyOverlayToggle(); markHere($('#here').value);
 }
 function applyOverlayToggle() {
   const on = $('#tgBorders').checked, m = REG.maps[cur];
@@ -426,11 +499,12 @@ function placeN(el, nx, ny, placement = OpenSeadragon.Placement.TOP_LEFT) {
   viewer.addOverlay({ element: el, location: new OpenSeadragon.Point(nx, ny * aspect), placement });
 }
 function place(el, x, y, placement) { const [nx, ny] = toImg(x, y); placeN(el, nx, ny, placement); }
-function markerEl({ name, sub, cls = '', tag = 'set', src, extra = '', alias }) {
+function markerEl({ name, sub, cls = '', tag = 'set', src, extra = '', alias, name_en, sub_en }) {
   const el = document.createElement('div'); el.className = 'mk ' + cls + (tag === 'inf' ? ' inf' : '');
-  el.innerHTML = `<div class="lab">${esc(name)}${sub ? '<small> · ' + esc(sub) + '</small>' : ''}</div><div class="pin"></div>`;
+  const dn = LANG === 'en' ? name_en || tr(name) : name, ds = sub && (LANG === 'en' ? sub_en || tr(sub) : sub);   // 显示名随语言；dataset.name 保持中文（当前地点匹配用）
+  el.innerHTML = `<div class="lab">${esc(dn)}${ds ? '<small> · ' + esc(ds) + '</small>' : ''}</div><div class="pin"></div>`;
   el.dataset.name = name; if (alias) el.dataset.alias = alias.join('|');
-  el._open = () => showCard(el, name, tag, src, extra);
+  el._open = () => showCard(el, dn, tag, src, extra);
   new OpenSeadragon.MouseTracker({ element: el, clickHandler: el._open });
   return el;
 }
@@ -438,22 +512,23 @@ function marker(o) { const el = markerEl(o); place(el, o.x, o.y); return el; }
 function showCard(el, name, tag, src, extra) {
   document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); el && el.classList.add('active');
   const c = $('#card'); c.hidden = false;
-  c.querySelector('.tag').textContent = tag === 'inf' ? '推断' : '设定原文'; c.querySelector('.tag').className = 'tag' + (tag === 'inf' ? ' inf' : '');
-  c.querySelector('h2').textContent = name; c.querySelector('.src').textContent = src; c.querySelector('.extra').innerHTML = extra || '';
+  c.querySelector('.tag').textContent = t(tag === 'inf' ? 'tag_inf' : 'tag_set'); c.querySelector('.tag').className = 'tag' + (tag === 'inf' ? ' inf' : '');
+  const sv = c.querySelector('.src'); c.querySelector('h2').textContent = name; sv.textContent = src;
+  if (LANG === 'en' && /[\u4e00-\u9fff]/.test(src || '') && t('src_note')) sv.dataset.note = t('src_note'); else delete sv.dataset.note;   // 英文界面：设定原文保持中文，加一行说明 c.querySelector('.extra').innerHTML = extra || '';
 }
 function closeCard() { $('#card').hidden = true; document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); }
 function worldOverlays() {
   for (const r of M.realms) { const el = document.createElement('div'); el.className = 'realm ' + r.id;
-    el.innerHTML = `<b>${r.name}</b><span>${r.sub}</span>`;
-    new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => showCard(null, r.name, r.tag, r.src) });
+    el.innerHTML = `<b>${esc(tr(r.name))}</b><span>${esc(tr(r.sub))}</span>`;
+    new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => showCard(null, tr(r.name), r.tag, r.src) });
     const off = { oren: -95, fed: -150, xl: -110 }[r.id]; place(el, r.c[0], r.c[1] + off, OpenSeadragon.Placement.CENTER); }
-  for (const m of M.minors) { if (m.n < 600) continue; const el = document.createElement('div'); el.className = 'minor'; el.textContent = '中小国';
+  for (const m of M.minors) { if (m.n < 600) continue; const el = document.createElement('div'); el.className = 'minor'; el.textContent = t('minor');
     place(el, m.c[0], m.c[1], OpenSeadragon.Placement.CENTER); }
-  { const el = document.createElement('div'); el.className = 'realm'; el.innerHTML = '<b style="font-size:20px;letter-spacing:6px">海外诸地</b><span>稀有矿物 · 异域人员输出地</span>';
-    new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => showCard(null, '海外诸地', 'inf', '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）；陆块形状与位置为推断') });
+  { const el = document.createElement('div'); el.className = 'realm'; el.innerHTML = `<b style="font-size:20px;letter-spacing:${LANG === 'en' ? 2 : 6}px">${esc(tr('海外诸地'))}</b><span>${esc(tr('稀有矿物 · 异域人员输出地'))}</span>`;
+    new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => showCard(null, tr('海外诸地'), 'inf', '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）；陆块形状与位置为推断') });
     place(el, M.overseas[0], M.overseas[1], OpenSeadragon.Placement.CENTER); }
   const enter = id => { const g = REG.groups.tiancheng; return `<p>${g.layers.map(k => { const L = REG.maps[k];
-    return L.status === 'planned' ? `<span style="opacity:.5">${esc(L.layer.name)}（制作中）</span>` : `<a data-go="${k}">进入${esc(L.layer.name)} →</a>`; }).join(' · ')}</p>`; };
+    return L.status === 'planned' ? `<span style="opacity:.5">${esc(nm(L.layer))}${esc(t('planned_paren'))}</span>` : `<a data-go="${k}">${esc(t('enter', { name: nm(L.layer) }))}</a>`; }).join(' · ')}</p>`; };
   for (const p of M.places) {
     if (p.type === 'capital') marker({ name: p.name, sub: p.sub, cls: 'capital' + (p.id === 'tiancheng' ? ' drill' : ''), tag: p.tag, src: p.src, x: p.x, y: p.y,
       extra: p.id === 'tiancheng' ? enter() : '' });
@@ -478,9 +553,9 @@ function pointOverlays() {
   }
   // link：跨层通道（如中层检查点 ↔ 下层 7 号井），地点卡里给一个直达链接
   const linkHtml = l => l && REG.maps[l.map] && REG.maps[l.map].status !== 'planned'
-    ? `<p><a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}">${esc(l.label || '前往' + REG.maps[l.map].title)} →</a></p>` : '';
+    ? `<p><a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}">${esc(nm(l, 'label') || t('goto', { title: nm(REG.maps[l.map], 'title') }))} →</a></p>` : '';
   for (const k of d.markers || []) { const meta = m.markers?.[k.id]; if (!meta) continue;
-    placeN(markerEl({ ...meta, sub: (meta.sub || '').replace('{{user}}', '你'), extra: linkHtml(meta.link) }), k.nx, k.ny); }
+    placeN(markerEl({ ...meta, sub: (meta.sub || '').replace('{{user}}', t('you')), extra: linkHtml(meta.link) }), k.nx, k.ny); }
 }
 
 // ---------------- 初始视角与当前地点 ----------------
