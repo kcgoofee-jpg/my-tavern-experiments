@@ -34,8 +34,10 @@
   @keyframes pulse { 0% { box-shadow: 0 0 0 0 #ff5a5acc; } 100% { box-shadow: 0 0 0 16px #ff5a5a00; } }
   .realm { transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; text-align: center; white-space: nowrap; color: #fff;
     text-shadow: 0 0 6px #000, 0 0 3px #000, 0 2px 8px #000c; }
-  .realm b { display: block; font-size: 30px; letter-spacing: 12px; font-weight: 900; }
-  .realm span { font-size: 13px; letter-spacing: 2px; opacity: .9; }
+  /* 字号随地图实际显示比例缩放（--rs = 屏幕像素 / 地图单位 × 1600 / 1100） */
+  .realm b { display: block; font-size: clamp(13px, calc(30px * var(--rs, 1)), 40px); letter-spacing: calc(12px * min(var(--rs, 1), 1)); font-weight: 900; }
+  .realm span { font-size: clamp(10px, calc(13px * var(--rs, 1)), 15px); letter-spacing: 2px; opacity: .9; }
+  body.tiny .realm span, body.tiny .minor { display: none; }
   .realm.oren b { font-family: "PingFang SC", sans-serif; color: #ffe2a8; }
   .realm.fed b { font-family: "Songti SC", "STSong", serif; color: #cfe3ff; }
   .realm.xl b { font-family: "Kaiti SC", "STKaiti", serif; color: #e6d6ff; }
@@ -44,6 +46,7 @@
   body.nomarkers .mk { display: none; }
   body.embed header h1, body.embed .where { display: none; }
   body.far .mk:not(.capital):not(.here):not(.active) .lab { display: none; }
+  body.far .mk:not(.active) .lab small { display: none; }
   /* 信息卡 */
   #card { position: fixed; right: 14px; top: 64px; width: 320px; max-width: calc(100vw - 28px); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.65; z-index: 10; backdrop-filter: blur(6px); }
   #card[hidden] { display: none; }
@@ -99,7 +102,11 @@ async function main() {
     maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true },
   });
   viewer.addHandler('open', onOpen);
-  viewer.addHandler('zoom', e => document.body.classList.toggle('far', e.zoom < 1.6));
+  const rescale = () => { if (!viewer.world.getItemCount()) return;
+    const px = viewer.viewport.getContainerSize().x * viewer.viewport.getZoom(true);   // 整张图的屏幕宽度
+    const rs = px / 1100; document.documentElement.style.setProperty('--rs', rs.toFixed(3));
+    document.body.classList.toggle('far', px < 1700); document.body.classList.toggle('tiny', px < 800); };
+  viewer.addHandler('animation', rescale); viewer.addHandler('resize', rescale); viewer.addHandler('open', () => setTimeout(rescale, 0));
   openTier(tier);
   $('#tgBorders').onchange = e => { const it = viewer.world.getItemAt(1); if (it) it.setOpacity(e.target.checked ? 1 : 0); };
   $('#tgLabels').onchange = e => document.body.classList.toggle('nolabels', !e.target.checked);

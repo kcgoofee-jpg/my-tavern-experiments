@@ -12,12 +12,13 @@
   root.id = ID;
   root.innerHTML = `
 <style>
-  #${ID} .em-fab { position: fixed; right: 18px; bottom: 96px; z-index: 30000; width: 48px; height: 48px; border-radius: 50%;
+  /* 只用视口单位定位：酒馆的 <html> 带 transform，会成为 fixed 的包含块且高度为 0 */
+  #${ID} .em-fab { position: fixed; left: calc(100vw - 66px); top: calc(100dvh - 144px); z-index: 30000; width: 48px; height: 48px; border-radius: 50%;
     border: 1px solid rgba(230,195,106,.7); background: rgba(20,23,28,.9); color: #e6c36a; cursor: pointer;
     box-shadow: 0 4px 14px rgba(0,0,0,.45); display: grid; place-items: center; touch-action: none; }
   #${ID} .em-fab svg { width: 24px; height: 24px; }
   #${ID} .em-fab.here::after { content: ''; position: absolute; right: 4px; top: 4px; width: 9px; height: 9px; border-radius: 50%; background: #ff5a5a; }
-  #${ID} .em-panel { position: fixed; z-index: 30001; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  #${ID} .em-panel { position: fixed; z-index: 30001; left: 50vw; top: 50dvh; transform: translate(-50%, -50%);
     width: min(1200px, 94vw); height: min(820px, 88vh); background: #14171c; border: 1px solid rgba(255,255,255,.16);
     border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.6); display: grid; grid-template-rows: auto 1fr; }
   #${ID} .em-panel[hidden] { display: none; }
