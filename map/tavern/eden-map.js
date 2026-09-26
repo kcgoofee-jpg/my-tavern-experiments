@@ -4,16 +4,27 @@
 // 当前地点取 MVU 变量「世界.当前地点」，变量更新 / 切换聊天时推送给地图高亮。
 (() => {
   const SELF = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
-  // 线路：地图的图片和数据可以走不同的 CDN 节点（路径格式相同，只换域名）。本地测试地址不换
+  // 线路：地图的图片和数据可以走不同的 CDN 节点。gh 线路路径格式相同，只换域名；npm 线路路径不同（包名 / 版本 / files/map/），单独拼。本地测试地址不换
+  const PKG = 'tiancheng-map-assets', REPO = 'kcgoofee-jpg/my-tavern-experiments';
   const LINES = [
     { key: 'vpn', name: '有梯子', sub: '官方 CDN · jsDelivr', host: 'cdn.jsdelivr.net' },
     { key: 'cn', name: '没梯子', sub: '国内镜像 · jsdmirror', host: 'cdn.jsdmirror.com' },
-  ];
+    // npm 包的国内镜像：首次 npm publish 并验证后再把 enabled 改成 true
+    { key: 'npm', name: 'npm 镜像', sub: '国内 · npmmirror', enabled: false, url: v => `https://registry.npmmirror.com/${PKG}/${v}/files/map/` },
+  ].filter(l => l.enabled !== false);
   const LINE_KEY = 'edenMapLine';
-  const swappable = /(^|\.)(jsdelivr\.net|jsdmirror\.com)$/.test(new URL(SELF).host);
+  const swappable = /(^|\.)(jsdelivr\.net|jsdmirror\.com|npmmirror\.com)$/.test(new URL(SELF).host);
+  // 当前版本：gh 标签 map-v<版本>，或 npm 路径里的版本号
+  const VER = (SELF.match(/@map-v([\d.]+)\//) || SELF.match(new RegExp(`/${PKG}/([\\d.]+)/files/`)) || [])[1] || null;
   let line = null; try { line = localStorage.getItem(LINE_KEY); } catch (e) {}
   if (!LINES.some(l => l.key === line)) line = null;
-  const baseFor = key => { if (!swappable || !key) return SELF; const u = new URL(SELF); u.host = LINES.find(l => l.key === key).host; return u.href; };
+  const baseFor = key => {
+    if (!swappable || !key) return SELF;
+    const l = LINES.find(x => x.key === key);
+    if (l.url) return VER ? l.url(VER) : SELF;                    // npm 线路：需要知道版本号
+    if (VER) return `https://${l.host}/gh/${REPO}@map-v${VER}/map/`;
+    const u = new URL(SELF); u.host = l.host; return u.href;     // 不知道版本（例如指向分支）：只换域名
+  };
   let BASE = baseFor(line);
   const pdoc = window.parent.document;
   const ID = 'eden-map-root';
