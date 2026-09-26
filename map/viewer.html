@@ -269,7 +269,7 @@ document.addEventListener('click', e => { const a = e.target.closest('[data-go]'
 
 // ---------------- 加载进度：已完成 / (已完成 + 正在加载) ----------------
 function initProgress() {
-  let done = 0, hideT = 0, tsT = 0;
+  let done = 0, hideT = 0, tsT = 0, firstLoaded = false;
   const ts = $('#tierState');
   const upd = () => {
     let busy = 0; for (let i = 0; i < viewer.world.getItemCount(); i++) busy += viewer.world.getItemAt(i)._tilesLoading || 0;
@@ -278,6 +278,8 @@ function initProgress() {
     if (!$('#loading').classList.contains('done')) $('#loading span').textContent = `加载 ${REG.maps[cur].title}… ${pct}%`;
     if (busy) { clearTimeout(tsT); ts.textContent = `加载中 ${pct}%`; ts.className = 'busy'; }
     else if (ts.className === 'busy') { ts.textContent = '✓ 已加载'; ts.className = 'ok'; clearTimeout(tsT); tsT = setTimeout(() => { ts.textContent = ''; ts.className = ''; }, 2500); }
+    // 当前地图首屏瓦片都到了：告诉酒馆（后台预加载据此收尾）
+    if (!busy && done && !firstLoaded) { firstLoaded = true; post({ type: 'eden-map:loaded' }); }
     clearTimeout(hideT); if (!busy) { if (done) $('#loading').classList.add('done'); hideT = setTimeout(() => { done = 0; $('#prog').hidden = true; }, 200); }
   };
   viewer.addHandler('open', () => { done = 0; upd(); });
