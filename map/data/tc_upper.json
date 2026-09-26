@@ -7,19 +7,23 @@
   {
    "id": "eden",
    "nx": 0.55,
-   "ny": 0.4573
+   "ny": 0.4573,
+   "r": 0.0552
   },
   {
    "id": "silver_crown",
    "nx": 0.1833,
-   "ny": 0.7933
+   "ny": 0.7933,
+   "r": 0.05
   },
   {
    "id": "climate_tower",
    "nx": 0.7833,
-   "ny": 0.7667
+   "ny": 0.7667,
+   "r": 0.0067
   }
  ],
+ "layer": "tc_upper",
  "islands": [
   {
    "id": "eden",
