@@ -2,6 +2,7 @@
 // 卡内脚本只需一行：import 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@<版本>/map/tavern/eden-map.js'
 // 注入酒馆页面：右下角悬浮按钮 + 地图面板；面板内用 srcdoc 加载 viewer.html（<base> 指回仓库，相对资源照常加载）。
 // 当前地点取 MVU 变量「世界.当前地点」，变量更新 / 切换聊天时推送给地图高亮。
+// 天城事态：从最近 40 楼原文解析事件标签（events.mjs，两种写法都认），推给地图落点；角色所在层的活跃事件压成一句注入给模型。
 (() => {
   const SELF = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 线路：地图的图片和数据可以走不同的 CDN 节点。gh 线路路径格式相同，只换域名；npm 线路路径不同（包名 / 版本 / files/map/），单独拼。本地测试地址不换
@@ -48,10 +49,10 @@
   #${ID} .em-fab.ready::before { border-color: rgba(123,216,143,.8); animation: em-fade 1.8s forwards; }
   @keyframes em-spin { to { transform: rotate(360deg); } }
   @keyframes em-fade { to { opacity: 0; } }
+  #${ID} .em-badge { position: absolute; left: -4px; top: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #f08a24; color: #111; font: 700 11px/18px system-ui, sans-serif; text-align: center; box-shadow: 0 0 0 2px #0d1117; }
+  #${ID} .em-badge[hidden] { display: none; }
+  #${ID} .em-tip { position: absolute; right: 56px; top: 8px; width: max-content; max-width: 180px; padding: 6px 10px; border-radius: 8px; background: #1b2128; border: 1px solid #f08a24; color: #e6edf3; font: 12px/1.5 system-ui, sans-serif; box-shadow: 0 6px 16px rgba(0,0,0,.5); pointer-events: none; }
   #${ID} .em-fab.here::after { content: ''; position: absolute; right: 4px; top: 4px; width: 9px; height: 9px; border-radius: 50%; background: #ff5a5a; }
-  /* 事件角标：聊天里出现了还没解除的事件（火灾、案件、网络攻击……），左上角一个数字 */
-  #${ID} .em-fab[data-ev]:not([data-ev=""])::before { content: attr(data-ev); position: absolute; left: -4px; top: -4px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box;
-    border-radius: 8px; background: #e0182d; color: #fff; font: 700 10px/16px sans-serif; text-align: center; box-shadow: 0 0 8px rgba(224,24,45,.8); }
   #${ID} .em-panel { position: fixed; z-index: 30001; left: 50vw; top: 50dvh; transform: translate(-50%, -50%);
     width: min(1200px, 94vw); height: min(820px, 88vh); background: #14171c; border: 1px solid rgba(255,255,255,.16);
     border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.6); display: grid; grid-template-rows: auto 1fr;
@@ -105,6 +106,7 @@
 </style>
 <button class="em-fab" title="世界地图" aria-label="打开世界地图">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>
+  <span class="em-badge" hidden></span>
 </button>
 <div class="em-panel" hidden>
   <div class="em-bar"><b class="em-title">新历 2088 · 地图</b><span class="em-here"></span><button class="em-line" title="切换加载线路"></button><button class="em-close" aria-label="关闭">×</button></div>
@@ -213,7 +215,7 @@
   async function loadViewer() {
     clearTimeout(killT);
     if (swappable && !line) return showPicker();   // 还没选线路：先选
-    if (alive) { post({ type: 'eden-map:wake' }); sent = null; push(); postEvents(); return; }
+    if (alive) { post({ type: 'eden-map:wake' }); sent = null; push(); sendEvents(); return; }
     startProg(); htmlProg = f => setProg(f * 20);
     let doc;
     try { doc = await fetchHtml(); setProg(20); }
@@ -233,7 +235,7 @@
   const onMsg = e => {
     if (e.source !== frame.contentWindow) return;
     if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
-    if (e.data?.type === 'eden-map:ready') { alive = true; setProg(50); loadEl.classList.add('over'); sent = null; push(); postEvents(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:ready') { alive = true; setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
     if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
     if (e.data?.type === 'eden-map:state') titleEl.textContent = `新历 2088 · ${e.data.title}`;
@@ -255,33 +257,54 @@
   let pushT = 0;
   const pushSoon = (ms = 150) => { clearTimeout(pushT); pushT = setTimeout(push, ms); };
 
-  // ---------- 事件：从聊天里的前端载体扫出地图标签，发给地图 ----------
-  // 前端（新闻快讯、执法局告示……）按世界书「地图联动规范」在载体里带一个隐藏标签：
-  //   <span style="display:none" data-tcmap="类型=火灾;地点=7号井黑市;标题=仓库起火;等级=3;状态=发生中;时间=2088.01.12 21:40"></span>
-  // 事件总是从聊天记录推出来（最近 200 楼）：重 roll、删楼、切聊天后自动一致，不另存状态。格式见 docs/map-events.md
-  const TAG_RE = /data-tcmap\s*=\s*(["'])(.*?)\1/g;
-  let evList = [], evLast = 0, evSig = '', evT = 0;
-  function chatTexts() {
-    try { const lastId = getLastMessageId(); return getChatMessages(`${Math.max(0, lastId - 200)}-${lastId}`).map(m => [m.message_id, m.message || '']); } catch (e) {}
-    try { const chat = (window.parent.SillyTavern || SillyTavern).getContext().chat, k = Math.max(0, chat.length - 200); return chat.slice(k).map((m, i) => [k + i, m.mes || '']); } catch (e) { return []; }
+  // ---------------- 天城事态 ----------------
+  // 聊天记录是唯一真相：每次从最近 SCAN 楼原文重算（swipe / 删楼 / 编辑后自然一致），不另存状态
+  const SCAN = 40, INJECT_ID = 'eden-map-events';
+  const badge = root.querySelector('.em-badge');
+  let events = [], floorNow = -1, seen = -1, injected = '', EVM = null;
+  // 事态模块单独加载：加载失败只是没有事态功能，地图照常可用
+  import(new URL('events.mjs', import.meta.url).href).then(m => { EVM = m; recompute(); }).catch(e => console.warn('[eden-map] 事态模块加载失败', e));
+  const chatKey = () => { try { return 'edenMapSeen:' + (SillyTavern.getContext().chatId || ''); } catch (e) { return 'edenMapSeen:'; } };
+  function loadSeen() { try { seen = +localStorage.getItem(chatKey()); if (!Number.isFinite(seen)) seen = -1; } catch (e) { seen = -1; } }
+  function recompute() {
+    if (!EVM) return;
+    const { collect, summarize, layerOf } = EVM;
+    let msgs = [];
+    try {
+      floorNow = getLastMessageId();
+      if (floorNow >= 0) msgs = getChatMessages(`${Math.max(0, floorNow - SCAN)}-${floorNow}`, { role: 'assistant' })
+        .map(m => ({ floor: m.message_id, text: m.message || '' }));
+    } catch (e) { floorNow = -1; }
+    events = collect(msgs, floorNow);
+    const fresh = events.filter(e => e.last > seen && e.tier !== 'fade').length;
+    badge.hidden = !fresh; badge.textContent = fresh > 9 ? '9+' : fresh;
+    if (fresh) tipOnce();
+    inject(summarize(events, layerOf(getHere())));
+    if (!panel.hidden && alive) sendEvents();
   }
-  function parseTag(s, mes) {
-    const o = { mes };
-    for (const kv of s.replace(/&quot;/g, '"').split(/[;；]/)) { const i = kv.search(/[=＝]/); if (i > 0) o[kv.slice(0, i).trim()] = kv.slice(i + 1).trim(); }
-    return o.类型 || o.标题 ? o : null;
+  function inject(text) {
+    if (text === injected) return; injected = text;
+    try {
+      uninjectPrompts([INJECT_ID]);
+      if (text) injectPrompts([{ id: INJECT_ID, position: 'in_chat', depth: 4, role: 'system', content: text, should_scan: false }]);
+    } catch (e) {}
   }
-  function scanEvents() {
-    const list = []; let lastId = 0;
-    for (const [id, text] of chatTexts()) { lastId = Math.max(lastId, id); for (const m of text.matchAll(TAG_RE)) { const o = parseTag(m[2], id); if (o) list.push(o); } }
-    const sig = JSON.stringify(list) + '|' + lastId; if (sig === evSig) return;
-    evSig = sig; evList = list; evLast = lastId;
-    const open = new Map();                                        // 同一事件（编号，或类型 + 地点 + 标题）以最后一条为准
-    for (const o of list) open.set(o.编号 || `${o.类型}|${o.地点}|${o.标题}`, o);
-    fab.dataset.ev = [...open.values()].filter(o => !/解除|结束|恢复|扑灭|已控制/.test(o.状态 || '') && lastId - o.mes < 80).length || '';
-    postEvents();
+  // 发给地图：isNew = 上次打开面板之后才出现 / 更新的；fly = 打开时要飞过去的最新未读事件
+  function sendEvents() {
+    if (!alive) return;
+    const items = events.map(e => ({ ...e, isNew: e.last > seen }));
+    const fly = items.find(e => e.isNew && e.tier !== 'fade')?.id || null;
+    post({ type: 'eden-map:events', v: 1, floor: floorNow, hereLayer: EVM ? EVM.layerOf(here) : '', items, fly });
+    if (!panel.hidden) { seen = floorNow; try { localStorage.setItem(chatKey(), String(seen)); } catch (e) {} badge.hidden = true; }
   }
-  const postEvents = () => { if (alive) post({ type: 'eden-map:events', list: evList, last: evLast }); };
-  const scanSoon = (ms = 400) => { clearTimeout(evT); evT = setTimeout(scanEvents, ms); };
+  let tipShown = false; try { tipShown = !!localStorage.getItem('edenMapEvTip'); } catch (e) {}
+  function tipOnce() {
+    if (tipShown || !panel.hidden) return; tipShown = true; try { localStorage.setItem('edenMapEvTip', '1'); } catch (e) {}
+    const t = pdoc.createElement('div'); t.className = 'em-tip'; t.textContent = '天城有新事态：点开地图查看位置'; fab.appendChild(t);
+    setTimeout(() => t.remove(), 6000);
+  }
+  let evT = 0;
+  const recomputeSoon = (ms = 250) => { clearTimeout(evT); evT = setTimeout(recompute, ms); };
 
   // 悬浮按钮可拖动（避开酒馆输入栏等位置），位置按屏幕比例记住；轻点才打开面板
   const POS_KEY = 'edenMapFabPos';
@@ -307,7 +330,7 @@
 
   const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; sleepViewer(); };
   fab.addEventListener('click', async () => { if (dragged) return;
-    if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); return; }   // 预加载中被点开：直接显示
+    if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); sendEvents(); return; }   // 预加载中被点开：直接显示
     if (!panel.hidden) return close(); panel.hidden = false; await loadViewer(); });
   root.querySelector('.em-close').addEventListener('click', close);
   pdoc.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
@@ -316,12 +339,13 @@
     try { await waitGlobalInitialized('Mvu'); eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, () => pushSoon()); } catch (e) {}
     eventOn(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     eventOn(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    for (const ev of ['CHAT_CHANGED', 'MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'CHARACTER_MESSAGE_RENDERED'])
-      if (tavern_events[ev]) eventOn(tavern_events[ev], () => scanSoon());   // 新楼、改楼、重 roll、删楼：重新扫一遍事件标签
-    push(); scanEvents();
+    eventOn(tavern_events.CHAT_CHANGED, () => { injected = null; loadSeen(); recomputeSoon(300); });
+    for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED']) if (tavern_events[k]) eventOn(tavern_events[k], () => recomputeSoon());   // 新楼、改楼、重 roll、删楼：重算
+    if (tavern_events.GENERATION_AFTER_COMMANDS) eventOn(tavern_events.GENERATION_AFTER_COMMANDS, () => { clearTimeout(evT); recompute(); });   // 生成前同步一次，注入的是最新态势
+    push(); loadSeen(); recompute();
     (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => preload());   // 打开聊天后空闲时：测速选线 + 预加载
   })();
 
   // 脚本被关闭或重载时清理注入的元素
-  window.addEventListener('pagehide', () => { clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); root.remove(); window.parent.removeEventListener('message', onMsg); });
+  window.addEventListener('pagehide', () => { clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); inject(''); root.remove(); window.parent.removeEventListener('message', onMsg); });
 })();
