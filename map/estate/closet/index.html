@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>伊甸庄园 · 主卧衣帽间样板间</title>
+<!--
+  伊甸庄园 · 主卧衣帽间样板间（three.js 0.160，独立页面，便于单独评分；以后并入主模型 F3 主卧套间 313 更衣室）
+  A = 纯程序几何 + 程序材质；B = 同一套几何 + 真实 CC0 扫描材质（Poly Haven / ambientCG）+ 真实 CC0 模型（座钟、梳妆镜、吊灯、衣箱、画框、怀表、瓷瓶）
+  URL 参数：?mode=A|B（默认 B）；?view=overview|island|hanging|shoes|mirror；?lang=en；?stats=1 显示帧率 / draw call；?embed=1 隐藏标题、背景透明
+  调试：window.__closet（setMode / view / bench / info）
+  素材来源与许可：assets/CREDITS.md；品牌与平台许可调研：docs/luxury-assets.md
+-->
+<style>
+  :root { --paper: #101418; --ink: #ece6d8; --muted: #9098a0; --gold: #e6c36a; --panel: rgba(16,20,24,.84); --line: rgba(230,195,106,.24); --btn: rgba(255,255,255,.05); }
+  html, body { margin: 0; height: 100%; overflow: hidden; color: var(--ink); font: 13px/1.45 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { background: radial-gradient(120% 90% at 50% 30%, #1f262d 0%, #13181d 55%, #0b0e11 100%); }
+  body.embed { background: transparent; }
+  #app { position: fixed; inset: 0; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  #app canvas { display: block; outline: none; }
+  #title { position: absolute; left: 18px; top: 14px; pointer-events: none; z-index: 1; }
+  #shade { position: absolute; left: 0; right: 0; top: 0; height: 110px; pointer-events: none; background: linear-gradient(rgba(10,13,16,.55), rgba(10,13,16,0)); }
+  body.embed #shade { display: none; }
+  #title h1 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: .3em; font-family: "Songti SC", "STSong", "Noto Serif SC", serif; }
+  #title p { margin: 2px 0 0; font-size: 11px; letter-spacing: .16em; color: var(--muted); }
+  #title i { display: block; width: 36px; height: 1px; background: var(--gold); margin: 8px 0 0; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  #ab { position: absolute; right: 12px; top: 12px; display: flex; padding: 3px; gap: 2px; }
+  #ab button, #views button, #zoom button, #credit { all: unset; cursor: pointer; }
+  #ab button { padding: 6px 11px; border-radius: 5px; font-size: 12px; letter-spacing: .06em; color: var(--ink); opacity: .75; white-space: nowrap; }
+  #ab button small { display: block; font-size: 10px; color: var(--muted); letter-spacing: .02em; }
+  #ab button.on { background: var(--gold); color: #17130a; opacity: 1; }
+  #ab button.on small { color: #3b3016; }
+  #views { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 2px; padding: 3px; }
+  #views button { padding: 7px 12px; border-radius: 5px; font-size: 12.5px; letter-spacing: .08em; color: var(--ink); opacity: .8; white-space: nowrap; }
+  #views button:hover { background: var(--btn); opacity: 1; }
+  #views button.on { color: var(--gold); opacity: 1; box-shadow: inset 0 -1px 0 var(--gold); }
+  #zoom { position: absolute; right: 12px; bottom: 14px; display: flex; flex-direction: column; overflow: hidden; }
+  #zoom button { width: 36px; height: 34px; display: grid; place-items: center; color: var(--ink); font-size: 18px; }
+  #zoom button + button { border-top: 1px solid var(--line); }
+  #zoom button:hover { background: var(--btn); }
+  #zoom svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  #credit { position: absolute; left: 18px; bottom: 16px; font-size: 11px; color: var(--muted); letter-spacing: .05em; }
+  #credit:hover { color: var(--gold); }
+  #credits { position: absolute; left: 12px; bottom: 44px; max-width: 360px; max-height: 60vh; overflow: auto; padding: 12px 14px; font-size: 11.5px; color: var(--ink); display: none; }
+  #credits.on { display: block; }
+  #credits h3 { margin: 0 0 6px; font-size: 12.5px; color: var(--gold); letter-spacing: .1em; font-weight: 500; }
+  #credits li { margin: 2px 0; color: var(--muted); } #credits li b { color: var(--ink); font-weight: 500; }
+  #credits a { color: var(--gold); }
+  #stats { position: absolute; right: 58px; bottom: 14px; font: 11px/1.4 ui-monospace, Menlo, monospace; color: var(--muted); padding: 5px 8px; white-space: pre; display: none; }
+  #loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: var(--muted); letter-spacing: .2em; font-size: 12px; transition: opacity .4s; pointer-events: none; text-align: center; }
+  #loading.done { opacity: 0; }
+  #loading i { display: block; margin: 10px auto 0; width: 120px; height: 1px; background: var(--line); }
+  #loading i b { display: block; height: 1px; width: 0; background: var(--gold); transition: width .2s; }
+  #toast { position: absolute; right: 12px; top: 62px; font-size: 11px; color: var(--muted); letter-spacing: .06em; padding: 4px 9px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  #toast.on { opacity: 1; }
+  body.embed #title, body.embed #credit { display: none; }
+  @media (max-width: 640px) {
+    #title { left: 12px; top: 10px; } #title h1 { font-size: 15px; letter-spacing: .22em; } #title p { display: none; }
+    #ab { right: 8px; top: calc(8px + env(safe-area-inset-top)); } #ab button { padding: 4px 10px; min-height: 36px; display: flex; flex-direction: column; justify-content: center; } #ab button small { display: block; font-size: 9.5px; }
+    #views { left: 8px; right: 60px; bottom: calc(10px + env(safe-area-inset-bottom)); transform: none; overflow-x: auto; scrollbar-width: none; } #views::-webkit-scrollbar { display: none; }
+    #views button { padding: 0 10px; min-height: 44px; display: flex; align-items: center; font-size: 12.5px; letter-spacing: .04em; }
+    #zoom { right: 8px; bottom: calc(10px + env(safe-area-inset-bottom)); } #zoom button { width: 44px; height: 44px; }
+    #credit { left: 4px; bottom: auto; top: 34px; padding: 12px 8px; }
+    #stats { right: 8px; bottom: auto; top: 50px; }
+    #credits { left: 8px; right: 8px; top: 56px; bottom: auto; max-width: none; }
+    #toast { top: 60px; right: 8px; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="shade"></div>
+<div id="title"><h1>主卧衣帽间</h1><p>伊甸庄园 · F3 主人私区 · 样板间</p><i></i></div>
+<div id="ab" class="panel"><button data-m="A">A 程序<small>全程序生成</small></button><button data-m="B">B 真实素材<small>CC0 扫描材质 + 模型</small></button></div>
+<div id="toast" class="panel"></div>
+<nav id="views" class="panel"></nav>
+<div id="zoom" class="panel"><button id="zin" title="放大">+</button><button id="zout" title="缩小">−</button><button id="zreset" title="复位"><svg viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 1 0 1.7-4"/><path d="M2 2.5v3h3"/></svg></button></div>
+<button id="credit">素材来源 · CC0</button>
+<div id="credits" class="panel"></div>
+<div id="stats" class="panel"></div>
+<div id="loading">1/3 引擎…<i><b></b></i></div>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module" src="main.js"></script>
+</body>
+</html>
