@@ -157,7 +157,7 @@ function rawFacade(bid, side, fi) {
     }
     if (side === 'S') {
       const xs = [-17.75, -10.5, -5.5, 0, 5.5, 10.5, 17.75];
-      let l = xs.map((c) => W(c, byFi));
+      let l = xs.map((c) => W(c, Math.abs(c) > 15 ? { ...byFi, w: 2.0 } : byFi));   // 端开间窗放宽到 2.0
       if (fi === 0) l = l.map((p) => (p.c === 0 ? { ...p, w: 2.4, bot: 0, top: 4.0, kind: 'door' } : p));
       if (fi === 1) l = noble(l).map((p) => ({ ...p, balcony: Math.abs(p.c) > 15 }));
       return l;
@@ -212,7 +212,7 @@ const inside = (r, blk) => r[0] >= blk.x0 - EPS && r[1] <= blk.x1 + EPS && r[2] 
 const blockOf = (r) => BLOCKS.find((b) => inside(r, b));
 const overlap = (a, b) => a[0] < b[1] - EPS && b[0] < a[1] - EPS && a[2] < b[3] - EPS && b[2] < a[3] - EPS;
 function roomH(r) {
-  if (r.floor === 4) return r.id === '502' ? 6 : 3.2;
+  if (r.floor === 4) return r.id === '502' ? DRUM.y1 - DRUM.y0 : 3.2;
   const blk = blockOf(r.r); return blk ? floorH(blk, r.floor) : FLOORS[r.floor].h;
 }
 const HUB = new Set(['101', '106', '108', '115', '121', '201', '205', '207', '214', '221', '305', '307', '314', '319', '407']);
@@ -512,10 +512,17 @@ function balustrade(b, x0, z0, x1, z1, y, h = 1.1, opt = {}) {
     b.put('trim', G.box, px, y + h + 0.04, pz, 0.6 * sc + 0.06, 0.08, 0.6 * sc + 0.06, -ang);
     if (opt.urns && (i === 0 || i === np || i % opt.urns === 0)) b.inst('urn', mat4(px, y + h + 0.08, pz, 1.1 * sc, 1.1 * sc, 1.1 * sc));
   }
-  const bsp = 0.34 * sc;
+  // 瓶柱：一段超过 4 根时，远景用 balPanel 贴图面片（'far'），车削实例只进 'fine'（近景 / 楼层细节）
+  const bsp = 0.34 * sc, bh = h - 0.34 * sc;
   for (let i = 0; i < np; i++) {
     const a = i / np * L + 0.34 * sc, e = (i + 1) / np * L - 0.34 * sc; const n = Math.max(1, Math.floor((e - a) / bsp));
-    for (let k = 0; k <= n; k++) { const d = a + (e - a) * k / n; b.inst('baluster', mat4(x0 + ux * d, y + 0.18 * sc, z0 + uz * d, sc, (h - 0.34 * sc) / 0.86, sc)); }
+    const many = n + 1 > 4 && !opt.solid, tb = many ? SUB(b, 'fine') : b;
+    for (let k = 0; k <= n; k++) { const d = a + (e - a) * k / n; tb.inst('baluster', mat4(x0 + ux * d, y + 0.18 * sc, z0 + uz * d, sc, bh / 0.86, sc)); }
+    if (many) {
+      const len = e - a + bsp, dm = (a + e) / 2, pg = new THREE.PlaneGeometry(len, bh), uv = pg.attributes.uv;
+      for (let j = 0; j < uv.count; j++) uv.setX(j, uv.getX(j) * (n + 1));
+      SUB(b, 'far').add('balPanel', pg, mat4(x0 + ux * dm, y + 0.18 * sc + bh / 2, z0 + uz * dm, 1, 1, 1, -ang));
+    }
   }
 }
 export { balustrade };
@@ -539,6 +546,13 @@ function slopeRail(b, ax, fixed, ua, ub, ya, yb, h = 0.95) {
 /* ================================================================
  * 外壳（full）
  * ================================================================ */
+// 两翼正背立面的中央三开间凸出（x ±29.71 … ±44.29，出 0.6 m）
+const BF_PIL = [29.71, 34.57, 39.43, 44.29];
+function breakfront(blk, side) {
+  if ((blk.id !== 'BW' && blk.id !== 'BE') || (side !== 'S' && side !== 'N')) return null;
+  const sg = blk.id === 'BW' ? -1 : 1, s = sidesOf(blk)[side];
+  return { s: { ...s, at: s.at + s.out * 0.6 }, u0: Math.min(sg * 29.71, sg * 44.29), u1: Math.max(sg * 29.71, sg * 44.29) };
+}
 function wallMat(blk, fi) { return fi === 0 && blk.id !== 'D' ? 'rustic' : 'stone'; }
 function styleOf(blk, fi) { if (blk.id === 'D' || blk.id === 'C') return fi === 0 && blk.id === 'C' ? 'rustic' : 'hall'; return ['rustic', 'noble', 'plain', 'frieze'][fi]; }
 function shell(full) {
@@ -548,9 +562,17 @@ function shell(full) {
     for (const side of ['S', 'N', 'E', 'W']) {
       const s = SS[side], ops = facadeOps(blk.id, side, fi);
       for (const [u0, u1] of extRanges(blk, side, fi)) {
-        const open = ops.filter((p) => p.c > u0 && p.c < u1);
+        const open = ops.filter((p) => p.c > u0 && p.c < u1), bf = breakfront(blk, side);
         fullWall(b, { ...s, u0, u1, y, h, open, mat: wallMat(blk, fi), ao: fi === 0 ? [y, 3, 0.8] : null });
-        for (const p of open) deco(b, s, p, y, style);
+        for (const p of open) if (!bf || p.c < bf.u0 || p.c > bf.u1) deco(b, s, p, y, style);
+        if (bf) {   // 两翼中央三开间凸出 0.6 m
+          const bo = open.filter((p) => p.c > bf.u0 && p.c < bf.u1);
+          fullWall(b, { ...bf.s, u0: bf.u0, u1: bf.u1, y, h, open: bo, mat: wallMat(blk, fi), ao: fi === 0 ? [y, 3, 0.8] : null });
+          for (const p of bo) deco(b, bf.s, p, y, style);
+          if (fi === 0) { band(b, 'trim', bf.s, bf.u0, bf.u1, y + h - 0.42, y + h, 0, 0.24); band(b, 'trim', bf.s, bf.u0, bf.u1, y + h - 0.54, y + h - 0.42, 0, 0.12); }
+          if (fi === 1) band(b, 'trim', bf.s, bf.u0, bf.u1, y + h - 0.2, y + h, 0, 0.1);
+          if (fi >= 1) for (const u of BF_PIL) pilasterSeg(b, bf.s, Math.sign(bf.u0) * u, y, Math.min(y + h, 13.8), { base: fi === 1, cap: fi === 2, w: 0.7 });
+        }
         // 腰线与隅石
         if (blk.id === 'A' || blk.id === 'BW' || blk.id === 'BE') {
           if (fi === 0) { band(b, 'trim', s, u0, u1, y + h - 0.42, y + h, 0, 0.24); band(b, 'trim', s, u0, u1, y + h - 0.54, y + h - 0.42, 0, 0.12); }
@@ -618,15 +640,18 @@ function portico(full) {
   // 门廊顶棚藻井
   for (let i = 0; i < 5; i++) for (let j = 0; j < 2; j++) { const x = -11.2 + i * 5.6, z = 24.2 + j * 2.6; b.bb('trimShade', x - 2.0, 14.66, z - 0.9, x + 2.0, 14.7, z + 0.9); b.bb(mk('ormolu'), x - 0.2, 14.62, z - 0.2, x + 0.2, 14.66, z + 0.2); }
   // 山花：底 17.6，宽 29.6，高 3.29（1:4.5）
-  const PW = 29.6, PH = PW / 2 / 4.5, pb = 17.6, zt = 29.3, ang = Math.atan2(PH, PW / 2), L = Math.hypot(PW / 2, PH);
+  const PW = 29.6, PH = PW / 2 / 4.5, pb = 17.6, zt = zf, ang = Math.atan2(PH, PW / 2), L = Math.hypot(PW / 2, PH);
   b.put('stone', G.prism(), 0, pb, (22.45 + zt) / 2, PW - 1.1, PH - 0.3, zt - 22.45);                  // 山花墙（面在 z 29.3）
   b.put('lead', G.prism(), 0, pb + 0.35, (22.45 + zt - 0.02) / 2, PW + 0.6, PH + 0.15, zt - 0.02 - 22.45); // 屋面从主楼立面（z 22）做到山花墙
   for (const sx of [-1, 1]) {
-    b.put('trim', G.box, sx * PW / 4, pb + PH / 2 + 0.12, zt + 0.45, L + 0.8, 0.46, 1.1, 0, 0, -sx * ang);   // 斜檐口
-    b.put('trim', G.box, sx * PW / 4, pb + PH / 2 - 0.2, zt + 0.2, L + 0.2, 0.2, 0.6, 0, 0, -sx * ang);
-    b.put('trim', G.box, sx * PW / 4, pb + PH / 2 + 0.4, zt + 0.55, L + 0.9, 0.12, 1.05, 0, 0, -sx * ang);
+    b.put('trim', G.box, sx * PW / 4, pb + PH / 2 + 0.12, zf + 0.6, L + 0.8, 0.46, 1.2, 0, 0, -sx * ang);   // 斜檐口
+    b.put('trim', G.box, sx * PW / 4, pb + PH / 2 - 0.2, zf + 0.3, L + 0.2, 0.2, 0.6, 0, 0, -sx * ang);
+    b.put('trim', G.box, sx * PW / 4, pb + PH / 2 + 0.4, zf + 0.62, L + 0.9, 0.12, 1.24, 0, 0, -sx * ang);
   }
   // 家徽（传承件 2）：WP-B 的 PROP.crest，缺失时用金色盾徽兜底
+  // 背面山墙：0.3 m 石墙封住铅皮屋面的后端三角
+  b.put('stone', G.prism(), 0, pb + 0.3, 22.3, PW + 0.5, PH + 0.12, 0.3);
+  b.put('trim', G.prism(), 0, pb + 0.3 + PH + 0.05, 22.3, 1.2, 0.3, 0.34);
   const k = new Kit(b, 0, 18.9, zt + 0.05), crest = prop('crest');
   if (crest) crest(k, { w: 2.4, relief: true });
   else {
@@ -648,6 +673,12 @@ function wingRoofs(b) {
       band(b, 'stone', s, u0, u1, 13.8, 14.1, 0, 0.04); band(b, 'trim', s, u0, u1, 14.1, 14.22, 0, 0.2);
       for (let u = u0 + 0.2; u < u1 - 0.1; u += 0.4) fp(b, 'trim', s, u, 14.28, 0.18, 0.12, 0.3, 0.14);
       band(b, 'trim', s, u0, u1, 14.34, 14.56, 0, 0.62); band(b, 'trim', s, u0, u1, 14.56, 14.7, 0, 0.52);
+      const bf = breakfront(blk, side);   // 檐口在凸出段上跟着前折
+      if (bf) { const t = bf.s;
+        band(b, 'stone', t, bf.u0, bf.u1, 13.8, 14.1, 0, 0.04); band(b, 'trim', t, bf.u0, bf.u1, 14.1, 14.22, 0, 0.2);
+        for (let u = bf.u0 + 0.2; u < bf.u1 - 0.1; u += 0.4) fp(b, 'trim', t, u, 14.28, 0.18, 0.12, 0.3, 0.14);
+        band(b, 'trim', t, bf.u0, bf.u1, 14.34, 14.56, 0, 0.62); band(b, 'trim', t, bf.u0, bf.u1, 14.56, 14.7, 0, 0.52);
+        band(b, 'stone', t, bf.u0, bf.u1, 14.7, 15.3, -0.4, 0); band(b, 'trim', t, bf.u0, bf.u1, 15.3, 15.42, 0, 0.08); }
     }
     const x0 = Math.min(sg * 20.45, sg * 54.45), x1 = Math.max(sg * 20.45, sg * 54.45);
     b.bb('lead', x0, 14.4, -16.45, x1, 14.62, 16.45);
@@ -739,7 +770,7 @@ function links(bF, bC) {
       bF.bb('pavers', x0, y, -3, x1, y + 0.03, 3.2);
       bF.bb('stone', x0, y, -3.3, x1, top - 0.9, -2.8);   // 后墙
       for (let x = x0 + 1.5; x < x1 - 1; x += 3) { bF.bb('trimShade', x - 0.55, y + 0.9, -2.82, x + 0.55, y + 3.4, -2.78); bF.bb('trim', x - 0.75, y + 3.4, -2.8, x + 0.75, y + 3.55, -2.7); }
-      for (let i = 0; i < 8; i++) { const x = sg * (55.5 + i * 3); ionic(bF, x, 2.6, y, top - 0.9, 0.3); }
+      for (let i = 0; i < 8; i++) { const x = sg * (55.5 + i * 3); ionic(bF, x, 2.6, y, top - 0.9, 0.25); }
       // 檐部与平顶
       const E = (ya, yb, za, zb, key = 'trim') => bF.bb(key, x0, ya, za, x1, yb, zb);
       E(top - 0.9, top - 0.6, -3.3, 2.98); E(top - 0.6, top - 0.3, -3.3, 2.96, 'stone'); E(top - 0.3, top - 0.15, -3.45, 3.2); E(top - 0.15, top, -3.55, 3.35);
@@ -749,7 +780,7 @@ function links(bF, bC) {
     if (bC) {
       bC.bb('pavers', x0, y, -3, x1, y + 0.03, 3.2);
       cutWall(bC, { ax: 'x', at: -3.05, t: 0.5, u0: x0, u1: x1, y, h: 5.5, open: [], mat: 'stone' }, 'hi-z', 4.6);
-      for (let i = 0; i < 8; i++) { const x = sg * (55.5 + i * 3); bC.bb('trim', x - 0.44, y, 2.16, x + 0.44, y + 0.18, 3.04); stub(bC, x, 2.6, y, 0.3, 14); }
+      for (let i = 0; i < 8; i++) { const x = sg * (55.5 + i * 3); bC.bb('trim', x - 0.37, y, 2.23, x + 0.37, y + 0.18, 2.97); stub(bC, x, 2.6, y, 0.25, 14); }
     }
   }
 }
@@ -759,6 +790,7 @@ function podium(site) {
   const rus = (x0, z0, x1, z1) => { site.bb('rustic', x0, 0, z0, x1, 1.2, z1, [0, 1.2, 0.8]); site.bb('trim', x0 - 0.2, 1.02, z0 - 0.2, x1 + 0.2, 1.22, z1 + 0.2); };
   for (const blk of BLOCKS) { const m = blk.t / 2 + 0.45; rus(blk.x0 - m, blk.z0 - m, blk.x1 + m, blk.z1 + m); }
   for (const sg of [-1, 1]) rus(Math.min(sg * 55, sg * 77), -3.8, Math.max(sg * 55, sg * 77), 3.8);
+  for (const sg of [-1, 1]) for (const sz of [-1, 1]) rus(Math.min(sg * 29.3, sg * 44.7), sz > 0 ? 16.8 : -17.5, Math.max(sg * 29.3, sg * 44.7), sz > 0 ? 17.5 : -16.8);   // 两翼凸出段下的基座
   site.put('rustic', G.cyl(28), 90, 0.6, -16, 7.35, 1.2, 7.35); site.put('trim', G.cyl(28), 90, 1.12, -16, 7.55, 0.2, 7.55);
   // 门廊台基 x ±15.5，z 22…29.5；前面 7 级台阶，踏面 0.4
   site.bb('rustic', -15.5, 0, 22.4, 15.5, 1.2, 29.5, [0, 1.2, 0.8]); site.bb('pavers', -15.3, 1.2, 22.4, 15.3, 1.23, 29.4);
@@ -776,7 +808,7 @@ function podium(site) {
 }
 
 /* ---------- 屋顶层（F5）：露台、退进栏杆、出口亭、紫藤廊、光井天窗、眺望亭鼓座与穹顶 ---------- */
-const DRUM = { cx: 0, cz: 2, R: 7, t: 0.6, y0: 18.7, y1: 24.7 };
+const DRUM = { cx: 0, cz: 2, R: 7, t: 0.6, y0: 18.7, y1: 23.2, wb: 1.3, wt: 3.7 };   // 鼓座 4.5 m；窗 1.3 → 3.7（相对）
 function drumSegs(fn) {
   const n = 64, Rm = DRUM.R - DRUM.t / 2, w = TAU * DRUM.R / n * 1.03;
   for (let i = 0; i < n; i++) {
@@ -848,8 +880,8 @@ function drumAndDome(b, cutMode) {
   if (cutMode) {
     drumSegs((x, z, a, w, win) => {
       b.put('stone', G.box, x, y0 + CUT / 2, z, w, CUT, t, a); b.put(mk('cap'), G.box, x, y0 + CUT + 0.01, z, w - 0.01, 0.02, t - 0.02, a);
-      const hi = SUB(b, hiTagOf(Math.sin(a), Math.cos(a))), top = 5.7;
-      if (win) { hi.put('stone', G.box, x, y0 + (CUT + 1.5) / 2, z, w, 1.5 - CUT, t, a); hi.put('stone', G.box, x, y0 + (4.7 + top) / 2, z, w, top - 4.7, t, a); hi.put('glass', G.box, x, y0 + 3.1, z, w, 3.2, 0.05, a); }
+      const hi = SUB(b, hiTagOf(Math.sin(a), Math.cos(a))), top = y1 - y0 - 0.3, { wb, wt } = DRUM;
+      if (win) { hi.put('stone', G.box, x, y0 + (CUT + wb) / 2, z, w, wb - CUT, t, a); hi.put('stone', G.box, x, y0 + (wt + top) / 2, z, w, top - wt, t, a); hi.put('glass', G.box, x, y0 + (wb + wt) / 2, z, w, wt - wb, 0.05, a); }
       else hi.put('stone', G.box, x, y0 + (CUT + top) / 2, z, w, top - CUT, t, a);
     });
     b.put(mk('compass'), G.cyl(48), cx, y0 + 0.045, cz, R - t, 0.03, R - t);
@@ -857,14 +889,15 @@ function drumAndDome(b, cutMode) {
   }
   drumSegs((x, z, a, w, win) => {
     if (!win) { b.put('stone', G.box, x, (y0 + y1) / 2, z, w, y1 - y0, t, a); return; }
-    b.put('stone', G.box, x, y0 + 0.75, z, w, 1.5, t, a); b.put('stone', G.box, x, (y0 + 4.7 + y1) / 2, z, w, y1 - y0 - 4.7, t, a);
-    b.put('glass', G.box, x, y0 + 3.1, z, w, 3.2, 0.05, a);
+    const { wb, wt } = DRUM;
+    b.put('stone', G.box, x, y0 + wb / 2, z, w, wb, t, a); b.put('stone', G.box, x, (y0 + wt + y1) / 2, z, w, y1 - y0 - wt, t, a);
+    b.put('glass', G.box, x, y0 + (wb + wt) / 2, z, w, wt - wb, 0.05, a);
   });
   for (let k = 0; k < 8; k++) {   // 拱窗套：拱心石、窗台
     const a = k * PI / 4, Ro = R + 0.02;
-    b.put('trim', G.box, cx + Math.sin(a) * Ro, y0 + 4.85, cz + Math.cos(a) * Ro, 0.4, 0.55, 0.2, a);
-    b.put('trim', G.box, cx + Math.sin(a) * (Ro + 0.05), y0 + 1.45, cz + Math.cos(a) * (Ro + 0.05), 1.6, 0.12, 0.3, a);
-    for (const da of [-0.13, 0.13]) b.put('trim', G.box, cx + Math.sin(a + da) * Ro, y0 + 3.0, cz + Math.cos(a + da) * Ro, 0.18, 3.3, 0.14, a + da);
+    b.put('trim', G.box, cx + Math.sin(a) * Ro, y0 + DRUM.wt + 0.15, cz + Math.cos(a) * Ro, 0.4, 0.55, 0.2, a);
+    b.put('trim', G.box, cx + Math.sin(a) * (Ro + 0.05), y0 + DRUM.wb - 0.05, cz + Math.cos(a) * (Ro + 0.05), 1.6, 0.12, 0.3, a);
+    for (const da of [-0.13, 0.13]) b.put('trim', G.box, cx + Math.sin(a + da) * Ro, y0 + (DRUM.wb + DRUM.wt) / 2, cz + Math.cos(a + da) * Ro, 0.18, DRUM.wt - DRUM.wb + 0.1, 0.14, a + da);
   }
   for (let k = 0; k < 16; k++) {   // 16 根壁柱
     const a = k * PI / 8 + PI / 16, Ro = R + 0.08;
@@ -875,7 +908,7 @@ function drumAndDome(b, cutMode) {
   const k = new Kit(b, cx, y1, cz);
   k.geo('trim', G.cyl(48), 0, 0.1, 0, R + 0.35, 0.2, R + 0.35); k.geo('trim', G.cyl(48), 0, 0.3, 0, R + 0.55, 0.2, R + 0.55);
   k.geo('stone', G.cyl(48), 0, 0.5, 0, R + 0.1, 0.2, R + 0.1);
-  const dr = 7.2, dh = 3.5, db = 0.5;   // 穹顶 r 7.2，基线 25.2，顶 28.7
+  const dr = 7.2, dh = 5.0, db = 0.5;   // 穹顶 r 7.2，基线 23.7，矢高 5，顶 28.7
   k.geo('lead', G.hemi(48), 0, db, 0, dr, dh, dr);
   const rib = new THREE.TorusGeometry(1, 0.016, 4, 20, PI / 2);
   for (let i = 0; i < 16; i++) k.geo('gold', rib, 0, db, 0, dr + 0.03, dh + 0.03, dr + 0.03, i * PI / 8);
@@ -996,6 +1029,7 @@ export function buildCut(b, fi) {
     if (r.void) { const gl = r.parts && r.parts.gallery; if (gl) b.bb(mk('oak'), gl[0], y, gl[2], gl[1], y + 0.025, gl[3]); continue; }
     const hs = holes.concat(partsOf(r).filter((p) => p.kind === 'void').map((p) => p.r));
     for (const q of rectMinus(r.r, hs)) b.bb(mk(r.mat), q[0], y, q[2], q[1], y + 0.025, q[3]);
+    if (!/^marble/.test(r.mat)) for (const p of partsOf(r)) if (p.kind === 'bath' || p.kind === 'wc') b.bb(mk('marbleC'), p.r[0], y + 0.025, p.r[2], p.r[1], y + 0.03, p.r[3]);   // 套间浴室素面大理石
   }
   // 竖井区的地面（伪房间）
   for (const q of rectsOf(fi)) if (!q.room) for (const rr of rectMinus(q.r, holes)) b.bb(mk('stoneFlag'), rr[0], y, rr[2], rr[1], y + 0.025, rr[3]);
@@ -1061,7 +1095,7 @@ function buildRoofCut(b) {
   drumAndDome(b, true);
   for (const r of roomsOf(4)) {
     if (r.minor || r.container) continue;
-    if (r.id === '502') { dress(b, r, { y, h: 6, rect: [-6.7, 6.7, -4.7, 8.7], openings: [], tallSides: ['-z', '+z', '-x', '+x'], round: { cx: 0, cz: 2, r: DRUM.R - DRUM.t } }); continue; }
+    if (r.id === '502') { dress(b, r, { y, h: DRUM.y1 - DRUM.y0, rect: [-6.7, 6.7, -4.7, 8.7], openings: [], tallSides: ['-z', '+z', '-x', '+x'], round: { cx: 0, cz: 2, r: DRUM.R - DRUM.t } }); continue; }
     const k = KIOSKS.find((q) => q.id === r.id); if (!k) continue;
     const [x0, x1, z0, z1] = k.r, t = 0.15;
     dress(b, r, { y, h: k.h, rect: [x0 + t, x1 - t, z0 + t, z1 - t], openings: [{ side: k.door.side, a: k.door.c - 0.6, b: k.door.c + 0.6, bot: 0, top: 2.4, kind: 'door' }], tallSides: ['-z', '+z', '-x', '+x'] });

@@ -9,6 +9,11 @@
 //   为兼容旧调用，buildHouse(full, cut, site) 仍可用：第三个参数存在时会顺带对每层调用 buildCut。
 // - buildWings(site) 保留为空函数。
 // - SHAFTS 新增 id / floors / stops / b1（向下延伸到的 y）。buildShafts(floorGroups) 签名不变，只画 floors 里的层段。
+// - 第 2 轮：栏杆瓶柱分两个子批次标签：'far' = balPanel 贴图面片（远景用，近景应隐藏），'fine' = 车削瓶柱实例（近景 / 楼层细节）。
+//   main.js updateSubs 请按 m/px 切换：far.visible = !fine.visible（m/px > 0.08 时只显示 far）。
+// - 第 2 轮：卫浴与早餐室地面改 'marbleC'（素面带纹大理石）；套间里的浴室 / 马桶间 parts 由 buildCut 叠一层 'marbleC'。
+// - 第 2 轮：服务区（仆役楼、马车房、工坊、机库、机坪）整体北移 22 m（SERVICE_DZ），AREAS 已同步。
+// - 第 2 轮：七个主角区域标签 pri 9–10（主楼、门廊、图书馆塔楼、音乐厅亭、中轴大道、停靠平台、人工湖），其余 ≤ 8。
 // - ROOMS 新增 id / wall / rank / tall / parts / alias_en / heritage / era / en；AREAS 新增 alias_en；新增 ROOM_BY_ID、HERITAGE、BLOCKS、ISLE、D2M、I2M。
 
 export const CUT = 1.2;            // 剖切高度
@@ -18,6 +23,8 @@ export const D2M = (x0, x1, y0, y1) => [x0, x1, -y1, -y0];
 export const I2M = (X, Y) => [X, 25 - Y];
 
 // 体块（外墙中线）。floors = 该体块占用的楼层；hs = 各层外墙高（缺省取 FLOORS[i].h）
+// 服务区整体北移（相对设定 −22 m），避免屋顶探进首屏
+export const SERVICE_DZ = -22;
 export const HOUSE = { x0: -20, x1: 20, z0: -22, z1: 22, t: 0.9 };
 export const BLOCKS = [
   { id: 'A', name: '中央主楼', x0: -20, x1: 20, z0: -22, z1: 22, t: 0.9, floors: [0, 1, 2, 3] },
@@ -57,7 +64,7 @@ export const ROOMS = [
     use: '桃花心木衣柜到顶，40 个编号黄铜衣钩，伞架、靴凳、鎏金全身镜、手套与帽盒柜',
     heritage: '每个挂钩下有珐琅编号牌，二代时为舞会订制，至今没有换过。', era: '二代',
     en: ['Cloakroom', 'Mahogany presses to the ceiling, 40 numbered brass hooks, umbrella stand, boot bench, gilt cheval mirror', 'Enamel number plates under every hook, ordered for a ball in the second generation and never replaced.'] }),
-  R('103', '访客盥洗室', 0, [-20, -12, 2, 12], 'checkSmall', 'silkGreen', 2, { parts: { wc: [[-20, -16, 2, 8], [-16, -12, 2, 8]] }, alias: ['访客盥洗室', '洗手间'], alias_en: ['Guest Cloakroom', 'Powder Room'],
+  R('103', '访客盥洗室', 0, [-20, -12, 2, 12], 'marbleC', 'silkGreen', 2, { parts: { wc: [[-20, -16, 2, 8], [-16, -12, 2, 8]] }, alias: ['访客盥洗室', '洗手间'], alias_en: ['Guest Cloakroom', 'Powder Room'],
     use: '前室（缎木化妆台、软凳、小沙发）+ 两间独立化妆间：高位桃花心木水箱马桶、大理石洗手台、椭圆镜、蜂窝纹擦手巾与叠放小方巾',
     heritage: '水箱侧面有铸铜铭牌，写着制造厂和「第三代翻新」的年份。', era: '三代',
     en: ['Guest Cloakroom', 'Anteroom with satinwood dressing table and two WC cubicles: high mahogany cisterns, marble basins, oval mirrors, stacked hand towels', 'Each cistern carries a cast-bronze maker\'s plate with the year of the third-generation refit.'] }),
@@ -98,7 +105,7 @@ export const ROOMS = [
     use: '可伸缩桃花心木长餐桌（最长 18 m，24 座）、两台餐具柜、两座卡拉拉白壁炉、历代宴会图、塞夫尔蓝金边餐具、三盏 36 臂水晶吊灯',
     heritage: '主位椅背上雕着家徽，是唯一不配套的一把椅子，初代从旧宅带来。', era: '初代',
     en: ['Dining Room', 'Extending mahogany table for 24, sideboards, two Carrara fireplaces, banquet paintings, Sèvres-blue service, three 36-arm chandeliers', 'The master\'s chair carries the carved crest; the only odd chair in the set, brought by the founder from the old house.'] }),
-  R('114', '早餐室', 0, [-54, -44, 2, 16], 'checkSmall', 'plasterYellow', 2, { alias: ['早餐室'], alias_en: ['Breakfast Room'],
+  R('114', '早餐室', 0, [-54, -44, 2, 16], 'marbleC', 'plasterYellow', 2, { alias: ['早餐室'], alias_en: ['Breakfast Room'],
     use: '胡桃木圆桌加 8 把椅子、边柜、黄铜罩早餐保温柜、盆栽柑橘；手绘藤蔓墙画',
     heritage: '墙画里的藤蔓间藏着历代孩子的名字缩写，是每一代装修时画师偷偷加的。', era: '历代',
     en: ['Breakfast Room', 'Round walnut table for 8, sideboard, brass warming cabinet, potted citrus, painted vine murals', 'The painted vines hide the initials of every generation\'s children, slipped in by the painters at each redecoration.'] }),
@@ -171,7 +178,7 @@ export const ROOMS = [
   R('214', '西二层廊', 1, [-54, -20, -2, 2], 'marble', 'plasterStone', 2, { minor: true, alias: ['西二层廊'], alias_en: ['West Upper Corridor'], use: '同西翼廊', en: ['West Upper Corridor', 'Wing corridor', ''] }),
   R('215', '档案与地图室', 1, [-34, -20, -16, -2], 'oak', 'panelWalnut', 3, { alias: ['档案室', '地图室'], alias_en: ['Archive and Map Room'], use: '恒温防火档案柜、平放式地图柜、阅读长桌；存历代地契、改建图纸、宴会名单', en: ['Archive and Map Room', 'Fire-proof archive presses, plan chests, reading table: deeds, alteration drawings, banquet lists', ''] }),
   R('216', '保险库', 1, [-40, -34, -16, -9], 'oak', 'panelWalnut', 3, { alias: ['保险库'], alias_en: ['Strong Room'], use: '钢门外包胡桃木板，内有家族文书与珠宝抽屉', en: ['Strong Room', 'Walnut-faced steel door; family papers and jewel drawers', ''] }),
-  R('217', '书房盥洗室', 1, [-40, -34, -9, -2], 'marble', 'marbleGold', 2, { alias: ['书房盥洗室'], alias_en: ['Study Washroom'],
+  R('217', '书房盥洗室', 1, [-40, -34, -9, -2], 'marbleC', 'marbleGold', 2, { alias: ['书房盥洗室'], alias_en: ['Study Washroom'],
     use: '连体低水箱马桶（乌木座圈、黄铜杠杆）、单盆洗手台、镀镍电热毛巾架挂深绿手巾、黄铜框方镜',
     heritage: '墙上挂一面初代用过的剃须镜，镜面已经雾化。', era: '初代',
     en: ['Study Washroom', 'Close-coupled WC with ebony seat, single basin, heated rail with green towels, brass mirror', 'The founder\'s shaving mirror hangs on the wall, its glass long since clouded.'] }),
@@ -202,7 +209,7 @@ export const ROOMS = [
     en: ['Portrait Gallery', 'Crimson damask hung with twelve family portraits; Ionic columns carry the drum above; velvet benches, heraldic shields', 'The last frame is empty, lined with crimson silk, reserved for the present head.'] }),
   R('302', '主人侍从间', 2, [-20, -12, 2, 22], 'oak', 'paintIvory', 3, { alias: ['主人侍从间'], alias_en: ['Valet\'s Room'], use: '熨烫台、以太衣物蒸汽机、擦鞋台、布草柜、侍从桌、铃板分机', en: ['Valet\'s Room', 'Pressing table, ether steamer, boot bench, linen press, bell extension', ''] }),
   R('303', '布草间', 2, [12, 20, 12, 22], 'oak', 'paintIvory', 3, { alias: ['布草间'], alias_en: ['Linen Room'], use: '布草柜与熨台', en: ['Linen Room', 'Linen presses and ironing table', ''] }),
-  R('304', '家庭盥洗室', 2, [12, 20, 2, 12], 'marble', 'marbleGold', 2, { alias: ['家庭盥洗室'], alias_en: ['Family Washroom'], use: '连体马桶（乌木座圈）、单盆洗手台、电热毛巾架挂象牙白毛巾、黄铜框镜', en: ['Family Washroom', 'Close-coupled WC, basin, heated rail with ivory towels, brass mirror', ''] }),
+  R('304', '家庭盥洗室', 2, [12, 20, 2, 12], 'marbleC', 'marbleGold', 2, { alias: ['家庭盥洗室'], alias_en: ['Family Washroom'], use: '连体马桶（乌木座圈）、单盆洗手台、电热毛巾架挂象牙白毛巾、黄铜框镜', en: ['Family Washroom', 'Close-coupled WC, basin, heated rail with ivory towels, brass mirror', ''] }),
   R('305', '三层过厅', 2, [-20, 20, -6, 2], 'oak', 'plasterStone', 2, { minor: true, alias: ['三层过厅'], alias_en: ['Second-floor Hall'], use: '西端门禁门通主人私区，东端通家人区', en: ['Second-floor Hall', 'Secured door west to the private wing, east to the family wing', ''] }),
   R('306', '家庭餐室', 2, [-8, 8, -22, -6], 'oak', 'silkDuck', 2, { alias: ['家庭餐室'], alias_en: ['Family Dining Room'],
     use: '胡桃木椭圆桌（8 人）、边柜、茶具柜、窗边早餐桌、西耶纳黄壁炉；窗外正对人工湖',
@@ -255,7 +262,7 @@ export const ROOMS = [
     use: '黄铜框以太监视墙、操作台、两把转椅、档案柜', en: ['Security Room', 'Brass-framed ether monitor wall, console, two swivel chairs, files', ''] }),
   R('409', '结界值守室', 3, [-8, 8, -22, -14], 'stoneFlag', 'plasterStone', 3, { alias: ['结界值守室'], alias_en: ['Ward Room'], src: '世界书', use: '黄铜加以太晶的结界主控台、四座锚碑的状态表盘、值守桌', en: ['Ward Room', 'Brass-and-crystal ward console, dials for the four anchor stones, duty desk', ''] }),
   R('410', '员工卧室', 3, [8, 20, -22, -6], 'oak', 'paintIvory', 3, { parts: { void: [8, 12, -20, -8] }, alias: ['员工卧室'], alias_en: ['Staff Bedrooms'], use: '员工卧室 ×3：单人床、床头柜、衣柜、小书桌；电梯在本层凭钥匙开门，楼梯厅的天光井穿过这里', en: ['Staff Bedrooms', 'Three bedrooms with single bed, nightstand, wardrobe, desk; key-only lift stop; the stair skylight shaft passes through', ''] }),
-  R('412', '员工盥洗室', 3, [-20, -14, -22, -14], 'tile', 'tileWhite', 3, { alias: ['员工盥洗室'], alias_en: ['Staff Washroom'], use: '淋浴 ×2、马桶 ×2（镀镍手柄、白色座圈）、洗手台 ×2、每人一格的毛巾架', en: ['Staff Washroom', 'Two showers, two WCs, two basins, towel pigeonholes', ''] }),
+  R('412', '员工盥洗室', 3, [-20, -14, -22, -14], 'marbleC', 'tileWhite', 3, { alias: ['员工盥洗室'], alias_en: ['Staff Washroom'], use: '淋浴 ×2、马桶 ×2（镀镍手柄、白色座圈）、洗手台 ×2、每人一格的毛巾架', en: ['Staff Washroom', 'Two showers, two WCs, two basins, towel pigeonholes', ''] }),
   R('413', '布草储藏', 3, [-14, -8, -14, -6], 'oak', 'paintIvory', 3, { alias: ['布草储藏'], alias_en: ['Linen Store'], use: '布草柜到顶，按房间编号分格', en: ['Linen Store', 'Linen presses to the ceiling, one compartment per room', ''] }),
 
   /* ---------------- F5 眺望层 ---------------- */
@@ -288,23 +295,23 @@ const A = (name, o) => ({ name, alias: [], alias_en: [], y: 3, pri: 5, src: '推
 export const AREAS = [
   A('伊甸庄园 · 主楼', { alias: ['伊甸庄园', '伊甸', '庄园', '主楼', '中央主楼', '府邸'], alias_en: ['Eden Manor', 'Main House', 'Manor'], x: 0, z: 0, w: 40, d: 44, y: 34, pri: 10, src: '世界书', note: 'src「新古典主义白色石材建筑」',
     use: '帕拉第奥式五段构图的中央主楼：六柱科林斯门廊与山花家徽、粗面石基座、檐部与挡檐墙、屋顶平台与眺望亭穹顶' }),
-  A('门廊', { alias: ['门廊', '柱廊'], alias_en: ['Portico'], x: 0, z: 26, w: 31, d: 8, y: 22, pri: 7, use: '六柱科林斯巨柱式门廊，柱高 13.5 m（10D），山花坡度 1:4.5，山花内贴金家徽', heritage: '纹章出现的位置：门廊山花（贴金）、大厅地面镶嵌、床头板、银器、毛巾刺绣、信笺、结界锚碑的碑座。' }),
-  A('西翼', { alias: ['西翼'], alias_en: ['West Wing'], x: -37, z: 0, w: 34, d: 32, y: 17, pri: 7, use: '三层七开间，平屋顶栏杆女儿墙：F1 餐厅，F2 书房，F3 主人套间' }),
-  A('东翼', { alias: ['东翼'], alias_en: ['East Wing'], x: 37, z: 0, w: 34, d: 32, y: 17, pri: 7, use: '三层七开间，平屋顶栏杆女儿墙：F1 会客厅，F2 客房，F3 家人区' }),
+  A('门廊', { alias: ['门廊', '柱廊'], alias_en: ['Portico'], x: 0, z: 26, w: 31, d: 8, y: 22, pri: 9, use: '六柱科林斯巨柱式门廊，柱高 13.5 m（10D），山花坡度 1:4.5，山花内贴金家徽', heritage: '纹章出现的位置：门廊山花（贴金）、大厅地面镶嵌、床头板、银器、毛巾刺绣、信笺、结界锚碑的碑座。' }),
+  A('西翼', { alias: ['西翼'], alias_en: ['West Wing'], x: -37, z: 0, w: 34, d: 32, y: 17, pri: 6, use: '三层七开间，平屋顶栏杆女儿墙：F1 餐厅，F2 书房，F3 主人套间' }),
+  A('东翼', { alias: ['东翼'], alias_en: ['East Wing'], x: 37, z: 0, w: 34, d: 32, y: 17, pri: 6, use: '三层七开间，平屋顶栏杆女儿墙：F1 会客厅，F2 客房，F3 家人区' }),
   A('西柱廊', { alias: ['西柱廊', '柱廊连廊', '连廊'], alias_en: ['West Colonnade', 'Colonnade'], x: -66, z: 0, w: 24, d: 6, y: 9, pri: 5, use: '爱奥尼亚单排柱廊，高 5.5 m，玻璃冬季封闭' }),
   A('东柱廊', { alias: ['东柱廊'], alias_en: ['East Colonnade'], x: 66, z: 0, w: 24, d: 6, y: 9, pri: 5, use: '爱奥尼亚单排柱廊，高 5.5 m，玻璃冬季封闭' }),
-  A('图书馆塔楼', { alias: ['图书馆塔楼', '塔楼', '浑天仪'], alias_en: ['Library Tower', 'Armillary'], x: -90, z: 0, w: 24, d: 24, y: 31, pri: 7, use: '西端塔亭：两层 10 m，八角塔身到 28 m，铅皮小穹顶与金色浑天仪', heritage: '塔顶的金色浑天仪每年转一格，一圈正好是一百年。' }),
-  A('音乐厅亭', { alias: ['音乐厅亭'], alias_en: ['Music Pavilion'], x: 90, z: -3, w: 24, d: 38, y: 16, pri: 7, use: '东端音乐厅：单层 11 m，筒拱屋面，北端半圆后殿安管风琴', heritage: '管风琴最低的那根音管上刻着四代家主和建造匠人的名字。' }),
-  A('前庭', { alias: ['前庭', '喷泉', '前院', '荣誉庭院'], alias_en: ['Forecourt', 'Fountain'], x: 0, z: 53, w: 110, d: 34, y: 9, pri: 9, src: '世界书', note: 'src「前庭喷泉」',
+  A('图书馆塔楼', { alias: ['图书馆塔楼', '塔楼', '浑天仪'], alias_en: ['Library Tower', 'Armillary'], x: -90, z: 0, w: 24, d: 24, y: 31, pri: 9, use: '西端塔亭：两层 10 m，八角塔身到 28 m，铅皮小穹顶与金色浑天仪', heritage: '塔顶的金色浑天仪每年转一格，一圈正好是一百年。' }),
+  A('音乐厅亭', { alias: ['音乐厅亭'], alias_en: ['Music Pavilion'], x: 90, z: -3, w: 24, d: 38, y: 16, pri: 9, use: '东端音乐厅：单层 11 m，筒拱屋面，北端半圆后殿安管风琴', heritage: '管风琴最低的那根音管上刻着四代家主和建造匠人的名字。' }),
+  A('前庭', { alias: ['前庭', '喷泉', '前院', '荣誉庭院'], alias_en: ['Forecourt', 'Fountain'], x: 0, z: 53, w: 110, d: 34, y: 9, pri: 8, src: '世界书', note: 'src「前庭喷泉」',
     use: '砾石广场，中央大喷泉：外池半径 7 m、三层水盘，顶上铜像「持苹果的少女」；两侧椴树林荫' }),
-  A('西花坛', { alias: ['花坛', '花园', '庭园', '刺绣花坛'], alias_en: ['Gardens', 'Garden', 'Parterre'], x: -36, z: 53, w: 40, d: 30, y: 2, pri: 8, src: '世界书', note: 'src「花园」；布局推断', use: '法式刺绣花坛 3 × 2 格，黄杨卷草纹填彩色碎砖和季节花' }),
+  A('西花坛', { alias: ['花坛', '花园', '庭园', '刺绣花坛'], alias_en: ['Gardens', 'Garden', 'Parterre'], x: -36, z: 53, w: 40, d: 30, y: 2, pri: 7, src: '世界书', note: 'src「花园」；布局推断', use: '法式刺绣花坛 3 × 2 格，黄杨卷草纹填彩色碎砖和季节花' }),
   A('东花坛', { alias: ['东花坛'], alias_en: ['East Parterre'], x: 36, z: 53, w: 40, d: 30, y: 2, pri: 6, use: '法式刺绣花坛 3 × 2 格' }),
-  A('中轴大道', { alias: ['大道', '中轴大道', '林荫道', '条纹草坪'], alias_en: ['Avenue', 'Grand Avenue'], x: 0, z: 170, w: 50, d: 200, y: 2, pri: 8, use: '大道 x ±3，两侧各一行椴树，前 56 m 有 16 座雕像台座；割草深浅条纹的长草坪' }),
+  A('中轴大道', { alias: ['大道', '中轴大道', '林荫道', '条纹草坪'], alias_en: ['Avenue', 'Grand Avenue'], x: 0, z: 170, w: 50, d: 200, y: 2, pri: 9, use: '大道 x ±3，两侧各一行椴树，前 56 m 有 16 座雕像台座；割草深浅条纹的长草坪' }),
   A('停靠平台', { alias: ['停靠平台', '停机坪', '码头', '平台', '候机亭'], alias_en: ['Landing Platform', 'Landing Stage'], x: 0, z: 277, r: 16, y: 5, pri: 9, src: '世界书', note: 'src「访客停靠平台」',
     use: '伸出岛缘的圆形平台，铜绿栏杆，地面嵌金色引导环；候机亭直径 6 m', heritage: '候机亭的铜门把手被历代访客摸出了一圈金色的亮边。' }),
   A('玫瑰园', { alias: ['玫瑰园'], alias_en: ['Rose Garden'], x: 95, z: 70, r: 25, y: 3, pri: 5, use: '直径 50 m 的圆形下沉园，4 条放射小径，中心铁艺凉亭，外圈攀缘蔷薇拱廊' }),
   A('迷园', { alias: ['迷园', '树篱迷宫', '迷宫'], alias_en: ['Hedge Maze', 'Maze'], x: -95, z: 70, w: 50, d: 50, y: 3, pri: 5, use: '紫杉迷园，中心是日晷' }),
-  A('后庭', { alias: ['后庭', '后院', '台地'], alias_en: ['Rear Court', 'Terrace Garden'], x: 0, z: -36.5, w: 60, d: 29, y: 3, pri: 8, src: '世界书', note: 'src「后庭」', use: '府邸后的石铺台地、两块草坪、栏杆与下到湖岸的台阶' }),
+  A('后庭', { alias: ['后庭', '后院', '台地'], alias_en: ['Rear Court', 'Terrace Garden'], x: 0, z: -36.5, w: 60, d: 29, y: 3, pri: 7, src: '世界书', note: 'src「后庭」', use: '府邸后的石铺台地、两块草坪、栏杆与下到湖岸的台阶' }),
   A('人工湖', { alias: ['人工湖', '湖'], alias_en: ['Lake'], x: 7.5, z: -102.5, w: 135, d: 65, ell: true, y: 2, pri: 9, src: '世界书', note: 'src「后庭人工湖」', use: '风景式湖岸的人工湖：湖心圆亭、水榭、白石小桥' }),
   A('湖心圆亭', { alias: ['湖心圆亭', '湖心亭', '圆亭'], alias_en: ['Lake Temple', 'Temple of the Lake'], x: 15, z: -102, r: 5, y: 10, pri: 6, use: '湖心小岛上的 8 柱圆形神殿，柱圈直径 5.6 m，高 7 m，铅皮穹顶加金球', heritage: '三代挖人工湖，建湖心圆亭，把后半部改成英式风景园。' }),
   A('水榭', { alias: ['水榭', '凉亭', '船屋'], alias_en: ['Water Pavilion', 'Boathouse'], x: 62, z: -93, w: 16, d: 10, y: 8, pri: 6, use: '架在湖上的石台和敞亭，下层是船屋', heritage: '船屋里停着一条初代的木船，每年只在庄园纪念日下水一次。' }),
@@ -313,11 +320,11 @@ export const AREAS = [
   A('果园', { alias: ['果园'], alias_en: ['Orchard'], x: 215, z: -80, w: 50, d: 50, y: 3, pri: 4, use: '苹果、梨、榅桲按梅花形种植，草下种野花（「伊甸」之名的由来之一）' }),
   A('西预留草坪', { alias: ['预留草坪', '设计草坪'], alias_en: ['Reserve Lawn'], x: -175, z: 10, w: 105, d: 95, y: 1, pri: 3, use: '绿篱框、十字步道、中心水盘、四角雕像、条纹割草，留给以后加建' }),
   A('东预留草坪', { alias: ['东预留草坪'], alias_en: ['East Reserve Lawn'], x: 175, z: 10, w: 105, d: 95, y: 1, pri: 3, use: '绿篱框、十字步道、中心水盘、四角雕像、条纹割草，留给以后加建' }),
-  A('仆役楼', { alias: ['仆役楼', '仆人楼', '主厨房'], alias_en: ['Staff Wing', 'Servants\' Block'], x: -150, z: -93, w: 44, d: 14, y: 12, pri: 4, use: '服务区：主厨房、仆役厅、员工宿舍、大洗衣房（2 层 + 阁楼）' }),
-  A('马车房', { alias: ['马车房', '车库', '马厩'], alias_en: ['Carriage House', 'Stables'], x: -150, z: -117, w: 40, d: 10, y: 9, pri: 4, use: '礼仪马车、4 匹马厩、马具室（1 层 + 草料阁）' }),
-  A('工坊', { alias: ['工坊'], alias_en: ['Workshop'], x: -178, z: -105, w: 8, d: 30, y: 7, pri: 3, use: '飞艇与以太引擎维修、燃料与以太储罐', note: '设定坐标与仆役楼重叠，西移 8 m' }),
-  A('机库', { alias: ['机库'], alias_en: ['Hangar'], x: -107, z: -130, w: 30, d: 20, y: 12, pri: 4, use: '主人私人飞艇和访客艇夜泊，高 9 m' }),
-  A('机坪', { alias: ['机坪'], alias_en: ['Apron'], x: -105, z: -105, w: 30, d: 26, y: 2, pri: 3, use: '机库前的起降坪' }),
+  A('仆役楼', { alias: ['仆役楼', '仆人楼', '主厨房'], alias_en: ['Staff Wing', 'Servants\' Block'], x: -150, z: -115.0, w: 44, d: 14, y: 12, pri: 4, use: '服务区：主厨房、仆役厅、员工宿舍、大洗衣房（2 层 + 阁楼）' }),
+  A('马车房', { alias: ['马车房', '车库', '马厩'], alias_en: ['Carriage House', 'Stables'], x: -150, z: -139.0, w: 40, d: 10, y: 9, pri: 4, use: '礼仪马车、4 匹马厩、马具室（1 层 + 草料阁）' }),
+  A('工坊', { alias: ['工坊'], alias_en: ['Workshop'], x: -178, z: -127.0, w: 8, d: 30, y: 7, pri: 3, use: '飞艇与以太引擎维修、燃料与以太储罐', note: '设定坐标与仆役楼重叠，西移 8 m；服务区整体北移 22 m' }),
+  A('机库', { alias: ['机库'], alias_en: ['Hangar'], x: -107, z: -152.0, w: 30, d: 20, y: 12, pri: 4, use: '主人私人飞艇和访客艇夜泊，高 9 m' }),
+  A('机坪', { alias: ['机坪'], alias_en: ['Apron'], x: -105, z: -127.0, w: 30, d: 26, y: 2, pri: 3, use: '机库前的起降坪' }),
   A('后轴观景台', { alias: ['观景台', '后轴观景台'], alias_en: ['Lookout', 'North Lookout'], x: 0, z: -215, r: 10, y: 3, pri: 4, use: '岛缘半圆观景台，俯瞰下方天城' }),
   A('西观景亭', { alias: ['西观景亭'], alias_en: ['West Lookout'], x: -315, z: 25, r: 4, y: 6, pri: 3, use: '小圆亭，看日落' }),
   A('东观景亭', { alias: ['东观景亭'], alias_en: ['East Lookout'], x: 315, z: 25, r: 4, y: 6, pri: 3, use: '小圆亭，看日出' }),
@@ -334,7 +341,7 @@ const H = (o) => ({ ry: 0, tour: 0, ...o });
 export const HERITAGE = [
   H({ id: 'landingRing', name: '停靠平台引导环', en: 'Landing ring', floor: null, room: null, x: 0, y: 1.0, z: 277, kind: 'landingRing', era: '历代', tour: 1, view: { w: 60, theta: 0.3, phi: 0.9 },
     caption: '停靠平台：候机亭的铜门把手被历代访客摸出了一圈金色的亮边。', caption_en: 'Landing platform: generations of visitors have polished a ring of gold onto the brass door handles of the waiting pavilion.' }),
-  H({ id: 'pedimentCrest', name: '山花家徽', en: 'Pediment crest', floor: null, room: null, x: 0, y: 18.9, z: 29.35, kind: 'crest', era: '初代', tour: 2, view: { w: 40, theta: 0.15, phi: 1.2 },
+  H({ id: 'pedimentCrest', name: '山花家徽', en: 'Pediment crest', floor: null, room: null, x: 0, y: 18.9, z: 29.0, kind: 'crest', era: '初代', tour: 2, view: { w: 40, theta: 0.15, phi: 1.2 },
     caption: '盾面是天城蓝，中间一株金色苹果树立在白色云纹上，树上方是一对展开的金色翅膀（代表浮空）。格言带上写「HORTUS SUPRA NUBES」（园在云上）。', caption_en: 'A Tiancheng-blue shield with a golden apple tree on white clouds beneath a pair of spread golden wings; motto HORTUS SUPRA NUBES, a garden above the clouds.' }),
   H({ id: 'longcaseClock', name: '长箱钟', en: 'Longcase clock', floor: 0, room: '101', x: -11.3, y: 1.2 + 2.9, z: 16, ry: Math.PI / 2, kind: 'longcaseClock', era: '初代', tour: 3, view: { w: 18, theta: 0.9, phi: 1.1 },
     caption: '初代奠基人订制的胡桃木长箱钟，高 2.6 m，表盘上是天城初建时的星图，每到整点报出庄园的建成日。', caption_en: 'The founder\'s walnut longcase clock, 2.6 m tall; its dial shows the stars over Tiancheng at its founding and it chimes the founding date every hour.' }),

@@ -569,6 +569,8 @@ export function toilet(k, o = {}) {
   // 座圈（3 cm）＋ 盖（大一圈、掀起 8°）＋ 两个铜合页
   const ys = yb + 0.132 + 0.012 + 0.015;
   k.geo(seat, G.tor(PI * 2, 6, 28, 0.25), 0, ys, zb + 0.01, 0.18, 0.06, 0.235);
+  f.geo(seat, G.tor(PI * 2, 4, 28, 0.1), 0, ys + 0.004, zb + 0.01, 0.137, 0.04, 0.178);   // 座圈内侧 2 mm 倒角
+  f.geo('porcelain', G.tor(PI * 2, 4, 32, 0.035), 0, yb + 0.118, zb, 0.2 * 1.02, 0.08, 0.26 * 1.02);   // 碗前沿釉面高光线
   const zh = zb - 0.27, yh = ys + 0.012, a = 10 * PI / 180, L = 0.29;
   k.geo(seat, G.cyl(28), 0, yh + Math.sin(a) * L + 0.009, zh + Math.cos(a) * L, 0.232, 0.02, L + 0.01, 0, -a);
   k.geo(seat, G.cyl(20), 0, yh + Math.sin(a) * (L + 0.01) + 0.022, zh + Math.cos(a) * (L + 0.01), 0.2, 0.012, L - 0.03, 0, -a);
@@ -583,7 +585,7 @@ export function toilet(k, o = {}) {
     rod(k, trim, [0, yb + 0.12, zb - 0.26], [0, yb + 0.2, 0.07], 0.022, 10); rod(k, trim, [0, yb + 0.2, 0.07], [0, yc - 0.02, 0.07], 0.02, 10);
     rod(k, trim, [0.22, yc + 0.04, 0.22], [0.28, yc + 0.04, 0.3], 0.006, 5);
     rod(f, trim, [0.28, yc + 0.03, 0.3], [0.28, 1.5, 0.3], 0.003, 4); k.geo('porcelain', G.lathe('wcpull', [[0, 0], [0.018, 0.01], [0.022, 0.06], [0.012, 0.1], [0, 0.11]], 10), 0.28, 1.39, 0.3);
-    for (let i = 0; i < 20; i++) f.geo(trim, G.tor(PI * 2, 3, 6, 0.3), 0.28, yc - 0.02 - i * 0.026, 0.3, 0.008, 0.008, 0.008, (i % 2) * H, H);
+    for (let i = 0; i < 28; i++) f.geo(trim, G.tor(PI * 2, 3, 6, 0.3), 0.28, yc - 0.02 - i * 0.0172, 0.3, 0.008, 0.008, 0.008, (i % 2) * H, H);
   } else {
     const yc = type === 'close' ? yb + 0.145 : 0.58, hc = 0.38;
     sl(k, 'porcelain', 0, yc + hc / 2, 0.12, 0.5, hc, 0.2, 0.025, 0, 0, 0, 0.025, 4);
@@ -606,12 +608,12 @@ export function towelStack(k, n, w, d, o = {}) {
   k = wk(k); const f = FINE(k); const t = o.t || 0.028, col = o.col || COL.towel, key = 'towel:' + col, r = srand(o.seed || ((n * 131 + w * 1000) | 0));
   const band = 'towel:' + shadeHex(col, 0.86);
   // 远景：主批次只放一块藏在折层里面的整块；近景（fine）才放逐条折层
-  const lod = n >= 3 && o.lod !== false, kf = lod ? f : k;
+  const lod = n >= 3 && o.lod !== false, kf = lod ? f : k, keyF = lod ? 'towelHi:' + col : key;
   if (lod) { const e = t / 2 + 0.003; k.geo(key, G.slab(w - 2 * e, n * t * 0.97 - 2 * e * 0.6, d - 2 * e, 0.006, 0, 1), 0, n * t * 0.97 / 2, 0); }
   let y = 0, dx = 0, dz = 0, a = 0;
   for (let i = 0; i < n; i++) {
     dx = (r() - 0.5) * 0.008; dz = (r() - 0.5) * 0.008; a = (r() - 0.5) * 0.052;
-    kf.geo(key, foldG(w, t, d), dx, y + t / 2, dz, 1, 1, 1, a);
+    kf.geo(keyF, foldG(w, t, d), dx, y + t / 2, dz, 1, 1, 1, a);
     if (!o.plain) { const s = Math.sin(a), c = Math.cos(a); f.box(band, dx + s * (d / 2 + 0.0008), y + t / 2, dz + c * (d / 2 + 0.0008), w - 0.03, t * 0.36, 0.002, a); }
     y += t * 0.97;
   }
@@ -620,6 +622,10 @@ export function towelStack(k, n, w, d, o = {}) {
     f.box('gold', dx + s * (d / 2 + 0.0015), yT, dz + c * (d / 2 + 0.0015), w - 0.04, 0.01, 0.002, a);
     const cd = d / 2 - 0.045; f.cyl('gold', dx + s * cd, y - 0.001, dz + c * cd, 0.015, 0.002, 14); f.cyl('enamel:' + COL.crestBlue, dx + s * cd, y + 0.0005, dz + c * cd, 0.0095, 0.0012, 12);
   }
+  // 最上一条的一端从前沿垂下、越过台沿 o.drape 米（绒圈垂边）
+  if (o.drape) { const L = y + o.drape, tp = 0.012, zf = dz + d / 2 + tp / 2;
+    k.geo('towel', panelG(w - 0.01, L, tp, 1, col), dx, y, zf, 1, 1, 1, a); cx_(k, key, dx, y - 0.002, zf - 0.004, tp * 0.9, w - 0.012, 8); cx_(k, key, dx, y - L + 0.006, zf + 0.004, 0.0115, w - 0.014, 8);
+    if (!o.plain) { f.box('gold', dx, y - L + 0.05, zf + 0.012, w - 0.03, 0.008, 0.002, a); vdisc(f, 'gold', dx, y - L + 0.1, zf + 0.012, 0.014, 0.014, 0.002, 12); } }
   return y;
 }
 // 垂挂的一片毛巾：竖直的厚片，截面是跑道形；中段微鼓，纵向两道软褶，两侧边略向后卷（顶、底被搭杆包边和滚边盖住）
@@ -941,11 +947,12 @@ export const PROP = {
   // 胸像台座（空座只留铜牌）
   bust(k, o = {}) {
     k = wk(k); const f = FINE(k);
+    if (!o.noPlinth) {
     k.bx('marbleW', 0, 0, 0, 0.52, 0.1, 0.52); k.bx('marbleW', 0, 0.1, 0, 0.46, 0.06, 0.46);
     k.bx('scagliola', 0, 0.16, 0, 0.36, 0.92, 0.36); k.bx('marbleW', 0, 1.08, 0, 0.44, 0.05, 0.44); k.bx('marbleW', 0, 1.13, 0, 0.48, 0.04, 0.48);
     f.box('brass', 0, 0.9, 0.182, 0.2, 0.07, 0.004);
-    if (o.empty) { f.box('ormolu', 0, 1.17, 0, 0.3, 0.004, 0.3); return; }
-    const y = 1.17, m = 'marbleW';
+    if (o.empty) { f.box('ormolu', 0, 1.17, 0, 0.3, 0.004, 0.3); return; } }
+    const y = o.noPlinth ? 0 : 1.17, m = 'marbleW';
     k.geo(m, G.lathe('socle', [[0, 0], [0.1, 0], [0.1, 0.03], [0.06, 0.06], [0.05, 0.12], [0, 0.12]], 12), 0, y, 0);
     k.sph(m, 0, y + 0.24, 0, 0.23, 0.14, 0.13, 10, 7); k.sph(m, 0, y + 0.22, 0.02, 0.17, 0.12, 0.12, 8, 6);
     k.cyl(m, 0, y + 0.3, 0, 0.055, 0.12, 8); k.sph(m, 0, y + 0.5, 0.01, 0.085, 0.105, 0.095, 10, 8);
@@ -958,7 +965,7 @@ export const PROP = {
     k = wk(k); const f = FINE(k); const w = o.w || 0.95, h = o.h || 1.2, b = 0.11;
     for (const [x, y, ww, hh] of [[0, h / 2 - b / 2, w, b], [0, -h / 2 + b / 2, w, b], [-w / 2 + b / 2, 0, b, h - 2 * b], [w / 2 - b / 2, 0, b, h - 2 * b]]) sl(k, 'gold', x, y, 0.04, ww, hh, 0.07, 0.02);
     for (const [x, y, ww, hh] of [[0, h / 2 - b - 0.01, w - 2 * b, 0.02], [0, -h / 2 + b + 0.01, w - 2 * b, 0.02], [-w / 2 + b + 0.01, 0, 0.02, h - 2 * b], [w / 2 - b - 0.01, 0, 0.02, h - 2 * b]]) k.box('ormolu', x, y, 0.03, ww, hh, 0.02);
-    if (o.empty) { k.box('velvet:' + COL.crimson, 0, 0, 0.012, w - 2 * b, h - 2 * b, 0.01); f.box('gold', 0, -h / 2 + b + 0.06, 0.02, 0.18, 0.04, 0.004); }
+    if (o.empty) { k.box('velvetGlow', 0, 0, 0.012, w - 2 * b, h - 2 * b, 0.01); for (const [x, y, ww, hh] of [[0, h / 2 - b - 0.03, w - 2 * b - 0.04, 0.012], [0, -h / 2 + b + 0.03, w - 2 * b - 0.04, 0.012], [-w / 2 + b + 0.03, 0, 0.012, h - 2 * b - 0.04], [w / 2 - b - 0.03, 0, 0.012, h - 2 * b - 0.04]]) k.box('glow', x, y, 0.02, ww, hh, 0.006); f.box('gold', 0, -h / 2 + b + 0.08, 0.02, 0.22, 0.05, 0.004); }
     else k.geo('art', G.vplane(ART(o.cell ?? 0)), 0, 0, 0.018, w - 2 * b, h - 2 * b, 1);
     k.geo('gold', G.seg(), 0, h / 2, 0.04, 0.2, 0.12, 0.06); f.sph('gold', 0, h / 2 + 0.1, 0.05, 0.05, 0.05, 0.03, 8, 6);
     for (const sx of [-1, 1]) for (const sy of [-1, 1]) f.sph('gold', sx * (w / 2 - 0.05), sy * (h / 2 - 0.05), 0.08, 0.04, 0.04, 0.02, 6, 4);
@@ -1185,17 +1192,18 @@ function ctx(b, room, F) {
   // 壁挂 Kit：墙高升起才返回（写入 hi 子批次），否则 null
   R.WH = (side, t, hy, off = 0.17, force) => { if (!force && !R.tall(side)) return null; const [x, z, ry] = R.wall(side, t, off); return SUB(new Kit(b, x, y + hy, z, ry), 'hi' + side); };
   R.hiOf = (k, lx, lz) => { const e = k.T.elements; const wx = e[0] * lx + e[8] * lz, wz = e[2] * lx + e[10] * lz; return vecSide(wx, wz); };
-  R.chand = (x, z, r, arms, tiers = 2, hang = 1.1, ceil) => { const yb = (ceil ?? h - 0.3) - hang; chandelier(R.K(x, z), yb, r, tiers, Math.max(0.15, hang - 0.35 * r), arms); };
-  R.band = (inset = 0.3, wid = 0.6) => floorBand(R, inset, wid);
+  R._post = []; R.post = (f) => R._post.push(f);
+  R.chand = (x, z, r, arms, tiers = 2, hang = 1.1, ceil) => { const yb = (ceil ?? h - 0.3) - hang; R.post(() => chandelier(R.K(x, z), yb, r, tiers, Math.max(0.15, hang - 0.35 * r), arms)); };
+  R.band = (inset = 0.3, wid = 0.6, fil) => floorBand(R, inset, wid, fil);
   return R;
 }
 // 地面黑金花饰带 + 黄铜细线
-function floorBand(R, inset, wid) {
+function floorBand(R, inset, wid, fil = 'brass') {
   const y = R.y + 0.028, [x0, x1, z0, z1] = [R.x0 + inset, R.x1 - inset, R.z0 + inset, R.z1 - inset], b = R.b;
   const put = (key, a, c, d, e, yy = y) => b.add(key, G.box, mat4((a + c) / 2, yy, (d + e) / 2, c - a, 0.006, e - d));
   put('marbleBlack', x0, x1, z0, z0 + wid); put('marbleBlack', x0, x1, z1 - wid, z1); put('marbleBlack', x0, x0 + wid, z0 + wid, z1 - wid); put('marbleBlack', x1 - wid, x1, z0 + wid, z1 - wid);
   const f = FINE(R.K(0, 0)).b, i = wid + 0.04;
-  for (const [a, c, d, e] of [[x0 + i, x1 - i, z0 + i, z0 + i + 0.015], [x0 + i, x1 - i, z1 - i - 0.015, z1 - i], [x0 + i, x0 + i + 0.015, z0 + i, z1 - i], [x1 - i - 0.015, x1 - i, z0 + i, z1 - i]]) f.add('brass', G.box, mat4((a + c) / 2, y + 0.001, (d + e) / 2, c - a, 0.006, e - d));
+  for (const [a, c, d, e] of [[x0 + i, x1 - i, z0 + i, z0 + i + 0.015], [x0 + i, x1 - i, z1 - i - 0.015, z1 - i], [x0 + i, x0 + i + 0.015, z0 + i, z1 - i], [x1 - i - 0.015, x1 - i, z0 + i, z1 - i]]) f.add(fil, G.box, mat4((a + c) / 2, y + 0.001, (d + e) / 2, c - a, 0.006, e - d));
 }
 // 局部框架（矩形 rect 内，背墙在 side）：u 沿墙，v 离墙；返回 { k, L, D, at(u,v,ry) }
 function frame(R, rect, side, orig) {
@@ -1233,6 +1241,9 @@ function bedroomArea(R, rect, o = {}) {
     vanity(F.at(-L + 0.5, D - 0.1, H), { fab: o.chairFab ? o.chairFab : undefined });
     if (2 * D > 7) { const lr = F.at(fx - 0.3, 2 * D - 0.9, -H); lr.bx('mahogany', 0, 0, 0, 0.9, 0.5, 0.5); lr.bx('enamel:#6b4a2e', 0, 0.5, 0, 0.8, 0.25, 0.45); }
   }
+  // v2：窗前写字台、床两侧落地灯
+  if (L > 3.2 && 2 * D > 8) { desk(F.at(L * 0.55, 2 * D - 0.9, 0), 1.4, 0.7, o.chairFab || 'fabCream', { wood: 'satinwood' }); floorLamp(F.at(-L + 0.5, 2 * D - 0.6)); }
+  floorLamp(F.at(bw / 2 + 1.05, 0.35));
   const e = F.at(0, D).T.elements; R.chand(e[12], e[14], 0.55, o.arms || 8, 1);
 }
 // 更衣区
@@ -1256,8 +1267,8 @@ function bathArea(R, rect, o = {}) {
   const bk = F.at(L - 0.02, D + 0.35, -H);
   const mk = F.hk(1, 0, L - 0.02, D + 0.35, 0, -H);
   basins(bk, bwid, { n: 1, trim, top: 'marbleGold', mk: mk || bk, frame: trim === 'nickel' ? 'nickel' : 'gold' });
-  towelStack(loc(bk, -bwid / 2 + 0.2, 0.02, 0, 0.862), 2, 0.3, 0.22, { col: o.towel || COL.towel, seed: 3 });
-  towelStack(loc(bk, -bwid / 2 + 0.2, 0.02, 0, 0.862 + 0.056), 2, 0.2, 0.18, { t: 0.022, col: o.towel || COL.towel, seed: 5 });
+  towelStack(loc(bk, -bwid / 2 + 0.2, 0.195, 0, 0.862), 2, 0.3, 0.22, { col: o.towel || COL.towel, seed: 3, drape: 0.07 });
+  towelStack(loc(bk, bwid / 2 - 0.16, 0.215, 0, 0.862), 2, 0.2, 0.18, { t: 0.022, col: o.towel || COL.towel, seed: 5, drape: 0.06 });
   // 电热毛巾架（左墙）挂浴巾两条
   const rk = F.at(-L + 0.14, D + 0.9, H); const ys = towelRail(rk, 0.72, 1.1, 5, trim);
   towelHang(loc(rk, -0.18, 0, 0, ys[0]), 0.32, 0.58, { col: o.towel || COL.towel }); towelHang(loc(rk, 0.18, 0, 0, ys[0]), 0.32, 0.54, { col: o.towel || COL.towel });
@@ -1267,6 +1278,8 @@ function bathArea(R, rect, o = {}) {
   { const e = F.at(-L + tubLen / 2 + 0.45, 1.45).T.elements; rugPlane(R.b, 'rugSavIvory', e[12], R.y + 0.034, e[14], 1.1, 0.65, F.ry); }
   { const e = F.at(0, D).T.elements; lantern(R.K(e[12], e[14]), R.h - 1.2, 0.8, 0.7, trim); }
 }
+// 客房套间拆成两个任务：卧室区 / 浴室 + 更衣区
+const suiteJobs = (o) => [(R) => bedroomArea(R, (R.room.parts || {}).bed || R.room.r, o), (R) => { const P = R.room.parts || {}; if (P.bath) bathArea(R, P.bath, o); if (P.dress) dressArea(R, P.dress, o); }];
 function suite(R, o) {
   const P = R.room.parts || {};
   bedroomArea(R, P.bed || R.room.r, o);
@@ -1283,6 +1296,14 @@ function generic(R) {
   R.chand(R.cx, R.cz, 0.6, 12, 2);
 }
 
+// 1.2 m 剖切线以下进主批次、以上进 hi 子批次的实体块（世界坐标，y 相对楼面）
+function splitBox(R, key, x0, x1, y0, y1, z0, z1, tag) {
+  const put = (b, a, c) => { if (c - a > 0.001) b.add(key, G.box, mat4((x0 + x1) / 2, R.y + (a + c) / 2, (z0 + z1) / 2, x1 - x0, c - a, z1 - z0)); };
+  put(R.b, y0, Math.min(y1, 1.2)); if (y1 > 1.2) put(tag ? wrapB(R.b.sub ? R.b.sub(tag) : R.b) : R.b, Math.max(1.2, y0), y1);
+}
+const ringG = (r0, r1, seg = 64) => G.custom(`ring${r0}_${r1}_${seg}`, () => new THREE.RingGeometry(r0, r1, seg, 1).rotateX(-H));
+// 灯：若干落地灯 / 边几台灯
+function lamps(R, pts) { for (const [x, z, kind] of pts) kind === 't' ? R.A(sideTable, x, z, 0, true) : R.A(floorLamp, x, z); }
 // 廊：长地毯 + 灯笼
 function corridor(R, lamps = true) {
   const along = R.w >= R.d, L = along ? R.w : R.d, W = along ? R.d : R.w;
@@ -1305,7 +1326,7 @@ function wcNook(R, rect, o = {}) {
 const ROOMFN = {
   /* ---------------- F1 ---------------- */
   '101'(R) {
-    R.band(0.35, 0.6);
+    R.band(0.35, 0.6, 'gold');
     const c = her('crest', '101') || { x: 0, z: 12 }; PROP.crest(R.K(c.x, c.z, 0, 0.027), { inlay: true, w: 4 });
     R.rug('rugAubAzure', 0, R.z1 - 3.1, 6, 4);
     const lc = her('longcaseClock', '101') || { x: -11.3, z: 16, ry: H }; PROP.longcaseClock(R.K(lc.x, lc.z, lc.ry ?? H));
@@ -1330,7 +1351,7 @@ const ROOMFN = {
       const F = frame(R, R.inset(rc), '-z'), { L, D } = F;
       toilet(F.at(-L / 2 + 0.3, 0), { type: 'high', seat: 'mahogany', trim: 'brass' });
       const bk = F.at(L - 0.02, D * 0.9, -H); basins(bk, 1.0, { n: 1, cab: 'mahogany', mk: bk });
-      towelStack(loc(bk, -0.36, 0.05, 0, 0.862), 6, 0.2, 0.2, { t: 0.018, seed: 11 + i }); towelStack(loc(bk, -0.36, -0.17, 0, 0.862), 6, 0.2, 0.2, { t: 0.018, seed: 21 + i });
+      towelStack(loc(bk, -0.36, 0.205, 0, 0.862), 6, 0.2, 0.2, { t: 0.018, seed: 11 + i, drape: 0.06 }); towelStack(loc(bk, -0.36, -0.02, 0, 0.862), 6, 0.2, 0.2, { t: 0.018, seed: 21 + i });
       flowers(loc(bk, 0.38, -0.15), 0.89, 0.09);
       const rg = F.at(-L + 0.05, D + 0.8, H); rg.geo('brass', G.tor(PI * 2, 6, 24, 0.08), 0, 1.25, 0.1, 0.1, 0.1, 0.1, 0, H); vdisc(rg, 'brass', 0, 1.36, 0.01, 0.03, 0.03, 0.01);
       towelHang(loc(rg, 0, 0.1, 0, 1.16), 0.26, 0.42, { col: '#EFE9DB', gap: 0.012 });
@@ -1354,17 +1375,19 @@ const ROOMFN = {
     R.A(armchair, R.cx - 1.4, R.z0 + 2.2, 0.5, 'velvet:' + COL.crimson); R.A(armchair, R.cx + 1.4, R.z0 + 2.2, -0.5, 'velvet:' + COL.crimson);
     R.A(sofa, R.cx, R.z0 + 4.8, PI, 'velvet:' + COL.champ, 2.2); R.A(coffeeTable, R.cx, R.z0 + 3.4, 0, 1.2, 0.6);
     { const k = R.K(R.x1 - 0.6, R.z1 - 1.2, -H); legs(k, 0.5, 0.36, 0.7, 0.02, 'mahogany', 0.03); for (let i = 0; i < 3; i++) k.box('books', 0, 0.35 + i * 0.12, 0, 0.44, 0.02, 0.3, 0, 0.1); }
+    lamps(R, [[R.x1 - 0.7, R.z0 + 0.7], [R.x0 + 0.7, R.z1 - 0.7, 't']]);
     R.chand(R.cx, R.cz, 0.6, 12, 2);
   },
-  '106'(R) {
+  '106': [(R) => {
     R.band(0.3, 0.4);
     const bz = (her('bust', '106') || {}).z ?? -5.3, empty = (her('bust', '106') || { x: 18 }).x;
     [-18, -14.5, -11, 11, 14.5, 18].forEach((x, i) => PROP.bust(R.K(x, bz), { empty: Math.abs(x - empty) < 0.3, seed: i }));
+  }, (R) => {
     for (const sx of [-1, 1]) { const [x, z] = R.wall('-z', sx * 5.5, 0.4); R.A(consoleT, x, z, 0, 1.6, true, { mk: R.tall('-z') ? SUB(R.K(x, z), 'hi-z') : null, mirror: 1.6 }); }
     for (const sx of [-1, 1]) R.A(consoleT, sx * 16, R.z1 - 0.55, PI, 1.6, false);
     for (const x of [-17, -8, -2.5, 2.5, 8, 17]) lantern(R.K(x, R.cz), R.h - 1.6, 1.2, 0.9);
     R.rug('rugRunner', 0, R.cz, 2.2, 14, H);
-  },
+  }],
   '107'(R) {
     R.rug('rugSavIvory', R.cx, R.cz, 10, 8);
     for (const s of [-1, 1]) { const cx = R.cx + s * 3.8, cz = R.cz;
@@ -1384,17 +1407,19 @@ const ROOMFN = {
   },
   '110'(R) { R.W(bellBoard, '-x', R.cz, 0.08); R.A(desk, R.cx + 0.5, R.cz, -H, 1.4, 0.7, 'enamel:#3a2a22', { wood: 'oak' }); R.A(windsor, R.cx - 0.8, R.cz + 1.6, 0); R.W(wardrobe, '+x', R.z0 + 1.2, 0.45, 1.4, 'oak'); R.W(counter, '-z', R.cx, 0.4, 2.0, 0.55); { const [x, z, ry] = R.wall('+z', R.cx, 0.1); const k = R.K(x, z, ry); k.bx('walnut', 0, 1.1, 0, 1.4, 0.9, 0.04); k.bx('linen', 0, 1.15, 0.025, 1.3, 0.8, 0.005); } R.chand(R.cx, R.cz, 0.35, 6, 1); },
   '111'(R) { R.W(filing, '-x', R.cz, 0.35, 4, 'oak'); { const [x, z, ry] = R.wall('+z', R.cx, 0.1); const k = R.K(x, z, ry); k.bx('iron', 0, 0, 0, 1.2, 2.0, 0.2); k.cyl('brass', 0, 1.0, 0.1, 0.18, 0.04, 16, 1, 1, 1, H); } R.A(workTable, R.cx + 0.8, R.cz, H, 2.0, 0.9, 'leatherG'); pendant(R.K(R.cx + 0.8, R.cz), R.h - 0.6, 0.9); },
-  '113'(R) {
+  '113': [(R) => {
     const lenT = Math.min(16.5, R.w - 7), cz = R.cz;
     R.rug('rugAubCrimson', R.cx + 0.5, cz, lenT + 1.5, 6);
     R.A(diningTable, R.cx + 0.6, cz, 0, lenT, 1.7, 'enamel:#6e1f1b', { n: 11, hostChair: true, candles: 5 });
+  }, (R) => {
+    const lenT = Math.min(16.5, R.w - 7), cz = R.cz;
     const cc = her('crestChair', '113') || { x: R.cx + 0.6 - lenT / 2 - 0.45, z: cz, ry: H }; PROP.crestChair(R.K(cc.x, cc.z, cc.ry ?? H));
     R.W(sideboard, '-x', cz, 0.35, 2.6); R.W(sideboard, '+x', cz, 0.35, 2.6);
     for (const u of [-6, 6]) R.W(fireplace, '-z', R.cx + u, 0.2, 1.9, { stone: 'marbleW', clock: u < 0 });
     for (const [i, u] of [[5, -6], [7, 0], [5, 6]].entries()) { const hk = R.WH('-z', R.cx + u[1], i === 1 ? 2.35 : 2.25, 0.08); if (hk) PROP.portraitFrame(hk, { w: i === 1 ? 2.2 : 1.6, h: i === 1 ? 1.5 : 1.1, cell: u[0] }); }
     for (const u of [-9, -3, 3, 9]) { const hk = R.WH('-z', R.cx + u, 1.9, 0.02); if (hk) sconce(hk, { arms: 3 }); }
     for (const x of [-6, 0, 6]) R.chand(R.cx + 0.6 + x, cz, 0.9, 36, 3);
-  },
+  }],
   '114'(R) { R.rug('rugSavIvory', R.cx, R.cz, 5, 5); R.A(roundTable, R.cx, R.cz, 0, 0.9, 'walnut'); for (let i = 0; i < 8; i++) { const a = i * PI / 4; R.A(chair, R.cx + Math.sin(a) * 1.35, R.cz + Math.cos(a) * 1.35, a + PI, 'velvet:#6F7F5B', 'walnut'); } flowers(R.K(R.cx, R.cz), 0.75, 0.22); R.W(sideboard, '-x', R.cz, 0.35, 2.4, 'walnut'); chafing(R.K(R.x0 + 0.4, R.cz, H, 0.95)); for (const s of [-1, 1]) R.A(citrus, R.x1 - 0.8, R.cz + s * 4.5, 0, 1.5); lantern(R.K(R.cx, R.cz), R.h - 1.3, 0.9, 0.9); },
   '116'(R) { R.W(counter, '-z', R.cx, 0.4, R.w - 2, 0.65); R.A(workTable, R.cx, R.cz + 0.8, 0, 3.4, 1.2); R.W(cabinetGlass, '+z', R.cx - 3, 0.3, 1.6, 'oak'); R.W(cabinetGlass, '+z', R.cx + 3, 0.3, 1.6, 'oak'); { const [x, z, ry] = R.wall('+x', R.cz, 0.35); const k = R.K(x, z, ry); k.bx('marbleW', 0, 0, 0, 1.4, 0.9, 0.6); k.bx('brass', 0, 0.9, 0, 0.9, 0.02, 0.45); k.geo('brass', G.tor(PI, 6, 12, 0.14), 0, 1.15, -0.2, 0.08, 0.08, 0.08, -H, -H); } for (let i = 0; i < 3; i++) pendant(R.K(R.cx - 2 + i * 2, R.cz + 0.8), R.h - 0.8, 1.0); },
   '117'(R) { for (let i = 0; i < 4; i++) R.W(cabinetGlass, '-z', R.x0 + 1.4 + i * 2.2, 0.3, 2.0, 'paintIvory', 2.6); R.A(workTable, R.cx, R.cz + 1, 0, 3.0, 1.1); flowers(R.K(R.cx - 0.8, R.cz + 1), 0.9, 0.2); flowers(R.K(R.cx + 0.6, R.cz + 1), 0.9, 0.16, [COL.linen, COL.champ]); R.W(counter, '+x', R.cz, 0.35, 2.4, 0.6); pendant(R.K(R.cx - 1, R.cz + 1), R.h - 0.8, 1.0); pendant(R.K(R.cx + 1, R.cz + 1), R.h - 0.8, 1.0); },
@@ -1409,9 +1434,10 @@ const ROOMFN = {
     const hk = R.WH('-z', R.cx, 1.55, 0.08); if (hk) { hk.bx('gold', 0, 0, 0, 1.9, 2.35, 0.06); hk.bx('mirror', 0, 0.1, 0.035, 1.66, 2.12, 0.006); hk.geo('gold', G.seg(), 0, 2.35, 0, 0.95, 0.25, 0.06); for (const s of [-1, 1]) { PROP.portraitFrame(loc(hk, s * 3.4, 0, 0, 1.2), { w: 1.3, h: 2.3, cell: s < 0 ? 0 : 4 }); sconce(loc(hk, s * 1.5, 0, 0, 1.1), { arms: 3 }); } }
     R.W(cabinetGlass, '+x', R.cz, 0.3, 1.8); R.W(consoleT, '-x', R.cz, 0.3, 1.6, false);
     R.A(cardTable, R.cx, R.z1 - 2.2, 0.3, 'velvet:' + COL.crimson);
+    lamps(R, [[R.x0 + 0.8, R.z1 - 0.9], [R.x1 - 0.8, R.z1 - 0.9]]);
     for (const s of [-1, 1]) R.chand(R.cx + s * 6, R.cz + 0.4, 0.9, 36, 3);
   },
-  '120'(R) { R.rug('rugAubIvory', R.cx, R.cz, 5, 6); R.W(fireplace, '+x', R.cz, 0.2, 1.6, { stone: 'marbleBlack:#7fae90', clock: true }); R.A(sofa, R.cx - 1.8, R.cz, H, 'velvet:' + COL.empire, 1.7, 2); R.A(armchair, R.cx + 0.6, R.cz - 1.6, 0.4, 'fabCream'); R.A(armchair, R.cx + 0.6, R.cz + 1.6, PI - 0.4, 'fabCream'); R.A(coffeeTable, R.cx - 0.5, R.cz, H, 1.0, 0.55); R.W(desk, '-z', R.cx, 0.9, 1.4, 0.7, 'fabCream'); R.W(bookshelf, '+z', R.cx, 0.45, 2.2, 2.6); R.chand(R.cx, R.cz, 0.6, 12, 2); },
+  '120'(R) { R.rug('rugAubIvory', R.cx, R.cz, 5, 6); R.W(fireplace, '+x', R.cz, 0.2, 1.6, { stone: 'marbleBlack:#7fae90', clock: true }); R.A(sofa, R.cx - 1.8, R.cz, H, 'velvet:' + COL.empire, 1.7, 2); R.A(armchair, R.cx + 0.6, R.cz - 1.6, 0.4, 'fabCream'); R.A(armchair, R.cx + 0.6, R.cz + 1.6, PI - 0.4, 'fabCream'); R.A(coffeeTable, R.cx - 0.5, R.cz, H, 1.0, 0.55); R.W(desk, '-z', R.cx, 0.9, 1.4, 0.7, 'fabCream'); R.W(bookshelf, '+z', R.cx, 0.45, 2.2, 2.6); lamps(R, [[R.cx - 2.8, R.cz - 1.2], [R.cx - 2.8, R.cz + 1.2, 't']]); R.chand(R.cx, R.cz, 0.6, 12, 2); },
   '122'(R) { R.A(billiard, R.cx, R.cz, 0); R.W(cueRack, '-x', R.cz, 0.15); for (const s of [-1, 1]) R.A(armchair, R.cx + s * 2.2, R.z1 - 1.0, PI + s * 0.3, 'enamel:#4a1d16'); for (const s of [-1, 1]) R.A(armchair, R.cx + s * 2.2, R.z0 + 1.2, -s * 0.3, 'enamel:#4a1d16'); R.W(sideboard, '+x', R.cz, 0.35, 2.0, 'walnut'); { const [x, z, ry] = R.wall('-z', R.cx, 0.1); const k = R.K(x, z, ry); k.bx('walnut', 0, 1.0, 0, 1.2, 0.8, 0.05); k.bx('enamel:#1b1b1b', 0, 1.05, 0.03, 1.1, 0.7, 0.005); for (let i = 0; i < 6; i++) FINE(k).box('porcelain', -0.4 + i * 0.07, 1.5, 0.035, 0.012, 0.08, 0.002); } { const k = R.K(R.cx, R.cz); k.cyl('brass', 0, R.h - 1.2, 0, 0.012, 0.9, 4); cx_(k, 'brass', 0, R.h - 1.25, 0, 0.02, 2.4, 6); for (const x of [-0.9, 0, 0.9]) { k.geo('enamel:#1d4a33', G.cyl(12, 0.35, true), x, R.h - 1.45, 0, 0.26, 0.2, 0.26); k.cyl('glow', x, R.h - 1.56, 0, 0.12, 0.02, 8); } } },
   '123'(R) { for (let i = 0; i < 3; i++) R.W(vitrine, '-z', R.x0 + 2 + i * 3.8, 0.6, 1.8); for (let i = 0; i < 3; i++) R.W(cabinetGlass, '+z', R.x0 + 2 + i * 3.8, 0.3, 1.8, 'ebony', 2.4); R.A(vitrine, R.cx, R.cz + 0.5, 0, 2.2); R.A(desk, R.cx, R.cz - 2, 0, 1.6, 0.8, 'fabCream'); R.chand(R.cx, R.cz, 0.5, 8, 1); },
   '124'(R) { ROOMFN['118'](R); },
@@ -1439,6 +1465,7 @@ const ROOMFN = {
     R.W(sofa, '+x', R.cz, 0.5, 'velvet:' + COL.paleGold, 2.6, 3); R.A(coffeeTable, R.x1 - 2.0, R.cz, H, 1.2, 0.55);
     { const [x, z, ry] = R.wall('+x', R.cz - 4.5, 0.35); const k = R.K(x, z, ry); k.bx('enamel:#1a1a1a', 0, 0, 0, 1.6, 1.0, 0.5); k.bx('enamel:#1a1a1a', 0, 1.0, -0.1, 1.6, 0.9, 0.3); FINE(k).box('gold', 0, 0.5, 0.252, 1.4, 0.6, 0.002); teaSet(loc(k, 0, 0.05), 1.0); }
     { const [x, z, ry] = R.wall('+x', R.cz + 4.5, 0.4); const k = R.K(x, z, ry); legs(k, 0.6, 0.5, 0.7, 0.02, 'mahogany'); k.bx('mahogany', 0, 0.68, 0, 0.64, 0.04, 0.54); k.geo('nickel', G.lathe('samovar', [[0, 0], [0.12, 0], [0.08, 0.06], [0.16, 0.2], [0.17, 0.35], [0.1, 0.5], [0.05, 0.56], [0.08, 0.6], [0, 0.66]], 14), 0, 0.72, 0); }
+    lamps(R, [[R.x1 - 0.7, R.z0 + 0.8], [R.x1 - 0.7, R.z1 - 0.8]]);
     for (const z of [R.z0 + 5, R.z1 - 5]) R.chand(R.cx, z, 0.5, 8, 1);
   },
   '203'(R) { R.W(rack, '-x', R.cz, 0.35, 3.0); R.A(workTable, R.cx + 0.6, R.cz, H, 2.0, 0.6, 'fab:#F7F4EE'); R.W(desk, '+z', R.cx, 0.9, 1.2, 0.6, 'fabCream'); pendant(R.K(R.cx, R.cz), R.h - 0.6, 0.9); },
@@ -1466,6 +1493,7 @@ const ROOMFN = {
     const fd = her('foundersDesk', '212') || { x: -30, z: 9 }; PROP.foundersDesk(R.K(fd.x, fd.z, fd.ry ?? 0));
     for (const s of [-1, 1]) R.A(chesterfield, R.x0 + 4.2, R.cz + s * 1.8, s > 0 ? PI : 0, 2.2); R.A(coffeeTable, R.x0 + 4.2, R.cz, H, 1.2, 0.6);
     R.A(globe, R.x1 - 2.2, R.z0 + 2.0, 0, 0.4); R.A(isleModel, R.x1 - 2.2, R.z1 - 2.0, 0);
+    lamps(R, [[R.x0 + 4.2 - 1.5, R.cz - 2.6], [R.x0 + 4.2 + 1.5, R.cz + 2.6, 't']]);
     { const k = R.K(R.x1 - 4.5, R.z0 + 1.4); k.bx('walnut', 0, 0, 0, 1.6, 0.9, 1.0); for (let i = 0; i < 6; i++) FINE(k).box('walnut', 0, 0.1 + i * 0.13, 0.502, 1.5, 0.11, 0.008); k.bx('leatherG', 0, 0.9, 0, 1.5, 0.004, 0.9); }
     R.chand(R.cx, R.cz, 0.7, 12, 2);
   },
@@ -1484,20 +1512,24 @@ const ROOMFN = {
     { const m = F.hk(0, -1, L - 1.3, 0, 1.55); if (m) { mirrorRect(m, 0.34, 0.44, 'brass'); FINE(m).box('enamel:#cfd3d4', 0, 0, 0.045, 0.28, 0.36, 0.002); } }
   },
   '218'(R) { R.rug('rugAubIvory', R.cx, R.cz, 5, 5); R.A(armchair, R.cx - 1, R.cz, 0.4, 'velvet:#6F7F5B'); R.A(armchair, R.cx + 1, R.cz, -0.4, 'velvet:#6F7F5B'); R.A(stool, R.cx, R.cz + 1.1, 0, 'velvet:#6F7F5B'); R.A(floorLamp, R.cx - 1.8, R.cz - 0.6); R.A(roundTable, R.cx, R.cz - 1.2, 0, 0.45); R.A(chaise, R.cx, R.z0 + 1.0, 0, 'fab:' + COL.ivory); R.W(bookshelf, '+z', R.cx, 0.45, 2.4, 2.5); R.A(telescope, R.x0 + 1.4, R.z0 + 1.2, PI + 0.3); R.chand(R.cx, R.cz, 0.5, 8, 1); },
-  '219'(R) { suite(R, { fab: 'velvet:' + COL.azure, col: COL.azure, drape: '#D9DDE6', chairFab: 'velvet:' + COL.azure, canopy: 'poster', decoCol: COL.azure }); },
-  '220'(R) { suite(R, { fab: 'velvet:' + COL.rose, col: '#B7776B', drape: '#EAD6CF', chairFab: 'fab:' + COL.rose, canopy: 'poster', decoCol: COL.rose }); },
-  '222'(R) { suite(R, { fab: 'velvet:' + COL.empire, col: COL.empire, drape: '#D6E0D6', chairFab: 'velvet:' + COL.empire, canopy: 'poster', decoCol: COL.empire, bedArt: 7 }); },
-  '223'(R) { for (const s of [-1, 1]) { R.rug('rugSavIvory', R.cx + s * 4, R.cz, 5, 4.5); R.A(sofa, R.cx + s * 4, R.cz + 1.4, PI, 'fab:' + COL.ivory, 2.2); R.A(coffeeTable, R.cx + s * 4, R.cz, 0, 1.2, 0.6); R.A(armchair, R.cx + s * 4 - 1.3, R.cz - 1.2, 0.5, 'velvet:' + COL.champ); R.A(armchair, R.cx + s * 4 + 1.3, R.cz - 1.2, -0.5, 'velvet:' + COL.champ); } R.W(fireplace, '+z', R.cx, 0.2, 1.8, { clock: true }); R.W(desk, '+x', R.cz, 0.8, 1.4, 0.7, 'fabCream'); R.W(bookshelf, '-x', R.cz, 0.45, 2.2, 2.5); R.A(cardTable, R.cx, R.z0 + 1.8, 0.2); R.W(sideboard, '-z', R.cx + 4, 0.35, 1.8); for (const s of [-1, 1]) R.chand(R.cx + s * 4, R.cz, 0.55, 12, 2); },
+  '219': suiteJobs({ fab: 'velvet:' + COL.azure, col: COL.azure, drape: '#D9DDE6', chairFab: 'velvet:' + COL.azure, canopy: 'poster', decoCol: COL.azure }),
+  '220': suiteJobs({ fab: 'velvet:' + COL.rose, col: '#B7776B', drape: '#EAD6CF', chairFab: 'fab:' + COL.rose, canopy: 'poster', decoCol: COL.rose }),
+  '222': suiteJobs({ fab: 'velvet:' + COL.empire, col: COL.empire, drape: '#D6E0D6', chairFab: 'velvet:' + COL.empire, canopy: 'poster', decoCol: COL.empire, bedArt: 7 }),
+  '223': [(R) => { for (const s of [-1, 1]) { R.rug('rugSavIvory', R.cx + s * 4, R.cz, 5, 4.5); R.A(sofa, R.cx + s * 4, R.cz + 1.4, PI, 'fab:' + COL.ivory, 2.2); R.A(coffeeTable, R.cx + s * 4, R.cz, 0, 1.2, 0.6); R.A(armchair, R.cx + s * 4 - 1.3, R.cz - 1.2, 0.5, 'velvet:' + COL.champ); R.A(armchair, R.cx + s * 4 + 1.3, R.cz - 1.2, -0.5, 'velvet:' + COL.champ); } }, (R) => { R.W(fireplace, '+z', R.cx, 0.2, 1.8, { clock: true }); R.W(desk, '+x', R.cz, 0.8, 1.4, 0.7, 'fabCream'); R.W(bookshelf, '-x', R.cz, 0.45, 2.2, 2.5); R.A(cardTable, R.cx, R.z0 + 1.8, 0.2); R.W(sideboard, '-z', R.cx + 4, 0.35, 1.8); lamps(R, [[R.cx - 6.6, R.cz + 1.4], [R.cx + 6.6, R.cz + 1.4]]); for (const s of [-1, 1]) R.chand(R.cx + s * 4, R.cz, 0.55, 12, 2); }],
   C2(R) { for (const side of ['-z', '+z', '-x', '+x']) { const L = side[1] === 'z' ? R.w : R.d; const n = Math.floor((L - 2) / 2.2); for (let i = 0; i < n; i++) { const t = (side[1] === 'z' ? R.cx : R.cz) + (i - (n - 1) / 2) * 2.2; R.W(bookshelf, side, t, 0.3, 2.1, 3.0, 0.42, { hi: R.tall(side) ? 'hi' + side : null, rail: true }); } } for (const s of [-1, 1]) R.A(desk, R.cx + s * 4, R.cz + s * 4, s > 0 ? PI : 0, 1.4, 0.7, 'enamel:#4a1d16'); R.chand(R.cx, R.cz, 0.6, 12, 2); },
   /* ---------------- F3 ---------------- */
   '301'(R) {
     R.rug('rugRunner', R.cx, R.cz, 3, R.d - 3);
     const ef = her('portraitFrame', '301') || { x: 10, z: 2.35 };
     let cell = 0;
-    for (let i = 0; i < 6; i++) { const z = 4.5 + i * 3; const hk = R.WH('-x', z, 2.4, 0.17, true); if (hk) PROP.portraitFrame(hk, { w: 1.1, h: 1.45, cell: (cell++) % 5 }); }
-    for (const x of [-10, -7, -4, 4, 7, 10]) { const hk = R.WH('-z', x, 2.4, 0.17, true); if (!hk) continue; const empty = Math.abs(x - ef.x) < 0.3; PROP.portraitFrame(hk, { w: 1.1, h: 1.45, cell: (cell++) % 5, empty }); }
+    // 肖像约 1.5 倍（1.6 × 2.1 m）；最末一幅空框衬发光深红丝
+    for (let i = 0; i < 6; i++) { const z = 4.5 + i * 3; const hk = R.WH('-x', z, 2.6, 0.17, true); if (hk) PROP.portraitFrame(hk, { w: 1.6, h: 2.1, cell: (cell++) % 5 }); }
+    for (const x of [-10, -7, -4, 4, 7, 10]) { const hk = R.WH('-z', x, 2.6, 0.17, true); if (!hk) continue; const empty = Math.abs(x - ef.x) < 0.3; PROP.portraitFrame(hk, { w: 1.6, h: 2.1, cell: (cell++) % 5, empty }); }
     for (let i = 0; i < 4; i++) R.A(bench, R.cx, R.z0 + 3.4 + i * 4.8, H, 1.8, 'velvet:' + COL.crimson, 'gold');
-    for (const s of [-1, 1]) { const k = R.K(R.x1 - 0.6, R.cz + s * 4, -H); consoleT(k, 1.6, false, { vase: false }); PROP.crest(loc(k, 0, -0.1, 0, 0.87), { w: 0.55, supporters: false }); }
+    for (const z of [7, 17]) R.A(bench, R.x0 + 5.6, z, H, 1.8, 'velvet:' + COL.crimson, 'gold');
+    for (const [i, s] of [-1, 1].entries()) { const k = R.K(R.x1 - 0.6, R.cz + s * 4, -H); consoleT(k, 1.6, false, { vase: false }); PROP.crest(loc(k, -0.45, -0.1, 0, 0.87), { w: 0.45, supporters: false }); PROP.bust(loc(k, 0.35, 0, 0, 0.86), { noPlinth: true, seed: i }); }
+    { R.A(roundTable, R.cx, R.cz + 2.4, 0, 0.8, 'marbleW'); flowers(R.K(R.cx, R.cz + 2.4), 0.75, 0.3, [COL.crimson, COL.linen, COL.champ]); }
+    lamps(R, [[R.x0 + 1.0, R.z1 - 0.9], [R.x1 - 1.0, R.z1 - 0.9]]);
     for (let i = 0; i < 4; i++) R.chand(R.cx, R.z0 + 3 + i * 5, 0.45, 8, 1, 1.2);
   },
   '302'(R) { R.A(workTable, R.cx, R.cz - 3, 0, 2.2, 0.6, 'fab:#F7F4EE'); R.W(rack, '-x', R.cz + 4, 0.35, 3.0); R.W(desk, '+x', R.cz, 0.8, 1.3, 0.65, 'fabCream'); R.W(bellBoard, '-x', R.cz - 5, 0.08, 12, 1.2); { const k = R.K(R.cx, R.cz + 1); k.bx('walnut', 0, 0, 0, 0.9, 0.9, 0.5); k.bx('brass', 0, 0.9, 0, 0.5, 0.35, 0.35); } R.chand(R.cx, R.cz, 0.35, 6, 1); },
@@ -1510,7 +1542,7 @@ const ROOMFN = {
     const mk = F.hk(1, 0, L - 0.02, D, 0, -H) || bk; mirrorRect(loc(mk, 0, -0.26, 0, 1.6), 0.7, 0.9, 'brass'); for (const s of [-1, 1]) sconce(loc(mk, s * 0.55, -0.26, 0, 1.65), { arms: 1 });
     const rk = F.at(-L + 0.14, D + 0.8, H); const ys = towelRail(rk, 0.55, 1.0, 4, 'nickel');
     towelHang(loc(rk, -0.13, 0, 0, ys[0]), 0.24, 0.42, { col: '#F3EBDD' }); towelHang(loc(rk, 0.13, 0, 0, ys[0]), 0.24, 0.4, { col: '#F3EBDD' });
-    towelStack(loc(bk, -0.35, 0, 0, 0.862), 3, 0.26, 0.2, { col: '#F3EBDD', seed: 17 });
+    towelStack(loc(bk, -0.35, 0.205, 0, 0.862), 3, 0.26, 0.2, { col: '#F3EBDD', seed: 17, drape: 0.07 });
   },
   '306'(R) { R.rug('rugAubIvory', R.cx, R.cz, 7, 5.5); R.A(diningTable, R.cx, R.cz, 0, 3.4, 1.4, 'velvet:#6F7F5B', { n: 3, candles: 3 }); R.W(sideboard, '+z', R.cx - 3, 0.35, 2.2, 'walnut'); R.W(cabinetGlass, '+z', R.cx + 3, 0.3, 1.8, 'walnut'); R.W(fireplace, '-x', R.cz, 0.2, 1.7, { stone: 'marbleGold:#E0B860', clock: true, mirror: 1.0 }); R.A(roundTable, R.x1 - 1.6, R.z0 + 1.6, 0, 0.55); R.A(chair, R.x1 - 2.4, R.z0 + 1.6, H, 'velvet:#6F7F5B'); R.A(chair, R.x1 - 0.8, R.z0 + 1.6, -H, 'velvet:#6F7F5B'); R.chand(R.cx, R.cz, 0.6, 12, 2); },
   '309'(R) { R.W(bellBoard, '-x', R.cz, 0.08, 18, 1.4); R.A(windsor, R.cx, R.cz - 1, 0); R.A(windsor, R.cx + 1, R.cz - 1, 0); R.W(counter, '+x', R.cz, 0.35, 2.0, 0.55); pendant(R.K(R.cx, R.cz), R.h - 0.6, 0.8); },
@@ -1523,7 +1555,7 @@ const ROOMFN = {
     R.A(armchair, R.cx - 1.8, R.z0 + 2.3, 0.6, 'velvet:' + COL.champ); R.A(armchair, R.cx + 1.8, R.z0 + 2.3, -0.6, 'velvet:' + COL.champ);
     R.W(desk, '+z', R.cx - 5.5, 0.8, 1.5, 0.75, 'velvet:' + COL.azure, { wood: 'satinwood' });
     R.W(bookshelf, '-x', R.cz - 2, 0.45, 2.2, 2.6); R.W(bookshelf, '-x', R.cz + 2, 0.45, 2.2, 2.6); R.W(gramophone, '+x', R.cz, 0.5);
-    R.A(floorLamp, R.cx - 3.2, R.cz + 2.2); R.chand(R.cx, R.cz, 0.7, 16, 2);
+    R.A(floorLamp, R.cx - 3.2, R.cz + 2.2); lamps(R, [[R.cx + 3.2, R.cz + 2.2, 't'], [R.x1 - 1.0, R.z1 - 0.9]]); R.chand(R.cx, R.cz, 0.7, 16, 2);
   },
   '313'(R) {
     for (let i = 0; i < 4; i++) R.W(wardrobe, '-x', R.z0 + 1.5 + i * 2.6, 0.45, 2.4, 'mahogany', 3.1);
@@ -1546,9 +1578,15 @@ const ROOMFN = {
     R.W(desk, '+x', R.cz + 2.5, 0.8, 1.4, 0.7, 'velvet:' + COL.rose, { wood: 'satinwood' });
     R.W(vanity, '+x', R.cz - 2.6, 0.35, { fab: 'velvet:' + COL.rose });
     R.A(floorLamp, R.x0 + 1.4, R.z1 - 1.2);
+    // v2：床前围合座区（沙发 + 2 扶手椅 + 茶几 + 边几）与灯
+    { const gx = R.cx + 5.2, gz = R.cz + 0.2;
+      R.A(sofa, gx, gz + 1.5, PI, 'velvet:' + COL.champ, 2.2, 3, 'gold'); R.A(coffeeTable, gx, gz, 0, 1.2, 0.6);
+      R.A(armchair, gx - 1.5, gz - 1.3, 0.55, 'velvet:' + COL.rose, 'gold'); R.A(armchair, gx + 1.5, gz - 1.3, -0.55, 'velvet:' + COL.rose, 'gold');
+      R.A(sideTable, gx + 1.65, gz + 1.5, 0, true); R.A(floorLamp, gx - 1.7, gz + 1.7); }
+    lamps(R, [[R.x0 + 1.4, R.z0 + 1.2], [R.x1 - 1.2, R.z0 + 1.2]]);
     R.chand(R.cx, R.cz, 0.75, 16, 2);
   },
-  '316'(R) {
+  '316': [(R) => {
     R.band(0.3, 0.45);
     const cx = R.cx, cz = R.cz;
     // 整石浴缸（圆台）
@@ -1564,8 +1602,8 @@ const ROOMFN = {
     // 双台盆（−x 外墙），镜与壁灯挂在远墙
     const vz = cz - 0.6, [bx0, bz0] = R.wall('-x', vz, 0.45), bk = R.K(bx0, bz0, H), hkx = R.tall('-x') ? SUB(R.K(bx0, bz0, H), 'hi-x') : bk;
     basins(bk, 3.0, { n: 2, top: 'marbleGold', mk: hkx });
-    towelStack(loc(bk, -0.12, 0.02, 0, 0.862), 4, 0.3, 0.22, { seed: 31 });
-    towelStack(loc(bk, 0.2, 0.04, 0, 0.862), 6, 0.2, 0.19, { t: 0.024, seed: 37 });
+    towelStack(loc(bk, -0.14, 0.195, 0, 0.862), 4, 0.3, 0.22, { seed: 31, drape: 0.08 });
+    towelStack(loc(bk, 0.2, 0.21, 0, 0.862), 6, 0.2, 0.19, { t: 0.024, seed: 37, drape: 0.06 });
     // 两组电热毛巾架，各挂两条浴巾（背靠 −z 外墙）
     for (const [i, x] of [[0, R.x0 + 5.6], [1, R.x0 + 7.4]].entries()) { const [rx0, rz0] = R.wall('-z', x[1], 0.27), rk = R.K(rx0, rz0, 0); const ys = towelRail(rk, 0.78, 1.15, 5, 'brass');
       towelHang(loc(rk, -0.19, 0, 0, ys[0]), 0.34, 0.62 - i * 0.03, { seed: i }); towelHang(loc(rk, 0.19, 0, 0, ys[0]), 0.34, 0.58 + i * 0.02); }
@@ -1581,9 +1619,32 @@ const ROOMFN = {
     R.A(screenFold, R.x1 - 3.6, R.z1 - 0.8, 0.3, 'fab:' + COL.ivory);
     R.rug('rugSavIvory', t.x, t.z + 2.1, 1.5, 0.8);
     R.chand(cx, cz + 3.0, 0.45, 8, 1);
-  },
-  '317'(R) { suite(R, { fab: 'velvet:' + COL.pearl, col: '#B9B6AF', drape: '#E7E3DA', chairFab: 'fab:' + COL.pearl, canopy: 'poster', trim: 'nickel', seat: 'white', decoCol: COL.paleGold, throwCol: COL.paleGold, bedArt: 3 }); },
-  '318'(R) { R.rug('rugAubIvory', R.cx, R.cz, 6, 6); R.A(sofa, R.cx, R.cz + 1.6, PI, 'fab:' + COL.ivory, 2.4); R.A(armchair, R.cx - 1.6, R.cz - 1.2, 0.5, 'velvet:' + COL.champ); R.A(armchair, R.cx + 1.6, R.cz - 1.2, -0.5, 'velvet:' + COL.champ); R.A(coffeeTable, R.cx, R.cz + 0.2, 0, 1.2, 0.6); R.W(fireplace, '+x', R.cz, 0.2, 1.6, { clock: true, mirror: 1.0 }); R.W(bookshelf, '-z', R.cx, 0.45, 2.4, 2.5); R.A(cardTable, R.cx - 3, R.z1 - 2, 0.2); R.W(gramophone, '-x', R.cz + 3, 0.5); { const k = R.K(R.cx + 3, R.z0 + 1.2); for (let i = 0; i < 4; i++) { k.box('ormolu', -0.3 + i * 0.2, 0.9, 0, 0.12, 0.16, 0.015, 0, -0.15); } } R.chand(R.cx, R.cz, 0.55, 12, 2); },
+  }, (R) => {
+    const t = her('tub', '316') || { x: R.cx, z: R.cz }, wc = (R.room.parts && R.room.parts.wc) || [R.x0, R.x0 + 3, R.z0, R.z0 + 3];
+    // v2：圆台外 4.5 m 黑金花环带 + 金线
+    R.b.add('marbleBlack', ringG(1.62, 2.25), mat4(t.x, R.y + 0.029, t.z)); FINE(R.K(0, 0)).b.add('gold', G.tor(PI * 2, 3, 64, 0.008), mat4(t.x, R.y + 0.031, t.z, 2.25, 0.3, 2.25));
+    // 一对丝绒贵妃榻 + 大理石小几
+    R.A(chaise, t.x, t.z - 3.0, 0, 'velvet:' + COL.champ, 1.8); R.A(chaise, t.x, t.z + 3.0, PI, 'velvet:' + COL.champ, 1.8);
+    { const k = R.K(t.x + 1.45, t.z + 3.0); k.geo('ormolu', G.lathe('gued', [[0, 0], [0.2, 0], [0.18, 0.04], [0.05, 0.1], [0.04, 0.5], [0.08, 0.55], [0, 0.55]], 10), 0, 0, 0); k.cyl('marbleW', 0, 0.55, 0, 0.3, 0.03, 20); flowers(loc(k, 0, 0), 0.58, 0.1, [COL.linen, COL.rose]); }
+    // 壁灯每 2.4 m（远墙）
+    for (const x of [-50.2, -47.8, -45.4]) { const hk = R.WH('-z', x, 2.0, 0.17); if (hk) sconce(hk, { arms: 2 }); }
+    for (const z of [-12.3, -7.0, -2.9]) { const hk = R.WH('-x', z, 2.0, 0.17); if (hk) sconce(hk, { arms: 2 }); }
+    // 直径 3 m 圆形天光：铜圈 + 发光环 + 乳白玻璃
+    { const k = R.K(t.x, t.z, 0, R.h - 0.32); k.geo('ormolu', G.tor(PI * 2, 5, 64, 0.04), 0, 0, 0, 1.5, 1.5, 1.5); k.geo('glow', G.tor(PI * 2, 4, 64, 0.02), 0, -0.03, 0, 1.44, 1.44, 1.44); k.geo('glassHouse', ringG(0, 1.44, 48), 0, 0.01, 0); }
+    // 马桶间：2.4 m 高实墙 + 门框（1.2 m 以上进 hi，朝相机的一面剖掉）
+    { const [wx0, wx1, wz0, wz1] = wc, T = 0.12, dz0 = wz1 - 0.95, dz1 = wz1 - 0.2, xi = wx0 + 0.45, zi = wz0 + 0.45;
+      splitBox(R, 'marbleGold', wx1 - T / 2, wx1 + T / 2, 0, 2.4, zi, dz0, 'hi+x'); splitBox(R, 'marbleGold', wx1 - T / 2, wx1 + T / 2, 0, 2.4, dz1, wz1 + T / 2, 'hi+x'); splitBox(R, 'marbleGold', wx1 - T / 2, wx1 + T / 2, 2.1, 2.4, dz0, dz1, 'hi+x');
+      splitBox(R, 'marbleGold', xi, wx1 - T / 2, 0, 2.4, wz1 - T / 2, wz1 + T / 2, 'hi+z');
+      splitBox(R, 'trim', wx1 - T / 2 - 0.02, wx1 + T / 2 + 0.02, 2.4, 2.47, zi, wz1 + T / 2 + 0.02, 'hi+x'); splitBox(R, 'trim', xi, wx1, 2.4, 2.47, wz1 - T / 2 - 0.02, wz1 + T / 2 + 0.02, 'hi+z');
+      for (const z of [dz0 - 0.05, dz1 + 0.05]) splitBox(R, 'trim', wx1 - T / 2 - 0.03, wx1 + T / 2 + 0.03, 0, 2.18, z - 0.05, z + 0.05, 'hi+x');
+      splitBox(R, 'trim', wx1 - T / 2 - 0.03, wx1 + T / 2 + 0.03, 2.1, 2.24, dz0 - 0.1, dz1 + 0.1, 'hi+x');
+      splitBox(R, 'marbleBlack', wx1 - T / 2 - 0.01, wx1 + T / 2 + 0.01, 0, 0.18, zi, dz0, null); splitBox(R, 'marbleBlack', xi, wx1 - T / 2, 0, 0.18, wz1 - T / 2 - 0.01, wz1 + T / 2 + 0.01, null);
+      // 门扇开向浴室、贴墙
+      splitBox(R, 'mahogany', wx1 + T / 2, wx1 + T / 2 + 0.72, 0, 2.06, dz1 - 0.02, dz1 + 0.02, 'hi+x');
+      R.K(wx1 + T / 2 + 0.64, dz1 + 0.05, 0, 1.0).sph('brass', 0, 0, 0, 0.025, 0.025, 0.025, 8, 6); }
+  }],
+  '317': suiteJobs({ fab: 'velvet:' + COL.pearl, col: '#B9B6AF', drape: '#E7E3DA', chairFab: 'fab:' + COL.pearl, canopy: 'poster', trim: 'nickel', seat: 'white', decoCol: COL.paleGold, throwCol: COL.paleGold, bedArt: 3 }),
+  '318'(R) { R.rug('rugAubIvory', R.cx, R.cz, 6, 6); R.A(sofa, R.cx, R.cz + 1.6, PI, 'fab:' + COL.ivory, 2.4); R.A(armchair, R.cx - 1.6, R.cz - 1.2, 0.5, 'velvet:' + COL.champ); R.A(armchair, R.cx + 1.6, R.cz - 1.2, -0.5, 'velvet:' + COL.champ); R.A(coffeeTable, R.cx, R.cz + 0.2, 0, 1.2, 0.6); R.W(fireplace, '+x', R.cz, 0.2, 1.6, { clock: true, mirror: 1.0 }); R.W(bookshelf, '-z', R.cx, 0.45, 2.4, 2.5); R.A(cardTable, R.cx - 3, R.z1 - 2, 0.2); R.W(gramophone, '-x', R.cz + 3, 0.5); lamps(R, [[R.cx + 2.1, R.cz + 1.6, 't'], [R.cx - 2.3, R.cz + 1.8]]); { const k = R.K(R.cx + 3, R.z0 + 1.2); for (let i = 0; i < 4; i++) { k.box('ormolu', -0.3 + i * 0.2, 0.9, 0, 0.12, 0.16, 0.015, 0, -0.15); } } R.chand(R.cx, R.cz, 0.55, 12, 2); },
   '320'(R) {
     // 中性房间：只放普通家具（沙发、扶手椅、书桌和椅子、书柜、衣柜、单人床、茶几、台灯）
     R.A(sofa, R.cx - 3, R.cz + 1.5, PI, 'fab:' + COL.ivory, 2.2, 3); R.A(coffeeTable, R.cx - 3, R.cz, 0, 1.1, 0.55); R.A(armchair, R.cx - 3, R.cz - 1.5, 0, 'fab:' + COL.ivory);
@@ -1644,16 +1705,24 @@ const ROOMFN = {
 /* ================================================================
  * 按楼层布置（main.js 对每层调用一次）
  * ================================================================ */
-export function furnish(b, fi, only) {
+/* 按房间拆成的任务列表（每个闭包约 5–40 ms），供 main.js 的空闲队列逐个执行、全部完成后再 b.build()：
+ *   const jobs = furnishJobs(b, fi); jobs.forEach(j => idle(j)); …; b.build()
+ * furnish(b, fi) 仍可用：一次性跑完全部任务。 */
+export function furnishJobs(b, fi, only) {
   b = wrapB(b);
-  const F = FLOORS[fi]; if (!F) return;
-  const rooms = ROOMS.filter((r) => r.floor === fi);
-  for (const room of rooms) {
+  const F = FLOORS[fi]; if (!F) return [];
+  const jobs = [];
+  for (const room of ROOMS.filter((r) => r.floor === fi)) {
     if (!room.id || (only && room.id !== only)) continue;
     const fn = ROOMFN[room.id];
     if (!fn && (room.minor || room.void || room.skipFloor)) continue;
-    try { const R = ctx(b, room, F); if (fn) fn(R); else generic(R); }
-    catch (e) { console.warn('furnish', room.id, e); }
+    // 一个房间 = 若干阶段（ROOMFN 可为函数数组）+ 一个收尾任务（吊灯等经 R.post 推迟的件），保证单个任务不超过约 50 ms
+    const phases = Array.isArray(fn) ? fn : [fn || generic]; let R = null;
+    const run = (f) => { try { if (!R) R = ctx(b, room, F); f(R); } catch (e) { console.warn('furnish', room.id, e); } };
+    phases.forEach((f, i) => { const j = () => run(f); j.id = room.id + (phases.length > 1 ? '.' + i : ''); jobs.push(j); });
+    const post = () => run((r) => { const l = r._post.splice(0); for (const g of l) g(); }); post.id = room.id + '.post'; jobs.push(post);
   }
+  return jobs;
 }
+export function furnish(b, fi, only) { for (const j of furnishJobs(b, fi, only)) j(); }
 export { ROOMFN as ROOM_FURNISH };

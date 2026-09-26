@@ -235,7 +235,7 @@ export function buildGardens(b) {
   /* --- 预留草坪 ×2 (±175, 10)，105 × 95 --- */
   for (const sx of [-1, 1]) reserveLawn(b, sx * 175, 10);
   /* --- 服务区（西北）与紫藤廊 --- */
-  serviceZone(b);
+  serviceZone(shifted(b, 0, SZ_DZ)); pergolaWalk(b);
   /* --- 岛缘观景台、结界锚碑、停靠平台 --- */
   lookouts(b);
   for (const [x, z] of [[-235, -140], [235, -140], [-235, 190], [235, 190]]) anchor(b, x, z);
@@ -481,7 +481,7 @@ function reserveLawn(b, cx, cz) {
 
 /* ---------- 西北服务区 ---------- */
 function serviceZone(b) {
-  rect(-186, -148, -84, -80);
+  rect(-186, -148 + SZ_DZ, -84, -72 + SZ_DZ);
   b.bb('gravel', -184, 0, -146, -86, 0.04, -82);
   const house = (x0, x1, z0, z1, h, roofH, opt = {}) => {
     b.bb('stone', x0, 0, z0, x1, h, z1);
@@ -512,12 +512,24 @@ function serviceZone(b) {
   for (const [x, z] of [[-119, -93], [-91, -93], [-119, -117], [-91, -117]]) DT(b).inst('bollard', mat4(x, 0.06, z, 1, 1, 1));
   // 遮挡：东侧与南侧高绿篱 + 树团（从主轴方向看不见）
   hedgeLine(b, -84, -80, -84, -148, 1.6, 4.2); hedgeLine(b, -186, -79, -84, -79, 1.6, 4.2);
-  for (let i = 0; i < 110; i++) { const t = R(); const onE = R() < 0.5; const x = onE ? -80 + R() * 9 : -188 + t * 106, z = onE ? -74 - t * 78 : -75 + R() * 8; if (inIsland(x, z, 10)) tree(b, x, z, 1.25 + R() * 0.45, R() < 0.25 ? 'cone' : 'crown2'); }
+  for (let i = 0; i < 110; i++) { const t = R(); const onE = R() < 0.5; const x = onE ? -80 + R() * 9 : -188 + t * 106, z = onE ? -74 - t * 78 : -75 + R() * 8; if (inIsland(x, z + SZ_DZ, 10)) tree(b, x, z, 1.25 + R() * 0.45, R() < 0.25 ? 'cone' : 'crown2'); }
   for (let x = -186; x <= -88; x += 4.6) tree(b, x + R() * 1.5, -82.5 + R() * 1.5, 1.55 + R() * 0.3, 'crown2');   // 紧贴建筑前的一排大树
+  for (let x = -124; x <= -88; x += 4.2) tree(b, x + R(), -89 + R(), 1.7 + R() * 0.3, 'crown2');   // 机坪南缘
   for (let z = -86; z >= -146; z -= 4.6) tree(b, -86.5 + R() * 1.2, z, 1.5 + R() * 0.3, 'crown2');
-  for (let i = 0; i < 30; i++) { const x = -190 - R() * 30, z = -80 - R() * 70; if (inIsland(x, z, 12) && free(x, z, 1)) tree(b, x, z, 0.9 + R() * 0.3); }
+  for (let i = 0; i < 30; i++) { const x = -190 - R() * 30, z = -80 - R() * 70; if (inIsland(x, z + SZ_DZ, 12) && free(x, z + SZ_DZ, 1)) tree(b, x, z, 0.9 + R() * 0.3); }
+}
+// 服务区整体北移 SZ_DZ（设定坐标下屋顶会探进首屏，挪到首屏上沿之外；AREAS 同步）
+const SZ_DZ = P.SERVICE_DZ ?? -22;
+function shifted(b, dx, dz) {   // 平移代理：put / box / bb / inst / sub 都带上偏移
+  const T = new THREE.Matrix4().makeTranslation(dx, 0, dz), o = Object.create(b);
+  o.add = (key, geom, m, ao) => b.add(key, geom, m ? m.clone().premultiply(T) : T.clone(), ao);
+  o.inst = (proto, m, color) => b.inst(proto, m.clone().premultiply(T), color);
+  o.sub = (tag) => shifted(b.sub ? b.sub(tag) : b, dx, dz);
+  return o;
+}
+function pergolaWalk(b) {
   // 紫藤廊：主人通道暗门（后露台 x −9.4）→ 西行 → 北折到机坪
-  const pts = [[-25, -26], [-80, -26], [-80, -108], [-90, -108]];
+  const pts = [[-25, -26], [-80, -26], [-80, -108 + SZ_DZ], [-90, -108 + SZ_DZ]];
   for (let s = 0; s < pts.length - 1; s++) {
     const [xa, za] = pts[s], [xb, zb] = pts[s + 1], L = Math.hypot(xb - xa, zb - za), ux = (xb - xa) / L, uz = (zb - za) / L, n = Math.round(L / 3);
     path(b, xa, za, xb, zb, 2.4, 0.04, 'pavers');

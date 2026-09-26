@@ -53,22 +53,27 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure
 renderer.shadowMap.enabled = tier < 2; renderer.shadowMap.type = tier === 0 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap; renderer.shadowMap.autoUpdate = false;
 app.prepend(renderer.domElement);
 const labelR = new CSS2DRenderer({ element: $('#labels') }); labelR.setSize(innerWidth, innerHeight);
-document.body.classList.toggle('grade', tier < 2);
+document.body.classList.add('grade');
+const T_GL = performance.now() - T0;
+const kick = (phase) => { try { window.__estateKick && window.__estateKick(phase); } catch (e) { } };   // 看门狗：每个构建阶段重新计时
+const yieldUI = () => new Promise((r) => setTimeout(r, 0));
 
 const scene = new THREE.Scene();
-const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
-pmrem.dispose();
-const TB = { env: performance.now() - T0 }; { const t0 = performance.now(); L.initMaterials(null, MAT_TIER); if (typeof L.initProtos === 'function') L.initProtos(); TB.mats = performance.now() - t0; }
+// 环境光照：RoomEnvironment 先渲进 64 px 立方体，再做 PMREM（比 fromScene 的 256 px 便宜很多）
+{ const pmrem = new THREE.PMREMGenerator(renderer), env = new RoomEnvironment(renderer);
+  try { const rt = new THREE.WebGLCubeRenderTarget(64, { type: THREE.HalfFloatType }); const cc = new THREE.CubeCamera(0.1, 100, rt); cc.update(renderer, env); scene.environment = pmrem.fromCubemap(rt.texture).texture; rt.dispose(); }
+  catch (e) { scene.environment = pmrem.fromScene(env, 0.04).texture; }
+  env.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); pmrem.dispose(); }
+const TB = { gl: T_GL, env: performance.now() - T0 - T_GL }; { const t0 = performance.now(); L.initMaterials(null, MAT_TIER); if (typeof L.initProtos === 'function') L.initProtos(); TB.mats = performance.now() - t0; }
 for (const m of Object.values(L.MATS)) if (m && m.envMapIntensity === 1) m.envMapIntensity = 0.6;
 // 室外淡暖雾：常驻（切换 fog 会重编译着色器），楼层模式把距离推远等于关闭
-const FOG_ON = [880, 2500], FOG_OFF = [1e5, 1e5 + 1];
+const FOG_ON = [480, 2125], FOG_OFF = [1e5, 1e5 + 1];
 scene.fog = new THREE.Fog('#e9d9bd', ...FOG_ON);
 
 /* ---------------- 光：黄金时刻的太阳 + 半球光 + 固定数量的室内暖光 ---------------- */
-const hemi = new THREE.HemisphereLight('#dfe6f0', '#6b5a44', 0.5); scene.add(hemi);
-const sun = new THREE.DirectionalLight('#ffd9a0', 3.1);
-const SUN_DIR = new THREE.Vector3(-0.85, 0.37, 0.37).normalize();   // 高度约 22°，西南偏西
+const hemi = new THREE.HemisphereLight('#dfe6f0', '#6b5a44', 0.38); scene.add(hemi);
+const sun = new THREE.DirectionalLight('#ffd9a0', 3.4);
+const SUN_DIR = new THREE.Vector3(-0.9, 0.26, 0.34).normalize();   // 高度约 15°，西南偏西：长影子
 sun.castShadow = tier < 2; const SM = tier === 0 ? 2048 : 1024; sun.shadow.mapSize.set(SM, SM);
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.05;
 scene.add(sun, sun.target);
@@ -83,16 +88,20 @@ function fitShadow(tight) {
 // 每层一盏 + 焦点光（T0 2 / T1 1 / T2 0）；数量全程不变，只调强度（灯数变化会让所有着色器重编译）
 const WARM = '#ffcf8a', FLOOR_I = 12, FOCUS_I = 6, LIGHT_UP = 10;   // 剖切视图没有顶棚：灯放高一点，整层均匀微暖，不出亮斑
 const floorLights = FLOORS.map((f) => { const l = new THREE.PointLight(WARM, 0, 110, 1.2); l.position.set(0, f.y + LIGHT_UP, EXT.cz); scene.add(l); return l; });
-const focusLights = Array.from({ length: [2, 1, 0][MAT_TIER] }, () => { const l = new THREE.PointLight(WARM, 0, 26, 1.2); scene.add(l); return l; });
+const focusLights = Array.from({ length: [0, 1, 0][MAT_TIER] }, () => { const l = new THREE.PointLight(WARM, 0, 26, 1.2); scene.add(l); return l; });
+// 桌面（T0）：房间暖光池，固定 6 盏，跟着当前楼层里离视点最近的主房间 / 盥洗室走（只移动、调强度）
+const ROOM_WARM = '#ffd9a0', ROOM_I = 3;
+const roomLights = Array.from({ length: MAT_TIER === 0 ? 6 : 0 }, () => { const l = new THREE.PointLight(ROOM_WARM, 0, 10, 2); scene.add(l); return l; });
 
 /* ---------------- 相机与控制 ---------------- */
 const BASE = 60, DIST = 900;
 const camera = new THREE.OrthographicCamera(-BASE, BASE, BASE, -BASE, 1, 3000);
-let minZoom = 0.1, maxZoom = 20;
+let minZoom = 0.1, maxZoom = 20, maxIn = 60;
+const maxZ = () => (typeof mode === 'number' ? maxIn : maxZoom);   // 室内允许拉到画面高约 2 m（看清马桶、毛巾）
 const barBox = () => { const bar = document.getElementById('floors'); if (!bar || !bar.offsetWidth) return null; const r = bar.getBoundingClientRect(); return { r, horiz: r.width > r.height }; };
 function frustum() {
   const a = innerWidth / innerHeight; camera.left = -BASE * a; camera.right = BASE * a; camera.top = BASE; camera.bottom = -BASE; camera.updateProjectionMatrix();
-  minZoom = Math.min(2 * BASE * a / 820, 2 * BASE / 720); maxZoom = 2 * BASE / 7;
+  minZoom = Math.min(2 * BASE * a / 820, 2 * BASE / 720); maxZoom = 2 * BASE / 7; maxIn = 2 * BASE / 2.0;
   // 楼层条占掉的地方：桌面在左侧（画面中心右移），手机在底部（画面中心上移）
   const b = barBox(); let ox = 0, oy = 0;
   if (b) { if (b.horiz) oy = Math.round((innerHeight - b.r.top) / 2); else ox = -Math.round(b.r.right / 2); }
@@ -123,18 +132,41 @@ function projExtent(w, d, h, theta, phi) {
 /* ---------------- 构建：外观先出，各层剖切 / 家具 / 细件延迟 ---------------- */
 const NEWAPI = typeof BLD.buildCut === 'function';
 if (typeof BLD.setRooms === 'function') BLD.setRooms((fi) => ROOMS.filter((r) => r.floor === fi));
-const full = FLOORS.map((f, i) => new L.Batch('full' + i)), cut = FLOORS.map((f, i) => new L.Batch('cut' + i)), site = new L.Batch('site', { tile: Q.has('tile') ? +Q.get('tile') : 128 });
+// T1 用更粗的分块、子批次不分块，控制 draw call（≤ 150）
+const TILE = Q.has('tile') ? +Q.get('tile') : tier >= 1 ? 256 : 128;
+const full = FLOORS.map((f, i) => new L.Batch('full' + i)), cut = FLOORS.map((f, i) => new L.Batch('cut' + i)), site = new L.Batch('site', { tile: TILE, subTile: tier >= 1 ? 0 : 256 });
+kick('house'); await yieldUI();
 let t = performance.now();
 if (NEWAPI) BLD.buildHouse(full, site); else { BLD.buildHouse(full, cut, site); if (typeof BLD.buildWings === 'function') BLD.buildWings(site); }
-TB.house = performance.now() - t; t = performance.now();
+TB.house = performance.now() - t; kick('site'); await yieldUI(); t = performance.now();
 if (typeof SITE.buildIsland === 'function') SITE.buildIsland(scene, site);
 if (typeof SITE.buildGardens === 'function') SITE.buildGardens(site);
-TB.site = performance.now() - t; t = performance.now();
+TB.site = performance.now() - t; kick('merge'); await yieldUI(); t = performance.now();
 const SUBS = [];   // 所有带子批次的组：按相机方位 / 可见宽度切换
 const reg = (g) => { if (g && g.userData && g.userData.subs) SUBS.push(g); return g; };
 const siteG = reg(site.build({ defer: ['fine'] })); scene.add(siteG);
 const fullG = full.map((b) => { const g = reg(b.build({ defer: ['fine'] })); scene.add(g); return g; });
 TB.merge = performance.now() - t;
+
+/* ---------------- 树的 LOD：远看（m/px > 0.12）和 T1 用低面数原型（WP-B 的 crownLo / trunkLo，没有就本地生成） ---------------- */
+function loGeom(name) {
+  const P_ = L.PROTO || {};
+  const own = P_[name + 'Lo'] || (name.startsWith('crown') || name === 'ball' ? P_.crownLo : name === 'trunk' ? P_.trunkLo : null);
+  if (own && own.geom) return own.geom;
+  let g;
+  if (name.startsWith('crown') || name === 'ball') g = new THREE.IcosahedronGeometry(1, 0).toNonIndexed();
+  else if (name === 'trunk') g = new THREE.CylinderGeometry(0.6, 1, 1, 4, 1, true).translate(0, 0.5, 0).toNonIndexed();
+  else return null;
+  const p = g.attributes.position, c = new Float32Array(p.count * 3);
+  for (let i = 0; i < p.count; i++) { const f = name === 'trunk' ? 1 : 0.62 + 0.46 * (p.getY(i) + 1) / 2; c[i * 3] = c[i * 3 + 1] = c[i * 3 + 2] = f; }
+  g.setAttribute('color', new THREE.BufferAttribute(c, 3)); g.deleteAttribute('uv'); if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(p.count * 2), 2));
+  return g;
+}
+const LODI = [];
+{ const lo = {}; siteG.traverse((o) => { if (!o.isInstancedMesh || !/^(crown\w*|ball|trunk)$/.test(o.name)) return; if (!(o.name in lo)) lo[o.name] = loGeom(o.name); if (lo[o.name]) LODI.push({ im: o, hi: o.geometry, lo: lo[o.name] }); }); }
+let loOn = null;
+function setLo(on) { if (on === loOn) return; loOn = on; for (const e of LODI) e.im.geometry = on ? e.lo : e.hi; renderer.shadowMap.needsUpdate = true; }
+
 const floorG = FLOORS.map((f, i) => { const g = new THREE.Group(); g.name = 'floor' + i; g.visible = false; scene.add(g); return g; });
 const cutG = [], furnG = [];
 let subDirty = true;
@@ -154,18 +186,51 @@ function ensureCut(i) {
   warm(g); renderer.shadowMap.needsUpdate = true; needs = true; subDirty = true;
   return g;
 }
-function ensureFurn(i) {
-  if (furnG[i]) return furnG[i];
-  const t0 = performance.now(), b = new L.Batch('furn' + i);
-  try { if (typeof FUR.furnish === 'function') FUR.furnish(b, i); } catch (e) { console.error('furnish', i, e); }
-  const g = reg(b.build({ defer: ['fine'] })); furnG[i] = g; floorG[i].add(g);
-  if (tier >= 1) g.traverse((o) => { o.castShadow = false; });
-  TB['furn' + i] = performance.now() - t0;
-  warm(g); renderer.shadowMap.needsUpdate = true; needs = true; subDirty = true;
-  return g;
+
+/* ---------------- 家具：按任务切片建（WP-B 的 furnishJobs，没有就整层一次 furnish）；顺便探出马桶、毛巾的位置 ---------------- */
+const furnState = [];
+const PROBE = FLOORS.map(() => ({ wc: [], towel: [] }));
+function probeFor(fi) {
+  const fy = FLOORS[fi].y, box = new THREE.Box3(), c = new THREE.Vector3(), sz = new THREE.Vector3();
+  return (key, g) => {
+    const tw = key.startsWith('towel'), pc = key === 'porcelain' || key.startsWith('porcelain');
+    if (!tw && !pc) return;
+    box.setFromBufferAttribute(g.attributes.position); box.getCenter(c); box.getSize(sz);
+    const dy = c.y - fy;
+    if (tw) { if (dy > 0.2 && dy < 2.2) PROBE[fi].towel.push([c.x, dy, c.z]); }
+    else if (dy > 0.1 && dy < 0.6 && Math.max(sz.x, sz.z) < 0.75 && sz.y < 0.7) PROBE[fi].wc.push([c.x, dy, c.z]);
+  };
 }
+function furnStart(i) {
+  if (furnState[i]) return furnState[i];
+  const b = new L.Batch('furn' + i); let it = null;
+  if (typeof FUR.furnishJobs === 'function') { try { const j = FUR.furnishJobs(b, i); if (j && typeof j[Symbol.iterator] === 'function') it = j[Symbol.iterator](); } catch (e) { console.error('furnishJobs', i, e); } }
+  if (!it) it = [() => { if (typeof FUR.furnish === 'function') FUR.furnish(b, i); }][Symbol.iterator]();
+  return (furnState[i] = { b, it, done: false, ms: 0 });
+}
+function furnStep(i, budget) {   // 跑到预算用完；返回是否已建完
+  if (furnG[i]) return true;
+  const st = furnStart(i), t0 = performance.now();
+  L.Batch.probe = probeFor(i);
+  try {
+    while (!st.done) {
+      let r; try { r = st.it.next(); } catch (e) { console.error('furnish', i, e); st.done = true; break; }
+      if (r.done) { st.done = true; break; }
+      if (typeof r.value === 'function') { try { r.value(); } catch (e) { console.error('furnish job', i, e); } }
+      if (budget != null && performance.now() - t0 > budget) break;
+    }
+  } finally { L.Batch.probe = null; st.ms += performance.now() - t0; }
+  if (!st.done) return false;
+  const g = reg(st.b.build({ defer: ['fine'] })); furnG[i] = g; floorG[i].add(g);
+  if (tier >= 1) g.traverse((o) => { o.castShadow = false; });
+  TB['furn' + i] = st.ms;
+  makeCloseups(i);
+  warm(g); renderer.shadowMap.needsUpdate = true; needs = true; subDirty = true;
+  if (pinned && pinned.floor === i && cardFor === pinned) { cardFor = null; showCard(pinned); }
+  return true;
+}
+const ensureFurn = (i) => { furnStep(i, null); return furnG[i]; };
 const shaftG = typeof BLD.buildShafts === 'function' ? BLD.buildShafts(floorG) : FLOORS.map((f, i) => { const g = new THREE.Group(); floorG[i].add(g); return g; });
-ensureFurn(4);   // 屋顶露台在外观里就能看到
 const T_BUILD = performance.now() - T0;
 
 /* ---------------- 数据项：房间 / 区域 / 竖井 / 传承件 ---------------- */
@@ -191,7 +256,8 @@ SHAFTS.forEach((s) => {
   (shaftG || []).forEach((g) => g.children.forEach((c) => { if (c.userData.shaft === s) { c.userData.item = it; it.picks.push(c); } }));
   ITEMS.push(it);
 });
-const floorTags = FLOORS.map((f, i) => { const rs = ROOMS.filter((r) => r.floor === i); const x = rs.length ? Math.min(...rs.map((r) => r.r[0])) - 3 : -44; return mkLabel(floorG[i], x, f.y + 0.6, rs.length ? Math.max(...rs.map((r) => r.r[3])) : 13, 'floor'); });
+// 「全部」视图的楼层牌放在右侧立面外、左对齐，不会被左边的楼层条挡住
+const floorTags = FLOORS.map((f, i) => { const rs = ROOMS.filter((r) => r.floor === i); const x = rs.length ? Math.max(...rs.map((r) => r.r[1])) + 3 : 44; const o = mkLabel(floorG[i], x, f.y + 0.6, rs.length ? Math.max(...rs.map((r) => r.r[3])) : 13, 'floor'); o.center.set(0, 0.5); return o; });
 // 传承件 ◆ 标记
 const HITEMS = HERITAGE.map((h) => {
   const it = { kind: 'heritage', d: h, floor: h.floor ?? null, cx: h.x, cz: h.z, w: 2, dd: 2, y: h.y };
@@ -221,8 +287,8 @@ function relabel() {
 
 /* ---------------- UI 文案 ---------------- */
 const TXT = {
-  zh: { ext: '外观', all: '全部', shafts: '竖井', tour: '传承', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '新古典主义府邸 · 剖切模型', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位', floor: '楼层', size: '尺寸', use: '用途', src: '出处', thru: '贯穿各层', estate: '室外', dia: '直径', her: '传承细节', era: '年代', heritage: '传承件', loading: '加载中…', prev: '上一站', next: '下一站', close: '关闭' },
-  en: { ext: 'Exterior', all: 'All', shafts: 'Shafts', tour: 'Heritage', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Neoclassical house · cutaway', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset', floor: 'Floor', size: 'Size', use: 'Use', src: 'Source', thru: 'through the floors', estate: 'Grounds', dia: 'diameter', her: 'Heritage', era: 'Era', heritage: 'Heirloom', loading: 'Loading…', prev: 'Previous', next: 'Next', close: 'Close' },
+  zh: { ext: '外观', all: '全部', shafts: '竖井', tour: '传承', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '帕拉第奥五段式 · 204 m 立面', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位', floor: '楼层', size: '尺寸', use: '用途', src: '出处', thru: '贯穿各层', estate: '室外', dia: '直径', her: '传承细节', era: '年代', heritage: '传承件', loading: '加载中…', prev: '上一站', next: '下一站', close: '关闭', detail: '细节', cuWc: '马桶间', cuTowel: '毛巾与台面', pill: '◆ 传承导览' },
+  en: { ext: 'Exterior', all: 'All', shafts: 'Shafts', tour: 'Heritage', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Palladian five-part house · 204 m front', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset', floor: 'Floor', size: 'Size', use: 'Use', src: 'Source', thru: 'through the floors', estate: 'Grounds', dia: 'diameter', her: 'Heritage', era: 'Era', heritage: 'Heirloom', loading: 'Loading…', prev: 'Previous', next: 'Next', close: 'Close', detail: 'Detail', cuWc: 'WC', cuTowel: 'Towels & vanity', pill: '◆ Heritage tour' },
 };
 const tx = (k) => TXT[LANG][k];
 const floorsEl = $('#floors'); const BTN = {};
@@ -255,7 +321,7 @@ function viewFor(m) {
     return { target: new THREE.Vector3(0, 5, 85), zoom: fitZoom(w * 0.92, h * 0.98), theta: th, phi: ph };
   }
   const W = P_ ? Math.min(EXT.w, 112) : EXT.w + 6;
-  if (m === 'all') { const [w, h] = projExtent(W, EXT.d, FLOORS.length * EXPL + 12, AZ, 0.86); return { target: new THREE.Vector3(0, FLOORS[2].y + 2 * EXPL, EXT.cz), zoom: P_ ? fitZoom(w, 1) : fitZoom(w * 1.04, h * 1.04), theta: AZ, phi: 0.86 }; }
+  if (m === 'all') { const [w, h] = projExtent(W + 24, EXT.d, FLOORS.length * EXPL + 12, AZ, 0.86); return { target: new THREE.Vector3(8, FLOORS[2].y + 2 * EXPL, EXT.cz), zoom: P_ ? fitZoom(w, 1) : fitZoom(w * 1.04, h * 1.04), theta: AZ, phi: 0.86 }; }
   const [w, h] = projExtent(W, EXT.d, 6, AZ, 0.8);
   return { target: new THREE.Vector3(0, FLOORS[m].y, EXT.cz), zoom: P_ ? fitZoom(w * 0.9, 1) : fitZoom(w * 1.04, h * 1.1), theta: AZ, phi: 0.8 };
 }
@@ -277,7 +343,7 @@ function setMode(m, o = {}) {
   hover = null; hideCard(true); showHi(hiHover, null);
   syncNav(); updateLabelSet(); lightsFor(); subDirty = true; renderer.shadowMap.needsUpdate = true; needs = true;
   if (o.fly) flyTo(viewFor(m));
-  if (o.user) post({ type: 'estate:floor', floor: modeKey(m) });
+  if (o.user) { post({ type: 'estate:floor', floor: modeKey(m) }); hidePill(); }
 }
 const modeKey = (m) => (typeof m === 'number' ? FLOORS[m].id : m);
 function toggleShafts() { showShafts = !showShafts; shaftG.forEach((g, i) => { if (g) g.visible = showShafts && mode !== 'ext' && floorG[i].visible; }); syncNav(); needs = true; renderer.shadowMap.needsUpdate = true; }
@@ -303,9 +369,29 @@ function lightsFor() {
     const f = FLOORS[tgt.floor], hh = 6;
     l.position.set(tgt.cx, f.y + hh + offs[tgt.floor], tgt.cz); l.userData.floor = tgt.floor; l.userData.dy = f.y + hh; l.intensity = FOCUS_I;
   });
+  assignRoomLights(true);
+}
+// 房间暖光池（T0）：钉住的房间优先，其余按离视点远近；强度 3，distance = 房间对角线 × 0.6，不投影
+let rlKey = '';
+const isBath = (it) => !!it.close || /盥洗|浴|WC|Bath/i.test(it.d.name) || !!(it.d.parts && (it.d.parts.wc || it.d.parts.bath));
+function assignRoomLights(force) {
+  if (!roomLights.length) return;
+  if (typeof mode !== 'number') { if (rlKey !== 'off') { for (const l of roomLights) l.intensity = 0; rlKey = 'off'; needs = true; } return; }
+  const tg = controls.target, key = `${mode}|${pinned ? pinned.d.name : ''}|${Math.round(tg.x / 5)},${Math.round(tg.z / 5)}`;
+  if (!force && key === rlKey) return; rlKey = key;
+  const f = FLOORS[mode], cands = ITEMS.filter((it) => it.kind === 'room' && it.floor === mode && !it.d.minor && !it.d.void && (it.rank === 1 || isBath(it)));
+  const dist = (it) => Math.hypot(Math.max(0, Math.abs(tg.x - it.cx) - it.w / 2), Math.max(0, Math.abs(tg.z - it.cz) - it.dd / 2));
+  cands.sort((a, b) => (b === pinned) - (a === pinned) || dist(a) - dist(b));
+  roomLights.forEach((l, k) => {
+    const it = cands[k]; if (!it) { l.intensity = 0; return; }
+    l.distance = Math.max(4, 0.6 * Math.hypot(it.w, it.dd)); l.position.set(it.cx, f.y + Math.min((f.h || 4.5) - 0.5, 3.0) + offs[mode], it.cz); l.intensity = ROOM_I;
+  });
+  needs = true;
 }
 
 /* ---------------- 标签：按等级、模式、缩放与重叠筛选 ---------------- */
+const HERO = new Set(['伊甸庄园 · 主楼', '门廊', '图书馆塔楼', '音乐厅亭', '中轴大道', '停靠平台', '人工湖']);
+let extZoom0 = 1;
 let labelSet = [];
 function updateLabelSet() {
   labelSet = [];
@@ -323,7 +409,7 @@ function cullLabels() {
     let ok = true;
     if (it.rank === 3 && !hot) ok = false;                                   // 服务用房 / 服务区：只在悬停时显示
     if (it.kind === 'room' && it.rank === 2 && visW >= 120 && !hot) ok = false;
-    if (it.kind === 'area' && visW > 520 && (it.d.pri ?? 5) < 8 && !hot) ok = false;
+    if (it.kind === 'area' && !hot && !(HERO.has(it.d.name) || (it.d.pri ?? 5) >= 10) && camera.zoom < extZoom0 * 1.4) ok = false;   // 首屏只留七个主标签
     if (it.kind === 'area' && visW < 60 && (it.d.pri ?? 5) < 10 && !hot) ok = false;
     if (ok) {
       it.label.getWorldPosition(_v).project(camera);
@@ -340,11 +426,15 @@ function cullLabels() {
 
 /* ---------------- 子批次可见性：hi±x/±z 按相机方位，detail / fine 按可见宽度 ---------------- */
 let subKey = '';
+// 阈值按「每像素多少米」算（visW / innerWidth），手机窄屏不会因为可见宽度小就开满细节
+const MPP_DETAIL = 0.234, MPP_FINE = 0.047, MPP_TREE_LO = 0.12;
 function updateSubs(visW) {
-  const dx = camera.position.x - controls.target.x, dz = camera.position.z - controls.target.z;
-  const fineOn = (mode !== 'all' && visW < 60) || !!(pinned && pinned.floor != null && typeof mode === 'number' && pinned.floor === mode);
-  const detailOn = visW <= 300;
-  const key = `${dx > 0}${dz > 0}${fineOn}${detailOn}${mode}`;
+  const dx = camera.position.x - controls.target.x, dz = camera.position.z - controls.target.z, mpp = visW / Math.max(1, innerWidth);
+  const fineOn = (mode !== 'all' && mpp < MPP_FINE) || !!(pinned && pinned.floor != null && typeof mode === 'number' && pinned.floor === mode);
+  const detailOn = mpp <= MPP_DETAIL;
+  setLo(tier >= 1 || mpp > MPP_TREE_LO);
+  document.body.classList.toggle('zoomed', mode !== 'ext' || mpp < 0.1);
+  const key = `${dx > 0}${dz > 0}${fineOn}${detailOn}${mode}${loOn}`;
   if (!subDirty && key === subKey) return; subKey = key; subDirty = false;
   const fineG = typeof mode === 'number' ? [cutG[mode], furnG[mode], ...fullG.slice(0, mode), siteG] : mode === 'ext' ? [siteG, ...fullG, furnG[4]] : [];
   if (fineOn) for (const g of fineG) if (g && g.userData.pending && g.userData.pending.fine) { const sg = L.buildPending?.(g, 'fine'); if (sg && tier >= 1) sg.traverse((o) => { o.castShadow = false; }); }
@@ -422,6 +512,7 @@ function cardHTML(it) {
     if (her) h += `<div class="her"><em>${tx('her')}</em>${esc(her)}</div>`;
     if (d.era) h += `<div class="era">${tx('era')} <b>${esc(d.era)}</b></div>`;
   }
+  if (it.kind === 'room' && it.close && it.close.length) h += `<div class="acts"><button class="cu" type="button">${tx('detail')} ›</button><span class="cun"></span></div>`;
   if (DEBUG && d.src) {
     const si = { '世界书': 0, 'ROADMAP': 1, '推断': 2 }[d.src] ?? 2;
     h += `<div class="src"><b class="s${si}">${esc(zh ? d.src : SRC_EN[d.src] || d.src)}</b>${zh && d.note ? esc(d.note) : ''}</div>`;
@@ -431,8 +522,39 @@ function cardHTML(it) {
 let cardFor = null, cardAt = null;
 function showCard(it, x, y) {
   if (cardFor !== it) { card.innerHTML = cardHTML(it); cardFor = it; }
-  cardAt = x == null ? null : [x, y]; placeCard(); card.classList.add('on');
+  cardAt = x == null ? null : [x, y]; card.classList.toggle('pinned', it === pinned && x == null); placeCard(); card.classList.add('on');
 }
+/* ---------------- 近景视点：每个盥洗室的马桶间（画面高 ~2.2 m）和毛巾架 / 台面（~1.8 m）；位置由家具构建时的探针找出 ---------------- */
+function clusters(pts, r) {
+  const cs = [];
+  for (const p of pts) { let c = cs.find((c) => Math.hypot(c.x - p[0], c.z - p[2]) < r); if (!c) cs.push(c = { x: p[0], z: p[2], y: p[1], n: 0, sx: 0, sy: 0, sz: 0 }); c.n++; c.sx += p[0]; c.sy += p[1]; c.sz += p[2]; c.x = c.sx / c.n; c.y = c.sy / c.n; c.z = c.sz / c.n; }
+  return cs;
+}
+function makeCloseups(fi) {
+  const pr = PROBE[fi], f = FLOORS[fi];
+  for (const it of ITEMS) {
+    if (it.kind !== 'room' || it.floor !== fi || it.d.minor) continue;
+    const [x0, x1, z0, z1] = it.d.r, inR = (p) => p[0] >= x0 && p[0] <= x1 && p[2] >= z0 && p[2] <= z1;
+    const rects = []; for (const v of Object.values(it.d.parts || {})) { if (!Array.isArray(v)) continue; if (Array.isArray(v[0])) rects.push(...v); else if (v.length === 4) rects.push(v); }
+    const center = (x, z) => { for (const q of rects) if (x >= q[0] && x <= q[1] && z >= q[2] && z <= q[3]) return [(q[0] + q[1]) / 2, (q[2] + q[3]) / 2]; return [it.cx, it.cz]; };
+    const th = (x, z) => { const [cx, cz] = center(x, z), dx = cx - x, dz = cz - z; return Math.hypot(dx, dz) < 0.4 ? AZ : Math.atan2(dx, dz); };
+    const list = [];
+    clusters(pr.wc.filter(inR), 0.7).filter((c) => c.n >= 2).forEach((c) => list.push({ kind: 'wc', x: c.x, y: f.y + 0.45, z: c.z, H: 2.2, theta: th(c.x, c.z), phi: 1.0 }));
+    clusters(pr.towel.filter(inR), 1.0).sort((a, b) => b.n - a.n).slice(0, 2).forEach((c) => list.push({ kind: 'towel', x: c.x, y: f.y + Math.min(1.1, c.y), z: c.z, H: 1.8, theta: th(c.x, c.z), phi: 1.0 }));
+    if (list.length) it.close = list; else delete it.close;
+  }
+}
+function goCloseup(it, k) {
+  if (!it.close || !it.close.length) return;
+  if (mode !== it.floor) setMode(it.floor);
+  if (pinned !== it) pin(it, false);
+  it.cuI = ((k ?? (it.cuI ?? -1) + 1) + it.close.length) % it.close.length;
+  const c = it.close[it.cuI];
+  flyTo({ target: new THREE.Vector3(c.x, c.y, c.z), zoom: fitZoom(0.1, c.H), theta: c.theta, phi: c.phi }, 900);
+  const n = card.querySelector('.cun'); if (n) n.textContent = `${it.cuI + 1} / ${it.close.length} · ${tx(c.kind === 'wc' ? 'cuWc' : 'cuTowel')}`;
+  subDirty = true;
+}
+card.addEventListener('click', (e) => { if (e.target.closest('.cu') && cardFor) { e.stopPropagation(); goCloseup(cardFor); } });
 function placeCard() {
   if (!cardFor) return; let x, y;
   const w = card.offsetWidth, h = card.offsetHeight;
@@ -495,7 +617,7 @@ let tween = null;
 const sph = new THREE.Spherical();
 function flyTo(v, dur = 650) {
   sph.setFromVector3(camera.position.clone().sub(controls.target));
-  const to = { target: v.target.clone(), zoom: clamp(v.zoom, minZoom, maxZoom), theta: v.theta ?? sph.theta, phi: v.phi ?? sph.phi };
+  const to = { target: v.target.clone(), zoom: clamp(v.zoom, minZoom, maxZ()), theta: v.theta ?? sph.theta, phi: v.phi ?? sph.phi };
   let dt = to.theta - sph.theta; dt = Math.atan2(Math.sin(dt), Math.cos(dt));
   tween = { t0: performance.now(), dur, from: { target: controls.target.clone(), zoom: camera.zoom, theta: sph.theta, phi: sph.phi }, to, dt, ease: v.ease };
   needs = true;
@@ -519,7 +641,7 @@ function zoomAt(cx, cy, f) {
   const rc = renderer.domElement.getBoundingClientRect();
   const nx = ((cx - rc.left) / rc.width) * 2 - 1, ny = -((cy - rc.top) / rc.height) * 2 + 1;
   _p0.set(nx, ny, 0).unproject(camera);
-  const z = clamp(camera.zoom * f, minZoom, maxZoom); if (z === camera.zoom) return;
+  const z = clamp(camera.zoom * f, minZoom, maxZ()); if (z === camera.zoom) return;
   camera.zoom = z; camera.updateProjectionMatrix();
   _p1.set(nx, ny, 0).unproject(camera);
   _p0.sub(_p1); camera.position.add(_p0); controls.target.add(_p0);
@@ -561,7 +683,7 @@ app.addEventListener('touchend', (e) => {
     pinch = null;
   }
 });
-const zoomBtn = (f) => { const to = clamp(camera.zoom * f, minZoom, maxZoom); flyTo({ target: controls.target.clone(), zoom: to, theta: null, phi: null }, 260); };
+const zoomBtn = (f) => { const to = clamp(camera.zoom * f, minZoom, maxZ()); flyTo({ target: controls.target.clone(), zoom: to, theta: null, phi: null }, 260); };
 const resetView = () => { unpin(); flyTo(viewFor(mode)); };
 $('#zin').onclick = () => zoomBtn(1.6); $('#zout').onclick = () => zoomBtn(1 / 1.6); $('#zreset').onclick = resetView;
 
@@ -630,7 +752,10 @@ function setTier(n) {
 }
 
 /* ---------------- 传承导览 ---------------- */
-const TOUR = HITEMS.filter((it) => it.d.tour > 0).sort((a, b) => a.d.tour - b.d.tour);
+// 导览：停靠环开场；塔顶浑天仪没有编号时插在山花家徽之后
+const tourKey = (it) => (it.d.tour > 0 ? it.d.tour : it.d.kind === 'armillary' ? 2.5 : 99);
+const TOUR = HITEMS.filter((it) => it.d.tour > 0 || it.d.kind === 'armillary').sort((a, b) => tourKey(a) - tourKey(b));
+const VIEW_FIX = { landingRing: { theta: 0, phi: 1.1, w: 70 }, crest: { w: 13, phi: 1.25 }, armillary: { w: 13, phi: 1.15 } };   // 室外金饰拉近到能看清
 let tourI = -1;
 const tourEl = $('#tour');
 function focusHeritage(it, fly = true) {
@@ -638,9 +763,9 @@ function focusHeritage(it, fly = true) {
   if (mode !== m) setMode(m);
   pin(it, false);
   if (!fly) return;
-  const v = h.view || {};
+  const v = { ...(h.view || {}), ...(h.floor == null ? VIEW_FIX[h.kind] || {} : {}) };
   const W = v.w || (h.floor != null ? 18 : h.kind === 'crest' ? 40 : 60);
-  const y = h.floor != null ? FLOORS[h.floor].y : Math.max(0, (h.y ?? 0) * 0.6);
+  const y = h.floor != null ? FLOORS[h.floor].y : Math.max(0, h.y ?? 0);
   sph.setFromVector3(camera.position.clone().sub(controls.target));
   flyTo({ target: new THREE.Vector3(h.x, y, h.z), zoom: fitZoom(W, W * 0.66), theta: v.theta ?? (h.floor != null ? AZ : 0.25), phi: v.phi ?? (h.floor != null ? 0.82 : 1.0) }, 900);
 }
@@ -649,7 +774,7 @@ function showTourText() {
   tourEl.querySelector('.tx b').innerHTML = `${esc(nameOf(it))}<small>${tourI + 1} / ${TOUR.length}${h.era ? ' · ' + esc(h.era) : ''}</small>`;
   tourEl.querySelector('.tx span').textContent = LANG === 'en' ? h.caption_en || h.caption || '' : h.caption || '';
 }
-function tourGo(i) { if (!TOUR.length) return; tourI = (i + TOUR.length) % TOUR.length; tourEl.classList.add('on'); showTourText(); focusHeritage(TOUR[tourI]); syncNav(); }
+function tourGo(i) { if (!TOUR.length) return; hidePill(); tourI = (i + TOUR.length) % TOUR.length; tourEl.classList.add('on'); showTourText(); focusHeritage(TOUR[tourI]); syncNav(); }
 function tourClose() { tourI = -1; tourEl.classList.remove('on'); syncNav(); }
 function toggleTour() { if (tourI >= 0) tourClose(); else tourGo(0); }
 tourEl.querySelector('.prev').onclick = () => tourGo(tourI - 1);
@@ -679,10 +804,11 @@ window.addEventListener('message', (e) => {
 function setLang(l) { LANG = l; buildNav(); relabel(); frustum(); const it = cardFor; cardFor = null; if (it) showCard(it, cardAt?.[0], cardAt?.[1]); needs = true; }
 
 /* ---------------- 尺寸 ---------------- */
-addEventListener('resize', () => { frustum(); renderer.setSize(innerWidth, innerHeight); labelR.setSize(innerWidth, innerHeight); camera.zoom = clamp(camera.zoom, minZoom, maxZoom); camera.updateProjectionMatrix(); needs = true; });
+addEventListener('resize', () => { frustum(); renderer.setSize(innerWidth, innerHeight); labelR.setSize(innerWidth, innerHeight); camera.zoom = clamp(camera.zoom, minZoom, maxZ()); camera.updateProjectionMatrix(); needs = true; });
 
 /* ---------------- 循环（按需渲染） ---------------- */
 const statsEl = $('#stats'); if (STATS) statsEl.style.display = 'block';
+let rlT = 0, shadowFirst = false;
 let frames = 0, fpsT = performance.now(), fps = 0, first = true, lastInfo = { calls: 0, triangles: 0 }, lastPulse = 0;
 function loop(now) {
   requestAnimationFrame(loop);
@@ -703,10 +829,15 @@ function loop(now) {
   if (pinned && now - pinT < 2000 && now - lastPulse > 66) { lastPulse = now; const k = 0.6 + 0.4 * Math.abs(Math.sin((now - pinT) / 420 * Math.PI)); hiPin.userData.fm.opacity = hiPin.userData.fillOp * (0.5 + k * 0.7); needs = true; }
   else if (pinned && now - pinT >= 2000 && hiPin.userData.fm.opacity !== hiPin.userData.fillOp) { hiPin.userData.fm.opacity = hiPin.userData.fillOp; needs = true; }
   if (lowRes && !down && !pinch && now - lastInteract > 150) setLowRes(false);
+  if (roomLights.length && typeof mode === 'number' && now - rlT > 300) { rlT = now; assignRoomLights(false); }
+  if (!pillDone && pill && pillT0 && !tween && tourI < 0 && now - Math.max(pillT0, lastInteract) > 4000) { pillDone = true; pill.textContent = tx('pill'); pill.classList.add('on'); }
   if (!(needs || moving || anim || STATS)) { lastFrameT = now; return; }
   needs = false;
   cullFurnAll();
-  renderer.render(scene, camera); lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
+  if (first && frames === 0 && !shadowFirst) { shadowFirst = true; renderer.shadowMap.needsUpdate = false; needs = true; }   // 首帧不画阴影贴图，下一帧补上
+  else if (shadowFirst === true) { shadowFirst = 2; renderer.shadowMap.needsUpdate = true; }
+  const tR = first ? performance.now() : 0;
+  renderer.render(scene, camera); if (first) TB.firstRender = performance.now() - tR; lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
   labelR.render(scene, camera); cullLabels();
   if (cardFor && !cardAt) placeCard();
   samplePerf(now, moving || anim);
@@ -721,17 +852,28 @@ function onFirstFrame() {
   post({ type: 'estate:ready', floors: FLOORS.map((f) => f.id), rooms: ROOMS.filter((r) => !r.minor).map((r) => ({ name: r.name, en: enOf(r.name)[0], floor: FLOORS[r.floor].id, alias: r.alias })).concat(AREAS.map((a) => ({ name: a.name, en: enOf(a.name)[0], floor: 'ext', alias: a.alias }))) });
   // 开场推近：约 2 s（嵌入、减少动态、直接进楼层时不做）
   if (mode === 'ext' && !EMBED && !REDUCED && !tween) { const v = viewFor('ext'); v.ease = 'out'; flyTo(v, 2200); }
-  // 空闲时逐层补建：先剖切，再家具；当前层优先
-  const idle = window.requestIdleCallback || ((f) => setTimeout(f, 60));
-  const jobs = []; FLOORS.forEach((f, i) => { jobs.push(() => ensureCut(i), () => ensureFurn(i)); });
-  const next = (dl) => {
+  // 空闲时逐层补建：屋顶家具先，然后逐层剖切、家具（家具按任务切片，每片 ≤ 12 ms）；开场推近结束后才开始
+  const idle = window.requestIdleCallback || ((f) => setTimeout(f, 40));
+  const jobs = [{ f: 4, k: 'furn' }]; FLOORS.forEach((f, i) => { jobs.push({ f: i, k: 'cut' }); if (i !== 4) jobs.push({ f: i, k: 'furn' }); });
+  const run = (dl) => {
     const t0 = performance.now();
-    while (jobs.length) { const j = jobs.shift(); j(); if (!dl || !dl.timeRemaining || dl.timeRemaining() < 8 || performance.now() - t0 > 30) break; }
-    if (jobs.length) idle(next, { timeout: 1500 });
-    else window.__estate.allBuiltMs = performance.now() - T0;
+    while (jobs.length) {
+      if (typeof mode === 'number') { const k = jobs.findIndex((j) => j.f === mode); if (k > 0) jobs.unshift(...jobs.splice(k, 1)); }
+      const j = jobs[0]; let done = true;
+      if (j.k === 'cut') ensureCut(j.f); else done = furnStep(j.f, 12);
+      if (done) jobs.shift();
+      if (performance.now() - t0 > 12 || (dl && dl.timeRemaining && dl.timeRemaining() < 4)) break;
+    }
+    if (jobs.length) schedule(); else window.__estate.allBuiltMs = performance.now() - T0;
   };
-  idle(next, { timeout: 1500 });
+  const schedule = () => { if (tween) { setTimeout(schedule, 150); return; } idle(run, { timeout: 1000 }); };
+  schedule();
+  pillT0 = performance.now();
 }
+// 首次载入空闲 4 s 后，浮出一枚金色「◆ 传承导览」
+const pill = $('#tourPill'); let pillT0 = 0, pillDone = EMBED || !TOUR.length;
+function hidePill() { pillDone = true; if (pill) pill.classList.remove('on'); }
+if (pill) pill.onclick = () => { hidePill(); tourGo(0); };
 
 /* ---------------- 启动 ---------------- */
 window.__estate = {
@@ -743,6 +885,12 @@ window.__estate = {
 buildNav(); relabel(); frustum();
 const m0 = parseFloor(Q.get('floor')) ?? 'ext';
 setMode(m0);
-{ const v0 = viewFor(m0); let z = v0.zoom; if (m0 === 'ext' && !EMBED && !REDUCED) z *= 0.86; camera.zoom = clamp(z, minZoom, maxZoom); camera.updateProjectionMatrix(); placeCam(v0.target, v0.theta, v0.phi); targetY = v0.target.y; }
+{ const v0 = viewFor(m0); let z = v0.zoom; if (m0 === 'ext' && !EMBED && !REDUCED) z *= 0.86; camera.zoom = clamp(z, minZoom, maxZ()); camera.updateProjectionMatrix(); placeCam(v0.target, v0.theta, v0.phi); targetY = v0.target.y; }
 fitShadow(true);
+extZoom0 = viewFor('ext').zoom;
+// 首帧之前先把着色器编译好（有并行编译扩展时异步），estate:ready 仍在首帧画完时发
+TB.preCompile = performance.now() - T0;
+kick('compile'); await yieldUI();
+{ const t0 = performance.now(); try { if (renderer.extensions.has('KHR_parallel_shader_compile')) await renderer.compileAsync(scene, camera); else renderer.compile(scene, camera); } catch (e) { } TB.compile = performance.now() - t0; }
+kick('render');
 requestAnimationFrame(loop);

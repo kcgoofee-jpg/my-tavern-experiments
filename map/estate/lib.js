@@ -144,8 +144,8 @@ function makeTextures() {
   { const [c, g] = marbleCanvas(256, CALA, '#B89B6A', 7, 0.08, [0.8, 3.2]); veins(g, 256, 256, 5, '#8f8a82', 0.12, 0.3, 0.5, 1.4); TEX.calacatta = tx(c); }
   // 黑金花：白纹
   { const [c, g] = marbleCanvas(256, NERO, '#E8E6E0', 8, 0.035, [0.5, 1.8]); veins(g, 256, 256, 4, '#C9A24B', 0.1, 0.25, 0.4, 1); TEX.nero = tx(c); }
-  // 斜置棋盘格：边长 1.2 m 的方块转 45°，贴图周期 1.2·√2 = 1.697 m
-  { const [c, g] = marbleCanvas(256, NERO, '#E8E6E0', 6, 0.03, [0.4, 1.4]);
+  // 斜置棋盘格：边长 1.2 m 的方块转 45°，贴图周期 1.2·√2 = 1.697 m；深色块用暖灰带灰纹的 #6b6258（v1 审阅：去掉「餐馆黑白格」感）
+  { const [c, g] = marbleCanvas(256, '#6b6258', '#b9b2a6', 7, 0.06, [0.5, 1.8]); veins(g, 256, 256, 3, '#4a433b', 0.12, 0.3, 0.4, 1.2);
     g.save(); g.beginPath(); g.moveTo(128, 0); g.lineTo(256, 128); g.lineTo(128, 256); g.lineTo(0, 128); g.closePath(); g.clip();
     g.fillStyle = STAT; g.fillRect(0, 0, 256, 256); clouds(g, 256, 256, 5, '#9A9A9C', 0.05); veins(g, 256, 256, 8, '#9A9A9C', 0.15, 0.4, 0.5, 1.8, 1, false); g.restore();
     g.strokeStyle = 'rgba(60,55,50,.35)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(128, 0); g.lineTo(256, 128); g.lineTo(128, 256); g.lineTo(0, 128); g.closePath(); g.stroke();
@@ -407,7 +407,7 @@ export function initMaterials(envMap, tier = 0) {
   S('glass', { color: '#1A2229', roughness: 0.05, metalness: 0.3, envMapIntensity: 1.4, emissive: '#ffb865', emissiveIntensity: 0.25 });
   S('cap', { color: '#2d2723', roughness: 1 }, null, true);
   S('lead', { color: '#858B90', roughness: 0.7, metalness: 0.3 });
-  S('gold', { color: GOLD, roughness: 0.25, metalness: 1, envMapIntensity: 1.3 });
+  S('gold', { color: GOLD, roughness: 0.25, metalness: 1, envMapIntensity: 1.3, emissive: GOLD, emissiveIntensity: 0.15 });   // 金箔：外观远看也要亮（山花家徽、浑天仪）
   S('ormolu', { color: '#C9A24B', roughness: 0.3, metalness: 1, envMapIntensity: 1.2 });
   S('brass', { color: '#B5913F', roughness: 0.2, metalness: 1, envMapIntensity: 1.25 });
   S('nickel', { color: '#C7C9C8', roughness: 0.15, metalness: 1, envMapIntensity: 1.2 });
@@ -461,6 +461,10 @@ export function initMaterials(envMap, tier = 0) {
   S('porcelain', { color: '#F6F4EF', roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05 });
   S('enamel', { color: '#ffffff', roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.08 });                      // 顶点着色：珐琅、漆面、纹章蓝
   S('towel', { color: '#ffffff', roughness: 1, normalMap: TEX.towelN, normalScale: new THREE.Vector2(0.9, 0.9), sheen: 0.8, sheenRoughness: 0.9, sheenColor: '#ffffff' }, 0.035);   // 顶点着色，默认 #F4EFE4
+  // 近景毛巾：法线强度加倍，只给 fine 子批次里的逐条折层用
+  S('towelHi', { color: '#ffffff', roughness: 1, normalMap: TEX.towelN, normalScale: new THREE.Vector2(1.8, 1.8), sheen: 0.8, sheenRoughness: 0.9, sheenColor: '#ffffff' }, 0.035);
+  // 空画框衬里：深红丝绒带自发光，默认视距也能读出来
+  S('velvetGlow', { color: '#7B1E2B', roughness: 0.85, sheen: 0.9, sheenRoughness: 0.35, sheenColor: '#e0a0a0', emissive: '#7B1E2B', emissiveIntensity: 0.55, vertexColors: false });
   S('linen', { color: '#F7F4EE', roughness: 0.9, sheen: 0.25, sheenRoughness: 0.6, sheenColor: '#ffffff' });
   S('fab', { color: '#ffffff', roughness: 0.75, sheen: 0.5, sheenRoughness: 0.5, sheenColor: '#e8dcc8' });           // 顶点着色：丝缎、亚麻
   S('velvet', { color: '#ffffff', roughness: 0.85, sheen: 0.9, sheenRoughness: 0.35, sheenColor: '#c8b8a0' });      // 顶点着色：丝绒
@@ -542,6 +546,10 @@ export function initProtos() {
   PROTO.cone = { geom: vcolGrad(jitter(new THREE.ConeGeometry(1, 1, 9, 2).translate(0, 0.5, 0), 0.12, 5), 0, 1, 0.65, 1.05), mat: 'foliage' };
   PROTO.ball = { geom: vcolGrad(jitter(new THREE.IcosahedronGeometry(1, 1), 0.08, 4), -1, 1, 0.7, 1.05), mat: 'foliage' };
   PROTO.trunk = { geom: prep(new THREE.CylinderGeometry(0.6, 1, 1, 6).translate(0, 0.5, 0)), mat: 'bark' };
+  // 远景 / T1 用的低模（20 面树冠、5 棱树干），由 main.js 按距离或档位切换
+  PROTO.crownLo = { geom: vcolGrad(jitter(new THREE.IcosahedronGeometry(1, 0), 0.25, 3), -1, 1, 0.62, 1.08), mat: 'foliage' };
+  PROTO.crown2Lo = { geom: vcolGrad(jitter(new THREE.IcosahedronGeometry(1, 0), 0.35, 9), -1, 1, 0.6, 1.1), mat: 'foliage' };
+  PROTO.trunkLo = { geom: prep(new THREE.CylinderGeometry(0.6, 1, 1, 5).translate(0, 0.5, 0)), mat: 'bark' };
   PROTO.root = { geom: prep(new THREE.ConeGeometry(1, 1, 5).rotateX(Math.PI).translate(0, -0.5, 0)), mat: 'root' };
   // 灯柱：铁杆 + 灯笼（发光）+ 金顶
   { const parts = [
@@ -562,6 +570,8 @@ export function initProtos() {
 /* ---------------- Batch：同一组里按材质合并成一个网格（WP-C 段：从本行到文件尾） ----------------
    new Batch(name, { tile })  tile = 空间分块边长（米），>0 时每个材质按 XZ 网格分块合并，块各有包围球，视锥剔除才生效
    b.sub(tag)                 懒创建子批次（'detail' | 'fine' | 'hi-z' | 'hi+z' | 'hi-x' | 'hi+x'）；子批次的 sub() 仍回到根批次
+   Batch.probe = fn(key, geom, batch)  可选的探针：每块几何合并前回调（main.js 用它找马桶、毛巾的位置做近景视点）
+   new Batch(name, { tile, subTile })  subTile 为子批次的分块边长（缺省同 tile，0 = 不分块）
    b.build({ defer })         子批次成为子组，放在 grp.userData.subs[tag]；defer 里的标签先不建，留在 grp.userData.pending[tag]
    buildPending(grp, tag)     按需补建被推迟的子批次，返回子组（或 null）
    合并时保留索引（没有索引的几何补一个顺序索引），顶点量约为非索引的 1/3 */
@@ -569,11 +579,11 @@ const KEEP = ['position', 'normal', 'uv'];
 const TILE_MIN = 8000, TILE_MIN_INST = 40;   // 分块后顶点数低于它的块并入零散块
 const _seqIdx = (n) => { const a = n > 65535 ? new Uint32Array(n) : new Uint16Array(n); for (let i = 0; i < n; i++) a[i] = i; return new THREE.BufferAttribute(a, 1); };
 export class Batch {
-  constructor(name, opt = {}) { this.name = name; this.tile = opt.tile || 0; this.parts = new Map(); this.insts = new Map(); this.subs = null; this.root = opt.root || null; }
+  constructor(name, opt = {}) { this.name = name; this.tile = opt.tile || 0; this.subTile = opt.subTile ?? this.tile; this.parts = new Map(); this.insts = new Map(); this.subs = null; this.root = opt.root || null; }
   sub(tag) {
     if (this.root) return this.root.sub(tag);
     if (!this.subs) this.subs = new Map();
-    let s = this.subs.get(tag); if (!s) { s = new Batch(this.name + ':' + tag, { tile: this.tile, root: this }); s.tag = tag; this.subs.set(tag, s); }
+    let s = this.subs.get(tag); if (!s) { s = new Batch(this.name + ':' + tag, { tile: this.subTile, root: this }); s.tag = tag; this.subs.set(tag, s); }
     return s;
   }
   add(key, geom, m, ao) {
@@ -595,6 +605,7 @@ export class Batch {
     }
     g.setAttribute('color', col);
     g.groups = [];
+    if (Batch.probe) Batch.probe(key, g, this);
     let l = this.parts.get(key); if (!l) this.parts.set(key, l = []); l.push(g); return g;
   }
   put(key, geom, x, y, z, sx = 1, sy = 1, sz = 1, ry = 0, rx = 0, rz = 0, ao) { if (Array.isArray(rx)) { ao = rx; rx = 0; } return this.add(key, geom, mat4(x, y, z, sx, sy, sz, ry, rx, rz), ao); }
@@ -661,6 +672,7 @@ export class Batch {
     return grp;
   }
 }
+Batch.probe = null;
 export function buildPending(grp, tag) {
   const u = grp && grp.userData; if (!u || !u.pending || !u.pending[tag]) return (u && u.subs && u.subs[tag]) || null;
   const sg = u.pending[tag].build(); sg.userData.tag = tag; delete u.pending[tag]; grp.add(sg); u.subs[tag] = sg; return sg;
