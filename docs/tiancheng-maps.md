@@ -34,8 +34,11 @@
 ```
 blender/
   tc_common.py        共用：参数解析、材质、批量网格（box_mesh / ico_mesh / cyl_mesh / Batch）、城市生成、相机与导出、Layer 运行器
-  tc_detail.py        细节层：楼体部件（女儿墙、退台塔楼、坡顶、设备、太阳能板、屋顶花园）、路面标线与斑马线、车流与车灯、
-                      带 AO 与污渍的城市材质、波纹铁皮、沥青
+  tc_city.py          城市骨架：OSM 的道路、建筑轮廓、公园、水面、铁路 → 轮廓挤出、道路网格、沿路取点、路面标线、
+                      车流、楼顶部件（女儿墙、退台塔楼、坡顶、设备、太阳能板、屋顶花园）
+  tc_osm.py           OSM 下载与处理（纯 Python）：fetch → data/osm/raw/*.osm（不进 git），build → data/osm/city.json
+  tc_detail.py        材质（带 AO 与污渍的城市材质、波纹铁皮、沥青）、坡屋顶网格、车灯
+  data/osm/city.json  城市骨架数据（© OpenStreetMap contributors，ODbL）
   data/tc_islands.json  上层浮岛布局（数据，可手改；不依赖随机序列）
   tiancheng_upper.py  上层：白天，浮岛与庄园，中层楼顶压在霾下作远景
   tiancheng_mid.py    中层：夜景霓虹，悬浮轨道，浮岛投影，地标
@@ -62,10 +65,10 @@ layer.marker('checkpoint_c', (x, y, 0), r=.6)     # 登记地标：平面坐标 
 layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/data/tc_mid.json → 渲染
 ```
 
-城市肌理（`tc_common.city_blocks`）：主干道把城市切成 70–200 m 的街坊；街坊四边按 6–40 m 面宽切成地块，楼沿街贴建（相邻常共墙），内院是低矮加建、停车场或树；高楼区偶尔几块地合并成塔楼；整块公园、整块大体量建筑。之前是 24 m 一格、格与格之间都留缝，整张图像棋盘——这是「粗糙」的主要来源。
+城市骨架（`tc_city.City`）：取自 OpenStreetMap 的真实路网与建筑轮廓——香港九龙油麻地—旺角—太子一带（南北约 3 km），整块旋转 90° 放进 3 km × 1.875 km 的片区，不保留任何名称（天城是虚构城市，地标另按设定叠加）。选这里而不是重庆渝中：OSM 在这里的建筑轮廓非常完整、约一半带层数或高度，而且是世界上最密的高层街区之一。缺高度的楼按城区强度随机补。三层用同一套轮廓与道路：上层俯视远景（或云海）、中层把楼高放大成垂直超大城市、下层压低并按片区换成厂房 / 棚户 / 旧城。此前用过两版合成网格（24 m 棋盘、街坊地块），都一眼能看出是程序生成的。
 
 规则：
-- **城市生成必须是第一个随机调用**，由 `Layer` 保证。各层只能在生成之后按 `kind` 重新配色、压低或删除（`tc.keep_mask`），不能再消耗城市的随机序列。
+- **城市（OSM）载入必须是第一个随机调用**（缺高度的楼、屋顶颜色按这个序列补），由 `Layer` 保证。各层只能在生成之后按 `kind` 重新配色、压低或删除（`tc.keep_mask`），不能再消耗城市的随机序列。
 - 上层不另起种子（`seed=None`），岛屿沿用旧的随机序列，所以布局与 v0.7.0 逐字节一致。中层、下层各自另起种子。
 
 ### 命令行（三层一致）
@@ -76,6 +79,7 @@ layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/
 | `--crop x0,y0,x1,y1` | 只渲染一块（归一化，左上原点），用于在最终分辨率下检查局部 |
 | `--preview` | 800px / 8 采样、不加光晕；显式给的 `--res` / `--samples` 优先 |
 | `--data-only` | 只导出点位 JSON，不渲染（几秒） |
+| `--below clouds\|city` | 仅上层：岛屿下方是云海（默认）还是中层城市（`tc_upper_city`，查看器的「显示下方城市」开关） |
 | 层参数 | 中层 `--glow` `--ambient`；下层 `--glow` `--lamp` `--ambient`；上层 `--haze` |
 
 运行方式：`blender -b -P blender/tiancheng_mid.py -- ...`，或 `python3 blender/tiancheng_mid.py -- ...`（pip 装的 `bpy`，自带 OpenImageDenoise）。批量用 `bash tools/render_all.sh [upper mid low] [--res] [--samples] [--data-only] [--bpy] [-- 层参数]`。
@@ -92,7 +96,7 @@ layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/
 
 ### 注册表 `map/data/maps.json`（每张地图）
 
-`title`、`parent`、`group`、`layer{name, sub, alt}`、`kind`（world / points）、`base`（DZI）、`data`、`focus`、`status: planned`、`overlay{type: dzi | barriers, label, src?, from?}`、`markers{id: {name, sub, cls, tag: set | inf, src, alias[], link?}}`。
+`title`、`parent`、`group`、`layer{name, sub, alt}`、`kind`（world / points）、`base`（DZI）、`data`、`focus`、`status: planned`、`alt{label, base}`（另一版底图，查看器里一个开关）、`credit`（数据署名）、`overlay{type: dzi | barriers, label, src?, from?}`、`markers{id: {name, sub, cls, tag: set | inf, src, alias[], link?}}`。
 
 - `overlay.from`：叠加层取另一张地图的数据。中层的「上层投影」就是取上层的 `islands`。
 - `link: {map, marker, label}`：跨层通道。地点卡里给一个直达链接，打开目标地图后聚焦并展开对应地点。`check_maps.py` 会检查两端在平面上是否重合。
