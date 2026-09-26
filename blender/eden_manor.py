@@ -25,24 +25,52 @@ R_BLK = (20, 54, -16, 16)                  # 右翼
 BLOCKS = [(C_BLK, 18.0), (L_BLK, 13.5), (R_BLK, 13.5)]
 DRUM = (0.0, -2.0, 7.0)                    # F5 眺望亭：圆心 x、y，半径
 
-# 房间：(名称, 类型, x0, x1, y0, y1)。类型决定地面材料与家具；中性房间只放普通家具
+# 房间：(编号 名称, 类型, x0, x1, y0, y1)——按 docs/eden-estate.md §4（2026-09-27 三合一顾问重写版）。类型决定地面材料与家具；中性房间只放普通家具
 ROOMS = {
-    'F1': [('大厅', 'hall', -20, 20, -22, 4), ('仆从值班室', 'staff', -20, -2, 4, 22), ('楼梯电梯前厅', 'lobby', -2, 20, 4, 22),
-           ('餐厅', 'dining', -53, -21, -15, 15), ('会客厅', 'reception', 21, 53, -15, 15)],
-    'F2': [('大厅上空', 'void', -20, 20, -22, 4), ('起居茶室', 'lounge', -20, -2, 4, 22), ('楼梯电梯前厅', 'lobby', -2, 20, 4, 22),
-           ('书房', 'study', -53, -29, -12, 8), ('二层廊', 'corridor', -29, -21, -15, 15), ('客房 A', 'guest', 21, 53, -15, 0), ('客房 B', 'guest', 21, 53, 0, 15)],
-    'F3': [('廊厅', 'gallery', -20, 20, -22, 4), ('私人通道厅', 'lobby', -20, -2, 4, 22), ('楼梯电梯前厅', 'lobby', -2, 20, 4, 22),
-           ('主卧', 'master', -53, -32, -15, 15), ('更衣室', 'dressing', -32, -21, -15, 0), ('浴室', 'bath', -32, -21, 0, 15),
-           ('私人房间 A', 'private', 21, 41, -8, 8), ('三层廊', 'corridor', 41, 53, -15, 15)],
-    'F4': [('女仆长办公室', 'office', -20, -4, -22, -8), ('附属用房', 'annex', -20, 0, -8, 8), ('洗衣 / 储藏', 'laundry', 2, 20, -22, -8),
-           ('监控室', 'monitor', 6, 20, -8, 4), ('四层廊', 'corridor', 0, 6, -8, 4), ('楼梯电梯前厅', 'lobby', -2, 20, 4, 22), ('后廊', 'corridor', -20, -2, 8, 22)],
-    'F5': [('私人电梯厅', 'lift', -7, 7, -9, 5)],
+    'F1': [('101 大厅', 'hall', -12, 12, -22, -2), ('102 衣帽间', 'dressing', -20, -12, -22, -12), ('103 访客盥洗室', 'wc', -20, -12, -12, -2),
+           ('104 门房', 'office', 12, 20, -22, -12), ('105 候见室', 'lounge', 12, 20, -12, -2), ('106 一层过厅', 'corridor', -20, 20, -2, 6),
+           ('107 花园厅', 'garden_hall', -8, 8, 6, 22), ('108 主楼梯厅', 'lobby', 8, 20, 6, 22), ('110 值班室', 'staff', -20, -14, 14, 22),
+           ('111 银器室', 'store', -14, -8, 6, 14), ('113 餐厅', 'dining', -44, -20, -16, -2), ('114 早餐室', 'breakfast', -54, -44, -16, -2),
+           ('115 西翼廊', 'corridor', -54, -20, -2, 2), ('116 备餐间', 'pantry', -34, -20, 2, 16), ('117 瓷器与花艺室', 'store', -46, -34, 2, 16),
+           ('118 家族门厅', 'lobby', -54, -46, 2, 16), ('119 会客厅', 'reception', 20, 44, -16, -2), ('120 绿厅', 'lounge', 44, 54, -16, -2),
+           ('121 东翼廊', 'corridor', 20, 54, -2, 2), ('122 台球室', 'billiards', 20, 34, 2, 16), ('123 珍藏室', 'gallery', 34, 46, 2, 16), ('124 东门厅', 'lobby', 46, 54, 2, 16)],
+    'F2': [('201 大厅上空', 'void', -12, 12, -22, -2), ('202 茶室', 'lounge', -20, -12, -22, -2), ('203 客用侍从间', 'staff', 12, 20, -22, -12),
+           ('204 客用布草间', 'store', 12, 20, -12, -2), ('205 二层过厅', 'corridor', -20, 20, -2, 6), ('206 起居室', 'lounge', -8, 8, 6, 22),
+           ('207 主楼梯平台', 'lobby', 8, 20, 6, 22), ('209 楼层配餐间', 'pantry', -20, -14, 14, 22), ('211 小储藏', 'store', -14, -8, 6, 14),
+           ('212 书房', 'study', -40, -20, -16, -2), ('213 秘书室', 'office', -54, -40, -16, -2), ('214 西二层廊', 'corridor', -54, -20, -2, 2),
+           ('215 档案与地图室', 'archive', -34, -20, 2, 16), ('216 保险库', 'vault', -40, -34, 9, 16), ('217 书房盥洗室', 'wc', -40, -34, 2, 9),
+           ('218 晨读室', 'lounge', -54, -40, 2, 16), ('219 客房 A', 'guest', 20, 37, -16, -2), ('220 客房 B', 'guest', 37, 54, -16, -2),
+           ('221 东二层廊', 'corridor', 20, 54, -2, 2), ('222 客房 C', 'guest', 20, 37, 2, 16), ('223 客用起居室', 'lounge', 37, 54, 2, 16)],
+    'F3': [('301 肖像廊', 'gallery', -12, 12, -22, -2), ('302 主人侍从间', 'staff', -20, -12, -22, -2), ('303 布草间', 'store', 12, 20, -22, -12),
+           ('304 家庭盥洗室', 'wc', 12, 20, -12, -2), ('305 三层过厅', 'corridor', -20, 20, -2, 6), ('306 家庭餐室', 'breakfast', -8, 8, 6, 22),
+           ('307 主楼梯顶层平台', 'lobby', 8, 20, 6, 22), ('309 侍从待命室', 'staff', -20, -14, 14, 22), ('311 主人前厅', 'lobby', -14, -8, 6, 14),
+           ('312 主人起居室', 'lounge', -40, -20, -16, -2), ('313 更衣室', 'dressing', -54, -40, -16, -2), ('314 西三层廊', 'corridor', -54, -20, -2, 2),
+           ('315 主卧', 'master', -40, -20, 2, 16), ('316 主浴室', 'bath', -54, -40, 2, 16), ('317 寝（次卧套间）', 'guest', 20, 40, -16, -2),
+           ('318 家庭客厅', 'lounge', 40, 54, -16, -2), ('319 东三层廊', 'corridor', 20, 54, -2, 2), ('320 私人房间 A', 'private', 20, 36, 2, 16),
+           ('321 备用卧室', 'guest', 36, 54, 2, 16)],
+    'F4': [('401 女仆长办公室', 'office', -20, -8, -22, -12), ('402 女仆长卧室', 'bedroom_s', -20, -8, -12, -2), ('403 附属用房', 'annex', -8, 8, -22, -10),
+           ('404 员工起居室', 'staff', -8, 8, -10, -2), ('405 洗衣房', 'laundry', 8, 20, -22, -12), ('406 储藏室', 'store', 8, 20, -12, -2),
+           ('407 四层廊', 'corridor', -20, 20, -2, 6), ('408 监控室', 'monitor', -8, 8, 6, 14), ('409 结界值守室', 'ward', -8, 8, 14, 22),
+           ('410 员工卧室', 'dorm', 8, 20, 6, 22), ('412 员工盥洗室', 'wc', -20, -14, 14, 22), ('413 布草储藏', 'store', -14, -8, 6, 14)],
+    'F5': [('502 眺望亭', 'lookout', -7, 7, -9, 5)],
 }
-SHAFTS = [('主楼梯', 'stair', 4, 12, 12, 20, 'F1 F2 F3 F4 F5'), ('电梯', 'lift', 14, 18, 14, 19, 'F1 F2 F3 F4 F5'),
-          ('主人通道', 'master', -6, -2, 16, 20, 'F1 F3 F5')]
-FLOORMAT = {'hall': 'marble', 'lobby': 'marble', 'gallery': 'marble', 'corridor': 'marble', 'lift': 'marble',
-            'dining': 'parquet', 'reception': 'parquet', 'lounge': 'parquet', 'study': 'parquet', 'guest': 'parquet', 'master': 'parquet',
-            'private': 'parquet', 'office': 'parquet', 'dressing': 'parquet', 'annex': 'lino', 'staff': 'lino', 'laundry': 'tile', 'bath': 'tile', 'monitor': 'lino'}
+# 竖井：(名称, 类型, x0, x1, y0, y1, 停靠层)。主楼梯厅里是双跑楼梯 + 井心笼式电梯
+SHAFTS = [('108 主楼梯', 'stair', 8, 20, 6, 22, 'F1 F2 F3'), ('电梯', 'lift', 12.5, 15.5, 12.5, 16.5, 'F1 F2 F3 F4 F5'),
+          ('109 仆役楼梯', 'service', -20, -14, 6, 14, 'F1 F2 F3 F4 F5'), ('112 主人通道', 'master', -14, -8, 14, 22, 'F1 F3 F5')]
+FLOORMAT = {'hall': 'marble', 'lobby': 'marble', 'gallery': 'marble', 'corridor': 'marble', 'lookout': 'marble', 'garden_hall': 'marble_check',
+            'dining': 'parquet', 'reception': 'parquet', 'lounge': 'parquet', 'study': 'parquet', 'guest': 'parquet', 'master': 'parquet', 'billiards': 'parquet',
+            'private': 'parquet', 'office': 'parquet', 'dressing': 'parquet', 'archive': 'parquet', 'bedroom_s': 'parquet', 'dorm': 'parquet',
+            'breakfast': 'marble_check', 'wc': 'marble_check', 'annex': 'lino', 'staff': 'parquet', 'laundry': 'tile', 'bath': 'marble', 'monitor': 'lino',
+            'store': 'lino', 'pantry': 'tile', 'vault': 'lino', 'ward': 'stone2'}
+
+def _check_mat():
+    """黑白棋盘格大理石（早餐室、访客盥洗室、花园厅）。"""
+    m = bpy.data.materials.new('em_marble_check'); m.use_nodes = True; nt = m.node_tree; b = tc.bsdf_of(m)
+    tco = nt.nodes.new('ShaderNodeTexCoord'); ch = nt.nodes.new('ShaderNodeTexChecker'); ch.inputs['Scale'].default_value = 1.0
+    mp = nt.nodes.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (1.25, 1.25, 1.25)   # 物体坐标（米）→ 0.8 m 一格
+    nt.links.new(tco.outputs['Object'], mp.inputs['Vector']); nt.links.new(mp.outputs['Vector'], ch.inputs['Vector'])
+    ch.inputs['Color1'].default_value = (.85, .84, .81, 1); ch.inputs['Color2'].default_value = (.04, .04, .045, 1)
+    nt.links.new(ch.outputs['Color'], b.inputs['Base Color']); tc.set_in(b, 'Roughness', .2); return m
 
 def _mats():
     M = {
@@ -65,7 +93,13 @@ def _mats():
         'screen': tc.mat('em_screen', (.05, .07, .09), .2),
         'water': tc.mat('em_water', (.10, .22, .28), .05, spec=.9),
         'plant': tc.mat('em_plant', (.10, .22, .08), .9),
-        'shaft_stair': tc.mat('em_shaft_stair', (.78, .52, .25), .7), 'shaft_lift': tc.mat('em_shaft_lift', (.28, .55, .60), .5),
+        'marble_check': _check_mat(), 'marble_black': tc.mat('em_marble_black', (.03, .03, .035), .15, spec=.8),
+        'mahogany': tc.noise_mat('em_mahogany', (.16, .06, .035), (.24, .10, .05), 60, .35, .02), 'brass': tc.mat('em_brass', (.78, .60, .28), .25, metal=1),
+        'porcelain': tc.mat('em_porcelain', (.93, .93, .91), .08, spec=.9), 'towel': tc.noise_mat('em_towel', (.88, .86, .80), (.95, .93, .88), 400, 1.0, .3),
+        'linen': tc.mat('em_linen', (.90, .88, .83), .9), 'felt': tc.mat('em_felt', (.06, .22, .12), .95),
+        'aether': tc.emit_mat('em_aether', (.45, .9, 1.0), 3.0), 'gold_crest': tc.mat('em_gold_crest', (.90, .76, .42), .25, metal=1),
+        'shaft_service': tc.mat('em_shaft_service', (.79, .54, .25), .7),
+        'shaft_stair': tc.mat('em_shaft_stair', (.62, .50, .30), .7), 'shaft_lift': tc.mat('em_shaft_lift', (.30, .55, .60), .5),
         'shaft_master': tc.mat('em_shaft_master', (.45, .35, .60), .6),
     }
     return M
@@ -183,18 +217,30 @@ def _terrace(B, blk, z):
 
 def _portico(B, h=13.5):
     """正面巨柱式柱廊：6 根柱贯通三层，山花三角楣，台阶。"""
-    y = -28.5
-    for k in range(6):
-        x = -12.5 + k * 5
-        B('trim').cyl(x, y, .6, .85, h - 1.4, seg=20); B('trim').box(x, y, 0, 2.1, 2.1, .6); B('trim').box(x, y, h - .8, 2.1, 2.1, .8)   # 柱身、柱础、柱头
-    B('trim').box(0, -25.5, h, 31, 8, 1.2)                                                            # 额枋
+    y = -28.5; ent = 2.9                                                                            # 科林斯：柱径 1.35 m、柱高 10D；檐部 2.9 m；中间一跨放宽到 6 m
+    for x in (-13, -8, -3, 3, 8, 13):
+        B('trim').cyl(x, y, .6, .675, h - 1.6, seg=24); B('trim').box(x, y, 0, 1.8, 1.8, .6)                      # 柱身、柱础
+        B('trim').cyl(x, y, h - 1.0, .75, .6, seg=16, r2=.95); B('trim').box(x, y, h - .4, 1.9, 1.9, .4)            # 柱头（外张的钟形 + 顶板）
+    B('trim').box(0, -25.5, h, 31, 8, 1.0); B('stone').box(0, -25.5, h + 1.0, 31, 8, 1.1); B('trim').box(0, -25.5, h + 2.1, 32, 8.6, .8)   # 额枋、檐壁、檐口
     B('stone').box(0, -25, 0, 31, 7, .6)                                                              # 柱廊地坪
     for s in range(4): B('stone2').box(0, -29.5 - s * 1.1, 0, 34 + s * 2, 1.1, .6 - s * .15)          # 台阶
     # 山花：三棱柱（坡屋面沿 y 方向，斜面朝上）
-    bm = B('roof').bm; ht = 4.2; z = h + 1.2
+    bm = B('roof').bm; ht = 3.6; z = h + ent
     vs = [bm.verts.new(v) for v in ((-15.5, -29.5, z), (15.5, -29.5, z), (0, -29.5, z + ht), (-15.5, -21.5, z), (15.5, -21.5, z), (0, -21.5, z + ht))]
     for f in ((0, 1, 2), (3, 5, 4), (0, 2, 5, 3), (1, 4, 5, 2)): bm.faces.new([vs[i] for i in f])
     B('trim').box(0, -29.7, z, 31.5, .4, .5)                                                          # 山花底檐
+    B('gold_crest', smooth=True).ico(0, -29.75, z + 1.4, 1.0, sz=1.0, sub=2)                            # 山花中心的金色家徽（鎏金 #E6C36A）
+
+def _kiosks(B, open_=False):
+    """屋顶平台上的三座出口小亭（主人通道、电梯、仆役楼梯）+ 主人通道出口到眺望亭之间的紫藤廊。"""
+    z = 18.85; h = CUT if open_ else 3.2
+    for (x0, x1, y0, y1) in ((-14, -8, 14, 22), (12, 16, 12, 17), (-20, -14, 6, 14)):
+        if open_: _walls(B, 'stone', x0, x1, y0, y1, z, h, .4, [('S', (x0 + x1) / 2, 1.4)])
+        else: B('stone').box((x0 + x1) / 2, (y0 + y1) / 2, z, x1 - x0, y1 - y0, h); B('trim').box((x0 + x1) / 2, (y0 + y1) / 2, z + h, x1 - x0 + .6, y1 - y0 + .6, .35)
+    for k in range(6):                                                                                 # 紫藤廊：主人通道出口 (−11, 14) → 眺望亭 (0, 5)
+        f = k / 5; x, y = -11 + 9 * f, 13 - 7 * f
+        for s in (-1, 1): B('trim').box(x + s * 1.1, y + s * .9, z, .25, .25, 2.6)
+        B('wood').box(x, y, z + 2.6, 3.2, .3, .15, -.66); B('plant', smooth=True).ico(x, y, z + 2.9, .9, sz=.4, sub=1)
 
 def _belvedere(B, open_top=True):
     """F5 眺望亭：圆形鼓座（私人电梯厅）+ 穹顶 + 灯亭 + 金色顶饰。"""
@@ -301,8 +347,48 @@ def _furnish(B, kind, x0, x1, y0, y1, z):
         B('fabric').box(cx - 3, cy - 3, z, 3, .8, .5); plant(x0 + 1.5, y0 + 1.5); plant(x1 - 1.5, y0 + 1.5)
     elif kind == 'corridor':
         B('rug').box(cx, cy, z, w * .5 if w < d else w - 2, d - 2 if w < d else d * .5, .03)
-    elif kind == 'lift':
-        B('fabric').box(0, -6.5, z, 4, .8, .5); plant(-4.5, 2.5); plant(4.5, 2.5)
+    elif kind == 'lookout':                                                                         # F5 眺望厅：环形软座 + 望远镜
+        for k in range(10): a = k / 10 * 2 * math.pi; B('fabric2').box(DRUM[0] + math.cos(a) * 5.4, DRUM[1] + math.sin(a) * 5.4, z, .9, 2.4, .45, a)
+        B('brass').cyl(DRUM[0], DRUM[1] + 2, z, .12, 1.3, seg=10); B('brass').box(DRUM[0], DRUM[1] + 2.4, z + 1.3, .3, 1.2, .3, .3)
+    elif kind == 'wc':                                                                              # 盥洗室：隔间里的马桶（座 + 水箱）、洗手台、毛巾架与毛巾
+        n = max(1, int((w if w > d else d) / 4))
+        for k in range(n):
+            if w > d: tx, ty = x0 + (k + .5) * w / n, y1 - 1.0
+            else: tx, ty = x1 - 1.0, y0 + (k + .5) * d / n
+            B('porcelain').cyl(tx, ty, z, .22, .42, seg=16); B('mahogany').box(tx, ty, z + .42, .44, .52, .05)   # 马桶与座圈
+            B('porcelain').box(tx + (0 if w > d else .35), ty + (.35 if w > d else 0), z + .45, .5 if w > d else .2, .2 if w > d else .5, .45)   # 水箱
+            B('brass').box(tx + .15, ty + .3, z + .8, .08, .03, .03)                                   # 冲水手柄
+        B('marble').box(cx, y0 + .5, z, min(w - 1, 2.4), .6, .85); B('porcelain').box(cx, y0 + .5, z + .85, .5, .4, .06)   # 洗手台
+        B('brass').box(x0 + .25, cy, z + 1.0, .05, 1.2, .05); B('towel').box(x0 + .3, cy, z + .55, .1, .9, .5)   # 毛巾架 + 挂着的毛巾
+    elif kind == 'breakfast':
+        B('rug').box(cx, cy, z, w * .6, d * .5, .03); B('mahogany').cyl(cx, cy, z, 1.4, .76, seg=32)
+        for k in range(8): a = k / 8 * 2 * math.pi; B('fabric').box(cx + math.cos(a) * 2.0, cy + math.sin(a) * 2.0, z, .5, .5, .95, a)
+        B('wood').box(x0 + .4, cy, z, .5, d * .5, 1.0)
+    elif kind == 'garden_hall':                                                                     # 花园厅：棋盘格地面、棕榈盆栽、两组沙发，朝后庭
+        for dx in (-1, 1):
+            for dy in (-1, 1): plant(cx + dx * (w / 2 - 1.5), cy + dy * (d / 2 - 1.5))
+        B('fabric').box(cx, cy - 2, z, 3.4, .9, .8); B('fabric').box(cx, cy + 2, z, 3.4, .9, .8); B('marble').box(cx, cy, z, 1.6, 1.0, .45)
+    elif kind == 'pantry':                                                                          # 备餐：沿墙台面 + 中岛
+        B('marble').box(cx, y1 - .5, z, w - 1, .7, .9); B('marble').box(x0 + .5, cy, z, .7, d - 2, .9); B('wood').box(cx, cy, z, min(4, w * .4), 1.2, .9)
+    elif kind == 'store':
+        for k in range(max(1, int(w / 2.2))): B('wood').box(x0 + 1.1 + k * 2.2, cy, z, .5, d - 2, 2.2)
+    elif kind == 'archive':
+        for k in range(max(1, int(d / 2.4))): B('mahogany').box(cx, y0 + 1.2 + k * 2.4, z, w - 3, .45, 2.2)
+        B('mahogany').box(x1 - 2.5, cy, z, 2.0, 1.2, .9)                                            # 地图柜
+    elif kind == 'vault':
+        for k in range(3): B('metal').box(x0 + 1 + k * 1.8, y1 - .6, z, 1.4, .8, 1.9)
+        B('brass').cyl(cx, y0 + .4, z + .6, .5, .1, seg=24)                                          # 金库门的圆转盘（贴在门口）
+    elif kind == 'billiards':
+        B('mahogany').box(cx, cy, z, 1.7, 3.1, .78); B('felt').box(cx, cy, z + .78, 1.5, 2.9, .03)
+        B('wood').box(x0 + .4, cy, z, .4, 3, 1.4); sofa_set(cx, y1 - 3, math.pi)
+    elif kind == 'ward':                                                                            # 结界值守室：黄铜主控台 + 以太晶 + 四个锚碑表盘
+        B('brass').box(cx, cy, z, 4, 1.2, .95); B('aether', smooth=True).ico(cx, cy, z + 1.4, .35, sz=1.8, sub=2)
+        for k in range(4): B('brass').cyl(x0 + 2 + k * (w - 4) / 3, y1 - .4, z + 1.2, .45, .08, seg=20)
+        B('fabric2').box(cx, cy - 1.4, z, .6, .6, 1.0)
+    elif kind == 'dorm':
+        for k in range(3): bed(x0 + 2, y0 + 2.5 + k * (d - 3) / 3); B('wood').box(x1 - .5, y0 + 2.5 + k * (d - 3) / 3, z, .6, 1.2, 2.0)
+    elif kind == 'bedroom_s':
+        bed(cx - 2, cy); B('wood').box(x1 - .5, cy, z, .6, 2.0, 2.0); B('wood').box(cx + 2.5, y0 + .8, z, 1.4, .6, .76)
 
 def _stairs(B, x0, x1, y0, y1, z, rise=FH):
     """双跑楼梯：两段踏步 + 中间平台（看得出是楼梯即可）。"""
@@ -322,16 +408,25 @@ def _floor_plan(B, fl):
             for (a0, a1, b0, b1) in ((x0, x1, y0, y0 + 2.5), (x0, x1, y1 - .5, y1), (x0, x0 + 2.5, y0, y1), (x1 - 2.5, x1, y0, y1)):
                 B('marble').box((a0 + a1) / 2, (b0 + b1) / 2, z - .3, a1 - a0, b1 - b0, .3)        # 回廊
             continue
-        if kind == 'lift': _furnish(B, kind, x0, x1, y0, y1, z); continue                         # F5 私人电梯厅在圆形鼓座里（墙另建）
+        if kind == 'lookout': _furnish(B, kind, x0, x1, y0, y1, z); continue                      # F5 眺望厅在圆形鼓座里（墙另建）
         B(FLOORMAT.get(kind, 'marble')).box((x0 + x1) / 2, (y0 + y1) / 2, z - .3, x1 - x0, y1 - y0, .3)
         gaps = [(s, c, 1.8) for s, c in (('S', (x0 + x1) / 2), ('N', (x0 + x1) / 2), ('W', (y0 + y1) / 2), ('E', (y0 + y1) / 2))]
         _walls(B, 'wall_in', x0 + .15, x1 - .15, y0 + .15, y1 - .15, z, CUT, .25, gaps)   # 各房间的墙往里收一点：相邻房间的墙并排，不重叠
         _furnish(B, kind, x0, x1, y0, y1, z)
     for name, kind, x0, x1, y0, y1, fls in SHAFTS:
         if fl not in fls.split(): continue
-        key = {'stair': 'shaft_stair', 'lift': 'shaft_lift', 'master': 'shaft_master'}[kind]
+        key = {'stair': 'shaft_stair', 'lift': 'shaft_lift', 'master': 'shaft_master', 'service': 'shaft_service'}[kind]
+        if kind == 'stair':                                                                          # 楼梯厅：沿东西两侧的两跑楼梯，中间是笼式电梯
+            _walls(B, key, x0, x1, y0, y1, z, CUT + .3, .3, [('S', (x0 + x1) / 2, 2.4), ('W', (y0 + y1) / 2, 2.0)])
+            if fl != 'F3': _stairs(B, x0 + .3, x0 + 4.3, y0 + .3, y1 - .3, z); _stairs(B, x1 - 4.3, x1 - .3, y0 + .3, y1 - .3, z)
+            continue
+        if kind == 'lift':                                                                           # 黄铜笼式轿厢
+            for dx in (-1, 1):
+                for dy in (-1, 1): B('brass').box((x0 + x1) / 2 + dx * (x1 - x0) / 2, (y0 + y1) / 2 + dy * (y1 - y0) / 2, z, .12, .12, CUT + .4)
+            B('brass').box((x0 + x1) / 2, (y0 + y1) / 2, z + CUT + .3, x1 - x0, y1 - y0, .1); B(key).box((x0 + x1) / 2, (y0 + y1) / 2, z, x1 - x0 - .3, y1 - y0 - .3, .05)
+            continue
         _walls(B, key, x0, x1, y0, y1, z, CUT + .3, .3, [('S', (x0 + x1) / 2, 1.6)])
-        if kind == 'stair' and fl != 'F5': _stairs(B, x0 + .3, x1 - .3, y0 + .3, y1 - .3, z)
+        if kind == 'service' and fl != 'F5': _stairs(B, x0 + .3, x1 - .3, y0 + .3, y1 - .3, z)
         else: B(key).box((x0 + x1) / 2, (y0 + y1) / 2, z, x1 - x0 - .7, y1 - y0 - .7, .05)
 
 def build_eden_manor(layer, center=(0, 0, 0), rot=0.0, scale=1.0, cutaway=None):
@@ -345,7 +440,7 @@ def build_eden_manor(layer, center=(0, 0, 0), rot=0.0, scale=1.0, cutaway=None):
         for blk, h in BLOCKS:
             skip = [(-15.5, 15.5, 'S')] if blk == C_BLK else []
             _block_exterior(B, blk, h); _windows(B, blk, h, skip=skip)
-        _portico(B); _belvedere(B)
+        _portico(B); _belvedere(B); _kiosks(B)
         _balustrade(B, _rect(-20.4, 20.4, -22.4, 22.4), 18.85)                                       # 中央屋顶平台栏杆（F5 露台）
         for s in range(5): B('stone2').box(0, 22.8 + s * 1.2, 0, 24 - s * 1.2, 1.2, 1.0 - s * .2)       # 背面台阶（下到后庭）
     else:
@@ -362,6 +457,7 @@ def build_eden_manor(layer, center=(0, 0, 0), rot=0.0, scale=1.0, cutaway=None):
                 if abs(math.cos(a0 + math.pi / 2)) > .97 and math.sin(a0) < 0: continue
                 bm.box(x + math.cos(a0) * r, y + math.sin(a0) * r, 18.85, 1.0, .5, CUT, a0 + math.pi / 2)
             for k2 in range(6): B('fabric').box(-14 + k2 * 5.6, -18, 18.9, .8, 2.0, .35)                 # 露台躺椅
+            _kiosks(B, open_=True)
             for sx in (-1, 1): B('plant', smooth=True).ico(sx * 16, 16, 19.6, 1.0, sub=2); B('wood').box(sx * 16, 16, 18.85, 1.4, 1.4, .6)
         _floor_plan(B, cutaway)
     obs = B.done(root)
