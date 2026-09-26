@@ -463,6 +463,7 @@ export function initMaterials(envMap, tier = 0) {
   S('towel', { color: '#ffffff', roughness: 1, normalMap: TEX.towelN, normalScale: new THREE.Vector2(0.9, 0.9), sheen: 0.8, sheenRoughness: 0.9, sheenColor: '#ffffff' }, 0.035);   // 顶点着色，默认 #F4EFE4
   // 近景毛巾：法线强度加倍，只给 fine 子批次里的逐条折层用
   S('towelHi', { color: '#ffffff', roughness: 1, normalMap: TEX.towelN, normalScale: new THREE.Vector2(1.8, 1.8), sheen: 0.8, sheenRoughness: 0.9, sheenColor: '#ffffff' }, 0.035);
+  MATS.towel.side = MATS.towelHi.side = THREE.DoubleSide;   // 垂片两端开口、镜像摆放时不被背面剔除成「幽灵片」
   // 空画框衬里：深红丝绒带自发光，默认视距也能读出来
   S('velvetGlow', { color: '#7B1E2B', roughness: 0.85, sheen: 0.9, sheenRoughness: 0.35, sheenColor: '#e0a0a0', emissive: '#7B1E2B', emissiveIntensity: 0.55, vertexColors: false });
   S('linen', { color: '#F7F4EE', roughness: 0.9, sheen: 0.25, sheenRoughness: 0.6, sheenColor: '#ffffff' });
