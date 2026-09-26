@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>世界地图</title>
+<script src="https://cdn.jsdelivr.net/npm/openseadragon@5/build/openseadragon/openseadragon.min.js"></script>
+<style>
+  :root { --bg: #14171c; --panel: rgba(20,23,28,.88); --line: rgba(255,255,255,.14); --ink: #eef1f4; --muted: #9aa3ad; --gold: #e6c36a; --inf: #ffb347; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif; }
+  #app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 15px; margin: 0 10px 0 0; letter-spacing: 2px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button, .btn { background: transparent; color: var(--ink); border: 0; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--gold); color: #1a1406; font-weight: 700; }
+  .btn { border: 1px solid var(--line); border-radius: 8px; }
+  label.tg { font-size: 13px; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; cursor: pointer; }
+  .where { margin-left: auto; display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+  .where input { background: rgba(255,255,255,.06); border: 1px solid var(--line); color: var(--ink); border-radius: 6px; padding: 5px 8px; width: 200px; font: inherit; }
+  #osd { position: relative; }
+  /* 标记 */
+  .mk { position: relative; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none; }
+  .mk .pin { width: 14px; height: 14px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #4dabf7; border: 2px solid #fff; box-shadow: 0 1px 4px #000a; }
+  .mk .lab { margin-bottom: 4px; padding: 2px 8px; border-radius: 10px; background: rgba(12,14,18,.78); border: 1px solid rgba(255,255,255,.25); font-size: 12px; white-space: nowrap; color: #fff; }
+  .mk.capital .pin { background: var(--gold); width: 16px; height: 16px; }
+  .mk.capital .lab { font-size: 14px; font-weight: 800; border-color: var(--gold); }
+  .mk.inf .pin { background: var(--inf); }
+  .mk.inf .lab { color: #ffd9a8; }
+  .mk.drill .lab { background: rgba(230,195,106,.92); color: #1a1406; font-weight: 800; }
+  .mk.here .pin { background: #ff5a5a; animation: pulse 1.4s infinite; }
+  .mk.active .lab { outline: 2px solid var(--gold); }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 #ff5a5acc; } 100% { box-shadow: 0 0 0 16px #ff5a5a00; } }
+  .realm { transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; text-align: center; white-space: nowrap; color: #fff;
+    text-shadow: 0 0 6px #000, 0 0 3px #000, 0 2px 8px #000c; }
+  .realm b { display: block; font-size: 30px; letter-spacing: 12px; font-weight: 900; }
+  .realm span { font-size: 13px; letter-spacing: 2px; opacity: .9; }
+  .realm.oren b { font-family: "PingFang SC", sans-serif; color: #ffe2a8; }
+  .realm.fed b { font-family: "Songti SC", "STSong", serif; color: #cfe3ff; }
+  .realm.xl b { font-family: "Kaiti SC", "STKaiti", serif; color: #e6d6ff; }
+  .minor { transform: translate(-50%, -50%); font-size: 12px; color: #fff; opacity: .8; text-shadow: 0 0 4px #000, 0 0 2px #000; white-space: nowrap; }
+  body.nolabels .realm, body.nolabels .minor { display: none; }
+  body.nomarkers .mk { display: none; }
+  body.embed header h1, body.embed .where { display: none; }
+  body.far .mk:not(.capital):not(.here):not(.active) .lab { display: none; }
+  /* 信息卡 */
+  #card { position: fixed; right: 14px; top: 64px; width: 320px; max-width: calc(100vw - 28px); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.65; z-index: 10; backdrop-filter: blur(6px); }
+  #card[hidden] { display: none; }
+  #card .tag { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 4px; background: #2f6f4f; }
+  #card .tag.inf { background: #b06000; }
+  #card h2 { margin: 6px 0 4px; font-size: 17px; }
+  #card .src { color: #c9d1d9; }
+  #card .x { position: absolute; right: 8px; top: 6px; background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; }
+  #card a { color: var(--gold); }
+  #status { position: fixed; left: 14px; bottom: 12px; font-size: 12px; color: var(--muted); z-index: 5; text-shadow: 0 0 3px #000; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>新历 2088 · 世界地图</h1>
+    <div class="seg" id="tiers"></div>
+    <label class="tg"><input type="checkbox" id="tgBorders" checked>国界</label>
+    <label class="tg"><input type="checkbox" id="tgLabels" checked>地名</label>
+    <label class="tg"><input type="checkbox" id="tgMarkers" checked>标记</label>
+    <div class="where">当前地点 <input id="here" placeholder="模拟 MVU：世界.当前地点" value="旷野高地"></div>
+  </header>
+  <div id="osd"></div>
+</div>
+<div id="card" hidden><button class="x" id="cardX">×</button><span class="tag"></span><h2></h2><div class="src"></div><div class="extra"></div></div>
+<div id="status">加载中…</div>
+<script>
+// 底图三档（与 v4.3 做法一致：单张大图，按清晰度切换）
+const TIERS = [
+  { key: 'low', name: '低清', url: 'art/world_2k.jpg' },
+  { key: 'hd', name: '高清', url: 'art/world_4k.jpg' },
+  { key: 'uhd', name: '超清', url: 'art/world_8k.jpg' },
+];
+const BORDERS = 'art/borders.png';
+// 代码地图坐标（1600×1000）→ 底图归一化坐标（相机裁切：宽 98.5%、高 97%）
+const toImg = (x, y) => [(x / 1600 - .0075) / .985, (y / 1000 - .015) / .97];
+
+let viewer, aspect = 1, M, tier = 'hd';
+try { tier = localStorage.getItem('mapTier') || 'hd'; } catch (e) {}
+const $ = s => document.querySelector(s);
+
+async function main() {
+  M = await fetch('data/world_markers.json').then(r => r.json());
+  // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点
+  try { const d = await fetch('data/derived.json').then(r => r.ok ? r.json() : null);
+    if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland); } catch (e) {}
+  const seg = $('#tiers');
+  for (const t of TIERS) { const b = document.createElement('button'); b.textContent = t.name + '地图'; b.dataset.k = t.key;
+    b.onclick = () => openTier(t.key); seg.appendChild(b); }
+  viewer = OpenSeadragon({
+    element: $('#osd'), prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5/build/openseadragon/images/',
+    showNavigator: true, navigatorPosition: 'BOTTOM_RIGHT', visibilityRatio: 1, constrainDuringPan: true,
+    maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true },
+  });
+  viewer.addHandler('open', onOpen);
+  viewer.addHandler('zoom', e => document.body.classList.toggle('far', e.zoom < 1.6));
+  openTier(tier);
+  $('#tgBorders').onchange = e => { const it = viewer.world.getItemAt(1); if (it) it.setOpacity(e.target.checked ? 1 : 0); };
+  $('#tgLabels').onchange = e => document.body.classList.toggle('nolabels', !e.target.checked);
+  $('#tgMarkers').onchange = e => document.body.classList.toggle('nomarkers', !e.target.checked);
+  $('#here').oninput = () => markHere($('#here').value);
+  $('#cardX').onclick = () => { $('#card').hidden = true; document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); };
+}
+function openTier(key) {
+  tier = key; try { localStorage.setItem('mapTier', key); } catch (e) {}
+  document.querySelectorAll('#tiers button').forEach(b => b.classList.toggle('on', b.dataset.k === key));
+  const t = TIERS.find(t => t.key === key);
+  $('#status').textContent = `加载 ${t.name}地图…`;
+  viewer.open([{ type: 'image', url: t.url }, { type: 'image', url: BORDERS, opacity: $('#tgBorders').checked ? 1 : 0 }]);
+}
+function onOpen() {
+  const it = viewer.world.getItemAt(0), sz = it.getContentSize(); aspect = sz.y / sz.x;
+  $('#status').textContent = `${TIERS.find(t => t.key === tier).name}地图 · ${sz.x}×${sz.y}`;
+  viewer.clearOverlays(); addOverlays(); markHere($('#here').value);
+}
+function place(el, x, y, placement = OpenSeadragon.Placement.TOP_LEFT) {
+  const [nx, ny] = toImg(x, y); viewer.addOverlay({ element: el, location: new OpenSeadragon.Point(nx, ny * aspect), placement });
+}
+function marker({ name, sub, cls = '', tag = 'set', src, x, y, extra = '' }) {
+  const el = document.createElement('div'); el.className = 'mk ' + cls + (tag === 'inf' ? ' inf' : '');
+  el.innerHTML = `<div class="lab">${name}${sub ? ' · <small>' + sub + '</small>' : ''}</div><div class="pin"></div>`;
+  el.dataset.name = name;
+  new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => showCard(el, name, tag, src, extra) });
+  place(el, x, y); return el;
+}
+function showCard(el, name, tag, src, extra) {
+  document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); el && el.classList.add('active');
+  const c = $('#card'); c.hidden = false;
+  c.querySelector('.tag').textContent = tag === 'inf' ? '推断' : '设定原文'; c.querySelector('.tag').className = 'tag' + (tag === 'inf' ? ' inf' : '');
+  c.querySelector('h2').textContent = name; c.querySelector('.src').textContent = src; c.querySelector('.extra').innerHTML = extra || '';
+}
+function addOverlays() {
+  for (const r of M.realms) { const el = document.createElement('div'); el.className = 'realm ' + r.id;
+    el.innerHTML = `<b>${r.name}</b><span>${r.sub}</span>`;
+    new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => showCard(null, r.name, r.tag, r.src) });
+    const off = { oren: -95, fed: -150, xl: -110 }[r.id]; place(el, r.c[0], r.c[1] + off, OpenSeadragon.Placement.CENTER); }
+  for (const m of M.minors) { if (m.n < 600) continue; const el = document.createElement('div'); el.className = 'minor'; el.textContent = '中小国';
+    place(el, m.c[0], m.c[1], OpenSeadragon.Placement.CENTER); }
+  { const el = document.createElement('div'); el.className = 'realm'; el.innerHTML = '<b style="font-size:20px;letter-spacing:6px">海外诸地</b><span>稀有矿物 · 异域人员输出地</span>';
+    new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => showCard(null, '海外诸地', 'inf', '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）；陆块形状与位置为推断') });
+    place(el, M.overseas[0], M.overseas[1], OpenSeadragon.Placement.CENTER); }
+  for (const p of M.places) {
+    if (p.type === 'capital') marker({ name: p.name, sub: p.sub, cls: 'capital' + (p.id === 'tiancheng' ? ' drill' : ''), tag: p.tag, src: p.src, x: p.x, y: p.y,
+      extra: p.id === 'tiancheng' ? '<p><a href="tiancheng.html">进入天城分层图（上层 / 中层 / 下层）→</a></p>' : '' });
+    else marker({ name: p.name, sub: p.sub, cls: 'start', tag: p.tag, src: p.src, x: p.x, y: p.y });
+  }
+  for (const f of M.fiefs) marker({ name: f.name, tag: f.tag, src: f.src, x: f.x, y: f.y });
+}
+// 当前地点高亮（将来由 MVU 变量「世界.当前地点」驱动）
+// 庄园与天城内部的地点在世界图上都归到「天城」
+const ALIAS = { '天城': ['天城', '伊甸', '庄园', '书房', '主卧', '大厅', '餐厅', '会客厅', '客房', '寝', '浴室', '后庭', '前庭', '上层', '中层', '下层', '钢铁霓虹', '地基', '公寓'] };
+function markHere(v) {
+  v = (v || '').replace('{{user}}', '');
+  document.querySelectorAll('.mk').forEach(e => { const n = e.dataset.name;
+    const hit = !!v && (v.includes(n) || n.includes(v) || (ALIAS[n] || []).some(k => v.includes(k)));
+    e.classList.toggle('here', hit); });
+}
+// 嵌入酒馆（悬浮按钮面板）：接收当前地点；站内链接用 fetch + document.write 保持 <base>
+if (window.top !== window) {
+  document.body.classList.add('embed');
+  window.addEventListener('message', e => { if (e.data?.type === 'eden-map:here') { $('#here').value = e.data.value || ''; markHere(e.data.value); } });
+  document.addEventListener('click', async e => { const a = e.target.closest('a[href$=".html"]'); if (!a) return; e.preventDefault();
+    const base = document.baseURI; const html = await fetch(new URL(a.getAttribute('href'), base)).then(r => r.text());
+    document.open(); document.write(html.replace('<head>', `<head><base href="${base}">`)); document.close(); });
+}
+main();
+</script>
+</body>
+</html>

@@ -368,6 +368,15 @@ D.SEEDS.forEach((s, k) => { if (s.kind !== 'minor') return;
 // ---------- 天城纵剖面（section.js，缩放嵌入） ----------
 // 剖面已独立为竖图：tiancheng.html
 
+// ---------- 导出标记坐标（?export）：供查看器与 Blender 底图对齐 ----------
+if (location.search.includes('export')) {
+  const realms = D.REALMS.map(r => ({ id: r.id, name: r.name, sub: r.sub, src: r.src, tag: r.tag, c: centroid(s => r.kinds.includes(s.kind)) }));
+  const minors = D.SEEDS.map((s, k) => ({ s, k })).filter(o => o.s.kind === 'minor').map(o => ({ id: o.s.id, n: owner.reduce((a, v) => a + (v === o.k), 0), c: centroid(t => t === o.s) }));
+  const pre = document.createElement('pre'); pre.id = 'dump2';
+  pre.textContent = JSON.stringify({ places: D.PLACES, fiefs: D.FIEFS, realms, minors, overseas: centroid(s => s.kind === 'overseas') });
+  document.body.appendChild(pre);
+}
+
 // ---------- 图层开关 ----------
 const LAYERS = [['dots', '赤潮据点'], ['marks', '教会 / 圆桌封地'], ['lines', '管道 / 航线 / 中枢线'], ['models', '首都模型'], ['mist', '以太薄雾']];
 const lay = document.getElementById('layers');

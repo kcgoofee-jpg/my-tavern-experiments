@@ -7,7 +7,7 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, 'data')
 args = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
-opt = {'--clouds': '0', '--res': '3200', '--samples': '128', '--out': os.path.join(HERE, '..', 'map', 'art', 'world_preview.png'), '--tilt': '0'}
+opt = {'--crop': '', '--clouds': '0', '--tex': '1.5', '--mesh': '2400', '--res': '3200', '--samples': '128', '--out': os.path.join(HERE, '..', 'map', 'art', 'world_preview.png'), '--tilt': '0'}
 for i in range(0, len(args) - 1, 2): opt[args[i]] = args[i + 1]
 RES, SAMPLES, OUT, TILT = int(opt['--res']), int(opt['--samples']), os.path.abspath(opt['--out']), float(opt['--tilt'])
 
@@ -120,9 +120,15 @@ for it in range(24):
 h = np.where(landE, fill_pits(h), 0); jit = rng.random(h.shape).astype(np.float32) * 4e-6; rcv, _ = d8(h + jit); A = accumulate(h + jit, rcv)
 river = np.clip((np.log(A) - 6.5) / 2.5, 0, 1) * landE
 print('erosion done; max A', A.max(), 'h max', h.max())
+# 旷野高地：奥伦境内、离天城 180 以外的最高点（地图坐标 1600×1000），写给查看器
+oren = np.isin(ownE, [n_ for n_, k in enumerate(kinds) if k.startswith('oren')])
+yyE, xxE = np.mgrid[0:EH, 0:EW]
+far = np.hypot(xxE * 2 - 720, yyE * 2 - 470) > 180
+cand = np.where(oren & far, h, -1); iy, ix = np.unravel_index(np.argmax(cand), cand.shape)
+json.dump({'highland': {'x': int(ix * 2), 'y': int(iy * 2)}}, open(os.path.join(HERE, '..', 'map', 'data', 'derived.json'), 'w'))
 
 # ---------------- 上采样到渲染网格 + 高频细节 ----------------
-H2, W2 = int(GH * 1.5), int(GW * 1.5)
+H2, W2 = int(GH * float(opt['--tex'])), int(GW * float(opt['--tex']))
 def up(a):
     y = np.linspace(0, a.shape[0] - 1, H2); x = np.linspace(0, a.shape[1] - 1, W2)
     y0 = np.floor(y).astype(int); x0 = np.floor(x).astype(int); y1 = np.minimum(y0 + 1, a.shape[0] - 1); x1 = np.minimum(x0 + 1, a.shape[1] - 1)
@@ -134,9 +140,64 @@ def noise2(shape, scale, octaves=5, ridged_=False):
     return (ridged(xx2 / scale, yy2 / scale, octaves) if ridged_ else fbm(xx2 / scale, yy2 / scale, octaves) * .5 + .5)
 landU = up(land.astype(np.float32)) > .5
 kidxU = up(np.where(land, owner, 0).astype(np.float32)).round().astype(int)
-hU = up(h); riverU = up(river); heightU = up(height); MU = up(Mmask)
-det = noise2((H2, W2), 18, 4, ridged_=True)
-hU = hU + (det - .5) * .018 * (.25 + MU) * np.clip(hU * 6, 0, 1)
+hU = up(h); heightU = up(height); MU = up(Mmask)
+# 河流：矢量化——沿汇流网络追踪河道折线，Chaikin 平滑 + 蜿蜒扰动，线宽随流量增大，再栅格化
+TSr = float(opt['--tex']) / 1.5
+A_MIN = 700
+rflat = rcv; Af = A.ravel(); isriv = (Af > A_MIN) & landE.ravel()
+upstream = np.zeros(Af.size, bool)
+src_idx = np.nonzero(isriv)[0]
+upstream[rflat[src_idx]] = True                                    # 有河流汇入的格子
+starts = [i for i in src_idx if not upstream[i]]
+visited = np.zeros(Af.size, bool); lines = []
+for st in starts:
+    path = [st]; cur = st
+    while True:
+        nxt = rflat[cur]
+        if nxt == cur or not landE.ravel()[nxt]: path.append(nxt); break
+        path.append(nxt)
+        if visited[nxt]: break
+        visited[nxt] = True; cur = nxt
+    if len(path) > 3: lines.append(path)
+sxH, syH = W2 / EW, H2 / EH
+def chaikin(p, n=3):
+    for _ in range(n):
+        q = np.empty((len(p) * 2 - 2, 2), np.float32); q[0::2] = p[:-1] * .75 + p[1:] * .25; q[1::2] = p[:-1] * .25 + p[1:] * .75
+        q[0] = p[0]; q[-1] = p[-1]; p = q
+    return p
+classes = [np.zeros((H2, W2), bool) for _ in range(4)]
+for path in lines:
+    ys, xs = np.divmod(np.array(path), EW)
+    pts = np.stack([(xs + .5) * sxH, (ys + .5) * syH], -1).astype(np.float32)
+    pts = chaikin(pts, 3)
+    # 蜿蜒：沿法线方向加噪声位移
+    d = np.gradient(pts, axis=0); nrm = np.stack([-d[:, 1], d[:, 0]], -1); nrm /= np.maximum(np.linalg.norm(nrm, axis=1, keepdims=True), 1e-6)
+    t = np.cumsum(np.r_[0, np.linalg.norm(np.diff(pts, axis=0), axis=1)])
+    wob = (fbm(t / (18 * TSr), np.full_like(t, len(lines) % 97 + .5), 3)) * 3.2 * TSr
+    pts = pts + nrm * wob[:, None]
+    # 稠密采样后按流量分档
+    seg = np.diff(pts, axis=0); L = np.linalg.norm(seg, axis=1)
+    k = np.maximum(1, np.ceil(L / .6).astype(int))
+    fl = Af[np.array(path)]; fl = np.interp(np.linspace(0, len(fl) - 1, len(pts)), np.arange(len(fl)), fl)
+    for a0, sg, kk, f in zip(pts[:-1], seg, k, fl[:-1]):
+        tt = np.linspace(0, 1, kk, endpoint=False)[:, None]; pp = a0 + sg * tt
+        c = min(3, int(np.log(f / A_MIN) / np.log(4)))
+        yi = np.clip(pp[:, 1].astype(int), 0, H2 - 1); xi = np.clip(pp[:, 0].astype(int), 0, W2 - 1)
+        classes[c][yi, xi] = True
+riverU = np.zeros((H2, W2), np.float32)
+for c, m in enumerate(classes):
+    r_ = int(round(c * .6 * TSr))
+    mm = m.copy()
+    for dy in range(-r_, r_ + 1):
+        for dx in range(-r_, r_ + 1):
+            if dy * dy + dx * dx <= r_ * r_ and (dy or dx): mm |= np.roll(np.roll(m, dy, 0), dx, 1)
+    riverU = np.maximum(riverU, mm.astype(np.float32) * (.42 + c * .18))
+riverU = box(riverU, 1)
+print('rivers', len(lines))
+TS = float(opt['--tex']) / 1.5   # 纹理像素尺度：半径、噪声尺度都按它放大
+det = noise2((H2, W2), 18 * TS, 4, ridged_=True)
+det2 = noise2((H2, W2), 70 * TS, 4)
+hU = hU + ((det - .5) * .016 * MU ** 1.5 + (det2 - .5) * .01) * np.clip(hU * 6, 0, 1)
 hU = np.where(landU, np.maximum(hU, .003), 0)
 mtU = MU
 GH, GW = H2, W2; land = landU; elev = hU; height = heightU; owner = np.where(landU, kidxU, -1)
@@ -161,47 +222,60 @@ for k, p in PAL.items():
     p0, p1, p2 = [np.array(c, np.float32) for c in p]
     c = np.where(t < .5, p0 + (p1 - p0) * (t * 2), p1 + (p2 - p1) * ((t - .5) * 2))
     col[m] = c[m]
-col = box(col, 9)                                                     # 势力交界处的生物群系自然过渡
-n1, n2 = noise2((GH, GW), 50, 4), noise2((GH, GW), 8, 3)
-n3 = noise2((GH, GW), 160, 3)
+col = box(col, max(1, int(9 * TS)))                                                     # 势力交界处的生物群系自然过渡
+n1, n2 = noise2((GH, GW), 50 * TS, 4), noise2((GH, GW), 8 * TS, 3)
+n3 = noise2((GH, GW), 160 * TS, 3)
 wet = np.array((.72, 1.05, .70), np.float32); dry = np.array((1.15, 1.0, .82), np.float32)
-col *= (wet + (dry - wet) * n3[..., None]) * (0.75 + 0.5 * n1[..., None]) * (0.88 + 0.24 * n2[..., None])
+n4 = noise2((GH, GW), 2.5 * TS, 2)
+col *= (wet + (dry - wet) * n3[..., None]) * (0.75 + 0.5 * n1[..., None]) * (0.88 + 0.24 * n2[..., None]) * (0.92 + 0.16 * n4[..., None])
 gy, gx = np.gradient(elev * 90)
 slope = np.clip(np.hypot(gx, gy), 0, 1)
 rock = np.array((.22, .20, .18), np.float32)
 col = col * (1 - slope[..., None] * .75) + rock * slope[..., None] * .75
 # 农田拼块：骑士领、奥伦行省、中小国的低缓地带
-cell = 6; gyc, gxc = np.mgrid[0:GH, 0:GW]
+cell = max(2, int(6 * TS)); gyc, gxc = np.mgrid[0:GH, 0:GW]
 tone = rng.random((GH // cell + 2, GW // cell + 2)).astype(np.float32)
-jx = (gxc + (noise2((GH, GW), 30, 2) * 10).astype(int)) // cell; jy = (gyc + (noise2((GH, GW), 30, 2) * 10).astype(int)) // cell
+jx = (gxc + (noise2((GH, GW), 30 * TS, 2) * 10).astype(int)) // cell; jy = (gyc + (noise2((GH, GW), 30 * TS, 2) * 10).astype(int)) // cell
 fields = tone[np.clip(jy, 0, tone.shape[0] - 1), np.clip(jx, 0, tone.shape[1] - 1)]
 farmk = np.isin(kind_arr, ['fed-knight', 'oren-prov', 'minor']) & land
 farm = box((farmk & (slope < .25) & (elev < .2)).astype(np.float32), 3) * (n3 > .35)
 fcol = np.stack([.20 + .16 * fields, .21 + .10 * fields, .10 + .06 * fields], -1)
 col = col * (1 - farm[..., None] * .35) + fcol * farm[..., None] * .35
 # 城市建成区（三座首都，坐标来自代码地图）
-for (cxp, cyp, r0) in [(720, 470, 20), (330, 470, 17), (1100, 440, 13)]:
+for (cxp, cyp, r0, rot) in [(720, 470, 34, .3), (330, 470, 28, -.2), (1100, 440, 20, .6)]:
     ux, uy = cxp / 1600 * GW, cyp / 1000 * GH; rr = r0 / 1600 * GW
-    d = np.hypot(gxc - ux, gyc - uy) / rr + (noise2((GH, GW), 12, 3) - .5) * .9
-    urb = np.clip(1.4 - d, 0, 1) ** .7
-    speck = rng.random((GH, GW)).astype(np.float32)
-    ucol = np.array((.22, .21, .20), np.float32) * (0.85 + .3 * speck[..., None]) * (0.85 + .3 * n2[..., None])
-    urb = urb * np.clip(speck * 1.6 - .2, 0, 1) ** .5
-    col = col * (1 - urb[..., None] * .8) + ucol * urb[..., None] * .8
+    y0c, y1c = int(max(0, uy - rr * 1.8)), int(min(GH, uy + rr * 1.8)); x0c, x1c = int(max(0, ux - rr * 1.8)), int(min(GW, ux + rr * 1.8))
+    hh_, ww_ = y1c - y0c, x1c - x0c
+    yy_, xx_ = np.mgrid[y0c:y1c, x0c:x1c].astype(np.float32)
+    dx_, dy_ = xx_ - ux, yy_ - uy; rad = np.hypot(dx_, dy_); th = np.arctan2(dy_, dx_)
+    nz = noise2((hh_, ww_), 14 * TS, 4)
+    urb = np.clip((1.25 - rad / rr - (nz - .5) * 1.1) * 2.2, 0, 1)
+    grain = box(rng.random((hh_, ww_)).astype(np.float32), 1)
+    wxs = fbm(xx_ / (60 * TS), yy_ / (60 * TS), 2) * 6 * TS; wys = fbm(xx_ / (60 * TS) + 3, yy_ / (60 * TS), 2) * 6 * TS
+    rx_ = (dx_ + wxs) * np.cos(rot) + (dy_ + wys) * np.sin(rot); ry_ = -(dx_ + wxs) * np.sin(rot) + (dy_ + wys) * np.cos(rot)
+    bw = 5 * TS
+    dist = noise2((hh_, ww_), 5 * TS, 3)
+    street = (dist < .28).astype(np.float32) * .6
+    avenue = np.clip(1 - np.abs(np.sin(th * 6 + (nz - .5) * .6)) * rad / 1.6, 0, 1) * (rad > rr * .1)
+    c = np.stack([.25 + .10 * grain, .24 + .09 * grain, .225 + .08 * grain], -1) * (0.9 + .2 * nz[..., None])
+    c = c * (1 - street[..., None] * .22)
+    c = c + avenue[..., None] * .07
+    a_ = urb[..., None] * .92
+    col[y0c:y1c, x0c:x1c] = col[y0c:y1c, x0c:x1c] * (1 - a_) + c * a_
 # 斑驳积雪：沿岩脊，受坡度与噪声控制
 snow = (np.clip(((elev + (n2 - .5) * .12 + (det - .5) * .10) - .47) * 25, 0, 1) * np.clip(mt * 2 - .5, 0, 1) * np.clip(1.25 - slope * .8, 0, 1))
 col = col * (1 - snow[..., None]) + np.array((.80, .82, .86), np.float32) * snow[..., None]
 riverU2 = np.clip(riverU * 1.4, 0, 1)
 col = col * (1 - riverU2[..., None] * .85) + np.array((.03, .07, .09), np.float32) * riverU2[..., None] * .85
-valley = box(riverU, 4)                                                # 河谷更湿润、更绿
+valley = box(riverU, max(1, int(4 * TS)))                                                # 河谷更湿润、更绿
 col = col * (1 - valley[..., None] * .25) + np.array((.10, .18, .07), np.float32) * valley[..., None] * .25
-coast = box(land.astype(np.float32), 1)
+coast = box(land.astype(np.float32), max(1, int(1 * TS)))
 beach = np.clip((1 - coast) * 2, 0, 1) * land
 col = col * (1 - beach[..., None] * .6) + np.array((.48, .44, .33), np.float32) * beach[..., None] * .6
 col = col * .95 + np.array((.025, .03, .045), np.float32)   # 大气散射的轻微蓝灰罩
 # 水色：按离岸距离（多次模糊陆地掩膜近似）
 lf = land.astype(np.float32)
-near = box(lf, 10) * .3 + box(lf, 30) * .3 + box(lf, 80) * .4
+near = box(lf, max(1, int(10 * TS))) * .3 + box(lf, max(1, int(30 * TS))) * .3 + box(lf, max(1, int(80 * TS))) * .4
 depth = np.clip(1 - near * 1.7 + (n1 - .5) * .12, 0, 1) ** .5
 shallow, deep = np.array((.035, .10, .12), np.float32), np.array((.006, .02, .05), np.float32)
 wcol = shallow + (deep - shallow) * depth[..., None]
@@ -222,13 +296,14 @@ sc = bpy.context.scene
 MW, MH = 16.0, 10.0
 S_LAND = 1.0                                                             # 垂直夸张
 
-coastramp = np.clip(box(land.astype(np.float32), 18) * 1.8 - .8, 0, 1) ** 1.5
+coastramp = np.clip(box(land.astype(np.float32), int(18 * TS)) * 1.8 - .8, 0, 1) ** 1.5
 disp = np.where(land, 0.001 + elev * coastramp, -0.02 - depth * .2).astype(np.float32)
 img_h = to_image('height', disp, float_buf=True); img_h.colorspace_settings.name = 'Non-Color'
 img_c = to_image('albedo', np.clip(col, 0, 1)); img_c.colorspace_settings.name = 'sRGB'
 img_w = to_image('water', wcol); img_w.colorspace_settings.name = 'sRGB'
 
-bpy.ops.mesh.primitive_grid_add(x_subdivisions=GW, y_subdivisions=GH, size=1, calc_uvs=True)
+MX = min(GW, int(opt['--mesh'])); MY = int(MX * GH / GW)
+bpy.ops.mesh.primitive_grid_add(x_subdivisions=MX, y_subdivisions=MY, size=1, calc_uvs=True)
 terrain = bpy.context.active_object; terrain.name = 'terrain'
 terrain.scale = (MW, MH, 1); bpy.ops.object.transform_apply(scale=True)
 # 直接按坐标采样高度写入顶点（比 Displace 修改器可靠）
@@ -302,7 +377,7 @@ if opt['--clouds'] == '1':   # 默认不渲云：迷雾与云改由查看器图�
     cloud_layer('cirrus', 1.6, 1.0, .58, .90, stretch=3.0, dens=.18)
 # 虚灵古派：以太薄雾（谷地低雾，只在其领土内）
 xlm = np.zeros((GH, GW), np.float32); xlm[(kind_arr == 'xl') & land] = 1
-xlm = box(xlm, 20) * np.clip(1 - elev * 3.5, 0, 1) ** 2
+xlm = box(xlm, int(20 * TS)) * np.clip(1 - elev * 3.5, 0, 1) ** 2
 img_fog = to_image('xlfog', xlm); img_fog.colorspace_settings.name = 'Non-Color'
 if opt['--clouds'] == '1': cloud_layer('xl_mist', .12, 6.0, .40, .85, dens=.42, mask_img=img_fog)
 
@@ -328,6 +403,11 @@ try: sc.view_settings.view_transform = 'Standard'; sc.view_settings.look = 'None
 except Exception: sc.view_settings.view_transform = 'Filmic'
 sc.render.image_settings.file_format = 'PNG'
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
+if opt['--crop']:   # 局部渲染：x0,y0,x1,y1（0~1，左上为原点），用于在最终精度下检查细节
+    x0c, y0c, x1c, y1c = [float(v) for v in opt['--crop'].split(',')]
+    sc.render.use_border = True; sc.render.use_crop_to_border = True
+    sc.render.border_min_x, sc.render.border_max_x = x0c, x1c
+    sc.render.border_min_y, sc.render.border_max_y = 1 - y1c, 1 - y0c
 sc.render.filepath = OUT
 bpy.ops.render.render(write_still=True)
 print('WROTE', OUT, sc.render.resolution_x, sc.render.resolution_y)
