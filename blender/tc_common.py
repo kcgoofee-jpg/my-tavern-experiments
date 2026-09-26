@@ -334,13 +334,30 @@ def render(sc, OUT, label=''):
     tick('render start'); bpy.ops.render.render(write_still=True); tick('render done')
     print('WROTE', OUT, sc.render.resolution_x, sc.render.resolution_y, label)
 def glare(sc, threshold=1.0, size=7, mix=-.6):
-    """合成器光晕（Fog Glow）：发光体周围一圈柔光，夜景的真实感主要靠它。mix<0 偏向原图。"""
-    sc.use_nodes = True; nt = sc.node_tree
-    for n in list(nt.nodes): nt.nodes.remove(n)
-    rl = nt.nodes.new('CompositorNodeRLayers'); gl = nt.nodes.new('CompositorNodeGlare'); out = nt.nodes.new('CompositorNodeComposite')
-    gl.glare_type = 'FOG_GLOW'; gl.quality = 'HIGH'; gl.threshold = threshold; gl.size = size; gl.mix = mix
-    nt.links.new(rl.outputs['Image'], gl.inputs['Image']); nt.links.new(gl.outputs['Image'], out.inputs['Image'])
-    sc.render.use_compositing = True
+    """合成器光晕（Fog Glow）：发光体周围一圈柔光，夜景的真实感主要靠它。
+    size 沿用 Blender 4 的含义（光晕半径约 2^size 像素，按 2000px 宽折算）；mix 为 4 的混合（-1 只要原图，0 各半）。
+    Blender ≥ 5：合成器是节点组（scene.compositing_node_group），输出用组输出节点，Glare 的参数变成输入口。
+    任何一步失败都只跳过光晕，不中断渲染。"""
+    try:
+        if hasattr(sc, 'compositing_node_group'):              # Blender 5+
+            ng = bpy.data.node_groups.new('Compositor', 'CompositorNodeTree')
+            ng.interface.new_socket('Image', in_out='OUTPUT', socket_type='NodeSocketColor')
+            rl = ng.nodes.new('CompositorNodeRLayers'); gl = ng.nodes.new('CompositorNodeGlare'); out = ng.nodes.new('NodeGroupOutput')
+            gl.inputs['Type'].default_value = 'Fog Glow'; gl.inputs['Quality'].default_value = 'High'
+            gl.inputs['Threshold'].default_value = threshold
+            gl.inputs['Size'].default_value = min(1.0, 2 ** size / 2000)   # 5 里是相对图宽的比例，与分辨率无关
+            gl.inputs['Strength'].default_value = (mix + 1) / 2 * 2          # 4 的 mix → 5 的叠加强度（按样张目测对齐）
+            ng.links.new(rl.outputs['Image'], gl.inputs['Image']); ng.links.new(gl.outputs['Image'], out.inputs[0])
+            sc.compositing_node_group = ng
+        else:                                                  # Blender 3.x / 4.x
+            sc.use_nodes = True; nt = sc.node_tree
+            for n in list(nt.nodes): nt.nodes.remove(n)
+            rl = nt.nodes.new('CompositorNodeRLayers'); gl = nt.nodes.new('CompositorNodeGlare'); out = nt.nodes.new('CompositorNodeComposite')
+            gl.glare_type = 'FOG_GLOW'; gl.quality = 'HIGH'; gl.threshold = threshold; gl.size = size; gl.mix = mix
+            nt.links.new(rl.outputs['Image'], gl.inputs['Image']); nt.links.new(gl.outputs['Image'], out.inputs['Image'])
+        sc.render.use_compositing = True
+    except Exception as e:
+        print('glare skipped (compositor API changed?):', e)
 def point_lights(name, pts, power, radius=.02):
     """一批点光源：pts = [(x, y, z, (r, g, b))]。共用同一个灯光数据块会让颜色一样，所以按颜色分组。"""
     datas = {}
