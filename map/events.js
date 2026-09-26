@@ -12,6 +12,7 @@ const TCEvents = (() => {
     政策: ['政', '#6f9be0'], 公共直播: ['播', '#e0182d'], 民生: ['民', '#e8d08a'], 军事调动: ['军', '#a3b18a'], 急救: ['救', '#37c5b0'], 其他: ['!', '#cfd8e0'],
   };
   const look = c => LOOK[c] || LOOK.其他;
+  const lk = e => e.ch && e.color ? [e.ch, e.color] : look(e.cat);   // events.mjs 给的图标字与大类颜色优先（8 个大类 = 8 种颜色）
   const MAP_OF = { 上层: 'tc_upper', 中层: 'tc_mid', 下层: 'tc_low', 天城外: 'world' };
   // 城区关键词 → 平面坐标（x ∈ [-15, 15]、y ∈ [-9.375, 9.375]，与 Blender 同一平面；位置为推断）
   const ZONES = {
@@ -77,7 +78,7 @@ const TCEvents = (() => {
     const seen = {};
     for (const e of here) {
       const p = pos(e), k = `${p.nx.toFixed(3)},${p.ny.toFixed(3)}`, n = seen[k] = (seen[k] || 0) + 1;   // 同一地点多条：绕一小圈错开
-      const a = n * 2.4, r = n > 1 ? .006 * Math.sqrt(n) : 0, [ch, color] = look(e.cat);
+      const a = n * 2.4, r = n > 1 ? .006 * Math.sqrt(n) : 0, [ch, color] = lk(e);
       const el = document.createElement('div');
       el.className = `ev ${e.closed ? 'ev-cleared' : 'ev-active'} sev${Math.max(1, e.lvl)} tier-${e.tier}${p.approx ? ' approx' : ''}${e.isNew && live(e) ? ' ev-new' : ''}`;
       el.style.setProperty('--c', color); el.dataset.ev = e.id;
@@ -93,12 +94,13 @@ const TCEvents = (() => {
     document.querySelectorAll('.ev.hot').forEach(x => x.classList.remove('hot')); el?.classList.add('hot');
     const p = pos(e), st = e.closed ? '已解除' : e.status || '发生中';
     showCard(null, `${e.cat} · ${e.text || ''}`, 'inf', [
+      e.grp && `分类：${e.grp} · ${e.cat}${e.rare >= 3 ? (e.rare >= 4 ? '（传说级）' : '（罕见）') : ''}`,
       `地点：${e.layer}${e.place ? '·' + e.place : ''}${p.approx ? '（位置不详，按所在层大致标出）' : ''}`,
       `等级：${'▮'.repeat(Math.max(1, e.lvl))}${'▯'.repeat(3 - Math.max(1, e.lvl))}　状态：${st}`,
       e.time && `时间：${e.time}`, e.code && `编号：${e.code}`,
       e.feed ? `来源：${e.src || '外部数据源'}` : `来源：${e.src || '未署名'} · 聊天第 ${e.first} 楼${e.count > 1 ? `起，更新 ${e.count - 1} 次` : ''}`,
     ].filter(Boolean).join('\n'));
-    const t = document.querySelector('#card .tag'); t.textContent = '天城事态'; t.style.background = look(e.cat)[1]; t.style.color = '#111';
+    const t = document.querySelector('#card .tag'); t.textContent = '天城事态'; t.style.background = lk(e)[1]; t.style.color = '#111';
   }
   function flyTo(id) {
     const e = all().find(x => x.id === id), mid = e && mapOf(e);
@@ -122,7 +124,7 @@ const TCEvents = (() => {
   function land(e, p) {
     card(e, document.querySelector(`.ev[data-ev="${CSS.escape(e.id)}"]`));
     if (reduce) return;
-    const el = document.createElement('div'); el.className = 'ev-radar'; el.style.setProperty('--c', look(e.cat)[1]);
+    const el = document.createElement('div'); el.className = 'ev-radar'; el.style.setProperty('--c', lk(e)[1]);
     el.innerHTML = '<span></span><span></span><span></span><i></i>';
     viewer.addOverlay({ element: el, location: new OpenSeadragon.Point(p.nx, p.ny * aspect), placement: OpenSeadragon.Placement.CENTER });
     setTimeout(() => viewer.removeOverlay(el), 2200);
@@ -137,7 +139,7 @@ const TCEvents = (() => {
     const n = list.filter(live).length, fresh = list.filter(e => e.isNew).length;
     bar.querySelector('button').innerHTML = `<i class="dot"></i><span>${n ? `${n} 起进行中` : '暂无进行中'} · 共 ${list.length} 起事态</span>${fresh ? `<span class="new">${fresh} 条新</span>` : ''}<span class="tog">${open ? '收起 ▾' : '展开 ▴'}</span>`;
     bar.dataset.open = open ? '1' : '0';
-    bar.querySelector('ol').innerHTML = list.map(e => `<li data-id="${esc(e.id)}" class="tier-${e.tier}${e.isNew ? ' isnew' : ''}" style="--c:${look(e.cat)[1]}"><i></i><b>${esc(e.cat)}${e.closed ? ' · 已解除' : ''} <em>${esc(e.layer)}${e.place ? '·' + esc(e.place) : ''}</em></b><em>${e.feed ? '数据源' : `第 ${e.last} 楼`}</em><small>${esc(e.text || '')}${e.src ? ' —— ' + esc(e.src) : ''}</small></li>`).join('');
+    bar.querySelector('ol').innerHTML = list.map(e => `<li data-id="${esc(e.id)}" class="tier-${e.tier}${e.isNew ? ' isnew' : ''}" style="--c:${lk(e)[1]}"><i></i><b>${esc(e.cat)}${e.closed ? ' · 已解除' : ''} <em>${esc(e.layer)}${e.place ? '·' + esc(e.place) : ''}</em></b><em>${e.feed ? '数据源' : `第 ${e.last} 楼`}</em><small>${esc(e.text || '')}${e.src ? ' —— ' + esc(e.src) : ''}</small></li>`).join('');
   }
   function updateToggle() {
     let tg = document.getElementById('tgEvents');
