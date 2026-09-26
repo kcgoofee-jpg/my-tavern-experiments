@@ -70,12 +70,43 @@ RCLS = [((.045, .045, .05), .92, 0.0), ((.095, .095, .1), .72, .05), ((.12, .116
 rcls = _vrng.choice(4, size=n, p=[.28, .38, .16, .18])
 rjit = _vrng.uniform(.8, 1.15, n).astype(np.float32); rtint = _vrng.uniform(-.012, .012, (n, 3)).astype(np.float32)
 bw_core = np.array([tc_city.core_w(city, city.b[i]['cx'], city.b[i]['cy']) if city.b[i]['dk'] in ('core', 'outer') else .55 for i in idx], np.float32)
+# A6 交界材质过渡：核心 / 商业交界两侧约 120 m 内，楼顶材料的混合比例也渐变（原来商业区恒为 .55、核心恒为 1，交界一刀切）
+def _dmixw(x, y, band=2.4):                                             # 宽过渡带的城区权重（交界处各半，往里约 120 m 渐变到纯色）
+    w_ = [(D['kind'], tc_city._ss(tc_city.sdist(x, y, D['P']) / band + .5)) for D in city.districts]; s_ = sum(v for _, v in w_) or 1
+    return {k: v / s_ for k, v in w_}
+MIXW = [_dmixw(city.b[i]['cx'], city.b[i]['cy']) for i in idx]
+for j, i in enumerate(idx):
+    dk_ = city.b[i]['dk']
+    if dk_ == 'commercial': bw_core[j] = .55 + .45 * MIXW[j].get('core', 0)
+    elif dk_ == 'core': bw_core[j] = bw_core[j] * (1 - .45 * MIXW[j].get('commercial', 0))
 for j in range(n):
     c_ = np.array(RCLS[rcls[j]][0], np.float32) * rjit[j] + rtint[j]
     cols[j] = cols[j] * (1 - .85 * bw_core[j]) + np.clip(c_, .01, 1) * .85 * bw_core[j]
+# A6 核心区亮度：A5 缩小看核心区比外围暗一档、楼的高低读不出。按楼高排名给屋面亮度（矮楼 ×.84 → 最高 ×1.18，平均约 1），
+# 整体再 ×1.08；由 real_mesh 的 CORE_SHADE 让最高一级屋面偏亮偏暖、低的退台更暗（最高一级合计提亮约 20%，屋面平均约 12%）。
+core_j = np.array([j for j, i in enumerate(idx) if city.b[i]['dk'] == 'core'], np.int64)
+if len(core_j):
+    rk = np.argsort(np.argsort(tops[core_j])) / max(1, len(core_j) - 1)
+    cols[core_j] *= (1.08 * (.84 + .34 * rk ** 1.2))[:, None].astype(np.float32)
+CORE_SHADE = dict(lo=.5, span=.62, gamma=1.3, top=(1.06, 1.0, .9))
+# A6 交界亮度过渡：各城区（远离交界处）屋面的平均亮度——核心区按真实楼屋面的实际色调折算（REAL_TONES × CORE_SHADE 顶级）——
+# 交界两侧约 120 m 内按宽过渡带的城区权重，把每栋楼的亮度往「混合后的目标亮度」拉，拼缝两边不再差一档。纯确定性。
+LUM = np.array([.2126, .7152, .0722], np.float32)
+EFF = {'core': float(np.dot(tc_city.REAL_TONE_P, [np.dot(t, LUM) for t in tc_city.REAL_TONES])) * 1.12, 'commercial': 1.0, 'outer': 1.0}
+lum = (cols @ LUM) * np.array([EFF.get(city.b[i]['dk'], 1.0) for i in idx], np.float32)
+DL = {}
+for k in EFF:
+    sel_ = [j for j, i in enumerate(idx) if city.b[i]['dk'] == k and MIXW[j].get(k, 0) > .99]
+    if sel_: DL[k] = float(np.mean(lum[sel_]))
+for j, i in enumerate(idx):
+    own = city.b[i]['dk']
+    if own not in DL or MIXW[j].get(own, 0) > .99: continue
+    tgt = sum(v * DL.get(k, DL[own]) for k, v in MIXW[j].items())
+    cols[j] *= float(np.clip(tgt / DL[own], .75, 1.35))
+tick('district roof luminance ' + ', '.join(f'{k} {v:.3f}' for k, v in DL.items()))
 for k_, (_, rough_, metal_) in enumerate(RCLS):
     sel = np.where(rcls == k_)[0]
-    if len(sel): city.buildings_mesh(f'city{k_}', idx[sel], ZG, tops[sel], cols[sel], td.city_mat(f'citymat{k_}', rough_, .018, 1.0 + .3 * (k_ == 0), metal_))
+    if len(sel): city.buildings_mesh(f'city{k_}', idx[sel], ZG, tops[sel], cols[sel], td.city_mat(f'citymat{k_}', rough_, .018, 1.0 + .3 * (k_ == 0), metal_), shade=CORE_SHADE)
 kit = tc_city.roof_kit(city, idx, tops, cols, R, 'night', cap=.18)
 # 天窗（roof_kit 的玻璃块 + 中间一盏小灯）原来都在楼顶正中，整片街区看是一格一个亮点的点阵：挪到偏心的位置、大小不一，灯只留一部分、亮度不一
 _srng = np.random.default_rng(7105)
@@ -151,21 +182,24 @@ def corr_near(x, y): co_, _, d = kd_c.find((x, y, 0)); return co_, d
 NEON_DF = {'core': .12, 'commercial': 1.0, 'outer': .012}
 TRAFFIC_DF = {'core': .9, 'commercial': 1.0, 'outer': .35}
 # 交界不一刀切：按到各城区多边形的有向距离做 smoothstep 权重（交界处各半，往里 75 m 渐变到纯色），按位置缓存
+# A6：九龙东侧（约 x = 10.5）是旺角街网里一条笔直的南北向大路，路东是公园、楼稀，霓虹在这条直线上戛然而止。
+# 霓虹密度按一条起伏的线（确定性正弦）在路西约 100 m 内渐弱，让熄灭的边缘不贴着这条直路。
 from functools import lru_cache
 def _ss(t): t = min(1, max(0, t)); return t * t * (3 - 2 * t)
 @lru_cache(maxsize=None)
 def _dmix(xk, yk):
-    x, y = xk * .02, yk * .02; w_ = [(D['kind'], _ss(tc_city.sdist(x, y, D['P']) / .75 + .5)) for D in city.districts]
+    x, y = xk * .02, yk * .02; w_ = [(D['kind'], _ss(tc_city.sdist(x, y, D['P']) / 1.5 + .5)) for D in city.districts]   # A6：过渡带放宽到交界两侧约 75 m
     s_ = sum(v for _, v in w_) or 1; return tuple((k, v / s_) for k, v in w_)
 def dmix(x, y): return _dmix(round(x / .02), round(y / .02))
 def dval(x, y, tab): return sum(v * tab[k] for k, v in dmix(x, y))
 def corr_w(x, y): return math.exp(-corr_near(x, y)[1] / .2)
-def glow_w(x, y): return corr_w(x, y) * (.55 + .45 * tc.district(x, y)) * dval(x, y, NEON_DF)
+def kow_east(x, y): return .3 + .7 * _ss((10.2 + .45 * math.sin(y * 1.9 + .4) + .2 * math.sin(y * 4.3 + 2.1) - x) / 1.1 + .5)
+def glow_w(x, y): return corr_w(x, y) * (.55 + .45 * tc.district(x, y)) * dval(x, y, NEON_DF) * kow_east(x, y)
 
 # ---------------- 街道：路灯（商业街亮、背街暗）、标线、车流（车头白、车尾红）----------------
-_lp = city.along(.12, CAR, side_offset=.008, jitter=.25, rng=R)
-_lk = [R.random() >= .15 for _ in _lp]                               # 间距不齐、偶尔缺一盏（与原来同样的随机调用，不动 R）
-_lp = [p for p, k in zip(_lp, _lk) if k]
+# A6：原来沿每条路两侧每 12 m 一盏，整张图是一排排等距的点阵。改为 tc_city.street_lamps：按路级别定间距（干道两侧错开 27–30 m，
+# 支路单侧 34–50 m，隔一段换边），间距抖动，路口转角补灯。独立随机（7110）。
+_lp = city.street_lamps(np.random.default_rng(7110), CAR, side_offset=.008)
 lamps = [(x, y, .01, .01, ZG + .006, ZG + .008) for x, y, *_ in _lp]
 lw = np.array([max(glow_w(l[0], l[1]), .5 * dval(l[0], l[1], {'core': 1, 'commercial': 0, 'outer': 0})) for l in lamps])   # 核心区的街灯也亮
 # 路灯（A3）：不再是两排等距的白点——按道路等级分亮度与色温（干道 LED 偏白、次干道暖白、居住街钠灯暖黄且暗、小巷稀少），
@@ -176,13 +210,14 @@ LAMP_TIER = {'trunk': ('#fff2e2', 1.0, .92), 'primary': ('#fff2e2', 1.0, .92), '
 SL, SLC = [], []
 for (x, y, ang, c, _w), l, wv in zip(_lp, lamps, lw):
     col_, k_, keep_ = LAMP_TIER.get(c, ('#ffcf96', .4, .6))
-    if _lrng2.random() > keep_: continue
+    if _lrng2.random() > .55 + .45 * keep_: continue                  # A6：间距已按路级别拉开，这里只再缺少量
     s_ = _lrng2.normal(0, .025); x, y = x + s_ * math.cos(ang), y + s_ * math.sin(ang)
-    kk = k_ * (1.0 if wv > .35 else .45) * _lrng2.uniform(.55, 1.1) * (.2 if _lrng2.random() < .04 else 1)   # 商业街 / 核心区亮，背街暗；个别灯快坏了
+    kk = 1.25 * k_ * (1.0 if wv > .35 else .45) * _lrng2.uniform(.55, 1.1) * (.2 if _lrng2.random() < .04 else 1)   # 商业街 / 核心区亮，背街暗；个别灯快坏了
     SL.append((x, y, .01, .01, ZG + .006, ZG + .008)); SLC.append(np.array(srgb(col_)) * kk)
 tc.box_mesh('streetlights', SL, np.array(SLC, np.float32).reshape(-1, 3), emit_mat('streetglow', None, 3.5 * GLOW))
 mb, mr, mc = city.road_marks(ZG + .0045, color=(.3, .3, .28)); tc.box_mesh('road_marks', mb, mc, td.city_mat('markmat', .6, ao=0), rot=mr)
-cars, crot, cdir, ccol = city.traffic(R, ZG + .004, 3.2, weight=lambda x, y: .08 + .92 * corr_w(x, y) * dval(x, y, TRAFFIC_DF), platoon=True)   # 主干道车多，外围稀疏；车成队
+# A6：车流改 tc_city.traffic2——按路级别、城区、每条路的繁忙度（约四分之一几乎没车）定密度，成队 + 大间隙，交叉口前排队。独立随机（7111）。
+cars, crot, cdir, ccol = city.traffic2(np.random.default_rng(7111), ZG + .004, 3.2, weight=lambda x, y: .1 + .9 * corr_w(x, y) * dval(x, y, TRAFFIC_DF))
 tc.box_mesh('cars', cars, ccol * .35, tc.vcol_mat('carmat', .25, .6), rot=crot)
 hb, tb, lr = td.car_lights(cars, cdir)
 tc.box_mesh('headlights', hb, np.tile(srgb('#fff4e0'), (len(hb), 1)), emit_mat('head', None, 3.5 * GLOW), rot=lr)
@@ -191,6 +226,15 @@ tick(f'street: lamps {len(lamps)}, cars {len(cars)}')
 
 # ---------------- 霓虹：朝商业街那一面的挑出招牌、临街楼顶灯带、塔楼全息广告 ----------------
 strips, srot, scol, signs, sgrot, sigc, holo, hrot, holc, spill = [], [], [], [], [], [], [], [], [], []
+# A6：招牌长短、亮度、色相原来是均匀分布，整片九龙读成同一种亮条。改为对数正态：多数是小灯箱，少量大招牌（更大、单位面积略暗）；
+# 每块的亮度、色相（±约 10°）、饱和度各自抖动；招牌数随离商业街的远近变化，同一栋楼的招牌聚在临街立面的一段（铺面）上。
+# 原来的 R 调用保留（高度、颜色仍取自 R），尺寸、亮度、色相另用独立随机（7112）。
+import colorsys
+_nrng = np.random.default_rng(7112)
+def njit(c, k=1.0):
+    h_, s_, v_ = colorsys.rgb_to_hsv(*c); h_ = (h_ + _nrng.normal(0, .028)) % 1; s_ *= _nrng.uniform(.72, 1.0)
+    return np.array(colorsys.hsv_to_rgb(h_, s_, v_), np.float32) * k
+def nbright(): return float(np.clip(_nrng.lognormal(0, .5), .25, 2.6))
 for i, top in zip(idx, tops):
     b = city.b[i]; x, y, w, d, rot = b['obb']; wgt = glow_w(b['cx'], b['cy']); nd = dval(b['cx'], b['cy'], NEON_DF)   # nd：城区的霓虹底数（外围几乎为零）
     rtop = tc_city.roof_top(b, top)
@@ -202,18 +246,25 @@ for i, top in zip(idx, tops):
     pal = [NEON[R.choice(4, p=NEON_P)] for _ in range(2)]                                   # 一栋楼的招牌一两种颜色
     ta = math.atan2(tan_[1], tan_[0])
     if R.random() < .03 * nd + .75 * wgt:                              # 挑出招牌：从临街外墙水平伸出，俯视能在楼缝里看到
-        for _ in range(R.integers(2, 7)):
-            L = R.uniform(.012, .03); sz = R.uniform(.02, .06); z = R.uniform(max(ZG + .05, top - .9), max(ZG + .06, top - .03))
-            p = c0 + nrm * (half + L / 2) + tan_ * R.uniform(-.4, .4) * flen
-            signs.append((p[0], p[1], sz, L, z, z + .003)); sgrot.append(ta); sigc.append(pal[R.integers(2)])
-        if R.random() < .2: spill.append((signs[-1][0], signs[-1][1], signs[-1][5] + .05, sigc[-1]))
+        nsg = max(1, int(round(int(R.integers(2, 7)) * (.35 + 1.3 * wgt) * _nrng.lognormal(0, .35))))
+        cu = _nrng.uniform(-.3, .3)                                     # 这栋楼的铺面在临街立面的哪一段
+        for _ in range(nsg):
+            big = _nrng.random() < .04 + .07 * wgt
+            sz = _nrng.uniform(.07, .15) if big else float(np.clip(_nrng.lognormal(math.log(.022), .55), .007, .07))
+            L = _nrng.uniform(.03, .05) if big else float(np.clip(sz * _nrng.lognormal(-.3, .3), .008, .035))
+            z = R.uniform(max(ZG + .05, top - .9), max(ZG + .06, top - .03))
+            p = c0 + nrm * (half + L / 2) + tan_ * float(np.clip(cu + _nrng.normal(0, .14), -.45, .45)) * flen
+            signs.append((p[0], p[1], sz, L, z, z + .003)); sgrot.append(ta); sigc.append(njit(pal[R.integers(2)], nbright() * (.6 if big else 1.0)))
+        if R.random() < .2: spill.append((signs[-1][0], signs[-1][1], signs[-1][5] + .05, tuple(float(v) for v in sigc[-1] / max(float(sigc[-1].max()), 1e-6))))
     if R.random() < .02 * nd + .3 * wgt and flen > .04:                # 临街一侧的楼顶灯带
         if 'real' in b:                                                 # 真实楼：贴着最高一级屋面临街那条边（tobb），高度是该级屋面
             tx, ty, tw, td_, tr = b['tobb']; tu = np.array([math.cos(tr), math.sin(tr)]); tv = np.array([-tu[1], tu[0]])
             tn, th_, tt, tl = max([(tu, tw / 2, tv, td_), (-tu, tw / 2, tv, td_), (tv, td_ / 2, tu, tw), (-tv, td_ / 2, tu, tw)], key=lambda f: float(f[0] @ to))
-            p = np.array([tx, ty]) + tn * (th_ - .004); strips.append((p[0], p[1], tl * .9, .004, rtop + .006, rtop + .009)); srot.append(math.atan2(tt[1], tt[0])); scol.append(pal[0])
+            fl = float(np.clip(_nrng.lognormal(math.log(.5), .5), .12, .92)); off_ = _nrng.uniform(-.5, .5) * (1 - fl) * tl   # A6：灯带长短不一、不居中
+            p = np.array([tx, ty]) + tn * (th_ - .004) + tt * off_; strips.append((p[0], p[1], tl * fl, .004, rtop + .006, rtop + .009)); srot.append(math.atan2(tt[1], tt[0])); scol.append(njit(pal[0], nbright()))
         else:
-            p = c0 + nrm * (half - .004); strips.append((p[0], p[1], flen * .9, .004, top + .006, top + .009)); srot.append(ta); scol.append(pal[0])
+            fl = float(np.clip(_nrng.lognormal(math.log(.5), .5), .12, .92)); off_ = _nrng.uniform(-.5, .5) * (1 - fl) * flen
+            p = c0 + nrm * (half - .004) + tan_ * off_; strips.append((p[0], p[1], flen * fl, .004, top + .006, top + .009)); srot.append(ta); scol.append(njit(pal[0], nbright()))
     if b['dk'] == 'commercial' and top > -1.9 and w * d > .006 and R.random() < .02 + .35 * wgt:   # 全息广告：只在商业区，楼顶竖立的窄屏（扫描线纹理）
         holo.append((x, y, w * .5, .004, top + .01, top + .07)); hrot.append(rot); holc.append((PINK, CYAN)[R.integers(2)])
 for x, y, *_ in city.along(.35, CORR):                                 # 商业街的彩色溢光：沿街一串点光，染亮路面与低层楼顶
@@ -229,44 +280,31 @@ if len(spill) > 1600:                                                  # 点光�
     keep_s = R.choice(len(spill), 1600, replace=False); boost = len(spill) / 1600; spill = [spill[i] for i in keep_s]
 else: boost = 1
 tc.point_lights('neon_spill', spill, .15 * GLOW * min(boost, 1.6))
-# 核心区：楼内透出的暖光——高楼顶冠的金色灯带（装饰艺术风格的楼冠）、退台上的暖光、少量暖色溢光
-# 不是一圈统一粗细的描边：每条边是否亮、亮几段、段长、粗细、亮度各不相同；出现的概率和亮度按核心区权重（tc_city.core_w）
-# 从核心区往外围逐渐减弱（交界两侧各 100 m），不按城区二选一。单独的随机，不动 R。
+# 核心区：楼内透出的暖光——高楼顶冠的灯带、退台上的暖光、少量暖色溢光。单独的随机，不动 R。
+# A6：楼冠灯带只留给核心区按楼高排名前约 5% 的楼（地标自己的灯另算）；其余一律不画——A5 里只亮部分边的细金线读成 L 形 / 三角形的选中框。
+# 留下的这几十栋不画线（草稿 1：整圈连续的细线仍读成一个个选中框），改为楼冠上方一盏暖色投光，把最高一级屋面和女儿墙照出一片暖光——
+# 读作「被照亮的楼冠」而不是描边。
 _crng = np.random.default_rng(7103)
-crown, crot_, ccol_, warm = [], [], [], []
-CROWN = np.array(srgb('#ffd9a0'))
+crown, warm = [], []
+_ct = [t for i, t in zip(idx, tops) if city.b[i]['dk'] == 'core' and 'real' in city.b[i]]
+CROWN_Z = float(np.quantile(_ct, .95)) if _ct else 1e9                  # 核心区楼高前 5% 的门槛
 for i, top in zip(idx, tops):
     b = city.b[i]
     if b['dk'] not in ('core', 'outer') or top < -2.6: continue        # 约 80 m 以上的楼
     wc = tc_city.core_w(city, b['cx'], b['cy'])
     if wc < .03: continue
-    x, y, w, d, rot = b['obb']; u = np.array([math.cos(rot), math.sin(rot)]); v = np.array([-u[1], u[0]]); c0 = np.array([x, y])
-    if 'real' in b:                                                    # 真实楼（A5）：灯带沿最高一级屋面的真实轮廓，贴在该级屋面上（不按外接矩形、不悬空），
-        rz = tc_city.roof_top(b, top); P_ = b['top_p']; tw_, td2 = b['tobb'][2:4]   # 每条边一段连续的暗线（审阅：断续的亮框像选中框）
-        if _crng.random() < .5 * wc and tw_ * td2 > .002:
-            kb = wc * _crng.uniform(.08, .2); th = _crng.uniform(.002, .003)   # 草稿 1：.25–.6 仍像一圈选中框，再压暗、只亮一部分边
-            for a_, b_ in zip(P_, np.roll(P_, -1, 0)):
-                e_ = b_ - a_; L = float(np.hypot(*e_))
-                if L < .012 or _crng.random() < .55: continue
-                nin = np.array([-e_[1], e_[0]]) / L; p = (a_ + b_) / 2 + nin * .0015      # 压在女儿墙顶上（real_kit 的女儿墙高 .006）
-                crown.append((p[0], p[1], L * .92, th, rz + .006, rz + .0075)); crot_.append(math.atan2(e_[1], e_[0])); ccol_.append(CROWN * kb * _crng.uniform(.8, 1.05))
+    x, y, w, d, rot = b['obb']
+    if 'real' in b:
+        rz = tc_city.roof_top(b, top); P_ = b['top_p']
+        if top >= CROWN_Z and b['tobb'][2] * b['tobb'][3] > .0008:
+            tx_, ty_, tw3, td3, tr3 = b['tobb']; su_, sv_ = _crng.choice([-1, 1]), _crng.choice([-1, 1])   # 草稿 2：灯在正中像每栋楼一个亮点，改从一角斜打
+            ox_, oy_ = su_ * (tw3 / 2 + .01), sv_ * (td3 / 2 + .01); c3, s3 = math.cos(tr3), math.sin(tr3)
+            crown.append((tx_ + ox_ * c3 - oy_ * s3, ty_ + ox_ * s3 + oy_ * c3, rz + .025, srgb('#ffd29a')))   # 楼冠边上的暖色投光
         x, y = b['tobb'][:2]; w, d = b['tobb'][2:4]; top = rz
-    elif _crng.random() < .55 * wc:
-        kb = wc * _crng.uniform(.4, 1.1)                               # 这栋楼的亮度
-        th = _crng.uniform(.0025, .0055)                               # 灯带粗细
-        for nrm, half, flen, ang, tan_ in ((v, d / 2, w, rot, u), (-v, d / 2, w, rot, u), (u, w / 2, d, rot + math.pi / 2, v), (-u, w / 2, d, rot + math.pi / 2, v)):
-            if _crng.random() < .3: continue                           # 这一面不亮（灯坏了 / 背面没装）
-            t = -.46 * flen + _crng.uniform(0, .08) * flen
-            while t < .46 * flen:                                      # 一段段的，中间断开
-                L = min(_crng.uniform(.15, .6) * flen, .46 * flen - t)
-                if L > .004:
-                    p = c0 + nrm * (half - .003) + tan_ * (t + L / 2)
-                    crown.append((p[0], p[1], L, th, top + .002, top + .005)); crot_.append(ang); ccol_.append(CROWN * kb * _crng.uniform(.55, 1.1))
-                t += L + _crng.uniform(.04, .22) * flen
-    if _crng.random() < .25 * wc: warm.append((x + _crng.uniform(-.3, .3) * w, y + _crng.uniform(-.3, .3) * d, top - _crng.uniform(.1, .5), srgb('#ffcf8f')))
-tc.box_mesh('core_crowns', crown, np.array(ccol_, np.float32).reshape(-1, 3), emit_mat('crown', None, 4.0 * GLOW), rot=np.array(crot_, np.float32))
+    if _crng.random() < .2 * wc: warm.append((x + _crng.uniform(-.3, .3) * w, y + _crng.uniform(-.3, .3) * d, top - _crng.uniform(.1, .5), srgb('#ffcf8f')))
+tc.point_lights('core_crown_flood', crown, .6 * GLOW, .03)
 tc.point_lights('core_warm', warm, .25 * GLOW, .05)
-tick(f'core warm light: crown segments {len(crown)}, spill {len(warm)}')
+tick(f'core warm light: crown floods {len(crown)}, spill {len(warm)}')
 tick(f'neon: signs {len(signs)}, roof strips {len(strips)}, holo {len(holo)}, spill {len(spill)}, aviation {len(warn)}')
 
 # ---------------- 天桥：相邻高楼之间的连廊（「层层叠叠」）----------------

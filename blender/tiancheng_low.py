@@ -65,7 +65,9 @@ keep = city.keep(zones)
 def blackout(x, y): return math.sin(x * .41 + 2.1) * math.cos(y * .37 + .4) + .4 * math.sin(x * .9 - y * .7) > 1.0   # 断电的片区
 def _ss(t): t = min(1, max(0, t)); return t * t * (3 - 2 * t)
 SEAM = tc_city.low_seam_x
-def vf(x, y): return _ss((x - SEAM(y)) / .75)                         # 工业带 → 城中村的交界（起伏的一条线，tc_city.low_seam_x）：城中村一侧 75 m 内由疏到密
+# A6：过渡带本身也不沿交界线平行——叠一层二维的确定性起伏（约 ±40 m），城中村的边缘成片地伸进 / 退出，工业带的棚屋堆场补进退出来的空当。
+def seam_n(x, y): return .28 * math.sin(x * 2.3 + y * 1.1 + .5) * math.cos(y * 2.9 - x * .7) + .12 * math.sin(x * 5.1 - y * 3.7)
+def vf(x, y): return _ss((x - SEAM(y) + seam_n(x, y)) / .9)            # 工业带 → 城中村的交界（起伏的一条线，tc_city.low_seam_x）：城中村一侧约 90 m 内由疏到密
 ZONE = np.array([2 if b['dk'] == 'village' else 1 if b['a'] > .015 else 0 for b in city.b], np.int8)   # 0 工人住宅 1 厂房 2 城中村
 
 # 地面：水泥与泥地；路面沥青；荒掉的公园是泥地；水面发黑
@@ -108,19 +110,50 @@ vil = np.where(keep & (ZONE == 2))[0]
 VIL = np.array([(.3, .29, .27), (.24, .23, .22), (.34, .3, .26), (.28, .16, .1), (.2, .21, .22)], np.float32)   # 水泥、瓷砖、锈、深灰
 top_v = np.array([((.1 if city.b[i].get('dense') else .06) + city.b[i]['h'] / 45 * .08) * (.4 + .6 * vf(city.b[i]['cx'], city.b[i]['cy'])) for i in vil], np.float32)
 c_v = VIL[R.integers(len(VIL), size=len(vil))] * R.uniform(.75, 1.15, (len(vil), 1))
-_vm = np.array([not amc_clear(city.b[i]['cx'], city.b[i]['cy'], .06) for i in vil], bool)
-city.buildings_mesh('village', vil[_vm], 0, top_v[_vm], c_v[_vm], td.city_mat('villagemat', .85, .012, 1.6))
-SHACK = np.array([(.3, .14, .08), (.36, .2, .12), (.1, .16, .26), (.3, .3, .28), (.22, .2, .17), (.16, .2, .12)], np.float32)
-shacks, shc2, shr, vtanks = [], [], [], []
+# A6：楼高再按对数正态抖一次（原来同一片的屋顶几乎一样高）；交界过渡带里的握手楼按 vf 成片地缺（留出空地给工业带一侧的棚屋、堆场），
+# 交界不再是一条整齐的楼墙。独立随机（9107），不动 R。
+_vr = np.random.default_rng(9107)
+top_v = (top_v * np.clip(_vr.lognormal(0, .2, len(vil)), .65, 1.6)).astype(np.float32)
+_vdrop = np.array([_vr.random() < .6 * (1 - vf(city.b[i]['cx'], city.b[i]['cy'])) ** 1.4 for i in vil], bool)
+_vm = np.array([not amc_clear(city.b[i]['cx'], city.b[i]['cy'], .06) for i in vil], bool) & ~_vdrop
+vmat = td.city_mat('villagemat', .85, .012, 1.6)
+city.buildings_mesh('village', vil[_vm], 0, top_v[_vm], c_v[_vm], vmat)
+# A6：屋顶杂物的色相收窄到三类——铁锈（两档）、篷布蓝灰（两档）、褪色红，外加一档锈灰的旧铁皮（原来蓝、绿、橙、灰各一，太杂）。条数不变（R 的序列不变）。
+SHACK = np.array([(.3, .15, .09), (.22, .125, .08), (.15, .175, .21), (.2, .225, .25), (.33, .16, .13), (.24, .21, .19)], np.float32)
+shacks, shc2, shr, vtanks, sho, vto = [], [], [], [], [], []
 for i, t in zip(vil, top_v):
     b = city.b[i]; x, y, w, d, rot = b['obb']; cs, sn = math.cos(rot), math.sin(rot)
     for _ in range(int(round(int(R.integers(1, 5 if b.get('dense') else 3)) * (.4 + .6 * vf(x, y))))):   # 屋顶加建的铁皮房、篷布（交界处少）
         u, v = R.uniform(-.3, .3) * w, R.uniform(-.3, .3) * d; sw, sd = R.uniform(.02, .05), R.uniform(.02, .04)
-        shacks.append((x + u * cs - v * sn, y + u * sn + v * cs, sw, sd, t, t + R.uniform(.006, .02))); shc2.append(SHACK[R.integers(len(SHACK))] * R.uniform(.7, 1.2)); shr.append(rot + R.normal(0, .08))
-    if R.random() < .6: vtanks.append((x + R.uniform(-.3, .3) * w, y + R.uniform(-.3, .3) * d, t, .008, .012))   # 屋顶水箱
-_sm = [not amc_clear(s_[0], s_[1], .06) for s_ in shacks]
+        shacks.append((x + u * cs - v * sn, y + u * sn + v * cs, sw, sd, t, t + R.uniform(.006, .02))); shc2.append(SHACK[R.integers(len(SHACK))] * R.uniform(.7, 1.2)); shr.append(rot + R.normal(0, .08)); sho.append(int(i))
+    if R.random() < .6: vtanks.append((x + R.uniform(-.3, .3) * w, y + R.uniform(-.3, .3) * d, t, .008, .012)); vto.append(int(i))   # 屋顶水箱
+# A6：屋顶加建层（贴一边的一整层，比屋面小一圈）、天台棚（架在柱子上的一片篷布 / 铁皮）、成组的水箱（不锈钢灰、褪色蓝灰）。
+# 只加在留下来的楼上；独立随机（9107 接着用）。
+ADD, ADDC, ADDR, CAN, CANC, CANR, VT2, VT2C = [], [], [], [], [], [], [], []
+_vkeep = set(int(i) for i in vil[_vm])
+for i, t, c in zip(vil, top_v, c_v):
+    if int(i) not in _vkeep: continue
+    b = city.b[i]; x, y, w, d, rot = b['obb']; cs, sn = math.cos(rot), math.sin(rot); at_ = lambda u, v: (x + u * cs - v * sn, y + u * sn + v * cs)
+    k_ = .4 + .6 * vf(x, y); zt = float(t)
+    if _vr.random() < .32 * k_:                                          # 加建层：一整层，贴着一条边
+        fw, fd = _vr.uniform(.4, .78), _vr.uniform(.45, .85); su, sv = _vr.choice([-1, 1]), _vr.choice([-1, 1])
+        hh = _vr.uniform(.012, .028); ADD.append((*at_(su * (1 - fw) / 2 * w, sv * (1 - fd) / 2 * d), w * fw, d * fd, zt, zt + hh)); ADDR.append(rot)
+        ADDC.append(np.asarray(c) * _vr.uniform(.8, 1.1) if _vr.random() < .6 else SHACK[_vr.choice([0, 1, 5])] * _vr.uniform(.8, 1.1))
+        if _vr.random() < .5: zt += hh                                  # 水箱、棚子有时在加建层顶上
+    if _vr.random() < .22 * k_:                                          # 天台棚：薄薄一片，离屋面一人多高
+        fw, fd = _vr.uniform(.3, .6), _vr.uniform(.3, .6); u_, v_ = _vr.uniform(-.25, .25) * w, _vr.uniform(-.25, .25) * d; zc = zt + _vr.uniform(.012, .02)
+        CAN.append((*at_(u_, v_), w * fw, d * fd, zc, zc + .0015)); CANR.append(rot + _vr.normal(0, .05)); CANC.append(SHACK[_vr.choice([0, 2, 3, 4])] * _vr.uniform(.75, 1.1))
+    if _vr.random() < .35 * k_:                                          # 成组的水箱
+        u0, v0 = _vr.uniform(-.3, .3) * w, _vr.uniform(-.3, .3) * d; nt = int(_vr.integers(1, 4)); r_ = _vr.uniform(.005, .008)
+        tcol = np.array((.34, .34, .35)) if _vr.random() < .6 else np.array((.17, .2, .24))
+        for k in range(nt): VT2.append((*at_(u0 + k * r_ * 2.3, v0), zt, r_, r_ * _vr.uniform(1.1, 1.6))); VT2C.append(tcol * _vr.uniform(.8, 1.1))
+tc.box_mesh('village_addons', ADD, np.array(ADDC, np.float32).reshape(-1, 3), vmat, rot=np.array(ADDR, np.float32))
+tc.box_mesh('village_canopies', CAN, np.array(CANC, np.float32).reshape(-1, 3), td.corrugated_mat('canopyroof', .6, .35, 1500, 1.4), rot=np.array(CANR, np.float32))
+tc.cyl_mesh('village_tanks', VT2, td.city_mat('vtank2', .45, .004, 1.1, .35), 10, colors=np.array(VT2C, np.float32).reshape(-1, 3))
+tick(f'village A6: dropped at seam {int(_vdrop.sum())}, add-on floors {len(ADD)}, canopies {len(CAN)}, tanks {len(VT2)}')
+_sm = [not amc_clear(s_[0], s_[1], .06) and o_ in _vkeep for s_, o_ in zip(shacks, sho)]
 tc.box_mesh('shacks', [s_ for s_, k in zip(shacks, _sm) if k], [c for c, k in zip(shc2, _sm) if k], td.corrugated_mat('shackroof', .6, .35, 1500, 1.4), rot=np.array([r_ for r_, k in zip(shr, _sm) if k], np.float32))
-tc.cyl_mesh('roof_tanks', [t_ for t_ in vtanks if not amc_clear(t_[0], t_[1], .06)], td.city_mat('rooftank', .5, .004, 1.2, .4), 10, colors=(.3, .3, .3))
+tc.cyl_mesh('roof_tanks', [t_ for t_, o_ in zip(vtanks, vto) if not amc_clear(t_[0], t_[1], .06) and o_ in _vkeep], td.city_mat('rooftank', .5, .004, 1.2, .4), 10, colors=(.3, .3, .3))
 tick(f'village: {len(vil)} buildings, {len(shacks)} rooftop shacks, {len(vtanks)} water tanks')
 
 # ---------------- 储罐与管道：管道从工业区通向最近的支柱（物资顺着支柱里的货梯往上送）----------------
@@ -215,6 +248,7 @@ kd_road = city.road_kd(CAR)
 def in_bldg(x, y, pad=.02, reach=2.2):
     for co_, bi, dd in kd_b.find_range((x, y, 0), reach):             # reach 要够大：大厂房的中心离得远，轮廓却可能盖到这里
         b_ = city.b[bi]; ow, od = b_['obb'][2], b_['obb'][3]
+        if b_['dk'] == 'village' and bi not in _vkeep: continue        # A6：交界处去掉的握手楼不占地
         if dd < max(ow, od) / 2 + pad and (dd < min(ow, od) / 2 + pad or point_in_poly(x, y, b_['p'])): return True
     return False
 def in_zone(x, y):
@@ -254,10 +288,10 @@ def lot(x, y, kind, rot):
     if kind in ('stack', 'scrap') and _frng.random() < .12:            # 堆场的工作灯（偏白）
         f_work.append((x, y, .16, srgb('#ffe2b8'))); f_heads.append((x, y, .012, .012, .12, .123))
 occ_f = set(); n_buf = n_lot = 0
-for gx in np.arange(-15.2, 2.0, .09):
+for gx in np.arange(-15.2, 2.8, .09):                                  # A6：交界线最东到 x ≈ 2.2
     for gy in np.arange(-9.3, 9.35, .09):
         x = gx + _frng.uniform(-.03, .03); y = gy + _frng.uniform(-.03, .03)
-        d = SEAM(y) - x                                                 # 离交界多远（工业带一侧为正）
+        d = SEAM(y) - x - seam_n(x, y)                                  # 离交界多远（工业带一侧为正；A6：与 vf 同一条二维起伏的过渡线，棚屋补进城中村退出来的空当）
         if d < .12: continue
         nz = .5 + .5 * math.sin(x * 2.3 + 1.1) * math.cos(y * 1.9 - .5)   # 成片、不均匀
         if d < 1.3: p = .9 * (1 - d / 1.3) ** 1.1 * (.55 + .45 * nz); buf = True
@@ -323,10 +357,13 @@ tc.point_lights('fill_fire', f_fire, LAMP * .7 * GLOW, .01)
 
 # ---------------- 光：钠灯 + 少量磷光绿 ----------------
 lamp_heads, lamp_lights, extra_flood = [], [], []
-for x, y, ang, c, w in city.along(.3, CAR - {'service'}, side_offset=.008, both=False):
-    if R.random() < (.6 if blackout(x, y) else .2): continue           # 坏掉的路灯；断电片区大半不亮
+# A6：原来每条路单侧每 30 m 一盏、等距；改用 tc_city.street_lamps（按路级别定间距、两侧错开 / 单侧换边、间距抖动、路口转角补灯），
+# 独立随机（9108），不动 R。
+_lr9 = np.random.default_rng(9108)
+for x, y, ang, c, w in city.street_lamps(_lr9, CAR - {'service'}, side_offset=.008, scale=1.0, corner=.35, one_side=True):
+    if _lr9.random() < (.6 if blackout(x, y) else .22): continue       # 坏掉的路灯；断电片区大半不亮
     lamp_heads.append((x, y, .012, .012, .07, .073))
-    if len(lamp_heads) % 2 == 0: lamp_lights.append((x, y, .09, SODIUM if R.random() < .7 else SODIUM2))   # 一半灯头投光（功率加倍补回）
+    if _lr9.random() < .5: lamp_lights.append((x, y, .09, SODIUM if _lr9.random() < .7 else SODIUM2))   # 一半灯头投光（功率加倍补回）
 pil_lights = []
 for (px, py), (rot, w, d, top) in zip(PILLARS, PIL_TOP):             # 柱基旁两盏钠灯（方向随机，不成环；功率按原来一圈 9 盏的总量补回）
     for _ in range(2):
@@ -350,9 +387,9 @@ tc.point_lights('pillar_sodium', pil_lights, LAMP * 2 * GLOW * 4, .01)
 tc.point_lights('pipe_sodium', pipe_lamps, LAMP * .18 * GLOW, .01)
 # 棚屋区：昏暗的暖光与磷光绿（霉菌灯、黑市招牌）
 glim, gdots = [], []
-for x, y, w, d, z0, z1 in shacks:
+for (x, y, w, d, z0, z1), o_ in zip(shacks, sho):
     r, m_ = R.random(), .4 + .6 * vf(x, y); k_ = .5 + .5 * vf(x, y)    # 交界处灯少、也暗
-    if amc_clear(x, y, .06): continue                                   # （R 照样取，保持序列）
+    if amc_clear(x, y, .06) or o_ not in _vkeep: continue              # （R 照样取，保持序列）
     if r < .04 * m_: glim.append((x, y, z1 + .04, SODIUM2, k_)); gdots.append((x, y, .008, .008, z1, z1 + .002, *(np.array(SODIUM2) * k_)))
     elif r < .045 * m_: glim.append((x, y, z1 + .04, PHOS, k_)); gdots.append((x, y, .01, .006, z1, z1 + .002, *(np.array(PHOS) * k_)))
 for q in range(4):                                                     # 亮度分四档（同一档共用一个灯光数据块）

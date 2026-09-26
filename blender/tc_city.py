@@ -39,25 +39,44 @@ def point_in_poly(x, y, P):
 # k：中层楼高倍数（真实楼高 × k / 100 = 平面单位）；kind：各层按它决定配色、霓虹、片区肌理。
 F = 15.3; G = 9.55                                              # 片区外框（比 ±15 × ±9.375 略大，边上不留空）
 def low_seam_x(y):
-    """下层工业带 / 城中村的交界：不是 x = 1 的直线，而是随 y 起伏的一条线（确定性的三层正弦，不消耗随机）。
-    平均仍在 x = 1，起伏约 ±70 m，交界大道沿它走。"""
-    return 1 + .42 * math.sin(y * 1.3 + .7) + .22 * math.sin(y * 3.1 + 2.0) + .09 * math.sin(y * 7.3 + .4)
-_SEAM = [(round(low_seam_x(y), 4), round(float(y), 4)) for y in np.linspace(-G, G, 64)]
+    """下层工业带 / 城中村的交界：不是 x = 1 的直线，而是随 y 起伏的一条线（确定性的多层正弦，不消耗随机）。
+    平均仍在 x = 1。A6：原来起伏约 ±70 m、周期短，缩小看仍是一条直边——加一层长周期大起伏（约 ±90 m，一个片区高度里摆一个半来回），
+    合计约 ±150 m；再叠一层短周期的小折（约 ±6 m），交界大道沿它走。"""
+    return (1 + .9 * math.sin(y * .62 + 2.4) + .38 * math.sin(y * 1.3 + .7) + .2 * math.sin(y * 3.1 + 2.0)
+            + .09 * math.sin(y * 7.3 + .4) + .06 * math.sin(y * 13.1 + 1.7))
+_SEAM = [(round(low_seam_x(y), 4), round(float(y), 4)) for y in np.linspace(-G, G, 96)]
 def mid_seam_x(y):
     """中层核心区（曼哈顿）/ 外围（布鲁克林）的交界（A3）：不再是 x = -6 的竖线，而是一条斜着走的起伏林荫大道——
     北端偏东、南端偏西（斜度介于曼哈顿的竖向街网与布鲁克林约 60° 的街网之间），叠两层确定性正弦（不消耗随机），起伏约 ±45 m。
     平均仍在 x ≈ -6。"""
     return -6 + .1 * (y - 3) + .3 * math.sin(y * .9 + .4) + .12 * math.sin(y * 2.3 + 1.9) + .05 * math.sin(y * 5.9 + .8)
-_MSEAM = [(round(mid_seam_x(y), 4), round(float(y), 4)) for y in np.linspace(-3.5, G, 40)]   # 南 → 北
+def mid_hseam_y(x):
+    """中层核心区 / 商业区（九龙）的交界（A6）：原来是 y = -3.5 的水平直线。改成确定性的起伏曲线（不消耗随机）：
+    一层长周期（约 ±45 m）+ 两层短周期，合计约 ±70 m，平均仍在 y ≈ -3.5；东段略往北抬（旺角的街网在东边更深入）。"""
+    return -3.5 + .03 * x + .42 * math.sin(x * .41 + 4.7) + .18 * math.sin(x * 1.13 + 4.2) + .07 * math.sin(x * 2.9 + 2.2) + .03 * math.sin(x * 6.7 + .9)
+def mid_wseam_x(y):
+    """中层商业区（九龙）/ 外围（布鲁克林）的西侧交界（A6）：原来是 x = -9 的竖线，改成起伏曲线（约 ±60 m），平均仍在 x ≈ -9。"""
+    return -9 + .36 * math.sin(y * .7 + 2.1) + .16 * math.sin(y * 1.9 + .6) + .06 * math.sin(y * 4.7 + 1.4)
+# 三区交点：核心 / 商业 / 外围交于 J（mid_seam_x 与 mid_hseam_y 的交点）；商业 / 外围的西侧交界与水平交界交于 CW。定点迭代求交（确定性）。
+_yj = -3.5
+for _ in range(20): _yj = mid_hseam_y(mid_seam_x(_yj))
+_J = (round(mid_seam_x(_yj), 4), round(_yj, 4))
+_yw = -3.5
+for _ in range(20): _yw = mid_hseam_y(mid_wseam_x(_yw))
+_CW = (round(mid_wseam_x(_yw), 4), round(_yw, 4))
+_MSEAM = [_J] + [(round(mid_seam_x(y), 4), round(float(y), 4)) for y in np.linspace(_yj, G, 40)[1:]]   # 南 → 北（核心 / 外围）
+_HSEAM_W = [_CW] + [(round(float(x), 4), round(mid_hseam_y(x), 4)) for x in np.linspace(_CW[0], _J[0], 8)[1:-1]] + [_J]   # 西 → 东（商业 / 外围）
+_HSEAM_E = [_J] + [(round(float(x), 4), round(mid_hseam_y(x), 4)) for x in np.linspace(_J[0], F, 72)[1:-1]] + [(F, round(mid_hseam_y(F), 4))]   # 西 → 东（商业 / 核心）
+_WSEAM = [(round(mid_wseam_x(y), 4), round(float(y), 4)) for y in np.linspace(-G, _yw, 24)[:-1]] + [_CW]   # 南 → 北（商业 / 外围）
 DISTRICTS = {
     'mid': [
         dict(kind='core', region='manhattan', offset=(4.5, 3.05), k=1.25,         # 核心区与高区：曼哈顿中城
-             poly=[(F, -3.5), (F, G)] + _MSEAM[::-1],                                # 西边界是斜向起伏的交界大道（mid_seam_x）
+             poly=[(F, G)] + _MSEAM[::-1] + _HSEAM_E[1:],                            # 西边界是斜向起伏的交界大道（mid_seam_x），南边界是起伏的 mid_hseam_y（A6）
              geom='real3d'),                                                         # A5：楼换成纽约 3D 建筑模型的真实几何（tc_real3d，hybrid；上层远景共用）
         dict(kind='commercial', region='kowloon', offset=(0, -5.2), k=3.0,         # 商业区：九龙旺角最密的一段（C 区检查点在这里）
-             poly=[(-9, -G), (F, -G), (F, -3.5), (-9, -3.5)]),
+             poly=[(F, -G)] + _HSEAM_E[::-1] + _HSEAM_W[::-1][1:] + _WSEAM[::-1][1:]),   # 北、西两边都是起伏曲线（A6）
         dict(kind='outer', region='brooklyn', offset=(-10.5, 0), k=1.6,            # 外围居住区：布鲁克林联排住宅与旧仓库
-             poly=[(-F, -G), (-9, -G), (-9, -3.5)] + _MSEAM + [(-F, G)]),
+             poly=[(-F, -G)] + _WSEAM + _HSEAM_W[1:] + _MSEAM[1:] + [(-F, G)]),
     ],
     'low': [
         dict(kind='industrial', region='ruhr', offset=(-7, 0), k=1.0,              # 工业带：鲁尔区钢厂、货运铁路、储罐
@@ -191,6 +210,7 @@ class City:
         for i, b in enumerate(self.b): kb.insert((b['cx'], b['cy'], 0), i)
         kb.balance()
         occ = set(); n0 = len(self.b)
+        rv = np.random.default_rng(4410)                                  # A6：楼的尺寸 / 高度的额外抖动（独立随机，不动城市序列）
         areas = [(q, (*q.min(0), *q.max(0))) for q in self.parks + self.water]   # 公园、水面里不盖楼
         xs = [p[0] for p in P]; ys = [p[1] for p in P]
         for px in np.arange(min(xs), max(xs), 1.2):
@@ -213,9 +233,14 @@ class City:
                         occ.add(g)
                         ds = 1.12 if dense else 1.0                                       # 城寨一带楼挨楼（只放大轮廓，不多取随机）
                         w_, d_ = bw * rng.uniform(.85, 1.1) * ds, bw * rng.uniform(.8, 1.2) * ds
+                        # A6：原来整片楼的宽深都在 ±15% 内，屋顶读成同尺寸的方块。按对数正态再抖一次（多数略小、少数并成大一号的楼），
+                        # 并让长宽比拉开；缩小的楼之间自然留出窄巷。
+                        f_ = float(np.clip(rv.lognormal(-.06, .22), .6, 1.55)); asp = float(np.clip(rv.lognormal(0, .2), .7, 1.45))
+                        w_, d_ = w_ * f_ * asp ** .5, d_ * f_ / asp ** .5
                         Q = np.array([(x + (-w_ / 2) * cs - (-d_ / 2) * sn, y + (-w_ / 2) * sn + (-d_ / 2) * cs), (x + (w_ / 2) * cs - (-d_ / 2) * sn, y + (w_ / 2) * sn + (-d_ / 2) * cs),
                                       (x + (w_ / 2) * cs - (d_ / 2) * sn, y + (w_ / 2) * sn + (d_ / 2) * cs), (x + (-w_ / 2) * cs - (d_ / 2) * sn, y + (-w_ / 2) * sn + (d_ / 2) * cs)], np.float32)
                         h = float(rng.uniform(36, 45) if dense else rng.uniform(18, 32))   # 握手楼 6–10 层；城寨一带 12–14 层
+                        h *= float(np.clip(rv.lognormal(0, .2), .6, 1.7)) * (1.35 if rv.random() < .06 else 1.0)   # A6：高度更参差，少数加盖到十几层
                         self.b.append(dict(p=Q, cx=float(x), cy=float(y), a=float(w_ * d_), h=h, n=tc.district(x, y), obb=(float(x), float(y), w_, d_, ang),
                                            k=D['k'], dk=D['kind'], di=self.districts.index(D), synth=True, dense=dense))
         tick(f'village: {len(self.b) - n0} handshake buildings generated')
@@ -293,13 +318,13 @@ class City:
         self.roads = out
 
     # ---------- 网格 ----------
-    def buildings_mesh(self, name, idx, z0, z1, colors, m):
+    def buildings_mesh(self, name, idx, z0, z1, colors, m, shade=None):
         """idx 中的楼按轮廓挤出：顶面 n 边形 + 侧面四边形。z0 / z1 为每栋楼的底 / 顶（数组或常数）。
-        真实楼（'real' in b）不挤出，走 real_mesh（原始屋面与外墙，按 z1 等比缩放），网格名加 _real。"""
+        真实楼（'real' in b）不挤出，走 real_mesh（原始屋面与外墙，按 z1 等比缩放），网格名加 _real；shade 见 real_mesh。"""
         idx = np.asarray(idx, np.int64); z0 = np.broadcast_to(z0, len(idx)); z1 = np.broadcast_to(z1, len(idx)); colors = np.asarray(colors, np.float32).reshape(-1, 3)
         real = np.array(['real' in self.b[i] for i in idx], bool)
         o = poly_prisms(name, [self.b[i]['p'] for i in idx[~real]], z0[~real], z1[~real], colors[~real], m)
-        if real.any(): real_mesh(name + '_real', [self.b[i] for i in idx[real]], z0[real], z1[real], colors[real], m)
+        if real.any(): real_mesh(name + '_real', [self.b[i] for i in idx[real]], z0[real], z1[real], colors[real], m, shade)
         return o
     def roads_mesh(self, name, z, m, classes=None, widen=1.0, color=(.09, .09, .1)):
         """道路：每段一个四边形 + 每个节点一个八边形（补转角的缝）。"""
@@ -390,6 +415,103 @@ class City:
                         t += max(.055, rng.exponential(1 / (density * (.3 + 1.4 * k))))
         return (np.array(cars, np.float32).reshape(-1, 6), np.array(rots, np.float32), np.array(dirs, np.float32).reshape(-1, 2),
                 np.array(cols, np.float32).reshape(-1, 3))
+    # ---------- A6：车流与路灯按路级、交叉口、城区分布（替代等距点阵）----------
+    def junctions(self, classes=CAR):
+        """交叉口：道路顶点按度数计（路中间的顶点算 2、端点算 1，按 2 m 量化后合并），度数 ≥ 3 的点。返回量化键的集合。"""
+        from collections import Counter
+        deg = Counter()
+        for r in self.roads:
+            if r['c'] not in classes: continue
+            P = r['p']; n = len(P)
+            for j, p in enumerate(P): deg[(round(float(p[0]) * 50), round(float(p[1]) * 50))] += 1 if j in (0, n - 1) else 2
+        return {k for k, v in deg.items() if v >= 3}
+    @staticmethod
+    def _poly_len(P):
+        d = np.diff(P, axis=0); L = np.hypot(d[:, 0], d[:, 1]); return d, L, np.concatenate([[0], np.cumsum(L)])
+    @staticmethod
+    def _at(P, d, L, cum, t):
+        i = int(min(max(np.searchsorted(cum, t, 'right') - 1, 0), len(L) - 1)); u = d[i] / max(L[i], 1e-9)
+        return P[i] + u * (t - cum[i]), u
+    TRAFFIC_CLASS = {'motorway': 1.2, 'trunk': 1.1, 'primary': 1.0, 'secondary': .72, 'tertiary': .48, 'motorway_link': .5, 'trunk_link': .5,
+                     'primary_link': .45, 'secondary_link': .4, 'tertiary_link': .3, 'unclassified': .26, 'residential': .16, 'living_street': .06}
+    def traffic2(self, rng, z, density=3.2, weight=None, boulevard=.45):
+        """车流（A6，中层）：替代 traffic 的等距点阵——
+        - 每条路、每个方向各有一个「繁忙度」（对数正态），约四分之一的路段几乎没车；路级别（TRAFFIC_CLASS）× 城区权重 weight(x, y) 定平均密度；
+        - 车成队行驶（1–8 辆一队，队内 5–8 m），队与队之间是按指数分布的大间隙（均值按密度反推，保持平均车量）；
+        - 交叉口前（行驶方向上）按概率排一串等红灯的车（2–10 辆，贴得更紧）；交叉口里不停车；
+        - 少量长车（公交、货车）。交界大道（dk='boulevard'）按 boulevard 倍数压低。
+        rng 用独立随机。返回与 traffic 相同的 (cars, rot, dirs, cols)。"""
+        J = self.junctions(); cars, rots, dirs, cols = [], [], [], []
+        for r in self.roads:
+            if r['c'] not in CAR or r['c'] == 'service': continue
+            P = np.asarray(r['p'], np.float64); w = r['w']
+            if len(P) < 2: continue
+            d, L, cum = self._poly_len(P); Lt = float(cum[-1])
+            if Lt < .06: continue
+            base = self.TRAFFIC_CLASS.get(r['c'], .2) * (boulevard if r.get('dk') == 'boulevard' else 1.0)
+            jt = [float(cum[j]) for j, p in enumerate(P) if (round(float(p[0]) * 50), round(float(p[1]) * 50)) in J]
+            for s in (1, -1):
+                # 这条路这个方向的繁忙度：每过一个交叉口重新取一次（与上一段相关），长直街不会从头到尾一样忙；约四分之一的段几乎没车
+                spans = sorted(set([0.0, Lt] + jt)); acts = []; a_prev = float(rng.lognormal(0, .65))
+                for _ in spans[:-1]:
+                    a_prev = a_prev ** .45 * float(rng.lognormal(0, .65)) ** .55; acts.append(a_prev * (.05 if rng.random() < .25 else 1.0))
+                def act_at(t_, spans=spans, acts=acts): return acts[min(len(acts) - 1, max(0, int(np.searchsorted(spans, t_, 'right')) - 1))]
+                act = float(np.mean(acts))
+                ts = []
+                for q in jt:                                                                   # 交叉口前等红灯的一串
+                    if rng.random() > min(.85, .5 * base * act_at(q - s * .01)): continue
+                    m_ = int(min(10, 2 + rng.geometric(.3))); t0 = q - s * (.03 + w * .5)
+                    for k in range(m_): ts.append(t0 - s * k * rng.uniform(.05, .058))
+                t = float(rng.uniform(0, .4))
+                while t < Lt - .03:
+                    x_, y_ = self._at(P, d, L, cum, t)[0]
+                    kd = weight(float(x_), float(y_)) if weight else .5
+                    lam = max(1e-3, density * base * act_at(t) * (.25 + 1.5 * kd))          # 每单位长度（100 m）的车数
+                    n = int(min(8, rng.geometric(.38)))
+                    for k in range(n): ts.append(t + k * rng.uniform(.052, .08))
+                    t += n * .065 + max(.12, rng.exponential(n / lam))
+                ts = sorted(t_ for t_ in ts if .02 < t_ < Lt - .02 and all(abs(t_ - q) > w * .5 + .015 for q in jt))
+                last = -1.0
+                for t_ in ts:
+                    if t_ - last < .05: continue                                           # 车不叠在一起
+                    last = t_; p, u = self._at(P, d, L, cum, t_); nrm = np.array([-u[1], u[0]])
+                    q_ = p + nrm * s * (w / 4 + rng.uniform(-w / 14, w / 14))
+                    big = base >= .45 and rng.random() < .05
+                    cars.append((q_[0], q_[1], .1 if big else .046 * rng.uniform(.9, 1.1), .025 if big else .02, z, z + (.02 if big else .015)))
+                    rots.append(math.atan2(u[1], u[0])); dirs.append(u * s); cols.append(td_car_color(rng))
+        return (np.array(cars, np.float32).reshape(-1, 6), np.array(rots, np.float32), np.array(dirs, np.float32).reshape(-1, 2),
+                np.array(cols, np.float32).reshape(-1, 3))
+    LAMP_SPACING = {'motorway': (.3, 2), 'trunk': (.27, 2), 'primary': (.27, 2), 'secondary': (.3, 2), 'tertiary': (.34, 1), 'unclassified': (.4, 1),
+                    'residential': (.42, 1), 'living_street': (.5, 1), 'service': (.75, 1), 'motorway_link': (.32, 1), 'trunk_link': (.32, 1),
+                    'primary_link': (.32, 1), 'secondary_link': (.34, 1), 'tertiary_link': (.36, 1)}
+    def street_lamps(self, rng, classes=None, side_offset=.008, scale=1.0, corner=.6, one_side=False):
+        """路灯位置（A6）：替代 along(.12, 两侧) 的等距双排点阵——按路级别定间距（干道 27–30 m 两侧错开、支路 34–50 m 单侧、小巷更稀），
+        间距 ±20% 抖动；单侧的路每隔一段换边；交叉口的转角按 corner 概率各补一盏（路口比路段亮）。rng 用独立随机。
+        one_side=True（下层）：所有路都只装一侧（老工业区、城中村的路灯本来就稀）。返回 [(x, y, 方向角, 道路等级, 宽度)]，与 along 相同。"""
+        J = self.junctions(); out = []; seen = set()
+        for r in self.roads:
+            if classes and r['c'] not in classes: continue
+            P = np.asarray(r['p'], np.float64); w = r['w']
+            if len(P) < 2: continue
+            d, L, cum = self._poly_len(P); Lt = float(cum[-1])
+            if Lt < .03: continue
+            sp, two = self.LAMP_SPACING.get(r['c'], (.4, 1)); sp *= scale
+            if one_side: two = 1
+            for side in ((-1, 1) if two == 2 else (1,)):
+                t = float(rng.uniform(0, sp)) + (sp / 2 if side < 0 else 0); sd = side if two == 2 else (1 if rng.random() < .5 else -1)
+                while t < Lt - .01:
+                    p, u = self._at(P, d, L, cum, t); nrm = np.array([-u[1], u[0]])
+                    q_ = p + nrm * sd * (w / 2 + side_offset); out.append((float(q_[0]), float(q_[1]), math.atan2(u[1], u[0]), r['c'], w))
+                    t += sp * rng.uniform(.8, 1.2)
+                    if two == 1 and rng.random() < .12: sd = -sd                            # 单侧的路：隔一段换到对面
+            for j, p in enumerate(P):                                                      # 路口转角
+                k_ = (round(float(p[0]) * 50), round(float(p[1]) * 50))
+                if k_ not in J or rng.random() > corner: continue
+                key = (k_, r['c']);
+                if key in seen: continue
+                seen.add(key); i_ = min(j, len(L) - 1); u = d[i_] / max(L[i_], 1e-9); nrm = np.array([-u[1], u[0]]); sd = 1 if rng.random() < .5 else -1
+                q_ = p + nrm * sd * (w / 2 + side_offset) + u * rng.uniform(-.02, .02); out.append((float(q_[0]), float(q_[1]), math.atan2(u[1], u[0]), r['c'], w))
+        return out
     def road_kd(self, classes):
         """道路采样点的 KD 树：用来算「离某类道路多远」（商业街权重、地标避让）。"""
         from mathutils.kdtree import KDTree
@@ -430,9 +552,13 @@ def roof_top(b, top, zbase=None):
     zb = tc.Z_GROUND if zbase is None else zbase
     return zb + (top - zb) * b.get('tz', 1.0)
 def top_obb(b): return b.get('tobb', b['obb'])
-def real_mesh(name, blist, z0, z1, colors, m):
+REAL_SHADE = dict(lo=.62, span=.38, gamma=1.0, top=None)       # 默认（上层远景）：屋面亮度 = lo + span × (该级高度 / 楼高)^gamma
+def real_mesh(name, blist, z0, z1, colors, m, shade=None):
     """真实楼的原始屋面与外墙（一个网格）：竖向按 real_scale 等比；屋面按楼、按每一级退台换一种屋面色调（REAL_TONES），
-    再按高度压暗（低的退台暗、最高一级亮一些，但整体压在楼的屋顶色附近，不像白模）；外墙压暗。平直着色。"""
+    再按高度压暗（低的退台暗、最高一级亮一些，但整体压在楼的屋顶色附近，不像白模）；外墙压暗。平直着色。
+    shade（A6，中层用）：dict(lo, span, gamma, top)——退台亮度曲线；top = 最高一级屋面（≥ 97% 楼高）额外乘的 RGB（偏亮偏暖）。
+    不给则用 REAL_SHADE（与 A5 相同）。"""
+    sh = dict(REAL_SHADE, **(shade or {}))
     co, loops, totals, fcol = [], [], [], []; base = 0
     for b, a0, a1, c in zip(blist, z0, z1, colors):
         RD = real_data(b['region'])
@@ -447,7 +573,8 @@ def real_mesh(name, blist, z0, z1, colors, m):
             if RD['FT'][f] == 1:
                 zm = float(np.median(RD['Vf'][F, 2])); key = round(zm * 2)
                 if key not in tone: tone[key] = np.array(REAL_TONES[fr.choice(4, p=REAL_TONE_P)], np.float32) * fr.uniform(.88, 1.12)
-                k = c * tone[key] * (.62 + .38 * min(1.0, zm / max(b['h'], 1.0)))
+                fr_ = min(1.0, zm / max(b['h'], 1.0)); k = c * tone[key] * (sh['lo'] + sh['span'] * fr_ ** sh['gamma'])
+                if sh['top'] is not None and fr_ >= .97: k = k * np.asarray(sh['top'], np.float32)
             else: k = c * .55
             fcol.append((*np.clip(k, 0, 1).tolist(), 1.0))
         base += len(Vb)
