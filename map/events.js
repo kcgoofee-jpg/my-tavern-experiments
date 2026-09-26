@@ -105,8 +105,27 @@ const TCEvents = (() => {
     if (!e || !REG.maps[mid] || REG.maps[mid].status === 'planned' || REG.maps[mid].kind === 'world') return !!e;
     if (mid !== cur) { flyId = id; go(mid); return false; }
     const p = pos(e), w = .22, h = w * ($('#osd').clientHeight / Math.max(1, $('#osd').clientWidth));
-    userMoved = true; viewer.viewport.fitBounds(new OpenSeadragon.Rect(p.nx - w / 2, p.ny * aspect - h / 2, w, h));
-    card(e, document.querySelector(`.ev[data-ev="${CSS.escape(id)}"]`)); return true;
+    userMoved = true;
+    const vp = viewer.viewport, target = new OpenSeadragon.Rect(p.nx - w / 2, p.ny * aspect - h / 2, w, h), now = vp.getBounds(true);
+    // 飞行：离得远就先拉远（把起点和目标一起框进来），再俯冲下去；近的直接平移。落地时雷达扫描 + 定位环收缩
+    const far = Math.hypot(now.x + now.width / 2 - p.nx, now.y + now.height / 2 - p.ny * aspect) > Math.max(now.width, w) * .9;
+    clearTimeout(flyT);
+    if (far && !reduce) {
+      const x0 = Math.min(now.x, target.x), y0 = Math.min(now.y, target.y), x1 = Math.max(now.x + now.width, target.x + w), y1 = Math.max(now.y + now.height, target.y + h);
+      vp.fitBounds(new OpenSeadragon.Rect(x0 - .02, y0 - .02, x1 - x0 + .04, y1 - y0 + .04));
+      flyT = setTimeout(() => { vp.fitBounds(target); flyT = setTimeout(() => land(e, p), 900); }, 750);
+    } else { vp.fitBounds(target, !!reduce); flyT = setTimeout(() => land(e, p), reduce ? 0 : 700); }
+    return true;
+  }
+  let flyT = 0;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function land(e, p) {
+    card(e, document.querySelector(`.ev[data-ev="${CSS.escape(e.id)}"]`));
+    if (reduce) return;
+    const el = document.createElement('div'); el.className = 'ev-radar'; el.style.setProperty('--c', look(e.cat)[1]);
+    el.innerHTML = '<span></span><span></span><span></span><i></i>';
+    viewer.addOverlay({ element: el, location: new OpenSeadragon.Point(p.nx, p.ny * aspect), placement: OpenSeadragon.Placement.CENTER });
+    setTimeout(() => viewer.removeOverlay(el), 2200);
   }
   // 打开某张图之后（onOpen 里调用）：画点；如果有待飞的事件，飞过去
   function afterOpen() { render(); if (flyId && flyTo(flyId)) flyId = null; }
@@ -159,6 +178,14 @@ const TCEvents = (() => {
   .ev.hot i{outline:2px solid #fff;outline-offset:3px}
   body.far .ev b{display:none} body.noevents .ev{display:none}
   .mk .lab[data-ev]::after{content:attr(data-ev);display:inline-block;margin-left:6px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:#e0182d;color:#fff;font:700 10px/15px 'PingFang SC',sans-serif;text-align:center;vertical-align:1px;box-shadow:0 0 6px rgba(224,24,45,.8)}
+  .ev-radar{--c:#fff;width:0;height:0;pointer-events:none;position:relative}
+  .ev-radar span{position:absolute;left:-60px;top:-60px;width:120px;height:120px;border-radius:50%;border:2px solid var(--c);opacity:0;animation:evradar 1.5s ease-out forwards}
+  .ev-radar span:nth-child(2){animation-delay:.25s}.ev-radar span:nth-child(3){animation-delay:.5s}
+  .ev-radar i{position:absolute;left:-36px;top:-36px;width:72px;height:72px;border:2px solid var(--c);border-radius:4px;box-shadow:0 0 12px var(--c);animation:evlock .9s cubic-bezier(.2,.8,.2,1) forwards}
+  .ev-radar i::before,.ev-radar i::after{content:'';position:absolute;background:var(--c)}
+  .ev-radar i::before{left:50%;top:-10px;bottom:-10px;width:1px}.ev-radar i::after{top:50%;left:-10px;right:-10px;height:1px}
+  @keyframes evradar{0%{transform:scale(.1);opacity:.9}100%{transform:scale(1);opacity:0}}
+  @keyframes evlock{0%{transform:scale(2.4) rotate(45deg);opacity:0}60%{opacity:1}100%{transform:scale(.45) rotate(0);opacity:0}}
   @keyframes evpulse{from{transform:scale(1);opacity:.9}to{transform:scale(2.2);opacity:0}}
   #evbar{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:6;max-width:min(460px,calc(100% - 16px));width:max-content;background:rgba(13,17,23,.92);border:1px solid rgba(240,138,36,.6);border-radius:12px;font-size:12px;color:#e6edf3;box-shadow:0 6px 18px rgba(0,0,0,.5)}
   #evbar[hidden]{display:none}
