@@ -101,10 +101,11 @@ async function main() {
     b.onclick = () => openTier(t.key); seg.appendChild(b); }
   viewer = OpenSeadragon({
     element: $('#osd'), prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5/build/openseadragon/images/',
-    showNavigator: true, navigatorPosition: 'BOTTOM_RIGHT', visibilityRatio: 1, constrainDuringPan: true,
+    showNavigator: true, navigatorPosition: 'BOTTOM_RIGHT', visibilityRatio: 1, constrainDuringPan: true, homeFillsViewer: true, minZoomImageRatio: 1,
     maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: true, imageLoaderLimit: 2, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true },
   });
   viewer.addHandler('open', onOpen);
+  viewer.addHandler('canvas-drag', () => userMoved = true); viewer.addHandler('canvas-scroll', () => userMoved = true); viewer.addHandler('canvas-pinch', () => userMoved = true);
   let lastRs = 0, queued = false;
   const rescale = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false;
     if (!viewer.world.getItemCount()) return;
@@ -130,7 +131,7 @@ function openTier(key) {
 function onOpen() {
   const it = viewer.world.getItemAt(0), sz = it.getContentSize(); aspect = sz.y / sz.x;
   $('#status').textContent = `${TIERS.find(t => t.key === tier).name}地图 · ${sz.x}×${sz.y}`;
-  viewer.clearOverlays(); addOverlays(); markHere($('#here').value);
+  viewer.clearOverlays(); addOverlays(); markHere($('#here').value); focusStart(true);
 }
 function place(el, x, y, placement = OpenSeadragon.Placement.TOP_LEFT) {
   const [nx, ny] = toImg(x, y); viewer.addOverlay({ element: el, location: new OpenSeadragon.Point(nx, ny * aspect), placement });
@@ -165,7 +166,16 @@ function addOverlays() {
   }
   for (const f of M.fiefs) marker({ name: f.name, tag: f.tag, src: f.src, x: f.x, y: f.y });
 }
-// 当前地点高亮（将来由 MVU 变量「世界.当前地点」驱动）
+// 初始视角：先聚焦当前地点（没有就聚焦天城），再由玩家自己缩小探索
+let userMoved = false;
+function focusStart(immediately) {
+  if (userMoved || !viewer || !viewer.world.getItemCount()) return;
+  const el = document.querySelector('.mk.here') || [...document.querySelectorAll('.mk')].find(e => e.dataset.name === '天城');
+  const p = el && M.places.find(q => q.name === el.dataset.name) || M.fiefs.find(q => q.name === el?.dataset.name) || M.places[0];
+  const [nx, ny] = toImg(p.x, p.y), w = .34, h = w * viewer.viewport.getContainerSize().y / viewer.viewport.getContainerSize().x;
+  viewer.viewport.fitBounds(new OpenSeadragon.Rect(nx - w / 2, ny * aspect - h / 2, w, h), immediately);
+}
+// 当前地点高亮（由 MVU 变量「世界.当前地点」驱动）
 // 庄园与天城内部的地点在世界图上都归到「天城」
 const ALIAS = { '天城': ['天城', '伊甸', '庄园', '书房', '主卧', '大厅', '餐厅', '会客厅', '客房', '寝', '浴室', '后庭', '前庭', '上层', '中层', '下层', '钢铁霓虹', '地基', '公寓'] };
 function markHere(v) {
@@ -177,7 +187,7 @@ function markHere(v) {
 // 嵌入酒馆（悬浮按钮面板）：接收当前地点；站内链接用 fetch + document.write 保持 <base>
 if (window.top !== window) {
   document.body.classList.add('embed');
-  window.addEventListener('message', e => { if (e.data?.type === 'eden-map:here') { $('#here').value = e.data.value || ''; markHere(e.data.value); } });
+  window.addEventListener('message', e => { if (e.data?.type === 'eden-map:here') { $('#here').value = e.data.value || ''; markHere(e.data.value); focusStart(false); } });
   document.addEventListener('click', async e => { const a = e.target.closest('a[href$=".html"]'); if (!a) return; e.preventDefault();
     const base = document.baseURI; const html = await fetch(new URL(a.getAttribute('href'), base)).then(r => r.text());
     document.open(); document.write(html.replace('<head>', `<head><base href="${base}">`)); document.close(); });

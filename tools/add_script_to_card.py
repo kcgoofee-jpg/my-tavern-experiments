@@ -27,6 +27,7 @@ def main():
     ap.add_argument('src'); ap.add_argument('dst')
     ap.add_argument('--name', required=True); ap.add_argument('--import', dest='url', required=True)
     ap.add_argument('--info', default='')
+    ap.add_argument('--version', default='', help='写入 character_version：原版本号 + "+map<版本>"')
     a = ap.parse_args()
     if a.src == a.dst:
         sys.exit('输出不能覆盖源文件')
@@ -45,6 +46,9 @@ def main():
                 data = card.get('data', card)
                 th = data.setdefault('extensions', {}).setdefault('tavern_helper', {'scripts': [], 'variables': {}})
                 scripts = th.setdefault('scripts', [])
+                if a.version:
+                    base = str(data.get('character_version', '')).split('+map')[0]
+                    data['character_version'] = f"{base}+map{a.version}" if base else f"map{a.version}"
                 old = next((s for s in scripts if s.get('name') == a.name), None)
                 if old: entry['id'] = old.get('id', entry['id']); scripts[scripts.index(old)] = entry
                 else: scripts.append(entry)
