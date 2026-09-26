@@ -1,19 +1,23 @@
-// 伊甸庄园 · 场景、相机、楼层剖切、标签、房间卡、缩放交互与嵌入协议（协议说明见 index.html 顶部注释）
+// 伊甸庄园 · 场景、相机、楼层剖切、标签、房间卡、缩放交互、画质分级、传承导览与嵌入协议（协议说明见 index.html 顶部注释）
+// 对 plan / building / site / furniture 一律用命名空间导入并做存在性检查：其它工作包改到一半时页面仍能运行。
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { initMaterials, initProtos, Batch, MATS } from './lib.js';
-import { FLOORS, ROOMS, AREAS, SHAFTS, CUT, EN, FLOOR_EN, SRC_EN } from './plan.js';
-import { buildHouse, buildWings, buildShafts, setRooms } from './building.js';
-import { buildIsland, buildGardens } from './site.js';
-import { furnish } from './furniture.js';
+import * as L from './lib.js';
+import * as P from './plan.js';
+import * as BLD from './building.js';
+import * as SITE from './site.js';
+import * as FUR from './furniture.js';
 
 const T0 = performance.now();
 const Q = new URLSearchParams(location.search);
 const IN_FRAME = window.parent !== window;
 const EMBED = Q.get('embed') === '1' || location.protocol === 'about:';
 const STATS = Q.get('stats') === '1';
+const DEBUG = Q.get('debug') === '1';
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const COARSE = matchMedia('(pointer: coarse)').matches;
 let LANG = Q.get('lang') === 'en' ? 'en' : 'zh';
 let THEME = Q.get('theme') === 'light' ? 'light' : 'dark';
 document.body.classList.toggle('embed', EMBED);
@@ -21,210 +25,354 @@ document.documentElement.dataset.theme = THEME;
 const $ = (s) => document.querySelector(s);
 const app = $('#app');
 let needs = true;
+const clamp = THREE.MathUtils.clamp;
+
+/* ---------------- 数据（带兜底） ---------------- */
+const FLOORS = P.FLOORS, ROOMS = P.ROOMS || [], AREAS = P.AREAS || [], SHAFTS = P.SHAFTS || [];
+const CUT = P.CUT ?? 1.2, EN = P.EN || {}, FLOOR_EN = P.FLOOR_EN || ['State', 'Daily', 'Private', 'Service', 'Lookout'], SRC_EN = P.SRC_EN || {};
+const HERITAGE = Array.isArray(P.HERITAGE) ? P.HERITAGE : [];
+const rankOf = (r) => r.rank ?? (r.minor ? 3 : (r.r[1] - r.r[0]) * (r.r[3] - r.r[2]) >= 150 ? 1 : 2);
+// 主楼 + 两翼 + 塔亭的外包（楼层视图按它适配）
+const EXT = (() => { let x0 = 0, x1 = 0, z0 = 0, z1 = 0; for (const r of ROOMS) { x0 = Math.min(x0, r.r[0]); x1 = Math.max(x1, r.r[1]); z0 = Math.min(z0, r.r[2]); z1 = Math.max(z1, r.r[3]); } return { x0, x1, z0, z1, w: Math.max(40, 2 * Math.max(-x0, x1)), d: Math.max(20, z1 - z0), cz: (z0 + z1) / 2 }; })();
+
+/* ---------------- 画质分级 T0 / T1 / T2 ---------------- */
+const qTier = Q.get('tier');
+const TIER_FIXED = qTier != null && /^[012]$/.test(qTier);
+let tier = TIER_FIXED ? +qTier : (COARSE || (navigator.deviceMemory || 8) <= 4 || innerWidth < 700) ? 1 : 0;
+const MAT_TIER = tier;           // 材质档在启动时定，运行时降档不换材质
+const DPR_CAP = [2, 1.5, 1];
+const dprFor = (t) => Math.min(window.devicePixelRatio || 1, DPR_CAP[t]);
+let dpr = dprFor(tier), lowRes = false;
 
 /* ---------------- 渲染器 ---------------- */
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const renderer = new THREE.WebGLRenderer({ antialias: tier === 0, alpha: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(dpr);
 renderer.setSize(innerWidth, innerHeight);
 renderer.setClearColor(0x000000, 0);
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.02;
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = false;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
+renderer.shadowMap.enabled = tier < 2; renderer.shadowMap.type = tier === 0 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap; renderer.shadowMap.autoUpdate = false;
 app.prepend(renderer.domElement);
 const labelR = new CSS2DRenderer({ element: $('#labels') }); labelR.setSize(innerWidth, innerHeight);
+document.body.classList.toggle('grade', tier < 2);
 
 const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
-initMaterials(null); initProtos();
-for (const m of Object.values(MATS)) if (m.envMapIntensity === 1) m.envMapIntensity = 0.42;
+pmrem.dispose();
+L.initMaterials(null, MAT_TIER); if (typeof L.initProtos === 'function') L.initProtos();
+for (const m of Object.values(L.MATS)) if (m && m.envMapIntensity === 1) m.envMapIntensity = 0.6;
+// 室外淡暖雾：常驻（切换 fog 会重编译着色器），楼层模式把距离推远等于关闭
+const FOG_ON = [880, 2500], FOG_OFF = [1e5, 1e5 + 1];
+scene.fog = new THREE.Fog('#e9d9bd', ...FOG_ON);
 
-const hemi = new THREE.HemisphereLight('#e4ebf2', '#7a6d5a', 0.85); scene.add(hemi);
-const sun = new THREE.DirectionalLight('#fff0da', 2.7);
-const SUN_DIR = new THREE.Vector3(-0.62, 1.0, 0.78).normalize();
-sun.castShadow = true; const SM = matchMedia('(pointer: coarse)').matches ? 1536 : 2048; sun.shadow.mapSize.set(SM, SM);
+/* ---------------- 光：黄金时刻的太阳 + 半球光 + 固定数量的室内暖光 ---------------- */
+const hemi = new THREE.HemisphereLight('#dfe6f0', '#6b5a44', 0.5); scene.add(hemi);
+const sun = new THREE.DirectionalLight('#ffd9a0', 3.1);
+const SUN_DIR = new THREE.Vector3(-0.85, 0.37, 0.37).normalize();   // 高度约 22°，西南偏西
+sun.castShadow = tier < 2; const SM = tier === 0 ? 2048 : 1024; sun.shadow.mapSize.set(SM, SM);
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.05;
 scene.add(sun, sun.target);
 let shadowTight = null;
 function fitShadow(tight) {
   if (tight === shadowTight) return; shadowTight = tight;
-  const c = sun.shadow.camera, h = tight ? 104 : 390;
-  sun.target.position.set(0, 0, tight ? 4 : 0); sun.position.copy(SUN_DIR).multiplyScalar(800).add(sun.target.position);
-  c.left = -h; c.right = h; c.top = h; c.bottom = -h; c.near = 300; c.far = 1500; c.updateProjectionMatrix();
+  const c = sun.shadow.camera, h = tight ? Math.max(70, EXT.w / 2 + 16) : 400;
+  sun.target.position.set(0, 0, tight ? EXT.cz : 25); sun.position.copy(SUN_DIR).multiplyScalar(900).add(sun.target.position);
+  c.left = -h; c.right = h; c.top = h; c.bottom = -h; c.near = 300; c.far = 1700; c.updateProjectionMatrix();
   sun.target.updateMatrixWorld(); renderer.shadowMap.needsUpdate = true;
 }
+// 每层一盏 + 焦点光（T0 2 / T1 1 / T2 0）；数量全程不变，只调强度（灯数变化会让所有着色器重编译）
+const WARM = '#ffcf8a', FLOOR_I = 38, FOCUS_I = 26;
+const floorLights = FLOORS.map((f) => { const l = new THREE.PointLight(WARM, 0, 70, 1.2); l.position.set(0, f.y + 3.2, EXT.cz); scene.add(l); return l; });
+const focusLights = Array.from({ length: [2, 1, 0][MAT_TIER] }, () => { const l = new THREE.PointLight(WARM, 0, 26, 1.2); scene.add(l); return l; });
 
 /* ---------------- 相机与控制 ---------------- */
 const BASE = 60, DIST = 900;
 const camera = new THREE.OrthographicCamera(-BASE, BASE, BASE, -BASE, 1, 3000);
 let minZoom = 0.1, maxZoom = 20;
+const barBox = () => { const bar = document.getElementById('floors'); if (!bar || !bar.offsetWidth) return null; const r = bar.getBoundingClientRect(); return { r, horiz: r.width > r.height }; };
 function frustum() {
   const a = innerWidth / innerHeight; camera.left = -BASE * a; camera.right = BASE * a; camera.top = BASE; camera.bottom = -BASE; camera.updateProjectionMatrix();
   minZoom = Math.min(2 * BASE * a / 820, 2 * BASE / 720); maxZoom = 2 * BASE / 7;
-  // 左侧楼层条占掉的宽度：把画面中心往右挪一半
-  const bar = document.getElementById('floors'), right = bar && bar.offsetWidth ? bar.getBoundingClientRect().right : 0;
-  camera.setViewOffset(innerWidth, innerHeight, -Math.round(right / 2), 0, innerWidth, innerHeight);
+  // 楼层条占掉的地方：桌面在左侧（画面中心右移），手机在底部（画面中心上移）
+  const b = barBox(); let ox = 0, oy = 0;
+  if (b) { if (b.horiz) oy = Math.round((innerHeight - b.r.top) / 2); else ox = -Math.round(b.r.right / 2); }
+  camera.setViewOffset(innerWidth, innerHeight, ox, oy, innerWidth, innerHeight);
 }
 frustum();
-const fitZoom = (w, h) => { const bar = document.getElementById('floors'); const usable = Math.max(0.5, 1 - (bar ? bar.getBoundingClientRect().right + 10 : 0) / innerWidth); return Math.min(2 * BASE * (innerWidth / innerHeight) * usable / w, 2 * BASE / h); };
+const fitZoom = (w, h) => {
+  const b = barBox(); let uw = 1, uh = 1;
+  if (b) { if (b.horiz) uh = Math.max(0.6, 1 - (innerHeight - b.r.top + 8) / innerHeight); else uw = Math.max(0.5, 1 - (b.r.right + 10) / innerWidth); }
+  return Math.min(2 * BASE * (innerWidth / innerHeight) * uw / w, 2 * BASE * uh / h);
+};
 const PORTRAIT = () => innerWidth / innerHeight < 0.8;
 const controls = new OrbitControls(camera, renderer.domElement);
 Object.assign(controls, { enableDamping: true, dampingFactor: 0.14, rotateSpeed: 0.55, screenSpacePanning: true, enableZoom: false, minPolarAngle: 0.18, maxPolarAngle: 1.3 });
 controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.PAN };
 controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN };
-const AZ = 0.62, POL = 0.93;
+const AZ = 0.42;
 function placeCam(target, theta, phi) {
   camera.position.set(target.x + DIST * Math.sin(phi) * Math.sin(theta), target.y + DIST * Math.cos(phi), target.z + DIST * Math.sin(phi) * Math.cos(theta));
   controls.target.copy(target); camera.lookAt(target);
 }
-
-/* ---------------- 构建 ---------------- */
-setRooms((fi) => ROOMS.filter((r) => r.floor === fi));
-const full = FLOORS.map((f, i) => new Batch('full' + i)), cut = FLOORS.map((f, i) => new Batch('cut' + i)), site = new Batch('site');
-buildHouse(full, cut, site); buildWings(site); buildIsland(scene, site); buildGardens(site);
-scene.add(site.build());
-const fullG = full.map((b) => { const g = b.build(); scene.add(g); return g; });
-const floorG = FLOORS.map((f, i) => { const g = new THREE.Group(); g.name = 'floor' + i; const c = cut[i].build(); g.add(c); g.userData.cut = c; scene.add(g); return g; });
-const shaftG = buildShafts(floorG);
-const furnG = [];
-function ensureFurn(i) {
-  if (furnG[i]) return; const b = new Batch('furn' + i); furnish(b, i); furnG[i] = b.build(); floorG[i].add(furnG[i]);
-  renderer.shadowMap.needsUpdate = true; needs = true;
+// 在给定方位下，一个 w × d（x × z）、高 h 的盒子投影到屏幕上的宽高
+function projExtent(w, d, h, theta, phi) {
+  const c = Math.abs(Math.cos(theta)), s = Math.abs(Math.sin(theta));
+  return [w * c + d * s, (w * s + d * c) * Math.cos(phi) + h * Math.sin(phi)];
 }
-ensureFurn(4);
+
+/* ---------------- 构建：外观先出，各层剖切 / 家具 / 细件延迟 ---------------- */
+const NEWAPI = typeof BLD.buildCut === 'function';
+if (typeof BLD.setRooms === 'function') BLD.setRooms((fi) => ROOMS.filter((r) => r.floor === fi));
+const full = FLOORS.map((f, i) => new L.Batch('full' + i)), cut = FLOORS.map((f, i) => new L.Batch('cut' + i)), site = new L.Batch('site', { tile: Q.has('tile') ? +Q.get('tile') : 128 });
+const TB = {};
+let t = performance.now();
+if (NEWAPI) BLD.buildHouse(full, site); else { BLD.buildHouse(full, cut, site); if (typeof BLD.buildWings === 'function') BLD.buildWings(site); }
+TB.house = performance.now() - t; t = performance.now();
+if (typeof SITE.buildIsland === 'function') SITE.buildIsland(scene, site);
+if (typeof SITE.buildGardens === 'function') SITE.buildGardens(site);
+TB.site = performance.now() - t; t = performance.now();
+const SUBS = [];   // 所有带子批次的组：按相机方位 / 可见宽度切换
+const reg = (g) => { if (g && g.userData && g.userData.subs) SUBS.push(g); return g; };
+const siteG = reg(site.build({ defer: ['fine'] })); scene.add(siteG);
+const fullG = full.map((b) => { const g = reg(b.build({ defer: ['fine'] })); scene.add(g); return g; });
+TB.merge = performance.now() - t;
+const floorG = FLOORS.map((f, i) => { const g = new THREE.Group(); g.name = 'floor' + i; g.visible = false; scene.add(g); return g; });
+const cutG = [], furnG = [];
+let subDirty = true;
+function warm(g) {   // 提前编译新建楼层的着色器，首次切层不卡
+  if (typeof renderer.compileAsync !== 'function') return;
+  const v = [], p = []; for (let o = g; o; o = o.parent) { p.push(o); v.push(o.visible); o.visible = true; }
+  try { if (renderer.extensions.has('KHR_parallel_shader_compile')) renderer.compileAsync(g, camera, scene).catch(() => { }); else renderer.compile(g, camera, scene); } catch (e) { }
+  p.forEach((o, i) => { o.visible = v[i]; });
+}
+function ensureCut(i) {
+  if (cutG[i]) return cutG[i];
+  const t0 = performance.now();
+  try { if (NEWAPI) BLD.buildCut(cut[i], i); } catch (e) { console.error('buildCut', i, e); }
+  const g = reg(cut[i].build({ defer: ['fine'] })); g.name = 'cut' + i; g.visible = mode !== 'ext';
+  floorG[i].add(g); cutG[i] = g; floorG[i].userData.cut = g;
+  TB['cut' + i] = performance.now() - t0;
+  warm(g); renderer.shadowMap.needsUpdate = true; needs = true; subDirty = true;
+  return g;
+}
+function ensureFurn(i) {
+  if (furnG[i]) return furnG[i];
+  const t0 = performance.now(), b = new L.Batch('furn' + i);
+  try { if (typeof FUR.furnish === 'function') FUR.furnish(b, i); } catch (e) { console.error('furnish', i, e); }
+  const g = reg(b.build({ defer: ['fine'] })); furnG[i] = g; floorG[i].add(g);
+  if (tier >= 1) g.traverse((o) => { o.castShadow = false; });
+  TB['furn' + i] = performance.now() - t0;
+  warm(g); renderer.shadowMap.needsUpdate = true; needs = true; subDirty = true;
+  return g;
+}
+const shaftG = typeof BLD.buildShafts === 'function' ? BLD.buildShafts(floorG) : FLOORS.map((f, i) => { const g = new THREE.Group(); floorG[i].add(g); return g; });
+ensureFurn(4);   // 屋顶露台在外观里就能看到
 const T_BUILD = performance.now() - T0;
 
-/* ---------------- 数据项：房间 / 区域 / 竖井 ---------------- */
+/* ---------------- 数据项：房间 / 区域 / 竖井 / 传承件 ---------------- */
 const pickMat = new THREE.MeshBasicMaterial({ visible: false });
 const ITEMS = [];
 ROOMS.forEach((r) => {
-  const [x0, x1, z0, z1] = r.r, f = FLOORS[r.floor];
-  const it = { kind: 'room', d: r, floor: r.floor, cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, w: x1 - x0, dd: z1 - z0, y: f.y };
+  const [x0, x1, z0, z1] = r.r, f = FLOORS[r.floor]; if (!f) return;
+  const it = { kind: 'room', d: r, floor: r.floor, cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, w: x1 - x0, dd: z1 - z0, y: f.y, rank: rankOf(r) };
   const m = new THREE.Mesh(new THREE.BoxGeometry(it.w, CUT + 0.2, it.dd), pickMat); m.position.set(it.cx, f.y + (CUT + 0.2) / 2, it.cz); m.userData.item = it; floorG[r.floor].add(m); it.pick = m;
   const lp = r.lp || [it.cx, it.cz];
   it.label = mkLabel(floorG[r.floor], lp[0], f.y + (r.floor === 4 ? 1.9 : CUT + 0.9), lp[1], 'room');
-  it.pri = it.w * it.dd * (r.minor ? 0.2 : 1); ITEMS.push(it);
+  it.pri = (4 - it.rank) * 10000 + it.w * it.dd * (r.minor ? 0.2 : 1); ITEMS.push(it);
 });
 AREAS.forEach((a) => {
-  const it = { kind: 'area', d: a, floor: null, cx: a.x, cz: a.z, w: a.w || a.r * 2, dd: a.d || a.r * 2, y: 0, round: !!a.r || !!a.ell };
-  const hgt = a.pri >= 10 ? 30 : a.name.includes('楼') || a.name.includes('机库') || a.name === '温室' ? 16 : 1.5;
+  const it = { kind: 'area', d: a, floor: null, cx: a.x, cz: a.z, w: a.w || a.r * 2, dd: a.d || a.r * 2, y: 0, round: !!a.r || !!a.ell, rank: (a.pri ?? 5) <= 4 ? 3 : 1 };
+  const hgt = a.h || (a.pri >= 10 ? 30 : /楼|机库|塔|音乐厅|橘园|温室/.test(a.name) ? 16 : 1.5);
   const g = it.round ? new THREE.CylinderGeometry(1, 1, hgt, 32).scale(it.w / 2, 1, it.dd / 2) : new THREE.BoxGeometry(it.w, hgt, it.dd);
   const m = new THREE.Mesh(g, pickMat); m.position.set(a.x, hgt / 2, a.z); m.userData.item = it; scene.add(m); it.pick = m;
-  it.label = mkLabel(scene, a.x, a.y, a.z, 'area'); it.pri = a.pri * 1000; ITEMS.push(it);
+  it.label = mkLabel(scene, a.x, a.y ?? 3, a.z, 'area'); it.pri = (a.pri ?? 5) * 1000; ITEMS.push(it);
 });
 SHAFTS.forEach((s) => {
   const [x0, x1, z0, z1] = s.r; const it = { kind: 'shaft', d: s, floor: null, cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, w: x1 - x0, dd: z1 - z0, picks: [] };
-  shaftG.forEach((g) => g.children.forEach((c) => { if (c.userData.shaft === s) { c.userData.item = it; it.picks.push(c); } }));
+  (shaftG || []).forEach((g) => g.children.forEach((c) => { if (c.userData.shaft === s) { c.userData.item = it; it.picks.push(c); } }));
   ITEMS.push(it);
 });
-const floorTags = FLOORS.map((f, i) => mkLabel(floorG[i], -44, f.y + 0.6, 13, 'floor'));
+const floorTags = FLOORS.map((f, i) => { const rs = ROOMS.filter((r) => r.floor === i); const x = rs.length ? Math.min(...rs.map((r) => r.r[0])) - 3 : -44; return mkLabel(floorG[i], x, f.y + 0.6, rs.length ? Math.max(...rs.map((r) => r.r[3])) : 13, 'floor'); });
+// 传承件 ◆ 标记
+const HITEMS = HERITAGE.map((h) => {
+  const it = { kind: 'heritage', d: h, floor: h.floor ?? null, cx: h.x, cz: h.z, w: 2, dd: 2, y: h.y };
+  const parent = it.floor != null && floorG[it.floor] ? floorG[it.floor] : scene;
+  const el = document.createElement('div'); el.className = 'mk'; el.appendChild(document.createElement('i'));
+  el.addEventListener('click', (e) => { e.stopPropagation(); pin(it, false); });
+  el.addEventListener('dblclick', (e) => { e.stopPropagation(); focusHeritage(it); });
+  el.addEventListener('pointerenter', () => { if (!pinned) showCard(it, null); });
+  el.addEventListener('pointerleave', () => { if (!pinned) hideCard(); });
+  const o = new CSS2DObject(el); o.position.set(h.x, h.y ?? 0, h.z); o.visible = false; parent.add(o); it.mk = o; return it;
+});
 
 function mkLabel(parent, x, y, z, cls) {
   const el = document.createElement('div'); el.className = 'lbl ' + cls; el.appendChild(document.createElement('span'));
   const o = new CSS2DObject(el); o.position.set(x, y, z); o.center.set(0.5, 0.5); o.visible = false; parent.add(o); return o;
 }
-const nameOf = (it) => LANG === 'en' ? (EN[it.d.name] || [it.d.name])[0] : it.d.name;
-const useOf = (it) => LANG === 'en' ? (EN[it.d.name] || [, it.d.use])[1] : it.d.use;
+const enOf = (name) => EN[name] || [];
+const nameOf = (it) => LANG === 'en' ? (it.kind === 'heritage' ? it.d.en || it.d.name : enOf(it.d.name)[0] || it.d.name) : it.d.name;
+const useOf = (it) => LANG === 'en' ? enOf(it.d.name)[1] || it.d.use : it.d.use;
+const heritageOf = (it) => LANG === 'en' ? enOf(it.d.name)[2] || it.d.heritage_en || '' : it.d.heritage || '';
 const floorName = (i) => LANG === 'en' ? `${FLOORS[i].label} · ${FLOOR_EN[i]}` : `${FLOORS[i].label} · ${FLOORS[i].name}`;
 function relabel() {
   for (const it of ITEMS) if (it.label) { it.label.element.firstChild.textContent = nameOf(it); it.lw = 0; }
   floorTags.forEach((o, i) => { o.element.firstChild.textContent = floorName(i); });
+  HITEMS.forEach((it) => { it.mk.element.title = nameOf(it); });
 }
 
 /* ---------------- UI 文案 ---------------- */
 const TXT = {
-  zh: { ext: '外观', all: '全部', shafts: '竖井', title: '伊甸庄园', sub: '新古典主义府邸 · 剖切模型', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合缩放 · 双击房间拉近，双击空白复位', zin: '放大', zout: '缩小', zreset: '复位', floor: '楼层', size: '尺寸', use: '用途', src: '出处', thru: '贯穿 1F–5F', estate: '室外', dia: '直径', loading: '加载中…' },
-  en: { ext: 'Exterior', all: 'All', shafts: 'Shafts', title: 'Eden Manor', sub: 'Neoclassical mansion · cutaway', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch to zoom · double-click a room to zoom in, empty space to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset', floor: 'Floor', size: 'Size', use: 'Use', src: 'Source', thru: 'through 1F–5F', estate: 'Grounds', dia: 'diameter', loading: 'Loading…' },
+  zh: { ext: '外观', all: '全部', shafts: '竖井', tour: '传承', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '新古典主义府邸 · 剖切模型', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位', floor: '楼层', size: '尺寸', use: '用途', src: '出处', thru: '贯穿各层', estate: '室外', dia: '直径', her: '传承细节', era: '年代', heritage: '传承件', loading: '加载中…', prev: '上一站', next: '下一站', close: '关闭' },
+  en: { ext: 'Exterior', all: 'All', shafts: 'Shafts', tour: 'Heritage', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Neoclassical house · cutaway', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset', floor: 'Floor', size: 'Size', use: 'Use', src: 'Source', thru: 'through the floors', estate: 'Grounds', dia: 'diameter', her: 'Heritage', era: 'Era', heritage: 'Heirloom', loading: 'Loading…', prev: 'Previous', next: 'Next', close: 'Close' },
 };
-const t = (k) => TXT[LANG][k];
+const tx = (k) => TXT[LANG][k];
 const floorsEl = $('#floors'); const BTN = {};
 function buildNav() {
-  floorsEl.innerHTML = '';
-  const add = (key, html, cls = '') => { const b = document.createElement('button'); b.type = 'button'; b.innerHTML = html; if (cls) b.className = cls; b.onclick = () => (key === 'shafts' ? toggleShafts() : setMode(key, { fly: true, user: true })); floorsEl.appendChild(b); BTN[key] = b; return b; };
-  add('ext', t('ext')); add('all', t('all')); floorsEl.appendChild(document.createElement('hr'));
-  for (let i = 4; i >= 0; i--) add(i, `${FLOORS[i].label}<small>${LANG === 'en' ? FLOOR_EN[i] : FLOORS[i].name}</small>`);
-  floorsEl.appendChild(document.createElement('hr'));
-  add('shafts', `<b></b>${t('shafts')}`, 'tog');
+  floorsEl.innerHTML = ''; for (const k of Object.keys(BTN)) delete BTN[k];
+  const sep = () => floorsEl.appendChild(document.createElement('hr'));
+  const add = (key, html, cls = '') => { const b = document.createElement('button'); b.type = 'button'; b.innerHTML = html; if (cls) b.className = cls; b.onclick = () => (key === 'shafts' ? toggleShafts() : key === 'tour' ? toggleTour() : setMode(key, { fly: true, user: true })); floorsEl.appendChild(b); BTN[key] = b; return b; };
+  add('ext', tx('ext')); add('all', tx('all')); sep();
+  for (let i = FLOORS.length - 1; i >= 0; i--) add(i, `${FLOORS[i].label}<small>${LANG === 'en' ? FLOOR_EN[i] : FLOORS[i].name}</small>`);
+  sep(); add('shafts', `<b></b><span class="t">${tx('shafts')}</span>`, 'tog');
+  if (TOUR.length) add('tour', `◆<span class="t"> ${tx('tour')}</span>`, 'tourb');
   syncNav();
-  $('#title h1').textContent = t('title'); $('#title p').textContent = t('sub'); $('#hint').textContent = t('hint');
-  $('#zin').title = t('zin'); $('#zout').title = t('zout'); $('#zreset').title = t('zreset'); document.documentElement.lang = LANG === 'en' ? 'en' : 'zh-CN';
+  $('#title h1').textContent = tx('title'); $('#title .motto').textContent = tx('motto'); $('#title .sub').textContent = tx('sub'); $('#hint').textContent = tx('hint');
+  $('#zin').title = tx('zin'); $('#zout').title = tx('zout'); $('#zreset').title = tx('zreset'); document.documentElement.lang = LANG === 'en' ? 'en' : 'zh-CN';
+  const tr = $('#tour'); tr.querySelector('.prev').title = tx('prev'); tr.querySelector('.next').title = tx('next'); tr.querySelector('.x').title = tx('close');
+  if (tourI >= 0) showTourText();
 }
-function syncNav() { for (const [k, b] of Object.entries(BTN)) { if (k === 'shafts') b.classList.toggle('act', showShafts); else b.classList.toggle('on', String(mode) === k); } }
+function syncNav() { for (const [k, b] of Object.entries(BTN)) { if (k === 'shafts') b.classList.toggle('act', showShafts); else if (k === 'tour') b.classList.toggle('on', tourI >= 0); else b.classList.toggle('on', String(mode) === k); } }
 
 /* ---------------- 模式：ext / all / 0..4 ---------------- */
 let mode = 'ext', showShafts = true;
 const EXPL = 8.5;
 const offs = FLOORS.map(() => 0), offTarget = FLOORS.map(() => 0);
 function viewFor(m) {
-  const P = PORTRAIT();
-  if (m === 'ext') return { target: new THREE.Vector3(0, 6, P ? 18 : 30), zoom: P ? fitZoom(140, 1) : fitZoom(250, 150), theta: AZ, phi: POL };
-  if (m === 'all') return { target: new THREE.Vector3(0, 19, 0), zoom: P ? fitZoom(100, 1) : fitZoom(120, 116), theta: AZ, phi: 0.86 };
-  return { target: new THREE.Vector3(0, FLOORS[m].y, 1), zoom: P ? fitZoom(72, 1) : fitZoom(94, 62), theta: AZ, phi: 0.8 };
+  const P_ = PORTRAIT();
+  if (m === 'ext') {
+    // 正对中轴：停靠环 → 大道 → 喷泉 → 门廊 → 穹顶 → 湖心亭
+    if (P_) { const th = 0.12, ph = 0.95; const [, h] = projExtent(60, 390, 30, th, ph); return { target: new THREE.Vector3(0, 5, 88), zoom: fitZoom(1, h * 0.98), theta: th, phi: ph }; }
+    const th = 0.25, ph = 1.05; const [w, h] = projExtent(250, 390, 30, th, ph);
+    return { target: new THREE.Vector3(0, 5, 85), zoom: fitZoom(w * 0.92, h * 0.98), theta: th, phi: ph };
+  }
+  const W = P_ ? Math.min(EXT.w, 112) : EXT.w + 6;
+  if (m === 'all') { const [w, h] = projExtent(W, EXT.d, FLOORS.length * EXPL + 12, AZ, 0.86); return { target: new THREE.Vector3(0, FLOORS[2].y + 2 * EXPL, EXT.cz), zoom: P_ ? fitZoom(w, 1) : fitZoom(w * 1.04, h * 1.04), theta: AZ, phi: 0.86 }; }
+  const [w, h] = projExtent(W, EXT.d, 6, AZ, 0.8);
+  return { target: new THREE.Vector3(0, FLOORS[m].y, EXT.cz), zoom: P_ ? fitZoom(w * 0.9, 1) : fitZoom(w * 1.04, h * 1.1), theta: AZ, phi: 0.8 };
 }
 function setMode(m, o = {}) {
   if (typeof m === 'string' && /^\d$/.test(m)) m = +m;
   mode = m;
+  if (typeof m === 'number') { ensureCut(m); ensureFurn(m); }
+  if (m === 'all') FLOORS.forEach((f, i) => { ensureCut(i); ensureFurn(i); });
   fullG.forEach((g, i) => { g.visible = m === 'ext' || (typeof m === 'number' && i < m); });
   floorG.forEach((g, i) => {
     const on = m === 'all' || m === i || (m === 'ext' && i === 4);
-    g.visible = on; g.userData.cut.visible = m !== 'ext';
-    if (on) ensureFurn(i);
-    shaftG[i].visible = showShafts && m !== 'ext' && on;
+    g.visible = on; if (cutG[i]) cutG[i].visible = m !== 'ext';
+    if (furnG[i]) furnG[i].visible = true;
+    if (shaftG[i]) shaftG[i].visible = showShafts && m !== 'ext' && on;
     offTarget[i] = m === 'all' ? i * EXPL : 0;
   });
+  scene.fog.near = m === 'ext' ? FOG_ON[0] : FOG_OFF[0]; scene.fog.far = m === 'ext' ? FOG_ON[1] : FOG_OFF[1];
   if (pinned && !itemVisible(pinned)) unpin();
-  hover = null; hideCard(true);
-  syncNav(); updateLabelSet(); renderer.shadowMap.needsUpdate = true; needs = true;
+  hover = null; hideCard(true); showHi(hiHover, null);
+  syncNav(); updateLabelSet(); lightsFor(); subDirty = true; renderer.shadowMap.needsUpdate = true; needs = true;
   if (o.fly) flyTo(viewFor(m));
   if (o.user) post({ type: 'estate:floor', floor: modeKey(m) });
 }
 const modeKey = (m) => (typeof m === 'number' ? FLOORS[m].id : m);
-function toggleShafts() { showShafts = !showShafts; shaftG.forEach((g, i) => { g.visible = showShafts && mode !== 'ext' && floorG[i].visible; }); syncNav(); needs = true; renderer.shadowMap.needsUpdate = true; }
+function toggleShafts() { showShafts = !showShafts; shaftG.forEach((g, i) => { if (g) g.visible = showShafts && mode !== 'ext' && floorG[i].visible; }); syncNav(); needs = true; renderer.shadowMap.needsUpdate = true; }
 function itemVisible(it) {
   if (it.kind === 'area') return mode === 'ext';
   if (it.kind === 'shaft') return mode !== 'ext' && showShafts;
+  if (it.kind === 'heritage') return it.floor == null ? mode === 'ext' : mode === 'all' || mode === it.floor;
   return mode === 'all' || mode === it.floor;
 }
 function parseFloor(f) {
   if (f == null) return null; const s = String(f).trim().toLowerCase();
   if (['ext', 'exterior', '外观', 'out'].includes(s)) return 'ext';
   if (['all', '全部', 'cutaway'].includes(s)) return 'all';
-  const n = s.match(/(\d)/); if (n) { const k = +n[1]; if (k >= 1 && k <= 5) return k - 1; }
+  const n = s.match(/(\d)/); if (n) { const k = +n[1]; if (k >= 1 && k <= FLOORS.length) return k - 1; }
   return null;
 }
+// 室内暖光：只调强度
+function lightsFor() {
+  floorLights.forEach((l, i) => { l.intensity = mode === i ? FLOOR_I : mode === 'all' ? FLOOR_I * 0.55 : 0; });
+  const tgt = pinned && (pinned.kind === 'room' || (pinned.kind === 'heritage' && pinned.floor != null)) ? pinned : null;
+  focusLights.forEach((l, k) => {
+    if (!tgt || k > 0) { l.intensity = 0; return; }
+    const f = FLOORS[tgt.floor], hh = Math.min((f.h || 4.5) - 0.6, 3.4);
+    l.position.set(tgt.cx, f.y + hh + offs[tgt.floor], tgt.cz); l.userData.floor = tgt.floor; l.userData.dy = f.y + hh; l.intensity = FOCUS_I;
+  });
+}
 
-/* ---------------- 标签：按模式、缩放与重叠筛选 ---------------- */
+/* ---------------- 标签：按等级、模式、缩放与重叠筛选 ---------------- */
 let labelSet = [];
 function updateLabelSet() {
   labelSet = [];
   for (const it of ITEMS) { if (!it.label) continue; const on = itemVisible(it) && it.kind !== 'shaft'; it.label.visible = on; if (on) labelSet.push(it); }
   floorTags.forEach((o) => { o.visible = mode === 'all'; });
+  HITEMS.forEach((it) => { it.mk.visible = itemVisible(it); });
 }
 const _v = new THREE.Vector3();
 function cullLabels() {
   const W = innerWidth, H = innerHeight, placed = [];
   const visW = (camera.right - camera.left) / camera.zoom;
-  const list = labelSet.slice().sort((a, b) => (b === pinned) - (a === pinned) || b.pri - a.pri);
+  const list = labelSet.slice().sort((a, b) => (b === pinned) - (a === pinned) || (b === hover) - (a === hover) || b.pri - a.pri);
   for (const it of list) {
-    const el = it.label.element;
+    const el = it.label.element, hot = it === pinned || it === hover;
     let ok = true;
-    if (it.kind === 'area' && visW > 520 && it.d.pri < 8) ok = false;
-    if (it.kind === 'area' && visW < 60 && it.d.pri < 10) ok = false;
-    if (it.kind === 'room' && mode === 'all' && visW > 150 && it.pri < 150) ok = false;
-    it.label.getWorldPosition(_v).project(camera);
-    const x = (_v.x + 1) / 2 * W, y = (1 - _v.y) / 2 * H;
-    if (!it.lw) { it.lw = el.firstChild.offsetWidth || 60; it.lh = el.firstChild.offsetHeight || 18; }
-    const r = [x - it.lw / 2 - 3, y - it.lh / 2 - 2, x + it.lw / 2 + 3, y + it.lh / 2 + 2];
-    if (ok && it !== pinned) for (const p of placed) if (r[0] < p[2] && r[2] > p[0] && r[1] < p[3] && r[3] > p[1]) { ok = false; break; }
-    if (ok) placed.push(r);
+    if (it.rank === 3 && !hot) ok = false;                                   // 服务用房 / 服务区：只在悬停时显示
+    if (it.kind === 'room' && it.rank === 2 && visW >= 120 && !hot) ok = false;
+    if (it.kind === 'area' && visW > 520 && (it.d.pri ?? 5) < 8 && !hot) ok = false;
+    if (it.kind === 'area' && visW < 60 && (it.d.pri ?? 5) < 10 && !hot) ok = false;
+    if (ok) {
+      it.label.getWorldPosition(_v).project(camera);
+      const x = (_v.x + 1) / 2 * W, y = (1 - _v.y) / 2 * H;
+      if (!it.lw) { it.lw = el.firstChild.offsetWidth || 60; it.lh = el.firstChild.offsetHeight || 18; }
+      const r = [x - it.lw / 2 - 3, y - it.lh / 2 - 2, x + it.lw / 2 + 3, y + it.lh / 2 + 2];
+      if (!hot) for (const p of placed) if (r[0] < p[2] && r[2] > p[0] && r[1] < p[3] && r[3] > p[1]) { ok = false; break; }
+      if (ok) placed.push(r);
+    }
     el.classList.toggle('hide', !ok); el.classList.toggle('hot', it === pinned);
   }
+  HITEMS.forEach((it) => it.mk.element.classList.toggle('hot', it === pinned));
+}
+
+/* ---------------- 子批次可见性：hi±x/±z 按相机方位，detail / fine 按可见宽度 ---------------- */
+let subKey = '';
+function updateSubs(visW) {
+  const dx = camera.position.x - controls.target.x, dz = camera.position.z - controls.target.z;
+  const fineOn = (typeof mode === 'number' && visW < 60) || !!(pinned && pinned.floor != null && typeof mode === 'number' && pinned.floor === mode);
+  const detailOn = visW <= 300;
+  const key = `${dx > 0}${dz > 0}${fineOn}${detailOn}${mode}`;
+  if (!subDirty && key === subKey) return; subKey = key; subDirty = false;
+  if (fineOn && typeof mode === 'number') for (const g of [cutG[mode], furnG[mode]]) if (g && g.userData.pending && g.userData.pending.fine) { const sg = L.buildPending?.(g, 'fine'); if (sg && tier >= 1) sg.traverse((o) => { o.castShadow = false; }); }
+  for (const g of SUBS) {
+    const s = g.userData.subs; if (!s) continue;
+    if (s['hi-z']) s['hi-z'].visible = dz > 0;
+    if (s['hi+z']) s['hi+z'].visible = dz < 0;
+    if (s['hi-x']) s['hi-x'].visible = dx > 0;
+    if (s['hi+x']) s['hi+x'].visible = dx < 0;
+    if (s.detail) s.detail.visible = detailOn;
+    if (s.fine) s.fine.visible = fineOn;
+  }
+  renderer.shadowMap.needsUpdate = true;
+}
+// 「全部」模式：远在屏幕外的楼层隐藏家具
+function cullFurnAll() {
+  if (mode !== 'all') return;
+  furnG.forEach((g, i) => {
+    if (!g) return; _v.set(0, FLOORS[i].y + offs[i], EXT.cz).project(camera);
+    g.visible = Math.abs(_v.x) < 1.6 && Math.abs(_v.y) < 1.6;
+  });
 }
 
 /* ---------------- 高亮框 ---------------- */
 function mkHi(color, lineOp, fillOp) {
   const g = new THREE.Group(); g.renderOrder = 6;
-  const lm = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: lineOp, depthWrite: false });
-  const fm = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: fillOp, depthWrite: false, side: THREE.DoubleSide });
+  const lm = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: lineOp, depthWrite: false, fog: false });
+  const fm = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: fillOp, depthWrite: false, side: THREE.DoubleSide, fog: false });
   const bars = [0, 1, 2, 3].map(() => new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), lm));
   const fill = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), fm);
   const ring = new THREE.Mesh(new THREE.RingGeometry(0.97, 1, 64).rotateX(-Math.PI / 2), lm); const disc = new THREE.Mesh(new THREE.CircleGeometry(1, 64).rotateX(-Math.PI / 2), fm);
@@ -232,10 +380,10 @@ function mkHi(color, lineOp, fillOp) {
 }
 const hiPin = mkHi('#e6c36a', 0.95, 0.2), hiHover = mkHi('#f3dfa2', 0.55, 0.1);
 function showHi(h, it) {
-  if (!it) { h.visible = false; return; }
+  if (!it || it.kind === 'heritage') { h.visible = false; return; }
   const u = h.userData, parent = it.kind === 'room' ? floorG[it.floor] : scene;
   if (h.parent !== parent) parent.add(h);
-  const y = it.kind === 'room' ? it.y + 0.06 : it.kind === 'shaft' ? 0 : (it.d.pri >= 10 ? 1.3 : it.d.name === '停靠平台' ? 0.6 : 0.5);
+  const y = it.kind === 'room' ? it.y + 0.06 : it.kind === 'shaft' ? 0 : ((it.d.pri ?? 5) >= 10 ? 1.3 : 0.5);
   const th = Math.max(0.18, Math.min(it.w, it.dd) * 0.025);
   const round = !!it.round;
   u.ring.visible = u.disc.visible = round; u.fill.visible = !round; u.bars.forEach((b) => (b.visible = !round));
@@ -246,25 +394,39 @@ function showHi(h, it) {
     const B = u.bars; B[0].scale.set(w + th, 0.08, th); B[0].position.set(cx, y + 0.04, cz - dd / 2); B[1].scale.set(w + th, 0.08, th); B[1].position.set(cx, y + 0.04, cz + dd / 2);
     B[2].scale.set(th, 0.08, dd); B[2].position.set(cx - w / 2, y + 0.04, cz); B[3].scale.set(th, 0.08, dd); B[3].position.set(cx + w / 2, y + 0.04, cz);
   }
-  if (it.kind === 'shaft') { const f = typeof mode === 'number' ? mode : 0; h.position.y = 0; u.fill.position.y = u.bars[0].position.y = FLOORS[f].y + 0.1; for (const b of u.bars) b.position.y = FLOORS[f].y + 0.14; if (h.parent !== floorG[f]) floorG[f].add(h); }
+  if (it.kind === 'shaft') { const f = typeof mode === 'number' ? mode : 0; u.fill.position.y = FLOORS[f].y + 0.1; for (const b of u.bars) b.position.y = FLOORS[f].y + 0.14; if (h.parent !== floorG[f]) floorG[f].add(h); }
   h.visible = true;
 }
 
-/* ---------------- 房间卡 ---------------- */
+/* ---------------- 房间卡：编号 · 尺寸 · 用途 ─ 金线 ─ 传承细节 · 年代 ---------------- */
 const card = $('#card');
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function cardHTML(it) {
   const d = it.d, zh = LANG === 'zh';
+  if (it.kind === 'heritage') {
+    const cap = zh ? d.caption : d.caption_en || d.caption;
+    const where = d.room && P.ROOM_BY_ID?.[d.room] ? (zh ? P.ROOM_BY_ID[d.room].name : enOf(P.ROOM_BY_ID[d.room].name)[0] || P.ROOM_BY_ID[d.room].name) : d.floor != null ? floorName(d.floor) : tx('estate');
+    return `<h3>◆ ${esc(nameOf(it))}</h3><div class="sub">${esc(tx('heritage'))} · ${esc(where)}</div><div class="gold"></div>` +
+      (cap ? `<div class="her">${esc(cap)}</div>` : '') + (d.era ? `<div class="era">${esc(tx('era'))} <b>${esc(d.era)}</b></div>` : '');
+  }
   let sub, size;
-  if (it.kind === 'room') { sub = floorName(it.floor); size = `${it.w} × ${it.dd} m · ${Math.round(it.w * it.dd)} ㎡`; }
-  else if (it.kind === 'area') { sub = t('estate'); size = it.round ? `${t('dia')} ${it.w} m` : `${it.w} × ${it.dd} m`; }
-  else { sub = t('thru'); size = `${it.w} × ${it.dd} m`; }
-  const si = { '世界书': 0, 'ROADMAP': 1, '推断': 2 }[d.src] ?? 2;
-  const srcName = zh ? d.src : SRC_EN[d.src] || d.src;
-  const note = zh && d.note ? d.note : '';
-  const alt = zh ? (EN[d.name] || [''])[0] : d.name;
-  return `<h3>${nameOf(it)}</h3><div class="sub">${sub}${alt ? ' · ' + alt : ''}</div>` +
-    `<div class="row"><em>${t('size')}</em>${size}</div><div class="row"><em>${t('use')}</em>${useOf(it)}</div>` +
-    `<div class="src"><b class="s${si}">${srcName}</b>${note}</div>`;
+  if (it.kind === 'room') { sub = floorName(it.floor) + (d.id ? ` · ${d.id}` : ''); size = `${+it.w.toFixed(1)} × ${+it.dd.toFixed(1)} m · ${Math.round(it.w * it.dd)} ㎡`; }
+  else if (it.kind === 'area') { sub = tx('estate'); size = it.round ? `${tx('dia')} ${it.w} m` : `${it.w} × ${it.dd} m`; }
+  else { sub = tx('thru'); size = `${it.w} × ${it.dd} m`; }
+  const alt = zh ? enOf(d.name)[0] || '' : d.name;
+  let h = `<h3>${esc(nameOf(it))}</h3><div class="sub">${esc(sub)}${alt ? ' · ' + esc(alt) : ''}</div>` +
+    `<div class="row"><em>${tx('size')}</em>${esc(size)}</div><div class="row"><em>${tx('use')}</em>${esc(useOf(it))}</div>`;
+  const her = heritageOf(it);
+  if (her || d.era) {
+    h += `<div class="gold"></div>`;
+    if (her) h += `<div class="her"><em>${tx('her')}</em>${esc(her)}</div>`;
+    if (d.era) h += `<div class="era">${tx('era')} <b>${esc(d.era)}</b></div>`;
+  }
+  if (DEBUG && d.src) {
+    const si = { '世界书': 0, 'ROADMAP': 1, '推断': 2 }[d.src] ?? 2;
+    h += `<div class="src"><b class="s${si}">${esc(zh ? d.src : SRC_EN[d.src] || d.src)}</b>${zh && d.note ? esc(d.note) : ''}</div>`;
+  }
+  return h;
 }
 let cardFor = null, cardAt = null;
 function showCard(it, x, y) {
@@ -289,26 +451,24 @@ function pickAt(cx, cy) {
   for (const it of ITEMS) { if (!itemVisible(it)) continue; if (it.pick) list.push(it.pick); if (it.picks) for (const p of it.picks) if (p.parent.visible) list.push(p); }
   const hits = ray.intersectObjects(list, false);
   if (!hits.length) return null;
-  // 最具体的优先（面积最小）
-  hits.sort((a, b) => (a.object.userData.item.w * a.object.userData.item.dd) - (b.object.userData.item.w * b.object.userData.item.dd));
+  hits.sort((a, b) => (a.object.userData.item.w * a.object.userData.item.dd) - (b.object.userData.item.w * b.object.userData.item.dd));   // 最具体的优先
   return hits[0].object.userData.item;
 }
-let pinned = null, hover = null;
+let pinned = null, hover = null, pinT = 0;
 function pin(it, fly) {
-  pinned = it; showHi(hiPin, it); showHi(hiHover, null); showCard(it); needs = true;
+  pinned = it; pinT = performance.now(); showHi(hiPin, it); showHi(hiHover, null); cardFor = null; showCard(it); lightsFor(); subDirty = true; needs = true;
   if (fly) focusView(it);
 }
-function unpin() { pinned = null; showHi(hiPin, null); hideCard(true); needs = true; }
+function unpin() { pinned = null; showHi(hiPin, null); hideCard(true); lightsFor(); subDirty = true; needs = true; }
 function focusView(it) {
   const y = it.kind === 'room' ? it.y + (mode === 'all' ? offTarget[it.floor] : 0) : it.kind === 'area' ? 0 : FLOORS[typeof mode === 'number' ? mode : 0].y;
-  // 等轴投影下房间外接尺寸（按当前方位角）
   sph.setFromVector3(camera.position.clone().sub(controls.target));
-  const c = Math.abs(Math.cos(sph.theta)), s = Math.abs(Math.sin(sph.theta));
-  const pw = it.w * c + it.dd * s, ph = (it.w * s + it.dd * c) * Math.cos(sph.phi) + 3;
+  const [pw, ph] = projExtent(it.w, it.dd, 3, sph.theta, sph.phi);
   const pad = it.kind === 'room' ? 1.25 : 1.12;
   flyTo({ target: new THREE.Vector3(it.cx, y, it.cz), zoom: fitZoom(pw * pad + 3, ph * pad + 6), theta: null, phi: null });
 }
 function focusItem(it) {
+  if (it.kind === 'heritage') return focusHeritage(it);
   if (it.kind === 'room' && mode !== it.floor) setMode(it.floor);
   if (it.kind === 'area' && mode !== 'ext') setMode('ext');
   if (it.kind === 'shaft' && mode === 'ext') setMode(0);
@@ -318,11 +478,11 @@ function findByName(name) {
   const s = String(name || '').trim(); if (!s) return null;
   let best = null, score = -1; const low = s.toLowerCase();
   for (const it of ITEMS) {
-    const d = it.d, rank = it.kind === 'room' ? 3 : it.kind === 'area' ? (d.pri >= 10 ? 1 : 2) : 2;
-    const keys = [d.name, ...(d.alias || []), (EN[d.name] || [])[0]].filter(Boolean);
+    const d = it.d, rank = it.kind === 'room' ? 3 : it.kind === 'area' ? ((d.pri ?? 5) >= 10 ? 1 : 2) : 2;
+    const keys = [d.name, d.id, ...(d.alias || []), enOf(d.name)[0], ...(d.alias_en || [])].filter((k) => typeof k === 'string' && k);
     for (const k of keys) {
       const kl = k.toLowerCase(); let sc = -1;
-      if (low === kl) sc = 10000; else if (low.includes(kl)) sc = rank * 100 + kl.length; else continue;
+      if (low === kl) sc = 10000; else if (kl.length > 1 && low.includes(kl)) sc = rank * 100 + kl.length; else continue;
       if (it.kind === 'room' && d.minor) sc -= 50;
       if (sc > score) { score = sc; best = it; }
     }
@@ -335,14 +495,15 @@ let tween = null;
 const sph = new THREE.Spherical();
 function flyTo(v, dur = 650) {
   sph.setFromVector3(camera.position.clone().sub(controls.target));
-  const to = { target: v.target.clone(), zoom: THREE.MathUtils.clamp(v.zoom, minZoom, maxZoom), theta: v.theta ?? sph.theta, phi: v.phi ?? sph.phi };
+  const to = { target: v.target.clone(), zoom: clamp(v.zoom, minZoom, maxZoom), theta: v.theta ?? sph.theta, phi: v.phi ?? sph.phi };
   let dt = to.theta - sph.theta; dt = Math.atan2(Math.sin(dt), Math.cos(dt));
-  tween = { t0: performance.now(), dur, from: { target: controls.target.clone(), zoom: camera.zoom, theta: sph.theta, phi: sph.phi }, to, dt };
+  tween = { t0: performance.now(), dur, from: { target: controls.target.clone(), zoom: camera.zoom, theta: sph.theta, phi: sph.phi }, to, dt, ease: v.ease };
   needs = true;
 }
 function stepTween(now) {
   if (!tween) return false;
-  let k = Math.min(1, (now - tween.t0) / tween.dur); const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+  const k = Math.min(1, (now - tween.t0) / tween.dur);
+  const e = tween.ease === 'out' ? 1 - Math.pow(1 - k, 3) : k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
   const f = tween.from, to = tween.to;
   const tg = f.target.clone().lerp(to.target, e);
   camera.zoom = Math.exp(Math.log(f.zoom) + (Math.log(to.zoom) - Math.log(f.zoom)) * e); camera.updateProjectionMatrix();
@@ -351,51 +512,64 @@ function stepTween(now) {
   return true;
 }
 
-/* ---------------- 缩放：滚轮 / 触控板捏合 / 双指捏合 / 按钮 ---------------- */
+/* ---------------- 缩放：滚轮 / 触控板捏合 / Safari gesture / 双指捏合 / 按钮 / 键盘 ---------------- */
 const _p0 = new THREE.Vector3(), _p1 = new THREE.Vector3(), _dir = new THREE.Vector3();
 function zoomAt(cx, cy, f) {
   tween = null;
   const rc = renderer.domElement.getBoundingClientRect();
   const nx = ((cx - rc.left) / rc.width) * 2 - 1, ny = -((cy - rc.top) / rc.height) * 2 + 1;
   _p0.set(nx, ny, 0).unproject(camera);
-  const z = THREE.MathUtils.clamp(camera.zoom * f, minZoom, maxZoom); if (z === camera.zoom) return;
+  const z = clamp(camera.zoom * f, minZoom, maxZoom); if (z === camera.zoom) return;
   camera.zoom = z; camera.updateProjectionMatrix();
   _p1.set(nx, ny, 0).unproject(camera);
   _p0.sub(_p1); camera.position.add(_p0); controls.target.add(_p0);
-  keepTargetY(); needs = true;
+  keepTargetY(); touchInteract(); needs = true;
 }
 let targetY = 6;
 function keepTargetY() {  // 沿视线把轴心滑回原高度（正交相机下画面不变）
   _dir.subVectors(controls.target, camera.position).normalize(); if (Math.abs(_dir.y) < 1e-3) return;
   const s = (targetY - controls.target.y) / _dir.y; controls.target.addScaledVector(_dir, s); camera.position.addScaledVector(_dir, s);
 }
+// 整个窗口吞掉滚轮：楼层条、按钮、卡片上方滚动也不会带着父页面滚
+window.addEventListener('wheel', (e) => { e.preventDefault(); }, { passive: false });
 app.addEventListener('wheel', (e) => {
   e.preventDefault(); e.stopPropagation();
   let dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 300 : 1);
-  dy = THREE.MathUtils.clamp(dy, -150, 150);
+  dy = clamp(dy, -150, 150);
   zoomAt(e.clientX, e.clientY, Math.exp(-dy * (e.ctrlKey ? 0.011 : 0.0021)));
 }, { passive: false, capture: true });
+// 楼层条（手机横排）用滚轮横向滚动
+floorsEl.addEventListener('wheel', (e) => { if (floorsEl.scrollWidth > floorsEl.clientWidth) floorsEl.scrollLeft += e.deltaY + e.deltaX; }, { passive: true });
+// macOS Safari 的触控板捏合走 gesture 事件（e.scale），不是 ctrl+wheel
+let gLast = 1;
+window.addEventListener('gesturestart', (e) => { e.preventDefault(); gLast = 1; }, { passive: false });
+window.addEventListener('gesturechange', (e) => { e.preventDefault(); if (COARSE) return; const s = e.scale || 1; zoomAt(e.clientX ?? innerWidth / 2, e.clientY ?? innerHeight / 2, s / gLast); gLast = s; }, { passive: false });
+window.addEventListener('gestureend', (e) => { e.preventDefault(); gLast = 1; }, { passive: false });
 // 双指捏合（与 OrbitControls 的双指平移并行）
 let pinch = null;
 app.addEventListener('touchstart', (e) => {
-  if (e.touches.length === 2) { const [a, b] = e.touches; pinch = { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), t: performance.now(), moved: 0, cx: (a.clientX + b.clientX) / 2, cy: (a.clientY + b.clientY) / 2 }; }
+  if (e.touches.length === 2) { const [a, b] = e.touches; pinch = { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), t: performance.now(), moved: 0, cx: (a.clientX + b.clientX) / 2, cy: (a.clientY + b.clientY) / 2 }; cancelTap(); }
 }, { passive: false });
 app.addEventListener('touchmove', (e) => {
   e.preventDefault();
   if (e.touches.length === 2 && pinch) { const [a, b] = e.touches; const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); const cx = (a.clientX + b.clientX) / 2, cy = (a.clientY + b.clientY) / 2;
-    if (pinch.d > 0) zoomAt(cx, cy, d / pinch.d); pinch.moved += Math.abs(d - pinch.d) + Math.hypot(cx - pinch.cx, cy - pinch.cy); pinch.d = d; pinch.cx = cx; pinch.cy = cy; }
+    if (pinch.d > 0) zoomAt(cx, cy, d / pinch.d); pinch.moved += Math.abs(d - pinch.d) + Math.hypot(cx - pinch.cx, cy - pinch.cy); pinch.d = d; pinch.cx = cx; pinch.cy = cy; setLowRes(true); }
 }, { passive: false });
 app.addEventListener('touchend', (e) => {
   if (pinch && e.touches.length < 2) { // 双指轻点 → 拉近该房间
-    if (performance.now() - pinch.t < 260 && pinch.moved < 12) { const it = pickAt(pinch.cx, pinch.cy); if (it) { focusItem(it); post({ type: 'estate:select', name: it.d.name, floor: it.floor != null ? FLOORS[it.floor].id : null }); } }
+    if (performance.now() - pinch.t < 260 && pinch.moved < 12) { const it = pickAt(pinch.cx, pinch.cy); if (it) { focusItem(it); postSelect(it); } }
     pinch = null;
   }
 });
-const zoomBtn = (f) => { const rc = renderer.domElement.getBoundingClientRect(); const z0 = camera.zoom; const to = THREE.MathUtils.clamp(z0 * f, minZoom, maxZoom); flyTo({ target: controls.target.clone(), zoom: to, theta: null, phi: null }, 260); };
-$('#zin').onclick = () => zoomBtn(1.6); $('#zout').onclick = () => zoomBtn(1 / 1.6); $('#zreset').onclick = () => { unpin(); flyTo(viewFor(mode)); };
+const zoomBtn = (f) => { const to = clamp(camera.zoom * f, minZoom, maxZoom); flyTo({ target: controls.target.clone(), zoom: to, theta: null, phi: null }, 260); };
+const resetView = () => { unpin(); flyTo(viewFor(mode)); };
+$('#zin').onclick = () => zoomBtn(1.6); $('#zout').onclick = () => zoomBtn(1 / 1.6); $('#zreset').onclick = resetView;
 
-/* ---------------- 指针：悬停卡、点选、双击 ---------------- */
-let down = null, lastTap = null;
+/* ---------------- 指针：悬停卡（每帧最多拾取一次）、点选（触屏延迟 250 ms 给双击）、双击 ---------------- */
+let down = null, lastTap = null, tapTimer = 0;
+const postSelect = (it) => post({ type: 'estate:select', name: it.d.name, floor: it.floor != null ? FLOORS[it.floor].id : null });
+const cancelTap = () => { if (tapTimer) { clearTimeout(tapTimer); tapTimer = 0; } };
+function tapPin(it) { if (it) { pin(it, false); postSelect(it); } else if (pinned) unpin(); }
 renderer.domElement.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: performance.now(), type: e.pointerType }; tween = null; });
 renderer.domElement.addEventListener('pointerup', (e) => {
   if (!down) return; const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), dt = performance.now() - down.t; const type = down.type; down = null;
@@ -403,27 +577,92 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   const it = pickAt(e.clientX, e.clientY);
   if (type !== 'mouse') {
     const now = performance.now();
-    if (lastTap && now - lastTap.t < 330 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) { lastTap = null; dbl(it); return; }
+    if (lastTap && now - lastTap.t < 300 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) { lastTap = null; cancelTap(); dbl(it); return; }
     lastTap = { t: now, x: e.clientX, y: e.clientY };
+    cancelTap(); tapTimer = setTimeout(() => { tapTimer = 0; tapPin(it); }, 250);
+    return;
   }
-  if (it) { pin(it, false); post({ type: 'estate:select', name: it.d.name, floor: it.floor != null ? FLOORS[it.floor].id : null }); } else if (pinned) unpin();
+  tapPin(it);
 });
 renderer.domElement.addEventListener('dblclick', (e) => { dbl(pickAt(e.clientX, e.clientY)); });
-function dbl(it) { if (it) focusItem(it); else { unpin(); flyTo(viewFor(mode)); } }
-renderer.domElement.addEventListener('pointermove', (e) => {
-  if (e.pointerType !== 'mouse' || e.buttons) return;
+function dbl(it) { if (it) { focusItem(it); postSelect(it); } else resetView(); }
+let hoverEv = null, hoverRaf = 0;
+function doHover() {
+  hoverRaf = 0; const e = hoverEv; if (!e) return;
   const it = pickAt(e.clientX, e.clientY);
   if (it !== hover) { hover = it; showHi(hiHover, it && it !== pinned ? it : null); needs = true; }
   if (it) showCard(it, e.clientX + 16, e.clientY + 14); else hideCard();
   renderer.domElement.style.cursor = it ? 'pointer' : '';
+}
+renderer.domElement.addEventListener('pointermove', (e) => {
+  if (e.pointerType !== 'mouse' || e.buttons) return;
+  hoverEv = { clientX: e.clientX, clientY: e.clientY }; if (!hoverRaf) hoverRaf = requestAnimationFrame(doHover);
 });
-renderer.domElement.addEventListener('pointerleave', () => { hover = null; showHi(hiHover, null); hideCard(); needs = true; });
-controls.addEventListener('start', () => { tween = null; });
-controls.addEventListener('change', () => { needs = true; });
+renderer.domElement.addEventListener('pointerleave', () => { hoverEv = null; hover = null; showHi(hiHover, null); hideCard(); needs = true; });
+controls.addEventListener('start', () => { tween = null; setLowRes(true); });
+controls.addEventListener('change', () => { needs = true; touchInteract(); });
+
+/* ---------------- 拖动时降分辨率，停下 150 ms 后补一帧清晰画面 ---------------- */
+let lastInteract = 0;
+function touchInteract() { lastInteract = performance.now(); }
+function setLowRes(on) {
+  touchInteract();
+  if (on === lowRes) return; lowRes = on;
+  renderer.setPixelRatio(on ? dpr * 0.75 : dpr); renderer.setSize(innerWidth, innerHeight); needs = true;
+}
+
+/* ---------------- 自适应降档：交互中 1 s 内平均帧时 > 33 ms 就降一档（只改 DPR 和阴影） ---------------- */
+let perfAcc = 0, perfN = 0, lastFrameT = 0;
+function samplePerf(now, moving) {
+  if (TIER_FIXED || tier >= 2) return;
+  const dt = now - lastFrameT; lastFrameT = now;
+  if (!moving || dt > 250) { perfAcc = 0; perfN = 0; return; }
+  perfAcc += dt; perfN++;
+  if (perfAcc >= 1000) { if (perfAcc / perfN > 33) setTier(tier + 1); perfAcc = 0; perfN = 0; }
+}
+function setTier(n) {
+  n = Math.min(2, n); if (n <= tier) return; tier = n;
+  dpr = dprFor(tier); renderer.setPixelRatio(lowRes ? dpr * 0.75 : dpr); renderer.setSize(innerWidth, innerHeight);
+  if (tier >= 1) { furnG.forEach((g) => g && g.traverse((o) => { o.castShadow = false; })); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } sun.shadow.mapSize.set(1024, 1024); }
+  if (tier >= 2) { sun.castShadow = false; }
+  renderer.shadowMap.needsUpdate = true; needs = true;
+  console.info('estate: tier →', tier);
+}
+
+/* ---------------- 传承导览 ---------------- */
+const TOUR = HITEMS.filter((it) => it.d.tour > 0).sort((a, b) => a.d.tour - b.d.tour);
+let tourI = -1;
+const tourEl = $('#tour');
+function focusHeritage(it, fly = true) {
+  const h = it.d, m = h.floor == null ? 'ext' : h.floor;
+  if (mode !== m) setMode(m);
+  pin(it, false);
+  if (!fly) return;
+  const v = h.view || {};
+  const W = v.w || (h.floor != null ? 18 : h.kind === 'crest' ? 40 : 60);
+  const y = h.floor != null ? FLOORS[h.floor].y : Math.max(0, (h.y ?? 0) * 0.6);
+  sph.setFromVector3(camera.position.clone().sub(controls.target));
+  flyTo({ target: new THREE.Vector3(h.x, y, h.z), zoom: fitZoom(W, W * 0.66), theta: v.theta ?? (h.floor != null ? AZ : 0.25), phi: v.phi ?? (h.floor != null ? 0.82 : 1.0) }, 900);
+}
+function showTourText() {
+  const it = TOUR[tourI]; if (!it) return; const h = it.d;
+  tourEl.querySelector('.tx b').innerHTML = `${esc(nameOf(it))}<small>${tourI + 1} / ${TOUR.length}${h.era ? ' · ' + esc(h.era) : ''}</small>`;
+  tourEl.querySelector('.tx span').textContent = LANG === 'en' ? h.caption_en || h.caption || '' : h.caption || '';
+}
+function tourGo(i) { if (!TOUR.length) return; tourI = (i + TOUR.length) % TOUR.length; tourEl.classList.add('on'); showTourText(); focusHeritage(TOUR[tourI]); syncNav(); }
+function tourClose() { tourI = -1; tourEl.classList.remove('on'); syncNav(); }
+function toggleTour() { if (tourI >= 0) tourClose(); else tourGo(0); }
+tourEl.querySelector('.prev').onclick = () => tourGo(tourI - 1);
+tourEl.querySelector('.next').onclick = () => tourGo(tourI + 1);
+tourEl.querySelector('.x').onclick = tourClose;
 
 /* ---------------- 键盘 / 消息 ---------------- */
-const SEQ = [0, 1, 2, 3, 4, 'ext'];
+const SEQ = [...FLOORS.map((f, i) => i), 'ext'];
 window.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (['+', '=', '-', '_', '0'].includes(e.key)) { e.preventDefault(); if (e.key === '0') resetView(); else zoomBtn(e.key === '+' || e.key === '=' ? 1.6 : 1 / 1.6); return; }
+  if (tourI >= 0 && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { e.preventDefault(); tourGo(tourI + (e.key === 'ArrowRight' ? 1 : -1)); return; }
+  if (e.key === 'Escape' && tourI >= 0) { tourClose(); return; }
   if (!['PageUp', 'PageDown', '[', ']'].includes(e.key)) return; e.preventDefault();
   if (IN_FRAME) { post({ type: 'estate:key', key: e.key }); return; }
   const up = e.key === 'PageUp' || e.key === ']'; let i = SEQ.indexOf(mode === 'all' ? 'ext' : mode); i = Math.max(0, Math.min(SEQ.length - 1, i + (up ? 1 : -1))); setMode(SEQ[i], { fly: true });
@@ -440,51 +679,70 @@ window.addEventListener('message', (e) => {
 function setLang(l) { LANG = l; buildNav(); relabel(); frustum(); const it = cardFor; cardFor = null; if (it) showCard(it, cardAt?.[0], cardAt?.[1]); needs = true; }
 
 /* ---------------- 尺寸 ---------------- */
-addEventListener('resize', () => { frustum(); renderer.setSize(innerWidth, innerHeight); labelR.setSize(innerWidth, innerHeight); camera.zoom = THREE.MathUtils.clamp(camera.zoom, minZoom, maxZoom); camera.updateProjectionMatrix(); needs = true; });
+addEventListener('resize', () => { frustum(); renderer.setSize(innerWidth, innerHeight); labelR.setSize(innerWidth, innerHeight); camera.zoom = clamp(camera.zoom, minZoom, maxZoom); camera.updateProjectionMatrix(); needs = true; });
 
-/* ---------------- 循环 ---------------- */
+/* ---------------- 循环（按需渲染） ---------------- */
 const statsEl = $('#stats'); if (STATS) statsEl.style.display = 'block';
-let frames = 0, fpsT = performance.now(), fps = 0, first = true, lastInfo = { calls: 0, triangles: 0 };
+let frames = 0, fpsT = performance.now(), fps = 0, first = true, lastInfo = { calls: 0, triangles: 0 }, lastPulse = 0;
 function loop(now) {
   requestAnimationFrame(loop);
   let moving = stepTween(now);
   if (!moving) moving = controls.update();
   else controls.update();
-  // 目标限制在岛上空
-  const tg = controls.target; const cx = THREE.MathUtils.clamp(tg.x, -340, 340), cz = THREE.MathUtils.clamp(tg.z, -300, 320);
+  const tg = controls.target; const cx = clamp(tg.x, -340, 340), cz = clamp(tg.z, -300, 320);   // 目标限制在岛上空
   if (cx !== tg.x || cz !== tg.z) { camera.position.x += cx - tg.x; camera.position.z += cz - tg.z; tg.x = cx; tg.z = cz; }
   if (!tween) targetY = tg.y;
   // 楼层展开动画
   let anim = false;
-  floorG.forEach((g, i) => { const d = offTarget[i] - offs[i]; if (Math.abs(d) > 0.01) { offs[i] += d * 0.18; anim = true; } else offs[i] = offTarget[i]; g.position.y = offs[i]; });
-  if (anim) renderer.shadowMap.needsUpdate = true;
+  floorG.forEach((g, i) => { const d = offTarget[i] - offs[i]; if (Math.abs(d) > 0.01) { offs[i] += d * 0.18; anim = true; } else offs[i] = offTarget[i]; g.position.y = offs[i]; floorLights[i].position.y = FLOORS[i].y + 3.2 + offs[i]; });
+  if (anim) { renderer.shadowMap.needsUpdate = true; for (const l of focusLights) if (l.userData.floor != null) l.position.y = l.userData.dy + offs[l.userData.floor]; }
   const visW = (camera.right - camera.left) / camera.zoom;
   fitShadow(visW < 300);
-  if (pinned) { const k = 0.6 + 0.4 * Math.abs(Math.sin(now / 420)); hiPin.userData.fm.opacity = hiPin.userData.fillOp * (0.5 + k * 0.7); }
-  if (!(needs || moving || anim || STATS || pinned)) return;
+  updateSubs(visW);
+  // 钉住房间的脉冲：15 Hz，2 s 后停
+  if (pinned && now - pinT < 2000 && now - lastPulse > 66) { lastPulse = now; const k = 0.6 + 0.4 * Math.abs(Math.sin((now - pinT) / 420 * Math.PI)); hiPin.userData.fm.opacity = hiPin.userData.fillOp * (0.5 + k * 0.7); needs = true; }
+  else if (pinned && now - pinT >= 2000 && hiPin.userData.fm.opacity !== hiPin.userData.fillOp) { hiPin.userData.fm.opacity = hiPin.userData.fillOp; needs = true; }
+  if (lowRes && !down && !pinch && now - lastInteract > 150) setLowRes(false);
+  if (!(needs || moving || anim || STATS)) { lastFrameT = now; return; }
   needs = false;
+  cullFurnAll();
   renderer.render(scene, camera); lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
   labelR.render(scene, camera); cullLabels();
   if (cardFor && !cardAt) placeCard();
+  samplePerf(now, moving || anim);
   frames++;
   if (first) { first = false; onFirstFrame(); }
-  if (STATS && now - fpsT > 500) { fps = frames * 1000 / (now - fpsT); frames = 0; fpsT = now; statsEl.textContent = `${fps.toFixed(0)} fps\n${lastInfo.calls} calls\n${(lastInfo.triangles / 1000).toFixed(0)}k tris\nbuild ${T_BUILD.toFixed(0)} ms`; }
+  if (STATS && now - fpsT > 500) { fps = frames * 1000 / (now - fpsT); frames = 0; fpsT = now; statsEl.textContent = `T${tier} · ${fps.toFixed(0)} fps\n${lastInfo.calls} calls\n${(lastInfo.triangles / 1000).toFixed(0)}k tris\nbuild ${T_BUILD.toFixed(0)} ms`; }
 }
 function onFirstFrame() {
-  $('#loading').classList.add('done');
+  window.__estateFirstFrame = true; if (window.__estateWatchdog) window.__estateWatchdog();
+  const ld = $('#loading'); ld.classList.add('done'); setTimeout(() => { ld.innerHTML = ''; }, 500);
   window.__estate.firstFrameMs = performance.now() - T0;
-  post({ type: 'estate:ready', floors: FLOORS.map((f) => f.id), rooms: ROOMS.filter((r) => !r.minor).map((r) => ({ name: r.name, en: (EN[r.name] || [])[0], floor: FLOORS[r.floor].id, alias: r.alias })).concat(AREAS.map((a) => ({ name: a.name, en: (EN[a.name] || [])[0], floor: 'ext', alias: a.alias }))) });
-  // 室内在空闲时补建
-  let i = 0; const idle = window.requestIdleCallback || ((f) => setTimeout(f, 60));
-  const next = () => { while (i < 4 && furnG[i]) i++; if (i >= 4) return; ensureFurn(i); if (!floorG[i].visible) needs = false; i++; idle(next); };
-  idle(next);
+  post({ type: 'estate:ready', floors: FLOORS.map((f) => f.id), rooms: ROOMS.filter((r) => !r.minor).map((r) => ({ name: r.name, en: enOf(r.name)[0], floor: FLOORS[r.floor].id, alias: r.alias })).concat(AREAS.map((a) => ({ name: a.name, en: enOf(a.name)[0], floor: 'ext', alias: a.alias }))) });
+  // 开场推近：约 2 s（嵌入、减少动态、直接进楼层时不做）
+  if (mode === 'ext' && !EMBED && !REDUCED && !tween) { const v = viewFor('ext'); v.ease = 'out'; flyTo(v, 2200); }
+  // 空闲时逐层补建：先剖切，再家具；当前层优先
+  const idle = window.requestIdleCallback || ((f) => setTimeout(f, 60));
+  const jobs = []; FLOORS.forEach((f, i) => { jobs.push(() => ensureCut(i), () => ensureFurn(i)); });
+  const next = (dl) => {
+    const t0 = performance.now();
+    while (jobs.length) { const j = jobs.shift(); j(); if (!dl || !dl.timeRemaining || dl.timeRemaining() < 8 || performance.now() - t0 > 30) break; }
+    if (jobs.length) idle(next, { timeout: 1500 });
+    else window.__estate.allBuiltMs = performance.now() - T0;
+  };
+  idle(next, { timeout: 1500 });
 }
 
 /* ---------------- 启动 ---------------- */
-window.__estate = { setMode, focus: (n) => { const it = findByName(n); if (it) focusItem(it); return !!it; }, stats: () => ({ ...lastInfo, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, build: T_BUILD }), camera, controls, renderer, scene, setLang };
+window.__estate = {
+  setMode, focus: (n) => { const it = findByName(n); if (it) focusItem(it); return !!it; }, find: (n) => { const it = findByName(n); return it ? { kind: it.kind, name: it.d.name, id: it.d.id, floor: it.floor } : null; },
+  tour: (i) => tourGo(i ?? 0), tier: () => tier,
+  stats: () => ({ ...lastInfo, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length, build: T_BUILD, tier, times: TB, firstFrameMs: window.__estate.firstFrameMs, allBuiltMs: window.__estate.allBuiltMs }),
+  camera, controls, renderer, scene, setLang,
+};
 buildNav(); relabel(); frustum();
 const m0 = parseFloor(Q.get('floor')) ?? 'ext';
 setMode(m0);
-const v0 = viewFor(m0); camera.zoom = THREE.MathUtils.clamp(v0.zoom, minZoom, maxZoom); camera.updateProjectionMatrix(); placeCam(v0.target, v0.theta, v0.phi); targetY = v0.target.y;
+{ const v0 = viewFor(m0); let z = v0.zoom; if (m0 === 'ext' && !EMBED && !REDUCED) z *= 0.86; camera.zoom = clamp(z, minZoom, maxZoom); camera.updateProjectionMatrix(); placeCam(v0.target, v0.theta, v0.phi); targetY = v0.target.y; }
 fitShadow(true);
 requestAnimationFrame(loop);

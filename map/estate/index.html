@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>伊甸庄园 · 剖切模型</title>
+<title>伊甸家族府邸 · 剖切模型</title>
 <!--
   伊甸庄园 · 交互式剖切模型（three.js 0.160，程序生成，无外部模型 / 图片）
   入口：map/estate/index.html；模块：main.js（场景与交互）、plan.js（楼层 / 房间 / 室外区域数据）、building.js、site.js、furniture.js、lib.js
 
   ── 嵌入协议（查看器 map/viewer.html 用 fetch + <base href> + iframe.srcdoc 加载本页；直接 iframe src 也可以）──
   URL 参数：?embed=1 隐藏标题与提示、背景透明（srcdoc 载入时自动视为嵌入）；?lang=en；?theme=light|dark；?floor=ext|all|F1..F5；?stats=1 显示帧率 / draw call
+  新增（可选，不影响协议）：?tier=0|1|2 固定画质档（0 桌面 / 1 手机 / 2 最低，省略则自动判定并在卡顿时降档）；?debug=1 房间卡显示出处徽章
   父 → 本页（window.postMessage）：
     { type: 'estate:room',  name }      按房间名 / 别名 / 英文名（优先具体房间、其次最长匹配）切到所在楼层、高亮并拉近；name 为空或匹配不到 → 取消高亮
     { type: 'estate:floor', floor }     'ext' | 'all' | 'F1'..'F5' | 1..5（也接受 '外观' / '全部' / '1F'）
@@ -20,14 +21,13 @@
     { type: 'estate:ready', floors: ['F1'..'F5'], rooms: [{ name, en, floor, alias }] }   第一帧画完（外观先出，室内在空闲时补建）
     { type: 'estate:key', key }         本页获得焦点时按下 PageUp / PageDown / [ / ]，交给查看器切层（非嵌入时本页自己切层）
     { type: 'estate:select', name, floor }   用户点选 / 双击了某个房间或区域（查看器可忽略）
-  调试：window.__estate（setMode / focus / stats）
+  调试：window.__estate（setMode / focus / stats / tour）
+  依赖：three@0.160.0 已放在 vendor/（importmap 用相对路径，<base href> 嵌入时同样可用）
 -->
 <style>
   :root { --inset: 12px; --paper: #101418; --ink: #e9e4d8; --muted: #8e98a2; --gold: #e6c36a; --panel: rgba(16,20,24,.84); --line: rgba(230,195,106,.22); --btn: rgba(255,255,255,.04); --lbl: rgba(12,15,18,.62); --lblink: #f3eee2; }
   :root[data-theme="light"] { --paper: #f6f7f5; --ink: #14171a; --muted: #6b7178; --gold: #8f6f2e; --panel: rgba(255,255,255,.9); --line: rgba(143,111,46,.28); --btn: rgba(20,23,26,.04); --lbl: rgba(255,255,255,.84); --lblink: #14171a; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; color: var(--ink); font: 13px/1.45 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-  body:not(.embed) { background: radial-gradient(120% 90% at 50% 30%, #1d252d 0%, #12171c 55%, #0b0e11 100%); }
-  :root[data-theme="light"] body:not(.embed) { background: radial-gradient(120% 90% at 50% 30%, #ffffff 0%, #f1f2ef 55%, #e4e6e1 100%); }
   #app { position: fixed; inset: 0; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   #app canvas { display: block; outline: none; }
   #labels { position: absolute; inset: 0; pointer-events: none; }
@@ -72,27 +72,102 @@
   #stats { position: absolute; right: 56px; bottom: 14px; font: 11px/1.4 ui-monospace, Menlo, monospace; color: var(--muted); background: var(--panel); padding: 5px 8px; border-radius: 5px; white-space: pre; display: none; }
   #loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); letter-spacing: .2em; font-size: 12px; transition: opacity .4s; pointer-events: none; }
   #loading.done { opacity: 0; }
+
+  html, body { overscroll-behavior: none; touch-action: none; }
+  body:not(.embed) { background: radial-gradient(120% 95% at 50% 32%, #2a2c30 0%, #171a20 58%, #0c0e12 100%); }
+  :root[data-theme="light"] body:not(.embed) { background: radial-gradient(125% 100% at 50% 35%, #f7f1e3 0%, #efe6d2 55%, #ddd0b4 100%); }
+  #vignette { position: fixed; inset: 0; pointer-events: none; display: none; background: radial-gradient(130% 100% at 50% 45%, transparent 58%, rgba(40,26,8,.28) 100%); }
+  :root:not([data-theme="light"]) #vignette { background: radial-gradient(130% 100% at 50% 45%, transparent 55%, rgba(0,0,0,.42) 100%); }
+  #grade { position: fixed; inset: 0; pointer-events: none; display: none; mix-blend-mode: soft-light; background: linear-gradient(180deg, rgba(255,214,150,.20), rgba(255,190,120,.10) 55%, rgba(40,70,70,.10)); }
+  body:not(.embed) #vignette, body:not(.embed).grade #grade { display: block; }
+  #title { padding: 8px 14px 8px 10px; margin: -8px 0 0 -10px; border-radius: 10px; background: radial-gradient(120% 140% at 0% 0%, var(--panel) 30%, transparent 75%); }
+  #title h1, #title p { text-shadow: 0 1px 2px rgba(0,0,0,.35); }
+  :root[data-theme="light"] #title h1, :root[data-theme="light"] #title p { text-shadow: 0 1px 2px rgba(255,255,255,.7); }
+  #title .crest { display: flex; align-items: center; gap: 9px; }
+  #title svg { width: 22px; height: 26px; flex: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
+  #title p.motto { margin-top: 3px; font-family: "Cormorant Garamond", "Times New Roman", "Songti SC", serif; font-size: 11.5px; letter-spacing: .16em; color: var(--gold); }
+  #floors button.tourb { color: var(--gold); letter-spacing: .12em; }
+  #floors button.tourb.on { background: var(--gold); color: #17130a; }
+  #card .gold { height: 1px; margin: 7px 0 6px; background: linear-gradient(90deg, var(--gold), transparent); }
+  #card .her { font-size: 12px; line-height: 1.55; color: var(--ink); font-family: "Songti SC", "STSong", "Noto Serif SC", serif; }
+  #card .her em { font-style: normal; color: var(--gold); margin-right: 6px; font-family: inherit; letter-spacing: .08em; }
+  #card .era { font-size: 11px; color: var(--muted); margin-top: 3px; letter-spacing: .06em; }
+  #card .era b { color: var(--gold); font-weight: 500; }
+  .mk { pointer-events: auto !important; cursor: pointer; }
+  .mk i { display: block; width: 11px; height: 11px; transform: rotate(45deg); background: var(--gold); border: 1.5px solid #fff7df; box-shadow: 0 0 0 1px rgba(60,40,10,.45), 0 0 10px rgba(230,195,106,.8); transition: transform .15s; }
+  .mk:hover i, .mk.hot i { transform: rotate(45deg) scale(1.35); }
+  #tour { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(560px, calc(100% - 140px)); display: none; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: 8px; padding: 9px 12px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 10px 30px rgba(0,0,0,.28); }
+  #tour.on { display: flex; }
+  #tour button { all: unset; cursor: pointer; flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); color: var(--gold); font-size: 15px; }
+  #tour button:hover { background: var(--btn); }
+  #tour .tx { flex: 1; min-width: 0; }
+  #tour .tx b { display: block; font: 600 13.5px/1.3 "Songti SC", "STSong", "Noto Serif SC", serif; letter-spacing: .1em; color: var(--ink); }
+  #tour .tx b small { font: 400 10.5px system-ui, sans-serif; color: var(--gold); letter-spacing: .08em; margin-left: 6px; }
+  #tour .tx span { display: block; font-size: 12px; color: var(--muted); line-height: 1.45; margin-top: 2px; }
+  #tour .x { width: 22px; height: 22px; font-size: 12px; border: 0; color: var(--muted); align-self: flex-start; }
+  #loading .fail { pointer-events: auto; display: grid; gap: 10px; place-items: center; color: var(--ink); letter-spacing: .12em; }
+  #loading .fail button { all: unset; cursor: pointer; padding: 6px 16px; border: 1px solid var(--gold); border-radius: 16px; color: var(--gold); font-size: 12px; }
   body.embed #title, body.embed #hint { display: none; }
   @media (max-width: 640px) {
-    #title { left: 12px; top: 10px; } #title h1 { font-size: 16px; } #title p { display: none; }
-    #floors { padding: 3px; } #floors button { min-width: 0; padding: 6px 7px; font-size: 12px; } #floors button small { display: none; }
+    #title { left: 12px; top: 10px; } #title h1 { font-size: 15px; letter-spacing: .24em; } #title p.sub { display: none; } #title p.motto { font-size: 10px; } #title svg { width: 18px; height: 22px; }
+    /* 楼层条改成底部横排 chip；左边距避开查看器左下角的层切换器 */
+    #floors { top: auto; bottom: 10px; left: var(--inset); right: 10px; transform: none; flex-direction: row; align-items: center; gap: 3px; padding: 4px; overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
+    #floors::-webkit-scrollbar { display: none; }
+    #floors button { flex: none; min-width: 0; padding: 7px 8px; font-size: 12px; } #floors button small { display: none; }
+    #floors button { padding: 7px 6px; font-size: 11.5px; letter-spacing: .04em; }
+    #floors hr { border: 0; border-left: 1px solid var(--line); margin: 4px 0; height: 16px; }
+    #floors button.tog .t { display: none; } #floors button.tog b { width: 10px; height: 10px; }
+    #zoom { bottom: 62px; right: 10px; }
     #card { left: 10px !important; right: 10px; top: 10px !important; bottom: auto; max-width: none; }   /* 查看器的层切换器在左下角，卡片放顶部 */
-    #hint { display: none; }
+    #tour { left: 10px; right: 10px; bottom: 60px; transform: none; width: auto; }
+    #hint, #stats { display: none !important; }
   }
 </style>
 </head>
 <body>
 <div id="app"><div id="labels"></div></div>
-<div id="title"><h1>伊甸庄园</h1><p>新古典主义府邸 · 剖切模型</p><i></i></div>
+<div id="vignette"></div><div id="grade"></div>
+<div id="title"><div class="crest"><svg viewBox="0 0 22 26" aria-hidden="true"><path d="M1.5 1.5h19v10.5c0 6.4-4.3 10.3-9.5 12.5C5.8 22.3 1.5 18.4 1.5 12z" fill="#2c4f86" stroke="#e6c36a" stroke-width="1.3"/><path d="M11 20.5v-7.2" stroke="#e6c36a" stroke-width="1.4"/><circle cx="11" cy="9.6" r="3.6" fill="#e6c36a"/><circle cx="8.6" cy="11.2" r=".75" fill="#2c4f86"/><circle cx="13.2" cy="8.6" r=".75" fill="#2c4f86"/><path d="M3.6 8.6c1.6-.2 2.9.4 3.6 1.8-1.5-.3-2.6 0-3.6.9m14.8-2.7c-1.6-.2-2.9.4-3.6 1.8 1.5-.3 2.6 0 3.6.9" fill="none" stroke="#e6c36a" stroke-width="1.1" stroke-linecap="round"/><path d="M8 20.6h6" stroke="#e6c36a" stroke-width="1.1"/></svg><h1>伊甸家族府邸</h1></div><p class="motto">始建约一百九十年 · HORTUS SUPRA NUBES</p><p class="sub">新古典主义府邸 · 剖切模型</p><i></i></div>
 <nav id="floors"></nav>
 <div id="zoom"><button id="zin" title="放大">+</button><button id="zout" title="缩小">−</button><button id="zreset" title="复位"><svg viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 1 0 1.7-4"/><path d="M2 2.5v3h3"/></svg></button></div>
 <div id="card"></div>
+<div id="tour"><button class="prev" type="button" aria-label="上一站">‹</button><div class="tx"><b></b><span></span></div><button class="next" type="button" aria-label="下一站">›</button><button class="x" type="button" aria-label="关闭">✕</button></div>
 <div id="hint"></div>
 <div id="stats"></div>
-<div id="loading">加载中…</div>
+<div id="loading"><span>加载中…</span></div>
 <script type="importmap">
-{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/jsm/" } }
 </script>
-<script type="module" src="main.js"></script>
+<link rel="modulepreload" href="./vendor/three.module.min.js">
+<link rel="modulepreload" href="./vendor/jsm/controls/OrbitControls.js">
+<link rel="modulepreload" href="./vendor/jsm/renderers/CSS2DRenderer.js">
+<link rel="modulepreload" href="./vendor/jsm/environments/RoomEnvironment.js">
+<link rel="modulepreload" href="./vendor/jsm/utils/BufferGeometryUtils.js">
+<link rel="modulepreload" href="./main.js">
+<link rel="modulepreload" href="./lib.js">
+<link rel="modulepreload" href="./plan.js">
+<link rel="modulepreload" href="./building.js">
+<link rel="modulepreload" href="./site.js">
+<link rel="modulepreload" href="./furniture.js">
+<script>
+  // 加载看门狗：8 s 内没有首帧，或首帧前出错 → 「加载失败 · 重试」
+  (function () {
+    var en = /[?&]lang=en\b/.test(location.search), shown = false;
+    function fail(why) {
+      if (window.__estateFirstFrame || shown) return; shown = true;
+      var el = document.getElementById('loading'); if (!el) return;
+      el.classList.remove('done');
+      el.innerHTML = '<div class="fail"><span>' + (en ? 'Failed to load' : '加载失败') + '</span><button type="button">' + (en ? 'Retry' : '重试') + '</button></div>';
+      el.querySelector('button').onclick = function () { location.reload(); };
+      if (why) console.warn('estate load:', why);
+    }
+    window.__estateFail = fail;
+    var t = setTimeout(function () { fail('timeout'); }, 8000);
+    window.__estateWatchdog = function () { clearTimeout(t); };
+    addEventListener('error', function (e) { fail(e && (e.message || (e.target && e.target.src))); }, true);
+    addEventListener('unhandledrejection', function (e) { fail(e && e.reason); });
+  })();
+</script>
+<script type="module" src="./main.js" onerror="window.__estateFail && window.__estateFail('main.js')"></script>
 </body>
 </html>
