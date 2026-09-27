@@ -31,12 +31,12 @@
       "alias": ["伊甸庄园", "伊甸", "庄园", "书房", "主卧", "大厅", "餐厅", "会客厅", "客房", "前庭", "后庭", "花园", "停靠平台", "储藏室", "人工湖", "喷泉"]
     },
     "world": {
-      "view": { "focus": "tiancheng", "width_m": 4000000, "min_width_m": 700000, "extent_m": [12000000, 7500000], "phone": [0.08, 0.16, 0.82, 0.72], "phone": [0.03, 0.14, 0.86, 0.74], "phone": [0.16, 0.08, 0.8, 0.78] },
+      "view": { "focus": "tiancheng", "width_m": 4000000, "min_width_m": 700000, "extent_m": [12000000, 7500000] },
       "title": "世界", "title_en": "World", "kind": "world", "base": "art/world.dzi",
       "overlay": { "type": "dzi", "src": "art/borders.dzi", "label": "国界", "label_en": "Borders" }
     },
     "tc_upper": {
-      "view": { "focus": "eden", "width_m": 1700, "min_width_m": 60, "extent_m": [3000, 1875] },
+      "view": { "focus": "eden", "width_m": 1700, "min_width_m": 60, "extent_m": [3000, 1875], "phone": [0.16, 0.08, 0.8, 0.78] },
       "title": "天城 · 上层", "title_en": "Tiancheng · Upper Tier", "parent": "world", "group": "tiancheng",
       "layer": { "name": "上层", "sub": "悬浮庄园区", "alt": "800–1500 m", "alt_en": "800–1500 m", "name_en": "Upper", "sub_en": "Floating Estates" },
       "kind": "points", "base": "art/tc_upper.dzi", "data": "data/tc_upper.json",
@@ -66,7 +66,7 @@
       }
     },
     "tc_mid": {
-      "view": { "focus": "enforcement_hq", "width_m": 2000, "min_width_m": 60, "extent_m": [3000, 1875] },
+      "view": { "focus": "enforcement_hq", "width_m": 2000, "min_width_m": 60, "extent_m": [3000, 1875], "phone": [0.03, 0.14, 0.86, 0.74] },
       "title": "天城 · 中层", "title_en": "Tiancheng · Middle Tier", "parent": "world", "group": "tiancheng",
       "layer": { "name": "中层", "sub": "钢铁霓虹区", "alt": "50–800 m", "alt_en": "50–800 m", "name_en": "Middle", "sub_en": "Steel & Neon" },
       "kind": "points", "base": "art/tc_mid.dzi", "credit": "城市骨架 © OpenStreetMap contributors (ODbL)；核心区建筑几何：NYC 3-D Building Model（2014），© City of New York / Office of Technology and Innovation，NYC Open Data；经投影、旋转、缩放并叠加生成内容", "credit_en": "City layout © OpenStreetMap contributors (ODbL); Core-district building geometry: NYC 3-D Building Model (2014), City of New York / Office of Technology and Innovation, via NYC Open Data; reprojected, rotated, scaled and combined with generated content", "data": "data/tc_mid.json",
@@ -120,7 +120,7 @@
       }
     },
     "tc_low": {
-      "view": { "focus": "well7", "width_m": 1600, "min_width_m": 60, "extent_m": [3000, 1875] },
+      "view": { "focus": "well7", "width_m": 1600, "min_width_m": 60, "extent_m": [3000, 1875], "phone": [0.08, 0.16, 0.82, 0.72] },
       "title": "天城 · 下层", "title_en": "Tiancheng · Lower Tier", "parent": "world", "group": "tiancheng",
       "layer": { "name": "下层", "sub": "地基区", "alt": "地面至 −200 m", "name_en": "Lower", "sub_en": "Foundations", "alt_en": "Ground to −200 m" },
       "kind": "points", "base": "art/tc_low.dzi", "credit": "城市骨架 © OpenStreetMap contributors (ODbL)", "credit_en": "City layout © OpenStreetMap contributors (ODbL)", "data": "data/tc_low.json",

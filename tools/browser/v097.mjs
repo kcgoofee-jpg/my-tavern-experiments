@@ -35,7 +35,7 @@ async function run(name, preset) {
       await vf.locator('#card .cmp [data-cmp="ask"]').click(); await B.wait(600);
       const v2 = await p.evaluate(() => document.getElementById('send_textarea').value);
       rep.check(`${name} 追问：接在草稿后面，不清掉`, v2 === '前往7 号井黑市。 关于7 号井黑市，', v2);
-      const toast = await vf.evaluate(() => document.getElementById('cuToast')?.textContent || '');
+      const toast = await p.evaluate(() => [...document.querySelectorAll('#eden-map-root .nt-p2 .nt-item')].map(t => t.textContent).join(' '));   // UI v2：嵌入时提示在宿主通知层
       rep.check(`${name} 提示「已填入聊天输入框（未发送）」`, /未发送/.test(toast), toast);
       // 设置里改模板
       await p.evaluate(() => { document.getElementById('send_textarea').value = ''; });

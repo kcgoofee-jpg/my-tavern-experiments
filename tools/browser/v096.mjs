@@ -29,7 +29,7 @@ const ev = (p, f, a) => p.evaluate(f, a);
   const ui = await ev(p, () => ({ credit: document.getElementById('credit').hidden, cbtn: !!document.getElementById('creditBtn')?.offsetParent,
     zoom: getComputedStyle(document.getElementById('zoom')).display }));
   rep.check('credit_collapsed', ui.credit && ui.cbtn, JSON.stringify(ui));
-  rep.check('zoom_hidden_touch', ui.zoom === 'none', ui.zoom);
+  rep.check('zoom_in_thumb_column', ui.zoom === 'flex', ui.zoom);   // UI v2 §10.1：手机控制列常驻 ⋯ + − ⌂
   await p.click('#creditBtn'); const open1 = await ev(p, () => !document.getElementById('credit').hidden);
   rep.check('credit_expands', open1);
   const vis = () => ev(p, () => [...document.querySelectorAll('#layers button')].filter(b => b.offsetParent && getComputedStyle(b).display !== 'none').length);
@@ -64,7 +64,7 @@ const ev = (p, f, a) => p.evaluate(f, a);
   await ev(p, () => { for (let i = 0; i < 2; i++) { viewer.viewport.zoomBy(1.3); viewer.viewport.applyConstraints(); } });
   await p.waitForFunction(() => TCScale.isTier(cur), null, { timeout: 4000 }).catch(() => {}); await B.wait(1500);
   const w2 = await ev(p, () => ({ cur, w: viewer.viewport.getBounds(true).width, crumb: document.getElementById('crumbs').textContent }));
-  rep.check('handoff_in_to_tier', w2.cur === 'tc_low' && w2.w > 5, JSON.stringify(w2));
+  rep.check('handoff_in_to_tier', w2.cur === 'tc_low' && w2.w > .5 && w2.w < 1.2, JSON.stringify(w2));   // UI v2（U2）：手机竖屏进城落在核心区（view.phone），不再是最远一档的云雾圈
   // 5 三维测试件：整屏加载页、热点不重叠、围栏标记落在网格上、菜单抽屉有标题栏和关闭
   await ev(p, () => go('dairy')); await B.wait(300);
   const ld = await ev(p, () => { const l = document.getElementById('loading'); return { over: l.classList.contains('over'), bg: getComputedStyle(l).backgroundColor }; });
@@ -80,7 +80,7 @@ const ev = (p, f, a) => p.evaluate(f, a);
     rep.check('v3d_ready', cam.ok);
   } else rep.check('v3d_ready', false, '三维页没就绪');
   await B.wait(500); await snap(p, 'dairy_375');
-  await p.click('#thumbBtn'); await B.wait(400);
+  await p.click('#setBtn'); await B.wait(400);   // UI v2：三维页上查看器的「⋯」在顶栏（控制列让给三维外壳）
   const sh = await ev(p, () => ({ open: !document.getElementById('setPop').hidden, x: !!document.getElementById('setX')?.offsetParent, top: document.getElementById('setPop').scrollTop,
     about: document.getElementById('aboutBox').textContent }));
   rep.check('sheet_header_close', sh.open && sh.x && sh.top === 0, JSON.stringify(sh));
@@ -114,7 +114,7 @@ const ev = (p, f, a) => p.evaluate(f, a);
   const H = await openHost(P, { here: '旷野高地' }); await H.open(); const vf = await H.viewer();
   const lang = await vf.evaluate(() => ({ lang: LANG, crumb: document.getElementById('crumbs').textContent }));
   rep.check('embed_lang_consistent', lang.lang === 'zh' && !/World/.test(lang.crumb), JSON.stringify(lang));
-  await vf.evaluate(() => document.getElementById('thumbBtn').click()); await B.wait(500);
+  await vf.evaluate(() => { document.getElementById('thumbBtn').click(); document.querySelector('#setPop .sgroups button[data-page="update"]').click(); }); await B.wait(500);   // UI v2：版本与检查更新在「更新与版本」页
   const ab = await vf.evaluate(() => document.getElementById('aboutBox').textContent);
   rep.check('embed_about', /地图版本 v/.test(ab) && /检查更新/.test(ab), ab);
   await vf.locator('#updBtn').click();   // 真实点击：按钮点完即重绘，设置弹层不能因此关掉

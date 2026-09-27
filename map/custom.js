@@ -137,7 +137,7 @@ const TCCustom = (() => {
   function closeDlg(restore = true) {
     if (!dlg || dlg.hidden) return; dlg.hidden = true; document.body.classList.remove('cudlg');
     if (!restore) return;
-    if (!(opener?.isConnected && opener.offsetParent)) { if (document.getElementById('setPop')?.hidden && typeof showSet === 'function') showSet(true); opener = document.querySelector('#cuBox .cu-open'); }
+    if (!(opener?.isConnected && opener.offsetParent)) { if (window.TCSettings) TCSettings.open('data'); else if (document.getElementById('setPop')?.hidden && typeof showSet === 'function') showSet(true); opener = document.querySelector('#cuBox .cu-open'); }
     opener?.focus({ preventScroll: true });
   }
   const ic = d => `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="${d}"/></svg>`;

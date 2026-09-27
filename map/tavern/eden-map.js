@@ -171,7 +171,7 @@
     #${ID} .em-bar .em-close { width: 44px; height: 44px; }
     #${ID} .em-bar .em-close svg { width: 22px; height: 22px; }
     #${ID} .em-panel.em-left .em-close { order: -1; }   /* 左手（E7）：关闭按钮到左上，离左手拇指近一些；底部还有地图菜单里的「关闭地图」 */
-    #${ID} .em-panel.em-left .em-bar { padding: env(safe-area-inset-top) 10px 0 2px; }
+    #${ID} .em-panel.em-left .em-bar { padding: env(safe-area-inset-top) 10px 0 2px; right: auto; left: 0; }   /* 左手：宿主栏（✕ 在最左）贴左上，查看器顶栏左端让位 */
   }
 </style>
 <button class="em-fab" title="世界地图" aria-label="打开世界地图">
@@ -382,7 +382,7 @@
   window.parent.addEventListener('message', onMsg);
   // 合并顶栏：宿主栏的宽度告诉查看器，查看器顶栏右端让出这一段；线路按钮移进查看器设置「高级」
   const hbarEl = root.querySelector(".em-bar");
-  const sendBar = () => { post({ type: 'eden-map:hostbar', w: Math.ceil(hbarEl.getBoundingClientRect().width) }); post({ type: 'eden-map:line', swappable }); };
+  const sendBar = () => { post({ type: 'eden-map:hostbar', w: Math.ceil(hbarEl.getBoundingClientRect().width), side: panel.classList.contains('em-left') ? 'left' : 'right' }); post({ type: 'eden-map:line', swappable }); };
   try { new ResizeObserver(() => { if (alive) sendBar(); }).observe(hbarEl); } catch (e) {}
   // ---------------- UI v2 唯一通知层（ui/notice.mjs，spec §3）：P0 强制更新 / P1 更新、自检、存储 / P2 新事态、查看器转来的提示 ----------------
   let NT = null, chromeAt = { top: 44, bottom: 0 }, formBusy = false;
@@ -1083,7 +1083,7 @@
       const r = fab.getBoundingClientRect(), vh = window.parent.innerHeight, y = vh > 48 ? r.top / (vh - 48) : .85;
       const p = placeFab(handPref === 'left' ? .03 : .97, y); try { localStorage.setItem(POS_KEY, JSON.stringify(p)); } catch (e) {}
     }
-    panel.classList.toggle('em-left', handPref === 'left' || (handPref === 'auto' && fabLeft()));
+    panel.classList.toggle('em-left', handPref === 'left' || (handPref === 'auto' && fabLeft())); if (typeof sendBar === 'function' && alive) sendBar();
   };
   { let saved = null; try { saved = localStorage.getItem(POS_KEY); } catch (e) {}
     if (!saved && handPref === 'left') placeFab(.03, Math.max(0, (window.parent.innerHeight - 144) / Math.max(1, window.parent.innerHeight - 48))); }   // 没拖过：左手默认放左下
