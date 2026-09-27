@@ -44,7 +44,11 @@ const TCEvents = (() => {
   const hash = s => { let h = 2166136261; for (const c of String(s)) h = Math.imul(h ^ c.codePointAt(0), 16777619); return (h >>> 0) / 4294967296; };
   const all = () => items.concat(feedItems);
   const vis = () => all().filter(e => !off.has(grpOf(e)));   // 筛选后看得见的
-  const mapOf = e => MAP_OF[e.layer] || 'tc_mid';
+  // v0.9.6：城外 / 异兽类（天城外、又没认出具体的世界地名）落在「天城周边」过渡环里：显示在当前所在的天城层（不在天城时算中层）
+  const RE_RING = /外围|城外|郊|异兽|兽潮|野兽|清剿|荒野|边境|防线/;
+  const isRing = e => e.layer === '天城外' && RE_RING.test((e.place || '') + (e.cat || '')) && !worldPos(e.place);
+  const tierNow = () => { const S = window.TCScale; return S?.isTier(cur) ? cur : S?.lastTier || 'tc_mid'; };
+  const mapOf = e => (isRing(e) ? tierNow() : MAP_OF[e.layer] || 'tc_mid');
   const live = e => !e.closed && e.tier !== 'fade';
 
   // 地点 → 坐标：①显式坐标 ②该层地图的地标名 / 别名（最长匹配）③城区关键词 ④只知道层：按地点哈希放在中部一圈，标成「位置不详」
@@ -61,6 +65,8 @@ const TCEvents = (() => {
   function pos(e) {
     const mid = mapOf(e), m = REG.maps[mid];
     if (m?.kind === 'world') return worldPos(e.place) || { nx: .5, ny: .5, approx: true, none: true };
+    if (isRing(e)) { const a = hash(e.key || e.id) * Math.PI * 2, r = .62 + .5 * hash((e.key || e.id) + '#');   // 城边外 0.6–1.1 个城宽（约 2–3 km）一圈
+      return { nx: .5 + Math.cos(a) * r, ny: .5 + Math.sin(a) * r * .8, approx: true, ring: true }; }
     const xy = (e.xy || '').split(/[,，]/).map(Number);
     if (xy.length === 2 && xy.every(v => v >= 0 && v <= 1)) return { nx: xy[0], ny: xy[1] };
     let best = null;

@@ -238,5 +238,21 @@
   "ev.src_floor": "{src} · 聊天第 {n} 楼",
   "ev.new": "新",
   "ev.legend_aria": "按大类筛选",
-  "tiles_failed": "地图图块加载失败：当前线路连不上。可以重试，或在标题栏换一条线路"
+  "tiles_failed": "地图图块加载失败：当前线路连不上。可以重试，或在标题栏换一条线路",
+  "credit_aria": "署名",
+  "ring": "天城周边",
+  "about.title": "地图版本",
+  "about.ch_tag": "固定版本 {ref}",
+  "about.ch_follow": "跟随分支 {ref}（每次打开取最新提交）",
+  "about.ch_ref": "预览提交 {ref}",
+  "about.ch_local": "本地 / 单独打开",
+  "about.line": "线路：{l}",
+  "about.check": "检查更新",
+  "about.checking": "检查中…",
+  "about.latest": "已是最新（v{v}）",
+  "about.new": "有新版 v{v}",
+  "about.notes": "更新说明",
+  "about.how_follow": "跟随版会自动用上新版本：刷新酒馆页面即可",
+  "about.how_tag": "固定版不会自己变：导入新版脚本「【地图】伊甸地图 v{v}」（同名覆盖）",
+  "about.fail": "检查失败：连不上更新接口，稍后再试"
 }

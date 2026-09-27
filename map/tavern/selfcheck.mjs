@@ -29,9 +29,51 @@ export function getPath(obj, path) {
   let v = obj; for (const k of path.split('.')) { if (v == null || typeof v !== 'object' || !(k in v)) return undefined; v = v[k]; }
   return Array.isArray(v) ? v[0] : v;
 }
-/** 世界书条目 [{name, enabled}] → 缺了哪几个附加条目（名字前缀匹配、要启用） */
+/** 条目名规范化：去空白、全角半角统一、去掉常见的包裹符号（有人导入时会改成「【地图】地图联动规范」之类） */
+export const wbNorm = s => String(s ?? '').normalize('NFKC').replace(/[\s【】\[\]（）()《》「」·•:：_-]/g, '');
+/** 世界书条目 [{name, enabled}] → 缺了哪几个附加条目（名字包含即算、要启用） */
 export function wbMissing(entries) {
-  return WB_ENTRIES.filter(w => !entries.some(e => e && e.enabled !== false && String(e.name || '').startsWith(w)));
+  return WB_ENTRIES.filter(w => !entries.some(e => e && e.enabled !== false && wbNorm(e.name).includes(wbNorm(w))));
+}
+/** 酒馆助手不同版本的条目形状 → {name, enabled}：新接口 {name, enabled}；旧接口 {comment, enabled}；原始 ST {comment, disable} */
+export const wbEntry = e => (e && typeof e === 'object' ? { name: e.name ?? e.comment ?? '', enabled: e.enabled ?? (e.disable === undefined ? true : !e.disable) } : null);
+const arr = v => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.values(v) : []);
+
+/**
+ * 收集世界书事实（v0.9.6，修 v0.9.5 的误报：用户导入并设为全局启用，自检仍说「缺少」）。
+ * f = 取接口的函数 name => fn | null（宿主传 window / TavernHelper 上的同名函数；同步或返回 Promise 都行）。
+ * 以前的问题：① 列书名的几个接口是 if / else if，只取了第一个；有的版本 getGlobalWorldbookNames 返回空（设置还没加载完）就不再看 getLorebookSettings；
+ * ② 每本书取条目失败被吞掉，条目为空 → 四条全「缺少」；③ 名字只认前缀。
+ * 现在：所有列名接口取并集；取条目 getWorldbook 失败再试 getLorebookEntries；一本都取不到 → null（查不了，跳过，不报警）；
+ * 启用的书里没找到、但所有世界书里有附加条目 → { missing, imported: true }（提示「已导入但没启用」）。
+ */
+export async function collectWorldbook(f) {
+  const call = async (n, ...a) => { const fn = f(n); if (typeof fn !== 'function') return undefined; try { return await fn(...a); } catch (e) { return undefined; } };
+  const names = new Set(), add = n => { if (typeof n === 'string' && n) names.add(n); else if (n && typeof n === 'object' && typeof n.name === 'string') names.add(n.name); };
+  let listed = false;
+  for (const [n, pick, ...args] of [['getGlobalWorldbookNames', v => v], ['getLorebookSettings', v => v?.selected_global_lorebooks],
+    ['getCharWorldbookNames', v => [v?.primary, ...arr(v?.additional)], 'current'], ['getCharLorebooks', v => [v?.primary, ...arr(v?.additional)]],
+    ['getChatWorldbookName', v => [v], 'current'], ['getChatLorebook', v => [v]]]) {
+    if (typeof f(n) !== 'function') continue; listed = true;
+    arr(pick(await call(n, ...args))).forEach(add);
+  }
+  const hasGet = typeof f('getWorldbook') === 'function' || typeof f('getLorebookEntries') === 'function';
+  if (!listed || !hasGet) return null;
+  const entriesOf = async n => {
+    let v = await call('getWorldbook', n); if (Array.isArray(v) || (v && typeof v === 'object')) return arr(v).map(wbEntry).filter(Boolean);
+    v = await call('getLorebookEntries', n); if (Array.isArray(v)) return v.map(wbEntry).filter(Boolean);
+    return null;
+  };
+  const entries = []; let got = 0;
+  for (const n of names) { const e = await entriesOf(n); if (e) { got++; entries.push(...e); } }
+  if (names.size && !got) return null;   // 一本都取不到：查不了，不报「缺少」
+  const missing = wbMissing(entries), lore = entries.some(e => e.enabled !== false && wbNorm(e.name).startsWith(wbNorm(LORE_PREFIX)));
+  let imported = false;
+  if (missing.length) {   // 只在「缺」时再看所有世界书：区分「没导入」和「导入了但没启用 / 没绑定」
+    const all = arr(await call('getWorldbookNames') ?? await call('getLorebooks'));
+    for (const n of all) { if (typeof n !== 'string' || names.has(n)) continue; const e = await entriesOf(n); if (e && wbMissing(e).length < WB_ENTRIES.length) { imported = true; break; } }
+  }
+  return { missing, lore, imported };
 }
 
 /**
@@ -87,6 +129,8 @@ export function evaluate(f) {
 
   const w = f.worldbook;
   if (!w) out.push(item('worldbook', 'skip', '查不了世界书（酒馆助手没有世界书接口）', 'Cannot inspect lorebooks (no TavernHelper lorebook API)'));
+  else if (w.missing.length && w.imported) out.push(item('worldbook', 'warn', `世界书附加条目已导入但没有启用：${w.missing.join('、')}（在世界书里把「伊甸地图·世界书附加条目」设为全局，或绑定到当前角色 / 聊天）`,
+    `Lorebook add-on imported but not active: ${w.missing.join(', ')} (activate the Eden map add-on globally or bind it to this character / chat)`));
   else if (w.missing.length) out.push(item('worldbook', 'warn', `世界书附加条目缺少：${w.missing.join('、')}（导入「伊甸地图·世界书附加条目」，并在世界书里设为全局、或绑定到当前角色 / 聊天；刚导入的话刷新一次页面）`,
     `Lorebook add-on entries missing: ${w.missing.join(', ')} (import the Eden map add-on lorebook and activate it globally or bind it to this character / chat; refresh once after importing)`));
   else out.push(item('worldbook', 'ok', '世界书附加条目已启用', 'Lorebook add-on entries enabled'));
@@ -129,3 +173,10 @@ export function swapVer(url, to) {
 }
 /** 需要弹一次提示的警告签名（同一组警告只提示一次，不按聊天重复） */
 export const warnSig = items => items.filter(i => i.status === 'warn').map(i => i.id).sort().join(',');
+
+/** v0.9.6「检查更新」的结论：current = 正在用的版本（build.json），latest = 最新 map-v 标签；跟随分支的版本可能比最新标签还新（未发版）→ 也算最新 */
+export function updateVerdict(current, latest, channel) {
+  if (!latest) return { status: 'fail' };
+  if (!current) return { status: 'new', latest, channel };
+  return cmpVer(latest, current) > 0 ? { status: 'new', latest, current, channel } : { status: 'latest', latest, current, channel };
+}

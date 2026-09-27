@@ -107,7 +107,8 @@ const STR = {
   en: { mode_ext: 'Exterior', mode_xray: 'X-ray', mode_cut: 'Section', cut_h: 'Cut height', parts: 'Parts', parts_h: 'Parts (tap to fly)', retry: 'Retry', close: 'Close',
     loading: 'Loading model {p}', fail: 'Model failed to load. Check the connection and retry.', slow: 'Still loading… keep waiting or retry', modes: 'View mode', canvas: '3D model: drag to orbit, pinch to zoom' },
 };
-let LANG = (Q.get('lang') || navigator.language || 'zh').startsWith('en') ? 'en' : 'zh';
+// v0.9.6：语言先看地图的设置（同源本机存储 edenMapLang），再看系统语言；嵌入时查看器还会发 estate:lang
+let LANG = (Q.get('lang') || (() => { try { return localStorage.getItem('edenMapLang'); } catch (e) { return null; } })() || 'zh').startsWith('en') ? 'en' : 'zh';
 const t = (k, v = {}) => (STR[LANG][k] || STR.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
 const L = o => (o && (o[LANG] || o.zh)) || '';
 function applyLang() {
@@ -149,19 +150,22 @@ controls.addEventListener('change', () => { dirty = true; });
 const U = {
   uXray: { value: 0 }, uXMin: { value: 0.2 }, uCenter: { value: new THREE.Vector3() }, uCamDir: { value: new THREE.Vector3(1, 0, 0) },
   uCap: { value: new THREE.Color('#6b6358') }, uCapOn: { value: 0 }, uTime: { value: 0 },
+  uR0: { value: 14 }, uR1: { value: 26 }, uGround: { value: new THREE.Color('#8b8f86') },   // v0.9.6：地面只留建筑周围一圈，往外淡出
 };
 function patch(mat, role) {
-  mat.userData.u = { uGain: { value: 1 }, uHi: { value: 0 }, uRoleX: { value: role === 'walls' ? 1 : 0 }, uFade: { value: 1 } };
+  mat.userData.u = { uGain: { value: 1 }, uHi: { value: 0 }, uRoleX: { value: role === 'walls' ? 1 : 0 }, uFade: { value: 1 }, uSite: { value: role === 'site' ? 1 : 0 } };
   mat.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, U, mat.userData.u);
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;')
       .replace('#include <project_vertex>', '#include <project_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
-varying vec3 vWP; uniform float uGain, uHi, uRoleX, uFade, uXray, uXMin, uCapOn, uTime; uniform vec3 uCenter, uCamDir, uCap;
+varying vec3 vWP; uniform float uGain, uHi, uRoleX, uFade, uXray, uXMin, uCapOn, uTime, uSite, uR0, uR1; uniform vec3 uCenter, uCamDir, uCap, uGround;
 float bayer4(vec2 p) { ivec2 q = ivec2(mod(p, 4.0)); int i = q.x + q.y * 4;
   float m[16] = float[16](0.,8.,2.,10.,12.,4.,14.,6.,3.,11.,1.,9.,15.,7.,13.,5.); return (m[i] + 0.5) / 16.0; }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
 { float a = uFade;
+  if (uSite > 0.5) { float r = length(vWP.xz - uCenter.xz); diffuseColor.a *= 1.0 - smoothstep(uR0, uR1, r);   // 平滑透明（不用抖动，免得边缘一片网点）
+    float l = dot(diffuseColor.rgb, vec3(.3, .59, .11)); diffuseColor.rgb = mix(uGround * (0.85 + 0.3 * l), diffuseColor.rgb, 0.18); }   // 中性色、低噪声
   if (uXray > 0.5 && uRoleX > 0.5) { float d = dot(vWP - uCenter, uCamDir); a *= mix(1.0, uXMin, smoothstep(-1.5, 1.0, d)); }
   if (a < 0.999 && a <= bayer4(gl_FragCoord.xy)) discard;
   diffuseColor.rgb *= uGain;
@@ -213,7 +217,7 @@ function setup(sc) {
     const role = roleOf(o.name), map = o.material.map || null;
     if (map) { map.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy()); map.colorSpace = THREE.SRGBColorSpace; }
     o.material.dispose();
-    o.material = new THREE.MeshBasicMaterial({ map, side: THREE.DoubleSide });
+    o.material = new THREE.MeshBasicMaterial({ map, side: THREE.DoubleSide, transparent: role === 'site' });
     patch(o.material, role);
     o.userData.role = role; meshes[o.name] = o;
     o.matrixAutoUpdate = false;   // 矩阵已由 root.updateMatrixWorld 算好（meshopt 量化把解码缩放放在节点上）
@@ -230,25 +234,43 @@ function setup(sc) {
     ln.matrixAutoUpdate = false; ln.matrix.copy(m.matrix); ln.visible = false; wallsLines.add(ln); }
   scene.add(wallsLines); meshes.__edges = wallsLines;
   const B = MAN.groups.building; U.uCenter.value.set((B.min[0] + B.max[0]) / 2, 0, (B.min[2] + B.max[2]) / 2);
+  { const fr = new THREE.Box3(); for (const n of MAN.camera.frame || []) if (meshes[n]) fr.expandByObject(meshes[n]);
+    const half = fr.isEmpty() ? Math.hypot(B.max[0] - B.min[0], B.max[2] - B.min[2]) / 2 : Math.hypot(fr.max.x - fr.min.x, fr.max.z - fr.min.z) / 2;
+    U.uR0.value = half * 1.05; U.uR1.value = half * 1.6; }
   HS = (MAN.hotspots || []).map((h, i) => { const m = meshes[h.mesh]; if (!m) return null;
     box.setFromObject(m); const c = h.focus ? new THREE.Vector3(...h.focus) : box.getCenter(new THREE.Vector3());
     const r = h.radius || box.getSize(v3).length() / 2;
-    return { ...h, n: i + 1, m, c, r }; }).filter(Boolean);
+    // 标记锚点（v0.9.6）：没给 focus 时用网格上离包围盒中心最近的顶点——围栏这类「一圈」的网格，包围盒中心落在空地上（热点 8 飘在空地）
+    let a = c;
+    if (!h.focus) { const pos = m.geometry.attributes.position, p = new THREE.Vector3(); let best = Infinity; const step = Math.max(1, Math.floor(pos.count / 4000));
+      for (let k = 0; k < pos.count; k += step) { p.fromBufferAttribute(pos, k).applyMatrix4(m.matrixWorld); const d = p.distanceToSquared(c); if (d < best) { best = d; a = p.clone(); } } }
+    return { ...h, n: i + 1, m, c, r, a }; }).filter(Boolean);
   buildList(); buildPins();
   // 起始视角：按 camera.frame 的网格自动取景
   box.makeEmpty(); for (const n of MAN.camera.frame || []) if (meshes[n]) box.expandByObject(meshes[n]);
   if (box.isEmpty()) box.setFromObject(root);
   resize();
   const c = box.getCenter(new THREE.Vector3()), R = box.getSize(v3).length() / 2;
-  START.t.copy(c); START.p.copy(c).addScaledVector(new THREE.Vector3(...MAN.camera.dir).normalize(), R / Math.sin(fitHalf()) * 0.8);
-  controls.target.copy(START.t); camera.position.copy(START.p);
   controls.minDistance = MAN.camera.min || 1; controls.maxDistance = MAN.camera.max || 100; controls.maxPolarAngle = MAN.camera.maxPolar || 1.45;
+  FRAME.c = c; FRAME.R = R; frameStart();
   SITE.setFromObject(root); SITE.expandByScalar(-2);
   const s = MAN.section; if (s) { const r = $('#cutH'); r.min = s.min; r.max = s.max; r.value = s.default; showCut(); }
   controls.update(); setMode(mode);
 }
 // 竖屏按水平视角取景（手机上横向才是短边）
-function fitHalf() { const v = THREE.MathUtils.degToRad(camera.fov / 2), a = innerWidth / innerHeight; return Math.min(v, Math.atan(Math.tan(v) * a)); }
+function fitHalf() { const v = THREE.MathUtils.degToRad(camera.fov / 2), a = innerWidth > 0 && innerHeight > 0 ? innerWidth / innerHeight : 1; return Math.max(.12, Math.min(v, Math.atan(Math.tan(v) * a))); }
+// 起始取景（v0.9.6）：iframe 刚建时宽高可能是 0（角度算成 0 → 距离无穷大 → 相机 NaN，看到一面暗「幕布」）；现在限幅、离建筑足够远，
+// 用户还没动过相机时，尺寸变了（面板展开、横竖屏）就重新取景
+const FRAME = { c: null, R: 0 }; let camTouched = false;
+function frameStart() {
+  if (!FRAME.c) return;
+  const dir = new THREE.Vector3(...MAN.camera.dir).normalize();
+  let dist = Math.min(FRAME.R / Math.sin(fitHalf()) * 0.85, (controls.maxDistance || 100) * .95); dist = Math.max(dist, (controls.minDistance || 1) * 2);
+  START.t.copy(FRAME.c); START.p.copy(FRAME.c).addScaledVector(dir, dist);
+  const B = MAN.groups.building; if (B) { const bb = new THREE.Box3(new THREE.Vector3(...B.min), new THREE.Vector3(...B.max)).expandByScalar(1);
+    while (bb.containsPoint(START.p)) START.p.addScaledVector(dir, 2); }
+  controls.target.copy(START.t); camera.position.copy(START.p); controls.update(); dirty = true;
+}
 const START = { p: new THREE.Vector3(), t: new THREE.Vector3() }, SITE = new THREE.Box3();
 function disposeRoot() {
   if (!root) return;
@@ -274,10 +296,15 @@ function buildPins() {
 const pv = new THREE.Vector3();
 function placePins() {
   const w = canvas.clientWidth, h = canvas.clientHeight;
-  for (const s of HS) { pv.copy(s.c); pv.project(camera);
-    const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05 && !(mode === 'cut' && s.c.y > cutY() + 0.2);
-    s.pin.hidden = !vis; if (vis) s.pin.style.transform = `translate(${(pv.x + 1) / 2 * w}px, ${(1 - pv.y) / 2 * h}px)`;
-    s.pin.classList.toggle('on', sel === s.id); }
+  // v0.9.6 标记避让：屏幕上离得太近（< 30 px）的标记沿一圈错开，不再叠成一个（7 压在 1 / 3 上）
+  const placed = [];
+  for (const s of HS) { pv.copy(s.a || s.c); pv.project(camera);
+    const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05 && !(mode === 'cut' && (s.a || s.c).y > cutY() + 0.2);
+    s.pin.hidden = !vis; s.pin.classList.toggle('on', sel === s.id); if (!vis) continue;
+    let x = (pv.x + 1) / 2 * w, y = (1 - pv.y) / 2 * h;
+    const x0 = x, y0 = y;   // 围着原位置一圈圈找空位（每圈 8 个方向，半径 32 / 64 px）
+    for (let k = 0; k < 16 && placed.some(p => Math.hypot(p[0] - x, p[1] - y) < 30); k++) { const ang = -Math.PI / 2 + (k % 8) * Math.PI / 4, r = 32 * (1 + (k >> 3)); x = x0 + Math.cos(ang) * r; y = y0 + Math.sin(ang) * r; }
+    placed.push([x, y]); s.pin.style.transform = `translate(${x}px, ${y}px)`; }
 }
 function showCard(id) {
   const h = HS.find(x => x.id === id), c = $('#card'); if (!h) { c.hidden = true; return; }
@@ -325,7 +352,7 @@ function stepTween(now) {
   controls.update(); dirty = true;
   if (k >= 1) tween = null;
 }
-['pointerdown', 'wheel'].forEach(ev => canvas.addEventListener(ev, () => { tween = null; }, { passive: true }));
+['pointerdown', 'wheel'].forEach(ev => canvas.addEventListener(ev, () => { tween = null; camTouched = true; }, { passive: true }));
 
 // ---------------- 显示方式 ----------------
 const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1.6);
@@ -375,7 +402,8 @@ canvas.addEventListener('pointerup', e => {
 });
 
 // ---------------- 循环 ----------------
-function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); dirty = true; }
+function resize() { const w = innerWidth, h = innerHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); dirty = true;
+  if (root && !camTouched && !tween && !sel) frameStart(); }
 addEventListener('resize', resize);
 const FT = []; let last = performance.now(), running = true;
 function frame(now) {
