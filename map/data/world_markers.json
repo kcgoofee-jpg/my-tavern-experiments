@@ -39,7 +39,10 @@
    "autoHighest": "oren",
    "src": "开场白 JSONPatch：当前地点 = 旷野高地（位置设定未给，取奥伦境内最高处）",
    "x": 896,
-   "y": 428
+   "y": 428,
+   "openings": [
+    7
+   ]
   }
  ],
  "fiefs": [

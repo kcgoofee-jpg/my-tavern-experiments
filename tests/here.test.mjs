@@ -99,4 +99,13 @@ t('自定义叫法的本机存储：按聊天分开，没有聊天 id 用全局�
   assert.equal(setRoomAlias(store, 'c5', '某处', '不存在的房间', null), true);
   assert.equal(resolveHere('某处', buildIndex(J('data/maps.json'), null, null, readCustom(store, 'c5'))), null);
 });
+t('开局地点（v0.9.2）：卡里开场白写的当前地点都能落点', () => {
+  is('{{user}}书房', 1, 'eden_estate', { word: '书房' });                                   // 开局二～五
+  is('中层-钢铁霓虹区-旧公寓楼-房间', 3, 'tc_mid', { marker: 'old_apartment' });           // 开局六
+  is('天城-中层高区-辉光大教堂', 3, 'tc_mid', { marker: 'radiance_cathedral' });           // 开局八
+  is('旷野高地', 5, 'world', { place: '旷野高地' });                                        // 开局七
+  is('天城边缘的废弃教堂区', 3, 'tc_low', { marker: 'ruined_churches' });                  // 开局四（目的地；不被「教堂」带去辉光大教堂）
+  is('天城第一学府', 3, 'tc_mid', { marker: 'starabyss_univ' });                           // 开局二
+  is('首相府', 3, 'tc_upper', { marker: 'pm_residence' });                                 // 开局三
+});
 console.log(`\n${n} passed`);
