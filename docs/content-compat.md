@@ -77,3 +77,13 @@
 - **按角色卡存本机**：`localStorage` 键 `edenMap:varmap:<卡的头像文件名或名字>`，不进聊天、不上传。
 - **没有 MVU**：地点、事态、人物全部退回聊天标签（与以前一样）。自检里多一行「读法」：MVU（写明地点路径）/ MVU 但没找到地点字段（提示去设置里选）/ 聊天标签。
 - 行程的地点历史：先读每一楼的 MVU 变量，拿不到时读消息原文里 JSONPatch 对地点路径（由映射换算成 `/a/b`）的最后一次写入。
+
+## 表格数据库插件（只读兼容）
+有的用户同时启用一个「数据库 / 自动填表」扩展（宿主页全局对象 `AutoCardUpdaterAPI`）。它把剧情整理成若干张表，存在聊天楼层对象的自有字段里，经它自己的世界书条目注入；填表、剧情规划走它自己的额外生成请求（`generateRaw` 自带消息列表，地图的 `injectPrompts` 注入不会进这些请求）。
+- **检测**：`map/tavern/shujuku.mjs` `findApi`（有 `exportTableAsJson` 才算）。检测到时自检多一行「数据库插件：已检测 / 兼容模式」。
+- **只读**：只调用 `exportTableAsJson`、`registerTableUpdateCallback` / `unregisterTableUpdateCallback`；从不写它的表、不触发填表。
+- **当前地点**：MVU 映射读不到地点时，改读它的「全局 / 主角」表（列名：当前详细地点 / 所在地点 / 地点 / 位置 → 次要地区 → 主要地区）；MVU 有地点时以 MVU 为准。它的表更新时地图重算。
+- **人物位置**：表里同时有「姓名」列和地点列时补进人物栏（MVU 优先，聊天标签照常）。
+- **正文优化**：它的可选「正文优化」会改写 AI 楼层（原文存在 `extra._acu_original_content`）；改写丢掉的 ⌖ 标签从原文补回解析（`lostTags`，只补标签，不改楼层）。
+- **界面**：它的全屏界面 `#acu-app-v2`（z-index 9000）打开时，地图悬浮按钮先隐藏，关上再出现。
+- 单测 `tests/shujuku.test.mjs`；隔离实例实测记录见 CHANGELOG。
