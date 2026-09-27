@@ -119,7 +119,7 @@ t('设定对齐（card-digest §10）：开局与标记', () => {
   assert.equal(reg.maps.tc_mid.layer.alt, '50–800 m'); assert.equal(reg.maps.tc_low.layer.alt, '地面至 −200 m');
 });
 t('设定对齐：大主教 → 辉光大教堂（中层）', () => {
-  is('大主教府邸', 3, 'tc_mid', { marker: 'radiance_cathedral' }); is('大主教的书房', 3, 'tc_mid', { marker: 'radiance_cathedral' });
+  is('大主教府邸', 3, 'tc_mid', { marker: 'radiance_cathedral' }); is('天城主教座堂', 3, 'tc_mid', { marker: 'radiance_cathedral' }); is('主教座堂', 3, 'tc_mid', { marker: 'radiance_cathedral' }); is('大主教的书房', 3, 'tc_mid', { marker: 'radiance_cathedral' });
 });
 t('设定对齐：泛称不自动落地标', () => {
   assert.equal(R('天城大学'), null); assert.equal(R('天城大学法学院'), null); assert.equal(R('大学'), null);   // 天城大学 ≠ 星渊大学
