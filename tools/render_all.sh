@@ -44,7 +44,9 @@ for L in "${LAYERS[@]}"; do
   T0=$SECONDS
   if [ "$DATA_ONLY" = 1 ]; then
     [ "$L" = upper_city ] && continue                      # 与 upper 共用同一份点位
+    # 2026-09-27 接手 review：以前管道的 grep 把退出码吃掉、失败也 continue，层脚本崩了等于什么都没重算
     "${RUN[@]}" -- --data-only ${EXTRA[@]+"${EXTRA[@]}"} 2>&1 | grep -E "DATA-ONLY|Error|Traceback" || true
+    [ "${PIPESTATUS[0]}" = 0 ] || { echo "$L --data-only 失败（看上面的 Error / Traceback）"; exit 1; }
     continue
   fi
   OUT="$PWD/map/art/tc_${L}_full.png"
@@ -57,5 +59,5 @@ for L in "${LAYERS[@]}"; do
   python3 tools/make_dzi.py "$OUT" "map/art/tc_${L}"
   echo "   $L 用时 $((SECONDS - T0)) 秒"
 done
-python3 tools/check_maps.py || echo "（检查未通过：见上面的错误）"
+python3 tools/check_maps.py || { echo "检查未通过（见上面的错误）：先修数据，别提交" >&2; exit 1; }   # 2026-09-27：以前这里只 echo，退出码仍是 0
 [ "$DATA_ONLY" = 1 ] || echo "完成。检查 git status，确认后提交 map/art/tc_*.dzi、map/art/tc_*_files/、map/data/tc_*.json"

@@ -136,14 +136,23 @@ for lg in ('zh', 'en'):
 if len(i18n) == 2:
     for k in (set(i18n['zh']) ^ set(i18n['en'])) - {'names'}: err(f'i18n：键 {k} 只在一种语言里有')
     # 事件体系（map/tavern/events.mjs 的 GROUPS / CATS）：每个大类、每种类型在 en.json 的 names 里要有英文（英文界面的图例、事件卡用）
-    import subprocess
-    try:
+    import shutil, subprocess
+    def run_node():
         js = "import('./map/tavern/events.mjs').then(m=>console.log(JSON.stringify([...Object.keys(m.GROUPS),...Object.keys(m.CATS)])))"
-        r = subprocess.run(['node', '-e', js], capture_output=True, text=True, cwd=os.path.join(ROOT, '..'), timeout=30)
-        names = set(json.loads(r.stdout)) if r.returncode == 0 else None
-    except (OSError, ValueError, subprocess.TimeoutExpired): names = None
-    if names is None: warn('没有 node，跳过事件类型英文名检查')
+        return subprocess.run(['node', '-e', js], capture_output=True, text=True, cwd=os.path.join(ROOT, '..'), timeout=30)
+    names = None
+    if shutil.which('node') is None:
+        warn('没有 node，跳过事件类型英文名检查')
     else:
+        # node 在、模块却加载不出来（顶层报错、循环依赖、语法错）→ 这是错误，不是警告：
+        # 以前这里一律降级成警告，events.mjs 加载失败也能过门控，用户侧事件系统整个挂掉。
+        try:
+            r = run_node()
+            if r.returncode != 0: err(f'events.mjs 加载失败（node 退出码 {r.returncode}）：{(r.stderr or "").strip().splitlines()[-1:] or [""]}')
+            else: names = set(json.loads(r.stdout))
+        except (ValueError, subprocess.TimeoutExpired) as e:
+            err(f'events.mjs 加载失败：{type(e).__name__}: {e}')
+    if names is not None:
         for k in sorted(names - set(i18n['en'].get('names', {}))): err(f'i18n：事件大类 / 类型「{k}」在 en.json 的 names 里没有英文')
 # 外部事件数据源（map/events.js 定时拉取）：feeds: [{label, url, every}]
 feeds = reg.get('feeds', [])
