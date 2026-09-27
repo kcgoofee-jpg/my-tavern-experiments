@@ -73,7 +73,7 @@ export const PLACES = [
     src: '大骑士领·圣都：光辉联邦首都，全球骑士竞赛与商业体育博彩中枢；温带阔叶林气候，巨型以太穹顶调节赛场及核心商业区天气' },
   { id: 'yuanyu', type: 'capital', x: 1100, y: 440, name: '原域', sub: '虚灵古派国都 · 诸神殿（悬浮圣山）', tag: 'set',
     src: '诸神殿：坐落于国都原域核心的悬浮圣山之上；全城哥特式尖塔、巴洛克穹顶，常年笼罩以太薄雾' },
-  { id: 'highland', type: 'start', name: '旷野高地', sub: '开局地点', tag: 'inf', autoHighest: 'oren',
+  { id: 'highland', type: 'start', name: '旷野高地', sub: '开局地点', tag: 'inf', autoHighest: 'oren', openings: [7],
     src: '开场白 JSONPatch：当前地点 = 旷野高地（位置设定未给，取奥伦境内最高处）' },
 ];
 

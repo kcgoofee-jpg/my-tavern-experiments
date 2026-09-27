@@ -270,6 +270,7 @@
   .mk.capital .lab { font-size: var(--fs-body); font-weight: 800; border-color: var(--gold); }
   .mk.inf .pin { background: var(--map-label-bg); border-color: var(--accent); }   /* 传闻（推断）：空心针 */
   .mk.drill .lab { background: var(--gold); color: #1a1406; border-color: var(--gold); font-weight: 800; }
+  .mk.op .pin { box-shadow: 0 0 0 3px var(--gold), 0 1px 4px #000a; } .mk.op .lab { border: 2px solid var(--gold); font-weight: 700; } .mk.op .lab::after { content: attr(data-op); margin-left: var(--sp-2); font-size: var(--fs-micro); color: var(--gold); }   /* 开局关键地点（maps.json 的 openings） */
   .mk.here .pin { background: var(--alert); }
   .mk.here::after { content: ''; position: absolute; bottom: -6px; left: 50%; width: 22px; height: 22px; margin-left: -13px; border-radius: 50%; border: 2px solid var(--alert); animation: pulse 1.4s infinite; will-change: transform, opacity; }
   @media (prefers-reduced-motion: reduce) { .mk.here::after { animation: none !important; transform: scale(1.2); opacity: .6; } }
@@ -805,6 +806,7 @@ function mapChrome(m) {
   if (m.overlay) { let on = m.overlay.type !== 'barriers'; if (!on) try { on = localStorage.getItem('edenMapBarriers') === '1'; } catch (e) {} $('#tgBorders').checked = on; }
   $('#tgOverlay span').textContent = m.overlay ? nm(m.overlay, 'label') || t('overlay') : t('overlay'); $('#tgOverlay').hidden = !m.overlay;
   $('#tgAlt').hidden = !m.alt; if (m.alt) $('#tgAlt span').textContent = nm(m.alt, 'label') || t('alt_base');
+  if (m.overlay) { let on = m.overlay.type !== 'barriers'; if (!on) try { on = localStorage.getItem('edenMapBarriers') === '1'; } catch (e) {} $('#tgBorders').checked = on; }
 }
 
 // ---------------- 庄园剖面（kind=estate） ----------------
@@ -1120,7 +1122,7 @@ let declT = 0;
 function declutter() { clearTimeout(declT); declT = setTimeout(() => {
   const mks = [...document.querySelectorAll('.mk')], evs = [...document.querySelectorAll('.ev')], words = [...document.querySelectorAll('.realm, .minor')];
   if (!mks.length && !evs.length) return;
-  const rank = e => e.classList.contains('here') || e.classList.contains('active') ? 0 : e.classList.contains('capital') ? 1 : e.dataset.focus ? 2 : e.dataset.link ? 3 : 4;
+  const rank = e => e.classList.contains('here') || e.classList.contains('active') ? 0 : e.classList.contains('capital') || e.classList.contains('op') ? 1 : e.dataset.focus ? 2 : e.dataset.link ? 3 : 4;
   [...mks, ...evs, ...words].forEach(e => e.classList.remove('lhide'));
   const hit = (r, k, g = 4) => r.left < k.right + g && r.right > k.left - g && r.top < k.bottom + 2 && r.bottom > k.top - 2;
   const box = e => { const r = e?.getBoundingClientRect(); return r && r.width ? r : null; };
@@ -1162,11 +1164,15 @@ function trackEl(el, onOpen, label) {
 function untrack(el) { const tk = el?._tk; if (!tk) return; el._tk = null; trackers = trackers.filter(x => x !== tk); tk.destroy(); }
 function untrackAll() { const all = trackers; trackers = []; for (const tk of all) { if (tk.element) tk.element._tk = null; tk.destroy(); } }
 let cardFrom = null;   // 打开卡片的元素：卡片关闭后焦点回到这里
-function markerEl({ name, sub, cls = '', tag = 'set', src, extra = '', alias, name_en, sub_en }) {
+// 开局编号：标签上连续的写成区间（开局一至五）；opening_dest = 该开局的目的地（起点在庄园书房），卡片里逐个列出
+const OPN = n => LANG === 'en' ? 'Opening ' + n : '开局' + ('一二三四五六七八九十'[n - 1] || n);   // 开局只写编号，不带开局标题
+function markerEl({ name, sub, cls = '', tag = 'set', src, extra = '', alias, name_en, sub_en, openings, opening_dest }) {
   const el = document.createElement('div'); el.className = 'mk ' + cls + (tag === 'inf' ? ' inf' : '');
   const dn = LANG === 'en' ? name_en || tr(name) : name, ds = sub && (LANG === 'en' ? sub_en || tr(sub) : sub);   // 显示名随语言；dataset.name 保持中文（当前地点匹配用）
   el.innerHTML = `<div class="lab">${esc(dn)}${ds ? '<small> · ' + esc(ds) + '</small>' : ''}</div><div class="pin"></div>`;
   el.dataset.name = name; if (alias) el.dataset.alias = alias.join('|');
+  if (openings?.length) { const o = openings.map(OPN).join(' · '); el.classList.add('op'); const a = [...openings].sort((x, y) => x - y), run = a.length > 2 && a.at(-1) - a[0] === a.length - 1;
+    el.querySelector('.lab').dataset.op = run ? (LANG === 'en' ? `Openings ${a[0]}–${a.at(-1)}` : OPN(a[0]) + '至' + OPN(a.at(-1)).slice(2)) : o; extra = `<p class="op">${esc(o)}${opening_dest ? esc(LANG === 'en' ? ' · destination (starts in the study)' : ' · 目的地（从庄园书房出发）') : ''}</p>` + extra; }
   el._open = () => showCard(el, dn, tag, src, extra, ds);
   trackEl(el, el._open, dn + (ds ? ' · ' + ds : ''));
   return el;
@@ -1203,9 +1209,9 @@ function worldOverlays() {
   const enter = id => { const g = REG.groups.tiancheng; return g.layers.map(k => { const L = REG.maps[k];
     return L.status === 'planned' ? `<span class="planned">${esc(nm(L.layer))}${esc(t('planned_paren'))}</span>` : `<a data-go="${k}" role="button" tabindex="0">${esc(t('enter', { name: nm(L.layer) }))}</a>`; }).join(''); };
   for (const p of M.places) {
-    if (p.type === 'capital') marker({ name: p.name, sub: p.sub, cls: 'capital' + (p.id === 'tiancheng' ? ' drill' : ''), tag: p.tag, src: p.src, x: p.x, y: p.y,
+    if (p.type === 'capital') marker({ name: p.name, sub: p.sub, cls: 'capital' + (p.id === 'tiancheng' ? ' drill' : ''), tag: p.tag, src: p.src, x: p.x, y: p.y, openings: p.openings,
       extra: p.id === 'tiancheng' ? enter() : '' });
-    else marker({ name: p.name, sub: p.sub, cls: 'start', tag: p.tag, src: p.src, x: p.x, y: p.y });
+    else marker({ name: p.name, sub: p.sub, cls: 'start', tag: p.tag, src: p.src, x: p.x, y: p.y, openings: p.openings });
   }
   for (const f of M.fiefs) marker({ name: f.name, tag: f.tag, src: f.src, x: f.x, y: f.y });
 }
