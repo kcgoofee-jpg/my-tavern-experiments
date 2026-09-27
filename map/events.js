@@ -10,6 +10,9 @@ const TCEvents = (() => {
     return Object.entries(v).reduce((s, [a, b]) => s.split('{' + a + '}').join(b), zh); };
   const tn = z => (z && window.I18N?.tr?.(z)) || z || '';
   const where = e => tn(e.layer) + (e.place ? '·' + e.place : '');
+  // 当前这一层的事件不再写层名（面包屑、层按钮已经说了）；别的层照写（v0.9.2）
+  const whereHere = e => mapOf(e) === cur && e.place ? e.place : where(e);
+  const srcNew = e => e.src && !(e.place || '').includes(e.src) ? e.src : '';   // 发布方就是地点本身（「血肉磨坊」）时不再重复
   const LOOK = {   // 类别 → 图标字、颜色（真实事件地图的惯例：火警红橙、警务蓝、治安紫、基础设施灰、网络青）
     火灾: ['火', '#ff5a2a'], 爆炸: ['爆', '#ff2a2a'], 持械: ['警', '#e0182d'], 凶案: ['案', '#c2263a'], 抢劫: ['劫', '#c23bd6'], 盗窃: ['盗', '#9a5cff'],
     通缉: ['缉', '#3d7dff'], 检查点管控: ['管', '#f08a24'], 黑市查抄: ['查', '#9fe870'], 骚乱: ['乱', '#e08a24'], 交通事故: ['轨', '#f0c020'],
@@ -63,7 +66,7 @@ const TCEvents = (() => {
     let best = null;
     for (const k of markersOf[mid] || []) { const meta = m?.markers?.[k.id]; if (!meta) continue;
       for (const w of [meta.name, ...(meta.alias || [])]) if (w && e.place && (e.place.includes(w) || w.includes(e.place)) && (!best || w.length > best.len)) best = { k, len: w.length }; }
-    if (best) return { nx: best.k.nx, ny: best.k.ny, marker: true };
+    if (best) return { nx: best.k.nx, ny: best.k.ny, marker: true, name: m.markers[best.k.id].name };
     const j = hash(e.key || e.id), j2 = hash((e.key || e.id) + '~');
     for (const [re, x, y] of ZONES[mid] || []) if (re.test(e.place)) return { nx: (x + 15) / 30 + (j - .5) * .04, ny: (9.375 - y) / 18.75 + (j2 - .5) * .06 };
     return { nx: .2 + .6 * j, ny: .2 + .6 * j2, approx: true };
@@ -112,9 +115,9 @@ const TCEvents = (() => {
     if (world) worldBadge();
     // 正在飞往的那一条即使已淡出也画出来，落点上不会空（E4 N17）；世界图只画天城外的事件（E4 N15）
     const here = vis().filter(e => mapOf(e) === cur && (e.tier !== 'fade' || e.id === lastFly)).slice(0, 50);    // 手机上叠加层不超过 50 个
-    const seen = {};
+    const seen = {}, onMk = new Set();
     for (const e of here) {
-      const p = pos(e); if (p.none) continue;
+      const p = pos(e); if (p.none) continue; if (p.name) onMk.add(p.name);
       const k = `${p.nx.toFixed(3)},${p.ny.toFixed(3)}`, n = seen[k] = (seen[k] || 0) + 1;   // 同一地点多条：绕一小圈错开
       const a = n * 2.4, r = n > 1 ? .006 * Math.sqrt(n) : 0, [ch, color] = lk(e);
       const el = document.createElement('div');
@@ -126,6 +129,8 @@ const TCEvents = (() => {
       if (typeof trackEl === 'function') trackEl(el, () => card(e, el), label); else new OpenSeadragon.MouseTracker({ element: el, clickHandler: () => card(e, el) });
       placeN(el, p.nx + Math.cos(a) * r, p.ny + Math.sin(a) * r * 1.6, OpenSeadragon.Placement.CENTER); layerEls.push(el);
     }
+    // v0.9.2：事态落在某个地标上时，这个地标（针脚 + 地名）让位给事态点，只留一条标签；当前地点的针脚照常显示
+    document.querySelectorAll('.mk').forEach(m => m.classList.toggle('evon', shown && onMk.has(m.dataset.name) && !m.classList.contains('here')));
     document.body.classList.toggle('noevents', !shown);
     updateToggle(); applyGlitch();
     if (typeof tabOrder === 'function') tabOrder();
@@ -138,13 +143,13 @@ const TCEvents = (() => {
     const p = pos(e), st = e.closed ? T('ev.cleared', '已解除') : tn(e.status) || T('ev.ongoing', '发生中');
     const rare = e.rare >= 4 ? T('ev.rare4', '（传说级）') : e.rare >= 3 ? T('ev.rare3', '（罕见）') : '';
     const lv = Math.max(1, e.lvl);
-    showCard(null, e.text || tn(e.cat), 'inf', '', '', `${e.grp ? tn(e.grp) + ' · ' : ''}${tn(e.cat)}${rare}`);
+    showCard(null, e.text || tn(e.cat), 'inf', '', '', `${tn(e.cat)}${rare}`);   // 大类只在顶上的色块里出现一次（v0.9.2）
     const rows = [
-      [T('ev.k_place', '地点'), esc(where(e)) + (p.approx ? `<br><small>${esc(T('ev.approx', '（位置不详，按所在层大致标出）'))}</small>` : '')],
+      [T('ev.k_place', '地点'), esc(whereHere(e)) + (p.approx ? `<br><small>${esc(T('ev.approx', '（位置不详，按所在层大致标出）'))}</small>` : '')],
       [T('ev.k_state', '等级 / 状态'), `<span class="bars" aria-label="${esc(T('ev.k_lvl', '等级') + ' ' + lv + '/3')}">${'▮'.repeat(lv)}${'▯'.repeat(3 - lv)}</span>　${esc(st)}`],
       e.time && [T('ev.k_time', '时间'), esc(e.time)], e.code && [T('ev.k_code', '编号'), esc(e.code)],
       [T('ev.k_src', '来源'), esc(e.feed ? e.src || T('ev.feed_default', '外部数据源')
-        : T('ev.src_floor', '{src} · 聊天第 {n} 楼', { src: e.src || T('ev.unsigned', '未署名'), n: e.first }) + (e.count > 1 ? T('ev.updates', '起，更新 {n} 次', { n: e.count - 1 }) : ''))],
+        : (srcNew(e) || !e.src ? T('ev.src_floor', '{src} · 聊天第 {n} 楼', { src: srcNew(e) || T('ev.unsigned', '未署名'), n: e.first }) : T('ev.floor', '第 {n} 楼', { n: e.first })) + (e.count > 1 ? T('ev.updates', '起，更新 {n} 次', { n: e.count - 1 }) : ''))],
     ].filter(Boolean);
     const sv = document.querySelector('#card .src'); delete sv.dataset.note;   // 事态卡不是设定原文，不加「原文（中文）」说明
     sv.innerHTML = `<dl class="fields">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>`;
@@ -201,16 +206,19 @@ const TCEvents = (() => {
     const tb = bar.querySelector(':scope > button'); tb.setAttribute('aria-expanded', open ? 'true' : 'false');
     // 左侧形状点 = 最新一条（进行中优先）的大类
     const top = list.filter(live).sort((a, b) => (b.last || 0) - (a.last || 0))[0] || list[0];
-    tb.innerHTML = `<i class="shp ${shp(top ? grpOf(top) : '其他')}" style="--c:${top ? lk(top)[1] : 'var(--muted)'}" aria-hidden="true"></i><span class="sum">${esc(n ? T('ev.bar_live', '{n} 起进行中', { n }) : T('ev.bar_none', '暂无进行中'))} · ${esc(T('ev.bar_total', '共 {n} 起事态', { n: list.length }))}${hid ? ' · ' + esc(T('ev.filtered', '已隐藏 {n} 类', { n: hid })) : ''}</span>${fresh ? `<span class="new">${esc(T('ev.bar_new', '{n} 条新', { n: fresh }))}</span>` : ''}<span class="sr-only">${esc(open ? T('ev.collapse', '收起') : T('ev.expand', '展开'))}</span><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg>`;
+    tb.innerHTML = `<i class="shp ${shp(top ? grpOf(top) : '其他')}" style="--c:${top ? lk(top)[1] : 'var(--muted)'}" aria-hidden="true"></i><span class="sum">${esc(n ? T('ev.bar_live', '{n} 起进行中', { n }) : T('ev.bar_none', '暂无进行中'))}${list.length !== n ? ' · ' + esc(T('ev.bar_total', '共 {n} 起事态', { n: list.length })) : ''}${hid ? ' · ' + esc(T('ev.filtered', '已隐藏 {n} 类', { n: hid })) : ''}</span>${fresh ? `<span class="new">${esc(T('ev.bar_new', '{n} 条新', { n: fresh }))}</span>` : ''}<span class="sr-only">${esc(open ? T('ev.collapse', '收起') : T('ev.expand', '展开'))}</span><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg>`;
     bar.dataset.open = open ? '1' : '0';
     // 图例：9 个大类都列出（没有事件的变淡），数字 = 该类条数；点一下隐藏 / 恢复
     const cnt = {}; for (const e of every) cnt[grpOf(e)] = (cnt[grpOf(e)] || 0) + 1;
-    const gs = ORDER.concat(cnt.其他 ? ['其他'] : []);
+    const gs = ORDER.concat(cnt.其他 ? ['其他'] : []).filter(g => cnt[g] || off.has(g));   // 只列有事件的大类和已隐藏的（v0.9.2：9 个空类占两行）
     bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${GROUPS[g] || '#cfd8e0'}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i class="shp ${shp(g)}" aria-hidden="true"></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join('')
-      + `<small>${esc(T('ev.legend_hint', '点大类可隐藏 / 显示'))}</small>`;
+      + (hintOnce() ? `<small>${esc(T('ev.legend_hint', '点大类可隐藏 / 显示'))}</small>` : ''); bar.querySelector('.evleg').title = T('ev.legend_hint', '点大类可隐藏 / 显示');
     // 列表项：li 里包一个真正的 <button>（原来 li 上的 role=button 让 axe 报 list / aria-allowed-role，E4b R08）
-    bar.querySelector('ol').innerHTML = list.map(e => `<li class="tier-${e.tier}${e.isNew ? ' isnew' : ''}${e.closed ? ' closed' : ''}" style="--c:${lk(e)[1]}"><button type="button" data-id="${esc(e.id)}"><i class="shp ${shp(grpOf(e))}" aria-hidden="true"></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(T('ev.cleared', '已解除')) : ''}${e.isNew ? `<span class="nb">${esc(T('ev.new', '新'))}</span>` : ''} <em>${esc(where(e))}</em></b><em>${esc(e.feed ? T('ev.feed', '数据源') : T('ev.floor', '第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${e.src ? ' —— ' + esc(e.src) : ''}</small></button></li>`).join('');
+    bar.querySelector('ol').innerHTML = list.map(e => `<li class="tier-${e.tier}${e.isNew ? ' isnew' : ''}${e.closed ? ' closed' : ''}" style="--c:${lk(e)[1]}"><button type="button" data-id="${esc(e.id)}"><i class="shp ${shp(grpOf(e))}" aria-hidden="true"></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(T('ev.cleared', '已解除')) : ''}${e.isNew ? `<span class="nb">${esc(T('ev.new', '新'))}</span>` : ''} <em>${esc(whereHere(e))}</em></b><em>${esc(e.feed ? T('ev.feed', '数据源') : T('ev.floor', '第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${srcNew(e) ? ' —— ' + esc(srcNew(e)) : ''}</small></button></li>`).join('');
   }
+  // 图例提示只在第一次展开时出现一行（之后在 title 里），不常驻占一行（v0.9.2）
+  let hintSeen = null;
+  function hintOnce() { if (!open) return false; if (hintSeen === null) { try { hintSeen = !!localStorage.getItem('edenMapLegHint'); localStorage.setItem('edenMapLegHint', '1'); } catch (e) { hintSeen = true; } } return !hintSeen; }
   function updateToggle() {
     let tg = document.getElementById('tgEvents');
     if (!tg) {
@@ -270,7 +278,7 @@ const TCEvents = (() => {
   .ev.approx i{outline:1px dashed rgba(255,255,255,.6);outline-offset:3px}
   .ev.hot i{outline:2px solid var(--map-label-ink,#fff);outline-offset:3px}
   .ev:focus-visible i{outline:2px solid var(--focus,#63b4be);outline-offset:4px}   /* 键盘焦点（E4b R07） */
-  body.far .ev b{display:none} body.noevents .ev{display:none}
+  body.far .ev b{display:none} body.noevents .ev{display:none} .mk.evon{visibility:hidden}
   /* 世界图「天城」上的事态数：全站唯一的红 */
   .mk .lab[data-ev]::after{content:attr(data-ev);display:inline-block;margin-left:6px;min-width:16px;height:16px;padding:0 5px;box-sizing:border-box;border-radius:var(--r-pill,999px);background:var(--alert,#ff5a5a);color:var(--on-alert,#1a0606);font:700 var(--fs-micro,11px)/16px var(--font-mono,monospace);text-align:center;vertical-align:1px}
   .ev-radar{--c:#fff;width:0;height:0;pointer-events:none;position:relative}

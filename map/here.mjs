@@ -67,6 +67,12 @@ export function buildIndex(reg, world = null, names = null, custom = null) {
 
 /** 当前地点 → { level, map, room?, marker?, place?, word } 或 null */
 export function resolveHere(value, idx) {
+  // 写了多处（「A / B」）：按顺序取第一处认得出的（v0.9.2，和标题栏只显示第一处一致）
+  const parts = String(value || '').split(/\s*[\/／|｜]\s*/).filter(Boolean);
+  if (parts.length > 1) { for (const p of parts) { const r = resolveOne(p, idx); if (r) return r; } return null; }
+  return resolveOne(value, idx);
+}
+function resolveOne(value, idx) {
   const v = String(value || '').replace(/\{\{user\}\}/g, '').trim();
   if (!v || !idx) return null;
   // 各级最长匹配
