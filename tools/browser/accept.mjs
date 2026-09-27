@@ -99,6 +99,7 @@ try {
       await B.shot(p, OUT, 'desk_estate_zoom');
     }
     await B.goMap(p, 'tc_upper');
+    await p.waitForFunction(() => !document.querySelector('#estate.on'), null, { timeout: 3000 }).catch(() => {});   // iframe 在新底图第一张瓦片后 60 ms 才淡出（fadeAway）
     rep.check('离开庄园回上层', (await B.viewerState(p)).map === 'tc_upper' && !(await B.viewerState(p)).estateOn);
     // 独立打开庄园页取 draw calls（?stats=1）
     const E = await B.newPage('desktop');

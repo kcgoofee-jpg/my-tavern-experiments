@@ -885,8 +885,8 @@
   async function showSplash() {
     SPm ??= await import(SELF + 'tavern/splash.mjs').catch(() => null); if (!SPm) return false;
     const lite = lean(), get = f => fetch(BASE + f, { cache: 'force-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
-    const EST = ['estate/index.html', 'estate/main.js', 'estate/lib.js', 'estate/building.js', 'estate/furniture.js', 'estate/site.js', 'estate/plan.js', 'estate/vendor/three.module.min.js',
-      'estate/vendor/jsm/controls/OrbitControls.js', 'estate/vendor/jsm/environments/RoomEnvironment.js', 'estate/vendor/jsm/renderers/CSS2DRenderer.js'];
+    const EST = ['estate/index.html', 'estate/main.js', 'estate/model/manifest.json', 'estate/model/zones.json', 'data/eden_estate_rooms.json', 'estate/vendor/three.module.min.js',
+      'estate/vendor/jsm/controls/OrbitControls.js', 'estate/vendor/jsm/renderers/CSS2DRenderer.js', 'estate/vendor/jsm/loaders/GLTFLoader.js', 'estate/vendor/jsm/libs/meshopt_decoder.module.js', 'estate/vendor/jsm/utils/BufferGeometryUtils.js', 'estate/model/site.glb'];   // 整岛模型标准档一并预热（省流时整项跳过）
     const bi = await buildNow();
     splash = SPm.openSplash({ root, id: ID, pdoc, ver: VER, en: UL === 'en', about: { version: bi?.version || SCRIPT.version || VER, code: bi?.code || SCRIPT.code, channel: channel(), ref: SCRIPT.ref || refOf() }, store: localStorage, cap: window.parent.__edenSplashCap || 25,
       checks: () => runCheck().then(() => checkItems),
