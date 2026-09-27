@@ -685,3 +685,54 @@ def window_grid(name, wall=(0.06, 0.065, 0.07), lit=(1.0, 0.78, 0.5), estr=3.0, 
     es = nt.nodes.new('ShaderNodeMath'); es.operation = 'MULTIPLY'; es.inputs[1].default_value = estr
     nt.links.new(mu.outputs[0], es.inputs[0]); nt.links.new(es.outputs[0], b.inputs['Emission Strength'])
     return m
+
+
+# ---------------------------------------------------------------- 地形网格 / 程序化岩石（highland 等自然地形用）
+def grid(B, rows, m, flip=False, keep=None, smooth=True):
+    """rows[j][i] = (x, y, z) 的结构化网格，共享顶点；默认绕序 (i,j)→(i+1,j)→(i+1,j+1)→(i,j+1)。
+    keep(i, j, verts) → False 时跳过该四边形；flip 反转法向。"""
+    idx = B.mi(m)
+    bm = B.bm
+    V = [[bm.verts.new(p) for p in r] for r in rows]
+    for j in range(len(rows) - 1):
+        for i in range(len(rows[j]) - 1):
+            q = [V[j][i], V[j][i + 1], V[j + 1][i + 1], V[j + 1][i]]
+            if keep is not None and not keep(i, j, q):
+                continue
+            if flip:
+                q.reverse()
+            try:
+                f = bm.faces.new(q)
+            except ValueError:
+                continue
+            f.material_index = idx; f.smooth = smooth
+
+
+def rock(B, x, y, z, r, m, seed=0, seg=9, rings=6, sz=0.7, rough=0.35, facet=0.0, rz=0.0):
+    """噪声扰动的低面数石块（底部略埋入地面）。facet>0 → 棱角更硬（碎石、破裂岩块）。"""
+    import random as _r
+    from mathutils import noise as _n
+    rnd = _r.Random(seed)
+    off = Vector((rnd.uniform(0, 100), rnd.uniform(0, 100), rnd.uniform(0, 100)))
+    sx, sy = rnd.uniform(0.75, 1.25), rnd.uniform(0.75, 1.25)
+    rot = Matrix.Rotation(rz or rnd.uniform(0, math.tau), 3, 'Z')
+    vs = []
+    for k in range(rings + 1):
+        th = math.pi * k / rings
+        for i in range(seg):
+            ph = math.tau * i / seg + (0.5 * math.tau / seg if k % 2 else 0)
+            d = Vector((math.sin(th) * math.cos(ph), math.sin(th) * math.sin(ph), math.cos(th)))
+            n = _n.noise(d * 1.3 + off) * rough + _n.noise(d * 3.1 + off) * rough * 0.4
+            if facet:
+                n += (rnd.random() - 0.5) * facet
+            rr = r * (1 + n)
+            p = rot @ Vector((d.x * rr * sx, d.y * rr * sy, d.z * rr * sz))
+            if p.z < -r * 0.25 * sz:
+                p.z = -r * 0.25 * sz
+            vs.append((x + p.x, y + p.y, z + p.z))
+    fs = []
+    for k in range(rings):
+        for i in range(seg):
+            a, b = k * seg + i, k * seg + (i + 1) % seg
+            fs.append((a, a + seg, b + seg, b))
+    return B.poly(vs, fs, m, smooth=facet == 0)

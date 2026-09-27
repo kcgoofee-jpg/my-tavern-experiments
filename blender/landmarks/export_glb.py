@@ -39,6 +39,9 @@ BUDGET = {
     'site_deck': (12000, 2048), 'props_checkpoint': (30000, 2048), 'props_gates': (30000, 1024),
     'props_shaft': (40000, 2048), 'props_lift': (12000, 1024), 'props_shop': (12000, 1024), 'props_terminal': (6000, 512),
     'props_taxpoint': (12000, 1024), 'props_walls': (30000, 2048),
+    # highland（旷野高地：台地 / 峭壁 / 小径 / 石块 / 焦土 / 丛草与树）
+    'site_plateau': (55000, 2048), 'site_cliff': (80000, 2048), 'site_trail': (5000, 1024),
+    'props_rocks': (30000, 1024), 'props_scorch': (12000, 1024), 'site_vegetation': (60000, 1024),
 }
 
 

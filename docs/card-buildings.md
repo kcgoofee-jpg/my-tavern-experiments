@@ -13,7 +13,7 @@
 | 优先级 | 地图 | id | 名称 | 标记 | 层 / 位置来源 | 模型 | 质量 | 备注 |
 |---|---|---|---|---|---|---|---|---|
 | P1 开局 | site_highland | `cliff_edge` | 崖壁 | ✅ | 卡 | — | — | 开局七 |
-| P1 开局 | site_highland | `highland_plateau` | 旷野高地 | ✅ | 卡 | — | — | 开局七 |
+| P1 开局 | site_highland | `highland_plateau` | 旷野高地 | ✅ | 卡 | 旷野高地 `map/props/highland/` | 标准（r4 7 / 7） | 开局七 |
 | P1 开局 | tc_low | `junk_market` | 旧货市场 | ✅ | 卡 + 推断位置 | 铁皮屋区与旧货市场 `map/props/lower_quarter/` | 标准（r3 7 / 7） | 开局六 |
 | P1 开局 | tc_low | `ruined_churches` | 废弃教堂区 | ✅ | 卡 + 推断位置 | 废弃教堂区 `map/props/ruined_churches/` | 标准（r2 7 / 8） | 开局四 |
 | P1 开局 | tc_low | `tin_shacks` | 铁皮屋区 | ✅ | 卡 + 推断位置 | 铁皮屋区与旧货市场 `map/props/lower_quarter/` | 标准（r3 7 / 7） | 开局六 |
