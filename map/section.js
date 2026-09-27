@@ -3,12 +3,36 @@
 
 export const SEC_W = 830, SEC_H = 1078;
 
+// 剖面数据校验：返回问题列表（空 = 完整）。缺条目不再让绘制中途抛错，而是画占位并在悬停卡上标「数据缺失」。
+export const SECTION_ITEM_KEYS = ['议会', '辉光', '圣铁', '执法局', '环城', '旧公寓', '工厂', '委员会', '黑市', '哨所', '伊甸', '银冠堡'];
+export const SECTION_BANDS = [[800, 1500], [50, 800], [-200, 50]];
+const missing = name => ({ name, tag: 'inf', src: `（数据缺失：${name}）`, missing: true });
+export function validateSection(sec) {
+  const out = []; if (!sec || typeof sec !== 'object') return ['SECTION 缺失'];
+  for (const k of ['bands', 'lines', 'items']) if (!Array.isArray(sec[k])) out.push(`SECTION.${k} 不是数组`);
+  const items = Array.isArray(sec.items) ? sec.items : [], bands = Array.isArray(sec.bands) ? sec.bands : [];
+  items.forEach((i, n) => { if (!i || typeof i.name !== 'string') out.push(`items[${n}] 缺 name`); });
+  for (const k of SECTION_ITEM_KEYS) if (!items.some(i => typeof i?.name === 'string' && i.name.includes(k))) out.push(`items 缺「${k}」`);
+  for (const [f] of SECTION_BANDS) if (!bands.some(b => b?.from === f && Number.isFinite(b?.to))) out.push(`bands 缺 from=${f}`);
+  for (const k of ['districts', 'towers']) if (!sec[k]) out.push(`SECTION.${k} 缺失`);
+  return out;
+}
+export function normSection(sec) {
+  const s = sec && typeof sec === 'object' ? sec : {}, arr = v => Array.isArray(v) ? v.filter(x => x && typeof x === 'object') : [];
+  const bands = arr(s.bands).filter(b => Number.isFinite(b.from) && Number.isFinite(b.to));
+  for (const [from, to] of SECTION_BANDS) if (!bands.some(b => b.from === from)) bands.push({ from, to, ...missing(`${from}–${to} m`) });
+  return { ...s, bands, lines: arr(s.lines).filter(l => Number.isFinite(l.at)), items: arr(s.items).filter(i => typeof i.name === 'string'),
+    districts: s.districts || missing('18 辖区'), towers: s.towers || missing('塔') };
+}
+
 export function drawSection(root, el, tip, D) {
   const R = mulberry32(2088);
   const X0 = 60, X1 = 630, PW = X1 - X0;
   const Y = h => 50 + (1500 - h) * 1010 / 1700;
-  const item = key => D.SECTION.items.find(i => i.name.includes(key));
-  const band = from => D.SECTION.bands.find(b => b.from === from);
+  const bad = validateSection(D?.SECTION); if (bad.length) console.warn('[section] 数据不完整：', bad.join('；'));
+  const SEC = normSection(D?.SECTION);
+  const item = key => SEC.items.find(i => i.name.includes(key)) || missing(key);
+  const band = from => SEC.bands.find(b => b.from === from);
   const deco = parent => el('g', { 'pointer-events': 'none' }, parent);
 
   // ---------- defs ----------
@@ -126,7 +150,7 @@ export function drawSection(root, el, tip, D) {
   barracks(el('g', {}, plot), 560, item('环城'));
   apartment(el('g', {}, plot), 210, item('旧公寓'));
   // 18 辖区刻度 + 12 教区
-  { const g = el('g', {}, plot); tip(g, D.SECTION.districts);
+  { const g = el('g', {}, plot); tip(g, SEC.districts);
     for (let k = 0; k <= 18; k++) { const h = 50 + k * (750 / 18); el('line', { x1: X1 - 9, y1: Y(h), x2: X1, y2: Y(h), stroke: '#c9bff0', 'stroke-width': 1 }, g);
       if (k < 18 && k % 3 === 0) el('text', { x: X1 - 12, y: Y(h + 750 / 36) + 3, 'text-anchor': 'end', 'font-size': 8, fill: '#c9bff0', stroke: '#141020', 'stroke-width': 2 }, g, `${18 - k}区`); }
     const t = label(g, X1 - 16, Y(420), '执法局 18 辖区（按中层纵向高度）', 'lilac', 10, 'middle'); t.setAttribute('transform', `rotate(-90 ${X1 - 16} ${Y(420)})`); }
@@ -134,7 +158,7 @@ export function drawSection(root, el, tip, D) {
     label(g, X0 + 6, Y(470), '中层 12 教区 · 上层无教区', 'lilac', 10); }
 
   // ============ 管控线 ============
-  for (const l of D.SECTION.lines) { const g = el('g', {}, plot); tip(g, l); const y = Y(l.at);
+  for (const l of SEC.lines) { const g = el('g', {}, plot); tip(g, l); const y = Y(l.at);
     el('line', { x1: X0, y1: y, x2: X1, y2: y, stroke: '#ffcf33', 'stroke-width': 2.2, 'stroke-dasharray': '7 4' }, g);
     el('line', { x1: X0, y1: y, x2: X1, y2: y, stroke: '#ffcf33', 'stroke-width': 6, opacity: .15 }, g);
     for (const gx of [470, 550]) { el('rect', { x: gx - 5, y: y - 18, width: 10, height: 22, fill: '#39334f', stroke: '#ffcf33', 'stroke-width': 1 }, g);
@@ -155,7 +179,7 @@ export function drawSection(root, el, tip, D) {
   ruinedChurches(el('g', {}, plot));
 
   // ---------- 层名 + 高度刻度 ----------
-  for (const b of D.SECTION.bands) { const dark = b.from < 800;
+  for (const b of SEC.bands) { const dark = b.from < 800;
     el('text', { x: X0 + 8, y: Y(b.to) + 20, 'font-size': 15, 'font-weight': 800, fill: dark ? '#f2eefc' : '#1f3550', stroke: dark ? '#141020' : '#eef6fb', 'stroke-width': 4, 'pointer-events': 'none' }, root, b.name); }
   for (const h of [-200, 0, 50, 200, 400, 600, 800, 1000, 1200, 1500]) {
     el('line', { x1: X0 - 6, y1: Y(h), x2: X0, y2: Y(h), stroke: '#555' }, root);
@@ -340,7 +364,7 @@ export function drawSection(root, el, tip, D) {
     el('text', { x: cx + 84, y: y - 3, 'text-anchor': 'start', 'font-size': 9.5, fill: '#1f3550', stroke: '#eef6fb', 'stroke-width': 3, 'paint-order': 'stroke' }, g, '上层与中层交界的悬浮要塞');
   }
   function climateTower(g, x) {
-    tip(g, D.SECTION.towers);
+    tip(g, SEC.towers);
     el('rect', { x: x - 4, y: Y(880), width: 8, height: Y(0) - Y(880), fill: '#5fb9cc' }, g);
     el('rect', { x: x - 1, y: Y(880), width: 2, height: Y(0) - Y(880), fill: '#d6f7ff', opacity: .6 }, g);
     for (let h = 100; h < 880; h += 110) el('ellipse', { cx: x, cy: Y(h), rx: 9, ry: 3, fill: '#3e8fa3', stroke: '#bff4ff', 'stroke-width': .6 }, g);
