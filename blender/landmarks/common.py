@@ -480,3 +480,97 @@ def spot_light(name, loc, tgt, energy, color, angle=60, radius=0.2):
     o = bpy.data.objects.new(name, ld); bpy.context.scene.collection.objects.link(o); o.location = loc
     o.rotation_euler = (Vector(tgt) - Vector(loc)).to_track_quat('-Z', 'Y').to_euler()
     return o
+
+
+# ---------------------------------------------------------------- 程序化树（叶片卡簇，不用外部资产）
+_TREE_MATS = {}
+
+
+def tree_mats():
+    """树皮 + 三种叶色（深 / 中 / 带黄），叶片卡正反两面都渲染，略带透光。"""
+    if not _TREE_MATS:
+        _TREE_MATS['bark'] = flat('tree_bark', (0.16, 0.13, 0.1), 0.9, noise=0.45)
+        for k, c in (('leaf_a', (0.07, 0.14, 0.05)), ('leaf_b', (0.11, 0.19, 0.06)), ('leaf_c', (0.17, 0.22, 0.08)),
+                     ('conifer', (0.05, 0.1, 0.07)), ('yew', (0.04, 0.09, 0.04))):
+            m = flat('tree_' + k, c, 0.75, noise=0.35)
+            b = [n for n in m.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'][0]
+            b.inputs['Subsurface Weight'].default_value = 0.0
+            b.inputs['Transmission Weight'].default_value = 0.0
+            _TREE_MATS[k] = m
+    return _TREE_MATS
+
+
+def _cards(B, rnd, ctr, rad, n, size, mats, flatz=0.0, squash=1.0, shell=0.6):
+    """在椭球 ctr / rad（(rx, ry, rz)）内撒 n 片叶卡；shell 越大越贴外表面；flatz>0 让叶卡趋向水平（雪松层）。"""
+    for _ in range(n):
+        while True:
+            v = Vector((rnd.uniform(-1, 1), rnd.uniform(-1, 1), rnd.uniform(-1, 1)))
+            if v.length <= 1.0: break
+        if v.length > 1e-3:
+            v = v.normalized() * (v.length ** (1 - shell))
+        p = Vector((ctr[0] + v.x * rad[0], ctr[1] + v.y * rad[1], ctr[2] + v.z * rad[2] * squash))
+        nrm = Vector((rnd.uniform(-1, 1), rnd.uniform(-1, 1), rnd.uniform(-1, 1)) ) + v * 0.8 + Vector((0, 0, flatz))
+        nrm = nrm.normalized() if nrm.length > 1e-4 else Vector((0, 0, 1))
+        t = nrm.cross(Vector((0.3, 0.7, 0.1)).normalized()); t = t.normalized() if t.length > 1e-4 else Vector((1, 0, 0))
+        w = nrm.cross(t)
+        s = size * rnd.uniform(0.6, 1.3)
+        a, b = t * s, w * s * rnd.uniform(0.5, 0.9)
+        B.poly([tuple(p - a - b), tuple(p + a - b), tuple(p + a + b), tuple(p - a + b)], [(0, 1, 2, 3)], mats[rnd.randrange(len(mats))])
+
+
+def tree(B, x, y, h, r, kind='oak', seed=0, z=0.0):
+    """kind: 'oak'（不规则分叶簇的阔叶冠）/ 'cedar'（黎巴嫩雪松：水平分层）/ 'yew'（修剪紫杉圆锥）/ 'yew_col'（紫杉柱）"""
+    import random as _r
+    rnd = _r.Random(seed)
+    M = tree_mats()
+    bark = M['bark']
+    if kind == 'oak':
+        leaves = [M['leaf_a'], M['leaf_b'], M['leaf_c']]
+        tz = h * rnd.uniform(0.3, 0.38)
+        lean = (rnd.uniform(-0.4, 0.4), rnd.uniform(-0.4, 0.4))
+        B.tube([(x, y, z - 0.2), (x + lean[0] * 0.3, y + lean[1] * 0.3, z + tz * 0.5), (x + lean[0], y + lean[1], z + tz)], 0.28 * h / 10 + 0.12, bark, n=10)
+        nl = rnd.randint(4, 6)
+        for i in range(nl):   # 主枝 → 各自一个大叶簇，再分若干小簇
+            a = i * math.tau / nl + rnd.uniform(-0.4, 0.4)
+            d = r * rnd.uniform(0.45, 0.8)
+            ez = z + h * rnd.uniform(0.55, 0.85)
+            e = (x + d * math.cos(a), y + d * math.sin(a), ez)
+            mid = (x + lean[0] + d * 0.45 * math.cos(a), y + lean[1] + d * 0.45 * math.sin(a), z + tz + (ez - z - tz) * 0.55)
+            B.tube([(x + lean[0], y + lean[1], z + tz - 0.2), mid, e], 0.14 * h / 10 + 0.05, bark, n=6)
+            for j in range(rnd.randint(3, 5)):
+                cr = r * rnd.uniform(0.28, 0.42)
+                c = (e[0] + rnd.uniform(-0.5, 0.5) * r * 0.5, e[1] + rnd.uniform(-0.5, 0.5) * r * 0.5, e[2] + rnd.uniform(-0.2, 0.5) * h * 0.2)
+                _cards(B, rnd, c, (cr, cr, cr * 0.75), int(70 * (cr / 1.3) ** 2) + 25, 0.32 * max(1.0, r / 4), leaves, shell=0.7)
+        _cards(B, rnd, (x, y, z + h * 0.88), (r * 0.45, r * 0.45, h * 0.12), 90, 0.32, leaves, shell=0.7)   # 冠顶
+    elif kind == 'cedar':
+        leaves = [M['conifer'], M['leaf_a']]
+        B.tube([(x, y, z - 0.2), (x + 0.2, y, z + h * 0.5), (x - 0.1, y + 0.2, z + h * 0.95)], 0.35 * h / 12 + 0.1, bark, n=10)
+        tiers = rnd.randint(4, 6)
+        for k in range(tiers):
+            f = k / (tiers - 1)
+            tzk = z + h * (0.3 + 0.62 * f)
+            for j in range(rnd.randint(2, 3) if k < tiers - 1 else 1):
+                a = rnd.uniform(0, math.tau); d = r * (1 - 0.6 * f) * rnd.uniform(0.2, 0.5)
+                cx_, cy_ = x + d * math.cos(a), y + d * math.sin(a)
+                pr = r * (1 - 0.65 * f) * rnd.uniform(0.55, 0.8)
+                B.tube([(x, y, tzk - 0.3), (cx_, cy_, tzk - 0.1)], 0.08, bark, n=5)
+                _cards(B, rnd, (cx_, cy_, tzk), (pr, pr * rnd.uniform(0.7, 1.0), 0.35), int(55 * (pr / 1.5) ** 2) + 20, 0.4,
+                       leaves, flatz=2.5, shell=0.3)
+    else:   # 修剪紫杉：实心核 + 表面短叶卡
+        col = kind == 'yew_col'
+        prof = [(r, 0.0), (r * 1.02, h * 0.35), (r * 0.9, h * 0.75), (r * 0.55, h * 0.95), (0.05, h)] if col else \
+               [(r, 0.0), (r * 0.78, h * 0.3), (r * 0.45, h * 0.7), (0.04, h)]
+        B.lathe(x, y, z, [(pr_ * 0.97, dz) for (pr_, dz) in prof], M['yew'], n=14)
+        for _ in range(int(420 * h * r) + 300):
+            t = rnd.random() ** 0.8
+            k = min(int(t * (len(prof) - 1)), len(prof) - 2)
+            ft = t * (len(prof) - 1) - k
+            rr = prof[k][0] + (prof[k + 1][0] - prof[k][0]) * ft
+            zz = prof[k][1] + (prof[k + 1][1] - prof[k][1]) * ft
+            a = rnd.uniform(0, math.tau)
+            p = Vector((x + rr * math.cos(a), y + rr * math.sin(a), z + zz))
+            nrm = Vector((math.cos(a), math.sin(a), 0.4)).normalized()
+            tt = nrm.cross(Vector((0, 0, 1))).normalized(); w = nrm.cross(tt)
+            s = 0.045
+            B.poly([tuple(p - tt * s - w * s), tuple(p + tt * s - w * s), tuple(p + tt * s + w * s), tuple(p - tt * s + w * s)],
+                   [(0, 1, 2, 3)], M['yew'])
