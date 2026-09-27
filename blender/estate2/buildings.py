@@ -10,10 +10,11 @@ from . import layout as L
 from .common import NT, mat_new, link_obj, bm_to_obj, coll, rng, rot2
 
 FH = 4.5   # 层高
+ARCHED = {'hall', 'w_wing_a', 'e_wing_a', 'w_wing_b', 'e_wing_b', 'w_pav', 'e_pav', 'n_link', 'w_low', 'e_low', 'breakers'}   # r3 首层拱窗
 
 
 # ---------------------------------------------------------------- 材质
-def _stone(name, tex, tint, tint_amt, windows=True, grime=0.18):
+def _stone(name, tex, tint, tint_amt, windows=True, grime=0.18, ashlar=False):
     m, t = mat_new(name)
     if t is None:
         return m
@@ -38,6 +39,28 @@ def _stone(name, tex, tint, tint_amt, windows=True, grime=0.18):
     dirt = t.math('ADD', dirt, t.math('MULTIPLY', aof, 0.35), (-1000, -700), clamp=True)
     col = t.mix(dirt, base, (0.36, 0.34, 0.3), 'MULTIPLY', (-900, 300))
     rough = t.math('ADD', r, 0.15, (-900, 0), clamp=True)
+    if ashlar:
+        # r3 石灰岩琢石砌（ashlar）：0.6 m 一皮、1.4 m 一块，错缝；接缝细、块与块之间有极轻的色差
+        sep0 = t.new('ShaderNodeSeparateXYZ', (-1900, 900))
+        t.link(tc.outputs['Object'], sep0.inputs[0])
+        ns0 = t.new('ShaderNodeSeparateXYZ', (-1900, 1100))
+        t.link(tc.outputs['Normal'], ns0.inputs[0])
+        side = t.math('GREATER_THAN', t.math('ABSOLUTE', ns0.outputs['X']), 0.5, (-1700, 1100))
+        uu0 = t.math('ADD', t.math('MULTIPLY', side, sep0.outputs['Y']), t.math('MULTIPLY', t.math('SUBTRACT', 1.0, side), sep0.outputs['X']), (-1500, 1000))
+        cv = t.new('ShaderNodeCombineXYZ', (-1300, 1000))
+        t.link(uu0, cv.inputs[0]); t.link(sep0.outputs['Z'], cv.inputs[1])
+        br = t.new('ShaderNodeTexBrick', (-1100, 1000), **{'Scale': 1.0, 'Mortar Size': 0.012, 'Mortar Smooth': 0.3, 'Bias': 0.0,
+                                                          'Brick Width': 1.4, 'Row Height': 0.6})
+        br.offset = 0.5
+        br.inputs['Color1'].default_value = (1.0, 1.0, 1.0, 1)
+        br.inputs['Color2'].default_value = (0.93, 0.92, 0.9, 1)
+        br.inputs['Mortar'].default_value = (0.62, 0.6, 0.56, 1)
+        t.link(cv.outputs[0], br.inputs['Vector'])
+        col = t.mix(1.0, col, br.outputs['Color'], 'MULTIPLY', (-800, 500))
+        bmp = t.new('ShaderNodeBump', (-800, -300), Strength=0.35, Distance=0.02)
+        t.link(br.outputs['Fac'], bmp.inputs['Height'])
+        t.link(n, bmp.inputs['Normal'])
+        n = bmp.outputs['Normal']
     if windows:
         # 窗：物体局部坐标；开间 bay、层高 fh、顶部 top 来自物体自定义属性
         bay = t.attr('bay', 'OBJECT', (-2000, -1600)).outputs['Fac']
@@ -56,7 +79,8 @@ def _stone(name, tex, tint, tint_amt, windows=True, grime=0.18):
         wu = t.math('MULTIPLY', t.math('GREATER_THAN', fu, 0.3), t.math('LESS_THAN', fu, 0.7))
         wz = t.math('MULTIPLY', t.math('GREATER_THAN', fz, 0.24), t.math('LESS_THAN', fz, 0.8))
         wtop = t.math('LESS_THAN', sep.outputs['Z'], t.math('SUBTRACT', top, 1.0))
-        wbot = t.math('GREATER_THAN', sep.outputs['Z'], 0.4)
+        wz0 = t.math('MAXIMUM', t.attr('wz0', 'OBJECT', (-2000, -2200)).outputs['Fac'], 0.4)
+        wbot = t.math('GREATER_THAN', sep.outputs['Z'], wz0)
         vert = t.math('LESS_THAN', az, 0.3)
         win = t.math('MULTIPLY', t.math('MULTIPLY', wu, wz), t.math('MULTIPLY', t.math('MULTIPLY', wtop, wbot), vert), (-800, -1500))
         col = t.mix(win, col, (0.018, 0.022, 0.028), loc=(-600, 300))
@@ -140,8 +164,63 @@ def _pool():
     t.link(v, n.inputs['Vector'])
     bump = t.new('ShaderNodeBump', (-400, -200), Strength=0.1, Distance=0.1)
     t.link(n.outputs['Fac'], bump.inputs['Height'])
-    b = t.bsdf((200, 0), Roughness=0.03, **{'Base Color': (0.05, 0.42, 0.45, 1)})
+    b = t.bsdf((200, 0), Roughness=0.03, **{'Base Color': (0.02, 0.13, 0.16, 1)})
     t.link(bump.outputs['Normal'], b.inputs['Normal'])
+    return m
+
+
+def _honed():
+    """磨面石灰岩铺地：1.2 × 0.8 m 大板，细缝，微光泽。"""
+    m, t = mat_new('e2_honed')
+    if t is None:
+        return m
+    v, tc = t.coords('Object', 1.0)
+    sep = t.new('ShaderNodeSeparateXYZ', (-1000, 0))
+    t.link(tc.outputs['Object'], sep.inputs[0])
+    cv = t.new('ShaderNodeCombineXYZ', (-800, 0))
+    t.link(sep.outputs['X'], cv.inputs[0]); t.link(sep.outputs['Y'], cv.inputs[1])
+    br = t.new('ShaderNodeTexBrick', (-600, 0), **{'Scale': 1.0, 'Mortar Size': 0.006, 'Brick Width': 1.2, 'Row Height': 0.8})
+    br.offset = 0.0
+    br.inputs['Color1'].default_value = (0.86, 0.83, 0.77, 1)
+    br.inputs['Color2'].default_value = (0.8, 0.77, 0.7, 1)
+    br.inputs['Mortar'].default_value = (0.55, 0.52, 0.47, 1)
+    t.link(cv.outputs[0], br.inputs['Vector'])
+    nz = t.new('ShaderNodeTexNoise', (-600, -300), **{'Scale': 3.0, 'Detail': 6.0})
+    t.link(v, nz.inputs['Vector'])
+    col = t.mix(t.math('MULTIPLY', nz.outputs['Fac'], 0.25), br.outputs['Color'], (0.7, 0.66, 0.58), loc=(-300, 0))
+    b = t.bsdf((200, 0), Roughness=0.32)
+    t.link(col, b.inputs['Base Color'])
+    return m
+
+
+def _hedge():
+    """修剪黄杨绿篱：深绿 + 细密叶面噪声凹凸（航拍可读的“剪过”质感）。"""
+    m, t = mat_new('e2_hedge')
+    if t is None:
+        return m
+    v, tc = t.coords('Object', 1.0)
+    n = t.new('ShaderNodeTexNoise', (-900, -200), **{'Scale': 9.0, 'Detail': 6.0, 'Roughness': 0.7})
+    t.link(v, n.inputs['Vector'])
+    n2 = t.new('ShaderNodeTexNoise', (-900, 200), **{'Scale': 0.4, 'Detail': 2.0})
+    t.link(v, n2.inputs['Vector'])
+    col = t.mix(n2.outputs['Fac'], (0.025, 0.07, 0.018), (0.06, 0.13, 0.03), loc=(-500, 200))
+    col = t.mix(t.math('MULTIPLY', n.outputs['Fac'], 0.5), col, (0.1, 0.18, 0.05), loc=(-300, 200))
+    bump = t.new('ShaderNodeBump', (-400, -200), Strength=0.6, Distance=0.05)
+    t.link(n.outputs['Fac'], bump.inputs['Height'])
+    b = t.bsdf((200, 0), Roughness=0.8)
+    t.link(col, b.inputs['Base Color'])
+    t.link(bump.outputs['Normal'], b.inputs['Normal'])
+    return m
+
+
+def _spray():
+    """喷泉水柱：半透明白 + 微自发光。"""
+    m, t = mat_new('e2_spray')
+    if t is None:
+        return m
+    b = t.bsdf((200, 0), Roughness=0.2, **{'Base Color': (0.9, 0.95, 1.0, 1), 'Transmission Weight': 0.6, 'Alpha': 0.75})
+    b.inputs['Emission Color'].default_value = (0.85, 0.9, 1.0, 1)
+    b.inputs['Emission Strength'].default_value = 0.25
     return m
 
 
@@ -152,13 +231,17 @@ def mats():
     if MATS:
         return MATS
     MATS.update(
-        white=_stone('e2_stone_white', 'castle_brick_02_white', (0.86, 0.83, 0.76), 0.5),
-        plain=_stone('e2_stone_plain', 'castle_brick_02_white', (0.84, 0.8, 0.72), 0.35, windows=False),
+        # r3：清爽白石（Portland / 石灰华调），降低风化，不再是奶油墙
+        white=_stone('e2_stone_white', 'castle_brick_02_white', (0.92, 0.9, 0.85), 0.82, grime=0.07, ashlar=True),
+        plain=_stone('e2_stone_plain', 'castle_brick_02_white', (0.94, 0.925, 0.88), 0.85, windows=False, grime=0.05),
+        ashlar=_stone('e2_stone_ashlar', 'castle_brick_02_white', (0.93, 0.91, 0.86), 0.85, windows=False, grime=0.06, ashlar=True),
+        honed=_honed(),
         wallstone=_stone('e2_stone_wall', 'castle_wall_varriation', (0.8, 0.74, 0.62), 0.4, windows=False, grime=0.1),
         beige=_stone('e2_stone_beige', 'castle_brick_02_white', (0.66, 0.56, 0.42), 0.7),
         grey=_stone('e2_stone_grey', 'castle_wall_varriation', (0.4, 0.39, 0.37), 0.35, grime=0.25),
         grey_plain=_stone('e2_stone_grey_plain', 'castle_wall_varriation', (0.4, 0.39, 0.37), 0.35, windows=False),
-        terra=_roof('e2_roof_terracotta', 'clay_roof_tiles_02', (0.42, 0.19, 0.08), 0.3, 1 / 2.4),
+        # r3：屋顶从陶土红瓦改成浅灰石板（用户定）；键名沿用 terra 以少改调用处
+        terra=_roof('e2_roof_lightslate', 'grey_roof_tiles_02', (0.3, 0.335, 0.38), 0.6, 1 / 2.0),   # r3b：中灰蓝石板，和白墙拉开
         slate=_roof('e2_roof_slate', 'grey_roof_tiles_02', (0.13, 0.135, 0.15), 0.4, 1 / 2.0),
         wood=_wood(),
         bronze=_plain('e2_bronze', (0.18, 0.12, 0.07), 0.35, 0.9),
@@ -167,7 +250,10 @@ def mats():
         glass=_plain('e2_glass', (0.05, 0.07, 0.08), 0.05),
         awning=_awning(),
         pool=_pool(),
-        shutter=_plain('e2_window_dark', (0.035, 0.05, 0.045), 0.25),
+        shutter=_plain('e2_window_glass', (0.05, 0.07, 0.09), 0.03, 0.65),
+        hedge=_hedge(),
+        steel=_plain('e2_steel', (0.03, 0.03, 0.032), 0.35, 0.8),
+        spray=_spray(),
         rock=_stone('e2_rock', 'rock_face_03', (0.22, 0.2, 0.18), 0.45, windows=False, grime=0.3),
     )
     return MATS
@@ -238,7 +324,7 @@ def _gable(bm_roof, bm_wall, w, d, z, pitch, ov):
     return rise
 
 
-def _facade_detail(bm, w, d, ht, fh, bay, zbase, bg=None):
+def _facade_detail(bm, w, d, ht, fh, bay, zbase, bg=None, arched=False, steel=None):
     """窗套（侧框 + 窗楣 + 窗台，外凸 0.18 m，和着色器画的暗窗对齐）、每层腰线、双层檐口。"""
     pr = 0.18
     for face in ('x-', 'x+', 'y-', 'y+'):
@@ -258,6 +344,28 @@ def _facade_detail(bm, w, d, ht, fh, bay, zbase, bg=None):
         for f in range(nf):
             zf = f * fh
             z0, z1 = zf + 0.24 * fh, zf + 0.8 * fh
+            if arched and f == 0 and bg is not None:
+                # r3 首层拱形落地窗：钢框玻璃 + 石拱券（Borgo 式），半圆拱用 7 级台阶近似
+                hw = 0.26 * bay
+                za, zc = 0.35, 0.6 * fh
+                for u in us:
+                    B(u - hw, u + hw, za, zc, 0, 0.13, bg)
+                    for k in range(16):
+                        a0, a1 = k / 16, (k + 1) / 16
+                        hwk = hw * math.sqrt(max(0.0, 1 - a1 ** 2))
+                        B(u - hwk, u + hwk, zc + hw * a0, zc + hw * a1, 0, 0.13, bg)
+                    for k in range(9):   # 拱券石（楔石一圈）
+                        th = math.pi * (k + 0.5) / 9
+                        cu, cz = u + (hw + 0.16) * math.cos(th), zc + (hw + 0.16) * math.sin(th)
+                        B(cu - 0.2, cu + 0.2, cz - 0.2, cz + 0.2, 0, pr + 0.04)
+                    B(u - hw - 0.24, u - hw, za, zc, 0, pr)
+                    B(u + hw, u + hw + 0.24, za, zc, 0, pr)
+                    if steel is not None:   # 细钢框：竖梃 2 道 + 横档 2 道 + 拱内放射档
+                        for du in (-hw / 3, hw / 3):
+                            B(u + du - 0.03, u + du + 0.03, za, zc + hw * 0.9, 0, 0.17, steel)
+                        for zz in (za + (zc - za) * 0.45, zc):
+                            B(u - hw, u + hw, zz - 0.03, zz + 0.03, 0, 0.17, steel)
+                continue
             if z1 > ht - 1.0 or z0 < 0.4:
                 continue
             for u in us:
@@ -267,16 +375,122 @@ def _facade_detail(bm, w, d, ht, fh, bay, zbase, bg=None):
                 B(u - hw - 0.35, u + hw + 0.35, z1, z1 + 0.32, 0, pr + 0.08)   # 窗楣
                 B(u - hw - 0.3, u + hw + 0.3, z0 - 0.14, z0, 0, pr + 0.1)      # 窗台
                 if bg is not None:
-                    B(u - hw, u + hw, z0, z1, 0, 0.03, bg)                       # 玻璃
-                    B(u - 0.05, u + 0.05, z0, z1, 0, 0.08)                       # 竖梃
+                    B(u - hw, u + hw, z0, z1, 0, 0.13, bg)                       # 玻璃
+                    B(u - 0.05, u + 0.05, z0, z1, 0, 0.16)                       # 竖梃
                     zt = z0 + (z1 - z0) * 0.7
-                    B(u - hw, u + hw, zt - 0.05, zt + 0.05, 0, 0.08)             # 横档
-                    B(u - hw - 0.55, u - hw - 0.22, z0, z1, 0, 0.1, bg)          # 百叶窗（深色）
-                    B(u + hw + 0.22, u + hw + 0.55, z0, z1, 0, 0.1, bg)
+                    B(u - hw, u + hw, zt - 0.05, zt + 0.05, 0, 0.16)             # 横档
             if f > 0:
                 B(-L_ / 2 - 0.12, L_ / 2 + 0.12, zf - 0.12, zf + 0.1, 0, 0.12)   # 腰线
         B(-L_ / 2 - 0.25, L_ / 2 + 0.25, ht - 1.0, ht - 0.75, 0, 0.25)            # 檐下线脚
         B(-L_ / 2 - 0.2, L_ / 2 + 0.2, zbase, 0.6, 0, 0.15)                       # 勒脚
+
+
+def baluster_run(bm, p0, p1, z0, z1=None, h=1.0, pitch=0.42, rail=0.26):
+    """栏杆段（局部坐标）：底座 + 瓶式栏杆柱（方截面收腰）+ 扶手，可斜（楼梯）。"""
+    z1 = z0 if z1 is None else z1
+    (x0, y0), (x1, y1) = p0, p1
+    ln = math.hypot(x1 - x0, y1 - y0)
+    if ln < 0.3:
+        return
+    n = max(1, int(ln / pitch))
+    tx, ty = (x1 - x0) / ln, (y1 - y0) / ln
+    nx, ny = -ty, tx
+
+    def quad_bar(za0, za1, hw, th):   # 沿段方向的长条（底座 / 扶手），允许斜
+        c = [(x0 + nx * s_ * hw, y0 + ny * s_ * hw) for s_ in (-1, 1)] + [(x1 + nx * s_ * hw, y1 + ny * s_ * hw) for s_ in (1, -1)]
+        zs = [za0, za0, za1, za1]
+        vb = [bm.verts.new((c[i][0], c[i][1], zs[i])) for i in range(4)]
+        vt = [bm.verts.new((c[i][0], c[i][1], zs[i] + th)) for i in range(4)]
+        bm.faces.new(vb[::-1]); bm.faces.new(vt)
+        for i in range(4):
+            j = (i + 1) % 4
+            bm.faces.new([vb[i], vb[j], vt[j], vt[i]])
+    quad_bar(z0, z1, rail / 2 + 0.03, 0.22)
+    quad_bar(z0 + h - 0.16, z1 + h - 0.16, rail / 2 + 0.04, 0.16)
+    for k in range(n + 1):
+        f = k / n
+        x, y, z = x0 + (x1 - x0) * f, y0 + (y1 - y0) * f, z0 + (z1 - z0) * f
+        if k in (0, n):
+            _box(bm, x - 0.2, y - 0.2, z, x + 0.2, y + 0.2, z + h + 0.1)      # 端墩
+            continue
+        _box(bm, x - 0.06, y - 0.06, z + 0.22, x + 0.06, y + 0.06, z + h - 0.16)
+        _box(bm, x - 0.1, y - 0.1, z + 0.3, x + 0.1, y + 0.1, z + 0.55)        # 瓶身鼓出
+
+
+def balustrade_rect(bm, w, d, z, inset=0.1, h=1.0):
+    W, D = w / 2 - inset, d / 2 - inset
+    c = [(-W, -D), (W, -D), (W, D), (-W, D)]
+    for i in range(4):
+        baluster_run(bm, c[i], c[(i + 1) % 4], z, h=h)
+
+
+def rustication(bm, w, d, zbase, top):
+    """首层横向凹缝石（rusticated base）+ 转角隅石：做成外凸的石条，缝就是条与条之间的阴影。"""
+    course = 0.62
+    z = max(zbase, -0.6)
+    k = 0
+    while z + course <= top + 0.01:
+        for face in ('x-', 'x+', 'y-', 'y+'):
+            L_ = d if face[0] == 'x' else w
+            half_o = (w if face[0] == 'x' else d) / 2
+            sg = -1 if face[1] == '-' else 1
+            a, b = -L_ / 2 - 0.1, L_ / 2 + 0.1
+            if face[0] == 'x':
+                _box(bm, sg * half_o - 0.1 * (sg < 0), a, z + 0.05, sg * half_o + 0.1 * (sg > 0), b, z + course - 0.05)
+            else:
+                _box(bm, a, sg * half_o - 0.1 * (sg < 0), z + 0.05, b, sg * half_o + 0.1 * (sg > 0), z + course - 0.05)
+        z += course
+        k += 1
+
+
+def quoins(bm, w, d, z0, z1):
+    """转角隅石：长短交替的外凸石块。"""
+    z, k, hh = z0, 0, 0.55
+    while z + hh <= z1:
+        a = 1.3 if k % 2 == 0 else 0.8
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                x, y = sx * w / 2, sy * d / 2
+                _box(bm, min(x, x - sx * a), y - 0.09 if sy < 0 else y - 0.02, z + 0.04, max(x, x - sx * a), y + 0.02 if sy < 0 else y + 0.09, z + hh - 0.04)
+                _box(bm, x - 0.09 if sx < 0 else x - 0.02, min(y, y - sy * a), z + 0.04, x + 0.02 if sx < 0 else x + 0.09, max(y, y - sy * a), z + hh - 0.04)
+        z += hh
+        k += 1
+
+
+def colonnade(col, spec, face='-y', depth=3.6, h=None, name=None):
+    """首层外廊：一排圆柱 + 额枋 + 平屋面露台 + 栏杆（翼楼正面的柱廊）。"""
+    M = mats()
+    bid, cx, cy, w, d, fl, rot_deg, *_r = spec
+    rot = math.radians(rot_deg)
+    z0, _ = site_z(cx, cy, w, d, rot)
+    h = h or FH
+    bm = bmesh.new()
+    L_ = w if face in ('-y', '+y') else d
+    off = (d if face in ('-y', '+y') else w) / 2
+    sg = -1 if face[0] == '-' else 1
+
+    def P(u, o):
+        return (u, sg * o) if face in ('-y', '+y') else (sg * o, u)
+    n = max(2, int(L_ / 3.2))
+    for i in range(n + 1):
+        u = -L_ / 2 + 0.6 + i * (L_ - 1.2) / n
+        x, y = P(u, off + depth - 0.5)
+        bmesh.ops.create_cone(bm, cap_ends=True, segments=16, radius1=0.34, radius2=0.29, depth=h - 1.0,
+                              matrix=Matrix.Translation((x, y, 0.45 + (h - 1.0) / 2)))
+        _box(bm, x - 0.45, y - 0.45, 0, x + 0.45, y + 0.45, 0.45)
+        _box(bm, x - 0.45, y - 0.45, h - 0.55, x + 0.45, y + 0.45, h - 0.35)
+    a, b = P(-L_ / 2, off), P(L_ / 2, off + depth)
+    _box(bm, min(a[0], b[0]), min(a[1], b[1]), -1.0, max(a[0], b[0]), max(a[1], b[1]), 0.12)        # 台基
+    _box(bm, min(a[0], b[0]) - 0.2, min(a[1], b[1]) - 0.2, h - 0.35, max(a[0], b[0]) + 0.2, max(a[1], b[1]) + 0.2, h + 0.35)   # 额枋 + 屋面
+    p0, p1 = P(-L_ / 2 + 0.2, off + depth), P(L_ / 2 - 0.2, off + depth)
+    baluster_run(bm, p0, p1, h + 0.35, h=0.95)
+    for uu in (-L_ / 2 + 0.2, L_ / 2 - 0.2):
+        baluster_run(bm, P(uu, off), P(uu, off + depth), h + 0.35, h=0.95)
+    _obj(name or f'{bid}_colonnade', bm, M['plain'], (cx, cy, z0), rot, None, col)
+    bm = bmesh.new()   # 廊下阴影面
+    a, b = P(-L_ / 2, off - 0.05), P(L_ / 2, off + 0.05)
+    _box(bm, min(a[0], b[0]), min(a[1], b[1]), 0.12, max(a[0], b[0]), max(a[1], b[1]), h - 0.35)
+    _obj((name or f'{bid}_colonnade') + '_shade', bm, M['dark'], (cx, cy, z0), rot, None, col)
 
 
 def site_z(cx, cy, w, d, rot):
@@ -326,28 +540,33 @@ def building(spec, col, r):
         return obs, z0
     bm = bmesh.new()
     _box(bm, -w / 2, -d / 2, zmin - z0 - 1.5, w / 2, d / 2, ht)
-    obs.append(_obj(f'{bid}_body', bm, wall_m, (cx, cy, z0), rot, dict(bay=3.4 if mk != 'grey' else 3.0, fh=fh, top=ht), col))
+    arched = mk == 'white' and bid in ARCHED
+    obs.append(_obj(f'{bid}_body', bm, wall_m, (cx, cy, z0), rot, dict(bay=3.4 if mk != 'grey' else 3.0, fh=fh, top=ht, wz0=fh if arched else 0.4), col))
     bm = bmesh.new()
     bmg = bmesh.new()
-    _facade_detail(bm, w, d, ht, fh, 3.4 if mk != 'grey' else 3.0, zmin - z0 - 1.5, bmg)
+    bms = bmesh.new()
+    _facade_detail(bm, w, d, ht, fh, 3.4 if mk != 'grey' else 3.0, zmin - z0 - 1.5, bmg, arched, bms)
     obs.append(_obj(f'{bid}_glass', bmg, M['shutter'] if mk != 'grey' else M['glass'], (cx, cy, z0), rot, None, col))
+    obs.append(_obj(f'{bid}_steel', bms, M['steel'], (cx, cy, z0), rot, None, col))
     if roof != 'gable':
-        _box(bm, -w / 2 - 0.45, -d / 2 - 0.45, ht - 0.55, w / 2 + 0.45, d / 2 + 0.45, ht)   # 檐口
+        # r3 檐口：三道叠涩（檐下线脚 → 齿饰带 → 挑檐板），比 r2 的一块板更像石作
+        _box(bm, -w / 2 - 0.25, -d / 2 - 0.25, ht - 0.9, w / 2 + 0.25, d / 2 + 0.25, ht - 0.6)
+        _box(bm, -w / 2 - 0.45, -d / 2 - 0.45, ht - 0.6, w / 2 + 0.45, d / 2 + 0.45, ht - 0.35)
+        _box(bm, -w / 2 - 0.75, -d / 2 - 0.75, ht - 0.35, w / 2 + 0.75, d / 2 + 0.75, ht)
+        if mk != 'grey':
+            rustication(bm, w, d, zmin - z0 - 1.5, min(fh, ht) - 0.1)
+            quoins(bm, w, d, min(fh, ht), ht - 0.9)
+        if roof in ('hip', 'hip_low', 'flat'):
+            balustrade_rect(bm, w + 1.2, d + 1.2, ht, 0.2, 1.05)   # 屋顶女儿墙栏杆
     else:
         _box(bm, -w / 2 - 0.2, -d / 2 - 0.2, 0, w / 2 + 0.2, d / 2 + 0.2, 0.5)            # 勒脚
     rise = 0
     bm_roof = bmesh.new()
     if roof == 'hip':
-        rise = _hip(bm_roof, w, d, ht, 0.46, 0.9)
+        rise = _hip(bm_roof, w - 1.0, d - 1.0, ht + 0.3, 0.36, 0.0)   # 栏杆后的低坡石板顶
     elif roof == 'hip_low':   # Breakers：低坡四坡顶 + 屋顶栏杆
         rise = _hip(bm_roof, w - 2.4, d - 2.4, ht + 0.4, 0.42, 0.0)
-        for sx, sy, ww, dd in [(0, -1, w, 0.4), (0, 1, w, 0.4), (-1, 0, 0.4, d), (1, 0, 0.4, d)]:
-            px, py = sx * (w / 2 - 0.2), sy * (d / 2 - 0.2)
-            _box(bm, px - ww / 2, py - dd / 2, ht, px + ww / 2, py + dd / 2, ht + 1.2)
     elif roof == 'flat':
-        for sx, sy, ww, dd in [(0, -1, w, 0.35), (0, 1, w, 0.35), (-1, 0, 0.35, d), (1, 0, 0.35, d)]:
-            px, py = sx * (w / 2 - 0.17), sy * (d / 2 - 0.17)
-            _box(bm, px - ww / 2, py - dd / 2, ht, px + ww / 2, py + dd / 2, ht + 1.0)
         _box(bm_roof, -w / 2 + 0.3, -d / 2 + 0.3, ht - 0.1, -w / 2 + w * 0.45, d / 2 - 0.3, ht + 3.0)   # 屋顶小亭
     elif roof == 'gable':
         bm_w2 = bmesh.new()
@@ -583,7 +802,7 @@ def retaining_wall(name, pts, z, c, col):
         bot.append(bm.verts.new((ox, oy, zb)))
     for i in range(len(s) - 1):
         bm.faces.new([bot[i], bot[i + 1], top[i + 1], top[i]])
-    bm_to_obj(bm, name, col, M['wallstone'])
+    bm_to_obj(bm, name, col, M['ashlar'])   # r3：挡土墙也用石灰岩琢石砌
     sweep(name + '_coping', [(x, y, z + 0.05) for x, y in off], [(-1.2, -0.35), (-1.2, 0.0), (1.2, 0.0), (1.2, -0.35)], M['plain'], col)
 
 
@@ -630,7 +849,7 @@ def balustrades(col):
         z = p['zv'] if not isinstance(p['zv'], tuple) else p['zv'][1]
         base = lambda x, y: True
         if p['id'] == 'plateau':
-            base = lambda x, y: y < 24 and abs(x) > 8
+            base = lambda x, y: y < 24
         elif p['id'] == 'terrace':
             base = lambda x, y: y < -66 and not (abs(x) < 8 and y > -70)
         # 只在台地真实存在处立栏杆（岛缘附近台地被淡出，栏杆会悬空）
@@ -815,6 +1034,8 @@ def build_all():
     r = rng(5)
     zmap = {}
     for spec in L.all_buildings():
+        if spec[7] == 'sketch':
+            continue
         if spec[0] == 'porch':
             zmap['porch'] = site_z(*spec[1:5], 0)[0]
             continue
@@ -827,17 +1048,19 @@ def build_all():
     for i, pts in enumerate(L.WALKWAYS):
         walkway(i, pts, col)
     balustrades(col)
-    grand_stairs(col)
-    fountain(col)
+    from . import gardens
+    gardens.build(col)
     dock(col)
     funicular(col)
     rope_bridge(col)
     for i, (x, y, a) in enumerate(L.TREEHOUSES):
         treehouse(i, x, y, a, col)
     specs = {s[0]: s for s in L.all_buildings()}
-    for bid, face in (('e_wing_a', '-y'), ('w_wing_a', '-y'), ('club', '+y'), ('e_pav', '+x'), ('w_pav', '-x'), ('spa', '-y')):
+    for bid, face in (('club', '+y'), ('spa', '-y')):
         awning(f'awn_{bid}', specs[bid], zmap[bid], face, col)
-    for bid, dx, dy in (('v1', 0, -11), ('v2', 0, -10), ('v4', 3, -10), ('v5', 0, -11), ('v6', 0, -10), ('v8', 0, -10), ('v10', 0, -10), ('breakers', 0, -30)):
+    for bid, face in (('e_wing_a', '-y'), ('w_wing_a', '-y'), ('e_wing_b', '+x'), ('w_wing_b', '-x'), ('breakers', '-y')):
+        colonnade(col, specs[bid], face, 3.6 if bid != 'breakers' else 4.5, FH if bid != 'breakers' else 5.0)
+    for bid, dx, dy in (('breakers', 0, -30),):
         s = specs[bid]
         x, y = rot2(dx, dy, math.radians(s[6]))
         if bid == 'breakers':

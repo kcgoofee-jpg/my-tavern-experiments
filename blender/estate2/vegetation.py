@@ -157,12 +157,27 @@ def plan_points(seed=7, density=1.0):
     # 林中空地：稀疏一些，别墅 / 树屋周边留出视野
     thin = L.fbm(X, Y, 45, 2, 21)
     ok &= rs.uniform(0, 1, X.shape) < np.clip(0.78 + 0.5 * thin, 0.25, 1)
-    ok &= rs.uniform(0, 1, X.shape) > at['meadow'] * 0.85        # 外坡草甸：只留零星树
+    ok &= rs.uniform(0, 1, X.shape) > at['meadow'] * 0.85        # 外坡草甸 / 林中空地：只留零星树
+    ok &= L.clearing(X, Y) < 0.35
+    for b in L.VILLAS:                                            # 别墅周边 12 m 内留给热带林下层与露台
+        ok &= np.hypot(X - b[1], Y - b[2]) > 17
     w = np.array([p[2] for p in PROTOS]); w = w / w.sum()
     forest_idx = rs.choice(len(PROTOS), size=X.shape, p=w)
     edge_band = (e < 30)
     forest_idx = np.where(edge_band & (rs.uniform(0, 1, X.shape) < 0.35), 3, forest_idx)
-    out = [('forest', X[ok], Y[ok], H[ok], forest_idx[ok], rs.uniform(0.75, 1.25, ok.sum()))]
+    # r3 林冠分层：大尺度噪声决定“老林”斑块（高大乔木 1.25–1.7 倍）与次生林（0.65–1.0 倍），外加零星突出木
+    layer = np.clip(0.5 + 1.4 * L.fbm(X, Y, 110, 2, 51), 0, 1)
+    scl = 0.65 + 0.55 * layer + rs.uniform(-0.12, 0.3, X.shape)
+    emerg = rs.uniform(0, 1, X.shape) < 0.04
+    forest_idx = np.where(emerg, 2, forest_idx)
+    scl = np.where(emerg, rs.uniform(1.45, 1.8, X.shape), scl)
+    out = [('forest', X[ok], Y[ok], H[ok], forest_idx[ok], scl[ok])]
+    # 空地里的孤植大树
+    Xs, Ys = _poisson(28.0, rs)
+    cs = L.clearing(Xs, Ys)
+    Hs, ats = L.terrain(Xs, Ys)
+    oks = (cs > 0.6) & (L.edge_dist(Xs, Ys) > 10) & (L.footprint_sd(Xs, Ys, 4.0) > 0) & (ats['gravel'] < 0.2) & (rs.uniform(0, 1, Xs.shape) < 0.45)
+    out.append(('forest', Xs[oks], Ys[oks], Hs[oks], rs.choice([1, 2], size=oks.sum()), rs.uniform(1.2, 1.6, oks.sum())))
     # 林缘灌木：在树点之间补
     X2, Y2 = _poisson(5.0, rs)
     H2, at2 = L.terrain(X2, Y2)
@@ -175,7 +190,8 @@ def plan_points(seed=7, density=1.0):
         gx += [-22, 22]; gy += [y, y]
     for a in np.linspace(0, 2 * math.pi, 10, endpoint=False):
         gx.append(L.FOUNTAIN[0] + 42 * math.cos(a)); gy.append(L.FOUNTAIN[1] + 30 * math.sin(a))
-    for x, y in [(-92, -10), (92, -10), (-100, 40), (98, 44), (-30, 70), (40, 66), (-70, -70), (70, -72), (0, 48)]:
+    for x, y in [(-92, -10), (92, -10), (-100, 40), (98, 44), (-30, 70), (40, 66), (-70, -70), (70, -72), (0, 48),
+                 (27, -33.5), (44, -34), (-27, -33.5), (-44, -34)]:   # r3：门前露台南侧的橄榄状孤植（给露台投斑驳树影）
         gx.append(x); gy.append(y)
     pl = [p for p in L.PADS if p['id'] == 'plateau'][0]
     for a in np.linspace(0, 2 * math.pi, 64, endpoint=False):   # 主台地外圈树团（海湖：建筑被植被包围）
@@ -186,6 +202,9 @@ def plan_points(seed=7, density=1.0):
     gx, gy = np.array(gx, float), np.array(gy, float)
     gx += rs.uniform(-1.5, 1.5, gx.shape); gy += rs.uniform(-1.5, 1.5, gy.shape)
     keep = (L.footprint_sd(gx, gy, 4.0) > 0) & (L.gravel_mask(gx, gy) < 0.3)
+    for gid, _, kind, c, sz, rot in L.GARDENS:
+        if gid in ('rose', 'rose_w'):
+            keep &= ~((np.abs(gx - c[0]) < sz[0] + 4) & (np.abs(gy - c[1]) < sz[1] + 4))
     for pts in L.WALKWAYS:
         keep &= L.poly_dist(gx, gy, pts) > 4
     gx, gy = gx[keep], gy[keep]
@@ -195,7 +214,82 @@ def plan_points(seed=7, density=1.0):
     return out
 
 
-def build(density=1.0, seed=7):
+def flower_points(seed=13):
+    """r3 开花灌木团（绣线菊式白花）：主台地前沿、露台外沿、花坛外圈、大道花境。返回 (X, Y, H, scale)。"""
+    rs = np.random.RandomState(seed)
+    xs, ys = [], []
+    pl = [p for p in L.PADS if p['id'] == 'plateau'][0]
+    for a in np.linspace(math.pi * 1.02, math.pi * 1.98, 170):   # 主台地南沿（墙内 3 m）
+        x, y = pl['c'][0] + (pl['r'][0] - 3.2) * math.cos(a), pl['c'][1] + (pl['r'][1] - 3.2) * math.sin(a)
+        if abs(x) > 36 and rs.uniform() < 0.8:
+            xs.append(x); ys.append(y)
+    for x in np.arange(17, 50, 1.3):                              # 东翼露台外沿
+        xs += [x, x + 0.6]; ys += [-30.6, -31.6]
+        xs += [-x, -x - 0.6]; ys += [-30.6, -31.6]
+    for gid, _, kind, c, sz, rot in L.GARDENS:
+        if gid in ('rose', 'rose_w'):
+            for t in np.linspace(0, 1, 60):
+                for (ax, ay, bx, by) in ((-1, -1, 1, -1), (1, -1, 1, 1), (1, 1, -1, 1), (-1, 1, -1, -1)):
+                    x = c[0] + (sz[0] + 5.2) * (ax + (bx - ax) * t)
+                    y = c[1] + (sz[1] + 5.2) * (ay + (by - ay) * t)
+                    if rs.uniform() < 0.55:
+                        xs.append(x); ys.append(y)
+    for sx in (-1, 1):
+        for y in np.arange(-244, -152, 2.6):
+            xs.append(sx * 27.5 + rs.uniform(-0.6, 0.6)); ys.append(y)
+    X, Y = np.array(xs, float), np.array(ys, float)
+    X += rs.uniform(-0.5, 0.5, X.shape); Y += rs.uniform(-0.5, 0.5, Y.shape)
+    ok = (L.footprint_sd(X, Y, 0.5) > 0) & (L.gravel_mask(X, Y) < 0.3)
+    X, Y = X[ok], Y[ok]
+    H, _ = L.terrain(X, Y)
+    return X, Y, H, rs.uniform(0.3, 0.48, len(X))
+
+
+def _flowering(src):
+    """复制灌木原型，叶片里 45% 换成白色小花团（绣线菊 / 白色山茶的航拍观感）。"""
+    ob = src.copy()
+    ob.data = src.data.copy()
+    ob.name = src.name + '_flower'
+    for i, slot in enumerate(ob.material_slots):
+        m = slot.material
+        if not m or not m.use_nodes:
+            continue
+        m2 = m.copy(); m2.name = m.name + '_flower'
+        nt = m2.node_tree
+        b = next((n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED'), None)
+        if b is None or not b.inputs['Base Color'].is_linked:
+            continue
+        src_sock = b.inputs['Base Color'].links[0].from_socket
+        tc = nt.nodes.new('ShaderNodeTexCoord')
+        nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 6.0; nz.inputs['Detail'].default_value = 2.0
+        nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
+        mr = nt.nodes.new('ShaderNodeMapRange')
+        mr.inputs['From Min'].default_value = 0.54; mr.inputs['From Max'].default_value = 0.56
+        nt.links.new(nz.outputs['Fac'], mr.inputs['Value'])
+        mix = nt.nodes.new('ShaderNodeMix'); mix.data_type = 'RGBA'
+        nt.links.new(mr.outputs[0], mix.inputs[0])
+        nt.links.new(src_sock, mix.inputs[6])
+        mix.inputs[7].default_value = (1.0, 0.99, 0.95, 1)
+        nt.links.new(mix.outputs[2], b.inputs['Base Color'])
+        ob.material_slots[i].material = m2
+    return ob
+
+
+def tropic_points(seed=11):
+    """别墅周边的热带林下层（Nekajui 式浓密）：每 2.2 m 一株，半径 12–32 m 的环带。"""
+    rs = np.random.RandomState(seed)
+    X, Y = _poisson(2.2, rs)
+    keep = np.zeros(X.shape, bool)
+    for b in L.VILLAS:
+        dd = np.hypot(X - b[1], Y - b[2])
+        keep |= (dd > 13) & (dd < 32) & (rs.uniform(0, 1, X.shape) < np.clip((34 - dd) / 14, 0, 1))
+    X, Y = X[keep], Y[keep]
+    H, at = L.terrain(X, Y)
+    ok = (L.edge_dist(X, Y) > 3) & (at['gravel'] < 0.3) & (at['lake'] < 0.2) & (L.footprint_sd(X, Y, 1.0) > 0)
+    return X[ok], Y[ok], H[ok]
+
+
+def build(density=1.0, seed=7, tropic_protos=None):
     col = coll('vegetation')
     protos = bpy.data.collections.new('e2_tree_protos')
     bpy.context.scene.collection.children.link(protos)
@@ -213,6 +307,25 @@ def build(density=1.0, seed=7):
         rot = np.stack([rs.uniform(-0.05, 0.05, len(X)), rs.uniform(-0.05, 0.05, len(X)), rs.uniform(0, 2 * math.pi, len(X))], 1)
         scl = np.repeat(s[:, None], 3, 1)
         _points_obj(f'veg_{kind}', P, idx, rot, scl, shrubs if kind == 'shrub' else protos, col)
+        n += len(X)
+    fl = bpy.data.collections.new('e2_flower_protos')
+    bpy.context.scene.collection.children.link(fl)
+    fl.objects.link(_flowering(shrubs.objects[0]))
+    bpy.context.view_layer.layer_collection.children[fl.name].exclude = True
+    X, Y, H, sc = flower_points()
+    P = np.stack([X, Y, H + 0.1], 1)
+    rot = np.stack([np.zeros(len(X)), np.zeros(len(X)), rs.uniform(0, 2 * math.pi, len(X))], 1)
+    scl = np.stack([sc * 1.25, sc * 1.25, sc], 1)
+    _points_obj('veg_flowers', P, np.zeros(len(X), int), rot, scl, fl, col)
+    n += len(X)
+    if tropic_protos is not None and len(tropic_protos.objects):
+        X, Y, H = tropic_points()
+        k = len(tropic_protos.objects)
+        idx = rs.randint(0, k, len(X))
+        P = np.stack([X, Y, H - 0.2], 1)
+        rot = np.stack([np.zeros(len(X)), np.zeros(len(X)), rs.uniform(0, 2 * math.pi, len(X))], 1)
+        scl = np.repeat(rs.uniform(0.8, 1.6, len(X))[:, None], 3, 1)
+        _points_obj('veg_tropic', P, idx, rot, scl, tropic_protos, col)
         n += len(X)
     print(f'[vegetation] {n} 株实例')
     return col
