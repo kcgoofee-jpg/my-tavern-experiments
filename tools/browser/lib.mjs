@@ -8,8 +8,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-export const PORT = +(process.env.EDEN_PORT || 5178);
-export const BASE = process.env.EDEN_BASE || `http://localhost:${PORT}/`;
+// 端口：EDEN_PORT 优先；否则按本工作树路径哈希到 5200–5999（每个 worktree 固定、互不相同），不再默认共用 5178——
+// 以前 worktree 里的测试会悄悄打到主 checkout / 别的 worktree 起的服务上。PORT / BASE 是 live binding，ensureServer 可能改它们。
+const MAP_ROOT = fs.realpathSync(path.join(REPO_ROOT, 'map'));
+const hashPort = s => { let h = 2166136261; for (const c of Buffer.from(s)) h = Math.imul(h ^ c, 16777619) >>> 0; return 5200 + h % 800; };
+export let PORT = +(process.env.EDEN_PORT || hashPort(MAP_ROOT));
+export let BASE = process.env.EDEN_BASE || `http://localhost:${PORT}/`;
 export const wait = ms => new Promise(r => setTimeout(r, ms));
 
 // ---------- Playwright：先找 tools/browser/node_modules，再找 PLAYWRIGHT_DIR，最后找 npx 缓存 ----------
@@ -33,13 +37,21 @@ export function quietWait() {
   if (r.status !== 0) throw new Error('quiet_wait 失败，退出码 ' + r.status);
 }
 
-// ---------- 本地服务：5178 已在跑就用它（.claude/launch.json 的 map），否则起 tools/cors_server.py ----------
+// ---------- 本地服务：端口上已有服务且 /__root 就是本工作树的 map/ 才复用；否则起 tools/cors_server.py ----------
+// 端口被别的目录的服务占着：EDEN_PORT 显式指定时照用并警告；默认端口时往后找空端口自己起。EDEN_BASE 指定时不校验。
 export async function ensureServer() {
-  const up = async () => { try { const r = await fetch(BASE + 'viewer.html', { method: 'HEAD' }); return r.ok; } catch (e) { return false; } };
-  if (await up()) return { started: false, stop() {} };
-  if (process.env.EDEN_BASE) throw new Error(`${BASE} 连不上`);
-  const p = spawn('python3', [path.join(REPO_ROOT, 'tools/cors_server.py'), String(PORT), path.join(REPO_ROOT, 'map')], { stdio: 'ignore', detached: true });
-  for (let i = 0; i < 50; i++) { await wait(200); if (await up()) return { started: true, stop() { try { process.kill(-p.pid); } catch (e) { p.kill(); } } }; }
+  const up = async b => { try { const r = await fetch(b + 'viewer.html', { method: 'HEAD' }); return r.ok; } catch (e) { return false; } };
+  const root = async b => { try { const r = await fetch(b + '__root'); return r.ok ? (await r.text()).trim() : null; } catch (e) { return null; } };
+  const busy = async p => { try { await fetch(`http://localhost:${p}/`, { method: 'HEAD' }); return true; } catch (e) { return false; } };
+  if (process.env.EDEN_BASE) { if (await up(BASE)) return { started: false, stop() {} }; throw new Error(`${BASE} 连不上`); }
+  if (await up(BASE)) {
+    const r = await root(BASE);
+    if (r === MAP_ROOT) return { started: false, stop() {} };
+    if (process.env.EDEN_PORT) { console.warn(`[lib] 端口 ${PORT} 上的服务不是本工作树（${r || '未知目录'}），按 EDEN_PORT 照用`); return { started: false, stop() {} }; }
+  }
+  for (let i = 0; i < 40 && await busy(PORT); i++) { PORT = 5200 + (PORT - 5200 + 1) % 800; BASE = `http://localhost:${PORT}/`; }
+  const p = spawn('python3', [path.join(REPO_ROOT, 'tools/cors_server.py'), String(PORT), MAP_ROOT], { stdio: 'ignore', detached: true });
+  for (let i = 0; i < 50; i++) { await wait(200); if (await up(BASE) && await root(BASE) === MAP_ROOT) return { started: true, stop() { try { process.kill(-p.pid); } catch (e) { p.kill(); } } }; }
   p.kill(); throw new Error('本地服务起不来：python3 tools/cors_server.py ' + PORT + ' map');
 }
 
@@ -60,7 +72,7 @@ export async function browser(engine = 'chromium') {
 }
 export async function closeAll() { for (const k of Object.keys(browsers)) { await browsers[k].close().catch(() => {}); delete browsers[k]; } }
 
-// 新页面：preset + 语言 / 主题 / 清晰度档位（写进 localStorage，只对 5178 生效）+ 网络统计 + 错误收集
+// 新页面：preset + 语言 / 主题 / 清晰度档位（写进 localStorage，只对当前 BASE 的 origin 生效）+ 网络统计 + 错误收集
 // opts: { lang: 'zh'|'en', scheme: 'dark'|'light', tier: 'save'|'std'|'hd'|'auto', init: [fn, arg] }
 export async function newPage(preset = 'desktop', opts = {}) {
   const P = PRESETS[preset]; if (!P) throw new Error('未知 preset ' + preset);

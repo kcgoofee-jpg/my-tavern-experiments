@@ -3,8 +3,8 @@
 import * as B from './lib.mjs';
 import path from 'node:path'; import fs from 'node:fs'; import { execFileSync } from 'node:child_process';
 const OUT = process.argv[2] || '/tmp/proto_clouds'; fs.mkdirSync(OUT, { recursive: true });
-const URL = B.BASE + '_proto/clouds.html';
 B.quietWait(); await B.ensureServer();
+const URL = B.BASE + '_proto/clouds.html';   // ensureServer 之后再取 BASE（端口可能换）
 const R = {};
 const open = async (preset, q = '') => {
   const P = await B.newPage(preset, { scheme: 'light' });

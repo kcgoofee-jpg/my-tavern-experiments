@@ -8,7 +8,7 @@ import { newPage, shot, closeAll, wait, BASE, ensureServer } from './lib.mjs';
 const OUT = path.resolve(process.argv[2] || 'docs/reviews/dairy_interactive');
 const MODEL = process.argv[3] || 'dairy';
 const SHOTS = path.join(OUT, 'shots');
-await ensureServer();
+const srv = await ensureServer();   // 自己起的服务跑完要关（端口隔离后不再复用别人的）
 const q = a => { const s = [...a].sort((x, y) => x - y); const at = p => s[Math.min(s.length - 1, Math.floor(p * s.length))]; return { p50: at(0.5), p95: at(0.95) }; };
 const fpsOf = ft => { const { p50, p95 } = q(ft); return { fps_p50: +(1000 / p50).toFixed(1), fps_p95: +(1000 / p95).toFixed(1), ms_p50: +p50.toFixed(1), ms_p95: +p95.toFixed(1) }; };
 const results = {};
@@ -64,7 +64,7 @@ for (const preset of ['desktop', 'phone', 'desktopWk', 'iphone']) {
   await P.close();
 }
 } catch (e) { crash = String(e?.stack || e); results.crash = crash; }
-await closeAll();
+await closeAll(); srv.stop();
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, 'perf.json'), JSON.stringify(results, null, 1));
 console.log(JSON.stringify(results, null, 1));

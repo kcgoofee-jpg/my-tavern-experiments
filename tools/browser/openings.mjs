@@ -1,7 +1,7 @@
 // node tools/browser/openings.mjs <输出目录> —— 开局关键地点（maps.json openings）在各层默认视野的截图：桌面 1440 与 375 手机
 import { ensureServer, newPage, openViewer, closeAll } from './lib.mjs';
 const out = process.argv[2] || '/tmp/openings';
-await ensureServer();
+const srv = await ensureServer();   // 自己起的服务跑完要关（端口隔离后不再复用别人的）
 const res = []; let fail = 0;   // 有脚本错误 / 某图一个标记都没有 / 运行异常 → 退出码 1（C-测试缺口：以前无条件 exit 0）
 try {
 for (const preset of ['desktop', 'phone']) {
@@ -16,5 +16,5 @@ for (const preset of ['desktop', 'phone']) {
   }
 }
 } catch (e) { fail++; res.push({ error: String(e?.stack || e) }); }
-console.log(JSON.stringify(res, null, 1)); await closeAll();
+console.log(JSON.stringify(res, null, 1)); await closeAll(); srv.stop();
 console.log(fail ? `有失败：${fail}` : '全部通过'); process.exit(fail ? 1 : 0);
