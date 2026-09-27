@@ -292,4 +292,7 @@ def export(co):
                              **({'layout': i['isle'].layout, 'plan': i['isle'].plan} if i['isle'].layout else {}),
                              outline=i['isle'].export(norm), **({'role': i['isle'].d['role']} if i['isle'].d.get('role') else {})) for i in islands],
             'routes': rts}
+if layer.opt.get('--city-only') and BELOW == 'city':   # 只渲下方城市（岛全部隐藏）：给 tools/eden_into_upper.py 补旧伊甸岛下面的城市用，配合 --crop
+    for o in layer.sc.objects:
+        if o.type == 'MESH' and o not in BELOW_OBJS: o.hide_render = True
 layer.finish(world=(_wc, _ws), extra=export, label=f'islands {len(islands)}')
