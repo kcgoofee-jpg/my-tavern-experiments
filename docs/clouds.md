@@ -1,5 +1,7 @@
 # 上层云海重做（云端任务 4 · 1）
 
+> **现状（v0.9.2）**：发布版已换成方案 B（纯白云底 + 查看器实时漂移云），见 §6 末「方案 B」。下面 §1–§5 是旧 toon 云海的记录。
+
 结论：选 **metaball 融合的积云团 + 三阶着色（《部落冲突》式）**，岛影由「云用太阳」单独投射。代码在 `blender/tc_clouds.py`。`tiancheng_upper.py --below clouds` 时自动调用，只加了一行。
 - 选定草稿：`docs/drafts/clouds_v3_toon.jpg`
 - 新旧对比：`docs/drafts/clouds_old_vs_v3.jpg`
@@ -114,7 +116,7 @@
 
 本机重跑：`bash tools/render_all.sh upper --res 8000 --samples 128`
 
-## 6. 《部落冲突》式薄纱云原型（2026-09-27，待用户批准；发布版仍是 toon）
+## 6. 《部落冲突》式云：原型与方案 B（发布版）
 
 用户否掉 toon 云海（「这他妈的也不是云啊」），参考 CoC：半透明、沿等轴测斜向叠起的圆角云板、边缘虚、白到浅冷灰、低对比、无描边，地面透得出来；切层时云合拢到全白再散开。
 
@@ -126,6 +128,25 @@
   (a) 两层漂移（远层慢、淡，近层快、浓；拖动时视差 0.85 / 1.2）；(b) CoC 式切层：9 条斜带 × 3 团从两头交错扫入约 420 ms → 全白停 150 ms 换层 → 往两侧散开 600 ms，转场中点一下可跳过；(c) 淡入淡出 280 / 420 ms。只动 transform / opacity；`prefers-reduced-motion` → 立即换层、无漂移；`saveData` / `deviceMemory ≤ 2` → 无漂移、不加载精灵、切层用白幕淡入淡出。
 - 测量：`node tools/browser/proto_clouds.mjs`：375 宽 Chromium 与 WebKit（iPhone）漂移 / CoC 转场 / 淡入淡出都约 60 fps（p95 16.7–18 ms），截图序列 `docs/drafts/clouds_coc_anim_1_drift … 4_parting.jpg`。
 - 评审：`docs/reviews/clouds_coc/`（美术总监有条件通过，推荐 B：只烘云边的底图 + 动态漂移，切层用 CoC 式；玩家：第 1 轮条纹像模糊滤镜，要一坨一坨的形状，转场要能跳过）。第 2 轮已按两份意见改：云板变短变厚、模糊减到约 1/3、覆盖率与不透明度下调、侧面提亮、云边收窄、霾降低、可跳过。
+
+### 方案 B（发布版，v0.9.2）
+
+用户批准 B，并补一句「底图可以做个不动的纯白云铺满」。
+
+- **静态底图**：`blender/tc_clouds.py` 的 `CLOUD_STYLE = 'white'`（默认）→ `build_white_floor`。`bash tools/render_all.sh upper` 不加参数就是这个效果。
+  - 岛下一整片不透明的近白云底（自发光贴图平面，z −0.6）：云谷 ≈ #E2E7EE、云顶 ≈ #F6F8FB，约 8 % 的柔和团状起伏（团约为岛的 0.5–1.5 倍，高斯模糊，无细碎噪点）。不透城市、没有灰纱。
+  - 岛缘柔白云边（`_lip_rgba`，纯白、gain 1.0，与原型 lip_only 同形），z 0.97。
+  - 云底与云边自发光、不受光、不投影 → **没有岛影**（用户硬规定）。岛的建模、材质、主太阳与之前完全相同（岩体同样不投影）。
+  - `upper_city`（关云看城市）：脚本已改为城市只被城市自己挡光（`relight_city`，与薄纱原型同法）→ 城市上没有岛影；2K 对比 `docs/drafts/upper_city_no_shadow_2k_before_after.jpg`。**8K 瓦片尚未重渲**（等用户确认后 `bash tools/render_all.sh upper_city`）。旧 toon：`--clouds toon`；薄纱原型：`--clouds veil`。
+  - 草稿：`docs/drafts/clouds_b_white_r1.jpg`（太平、云边看不见）→ `clouds_b_white_r2.jpg`（选定）。评审：`docs/reviews/clouds_b/`（第 2 轮三位都过岛可读性门槛）。
+  - 参数：`--lip-gain`（默认 1.0）、`--no-lip`。
+- **查看器实时云**（`map/viewer.html` 文末「云」脚本块 + 一段 CSS，挂点：包一层 `go()`，监听 `body[data-map]` 与「显示下方城市」开关）：
+  - 漂移：只在上层且云开时；远层 11 团（小、慢、淡）+ 近层 6 团（横屏各少 20 %）（大、快、稍浓），默认视野约 5–8 团可见；拖动视差 0.85 / 1.2，超出半屏时淡出重排。画在底图之上、标记之下。
+  - 天城层与层切换：CoC 式斜带扫入 → 全白换层（等新底图第一张瓦片，最多 1.2 s）→ 散开；转场中点一下跳过。
+  - 减少动态效果：无漂移、直接换层。省流（`lean()`：saveData、2g/3g、内存 ≤ 4 GB、手动「省流」档）：无漂移、零精灵请求，切层用白幕淡入淡出。
+  - 只动 transform / opacity，无 backdrop-filter。精灵 `map/art/clouds/puff1–6.png`（480 px 宽，共约 320 KB，用到才加载），与瓦片同一基址，jsDelivr 线路可用。
+  - 测试：`node tools/browser/clouds.mjs`（Chromium / WebKit × 375 / 桌面：可见团数、帧率、跳过、开关、降级）。
+- `map/_proto/` 保留作演示。
 
 ## 参考
 
