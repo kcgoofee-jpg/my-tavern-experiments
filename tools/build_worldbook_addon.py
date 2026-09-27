@@ -55,7 +55,7 @@ def build(version):
 
     # ---- 地点：各层地标（标准名）
     def marks(mid):
-        return '、'.join(k['name'].replace(' ', '') for k in reg[mid]['markers'].values())
+        return '、'.join(k['name'].replace(' ', '') for k in canon(reg[mid]['markers']).values())
     layers = [(reg[m]['layer']['name'], reg[m]['layer'].get('sub', ''), m) for m in ('tc_upper', 'tc_mid', 'tc_low')]
     place_rows = '\n'.join(f'  {name}（{sub}）：{marks(mid)}' for name, sub, mid in layers)
 
@@ -131,13 +131,22 @@ def build(version):
     return [('地图联动规范 v3', rules, 900), ('地图事件类型 v2', types, 901), ('地图当前地点 v2', here, 902), ('地图人物位置 v1', who, 903)] + lore, n
 
 
+def canon(markers):
+    """卡里有的地标（canon:false = 仓库自设、卡中没有，不向模型列出；见 docs/card-digest.md §10）"""
+    return {k: v for k, v in markers.items() if v.get('canon', True) is not False}
+
+
+INFERRED = '（位置为地图推断）'
+
+
 LAYER_RE = {'上层': '中层|下层', '中层': '上层|下层', '下层': '上层|中层'}
 
 
 def neighbours(reg, mid, k, n=3):
     """同层最近的 n 个地标（按 data/<层>.json 的归一化坐标）"""
     d = json.load(open(os.path.join(ROOT, 'map', reg[mid]['data']), encoding='utf-8'))
-    xy = {m['id']: (m.get('ax', m['nx']), m.get('ay', m['ny'])) for m in d['markers']}
+    ok = canon(reg[mid]['markers'])
+    xy = {m['id']: (m.get('ax', m['nx']), m.get('ay', m['ny'])) for m in d['markers'] if m['id'] in ok}
     if k not in xy: return []
     x0, y0 = xy[k]
     near = sorted((((x - x0) ** 2 + (y - y0) ** 2), i) for i, (x, y) in xy.items() if i != k)
@@ -148,13 +157,15 @@ def lore_lines(reg, mid):
     """每个地标一句中性方位：[(匹配词[], 描述)]；再加一句只写到层时的层概况"""
     m, L = reg[mid], reg[mid]['layer']
     rows = []
-    for k, v in m['markers'].items():
+    for k, v in canon(m['markers']).items():
         nm = v['name'].replace(' ', '')
         sub = re.sub(r'\{\{user\}\}\s*', '玩家', v.get('sub') or '')
         words = [w for w in dict.fromkeys([v['name'], nm, *v.get('alias', [])]) if len([*w]) >= 2]
         nb = neighbours(reg, mid, k)
-        rows.append((words, f'{nm}：天城{L["name"]}（{L["sub"]}）' + (f'，{sub}' if sub else '') + (f'；附近：{"、".join(nb)}' if nb else '') + '。'))
-    layer = (L['name'], [L['name'], *m.get('districts', [])], f'天城{L["name"]}（{L["sub"]}，{L.get("alt", "")}）；主要地标：' + '、'.join(v['name'].replace(' ', '') for v in m['markers'].values()) + '。')
+        # 位置（或层）是地图推断的：写明，不当事实注入（tag=inf：卡没给层或地点本身是推断；src 含「推断」：层是卡给的，具体位置推断）
+        inf = INFERRED if v.get('tag') == 'inf' else '（具体位置为地图推断）' if '推断' in v.get('src', '') else ''
+        rows.append((words, f'{nm}：天城{L["name"]}（{L["sub"]}）' + (f'，{sub}' if sub else '') + inf + (f'；地图上邻近：{"、".join(nb)}（相对位置为地图推断）' if nb else '') + '。'))
+    layer = (L['name'], [L['name'], *m.get('districts', [])], f'天城{L["name"]}（{L["sub"]}，{L.get("alt", "")}）；地图上的地标：' + '、'.join(v['name'].replace(' ', '') for v in canon(m['markers']).values()) + '（多数地标的具体位置为地图推断）。')
     return rows, layer
 
 
