@@ -15,6 +15,8 @@
 
 - r4c：南侧到达序列全开敞（草坪 / 草甸到崖边 + 崖边栏杆步道 + 两座观景台）、北崖裸岩岬角；观景台改实心浅石 + 低石栏 + 深色石边；西侧三分之一改地中海农业台地（layout.agri / agri_z：同心台地、葡萄园行、薰衣草带、干砌石墙、橄榄行、农场路、石灰岩露头）；东崖 V4 改崖顶草甸；别墅 10 → 4 栋（V1/V2/V3/V8），三型轮换（Sketchfab / 自建 L 形石板顶 / 合院绿化屋面）；夜景 `--light night`（月光 + 暖窗光 + 园路 / 大道灯 + 泳池水下灯 + 喷泉灯）。
 - r4d：Greystone 按真实比例放大（E 形约 76 × 46 m）+ Thiene 式园林（gardens.greystone_gardens：上台地倒影池 + 喷泉 + 黄杨 / 紫杉、圆形车场、弧形双石阶、下花园锦鲤倒影池、跌水溪）；Warner 式 Tudor 客舍 + 岩洞泳池 + 锦鲤池 + 卵石院（warner.py）；车库放大 + 前院停车；停机坪（gardens.helipad）；奶牛农场：`e4r/dairy_save.py` 另跑 props/dairy_parlour/build.py 存 .blend（不改原文件），环境变量 E2_DAIRY_BLEND 指向它，gardens.dairy 链入；网球场加垫平台地。调研写在 docs/eden-references.md（Greystone / Warner 两节）。
+- r4e：客舍重做（分层青苔岩、叶片卡爬藤 + 玫瑰、不规则半木构、无地平线）；主楼近景 64 spp 重渲；玻璃健身亭（gym.py，src: user，东南网球场旁）；按卡对齐（去候机亭 / 飞艇，悬浮载具库 / 载具停靠坪 / 悬浮车库，屋顶眺望亭不算楼层，删莉娜）；zones.py 入库。
+  审查 r3：美术总监 7、景观 7、rp_glance 7.5、fresh 7。遗留：观景台 / 湖心圆台俯视仍是白圆盘；梯田条带太规律、薰衣草偏艳；特写里柏树光滑、台阶纯白、木筋像贴纸、烟囱橙色、健身亭屋面光板；夜景东林全黑、主楼光晕偏宽。
 - 分区图：`docs/drafts/eden2_r4_zones.jpg`（生成脚本在 scratchpad zl/zones.py，读 layout.py 的遮罩）。
 
 ---
