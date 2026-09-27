@@ -191,6 +191,10 @@
     #layers { left: 6px; top: auto; bottom: 30px; transform: none; gap: 8px; }
     #layers button { min-width: 0; padding: 4px 9px; font-size: 12px; min-height: 36px; }
     #layers button small { display: none; }
+    /* 手机进庄园（ui-audit R02 / R11）：层按钮改成底部一行，庄园 iframe 让出这一条，庄园的楼层条、导览条、房间卡都不再被盖住 */
+    body.estate #layers { top: auto; bottom: calc(5px + env(safe-area-inset-bottom)); flex-direction: row; gap: 6px; touch-action: none; }
+    body.estate #layers button { flex: none; }
+    body.estate #estate { bottom: auto; height: calc(100% - 46px - env(safe-area-inset-bottom)); }
     .seg button { padding: 7px 10px; }
     label.tg { flex: none; font-size: 12px; }
     #tierState { min-width: 0; }
@@ -671,6 +675,8 @@ window.addEventListener('message', e => {
   if (e.data?.type === 'estate:key') stepLayer({ PageUp: -1, '[': -1, PageDown: 1, ']': 1 }[e.data.key] || 0);
 });
 addEventListener('resize', () => estateInset());
+// 庄园时层按钮条上的滚轮不带着宿主页滚（庄园里没有 OSD 接滚轮）
+$('#layers').addEventListener('wheel', e => { if (document.body.classList.contains('estate')) e.preventDefault(); }, { passive: false });
 
 function renderNav() {
   const m = REG.maps[cur], chain = [];
