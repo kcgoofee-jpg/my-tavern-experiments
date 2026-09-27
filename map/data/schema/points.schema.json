@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "points.schema.json",
+  "title": "points 地图的渲染数据（map/data/tc_*.json、site_*.json，maps.json 里 maps.<id>.data 指向的文件）",
+  "description": "由渲染脚本导出：标记的归一化坐标、上层的岛与航线。名称、出处等元数据在 maps.json 的 markers 里，这里只放几何。",
+  "type": "object",
+  "required": ["extent_m", "markers"],
+  "additionalProperties": false,
+  "patternProperties": { "^_": {} },
+  "properties": {
+    "extent_m": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number", "exclusiveMinimum": 0 }, "description": "底图覆盖的 [宽, 高]（米）" },
+    "layer": { "type": ["string", "null"] },
+    "markers": { "type": "array", "items": { "type": "object", "required": ["id", "nx", "ny"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "nx": { "$ref": "#/$defs/unit" }, "ny": { "$ref": "#/$defs/unit" },
+        "r": { "type": "number", "minimum": 0 }, "ax": { "$ref": "#/$defs/unit" }, "ay": { "$ref": "#/$defs/unit" },
+        "manual": { "type": "boolean", "description": "手工摆放（渲染脚本不覆盖）" } } } },
+    "islands": { "type": "array", "items": { "type": "object", "required": ["id", "nx", "ny"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "nx": { "$ref": "#/$defs/unit" }, "ny": { "$ref": "#/$defs/unit" },
+        "rx": { "type": "number", "minimum": 0 }, "ry": { "type": "number", "minimum": 0 }, "rot": { "type": "number" }, "alt_m": { "type": "number" },
+        "estate_style": { "type": "string" }, "shape": { "type": "string" }, "rim": { "type": "string" }, "terrain": { "type": "string" },
+        "layout": { "type": "string" }, "plan": { "type": "string" }, "role": { "type": "string" },
+        "outline": { "type": "array", "minItems": 8, "items": { "$ref": "#/$defs/pt" } } } } },
+    "routes": { "type": "array", "items": { "type": "object", "required": ["kind", "pts"], "additionalProperties": false,
+      "properties": { "kind": { "enum": ["lane", "patrol", "patrol_city"] }, "from": { "type": "string" }, "to": { "type": "string" }, "pts": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/pt" } } } } }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "unit": { "type": "number", "minimum": 0, "maximum": 1 },
+    "pt": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "$ref": "#/$defs/unit" } }
+  }
+}

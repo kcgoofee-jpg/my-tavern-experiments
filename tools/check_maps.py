@@ -4,6 +4,7 @@
 用法：python3 tools/check_maps.py            # 有错误时退出码 1
       python3 tools/check_maps.py --committed [REV]   # 校验提交内容（默认 HEAD）而不是工作区：文件没 git add 就算缺（C-1，ship.sh 用）
 检查：
+  - JSON Schema（map/data/schema/*.schema.json，tools/jsonschema_lite.py）：maps.json、points 数据（tc_*.json、site_*.json）、addon_places.json 的字段、类型、枚举；未登记的字段报错
   - maps.json 结构：start / parent / group / overlay.from / link 指向的地图都存在
   - 已上线的地图：底图 DZI 与瓦片目录存在；points 地图的数据文件存在
   - 标记：渲染数据里的每个 id 在 maps.json 里有名称；maps.json 里的每个标记在数据里有坐标；nx/ny 在 0…1
@@ -40,6 +41,20 @@ def err(m): errors.append(m)
 def warn(m): warns.append(m)
 
 reg = load(os.path.join(ROOT, 'data', 'maps.json'))
+# JSON Schema（map/data/schema/）：先查结构（字段、类型、枚举），下面再查跨文件一致性。schema 是规范本身，永远读工作区（--committed 时也一样）
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from jsonschema_lite import validate as _validate
+_SCHEMA = {n: json.load(open(os.path.join(ROOT, 'data', 'schema', n + '.schema.json'), encoding='utf-8')) for n in ('maps', 'points', 'addon_places')}
+def schema_check(name, doc, label):
+    for e in _validate(doc, _SCHEMA[name]): err(f'schema {label}：{e}')
+schema_check('maps', reg, 'maps.json')
+if not isinstance(reg.get('maps'), dict) or not reg['maps']:
+    for e in errors: print('错误', e)
+    sys.exit(1)
+for _mid, _m in reg['maps'].items():
+    if isinstance(_m, dict) and _m.get('data') and _m.get('status') != 'planned' and exists(os.path.join(ROOT, _m['data'])):
+        schema_check('points', load(os.path.join(ROOT, _m['data'])), _m['data'])
+if exists(os.path.join(ROOT, 'data', 'addon_places.json')): schema_check('addon_places', load(os.path.join(ROOT, 'data', 'addon_places.json')), 'addon_places.json')
 maps = reg['maps']
 if reg.get('start') not in maps: err(f"start 指向不存在的地图 {reg.get('start')}")
 for gid, g in reg.get('groups', {}).items():
