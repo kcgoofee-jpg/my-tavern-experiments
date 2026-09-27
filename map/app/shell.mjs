@@ -1,6 +1,6 @@
 // 外壳：控制列、唯一抽屉 / 右栏胶水、通知层、状态点、单手模式、双击缩放。
 import { REG, cur, viewer } from './state.mjs';
-import { $, announce, esc, ico, post, tx } from './util.mjs';
+import { $, afterLoadIdle, announce, esc, ico, post, tx } from './util.mjs';
 import { declutter } from './tiers.mjs';
 import { LANG, nm, postState, t } from './i18n.mjs';
 import { narrowNow } from './estate.mjs';
@@ -84,7 +84,8 @@ export function flashOk() { const d = $('#stDot'); d.classList.add('flash'); set
 export let NT = null, ntQ = [];
 const formBusy = () => { const a = document.activeElement; return !!a && !$('#setPop').hidden && $('#setPop').contains(a) && a.matches('input:not([type=checkbox]), textarea, select, [contenteditable]'); };
 let ntLoad = null;
-// 单独打开时通知组件在第一次 notify() 才取（首屏不下载 ui/notice.mjs，v2b 冷开包体）；嵌入时由宿主渲染
+// 单独打开时通知组件不在首屏取：页面 load 后空闲时预取，或第一次 notify() 时取（v2b 冷开包体）；嵌入时由宿主渲染
+afterLoadIdle(() => loadNotices());
 function loadNotices() {
   if (window.top !== window || ntLoad) return; ntLoad = true;
   import(new URL('ui/notice.mjs', document.baseURI).href).then(m => {

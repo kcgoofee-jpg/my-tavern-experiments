@@ -1,6 +1,7 @@
 """JSON Schema（draft 2020-12）的小子集校验器，给 tools/check_maps.py 用：不引第三方依赖（本机 / CI 都没装 jsonschema）。
 
 支持的关键字见 KNOWN；schema 里出现别的关键字直接报错（不会悄悄不校验）。$ref 只支持本文件内的 "#/$defs/<名>"。
+pattern / patternProperties 用 Python re（不是 ECMA-262）：只写两边含义相同的简单正则（字符类、锚点、量词），不用 \p{…}、\d 的 Unicode 差异。
 用法：errors = validate(instance, schema)  → ['<路径>: <说明>', ...]
 """
 import re

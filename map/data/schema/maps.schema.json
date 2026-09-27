@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "maps.schema.json",
   "title": "地图注册表 map/data/maps.json",
-  "description": "结构（字段、类型、枚举）由本文件约束，tools/check_maps.py 每次都校验；跨文件的一致性（指向的地图 / 标记存在、坐标对齐、瓦片在不在）仍由 check_maps.py 的逐项检查负责。加字段：先在这里登记（写 description），再写数据。以 _ 开头的键是注释。",
+  "description": "结构（字段、类型、枚举）由本文件约束，tools/check_maps.py 每次都校验；跨文件的一致性（指向的地图 / 标记存在、坐标对齐、瓦片在不在）仍由 check_maps.py 的逐项检查负责。加字段：在同一个提交里先在这里登记（写 description），再写数据——未登记的字段 check_maps 报错。以 _ 开头的键（注释 / 草稿备注）任何对象里都放行。",
   "type": "object",
   "required": ["start", "groups", "maps"],
   "additionalProperties": false,
@@ -22,13 +22,13 @@
     "strList": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "strListNE": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
     "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*\\.\\.)[^\\s]+$", "description": "相对 map/ 的路径" },
-    "group": { "type": "object", "required": ["title", "layers"], "additionalProperties": false,
+    "group": { "type": "object", "required": ["title", "layers"], "additionalProperties": false, "patternProperties": { "^_": {} },
       "properties": {
         "title": { "$ref": "#/$defs/str" }, "title_en": { "$ref": "#/$defs/str" },
         "layers": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/id" }, "description": "同组各层（层切换器顺序）" },
         "place": { "$ref": "#/$defs/id", "description": "世界图上的地点 / 封地 id（尺度交接点，app/scale.mjs）" },
         "upper": { "type": "array", "items": { "$ref": "#/$defs/id" } } } },
-    "layer": { "type": "object", "required": ["name"], "additionalProperties": false,
+    "layer": { "type": "object", "required": ["name"], "additionalProperties": false, "patternProperties": { "^_": {} },
       "properties": { "name": { "$ref": "#/$defs/str" }, "sub": { "type": "string" }, "alt": { "type": "string" }, "name_en": { "type": "string" }, "sub_en": { "type": "string" }, "alt_en": { "type": "string" } } },
     "view": { "type": "object", "required": ["extent_m"], "additionalProperties": false,
       "properties": {
@@ -47,7 +47,7 @@
       "properties": { "map": { "$ref": "#/$defs/id" }, "label": { "type": "string" }, "label_en": { "type": "string" } } },
     "gallery": { "type": "object", "required": ["id"], "additionalProperties": false, "description": "房间图集入口（data/room_galleries.json 的键）",
       "properties": { "id": { "$ref": "#/$defs/str" }, "label": { "type": "string" }, "label_en": { "type": "string" } } },
-    "marker": { "type": "object", "required": ["name", "tag", "src", "alias"], "additionalProperties": false,
+    "marker": { "type": "object", "required": ["name", "tag", "src", "alias"], "additionalProperties": false, "patternProperties": { "^_": {} },
       "properties": {
         "name": { "$ref": "#/$defs/str" }, "name_en": { "type": "string" }, "sub": { "type": "string" }, "sub_en": { "type": "string" },
         "tag": { "enum": ["set", "inf"], "description": "set = 卡里写明；inf = 仓库推断" },
@@ -59,7 +59,7 @@
         "opening_dest": { "type": "boolean" },
         "econ": { "type": "string" }, "econ_en": { "type": "string" },
         "link": { "$ref": "#/$defs/link" }, "link3d": { "$ref": "#/$defs/link3d" }, "gallery": { "$ref": "#/$defs/gallery" }, "cover": { "$ref": "#/$defs/cover" } } },
-    "map": { "type": "object", "required": ["title", "kind"], "additionalProperties": false,
+    "map": { "type": "object", "required": ["title", "kind"], "additionalProperties": false, "patternProperties": { "^_": {} },
       "properties": {
         "title": { "$ref": "#/$defs/str" }, "title_en": { "type": "string" },
         "kind": { "enum": ["world", "points", "estate"] },

@@ -39,3 +39,6 @@ export const getJSON = url => {
 export function setSrQ(v) { return (srQ = v); }
 export function setPR(v) { return (PR = v); }
 export function setNarrow(v) { return (narrow = v); }
+// 页面 load 之后的空闲时刻再做（首屏之外的预取：第一次点开时不再等一个 CDN 往返）
+export function afterLoadIdle(f) { const go = () => (window.requestIdleCallback ? requestIdleCallback(() => f(), { timeout: 4000 }) : setTimeout(f, 1500));
+  if (document.readyState === 'complete') go(); else addEventListener('load', go, { once: true }); }
