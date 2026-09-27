@@ -24,7 +24,7 @@ const TCUnmapped = (() => {
       hd.insertBefore(chip, hd.querySelector('.grow'));
     }
     chip.hidden = !name || embed;   // 嵌在酒馆里：显示在卡内脚本的标题栏
-    if (name) { chip.textContent = T('um.chip', '未上图：{n}', { n: name }); chip.title = T('um.tip', '地图认不出这个地点，点这里把它放到地图上'); }
+    if (name) { chip.textContent = ''; const s = document.createElement('span'); s.textContent = T('um.chip', '未上图：{n}', { n: name }); chip.append(s); chip.title = T('um.tip', '地图认不出这个地点，点这里把它放到地图上'); }
   }
 
   // ---------- 候选：地标、层 / 大区、庄园房间 / 室外、世界地名 ----------
@@ -105,7 +105,7 @@ const TCUnmapped = (() => {
   function close() { if (!dlg || dlg.hidden) return; dlg.hidden = true; try { (opener && opener.isConnected ? opener : chip)?.focus?.({ preventScroll: true }); } catch (e) {} }
 
   const css = `
-  #unmapped{flex:0 1 auto;min-width:0;max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-style:dashed;color:var(--ink)}
+  #unmapped{flex:0 1 auto;min-width:0;max-width:40vw;overflow:hidden;white-space:nowrap;border-style:dashed;color:var(--ink);justify-content:flex-start}#unmapped>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
   #unmapped[hidden]{display:none}
   #umDlg{position:fixed;inset:0;z-index:41;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 55%,transparent);color:var(--ink);font-family:var(--font-ui)}
   #umDlg[hidden]{display:none}

@@ -48,3 +48,8 @@ test('静态清点：仓库里每个发送的消息类型都登记在 SCHEMA', (
   for (const f of files) for (const m of rd(f).matchAll(/type:\s*'((?:eden-map|estate|v3d):[\w-]+)'/g)) if (!SCHEMA[m[1]]) miss.add(`${m[1]}（${f}）`);
   assert.deepEqual([...miss], []);
 });
+test('宿主 PROTO 与 core/protocol.mjs 一致；settings / notice-act 可缺字段（设置首页深链、无 key 的通知按钮）', () => {
+  assert.match(rd('map/tavern/eden-map.js'), new RegExp(`const PROTO = ${PROTO};`));
+  assert.match(rd('map/viewer.html'), new RegExp(`const PROTO = ${PROTO};`));
+  assert.equal(check({ type: 'eden-map:settings' }).ok, true); assert.equal(check({ type: 'eden-map:notice-act' }).ok, true);
+});

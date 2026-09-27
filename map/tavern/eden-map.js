@@ -7,7 +7,8 @@
 (() => {
   const SELF = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 协议 v2（core/protocol.mjs，docs/design/arch-v2.md §3）：发出的消息盖 v；收到的消息按 schema 校验（模块没到时照旧处理）
-  const PROTO = 2; let PRm = null; import(SELF + 'core/protocol.mjs').then(m => { PRm = m; }).catch(() => {});
+  const PROTO = 2; let PRm = null;   // 与 core/protocol.mjs PROTO 一致（tests/protocol.test.mjs 检查）
+  import(SELF + 'core/protocol.mjs').then(m => { PRm = m; }).catch(() => {});
   // 线路：地图的图片和数据可以走不同的 CDN 节点。gh 线路路径格式相同，只换域名；npm 线路路径不同（包名 / 版本 / files/map/），单独拼。本地测试地址不换
   const PKG = 'tiancheng-map-assets', REPO = 'kcgoofee-jpg/my-tavern-experiments';
   const LINES = [
@@ -370,7 +371,7 @@
       (async () => { let cleaned = null; const st = store();
         if (e.data.type === 'eden-map:storage-clean' && BG && st && Date.now() - (window.__edenCleanAt || 0) > 10000) { window.__edenCleanAt = Date.now();   // 只认本面板 iframe（onMsg 的 e.source 检查）；10 秒内只清一次
           try { cleaned = BG.sweep(st, chatId(), 5); } catch (x) { console.warn('[eden-map] 清理失败', x); cleaned = { error: true, dropped: [], freed: 0 }; } }
-        else if (e.data.type === 'eden-map:storage-clean') cleaned = { limited: true, dropped: [], freed: 0, wait: Math.ceil((10000 - (Date.now() - (window.__edenCleanAt || 0))) / 1000) };   // 10 秒内再点：明确回「请稍后再试」，不再无声无息
+        else if (e.data.type === 'eden-map:storage-clean') cleaned = { limited: true, dropped: [], freed: 0, wait: Math.max(1, Math.ceil((10000 - (Date.now() - (window.__edenCleanAt || 0))) / 1000)) };   // 10 秒内再点：明确回「请稍后再试」，不再无声无息
         const [s, src] = await Promise.all([api.storage().catch(() => null), api.sources().catch(() => null)]);
         let cleanable = null; try { if (BG && st) { const c = chatId(); cleanable = Math.max(0, BG.chatsByAge(st, c).length + (c ? 1 : 0) - 5); } } catch (x) {}   // 与 sweep 同一算法，确认文案里的数字 = 实际会清的个数
         post({ type: 'eden-map:storage-result', cleanable, storage: s && { total: s.total, ours: s.ours, avatars: s.avatars, chats: Object.keys(s.chats || {}).length }, sources: src, cleaned: cleaned && { n: cleaned.dropped.length, bytes: cleaned.freed, error: !!cleaned.error, limited: !!cleaned.limited, wait: cleaned.wait || 0 } }); })(); }   // UI v2：线路选择在地图设置「高级」
@@ -1062,7 +1063,7 @@
       const later = pdoc.createElement('button'); later.type = 'button'; later.className = 'em-later'; later.textContent = T.later; later.onclick = () => { try { window.parent.__edenMapUpdLater = u.latest; } catch (e) {} t.remove(); };
       const skip = pdoc.createElement('button'); skip.type = 'button'; skip.className = 'em-skip'; skip.textContent = T.skip; skip.onclick = () => { lsSet(UPD_SKIP_KEY, u.latest); t.remove(); };
       if (T.act) { const go = pdoc.createElement('button'); go.type = 'button'; go.className = 'em-go nt-pri'; go.textContent = T.act;
-        go.onclick = () => { t.remove(); if (T.actKind === 'reload') { try { window.parent.location.reload(); } catch (e) {} } else switchVersion(); }; acts.append(go); }
+        go.onclick = () => { t.remove(); if (T.actKind === 'reload') { try { window.parent.location.reload(); } catch (e) { try { location.reload(); } catch (x) {} } } else switchVersion(); }; acts.append(go); }
       acts.append(later, skip); t.append(acts);
     }, true);
   }

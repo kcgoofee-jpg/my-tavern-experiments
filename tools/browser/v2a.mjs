@@ -89,9 +89,10 @@ async function hint(preset) {
     const t = await p.evaluate(() => document.querySelector('.vw-nt .nt-p1 .nt-item, .nt-p1 .nt-item')?.textContent || '');
     rep.check(`${preset} 第一次打开：三步提示`, /三步上手/.test(t) && /①/.test(t) && /③/.test(t), t.slice(0, 80));
     await B.shot(p, OUT, `hint_${preset}`);
+    await p.locator('.nt-p1 .nt-item button', { hasText: '知道了' }).click(); await B.wait(300);   // 关掉或点按钮才算看过
     await B.openViewer(P, { map: 'tc_mid' }); await B.wait(3500);
     const t2 = await p.evaluate(() => document.querySelector('.nt-p1 .nt-item')?.textContent || '');
-    rep.check(`${preset} 再开不再出`, !/三步上手/.test(t2), t2.slice(0, 60));
+    rep.check(`${preset} 点「知道了」后再开不再出`, !/三步上手/.test(t2), t2.slice(0, 60));
   } finally { await P.ctx.close(); }
 }
 try {

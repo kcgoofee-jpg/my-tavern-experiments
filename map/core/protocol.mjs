@@ -1,5 +1,6 @@
 // 地图消息协议（大版本 2，docs/design/arch-v2.md §3）：宿主（tavern/eden-map.js）↔ 查看器（viewer.html）↔ 庄园 / 三维子页。
 // 信封 { type, v: PROTO, t?, ...字段 }。缺 v = v1（旧宿主 / 旧查看器，换线路时两边可能不同版本）照收；v 比本端新也照收（多出来的字段不管）。
+// 只做形状检查而且是部分的：字段表为空的类型只确认「这个类型存在」，接收方仍要自己处理缺字段。
 // SCHEMA：每种消息要求的字段与类型（'string' | 'number' | 'boolean' | 'object' | 'array' | 'any'；后缀 ? = 可缺 / null）。
 // 没登记的类型：本端版本及更旧的消息一律丢（接收方本来也不处理）；更新版本发来的未知类型也丢，但不告警。
 // 纯函数、无依赖；node 单测 tests/protocol.test.mjs。只做形状检查，不过滤任何文字内容。
@@ -42,7 +43,7 @@ export const SCHEMA = {
   'eden-map:events': [H2V, { items: 'array?' }],
   'eden-map:custom': [H2V, {}],
   'eden-map:clock': [H2V, {}],
-  'eden-map:outfit': [H2V, { items: 'array?' }],
+  'eden-map:outfit': [H2V, { items: 'object?' }],   // mvu.outfit()：{ 部位: 描述 } 或 null
   'eden-map:varmap': [H2V, {}],
   'eden-map:trips': [H2V, { items: 'array?' }],
   'eden-map:toast': [H2V, { items: 'array?' }],
@@ -51,8 +52,8 @@ export const SCHEMA = {
   'eden-map:line': [H2V, { swappable: 'boolean?' }],
   'eden-map:key': [H2V, { key: 'string' }],
   'eden-map:storage-result': [H2V, { storage: 'object?', sources: 'object?', cleaned: 'object?', cleanable: 'number?' }],
-  'eden-map:settings': [H2V, { page: 'string' }],
-  'eden-map:notice-act': [H2V, { key: 'string' }],
+  'eden-map:settings': [H2V, { page: 'string?' }],
+  'eden-map:notice-act': [H2V, { key: 'string?' }],
   'eden-map:unmapped-pick': [H2V, {}],
   'eden-map:sleep': [H2V, {}],
   'eden-map:wake': [H2V, {}],
