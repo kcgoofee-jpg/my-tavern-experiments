@@ -1,0 +1,87 @@
+# estate2 · 伊甸庄园风格帧：暂停记录（2026-09-27，用户叫停）
+
+任务：按 `docs/eden-references.md` 已定方向，在 Blender 里出 1 张 2000px 3/4 航拍风格帧，可以的话再加一张俯视图，然后停下等用户认可。
+暂停时的进度：总平面和代码写到约 60%，**一张帧都还没渲染**，也没用过 GPU。
+
+## 已完成
+
+| 文件 | 内容 | 状态 |
+|---|---|---|
+| `fetch_assets.py` | 从 Poly Haven / ambientCG 下载 CC0 素材到 `blender/data/estate2/`（29 MB） | 已跑通 |
+| `layout.py` | 总平面，纯 numpy：岛轮廓、地形、台地、路网、建筑清单、连廊、缆车、吊桥 | 已用俯视高程图自检（scratchpad，未入库） |
+| `common.py` | 材质节点工具、网格工具 | 已写，未在 Blender 里跑过 |
+| `terrain.py` | 岛体网格和岩基、湖面、云海，以及地形、水、云海材质 | 已写，未跑过 |
+| `buildings.py` | 所有建筑、连廊、栏杆、台阶、喷泉、停靠平台、缆车、吊桥、树屋、泳池、遮阳篷 | 已写，未跑过 |
+
+### 总平面决定
+
+坐标沿用 `docs/eden-estate.md`：岛坐标，−y 是正面。岛约 670 × 500 m。
+
+**地形（Nekajui）**：不再是平草坪，高差约 −10 到 30 m。
+- 主楼群坐在高台上：椭圆，z 30，中心 (0, 8)，半径 128 × 76。高台南侧是白石挡土墙，北侧是天然崖，直落后面的湖。
+- 高台前方是前庭台地（z 20）：喷泉在 (0, −113)，外圈是环形砾石广场，从这里走 14 m 宽的中轴大台阶上高台。
+- 再往前是 Biltmore 式长坡大道：两侧车道，中间是草坪，从 z 8.5 升到 19。大道尽头是岛前缘的停靠平台 (0, −268)。平台是伸出岛外的圆台，有铜栏、金色引导环和一个候机亭。
+- 后湖湖面标高 4.5，中心 (−12, 142)，半径 100 × 44。
+- 东侧林间有一条沟谷，上面架了吊桥。
+- 岛缘是崖岸，岛下是倒锥形岩基。
+
+**主楼群（海湖庄园式）**：13 块高低不一的体量。
+- 中央大厅；观景塔在 (−17, −17)，高 6 层，顶层是敞廊，屋顶是陡四坡；东侧还有一座小望楼。
+- 东西各有两段错开的翼楼和一座角亭，角度有偏转。
+- 后面是半圆回廊（R31，开口朝湖），院内只放草坪和棕榈，**不做水池**。
+- 回廊内侧挂黄白条纹遮阳篷，屋顶带烟囱。
+- 墙用白石（castle_brick_02_white 调白，带雨痕、墙脚泛潮和 AO 积灰）。窗由着色器按层高和开间画出。
+- **屋顶选陶土红瓦**（clay_roof_tiles_02）：白墙配红瓦最接近参考图 01、03，也和 Breakers 的红顶一致。只有 Greystone 用灰板岩。
+
+**沿等高线的建筑**：
+- 东侧 4 栋客房楼，西侧有 1 座 spa 和 2 栋客房楼，都用有顶连廊接到主楼群。
+- 连廊是红瓦双坡顶加白石柱，跟着地形起伏，共 8 段。
+- 回廊后面连廊通到崖顶观景台和缆车站。缆车沿崖下到湖边俱乐部 (72, 134)，俱乐部有遮阳篷。
+
+**角落单栋**：
+- 东南崖岬：The Breakers 式别馆，米白石、4 层、低坡红瓦四坡顶，屋顶有栏杆和 6 根烟囱，面海一侧有露台和长泳池。
+- 西南坡地：Greystone 式都铎灰石老宅，4 组陡山墙，灰板岩顶，高烟囱，下方是三级台地花园，都是白石墙。
+
+**林中**：
+- 10 栋散落别墅：红瓦四坡顶或平顶带屋顶小亭，7 栋配小泳池。
+- 6 座树屋：高约 8 m 的木平台加小屋。
+- 东、东北各有一处崖边观景台。步道从林中穿过。
+
+**明确没用的**：
+- 旧 three.js 和 b1 的构图：五段式府邸、刺绣花坛网格、条纹大草坪中轴、环形绿篱、球形树。
+- Chatsworth 和 Vaux 的元素。
+- 中庭水池。
+
+## 下一步（还没写）
+
+1. **`vegetation.py`**
+   - 阔叶树原型 6–8 种：树干和枝条用 bark_brown_02；树冠由几团不规则叶簇组成，叶片是按 Leaf001 叶形裁出的多边形卡片，不用 alpha，不做球形树冠。
+   - 棕榈原型 3 种：弯曲树干，每株约 16 片下垂羽状叶。
+   - 地中海柏树若干。
+   - 用几何节点 Instance on Points 散布：林地约 2000 株；棕榈约 250 株，种在大道两侧、喷泉环、主楼周围、回廊院、Breakers 草坪边和湖岸。
+2. **`style_frame.py`**（入口）
+   - 调用 `terrain.build_island / build_lake / build_cloudsea`、`buildings.build_all` 和植被。
+   - 光照：HDRI（kloofendal_48d_partly_cloudy_puresky）加 Sun。
+   - 相机：3/4 航拍从西南前方看，约 (−300, −820, 560)；另加一台正交俯视相机。
+   - Cycles Metal，32 spp 加 OIDN，出 2000 px。
+   - 用法：`blender -b -P blender/estate2/style_frame.py -- --view aerial|top --res 2000 --samples 32 --out …`
+3. 首次跑多半要修 API 细节。几处可疑的地方：
+   - Blender 5.2 的 `ShaderNodeMix` 插槽编号；
+   - `ShaderNodeAttribute` 的 OBJECT 类型读自定义属性；
+   - `create_circle` 的 `cap_ends` 参数；
+   - `buildings.dock` 里多余的一行 `ring`。
+4. GPU 规则：`pgrep -f "[M]acOS/Blender -b"` 为空并且跑完 `bash tools/quiet_wait.sh` 之后才能渲染；云原型 agent 也在用 GPU，要轮流。
+5. 渲染后审查：2 个 Opus 审稿人（豪宅营销、对照参考图的美术指导）加上 rp_glance，最多改两轮。成片存到 `docs/drafts/eden_style_frame_*.jpg`（≤ 600 KB）；素材来源补进 `map/estate/assets/CREDITS.md`；然后停下等用户认可。
+
+## 素材（全部 CC0，已下载，在 `blender/data/estate2/`）
+
+- **Poly Haven 贴图**（1k，diff / nor_gl / rough）：castle_brick_02_white、clay_roof_tiles_02、grey_roof_tiles_02、castle_wall_varriation、rock_face_03、cliff_side、aerial_grass_rock、forest_leaves_02、gravel_floor、bark_brown_02
+- **Poly Haven HDRI**：kloofendal_48d_partly_cloudy_puresky 2k
+- **ambientCG**：Leaf001 1K（Color / Opacity / NormalGL / Roughness）
+- Poly Haven 的树模型每个 46–500 MB，超出 50 MB 预算，所以没用，改为程序生成树配真实树皮和树叶贴图。
+
+## 待定问题
+
+1. 屋顶颜色：暂定陶土红瓦，灰板岩只给 Greystone。用户如果更想要整体灰顶，改 `buildings.mats()` 就行。
+2. 设定文档第 2 节写的是帕拉第奥五段式府邸和法式花坛，现在已经被参考板取代。要不要同步改 `docs/eden-estate.md` 的总平面？这需要用户拍板。
+3. 素材是整份提交进仓库（29 MB），还是只留 `fetch_assets.py`、把 `blender/data/estate2/` 加进 .gitignore？这次按协调方要求一起提交了。
