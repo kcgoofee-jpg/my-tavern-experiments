@@ -66,30 +66,33 @@ def mat(name, rgb, rough=0.5, metal=0.0, emit=0.0, trans=0.0, coat=0.0):
 
 def mats():
     return dict(
-        vinyl=mat('vinyl', (0.40, 0.47, 0.50), 0.42, coat=0.3),          # 无缝 PVC 卷材，浅灰蓝
-        vinyl_dk=mat('vinyl_dk', (0.36, 0.42, 0.45), 0.45),              # 踢脚圆弧收边、导向色带
-        panel=mat('panel', (0.90, 0.91, 0.91), 0.28, coat=0.5),         # 洁净板墙（抗菌涂层钢板）
-        seam=mat('seam', (0.42, 0.45, 0.47), 0.4),
-        ceil=mat('ceil', (0.93, 0.93, 0.94), 0.35),
-        led=mat('led', (0.93, 0.97, 1.0), 0.3, emit=4.0),                # 冷白 LED 平板
-        vinyl_cl=mat('vinyl_cl', (0.33, 0.44, 0.47), 0.42, coat=0.3),   # 洁侧卷材（换色 = 脏 / 洁分界）
+        vinyl=mat('vinyl', (0.33, 0.35, 0.35), 0.55, coat=0.05),          # 无缝 PVC 卷材，浅灰蓝
+        vinyl_dk=mat('vinyl_dk', (0.22, 0.27, 0.29), 0.5),              # 踢脚圆弧收边、导向色带
+        panel=mat('panel', (0.72, 0.71, 0.68), 0.45, coat=0.1),         # 洁净板墙（抗菌涂层钢板）
+        seam=mat('seam', (0.30, 0.32, 0.33), 0.5),
+        ceil=mat('ceil', (0.74, 0.75, 0.75), 0.6),
+        led=mat('led', (0.93, 0.96, 1.0), 0.3, emit=1.8),                # 冷白 LED 平板
+        vinyl_cl=mat('vinyl_cl', (0.30, 0.34, 0.35), 0.55, coat=0.05),   # 洁侧卷材（换色 = 脏 / 洁分界）
         grille=mat('grille', (0.6, 0.62, 0.63), 0.45, 0.6),
-        led_soft=mat('led_soft', (0.9, 0.95, 1.0), 0.3, emit=3.0),
+        led_soft=mat('led_soft', (0.9, 0.94, 1.0), 0.3, emit=1.4),
         steel=mat('steel', (0.78, 0.79, 0.80), 0.22, 1.0),              # 不锈钢
-        brushed=mat('brushed', (0.70, 0.71, 0.72), 0.38, 1.0),
-        white=mat('white', (0.88, 0.89, 0.90), 0.35),                    # 设备外壳
+        brushed=mat('brushed', (0.70, 0.71, 0.72), 0.35, 0.85),
+        white=mat('white', (0.74, 0.75, 0.76), 0.4),                    # 设备外壳
         grey=mat('grey', (0.35, 0.37, 0.39), 0.4),
         dark=mat('dark', (0.05, 0.055, 0.06), 0.35),
-        glass=mat('glass', (0.92, 0.96, 0.97), 0.02, trans=1.0),
-        screen=mat('screen', (0.12, 0.55, 0.62), 0.2, emit=2.2),         # 监护 / 显示屏（青色 UI）
-        screen_g=mat('screen_g', (0.25, 0.75, 0.35), 0.2, emit=1.8),
+        glass=mat('glass', (0.55, 0.62, 0.64), 0.05, trans=0.6),
+        screen=mat('screen', (0.05, 0.16, 0.2), 0.15, emit=0.5),         # 监护 / 显示屏（青色 UI）
+        screen_g=mat('screen_g', (0.05, 0.2, 0.1), 0.15, emit=0.5),
         pad=mat('pad', (0.16, 0.30, 0.38), 0.55),                        # 手术台垫（深蓝灰聚氨酯）
         red=mat('red', (0.62, 0.06, 0.05), 0.4),                         # 抢救车
         yellow=mat('yellow', (0.85, 0.66, 0.08), 0.45),                  # 除颤仪外壳 / 警示
-        green_s=mat('green_s', (0.2, 0.75, 0.3), 0.3, emit=4.0),        # 门禁状态灯
-        amber_s=mat('amber_s', (1.0, 0.55, 0.1), 0.3, emit=4.0),
-        blue_gas=mat('gas_o2', (0.9, 0.9, 0.9), 0.3),
-        teal=mat('teal', (0.16, 0.45, 0.48), 0.5),                       # 洁净服
+        green_s=mat('green_s', (0.2, 0.75, 0.3), 0.3, emit=2.0),        # 门禁状态灯
+        amber_s=mat('amber_s', (1.0, 0.55, 0.1), 0.3, emit=2.0),
+        blue_gas=mat('gas_o2', (0.8, 0.8, 0.8), 0.3),
+        gas_n2o=mat('gas_n2o', (0.1, 0.25, 0.6), 0.35),                   # N2O 蓝（ISO 32）
+        chrome=mat('chrome', (0.85, 0.86, 0.87), 0.12, 1.0),
+        teal=mat('teal', (0.16, 0.45, 0.48), 0.5),
+        gown=mat('gown', (0.35, 0.55, 0.62), 0.85),                      # 一次性无纺布隔离衣（浅蓝）                       # 洁净服
         linen=mat('linen', (0.86, 0.88, 0.9), 0.8),
     )
 
@@ -229,13 +232,25 @@ def surgical_light(K, cx, cy):
     """双头 LED 无影灯：吸顶中心轴 + 两节平衡臂 + 两个灯头（下面发光）。"""
     K.cyl('white', cx, cy, CLEAR - 0.25, CLEAR, 0.12)
     K.cyl('brushed', cx, cy, CLEAR - 0.55, CLEAR - 0.25, 0.04)
-    for dx, dy, hz, rr in ((0.75, 0.25, 1.95, 0.36), (-0.55, -0.55, 2.1, 0.3)):
-        K.box('white', cx, cy - 0.03, CLEAR - 0.58, cx + dx, cy + 0.03, CLEAR - 0.52)
-        K.box('white', cx + dx - 0.03, cy - 0.03 + min(0, dy), CLEAR - 0.58, cx + dx + 0.03, cy + 0.03 + max(0, dy), CLEAR - 0.52)
-        K.cyl('white', cx + dx, cy + dy, hz + 0.1, CLEAR - 0.55, 0.025)
-        K.cyl('white', cx + dx, cy + dy, hz, hz + 0.12, rr, seg=40, r2=rr * 0.75)     # 灯头外壳
-        K.cyl('led', cx + dx, cy + dy, hz - 0.012, hz, rr * 0.9, seg=40)               # 发光面
-        K.cyl('dark', cx + dx, cy + dy, hz - 0.05, hz, 0.04)                            # 无菌手柄
+    for dx, dy, hz, rr, ex in ((0.45, 0.35, 1.9, 0.55, (0.9, -0.3)), (-0.45, -0.5, 2.1, 0.48, (-0.8, 0.5))):   # 主灯头 Ø1.1 m / 副灯头 Ø0.96 m，都在台面上方
+        mx, my = cx + ex[0], cy + ex[1]                                                # 肘关节
+        for (ax, ay, bx, by, z) in ((cx, cy, mx, my, CLEAR - 0.55), (mx, my, cx + dx, cy + dy, CLEAR - 0.8)):
+            L = math.hypot(bx - ax, by - ay); n = max(2, int(L / 0.08))
+            for k in range(n + 1):                                                     # 斜臂：沿线小段拼
+                t = k / n; px, py = ax + (bx - ax) * t, ay + (by - ay) * t
+                K.box('white', px - 0.055, py - 0.055, z - 0.045, px + 0.055, py + 0.055, z + 0.045)
+        K.cyl('grey', mx, my, CLEAR - 0.83, CLEAR - 0.52, 0.045)                       # 肘关节套筒
+        K.cyl('white', cx + dx, cy + dy, hz + 0.18, CLEAR - 0.8, 0.025)
+        K.cyl('white', cx + dx, cy + dy, hz, hz + 0.1, rr, seg=48, r2=rr * 0.82)      # 灯头外壳（穹顶：下沿 → 上收）
+        K.cyl('white', cx + dx, cy + dy, hz + 0.1, hz + 0.2, rr * 0.82, seg=48, r2=rr * 0.35)
+        K.cyl('grey', cx + dx, cy + dy, hz - 0.015, hz, rr * 0.96, seg=48)            # 下沿防眩环
+        K.cyl('led_soft', cx + dx, cy + dy, hz - 0.013, hz - 0.01, rr * 0.93, seg=48, r2=rr * 0.93)   # 微亮的环形出光面
+        for ring, rn in ((0.78, 10), (0.5, 7)):                                        # 多透镜 LED 模组（两圈 + 中心）
+            for k in range(rn):
+                a = 2 * math.pi * k / rn
+                K.cyl('led', cx + dx + rr * ring * math.cos(a), cy + dy + rr * ring * math.sin(a), hz - 0.022, hz - 0.015, rr * 0.11, seg=12)
+        K.cyl('dark', cx + dx, cy + dy, hz - 0.16, hz, 0.035)                          # 中心无菌手柄
+        K.cyl('grey', cx + dx, cy + dy, hz - 0.17, hz - 0.14, 0.05)
 
 
 def ceiling_boom(K, cx, cy, arm_dx, arm_dy, kind):
@@ -247,16 +262,43 @@ def ceiling_boom(K, cx, cy, arm_dx, arm_dy, kind):
     K.cyl('white', ex, ey, CLEAR - 0.42, CLEAR - 0.15, 0.1)
     K.box('white', ex - 0.22, ey - 0.16, 0.95, ex + 0.22, ey + 0.16, CLEAR - 0.42)  # 塔身
     for i in range(4):   # 医用气体快插（O2 白 / 空气 黑白 / 负压 黄 / N2O 蓝）——按 ISO 32 色标
-        K.cyl(('blue_gas', 'dark', 'yellow', 'screen')[i], ex - 0.23, ey - 0.09 + i * 0.06, 1.6, 0.04, 0.018, seg=12, axis='x')
+        K.cyl(('blue_gas', 'dark', 'yellow', 'gas_n2o')[i], ex - 0.23, ey - 0.09 + i * 0.06, 1.6, 0.04, 0.018, seg=12, axis='x')
     for zz in (1.1, 1.45):
         K.box('brushed', ex - 0.3, ey - 0.25, zz, ex + 0.3, ey + 0.25, zz + 0.03)   # 设备搁板
     if kind == 'anesthesia':
         K.box('white', ex - 0.24, ey - 0.2, 1.13, ex + 0.24, ey + 0.18, 1.42)     # 呼吸机主机
         K.box('screen', ex - 0.18, ey - 0.205, 1.2, ex + 0.12, ey - 0.2, 1.38)
         K.cyl('grey', ex + 0.2, ey - 0.26, 1.3, 0.1, 0.035, seg=12, axis='y')
-    K.box('dark', ex - 0.36, ey - 0.3, 1.78, ex + 0.36, ey - 0.26, 2.2)             # 监护大屏
-    K.box('screen', ex - 0.33, ey - 0.305, 1.81, ex + 0.33, ey - 0.3, 2.17)
-    K.box('brushed', ex - 0.04, ey - 0.26, 1.9, ex + 0.04, ey - 0.16, 2.0)
+    if kind == 'anesthesia':
+        K.box('dark', ex - 0.3, ey - 0.3, 1.78, ex + 0.3, ey - 0.26, 2.12)             # 监护屏（唯一一块吊塔屏）
+        K.box('screen', ex - 0.27, ey - 0.305, 1.81, ex + 0.27, ey - 0.3, 2.09)
+        K.box('brushed', ex - 0.04, ey - 0.26, 1.9, ex + 0.04, ey - 0.16, 2.0)
+    else:
+        for i in range(3):                                                           # 电源插座 / 数据口块
+            K.box('grey', ex - 0.23, ey - 0.12 + i * 0.1, 1.75, ex - 0.22, ey - 0.05 + i * 0.1, 1.85)
+        K.box('white', ex - 0.22, ey - 0.2, 1.48, ex + 0.2, ey + 0.18, 1.7)            # 电外科主机
+
+
+def anesthesia_machine(K, x, y):
+    """麻醉工作站：带脚轮底柜 + 工作台面 + 挥发罐 + 流量计柱 + 呼吸回路臂 + CO2 吸收罐。"""
+    K.box('white', x - 0.4, y - 0.3, 0.12, x + 0.4, y + 0.3, 0.85)
+    K.box('grey', x - 0.42, y - 0.32, 0.85, x + 0.42, y + 0.32, 0.88)
+    K.box('white', x - 0.35, y + 0.05, 0.88, x + 0.35, y + 0.3, 1.45)
+    for i in range(2):
+        K.box('yellow' if i else 'gas_n2o', x - 0.3 + i * 0.16, y - 0.02, 1.0, x - 0.18 + i * 0.16, y + 0.05, 1.25)   # 挥发罐
+    K.cyl('glass', x + 0.2, y - 0.05, 0.95, 1.2, 0.06, seg=16)                     # CO2 吸收罐
+    K.box('white', x - 0.35, y + 0.15, 1.45, x + 0.35, y + 0.3, 1.5)                # 顶部搁板
+    K.cyl('glass', x - 0.25, y - 0.1, 1.1, 1.38, 0.07, seg=16)                     # 风箱（透明罩）
+    K.cyl('grey', x - 0.25, y - 0.1, 1.1, 1.14, 0.075, seg=16)
+    K.cyl('brushed', x + 0.25, y + 0.2, 1.5, 1.62, 0.025)                          # 监护臂
+    K.box('dark', x - 0.05, y - 0.02, 1.62, x + 0.45, y + 0.05, 1.95)
+    K.box('screen_g', x - 0.02, y - 0.025, 1.65, x + 0.42, y - 0.02, 1.92)
+    for i in range(3):                                                             # 医用气体软管上吊塔
+        K.cyl(('blue_gas', 'dark', 'yellow')[i], x - 0.3 + i * 0.05, y + 0.28, 1.5, CLEAR - 0.5, 0.012, seg=6)
+    K.cyl('grey', x + 0.35, y - 0.1, 1.05, 0.35, 0.02, seg=10, axis='x')           # 回路臂
+    for sx in (-0.35, 0.35):
+        for sy in (-0.25, 0.25):
+            K.cyl('dark', x + sx, y + sy, 0.0, 0.12, 0.05, seg=12)
 
 
 def crash_cart(K, x, y):
@@ -326,6 +368,8 @@ def scrub_sink(K, x0, x1, y, face=1):
         K.box('dark', cx - 0.06, y + face * 0.02, 1.12, cx + 0.06, y + face * 0.04, 1.2)   # 感应窗
         K.box('brushed', cx - 0.12, y + face * (d + 0.0), 0.35, cx + 0.12, y + face * (d + 0.03), 0.5)  # 膝控板
     K.box('glass', x0 + 0.1, y + face * 0.01, 1.4, x1 - 0.1, y + face * 0.02, 2.0)
+    K.box('white', x0 + 0.05, y + face * 0.02, 1.3, x0 + 0.17, y + face * 0.12, 1.55)   # 手术刷手液 / 皂液器（肘控）
+    K.box('brushed', x0 + 0.07, y + face * 0.12, 1.3, x0 + 0.15, y + face * 0.2, 1.33)
     K.box('dark', x1 - 0.5, y + face * 0.02, 2.05, x1 - 0.1, y + face * 0.03, 2.25)
     K.box('screen', x1 - 0.48, y + face * 0.03, 2.07, x1 - 0.12, y + face * 0.035, 2.23)
 
@@ -365,13 +409,14 @@ def gas_panel(K, x, y0, y1, face=1):
     n = int((y1 - y0) / 0.15)
     for i in range(n):
         yy = y0 + 0.1 + i * 0.15
-        K.cyl(('blue_gas', 'dark', 'yellow', 'screen', 'blue_gas')[i % 5], x + face * 0.09, yy, 1.48, 0.03, 0.022, seg=12, axis='x')
+        K.cyl(('blue_gas', 'dark', 'yellow', 'gas_n2o', 'blue_gas')[i % 5], x + face * 0.09, yy, 1.48, 0.03, 0.022, seg=12, axis='x')
 
 
 def wall_display(K, x0, x1, y, face=-1):
-    """墙嵌大屏（影像 / 手术导航、再生治疗进度），2088 年的平常设备。"""
-    K.box('dark', x0, y, 1.2, x1, y + face * 0.04, 2.3)
-    K.box('screen', x0 + 0.04, y + face * 0.041, 1.24, x1 - 0.04, y + face * 0.045, 2.26)
+    """墙嵌影像屏（PACS 阅片 / 手术导航）：与墙板齐平嵌装，外圈不锈钢收边，屏面平时暗、只显示淡的影像。"""
+    K.box('brushed', x0 - 0.03, y, 1.17, x1 + 0.03, y + face * 0.012, 2.33)
+    K.box('dark', x0, y, 1.2, x1, y + face * 0.014, 2.3)
+    K.box('screen', x0 + 0.04, y + face * 0.015, 1.24, x1 - 0.04, y + face * 0.017, 2.26)
 
 
 def prosthetic_bench(K, x, y):
@@ -385,6 +430,38 @@ def prosthetic_bench(K, x, y):
         K.box('white', x + 0.1, y + 0.03 + i * 0.035, 1.03, x + 0.24, y + 0.055 + i * 0.035, 1.06)
     K.box('dark', x + 0.3, y + 0.2, 1.1, x + 0.6, y + 0.28, 1.35)
     K.box('screen', x + 0.32, y + 0.195, 1.12, x + 0.58, y + 0.2, 1.33)
+
+
+def gown_rack(K, x, y0, y1):
+    """开放式不锈钢洁净服架（贴西墙，沿 y）：四层线网搁板放叠好的洗手衣 / 帽 / 鞋套，上方挂衣杆挂隔离衣，底层鞋套机。"""
+    d = 0.45
+    for yy in (y0, y1):
+        for xx in (x + 0.03, x + d - 0.03):
+            K.box('chrome', xx - 0.012, yy - 0.012, 0.0, xx + 0.012, yy + 0.012, 1.95)       # 立柱
+    for zz in (0.15, 0.5, 0.85):
+        K.box('chrome', x, y0, zz, x + d, y1, zz + 0.02)                               # 搁板
+        for i in range(8):
+            K.box('seam', x + 0.02, y0 + (y1 - y0) * (i + 0.5) / 8 - 0.004, zz + 0.02, x + d - 0.02, y0 + (y1 - y0) * (i + 0.5) / 8 + 0.004, zz + 0.024)
+    stacks = (('teal', 0.12), ('teal', 0.16), ('linen', 0.1), ('teal', 0.14))
+    for zz in (0.52, 0.87):
+        for k, (m, h) in enumerate(stacks):
+            a = y0 + 0.05 + k * (y1 - y0 - 0.1) / 4
+            K.box(m, x + 0.06, a + 0.02, zz + 0.02, x + d - 0.06, a + (y1 - y0 - 0.1) / 4 - 0.02, zz + 0.02 + h + (k % 2) * 0.03)
+    for k in range(3):                                                                 # 底层：鞋套 / 帽盒（白色纸盒）
+        a = y0 + 0.08 + k * 0.5
+        K.box('white', x + 0.05, a, 0.17, x + d - 0.05, a + 0.4, 0.4)
+    for zz in (1.2, 1.55):                                                             # 上两层：无菌包装的隔离衣包（平叠）
+        K.box('chrome', x, y0, zz, x + d, y1, zz + 0.02)
+        for k in range(6):
+            a = y0 + 0.04 + k * (y1 - y0 - 0.08) / 6
+            for j in range(2 + (k % 2)):
+                K.box('gown' if (k + j) % 3 else 'linen', x + 0.05, a + 0.015, zz + 0.02 + j * 0.05, x + d - 0.05, a + (y1 - y0 - 0.08) / 6 - 0.015, zz + 0.065 + j * 0.05)
+    K.box('white', x, y0 + 0.3, 1.9, x + 0.1, y1 - 0.3, 2.2)                         # 墙上帽子 / 口罩分配盒
+    for k in range(3):
+        a = y0 + 0.35 + k * (y1 - y0 - 0.6) / 3
+        K.box('dark', x + 0.1, a, 1.93, x + 0.105, a + (y1 - y0 - 0.6) / 3 - 0.05, 1.98)
+    K.box('white', x + 0.02, y1 + 0.1, 0.0, x + 0.42, y1 + 0.45, 0.85)                 # 自动鞋套机
+    K.box('dark', x + 0.1, y1 + 0.15, 0.85, x + 0.34, y1 + 0.4, 0.86)
 
 
 def gown_lockers(K, x0, x1, y, face=-1):
@@ -476,18 +553,23 @@ def build(col=None, f1_z=None):
     ceiling_boom(K, tx + 1.2, ty + 1.2, 1.0, 0.2, 'equipment')
     crash_cart(K, 10.0, 2.25)
     ventilator(K, 11.6, 5.9)
-    monitor_stand(K, 15.3, 3.1)
+    anesthesia_machine(K, tx - 0.75, ty + 1.95)                               # 头端麻醉机
+    K.box('steel', tx + 0.9, ty - 1.6, 0.8, tx + 1.6, ty - 1.1, 0.83); K.box('brushed', tx + 0.9, ty - 1.6, 0.35, tx + 1.6, ty - 1.1, 0.37)   # 器械台（Mayo / 后台）
+    for sx in (0.93, 1.57):
+        for sy in (-1.57, -1.13):
+            K.cyl('brushed', tx + sx, ty + sy, 0.0, 0.8, 0.012, seg=8)
     cabinets(K, ix0 + 0.05, 13.2, iy1, face=-1)                              # 北墙洁净柜
     cabinets(K, 15.6, ix1 - 1.2, iy1, face=-1)
     gas_panel(K, ix0, 4.8, 5.8)                                               # 西墙设备带
-    K.box('dark', ix0, 5.9, 1.2, ix0 + 0.04, 7.3, 2.3); K.box('screen', ix0 + 0.041, 5.95, 1.24, ix0 + 0.045, 7.25, 2.26)
     wall_display(K, 13.2, 15.6, iy1 - 0.02)
     pass_hatch(K, 11.0, y0, face=1)                                           # 南墙传递窗（洗消间 → 处置室）
     hermetic_door(K, 17.0, iy0 + 0.16, 'x', state='green')
     env_panel(K, 15.0, iy0, 1)
     for ex, ey, fx, fy in ((ix0, iy0 + 0.4, 1, 0), (ix0, iy1 - 0.6, 1, 0), (ix1, iy1 - 0.6, -1, 0), (ix1, iy0 + 0.4, -1, 0)):
         extract_grille(K, ex, ey, fx, fy)
-    K.box('dark', ix1 - 0.04, 2.2, 1.2, ix1, 4.2, 2.3); K.box('screen', ix1 - 0.045, 2.25, 1.24, ix1 - 0.041, 4.15, 2.26)   # 东墙影像屏
+    K.box('brushed', ix1 - 0.06, 2.4, 0.0, ix1, 3.9, 0.1)                         # 东墙防撞条
+    for zz in (0.85, 1.0):
+        K.box('grey', ix1 - 0.05, 1.2, zz, ix1, 7.0, zz + 0.05)
     obs += K.done(M)
 
     # --- 缓冲更衣间 (14..20, -3..1.5)
@@ -503,19 +585,12 @@ def build(col=None, f1_z=None):
     K.box('dark', 17.9, ay0 + 0.0, 2.05, 18.3, ay0 + 0.01, 2.3); K.box('screen_g', 17.92, ay0 + 0.01, 2.07, 18.28, ay0 + 0.015, 2.28)   # 南门压差表
     for ex, ey, fx, fy in ((ax0, ay1 - 0.5, 1, 0), (ax1, ay0 + 0.4, -1, 0)):
         extract_grille(K, ex, ey, fx, fy)
-    K.box('white', ax0, -2.7, 0.1, ax0 + 0.5, -1.1, 2.1)                      # 西墙洁净服 / 鞋套柜（外侧 = 脏侧）
-    for i in range(4):
-        yy = -2.7 + i * 0.4
-        K.box('seam', ax0 + 0.5, yy - 0.003, 0.1, ax0 + 0.505, yy + 0.003, 2.1)
-        K.box('glass', ax0 + 0.505, yy + 0.04, 1.2, ax0 + 0.51, yy + 0.36, 1.95)
-        K.box('teal', ax0 + 0.1, yy + 0.06, 1.25, ax0 + 0.45, yy + 0.34, 1.8)
-        K.box('brushed', ax0 + 0.51, yy + 0.3, 0.9, ax0 + 0.53, yy + 0.33, 1.1)
+    gown_rack(K, ax0 + 0.02, -2.75, -1.05)                                   # 西墙开放式洁净服架（外侧 = 脏侧）
     scrub_sink(K, 14.3, 16.1, ay1, face=-1)                                   # 北墙西段刷手槽（进处置室前）
     K.box('steel', ax1 - 0.1, 0.0, 0.3, ax1, 1.2, 2.1)                        # 东墙风淋喷嘴板（洁侧）
     for i in range(9):
         for yy in (0.2, 1.0):
             K.cyl('dark', ax1 - 0.1, yy, 0.5 + i * 0.18, 0.03, 0.022, seg=10, axis='x')
-    K.box('dark', 16.2, ay1 - 0.03, 2.0, 16.6, ay1 - 0.02, 2.25); K.box('screen_g', 16.22, ay1 - 0.035, 2.02, 16.58, ay1 - 0.03, 2.23)   # 压差表
     K.box('white', 18.3, ay1 - 0.12, 1.1, 18.8, ay1, 1.5)                    # 手消 / 口罩 / 帽子分配器（进门前最后一步）
     K.box('dark', 18.45, ay1 - 0.125, 1.2, 18.65, ay1 - 0.12, 1.3)
     obs += K.done(M)
@@ -565,7 +640,7 @@ def render(view, out, res=1400, samples=64):
                 n = max(1, int((x1 - x0) / 3)); m = max(1, int((y1 - y0) / 3))
                 ld = bpy.data.lights.new(f'{name}{i}{j}', 'AREA'); ld.shape = 'RECTANGLE'
                 ld.size = (x1 - x0) / n * 0.8; ld.size_y = (y1 - y0) / m * 0.8
-                ld.energy = 22 * ld.size * ld.size_y; ld.color = (0.93, 0.97, 1.0)
+                ld.energy = 9 * ld.size * ld.size_y; ld.color = (0.93, 0.97, 1.0)
                 lo = bpy.data.objects.new(ld.name, ld); sc.collection.objects.link(lo)
                 lo.location = (x0 + (x1 - x0) * (i + 0.5) / n, y0 + (y1 - y0) * (j + 0.5) / m, B2_DZ + CLEAR - 0.05)
     loc, tgt, lens = VIEWS[view]
@@ -582,7 +657,7 @@ def render(view, out, res=1400, samples=64):
     except Exception:
         pass
     sc.render.resolution_x = res; sc.render.resolution_y = int(res * 0.625)
-    sc.view_settings.view_transform = 'AgX'; sc.view_settings.look = 'AgX - Medium High Contrast'; sc.view_settings.exposure = -1.75
+    sc.view_settings.view_transform = 'AgX'; sc.view_settings.look = 'AgX - Medium High Contrast'; sc.view_settings.exposure = -1.45
     sc.render.image_settings.file_format = 'JPEG'; sc.render.image_settings.quality = 88
     sc.render.filepath = out
     bpy.ops.render.render(write_still=True)
