@@ -35,6 +35,7 @@
 | ↳ 外壳 | `makeDock`、`sheetVis`、`initShell`、通知、单手模式 |
 | ↳ 宿主消息接口 | 来源 / 令牌检查，协议校验（v2），按类型分派 |
 | **`app/clouds.mjs`**（v2 从内联 #3 拆出） | 漂移云与切层转场。仍以重新赋值全局 `go` 的方式包装（模块可以写经典脚本的全局函数绑定），导出 `window.__clouds` |
+| **`app/cardlinks.mjs`**（v2 从主脚本拆出） | 地点卡链接：通道 `meta.link` + 可选的三维 `meta.link3d`（同图只出一个），纯函数 `linksHtml(meta, ctx)`；`tools/check_maps.py` 校验 link3d 指向的地图存在 |
 | **`app/scale.mjs`**（v2 从内联 #4 拆出） | `TCScale`：世界图与各组地图的交接环 |
 
 ### 1.2 其它文件
@@ -157,8 +158,9 @@
    - 聊天标签：`tavern/events.mjs`、`characters.mjs`、`trips.mjs`、`mvu.parseCustomTags`。
    - 下一步：`tavern/sources/index.mjs`，统一成 `{ id, detect(ctx), read(ctx) }` 注册表，让自检和变量映射从同一处枚举。
 2. **地图注册表**：`map/data/maps.json`（`maps.<id>.{kind, base, alt, overlay, group, parent, status, src, viewer3d, markers…}`、`groups.<id>.{layers, place, upper}`），由 `tools/check_maps.py` 校验。
-3. **三维查看器清单**：`kind=estate` 且带 `viewer3d:'<model>'` 时，查看器加载 `props/viewer3d.html`，注入 `__V3D_MODEL`，再读 `props/<model>/manifest.json`。
-4. **本机扩展 API**：`window.EdenMap`（宿主侧也挂一份并转发），以及 `TCSettings.registerSection(page, el, {order})`。
+3. **地点卡三维链接**：`maps.json` 标记可写 `link3d: { map, label?, label_en? }`，与 `link`（跨层通道）并存。
+4. **三维查看器清单**：`kind=estate` 且带 `viewer3d:'<model>'` 时，查看器加载 `props/viewer3d.html`，注入 `__V3D_MODEL`，再读 `props/<model>/manifest.json`。
+5. **本机扩展 API**：`window.EdenMap`（宿主侧也挂一份并转发），以及 `TCSettings.registerSection(page, el, {order})`。
 
 ## 6. 增量重构计划（风险从小到大，每一步 smoke、node --test、浏览器套件都全绿）
 

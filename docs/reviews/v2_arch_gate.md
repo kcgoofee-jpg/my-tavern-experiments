@@ -32,7 +32,8 @@
 - 2921352 · A：UI v2 遗留
 - 178f209 · B：arch-v2、协议 v2、存储键表、拆出 app/*.mjs、compose 回执来源检查、删死代码
 - 551abee · C / D：预热只取邻近地图、上手提示、leak_v2 / perf_v2
-- 3af0763 与之后的收尾 · 门控修复
+- d14895e、3d871a7 · 门控修复
+- 之后：地点卡可选第二链接 `meta.link3d`（app/cardlinks.mjs + tests/cardlinks.test.mjs + v2a link3d + check_maps 校验）
 
 ## 数字（docs/perf/v2.md）
 - 冷开后 10 s 内的流量：桌面 3374 → 2188 KB（−35 %），手机 3786 → 2600 KB（−31 %）；请求数 −31 % / −24 %。
