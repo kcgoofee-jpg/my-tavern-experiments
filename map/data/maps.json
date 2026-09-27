@@ -15,7 +15,7 @@
   "unplaced": {"_说明": "卡里有、但没写层与位置的机构与地点：地图不落点（不猜），附加条目里写明「位置未写」，免得模型自行定位。见 docs/card-omissions.md", "items": [{"name": "法师塔", "name_en": "Mage Tower", "src": "人物·神宫寺凛：法师塔首席"}, {"name": "施奈德精密改造诊所", "name_en": "Schneider Precision Clinic", "src": "人物·伊薇特（视觉样例里写作「施奈德生物改造诊所」）"}, {"name": "新生工坊", "name_en": "Rebirth Workshop", "src": "人物·伊薇特：天城最大的同类改造中心"}, {"name": "天城贵族管家学院", "name_en": "Tiancheng Butler Academy", "src": "人物·绫濑遥：她从这里毕业并任顾问"}, {"name": "天城执政厅", "name_en": "Tiancheng Executive Office", "src": "天城：行政机构，签发跨层通行许可"}, {"name": "天城政务院", "name_en": "Tiancheng Administrative Council", "src": "人物·阿斯特丽德：18 岁在这里实习（与执政厅是否同一机构，卡没说明）"}, {"name": "天城中央储备署", "name_en": "Central Reserve Office", "src": "货币与贸易：发行以太元，隶属议会"}, {"name": "天城文化署", "name_en": "Culture Office", "src": "文学与文化：出版审核"}, {"name": "军事学院", "name_en": "Military Academy", "src": "军事与治安：骑士团与防卫军的人才来源"}, {"name": "维克多庄园", "name_en": "Victor Estate", "src": "人物·凯莉：亡夫的庄园，现已不属于她"}, {"name": "猎季营地", "name_en": "Hunting-season camp", "src": "文学与文化：秋季野外的猎季营地"}, {"name": "「Y」的庄园", "name_en": "Estate of \"Y\"", "src": "庄园主社交：全天城最大、从不露面、不入联盟的庄园主"}]},
   "ambiguous": {
     "_说明": "当前地点里出现这些泛称、又没有更长的具体地标名时，不落到任何地标（卡里同名的地方不止一处）：写了层名就落到该层，否则不跳转。见 map/here.mjs",
-    "words": ["大学", "分局", "执法局分局", "中层分局", "修道院", "普通修道院", "委员会", "资产管理委员会", "骑士团", "议会骑士团", "骑士团巡逻据点", "区议会", "区级议会", "营区", "维克多庄园", "圣殿骑士团"]
+    "words": ["大学", "分局", "执法局分局", "中层分局", "修道院", "普通修道院", "委员会", "资产管理委员会", "骑士团", "议会骑士团", "骑士团巡逻据点", "区议会", "区级议会", "营区", "维克多庄园", "圣殿骑士团", "庄园主联盟"]
   },
   "maps": {
     "eden_estate": {
@@ -43,7 +43,7 @@
       "alt": { "label": "显示下方城市", "label_en": "Show city below", "base": "art/tc_upper_city.dzi" }, "credit": "城市骨架 © OpenStreetMap contributors (ODbL)；核心区建筑几何：NYC 3-D Building Model（2014），© City of New York / Office of Technology and Innovation，NYC Open Data；经投影、旋转、缩放并叠加生成内容", "credit_en": "City layout © OpenStreetMap contributors (ODbL); Core-district building geometry: NYC 3-D Building Model (2014), City of New York / Office of Technology and Innovation, via NYC Open Data; reprojected, rotated, scaled and combined with generated content",
       "overlay": { "type": "barriers", "label": "结界", "label_en": "Wards" },
       "focus": "eden",
-      "districts": ["悬浮庄园区", "悬浮区", "悬浮岛", "浮岛", "上城", "Floating Estates"],
+      "districts": ["上层悬浮庄园区", "上层_悬浮庄园区", "悬浮庄园区", "悬浮区", "悬浮岛", "浮岛", "上城", "Floating Estates"],
       "markers": {
         "eden": { "name": "伊甸庄园", "sub": "{{user}} 的庄园", "name_en": "Eden Manor", "sub_en": "Your estate", "cls": "capital", "tag": "set", "link": { "map": "eden_estate", "label": "进入伊甸庄园", "label_en": "Enter Eden Manor" },
           "cover": { "src": "art/covers/eden_1600.jpg", "src_800": "art/covers/eden_800.jpg", "alt": "伊甸庄园整岛斜俯航拍", "alt_en": "Aerial view of Eden Manor's floating isle" },
@@ -70,7 +70,7 @@
       "kind": "points", "base": "art/tc_mid.dzi", "credit": "城市骨架 © OpenStreetMap contributors (ODbL)；核心区建筑几何：NYC 3-D Building Model（2014），© City of New York / Office of Technology and Innovation，NYC Open Data；经投影、旋转、缩放并叠加生成内容", "credit_en": "City layout © OpenStreetMap contributors (ODbL); Core-district building geometry: NYC 3-D Building Model (2014), City of New York / Office of Technology and Innovation, via NYC Open Data; reprojected, rotated, scaled and combined with generated content", "data": "data/tc_mid.json",
       "overlay": { "type": "barriers", "label": "上层投影", "label_en": "Upper-tier footprint", "from": "tc_upper" },
       "focus": "enforcement_hq",
-      "districts": ["钢铁霓虹区", "钢铁霓虹", "商业区", "霓虹街", "核心区", "高区", "外围", "居住区", "中城", "Steel & Neon", "Neon Street", "Commercial District"],
+      "districts": ["中层钢铁霓虹区", "中层_钢铁霓虹区", "钢铁霓虹区", "钢铁霓虹", "中层低区", "中层高区", "商业区", "购物中心", "霓虹街", "核心区", "高区", "外围", "居住区", "中城", "Steel & Neon", "Neon Street", "Commercial District"],
       "markers": {
         "enforcement_hq": { "name": "天城执法局总局", "sub": "中层核心区", "name_en": "Enforcement Bureau HQ", "sub_en": "Middle Tier core", "cls": "capital", "tag": "set",
           "src": "天城·中层：天城执法局总局位于中层核心区（在核心区内的具体位置为推断）。中层按高度分 18 个辖区，每区一个执法分局；议会骑士团 12 个分队的巡逻据点在中层高区（数目是卡的设定，图上不逐个画）",
@@ -99,7 +99,7 @@
           "alias": ["层间检查点", "检查点", "C区", "C 区", "中层C区", "中层 C 区"] },
         "tiancheng_univ": {"name": "天城大学", "sub": "设法学院", "name_en": "Tiancheng University", "sub_en": "Has a law school", "tag": "inf", "layer_src": "user-decision", "src": "人物·维多利亚：天城大学设法学院（她 16 岁跳级入学，母亲是法学院终身教授）；与星渊大学不是同一所。卡未写层与位置：放在中层是用户决定（2026-09-27），具体位置为仓库推断", "alias": ["天城大学", "天城大学法学院", "法学院"]},
         "knights_camp": {"name": "骑士团营区", "sub": "议会骑士团", "name_en": "Knights' Encampment", "sub_en": "Council Knights", "tag": "inf", "layer_src": "user-decision", "src": "军事与治安、人物·罗莎琳德：议会骑士团的营区（团长每天巡营）；卡未写位置，也未写与银冠堡是否同一处。放在中层是用户决定（2026-09-27）；画在上层银冠堡的正下方为仓库推断", "alias": ["骑士团营区", "骑士团营地"]},
-        "supreme_court": {"name": "最高法院", "name_en": "Supreme Court", "tag": "inf", "src": "人物·维多利亚：她的公寓在中层高区、步行 15 分钟到最高法院，据此把法院放在中层高区（层与位置为仓库推断）", "alias": ["最高法院"]},
+        "supreme_court": {"name": "最高法院", "name_en": "Supreme Court", "tag": "inf", "src": "人物·维多利亚：她的公寓在中层高区、步行 15 分钟到最高法院，据此把法院放在中层高区（层与位置为仓库推断）", "alias": ["天城最高法院", "最高法院"]},
         "victoria_apartment": {"name": "维多利亚的公寓", "sub": "中层高区", "name_en": "Victoria's Apartment", "sub_en": "Middle Tier heights", "tag": "set", "src": "人物·维多利亚：公寓在中层高区，步行 15 分钟到最高法院（具体位置为仓库推断）", "alias": ["维多利亚的公寓", "维多利亚公寓"]},
         "merc_guild": {"name": "佣兵公会", "name_en": "Mercenary Guild", "tag": "set", "src": "军事与治安：雇佣兵经中层的佣兵公会接单（具体位置为仓库推断）", "alias": ["佣兵公会"]},
         "mid_monastery": {"name": "中层修道院", "sub": "中层五座普通修道院之一", "name_en": "Middle Tier Monastery", "sub_en": "One of five in the Middle Tier", "tag": "set", "src": "圣光教会：中层有 12 个教区（每区一座主教堂和若干礼拜堂）与 5 座普通修道院；卡未写各自位置，图上只画一处作代表（位置为仓库推断）", "alias": ["中层修道院"]},
@@ -113,7 +113,7 @@
       "layer": { "name": "下层", "sub": "地基区", "alt": "地面至 −200 m", "name_en": "Lower", "sub_en": "Foundations", "alt_en": "Ground to −200 m" },
       "kind": "points", "base": "art/tc_low.dzi", "credit": "城市骨架 © OpenStreetMap contributors (ODbL)", "credit_en": "City layout © OpenStreetMap contributors (ODbL)", "data": "data/tc_low.json",
       "focus": "well7",
-      "districts": ["地基区", "地基", "贫民区", "贫民窟", "棚户", "城寨", "工业区", "下城", "廉价酒馆", "地下格斗", "非法赌场", "二手市场", "二手衣物市场", "工厂", "Foundations", "Slums"],
+      "districts": ["下层地基区", "下层_地基区", "地基区", "地基", "贫民区", "贫民窟", "棚户", "城寨", "工业区", "下城", "廉价酒馆", "地下格斗", "非法赌场", "二手市场", "二手衣物市场", "工厂", "Foundations", "Slums"],
       "markers": {
         "well7": { "name": "7 号井黑市", "sub": "只收灰票", "name_en": "Well 7 Black Market", "sub_en": "Grey scrip only", "cls": "capital", "tag": "set", "link": { "map": "tc_mid", "marker": "checkpoint_c", "label": "上到中层 · C 区检查点", "label_en": "Up to Zone C Checkpoint · Middle" },
           "src": "天城·下层：「地基区 7 号井 · 只收灰票」；中层 C 区检查点的通道落在这里（井口与市集布局为推断）。井里的「老 K 杂货」只收灰票，黑市终端的主机名是「井下-07」；灰票是匿名芯片卡，天城只有下层黑市还用实体货币",
@@ -180,12 +180,12 @@
         "union_tower": {"name": "商业联合会联合大厦", "name_en": "Commercial Union Tower", "tag": "set", "src": "大骑士领·圣都：核心区的商业联合会联合大厦（位置与形制为仓库推断）", "alias": ["商业联合会联合大厦", "联合大厦", "商业联合会大厦"], "sub": "商业联合会", "sub_en": "Commercial Union"},
         "sun_arena": {"name": "太阳骑士大竞技场", "name_en": "Sun Knights Grand Arena", "tag": "set", "src": "大骑士领·圣都：核心区的太阳骑士大竞技场，容 30 万人（位置与形制为仓库推断）", "alias": ["太阳骑士大竞技场", "大竞技场"], "sub": "容 30 万人", "sub_en": "Seats 300,000"},
         "round_table_hall": {"name": "圆桌骑士议事殿", "name_en": "Round Table Hall", "tag": "set", "src": "大骑士领·圣都：核心区的圆桌骑士议事殿；圆桌骑士现存五席（位置与形制为仓库推断）", "alias": ["圆桌骑士议事殿", "议事殿"], "sub": "圆桌骑士", "sub_en": "Round Table"},
-        "elite_club": {"name": "顶级会所", "name_en": "Elite Clubs", "tag": "set", "src": "大骑士领·圣都：核心区的顶级会所（位置与形制为仓库推断）", "alias": ["顶级会所"]},
+        "elite_club": {"name": "顶级贵族与财阀会所", "name_en": "Elite Clubs", "tag": "set", "src": "大骑士领·圣都：核心区的「顶级贵族与财阀会所」（卡原名；2026-09-28 校名，原先简写成「顶级会所」；位置与形制为仓库推断）", "alias": ["顶级贵族与财阀会所", "财阀会所", "贵族会所", "顶级会所"]},
         "ether_dome": {"name": "以太穹顶", "name_en": "Aether Dome", "tag": "set", "src": "大骑士领·圣都：巨型以太穹顶调节赛场及核心商业区天气（穹顶范围为仓库推断）", "alias": ["以太穹顶", "穹顶"]},
-        "contest_corridor": {"name": "竞赛与狂欢回廊", "name_en": "Corridor of Contest and Revelry", "tag": "set", "src": "大骑士领·圣都：中环「竞赛与狂欢回廊」（位置与形制为仓库推断）", "alias": ["竞赛与狂欢回廊", "狂欢回廊"], "sub": "中环", "sub_en": "Middle ring"},
+        "contest_corridor": {"name": "竞赛与狂欢回廊", "name_en": "Corridor of Contest and Revelry", "tag": "set", "src": "大骑士领·圣都：中环「竞赛与狂欢回廊」（位置与形制为仓库推断）", "alias": ["竞赛与狂欢回廊", "狂欢回廊", "中环区", "竞赛事务局与博彩中心", "竞赛事务局", "博彩中心", "企业赞助基地与俱乐部", "企业赞助基地", "工匠工坊街"], "sub": "中环", "sub_en": "Middle ring"},
         "rust_outskirts": {"name": "铁锈与落败领", "name_en": "Rust and the Fallen", "tag": "set", "src": "大骑士领·圣都：外环「铁锈与落败领」（位置与形制为仓库推断）", "alias": ["铁锈与落败领", "落败领"], "sub": "外环", "sub_en": "Outer ring"},
-        "clearing_depot": {"name": "清算转运站", "name_en": "Clearing Depot", "tag": "set", "src": "大骑士领·圣都：外环的清算转运站（画成铁路编组场是仓库推断）", "alias": ["清算转运站", "转运站"]},
-        "free_knight_camp": {"name": "独立骑士营地", "name_en": "Free Knights Camp", "tag": "set", "src": "大骑士领·圣都：外环的独立骑士营地（帐篷营地是仓库推断）", "alias": ["独立骑士营地"]},
+        "clearing_depot": {"name": "清算转运站", "name_en": "Clearing Depot", "tag": "set", "src": "大骑士领·圣都：外环的「败者资产清算转运站」（卡原名；商业联合会设立；画成铁路编组场是仓库推断）", "alias": ["败者资产清算转运站", "资产清算转运站", "清算转运站", "转运站"]},
+        "free_knight_camp": {"name": "独立骑士黑市营地", "name_en": "Free Knights Camp", "tag": "set", "src": "大骑士领·圣都：外环的「独立骑士黑市营地」（卡原名；2026-09-28 校名，原先少了「黑市」；廉价旅馆与二手零件市场；帐篷营地是仓库推断）", "alias": ["独立骑士黑市营地", "黑市营地", "独立骑士营地"]},
         "linguang_post": {"name": "临光家族外城驻所", "name_en": "Linguang Outer Residence", "tag": "set", "src": "大骑士领·圣都：外环的临光家族外城驻所（位置与形制为仓库推断）", "alias": ["临光家族外城驻所", "外城驻所"]}
       }
     },
