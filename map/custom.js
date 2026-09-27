@@ -102,7 +102,7 @@ const TCCustom = (() => {
         + (data.同步世界书 && host.wbState === 'unbound' ? `<small class="cu-warn">${esc(T('cu.sync_unbound', '这个聊天已经绑定了别的聊天世界书：请在世界书设置里手动启用「伊甸地图·自定义」'))}</small>` : '') : '')
       + `<small>${esc(host ? (host.vars ? T('cu.store_chat', '存在这个聊天的变量里（换设备、导出聊天都跟着走）；摘要会作为背景发给模型') : T('cu.store_local', '酒馆助手没有变量接口：只存本机浏览器')) : T('cu.store_local2', '单独打开地图：只存本机浏览器'))}</small>`
       + `<label><span>${esc(T('cu.night', '夜间给上层、中层加一层夜色'))}</span><input type="checkbox" role="switch" id="optNight" ${nightOn() ? 'checked' : ''}></label>`
-      + (typeof TCChars !== 'undefined' && TCChars.hasPortraits ? `<label><span>${esc(T('ch.port', '使用原作头像'))}</span><input type="checkbox" role="switch" id="optPort" ${TCChars.portOn() ? 'checked' : ''}></label><small>${esc(T('ch.port_hint', '人物没有自己设的头像时，用卡里自带的原作立绘（作者 Yehehua，图片在作者的 CDN 上，按需加载）；省流时默认关'))}</small>` : '');
+      + (typeof TCChars !== 'undefined' && TCChars.hasPortraits ? `<label><span>${esc(T('ch.port', '使用原作头像'))}</span><input type="checkbox" role="switch" id="optPort" ${TCChars.portOn() ? 'checked' : ''}></label><small>${esc(T('ch.port_hint', '人物没有自己设的头像时，用卡里自带的原作立绘（作者 Yehehua，图片在作者的 CDN 上，按需加载）；省流时默认关。只收作者 CDN 上的立绘：卡里另有几位的立绘放在别的图床，本站不加载，这些人显示名字首字（不是故障，可以自己设头像）'))}</small>` : '');
     if (dlg && !dlg.hidden) renderDlg(false);
   }
   function onChange(ev) {

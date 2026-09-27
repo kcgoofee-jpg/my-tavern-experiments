@@ -253,7 +253,12 @@ def write_data(name, sc, co, markers, extra=None):
             'markers': [dict(id=m['id'], **dict(zip(('nx', 'ny'), norm(sc, co, m['pos']))), **({'r': round(m['r'] / W, 4)} if 'r' in m else {}))
                         for m in markers]}
     if extra: data.update(extra)
-    json.dump(data, open(os.path.join(HERE, '..', 'map', 'data', f'{name}.json'), 'w'), ensure_ascii=False, indent=1)
+    fn = os.path.join(HERE, '..', 'map', 'data', f'{name}.json')
+    try:   # 手工落点（manual: true，放在现有底图上的点，脚本里没有）重导出时保留
+        have = {m['id'] for m in data['markers']}
+        data['markers'] += [m for m in json.load(open(fn, encoding='utf-8')).get('markers', []) if m.get('manual') and m['id'] not in have]
+    except (OSError, ValueError): pass
+    json.dump(data, open(fn, 'w'), ensure_ascii=False, indent=1)
 def render(sc, OUT, label=''):
     tick('render start'); bpy.ops.render.render(write_still=True); tick('render done')
     print('WROTE', OUT, sc.render.resolution_x, sc.render.resolution_y, label)

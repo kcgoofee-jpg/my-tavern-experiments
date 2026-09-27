@@ -50,7 +50,64 @@
    "id": "old_apartment",
    "nx": 0.44,
    "ny": 0.715,
-   "r": 0.012
+   "r": 0.012,
+   "manual": true
+  },
+  {
+   "id": "tiancheng_univ",
+   "nx": 0.615,
+   "ny": 0.376,
+   "r": 0.03,
+   "manual": true
+  },
+  {
+   "id": "knights_camp",
+   "nx": 0.19,
+   "ny": 0.8,
+   "r": 0.025,
+   "manual": true
+  },
+  {
+   "id": "supreme_court",
+   "nx": 0.74,
+   "ny": 0.36,
+   "r": 0.015,
+   "manual": true
+  },
+  {
+   "id": "victoria_apartment",
+   "nx": 0.82,
+   "ny": 0.45,
+   "r": 0.01,
+   "manual": true
+  },
+  {
+   "id": "merc_guild",
+   "nx": 0.565,
+   "ny": 0.768,
+   "r": 0.015,
+   "manual": true
+  },
+  {
+   "id": "mid_monastery",
+   "nx": 0.77,
+   "ny": 0.576,
+   "r": 0.015,
+   "manual": true
+  },
+  {
+   "id": "mid_hospital",
+   "nx": 0.665,
+   "ny": 0.232,
+   "r": 0.015,
+   "manual": true
+  },
+  {
+   "id": "mid_care_home",
+   "nx": 0.88,
+   "ny": 0.608,
+   "r": 0.012,
+   "manual": true
   }
  ],
  "layer": "tc_mid"

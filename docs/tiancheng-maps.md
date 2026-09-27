@@ -209,3 +209,10 @@ layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/
 | 开局八 | 08:00 → **09:30** | 辉光大教堂（中层高区） | 中层 | 起点（等候晨祷） | `radiance_cathedral`（沿用） |
 
 2026-09-27 按 `docs/card-digest.md` §7 对齐：首相府从开局三移到开局五，开局二去掉星渊大学目的地，开局三目的地改为凯莉的宅邸。第九个开场白是自定义开局，没有固定地点。落点单测：`tests/here.test.mjs`「开局地点」。截图：`node tools/browser/openings.mjs <目录>`。新增的两个标记点位手写在 `map/data/tc_mid.json` / `tc_low.json`，重渲导出点位时要保留。
+
+## 8. 地图补充地点与世界书同步（v0.9.6）
+
+- **地图补充的地点**（原卡没有，或层 / 形制由用户或仓库决定）统一登记在 `map/data/addon_places.json`：`id`、`name`、`alias`（世界书关键词）、`src`（`user <日期>` = 用户决定 / 设计，`repo` = 仓库自设）、`text`（中性的设施、布局、氛围）、`refs`（对应的 `maps.json` 标记，形如 `tc_upper.pm_residence`）或 `estate: true`（伊甸庄园里的地点，`alias` 要有一个在 `eden_estate.rooms / areas` 里）。
+- `tools/build_worldbook_addon.py` 为每一处生成一条**关键词触发**的「地图补充-名称」条目（位置、深度照卡里设定条目：角色定义之前、深度 4，order 440 起），内容末尾标「地图附加设定，原卡没有」；卡里已有、地图常用的口径拆成「天城常识-*」「庄园常识-*」关键词条目（order 420 起）。
+- **维护规则**：`maps.json` 里 `canon:false`、有 `sub_src` / `layer_src`、或 `src` 含「仓库自设」「用户」的标记，必须出现在某一条的 `refs` 里；条目引用的标记必须存在。`python3 tools/check_maps.py` 检查这两条——**加、改、删地点时 `maps.json`、`addon_places.json`、世界书三处一起改**，改完重跑附加条目脚本。
+- 手工落点（不在渲染脚本里、直接写进 `map/data/tc_<层>.json` 的点）带 `manual: true`；`blender/tc_common.write_data` 重导出时保留它们。

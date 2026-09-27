@@ -154,6 +154,28 @@ if len(i18n) == 2:
             err(f'events.mjs 加载失败：{type(e).__name__}: {e}')
     if names is not None:
         for k in sorted(names - set(i18n['en'].get('names', {}))): err(f'i18n：事件大类 / 类型「{k}」在 en.json 的 names 里没有英文')
+# 地图补充地点 ↔ 世界书附加条目（map/data/addon_places.json → tools/build_worldbook_addon.py「地图补充-*」）：
+# 用户决定 / 仓库自设的标记都要有一条；条目引用的标记要存在；庄园条目的叫法要能落到 eden_estate（加、改、删地点时三处同步）
+ap_path = os.path.join(ROOT, 'data', 'addon_places.json')
+if not os.path.exists(ap_path): err('缺 map/data/addon_places.json（地图补充地点，世界书附加条目从它生成）')
+else:
+    ap = json.load(open(ap_path, encoding='utf-8')).get('places', [])
+    refs = {r for p in ap for r in p.get('refs', [])}
+    est = maps.get('eden_estate', {}); est_words = set(est.get('rooms', [])) | set(est.get('areas', []))
+    for p in ap:
+        for f in ('id', 'name', 'src', 'text'):
+            if not p.get(f): err(f"addon_places.{p.get('id', '?')}: 缺 {f}")
+        if not isinstance(p.get('alias'), list) or not p['alias']: err(f"addon_places.{p.get('id')}: alias 应为非空列表（世界书关键词）")
+        if not str(p.get('src', '')).startswith(('user', 'repo')): err(f"addon_places.{p.get('id')}: src 应以 user / repo 开头")
+        for r in p.get('refs', []):
+            mid, _, k = r.partition('.')
+            if k not in (maps.get(mid, {}).get('markers') or {}): err(f'addon_places.{p["id"]}: refs {r} 不存在（地点删了或改了 id？同步删改这一条）')
+        if p.get('estate') and not est_words & set(p.get('alias', [])): err(f'addon_places.{p["id"]}: 庄园条目的 alias 没有一个在 eden_estate 的 rooms / areas 里')
+    def added(v):
+        return v.get('canon') is False or v.get('sub_src') or v.get('layer_src') or any(w in v.get('src', '') for w in ('仓库自设', '用户'))
+    for mid, m in maps.items():
+        for k, v in (m.get('markers') or {}).items():
+            if added(v) and f'{mid}.{k}' not in refs: err(f'{mid}.{k}：用户决定 / 仓库自设的地点，addon_places.json 里没有对应条目（世界书附加条目缺它）')
 # 外部事件数据源（map/events.js 定时拉取）：feeds: [{label, url, every}]
 feeds = reg.get('feeds', [])
 if not isinstance(feeds, list): err('feeds 应为列表')
