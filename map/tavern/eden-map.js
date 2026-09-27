@@ -350,7 +350,7 @@
     here = getHere();
     // 一个地点胶囊：MVU 里写了多处（「A / B」）只显示第一处，全文在 title；右侧省略
     const full = userName(here), parts = full.split(/\s*[\/／|｜]\s*/).filter(Boolean);
-    hereEl.innerHTML = ''; if (parts[0]) { const a = pdoc.createElement('span'); a.className = 'em-nm'; a.textContent = parts[0]; hereEl.append(a); }
+    hereEl.innerHTML = ''; if (parts[0]) { const a = pdoc.createElement('span'); a.className = 'em-nm'; a.textContent = hereMod?.transitLabel?.(parts[0], UL === 'en') || parts[0]; hereEl.append(a); }   // 途中（v0.9.5）：「A → B（途中）」
     if (parts.length > 1) { const b = pdoc.createElement('span'); b.className = 'em-more'; b.textContent = ` +${parts.length - 1}`; hereEl.append(b); } hereEl.title = full ? U('here') + full : '';
     if (full) hereEl.setAttribute('aria-label', U('here') + full); else hereEl.removeAttribute('aria-label');
     hereEl.classList.remove('em-full');
@@ -461,9 +461,10 @@
   // 宿主页上的方法都返回 Promise。on('here' | 'events' | 'map', fn)：here / events 由本脚本发（面板关着也发），map 由地图发。
   const chatId = () => { try { return String(SillyTavern.getContext().chatId || ''); } catch (e) { return ''; } };
   const subs = { here: new Set(), events: new Set(), map: new Set(), characters: new Set(), outfit: new Set(), clock: new Set(), custom: new Set() };
-  let emHere = null, emEvSig = '', roomsKnown = null, HXm = null;
+  let emHere = null, emEvSig = '', roomsKnown = null, HXm = null, hereMod = null;
   function emit(ev, data) { for (const f of subs[ev]) { try { f(data); } catch (e) { console.warn('[EdenMap]', e); } } }
   const hx = () => (HXm ??= import(SELF + 'here.mjs'));
+  hx().then(m => { hereMod = m; setTimeout(push, 0); }).catch(() => {});
   let CXm = null; const chx = () => (CXm ??= import(SELF + 'tavern/characters.mjs'));
   const inner = () => { if (!alive) return null; try { const w = frame.contentWindow; if (!w?.EdenMap) return null; w.__edenMapChat?.(chatId()); return w.EdenMap; } catch (e) { return null; } };
   function knowRooms() { try { const r = inner()?.getRooms().rooms; if (r?.length) roomsKnown = r; } catch (e) {} }

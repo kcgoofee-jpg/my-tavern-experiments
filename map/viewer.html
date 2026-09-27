@@ -102,6 +102,7 @@
 <script defer src="events.js"></script>
 <script defer src="chars.js"></script>
 <script defer src="custom.js"></script>
+<script defer src="trips.js"></script>
 <script>document.addEventListener('DOMContentLoaded', () => { if (window.top !== window) parent.postMessage({ type: 'eden-map:boot', pct: .6 }, '*'); });   // 地图库已下载（启动进度 60%）</script>
 <style>
   /* E5 统一重构：颜色、字号、圆角、间距、动效全部取 ui/tokens.css 的语义令牌（docs/ui-audit.md 第三部分）；这里只写组件，不写色值。
@@ -1107,7 +1108,7 @@ function onOpen() {
 function drawOverlays() {
   untrackAll(); viewer.clearOverlays();
   if (REG.maps[cur].kind === 'world') worldOverlays(); else pointOverlays();
-  TCEvents.render(); TCChars.render(); TCCustom.relabel();   // 自定义显示名（v0.9.3）；人物层（chars.js，v0.9.2）；事件层（events.js）：聊天前端里的事件标签、外部数据源
+  TCEvents.render(); TCChars.render(); TCCustom.relabel(); TCTrips.render();   // 自定义显示名（v0.9.3）；人物层（chars.js，v0.9.2）；事件层（events.js）：聊天前端里的事件标签、外部数据源
   applyOverlayToggle(); markHere($('#here').value); tabOrder(); declutter();
 }
 // 竖屏（手机）：允许缩到整张图横向放进屏幕（上下留边），不再只能看到半张图（E4 N13）
@@ -1333,7 +1334,7 @@ function markHere(v) {
   document.querySelectorAll('.mk').forEach(e => { const n = e.dataset.name, al = e.dataset.alias ? e.dataset.alias.split('|') : ALIAS[n] || [];
     const hit = !!v && (extra.has(n) || v.includes(n) || n.includes(v) || al.some(k => v.includes(k)));
     e.classList.toggle('here', hit); });
-  updateLayerBadges(); estateRoom();
+  updateLayerBadges(); estateRoom(); if (typeof TCTrips !== 'undefined') TCTrips.render();   // v0.9.5 途中：两端之间的虚线弧
 }
 // ---------------- 自动跳到当前地点（map/here.mjs 六级落点；设置里可关，默认开） ----------------
 // 庄园房间 / 区域 → 庄园（房间由 estate:room 高亮，切楼层由庄园页自己做）；地标 → 该层并打开地点卡；层 / 大区 / 天城 → 该层默认视野；世界地名 → 世界图；匹配不到不动。

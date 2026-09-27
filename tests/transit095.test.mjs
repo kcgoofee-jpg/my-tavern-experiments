@@ -1,0 +1,28 @@
+// node tests/transit095.test.mjs —— v0.9.5 途中地点：「A至B的…」「从A到B」「前往B」「A → B」（map/here.mjs）。例子都是中性的
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import * as H from '../map/here.mjs';
+const REG = JSON.parse(fs.readFileSync(new URL('../map/data/maps.json', import.meta.url), 'utf8'));
+const idx = H.buildIndex(REG);
+let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
+t('切分四种写法', () => {
+  assert.deepEqual(H.parseTransit('天城上层·甲岛至乙园的私人载具舱内'), { from: '天城上层·甲岛', to: '乙园', via: '私人载具舱内' });
+  assert.deepEqual(H.parseTransit('从中层霓虹街到下层7号井'), { from: '中层霓虹街', to: '下层7号井', via: '' });
+  assert.deepEqual(H.parseTransit('中层，前往辉光大教堂的路上'), { from: '中层', to: '辉光大教堂', via: '' });
+  assert.deepEqual(H.parseTransit('甲地 → 乙地'), { from: '甲地', to: '乙地', via: '' });
+  assert.equal(H.parseTransit('天城·中层·天城执法局总局'), null); assert.equal(H.parseTransit(''), null);
+});
+t('两端都落到地标；终点借起点的层前缀', () => {
+  const r = H.resolveTransit('天城上层·罗斯柴尔德岛至伊甸庄园的私人载具舱内', idx);
+  assert.equal(r.from.marker, 'zaibatsu_estate'); assert.equal(r.to.map, 'eden_estate'); assert.equal(r.via, '私人载具舱内');
+  const h = H.resolveHere('天城上层·罗斯柴尔德岛至伊甸庄园的私人载具舱内', idx); assert.equal(h.marker, 'zaibatsu_estate'); assert.ok(h.transit);
+});
+t('终点认不出：只有起点', () => {
+  const r = H.resolveTransit('天城·中层·天城执法局总局前往某个没写过的地方', idx); assert.ok(r.from && !r.to);
+});
+t('两端都认不出：不算途中，照旧解析', () => { assert.equal(H.resolveTransit('甲地至乙地的车上', idx), null); });
+t('胶囊文字', () => {
+  assert.equal(H.transitLabel('天城上层·甲岛至乙园的私人载具舱内'), '甲岛 → 乙园（途中）');
+  assert.equal(H.transitLabel('从甲到乙', true), '甲 → 乙 (en route)'); assert.equal(H.transitLabel('乙园'), null);
+});
+console.log(`${n} passed`);
