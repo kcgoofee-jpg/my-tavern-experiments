@@ -141,7 +141,7 @@
 - ☑ 流程改进 1–7（用户 2026-09-27 批准）：① `tools/crops.sh` + 层脚本 `--crops` / `--crops-json`，一次 Blender 会话渲多块局部并核对尺寸；② `tools/review/` 人设模板（美术 5 / UI 5 / 庄园 4）+ 每轮现编人设 + 架构师汇总 + `pack.py` 简报；③ `tools/smoke.sh`；④ `tools/browser/`（Playwright 公共库 + `accept.mjs` E2 验收）；⑤ `tools/ship.sh`（smoke → 推送 → 预热 → 跟随预览，`--dry-run`）；⑥ `.gitattributes` NOTES union 合并（两边只追加）；⑦ 安静期锁 `tools/quiet.sh` / `quiet_wait.sh`。说明见 `docs/tooling.md`。
 
 **F 发版（本机，全部轨道完成后）**
-- ☐ F1 VERSION 0.9.1、CHANGELOG（合并两版内容）、version_code、标签、`build_card.sh`、CDN 预热全 200。
+- ☐ F1 VERSION 0.9.1、CHANGELOG（合并两版内容）、version_code、标签、CDN 预热全 200。**用户 2026-09-27：先不改角色卡**（要和作者沟通、兼容作者后续更新，相当于分支）→ 本版交付「外挂脚本（钉在 map-v0.9.1 标签）+ 世界书附加条目」两件，不跑 `build_card.sh`、不出新卡；原「卡文件存在、旧卡删除」门控改为「脚本 JSON 与世界书附加文件存在」。
 - ☐ F2 `tools/build_worldbook.py` 合并版世界书（含事件视觉样例、v2 类型清单）。
 - ☐ F3 隔离测试酒馆（`st-test`）导入验证：悬浮按钮、地图、庄园、事态落点。
 - ☐ F4 用户门控：npm 正式发布（截止约 2026-09-29 16:40，过了跳过）；最终交付清单。
