@@ -79,10 +79,10 @@ export async function newPage(preset = 'desktop', opts = {}) {
   const b = await browser(P.engine);
   const ctx = await b.newContext({ ...(typeof P.ctx === 'function' ? P.ctx() : P.ctx), colorScheme: opts.scheme || 'dark', locale: opts.lang === 'en' ? 'en-US' : 'zh-CN' });
   await ctx.addInitScript(o => {
-    try { if (location.port === o.port) { localStorage.setItem('edenMapLang', o.lang); if (o.tier) localStorage.setItem('edenMapTierV2', o.tier); } } catch (e) {}
+    try { if (location.port === o.port) { localStorage.setItem('edenMapLang', o.lang); if (o.tier) localStorage.setItem('edenMapTierV2', o.tier); if (!o.hint) localStorage.setItem('edenMapHint', '1'); } } catch (e) {}   // 大版本 2 首次三步提示：默认当已看过（opts.hint = true 时照常出）
     // 庄园第一帧时间点（map/estate/main.js 会置 window.__estateFirstFrame = true）
     let ff = false; Object.defineProperty(window, '__estateFirstFrame', { configurable: true, get: () => ff, set: v => { ff = v; if (v && !window.__ffAt) window.__ffAt = performance.now(); } });
-  }, { port: String(PORT), lang: opts.lang || 'zh', tier: opts.tier || null });
+  }, { port: String(PORT), lang: opts.lang || 'zh', tier: opts.tier || null, hint: !!opts.hint });
   if (opts.init) await ctx.addInitScript(...opts.init);
   const page = await ctx.newPage();
   const net = track(page);

@@ -3,6 +3,7 @@
 //   more3d  手机三维页（挤奶厅）：顶栏 ⋯ 打开后有「返回…」；标题不带「测试」
 //   labels  手机控制列有标注开关（#lblTog 可见、可切）
 //   unmap   当前地点认不出：抽屉 / 右栏「地点」页给「放到地图上」
+//   hint    第一次打开：三步提示横幅（P1，可关），关掉后再开不再出
 // 用法：node tools/browser/v2a.mjs <输出目录> [--only clean,more3d]
 import * as B from './lib.mjs';
 import { openHost } from './host_stub.mjs';
@@ -81,7 +82,20 @@ async function unmap(preset) {
   } finally { await P.ctx.close(); }
 }
 
+async function hint(preset) {
+  const P = await B.newPage(preset, { tier: 'save', hint: true });
+  try {
+    await B.openViewer(P, { map: 'tc_mid' }); await B.wait(3500); const p = P.page;
+    const t = await p.evaluate(() => document.querySelector('.vw-nt .nt-p1 .nt-item, .nt-p1 .nt-item')?.textContent || '');
+    rep.check(`${preset} 第一次打开：三步提示`, /三步上手/.test(t) && /①/.test(t) && /③/.test(t), t.slice(0, 80));
+    await B.shot(p, OUT, `hint_${preset}`);
+    await B.openViewer(P, { map: 'tc_mid' }); await B.wait(3500);
+    const t2 = await p.evaluate(() => document.querySelector('.nt-p1 .nt-item')?.textContent || '');
+    rep.check(`${preset} 再开不再出`, !/三步上手/.test(t2), t2.slice(0, 60));
+  } finally { await P.ctx.close(); }
+}
 try {
+  if (on('hint')) { await hint('phone'); await hint('desktop'); }
   if (on('clean')) { await clean('phone'); await clean('desktop'); }
   if (on('more3d')) await more3d();
   if (on('labels')) await labels();
