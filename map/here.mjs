@@ -67,11 +67,43 @@ export function buildIndex(reg, world = null, names = null, custom = null) {
   return idx;
 }
 
+// ---------------- v0.9.5 途中：「A至B的…」「从A到B」「前往B」「A → B」 ----------------
+// 返回 { from, to, via } 文本（via = 句尾的交通工具 / 处所，如「…的某某舱内」）；认不出返回 null。只做字符串切分，不过滤。
+const TAIL = /(?:的|之间|途中|路上|路途|航程|中途)/;
+export function parseTransit(value) {
+  const v = String(value || '').replace(/\{\{user\}\}/g, '').trim(); if (!v) return null;
+  const cut = s => { const m = s.match(TAIL); if (!m) return [s.trim(), '']; const via = s.slice(m.index + m[0].length).trim(); return [s.slice(0, m.index).trim(), /^(路上|途中|中途|航程|之间|路途)?$/.test(via) ? '' : via]; };
+  let m;
+  if ((m = v.match(/^(.*?)从\s*(.+?)\s*(?:到|去往|去|前往|飞往|驶向|往)\s*(.+)$/))) { const [to, via] = cut(m[3]); return to && m[2] ? { from: (m[1] + m[2]).trim(), to, via } : null; }
+  if ((m = v.match(/^(.+?)\s*(?:→|->|⇒)\s*(.+)$/))) { const [to, via] = cut(m[2]); return to ? { from: m[1].trim(), to, via } : null; }
+  if ((m = v.match(/^(.+?)至(.+)$/)) && !/^[高少多今甚]/.test(m[2])) { const [to, via] = cut(m[2]); return to && [...m[1]].length >= 2 ? { from: m[1].trim(), to, via } : null; }
+  if ((m = v.match(/^(.*?)(?:前往|去往|驶向|飞往|赶往|开往)\s*(.+)$/))) { const [to, via] = cut(m[2]); return to ? { from: m[1].replace(/[，,、\s]+$/, '').trim(), to, via } : null; }
+  return null;
+}
+const layerPrefix = s => { const m = String(s).match(/^(.*?[·・])/); return m ? m[1] : ''; };
+/** 途中地点 → { from: 落点|null, to: 落点|null, fromText, toText, via }；两端都认不出返回 null。终点没写层时借起点的层前缀再试一次 */
+export function resolveTransit(value, idx) {
+  const t = parseTransit(value); if (!t) return null;
+  const from = t.from ? resolveOne(t.from, idx) : null;
+  let to = resolveOne(t.to, idx); if (!to && layerPrefix(t.from)) { const r = resolveOne(layerPrefix(t.from) + t.to, idx); if (r && r.level <= 3) to = r; }
+  if (!from && !to) return null;
+  return { from, to, fromText: t.from, toText: t.to, via: t.via };
+}
+/** 标题栏胶囊的文字：「A → B（途中）」；不是途中返回 null */
+export function transitLabel(value, en = false) {
+  const t = parseTransit(value); if (!t) return null;
+  const short = s => String(s).split(/[·・]/).filter(Boolean).pop() || s;
+  return `${t.from ? short(t.from) + ' → ' : '→ '}${short(t.to)}${en ? ' (en route)' : '（途中）'}`;
+}
+
 /** 当前地点 → { level, map, room?, marker?, place?, word } 或 null */
 export function resolveHere(value, idx) {
   // 写了多处（「A / B」）：按顺序取第一处认得出的（v0.9.2，和标题栏只显示第一处一致）
   const parts = String(value || '').split(/\s*[\/／|｜]\s*/).filter(Boolean);
-  if (parts.length > 1) { for (const p of parts) { const r = resolveOne(p, idx); if (r) return r; } return null; }
+  if (parts.length > 1) { for (const p of parts) { const r = resolveHere(p, idx); if (r) return r; } return null; }
+  // 途中（v0.9.5）：落到起点（起点认不出就落终点），带上 transit 给地图画「在路上」
+  const tr = resolveTransit(value, idx);
+  if (tr) return { ...(tr.from || tr.to), transit: tr };
   return resolveOne(value, idx);
 }
 function resolveOne(value, idx) {
