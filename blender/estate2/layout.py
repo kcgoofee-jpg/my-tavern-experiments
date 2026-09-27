@@ -243,7 +243,7 @@ def cover(x, y, padmask, lake):
             parterre_gravel = np.maximum(parterre_gravel, ((lx < sz[0] + 3.5) & (ly < sz[1] + 3.5) & ~inside).astype(float))
     beds = np.maximum(beds, ((np.abs(np.abs(x) - 27.5) < 1.6) & (y > -246) & (y < -148)).astype(float))   # 大道两侧花境
     beds = np.maximum(beds, ((sd_te > -11) & (sd_te < -8) & (np.abs(x) > 12)).astype(float))            # 前庭沿墙花境
-    rill = ((np.abs(x) < 0.45) & (y > -246) & (y < -150)).astype(float)            # 大道中轴水渠
+    rill = np.zeros_like(paved)   # r4：大道中轴改成真水渠（gardens.canal）
     rill = np.maximum(rill, ((np.abs(x) < 0.9) & (y > -100) & (y < -88)).astype(float))
     dc = np.hypot(x - 72, y - 134)
     sand = ((dc < 34) & (lake < 0.95) & (dc > 10)).astype(float) * smooth01((34 - dc) / 6)
@@ -255,7 +255,22 @@ def cover(x, y, padmask, lake):
     for tx, ty, _ in TREEHOUSES:
         under = np.maximum(under, smooth01((20 - np.hypot(x - tx, y - ty)) / 8))
     meadow = np.maximum(meadow, clearing(x, y) * (1 - padmask) * (1 - lake))
+    wm = wood_mask(x, y)
+    meadow = np.maximum(meadow * wm, (1 - wm) * (1 - lake))   # r4：林带外全是草甸 / 园地
     return dict(paved=np.maximum(paved, parterre_gravel), beds=beds, rill=rill, sand=sand, meadow=meadow * (1 - under), tropic=under)
+
+
+def wood_mask(x, y):
+    """r4（用户：树太多且雷同）：林地只留外坡林带 + 别墅周边 + 沟谷，其余是草坪 / 草甸 / 设计过的树阵。"""
+    e = edge_dist(x, y)
+    belt = smooth01((52 + 14 * fbm(x, y, 60, 2, 61) - e) / 10)
+    for b in VILLAS:
+        belt = np.maximum(belt, smooth01((46 - np.hypot(x - b[1], y - b[2])) / 10))
+    belt = np.maximum(belt, smooth01((22 - poly_dist(x, y, RAVINE)) / 8))
+    # 视线走廊：主楼 → 湖、主楼 → 停靠平台，保持开敞
+    belt *= 1 - smooth01((70 - np.abs(x)) / 12) * ((y > 30) & (y < 110))
+    belt *= 1 - smooth01((60 - np.abs(x)) / 10) * (y < -60)
+    return belt
 
 
 def clearing(x, y):
@@ -388,6 +403,7 @@ GARDENS = [  # (id, 名称, kind, 中心, 尺寸, 旋转°)
     ('maze', '树篱迷宫', 'rect', (-200, -150), (30, 30), 20),
     ('orchard', '果园', 'ellipse', (205, 145), (28, 20), 0),
 ]
+COURTS = [(-168, -72, 22), (168, -100, -28), (-230, 95, -20)]   # r4 网球场 (x, y, 旋转°)，36.6 × 18.3 m 含外场
 BARRIER_STONES = [(-235, -165), (235, -165), (-235, 165), (235, 165)]   # 结界锚碑
 
 # 主楼群按翼 / 层落位（B2…F3 对应卡里的地上三层 + 地下两层；观景塔是屋顶眺望亭，不算楼层，键名沿用 F5）
@@ -450,4 +466,7 @@ def footprint_sd(x, y, pad=0.0):
     d = np.minimum(d, np.abs(np.hypot(x - ARC['c'][0], y - ARC['c'][1]) - ARC['R']) - ARC['depth'] / 2 - pad)
     for tx, ty, _ in TREEHOUSES:
         d = np.minimum(d, np.hypot(x - tx, y - ty) - 5 - pad)
+    for cx, cy, a in COURTS:
+        d = np.minimum(d, _sd_rect(x, y, cx, cy, 20 + 2 * pad, 38 + 2 * pad, math.radians(a), 1.0))
+    d = np.minimum(d, _sd_rect(x, y, 0, -198, 9 + 2 * pad, 100, 0, 1.0))   # 大道水渠
     return d

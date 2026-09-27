@@ -249,8 +249,118 @@ def vignette_terrace(col):
     bm_to_obj(bm, 'terrace_edge', col, M['plain'])
 
 
+def canal(col):
+    """r4 大道中轴：6 m 宽跌水水渠，分 9 段（每段平水面 + 石压顶），每段之间 0.4–1.3 m 小跌水；两端圆池。"""
+    M = mats()
+    bmS, bmW = bmesh.new(), bmesh.new()
+    ys = np.linspace(-246, -152, 10)
+    for y0, y1 in zip(ys[:-1], ys[1:]):
+        z = L.ground_z(0, (y0 + y1) / 2) - 0.1
+        _box(bmS, -3.6, y0, z - 1.5, 3.6, y1, z - 0.2)    # 槽底
+        for sx in (-1, 1):
+            _box(bmS, sx * 2.9, y0, z - 0.2, sx * 3.6, y1, z + 0.35)   # 石压顶
+        bmW.faces.new([bmW.verts.new(v) for v in [(-2.9, y0 + 0.4, z + 0.22), (2.9, y0 + 0.4, z + 0.22), (2.9, y1 - 0.4, z + 0.22), (-2.9, y1 - 0.4, z + 0.22)]])
+        _box(bmS, -3.6, y1 - 0.3, z - 0.2, 3.6, y1, z + 0.3)   # 跌水堰
+    for yc in (-250.0, -148.0):
+        z = L.ground_z(0, yc) - 0.1
+        bmesh.ops.create_cone(bmS, cap_ends=True, segments=48, radius1=6.5, radius2=6.5, depth=1.6, matrix=Matrix.Translation((0, yc, z - 0.4)))
+        bmesh.ops.create_circle(bmW, cap_ends=True, segments=48, radius=5.8, matrix=Matrix.Translation((0, yc, z + 0.43)))
+        bmesh.ops.create_cone(bmS, cap_ends=True, segments=16, radius1=0.7, radius2=0.5, depth=1.6, matrix=Matrix.Translation((0, yc, z + 1.0)))
+    bm_to_obj(bmS, 'canal_stone', col, M['plain'])
+    bm_to_obj(bmW, 'canal_water', col, M['pool'])
+
+
+def tennis(col):
+    """r4 网球场：硬地（深绿外场 + 蓝色内场）+ 白线 + 绿色围网立柱。"""
+    from .common import mat_new
+    court, t = mat_new('e2_court')
+    if t is not None:
+        t.bsdf((200, 0), Roughness=0.7, **{'Base Color': (0.05, 0.16, 0.1, 1)})
+    inner, t = mat_new('e2_court_in')
+    if t is not None:
+        t.bsdf((200, 0), Roughness=0.7, **{'Base Color': (0.06, 0.16, 0.32, 1)})
+    white, t = mat_new('e2_line')
+    if t is not None:
+        t.bsdf((200, 0), Roughness=0.6, **{'Base Color': (0.9, 0.9, 0.88, 1)})
+    M = mats()
+    for i, (cx, cy, a) in enumerate(L.COURTS):
+        z = L.ground_z(cx, cy) + 0.05
+        rot = math.radians(a)
+        parts = {}
+        bm = bmesh.new(); _box(bm, -9.1, -18.3, -2.5, 9.1, 18.3, 0.1); parts['court'] = (bm, court)
+        bm = bmesh.new(); _box(bm, -5.49, -11.89, 0.1, 5.49, 11.89, 0.12); parts['in'] = (bm, inner)
+        bm = bmesh.new()
+        lw = 0.05
+        for x in (-5.49, -4.11, 4.11, 5.49):
+            _box(bm, x - lw, -11.89, 0.12, x + lw, 11.89, 0.14)
+        for y in (-11.89, 11.89, -6.4, 6.4):
+            _box(bm, -5.49 if abs(y) > 7 else -4.11, y - lw, 0.12, 5.49 if abs(y) > 7 else 4.11, y + lw, 0.14)
+        _box(bm, -lw, -6.4, 0.12, lw, 6.4, 0.14)
+        _box(bm, -6.4, -0.05, 0.12, 6.4, 0.05, 1.0)   # 球网
+        parts['line'] = (bm, white)
+        bm = bmesh.new()
+        for x in np.linspace(-9.1, 9.1, 7):
+            for y in (-18.3, 18.3):
+                _box(bm, x - 0.06, y - 0.06, 0, x + 0.06, y + 0.06, 3.5)
+        for y in np.linspace(-18.3, 18.3, 12):
+            for x in (-9.1, 9.1):
+                _box(bm, x - 0.06, y - 0.06, 0, x + 0.06, y + 0.06, 3.5)
+        parts['post'] = (bm, M['steel'])
+        for k, (bm, m) in parts.items():
+            ob = bm_to_obj(bm, f'tennis{i}_{k}', col, m)
+            ob.location = (cx, cy, z); ob.rotation_euler.z = rot
+
+
+def pergolas(col):
+    """r4 玫瑰园北侧木构藤架：石柱 + 木梁 + 横条（俯视成细密条纹），上面零星爬藤。"""
+    M = mats()
+    bmS, bmW = bmesh.new(), bmesh.new()
+    z = L.TERRACE_Z
+    for gid, _, kind, (cx, cy), (hx, hy), _r in L.GARDENS:
+        if gid not in ('rose', 'rose_w'):
+            continue
+        y = cy + hy + 3.8
+        x0, x1 = cx - hx - 2, cx + hx + 2
+        for x in np.arange(x0, x1 + 0.1, 3.6):
+            for yy in (y - 1.6, y + 1.6):
+                _box(bmS, x - 0.25, yy - 0.25, z, x + 0.25, yy + 0.25, z + 2.8)
+        for yy in (y - 1.6, y + 1.6):
+            _box(bmW, x0 - 0.4, yy - 0.12, z + 2.8, x1 + 0.4, yy + 0.12, z + 3.1)
+        for x in np.arange(x0, x1, 0.6):
+            _box(bmW, x - 0.05, y - 2.3, z + 3.1, x + 0.05, y + 2.3, z + 3.25)
+    bm_to_obj(bmS, 'pergola_posts', col, M['plain'])
+    bm_to_obj(bmW, 'pergola_beams', col, M['wood'])
+
+
+def parterre_box(col):
+    """r4 花坛内的修剪黄杨图案：每块花床一圈内框 + 对角交叉 + 中心圆环（俯视可读的几何纹）。"""
+    M = mats()
+    bm = bmesh.new()
+    z = L.TERRACE_Z
+    for gid, _, kind, (cx, cy), (hx, hy), _r in L.GARDENS:
+        if gid not in ('rose', 'rose_w'):
+            continue
+        w, d = 2 * hx, 2 * hy
+        bw, bd = (w - 2 * 2.6 - 3.0) / 2, (d - 2 * 2.6 - 3.0) / 2
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                bx, by = cx + sx * (1.5 + bw / 2), cy + sy * (1.5 + bd / 2)
+                _hedge_rect(bm, bx, by, bw - 2.2, bd - 2.2, 0.22, 0.45)
+                from .buildings import _bar
+                for a, b in (((bx - bw / 2 + 0.6, by - bd / 2 + 0.6), (bx + bw / 2 - 0.6, by + bd / 2 - 0.6)),
+                             ((bx - bw / 2 + 0.6, by + bd / 2 - 0.6), (bx + bw / 2 - 0.6, by - bd / 2 + 0.6))):
+                    _bar(bm, (a[0], a[1], 0.2), (b[0], b[1], 0.2), 0.4, 0.45)
+                bmesh.ops.create_cone(bm, cap_ends=True, segments=24, radius1=1.6, radius2=1.6, depth=0.5, matrix=Matrix.Translation((bx, by, 0.2)))
+    ob = bm_to_obj(bm, 'parterre_box', col, M['hedge'])
+    ob.location.z = z
+
+
 def build(col):
-    vignette_terrace(col)
+    canal(col)
+    tennis(col)
+    pergolas(col)
+    parterre_box(col)
+    pass   # r4：露台小景暂时不做（用户定）
     imperial_stairs(col)
     fountain(col)
     parterres(col)

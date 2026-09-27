@@ -1,3 +1,17 @@
+# estate2 · r4 状态（2026-09-27：俯视地图帧）
+
+- 用户定：全部自建；只优化俯视看得到的东西（岩基、云领、露台小景暂不做）；上层地图用纯白云底 + 查看器里的活云。
+- 新视图 `--view map`：与 `tiancheng_upper.py` 同一正交俯视（0.375 m/px，+y 朝上），2000×1500 = 750 × 562.5 m，太阳高 50° 方位 125°（tc_common.SUN_ROT），Standard 视图变换，纯白自发光云底（terrain.build_white_floor）。`--view close`：主楼黄昏斜俯。
+  `blender -b -P blender/estate2/style_frame.py -- --view map --res 2000 --samples 64 --out …`（约 1 分钟）
+- 植被（用户 P0：树太多且雷同）：林地只留外坡林带 + 别墅周边 + 沟谷（layout.wood_mask），视线走廊主楼→湖、主楼→停靠平台开敞；
+  6 种分区（vegetation.KINDS）：冬青栎林带 / 伞松孤植 / 意大利柏行列（程序生成）/ 橄榄树阵 / 棕榈（程序生成）/ 蓝花楹 + 白玉兰；Poly Haven 原型按种换色、缩放。约 3300 实例（r3 约 4800+ 且全是同类）。
+- 地表：林带外全是园地草甸（绿底 + 干湿斑 + 野花团），不再是落叶林底；石灰华 2.4×1.2 m 错缝大板。
+- 屋面：坡度 0.5，铅皮屋脊 / 斜脊、老虎窗、天窗、脊上烟囱（buildings.roof_details）。
+- 园林：大道中轴跌水水渠 + 两端圆池、3 片网球场（layout.COURTS）、玫瑰园藤架、花床黄杨图案、每栋别墅一池。
+- 成片：`docs/drafts/eden2_r4_topdown.jpg`、`eden2_r4_vs_map.jpg`（左现地图，右新渲染，同比例）、`eden2_r4_close.jpg`；审查 `docs/reviews/eden2_r4/`。
+
+---
+
 # estate2 · 风格帧 r3（2026-09-27）
 
 - 成片：`docs/drafts/eden2_style_frame_r3.jpg`（主楼近景）、`_r3_wide.jpg`（整岛）、`_r3_terrace.jpg`（露台人眼小景，1600px）。审稿：`docs/reviews/eden2_r3/`。
