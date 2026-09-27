@@ -106,6 +106,7 @@
 <script defer src="unmapped.js"></script>
 <script defer src="varmap.js"></script>
 <script defer src="compose.js"></script>
+<script defer src="security.js"></script>
 <script>document.addEventListener('DOMContentLoaded', () => { if (window.top !== window) parent.postMessage({ type: 'eden-map:boot', pct: .6 }, '*'); });   // 地图库已下载（启动进度 60%）</script>
 <style>
   /* E5 统一重构：颜色、字号、圆角、间距、动效全部取 ui/tokens.css 的语义令牌（docs/ui-audit.md 第三部分）；这里只写组件，不写色值。
@@ -1173,6 +1174,7 @@ function onOpen() {
 function drawOverlays() {
   untrackAll(); viewer.clearOverlays();
   if (REG.maps[cur].kind === 'world') worldOverlays(); else pointOverlays();
+  if (typeof TCSecurity !== 'undefined') TCSecurity.afterOpen();   // v0.9.6 安保叠加层
   TCEvents.render(); TCChars.render(); TCCustom.relabel(); TCTrips.render();   // 自定义显示名（v0.9.3）；人物层（chars.js，v0.9.2）；事件层（events.js）：聊天前端里的事件标签、外部数据源
   applyOverlayToggle(); markHere($('#here').value); tabOrder(); declutter();
 }
@@ -1263,6 +1265,7 @@ function showCard(el, name, tag, src, extra, sub, cover) {
   if (LANG === 'en' && /[\u4e00-\u9fff]/.test(src || '') && t('src_note')) sv.dataset.note = t('src_note'); else delete sv.dataset.note;   // 英文界面：设定原文保持中文，加一行说明
   c.querySelector('.extra').innerHTML = extra || '';
   if (typeof TCCustom !== 'undefined') TCCustom.decorateCard(el, name);   // v0.9.3：自定义显示名 / 用途；本人地点卡的着装
+  if (typeof TCSecurity !== 'undefined') TCSecurity.decorate(el, name);   // v0.9.6 安保叠加层开着时：结界 / 监控 / 门禁
   if (typeof TCCompose !== 'undefined') TCCompose.attach(el || tag === 'set' ? { go: el?.dataset?.name || name, ask: el?.dataset?.name || name } : null);   // v0.9.6 地图 → 聊天：地点卡；事件 / 人物卡由 events.js / chars.js 另挂
   declutter();
 }

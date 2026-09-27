@@ -435,5 +435,8 @@
   "ch.m_yes": "Yes",
   "ch.m_no": "No",
   "ch.m_acc": "Accessories",
-  "ch.tier": "Combat tier"
+  "ch.tier": "Combat tier",
+  "sec.title": "Security",
+  "sec.hint": "Barrier, monitoring and access rules (only what the card states)",
+  "sec.badge": "Security: {s}"
 }
