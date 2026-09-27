@@ -242,7 +242,7 @@ def selfcheck(routes_out, mk):
     R['markers_with_anchor'] = sum('anchor' in m for m in mk)
     import tc_clouds
     off = {i['id']: round((i['z'] - .7) * math.tan(math.radians(tc_clouds.CLOUD_ZENITH)), 2) for i in I if i['z'] > 6}; R['shadow_offset_z_gt6'] = off
-    if any(v > 1.0 for v in off.values()): bad.append(f'z > 6 的岛影子偏移 > 1.0：{off}')
+    if tc_clouds.ISLAND_SHADOWS and any(v > 1.0 for v in off.values()): bad.append(f'z > 6 的岛影子偏移 > 1.0：{off}')
     R['suzhou_pool_ratio'] = {e.id: round(e.pool_ratio, 3) for e in isl if hasattr(e, 'pool_ratio')}
     R['lingnan_pond_ratio'] = {e.id: round(e.pond_ratio, 3) for e in isl if hasattr(e, 'pond_ratio')}
     json.dump(R, open(os.path.join(tc.HERE, '..', 'docs', 'drafts', 'upper_v5_selfcheck.json'), 'w'), ensure_ascii=False, indent=1, default=str)
