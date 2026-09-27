@@ -9,7 +9,7 @@
   渲染：随仓库的 three（../estate/vendor/），烘焙光照 → MeshBasicMaterial，无灯光、无阴影、无后处理。
   嵌入（viewer.html 的 kind=estate + viewer3d 字段）：blob iframe，<base> 指向本目录；模型 id 由注入的 window.__V3D_MODEL 给。
   消息（与旧庄园页同一套）：
-    宿主 → 本页：estate:lang {lang} / estate:theme {theme} / estate:inset {left} / v3d:fly {hotspot}
+    宿主 → 本页：estate:lang {lang} / estate:theme {theme} / estate:quality {q} / estate:inset {left} / v3d:fly {hotspot}
     本页 → 宿主：estate:ready（界面就绪，模型自己显示进度）/ estate:fail {reason} / v3d:state {mode, hotspot, flows}
     宿主 → 本页（续）：v3d:flows {on}（流向模式：manifest.flows 的示意折线 + 沿线移动的小球）
   调试：window.__v3d（stats、setMode、fly、orbitBench）。?tier=low|high 强制档位，?lang=en。
@@ -504,6 +504,9 @@ addEventListener('message', e => {
   const d = e.data || {};
   if (d.type === 'estate:lang') { LANG = d.lang === 'en' ? 'en' : 'zh'; applyLang(); }
   if (d.type === 'estate:theme') setTheme(d.theme);
+  if (d.type === 'estate:quality' && typeof d.q === 'string' && renderer) {   // 设置「三维画质」即时生效（毛玻璃 + 像素比）
+    document.documentElement.classList.toggle('noblur', TIER === 'low' || d.q === '1');
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, d.q === '1' ? 1 : d.q === '2' ? 2 : DPR_CAP)); renderer.setSize(innerWidth, innerHeight); dirty = true; }
   if (d.type === 'estate:inset') { document.body.style.setProperty('--inset', Math.max(0, (d.left | 0) - 8) + 'px'); }
   if (d.type === 'v3d:fly') fly(d.hotspot);
   if (d.type === 'v3d:mode') setMode(d.mode);

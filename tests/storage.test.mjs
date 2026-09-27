@@ -27,3 +27,15 @@ test('静态清点：仓库里出现的每个 edenMap* / edenEstate* 键都登�
   const miss = [...out].filter(k => k !== 'edenMap' && !S.known(k));
   assert.deepEqual(miss, []);
 });
+test('查看器与经典外挂脚本的本机读写都经 TCStore（core/storage.mjs 的同步镜像）', () => {
+  const rd = f => readFileSync(new URL('../map/' + f, import.meta.url), 'utf8');
+  const v = rd('viewer.html'), body = v.slice(v.indexOf('window.TCStore'));
+  const shimEnd = body.indexOf('})();') + 5, rest = body.slice(shimEnd).replace(/const LS = \(\(\) => \{[^\n]*\n[^\n]*\n/, '');
+  assert.doesNotMatch(rest, /\b(localStorage|sessionStorage)\.(get|set|remove)Item\(/);
+  for (const f of ['events.js', 'custom.js', 'trips.js', 'security.js']) assert.doesNotMatch(rd(f), /localStorage\.(get|set|remove)Item\(/, f);
+  // chars.js 只剩读状态栏自己的头像键（不是我们的键）
+  for (const l of rd('chars.js').split('\n').filter(l => /localStorage\.(get|set|remove)Item\(/.test(l))) assert.match(l, /eden_portrait|eden_custom_portraits/);
+  // 镜像里的 session 键 = KEYS 里 scope=session 的键
+  const ses = Object.entries(S.KEYS).filter(([, o]) => o.scope === 'session').map(([k]) => k);
+  assert.deepEqual(ses, [...v.matchAll(/ses = k => k === '([^']+)'/g)].map(m => m[1]));
+});

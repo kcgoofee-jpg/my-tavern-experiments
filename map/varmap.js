@@ -2,7 +2,7 @@
 // 这里列出每一项读哪个 stat_data 路径（下拉从实际的变量树里选，「自动」= 默认 / 自动找到的），旅行方式关键词，重置。改动发回卡内脚本，按角色卡存本机。
 // 只在嵌在酒馆里时显示。读查看器的全局：esc、post、LANG。
 const TCVarMap = (() => {
-  const T = (k, zh, v = {}) => { const r = window.I18N?.t?.(k, v); if (r && r !== k) return r; return Object.entries(v).reduce((s, [a, b]) => s.split('{' + a + '}').join(b), zh); };
+  const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let d = null, open = false;
   const F = [['location', '当前地点', 'Location'], ['time', '时刻', 'Time'], ['period', '时段', 'Period'], ['date', '日期', 'Date'], ['outfit', '主角着装', 'Outfit'],
     ['present', '在场人物表', 'Present table'], ['members', '成员表', 'Members table'], ['targets', '目标表', 'Targets table'], ['reputation', '声望', 'Reputation'], ['stageField', '阶段字段名', 'Stage field'],

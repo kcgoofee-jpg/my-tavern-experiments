@@ -4,7 +4,7 @@
 //   存在聊天变量 eden_map.自定义（mvu.mjs setCustom 的 alias / ignore；单独打开时存本机），存完立刻重建词表并跳过去。
 // 读查看器的全局：REG、M、HX、hereIdx、estPlan、TCCustom、jumpHere、esc、post、LANG、$。这里不过滤任何文字（textContent / esc）。
 const TCUnmapped = (() => {
-  const T = (k, zh, v = {}) => { const r = window.I18N?.t?.(k, v); if (r && r !== k) return r; return Object.entries(v).reduce((s, [a, b]) => s.split('{' + a + '}').join(b), zh); };
+  const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const embed = window.top !== window;
   let sent = null, name = null, value = '', chip = null, dlg = null, q = '', waitFor = null, opener = null;
   const KIND = { landmark: ['um.k_landmark', '地标'], layer: ['um.k_layer', '层 / 大区'], room: ['um.k_room', '庄园房间'], area: ['um.k_area', '庄园室外'], world: ['um.k_world', '世界地名'] };

@@ -13,19 +13,26 @@ VER=$(tr -d ' \n' < VERSION)
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/${NAME}.XXXXXX")
 trap '[ "$KEEP" = 1 ] || rm -rf "$TMP"' EXIT
 
-# 白名单：查看器页面与事件模块、卡内脚本、数据、界面语言（i18n）、庄园三维页面（map/estate/*.html）、第三方库、底图瓦片（dzi + _files/）与首屏缩略图
-mkdir -p "$TMP/map/art" "$TMP/map/data" "$TMP/map/tavern" "$TMP/map/i18n" "$TMP/map/estate" "$TMP/map/ui"
-cp map/viewer.html map/events.js "$TMP/map/"
-cp map/tavern/eden-map.js map/tavern/events.mjs "$TMP/map/tavern/"
+# 白名单（v2 起按目录收，避免漏新模块）：查看器页面与全部经典 / 模块脚本（map/*.js *.mjs、app/、core/、ui/）、卡内脚本（tavern/*.js *.mjs）、
+# 数据、界面语言、庄园三维（estate/ 除 NOTES 与 reviews）、通用三维查看器与道具（props/）、第三方库、底图瓦片（dzi + _files/）与首屏缩略图
+mkdir -p "$TMP/map/art" "$TMP/map/data" "$TMP/map/tavern" "$TMP/map/i18n" "$TMP/map/ui" "$TMP/map/app" "$TMP/map/core"
+cp map/viewer.html map/*.js map/*.mjs "$TMP/map/"
+cp map/tavern/*.js map/tavern/*.mjs "$TMP/map/tavern/"
+cp map/app/*.mjs "$TMP/map/app/"; cp map/core/*.mjs "$TMP/map/core/"
 cp map/data/*.json "$TMP/map/data/"
 cp map/i18n/*.json "$TMP/map/i18n/"
-cp map/ui/*.css "$TMP/map/ui/"   # 设计令牌（E5）
-cp map/estate/*.html "$TMP/map/estate/"
+cp map/ui/*.css map/ui/*.js map/ui/*.mjs "$TMP/map/ui/"
+rsync -a --exclude NOTES.md --exclude reviews map/estate "$TMP/map/"
+[ -d map/props ] && rsync -a --exclude '*.blend' --exclude '*.md' map/props "$TMP/map/"
 cp -R map/vendor "$TMP/map/"
 [ -f map/art/world_1k.jpg ] && cp map/art/world_1k.jpg "$TMP/map/art/"
 for d in map/art/*.dzi; do
   b=${d%.dzi}; cp "$d" "$TMP/map/art/"
   [ -d "${b}_files" ] && cp -R "${b}_files" "$TMP/map/art/"
+done
+# 自检：查看器 / 宿主里出现的相对模块与脚本路径都要在包里
+for f in $(grep -ohE '(src|href)="(app|core|ui)/[^"]+"|\x27(app|core|tavern|ui)/[a-z0-9_-]+\.m?js\x27' map/viewer.html | grep -oE '(app|core|tavern|ui)/[a-z0-9_.-]+'); do
+  [ -f "$TMP/map/$f" ] || { echo "pack_npm: 缺 map/$f" >&2; exit 1; }
 done
 cp README.md "$TMP/"
 [ -f LICENSE ] && cp LICENSE "$TMP/"

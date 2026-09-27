@@ -66,6 +66,7 @@ export const SCHEMA = {
   'estate:inset': [V2S, { left: 'number?' }],
   'estate:lang': [V2S, { lang: 'string' }],
   'estate:theme': [V2S, { theme: 'string' }],
+  'estate:quality': [V2S, { q: 'string' }],       // 设置「三维画质」auto / 1 省电 / 2 高：不重载即生效（毛玻璃 + 像素比）
   'estate:pause': [V2S, {}],
   'estate:resume': [V2S, {}],
   'estate:floor': ['both', { floor: 'any' }],     // 下行 = 直嵌 / 调试接口；上行 = 用户切了楼层（直嵌时给外层页）

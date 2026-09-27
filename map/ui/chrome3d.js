@@ -32,7 +32,7 @@ body.c3full #c3 .c3-col{visibility:hidden}
 @media (max-width:640px),(pointer:coarse){#c3 .c3-col button{width:44px;height:44px}#c3 .c3-seg button,#c3 .c3-sub button{min-height:44px;min-width:44px;padding:0 var(--sp-4,8px)}}
 @media (max-width:640px){#c3 .c3-title{display:none}}
 @media (prefers-reduced-transparency:reduce){#c3 *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}}
-html.noblur #c3 *,html.noblur .panel,html.noblur #title{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html.noblur *,html.noblur *::before,html.noblur *::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 @media (min-width:641px){#c3 .c3-top{align-items:flex-end}#c3.c3-embed .c3-top{align-items:center}}
 @media (pointer:coarse){#c3 .c3-col,#c3 .c3-seg,#c3 .c3-sub{-webkit-backdrop-filter:none;backdrop-filter:none}}
 `;

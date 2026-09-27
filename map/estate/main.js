@@ -807,6 +807,9 @@ window.addEventListener('message', (e) => {
   else if (d.type === 'estate:pause') { paused = true; }   // 查看器休眠：停渲染循环，模型与 GPU 资源留着
   else if (d.type === 'estate:resume' && paused) { paused = false; resumeT = performance.now(); needs = true; requestAnimationFrame(loop); }
   else if (d.type === 'estate:lang' && (d.lang === 'en' || d.lang === 'zh')) setLang(d.lang);
+  else if (d.type === 'estate:quality' && typeof d.q === 'string') {   // 设置「三维画质」即时生效
+    DPR = Math.min(window.devicePixelRatio || 1, d.q === '1' ? 1 : 2); document.documentElement.classList.toggle('noblur', d.q === '1');
+    renderer.setPixelRatio(lowRes ? Math.max(1, DPR * 0.75) : DPR); renderer.setSize(innerWidth, innerHeight); needs = true; }
   else if (d.type === 'estate:theme' && (d.theme === 'light' || d.theme === 'dark')) { THEME = d.theme; document.documentElement.dataset.theme = THEME; paintSky(); }
 });
 function setLang(l) { LANG = l; buildNav(); relabel(); frustum(); const it = cardFor; cardFor = null; if (it) showCard(it, cardAt?.[0], cardAt?.[1]); needs = true; }
