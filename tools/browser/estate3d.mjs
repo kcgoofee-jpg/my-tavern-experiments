@@ -29,6 +29,9 @@ try {
       await B.wait(1200);
       const pr = await f.evaluate(() => ({ mode: window.__estate.mode(), pin: window.__estate.pinned() }));
       rep.check('卡设定房间飞行（F3 个人寝室，按多边形取那一间）', pr.mode === 4 && pr.pin?.id === 'F3-91', JSON.stringify(pr));
+      await f.evaluate(() => window.postMessage({ type: 'estate:room', name: '无菌处置室', card: { name: '无菌处置室', floor: 'B2' } }, '*')); await B.wait(1200);
+      const pm = await f.evaluate(() => ({ mode: window.__estate.mode(), pin: window.__estate.pinned(), med: !!window.__estate.scene.getObjectByName('f_B2_med') }));
+      rep.check('B2 医疗中心（无菌处置室 → B2 剖切，医疗设备块已载入）', pm.mode === 0 && pm.pin?.name === '无菌处置室' && pm.med, JSON.stringify(pm));
       await f.evaluate(() => window.postMessage({ type: 'estate:room', name: '玫瑰园' }, '*')); await B.wait(1000);
       const pz = await f.evaluate(() => ({ mode: window.__estate.mode(), pin: window.__estate.pinned() }));
       rep.check('室外区域热点（玫瑰园 → 外观并高亮）', pz.mode === 'ext' && pz.pin?.name === '玫瑰园', JSON.stringify(pz));
