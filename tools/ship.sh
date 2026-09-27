@@ -41,7 +41,7 @@ PUSH=${PIPESTATUS[0]}; [ "$PUSH" = 0 ] || { echo "推送失败"; exit 1; }
 echo "-- 3/4 预热 CDN @$SHORT"
 WARMSUM="跳过"
 if [ "$WARM" = 1 ]; then
-  N=$(git ls-tree -r --name-only "$SHA" -- map | grep -vcE '\.(md|py)$' || true)
+  N=$(bash tools/warm_cdn.sh "$SHA" --count)
   if [ "$DRY" = 1 ]; then WARMSUM="演练：将预热 $N 个文件（bash tools/warm_cdn.sh $SHA $JOBS）"
   else
     W=$(bash tools/warm_cdn.sh "$SHA" "$JOBS"); echo "$W" | sed 's/^/   /'
