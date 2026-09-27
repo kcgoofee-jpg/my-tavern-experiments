@@ -16,6 +16,10 @@ BR=$(git rev-parse --abbrev-ref HEAD); SHA=$(git rev-parse HEAD); SHORT=${SHA:0:
 [ "$BR" = HEAD ] && { echo "当前不在分支上（detached HEAD）" >&2; exit 2; }
 [ "$DRY" = 1 ] && echo "== 演练（--dry-run）：$BR @ $SHORT" || echo "== 发布 $BR @ $SHORT"
 [ -z "$(git status --porcelain --untracked-files=no)" ] || echo "提醒：工作区有未提交的改动，不会被推送"
+# C-1：map/ 下未跟踪的文件（新切的瓦片、新数据没 git add）会让预览缺文件——直接中止；smoke 之外再用提交树跑一遍 check_maps
+UNTR=$(git status --porcelain --untracked-files=all -- map | grep '^??' || true)
+[ -z "$UNTR" ] || { echo "map/ 下有未跟踪文件（没 git add 就不会推送）：" >&2; echo "$UNTR" | head -20 | sed 's/^/   /' >&2; exit 1; }
+python3 tools/check_maps.py --committed HEAD >/dev/null || { python3 tools/check_maps.py --committed HEAD | grep '^错误' >&2; echo "check_maps（提交内容）失败" >&2; exit 1; }
 
 echo "-- 1/4 smoke"; bash tools/smoke.sh
 if [ "$REL" = 1 ]; then
