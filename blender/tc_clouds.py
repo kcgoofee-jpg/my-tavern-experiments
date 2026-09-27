@@ -6,15 +6,15 @@
 # 岛影：旧版影子是一块块水滴形的深色斑，离岛很远——
 #   ①岛下面倒锥形的岩体也在投影（水滴形），②太阳天顶角 40°，岛比云高 1–8 单位，影子偏出 1–7 单位（100–700 m）。
 #   新版：岩体不投影，影子只由岛面（及上面的树和楼）投出，和俯视看到的岛形一致；
-#   云只接收一盏「云用太阳」（灯光链接）：方位角与三层共用的太阳相同（tc.SUN_ROT 的 215°），天顶角 14°，
-#   影子落在岛的同一侧、离岛不远；太阳圆盘角 5°，岛越高影子越虚——一眼读出「岛浮在云上，越高越远」。
+#   云只接收「云用太阳」（灯光链接）：方位角与三层共用的太阳相同（tc.SUN_ROT 的 215°），天顶角 8°，
+#   影子落在岛的同一侧、离岛不远；太阳圆盘角 2.5°，高岛的影子也保得住岬角。底云另有一盏同向的灯，只有云团挡它：岛影不落进云缝。
 #   主太阳照岛、不照云；云用太阳只照云。
 # 伊甸庄园（主角岛）周围一圈云更密、更高、更亮。
 import bpy, bmesh, math, numpy as np
 import tc_common as tc
 from tc_common import W, H, tick
 
-CLOUD_ZENITH, CLOUD_SUN_ANGLE = 14, 5.0          # 云用太阳：天顶角（度）、太阳圆盘角（度，越大影子越虚）
+CLOUD_ZENITH, CLOUD_SUN_ANGLE = 8, 2.5           # 云用太阳：天顶角（度）、太阳圆盘角（度，越大影子越虚）。B2 第 2 轮：14 → 8、5 → 2.5，z 7.4 的岛影偏移 ≤ 0.95 单位，保得住岬角
 
 # 两种风格的云团参数：间距 S、主团半径 R0 + R1 × 浓度、周围小团个数与相对半径、顶上鼓包个数
 STYLES = {
@@ -50,11 +50,12 @@ def _puffs(islands, rng, style):
     for gy in np.arange(-H * .62, H * .62, S * .87):
         for gx in np.arange(-W * .62, W * .62, S):
             x = gx + (S / 2 if round(gy / (S * .87)) % 2 else 0) + rng.uniform(-.35, .35) * S; y = gy + rng.uniform(-.3, .3) * S
-            d = .65 * dens(x, y) + .35 * lump(x, y); tint = 1.0
-            if eden:                                         # 伊甸：外圈一环更密更亮的云
-                q = math.hypot((x - eden['x']) / eden['rx'], (y - eden['y']) / eden['ry'])
-                if 1.1 < q < 2.4: w = 1 - abs(q - 1.75) / .65; d = max(d, .55 + .4 * w); tint = 1 + .07 * w
-            if d < .3: continue                              # 云缝：露出下面的暗底云
+            dv = dens(x, y); d = .65 * dv + .35 * lump(x, y); tint = 1.0
+            if eden:                                         # 伊甸（按真实轮廓的 q）：环内侧不留缝；环外 1.6–2.6 一道浓带，环本身另排
+                q = _q(eden, x, y)
+                if q < 1.2: d = max(d, .5)
+                if 1.6 < q < 2.6: w = 1 - abs(q - 2.1) / .5; d = max(d, .45 + .3 * w)
+            if dv < .3 and d < .3: continue                  # 云缝只由低频浓度决定：lump 造成的小黑洞被填上
             R = (st['R0'] + st['R1'] * (d - .3)) * rng.uniform(.85, 1.15)
             top = -.1 + .8 * (d - .3) + rng.uniform(-.08, .08)
             fz = .62
@@ -67,22 +68,20 @@ def _puffs(islands, rng, style):
                 a = rng.uniform(0, 2 * math.pi); dist = R * rng.uniform(.1, .45); r = R * rng.uniform(.35, .5)
                 t = top + R * rng.uniform(.05, .15)
                 out.append((x + math.cos(a) * dist, y + math.sin(a) * dist, t - r * fz, r, fz, tint))
-    if eden:                                                 # 伊甸一圈：沿椭圆 1.6 倍处排一环饱满的亮云（主角岛的「云台」）
-        n = 16
+    if eden:                                                 # 伊甸亮云环：沿真实轮廓 × 1.25–1.5 排约 30 团，环顶 .95（高出周围，向外投一圈影），tint 1.12
+        isle = eden['isle']; n = 30
         for k in range(n):
-            a = 2 * math.pi * k / n + rng.uniform(-.1, .1); q = rng.uniform(1.45, 1.8)
-            c, s = math.cos(eden['rot']), math.sin(eden['rot']); ex, ey = math.cos(a) * eden['rx'] * q, math.sin(a) * eden['ry'] * q
-            x, y = eden['x'] + ex * c - ey * s, eden['y'] + ex * s + ey * c; R = rng.uniform(.75, 1.0); top = .75 + rng.uniform(-.05, .1)
-            out.append((x, y, top - R * .62, R, .62, 1.08))
-            for j in range(3):
+            a = 2 * math.pi * k / n + rng.uniform(-.06, .06); q = rng.uniform(1.25, 1.5); rr = isle.r(a) * q
+            x, y = isle.world(math.cos(a) * rr, math.sin(a) * rr); R = rng.uniform(.75, 1.0); top = .95 + rng.uniform(-.04, .06)
+            out.append((x, y, top - R * .62, R, .62, 1.12))
+            for j in range(4):
                 b = rng.uniform(0, 2 * math.pi); r = R * rng.uniform(.4, .6)
-                out.append((x + math.cos(b) * R * .6, y + math.sin(b) * R * .6, top + R * .05 - r * .62, r, .62, 1.08))
+                out.append((x + math.cos(b) * R * .6, y + math.sin(b) * R * .6, top + R * .05 - r * .62, r, .62, 1.12))
     # 不许穿过低空的岛：在岛的投影范围（外扩一点）里，云顶压到岛面以下
     P = np.array(out, np.float32)
-    for i in islands:
-        c, s = math.cos(-i['rot']), math.sin(-i['rot']); dx, dy = P[:, 0] - i['x'], P[:, 1] - i['y']
-        u, v = (dx * c - dy * s) / (i['rx'] * 1.25 + P[:, 3]), (dx * s + dy * c) / (i['ry'] * 1.25 + P[:, 3])
-        hit = u * u + v * v < 1; lim = i['z'] - .35
+    for i in islands:                                        # 按真实轮廓（长条岛到 1.43 rx 也罩得住）
+        c, s = math.cos(-i['rot']), math.sin(-i['rot']); dx, dy = P[:, 0] - i['x'], P[:, 1] - i['y']; lx, ly = dx * c - dy * s, dx * s + dy * c
+        hit = np.hypot(lx, ly) < i['isle'].r_np(np.arctan2(ly, lx)) * 1.15 + P[:, 3]; lim = i['z'] - .35
         over = hit & (P[:, 2] + P[:, 3] * P[:, 4] > lim); P[over, 2] = lim - P[over, 3] * P[over, 4]
     return P
 
@@ -98,12 +97,18 @@ def _mesh(P, name):
     at = me.attributes.new('tint', 'FLOAT', 'POINT'); at.data.foreach_set('value', np.repeat(P[:, 5], nv))
     return me
 
+def _q(eden, x, y):
+    """到伊甸的「轮廓倍数」：点到岛心距离 / 该方向的岸线半径（标量或 numpy）。"""
+    isle = eden['isle']; c, s = math.cos(-eden['rot']), math.sin(-eden['rot']); dx, dy = x - eden['x'], y - eden['y']
+    lx, ly = dx * c - dy * s, dx * s + dy * c
+    if np.ndim(lx): return np.hypot(lx, ly) / isle.r_np(np.arctan2(ly, lx))
+    return math.hypot(lx, ly) / isle.r(math.atan2(ly, lx))
+
 def _tint(x, y, eden):
-    """伊甸亮环：离伊甸椭圆 1.1–2.4 倍处逐渐提亮，1.65 倍处最亮（+8%）。"""
+    """伊甸亮环：沿真实轮廓 × 1.05–1.75 提亮，1.4 倍处最亮（+12 %）。"""
     if not eden: return np.ones_like(x)
-    c, s = math.cos(-eden['rot']), math.sin(-eden['rot']); dx, dy = x - eden['x'], y - eden['y']
-    q = np.hypot((dx * c - dy * s) / eden['rx'], (dx * s + dy * c) / eden['ry'])
-    return (1 + .08 * np.clip(1 - np.abs(q - 1.65) / .6, 0, 1)).astype(np.float32)
+    q = _q(eden, x, y)
+    return (1 + .12 * np.clip(1 - np.abs(q - 1.4) / .35, 0, 1)).astype(np.float32)
 
 def _meta(P, name, res=.09, eden=None):
     """metaball：各团互相融合成一整块积云（没有球与球相交的折痕），再转成网格；tint 取最近的团。"""
@@ -172,12 +177,18 @@ def build_cloud_sea(layer, islands, sun):
     for c in base.users_collection: c.objects.unlink(base)
     col.objects.link(base)
     bm_ = tc.noise_mat('cloud_base', (.40, .47, .60), (.50, .56, .68), 1.2, .95, .0); base.data.materials.append(bm_)
-    # 灯光链接：主太阳不照云；云用太阳只照云（岛照样挡它 → 岛影）
-    ex = bpy.data.collections.new('cloud_ex'); rx = bpy.data.collections.new('cloud_rx')
-    for o in (cl, base):
-        ex.objects.link(o); ex.collection_objects[-1].light_linking.link_state = 'EXCLUDE'; rx.objects.link(o)
+    bb = tc.bsdf_of(bm_); lk = next(l for l in bm_.node_tree.links if l.to_node == bb and l.to_socket.name == 'Base Color')
+    em_in = bb.inputs.get('Emission Color') or bb.inputs.get('Emission')
+    if em_in is not None: bm_.node_tree.links.new(lk.from_socket, em_in); tc.set_in(bb, 'Emission Strength', .2)   # 底云自发光 0.2：云缝最深处也不发黑
+    # 灯光链接：主太阳不照云；云用太阳只照云团（岛照样挡它 → 岛影落在云顶）；
+    # 底云单独一盏同方向的灯，只让云团挡它——云团照样在云缝里投蓝灰影带，岛影不再落进云缝成远处的暗斑
+    ex = bpy.data.collections.new('cloud_ex'); rx = bpy.data.collections.new('cloud_rx'); rxb = bpy.data.collections.new('cloud_rx_base'); blk = bpy.data.collections.new('cloud_blk_base')
+    for o in (cl, base): ex.objects.link(o); ex.collection_objects[-1].light_linking.link_state = 'EXCLUDE'
+    rx.objects.link(cl); rxb.objects.link(base); blk.objects.link(cl)
     sun.light_linking.receiver_collection = ex
-    cs = bpy.data.lights.new('cloud_sun', 'SUN'); cs.energy = sun.data.energy * layer.f('--cloud-light', .7); cs.color = sun.data.color; cs.angle = math.radians(CLOUD_SUN_ANGLE)
-    co = bpy.data.objects.new('cloud_sun', cs); col.objects.link(co)
-    co.rotation_euler = (math.radians(CLOUD_ZENITH), 0, tc.SUN_ROT[2]); co.light_linking.receiver_collection = rx
+    for nm, rcv in (('cloud_sun', rx), ('cloud_sun_base', rxb)):
+        cs = bpy.data.lights.new(nm, 'SUN'); cs.energy = sun.data.energy * layer.f('--cloud-light', .7); cs.color = sun.data.color; cs.angle = math.radians(CLOUD_SUN_ANGLE)
+        co = bpy.data.objects.new(nm, cs); col.objects.link(co)
+        co.rotation_euler = (math.radians(CLOUD_ZENITH), 0, tc.SUN_ROT[2]); co.light_linking.receiver_collection = rcv
+        if nm == 'cloud_sun_base': co.light_linking.blocker_collection = blk
     tick(f'cloud sea ({style}): {len(P)} puffs')
