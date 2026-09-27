@@ -106,6 +106,23 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   *, *::before, *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; }
 }
 </style>
+<link rel="modulepreload" href="here.mjs">
+<link rel="modulepreload" href="core/protocol.mjs">
+<link rel="modulepreload" href="app/cardlinks.mjs">
+<link rel="modulepreload" href="app/clouds.mjs">
+<link rel="modulepreload" href="app/scale.mjs">
+<link rel="modulepreload" href="app/storage-ui.mjs">
+<link rel="modulepreload" href="app/fog.mjs">
+<link rel="modulepreload" href="core/fog.mjs">
+<!-- OpenSeadragon 5.0.1（BSD-3，见 vendor/openseadragon/LICENSE.txt），随仓库版本固定 -->
+<!-- 启动文件和地图库并行开始下载（CDN 每个请求约 1 秒延迟，串行等待是打开慢的主因） -->
+<link rel="preload" as="fetch" crossorigin="anonymous" href="data/maps.json">
+<link rel="preload" as="fetch" crossorigin="anonymous" href="data/world_markers.json">
+<link rel="preload" as="fetch" crossorigin="anonymous" href="data/derived.json">
+<!-- defer：地图库（277 KB）不再挡住首帧，慢网下先出加载提示与世界缩略图（E4 N07）；main() 等 DOMContentLoaded（此时两个脚本都已执行） -->
+<script defer src="vendor/openseadragon/openseadragon.min.js"></script>
+<script defer src="ui/sheet.js"></script>
+<!-- 核心模块图一次性预取（排在地图库之后）：boot.mjs 的 import 不再逐级发现 -->
 <link rel="modulepreload" href="app/state.mjs">
 <link rel="modulepreload" href="app/util.mjs">
 <link rel="modulepreload" href="app/tiers.mjs">
@@ -123,22 +140,6 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <link rel="modulepreload" href="app/bridge.mjs">
 <link rel="modulepreload" href="app/plugins.mjs">
 <link rel="modulepreload" href="app/boot.mjs">
-<link rel="modulepreload" href="here.mjs">
-<link rel="modulepreload" href="core/protocol.mjs">
-<link rel="modulepreload" href="app/cardlinks.mjs">
-<link rel="modulepreload" href="app/clouds.mjs">
-<link rel="modulepreload" href="app/scale.mjs">
-<link rel="modulepreload" href="app/storage-ui.mjs">
-<link rel="modulepreload" href="app/fog.mjs">
-<link rel="modulepreload" href="core/fog.mjs">
-<!-- OpenSeadragon 5.0.1（BSD-3，见 vendor/openseadragon/LICENSE.txt），随仓库版本固定 -->
-<!-- 启动文件和地图库并行开始下载（CDN 每个请求约 1 秒延迟，串行等待是打开慢的主因） -->
-<link rel="preload" as="fetch" crossorigin="anonymous" href="data/maps.json">
-<link rel="preload" as="fetch" crossorigin="anonymous" href="data/world_markers.json">
-<link rel="preload" as="fetch" crossorigin="anonymous" href="data/derived.json">
-<!-- defer：地图库（277 KB）不再挡住首帧，慢网下先出加载提示与世界缩略图（E4 N07）；main() 等 DOMContentLoaded（此时两个脚本都已执行） -->
-<script defer src="vendor/openseadragon/openseadragon.min.js"></script>
-<script defer src="ui/sheet.js"></script>
 <!-- 查看器本体（arch-v2 §6）：app/boot.mjs 按原顺序拉起核心各块；功能外挂各自一个模块标签（加载失败只少那一块）。模块标签与 defer 同一队列、按文档顺序执行：地图库、抽屉 → 核心 → 外挂 → 叶子模块，之后 DOMContentLoaded → main() -->
 <script type="module" src="app/boot.mjs" onerror="var s=document.querySelector('#loading span');if(s)s.textContent='地图脚本没取到，检查网络后重试'"></script>
 <script type="module" src="events.mjs"></script>
