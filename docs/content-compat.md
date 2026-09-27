@@ -43,6 +43,9 @@
 - ✅ `EdenMap.on('here' | 'events' | 'map', fn)` / `EdenMap.off(事件, fn?)`：
   - `here` `{ value }`（查看器里另带 `resolved` 落点）；`events` `{ items, floor, hereLayer }`；`map` `{ map, title, kind }`。
   - 酒馆里 `here` / `events` 由卡内脚本发（面板关着也发），`map` 由地图发。
+- ✅ v0.9.6 `EdenMap.sources()`（只读，只在酒馆里的宿主页对象上）→ 当前在用的数据来源，不含数据内容：
+  `{ location: 'mvu' | 'db' | 'none', mvu: { present, mode: 'mvu' | 'mvu-partial' | 'tags' }, db: { tables, location, chars } | null, tags: true, characters: { mvu?, tag?, infer?, db? }, varmap: { 字段: 路径 } }`。
+  `location` = 标题栏当前地点来自 MVU 还是表格数据库插件；`db` 为 null 表示没检测到插件（`shujuku.mjs facts`）；`characters` 是人物栏各来源的人数。只供其他本机脚本判断「地图现在读的是什么」，不再做更多插件集成。
 - ✅ `EdenMap.selfcheck()`：卡内脚本的启动自检结果（酒馆助手接口、MVU「世界.当前地点」、重复的地图脚本、线路、世界书附加条目、脚本与地图版本、正式版是否有新标签），判定在 `map/tavern/selfcheck.mjs`（单测 `tests/selfcheck.test.mjs`）。结果显示在地图设置的「自检」一栏；有 ⚠ 时弹一次小提示。唯一的额外请求是正式版每天最多一次查 jsDelivr 数据接口的最新标签（不带 referrer、不带凭据）。
 
 暂缓（v0.9.1 不做，RP 价值研究 architect.md：价值 4.7，且有直播采到私人内容的风险）：

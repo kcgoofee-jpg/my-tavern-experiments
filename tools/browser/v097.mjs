@@ -97,6 +97,13 @@ async function run(name, preset) {
       rep.check(`${name} 没有安保数据的图上开关隐藏`, await vf.evaluate(() => document.getElementById('tgSec').hidden));
       await vf.evaluate(() => TCSecurity.set(false));
     }
+    if (on('sources')) {
+      const r = await p.evaluate(() => window.EdenMap.sources());
+      rep.check(`${name} EdenMap.sources()：地点来自 MVU、没装数据库插件、人物来源计数`, r.location === 'mvu' && r.mvu.present && r.mvu.mode === 'mvu' && r.db === null && r.tags === true && typeof r.characters === 'object', JSON.stringify(r).slice(0, 300));
+      await p.evaluate(() => { window.AutoCardUpdaterAPI = { exportTableAsJson: () => ({ s1: { name: '人物表', content: [[null, '姓名', '位置'], [1, '丙一', '中层']] } }) }; });
+      const r2 = await p.evaluate(() => window.EdenMap.sources());
+      rep.check(`${name} 装了数据库插件：db = { tables, chars }`, r2.db?.tables === 1 && r2.db?.chars === 1, JSON.stringify(r2.db));
+    }
     rep.check(`${name} 无页面错误`, !errs(P).length, errs(P).join(' | ').slice(0, 300));
   } catch (e) { rep.check(`${name} 运行`, false, String(e).slice(0, 300)); }
   finally { await P.ctx.close(); }
