@@ -1408,6 +1408,8 @@ function renderSelfCheck() {
   if (!box) { box = document.createElement('div'); box.id = 'selfCheck'; $('#setPop').appendChild(box); }
   const L = LANG === 'en' ? 'en' : 'zh', mark = { ok: '✓', warn: '⚠', skip: '–', info: '↑' };
   box.innerHTML = `<b>${esc(tx('selfcheck.title', '自检'))}</b><ul>${selfCheck.items.map(i => `<li class="${esc(i.status)}">${mark[i.status] || ''} ${esc(i[L] || i.zh)}</li>`).join('')}</ul>`;
+  { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'splashAgain'; b.textContent = tx('selfcheck.splash', '重新显示开场自检');   // v0.9.5
+    b.onclick = () => { showSet(false); post({ type: 'eden-map:splash' }); }; box.appendChild(b); }
   if (selfCheck.items.some(i => i.id === 'update')) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = tx('selfcheck.update_now', '本次切换到新版本');
     b.onclick = () => post({ type: 'eden-map:update-now' }); box.appendChild(b);

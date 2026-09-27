@@ -231,17 +231,18 @@
   // 触屏且网络 / 内存信息都拿不到（iOS WebKit）也按省流预热（E6）；这只影响后台预热，清晰度档位由地图自己定
   const touchUnknown = () => { const n = window.parent.navigator || navigator; return !n.connection && !('deviceMemory' in n) && !!window.parent.matchMedia?.('(pointer: coarse)').matches; };
   const lean = () => { const c = navigator.connection || {}; return !!c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || '') || (navigator.deviceMemory || 8) <= 4 || touchUnknown(); };
+  let preDone = null; const preP = new Promise(r => { preDone = r; });   // v0.9.5 开场自检等它：预加载结束（成功、失败、被用户点开打断都算）
   async function preload() {
-    if (!panel.hidden || alive) return;
+    if (!panel.hidden || alive) return preDone();
     fab.classList.add('prep'); fab.title = '地图预加载中…';
-    if (!(await (lineP = autoLine()))) { fab.classList.remove('prep'); fab.classList.add('fail'); fab.title = '地图线路都连不上，点开手动选择'; return; }
-    if (!panel.hidden || alive) { fab.classList.remove('prep'); return; }   // 测速期间用户已经点开了
+    if (!(await (lineP = autoLine()))) { fab.classList.remove('prep'); fab.classList.add('fail'); fab.title = '地图线路都连不上，点开手动选择'; preDone(); return; }
+    if (!panel.hidden || alive) { fab.classList.remove('prep'); preDone(); return; }   // 测速期间用户已经点开了
     if (lean()) {
       htmlProg = f => fab.style.setProperty('--p', Math.round(f * 80));
       try { await fetchHtml(); await Promise.all(['data/maps.json', 'data/world_markers.json', 'data/derived.json'].map(u => fetch(BASE + u).catch(() => null)));
         fab.classList.remove('prep'); fab.title = '世界地图'; }
       catch (e) { fab.classList.remove('prep'); fab.classList.add('fail'); fab.title = '地图预加载失败，点开重试'; }
-      finally { htmlProg = null; }
+      finally { htmlProg = null; preDone(); }
       return;
     }
     ghost = true; panel.classList.add('em-ghost'); panel.hidden = false;
@@ -249,7 +250,7 @@
     loadViewer();
   }
   function endGhost(ok) {
-    if (!ghost) return; ghost = false; clearTimeout(ghostT);
+    preDone(); if (!ghost) return; ghost = false; clearTimeout(ghostT);
     // 失败不画满进度环（之前 endProg 会 setProg(100)，看起来像成功了，E4 N06）
     if (ok) endProg(); else { clearInterval(watchT); loadEl.hidden = true; }
     panel.hidden = true; panel.classList.remove('em-ghost'); sleepViewer();
@@ -335,6 +336,7 @@
     if (e.data?.type === 'eden-map:custom-set') api.setCustom(e.data.key, e.data.patch || {});
     if (e.data?.type === 'eden-map:custom-reset') api.removeCustom(e.data.key);
     if (e.data?.type === 'eden-map:custom-sync') api.setWorldbookSync(!!e.data.on);
+    if (e.data?.type === 'eden-map:splash') showSplash();   // 设置「重新显示开场自检」
     if (e.data?.type === 'eden-map:varmap-set') setVarUser(e.data.user);   // v0.9.5 设置「变量映射」
   };
   window.parent.addEventListener('message', onMsg);
@@ -639,7 +641,7 @@
     // 三维查看器飞到热点（v1.0 测试件：{ map: 'dairy', hotspot: 'tank' }）：面板没开就先打开；地图就绪后转发
     async flyTo(t) { flyQ = t || null; if (panel.hidden && !ghost) { panel.hidden = false; await loadViewer(); } else if (ghost) fab.click();
       if (!flyQ) return true; const v = inner(); if (v?.flyTo) { flyQ = null; return v.flyTo(t); } return true; },
-    selfcheck: () => runCheck().then(() => ({ items: checkItems.map(i => ({ ...i })), at: checkAt })),   // 启动自检的结果（只在本机）
+    selfcheck: (o = {}) => { if (o?.show) showSplash(); return runCheck().then(() => ({ items: checkItems.map(i => ({ ...i })), at: checkAt })); },   // 启动自检的结果（只在本机）；{ show: true } 再显示开场自检卡（v0.9.5）
     on(ev, fn) { if (subs[ev] && typeof fn === 'function') subs[ev].add(fn); return api; },
     off(ev, fn) { if (subs[ev]) fn ? subs[ev].delete(fn) : subs[ev].clear(); return api; },
   });
@@ -712,7 +714,26 @@
     sendCheck(); toastOnce();
   }
   function sendCheck() { if (alive && checkItems.length) post({ type: 'eden-map:selfcheck', items: checkItems, canUpdate: !!(VER && swappable && SC?.swapVer(import.meta.url, VER)), autoUpdate: lsGet(AUTO_UPD_KEY) === '1' }); }
-  function toastOnce() {   // 有 ⚠ 时弹一次小提示；同一组警告不再弹（换聊天也不弹）
+  // ---------------- v0.9.5 开场自检卡（tavern/splash.mjs）：导入后 / 换版本后第一次打开聊天时显示；不挡聊天 ----------------
+  let SPm = null, splash = null;
+  const splashDue = () => { try { return localStorage.getItem('edenMapSplashSeen') !== String(VER || 'dev'); } catch (e) { return false; } };
+  async function showSplash() {
+    SPm ??= await import(SELF + 'tavern/splash.mjs').catch(() => null); if (!SPm) return false;
+    const lite = lean(), get = f => fetch(BASE + f, { cache: 'force-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
+    const EST = ['estate/index.html', 'estate/main.js', 'estate/lib.js', 'estate/building.js', 'estate/furniture.js', 'estate/site.js', 'estate/plan.js', 'estate/vendor/three.module.min.js',
+      'estate/vendor/jsm/controls/OrbitControls.js', 'estate/vendor/jsm/environments/RoomEnvironment.js', 'estate/vendor/jsm/renderers/CSS2DRenderer.js'];
+    splash = SPm.openSplash({ root, id: ID, pdoc, ver: VER, en: UL === 'en', store: localStorage, cap: window.parent.__edenSplashCap || 25,
+      checks: () => runCheck().then(() => checkItems),
+      tasks: [
+        { key: 'map', zh: '地图程序与当前一层的图块', en: 'Map program and current-layer tiles', run: () => { if (panel.hidden && !alive && !ghost) preload().catch(() => {}); return preP; } },
+        { key: 'estate', zh: '庄园三维页面', en: 'Estate 3D page', skip: lite, run: () => Promise.all(EST.map(get)) },
+        { key: 'clouds', zh: '云图', en: 'Cloud sprites', skip: lite, run: () => Promise.all([1, 2, 3, 4, 5, 6].map(k => get(`art/clouds/puff${k}.png`))) },
+      ],
+      onStart: () => { splash = null; if (panel.hidden || ghost) { if (ghost) endGhost(true); panel.hidden = false; loadViewer(); } }, onClose: () => { splash = null; } });
+    return true;
+  }
+  function toastOnce() {
+    if (splash) return;   // 开场自检卡开着：警告已经列在卡里   // 有 ⚠ 时弹一次小提示；同一组警告不再弹（换聊天也不弹）
     const sig = SC.warnSig(checkItems); if (!sig || sig === lsGet(TOAST_KEY)) return; lsSet(TOAST_KEY, sig);
     toastEl?.remove(); const t = toastEl = pdoc.createElement('div'); t.setAttribute('role', 'status'); t.className = 'em-ctoast';
     const warns = checkItems.filter(i => i.status === 'warn'), L = UL === 'en' ? 'en' : 'zh';
@@ -784,12 +805,12 @@
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED']) if (tavern_events[k]) eventOn(tavern_events[k], () => recomputeSoon());   // 新楼、改楼、重 roll、删楼：重算
     if (tavern_events.GENERATION_AFTER_COMMANDS) eventOn(tavern_events.GENERATION_AFTER_COMMANDS, () => { clearTimeout(evT); recompute(); });   // 生成前同步一次，注入的是最新态势
     push(); loadSeen(); recompute();
-    (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => { preload().catch(() => {}); setTimeout(runCheck, 4000); });   // 打开聊天后空闲时：测速选线 + 预加载；稍后自检一次
+    (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => { preload().catch(() => {}); if (splashDue()) showSplash(); else setTimeout(runCheck, 4000); });   // 打开聊天后空闲时：测速选线 + 预加载；稍后自检一次
   })();
 
   // 脚本被关闭或重载时清理注入的元素
   const cleanup = () => { clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
-    if (window.parent.EdenMap === api) delete window.parent.EdenMap; toastEl?.remove();
+    if (window.parent.EdenMap === api) delete window.parent.EdenMap; toastEl?.remove(); splash?.el?.remove();
     if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup;
     try { window.parent.__edenMapLoads = (window.parent.__edenMapLoads || []).filter(u => u !== SELF); } catch (e) {} };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）
   window.parent.__edenMapCleanup = cleanup;
