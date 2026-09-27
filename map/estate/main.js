@@ -264,7 +264,7 @@ ROOMS.forEach((r) => {
 });
 AREAS.forEach((a) => {
   const it = { kind: 'area', d: a, floor: null, cx: a.x, cz: a.z, w: a.w || a.r * 2, dd: a.d || a.r * 2, y: 0, round: !!a.r || !!a.ell, rank: (a.pri ?? 5) <= 4 ? 3 : 1 };
-  const hgt = a.h || (a.pri >= 10 ? 30 : /楼|机库|塔|音乐厅|橘园|温室/.test(a.name) ? 16 : 1.5);
+  const hgt = a.h || (a.pri >= 10 ? 30 : /楼|载具库|塔|音乐厅|橘园|温室/.test(a.name) ? 16 : 1.5);
   const g = it.round ? new THREE.CylinderGeometry(1, 1, hgt, 32).scale(it.w / 2, 1, it.dd / 2) : new THREE.BoxGeometry(it.w, hgt, it.dd);
   const m = new THREE.Mesh(g, pickMat); m.position.set(a.x, hgt / 2, a.z); m.userData.item = it; scene.add(m); it.pick = m;
   it.label = mkLabel(scene, a.x, a.y ?? 3, a.z, 'area'); it.pri = (a.pri ?? 5) * 1000; ITEMS.push(it);

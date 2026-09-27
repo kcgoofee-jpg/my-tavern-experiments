@@ -12,7 +12,7 @@
 // - 第 2 轮：栏杆瓶柱分两个子批次标签：'far' = balPanel 贴图面片（远景用，近景应隐藏），'fine' = 车削瓶柱实例（近景 / 楼层细节）。
 //   main.js updateSubs 请按 m/px 切换：far.visible = !fine.visible（m/px > 0.08 时只显示 far）。
 // - 第 2 轮：卫浴与早餐室地面改 'marbleC'（素面带纹大理石）；套间里的浴室 / 马桶间 parts 由 buildCut 叠一层 'marbleC'。
-// - 第 2 轮：服务区（仆役楼、马车房、工坊、机库、机坪）整体北移 22 m（SERVICE_DZ），AREAS 已同步。
+// - 第 2 轮：服务区（仆役楼、悬浮车库〔原马车房〕、工坊、悬浮载具库〔原机库〕、载具停靠坪〔原机坪〕）整体北移 22 m（SERVICE_DZ），AREAS 已同步。
 // - 第 2 轮：七个主角区域标签 pri 9–10（主楼、门廊、图书馆塔楼、音乐厅亭、中轴大道、停靠平台、人工湖），其余 ≤ 8。
 // - ROOMS 新增 id / wall / rank / tall / parts / alias_en / heritage / era / en；AREAS 新增 alias_en；新增 ROOM_BY_ID、HERITAGE、BLOCKS、ISLE、D2M、I2M。
 
@@ -38,10 +38,11 @@ export const FLOORS = [
   { id: 'F1', label: '1F', name: '礼仪层', y: 1.2, h: 4.5 },
   { id: 'F2', label: '2F', name: '日常层', y: 5.7, h: 4.5 },
   { id: 'F3', label: '3F', name: '私人层', y: 10.2, h: 4.5 },
-  { id: 'F4', label: '4F', name: '服务层', y: 14.7, h: 4.0 },     // 檐部与挡檐墙之后的顶楼，只有主楼
-  { id: 'F5', label: '5F', name: '眺望层', y: 18.7, h: 5.0 },     // 屋顶平台 + 眺望亭
+  { id: 'F4', label: '顶', name: '顶楼（非卡设定）', y: 14.7, h: 4.0 },     // 檐部与挡檐墙之后的顶楼，只有主楼
+  { id: 'F5', label: '屋顶', name: '眺望亭', y: 18.7, h: 5.0 },     // 屋顶平台 + 眺望亭
 ];
-export const FLOOR_EN = ['State', 'Daily', 'Private', 'Service', 'Lookout'];
+// 卡设定：地上 F1–F3 + 地下 B1–B2（docs/card-digest.md §6）。F4 顶楼是仓库自设；F5 是屋顶眺望亭（屋顶构筑物，不算楼层）。id 不变（estate:floor 接口）
+export const FLOOR_EN = ['State', 'Daily', 'Private', 'Attic (non-canon)', 'Roof lookout'];
 export const ENTAB = [14.7, 17.6];   // 额枋 14.7–15.6 · 檐壁 15.6–16.5 · 檐口 16.5–17.6；挡檐墙 17.6–18.7
 export const SRC_EN = { '世界书': 'Worldbook', 'ROADMAP': 'Roadmap', '推断': 'Inferred' };
 
@@ -86,7 +87,7 @@ export const ROOMS = [
     en: ['Garden Hall', 'Lake-facing salon: champagne-velvet sofas, marquetry table, grand piano, mirrors facing three French windows', 'Inside the piano lid is the date of the third head\'s wedding; the same piece has been played here at every wedding since.'] }),
   R('108', '主楼梯厅', 0, [8, 20, -22, -6], 'marble', 'plasterStone', 2, { alias: ['楼梯厅', '主楼梯厅', '楼梯'], alias_en: ['Stair Hall', 'Grand Staircase'],
     use: '石材悬挑双跑回转梯（F1 → F3，梯段宽 2.2 m，锻铁鎏金栏杆），梯井中央是黄铜笼式电梯，顶部天光井',
-    heritage: '黄铜笼式电梯是第三代装的第一部以太电梯。楼层指针还是原装的机械表盘，指针停在「3」的时候会轻响一声。', era: '三代',
+    heritage: '（仓库自设，非卡设定）黄铜笼式电梯是第三代装的第一部以太电梯。楼层指针还是原装的机械表盘，指针停在「3」的时候会轻响一声。', era: '三代',
     en: ['Stair Hall', 'Cantilevered stone return stair to 3F with gilt wrought-iron balustrade; brass cage lift in the well; skylight above', 'The brass cage lift was the first ether lift, installed by the third generation; its original dial chimes softly when the needle stops at 3.'] }),
   R('109', '仆役楼梯', 0, [-20, -14, -14, -6], 'stoneFlag', 'paintIvory', 3, { minor: true, alias: ['仆役楼梯'], alias_en: ['Service Stair'],
     use: '石踏步、铁栏杆，贯通 B1–F5；内有 1.2 × 1.2 m 食梯', en: ['Service Stair', 'Stone stair B1–5F with a 1.2 m dumbwaiter', ''] }),
@@ -99,7 +100,7 @@ export const ROOMS = [
     heritage: '二代订制的 120 件银餐具，每件底部刻有家徽和序号，至今一件不缺。', era: '二代',
     en: ['Silver Room', 'Safe door, polishing bench, baize-lined drawers, china register', 'All 120 pieces of the second generation\'s silver, each engraved with crest and number, are still complete.'] }),
   R('112', '主人通道底站', 0, [-14, -8, -22, -14], 'stoneFlag', 'panelWalnut', 3, { alias: ['主人通道底站'], alias_en: ['Master Passage (Ground)'], src: 'ROADMAP',
-    use: '石材螺旋梯加单人电梯（胡桃木轿厢）；后墙有一道与石缝对齐的暗门，出门是通往机库的紫藤廊',
+    use: '石材螺旋梯加单人电梯（胡桃木轿厢）；后墙有一道与石缝对齐的暗门，出门是通往悬浮载具库的紫藤廊',
     en: ['Master Passage (Ground)', 'Spiral stair and a one-person lift; a concealed door in the rear wall opens to the wisteria walk towards the hangar', ''] }),
   R('113', '餐厅', 0, [-44, -20, 2, 16], 'versailles', 'silkBlue', 1, { tall: ['-z'], alias: ['餐厅', '饭厅'], alias_en: ['Dining Room'], src: '世界书',
     use: '可伸缩桃花心木长餐桌（最长 18 m，24 座）、两台餐具柜、两座卡拉拉白壁炉、历代宴会图、塞夫尔蓝金边餐具、三盏 36 臂水晶吊灯',
@@ -283,7 +284,7 @@ export const ROOM_BY_ID = Object.fromEntries(ROOMS.map((r) => [r.id, r]));
  * ================================================================ */
 export const SHAFTS = [
   { id: 'stair', name: '主楼梯', r: [8, 20, -22, -6], color: '#4C8C99', floors: [0, 1, 2], stops: [0, 1, 2], src: '推断', use: '访客与主人：石材悬挑双跑回转梯，F1–F3，顶部天光' },
-  { id: 'lift', name: '电梯', r: [12.5, 15.5, -16.5, -12.5], color: '#4C8C99', floors: [0, 1, 2, 3, 4], stops: [0, 1, 2, 4], key: [3], src: '推断', use: '黄铜笼式以太电梯（三代加装）：停 F1–F3 与 F5，F4 需钥匙' },
+  { id: 'lift', name: '电梯', r: [12.5, 15.5, -16.5, -12.5], color: '#4C8C99', floors: [0, 1, 2, 3, 4], stops: [0, 1, 2, 4], key: [3], src: '推断', use: '黄铜笼式以太电梯（三代加装；仓库自设，非卡设定）：停 F1–F3 与 F5，F4 需钥匙' },
   { id: 'service', name: '仆役楼梯', r: [-20, -14, -14, -6], color: '#C98A40', floors: [0, 1, 2, 3, 4], stops: [0, 1, 2, 3, 4], b1: -3.3, src: '推断', use: '仆役：石踏步、铁栏杆，B1–F5；内有 1.2 × 1.2 m 食梯（手摇与以太两用）' },
   { id: 'master', name: '主人通道', r: [-14, -8, -22, -14], color: '#7A5FA0', floors: [0, 1, 2, 3, 4], stops: [0, 2, 4], src: 'ROADMAP', use: '仅主人：螺旋梯加单人电梯，只在 F1 / F3 / F5 开门；F1 后墙暗门通紫藤廊', note: '走线推断' },
 ];
@@ -307,8 +308,8 @@ export const AREAS = [
   A('西花坛', { alias: ['花坛', '花园', '庭园', '刺绣花坛'], alias_en: ['Gardens', 'Garden', 'Parterre'], x: -36, z: 53, w: 40, d: 30, y: 2, pri: 7, src: '世界书', note: 'src「花园」；布局推断', use: '法式刺绣花坛 3 × 2 格，黄杨卷草纹填彩色碎砖和季节花' }),
   A('东花坛', { alias: ['东花坛'], alias_en: ['East Parterre'], x: 36, z: 53, w: 40, d: 30, y: 2, pri: 6, use: '法式刺绣花坛 3 × 2 格' }),
   A('中轴大道', { alias: ['大道', '中轴大道', '林荫道', '条纹草坪'], alias_en: ['Avenue', 'Grand Avenue'], x: 0, z: 170, w: 50, d: 200, y: 2, pri: 9, use: '大道 x ±3，两侧各一行椴树，前 56 m 有 16 座雕像台座；割草深浅条纹的长草坪' }),
-  A('停靠平台', { alias: ['停靠平台', '停机坪', '码头', '平台', '候机亭'], alias_en: ['Landing Platform', 'Landing Stage'], x: 0, z: 277, r: 16, y: 5, pri: 9, src: '世界书', note: 'src「访客停靠平台」',
-    use: '伸出岛缘的圆形平台，铜绿栏杆，地面嵌金色引导环；候机亭直径 6 m', heritage: '候机亭的铜门把手被历代访客摸出了一圈金色的亮边。' }),
+  A('停靠平台', { alias: ['停靠平台', '访客停靠平台', '平台'], alias_en: ['Landing Platform', 'Landing Stage'], x: 0, z: 277, r: 16, y: 5, pri: 9, src: '世界书', note: 'src「访客停靠平台」',
+    use: '悬浮载具的降落点：伸出岛缘的圆形平台，铜绿栏杆，地面嵌金色引导环', heritage: '铜栏的扶手被历代访客摸出了一圈金色的亮边。' }),
   A('玫瑰园', { alias: ['玫瑰园'], alias_en: ['Rose Garden'], x: 95, z: 70, r: 25, y: 3, pri: 5, use: '直径 50 m 的圆形下沉园，4 条放射小径，中心铁艺凉亭，外圈攀缘蔷薇拱廊' }),
   A('迷园', { alias: ['迷园', '树篱迷宫', '迷宫'], alias_en: ['Hedge Maze', 'Maze'], x: -95, z: 70, w: 50, d: 50, y: 3, pri: 5, use: '紫杉迷园，中心是日晷' }),
   A('后庭', { alias: ['后庭', '后院', '台地'], alias_en: ['Rear Court', 'Terrace Garden'], x: 0, z: -36.5, w: 60, d: 29, y: 3, pri: 7, src: '世界书', note: 'src「后庭」', use: '府邸后的石铺台地、两块草坪、栏杆与下到湖岸的台阶' }),
@@ -321,10 +322,10 @@ export const AREAS = [
   A('西预留草坪', { alias: ['预留草坪', '设计草坪'], alias_en: ['Reserve Lawn'], x: -175, z: 10, w: 105, d: 95, y: 1, pri: 3, use: '绿篱框、十字步道、中心水盘、四角雕像、条纹割草，留给以后加建' }),
   A('东预留草坪', { alias: ['东预留草坪'], alias_en: ['East Reserve Lawn'], x: 175, z: 10, w: 105, d: 95, y: 1, pri: 3, use: '绿篱框、十字步道、中心水盘、四角雕像、条纹割草，留给以后加建' }),
   A('仆役楼', { alias: ['仆役楼', '仆人楼', '主厨房'], alias_en: ['Staff Wing', 'Servants\' Block'], x: -150, z: -115.0, w: 44, d: 14, y: 12, pri: 4, use: '服务区：主厨房、仆役厅、员工宿舍、大洗衣房（2 层 + 阁楼）' }),
-  A('马车房', { alias: ['马车房', '车库', '马厩'], alias_en: ['Carriage House', 'Stables'], x: -150, z: -139.0, w: 40, d: 10, y: 9, pri: 4, use: '礼仪马车、4 匹马厩、马具室（1 层 + 草料阁）' }),
-  A('工坊', { alias: ['工坊'], alias_en: ['Workshop'], x: -178, z: -127.0, w: 8, d: 30, y: 7, pri: 3, use: '飞艇与以太引擎维修、燃料与以太储罐', note: '设定坐标与仆役楼重叠，西移 8 m；服务区整体北移 22 m' }),
-  A('机库', { alias: ['机库'], alias_en: ['Hangar'], x: -107, z: -152.0, w: 30, d: 20, y: 12, pri: 4, use: '主人私人飞艇和访客艇夜泊，高 9 m' }),
-  A('机坪', { alias: ['机坪'], alias_en: ['Apron'], x: -105, z: -127.0, w: 30, d: 26, y: 2, pri: 3, use: '机库前的起降坪' }),
+  A('悬浮车库', { alias: ['悬浮车库', '车库'], alias_en: ['Hover Garage', 'Garage'], x: -150, z: -139.0, w: 40, d: 10, y: 9, pri: 4, src: 'user', note: '用户要求加的设施（卡中没有）', use: '悬浮车停放与保养' }),
+  A('工坊', { alias: ['工坊'], alias_en: ['Workshop'], x: -178, z: -127.0, w: 8, d: 30, y: 7, pri: 3, use: '悬浮载具与以太引擎维修、以太储罐', note: '设定坐标与仆役楼重叠，西移 8 m；服务区整体北移 22 m' }),
+  A('悬浮载具库', { alias: ['悬浮载具库', '载具库'], alias_en: ['Hover-vehicle Bay'], x: -107, z: -152.0, w: 30, d: 20, y: 12, pri: 4, note: '仓库自设（卡中没有）', use: '主人私人悬浮载具停放，高 9 m' }),
+  A('载具停靠坪', { alias: ['载具停靠坪', '停机坪'], alias_en: ['Vehicle Pad'], x: -105, z: -127.0, w: 30, d: 26, y: 2, pri: 3, src: 'user', note: '用户要求加的设施（卡中没有）', use: '悬浮载具库前的起降坪' }),
   A('后轴观景台', { alias: ['观景台', '后轴观景台'], alias_en: ['Lookout', 'North Lookout'], x: 0, z: -215, r: 10, y: 3, pri: 4, use: '岛缘半圆观景台，俯瞰下方天城' }),
   A('西观景亭', { alias: ['西观景亭'], alias_en: ['West Lookout'], x: -315, z: 25, r: 4, y: 6, pri: 3, use: '小圆亭，看日落' }),
   A('东观景亭', { alias: ['东观景亭'], alias_en: ['East Lookout'], x: 315, z: 25, r: 4, y: 6, pri: 3, use: '小圆亭，看日出' }),
@@ -340,7 +341,7 @@ export const AREAS = [
 const H = (o) => ({ ry: 0, tour: 0, ...o });
 export const HERITAGE = [
   H({ id: 'landingRing', name: '停靠平台引导环', en: 'Landing ring', floor: null, room: null, x: 0, y: 1.0, z: 277, kind: 'landingRing', era: '历代', tour: 1, view: { w: 60, theta: 0.3, phi: 0.9 },
-    caption: '停靠平台：候机亭的铜门把手被历代访客摸出了一圈金色的亮边。', caption_en: 'Landing platform: generations of visitors have polished a ring of gold onto the brass door handles of the waiting pavilion.' }),
+    caption: '停靠平台：铜栏的扶手被历代访客摸出了一圈金色的亮边。', caption_en: 'Landing platform: generations of visitors have polished a ring of gold onto the brass handrail.' }),
   H({ id: 'pedimentCrest', name: '山花家徽', en: 'Pediment crest', floor: null, room: null, x: 0, y: 18.9, z: 29.0, kind: 'crest', era: '初代', tour: 2, view: { w: 40, theta: 0.15, phi: 1.2 },
     caption: '盾面是天城蓝，中间一株金色苹果树立在白色云纹上，树上方是一对展开的金色翅膀（代表浮空）。格言带上写「HORTUS SUPRA NUBES」（园在云上）。', caption_en: 'A Tiancheng-blue shield with a golden apple tree on white clouds beneath a pair of spread golden wings; motto HORTUS SUPRA NUBES, a garden above the clouds.' }),
   H({ id: 'longcaseClock', name: '长箱钟', en: 'Longcase clock', floor: 0, room: '101', x: -11.3, y: 1.2 + 2.9, z: 16, ry: Math.PI / 2, kind: 'longcaseClock', era: '初代', tour: 3, view: { w: 18, theta: 0.9, phi: 1.1 },
@@ -352,7 +353,7 @@ export const HERITAGE = [
   H({ id: 'portraits', name: '肖像廊空框', en: 'The empty frame', floor: 2, room: '301', x: 10, y: 10.2 + 3.0, z: 2.35, kind: 'portraitFrame', era: '现任', tour: 4, view: { w: 18, theta: 0.2, phi: 1.1 },
     caption: '最末一个画框是空的（金框里衬着深红丝），留给现任家主。', caption_en: 'The last frame is empty, lined with crimson silk, reserved for the present head.' }),
   H({ id: 'liftCage', name: '黄铜笼式电梯', en: 'Brass cage lift', floor: 0, room: '108', x: 14, y: 1.2 + 3.2, z: -14.5, kind: 'liftCage', era: '三代',
-    caption: '黄铜笼式电梯是第三代装的第一部以太电梯。楼层指针还是原装的机械表盘，指针停在「3」的时候会轻响一声。', caption_en: 'The first ether lift, installed by the third generation; its original dial chimes softly when the needle stops at 3.' }),
+    caption: '（仓库自设，非卡设定）黄铜笼式电梯是第三代装的第一部以太电梯。楼层指针还是原装的机械表盘，指针停在「3」的时候会轻响一声。', caption_en: 'The first ether lift, installed by the third generation; its original dial chimes softly when the needle stops at 3.' }),
   H({ id: 'foundersDesk', name: '初代书桌', en: 'The founder\'s desk', floor: 1, room: '212', x: -30, y: 5.7 + 1.6, z: 9, kind: 'foundersDesk', era: '初代', tour: 5, view: { w: 18, theta: 0.5, phi: 1.0 },
     caption: '书桌是初代从旧宅搬来的，桌面的皮子换过四次，右手边那道墨水渍一直留着。', caption_en: 'The desk came from the founder\'s old house; its leather has been replaced four times, but the ink stain on the right has always stayed.' }),
   H({ id: 'crestChair', name: '主位家徽椅', en: 'The crested chair', floor: 0, room: '113', x: -39.8, y: 1.2 + 1.8, z: 9, ry: Math.PI / 2, kind: 'crestChair', era: '初代',
@@ -403,10 +404,10 @@ Object.assign(EN, {
   '西预留草坪': ['Reserve Lawn', 'Hedged lawn with cross paths, basin and corner statues, kept for future building'],
   '东预留草坪': ['East Reserve Lawn', 'Hedged lawn with cross paths, basin and corner statues'],
   '仆役楼': ['Staff Wing', 'Service yard: main kitchen, servants\' hall, staff quarters, laundry'],
-  '马车房': ['Carriage House', 'State carriages, four-horse stable, tack room'],
-  '工坊': ['Workshop', 'Airship and ether-engine repairs, fuel and ether tanks'],
-  '机库': ['Hangar', 'The master\'s airship and visitors\' craft overnight'],
-  '机坪': ['Apron', 'Landing apron in front of the hangar'],
+  '悬浮车库': ['Hover Garage', 'Hover-car parking and servicing (user-requested)'],
+  '工坊': ['Workshop', 'Hover-vehicle and ether-engine repairs, ether tanks'],
+  '悬浮载具库': ['Hover-vehicle Bay', 'The master\'s private hover vehicles'],
+  '载具停靠坪': ['Vehicle Pad', 'Landing pad in front of the vehicle bay (user-requested)'],
   '后轴观景台': ['North Lookout', 'Semicircular lookout over the city below'],
   '西观景亭': ['West Lookout', 'Small round pavilion for sunsets'],
   '东观景亭': ['East Lookout', 'Small round pavilion for sunrises'],
