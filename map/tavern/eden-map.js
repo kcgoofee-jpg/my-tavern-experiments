@@ -8,8 +8,8 @@
   // 线路：地图的图片和数据可以走不同的 CDN 节点。gh 线路路径格式相同，只换域名；npm 线路路径不同（包名 / 版本 / files/map/），单独拼。本地测试地址不换
   const PKG = 'tiancheng-map-assets', REPO = 'kcgoofee-jpg/my-tavern-experiments';
   const LINES = [
-    { key: 'vpn', name: '有梯子', sub: '官方 CDN · jsDelivr', host: 'cdn.jsdelivr.net' },
-    { key: 'cn', name: '没梯子', sub: '国内镜像 · jsdmirror', host: 'cdn.jsdmirror.com' },
+    { key: 'vpn', name: '有梯子', name_en: 'Global CDN', sub: '官方 CDN · jsDelivr', host: 'cdn.jsdelivr.net' },
+    { key: 'cn', name: '没梯子', name_en: 'CN mirror', sub: '国内镜像 · jsdmirror', host: 'cdn.jsdmirror.com' },
     // npm 包的国内镜像：首次 npm publish 并验证后再把 enabled 改成 true
     { key: 'npm', name: 'npm 镜像', sub: '国内 · npmmirror', enabled: false, url: v => `https://registry.npmmirror.com/${PKG}/${v}/files/map/` },
   ].filter(l => l.enabled !== false);
@@ -35,78 +35,99 @@
   root.id = ID;
   root.innerHTML = `
 <style>
+  /* 设计令牌（map/ui/tokens.css 的同名值；宿主页里不另发请求，所以内联一份）：唯一的金 #e6c36a、唯一的红 #ff5a5a；面板跟随地图的深 / 浅主题（E5） */
+  #${ID} { --em-gold: #e6c36a; --em-alert: #ff5a5a; --em-on-alert: #1a0606; --em-ok: #7bd88f; --em-focus: #63b4be;
+    --em-bg: #151b20; --em-surface-2: rgba(255,255,255,.06); --em-line: rgba(255,255,255,.12); --em-line-2: rgba(255,255,255,.22); --em-ink: #d5dde4; --em-muted: #8591a0; --em-accent: #e6c36a; --em-on-accent: #1a1406;
+    --em-font: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", system-ui, sans-serif; }
+  #${ID} .em-panel.em-light { --em-bg: #f8f5ee; --em-surface-2: rgba(20,23,26,.05); --em-line: rgba(20,23,26,.16); --em-line-2: rgba(20,23,26,.26); --em-ink: #1b1a17; --em-muted: #635e54;
+    --em-accent: #7a5d22; --em-on-accent: #fff; --em-alert: #c0392b; --em-on-alert: #fff; --em-ok: #23733b; --em-focus: #2d6c75; }
+  #${ID} :focus-visible { outline: 2px solid var(--em-focus); outline-offset: 2px; }
   /* 只用视口单位定位：酒馆的 <html> 带 transform，会成为 fixed 的包含块且高度为 0 */
   #${ID} .em-fab { position: fixed; left: calc(100vw - 66px); top: calc(100dvh - 144px); z-index: 30000; width: 48px; height: 48px; border-radius: 50%;
-    border: 1px solid rgba(230,195,106,.7); background: rgba(20,23,28,.9); color: #e6c36a; cursor: pointer;
-    box-shadow: 0 4px 14px rgba(0,0,0,.45); display: grid; place-items: center; touch-action: none; }
+    border: 1px solid rgba(230,195,106,.7); background: rgba(21,27,32,.92); color: var(--em-gold); cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,0,0,.35); display: grid; place-items: center; touch-action: none; transition: transform 120ms; }
+  #${ID} .em-fab:active { transform: scale(.97); }
   #${ID} .em-fab svg { width: 24px; height: 24px; }
   /* 后台预加载：面板照常排版但不可见、不接收点击，地图在里面把首屏加载进缓存 */
   #${ID} .em-panel.em-ghost { visibility: hidden; pointer-events: none; }
   /* 悬浮按钮上的预加载进度环；完成后短暂显示一圈绿色 */
   #${ID} .em-fab.prep::before, #${ID} .em-fab.ready::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid transparent; }
-  #${ID} .em-fab.prep::before { border: 0; background: conic-gradient(#e6c36a calc(var(--p, 0) * 1%), rgba(230,195,106,.18) 0);
+  #${ID} .em-fab.prep::before { border: 0; background: conic-gradient(var(--em-gold) calc(var(--p, 0) * 1%), rgba(230,195,106,.18) 0);
     -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px)); }
   #${ID} .em-fab.ready::before { border-color: rgba(123,216,143,.8); animation: em-fade 1.8s forwards; }
   /* 预加载失败：红色虚线环（不画满，不像成功），点开重试 */
-  #${ID} .em-fab.fail::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px dashed rgba(255,122,122,.85); }
+  #${ID} .em-fab.fail::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px dashed var(--em-alert); }
   @keyframes em-spin { to { transform: rotate(360deg); } }
   @keyframes em-fade { to { opacity: 0; } }
-  #${ID} .em-badge { position: absolute; left: -4px; top: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #f08a24; color: #111; font: 700 11px/18px system-ui, sans-serif; text-align: center; box-shadow: 0 0 0 2px #0d1117; }
+  /* 新事态数：事态计数 = 唯一的红（规范 --alert），深字保证 11 px 的对比度 */
+  #${ID} .em-badge { position: absolute; left: -4px; top: -4px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: var(--em-alert); color: var(--em-on-alert);
+    font: 700 11px/18px "IBM Plex Mono", ui-monospace, Menlo, monospace; text-align: center; box-shadow: 0 0 0 2px #151b20; }
   #${ID} .em-badge[hidden] { display: none; }
-  #${ID} .em-tip { position: absolute; right: 56px; top: 8px; width: max-content; max-width: 180px; padding: 6px 10px; border-radius: 8px; background: #1b2128; border: 1px solid #f08a24; color: #e6edf3; font: 12px/1.5 system-ui, sans-serif; box-shadow: 0 6px 16px rgba(0,0,0,.5); pointer-events: none; }
-  #${ID} .em-fab.here::after { content: ''; position: absolute; right: 4px; top: 4px; width: 9px; height: 9px; border-radius: 50%; background: #ff5a5a; }
+  #${ID} .em-tip { position: absolute; right: 56px; top: 8px; width: max-content; max-width: 180px; padding: 6px 10px; border-radius: 8px; background: #151b20; border: 1px solid rgba(230,195,106,.6); color: #d5dde4;
+    font: 12px/1.5 var(--em-font); box-shadow: 0 6px 20px rgba(0,0,0,.3); pointer-events: none; }
+  #${ID} .em-fab.here::after { content: ''; position: absolute; right: 4px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background: #ff5a5a; box-shadow: 0 0 0 2px #151b20; }
   #${ID} .em-panel { position: fixed; z-index: 30001; left: 50vw; top: 50dvh; transform: translate(-50%, -50%);
-    width: min(1200px, 94vw); height: min(820px, 88vh); background: #14171c; border: 1px solid rgba(255,255,255,.16);
-    border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.6); display: grid; grid-template-rows: auto 1fr;
+    width: min(1200px, 94vw); height: min(820px, 88vh); background: var(--em-bg); border: 1px solid var(--em-line-2); color: var(--em-ink); font-family: var(--em-font);
+    border-radius: 12px; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.38), 0 24px 64px rgba(0,0,0,.3); display: grid; grid-template-rows: auto 1fr;
     contain: layout paint style; }   /* 面板内的重排、重绘不波及酒馆页面 */
   #${ID} .em-panel[hidden] { display: none; }
-  #${ID} .em-bar { display: flex; align-items: center; gap: 10px; padding: 6px 10px; color: #eef1f4; font-size: 13px;
-    border-bottom: 1px solid rgba(255,255,255,.12); }
-  #${ID} .em-bar .em-here { color: #9aa3ad; margin-left: auto; }
-  #${ID} .em-bar button { background: none; border: 0; color: #9aa3ad; font-size: 20px; cursor: pointer; line-height: 1; }
+  /* 标题栏（44）：标题 · 当前地点 · 线路 · 关闭 */
+  #${ID} .em-bar { display: flex; align-items: center; gap: 10px; min-height: 44px; box-sizing: border-box; padding: 0 6px 0 14px; color: var(--em-ink); font-size: 13px;
+    border-bottom: 1px solid var(--em-line); }
+  #${ID} .em-bar .em-title { font-weight: 700; letter-spacing: .04em; }
+  #${ID} .em-bar .em-here { color: var(--em-muted); margin-left: auto; font-size: 12px; }
+  #${ID} .em-bar .em-here::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--em-alert); vertical-align: 1px; }
+  #${ID} .em-bar .em-here:empty { display: none; }
+  #${ID} .em-bar button { font: inherit; cursor: pointer; }
+  #${ID} .em-bar .em-close { width: 36px; height: 36px; display: grid; place-items: center; background: none; border: 0; border-radius: 8px; color: var(--em-muted); padding: 0; }
+  #${ID} .em-bar .em-close:hover { background: var(--em-surface-2); color: var(--em-ink); }
+  #${ID} .em-bar .em-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
   #${ID} .em-body { position: relative; min-height: 0; contain: strict; }
-  #${ID} iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #14171c; }
+  #${ID} iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--em-bg); }
   /* 地图程序就绪前的加载遮罩（就绪后由地图自己显示瓦片进度） */
-  #${ID} .em-load { position: absolute; inset: 0; display: grid; place-items: center; background: #14171c; color: #9aa3ad; font-size: 14px; }
+  #${ID} .em-load { position: absolute; inset: 0; display: grid; place-items: center; background: var(--em-bg); color: var(--em-ink); font-size: 13px; }
   #${ID} .em-load[hidden] { display: none; }
   /* 线路选择（首次使用时弹出；标题栏「线路」可重新选） */
-  #${ID} .em-pick { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; background: #14171c; color: #eef1f4; padding: 16px; }
+  #${ID} .em-pick { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; background: var(--em-bg); color: var(--em-ink); padding: 16px; }
   #${ID} .em-pick[hidden] { display: none; }
-  #${ID} .em-pick h3 { margin: 0 0 6px; font-size: 18px; text-align: center; }
-  #${ID} .em-pick p { margin: 0 0 16px; color: #9aa3ad; font-size: 13px; text-align: center; }
+  #${ID} .em-pick h3 { margin: 0 0 6px; font-size: 17px; text-align: center; }
+  #${ID} .em-pick p { margin: 0 0 16px; color: var(--em-muted); font-size: 13px; text-align: center; }
   #${ID} .em-pick .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-  #${ID} .em-pick button { width: 200px; padding: 14px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: #1c2027; color: #eef1f4;
-    font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, background .15s, transform .08s; }
-  #${ID} .em-pick button:hover { border-color: #e6c36a; background: #232830; }
+  #${ID} .em-pick button { width: 200px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--em-line-2); background: var(--em-surface-2); color: var(--em-ink);
+    font: inherit; text-align: left; cursor: pointer; transition: border-color 120ms, background 120ms, transform 120ms; }
+  #${ID} .em-pick button:hover { border-color: var(--em-accent); }
   #${ID} .em-pick button:active { transform: scale(.97); }
-  #${ID} .em-pick button b { display: block; font-size: 16px; }
-  #${ID} .em-pick button small { display: block; color: #9aa3ad; font-size: 12px; margin-top: 2px; }
-  #${ID} .em-pick button .ms { display: block; margin-top: 8px; font-size: 12px; color: #9aa3ad; }
-  #${ID} .em-pick button .ms .rec { color: #e6c36a; display: inline; font-size: 12px; }
-  #${ID} .em-pick button .ms.ok { color: #7bd88f; } #${ID} .em-pick button .ms.bad { color: #ff7a7a; }
-  #${ID} .em-bar .em-line { font-size: 12px; padding: 3px 8px; border: 1px solid rgba(255,255,255,.18); border-radius: 6px; color: #9aa3ad; }
-  #${ID} .em-bar .em-line:hover { color: #e6c36a; border-color: #e6c36a; }
+  #${ID} .em-pick button b { display: block; font-size: 15px; }
+  #${ID} .em-pick button small { display: block; color: var(--em-muted); font-size: 12px; margin-top: 2px; }
+  #${ID} .em-pick button .ms { display: block; margin-top: 8px; font-size: 12px; color: var(--em-muted); }
+  #${ID} .em-pick button .ms .rec { color: var(--em-accent); display: inline; font-size: 12px; }
+  #${ID} .em-pick button .ms.ok { color: var(--em-ok); } #${ID} .em-pick button .ms.bad { color: var(--em-alert); }
+  #${ID} .em-bar .em-line { font-size: 12px; height: 28px; padding: 0 10px; border: 1px solid var(--em-line-2); border-radius: 8px; background: transparent; color: var(--em-muted); white-space: nowrap; flex: none; }
+  #${ID} .em-bar .em-line:hover { color: var(--em-accent); border-color: var(--em-accent); }
   #${ID} .em-load > div { text-align: center; }
-  #${ID} .em-load .bar { width: 200px; height: 4px; margin: 10px auto 0; border-radius: 2px; background: rgba(255,255,255,.12); overflow: hidden; }
-  #${ID} .em-load .bar i { display: block; height: 100%; width: 0; background: #e6c36a; transition: width .25s; }
-  #${ID} .em-load .hint { margin-top: 8px; font-size: 12px; color: #e6c36a; min-height: 1em; }
+  #${ID} .em-load .txt { font-variant-numeric: tabular-nums; }
+  #${ID} .em-load .bar { width: 200px; height: 3px; margin: 10px auto 0; border-radius: 2px; background: var(--em-line); overflow: hidden; }
+  #${ID} .em-load .bar i { display: block; height: 100%; width: 0; background: var(--em-accent); transition: width .25s; }
+  #${ID} .em-load .hint { margin-top: 8px; font-size: 12px; color: var(--em-accent); min-height: 1em; }
   #${ID} .em-load .acts { margin-top: 8px; display: flex; gap: 8px; justify-content: center; }
   #${ID} .em-load .acts[hidden] { display: none; }
-  #${ID} .em-load .acts button { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,.25); background: #1c2027; color: #eef1f4; cursor: pointer; }
-  #${ID} .em-load .acts button:hover { border-color: #e6c36a; }
-  /* 地图程序就绪后遮罩变半透明：先看到模糊地图，进度卡片浮在上面 */
+  #${ID} .em-load .acts button { font: inherit; font-size: 13px; height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--em-line-2); background: transparent; color: var(--em-ink); cursor: pointer; }
+  #${ID} .em-load .acts button:first-child { background: var(--em-accent); border-color: var(--em-accent); color: var(--em-on-accent); font-weight: 700; }
+  #${ID} .em-load .acts button:hover { border-color: var(--em-accent); }
+  /* 地图程序就绪后遮罩变透明：先看到模糊地图，进度卡片（实底）浮在上面 */
   #${ID} .em-load.over { background: transparent; pointer-events: none; }
-  #${ID} .em-load.over > div { background: rgba(20,23,28,.88); padding: 12px 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); pointer-events: auto; }
+  #${ID} .em-load.over > div { background: var(--em-bg); padding: 12px 18px; border-radius: 12px; border: 1px solid var(--em-line); box-shadow: 0 6px 20px rgba(0,0,0,.3); pointer-events: auto; }
   @keyframes em-slide { from { background-position: -80px 0, 0 0; } to { background-position: 160px 0, 0 0; } }
-  /* 手机：面板全屏，关闭按钮加大 */
+  /* 手机：面板全屏，关闭按钮 44 */
   @media (max-width: 640px) {
     #${ID} .em-panel { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
-    #${ID} .em-bar { padding: calc(4px + env(safe-area-inset-top)) 8px 4px; font-size: 12px; }
+    #${ID} .em-bar { padding: env(safe-area-inset-top) 2px 0 10px; font-size: 13px; gap: 8px; }
     #${ID} .em-bar .em-here { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
     #${ID} .em-bar .em-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
     #${ID} .em-bar .em-here { flex: 1 1 0; }
     #${ID} .em-bar .em-line { white-space: nowrap; flex: none; }   /* 手机上标题、线路都不折行（用户实测：「没梯 / 子」断行） */
-    #${ID} .em-bar button { font-size: 28px; padding: 0 6px; }
+    #${ID} .em-bar .em-close { width: 44px; height: 44px; }
+    #${ID} .em-bar .em-close svg { width: 22px; height: 22px; }
   }
 </style>
 <button class="em-fab" title="世界地图" aria-label="打开世界地图">
@@ -114,7 +135,7 @@
   <span class="em-badge" hidden></span>
 </button>
 <div class="em-panel" hidden>
-  <div class="em-bar"><b class="em-title">新历 2088 · 地图</b><span class="em-here"></span><button class="em-line" title="切换加载线路"></button><button class="em-close" aria-label="关闭">×</button></div>
+  <div class="em-bar"><b class="em-title">新历 2088 · 地图</b><span class="em-here"></span><button class="em-line" title="切换加载线路"></button><button class="em-close" aria-label="关闭"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
   <div class="em-body"><iframe class="em-frame" title="地图"></iframe><div class="em-load" hidden><div><span class="txt">加载地图 0%</span><div class="bar"><i></i></div><div class="hint"></div><div class="acts" hidden><button class="retry">重试</button><button class="swap">换线路</button></div></div></div>
     <div class="em-pick" hidden><div><h3>选择加载线路</h3><p>地图图片较多，按你的网络选一条更快的线路；之后可以点标题栏的「线路」切换</p><div class="row"></div></div></div></div>
 </div>`;
@@ -124,8 +145,16 @@
   const hereEl = root.querySelector('.em-here'), loadEl = root.querySelector('.em-load'), titleEl = root.querySelector('.em-title');
   const pickEl = root.querySelector('.em-pick'), lineBtn = root.querySelector('.em-line');
   lineBtn.hidden = !swappable;
-  const showLine = () => { lineBtn.textContent = `线路：${LINES.find(l => l.key === line)?.name || '未选'}`; };
-  showLine();
+  // 标题栏跟着地图的语言与深浅主题（地图在 srcdoc 里，与酒馆页同源，设置存在同一个 localStorage；切换时地图发 eden-map:state {lang, theme}）
+  const UI = { zh: { title: '新历 2088 · ', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%' },
+    en: { title: 'NC 2088 · ', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%' } };
+  let UL = 'zh', mapTitle = ''; try { UL = localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) {}
+  const U = k => UI[UL][k];
+  { let th = 'auto'; try { th = localStorage.getItem('edenMapTheme') || 'auto'; } catch (e) {}
+    panel.classList.toggle('em-light', th === 'light' || (th === 'auto' && window.parent.matchMedia?.('(prefers-color-scheme: light)').matches)); }
+  const showLine = () => { const l = LINES.find(x => x.key === line); lineBtn.textContent = U('line') + (l ? (UL === 'en' && l.name_en) || l.name : U('unset')); };
+  const showTitle = () => { titleEl.textContent = U('title') + (mapTitle || U('map')); root.querySelector('.em-close').setAttribute('aria-label', U('close')); };
+  showLine(); showTitle();
   // 线路选择：每条线路现场测一次延迟（取一个小文件），连不上的标红
   function showPicker() {
     const row = pickEl.querySelector('.row'); row.innerHTML = '';
@@ -210,7 +239,7 @@
   function setProg(p) {
     p = Math.max(pct, Math.min(100, Math.round(p)));
     if (p > pct) { lastMove = Date.now(); hintEl.textContent = ''; actsEl.hidden = true; }
-    pct = p; txtEl.textContent = `加载地图 ${pct}%`; barEl.style.width = pct + '%'; fab.style.setProperty('--p', pct);
+    pct = p; txtEl.textContent = U('load').replace('{p}', pct); barEl.style.width = pct + '%'; fab.style.setProperty('--p', pct);
   }
   function endProg() { clearInterval(watchT); setProg(100); clearTimeout(quietT); quietT = setTimeout(() => { loadEl.hidden = true; loadEl.classList.remove('over'); }, 350); }   // 在 100% 停一下再收起
   loadEl.querySelector('.retry').addEventListener('click', () => { html = null; unloadViewer(); loadViewer(); });
@@ -244,7 +273,7 @@
     frame.onload = () => push();
     frame.srcdoc = doc;
   }
-  function unloadViewer() { alive = false; frame.onload = null; frame.removeAttribute('srcdoc'); frame.src = 'about:blank'; titleEl.textContent = '新历 2088 · 地图'; }
+  function unloadViewer() { alive = false; frame.onload = null; frame.removeAttribute('srcdoc'); frame.src = 'about:blank'; mapTitle = ''; showTitle(); }
   function sleepViewer() {
     if (!alive) return unloadViewer();
     post({ type: 'eden-map:sleep' }); clearTimeout(killT); killT = setTimeout(unloadViewer, SLEEP_MS);
@@ -257,7 +286,10 @@
     if (e.data?.type === 'eden-map:ready') { alive = true; setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
     if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
-    if (e.data?.type === 'eden-map:state') titleEl.textContent = `新历 2088 · ${e.data.title}`;
+    if (e.data?.type === 'eden-map:state') {
+      if (e.data.lang && e.data.lang !== UL && UI[e.data.lang]) { UL = e.data.lang; showLine(); push(); }
+      if (e.data.theme) panel.classList.toggle('em-light', e.data.theme === 'light');
+      mapTitle = e.data.title || ''; showTitle(); }
     if (e.data?.type === 'eden-map:esc') close();   // 地图里没有可关的卡片 / 列表时，Esc 关闭面板
   };
   window.parent.addEventListener('message', onMsg);
@@ -272,7 +304,7 @@
   // MVU 变量在流式输出时会连续更新：合并成一次，地点没变就不打扰地图
   function push() {
     here = getHere();
-    hereEl.textContent = here ? `当前地点：${userName(here)}` : '';
+    hereEl.textContent = here ? U('here') + userName(here) : '';
     fab.classList.toggle('here', !!here);
     // bg：后台预加载中（面板不可见），地图据此不自动进庄园（E4 N03）
     if (!panel.hidden && alive && here !== sent) { sent = here; post({ type: 'eden-map:here', value: here, bg: ghost }); }

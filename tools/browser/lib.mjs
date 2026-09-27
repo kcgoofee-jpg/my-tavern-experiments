@@ -165,7 +165,7 @@ export async function wheelDriftEstate(page, x, y, frame = page.mainFrame(), tic
 // 「死区」= 最上层元素既不是地图画布（#osd / #estate / canvas），也不是可交互控件，却挡在画面上（如透明的 #loading 文字层）。
 // 返回 { points, dead, bySelector: {选择器: 个数}, samples }
 export const deadZones = (frame, { step = 40, margin = 8 } = {}) => frame.evaluate(({ step, margin }) => {
-  const OK = 'button,a,input,select,textarea,label,summary,[role=button],[role=link],[tabindex],#card,header,nav,#layers,#evbar,#crumbs,#setPop,#credit,#status,.mk,.ev,.em-fab';
+  const OK = 'button,a,input,select,textarea,label,summary,[role=button],[role=link],[tabindex],#card,header,nav,#layers,#evbar,#crumbs,#setPop,.pop,#zoom,#foot,#credit,#status,.mk,.ev,.em-fab';
   const MAP = '#osd,#estate,canvas,.openseadragon-container';
   const sel = e => e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + (e.classList.length ? '.' + [...e.classList].slice(0, 2).join('.') : '');
   const out = { points: 0, dead: 0, bySelector: {}, samples: [] };

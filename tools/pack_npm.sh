@@ -14,11 +14,12 @@ TMP=$(mktemp -d "${TMPDIR:-/tmp}/${NAME}.XXXXXX")
 trap '[ "$KEEP" = 1 ] || rm -rf "$TMP"' EXIT
 
 # 白名单：查看器页面与事件模块、卡内脚本、数据、界面语言（i18n）、庄园三维页面（map/estate/*.html）、第三方库、底图瓦片（dzi + _files/）与首屏缩略图
-mkdir -p "$TMP/map/art" "$TMP/map/data" "$TMP/map/tavern" "$TMP/map/i18n" "$TMP/map/estate"
+mkdir -p "$TMP/map/art" "$TMP/map/data" "$TMP/map/tavern" "$TMP/map/i18n" "$TMP/map/estate" "$TMP/map/ui"
 cp map/viewer.html map/events.js "$TMP/map/"
 cp map/tavern/eden-map.js map/tavern/events.mjs "$TMP/map/tavern/"
 cp map/data/*.json "$TMP/map/data/"
 cp map/i18n/*.json "$TMP/map/i18n/"
+cp map/ui/*.css "$TMP/map/ui/"   # 设计令牌（E5）
 cp map/estate/*.html "$TMP/map/estate/"
 cp -R map/vendor "$TMP/map/"
 [ -f map/art/world_1k.jpg ] && cp map/art/world_1k.jpg "$TMP/map/art/"
@@ -38,7 +39,7 @@ cat > "$TMP/package.json" <<EOF
   "license": "$LICENSE_FIELD",
   "repository": { "type": "git", "url": "git+https://github.com/kcgoofee-jpg/my-tavern-experiments.git" },
   "homepage": "https://github.com/kcgoofee-jpg/my-tavern-experiments",
-  "files": ["map/viewer.html", "map/events.js", "map/tavern/", "map/data/", "map/i18n/", "map/estate/", "map/vendor/", "map/art/", "README.md"],
+  "files": ["map/viewer.html", "map/events.js", "map/tavern/", "map/data/", "map/i18n/", "map/ui/", "map/estate/", "map/vendor/", "map/art/", "README.md"],
   "keywords": ["sillytavern", "map", "deepzoom", "openseadragon"]
 }
 EOF

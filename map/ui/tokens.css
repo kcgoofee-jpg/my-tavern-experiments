@@ -1,0 +1,57 @@
+/* 天城地图 · 设计令牌 v1（docs/ui-audit.md 第三部分；E5 落成文件）。
+   查看器 viewer.html 用 <link> 引用；卡内脚本 eden-map.js 的宿主栏用同名变量的内联副本（宿主页里不能再多一个请求）。
+   原则：一套骨架，三层换皮。组件只引用语义令牌，不写色值。
+   E5 定稿的两处与草案不同：全站只有一种金 #e6c36a（深色上层 / 庄园 / 世界的 --accent；浅色取深一档 #7a5d22），只有一种红 --alert。 */
+:root {
+  /* 结构：全站一套 */
+  --font-ui: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", system-ui, sans-serif;
+  --font-serif: "Songti SC", "STSong", "Noto Serif SC", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --fs-display: 20px; --fs-title: 17px; --fs-body: 14px; --fs-control: 13px; --fs-small: 12px; --fs-micro: 11px;   /* 下限 11 */
+  --sp-1: 2px; --sp-2: 4px; --sp-3: 6px; --sp-4: 8px; --sp-5: 12px; --sp-6: 16px; --sp-7: 24px;
+  --r-s: 4px; --r-m: 8px; --r-l: 12px; --r-pill: 999px;
+  --dur-1: 120ms; --dur-2: 200ms; --dur-3: 320ms;
+  --ease-out: cubic-bezier(.2, .8, .2, 1); --ease-in: cubic-bezier(.4, 0, 1, 1);
+  --hit: 44px;
+  /* 全局色（不跟层变） */
+  --focus: #63b4be;
+  --alert: #ff5a5a; --on-alert: #1a0606;          /* 全站唯一的红：当前地点、事态计数、危险 / 失败 */
+  --ok: #7bd88f;
+  --gold: #e6c36a;                                  /* 全站唯一的金（琥珀）；深色上层的 --accent 就是它 */
+  --map-label-bg: rgba(12, 14, 18, .82); --map-label-ink: #fff; --map-label-line: rgba(255, 255, 255, .22);
+  --sh-1: 0 1px 3px rgba(0, 0, 0, .25); --sh-2: 0 6px 20px rgba(0, 0, 0, .30); --sh-3: 0 12px 32px rgba(0, 0, 0, .38);
+  --glow: none; --glow-text: none;
+  /* 深色 · 上层 / 庄园 / 世界（默认） */
+  --bg: #101418; --surface: #151b20; --surface-2: rgba(255, 255, 255, .06);
+  --line: rgba(255, 255, 255, .12); --ink: #d5dde4; --ink-2: #b7c1ca; --muted: #8591a0;
+  --accent: var(--gold); --on-accent: #1a1406; --accent-2: #efe9dc;
+  color-scheme: dark;
+}
+[data-map="tc_mid"] { --bg: #120a1f; --surface: #1a1029; --line: rgba(255, 61, 154, .24);
+  --ink: #f3e6ff; --ink-2: #dccbf0; --muted: #ac9ec3; --accent: #ff3d9a; --on-accent: #1a0610; --accent-2: #3de0ff;
+  --glow: 0 0 10px rgba(255, 61, 154, .7); --glow-text: -1px 0 #3de0ff, 1px 0 #ff3d9a, 0 0 10px rgba(255, 61, 154, .7); }
+[data-map="tc_low"] { --bg: #0b0b0b; --surface: #111411; --line: rgba(159, 232, 112, .2);
+  --ink: #d8e8cc; --ink-2: #bcd0ae; --muted: #7aa35c; --accent: #9fe870; --on-accent: #0b1406; --accent-2: #f4f1e8;
+  --ok: var(--muted); }                             /* 下层不用成功绿（和磷光绿混淆），改 --muted + ✓ */
+/* 浅色主题：只换值（组件 CSS 里不出现 .light 选择器） */
+.light { --focus: #2d6c75; --alert: #c0392b; --on-alert: #fff; --ok: #23733b;
+  --sh-1: 0 1px 3px rgba(0, 0, 0, .12); --sh-2: 0 6px 20px rgba(0, 0, 0, .15); --sh-3: 0 12px 32px rgba(0, 0, 0, .19);
+  --bg: #efeae0; --surface: #f8f5ee; --surface-2: rgba(20, 23, 26, .05);
+  --line: rgba(20, 23, 26, .16); --ink: #1b1a17; --ink-2: #3b3934; --muted: #635e54;
+  --accent: #7a5d22; --on-accent: #fff; --accent-2: #8f6f2e; color-scheme: light; }
+.light [data-map="tc_mid"], .light[data-map="tc_mid"] { --bg: #f1ecf7; --surface: #f9f6fc;
+  --line: rgba(29, 18, 48, .16); --ink: #1d1230; --ink-2: #3a2b52; --muted: #66537f; --accent: #b3155f; --on-accent: #fff; --accent-2: #0f8fa8;
+  --glow: none; --glow-text: none; }
+.light [data-map="tc_low"], .light[data-map="tc_low"] { --bg: #f4f1e8; --surface: #f8f6ef;
+  --line: rgba(27, 36, 20, .16); --ink: #1b2414; --ink-2: #34402b; --muted: #55664a; --accent: #3f7a22; --on-accent: #fff; --accent-2: #8a7a52; }
+/* 派生令牌：在 body 上再算一次，层 / 主题换了 --accent、--surface 之后跟着变（自定义属性在声明它的元素上求值） */
+:root, body {
+  --surface-glass: color-mix(in srgb, var(--surface) 92%, transparent);
+  --accent-weak: color-mix(in srgb, var(--accent) 14%, transparent);
+  --line-strong: color-mix(in srgb, var(--accent) 55%, var(--line));
+}
+/* 通用 */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; }
+}

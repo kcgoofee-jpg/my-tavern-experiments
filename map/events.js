@@ -129,21 +129,27 @@ const TCEvents = (() => {
     document.body.classList.toggle('noevents', !shown);
     updateToggle(); applyGlitch();
     if (typeof tabOrder === 'function') tabOrder();
+    if (typeof declutter === 'function') declutter();   // 事态点也参加标签避让（E5 R14）
   }
+  // 事态卡（规范 3.2 卡片）：tag = 大类（数据色底 + 深字）；标题 = 事件本身；副标题 = 大类 · 类型（不再和字段区重复）；字段区两列网格
+  let kbdFly = false;   // 从列表用键盘飞过去：落地开卡后焦点放到卡片标题（E4b R06）
   function card(e, el) {
     document.querySelectorAll('.ev.hot').forEach(x => x.classList.remove('hot')); el?.classList.add('hot');
     const p = pos(e), st = e.closed ? T('ev.cleared', '已解除') : tn(e.status) || T('ev.ongoing', '发生中');
     const rare = e.rare >= 4 ? T('ev.rare4', '（传说级）') : e.rare >= 3 ? T('ev.rare3', '（罕见）') : '';
-    showCard(null, `${tn(e.cat)} · ${e.text || ''}`, 'inf', [
-      e.grp && T('ev.f_cat', '分类：{grp} · {cat}', { grp: tn(e.grp), cat: tn(e.cat) }) + rare,
-      T('ev.f_place', '地点：{place}', { place: where(e) }) + (p.approx ? T('ev.approx', '（位置不详，按所在层大致标出）') : ''),
-      T('ev.f_lvl', '等级：{bars}　状态：{st}', { bars: '▮'.repeat(Math.max(1, e.lvl)) + '▯'.repeat(3 - Math.max(1, e.lvl)), st }),
-      e.time && T('ev.f_time', '时间：{v}', { v: e.time }), e.code && T('ev.f_code', '编号：{v}', { v: e.code }),
-      e.feed ? T('ev.f_src_feed', '来源：{src}', { src: e.src || T('ev.feed_default', '外部数据源') })
-        : T('ev.f_src', '来源：{src} · 聊天第 {n} 楼', { src: e.src || T('ev.unsigned', '未署名'), n: e.first }) + (e.count > 1 ? T('ev.updates', '起，更新 {n} 次', { n: e.count - 1 }) : ''),
-    ].filter(Boolean).join('\n'));
-    const t = document.querySelector('#card .tag'); t.textContent = T('ev.tag', '天城事态'); t.style.background = lk(e)[1]; t.style.color = '#111';
-    delete document.querySelector('#card .src').dataset.note;   // 事态卡不是设定原文，不加「原文（中文）」说明
+    const lv = Math.max(1, e.lvl);
+    showCard(null, e.text || tn(e.cat), 'inf', '', '', `${e.grp ? tn(e.grp) + ' · ' : ''}${tn(e.cat)}${rare}`);
+    const rows = [
+      [T('ev.k_place', '地点'), esc(where(e)) + (p.approx ? `<br><small>${esc(T('ev.approx', '（位置不详，按所在层大致标出）'))}</small>` : '')],
+      [T('ev.k_state', '等级 / 状态'), `<span class="bars" aria-label="${esc(T('ev.k_lvl', '等级') + ' ' + lv + '/3')}">${'▮'.repeat(lv)}${'▯'.repeat(3 - lv)}</span>　${esc(st)}`],
+      e.time && [T('ev.k_time', '时间'), esc(e.time)], e.code && [T('ev.k_code', '编号'), esc(e.code)],
+      [T('ev.k_src', '来源'), esc(e.feed ? e.src || T('ev.feed_default', '外部数据源')
+        : T('ev.src_floor', '{src} · 聊天第 {n} 楼', { src: e.src || T('ev.unsigned', '未署名'), n: e.first }) + (e.count > 1 ? T('ev.updates', '起，更新 {n} 次', { n: e.count - 1 }) : ''))],
+    ].filter(Boolean);
+    const sv = document.querySelector('#card .src'); delete sv.dataset.note;   // 事态卡不是设定原文，不加「原文（中文）」说明
+    sv.innerHTML = `<dl class="fields">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>`;
+    const t = document.querySelector('#card .tag'); t.textContent = e.grp ? tn(e.grp) : T('ev.tag', '天城事态'); t.className = 'tag data'; t.style.background = lk(e)[1];
+    if (kbdFly) { kbdFly = false; document.getElementById('cardTitle')?.focus({ preventScroll: true }); }
   }
   function flyTo(id) {
     const e = all().find(x => x.id === id), mid = e && mapOf(e);
@@ -192,21 +198,24 @@ const TCEvents = (() => {
     bar.hidden = !every.length || !shown; if (bar.hidden) return;
     if (!grpLoaded) { grpLoaded = true; mod().then(m => { if (m?.GROUPS) { GROUPS = m.GROUPS; ORDER = m.GROUP_ORDER || Object.keys(m.GROUPS).filter(g => g !== '其他'); if (m.SHAPES) SHAPES = m.SHAPES; renderBar(); } }); }   // 有事件时才取大类表
     const n = list.filter(live).length, fresh = list.filter(e => e.isNew).length, hid = ORDER.filter(g => off.has(g)).length + (off.has('其他') ? 1 : 0);
-    bar.querySelector('button').setAttribute('aria-expanded', open ? 'true' : 'false');
-    bar.querySelector('button').innerHTML = `<i class="dot"></i><span>${esc(n ? T('ev.bar_live', '{n} 起进行中', { n }) : T('ev.bar_none', '暂无进行中'))} · ${esc(T('ev.bar_total', '共 {n} 起事态', { n: list.length }))}${hid ? ' · ' + esc(T('ev.filtered', '已隐藏 {n} 类', { n: hid })) : ''}</span>${fresh ? `<span class="new">${esc(T('ev.bar_new', '{n} 条新', { n: fresh }))}</span>` : ''}<span class="tog">${esc(open ? T('ev.collapse', '收起 ▾') : T('ev.expand', '展开 ▴'))}</span>`;
+    const tb = bar.querySelector(':scope > button'); tb.setAttribute('aria-expanded', open ? 'true' : 'false');
+    // 左侧形状点 = 最新一条（进行中优先）的大类
+    const top = list.filter(live).sort((a, b) => (b.last || 0) - (a.last || 0))[0] || list[0];
+    tb.innerHTML = `<i class="shp ${shp(top ? grpOf(top) : '其他')}" style="--c:${top ? lk(top)[1] : 'var(--muted)'}" aria-hidden="true"></i><span class="sum">${esc(n ? T('ev.bar_live', '{n} 起进行中', { n }) : T('ev.bar_none', '暂无进行中'))} · ${esc(T('ev.bar_total', '共 {n} 起事态', { n: list.length }))}${hid ? ' · ' + esc(T('ev.filtered', '已隐藏 {n} 类', { n: hid })) : ''}</span>${fresh ? `<span class="new">${esc(T('ev.bar_new', '{n} 条新', { n: fresh }))}</span>` : ''}<span class="sr-only">${esc(open ? T('ev.collapse', '收起') : T('ev.expand', '展开'))}</span><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg>`;
     bar.dataset.open = open ? '1' : '0';
     // 图例：9 个大类都列出（没有事件的变淡），数字 = 该类条数；点一下隐藏 / 恢复
     const cnt = {}; for (const e of every) cnt[grpOf(e)] = (cnt[grpOf(e)] || 0) + 1;
     const gs = ORDER.concat(cnt.其他 ? ['其他'] : []);
-    bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${GROUPS[g] || '#cfd8e0'}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i class="shp ${shp(g)}"></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join('')
+    bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${GROUPS[g] || '#cfd8e0'}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i class="shp ${shp(g)}" aria-hidden="true"></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join('')
       + `<small>${esc(T('ev.legend_hint', '点大类可隐藏 / 显示'))}</small>`;
-    bar.querySelector('ol').innerHTML = list.map(e => `<li data-id="${esc(e.id)}" tabindex="0" role="button" class="tier-${e.tier}${e.isNew ? ' isnew' : ''}${e.closed ? ' closed' : ''}" style="--c:${lk(e)[1]}"><i class="shp ${shp(grpOf(e))}"></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(T('ev.cleared', '已解除')) : ''} <em>${esc(where(e))}</em></b><em>${esc(e.feed ? T('ev.feed', '数据源') : T('ev.floor', '第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${e.src ? ' —— ' + esc(e.src) : ''}</small></li>`).join('');
+    // 列表项：li 里包一个真正的 <button>（原来 li 上的 role=button 让 axe 报 list / aria-allowed-role，E4b R08）
+    bar.querySelector('ol').innerHTML = list.map(e => `<li class="tier-${e.tier}${e.isNew ? ' isnew' : ''}${e.closed ? ' closed' : ''}" style="--c:${lk(e)[1]}"><button type="button" data-id="${esc(e.id)}"><i class="shp ${shp(grpOf(e))}" aria-hidden="true"></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(T('ev.cleared', '已解除')) : ''}${e.isNew ? `<span class="nb">${esc(T('ev.new', '新'))}</span>` : ''} <em>${esc(where(e))}</em></b><em>${esc(e.feed ? T('ev.feed', '数据源') : T('ev.floor', '第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${e.src ? ' —— ' + esc(e.src) : ''}</small></button></li>`).join('');
   }
   function updateToggle() {
     let tg = document.getElementById('tgEvents');
     if (!tg) {
       tg = document.createElement('label'); tg.className = 'tg'; tg.id = 'tgEvents';
-      tg.innerHTML = '<input type="checkbox" checked><span></span>';
+      tg.innerHTML = '<span></span><input type="checkbox" role="switch" checked>';
       tg.querySelector('input').onchange = ev => { shown = ev.target.checked; document.body.classList.toggle('noevents', !shown); renderBar(); applyGlitch(); };
       document.getElementById('tgMarkers')?.closest('label')?.after(tg);
     }
@@ -233,7 +242,7 @@ const TCEvents = (() => {
   const css = `
   .ev{--c:#fff;position:relative;display:flex;align-items:center;gap:4px;transform:translate(-11px,-11px);pointer-events:auto;cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
   /* 图标 = 大类色的形状底（i::before，按大类裁成圆 / 方 / 菱 / 三角……，色弱也分得清）+ 类型字；描边和光晕在 i 上，不被裁掉 */
-  .ev i{width:20px;height:20px;display:grid;place-items:center;font:700 11px/1 'PingFang SC',sans-serif;font-style:normal;color:#0b0b0b;position:relative;z-index:0;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 4px var(--c))}
+  .ev i{width:20px;height:20px;display:grid;place-items:center;font:700 11px/1 var(--font-ui,sans-serif);font-style:normal;color:#0b0b0b;position:relative;z-index:0;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 4px var(--c))}
   .ev i::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:4px;background:linear-gradient(145deg,#fff 0,var(--c) 45%,color-mix(in srgb,var(--c) 60%,#000) 100%)}
   .ev.sev2 i{width:22px;height:22px}.ev.sev3 i{width:25px;height:25px;font-size:13px}
   .ev.sh-circle i::before,.ev.sh-ring i::before,i.shp.sh-circle,i.shp.sh-ring{border-radius:50%}
@@ -250,16 +259,20 @@ const TCEvents = (() => {
   .ev.sh-penta i{place-items:start center;padding-top:3px;box-sizing:border-box}
   body:not([data-map="tc_mid"]) .ev i{filter:drop-shadow(0 0 1px #000) drop-shadow(0 1px 1px rgba(0,0,0,.6))}   /* 光晕只在中层（规范 3.4） */
   /* 触屏：图标周围 44×44 的透明热区（E4 N25） */
-  @media (pointer:coarse),(max-width:640px){.ev::before{content:'';position:absolute;left:-12px;top:50%;width:44px;height:44px;margin-top:-22px}
-    #evbar>button{min-height:44px} #evbar li{min-height:40px} .evleg button{padding:8px 10px}}
-  .ev b{font:600 11px/1.3 'PingFang SC',sans-serif;color:#fff;background:rgba(8,10,14,.78);padding:1px 6px;border-radius:3px;border-left:2px solid var(--c);white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis}
+  @media (pointer:coarse),(max-width:640px){.ev::before{content:'';position:absolute;left:-12px;top:50%;width:44px;height:44px;margin-top:-22px}}
+  .ev b{font:600 var(--fs-micro,11px)/1.3 var(--font-ui,sans-serif);color:var(--map-label-ink,#fff);background:var(--map-label-bg,rgba(8,10,14,.8));padding:1px 6px;border-radius:var(--r-s,4px);border-left:2px solid var(--c);white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis}
+  .ev.lhide b{visibility:hidden}
+  .ev{z-index:2}
   .ev-new i::after{content:'';position:absolute;inset:-5px;border-radius:7px;border:2px solid var(--c);animation:evpulse 1.6s ease-out 5;will-change:transform,opacity}
   .ev-new.sev3 i::after{animation-duration:.9s;animation-iteration-count:9}
-  .ev.tier-after{opacity:.6}.ev-cleared{opacity:.45}.ev-cleared i::before{background:#777}.ev-cleared i{filter:drop-shadow(0 0 1px #000)}
+  /* 已解除 / 余波：图标变灰、变淡；文字标签不整体降透明度（对比度，E5 V20） */
+  .ev.tier-after i{opacity:.65}.ev-cleared i{opacity:.55}.ev-cleared i::before{background:#80868d}.ev-cleared i{filter:drop-shadow(0 0 1px #000)}.ev-cleared b{border-left-color:#80868d;color:#d0d4d8}
   .ev.approx i{outline:1px dashed rgba(255,255,255,.6);outline-offset:3px}
-  .ev.hot i{outline:2px solid #fff;outline-offset:3px}
+  .ev.hot i{outline:2px solid var(--map-label-ink,#fff);outline-offset:3px}
+  .ev:focus-visible i{outline:2px solid var(--focus,#63b4be);outline-offset:4px}   /* 键盘焦点（E4b R07） */
   body.far .ev b{display:none} body.noevents .ev{display:none}
-  .mk .lab[data-ev]::after{content:attr(data-ev);display:inline-block;margin-left:6px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:#e0182d;color:#fff;font:700 10px/15px 'PingFang SC',sans-serif;text-align:center;vertical-align:1px;box-shadow:0 0 6px rgba(224,24,45,.8)}
+  /* 世界图「天城」上的事态数：全站唯一的红 */
+  .mk .lab[data-ev]::after{content:attr(data-ev);display:inline-block;margin-left:6px;min-width:16px;height:16px;padding:0 5px;box-sizing:border-box;border-radius:var(--r-pill,999px);background:var(--alert,#ff5a5a);color:var(--on-alert,#1a0606);font:700 var(--fs-micro,11px)/16px var(--font-mono,monospace);text-align:center;vertical-align:1px}
   .ev-radar{--c:#fff;width:0;height:0;pointer-events:none;position:relative}
   .ev-radar span{position:absolute;left:-60px;top:-60px;width:120px;height:120px;border-radius:50%;border:2px solid var(--c);opacity:0;animation:evradar 1.5s ease-out forwards}
   .ev-radar span:nth-child(2){animation-delay:.25s}.ev-radar span:nth-child(3){animation-delay:.5s}
@@ -269,33 +282,46 @@ const TCEvents = (() => {
   @keyframes evradar{0%{transform:scale(.1);opacity:.9}100%{transform:scale(1);opacity:0}}
   @keyframes evlock{0%{transform:scale(2.4) rotate(45deg);opacity:0}60%{opacity:1}100%{transform:scale(.45) rotate(0);opacity:0}}
   @keyframes evpulse{from{transform:scale(1);opacity:.9}to{transform:scale(2.2);opacity:0}}
-  /* 横条跟随主题与层：底、字、次要字、分隔线用查看器的变量（E4 N29 最小修正；橙色描边与「新」留到 E5） */
-  #evbar{--ev-muted:var(--muted,#8b949e);position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:6;max-width:min(460px,calc(100% - 16px));width:max-content;background:var(--panel,rgba(13,17,23,.92));border:1px solid rgba(240,138,36,.6);border-radius:12px;font-size:12px;color:var(--ink,#e6edf3);box-shadow:0 6px 18px rgba(0,0,0,.35)}
-  #evbar>button:focus-visible,#evbar li:focus-visible{outline:2px solid var(--focus,#63b4be);outline-offset:-2px;border-radius:8px}
+  /* 事态横条（提示条）：Panel 规格，底部居中；左侧是最新事态的大类形状，「N 条新」用强调色 700，SVG chevron（E5 V03：不再用橙色描边） */
+  #evbar{position:absolute;left:50%;bottom:var(--sp-5,12px);transform:translateX(-50%);z-index:6;max-width:min(480px,calc(100% - 24px));width:max-content;box-sizing:border-box;
+    background:var(--surface-glass);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:var(--r-l,12px);box-shadow:var(--sh-2);
+    font-size:var(--fs-small,12px);color:var(--ink)}
+  #evbar[data-open="1"]{background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:var(--sh-3)}
   #evbar[hidden]{display:none}
-  #evbar>button{all:unset;box-sizing:border-box;display:flex;gap:8px;align-items:center;width:100%;padding:6px 12px;cursor:pointer}
-  #evbar>button:active{opacity:.7}
-  #evbar .dot{width:8px;height:8px;transform:rotate(45deg);background:#f08a24;flex:none}
-  #evbar .new{color:#f08a24;font-weight:700;white-space:nowrap} #evbar .tog{margin-left:auto;color:var(--ev-muted);white-space:nowrap}
-  #evbar ol{list-style:none;margin:0;padding:0 6px 6px;max-height:38vh;overflow-y:auto}
+  #evbar button{font:inherit;color:inherit;background:none;border:0;margin:0;text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none}
+  #evbar>button{box-sizing:border-box;display:flex;gap:var(--sp-4,8px);align-items:center;width:100%;min-height:36px;padding:0 var(--sp-5,12px);border-radius:var(--r-l,12px);transition:background var(--dur-1)}
+  #evbar>button:hover{background:var(--surface-2)}
+  #evbar>button:active{transform:scale(.99)}
+  #evbar>button:focus-visible,#evbar li>button:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+  #evbar>button .shp{width:10px;height:10px;background:var(--c);flex:none}
+  #evbar .sum{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  #evbar .new{color:var(--accent);font-weight:700;white-space:nowrap}
+  #evbar .chev{margin-left:auto;width:14px;height:14px;flex:none;fill:none;stroke:var(--muted);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:transform var(--dur-2)}
+  #evbar[data-open="1"] .chev{transform:rotate(180deg)}
+  #evbar ol{list-style:none;margin:0;padding:0 var(--sp-3,6px) var(--sp-3,6px);max-height:38vh;overflow-y:auto}
   #evbar[data-open="0"] ol,#evbar[data-open="0"] .evleg{display:none}
-  .evleg{display:flex;flex-wrap:wrap;gap:4px;padding:2px 8px 6px;align-items:center}
-  .evleg button{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:10px;border:1px solid var(--line,rgba(255,255,255,.14));font-size:11px;line-height:16px;cursor:pointer;color:var(--ink,#e6edf3);white-space:nowrap}
+  .evleg{display:flex;flex-wrap:wrap;gap:var(--sp-2,4px);padding:var(--sp-1,2px) var(--sp-4,8px) var(--sp-3,6px);align-items:center;border-top:1px solid var(--line)}
+  .evleg button{box-sizing:border-box;display:inline-flex;align-items:center;gap:var(--sp-2,4px);min-height:24px;padding:0 var(--sp-4,8px);border-radius:var(--r-pill,999px);border:1px solid var(--line)!important;font-size:var(--fs-micro,11px);line-height:1.4;white-space:nowrap;transition:border-color var(--dur-1),background var(--dur-1)}
   .evleg button i{width:9px;height:9px;border-radius:2px;background:var(--c);flex:none}
-  .evleg button em{font-style:normal;color:var(--ev-muted)}
-  /* 放在 all:unset 之后，否则触屏的最小高度被冲掉（E4b R05） */
-  @media (pointer:coarse),(max-width:640px){#evbar>button{min-height:44px} .evleg button{min-height:36px;padding:8px 10px}}
-  .evleg button.none{opacity:.45}.evleg button.off{opacity:.35;text-decoration:line-through}.evleg button.off i{background:transparent;box-shadow:inset 0 0 0 1px var(--c)}
-  .evleg button:hover{border-color:var(--c)}.evleg button:active{opacity:.6}.evleg button:focus-visible{outline:2px solid var(--c);outline-offset:1px}
-  .evleg small{color:var(--ev-muted);font-size:11px;margin-left:2px}
-  #evbar li{display:grid;grid-template-columns:12px 1fr auto;gap:2px 8px;align-items:baseline;padding:6px;border-top:1px solid var(--line,rgba(255,255,255,.08));cursor:pointer}
-  #evbar li:hover{background:var(--hover,rgba(255,255,255,.05))} #evbar li:active{opacity:.6}
-  #evbar li i{width:10px;height:10px;background:var(--c);align-self:center} #evbar li.closed i{background:#888}
-  #evbar li b{font-weight:600} #evbar li small{color:var(--ev-muted);font-size:11px;grid-column:2/-1}
-  #evbar li.tier-fade{opacity:.5} #evbar li.isnew b::after{content:' NEW';color:#f08a24;font-size:11px}
-  #evbar li em{font-style:normal;color:var(--ev-muted);font-size:11px}
-  @media (max-width:640px){body #evbar{left:96px;right:8px;transform:none;width:auto;max-width:none;bottom:calc(8px + env(safe-area-inset-bottom));z-index:9} body #evbar ol{max-height:34vh}}
-  #glitchNote{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;padding:3px 10px;border-radius:6px;background:rgba(6,20,26,.85);border:1px solid #3de0ff;color:#3de0ff;font:600 12px/1.5 ui-monospace,Menlo,monospace;text-shadow:-1px 0 #ff3d9a,1px 0 #3de0ff;pointer-events:none}
+  .evleg button em{font-style:normal;color:var(--muted);font-family:var(--font-mono)}
+  /* 状态用颜色和文字表达（E5 V20）：没有事件 = 淡字；隐藏 = 删除线 + 空心形状 */
+  .evleg button.none{color:var(--muted)}
+  .evleg button.off{color:var(--muted);text-decoration:line-through;border-style:dashed!important}.evleg button.off i{background:transparent;box-shadow:inset 0 0 0 1.5px var(--c)}
+  .evleg button:hover{border-color:var(--c)!important;background:var(--surface-2)}.evleg button:active{transform:scale(.97)}.evleg button:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+  .evleg small{color:var(--muted);font-size:var(--fs-micro,11px);margin-left:2px}
+  #evbar li{border-top:1px solid var(--line)}
+  #evbar li>button{display:grid;grid-template-columns:12px 1fr auto;gap:2px var(--sp-4,8px);align-items:baseline;width:100%;box-sizing:border-box;padding:var(--sp-3,6px);border-radius:var(--r-m,8px);transition:background var(--dur-1)}
+  #evbar li>button:hover{background:var(--surface-2)} #evbar li>button:active{transform:scale(.99)}
+  #evbar li i{width:10px;height:10px;background:var(--c);align-self:center} #evbar li.closed i{background:var(--muted)}
+  #evbar li b{font-weight:600} #evbar li small{color:var(--muted);font-size:var(--fs-micro,11px);grid-column:2/-1}
+  #evbar li.tier-fade b,#evbar li.closed b{color:var(--ink-2);font-weight:500}
+  #evbar li .nb{display:inline-block;margin-left:4px;padding:0 5px;border-radius:var(--r-s,4px);background:var(--accent-weak);color:var(--accent);font-size:var(--fs-micro,11px);font-weight:700;line-height:16px;vertical-align:1px}
+  #evbar li em{font-style:normal;color:var(--muted);font-size:var(--fs-micro,11px)}
+  /* 触屏：横条 44、列表行 44、图例 36（放在按钮样式之后，不被覆盖；E4b R05） */
+  @media (pointer:coarse),(max-width:640px){#evbar>button{min-height:44px} #evbar li>button{min-height:44px} .evleg button{min-height:36px;padding:0 10px}}
+  @media (max-width:640px){body #evbar{left:calc(var(--layers-w,0px) + 8px);right:8px;transform:none;width:auto;max-width:none;bottom:calc(var(--sp-5,12px) + env(safe-area-inset-bottom));z-index:9} body #evbar ol{max-height:34vh}
+    body #glitchNote{top:62px}}
+  #glitchNote{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;padding:3px 10px;border-radius:var(--r-s,4px);background:rgba(6,20,26,.88);border:1px solid #3de0ff;color:#3de0ff;font:600 var(--fs-small,12px)/1.5 var(--font-mono,monospace);text-shadow:-1px 0 #ff3d9a,1px 0 #3de0ff;pointer-events:none}
   #glitchNote[hidden]{display:none}
   /* 花屏：间歇发作（约 3 秒一次、每次半秒多），只动叠加层的 transform / 背景；底图滤镜只在桌面开，手机上省掉 */
   body[data-glitch]:not([data-glitch=""]) #stage::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;mix-blend-mode:screen;opacity:0;
@@ -320,14 +346,16 @@ const TCEvents = (() => {
 
   function init() {
     const stage = $('#stage');
-    if (!$('#evbar')) stage.insertAdjacentHTML('beforeend', '<div id="evbar" hidden data-open="0"><button type="button"></button><div class="evleg"></div><ol></ol></div><div id="glitchNote" hidden></div>');
+    if (!$('#evbar')) stage.insertAdjacentHTML('beforeend', '<div id="evbar" hidden data-open="0"><button type="button"></button><div class="evleg" role="group"></div><ol></ol></div><div id="glitchNote" hidden></div>');
+    $('#evbar .evleg').setAttribute('aria-label', T('ev.legend_aria', '按大类筛选'));
     $('#evbar .evleg').addEventListener('click', e => { const b = e.target.closest('button[data-g]'); if (!b) return;
       const g = b.dataset.g; off.has(g) ? off.delete(g) : off.add(g); try { localStorage.setItem(OFF_KEY, JSON.stringify([...off])); } catch (err) {}
       render(); renderBar(); badges(); });
     $('#evbar > button').setAttribute('aria-controls', 'evlist'); $('#evbar ol').id = 'evlist';
     $('#evbar > button').addEventListener('click', () => { open = !open; renderBar(); });
-    $('#evbar ol').addEventListener('click', e => { const li = e.target.closest('li'); if (li) flyTo(li.dataset.id); });
-    $('#evbar ol').addEventListener('keydown', e => { const li = e.target.closest('li'); if (li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); flyTo(li.dataset.id); } });
+    // 点列表项飞过去；卡片关闭（× / Esc）后焦点回到横条按钮（列表已收起）
+    $('#evbar ol').addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (!b) return;
+      kbdFly = e.detail === 0; if (typeof cardFrom !== 'undefined') cardFrom = $('#evbar > button'); flyTo(b.dataset.id); });
     if (coarse) document.body.classList.add('coarse');
   }
   // 层切换器上的事态数：某张地图上未解除的事件条数（查看器的 updateLayerBadges 读取）
