@@ -794,6 +794,7 @@ async function go(id) {
 // 随地图变的工具栏文字（叠加层、另一版底图的开关名）
 function mapChrome(m) {
   $('#credit').textContent = $('#credit').title = nm(m, 'credit');
+  if (m.overlay) { let on = m.overlay.type !== 'barriers'; if (!on) try { on = localStorage.getItem('edenMapBarriers') === '1'; } catch (e) {} $('#tgBorders').checked = on; }
   $('#tgOverlay span').textContent = m.overlay ? nm(m.overlay, 'label') || t('overlay') : t('overlay'); $('#tgOverlay').hidden = !m.overlay;
   $('#tgAlt').hidden = !m.alt; if (m.alt) $('#tgAlt span').textContent = nm(m.alt, 'label') || t('alt_base');
 }
@@ -802,7 +803,6 @@ function mapChrome(m) {
 // 嵌入接口（换版时保持）：maps.json 的 src 指向页面（相对 map/）。这里 fetch 页面文本、在 <head> 后插入 <base href="页面所在目录">、
 // 用 iframe.srcdoc 显示（查看器本身也是 srcdoc + <base> 加载的；jsDelivr 的 gh 线路把 .html 当纯文本返回，不能直接 iframe src）。
 //   查看器 → 庄园：{ type: 'estate:room', name }（当前地点；庄园按房间名 / 别名高亮，匹配不到就取消高亮）、{ type: 'estate:inset', left }（左侧留白 px）
-  if (m.overlay) { let on = m.overlay.type !== 'barriers'; if (!on) try { on = localStorage.getItem('edenMapBarriers') === '1'; } catch (e) {} $('#tgBorders').checked = on; }
 //   庄园 → 查看器：{ type: 'estate:ready' }（第一帧画完）、{ type: 'estate:key', key }（PageUp / PageDown / [ / ] 交给查看器切层）、
 //                 { type: 'estate:fail', reason }（三维库或页面脚本加载失败）
 // 三维库（three 0.160.0）随仓库放在 map/estate/vendor/，庄园页的 importmap 用相对路径，跟着 <base>（当前线路）走，没梯子也能加载。
@@ -1126,6 +1126,9 @@ function declutter() { clearTimeout(declT); declT = setTimeout(() => {
     const b = e.querySelector('b'), r = b && getComputedStyle(b).display !== 'none' ? box(b) : null; if (!r) continue;
     if (kept.some(k => hit(r, k)) || ic.some(([x, k]) => x !== e && hit(r, k, 0))) e.classList.add('lhide'); else kept.push(r);
   }
+  for (const e of sorted.filter(e => rank(e) > 1)) { const r = box(e.querySelector('.lab')), pin = box(e.querySelector('.pin'));
+    if (pin && icons.some(k => hit(pin, k, 6))) e.classList.add('lhide'); else place(e, r, true); }
+  for (const e of words.filter(e => e.classList.contains('minor'))) place(e, box(e), true);
 }, 80); }
 function applyOverlayToggle() {
   const on = $('#tgBorders').checked, m = REG.maps[cur];
@@ -1134,9 +1137,6 @@ function applyOverlayToggle() {
 }
 
 // ---------------- 标记 ----------------
-  for (const e of sorted.filter(e => rank(e) > 1)) { const r = box(e.querySelector('.lab')), pin = box(e.querySelector('.pin'));
-    if (pin && icons.some(k => hit(pin, k, 6))) e.classList.add('lhide'); else place(e, r, true); }
-  for (const e of words.filter(e => e.classList.contains('minor'))) place(e, box(e), true);
 function placeN(el, nx, ny, placement = OpenSeadragon.Placement.TOP_LEFT) {
   viewer.addOverlay({ element: el, location: new OpenSeadragon.Point(nx, ny * aspect), placement });
 }
