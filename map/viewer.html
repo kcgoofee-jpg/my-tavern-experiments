@@ -307,9 +307,9 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 let narrow = false;
 // 触屏或低内存设备：瓦片缓存减半（约 30 MB），避免手机 WebView 因内存被回收
 const coarse = matchMedia('(pointer: coarse)').matches || (navigator.deviceMemory || 8) <= 4;   // 手机 / 窄面板：隐藏小地图（信息卡的底部抽屉由 CSS 媒体查询处理）
-// 自动档的上限：手机、低内存（≤ 4 GB）、省流模式或 2g / 3g 网络最高只到「标准」
+// 自动档的上限：默认「清晰」（用户 2026-09-27：手机也上调一档）；只有低内存（≤ 4 GB）、省流模式或 2g / 3g 网络才封顶到「标准」
 const autoMax = () => { const c = navigator.connection || {};
-  return coarse || /Android|iPhone|iPad|iPod|Mobile/.test(navigator.userAgent) || c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || '') ? 'std' : 'hd'; };
+  return (navigator.deviceMemory || 8) <= 4 || c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || '') ? 'std' : 'hd'; };
 const post = msg => { if (window.top !== window) parent.postMessage(msg, '*'); };
 // 省流模式：系统省流（saveData）、2g / 3g、内存 ≤ 4 GB、或手动选了「省流」档：不在后台预热别的地图的瓦片，只取 HTML 与 JSON（E4 N02）
 const lean = () => { const c = navigator.connection || {};
