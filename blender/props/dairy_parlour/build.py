@@ -127,20 +127,20 @@ def pbr(name, aid, tile, tint=None, rough_mul=1.0, wet=0.0, nstr=1.0, metal=0.0,
         # 墙根泥溅：世界 z 0–0.6 m 渐变 × 噪声，压暗偏棕、变粗糙
         gp = nt.nodes.new('ShaderNodeNewGeometry'); sz = nt.nodes.new('ShaderNodeSeparateXYZ')
         nt.links.new(gp.outputs['Position'], sz.inputs[0])
-        mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['From Min'].default_value = 0.05; mr.inputs['From Max'].default_value = 0.65
+        mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['From Min'].default_value = 0.0; mr.inputs['From Max'].default_value = 0.9
         mr.inputs['To Min'].default_value = 1.0; mr.inputs['To Max'].default_value = 0.0
         nt.links.new(sz.outputs[2], mr.inputs['Value'])
         gn = nt.nodes.new('ShaderNodeTexNoise'); gn.inputs['Scale'].default_value = 7; gn.inputs['Detail'].default_value = 12
         nt.links.new(gp.outputs['Position'], gn.inputs['Vector'])
         gm_ = nt.nodes.new('ShaderNodeMath'); gm_.operation = 'MULTIPLY'
         nt.links.new(mr.outputs[0], gm_.inputs[0])
-        g2 = nt.nodes.new('ShaderNodeMath'); g2.operation = 'MULTIPLY_ADD'; g2.inputs[1].default_value = 1.6; g2.inputs[2].default_value = -0.2
+        g2 = nt.nodes.new('ShaderNodeMath'); g2.operation = 'MULTIPLY_ADD'; g2.inputs[1].default_value = 2.4; g2.inputs[2].default_value = -0.35
         nt.links.new(gn.outputs[0], g2.inputs[0]); nt.links.new(g2.outputs[0], gm_.inputs[1])
         cl = nt.nodes.new('ShaderNodeMath'); cl.operation = 'MINIMUM'; cl.inputs[1].default_value = 1.0
         nt.links.new(gm_.outputs[0], cl.inputs[0])
         gmix = nt.nodes.new('ShaderNodeMix'); gmix.data_type = 'RGBA'
         nt.links.new(cl.outputs[0], gmix.inputs['Factor']); nt.links.new(col, gmix.inputs[6])
-        gmix.inputs[7].default_value = (0.16, 0.12, 0.08, 1)
+        gmix.inputs[7].default_value = (0.1, 0.075, 0.05, 1)
         col = gmix.outputs[2]
     nt.links.new(col, b.inputs['Base Color'])
     nt.links.new(rough, b.inputs['Roughness'])
@@ -165,6 +165,20 @@ def steel(name, base_rough=0.22, brushed=True, tile=0.6, color=(0.78, 0.78, 0.8)
     b.inputs['Metallic'].default_value = 1.0
     if brushed:
         b.inputs['Anisotropic'].default_value = 0.6
+    # 水垢 / 手摸痕：噪声斑块把粗糙度抬高、颜色压灰
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 22; nz.inputs['Detail'].default_value = 6
+    nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
+    rp = nt.nodes.new('ShaderNodeValToRGB')
+    rp.color_ramp.elements[0].position = 0.6; rp.color_ramp.elements[1].position = 0.75
+    nt.links.new(nz.outputs[0], rp.inputs[0])
+    mxr = nt.nodes.new('ShaderNodeMix'); mxr.data_type = 'FLOAT'
+    nt.links.new(rp.outputs[0], mxr.inputs['Factor']); nt.links.new(mr.outputs[0], mxr.inputs[2]); mxr.inputs[3].default_value = 0.42
+    nt.links.new(mxr.outputs[0], b.inputs['Roughness'])
+    mxc = nt.nodes.new('ShaderNodeMix'); mxc.data_type = 'RGBA'
+    nt.links.new(rp.outputs[0], mxc.inputs['Factor'])
+    mxc.inputs[6].default_value = (*color, 1); mxc.inputs[7].default_value = (0.7, 0.69, 0.66, 1)
+    nt.links.new(mxc.outputs[2], b.inputs['Base Color'])
     return m
 
 
@@ -267,7 +281,11 @@ M['wood'] = pbr('post_wood', 'rough_wood', 0.8, tint=(0.8, 0.72, 0.62))
 M['grass_ground'] = pbr('grass_ground', 'grass_ground', 2.0)
 M['steel'] = steel('steel_brushed')
 M['steel_polish'] = steel('steel_polished', base_rough=0.24, tile=0.1)
-M['tank'] = steel('tank_brushed', base_rough=0.24, tile=1.0)
+M['tank'] = steel('tank_brushed', base_rough=0.38, tile=1.0, color=(0.7, 0.7, 0.71))
+M['psu'] = clear_hose('polysulfone')
+_b = M['psu'].node_tree.nodes['Principled BSDF']
+_b.inputs['Base Color'].default_value = (0.98, 0.9, 0.74, 1); _b.inputs['Transmission Weight'].default_value = 1.0; _b.inputs['Roughness'].default_value = 0.08; _b.inputs['IOR'].default_value = 1.63
+M['jet_old'] = plastic('jetter_worn', (0.78, 0.76, 0.68), rough=0.5)
 M['galv'] = galvanised()
 M['rubber'] = rubber('rubber_black')
 M['hose'] = clear_hose()
@@ -284,6 +302,11 @@ M['glass'] = clear_hose('receiver_glass')
 M['glass'].node_tree.nodes['Principled BSDF'].inputs['Transmission Weight'].default_value = 1.0
 M['glass'].node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.05
 M['display'] = emissive('display', 2.0)
+M['lcd'] = emissive('lcd', 1.2)
+M['lcd'].node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (0.02, 0.03, 0.03, 1)
+M['lcd'].node_tree.nodes['Principled BSDF'].inputs['Emission Color'].default_value = (0.35, 0.6, 0.75, 1)
+M['lcd'].node_tree.nodes['Principled BSDF'].inputs['Transmission Weight'].default_value = 0.0
+M['lcd'].node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.08
 M['display'].node_tree.nodes['Principled BSDF'].inputs['Emission Color'].default_value = (0.2, 0.9, 0.4, 1)
 
 # 屋面：压型钢板 + 每 3 m 一条采光板
@@ -490,6 +513,29 @@ for x in [PX0 - 0.2] + [PX0 + 2.2 * k for k in range(1, 5)] + [PX1 + 0.2]:
     pipe(f'gantry_{x:.1f}', [(x, -(PY1 + 0.14), 2.35), (x, PY1 + 0.14, 2.35)], 0.035, M['galv'])
 
 # ---------------------------------------------------------------- 奶管 / 脉动管 / 杯组
+def torus(name, center, axis, R, r, mat, seg=32, rseg=12):
+    bm = bmesh.new()
+    rings = []
+    for i in range(seg):
+        a = 2 * math.pi * i / seg
+        ring = []
+        for j in range(rseg):
+            b_ = 2 * math.pi * j / rseg
+            ring.append(bm.verts.new(((R + r * math.cos(b_)) * math.cos(a), (R + r * math.cos(b_)) * math.sin(a), r * math.sin(b_))))
+        rings.append(ring)
+    for i in range(seg):
+        for j in range(rseg):
+            bm.faces.new((rings[i][j], rings[(i + 1) % seg][j], rings[(i + 1) % seg][(j + 1) % rseg], rings[i][(j + 1) % rseg]))
+    me = bpy.data.meshes.new(name); bm.to_mesh(me); bm.free()
+    for p in me.polygons:
+        p.use_smooth = True
+    me.materials.append(mat)
+    o = link(bpy.data.objects.new(name, me))
+    o.location = tuple(center)
+    o.rotation_mode = 'QUATERNION'; o.rotation_quaternion = Vector(axis).to_track_quat('Z', 'Y')
+    return o
+
+
 def cyl_between(name, p0, p1, r, mat, r2=None, bev=0.002, seg=24):
     p0, p1 = Vector(p0), Vector(p1)
     o = cyl(name, tuple((p0 + p1) / 2), r, (p1 - p0).length, mat, seg=seg, bev=bev, r2=r2)
@@ -498,7 +544,7 @@ def cyl_between(name, p0, p1, r, mat, r2=None, bev=0.002, seg=24):
     return o
 
 
-PULSE_Z = MILK_LINE_Z + 0.25
+PULSE_Z = 1.9          # 脉动 / 真空管仍在架子高处
 GZ = 2.35
 
 
@@ -508,14 +554,14 @@ def cluster(tag, C, face):
     C = Vector(C)
     # 爪：不锈钢底座 + 透明聚砜上罩 + 顶上黑色脉动分配器 + 挂环
     cyl(f'claw_base_{tag}', tuple(C + Vector((0, 0, -0.022))), 0.062, 0.03, M['steel_polish'], seg=48, bev=0.012)
-    sphere(f'claw_bowl_{tag}', tuple(C + Vector((0, 0, 0.0))), 0.06, M['glass'], (1, 1, 0.75))
+    sphere(f'claw_bowl_{tag}', tuple(C + Vector((0, 0, 0.0))), 0.06, M['psu'], (1, 1, 0.75))
     cyl(f'distrib_{tag}', tuple(C + Vector((0, 0, 0.055))), 0.017, 0.03, M['grey_box'], bev=0.005)
     ring = C + Vector((0, 0, 0.078))
     cyl(f'claw_ring_{tag}', tuple(ring), 0.012, 0.004, M['steel'], axis='X', bev=0)
     # 出奶口（侧面，朝钩那边）
     fx, fy = face
-    out0 = C + Vector((fx * 0.055, fy * 0.055, -0.015))
-    out1 = C + Vector((fx * 0.085, fy * 0.085, -0.02))
+    out0 = C + Vector((fx * 0.05, fy * 0.05, -0.028))
+    out1 = out0 + Vector((fx * 0.035, fy * 0.035, -0.02))   # 底座下沿，朝外下倾 30°
     cyl_between(f'claw_outlet_{tag}', out0, out1, 0.009, M['steel'])
     for k in range(4):
         a = math.pi / 4 + k * math.pi / 2
@@ -530,10 +576,11 @@ def cluster(tag, C, face):
         tilt = d * 0.08 + Vector((random.uniform(-0.03, 0.03), random.uniform(-0.03, 0.03), 0))
         axis = (Vector((0, 0, -1)) + tilt).normalized()
         bot = top + axis * 0.145
-        cyl_between(f'shell_{tag}_{k}', top, bot, 0.02, M['steel_polish'], bev=0.004, seg=32)
+        cyl_between(f'shell_{tag}_{k}', top, bot, 0.016, M['steel_polish'], bev=0.004, seg=32, r2=0.021)   # 杯底（倒挂时朝上）细、杯口粗
         # 唇口：软黑橡胶，比壳粗一圈；中间是乳头孔
         lip1 = bot + axis * 0.028
-        cyl_between(f'mouth_{tag}_{k}', bot - axis * 0.004, lip1, 0.0245, M['rubber'], bev=0.009, seg=32)
+        cyl_between(f'mouth_{tag}_{k}', bot - axis * 0.004, lip1, 0.0235, M['rubber'], bev=0.006, seg=32)
+        torus(f'lip_{tag}_{k}', lip1 - axis * 0.004, axis, 0.019, 0.0075, M['rubber'])   # 翻边唇口
         cyl_between(f'mouthhole_{tag}_{k}', lip1 - axis * 0.002, lip1 + axis * 0.0005, 0.009, M['frame'], bev=0, seg=16)
         # 衬垫从杯壳上端伸出变成短奶管，拐弯接到爪上的进奶嘴
         stub = top - axis * 0.018
@@ -543,49 +590,55 @@ def cluster(tag, C, face):
         side = top + axis * 0.02 + d * 0.021
         cyl_between(f'pnip_{tag}_{k}', side, side + d * 0.012, 0.003, M['steel'], bev=0)
         dist = C + Vector((0, 0, 0.055)) + d * 0.017
-        tube(f'shortpulse_{tag}_{k}', [tuple(side + d * 0.012), tuple(side + d * 0.04 + Vector((0, 0, 0.05))), tuple(dist + d * 0.03 + Vector((0, 0, 0.02))), tuple(dist)], 0.0028, M['rubber'], res=16)
+        tube(f'shortpulse_{tag}_{k}', [tuple(side + d * 0.012), tuple(side + d * 0.015 + Vector((0, 0, 0.02))), tuple(dist + d * 0.015 + Vector((0, 0, 0.01))), tuple(dist)], 0.0028, M['rubber'], res=16)
     return out1, C + Vector((0, 0, 0.07))
 
 
 for s in (1, -1):
     ym = s * (PY1 + 0.05)
-    pipe(f'milkline_{s}', [(PX0 - 0.3, ym, MILK_LINE_Z), (PX1 + 0.1, ym, MILK_LINE_Z), (RECEIVER[0], s * 0.22, MILK_LINE_Z - 0.2), (RECEIVER[0], s * 0.22, -0.05)], 0.025, M['steel'], rad=0.25)
-    pipe(f'pulseline_{s}', [(PX0 - 0.3, ym, PULSE_Z), (PX1 + 0.3, ym, PULSE_Z)], 0.019, M['white_pvc'])
+    yml = s * (PY1 - 0.09)   # 低位奶管贴坑壁
+    pipe(f'milkline_{s}', [(PX0 - 0.3, yml, MILK_LINE_Z + 0.04), (PX1 + 0.1, yml, MILK_LINE_Z - 0.05), (RECEIVER[0], s * 0.2, -0.16), (RECEIVER[0], s * 0.2, -0.2)], 0.025, M['steel'], rad=0.2)
     for x in [PX0 + 1.1 * k for k in range(11)]:
-        cyl(f'clamp_{s}_{x:.1f}', (x, ym, (MILK_LINE_Z + GZ) / 2), 0.006, GZ - MILK_LINE_Z, M['steel'])
+        box(f'ml_bracket_{s}_{x:.1f}', x - 0.02, x + 0.02, min(s * PY1, yml), max(s * PY1, yml), MILK_LINE_Z - 0.04, MILK_LINE_Z - 0.025, M['steel'], 0.002)
+    pipe(f'pulseline_{s}', [(PX0 - 0.3, 0, 2.6), (PX0 - 0.3, ym, 2.6), (PX0 - 0.3, ym, PULSE_Z), (PX1 + 0.3, ym, PULSE_Z)], 0.019, M['white_pvc'])
+    for x in [PX0 + 1.1 * k for k in range(11)]:
+        cyl(f'clamp_{s}_{x:.1f}', (x, ym, (PULSE_Z + GZ) / 2), 0.006, GZ - PULSE_Z, M['steel'])
     # 坑壁清洗托（jetter）供水管
     yw = s * (PY1 - 0.05)
-    pipe(f'washline_{s}', [(PX0 - 0.2, yw, -0.42), (PX1 + 0.3, yw, -0.42)], 0.02, M['steel'])
+    pipe(f'washline_{s}', [(PX0 - 0.2, yw, -0.62), (PX1 + 0.3, yw, -0.62)], 0.02, M['steel'])
     for i, x in enumerate(SX):
         cx, cy, cz = x + 0.3, s * (PY1 - 0.17), 0.36
         # 杯组挂钩：从臀栏伸进坑、向下弯出钩，钩住爪顶挂环
         pipe(f'hook_{s}_{i}', [(cx, s * (PY1 + 0.14), 0.62), (cx, s * (PY1 - 0.05), 0.62), (cx, cy, 0.5), (cx, cy, cz + 0.078), (cx + 0.02, cy, cz + 0.1)], 0.005, M['steel'], rad=0.03)
         outlet, ptop = cluster(f'{s}_{i}', (cx, cy, cz), (0, s))
         # 长奶管 Ø16（透明）：侧出口 → 下垂 → 上到奶管上半部的进奶口
-        tube(f'longmilk_{s}_{i}', [tuple(outlet), tuple(outlet + Vector((0.02, s * 0.02, -0.06))), (cx - 0.08, s * (PY1 - 0.02), 0.25), (cx - 0.15, s * (PY1 + 0.04), 0.9), (x + 0.05, ym, MILK_LINE_Z + 0.03)], 0.008, M['hose'])
-        cyl(f'inlet_{s}_{i}', (x + 0.05, ym, MILK_LINE_Z + 0.02), 0.012, 0.05, M['steel'])
+        tube(f'longmilk_{s}_{i}', [tuple(outlet), tuple(outlet + Vector((0.03, s * 0.02, -0.08))), (cx - 0.05, s * (PY1 - 0.06), 0.1), (x + 0.05, yml, MILK_LINE_Z + 0.03)], 0.008, M['hose'])
+        cyl(f'inlet_{s}_{i}', (x + 0.05, yml, MILK_LINE_Z + 0.02), 0.012, 0.05, M['steel'])
         # 双脉动长管（黑，两根并在一起）：分配器 → 脉动器
         for off in (-0.0065, 0.0065):
             tube(f'pulse_{s}_{i}_{off}', [tuple(ptop + Vector((off, 0, 0))), tuple(ptop + Vector((off - 0.02, s * 0.04, 0.12))), (cx - 0.1 + off, s * (PY1 + 0.03), 0.95), (x + 0.2 + off, s * (PY1 + 0.05), PULSE_Z - 0.08)], 0.0062, M['rubber'])
         box(f'pulsator_{s}_{i}', x + 0.14, x + 0.26, s * (PY1 + 0.05) - 0.04, s * (PY1 + 0.05) + 0.04, PULSE_Z - 0.1, PULSE_Z - 0.02, M['grey_box'], 0.008)
         # 清洗托：坑壁上一组四个开口朝上的白色清洗杯
-        box(f'jet_bracket_{s}_{i}', cx - 0.14, cx + 0.14, min(yw, yw - s * 0.05), max(yw, yw - s * 0.05), -0.3, -0.28, M['steel'], 0.003)
-        for k, dx in enumerate((-0.105, -0.035, 0.035, 0.105)):
-            jy = yw - s * 0.06
-            cyl(f'jetter_{s}_{i}_{k}', (cx + dx, jy, -0.25), 0.03, 0.08, M['white_pvc'], bev=0.006, seg=32, r2=0.026)
-            cyl(f'jetter_hole_{s}_{i}_{k}', (cx + dx, jy, -0.2095), 0.021, 0.002, M['frame'], bev=0, seg=24)
-            pipe(f'jet_feed_{s}_{i}_{k}', [(cx + dx, jy, -0.29), (cx + dx, jy, -0.36), (cx + dx, yw, -0.42)], 0.006, M['steel'], rad=0.03)
+        jz = -0.2 + random.uniform(-0.01, 0.01)
+        box(f'jet_bracket_{s}_{i}', cx - 0.1, cx + 0.1, min(s * PY1, s * (PY1 - 0.26)), max(s * PY1, s * (PY1 - 0.26)), jz - 0.07, jz - 0.055, M['steel'], 0.003)
+        for k, (dx, dy) in enumerate(((-0.065, 0.11), (0.065, 0.11), (-0.065, 0.23), (0.065, 0.23))):
+            dx += random.uniform(-0.006, 0.006)
+            jy = s * (PY1 - dy)
+            jo = cyl(f'jetter_{s}_{i}_{k}', (cx + dx, jy, jz), 0.026, 0.08, random.choice((M['white_pvc'], M['jet_old'])), bev=0.006, seg=32, r2=0.03)
+            jo.rotation_euler = (random.uniform(-0.05, 0.05), random.uniform(-0.05, 0.05), 0)
+            cyl(f'jetter_hole_{s}_{i}_{k}', (cx + dx, jy, jz + 0.0405), 0.023, 0.002, M['frame'], bev=0, seg=24)
+            pipe(f'jet_feed_{s}_{i}_{k}', [(cx + dx, jy, jz - 0.04), (cx + dx, jy, jz - 0.12), (cx + dx, yw, -0.62)], 0.006, M['steel'], rad=0.03)
 
 # 集乳罐 + 奶泵
 rx, ry = RECEIVER
-cyl('receiver_glass', (rx, ry, -0.12), 0.17, 0.5, M['glass'], bev=0.01)
-cyl('receiver_top', (rx, ry, 0.15), 0.19, 0.05, M['steel_polish'], bev=0.01)
-cyl('receiver_bot', (rx, ry, -0.4), 0.19, 0.05, M['steel_polish'], bev=0.01)
+cyl('receiver_glass', (rx, ry, -0.45), 0.17, 0.5, M['glass'], bev=0.01)
+cyl('receiver_top', (rx, ry, -0.18), 0.19, 0.05, M['steel_polish'], bev=0.01)
+cyl('receiver_bot', (rx, ry, -0.73), 0.19, 0.05, M['steel_polish'], bev=0.01)
 for k in range(3):
     a = k * 2 * math.pi / 3
-    cyl(f'receiver_leg_{k}', (rx + math.cos(a) * 0.17, ry + math.sin(a) * 0.17, -D / 2 - 0.22), 0.015, D - 0.45, M['steel'])
+    cyl(f'receiver_leg_{k}', (rx + math.cos(a) * 0.17, ry + math.sin(a) * 0.17, -0.84), 0.015, 0.23, M['steel'])
 box('milk_pump', rx - 0.25, rx + 0.1, 0.3, 0.6, -D, -D + 0.3, M['steel'], 0.02)
-pipe('transfer_line', [(rx, ry, 0.18), (rx, ry, 1.1), (MILK_ROOM_X + 0.6, ry, 1.1), (TANK[0], TANK[1] + TANK[2] / 2 - 0.2, 2.25), ], 0.02, M['steel'], rad=0.2)
+pipe('transfer_line', [(rx, ry, -0.15), (rx, ry, 1.1), (MILK_ROOM_X + 0.6, ry, 1.1), (TANK[0], TANK[1] + TANK[2] / 2 - 0.2, 2.25), ], 0.02, M['steel'], rad=0.2)
 pipe('vacuum_line', [(PX0 - 0.3, 0, 2.6), (MILK_ROOM_X, 0, 2.6), (MILK_ROOM_X + 1.5, 0, 2.6), (MILK_ROOM_X + 1.5, 3.8, 2.6), (MILK_ROOM_X + 1.5, 3.8, 1.0)], 0.035, M['white_pvc'])
 
 # ---------------------------------------------------------------- 奶罐间
@@ -605,22 +658,33 @@ cyl('agitator_motor', (tx, ty - 0.6, tz + td / 2 + 0.15), 0.1, 0.28, M['white_pv
 box('agitator_box', tx - 0.12, tx + 0.12, ty - 0.72, ty - 0.48, tz + td / 2 + 0.3, tz + td / 2 + 0.42, M['white_pvc'], 0.01)
 pipe('tank_outlet', [(tx, ty - tl / 2 + 0.3, tleg + 0.1), (tx, ty - tl / 2 - 0.2, tleg + 0.1)], 0.03, M['steel'])
 cyl('tank_valve', (tx, ty - tl / 2 - 0.22, tleg + 0.1), 0.05, 0.1, M['steel'], axis='Y')
-box('tank_panel', tx - 0.25, tx + 0.25, ty + tl / 2 - 0.05, ty + tl / 2 + 0.08, tz - 0.25, tz + 0.2, M['white_pvc'], 0.01)
-box('tank_display', tx - 0.12, tx + 0.02, ty + tl / 2 + 0.08, ty + tl / 2 + 0.085, tz, tz + 0.08, M['display'], 0)
+# 控制箱：支架立在罐端外 0.25 m，灰色机箱 + 深色边框 + 显示屏 + 按键
+py0 = ty + tl / 2 + 0.3
+for u in (-0.15, 0.15):
+    cyl(f'panel_stand_{u}', (tx + u, py0 + 0.06, (tz - 0.25) / 2), 0.015, tz - 0.25, M['steel'])
+box('tank_panel', tx - 0.2, tx + 0.2, py0, py0 + 0.12, tz - 0.25, tz + 0.2, M['white_pvc'], 0.012)
+box('tank_bezel', tx - 0.15, tx + 0.15, py0 + 0.12, py0 + 0.13, tz - 0.02, tz + 0.15, M['grey_box'], 0.004)
+box('tank_display', tx - 0.11, tx + 0.03, py0 + 0.13, py0 + 0.132, tz + 0.04, tz + 0.12, M['lcd'], 0)
+for k_ in range(4):
+    cyl(f'tank_btn_{k_}', (tx + 0.07 + (k_ % 2) * 0.04, py0 + 0.135, tz + 0.05 + (k_ // 2) * 0.05), 0.012, 0.01, M['red'] if k_ == 0 else M['grey_box'], axis='Y', bev=0.003)
+cyl('tank_estop', (tx - 0.1, py0 + 0.13, tz - 0.12), 0.025, 0.02, M['red'], axis='Y', bev=0.006)
+tube('panel_cable', [(tx, py0, tz - 0.2), (tx, py0 - 0.15, tz - 0.3), (tx, ty + tl / 2 - 0.1, tz - 0.1)], 0.006, M['rubber'])
 # 制冷机组
 box('condenser', X1 - 0.75, X1 - 0.12, -5.2, -3.9, 0, 0.8, M['frame'], 0.02)
 cyl('condenser_fan', (X1 - 0.75, -4.55, 0.42), 0.26, 0.02, M['galv'], axis='X')
 for k in range(5):
     cyl(f'grille_{k}', (X1 - 0.765, -4.55, 0.42), 0.05 + k * 0.05, 0.004, M['steel'], axis='X', seg=48, bev=0)
 # 卫生阱（奶和真空之间的不锈钢小罐）+ 真空稳压罐 + 真空泵机组
-stx, sty = MILK_ROOM_X + 0.7, 3.2
-cyl('san_trap', (stx, sty, 1.2), 0.13, 0.36, M['steel_polish'], seg=48, bev=0.02)
-cyl('san_trap_lid', (stx, sty, 1.395), 0.14, 0.03, M['steel'], seg=48, bev=0.008)
-cyl('san_trap_valve', (stx, sty, 0.95), 0.03, 0.14, M['steel'])
+stx, sty = RECEIVER[0] - 0.05, 0.62
+TZ = -0.45
+cyl('san_trap', (stx, sty, TZ), 0.13, 0.36, M['steel_polish'], seg=48, bev=0.02)
+cyl('san_trap_lid', (stx, sty, TZ + 0.195), 0.14, 0.03, M['steel'], seg=48, bev=0.008)
+cyl('san_trap_valve', (stx, sty, TZ - 0.25), 0.03, 0.14, M['steel'])
 for k in range(3):
     a = k * 2 * math.pi / 3
-    cyl(f'san_leg_{k}', (stx + math.cos(a) * 0.12, sty + math.sin(a) * 0.12, 0.5), 0.012, 1.0, M['steel'])
-pipe('san_to_vac', [(stx, sty, 1.41), (stx, sty, 2.6), (MILK_ROOM_X + 1.5, sty, 2.6)], 0.03, M['white_pvc'])
+    cyl(f'san_leg_{k}', (stx + math.cos(a) * 0.12, sty + math.sin(a) * 0.12, (-D + TZ - 0.18) / 2), 0.012, TZ - 0.18 + D, M['steel'])
+pipe('san_to_vac', [(stx, sty, TZ + 0.21), (stx, sty, 2.6), (stx, 0, 2.6)], 0.03, M['white_pvc'])
+pipe('rec_to_trap', [(rx + 0.12, ry + 0.1, -0.17), (rx + 0.12, ry + 0.1, -0.05), (stx, sty - 0.1, -0.05), (stx, sty, TZ + 0.2)], 0.025, M['steel'], rad=0.06)
 vrx, vry = MILK_ROOM_X + 1.5, 4.6
 cyl('vac_receiver', (vrx, vry, 0.85), 0.2, 0.8, M['steel'], seg=48, bev=0.03)
 sphere('vac_receiver_top', (vrx, vry, 1.25), 0.2, M['steel'], (1, 1, 0.35))
@@ -680,7 +744,12 @@ for s_ in (1, -1):
     cyl(f'gutter_{s_}', ((X0 + X1) / 2, gy, EAVE - 0.08), 0.07, X1 - X0 + 0.8, M['galv'], axis='X', seg=24, bev=0.004)
     for gx in (X0 + 0.4, (X0 + X1) / 2, X1 - 0.4):
         wy = s_ * (Y1 + WT + 0.07)
-        pipe(f'downpipe_{s_}_{gx:.1f}', [(gx, gy, EAVE - 0.12), (gx, gy, EAVE - 0.35), (gx, wy, EAVE - 0.6), (gx, wy, 0.2), (gx, s_ * (Y1 + WT + 0.25), 0.03)], 0.045, M['galv'], rad=0.12)
+        pipe(f'downpipe_{s_}_{gx:.1f}', [(gx, gy, EAVE - 0.12), (gx, gy, EAVE - 0.35), (gx, wy, EAVE - 0.6), (gx, wy, 0.2), (gx, s_ * (Y1 + WT + 0.25), 0.06)], 0.045, M['galv'], rad=0.12)
+        gyd = s_ * (Y1 + WT + 0.38)
+        box(f'drain_pit_{s_}_{gx:.1f}', gx - 0.17, gx + 0.17, gyd - 0.17, gyd + 0.17, -0.1, -0.004, M['frame'], 0.005)
+        for kb in range(9):
+            bx_ = gx - 0.14 + kb * 0.035
+            box(f'drain_bar_{s_}_{gx:.1f}_{kb}', bx_, bx_ + 0.012, gyd - 0.15, gyd + 0.15, -0.012, 0.004, M['galv'], 0)
         for bz in (1.0, 2.2, 3.4):
             box(f'dp_clip_{s_}_{gx:.1f}_{bz}', gx - 0.06, gx + 0.06, min(wy, s_ * (Y1 + WT)), max(wy, s_ * (Y1 + WT)), bz, bz + 0.03, M['galv'], 0.002)
 # 钢门架（I 型钢简化：翼缘 + 腹板）
@@ -857,7 +926,7 @@ for si, (a, b) in enumerate(sides):
             L = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
             for k in range(8):
                 f = k / 8
-                sag = 4 * f * (1 - f) * (0.03 if kind == 'tape' else 0.035) * L / POST_STEP
+                sag = 4 * f * (1 - f) * (0.045 if kind == 'tape' else 0.035) * L / POST_STEP
                 seg.append((p0[0] + (p1[0] - p0[0]) * f, p0[1] + (p1[1] - p0[1]) * f, z + 0.02 - sag))
         seg.append((pts[-1][0], pts[-1][1], z + 0.02))
         # 带/线挂在绝缘子外侧（朝场内偏 6 cm）
@@ -870,7 +939,9 @@ for si, (a, b) in enumerate(sides):
             else:
                 seg2.append((x + math.copysign(0.07, dx), y, zz))
         if kind == 'tape':
-            tube(f'tape_{si}', seg2, 0, M['tape'], smooth=False, ribbon=0.02)
+            to = tube(f'tape_{si}', seg2, 0, M['tape'], smooth=False, ribbon=0.02)
+            for k_, pt in enumerate(to.data.splines[0].points):
+                pt.tilt = 0.35 * math.sin(k_ * 0.9 + si)
         else:
             tube(f'wire_{si}', seg2, 0.0022, M['wire'], smooth=False)
 for (x, y) in postset.values():
