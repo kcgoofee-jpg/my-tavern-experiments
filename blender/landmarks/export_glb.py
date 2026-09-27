@@ -35,6 +35,10 @@ BUDGET = {
     'props_shacks_a': (40000, 2048), 'props_shacks_b': (40000, 2048), 'props_alleys': (20000, 1024),
     'props_pipes': (12000, 1024),
     'props_market': (8000, 1024), 'props_stalls': (8000, 1024), 'props_goods': (16000, 1024), 'props_lights': (10000, 512),
+    # well7（层间检查点 + 7 号井黑市；props_market / props_lights 与 lower_quarter 共用上面的预算）
+    'site_deck': (12000, 2048), 'props_checkpoint': (30000, 2048), 'props_gates': (30000, 1024),
+    'props_shaft': (40000, 2048), 'props_lift': (12000, 1024), 'props_shop': (12000, 1024), 'props_terminal': (6000, 512),
+    'props_taxpoint': (12000, 1024), 'props_walls': (30000, 2048),
 }
 
 

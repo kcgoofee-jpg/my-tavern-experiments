@@ -17,8 +17,8 @@
 | P1 开局 | tc_low | `junk_market` | 旧货市场 | ✅ | 卡 + 推断位置 | 铁皮屋区与旧货市场 `map/props/lower_quarter/` | 标准（r3 7 / 7） | 开局六 |
 | P1 开局 | tc_low | `ruined_churches` | 废弃教堂区 | ✅ | 卡 + 推断位置 | 废弃教堂区 `map/props/ruined_churches/` | 标准（r2 7 / 8） | 开局四 |
 | P1 开局 | tc_low | `tin_shacks` | 铁皮屋区 | ✅ | 卡 + 推断位置 | 铁皮屋区与旧货市场 `map/props/lower_quarter/` | 标准（r3 7 / 7） | 开局六 |
-| P1 开局 | tc_low | `well7` | 7 号井黑市 | ✅ | 卡 | — | — | 视觉样例 / 开局 |
-| P1 开局 | tc_mid | `checkpoint_c` | 层间检查点 | ✅ | 卡 | — | — | 视觉样例 / 开局 |
+| P1 开局 | tc_low | `well7` | 7 号井黑市 | ✅ | 卡 | 层间检查点与 7 号井 `map/props/well7/`（link3d） | 标准（r2 8 / 7） | 视觉样例 / 开局 |
+| P1 开局 | tc_mid | `checkpoint_c` | 层间检查点 | ✅ | 卡 | 层间检查点与 7 号井 `map/props/well7/`（link3d） | 标准（r2 8 / 7） | 视觉样例 / 开局 |
 | P1 开局 | tc_mid | `old_apartment` | 旧公寓楼 | ✅ | 卡 + 推断位置 | 旧公寓楼 `map/props/old_apartment/` | 标准（r3 7.5 / 7） | 开局六 |
 | P1 开局 | tc_mid | `radiance_cathedral` | 辉光大教堂 | ✅ | 卡 | 辉光大教堂 `map/props/cathedral/` | 标准（r3 7.5 / 7） | 开局八 |
 | P1 开局 | tc_upper | `kelly_residence` | 凯莉的宅邸 | ✅ | 用户决定 | 凯莉的宅邸 `map/props/kelly_residence/` | 标准（r2 7 / 8） | 开局三 |
