@@ -40,12 +40,12 @@ const qTier = Q.get('tier');
 const TIER_FIXED = qTier != null && /^[012]$/.test(qTier);
 let tier = TIER_FIXED ? +qTier : (COARSE || (navigator.deviceMemory || 8) <= 4 || innerWidth < 700) ? 1 : 0;
 const MAT_TIER = tier;           // 材质档在启动时定，运行时降档不换材质
-const DPR_CAP = [2, 1.5, 1];
+const DPR_CAP = [2, 2, 1.5];   // 手机实测：DPR 1 / 1.5 且无抗锯齿在 3× 屏上一片锯齿（像素风），降档只降阴影，DPR 下限 1.5
 const dprFor = (t) => Math.min(window.devicePixelRatio || 1, DPR_CAP[t]);
 let dpr = dprFor(tier), lowRes = false;
 
 /* ---------------- 渲染器 ---------------- */
-const renderer = new THREE.WebGLRenderer({ antialias: tier === 0, alpha: true, powerPreference: 'high-performance' });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(dpr);
 renderer.setSize(innerWidth, innerHeight);
 renderer.setClearColor(0x000000, 0);
@@ -758,7 +758,7 @@ function touchInteract() { lastInteract = performance.now(); }
 function setLowRes(on) {
   touchInteract();
   if (on === lowRes) return; lowRes = on;
-  renderer.setPixelRatio(on ? dpr * 0.75 : dpr); renderer.setSize(innerWidth, innerHeight); needs = true;
+  renderer.setPixelRatio(on ? Math.max(1.25, dpr * 0.75) : dpr); renderer.setSize(innerWidth, innerHeight); needs = true;
 }
 
 /* ---------------- 自适应降档：交互中 1 s 内平均帧时 > 33 ms 就降一档（只改 DPR 和阴影） ---------------- */

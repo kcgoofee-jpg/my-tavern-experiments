@@ -103,6 +103,9 @@
     #${ID} .em-panel { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
     #${ID} .em-bar { padding: calc(4px + env(safe-area-inset-top)) 8px 4px; font-size: 12px; }
     #${ID} .em-bar .em-here { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    #${ID} .em-bar .em-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+    #${ID} .em-bar .em-here { flex: 1 1 0; }
+    #${ID} .em-bar .em-line { white-space: nowrap; flex: none; }   /* 手机上标题、线路都不折行（用户实测：「没梯 / 子」断行） */
     #${ID} .em-bar button { font-size: 28px; padding: 0 6px; }
   }
 </style>
