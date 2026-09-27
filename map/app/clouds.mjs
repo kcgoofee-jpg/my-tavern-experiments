@@ -1,10 +1,14 @@
 // 从 viewer.html 内联脚本拆出（大版本 2，docs/design/arch-v2.md §6 第 6 步）。外部模块标签按 <base> 解析，srcdoc 里也安全。
-// 模块不产生全局绑定，但能读写查看器经典脚本的全局绑定（viewer、REG、cur、go、$、lean…）；在所有 defer 脚本之后、DOMContentLoaded（main）之前执行。
+// 核心状态与工具显式 import（app/state、util、nav…）；切层包装经 nav.mjs 的 setGo 注册。在所有外挂模块之后、DOMContentLoaded（main）之前执行。
 // ---------------- 云（方案 B，v0.9.2；原型 map/_proto/clouds.html，说明 docs/clouds.md §6）----------------
-// 自成一块，挂点只有两处：① 包一层全局 go()（天城层与层之间的切层转场）；② 监听 body[data-map] 与「显示下方城市」开关（漂移云显隐）。
+// 自成一块，挂点只有两处：① 经 setGo 包一层 go()（天城层与层之间的切层转场）；② 监听 body[data-map] 与「显示下方城市」开关（漂移云显隐）。
 // (a) 漂移：只在上层、云开（没勾「显示下方城市」）时；远近两层，拖动视差 0.85 / 1.2。精灵 art/clouds/puff1–6.png 与瓦片同一基址（jsDelivr 线路也通），用到才加载。
 // (b) 切层：9 条斜带 × 3 团从两头扫入 → 全白里换层 → 往两侧散开；转场中点一下跳过。
 // 减少动态效果：不漂移、直接换层。省流（lean()）：不漂移、零精灵请求，切层用白幕淡入淡出。
+import { REG, cur, viewer } from './state.mjs';
+import { $ } from './util.mjs';
+import { lean } from './tiers.mjs';
+import { altOn, go, setGo } from './nav.mjs';
 (() => {
   const RMq = matchMedia('(prefers-reduced-motion: reduce)'), RM = () => RMq.matches;
   const ANG = 35 * Math.PI / 180, UX = Math.cos(ANG), UY = -Math.sin(ANG), PX = -UY, PY = UX, AR = 440 / 800;
@@ -93,13 +97,13 @@
     } finally { anims.forEach(a => { try { a.cancel(); } catch (e) {} }); snap?.remove(); osd.style.transform = ''; osd.style.opacity = ''; }
   }
   const go0 = go;
-  go = async function (id, ...rest) {                             // 挂点 ①：只包天城层与层之间的切换，其余原样
+  setGo(async function (id, ...rest) {                             // 挂点 ①：只包天城层与层之间的切换，其余原样
     if (busy || RM() || !viewer || id === cur || !isTC(cur) || !isTC(id) || REG.maps[cur].group !== REG.maps[id].group || !viewer.world.getItemCount()) return go0(id, ...rest);
     busy = true; let p;
     try { await riseSink(id, () => (p = go0(id, ...rest))); } catch (e) { if (!p) p = go0(id, ...rest); }
     finally { busy = false; }
     return p;
-  };
+  });
   window.__clouds = { sync, state: () => ({ shown, drift: anims.length, busy, cover: !!document.querySelector('.tier-snap'), rm: RM(), lean: lean(), n: box ? box.querySelectorAll('img').length : 0,
     visible: box && shown ? [...box.querySelectorAll('img')].filter(el => { const r = el.getBoundingClientRect(), s = viewer.container.getBoundingClientRect();
       return +getComputedStyle(el).opacity > .15 && r.right > s.left + r.width * .3 && r.left < s.right - r.width * .3 && r.bottom > s.top + r.height * .3 && r.top < s.bottom - r.height * .3; }).length : 0 }) };

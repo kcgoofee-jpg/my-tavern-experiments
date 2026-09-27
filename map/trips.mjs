@@ -3,7 +3,13 @@
 //     越旧越淡；人物的行程是细线、用人物的颜色；点一段看楼层和时间。图层菜单「行程」开关（默认开，存本机）。
 //   1 途中：当前地点写成「A至B的…」「从A到B」「前往B」时（here.mjs resolveTransit），在两端之间画一条虚线弧，玩家点放在弧的中点；终点认不出时在起点画「前往 B」箭头。
 // 线画在一个铺满两端外框的 SVG 叠加层里（OSD Rect 叠加层，随缩放伸缩；线宽、虚线用 non-scaling-stroke 保持屏幕像素）。
-// 读查看器的全局：viewer、REG、cur、curData、aspect、estateStandIn、hereRes、esc、$、trackEl、untrack、showCard。
+// 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
+import { REG, aspect, cur, curData, viewer } from './app/state.mjs';
+import { esc } from './app/util.mjs';
+import { estateStandIn } from './app/estate.mjs';
+import { showCard, trackEl, untrack } from './app/markers.mjs';
+import { hereRes, userMoved } from './app/locate.mjs';
+import { P, register } from './app/plugins.mjs';
 const TCTrips = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let els = [], fitFor = null, trips = [];
@@ -56,15 +62,15 @@ const TCTrips = (() => {
       const age = (n - 1 - i) / Math.max(1, n - 1), op = (1 - age * .65).toFixed(2), who = t.who ? dn(t.who) : T('tr.you', '你');
       const lab = T('tr.trip', '{who}：{a} → {b}', { who, a: short(dn(t.from)), b: short(dn(t.to)) });
       const open = () => showCard(null, lab, 'inf', '', '', [T('tr.floor', '第 {n} 楼', { n: t.floor }), t.time, T(...MODE_T[t.mode || ''])].filter(Boolean).join(' · '));
-      const col = t.who && typeof TCChars !== 'undefined' ? `--tc:${charColor(t.who)}` : '';
+      const col = t.who && typeof P.TCChars !== 'undefined' ? `--tc:${charColor(t.who)}` : '';
       if (t.mode === 'teleport') { for (const p of [a, b]) pin(p, '<i></i>', 'tp' + (t.who ? ' ch' : ''), lab, open); els.slice(-2).forEach(e => { e.style.opacity = op; if (col) e.setAttribute('style', e.getAttribute('style') + ';' + col); }); return; }
       const st = STY[t.mode] || STY[''], { svg, mid } = arc(a, b, { cls: `hist m-${t.mode || 'x'}${t.who ? ' ch' : ''}`, bend: st.bend, dash: st.dash });
       svg.style.opacity = op; if (col) svg.setAttribute('style', svg.getAttribute('style') + ';' + col);
       pin(mid, '', 'hit', lab, open);
     });
   }
-  const dn = n => (typeof TCCustom !== 'undefined' ? TCCustom.name(n) : n);
-  const charColor = n => (typeof TCChars !== 'undefined' && TCChars.color ? TCChars.color(n) : '#888');
+  const dn = n => (typeof P.TCCustom !== 'undefined' ? P.TCCustom.name(n) : n);
+  const charColor = n => (typeof P.TCChars !== 'undefined' && P.TCChars.color ? P.TCChars.color(n) : '#888');
   function set(items) { trips = Array.isArray(items) ? items.slice(-10) : []; render(); }
   function setOn(v) { try { TCStore.set(TK, v ? '1' : '0'); } catch (e) {} render(); }
   document.addEventListener('DOMContentLoaded', () => { const b = document.getElementById('tgTripsBox'); if (b) { b.checked = on(); b.addEventListener('change', () => setOn(b.checked)); } });
@@ -94,3 +100,5 @@ const TCTrips = (() => {
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   return { render, set, setOn, get items() { return trips.map(t => ({ ...t })); }, xy, arc, pin, clear };
 })();
+register('TCTrips', TCTrips);
+export { TCTrips };

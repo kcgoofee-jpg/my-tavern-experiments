@@ -2,11 +2,21 @@
 // 本文件：落点（与玩家当前地点同一条解析链 here.mjs）、地图上的圆形头像框（同一处多人叠成一组）、事态横条里的「人物」页（列表 + 总开关 + 逐人开关）、飞过去。
 // 与事态区分：事态 = 大类形状的小方块 / 图形 + 类型字；人物 = 圆形头像框 + 名字首字（或本机头像），颜色按名字哈希、避开事态大类色。
 // 开关和头像只存本机 localStorage（按聊天分开）；不发请求（头像是用户自己给的 data: / http 地址时由浏览器加载那张图）。
-// 读查看器的全局：viewer、REG、cur、curData、aspect、placeN、hereRes、estateStandIn、go、trackEl、untrack、showCard、closeCard、declutter、esc、$、M、toImg、LS、chatId。
+// 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
+import { M, REG, aspect, cur, curData, pendingFocus, setPendingFocus, viewer } from './app/state.mjs';
+import { esc, getJSON, toImg } from './app/util.mjs';
+import { declutter, leanBg } from './app/tiers.mjs';
+import { LANG } from './app/i18n.mjs';
+import { go } from './app/nav.mjs';
+import { estateStandIn } from './app/estate.mjs';
+import { closeCard, placeN, showCard, trackEl, untrack } from './app/markers.mjs';
+import { hereRes, setUserMoved, userMoved } from './app/locate.mjs';
+import { LS, chatId } from './app/extapi.mjs';
+import { P, register } from './app/plugins.mjs';
 const TCChars = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let portraits = {}, rosters = null, rep = null, stageOrder = null, items = [], floor = 0, CM = null, prefs = { show: true, off: [] }, avatars = {}, els = [], flyName = null;
-  const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/characters.mjs', document.baseURI).href).then(m => (CM = m)).catch(() => null);
+  const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/characters.mjs', document.baseURI).href).then(m => { CM = m; loadPrefs(); return m; }).catch(() => null);   // 第一次用到才取（有人物 / 改头像时）；取到就读本机偏好
   const chat = () => (typeof chatId === 'string' ? chatId : '');
   const store = () => (typeof LS !== 'undefined' ? LS : null);
   function loadPrefs() { if (!CM) return; prefs = CM.readCharPrefs(store(), chat()); avatars = CM.readAvatars(store(), chat()); }
@@ -24,7 +34,7 @@ const TCChars = (() => {
   const avImg = n => { const u = avOf(n); return u ? `<img alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" src="${esc(u)}" data-i="${esc(ini(n))}" onerror="this.replaceWith(this.dataset.i)">` : ''; };
   const visible = c => prefs.show && !prefs.off.includes(c.name);
   // v0.9.3：显示名（自定义，custom.js）与位置来源：MVU（在场人物的位置字段）/ 标签（聊天里的人物标签）/ 推断（在场但没写位置，按和你同处）
-  const dn = n => (typeof TCCustom !== 'undefined' ? TCCustom.name(n) : n);
+  const dn = n => (typeof P.TCCustom !== 'undefined' ? P.TCCustom.name(n) : n);
   const srcOf = c => c.src === 'mvu' ? T('ch.src_mvu', 'MVU') : c.src === 'tag' ? T('ch.src_tag', '标签') : T('ch.src_infer', '推断');
   const when = c => c.present ? T('ch.with_you', '和你在一起') : T('ev.floor', '第 {n} 楼', { n: c.floor });
 
@@ -36,11 +46,11 @@ const TCChars = (() => {
     if (REG.maps[r.map].kind === 'estate') { const s = estateStandIn(r.map); if (!s) return { map: r.map, estate: true }; r = { ...r, map: s.map, marker: s.marker }; }
     if (r.marker) { const p = await markerXY(r.map, r.marker); return p ? { map: r.map, ...p } : { map: r.map }; }
     if (r.place && typeof M !== 'undefined' && M) { const p = [...(M.places || []), ...(M.fiefs || [])].find(q => q.name === r.place); if (p) { const [nx, ny] = toImg(p.x, p.y); return { map: r.map, nx, ny }; } }
-    const z = typeof TCEvents !== 'undefined' && TCEvents.zoneXY?.(r.map, c.place);   // 只知道城区（霓虹街、7 号井一带）：按城区大致标出，虚线框
+    const z = typeof P.TCEvents !== 'undefined' && P.TCEvents.zoneXY?.(r.map, c.place);   // 只知道城区（霓虹街、7 号井一带）：按城区大致标出，虚线框
     return z ? { map: r.map, ...z } : { map: r.map };
   }
 
-  async function set(d) { await mod(); if (!Array.isArray(d.items)) return; const hadP = Object.values(portraits).some(okUrl); items = d.items.slice(0, 60); rosters = d.rosters || null; rep = Number.isFinite(d.rep) ? d.rep : null; stageOrder = Array.isArray(d.stageOrder) ? d.stageOrder : null; portraits = d.portraits && typeof d.portraits === 'object' ? d.portraits : {}; if (hadP !== Object.values(portraits).some(okUrl) && typeof TCCustom !== 'undefined') TCCustom.renderUI(); floor = d.floor || 0; loadPrefs(); await render(); bar(); if (flyName && cur) fly(flyName); }
+  async function set(d) { await mod(); if (!Array.isArray(d.items)) return; const hadP = Object.values(portraits).some(okUrl); items = d.items.slice(0, 60); rosters = d.rosters || null; rep = Number.isFinite(d.rep) ? d.rep : null; stageOrder = Array.isArray(d.stageOrder) ? d.stageOrder : null; portraits = d.portraits && typeof d.portraits === 'object' ? d.portraits : {}; if (hadP !== Object.values(portraits).some(okUrl) && typeof P.TCCustom !== 'undefined') P.TCCustom.renderUI(); floor = d.floor || 0; loadPrefs(); await render(); bar(); if (flyName && cur) fly(flyName); }
   let seq = 0;
   async function render() {
     for (const el of els) { if (typeof untrack === 'function') untrack(el); viewer?.removeOverlay(el); } els = [];
@@ -60,10 +70,10 @@ const TCChars = (() => {
   }
   function card(list) {
     showCard(null, list.map(c => dn(c.name)).join('、'), 'inf', '', '', list[0].place);
-    if (typeof TCCompose !== 'undefined') TCCompose.attach({ go: list[0].place || '', ask: list.length === 1 ? dn(list[0].name) : '' });   // v0.9.6 地图 → 聊天
+    if (typeof P.TCCompose !== 'undefined') P.TCCompose.attach({ go: list[0].place || '', ask: list.length === 1 ? dn(list[0].name) : '' });   // v0.9.6 地图 → 聊天
     const tg = document.querySelector('#card .tag'); tg.textContent = T('ch.tag', '人物'); tg.className = 'tag data'; tg.style.background = color(list[0].name);
     const sv = document.querySelector('#card .src'); delete sv.dataset.note;
-    const note = c => { const e = typeof TCCustom !== 'undefined' && TCCustom.entry(c.name); return e?.用途 ? ` · ${e.用途}` : ''; };
+    const note = c => { const e = typeof P.TCCustom !== 'undefined' && P.TCCustom.entry(c.name); return e?.用途 ? ` · ${e.用途}` : ''; };
     if (list.length === 1) { const c = list[0]; const id = identity(c.name), it = rosterItem(c.name);
       sv.innerHTML = `<dl class="fields">${id ? `<dt>${esc(T('ch.identity', '身份'))}</dt><dd>${esc(id)}</dd>` : ''}${it?.tier ? `<dt>${esc(T('ch.tier', '战力'))}</dt><dd><span class="chtier">${esc(it.tier)}</span></dd>` : ''}${c.roster ? (c.place ? `<dt>${esc(T('ev.k_place', '地点'))}</dt><dd>${esc(c.place)}</dd>` : '') : `<dt>${esc(T('ch.last', '最后出现'))}</dt><dd>${esc(c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor }))}</dd><dt>${esc(T('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd>`}</dl>${moreHtml(it, id)}`;
       document.getElementById('card').classList.toggle('person2', !!sv.querySelector('details.chmore'));   // 桌面：有「更多资料」时人物卡两栏
@@ -75,9 +85,9 @@ const TCChars = (() => {
   async function fly(name) {
     const c = items.find(x => x.name === name); flyName = null; if (!c) return;
     const w = await where(c); if (!w) { card([c]); return; }
-    if (w.map !== cur) { flyName = name; if (typeof closeCard === 'function') closeCard(); pendingFocus = null; go(w.map); return; }
+    if (w.map !== cur) { flyName = name; if (typeof closeCard === 'function') closeCard(); setPendingFocus(null); go(w.map); return; }
     if (w.nx == null) { card([c]); return; }
-    userMoved = true; const vp = viewer.viewport, b = vp.getBounds(true), wd = Math.min(b.width, .25), h = wd * b.height / b.width;
+    setUserMoved(true); const vp = viewer.viewport, b = vp.getBounds(true), wd = Math.min(b.width, .25), h = wd * b.height / b.width;
     vp.fitBounds(new OpenSeadragon.Rect(w.nx - wd / 2, w.ny * aspect - h / 2, wd, h));
     setTimeout(() => card(items.filter(x => x.place === c.place && visible(x)).length ? items.filter(x => x.place === c.place) : [c]), 650);
   }
@@ -87,7 +97,7 @@ const TCChars = (() => {
 
   // ---------- 横条里的「人物」页 ----------
   const count = () => items.length + (rosters?.members?.items?.length || 0) + (rosters?.targets?.items?.length || 0);
-  function bar() { if (typeof TCEvents !== 'undefined') TCEvents.renderBar?.(); }
+  function bar() { if (typeof P.TCEvents !== 'undefined') P.TCEvents.renderBar?.(); }
   // v0.9.5 名册（只读，卡内脚本按表的位置发现）：身份、阶段；分组可折叠（折叠状态存本机）
   const identity = n => { for (const g of ['present', 'members', 'targets']) { const it = rosters?.[g]?.items?.find(i => i.name === n); if (it?.identity) return it.identity; } return ''; };
   const rosterItem = n => { for (const g of ['present', 'members', 'targets']) { const it = rosters?.[g]?.items?.find(i => i.name === n); if (it) return it; } return null; };
@@ -146,7 +156,7 @@ const TCChars = (() => {
       else { const n = inp.dataset.n; prefs.off = inp.checked ? prefs.off.filter(x => x !== n) : [...prefs.off, n]; }
       savePrefs(); render(); bar(); return;
     }
-    const b = e.type === 'click' && e.target.closest('button.chgo'); if (b) { if (typeof TCEvents !== 'undefined') TCEvents.collapse(); if (b.dataset.card) cardOf(b.dataset.card); else fly(b.dataset.n); }
+    const b = e.type === 'click' && e.target.closest('button.chgo'); if (b) { if (typeof P.TCEvents !== 'undefined') P.TCEvents.collapse(); if (b.dataset.card) cardOf(b.dataset.card); else fly(b.dataset.n); }
   }
   // 本机头像（EdenMap.setAvatar / removeAvatar 转到这里）
   // data URL 头像先压到 160 px 的 webp / jpeg（和状态栏共用 localStorage 额度，通读 R3）
@@ -158,7 +168,7 @@ const TCChars = (() => {
   }
   async function setAvatar(name, src) { src = await shrink(src); const C = await mod(); if (!C || !store()) return false;
     const r = C.setAvatarEx ? C.setAvatarEx(store(), chat(), name, src) : { ok: C.setAvatar(store(), chat(), name, src) }, ok = r.ok;
-    if (!ok && C.warnText && (r.reason === 'cap' || r.reason === 'quota') && typeof TCCustom !== 'undefined') TCCustom.toast([C.warnText(r.reason, typeof LANG !== 'undefined' && LANG === 'en')]);   // A-13：满了要说，不悄悄失败
+    if (!ok && C.warnText && (r.reason === 'cap' || r.reason === 'quota') && typeof P.TCCustom !== 'undefined') P.TCCustom.toast([C.warnText(r.reason, typeof LANG !== 'undefined' && LANG === 'en')]);   // A-13：满了要说，不悄悄失败
     if (ok) { loadPrefs(); render(); bar(); } return ok; }
   async function removeAvatar(name) { const C = await mod(); const ok = !!C && !!store() && C.removeAvatar(store(), chat(), name); if (ok) { loadPrefs(); render(); bar(); } return ok; }
   function chatChanged() { loadPrefs(); render(); bar(); }
@@ -215,6 +225,7 @@ const TCChars = (() => {
   #evbar .chpane .chsw{flex:none;display:grid;place-items:center;min-width:44px;min-height:44px;margin:0}
   @media (pointer:coarse),(max-width:640px){#evbar .chpane .chgo{min-height:44px}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
-  mod().then(loadPrefs);
   return { color, portOn, setMoreOn(on) { try { TCStore.set(MO_KEY, on ? '1' : '0'); } catch (e) {} }, cardOf, setStatsOn(on) { try { TCStore.set('edenMapCharStats', on ? '1' : '0'); } catch (e) {} bar(); }, get statsOn() { return statsOn(); }, setPortOn(on) { try { TCStore.set(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
 })();
+register('TCChars', TCChars);
+export { TCChars };

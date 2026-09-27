@@ -1,6 +1,7 @@
 // 设置「数据与映射」页（从 viewer.html 内联脚本拆出，arch-v2 §6 第 6 步 settings-ui 第一块）：本机存储占用（EdenMap.storage()）、
 // 当前数据来源（EdenMap.sources()，数据源注册表 tavern/sources.mjs），只读；「清理旧聊天」只留最近 5 个聊天的地图数据。
-// 读查看器经典脚本的全局：$、esc、tx、post。查看器经 window.renderStorage 调用（模块在 main 之前执行）。
+// $、esc、tx、post 从 app/util.mjs 显式 import。查看器经 window.renderStorage 调用（模块在 main 之前执行）。
+import { $, esc, post, tx } from './util.mjs';
 export function renderStorage(d) {
   const box = $('#storBox'); if (!box) return;
   const kb = n => (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB', s = d?.storage, src = d?.sources;

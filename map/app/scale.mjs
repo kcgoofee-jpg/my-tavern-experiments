@@ -1,13 +1,19 @@
 // 从 viewer.html 内联脚本拆出（大版本 2，docs/design/arch-v2.md §6 第 6 步）。外部模块标签按 <base> 解析，srcdoc 里也安全。
-// 模块不产生全局绑定，但能读写查看器经典脚本的全局绑定（viewer、REG、cur、go、$、lean…）；在所有 defer 脚本之后、DOMContentLoaded（main）之前执行。
+// 核心状态与工具显式 import（app/state、util、nav…）；切层包装经 nav.mjs 的 setGo 注册。在所有外挂模块之后、DOMContentLoaded（main）之前执行。
 // ---------------- 尺度衔接（v0.9.6，批准的设计）：世界 ↔ 天城缩放交接 + 「天城周边」过渡环 ----------------
 // (a) 世界图放大到上限、天城在视野中部时继续放大 → 交叉淡入当前层（上次看的那层），落在对应的地理点、最远那一档（约 30 km）；
 //     天城某层缩到最远（约 30 km）后继续缩小 → 交叉淡回世界图（最大放大、天城居中）。面包屑随之更新。
 // (b) 过渡环：以城区（3000×1875 m）为中心、RING_W 倍宽的一圈，用世界底图里天城附近那几像素放大、柔化，再叠一圈程序生成的云海边，
-//     盖住城区底图的硬边；城区完全占满屏幕时隐藏（不画巨大的叠加层）。不需要新渲染。城外 / 异兽类事态落在这一圈（events.js）。
+//     盖住城区底图的硬边；城区完全占满屏幕时隐藏（不画巨大的叠加层）。不需要新渲染。城外 / 异兽类事态落在这一圈（events.mjs）。
 // 减少动态效果：交接照常，但没有缩放动画。
 // v0.9.6 起推广到所有「世界图地点有自己地图」的组（maps.json groups.<id>.place：天城、圣都、原域、旷野高地、圆桌封地）：
 // 每组的交接点 = 世界图上该地点；环宽 = RING_W × 该组的 extent_m 宽；环的面包屑「<组名>周边」。
+import { M, REG, aspect, cur, pendingFocus, pendingHome, setPendingFocus, setPendingHome, viewer } from './state.mjs';
+import { $, esc, toImg, tx } from './util.mjs';
+import { nm } from './i18n.mjs';
+import { getText } from './topbar.mjs';
+import { go, groupView } from './nav.mjs';
+import { RING_W } from './locate.mjs';
 const TCScale = (() => {
   const W_M = 12e6;
   const grp = id => { const m = REG?.maps?.[id]; return m && m.kind === 'points' && m.status !== 'planned' && m.group && REG.groups[m.group]?.place ? m.group : null; };
@@ -85,11 +91,11 @@ const TCScale = (() => {
     const w = port ? a.view.phone[2] : RING_W * .96, h = w * cs.y / cs.x;   // U2：手机竖屏从世界图进城，落在核心区而不是最远一档（四周一大圈云雾）
     groupView[gid] = new OpenSeadragon.Rect(.5 + dx - w / 2, asp / 2 + dy - h / 2, w, h);
     const sp = vp.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true);
-    window.__snapFx = { ox: sp.x, oy: sp.y, scale: 5 }; pendingFocus = null; pendingHome = false; go(id);
+    window.__snapFx = { ox: sp.x, oy: sp.y, scale: 5 }; setPendingFocus(null); setPendingHome(false); go(id);
   }
   function handoffOut() {
     const vp = viewer.viewport, cs = vp.getContainerSize(), sp = vp.pixelFromPoint(new OpenSeadragon.Point(.5, aspect / 2), true);
-    window.__snapFx = { ox: sp.x || cs.x / 2, oy: sp.y || cs.y / 2, scale: .2 }; window.__worldTC = REG.groups[grp(cur)]?.place || true; pendingFocus = null; go('world');
+    window.__snapFx = { ox: sp.x || cs.x / 2, oy: sp.y || cs.y / 2, scale: .2 }; window.__worldTC = REG.groups[grp(cur)]?.place || true; setPendingFocus(null); go('world');
   }
   function onZoom(e) {
     if (busy || !REG || !cur || !viewer.world.getItemCount() || !e || !isFinite(e.zoom)) return;

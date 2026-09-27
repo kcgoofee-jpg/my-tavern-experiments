@@ -43,14 +43,15 @@ test('envelope 盖版本；总线：来源检查 + 校验 + 分发 + dispose', (
 });
 test('静态清点：仓库里每个发送的消息类型都登记在 SCHEMA', () => {
   const files = ['map/viewer.html', 'map/tavern/eden-map.js', 'map/estate/main.js', 'map/estate/index.html', 'map/props/viewer3d.html',
-    ...readdirSync(new URL('../map/', import.meta.url)).filter(f => /\.(js|mjs)$/.test(f)).map(f => 'map/' + f)];
+    ...readdirSync(new URL('../map/', import.meta.url)).filter(f => /\.(js|mjs)$/.test(f)).map(f => 'map/' + f),
+    ...readdirSync(new URL('../map/app/', import.meta.url)).filter(f => f.endsWith('.mjs')).map(f => 'map/app/' + f)];
   const miss = new Set();
   for (const f of files) for (const m of rd(f).matchAll(/type:\s*'((?:eden-map|estate|v3d):[\w-]+)'/g)) if (!SCHEMA[m[1]]) miss.add(`${m[1]}（${f}）`);
   assert.deepEqual([...miss], []);
 });
 test('宿主 PROTO 与 core/protocol.mjs 一致；settings / notice-act 可缺字段（设置首页深链、无 key 的通知按钮）', () => {
   assert.match(rd('map/tavern/eden-map.js'), new RegExp(`const PROTO = ${PROTO};`));
-  assert.match(rd('map/viewer.html'), new RegExp(`const PROTO = ${PROTO};`));
+  assert.match(rd('map/app/util.mjs'), new RegExp(`const PROTO = ${PROTO};`));
   assert.equal(check({ type: 'eden-map:settings' }).ok, true); assert.equal(check({ type: 'eden-map:notice-act' }).ok, true);
 });
 test('真实负载：outfit 是对象（mvu.outfit）、events / chars 带 v:1 也照收', () => {

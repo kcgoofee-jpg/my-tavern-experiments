@@ -32,8 +32,8 @@ test('目标不存在 / 规划中 / 与通道同图：不出第二个', () => {
   assert.equal(linksHtml({}, ctx), ''); assert.equal(linksHtml(null, ctx), '');
 });
 test('查看器接线：标记卡用 linksHtml(meta)，模块标签在，check_maps 校验 link3d', () => {
-  const v = readFileSync(new URL('../map/viewer.html', import.meta.url), 'utf8');
-  assert.match(v, /extra: econHtml\(meta\) \+ links\(meta\)/); assert.match(v, /TCCardLinks\.linksHtml\(meta, linkCtx\)/);
+  const v = readFileSync(new URL('../map/viewer.html', import.meta.url), 'utf8'), mk = readFileSync(new URL('../map/app/markers.mjs', import.meta.url), 'utf8');
+  assert.match(mk, /extra: econHtml\(meta\) \+ links\(meta\)/); assert.match(mk, /TCCardLinks\.linksHtml\(meta, linkCtx\)/);
   assert.match(v, /<script type="module" src="app\/cardlinks\.mjs"/);
   assert.match(readFileSync(new URL('../tools/check_maps.py', import.meta.url), 'utf8'), /link3d/);
 });

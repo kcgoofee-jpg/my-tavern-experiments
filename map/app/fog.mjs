@@ -1,6 +1,9 @@
 // 迷雾探索（P3，默认关；设置「显示 · 迷雾探索」打开）：没到过的地点图钉变暗、收起地名，底图盖一层遮罩，到过的地点周围挖开。
 // 到访 = 当前地点解析到这张图的某个标记（markHere）。记录按聊天：嵌在酒馆里发给宿主存进聊天变量 eden_map.探索；单独打开存本机。
-// 从 viewer.html 拆出的模块（arch-v2 §6）：读查看器经典脚本的全局 viewer、REG、cur、$、TCStore、post；查看器经 window.TCFog 调用（都带 ?. 守卫）。
+// 从 viewer.html 拆出的模块（arch-v2 §6）：核心状态与工具从 state / util 显式 import，TCStore 是首帧前置的经典全局；查看器经 window.TCFog 调用（都带 ?. 守卫）。
+import { REG, cur, viewer } from './state.mjs';
+import { $, post } from './util.mjs';
+import { markHere } from './locate.mjs';
 import { norm, visit, known, count } from '../core/fog.mjs';
 const KEY = 'edenMapFog', LOCAL = 'edenMap:chat:local:fog';
 const embedded = () => window.top !== window;
