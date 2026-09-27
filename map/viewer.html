@@ -537,6 +537,8 @@ const coarse = matchMedia('(pointer: coarse)').matches || (navigator.deviceMemor
 const autoMax = () => { const c = navigator.connection || {};
   return (navigator.deviceMemory || 8) <= 4 || c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || '') ? 'std' : 'hd'; };
 const post = msg => { if (window.top !== window) parent.postMessage(msg, '*'); };
+// 庄园 / 3D 子页与查看器同源：往下发消息用具体 origin（A-6）；file:// 等 opaque origin 只能退回 '*'
+const SUB_ORIGIN = (() => { const o = self.origin || location.origin; return o && o !== 'null' ? o : '*'; })();   // srcdoc 里 location.origin 是 'null'，self.origin 才是继承来的真实 origin
 // 省流模式：系统省流（saveData）、2g / 3g、内存 ≤ 4 GB、或手动选了「省流」档：不在后台预热别的地图的瓦片，只取 HTML 与 JSON（E4 N02）
 const lean = () => { const c = navigator.connection || {};
   return !!c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || '') || (navigator.deviceMemory || 8) <= 4 || tier === 'save'; };
@@ -942,18 +944,18 @@ function leaveEstate() {
 function estateInset() {
   if (!est?.ready) return;
   const nav = $('#layers'), r = nav.hidden || narrowNow() ? null : nav.getBoundingClientRect(), st = $('#stage').getBoundingClientRect();
-  est.frame.contentWindow?.postMessage({ type: 'estate:inset', left: r ? Math.round(r.right - st.left + 8) : 6 }, '*');
+  est.frame.contentWindow?.postMessage({ type: 'estate:inset', left: r ? Math.round(r.right - st.left + 8) : 6 }, SUB_ORIGIN);
 }
 const narrowNow = () => innerWidth <= 640;
 // 庄园页的语言与主题跟着查看器（庄园页在 srcdoc 里读不到 URL 参数，所以载入后与切换时发消息）
 function estateLook() {
   const w = est?.frame.contentWindow; if (!w) return;
-  w.postMessage({ type: 'estate:lang', lang: LANG }, '*');
-  w.postMessage({ type: 'estate:theme', theme: document.documentElement.classList.contains('light') ? 'light' : 'dark' }, '*');
+  w.postMessage({ type: 'estate:lang', lang: LANG }, SUB_ORIGIN);
+  w.postMessage({ type: 'estate:theme', theme: document.documentElement.classList.contains('light') ? 'light' : 'dark' }, SUB_ORIGIN);
 }
 let estFocus = null;   // v0.9.5：「自定义」里点了某个房间 / 室外区域 → 庄园聚焦它（优先于当前地点，地点变了就清掉）
 function estateRoom() { if (!est?.ready) return; const v = ($('#here').value || '').replace('{{user}}', ''), r = hereRes(v);
-  est.frame.contentWindow?.postMessage({ type: 'estate:room', name: estFocus || (r?.custom ? r.room : v), card: estFocus && window.estCard?.name === estFocus ? window.estCard : null }, '*'); }   // 自定义叫法：庄园页收到的是对应的标准房间名
+  est.frame.contentWindow?.postMessage({ type: 'estate:room', name: estFocus || (r?.custom ? r.room : v), card: estFocus && window.estCard?.name === estFocus ? window.estCard : null }, SUB_ORIGIN); }   // 自定义叫法：庄园页收到的是对应的标准房间名
 window.addEventListener('message', e => {
   if (!est || e.source !== est.frame.contentWindow) return;
   if (e.data?.type === 'estate:ready') onEstateReady();
@@ -1537,11 +1539,11 @@ function v3dEntries() {
 new MutationObserver(() => { if (!$('#setPop').hidden) v3dEntries(); }).observe($('#setPop'), { attributes: true, attributeFilter: ['hidden'] });
 function v3dFly({ map, hotspot } = {}) {
   if (!REG?.maps[map]?.viewer3d) return false;
-  if (cur === map && est?.ready) { est.frame.contentWindow?.postMessage({ type: 'v3d:fly', hotspot }, '*'); return true; }
+  if (cur === map && est?.ready) { est.frame.contentWindow?.postMessage({ type: 'v3d:fly', hotspot }, SUB_ORIGIN); return true; }
   v3dPending = hotspot || null; go(map); return true;
 }
 window.addEventListener('message', e => { if (e.data?.type !== 'estate:ready' || !est || e.source !== est.frame.contentWindow || !v3dPending) return;
-  est.frame.contentWindow.postMessage({ type: 'v3d:fly', hotspot: v3dPending }, '*'); v3dPending = null; });
+  est.frame.contentWindow.postMessage({ type: 'v3d:fly', hotspot: v3dPending }, SUB_ORIGIN); v3dPending = null; });
 window.EdenMap = Object.freeze({
   flyTo(o) { return o?.hotspot ? v3dFly(o) : TCCustom.flyTo(o); },   // viewer3d：{ map: 'dairy', hotspot: 'tank' }；v0.9.5 地图：{ map, marker | room | area | character }
   // v0.9.3 自定义名称与用途（custom.js）；旧名 setRoomAlias / removeRoomAlias 保留：房间叫法 = 该房间的显示名
