@@ -82,4 +82,9 @@ t('表单校验：重名、太长、都空', () => {
   assert.equal(P.validate({ key: '餐厅', name: ' ', note: '', keys }).name, 'empty');
   assert.equal(P.validate({ key: '餐厅', name: '餐厅', keys }).name, 'empty');
 });
+t('改名保留旧显示名为旧叫法；{{user}} 宏不露出', () => {
+  let c = V.setCustom({}, '书房', { name: '星图室' }); c = V.setCustom(c, '书房', { name: '观星室' });
+  assert.deepEqual(c.items.书房.别名, ['星图室']); assert.equal(V.findKey(c, '星图室'), '书房');
+  assert.ok(!P.buildGroups({ reg: REG }).some(g => g.items.some(i => /\{\{user\}\}/.test(i.sub))));
+});
 console.log(`${n} passed`);

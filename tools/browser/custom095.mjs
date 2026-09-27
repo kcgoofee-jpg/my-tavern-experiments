@@ -55,7 +55,7 @@ async function run(name, preset) {
     // 3 选择器：分组、搜索
     await vf.evaluate(() => document.querySelector('#cuDlg .cu-add').click()); await B.wait(400);
     const grp = await vf.evaluate(() => ({ g: [...document.querySelectorAll('#cuRes h4')].map(h => h.firstChild.nodeValue.trim()), foc: document.activeElement?.id, chips: document.querySelectorAll('#cuDlg .chip').length }));
-    rep.check(`${name} 选择器：天城上 / 中 / 下层地标、庄园按楼层、室外、人物；焦点在搜索框`, grp.g[0] === '天城上层 · 地标' && grp.g.some(x => /伊甸庄园 · 1F/.test(x)) && grp.g.some(x => /室外/.test(x)) && grp.g.at(-1) === '人物' && grp.foc === 'cuQ' && grp.chips === grp.g.length, JSON.stringify(grp).slice(0, 300));
+    rep.check(`${name} 选择器：天城上 / 中 / 下层地标、庄园按楼层、室外、人物；焦点在搜索框`, grp.g[0] === '天城上层 · 地标' && grp.g.some(x => /伊甸庄园 · 1F/.test(x)) && grp.g.some(x => /室外/.test(x)) && grp.g.at(-1) === '人物' && (grp.foc === 'cuQ' || (/phone|iphone/.test(name) && grp.foc === 'cuDlgT')) && grp.chips === grp.g.length, JSON.stringify(grp).slice(0, 300));
     await jpg(p, `cu_${name}_picker`);
     await vf.locator('#cuQ').fill('执法局'); await B.wait(200);
     const hits = await vf.evaluate(() => [...document.querySelectorAll('#cuRes .cu-row b')].map(b => b.textContent));

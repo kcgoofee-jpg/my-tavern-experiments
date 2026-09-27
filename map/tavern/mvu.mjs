@@ -119,7 +119,9 @@ export function setCustom(c, key, patch = {}) {
   const n = normCustom(c), cur = { ...(n.items[key] || { 类: 'landmark' }) };
   if (patch.kind && KINDS.includes(patch.kind)) cur.类 = patch.kind;
   if (patch.source === 'tag' || patch.source === 'manual') cur.源 = patch.source === 'tag' ? '标签' : '手动';
-  if ('name' in patch) { const v = clean(patch.name); if ([...v].length > MAX_NAME) return null; if (v && v !== key) cur.名 = v; else delete cur.名; }
+  if ('name' in patch) { const v = clean(patch.name); if ([...v].length > MAX_NAME) return null;
+    if (cur.名 && v && v !== key && cur.名 !== v) cur.别名 = [...new Set([...(cur.别名 || []), cur.名])].slice(-5);   // 改名：旧显示名留作旧叫法，之前楼层里的叫法仍认得
+    if (v && v !== key) cur.名 = v; else delete cur.名; }
   if ('note' in patch) { const v = String(patch.note ?? '').trim(); if ([...v].length > MAX_NOTE) return null; if (v) cur.用途 = v; else delete cur.用途; }
   n.items[key] = cur; return normCustom(n);
 }

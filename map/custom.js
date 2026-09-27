@@ -68,7 +68,7 @@ const TCCustom = (() => {
   // 对话框三页：list 已有的自定义（卡片：原名 → 新名、用途摘要、来源；编辑 / 重置 / 在地图上看）→ pick 选择器（搜索 + 按层 / 楼层分组）→ edit 表单（校验、字数）。
   // 点卡片或选择器里的「在地图上看」= flyTo({ map, marker | room | area | character })。
   const KIND = { room: ['cu.room', '房间'], area: ['cu.area', '区域'], landmark: ['cu.landmark', '地标'], character: ['cu.character', '人物'] };
-  let PK = null, plan = null, view = 'list', editing = null, query = '', opener = null, resetArm = null, resetT = 0, flyMsg = '';
+  let listQ = '', PK = null, plan = null, view = 'list', editing = null, query = '', opener = null, resetArm = null, resetT = 0, flyMsg = '';
   const pk = () => (PK ? Promise.resolve(PK) : import(new URL('tavern/picker.mjs', document.baseURI).href).then(m => (PK = m)));
   const planP = () => (plan ? Promise.resolve(plan) : import(new URL('estate/plan.js', document.baseURI).href).then(m => (plan = m)).catch(() => (plan = {})));
   function groups() {
@@ -137,7 +137,7 @@ const TCCustom = (() => {
     else if (view === 'pick') { body.innerHTML = pickHtml(); pickResults(); }
     else body.innerHTML = editHtml();
     if (focus) {
-      const f = view === 'pick' ? body.querySelector('input[type=search]') : view === 'edit' ? body.querySelector('input[name=name]') : h;
+      const f = view === 'pick' ? (matchMedia('(pointer: coarse)').matches ? null : body.querySelector('input[type=search]')) : view === 'edit' ? body.querySelector('input[name=name]') : h;
       (f || h).focus({ preventScroll: true }); if (f?.select && view === 'edit') f.select();
     }
   }
@@ -148,7 +148,9 @@ const TCCustom = (() => {
     if (!items.length) return add + msg + `<div class="cu-emptybox"><p>${esc(T('cu.empty2', '还没有自定义。可以给地点起个自己的叫法，或写一句用途；模型会把它当作背景。例如：'))}</p><ul>`
       + [[T('cu.ex1a', '书房'), T('cu.ex1b', '星图室'), T('cu.ex1', '整理旧地图')], [T('cu.ex2a', '7 号井黑市'), T('cu.ex2b', '老井'), T('cu.ex2', '周五下午去补货')], [T('cu.ex3a', '温室'), '', T('cu.ex3', '冬天在这里喝茶')]]
         .map(([a, b, c]) => `<li><b>${esc(a)}</b>${b ? ` → <b>${esc(b)}</b>` : ''}<small>${esc(T('cu.note', '用途'))}：${esc(c)}</small></li>`).join('') + `</ul></div>`;
-    return add + msg + `<ul class="cu-cards">` + items.map(([k, e]) => {
+    const lq = listQ.trim().toLowerCase(), shown = lq ? items.filter(([k, e]) => [k, e.名, e.用途, ...(e.别名 || [])].some(s => s && s.toLowerCase().includes(lq))) : items;
+    const filt = items.length > 5 ? `<input type="search" id="cuLQ" class="cu-lq" autocomplete="off" aria-label="${esc(T('cu.list_search', '在已有的自定义里找'))}" placeholder="${esc(T('cu.list_search', '在已有的自定义里找'))}" value="${esc(listQ)}">` : '';
+    return add + msg + filt + `<ul class="cu-cards">` + shown.map(([k, e]) => {
       const src = e.源 === '标签' ? ['tag', T('cu.src_tag', '剧情标签')] : ['man', T('cu.src_manual', '手动')], arm = resetArm === k;
       return `<li class="cu-card"><button type="button" class="cu-main" data-fly="${esc(k)}" aria-label="${esc(T('cu.fly_aria', '在地图上看 {n}', { n: e.名 || k }))}">`
         + `<span class="cu-names">${e.名 ? `<s>${esc(k)}</s><i aria-hidden="true">→</i><b>${esc(e.名)}</b>` : `<b>${esc(k)}</b>`}</span>`
@@ -201,6 +203,7 @@ const TCCustom = (() => {
   }
   function onInput(ev) {
     if (ev.target.id === 'cuQ') { query = ev.target.value; pickResults(); }
+    else if (ev.target.id === 'cuLQ') { listQ = ev.target.value; const pos = ev.target.selectionStart; renderDlg(false); const i = dlg.querySelector('#cuLQ'); i.focus(); i.setSelectionRange(pos, pos); }
     else if (ev.target.form) check(false);
   }
   function say(s) { const l = dlg?.querySelector('.cu-live'); if (l) { l.textContent = ''; setTimeout(() => { l.textContent = s; }, 30); } }
@@ -259,8 +262,9 @@ const TCCustom = (() => {
     // 用户要看别处：这一次不再被「自动跳到当前地点」拉回去（面板刚打开 / 唤醒时宿主会再推一次当前地点）
     try { hereFresh = false; lastJump = document.getElementById('here')?.value || ''; } catch (e) {}
     if (t.character) {
-      if (typeof TCChars === 'undefined' || !TCChars.items.some(c => c.name === t.character)) return false;
-      TCChars.fly(t.character); return true;
+      const norm = s => String(s || '').trim().toLowerCase(), want = norm(MV?.findKey(data, t.character) || t.character);
+      const c = typeof TCChars !== 'undefined' && TCChars.items.find(c => norm(c.name) === want); if (!c) return false;
+      TCChars.fly(c.name); return true;
     }
     if (t.room || t.area) {
       const name = t.room || t.area, eid = t.map && REG.maps[t.map]?.kind === 'estate' ? t.map : Object.keys(REG.maps).find(k => REG.maps[k].kind === 'estate');
@@ -321,6 +325,7 @@ const TCCustom = (() => {
   #cuDlg .btn.warn{border-color:var(--alert);color:var(--alert)}
   #cuDlg .btn[aria-disabled=true]{opacity:.55}
   #cuDlg .cu-add{width:100%;margin-bottom:var(--sp-5)}
+  #cuDlg .cu-lq{margin-bottom:var(--sp-5)}
   #cuDlg .cu-msg{margin:0 0 var(--sp-5);padding:var(--sp-4) var(--sp-5);border-radius:var(--r-m);background:var(--accent-weak);font-size:var(--fs-small);line-height:1.5}
   #cuDlg .cu-emptybox{padding:var(--sp-5);border:1px dashed var(--line-strong);border-radius:var(--r-m);color:var(--ink-2);font-size:var(--fs-small);line-height:1.6}
   #cuDlg .cu-emptybox p{margin:0 0 var(--sp-4)}
@@ -386,6 +391,7 @@ const TCCustom = (() => {
     #cuDlg .cu-body{padding:var(--sp-5) var(--sp-6)}
     #cuDlg .cu-search{margin:calc(-1 * var(--sp-5)) calc(-1 * var(--sp-6)) 0;padding:var(--sp-5) var(--sp-6)}
     #cuDlg .cu-card .cu-acts .btn span{font-size:var(--fs-small)}
+    #cuDlg .cu-form .cu-acts{position:sticky;bottom:calc(-1 * var(--sp-5));margin:var(--sp-5) calc(-1 * var(--sp-6)) calc(-1 * var(--sp-5));padding:var(--sp-4) var(--sp-6) var(--sp-5);background:var(--surface);border-top:1px solid var(--line)}
   }
   #card .cu-note,#card .cu-outfit{margin:0 0 var(--sp-3,6px);font-size:var(--fs-micro);line-height:1.5;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #card .cu-note{white-space:normal}#card .cu-note b{color:var(--muted);font-weight:600}

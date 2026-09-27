@@ -12,6 +12,7 @@ const TIER = { tc_upper: ['天城上层', 'Upper tier'], tc_mid: ['天城中层'
  *  reg = maps.json；plan = estate/plan.js 的导出（可缺，缺了房间按一组列出）；chars = 人物名数组 */
 export function buildGroups({ reg, plan = null, chars = [], lang = 'zh' } = {}) {
   const en = lang === 'en', out = [], seen = new Set();
+  const macro = s => String(s || '').replace(/\{\{user\}\}\s*(的)?\s*/g, en ? 'your ' : '你的');   // 酒馆宏不直接露出来
   const add = (g, it) => { if (!it.key || seen.has(it.key)) return; seen.add(it.key); g.items.push(it); };
   const maps = Object.entries(reg?.maps || {});
   // 1 天城各层地标（上 → 中 → 下，其余 points 图排在后面）
@@ -20,7 +21,7 @@ export function buildGroups({ reg, plan = null, chars = [], lang = 'zh' } = {}) 
   for (const [id, m] of pts) {
     const t = TIER[id] || [m.title?.name || id, m.title_en?.name || m.title?.name_en || id];
     const g = { id: 'lm:' + id, label: en ? `${t[1]} · landmarks` : `${t[0]} · 地标`, short: en ? t[1] : t[0], items: [] };
-    for (const [mk, v] of Object.entries(m.markers || {})) add(g, { key: v.name, kind: 'landmark', target: { map: id, marker: mk }, sub: en ? (v.sub_en || v.sub || '') : (v.sub || ''), en: v.name_en || '', alias: v.alias || [] });
+    for (const [mk, v] of Object.entries(m.markers || {})) add(g, { key: v.name, kind: 'landmark', target: { map: id, marker: mk }, sub: macro(en ? (v.sub_en || v.sub || '') : (v.sub || '')), en: v.name_en || '', alias: v.alias || [] });
     if (g.items.length) out.push(g);
   }
   // 2 伊甸庄园：房间按楼层（plan.js 的 FLOORS / ROOMS；同一间房的多个叫法只列第一个，其余当搜索别名）、室外
