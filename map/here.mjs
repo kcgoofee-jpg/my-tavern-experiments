@@ -25,7 +25,7 @@ const len = w => (w ? [...w].length : 0);
 
 /** 由 maps.json（和可选的世界地点、英文名）建一次词表 */
 // custom：用户在本机自定义的房间叫法（不进仓库、不上 CDN），{ rooms: { 自定义名: 标准房间名 } }。
-// 当前地点写的是自定义名时，按对应的标准房间落点；来源见 viewer 的 EdenMap.setRoomAlias / localStorage「edenMapCustom」。
+// 当前地点写的是自定义名时，按对应的标准房间落点；来源见 viewer 的 EdenMap.setRoomAlias（存储见文件末尾 readCustom / setRoomAlias）。
 export function buildIndex(reg, world = null, names = null, custom = null) {
   const maps = reg?.maps || {}, idx = { estate: null, marks: [], layers: [], tiancheng: null, world: [] };
   const en = z => (names && names[z]) || null;
@@ -38,7 +38,7 @@ export function buildIndex(reg, world = null, names = null, custom = null) {
       if (k.link?.map === id) for (const w of [k.name, k.name_en, ...(k.alias || [])]) if (w && !rooms.includes(w) && !areas.includes(w)) whole.add(w);
     whole.delete(undefined); whole.delete(null); whole.delete('');
     const alias = {}; for (const [w, r] of Object.entries(custom?.rooms || {})) if (w && r && rooms.includes(r)) { alias[w] = r; rooms.push(w); }
-    idx.estate = { id, rooms, areas, whole: [...whole], alias };
+    idx.estate = { id, rooms, areas, whole: [...whole], alias, std: rooms.filter(w => !alias[w]) };
     break;
   }
   const estateId = idx.estate?.id;
@@ -87,4 +87,30 @@ export function resolveHere(value, idx) {
   let wp = null; for (const p of idx.world) { const w = longest(v, p.words); if (w && len(w) > len(wp?.word)) wp = { ...p, word: w }; }
   if (wp) return { level: 5, map: wp.map, place: wp.name, word: wp.word };
   return null;
+}
+
+// ---------------- 本机自定义叫法的存储（E6；viewer 的 window.EdenMap 与卡内脚本 eden-map.js 共用） ----------------
+// 只在用户本机 localStorage：有聊天 id 时按聊天分开存「edenMap:chat:<id>:custom」，否则全局「edenMap:custom」。值 = JSON { rooms: { 自定义名: 标准房间名 } }。
+// store = 带 getItem / setItem / removeItem 的对象（localStorage；单测里用假的）。不联网、不上传。
+export const customKey = chat => (chat ? `edenMap:chat:${chat}:custom` : 'edenMap:custom');
+export function readCustom(store, chat) {
+  let o = null; try { o = JSON.parse(store?.getItem(customKey(chat)) || 'null'); } catch (e) {}
+  const rooms = {};
+  if (o && o.rooms && typeof o.rooms === 'object') for (const [k, v] of Object.entries(o.rooms)) if (typeof k === 'string' && typeof v === 'string' && k && v) rooms[k] = v;
+  return { rooms };
+}
+function writeCustom(store, chat, c) {
+  try { if (Object.keys(c.rooms).length) store.setItem(customKey(chat), JSON.stringify(c)); else store.removeItem(customKey(chat)); return true; } catch (e) { return false; }
+}
+const clean = s => String(s ?? '').replace(/\s+/g, ' ').trim();
+/** 自定义名 → 标准房间名。valid = 标准房间名列表（知道时校验；不知道传 null，落点时 buildIndex 仍会忽略无效的）。返回 true / false */
+export function setRoomAlias(store, chat, name, room, valid = null) {
+  name = clean(name); room = clean(room);
+  if (!name || !room || name === room || [...name].length > 40) return false;
+  if (valid && (!valid.includes(room) || valid.includes(name))) return false;   // 只能指向标准房间；不能把标准房间名改指别处
+  const c = readCustom(store, chat); c.rooms[name] = room; return writeCustom(store, chat, c);
+}
+export function removeRoomAlias(store, chat, name) {
+  name = clean(name); const c = readCustom(store, chat);
+  if (!(name in c.rooms)) return false; delete c.rooms[name]; return writeCustom(store, chat, c);
 }

@@ -65,10 +65,10 @@ const layerGuess = loc => LAYERS.find(l => loc.startsWith(l)) || LAYERS.find(l =
 const CLOSED = /解除|结束|恢复|扑灭|已控制|平息/;
 export const LAYERS = ['上层', '中层', '下层', '天城外'];
 export const LAYER_MAP = { 上层: 'tc_upper', 中层: 'tc_mid', 下层: 'tc_low', 天城外: 'world' };
-export const AGE = { live: 7, after: 20, fade: 40 };        // 楼层差：≤7 活跃、≤20 余波、≤40 淡出（只在列表）、更早丢弃
+export const AGE = { live: 7, after: 20, fade: 40 };        // 楼层差：≤7 活跃、≤20 余波、>20 淡出（只在列表）；已解除 / 被新事件接替的 >40 丢弃
+// 未解除的事件不因楼层旧而丢（E6）：只要还在扫描窗口里（eden-map.js 的 SCAN = 80 楼），就以「淡出」留在列表里，直到出现「已解除」或滑出窗口
 export const MERGE_WINDOW = 15;                               // 同一类别 + 地点在 15 楼内再次出现 = 同一事件的更新
 const MAX_PER_FLOOR = 3;
-// 内容硬边界：事件只做城市治安、灾害、网络、公共事务；含这些词的整条丢弃
 // 不做任何关键词过滤：标签原样解析、原样落点（用户 2026-09-27：「我们做的是技术兼容」）。内容是用户自己聊天里的，地图只管位置与显示。
 // 世界书里的示范标记原文：模型原样复述时不上图
 export const EXAMPLES = new Set([
@@ -101,7 +101,7 @@ const decode = s => s.replace(/&(amp|lt|gt|quot|#39|#x27|nbsp);/g, (m, k) => ({ 
 const norm = s => s.replace(/\s+/g, '').replace(/[·•・.]/g, '·');
 export function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
 
-/** 一楼原文 → 标签列表 [{cat, layer, place, lvl, text, src, code?, time?, scope?, dur?, xy?}]；代码块里的、示范原文、越界内容跳过 */
+/** 一楼原文 → 标签列表 [{cat, layer, place, lvl, text, src, code?, time?, scope?, dur?, xy?}]；代码块里的、示范原文、推断不出层的跳过 */
 export function parseMarks(raw) {
   if (!raw || (raw.indexOf('⌖') < 0 && raw.indexOf('data-tcmap') < 0)) return [];
   const text = decode(String(raw)).replace(/```[\s\S]*?```/g, '').replace(/<code>[\s\S]*?<\/code>/gi, '');
@@ -149,21 +149,21 @@ export function collect(msgs, now) {
         for (const k of ['status', 'time', 'scope', 'dur', 'xy']) if (e[k]) cur[k] = e[k];
         if (e.lvl === 0) { cur.closed = true; cur.lvl = 0; done.push(cur); open.delete(key); } else { cur.lvl = e.lvl; }
       } else if (e.lvl > 0) {
-        if (cur) done.push(cur);
+        if (cur) { cur.stale = true; done.push(cur); }   // 隔了合并窗口又出现：旧的那条让位给新的，按已结束处理（不再常驻）
         open.set(key, { id: hash(key + '#' + floor), key, ...e, first: floor, last: floor, count: 1, closed: false });
       } else {
         // 第一次出现就是已解除（「快讯：XX 已被控制」这种一次写完的通报）：记为已解除，不丢
-        if (cur) { done.push(cur); open.delete(key); }
+        if (cur) { cur.stale = true; done.push(cur); open.delete(key); }
         done.push({ id: hash(key + '#' + floor), key, ...e, first: floor, last: floor, count: 1, closed: true });
       }
     }
   }
-  const all = [...done, ...open.values()].map(e => ({ ...e, tier: tierOf(now - e.last, e.closed) })).filter(e => e.tier);
+  const all = [...done, ...open.values()].map(e => ({ ...e, tier: tierOf(now - e.last, e.closed || !!e.stale) })).filter(e => e.tier);
   return all.sort((a, b) => b.last - a.last || b.lvl - a.lvl);
 }
-export function tierOf(age, closed) {
-  if (age > AGE.fade) return '';
-  if (closed) return age <= AGE.after ? 'after' : 'fade';
+// ended = 已解除，或被同类同地点的新事件接替。未结束的事件永远不返回 ''（窗口由调用方给的楼层决定）
+export function tierOf(age, ended) {
+  if (ended) return age > AGE.fade ? '' : age <= AGE.after ? 'after' : 'fade';
   return age <= AGE.live ? 'live' : age <= AGE.after ? 'after' : 'fade';
 }
 
