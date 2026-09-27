@@ -13,10 +13,11 @@ def build():
     box(0, 2.5, 0, 14, 2, 15, 'portland'); roof(0, 2.5, 15, 14, 2.2, 3, 'portland')
     for i in range(4):
         cyl(-5.4 + i * 3.6, 1.2, 0, .6, 12, 'white', 10)
-    box(0, -25, 0, 70, 36, .35, 'gravel')      # parade forecourt
+    box(0, -22, 0, 50, 28, .35, 'gravel')      # parade forecourt
     for i in (-1, 0, 1):
-        box(i * 14, -34, .35, 3, 3, 2.2, 'steel')  # abstract plinths (armour props, neutral)
+        box(i * 12, -28, .35, 4, 4, 3, 'steel')  # abstract plinths (armour props, neutral)
     box(0, -44, 0, 6, 36, .3, 'path')
+    cyl(0, 12, 21, 2.5, 5, 'white', 16); dome(0, 12, 26, 2.6, 'lead', .8)
     box(-60, 20, 0, 30, 30, .3, 'gravel'); box(-60, 20, .3, 26, 10, 5, 'lime')  # stables-turned-garage 仓库推断
     ring_trees(80, 30, 29, 1.2, gap=(math.radians(-90), .4))
     pad(0, -88, 12, math.radians(-90), 18)
