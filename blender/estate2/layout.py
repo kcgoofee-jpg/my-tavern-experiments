@@ -125,7 +125,7 @@ PADS = [
     dict(id='breakers', kind='ellipse', c=(236, -152), r=(70, 46), rot=-0.45, z='auto+2', blend=1.6, edge='stone'),
     dict(id='grey_house', kind='rect', c=(-232, -100), s=(64, 40), rot=0.35, z='auto+4', blend=1.6, edge='stone', r=3),
     dict(id='grey_t1', kind='rect', c=(-243, -134), s=(64, 22), rot=0.35, z='prev-3', blend=1.6, edge='stone', r=2),
-    dict(id='grey_t2', kind='rect', c=(-252, -157), s=(56, 20), rot=0.35, z='prev-3', blend=1.6, edge='stone', r=2),
+    dict(id='islet', kind='ellipse', c=(-22, 150), r=(9, 8), z=WATER_Z + 1.3, blend=3, edge='soft'),
     dict(id='club', kind='ellipse', c=(70, 132), r=(18, 12), z=WATER_Z + 1.2, blend=1.2, edge='stone'),
     dict(id='view_rear', kind='ellipse', c=(34, 84), r=(13, 10), z=PLATEAU_Z, blend=1.2, edge='stone'),
     dict(id='view_east', kind='ellipse', c=(300, 4), r=(14, 11), z='auto+1', blend=1.2, edge='stone'),
@@ -188,6 +188,8 @@ def terrain(x, y):
     for p in PADS:
         sd = pad_sd(p, x, y)
         m = smooth01(-sd / p['blend'] + 1) if p['blend'] > 0 else (sd < 0).astype(float)
+        if p['id'] not in ('dock', 'lake'):
+            m = m * smooth01((edge_dist(x, y) - 2) / 12)   # 台地不越出岛缘（否则岩基上会挂白墙裙边）
         zp = pad_z(p, x, y)
         if p['id'] == 'lake':
             h = h * (1 - m) + np.minimum(h, zp) * m
@@ -207,6 +209,7 @@ def terrain(x, y):
         if p['id'] == 'esplanade':
             lawn = np.maximum(lawn, (np.abs(x) < 26).astype(float) * (sd < -3))
             lawn = np.maximum(lawn, 0.55 * (sd < -3))
+    built = built * smooth01((edge_dist(x, y) - 3) / 4)   # 岛缘外不画白石墙（避免白色裙边）
     gravel = gravel_mask(x, y)
     cv = cover(x, y, padmask, lake)
     lawn = lawn * (1 - gravel) * (1 - cv['paved']) * (1 - cv['beds'])
@@ -222,10 +225,10 @@ def cover(x, y, padmask, lake):
     sd_pl, sd_te = pad_sd(pl, x, y), pad_sd(te, x, y)
     rc = np.hypot(x - FOUNTAIN[0], y - FOUNTAIN[1])
     paved = ((fp < 9) & (sd_pl < -1)).astype(float)                              # 主楼群周边石铺台地
-    paved = np.maximum(paved, ((sd_pl < -1) & (y < -22) & (y > -40) & (np.abs(x) < 70)).astype(float))   # 主楼前平台
+    paved = np.maximum(paved, ((sd_pl < -1) & (y < -24) & (y > -36) & (np.abs(x) < 26)).astype(float))   # 主楼前平台
     paved = np.maximum(paved, ((sd_te > -7) & (sd_te < -1.5)).astype(float))    # 前庭台地沿挡土墙的石铺步道
     paved = np.maximum(paved, ((rc > COURT_R) & (rc < COURT_R + 5)).astype(float))
-    paved = np.maximum(paved, ((sd_pl > -6) & (sd_pl < -1.5) & (y < 25)).astype(float))
+    paved = np.maximum(paved, ((sd_pl > -4) & (sd_pl < -1.5) & (y < 25)).astype(float))
     arc_r = np.hypot(x - ARC['c'][0], y - ARC['c'][1])
     paved *= 1 - ((arc_r < ARC['R'] - ARC['depth'] / 2 - 3) & (y > ARC['c'][1])).astype(float)   # 回廊院内留草坪
     beds = np.zeros_like(paved)
@@ -235,7 +238,7 @@ def cover(x, y, padmask, lake):
             beds = np.maximum(beds, ((r < 1) & (np.abs(np.sin(np.arctan2(y - c[1], x - c[0]) * 4)) > 0.25) & (r > 0.25)).astype(float))
     beds = np.maximum(beds, ((np.abs(np.abs(x) - 27.5) < 1.6) & (y > -246) & (y < -148)).astype(float))   # 大道两侧花境
     beds = np.maximum(beds, ((sd_te > -11) & (sd_te < -8) & (np.abs(x) > 12)).astype(float))            # 前庭沿墙花境
-    rill = ((np.abs(x) < 0.9) & (y > -246) & (y < -150)).astype(float)            # 大道中轴水渠
+    rill = ((np.abs(x) < 0.45) & (y > -246) & (y < -150)).astype(float)            # 大道中轴水渠
     rill = np.maximum(rill, ((np.abs(x) < 0.9) & (y > -100) & (y < -88)).astype(float))
     dc = np.hypot(x - 72, y - 134)
     sand = ((dc < 34) & (lake < 0.95) & (dc > 10)).astype(float) * smooth01((34 - dc) / 6)
@@ -357,12 +360,14 @@ SERVICE = [
     ('garage', -140, 138, 26, 10, 1.2, 35, 'hip', 'white'),         # 马车房 / 车库
     ('greenhouse', -118, 168, 34, 9, 1.4, 20, 'flat', 'white'),    # 温室 / 橘园（菜园北墙）
 ]
+WATERSIDE = ('waterside', -34, 100, 16, 9, 1.2, -4, 'hip', 'white')   # 水榭：湖南岸石台敞亭，半挑出水面
+ISLET = (-22, 150, 9)                       # 湖心小岛 (x, y, 半径)；岛上 8 柱圆亭 = 湖心亭
 WATER_TOWER = (-196, 88, 5.5, 22)          # 以太凝水塔：圆塔 (x, y, 半径, 高)，给喷泉供水
 HELIPAD = (-190, 176, 14)                  # 机坪 (x, y, 半径)
 GARDENS = [  # (id, 名称, kind, 中心, 尺寸, 旋转°)
     ('training', '露天训练场', 'rect', (-62, 58), (28, 14), 8),
     ('rear_lawn', '后庭草坪', 'ellipse', (0, 44), (20, 12), 0),
-    ('pavilion', '凉亭', 'circle', (-64, 104), (5, 5), 0),
+    ('pavilion', '凉亭', 'circle', (-84, 118), (5, 5), 0),
     ('rose', '玫瑰园（白玫瑰）', 'ellipse', (58, -104), (18, 14), 0),
     ('rose_w', '玫瑰园（西）', 'ellipse', (-58, -104), (18, 14), 0),
     ('kitchen_garden', '菜园（厨房花园）', 'rect', (-118, 150), (40, 26), 20),
@@ -374,7 +379,8 @@ BARRIER_STONES = [(-235, -165), (235, -165), (-235, 165), (235, 165)]   # 结界
 # 主楼群按翼 / 层落位（B2…F3 对应卡里的地上三层 + 地下两层；F5 为观景塔顶）
 PROGRAM = {
     'hall':      {'F1': ['大厅', '会客厅'], 'F2': ['书房', '主卧（含衣帽间、浴室）', '女仆长寝室'], 'F3': ['三楼公共浴室'],
-                  'B1': ['酒窖', '附属室 A*', '附属室 B*', '附属室 C*'], 'B2': ['档案室', '储藏室', '附属室 D*']},
+                  'B1': ['酒窖', '体能训练室', '附属室 A*', '附属室 B*', '附属室 C*'],
+                  'B2': ['档案室', '储藏室', '医务室', '结界发生器', '附属室 D*']},
     'porch':     {'F1': ['门廊（正门）']},
     'tower':     {'F5': ['观景塔 / 眺望亭']},
     'w_wing_a':  {'F1': ['餐厅', '备餐间'], 'F2': ['客房 ×2'], 'F3': ['新人公共寝室']},
@@ -382,7 +388,7 @@ PROGRAM = {
     'w_pav':     {'F1': ['物资仓库', '清洗消毒间', '服务楼梯'], 'F2': ['值班室 / 监控室']},
     'e_wing_a':  {'F2': ['东侧长廊（落地窗朝云海）'], 'F3': ['住客个人寝室 ×6']},
     'e_wing_b':  {'F2': ['起居室', '茶室'], 'F3': ['住客个人寝室 ×6']},
-    'e_pav':     {'F1': ['图书室'], 'B1': ['体能训练室'], 'B2': ['医务室']},
+    'e_pav':     {'F1': ['图书室'], 'F3': ['观景室（朝云海）']},
     'belvedere': {'F4': ['小望楼']},
     'n_link':    {'F1': ['廊厅（通后庭）']},
     'w_low':     {'F1': ['主人专用通道 / 电梯厅']},
@@ -393,17 +399,16 @@ PROGRAM = {
     'spa':       {'F1': ['水疗馆']},
     'club':      {'F1': ['湖边俱乐部']},
     'svc_house': {'F1': ['仆役厅', '员工餐厅', '附属用房']},
+    'waterside': {'F1': ['水榭']},
 }
 # 地下层平面（主楼 hall 40×24、东角亭 e_pav 20×16 下方），格子 = (名称, x0, y0, x1, y1) 局部米，−y 为正面
 BASEMENT = {
-    'hall': {'B1': [('酒窖', -20, -12, -8, 0), ('附属室 A*', -8, -12, 12, 4), ('附属室 B*', 12, -12, 20, 0),
-                    ('附属室 C*', 12, 0, 20, 12), ('楼梯 / 电梯厅', -20, 0, -8, 12), ('走廊', -8, 4, 12, 12)],
-             'B2': [('档案室', -20, -12, -6, 0), ('储藏室', -20, 0, -6, 12), ('附属室 D*', 6, -12, 20, 4),
-                    ('楼梯 / 电梯厅', -6, -12, 6, 0), ('走廊 / 设备间', -6, 0, 20, 12)]},
-    'e_pav': {'B1': [('体能训练室', -10, -8, 6, 8), ('楼梯', 6, -8, 10, 8)],
-              'B2': [('医务室', -10, -8, 6, 8), ('楼梯', 6, -8, 10, 8)]},
+    'hall': {'B1': [('酒窖', -20, -12, -10, 0), ('体能训练室', -10, -12, 6, 0), ('附属室 A*', 6, -12, 20, 0),
+                    ('楼梯 / 电梯厅', -20, 0, -10, 12), ('走廊', -10, 0, 6, 12), ('附属室 B*', 6, 0, 13, 12), ('附属室 C*', 13, 0, 20, 12)],
+             'B2': [('档案室', -20, -12, -10, 0), ('医务室', -10, -12, 6, 0), ('附属室 D*', 6, -12, 20, 0),
+                    ('储藏室', -20, 0, -10, 12), ('结界发生器', -10, 0, 6, 12), ('楼梯 / 电梯厅', 6, 0, 20, 12)]},
 }
-BASEMENT_LINK = '主楼 B1 与东角亭 B1 之间有地下走廊（沿东翼下方，约 55 m）'
+BASEMENT_LINK = '地下两层只在主楼下方；仆役楼梯与主人专用电梯都通到 B2'
 # 林中别墅：留给以后入住的外部人物（卡未写入住，先不定人）
 VILLA_NOTE = '别墅 V1–V10 与客房楼 g1–g4 / w_g1–w_g2 预留给外部人物长住（伊莎贝拉、维多利亚、克洛伊、塞拉菲娜、神宫寺凛、叶梨莎、玛嘉烈等）'
 
@@ -412,7 +417,7 @@ def all_buildings():
     out = []
     for grp in (MAIN, GUEST, VILLAS, GREYSTONE, SERVICE):
         out += list(grp)
-    out += [CLUB, BREAKERS]
+    out += [CLUB, BREAKERS, WATERSIDE]
     return out
 
 
