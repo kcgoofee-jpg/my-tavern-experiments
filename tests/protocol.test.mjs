@@ -53,3 +53,9 @@ test('宿主 PROTO 与 core/protocol.mjs 一致；settings / notice-act 可缺�
   assert.match(rd('map/viewer.html'), new RegExp(`const PROTO = ${PROTO};`));
   assert.equal(check({ type: 'eden-map:settings' }).ok, true); assert.equal(check({ type: 'eden-map:notice-act' }).ok, true);
 });
+test('真实负载：outfit 是对象（mvu.outfit）、events / chars 带 v:1 也照收', () => {
+  assert.equal(check({ type: 'eden-map:outfit', items: { 上衣: '白衬衫' }, text: '着装：白衬衫' }).ok, true);
+  assert.equal(check({ type: 'eden-map:outfit', items: null, text: '' }).ok, true);
+  assert.equal(check({ type: 'eden-map:events', v: 1, floor: 3, items: [] }).ok, true);
+  assert.equal(check({ type: 'eden-map:chars', v: 1, items: [], rosters: {} }).ok, true);
+});

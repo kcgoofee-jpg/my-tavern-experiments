@@ -845,6 +845,7 @@ async function warmOthers() {
     if (thin) continue;   // 省流时不记：网络好了以后还会补
     try {
       const x = await fetch(m.base).then(r => r.text());
+      if (cur !== c0) return;
       const T = +x.match(/TileSize="(\d+)"/)[1], f = x.match(/Format="(\w+)"/)[1];
       const W = +x.match(/Width="(\d+)"/)[1], H = +x.match(/Height="(\d+)"/)[1], top = Math.ceil(Math.log2(Math.max(W, H)));
       const dir = m.base.replace(/\.dzi$/, '_files/');
@@ -1818,7 +1819,7 @@ function placeEmpty(um) {
   if (!um) { e.textContent = ''; e.textContent = tx('s.place_empty', '点地图上的地点，这里显示它的介绍'); return; }
   let s = e.querySelector('span.umq'), b = e.querySelector('button');
   if (!s) { e.textContent = ''; s = document.createElement('span'); s.className = 'umq'; b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.onclick = () => TCUnmapped.open(); e.append(s, ' ', b); announce(tx('um.empty', '当前地点「{n}」还不在地图上。', { n: um })); }
-  s.textContent = tx('um.empty', '当前地点「{n}」还不在地图上。', { n: um }) + tx('um.empty_sub', '指派一次，这个聊天之后都会记住。'); b.textContent = tx('um.empty_btn', '放到地图上');   // 节点复用：焦点不丢
+  s.textContent = tx('um.empty', '当前地点「{n}」还不在地图上。', { n: um }) + tx('um.empty_sub', '放一次，这个聊天之后都会记住。'); b.textContent = tx('um.empty_btn', '放到地图上');   // 节点复用：焦点不丢
 }
 function cardSheet(open) {
   const S = window.TCSheet; if (!S) return; sheetVis();
