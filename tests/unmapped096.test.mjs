@@ -13,7 +13,7 @@ let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
 
 t('卡设定分层房间：每个房间名都落到第 1 级，带 std；只在一层的带 floor', () => {
   const idx = idxOf();
-  for (const r of PLAN.rooms) {
+  for (const r of PLAN.rooms.filter(r => r.name !== '（按原卡）')) {   // 占位不是名字，不进词表（v0.9.7，见 card097 测试）
     const x = resolveHere(r.name, idx);
     assert.ok(x && x.level === 1 && x.map === 'eden_estate', `认不出房间 ${r.name}`);
     assert.ok(x.std, `${r.name} 没有 std`);
@@ -22,10 +22,10 @@ t('卡设定分层房间：每个房间名都落到第 1 级，带 std；只在�
   assert.equal(resolveHere('伊甸庄园·女仆长寝室', idx).floor, 'F2');
   assert.equal(resolveHere('仆役核', idx).floor, undefined);   // 各层都有：不定楼层
 });
-t('受限房间：认得出、restricted、不在 maps.json 的描述房间里', () => {
+t('按原卡的房间：仓库只有占位，占位不进词表；也不在 maps.json 的房间里', () => {
   const idx = idxOf(), rs = PLAN.rooms.filter(r => r.kind === 'restricted');
   assert.ok(rs.length);
-  for (const r of rs) { const x = resolveHere(r.name, idx); assert.equal(x.restricted, true, r.name); assert.ok(!REG.maps.eden_estate.rooms.includes(r.name)); }
+  for (const r of rs) { assert.equal(r.name, '（按原卡）'); assert.equal(resolveHere(r.name, idx), null); assert.ok(!REG.maps.eden_estate.rooms.includes(r.name)); }
 });
 t('maps.json 房间 / 区域与卡房间不冲突（原有落点不变）', () => {
   const a = buildIndex(REG, W, EN), b = idxOf();
@@ -34,7 +34,7 @@ t('maps.json 房间 / 区域与卡房间不冲突（原有落点不变）', () =
     assert.equal(y?.level, x?.level, w); assert.equal(y?.map, x?.map, w);
   }
   const clash = new Set([...REG.maps.eden_estate.areas, ...b.estate.whole]);
-  for (const r of PLAN.rooms) for (const w of planWords(r.name)) assert.ok(!clash.has(w), `${w} 与区域 / 庄园叫法重名`);
+  for (const r of PLAN.rooms.filter(r => r.name !== '（按原卡）')) for (const w of planWords(r.name)) assert.ok(!clash.has(w), `${w} 与区域 / 庄园叫法重名`);
 });
 t('planWords：括注、×2、「 / 」拆开', () => {
   assert.deepEqual(planWords('主楼梯（塔楼）'), ['主楼梯（塔楼）', '主楼梯']);

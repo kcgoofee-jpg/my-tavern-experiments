@@ -613,7 +613,7 @@ async function mainInner() {
   if (!DICT || !Object.keys(DICT).length) { const zh = await getJSON('i18n/zh.json'); if (LANG !== 'zh') { LANG = 'zh'; document.documentElement.lang = 'zh-CN'; } DICT = zh || {}; }
   jsonCache.set('i18n/' + LANG + '.json', Promise.resolve(DICT));
   enNames = enDict?.names || null; rebuildHere();
-  getJSON('data/eden_estate_rooms.json').then(p => { if (!p?.rooms) return; estPlan = p; rebuildHere(); markHere($('#here').value); }).catch(() => {});   // v0.9.6：卡设定分层房间进当前地点词表（不挡启动）   // 当前地点 → 落点的词表（中英都认；加上本机自定义叫法）
+  getJSON('data/eden_estate_rooms.json').then(p => { if (!p?.rooms) return; estPlanRaw = p; bindPlan(); rebuildHere(); markHere($('#here').value); }).catch(() => {});   // v0.9.6：卡设定分层房间进当前地点词表（不挡启动）   // 当前地点 → 落点的词表（中英都认；加上本机自定义叫法）
   post({ type: 'eden-map:boot', pct: .9 });   // 数据文件已到
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点
   if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland);
@@ -934,7 +934,7 @@ function onEstateFail(reason) {
 function onEstateReady() {
   const f = est.frame; est.ready = true; if (estFail) setEstFail(false);
   f.classList.add('on'); estateActs(''); $('#loading').classList.add('done'); focusAfterGo();
-  estateLook(); estateInset(); estateRoom();
+  estateBind(); estateLook(); estateInset(); estateRoom();   // v0.9.7 estateBind：庄园页先换上本机卡原名，再发当前房间
   post({ type: 'eden-map:loaded' });
   // 庄园淡入完成后再关掉瓦片地图（释放解码内存）
   setTimeout(() => { if (est?.frame === f && REG.maps[cur]?.kind === 'estate') { viewer.close(); untrackAll(); viewer.clearOverlays(); } }, 240);
@@ -1417,7 +1417,19 @@ function markHere(v) {
 // ---------------- 自动跳到当前地点（map/here.mjs 六级落点；设置里可关，默认开） ----------------
 // 庄园房间 / 区域 → 庄园（房间由 estate:room 高亮，切楼层由庄园页自己做）；地标 → 该层并打开地点卡；层 / 大区 / 天城 → 该层默认视野；世界地名 → 世界图；匹配不到不动。
 // 打开面板（或唤醒）后的第一条地点一定跳；之后只有地点变了才跳，不打断用户自己在别的图上浏览。
-let estPlan = null;   // v0.9.6 map/data/eden_estate_rooms.json
+let estPlan = null, estPlanRaw = null;   // v0.9.6 map/data/eden_estate_rooms.json（estPlan = 套上本机卡原名绑定之后的，见 bindPlan）
+// v0.9.7 卡原名绑定：卡内脚本从用户自己的卡里按结构取回的原名（eden-map:card-bind），只在本页内存里用，不存盘
+let cardBind = null, CBmod = null, cardSpec = null;
+function bindPlan() { estPlan = estPlanRaw && CBmod && cardBind ? CBmod.applyBinding(estPlanRaw, cardBind.rooms) : estPlanRaw; }
+function onCardBind(d) {
+  const clean = o => Object.fromEntries(Object.entries(o && typeof o === 'object' ? o : {}).filter(([k, v]) => typeof k === 'string' && (typeof v === 'string' || Array.isArray(v))).slice(0, 200));
+  cardBind = { rooms: clean(d.rooms), specs: clean(d.specs) };
+  Promise.all([CBmod || import(new URL('card-bind.mjs', document.baseURI).href), cardSpec || getJSON('data/card_bind.json').catch(() => null)]).then(([m, sp]) => {
+    CBmod = m; cardSpec = sp; bindPlan(); rebuildHere(); markHere($('#here').value); estateBind();
+  }).catch(() => {});
+}
+function estateBind() { if (est?.ready && cardBind) est.frame.contentWindow?.postMessage({ type: 'estate:bind', names: cardBind.rooms }, SUB_ORIGIN); }
+window.cardBindLabel = id => (cardBind?.specs?.[id] || [])[0] || null;   // 剖面标签等按 id 取（section.B1 / section.B2）
 let HX = null, hereIdx = null, lastJump = null, hereFresh = true, bgMode = false;   // bgMode：酒馆在后台预加载（面板不可见）
 const AUTO_KEY = 'edenMapAutoHere';
 const autoHere = () => { try { return localStorage.getItem(AUTO_KEY) !== '0'; } catch (e) { return true; } };
@@ -1479,7 +1491,7 @@ const emSubs = { here: new Set(), events: new Set(), map: new Set(), characters:
 function emEmit(ev, data) { for (const f of emSubs[ev]) { try { f(data); } catch (e) { console.warn('[EdenMap]', e); } } if (ev === 'map') post({ type: 'eden-map:emit', ev, data }); }
 function emMapChanged() { if (cur === emMap) return; emMap = cur; const m = REG.maps[cur]; emEmit('map', { map: cur, title: nm(m, 'title'), kind: m.kind }); }
 // v0.9.3：自定义叫法来自 custom.js（聊天变量 eden_map.自定义，或单独打开时的本机存储）；custom.js 还没就绪时退回旧版本机叫法
-function rebuildHere() { if (HX && REG) hereIdx = HX.buildIndex(REG, M, enNames, (typeof TCCustom !== 'undefined' && TCCustom.index()) || HX.readCustom(LS, chatId), estPlan); }
+function rebuildHere() { if (HX && REG) hereIdx = HX.buildIndex(CBmod && cardBind && cardSpec ? CBmod.applyToRegistry(REG, cardSpec, cardBind.specs) : REG, M, enNames, (typeof TCCustom !== 'undefined' && TCCustom.index()) || HX.readCustom(LS, chatId), estPlan); }
 function setChat(id) { id = String(id || ''); if (id === chatId) return; chatId = id; rebuildHere(); TCChars.chatChanged(); TCCustom.chatChanged(); if (REG) { markHere($('#here').value); } }
 window.__edenMapChat = setChat;   // 宿主页转发调用前先同步聊天 id（同源 srcdoc，直接调用）
 // v0.9.6「关于 / 检查更新」：卡内脚本发来 eden-map:about { version, code, channel: tag | follow | ref | local, ref, sha, line }；
@@ -1678,6 +1690,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:lang' && ['zh', 'en'].includes(e.data.lang)) setLang(e.data.lang);   // v0.9.6：嵌入时语言以卡内脚本（标题栏）为准，两边只有一个设置
     if (e.data?.type === 'eden-map:about') { about = e.data; renderAbout(); }   // v0.9.6 版本与检查更新
     if (e.data?.type === 'eden-map:update-result') { updBusy = false; updRes = e.data; renderAbout(); }
+    if (e.data?.type === 'eden-map:card-bind') onCardBind(e.data);   // v0.9.7 卡原名绑定（本机）
     if (e.data?.type === 'eden-map:chars') { TCChars.set(e.data); emEmit('characters', { items: e.data.items, floor: e.data.floor }); }   // 人物栏（v0.9.2）
     if (e.data?.type === 'eden-map:custom') TCCustom.fromHost(e.data);   // v0.9.3：自定义名称与用途（聊天变量）
     if (e.data?.type === 'eden-map:clock') TCCustom.setClock(e.data);   // 世界时间 → 夜色

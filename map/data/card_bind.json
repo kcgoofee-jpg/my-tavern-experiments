@@ -1,0 +1,12 @@
+{
+ "_说明": "卡原名的运行时绑定（map/card-bind.mjs bindSpecs）：仓库只存稳定 id + 卡内结构定位（键路径 / 第几条 / 怎么切），不存原名；运行时从用户自己加载的卡 / 世界书里按结构取回，只在本机内存里用。target：{ map, marker } → 地标别名；{ map, districts: true } → 层的分区别名；use=label → 界面标签（按 id 取）。来源见 docs/reviews/canon_audit_0928.md（R1–R4）。庄园房间在 eden_estate_rooms.json 的 card_rooms。",
+ "version": 1,
+ "binds": [
+  { "id": "tc_low.amc_facility#3", "audit": "R1", "path": ["下层_地基区", "结构"], "take": "value", "split": "[、,，]", "pick": [3], "target": { "map": "tc_low", "marker": "amc_facility" }, "use": "alias" },
+  { "id": "tc_low.amc_facility#4", "audit": "R3", "path": ["下层_地基区", "结构"], "take": "value", "split": "[、,，]", "pick": [4], "target": { "map": "tc_low", "marker": "amc_facility" }, "use": "alias" },
+  { "id": "tc_mid.districts#shops", "audit": "R4a", "path": ["中层_钢铁霓虹区", "特征"], "take": "bullet", "n": 6, "cut": "散布|分布|遍布|[：:]", "split": "[、,，]", "pick": "all", "target": { "map": "tc_mid", "districts": true }, "use": "alias" },
+  { "id": "site_kavalierki.contest_corridor#3", "audit": "R4b", "path": ["中环区_竞赛与狂欢回廊", "主要设施"], "take": "bullet", "n": 3, "cut": "[：:]", "whole": true, "split": "与", "pick": [2], "target": { "map": "site_kavalierki", "marker": "contest_corridor" }, "use": "alias" },
+  { "id": "section.B1", "audit": "R2", "path": ["地下一层_*"], "take": "suffix", "use": "label" },
+  { "id": "section.B2", "audit": "R2", "path": ["地下二层_*"], "take": "suffix", "use": "label" }
+ ]
+}

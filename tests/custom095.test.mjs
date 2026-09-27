@@ -54,7 +54,7 @@ t('英文分组名', () => {
   assert.equal(E[0].label, 'Upper tier · landmarks'); assert.match(E.find(g => g.id === 'room:F1').label, /^Eden Manor · 1F/);
 });
 t('没有 plan.js（庄园页没取到）：房间整组列在「其他」里', () => {
-  const g = P.buildGroups({ reg: REG }); assert.ok(g.find(x => x.id === 'room:other').items.length >= 60);
+  const g = P.buildGroups({ reg: REG }); assert.ok(g.find(x => x.id === 'room:other').items.length >= 40);   // v0.9.7：只剩卡房间名 + 卡里的写法 + 通用叫法
 });
 t('搜索：标准名、别名、英文名、显示名、用途都认；空串原样', () => {
   const c = V.setCustom({}, '书房', { name: '星图室', note: '整理旧地图' });

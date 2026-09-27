@@ -1,5 +1,5 @@
 {
- "_说明": "伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 卡设定房间 / restricted 受限房间（不描述）/ support 辅助 / circ 走廊 / open 卡未写 / owner 主人专用 / user 用户设定（src=用户设定）。",
+ "_说明": "伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 卡设定房间 / restricted 按原卡、不描述（name 是占位「（按原卡）」，原名运行时从用户的卡绑定）/ support 辅助 / circ 走廊 / open 卡未写 / owner 主人专用 / user 用户设定（src=用户设定）。",
  "version": 1,
  "src": "docs/card-digest.md §6",
  "units": "m",
@@ -453,6 +453,9 @@
    "card_id": null,
    "note": "仆役楼梯 + 食梯 + 服务电梯，B2–F3 贯通；B2 楼梯间门禁：仅主人、女仆长芯片",
    "access": "仆从动线",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -486,6 +489,9 @@
    "card_id": null,
    "note": "主人专用通道：螺旋梯 + 单人电梯，B2–F2；F1 与会客厅暗门相接，F2 开进主卧衣帽间",
    "access": "仅主人",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      16,
@@ -519,6 +525,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -14,
@@ -543,15 +552,22 @@
    "src": "卡",
    "id": "B2-03",
    "floor": "B2",
-   "name": "受限房间",
+   "name": "（按原卡）",
    "kind": "restricted",
    "block": "hall",
    "area": 40.0,
    "card_area": 40,
    "card_range": null,
-   "card_id": "B2-受限",
+   "card_id": "B2-C01",
    "note": "无窗；不描述",
    "access": "主人 / 女仆长 / 被带去的人",
+   "words": [],
+   "synonyms": [],
+   "bind": {
+    "floor": "B2",
+    "n": 1,
+    "area": 40
+   },
    "poly": [
     [
      -10,
@@ -576,15 +592,18 @@
    "src": "卡",
    "id": "B2-04",
    "floor": "B2",
-   "name": "医疗室",
+   "name": "医疗与改造室",
    "kind": "card",
    "block": "hall",
    "area": 50.0,
    "card_area": 50,
    "card_range": null,
-   "card_id": "B2-医疗室",
+   "card_id": "B2-C02",
    "note": "体检、手术、恢复舱",
    "access": "主人 / 女仆长 / 被带去的人",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -5,
@@ -615,9 +634,12 @@
    "area": 20.0,
    "card_area": 20,
    "card_range": null,
-   "card_id": "B2-档案室",
+   "card_id": "B2-C03",
    "note": "协议原件、影像服务器；只有主人和女仆长能进",
    "access": "仅主人 / 女仆长",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      10,
@@ -648,9 +670,12 @@
    "area": 28.0,
    "card_area": 30,
    "card_range": null,
-   "card_id": "B2-储藏室",
+   "card_id": "B2-C04",
    "note": "备用设备、季节衣物、紧急医疗包",
    "access": "主人 / 女仆长 / 被带去的人",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      10,
@@ -684,6 +709,9 @@
    "card_id": null,
    "note": "卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      1.25,
@@ -717,6 +745,9 @@
    "card_id": null,
    "note": "卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -750,6 +781,9 @@
    "card_id": null,
    "note": "第二安全出口：B2–B1，经东侧下沉天井上到室外地坪（卡未写，建筑必需）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      16,
@@ -783,6 +817,9 @@
    "card_id": null,
    "note": "卡未写；地下机电",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -14,
@@ -816,6 +853,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -849,6 +889,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -882,6 +925,9 @@
    "card_id": null,
    "note": "B2 受限楼层前室：门禁（主人 / 女仆长芯片）",
    "access": "仅主人 / 女仆长 / 被带去的人",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      16,
@@ -915,6 +961,9 @@
    "card_id": null,
    "note": "仆役楼梯 + 食梯 + 服务电梯，B2–F3 贯通",
    "access": "仆从动线",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -948,6 +997,9 @@
    "card_id": null,
    "note": "主人专用通道：螺旋梯 + 单人电梯，B2–F2；F1 与会客厅暗门相接，F2 开进主卧衣帽间",
    "access": "仅主人",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      16,
@@ -981,6 +1033,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -1005,15 +1060,22 @@
    "src": "卡",
    "id": "B1-17",
    "floor": "B1",
-   "name": "受限房间 A",
+   "name": "（按原卡）",
    "kind": "restricted",
    "block": "hall",
    "area": 80.0,
    "card_area": 80,
    "card_range": null,
-   "card_id": "B1-受限A",
+   "card_id": "B1-C01",
    "note": "不描述",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": {
+    "floor": "B1",
+    "n": 1,
+    "area": 80
+   },
    "poly": [
     [
      -10,
@@ -1038,15 +1100,22 @@
    "src": "卡",
    "id": "B1-18",
    "floor": "B1",
-   "name": "受限房间 B",
+   "name": "（按原卡）",
    "kind": "restricted",
    "block": "hall",
    "area": 30.0,
    "card_area": 30,
    "card_range": null,
-   "card_id": "B1-受限B",
+   "card_id": "B1-C02",
    "note": "不描述",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": {
+    "floor": "B1",
+    "n": 2,
+    "area": 30
+   },
    "poly": [
     [
      0,
@@ -1071,15 +1140,22 @@
    "src": "卡",
    "id": "B1-19",
    "floor": "B1",
-   "name": "受限房间 C",
+   "name": "（按原卡）",
    "kind": "restricted",
    "block": "hall",
    "area": 25.2,
    "card_area": 25,
    "card_range": null,
-   "card_id": "B1-受限C",
+   "card_id": "B1-C04",
    "note": "不描述",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": {
+    "floor": "B1",
+    "n": 4,
+    "area": 25
+   },
    "poly": [
     [
      3.75,
@@ -1110,9 +1186,14 @@
    "area": 60.0,
    "card_area": 60,
    "card_range": null,
-   "card_id": "B1-体能训练室",
+   "card_id": "B1-C03",
    "note": "健身、柔韧训练；加固型格斗区和武器架",
    "access": "住客（按任务开放）",
+   "words": [],
+   "synonyms": [
+    "健身房"
+   ],
+   "bind": null,
    "poly": [
     [
      -8,
@@ -1143,9 +1224,14 @@
    "area": 30.0,
    "card_area": 30,
    "card_range": null,
-   "card_id": "B1-酒窖",
+   "card_id": "B1-C05",
    "note": "藏酒两千余瓶",
    "access": "",
+   "words": [
+    "酒窖"
+   ],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -14,
@@ -1179,6 +1265,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      6.9,
@@ -1212,6 +1301,9 @@
    "card_id": null,
    "note": "卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      10,
@@ -1245,6 +1337,9 @@
    "card_id": null,
    "note": "第二安全出口：B2–B1，经东侧下沉天井上到室外地坪（卡未写，建筑必需）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      16,
@@ -1278,6 +1373,9 @@
    "card_id": null,
    "note": "卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -1311,6 +1409,9 @@
    "card_id": null,
    "note": "卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -2,
@@ -1344,6 +1445,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -8,
@@ -1377,6 +1481,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -1410,6 +1517,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -14,
@@ -1443,6 +1553,9 @@
    "card_id": null,
    "note": "石材双跑梯，F1–F3；F3 再上一跑到屋顶眺望亭（屋顶构筑物，仓库自设）；仓库推断，卡未写",
    "access": "主人 / 访客 / 住客",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -22,
@@ -1476,6 +1589,9 @@
    "card_id": null,
    "note": "仆役楼梯 + 食梯 + 服务电梯，B2–F3 贯通",
    "access": "仆从动线",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -1509,6 +1625,9 @@
    "card_id": null,
    "note": "主人专用通道：螺旋梯 + 单人电梯，B2–F2；F1 与会客厅暗门相接，F2 开进主卧衣帽间",
    "access": "仅主人",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      16,
@@ -1542,6 +1661,9 @@
    "card_id": null,
    "note": "柱廊；车道落客；仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -8,
@@ -1572,9 +1694,15 @@
    "area": 200.0,
    "card_area": 200,
    "card_range": null,
-   "card_id": "F1-大厅",
+   "card_id": "F1-C01",
    "note": "正门入口、接待；中央圆形下沉区（晨间报到）；墙面全息屏",
    "access": "全体（新人可进）",
+   "words": [],
+   "synonyms": [
+    "门厅",
+    "玄关"
+   ],
+   "bind": null,
    "poly": [
     [
      -10,
@@ -1605,9 +1733,15 @@
    "area": 60.0,
    "card_area": 60,
    "card_range": null,
-   "card_id": "F1-会客厅",
+   "card_id": "F1-C04",
    "note": "壁炉、隔音；北墙暗门通主人专用通道",
    "access": "主人 / 访客",
+   "words": [],
+   "synonyms": [
+    "客厅",
+    "沙龙"
+   ],
+   "bind": null,
    "poly": [
     [
      10,
@@ -1641,6 +1775,9 @@
    "card_id": null,
    "note": "6 × 4 m 前室：南墙是会客厅暗门，东接螺旋梯与单人电梯；主廊一侧是普通墙板门（平时锁闭）",
    "access": "仅主人",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      10,
@@ -1674,6 +1811,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -12,
@@ -1707,6 +1847,9 @@
    "card_id": null,
    "note": "内部房间（无需外窗），机械通风；仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -1740,6 +1883,9 @@
    "card_id": null,
    "note": "主人动线：大厅 ↔ 餐厅 ↔ 东西翼；仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -1770,9 +1916,14 @@
    "area": 88.0,
    "card_area": 80,
    "card_range": null,
-   "card_id": "F1-餐厅",
+   "card_id": "F1-C02",
    "note": "胡桃木长桌可坐 20 人；北墙是通高玻璃隔断开向北廊楼（北廊楼北面落地窗采光）",
    "access": "主人",
+   "words": [],
+   "synonyms": [
+    "饭厅"
+   ],
+   "bind": null,
    "poly": [
     [
      -10,
@@ -1797,15 +1948,20 @@
    "src": "卡",
    "id": "F1-41",
    "floor": "F1",
-   "name": "备餐间",
+   "name": "独立食物准备间",
    "kind": "card",
    "block": "hall",
    "area": 44.0,
    "card_area": null,
    "card_range": null,
-   "card_id": "F1-备餐间",
-   "note": "餐厅独立备餐间（卡未写面积）",
+   "card_id": "F1-C03",
+   "note": "餐厅的独立食物准备间（卡未写面积）",
    "access": "仆从动线",
+   "words": [
+    "食物准备间"
+   ],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -14,
@@ -1839,6 +1995,9 @@
    "card_id": null,
    "note": "厨房 ↔ 仆役核 ↔ 备餐间；仓库推断，卡未写",
    "access": "仆从动线",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -1872,6 +2031,9 @@
    "card_id": null,
    "note": "通北廊楼、后庭园；仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -2,
@@ -1905,6 +2067,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      2,
@@ -1929,15 +2094,20 @@
    "src": "卡",
    "id": "F1-45",
    "floor": "F1",
-   "name": "厨房",
+   "name": "厨房与后勤区",
    "kind": "card",
    "block": "w_low",
    "area": 132.0,
    "card_area": null,
    "card_range": null,
-   "card_id": "F1-厨房",
-   "note": "自动烹饪（厨房与后勤区）",
+   "card_id": "F1-C05",
+   "note": "全自动烹饪；后勤三间在西翼",
    "access": "仆从动线",
+   "words": [
+    "厨房"
+   ],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -31,
@@ -1962,15 +2132,20 @@
    "src": "卡",
    "id": "F1-46",
    "floor": "F1",
-   "name": "衣物清洗维护间",
+   "name": "衣物清洗与维护间",
    "kind": "card",
    "block": "w_wing_a",
    "area": 100.0,
    "card_area": null,
    "card_range": null,
-   "card_id": "F1-洗衣",
+   "card_id": "F1-C06",
    "note": "厨房与后勤区",
    "access": "仆从动线",
+   "words": [],
+   "synonyms": [
+    "洗衣房"
+   ],
+   "bind": null,
    "poly": [
     [
      -52,
@@ -1995,15 +2170,18 @@
    "src": "卡",
    "id": "F1-47",
    "floor": "F1",
-   "name": "器具清洗消毒间",
+   "name": "道具清洗消毒间",
    "kind": "card",
    "block": "w_wing_a",
    "area": 80.0,
    "card_area": null,
    "card_range": null,
-   "card_id": "F1-消毒",
+   "card_id": "F1-C07",
    "note": "厨房与后勤区",
    "access": "仆从动线",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -42,
@@ -2034,9 +2212,14 @@
    "area": 120.0,
    "card_area": null,
    "card_range": null,
-   "card_id": "F1-仓库",
+   "card_id": "F1-C08",
    "note": "厨房与后勤区",
    "access": "仆从动线",
+   "words": [],
+   "synonyms": [
+    "仓库"
+   ],
+   "bind": null,
    "poly": [
     [
      -34,
@@ -2070,6 +2253,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "仆从动线",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -52,
@@ -2103,6 +2289,9 @@
    "card_id": null,
    "note": "只开门进仆役核，不开向主廊：仆从经 西翼服务走廊 → 服务连廊 → 仆役核 → 服务过道 → 备餐间，不走主人动线；仓库推断，卡未写",
    "access": "仆从动线",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -22,
@@ -2136,6 +2325,9 @@
    "card_id": null,
    "note": "廊厅；通后庭园与半圆回廊；仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -11,
@@ -2169,6 +2361,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      20,
@@ -2202,6 +2397,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      20,
@@ -2235,6 +2433,9 @@
    "card_id": null,
    "note": "石材双跑梯，F1–F3；F3 再上一跑到屋顶眺望亭（屋顶构筑物，仓库自设）；仓库推断，卡未写",
    "access": "主人 / 访客 / 住客",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -22,
@@ -2268,6 +2469,9 @@
    "card_id": null,
    "note": "仆役楼梯 + 食梯 + 服务电梯，B2–F3 贯通",
    "access": "仆从动线",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -2301,6 +2505,9 @@
    "card_id": null,
    "note": "主人专用通道：螺旋梯 + 单人电梯，B2–F2；F1 与会客厅暗门相接，F2 开进主卧衣帽间",
    "access": "仅主人",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      16,
@@ -2325,15 +2532,26 @@
    "src": "卡",
    "id": "F2-57",
    "floor": "F2",
-   "name": "主卧",
+   "name": "主人主卧",
    "kind": "card",
    "block": "hall",
    "area": 104.0,
    "card_area": 100,
    "card_range": null,
-   "card_id": "F2-主卧",
+   "card_id": "F2-C01",
    "note": "带衣帽间和独立浴室；床头呼叫面板；东北角是主人专用通道",
    "access": "主人",
+   "words": [
+    "主卧"
+   ],
+   "synonyms": [
+    "主卧室",
+    "卧室",
+    "衣帽间",
+    "私人衣帽间",
+    "更衣室"
+   ],
+   "bind": null,
    "poly": [
     [
      8,
@@ -2366,15 +2584,22 @@
    "src": "卡",
    "id": "F2-58",
    "floor": "F2",
-   "name": "书房",
+   "name": "主人书房",
    "kind": "card",
    "block": "hall",
    "area": 50.0,
    "card_area": 50,
    "card_range": null,
-   "card_id": "F2-书房",
+   "card_id": "F2-C02",
    "note": "全息终端、监控总览屏、南向落地窗（门廊上方）",
    "access": "主人（上锁）",
+   "words": [
+    "书房"
+   ],
+   "synonyms": [
+    "图书室"
+   ],
+   "bind": null,
    "poly": [
     [
      -2,
@@ -2408,6 +2633,9 @@
    "card_id": null,
    "note": "卡：门外走廊是等候位；主廊放宽成 5 m 的等候凹廊，顶上 F3 天窗井（R(-2, 8, -11, -9) 上方）采光；仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -2,
@@ -2438,9 +2666,12 @@
    "area": 30.0,
    "card_area": 30,
    "card_range": null,
-   "card_id": "F2-客房1",
+   "card_id": "F2-C04",
    "note": "访客短住",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -12,
@@ -2471,9 +2702,12 @@
    "area": 30.0,
    "card_area": 30,
    "card_range": null,
-   "card_id": "F2-客房2",
+   "card_id": "F2-C05",
    "note": "访客短住",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -7,
@@ -2507,6 +2741,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -12,
@@ -2540,6 +2777,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "仆从动线",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -2573,6 +2813,9 @@
    "card_id": null,
    "note": "女仆长寝室与主卧隔此走廊相对（专用直通门）；仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -2603,9 +2846,12 @@
    "area": 40.2,
    "card_area": 40,
    "card_range": null,
-   "card_id": "F2-女仆长寝室",
+   "card_id": "F2-C03",
    "note": "住处兼管理终端；与主卧隔走廊相对，有专用直通门",
    "access": "女仆长",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      10,
@@ -2639,6 +2885,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      10,
@@ -2672,6 +2921,9 @@
    "card_id": null,
    "note": "卡未写用途；北墙贴北廊楼，靠 F3 穹顶天窗井与北廊楼屋面高侧窗采光",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -14,
@@ -2705,6 +2957,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      16,
@@ -2738,6 +2993,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "仆从动线",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -2771,6 +3029,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -52,
@@ -2804,6 +3065,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -22,
@@ -2837,6 +3101,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      20,
@@ -2870,6 +3137,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      22,
@@ -2903,6 +3173,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      22,
@@ -2933,9 +3206,14 @@
    "area": 182.0,
    "card_area": null,
    "card_range": null,
-   "card_id": "F2-东侧长廊",
+   "card_id": "F2-C06",
    "note": "整面落地窗朝东：早上看云海，夜里看中层灯火（卡未写楼层，仓库放 F2）",
    "access": "",
+   "words": [],
+   "synonyms": [
+    "长廊"
+   ],
+   "bind": null,
    "poly": [
     [
      52.743,
@@ -2969,6 +3247,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      45.849,
@@ -3002,6 +3283,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -11,
@@ -3035,6 +3319,9 @@
    "card_id": null,
    "note": "石材双跑梯，F1–F3；F3 再上一跑到屋顶眺望亭（屋顶构筑物，仓库自设）；仓库推断，卡未写",
    "access": "主人 / 访客 / 住客",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -22,
@@ -3068,6 +3355,9 @@
    "card_id": null,
    "note": "仆役楼梯 + 食梯 + 服务电梯，B2–F3 贯通",
    "access": "仆从动线",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -3101,9 +3391,20 @@
     15,
     20
    ],
-   "card_id": "F3-个人寝室",
+   "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
    "poly": [
     [
      -12.0,
@@ -3137,9 +3438,20 @@
     15,
     20
    ],
-   "card_id": "F3-个人寝室",
+   "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
    "poly": [
     [
      -8.4,
@@ -3173,9 +3485,20 @@
     15,
     20
    ],
-   "card_id": "F3-个人寝室",
+   "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
    "poly": [
     [
      -4.8,
@@ -3209,9 +3532,20 @@
     15,
     20
    ],
-   "card_id": "F3-个人寝室",
+   "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
    "poly": [
     [
      -1.1999999999999993,
@@ -3245,9 +3579,20 @@
     15,
     20
    ],
-   "card_id": "F3-个人寝室",
+   "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
    "poly": [
     [
      2.4000000000000004,
@@ -3281,9 +3626,20 @@
     15,
     20
    ],
-   "card_id": "F3-个人寝室",
+   "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
    "poly": [
     [
      6.0,
@@ -3317,9 +3673,20 @@
     15,
     20
    ],
-   "card_id": "F3-个人寝室",
+   "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
    "poly": [
     [
      9.600000000000001,
@@ -3353,9 +3720,20 @@
     15,
     20
    ],
-   "card_id": "F3-个人寝室",
+   "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
    "poly": [
     [
      13.2,
@@ -3389,9 +3767,20 @@
     15,
     20
    ],
-   "card_id": "F3-个人寝室",
+   "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；北窗",
    "access": "正式住客",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
    "poly": [
     [
      -7,
@@ -3425,9 +3814,20 @@
     15,
     20
    ],
-   "card_id": "F3-个人寝室",
+   "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；北窗",
    "access": "正式住客",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
    "poly": [
     [
      -3.4,
@@ -3461,9 +3861,20 @@
     15,
     20
    ],
-   "card_id": "F3-个人寝室",
+   "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；北窗",
    "access": "正式住客",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
    "poly": [
     [
      0.2,
@@ -3497,9 +3908,20 @@
     15,
     20
    ],
-   "card_id": "F3-个人寝室",
+   "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；北窗",
    "access": "正式住客",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
    "poly": [
     [
      3.8,
@@ -3533,9 +3955,20 @@
     15,
     20
    ],
-   "card_id": "F3-个人寝室",
+   "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；北窗",
    "access": "正式住客",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
    "poly": [
     [
      7.4,
@@ -3569,9 +4002,20 @@
     15,
     20
    ],
-   "card_id": "F3-个人寝室",
+   "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；北窗",
    "access": "正式住客",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
    "poly": [
     [
      11.2,
@@ -3596,15 +4040,20 @@
    "src": "卡",
    "id": "F3-94",
    "floor": "F3",
-   "name": "新人公共寝区",
+   "name": "新进公共寝区",
    "kind": "card",
    "block": "hall",
    "area": 40.0,
    "card_area": 40,
    "card_range": null,
-   "card_id": "F3-新人寝区",
+   "card_id": "F3-C02",
    "note": "4 床；入住第一个月的住处",
    "access": "新人",
+   "words": [
+    "新进寝区"
+   ],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -15,
@@ -3635,9 +4084,19 @@
    "area": 48.0,
    "card_area": 50,
    "card_range": null,
-   "card_id": "F3-公共浴室",
+   "card_id": "F3-C03",
    "note": "住客共用（顶部天窗）",
    "access": "住客 / 新人",
+   "words": [
+    "三楼浴室"
+   ],
+   "synonyms": [
+    "公共浴室",
+    "浴室",
+    "浴池",
+    "盥洗室"
+   ],
+   "bind": null,
    "poly": [
     [
      -14,
@@ -3662,15 +4121,23 @@
    "src": "卡",
    "id": "F3-96",
    "floor": "F3",
-   "name": "女仆团集体间",
+   "name": "杂鱼女仆集体间",
    "kind": "card",
    "block": "hall",
    "area": 80.0,
    "card_area": 80,
    "card_range": null,
-   "card_id": "F3-女仆团集体间",
+   "card_id": "F3-C04",
    "note": "大通铺；东窗；北端是公共清洁间",
    "access": "女仆团",
+   "words": [
+    "集体间"
+   ],
+   "synonyms": [
+    "集体宿舍",
+    "女仆宿舍"
+   ],
+   "bind": null,
    "poly": [
     [
      15,
@@ -3701,9 +4168,12 @@
    "area": 15.0,
    "card_area": null,
    "card_range": null,
-   "card_id": "F3-清洁间",
+   "card_id": "F3-C05",
    "note": "集体间尽头",
    "access": "女仆团",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      15,
@@ -3737,6 +4207,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      16.8,
@@ -3770,6 +4243,9 @@
    "card_id": null,
    "note": "卡只在权限表里提到「F3 公共区」，没写面积与功能；穹顶灯亭天窗采光",
    "access": "住客 / 新人",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -8,
@@ -3803,6 +4279,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -12,
@@ -3836,6 +4315,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -14,
@@ -3869,6 +4351,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "仆从动线",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -3902,6 +4387,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -14,
@@ -3935,6 +4423,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -20,
@@ -3968,6 +4459,9 @@
    "card_id": null,
    "note": "仓库推断，卡未写",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -14,
@@ -4001,6 +4495,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -76.014,
@@ -4034,6 +4531,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      51.763,
@@ -4067,6 +4567,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      43.0,
@@ -4100,6 +4603,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -61.936,
@@ -4133,6 +4639,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -76.014,
@@ -4166,6 +4675,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      51.763,
@@ -4199,6 +4711,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      43.0,
@@ -4232,6 +4747,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      22,
@@ -4265,6 +4783,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      45.849,
@@ -4298,6 +4819,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -61.936,
@@ -4331,6 +4855,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      -76.014,
@@ -4364,6 +4891,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      51.763,
@@ -4397,6 +4927,9 @@
    "card_id": null,
    "note": "卡未写用途；仓库推断中性用途；与相邻体块直接相通（门洞在两体块相接的墙上）",
    "access": "",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      43.0,
@@ -4430,6 +4963,9 @@
    "card_id": null,
    "note": "地下医疗中心（B2）入口：接诊台、转运床停放；南接主廊，东墙气密患者转运门进无菌处置室、另一门进器械洗消间",
    "access": "主人 / 女仆长 / 医护",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      4,
@@ -4463,6 +4999,9 @@
    "card_id": null,
    "note": "器械清洗、灭菌柜；传递窗通无菌处置室",
    "access": "主人 / 女仆长 / 医护",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      8,
@@ -4496,6 +5035,9 @@
    "card_id": null,
    "note": "气闸 + 更衣：两道互锁密闭门、风淋、洁净服柜、刷手槽；南门接主人通道前室",
    "access": "主人 / 女仆长 / 医护",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      14,
@@ -4529,6 +5071,9 @@
    "card_id": null,
    "note": "急救 / 处置 / 小手术：手术台、无影灯、吊塔监护、呼吸机、除颤、抢救车、医用气体、洁净送风天花",
    "access": "主人 / 女仆长 / 医护",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
    "poly": [
     [
      8,
@@ -4548,5 +5093,499 @@
     ]
    ]
   }
- ]
+ ],
+ "card_rooms": [
+  {
+   "cid": "F1-C01",
+   "floor": "F1",
+   "order": 1,
+   "name": "大厅",
+   "words": [],
+   "synonyms": [
+    "门厅",
+    "玄关"
+   ],
+   "bind": null,
+   "poly_ids": [
+    "F1-34"
+   ]
+  },
+  {
+   "cid": "F1-C02",
+   "floor": "F1",
+   "order": 2,
+   "name": "餐厅",
+   "words": [],
+   "synonyms": [
+    "饭厅"
+   ],
+   "bind": null,
+   "poly_ids": [
+    "F1-40"
+   ]
+  },
+  {
+   "cid": "F1-C03",
+   "floor": "F1",
+   "order": 3,
+   "name": "独立食物准备间",
+   "words": [
+    "食物准备间"
+   ],
+   "synonyms": [],
+   "bind": null,
+   "poly_ids": [
+    "F1-41"
+   ]
+  },
+  {
+   "cid": "F1-C04",
+   "floor": "F1",
+   "order": 4,
+   "name": "会客厅",
+   "words": [],
+   "synonyms": [
+    "客厅",
+    "沙龙"
+   ],
+   "bind": null,
+   "poly_ids": [
+    "F1-35"
+   ]
+  },
+  {
+   "cid": "F1-C05",
+   "floor": "F1",
+   "order": 5,
+   "name": "厨房与后勤区",
+   "words": [
+    "厨房"
+   ],
+   "synonyms": [],
+   "bind": null,
+   "poly_ids": [
+    "F1-45"
+   ]
+  },
+  {
+   "cid": "F1-C06",
+   "floor": "F1",
+   "order": 6,
+   "name": "衣物清洗与维护间",
+   "words": [],
+   "synonyms": [
+    "洗衣房"
+   ],
+   "bind": null,
+   "poly_ids": [
+    "F1-46"
+   ]
+  },
+  {
+   "cid": "F1-C07",
+   "floor": "F1",
+   "order": 7,
+   "name": "道具清洗消毒间",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
+   "poly_ids": [
+    "F1-47"
+   ]
+  },
+  {
+   "cid": "F1-C08",
+   "floor": "F1",
+   "order": 8,
+   "name": "物资仓库",
+   "words": [],
+   "synonyms": [
+    "仓库"
+   ],
+   "bind": null,
+   "poly_ids": [
+    "F1-48"
+   ]
+  },
+  {
+   "cid": "F2-C01",
+   "floor": "F2",
+   "order": 1,
+   "name": "主人主卧",
+   "words": [
+    "主卧"
+   ],
+   "synonyms": [
+    "主卧室",
+    "卧室",
+    "衣帽间",
+    "私人衣帽间",
+    "更衣室"
+   ],
+   "bind": null,
+   "poly_ids": [
+    "F2-57"
+   ]
+  },
+  {
+   "cid": "F2-C02",
+   "floor": "F2",
+   "order": 2,
+   "name": "主人书房",
+   "words": [
+    "书房"
+   ],
+   "synonyms": [
+    "图书室"
+   ],
+   "bind": null,
+   "poly_ids": [
+    "F2-58"
+   ]
+  },
+  {
+   "cid": "F2-C03",
+   "floor": "F2",
+   "order": 3,
+   "name": "女仆长寝室",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
+   "poly_ids": [
+    "F2-65"
+   ]
+  },
+  {
+   "cid": "F2-C04",
+   "floor": "F2",
+   "order": 4,
+   "name": "客房",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
+   "poly_ids": [
+    "F2-60"
+   ]
+  },
+  {
+   "cid": "F2-C05",
+   "floor": "F2",
+   "order": 5,
+   "name": "客房",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
+   "poly_ids": [
+    "F2-61"
+   ]
+  },
+  {
+   "cid": "F2-C06",
+   "floor": "F2",
+   "order": 6,
+   "name": "东侧长廊",
+   "words": [],
+   "synonyms": [
+    "长廊"
+   ],
+   "bind": null,
+   "poly_ids": [
+    "F2-75"
+   ]
+  },
+  {
+   "cid": "F3-C01",
+   "floor": "F3",
+   "order": 1,
+   "name": "个人寝室",
+   "words": [],
+   "synonyms": [
+    "寝室",
+    "寝",
+    "宿舍"
+   ],
+   "bind": {
+    "floor": "F3",
+    "n": 1,
+    "area": 15
+   },
+   "poly_ids": [
+    "F3-80",
+    "F3-81",
+    "F3-82",
+    "F3-83",
+    "F3-84",
+    "F3-85",
+    "F3-86",
+    "F3-87",
+    "F3-88",
+    "F3-89",
+    "F3-90",
+    "F3-91",
+    "F3-92",
+    "F3-93"
+   ]
+  },
+  {
+   "cid": "F3-C02",
+   "floor": "F3",
+   "order": 2,
+   "name": "新进公共寝区",
+   "words": [
+    "新进寝区"
+   ],
+   "synonyms": [],
+   "bind": null,
+   "poly_ids": [
+    "F3-94"
+   ]
+  },
+  {
+   "cid": "F3-C03",
+   "floor": "F3",
+   "order": 3,
+   "name": "三楼公共浴室",
+   "words": [
+    "三楼浴室"
+   ],
+   "synonyms": [
+    "公共浴室",
+    "浴室",
+    "浴池",
+    "盥洗室"
+   ],
+   "bind": null,
+   "poly_ids": [
+    "F3-95"
+   ]
+  },
+  {
+   "cid": "F3-C04",
+   "floor": "F3",
+   "order": 4,
+   "name": "杂鱼女仆集体间",
+   "words": [
+    "集体间"
+   ],
+   "synonyms": [
+    "集体宿舍",
+    "女仆宿舍"
+   ],
+   "bind": null,
+   "poly_ids": [
+    "F3-96"
+   ]
+  },
+  {
+   "cid": "F3-C05",
+   "floor": "F3",
+   "order": 5,
+   "name": "公共清洁间",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
+   "poly_ids": [
+    "F3-97"
+   ]
+  },
+  {
+   "cid": "B1-C01",
+   "floor": "B1",
+   "order": 1,
+   "name": "（按原卡）",
+   "words": [],
+   "synonyms": [],
+   "bind": {
+    "floor": "B1",
+    "n": 1,
+    "area": 80
+   },
+   "poly_ids": [
+    "B1-17"
+   ]
+  },
+  {
+   "cid": "B1-C02",
+   "floor": "B1",
+   "order": 2,
+   "name": "（按原卡）",
+   "words": [],
+   "synonyms": [],
+   "bind": {
+    "floor": "B1",
+    "n": 2,
+    "area": 30
+   },
+   "poly_ids": [
+    "B1-18"
+   ]
+  },
+  {
+   "cid": "B1-C03",
+   "floor": "B1",
+   "order": 3,
+   "name": "体能训练室",
+   "words": [],
+   "synonyms": [
+    "健身房"
+   ],
+   "bind": null,
+   "poly_ids": [
+    "B1-20"
+   ]
+  },
+  {
+   "cid": "B1-C04",
+   "floor": "B1",
+   "order": 4,
+   "name": "（按原卡）",
+   "words": [],
+   "synonyms": [],
+   "bind": {
+    "floor": "B1",
+    "n": 4,
+    "area": 25
+   },
+   "poly_ids": [
+    "B1-19"
+   ]
+  },
+  {
+   "cid": "B1-C05",
+   "floor": "B1",
+   "order": 5,
+   "name": "恒温酒窖",
+   "words": [
+    "酒窖"
+   ],
+   "synonyms": [],
+   "bind": null,
+   "poly_ids": [
+    "B1-21"
+   ]
+  },
+  {
+   "cid": "B2-C01",
+   "floor": "B2",
+   "order": 1,
+   "name": "（按原卡）",
+   "words": [],
+   "synonyms": [],
+   "bind": {
+    "floor": "B2",
+    "n": 1,
+    "area": 40
+   },
+   "poly_ids": [
+    "B2-03"
+   ]
+  },
+  {
+   "cid": "B2-C02",
+   "floor": "B2",
+   "order": 2,
+   "name": "医疗与改造室",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
+   "poly_ids": [
+    "B2-04"
+   ]
+  },
+  {
+   "cid": "B2-C03",
+   "floor": "B2",
+   "order": 3,
+   "name": "档案室",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
+   "poly_ids": [
+    "B2-05"
+   ]
+  },
+  {
+   "cid": "B2-C04",
+   "floor": "B2",
+   "order": 4,
+   "name": "储藏室",
+   "words": [],
+   "synonyms": [],
+   "bind": null,
+   "poly_ids": [
+    "B2-06"
+   ]
+  },
+  {
+   "cid": "EX-C01",
+   "floor": "ext",
+   "order": 1,
+   "name": "前庭花园",
+   "words": [
+    "前庭"
+   ],
+   "synonyms": [],
+   "bind": null,
+   "poly_ids": []
+  },
+  {
+   "cid": "EX-C02",
+   "floor": "ext",
+   "order": 2,
+   "name": "后庭园",
+   "words": [
+    "后庭"
+   ],
+   "synonyms": [],
+   "bind": null,
+   "poly_ids": []
+  }
+ ],
+ "card_id_alias": {
+  "B2-受限": "B2-C01",
+  "B2-医疗室": "B2-C02",
+  "B2-档案室": "B2-C03",
+  "B2-储藏室": "B2-C04",
+  "B1-受限A": "B1-C01",
+  "B1-受限B": "B1-C02",
+  "B1-体能训练室": "B1-C03",
+  "B1-受限C": "B1-C04",
+  "B1-酒窖": "B1-C05",
+  "F1-大厅": "F1-C01",
+  "F1-餐厅": "F1-C02",
+  "F1-备餐间": "F1-C03",
+  "F1-会客厅": "F1-C04",
+  "F1-厨房": "F1-C05",
+  "F1-洗衣": "F1-C06",
+  "F1-消毒": "F1-C07",
+  "F1-仓库": "F1-C08",
+  "F2-主卧": "F2-C01",
+  "F2-书房": "F2-C02",
+  "F2-女仆长寝室": "F2-C03",
+  "F2-客房1": "F2-C04",
+  "F2-客房2": "F2-C05",
+  "F2-东侧长廊": "F2-C06",
+  "F3-个人寝室": "F3-C01",
+  "F3-新人寝区": "F3-C02",
+  "F3-公共浴室": "F3-C03",
+  "F3-女仆团集体间": "F3-C04",
+  "F3-清洁间": "F3-C05"
+ },
+ "retired_names": {
+  "受限房间": "B2-C01",
+  "附属室": "B2-C01",
+  "附属室D": "B2-C01",
+  "受限房间 A": "B1-C01",
+  "附属室A": "B1-C01",
+  "受限房间 B": "B1-C02",
+  "附属室B": "B1-C02",
+  "受限房间 C": "B1-C04",
+  "附属室C": "B1-C04",
+  "医疗室": "B2-C02",
+  "备餐间": "F1-C03",
+  "衣物清洗维护间": "F1-C06",
+  "器具清洗消毒间": "F1-C07",
+  "新人公共寝区": "F3-C02",
+  "女仆团集体间": "F3-C04"
+ }
 }

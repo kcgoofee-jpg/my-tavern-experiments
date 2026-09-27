@@ -142,7 +142,7 @@ for st, t in ((dict(color='#a0522d', lw=2.2), '有顶连廊（随地形）'), (d
               (dict(color='#222', lw=1.6, ls=(0, (1, 1))), '缆车'), (dict(color='#8b0000', lw=2), '索桥'), (dict(color='#2f6b2f', lw=1, ls='--'), '园林 / 场地分区'),
               (dict(color='#4a4a3a', lw=.5), '等高线 2 m（粗线 10 m）')):
     lg.plot([0, .05], [yy - .006] * 2, transform=lg.transAxes, **st); lg.text(.07, yy, t, fontsize=7.2, va='top'); yy -= .0158
-lg.text(0, yy - .01, '室内按卡「地上三层 + 地下两层」分翼落位；\n受限房间不标注。详表见 docs/eden-lore-space.md', fontsize=7, va='top', color='#555')
+lg.text(0, yy - .01, '室内按卡「地上三层 + 地下两层」分翼落位；\n按原卡的房间不标注。详表见 docs/eden-lore-space.md', fontsize=7, va='top', color='#555')
 lg.set_xlim(0, 1); lg.set_ylim(0, 1)
 fig.savefig(OUT + '.tmp.png', dpi=100)
 from PIL import Image
@@ -154,12 +154,12 @@ print(OUT, os.path.getsize(OUT) // 1024, 'KB')
 OUTB = OUT.replace('.png', '_basement.png')
 fig, axs = plt.subplots(1, 2, figsize=(13, 4.6), dpi=100)
 fig.subplots_adjust(0.02, 0.08, 0.98, 0.84, 0.06)
-COL = {'受限': '#d9d4cc', '恒温酒窖': '#ead9c4', '档案室': '#dfe6ee', '储藏室': '#e8e4da', '体能训练室': '#dcead9', '医疗室': '#d9e9ec'}
+COL = {'（按原卡）': '#d9d4cc', '恒温酒窖': '#ead9c4', '档案室': '#dfe6ee', '储藏室': '#e8e4da', '体能训练室': '#dcead9', '医疗与改造室': '#d9e9ec'}
 b = [q for q in L.MAIN if q[0] == 'hall'][0]
 for i, lv in enumerate(('B1', 'B2')):
     ax = axs[i]
     for n, x0, y0, x1, y1 in L.BASEMENT['hall'][lv]:
-        c = COL['受限'] if n.startswith('受限') else COL.get(n, '#f3f1ec')
+        c = COL.get(n, '#f3f1ec')
         ax.add_patch(Rectangle((x0, y0), x1 - x0, y1 - y0, fc=c, ec='#4a3a2a', lw=1.2))
         ax.text((x0 + x1) / 2, (y0 + y1) / 2, n, ha='center', va='center', fontsize=7, wrap=True)
     ax.set_xlim(-b[3] / 2 - 1, b[3] / 2 + 1); ax.set_ylim(-b[4] / 2 - 1, b[4] / 2 + 1); ax.set_aspect('equal'); ax.axis('off')

@@ -8,7 +8,7 @@ python3 blender/estate2/house_web.py --out /tmp/house_raw.glb [--doors /tmp/door
   楼板（按房间 kind 着中性色）、墙（相邻房间共用墙只出一次；外墙 0.45 m、内墙 0.2 m）、门洞（按走廊可达规则推断）、外墙窗洞（地上层）、
   竖向交通（塔楼双跑梯、仆役梯 + 服务电梯、主人螺旋梯 + 单人电梯、疏散梯）、穹顶四墩（B2–F3）、F3 顶上的鼓座转换梁框、门廊柱、大厅下沉圆区、
   中性家具块（floorplans 里的 furn 矩形；只按尺寸给高度，没有任何具体道具）。
-受限房间（kind = restricted）：只有空白楼板 + 墙 + 一个通走廊的门洞，没有家具和细节。
+按原卡的房间（kind = restricted，名字是占位「（按原卡）」）：只有空白楼板 + 墙 + 一个通走廊的门洞，没有家具和细节。
 坐标：floorplans / layout 是 x 东、y 北、z 上（F1 地坪 = 0）；glTF 是 Y 上：(x, z, −y)。
 网格：每层两块 f_<层>_struct / f_<层>_furn（每块一次 draw call），颜色在顶点色里（含一层便宜的墙脚 AO 渐变）。
 """
@@ -202,8 +202,8 @@ WIDE = ('circ',)
 def doors_for(rooms, segs):
     """→ {seg_index: [(t_center, width, height)]}。规则：
     1 与走廊（circ）相邻的房间开一扇门（走廊之间开宽洞）；
-    2 还没门的非受限房间，向共用墙最长的非受限邻居开一扇；
-    3 受限房间只走规则 1；门廊（support, block=porch）不算墙。"""
+    2 还没门的非 restricted房间，向共用墙最长的非 restricted邻居开一扇；
+    3 restricted 房间只走规则 1；门廊（support, block=porch）不算墙。"""
     D = {}; has = set()
     L = lambda s: float(np.linalg.norm(s['b'] - s['a']))
     pairs = {}
@@ -391,7 +391,7 @@ def build_floor(fl):
     structure(S, fl, z)
     for r in rooms:
         if r['kind'] in ('restricted', 'user'):
-            continue   # 受限房间：空白；医疗中心设备走 medical_web.py
+            continue   # restricted 房间：空白；医疗中心设备走 medical_web.py
         for f in r.get('furn', []):
             F.box(f[0], f[2], z, f[1], f[3], z + furn_height(f), FURN)
     info = dict(walls=len(segs), doors=sum(len(v) for v in doors.values()),

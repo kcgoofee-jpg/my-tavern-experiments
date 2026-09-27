@@ -8,11 +8,12 @@ export const FIELDS = ['location', 'time', 'period', 'date', 'outfit', 'present'
 export const MORE_FIELDS = ['codeField', 'socialField', 'heightField', 'weightField', 'knownField', 'accessoryField'];
 export const NAME_FIELDS = ['gradeField', 'coreField', ...MORE_FIELDS, 'tierField'], OFF = '-';
 // 默认字段名不在名册行里时，按字段名自动找（换卡兼容）
-export const MORE_RX = { codeField: /代号|codename|alias/i, socialField: /社会身份|公开身份|occupation/i, heightField: /身高|height/i, weightField: /体重|weight/i, knownField: /外界知情|知情|public/i, accessoryField: /饰物|配饰|项圈|accessor/i,
+export const MORE_RX = { gradeField: /.等级$|^grade$|rank/i, coreField: /..值$|core/i, codeField: /代号|codename|alias/i, socialField: /社会身份|公开身份|occupation/i, heightField: /身高|height/i, weightField: /体重|weight/i, knownField: /外界知情|知情|public/i, accessoryField: /饰物|配饰|项圈|accessor/i,
   tierField: /战力|战斗力|实力等级|超凡阶|combat|power|tier/i };   // E1 战力小签：这张卡的名册没有战力字段，默认空、按名找
+// v0.9.7：名册行的等级 / 核心数值 / 代号字段名不再写死这张卡的原文，按字段名形状自动发现（MORE_RX），用户仍可在映射里另选
 export const DEFAULT_MAP = { location: '世界.当前地点', time: '世界.当前时刻', period: '世界.当日时段', date: '世界.当前日期', outfit: '主角.着装',
-  present: '', members: '', targets: '', reputation: '', stageField: '', gradeField: '母畜等级', coreField: '母畜值',
-  codeField: '母畜代号', socialField: '社会身份', heightField: '身高', weightField: '体重', knownField: '外界知情', accessoryField: '项圈', tierField: '' };   // 空 = 按位置 / 通用字段名自动发现（mvu.mjs rosters / reputation）
+  present: '', members: '', targets: '', reputation: '', stageField: '', gradeField: '', coreField: '',
+  codeField: '', socialField: '社会身份', heightField: '身高', weightField: '体重', knownField: '外界知情', accessoryField: '项圈', tierField: '' };   // 空 = 按位置 / 通用字段名自动发现（mvu.mjs rosters / reputation）
 const plain = o => !!o && typeof o === 'object' && !Array.isArray(o);
 const val = v => (Array.isArray(v) && v.length === 2 && typeof v[1] === 'string' && (v[0] === null || typeof v[0] !== 'object') ? v[0] : v);
 export function get(obj, path) { let o = obj; for (const k of String(path || '').split('.').filter(Boolean)) { o = val(o); if (!plain(o) || !(k in o)) return undefined; o = o[k]; } return val(o); }

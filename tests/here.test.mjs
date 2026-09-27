@@ -15,7 +15,7 @@ t('1 庄园房间 → eden_estate（中英、带前缀、{{user}}）', () => {
   is('伊甸庄园·主卧', 1, 'eden_estate', { room: '伊甸庄园·主卧' });
   is('{{user}}的书房', 1, 'eden_estate', { word: '书房' });
   is('天城上层 伊甸庄园 3F 主卧室', 1, 'eden_estate', { word: '主卧室' });
-  is('女仆长办公室', 1, 'eden_estate');
+  is('女仆长寝室', 1, 'eden_estate');   // v0.9.7：旧模型自编的「女仆长办公室」已删，按卡名
   is('Eden Manor · Master Bedroom', 1, 'eden_estate', { word: 'Master Bedroom' });
   is('the library', 1, 'eden_estate');
 });
