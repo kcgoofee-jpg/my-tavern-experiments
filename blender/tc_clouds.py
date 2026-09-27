@@ -11,6 +11,7 @@
 #   主太阳照岛、不照云；云用太阳只照云。
 # 伊甸庄园（主角岛）周围一圈云更密、更高、更亮。
 import bpy, bmesh, math, numpy as np
+from mathutils import Vector, Euler
 import tc_common as tc
 from tc_common import W, H, tick
 
@@ -87,6 +88,41 @@ def _puffs(islands, rng, style):
         over = hit & (P[:, 2] + P[:, 3] * P[:, 4] > lim); P[over, 2] = lim - P[over, 3] * P[over, 4]
     return P
 
+def _lip_puffs(islands, rng):
+    """岛缘压边小云：每座岛 1–3 个云瓣（伊甸 6 瓣，含东南岩楔），瓣 = 沿岸线重叠的 3–6 团（团距 .55 R，融成一整块），
+    团心在岸线 .97–1.04 倍处、顶高略高于岛面，外侧再贴 1–2 团往外收；按弧长累计覆盖 12–26 % 周长，优先世界南侧（背光）；
+    避开停靠平台 / 码头方向（码头不被云盖住）。"""
+    out = []
+    for i in islands:
+        e = i['isle']; big = i['id'] == 'eden'
+        ang = np.arange(0, 2 * math.pi, .05); rr_ = np.array([e.r(a) for a in ang]); per = float(np.sum(rr_ * .05))
+        target = per * rng.uniform(.15, .3); n = 6 if big else (1 if per < 1.6 else int(rng.integers(2, 4)))
+        south = e.south(); avoid = [d[3] for d in (e.dock, getattr(e, 'dock_small', None)) if d]
+        angs = []
+        for k in range(80):
+            if len(angs) >= n: break
+            a = south + rng.normal(0, .8 if not big else 1.2)
+            if big and k == 0: a = -math.pi / 2 + .62                                   # 伊甸东南缘露岩的楔形
+            if any(abs(math.remainder(a - b, 2 * math.pi)) < .5 for b in avoid): continue
+            if any(abs(math.remainder(a - b, 2 * math.pi)) < .6 for b in angs): continue
+            angs.append(a)
+        for a in angs:
+            L = target / max(1, len(angs)); rr = e.r(a)
+            R = min(.34 if big else .16, max(.07, L * .4)); nseg = max(3, int(L / (R * .55)) + 1)
+            top0 = e.z + rng.uniform(.012, .03)
+            for j in range(nseg):
+                u = (j - (nseg - 1) / 2) / max(1, (nseg - 1) / 2)                      # -1…1 沿弧
+                b = a + u * (L / 2) / max(rr, .1); rb = e.r(b)
+                off = rng.uniform(.97, 1.04); Rj = R * (1 - .35 * abs(u)) * rng.uniform(.9, 1.1)   # 瓣中间厚、两头收
+                x, y = e.world(math.cos(b) * rb * off, math.sin(b) * rb * off)
+                top = top0 + e.h(math.cos(b) * rb * .97, math.sin(b) * rb * .97) - .01 * abs(u)
+                out.append((x, y, top - Rj * .5, Rj, .5, 1.0))
+                for _ in range(int(rng.integers(1, 3))):                               # 外侧贴一两团，往外收成缓坡
+                    c = b + rng.normal(0, .04); rc = e.r(c) * (1 + Rj * rng.uniform(.6, 1.0) / max(e.r(c), .1)); r2 = Rj * rng.uniform(.7, .9)
+                    xx, yy = e.world(math.cos(c) * rc, math.sin(c) * rc)
+                    out.append((xx, yy, top - .01 - r2 * .5, r2, .5, 1.0))
+    return np.array(out, np.float32)
+
 def _mesh(P, name):
     v0, f0 = _ico(2); n, nv = len(P), len(v0)
     V = (v0[None] * np.stack([P[:, 3], P[:, 3], P[:, 3] * P[:, 4]], 1)[:, None]) + P[:, None, :3]
@@ -126,6 +162,56 @@ def _meta(P, name, res=.09, eden=None):
     me.polygons.foreach_set('use_smooth', np.ones(len(me.polygons), bool))
     return me
 
+SKY = ((.55, .65, .8), .35)   # 与 tiancheng_upper.py 的 world 一致：发光版云按它补「天光」一项
+EMIT_GAIN = 1.0              # 发光版整体增益（草稿 A/B 对齐旧版亮度用）
+
+def _cloud_mat_emit(style, sun, lip=False):
+    """ISLAND_SHADOWS 关时的云：明暗全部烘进自发光，不接收任何灯光与天光 → 岛（及树、楼）对云既不投影、也不遮天光（没有暗晕）。
+    颜色 = 三阶 ramp × tint × [云用太阳直射项 max(n·L, 0) + 天光项 (1 + n_z) / 2 × 只算云自身的 AO]；
+    AO 节点 only_local：只看云自己的几何（团与团之间的缝照样变暗），看不到岛。lip=True：岛缘压边的小云——ramp 上移，不带暗面。"""
+    m = bpy.data.materials.new(f'cloud_{style}_emit' + ('_lip' if lip else '')); m.use_nodes = True; nt = m.node_tree; N, L = nt.nodes, nt.links
+    out = next(n for n in N if n.type == 'OUTPUT_MATERIAL'); N.remove(tc.bsdf_of(m))
+    geo = N.new('ShaderNodeNewGeometry'); nrm = geo.outputs['Normal']
+    ls = -tc.sun_dir()
+    dot = N.new('ShaderNodeVectorMath'); dot.operation = 'DOT_PRODUCT'; dot.inputs[1].default_value = (ls.x, ls.y, ls.z); L.new(nrm, dot.inputs[0])
+    up = N.new('ShaderNodeSeparateXYZ'); L.new(nrm, up.inputs['Vector'])
+    mix = N.new('ShaderNodeMath'); mix.operation = 'MULTIPLY_ADD'; mix.inputs[1].default_value = .6; L.new(dot.outputs['Value'], mix.inputs[0])
+    z4 = N.new('ShaderNodeMath'); z4.operation = 'MULTIPLY'; z4.inputs[1].default_value = .4; L.new(up.outputs['Z'], z4.inputs[0]); L.new(z4.outputs['Value'], mix.inputs[2])
+    fac = mix.outputs['Value']
+    if lip:                                                                          # 压边小云：ramp 输入上移 .3，背光面也落在过渡 / 受光阶
+        lf = N.new('ShaderNodeMath'); lf.operation = 'ADD'; lf.inputs[1].default_value = .3; L.new(fac, lf.inputs[0]); fac = lf.outputs['Value']
+    ramp = N.new('ShaderNodeValToRGB'); cr = ramp.color_ramp; L.new(fac, ramp.inputs['Fac'])
+    shadow, mid, lit = (.46, .52, .64, 1), (.62, .67, .77, 1), (.80, .81, .83, 1)
+    cr.elements[0].color, cr.elements[1].color = shadow, lit
+    if style == 'toon':
+        for pos, c in ((.31, shadow), (.36, mid), (.57, mid), (.62, lit)): e = cr.elements.new(pos); e.color = c
+    else:
+        cr.elements[0].position = .1; cr.elements[1].position = .85; e = cr.elements.new(.45); e.color = mid
+    at = N.new('ShaderNodeAttribute'); at.attribute_name = 'tint'
+    alb = N.new('ShaderNodeMixRGB'); alb.blend_type = 'MULTIPLY'; alb.inputs['Fac'].default_value = 1; L.new(ramp.outputs['Color'], alb.inputs[1]); L.new(at.outputs['Fac'], alb.inputs[2])
+    # 直射：云用太阳（天顶角 CLOUD_ZENITH）照度 / π × cos
+    lc = Vector((0, 0, 1)); lc.rotate(Euler((math.radians(CLOUD_ZENITH), 0, tc.SUN_ROT[2])))
+    ds = N.new('ShaderNodeVectorMath'); ds.operation = 'DOT_PRODUCT'; ds.inputs[1].default_value = tuple(lc); L.new(nrm, ds.inputs[0])
+    dcl = N.new('ShaderNodeClamp'); L.new(ds.outputs['Value'], dcl.inputs['Value'])
+    ao = N.new('ShaderNodeAmbientOcclusion'); ao.only_local = True; ao.inputs['Distance'].default_value = 1.2
+    try: ao.samples = 8
+    except Exception: pass
+    aof = N.new('ShaderNodeMapRange'); aof.inputs['To Min'].default_value = .82; L.new(ao.outputs['AO'], aof.inputs['Value'])   # 直射项：团缝略暗（代替云对云的投影）
+    k_sun = sun.data.energy * .7 / math.pi
+    sd = N.new('ShaderNodeMath'); sd.operation = 'MULTIPLY'; L.new(dcl.outputs['Result'], sd.inputs[0]); L.new(aof.outputs['Result'], sd.inputs[1])
+    sunc = N.new('ShaderNodeMixRGB'); sunc.blend_type = 'MULTIPLY'; sunc.inputs['Fac'].default_value = 1; sunc.inputs[1].default_value = tuple(c * k_sun for c in sun.data.color) + (1,)
+    L.new(sd.outputs['Value'], sunc.inputs[2])
+    # 天光：半球可见度 (1 + n_z) / 2 × 云自身 AO
+    hz = N.new('ShaderNodeMath'); hz.operation = 'MULTIPLY_ADD'; hz.inputs[1].default_value = .5; hz.inputs[2].default_value = .5; L.new(up.outputs['Z'], hz.inputs[0])
+    hs = N.new('ShaderNodeMath'); hs.operation = 'MULTIPLY'; L.new(hz.outputs['Value'], hs.inputs[0]); L.new(ao.outputs['AO'], hs.inputs[1])
+    skyc = N.new('ShaderNodeMixRGB'); skyc.blend_type = 'MULTIPLY'; skyc.inputs['Fac'].default_value = 1; skyc.inputs[1].default_value = tuple(c * SKY[1] * 1.25 for c in SKY[0]) + (1,)
+    L.new(hs.outputs['Value'], skyc.inputs[2])
+    tot = N.new('ShaderNodeMixRGB'); tot.blend_type = 'ADD'; tot.inputs['Fac'].default_value = 1; L.new(sunc.outputs['Color'], tot.inputs[1]); L.new(skyc.outputs['Color'], tot.inputs[2])
+    col = N.new('ShaderNodeMixRGB'); col.blend_type = 'MULTIPLY'; col.inputs['Fac'].default_value = 1; L.new(alb.outputs['Color'], col.inputs[1]); L.new(tot.outputs['Color'], col.inputs[2])
+    em = N.new('ShaderNodeEmission'); em.inputs['Strength'].default_value = EMIT_GAIN; L.new(col.outputs['Color'], em.inputs['Color'])
+    L.new(em.outputs['Emission'], out.inputs['Surface'])
+    return m
+
 def _cloud_mat(style):
     """云的颜色 = 按「主太阳方向」算的明暗（烘进底色：toon 三阶、soft 连续）× 伊甸亮环；
     再由几乎垂直的云用太阳照亮——顶面受光均匀，岛影直接压暗底色，影子干净。云的明暗方向因此与岛上的光一致。"""
@@ -163,6 +249,7 @@ def _cloud_mat(style):
 def build_cloud_sea(layer, islands, sun):
     """在上层场景里建云海。islands：tiancheng_upper.py 的岛列表（x, y, z, rx, ry, rot, id）；sun：主太阳对象。"""
     style = str(layer.opt.get('--clouds', 'toon'))
+    shadows = ISLAND_SHADOWS if layer.opt.get('--island-shadows') is None else str(layer.opt['--island-shadows']) not in ('0', 'False', 'off')   # 验收差分用：--island-shadows 1 临时打开
     for n in ('cloud_floor', 'cloud_wisps'):                # 旧版的两张噪声平面
         o = bpy.data.objects.get(n)
         if o: bpy.data.objects.remove(o, do_unlink=True)
@@ -172,7 +259,14 @@ def build_cloud_sea(layer, islands, sun):
     rng = np.random.default_rng(9107)
     col = bpy.data.collections.new('clouds'); layer.sc.collection.children.link(col)
     P = _puffs(islands, rng, style)
-    cl = bpy.data.objects.new('cloud_sea', (_meta(P, 'cloud_sea', layer.f('--cloud-res', min(.09, max(.035, .09 * 2000 / layer.res))), next((i for i in islands if i['id'] == 'eden'), None)) if layer.opt.get('--cloud-geo', 'meta') == 'meta' else _mesh(P, 'cloud_sea'))); col.objects.link(cl); cl.data.materials.append(_cloud_mat(style))
+    cl = bpy.data.objects.new('cloud_sea', (_meta(P, 'cloud_sea', layer.f('--cloud-res', min(.09, max(.035, .09 * 2000 / layer.res))), next((i for i in islands if i['id'] == 'eden'), None)) if layer.opt.get('--cloud-geo', 'meta') == 'meta' else _mesh(P, 'cloud_sea'))); col.objects.link(cl)
+    cl.data.materials.append(_cloud_mat(style) if shadows else _cloud_mat_emit(style, sun))
+    if not shadows and layer.opt.get('--no-lip') is None:     # 去影后：岛缘补白云压边（盖住岛缘 10–30 % 周长，优先南侧 / 背光侧），岛不读成贴纸
+        LP = _lip_puffs(islands, np.random.default_rng(4411))
+        if len(LP):
+            lip = bpy.data.objects.new('cloud_lip', _meta(LP, 'cloud_lip', layer.f('--lip-res', min(.03, max(.012, .03 * 2000 / layer.res))))); col.objects.link(lip)
+            lip.data.materials.append(_cloud_mat_emit(style, sun, lip=True)); lip.visible_shadow = False
+            tick(f'cloud lip: {len(LP)} puffs')
     # 云缝下面的底云：低 250 m、更暗的灰蓝——云团的影子落进云缝，一眼读出云层的厚度
     bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, -2.6)); base = bpy.context.active_object; base.name = 'cloud_base'
     base.scale = (W * 1.4, H * 1.4, 1)
@@ -192,5 +286,11 @@ def build_cloud_sea(layer, islands, sun):
         cs = bpy.data.lights.new(nm, 'SUN'); cs.energy = sun.data.energy * layer.f('--cloud-light', .7); cs.color = sun.data.color; cs.angle = math.radians(CLOUD_SUN_ANGLE)
         co = bpy.data.objects.new(nm, cs); col.objects.link(co)
         co.rotation_euler = (math.radians(CLOUD_ZENITH), 0, tc.SUN_ROT[2]); co.light_linking.receiver_collection = rcv
-        if nm == 'cloud_sun_base' or not ISLAND_SHADOWS: co.light_linking.blocker_collection = blk   # 只让云团挡光：ISLAND_SHADOWS 关时岛不在云上投影
+        if nm == 'cloud_sun_base' or not shadows: co.light_linking.blocker_collection = blk   # 只让云团挡光：ISLAND_SHADOWS 关时岛不在云上投影
+    if layer.opt.get('--island-ghost'):                      # 验收用：岛（及树、楼、塔）只对相机可见，不参与任何光线（影子、环境光遮挡、反射）→ 与正常版做差分
+        cl_set = set(col.all_objects)
+        for o in layer.sc.objects:
+            if o.type == 'MESH' and o not in cl_set:
+                o.visible_diffuse = o.visible_glossy = o.visible_transmission = o.visible_shadow = o.visible_volume_scatter = False
+        tick('island-ghost: islands camera-only')
     tick(f'cloud sea ({style}): {len(P)} puffs')

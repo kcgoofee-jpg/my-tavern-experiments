@@ -110,11 +110,23 @@ def mats():
         'car': m('bl_car', (.10, .11, .14), .2, metal=.8),
         'airship': m('bl_airship', (.80, .80, .78), .45),                                 # 伊甸访客飞艇（浅色，3 : 1）
         'roof_lead': m('bl_roof_lead', (.40, .42, .45), .5, metal=.3),
+        'marble_d': m('st_marble_d', (.70, .69, .65), .5),                                      # 伊甸岛缘栏杆（压暗）
         'aether': tc.emit_mat('bl_aether', (.45, .9, 1.0), 4.0),                                    # 以太晶簇（自发光青）
         'tree1': m('tr_oak', (.05, .12, .04), .9), 'tree2': m('tr_lime', (.085, .17, .05), .9),
         'tree3': m('tr_bamboo', (.13, .23, .07), .9), 'tree4': m('tr_banyan', (.03, .085, .03), .9),
         'tree5': m('tr_blossom', (.52, .36, .40), .9), 'tree6': m('tr_conifer', (.03, .08, .045), .9),
         'topiary': m('tr_topiary', (.03, .075, .03), .9),
+        'sz_ground': nm('gr_sz_ground', (.17, .20, .12), (.36, .33, .27), 18, .9, .1),       # 苏州园地：苔地与暖色花街铺地各半（B2 第 3 轮）
+        'paving_w': nm('gr_paving_w', (.40, .37, .31), (.48, .44, .37), 220, .85, .08),       # 暖色花街铺地
+        # 岭南（B2 第 3 轮）
+        'ln_ear': m('ln_ear', (.11, .12, .125), .7),                                          # 镬耳墙头（深色压顶）
+        'ln_ridge': m('ln_ridge', (.58, .58, .55), .6),                                       # 屋脊灰塑脊线
+        'ln_tile': m('ln_tile', (.15, .19, .17), .6),                                         # 灰绿瓦（亭、楼阁攒尖）
+        'ln_pave': nm('gr_ln_pave', (.36, .34, .30), (.44, .41, .36), 200, .85, .08),        # 禾坪 / 天井麻石（暖灰，小块）
+        'ln_hepin': nm('gr_ln_hepin', (.27, .26, .23), (.33, .31, .27), 160, .85, .08),       # 禾坪（偏暗，不当停车场读）
+        'ln_lane': nm('gr_ln_lane', (.20, .19, .18), (.26, .25, .23), 200, .85, .08),        # 巷道暗砖
+        'ln_ground': nm('gr_ln_ground', (.07, .13, .05), (.12, .19, .075), 60, .9, .1),     # 园地（苔绿，计入园林覆盖）
+        'ln_timber': m('ln_timber', (.30, .13, .08), .6),                                     # 木构（亭柱、水榭）
     })
     return _M
 
@@ -132,7 +144,7 @@ def top_mat(style):
     ramp.color_ramp.elements[0].position = .35; ramp.color_ramp.elements[1].position = 1.0; L.new(mix.outputs['Value'], ramp.inputs['Fac'])
     nz3 = N.new('ShaderNodeTexNoise'); nz3.inputs['Scale'].default_value = .8; nz3.inputs['Detail'].default_value = 2; L.new(tco.outputs['Object'], nz3.inputs['Vector'])
     lf = N.new('ShaderNodeMapRange'); lf.inputs['From Min'].default_value = .35; lf.inputs['From Max'].default_value = .65
-    lf.inputs['To Min'].default_value = .92; lf.inputs['To Max'].default_value = 1.08; L.new(nz3.outputs['Fac'], lf.inputs['Value'])
+    lf.inputs['To Min'].default_value = .86; lf.inputs['To Max'].default_value = 1.14      # B2 第 3 轮：低频斑块 ±8 % → ±14 %; L.new(nz3.outputs['Fac'], lf.inputs['Value'])
     patch = N.new('ShaderNodeMixRGB'); patch.blend_type = 'MULTIPLY'; patch.inputs['Fac'].default_value = 1
     L.new(ramp.outputs['Color'], patch.inputs['Color1']); L.new(lf.outputs['Result'], patch.inputs['Color2'])
     oi = N.new('ShaderNodeObjectInfo')                                                     # 每座岛：明度 ±15%、色相微偏
@@ -162,14 +174,16 @@ def flush():
     n = sum(sum(p is not None for p in v) for v in TREES.values()); _BAT.clear(); TREES.clear(); ROOFS.clear(); ROOFC.clear(); return n
 
 ROOF_SLATE, ROOF_MANSARD, ROOF_TILE, ROOF_REDTILE = (.20, .21, .23), (.15, .17, .22), (.10, .10, .11), (.34, .16, .11)
+LN_FAMS = ('village', 'ancestral', 'tower', 'boathall', 'rockery', 'twinpond')   # 岭南布局族（est_lingnan / _LnKit）
+ROOF_LN = (.15, .19, .17)                     # 岭南灰绿瓦（苏州是黛黑瓦 ROOF_TILE）
 HUB = None                 # 伊甸中心（世界坐标）：地标岛的停靠平台朝它开；tiancheng_upper.py 设置
 
 # 布局族与主楼平面：同风格普通岛按 id 排序后轮流分配（并排的 6 座不重复）；地标岛另起一轮
 FAMILIES = {
     'english': (('kitchen', 'folly', 'avenue', 'kitchen', 'orchard', 'boathouse', 'kitchen', 'deerpark'), ('L', 'H', 'E', 'court')),
     'chateau': (('axis', 'moat', 'miroir', 'tcanal', 'hunt'), ('U', 'block', 'range')),
-    'suzhou': (('bay', 'islet', 'twin'), ('two', 'three')),
-    'lingnan': (('front', 'side', 'court'), ('3x3', '3x2', '2x3')),
+    'suzhou': (('bay', 'islet', 'twin', 'court', 'hill', 'bay'), ('two', 'three', 'two', 'three', 'two', 'three')),
+    'lingnan': (LN_FAMS, ('c1x2', 'c2x2', 'c0', 'c0', 'c0', 'c2x1')),
 }
 def assign_families(isles):
     """给数据里没写 layout / plan 的岛按 id 轮流分配（就地修改 dict）。"""
@@ -205,6 +219,7 @@ class Isle:
         if self.style in ('suzhou', 'lingnan', 'chateau'): self.flats.append((0.0, 0.0, .8 * self.rx * self.ex, .8 * self.ry * self.ey))
         if self.style == 'neoclassical': self.flats.append((0.0, .1, .9 * self.rx, .9 * self.ry))
         self.plat, self.terrace_spans, self.dock, self.lake = None, [], None, None
+        self.main, self.dock_small = (0.0, 0.0), None                                       # 主楼位置（锚点、码头小路用）、普通岛的小码头
         self.fp, self.bldg, self.crowns, self.wl, self._tix = [], [], [], 0, []                            # 占地记录（inside 校验）、建筑外包、树冠、白名单深度
         self.noise = [(float(R.uniform(2, 6)) / max(self.F, .25), float(R.uniform(0, math.pi)), float(R.uniform(0, 6.3)), float(R.uniform(.4, 1))) for _ in range(4)]
         self._rim_segments(); self._cov_init()
@@ -373,9 +388,9 @@ class Isle:
         z0 = min(self.Z(lx + dx, ly + dy) for dx in (-w / 2, w / 2) for dy in (-d / 2, d / 2))
         X, Y = self.world(lx, ly); B(key).box(X, Y, z0 - .01, w, d, h + .01, self.rot + a); self._rec(key, rect_pts(lx, ly, w, d, a), max(h, .01))
         self.roof(lx, ly, w * 1.04, d * 1.1, z0 + h, ridge if ridge is not None else d * .38, a, col); self.claim_rect(lx, ly, w, d, a); return z0
-    def ear(self, lx, ly, span, t, zb, hgt, a):
+    def ear(self, lx, ly, span, t, zb, hgt, a, key='greybrick'):
         """岭南镬耳山墙：一片竖立的弧形墙头（本地 a 方向为墙厚，span 沿进深），高出屋脊。"""
-        bm = B('greybrick').bm; ca, sa = math.cos(self.rot + a), math.sin(self.rot + a); X0, Y0 = self.world(lx, ly)
+        bm = B(key).bm; ca, sa = math.cos(self.rot + a), math.sin(self.rot + a); X0, Y0 = self.world(lx, ly)
         prof = [(-span / 2, zb - .006)] + [(span / 2 * math.cos(u), zb + hgt * (.25 + .75 * math.sin(u))) for u in np.linspace(math.pi, 0, 9)] + [(span / 2, zb - .006)]
         faces = []
         for off in (-t / 2, t / 2):
@@ -421,11 +436,14 @@ class Isle:
             for dy in (-1, 1): X, Y = self.world(*Q(dx * cw * .42, dy * ch * .42)); TREES.setdefault('topiary', []).append((X, Y, self.Z(qx, qy) + .006, .006)); self.crowns.append((.006, 'topiary'))
     def bosquet(self, cx, cy, bw, bh, a, sp=.085, kind='tree2'):
         """法式丛林块：方块内规则种树（边上一圈绿篱）。"""
-        c, s = math.cos(a), math.sin(a); nx_, ny_ = max(1, int(bw / sp)), max(1, int(bh / sp)); n = 0
+        # B2 第 3 轮：去点阵——块尺寸 0.7–1.0 倍、树位抖动 ±35 % 间距、按块内噪声抽稀 10–30 %
+        R = self.R; c, s = math.cos(a), math.sin(a); f = float(R.uniform(.7, 1.0)); bw, bh = bw * f, bh * f
+        nx_, ny_ = max(1, int(bw / sp)), max(1, int(bh / sp)); n = 0; thin = float(R.uniform(.1, .3)); ph = float(R.uniform(0, TAU))
         for i in range(nx_):
             for j in range(ny_):
-                dx, dy = (i - (nx_ - 1) / 2) * sp, (j - (ny_ - 1) / 2) * sp; px, py = cx + dx * c - dy * s, cy + dx * s + dy * c
-                if self.inside(px, py, .9) and self.plant(px, py, float(self.R.uniform(.045, .055)), kind, .92, .3): n += 1
+                if (math.sin(i * 1.7 + j * 2.3 + ph) * .5 + .5) * R.random() < thin * .6: continue
+                dx, dy = (i - (nx_ - 1) / 2 + R.uniform(-.35, .35)) * sp, (j - (ny_ - 1) / 2 + R.uniform(-.35, .35)) * sp; px, py = cx + dx * c - dy * s, cy + dx * s + dy * c
+                if self.inside(px, py, .9) and self.plant(px, py, float(R.uniform(.042, .06)), kind if R.random() < .85 else 'tree6', .92, .3): n += 1
         return n
     def make_dock(self, rad, toward=None, th0=None):
         """岸外停靠平台：一半伸出岸线的圆台 + 金环；航线端点取它的中心（在岛外）。"""
@@ -444,10 +462,18 @@ class Isle:
         self.wl -= 1
         self.claim(cx, cy, rad + .02); self.claim(math.cos(th) * rr * .9, math.sin(th) * rr * .9, .04)
         self.dock = (cx, cy, rad, th); return cx, cy
+    def _under_crown(self, px, py, m=.01):
+        return any(TREES[k][i] is not None and math.hypot(px - x, py - y) < r + m for k, i, x, y, r, _ in self._tix)
     def anchor(self):
-        """标记锚点（本地）：离岸 0.8 倍半径、优先正南、不在任何建筑外包与水面上。"""
-        if self.dock: return self.dock[:2]
-        th0 = self.south()
+        """标记锚点（本地）。伊甸 = 停靠平台；其余 = 主楼旁的实地（B2 第 3 轮：不落在树冠、水面、建筑外包上，优先主楼南侧 6–30 m）。"""
+        if self.id == 'eden' and self.dock: return self.dock[:2]
+        mx, my = self.main; th0 = self.south()
+        ok = lambda px, py: (self.inside(px, py, .85) and not self.in_bldg(px, py, .02) and not self._under_crown(px, py)
+                             and not any(((px - a) / A) ** 2 + ((py - b) / Bb) ** 2 < 1.1 for a, b, A, Bb, _ in self.water))
+        for d in (.06, .09, .12, .16, .2, .25, .3):
+            for k in range(24):
+                th = th0 + (k + 1) // 2 * .26 * (1 if k % 2 else -1); px, py = mx + math.cos(th) * d, my + math.sin(th) * d
+                if ok(px, py): return px, py
         for k in range(48):
             th = th0 + (k + 1) // 2 * .13 * (1 if k % 2 else -1)
             for f in (.8, .74, .86, .68):
@@ -479,9 +505,9 @@ class Isle:
             a = R.uniform(0, TAU); s = R.uniform(.35, .6) if self.style != 'suzhou' else R.uniform(.0, .15)
             cx, cy = math.cos(a) * s * self.r(a), math.sin(a) * s * self.r(a)
             A, Bb = R.uniform(.22, .32) * self.F, R.uniform(.13, .2) * self.F
-            if self.style != 'suzhou': self.spots.append(('dip', cx, cy, max(A, Bb) * 1.05, .012))   # 苏州：池由 est_suzhou 画在压平的园心，不下凹
+            if self.style not in ('suzhou', 'lingnan'): self.spots.append(('dip', cx, cy, max(A, Bb) * 1.05, .012))   # 苏州：池由 est_suzhou 画在压平的园心，不下凹
             self.lake = (cx, cy, A, Bb, float(R.uniform(0, math.pi)))
-            if self.style != 'suzhou': self.water.append(self.lake)                           # 苏州：湖就是园池，由 est_suzhou 画
+            if self.style not in ('suzhou', 'lingnan'): self.water.append(self.lake)                # 岭南：lake 地形 = 园池放大 1.3 倍（est_lingnan）                           # 苏州：湖就是园池，由 est_suzhou 画
         # 岛面：极坐标网格（环 × 角），顶点高度 = 地形；坡陡处材质自动露岩
         NA = int(min(320, max(96, 110 * max(self.rx, self.ry)))); NR = int(min(40, max(10, 14 * max(self.rx, self.ry))))
         ths = np.linspace(0, TAU, NA, endpoint=False); rs = np.array([self.r(t) for t in ths])
@@ -546,10 +572,14 @@ class Isle:
                 pts = [(math.cos(a) * .975 * self.r(a), math.sin(a) * .975 * self.r(a)) for a in np.linspace(t0, t1, max(3, int(90 * M * frac)))]
                 self.wall_line('stone', pts, .008, .012)
                 for i in range(0, len(pts), 4): self.box('stone', pts[i][0], pts[i][1], .014, .014, .018)
-            elif kind == 'hedge':                                                           # 林带：岸线内成团的大树
+            elif kind == 'hedge':                                                           # 林带：岸线内成团的大树；按角度分段约 60 % 有树（留视线缺口），带宽用噪声在 0.3–1.5 倍间变
+                p1, p2, k1, k2 = float(R.uniform(0, TAU)), float(R.uniform(0, TAU)), int(R.integers(3, 6)), int(R.integers(7, 11))
                 for a in np.linspace(t0, t1, max(2, int(34 * M * frac * TAU / 2)), endpoint=False):
-                    for _ in range(int(R.integers(1, 4))):
-                        b = a + R.normal(0, .03); rt = float(R.uniform(.04, .07)) * (1.15 if self.style == 'lingnan' else 1); s = min(R.uniform(.84, .94), 1 - .8 * rt / self.r(b))
+                    g = math.sin(k1 * a + p1) + .6 * math.sin(k2 * a + p2)
+                    if g < -.3: continue
+                    bw = .3 + 1.2 * min(1.0, (g + .3) / 1.6)
+                    for _ in range(max(1, int(round(R.integers(1, 4) * bw)))):
+                        b = a + R.normal(0, .03); rt = float(R.uniform(.04, .07)) * (1.15 if self.style == 'lingnan' else 1); s = min(R.uniform(.93 - .09 * bw, .95), 1 - .8 * rt / self.r(b))
                         if s > .6: self.tree(math.cos(b) * s * self.r(b), math.sin(b) * s * self.r(b), rt, 'tree6' if R.random() < .4 else 'tree1')
             elif kind == 'roots':                                                           # 垂根：岸线外挂成团的深色藤根
                 for a in np.linspace(t0, t1, max(2, int(45 * M * frac * TAU / 2)), endpoint=False):
@@ -568,10 +598,44 @@ class Isle:
     def build_estate(self):
         role = self.d.get('role')
         if role:                                                                            # 有名有主的府邸：专门的主楼 + 按风格的完整园子
-            lx, ly, a, L, g0 = getattr(self, 'role_' + role)()
+            lx, ly, a, L, g0 = getattr(self, 'role_' + role)(); self.main = (lx, ly)
             getattr(self, 'garden_' + self.style)(lx, ly, a, L, g0)
         else: getattr(self, 'est_' + self.style)()
+        if self.dock is None: self.small_dock()
         self.fill_trees()
+
+    def small_dock(self):
+        """普通岛的小码头（B2 第 3 轮）：岸边一座伸出岸线的石埠 / 台阶码头（约 .05·F 宽），一条小路通到主楼或园门（碰到园墙、建筑就停）。
+        苏州 = 临水石埠（白石）、岭南 = 村口埠头（麻石）、英式 / 法式 = 台阶码头（石 + 三道台阶线）。朝伊甸方向优先。"""
+        th0 = (math.atan2(HUB[1] - self.y, HUB[0] - self.x) - self.rot) if HUB else self.south()
+        pick = None
+        for dt in (0, .25, -.25, .5, -.5, .8, -.8, 1.1, -1.1, 1.5, -1.5, 2.0, -2.0, 2.6, -2.6, 3.1):
+            th = th0 + dt; rr = self.r(th)
+            if all(not self.in_bldg(math.cos(th) * rr * f, math.sin(th) * rr * f, .02) and not self._in_polys(math.cos(th) * rr * f, math.sin(th) * rr * f)
+                   and not any(((math.cos(th) * rr * f - a) / A) ** 2 + ((math.sin(th) * rr * f - b) / Bb) ** 2 < 1 for a, b, A, Bb, _ in self.water) for f in (.8, .9, .97)):
+                pick = th; break
+        if pick is None: return
+        th = pick; rr = self.r(th); F = max(self.F, .25); w, L = .03 + .02 * F, .035 + .03 * F
+        key = {'suzhou': 'marble', 'lingnan': 'ln_pave'}.get(self.style, 'stone')
+        cx, cy = math.cos(th) * (rr + L * .25), math.sin(th) * (rr + L * .25); ang = th
+        zs = self.Z(math.cos(th) * rr * .95, math.sin(th) * rr * .95)
+        self.wl += 1
+        self.box(key, cx, cy, L, w, .008, ang, dz=zs - self.Z(cx, cy) - .004)
+        if self.style in ('english', 'chateau'):
+            for k in range(3): self.box('dark', cx + math.cos(ang) * (L * .5 - .004 - k * .007), cy + math.sin(ang) * (L * .5 - .004 - k * .007), .0015, w * .9, .001, ang, dz=zs - self.Z(cx, cy) + .004)
+        for k in (-1, 1): self.cyl('dark', cx + math.cos(ang) * L * .45 - math.sin(ang) * w * .45 * k, cy + math.sin(ang) * L * .45 + math.cos(ang) * w * .45 * k, .003, .014, 6, dz=zs - self.Z(cx, cy))   # 系缆桩
+        self.wl -= 1
+        self.claim(cx, cy, max(w, L) * .6)
+        pts = []; mx, my = self.main
+        x0, y0 = math.cos(th) * rr * .84, math.sin(th) * rr * .84
+        for t in np.linspace(0, 1, 24):
+            px, py = x0 + (mx - x0) * t, y0 + (my - y0) * t
+            if t > 0 and (not self.inside(px, py, .78) or self.in_bldg(px, py, .01) or self._in_polys(px, py) or any(((px - a) / A) ** 2 + ((py - b) / Bb) ** 2 < 1 for a, b, A, Bb, _ in self.water)): break
+            pts.append((px, py))
+        if len(pts) > 2:
+            self.wall_line('path' if self.style != 'lingnan' else 'ln_pave', pts, .01, .0018)
+            for q in pts[1::2]: self.claim(q[0], q[1], .012)
+        self.dock_small = (cx, cy, max(w, L), th)
 
     def _frame(self, rr, front=None):
         """地标主楼的位置与朝向（不再整圈占地：各部件自己 claim）。front：正面（-v）朝向本地角度。"""
@@ -726,10 +790,10 @@ class Isle:
         英式 = 外圈林带偏置 + 3–6 个大树团 + 少量孤植；法式只在岛缘林带（园内是方块丛林）；苏州 / 岭南只在园外；伊甸另排。"""
         R = self.R; st = self.style
         if st == 'neoclassical': return
-        dens = {'english': 95, 'chateau': 30, 'suzhou': 40, 'lingnan': 50, 'fortress': 8}[st]   # 每平方单位（1 万 m²）的树数
+        dens = {'english': 95, 'chateau': 30, 'suzhou': 40, 'lingnan': 110, 'fortress': 8}[st]   # 每平方单位（1 万 m²）的树数
         n = int(dens * math.pi * self.rx * self.ry)
         kinds = {'english': ('tree1', 'tree1', 'tree2', 'tree6'), 'chateau': ('tree2', 'tree2', 'tree6'), 'suzhou': ('tree3', 'tree3', 'tree2', 'tree6'),
-                 'lingnan': ('tree4', 'tree4', 'tree1', 'tree3'), 'fortress': ('tree6',)}[st]
+                 'lingnan': ('tree1', 'tree2', 'tree1', 'tree4', 'tree3'), 'fortress': ('tree6',)}[st]   # 岭南：荔枝、龙眼成团，少量榕树、竹
         sig = .05 * min(1.0, max(self.F, .4) / .6)
         if st == 'english':                                                                 # 布朗式：3–6 个大树团
             for _ in range(int(R.integers(3, 7))):
@@ -744,11 +808,12 @@ class Isle:
                     if i % 4 == 3 or j % 4 == 3: continue
                     dx, dy = i * sp, j * sp; px, py = lx0 + dx * c - dy * s, ly0 + dx * s + dy * c
                     if not self.inside(px, py, .9): continue
-                    if not self.plant(px, py, float(R.uniform(.045, .052)), 'tree2' if (i // 4 + j // 4) % 3 else 'tree6', .93, .45) and self.inside(px, py, .86) and self.free(px, py, .02, .92):
+                    if not self.plant(px, py, float(R.uniform(.045, .052)), 'tree2' if (i // 4 + j // 4) % 3 else 'tree6', .93, .45) and all(self.inside(qx, qy, .9) for qx, qy in rect_pts(px, py, sp * .9, sp * .9, a0)) and self.free(px, py, .02, .92):
                         self.box('hedge', px, py, sp * .9, sp * .9, .012, a0); self.claim(px, py, .03)   # 放不下大树处：修剪的鹅耳枥方块（palissade）
         k = 0
         while k < n:
             a = R.uniform(0, TAU)
+            if st == 'chateau' and self.F < .35: break                                     # 小法式岛：不撒外圈树（不再是一圈甜甜圈树环），园外只留规则丛林块
             if st == 'chateau': d = R.uniform(.87, .95)
             elif st == 'english' and R.random() < .6: d = .75 + .2 * R.random()
             else: d = math.sqrt(R.random()) * .93
@@ -756,12 +821,12 @@ class Isle:
             m = int(R.integers(3, 8)) if st in ('english', 'lingnan', 'chateau') else int(R.integers(1, 4))
             for _ in range(m):
                 r = float(R.uniform(.045, .09)) * (1.4 if st == 'lingnan' and R.random() < .3 else 1)
-                self.plant(lx + R.normal(0, sig), ly + R.normal(0, sig), r, kinds[int(R.integers(len(kinds)))], .97, 1.0 if st in ('suzhou', 'lingnan') else .6, pull=True)
+                self.plant(lx + R.normal(0, sig), ly + R.normal(0, sig), r, kinds[int(R.integers(len(kinds)))], .97, 1.0 if st == 'suzhou' else .6, pull=True)
             k += m
 
     # ================= 英国乡村庄园 =================
     def est_english(self):
-        lx, ly, a, L = self.main_english(); self.garden_english(lx, ly, a, L)
+        lx, ly, a, L = self.main_english(); self.main = (lx, ly); self.garden_english(lx, ly, a, L)
     def main_english(self):
         """蜂蜜色石头主楼（L / H / E / 回字平面，石板瓦坡顶）；正面（-v）朝向岛上最开阔的一侧（隔着草坡看湖）。"""
         R = self.R; F = max(self.F, .3); col = ROOF_SLATE
@@ -891,7 +956,7 @@ class Isle:
 
     # ================= 法国城堡与规整园 =================
     def est_chateau(self):
-        lx, ly, a, L = self.main_chateau(); self.garden_chateau(lx, ly, a, L)
+        lx, ly, a, L = self.main_chateau(); self.main = (lx, ly); self.garden_chateau(lx, ly, a, L)
     def main_chateau(self):
         """主楼三种平面：U 形（主体 + 两翼 + 角楼）/ 方楼（四角亭 + 中央穹顶）/ 长楼（中央凸出楼 + 端亭）；深灰蓝孟莎顶。
         正面（-v）是砾石荣誉庭院，园林立面（+v）朝岛上最长的方向。"""
@@ -1042,14 +1107,23 @@ class Isle:
         九曲桥 + 平板石桥；三面以上连续的廊；2–3 道带洞门缺口的分院墙；地面是花街铺地，不是草坪。"""
         R = self.R; F = max(self.F, .3); col = ROOF_TILE; fam = self.layout or 'bay'
         ph0 = float(R.uniform(0, TAU))
-        G = [(math.cos(t) * .84 * self.r(t) * (1 + .02 * math.sin(6 * t + ph0)), math.sin(t) * .84 * self.r(t) * (1 + .02 * math.sin(6 * t + ph0))) for t in np.linspace(0, TAU, 56, endpoint=False)]
+        # B2 第 3 轮去模板：court / hill 两族做「偏置园」——园墙只围岛的 ~2/3，偏向一侧，园外留竹林、草坡
+        gk, go = (.84, (0.0, 0.0))
+        if fam in ('court', 'hill'):
+            gph = float(R.uniform(0, TAU))
+            for gk in (.66, .62, .58, .54):
+                go = (math.cos(gph) * .14 * self.r(gph), math.sin(gph) * .14 * self.r(gph))
+                if all(self.inside(go[0] + math.cos(t) * gk * self.r(t), go[1] + math.sin(t) * gk * self.r(t), .86) for t in np.linspace(0, TAU, 48, endpoint=False)): break
+        G = [(go[0] + math.cos(t) * gk * self.r(t) * (1 + .02 * math.sin(6 * t + ph0)), go[1] + math.sin(t) * gk * self.r(t) * (1 + .02 * math.sin(6 * t + ph0))) for t in np.linspace(0, TAU, 56, endpoint=False)]
         Ag = poly_area(G); Rg = math.sqrt(Ag / math.pi); sc = min(1.0, Rg / .5)
         self.prune_trees(G, .45)
-        self.patch('paving', G, dz=.0012)
+        self.patch('sz_ground', G, dz=.0012)                                                # 花街铺地与苔地各半（不再满铺灰）
         self.wall_line('whitewall', G, .008, .008, closed=True); self.tile_line(G, .004, .008, closed=True)   # 白墙露边：墙厚 .008、瓦带 .004
         # 池：绕池心的极坐标多边形，按面积迭代到园的 ~37 %
-        tn = self.south() + math.pi
-        pc = (self.lake[0], self.lake[1]) if self.lake else (math.cos(tn) * .06 * Rg, math.sin(tn) * .06 * Rg)
+        gcx, gcy = sum(p[0] for p in G) / len(G), sum(p[1] for p in G) / len(G)
+        po = float(R.uniform(0, TAU)); pd_ = float(R.uniform(.1, .3)) * Rg                    # 池心偏离园心 .1–.3 Rg，方向随种子
+        pc = (gcx + math.cos(po) * pd_, gcy + math.sin(po) * pd_)
+        pr_t = float(R.uniform(.25, .40)) * (.75 if fam in ('court', 'hill') else 1)         # 池占园 .25–.40（分院 / 大假山族再少一些，给院子和山让地）
         h1, h2 = float(R.uniform(0, TAU)), float(R.uniform(0, TAU)); inl = [float(R.uniform(0, TAU)) for _ in range(2)]
         ths = np.linspace(0, TAU, 72, endpoint=False); bd = [ray_dist(pc[0], pc[1], t, G) for t in ths]
         def pool(k):
@@ -1061,35 +1135,44 @@ class Isle:
                 f = min(f, .8); out.append((pc[0] + math.cos(t) * b * f, pc[1] + math.sin(t) * b * f))
             return out
         k = .6
-        for _ in range(6): Pp = pool(k); k *= math.sqrt(.37 / max(.05, poly_area(Pp) / Ag))
+        for _ in range(6): Pp = pool(k); k *= math.sqrt(pr_t / max(.05, poly_area(Pp) / Ag))
         Pp = pool(k); self.patch('water', Pp, dz=.003); self.pool_ratio = poly_area(Pp) / Ag
         pr = lambda t: ray_dist(pc[0], pc[1], t, Pp)
         occ = []                                                                            # 园内占地（本函数自己的避让）
         def ok(x, y, rr): return pip(x, y, G) and not pip(x, y, Pp) and all(math.hypot(x - a_, y - b_) > rr + c_ for a_, b_, c_ in occ)
         if fam == 'islet':                                                                  # 池中小岛 + 亭
-            ix, iy = pc[0] + math.cos(h2) * pr(h2) * .35, pc[1] + math.sin(h2) * pr(h2) * .35; ri = .035 * sc + .012
+            ix, iy = pc[0] + math.cos(h2) * pr(h2) * .3, pc[1] + math.sin(h2) * pr(h2) * .3; ri = math.sqrt(.15 * poly_area(Pp) / math.pi)   # 池中岛 ≈ 池面 15 %
             self.disc('paving', ix, iy, ri, ri * .8, h1, dz=.0035, seg=20); self.cyl('whitewall', ix, iy, .01 * sc + .004, .01, 6, dz=.003); self.cyl('dark', ix, iy, .015 * sc + .005, .01, 6, dz=.013, r2=.002)
             self.tree(ix + ri * .5, iy, .04, 'tree2')
         # 主厅：池南，面阔约 15 m，朝北临池；屋脊一条浅灰脊线
-        ts = self.south(); hw = min(.15, .5 * Rg); hd = hw * .4; dist = pr(ts) + hd / 2 + .012
+        ts = self.south() + float(R.uniform(-1.1, 1.1)); hw = min(.15, .5 * Rg); hd = hw * .4; dist = pr(ts) + hd / 2 + .012   # 厅的朝向随岛变（不再都坐南朝北）
         room = ray_dist(pc[0], pc[1], ts, G)
         if dist + hd / 2 + .01 > room: hw *= .7; hd = hw * .4; dist = min(dist, room - hd / 2 - .012)
         hx, hy = pc[0] + math.cos(ts) * dist, pc[1] + math.sin(ts) * dist
+        for _ in range(8):                                                                  # 主厅整栋在 inside(.9) 里：不过就往池心收、缩小
+            if self._fits([(hx, hy, hw, hd, ts + math.pi / 2)], .9): break
+            hw *= .9; hd = hw * .4; dist -= .01; hx, hy = pc[0] + math.cos(ts) * dist, pc[1] + math.sin(ts) * dist
         z0 = self.house('whitewall', hx, hy, hw, hd, .014, ts + math.pi / 2, col, ridge=.01); self.box('stone', hx, hy, hw * .95, .0025, .002, ts + math.pi / 2, dz=z0 - self.Z(hx, hy) + .0235)
         self.box('paving', hx - math.cos(ts) * (hd / 2 + .008), hy - math.sin(ts) * (hd / 2 + .008), hw * .8, .012, .003, ts + math.pi / 2)   # 临池平台
-        occ.append((hx, hy, hw * .55))
+        occ.append((hx, hy, hw * .55)); self.main = (hx, hy)
         # 假山：池北岸一大团 + 1–2 小团（密集石堆，约 8 × 12 m）
         tn = ts + math.pi
+        hill = fam == 'hill'
         for kk, t in enumerate([tn] + [tn + R.uniform(1.2, 2.2) * R.choice([-1, 1]) for _ in range(int(R.integers(1, 3)))]):
-            d = pr(t) + .025 * sc; cx, cy = pc[0] + math.cos(t) * d, pc[1] + math.sin(t) * d; A, Bb = (.06 if kk == 0 else .035) * sc + .01, (.04 if kk == 0 else .025) * sc + .008
-            for _ in range(int((40 if kk == 0 else 18) * max(sc, .4))):
+            m_ = 2.2 if (hill and kk == 0) else 1.0                                            # hill 族：北岸一座大假山（约占园 12 %）+ 山顶亭
+            d = pr(t) + .025 * sc * m_; cx, cy = pc[0] + math.cos(t) * d, pc[1] + math.sin(t) * d; A, Bb = ((.06 if kk == 0 else .035) * sc + .01) * m_, ((.04 if kk == 0 else .025) * sc + .008) * m_
+            if hill and kk == 0:
+                while not pip(cx, cy, G) and d > pr(t): d -= .01; cx, cy = pc[0] + math.cos(t) * d, pc[1] + math.sin(t) * d
+            for _ in range(int((40 if kk == 0 else 18) * max(sc, .4) * m_ * m_)):
                 u, v = R.normal(0, .45), R.normal(0, .45); px, py = cx + (u * A * math.cos(t + math.pi / 2) - v * Bb * math.sin(t + math.pi / 2)), cy + (u * A * math.sin(t + math.pi / 2) + v * Bb * math.cos(t + math.pi / 2))
                 if pip(px, py, G): X, Y = self.world(px, py); B('rockery', True).ico(X, Y, self.Z(px, py), float(R.uniform(.007, .016)) * max(sc, .5), sz=1.8)
             self.disc('rockery', cx, cy, A * .8, Bb * .8, t + math.pi / 2, dz=.0025, seg=20)
+            if hill and kk == 0: self.cyl('whitewall', cx, cy, .01, .012, 6, dz=.02); self.cyl('dark', cx, cy, .018, .012, 6, dz=.032, r2=.002)   # 山顶亭
             occ.append((cx, cy, max(A, Bb)))
         # 其它厅、轩、亭、舫：绕池
-        for j in range(int(R.integers(3, 7))):
-            t = ts + (j + 1) * TAU / 7 + R.uniform(-.2, .2)
+        nb_ = int(R.integers(5, 9))
+        for j in range(nb_):
+            t = ts + (j + 1) * TAU / (nb_ + 1) + R.uniform(-.2, .2)
             if abs(math.remainder(t - tn, TAU)) < .45: continue
             p1, b = pr(t), ray_dist(pc[0], pc[1], t, G); kind = ('ting', 'xuan', 'ting', 'fang')[j % 4]
             if kind == 'ting':                                                               # 六角亭：半伸进池
@@ -1099,7 +1182,7 @@ class Isle:
                 w = (.07 if kind == 'xuan' else .05) * max(sc, .5) + .02; dd = .03 * max(sc, .5) + .01; d = p1 + dd / 2 + .01 if kind == 'xuan' else p1 - dd * .2
                 if d + dd / 2 > b - .02: continue
                 x, y = pc[0] + math.cos(t) * d, pc[1] + math.sin(t) * d
-                if not all(math.hypot(x - a_, y - b_) > w * .55 + c_ for a_, b_, c_ in occ): continue
+                if not all(math.hypot(x - a_, y - b_) > w * .55 + c_ for a_, b_, c_ in occ) or not self._fits([(x, y, w, dd, t + math.pi / 2)], .9): continue
                 if kind == 'fang': self.box('stone', x, y, w, dd, .006, t + math.pi / 2); self.roof(x, y, w * .7, dd * .9, self.Z(x, y) + .012, .006, t + math.pi / 2, col)   # 石舫
                 else: z0 = self.house('whitewall', x, y, w, dd, .012, t + math.pi / 2, col, ridge=.008); self.box('stone', x, y, w * .95, .002, .002, t + math.pi / 2, dz=z0 - self.Z(x, y) + .0195)
                 occ.append((x, y, w * .55))
@@ -1108,7 +1191,7 @@ class Isle:
         if R.random() < .5: s0, ln = runs[0]; runs = [(s0, ln // 2 - 2), ((s0 + ln // 2 + 2) % nG, ln // 2)]
         for s0, ln in runs:
             pts = [Gi[(s0 + i) % nG] for i in range(ln)]
-            self.tile_line(pts, .02, .01, ht=.006)
+            self.tile_line(pts, .03, .01, ht=.006)
             for q in (pts[0], pts[-1]): self.cyl('whitewall', q[0], q[1], .008, .012, 6); self.cyl('dark', q[0], q[1], .014, .01, 6, dz=.012, r2=.002)
             for x, y in pts[::3]: self._mark_circle(x, y, .012)
         # 分院墙：从园墙拉向池岸，中间一道洞门缺口
@@ -1120,8 +1203,21 @@ class Isle:
             for seg in ((a0, m1), (m2, e)):
                 if any(math.hypot((seg[0][0] + seg[1][0]) / 2 - a_, (seg[0][1] + seg[1][1]) / 2 - b_) < c_ for a_, b_, c_ in occ): continue
                 self.wall_line('whitewall', list(seg), .008, .008); self.tile_line(list(seg), .004, .008)
+        if fam == 'twin':                                                                   # 两池之间（腰部）一道水廊：石台 + 黛瓦廊顶
+            tw = h1 + math.pi / 2; d1, d2 = pr(tw + math.pi), pr(tw)
+            while d1 > .02 and not self.inside(pc[0] - math.cos(tw) * d1, pc[1] - math.sin(tw) * d1, .86): d1 -= .005
+            while d2 > .02 and not self.inside(pc[0] + math.cos(tw) * d2, pc[1] + math.sin(tw) * d2, .86): d2 -= .005
+            a_w = (pc[0] - math.cos(tw) * d1, pc[1] - math.sin(tw) * d1); b_w = (pc[0] + math.cos(tw) * d2, pc[1] + math.sin(tw) * d2)
+            self.wall_line('stone', [a_w, b_w], .02, .005, dz=.002); self.tile_line([a_w, b_w], .03, .014, ht=.006)
+        if fam == 'court':                                                                  # 分院：池对面一座无池的小院（白墙围合 + 小厅 + 铺地 + 一株树）
+            tc_ = po + math.pi; bd_ = ray_dist(gcx, gcy, tc_, G); cx, cy = gcx + math.cos(tc_) * bd_ * .6, gcy + math.sin(tc_) * bd_ * .6; w_ = min(.14, bd_ * .55)
+            if pip(cx, cy, G) and not pip(cx, cy, Pp):
+                cp = rect_pts(cx, cy, w_, w_ * .8, tc_); self.box('paving_w', cx, cy, w_, w_ * .8, .0024, tc_)
+                self.wall_line('whitewall', cp, .008, .012, closed=True); self.tile_line(cp, .004, .012, closed=True)
+                self.house('whitewall', cx + math.cos(tc_) * w_ * .25, cy + math.sin(tc_) * w_ * .25, w_ * .7, w_ * .25, .014, tc_ + math.pi / 2, col, ridge=.008)
+                self.tree(cx - math.cos(tc_) * w_ * .15, cy - math.sin(tc_) * w_ * .15, .045, 'tree2'); occ.append((cx, cy, w_ * .7))
         # 九曲桥（石色，每段交替转 ±45°，长约池宽 60 %）+ 平板石桥（水口上）
-        tb = ts + math.pi / 2 + R.uniform(-.4, .4); nd = tb + math.pi / 2; wid = pr(tb) + pr(tb + math.pi)
+        tb = ts + math.pi / 2 + R.uniform(-.9, .9); nd = tb + math.pi / 2; wid = pr(tb) + pr(tb + math.pi)
         mx, my, h1_, h2_ = pc[0], pc[1], pr(tb) * .3, pr(tb + math.pi) * .3
         for o in np.linspace(0, .85, 18):
             mx, my = pc[0] + math.cos(nd) * pr(nd) * o, pc[1] + math.sin(nd) * pr(nd) * o
@@ -1141,9 +1237,9 @@ class Isle:
         for _ in range(int(R.integers(4, 8)) * 3):
             if len(beds) >= 7: break
             t = R.uniform(0, TAU); p1, b = pr(t), ray_dist(pc[0], pc[1], t, G)
-            if b - p1 < .07: continue
+            if b - p1 < .045: continue
             d = (p1 + b) / 2; x, y = pc[0] + math.cos(t) * d, pc[1] + math.sin(t) * d; A = min(.05 * max(sc, .5) + .02, (b - p1) * .4); Bb = A * R.uniform(.55, .85)
-            if not ok(x, y, A) or self.in_bldg(x, y, A * .8): continue
+            if not ok(x, y, A) or self.in_bldg(x, y, A * .8) or not all(self.inside(px_, py_, .9) for px_, py_ in ell_pts(x, y, A, Bb, t + math.pi / 2, 12)): continue
             self.disc('hedge', x, y, A, Bb, t + math.pi / 2, dz=.0025, seg=18); beds.append((x, y, A)); occ.append((x, y, A * .6))
             for _ in range(int(R.integers(1, 3))): self.tree(x + R.normal(0, A * .3), y + R.normal(0, Bb * .3), float(R.uniform(.04, .05)), 'tree2' if R.random() < .5 else 'tree3')
         # 园内花木：以竹、常绿为主；1–2 株大乔木（白皮松）点景；池边 1–2 株粉花（≤ 5 %）
@@ -1161,6 +1257,10 @@ class Isle:
             t = R.uniform(0, TAU); d = (pr(t) + ray_dist(pc[0], pc[1], t, G)) / 2; x, y = pc[0] + math.cos(t) * d, pc[1] + math.sin(t) * d
             if ok(x, y, .04) and not self.in_bldg(x, y, .02): self.tree(x, y, .08, 'tree6'); occ.append((x, y, .06))
         self.claim_poly(G)
+        if fam in ('court', 'hill'):                                                         # 偏置园：园外一片竹林 + 草坡
+            for _ in range(int(20 + 40 * self.F)):
+                t = R.uniform(0, TAU); f = R.uniform(.5, .92); x, y = math.cos(t) * self.r(t) * f, math.sin(t) * self.r(t) * f
+                if not pip(x, y, G): self.plant(x, y, float(R.uniform(.04, .05)), 'tree3', .95, .6)
         # 园外：竹林团 + 茶垄只留在海岬尖端
         rs = [self.r(t) for t in np.linspace(0, TAU, 72, endpoint=False)]; rm = sum(rs) / len(rs)
         for i, t in enumerate(np.linspace(0, TAU, 72, endpoint=False)):
@@ -1169,76 +1269,39 @@ class Isle:
                     b = t + R.normal(0, .04); f = R.uniform(.88, .95); self.plant(math.cos(b) * self.r(b) * f, math.sin(b) * self.r(b) * f, float(R.uniform(.04, .05)), 'tree3', .97, .3)
     def garden_suzhou(self, lx, ly, a, L, g0=None): self.est_suzhou()
 
-    # ================= 岭南园林 =================
+    # ================= 岭南园林（B2 第 3 轮重写）=================
+    # 上一版「灰水泥满铺 + 成排长屋 + 直角方池」俯视读成营房 / 圈舍，整段推倒。现在每座岛是一处岭南园林 / 村口：
+    #   镬耳山墙（高出屋脊 1.2 m 的深色弧形墙头，40° 太阳下投出弧形影子）、灰绿瓦（不是苏州的黛黑瓦）、青砖墙；
+    #   祠堂三进（头门—中堂—后寝，天井 + 两廊）+ 禾坪 + 半月塘 + 村口大榕树；梳式小屋只作陪衬（≤ 2 × 2，长短、进深错开，巷口种树）；
+    #   园林部分取四座名园的构图：余荫山房（方池 + 八角池、廊桥）、可园（L 形连房 + 四层可楼 + 园外湖）、清晖园（船厅 + 长池）、梁园（池中石峰 + 草堂）；
+    #   地面是园地（苔绿）+ 天井 / 禾坪小块铺地，不再满铺。6 座岛 6 个布局族，互不相同。
+    def ln_pyr(self, key, lx, ly, rad, h, n=4, rot=0.0, dz=0.0):
+        """攒尖屋顶（n 边锥）：亭、楼阁。rot 为本地角。"""
+        X, Y = self.world(lx, ly)
+        bmesh.ops.create_cone(B(key).bm, cap_ends=True, cap_tris=False, segments=n, radius1=rad, radius2=.0005, depth=h,
+                              matrix=Matrix.Translation((X, Y, self.Z(lx, ly) + dz + h / 2)) @ Matrix.Rotation(self.rot + rot, 4, 'Z'))
+        self._rec(key, ell_pts(lx, ly, rad, rad, 0, 12), h)
+
     def est_lingnan(self):
-        """青砖墙围合的方整园区（按岛找最大的矩形）：前面是占园 25 % 的方池 + 水榭 + 直廊桥，后面是 3 × 3 梳式院落（主屋两端镬耳山墙，窄巷）；
-        一角一座三层方阁；1–2 株大榕树放在园外入口；园外荔枝林成网格。"""
-        R = self.R; F = max(self.F, .3); col = ROOF_TILE; fam = self.layout or 'front'
-        asp = 1.3; best = None
-        base = [0, math.pi / 2, math.pi / 4, -math.pi / 4, math.pi / 8, -math.pi / 8]
-        for ang in base:
-            for ox, oy in ((0, 0), (.08 * self.F, 0), (-.08 * self.F, 0), (0, .08 * self.F), (0, -.08 * self.F)):
-                lo, hi = .02, 3 * self.F
-                for _ in range(14):
-                    mid = (lo + hi) / 2; w, d = mid, mid * asp; cc = math.cos(ang), math.sin(ang)
-                    pts = [(ox + (u * w / 2) * cc[0] - (v * d / 2) * cc[1], oy + (u * w / 2) * cc[1] + (v * d / 2) * cc[0]) for u in (-1, -.5, 0, .5, 1) for v in (-1, -.5, 0, .5, 1) if abs(u) == 1 or abs(v) == 1]
-                    if all(self.inside(x, y, .8) for x, y in pts): lo = mid
-                    else: hi = mid
-                if best is None or lo > best[0]: best = (lo, ox, oy, ang)
-        Wg, ox, oy, a = best; Dg = Wg * asp
-        if R.random() < .5: a += math.pi                                                     # 正面朝哪头
-        c, s = math.cos(a), math.sin(a); P = lambda dx, dy: (ox + dx * c - dy * s, oy + dx * s + dy * c)
-        Gp = rect_pts(ox, oy, Wg, Dg, a); self.prune_trees(Gp, .6); self.patch('paving_g', Gp, dz=.0012, rings=2)
-        self.wall_line('greybrick', Gp, .006, .012, closed=True)
-        # 前方池（占园 25 %）
-        Ap = .25 * Wg * Dg; Dp = .38 * Dg; wmax = Wg * .62
-        pd = Dp - .03; pw = Ap / pd
-        if pw > wmax: pw = wmax; pd = Ap / pw; Dp = pd + .03
-        if fam == 'court': ypz = -Dg / 2 + (Dg - Dp) * .35 + Dp / 2                         # 池在两组院落之间
-        else: ypz = -Dg / 2 + Dp / 2
-        px_ = (Wg / 2 - pw / 2 - .02) * (1 if fam == 'side' else 0)
-        pcx, pcy = P(px_, ypz); self.box('water', pcx, pcy, pw, pd, .003, a)
-        self.wall_line('stone', rect_pts(pcx, pcy, pw + .006, pd + .006, a), .004, .004, closed=True); self.pond = (pw, pd); self.pond_ratio = pw * pd / (Wg * Dg)
-        self.water.append((pcx, pcy, pw / 2, pd / 2, a))
-        # 水榭（半伸进池，靠院落一侧）+ 直廊桥横跨方池
-        tx, ty = P(px_ + pw * .2, ypz + pd / 2 - .012); tw = min(.08, pw * .3)
-        self.box('stone', tx, ty, tw, .04, .006, a); z0 = self.house('greybrick', tx, ty, tw * .85, .03, .01, a, col, ridge=.009)
-        bx = px_ - pw * .22; bxx, byy = P(bx, ypz)
-        self.box('path', bxx, byy, .012, pd + .02, .005, a); self.roof(bxx, byy, pd + .02, .016, self.Z(bxx, byy) + .012, .004, a + math.pi / 2, col)
-        # 三层方阁（地标，长影子）
-        sx_ = -1 if fam == 'side' else R.choice([-1, 1]); sq = min(.07, .12 * Wg) + .01
-        gx, gy_ = P(sx_ * (Wg / 2 - sq / 2 - .02), -Dg / 2 + sq / 2 + .02) if fam != 'court' else P(sx_ * (Wg / 2 - sq / 2 - .02), Dg / 2 - sq / 2 - .02)
-        if abs(sx_ * (Wg / 2 - sq / 2 - .02) - px_) > pw / 2 + sq / 2 + .005 or fam == 'court':
-            z0 = self.house('greybrick', gx, gy_, sq, sq, .05, a, col, ridge=.012); self.roof(gx, gy_, sq * 1.3, sq * 1.3, z0 + .03, .006, a, col)
-        # 梳式院落：rows × cols，每格一栋三间主屋（两端镬耳墙）+ 天井 + 两廊，格间窄巷
-        rows, cols = {'3x3': (3, 3), '3x2': (3, 2), '2x3': (2, 3)}.get(self.plan, (3, 3))
-        if fam == 'court': zones = [(-Dg / 2 + .015, ypz - Dp / 2 - .015, 1), (ypz + Dp / 2 + .015, Dg / 2 - .015, max(1, rows - 1))]
-        else: zones = [(ypz + Dp / 2 + .015, Dg / 2 - .015, rows)]
-        for y0, y1, nr in zones:
-            if y1 - y0 < .05: continue
-            uy = (y1 - y0) / nr; ux = (Wg - .03) / cols
-            for i in range(cols):
-                for j in range(nr):
-                    cxu, cyu = -Wg / 2 + .015 + (i + .5) * ux, y0 + (j + .5) * uy
-                    hw, hd = ux * .8, uy * .42; hh = min(.016, .06 * hd + .008); rg = hd * .28
-                    hx, hy = P(cxu, cyu + uy * .22)
-                    if any(self.in_bldg(x, y) for x, y in rect_pts(hx, hy, hw, hd, a)): continue
-                    z0 = self.house('greybrick', hx, hy, hw, hd, hh, a, col, ridge=rg)
-                    for e in (-1, 1): self.ear(*P(cxu + e * hw / 2, cyu + uy * .22), hd * 1.05, .004, z0 + hh, rg + .007, a)   # 镬耳
-                    self.box('path', *P(cxu, cyu - uy * .12), hw * .5, uy * .26, .0022, a)                 # 天井
-                    for e in (-1, 1): self.house('greybrick', *P(cxu + e * hw * .38, cyu - uy * .12), hw * .2, uy * .3, hh * .75, a, col, ridge=rg * .6)   # 两廊
-        self.claim_poly(Gp)
-        # 园外：入口的大榕树 1–2 株；荔枝林成网格
-        nb = 0
-        for sxx in (R.choice([-1, 1]), 0, 1, -1):
-            for q in (P(sxx * Wg * .4, -Dg / 2 - .07), P(Wg / 2 + .08, sxx * Dg * .3), P(-Wg / 2 - .08, sxx * Dg * .3)):
-                if nb < 2 and self.inside(*q, .9) and self.plant(q[0], q[1], float(np.clip(.28 * self.F + .02, .06, .12)), 'tree4', .95, .9): nb += 1
-        if F > .3:
-            b_ = a; n = 0
-            for i in range(-12, 13):
-                for j in range(-12, 13):
-                    px, py = ox + (i * math.cos(b_) - j * math.sin(b_)) * .1, oy + (i * math.sin(b_) + j * math.cos(b_)) * .1
-                    if n < 40 and self.inside(px, py, .9) and self.plant(px, py, .045, 'tree1', .93, 1.0): n += 1
+        R = self.R; fam = self.layout if self.layout in LN_FAMS else 'village'
+        kit = _LnKit(self)
+        big = 1.3 if self.terrain == 'lake' else 1.0                                        # lake 地形：池放大
+        fn = getattr(kit, 'fam_' + fam)
+        # 找位置：朝向 12 个 × 偏移 5 个 × 缩放 1 → .55；所有占地要在 inside(.84) 里、不压裸岩 / 台地墙
+        best = None; a0 = float(R.uniform(0, TAU))
+        for s in ((1.1, 1.0, .92) if fam == 'ancestral' else (1.35, 1.2, 1.1, 1.0)) + (.84, .76, .68, .6, .52):
+            for k in range(12):
+                a = a0 + k * math.pi / 6
+                for ox, oy in ((0, 0), (.05, 0), (-.05, 0), (0, .05), (0, -.05)):
+                    kit.begin(a, s, (ox * self.F / .3, oy * self.F / .3), draw=False); fn(big)
+                    if kit.fits(): best = (a, s, (ox * self.F / .3, oy * self.F / .3)); break
+                if best: break
+            if best: break
+        if best is None: best = (a0, .5, (0, 0))
+        a, s, o = best; self.ln_fit = (round(a, 3), s)
+        kit.begin(a, s, o, draw=True); fn(big); self.main = kit.P(0, -.02)
+        self.pond_ratio = kit.water_area / max(1e-6, math.pi * self.rx * self.ry * self.ex * self.ey)
+        for P in kit.claims: self.claim_poly(P)
     def garden_lingnan(self, lx, ly, a, L, g0=None): self.est_lingnan()
 
     def est_fortress(self): pass
@@ -1249,6 +1312,222 @@ class Isle:
         for t in np.linspace(0, TAU, 36, endpoint=False):
             rr = self.r(t); X, Y = self.world(math.cos(t) * rr, math.sin(t) * rr); nx, ny = norm((X, Y, self.z)); pts.append([nx, ny])
         return pts
+
+# ---------------- 岭南园林工具箱（设计坐标 u 右、v 进深，+v 为后；× 缩放 s、转 a、平移 o → 岛的本地坐标）----------------
+class _LnKit:
+    """同一套调用跑两遍：draw=False 只记占地（找位置用），draw=True 真正生成。随机数每遍重新起种，两遍一致。"""
+    def __init__(self, isle): self.e = isle
+    def begin(self, a, s, o, draw):
+        self.a, self.s, self.o, self.draw = a, s, o, draw; self.c, self.sn = math.cos(a), math.sin(a)
+        self.polys, self.claims, self.water_area = [], [], 0.0
+        self.rng = np.random.default_rng(seed_of(self.e.id) + 77); self.rng2 = np.random.default_rng(seed_of(self.e.id) + 78)   # rng：两遍都走；rng2：只在生成时用
+    def P(self, u, v): s = self.s; return (self.o[0] + s * (u * self.c - v * self.sn), self.o[1] + s * (u * self.sn + v * self.c))
+    def rp(self, u, v, w, d, rot=0.0): return rect_pts(*self.P(u, v), w * self.s, d * self.s, self.a + rot)
+    def fits(self):
+        e = self.e
+        for Pl in self.polys:
+            cx, cy = sum(p[0] for p in Pl) / len(Pl), sum(p[1] for p in Pl) / len(Pl)
+            for x, y in Pl + [(cx, cy)]:
+                if not e.inside(x, y, .84) or any(math.hypot(x - a_, y - b_) < c_ for a_, b_, c_ in e.occ): return False
+        return True
+    # ---- 基本件 ----
+    def ground(self, pts, wall=False, gate=None, key='ln_ground'):
+        """园地（苔绿）一片；wall=True 时沿边砌青砖矮墙 + 灰绿瓦压顶，gate = 缺口所在的点序号（园门）。"""
+        L = [self.P(u, v) for u, v in pts]; self.polys.append(L)
+        if not self.draw: return L
+        self.e.prune_trees(L, .5); self.e.patch(key, L, dz=.0011, rings=2); self.claims.append(L)
+        if wall:
+            n = len(L); seq = [L[(gate + 1 + k) % n] for k in range(n - 1)] if gate is not None else L + [L[0]]
+            self.e.wall_line('greybrick', seq, .006, .018); self.e.tile_line(seq, .009, .018, col=ROOF_LN, ht=.003)
+        return L
+    def pave(self, u, v, w, d, key='ln_pave', rot=0.0):
+        self.polys.append(self.rp(u, v, w, d, rot))
+        if self.draw: self.e.box(key, *self.P(u, v), w * self.s, d * self.s, .0022, self.a + rot); self.claims.append(self.rp(u, v, w, d, rot))
+    def house(self, u, v, w, d, h, ears=True, along=0.0, col=ROOF_LN, rg=.3):
+        """一栋硬山顶房：屋脊沿 along（0 = 沿 u）；两端镬耳山墙（深色弧形墙头，高出屋脊 1.5 m）；屋脊一条浅灰脊线。"""
+        ang = self.a + along; W, D = w * self.s, d * self.s; self.polys.append(rect_pts(*self.P(u, v), W, D, ang))
+        if not self.draw: return
+        e = self.e; x, y = self.P(u, v); ridge = max(.012, D * rg)
+        f = float(self.rng2.uniform(.9, 1.1)); cc = tuple(min(1, k * f) for k in col)            # 每栋屋面明度 ±10 %
+        z0 = e.house('greybrick', x, y, W, D, h, ang, cc, ridge=ridge)
+        e.box('ln_ridge', x, y, W * .92, .0045, .004, ang, dz=z0 + h + ridge - e.Z(x, y) - .002)
+        if ears:
+            ca, sa = math.cos(ang), math.sin(ang)
+            for k in (-1, 1): e.ear(x + k * (W / 2 - .004) * ca, y + k * (W / 2 - .004) * sa, D * 1.22, .013, z0 + h, ridge + .026, ang, key='ln_ear')   # 墙头宽 1.3 m、高出屋脊 2.6 m：俯视一道深色山墙带，40° 太阳下投出弧形影
+    def tower(self, u, v, sz, fl):
+        """可楼式方阁：fl 层，逐层收分，每层一圈灰绿瓦檐（俯视是一圈套一圈的方檐），攒尖顶。"""
+        self.polys.append(self.rp(u, v, sz * 1.2, sz * 1.2))
+        if not self.draw: return
+        e = self.e; x, y = self.P(u, v); S = sz * self.s
+        for k in range(fl):
+            side = S * (1 - .08 * k); e.box('greybrick', x, y, side, side, .036, self.a, dz=k * .036)
+            e.ln_pyr('ln_tile', x, y, side * .86, .014 if k < fl - 1 else .05, 4, self.a + math.pi / 4, dz=k * .036 + .03)
+        e.claim_rect(x, y, S * 1.2, S * 1.2, self.a)
+    def pav(self, u, v, r, n=4, dz=0.0):
+        """亭：石台 + 木构 + 攒尖顶（4 / 6 / 8 角）。"""
+        self.polys.append(self.rp(u, v, r * 2.4, r * 2.4))
+        if not self.draw: return
+        e = self.e; x, y = self.P(u, v); rr = max(.018, r * self.s)
+        e.cyl('stone', x, y, rr * 1.3, .004 + dz, n); e.cyl('ln_timber', x, y, rr * .75, .026, n, dz=.004 + dz)
+        e.ln_pyr('ln_tile', x, y, rr * 1.35, .026, n, self.a + math.pi / n, dz=.028 + dz); e.claim(x, y, rr * 1.4)
+    def halfmoon(self, u, v, R):
+        """半月塘：直边在 v（靠祠堂 / 禾坪一侧），弧向前（-v）；石砌塘岸。"""
+        pts = [self.P(u + R * math.cos(t), v - .8 * R * math.sin(t)) for t in np.linspace(0, math.pi, 22)]; self.polys.append(pts)
+        if not self.draw: return
+        e = self.e; e.patch('water', pts, dz=.003, rings=2); e.wall_line('stone', pts, .005, .005, closed=True); self.claims.append(pts)
+        c = self.P(u, v - .4 * R); e.water.append((c[0], c[1], R * self.s * 1.05, .5 * R * self.s, self.a)); self.water_area += math.pi * R * R * .4 * self.s ** 2
+    def pond(self, u, v, A, Bb, rot=0.0, wob=.12, rocks=True):
+        """曲岸池：绕池心的谐波多边形，岸边零散湖石。"""
+        p1, p2 = float(self.rng.uniform(0, TAU)), float(self.rng.uniform(0, TAU))
+        cr, sr = math.cos(rot), math.sin(rot); pts = []
+        for t in np.linspace(0, TAU, 40, endpoint=False):
+            f = 1 + wob * math.sin(2 * t + p1) + wob * .6 * math.sin(3 * t + p2); du, dv = A * math.cos(t) * f, Bb * math.sin(t) * f
+            pts.append(self.P(u + du * cr - dv * sr, v + du * sr + dv * cr))
+        self.polys.append(pts)
+        if not self.draw: return pts
+        e = self.e; e.patch('water', pts, dz=.003, rings=3); c = self.P(u, v); self.claims.append(pts)
+        e.water.append((c[0], c[1], A * self.s, Bb * self.s, self.a + rot)); self.water_area += poly_area(pts)
+        if rocks:
+            for k in range(0, 40, 3):
+                if self.rng2.random() < .55:
+                    x, y = pts[k]; X, Y = e.world(x, y); B('rockery', True).ico(X, Y, e.Z(x, y) + .002, float(self.rng2.uniform(.005, .01)), sz=1.4)
+        return pts
+    def rectpond(self, u, v, w, d, key='water'):
+        self.polys.append(self.rp(u, v, w, d))
+        if not self.draw: return
+        e = self.e; x, y = self.P(u, v); e.box(key, x, y, w * self.s, d * self.s, .003, self.a); self.claims.append(self.rp(u, v, w, d))
+        e.wall_line('stone', rect_pts(x, y, w * self.s + .006, d * self.s + .006, self.a), .004, .005, closed=True)
+        e.water.append((x, y, w * self.s / 2, d * self.s / 2, self.a)); self.water_area += w * d * self.s ** 2
+    def octpond(self, u, v, r):
+        pts = [self.P(u + r * math.cos(t), v + r * math.sin(t)) for t in np.linspace(math.pi / 8, TAU + math.pi / 8, 8, endpoint=False)]; self.polys.append(pts)
+        if not self.draw: return
+        e = self.e; e.patch('water', pts, dz=.003, rings=1); e.wall_line('stone', pts, .004, .005, closed=True); self.claims.append(pts)
+        c = self.P(u, v); e.water.append((c[0], c[1], r * self.s, r * self.s, 0)); self.water_area += poly_area(pts)
+    def waterside(self, u, v, w, d, along=0.0):
+        """水榭：伸进池里的石台 + 敞轩（卷棚顶，不带镬耳）。"""
+        self.polys.append(self.rp(u, v, w, d, along))
+        if not self.draw: return
+        e = self.e; x, y = self.P(u, v); ang = self.a + along
+        e.box('stone', x, y, w * self.s * 1.15, d * self.s * 1.25, .006, ang); z0 = e.house('ln_timber', x, y, w * self.s, d * self.s, .03, ang, ROOF_LN, ridge=d * self.s * .22)
+        e.box('ln_ridge', x, y, w * self.s * .9, .004, .003, ang, dz=z0 + .03 + d * self.s * .22 - e.Z(x, y) - .002)
+    def bridge(self, u0, v0, u1, v1, covered=False, zig=0):
+        """石板桥 / 廊桥（covered：桥上一道灰绿瓦顶）/ 曲桥（zig 段数）。"""
+        if not self.draw: return
+        e = self.e; pts = [(u0 + (u1 - u0) * t, v0 + (v1 - v0) * t) for t in np.linspace(0, 1, (zig or 1) + 1)]
+        if zig:
+            L = math.hypot(u1 - u0, v1 - v0); nx_, ny_ = -(v1 - v0) / max(L, 1e-6), (u1 - u0) / max(L, 1e-6)
+            pts = [(p[0] + nx_ * (.02 if i % 2 else -.02) * (0 < i < zig), p[1] + ny_ * (.02 if i % 2 else -.02) * (0 < i < zig)) for i, p in enumerate(pts)]
+        LP = [self.P(*p) for p in pts]; e.wall_line('ln_pave', LP, .018 if not covered else .022, .006, dz=.002)
+        if covered:
+            for (ax, ay), (bx, by) in zip(LP, LP[1:]):
+                mx, my = (ax + bx) / 2, (ay + by) / 2; e.roof(mx, my, math.hypot(bx - ax, by - ay) + .01, .034, e.Z(mx, my) + .03, .01, math.atan2(by - ay, bx - ax), ROOF_LN)
+    def rocks(self, u, v, rad, n, peak=False):
+        if not self.draw: return
+        e = self.e
+        for _ in range(n):
+            t = self.rng2.uniform(0, TAU); d = rad * math.sqrt(self.rng2.random()); x, y = self.P(u + math.cos(t) * d, v + math.sin(t) * d)
+            X, Y = e.world(x, y); B('rockery', True).ico(X, Y, e.Z(x, y) + .002, float(self.rng2.uniform(.006, .014)), sz=float(self.rng2.uniform(3.0, 4.5)) if peak else 1.6)
+    def wall(self, pts):
+        if not self.draw: return
+        L = [self.P(u, v) for u, v in pts]; self.e.wall_line('greybrick', L, .006, .018); self.e.tile_line(L, .009, .018, col=ROOF_LN, ht=.003)
+    def tree(self, u, v, r, kind, fr=.3):
+        if not self.draw: return
+        x, y = self.P(u, v); self.e.plant(x, y, r, kind, .95, fr, pull=True)
+    def grove(self, u, v, rad, n, kinds, rmin=.04, rmax=.055):
+        if not self.draw: return
+        for _ in range(n):
+            t = self.rng2.uniform(0, TAU); d = rad * math.sqrt(self.rng2.random())
+            self.tree(u + math.cos(t) * d, v + math.sin(t) * d, float(self.rng2.uniform(rmin, rmax)), kinds[int(self.rng2.integers(len(kinds)))])
+    def banyan(self, u, v, r=.11):
+        """村口大榕树：特大深色树冠 + 旁边两团小冠（气根成林）。"""
+        if not self.draw: return
+        self.tree(u, v, r, 'tree4', .6)
+        for k in range(2): t = self.rng2.uniform(0, TAU); self.tree(u + math.cos(t) * r * .9, v + math.sin(t) * r * .9, r * .5, 'tree4', .3)
+    def comb(self, u0, v0, ncol, nrow, along_v=False):
+        """梳式小屋（陪衬）：ncol 条巷 × nrow 进；每栋长短、前后错开，屋前小天井，巷口种树。along_v：巷沿 u。"""
+        x = u0
+        for i in range(ncol):
+            w = float(self.rng.uniform(.10, .13)); y = v0 + (.045 if i % 2 else 0) + float(self.rng.uniform(-.01, .01))   # 相邻两巷前后错开半进
+            for j in range(nrow):
+                d = float(self.rng.uniform(.075, .09)); ww = w * float(self.rng.uniform(.85, 1.0))
+                self.house(x + w / 2, y + d / 2, ww, d, .04)
+                self.pave(x + w / 2, y - .018, ww * .6, .03)                              # 屋前天井
+                y += d + .045
+            if i < ncol - 1:
+                self.pave(x + w + .016, v0 + (y - v0) / 2 - .02, .024, y - v0, key='ln_lane')
+                self.tree(x + w + .016, v0 - .05, .045, 'tree1')                           # 巷口的树
+            x += w + .032
+        return x
+    # ---- 布局族 ----
+    def fam_village(self, big):
+        """村口：两进小祠堂 + 禾坪 + 半月塘 + 大榕树；一侧一列两栋梳式小屋；竹丛。"""
+        self.house(0, .02, .13, .07, .045); self.pave(0, .085, .09, .05); self.house(0, .15, .14, .085, .052)
+        for k in (-1, 1): self.house(k * .058, .085, .05, .022, .03, ears=False, along=math.pi / 2)
+        self.pave(0, -.07, .18, .065, key='ln_hepin')
+        self.halfmoon(0, -.105, .12 * big)
+        ncol = int(self.e.plan[1]) if self.e.plan[:1] == 'c' else 1
+        if ncol: self.comb(.11, -.02, 1, 2)
+        self.banyan(-.17, -.2, .1)
+        self.grove(-.16, .12, .05, 5, ('tree3', 'tree3', 'tree2')); self.grove(.05, .27, .06, 4, ('tree1', 'tree2'))
+    def fam_ancestral(self, big):
+        """大祠堂三进（头门—中堂—后寝，两个天井 + 两廊）+ 禾坪 + 半月塘；东侧两巷两进梳式屋；西侧园林：曲池 + 水榭 + 曲桥 + 三层阁。"""
+        self.house(0, -.05, .16, .075, .048); self.house(0, .085, .17, .1, .06); self.house(0, .215, .16, .08, .052)
+        for yy, dd in ((.0175, .06), (.15, .03)):
+            self.pave(0, yy, .11, dd)
+            for k in (-1, 1): self.house(k * .07, yy, dd + .01, .025, .032, ears=False, along=math.pi / 2)
+        self.wall([(-.085, -.09), (-.085, .26)]); self.wall([(.085, -.09), (.085, .26)])
+        self.pave(0, -.135, .24, .075, key='ln_hepin')                                        # 禾坪（小块、偏暗的麻石）
+        self.halfmoon(0, -.175, .16 * big)
+        self.comb(.13, -.02, 2, 1); self.grove(.2, .17, .05, 4, ('tree1', 'tree2'))
+        self.banyan(-.22, -.25, .12); self.banyan(.24, -.24, .09)
+        g = [(-.37 + .17 * math.cos(t) * (1 + .1 * math.sin(3 * t + .7)), .07 + .2 * math.sin(t) * (1 + .08 * math.sin(2 * t))) for t in np.linspace(0, TAU, 24, endpoint=False)]
+        self.ground(g, wall=True, gate=12)
+        self.pond(-.37, .04, .1 * big, .07 * big, .3); self.waterside(-.27, .02, .06, .045, math.pi / 2)
+        self.bridge(-.45, .0, -.33, .1, zig=4); self.tower(-.38, .2, .07, 3); self.pav(-.46, .12, .022, 6)
+        self.grove(-.3, -.07, .05, 4, ('tree3', 'tree3', 'tree2')); self.grove(-.46, .2, .04, 3, ('tree3', 'tree1'))
+    def fam_tower(self, big):
+        """可园：L 形连房围出园心草地（中间一座方亭 + 竹），转角一座四层可楼；园外东南一片曲岸湖（可湖）+ 水榭 + 曲桥；榕树。"""
+        for u in (-.1, .04):
+            self.house(u, .15, .13, .075, .045)
+        self.house(-.2, .01, .13, .075, .045, along=math.pi / 2); self.house(-.2, -.12, .08, .06, .04, along=math.pi / 2)
+        self.tower(-.2, .15, .085, 4)
+        self.ground([(-.15, -.19), (.12, -.19), (.12, .1), (-.15, .1)])
+        self.wall([(-.24, -.2), (.13, -.2), (.13, .11)])
+        self.pav(-.02, -.04, .026, 4); self.grove(.06, .04, .04, 4, ('tree3', 'tree3', 'tree2'))
+        self.pond(.2, -.25, .13 * big, .075 * big, -.4, .1); self.waterside(.09, -.25, .06, .04)
+        self.bridge(.16, -.33, .27, -.18, zig=4); self.banyan(.25, .13, .1)
+        self.grove(-.05, -.33, .06, 4, ('tree1', 'tree2', 'tree3'))
+    def fam_boathall(self, big):
+        """清晖园：一头长池 + 船厅（二层长屋，船头石台伸进池）+ 方亭 + 草堂；腰部一道廊桥；另一头三栋镬耳屋围一方天井，芭蕉竹丛。"""
+        self.rectpond(-.24, -.01, .19 * big, .1 * big); self.house(-.24, .1, .17, .06, .06, ears=False, rg=.2)
+        self.waterside(-.24, .04, .07, .035); self.pav(-.36, -.09, .024, 4); self.house(-.12, -.1, .08, .05, .04)
+        self.bridge(-.11, .02, .11, .02, covered=True)
+        self.house(.24, .1, .13, .07, .045); self.house(.16, -.04, .1, .06, .04, along=math.pi / 2); self.house(.32, -.04, .1, .06, .04, along=math.pi / 2)
+        self.pave(.24, -.02, .1, .09)
+        self.ground([(-.36, -.16), (-.12, -.16), (-.1, .15), (-.36, .15)])
+        self.grove(-.12, .13, .03, 3, ('tree3', 'tree3')); self.grove(.24, -.14, .04, 4, ('tree3', 'tree2', 'tree5'))
+        self.tree(.37, .12, .08, 'tree4', .5)
+    def fam_rockery(self, big):
+        """梁园：曲池里立几座湖石峰，北岸草堂（带镬耳）+ 前廊，东岸石山上一座六角亭，曲桥，西岸一栋小书斋；竹。"""
+        self.ground([(.26 * math.cos(t) * (1 + .1 * math.sin(3 * t + 1.1)), .02 + .22 * math.sin(t) * (1 + .07 * math.sin(2 * t + .4))) for t in np.linspace(0, TAU, 20, endpoint=False)], wall=True, gate=15)
+        self.pond(-.01, -.03, .14 * big, .09 * big, .2, .1, rocks=False)
+        self.rocks(-.04, -.03, .06 * big, 6, peak=True); self.rocks(.05, -.06, .03, 3, peak=True)
+        self.house(0, .13, .15, .08, .05); self.pave(0, .075, .12, .03)
+        self.rocks(.17, .0, .05, 14); self.pav(.17, .0, .024, 6, dz=.012)
+        self.bridge(-.12, -.1, .02, .06, zig=4); self.house(-.18, .02, .08, .05, .04, along=math.pi / 2)
+        self.grove(-.16, -.13, .04, 4, ('tree3', 'tree3', 'tree2')); self.grove(.12, .15, .03, 2, ('tree3',))
+        self.banyan(.02, -.26, .09)
+    def fam_twinpond(self, big):
+        """余荫山房：园墙内西方池、东八角池，中间一道廊桥（浣红跨绿）；八角池心八角水榭（玲珑水榭），方池北岸深柳堂（镬耳）；
+        东北临池别馆；园外后面两栋梳式屋、园门口榕树。"""
+        g = [(.27 * math.copysign(abs(math.cos(t)) ** .6, math.cos(t)), .03 + .2 * math.copysign(abs(math.sin(t)) ** .6, math.sin(t))) for t in np.linspace(0, TAU, 28, endpoint=False)]
+        self.ground(g, wall=True, gate=21)
+        self.rectpond(-.12, -.03, .15 * big, .13 * big); self.octpond(.12, -.04, .08 * big)
+        self.pav(.12, -.04, .03, 8); self.bridge(-.04, -.03, .05, -.035, covered=True)
+        self.house(-.12, .13, .15, .08, .05); self.house(.13, .12, .1, .07, .042)
+        self.grove(-.2, -.15, .03, 3, ('tree3', 'tree3')); self.grove(.22, .1, .03, 2, ('tree1', 'tree3'))
+        if self.e.plan[:1] == 'c' and int(self.e.plan[1]): self.comb(-.14, .3, int(self.e.plan[1]), 1)
+        self.banyan(.0, -.3, .1)
 
 # ---------------- 伊甸庄园（按 docs/eden-estate.md 的室外布局）----------------
 def build_eden(isle, layer):
@@ -1313,10 +1592,13 @@ def build_eden(isle, layer):
     cx_ = 1.75                                                                              # 东：椭圆，gazon coupé（草坪里切出砾石卷草纹）+ 中心雕像 + 四角树团
     e.wall_line('hedge', ell_pts(cx_, cy_, .5, .45, 0, 40), .012, .01, closed=True)
     e.disc('flowers', cx_, cy_, .48, .43, dz=.0022, seg=64); e.disc('lawn_e2', cx_, cy_, .44, .39, dz=.0024, seg=64); e.disc('lawn_e', cx_, cy_, .39, .34, dz=.0026, seg=64)
-    for k in range(4):
-        t0 = k * math.pi / 2 + math.pi / 4
-        pts = [(cx_ + math.cos(t0) * (.08 + .26 * u) + math.cos(t0 + math.pi / 2) * .06 * math.sin(u * 5), cy_ + math.sin(t0) * (.08 + .22 * u) + math.sin(t0 + math.pi / 2) * .06 * math.sin(u * 5)) for u in np.linspace(0, 1, 12)]
-        e.wall_line('gravel', pts, .012, .0028)
+    # B2 第 3 轮：原来 4 条同向弯折的砾石臂（只有 90° 旋转对称、没有镜像对称）改成东西 / 南北都镜像对称的图案：
+    # 同心砾石环 + 直十字园路 + 左右成对（沿东西轴镜像）的卷草花境
+    e.wall_line('gravel', ell_pts(cx_, cy_, .27, .235, 0, 48), .012, .0028, closed=True)
+    e.box('gravel', cx_, cy_, .76, .014, .0028); e.box('gravel', cx_, cy_, .014, .66, .0028)
+    e.disc('flowers', cx_, cy_, .13, .115, dz=.0027, seg=48); e.disc('lawn_e', cx_, cy_, .1, .088, dz=.0028, seg=48)   # 内圈花环
+    for sx in (-1, 1):
+        for sy in (-1, 1): e.disc('flowers', cx_ + sx * .19, cy_ + sy * .16, .04, .03, dz=.0029, seg=16)   # 四象限各一块椭圆花床（互为镜像）
     e.disc('gravel', cx_, cy_, .06, .06, dz=.0029, seg=24); e.cyl('marble', cx_, cy_, .018, .03, 12)
     for dx in (-1, 1):
         for dy in (-1, 1):
@@ -1401,8 +1683,11 @@ def build_eden(isle, layer):
         e.plant(lx, ly, float(R.uniform(.045, .07)), 'tree1' if R.random() < .6 else 'tree6', .98, .5)
     # 岛缘石栏（整圈，白名单）
     e.wl += 1
-    pts = e.outline(.975, 240); e.wall_line('marble', pts, .01, .014, closed=True)
-    for i in range(0, len(pts), 6): e.box('marble', pts[i][0], pts[i][1], .018, .018, .022)
+    pts = e.outline(.975, 240); i = 0                                                      # B2 第 3 轮：栏杆压暗（.70/.69/.65），每 40–60 m 断开一次（不再是一整圈白描边）
+    while i < len(pts):
+        seg = pts[i:i + int(R.integers(5, 8))]; i += len(seg) + 1
+        if len(seg) > 1: e.wall_line('marble_d', seg, .01, .014)
+        e.box('marble_d', seg[0][0], seg[0][1], .018, .018, .022)
     e.wl -= 1
 
 def build_silver_crown(isle):

@@ -168,7 +168,7 @@ def halo_mat():
     return m
 bpy.ops.mesh.primitive_circle_add(vertices=64, radius=1.1, fill_type='NGON', location=(*TOWER, 1.05)); halo = bpy.context.active_object; halo.name = 'tower_halo'
 halo.data.materials.append(halo_mat()); halo.visible_shadow = False
-markers.append({'id': 'climate_tower', 'pos': (*TOWER, 2.2), 'r': .2, 'anchor': (TOWER[0], TOWER[1] - .55)})
+markers.append({'id': 'climate_tower', 'pos': (*TOWER, 2.2), 'r': .2, 'anchor': (TOWER[0], TOWER[1] - .26)})   # B2 第 3 轮：锚点落在上层环台（半径 .21–.29）上，不再落在云面
 flush_trees(); tick(f'islands + estates ({te.flush()} trees)')
 FACES = sum(len(o.data.polygons) for o in bpy.data.objects if o.type == 'MESH')
 FACES_R4 = 352151                                           # r4（B2 第 1 轮）同口径的面数
@@ -210,6 +210,7 @@ def selfcheck(routes_out, mk):
         v = [(k, P) for k, P in e.fp if not all(e.inside(x, y, .92) for x, y in P + [(sum(p[0] for p in P) / len(P), sum(p[1] for p in P) / len(P))])]
         if v: viol[e.id] = sorted({k for k, _ in v})
     R['inside92_violations'] = viol
+    if viol: print('SELFCHECK inside92 detail', {e.id: [(k, [tuple(round(c, 3) for c in e.world(*q)) for q in P[:2]]) for k, P in e.fp if not all(e.inside(x, y, .92) for x, y in P)] for e in isl if e.id in viol})
     if viol: bad.append(f'inside(.92) 不过：{viol}')
     cov = {e.id: round(e.coverage(), 3) for e in isl}; R['coverage'] = cov
     low = {k: v for k, v in cov.items() if v < .5 and k not in ('eden', 'silver_crown')}
