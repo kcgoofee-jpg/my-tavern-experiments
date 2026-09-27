@@ -3,26 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>伊甸家族府邸 · 剖切模型</title>
+<title>伊甸家族府邸 · 三维</title>
 <!--
-  伊甸庄园 · 交互式剖切模型（three.js 0.160，程序生成，无外部模型 / 图片）
-  入口：map/estate/index.html；模块：main.js（场景与交互）、plan.js（楼层 / 房间 / 室外区域数据）、building.js、site.js、furniture.js、lib.js
+  伊甸庄园 · 网页三维（three.js 0.160）：estate2 r4 整岛外观（烘焙光照 glb）+ round-3 主楼分层（B2 / B1 / F1 / F2 / F3）
+  入口：map/estate/index.html；脚本：main.js；模型：model/manifest.json → model/site(.low).glb（整岛，blender/estate2/export_web.py）、
+  model/house(.low).glb（主楼室内体量，blender/estate2/house_web.py，进内透 / 剖切才加载）；房间多边形：../data/eden_estate_rooms.json；室外热点：model/zones.json
 
-  ── 嵌入协议（查看器 map/viewer.html 用 fetch + <base href> + iframe.srcdoc 加载本页；直接 iframe src 也可以）──
-  URL 参数：?embed=1 隐藏标题与提示、背景透明（srcdoc 载入时自动视为嵌入）；?lang=en；?theme=light|dark；?floor=ext|all|F1..F5；?stats=1 显示帧率 / draw call
-  新增（可选，不影响协议）：?tier=0|1|2 固定画质档（0 桌面 / 1 手机 / 2 最低，省略则自动判定并在卡顿时降档）；?debug=1 房间卡显示出处徽章
+  ── 嵌入协议（查看器 map/viewer.html 用 fetch + <base href> + blob iframe 加载本页；直接 iframe src 也可以）──
+  URL 参数：?embed=1 隐藏标题与提示、背景透明（blob / srcdoc 载入时自动视为嵌入）；?lang=en；?theme=light|dark；?floor=ext|xray|B2|B1|F1|F2|F3；?stats=1 显示帧率 / draw call
+  ?tier=low|std 固定模型档（省略则自动：手机 / 省流 / 内存 ≤ 4 GB / 地图「省流」档 → low）
   父 → 本页（window.postMessage）：
-    { type: 'estate:room',  name }      按房间名 / 别名 / 英文名（优先具体房间、其次最长匹配）切到所在楼层、高亮并拉近；name 为空或匹配不到 → 取消高亮
-    { type: 'estate:floor', floor }     'ext' | 'all' | 'F1'..'F5' | 1..5（也接受 '外观' / '全部' / '1F'）
+    { type: 'estate:room',  name, card? }  按房间名 / 别名 / 区域名切到所在楼层（或外观）、高亮并拉近；card = { name, floor, poly } 时取同层同名、多边形最近的那一间；匹配不到 → 取消高亮
+    { type: 'estate:floor', floor }     'ext' | 'xray' | 'B2' | 'B1' | 'F1' | 'F2' | 'F3'（也接受 '外观' / '内透' / '全部' / '1F' / 'B1F'）
     { type: 'estate:inset', left }      左侧留白 px（楼层条避让查看器的层切换器）
-    { type: 'estate:lang',  lang }      'zh' | 'en'：楼层条、房间名、房间卡切换语言
-    { type: 'estate:theme', theme }     'dark' | 'light'：背景（非嵌入时）与 UI 面板配色
+    { type: 'estate:lang',  lang }      'zh' | 'en'
+    { type: 'estate:theme', theme }     'dark' | 'light'
   本页 → 父：
-    { type: 'estate:ready', floors: ['F1'..'F5'], rooms: [{ name, en, floor, alias }] }   第一帧画完（外观先出，室内在空闲时补建）
+    { type: 'estate:ready', floors: ['B2'..'F3'], rooms: [{ name, en, floor, alias }] }   整岛模型第一帧画完
     { type: 'estate:key', key }         本页获得焦点时按下 PageUp / PageDown / [ / ]，交给查看器切层（非嵌入时本页自己切层）
-    { type: 'estate:select', name, floor }   用户点选 / 双击了某个房间或区域（查看器可忽略）
-  调试：window.__estate（setMode / focus / stats / tour）
-  依赖：three@0.160.0 已放在 vendor/（importmap 用相对路径，<base href> 嵌入时同样可用）
+    { type: 'estate:select', name, floor }   用户点选 / 双击了某个房间或区域
+    { type: 'estate:floor', floor }     用户在楼层条上切了视图
+  调试：window.__estate（setMode / focus / find / focusCard / stats）
+  依赖：three@0.160.0 在 vendor/（importmap 用相对路径，<base href> 嵌入时同样可用）；GLTFLoader + meshopt 解码器
 -->
 <style>
   :root { --inset: 12px; --paper: #101418; --ink: #e9e4d8; --muted: #8e98a2; --gold: #e6c36a; --panel: rgba(16,20,24,.84); --line: rgba(230,195,106,.22); --btn: rgba(255,255,255,.04); --lbl: rgba(12,15,18,.62); --lblink: #f3eee2; }
@@ -49,6 +51,10 @@
   :root[data-theme="light"] #floors button.on { color: #fff; }
   #floors button.on small { color: inherit; opacity: .75; }
   #floors hr { border: 0; border-top: 1px solid var(--line); margin: 3px 2px; }
+  body.nolabels .lbl:not(.hot) span { display: none; }
+  #zoom #lblBtn { font-size: 12px; font-family: "Songti SC", "STSong", serif; }
+  #zoom #lblBtn[aria-pressed="false"] { opacity: .45; text-decoration: line-through; }
+  #floors .cap { font-size: 10px; letter-spacing: .2em; color: var(--muted); padding: 2px 9px 0; }
   #floors button.tog { font-size: 11.5px; }
   #floors button.tog b { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 1px; background: linear-gradient(90deg, #C98A40 33%, #4C8C99 33% 66%, #7A5FA0 66%); opacity: .5; }
   #floors button.tog.act b { opacity: 1; }
@@ -126,6 +132,7 @@
     #floors button { flex: none; min-width: 0; padding: 7px 8px; font-size: 12px; } #floors button small { display: none; }
     #floors button { padding: 7px 6px; font-size: 11.5px; letter-spacing: .04em; }
     #floors hr { border: 0; border-left: 1px solid var(--line); margin: 4px 0; height: 16px; }
+    #floors .cap { display: none; }
     #floors button.tog .t { display: none; } #floors button.tog b { width: 10px; height: 10px; }
     #zoom { bottom: 62px; right: 10px; }
     #card { left: 10px !important; right: 10px; top: 10px !important; bottom: auto; max-width: none; }   /* 查看器的层切换器在左下角，卡片放顶部 */
@@ -138,9 +145,9 @@
 <body>
 <div id="app"><div id="labels"></div></div>
 <div id="vignette"></div><div id="grade"></div>
-<div id="title"><div class="crest"><svg viewBox="0 0 22 26" aria-hidden="true"><path d="M1.5 1.5h19v10.5c0 6.4-4.3 10.3-9.5 12.5C5.8 22.3 1.5 18.4 1.5 12z" fill="#2c4f86" stroke="#e6c36a" stroke-width="1.3"/><path d="M11 20.5v-7.2" stroke="#e6c36a" stroke-width="1.4"/><circle cx="11" cy="9.6" r="3.6" fill="#e6c36a"/><circle cx="8.6" cy="11.2" r=".75" fill="#2c4f86"/><circle cx="13.2" cy="8.6" r=".75" fill="#2c4f86"/><path d="M3.6 8.6c1.6-.2 2.9.4 3.6 1.8-1.5-.3-2.6 0-3.6.9m14.8-2.7c-1.6-.2-2.9.4-3.6 1.8 1.5-.3 2.6 0 3.6.9" fill="none" stroke="#e6c36a" stroke-width="1.1" stroke-linecap="round"/><path d="M8 20.6h6" stroke="#e6c36a" stroke-width="1.1"/></svg><h1>伊甸家族府邸</h1></div><p class="motto">始建约一百九十年 · HORTUS SUPRA NUBES</p><p class="sub">帕拉第奥五段式 · 204 m 立面</p><i></i></div>
+<div id="title"><div class="crest"><svg viewBox="0 0 22 26" aria-hidden="true"><path d="M1.5 1.5h19v10.5c0 6.4-4.3 10.3-9.5 12.5C5.8 22.3 1.5 18.4 1.5 12z" fill="#2c4f86" stroke="#e6c36a" stroke-width="1.3"/><path d="M11 20.5v-7.2" stroke="#e6c36a" stroke-width="1.4"/><circle cx="11" cy="9.6" r="3.6" fill="#e6c36a"/><circle cx="8.6" cy="11.2" r=".75" fill="#2c4f86"/><circle cx="13.2" cy="8.6" r=".75" fill="#2c4f86"/><path d="M3.6 8.6c1.6-.2 2.9.4 3.6 1.8-1.5-.3-2.6 0-3.6.9m14.8-2.7c-1.6-.2-2.9.4-3.6 1.8 1.5-.3 2.6 0 3.6.9" fill="none" stroke="#e6c36a" stroke-width="1.1" stroke-linecap="round"/><path d="M8 20.6h6" stroke="#e6c36a" stroke-width="1.1"/></svg><h1>伊甸家族府邸</h1></div><p class="motto">始建约一百九十年 · HORTUS SUPRA NUBES</p><p class="sub">浮岛庄园 · 主楼地上三层 + 地下两层</p><i></i></div>
 <nav id="floors"></nav>
-<div id="zoom"><button id="zin" title="放大">+</button><button id="zout" title="缩小">−</button><button id="zreset" title="复位"><svg viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 1 0 1.7-4"/><path d="M2 2.5v3h3"/></svg></button></div>
+<div id="zoom"><button id="lblBtn" type="button" aria-pressed="true" title="标注（L）">标</button><button id="zin" title="放大">+</button><button id="zout" title="缩小">−</button><button id="zreset" title="复位"><svg viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 1 0 1.7-4"/><path d="M2 2.5v3h3"/></svg></button></div>
 <div id="card"></div>
 <div id="tour"><button class="prev" type="button" aria-label="上一站">‹</button><div class="tx"><b></b><span></span></div><button class="next" type="button" aria-label="下一站">›</button><button class="x" type="button" aria-label="关闭">✕</button></div>
 <button id="tourPill" type="button">◆ 传承导览</button>
@@ -153,14 +160,10 @@
 <link rel="modulepreload" href="./vendor/three.module.min.js">
 <link rel="modulepreload" href="./vendor/jsm/controls/OrbitControls.js">
 <link rel="modulepreload" href="./vendor/jsm/renderers/CSS2DRenderer.js">
-<link rel="modulepreload" href="./vendor/jsm/environments/RoomEnvironment.js">
-<link rel="modulepreload" href="./vendor/jsm/utils/BufferGeometryUtils.js">
+<link rel="modulepreload" href="./vendor/jsm/loaders/GLTFLoader.js">
+<link rel="modulepreload" href="./vendor/jsm/libs/meshopt_decoder.module.js">
 <link rel="modulepreload" href="./main.js">
-<link rel="modulepreload" href="./lib.js">
-<link rel="modulepreload" href="./plan.js">
-<link rel="modulepreload" href="./building.js">
-<link rel="modulepreload" href="./site.js">
-<link rel="modulepreload" href="./furniture.js">
+<link rel="preload" href="./model/manifest.json" as="fetch" crossorigin>
 <script>
   // 加载看门狗：8 s 内没有首帧，或首帧前出错 → 「加载失败 · 重试」
   (function () {

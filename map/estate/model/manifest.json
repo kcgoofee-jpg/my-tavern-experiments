@@ -1,0 +1,6 @@
+{
+ "_说明": "庄园网页三维的模型清单（main.js 读）。site = 整岛外观（blender/estate2/export_web.py 烘焙，std / low 两档）；house = 主楼室内体量（blender/estate2/house_web.py），进内透 / 剖切时才加载；f1_z = 主楼 F1 地坪的世界标高（米，layout z）。坐标 = glTF（Y 上）：layout (x, y, z) → (x, z, −y)。",
+ "site": { "std": "site.glb", "low": "site_low.glb" },
+ "house": null,
+ "f1_z": 30.0
+}
