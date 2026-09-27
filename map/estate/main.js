@@ -27,17 +27,17 @@ const kick = (phase) => { try { window.__estateKick && window.__estateKick(phase
 const clamp = THREE.MathUtils.clamp;
 let needs = true;
 
-/* ---------------- 档位：低档 = 手机 / 省流 / 内存 ≤ 4 GB（地图「省流」档 edenMapTierV2 = save 也算） ---------------- */
+/* ---------------- 档位：低档 = 省流 / 慢网 / 内存 ≤ 4 GB（地图「省流」档 edenMapTierV2 = save 也算）；新款手机（iPhone 不报内存、安卓 ≥ 6 GB）走标准档 ---------------- */
 const qTier = Q.get('tier');
 const conn = navigator.connection || {};
 const LOW = qTier != null ? /^(1|2|low|save)$/.test(qTier)
-  : (LS('edenMapTierV2') === 'save' || !!conn.saveData || /(^|-)(2g|3g)$/.test(conn.effectiveType || '') || (navigator.deviceMemory || 8) <= 4 || (COARSE && Math.min(screen.width, screen.height) < 600));
+  : (LS('edenMapTierV2') === 'save' || !!conn.saveData || /(^|-)(2g|3g)$/.test(conn.effectiveType || '') || (navigator.deviceMemory || 8) <= 4);
 const tier = LOW ? 1 : 0;
-const DPR = Math.min(window.devicePixelRatio || 1, LOW ? 1.5 : 2);
+let DPR = Math.min(window.devicePixelRatio || 1, 2);   // 手机也用 2（原先低档 1.5 + 关抗锯齿，边缘锯齿、贴图发糊）；持续帧率 < 30 再降到 1.5（见 loop）
 let lowRes = false;
 
 /* ---------------- 渲染器（烘焙光照：MeshBasic，无色调映射；室内体量用 Lambert + 两盏灯） ---------------- */
-const renderer = new THREE.WebGLRenderer({ antialias: !LOW || DPR < 1.5, alpha: true, powerPreference: 'high-performance', stencil: false });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance', stencil: false });
 renderer.setPixelRatio(DPR); renderer.setSize(innerWidth, innerHeight); renderer.setClearColor(0x000000, 0);
 renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.NoToneMapping; renderer.localClippingEnabled = true;
 app.prepend(renderer.domElement);
@@ -67,7 +67,10 @@ const ALIAS = {
   '三楼公共浴室': ['Bathroom'], '恒温酒窖': ['Wine Cellar'], '衣物清洗与维护间': ['Laundry'], '东侧长廊': ['Gallery'], '体能训练室': ['Gym'],
   '主人通道': ['主人专用通道'], '储藏室': ['Storeroom'],
 };
-const GALLERY = { '主人主卧': 'wardrobe' };   // 房间图集（map/data/room_galleries.json）：衣帽间在主卧里
+const GALLERY = { '主人主卧': 'wardrobe', '衣帽间': 'wardrobe' };   // 房间图集（map/data/room_galleries.json）：卡把步入式衣帽间放在主卧套间里
+// 主卧套间内的子区域（卡：主卧「带衣帽间和独立浴室」，主人通道 F2 开进衣帽间）：单独做一个可点的热点，点开就是衣帽间图集
+const SUBS = [{ parent: 'F2-57', id: 'F2-57w', name: '衣帽间', en: 'Walk-in Wardrobe', alias: ['私人衣帽间', '步入式衣帽间', '更衣室', 'Dressing Room', 'Walk-in Wardrobe'], floor: 'F2', kind: 'card', sub: true,
+  note: '主卧套间内的步入式衣帽间；东侧门通主人专用通道', poly: [[12, -10], [16, -10], [16, -6], [12, -6]] }];
 const KIND_COL = { card: '#d9c29a', restricted: '#9d9a94', support: '#aab3bb', circ: '#e9e4d8', owner: '#a79bb6', inferred: '#c8cfbd', open: '#c8cfbd' };
 
 /* ---------------- 相机与控制（正交；缩放以光标为中心） ---------------- */
@@ -108,11 +111,106 @@ const HC = V((HOUSE_BOX.x0 + HOUSE_BOX.x1) / 2, (HOUSE_BOX.y0 + HOUSE_BOX.y1) / 
 
 /* ---------------- UI 文案 ---------------- */
 const TXT = {
-  zh: { ext: '外观', xray: '内透', sect: '剖切', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '浮岛庄园 · 主楼地上三层 + 地下两层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位', size: '面积', use: '说明', access: '出入', estate: '室外', loading: '加载中…', loadingP: '加载模型 {p}', gallery: '图集', restricted: '按原卡 · 不描述', card: '卡设定', inferred: '仓库推断（卡未写）', houseLoading: '载入室内…' },
-  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Floating-isle estate · house: 3 floors + 2 basements', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset', size: 'Area', use: 'Notes', access: 'Access', estate: 'Grounds', loading: 'Loading…', loadingP: 'Loading model {p}', gallery: 'Photos', restricted: 'Per the card · not described', card: 'From the card', inferred: 'Repository inference (not in card)', houseLoading: 'Loading interior…' },
+  zh: { ext: '外观', xray: '内透', sect: '剖切', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '浮岛庄园 · 主楼地上三层 + 地下两层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位', size: '面积', use: '说明', access: '出入', estate: '室外', loading: '加载中…', loadingP: '加载模型 {p}', gallery: '衣帽间图集', restricted: '按原卡 · 不描述', card: '卡设定', inferred: '仓库推断（卡未写）', houseLoading: '载入室内…' },
+  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Floating-isle estate · house: 3 floors + 2 basements', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset', size: 'Area', use: 'Notes', access: 'Access', estate: 'Grounds', loading: 'Loading…', loadingP: 'Loading model {p}', gallery: 'Wardrobe photos', restricted: 'Per the card · not described', card: 'From the card', inferred: 'Repository inference (not in card)', houseLoading: 'Loading interior…' },
 };
 const tx = (k, v = {}) => (TXT[LANG][k] || TXT.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
 const floorName = (i) => LANG === 'en' ? `${FLOORS[i].id} · ${FLOOR_EN[FLOORS[i].id]}` : `${FLOORS[i].id} · ${FLOORS[i].name}`;
+
+/* ---------------- 挡土墙 / 陡坡：地面贴图是俯视烘焙，竖直面上被拉成条纹 → 陡面拆出来，改用按世界坐标平铺的石砌材质 ---------------- */
+function stoneTex() {
+  const N = 256, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d');
+  g.fillStyle = '#8f877a'; g.fillRect(0, 0, N, N);   // 灰缝
+  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const rows = 8, rh = N / rows;
+  for (let r = 0; r < rows; r++) {
+    let x = r % 2 ? -rh * 0.9 : 0;
+    while (x < N) {
+      const w = rh * (1.3 + rnd() * 1.1), l = 150 + rnd() * 34 | 0;
+      g.fillStyle = `rgb(${l + 14},${l + 8},${l - 4})`;
+      for (const dx of [0, -N, N]) g.fillRect(x + dx + 1.5, r * rh + 1.5, w - 3, rh - 3);
+      x += w;
+    }
+  }
+  const im = g.getImageData(0, 0, N, N), d = im.data;   // 细颗粒
+  for (let i = 0; i < d.length; i += 4) { const n = (rnd() - 0.5) * 22; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+  g.putImageData(im, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); return t;
+}
+function splitWalls(o) {
+  const g = o.geometry, pos = g.attributes.position, idx = g.index, uvA = g.attributes.uv; if (!idx || !uvA) return;
+  const ground = o.name.startsWith('ground'), rock = o.name.startsWith('rock'), u0 = new THREE.Vector2(), u1 = new THREE.Vector2(), u2 = new THREE.Vector2();
+  o.updateWorldMatrix(true, false);
+  // 岩体：外圈悬崖保留岩石贴图；岛内台地之间的挡土墙（离外缘远）才换石砌。按 72 个方位记外缘半径
+  const NB = 72, rim = new Float32Array(NB), _w = new THREE.Vector3(), bin = (x, z) => ((Math.floor((Math.atan2(z, x) + Math.PI) / (2 * Math.PI) * NB) % NB) + NB) % NB;
+  if (rock) for (let i = 0; i < pos.count; i++) { _w.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld); const k = bin(_w.x, _w.z); rim[k] = Math.max(rim[k], Math.hypot(_w.x, _w.z)); }
+  const keep = [], wall = [], a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), n = new THREE.Vector3();
+  for (let i = 0; i < idx.count; i += 3) {
+    const i0 = idx.getX(i), i1 = idx.getX(i + 1), i2 = idx.getX(i + 2);
+    a.fromBufferAttribute(pos, i0).applyMatrix4(o.matrixWorld); b.fromBufferAttribute(pos, i1).applyMatrix4(o.matrixWorld); c.fromBufferAttribute(pos, i2).applyMatrix4(o.matrixWorld);
+    n.subVectors(c, b).cross(a.clone().sub(b)).normalize();
+    const h = Math.max(a.y, b.y, c.y) - Math.min(a.y, b.y, c.y);
+    let bad = ground;
+    if (rock) { const cx = (a.x + b.x + c.x) / 3, cz = (a.z + b.z + c.z) / 3; bad = Math.hypot(cx, cz) < rim[bin(cx, cz)] - 45; }
+    else if (!ground && Math.abs(n.y) < 0.42 && h > 0.4) {   // 分区烘焙：贴图坐标在竖直方向被压扁（条纹）的竖直面才换
+      u0.fromBufferAttribute(uvA, i0); u1.fromBufferAttribute(uvA, i1); u2.fromBufferAttribute(uvA, i2);
+      const e1 = b.clone().sub(a), e2 = c.clone().sub(a), f1 = u1.clone().sub(u0), f2 = u2.clone().sub(u0);
+      const det = f1.x * f2.y - f1.y * f2.x;
+      if (Math.abs(det) < 1e-12) bad = true;
+      else { const T = e1.clone().multiplyScalar(f2.y).addScaledVector(e2, -f1.y).divideScalar(det), Bt = e2.clone().multiplyScalar(f1.x).addScaledVector(e1, -f2.x).divideScalar(det);
+        const lt = T.length(), lb = Bt.length(); bad = Math.min(lt, lb) / Math.max(lt, lb) < 0.12; }
+    }
+    if (bad && Math.abs(n.y) < 0.42 && h > 0.25 && a.y > 8) wall.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z); else keep.push(i0, i1, i2);   // a.y > 8：岛体侧面（岩壁）不动
+  }
+  if (!wall.length) return;
+  g.setIndex(keep);
+  const wg = new THREE.BufferGeometry(), P = new Float32Array(wall), uv = new Float32Array(P.length / 3 * 2), col = new Float32Array(P.length);
+  const sun = new THREE.Vector3(-0.55, 0.5, 0.45).normalize(), S = 1 / 3.2;   // 一块石纹贴图 = 3.2 m
+  for (let t = 0; t < P.length; t += 9) {
+    a.fromArray(P, t); b.fromArray(P, t + 3); c.fromArray(P, t + 6); n.subVectors(c, b).cross(a.clone().sub(b)).normalize();
+    const alongX = Math.abs(n.x) < Math.abs(n.z), k = 0.62 + 0.38 * Math.max(0, n.dot(sun));
+    for (let v = 0; v < 3; v++) { const j = t + v * 3, q = j / 3 * 2; uv[q] = (alongX ? P[j] : P[j + 2]) * S; uv[q + 1] = P[j + 1] * S; col[j] = col[j + 1] = col[j + 2] = k; }
+  }
+  wg.setAttribute('position', new THREE.BufferAttribute(P, 3)); wg.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); wg.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const wm = new THREE.Mesh(wg, new THREE.MeshBasicMaterial({ map: stoneTex(), vertexColors: true, side: THREE.DoubleSide }));
+  wm.name = 'ground_walls'; o.userData.walls = wm; STAT.walls = (STAT.walls || 0) + wall.length / 9;
+  scene.add(wm);   // 顶点已换到世界坐标
+  SITE_EXTRA.push(wm);
+}
+
+/* ---------------- 背景：渐变天空 + 云海（上层封面同一套暖白云、淡蓝天；深色主题压暗） ---------------- */
+const SKY = { dark: ['#27324a', '#6d6f7c', '#b9a78f'], light: ['#8fb6d8', '#d9e3ea', '#f4ead6'] };
+let skyTex = null, cloudMat = null;
+function paintSky() {
+  const [top, mid, hor] = SKY[THEME === 'light' ? 'light' : 'dark'];
+  const c = skyTex ? skyTex.image : document.createElement('canvas'); c.width = 4; c.height = 256;
+  const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, top); gr.addColorStop(0.55, mid); gr.addColorStop(1, hor);
+  g.fillStyle = gr; g.fillRect(0, 0, 4, 256);
+  if (!skyTex) { skyTex = new THREE.CanvasTexture(c); skyTex.colorSpace = THREE.SRGBColorSpace; } else skyTex.needsUpdate = true;
+  scene.background = skyTex;
+  if (cloudMat) { const L = THEME === 'light'; cloudMat.uniforms.cHi.value.set(L ? '#fdfbf6' : '#cfc8bd'); cloudMat.uniforms.cLo.value.set(L ? '#d3dbe4' : '#7a7d8a'); cloudMat.uniforms.cFar.value.set(hor); }
+  needs = true;
+}
+function addBackdrop(root) {
+  const bb = new THREE.Box3().setFromObject(root);
+  cloudMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false,
+    uniforms: { cHi: { value: new THREE.Color() }, cLo: { value: new THREE.Color() }, cFar: { value: new THREE.Color() }, R: { value: 1900 } },
+    vertexShader: 'varying vec2 vP; void main(){ vec4 w = modelMatrix * vec4(position,1.); vP = w.xz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: `varying vec2 vP; uniform vec3 cHi, cLo, cFar; uniform float R;
+      float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); return mix(mix(h(i), h(i+vec2(1,0)), f.x), mix(h(i+vec2(0,1)), h(i+vec2(1,1)), f.x), f.y); }
+      float fbm(vec2 p){ float s = 0., a = .5; for (int k = 0; k < 5; k++) { s += a * n(p); p = p * 2.03 + 17.; a *= .5; } return s; }
+      void main(){ float r = length(vP) / R; float c = fbm(vP / 260.); float d = fbm(vP / 60. + 5.);
+        float v = smoothstep(.30, .85, c * .8 + d * .3);
+        vec3 col = mix(cLo, cHi, v); col = mix(col, cFar, smoothstep(.35, 1., r) * .8);
+        gl_FragColor = vec4(col, (1. - smoothstep(.7, 1., r)) * (.55 + .45 * v)); }`,
+  });
+  const sea = new THREE.Mesh(new THREE.CircleGeometry(1900, 64).rotateX(-Math.PI / 2), cloudMat);
+  sea.position.y = bb.min.y + (bb.max.y - bb.min.y) * 0.18; sea.renderOrder = -1; sea.name = 'cloud_sea'; scene.add(sea); SITE_EXTRA.push(sea);
+  paintSky();
+}
 
 /* ---------------- 加载：整岛外观 glb ---------------- */
 const loadEl = $('#loading');
@@ -130,19 +228,23 @@ const siteG = (await loadGlb(siteFile, (e) => { if (e.total) { STAT.bytes = e.to
 TB.site = performance.now() - t;
 kick('setup');
 const MESH = {};
+const GROUNDS = [], SITE_EXTRA = [];
 const shellClip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e5);
 siteG.traverse((o) => {
   if (!o.isMesh) return;
   const map = o.material.map || null;
-  if (map) { map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = Math.min(LOW ? 2 : 8, renderer.capabilities.getMaxAnisotropy()); }
+  if (map) { map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = Math.min(LOW ? 4 : 8, renderer.capabilities.getMaxAnisotropy()); map.minFilter = THREE.LinearMipmapLinearFilter; map.generateMipmaps = true; map.needsUpdate = true; }
+  if (map && /^(ground|rock|site_[cew])/.test(o.name)) GROUNDS.push(o);
   o.material.dispose();
   const shell = o.name.startsWith('house_shell');
   o.material = new THREE.MeshBasicMaterial({ map, vertexColors: !map && !!o.geometry.attributes.color, side: shell ? THREE.DoubleSide : THREE.FrontSide, clippingPlanes: shell ? [shellClip] : null });
   if (o.material.vertexColors) o.material.color.setScalar(1.22);   // 顶点色烘焙逐点平均了阴影面，整体偏暗：提一点与贴图烘焙对齐
-  if (shell) darkBack(o.material, [0.16, 0.145, 0.13]);
+  if (shell) darkBack(o.material, [0.55, 0.52, 0.47]);   // 剖切面：浅灰截面（原先近黑，F2 剖切时翼楼成了黑块）
   MESH[o.name] = o; STAT.tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
 });
+GROUNDS.forEach(splitWalls);
 scene.add(siteG);
+addBackdrop(siteG);
 const SHELL = Object.values(MESH).filter((m) => m.name.startsWith('house_shell'));
 const SITE_MESHES = Object.values(MESH).filter((m) => !m.name.startsWith('house_shell'));
 // 背面（剖开的墙内侧）涂深色：剖切时看起来像墙体截面
@@ -182,13 +284,13 @@ const plateMats = {};
 const plateMat = (kind) => (plateMats[kind] ||= new THREE.MeshBasicMaterial({ color: KIND_COL[kind] || KIND_COL.inferred, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
 const edgeMat = new THREE.LineBasicMaterial({ color: '#5a4a32', transparent: true, opacity: 0.55 });
 const plates = FLOORS.map(() => []);
-CARD.rooms.forEach((r) => {
+CARD.rooms.concat(SUBS.filter((w) => CARD.rooms.some((r) => r.id === w.parent)).map((w) => ({ ...w, area: 16 }))).forEach((r) => {
   const fi = FI[r.floor]; if (fi == null) return;
   const f = FLOORS[fi], bb = bboxOf(r.poly);
   const plate = new THREE.Mesh(flatGeo(r.poly, f.y + 0.06), plateMat(r.kind)); plate.renderOrder = 2; roomG[fi].add(plate); plates[fi].push(plate);
   const pts = r.poly.map(([x, y]) => V(x, y, f.y + 0.08)); pts.push(pts[0].clone());
   const edge = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), edgeMat); roomG[fi].add(edge); plates[fi].push(edge);
-  const pg = new THREE.ExtrudeGeometry(polyShape(r.poly), { depth: 2.4, bevelEnabled: false }); pg.rotateX(-Math.PI / 2); pg.translate(0, f.y, 0);
+  const pg = new THREE.ExtrudeGeometry(polyShape(r.poly), { depth: r.sub ? 2.5 : 2.4, bevelEnabled: false }); pg.rotateX(-Math.PI / 2); pg.translate(0, f.y, 0);
   const pick = new THREE.Mesh(pg, pickMat); roomG[fi].add(pick);
   const c = V((bb.x0 + bb.x1) / 2, (bb.y0 + bb.y1) / 2, f.y);
   const rank = r.kind === 'card' || r.kind === 'restricted' ? 1 : r.kind === 'circ' ? 3 : 2;
@@ -280,6 +382,7 @@ function applyMode() {
   const m = mode, fl = isFloor(m);
   const under = fl && m <= 1;
   for (const s of SITE_MESHES) s.visible = !under;
+  for (const s of SITE_EXTRA) if (s.name === 'ground_walls') s.visible = !under;
   // 主楼外壳：外观原样；内透半透明；剖切切在楼面以上 1.5 m（地下层不显示）
   for (const s of SHELL) {
     s.visible = !under;
@@ -403,6 +506,11 @@ function cardHTML(it) {
   }
   let h = `<h3>${esc(nameOf(it))}</h3><div class="sub">${esc(floorName(it.floor))} · ${esc(d.id)}</div>`;
   if (d.kind === 'restricted') return h + `<div class="row">${esc(tx('restricted'))}</div>`;
+  if (d.sub) {
+    h += `<div class="row"><em>${zh ? '位置' : 'Where'}</em>${zh ? '主卧套间内' : 'Inside the master suite'}</div>`;
+    if (zh && d.note) h += `<div class="row"><em>${tx('use')}</em>${esc(d.note)}</div>`;
+    return h + `<div class="src"><b class="s0">${esc(tx('card'))}</b></div><div class="acts"><button class="gal" type="button">${tx('gallery')} ›</button></div>`;
+  }
   const area = d.card_area ? `${Math.round(d.area)} ㎡（${zh ? '卡' : 'card'} ${d.card_area}）` : d.card_range ? `${Math.round(d.area)} ㎡（${zh ? '卡' : 'card'} ${d.card_range[0]}–${d.card_range[1]}）` : `${Math.round(d.area)} ㎡`;
   h += `<div class="row"><em>${tx('size')}</em>${esc(area)}</div>`;
   if (zh && d.note) h += `<div class="row"><em>${tx('use')}</em>${esc(d.note)}</div>`;
@@ -442,6 +550,8 @@ function pickAt(cx, cy) {
   const hits = ray.intersectObjects(list, false);
   if (!hits.length) return null;
   if (mode === 'ext') hits.sort((a, b) => (a.object.userData.item.d.r ?? 0) - (b.object.userData.item.d.r ?? 0));   // 区域：最具体（最小）的优先
+  const sub = hits.find((h) => h.object.userData.item.d.sub);   // 套间里的子区域（衣帽间）压过外层房间
+  if (sub && hits[0].object.userData.item.d.id === sub.object.userData.item.d.parent) return sub.object.userData.item;
   return hits[0].object.userData.item;
 }
 let pinned = null, hover = null, pinT = 0;
@@ -465,7 +575,7 @@ function keysOf(it) {
   const d = it.d;
   if (it.kind === 'area') return [d.name, d.en, ...(d.alias || [])];
   const base = d.name.replace(/[（(][^）)]*[）)]/g, '').replace(/\s*[×x]\s*\d+\s*$/, '').trim();   // 同 here.mjs planWords：去括注 / 「 ×2」，「 / 」两侧各算一个叫法
-  return [d.name === PH ? null : d.name, d.id, d.card_id, d.name === PH ? null : base, ...(d.name === PH ? [] : base.split(/\s*[\/／]\s*/).filter((w) => [...w].length >= 2)), ...(d.words || []), ...(d.synonyms || []), ...(ALIAS[d.name] || [])];
+  return [d.name === PH ? null : d.name, d.id, d.card_id, d.name === PH ? null : base, ...(d.name === PH ? [] : base.split(/\s*[\/／]\s*/).filter((w) => [...w].length >= 2)), ...(d.alias || []), ...(d.words || []), ...(d.synonyms || []), ...(ALIAS[d.name] || [])];
 }
 // 旧编号 / 仓库以前自编的旧名（聊天里存过的）→ 现在的卡编号
 const OLD = { ...(CARD.card_id_alias || {}), ...(CARD.retired_names || {}) };
@@ -475,7 +585,7 @@ function findByName(name, floor) {
   let best = null, score = -1;
   for (const it of ITEMS) {
     if (floor != null && it.floor !== floor) continue;
-    const rank = it.kind === 'room' ? (it.d.kind === 'card' || it.d.kind === 'restricted' ? 4 : 2) : it.d.pri >= 8 ? 1 : 3;
+    const rank = it.kind === 'room' ? (it.d.sub ? 5 : it.d.kind === 'card' || it.d.kind === 'restricted' ? 4 : 2) : it.d.pri >= 8 ? 1 : 3;
     for (const k of keysOf(it).filter((k) => typeof k === 'string' && k)) {
       const kl = norm(k); let sc = -1;
       if (s === kl) sc = 10000 + rank; else if (kl.length > 1 && s.includes(kl)) sc = rank * 100 + kl.length; else continue;
@@ -655,7 +765,7 @@ window.addEventListener('message', (e) => {
   else if (d.type === 'estate:floor') { const m = parseFloor(d.floor); if (m != null) setMode(m, { fly: true }); }
   else if (d.type === 'estate:inset' && Number.isFinite(d.left)) { document.documentElement.style.setProperty('--inset', Math.max(6, d.left) + 'px'); frustum(); needs = true; }
   else if (d.type === 'estate:lang' && (d.lang === 'en' || d.lang === 'zh')) setLang(d.lang);
-  else if (d.type === 'estate:theme' && (d.theme === 'light' || d.theme === 'dark')) { THEME = d.theme; document.documentElement.dataset.theme = THEME; needs = true; }
+  else if (d.type === 'estate:theme' && (d.theme === 'light' || d.theme === 'dark')) { THEME = d.theme; document.documentElement.dataset.theme = THEME; paintSky(); }
 });
 function setLang(l) { LANG = l; buildNav(); relabel(); frustum(); const it = cardFor; cardFor = null; if (it) showCard(it, cardAt?.[0], cardAt?.[1]); needs = true; }
 addEventListener('resize', () => { frustum(); renderer.setSize(innerWidth, innerHeight); labelR.setSize(innerWidth, innerHeight); camera.zoom = clamp(camera.zoom, minZoom, maxZoom); camera.updateProjectionMatrix(); needs = true; });
@@ -676,12 +786,22 @@ function loop(now) {
   if (lowRes && !down && !pinch && now - lastInteract > 150) setLowRes(false);
   if (!(needs || moving || STATS)) return;
   needs = false;
+  adapt(now, moving);
   renderer.render(scene, camera); lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
   labelR.render(scene, camera); cullLabels();
   if (cardFor && !cardAt) placeCard();
   frames++;
   if (first) { first = false; onFirstFrame(); }
   if (STATS && now - fpsT > 500) { fps = frames * 1000 / (now - fpsT); frames = 0; fpsT = now; statsEl.textContent = `T${tier} · ${fps.toFixed(0)} fps\n${lastInfo.calls} calls\n${(lastInfo.triangles / 1000).toFixed(0)}k tris\n${STAT.site}${STAT.house ? ' + ' + STAT.house : ''}`; }
+}
+// 自适应清晰度：连续动画 / 拖动时统计 2 秒，帧率 < 30 就把像素比降到 1.5（只降一次）
+let adT = 0, adN = 0;
+function adapt(now, moving) {
+  if (DPR <= 1.5 || STATS && Q.get('adapt') === '0') return;
+  if (!moving) { adT = 0; return; }
+  if (!adT) { adT = now; adN = 0; return; }
+  adN++;
+  if (now - adT > 2000) { const f = adN * 1000 / (now - adT); adT = 0; if (f < 30) { DPR = 1.5; renderer.setPixelRatio(lowRes ? Math.max(1, DPR * 0.75) : DPR); renderer.setSize(innerWidth, innerHeight); } }
 }
 function onFirstFrame() {
   window.__estateFirstFrame = true; if (window.__estateWatchdog) window.__estateWatchdog();
@@ -701,7 +821,7 @@ window.__estate = {
   setMode: (m) => setMode(parseFloor(m) ?? m, { fly: true }), focus: (n) => { const it = findByName(n); if (it) focusItem(it); return !!it; },
   find: (n) => { const it = findByName(n); return it ? { kind: it.kind, name: it.d.name, id: it.d.id, floor: it.floor != null ? FLOORS[it.floor].id : null } : null; },
   focusCard: (c) => focusRoomMsg(c.name, c), mode: () => mode, houseState: () => houseState, pinned: () => pinned && { kind: pinned.kind, name: pinned.d.name, id: pinned.d.id },
-  tier: () => tier,
+  tier: () => tier, dpr: () => DPR,
   stats: () => ({ ...lastInfo, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length, tier, low: LOW, files: STAT, times: TB, firstFrameMs: window.__estate.firstFrameMs, tris: STAT.tris }),
   camera, controls, renderer, scene, setLang,
 };
