@@ -21,8 +21,10 @@
 我们的规则只提到我们自己的东西（人物标签、⌖改名 / ⌖用途、地图.*），不引用卡里的字段名或原文。
 示范标签只用 EXAMPLES 里的原文（模型照抄时地图不落点）。不写任何关键词过滤规则（地图不过滤内容，见 docs/content-compat.md）。
 
-用法：python3 tools/build_worldbook_addon.py [--version 0.9.1] [--out 路径] [--check 参照世界书.json]
+用法：python3 tools/build_worldbook_addon.py [--version 0.9.1] [--out 路径] [--check 参照世界书.json] [--force]
 默认输出：~/Downloads/酒馆/世界书/伊甸地图·世界书附加条目 v<版本>.json；只用标准库 + node。
+版本：不写 --version 时取 VERSION；该版本已发布（有 map-v<版本> 标签）则默认改用 <版本>-dev，不碰已发布的文件。
+      显式写一个已发布的版本号时拒绝写出，除非 --force（曾经有 agent 因为 VERSION 还没升而覆盖了已发布的 v0.9.5 文件）。
 """
 import argparse, json, os, re, subprocess, sys
 
@@ -339,10 +341,18 @@ console.log(JSON.stringify({ tags: C.parseChars(a.who).length + V.parseCustomTag
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--version', default=open(os.path.join(ROOT, 'VERSION')).read().strip() if os.path.exists(os.path.join(ROOT, 'VERSION')) else '0.9.1')
+    ap.add_argument('--version', help='默认取 VERSION；已发布则 <VERSION>-dev')
     ap.add_argument('--out')
     ap.add_argument('--check', metavar='参照.json', help='按一份现有世界书核对字段与类型')
+    ap.add_argument('--force', action='store_true', help='允许写已发布版本（有 map-v<版本> 标签）的文件')
     a = ap.parse_args()
+    released = lambda v: subprocess.run(['git', 'rev-parse', '-q', '--verify', f'refs/tags/map-v{v}'], cwd=ROOT, capture_output=True).returncode == 0
+    if a.version is None:
+        v = open(os.path.join(ROOT, 'VERSION')).read().strip() if os.path.exists(os.path.join(ROOT, 'VERSION')) else '0.9.1'
+        a.version = f'{v}-dev' if released(v) else v
+        if a.version != v: print(f'VERSION {v} 已发布（map-v{v}），输出按 {a.version}（要写正式版本号：--version <新版本>）')
+    elif released(a.version) and not a.force:
+        sys.exit(f'v{a.version} 已发布（有 map-v{a.version} 标签），拒绝覆盖已发布的附加世界书；确实要重写请加 --force，或用 --version {a.version}-dev / 新版本号')
     items, n = build(a.version)
     lore_max = selftest(items)
     book = to_book(items)
