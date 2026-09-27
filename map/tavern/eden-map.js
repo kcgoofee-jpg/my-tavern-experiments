@@ -211,18 +211,23 @@
   }
   lineBtn.addEventListener('click', showPicker);
 
-  // 自动选线：所有线路同时取一个小文件，最先成功的就是最快的。用户手动选过就尊重手动选择
-  function probe(key) {
-    const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 6000);
-    return fetch(baseFor(key) + 'data/maps.json', { cache: 'no-store', signal: ctl.signal })
+  // 自动选线（v0.9.5 性能 P1）：所有线路同时取小文件 data/build.json（加时间戳绕过缓存），最先成功的胜出，其余请求立即取消；
+  // 胜出线路记 24 小时（edenMapLineAt），过期或加载失败才重测。用户手动选过就尊重手动选择
+  const LINE_TTL = 24 * 3600e3, LINE_AT = LINE_KEY + 'At';
+  function probe(key, ctl) {
+    const to = setTimeout(() => ctl.abort(), 6000);
+    return fetch(baseFor(key) + 'data/build.json?probe=' + Date.now(), { cache: 'no-store', signal: ctl.signal })
       .then(r => { if (!r.ok) throw 0; return key; }).finally(() => clearTimeout(to));
   }
-  async function autoLine() {
+  async function autoLine(force = false) {
     if (!swappable) return true;
-    let manual = false; try { manual = localStorage.getItem(LINE_KEY + 'Manual') === '1'; } catch (e) {}
+    let manual = false, at = 0; try { manual = localStorage.getItem(LINE_KEY + 'Manual') === '1'; at = +localStorage.getItem(LINE_AT) || 0; } catch (e) {}
     if (manual && line) return true;
-    const key = await Promise.any(LINES.map(l => probe(l.key))).catch(() => null);
+    if (!force && line && Date.now() - at < LINE_TTL) return true;   // 24 小时内测过：直接用
+    const ctls = LINES.map(() => new AbortController());
+    const key = await Promise.any(LINES.map((l, i) => probe(l.key, ctls[i]).then(k => { ctls.forEach((c, j) => { if (j !== i) c.abort(); }); return k; }))).catch(() => null);
     if (!key) return false;
+    try { localStorage.setItem(LINE_AT, String(Date.now())); } catch (e) {}
     if (key !== line) { line = key; BASE = baseFor(key); html = null; try { localStorage.setItem(LINE_KEY, key); } catch (e) {} showLine(); }
     return true;
   }
@@ -303,7 +308,8 @@
     startProg(); htmlProg = f => setProg(f * 20);
     let doc;
     try { doc = await fetchHtml(); setProg(20); }
-    catch (e) { hintEl.textContent = '地图程序下载失败，可以重试或换一条线路'; actsEl.hidden = false; clearInterval(watchT); if (ghost) endGhost(false); return; }
+    catch (e) { try { localStorage.removeItem(LINE_AT); } catch (x) {} autoLine(true).catch(() => {});   // 这条线路失败：下次重测（v0.9.5）
+      hintEl.textContent = '地图程序下载失败，可以重试或换一条线路'; actsEl.hidden = false; clearInterval(watchT); if (ghost) endGhost(false); return; }
     finally { htmlProg = null; }
     if (panel.hidden) return;   // 取页面期间面板又被关了
     frame.onload = () => push();
