@@ -89,7 +89,7 @@ const TCChars = (() => {
   function row(c) {
     const id = identity(c.name);
     return `<li><button type="button" class="chgo" data-n="${esc(c.name)}"><i class="av" style="--c:${color(c.name)}">${avImg(c.name) || esc(ini(c.name))}</i><b>${esc(dn(c.name))}</b><em><span class="chsrc src-${esc(c.src || 'infer')}">${esc(srcOf(c))}</span> ${esc(when(c))}</em><small>${esc((id ? id + ' · ' : '') + c.place)}</small></button>`
-      + `<input type="checkbox" role="switch" data-n="${esc(c.name)}" aria-label="${esc(T('ch.toggle_one', '在地图上显示 {n}', { n: c.name }))}" ${prefs.off.includes(c.name) ? '' : 'checked'} ${prefs.show ? '' : 'disabled'}></li>`;
+      + `<label class="chsw"><input type="checkbox" role="switch" data-n="${esc(c.name)}" aria-label="${esc(T('ch.toggle_one', '在地图上显示 {n}', { n: c.name }))}" ${prefs.off.includes(c.name) ? '' : 'checked'} ${prefs.show ? '' : 'disabled'}></label></li>`;
   }
   function rosterRow(it) {
     const c = items.find(x => x.name === it.name);
@@ -135,7 +135,7 @@ const TCChars = (() => {
   .chm .av,#evbar .chpane .av{--c:#888;flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;box-sizing:border-box;border:2px solid #fff;box-shadow:0 0 0 2px var(--c);background:var(--c);color:#fff;
     font:700 12px/1 var(--font-ui,sans-serif);font-style:normal;overflow:hidden;text-shadow:0 1px 1px rgba(0,0,0,.45)}
   .chm.approx .av:first-child{outline:1px dashed rgba(255,255,255,.7);outline-offset:3px}
-  .chm .av+.av{margin-left:-9px}.chm .av.more{--c:#3a3f46;font-size:10px}
+  .chm .av+.av{margin-left:-9px}.chm .av.more{--c:#3a3f46;font-size:var(--fs-micro,11px)}
   .chm .av img,#evbar .chpane .av img{width:100%;height:100%;object-fit:cover}
   .chm b{margin-left:5px;font:600 var(--fs-micro,11px)/1.3 var(--font-ui,sans-serif);color:var(--map-label-ink,#fff);background:var(--map-label-bg,rgba(8,10,14,.8));padding:1px 7px;border-radius:var(--r-pill,999px);white-space:nowrap;max-width:12em;overflow:hidden;text-overflow:ellipsis}
   .chm.lhide b{visibility:hidden} body.far .chm b{display:none} body.nomarkers .chm{display:none}
@@ -146,10 +146,10 @@ const TCChars = (() => {
   #evbar .chpane .chgrps{max-height:40vh;max-height:40dvh;overflow-y:auto}
   #evbar .chpane ul{list-style:none;margin:0;padding:0}
   #evbar .chpane summary{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 var(--sp-3,6px);cursor:pointer;font-size:var(--fs-small,12px);font-weight:600;color:var(--ink-2);border-top:1px solid var(--line)}
-  #evbar .chpane summary small{color:var(--muted);font-weight:400}
+  #evbar .chpane summary small{color:var(--muted);font-weight:400;font-size:var(--fs-micro,11px)}
   #evbar .chpane summary{list-style:none}#evbar .chpane summary::-webkit-details-marker{display:none}#evbar .chpane summary::before{content:'';width:6px;height:6px;border:solid var(--muted);border-width:0 1.5px 1.5px 0;transform:rotate(-45deg);margin:0 4px 0 2px;transition:transform var(--dur-1,120ms)}#evbar .chpane details[open]>summary::before{transform:rotate(45deg)}
   #evbar .chpane .chro{cursor:default}
-  #evbar .chpane .chstage{display:inline-flex;align-items:center;gap:4px;padding:0 6px;border:1px solid var(--line-strong,rgba(255,255,255,.25));border-radius:var(--r-pill,999px);font-size:10px;line-height:15px;color:var(--ink-2)}
+  #evbar .chpane .chstage{display:inline-flex;align-items:center;gap:4px;padding:0 6px;border:1px solid var(--line-strong,rgba(255,255,255,.25));border-radius:var(--r-pill,999px);font-size:var(--fs-micro,11px);line-height:15px;color:var(--ink-2)}
   #evbar .chpane .chstage i{display:inline-flex;gap:2px}#evbar .chpane .chstage i b{width:5px;height:5px;border-radius:50%;background:var(--line-strong,rgba(255,255,255,.25))}
   #evbar .chpane .chstage i b.on{background:var(--accent)}
   @media (pointer:coarse),(max-width:640px){#evbar .chpane summary{min-height:44px}}
@@ -159,9 +159,10 @@ const TCChars = (() => {
   #evbar .chpane .chgo .av{grid-row:1/3}
   #evbar .chpane .chgo b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #evbar .chpane .chgo em{font-style:normal;color:var(--muted);font-size:var(--fs-micro,11px);white-space:nowrap}
-  #evbar .chpane .chsrc{display:inline-block;padding:0 5px;margin-right:2px;border:1px solid var(--line-strong,rgba(255,255,255,.25));border-radius:var(--r-pill,999px);font-size:10px;line-height:15px}
+  #evbar .chpane .chsrc{display:inline-block;padding:0 5px;margin-right:2px;border:1px solid var(--line-strong,rgba(255,255,255,.25));border-radius:var(--r-pill,999px);font-size:var(--fs-micro,11px);line-height:15px}
   #evbar .chpane .chsrc.src-mvu{border-color:var(--accent);color:var(--accent)}
   #evbar .chpane .chgo small{grid-column:2/-1;color:var(--muted);font-size:var(--fs-micro,11px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #evbar .chpane .chsw{flex:none;display:grid;place-items:center;min-width:44px;min-height:44px;margin:0}
   @media (pointer:coarse),(max-width:640px){#evbar .chpane .chgo{min-height:44px}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   mod().then(loadPrefs);

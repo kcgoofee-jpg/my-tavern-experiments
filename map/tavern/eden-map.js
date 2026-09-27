@@ -312,15 +312,20 @@
       hintEl.textContent = '地图程序下载失败，可以重试或换一条线路'; actsEl.hidden = false; clearInterval(watchT); if (ghost) endGhost(false); return; }
     finally { htmlProg = null; }
     if (panel.hidden) return;   // 取页面期间面板又被关了
-    frame.onload = () => push();
+    frame.onload = () => { setHostToken(); push(); };
+    setHostToken();
     frame.srcdoc = doc;
   }
   function unloadViewer() { alive = false; frame.onload = null; frame.removeAttribute('srcdoc'); frame.src = 'about:blank'; mapTitle = ''; showTitle(); }
+  // 宿主令牌（2026-09-27 接手 review P1）：查看器只认带这个令牌的消息。脚本跑在卡片 iframe 里、查看器挂在宿主页上时
+  // 「消息来源窗口」并不是查看器的 parent，所以只比对 e.source 会把真宿主也挡掉；令牌写在查看器窗口上，只有能碰到这个窗口的脚本才拿得到。
+  const HOST_TOKEN = 'ek' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+  const setHostToken = () => { try { const w = frame.contentWindow; if (w) w.__edenHostToken = HOST_TOKEN; } catch (e) {} };
   function sleepViewer() {
     if (!alive) return unloadViewer();
     post({ type: 'eden-map:sleep' }); clearTimeout(killT); killT = setTimeout(unloadViewer, SLEEP_MS);
   }
-  const post = msg => { if (!dead) frame.contentWindow?.postMessage(msg, '*'); };
+  const post = msg => { if (!dead) { setHostToken(); frame.contentWindow?.postMessage({ ...msg, t: HOST_TOKEN }, '*'); } };   // srcdoc 换页后属性会丢，每次发消息前补一次
   let flyQ = null;   // EdenMap.flyTo 在地图就绪前调用时排队
   // 地图 → 酒馆：ready 撤掉遮罩；state 更新面板标题。只接受来自本面板 iframe 的消息
   const onMsg = e => {
