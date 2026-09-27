@@ -43,10 +43,14 @@ export function openSplash(o) {
   const el = pdoc.createElement('div'); el.className = 'em-splash'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-labelledby', 'emSplashT');
   el.innerHTML = `<header><svg class="cmp" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="1.5"/><g><path d="M16 5l3 11-3 11-3-11z" fill="currentColor" opacity=".9"/><path d="M16 16l3 0-3 11-3-11z" fill="var(--em-bg)" opacity=".7"/></g></svg>`
     + `<h2 id="emSplashT"></h2><button type="button" class="x"></button></header><div class="pb" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>`
-    + `<div class="pt"><span class="st"></span><span class="pc">0%</span></div><ul class="ck"></ul><ul class="tk"></ul><button type="button" class="go"></button>`;
+    + `<div class="pt"><span class="st"></span><span class="pc">0%</span></div><ul class="ck"></ul><ul class="tk"></ul><button type="button" class="go"></button><footer class="vf"></footer>`;
   el.querySelector('h2').textContent = L('伊甸地图', 'Eden Map') + (o.ver ? ' v' + o.ver : '');
   el.querySelector('.x').textContent = '×'; el.querySelector('.x').setAttribute('aria-label', L('关闭（后台继续加载）', 'Close (loading continues)'));
   el.querySelector('.go').textContent = L('开始', 'Start');
+  // v0.9.6：页脚写版本、构建号、跟随方式（o.about = { version, code, channel, ref }）
+  { const a = o.about || {}, ch = { tag: L('固定版本', 'pinned'), follow: L('跟随 ', 'following ') + (a.ref || ''), ref: L('预览 ', 'preview ') + (a.ref || ''), local: L('本地', 'local') }[a.channel] || '';
+    el.querySelector('.vf').textContent = [(a.version || o.ver) ? 'v' + (a.version || o.ver) : '', a.code || '', ch].filter(Boolean).join(' · ');
+    el.querySelector('.vf').style.cssText = 'margin-top:10px;font:11px/1.4 ui-monospace,Menlo,monospace;opacity:.7;text-align:center'; }
   root.appendChild(el); markSeen(o.store, o.ver);   // 显示过就算（不因为没点关闭而每次都弹）
   const ul = el.querySelector('ul.ck'), tk = el.querySelector('ul.tk'), bar = el.querySelector('.pb'), stEl = el.querySelector('.st'), pcEl = el.querySelector('.pc');
   const RM = (() => { try { return pdoc.defaultView.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } })();

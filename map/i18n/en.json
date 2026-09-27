@@ -367,5 +367,21 @@
   "ev.src_floor": "{src} · chat message #{n}",
   "ev.new": "NEW",
   "ev.legend_aria": "Filter by category",
-  "tiles_failed": "Map tiles failed to load: this route is unreachable. Retry, or switch route in the title bar"
+  "tiles_failed": "Map tiles failed to load: this route is unreachable. Retry, or switch route in the title bar",
+  "credit_aria": "Credits",
+  "ring": "Tiancheng outskirts",
+  "about.title": "Map version",
+  "about.ch_tag": "Pinned release {ref}",
+  "about.ch_follow": "Following branch {ref} (latest commit on each open)",
+  "about.ch_ref": "Preview commit {ref}",
+  "about.ch_local": "Local / standalone",
+  "about.line": "Route: {l}",
+  "about.check": "Check for updates",
+  "about.checking": "Checking…",
+  "about.latest": "Up to date (v{v})",
+  "about.new": "New version v{v}",
+  "about.notes": "Release notes",
+  "about.how_follow": "The follow-branch script picks it up automatically: just reload the page",
+  "about.how_tag": "Pinned scripts don't change by themselves: import the new script \"【地图】伊甸地图 v{v}\" (it replaces the old one)",
+  "about.fail": "Check failed: update service unreachable, try later"
 }

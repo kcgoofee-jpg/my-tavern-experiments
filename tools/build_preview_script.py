@@ -20,9 +20,21 @@ HOSTS = ['cdn.jsdmirror.com', 'cdn.jsdelivr.net']   # 与卡内顺序一致：�
 # 原作署名（作者同意二次创作的条件：发布时首帖附原作帖链接，2026-09-27 经 Discord 同意）
 CREDIT = '原作角色卡：Yehehua（类脑社区），原作发布帖 https://discord.com/channels/1380075940285124724/1534464824141025321 。本地图是经作者同意的二次创作。'
 
-def build(ref):
+def about(channel, ref):
+    """v0.9.6：烘进脚本的版本信息（VERSION + map/data/build.json），地图设置「关于」与开场自检页脚显示；运行时以线路上的 build.json 为准。"""
+    ver = open('VERSION', encoding='utf-8').read().strip() if os.path.exists('VERSION') else ''
+    try: code = json.load(open('map/data/build.json', encoding='utf-8')).get('code', '')
+    except Exception: code = ''
+    return {'version': ver, 'code': code, 'channel': channel, 'ref': ref}
+
+
+def stamp(info):
+    return 'window.__edenMapScript = ' + json.dumps(info, ensure_ascii=False) + ';\n'
+
+
+def build(ref, channel='ref'):
     urls = [f'https://{h}/gh/{REPO}@{ref}/map/tavern/eden-map.js' for h in HOSTS]
-    content = ("// 地图脚本：依次尝试各线路，加载成功就停\n(async () => {\n  for (const u of " + json.dumps(urls) +
+    content = stamp(about(channel, ref)) + ("// 地图脚本：依次尝试各线路，加载成功就停\n(async () => {\n  for (const u of " + json.dumps(urls) +
                ") {\n    try { await import(u); return; } catch (e) { console.warn('[地图] 线路不可用，换下一个', u); }\n  }\n})();\n")
     return {
         'type': 'script', 'enabled': True, 'name': f'【地图】世界地图（预览 {ref}）',
@@ -37,7 +49,7 @@ def build(ref):
 def build_release(tag):
     """正式版：与 build() 同样的多线路加载，钉在发版标签；id 固定，下个版本导入时覆盖旧版而不是多一份。"""
     ver = tag[len('map-v'):] if tag.startswith('map-v') else tag
-    d = build(tag)
+    d = build(tag, 'tag')
     d.update(name=f'【地图】伊甸地图 v{ver}', id=str(uuid.uuid5(uuid.NAMESPACE_URL, 'eden-map-release')),
              info=f'伊甸地图 v{ver}（外挂脚本，不改角色卡）：加载 {REPO}@{tag} 的 map/tavern/eden-map.js（jsdmirror → jsDelivr）。'
                   '配合世界书「伊甸地图·世界书附加条目」使用。升级时导入新版同名脚本会覆盖本条；请停用各种预览版地图脚本，避免两个悬浮按钮互相替换。' + CREDIT)
@@ -55,6 +67,7 @@ def build_follow(branch, fallback):
          || await tryJson(`https://data.jsdelivr.com/v1/packages/gh/${REPO}/resolved?specifier=${encodeURIComponent(BR)}`, j => j.version);
   try { if (sha) localStorage.setItem(KEY, sha); else sha = localStorage.getItem(KEY); } catch (e) {}
   sha = (sha || %(fb)s).slice(0, 12);
+  try { window.__edenMapScript = Object.assign(window.__edenMapScript || {}, { sha }); } catch (e) {}
   console.info('[地图] 预览提交', sha);
   for (const h of HOSTS) {
     const u = `https://${h}/gh/${REPO}@${sha}/map/tavern/eden-map.js`;
@@ -65,7 +78,7 @@ def build_follow(branch, fallback):
     return {
         'type': 'script', 'enabled': True, 'name': f'【地图】世界地图（预览 · 跟随 {branch}）',
         'id': str(uuid.uuid5(uuid.NAMESPACE_URL, f'eden-map-preview-follow:{branch}')),
-        'content': js,
+        'content': stamp(about('follow', branch)) + js,
         'info': f'地图预览版（可复用）：每次打开时加载 {REPO} 分支 {branch} 的最新提交。推送新版本后刷新酒馆即可，不用重新导入。'
                 '试用完请删除或停用，避免和卡内的「【地图】世界地图」同时运行。' + CREDIT,
         'button': {'enabled': False, 'buttons': []}, 'data': {}, 'export_with': {'button': True, 'data': True},

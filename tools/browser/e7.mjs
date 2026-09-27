@@ -50,7 +50,7 @@ async function phone(preset, hand, tag) {
   const eff = hand === 'auto' ? 'right' : hand;
   const onSide = bx.every(b => eff === 'left' ? b.l < W * .5 && b.l >= 0 : b.r > W * .5 && b.r <= W);
   const inZone = bx.every(b => b.t >= H * .4 && b.b <= H);
-  rep.check(`${tag} 停靠栏在${eff === 'left' ? '左' : '右'}手拇指区（下 60%）`, side === eff && onSide && inZone && bx.length >= 7,
+  rep.check(`${tag} 停靠栏在${eff === 'left' ? '左' : '右'}手拇指区（下 60%）`, side === eff && onSide && inZone && bx.length >= 2,   // v0.9.6：触屏不显示缩放组、层切换器收成一个胶囊（菜单 + 当前层）
     `${bx.length} 个控件；最高 ${Math.round(Math.min(...bx.map(b => b.t)))} px / ${H}；${eff === 'left' ? '最右 ' + Math.round(Math.max(...bx.map(b => b.r))) : '最左 ' + Math.round(Math.min(...bx.map(b => b.l)))} px / ${W}`);
   const hits = await p.evaluate(() => [...document.querySelectorAll('#thumbBtn, #zoom button, #layers button')].filter(e => e.offsetParent).map(e => { const r = e.getBoundingClientRect(), s = getComputedStyle(e, '::before');
     return Math.min(r.width, r.height) + (s.content !== 'none' ? Math.max(0, -parseFloat(s.top) || 0) * 2 : 0); }));

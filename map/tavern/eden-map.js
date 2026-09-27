@@ -9,8 +9,8 @@
   // 线路：地图的图片和数据可以走不同的 CDN 节点。gh 线路路径格式相同，只换域名；npm 线路路径不同（包名 / 版本 / files/map/），单独拼。本地测试地址不换
   const PKG = 'tiancheng-map-assets', REPO = 'kcgoofee-jpg/my-tavern-experiments';
   const LINES = [
-    { key: 'vpn', name: '有梯子', name_en: 'Global CDN', sub: '官方 CDN · jsDelivr', host: 'cdn.jsdelivr.net' },
-    { key: 'cn', name: '没梯子', name_en: 'CN mirror', sub: '国内镜像 · jsdmirror', host: 'cdn.jsdmirror.com' },
+    { key: 'vpn', name: '有梯子', name_en: 'Global CDN', short_en: 'Global', sub: '官方 CDN · jsDelivr', host: 'cdn.jsdelivr.net' },
+    { key: 'cn', name: '没梯子', name_en: 'CN mirror', short_en: 'CN', sub: '国内镜像 · jsdmirror', host: 'cdn.jsdmirror.com' },
     // npm 包的国内镜像：首次 npm publish 并验证后再把 enabled 改成 true
     { key: 'npm', name: 'npm 镜像', sub: '国内 · npmmirror', enabled: false, url: v => `https://registry.npmmirror.com/${PKG}/${v}/files/map/` },
   ].filter(l => l.enabled !== false);
@@ -183,7 +183,9 @@
   hostTheme(storedTheme());
   const onThemeMq = () => { if (storedTheme() === 'auto') hostTheme('auto'); };
   themeMq?.addEventListener?.('change', onThemeMq);
-  const showLine = () => { const l = LINES.find(x => x.key === line); lineBtn.textContent = U('line') + (l ? (UL === 'en' && l.name_en) || l.name : U('unset')); };
+  // v0.9.6：线路按钮只写短名（「有梯子」/「Global」），完整说明放 title；以前「线路：没梯子」在手机上截成「线路：…」、英文「Route: C…」
+  const showLine = () => { const l = LINES.find(x => x.key === line), full = l ? (UL === 'en' && l.name_en) || l.name : U('unset');
+    lineBtn.textContent = '⇄ ' + (l ? (UL === 'en' ? l.short_en || l.name_en : l.name) : U('unset')); lineBtn.title = U('line') + full; lineBtn.setAttribute('aria-label', U('line') + full); };
   // v0.9.2：标题只写纪年，层名只在地图的面包屑里出现一次
   const showTitle = () => { titleEl.textContent = U('title'); root.querySelector('.em-close').setAttribute('aria-label', U('close'));
     fab.setAttribute('aria-label', U('open')); if (!fab.classList.contains('prep') && !fab.classList.contains('fail')) fab.title = U('fab'); };
@@ -331,12 +333,12 @@
   const onMsg = e => {
     if (e.source !== frame.contentWindow) return;
     if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
-    if (e.data?.type === 'eden-map:ready') { alive = true; sentClock = sentOutfit = charsSent = null; knowRooms(); sendCheck(); sendCustom(); sendTrips(); varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: UL }); sendAbout(); alive = true; sentClock = sentOutfit = charsSent = null; knowRooms(); sendCheck(); sendCustom(); sendTrips(); varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
     if (e.data?.type === 'eden-map:ready' && flyQ) { const q = flyQ; flyQ = null; setTimeout(() => inner()?.flyTo?.(q), 0); }   // EdenMap.flyTo 排队的
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
     if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
     if (e.data?.type === 'eden-map:state') {
-      if (e.data.lang && e.data.lang !== UL && UI[e.data.lang]) { UL = e.data.lang; showLine(); push(); }
+      if (e.data.lang && e.data.lang !== UL && UI[e.data.lang]) { UL = e.data.lang; try { localStorage.setItem('edenMapLang', UL); } catch (x) {} showLine(); push(); }   // 地图里切了语言：标题栏跟着换并记下（两边只有一个设置）
       if (e.data.theme) hostTheme(e.data.theme);
       if (e.data.hand && e.data.hand !== handPref) { handPref = e.data.hand; applyHand(true); }
       mapTitle = e.data.title || ''; showTitle(); }
@@ -350,8 +352,33 @@
     if (e.data?.type === 'eden-map:custom-sync') api.setWorldbookSync(!!e.data.on);
     if (e.data?.type === 'eden-map:splash') showSplash();   // 设置「重新显示开场自检」
     if (e.data?.type === 'eden-map:varmap-set') setVarUser(e.data.user);   // v0.9.5 设置「变量映射」
+    if (e.data?.type === 'eden-map:check-update') checkUpdate().then(r => post({ type: 'eden-map:update-result', ...r }));   // v0.9.6「检查更新」
   };
   window.parent.addEventListener('message', onMsg);
+  // ---------------- v0.9.6 版本与检查更新 ----------------
+  // 版本信息：预览 / 正式脚本在 import 前写 window.__edenMapScript = { version, code, channel: tag | follow | ref, ref, sha }（tools/build_preview_script.py 烘进去）；
+  // 没有（旧脚本、本地）时按脚本地址推断，版本号与构建号取当前线路的 data/build.json。
+  const SCRIPT = (() => { try { return window.__edenMapScript || window.parent.__edenMapScript || {}; } catch (e) { return {}; } })();
+  const refOf = () => (SELF.match(/@([^/]+)\/map\/$/) || [])[1] || '';
+  const channel = () => SCRIPT.channel || (VER ? 'tag' : swappable ? 'ref' : 'local');
+  let aboutBuild = null;
+  const buildNow = () => aboutBuild ??= fetch(BASE + 'data/build.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
+  async function sendAbout() { const b = await buildNow(), l = LINES.find(x => x.key === line);
+    post({ type: 'eden-map:about', version: b?.version || SCRIPT.version || VER || null, code: b?.code || SCRIPT.code || null, channel: channel(),
+      ref: SCRIPT.ref || (VER ? 'map-v' + VER : refOf()), sha: SCRIPT.sha || null, line: l ? (UL === 'en' && l.name_en) || l.name : '' }); }
+  // 查最新 map-v 标签（jsDelivr 数据接口，绕缓存），再取该标签的 build.json（走当前线路）；比较版本号。只报告，不安装
+  async function checkUpdate() {
+    try {
+      SC ??= await import(SELF + 'tavern/selfcheck.mjs');
+      const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 10000);
+      const j = await fetch(SC.UPDATE_API(REPO) + '?t=' + Date.now(), { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', signal: ctl.signal }).then(r => r.ok ? r.json() : null).finally(() => clearTimeout(to));
+      const latest = SC.latestTag(j); if (!latest) return { status: 'fail' };
+      const host = (LINES.find(x => x.key === line) || LINES[0]).host || 'cdn.jsdelivr.net';
+      const lb = await fetch(`https://${host}/gh/${REPO}@map-v${latest}/map/data/build.json?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
+      const cur = (await buildNow())?.version || SCRIPT.version || VER;
+      return { ...SC.updateVerdict(cur, latest, channel()), code: lb?.code || null, notes: `https://github.com/${REPO}/blob/map-v${latest}/CHANGELOG.md` };
+    } catch (e) { return { status: 'fail' }; }
+  }
   // ---------------- v0.9.5 变量映射（换卡兼容；tavern/adapter.mjs）：按角色卡存本机，缺了自动找；设置「变量映射」里可改 ----------------
   let varAD = null, varUser = {}, varMap = { location: '世界.当前地点' }, varSig = '', varCard = '';
   const cardKey = () => { try { const c = SillyTavern.getContext(); return c.characters?.[c.characterId]?.avatar || c.name2 || ''; } catch (e) { return ''; } };
@@ -699,23 +726,11 @@
   let dead = false; const offs = [];
   const listen = (ev, fn) => { if (dead) return; try { offs.push([ev, fn, eventOn(ev, fn)]); } catch (e) {} };
   const unlisten = () => { for (const [ev, fn, h] of offs.splice(0)) { try { if (fnOk('eventRemoveListener')) eventRemoveListener(ev, fn, h); else if (fnOk('eventOff')) eventOff(ev, fn); } catch (e) {} } };
-  async function wbFacts() {   // 世界书：酒馆助手的新接口（getWorldbook）或旧接口（getLorebookEntries）；都没有 / 出错 → null（跳过）
-    try {
-      const names = new Set(), add = n => { if (n && typeof n === 'string') names.add(n); };
-      let listed = false;
-      if (fnOk('getGlobalWorldbookNames')) { listed = true; (await getGlobalWorldbookNames() || []).forEach(add); }
-      else if (fnOk('getLorebookSettings')) { listed = true; ((await getLorebookSettings())?.selected_global_lorebooks || []).forEach(add); }
-      if (fnOk('getCharWorldbookNames')) { listed = true; const c = await getCharWorldbookNames('current'); add(c?.primary); (c?.additional || []).forEach(add); }
-      else if (fnOk('getCharLorebooks')) { listed = true; const c = await getCharLorebooks(); add(c?.primary); (c?.additional || []).forEach(add); }
-      if (fnOk('getChatWorldbookName')) { listed = true; add(await getChatWorldbookName('current')); }
-      else if (fnOk('getChatLorebook')) { listed = true; add(await getChatLorebook()); }
-      const get = fnOk('getWorldbook') ? async n => (await getWorldbook(n) || []).map(e => ({ name: e.name, enabled: e.enabled }))
-        : fnOk('getLorebookEntries') ? async n => (await getLorebookEntries(n) || []).map(e => ({ name: e.comment, enabled: e.enabled })) : null;
-      if (!listed || !get) return null;
-      const entries = []; for (const n of names) { try { entries.push(...await get(n)); } catch (e) {} }
-      return { missing: SC.wbMissing(entries), lore: entries.some(e => e && e.enabled !== false && String(e.name || '').startsWith(SC.LORE_PREFIX)) };
-    } catch (e) { return null; }
-  }
+  // 世界书（v0.9.6）：判定与接口兼容都在 selfcheck.mjs 的 collectWorldbook（node 单测 tests/worldbook096.test.mjs）；这里只把接口交给它：
+  // 全局函数优先，其次酒馆助手的 TavernHelper 命名空间（有的版本不挂全局）。出错 → null（跳过）
+  const hostFn = n => { try { const g = window[n] ?? globalThis[n]; if (typeof g === 'function') return g;
+    const th = window.TavernHelper ?? window.parent?.TavernHelper; return typeof th?.[n] === 'function' ? th[n].bind(th) : null; } catch (e) { return null; } };
+  async function wbFacts() { try { return await SC.collectWorldbook(hostFn); } catch (e) { return null; } }
   async function updateFacts() {   // 正式版才查；一天最多一次（不论成败），结果记在本机
     if (!VER || !swappable || !SC.swapVer(import.meta.url, VER)) return null;
     let c = null; try { c = JSON.parse(lsGet(UPD_KEY)); } catch (e) {}
@@ -746,6 +761,8 @@
         vars: varsOk(), ejs: (() => { try { return typeof (window.parent.EjsTemplate || globalThis.EjsTemplate) === 'object'; } catch (e) { return false; } })(),
         mvu, varmode, dup: { others: loads, oldStyle, replaced: !root.isConnected }, line: ln, worldbook: await wbFacts(), version: { script: VER, viewer: viewerVer }, update: await updateFacts(),
       };
+      // 世界书「缺少」先别急着报：酒馆刚启动时全局世界书设置可能还没加载完（v0.9.6 误报），6 秒后再查一次
+      if (checkFacts.worldbook?.missing?.length) { await new Promise(r => setTimeout(r, 6000)); if (dead) return; checkFacts.worldbook = await wbFacts(); }
       finishCheck();
       if (checkFacts.update && SC.cmpVer(checkFacts.update.latest, VER) > 0 && lsGet(AUTO_UPD_KEY) === '1') switchVersion();   // 用户开了「自动更新到新正式版」
     })().catch(e => { console.warn('[eden-map] 自检失败', e); });
@@ -765,7 +782,8 @@
     const lite = lean(), get = f => fetch(BASE + f, { cache: 'force-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
     const EST = ['estate/index.html', 'estate/main.js', 'estate/lib.js', 'estate/building.js', 'estate/furniture.js', 'estate/site.js', 'estate/plan.js', 'estate/vendor/three.module.min.js',
       'estate/vendor/jsm/controls/OrbitControls.js', 'estate/vendor/jsm/environments/RoomEnvironment.js', 'estate/vendor/jsm/renderers/CSS2DRenderer.js'];
-    splash = SPm.openSplash({ root, id: ID, pdoc, ver: VER, en: UL === 'en', store: localStorage, cap: window.parent.__edenSplashCap || 25,
+    const bi = await buildNow();
+    splash = SPm.openSplash({ root, id: ID, pdoc, ver: VER, en: UL === 'en', about: { version: bi?.version || SCRIPT.version || VER, code: bi?.code || SCRIPT.code, channel: channel(), ref: SCRIPT.ref || refOf() }, store: localStorage, cap: window.parent.__edenSplashCap || 25,
       checks: () => runCheck().then(() => checkItems),
       tasks: [
         { key: 'map', zh: '地图程序与当前一层的图块', en: 'Map program and current-layer tiles', run: () => { if (panel.hidden && !alive && !ghost) preload().catch(() => {}); return preP; } },
@@ -775,14 +793,20 @@
       onStart: () => { splash = null; if (panel.hidden || ghost) { if (ghost) endGhost(true); panel.hidden = false; loadViewer(); } }, onClose: () => { splash = null; } });
     return true;
   }
+  // 有 ⚠ 时弹一次小提示：同一版本、同一组警告只弹一次（点 × 或自动收起都算看过）；地图面板开着时不弹——
+  // 面板里的设置 / 表单会被它盖住（v0.9.6 用户实测：盖住了变量映射表），警告在地图设置的「自检」一栏里都有；面板关上后再弹
+  let toastWait = false;
   function toastOnce() {
-    if (splash) return;   // 开场自检卡开着：警告已经列在卡里   // 有 ⚠ 时弹一次小提示；同一组警告不再弹（换聊天也不弹）
-    const sig = SC.warnSig(checkItems); if (!sig || sig === lsGet(TOAST_KEY)) return; lsSet(TOAST_KEY, sig);
+    if (splash) return;   // 开场自检卡开着：警告已经列在卡里
+    const sig = SC.warnSig(checkItems); if (!sig) return;
+    const key = (VER || 'dev') + '|' + sig; if (key === lsGet(TOAST_KEY)) return;
+    if (!panel.hidden && !ghost) { toastWait = true; return; }
+    toastWait = false; lsSet(TOAST_KEY, key);
     toastEl?.remove(); const t = toastEl = pdoc.createElement('div'); t.setAttribute('role', 'status'); t.className = 'em-ctoast';
     const warns = checkItems.filter(i => i.status === 'warn'), L = UL === 'en' ? 'en' : 'zh';
     t.innerHTML = `<b>${UL === 'en' ? 'Map self-check' : '地图自检'}</b><button type="button" aria-label="${UI[UL].close}">×</button>`;
     for (const w of warns) { const d = pdoc.createElement('div'); d.textContent = '⚠ ' + w[L]; t.appendChild(d); }
-    t.querySelector('button').onclick = () => t.remove(); root.appendChild(t); setTimeout(() => t.remove(), 20000);
+    t.querySelector('button').onclick = () => t.remove(); root.appendChild(t); setTimeout(() => t.remove(), 12000);
   }
   function switchVersion() {   // 本次会话换成新正式版：加载新标签的同一个脚本，它会清掉这一份（要长期用，重新导入新版脚本）
     const nv = updInfo?.latest, url = nv && SC?.swapVer(import.meta.url, nv);
@@ -830,11 +854,11 @@
     if (!saved && handPref === 'left') placeFab(.03, Math.max(0, (window.parent.innerHeight - 144) / Math.max(1, window.parent.innerHeight - 48))); }   // 没拖过：左手默认放左下
   applyHand(false);
   fab.addEventListener('pointerup', () => { if (dragged && handPref === 'auto') applyHand(false); });
-  const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; flyNext = true; sleepViewer(); };
+  const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; flyNext = true; sleepViewer(); if (toastWait && SC) setTimeout(toastOnce, 400); };
   fab.addEventListener('click', async () => { if (dragged) return;
     if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); sent = null; charsSent = null; push(); sendEvents(); return; }   // 预加载中被点开：直接显示，重新推一次地点（这次可以进庄园）
     fab.classList.remove('fail'); fab.querySelectorAll('.em-tip').forEach(t => t.remove());   // 提示不留在面板后面（v0.9.2）
-    if (!panel.hidden) return close(); panel.hidden = false; await loadViewer(); });
+    if (!panel.hidden) return close(); toastEl?.remove(); panel.hidden = false; await loadViewer(); });   // 面板打开：自检小提示不盖在面板上（v0.9.6）
   root.querySelector('.em-close').addEventListener('click', close);
   hereEl.addEventListener('click', () => { if (hereEl.title) hereEl.classList.toggle('em-full'); });
   // 宿主页的 Esc：只在焦点不在输入框里时关地图（在聊天框里按 Esc 不该把地图关掉，E5 r2 RP-6）
