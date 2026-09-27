@@ -19,7 +19,7 @@ STALL_PITCH = 1.1
 STALL_ANGLE = 35.0                   # 度
 STALL_X0 = -5.0                      # 第一个牛位中心 x
 
-MILK_LINE_Z = 1.95                   # 高位奶管，以牛站台面为 0（坑底以上 2.9 m，高位系统）
+MILK_LINE_Z = 1.65                   # 高位奶管，牛站台面以上（高位 1.5–1.8 m、中位 1.2–1.5 m、低位台面下 0.3 m；ScienceDirect Topics《Milking System》）
 RECEIVER = (5.4, 0.0)                # 集乳罐 x, y（坑尾）
 
 MILK_ROOM_X = 6.0                    # 隔墙 x，右侧是奶罐间
@@ -28,7 +28,7 @@ ENTRY = (-9.0, -7.0)                 # 西端入口门洞（牛进）
 EXIT_Y = 6.0                         # 北侧出口通道通向围场
 
 PADDOCK = (-16.0, 16.0, 9.0, 34.0)   # 围场
-POST_STEP = 5.0
+POST_STEP = 10.0                     # 永久围场 8–12 m 一根，转角 / 闸门用粗撑桩 + 斜撑
 POST_H = 1.3
 INSULATOR_Z = (0.55, 0.95)
 GATE = (-1.2, 1.2)                   # 围场南边闸门（x 区间）
