@@ -15,6 +15,8 @@ import tc_common as tc
 from tc_common import W, H, tick
 
 CLOUD_ZENITH, CLOUD_SUN_ANGLE = 8, 2.5           # 云用太阳：天顶角（度）、太阳圆盘角（度，越大影子越虚）。B2 第 2 轮：14 → 8、5 → 2.5，z 7.4 的岛影偏移 ≤ 0.95 单位，保得住岬角
+ISLAND_SHADOWS = False   # 用户指示（2026-09-27）：岛不往云上投影，只留白色云层对岛底的遮挡；用户批准后再改 True
+EDEN_RING = False        # 用户决定：去掉伊甸外圈亮云环（伊甸靠尺寸与结界圈已最显眼）；True 恢复
 
 # 两种风格的云团参数：间距 S、主团半径 R0 + R1 × 浓度、周围小团个数与相对半径、顶上鼓包个数
 STYLES = {
@@ -54,7 +56,7 @@ def _puffs(islands, rng, style):
             if eden:                                         # 伊甸（按真实轮廓的 q）：环内侧不留缝；环外 1.6–2.6 一道浓带，环本身另排
                 q = _q(eden, x, y)
                 if q < 1.2: d = max(d, .5)
-                if 1.6 < q < 2.6: w = 1 - abs(q - 2.1) / .5; d = max(d, .45 + .3 * w)
+                if EDEN_RING and 1.6 < q < 2.6: w = 1 - abs(q - 2.1) / .5; d = max(d, .45 + .3 * w)
             if dv < .3 and d < .3: continue                  # 云缝只由低频浓度决定：lump 造成的小黑洞被填上
             R = (st['R0'] + st['R1'] * (d - .3)) * rng.uniform(.85, 1.15)
             top = -.1 + .8 * (d - .3) + rng.uniform(-.08, .08)
@@ -68,7 +70,7 @@ def _puffs(islands, rng, style):
                 a = rng.uniform(0, 2 * math.pi); dist = R * rng.uniform(.1, .45); r = R * rng.uniform(.35, .5)
                 t = top + R * rng.uniform(.05, .15)
                 out.append((x + math.cos(a) * dist, y + math.sin(a) * dist, t - r * fz, r, fz, tint))
-    if eden:                                                 # 伊甸亮云环：沿真实轮廓 × 1.25–1.5 排约 30 团，环顶 .95（高出周围，向外投一圈影），tint 1.12
+    if eden and EDEN_RING:                                   # 伊甸亮云环：沿真实轮廓 × 1.25–1.5 排约 30 团，环顶 .95（高出周围，向外投一圈影），tint 1.12
         isle = eden['isle']; n = 30
         for k in range(n):
             a = 2 * math.pi * k / n + rng.uniform(-.06, .06); q = rng.uniform(1.25, 1.5); rr = isle.r(a) * q
@@ -106,7 +108,7 @@ def _q(eden, x, y):
 
 def _tint(x, y, eden):
     """伊甸亮环：沿真实轮廓 × 1.05–1.75 提亮，1.4 倍处最亮（+12 %）。"""
-    if not eden: return np.ones_like(x)
+    if not eden or not EDEN_RING: return np.ones_like(x)
     q = _q(eden, x, y)
     return (1 + .12 * np.clip(1 - np.abs(q - 1.4) / .35, 0, 1)).astype(np.float32)
 
@@ -190,5 +192,5 @@ def build_cloud_sea(layer, islands, sun):
         cs = bpy.data.lights.new(nm, 'SUN'); cs.energy = sun.data.energy * layer.f('--cloud-light', .7); cs.color = sun.data.color; cs.angle = math.radians(CLOUD_SUN_ANGLE)
         co = bpy.data.objects.new(nm, cs); col.objects.link(co)
         co.rotation_euler = (math.radians(CLOUD_ZENITH), 0, tc.SUN_ROT[2]); co.light_linking.receiver_collection = rcv
-        if nm == 'cloud_sun_base': co.light_linking.blocker_collection = blk
+        if nm == 'cloud_sun_base' or not ISLAND_SHADOWS: co.light_linking.blocker_collection = blk   # 只让云团挡光：ISLAND_SHADOWS 关时岛不在云上投影
     tick(f'cloud sea ({style}): {len(P)} puffs')
