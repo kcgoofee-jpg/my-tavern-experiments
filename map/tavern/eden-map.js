@@ -71,6 +71,7 @@
   #${ID} .em-badge[hidden] { display: none; }
   #${ID} .em-tip { position: absolute; right: 56px; top: 8px; width: max-content; max-width: 180px; padding: 6px 10px; border-radius: 8px; background: #151b20; border: 1px solid rgba(230,195,106,.6); color: #d5dde4;
     font: 12px/1.5 var(--em-font); box-shadow: 0 6px 20px rgba(0,0,0,.3); pointer-events: none; }
+  #${ID} .em-tip.em-tip-r { right: auto; left: 56px; }   /* 悬浮按钮在左半边（左手）：提示朝右 */
   #${ID} .em-fab.here::after { content: ''; position: absolute; right: 4px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background: #ff5a5a; box-shadow: 0 0 0 2px #151b20; }
   #${ID} .em-panel { position: fixed; z-index: 30001; left: 50vw; top: 50dvh; transform: translate(-50%, -50%);
     width: min(1200px, 94vw); height: min(820px, 88vh); height: min(820px, 88dvh); grid-template-columns: minmax(0, 1fr); background: var(--em-bg); border: 1px solid var(--em-line-2); color: var(--em-ink); font-family: var(--em-font);
@@ -142,6 +143,8 @@
     #${ID} .em-bar .em-here { min-width: 4.5em; }   /* 线路按钮不再把「当前地点」挤成 0 宽（E5 r3 手机 N-01） */
     #${ID} .em-bar .em-close { width: 44px; height: 44px; }
     #${ID} .em-bar .em-close svg { width: 22px; height: 22px; }
+    #${ID} .em-panel.em-left .em-close { order: -1; }   /* 左手（E7）：关闭按钮到左上，离左手拇指近一些；底部还有地图菜单里的「关闭地图」 */
+    #${ID} .em-panel.em-left .em-bar { padding: env(safe-area-inset-top) 10px 0 2px; }
   }
 </style>
 <button class="em-fab" title="世界地图" aria-label="打开世界地图">
@@ -307,6 +310,7 @@
     if (e.data?.type === 'eden-map:state') {
       if (e.data.lang && e.data.lang !== UL && UI[e.data.lang]) { UL = e.data.lang; showLine(); push(); }
       if (e.data.theme) panel.classList.toggle('em-light', e.data.theme === 'light');
+      if (e.data.hand && e.data.hand !== handPref) { handPref = e.data.hand; applyHand(true); }
       mapTitle = e.data.title || ''; showTitle(); }
     if (e.data?.type === 'eden-map:esc') close();   // 地图里没有可关的卡片 / 列表时，Esc 关闭面板
     if (e.data?.type === 'eden-map:emit' && e.data.ev === 'map') emit('map', e.data.data);   // 本机扩展：切图（E6）
@@ -387,7 +391,7 @@
   let tipShown = false; try { tipShown = !!localStorage.getItem('edenMapEvTip'); } catch (e) {}
   function tipOnce() {
     if (tipShown || !panel.hidden) return; tipShown = true; try { localStorage.setItem('edenMapEvTip', '1'); } catch (e) {}
-    const t = pdoc.createElement('div'); t.className = 'em-tip'; t.textContent = '天城有新事态：点开地图查看位置'; fab.appendChild(t);
+    const t = pdoc.createElement('div'); t.className = 'em-tip' + (fabLeft() ? ' em-tip-r' : ''); t.textContent = '天城有新事态：点开地图查看位置'; fab.appendChild(t);
     setTimeout(() => t.remove(), 6000);
   }
   let evT = 0;
@@ -517,6 +521,22 @@
     if (dragged) { const r = fab.getBoundingClientRect(), vw = window.parent.innerWidth, vh = window.parent.innerHeight;
       const p = placeFab(r.left / (vw - 48), r.top / (vh - 48)); try { localStorage.setItem(POS_KEY, JSON.stringify(p)); } catch (err) {} } });
 
+  // 单手（E7）：惯用手在地图设置里改（同源 localStorage；改了地图发 eden-map:state {hand}）
+  // 惯用手选了左 / 右：悬浮按钮挪到那一侧（高度不变）并记住；自动 = 不动它（地图反过来按它在哪一半判断左右手）
+  const HAND_KEY = 'edenMapHand';
+  let handPref = 'auto'; try { handPref = localStorage.getItem(HAND_KEY) || 'auto'; } catch (e) {}
+  const fabLeft = () => { const r = fab.getBoundingClientRect(); return r.left + r.width / 2 < window.parent.innerWidth / 2; };
+  const applyHand = move => {
+    if (move && (handPref === 'left' || handPref === 'right')) {
+      const r = fab.getBoundingClientRect(), vh = window.parent.innerHeight, y = vh > 48 ? r.top / (vh - 48) : .85;
+      const p = placeFab(handPref === 'left' ? .03 : .97, y); try { localStorage.setItem(POS_KEY, JSON.stringify(p)); } catch (e) {}
+    }
+    panel.classList.toggle('em-left', handPref === 'left' || (handPref === 'auto' && fabLeft()));
+  };
+  { let saved = null; try { saved = localStorage.getItem(POS_KEY); } catch (e) {}
+    if (!saved && handPref === 'left') placeFab(.03, Math.max(0, (window.parent.innerHeight - 144) / Math.max(1, window.parent.innerHeight - 48))); }   // 没拖过：左手默认放左下
+  applyHand(false);
+  fab.addEventListener('pointerup', () => { if (dragged && handPref === 'auto') applyHand(false); });
   const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; flyNext = true; sleepViewer(); };
   fab.addEventListener('click', async () => { if (dragged) return;
     if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); sent = null; push(); sendEvents(); return; }   // 预加载中被点开：直接显示，重新推一次地点（这次可以进庄园）
