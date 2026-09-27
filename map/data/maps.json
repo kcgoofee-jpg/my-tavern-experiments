@@ -144,7 +144,7 @@
           "alias": ["前沿哨所", "哨所"] },
         "amc_facility": { "name": "资产管理委员会下层设施", "sub": "直管设施 · 另有管理中心与集中工厂", "name_en": "Asset Management Committee, Lower Facility", "sub_en": "Directly run · plus an admin centre and a central works", "tag": "set",
           "src": "天城·下层：资产管理委员会直管的下层公共收容设施，周边有执法分队驻守（委员会总部位置卡未写；图上只画有围墙的建筑外观，位置为推断）。卡里下层另有委员会的公共设施管理中心与一座集中工厂，和直管设施是不同的设施，图上合画为一处。下层帮派控制大部分地盘，唯一相对安全的是委员会直管设施的周边",
-          "alias": ["委员会下层设施", "公共收容设施"] },
+          "alias": ["委员会下层设施", "公共收容设施"] , "link": {"map": "lm_amc_facility", "label": "查看三维模型", "label_en": "View 3D model"} },
         "ruined_churches": { "name": "废弃教堂区", "sub": "天城边缘 · 以太场残留", "name_en": "Derelict Church Quarter", "sub_en": "City edge · residual aether", "tag": "inf", "openings": [4], "opening_dest": true, 
           "src": "卡：「天城边缘的废弃教堂区」，已荒废但仍有以太场残留；下层教区的教堂多半荒废，故画在下层边缘（层与位置为推断）",
           "alias": ["废弃教堂区", "废弃教堂", "Derelict Church"] , "link": {"map": "lm_ruined_churches", "label": "查看三维模型", "label_en": "View 3D model"} },
@@ -170,6 +170,7 @@
     "lm_lower_quarter": {"title": "铁皮屋区与旧货市场（三维）", "title_en": "Tin Shacks & Junk Market (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "lower_quarter", "src": "props/viewer3d.html", "alias": ["铁皮屋区与旧货市场（三维）"], "src_note": "开局六提到的两处下层地点合成一个三维场景（标准版：标准档 + 低档 glb；铁皮屋区 + 旧货市场，具体位置为仓库推断）；从 tc_low.tin_shacks 标记的「查看三维模型」进。源：blender/landmarks/lower_quarter/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_well7": {"title": "层间检查点与 7 号井（三维）", "title_en": "Checkpoint & Well 7 (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "well7", "src": "props/viewer3d.html", "alias": ["层间检查点与 7 号井（三维）"], "src_note": "视觉样例里的层间检查点（中层 C 区）与 7 号井黑市（下层）画成一个竖向三维场景（标准版：标准档 + 低档 glb，布局为仓库推断）；两个标记的 link 已用于跨层直达，三维入口写在 link3d（查看器渲染由 UI v2 接）。源：blender/landmarks/well7/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_highland": {"title": "旷野高地（三维）", "title_en": "Wild Highlands (3D)", "parent": "site_highland", "kind": "estate", "viewer3d": "highland", "src": "props/viewer3d.html", "alias": ["旷野高地（三维）"], "src_note": "开局七地点的三维模型（标准版：标准档 + 低档 glb；台地、崖壁、下山小径、焦黑地面，地形为仓库推断）；从 site_highland.highland_plateau 标记的「查看三维模型」进。源：blender/landmarks/highland/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_amc_facility": {"title": "资产管理委员会下层设施（三维）", "title_en": "Asset Management Committee, Lower Facility (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "amc_facility", "src": "props/viewer3d.html", "alias": ["资产管理委员会下层设施（三维）"], "src_note": "只画外观的机构院落三维（标准版：标准档 + 低档 glb；行政中心、中央工坊、门岗、执法分队驻点、缓冲街道，位置与形制为仓库推断）；从 tc_low.amc_facility 标记的「查看三维模型」进。源：blender/landmarks/amc_facility/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_pm_residence": {
       "title": "首相府（三维）", "title_en": "Prime Minister's Residence (3D)", "parent": "tc_upper", "kind": "estate",
       "viewer3d": "pm_residence", "src": "props/viewer3d.html", "alias": ["首相府花园"],
