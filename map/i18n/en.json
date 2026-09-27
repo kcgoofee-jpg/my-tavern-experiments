@@ -166,6 +166,7 @@
   "planned": "In progress",
   "planned_paren": " (in progress)",
   "enter": "Enter {name}",
+  "view3d": "View 3D model ({title})",
   "goto": "Go to {title}",
   "you": "you",
   "minor": "Minor states",

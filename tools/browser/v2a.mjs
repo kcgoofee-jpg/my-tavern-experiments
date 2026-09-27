@@ -3,6 +3,7 @@
 //   more3d  手机三维页（挤奶厅）：顶栏 ⋯ 打开后有「返回…」；标题不带「测试」
 //   labels  手机控制列有标注开关（#lblTog 可见、可切）
 //   unmap   当前地点认不出：抽屉 / 右栏「地点」页给「放到地图上」
+//   link3d  地点卡同时显示通道 link 与三维 link3d（注册表里临时加一个 link3d）
 //   hint    第一次打开：三步提示横幅（P1，可关），关掉后再开不再出
 // 用法：node tools/browser/v2a.mjs <输出目录> [--only clean,more3d]
 import * as B from './lib.mjs';
@@ -95,7 +96,22 @@ async function hint(preset) {
     rep.check(`${preset} 点「知道了」后再开不再出`, !/三步上手/.test(t2), t2.slice(0, 60));
   } finally { await P.ctx.close(); }
 }
+async function link3d() {
+  const P = await B.newPage('desktop', { tier: 'save' });
+  try {
+    await B.openViewer(P, { map: 'tc_mid' }); await B.wait(1200); const p = P.page;
+    const r = await p.evaluate(async () => {
+      const [id, meta] = Object.entries(REG.maps.tc_mid.markers).find(([, v]) => v.link) || []; if (!id) return { skip: true };
+      meta.link3d = { map: meta.link.map === 'lm_pm_residence' ? 'lm_cathedral' : 'lm_pm_residence' }; await go('tc_upper'); await new Promise(r => setTimeout(r, 800)); await go('tc_mid'); await new Promise(r => setTimeout(r, 1500));
+      const mk = document.querySelector(`.mk[data-name="${meta.name}"]`); mk?._open?.(); await new Promise(r => setTimeout(r, 400));
+      const ex = document.querySelector('#card .extra');
+      return { id, n: ex ? ex.querySelectorAll('a[data-go]').length : 0, t: ex?.querySelector('a[data-link3d]')?.textContent || '' };
+    });
+    rep.check('地点卡：通道 + 三维两个链接', r.skip || (r.n === 2 && /三维/.test(r.t)), JSON.stringify(r));
+  } finally { await P.ctx.close(); }
+}
 try {
+  if (on('link3d')) await link3d();
   if (on('hint')) { await hint('phone'); await hint('desktop'); }
   if (on('clean')) { await clean('phone'); await clean('desktop'); }
   if (on('more3d')) await more3d();

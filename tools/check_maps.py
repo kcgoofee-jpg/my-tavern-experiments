@@ -126,6 +126,8 @@ for mid, m in maps.items():
 # 跨层通道
 for mid, m in maps.items():
     for i, v in (m.get('markers') or {}).items():
+        l3 = v.get('link3d')   # 可选的三维链接（与 link 并存）
+        if l3 and l3.get('map') not in maps: err(f"{mid}.{i}.link3d → 地图 {l3.get('map')} 不存在")
         l = v.get('link')
         if not l: continue
         if l.get('map') not in maps: err(f"{mid}.{i}.link → 地图 {l.get('map')} 不存在"); continue
