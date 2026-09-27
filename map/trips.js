@@ -1,10 +1,13 @@
 // 天城 · 行程层（查看器用，v0.9.5）：
+//   2 最近的行程（卡内脚本推出，最多玩家 5 段 + 人物 5 段）：按交通方式画——air 虚线弧、underground 点线、teleport 不连线只有两端脉冲点、rail / road 贴地实线；
+//     越旧越淡；人物的行程是细线、用人物的颜色；点一段看楼层和时间。图层菜单「行程」开关（默认开，存本机）。
 //   1 途中：当前地点写成「A至B的…」「从A到B」「前往B」时（here.mjs resolveTransit），在两端之间画一条虚线弧，玩家点放在弧的中点；终点认不出时在起点画「前往 B」箭头。
 // 线画在一个铺满两端外框的 SVG 叠加层里（OSD Rect 叠加层，随缩放伸缩；线宽、虚线用 non-scaling-stroke 保持屏幕像素）。
 // 读查看器的全局：viewer、REG、cur、curData、aspect、estateStandIn、hereRes、esc、$、trackEl、untrack、showCard。
 const TCTrips = (() => {
   const T = (k, zh, v = {}) => { const r = window.I18N?.t?.(k, v); if (r && r !== k) return r; return Object.entries(v).reduce((s, [a, b]) => s.split('{' + a + '}').join(b), zh); };
-  let els = [], fitFor = null;
+  let els = [], fitFor = null, trips = [];
+  const TK = 'edenMapTrips', on = () => { try { return localStorage.getItem(TK) !== '0'; } catch (e) { return true; } };
   // 落点 → 当前图上的归一化坐标（地标；庄园 → 它在上层的替身地标）；不在当前图返回 null
   function xy(r) {
     if (!r || typeof REG === 'undefined' || !REG || !cur) return null;
@@ -43,10 +46,32 @@ const TCTrips = (() => {
         setTimeout(() => viewer.viewport.fitBounds(new OpenSeadragon.Rect(Math.min(a.x, b.x) - pad, Math.min(a.y, b.y) - pad, Math.abs(b.x - a.x) + 2 * pad, Math.abs(b.y - a.y) + 2 * pad)), 300); } }
     else if (a || b) pin(a || b, `<i></i><b>${esc(a ? T('tr.to', '前往 {b}', { b: short(t.toText) }) : T('tr.from', '从 {a} 来', { a: short(t.fromText) }))}</b>`, 'you edge', lab, open);
   }
+  const STY = { air: { bend: .2, dash: '7 6' }, underground: { bend: .06, dash: '1.5 6' }, rail: { bend: 0, dash: '' }, road: { bend: 0, dash: '' }, '': { bend: .14, dash: '4 6' } };
+  const MODE_T = { air: ['tr.air', '空中'], underground: ['tr.underground', '地下'], teleport: ['tr.teleport', '传送'], rail: ['tr.rail', '轨道'], road: ['tr.road', '地面'], '': ['tr.unknown', '方式未知'] };
+  function renderTrips() {
+    if (!on() || !trips.length) return;
+    const n = trips.length;
+    trips.forEach((t, i) => {
+      const a = xy(hereRes(t.from)), b = xy(hereRes(t.to)); if (!a || !b || (a.x === b.x && a.y === b.y)) return;
+      const age = (n - 1 - i) / Math.max(1, n - 1), op = (1 - age * .65).toFixed(2), who = t.who ? dn(t.who) : T('tr.you', '你');
+      const lab = T('tr.trip', '{who}：{a} → {b}', { who, a: short(dn(t.from)), b: short(dn(t.to)) });
+      const open = () => showCard(null, lab, 'inf', '', '', [T('tr.floor', '第 {n} 楼', { n: t.floor }), t.time, T(...MODE_T[t.mode || ''])].filter(Boolean).join(' · '));
+      const col = t.who && typeof TCChars !== 'undefined' ? `--tc:${charColor(t.who)}` : '';
+      if (t.mode === 'teleport') { for (const p of [a, b]) pin(p, '<i></i>', 'tp' + (t.who ? ' ch' : ''), lab, open); els.slice(-2).forEach(e => { e.style.opacity = op; if (col) e.setAttribute('style', e.getAttribute('style') + ';' + col); }); return; }
+      const st = STY[t.mode] || STY[''], { svg, mid } = arc(a, b, { cls: `hist m-${t.mode || 'x'}${t.who ? ' ch' : ''}`, bend: st.bend, dash: st.dash });
+      svg.style.opacity = op; if (col) svg.setAttribute('style', svg.getAttribute('style') + ';' + col);
+      pin(mid, '', 'hit', lab, open);
+    });
+  }
+  const dn = n => (typeof TCCustom !== 'undefined' ? TCCustom.name(n) : n);
+  const charColor = n => (typeof TCChars !== 'undefined' && TCChars.color ? TCChars.color(n) : '#888');
+  function set(items) { trips = Array.isArray(items) ? items.slice(-10) : []; render(); }
+  function setOn(v) { try { localStorage.setItem(TK, v ? '1' : '0'); } catch (e) {} render(); }
+  document.addEventListener('DOMContentLoaded', () => { const b = document.getElementById('tgTripsBox'); if (b) { b.checked = on(); b.addEventListener('change', () => setOn(b.checked)); } });
   function render() {
     clear();
     if (typeof viewer === 'undefined' || !viewer || !cur || !viewer.world.getItemCount() || REG.maps[cur]?.kind !== 'points') return;
-    renderTransit();
+    renderTrips(); renderTransit();
   }
   const css = `
   svg.trip{overflow:visible;pointer-events:none;z-index:1}
@@ -56,8 +81,16 @@ const TCTrips = (() => {
   .tripin.you{cursor:pointer;pointer-events:auto}
   .tripin.you::before{content:'';position:absolute;left:-22px;top:-22px;width:44px;height:44px}
   .tripin b{position:absolute;left:12px;top:-10px;white-space:nowrap;font:600 var(--fs-micro,11px)/1.3 var(--font-ui,sans-serif);color:var(--map-label-ink,#fff);background:var(--map-label-bg,rgba(8,10,14,.8));padding:2px 7px;border-radius:var(--r-pill,999px)}
+  svg.trip.hist path{stroke:var(--accent);stroke-width:2}
+  svg.trip.hist.ch path{stroke:var(--tc,var(--accent-2));stroke-width:1.2}
+  svg.trip.m-rail path,svg.trip.m-road path{stroke-width:1.6;filter:none;opacity:.9}
+  .tripin.hit{cursor:pointer;pointer-events:auto}.tripin.hit::before{content:'';position:absolute;left:-16px;top:-16px;width:32px;height:32px}
+  @media (pointer:coarse){.tripin.hit::before{left:-22px;top:-22px;width:44px;height:44px}}
+  .tripin.tp{cursor:pointer;pointer-events:auto}.tripin.tp i{left:-6px;top:-6px;width:12px;height:12px;background:var(--accent);border-color:var(--surface)}
+  .tripin.tp.ch i{background:var(--tc,var(--accent-2))}
+  @media (prefers-reduced-motion:no-preference){.tripin.tp i{animation:trpulse 1.6s ease-in-out infinite}}
   @media (prefers-reduced-motion:no-preference){.tripin.you i{animation:trpulse 2s ease-in-out infinite}}
   @keyframes trpulse{50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--alert) 12%,transparent)}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
-  return { render, xy, arc, pin, clear };
+  return { render, set, setOn, get items() { return trips.map(t => ({ ...t })); }, xy, arc, pin, clear };
 })();
