@@ -1025,7 +1025,7 @@ def fountain(col):
 
 
 def dock(col):
-    """访客停靠平台：伸出岛缘的圆台，铜栏 + 金色引导环 + 小候机亭。"""
+    """访客停靠平台：伸出岛缘的圆台，铜栏 + 金色引导环。"""
     M = mats()
     cx, cy, z = 0.0, -268.0, 8.5
     bm = bmesh.new()
@@ -1037,12 +1037,7 @@ def dock(col):
     tx = bpy.data.textures.new('e2_dock_rock', 'CLOUDS'); tx.noise_scale = 3.0
     ob.modifiers.new('sub', 'SUBSURF').levels = 2
     dm = ob.modifiers.new('disp', 'DISPLACE'); dm.texture = tx; dm.strength = 2.5
-    bm = bmesh.new()
-    bmesh.ops.create_cone(bm, cap_ends=True, segments=24, radius1=3.2, radius2=3.2, depth=4.2, matrix=Matrix.Translation((cx, cy + 12, z + 2.1)))
-    bm_to_obj(bm, 'dock_stone', col, M['plain'])
-    bm = bmesh.new()
-    bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=12, radius=3.6, matrix=Matrix.Translation((cx, cy + 12, z + 4.2)) @ Matrix.Diagonal((1, 1, 0.6, 1)))
-    bm_to_obj(bm, 'dock_dome', col, M['bronze'])
+    # r4e：候机亭按卡去掉（卡里没有）
     ring = [(cx + 19.6 * math.cos(a), cy + 19.6 * math.sin(a)) for a in np.linspace(math.radians(200), math.radians(340 + 360 * 0), 60)]
     ring = [(cx + 19.6 * math.cos(a), cy + 19.6 * math.sin(a)) for a in np.linspace(math.radians(-200), math.radians(20), 70)]
     sweep('dock_rail', [(x, y, z) for x, y in ring], [(-0.08, 0), (-0.08, 1.1), (0.08, 1.1), (0.08, 0)], M['bronze'], col)
@@ -1203,9 +1198,10 @@ def build_all():
     for i, pts in enumerate(L.WALKWAYS):
         walkway(i, pts, col)
     balustrades(col)
-    from . import gardens, warner
+    from . import gardens, warner, gym
     gardens.build(col)
     warner.build(col)
+    gym.build(col)
     dock(col)
     funicular(col)
     rope_bridge(col)

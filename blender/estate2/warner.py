@@ -20,16 +20,19 @@ def _tudor_mat():
     tc = t.new('ShaderNodeTexCoord', (-1600, 0))
     sep = t.new('ShaderNodeSeparateXYZ', (-1400, 0)); t.link(tc.outputs['Object'], sep.inputs[0])
     X, Y, Z = sep.outputs['X'], sep.outputs['Y'], sep.outputs['Z']
-    u = t.math('ADD', X, Y)
-    post = t.math('LESS_THAN', t.math('FRACT', t.math('DIVIDE', u, 0.95)), 0.16)              # 立柱
-    rail = t.math('LESS_THAN', t.math('FRACT', t.math('DIVIDE', t.math('SUBTRACT', Z, 0.2), 1.5)), 0.1)   # 横梁
+    u0 = t.math('ADD', X, Y)
+    jn = t.new('ShaderNodeTexNoise', (-1300, 300), **{'Scale': 0.35, 'Detail': 2.0})
+    t.link(tc.outputs['Object'], jn.inputs['Vector'])
+    u = t.math('ADD', u0, t.math('MULTIPLY', t.math('SUBTRACT', jn.outputs['Fac'], 0.5), 0.9))
+    post = t.math('LESS_THAN', t.math('FRACT', t.math('DIVIDE', u, 1.15)), t.math('ADD', 0.1, t.math('MULTIPLY', jn.outputs['Fac'], 0.1)))              # 立柱
+    rail = t.math('LESS_THAN', t.math('FRACT', t.math('DIVIDE', t.math('SUBTRACT', t.math('ADD', Z, t.math('MULTIPLY', t.math('SUBTRACT', jn.outputs['Fac'], 0.5), 0.35)), 0.2), 1.5)), 0.07)   # 横梁
     diag = t.math('LESS_THAN', t.math('ABSOLUTE', t.math('SUBTRACT', t.math('FRACT', t.math('DIVIDE', t.math('ADD', u, Z), 2.85)), 0.5)), 0.03)  # 斜撑
     timber = t.math('MAXIMUM', t.math('MAXIMUM', post, rail), t.math('MULTIPLY', diag, t.math('GREATER_THAN', Z, 3.2)))
     stone = t.math('LESS_THAN', Z, 1.0)
     nz = t.new('ShaderNodeTexNoise', (-1200, -300), **{'Scale': 2.5, 'Detail': 6.0})
     t.link(tc.outputs['Object'], nz.inputs['Vector'])
-    plaster = t.mix(t.math('MULTIPLY', nz.outputs['Fac'], 0.3), (0.86, 0.8, 0.66), (0.7, 0.64, 0.5), loc=(-600, 200))
-    col = t.mix(timber, plaster, (0.09, 0.06, 0.04), loc=(-400, 200))
+    plaster = t.mix(t.math('MULTIPLY', nz.outputs['Fac'], 0.3), (0.84, 0.78, 0.63), (0.66, 0.6, 0.47), loc=(-600, 200))
+    col = t.mix(timber, plaster, (0.035, 0.025, 0.018), loc=(-400, 200))
     col = t.mix(stone, col, (0.45, 0.43, 0.4), loc=(-300, 200))
     b = t.bsdf((200, 0), Roughness=0.8)
     t.link(col, b.inputs['Base Color'])
@@ -58,13 +61,34 @@ def _cobble():
     return m
 
 
+def _moss_rock():
+    m, t = mat_new('e2_moss_rock')
+    if t is None:
+        return m
+    v, tc = t.coords('Object', 1 / 2.5)
+    c, r, n = t.pbr_tex('rock_face_03', v, (-1200, 0), 1.2)
+    geo = t.new('ShaderNodeNewGeometry', (-1200, 500))
+    sp = t.new('ShaderNodeSeparateXYZ', (-1000, 500)); t.link(geo.outputs['Normal'], sp.inputs[0])
+    nz = t.new('ShaderNodeTexNoise', (-1000, 300), **{'Scale': 3.0, 'Detail': 8.0})
+    t.link(tc.outputs['Object'], nz.inputs['Vector'])
+    mr = t.new('ShaderNodeMapRange', (-800, 500), **{'From Min': 0.55, 'From Max': 0.85})
+    t.link(sp.outputs['Z'], mr.inputs['Value'])
+    moss = mr.outputs[0]
+    mf = t.math('MULTIPLY', moss, t.math('GREATER_THAN', nz.outputs['Fac'], 0.42))
+    base = t.mix(0.3, c, (0.26, 0.24, 0.21), loc=(-600, 0))
+    col = t.mix(mf, base, (0.08, 0.14, 0.04), loc=(-400, 0))
+    b = t.bsdf((200, 0))
+    t.link(col, b.inputs['Base Color']); t.link(r, b.inputs['Roughness']); t.link(n, b.inputs['Normal'])
+    return m
+
+
 def _xf(bm, M):
     bmesh.ops.transform(bm, matrix=M, verts=bm.verts)
 
 
 def build(col):
     M = mats()
-    tud, brick = _tudor_mat(), _plain('e2_brick_red', (0.24, 0.1, 0.06), 0.85)
+    tud, brick = _tudor_mat(), _plain('e2_brick_red', (0.14, 0.06, 0.035), 0.85)
     cx, cy, rd = C
     rot = math.radians(rd)
     z0 = L.ground_z(cx, cy)
@@ -110,18 +134,42 @@ def build(col):
     _box(bg, ex - 0.7, ey - 0.4, 0, ex + 0.7, ey - 0.3, 2.4)
     for bb, m, n in ((bg, M['shutter'], 'cottage_glass'), (bl, M['lead'], 'cottage_leads'), (bs, M['plain'], 'cottage_stone')):
         _xf(bb, R); bm_to_obj(bb, n, col, m)
-    # 爬藤 / 玫瑰：墙脚与墙面的不规则叶团
+    # 爬藤 / 玫瑰：贴墙叶片卡（Leaf001 叶形透明），成片向上蔓延；玫瑰为叶丛里的粉色小花卡
     rs = np.random.RandomState(3)
-    bi = bmesh.new()
-    for k in range(38):
-        side = rs.choice([-3.55, 3.55]); x = rs.uniform(-7.2, 7.2); zc = rs.uniform(0.3, 3.8)
-        bmesh.ops.create_icosphere(bi, subdivisions=1, radius=rs.uniform(0.35, 0.7), matrix=Matrix.Translation((x, side, zc)) @ Matrix.Diagonal((1.3, 0.45, 1.0, 1)))
-    _xf(bi, R); bm_to_obj(bi, 'cottage_ivy', col, M['hedge'])
-    bf = bmesh.new()
-    for k in range(40):
-        x = rs.uniform(-7.2, 7.2)
-        bmesh.ops.create_icosphere(bf, subdivisions=1, radius=0.12, matrix=Matrix.Translation((x, -3.75, rs.uniform(0.4, 3.0))))
-    _xf(bf, R); bm_to_obj(bf, 'cottage_roses', col, _plain('e2_rose', (0.75, 0.18, 0.3), 0.6))
+    from .common import tex_path, img
+    leaf, t = mat_new('e2_ivy_leaf')
+    if t is not None:
+        tcl = t.new('ShaderNodeTexCoord', (-900, 0))
+        ci = t.new('ShaderNodeTexImage', (-700, 100), image=img(tex_path('Leaf001', 'Color')))
+        oi = t.new('ShaderNodeTexImage', (-700, -200), image=img(tex_path('Leaf001', 'Opacity'), False))
+        for n_ in (ci, oi):
+            t.link(tcl.outputs['UV'], n_.inputs['Vector'])
+        b = t.bsdf((200, 0), Roughness=0.55)
+        t.link(t.mix(0.45, ci.outputs['Color'], (0.04, 0.12, 0.03), 'MULTIPLY', (-400, 100)), b.inputs['Base Color'])
+        t.link(oi.outputs['Color'], b.inputs['Alpha'])
+    rose, t = mat_new('e2_rose_flower')
+    if t is not None:
+        t.bsdf((200, 0), Roughness=0.6, **{'Base Color': (0.8, 0.22, 0.35, 1)})
+    bi, bf = bmesh.new(), bmesh.new()
+    uvl = bi.loops.layers.uv.new('UV')
+    patches = [(-6.5, -3.55, 3.4), (-1.0, -3.55, 2.2), (5.0, -3.55, 3.8), (3.0, 3.55, 3.0), (-6.0, 3.55, 2.6)]
+    for (px, wy, hmax) in patches:
+        for k in range(650):
+            x = px + rs.normal(0, 1.1); zc = abs(rs.normal(0, hmax * 0.55))
+            if zc > hmax + 0.6 or abs(x) > 7.4:
+                continue
+            sgn = -1 if wy < 0 else 1
+            y = wy + sgn * rs.uniform(0.02, 0.12)
+            sz = rs.uniform(0.09, 0.16); a = rs.uniform(0, 2 * math.pi)
+            ca, sa = math.cos(a) * sz, math.sin(a) * sz
+            vv = [bi.verts.new((x + dx, y, zc + dz)) for dx, dz in ((-ca + sa, -sa - ca), (ca + sa, sa - ca), (ca - sa, sa + ca), (-ca - sa, -sa + ca))]
+            f = bi.faces.new(vv)
+            for lp, uv in zip(f.loops, ((0, 0), (1, 0), (1, 1), (0, 1))):
+                lp[uvl].uv = uv
+            if wy < 0 and rs.uniform() < 0.06:
+                bmesh.ops.create_icosphere(bf, subdivisions=1, radius=0.05, matrix=Matrix.Translation((x, y + sgn * 0.08, zc)))
+    _xf(bi, R); bm_to_obj(bi, 'cottage_ivy', col, leaf)
+    _xf(bf, R); bm_to_obj(bf, 'cottage_roses', col, rose)
     # 卵石院（门前 20 × 12 m）
     bcb = bmesh.new(); _box(bcb, -11, -20, -1.0, 11, -8, 0.08); _xf(bcb, R); bm_to_obj(bcb, 'cottage_court', col, _cobble())
     # 岩洞泳池：不规则池 + 置换的岩石围 + 小瀑布
@@ -134,13 +182,20 @@ def build(col):
     bw2.faces.new(vs); _xf(bw2, R); bm_to_obj(bw2, 'grotto_water', col, M['pool'])
     brk = bmesh.new()
     for a, r in zip(th, rr):
-        for k in range(2):
-            s = rs.uniform(0.6, 1.3) * (2.2 if (a > 1.0 and a < 2.2) else 1.0)
-            bmesh.ops.create_icosphere(brk, subdivisions=2, radius=s, matrix=Matrix.Translation((px + (r + 0.6 + k * 0.8) * math.cos(a) * 1.3, py + (r + 0.6 + k * 0.8) * math.sin(a), 0.2 + s * 0.4)) @ Matrix.Diagonal((1.2, 1.0, 0.8, 1)))
+        high = 1.0 < a < 2.2
+        for k in range(3 if high else 2):
+            s_ = rs.uniform(0.9, 1.6) * (1.6 if high else 1.0)
+            zl = 0.1 + k * (0.55 if not high else 0.9)
+            M_ = Matrix.Translation((px + (r + 0.8 + k * 0.3) * math.cos(a) * 1.3, py + (r + 0.8 + k * 0.3) * math.sin(a), zl)) @ Matrix.Rotation(a + rs.uniform(-0.4, 0.4), 4, 'Z') @ Matrix.Rotation(rs.uniform(-0.12, 0.12), 4, 'X') @ Matrix.Diagonal((1.6 * s_, 1.1 * s_, 0.42 * s_ * (1.3 if high else 1.0), 1))
+            bmesh.ops.create_cube(brk, size=1.0, matrix=M_)
     _xf(brk, R)
-    ob = bm_to_obj(brk, 'grotto_rocks', col, M['rock'])
-    tx = bpy.data.textures.new('e2_grotto', 'CLOUDS'); tx.noise_scale = 0.6
-    dm = ob.modifiers.new('d', 'DISPLACE'); dm.texture = tx; dm.strength = 0.35
+    ob = bm_to_obj(brk, 'grotto_rocks', col, _moss_rock())
+    ob.modifiers.new('bev', 'BEVEL').width = 0.08
+    ob.modifiers.new('sub', 'SUBSURF').levels = 3
+    tx = bpy.data.textures.new('e2_grotto', 'VORONOI'); tx.noise_scale = 0.5
+    dm = ob.modifiers.new('d', 'DISPLACE'); dm.texture = tx; dm.strength = 0.18
+    tx2 = bpy.data.textures.new('e2_grotto2', 'CLOUDS'); tx2.noise_scale = 0.15
+    dm2 = ob.modifiers.new('d2', 'DISPLACE'); dm2.texture = tx2; dm2.strength = 0.06
     bsp = bmesh.new()   # 小瀑布
     a = 1.6; r = 5.5 + 1.3 * math.sin(2 * a + 0.5) + 0.6 * math.sin(5 * a)
     fx, fy = px + r * math.cos(a) * 1.3, py + r * math.sin(a)

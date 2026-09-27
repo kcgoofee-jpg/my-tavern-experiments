@@ -389,7 +389,7 @@ def grey_terraces(col):
 
 
 def helipad(col):
-    """r4d 停机坪：混凝土圆台 + 白圈 + H（机库旁，和停靠平台 O-03 分开）。"""
+    """r4d 载具停靠坪（src: user）：混凝土圆台 + 白圈 + H 标记（悬浮载具库旁，和停靠平台 O-03 分开；不放飞行器）。"""
     M = mats()
     x, y, r = L.HELIPAD
     z = L.ground_z(x, y)
