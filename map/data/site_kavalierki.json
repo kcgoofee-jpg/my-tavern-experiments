@@ -1,0 +1,74 @@
+{
+ "extent_m": [
+  20000.0,
+  12500.0
+ ],
+ "markers": [
+  {
+   "id": "glory_crown",
+   "nx": 0.52,
+   "ny": 0.52,
+   "r": 0.12
+  },
+  {
+   "id": "union_tower",
+   "nx": 0.56,
+   "ny": 0.45,
+   "r": 0.02
+  },
+  {
+   "id": "sun_arena",
+   "nx": 0.45,
+   "ny": 0.53,
+   "r": 0.05
+  },
+  {
+   "id": "round_table_hall",
+   "nx": 0.54,
+   "ny": 0.58,
+   "r": 0.02
+  },
+  {
+   "id": "elite_club",
+   "nx": 0.61,
+   "ny": 0.52,
+   "r": 0.02
+  },
+  {
+   "id": "contest_corridor",
+   "nx": 0.685,
+   "ny": 0.48,
+   "r": 0.06
+  },
+  {
+   "id": "rust_outskirts",
+   "nx": 0.8,
+   "ny": 0.5,
+   "r": 0.06
+  },
+  {
+   "id": "clearing_depot",
+   "nx": 0.27,
+   "ny": 0.72,
+   "r": 0.04
+  },
+  {
+   "id": "free_knight_camp",
+   "nx": 0.75,
+   "ny": 0.77,
+   "r": 0.04
+  },
+  {
+   "id": "linguang_post",
+   "nx": 0.3,
+   "ny": 0.3,
+   "r": 0.03
+  },
+  {
+   "id": "ether_dome",
+   "nx": 0.5,
+   "ny": 0.34,
+   "r": 0.02
+  }
+ ]
+}

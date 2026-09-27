@@ -475,7 +475,7 @@
     <div class="seg" id="langSeg" role="group" data-i18n-aria="lang_title" data-i18n-title="lang_title" title="界面语言"><button type="button" data-lang="zh">中</button><button type="button" data-lang="en">EN</button></div>
     <button type="button" class="btn ic" id="themeBtn" data-i18n-title="theme_title" title="界面主题"></button>
     <button type="button" class="btn ic" id="setBtn" data-i18n-title="settings_title" title="设置" aria-expanded="false" aria-controls="setPop"></button>
-    <div class="where"><span data-i18n="here">当前地点</span> <input id="here" data-i18n-ph="here_ph" placeholder="模拟 MVU：世界.当前地点" value="旷野高地"></div>
+    <div class="where"><span data-i18n="here">当前地点</span> <input id="here" data-i18n-ph="here_ph" placeholder="模拟 MVU：世界.当前地点" value=""></div>
   </header>
   <div id="stage" role="main" data-i18n-aria="page_title" aria-label="天城地图"><div id="osd"></div><div id="foot"><button type="button" id="build" data-i18n-title="build_title" title="版本编码，点击复制诊断信息"></button><button type="button" id="creditBtn" aria-expanded="false" aria-controls="credit" data-i18n-aria="credit_aria" aria-label="署名">ⓘ</button><div id="credit" hidden></div></div><nav id="layers" hidden data-i18n-aria="layers_aria" aria-label="楼层"></nav>
     <div id="zoom" role="group" data-i18n-aria="zoom_group" aria-label="缩放"><button type="button" id="zIn" data-i18n-aria="zoom_in" aria-label="放大" data-i18n-title="zoom_in" title="放大"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button><button type="button" id="zOut" data-i18n-aria="zoom_out" aria-label="缩小" data-i18n-title="zoom_out" title="缩小"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10"/></svg></button><button type="button" id="zHome" data-i18n-aria="zoom_home" aria-label="复位" data-i18n-title="zoom_home" title="复位视野"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5L8 3l5.5 4.5M4 6.5V13h8V6.5"/></svg></button></div>
@@ -610,8 +610,10 @@ async function mainInner() {
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点
   if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland);
   // 世界图上，天城各层地图里的地点（执法局、7 号井……）都归到「天城」
-  for (const k of REG.groups.tiancheng?.layers || []) { ALIAS['天城'].push(...(REG.maps[k].alias || []));
-    for (const v of Object.values(REG.maps[k].markers || {})) ALIAS['天城'].push(...(v.alias || [])); }
+  // 开局地点的简易地图（groups.<id>.place）同理：地图里的地标归到世界图上对应的地点 / 封地
+  for (const [gid, g] of Object.entries(REG.groups)) { const pl = g.place && [...M.places, ...M.fiefs].find(q => q.id === g.place), key = gid === 'tiancheng' ? '天城' : pl?.name; if (!key) continue;
+    const A = ALIAS[key] ??= [key];
+    for (const k of g.layers || []) { A.push(...(REG.maps[k].alias || [])); for (const v of Object.values(REG.maps[k].markers || {})) A.push(...(v.alias || [])); } }
   narrow = innerWidth <= 640;   // 等 iframe 布局完成后再判断，脚本刚执行时宽度可能还是 0
   const seg = $('#tiers');
   for (const x of [{ key: 'auto' }, ...TIERS]) { const b = document.createElement('button'); b.dataset.k = x.key;
@@ -1228,14 +1230,12 @@ function untrack(el) { const tk = el?._tk; if (!tk) return; el._tk = null; track
 function untrackAll() { const all = trackers; trackers = []; for (const tk of all) { if (tk.element) tk.element._tk = null; tk.destroy(); } }
 let cardFrom = null;   // 打开卡片的元素：卡片关闭后焦点回到这里
 // 开局编号：标签上连续的写成区间（开局一至五）；opening_dest = 该开局的目的地（起点在庄园书房），卡片里逐个列出
-const OPN = n => LANG === 'en' ? 'Opening ' + n : '开局' + ('一二三四五六七八九十'[n - 1] || n);   // 开局只写编号，不带开局标题
 function markerEl({ name, sub, cls = '', tag = 'set', src, extra = '', alias, name_en, sub_en, openings, opening_dest, cover }) {
   const el = document.createElement('div'); el.className = 'mk ' + cls + (tag === 'inf' ? ' inf' : '');
   const dn = LANG === 'en' ? name_en || tr(name) : name, ds = sub && (LANG === 'en' ? sub_en || tr(sub) : sub);   // 显示名随语言；dataset.name 保持中文（当前地点匹配用）
   el.innerHTML = `<div class="lab">${esc(dn)}${ds ? '<small> · ' + esc(ds) + '</small>' : ''}</div><div class="pin"></div>`;
   el.dataset.name = name; if (alias) el.dataset.alias = alias.join('|');
-  if (openings?.length) { const o = openings.map(OPN).join(' · '); el.classList.add('op'); const a = [...openings].sort((x, y) => x - y), run = a.length > 2 && a.at(-1) - a[0] === a.length - 1;
-    el.querySelector('.lab').dataset.op = run ? (LANG === 'en' ? `Openings ${a[0]}–${a.at(-1)}` : OPN(a[0]) + '至' + OPN(a.at(-1)).slice(2)) : o; extra = `<p class="op">${esc(o)}${opening_dest ? esc(LANG === 'en' ? ' · destination (starts in the study)' : ' · 目的地（从庄园书房出发）') : ''}</p>` + extra; }
+  // v0.9.6（用户 2026-09-27）：地图上不再显示「开局 N」金色标签与地点卡里的开局列表（地图跟随 MVU 当前地点，选了开局就跳过去）；openings 数据只留给自检与文档
   el._open = () => showCard(el, dn, tag, src, extra, ds, cover);
   trackEl(el, el._open, dn + (ds ? ' · ' + ds : ''));
   return el;
@@ -1272,14 +1272,14 @@ function worldOverlays() {
   { const el = document.createElement('div'); el.className = 'realm'; el.innerHTML = `<b style="font-size:20px;letter-spacing:${LANG === 'en' ? 2 : 6}px">${esc(tr('海外诸地'))}</b><span>${esc(tr('稀有矿物 · 异域人员输出地'))}</span>`;
     trackEl(el, () => showCard(null, tr('海外诸地'), 'inf', '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）；陆块形状与位置为推断'), tr('海外诸地'));
     place(el, M.overseas[0], M.overseas[1], OpenSeadragon.Placement.CENTER); }
-  const enter = id => { const g = REG.groups.tiancheng; return g.layers.map(k => { const L = REG.maps[k];
+  const gOf = id => id && Object.keys(REG.groups).find(k => REG.groups[k].place === id);   // 世界图地点 → 有地图的组（天城、开局地点）
+  const enter = gid => { const g = gid && REG.groups[gid]; if (!g) return ''; return g.layers.map(k => { const L = REG.maps[k];
     return L.status === 'planned' ? `<span class="planned">${esc(nm(L.layer))}${esc(t('planned_paren'))}</span>` : `<a data-go="${k}" role="button" tabindex="0">${esc(t('enter', { name: nm(L.layer) }))}</a>`; }).join(''); };
   for (const p of M.places) {
-    if (p.type === 'capital') marker({ name: p.name, sub: p.sub, cls: 'capital' + (p.id === 'tiancheng' ? ' drill' : ''), tag: p.tag, src: p.src, x: p.x, y: p.y, openings: p.openings,
-      extra: p.id === 'tiancheng' ? enter() : '' });
-    else marker({ name: p.name, sub: p.sub, cls: 'start', tag: p.tag, src: p.src, x: p.x, y: p.y, openings: p.openings });
+    const gid = gOf(p.id);
+    marker({ name: p.name, sub: p.sub, cls: (p.type === 'capital' ? 'capital' : 'start') + (gid ? ' drill' : ''), tag: p.tag, src: p.src, x: p.x, y: p.y, openings: p.openings, extra: enter(gid) });
   }
-  for (const f of M.fiefs) marker({ name: f.name, tag: f.tag, src: f.src, x: f.x, y: f.y });
+  for (const f of M.fiefs) { const gid = gOf(f.id); marker({ name: f.name, cls: gid ? 'drill' : '', tag: f.tag, src: f.src, x: f.x, y: f.y, extra: enter(gid) }); }
 }
 // 闭合多边形 → 平滑闭合曲线（Catmull-Rom 转三次贝塞尔，曲线经过每个顶点）
 function smoothPath(P) {
@@ -1361,7 +1361,8 @@ function focusStart(immediately) {
   }
   let nx, ny, w;
   if (m.kind === 'world' && window.__worldTC) {   // v0.9.6 从天城缩出来：世界图最大放大、天城居中
-    window.__worldTC = false; const p = M.places.find(q => q.id === 'tiancheng'); [nx, ny] = toImg(p.x, p.y);
+    const pid = typeof window.__worldTC === 'string' ? window.__worldTC : 'tiancheng'; window.__worldTC = false;
+    const p = [...M.places, ...M.fiefs].find(q => q.id === pid) || M.places.find(q => q.id === 'tiancheng'); [nx, ny] = toImg(p.x, p.y);
     const w0 = (viewNorm(m, 'min_width_m') || .06) * (cs.y > cs.x ? cs.x / cs.y : 1), h0 = w0 * cs.y / cs.x;
     viewer.viewport.fitBounds(new OpenSeadragon.Rect(nx - w0 / 2, ny * aspect - h0 / 2, w0, h0), immediately); viewer.viewport.applyConstraints(true); return;
   }
@@ -1617,7 +1618,10 @@ function initCardSwipe() {
 }
 // 首张图：有当前地点就直接去它的图，否则去注册表的起始图（世界）
 let bootT = 0; const BOOT = '#boot';
-function bootStart() { clearTimeout(bootT); bootT = 0; if (cur) return; if (!jumpHere($('#here').value, true)) go(REG.start); }
+// v0.9.6：起始图是伊甸庄园（maps.json start）；后台预加载 / 三维加载失败过 / 省流设备时落到它的平面替身（上层的伊甸地标），和自动跳转同一规则
+function bootStart() { clearTimeout(bootT); bootT = 0; if (cur) return; if (jumpHere($('#here').value, true)) return;
+  const s = REG.maps[REG.start]?.kind === 'estate' && (bgMode || estFail || leanBg()) && estateStandIn(REG.start);
+  if (s) { pendingFocus = s.marker; go(s.map); } else go(REG.start); }
 function bootLater() { clearTimeout(bootT); bootT = setTimeout(bootStart, 600); }
 // 嵌入酒馆（悬浮按钮面板）的消息接口：
 //   酒馆 → 地图：eden-map:here {value}（当前地点）、eden-map:open {map}（直接打开某张地图）
@@ -1684,7 +1688,7 @@ document.addEventListener('DOMContentLoaded', main);   // 两个 defer 脚本（
   // 默认视野下约 5–8 团看得见（原型太稀）：远层小、慢、淡，近层大、快、稍浓
   const LAYERS = { far: { n: 11, size: [.42, .62], op: [.3, .45], dur: [70, 95], par: .85 }, near: { n: 6, size: [.62, .85], op: [.38, .5], dur: [42, 58], par: 1.2 } };
   const rnd = (a, b) => a + Math.random() * (b - a);
-  const isTC = id => { const m = REG?.maps?.[id]; return !!m && m.kind === 'points' && m.group === 'tiancheng'; };
+  const isTC = id => { const m = REG?.maps?.[id]; return !!m && m.kind === 'points' && !!m.group; };
   const want = () => cur === 'tc_upper' && !altOn('tc_upper') && !RM() && !lean();
   let box = null, lay = {}, anims = [], shown = false, acc = { far: [0, 0], near: [0, 0] }, last = null, hooked = false;
   const size = () => { const c = viewer.container; return [c.clientWidth, c.clientHeight]; };
@@ -1748,7 +1752,7 @@ document.addEventListener('DOMContentLoaded', main);   // 两个 defer 脚本（
   // 每一步都有硬超时，finally 里无条件清场；减少动态效果：直接换层。
   let busy = false;
   const wait = ms => new Promise(r => setTimeout(r, ms));
-  const idx = id => REG.groups.tiancheng.layers.indexOf(id);
+  const idx = id => REG.groups[REG.maps[id].group].layers.indexOf(id);
   const drawn = ms => new Promise(r => { const t = setTimeout(r, ms); viewer.addOnceHandler('tile-drawn', () => { clearTimeout(t); setTimeout(r, 30); }); });
   const within = (p, ms) => Promise.race([p, wait(ms)]);
   async function riseSink(id, run) {
@@ -1766,7 +1770,7 @@ document.addEventListener('DOMContentLoaded', main);   // 两个 defer 脚本（
   }
   const go0 = go;
   go = async function (id, ...rest) {                             // 挂点 ①：只包天城层与层之间的切换，其余原样
-    if (busy || RM() || !viewer || id === cur || !isTC(cur) || !isTC(id) || !viewer.world.getItemCount()) return go0(id, ...rest);
+    if (busy || RM() || !viewer || id === cur || !isTC(cur) || !isTC(id) || REG.maps[cur].group !== REG.maps[id].group || !viewer.world.getItemCount()) return go0(id, ...rest);
     busy = true; let p;
     try { await riseSink(id, () => (p = go0(id, ...rest))); } catch (e) { if (!p) p = go0(id, ...rest); }
     finally { busy = false; }
@@ -1784,24 +1788,29 @@ document.addEventListener('DOMContentLoaded', main);   // 两个 defer 脚本（
 // (b) 过渡环：以城区（3000×1875 m）为中心、RING_W 倍宽的一圈，用世界底图里天城附近那几像素放大、柔化，再叠一圈程序生成的云海边，
 //     盖住城区底图的硬边；城区完全占满屏幕时隐藏（不画巨大的叠加层）。不需要新渲染。城外 / 异兽类事态落在这一圈（events.js）。
 // 减少动态效果：交接照常，但没有缩放动画。
+// v0.9.6 起推广到所有「世界图地点有自己地图」的组（maps.json groups.<id>.place：天城、圣都、原域、旷野高地、圆桌封地）：
+// 每组的交接点 = 世界图上该地点；环宽 = RING_W × 该组的 extent_m 宽；环的面包屑「<组名>周边」。
 const TCScale = (() => {
-  const W_M = 12e6, T_M = 3000;
-  const isTier = id => { const m = REG?.maps?.[id]; return !!m && m.group === 'tiancheng' && m.kind === 'points'; };
-  let lastTier = null, busy = false, pushes = [], ringOn = false, holder = null;
+  const W_M = 12e6;
+  const grp = id => { const m = REG?.maps?.[id]; return m && m.kind === 'points' && m.status !== 'planned' && m.group && REG.groups[m.group]?.place ? m.group : null; };
+  const isTier = id => !!grp(id);
+  const T_Mof = id => REG.maps[id]?.view?.extent_m?.[0] || 3000;
+  let lastTier = {}, lastG = null, busy = false, pushes = [], ringOn = false, holder = null;
   const cache = {};
-  const tcPt = () => { const p = M.places.find(q => q.id === 'tiancheng'); const [nx, ny] = toImg(p.x, p.y); return [nx, ny]; };
+  const ptOf = gid => { const p = [...M.places, ...M.fiefs].find(q => q.id === REG.groups[gid]?.place); return p ? toImg(p.x, p.y) : null; };
+  const places = () => Object.keys(REG.groups).filter(g => REG.groups[g].place && REG.groups[g].layers.some(isTier) && ptOf(g));
   // 程序噪声（值噪声 fbm，固定种子，每次一样）
   const h2 = (x, y) => { let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
   const vn = (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
     const a = h2(xi, yi), b = h2(xi + 1, yi), c = h2(xi, yi + 1), d = h2(xi + 1, yi + 1); return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy; };
   const fbm = (x, y) => vn(x, y) * .5 + vn(x * 2.1, y * 2.1) * .27 + vn(x * 4.3, y * 4.3) * .15 + vn(x * 8.7, y * 8.7) * .08;
-  async function paint(upper, asp) {
+  async function paint(upper, asp, gid, T_M) {
     const CW = 320, CH = Math.round(CW * asp), c = document.createElement('canvas'); c.width = CW; c.height = CH; const g = c.getContext('2d');
     g.fillStyle = upper ? '#c9d3dc' : '#7d8a6a'; g.fillRect(0, 0, CW, CH);
     try {   // 世界底图：天城附近 RING_W × 3 km 那一小块（约 20 px）放大
       const x = await getText('art/world.dzi'), T = +x.match(/TileSize="(\d+)"/)[1], ov = +(x.match(/Overlap="(\d+)"/)?.[1] || 0), f = x.match(/Format="(\w+)"/)[1];
       const W = +x.match(/Width="(\d+)"/)[1], H = +x.match(/Height="(\d+)"/)[1], top = Math.ceil(Math.log2(Math.max(W, H)));
-      const [nx, ny] = tcPt(), px = nx * W, py = ny * H, col = Math.floor(px / T), row = Math.floor(py / T), x0 = col * T - (col ? ov : 0), y0 = row * T - (row ? ov : 0);
+      const [nx, ny] = ptOf(gid), px = nx * W, py = ny * H, col = Math.floor(px / T), row = Math.floor(py / T), x0 = col * T - (col ? ov : 0), y0 = row * T - (row ? ov : 0);
       const cw = RING_W * T_M / (W_M / W), ch = cw * asp;
       const img = new Image(); img.crossOrigin = 'anonymous'; img.src = `art/world_files/${top}/${col}_${row}.${f}`; await img.decode();
       g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
@@ -1824,60 +1833,64 @@ const TCScale = (() => {
   }
   function ring() {
     if (!isTier(cur)) return;
-    const m = REG.maps[cur], upper = cur === 'tc_upper', key = cur + ':' + aspect.toFixed(3);
+    const gid = grp(cur), upper = (REG.groups[gid].upper || []).includes(cur), key = cur + ':' + aspect.toFixed(3);
     holder = document.createElement('div'); holder.className = 'tc-ring'; holder.setAttribute('aria-hidden', 'true');
     holder.style.cssText = 'pointer-events:none;'; const h = holder;
     viewer.addOverlay({ element: h, location: new OpenSeadragon.Rect(.5 - RING_W / 2, aspect / 2 - RING_W * aspect / 2, RING_W, RING_W * aspect) });
-    (cache[key] ??= paint(upper, aspect)).then(c => { if (!h.isConnected) return; const cv = c.cloneNode(); cv.getContext('2d').drawImage(c, 0, 0);
+    (cache[key] ??= paint(upper, aspect, gid, T_Mof(cur))).then(c => { if (!h.isConnected) return; const cv = c.cloneNode(); cv.getContext('2d').drawImage(c, 0, 0);
       cv.style.cssText = 'width:100%;height:100%;display:block'; h.appendChild(cv); sync(); });
     sync();
   }
   function crumb() {
     const cr = $('#crumbs'); let el = cr.querySelector('.ringc');
-    if (ringOn && !el && cr.querySelector('b')) { el = document.createElement('span'); el.className = 'ringc'; el.innerHTML = `${esc(tx('ring', '天城周边'))}<span class="sep" aria-hidden="true"> › </span>`;
+    if (ringOn && !el && cr.querySelector('b')) { el = document.createElement('span'); el.className = 'ringc'; const gid = grp(cur), lab = gid === 'tiancheng' ? tx('ring', '天城周边') : tx('ring_of', REG.groups[gid].title + '周边', { name: nm(REG.groups[gid], 'title') });
+      el.innerHTML = `${esc(lab)}<span class="sep" aria-hidden="true"> › </span>`;
       el.style.color = 'var(--muted)'; cr.querySelector('b').before(el); }
     if (!ringOn && el) el.remove();
   }
   function sync() {
     if (!viewer?.world.getItemCount()) return;
     const w = viewer.viewport.getBounds(true).width, t = isTier(cur);
-    if (holder) holder.style.visibility = t && w > .9 ? '' : 'hidden';
+    const bb = viewer.viewport.getBounds(true), edge = bb.x < 0 || bb.y < 0 || bb.x + bb.width > 1 || bb.y + bb.height > aspect;   // 拖到图边露出外面：也显示环，不露黑底
+    if (holder) holder.style.visibility = t && (w > .9 || edge) ? '' : 'hidden';
     const on = t && w > 1.6; if (on !== ringOn) { ringOn = on; crumb(); } else if (on) crumb();
   }
-  function handoffIn(ref) {
-    const g = REG.groups.tiancheng, id = lastTier && REG.maps[lastTier]?.status !== 'planned' ? lastTier : g.layers.find(isTier); if (!id) return;
-    const vp = viewer.viewport, c = vp.getCenter(true), [nx, ny] = tcPt(), cs = vp.getContainerSize();
+  // 世界图视野中心最近的那个地点（在视野宽 30% 以内才算）
+  function nearest() { const vp = viewer.viewport, b = vp.getBounds(true), c = b.getCenter(); let best = null;
+    for (const g of places()) { const [nx, ny] = ptOf(g), d = Math.hypot(c.x - nx, c.y - ny * aspect); if (d < b.width * .3 && (!best || d < best.d)) best = { g, d }; }
+    return best?.g || null; }
+  function handoffIn(ref, gid = nearest() || 'tiancheng') {
+    const g = REG.groups[gid], lt = lastTier[gid], id = lt && isTier(lt) ? lt : g.layers.find(isTier); if (!id) return;
+    const vp = viewer.viewport, c = vp.getCenter(true), [nx, ny] = ptOf(gid), cs = vp.getContainerSize(), T_M = T_Mof(id);
     const dx = Math.max(-4, Math.min(4, (c.x - nx) * W_M / T_M)), dy = Math.max(-2.5, Math.min(2.5, (c.y - ny * aspect) * W_M / T_M));
     const a = REG.maps[id], asp = (a.view?.extent_m?.[1] || 1875) / (a.view?.extent_m?.[0] || 3000), w = RING_W * .96, h = w * cs.y / cs.x;
-    groupView.tiancheng = new OpenSeadragon.Rect(.5 + dx - w / 2, asp / 2 + dy - h / 2, w, h);
+    groupView[gid] = new OpenSeadragon.Rect(.5 + dx - w / 2, asp / 2 + dy - h / 2, w, h);
     const sp = vp.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true);
     window.__snapFx = { ox: sp.x, oy: sp.y, scale: 5 }; pendingFocus = null; pendingHome = false; go(id);
   }
   function handoffOut() {
     const vp = viewer.viewport, cs = vp.getContainerSize(), sp = vp.pixelFromPoint(new OpenSeadragon.Point(.5, aspect / 2), true);
-    window.__snapFx = { ox: sp.x || cs.x / 2, oy: sp.y || cs.y / 2, scale: .2 }; window.__worldTC = true; pendingFocus = null; go('world');
+    window.__snapFx = { ox: sp.x || cs.x / 2, oy: sp.y || cs.y / 2, scale: .2 }; window.__worldTC = REG.groups[grp(cur)]?.place || true; pendingFocus = null; go('world');
   }
   function onZoom(e) {
     if (busy || !REG || !cur || !viewer.world.getItemCount() || !e || !isFinite(e.zoom)) return;
     const vp = viewer.viewport, m = REG.maps[cur], z = vp.getZoom(true), now = performance.now();
     let dir = 0;
-    if (m.kind === 'world' && e.zoom > vp.getMaxZoom() * 1.01 && z >= vp.getMaxZoom() * .9) {
-      const b = vp.getBounds(true), c = b.getCenter(), [nx, ny] = tcPt();
-      if (Math.hypot(c.x - nx, c.y - ny * aspect) < b.width * .3) dir = 1;
-    }
+    let tgt = null;
+    if (m.kind === 'world' && e.zoom > vp.getMaxZoom() * 1.01 && z >= vp.getMaxZoom() * .9) { tgt = nearest(); if (tgt) dir = 1; }
     if (isTier(cur) && e.zoom < vp.getMinZoom() * .99 && z <= vp.getMinZoom() * 1.12) dir = -1;
     if (!dir) return;   // 约束回弹时也会发 zoom 事件（值在范围内），不能因此清掉计数
     pushes = pushes.filter(p => p.d === dir && now - p.t < 1500); pushes.push({ d: dir, t: now });
     if (pushes.length < 2) return;   // 在极限处再推一下才交接，不会一碰就跳
     pushes = []; busy = true; setTimeout(() => { busy = false; }, 1200);
-    dir > 0 ? handoffIn(e.refPoint) : handoffOut();
+    dir > 0 ? handoffIn(e.refPoint, tgt) : handoffOut();
   }
   function init() {
     viewer.addHandler('zoom', onZoom); viewer.addHandler('animation', sync); viewer.addHandler('animation-finish', sync); viewer.addHandler('open', () => setTimeout(sync, 0));
-    new MutationObserver(() => { if (isTier(cur)) lastTier = cur; if (!isTier(cur)) { holder = null; ringOn = false; } }).observe(document.body, { attributes: true, attributeFilter: ['data-map'] });
+    new MutationObserver(() => { if (isTier(cur)) { lastG = grp(cur); lastTier[lastG] = cur; } if (!isTier(cur)) { holder = null; ringOn = false; } }).observe(document.body, { attributes: true, attributeFilter: ['data-map'] });
   }
   const t0 = setInterval(() => { if (typeof viewer !== 'undefined' && viewer && typeof viewer.addHandler === 'function') { clearInterval(t0); init(); } }, 100);
-  return { isTier, ring, sync, handoffIn, handoffOut, get ringOn() { return ringOn; }, get lastTier() { return lastTier; } };
+  return { isTier, ring, sync, handoffIn, handoffOut, get ringOn() { return ringOn; }, get lastTier() { return lastTier[lastG] || null; }, grp, places };
 })();
 window.TCScale = TCScale;
 </script>

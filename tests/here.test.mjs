@@ -50,9 +50,15 @@ t('4 只有层名或大区 → 该层默认视野', () => {
 t('5 只有「天城」→ 上层；世界地名 → 世界图', () => {
   is('天城', 5, 'tc_upper', { place: undefined });
   is('Tiancheng', 5, 'tc_upper');
-  is('旷野高地', 5, 'world', { place: '旷野高地' });
-  is('大骑士领·圣都', 5, 'world', { place: '大骑士领·圣都' });
-  is('圆桌第三席封地', 5, 'world');
+  is('奥伦帝国边境', 5, 'world', { place: '奥伦帝国' });
+});
+t('开局地点的简易地图（v0.9.6）：地名落到各自的地图', () => {
+  is('旷野高地', 3, 'site_highland', { marker: 'highland_plateau' });
+  is('大骑士领·圣都', 4, 'site_kavalierki');
+  is('圣都·太阳骑士大竞技场', 3, 'site_kavalierki', { marker: 'sun_arena' });
+  is('原域·诸神殿', 3, 'yuanyu_sanctum', { marker: 'pantheon' });
+  is('圆桌第三席封地', 4, 'site_fief3');
+  is('光辉联邦', 5, 'world');
   is('奥伦帝国边境', 5, 'world', { place: '奥伦帝国' });
 });
 t('6 匹配不到 → null', () => {
@@ -103,7 +109,7 @@ t('开局地点（v0.9.2）：卡里开场白写的当前地点都能落点', ()
   is('{{user}}书房', 1, 'eden_estate', { word: '书房' });                                   // 开局二～五
   is('中层-钢铁霓虹区-旧公寓楼-房间', 3, 'tc_mid', { marker: 'old_apartment' });           // 开局六
   is('天城-中层高区-辉光大教堂', 3, 'tc_mid', { marker: 'radiance_cathedral' });           // 开局八
-  is('旷野高地', 5, 'world', { place: '旷野高地' });                                        // 开局七
+  is('旷野高地', 3, 'site_highland', { marker: 'highland_plateau' });                   // 开局七（v0.9.6 起有自己的地图）
   is('天城边缘的废弃教堂区', 3, 'tc_low', { marker: 'ruined_churches' });                  // 开局四（目的地；不被「教堂」带去辉光大教堂）
   is('首相府', 3, 'tc_upper', { marker: 'pm_residence' });                                 // 开局五（目的地）
 });

@@ -118,8 +118,10 @@ for mid, m in maps.items():
         if a and b and maps[mid].get('group') and maps[mid].get('group') == maps[l['map']].get('group'):
             dx, dy = a['nx'] - b['nx'], (a['ny'] - b['ny']) * 1875 / 3000
             if (dx * dx + dy * dy) ** .5 > .02: err(f"{mid}.{i} 与 {l['map']}.{l['marker']} 在平面上没对齐（偏差 {(dx * dx + dy * dy) ** .5:.3f} 图宽）")
-ext = {tuple(d.get('extent_m', [])) for d in data.values() if d.get('extent_m')}
-if len(ext) > 1: err(f'各层 extent_m 不一致：{ext}')
+for gid, g in reg.get('groups', {}).items():   # 同组各层共用一套平面坐标（切层保持 x / y）
+    ext = {tuple(data[k].get('extent_m', [])) for k in g['layers'] if data.get(k, {}).get('extent_m')}
+    if len(ext) > 1: err(f'group {gid} 各层 extent_m 不一致：{ext}')
+    if g.get('place') and g['place'] not in place_ids | {f.get('id') for f in wm.get('fiefs', [])}: err(f"group {gid}.place → {g['place']} 不是世界图的地点 / 封地 id")
 # 英文界面（map/i18n）：地图标题、层名、地标都要有英文名（没有时查看器显示中文原文）
 for mid, m in maps.items():
     if m.get('status') == 'planned': continue
@@ -170,7 +172,10 @@ else:
         for r in p.get('refs', []):
             mid, _, k = r.partition('.')
             if k not in (maps.get(mid, {}).get('markers') or {}): err(f'addon_places.{p["id"]}: refs {r} 不存在（地点删了或改了 id？同步删改这一条）')
+        if p.get('site') and not p.get('refs'): err(f'addon_places.{p["id"]}: 开局地点地图的条目要有 refs')
         if p.get('estate') and not est_words & set(p.get('alias', [])): err(f'addon_places.{p["id"]}: 庄园条目的 alias 没有一个在 eden_estate 的 rooms / areas 里')
+    for mid, m in maps.items():   # 开局地点的简易地图（site:true）：每张至少一条附加条目引用它的地标
+        if m.get('site') and not any(r.startswith(mid + '.') for r in refs): err(f'{mid}：开局地点地图在 addon_places.json 里没有条目（世界书附加条目缺它）')
     def added(v):
         return v.get('canon') is False or v.get('sub_src') or v.get('layer_src') or any(w in v.get('src', '') for w in ('仓库自设', '用户'))
     for mid, m in maps.items():
