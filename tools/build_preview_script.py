@@ -17,6 +17,9 @@ REPO = 'kcgoofee-jpg/my-tavern-experiments'
 HOSTS = ['cdn.jsdmirror.com', 'cdn.jsdelivr.net']   # 与卡内顺序一致：先国内镜像，再官方 CDN
 
 
+# 原作署名（作者同意二次创作的条件：发布时首帖附原作帖链接，2026-09-27 经 Discord 同意）
+CREDIT = '原作角色卡：Yehehua（类脑社区），原作发布帖 https://discord.com/channels/1380075940285124724/1534464824141025321 。本地图是经作者同意的二次创作。'
+
 def build(ref):
     urls = [f'https://{h}/gh/{REPO}@{ref}/map/tavern/eden-map.js' for h in HOSTS]
     content = ("// 地图脚本：依次尝试各线路，加载成功就停\n(async () => {\n  for (const u of " + json.dumps(urls) +
@@ -26,7 +29,7 @@ def build(ref):
         'id': str(uuid.uuid5(uuid.NAMESPACE_URL, f'eden-map-preview:{ref}')),   # 同一个 ref 重复生成时 id 不变，重新导入会覆盖而不是多一份
         'content': content,
         'info': f'地图预览版：加载 {REPO}@{ref} 的 map/tavern/eden-map.js（jsdmirror → jsDelivr）。'
-                '试用完请删除或停用，避免和卡内的「【地图】世界地图」同时运行（两个悬浮按钮会互相替换）。',
+                '试用完请删除或停用，避免和卡内的「【地图】世界地图」同时运行（两个悬浮按钮会互相替换）。' + CREDIT,
         'button': {'enabled': False, 'buttons': []}, 'data': {}, 'export_with': {'button': True, 'data': True},
     }
 
@@ -37,7 +40,7 @@ def build_release(tag):
     d = build(tag)
     d.update(name=f'【地图】伊甸地图 v{ver}', id=str(uuid.uuid5(uuid.NAMESPACE_URL, 'eden-map-release')),
              info=f'伊甸地图 v{ver}（外挂脚本，不改角色卡）：加载 {REPO}@{tag} 的 map/tavern/eden-map.js（jsdmirror → jsDelivr）。'
-                  '配合世界书「伊甸地图·世界书附加条目」使用。升级时导入新版同名脚本会覆盖本条；请停用各种预览版地图脚本，避免两个悬浮按钮互相替换。')
+                  '配合世界书「伊甸地图·世界书附加条目」使用。升级时导入新版同名脚本会覆盖本条；请停用各种预览版地图脚本，避免两个悬浮按钮互相替换。' + CREDIT)
     return d
 
 
@@ -64,7 +67,7 @@ def build_follow(branch, fallback):
         'id': str(uuid.uuid5(uuid.NAMESPACE_URL, f'eden-map-preview-follow:{branch}')),
         'content': js,
         'info': f'地图预览版（可复用）：每次打开时加载 {REPO} 分支 {branch} 的最新提交。推送新版本后刷新酒馆即可，不用重新导入。'
-                '试用完请删除或停用，避免和卡内的「【地图】世界地图」同时运行。',
+                '试用完请删除或停用，避免和卡内的「【地图】世界地图」同时运行。' + CREDIT,
         'button': {'enabled': False, 'buttons': []}, 'data': {}, 'export_with': {'button': True, 'data': True},
     }
 

@@ -98,6 +98,12 @@
 | `tests/` | 单元测试 |
 | `docs/` | 设计文档、门控记录、审阅报告 |
 
+## 原作与授权
+
+- 原作：角色卡《母畜庄园》，作者 **Yehehua**，发布于 Discord「类脑」社区：<https://discord.com/channels/1380075940285124724/1534464824141025321>。
+- 本仓库的地图、脚本与世界书附加条目是二次创作，不包含也不修改原卡。作者于 2026-09-27 通过 Discord 同意，条件是**发布时首帖附上面的原作帖链接**。
+- 同一行署名也写在地图脚本说明（`tools/build_preview_script.py`）、世界书附加条目（`tools/build_worldbook_addon.py`）和查看器设置面板底部。
+
 ## 7. 数据与署名
 
 - 城市骨架：**© OpenStreetMap contributors**，[ODbL 1.0](https://opendatacommons.org/licenses/odbl/)（https://www.openstreetmap.org/copyright）。派生数据 `blender/data/osm/*.json` 同样按 ODbL 提供。查看器在天城各层右上角显示署名。
