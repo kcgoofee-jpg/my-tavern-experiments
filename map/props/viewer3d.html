@@ -73,7 +73,17 @@
     #cut input { width: 110px; }
     .seg button { min-width: 48px; padding: 0 var(--sp-4); }
     #credit { display: none; }
+    /* U12：手机上说明卡改为底部面板（≤40% 高，可拖下关闭）；热点编号缩小；视图条紧凑 */
+    #card { left: 0; right: 0; bottom: 0; width: auto; max-height: 40vh; overflow: auto; border-radius: var(--r-l) var(--r-l) 0 0; padding: var(--sp-6) var(--sp-5) calc(var(--sp-4) + env(safe-area-inset-bottom)); }
+    #card .grip { display: block; }
+    #flows { top: calc(56px + env(safe-area-inset-top)); width: min(260px, calc(100% - 32px)); max-height: 50%; overflow: auto; }
+    .pin span { width: 17px; height: 17px; font-size: 10px; border-width: 1px; }
+    .seg button { min-height: 36px; min-width: 40px; padding: 0 var(--sp-3); }
+    #top .btn { min-height: 40px; padding: 0 var(--sp-4); }
+    #top { gap: var(--sp-3); }
   }
+  #card .grip { display: none; position: absolute; top: 0; left: 0; right: 0; height: 22px; cursor: grab; touch-action: none; }
+  #card .grip::before { content: ''; position: absolute; left: 50%; top: 8px; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--line-strong); }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -88,11 +98,12 @@
   </div>
   <label id="cut" class="panel" hidden><span data-t="cut_h">剖切高度</span><input type="range" id="cutH" min="0" max="6" step="0.05"><output id="cutV"></output></label>
   <button type="button" class="btn panel" id="flowBtn" aria-pressed="false" aria-controls="flows" hidden data-t="flows">流向</button>
+  <button type="button" class="btn panel" id="legendBtn" aria-expanded="false" aria-controls="flows" hidden data-t="legend">图例</button>
   <button type="button" class="btn panel" id="listBtn" aria-expanded="true" aria-controls="list" data-t="parts">部件</button>
 </div>
 <nav id="flows" class="panel" hidden aria-labelledby="flowsH"><h2 id="flowsH" data-t="flows_h">流向（示意，点一条看说明）</h2><ol></ol></nav>
 <nav id="list" class="panel" aria-labelledby="listH"><h2 id="listH" data-t="parts_h">部件（点击飞过去）</h2><ol></ol></nav>
-<section id="card" class="panel" hidden aria-live="polite"><button type="button" class="btn x" aria-label="关闭" data-ta="close">✕</button><h3></h3><p></p><small></small></section>
+<section id="card" class="panel" hidden aria-live="polite"><div class="grip" aria-hidden="true"></div><button type="button" class="btn x" aria-label="关闭" data-ta="close">✕</button><h3></h3><p></p><small></small></section>
 <div id="credit"></div>
 <div id="fps" hidden></div>
 <div id="load" role="status"><div><span class="txt">加载中…</span><div class="bar"><i></i></div><div class="acts" hidden><button type="button" class="btn" id="retry" data-t="retry">重试</button></div></div></div>
@@ -111,9 +122,9 @@ const post = m => { if (EMBED) try { parent.postMessage(m, '*'); } catch (e) {} 
 
 // ---------------- 语言 / 主题 ----------------
 const STR = {
-  zh: { mode_ext: '外观', mode_xray: '内透', mode_cut: '剖切', cut_h: '剖切高度', parts: '部件', parts_h: '部件（点击飞过去）', flows: '流向', flows_h: '流向（示意，点一条看说明）', retry: '重试', close: '关闭',
+  zh: { mode_ext: '外观', mode_xray: '内透', mode_cut: '剖切', cut_h: '剖切高度', parts: '部件', parts_h: '部件（点击飞过去）', flows: '流向', legend: '图例', flows_h: '流向（示意，点一条看说明）', retry: '重试', close: '关闭',
     loading: '加载模型 {p}', fail: '模型加载失败，请检查网络后重试', slow: '加载较慢…可以继续等，或重试', modes: '显示方式', canvas: '三维模型：拖动旋转，双指缩放' },
-  en: { mode_ext: 'Exterior', mode_xray: 'X-ray', mode_cut: 'Section', cut_h: 'Cut height', parts: 'Parts', parts_h: 'Parts (tap to fly)', flows: 'Flows', flows_h: 'Flows (schematic, tap for details)', retry: 'Retry', close: 'Close',
+  en: { mode_ext: 'Exterior', mode_xray: 'X-ray', mode_cut: 'Section', cut_h: 'Cut height', parts: 'Parts', parts_h: 'Parts (tap to fly)', flows: 'Flows', legend: 'Legend', flows_h: 'Flows (schematic, tap for details)', retry: 'Retry', close: 'Close',
     loading: 'Loading model {p}', fail: 'Model failed to load. Check the connection and retry.', slow: 'Still loading… keep waiting or retry', modes: 'View mode', canvas: '3D model: drag to orbit, pinch to zoom' },
 };
 // v0.9.6：语言先看地图的设置（同源本机存储 edenMapLang），再看系统语言；嵌入时查看器还会发 estate:lang
@@ -311,6 +322,9 @@ function placePins() {
     const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05 && !(mode === 'cut' && (s.a || s.c).y > cutY() + 0.2);
     s.pin.hidden = !vis; s.pin.classList.toggle('on', sel === s.id); if (!vis) continue;
     let x = (pv.x + 1) / 2 * w, y = (1 - pv.y) / 2 * h;
+    if (innerWidth <= 640) {   // U12：手机上挤在一起的编号直接隐藏（选中的除外），不再绕圈错开
+      if (sel !== s.id && placed.some(p => Math.hypot(p[0] - x, p[1] - y) < 26)) { s.pin.hidden = true; continue; }
+      placed.push([x, y]); s.pin.style.transform = `translate(${x}px, ${y}px)`; continue; }
     const x0 = x, y0 = y;   // 围着原位置一圈圈找空位（每圈 8 个方向，半径 32 / 64 px）
     for (let k = 0; k < 16 && placed.some(p => Math.hypot(p[0] - x, p[1] - y) < 30); k++) { const ang = -Math.PI / 2 + (k % 8) * Math.PI / 4, r = 32 * (1 + (k >> 3)); x = x0 + Math.cos(ang) * r; y = y0 + Math.sin(ang) * r; }
     placed.push([x, y]); s.pin.style.transform = `translate(${x}px, ${y}px)`; }
@@ -343,7 +357,7 @@ function stepFlows(now) {
     x.dots.instanceMatrix.needsUpdate = true; }
 }
 function setFlows(on) {
-  flowOn = on; flowG.visible = on; $('#flows').hidden = !on; $('#flowBtn').setAttribute('aria-pressed', String(on));
+  flowOn = on; flowG.visible = on; $('#legendBtn').hidden = !on; showLegend(on && !PHONE()); $('#flowBtn').setAttribute('aria-pressed', String(on));
   if (on) { if (mode === 'ext') setMode('xray'); showList(false); }
   else { for (const x of FL) x.tube.material.opacity = 0.45; if (!sel) $('#card').hidden = true; }
   dirty = true; post({ type: 'v3d:state', mode, hotspot: sel, flows: on });
@@ -354,6 +368,20 @@ function showFlow(id) {
   c.querySelector('h3').textContent = L(x.f.name); c.querySelector('p').textContent = L(x.f.desc);
   c.querySelector('small').textContent = LANG === 'en' ? x.f.name.zh : (x.f.name.en || ''); c.hidden = false;
   document.querySelectorAll('#flows li button').forEach(b => b.toggleAttribute('aria-current', b.dataset.id === id)); dirty = true;
+  if (PHONE()) showLegend(false);
+}
+// U12：手机上流向图例 / 部件列表默认收起，一点即开；点画面或选中后自动收起
+const PHONE = () => innerWidth <= 640;
+function showLegend(on) { $('#flows').hidden = !on; $('#legendBtn').setAttribute('aria-expanded', String(on)); $('#legendBtn').setAttribute('aria-pressed', String(on)); }
+$('#legendBtn').onclick = () => { const on = $('#flows').hidden; showLegend(on); if (on && PHONE()) showList(false); };
+document.addEventListener('pointerdown', e => { if (PHONE() && !e.target.closest('#list, #flows, #top')) { showList(false); showLegend(false); } }, { passive: true });
+{ // 底部面板往下拖 > 60px 关闭
+  const g = $('#card .grip'), c = $('#card'); let y0 = null;
+  g.addEventListener('pointerdown', e => { y0 = e.clientY; g.setPointerCapture(e.pointerId); });
+  g.addEventListener('pointermove', e => { if (y0 != null) c.style.transform = `translateY(${Math.max(0, e.clientY - y0)}px)`; });
+  const end = e => { if (y0 == null) return; const d = e.clientY - y0; y0 = null; c.style.transform = '';
+    if (d > 60) { if (sel) select(null); else c.hidden = true; } };
+  g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end);
 }
 $('#flowBtn').onclick = () => setFlows(!flowOn);
 function showCard(id) {
@@ -363,7 +391,7 @@ function showCard(id) {
 }
 $('#card .x').onclick = () => select(null);
 function showList(on) { $('#list').hidden = !on; $('#listBtn').setAttribute('aria-expanded', String(on)); $('#listBtn').setAttribute('aria-pressed', String(on)); }
-$('#listBtn').onclick = () => showList($('#list').hidden);
+$('#listBtn').onclick = () => { const on = $('#list').hidden; showList(on); if (on && PHONE()) showLegend(false); };
 if (innerWidth <= 640) showList(false);
 
 function select(id) {
@@ -371,6 +399,7 @@ function select(id) {
   for (const s of HS) s.m.material.userData.u.uHi.value = s.id === id ? 1 : 0;
   for (const m of Object.values(meshes)) if (m.material?.userData?.u) m.material.userData.u.uGain.value = id && m.userData.role === 'props' && !HS.some(s => s.id === id && s.m === m) ? 0.72 : 1;
   document.querySelectorAll('#list li button').forEach(b => b.toggleAttribute('aria-current', b.dataset.id === id));
+  if (id && innerWidth <= 640) { showList(false); showLegend(false); }
   showCard(id); dirty = true; post({ type: 'v3d:state', mode, hotspot: id });
 }
 
