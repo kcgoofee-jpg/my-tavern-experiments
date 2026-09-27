@@ -66,7 +66,7 @@ export const catOf = s => { s = String(s || '').trim(); if (CATS[s]) return s; i
 // 将军官邸、以太研究院是仓库自设（卡中没有，maps.json canon:false），图上还画着，所以仍认；附加条目不向模型列出它们
 const RE_UP = /庄园|悬浮岛|浮岛|伊甸|银冠|气候调节塔|首相府|财团|罗斯柴尔德|R-02|联盟会所|将军官邸|以太研究院/;
 const RE_LOW = /井|地基|血肉磨坊|施粥|废弃教堂|哨所|货运|下层分局|委员会下层|公共收容设施|量产|灰票|下城/;
-const RE_MID = /霓虹|C区|检查点|执法局总局|大教堂|大主教|圣铁摇篮|战斗修女院|军营|星渊|议会(?!骑士团)|商业区|旧公寓|最高法院|佣兵公会|中城/;
+const RE_MID = /霓虹|C区|检查点|执法局总局|大教堂|主教座堂|大主教|圣铁摇篮|战斗修女院|军营|星渊|议会(?!骑士团)|商业区|旧公寓|最高法院|佣兵公会|中城/;
 const RE_OUT = /光辉联邦|大骑士领|圣都|第三帝国|灵枢秘派|虚灵古派|原域|诸神殿|临光家族|圆桌骑士封地|伦敦|海外|旷野|大陆/;
 const guessByName = s => (RE_UP.test(s) ? '上层' : RE_LOW.test(s) ? '下层' : RE_MID.test(s) ? '中层' : RE_OUT.test(s) ? '天城外' : '');
 const layerGuess = loc => LAYERS.find(l => loc.startsWith(l)) || LAYERS.find(l => l !== '天城外' && loc.includes(l)) || guessByName(loc);
