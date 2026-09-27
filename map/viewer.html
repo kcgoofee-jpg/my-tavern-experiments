@@ -849,7 +849,6 @@ function mapChrome(m) {
   if (m.overlay) { let on = m.overlay.type !== 'barriers'; if (!on) try { on = localStorage.getItem('edenMapBarriers') === '1'; } catch (e) {} $('#tgBorders').checked = on; }
   $('#tgOverlay span').textContent = m.overlay ? nm(m.overlay, 'label') || t('overlay') : t('overlay'); $('#tgOverlay').hidden = !m.overlay;
   $('#tgAlt').hidden = !m.alt; if (m.alt) $('#tgAlt span').textContent = nm(m.alt, 'label') || t('alt_base');
-  if (m.overlay) { let on = m.overlay.type !== 'barriers'; if (!on) try { on = localStorage.getItem('edenMapBarriers') === '1'; } catch (e) {} $('#tgBorders').checked = on; }
 }
 
 // ---------------- 庄园剖面（kind=estate） ----------------
