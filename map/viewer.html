@@ -202,6 +202,8 @@
   }
   #credit { position: absolute; right: 8px; top: 6px; z-index: 4; font-size: 10px; color: rgba(255,255,255,.55); text-shadow: 0 0 3px #000; pointer-events: none; }
   #credit:empty { display: none; }
+  /* 手机上署名只占一行，不再折成 3–4 行盖住缩放按钮（E4b R04） */
+  @media (max-width: 640px) { #credit { left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; color: rgba(255,255,255,.8); text-shadow: 0 0 3px #000, 0 0 2px #000; } }
   /* 左下角：版本号在最下，状态行在它上方（原来两者叠在一起）；都加面板底，地图亮处也读得清（E4 N28） */
   #build { position: absolute; left: 6px; bottom: 6px; z-index: 4; font: 11px/1.4 ui-monospace, Menlo, monospace; color: var(--muted); background: var(--panel); border: 0; border-radius: 4px; padding: 1px 5px; cursor: pointer; }
   #build:hover { color: var(--ink); }
@@ -224,7 +226,8 @@
   #loading .acts[hidden] { display: none; }
   #loading .acts button { font: inherit; font-size: 13px; padding: 8px 14px; min-height: 40px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
   #loading .acts button:hover { border-color: var(--gold); }
-  #loading.over .acts, #loading.over span { pointer-events: auto; }
+  /* 只在加载中接收点击；.done 后整块穿透，否则正中会留一块吃掉滚轮 / 拖动的死区（E4b R01） */
+  #loading.over:not(.done) .acts, #loading.over:not(.done) span { pointer-events: auto; }
   #loading > div { text-align: center; }
   /* 「⋯」菜单（窄屏）：工具栏放不下的档位、开关、语言、主题、版本号都搬进设置弹层 */
   #setPop .more { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }

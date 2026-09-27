@@ -283,6 +283,8 @@ const TCEvents = (() => {
   .evleg button{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:10px;border:1px solid var(--line,rgba(255,255,255,.14));font-size:11px;line-height:16px;cursor:pointer;color:var(--ink,#e6edf3);white-space:nowrap}
   .evleg button i{width:9px;height:9px;border-radius:2px;background:var(--c);flex:none}
   .evleg button em{font-style:normal;color:var(--ev-muted)}
+  /* 放在 all:unset 之后，否则触屏的最小高度被冲掉（E4b R05） */
+  @media (pointer:coarse),(max-width:640px){#evbar>button{min-height:44px} .evleg button{min-height:36px;padding:8px 10px}}
   .evleg button.none{opacity:.45}.evleg button.off{opacity:.35;text-decoration:line-through}.evleg button.off i{background:transparent;box-shadow:inset 0 0 0 1px var(--c)}
   .evleg button:hover{border-color:var(--c)}.evleg button:active{opacity:.6}.evleg button:focus-visible{outline:2px solid var(--c);outline-offset:1px}
   .evleg small{color:var(--ev-muted);font-size:11px;margin-left:2px}
