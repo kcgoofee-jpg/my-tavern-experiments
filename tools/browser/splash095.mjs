@@ -16,6 +16,11 @@ async function run(name, preset, scheme = 'dark') {
     await P.page.route('**/art/clouds/puff1.png', async r => { await new Promise(x => setTimeout(x, 20000)); r.continue().catch(() => {}); });
     const H = await openHost(P, { here: '天城·中层·天城执法局总局', msgs: [], stat: {}, chat: 's95-' + name, splash: true });
     const p = P.page;
+    // UI v2（spec §3，用户批准）：第一次打开聊天、自检全部正常时不再自动弹开场卡（有 ⚠ 才出 P1 横幅）；手动「重新显示」照常弹卡
+    await B.wait(7000);
+    const auto = await p.evaluate(() => ({ card: !!document.querySelector('#eden-map-root .em-splash'), seen: localStorage.getItem('edenMapSplashSeen') }));
+    rep.check(`${name} 自检正常：不自动弹开场卡，记下本版`, !auto.card && !!auto.seen, JSON.stringify(auto));
+    await p.evaluate(() => window.EdenMap.selfcheck({ show: true }));
     await p.waitForSelector('#eden-map-root .em-splash', { timeout: 15000 });
     await B.wait(3500);
     const s1 = await p.evaluate(() => { const e = document.querySelector('#eden-map-root .em-splash'); return { t: e.querySelector('h2').textContent, n: e.querySelectorAll('li.on').length, pc: +e.querySelector('.pb').getAttribute('aria-valuenow'), st: e.querySelector('.st').textContent, lean: e.querySelectorAll('ul.tk li.skip').length }; });

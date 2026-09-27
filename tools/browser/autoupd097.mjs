@@ -59,7 +59,7 @@ async function page({ latest = 'map-v9.9.9', build = { version: '9.9.9', code: '
   const { P, p } = await page({ latest: 'map-s2-v0.1.0', build: { version: '0.1.0', code: 'S2-0100-R-0001', min_version: 'S2:0.1.0', force_reason: '旧版读不了新数据格式' } });
   await p.waitForSelector('#eden-map-root .em-force', { timeout: 15000 }).catch(() => {});
   let t = await q(p, '#eden-map-root .em-force');
-  rep.check('force_prompt', !!t && t.role === 'alert' && /已停止支持/.test(t.text) && /旧版读不了新数据格式/.test(t.text) && /本次关闭/.test(t.text) && !/此版本不再提示/.test(t.text), JSON.stringify(t));
+  rep.check('force_prompt', !!t && t.role === 'alertdialog' && /* UI v2：P0 阻断卡 */  /已停止支持/.test(t.text) && /旧版读不了新数据格式/.test(t.text) && /本次关闭/.test(t.text) && !/此版本不再提示/.test(t.text), JSON.stringify(t));
   const href = await p.evaluate(() => document.querySelector('#eden-map-root .em-force a')?.href);
   rep.check('force_series_tag', /blob\/map-s2-v0\.1\.0\//.test(href || ''), href);
   await B.shot(p, OUT, 'force_prompt');
