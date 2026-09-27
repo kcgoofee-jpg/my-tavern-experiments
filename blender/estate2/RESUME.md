@@ -13,6 +13,10 @@
 - r4 第二轮（用户：只有深浅两种绿）：地面拼块（条纹草坪 / 金黄稻草鼠尾草草甸 + 野花带 / 橄榄园干土 / 岛缘沙石带 / 露头岩 / 菜园 / 色块花境）、红土网球场、绿松石泳池；客房楼 8→4（g1/g3/spa/w_g1，铜绿 / 陶瓦顶，buildings.ROOF_OVR）；机库弧形金属顶 + 停机坪；服务院四翼围合 + 温室；Greystone 台地黄杨方格；林缘成团；主路路缘；柏树 / 伞松放大；开花 / 秋色树约 30 株。
   审查 r2：美术总监 7、景观 7、rp_glance 7.5、fresh 7.5，全部过门槛。遗留：草甸浅斑太圆太均匀；白色空心圆环（观景台）像 UI 线稿；别墅同款白盒在 375 px 下成白点。
 
+- r4c：南侧到达序列全开敞（草坪 / 草甸到崖边 + 崖边栏杆步道 + 两座观景台）、北崖裸岩岬角；观景台改实心浅石 + 低石栏 + 深色石边；西侧三分之一改地中海农业台地（layout.agri / agri_z：同心台地、葡萄园行、薰衣草带、干砌石墙、橄榄行、农场路、石灰岩露头）；东崖 V4 改崖顶草甸；别墅 10 → 4 栋（V1/V2/V3/V8），三型轮换（Sketchfab / 自建 L 形石板顶 / 合院绿化屋面）；夜景 `--light night`（月光 + 暖窗光 + 园路 / 大道灯 + 泳池水下灯 + 喷泉灯）。
+- r4d：Greystone 按真实比例放大（E 形约 76 × 46 m）+ Thiene 式园林（gardens.greystone_gardens：上台地倒影池 + 喷泉 + 黄杨 / 紫杉、圆形车场、弧形双石阶、下花园锦鲤倒影池、跌水溪）；Warner 式 Tudor 客舍 + 岩洞泳池 + 锦鲤池 + 卵石院（warner.py）；车库放大 + 前院停车；停机坪（gardens.helipad）；奶牛农场：`e4r/dairy_save.py` 另跑 props/dairy_parlour/build.py 存 .blend（不改原文件），环境变量 E2_DAIRY_BLEND 指向它，gardens.dairy 链入；网球场加垫平台地。调研写在 docs/eden-references.md（Greystone / Warner 两节）。
+- 分区图：`docs/drafts/eden2_r4_zones.jpg`（生成脚本在 scratchpad zl/zones.py，读 layout.py 的遮罩）。
+
 ---
 
 # estate2 · 风格帧 r3（2026-09-27）

@@ -226,7 +226,7 @@ def _spray():
 
 
 MATS = {}
-ROOF_OVR = {'g1': 'copper', 'g3': 'terracotta', 'spa': 'copper', 'w_g1': 'terracotta', 'svc_n': 'terracotta', 'svc_s': 'terracotta', 'svc_w': 'terracotta', 'svc_e': 'terracotta', 'club': 'copper'}
+ROOF_OVR = {'garage': 'terracotta', 'g1': 'copper', 'g3': 'terracotta', 'spa': 'copper', 'w_g1': 'terracotta', 'svc_n': 'terracotta', 'svc_s': 'terracotta', 'svc_w': 'terracotta', 'svc_e': 'terracotta', 'club': 'copper'}
 
 
 def mats():
@@ -580,7 +580,7 @@ def building(spec, col, r):
     M = mats()
     rot = math.radians(rot_deg)
     z0, zmin = site_z(cx, cy, w, d, rot)
-    fh = FH if bid not in ('v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9', 'v10') else 3.8
+    fh = FH if not (bid.startswith('v') and bid[1:2].isdigit()) else 3.6
     if mk == 'grey':
         fh = 4.0
     ht = floors * fh
@@ -631,7 +631,7 @@ def building(spec, col, r):
         if mk != 'grey':
             rustication(bm, w, d, zmin - z0 - 1.5, min(fh, ht) - 0.1)
             quoins(bm, w, d, min(fh, ht), ht - 0.9)
-        if roof in ('hip', 'hip_low', 'flat') and not bid.startswith('svc'):
+        if roof in ('hip', 'hip_low', 'flat') and not bid.startswith(('svc', 'v')):
             balustrade_rect(bm, w + 1.2, d + 1.2, ht, 0.2, 1.05)   # 屋顶女儿墙栏杆
     else:
         _box(bm, -w / 2 - 0.2, -d / 2 - 0.2, 0, w / 2 + 0.2, d / 2 + 0.2, 0.5)            # 勒脚
@@ -668,6 +668,8 @@ def building(spec, col, r):
             x = -w / 2 + k * 1.2
             _bar(bm_lead, (x, -d / 2, ht), (x, 0, ht + d * 0.35), 0.12, 0.1)
             _bar(bm_lead, (x, 0, ht + d * 0.35), (x, d / 2, ht), 0.12, 0.1)
+    elif roof == 'green':   # r4c 绿化屋面
+        _box(bm_roof, -w / 2 + 0.4, -d / 2 + 0.4, ht - 0.1, w / 2 - 0.4, d / 2 - 0.4, ht + 0.25)
     elif roof == 'flat':
         _box(bm_roof, -w / 2 + 0.3, -d / 2 + 0.3, ht - 0.1, -w / 2 + w * 0.45, d / 2 - 0.3, ht + 3.0)   # 屋顶小亭
     elif roof == 'gable':
@@ -679,6 +681,8 @@ def building(spec, col, r):
     obs.append(_obj(f'{bid}_sky', bm_sky, M['shutter'], (cx, cy, z0), rot, None, col))
     if roof == 'flat':
         obs.append(_obj(f'{bid}_roofbox', bm_roof, plain_m, (cx, cy, z0), rot, None, col))
+    elif roof == 'green':
+        obs.append(_obj(f'{bid}_roof', bm_roof, M['hedge'], (cx, cy, z0), rot, None, col))
     elif roof == 'barrel':
         obs.append(_obj(f'{bid}_roof', bm_roof, M['metal'], (cx, cy, z0), rot, None, col))
     elif roof == 'glass':
@@ -889,15 +893,15 @@ def walkway(i, pts, col):
     bm_to_obj(bm, f'walk{i}_posts', col, M['plain'])
 
 
-def balustrade_path(name, pts, z, col, h=1.05, closed=False):
+def balustrade_path(name, pts, z, col, h=1.05, closed=False, mat=None):
     M = mats()
     s = _resample(pts + ([pts[0]] if closed else []), 2.0)
     zz = z if not callable(z) else None
     sweep(name, [(x, y, (zz if zz is not None else z(x, y))) for x, y in s],
-          [(-0.22, -0.3), (-0.22, h), (0.22, h), (0.22, -0.3)], M['plain'], col)
+          [(-0.22, -0.3), (-0.22, h), (0.22, h), (0.22, -0.3)], mat or M['plain'], col)
 
 
-def retaining_wall(name, pts, z, c, col):
+def retaining_wall(name, pts, z, c, col, dark=False):
     """台地挡土墙：真实砌石墙面（从台面到外侧地面以下 1 m）+ 外挑压顶。"""
     M = mats()
     s = _resample(pts, 2.0)
@@ -913,8 +917,8 @@ def retaining_wall(name, pts, z, c, col):
         bot.append(bm.verts.new((ox, oy, zb)))
     for i in range(len(s) - 1):
         bm.faces.new([bot[i], bot[i + 1], top[i + 1], top[i]])
-    bm_to_obj(bm, name, col, M['ashlar'])   # r3：挡土墙也用石灰岩琢石砌
-    sweep(name + '_coping', [(x, y, z + 0.05) for x, y in off], [(-1.2, -0.35), (-1.2, 0.0), (1.2, 0.0), (1.2, -0.35)], M['plain'], col)
+    bm_to_obj(bm, name, col, M['wallstone'] if dark else M['ashlar'])   # r3：挡土墙也用石灰岩琢石砌
+    sweep(name + '_coping', [(x, y, z + 0.05) for x, y in off], [(-1.2, -0.35), (-1.2, 0.0), (1.2, 0.0), (1.2, -0.35)], M['grey_plain'] if dark else M['plain'], col)
 
 
 def pad_outline(p, n=160, filt=None):
@@ -967,8 +971,24 @@ def balustrades(col):
         filt = lambda x, y, b=base, zz=z: b(x, y) and float(L.edge_dist(x, y)) > 8 and abs(L.ground_z(x, y) - zz) < 2.5
         for k, seg in enumerate(pad_outline(p, filt=filt)):
             if len(seg) > 1:
-                balustrade_path(f'bal_{p["id"]}_{k}', seg, z - 0.1, col)
-                retaining_wall(f'wall_{p["id"]}_{k}', seg, z, p['c'], col)
+                lk = p['id'].startswith(('view', 'look'))
+                balustrade_path(f'bal_{p["id"]}_{k}', seg, z - 0.1, col, h=0.8 if lk else 1.05, mat=mats()['wallstone'] if lk else None)
+                retaining_wall(f'wall_{p["id"]}_{k}', seg, z, p['c'], col, dark=lk)
+    # r4c 南侧崖边步道栏杆（岛缘内 4 m，停靠平台两侧断开）
+    th = np.linspace(-math.pi + 0.05, -0.05, 400)
+    R = L.outline_R(th) - 3.6
+    X, Y = R * np.cos(th), R * np.sin(th)
+    sp = L.smooth01((-Y - 95) / 25) * L.smooth01((215 - np.abs(X)) / 35)
+    seg, k = [], 0
+    for x, y, v in zip(X, Y, sp):
+        if v > 0.5 and abs(x) > 34:
+            seg.append((float(x), float(y)))
+        elif len(seg) > 2:
+            balustrade_path(f'bal_prom_{k}', seg, lambda a, b: L.ground_z(a, b) - 0.1, col, h=0.95); seg, k = [], k + 1
+        else:
+            seg = []
+    if len(seg) > 2:
+        balustrade_path(f'bal_prom_{k}', seg, lambda a, b: L.ground_z(a, b) - 0.1, col, h=0.95)
 
 
 def grand_stairs(col):
@@ -1140,6 +1160,30 @@ def rotunda(col):
     bm_to_obj(bm, 'rotunda_dome', col, M['slate'])
 
 
+def villa_alt(spec, kind, col, r):
+    """r4c 自建别墅第 2 / 3 型：L 形（深色石板坡顶）/ 合院（绿化屋面 + 木平台）。"""
+    bid, cx, cy, w, d, fl, rot_deg, *_ = spec
+    rot = math.radians(rot_deg)
+    def P(u, v):
+        x, y = rot2(u, v, rot)
+        return cx + x, cy + y
+    M = mats()
+    if kind == 'L':
+        parts = [(f'{bid}_La', *P(-2, -3), 22, 9, 2, rot_deg, 'hip', 'white'), (f'{bid}_Lb', *P(7.5, 4), 9, 15, 2, rot_deg, 'hip', 'white')]
+        for sp in parts:
+            ROOF_OVR[sp[0]] = 'slate'
+            building(sp, col, r)
+    else:
+        parts = [(f'{bid}_Ca', *P(0, -8), 22, 6, 1, rot_deg, 'green', 'white'), (f'{bid}_Cb', *P(-8, 2), 6, 14, 1, rot_deg, 'green', 'white'),
+                 (f'{bid}_Cc', *P(8, 2), 6, 14, 1, rot_deg, 'green', 'white')]
+        for sp in parts:
+            building(sp, col, r)
+        z = L.ground_z(cx, cy)
+        bm = bmesh.new()
+        _box(bm, -5, -5, -1, 5, 8, 0.25)   # 院内木平台
+        _obj(f'{bid}_deck', bm, M['wood'], (cx, cy, z), rot, None, col)
+
+
 def build_all():
     col = coll('buildings')
     r = rng(5)
@@ -1159,8 +1203,9 @@ def build_all():
     for i, pts in enumerate(L.WALKWAYS):
         walkway(i, pts, col)
     balustrades(col)
-    from . import gardens
+    from . import gardens, warner
     gardens.build(col)
+    warner.build(col)
     dock(col)
     funicular(col)
     rope_bridge(col)

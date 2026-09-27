@@ -166,6 +166,13 @@ def place_villas(v, plinth_mat):
         zs = [L.ground_z(x, y) for x, y in pts]
         z0 = float(np.percentile(zs, 60))
         mirror = -1 if i % 2 else 1
+        if i % 3:   # r4c：三型别墅轮换（Sketchfab 原型 / 自建 L 形 / 自建合院）
+            from .buildings import villa_alt, plunge_pool
+            import random
+            villa_alt(spec, 'L' if i % 3 == 1 else 'C', col, random.Random(i))
+            px, pyw = cx - math.sin(rot) * 16, cy + math.cos(rot) * 16
+            plunge_pool(f'pool_{bid}', px, pyw, rot_deg + 90, L.ground_z(cx, cy) + 0.05, col, 4.0, 11.0)
+            continue
         _instance(v[order[i]], f'villa_{bid}', (cx, cy, z0), rot, (mirror, 1, 1), col)
         bm = bmesh.new()
         _box(bm, lo[0] * 0.92, lo[1] * 0.92, min(zs) - z0 - 2.0, hi[0] * 0.92, hi[1] * 0.92, 0.05)

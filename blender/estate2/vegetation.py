@@ -147,21 +147,23 @@ def _poisson(step, rs, box=(-350, 350, -270, 270)):
 KINDS = {
     'oak':     [('island_tree_01', 14.0, (0.49, 1.15, 1.0), ((0.06, 0.12, 0.05), 0.15), (1.0, 1.0)),     # 冬青栎：深、偏蓝绿，外坡林带
                 ('island_tree_02', 12.0, (0.47, 1.1, 1.0), ((0.05, 0.11, 0.05), 0.2), (1.0, 1.0))],
-    'pine':    [('island_tree_03', 15.0, (0.46, 0.7, 1.35), ((0.3, 0.36, 0.2), 0.4), (1.7, 0.7))],   # 伞松：宽平冠、灰绿，草坪孤植
-    'olive':   [('searsia_burchellii', 6.0, (0.47, 0.35, 1.5), ((0.5, 0.55, 0.46), 0.55), (1.5, 1.0))],  # 橄榄：银灰绿，台地树阵
+    'pine':    [('island_tree_03', 15.0, (0.47, 0.9, 0.75), ((0.06, 0.12, 0.05), 0.4), (1.9, 0.6))],   # 伞松：宽平冠、灰绿，草坪孤植
+    'olive':   [('searsia_burchellii', 6.0, (0.47, 0.25, 1.7), ((0.62, 0.66, 0.58), 0.6), (1.5, 1.0))],  # 橄榄：银灰绿，台地树阵
     'bloom':   [('island_tree_02', 10.0, (0.5, 1.0, 1.0), ((0.42, 0.3, 0.75), 0.8), (1.1, 0.9)),       # 蓝花楹
                 ('island_tree_02', 9.0, (0.5, 1.0, 1.0), ((0.95, 0.9, 0.9), 0.75), (1.0, 0.9)),         # 白玉兰
-                ('island_tree_01', 12.0, (0.5, 1.0, 1.0), ((0.62, 0.22, 0.07), 0.7), (1.0, 1.0))],       # 秋色（红叶山毛榉 / 枫）
+                ('island_tree_01', 12.0, (0.5, 1.0, 1.0), ((0.62, 0.22, 0.07), 0.7), (1.0, 1.0)),
+                ('searsia_burchellii', 6.0, (0.5, 1.0, 1.0), ((0.85, 0.35, 0.55), 0.75), (1.4, 1.0))],   # 紫薇（粉）       # 秋色（红叶山毛榉 / 枫）
     'cypress': [('proc_cypress', 14.0, None, None, (1.0, 1.0))],                                      # 意大利柏：柱状，大道与台地
     'palm':    [('proc_palm', 11.0, None, None, (1.3, 1.0))],                                         # 棕榈：别墅、湖边俱乐部、Breakers
 }
 
 
-def _ok_ground(X, Y, pad=4.0, allow_lawn=False):
+def _ok_ground(X, Y, pad=4.0, allow_lawn=False, allow_agri=False):
     H, at = L.terrain(X, Y)
     ok = (L.edge_dist(X, Y) > 6) & (L.footprint_sd(X, Y, pad) > 0) & (at['gravel'] < 0.2) & (at['lake'] < 0.1) & (at['paved'] < 0.3) & (at['beds'] < 0.3)
     if not allow_lawn:
         ok &= (at['lawn'] < 0.3) & (at['padmask'] < 0.5)
+    ok &= (at['agri'] < 0.3) | allow_agri
     for pts in L.WALKWAYS:
         ok &= L.poly_dist(X, Y, pts) > 4
     for pts in L.FOOTPATHS:
@@ -189,7 +191,7 @@ def plan_points(seed=7, density=1.0):
         ok &= np.hypot(X - b[1], Y - b[2]) > 20
     out.append(('oak', X[ok], Y[ok], H[ok], rs.randint(0, 2, ok.sum()), rs.uniform(0.8, 1.35, ok.sum())))
     # 2) 园中树团（5–9 株冬青栎 + 1 株伞松）
-    clumps = [(-140, -115), (125, -80), (-120, 60), (115, 95), (-60, -180), (70, -175), (-235, 0), (205, 60), (-40, 205), (160, -10)]
+    clumps = [(-140, -115), (125, -80), (-120, 60), (115, 95), (-235, 0), (205, 60), (-40, 205), (160, -10)]
     cx, cy, ck = [], [], []
     for (x0, y0) in clumps:
         n = rs.randint(5, 9)
@@ -201,10 +203,10 @@ def plan_points(seed=7, density=1.0):
     out.append(('oak', X[ok], Y[ok], H[ok], rs.randint(0, 2, ok.sum()), rs.uniform(0.9, 1.3, ok.sum())))
     # 3) 伞松孤植：草甸 / 湖岸 / 主台地外
     spec = [(-95, -60), (95, -62), (-175, -30), (180, -60), (-60, 95), (85, 70), (-110, 125), (35, 175), (-5, 190), (-200, 40),
-            (160, 110), (-120, -150), (120, -140), (-80, -230), (85, -225), (250, -40), (-270, -80), (-230, 125), (125, 185), (-150, 20)]
+            (160, 110), (250, -40), (-270, -80), (-230, 125), (125, 185), (-150, 20)]
     X, Y = _pts(spec, rs, 3)
     ok, H = _ok_ground(X, Y, 6.0)
-    out.append(('pine', X[ok], Y[ok], H[ok], np.zeros(ok.sum(), int), rs.uniform(1.25, 1.6, ok.sum())))
+    out.append(('pine', X[ok], Y[ok], H[ok], np.zeros(ok.sum(), int), rs.uniform(1.4, 1.8, ok.sum())))
     # 4) 意大利柏：大道两侧行列、前庭台地四角、Greystone 与 Breakers 的引道
     cyp = []
     for y in np.arange(-248, -150, 8):
@@ -216,25 +218,50 @@ def plan_points(seed=7, density=1.0):
     for t in np.linspace(0, 1, 9):
         cyp.append((-205 + 30 * t, -125 + 40 * t)); cyp.append((190 + 30 * t, -115 - 25 * t))
     X, Y = _pts(cyp, rs, 0.3)
-    ok, H = _ok_ground(X, Y, 2.0, allow_lawn=True)
+    ok, H = _ok_ground(X, Y, 2.0, allow_lawn=True, allow_agri=True)
     out.append(('cypress', X[ok], Y[ok], H[ok], np.zeros(ok.sum(), int), rs.uniform(1.25, 1.4, ok.sum())))
     # 5) 橄榄树阵：大道外侧坡地（梅花形 10 m）+ 前庭台地东西两端
     ol = []
-    for sx in (-1, 1):
-        for i, y in enumerate(np.arange(-240, -150, 10)):
-            for x in np.arange(52, 100, 10):
-                ol.append((sx * (x + 5 * (i % 2)), y))
+    for (gx0, gy0, gw, gh) in ((170, 5, 36, 36),):
+        for i, y in enumerate(np.arange(gy0 - gh / 2, gy0 + gh / 2 + 0.1, 11)):
+            for x in np.arange(gx0 - gw / 2, gx0 + gw / 2 + 0.1, 11):
+                ol.append((x, y))
+    # r4c 农业台地：台沿一行橄榄
+    Xa, Ya = _poisson(7.0, rs)
+    fr = (L.agri_z(Xa, Ya) / 11.0) % 1.0
+    sel = (L.agri(Xa, Ya) > 0.8) & (fr > 0.06) & (fr < 0.16) & (rs.uniform(0, 1, Xa.shape) < 0.7)
+    ol += list(zip(Xa[sel], Ya[sel]))
     X, Y = _pts(ol, rs, 0.6)
-    ok, H = _ok_ground(X, Y, 3.0, allow_lawn=True)
-    ok &= L.wood_mask(X, Y) < 0.5
-    out.append(('olive', X[ok], Y[ok], H[ok], np.zeros(ok.sum(), int), rs.uniform(0.85, 1.15, ok.sum())))
+    ok, H = _ok_ground(X, Y, 3.0, allow_lawn=True, allow_agri=True)
+    out.append(('olive', X[ok], Y[ok], H[ok], np.zeros(ok.sum(), int), rs.uniform(0.95, 1.05, ok.sum())))
     # 6) 开花树点缀：湖岸、主台地后侧、客房楼前
     bl = [(-80, 105), (50, 108), (-100, 170), (20, 190), (-45, 60), (45, 58), (108, -58), (-120, -60), (135, 40), (-150, -30),
           (-92, -128), (92, -128), (-20, 118), (100, 160), (-175, -40), (170, -40), (-60, 150), (75, 105), (-130, 95), (215, 150),
-          (-255, 60), (260, -20), (-40, -150), (45, -150), (0, 160), (-210, -110), (150, -150), (-165, 150)]
+          (-255, 60), (260, -20), (0, 160), (-210, -110), (-165, 150)]
     X, Y = _pts(bl, rs, 2)
     ok, H = _ok_ground(X, Y, 4.0, allow_lawn=True)
     out.append(('bloom', X[ok], Y[ok], H[ok], (np.arange(ok.sum()) % 3), rs.uniform(1.1, 1.45, ok.sum())))
+    # 6b) r4d Greystone（Thiene 式）：北向柏树林荫道、车场周边栎 / 伞松、下花园木兰 + 紫薇、两株棕榈
+    import math as _m
+    _ga = _m.radians(L.GS_ROT)
+    G = lambda u, v: (L.GS_C[0] + u * _m.cos(_ga) - v * _m.sin(_ga), L.GS_C[1] + u * _m.sin(_ga) + v * _m.cos(_ga))
+    gc = [G(sx * 7, v) for v in range(74, 112, 6) for sx in (-1, 1)]
+    X, Y = _pts(gc, rs, 0.2)
+    ok, H = _ok_ground(X, Y, 1.0, allow_lawn=True, allow_agri=True)
+    out.append(('cypress', X[ok], Y[ok], H[ok], np.zeros(ok.sum(), int), rs.uniform(1.3, 1.45, ok.sum())))
+    go = [G(u, v) for u, v in ((-45, 40), (-52, 20), (45, 42), (-48, 60), (52, 62), (-55, -5), (-50, -40), (50, -45), (60, 25))]
+    X, Y = _pts(go, rs, 2)
+    ok, H = _ok_ground(X, Y, 2.0, allow_lawn=True, allow_agri=True)
+    out.append(('oak', X[ok], Y[ok], H[ok], rs.randint(0, 2, ok.sum()), rs.uniform(1.3, 1.6, ok.sum())))
+    gp = [G(u, v) for u, v in ((-40, 80), (38, 84), (-62, 38))]
+    X, Y = _pts(gp, rs, 2)
+    ok, H = _ok_ground(X, Y, 2.0, allow_lawn=True, allow_agri=True)
+    out.append(('pine', X[ok], Y[ok], H[ok], np.zeros(ok.sum(), int), rs.uniform(1.4, 1.7, ok.sum())))
+    gb = [(G(u, v), k) for (u, v), k in (((-30, -48), 1), ((30, -48), 1), ((-44, -44), 3), ((44, -44), 3), ((-20, -52), 3), ((20, -52), 3), ((-38, 50), 1), ((38, 50), 1))]
+    X, Y = _pts([p for p, _ in gb], rs, 0.5)
+    kk = np.array([k for _, k in gb])
+    ok, H = _ok_ground(X, Y, 1.0, allow_lawn=True, allow_agri=True)
+    out.append(('bloom', X[ok], Y[ok], H[ok], kk[ok], rs.uniform(0.9, 1.1, ok.sum())))
     # 7) 棕榈：别墅泳池侧、湖边俱乐部、Breakers 草坪、回廊院
     pa = []
     for b in L.VILLAS:
@@ -245,6 +272,7 @@ def plan_points(seed=7, density=1.0):
         pa.append((72 + 22 * math.cos(a), 134 + 15 * math.sin(a)))
     for a in np.linspace(-2.6, -0.4, 8):
         pa.append((236 + 58 * math.cos(a - 0.45), -152 + 38 * math.sin(a - 0.45)))
+    pa += [G(-12, 34), G(12, 34)]
     for a in np.linspace(0.4, 2.7, 6):
         pa.append((0 + 18 * math.cos(a), 30 + 18 * math.sin(a)))
     X, Y = _pts(pa, rs, 1.5)
@@ -254,7 +282,7 @@ def plan_points(seed=7, density=1.0):
     X2, Y2 = _poisson(6.0, rs)
     ok2, H2 = _ok_ground(X2, Y2, 1.5)
     w2 = L.wood_mask(X2, Y2)
-    ok2 &= (w2 > 0.2) & (w2 < 0.8) & (rs.uniform(0, 1, X2.shape) < 0.5)
+    ok2 &= (((w2 > 0.2) & (w2 < 0.8)) | (L.crag(X2, Y2) > 0.4)) & (rs.uniform(0, 1, X2.shape) < 0.5)
     out.append(('shrub', X2[ok2], Y2[ok2], H2[ok2], np.zeros(ok2.sum(), int), rs.uniform(0.7, 1.4, ok2.sum())))
     return out
 
@@ -371,12 +399,12 @@ def _leaf_mat(name, c1, c2, rough=0.8):
     if t is None:
         return m
     v, tc = t.coords('Object', 1.0)
-    n = t.new('ShaderNodeTexNoise', (-900, -200), **{'Scale': 2.2, 'Detail': 8.0, 'Roughness': 0.75})
+    n = t.new('ShaderNodeTexNoise', (-900, -200), **{'Scale': 4.0, 'Detail': 12.0, 'Roughness': 0.8})
     t.link(v, n.inputs['Vector'])
     oi = t.new('ShaderNodeObjectInfo', (-900, 300))
     col = t.mix(n.outputs['Fac'], c1, c2, loc=(-500, 0))
     col = t.mix(t.math('MULTIPLY', oi.outputs['Random'], 0.35), col, (c1[0] * 0.7, c1[1] * 0.8, c1[2] * 0.7), loc=(-300, 0))
-    bump = t.new('ShaderNodeBump', (-400, -300), Strength=0.9, Distance=0.15)
+    bump = t.new('ShaderNodeBump', (-400, -300), Strength=1.0, Distance=0.35)
     t.link(n.outputs['Fac'], bump.inputs['Height'])
     b = t.bsdf((200, 0), Roughness=rough)
     t.link(col, b.inputs['Base Color']); t.link(bump.outputs['Normal'], b.inputs['Normal'])
@@ -388,19 +416,19 @@ def _proc_cypress(h, coll_):
     import bmesh
     from mathutils import Matrix, noise, Vector
     bm = bmesh.new()
-    bmesh.ops.create_uvsphere(bm, u_segments=20, v_segments=24, radius=1.0)
+    bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=48, radius=1.0)
     for v in bm.verts:
         z = v.co.z
         t = (z + 1) / 2                             # 0 底 → 1 顶
         prof = math.sin(math.pi * min(1, t * 1.15) ** 0.8) ** 0.7 * (1 - 0.25 * t)
-        d = 1 + 0.28 * noise.noise(Vector((v.co.x * 3, v.co.y * 3, z * 9)))
+        d = 1 + 0.3 * noise.noise(Vector((v.co.x * 3, v.co.y * 3, z * 9))) + 0.15 * noise.noise(Vector((v.co.x * 9, v.co.y * 9, z * 25)))
         v.co.x *= 1.6 * prof * d; v.co.y *= 1.6 * prof * d
         v.co.z = t * h
     bmesh.ops.create_cone(bm, cap_ends=True, segments=6, radius1=0.2, radius2=0.15, depth=1.5, matrix=Matrix.Translation((0, 0, -0.5)))
     me = bpy.data.meshes.new('proc_cypress'); bm.to_mesh(me); bm.free()
     for p in me.polygons:
         p.use_smooth = True
-    me.materials.append(_leaf_mat('e2_cypress', (0.02, 0.05, 0.025), (0.05, 0.1, 0.04)))
+    me.materials.append(_leaf_mat('e2_cypress', (0.012, 0.03, 0.014), (0.035, 0.07, 0.03)))
     ob = bpy.data.objects.new('proc_cypress', me); coll_.objects.link(ob)
     return ob
 

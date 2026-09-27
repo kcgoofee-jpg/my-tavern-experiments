@@ -32,3 +32,18 @@
 
 ## 下一步（用户认可后）
 按 `CLOUD_TASK8.md` 重开建模：**先出 1 张风格帧**（外观航拍 2000px，体量 + 材质 + 光照 + 植被），用户认可后再铺开；首稿即用真实天光（HDRI）、扫描植被、PBR 材质；布局按本参考板，不沿用 three.js 版与 b1 草稿的构图。
+
+## Greystone 园林（r4d 调研，2026-09-27）
+真实对象：Greystone Mansion & Gardens（Doheny 庄园，Beverly Hills）。建筑 Gordon Kaufmann，1927–28；都铎复兴式，55 间房，约 46,000 sq ft（4,300 m²），印第安纳石灰岩墙、陡坡石板顶、多山墙、高烟囱；原占地约 16 英亩，坡地庄园；1976 年列入 NRHP，1971 年起为市立公园。
+园林：Paul Thiene（1926–27），主设计 Emile Kuehl。
+- **三级正式台地**：意大利文艺复兴式上台地花园（在主楼上坡一侧），与主楼同一种印第安纳石灰岩砌巨型挡土墙；宽阔的弧形石阶下到坡下的下花园；栏杆、平台、石板园路（彩色板岩）。
+- **水景**：两座人工湖、两条溪、两道瀑布（其中一道沿山坡跌落约 80 ft），多处倒影池；泳池做成倒影池形式；锦鲤倒影池；挡土墙壁龛里的小涌泉。
+- **种植**：柏树林荫道（cypress allée）；黄杨绿篱与花坛（白色 'Iceberg' 玫瑰）；柱状紫杉；南方木兰、星花木兰；单干紫薇；茶梅；法国薰衣草；坡地草与灌木；以浓密乔木把人工水景“自然化”。（加州栎、梧桐、松、雪松、棕榈等在公开资料里没有逐一核实，按南加州坡地庄园惯例少量补充，属推断。）
+- **其他**：原车场（motor court）、入口拱门、围合院落、门房（今办公室）、坡下外屋基址。
+- 图片：只存本地 `~/Downloads/酒馆/伊甸参考/greystone/`，不入库（本轮未下载，需用户确认后再存）。
+- 来源：[Wikipedia · Greystone Mansion](https://en.wikipedia.org/wiki/Greystone_Mansion)；[LALH · Paul Thiene in Southern California](https://lalh.org/place-studies/paul-thiene-in-southern-california-2019/)；[Queen of the Dirt · Greystone Mansion and Gardens](https://queenofthedirt.blog/2017/11/17/greystone-mansion-and-gardens/)；[Friends of Greystone · History](https://greystonemansion.org/history-2/)。
+
+**伊甸落位（r4d）**：主楼按真实比例（约 76 × 46 m，E 形，朝南），上坡（北）为意大利台地花园（黄杨花坛 + 白玫瑰 + 长倒影池 + 两座喷泉）与车场（圆形，中央喷泉）；北向柏树林荫道；南侧弧形双石阶下到下花园（中央锦鲤倒影池 + 两侧黄杨方格）；东侧一道跌水溪沿坡落到 Warner 式 Tudor 客舍的岩洞泳池（客舍 + 岩洞泳池 + 锦鲤池 = 「Greystone 客舍」）；木兰、紫薇点缀，栎 / 伞松 / 少量棕榈框边。
+
+## Warner 式客舍（r4d，2026-09-27）
+参考：前 Harry Warner 庄园（1006 N Rexford Dr, Beverly Hills）：都铎式主宅与客舍、岩洞泳池与 spa、花园与浪漫喷泉环绕的锦鲤池、卵石车道、老树、南北向锦标赛网球场。来源：[The Beverly Hills Estates](https://thebeverlyhillsestates.com/listing/1006-n-rexford-dr/)、[Haute Residence](https://www.hauteresidence.com/joyce-rey-presents-the-newly-remodeled-harry-warner-estate-in-beverly-hills/)。图片只存本地 `~/Downloads/酒馆/伊甸参考/warner/`（本轮未下载）。
