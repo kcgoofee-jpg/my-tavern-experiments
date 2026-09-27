@@ -1,6 +1,6 @@
 # 天城 · 下层（地基区，地面）· Blender 正俯视写实渲染（夜景草稿）
 # 用法：Blender -b -P tiancheng_low.py -- [--res 1600] [--samples 64] [--out path.png] [--crop x0,y0,x1,y1 | --crops "x0,y0,x1,y1:名字;..." | --crops-json 文件] [--out-dir 目录] [--preview] [--data-only]
-#       [--glow 1]（发光体倍数）[--lamp .3]（钠灯功率）[--ambient .12]（天光）
+#       [--glow 1]（发光体倍数）[--lamp .3]（钠灯功率）[--ambient .12]（天光）[--no-landmark-glow]（去掉地标光圈 / 描边灯 / 光晕）
 #       或 python3 tiancheng_low.py -- ...（pip 装的 bpy）。参数与导出格式三层一致，见 docs/tiancheng-maps.md
 # 与上层、中层同一相机、同一平面坐标、同一套 OSM 路网与建筑轮廓（tc_city，© OpenStreetMap contributors）：
 # 楼的轮廓沿用，只压低高度、按片区换成厂房 / 旧楼；贫民窟里的楼轮廓内塞满铁皮棚屋。
@@ -16,6 +16,7 @@ from mathutils.kdtree import KDTree
 
 layer = tc.Layer('tc_low', seed=9001, bounces=4, city='low')   # 城市在这里生成（第一个随机调用）：街道位置与上层、中层一致
 sc, col_main, city, R, GLOW, LAMP = layer.sc, layer.col, layer.city, layer.rng, layer.f('--glow', 1), layer.f('--lamp', .3)
+LM_GLOW = layer.lm_glow        # False（--no-landmark-glow）：去掉地标的光圈 / 描边灯 / 光晕，见「地标」一节末尾；随机照常取，只在出图时过滤
 
 def srgb(h):
     c = [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]
@@ -484,7 +485,7 @@ tc.point_lights('pipe_sodium', pipe_lamps, LAMP * .18 * GLOW, .01)
 glim, gdots = [], []
 for (x, y, w, d, z0, z1), o_ in zip(shacks, sho):
     r, m_ = R.random(), .4 + .6 * vf(x, y); k_ = .5 + .5 * vf(x, y)    # 交界处灯少、也暗
-    m_ *= .35 + .65 * _ss((math.hypot(x - WELL7[0], y - WELL7[1]) - .9) / .8)   # A7：7 号井周围 ~120 m 城中村的窗光压暗，井口的冷光更显
+    if LM_GLOW: m_ *= .35 + .65 * _ss((math.hypot(x - WELL7[0], y - WELL7[1]) - .9) / .8)   # A7：7 号井周围 ~120 m 城中村的窗光压暗，井口的冷光更显
     if amc_clear(x, y, .06) or o_ not in _vkeep: continue              # （R 照样取，保持序列）
     if r < .04 * m_: glim.append((x, y, z1 + .04, SODIUM2, k_)); gdots.append((x, y, .008, .008, z1, z1 + .002, *(np.array(SODIUM2) * k_)))
     elif r < .045 * m_: glim.append((x, y, z1 + .04, PHOS, k_)); gdots.append((x, y, .01, .006, z1, z1 + .002, *(np.array(PHOS) * k_)))
@@ -536,6 +537,12 @@ def lamps_irregular(x, y, z, rx, ry, n, c, s=.012, miss=.2):
 def ground(x, y, w, d, c=(.042, .039, .035), rot=0, z=.004):     # 地标底板：默认接近路面、带沥青斑驳，不像一块面板
     b = Batch('pl', td.asphalt_mat('pl', c, 1.4)); b.box(x, y, 0, w, d, z, rot); return b.done()
 extra_lights = []
+LM_DROP, LM_DROP_H = set(), set()                                       # --no-landmark-glow 时要去掉的 extra_lights / LM_HEADS 下标（随机照常取）
+def drop_since(n_l, n_h=None):
+    LM_DROP.update(range(n_l, len(extra_lights)))
+    if n_h is not None: LM_DROP_H.update(range(n_h, len(LM_HEADS)))
+def drop_obj(o):                                                        # 已建好的发光体（建的时候取过随机）：出图前删掉
+    if not LM_GLOW: bpy.data.objects.remove(o, do_unlink=True)
 def lights_scatter(x, y, z, rx, ry, n, c):                            # 几盏投光：位置随机，不成圈
     for _ in range(n): a, r_ = _lrng.uniform(0, 2 * math.pi), _lrng.uniform(.4, 1.0); extra_lights.append((x + rx * r_ * math.cos(a), y + ry * r_ * math.sin(a), z, c))
 
@@ -548,7 +555,7 @@ wl.ring(x, y, 0, .36, .03, .08, 48)
 wl.done()
 # 升降台（A3 返修：原来是浅色高光金属板，正上方的冷光在正俯视里镜面反射成一块白方块）：
 # 底下是黑的井底，上面是深色油污钢的格栅——一根根扁钢条 + 两道横梁，条缝里透黑；粗糙、低金属度，不再镜面反光
-pit_ = Batch('well7_pit', emit_mat('well_pit', srgb('#9fc2ff'), .35 * GLOW)); pit_.box(x, y, .018, .38, .38, .004); pit_.done()   # 格栅缝里透出的冷光（竖井深处的天光反上来），很暗
+pit_ = Batch('well7_pit', emit_mat('well_pit', srgb('#9fc2ff'), .35 * GLOW) if LM_GLOW else mat('well_pit_dark', (.005, .005, .006), 1)); pit_.box(x, y, .018, .38, .38, .004); pit_.done()   # 格栅缝里透出的冷光（竖井深处的天光反上来），很暗
 gs = Batch('well7_grate', tc.noise_mat('well_grate', (.025, .026, .028), (.07, .062, .052), 180, .78, .25))
 for k in range(19): gs.box(x - .171 + k * .019, y, .022, .0085, .37, .006)   # 扁钢条（条缝约 1 m）
 for v_ in (-.12, .12): gs.box(x, y + v_, .022, .37, .014, .0075)              # 横梁
@@ -583,9 +590,9 @@ wg = Batch('well_glow', emit_mat('well_sodium', SODIUM, 5.0 * GLOW))
 for _ in range(5): a = R.uniform(0, 2 * math.pi); wg.box(x + .32 * math.cos(a), y + .32 * math.sin(a), .6, .012, .012, .003)   # 井口几盏钠灯（随机位置）
 wg.done()
 # 竖井漏下来的一束冷色天光：整个下层唯一的自然光（参考米德加板下的「天窗」）；光源放在井筒口内，只照井底与近处
-shaft = bpy.data.lights.new('shaft_sky', 'AREA'); shaft.shape = 'DISK'; shaft.size = .55; shaft.energy = 7.0 * GLOW * LAMP / .3   # 井底被照成一块冷色的光斑：整张下层唯一的冷色焦点（A3：格栅改深色后略降，冷光落在格栅与井圈上，不再过曝）
-shaft.color = srgb('#cfe0ff'); so_ = bpy.data.objects.new('shaft_sky', shaft); so_.location = (x, y, .58); col_main.objects.link(so_)
-td.glow_pools('well7_pool', [(x, y, .0068, 1.1, srgb('#7aa6e0'))], .07 * GLOW, 32, 2.4)   # 第 3 轮：只留一圈外晕、降饱和（内圈叠上去像 UI 图标）   # A7：井口一圈冷光（缩小看 7 号井是全图唯一的冷色光斑）
+if LM_GLOW: shaft = bpy.data.lights.new('shaft_sky', 'AREA'); shaft.shape = 'DISK'; shaft.size = .55; shaft.energy = 7.0 * GLOW * LAMP / .3   # 井底被照成一块冷色的光斑：整张下层唯一的冷色焦点（A3：格栅改深色后略降，冷光落在格栅与井圈上，不再过曝）
+if LM_GLOW: shaft.color = srgb('#cfe0ff'); so_ = bpy.data.objects.new('shaft_sky', shaft); so_.location = (x, y, .58); col_main.objects.link(so_)
+if LM_GLOW: td.glow_pools('well7_pool', [(x, y, .0068, 1.1, srgb('#7aa6e0'))], .07 * GLOW, 32, 2.4)   # 第 3 轮：只留一圈外晕、降饱和（内圈叠上去像 UI 图标）   # A7：井口一圈冷光（缩小看 7 号井是全图唯一的冷色光斑）
 for _ in range(10): a, rr_ = R.uniform(0, 2 * math.pi), R.uniform(.45, .75); extra_lights.append((x + rr_ * math.cos(a), y + rr_ * math.sin(a), .1, SODIUM))
 for _ in range(2): a, rr_ = R.uniform(0, 2 * math.pi), R.uniform(.45, .75); extra_lights.append((x + rr_ * math.cos(a), y + rr_ * math.sin(a), .1, PHOS))
 layer.marker('well7', (x, y, 0), .8)
@@ -599,8 +606,8 @@ for k, (rx, ry, hh) in enumerate(((.5, .38, .12), (.42, .31, .09), (.36, .26, .0
 ml.done()
 pit = Batch('pit', mat('pit', (.13, .1, .08), .95)); pit.cyl(0, 0, 0, 1, .006, 48); po = pit.done()   # A7：沙坑降饱和（原来是全区最红的一块，像 UI 图标）
 po.scale = (.27, .18, 1); po.location = (x, y, 0)                  # 中央沙坑（椭圆）
-lamps_irregular(x, y, .125, .5, .38, 9, WHITE, .014, .3)             # 看台顶上几盏照坑的灯
-extra_lights += [(x + dx, y + dy, .25, WHITE) for dx, dy in ((-.15, 0), (.15, 0), (0, .1), (0, -.1))]
+_h0 = len(LM_HEADS); lamps_irregular(x, y, .125, .5, .38, 9, WHITE, .014, .3); LM_DROP_H.update(range(_h0, len(LM_HEADS)))   # 看台顶上几盏照坑的灯（沿椭圆一圈）
+_n0 = len(extra_lights); extra_lights += [(x + dx, y + dy, .25, WHITE) for dx, dy in ((-.15, 0), (.15, 0), (0, .1), (0, -.1))]; drop_since(_n0)   # 照坑的 4 盏白光：把看台照成一块亮椭圆
 layer.marker('blood_mill', (x, y, 0), .5)
 
 # 执法局下层分局：围墙院落、方形主楼、车库；冷白 + 执法蓝
@@ -611,12 +618,12 @@ for sx in (-1, 1): ef.box(x + sx * .6, y, 0, .03, 1.0, .06); ef.box(x, y + sx * 
 ef.box(x - .1, y + .1, 0, .6, .45, .2); ef.box(x + .38, y - .25, 0, .25, .3, .08)
 for k in range(6): ef.box(x - .35 + k * .12, y - .35, 0, .07, .035, .02)   # 装甲车
 ef.done()
-eb = Batch('enf_blue', emit_mat('enf_blue', tuple(.5 * c_ + .5 * w_ for c_, w_ in zip(BLUE, WHITE)), 2.2 * GLOW))   # A7：执法蓝压暗、降饱和（冷色焦点只留 7 号井）       # 执法蓝：大门两盏 + 围墙四角（离散的灯，不描边）
+_eb = Batch('enf_blue', emit_mat('enf_blue', tuple(.5 * c_ + .5 * w_ for c_, w_ in zip(BLUE, WHITE)), 2.2 * GLOW))   # A7：执法蓝压暗、降饱和（冷色焦点只留 7 号井）       # 执法蓝：大门两盏 + 围墙四角（离散的灯，不描边）
 for sx in (-1, 1):
-    eb.box(x - .1 + sx * .06, y - .5, .06, .014, .014, .003)
-    for sy in (-1, 1): eb.box(x + sx * .6, y + sy * .5, .06, .014, .014, .003)
-eb.done()
-lights_scatter(x, y, .2, .5, .4, 5, WHITE)
+    _eb.box(x - .1 + sx * .06, y - .5, .06, .014, .014, .003)
+    for sy in (-1, 1): _eb.box(x + sx * .6, y + sy * .5, .06, .014, .014, .003)
+drop_obj(_eb.done())
+_n0 = len(extra_lights); lights_scatter(x, y, .2, .5, .4, 5, WHITE); drop_since(_n0)
 layer.marker('enforcement_low', (x - .1, y + .1, 0), .6)
 
 # 施粥站：半荒废的旧教堂（中殿屋顶塌了一段）+ 前院长桌与排队人流；暖光
@@ -678,8 +685,8 @@ ow = Batch('outpost_glow', emit_mat('outpost_white', srgb('#ffe2b8'), 2.5 * GLOW
 for sx in (-1, 1):
     for sy in (-1, 1): ow.box(x + sx * .6 + _lrng.normal(0, .01), y + sy * .52 + _lrng.normal(0, .01), .16, .014, .014, .003)   # 岗楼顶的探照灯头（小）
 for a in (.5, 2.3, 4.4): ow.box(x + .35 + .12 * math.cos(a), y - .2 + .12 * math.sin(a), .008, .01, .01, .003)   # 停机坪边上三盏（不成圈）
-ow.done()
-extra_lights += [(x + sx * .55, y + sy * .47, .3, srgb('#ffe2b8')) for sx in (-1, 1) for sy in (-1, 1)]
+drop_obj(ow.done())
+_n0 = len(extra_lights); extra_lights += [(x + sx * .55, y + sy * .47, .3, srgb('#ffe2b8')) for sx in (-1, 1) for sy in (-1, 1)]; drop_since(_n0)   # 四角探照灯：连成一个亮框
 layer.marker('outpost', (x, y, 0), .7)
 
 # 资产管理委员会下层设施：有围墙的大型管理设施——只做中性的建筑外观
@@ -737,8 +744,8 @@ for sx in (-1, 1):                                                     # 围墙�
 for _ in range(6):
     if R.random() < .5: aw.box(x + R.uniform(-1.1, 1.1), y + (.8 if R.random() < .5 else -.8), .1, .015, .015, .003)
     else: aw.box(x + (1.15 if R.random() < .5 else -1.15), y + R.uniform(-.75, .75), .1, .015, .015, .003)
-aw.done()
-extra_lights += [(x + R.uniform(-1, 1), y + (.85 if R.random() < .5 else -.85), .2, SODIUM2 if R.random() < .6 else SODIUM) for _ in range(5)]   # 几盏不规则的墙灯，不照出一圈白边
+drop_obj(aw.done())
+_n0 = len(extra_lights); extra_lights += [(x + R.uniform(-1, 1), y + (.85 if R.random() < .5 else -.85), .2, SODIUM2 if R.random() < .6 else SODIUM) for _ in range(5)]; drop_since(_n0)   # 几盏不规则的墙灯，不照出一圈白边
 layer.marker('amc_facility', (x - .1, y + .1, 0), 1.2)
 
 # 货运站的照明塔
@@ -748,6 +755,9 @@ for gu in np.linspace(-1.4, 1.4, 6):                                    # 沿铁
     for sv in (-1, 1):
         px, py = at(gu, sv * .52); yl.box(px, py, .3, .03, .03, .003, YROT); extra_lights.append((*at(gu, sv * .5), .35, SODIUM))
 yl.done()
+if not LM_GLOW:                                                        # --no-landmark-glow：去掉 7 号井的冷光晕 / 井口光斑 / 周围压暗，拳场看台一圈灯与照坑白光，
+    extra_lights = [v for i, v in enumerate(extra_lights) if i not in LM_DROP]   # 执法局蓝灯与白投光，哨所四角探照灯，资管委墙灯
+    LM_HEADS = [v for i, v in enumerate(LM_HEADS) if i not in LM_DROP_H]
 tc.point_lights('landmark_light', extra_lights, LAMP * 2.5 * GLOW, .02)
 if LM_HEADS: tc.box_mesh('landmark_heads', [(x, y, s, s, z, z + .003) for x, y, z, s, c in LM_HEADS], np.array([c for *_, c in LM_HEADS], np.float32).reshape(-1, 3), emit_mat('lmhead', None, 4.5 * GLOW))
 tick('landmarks')
