@@ -416,5 +416,13 @@
   "ch.grade": "Grade",
   "vm.off": "Off",
   "char_stats": "Show stats in people bar",
-  "char_stats_hint": "Show members' grade and core stat in the roster (pick or turn off the fields in Variable mapping)"
+  "char_stats_hint": "Show members' grade and core stat in the roster (pick or turn off the fields in Variable mapping)",
+  "cmp.go": "Go here",
+  "cmp.ask": "Ask about this",
+  "cmp.tip": "Fill the chat input (not sent)",
+  "cmp.done": "Filled into the chat input (not sent)",
+  "cmp.fail": "Chat input box not found",
+  "cmp.title": "Chat fill templates",
+  "cmp.hint": "\"Go here\" / \"Ask about this\" on cards put this sentence into the Tavern input box; it is never sent automatically. {name} = place / event / person",
+  "cmp.reset": "Restore defaults"
 }

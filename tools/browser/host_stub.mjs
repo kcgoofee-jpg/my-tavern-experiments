@@ -28,7 +28,7 @@ const STUB = `<script>
   window.getLastMessageId = function () { return S.msgs.length ? S.msgs[S.msgs.length - 1].message_id : -1; };
   window.getChatMessages = function () { return S.msgs; };
 <\/script><script type="module" src="__SCRIPT_BASE__tavern/eden-map.js"><\/script>`;
-const HOST = `<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><body style="margin:0;background:#2a2a2a;height:100vh;color:#aaa;font:14px sans-serif"><p style="padding:12px">tavern host (stub)</p>
+const HOST = `<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><body style="margin:0;background:#2a2a2a;height:100vh;color:#aaa;font:14px sans-serif"><p style="padding:12px">tavern host (stub)</p><textarea id=send_textarea style="position:fixed;left:8px;bottom:8px;width:200px;height:24px"></textarea>
 <iframe id=card style="display:none" srcdoc="${STUB.replace(/"/g, '&quot;')}"></iframe></body>`;
 
 export async function openHost(P, { here = '', stat = {}, msgs = [], chat = 'stub', vars = {}, noVars = false, ls = null, charData = null, rawStat = false, splash = false, scriptBase = null } = {}) {

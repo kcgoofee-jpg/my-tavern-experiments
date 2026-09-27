@@ -105,6 +105,7 @@
 <script defer src="trips.js"></script>
 <script defer src="unmapped.js"></script>
 <script defer src="varmap.js"></script>
+<script defer src="compose.js"></script>
 <script>document.addEventListener('DOMContentLoaded', () => { if (window.top !== window) parent.postMessage({ type: 'eden-map:boot', pct: .6 }, '*'); });   // 地图库已下载（启动进度 60%）</script>
 <style>
   /* E5 统一重构：颜色、字号、圆角、间距、动效全部取 ui/tokens.css 的语义令牌（docs/ui-audit.md 第三部分）；这里只写组件，不写色值。
@@ -570,7 +571,8 @@ const nm = (o, k = 'name') => { const z = o?.[k] ?? ''; return LANG === 'en' ? (
 window.I18N = { get lang() { return LANG; }, t, nm, tr };   // 给 events.js 等其他脚本用
 function applyI18n() {
   document.title = t('page_title');
-  try { if (typeof TCVarMap !== 'undefined') TCVarMap.render?.(); } catch (e) {}   // 变量映射面板：手机「⋯」抽屉里切语言时也要跟着换（接手 review P2）
+  try { if (typeof TCVarMap !== 'undefined') TCVarMap.render?.(); } catch (e) {}
+  try { if (typeof TCCompose !== 'undefined') TCCompose.renderUI(); } catch (e) {}   // v0.9.6 填入聊天的模板   // 变量映射面板：手机「⋯」抽屉里切语言时也要跟着换（接手 review P2）
   document.querySelectorAll('[data-i18n]').forEach(e => e.textContent = t(e.dataset.i18n));
   document.querySelectorAll('[data-i18n-title]').forEach(e => e.title = t(e.dataset.i18nTitle));
   document.querySelectorAll('[data-i18n-ph]').forEach(e => e.placeholder = t(e.dataset.i18nPh));
@@ -1260,6 +1262,7 @@ function showCard(el, name, tag, src, extra, sub, cover) {
   if (LANG === 'en' && /[\u4e00-\u9fff]/.test(src || '') && t('src_note')) sv.dataset.note = t('src_note'); else delete sv.dataset.note;   // 英文界面：设定原文保持中文，加一行说明
   c.querySelector('.extra').innerHTML = extra || '';
   if (typeof TCCustom !== 'undefined') TCCustom.decorateCard(el, name);   // v0.9.3：自定义显示名 / 用途；本人地点卡的着装
+  if (typeof TCCompose !== 'undefined') TCCompose.attach(el || tag === 'set' ? { go: el?.dataset?.name || name, ask: el?.dataset?.name || name } : null);   // v0.9.6 地图 → 聊天：地点卡；事件 / 人物卡由 events.js / chars.js 另挂
   declutter();
 }
 // user = 用户主动关闭（× / Esc）：焦点回到打开卡片的元素
@@ -1496,7 +1499,7 @@ function renderAbout() {
       : esc(tx('about.fail', '检查失败：连不上更新接口，稍后再试'))}</div>`;
   }
   box.innerHTML = h;
-  if (window.top !== window) {   // v0.9.7「自动检查更新」（默认开；卡内脚本启动时读 edenMapAutoCheck，同源 localStorage）
+  if (window.top !== window) {   // v0.9.6「自动检查更新」（默认开；卡内脚本启动时读 edenMapAutoCheck，同源 localStorage）
     const lb = document.createElement('label'); lb.innerHTML = `<span>${esc(tx('about.auto_check', '自动检查更新'))}</span><input type="checkbox" role="switch" id="optAutoCheck">`;
     const cb = lb.querySelector('input'); let on = true; try { on = localStorage.getItem('edenMapAutoCheck') !== '0'; } catch (e) {}
     cb.checked = on; cb.onchange = () => { try { localStorage.setItem('edenMapAutoCheck', cb.checked ? '1' : '0'); } catch (e) {} }; box.appendChild(lb);

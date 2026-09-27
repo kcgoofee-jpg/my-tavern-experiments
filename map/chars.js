@@ -60,6 +60,7 @@ const TCChars = (() => {
   }
   function card(list) {
     showCard(null, list.map(c => dn(c.name)).join('、'), 'inf', '', '', list[0].place);
+    if (typeof TCCompose !== 'undefined') TCCompose.attach({ go: list[0].place || '', ask: list.length === 1 ? dn(list[0].name) : '' });   // v0.9.6 地图 → 聊天
     const tg = document.querySelector('#card .tag'); tg.textContent = T('ch.tag', '人物'); tg.className = 'tag data'; tg.style.background = color(list[0].name);
     const sv = document.querySelector('#card .src'); delete sv.dataset.note;
     const note = c => { const e = typeof TCCustom !== 'undefined' && TCCustom.entry(c.name); return e?.用途 ? ` · ${e.用途}` : ''; };

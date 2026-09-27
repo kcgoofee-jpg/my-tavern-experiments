@@ -51,6 +51,12 @@
 
 这些接口不联网、不上传、不写进地址；仓库里只有接口本身，没有任何用户数据。
 
+## 地图 → 聊天（v0.9.6，未发版）
+- 地点卡、事件卡、人物卡底部两个按钮「去这里」「追问这件事」：把一句中性模板句填进酒馆输入框，**从不自动发送**，用户自己改、自己发。只在嵌在酒馆里时显示。
+- 默认模板：`前往{name}。` / `关于{name}，`（英文 `Go to {name}. ` / `About {name}, `）；`{name}` = 地点 / 事件 / 人物名。地图设置「填入聊天的模板」可改，存本机 `localStorage` 的 `edenMapCompose`，「恢复默认」删键。人物卡：去这里 = 人物所在地点，追问 = 人物名；事件卡：去这里 = 事件地点（有才显示）。
+- 填入方式（`map/tavern/compose.mjs` 的 `insert`）：酒馆页有 `#send_textarea` 就直接写（**接在已有草稿后面**，派发 `input` 事件，光标移到末尾）；没有时退回酒馆助手 `triggerSlash('/setinput …')`（会替换草稿，`|` 转义）。酒馆助手没有专门的「设置输入框」接口，所以优先直接写输入框，不清掉用户已经打的字。填完地图提示「已填入聊天输入框（未发送）」。
+- 单测 `tests/compose097.test.mjs`，浏览器 `tools/browser/v097.mjs --only compose`。
+
 ## 未上图的地点与扩展叫法（v0.9.6）
 - 当前地点认不出（`here.mjs` `unmappedName(value, idx)` 非 null）：不跳转；酒馆标题栏显示「未上图：<名字>」（地图发 `eden-map:unmapped {name}`，点标题栏回发 `eden-map:unmapped-pick`），单独打开时显示在查看器页头。
 - 指派 = `setCustom(标准名, { alias: 名字, kind })`，kind = landmark / layer / room / area / world；写进 `eden_map.自定义.items[标准名].别名`，一个叫法只指向一处；`{ unalias }` 去掉；「忽略」= `setCustom(名字, { ignore: true })`，存 `eden_map.自定义.忽略`（最多 50 个）。

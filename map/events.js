@@ -154,6 +154,7 @@ const TCEvents = (() => {
     const rare = e.rare >= 4 ? T('ev.rare4', '（传说级）') : e.rare >= 3 ? T('ev.rare3', '（罕见）') : '';
     const lv = Math.max(1, e.lvl);
     showCard(null, e.text || tn(e.cat), 'inf', '', '', `${tn(e.cat)}${rare}`);   // 大类只在顶上的色块里出现一次（v0.9.2）
+    if (typeof TCCompose !== 'undefined') TCCompose.attach({ go: e.place || '', ask: e.text || tn(e.cat) });   // v0.9.6 地图 → 聊天
     const rows = [
       [T('ev.k_place', '地点'), esc(whereHere(e)) + (p.approx ? `<br><small>${esc(T('ev.approx', '（位置不详，按所在层大致标出）'))}</small>` : '')],
       [T('ev.k_state', '等级 / 状态'), `<span class="bars" aria-label="${esc(T('ev.k_lvl', '等级') + ' ' + lv + '/3')}">${'▮'.repeat(lv)}${'▯'.repeat(3 - lv)}</span>　${esc(st)}`],
