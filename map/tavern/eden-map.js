@@ -318,7 +318,7 @@
   const onMsg = e => {
     if (e.source !== frame.contentWindow) return;
     if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
-    if (e.data?.type === 'eden-map:ready') { alive = true; sentClock = sentOutfit = null; knowRooms(); sendCheck(); sendCustom(); sendTrips(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:ready') { alive = true; sentClock = sentOutfit = null; knowRooms(); sendCheck(); sendCustom(); sendTrips(); varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
     if (e.data?.type === 'eden-map:ready' && flyQ) { const q = flyQ; flyQ = null; setTimeout(() => inner()?.flyTo?.(q), 0); }   // EdenMap.flyTo 排队的
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
     if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
@@ -335,18 +335,35 @@
     if (e.data?.type === 'eden-map:custom-set') api.setCustom(e.data.key, e.data.patch || {});
     if (e.data?.type === 'eden-map:custom-reset') api.removeCustom(e.data.key);
     if (e.data?.type === 'eden-map:custom-sync') api.setWorldbookSync(!!e.data.on);
+    if (e.data?.type === 'eden-map:varmap-set') setVarUser(e.data.user);   // v0.9.5 设置「变量映射」
   };
   window.parent.addEventListener('message', onMsg);
+  // ---------------- v0.9.5 变量映射（换卡兼容；tavern/adapter.mjs）：按角色卡存本机，缺了自动找；设置「变量映射」里可改 ----------------
+  let varAD = null, varUser = {}, varMap = { location: '世界.当前地点' }, varSig = '', varCard = '';
+  const cardKey = () => { try { const c = SillyTavern.getContext(); return c.characters?.[c.characterId]?.avatar || c.name2 || ''; } catch (e) { return ''; } };
+  import(SELF + 'tavern/adapter.mjs').then(m => { varAD = m; refreshVarMap(); push(); }).catch(() => {});
+  function refreshVarMap() {
+    if (!varAD) return; const card = cardKey(); if (card !== varCard) { varCard = card; varUser = varAD.readUser(localStorage, card); }
+    let st = null; try { st = Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data || null; } catch (e) {}
+    varMap = varAD.effective(varUser, st);
+    const sig = JSON.stringify([varMap, varUser, !!st]); if (sig !== varSig) { varSig = sig; sendVarMap(st); }
+  }
+  function sendVarMap(st) {
+    if (!alive || !varAD) return; if (st === undefined) try { st = Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data || null; } catch (e) { st = null; }
+    post({ type: 'eden-map:varmap', card: varCard, paths: varAD.paths(st), map: varMap, user: varUser, detected: varAD.detect(st), mode: varAD.mode(typeof Mvu !== 'undefined', st, varMap) });
+  }
+  function setVarUser(u) { if (!varAD) return; varUser = u && typeof u === 'object' ? u : {}; varAD.writeUser(localStorage, varCard, varUser); varSig = ''; refreshVarMap(); recomputeSoon(50); push(); if (checkP) checkP.then(() => { checkP = null; runCheck(); }); }   // 自检重跑，读法跟着变
   function getHere() {
     try {
       const d = Mvu.getMvuData({ type: 'message', message_id: 'latest' });
-      return _.get(d, 'stat_data.世界.当前地点', '') || '';
+      return String(varAD ? varAD.get(d?.stat_data, varMap.location) ?? '' : _.get(d, 'stat_data.世界.当前地点', '') || '');
     } catch (e) { return ''; }
   }
   // 标题栏显示用：{{user}} 换成酒馆里的用户名，取不到就去掉（发给地图的仍是原值，地图自己处理）
   const userName = s => { let n = ''; try { n = SillyTavern.getContext().name1 || ''; } catch (e) {} return String(s).replace(/\{\{user\}\}/g, n).trim(); };
   // MVU 变量在流式输出时会连续更新：合并成一次，地点没变就不打扰地图
   function push() {
+    refreshVarMap();
     here = getHere();
     // 一个地点胶囊：MVU 里写了多处（「A / B」）只显示第一处，全文在 title；右侧省略
     const full = userName(here), parts = full.split(/\s*[\/／|｜]\s*/).filter(Boolean);
@@ -366,12 +383,12 @@
   import(new URL('mvu.mjs', import.meta.url).href).then(m => { MV = m; push(); loadCustom(); }).catch(e => console.warn('[eden-map] MVU 模块加载失败', e));
   function pushMvu() {
     if (!MV) return;
-    const st = mvuStat(), w = MV.worldTime(st), lb = MV.clockLabel(w);
+    refreshVarMap(); const st = mvuStat(), w = MV.worldTime(st, varMap), lb = MV.clockLabel(w);
     clock = { ...w, ...lb, night: MV.isNight(w) };
     const cs = JSON.stringify(clock);
     if (cs !== clockSig) { clockSig = cs; clockEl.hidden = !lb.short; clockEl.textContent = lb.short; clockEl.title = lb.full; if (lb.full) clockEl.setAttribute('aria-label', lb.full); emit('clock', { ...clock }); sentClock = null; }
     if (alive && sentClock !== clockSig) { sentClock = clockSig; post({ type: 'eden-map:clock', ...clock }); }
-    const o = MV.outfit(st), os = JSON.stringify(o);
+    const o = MV.outfit(st, varMap.outfit), os = JSON.stringify(o);
     if (os !== outfitSig) { outfitSig = os; outfitNow = o; emit('outfit', { items: o ? { ...o } : null, text: MV.outfitText(o) }); sentOutfit = null; }
     if (alive && sentOutfit !== outfitSig) { sentOutfit = outfitSig; post({ type: 'eden-map:outfit', items: outfitNow, text: MV.outfitText(outfitNow) }); }
   }
@@ -402,8 +419,8 @@
         .map(m => ({ floor: m.message_id, text: String(m.message || '').replace(/<%[\s\S]*?%>/g, '') }));   // 原文里可能还留着 EJS 模板源码，里面的示例标签不算事件
     } catch (e) { floorNow = -1; }
     events = collect(msgs, floorNow);
-    if (CHM) { const st = mvuStat(); chars = CHM.collectChars(msgs, floorNow, CHM.mvuChars(st, getHere()));
-      if (MV) { roster = MV.rosters(st); rep = MV.reputation(st); stageOrderFor(roster); portraitsFor(); }
+    if (CHM) { const st = mvuStat(); chars = CHM.collectChars(msgs, floorNow, CHM.mvuChars(st, getHere(), varMap.present));
+      if (MV) { roster = MV.rosters(st, { present: varMap.present, members: varMap.members, targets: varMap.targets, stageField: varMap.stageField }); rep = MV.reputation(st, varMap.reputation); stageOrderFor(roster); portraitsFor(); }
       const sig = floorNow + '|' + chars.map(c => c.name + '@' + c.place + '#' + c.floor).join() + '|' + JSON.stringify(roster) + Object.keys(portraits).length + rep + (stageOrder || []).join();
       if (sig !== charSig) { charSig = sig; if (!panel.hidden && alive) sendChars(); emit('characters', { items: chars.map(c => ({ ...c })), floor: floorNow }); } }
     const fresh = events.filter(e => e.last > seen && e.tier !== 'fade').length;
@@ -437,11 +454,11 @@
   let TRm = null, trips = [], tripSig = ''; import(SELF + 'tavern/trips.mjs').then(m => { TRm = m; }).catch(() => {});
   function computeTrips(msgs) {
     if (!TRm || !MV || !custom || customChat !== chatId()) return;
-    const kw = TRm.keywords(TRm.DEFAULT_KEYWORDS, false), recentMsgs = msgs.slice(-30), seq = [], tags = [];
+    const kw = TRm.keywords(varUser.keywords || TRm.DEFAULT_KEYWORDS, !!varUser.fantasy), lp = '/' + String(varMap.location || '世界.当前地点').split('.').join('/'), recentMsgs = msgs.slice(-30), seq = [], tags = [];
     for (const m of recentMsgs) {
       let st = null; try { st = Mvu.getMvuData({ type: 'message', message_id: m.floor })?.stat_data || null; } catch (e) {}
-      const place = String(MV.get(st, '世界.当前地点') ?? '').trim() || TRm.patchPlace(m.text);
-      seq.push({ floor: m.floor, place, text: m.text.slice(0, 4000), time: String(MV.get(st, '世界.当前时刻') ?? '') });
+      const place = String(MV.get(st, varMap.location) ?? '').trim() || TRm.patchPlace(m.text, lp);
+      seq.push({ floor: m.floor, place, text: m.text.slice(0, 4000), time: String(MV.get(st, varMap.time) ?? '') });
       if (CHM) for (const c of CHM.parseChars(m.text)) tags.push({ floor: m.floor, name: c.name, place: c.place, text: m.text.slice(0, 4000) });
     }
     const tr = s => hereMod?.parseTransit?.(s) || null;
@@ -672,15 +689,17 @@
       try { await Promise.race([waitGlobalInitialized('Mvu'), new Promise(r => setTimeout(r, 3000))]); } catch (e) {}
       let mvu = null;
       try { if (typeof Mvu !== 'undefined' && Mvu?.getMvuData) { const st = Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data;
-        mvu = { stat: !!st && typeof st === 'object', here: !!st && SC.getPath(st, SC.HERE_PATH) !== undefined, candidates: st ? SC.findPaths(st).filter(p => p !== SC.HERE_PATH) : [],
-          fields: st && MV ? { present: !!MV.presentList(st), clock: !!MV.worldTime(st).time, outfit: MV.get(st, '主角.着装') !== undefined } : null }; } } catch (e) { mvu = { stat: false }; }
+        refreshVarMap(); const hp = varMap.location || SC.HERE_PATH;
+        mvu = { stat: !!st && typeof st === 'object', path: hp, here: !!st && SC.getPath(st, hp) !== undefined, candidates: st ? SC.findPaths(st).filter(p => p !== hp) : [],
+          fields: st && MV ? { present: !!MV.presentList(st, varMap.present), clock: !!MV.worldTime(st, varMap).time, outfit: MV.get(st, varMap.outfit || '主角.着装') !== undefined } : null }; } } catch (e) { mvu = { stat: false }; }
+      const varmode = varAD ? varAD.mode(typeof Mvu !== 'undefined' && !!Mvu?.getMvuData, (() => { try { return Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data; } catch (e) { return null; } })(), varMap) : null;
       const loads = [...new Set((window.parent.__edenMapLoads || []).filter(u => u !== SELF && u !== switchedFrom))];
       const ln = { swappable, name: (LINES.find(l => l.key === line) || {}).name || '',
         ok: !swappable ? null : lineP ? await lineP.then(ok => ok && fetchHtml().then(() => true, () => false), () => false) : html ? await html.then(() => true, () => false) : null };
       checkFacts = {
         api: { getChatMessages: fnOk('getChatMessages'), eventOn: fnOk('eventOn'), injectPrompts: fnOk('injectPrompts'), tavern_events: typeof tavern_events === 'object' },
         vars: varsOk(), ejs: (() => { try { return typeof (window.parent.EjsTemplate || globalThis.EjsTemplate) === 'object'; } catch (e) { return false; } })(),
-        mvu, dup: { others: loads, oldStyle, replaced: !root.isConnected }, line: ln, worldbook: await wbFacts(), version: { script: VER, viewer: viewerVer }, update: await updateFacts(),
+        mvu, varmode, dup: { others: loads, oldStyle, replaced: !root.isConnected }, line: ln, worldbook: await wbFacts(), version: { script: VER, viewer: viewerVer }, update: await updateFacts(),
       };
       finishCheck();
       if (checkFacts.update && SC.cmpVer(checkFacts.update.latest, VER) > 0 && lsGet(AUTO_UPD_KEY) === '1') switchVersion();   // 用户开了「自动更新到新正式版」

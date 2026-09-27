@@ -30,7 +30,7 @@ t('来源：剧情标签 → 标签；手动编辑 → 手动；外部 setCustom
   c = V.setCustom(c, '餐厅', { name: '长桌厅' }); assert.equal(c.items.餐厅.源, undefined);
   assert.equal(V.normCustom({ items: { a: { 名: 'b', 源: '别的' } } }).items.a.源, undefined);
 });
-const G = P.buildGroups({ reg: REG, plan, chars: ['莉娜', '卡尔'] });
+const G = P.buildGroups({ reg: REG, plan, chars: ['米拉', '卡尔'] });
 t('选择器分组：上 / 中 / 下层地标 → 庄园按楼层 → B1 / 其他 → 室外 → 人物', () => {
   const ids = G.map(g => g.id);
   assert.deepEqual(ids.slice(0, 3), ['lm:tc_upper', 'lm:tc_mid', 'lm:tc_low']);
@@ -46,7 +46,7 @@ t('选择器：同一间房的多个叫法只列一个（其余当搜索别名�
   assert.ok(keys.includes('大厅') && !keys.includes('门厅') && !keys.includes('玄关'));
   const hall = P.findItem(G, '大厅'); assert.ok(hall.alias.includes('门厅')); assert.deepEqual(hall.target, { map: 'eden_estate', room: '大厅' });
   const mk = P.findItem(G, '天城执法局总局'); assert.deepEqual(mk.target, { map: 'tc_mid', marker: 'enforcement_hq' }); assert.equal(mk.kind, 'landmark');
-  assert.deepEqual(P.findItem(G, '莉娜').target, { character: '莉娜' });
+  assert.deepEqual(P.findItem(G, '米拉').target, { character: '米拉' });
   assert.equal(P.findItem(G, '前庭').kind, 'area');
 });
 t('英文分组名', () => {
@@ -68,7 +68,7 @@ t('飞行目标：只留认识的字段；地标要有 map', () => {
   assert.deepEqual(P.normTarget({ map: 'tc_mid', marker: 'x', junk: 1 }), { map: 'tc_mid', marker: 'x' });
   assert.equal(P.normTarget({ marker: 'x' }), null);
   assert.deepEqual(P.normTarget({ room: ' 书房 ' }), { room: '书房' });
-  assert.deepEqual(P.normTarget({ character: '莉娜' }), { character: '莉娜' });
+  assert.deepEqual(P.normTarget({ character: '米拉' }), { character: '米拉' });
   assert.equal(P.normTarget(null), null); assert.equal(P.normTarget({ map: 'tc_mid' }), null); assert.equal(P.normTarget({ room: 3 }), null);
 });
 t('表单校验：重名、太长、都空', () => {

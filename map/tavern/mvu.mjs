@@ -24,10 +24,11 @@ export const POS_KEY = '位置';
 // 表的每一项可能是：{ 名字: { 位置: '层·地点', … } }、{ 名字: '层·地点' }、{ 名字: '一句描述' }、['名字', …]、[{ 名字 / 姓名 / name, 位置 }]、'甲、乙'
 const looksPlace = s => /[·・]/.test(s) && [...s].length <= 60;   // 字符串值只有写成「层·地点」才当位置（否则可能是描述）
 /** stat_data → 在场人物 [{ name, place }]（place = '' 表示没写位置，调用方按玩家所在处推断）。没有在场表返回 null */
-export function presentList(stat) {
+export function presentList(stat, path = '') {
   if (!stat || typeof stat !== 'object') return null;
-  const key = PRESENT_KEYS.find(k => k in stat); if (!key) return null;
-  const t = val(stat[key]), out = [], add = (n, p) => { n = clean(n); if (n && [...n].length <= 40 && !out.some(o => o.name === n)) out.push({ name: n, place: clean(p) }); };
+  const key = path || PRESENT_KEYS.find(k => k in stat); if (!key) return null;
+  const t0 = path ? get(stat, path) : stat[key]; if (t0 === undefined) return null;
+  const t = val(t0), out = [], add = (n, p) => { n = clean(n); if (n && [...n].length <= 40 && !out.some(o => o.name === n)) out.push({ name: n, place: clean(p) }); };
   const posOf = o => { const p = str(val(o?.[POS_KEY])); return p; };
   if (typeof t === 'string') { for (const n of t.split(/[、,，;；\/]/)) add(n, ''); return out; }
   if (Array.isArray(t)) {
@@ -48,8 +49,8 @@ export function presentList(stat) {
 
 // ---------------- 4 世界时间 ----------------
 /** stat_data → { date, time, period }（缺的是 ''） */
-export function worldTime(stat) {
-  return { date: str(get(stat, '世界.当前日期')), time: str(get(stat, '世界.当前时刻')), period: str(get(stat, '世界.当日时段')) };
+export function worldTime(stat, m = {}) {
+  return { date: str(get(stat, m.date || '世界.当前日期')), time: str(get(stat, m.time || '世界.当前时刻')), period: str(get(stat, m.period || '世界.当日时段')) };
 }
 const hourOf = t => { const m = String(t || '').match(/(\d{1,2})\s*[:：时]\s*(\d{0,2})/); return m ? +m[1] + (+m[2] || 0) / 60 : null; };
 /** 夜间：时段写着「寝 / 夜 / 凌晨」，或时刻在 22:00–05:00 */
@@ -78,8 +79,8 @@ export function timeKey(s) {
 export const OUTFIT_KEYS = ['衣服', '裤子', '鞋子'];
 const EMPTY = /^(待初始化|无|空|未知|none|-|—)?$/i;
 /** stat_data → { 衣服, 裤子, 鞋子, … }（只收字符串，空和「待初始化」不算）；没有着装返回 null */
-export function outfit(stat) {
-  const o = get(stat, '主角.着装'); if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+export function outfit(stat, path = '') {
+  const o = get(stat, path || '主角.着装'); if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
   const r = {}; for (const [k, v] of Object.entries(o)) { const s = str(val(v)); if (s && !EMPTY.test(s)) r[k] = s; }
   return Object.keys(r).length ? r : null;
 }

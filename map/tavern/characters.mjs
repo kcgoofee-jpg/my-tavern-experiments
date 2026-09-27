@@ -37,10 +37,10 @@ export function parseChars(raw) {
 }
 
 /** MVU stat_data → [{name, place}]；here = 玩家当前地点（在场表的人放在这里） */
-export function mvuChars(stat, here) {
+export function mvuChars(stat, here, presentPath = '') {
   const out = [], first = String(here || '').split(/\s*[\/／|｜]\s*/)[0].trim();
   if (!stat || typeof stat !== 'object') return out;
-  const pres = presentList(stat), done = new Set();
+  const pres = presentList(stat, presentPath), done = new Set();
   for (const p of pres || []) { done.add(p.name); if (p.place) out.push({ name: p.name, place: p.place }); else if (first) out.push({ name: p.name, place: first, present: true }); }
   for (const [tk, tbl] of Object.entries(stat)) {
     if (!tbl || typeof tbl !== 'object' || Array.isArray(tbl) || tk === '世界') continue;

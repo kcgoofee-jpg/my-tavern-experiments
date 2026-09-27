@@ -7,7 +7,7 @@ import * as B from './lib.mjs';
 
 const STUB = `<script>
   var S = parent.__stub, H = {};
-  window.Mvu = { getMvuData: function () { var st = Object.assign({}, S.stat || {}); st.世界 = Object.assign({ 当前地点: S.here }, (S.stat || {}).世界 || {}); return { stat_data: st }; }, events: { VARIABLE_UPDATE_ENDED: 'v' } };
+  window.Mvu = { getMvuData: function () { if (S.rawStat) return { stat_data: S.stat }; var st = Object.assign({}, S.stat || {}); st.世界 = Object.assign({ 当前地点: S.here }, (S.stat || {}).世界 || {}); return { stat_data: st }; }, events: { VARIABLE_UPDATE_ENDED: 'v' } };
   // v0.9.3：酒馆助手聊天变量与世界书接口（S.noVars = true 时不提供，测退回本机存储）；写入记在 parent.__vars / parent.__wb
   if (!S.noVars) {
     parent.__vars = parent.__vars || JSON.parse(JSON.stringify(S.vars || {}));
@@ -31,9 +31,9 @@ const STUB = `<script>
 const HOST = `<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><body style="margin:0;background:#2a2a2a;height:100vh;color:#aaa;font:14px sans-serif"><p style="padding:12px">tavern host (stub)</p>
 <iframe id=card style="display:none" srcdoc="${STUB.replace(/"/g, '&quot;')}"></iframe></body>`;
 
-export async function openHost(P, { here = '', stat = {}, msgs = [], chat = 'stub', vars = {}, noVars = false, ls = null, charData = null } = {}) {
+export async function openHost(P, { here = '', stat = {}, msgs = [], chat = 'stub', vars = {}, noVars = false, ls = null, charData = null, rawStat = false } = {}) {
   const p = P.page;
-  await P.ctx.addInitScript(s => { if (window.top === window) { window.__stub = s; if (s.ls && !sessionStorage.getItem('__lsSeeded')) { sessionStorage.setItem('__lsSeeded', '1'); for (const [k, v] of Object.entries(s.ls)) localStorage.setItem(k, v); } } }, { here, stat, msgs, chat, vars, noVars, ls, charData });
+  await P.ctx.addInitScript(s => { if (window.top === window) { window.__stub = s; if (s.ls && !sessionStorage.getItem('__lsSeeded')) { sessionStorage.setItem('__lsSeeded', '1'); for (const [k, v] of Object.entries(s.ls)) localStorage.setItem(k, v); } } }, { here, stat, msgs, chat, vars, noVars, ls, charData, rawStat });
   await p.route(B.BASE + '__stubhost.html', r => r.fulfill({ contentType: 'text/html; charset=utf-8', body: HOST }));
   await p.goto(B.BASE + '__stubhost.html');
   await p.waitForSelector('#eden-map-root .em-fab', { timeout: 15000 });
