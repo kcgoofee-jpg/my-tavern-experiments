@@ -23,9 +23,12 @@ export function parseChars(raw) {
   if (!raw || (raw.indexOf('⌖人物') < 0 && raw.indexOf('人物=') < 0)) return [];
   const text = decode(String(raw)).replace(/```[\s\S]*?```/g, '').replace(/<code>[\s\S]*?<\/code>/gi, '');
   const found = [];
-  for (const m of text.matchAll(/⌖人物[\s:：]+([^<\n⌖@＠]{1,40}?)\s*[@＠]\s*([^<\n⌖]{1,60})/g)) {
-    if (EXAMPLES.has(`⌖人物 ${m[1].trim()} @ ${m[2].trim()}`)) continue;
-    found.push([m.index, clean(m[1]), clean(m[2])]);
+  // 地点到句读为止：世界书教的是隐藏 span，但模型常写成裸标签「⌖人物 雷恩 @ 下层·7号井，他推开铁门…」，
+  // 以前会把后面的整句吃进地点，再进列表 / 地点卡 / 注入 / 行程（2026-09-27 接手 review P2）。
+  for (const m of text.matchAll(/⌖人物[\s:：]+([^<\n⌖@＠]{1,40}?)\s*[@＠]\s*([^<\n⌖，。；、,;！？!?]{1,60})/g)) {
+    const place = clean(m[2]).replace(/[\s和与及、]+$/, '');   // 两个标签挨着写时尾巴上会挂一个「和」
+    if (EXAMPLES.has(`⌖人物 ${m[1].trim()} @ ${place}`)) continue;
+    found.push([m.index, clean(m[1]), place]);
   }
   for (const m of text.matchAll(/data-tcmap\s*=\s*(["'])(.*?)\1/g)) {
     if (EXAMPLES.has(m[2].trim())) continue;

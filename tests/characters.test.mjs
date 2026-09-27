@@ -61,4 +61,11 @@ t('人物地点与玩家地点同一条解析链（here.mjs）', () => {
   assert.equal(resolveHere('下层·7号井', idx)?.map, 'tc_low');
   assert.equal(resolveHere('天城上层·D区 / 天城下层·7号井', idx)?.map, 'tc_upper');   // 多处取第一处认得出的
 });
+t('裸标签只取到句读：不把后面的叙述吃进地点（2026-09-27 接手 review）', () => {
+  assert.deepEqual(C.parseChars('⌖人物 雷恩 @ 下层·7号井，他推开铁门走进黑市。'), [{ name: '雷恩', place: '下层·7号井' }]);
+  assert.deepEqual(C.parseChars('⌖人物 米拉 @ 庄园·书房；随后她去了花园。'), [{ name: '米拉', place: '庄园·书房' }]);
+  // 两个标签挨着写：不吞掉后一个，尾部的「和」也去掉
+  assert.deepEqual(C.parseChars('⌖人物 甲 @ 中层·C区检查点 和 ⌖人物 乙 @ 上层·银冠堡'),
+    [{ name: '甲', place: '中层·C区检查点' }, { name: '乙', place: '上层·银冠堡' }]);
+});
 console.log(`characters: ${n} 项通过`);
