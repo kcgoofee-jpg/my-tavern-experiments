@@ -35,10 +35,11 @@ def imperial_stairs(col):
             ztop = zb + (k + 1) * rise
             _box(bm, min(xa, xb), yw - wid, zb - 0.6, max(xa, xb), yw + 0.3, ztop - 0.06)
             _box(bt, min(xa, xb) - 0.03, yw - wid - 0.05, ztop - 0.07, max(xa, xb) + 0.03, yw + 0.3, ztop)   # 踏步石（带前沿）
-        # 顶部平台：接到台面
-        xa, xb = s * x_hi, s * (x_hi + 5.0)
-        yw = wall_y(s * (x_hi + 2.5))
-        _box(bm, min(xa, xb), yw - wid, zb - 0.6, max(xa, xb), yw + 2.5, zt)
+        # 顶部平台（r5 修）：只贴到墙面、不插进墙体；台面与压顶同高，另铺一块门槛石板跨过压顶盖住草坪边
+        xa, xb = s * x_hi, s * (x_hi + STAIR_HEAD_W)
+        yw = min(wall_y(xa), wall_y(xb))
+        _box(bm, min(xa, xb), yw - wid, zb - 0.6, max(xa, xb), yw + 0.3, zt + 0.05)
+        _box(bt, min(xa, xb) + 0.3, yw - 0.4, zt - 0.3, max(xa, xb) - 0.3, yw + 1.8 + 1.6, zt + 0.1)
         # 底部起步平台
         xa, xb = s * 5.2, s * x_lo
         _box(bm, min(xa, xb), wall_y(s * 6) - wid - 0.6, zb - 0.6, max(xa, xb), wall_y(s * 6) + 0.3, zb + 0.12)
@@ -50,9 +51,14 @@ def imperial_stairs(col):
             za = zb + (abs(xa) - x_lo) * (zt - zb) / (x_hi - x_lo)
             zb2 = zb + (abs(xb) - x_lo) * (zt - zb) / (x_hi - x_lo)
             baluster_run(bb, (xa, wall_y(xa) - wid + 0.15), (xb, wall_y(xb) - wid + 0.15), za + 0.1, zb2 + 0.1, h=1.0, pitch=0.5)
-        x2 = s * (x_hi + 5.0)
-        baluster_run(bb, (s * x_hi, wall_y(s * x_hi) - wid + 0.15), (x2, wall_y(x2) - wid + 0.15), zt, h=1.0)
-        baluster_run(bb, (x2, wall_y(x2) - wid + 0.15), (x2 + s * 0.01, wall_y(x2) + 0.3), zt, h=1.0)
+        x2 = s * (x_hi + STAIR_HEAD_W)
+        yl = yw - wid + 0.15
+        baluster_run(bb, (s * x_hi, yl), (x2 - s * 0.5, yl), zt + 0.05, h=1.0)
+        baluster_run(bb, (x2 - s * 0.35, yl + 0.5), (x2 - s * 0.35, yw - 0.4), zt + 0.05, h=1.0)
+        for px, py in ((s * x_hi, yl), (x2 - s * 0.35, yl)):   # 平台两角墩柱 + 石瓶，栏杆落在墩柱之间
+            _box(bb, px - 0.4, py - 0.4, zt + 0.05, px + 0.4, py + 0.4, zt + 1.3)
+            bmesh.ops.create_uvsphere(bb, u_segments=12, v_segments=8, radius=0.35, matrix=Matrix.Translation((px, py, zt + 1.7)))
+        stair_head_pavilion(col, s * (x_hi + STAIR_HEAD_W / 2), yw)
         # 起步处的墩柱 + 石瓶
         x0 = s * 5.4
         y0 = wall_y(x0) - wid - 0.3
@@ -63,6 +69,36 @@ def imperial_stairs(col):
     bm_to_obj(bb, 'imperial_stairs_bal', col, M['plain'])
     # 墙顶（主台地边缘）中央观景栏杆 + 壁泉
     wall_fountain(col)
+
+
+STAIR_HEAD_W = 5.5   # 顶部平台沿墙长度
+
+
+def stair_head_pavilion(col, cx, yw):
+    """r5：梯顶小亭。退到台地里（离墙外皮 7.3 m，离草坪边 5.5 m），4 根塔斯干柱 + 檐部 + 低四坡石板顶；门槛石板到亭子铺一条 2.4 m 石径。"""
+    M = mats()
+    zt = L.PLATEAU_Z
+    cy = yw + 1.8 + 3.0 + 2.6
+    a, h = 2.6, 3.4
+    bm = bmesh.new()
+    _box(bm, cx - a - 0.4, cy - a - 0.4, zt - 0.3, cx + a + 0.4, cy + a + 0.4, zt + 0.35)          # 台基
+    _box(bm, cx - 1.2, yw + 1.8 + 1.4, zt - 0.2, cx + 1.2, cy - a - 0.4, zt + 0.08)                   # 石径
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            px, py = cx + sx * (a - 0.3), cy + sy * (a - 0.3)
+            _box(bm, px - 0.38, py - 0.38, zt + 0.35, px + 0.38, py + 0.38, zt + 0.6)
+            bmesh.ops.create_cone(bm, cap_ends=True, segments=16, radius1=0.3, radius2=0.25, depth=h - 0.5,
+                                  matrix=Matrix.Translation((px, py, zt + 0.6 + (h - 0.5) / 2)))
+    _box(bm, cx - a, cy - a, zt + h + 0.35, cx + a, cy + a, zt + h + 0.95)                          # 檐部
+    _box(bm, cx - a - 0.25, cy - a - 0.25, zt + h + 0.95, cx + a + 0.25, cy + a + 0.25, zt + h + 1.15)   # 檐口
+    bm_to_obj(bm, 'stair_head_pavilion', col, M['plain'])
+    rb = bmesh.new()
+    zr, e = zt + h + 1.15, a + 0.25
+    v = [rb.verts.new(p) for p in ((cx - e, cy - e, zr), (cx + e, cy - e, zr), (cx + e, cy + e, zr), (cx - e, cy + e, zr), (cx, cy, zr + 1.3))]
+    for i in range(4):
+        rb.faces.new([v[i], v[(i + 1) % 4], v[4]])
+    rb.faces.new(v[3::-1])
+    bm_to_obj(rb, 'stair_head_pavilion_roof', col, M['slate'])
 
 
 def wall_fountain(col):

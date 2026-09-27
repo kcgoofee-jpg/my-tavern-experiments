@@ -25,6 +25,7 @@ VIEWS = {
     'gym': ((170, -134, 16), (188, -110, 0.5), 30),
     'greystone': ((-160, -200, 55), (-222, -108, 6), 32),   # r4d Greystone 客舍，相对地面高度
     'close': ((-120, -120, 125), (0, 0, 30), 38),  # r4：主楼黄昏斜俯近景
+    'whole': ((-215, -640, 470), (-5, 25, -20), 30),  # r5：整岛斜俯（约 36°，参考图 11 的暖黄昏风格）
 }
 MAP_MPP = 0.375   # 上层地图：3000 m / 8000 px
 SUN_ELEV, SUN_AZ = 24.0, 132.0   # 度；方位从 +x 逆时针，太阳在东南偏南，逆光给建筑侧光
@@ -40,6 +41,8 @@ def args():
     p.add_argument('--out', default='/tmp/eden2_style_frame.png')
     p.add_argument('--save', default='')
     p.add_argument('--light', default='sunset', help='day | sunset（r3：kiara_8_sunset HDRI + 低暖太阳）')
+    p.add_argument('--region', default='', help='局部重渲：世界坐标包围盒 x0,y0,z0,x1,y1,z1；只渲这块（render border + crop），旁写 <out>.region.json，再用 tools/region_patch.py 合回整图')
+    p.add_argument('--region-pad', type=int, default=24, help='局部重渲外扩像素（合成时做羽化）')
     return p.parse_args(a)
 
 
@@ -166,6 +169,25 @@ def camera(scene, view, res):
     scene.render.resolution_percentage = 100
 
 
+def region_border(scene, bb, pad, out):
+    """把世界坐标包围盒投到当前相机，设 render border（裁到边框），并记下像素框供 tools/region_patch.py 合成。"""
+    import json, itertools
+    from bpy_extras.object_utils import world_to_camera_view
+    cam = scene.camera
+    bpy.context.view_layer.update()
+    uv = [world_to_camera_view(scene, cam, Vector(c)) for c in itertools.product((bb[0], bb[3]), (bb[1], bb[4]), (bb[2], bb[5]))]
+    W, H = scene.render.resolution_x, scene.render.resolution_y
+    x0 = max(0, int(min(p.x for p in uv) * W) - pad); x1 = min(W, int(math.ceil(max(p.x for p in uv) * W)) + pad)
+    y0 = max(0, int(min(p.y for p in uv) * H) - pad); y1 = min(H, int(math.ceil(max(p.y for p in uv) * H)) + pad)
+    r = scene.render
+    r.use_border, r.use_crop_to_border = True, True
+    r.border_min_x, r.border_max_x, r.border_min_y, r.border_max_y = x0 / W, x1 / W, y0 / H, y1 / H
+    box = dict(W=W, H=H, left=x0, top=H - y1, right=x1, bottom=H - y0, pad=pad, bbox=bb)   # 左上原点像素
+    with open(out + '.region.json', 'w') as f:
+        json.dump(box, f)
+    print('[region]', box)
+
+
 def _plight(name, loc, power, col=(1.0, 0.72, 0.45), radius=0.6):
     ld = bpy.data.lights.new(name, 'POINT'); ld.energy = power; ld.color = col; ld.shadow_soft_size = radius
     ob = bpy.data.objects.new(name, ld); bpy.context.scene.collection.objects.link(ob); ob.location = loc
@@ -251,6 +273,8 @@ def main():
         scene.view_settings.look = 'AgX - Medium High Contrast'
         scene.view_settings.exposure = 1.3
     camera(scene, a.view, a.res)
+    if a.region:
+        region_border(scene, [float(v) for v in a.region.split(',')], a.region_pad, a.out)
     scene.render.image_settings.file_format = 'PNG'
     scene.render.filepath = a.out
     if a.save:
