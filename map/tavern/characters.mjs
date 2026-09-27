@@ -36,6 +36,15 @@ export function parseChars(raw) {
   return found.sort((a, b) => a[0] - b[0]).filter(([, n, p]) => n && p).slice(0, MAX_TAGS_PER_FLOOR).map(([, name, place]) => ({ name, place }));
 }
 
+/** 名字对齐（v0.9.5 通读）：去掉世界书标签的 _idN 后缀；只写了名（伊莎贝拉）而已知名单里正好有一个以「名·」开头的全名 → 用全名。
+ *  名字当姓用的（「维多利亚」与「某某·维多利亚」）不合并：只认「名·」前缀，且只有唯一一个时才认 */
+export function canonName(name, known = []) {
+  const n = clean(String(name || '').replace(/_id\d+$/i, '')); if (!n || known.includes(n) || /[·・]/.test(n)) return n;
+  const full = known.filter(k => new RegExp('^' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[·・]').test(k));
+  return full.length === 1 ? full[0] : n;
+}
+/** 消息原文 → 解析标签前先去掉 MVU 的变量更新块（包括没有闭合的，开局九有一处） */
+export const stripUpdate = s => String(s || '').replace(/<UpdateVariable>[\s\S]*?(?:<\/UpdateVariable>|$)/gi, ' ');
 /** MVU stat_data → [{name, place}]；here = 玩家当前地点（在场表的人放在这里） */
 export function mvuChars(stat, here, presentPath = '') {
   const out = [], first = String(here || '').split(/\s*[\/／|｜]\s*/)[0].trim();
@@ -57,9 +66,9 @@ export function mvuChars(stat, here, presentPath = '') {
 }
 
 /** 最近若干楼 [{floor, text}] + MVU（最新楼的状态）→ 每人最新位置 [{name, place, floor, src: 'mvu'|'tag'|'infer', present?}]，新的在前 */
-export function collectChars(msgs, now, mvu = []) {
-  const map = new Map();
-  for (const { floor, text } of msgs) for (const c of parseChars(text)) map.set(c.name, { ...c, floor, src: 'tag' });
+export function collectChars(msgs, now, mvu = [], known = []) {
+  const map = new Map(), names = [...new Set([...mvu.map(c => c.name), ...known])];
+  for (const { floor, text } of msgs) for (const c of parseChars(text)) { const n = canonName(c.name, names); map.delete(c.name); map.set(n, { ...c, name: n, floor, src: 'tag' }); }
   for (const c of mvu) {   // MVU 是最新楼的状态：写了位置就以它为准；在场但没写位置时，有近期标签（≤ 20 楼）用标签，否则推断为和玩家同处
     if (c.present && map.has(c.name) && now - map.get(c.name).floor <= PRESENT_TAG_FRESH) continue;
     map.set(c.name, { ...c, floor: now, src: c.present ? 'infer' : 'mvu' });
@@ -97,7 +106,8 @@ export const avatarKey = chat => (chat ? `edenMap:chat:${chat}:avatars` : 'edenM
 export const charPrefKey = chat => (chat ? `edenMap:chat:${chat}:chars` : 'edenMap:chars');
 const readJ = (st, k) => { try { const o = JSON.parse(st?.getItem(k) || 'null'); return o && typeof o === 'object' ? o : null; } catch (e) { return null; } };
 export function readAvatars(st, chat) { return { ...(readJ(st, avatarKey('')) || {}), ...(chat ? readJ(st, avatarKey(chat)) || {} : {}) }; }
-const okImg = s => typeof s === 'string' && s.length <= 400000 && /^(data:image\/(png|jpe?g|webp|gif);base64,|https?:\/\/|blob:)/i.test(s);
+export const AVATAR_MAX = 160000;   // v0.9.5（通读 R3）：和状态栏共用同一份 localStorage 额度，单张 data URL 上限约 160 KB（查看器会先压缩）
+const okImg = s => typeof s === 'string' && (s.startsWith('data:') ? s.length <= AVATAR_MAX : s.length <= 2000) && /^(data:image\/(png|jpe?g|webp|gif);base64,|https?:\/\/|blob:)/i.test(s);
 export function setAvatar(st, chat, name, src) {
   name = clean(name); if (!name || [...name].length > 40 || !okImg(src)) return false;
   const k = avatarKey(chat), o = readJ(st, k) || {}; o[name] = src;

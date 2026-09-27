@@ -28,4 +28,17 @@ t('原作头像表：只收作者 CDN 的 /sfw/ 地址', () => {
   const src = `var defaultPortraits = { "甲": "${ok}", "乙": "https://cdn.jsdelivr.net/gh/Yehehua1311/repo@main/B/other/B_1.png", "丙": "https://example.com/sfw/c.png" };`;
   assert.deepEqual(V.findPortraits([src]), { 甲: ok }); assert.deepEqual(V.findPortraits(['无']), {});
 });
+import * as C from '../map/tavern/characters.mjs';
+t('名字对齐：去 _idN；短名唯一对应「名·」全名；名字当姓用的不合并', () => {
+  const known = ['甲·乙家', '丙', '丁·戊', '某人·丙'];
+  assert.equal(C.canonName('甲_id9', known), '甲·乙家'); assert.equal(C.canonName('甲', known), '甲·乙家');
+  assert.equal(C.canonName('丙', known), '丙'); assert.equal(C.canonName('丙', ['某人·丙', '他人·丙']), '丙');
+  assert.equal(C.canonName('己', ['己·一', '己·二']), '己');
+  const r = C.collectChars([{ floor: 3, text: '⌖人物 甲_id9 @ 中层·某处' }], 5, [{ name: '甲·乙家', place: '中层·某处', present: false }]);
+  assert.equal(r.length, 1); assert.equal(r[0].name, '甲·乙家');
+});
+t('变量更新块不参与标签解析（含没闭合的）', () => {
+  assert.equal(C.stripUpdate('前<UpdateVariable>⌖人物 甲 @ 中层·某处</UpdateVariable>后'), '前 后');
+  assert.equal(C.stripUpdate('前<UpdateVariable>没闭合'), '前 ');
+});
 console.log(`${n} passed`);

@@ -16,7 +16,11 @@ const TCChars = (() => {
   // 头像：本机设置的优先；否则「使用原作头像」开着时用卡自带的立绘表（只收作者 CDN 的 /sfw/ 地址，懒加载，失败退回首字）
   const PK_ = 'edenMapPortraits', portOn = () => { try { const v = localStorage.getItem(PK_); return v == null ? !(typeof leanBg === 'function' && leanBg()) : v === '1'; } catch (e) { return true; } };
   const okUrl = u => /^https:\/\/cdn\.jsdelivr\.net\/gh\/Yehehua1311\/[^?#]*\/sfw\/[^?#]+\.(png|jpe?g|webp)$/i.test(u || '');
-  const avOf = n => avatars[n] || (portOn() && okUrl(portraits[n]) ? portraits[n] : '');
+  // 状态栏里玩家自己设的头像（卡的状态栏存在同源 localStorage：eden_custom_portraits = { 名: 地址 }、eden_portrait_<名> = data URL），只读
+  const barAv = n => { try { const short = String(n).split(/[·・]/)[0]; for (const k of [n, short]) { const d = localStorage.getItem('eden_portrait_' + k); if (d && d.startsWith('data:image/')) return d; }
+    const m = JSON.parse(localStorage.getItem('eden_custom_portraits') || '{}'); const u = m[n] || m[short]; return typeof u === 'string' && /^(https:|data:image\/)/.test(u) ? u : ''; } catch (e) { return ''; } };
+  const cardPort = n => { const u = portraits[n] || portraits[String(n).split(/[·・]/)[0]]; return okUrl(u) ? u : ''; };
+  const avOf = n => avatars[n] || barAv(n) || (portOn() ? cardPort(n) : '');
   const avImg = n => { const u = avOf(n); return u ? `<img alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" src="${esc(u)}" data-i="${esc(ini(n))}" onerror="this.replaceWith(this.dataset.i)">` : ''; };
   const visible = c => prefs.show && !prefs.off.includes(c.name);
   // v0.9.3：显示名（自定义，custom.js）与位置来源：MVU（在场人物的位置字段）/ 标签（聊天里的人物标签）/ 推断（在场但没写位置，按和你同处）
@@ -114,7 +118,14 @@ const TCChars = (() => {
     const b = e.type === 'click' && e.target.closest('button.chgo'); if (b) { if (typeof TCEvents !== 'undefined') TCEvents.collapse(); fly(b.dataset.n); }
   }
   // 本机头像（EdenMap.setAvatar / removeAvatar 转到这里）
-  async function setAvatar(name, src) { const C = await mod(); const ok = !!C && !!store() && C.setAvatar(store(), chat(), name, src); if (ok) { loadPrefs(); render(); bar(); } return ok; }
+  // data URL 头像先压到 160 px 的 webp / jpeg（和状态栏共用 localStorage 额度，通读 R3）
+  async function shrink(src) {
+    if (typeof src !== 'string' || !src.startsWith('data:image/') || src.length < 40000) return src;
+    try { const img = new Image(); img.src = src; await img.decode(); const k = Math.min(1, 160 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k)); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      const w = c.toDataURL('image/webp', .82); return w.startsWith('data:image/webp') ? w : c.toDataURL('image/jpeg', .82); } catch (e) { return src; }
+  }
+  async function setAvatar(name, src) { src = await shrink(src); const C = await mod(); const ok = !!C && !!store() && C.setAvatar(store(), chat(), name, src); if (ok) { loadPrefs(); render(); bar(); } return ok; }
   async function removeAvatar(name) { const C = await mod(); const ok = !!C && !!store() && C.removeAvatar(store(), chat(), name); if (ok) { loadPrefs(); render(); bar(); } return ok; }
   function chatChanged() { loadPrefs(); render(); bar(); }
 

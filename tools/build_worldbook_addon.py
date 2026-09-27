@@ -14,7 +14,7 @@
   3 地图当前地点 v2：地图认得的地点叫法（房间 / 区域 / 地标）；剧情改名 / 用途标签（⌖改名 / ⌖用途，v0.9.3）
   4 地图人物位置 v1（v0.9.3）：在场人物换地方时写人物标签。卡的 MVU zod 结构会丢掉在场人物对象里的未知键，
     所以不要求模型写任何变量，标签才是地图的来源
-  5–7 地图方位·上层 / 中层 / 下层（v0.9.3，EJS 条件）：「世界.当前地点」落在该层某个地标时，只展开那一处的中性方位
+  5–7 地图方位·上层 / 中层 / 下层（v0.9.3，EJS 条件；v0.9.5 起不常驻，聊天里出现该层层名 / 地标名时触发）：「世界.当前地点」落在该层某个地标时，只展开那一处的中性方位
     （名称、层、副标题、邻近地标）。要装「提示词模板」（ST-Prompt-Template）扩展；没装时自检会提示关掉这三条。
 我们的规则只提到我们自己的东西（人物标签、⌖改名 / ⌖用途、地图.*），不引用卡里的字段名或原文。
 示范标签只用 EXAMPLES 里的原文（模型照抄时地图不落点）。不写任何关键词过滤规则（地图不过滤内容，见 docs/content-compat.md）。
@@ -131,7 +131,9 @@ def build(version):
     # ---- 方位（v0.9.3）：EJS 条件条目，每层一条；只展开当前地点所在的那一处
     lore = []
     for name, sub, mid in layers:
-        lore.append((f'地图方位·{name}', ejs_layer(reg, mid), 910 + len(lore)))
+        # v0.9.5（通读 R5）：不再常驻，按层触发——聊天里出现这一层的层名或它的地标名 / 别名时才发（EJS 仍只展开当前地点那一处）
+        kw = [w for w in dict.fromkeys([name, f'天城{name}', sub, *[x for v in reg[mid].get('markers', {}).values() for x in [v['name'], *v.get('alias', [])]]]) if w and len([*w]) >= 2]
+        lore.append((f'地图方位·{name}', ejs_layer(reg, mid), 910 + len(lore), {'constant': False, 'key': kw}))
 
 
     return [('地图联动规范 v3', rules, 900), ('地图事件类型 v2', types, 901), ('地图当前地点 v2', here, 902), ('地图人物位置 v1', who, 903)] + lore, n
@@ -200,8 +202,8 @@ FIELDS = dict(  # 与 SillyTavern 1.12+ 导出的世界书条目字段一致（�
 
 def to_book(items):
     entries = {}
-    for i, (comment, content, order) in enumerate(items):
-        e = {'uid': i, 'comment': comment, 'content': content, 'order': order, 'displayIndex': i}
+    for i, (comment, content, order, *extra) in enumerate(items):
+        e = {'uid': i, 'comment': comment, 'content': content, 'order': order, 'displayIndex': i, **(extra[0] if extra else {})}
         for k, v in FIELDS.items(): e.setdefault(k, json.loads(json.dumps(v)))
         entries[str(i)] = e
     return {'_credit': CREDIT, 'entries': entries}   # 酒馆导入只读 entries；_credit 是原作署名
@@ -261,8 +263,8 @@ MINI_EJS = r"""const render = (tpl, here) => { let code = 'let __o = "";'; let i
 
 def selftest_093(items):
     """v0.9.3：人物 / 改名示范不生效；方位条目按当前地点只展开一处，别的层、没写地点时为空；统计渲染后的 tokens"""
-    lore = [(c, t) for c, t, _ in items if c.startswith('地图方位')]
-    who, here = next(t for c, t, _ in items if c.startswith('地图人物位置')), next(t for c, t, _ in items if c.startswith('地图当前地点'))
+    lore = [(c, t) for c, t, *_ in items if c.startswith('地图方位')]
+    who, here = next(t for c, t, *_ in items if c.startswith('地图人物位置')), next(t for c, t, *_ in items if c.startswith('地图当前地点'))
     probes = ['天城·中层·天城执法局总局', '中层·霓虹街', '下层·废弃教堂区', '伊甸庄园·书房', '主卧', '天城·上层', ['中层·霓虹街', '[旧格式]'], '世界地图上的某地', '']
     js = MINI_EJS + """
 import * as C from './map/tavern/characters.mjs'; import * as V from './map/tavern/mvu.mjs'; import fs from 'node:fs';
@@ -300,7 +302,7 @@ def main():
     with open(out, 'w', encoding='utf-8') as f:
         json.dump(book, f, ensure_ascii=False, indent=2); f.write('\n')
     tot = 0
-    for c, content, _ in items:
+    for c, content, *_ in items:
         t = tokens(content); tot += 0 if c.startswith('地图方位') else t
         print(f'  {c}：{len(content)} 字符，约 {t} tokens' + ('（EJS 源码，不直接发给模型）' if c.startswith('地图方位') else ''))
     print(f'写入 {out}（{len(items)} 条，{n} 种类型）')
