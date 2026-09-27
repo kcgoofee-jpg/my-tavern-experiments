@@ -362,5 +362,18 @@
   "ev.short": "事",
   "ch.short": "人",
   "s.labels_on": "标注已显示",
-  "s.labels_off": "标注已隐藏"
+  "s.labels_off": "标注已隐藏",
+  "s.stor": "存储与数据来源",
+  "s.stor_local": "单独打开时没有聊天数据；嵌在酒馆里才显示",
+  "s.src_mvu": "MVU 变量",
+  "s.src_db": "数据库插件表",
+  "s.src_none": "聊天标签 / 未读到",
+  "s.stor_used": "地图占用本机存储",
+  "s.stor_detail": "全站共 {t}；头像 {a}；{n} 个聊天",
+  "s.src_loc": "当前地点来自",
+  "s.src_mode": "变量读取方式",
+  "s.src_chars": "人物来源",
+  "s.stor_clean": "清理旧聊天的地图数据",
+  "s.stor_clean_btn": "清理",
+  "s.stor_cleaned": "已清理 {n} 个聊天，释放 {b}"
 }

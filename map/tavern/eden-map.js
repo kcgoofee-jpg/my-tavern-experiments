@@ -353,6 +353,7 @@
     if (e.source !== frame.contentWindow) return;
     if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
     if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: UL }); sendBar(); sendAbout(); alive = true; sentClock = sentOutfit = charsSent = bindSent = null; knowRooms(); sendCheck(); sendCustom(); sendTrips(); varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:ready' && setQ) { const q = setQ; setQ = null; setTimeout(() => post({ type: 'eden-map:settings', page: q }), 0); }
     if (e.data?.type === 'eden-map:ready' && flyQ) { const q = flyQ; flyQ = null; setTimeout(() => inner()?.flyTo?.(q), 0); }   // EdenMap.flyTo 排队的
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
     if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
@@ -361,11 +362,16 @@
       if (e.data.theme) hostTheme(e.data.theme);
       if (e.data.hand && e.data.hand !== handPref) { handPref = e.data.hand; applyHand(true); }
       mapTitle = e.data.title || ''; showTitle(); }
-    if (e.data?.type === 'eden-map:esc') close();
-    if (e.data?.type === 'eden-map:line-pick') showPicker();   // UI v2：线路选择在地图设置「高级」
+    if (e.data?.type === 'eden-map:esc') close();   // 地图里没有可关的卡片 / 列表时，Esc 关闭面板
+    if (e.data?.type === 'eden-map:line-pick') showPicker();
+    if (e.data?.type === 'eden-map:storage-info' || e.data?.type === 'eden-map:storage-clean') {   // 设置「数据与映射」：存储占用、数据来源；清理 = 只留最近 5 个聊天的地图数据
+      (async () => { let cleaned = null; const st = store();
+        if (e.data.type === 'eden-map:storage-clean' && BG && st) { try { cleaned = BG.sweep(st, chatId(), 5); } catch (x) {} }
+        const [s, src] = await Promise.all([api.storage().catch(() => null), api.sources().catch(() => null)]);
+        post({ type: 'eden-map:storage-result', storage: s && { total: s.total, ours: s.ours, avatars: s.avatars, chats: Object.keys(s.chats || {}).length }, sources: src, cleaned: cleaned && { n: cleaned.dropped.length, bytes: cleaned.freed } }); })(); }   // UI v2：线路选择在地图设置「高级」
     if (e.data?.type === 'eden-map:chrome') { chromeAt = { top: +e.data.top || 44, bottom: +e.data.bottom || 0 }; NT?.refresh(); }   // 抽屉高度：P2 提示放在它上方
     if (e.data?.type === 'eden-map:formbusy') { formBusy = !!e.data.on; NT?.refresh(); }
-    if (e.data?.type === 'eden-map:notice' && e.data.n && typeof e.data.n === 'object') viewerNotice(e.data.n);   // 地图里没有可关的卡片 / 列表时，Esc 关闭面板
+    if (e.data?.type === 'eden-map:notice' && e.data.n && typeof e.data.n === 'object') viewerNotice(e.data.n);   // 查看器的通知由宿主统一显示
     if (e.data?.type === 'eden-map:unmapped') { const n = typeof e.data.name === 'string' && e.data.name ? e.data.name : null; if (n !== unm) { unm = n; push(); } }   // v0.9.6：地图认不出当前地点 → 标题栏「未上图：…」
     if (e.data?.type === 'eden-map:emit' && e.data.ev === 'map') emit('map', e.data.data);   // 本机扩展：切图（E6）
     if (e.data?.type === 'eden-map:build') { viewerVer = e.data.version || null; if (checkFacts) finishCheck(); }   // 地图的版本（data/build.json）→ 自检比对
@@ -383,11 +389,11 @@
   // 合并顶栏：宿主栏的宽度告诉查看器，查看器顶栏右端让出这一段；线路按钮移进查看器设置「高级」
   const hbarEl = root.querySelector(".em-bar");
   const sendBar = () => { post({ type: 'eden-map:hostbar', w: Math.ceil(hbarEl.getBoundingClientRect().width), side: panel.classList.contains('em-left') ? 'left' : 'right' }); post({ type: 'eden-map:line', swappable }); };
-  try { new ResizeObserver(() => { if (alive) sendBar(); }).observe(hbarEl); } catch (e) {}
+  let barRO = null; try { barRO = new ResizeObserver(() => { if (alive && !dead) sendBar(); }); barRO.observe(hbarEl); } catch (e) {}
   // ---------------- UI v2 唯一通知层（ui/notice.mjs，spec §3）：P0 强制更新 / P1 更新、自检、存储 / P2 新事态、查看器转来的提示 ----------------
   let NT = null, chromeAt = { top: 44, bottom: 0 }, formBusy = false;
   const ntReady = import(SELF + 'ui/notice.mjs').then(m => {
-    NT = m.createNotices({ doc: pdoc, mount: root, root: '#' + ID, baseCls: 'em-ctoast', en: UL === 'en', busy: () => formBusy && !panel.hidden,
+    NT = m.createNotices({ doc: pdoc, mount: root, root: '#' + ID, baseCls: 'em-ctoast', en: UL === 'en', busy: () => formBusy && !panel.hidden, inertEls: () => [frame, hbarEl],
       anchor: () => { if (panel.hidden || ghost) return null; const r = panel.getBoundingClientRect(); return { left: r.left, top: r.top, width: r.width, height: r.height, top0: chromeAt.top, bottom0: chromeAt.bottom, modal: true }; } });
     return NT; }).catch(e => { console.warn('[eden-map] 通知层加载失败', e); return null; });
   // 查看器发来的通知（嵌入时它不自己画）：按钮点了回传 eden-map:notice-act
@@ -973,15 +979,25 @@
     hostToast(UL === 'en' ? `Map self-check: ${warns.length} item(s) need attention` : `地图自检发现 ${warns.length} 项需要注意`, warns.map(w => '⚠ ' + w[L]), 0, null, false,
       { key: 'selfcheck', actions: [{ label: UL === 'en' ? 'View' : '查看', primary: true, run: () => openSettings('update') }] });
   }
-  function openSettings(page) { if (panel.hidden) { panel.hidden = false; loadViewer().then(() => setTimeout(() => post({ type: 'eden-map:settings', page }), alive ? 0 : 1500)); } else post({ type: 'eden-map:settings', page }); }
+  let setQ = null;   // 面板还没就绪时排队，eden-map:ready 后发（和 flyQ 一样）
+  function openSettings(page) { if (alive && !panel.hidden && !ghost) { post({ type: 'eden-map:settings', page }); return; } setQ = page; if (panel.hidden || ghost) fab.click(); else if (alive) { post({ type: 'eden-map:settings', page }); setQ = null; } }
+  // 通知层模块加载失败时的兜底（强制更新等不能悄悄丢）：最简单的一张卡，文字 + 自带按钮 + ×（P0 无 ×）
+  function fallbackToast(title, lines, extra, o = {}) {
+    const t = pdoc.createElement('div'); t.className = 'em-ctoast'; t.setAttribute('role', o.level === 0 ? 'alertdialog' : 'status');
+    t.style.cssText = 'position:fixed;left:50vw;top:12px;transform:translateX(-50%);z-index:30003;max-width:min(420px,92vw);box-sizing:border-box;padding:10px 14px;border-radius:12px;background:var(--em-bg);color:var(--em-ink);border:1px solid var(--em-line-2);font:13px/1.5 var(--em-font)';
+    const b = pdoc.createElement('b'); b.textContent = title; t.append(b); for (const l of lines || []) { const d = pdoc.createElement('div'); d.textContent = l; t.append(d); }
+    if (o.level !== 0) { const x = pdoc.createElement('button'); x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', UI[UL].close); x.onclick = () => t.remove(); t.append(x); }
+    extra?.(t); root.appendChild(t); return t;
+  }
   // 宿主页提示（UI v2：全部进唯一通知层 ui/notice.mjs）。upd：更新提示（P1，力度 force 时 P0）；其余 P1。extra(el) 可以往里加链接、按钮
-  let updEl = null;
+  let updEl = null; const ntTimers = {};
   function hostToast(title, lines, ms = 12000, extra = null, upd = false, o = {}) {
-    if (!NT) { ntReady.then(n => { if (n && !dead) hostToast(title, lines, ms, extra, upd, o); }); return null; }
+    if (!NT) { ntReady.then(n => { if (dead) return; if (n) hostToast(title, lines, ms, extra, upd, o); else fallbackToast(title, lines, extra, o); }); return null; }
     const key = o.key || (upd ? 'upd' : 'toast'), level = o.level ?? 1;
+    clearTimeout(ntTimers[key]);
     const t = NT.push({ key, level, title, lines, actions: o.actions, build: extra ? el => extra(el) : null, ms: level === 2 ? ms || undefined : undefined });
     if (upd) updEl = t; else toastEl = t;
-    if (ms && level !== 2) setTimeout(() => NT?.get(key) === t && NT.remove(key), ms);
+    if (ms && level !== 2) ntTimers[key] = setTimeout(() => { delete ntTimers[key]; if (NT?.get(key) === t) NT.remove(key); }, ms);
     return t;
   }
   // ---------------- 自动检查更新（设置「自动检查更新」默认开，存本机 edenMapAutoCheck）----------------
@@ -1120,7 +1136,7 @@
 
   // 脚本被关闭或重载时清理注入的元素
   const cleanup = () => { if (dead) return; dead = true; unlisten(); clearInterval(pollT); clearInterval(updT); cgObs.disconnect(); acuObs.disconnect(); try { dbApiRef?.unregisterTableUpdateCallback?.(dbCb); } catch (e) {} clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); clearTimeout(restT); clearTimeout(ghostT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
-    if (window.parent.EdenMap === api) delete window.parent.EdenMap; toastEl?.remove(); updEl?.remove(); splash?.el?.remove(); try { NT?.destroy(); } catch (e) {}
+    if (window.parent.EdenMap === api) delete window.parent.EdenMap; toastEl?.remove(); updEl?.remove(); splash?.el?.remove(); try { NT?.destroy(); barRO?.disconnect(); } catch (e) {}
     if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup;
     try { window.parent.__edenMapLoads = (window.parent.__edenMapLoads || []).filter(u => u !== SELF); } catch (e) {} };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）
   window.parent.__edenMapCleanup = cleanup;

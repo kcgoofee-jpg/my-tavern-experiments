@@ -44,15 +44,21 @@ ${root} .nt-p0 .nt-item .nt-x{display:none}
 ${root} .nt-p0.nt-top{align-items:start}
 @media (prefers-reduced-motion:no-preference){${root} .nt-item{animation:nt-in .2s cubic-bezier(.2,.8,.2,1)}}
 @keyframes nt-in{from{opacity:0;transform:translateY(4px)}}
-@media (max-width:640px){${root} .nt-acts button{height:44px}}
+@media (max-width:640px),(pointer:coarse){${root} .nt-acts button,${root} .nt-more button{height:44px}}
 `;
 const detach = n => n?.parentNode?.removeChild(n);   // 调用方可以把 el.remove 改成「从队列移除」，这里不走它
-export function createNotices({ doc = document, mount, root = 'body', baseCls = '', anchor = () => null, busy = () => false, en = false, onChange } = {}) {
+export function createNotices({ doc = document, mount, root = 'body', baseCls = '', anchor = () => null, busy = () => false, en = false, onChange, inertEls } = {}) {
   if (!doc.getElementById('nt-css-' + baseCls)) { const s = doc.createElement('style'); s.id = 'nt-css-' + baseCls; s.textContent = CSS(root); (doc.head || mount).appendChild(s); }
   const layer = doc.createElement('div'); layer.className = 'nt-layer'; mount.appendChild(layer);
   const p0 = doc.createElement('div'), p1 = doc.createElement('div'), p2 = doc.createElement('div');
   p0.className = 'nt-p0'; p1.className = 'nt-p1'; p2.className = 'nt-p2'; p2.setAttribute('aria-live', 'polite');
   layer.append(p1, p2, p0);
+  // P0 打开时：背景 inert（查看器 / 面板），Tab 限在卡片里，关闭后焦点回原处（§3、§10.9）
+  let p0Ret = null, inertOn = false, dead = false;
+  const setInert = on => { inertOn = on; for (const n of (typeof inertEls === 'function' ? inertEls() : [])) { try { n.inert = on; } catch (e) {} } };
+  p0.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); return; } if (e.key !== 'Tab') return;
+    const f = [...p0.querySelectorAll('button, a[href]')]; if (!f.length) return; const i = f.indexOf(doc.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && (i === f.length - 1 || i < 0)) { e.preventDefault(); f[0].focus(); } });
   const items = new Map(); let p2Cur = null, p2T = 0, p2Left = 0, p2Start = 0, p1Open = false, lang = en;
   const txt = (zh, e) => (lang ? e : zh);
   function place() {
@@ -84,7 +90,7 @@ export function createNotices({ doc = document, mount, root = 'body', baseCls = 
     if (it.level === 2) {   // 悬停 / 聚焦时暂停计时
       const pause = () => { if (p2Cur !== it || !p2T) return; clearTimeout(p2T); p2T = 0; p2Left = Math.max(1500, p2Left - (Date.now() - p2Start)); };
       const resume = () => { if (p2Cur !== it || p2T || d.matches(':hover') || d.contains(doc.activeElement)) return; p2Start = Date.now(); p2T = setTimeout(() => remove(it.key, 'timeout'), p2Left); };
-      d.addEventListener('pointerenter', pause); d.addEventListener('focusin', pause); d.addEventListener('pointerleave', resume); d.addEventListener('focusout', () => setTimeout(resume, 0));
+      d.addEventListener('pointerenter', pause); d.addEventListener('focusin', pause); d.addEventListener('pointerleave', resume); d.addEventListener('focusout', () => setTimeout(() => { if (!dead) resume(); }, 0));
     }
     return d;
   }
@@ -94,8 +100,8 @@ export function createNotices({ doc = document, mount, root = 'body', baseCls = 
     // P0：只显示最早的一个
     const top0 = z[0] || null;
     for (const i of z) if (i !== top0 && i.el.isConnected) detach(i.el);
-    if (top0 && !top0.el.isConnected) { p0.replaceChildren(top0.el); setTimeout(() => (top0.el.querySelector('.nt-pri') || top0.el.querySelector('button'))?.focus({ preventScroll: true }), 30); }
-    if (!top0) p0.replaceChildren();
+    if (top0 && !top0.el.isConnected) { p0.replaceChildren(top0.el); if (!p0Ret) p0Ret = doc.activeElement; setInert(true); setTimeout(() => (top0.el.querySelector('.nt-pri') || top0.el.querySelector('button'))?.focus({ preventScroll: true }), 30); }
+    if (!top0) { p0.replaceChildren(); if (p0Ret !== undefined && p0Ret !== null || inertOn) { setInert(false); const r = p0Ret; p0Ret = null; try { r?.isConnected && r.focus({ preventScroll: true }); } catch (e) {} } }
     p0.hidden = !top0;
     // P1：一条横幅 + 「还有 N 条」
     const ones = all.filter(i => i.level === 1);
@@ -137,6 +143,6 @@ export function createNotices({ doc = document, mount, root = 'body', baseCls = 
   const onResize = () => place(); doc.defaultView.addEventListener('resize', onResize);
   return {
     push, remove, refresh: render, has: k => items.has(k), get: k => items.get(k)?.el || null, list: () => [...items.values()].map(i => ({ key: i.key, level: i.level, title: i.title })),
-    setLang(e) { lang = !!e; render(); }, destroy() { doc.defaultView.removeEventListener('resize', onResize); layer.remove(); items.clear(); clearTimeout(p2T); }, layer,
+    setLang(e) { lang = !!e; render(); }, get blocking() { return !p0.hidden && !!p0.firstChild; }, destroy() { dead = true; setInert(false); doc.defaultView.removeEventListener('resize', onResize); layer.remove(); items.clear(); clearTimeout(p2T); }, layer,
   };
 }
