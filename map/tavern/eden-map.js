@@ -3,6 +3,7 @@
 // 注入酒馆页面：右下角悬浮按钮 + 地图面板；面板内用 srcdoc 加载 viewer.html（<base> 指回仓库，相对资源照常加载）。
 // 当前地点取 MVU 变量「世界.当前地点」，变量更新 / 切换聊天时推送给地图高亮。
 // 天城事态：从最近 80 楼原文解析事件标签（events.mjs，两种写法都认），推给地图落点；角色所在层的活跃事件压成一句注入给模型。
+// v0.9.3 MVU 联动（mvu.mjs）：只读 stat_data（世界时间、主角着装、在场人物）；自定义名称与用途存在聊天变量顶层键 eden_map（不进 stat_data，见 docs/content-compat.md）。
 (() => {
   const SELF = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 线路：地图的图片和数据可以走不同的 CDN 节点。gh 线路路径格式相同，只换域名；npm 线路路径不同（包名 / 版本 / files/map/），单独拼。本地测试地址不换
@@ -95,6 +96,8 @@
   #${ID} .em-bar .em-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
   #${ID} .em-bar, #${ID} .em-body { min-width: 0; }   /* 标题栏的长地点 / 线路按钮不再把面板撑出屏幕（E5 r2 P0：关闭按钮曾被推到 404–585 px） */
   #${ID} .em-bar .em-title { min-width: 0; }
+  #${ID} .em-bar .em-clock { flex: none; color: var(--em-muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: -4px; }
+  #${ID} .em-bar .em-clock[hidden] { display: none; }
   #${ID} .em-body { position: relative; min-height: 0; contain: strict; }
   #${ID} iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--em-bg); }
   /* 地图程序就绪前的加载遮罩（就绪后由地图自己显示瓦片进度） */
@@ -152,7 +155,7 @@
   <span class="em-badge" hidden></span>
 </button>
 <div class="em-panel" hidden>
-  <div class="em-bar"><b class="em-title">新历 2088</b><span class="em-here"></span><button class="em-line" title="切换加载线路"></button><button class="em-close" aria-label="关闭"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+  <div class="em-bar"><b class="em-title">新历 2088</b><span class="em-clock" hidden></span><span class="em-here"></span><button class="em-line" title="切换加载线路"></button><button class="em-close" aria-label="关闭"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
   <div class="em-body"><iframe class="em-frame" title="地图"></iframe><div class="em-load" hidden><div><span class="txt">加载地图 0%</span><div class="bar"><i></i></div><div class="hint"></div><div class="acts" hidden><button class="retry">重试</button><button class="swap">换线路</button></div></div></div>
     <div class="em-pick" hidden><div><h3>选择加载线路</h3><p>地图图片较多，按你的网络选一条更快的线路；之后可以点标题栏的「线路」切换</p><div class="row"></div></div></div></div>
 </div>`;
@@ -160,7 +163,7 @@
 
   const fab = root.querySelector('.em-fab'), panel = root.querySelector('.em-panel'), frame = root.querySelector('.em-frame');
   const hereEl = root.querySelector('.em-here'), loadEl = root.querySelector('.em-load'), titleEl = root.querySelector('.em-title');
-  const pickEl = root.querySelector('.em-pick'), lineBtn = root.querySelector('.em-line');
+  const pickEl = root.querySelector('.em-pick'), lineBtn = root.querySelector('.em-line'), clockEl = root.querySelector('.em-clock');
   lineBtn.hidden = !swappable;
   // 标题栏跟着地图的语言与深浅主题（地图在 srcdoc 里，与酒馆页同源，设置存在同一个 localStorage；切换时地图发 eden-map:state {lang, theme}）
   const UI = { zh: { title: '新历 2088', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%', open: '打开世界地图', fab: '世界地图' },
@@ -304,7 +307,7 @@
   const onMsg = e => {
     if (e.source !== frame.contentWindow) return;
     if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
-    if (e.data?.type === 'eden-map:ready') { alive = true; knowRooms(); sendCheck(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:ready') { alive = true; sentClock = sentOutfit = null; knowRooms(); sendCheck(); sendCustom(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
     if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
     if (e.data?.type === 'eden-map:state') {
@@ -316,6 +319,10 @@
     if (e.data?.type === 'eden-map:emit' && e.data.ev === 'map') emit('map', e.data.data);   // 本机扩展：切图（E6）
     if (e.data?.type === 'eden-map:build') { viewerVer = e.data.version || null; if (checkFacts) finishCheck(); }   // 地图的版本（data/build.json）→ 自检比对
     if (e.data?.type === 'eden-map:update-now') switchVersion();   // 自检里点了「本次切换到新版本」
+    // v0.9.3 自定义（地图设置里的「自定义」一栏）：地图只发请求，数据由这里写进聊天变量后再推回去
+    if (e.data?.type === 'eden-map:custom-set') api.setCustom(e.data.key, e.data.patch || {});
+    if (e.data?.type === 'eden-map:custom-reset') api.removeCustom(e.data.key);
+    if (e.data?.type === 'eden-map:custom-sync') api.setWorldbookSync(!!e.data.on);
   };
   window.parent.addEventListener('message', onMsg);
   function getHere() {
@@ -340,7 +347,23 @@
     if (!panel.hidden && alive) post({ type: 'eden-map:chat', id: chatId() });   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
     if (!panel.hidden && alive && here !== sent) { sent = here; post({ type: 'eden-map:here', value: here, bg: ghost }); }
     if (here !== emHere) { emHere = here; emit('here', { value: here }); }
+    pushMvu();
   }
+  // ---------------- v0.9.3：世界时间（标题栏 + 地图夜色）与主角着装（本人地点卡）；只读 stat_data，缺字段就不显示 ----------------
+  let MV = null, clockSig = null, outfitSig = null, clock = null, outfitNow = null;
+  import(new URL('mvu.mjs', import.meta.url).href).then(m => { MV = m; push(); loadCustom(); }).catch(e => console.warn('[eden-map] MVU 模块加载失败', e));
+  function pushMvu() {
+    if (!MV) return;
+    const st = mvuStat(), w = MV.worldTime(st), lb = MV.clockLabel(w);
+    clock = { ...w, ...lb, night: MV.isNight(w) };
+    const cs = JSON.stringify(clock);
+    if (cs !== clockSig) { clockSig = cs; clockEl.hidden = !lb.short; clockEl.textContent = lb.short; clockEl.title = lb.full; if (lb.full) clockEl.setAttribute('aria-label', lb.full); emit('clock', { ...clock }); sentClock = null; }
+    if (alive && sentClock !== clockSig) { sentClock = clockSig; post({ type: 'eden-map:clock', ...clock }); }
+    const o = MV.outfit(st), os = JSON.stringify(o);
+    if (os !== outfitSig) { outfitSig = os; outfitNow = o; emit('outfit', { items: o ? { ...o } : null, text: MV.outfitText(o) }); sentOutfit = null; }
+    if (alive && sentOutfit !== outfitSig) { sentOutfit = outfitSig; post({ type: 'eden-map:outfit', items: outfitNow, text: MV.outfitText(outfitNow) }); }
+  }
+  let sentClock = null, sentOutfit = null;
   let pushT = 0;
   const pushSoon = (ms = 150) => { clearTimeout(pushT); pushT = setTimeout(push, ms); };
 
@@ -373,7 +396,8 @@
     const fresh = events.filter(e => e.last > seen && e.tier !== 'fade').length;
     badge.hidden = !fresh; badge.textContent = fresh > 9 ? '9+' : fresh;
     if (fresh) tipOnce();
-    inject([summarize(events, layerOf(getHere())), CHM ? CHM.summarizeChars(chars) : ''].filter(Boolean).join('\n'));
+    customTags(msgs);
+    inject([summarize(events, layerOf(getHere())), CHM ? CHM.summarizeChars(chars) : '', MV && custom ? MV.summarizeCustom(custom) : ''].filter(Boolean).join('\n'));
     if (!panel.hidden && alive) sendEvents();
     if (subs.events.size) { const sig = floorNow + '|' + events.map(e => e.id + ':' + e.last + ':' + e.tier).join(); if (sig !== emEvSig) { emEvSig = sig; emit('events', { items: events.map(e => ({ ...e })), floor: floorNow, hereLayer: layerOf(here) }); } }
   }
@@ -411,7 +435,7 @@
   // 自定义叫法按聊天分开存（edenMap:chat:<聊天 id>:custom），拿不到聊天 id 时存全局 edenMap:custom。不联网、不上传、不进地址。
   // 宿主页上的方法都返回 Promise。on('here' | 'events' | 'map', fn)：here / events 由本脚本发（面板关着也发），map 由地图发。
   const chatId = () => { try { return String(SillyTavern.getContext().chatId || ''); } catch (e) { return ''; } };
-  const subs = { here: new Set(), events: new Set(), map: new Set(), characters: new Set() };
+  const subs = { here: new Set(), events: new Set(), map: new Set(), characters: new Set(), outfit: new Set(), clock: new Set(), custom: new Set() };
   let emHere = null, emEvSig = '', roomsKnown = null, HXm = null;
   function emit(ev, data) { for (const f of subs[ev]) { try { f(data); } catch (e) { console.warn('[EdenMap]', e); } } }
   const hx = () => (HXm ??= import(SELF + 'here.mjs'));
@@ -419,11 +443,104 @@
   const inner = () => { if (!alive) return null; try { const w = frame.contentWindow; if (!w?.EdenMap) return null; w.__edenMapChat?.(chatId()); return w.EdenMap; } catch (e) { return null; } };
   function knowRooms() { try { const r = inner()?.getRooms().rooms; if (r?.length) roomsKnown = r; } catch (e) {} }
   const store = () => { try { return window.parent.localStorage; } catch (e) { return null; } };
+
+  // ---------------- v0.9.3 自定义名称与用途（聊天变量 eden_map.自定义；酒馆助手没有变量接口时退回本机 localStorage） ----------------
+  // 不写进 stat_data：卡的 MVU zod 结构会丢掉未知键。删除一项要整块替换，所以写入优先用 updateVariablesWith / replaceVariables（insertOrAssignVariables 是深合并，删不掉键）。
+  // 剧情标签 ⌖改名 / ⌖用途：只处理比 eden_map.标签楼 新的楼层，处理后记下楼层；每条在地图的事态横条上方提示一次。
+  // 「同步到世界书」默认关；打开时才建世界书「伊甸地图·自定义」（一个常驻条目），当前聊天没有绑定聊天世界书时绑定到这个聊天。
+  let custom = null, tagFloor = -1, customChat = null, toastQ = [], regP = null;
+  const varsOk = () => fnOk('getVariables') && (fnOk('updateVariablesWith') || fnOk('replaceVariables') || fnOk('insertOrAssignVariables'));
+  const lsCustomKey = () => 'edenMap:chat:' + (chatId() || '') + ':custom2';
+  function readVars() {
+    if (varsOk()) { try { const v = getVariables({ type: 'chat' })?.[MV.VAR_ROOT]; return v && typeof v === 'object' ? v : {}; } catch (e) {} }
+    try { return JSON.parse(localStorage.getItem(lsCustomKey()) || '{}') || {}; } catch (e) { return {}; }
+  }
+  async function writeVars(root) {
+    if (varsOk()) {
+      try {
+        if (fnOk('updateVariablesWith')) await updateVariablesWith(v => { v[MV.VAR_ROOT] = root; return v; }, { type: 'chat' });
+        else if (fnOk('replaceVariables')) { const all = { ...(getVariables({ type: 'chat' }) || {}) }; all[MV.VAR_ROOT] = root; await replaceVariables(all, { type: 'chat' }); }
+        else await insertOrAssignVariables({ [MV.VAR_ROOT]: root }, { type: 'chat' });
+        return true;
+      } catch (e) { console.warn('[eden-map] 写聊天变量失败，改存本机', e); }
+    }
+    try { localStorage.setItem(lsCustomKey(), JSON.stringify(root)); return true; } catch (e) { return false; }
+  }
+  const saveRoot = () => writeVars({ 自定义: custom, 标签楼: tagFloor });
+  // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
+  async function migrateOld() {
+    const H = await hx().catch(() => null), st = store(); if (!H || !st) return false;
+    let any = false;
+    for (const k of [H.customKey(chatId()), H.customKey('')]) {
+      const rooms = (() => { try { return JSON.parse(st.getItem(k) || 'null')?.rooms || null; } catch (e) { return null; } })();
+      if (!rooms || !Object.keys(rooms).length) continue;
+      const r = MV.migrateRooms(custom, rooms); custom = r.custom; any = true;
+      if (k !== H.customKey('')) { try { st.setItem(k + '.migrated', st.getItem(k)); st.removeItem(k); } catch (e) {} }
+    }
+    return any;
+  }
+  async function loadCustom() {
+    if (!MV) return;
+    const id = chatId(); customChat = id;
+    const v = readVars(); custom = MV.normCustom(v.自定义); tagFloor = Number.isFinite(+v.标签楼) && v.标签楼 !== null ? +v.标签楼 : -1;
+    if (await migrateOld()) await saveRoot();
+    if (customChat !== id) return;
+    customChanged(false);
+  }
+  function customChanged(save = true) {
+    if (save) saveRoot();
+    sendCustom(); emit('custom', MV.normCustom(custom)); recomputeSoon(50);
+    if (custom?.同步世界书) syncWb().catch(e => console.warn('[eden-map] 同步世界书失败', e));
+  }
+  function sendCustom() { if (alive && custom) post({ type: 'eden-map:custom', data: custom, vars: varsOk(), wb: wbOk() }); flushToasts(); }
+  const wbOk = () => fnOk('createOrReplaceWorldbook') || fnOk('createWorldbook');
+  let wbState = '';
+  async function syncWb() {
+    if (!wbOk()) { wbState = 'noapi'; return false; }
+    const content = MV.wbContent(custom);
+    const entry = { name: MV.WB_ENTRY, enabled: !!content, strategy: { type: 'constant', keys: [] }, position: { type: 'after_character_definition', order: 903 }, content: content || '（空）',
+      recursion: { prevent_incoming: true, prevent_outgoing: true } };
+    if (fnOk('createOrReplaceWorldbook')) await createOrReplaceWorldbook(MV.WB_NAME, [entry]); else await createWorldbook(MV.WB_NAME, [entry]);
+    // 绑定：当前聊天没有聊天世界书时绑定到这个聊天；已有别的就不动（在地图设置里提示手动启用）
+    let bound = false;
+    try { const cur = fnOk('getChatWorldbookName') ? getChatWorldbookName('current') : null;
+      if (cur === MV.WB_NAME) bound = true; else if (!cur && fnOk('rebindChatWorldbook')) { await rebindChatWorldbook('current', MV.WB_NAME); bound = true; } } catch (e) {}
+    if (!bound) try { bound = (fnOk('getGlobalWorldbookNames') && getGlobalWorldbookNames().includes(MV.WB_NAME)); } catch (e) {}
+    wbState = bound ? 'bound' : 'unbound'; sendCustom(); return true;
+  }
+  // 标签用到的「类」：人物栏里的名字 → 人物；庄园房间 / 区域（maps.json）→ 房间 / 区域；其余当地标
+  const reg = () => (regP ??= fetch(BASE + 'data/maps.json').then(r => r.ok ? r.json() : null).catch(() => null));
+  let regNow = null; reg().then(r => { regNow = r; });
+  // 注：reg() 用的是当前线路的 maps.json（与地图同一份）；取不到时一律当地标
+  function kindOf(key) {
+    if (chars.some(c => c.name === key)) return 'character';
+    const e = Object.values(regNow?.maps || {}).find(m => m.kind === 'estate');
+    if (e?.rooms?.includes(key)) return 'room'; if (e?.areas?.includes(key)) return 'area';
+    return 'landmark';
+  }
+  function customTags(msgs) {
+    if (!MV || !custom || customChat !== chatId()) return;
+    if (floorNow >= 0 && floorNow < tagFloor) tagFloor = floorNow;   // 删过楼：之后的新楼照常处理
+    const r = MV.applyTags(custom, msgs, tagFloor, kindOf);
+    if (r.last === tagFloor && !r.applied.length) return;
+    custom = r.custom; tagFloor = r.last;
+    if (r.applied.length) { toastQ.push(...r.applied.map(MV.tagToast)); customChanged(true); } else saveRoot();
+  }
+  function flushToasts() { if (!alive || !toastQ.length) return; post({ type: 'eden-map:toast', items: toastQ.splice(0) }); }
   const api = Object.freeze({
-    async setRoomAlias(name, room) { const v = inner(); if (v) return v.setRoomAlias(name, room); const H = await hx(), st = store(); return !!st && H.setRoomAlias(st, chatId(), name, room, roomsKnown); },
-    async removeRoomAlias(name) { const v = inner(); if (v) return v.removeRoomAlias(name); const H = await hx(), st = store(); return !!st && H.removeRoomAlias(st, chatId(), name); },
-    async getRooms() { const v = inner(); if (v) { const r = v.getRooms(); if (r.rooms?.length) roomsKnown = r.rooms; return r; }
-      const H = await hx(); return { rooms: roomsKnown ? [...roomsKnown] : [], alias: H.readCustom(store(), chatId()).rooms, chat: chatId() || null }; },
+    // v0.9.3 自定义名称与用途（聊天变量 eden_map.自定义）：key = 标准名（房间 / 区域 / 地标 / 人物）；patch = { name?, note?, kind? }，传 '' 清掉
+    async setCustom(key, patch = {}) { if (!MV || !custom) await loadCustom(); if (!MV) return false; await reg(); const k = String(key || '').trim(), r = MV.setCustom(custom, k, { ...patch, kind: patch.kind || custom.items[k]?.类 || kindOf(k) }); if (!r) return false; custom = r; customChanged(true); return true; },
+    async removeCustom(key) { if (!MV || !custom) await loadCustom(); if (!MV) return false; const r = MV.removeCustom(custom, MV.findKey(custom, key) || key); if (!r) return false; custom = r; customChanged(true); return true; },
+    async getCustom() { if (!MV || !custom) await loadCustom(); return { ...MV.normCustom(custom), storage: varsOk() ? 'chat' : 'local', worldbook: wbState || null }; },
+    async setWorldbookSync(on) { if (!MV || !custom) await loadCustom(); custom = { ...custom, 同步世界书: !!on }; customChanged(true); if (!on) wbState = ''; return true; },
+    // 旧名字保留（≤ 0.9.2）：房间叫法 = 该房间的自定义显示名
+    async setRoomAlias(name, room) { const rooms = roomsKnown || Object.values((await reg())?.maps || {}).find(m => m.kind === 'estate')?.rooms || null;
+      if (rooms && (!rooms.includes(String(room).trim()) || rooms.includes(String(name).trim()))) return false; return api.setCustom(room, { name, kind: 'room' }); },
+    async removeRoomAlias(name) { if (!MV || !custom) await loadCustom(); const k = MV?.findKey(custom, name); return !!k && k !== String(name).trim() && api.setCustom(k, { name: '' }); },
+    async getRooms() { if (!MV || !custom) await loadCustom(); const rooms = roomsKnown || Object.values((await reg())?.maps || {}).find(m => m.kind === 'estate')?.rooms || [];
+      return { rooms: [...rooms], alias: MV ? MV.aliasMap(custom, ['room']) : {}, chat: chatId() || null }; },
+    getOutfit: async () => ({ items: outfitNow ? { ...outfitNow } : null, text: MV ? MV.outfitText(outfitNow) : '' }),   // 主角着装（只读 MVU 主角.着装）
+    getClock: async () => (clock ? { ...clock } : null),   // 世界时间（只读 MVU 世界.当前日期 / 当前时刻 / 当日时段）
     // 人物头像（v0.9.2）：只存本机 localStorage（按聊天，拿不到聊天 id 时全局），不上传、不进地址；src = data:image/… 或 http(s) 图片地址
     async setAvatar(name, src) { const v = inner(); if (v) return v.setAvatar(name, src); const C = await chx(), st = store(); return !!st && C.setAvatar(st, chatId(), name, src); },
     async removeAvatar(name) { const v = inner(); if (v) return v.removeAvatar(name); const C = await chx(), st = store(); return !!st && C.removeAvatar(st, chatId(), name); },
@@ -478,12 +595,14 @@
       try { await Promise.race([waitGlobalInitialized('Mvu'), new Promise(r => setTimeout(r, 3000))]); } catch (e) {}
       let mvu = null;
       try { if (typeof Mvu !== 'undefined' && Mvu?.getMvuData) { const st = Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data;
-        mvu = { stat: !!st && typeof st === 'object', here: !!st && SC.getPath(st, SC.HERE_PATH) !== undefined, candidates: st ? SC.findPaths(st).filter(p => p !== SC.HERE_PATH) : [] }; } } catch (e) { mvu = { stat: false }; }
+        mvu = { stat: !!st && typeof st === 'object', here: !!st && SC.getPath(st, SC.HERE_PATH) !== undefined, candidates: st ? SC.findPaths(st).filter(p => p !== SC.HERE_PATH) : [],
+          fields: st && MV ? { present: !!MV.presentList(st), clock: !!MV.worldTime(st).time, outfit: MV.get(st, '主角.着装') !== undefined } : null }; } } catch (e) { mvu = { stat: false }; }
       const loads = [...new Set((window.parent.__edenMapLoads || []).filter(u => u !== SELF && u !== switchedFrom))];
       const ln = { swappable, name: (LINES.find(l => l.key === line) || {}).name || '',
         ok: !swappable ? null : lineP ? await lineP.then(ok => ok && fetchHtml().then(() => true, () => false), () => false) : html ? await html.then(() => true, () => false) : null };
       checkFacts = {
         api: { getChatMessages: fnOk('getChatMessages'), eventOn: fnOk('eventOn'), injectPrompts: fnOk('injectPrompts'), tavern_events: typeof tavern_events === 'object' },
+        vars: varsOk(), ejs: (() => { try { return typeof (window.parent.EjsTemplate || globalThis.EjsTemplate) === 'object'; } catch (e) { return false; } })(),
         mvu, dup: { others: loads, oldStyle, replaced: !root.isConnected }, line: ln, worldbook: await wbFacts(), version: { script: VER, viewer: viewerVer }, update: await updateFacts(),
       };
       finishCheck();
@@ -566,7 +685,7 @@
     try { await waitGlobalInitialized('Mvu'); eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, () => { pushSoon(); recomputeSoon(); }); } catch (e) {}   // MVU 人物表也会变（人物栏）
     eventOn(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     eventOn(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    eventOn(tavern_events.CHAT_CHANGED, () => { injected = null; loadSeen(); recomputeSoon(300); });
+    eventOn(tavern_events.CHAT_CHANGED, () => { injected = null; loadSeen(); custom = null; loadCustom().then(() => recomputeSoon(300)); });
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED']) if (tavern_events[k]) eventOn(tavern_events[k], () => recomputeSoon());   // 新楼、改楼、重 roll、删楼：重算
     if (tavern_events.GENERATION_AFTER_COMMANDS) eventOn(tavern_events.GENERATION_AFTER_COMMANDS, () => { clearTimeout(evT); recompute(); });   // 生成前同步一次，注入的是最新态势
     push(); loadSeen(); recompute();
