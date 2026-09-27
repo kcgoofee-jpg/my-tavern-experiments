@@ -206,8 +206,8 @@
   }
   #credit { position: absolute; right: 8px; top: 6px; z-index: 4; font-size: 10px; color: rgba(255,255,255,.55); text-shadow: 0 0 3px #000; pointer-events: none; }
   #credit:empty { display: none; }
-  /* 手机上署名只占一行，不再折成 3–4 行盖住缩放按钮（E4b R04） */
-  @media (max-width: 640px) { #credit { left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; color: rgba(255,255,255,.8); text-shadow: 0 0 3px #000, 0 0 2px #000; } }
+  /* 手机上署名只占一行、从左上角 + − ⌂ 右侧开始，不再盖住缩放按钮（E4b R04；用户实测修正） */
+  @media (max-width: 640px) { #credit { left: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; color: rgba(255,255,255,.8); text-shadow: 0 0 3px #000, 0 0 2px #000; } }
   /* 左下角：版本号在最下，状态行在它上方（原来两者叠在一起）；都加面板底，地图亮处也读得清（E4 N28） */
   #build { position: absolute; left: 6px; bottom: 6px; z-index: 4; font: 11px/1.4 ui-monospace, Menlo, monospace; color: var(--muted); background: var(--panel); border: 0; border-radius: 4px; padding: 1px 5px; cursor: pointer; }
   #build:hover { color: var(--ink); }

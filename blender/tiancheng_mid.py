@@ -87,8 +87,9 @@ for j in range(n):
 core_j = np.array([j for j, i in enumerate(idx) if city.b[i]['dk'] == 'core'], np.int64)
 if len(core_j):
     rk = np.argsort(np.argsort(tops[core_j])) / max(1, len(core_j) - 1)
-    cols[core_j] *= (1.08 * (.84 + .34 * rk ** 1.2))[:, None].astype(np.float32)
-CORE_SHADE = dict(lo=.5, span=.62, gamma=1.3, top=(1.06, 1.0, .9))
+    # A7：缩小看核心区仍偏暗、楼高层次弱——排名亮度拉开（矮楼 ×.74 → 最高 ×1.62），整体再提约 15%；退台曲线更陡（低退台更暗、顶级更亮更暖）
+    cols[core_j] *= (1.25 * (.55 + .95 * rk ** 1.5))[:, None].astype(np.float32)
+CORE_SHADE = dict(lo=.4, span=.9, gamma=1.15, top=(1.14, 1.05, .9))
 # A6 交界亮度过渡：各城区（远离交界处）屋面的平均亮度——核心区按真实楼屋面的实际色调折算（REAL_TONES × CORE_SHADE 顶级）——
 # 交界两侧约 120 m 内按宽过渡带的城区权重，把每栋楼的亮度往「混合后的目标亮度」拉，拼缝两边不再差一档。纯确定性。
 LUM = np.array([.2126, .7152, .0722], np.float32)
@@ -106,7 +107,7 @@ for j, i in enumerate(idx):
 tick('district roof luminance ' + ', '.join(f'{k} {v:.3f}' for k, v in DL.items()))
 for k_, (_, rough_, metal_) in enumerate(RCLS):
     sel = np.where(rcls == k_)[0]
-    if len(sel): city.buildings_mesh(f'city{k_}', idx[sel], ZG, tops[sel], cols[sel], td.city_mat(f'citymat{k_}', rough_, .018, 1.0 + .3 * (k_ == 0), metal_), shade=CORE_SHADE)
+    if len(sel): city.buildings_mesh(f'city{k_}', idx[sel], ZG, tops[sel], cols[sel], td.city_mat(f'citymat{k_}', rough_, .09, 1.0 + .3 * (k_ == 0), metal_), shade=CORE_SHADE)   # A7：AO 距离 2 m → 9 m：高楼脚下的矮楼顶、窄街更暗，楼高层次读得出
 kit = tc_city.roof_kit(city, idx, tops, cols, R, 'night', cap=.18)
 # 天窗（roof_kit 的玻璃块 + 中间一盏小灯）原来都在楼顶正中，整片街区看是一格一个亮点的点阵：挪到偏心的位置、大小不一，灯只留一部分、亮度不一
 _srng = np.random.default_rng(7105)
@@ -173,6 +174,88 @@ tick(f'roof equipment {len(EQ)}, tanks {len(WT)}, gardens {len(GARD)}, helipads 
 tk = [t for t in city.trees if not any(z(t[0], t[1]) if callable(z) else ((z[1] < t[0] < z[3] and z[2] < t[1] < z[4]) if z[0] == 'rect' else ((t[0] - z[0]) / z[2]) ** 2 + ((t[1] - z[1]) / z[3]) ** 2 < 1) for z in ZONES)]
 tc.ico_mesh('trees', [(x, y, ZG + .004 + r * .55, r) for x, y, r in tk], mat('treen', (.01, .018, .01), .9)); tick('city (night)')
 
+# ---------------- A7：九龙西段（布鲁克林 / 核心交界一侧）的空地补楼 ----------------
+# OSM 在这一段的楼少（立交、停车场、过渡带按密度渐变去掉的楼），缩小看是一大片黑地上撒满车灯。按旺角的街坊尺度在空地上补中低层楼：
+# 朝向跟最近的路、让开道路 / 地标 / 公园 / 已有的楼，按一层低频起伏成片地补（不是均匀铺满）。独立随机（7115），不动 R 与城市序列。
+_frng7 = np.random.default_rng(7115)
+_Pk = next(D['P'] for D in city.districts if D['kind'] == 'commercial')
+_rp, _rh = [], []
+for r in city.roads:
+    if r['c'] not in CAR or r['c'] == 'service': continue                 # 步道、停车场通道上可以盖楼（九龙的楼本来就压着小巷）
+    Q = r['p']
+    for u, v in zip(Q[:-1], Q[1:]):
+        nn = max(1, int(float(np.hypot(*(v - u))) / .03))
+        for t in range(nn + 1): _rp.append(u + (v - u) * t / nn); _rh.append(r['w'] / 2)
+_kr = KDTree(len(_rp))
+for i_, p_ in enumerate(_rp): _kr.insert((p_[0], p_[1], 0), i_)
+_kr.balance()
+_kb = KDTree(max(1, len(idx)))
+for j_, i_ in enumerate(idx): _kb.insert((city.b[i_]['cx'], city.b[i_]['cy'], 0), int(i_))
+_kb.balance()
+def _in_bld(x, y, pad=.03):
+    for _, bi, dd in _kb.find_range((x, y, 0), 1.2):
+        b_ = city.b[bi]; ow, od = b_['obb'][2], b_['obb'][3]
+        if dd < max(ow, od) / 2 + pad and (dd < min(ow, od) / 2 + pad or tc_city.point_in_poly(x, y, b_['p'])): return True
+    return False
+def _in_zone(x, y):
+    for z in ZONES:
+        if callable(z):
+            if z(x, y): return True
+        elif z[0] == 'rect':
+            if z[1] < x < z[3] and z[2] < y < z[4]: return True
+        elif ((x - z[0]) / z[2]) ** 2 + ((y - z[1]) / z[3]) ** 2 < 1.1: return True
+    return False
+_areas = [(q, (*q.min(0), *q.max(0))) for q in city.parks + city.water]
+_kcols = cols[[j for j, i in enumerate(idx) if city.b[i]['dk'] == 'commercial']]
+_Pc = next(D['P'] for D in city.districts if D['kind'] == 'core')
+_ccols = cols[[j for j, i in enumerate(idx) if city.b[i]['dk'] == 'core']]
+FP, FZ, FC, FEQ, FEQC, FEQR, FSG, FSGC, FSGR = [], [], [], [], [], [], [], [], []
+_occ7 = set(); from collections import Counter; _rj7 = Counter()
+# A7 第 2 轮：核心区一侧交界带（离 mid_hseam_y 约 100 m 内，过渡带按密度去掉了不少楼，缩小看是一条空荡的宽带）也补楼，
+# 颜色取核心区的屋面色，少量取九龙的（九龙的低层楼渗进核心区最后一排）。
+for gx in np.arange(-10.5, 15.2, .085):
+    for gy in np.arange(-9.4, -1.6, .085):
+        x, y = gx + _frng7.uniform(-.025, .025), gy + _frng7.uniform(-.025, .025)
+        in_k = tc_city.point_in_poly(x, y, _Pk)
+        if in_k:
+            if x > 2.0 or tc_city.sdist(x, y, _Pk) < .16: continue
+            patch = .5 + .5 * math.sin(x * 1.7 + 1.3) * math.cos(y * 2.1 - .4) + .25 * math.sin(x * 4.3 - y * 3.1)
+            if _frng7.random() > min(1.0, max(0.0, patch + .35)) * (1 - tc_city._ss((x - .5) / 1.5)): continue
+        else:
+            if not tc_city.point_in_poly(x, y, _Pc) or tc_city.sdist(x, y, _Pc) < .14 or y - tc_city.mid_hseam_y(x) > 1.0: continue
+            if _frng7.random() > .8 * (1 - tc_city._ss((y - tc_city.mid_hseam_y(x) - .4) / .6)): continue
+        g = (round(x / .085), round(y / .085))
+        if g in _occ7 or _in_zone(x, y): _rj7['zone'] += 1; continue
+        co_, ri, rd = _kr.find((x, y, 0)); j2 = min(ri + 1, len(_rp) - 1)
+        w_, d_ = float(np.clip(_frng7.lognormal(math.log(.085), .3), .045, .17)), float(np.clip(_frng7.lognormal(math.log(.07), .25), .04, .12))
+        if rd < _rh[ri] + .035: _rj7['road'] += 1; continue
+        w_, d_ = w_ * 1.45, d_ * 1.4                                          # 旺角的街坊楼：比原来的尺寸大一号
+        if any(b0[0] - .05 < x < b0[2] + .05 and b0[1] - .05 < y < b0[3] + .05 and tc_city.point_in_poly(x, y, q) for q, b0 in _areas): continue
+        ang = math.atan2(_rp[j2][1] - _rp[ri][1], _rp[j2][0] - _rp[ri][0]) + _frng7.normal(0, .04); cs, sn = math.cos(ang), math.sin(ang)
+        corners = [(x + u * cs - v * sn, y + u * sn + v * cs) for u, v in ((-w_ / 2, -d_ / 2), (w_ / 2, -d_ / 2), (w_ / 2, d_ / 2), (-w_ / 2, d_ / 2))]
+        if _in_bld(x, y) or any(_in_bld(cx_, cy_, .015) for cx_, cy_ in corners): _rj7['bldg'] += 1; continue
+        if any(_kr.find((cx_, cy_, 0))[2] < _rh[_kr.find((cx_, cy_, 0))[1]] + .01 for cx_, cy_ in corners): _rj7['road'] += 1; continue
+        for di_ in (-1, 0, 1):
+            for dj_ in (-1, 0, 1): _occ7.add((g[0] + di_, g[1] + dj_))
+        h_ = float(np.clip(_frng7.lognormal(math.log(.45), .45), .15, 1.3))
+        FP.append(np.array(corners, np.float32)); FZ.append(ZG + h_)
+        _src = _kcols if (in_k or _frng7.random() < .25) else _ccols
+        FC.append(np.clip(_src[_frng7.integers(len(_src))] * _frng7.uniform(.8, 1.15), .02, 1))
+        for _ in range(int(_frng7.integers(0, 3))):                          # 屋顶设备
+            u_, v_ = _frng7.uniform(-.3, .3) * w_, _frng7.uniform(-.3, .3) * d_; s_ = _frng7.uniform(.008, .02)
+            FEQ.append((x + u_ * cs - v_ * sn, y + u_ * sn + v_ * cs, s_, s_ * _frng7.uniform(.7, 1.4), ZG + h_, ZG + h_ + _frng7.uniform(.005, .015))); FEQR.append(ang); FEQC.append(np.array(FC[-1]) * 1.3)
+        if _frng7.random() < (.35 if in_k else .1):                           # 临街一侧一两块小招牌（暗、短）
+            side = 1 if (x - co_[0]) * -sn + (y - co_[1]) * cs < 0 else -1
+            for _ in range(int(_frng7.integers(1, 3))):
+                u_ = _frng7.uniform(-.4, .4) * w_; v_ = side * (d_ / 2 + .008); z_ = ZG + _frng7.uniform(.05, max(.06, h_ - .03))
+                FSG.append((x + u_ * cs - v_ * sn, y + u_ * sn + v_ * cs, float(np.clip(_frng7.lognormal(math.log(.02), .4), .008, .045)), .012, z_, z_ + .003)); FSGR.append(ang)
+                FSGC.append(np.array(NEON[_frng7.choice(4, p=NEON_P)]) * _frng7.uniform(.25, .7))
+if FP:
+    tc_city.poly_prisms('kowloon_fill', FP, np.full(len(FP), ZG, np.float32), np.array(FZ, np.float32), np.array(FC, np.float32).reshape(-1, 3), td.city_mat('kfillmat', .7, .018, 1.2, .1))
+    if FSG: tc.box_mesh('kowloon_fill_signs', FSG, np.array(FSGC, np.float32).reshape(-1, 3), emit_mat('kfsigns', None, 4.0 * GLOW), rot=np.array(FSGR, np.float32))
+    tc.box_mesh('kowloon_fill_eq', FEQ, np.array(FEQC, np.float32).reshape(-1, 3), td.city_mat('kfilleq', .6, .01, 1.2, .2), rot=np.array(FEQR, np.float32))
+tick(f'kowloon west fill: {len(FP)} buildings, {len(FSG)} signs, rejected {dict(_rj7)}')
+
 # ---------------- 商业街：OSM 的主干道（干线、次干线、支线）就是霓虹走廊 ----------------
 # 霓虹、全息广告、车流、溢光都向它们聚集（真实城市的夜景是一条条亮街，不是均匀撒点）
 CORR = {'trunk', 'primary', 'secondary', 'tertiary'}
@@ -180,7 +263,7 @@ kd_c = city.road_kd(CORR)
 def corr_near(x, y): co_, _, d = kd_c.find((x, y, 0)); return co_, d
 # 城区决定夜景气质：核心区（曼哈顿中城）霓虹克制、楼里透出暖光；商业区（旺角）霓虹最密；外围（布鲁克林）几乎没有霓虹
 NEON_DF = {'core': .12, 'commercial': 1.0, 'outer': .012}
-TRAFFIC_DF = {'core': .9, 'commercial': 1.0, 'outer': .35}
+TRAFFIC_DF = {'core': .9, 'commercial': 1.0, 'outer': .18}          # A7：悬浮轨道是主要公共交通——外围居住区车很少
 # 交界不一刀切：按到各城区多边形的有向距离做 smoothstep 权重（交界处各半，往里 75 m 渐变到纯色），按位置缓存
 # A6：九龙东侧（约 x = 10.5）是旺角街网里一条笔直的南北向大路，路东是公园、楼稀，霓虹在这条直线上戛然而止。
 # 霓虹密度按一条起伏的线（确定性正弦）在路西约 100 m 内渐弱，让熄灭的边缘不贴着这条直路。
@@ -195,11 +278,18 @@ def dval(x, y, tab): return sum(v * tab[k] for k, v in dmix(x, y))
 def corr_w(x, y): return math.exp(-corr_near(x, y)[1] / .2)
 def kow_east(x, y): return .3 + .7 * _ss((10.2 + .45 * math.sin(y * 1.9 + .4) + .2 * math.sin(y * 4.3 + 2.1) - x) / 1.1 + .5)
 def glow_w(x, y): return corr_w(x, y) * (.55 + .45 * tc.district(x, y)) * dval(x, y, NEON_DF) * kow_east(x, y)
+# A7：核心 / 九龙交界两侧约 120 m 内（一条曼哈顿东西向干道 + 交界大道 + 九龙北缘的几条路挤在一起），车灯、路灯叠成一条横向亮带；
+# 九龙西段（布鲁克林交界一侧的立交与空地）车流也偏密。按到交界曲线的距离与西段权重压低车流与路灯。纯确定性。
+def seam_quiet(x, y):
+    q = .12 + .88 * _ss((abs(y - tc_city.mid_hseam_y(x)) - .2) / 1.4) if x > tc_city._CW[0] - .5 else 1.0
+    if dval(x, y, {'core': 0, 'commercial': 1, 'outer': 0}) > .3:
+        q *= .28 + .72 * _ss((x + 1.5) / 3.0)                       # 九龙西段（x < 约 0）车少大半
+    return q
 
 # ---------------- 街道：路灯（商业街亮、背街暗）、标线、车流（车头白、车尾红）----------------
 # A6：原来沿每条路两侧每 12 m 一盏，整张图是一排排等距的点阵。改为 tc_city.street_lamps：按路级别定间距（干道两侧错开 27–30 m，
 # 支路单侧 34–50 m，隔一段换边），间距抖动，路口转角补灯。独立随机（7110）。
-_lp = city.street_lamps(np.random.default_rng(7110), CAR, side_offset=.008)
+_lp = city.street_lamps(np.random.default_rng(7110), CAR, side_offset=.008, jit=.38, min_sep=.13, corner=.22)   # 路口转角补灯少一些（原来每个路口一颗亮珠）   # A7：间距抖动加大、分幅干道的平行两排去重
 lamps = [(x, y, .01, .01, ZG + .006, ZG + .008) for x, y, *_ in _lp]
 lw = np.array([max(glow_w(l[0], l[1]), .5 * dval(l[0], l[1], {'core': 1, 'commercial': 0, 'outer': 0})) for l in lamps])   # 核心区的街灯也亮
 # 路灯（A3）：不再是两排等距的白点——按道路等级分亮度与色温（干道 LED 偏白、次干道暖白、居住街钠灯暖黄且暗、小巷稀少），
@@ -210,15 +300,24 @@ LAMP_TIER = {'trunk': ('#fff2e2', 1.0, .92), 'primary': ('#fff2e2', 1.0, .92), '
 SL, SLC = [], []
 for (x, y, ang, c, _w), l, wv in zip(_lp, lamps, lw):
     col_, k_, keep_ = LAMP_TIER.get(c, ('#ffcf96', .4, .6))
-    if _lrng2.random() > .55 + .45 * keep_: continue                  # A6：间距已按路级别拉开，这里只再缺少量
+    if _lrng2.random() > .45 + .45 * keep_: continue                  # A6：间距已按路级别拉开，这里只再缺少量（A7 再缺约一成）
     s_ = _lrng2.normal(0, .025); x, y = x + s_ * math.cos(ang), y + s_ * math.sin(ang)
     kk = 1.25 * k_ * (1.0 if wv > .35 else .45) * _lrng2.uniform(.55, 1.1) * (.2 if _lrng2.random() < .04 else 1)   # 商业街 / 核心区亮，背街暗；个别灯快坏了
+    kk *= seam_quiet(x, y)                                                  # A7：交界亮带压暗
     SL.append((x, y, .01, .01, ZG + .006, ZG + .008)); SLC.append(np.array(srgb(col_)) * kk)
 tc.box_mesh('streetlights', SL, np.array(SLC, np.float32).reshape(-1, 3), emit_mat('streetglow', None, 3.5 * GLOW))
+# A7：路灯的地面光池——灯下一小片（半径 4–8 m）渐隐的暖光，路面与人行道被照亮，而不是只有一个亮点。独立随机（7113）。
+_plr = np.random.default_rng(7113)
+POOLS = [(x, y, ZG + .0056, (.045 + .04 * min(1.0, float(np.max(c)) / .9)) * _plr.uniform(.75, 1.3), np.asarray(c) / max(float(np.max(c)), 1e-6) * min(1.0, float(np.max(c))))
+         for (x, y, *_), c in zip(SL, SLC) if float(np.max(c)) > .08]
+td.glow_pools('lamp_pools', POOLS, .13 * GLOW)
 mb, mr, mc = city.road_marks(ZG + .0045, color=(.3, .3, .28)); tc.box_mesh('road_marks', mb, mc, td.city_mat('markmat', .6, ao=0), rot=mr)
 # A6：车流改 tc_city.traffic2——按路级别、城区、每条路的繁忙度（约四分之一几乎没车）定密度，成队 + 大间隙，交叉口前排队。独立随机（7111）。
-cars, crot, cdir, ccol = city.traffic2(np.random.default_rng(7111), ZG + .004, 3.2, weight=lambda x, y: .1 + .9 * corr_w(x, y) * dval(x, y, TRAFFIC_DF))
+cars, crot, cdir, ccol = city.traffic2(np.random.default_rng(7111), ZG + .004, 2.1, weight=lambda x, y: .1 + .9 * corr_w(x, y) * dval(x, y, TRAFFIC_DF), scale=lambda x, y: seam_quiet(x, y) ** 1.6)   # A7：总量约减三成（悬浮轨道为主），交界带再压   # A7：交界与九龙西段车少
 tc.box_mesh('cars', cars, ccol * .35, tc.vcol_mat('carmat', .25, .6), rot=crot)
+# A7 第 3 轮：交界带（含九龙西段的立交）每条路的密度已压到很低，但路多、车道多，缩小看仍是一片车灯——再按 seam_quiet 随机去掉一部分车。独立随机（7118）。
+_cq = np.random.default_rng(7118); _ck = np.array([_cq.random() < min(1.0, seam_quiet(float(c[0]), float(c[1])) / .45) for c in cars], bool)
+cars, crot, cdir, ccol = cars[_ck], crot[_ck], cdir[_ck], ccol[_ck]
 hb, tb, lr = td.car_lights(cars, cdir)
 tc.box_mesh('headlights', hb, np.tile(srgb('#fff4e0'), (len(hb), 1)), emit_mat('head', None, 3.5 * GLOW), rot=lr)
 tc.box_mesh('taillights', tb, np.tile(srgb('#ff2a1a'), (len(tb), 1)), emit_mat('tail', None, 3.0 * GLOW), rot=lr)
@@ -323,7 +422,19 @@ for j, (x, y, t) in enumerate(tall):
         break
 if bridges:
     tc.box_mesh('skybridges', bridges, np.full((len(bridges), 3), .05), tc.vcol_mat('bridgemat', .4, .6), rot=np.array(brot))
-    tc.box_mesh('skybridge_lines', blines, np.array([CYAN if R.random() < .6 else PINK for _ in blines]), emit_mat('bridgeglow', None, 1.2 * GLOW), rot=np.array(brot))
+    # A7：原来整条天桥一根发光线（长到 45 m），九龙里读成一道道斜长的激光线。改成连廊玻璃里透出的几格暖白窗光（短、暗、有缺），
+    # 霓虹色只留给少数、且只在短连廊上。R 的调用次数不变（颜色照取）；窗格用独立随机（7114）。
+    _brng = np.random.default_rng(7114); bl2, bc2, br2 = [], [], []
+    bcol = [CYAN if R.random() < .6 else PINK for _ in blines]
+    for (mx, my, L, _w, z0, z1), c, a in zip(blines, bcol, brot):
+        neon = L < .28 and _brng.random() < .25
+        nseg = max(1, int(L / .05)); ca_, sa_ = math.cos(a), math.sin(a)
+        for k in range(nseg):
+            if _brng.random() < .45: continue
+            t = (k + .5) / nseg - .5; px_, py_ = mx + ca_ * t * L, my + sa_ * t * L
+            bl2.append((px_, py_, L / nseg * .55, .003, z0, z1)); br2.append(a)
+            bc2.append(np.array(c) * .6 if neon else np.array(srgb('#ffe2b8')) * _brng.uniform(.25, .6))
+    if bl2: tc.box_mesh('skybridge_lines', bl2, np.array(bc2, np.float32), emit_mat('bridgeglow', None, 1.0 * GLOW), rot=np.array(br2, np.float32))
 tick(f'skybridges {len(bridges)}')
 
 # ---------------- 悬浮轨道：贯穿全片区的发光曲线 ----------------
@@ -349,8 +460,8 @@ def curve_obj(name, pts, z, bevel, m):
     o = bpy.data.objects.new(name, cu); col_main.objects.link(o); o.data.materials.append(m)
     return o
 guide_m = mat('guideway', (.05, .055, .06), .35, .7)
-rail_m = emit_mat('railglow', ICE, 2.2 * GLOW)
-rail_m2 = emit_mat('railglow2', CYAN, 2.0 * GLOW)
+rail_m = emit_mat('railglow', ICE, 1.2 * GLOW)                    # A7：导轨光带压暗约一半（原来像矢量描线），车站仍是轨道上最亮的点
+rail_m2 = emit_mat('railglow2', tuple(.55 * c_ + .45 * i_ for c_, i_ in zip(CYAN, ICE)), 1.0 * GLOW)
 trains, trc, trrot, plat, platrot = [], [], [], [], []
 for k, r in enumerate(ROUTES):
     pts = catmull(r); zt = .22 + .05 * (k % 3)                  # 不同线路高度错开，交叉处上下穿行
@@ -677,6 +788,50 @@ tc.box_mesh('dark_fill_glints', WD, np.array([np.array(srgb('#ffc88a')) * v[6] f
 tc.point_lights('window_spill', WIN_L, .05 * GLOW, .02)
 tick(f'plazas {len(PLAZAS)}, dark-area fill: window spill {len(WIN_L)}, glints {len(WIN_D)}')
 
+# ---------------- A7 第 2 轮：交界大道的行道树（两侧各一排，间距不齐、有缺）——交界读成一条林荫大道，而不是一片车灯 ----------------
+_brt = np.random.default_rng(7116); BT = []
+for r in city.roads:
+    if r.get('dk') != 'boulevard': continue
+    P = np.asarray(r['p'], np.float64)
+    for a_, b_ in zip(P[:-1], P[1:]):
+        dv = b_ - a_; L = float(np.hypot(*dv))
+        if L < 1e-4: continue
+        u = dv / L; nrm = np.array([-u[1], u[0]]); t = float(_brt.uniform(0, .06))
+        while t < L:
+            for sd in (-1, 1):
+                if _brt.random() < .18: continue
+                q = a_ + u * t + nrm * sd * (tc_city.BLVD_W / 2 - .018 + _brt.normal(0, .004))
+                if not _in_zone(float(q[0]), float(q[1])): rr_ = _brt.uniform(.016, .026); BT.append((float(q[0]), float(q[1]), ZG + .006 + rr_ * .55, rr_))
+            t += _brt.uniform(.06, .1)
+tc.ico_mesh('boulevard_trees', BT, mat('blvd_tree', (.014, .024, .012), .9))
+# 外围居住区（布鲁克林）：整片稀疏的暖色窗光与楼梯间灯（原来只在左上角暗区有），密度约核心区的三分之一。独立随机（7117）。
+_wrng = np.random.default_rng(7117); WG = []
+for i, top in zip(idx, tops):
+    b = city.b[i]
+    if b['dk'] != 'outer' or dark_w(b['cx'], b['cy']) > .05 or _wrng.random() > .16: continue
+    x, y, w, d, rot = b['obb']; cs, sn = math.cos(rot), math.sin(rot); u_, v_ = _wrng.uniform(-.35, .35) * w, _wrng.uniform(-.35, .35) * d; s_ = _wrng.uniform(.005, .01)
+    WG.append((x + u_ * cs - v_ * sn, y + u_ * sn + v_ * cs, s_, s_ * _wrng.uniform(.8, 1.6), top + .001, top + .003, _wrng.uniform(.15, .5)))
+# A7 第 3 轮：核心区楼顶的「楼里透出的光」——楼梯间 / 机房门口、玻璃顶、顶层窗边的小块暖光（1–3 处，亮度不一，大半楼是黑的），
+# 核心区屋面不再是一片没有生气的灰盒子。高楼更可能亮。独立随机（7119）。
+_krng = np.random.default_rng(7119); CG = []
+for i, top in zip(idx, tops):
+    b = city.b[i]
+    if b['dk'] != 'core': continue
+    hq_ = float(np.clip((top - ZG) / 3.0, 0, 1))
+    if _krng.random() > .22 + .4 * hq_: continue
+    x, y, w, d, rot = tc_city.top_obb(b); zt_ = tc_city.roof_top(b, top); cs, sn = math.cos(rot), math.sin(rot)
+    for _ in range(int(_krng.integers(1, 4))):
+        edge = _krng.random() < .55                                         # 一半贴着屋面边缘（顶层窗户透到女儿墙内侧的一条光）
+        if edge:
+            sd = _krng.choice([-1, 1]); u_ = _krng.uniform(-.4, .4) * w; v_ = sd * (d / 2 - .006); lw_, ld_ = _krng.uniform(.012, .04), .004
+        else:
+            u_, v_ = _krng.uniform(-.35, .35) * w, _krng.uniform(-.35, .35) * d; lw_ = _krng.uniform(.006, .014); ld_ = lw_ * _krng.uniform(.6, 1.4)
+        CG.append((x + u_ * cs - v_ * sn, y + u_ * sn + v_ * cs, lw_, ld_, zt_ + .001, zt_ + .003, rot, _krng.uniform(.15, .6) * (.6 + .6 * hq_)))
+tc.box_mesh('core_window_glints', [v[:6] for v in CG], np.array([np.array(srgb('#ffd29a')) * v[7] for v in CG], np.float32).reshape(-1, 3), emit_mat('coreglint', None, 3.0 * GLOW), rot=np.array([v[6] for v in CG], np.float32))
+tick(f'core window glints {len(CG)}')
+tc.box_mesh('outer_window_glints', [v[:6] for v in WG], np.array([np.array(srgb('#ffc27a')) * v[6] for v in WG], np.float32).reshape(-1, 3), emit_mat('outerglint', None, 3.0 * GLOW))
+tick(f'boulevard trees {len(BT)}, outer glints {len(WG)}')
+
 # ---------------- 头顶浮岛的投影：夜里没有日照，挡住的是上方漫射下来的天光，所以影子在岛的正下方、边缘很虚 ----------------
 # 用三层逐渐缩小的半透明暗面叠出柔和的边（不画描边）。岛的轮廓由查看器的「上层投影」叠加层给出。
 soft = [Batch(f'isle_shade{k}', tc.shade_mat(f'isle_shade{k}', (0, 0, 0), a)) for k, a in enumerate((.1, .12, .14))]
@@ -685,10 +840,21 @@ for iid, ix, iy, rx, ry, rot, alt in tc.upper_islands():
         bm = soft[k].bm; ret = bmesh.ops.create_circle(bm, cap_ends=True, segments=64, radius=1)
         bmesh.ops.transform(bm, verts=ret['verts'], matrix=Matrix.Translation((ix, iy, .6 + k * .01)) @ Matrix.Rotation(rot, 4, 'Z') @ Matrix.Diagonal((rx * sc_, ry * sc_, 1, 1)))
 for b_ in soft: b_.done().visible_shadow = False
+# A7 第 2 轮：「缝隙天光」只从浮岛之间漏下来——每座岛一块相机看不见、只挡光线的实心遮挡板（高于全部城市），
+# 岛下是纯人造光，岛与岛之间才有一条条斜照的冷光和柔和的楼影。遮挡板不参与漫反射 / 反射，只参与阴影。
+occ = Batch('isle_occluders', mat('isle_occ', (0, 0, 0), 1))
+for iid, ix, iy, rx, ry, rot, alt in tc.upper_islands():
+    ret = bmesh.ops.create_circle(occ.bm, cap_ends=True, segments=48, radius=1)
+    bmesh.ops.transform(occ.bm, verts=ret['verts'], matrix=Matrix.Translation((ix, iy, 1.4)) @ Matrix.Rotation(rot, 4, 'Z') @ Matrix.Diagonal((rx * 1.05, ry * 1.05, 1, 1)))
+_oo = occ.done(); _oo.visible_camera = False; _oo.visible_diffuse = False; _oo.visible_glossy = False; _oo.visible_transmission = False
 tick('island shadows')
 
 # ---------------- 环境光：没有日照，只剩上层漏下来的一点冷色天光 ----------------
 # 光晕两层：贴着灯管的小光晕（Bloom：霓虹、车灯边缘的溢光）+ 大范围的雾光（Fog Glow 半径加大到真正会扩散的尺度，强度略降，不整体过曝）
 _tight = tuple(map(float, str(layer.opt.get('--tight', '.8,6.5,1.8')).split(',')))   # 调参用：--tight 阈值,尺度,强度
 _fog = tuple(map(float, str(layer.opt.get('--fog', '.7,9.5,-.6')).split(',')))
-layer.finish(world=((.35, .42, .6), layer.f('--ambient', .7)), glare_opts=dict(threshold=_fog[0], size=_fog[1], mix=_fog[2], tight=_tight))
+# A7：楼高层次——全漫射的天光下楼顶只按颜色分高低，缩小看核心区是一片均匀的灰。加一盏很弱的冷色平行光（上层浮岛之间漏下来的天光，
+# 方向与三层共用的太阳相同、软影），高楼在矮楼顶和街道上投下柔和的影子，楼高一眼读得出；天光相应略降，总亮度不变。
+_sky = bpy.data.lights.new('gap_skylight', 'SUN'); _sky.energy = layer.f('--gapsun', .8); _sky.angle = math.radians(6); _sky.color = (.72, .8, 1.0)
+_so = bpy.data.objects.new('gap_skylight', _sky); col_main.objects.link(_so); _so.rotation_euler = tc.SUN_ROT
+layer.finish(world=((.35, .42, .6), layer.f('--ambient', .58)), glare_opts=dict(threshold=_fog[0], size=_fog[1], mix=_fog[2], tight=_tight))
