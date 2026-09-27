@@ -50,7 +50,22 @@
    "id": "ruined_churches",
    "nx": 0.88,
    "ny": 0.765,
-   "r": 0.03
+   "r": 0.03,
+   "manual": true
+  },
+  {
+   "id": "tin_shacks",
+   "nx": 0.55,
+   "ny": 0.24,
+   "r": 0.03,
+   "manual": true
+  },
+  {
+   "id": "junk_market",
+   "nx": 0.55,
+   "ny": 0.68,
+   "r": 0.02,
+   "manual": true
   }
  ],
  "layer": "tc_low"

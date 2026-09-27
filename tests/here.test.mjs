@@ -122,14 +122,16 @@ t('设定对齐：大主教 → 辉光大教堂（中层）', () => {
   is('大主教府邸', 3, 'tc_mid', { marker: 'radiance_cathedral' }); is('天城主教座堂', 3, 'tc_mid', { marker: 'radiance_cathedral' }); is('主教座堂', 3, 'tc_mid', { marker: 'radiance_cathedral' }); is('大主教的书房', 3, 'tc_mid', { marker: 'radiance_cathedral' });
 });
 t('设定对齐：泛称不自动落地标', () => {
-  assert.equal(R('天城大学'), null); assert.equal(R('天城大学法学院'), null); assert.equal(R('大学'), null);   // 天城大学 ≠ 星渊大学
+  assert.equal(R('大学'), null);                                                                        // 天城大学 ≠ 星渊大学：单说「大学」不落
+  is('天城大学', 3, 'tc_mid', { marker: 'tiancheng_univ' }); is('天城大学法学院', 3, 'tc_mid', { marker: 'tiancheng_univ' });   // 用户决定（2026-09-27）：中层
   is('星渊大学', 3, 'tc_mid', { marker: 'starabyss_univ' }); is('天城第一学府', 3, 'tc_mid', { marker: 'starabyss_univ' });
   is('中层 第三分局', 4, 'tc_mid'); assert.equal(R('执法局分局'), null);                                   // 中层有 18 个分局
   is('下层分局', 3, 'tc_low', { marker: 'enforcement_low' }); is('执法局下层分局', 3, 'tc_low', { marker: 'enforcement_low' });
   is('中层 某修道院', 4, 'tc_mid'); assert.equal(R('修道院'), null); is('战斗修女院', 3, 'tc_mid', { marker: 'iron_cradle' });
   assert.equal(R('资产管理委员会'), null); is('公共收容设施', 3, 'tc_low', { marker: 'amc_facility' });
   assert.equal(R('骑士团巡逻据点'), null); assert.equal(R('议会骑士团'), null); is('银冠堡', 3, 'tc_upper', { marker: 'silver_crown' });
-  assert.equal(R('凯莉的宅邸'), null);                                                                  // 开局三目的地，卡未写位置
+  is('凯莉的宅邸', 3, 'tc_upper', { marker: 'kelly_residence' }); is('凯莉宅邸', 3, 'tc_upper', { marker: 'kelly_residence' });   // 用户决定：上层（开局三目的地）
+  assert.deepEqual(J('data/maps.json').maps.tc_upper.markers.kelly_residence.openings, [3]);
 });
 t('设定对齐：罗斯柴尔德庄园 · 悬浮岛 R-02；MVU 默认值「User主卧」', () => {
   for (const v of ['罗斯柴尔德庄园', '悬浮岛 R-02', '悬浮岛R-02']) is(v, 3, 'tc_upper', { marker: 'zaibatsu_estate' });
@@ -142,7 +144,18 @@ t('v0.9.5 五路通读：下层泛称、联盟会所别名、歧义词', () => {
   is('联盟会所', 3, 'tc_upper', { marker: 'league_club' });
   assert.equal(R('品鉴宴'), null);                                                        // 品鉴宴由庄园主轮流做东，不落会所
   is('罗斯柴尔德庄园品鉴宴', 3, 'tc_upper', { marker: 'zaibatsu_estate' });
-  for (const v of ['区议会', '骑士团营区']) assert.equal(R(v), null, v);                     // 卡没写位置：歧义词，不跳转
+  for (const v of ['区议会', '营区']) assert.equal(R(v), null, v);                            // 卡没写位置：歧义词，不跳转
+  is('骑士团营区', 3, 'tc_mid', { marker: 'knights_camp' });                                   // 用户决定（2026-09-27）：中层
+});
+
+t('v0.9.6 卡遗漏补全：新地标与未落点机构', () => {
+  is('最高法院', 3, 'tc_mid', { marker: 'supreme_court' }); is('佣兵公会', 3, 'tc_mid', { marker: 'merc_guild' }); is('维多利亚的公寓', 3, 'tc_mid', { marker: 'victoria_apartment' });
+  is('中层修道院', 3, 'tc_mid', { marker: 'mid_monastery' }); assert.equal(R('修道院'), null);   // 泛称仍不落
+  is('中层 C 区', 3, 'tc_mid', { marker: 'checkpoint_c' }); is('老K杂货', 3, 'tc_low', { marker: 'well7' });
+  is('铁皮屋区', 3, 'tc_low', { marker: 'tin_shacks' }); is('旧货市场', 3, 'tc_low', { marker: 'junk_market' }); is('孤儿收容所', 3, 'tc_low', { marker: 'soup_kitchen' });
+  for (const v of ['法师塔', '新生工坊', '天城文化署', '维克多庄园']) { const r = R(v); assert.ok(!r || (!r.marker && r.level >= 5), v); }   // 卡没写位置：不落地标（带「天城」的只到城市级）
+  const reg = J('data/maps.json'); assert.ok(reg.unplaced.items.some(i => i.name === '法师塔'));
+  for (const k of ['tiancheng_univ', 'knights_camp']) assert.equal(reg.maps.tc_mid.markers[k].layer_src, 'user-decision', k);
 });
 
 console.log(`\n${n} passed`);
