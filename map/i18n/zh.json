@@ -53,5 +53,6 @@
   "ev.k_src": "来源",
   "ev.src_floor": "{src} · 聊天第 {n} 楼",
   "ev.new": "新",
-  "ev.legend_aria": "按大类筛选"
+  "ev.legend_aria": "按大类筛选",
+  "tiles_failed": "地图图块加载失败：当前线路连不上。可以重试，或在标题栏换一条线路"
 }

@@ -187,12 +187,13 @@
   "tier_now": "now {px}px",
   "tier_cap": "detail cap {px}px",
   "ev.k_place": "Location",
-  "ev.k_state": "Severity / status",
+  "ev.k_state": "Severity",
   "ev.k_lvl": "Severity",
   "ev.k_time": "Time",
   "ev.k_code": "Ref",
   "ev.k_src": "Source",
   "ev.src_floor": "{src} · chat message #{n}",
   "ev.new": "NEW",
-  "ev.legend_aria": "Filter by category"
+  "ev.legend_aria": "Filter by category",
+  "tiles_failed": "Map tiles failed to load: this route is unreachable. Retry, or switch route in the title bar"
 }

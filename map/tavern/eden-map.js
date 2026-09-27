@@ -29,6 +29,8 @@
   let BASE = baseFor(line);
   const pdoc = window.parent.document;
   const ID = 'eden-map-root';
+  // 幂等：脚本被重复注入（换卡、热重载）时先清掉上一份的元素和全部监听，只留一个悬浮按钮、一套监听
+  try { window.parent.__edenMapCleanup?.(); } catch (e) {}
   pdoc.getElementById(ID)?.remove();
 
   const root = pdoc.createElement('div');
@@ -60,14 +62,14 @@
   @keyframes em-spin { to { transform: rotate(360deg); } }
   @keyframes em-fade { to { opacity: 0; } }
   /* 新事态数：事态计数 = 唯一的红（规范 --alert），深字保证 11 px 的对比度 */
-  #${ID} .em-badge { position: absolute; left: -4px; top: -4px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: var(--em-alert); color: var(--em-on-alert);
+  #${ID} .em-badge { font-variant-numeric: tabular-nums; position: absolute; left: -4px; top: -4px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: var(--em-alert); color: var(--em-on-alert);
     font: 700 11px/18px "IBM Plex Mono", ui-monospace, Menlo, monospace; text-align: center; box-shadow: 0 0 0 2px #151b20; }
   #${ID} .em-badge[hidden] { display: none; }
   #${ID} .em-tip { position: absolute; right: 56px; top: 8px; width: max-content; max-width: 180px; padding: 6px 10px; border-radius: 8px; background: #151b20; border: 1px solid rgba(230,195,106,.6); color: #d5dde4;
     font: 12px/1.5 var(--em-font); box-shadow: 0 6px 20px rgba(0,0,0,.3); pointer-events: none; }
   #${ID} .em-fab.here::after { content: ''; position: absolute; right: 4px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background: #ff5a5a; box-shadow: 0 0 0 2px #151b20; }
   #${ID} .em-panel { position: fixed; z-index: 30001; left: 50vw; top: 50dvh; transform: translate(-50%, -50%);
-    width: min(1200px, 94vw); height: min(820px, 88vh); background: var(--em-bg); border: 1px solid var(--em-line-2); color: var(--em-ink); font-family: var(--em-font);
+    width: min(1200px, 94vw); height: min(820px, 88vh); height: min(820px, 88dvh); grid-template-columns: minmax(0, 1fr); background: var(--em-bg); border: 1px solid var(--em-line-2); color: var(--em-ink); font-family: var(--em-font);
     border-radius: 12px; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.38), 0 24px 64px rgba(0,0,0,.3); display: grid; grid-template-rows: auto 1fr;
     contain: layout paint style; }   /* 面板内的重排、重绘不波及酒馆页面 */
   #${ID} .em-panel[hidden] { display: none; }
@@ -79,9 +81,11 @@
   #${ID} .em-bar .em-here::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--em-alert); vertical-align: 1px; }
   #${ID} .em-bar .em-here:empty { display: none; }
   #${ID} .em-bar button { font: inherit; cursor: pointer; }
-  #${ID} .em-bar .em-close { width: 36px; height: 36px; display: grid; place-items: center; background: none; border: 0; border-radius: 8px; color: var(--em-muted); padding: 0; }
+  #${ID} .em-bar .em-close { flex: none; width: 36px; height: 36px; display: grid; place-items: center; background: none; border: 0; border-radius: 8px; color: var(--em-muted); padding: 0; }
   #${ID} .em-bar .em-close:hover { background: var(--em-surface-2); color: var(--em-ink); }
   #${ID} .em-bar .em-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+  #${ID} .em-bar, #${ID} .em-body { min-width: 0; }   /* 标题栏的长地点 / 线路按钮不再把面板撑出屏幕（E5 r2 P0：关闭按钮曾被推到 404–585 px） */
+  #${ID} .em-bar .em-title { min-width: 0; }
   #${ID} .em-body { position: relative; min-height: 0; contain: strict; }
   #${ID} iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--em-bg); }
   /* 地图程序就绪前的加载遮罩（就绪后由地图自己显示瓦片进度） */
@@ -146,14 +150,15 @@
   const pickEl = root.querySelector('.em-pick'), lineBtn = root.querySelector('.em-line');
   lineBtn.hidden = !swappable;
   // 标题栏跟着地图的语言与深浅主题（地图在 srcdoc 里，与酒馆页同源，设置存在同一个 localStorage；切换时地图发 eden-map:state {lang, theme}）
-  const UI = { zh: { title: '新历 2088 · ', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%' },
-    en: { title: 'NC 2088 · ', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%' } };
+  const UI = { zh: { title: '新历 2088 · ', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%', open: '打开世界地图', fab: '世界地图' },
+    en: { title: 'NC 2088 · ', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%', open: 'Open world map', fab: 'World map' } };
   let UL = 'zh', mapTitle = ''; try { UL = localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) {}
   const U = k => UI[UL][k];
   { let th = 'auto'; try { th = localStorage.getItem('edenMapTheme') || 'auto'; } catch (e) {}
     panel.classList.toggle('em-light', th === 'light' || (th === 'auto' && window.parent.matchMedia?.('(prefers-color-scheme: light)').matches)); }
   const showLine = () => { const l = LINES.find(x => x.key === line); lineBtn.textContent = U('line') + (l ? (UL === 'en' && l.name_en) || l.name : U('unset')); };
-  const showTitle = () => { titleEl.textContent = U('title') + (mapTitle || U('map')); root.querySelector('.em-close').setAttribute('aria-label', U('close')); };
+  const showTitle = () => { titleEl.textContent = U('title') + (mapTitle || U('map')); root.querySelector('.em-close').setAttribute('aria-label', U('close'));
+    fab.setAttribute('aria-label', U('open')); if (!fab.classList.contains('prep') && !fab.classList.contains('fail')) fab.title = U('fab'); };
   showLine(); showTitle();
   // 线路选择：每条线路现场测一次延迟（取一个小文件），连不上的标红
   function showPicker() {
@@ -328,7 +333,7 @@
     try {
       floorNow = getLastMessageId();
       if (floorNow >= 0) msgs = getChatMessages(`${Math.max(0, floorNow - SCAN)}-${floorNow}`, { role: 'assistant' })
-        .map(m => ({ floor: m.message_id, text: m.message || '' }));
+        .map(m => ({ floor: m.message_id, text: String(m.message || '').replace(/<%[\s\S]*?%>/g, '') }));   // 原文里可能还留着 EJS 模板源码，里面的示例标签不算事件
     } catch (e) { floorNow = -1; }
     events = collect(msgs, floorNow);
     const fresh = events.filter(e => e.last > seen && e.tier !== 'fade').length;
@@ -345,10 +350,13 @@
     } catch (e) {}
   }
   // 发给地图：isNew = 上次打开面板之后才出现 / 更新的；fly = 打开时要飞过去的最新未读事件
+  // fly 只在打开面板的那一次带上：面板开着时新楼的事件只更新列表和点，不把地图拉走、不关玩家正在看的卡（E5 r2 RP P1）
+  let flyNext = true;
   function sendEvents() {
     if (!alive) return;
     const items = events.map(e => ({ ...e, isNew: e.last > seen }));
-    const fly = items.find(e => e.isNew && e.tier !== 'fade')?.id || null;
+    const fly = flyNext && !panel.hidden && !ghost ? items.find(e => e.isNew && e.tier !== 'fade')?.id || null : null;
+    if (!panel.hidden && !ghost) flyNext = false;
     post({ type: 'eden-map:events', v: 1, floor: floorNow, hereLayer: EVM ? EVM.layerOf(here) : '', items, fly });
     if (!panel.hidden) { seen = floorNow; try { localStorage.setItem(chatKey(), String(seen)); } catch (e) {} badge.hidden = true; }
   }
@@ -383,13 +391,15 @@
     if (dragged) { const r = fab.getBoundingClientRect(), vw = window.parent.innerWidth, vh = window.parent.innerHeight;
       const p = placeFab(r.left / (vw - 48), r.top / (vh - 48)); try { localStorage.setItem(POS_KEY, JSON.stringify(p)); } catch (err) {} } });
 
-  const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; sleepViewer(); };
+  const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; flyNext = true; sleepViewer(); };
   fab.addEventListener('click', async () => { if (dragged) return;
     if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); sent = null; push(); sendEvents(); return; }   // 预加载中被点开：直接显示，重新推一次地点（这次可以进庄园）
     fab.classList.remove('fail');
     if (!panel.hidden) return close(); panel.hidden = false; await loadViewer(); });
   root.querySelector('.em-close').addEventListener('click', close);
-  pdoc.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  // 宿主页的 Esc：只在焦点不在输入框里时关地图（在聊天框里按 Esc 不该把地图关掉，E5 r2 RP-6）
+  const onKey = e => { if (e.key === 'Escape' && !e.target?.closest?.('input, textarea, select, [contenteditable]')) close(); };
+  pdoc.addEventListener('keydown', onKey);
 
   (async () => {
     try { await waitGlobalInitialized('Mvu'); eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, () => pushSoon()); } catch (e) {}
@@ -403,5 +413,8 @@
   })();
 
   // 脚本被关闭或重载时清理注入的元素
-  window.addEventListener('pagehide', () => { clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); inject(''); root.remove(); window.parent.removeEventListener('message', onMsg); });
+  const cleanup = () => { clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); pdoc.removeEventListener('keydown', onKey);
+    if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup; };
+  window.parent.__edenMapCleanup = cleanup;
+  window.addEventListener('pagehide', cleanup);
 })();
