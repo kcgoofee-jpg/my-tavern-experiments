@@ -28,7 +28,8 @@ async function jpg(page, name) {
   console.log('  截图', path.relative(process.cwd(), f), (fs.statSync(f).size / 1024).toFixed(0) + ' KB');
 }
 // 停靠栏里每个可见控件的位置（相对视口）
-const dockBoxes = page => page.evaluate(() => [...document.querySelectorAll('#thumbBtn, #zoom button, #layers button')].filter(e => e.offsetParent && getComputedStyle(e).visibility !== 'hidden')
+// UI v2：控制列 #dock 只有 ⋯ + − ⌂（层切换在抽屉摘要行的层名胶囊里）
+const dockBoxes = page => page.evaluate(() => [...document.querySelectorAll('#dock button')].filter(e => e.offsetParent && getComputedStyle(e).visibility !== 'hidden')
   .map(e => { const r = e.getBoundingClientRect(); return { id: e.id || e.dataset.go || e.getAttribute('aria-label'), l: r.left, r: r.right, t: r.top, b: r.bottom }; }));
 const osdCenter = page => page.evaluate(() => { const r = viewer.container.getBoundingClientRect(); return { x: r.left + r.width * .5, y: r.top + r.height * .4 }; });
 // 合成触摸指针事件（两个引擎都能跑）：点在 OSD 画布上
@@ -52,14 +53,14 @@ async function phone(preset, hand, tag) {
   const inZone = bx.every(b => b.t >= H * .4 && b.b <= H);
   rep.check(`${tag} 停靠栏在${eff === 'left' ? '左' : '右'}手拇指区（下 60%）`, side === eff && onSide && inZone && bx.length >= 2,   // v0.9.6：触屏不显示缩放组、层切换器收成一个胶囊（菜单 + 当前层）
     `${bx.length} 个控件；最高 ${Math.round(Math.min(...bx.map(b => b.t)))} px / ${H}；${eff === 'left' ? '最右 ' + Math.round(Math.max(...bx.map(b => b.r))) : '最左 ' + Math.round(Math.min(...bx.map(b => b.l)))} px / ${W}`);
-  const hits = await p.evaluate(() => [...document.querySelectorAll('#thumbBtn, #zoom button, #layers button')].filter(e => e.offsetParent).map(e => { const r = e.getBoundingClientRect(), s = getComputedStyle(e, '::before');
+  const hits = await p.evaluate(() => [...document.querySelectorAll('#dock button, #evbar .uis-lead #layers button')].filter(e => e.offsetParent).map(e => { const r = e.getBoundingClientRect(), s = getComputedStyle(e, '::before');
     return Math.min(r.width, r.height) + (s.content !== 'none' ? Math.max(0, -parseFloat(s.top) || 0) * 2 : 0); }));
   rep.check(`${tag} 停靠栏触控热区 ≥ 40 px`, Math.min(...hits) >= 40, `最小 ${Math.min(...hits).toFixed(0)} px`);
   // 事态横条不和停靠栏重叠
   const ov = await p.evaluate(() => { const e = document.querySelector('#evbar'), d = document.querySelector('#dock'); if (!e || e.hidden) return 'no-evbar';
     const a = e.getBoundingClientRect(), b = [...d.children].filter(x => x.offsetParent).map(x => x.getBoundingClientRect());
     return b.some(r => a.left < r.right && a.right > r.left && a.top < r.bottom && a.bottom > r.top) ? 'overlap' : 'ok'; });
-  rep.check(`${tag} 事态横条让开停靠栏`, ov === 'ok', ov);
+  rep.check(`${tag} 抽屉让开控制列`, ov === 'ok', ov);
   await jpg(p, `${tag}_map`);
   // 2. 底部菜单：打开抽屉，里面有「返回世界」；抽屉在下半屏
   await p.locator('#thumbBtn').click(); await B.wait(400);
@@ -102,9 +103,12 @@ async function phone(preset, hand, tag) {
   const xb = await p.evaluate(() => { const r = document.querySelector('#cardX').getBoundingClientRect(); return r.left + r.width / 2; });
   rep.check(`${tag} 卡片关闭按钮在${eff === 'left' ? '左' : '右'}侧`, eff === 'left' ? xb < W / 2 : xb > W / 2, `x ${Math.round(xb)}`);
   await jpg(p, `${tag}_card`);
-  const g = await p.evaluate(() => { const r = document.querySelector('#card .grab').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
-  await touch(p, 'pointerdown', g.x, g.y, 9); for (let d = 20; d <= 120; d += 20) { await touch(p, 'pointermove', g.x, g.y + d, 9); await B.wait(16); } await touch(p, 'pointerup', g.x, g.y + 120, 9); await B.wait(300);
-  rep.check(`${tag} 卡片抽屉往下拖关闭`, await p.evaluate(() => document.querySelector('#card').hidden));
+  // UI v2：卡片在唯一抽屉的「地点」页；拖柄往下 = 抽屉降到收起（地点页留着，点「地点」再展开）
+  const g = await p.evaluate(() => { const r = document.querySelector('#evbar .uis-grip').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, st: TCSheet.state }; });
+  await touch(p, 'pointerdown', g.x, g.y, 9); for (let d = 20; d <= 240; d += 20) { await touch(p, 'pointermove', g.x, g.y + d, 9); await B.wait(16); } await touch(p, 'pointerup', g.x, g.y + 240, 9); await B.wait(400);
+  rep.check(`${tag} 抽屉往下拖收起（${g.st} → 收起）`, await p.evaluate(() => TCSheet.state === 'peek'));
+  await p.locator('#evbar .uis-tog').click(); await B.wait(300);
+  rep.check(`${tag} 文字按钮「展开」再打开（WCAG 2.5.7）`, await p.evaluate(() => TCSheet.state === 'half' && document.querySelector('#evbar .uis-tog').getAttribute('aria-expanded') === 'true'));
   rep.metric(tag + '_errors', P.errors.slice(0, 10));
   rep.check(`${tag} 无脚本错误`, !P.errors.filter(e => !/http 404/.test(e)).length, P.errors.slice(0, 3).join(' | '));
   await P.close();
@@ -123,14 +127,15 @@ try {
     const p = P.page; await B.openViewer(P, { map: 'tc_upper' }); await B.wait(600);
     rep.check('自动：悬浮按钮拖在左半边 → 左手布局', await p.evaluate(() => document.documentElement.dataset.hand) === 'left');
     await p.locator('#thumbBtn').click(); await B.wait(300);
+    await p.locator('#setPop .sgroups button[data-page="display"]').click(); await B.wait(200);   // UI v2：惯用手在设置「显示」页
     await p.locator('#handSeg button[data-hand="right"]').click(); await B.wait(300);
     await p.reload(); await p.waitForFunction(() => document.getElementById('loading')?.classList.contains('done'), null, { timeout: 20000 }).catch(() => {});
     const st = await p.evaluate(() => ({ hand: document.documentElement.dataset.hand, pref: localStorage.getItem('edenMapHand') }));
     rep.check('设置记在本机：刷新后仍是右手', st.hand === 'right' && st.pref === 'right', JSON.stringify(st));
     await B.goMap(p, 'eden_estate', 60000); await B.wait(1500);
-    const row = await p.evaluate(() => { const d = document.querySelector('#dock'), r = [...d.children].filter(x => x.offsetParent).map(x => x.getBoundingClientRect());
-      return { dir: getComputedStyle(d).flexDirection, bottom: Math.max(...r.map(x => x.bottom)), right: Math.max(...r.map(x => x.right)), menuRight: document.querySelector('#thumbBtn').getBoundingClientRect().right }; });
-    rep.check('庄园：停靠栏是底部一行，菜单在右下角', row.dir === 'row' && row.bottom > 812 - 50 && row.menuRight > 375 - 20, JSON.stringify(row));
+    // UI v2：三维页自带控制列与抽屉（ui/chrome3d.js），查看器的控制列让开；「⋯」在顶栏
+    const row = await p.evaluate(() => ({ dock: getComputedStyle(document.querySelector('#dock')).display, set: !!document.querySelector('#setBtn').offsetParent, sheet: document.querySelector('#evbar').hidden }));
+    rep.check('庄园：查看器控制列与抽屉让给三维页，顶栏有「⋯」', row.dock === 'none' && row.set && row.sheet, JSON.stringify(row));
     await jpg(p, 'estate_right');
     await P.close();
   });
@@ -160,13 +165,13 @@ try {
     await P.close();
   });
 
-  // 桌面不受影响：停靠栏 display: contents，缩放组仍在右下、层切换器左中
+  // 桌面：控制列在右下（右栏左侧），层切换器在控制列顶上常展开
   await step('桌面布局不变', async () => {
     const P = await B.newPage('desktop', { tier: 'save', init: [() => { try { localStorage.setItem('edenMapHand', 'left'); } catch (e) {} }] });
     const p = P.page; await B.openViewer(P, { map: 'tc_mid' }); await B.wait(600);
     const d = await p.evaluate(() => ({ dock: getComputedStyle(document.querySelector('#dock')).display, thumb: getComputedStyle(document.querySelector('#thumbBtn')).display,
       zoom: document.querySelector('#zoom').getBoundingClientRect().right, lay: document.querySelector('#layers').getBoundingClientRect().left }));
-    rep.check('桌面：停靠栏不占位，缩放组右下、层切换器左中', d.dock === 'contents' && d.thumb === 'none' && d.zoom > 1300 && d.lay < 40, JSON.stringify(d));
+    rep.check('桌面：控制列右下，层切换器在控制列里，没有「⋯」', d.dock === 'flex' && d.thumb === 'none' && d.zoom > 1300 && d.lay > 1200, JSON.stringify(d));
     await P.close();
   });
 } finally {

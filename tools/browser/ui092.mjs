@@ -30,7 +30,7 @@ async function run(name, preset, opts = {}) {
     await vf.evaluate(() => go('tc_low')); await B.wait(2500);
     await B.shot(p, OUT, `${name}_map`);
     // 打开事态卡：列表里点第一条
-    await vf.evaluate(() => document.querySelector('#evbar > button').click()); await B.wait(300);
+    await vf.evaluate(() => document.querySelector('#evbar .evtab').click()); await B.wait(300);
     await B.shot(p, OUT, `${name}_list`);
     await vf.evaluate(() => document.querySelector('#evbar ol button[data-id]')?.click()); await B.wait(2600);
     await B.shot(p, OUT, `${name}_card`);

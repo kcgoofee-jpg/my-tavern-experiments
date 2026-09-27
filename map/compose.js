@@ -34,7 +34,7 @@ const TCCompose = (() => {
     const pop = document.getElementById('setPop'); if (!pop || !embedded()) return;
     const M = await mod(); if (!M) return;
     let box = document.getElementById('cmpBox');
-    if (!box) { box = document.createElement('details'); box.id = 'cmpBox'; const at = document.getElementById('vmBox') || document.getElementById('selfCheck'); at ? pop.insertBefore(box, at) : pop.appendChild(box);
+    if (!box) { box = document.createElement('details'); box.id = 'cmpBox'; if (window.TCSettings) TCSettings.registerSection('data', box, { order: 30 }); else { const at = document.getElementById('vmBox') || document.getElementById('selfCheck'); at ? pop.insertBefore(box, at) : pop.appendChild(box); }
       box.addEventListener('toggle', () => { open = box.open; }); box.addEventListener('change', onChange); box.addEventListener('click', ev => { if (ev.target.closest('[data-cmpreset]')) { ev.stopPropagation(); M.write(st(), {}); renderUI(); } }); }
     box.open = open;
     const cur = M.read(st(), lang()), d = M.DEFAULTS[lang()];

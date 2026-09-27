@@ -177,7 +177,7 @@ const TCChars = (() => {
   @media (pointer:coarse),(max-width:640px){.chm::before{content:'';position:absolute;left:-9px;top:50%;width:44px;height:44px;margin-top:-22px}}
   #evbar .chpane{padding:0 var(--sp-3,6px) var(--sp-3,6px)}
   #evbar .chpane .chall{padding:0 12px 0 var(--sp-3,6px);border-top:1px solid var(--line)}
-  #evbar .chpane .chgrps{max-height:40vh;max-height:40dvh;overflow-y:auto}
+  #evbar .chpane .chgrps{overflow:visible}
   #evbar .chpane ul{list-style:none;margin:0;padding:0}
   #evbar .chpane summary{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 var(--sp-3,6px);cursor:pointer;font-size:var(--fs-small,12px);font-weight:600;color:var(--ink-2);border-top:1px solid var(--line)}
   #evbar .chpane summary small{color:var(--muted);font-weight:400;font-size:var(--fs-micro,11px)}

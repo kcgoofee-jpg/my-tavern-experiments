@@ -17,7 +17,7 @@ const TCVarMap = (() => {
     const pop = document.getElementById('setPop'); if (!pop) return;
     let box = document.getElementById('vmBox');
     if (!d) { box?.remove(); return; }
-    if (!box) { box = document.createElement('details'); box.id = 'vmBox'; const at = document.getElementById('selfCheck'); at ? pop.insertBefore(box, at) : pop.appendChild(box);
+    if (!box) { box = document.createElement('details'); box.id = 'vmBox'; if (window.TCSettings) TCSettings.registerSection('data', box, { order: 10 }); else { const at = document.getElementById('selfCheck'); at ? pop.insertBefore(box, at) : pop.appendChild(box); }
       box.addEventListener('toggle', () => { open = box.open; }); box.addEventListener('change', onChange); box.addEventListener('click', onClick); }
     box.open = open;
     const opt = (p, cur) => `<option value="${esc(p.path)}" ${p.path === cur ? 'selected' : ''}>${esc(p.path)}</option>`;
