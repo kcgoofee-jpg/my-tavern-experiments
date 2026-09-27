@@ -27,7 +27,7 @@ const TCCompose = (() => {
   }
   document.addEventListener('click', onClick);
   // 卡内脚本回话：填进去了没有
-  addEventListener('message', e => { if (e.data?.type !== 'eden-map:compose-done') return;
+  addEventListener('message', e => { if (e.data?.type !== 'eden-map:compose-done' || !window.__fromHost?.(e)) return;   // 只认宿主（arch-v2：以前任何窗口都能弹这条提示）
     if (typeof TCCustom !== 'undefined') TCCustom.toast([e.data.ok ? T('cmp.done', '已填入聊天输入框（未发送）') : T('cmp.fail', '没找到酒馆输入框')]); });
   // ---------- 设置：填入聊天的模板 ----------
   async function renderUI() {

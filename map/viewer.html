@@ -100,6 +100,9 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 }
 </style>
 <link rel="modulepreload" href="here.mjs">
+<link rel="modulepreload" href="core/protocol.mjs">
+<link rel="modulepreload" href="app/clouds.mjs">
+<link rel="modulepreload" href="app/scale.mjs">
 <!-- OpenSeadragon 5.0.1（BSD-3，见 vendor/openseadragon/LICENSE.txt），随仓库版本固定 -->
 <!-- 启动文件和地图库并行开始下载（CDN 每个请求约 1 秒延迟，串行等待是打开慢的主因） -->
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/maps.json">
@@ -583,7 +586,9 @@ const coarse = matchMedia('(pointer: coarse)').matches || (navigator.deviceMemor
 // 自动档的上限：默认「清晰」（用户 2026-09-27：手机也上调一档）；只有低内存（≤ 4 GB）、省流模式或 2g / 3g 网络才封顶到「标准」
 const autoMax = () => { const c = navigator.connection || {};
   return (navigator.deviceMemory || 8) <= 4 || c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || '') ? 'std' : 'hd'; };
-const post = msg => { if (window.top !== window) parent.postMessage(msg, '*'); };
+// 协议 v2（core/protocol.mjs，arch-v2 §3）：发出的消息都盖 v；收到的消息经 PR.accept 校验（模块未到时照旧处理，宿主在 ready 之后才推数据）
+const PROTO = 2; let PR = null;
+const post = msg => { if (window.top !== window) parent.postMessage({ ...msg, v: PROTO }, '*'); };
 // 庄园 / 3D 子页与查看器同源：往下发消息用具体 origin（A-6）；file:// 等 opaque origin 只能退回 '*'
 const SUB_ORIGIN = (() => { const o = self.origin || location.origin; return o && o !== 'null' ? o : '*'; })();   // srcdoc 里 location.origin 是 'null'，self.origin 才是继承来的真实 origin
 // 省流模式：系统省流（saveData）、2g / 3g、内存 ≤ 4 GB、或手动选了「省流」档：不在后台预热别的地图的瓦片，只取 HTML 与 JSON（E4 N02）
@@ -643,7 +648,6 @@ function setTheme(th) {
   try { localStorage.setItem('edenMapTheme', window.__theme); } catch (e) {}
   window.__applyTheme(); paintSegs(); estateLook(); postState();
 }
-const cycleTheme = () => setTheme(['auto', 'light', 'dark'][(['auto', 'light', 'dark'].indexOf(window.__theme) + 1) % 3]);
 // 设置「显示」页的分段控件：主题、减少动态、三维画质（语言、清晰度、惯用手各自有 paint）
 function paintSegs() {
   const on = (sel, attr, v) => document.querySelectorAll(sel).forEach(b => { const x = b.dataset[attr] === v; b.classList.toggle('on', x); b.setAttribute('aria-pressed', x); });
@@ -659,7 +663,8 @@ async function mainInner() {
   // 三个启动文件并行取（之前 derived.json 要等前两个取完才开始）
   let d, enDict;
   [REG, M, d, DICT, HX, enDict] = await Promise.all([getJSON('data/maps.json'), getJSON('data/world_markers.json'), getJSON('data/derived.json'), window.__i18n,
-    import(new URL('here.mjs', document.baseURI).href).catch(() => null), LANG === 'en' ? window.__i18n : getJSON('i18n/en.json')]);
+    import(new URL('here.mjs', document.baseURI).href).catch(() => null), LANG === 'en' ? window.__i18n : getJSON('i18n/en.json'),
+    import(new URL('core/protocol.mjs', document.baseURI).href).then(m => { PR = m; }, () => null)]);
   // v0.9.6：选了 EN 但英文词典没取到时，整页退回中文（以前 LANG 仍是 en：面包屑英文、界面中文、变量映射英文，混在一起）
   if (!DICT || !Object.keys(DICT).length) { const zh = await getJSON('i18n/zh.json'); if (LANG !== 'zh') { LANG = 'zh'; document.documentElement.lang = 'zh-CN'; } DICT = zh || {}; }
   jsonCache.set('i18n/' + LANG + '.json', Promise.resolve(DICT));
@@ -745,7 +750,7 @@ async function mainInner() {
   else go(REG.start);   // 用户 2026-09-28：总是先开世界图；跳到当前地点只在点「当前位置」时
   $('#hereGo').onclick = () => jumpHere($('#here').value);
   TCEvents.init(); TCEvents.pollFeeds();   // 事态横条与花屏提示；外部事件数据源（maps.json 的 feeds，默认没有）
-  post({ type: 'eden-map:ready' });
+  post({ type: 'eden-map:ready', proto: PROTO });
   // 首张地图画出来后，空闲时预热其他地图：描述文件、点位数据、最粗的几层瓦片（切过去立刻有模糊版）
   viewer.addOnceHandler('tile-drawn', () => setTimeout(warmOthers, 1500));
 }
@@ -912,7 +917,7 @@ function mapChrome(m) {
 
 // ---------------- 庄园剖面（kind=estate） ----------------
 // 嵌入接口（换版时保持）：maps.json 的 src 指向页面（相对 map/）。这里 fetch 页面文本、在 <head> 后插入 <base href="页面所在目录">、
-// 用 iframe.srcdoc 显示（查看器本身也是 srcdoc + <base> 加载的；jsDelivr 的 gh 线路把 .html 当纯文本返回，不能直接 iframe src）。
+// 用 blob: iframe 显示（见 openEstate 里的说明；查看器本身是 srcdoc + <base> 加载的；jsDelivr 的 gh 线路把 .html 当纯文本返回，不能直接 iframe src）。
 //   查看器 → 庄园：{ type: 'estate:room', name }（当前地点；庄园按房间名 / 别名高亮，匹配不到就取消高亮）、{ type: 'estate:inset', left }（左侧留白 px）
 //   庄园 → 查看器：{ type: 'estate:ready' }（第一帧画完）、{ type: 'estate:key', key }（PageUp / PageDown / [ / ] 交给查看器切层）、
 //                 { type: 'estate:fail', reason }（三维库或页面脚本加载失败）
@@ -1024,7 +1029,7 @@ function estateRoom() { if (!est?.ready) return; const v = ($('#here').value || 
   const cc = cr ? { name: cr.name, floor: cr.floor, kind: cr.kind, area: cr.area, poly: cr.poly, z: (estPlan.floors.find(f => f.id === cr.floor) || {}).z } : null;
   est.frame.contentWindow?.postMessage({ type: 'estate:room', name: estFocus || (cc ? cc.name : r?.custom ? r.room : v), card: estFocus && window.estCard?.name === estFocus ? window.estCard : cc }, SUB_ORIGIN); }   // 自定义叫法：庄园页收到的是对应的标准房间名
 window.addEventListener('message', e => {
-  if (!est || e.source !== est.frame.contentWindow) return;
+  if (!est || e.source !== est.frame.contentWindow || (PR && !PR.accept(e.data, '（子页 → 查看器）'))) return;
   if (e.data?.type === 'estate:ready') onEstateReady();
   if (e.data?.type === 'estate:fail') onEstateFail(e.data.reason);
   if (e.data?.type === 'estate:key' && e.data.key === 'Escape') onEsc();
@@ -1645,7 +1650,7 @@ function renderStorage(d) {
     + `<div class="hrow"><span>${esc(tx('s.stor_clean', '清理旧聊天的地图数据'))}</span><button type="button" class="btn" id="storClean">${esc(tx('s.stor_clean_btn', '清理'))}</button></div>`
     + (d.cleaned ? `<small role="status">${esc(d.cleaned.limited ? tx('s.stor_limited', '刚清理过，请 {s} 秒后再试', { s: d.cleaned.wait || 10 }) : d.cleaned.error ? tx('s.stor_fail', '清理失败') : tx('s.stor_cleaned', '已清理 {n} 个聊天，释放 {b}', { n: d.cleaned.n, b: kb(d.cleaned.bytes) }))}</small>` : '');
   // 清理不可撤销：第一次点只变成「再点一次确认（删除 N 个旧聊天）」，5 秒内再点才发（架构评审 P1）
-  const cb = $('#storClean'), old = Math.max(0, (s?.chats || 0) - 5); let armed = 0;
+  const cb = $('#storClean'), old = typeof d.cleanable === 'number' ? d.cleanable : Math.max(0, (s?.chats || 0) - 5); let armed = 0;
   if (!old) { cb.disabled = true; cb.title = tx('s.stor_none', '没有可清理的旧聊天'); }
   cb.onclick = () => { if (Date.now() - armed < 5000) { armed = 0; cb.disabled = true; post({ type: 'eden-map:storage-clean' }); return; }
     armed = Date.now(); cb.textContent = tx('s.stor_confirm', `再点一次确认：删除 ${old} 个旧聊天的地图数据（不能撤销）`, { n: old });
@@ -1914,6 +1919,15 @@ function initQuickZoom() {
 // 嵌入酒馆（悬浮按钮面板）的消息接口：
 //   酒馆 → 地图：eden-map:here {value}（当前地点）、eden-map:open {map}（直接打开某张地图）
 //   地图 → 酒馆：eden-map:ready（可以撤掉加载遮罩）、eden-map:state {map, title}（当前地图，用于面板标题）
+// 只认宿主：parent，或带宿主令牌的消息（宿主可能是挂着脚本的另一个 iframe）；外挂脚本（compose.js 等）共用这一个判断
+function fromHost(e) {
+  if (window.top === window || !e?.data) return false;
+  if (e.origin && e.origin !== 'null' && e.origin !== self.origin) return false;   // v2：同源（srcdoc / 宿主同一 origin）
+  if (e.source === window.parent) return true;
+  const tok = (() => { try { return window.__edenHostToken || null; } catch (x) { return null; } })();
+  return !!tok && e.data.t === tok;
+}
+window.__fromHost = fromHost;
 if (window.top !== window) {
   document.body.classList.add('embed');
   window.addEventListener('message', e => {
@@ -1921,9 +1935,7 @@ if (window.top !== window) {
     // 宿主可能是 window.parent（脚本跑在顶层页），也可能是宿主页里挂着脚本的另一个 iframe（外挂脚本挂在卡片 iframe 里）——
     // 所以除了 parent，还认宿主写在查看器窗口上的令牌（eden-map.js 的 HOST_TOKEN）。同源脚本理论上能去读那个属性，
     // 这里是「挡住无意/顺手来一发」而不是同源隔离，真正的隔离要靠酒馆本身。
-    const fromParent = e.source === window.parent;
-    const tok = (() => { try { return window.__edenHostToken || null; } catch (x) { return null; } })();
-    if (!fromParent && !(tok && e.data && e.data.t === tok)) return;
+    if (!fromHost(e) || (PR && !PR.accept(e.data, '（宿主 → 查看器）'))) return;
     // bg = 酒馆在后台预加载（面板不可见）：不进庄园，也不消耗「打开后第一次一定跳」的资格
     if (e.data?.type === 'eden-map:here') { if (($('#here').value || '') !== (e.data.value || '')) estFocus = null; $('#here').value = e.data.value || ''; markHere(e.data.value);
       emEmit('here', { value: e.data.value || '', resolved: hereRes(e.data.value || '') }); }
@@ -1967,225 +1979,7 @@ function bootFail(e) {
 }
 document.addEventListener('DOMContentLoaded', main);   // 两个 defer 脚本（地图库、事态层）执行完之后
 </script>
-<script>
-// ---------------- 云（方案 B，v0.9.2；原型 map/_proto/clouds.html，说明 docs/clouds.md §6）----------------
-// 自成一块，挂点只有两处：① 包一层全局 go()（天城层与层之间的切层转场）；② 监听 body[data-map] 与「显示下方城市」开关（漂移云显隐）。
-// (a) 漂移：只在上层、云开（没勾「显示下方城市」）时；远近两层，拖动视差 0.85 / 1.2。精灵 art/clouds/puff1–6.png 与瓦片同一基址（jsDelivr 线路也通），用到才加载。
-// (b) 切层：9 条斜带 × 3 团从两头扫入 → 全白里换层 → 往两侧散开；转场中点一下跳过。
-// 减少动态效果：不漂移、直接换层。省流（lean()）：不漂移、零精灵请求，切层用白幕淡入淡出。
-(() => {
-  const RMq = matchMedia('(prefers-reduced-motion: reduce)'), RM = () => RMq.matches;
-  const ANG = 35 * Math.PI / 180, UX = Math.cos(ANG), UY = -Math.sin(ANG), PX = -UY, PY = UX, AR = 440 / 800;
-  const SPR = k => `art/clouds/puff${k % 6 + 1}.png`;
-  // 默认视野下约 5–8 团看得见（原型太稀）：远层小、慢、淡，近层大、快、稍浓
-  const LAYERS = { far: { n: 11, size: [.42, .62], op: [.3, .45], dur: [70, 95], par: .85 }, near: { n: 6, size: [.62, .85], op: [.38, .5], dur: [42, 58], par: 1.2 } };
-  const rnd = (a, b) => a + Math.random() * (b - a);
-  const isTC = id => { const m = REG?.maps?.[id]; return !!m && m.kind === 'points' && !!m.group; };
-  const want = () => cur === 'tc_upper' && !altOn('tc_upper') && !RM() && !lean();
-  let box = null, lay = {}, anims = [], shown = false, acc = { far: [0, 0], near: [0, 0] }, last = null, hooked = false;
-  const size = () => { const c = viewer.container; return [c.clientWidth, c.clientHeight]; };
-  function mount() {
-    if (box?.isConnected) return true;
-    const dc = viewer?.drawer?.canvas; if (!dc?.parentNode) return false;
-    box = document.createElement('div'); box.className = 'cl-drift'; box.setAttribute('aria-hidden', 'true');
-    for (const id of ['far', 'near']) { lay[id] = document.createElement('div'); box.appendChild(lay[id]); }
-    dc.after(box); return true;                                  // 底图画布之上、标记叠加层之下
-  }
-  function build() {
-    anims.forEach(a => a.cancel()); anims = []; for (const id in lay) lay[id].replaceChildren();
-    const [vw, vh] = size(), D = Math.hypot(vw, vh); let s = 0;
-    const nk = vw > vh ? .8 : 1;                                  // 横屏同样团数会显得挤：少 20 %
-    for (const [id, L] of Object.entries(LAYERS)) for (let k = 0, n = Math.round(L.n * nk); k < n; k++) {
-      const el = new Image(); el.alt = ''; el.decoding = 'async'; el.src = SPR(s++);
-      const w = D * rnd(...L.size), h = w * AR; el.style.width = w + 'px';
-      const off = (k / n - .5) * D * .95 + rnd(-.06, .06) * D;
-      const cx = vw / 2 + PX * off - w / 2, cy = vh / 2 + PY * off - h / 2, T = D * .6 + w * .5;
-      const op = rnd(...L.op), dur = rnd(...L.dur) * 1000;
-      lay[id].appendChild(el);
-      anims.push(el.animate([
-        { transform: `translate3d(${cx - UX * T}px,${cy - UY * T}px,0)`, opacity: 0 },
-        { opacity: op, offset: .12 }, { opacity: op, offset: .88 },
-        { transform: `translate3d(${cx + UX * T}px,${cy + UY * T}px,0)`, opacity: 0 }], { duration: dur, iterations: Infinity, delay: -((k * .618 + (id === 'near') * .31) % 1) * dur,   /* 黄金比例错相：可见团数稳定 */ easing: 'linear' }));
-    }
-  }
-  function pan() {                                                // 视差：按底图屏幕位移累加；超出半屏时淡出重排（不跳）
-    if (!shown) return;
-    const vp = viewer.viewport, c = vp.getCenter(true), sc = size()[0] / vp.getBounds(true).width;
-    if (last) { const dx = -(c.x - last.x) * sc, dy = -(c.y - last.y) * sc;
-      for (const id in LAYERS) { const a = acc[id], p = LAYERS[id].par; a[0] += dx * p; a[1] += dy * p; lay[id].style.transform = `translate3d(${a[0]}px,${a[1]}px,0)`; } }
-    last = c;
-    const [vw, vh] = size();
-    if (!box.classList.contains('fade') && (Math.abs(acc.near[0]) > vw * .6 || Math.abs(acc.near[1]) > vh * .6)) reset(true);
-  }
-  function reset(soft) {
-    const apply = () => { acc = { far: [0, 0], near: [0, 0] }; last = null; for (const id in lay) lay[id].style.transform = ''; if (shown) build(); box.classList.remove('fade'); };
-    if (soft) { box.classList.add('fade'); setTimeout(apply, 300); } else apply();
-  }
-  function hide() { shown = false; anims.forEach(a => a.cancel()); anims = []; if (box) { for (const id in lay) lay[id].replaceChildren(); box.hidden = true; } }
-  function sync() {
-    if (!viewer) return;
-    if (!hooked) { hooked = true;
-      viewer.addHandler('animation', pan); viewer.addHandler('viewport-change', pan);
-      let rt; viewer.addHandler('resize', () => { clearTimeout(rt); rt = setTimeout(() => shown && reset(false), 150); });
-      viewer.addHandler('close', () => { if (cur == null) hide(); });
-    }
-    if (!want()) return hide();
-    if (!shown && mount()) { shown = true; box.hidden = false; reset(false); }
-  }
-  new MutationObserver(() => setTimeout(sync, 0)).observe(document.body, { attributes: true, attributeFilter: ['data-map'] });
-  document.addEventListener('change', e => { if (e.target?.id === 'tgAltBox') setTimeout(sync, 0); });
-  RMq.addEventListener?.('change', sync);
-  document.addEventListener('visibilitychange', () => anims.forEach(a => document.hidden ? a.pause() : a.play()));
-
-  // ---------- 切层转场（v0.9.6：短的升 / 降，替换原来的大云团扫屏）----------
-  // 用户实测 v0.9.5：「✓ 已加载」之后大团模糊云还停在中层 / 下层上面——Web Animations 的 finished 在 WKWebView 里可能一直不 resolve，
-  // 云团停在 fill: forwards 的不透明状态。现在：各层共用同一平面范围（3000×1875 m），切层保持当前 x / y（groupView），
-  // 只做 ≈ 420 ms 的升降：旧画面放大淡出（往下）或缩小淡出（往上），新图从反方向轻微缩放淡入。
-  // 每一步都有硬超时，finally 里无条件清场；减少动态效果：直接换层。
-  let busy = false;
-  const wait = ms => new Promise(r => setTimeout(r, ms));
-  const idx = id => REG.groups[REG.maps[id].group].layers.indexOf(id);
-  const drawn = ms => new Promise(r => { const t = setTimeout(r, ms); viewer.addOnceHandler('tile-drawn', () => { clearTimeout(t); setTimeout(r, 30); }); });
-  const within = (p, ms) => Promise.race([p, wait(ms)]);
-  async function riseSink(id, run) {
-    const down = idx(id) > idx(cur), src = viewer.drawer?.canvas, osd = $('#osd'); let snap = null;
-    if (src?.width) { snap = document.createElement('canvas'); snap.width = src.width; snap.height = src.height; snap.className = 'snap tier-snap'; snap.style.zIndex = 6;
-      try { snap.getContext('2d').drawImage(src, 0, 0); $('#stage').appendChild(snap); } catch (e) { snap = null; } }
-    const anims = [];
-    try {
-      await run(); await within(drawn(600), 700);
-      const D = 420, E = 'cubic-bezier(.3,.7,.3,1)';
-      if (snap) anims.push(snap.animate([{ transform: 'scale(1)', opacity: 1 }, { transform: `scale(${down ? 1.14 : .88})`, opacity: 0 }], { duration: D, easing: E, fill: 'forwards' }));
-      anims.push(osd.animate([{ transform: `scale(${down ? .94 : 1.06})`, opacity: .35 }, { transform: 'scale(1)', opacity: 1 }], { duration: D, easing: E }));
-      await within(Promise.all(anims.map(a => a.finished.catch(() => {}))), D + 250);
-    } finally { anims.forEach(a => { try { a.cancel(); } catch (e) {} }); snap?.remove(); osd.style.transform = ''; osd.style.opacity = ''; }
-  }
-  const go0 = go;
-  go = async function (id, ...rest) {                             // 挂点 ①：只包天城层与层之间的切换，其余原样
-    if (busy || RM() || !viewer || id === cur || !isTC(cur) || !isTC(id) || REG.maps[cur].group !== REG.maps[id].group || !viewer.world.getItemCount()) return go0(id, ...rest);
-    busy = true; let p;
-    try { await riseSink(id, () => (p = go0(id, ...rest))); } catch (e) { if (!p) p = go0(id, ...rest); }
-    finally { busy = false; }
-    return p;
-  };
-  window.__clouds = { sync, state: () => ({ shown, drift: anims.length, busy, cover: !!document.querySelector('.tier-snap'), rm: RM(), lean: lean(), n: box ? box.querySelectorAll('img').length : 0,
-    visible: box && shown ? [...box.querySelectorAll('img')].filter(el => { const r = el.getBoundingClientRect(), s = viewer.container.getBoundingClientRect();
-      return +getComputedStyle(el).opacity > .15 && r.right > s.left + r.width * .3 && r.left < s.right - r.width * .3 && r.bottom > s.top + r.height * .3 && r.top < s.bottom - r.height * .3; }).length : 0 }) };
-})();
-</script>
-<script>
-// ---------------- 尺度衔接（v0.9.6，批准的设计）：世界 ↔ 天城缩放交接 + 「天城周边」过渡环 ----------------
-// (a) 世界图放大到上限、天城在视野中部时继续放大 → 交叉淡入当前层（上次看的那层），落在对应的地理点、最远那一档（约 30 km）；
-//     天城某层缩到最远（约 30 km）后继续缩小 → 交叉淡回世界图（最大放大、天城居中）。面包屑随之更新。
-// (b) 过渡环：以城区（3000×1875 m）为中心、RING_W 倍宽的一圈，用世界底图里天城附近那几像素放大、柔化，再叠一圈程序生成的云海边，
-//     盖住城区底图的硬边；城区完全占满屏幕时隐藏（不画巨大的叠加层）。不需要新渲染。城外 / 异兽类事态落在这一圈（events.js）。
-// 减少动态效果：交接照常，但没有缩放动画。
-// v0.9.6 起推广到所有「世界图地点有自己地图」的组（maps.json groups.<id>.place：天城、圣都、原域、旷野高地、圆桌封地）：
-// 每组的交接点 = 世界图上该地点；环宽 = RING_W × 该组的 extent_m 宽；环的面包屑「<组名>周边」。
-const TCScale = (() => {
-  const W_M = 12e6;
-  const grp = id => { const m = REG?.maps?.[id]; return m && m.kind === 'points' && m.status !== 'planned' && m.group && REG.groups[m.group]?.place ? m.group : null; };
-  const isTier = id => !!grp(id);
-  const T_Mof = id => REG.maps[id]?.view?.extent_m?.[0] || 3000;
-  let lastTier = {}, lastG = null, busy = false, pushes = [], ringOn = false, holder = null;
-  const cache = {};
-  const ptOf = gid => { const p = [...M.places, ...M.fiefs].find(q => q.id === REG.groups[gid]?.place); return p ? toImg(p.x, p.y) : null; };
-  const places = () => Object.keys(REG.groups).filter(g => REG.groups[g].place && REG.groups[g].layers.some(isTier) && ptOf(g));
-  // 程序噪声（值噪声 fbm，固定种子，每次一样）
-  const h2 = (x, y) => { let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
-  const vn = (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
-    const a = h2(xi, yi), b = h2(xi + 1, yi), c = h2(xi, yi + 1), d = h2(xi + 1, yi + 1); return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy; };
-  const fbm = (x, y) => vn(x, y) * .5 + vn(x * 2.1, y * 2.1) * .27 + vn(x * 4.3, y * 4.3) * .15 + vn(x * 8.7, y * 8.7) * .08;
-  async function paint(upper, asp, gid, T_M) {
-    const CW = 320, CH = Math.round(CW * asp), c = document.createElement('canvas'); c.width = CW; c.height = CH; const g = c.getContext('2d');
-    g.fillStyle = upper ? '#c9d3dc' : '#7d8a6a'; g.fillRect(0, 0, CW, CH);
-    try {   // 世界底图：天城附近 RING_W × 3 km 那一小块（约 20 px）放大
-      const x = await getText('art/world.dzi'), T = +x.match(/TileSize="(\d+)"/)[1], ov = +(x.match(/Overlap="(\d+)"/)?.[1] || 0), f = x.match(/Format="(\w+)"/)[1];
-      const W = +x.match(/Width="(\d+)"/)[1], H = +x.match(/Height="(\d+)"/)[1], top = Math.ceil(Math.log2(Math.max(W, H)));
-      const [nx, ny] = ptOf(gid), px = nx * W, py = ny * H, col = Math.floor(px / T), row = Math.floor(py / T), x0 = col * T - (col ? ov : 0), y0 = row * T - (row ? ov : 0);
-      const cw = RING_W * T_M / (W_M / W), ch = cw * asp;
-      const img = new Image(); img.crossOrigin = 'anonymous'; img.src = `art/world_files/${top}/${col}_${row}.${f}`; await img.decode();
-      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
-      g.drawImage(img, Math.max(0, px - x0 - cw / 2), Math.max(0, py - y0 - ch / 2), cw, ch, 0, 0, CW, CH);
-    } catch (e) {}
-    let id; try { id = g.getImageData(0, 0, CW, CH); } catch (e) { return c; }
-    const D = id.data, cx0 = CW / 2 - CW / RING_W / 2, cx1 = CW / 2 + CW / RING_W / 2, cy0 = CH / 2 - CH / RING_W / 2, cy1 = CH / 2 + CH / RING_W / 2;
-    const base = upper ? .1 : .5;   // 上层在云海之上：环里大多是云；中、下层：地面为主，城边一圈云
-    for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
-      const dx = Math.max(cx0 - x, 0, x - cx1), dy = Math.max(cy0 - y, 0, y - cy1), out = Math.hypot(dx, dy);
-      const inn = Math.min(x - cx0, cx1 - x, y - cy0, cy1 - y), d = out > 0 ? out : -inn;   // 到城区矩形的带符号距离（像素，外正内负）
-      const n = fbm(x / 26, y / 26), edge = Math.exp(-Math.max(d, 0) / 9);
-      let k = Math.min(1, Math.max(0, (n - base) * 2.2 + edge * .95));
-      const i = (y * CW + x) * 4, L = (D[i] * .3 + D[i + 1] * .59 + D[i + 2] * .11);
-      for (let j = 0; j < 3; j++) { const b = D[i + j] * .6 + L * .4; D[i + j] = b + ([244, 246, 250][j] - b) * k; }
-      const er = Math.hypot((x + .5) / CW * 2 - 1, (y + .5) / CH * 2 - 1) + (n - .45) * .12, outer = Math.min(1, Math.max(0, (.97 - er) / .32));   // 环的外缘按椭圆 + 噪声柔化淡出（以前按矩形，四角看得出方框）
-      D[i + 3] = d >= 0 ? Math.round(255 * outer * outer * (3 - 2 * outer)) : Math.round(255 * k * Math.max(0, 1 + d / 3.5) * .85);   // 城内：只留 3–4 px 宽的云边，盖住底图硬边
-    }
-    g.putImageData(id, 0, 0); return c;
-  }
-  function ring() {
-    if (!isTier(cur)) return;
-    const gid = grp(cur), upper = (REG.groups[gid].upper || []).includes(cur), key = cur + ':' + aspect.toFixed(3);
-    holder = document.createElement('div'); holder.className = 'tc-ring'; holder.setAttribute('aria-hidden', 'true');
-    holder.style.cssText = 'pointer-events:none;'; const h = holder;
-    viewer.addOverlay({ element: h, location: new OpenSeadragon.Rect(.5 - RING_W / 2, aspect / 2 - RING_W * aspect / 2, RING_W, RING_W * aspect) });
-    (cache[key] ??= paint(upper, aspect, gid, T_Mof(cur))).then(c => { if (!h.isConnected) return; const cv = c.cloneNode(); cv.getContext('2d').drawImage(c, 0, 0);
-      cv.style.cssText = 'width:100%;height:100%;display:block'; h.appendChild(cv); sync(); });
-    sync();
-  }
-  function crumb() {
-    const cr = $('#crumbs'); let el = cr.querySelector('.ringc');
-    if (ringOn && !el && cr.querySelector('b')) { el = document.createElement('span'); el.className = 'ringc'; const gid = grp(cur), lab = gid === 'tiancheng' ? tx('ring', '天城周边') : tx('ring_of', REG.groups[gid].title + '周边', { name: nm(REG.groups[gid], 'title') });
-      el.innerHTML = `${esc(lab)}<span class="sep" aria-hidden="true"> › </span>`;
-      el.style.color = 'var(--muted)'; cr.querySelector('b').before(el); }
-    if (!ringOn && el) el.remove();
-  }
-  function sync() {
-    if (!viewer?.world.getItemCount()) return;
-    const w = viewer.viewport.getBounds(true).width, t = isTier(cur);
-    const bb = viewer.viewport.getBounds(true), edge = bb.x < 0 || bb.y < 0 || bb.x + bb.width > 1 || bb.y + bb.height > aspect;   // 拖到图边露出外面：也显示环，不露黑底
-    if (holder) holder.style.visibility = t && (w > .9 || edge) ? '' : 'hidden';
-    const on = t && w > 1.6; if (on !== ringOn) { ringOn = on; crumb(); } else if (on) crumb();
-  }
-  // 世界图视野中心最近的那个地点（在视野宽 30% 以内才算）
-  function nearest() { const vp = viewer.viewport, b = vp.getBounds(true), c = b.getCenter(); let best = null;
-    for (const g of places()) { const [nx, ny] = ptOf(g), d = Math.hypot(c.x - nx, c.y - ny * aspect); if (d < b.width * .3 && (!best || d < best.d)) best = { g, d }; }
-    return best?.g || null; }
-  function handoffIn(ref, gid = nearest() || 'tiancheng') {
-    const g = REG.groups[gid], lt = lastTier[gid], id = lt && isTier(lt) ? lt : g.layers.find(isTier); if (!id) return;
-    const vp = viewer.viewport, c = vp.getCenter(true), [nx, ny] = ptOf(gid), cs = vp.getContainerSize(), T_M = T_Mof(id);
-    const dx = Math.max(-4, Math.min(4, (c.x - nx) * W_M / T_M)), dy = Math.max(-2.5, Math.min(2.5, (c.y - ny * aspect) * W_M / T_M));
-    const a = REG.maps[id], asp = (a.view?.extent_m?.[1] || 1875) / (a.view?.extent_m?.[0] || 3000), port = cs.y > cs.x && a.view?.phone;
-    const w = port ? a.view.phone[2] : RING_W * .96, h = w * cs.y / cs.x;   // U2：手机竖屏从世界图进城，落在核心区而不是最远一档（四周一大圈云雾）
-    groupView[gid] = new OpenSeadragon.Rect(.5 + dx - w / 2, asp / 2 + dy - h / 2, w, h);
-    const sp = vp.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true);
-    window.__snapFx = { ox: sp.x, oy: sp.y, scale: 5 }; pendingFocus = null; pendingHome = false; go(id);
-  }
-  function handoffOut() {
-    const vp = viewer.viewport, cs = vp.getContainerSize(), sp = vp.pixelFromPoint(new OpenSeadragon.Point(.5, aspect / 2), true);
-    window.__snapFx = { ox: sp.x || cs.x / 2, oy: sp.y || cs.y / 2, scale: .2 }; window.__worldTC = REG.groups[grp(cur)]?.place || true; pendingFocus = null; go('world');
-  }
-  function onZoom(e) {
-    if (busy || !REG || !cur || !viewer.world.getItemCount() || !e || !isFinite(e.zoom)) return;
-    const vp = viewer.viewport, m = REG.maps[cur], z = vp.getZoom(true), now = performance.now();
-    let dir = 0;
-    let tgt = null;
-    if (m.kind === 'world' && e.zoom > vp.getMaxZoom() * 1.01 && z >= vp.getMaxZoom() * .9) { tgt = nearest(); if (tgt) dir = 1; }
-    if (isTier(cur) && e.zoom < vp.getMinZoom() * .99 && z <= vp.getMinZoom() * 1.12) dir = -1;
-    if (!dir) return;   // 约束回弹时也会发 zoom 事件（值在范围内），不能因此清掉计数
-    pushes = pushes.filter(p => p.d === dir && now - p.t < 1500); pushes.push({ d: dir, t: now });
-    if (pushes.length < 2) return;   // 在极限处再推一下才交接，不会一碰就跳
-    pushes = []; busy = true; setTimeout(() => { busy = false; }, 1200);
-    dir > 0 ? handoffIn(e.refPoint, tgt) : handoffOut();
-  }
-  function init() {
-    viewer.addHandler('zoom', onZoom); viewer.addHandler('animation', sync); viewer.addHandler('animation-finish', sync); viewer.addHandler('open', () => setTimeout(sync, 0));
-    new MutationObserver(() => { if (isTier(cur)) { lastG = grp(cur); lastTier[lastG] = cur; } if (!isTier(cur)) { holder = null; ringOn = false; } }).observe(document.body, { attributes: true, attributeFilter: ['data-map'] });
-  }
-  const t0 = setInterval(() => { if (typeof viewer !== 'undefined' && viewer && typeof viewer.addHandler === 'function') { clearInterval(t0); init(); } }, 100);
-  return { isTier, ring, sync, handoffIn, handoffOut, get ringOn() { return ringOn; }, get lastTier() { return lastTier[lastG] || null; }, grp, places };
-})();
-window.TCScale = TCScale;
-</script>
+<script type="module" src="app/clouds.mjs"></script>
+<script type="module" src="app/scale.mjs"></script>
 </body>
 </html>

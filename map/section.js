@@ -195,10 +195,6 @@ export function drawSection(root, el, tip, D) {
     const T = { dark: ['#1f3550', '#eef6fb'], gold: ['#7a5200', '#fff7de'], cyan: ['#8ff0ff', '#0d1a24'], lilac: ['#d8d0f5', '#141020'],
       white: ['#ffffff', '#141020'], inf: ['#ffb347', '#141020'], infDark: ['#9a5200', '#fff7de'], eden: ['#6b4200', '#fff7de'], red: ['#ff9a8a', '#140a08'] }[tone];
     return el('text', { x, y, 'text-anchor': anchor, 'font-size': size, 'font-weight': 600, fill: T[0], stroke: T[1], 'stroke-width': 3.5, 'paint-order': 'stroke' }, g, text); }
-  function callout(g, x1, y1, x2, y2, text, tone = 'dark', size = 10.5) {
-    el('path', { d: `M${x1},${y1} L${x2},${y2}`, stroke: tone === 'infDark' ? '#9a5200' : '#3a4a5a', 'stroke-width': .8, fill: 'none' }, g);
-    el('circle', { cx: x1, cy: y1, r: 1.8, fill: tone === 'infDark' ? '#9a5200' : '#3a4a5a' }, g);
-    label(g, x2 + (x2 >= x1 ? 3 : -3), y2 + 3.5, text, tone, size, x2 >= x1 ? 'start' : 'end'); }
   function cloud(g, x, y, s, op) { for (const [dx, dy, r] of [[0, 0, 22], [-20, 5, 15], [20, 4, 17], [-36, 9, 10], [36, 9, 11]])
     el('ellipse', { cx: x + dx * s, cy: y + dy * s, rx: r * s * 1.3, ry: r * s * .55, fill: '#ffffff', opacity: op }, g); }
   function car(g, x, y, dir) {

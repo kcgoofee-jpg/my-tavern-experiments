@@ -37,7 +37,7 @@ PY
   local f rc=0
   # 覆盖：viewer.html 内联、map/ 与 map/tavern/ 的脚本、庄园 three.js（map/estate/）、世界图数据 map/data/world.js。
   # Node < 22 不做模块语法探测，所以先按脚本查、失败再按 ES 模块查，两个都不行才算失败。
-  for f in "$TMP"/inline*.*js map/*.js map/*.mjs map/tavern/*.js map/tavern/*.mjs map/estate/*.js map/data/*.js; do
+  for f in "$TMP"/inline*.*js map/*.js map/*.mjs map/tavern/*.js map/tavern/*.mjs map/core/*.mjs map/app/*.mjs map/estate/*.js map/data/*.js; do
     [ -f "$f" ] || continue
     node --check "$f" >/dev/null 2>&1 && continue
     node --input-type=module --check < "$f" >/dev/null 2>&1 && continue

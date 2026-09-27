@@ -8,7 +8,7 @@ export const LRU_KEY = 'edenMap:lru';
 export const MAX_CHATS = 30;
 export const AVATARS_PER_CHAT = 24;
 export const AVATAR_TOTAL = 1500000;   // 字节（UTF-16：字符数 × 2）
-export const isOurs = k => typeof k === 'string' && k.startsWith('edenMap');
+export const isOurs = k => typeof k === 'string' && (k.startsWith('edenMap') || k === 'edenEstateLabels');   // edenEstateLabels：庄园标注开关的历史键名（core/storage.mjs KEYS）
 /** 键 → 所属聊天 id；不是按聊天分的键返回 null（全局设置、全局头像等不参与 LRU） */
 export function chatOf(k) {
   if (!isOurs(k)) return null;

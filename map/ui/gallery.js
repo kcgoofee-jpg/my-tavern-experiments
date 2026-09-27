@@ -24,7 +24,6 @@ function key(e) {
   if (e.key === 'Escape') closeGallery(); else if (e.key === 'ArrowRight') show(st.i + 1); else if (e.key === 'ArrowLeft') show(st.i - 1); else return;
   e.preventDefault(); e.stopImmediatePropagation();
 }
-export const galleryOpen = () => !!el;
 export function closeGallery() {
   if (!el) return; const cb = st?.onClose;
   el.remove(); el = null; st = null; removeEventListener('keydown', key, true); cb?.();
