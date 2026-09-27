@@ -320,7 +320,7 @@ const TCEvents = (() => {
   /* 触屏：横条 44、列表行 44、图例 36（放在按钮样式之后，不被覆盖；E4b R05） */
   @media (pointer:coarse),(max-width:640px){#evbar>button{min-height:44px} #evbar li>button{min-height:44px} .evleg button{min-height:36px;padding:0 10px}}
   @media (max-width:640px){body #evbar{left:calc(var(--layers-w,0px) + 8px);right:8px;transform:none;width:auto;max-width:none;bottom:calc(var(--sp-5,12px) + env(safe-area-inset-bottom));z-index:9} body #evbar ol{max-height:34vh}
-    body #glitchNote{top:62px}}
+    body #glitchNote{top:60px;left:auto;right:8px;transform:none}}
   #glitchNote{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;padding:3px 10px;border-radius:var(--r-s,4px);background:rgba(6,20,26,.88);border:1px solid #3de0ff;color:#3de0ff;font:600 var(--fs-small,12px)/1.5 var(--font-mono,monospace);text-shadow:-1px 0 #ff3d9a,1px 0 #3de0ff;pointer-events:none}
   #glitchNote[hidden]{display:none}
   /* 花屏：间歇发作（约 3 秒一次、每次半秒多），只动叠加层的 transform / 背景；底图滤镜只在桌面开，手机上省掉 */
