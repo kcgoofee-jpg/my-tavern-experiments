@@ -62,7 +62,7 @@ t('6 匹配不到 → null', () => {
 t('优先级：更长的别处地标压过「庄园」二字', () => {
   const r = R('财团家族庄园的书房');
   assert.equal(r.level, 3); assert.equal(r.marker, 'zaibatsu_estate');
-  is('首相府', 3, 'tc_upper', { marker: 'pm_residence' }); is('大主教府邸', 3, 'tc_upper', { marker: 'archbishop_palace' });
+  is('首相府', 3, 'tc_upper', { marker: 'pm_residence' });
 });
 t('自定义房间叫法（本机）：落到对应的标准房间', () => {
   const ci = buildIndex(J('data/maps.json'), J('data/world_markers.json'), J('i18n/en.json').names, { rooms: { '我的秘密书斋': '书房', '坏名': '不存在的房间' } });
@@ -105,11 +105,36 @@ t('开局地点（v0.9.2）：卡里开场白写的当前地点都能落点', ()
   is('天城-中层高区-辉光大教堂', 3, 'tc_mid', { marker: 'radiance_cathedral' });           // 开局八
   is('旷野高地', 5, 'world', { place: '旷野高地' });                                        // 开局七
   is('天城边缘的废弃教堂区', 3, 'tc_low', { marker: 'ruined_churches' });                  // 开局四（目的地；不被「教堂」带去辉光大教堂）
-  is('天城第一学府', 3, 'tc_mid', { marker: 'starabyss_univ' });                           // 开局二
-  is('首相府', 3, 'tc_upper', { marker: 'pm_residence' });                                 // 开局三
+  is('首相府', 3, 'tc_upper', { marker: 'pm_residence' });                                 // 开局五（目的地）
 });
 t('v0.9.3：地标的自定义显示名也能落点', () => {
   const ix = buildIndex(J('data/maps.json'), null, null, { rooms: {}, marks: { 蓝塔: '天城执法局总局' } });
   const r = resolveHere('天城·中层·蓝塔', ix); assert.equal(r.map, 'tc_mid'); assert.equal(r.marker, 'enforcement_hq');
 });
+t('设定对齐（card-digest §10）：开局与标记', () => {
+  const reg = J('data/maps.json'), up = reg.maps.tc_upper.markers, mid = reg.maps.tc_mid.markers;
+  assert.deepEqual(up.pm_residence.openings, [5]); assert.equal(up.pm_residence.opening_dest, true);   // 首相府属于开局五
+  assert.equal(mid.starabyss_univ.openings, undefined); assert.equal(mid.starabyss_univ.opening_dest, undefined);   // 开局二没有目的地
+  assert.equal(up.archbishop_palace, undefined);                                                   // 上层没有教区
+  assert.equal(reg.maps.tc_mid.layer.alt, '50–800 m'); assert.equal(reg.maps.tc_low.layer.alt, '地面至 −200 m');
+});
+t('设定对齐：大主教 → 辉光大教堂（中层）', () => {
+  is('大主教府邸', 3, 'tc_mid', { marker: 'radiance_cathedral' }); is('大主教的书房', 3, 'tc_mid', { marker: 'radiance_cathedral' });
+});
+t('设定对齐：泛称不自动落地标', () => {
+  assert.equal(R('天城大学'), null); assert.equal(R('天城大学法学院'), null); assert.equal(R('大学'), null);   // 天城大学 ≠ 星渊大学
+  is('星渊大学', 3, 'tc_mid', { marker: 'starabyss_univ' }); is('天城第一学府', 3, 'tc_mid', { marker: 'starabyss_univ' });
+  is('中层 第三分局', 4, 'tc_mid'); assert.equal(R('执法局分局'), null);                                   // 中层有 18 个分局
+  is('下层分局', 3, 'tc_low', { marker: 'enforcement_low' }); is('执法局下层分局', 3, 'tc_low', { marker: 'enforcement_low' });
+  is('中层 某修道院', 4, 'tc_mid'); assert.equal(R('修道院'), null); is('战斗修女院', 3, 'tc_mid', { marker: 'iron_cradle' });
+  assert.equal(R('资产管理委员会'), null); is('公共收容设施', 3, 'tc_low', { marker: 'amc_facility' });
+  assert.equal(R('骑士团巡逻据点'), null); assert.equal(R('议会骑士团'), null); is('银冠堡', 3, 'tc_upper', { marker: 'silver_crown' });
+  assert.equal(R('凯莉的宅邸'), null);                                                                  // 开局三目的地，卡未写位置
+});
+t('设定对齐：罗斯柴尔德庄园 · 悬浮岛 R-02；MVU 默认值「User主卧」', () => {
+  for (const v of ['罗斯柴尔德庄园', '悬浮岛 R-02', '悬浮岛R-02']) is(v, 3, 'tc_upper', { marker: 'zaibatsu_estate' });
+  is('User主卧', 1, 'eden_estate', { word: '主卧' });
+  is('伊甸庄园·悬浮车库', 2, 'eden_estate', { word: '悬浮车库' }); is('伊甸庄园·载具停靠坪', 2, 'eden_estate', { word: '载具停靠坪' });
+});
+
 console.log(`\n${n} passed`);

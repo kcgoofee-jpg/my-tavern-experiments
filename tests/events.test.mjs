@@ -177,7 +177,7 @@ t('v2 人物类照常解析；示范原文仍被忽略', () => {
   }
 });
 t('v2 上层府邸地名推断到上层', () => {
-  for (const p of ['首相府', '将军官邸', '财团家族庄园', '大主教府邸', '庄园主联盟会所', '以太研究院']) {
+  for (const p of ['首相府', '将军官邸', '财团家族庄园', '罗斯柴尔德庄园', '悬浮岛 R-02', '庄园主联盟会所', '以太研究院', '银冠堡']) {
     assert.equal(parseMarks(`⌖公开行程｜${p}｜1｜到访`)[0].layer, '上层', p); assert.equal(layerOf(p), '上层', p);
   }
 });
@@ -206,4 +206,17 @@ t('色弱：媒体与气候拉开颜色，9 个大类各有形状（E4 N30）', 
   for (const g of GROUP_ORDER) assert.ok(SHAPES[g], g);
   assert.equal(new Set(GROUP_ORDER.map(g => SHAPES[g])).size, GROUP_ORDER.length);
 });
+t('设定对齐：层推断（card-digest §10 第 5、12、13、14 条）', () => {
+  const L = p => (parseMarks(`⌖公开行程｜${p}｜1｜到访`)[0] || {}).layer || '';   // 认不出层的事件不上图（parseMarks 不返回）
+  assert.equal(L('大主教府邸'), '中层'); assert.equal(layerOf('大主教府邸'), '中层');       // 上层没有教区
+  assert.equal(L('骑士团巡逻据点'), ''); assert.equal(layerOf('议会骑士团'), '');          // 「骑士团」不单独定层
+  assert.equal(L('银冠堡'), '上层');
+  for (const p of ['光辉联邦', '大骑士领·圣都', '第三帝国', '灵枢秘派', '虚灵古派', '原域', '海外']) { assert.equal(L(p), '天城外', p); assert.equal(layerOf(p), '天城外', p); }
+  assert.equal(L('奥伦帝国'), '');                                                       // 国都就是天城，不算天城外
+  assert.equal(L('最高法院'), '中层'); assert.equal(L('佣兵公会'), '中层'); assert.equal(L('公共收容设施'), '下层');
+  assert.equal(L('法师塔'), ''); assert.equal(L('天城执政厅'), '');                       // 卡没写层：不猜
+  assert.equal(L('旧公寓楼'), '中层'); assert.equal(L('废弃教堂区'), '下层');             // 之前的修正保留
+  assert.equal(L('中层第三分局'), '中层'); assert.equal(L('下层分局'), '下层');
+});
+
 console.log(`\n${n} passed`);
