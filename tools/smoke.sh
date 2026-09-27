@@ -16,6 +16,7 @@ step() { local name=$1; shift; local t=$SECONDS
   if "$@" > "$TMP/out" 2>&1; then echo "✓ $name ($((SECONDS - t))s)"; else echo "✗ $name"; tail -15 "$TMP/out" | sed 's/^/    /'; FAIL=1; fi; }
 
 step "check_maps" python3 tools/check_maps.py
+step "令牌内联一致（tokens.css ↔ viewer.html）" python3 tools/sync_tokens.py --check
 step "node --test tests/ ($(ls tests/*.test.mjs | wc -l | tr -d ' ') 个)" node --test tests/*.test.mjs
 
 inline_check() {

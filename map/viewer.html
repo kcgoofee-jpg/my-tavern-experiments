@@ -4,8 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>天城地图</title>
-<!-- 设计令牌（E5）：颜色、字号、圆角、间距、动效；和查看器同一线路，最先下载 -->
-<link rel="stylesheet" href="ui/tokens.css">
 <script>
 // 主题（默认跟随系统）与界面语言（中 / EN）：首帧之前定好，避免先闪一下深色或中文。?theme=light|dark|auto、?lang=en 可覆盖
 (function () {
@@ -19,11 +17,74 @@
   window.__i18n = fetch('i18n/' + lg + '.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));   // 和启动数据并行取
   // 首图一定是世界图（独立打开、没有 ?map= / ?here=）时才预取世界底图的描述文件与 1200px 缩略图；嵌入酒馆时首图由当前地点决定，不预取（省流，E4 N04）
   // dzi 带 crossorigin：凭据模式与 OSD 的请求一致，预取的结果才用得上
+  if ((navigator.deviceMemory || 8) <= 4) d.classList.add('lowmem');   // 低内存：不用毛玻璃（backdrop-filter 很贵）
   window.__worldFirst = window.top === window && !q.get('map') && !q.get('here');
   if (window.__worldFirst) for (const [h, as, co] of [['art/world.dzi', 'fetch', 1], ['art/borders.dzi', 'fetch', 1], ['art/world_1k.jpg', 'image', 0]]) {
     const l = document.createElement('link'); l.rel = 'preload'; l.as = as; l.href = h; if (co) l.crossOrigin = 'anonymous'; document.head.appendChild(l); }
 })();
 </script>
+<!-- 设计令牌（E5）：map/ui/tokens.css 的逐字副本，内联进来——少一个会阻塞首帧的请求，令牌文件挂了也不散架（E5 r2 弱网 W2 / W3）。
+     改令牌只改 map/ui/tokens.css，再跑 python3 tools/sync_tokens.py；tools/smoke.sh 会检查两者一致。 -->
+<style id="tokens">
+/* 天城地图 · 设计令牌 v1（docs/ui-audit.md 第三部分；E5 落成文件）。
+   查看器 viewer.html 用 <link> 引用；卡内脚本 eden-map.js 的宿主栏用同名变量的内联副本（宿主页里不能再多一个请求）。
+   原则：一套骨架，三层换皮。组件只引用语义令牌，不写色值。
+   E5 定稿的两处与草案不同：全站只有一种金 #e6c36a（深色上层 / 庄园 / 世界的 --accent；浅色取深一档 #7a5d22），只有一种红 --alert。 */
+:root {
+  /* 结构：全站一套 */
+  --font-ui: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", system-ui, sans-serif;
+  --font-serif: "Songti SC", "STSong", "Noto Serif SC", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --fs-display: 20px; --fs-title: 17px; --fs-body: 14px; --fs-control: 13px; --fs-small: 12px; --fs-micro: 11px;   /* 下限 11 */
+  --sp-1: 2px; --sp-2: 4px; --sp-3: 6px; --sp-4: 8px; --sp-5: 12px; --sp-6: 16px; --sp-7: 24px;
+  --r-s: 4px; --r-m: 8px; --r-l: 12px; --r-pill: 999px;
+  --dur-1: 120ms; --dur-2: 200ms; --dur-3: 320ms;
+  --ease-out: cubic-bezier(.2, .8, .2, 1); --ease-in: cubic-bezier(.4, 0, 1, 1);
+  --hit: 44px;
+  /* 全局色（不跟层变） */
+  --focus: #63b4be;
+  --alert: #ff5a5a; --on-alert: #1a0606;          /* 全站唯一的红：当前地点、事态计数、危险 / 失败 */
+  --ok: #7bd88f;
+  --gold: #e6c36a;                                  /* 全站唯一的金（琥珀）；深色上层的 --accent 就是它 */
+  --map-label-bg: rgba(12, 14, 18, .82); --map-label-ink: #fff; --map-label-line: rgba(255, 255, 255, .22);
+  --sh-1: 0 1px 3px rgba(0, 0, 0, .25); --sh-2: 0 6px 20px rgba(0, 0, 0, .30); --sh-3: 0 12px 32px rgba(0, 0, 0, .38);
+  --glow: none; --glow-text: none;
+  /* 深色 · 上层 / 庄园 / 世界（默认） */
+  --bg: #101418; --surface: #151b20; --surface-2: rgba(255, 255, 255, .06);
+  --line: rgba(255, 255, 255, .12); --ink: #d5dde4; --ink-2: #b7c1ca; --muted: #8591a0;
+  --accent: var(--gold); --on-accent: #1a1406; --accent-2: #efe9dc;
+  color-scheme: dark;
+}
+[data-map="tc_mid"] { --bg: #120a1f; --surface: #1a1029; --line: rgba(255, 61, 154, .24);
+  --ink: #f3e6ff; --ink-2: #dccbf0; --muted: #ac9ec3; --accent: #ff3d9a; --on-accent: #1a0610; --accent-2: #3de0ff;
+  --glow: 0 0 10px rgba(255, 61, 154, .7); --glow-text: -1px 0 #3de0ff, 1px 0 #ff3d9a, 0 0 10px rgba(255, 61, 154, .7); }
+[data-map="tc_low"] { --bg: #0b0b0b; --surface: #111411; --line: rgba(159, 232, 112, .2);
+  --ink: #d8e8cc; --ink-2: #bcd0ae; --muted: #7aa35c; --accent: #9fe870; --on-accent: #0b1406; --accent-2: #f4f1e8;
+  --ok: var(--muted); }                             /* 下层不用成功绿（和磷光绿混淆），改 --muted + ✓ */
+/* 浅色主题：只换值（组件 CSS 里不出现 .light 选择器） */
+.light { --focus: #2d6c75; --alert: #c0392b; --on-alert: #fff; --ok: #23733b;
+  --sh-1: 0 1px 3px rgba(0, 0, 0, .12); --sh-2: 0 6px 20px rgba(0, 0, 0, .15); --sh-3: 0 12px 32px rgba(0, 0, 0, .19);
+  --bg: #efeae0; --surface: #f8f5ee; --surface-2: rgba(20, 23, 26, .05);
+  --line: rgba(20, 23, 26, .16); --ink: #1b1a17; --ink-2: #3b3934; --muted: #635e54;
+  --accent: #7a5d22; --on-accent: #fff; --accent-2: #8f6f2e; color-scheme: light; }
+.light [data-map="tc_mid"], .light[data-map="tc_mid"] { --bg: #f1ecf7; --surface: #f9f6fc;
+  --line: rgba(29, 18, 48, .16); --ink: #1d1230; --ink-2: #3a2b52; --muted: #66537f; --accent: #b3155f; --on-accent: #fff; --accent-2: #0f8fa8;
+  --glow: none; --glow-text: none; }
+.light [data-map="tc_low"], .light[data-map="tc_low"] { --bg: #f4f1e8; --surface: #f8f6ef;
+  --line: rgba(27, 36, 20, .16); --ink: #1b2414; --ink-2: #34402b; --muted: #55664a; --accent: #336619; --on-accent: #fff; --accent-2: #8a7a52; }
+/* 派生令牌：在 body 上再算一次，层 / 主题换了 --accent、--surface 之后跟着变（自定义属性在声明它的元素上求值） */
+:root, body {
+  --surface-glass: color-mix(in srgb, var(--surface) 92%, transparent);
+  --accent-weak: color-mix(in srgb, var(--accent) 14%, transparent);
+  --line-strong: color-mix(in srgb, var(--accent) 55%, var(--line));
+}
+/* 通用 */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; }
+}
+</style>
+<link rel="modulepreload" href="here.mjs">
 <!-- OpenSeadragon 5.0.1（BSD-3，见 vendor/openseadragon/LICENSE.txt），随仓库版本固定 -->
 <!-- 启动文件和地图库并行开始下载（CDN 每个请求约 1 秒延迟，串行等待是打开慢的主因） -->
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/maps.json">
@@ -38,7 +99,7 @@
      例外（规范允许）：地图标签的深色胶囊（两种主题都深）、事态大类的数据色、花屏提示的青色、世界图国名的描边。 */
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: var(--fs-body); }
   button { font-family: inherit; }
-  #app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; }
+  #app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; grid-template-columns: minmax(0, 1fr); }   /* 工具栏再宽也不撑宽整页（E5 r2 无障碍 P1） */
   .ico { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
@@ -47,12 +108,12 @@
     background: var(--surface-glass); border-bottom: 1px solid var(--line); position: relative; z-index: 12;
     transition: background var(--dur-3), color var(--dur-3), border-color var(--dur-3); }
   header .grow { flex: 1 1 0; min-width: 0; }
-  #crumbs { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-body); white-space: nowrap; min-width: 0; flex: 0 1 auto; overflow: hidden; }
-  #crumbs a { color: var(--accent); cursor: pointer; text-decoration: none; border-radius: var(--r-s); }
+  #crumbs { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-body); white-space: nowrap; min-width: 0; flex: 0 1 auto; }
+  #crumbs a { flex: none; color: var(--accent); cursor: pointer; text-decoration: none; border-radius: var(--r-s); }
   #crumbs a:hover { text-decoration: underline; }
   #crumbs a:active { opacity: .6; }
   #crumbs .sep { color: var(--muted); }
-  #crumbs b { font-weight: 700; overflow: hidden; text-overflow: ellipsis; text-shadow: var(--glow-text); }
+  #crumbs b { font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-shadow: var(--glow-text); }
   #crumbs b:focus { outline: none; }
   /* 按钮：高 32（手机 36），1 px 描边，透明底；悬停 --surface-2 + --line-strong；按下 scale(.97)；选中 / 展开 = 强调色 */
   .btn { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-3); height: 32px; box-sizing: border-box; padding: 0 var(--sp-5);
@@ -81,6 +142,7 @@
   .where { flex: none; display: flex; gap: var(--sp-3); align-items: center; font-size: var(--fs-control); color: var(--muted); }
   .where input { background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); border-radius: var(--r-m); height: 32px; box-sizing: border-box; padding: 0 var(--sp-4); width: 150px; font: inherit; }
   body.embed .where { display: none; }
+  body.hdrc #layWrap { display: none; }   /* 放不下（窄窗口、放大 200%、EN）：档位 / 图层 / 语言 / 主题收进 ⚙ 菜单，不再挤出屏幕 */
   @media (max-width: 1180px) { .where { display: none; } }
 
   /* ---------- 弹层（图层 ▾、设置 ⚙ / 手机「⋯」）：Panel 规格 ---------- */
@@ -112,6 +174,7 @@
   #stage { position: relative; min-height: 0; }
   #osd { position: absolute; inset: 0; z-index: 0; }   /* 自成层叠上下文：地图上的标签 / 针脚 / 事态点永远在固定界面（层切换器、缩放组、页脚、横条）之下（E5 R14） */
   /* 小地图：--r-m、1 px --line，视口框 1.5 px 强调色（替换 OSD 默认的灰框红框） */
+  #osd .openseadragon-canvas { z-index: 0; }   /* 地图叠加物不画到小地图上 */
   #osd .navigator { border: 1px solid var(--line) !important; border-radius: var(--r-m); overflow: hidden; background: var(--bg) !important; box-shadow: var(--sh-2); margin: 0 var(--sp-5) var(--sp-5) 0 !important; }
   #osd .displayregion { border: 1.5px solid var(--accent) !important; border-radius: 2px; }
   /* 缩放组（替代 OSD 自带的拟物 + − ⌂）：Panel 规格，纵向 3 个 32 × 32 图标按钮，右下角小地图上方 */
@@ -290,16 +353,22 @@
     #zoom { right: auto; left: var(--sp-4); top: var(--sp-4); bottom: auto; flex-direction: row; }
     #zoom button { width: 36px; height: 36px; }
     #foot { left: 150px; right: var(--sp-4); top: var(--sp-3); bottom: auto; max-width: none; justify-content: flex-end; }
-    #credit { text-align: right; }
+    #credit { text-align: right; cursor: pointer; }
+    #credit.full { white-space: normal; text-overflow: clip; }   /* 手机没有 title 悬停：点一下展开全文 */
     #card { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-width: none; max-height: 45%; border-radius: var(--r-l) var(--r-l) 0 0; border-bottom: 0;
       background: var(--surface); box-shadow: var(--sh-3); -webkit-backdrop-filter: none; backdrop-filter: none;
       padding: var(--sp-2) var(--sp-6) calc(14px + env(safe-area-inset-bottom)); }
     #card .grab { display: block; width: 36px; height: 4px; margin: 2px auto var(--sp-3); border-radius: var(--r-pill); background: var(--line-strong); }
-    #setPop { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-width: none; max-height: 70%; overflow-y: auto; border-radius: var(--r-l) var(--r-l) 0 0; border-bottom: 0;
-      padding: var(--sp-5) var(--sp-6) calc(var(--sp-6) + env(safe-area-inset-bottom)); box-shadow: var(--sh-3), 0 0 0 100vmax rgba(0,0,0,.35); }
+    #setPop { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-width: none; max-height: 60%; max-height: 60dvh; overflow-y: auto; border-radius: var(--r-l) var(--r-l) 0 0; border-bottom: 0;
+      padding: var(--sp-5) var(--sp-6) calc(var(--sp-6) + env(safe-area-inset-bottom)); box-shadow: var(--sh-3); }
+    #setMask:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 12; background: rgba(0,0,0,.35); }
+    body.cardopen #layers { visibility: hidden; }   /* 卡片抽屉打开时层切换器不从抽屉上沿露出一截 */
     #setPop::before { content: ''; display: block; width: 36px; height: 4px; margin: -4px auto var(--sp-5); border-radius: var(--r-pill); background: var(--line-strong); }
     .mk .lab { font-size: var(--fs-micro); }
   }
+  /* 触屏 / 低内存：不用毛玻璃，面板实底（TT 实测：WebKit 上 backdrop-filter 是最贵的 CSS 之一） */
+  @media (pointer: coarse) { #layers, #card, #evbar { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--surface) !important; } }
+  html.lowmem :is(#layers, #card, #evbar) { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--surface) !important; }
   /* ---------- 触屏：触控目标 ≥ 44 px，用透明扩展热区，相邻热区不重叠（E4 N25） ---------- */
   @media (pointer: coarse), (max-width: 640px) {
     #layers button::before { content: ''; position: absolute; inset: -2px 0; }
@@ -330,7 +399,7 @@
   </header>
   <div id="stage" role="main" data-i18n-aria="page_title" aria-label="天城地图"><div id="osd"></div><div id="foot"><button type="button" id="build" data-i18n-title="build_title" title="版本编码，点击复制诊断信息"></button><div id="credit"></div></div><nav id="layers" hidden data-i18n-aria="layers_aria" aria-label="楼层"></nav>
     <div id="zoom" role="group" data-i18n-aria="zoom_group" aria-label="缩放"><button type="button" id="zIn" data-i18n-aria="zoom_in" aria-label="放大" data-i18n-title="zoom_in" title="放大"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button><button type="button" id="zOut" data-i18n-aria="zoom_out" aria-label="缩小" data-i18n-title="zoom_out" title="缩小"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10"/></svg></button><button type="button" id="zHome" data-i18n-aria="zoom_home" aria-label="复位" data-i18n-title="zoom_home" title="复位视野"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5L8 3l5.5 4.5M4 6.5V13h8V6.5"/></svg></button></div>
-    <div id="prog" hidden><i></i></div><div id="loading"><div><span data-i18n="loading">加载中…</span><div class="acts" hidden><button type="button" class="btn" id="estRetry" data-i18n="estate.retry">重试</button><button type="button" class="btn" id="estPlan" data-i18n="estate.plan">看平面图</button></div></div></div></div>
+    <div id="prog" hidden><i></i></div><div id="loading"><div><span data-i18n="loading">加载中…</span><div class="acts" hidden><button type="button" class="btn" id="estRetry" data-i18n="estate.retry">重试</button><button type="button" class="btn" id="estPlan" data-i18n="estate.plan">看平面图</button><button type="button" class="btn" id="tileRetry" hidden data-i18n="estate.retry">重试</button></div></div></div></div>
   <script>if (window.__worldFirst) document.getElementById('loading').classList.add('thumb');</script>
 </div>
 <div id="layPop" class="pop" hidden role="dialog" data-i18n-aria="layers_menu" aria-label="图层"><div id="layList">
@@ -343,6 +412,7 @@
 <div id="setPop" class="pop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置"><div class="more"></div><label><span data-i18n="auto_here">打开地图时自动跳到当前地点</span><input type="checkbox" role="switch" id="optAutoHere" checked></label><small data-i18n="auto_here_hint">庄园房间直达对应楼层；地标、层、世界地名各自落到对应的图</small>
   <label class="row"><span data-i18n="no_fx">关闭花屏特效</span><input type="checkbox" role="switch" id="optNoFx"></label><small data-i18n="no_fx_hint">网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字</small></div>
 <div id="card" hidden role="dialog" aria-labelledby="cardTitle"><div class="grab" aria-hidden="true"></div><div class="top"><span class="tag"></span><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><h2 id="cardTitle" tabindex="-1"></h2><div class="sub"></div><div class="src"></div><div class="extra"></div></div>
+<div id="setMask" hidden></div>
 <div id="sr" class="sr-only" aria-live="polite"></div>
 <div id="status"></div>
 <script>
@@ -474,7 +544,7 @@ async function main() {
   viewer = OpenSeadragon({
     element: $('#osd'), drawer: 'canvas', prefixUrl: 'vendor/openseadragon/images/',
     showNavigator: !narrow, showFullPageControl: false, showNavigationControl: false, navigatorPosition: 'BOTTOM_RIGHT', navigatorWidth: '180px', navigatorHeight: '120px',   // 自绘缩放组 #zoom 替代 OSD 的拟物按钮（E5 V01） visibilityRatio: 1, constrainDuringPan: true, homeFillsViewer: true, minZoomImageRatio: 1,
-    maxZoomPixelRatio: 1.25, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: 16, maxImageCacheCount: coarse ? 30 : 60,   /* 512px 瓦片：并发拉取，缓存约 60 MB */ minPixelRatio: effTier().ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true }, gestureSettingsTouch: { pinchRotate: false, flickEnabled: true },
+    maxZoomPixelRatio: 1.25, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: coarse ? 6 : 16,   /* 手机 / 低内存并发少一些（TT WebKit 实测） */ maxImageCacheCount: coarse ? 30 : 60,   /* 512px 瓦片：并发拉取，缓存约 60 MB */ minPixelRatio: effTier().ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true }, gestureSettingsTouch: { pinchRotate: false, flickEnabled: true },
     smoothTileEdgesMinZoom: Infinity,   // 瓦片有 1px 重叠，不需要放大时整屏再画一遍去接缝
   });
   viewer.addHandler('open', onOpen);
@@ -508,6 +578,7 @@ async function main() {
   $('#here').oninput = () => markHere($('#here').value);
   $('#here').onchange = () => jumpHere($('#here').value, true);   // 单独打开查看器时：输入框改完（回车 / 失焦）= 模拟 MVU 地点更新
   initSettings();
+  $('#credit').addEventListener('click', e => { if (narrowNow()) e.currentTarget.classList.toggle('full'); });
   $('#cardX').onclick = () => closeCard(true);
   const qs = new URLSearchParams(location.search), q = qs.get('map');
   if (qs.get('here')) $('#here').value = qs.get('here');   // 调试：?here=主卧
@@ -523,13 +594,18 @@ async function main() {
 // 桌面：图层开关在「图层 ▾」弹层里；窄屏：档位、图层开关、语言、主题、版本号都进「⋯」底部抽屉
 const moreEls = () => [$('#tiers'), $('#layList'), $('#langSeg'), $('#themeBtn'), $('#build')].filter(Boolean);
 function layoutHeader() {
-  const nar = narrowNow(), box = $('#setPop .more');
-  for (const el of moreEls()) {
+  const box = $('#setPop .more'), hdr = $('header');
+  const put = nar => { for (const el of moreEls()) {
     if (nar && el.parentElement !== box) { el._ph ??= document.createComment('slot'); el.before(el._ph); box.appendChild(el); }
     else if (!nar && el.parentElement === box && el._ph?.isConnected) el._ph.replaceWith(el);
-  }
+  } };
+  // 桌面宽度下先全部放回工具栏，量一下放不放得下（面包屑按全长算）；放不下就和手机一样收进菜单（641–860 px、EN、页面放大 200%，E5 r2 无障碍 P1）
+  let nar = narrowNow(); document.body.classList.remove('hdrc'); put(nar);
+  if (!nar) { const cs = getComputedStyle(hdr), kids = [...hdr.children].filter(e => e.offsetParent && !e.classList.contains('grow'));
+    const need = kids.reduce((a, e) => a + (e.id === 'crumbs' ? e.scrollWidth : e.offsetWidth), 0) + (kids.length - 1) * parseFloat(cs.columnGap || 8) + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    if (need > hdr.clientWidth) { nar = true; put(true); document.body.classList.add('hdrc'); } }
   if (nar) showLay(false);
-  $('#setBtn').innerHTML = ico(nar ? 'more' : 'set');
+  $('#setBtn').innerHTML = ico(nar ? 'more' : 'set'); $('#setBtn').setAttribute('aria-label', t(nar ? 'more' : 'settings_title'));
   $('#setBtn').setAttribute('aria-label', t(nar ? 'more' : 'settings_title'));
 }
 // 面板收起（休眠）时的慢速预取：把另一版底图（如上层「显示下方城市」）按当前清晰度上限一张一张取进缓存，
@@ -692,7 +768,7 @@ const EST_HOOK = `<script>(function(){var f=0;function fail(r){if(f)return;f=1;t
   `addEventListener('unhandledrejection',function(e){var m=String(e.reason&&e.reason.message||e.reason||'');if(/import|module|fetch/i.test(m))fail('import')})})()<\/script>`;
 function estateActs(state) {   // state: '' 隐藏；'slow' 仍在加载；'fail' 失败
   const ld = $('#loading'), acts = ld.querySelector('.acts'), ti = nm(REG.maps[cur] || {}, 'title');
-  acts.hidden = !state;
+  acts.hidden = !state; $('#estRetry').hidden = $('#estPlan').hidden = false; $('#tileRetry').hidden = true;
   if (state === 'slow') ld.querySelector('span').textContent = tx('estate.slow', '庄园三维模型加载较慢…可以继续等，或先看平面图');
   if (state === 'fail') { ld.querySelector('span').textContent = tx('estate.failed', '庄园三维模型加载失败：当前网络连不上三维库'); ld.classList.remove('done'); }
   if (state) { ld.classList.add('over'); announce(ld.querySelector('span').textContent); }
@@ -715,17 +791,21 @@ async function openEstate(id, m, hadPrev) {
   const old = est?.frame; if (old && old.parentNode) old.remove();
   const f = document.createElement('iframe'); f.id = 'estate'; f.title = nm(m, 'title');
   const vend = new URL('vendor/', url).href;
-  f.srcdoc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">${EST_HOOK}`)
+  // 用 blob: 地址而不是 srcdoc：Tauri Tavern 的 WKWebView 里第三层 srcdoc iframe（宿主 → 查看器 srcdoc → 庄园）永远不加载（TT 实测 P0）。
+  // blob 由查看器自己的窗口创建（同源），<base> 照旧，相对资源按线路解析；加载完就回收。
+  const doc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">${EST_HOOK}`)
     .replace(/(["'])https:\/\/cdn\.(?:jsdelivr\.net|jsdmirror\.com)\/npm\/three@0\.160\.0\/build\/three\.module(?:\.min)?\.js\1/g, `$1${vend}three.module.min.js$1`)
     .replace(new RegExp(THREE_CDN.source + 'examples\\/jsm\\/', 'g'), vend + 'jsm/');
-  f.addEventListener('load', () => { if (est?.frame === f) estateLook(); });   // 首帧前就带上语言与主题，少闪一下
+  const blob = URL.createObjectURL(new Blob([doc], { type: 'text/html' })); f.src = blob;
+  f.addEventListener('load', () => { setTimeout(() => URL.revokeObjectURL(blob), 0); if (est?.frame === f) estateLook(); });   // 首帧前就带上语言与主题，少闪一下
   $('#stage').appendChild(f);
   est = { id, frame: f, ready: false };
   // 12 秒还没画出第一帧：给出路（重试 / 看平面图），庄园继续在后台加载，画好了照常切过去
   setTimeout(() => { if (est?.frame === f && f.isConnected && !est.ready && !est.failed) estateActs('slow'); }, 12000);
 }
-function onEstateFail() {
-  if (!est || est.ready) return; est.failed = true; setEstFail(true); estateActs('fail');
+function onEstateFail(reason) {
+  if (!est || est.ready) return;
+  if (reason === 'timeout') return estateActs('slow');   // 只是慢（庄园页自己的超时），不说成「连不上三维库」（E5 r2 弱网 W4） est.failed = true; setEstFail(true); estateActs('fail');
 }
 function onEstateReady() {
   const f = est.frame; est.ready = true; if (estFail) setEstFail(false);
@@ -759,7 +839,7 @@ function estateRoom() { if (est?.ready) est.frame.contentWindow?.postMessage({ t
 window.addEventListener('message', e => {
   if (!est || e.source !== est.frame.contentWindow) return;
   if (e.data?.type === 'estate:ready') onEstateReady();
-  if (e.data?.type === 'estate:fail') onEstateFail();
+  if (e.data?.type === 'estate:fail') onEstateFail(e.data.reason);
   if (e.data?.type === 'estate:key') stepLayer({ PageUp: -1, '[': -1, PageDown: 1, ']': 1 }[e.data.key] || 0);
 });
 addEventListener('resize', () => estateInset());
@@ -818,7 +898,7 @@ document.addEventListener('keydown', e => {
   // 站内跳转（面包屑、「进入上层」、跨层通道）是 role=button 的链接：Enter / 空格触发
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-go][role="button"]')) { e.preventDefault(); e.target.click(); return; }
   const d = { PageUp: -1, '[': -1, PageDown: 1, ']': 1 }[e.key];
-  if (d) { e.preventDefault(); stepLayer(d); }
+  if (d) { e.preventDefault(); kbdGo = true; stepLayer(d); }
 }, true);
 // 键盘触发的站内跳转（click 的 detail = 0）：新图打开后把焦点放到卡片标题或当前层按钮，不掉到 body（E4b R06）
 let kbdGo = false;
@@ -831,12 +911,14 @@ function focusAfterGo() {
 
 // ---------------- 加载进度：已完成 / (已完成 + 正在加载) ----------------
 function initProgress() {
-  let done = 0, hideT = 0, firstLoaded = false;
+  let done = 0, ok = 0, bad = 0, hideT = 0, firstLoaded = false;
   const ts = $('#tierState');
   const upd = () => {
     let busy = 0; for (let i = 0; i < viewer.world.getItemCount(); i++) busy += viewer.world.getItemAt(i)._tilesLoading || 0;
     // 还没有任何瓦片请求（done = 0、busy = 0）时不报 100%：慢网下曾经先显示 100% 再掉回 9%（E4 N05）
     if (!busy && !done) { $('#prog').hidden = true; return; }
+    // 这一批瓦片全部失败（线路断了）：不报 100%、不说「已加载」、不撤遮罩，给「重试」（E5 r2 弱网 W1）
+    if (!busy && bad && !ok) { tilesFailed(); clearTimeout(hideT); hideT = setTimeout(() => { done = ok = bad = 0; }, 200); return; }
     const pct = busy ? Math.round(done / (done + busy) * 100) : 100;
     $('#prog').hidden = !busy; $('#prog i').style.width = pct + '%';
     if (!$('#loading').classList.contains('done') && REG.maps[cur]?.kind !== 'estate') $('#loading span').textContent = t('loading_pct', { title: nm(REG.maps[cur], 'title'), pct });
@@ -846,10 +928,10 @@ function initProgress() {
     // 当前地图首屏瓦片都到了：告诉酒馆（后台预加载据此收尾）
     if (!busy && done && !firstLoaded) { firstLoaded = true; post({ type: 'eden-map:loaded' }); }
     // 在 100% 停一下再淡出；期间换了地图（例如跳去庄园）就不撤，免得撤掉庄园的遮罩（E4 N08）
-    clearTimeout(hideT); if (!busy) { if (done) { const at = cur; setTimeout(() => { if (cur === at && REG.maps[cur]?.kind !== 'estate') $('#loading').classList.add('done'); }, 350); } hideT = setTimeout(() => { done = 0; $('#prog').hidden = true; }, 200); }
+    clearTimeout(hideT); if (!busy) { if (done) { const at = cur; setTimeout(() => { if (cur === at && REG.maps[cur]?.kind !== 'estate') $('#loading').classList.add('done'); }, 350); } hideT = setTimeout(() => { done = ok = bad = 0; $('#prog').hidden = true; }, 200); }
   };
-  viewer.addHandler('open', () => { done = 0; upd(); });
-  viewer.addHandler('tile-loaded', () => { done++; lastTile = Date.now(); upd(); });
+  viewer.addHandler('open', () => { done = ok = bad = 0; tileActs(false); upd(); });
+  viewer.addHandler('tile-loaded', () => { done++; ok++; lastTile = Date.now(); tileActs(false); upd(); });
   // 卡住提示：还有图块在加载，但 8 秒没有新图块到达 → 网络慢；20 秒 → 可点击重试（重新请求当前地图的图块）
   let lastTile = Date.now();
   setInterval(() => {
@@ -859,14 +941,27 @@ function initProgress() {
     if (idle > 20) { ts.textContent = t('stuck'); ts.className = 'busy stuck'; }
     else if (idle > 8 && !ts.classList.contains('stuck')) { ts.textContent = t('slow', { pct: ts.textContent.match(/\d+%/)?.[0] || '' }); }
   }, 1000);
-  ts.addEventListener('click', () => { if (!ts.classList.contains('stuck')) return; ts.className = 'busy'; lastTile = Date.now();
+  ts.addEventListener('click', () => { if (!ts.classList.contains('stuck')) return; if (!$('#tileRetry').hidden) return retryTiles(); ts.className = 'busy'; lastTile = Date.now();
     viewer.world.resetItems(); for (let i = 0; i < viewer.world.getItemCount(); i++) viewer.world.getItemAt(i)._needsUpdate = true; viewer.forceRedraw(); });
-  viewer.addHandler('tile-load-failed', () => { done++; upd(); });
+  viewer.addHandler('tile-load-failed', () => { done++; bad++; upd(); });
+  $('#tileRetry').onclick = retryTiles;
   viewer.addHandler('update-viewport', () => { if (!$('#prog').hidden || viewer.world.getItemAt(0)?._tilesLoading) upd(); });
   // 首屏：第一张瓦片画出来就撤掉遮罩（模糊版先出，随后变清晰）
   viewer.addHandler('tile-drawn', () => $('#loading').classList.add('over'));
 }
 
+// 瓦片线路失败：遮罩上给「重试」，顶栏显示「卡住了？点此重试」；重试 = 重新请求当前地图的瓦片
+function tileActs(on) { const b = $('#tileRetry'); if (!b || b.hidden === !on) return; b.hidden = !on;
+  const acts = $('#loading .acts'); if (on) { acts.hidden = false; $('#estRetry').hidden = $('#estPlan').hidden = true; } else if ($('#estRetry').hidden) acts.hidden = true; }
+function tilesFailed() {
+  const ts = $('#tierState'); clearTimeout(tsT2); ts.textContent = t('stuck'); ts.className = 'busy stuck'; $('#prog').hidden = true;
+  if (REG.maps[cur]?.kind === 'estate') return;
+  const ld = $('#loading'); ld.classList.remove('done'); $('#loading span').textContent = t('tiles_failed'); tileActs(true); announce(t('tiles_failed'));
+}
+function retryTiles() {   // 失败的瓦片 OSD 不会再请求（resetItems 不清失败记录），所以按原视野重新打开当前地图
+  tileActs(false); const id = cur, v = viewer.viewport.getBounds(); if (!id) return;
+  cur = null; userMoved = true; go(id).then(() => viewer.addOnceHandler('open', () => viewer.viewport.fitBounds(v, true)));
+}
 // 「✓ 已加载」：只在加载遮罩消失之后出现（E5 V13），--ok 色 1.5 秒后淡成 --muted，再 1.5 秒收起
 let tsT2 = 0;
 function tsOk(n = 0) {
@@ -1009,7 +1104,7 @@ function marker(o) { const el = markerEl(o); place(el, o.x, o.y); return el; }
 // 卡片：顶行 tag + 关闭；标题；副标题；正文（设定原文）或字段区；链接行（规范 3.2）
 function showCard(el, name, tag, src, extra, sub) {
   document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); el && el.classList.add('active');
-  const c = $('#card'); c.hidden = false;
+  const c = $('#card'); c.hidden = false; document.body.classList.add('cardopen');
   const tg = c.querySelector('.tag'); tg.textContent = t(tag === 'inf' ? 'tag_inf' : 'tag_set'); tg.className = 'tag' + (tag === 'inf' ? ' inf' : ''); tg.removeAttribute('style');   // 事态卡的数据色不带到地点卡
   c.querySelector('.sub').textContent = sub || '';
   const sv = c.querySelector('.src'); c.querySelector('h2').textContent = name; sv.textContent = src || '';
@@ -1020,7 +1115,7 @@ function showCard(el, name, tag, src, extra, sub) {
 // user = 用户主动关闭（× / Esc）：焦点回到打开卡片的元素
 function closeCard(user) {
   const c = $('#card'), had = !c.hidden, inCard = c.contains(document.activeElement);
-  c.hidden = true; document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active'));
+  c.hidden = true; document.body.classList.remove('cardopen'); document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active'));
   if (had && (user === true || inCard) && cardFrom?.isConnected) cardFrom.focus({ preventScroll: true });
   if (had) declutter();
 }
@@ -1180,14 +1275,25 @@ function initSettings() {
   const btn = $('#setBtn'), pop = $('#setPop'), box = $('#optAutoHere');
   box.checked = autoHere();
   box.onchange = () => { try { localStorage.setItem(AUTO_KEY, box.checked ? '1' : '0'); } catch (e) {} if (box.checked) jumpHere($('#here').value, true); };
-  showSet = on => { pop.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); if (on) showLay(false); };
+  // 打开弹层时焦点进到第一个控件（弹层在 DOM 里排在整张地图之后，不这样要按十几下 Tab，E5 r2 无障碍 P1）；窄屏有真正的遮罩，点遮罩关、不穿透到地图
+  const firstIn = el => el.querySelector('button:not([hidden]), input, [tabindex="0"]');
+  const mask = $('#setMask');
+  mask.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); showSet(false); });
+  mask.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); });
+  showSet = on => { const was = !pop.hidden; pop.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); mask.hidden = !(on && narrowNow());
+    if (on) { showLay(false); if (!was) firstIn(pop)?.focus({ preventScroll: true }); } };
   btn.onclick = e => { e.stopPropagation(); showSet(pop.hidden); };
   document.addEventListener('click', e => { if (!pop.hidden && !pop.contains(e.target) && !btn.contains(e.target)) showSet(false); });
   // 「图层 ▾」弹层：挂在按钮下方、右对齐
   const lb = $('#layBtn'), lp = $('#layPop');
   showLay = on => { lp.hidden = !on; lb.setAttribute('aria-expanded', on ? 'true' : 'false');
-    if (on) { showSet(false); const r = lb.getBoundingClientRect(); lp.style.left = Math.max(8, Math.min(innerWidth - lp.offsetWidth - 8, r.right - lp.offsetWidth)) + 'px'; } };
+    if (on) { showSet(false); const r = lb.getBoundingClientRect(); lp.style.left = Math.max(8, Math.min(innerWidth - lp.offsetWidth - 8, r.right - lp.offsetWidth)) + 'px'; firstIn(lp)?.focus({ preventScroll: true }); } };
   lb.onclick = e => { e.stopPropagation(); showLay(lp.hidden); };
+  // 弹层里 Tab 循环，不跑回地图
+  for (const el of [pop, lp]) el.addEventListener('keydown', e => { if (e.key !== 'Tab') return;
+    const f = [...el.querySelectorAll('button, input, [tabindex="0"]')].filter(x => x.offsetParent && !x.disabled); if (!f.length) return;
+    const i = f.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); } });
   document.addEventListener('click', e => { if (!lp.hidden && !lp.contains(e.target) && !lb.contains(e.target)) showLay(false); });
   // 关闭花屏特效：只停动画和滤镜，「⚠ 数据链路受扰」文字照常显示；系统开了「减少动态效果」时默认勾上（E4 N24）
   const fx = $('#optNoFx'); let nofx = matchMedia('(prefers-reduced-motion: reduce)').matches;

@@ -43,7 +43,7 @@
   --line: rgba(29, 18, 48, .16); --ink: #1d1230; --ink-2: #3a2b52; --muted: #66537f; --accent: #b3155f; --on-accent: #fff; --accent-2: #0f8fa8;
   --glow: none; --glow-text: none; }
 .light [data-map="tc_low"], .light[data-map="tc_low"] { --bg: #f4f1e8; --surface: #f8f6ef;
-  --line: rgba(27, 36, 20, .16); --ink: #1b2414; --ink-2: #34402b; --muted: #55664a; --accent: #3f7a22; --on-accent: #fff; --accent-2: #8a7a52; }
+  --line: rgba(27, 36, 20, .16); --ink: #1b2414; --ink-2: #34402b; --muted: #55664a; --accent: #336619; --on-accent: #fff; --accent-2: #8a7a52; }
 /* 派生令牌：在 body 上再算一次，层 / 主题换了 --accent、--surface 之后跟着变（自定义属性在声明它的元素上求值） */
 :root, body {
   --surface-glass: color-mix(in srgb, var(--surface) 92%, transparent);

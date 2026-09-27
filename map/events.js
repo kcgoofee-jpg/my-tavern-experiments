@@ -294,11 +294,11 @@ const TCEvents = (() => {
   #evbar>button:active{transform:scale(.99)}
   #evbar>button:focus-visible,#evbar li>button:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
   #evbar>button .shp{width:10px;height:10px;background:var(--c);flex:none}
-  #evbar .sum{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  #evbar .sum{font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
   #evbar .new{color:var(--accent);font-weight:700;white-space:nowrap}
   #evbar .chev{margin-left:auto;width:14px;height:14px;flex:none;fill:none;stroke:var(--muted);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:transform var(--dur-2)}
   #evbar[data-open="1"] .chev{transform:rotate(180deg)}
-  #evbar ol{list-style:none;margin:0;padding:0 var(--sp-3,6px) var(--sp-3,6px);max-height:38vh;overflow-y:auto}
+  #evbar ol{list-style:none;margin:0;padding:0 var(--sp-3,6px) var(--sp-3,6px);max-height:38vh;max-height:38dvh;overflow-y:auto}
   #evbar[data-open="0"] ol,#evbar[data-open="0"] .evleg{display:none}
   .evleg{display:flex;flex-wrap:wrap;gap:var(--sp-2,4px);padding:var(--sp-1,2px) var(--sp-4,8px) var(--sp-3,6px);align-items:center;border-top:1px solid var(--line)}
   .evleg button{box-sizing:border-box;display:inline-flex;align-items:center;gap:var(--sp-2,4px);min-height:24px;padding:0 var(--sp-4,8px);border-radius:var(--r-pill,999px);border:1px solid var(--line)!important;font-size:var(--fs-micro,11px);line-height:1.4;white-space:nowrap;transition:border-color var(--dur-1),background var(--dur-1)}
@@ -318,8 +318,8 @@ const TCEvents = (() => {
   #evbar li .nb{display:inline-block;margin-left:4px;padding:0 5px;border-radius:var(--r-s,4px);background:var(--accent-weak);color:var(--accent);font-size:var(--fs-micro,11px);font-weight:700;line-height:16px;vertical-align:1px}
   #evbar li em{font-style:normal;color:var(--muted);font-size:var(--fs-micro,11px)}
   /* 触屏：横条 44、列表行 44、图例 36（放在按钮样式之后，不被覆盖；E4b R05） */
-  @media (pointer:coarse),(max-width:640px){#evbar>button{min-height:44px} #evbar li>button{min-height:44px} .evleg button{min-height:36px;padding:0 10px}}
-  @media (max-width:640px){body #evbar{left:calc(var(--layers-w,0px) + 8px);right:8px;transform:none;width:auto;max-width:none;bottom:calc(var(--sp-5,12px) + env(safe-area-inset-bottom));z-index:9} body #evbar ol{max-height:34vh}
+  @media (pointer:coarse),(max-width:640px){#evbar>button{min-height:44px} #evbar li>button{min-height:44px} .evleg button{min-height:44px;padding:0 12px}}
+  @media (max-width:640px){body #evbar{left:calc(var(--layers-w,0px) + 8px);right:8px;transform:none;width:auto;max-width:none;bottom:calc(var(--sp-5,12px) + env(safe-area-inset-bottom));z-index:9} body #evbar ol{max-height:34vh;max-height:34dvh}
     body #glitchNote{top:60px;left:auto;right:8px;transform:none}}
   #glitchNote{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;padding:3px 10px;border-radius:var(--r-s,4px);background:rgba(6,20,26,.88);border:1px solid #3de0ff;color:#3de0ff;font:600 var(--fs-small,12px)/1.5 var(--font-mono,monospace);text-shadow:-1px 0 #ff3d9a,1px 0 #3de0ff;pointer-events:none}
   #glitchNote[hidden]{display:none}
