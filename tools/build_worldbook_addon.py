@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""生成「伊甸地图·世界书附加条目」：只含地图条目的独立世界书 JSON（酒馆「导入世界书」直接用，不改角色卡）。
+"""生成「伊甸地图·世界书附加条目」
+
+原作角色卡：Yehehua（类脑社区），原作发布帖 https://discord.com/channels/1380075940285124724/1534464824141025321 。本地图与附加条目是经作者同意（2026-09-27，Discord）的二次创作；发布时首帖须附原作帖链接。
+
+：只含地图条目的独立世界书 JSON（酒馆「导入世界书」直接用，不改角色卡）。
 
 内容从仓库数据生成，改了事件类型或地名后重跑即可保持一致：
   - 事件类型、大类顺序、稀有度、示范原文：map/tavern/events.mjs（CATS / GROUP_ORDER / EXAMPLES，经 node 读取）
@@ -21,6 +25,7 @@
 import argparse, json, os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CREDIT = '原作角色卡：Yehehua（类脑社区），原作发布帖 https://discord.com/channels/1380075940285124724/1534464824141025321 。本附加条目是经作者同意的二次创作。'
 RARE = {3: '罕', 4: '传'}
 
 
@@ -198,7 +203,7 @@ def to_book(items):
         e = {'uid': i, 'comment': comment, 'content': content, 'order': order, 'displayIndex': i}
         for k, v in FIELDS.items(): e.setdefault(k, json.loads(json.dumps(v)))
         entries[str(i)] = e
-    return {'entries': entries}
+    return {'_credit': CREDIT, 'entries': entries}   # 酒馆导入只读 entries；_credit 是原作署名
 
 
 def tokens(s):
