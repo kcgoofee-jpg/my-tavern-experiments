@@ -55,6 +55,16 @@ async function run(name, preset) {
       const sent = await p.evaluate(() => !!window.__sent);
       rep.check(`${name} 从不发送`, !sent);
     }
+    if (on('more')) {
+      await vf.evaluate(() => { closeCard(); TCChars.cardOf('甲一'); }); await B.wait(400);
+      const m = await vf.evaluate(() => { const d = document.querySelector('#card details.chmore'); if (!d) return null; d.open = true;
+        return { t: document.querySelector('#card h2').textContent, rows: [...d.querySelectorAll('dt')].map((x, i) => x.textContent + '=' + d.querySelectorAll('dd')[i].textContent) }; });
+      rep.check(`${name} 名册成员（不在图上）也能开人物卡，「更多资料」列出代号 / 身高体重 / 外界知情 / 饰物`, m && m.t === '甲一' && ['代号=青鸟', '身高 / 体重=168 cm · 52 kg', '外界知情=不知情', '饰物=银色细链'].every(r => m.rows.includes(r)), JSON.stringify(m));
+      await B.wait(200); await B.shot(p, OUT, `more_${name}_card`);
+      await vf.evaluate(() => { const c = document.getElementById('optCharMore'); c.checked = false; c.onchange(); closeCard(); TCChars.cardOf('甲一'); }); await B.wait(300);
+      rep.check(`${name} 设置关掉「更多资料」后不显示`, await vf.evaluate(() => !document.querySelector('#card details.chmore')));
+      await vf.evaluate(() => { const c = document.getElementById('optCharMore'); c.checked = true; c.onchange(); });
+    }
     rep.check(`${name} 无页面错误`, !errs(P).length, errs(P).join(' | ').slice(0, 300));
   } catch (e) { rep.check(`${name} 运行`, false, String(e).slice(0, 300)); }
   finally { await P.ctx.close(); }

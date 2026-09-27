@@ -424,5 +424,15 @@
   "cmp.fail": "Chat input box not found",
   "cmp.title": "Chat fill templates",
   "cmp.hint": "\"Go here\" / \"Ask about this\" on cards put this sentence into the Tavern input box; it is never sent automatically. {name} = place / event / person",
-  "cmp.reset": "Restore defaults"
+  "cmp.reset": "Restore defaults",
+  "char_more": "More details on person cards",
+  "char_more_hint": "An expandable section on person cards: codename, public identity, height / weight, publicly known, accessories (pick or turn off the fields in Variable mapping)",
+  "ch.more_h": "More details",
+  "ch.m_code": "Codename",
+  "ch.m_social": "Public identity",
+  "ch.m_hw": "Height / weight",
+  "ch.m_known": "Publicly known",
+  "ch.m_yes": "Yes",
+  "ch.m_no": "No",
+  "ch.m_acc": "Accessories"
 }
