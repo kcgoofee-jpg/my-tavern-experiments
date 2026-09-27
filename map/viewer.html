@@ -123,6 +123,7 @@
   .btn:active { transform: scale(.97); }
   .btn[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
   .btn.ic { width: 32px; padding: 0; }
+  .btn[hidden] { display: none; }   /* .btn 的 inline-flex 不能盖过 hidden（E5 r3 弱网 W9） */
   .btn .lbl { display: none; }
   .btn .chev { width: 12px; height: 12px; transition: transform var(--dur-2); }
   .btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
@@ -151,7 +152,7 @@
     font-size: var(--fs-control); line-height: 1.5; }
   .pop[hidden], #setPop [hidden] { display: none !important; }
   #layPop { width: 220px; padding: var(--sp-3) var(--sp-4); }
-  #setPop { right: var(--sp-5); }
+  #setPop { right: var(--sp-5); max-height: calc(100dvh - var(--hdr, 48px) - 16px); overflow-y: auto; }   /* 矮窗口（放大 200%）里菜单能滚动 */
   .pop h3 { margin: 0 0 var(--sp-3); font: 600 var(--fs-micro)/1.4 var(--font-ui); color: var(--muted); letter-spacing: .06em; }
   html[lang="en"] .pop h3 { letter-spacing: 0; }
   /* 开关（Toggle）：整行 label 是热区；34 × 20 胶囊 */
@@ -199,6 +200,8 @@
   #layers button:not(:disabled):active { transform: scale(.97); }
   #layers button.on { background: var(--accent-weak); box-shadow: inset 3px 0 0 var(--accent); color: var(--accent); font-weight: 700; text-shadow: var(--glow-text); }
   #layers button:disabled { opacity: .45; cursor: default; }
+  /* 中层选中项：字用 --ink，不叠色差重影；霓虹粉留给左线和底（E5 r3 无障碍 F-12 / F-10：触屏实底上粉字只有 4.09:1） */
+  body[data-map="tc_mid"] #layers button.on { color: var(--ink); text-shadow: none; }
   /* 层按钮上的标记：6 px 红点 = 当前地点在这一层；胶囊角标 = 这一层未解除的事态数（全站唯一的红） */
   #layers .hd { display: none; width: 6px; height: 6px; margin-left: var(--sp-3); border-radius: 50%; background: var(--alert); vertical-align: 2px; }
   #layers button.here .hd { display: inline-block; }
@@ -227,8 +230,8 @@
   #loading.thumb { background: linear-gradient(rgba(10,12,16,.55), rgba(10,12,16,.55)), url(art/world_1k.jpg) center / cover; }
   #loading .acts { display: flex; gap: var(--sp-4); justify-content: center; margin-top: 10px; }
   #loading .acts[hidden] { display: none; }
-  #loading .acts button { height: 40px; }
-  #loading .acts button:first-child { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
+  #loading .acts button { height: 40px; background: var(--surface); box-shadow: var(--sh-2); }   /* 次按钮实底：浅色云海上也看得见（E5 r3 现编） */
+  #loading .acts button:first-child, #loading #tileRetry { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
   /* 只在加载中接收点击；.done 后整块穿透，否则正中会留一块吃掉滚轮 / 拖动的死区（E4b R01） */
   #loading.over:not(.done) .acts, #loading.over:not(.done) span { pointer-events: auto; }
 
@@ -602,7 +605,7 @@ function layoutHeader() {
   // 桌面宽度下先全部放回工具栏，量一下放不放得下（面包屑按全长算）；放不下就和手机一样收进菜单（641–860 px、EN、页面放大 200%，E5 r2 无障碍 P1）
   let nar = narrowNow(); document.body.classList.remove('hdrc'); put(nar);
   if (!nar) { const cs = getComputedStyle(hdr), kids = [...hdr.children].filter(e => e.offsetParent && !e.classList.contains('grow'));
-    const need = kids.reduce((a, e) => a + (e.id === 'crumbs' ? e.scrollWidth : e.offsetWidth), 0) + (kids.length - 1) * parseFloat(cs.columnGap || 8) + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    const need = kids.reduce((a, e) => a + (e.id === 'crumbs' ? [...e.children].reduce((w, c) => w + c.scrollWidth + 6, 0) : e.offsetWidth), 0) + (kids.length - 1) * parseFloat(cs.columnGap || 8) + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
     if (need > hdr.clientWidth) { nar = true; put(true); document.body.classList.add('hdrc'); } }
   if (nar) showLay(false);
   $('#setBtn').innerHTML = ico(nar ? 'more' : 'set'); $('#setBtn').setAttribute('aria-label', t(nar ? 'more' : 'settings_title'));
@@ -805,7 +808,8 @@ async function openEstate(id, m, hadPrev) {
 }
 function onEstateFail(reason) {
   if (!est || est.ready) return;
-  if (reason === 'timeout') return estateActs('slow');   // 只是慢（庄园页自己的超时），不说成「连不上三维库」（E5 r2 弱网 W4） est.failed = true; setEstFail(true); estateActs('fail');
+  if (reason === 'timeout') return estateActs('slow');   // 只是慢（庄园页自己的超时），不说成「连不上三维库」（E5 r2 弱网 W4）
+  est.failed = true; setEstFail(true); estateActs('fail');
 }
 function onEstateReady() {
   const f = est.frame; est.ready = true; if (estFail) setEstFail(false);
@@ -857,6 +861,7 @@ function renderNav() {
   if (g) nav.innerHTML = g.layers.map(k => { const L = REG.maps[k], planned = L.status === 'planned';
     return `<button type="button" data-go="${k}" class="${k === cur ? 'on' : ''}" ${k === cur ? 'aria-current="page"' : ''} ${planned ? `disabled title="${esc(tx('layers.planned', '制作中'))}"` : ''}>${esc(nm(L.layer))}<i class="hd" title="${esc(tx('layers.here', '当前地点在这一层'))}"></i><em class="evn"></em><small>${esc(planned ? tx('layers.planned', '制作中') : nm(L.layer, 'alt'))}</small></button>`; }).join('');
   updateLayerBadges();
+  if (!narrowNow()) requestAnimationFrame(layoutHeader);   // 面包屑变长（切到更深的图）后重新量工具栏放不放得下（E5 r3 设计 D8 / 无障碍 F-14）
 }
 // 当前地点在同组的哪一层：各层地标名 / 别名、庄园的房间别名里最长的匹配；匹配不到再看有没有写「上层 / 中层 / 下层」
 function hereLayer(v, g) {
@@ -956,9 +961,11 @@ function tileActs(on) { const b = $('#tileRetry'); if (!b || b.hidden === !on) r
 function tilesFailed() {
   const ts = $('#tierState'); clearTimeout(tsT2); ts.textContent = t('stuck'); ts.className = 'busy stuck'; $('#prog').hidden = true;
   if (REG.maps[cur]?.kind === 'estate') return;
-  const ld = $('#loading'); ld.classList.remove('done'); $('#loading span').textContent = t('tiles_failed'); tileActs(true); announce(t('tiles_failed'));
+  const first = $('#tileRetry').hidden, ld = $('#loading'); ld.classList.remove('done'); $('#loading span').textContent = t('tiles_failed'); tileActs(true);
+  if (first) announce(t('tiles_failed'));   // 每批失败都会进来：只在第一次播报（E5 r3 无障碍 F-13）
 }
 function retryTiles() {   // 失败的瓦片 OSD 不会再请求（resetItems 不清失败记录），所以按原视野重新打开当前地图
+  srQ = []; clearTimeout(srT); const sp = $('#loading span'); sp.tabIndex = -1; sp.focus({ preventScroll: true });   // 按钮隐藏前先把焦点给提示文字，不掉到 body
   tileActs(false); const id = cur, v = viewer.viewport.getBounds(); if (!id) return;
   cur = null; userMoved = true; go(id).then(() => viewer.addOnceHandler('open', () => viewer.viewport.fitBounds(v, true)));
 }
