@@ -166,6 +166,11 @@
   #setPop small { display: block; color: var(--muted); font-size: var(--fs-micro); line-height: 1.45; margin: -2px 48px var(--sp-4) 0; }
   #setPop .more { display: flex; flex-direction: column; gap: var(--sp-5); margin-bottom: var(--sp-5); padding-bottom: var(--sp-5); border-bottom: 1px solid var(--line); }
   #setPop .more:empty { display: none; }
+  /* 自检（E6，只在嵌入酒馆时出现） */
+  #selfCheck { margin-top: var(--sp-5); padding-top: var(--sp-5); border-top: 1px solid var(--line); font-size: var(--fs-micro); line-height: 1.5; color: var(--ink); }
+  #selfCheck b { display: block; font-size: var(--fs-control); margin-bottom: var(--sp-2, 4px); } #selfCheck ul { list-style: none; margin: 0 0 var(--sp-4) 0; padding: 0; }
+  #selfCheck li.ok::first-letter { color: var(--ok, #7bd88f); } #selfCheck li.warn { color: var(--alert, #ff5a5a); } #selfCheck li.skip { color: var(--muted); } #selfCheck li.info { color: var(--accent); }
+  #selfCheck .btn { min-height: 36px; margin: 2px 0 var(--sp-2, 4px); }
   #setPop .more > .seg, #setPop .more > .btn, #setPop .more > #build { align-self: flex-start; }
   #setPop .more .btn .lbl { display: inline; }
   #setPop .more .btn.ic { width: auto; padding: 0 var(--sp-5); }
@@ -460,6 +465,9 @@ const post = msg => { if (window.top !== window) parent.postMessage(msg, '*'); }
 // 省流模式：系统省流（saveData）、2g / 3g、内存 ≤ 4 GB、或手动选了「省流」档：不在后台预热别的地图的瓦片，只取 HTML 与 JSON（E4 N02）
 const lean = () => { const c = navigator.connection || {};
   return !!c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || '') || (navigator.deviceMemory || 8) <= 4 || tier === 'save'; };
+// 触屏且拿不到网络 / 内存信息（iOS WebKit 两个都没有）：按省流处理，但只用于后台预热和「自动进 3D 庄园」；清晰度自动档上限 autoMax() 不受影响（用户 2026-09-27 定，E6）
+const touchUnknown = !navigator.connection && !('deviceMemory' in navigator) && matchMedia('(pointer: coarse)').matches;
+const leanBg = () => lean() || touchUnknown;
 // 读屏播报（aria-live）：新事态、花屏开始
 // 同一时刻的几条（新事态 + 花屏）合并成一句播报，后一条不再覆盖前一条（E4b R09）
 let srQ = [], srT = 0;
@@ -487,6 +495,7 @@ function applyI18n() {
   const th = window.__theme; $('#themeBtn').innerHTML = ico(th) + `<span class="lbl">${esc(t('theme_' + th))}</span>`;
   $('#themeBtn').setAttribute('aria-label', t('theme_title') + '：' + t('theme_' + th));
   $('#setBtn').setAttribute('aria-label', t(narrowNow() ? 'more' : 'settings_title'));
+  renderSelfCheck();
 }
 async function setLang(l) {
   if (l === LANG) return;
@@ -503,7 +512,7 @@ function cycleTheme() {
 }
 const themeNow = () => document.documentElement.classList.contains('light') ? 'light' : 'dark';
 // 当前地图、标题、语言、主题 → 酒馆（面板标题栏跟着换语言和深浅）
-function postState() { if (cur && REG?.maps[cur]) post({ type: 'eden-map:state', map: cur, title: nm(REG.maps[cur], 'title'), lang: LANG, theme: themeNow() }); }
+function postState() { if (cur && REG?.maps[cur]) { post({ type: 'eden-map:state', map: cur, title: nm(REG.maps[cur], 'title'), lang: LANG, theme: themeNow() }); emMapChanged(); } }
 
 async function main() {
   // 三个启动文件并行取（之前 derived.json 要等前两个取完才开始）
@@ -511,7 +520,7 @@ async function main() {
   [REG, M, d, DICT, HX, enDict] = await Promise.all([getJSON('data/maps.json'), getJSON('data/world_markers.json'), getJSON('data/derived.json'), window.__i18n,
     import(new URL('here.mjs', document.baseURI).href).catch(() => null), LANG === 'en' ? window.__i18n : getJSON('i18n/en.json')]);
   DICT = DICT || {}; jsonCache.set('i18n/' + LANG + '.json', Promise.resolve(DICT));
-  if (HX) hereIdx = HX.buildIndex(REG, M, enDict?.names);   // 当前地点 → 落点的词表（中英都认）
+  enNames = enDict?.names || null; rebuildHere();   // 当前地点 → 落点的词表（中英都认；加上本机自定义叫法）
   post({ type: 'eden-map:boot', pct: .9 });   // 数据文件已到
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点
   if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland);
@@ -579,7 +588,7 @@ async function main() {
     $('#tgRoutesBox').onchange = e => { document.body.classList.toggle('noroutes', !e.target.checked); try { localStorage.setItem('edenMapRoutes', e.target.checked ? '1' : '0'); } catch (err) {} }; }
   $('#tgMarkers').onchange = e => document.body.classList.toggle('nomarkers', !e.target.checked);
   $('#here').oninput = () => markHere($('#here').value);
-  $('#here').onchange = () => jumpHere($('#here').value, true);   // 单独打开查看器时：输入框改完（回车 / 失焦）= 模拟 MVU 地点更新
+  $('#here').onchange = () => { jumpHere($('#here').value, true); emEmit('here', { value: $('#here').value, resolved: hereRes($('#here').value) }); };   // 单独打开查看器时：输入框改完（回车 / 失焦）= 模拟 MVU 地点更新
   initSettings();
   $('#credit').addEventListener('click', e => { if (narrowNow()) e.currentTarget.classList.toggle('full'); });
   $('#cardX').onclick = () => closeCard(true);
@@ -616,7 +625,7 @@ function layoutHeader() {
 let slowStop = true;
 const slowDone = new Set();
 async function slowWarmAlt() {
-  if (lean()) return;   // 省流：后台不拉另一版底图
+  if (leanBg()) return;   // 省流（含拿不到网络信息的触屏）：后台不拉另一版底图
   slowStop = false;
   for (const m of Object.values(REG.maps)) {
     if (!m.alt?.base || m.status === 'planned') continue;
@@ -654,6 +663,7 @@ function clientTail() {
 let buildCode = '';
 fetch('data/build.json').then(r => r.ok ? r.json() : null).then(b => {
   buildCode = ((b && b.code) || 'S0-0000-D-0000') + '-' + clientTail();
+  post({ type: 'eden-map:build', version: b?.version || null, code: b?.code || null });   // 给卡内脚本的自检比对版本（E6）
   $('#build').textContent = buildCode;
 }).catch(() => {});
 $('#build').addEventListener('click', () => {
@@ -664,7 +674,7 @@ $('#build').addEventListener('click', () => {
 });
 const getText = url => { if (!textCache.has(url)) textCache.set(url, fetch(url).then(r => r.text())); return textCache.get(url); };
 async function warmOthers() {
-  const thin = lean();   // 省流：只取 JSON 与庄园页 HTML，不取 dzi、不取瓦片
+  const thin = leanBg();   // 省流（含拿不到网络信息的触屏）：只取 JSON 与庄园页 HTML，不取 dzi、不取瓦片
   for (const [id, m] of Object.entries(REG.maps)) {
     if (m.kind === 'estate' && m.src && id !== cur) { getText(new URL(m.src, document.baseURI).href).catch(() => {}); continue; }   // 庄园页面文本（三维库本身不预取）
     if (id === cur || m.status === 'planned' || !m.base) continue;
@@ -839,7 +849,8 @@ function estateLook() {
   w.postMessage({ type: 'estate:lang', lang: LANG }, '*');
   w.postMessage({ type: 'estate:theme', theme: document.documentElement.classList.contains('light') ? 'light' : 'dark' }, '*');
 }
-function estateRoom() { if (est?.ready) est.frame.contentWindow?.postMessage({ type: 'estate:room', name: ($('#here').value || '').replace('{{user}}', '') }, '*'); }
+function estateRoom() { if (!est?.ready) return; const v = ($('#here').value || '').replace('{{user}}', ''), r = hereRes(v);
+  est.frame.contentWindow?.postMessage({ type: 'estate:room', name: r?.custom ? r.room : v }, '*'); }   // 自定义叫法：庄园页收到的是对应的标准房间名
 window.addEventListener('message', e => {
   if (!est || e.source !== est.frame.contentWindow) return;
   if (e.data?.type === 'estate:ready') onEstateReady();
@@ -1271,8 +1282,8 @@ function jumpHere(v, force) {
   let r = hereRes(v);
   if (!r || !autoHere() || !REG?.maps[r.map] || REG.maps[r.map].status === 'planned') return false;
   if (!force && v === lastJump) return false;
-  // 后台预加载时、或本次会话庄园三维加载失败过：不自动进庄园，落到它的平面替身（上层的伊甸地标）（E4 N01、N03）
-  if (REG.maps[r.map].kind === 'estate' && (bgMode || estFail)) { const sub = estateStandIn(r.map); if (sub) r = { ...r, map: sub.map, marker: sub.marker }; }
+  // 后台预加载时、本次会话庄园三维加载失败过、或省流设备（含 iOS 这类拿不到网络信息的触屏）：不自动进庄园，落到它的平面替身（上层的伊甸地标），地点卡里有「进入庄园」由用户决定（E4 N01、N03，E6）
+  if (REG.maps[r.map].kind === 'estate' && (bgMode || estFail || leanBg())) { const sub = estateStandIn(r.map); if (sub) r = { ...r, map: sub.map, marker: sub.marker }; }
   if (!bgMode) lastJump = v;   // 后台那次不算「已经跳过」：用户真正打开面板时还会跳
   if (r.map !== cur) { pendingFocus = r.marker || null; pendingHome = !r.marker && !r.place; go(r.map); return true; }
   if ((r.marker || r.place) && viewer?.world.getItemCount()) { userMoved = false; markHere(v); focusStart(false); }   // 同一张图：飞到地标 / 世界地名
@@ -1309,6 +1320,47 @@ function initSettings() {
   fx.onchange = () => { document.body.classList.toggle('nofx', fx.checked); try { localStorage.setItem('edenMapNoFx', fx.checked ? '1' : '0'); } catch (e) {} };
 }
 let showSet = () => {}, showLay = () => {};
+// ---------------- 本机扩展接口 window.EdenMap（E6，docs/content-compat.md） ----------------
+// 只读写用户本机 localStorage，不联网、不上传、不进地址。酒馆里由卡内脚本 eden-map.js 在宿主页挂同名对象并转发到这里，并告诉地图当前聊天 id。
+//   setRoomAlias(自定义名, 标准房间名) → true / false；removeRoomAlias(自定义名)；getRooms() → { rooms: 标准房间名[], alias: { 自定义名: 标准房间名 }, chat }
+//   on('here' | 'events' | 'map', fn) / off(事件, fn?)：here {value, resolved}、events {items, floor, hereLayer}、map {map, title, kind}
+let chatId = '', enNames = null, emMap = null;
+const LS = (() => { try { return localStorage; } catch (e) { return null; } })();
+const emSubs = { here: new Set(), events: new Set(), map: new Set() };
+function emEmit(ev, data) { for (const f of emSubs[ev]) { try { f(data); } catch (e) { console.warn('[EdenMap]', e); } } if (ev === 'map') post({ type: 'eden-map:emit', ev, data }); }
+function emMapChanged() { if (cur === emMap) return; emMap = cur; const m = REG.maps[cur]; emEmit('map', { map: cur, title: nm(m, 'title'), kind: m.kind }); }
+function rebuildHere() { if (HX && REG) hereIdx = HX.buildIndex(REG, M, enNames, HX.readCustom(LS, chatId)); }
+function setChat(id) { id = String(id || ''); if (id === chatId) return; chatId = id; rebuildHere(); if (REG) { markHere($('#here').value); } }
+function customChanged(name) { rebuildHere(); const v = $('#here').value || ''; markHere(v); if (name && v.includes(name)) jumpHere(v, true); }
+window.__edenMapChat = setChat;   // 宿主页转发调用前先同步聊天 id（同源 srcdoc，直接调用）
+// 设置里的「自检」一栏：✓ / ⚠ 列表（中 / EN）、新正式版的「本次切换」按钮、「自动更新到新正式版」开关（默认关，存本机 edenMapAutoUpdate）
+let selfCheck = null;
+function renderSelfCheck() {
+  if (!selfCheck?.items) return;
+  let box = document.getElementById('selfCheck');
+  if (!box) { box = document.createElement('div'); box.id = 'selfCheck'; $('#setPop').appendChild(box); }
+  const L = LANG === 'en' ? 'en' : 'zh', mark = { ok: '✓', warn: '⚠', skip: '–', info: '↑' };
+  box.innerHTML = `<b>${esc(tx('selfcheck.title', '自检'))}</b><ul>${selfCheck.items.map(i => `<li class="${esc(i.status)}">${mark[i.status] || ''} ${esc(i[L] || i.zh)}</li>`).join('')}</ul>`;
+  if (selfCheck.items.some(i => i.id === 'update')) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = tx('selfcheck.update_now', '本次切换到新版本');
+    b.onclick = () => post({ type: 'eden-map:update-now' }); box.appendChild(b);
+    const n = document.createElement('small'); n.textContent = tx('selfcheck.update_note', '只对这次打开的页面生效；要长期使用，请重新导入新版脚本'); box.appendChild(n);
+  }
+  if (selfCheck.canUpdate) {
+    const lb = document.createElement('label'); lb.innerHTML = `<span>${esc(tx('selfcheck.auto_update', '自动更新到新正式版'))}</span><input type="checkbox" role="switch" id="optAutoUpd">`;
+    const cb = lb.querySelector('input'); let on = !!selfCheck.autoUpdate; try { on = localStorage.getItem('edenMapAutoUpdate') === '1'; } catch (e) {}
+    cb.checked = on; cb.onchange = () => { try { localStorage.setItem('edenMapAutoUpdate', cb.checked ? '1' : '0'); } catch (e) {} };
+    box.appendChild(lb);
+  }
+}
+window.EdenMap = Object.freeze({
+  setRoomAlias(name, room) { if (!HX || !LS) return false; const ok = HX.setRoomAlias(LS, chatId, name, room, hereIdx?.estate?.std || null); if (ok) customChanged(String(name).trim()); return ok; },
+  removeRoomAlias(name) { if (!HX || !LS) return false; const ok = HX.removeRoomAlias(LS, chatId, name); if (ok) customChanged(''); return ok; },
+  selfcheck() { return selfCheck ? { items: selfCheck.items.map(i => ({ ...i })) } : null; },   // 嵌在酒馆里才有（卡内脚本发来）
+  getRooms() { return { rooms: [...(hereIdx?.estate?.std || [])], alias: HX ? HX.readCustom(LS, chatId).rooms : {}, chat: chatId || null }; },
+  on(ev, fn) { if (emSubs[ev] && typeof fn === 'function') emSubs[ev].add(fn); return this; },
+  off(ev, fn) { if (emSubs[ev]) fn ? emSubs[ev].delete(fn) : emSubs[ev].clear(); return this; },
+});
 // 首张图：有当前地点就直接去它的图，否则去注册表的起始图（世界）
 let bootT = 0; const BOOT = '#boot';
 function bootStart() { clearTimeout(bootT); bootT = 0; if (cur) return; if (!jumpHere($('#here').value, true)) go(REG.start); }
@@ -1322,10 +1374,12 @@ if (window.top !== window) {
     // bg = 酒馆在后台预加载（面板不可见）：不进庄园，也不消耗「打开后第一次一定跳」的资格
     if (e.data?.type === 'eden-map:here') { bgMode = !!e.data.bg; $('#here').value = e.data.value || ''; markHere(e.data.value);
       if (bootT) bootStart(); else if (!jumpHere(e.data.value || '', hereFresh)) focusStart(false);
-      if (!bgMode) hereFresh = false; }
+      if (!bgMode) hereFresh = false; emEmit('here', { value: e.data.value || '', resolved: hereRes(e.data.value || '') }); }
     if (e.data?.type === 'eden-map:open') clearTimeout(bootT), bootT = 0;
     if (e.data?.type === 'eden-map:open') go(e.data.map);
-    if (e.data?.type === 'eden-map:events') TCEvents.set(e.data);   // 卡内脚本从聊天里解析、合并好的事态 {items, floor, fly}
+    if (e.data?.type === 'eden-map:events') { TCEvents.set(e.data); emEmit('events', { items: e.data.items, floor: e.data.floor, hereLayer: e.data.hereLayer }); }   // 卡内脚本从聊天里解析、合并好的事态 {items, floor, fly}
+    if (e.data?.type === 'eden-map:chat') setChat(e.data.id);
+    if (e.data?.type === 'eden-map:selfcheck') { selfCheck = e.data; renderSelfCheck(); }   // 卡内脚本的启动自检结果（E6）   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
     // 面板关闭时休眠：关掉底图（释放已解码的瓦片），脚本与数据留着；再打开时唤醒，重新打开当前地图
     if (e.data?.type === 'eden-map:sleep' && viewer) { saveView(); sleeping = cur || (bootT ? BOOT : null); clearTimeout(bootT); bootT = 0; cur = null; est?.frame.remove(); est = null; document.body.classList.remove('estate'); viewer.close(); untrackAll(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }
     if (e.data?.type === 'eden-map:wake' && sleeping) { slowStop = true; const id = sleeping; sleeping = null; hereFresh = true; if (id === BOOT) bootLater(); else go(id); }

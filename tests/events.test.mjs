@@ -46,8 +46,23 @@ t('超过合并窗口 = 新事件；老化分档', () => {
   const items = collect([{ floor: 1, text: '⌖火灾｜下层·7号井｜1｜a' }, { floor: 30, text: '⌖火灾｜下层·7号井｜1｜b' }], 30);
   assert.equal(items.length, 2);
   assert.deepEqual(items.map(e => e.tier), ['live', 'fade']);
-  assert.equal(collect([{ floor: 1, text: '⌖火灾｜下层·7号井｜1｜a' }], 50).length, 0);
   assert.equal(tierOf(8, false), 'after');
+});
+t('未解除的事件不因楼层旧而丢（窗口内一直以「淡出」列出）；已解除的照旧淡出后丢弃（E6）', () => {
+  const open = collect([{ floor: 1, text: '⌖通缉｜中层·霓虹街｜2｜悬赏令' }], 80);
+  assert.equal(open.length, 1); assert.equal(open[0].tier, 'fade'); assert.equal(open[0].closed, false);
+  assert.equal(tierOf(79, false), 'fade'); assert.equal(tierOf(500, false), 'fade');
+  const shut = collect([{ floor: 1, text: '⌖通缉｜中层·霓虹街｜2｜悬赏令' }, { floor: 5, text: '⌖通缉｜中层·霓虹街｜0｜已落网' }], 80);
+  assert.equal(shut.length, 0);   // 已解除 76 楼 > 40：丢
+  assert.equal(collect([{ floor: 1, text: '⌖通缉｜中层·霓虹街｜2｜a' }, { floor: 5, text: '⌖通缉｜中层·霓虹街｜0｜b' }], 30)[0].tier, 'fade');
+  assert.equal(tierOf(41, true), ''); assert.equal(tierOf(20, true), 'after');
+});
+t('隔了合并窗口再出现：旧的一条让位，不常驻（避免同一事件两条都挂着）', () => {
+  const items = collect([{ floor: 1, text: '⌖封锁｜中层·C区检查点｜2｜a' }, { floor: 30, text: '⌖封锁｜中层·C区检查点｜2｜b' }], 75);
+  assert.equal(items.length, 1); assert.equal(items[0].text, 'b'); assert.equal(items[0].tier, 'fade');
+  // 隔了合并窗口才来的「已解除」：旧的未解除那条也不再常驻
+  const late = collect([{ floor: 1, text: '⌖封锁｜中层·C区检查点｜2｜a' }, { floor: 30, text: '⌖封锁｜中层·C区检查点｜0｜解除' }], 75);
+  assert.equal(late.length, 0);
 });
 t('swipe / 删楼：纯函数重算', () => {
   const a = collect([{ floor: 5, text: '⌖凶案｜下层·贫民区｜2｜a' }], 5);
