@@ -9,7 +9,12 @@ def build():
     box(0, 8, 0, 44, 12, 12, 'redbrick'); roof(0, 8, 12, 44, 12, 6, 'slate', 'x')
     for sx in (-1, 1):
         box(sx * 25, 8, 0, 10, 34, 12, 'redbrick'); roof(sx * 25, 8, 12, 10, 34, 6, 'slate', 'y')
-        box(sx * 25, -10, 12, 10, .6, 4, 'redbrick')  # gable end
+    for sx in (-1, 1):
+        cyl(sx * 30, -9, 12, 2, 6, 'redbrick', 8); cyl(sx * 30, -9, 18, 2.1, 3, 'lead', 8, .2)
+        for k, w in enumerate((10, 7, 4)):
+            box(sx * 25, -9.7, 12 + k * 1.3, w, .6, 1.3, 'redbrick')
+        for y in (0, 16):
+            cyl(sx * 25, y, 16, .7, 5, 'redbrick', 8)
     for x in (-8, 8):
         cyl(x, 8, 12, .8, 9, 'redbrick', 8)
     box(0, -20, 0, 50, 22, .35, 'gravel')
