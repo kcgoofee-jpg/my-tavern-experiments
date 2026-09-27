@@ -116,6 +116,12 @@
           "src": "天城·下层：「老旧地面轨道、货运通道、步行为主」；货运站与轨道枢纽的位置为推断",
           "alias": ["货运站", "货运", "铁路", "轨道枢纽"] }
       }
+    },
+    "dairy": {
+      "title": "测试：模型交互（挤奶厅）", "title_en": "Test: model interaction (dairy)", "parent": "world", "kind": "estate", "test": true,
+      "viewer3d": "dairy", "src": "props/viewer3d.html",
+      "src_note": "通用三维查看器（props/viewer3d.html + props/<viewer3d>/manifest.json）的测试件，只从设置里的测试入口进；不是剧情地点。伊甸庄园切到新查看器 = 给 eden_estate 加一行 \"viewer3d\": \"eden\"（props/eden/manifest.json 就位后），见 docs/model-sources.md",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     }
   }
 }

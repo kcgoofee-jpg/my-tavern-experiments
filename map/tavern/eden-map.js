@@ -303,11 +303,13 @@
     post({ type: 'eden-map:sleep' }); clearTimeout(killT); killT = setTimeout(unloadViewer, SLEEP_MS);
   }
   const post = msg => frame.contentWindow?.postMessage(msg, '*');
+  let flyQ = null;   // EdenMap.flyTo 在地图就绪前调用时排队
   // 地图 → 酒馆：ready 撤掉遮罩；state 更新面板标题。只接受来自本面板 iframe 的消息
   const onMsg = e => {
     if (e.source !== frame.contentWindow) return;
     if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
     if (e.data?.type === 'eden-map:ready') { alive = true; sentClock = sentOutfit = null; knowRooms(); sendCheck(); sendCustom(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:ready' && flyQ) { const q = flyQ; flyQ = null; setTimeout(() => inner()?.flyTo?.(q), 0); }   // EdenMap.flyTo 排队的
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
     if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
     if (e.data?.type === 'eden-map:state') {
@@ -571,6 +573,9 @@
     async setAvatar(name, src) { const v = inner(); if (v) return v.setAvatar(name, src); const C = await chx(), st = store(); return !!st && C.setAvatar(st, chatId(), name, src); },
     async removeAvatar(name) { const v = inner(); if (v) return v.removeAvatar(name); const C = await chx(), st = store(); return !!st && C.removeAvatar(st, chatId(), name); },
     async getCharacters() { return { items: chars.map(c => ({ ...c })), floor: floorNow }; },
+    // 三维查看器飞到热点（v1.0 测试件：{ map: 'dairy', hotspot: 'tank' }）：面板没开就先打开；地图就绪后转发
+    async flyTo(t) { flyQ = t || null; if (panel.hidden && !ghost) { panel.hidden = false; await loadViewer(); } else if (ghost) fab.click();
+      const v = inner(); if (v?.flyTo) { flyQ = null; return v.flyTo(t); } return true; },
     selfcheck: () => runCheck().then(() => ({ items: checkItems.map(i => ({ ...i })), at: checkAt })),   // 启动自检的结果（只在本机）
     on(ev, fn) { if (subs[ev] && typeof fn === 'function') subs[ev].add(fn); return api; },
     off(ev, fn) { if (subs[ev]) fn ? subs[ev].delete(fn) : subs[ev].clear(); return api; },

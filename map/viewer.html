@@ -851,7 +851,7 @@ async function openEstate(id, m, hadPrev) {
   const ld = $('#loading'), ti = nm(m, 'title'); ld.classList.remove('done', 'thumb'); ld.classList.toggle('over', hadPrev); estateActs('');
   ld.querySelector('span').textContent = tx('estate.loading', `加载 ${ti}…`, { title: ti });
   postState();
-  const url = new URL(m.src, document.baseURI).href;
+  const url = new URL(m.viewer3d ? 'props/viewer3d.html' : m.src, document.baseURI).href;   // viewer3d：通用三维查看器 + props/<id>/manifest.json（见 v3d 段）
   let html;
   try { html = await getText(url); } catch (e) { textCache.delete(url); html = null; }
   if (cur !== id) return;
@@ -861,7 +861,7 @@ async function openEstate(id, m, hadPrev) {
   const vend = new URL('vendor/', url).href;
   // 用 blob: 地址而不是 srcdoc：Tauri Tavern 的 WKWebView 里第三层 srcdoc iframe（宿主 → 查看器 srcdoc → 庄园）永远不加载（TT 实测 P0）。
   // blob 由查看器自己的窗口创建（同源），<base> 照旧，相对资源按线路解析；加载完就回收。
-  const doc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">${EST_HOOK}`)
+  const doc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">${EST_HOOK}${m.viewer3d ? `<script>window.__V3D_MODEL=${JSON.stringify(String(m.viewer3d))}<\/script>` : ''}`)
     .replace(/(["'])https:\/\/cdn\.(?:jsdelivr\.net|jsdmirror\.com)\/npm\/three@0\.160\.0\/build\/three\.module(?:\.min)?\.js\1/g, `$1${vend}three.module.min.js$1`)
     .replace(new RegExp(THREE_CDN.source + 'examples\\/jsm\\/', 'g'), vend + 'jsm/');
   const blob = URL.createObjectURL(new Blob([doc], { type: 'text/html' })); f.src = blob;
@@ -1415,7 +1415,28 @@ function renderSelfCheck() {
     box.appendChild(lb);
   }
 }
+// ---------------- 通用三维查看器（props/viewer3d.html，maps.json 里带 viewer3d 的 kind=estate 地图） ----------------
+// 测试入口：maps.json 里 test: true 的 viewer3d 地图，在设置弹层底部各放一个按钮（不进层切换器、不参与当前地点匹配）。
+// EdenMap.flyTo({ map, hotspot })：切到该图（没开就先切），查看器就绪后发 v3d:fly；hotspot = 清单 hotspots[].id。
+let v3dPending = null;
+function v3dEntries() {
+  if (!REG) return;
+  for (const [id, m] of Object.entries(REG.maps)) { if (!m.test || !m.viewer3d) continue;
+    let b = document.getElementById('v3dTest_' + id);
+    if (!b) { b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'v3dTest_' + id; b.style.marginTop = 'var(--sp-4)';
+      b.onclick = () => { showSet(false); go(id); }; $('#setPop').appendChild(b); }
+    b.textContent = nm(m, 'title'); }
+}
+new MutationObserver(() => { if (!$('#setPop').hidden) v3dEntries(); }).observe($('#setPop'), { attributes: true, attributeFilter: ['hidden'] });
+function v3dFly({ map, hotspot } = {}) {
+  if (!REG?.maps[map]?.viewer3d) return false;
+  if (cur === map && est?.ready) { est.frame.contentWindow?.postMessage({ type: 'v3d:fly', hotspot }, '*'); return true; }
+  v3dPending = hotspot || null; go(map); return true;
+}
+window.addEventListener('message', e => { if (e.data?.type !== 'estate:ready' || !est || e.source !== est.frame.contentWindow || !v3dPending) return;
+  est.frame.contentWindow.postMessage({ type: 'v3d:fly', hotspot: v3dPending }, '*'); v3dPending = null; });
 window.EdenMap = Object.freeze({
+  flyTo(o) { return v3dFly(o || {}); },   // 目前只支持 viewer3d 地图：{ map: 'dairy', hotspot: 'tank' }
   // v0.9.3 自定义名称与用途（custom.js）；旧名 setRoomAlias / removeRoomAlias 保留：房间叫法 = 该房间的显示名
   setCustom(key, patch) { return TCCustom.setCustom(key, patch || {}); }, removeCustom(key) { return TCCustom.removeCustom(key); }, getCustom() { return TCCustom.data; },
   setRoomAlias(name, room) { const std = hereIdx?.estate?.std || null; room = String(room || '').trim(); name = String(name || '').trim();
