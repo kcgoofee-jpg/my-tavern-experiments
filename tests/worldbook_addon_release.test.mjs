@@ -1,11 +1,12 @@
 // build_worldbook_addon.py：已发布版本（有 map-v<版本> 标签）的附加世界书不许覆盖，除非 --force；VERSION 已发布时默认按 <版本>-dev 输出
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';   // .pathname 会把中文路径百分号编码（主 checkout 在「性能/」下）
 import assert from 'node:assert/strict';
 import { spawnSync, execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const tags = execFileSync('git', ['tag', '-l', 'map-v*'], { cwd: ROOT, encoding: 'utf8' }).trim().split('\n').filter(Boolean);
 const run = (...a) => spawnSync('python3', ['tools/build_worldbook_addon.py', ...a], { cwd: ROOT, encoding: 'utf8' });
 

@@ -1,9 +1,10 @@
 // 上层伊甸标记锚点 / 岛轮廓与 estate2 r4（v7 底图）一致；手摆点位（manual）不被工具改动
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';   // .pathname 会把中文路径百分号编码（主 checkout 在「性能/」下）
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const hasNp = spawnSync('python3', ['-c', 'import numpy'], { cwd: ROOT }).status === 0;
 
 test('eden anchor matches estate2 dock', { skip: !hasNp && 'no numpy' }, () => {

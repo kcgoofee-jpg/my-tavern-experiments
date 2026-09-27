@@ -1,11 +1,12 @@
 // tools/browser/lib.mjs 的端口隔离：默认端口按工作树路径哈希；端口上是别的目录的服务时不复用，自己换端口起
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';   // .pathname 会把中文路径百分号编码（主 checkout 在「性能/」下）
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 test('ensureServer skips a foreign server on the default port', { timeout: 60000 }, async t => {
