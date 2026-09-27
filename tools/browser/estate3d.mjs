@@ -36,9 +36,9 @@ try {
       const pz = await f.evaluate(() => ({ mode: window.__estate.mode(), pin: window.__estate.pinned() }));
       rep.check('室外区域热点（玫瑰园 → 外观并高亮）', pz.mode === 'ext' && pz.pin?.name === '玫瑰园', JSON.stringify(pz));
       await f.evaluate(() => window.postMessage({ type: 'estate:room', name: '更衣室' }, '*')); await B.wait(1000);
-      const g = await f.evaluate(() => ({ pin: window.__estate.pinned(), gal: !!document.querySelector('#card .gal') }));
-      rep.check('旧名「更衣室」→ 主卧，房间卡有「图集」', g.pin?.name === '主卧' && g.gal, JSON.stringify(g));
-      if (g.gal) { await P.page.click('#card .gal'); await B.wait(1200); const o = await P.page.evaluate(() => !!document.querySelector('.rg .rg-img')); rep.check('图集打开', o); await P.page.keyboard.press('Escape'); }
+      const g = await f.evaluate(() => ({ pin: window.__estate.pinned(), gal: !!document.querySelector('#card .gal'), label: document.querySelector('#card .gal')?.textContent }));
+      rep.check('旧名「更衣室」→ 主卧套间里的衣帽间热点，卡有「衣帽间图集」', g.pin?.name === '衣帽间' && g.gal && g.label === '衣帽间图集 ›', JSON.stringify(g));
+      if (g.gal) { await P.page.click('#card .gal'); await B.wait(1200); const o = await P.page.evaluate(() => ({ img: !!document.querySelector('.rg .rg-img'), title: document.querySelector('.rg')?.textContent.includes('衣帽间') })); rep.check('衣帽间图集打开（标题「衣帽间」）', o.img && o.title, JSON.stringify(o)); await P.page.keyboard.press('Escape'); }
       await P.page.keyboard.press('l'); await B.wait(300);
       const lb = await P.page.evaluate(() => ({ off: document.body.classList.contains('nolabels'), ls: localStorage.getItem('edenEstateLabels') }));
       await P.page.keyboard.press('l');
