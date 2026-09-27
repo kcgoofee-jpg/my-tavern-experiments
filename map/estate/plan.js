@@ -38,11 +38,11 @@ export const FLOORS = [
   { id: 'F1', label: '1F', name: '礼仪层', y: 1.2, h: 4.5 },
   { id: 'F2', label: '2F', name: '日常层', y: 5.7, h: 4.5 },
   { id: 'F3', label: '3F', name: '私人层', y: 10.2, h: 4.5 },
-  { id: 'F4', label: '顶', name: '顶楼（非卡设定）', y: 14.7, h: 4.0 },     // 檐部与挡檐墙之后的顶楼，只有主楼
-  { id: 'F5', label: '屋顶', name: '眺望亭', y: 18.7, h: 5.0 },     // 屋顶平台 + 眺望亭
+  { id: 'F4', label: '顶', name: '屋顶服务间', y: 14.7, h: 4.0 },     // 檐部与挡檐墙之后的顶楼，只有主楼
+  { id: 'F5', label: '屋顶', name: '屋顶眺望亭', y: 18.7, h: 5.0 },     // 屋顶平台 + 眺望亭
 ];
-// 卡设定：地上 F1–F3 + 地下 B1–B2（docs/card-digest.md §6）。F4 顶楼是仓库自设；F5 是屋顶眺望亭（屋顶构筑物，不算楼层）。id 不变（estate:floor 接口）
-export const FLOOR_EN = ['State', 'Daily', 'Private', 'Attic (non-canon)', 'Roof lookout'];
+// 卡设定：地上 F1–F3 + 地下 B1–B2（docs/card-digest.md §6）。F4 / F5 都是屋顶构筑物（仓库自设，不算楼层，不再标成「顶楼」）；卡设定的分层房间见 map/data/eden_estate_rooms.json。id 不变（estate:floor 接口）
+export const FLOOR_EN = ['State', 'Daily', 'Private', 'Roof service rooms', 'Roof lookout'];
 export const ENTAB = [14.7, 17.6];   // 额枋 14.7–15.6 · 檐壁 15.6–16.5 · 檐口 16.5–17.6；挡檐墙 17.6–18.7
 export const SRC_EN = { '世界书': 'Worldbook', 'ROADMAP': 'Roadmap', '推断': 'Inferred' };
 
