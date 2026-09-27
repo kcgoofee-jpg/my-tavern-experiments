@@ -1,5 +1,5 @@
 {
- "_说明": "天城上层的浮岛（平面坐标，1 单位 = 100 m；z = (海拔 - 700) / 100；rot 为弧度；estate_style：english 英国乡村庄园 / chateau 法国城堡与规整花园 / suzhou 苏州园林 / lingnan 岭南园林 / neoclassical 新古典（伊甸庄园，设定原文）/ fortress 要塞（银冠堡）；style 是 v0.7 的旧字段，已不用）。由 v0.7.0 的随机布局固定下来，可以直接改；改完跑 tools/render_all.sh upper --data-only 更新点位。 role：有名有主的地标府邸（pm_residence 首相府 / general_residence 将军官邸 / zaibatsu_estate 财团家族庄园 / archbishop_palace 大主教府邸 / league_club 庄园主联盟会所 / aether_institute 以太研究院），主楼按 role 建，园子按 estate_style；可选 shape / rim / terrain 覆盖随机值（见 docs/upper-estates.md）。v0.9.1 起伊甸 rx 3.35、ry 2.5（约 670 × 500 m）。",
+ "_说明": "天城上层的浮岛（平面坐标，1 单位 = 100 m；z = (海拔 - 700) / 100；rot 为弧度；estate_style：english 英国乡村庄园 / chateau 法国城堡与规整花园 / suzhou 苏州园林 / lingnan 岭南园林 / neoclassical 新古典（伊甸庄园，设定原文）/ fortress 要塞（银冠堡）；style 是 v0.7 的旧字段，已不用）。由 v0.7.0 的随机布局固定下来，可以直接改；改完跑 tools/render_all.sh upper --data-only 更新点位。 role：有名有主的地标府邸（pm_residence 首相府 / general_residence 将军官邸 / zaibatsu_estate 财团家族庄园 / archbishop_palace 大主教府邸 / league_club 庄园主联盟会所 / aether_institute 以太研究院），主楼按 role 建，园子按 estate_style；可选 shape / rim / terrain 覆盖随机值（见 docs/upper-estates.md）。v0.9.1 起伊甸 rx 3.35、ry 2.5（约 670 × 500 m）。 v0.9.1 B2 第 2 轮：风格重分配（英 11 / 法 8 / 苏 6 / 岭 6，按边缘间距的最近 2 邻无同风格），每座岛显式写 shape / rim / terrain（同风格不重复，rim 是主岛缘，实际按角度分段混用）；可选 layout / plan 覆盖按 id 轮流分配的布局族与主楼平面。",
  "islands": [
   {
    "id": "eden",
@@ -33,7 +33,10 @@
    "rot": 2.65899,
    "style": "neo",
    "estate_style": "english",
-   "role": "archbishop_palace"
+   "role": "archbishop_palace",
+   "shape": "long",
+   "rim": "cliff",
+   "terrain": "meadow"
   },
   {
    "id": "isle3",
@@ -44,7 +47,10 @@
    "ry": 0.24088,
    "rot": 0.63658,
    "style": "gothic",
-   "estate_style": "suzhou"
+   "estate_style": "suzhou",
+   "shape": "cape",
+   "rim": "cliff",
+   "terrain": "lake"
   },
   {
    "id": "isle4",
@@ -55,7 +61,10 @@
    "ry": 0.68184,
    "rot": 0.8315,
    "style": "dome",
-   "estate_style": "chateau"
+   "estate_style": "chateau",
+   "shape": "round",
+   "rim": "wall",
+   "terrain": "meadow"
   },
   {
    "id": "isle5",
@@ -66,7 +75,10 @@
    "ry": 0.73494,
    "rot": 2.30698,
    "style": "dome",
-   "estate_style": "english"
+   "estate_style": "english",
+   "shape": "cape",
+   "rim": "hedge",
+   "terrain": "meadow"
   },
   {
    "id": "isle6",
@@ -78,7 +90,10 @@
    "rot": 1.39023,
    "style": "neo",
    "estate_style": "english",
-   "role": "pm_residence"
+   "role": "pm_residence",
+   "shape": "long",
+   "rim": "cliff",
+   "terrain": "crag"
   },
   {
    "id": "isle7",
@@ -89,7 +104,10 @@
    "ry": 0.58084,
    "rot": 2.58276,
    "style": "villa",
-   "estate_style": "english"
+   "estate_style": "english",
+   "shape": "cape",
+   "rim": "hedge",
+   "terrain": "terrace"
   },
   {
    "id": "isle8",
@@ -100,7 +118,10 @@
    "ry": 0.25545,
    "rot": 0.62988,
    "style": "dome",
-   "estate_style": "english"
+   "estate_style": "lingnan",
+   "shape": "cape",
+   "rim": "hedge",
+   "terrain": "meadow"
   },
   {
    "id": "isle9",
@@ -112,7 +133,10 @@
    "rot": 2.04772,
    "style": "glass",
    "estate_style": "chateau",
-   "role": "league_club"
+   "role": "league_club",
+   "shape": "round",
+   "rim": "wall",
+   "terrain": "terrace"
   },
   {
    "id": "isle10",
@@ -123,7 +147,10 @@
    "ry": 0.51177,
    "rot": 1.86817,
    "style": "dome",
-   "estate_style": "english"
+   "estate_style": "english",
+   "shape": "cape",
+   "rim": "roots",
+   "terrain": "lake"
   },
   {
    "id": "isle11",
@@ -134,7 +161,10 @@
    "ry": 0.35948,
    "rot": 2.20197,
    "style": "glass",
-   "estate_style": "chateau"
+   "estate_style": "chateau",
+   "shape": "cape",
+   "rim": "cliff",
+   "terrain": "terrace"
   },
   {
    "id": "isle12",
@@ -145,7 +175,10 @@
    "ry": 0.62417,
    "rot": 2.70321,
    "style": "dome",
-   "estate_style": "chateau"
+   "estate_style": "lingnan",
+   "shape": "long",
+   "rim": "hedge",
+   "terrain": "meadow"
   },
   {
    "id": "isle13",
@@ -156,7 +189,10 @@
    "ry": 0.37556,
    "rot": 0.25917,
    "style": "glass",
-   "estate_style": "chateau"
+   "estate_style": "english",
+   "shape": "round",
+   "rim": "cliff",
+   "terrain": "crag"
   },
   {
    "id": "isle14",
@@ -167,7 +203,10 @@
    "ry": 0.31255,
    "rot": 0.56862,
    "style": "glass",
-   "estate_style": "lingnan"
+   "estate_style": "lingnan",
+   "shape": "round",
+   "rim": "hedge",
+   "terrain": "meadow"
   },
   {
    "id": "isle15",
@@ -178,7 +217,10 @@
    "ry": 0.25808,
    "rot": 2.94452,
    "style": "glass",
-   "estate_style": "english"
+   "estate_style": "suzhou",
+   "shape": "long",
+   "rim": "roots",
+   "terrain": "meadow"
   },
   {
    "id": "isle16",
@@ -189,7 +231,10 @@
    "ry": 0.28383,
    "rot": 2.30086,
    "style": "dome",
-   "estate_style": "chateau"
+   "estate_style": "chateau",
+   "shape": "cape",
+   "rim": "wall",
+   "terrain": "meadow"
   },
   {
    "id": "isle17",
@@ -200,7 +245,10 @@
    "ry": 0.20108,
    "rot": 1.38292,
    "style": "villa",
-   "estate_style": "chateau"
+   "estate_style": "chateau",
+   "shape": "cape",
+   "rim": "hedge",
+   "terrain": "meadow"
   },
   {
    "id": "isle18",
@@ -211,7 +259,10 @@
    "ry": 0.38567,
    "rot": 2.70728,
    "style": "gothic",
-   "estate_style": "english"
+   "estate_style": "english",
+   "shape": "twin",
+   "rim": "roots",
+   "terrain": "lake"
   },
   {
    "id": "isle19",
@@ -222,7 +273,10 @@
    "ry": 0.2678,
    "rot": 0.28812,
    "style": "villa",
-   "estate_style": "lingnan"
+   "estate_style": "lingnan",
+   "shape": "twin",
+   "rim": "cliff",
+   "terrain": "meadow"
   },
   {
    "id": "isle20",
@@ -233,7 +287,10 @@
    "ry": 0.26166,
    "rot": 0.76027,
    "style": "dome",
-   "estate_style": "english"
+   "estate_style": "english",
+   "shape": "twin",
+   "rim": "hedge",
+   "terrain": "meadow"
   },
   {
    "id": "isle21",
@@ -244,7 +301,10 @@
    "ry": 0.20904,
    "rot": 0.88241,
    "style": "gothic",
-   "estate_style": "suzhou"
+   "estate_style": "suzhou",
+   "shape": "cape",
+   "rim": "wall",
+   "terrain": "meadow"
   },
   {
    "id": "isle22",
@@ -255,7 +315,10 @@
    "ry": 0.6129,
    "rot": 1.44289,
    "style": "neo",
-   "estate_style": "english"
+   "estate_style": "suzhou",
+   "shape": "round",
+   "rim": "roots",
+   "terrain": "lake"
   },
   {
    "id": "isle23",
@@ -266,7 +329,10 @@
    "ry": 0.39902,
    "rot": 2.9791,
    "style": "glass",
-   "estate_style": "english"
+   "estate_style": "english",
+   "shape": "cape",
+   "rim": "cliff",
+   "terrain": "meadow"
   },
   {
    "id": "isle24",
@@ -277,7 +343,10 @@
    "ry": 0.24582,
    "rot": 2.89061,
    "style": "dome",
-   "estate_style": "chateau"
+   "estate_style": "lingnan",
+   "shape": "cape",
+   "rim": "roots",
+   "terrain": "meadow"
   },
   {
    "id": "isle25",
@@ -289,7 +358,10 @@
    "rot": 1.59113,
    "style": "glass",
    "estate_style": "english",
-   "role": "aether_institute"
+   "role": "aether_institute",
+   "shape": "long",
+   "rim": "roots",
+   "terrain": "meadow"
   },
   {
    "id": "isle26",
@@ -300,7 +372,10 @@
    "ry": 0.40509,
    "rot": 0.93446,
    "style": "gothic",
-   "estate_style": "chateau"
+   "estate_style": "chateau",
+   "shape": "twin",
+   "rim": "hedge",
+   "terrain": "meadow"
   },
   {
    "id": "isle27",
@@ -311,7 +386,10 @@
    "ry": 0.44863,
    "rot": 1.74969,
    "style": "gothic",
-   "estate_style": "suzhou"
+   "estate_style": "suzhou",
+   "shape": "long",
+   "rim": "wall",
+   "terrain": "lake"
   },
   {
    "id": "isle28",
@@ -322,7 +400,10 @@
    "ry": 0.2777,
    "rot": 1.8728,
    "style": "gothic",
-   "estate_style": "chateau"
+   "estate_style": "suzhou",
+   "shape": "round",
+   "rim": "cliff",
+   "terrain": "meadow"
   },
   {
    "id": "isle29",
@@ -334,7 +415,10 @@
    "rot": 1.27028,
    "style": "gothic",
    "estate_style": "english",
-   "role": "general_residence"
+   "role": "general_residence",
+   "shape": "round",
+   "rim": "roots",
+   "terrain": "meadow"
   },
   {
    "id": "isle30",
@@ -346,7 +430,10 @@
    "rot": 0.26866,
    "style": "glass",
    "estate_style": "chateau",
-   "role": "zaibatsu_estate"
+   "role": "zaibatsu_estate",
+   "shape": "round",
+   "rim": "cliff",
+   "terrain": "meadow"
   },
   {
    "id": "isle31",
@@ -357,7 +444,10 @@
    "ry": 0.2827,
    "rot": 2.39317,
    "style": "glass",
-   "estate_style": "chateau"
+   "estate_style": "chateau",
+   "shape": "round",
+   "rim": "hedge",
+   "terrain": "terrace"
   },
   {
    "id": "isle32",
@@ -368,7 +458,10 @@
    "ry": 0.3273,
    "rot": 0.72262,
    "style": "glass",
-   "estate_style": "english"
+   "estate_style": "lingnan",
+   "shape": "round",
+   "rim": "cliff",
+   "terrain": "meadow"
   }
  ]
 }
