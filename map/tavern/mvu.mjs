@@ -91,14 +91,15 @@ export function outfitText(o, max = 48) {
 }
 
 // ---------------- 2 自定义名称与用途（聊天变量 eden_map.自定义，在 stat_data 之外） ----------------
-// 形状：{ items: { 标准名: { 类: 'room' | 'area' | 'landmark' | 'character', 名?: 显示名, 用途?: 备注, 别名?: [旧叫法] } }, 同步世界书?: bool }
+// 形状：{ items: { 标准名: { 类: 'room' | 'area' | 'landmark' | 'character', 名?: 显示名, 用途?: 备注, 别名?: [旧叫法], 源?: '手动' | '标签' } }, 同步世界书: bool, 同步手动?: true }
+// v0.9.5：「同步到世界书」默认开。没动过开关（没有 同步手动）一律当开；自己关过的（同步手动 + 同步世界书 false）保持关。
 export const VAR_ROOT = 'eden_map';   // 聊天变量顶层键：{ 自定义: {...}, 标签楼: 已处理到的楼层 }
 export const KINDS = ['room', 'area', 'landmark', 'character'];
 export const MAX_NAME = 40, MAX_NOTE = 200;
 export function normCustom(raw) {
-  const out = { items: {}, 同步世界书: false };
+  const out = { items: {}, 同步世界书: true };
   if (!raw || typeof raw !== 'object') return out;
-  out.同步世界书 = raw.同步世界书 === true;
+  if (raw.同步手动 === true) { out.同步手动 = true; out.同步世界书 = raw.同步世界书 === true; }
   for (const [k0, it] of Object.entries(raw.items || {})) {
     const k = clean(k0); if (!k || !it || typeof it !== 'object') continue;
     const e = { 类: KINDS.includes(it.类) ? it.类 : 'landmark' };
@@ -107,6 +108,7 @@ export function normCustom(raw) {
     if (u) e.用途 = [...u].slice(0, MAX_NOTE).join('');
     const al = Array.isArray(it.别名) ? [...new Set(it.别名.map(clean).filter(a => a && a !== k && a !== e.名))] : [];
     if (al.length) e.别名 = al;
+    if (it.源 === '标签' || it.源 === '手动') e.源 = it.源;
     if (e.名 || e.用途 || e.别名) out.items[k] = e;
   }
   return out;
@@ -116,6 +118,7 @@ export function setCustom(c, key, patch = {}) {
   key = clean(key); if (!key || [...key].length > MAX_NAME) return null;
   const n = normCustom(c), cur = { ...(n.items[key] || { 类: 'landmark' }) };
   if (patch.kind && KINDS.includes(patch.kind)) cur.类 = patch.kind;
+  if (patch.source === 'tag' || patch.source === 'manual') cur.源 = patch.source === 'tag' ? '标签' : '手动';
   if ('name' in patch) { const v = clean(patch.name); if ([...v].length > MAX_NAME) return null; if (v && v !== key) cur.名 = v; else delete cur.名; }
   if ('note' in patch) { const v = String(patch.note ?? '').trim(); if ([...v].length > MAX_NOTE) return null; if (v) cur.用途 = v; else delete cur.用途; }
   n.items[key] = cur; return normCustom(n);
@@ -151,6 +154,11 @@ export function wbContent(c) {
   const rows = Object.entries(c?.items || {}).map(([k, e]) => `- ${k}${e.名 ? `：玩家称为「${e.名}」` : ''}${e.用途 ? `；用途：${e.用途}` : ''}`);
   return rows.length ? `<地图自定义>\n以下地点 / 人物有玩家起的名字或用途，正文里可以用这些叫法：\n${rows.join('\n')}\n</地图自定义>` : '';
 }
+/** 0.9.3 → 0.9.5 迁移：旧数据总是写着 同步世界书 false。这一本聊天世界书已经建过（只有打开过同步才会建）→ 说明是自己关掉的，记成 同步手动 保持关 */
+export function syncMigrate(raw, wbExists) {
+  if (!raw || typeof raw !== 'object' || raw.同步手动 || raw.同步世界书 !== false || !wbExists) return raw;
+  return { ...raw, 同步手动: true };
+}
 export const WB_NAME = '伊甸地图·自定义', WB_ENTRY = '地图自定义';
 /** 按聊天分开的世界书名（多个聊天共用一本会互相串）：「伊甸地图·自定义·<聊天 id 的短哈希>」 */
 export function wbName(chat) { let h = 2166136261; for (const c of String(chat || '')) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return `${WB_NAME}·${(h >>> 0).toString(16).padStart(8, '0').slice(0, 6)}`; }
@@ -179,7 +187,7 @@ export function applyTags(c, msgs, after, kindOf = () => 'landmark') {
     if (!(floor > after)) continue; last = Math.max(last, floor);
     for (const t of parseCustomTags(text)) {
       const key = findKey(cur, t.key) || t.key, kind = cur.items[key]?.类 || kindOf(key);
-      const nx = setCustom(cur, key, t.op === 'name' ? { name: t.value, kind } : { note: t.value, kind });
+      const nx = setCustom(cur, key, t.op === 'name' ? { name: t.value, kind, source: 'tag' } : { note: t.value, kind, source: 'tag' });
       if (nx) { cur = nx; applied.push({ ...t, key, floor }); }
     }
   }
