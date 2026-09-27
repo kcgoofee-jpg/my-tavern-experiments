@@ -5,13 +5,14 @@
 ## 0. 结论速览
 
 - **中枢是 `map/viewer.html`**（约 2180 行，gzip 约 72 KB）。内联主脚本约 1400 行，全部是全局作用域：顶层 `let/const` 是所有脚本共享的全局词法绑定。8 个 `defer` 外挂脚本（events / chars / custom / trips / unmapped / varmap / compose / security）直接读写这些绑定（`viewer`、`REG`、`cur`、`go`、`post`、`trackEl`……）。
+  **v2b 起**（§1.3）：内联主脚本已拆成 `map/app/*.mjs` 的 ES 模块、外挂改成 ES 模块，viewer.html 只剩标记、样式与两段首帧前置脚本；下文 §1.1 保留拆分前的分区作对照。
 - **加载链**：卡内脚本 `map/tavern/eden-map.js`（ES 模块）先 `fetch(BASE+'viewer.html')`，插入 `<base href=BASE>`，再赋给 `frame.srcdoc`。查看器用同样的办法 fetch 庄园页和三维页，插入 `<base>` 与失败钩子，包成 **blob URL** 放进 iframe。
 - **协议**：3 条链路，60 多种消息。v2 之前所有消息都没有协议版本，也没有检查 `e.origin`，只靠 `e.source` 加宿主令牌。compose.js 的回执监听连来源都不查（P1，本版已修）。
 - **死代码**：`cycleTheme`、section.js 的 `callout`、gallery.js 的 `galleryOpen`（v2 已删）。`estate:select`、上行 `estate:floor`、`v3d:state` 查看器不收，但它们是写明的直嵌接口，保留。
 
 ## 1. 模块边界
 
-### 1.1 `map/viewer.html` 分区
+### 1.1 `map/viewer.html` 分区（拆分前，v2 基线；拆到哪个模块见 §1.3）
 
 | 区域 | 职责 |
 |---|---|
@@ -38,12 +39,48 @@
 | **`app/cardlinks.mjs`**（v2 从主脚本拆出） | 地点卡链接：通道 `meta.link` + 可选的三维 `meta.link3d`（同图只出一个），纯函数 `linksHtml(meta, ctx)`；`tools/check_maps.py` 校验 link3d 指向的地图存在 |
 | **`app/scale.mjs`**（v2 从内联 #4 拆出） | `TCScale`：世界图与各组地图的交接环 |
 
+### 1.3 v2b 模块图（§6 第 6、7 步落地后）
+
+`viewer.html` = 标记 + 样式 + 两段首帧前置（内联 #0：首选项 / TCStore 镜像；body 末尾 #2：嵌入标记与宿主早到消息排队）。脚本全是外部标签，按文档顺序：
+
+```
+defer   vendor/openseadragon  ui/sheet.js
+module  app/boot.mjs ──(按原内联顺序 import)──> state → util → tiers → i18n → topbar → nav → estate → layers → markers → locate → settings → extapi → shell → host → bridge
+module  events.mjs  chars.mjs  custom.mjs  trips.mjs  unmapped.mjs  [varmap.mjs  compose.mjs：嵌入时 document.write]  security.mjs
+module  app/cardlinks.mjs  app/clouds.mjs  app/fog.mjs  app/storage-ui.mjs  app/scale.mjs
+DOMContentLoaded → main()（app/boot.mjs）
+```
+
+| 模块 | 职责（原内联子区） | 规则 |
+|---|---|---|
+| `app/state.mjs` | 核心可变状态 `viewer, aspect, M, REG, cur, curData, ovData, sleeping, pendingFocus, pendingHome` | 叶子（不 import）。读 = import 活绑定；写 = `setCur()` 等 setter |
+| `app/util.mjs` | 常量与工具：`toImg`、`$`、`tx/esc/ico`、`coarse`、`PROTO/PR/post`、`SUB_ORIGIN`、`announce`、`getJSON` | 叶子 |
+| `app/plugins.mjs` | 外挂注册表 `P` + `register(name, api)`（同名挂 window） | 叶子 |
+| `app/tiers.mjs` | 档位（`TIERS/tier/effTier/autoMax`）、省流 `lean/leanBg`、加载进度、叠加层、`declutter/routeGaps` | |
+| `app/i18n.mjs` | `LANG/DICT/t/tr/nm`、`setLang/setTheme/postState`、`window.I18N` | |
+| `app/topbar.mjs` | 顶栏布局、后台预热、版本编码 | |
+| `app/nav.mjs` | `go`（`setGo` = 显式的包装注册，clouds 用）、`snapshot`、`mapChrome`、另一版底图 | |
+| `app/estate.mjs` | 庄园 / 三维子页宿主：`openEstate`、`EST_HOOK`、子页消息、viewer3d 入口 | |
+| `app/layers.mjs` | 层切换条、Esc 分层、单字符快捷键 | |
+| `app/markers.mjs` | `placeN/trackEl/marker/showCard/closeCard`、世界图与点位图叠加 | |
+| `app/locate.mjs` | 初始视角、`markHere`、卡原名绑定、here.mjs 落点、`jumpHere` | |
+| `app/settings.mjs` | 设置弹层、`TCSettings`、搜索、关于 / 检查更新、自检 | |
+| `app/extapi.mjs` | `window.EdenMap`、聊天 id、`emEmit` | |
+| `app/shell.mjs` | 控制列、抽屉 / 右栏胶水、通知层、状态点、单手、双击缩放 | |
+| `app/host.mjs` | 宿主消息接口（来源 / 令牌 / 协议校验 → 分派），补处理前置 #2 排队的早到消息 | |
+| `app/boot.mjs` | `main/mainInner/bootFail`，按原顺序拉起各块 | 唯一入口 |
+| `app/bridge.mjs` | 兼容面：原全局名（`cur`、`viewer`、`go`、`REG`…）在 window 上的只读 getter，给浏览器测试与本机调试 | 只加不减；新代码不用 |
+
+依赖方向：外挂 → 核心 用显式 import；核心 → 外挂、外挂 ↔ 外挂 一律经 `P.TC*`（外挂可能没加载 / 按需加载，调用处保留守卫）。核心各块之间是互相 import 的（原来就是一个作用域），但**求值期**只碰 `state` / `util` / `plugins` 与自己的绑定，其余引用都在函数体里——`import` 顺序即原内联脚本的执行顺序，所以求值期没有 TDZ。
+`map/core/*` 仍然只放与卡无关的通用服务（协议、存储、迷雾纯函数）；卡相关的数据与配置在 `map/data` 与 `map/tavern` 适配层。
+
+
 ### 1.2 其它文件
 
 | 文件 | 形态 | 职责 |
 |---|---|---|
-| `map/events.js` / `chars.js` / `custom.js` / `trips.js` / `unmapped.js` | 经典 IIFE → `TC*` | 事态、人物栏、自定义名称 / 夜色 / 着装、行程线、未上图 |
-| `map/varmap.js` / `compose.js` / `security.js` | 经典 IIFE | 变量映射页、「去这里 / 追问」、安保叠加层。**v2 起按需加载**（见 §6.3） |
+| `map/events.mjs` / `chars.mjs` / `custom.mjs` / `trips.mjs` / `unmapped.mjs` | ES 模块外挂（v2b 起；之前是经典 IIFE） | 事态、人物栏、自定义名称 / 夜色 / 着装、行程线、未上图。核心状态与工具显式 import，自己经 `app/plugins.mjs` 的 `register` 登记为 `P.TC*` |
+| `map/varmap.mjs` / `compose.mjs` / `security.mjs` | ES 模块外挂 | 变量映射页、「去这里 / 追问」、安保叠加层。varmap / compose **按需加载**（只在嵌入时写出模块标签，见 §6.3） |
 | `map/here.mjs` / `card-bind.mjs` | ES 模块 | 当前地点解析（六级落点）；卡原名绑定 |
 | `map/core/protocol.mjs`（v2 新增） | ES 模块 | 协议版本 `PROTO`、消息 schema、`validate`、`createBus` |
 | `map/core/storage.mjs`（v2 新增） | ES 模块 | 本机存储服务：`KEYS` 键表（默认值 / 作用域），带 try/catch 的 `get/set/json/remove` |
@@ -72,8 +109,8 @@
    **外部模块标签 `<script type="module" src="app/x.mjs">` 是安全的**：`src` 按 `<base>` 解析，模块内部的相对 import 按 `import.meta.url`（CDN 地址）解析。
 3. 跨源模块需要 CORS。jsDelivr、jsdmirror、npmmirror 都返回 `ACAO:*`。模块之间只能用相对路径互相引用。
 4. 查看器、宿主、blob 子页三者同源（O），共用 localStorage，所以键名必须全局统一（见 `core/storage.mjs` 的 `KEYS`）。
-5. 模块脚本不会产生全局词法绑定，但**能读写经典脚本的全局绑定**（全局声明环境是共享的）。所以拆出去的模块可以直接用 `viewer`、`cur` 等，前提是运行时它们已经声明。模块在所有 defer 脚本之后按文档顺序执行。
-6. 读 viewer.html 的工具在拆分时要同步更新：`tools/smoke.sh` 的 `inline_check`（已把 `map/app/*.mjs`、`map/core/*.mjs` 纳入 `node --check`）、`tests/postmessage.test.mjs`、`tools/pack_npm.sh`、`tools/warm_cdn.sh`。
+5. 模块脚本不会产生全局词法绑定。v2b 起查看器里已没有经典主脚本：模块之间一律显式 import（写状态经 setter），原全局名只在 `app/bridge.mjs` 以只读 getter 留给测试 / 调试。模块标签与 defer 脚本同一队列，按文档顺序执行；核心模块在地图库下载完后才求值，所以首帧必须的动作（`body.embed`、宿主早到消息的排队）放在 body 末尾的内联前置 #2。
+6. 读 viewer.html 的工具在拆分时要同步更新：`tools/smoke.sh` 的 `inline_check`（已把 `map/app/*.mjs`、`map/core/*.mjs` 纳入 `node --check`）、`tests/postmessage.test.mjs`、`tools/pack_npm.sh`、`tools/warm_cdn.sh`。 v2b：这些检查改为读 `viewer.html + map/app/*.mjs`；外挂文件名改为 `.mjs`。
 
 ## 3. postMessage 协议
 
@@ -135,9 +172,9 @@
 | 状态 | 所有者 | 读者 |
 |---|---|---|
 | 首帧偏好 `__theme/__lang/__hand` | 内联 #0 | 主脚本 |
-| `viewer, REG, M, cur, est, HX, LANG…`（全局 let） | 主脚本 | 外挂脚本、`app/*.mjs` |
-| `go` | 主脚本；`app/clouds.mjs` 重新赋值包装（下一步改成显式的包装注册） | 所有人 |
-| `TC*` 命名空间 | 各外挂文件 | 主脚本（带 `typeof` 守卫） |
+| `viewer, REG, M, cur…`（v2b：`app/state.mjs`）；`est`、`HX`、`LANG` 等在各自模块 | 声明它的模块（写经 `set*()`） | 其它模块、外挂（import 活绑定） |
+| `go` | `app/nav.mjs`；`app/clouds.mjs` 经 `setGo` 注册包装 | 所有人 |
+| `TC*` 命名空间 | 各外挂模块（`register` 进 `app/plugins.mjs` 的 `P`，同名挂 window） | 核心与其它外挂经 `P.TC*`（带守卫） |
 | `__edenHostToken` | 宿主写入 | 查看器宿主接口 |
 | 聊天变量 `eden_map.{自定义, 标签楼}` | 宿主（mvu.mjs） | 经消息推给查看器 |
 | localStorage `edenMap*` | 键表在 `core/storage.mjs` 的 `KEYS` | 见下 |
@@ -186,3 +223,5 @@
 ## 7. 本版本（大版本 2）落地情况
 
 见 `docs/reviews/v2_arch_gate.md` 的「提交」一节。已完成：§6 第 1–4 步、第 5 步的服务与宿主侧迁移、第 6 步的叶子块（云、尺度衔接）、§6.3。第 6 步主脚本的逐块搬迁、第 7、8 步留到下一版本。
+
+**v2b**（`docs/reviews/v2b_modules_gate.md`）：第 6 步主脚本逐块搬迁完成（§1.3），第 7 步外挂改 ES 模块完成，第 8 步的 `maps.json` JSON Schema 完成（`map/data/schema/*.schema.json`：maps、points 数据 tc_* / site_*、addon_places；`tools/jsonschema_lite.py` 小子集校验器，`tools/check_maps.py` 每次先查结构，未登记字段报错；`tests/schema_maps.test.mjs`）。行为不变：浏览器套件全绿、冷开 / 包体数字见门控记录。

@@ -11,7 +11,7 @@ MODE=; ARGS=()
 for x in "$@"; do case "$x" in --list|--count) MODE=$x ;; *) ARGS+=("$x") ;; esac; done
 REF=${ARGS[0]:-$(python3 -c "import sys; sys.path.insert(0, 'tools'); import verlib; print(verlib.tag_of(open('VERSION').read().strip()))")}; JOBS=${ARGS[1]:-16}   # 标签规则见 tools/verlib.py
 BASE="https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@$REF"
-EXCL='\.(md|py|txt)$|^map/(shots|_proto)/|/reviews/|^map/(world|world_draft[0-9]*|tiancheng)\.html$|^map/section\.js$'
+EXCL='\.(md|py|txt)$|^map/data/schema/|^map/(shots|_proto)/|/reviews/|^map/(world|world_draft[0-9]*|tiancheng)\.html$|^map/section\.js$'
 files() { git ls-tree -r --name-only "$REF" -- map | grep -vE "$EXCL" || true; }
 N=$(files | wc -l | tr -d ' ')
 [ "$MODE" = --count ] && { echo "$N"; exit 0; }
