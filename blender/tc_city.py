@@ -235,13 +235,17 @@ class City:
                         w_, d_ = bw * rng.uniform(.85, 1.1) * ds, bw * rng.uniform(.8, 1.2) * ds
                         # A6：原来整片楼的宽深都在 ±15% 内，屋顶读成同尺寸的方块。按对数正态再抖一次（多数略小、少数并成大一号的楼），
                         # 并让长宽比拉开；缩小的楼之间自然留出窄巷。
-                        f_ = float(np.clip(rv.lognormal(-.06, .22), .6, 1.55)); asp = float(np.clip(rv.lognormal(0, .2), .7, 1.45))
+                        # A7：楼缝偏宽（多数楼缩小后楼距 3–5 m）——改成多数略放大、楼贴楼（握手楼的楼距约 1 m），仍有少数小楼留出窄巷
+                        f_ = float(np.clip(rv.lognormal(.07, .22), .72, 1.75)); asp = float(np.clip(rv.lognormal(0, .22), .7, 1.5))
                         w_, d_ = w_ * f_ * asp ** .5, d_ * f_ / asp ** .5
-                        Q = np.array([(x + (-w_ / 2) * cs - (-d_ / 2) * sn, y + (-w_ / 2) * sn + (-d_ / 2) * cs), (x + (w_ / 2) * cs - (-d_ / 2) * sn, y + (w_ / 2) * sn + (-d_ / 2) * cs),
-                                      (x + (w_ / 2) * cs - (d_ / 2) * sn, y + (w_ / 2) * sn + (d_ / 2) * cs), (x + (-w_ / 2) * cs - (d_ / 2) * sn, y + (-w_ / 2) * sn + (d_ / 2) * cs)], np.float32)
+                        if rv.random() < .15:                                              # A7 第 2 轮：少数楼偏转几度（不是整片严格对齐的方格）
+                            a2 = ang + float(rv.normal(0, .09)); cb, sb = math.cos(a2), math.sin(a2)
+                        else: cb, sb = cs, sn
+                        Q = np.array([(x + (-w_ / 2) * cb - (-d_ / 2) * sb, y + (-w_ / 2) * sb + (-d_ / 2) * cb), (x + (w_ / 2) * cb - (-d_ / 2) * sb, y + (w_ / 2) * sb + (-d_ / 2) * cb),
+                                      (x + (w_ / 2) * cb - (d_ / 2) * sb, y + (w_ / 2) * sb + (d_ / 2) * cb), (x + (-w_ / 2) * cb - (d_ / 2) * sb, y + (-w_ / 2) * sb + (d_ / 2) * cb)], np.float32)
                         h = float(rng.uniform(36, 45) if dense else rng.uniform(18, 32))   # 握手楼 6–10 层；城寨一带 12–14 层
                         h *= float(np.clip(rv.lognormal(0, .2), .6, 1.7)) * (1.35 if rv.random() < .06 else 1.0)   # A6：高度更参差，少数加盖到十几层
-                        self.b.append(dict(p=Q, cx=float(x), cy=float(y), a=float(w_ * d_), h=h, n=tc.district(x, y), obb=(float(x), float(y), w_, d_, ang),
+                        self.b.append(dict(p=Q, cx=float(x), cy=float(y), a=float(w_ * d_), h=h, n=tc.district(x, y), obb=(float(x), float(y), w_, d_, math.atan2(sb, cb)),
                                            k=D['k'], dk=D['kind'], di=self.districts.index(D), synth=True, dense=dense))
         tick(f'village: {len(self.b) - n0} handshake buildings generated')
 
@@ -434,12 +438,13 @@ class City:
         return P[i] + u * (t - cum[i]), u
     TRAFFIC_CLASS = {'motorway': 1.2, 'trunk': 1.1, 'primary': 1.0, 'secondary': .72, 'tertiary': .48, 'motorway_link': .5, 'trunk_link': .5,
                      'primary_link': .45, 'secondary_link': .4, 'tertiary_link': .3, 'unclassified': .26, 'residential': .16, 'living_street': .06}
-    def traffic2(self, rng, z, density=3.2, weight=None, boulevard=.45):
+    def traffic2(self, rng, z, density=3.2, weight=None, boulevard=.45, scale=None):
         """车流（A6，中层）：替代 traffic 的等距点阵——
         - 每条路、每个方向各有一个「繁忙度」（对数正态），约四分之一的路段几乎没车；路级别（TRAFFIC_CLASS）× 城区权重 weight(x, y) 定平均密度；
         - 车成队行驶（1–8 辆一队，队内 5–8 m），队与队之间是按指数分布的大间隙（均值按密度反推，保持平均车量）；
         - 交叉口前（行驶方向上）按概率排一串等红灯的车（2–10 辆，贴得更紧）；交叉口里不停车；
         - 少量长车（公交、货车）。交界大道（dk='boulevard'）按 boulevard 倍数压低。
+        scale(x, y)（A7，可选）：直接乘在密度与排队概率上的倍数（weight 有 .25 的底数，压不到很低）。
         rng 用独立随机。返回与 traffic 相同的 (cars, rot, dirs, cols)。"""
         J = self.junctions(); cars, rots, dirs, cols = [], [], [], []
         for r in self.roads:
@@ -459,14 +464,15 @@ class City:
                 act = float(np.mean(acts))
                 ts = []
                 for q in jt:                                                                   # 交叉口前等红灯的一串
-                    if rng.random() > min(.85, .5 * base * act_at(q - s * .01)): continue
+                    qs = 1.0 if scale is None else scale(*map(float, self._at(P, d, L, cum, q)[0]))
+                    if rng.random() > min(.85, .5 * base * act_at(q - s * .01) * qs): continue
                     m_ = int(min(10, 2 + rng.geometric(.3))); t0 = q - s * (.03 + w * .5)
                     for k in range(m_): ts.append(t0 - s * k * rng.uniform(.05, .058))
                 t = float(rng.uniform(0, .4))
                 while t < Lt - .03:
                     x_, y_ = self._at(P, d, L, cum, t)[0]
                     kd = weight(float(x_), float(y_)) if weight else .5
-                    lam = max(1e-3, density * base * act_at(t) * (.25 + 1.5 * kd))          # 每单位长度（100 m）的车数
+                    lam = max(1e-3, density * base * act_at(t) * (.25 + 1.5 * kd) * (1.0 if scale is None else scale(float(x_), float(y_))))   # 每单位长度（100 m）的车数
                     n = int(min(8, rng.geometric(.38)))
                     for k in range(n): ts.append(t + k * rng.uniform(.052, .08))
                     t += n * .065 + max(.12, rng.exponential(n / lam))
@@ -484,12 +490,16 @@ class City:
     LAMP_SPACING = {'motorway': (.3, 2), 'trunk': (.27, 2), 'primary': (.27, 2), 'secondary': (.3, 2), 'tertiary': (.34, 1), 'unclassified': (.4, 1),
                     'residential': (.42, 1), 'living_street': (.5, 1), 'service': (.75, 1), 'motorway_link': (.32, 1), 'trunk_link': (.32, 1),
                     'primary_link': (.32, 1), 'secondary_link': (.34, 1), 'tertiary_link': (.36, 1)}
-    def street_lamps(self, rng, classes=None, side_offset=.008, scale=1.0, corner=.6, one_side=False):
+    def street_lamps(self, rng, classes=None, side_offset=.008, scale=1.0, corner=.6, one_side=False, jit=.2, min_sep=0.0):
         """路灯位置（A6）：替代 along(.12, 两侧) 的等距双排点阵——按路级别定间距（干道 27–30 m 两侧错开、支路 34–50 m 单侧、小巷更稀），
         间距 ±20% 抖动；单侧的路每隔一段换边；交叉口的转角按 corner 概率各补一盏（路口比路段亮）。rng 用独立随机。
-        one_side=True（下层）：所有路都只装一侧（老工业区、城中村的路灯本来就稀）。返回 [(x, y, 方向角, 道路等级, 宽度)]，与 along 相同。"""
+        one_side=True（下层）：所有路都只装一侧（老工业区、城中村的路灯本来就稀）。返回 [(x, y, 方向角, 道路等级, 宽度)]，与 along 相同。
+        A7：jit = 间距抖动幅度（默认 ±20%，与 A6 相同）；min_sep > 0 时按路级别从高到低放灯，离已放的灯不到 min_sep 的去掉——
+        双向分幅的干道、辅路、匝道各装一排灯时读成两三排平行的点阵，去重后只留一排错落的灯。"""
         J = self.junctions(); out = []; seen = set()
-        for r in self.roads:
+        order = list(self.TRAFFIC_CLASS) + ['service']
+        roads = sorted(self.roads, key=lambda r: order.index(r['c']) if r['c'] in order else len(order)) if min_sep > 0 else self.roads
+        for r in roads:
             if classes and r['c'] not in classes: continue
             P = np.asarray(r['p'], np.float64); w = r['w']
             if len(P) < 2: continue
@@ -502,7 +512,7 @@ class City:
                 while t < Lt - .01:
                     p, u = self._at(P, d, L, cum, t); nrm = np.array([-u[1], u[0]])
                     q_ = p + nrm * sd * (w / 2 + side_offset); out.append((float(q_[0]), float(q_[1]), math.atan2(u[1], u[0]), r['c'], w))
-                    t += sp * rng.uniform(.8, 1.2)
+                    t += sp * rng.uniform(1 - jit, 1 + jit)
                     if two == 1 and rng.random() < .12: sd = -sd                            # 单侧的路：隔一段换到对面
             for j, p in enumerate(P):                                                      # 路口转角
                 k_ = (round(float(p[0]) * 50), round(float(p[1]) * 50))
@@ -511,6 +521,13 @@ class City:
                 if key in seen: continue
                 seen.add(key); i_ = min(j, len(L) - 1); u = d[i_] / max(L[i_], 1e-9); nrm = np.array([-u[1], u[0]]); sd = 1 if rng.random() < .5 else -1
                 q_ = p + nrm * sd * (w / 2 + side_offset) + u * rng.uniform(-.02, .02); out.append((float(q_[0]), float(q_[1]), math.atan2(u[1], u[0]), r['c'], w))
+        if min_sep > 0:                                                                    # A7：去掉离已放的灯太近的（高级别的路先放）
+            cell = {}; kept = []
+            for L_ in out:
+                gx, gy = int(math.floor(L_[0] / min_sep)), int(math.floor(L_[1] / min_sep))
+                if any(math.hypot(L_[0] - q[0], L_[1] - q[1]) < min_sep for i in (-1, 0, 1) for j in (-1, 0, 1) for q in cell.get((gx + i, gy + j), ())): continue
+                cell.setdefault((gx, gy), []).append(L_); kept.append(L_)
+            out = kept
         return out
     def road_kd(self, classes):
         """道路采样点的 KD 树：用来算「离某类道路多远」（商业街权重、地标避让）。"""
