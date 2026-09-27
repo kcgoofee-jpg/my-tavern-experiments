@@ -69,7 +69,7 @@ export const AGE = { live: 7, after: 20, fade: 40 };        // 楼层差：≤7 
 export const MERGE_WINDOW = 15;                               // 同一类别 + 地点在 15 楼内再次出现 = 同一事件的更新
 const MAX_PER_FLOOR = 3;
 // 内容硬边界：事件只做城市治安、灾害、网络、公共事务；含这些词的整条丢弃
-const BLOCK = /母畜|项圈|调教|侍寝|性奴|束缚|拘束|捆绑|凌辱|强奸|猥亵|裸/;
+// 不做任何关键词过滤：标签原样解析、原样落点（用户 2026-09-27：「我们做的是技术兼容」）。内容是用户自己聊天里的，地图只管位置与显示。
 // 世界书里的示范标记原文：模型原样复述时不上图
 export const EXAMPLES = new Set([
   '⌖政策｜中层·商业区｜1｜议会通过跨层通行税修正案｜天城议会',
@@ -125,7 +125,6 @@ export function parseMarks(raw) {
   }
   const out = [];
   for (const [, e] of found.sort((a, b) => a[0] - b[0])) {
-    if (BLOCK.test(e.line)) continue;
     const loc = norm(e.loc), layer = layerGuess(loc);
     if (!layer) continue;
     const place = loc.slice(loc.startsWith(layer) ? layer.length : 0).replace(/^·+/, '');

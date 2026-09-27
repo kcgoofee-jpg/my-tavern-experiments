@@ -24,7 +24,9 @@ function longest(v, words) {
 const len = w => (w ? [...w].length : 0);
 
 /** 由 maps.json（和可选的世界地点、英文名）建一次词表 */
-export function buildIndex(reg, world = null, names = null) {
+// custom：用户在本机自定义的房间叫法（不进仓库、不上 CDN），{ rooms: { 自定义名: 标准房间名 } }。
+// 当前地点写的是自定义名时，按对应的标准房间落点；来源见 viewer 的 EdenMap.setRoomAlias / localStorage「edenMapCustom」。
+export function buildIndex(reg, world = null, names = null, custom = null) {
   const maps = reg?.maps || {}, idx = { estate: null, marks: [], layers: [], tiancheng: null, world: [] };
   const en = z => (names && names[z]) || null;
   // 庄园（kind=estate）：房间 / 区域词表；整座庄园的叫法 = alias 里不是房间也不是区域的词 + 标题 + 链接到它的地标（如上层的「伊甸庄园」）
@@ -35,7 +37,8 @@ export function buildIndex(reg, world = null, names = null) {
     for (const L of Object.values(maps)) for (const k of Object.values(L.markers || {}))
       if (k.link?.map === id) for (const w of [k.name, k.name_en, ...(k.alias || [])]) if (w && !rooms.includes(w) && !areas.includes(w)) whole.add(w);
     whole.delete(undefined); whole.delete(null); whole.delete('');
-    idx.estate = { id, rooms, areas, whole: [...whole] };
+    const alias = {}; for (const [w, r] of Object.entries(custom?.rooms || {})) if (w && r && rooms.includes(r)) { alias[w] = r; rooms.push(w); }
+    idx.estate = { id, rooms, areas, whole: [...whole], alias };
     break;
   }
   const estateId = idx.estate?.id;
@@ -73,7 +76,7 @@ export function resolveHere(value, idx) {
   // 庄园：写了庄园（且没有更长的别处地标，如「财团家族庄园」），或只写了房间 / 区域而没有写别的层、地标
   const inEstate = E && ((eWhole && len(eWhole) >= len(mark?.word)) || (!eWhole && (eRoom || eArea) && !mark && !lay));
   if (inEstate) {
-    if (eRoom && len(eRoom) >= len(eArea) - 1) return { level: 1, map: E.id, room: v, word: eRoom };   // 「后庭浴室」这类两者都有时偏向房间
+    if (eRoom && len(eRoom) >= len(eArea) - 1) return E.alias?.[eRoom] ? { level: 1, map: E.id, room: E.alias[eRoom], word: eRoom, custom: true } : { level: 1, map: E.id, room: v, word: eRoom };   // 「后庭浴室」这类两者都有时偏向房间
     if (eArea) return { level: 2, map: E.id, room: v, word: eArea };
     return { level: 2, map: E.id, room: v, word: eWhole };
   }
