@@ -25,4 +25,5 @@ t('胶囊文字', () => {
   assert.equal(H.transitLabel('天城上层·甲岛至乙园的私人载具舱内'), '甲岛 → 乙园（途中）');
   assert.equal(H.transitLabel('从甲到乙', true), '甲 → 乙 (en route)'); assert.equal(H.transitLabel('乙园'), null);
 });
+t('「议会骑士团」不落到「天城议会」（council）', () => { for (const v of ['议会骑士团总部', '天城·上层·议会骑士团']) assert.notEqual(H.resolveHere(v, idx)?.marker, 'council'); });
 console.log(`${n} passed`);
