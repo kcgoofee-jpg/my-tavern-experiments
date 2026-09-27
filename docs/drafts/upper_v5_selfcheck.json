@@ -1,0 +1,145 @@
+{
+ "style_counts": {
+  "neoclassical": 1,
+  "fortress": 1,
+  "english": 11,
+  "suzhou": 6,
+  "chateau": 8,
+  "lingnan": 6
+ },
+ "near2_same_style": [],
+ "tuples": 25,
+ "inside92_violations": {},
+ "coverage": {
+  "eden": 0.377,
+  "silver_crown": 0.091,
+  "isle2": 0.654,
+  "isle3": 0.788,
+  "isle4": 0.602,
+  "isle5": 0.636,
+  "isle6": 0.598,
+  "isle7": 0.654,
+  "isle8": 0.921,
+  "isle9": 0.609,
+  "isle10": 0.684,
+  "isle11": 0.624,
+  "isle12": 0.732,
+  "isle13": 0.558,
+  "isle14": 0.789,
+  "isle15": 0.867,
+  "isle16": 0.539,
+  "isle17": 0.831,
+  "isle18": 0.671,
+  "isle19": 0.628,
+  "isle20": 0.874,
+  "isle21": 0.759,
+  "isle22": 0.819,
+  "isle23": 0.586,
+  "isle24": 0.597,
+  "isle25": 0.771,
+  "isle26": 0.823,
+  "isle27": 0.828,
+  "isle28": 0.811,
+  "isle29": 0.538,
+  "isle30": 0.576,
+  "isle31": 0.733,
+  "isle32": 0.683
+ },
+ "terrace_spans_deg": [
+  170,
+  181,
+  157,
+  158
+ ],
+ "crown_min": 0.04,
+ "trees": 4332,
+ "faces": 281462,
+ "faces_ratio_r4": 0.799,
+ "eden_anchors": 4,
+ "eden_belvedere_rear": true,
+ "eden_dock_diam_m": 52,
+ "routes": [
+  [
+   "lane",
+   "isle6",
+   "eden",
+   5,
+   {}
+  ],
+  [
+   "lane",
+   "isle6",
+   "silver_crown",
+   4,
+   {}
+  ],
+  [
+   "lane",
+   "isle9",
+   "eden",
+   5,
+   {}
+  ],
+  [
+   "lane",
+   "isle9",
+   "silver_crown",
+   16,
+   {}
+  ],
+  [
+   "lane",
+   "isle30",
+   "eden",
+   6,
+   {}
+  ],
+  [
+   "lane",
+   "isle30",
+   "silver_crown",
+   5,
+   {}
+  ],
+  [
+   "patrol",
+   "silver_crown",
+   "silver_crown",
+   33,
+   {}
+  ],
+  [
+   "patrol_city",
+   "silver_crown",
+   "silver_crown",
+   36,
+   {}
+  ]
+ ],
+ "markers_with_anchor": 9,
+ "shadow_offset_z_gt6": {
+  "isle4": 0.86,
+  "isle5": 0.94,
+  "isle13": 0.92,
+  "isle15": 0.75,
+  "isle16": 0.92,
+  "isle19": 0.76,
+  "isle23": 0.88
+ },
+ "suzhou_pool_ratio": {
+  "isle3": 0.37,
+  "isle15": 0.37,
+  "isle21": 0.37,
+  "isle22": 0.37,
+  "isle27": 0.37,
+  "isle28": 0.37
+ },
+ "lingnan_pond_ratio": {
+  "isle8": 0.25,
+  "isle12": 0.25,
+  "isle14": 0.25,
+  "isle19": 0.25,
+  "isle24": 0.25,
+  "isle32": 0.25
+ }
+}
