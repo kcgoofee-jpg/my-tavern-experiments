@@ -169,6 +169,7 @@
     "lm_old_apartment": {"title": "旧公寓楼（三维）", "title_en": "Old Apartment Block (3D)", "parent": "tc_mid", "kind": "estate", "viewer3d": "old_apartment", "src": "props/viewer3d.html", "alias": ["旧公寓楼（三维）"], "src_note": "开局六的地点的三维模型（标准版：标准档 + 低档 glb；老式步行梯公寓 + 早餐店、地铁口、雨后街道与玩家租的房间，具体位置为仓库推断）；从 tc_mid.old_apartment 标记的「查看三维模型」进。源：blender/landmarks/old_apartment/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_lower_quarter": {"title": "铁皮屋区与旧货市场（三维）", "title_en": "Tin Shacks & Junk Market (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "lower_quarter", "src": "props/viewer3d.html", "alias": ["铁皮屋区与旧货市场（三维）"], "src_note": "开局六提到的两处下层地点合成一个三维场景（标准版：标准档 + 低档 glb；铁皮屋区 + 旧货市场，具体位置为仓库推断）；从 tc_low.tin_shacks 标记的「查看三维模型」进。源：blender/landmarks/lower_quarter/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_well7": {"title": "层间检查点与 7 号井（三维）", "title_en": "Checkpoint & Well 7 (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "well7", "src": "props/viewer3d.html", "alias": ["层间检查点与 7 号井（三维）"], "src_note": "视觉样例里的层间检查点（中层 C 区）与 7 号井黑市（下层）画成一个竖向三维场景（标准版：标准档 + 低档 glb，布局为仓库推断）；两个标记的 link 已用于跨层直达，三维入口写在 link3d（查看器渲染由 UI v2 接）。源：blender/landmarks/well7/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_highland": {"title": "旷野高地（三维）", "title_en": "Wild Highlands (3D)", "parent": "site_highland", "kind": "estate", "viewer3d": "highland", "src": "props/viewer3d.html", "alias": ["旷野高地（三维）"], "src_note": "开局七地点的三维模型（标准版：标准档 + 低档 glb；台地、崖壁、下山小径、焦黑地面，地形为仓库推断）；从 site_highland.highland_plateau 标记的「查看三维模型」进。源：blender/landmarks/highland/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_pm_residence": {
       "title": "首相府（三维）", "title_en": "Prime Minister's Residence (3D)", "parent": "tc_upper", "kind": "estate",
       "viewer3d": "pm_residence", "src": "props/viewer3d.html", "alias": ["首相府花园"],
@@ -266,7 +267,7 @@
       "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
       "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
       "markers": {
-        "highland_plateau": {"name": "旷野高地", "name_en": "Wild Highlands", "tag": "set", "src": "荒野中的高地；卡里只写了荒野与崖壁，地形为仓库推断", "alias": ["旷野高地", "旷野", "高地"], "sub": "荒野", "sub_en": "Wilderness", "cls": "capital", "openings": [7]},
+        "highland_plateau": {"name": "旷野高地", "name_en": "Wild Highlands", "tag": "set", "src": "荒野中的高地；卡里只写了荒野与崖壁，地形为仓库推断", "alias": ["旷野高地", "旷野", "高地"], "sub": "荒野", "sub_en": "Wilderness", "cls": "capital", "openings": [7], "link": {"map": "lm_highland", "label": "查看三维模型", "label_en": "View 3D model"} },
         "cliff_edge": {"name": "崖壁", "name_en": "Cliff edge", "tag": "set", "src": "荒野里有崖壁（走向、高度为仓库推断）", "alias": ["崖壁", "崖边"]},
         "trail_down": {"name": "下山小径", "name_en": "Trail down", "tag": "inf", "src": "仓库推断：崖下通往低地的小径（苍穹要回的修道院方向卡没写）", "alias": ["下山小径"], "canon": false}
       }
