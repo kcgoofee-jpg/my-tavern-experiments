@@ -427,7 +427,6 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     #dock { right: var(--sp-4); }
     html[data-hand="left"] #dock { right: auto; left: var(--sp-4); align-items: flex-start; }
     #zoom button { width: 44px; height: 44px; }
-    #zoom #lblTog { display: none; }
     /* 半开时控制列最高到屏幕中线；再高就横排贴在抽屉上沿（§10.1）；全开时隐藏（inert） */
     #dock.row { flex-direction: row-reverse; align-items: flex-end; }
     #dock.row #zoom { flex-direction: row-reverse; }
@@ -628,7 +627,7 @@ function applyI18n() {
   $('#setBtn').setAttribute('aria-label', tx('settings_title', '设置'));
   $('#upBtn').setAttribute('aria-label', tx('s.up', '上一级')); $('#upBtn').title = tx('s.up', '上一级');
   window.TCSheet?.text({ expand: tx('s.expand', '展开'), collapse: tx('s.collapse', '收起'), region: tx('s.sheet', '事态、人物与地点') });
-  if (window.TCSheet) { TCSheet.label('pl', esc(tx('s.place', '地点')), esc(tx('s.place_short', '地'))); $('#cardEmpty').textContent = tx('s.place_empty', '点地图上的地点，这里显示它的介绍'); }
+  if (window.TCSheet) { TCSheet.label('pl', esc(tx('s.place', '地点')), esc(tx('s.place_short', '地'))); $('#cardEmpty').dataset.um = '-'; placeEmpty(typeof TCUnmapped !== 'undefined' ? TCUnmapped.name : null); }
   stDotLabel(); renderSelfCheck(); renderAbout(); setPage(setPageNow, true);
 }
 async function setLang(l) {
@@ -1285,10 +1284,12 @@ function declutter() { clearTimeout(declT); declT = setTimeout(() => {
   const rank = e => e.classList.contains('here') || e.classList.contains('active') ? 0 : e.classList.contains('capital') || e.classList.contains('op') ? 1 : e.dataset.focus ? 2 : e.dataset.link ? 3 : 4;
   [...mks, ...evs, ...words].forEach(e => e.classList.remove('lhide'));
   const hit = (r, k, g = 4) => r.left < k.right + g && r.right > k.left - g && r.top < k.bottom + 2 && r.bottom > k.top - 2;
-  const box = e => { const r = e?.getBoundingClientRect(); return r && r.width ? r : null; };
+  const seen = new Map(), box = e => { if (!e) return null; if (seen.has(e)) return seen.get(e); const r = e.getBoundingClientRect(), v = r.width ? r : null; seen.set(e, v); return v; };   // 同一轮只量一次，routeGaps 复用
   const ic = evs.flatMap(e => [...e.querySelectorAll(':scope > i, :scope > .chg > i')].map(i => [e, box(i)])).filter(x => x[1]), icons = ic.map(x => x[1]), kept = [];
   const place = (e, r, avoidIcons) => { if (!r) return; if (kept.some(k => hit(r, k)) || (avoidIcons && icons.some(k => hit(r, k, 0)))) e.classList.add('lhide'); else kept.push(r); };
   const sorted = mks.sort((a, b) => rank(a) - rank(b));
+  // 控制列（手机半开抽屉时横排贴在抽屉上沿）当障碍：压在它下面的地名收起，不再被按钮盖住（v2 门控遗留）
+  const dk = $('#dock'); if (dk && !dk.hidden && getComputedStyle(dk).display !== 'none') for (const c of dk.children) { const r = c.offsetParent && box(c); if (r) kept.push(r); }
   for (const e of sorted.filter(e => rank(e) <= 1)) place(e, box(e.querySelector('.lab')), false);
   for (const e of words.filter(e => e.classList.contains('realm'))) { const r = box(e.querySelector('b')); if (r) kept.push(r); }
   // v0.9.2：事态标题先于普通地名：事态点所在的地名收起，只留一条标签（事态标题）
@@ -1299,12 +1300,14 @@ function declutter() { clearTimeout(declT); declT = setTimeout(() => {
   for (const e of sorted.filter(e => rank(e) > 1)) { const r = box(e.querySelector('.lab')), pin = box(e.querySelector('.pin'));
     if (pin && icons.some(k => hit(pin, k, 6))) e.classList.add('lhide'); else place(e, r, true); }
   for (const e of words.filter(e => e.classList.contains('minor'))) place(e, box(e), true);
-  routeGaps();
+  routeGaps(box);
 }, 80); }
-function routeGaps() {
+// measure：declutter 同一轮已量过的标签框（带缓存的 box），避让后直接复用，不再对每个标签二次 getBoundingClientRect
+function routeGaps(measure) {
   const svg = document.querySelector('.routes'); if (!svg || document.body.classList.contains('noroutes')) return;
   const g = svg.querySelector('.gaps'), m = svg.getScreenCTM?.(); if (!g || !m) return; const inv = m.inverse(), P = (x, y) => new DOMPoint(x, y).matrixTransform(inv);
-  const rs = [...document.querySelectorAll('.mk:not(.lhide) .lab, .chm .av, .ev:not(.lhide) b')].map(e => e.getBoundingClientRect()).filter(r => r.width);
+  const M = measure || (e => { const r = e.getBoundingClientRect(); return r.width ? r : null; });
+  const rs = [...document.querySelectorAll('.mk:not(.lhide) .lab, .chm .av, .ev:not(.lhide) b')].map(M).filter(Boolean);
   const html = rs.map(r => { const a = P(r.left - 3, r.top - 3), b = P(r.right + 3, r.bottom + 3); return `<rect x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" width="${(b.x - a.x).toFixed(1)}" height="${(b.y - a.y).toFixed(1)}" rx="4" fill="#000"/>`; }).join('');
   if (html !== g.__h) { g.__h = html; g.innerHTML = html; }   // 没变就不重写遮罩（WebKit 重栅格化）
 }
@@ -1640,7 +1643,7 @@ function renderStorage(d) {
     + `<div class="hrow"><span>${esc(tx('s.src_mode', '变量读取方式'))}</span><span>${esc(src?.mvu?.mode || '—')}</span></div>`
     + `<div class="hrow"><span>${esc(tx('s.src_chars', '人物来源'))}</span><span>${esc(ch)}</span></div>`
     + `<div class="hrow"><span>${esc(tx('s.stor_clean', '清理旧聊天的地图数据'))}</span><button type="button" class="btn" id="storClean">${esc(tx('s.stor_clean_btn', '清理'))}</button></div>`
-    + (d.cleaned ? `<small role="status">${esc(d.cleaned.error ? tx('s.stor_fail', '清理失败') : tx('s.stor_cleaned', '已清理 {n} 个聊天，释放 {b}', { n: d.cleaned.n, b: kb(d.cleaned.bytes) }))}</small>` : '');
+    + (d.cleaned ? `<small role="status">${esc(d.cleaned.limited ? tx('s.stor_limited', '刚清理过，请 {s} 秒后再试', { s: d.cleaned.wait || 10 }) : d.cleaned.error ? tx('s.stor_fail', '清理失败') : tx('s.stor_cleaned', '已清理 {n} 个聊天，释放 {b}', { n: d.cleaned.n, b: kb(d.cleaned.bytes) }))}</small>` : '');
   // 清理不可撤销：第一次点只变成「再点一次确认（删除 N 个旧聊天）」，5 秒内再点才发（架构评审 P1）
   const cb = $('#storClean'), old = Math.max(0, (s?.chats || 0) - 5); let armed = 0;
   if (!old) { cb.disabled = true; cb.title = tx('s.stor_none', '没有可清理的旧聊天'); }
@@ -1786,8 +1789,16 @@ function sheetVis() {
   const S = window.TCSheet; if (!S) return;
   const estate = document.body.classList.contains('estate'), ev = !S.button('ev').hidden, ch = !S.button('ch').hidden, card = !$('#card').hidden;
   const layChip = narrowNow() && !$('#layers').hidden;
-  S.hide(estate || !(ev || ch || card || layChip));
-  S.showTab('pl', ev || ch || card);
+  // 未上图（v2 门控遗留）：当前地点认不出时，抽屉 / 桌面收起的右栏条也留着，「地点」页给出「放到地图上」入口
+  const um = typeof TCUnmapped !== 'undefined' ? TCUnmapped.name : null; placeEmpty(um);
+  S.hide(estate || !(ev || ch || card || layChip || um));
+  S.showTab('pl', ev || ch || card || !!um);
+}
+function placeEmpty(um) {
+  const e = $('#cardEmpty'); if (!e || e.dataset.um === (um || '')) return; e.dataset.um = um || '';
+  if (!um) { e.textContent = tx('s.place_empty', '点地图上的地点，这里显示它的介绍'); return; }
+  e.textContent = tx('um.empty', '当前地点「{n}」还不在地图上。', { n: um }) + ' ';
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = tx('um.empty_btn', '放到地图上'); b.onclick = () => TCUnmapped.open(); e.append(b);
 }
 function cardSheet(open) {
   const S = window.TCSheet; if (!S) return; sheetVis();
@@ -1806,6 +1817,7 @@ function initShell() {
       // 半开时控制列最高到屏幕中线，超过就横排贴在抽屉上沿（§10.1）
       const st = $('#stage').getBoundingClientRect(); dock.classList.remove('row');
       if (mode === 'sheet' && state === 'half' && h + dock.offsetHeight + 12 > st.height * .5 + 1) dock.classList.add('row');
+      declutter();   // 控制列换了位置 / 排法：重新避让地名
       if (tab === 'ch' || tab === 'ev') TCEvents.renderBar();
       post({ type: 'eden-map:chrome', bottom: h, top: $('header').offsetHeight }); noticeRefresh();
     } });

@@ -81,4 +81,9 @@ t('updatePromptText：跟随分支 / 最新版加载器 = 刷新；锁定 = 去�
   assert.match(updatePromptText('0.9.7', 'follow').how, /刷新/); assert.match(updatePromptText('0.9.7', 'tag').how, /重新导入.*v0\.9\.7/);
   assert.match(updatePromptText('0.9.7', 'tag', true).title, /v0\.9\.7/); assert.equal(updatePromptText('1.0.0', 'ref').skip, '此版本不再提示');
 });
+t('updatePromptText 主按钮：跟随 / 最新 = 刷新载入；钉版本 = 本次切换；锁定 = 无', () => {
+  assert.equal(updatePromptText('0.9.7', 'follow').act, '刷新载入'); assert.equal(updatePromptText('0.9.7', 'latest').actKind, 'reload');
+  assert.equal(updatePromptText('0.9.7', 'tag').actKind, 'switch'); assert.equal(updatePromptText('0.9.7', 'locked').act, null);
+  assert.equal(updatePromptText('0.9.7', 'follow', true).act, 'Reload');
+});
 console.log(`${n} 项通过`);

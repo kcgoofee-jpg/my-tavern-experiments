@@ -509,5 +509,8 @@
   "s.stor_cleaned": "Cleaned {n} chats, freed {b}",
   "s.stor_none": "No old chats to clean",
   "s.stor_confirm": "Tap again to confirm: delete map data of {n} old chats (cannot be undone)",
+  "um.empty": "Current location “{n}” is not on the map yet.",
+  "um.empty_btn": "Put it on the map",
+  "s.stor_limited": "Just cleaned — try again in {s} s",
   "s.stor_fail": "Clean-up failed"
 }

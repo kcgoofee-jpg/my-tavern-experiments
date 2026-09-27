@@ -13,7 +13,7 @@ const TCUnmapped = (() => {
     value = String(v ?? document.getElementById('here')?.value ?? '');
     name = typeof HX !== 'undefined' && HX?.unmappedName && hereIdx ? HX.unmappedName(value, hereIdx) : null;
     const sig = (name || '') + '\n' + value; if (sig !== sent) { sent = sig; post({ type: 'eden-map:unmapped', name }); }   // 卡内脚本的标题栏
-    renderChip();
+    renderChip(); if (typeof sheetVis === 'function') sheetVis();   // 查看器抽屉 / 右栏跟着显示「放到地图上」
     if (waitFor && waitFor === value && !name) { waitFor = null; if (typeof jumpHere === 'function') jumpHere(value, true); }   // 刚指派完：立刻跳过去
   }
   function renderChip() {
