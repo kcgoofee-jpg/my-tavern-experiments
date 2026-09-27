@@ -599,3 +599,89 @@ def holo(name, c1, c2, estr=6.0, alpha=0.55, scan=6.0, scale=0.6):
     nt.links.new(tr.outputs[0], mx.inputs[1]); nt.links.new(em.outputs[0], mx.inputs[2])
     nt.links.new(mx.outputs[0], out.inputs[0])
     return m
+
+
+# ---------------------------------------------------------------- 警示条纹 / 线条屏 / 楼窗格（well7 起加；无文字）
+def hazard(name, c1=(0.75, 0.52, 0.04), c2=(0.02, 0.02, 0.02), period=0.5, rough=0.55, wear=0.35):
+    """斜向警示条纹漆（世界 x+y+z 方向交替两色），带噪声磨损露出底色。"""
+    m, nt, b = new_mat(name)
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    sep = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(tc.outputs['Object'], sep.inputs[0])
+    def M(op, a, bb):
+        n = nt.nodes.new('ShaderNodeMath'); n.operation = op
+        for i, v in enumerate((a, bb)):
+            if isinstance(v, float): n.inputs[i].default_value = v
+            else: nt.links.new(v, n.inputs[i])
+        return n.outputs[0]
+    s = M('ADD', M('ADD', sep.outputs[0], sep.outputs[1]), sep.outputs[2])
+    band = M('LESS_THAN', M('FRACT', M('MULTIPLY', s, 1.0 / period), 0.0), 0.5)
+    col = _mix(nt, tuple(c2), tuple(c1), band)
+    nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 3.0; nz.inputs['Detail'].default_value = 8
+    nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
+    mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['From Min'].default_value = 0.62; mr.inputs['From Max'].default_value = 0.7
+    mr.inputs['To Max'].default_value = wear
+    nt.links.new(nz.outputs[0], mr.inputs['Value'])
+    col = _mix(nt, col, (0.12, 0.11, 0.1), mr.outputs[0])
+    nt.links.new(col, b.inputs['Base Color'])
+    b.inputs['Roughness'].default_value = rough
+    return m
+
+
+def line_screen(name, c=(0.2, 1.0, 0.45), estr=4.0, scale=38.0):
+    """终端屏：暗底上的抽象水平亮线（波纹带 + 噪声断续），没有任何字符。"""
+    m, nt, b = new_mat(name)
+    b.inputs['Base Color'].default_value = (0.01, 0.02, 0.012, 1); b.inputs['Roughness'].default_value = 0.12
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    wv = nt.nodes.new('ShaderNodeTexWave'); wv.wave_type = 'BANDS'; wv.bands_direction = 'Z'
+    wv.inputs['Scale'].default_value = scale; wv.inputs['Distortion'].default_value = 0.0
+    nt.links.new(tc.outputs['Object'], wv.inputs['Vector'])
+    th = nt.nodes.new('ShaderNodeMath'); th.operation = 'GREATER_THAN'; th.inputs[1].default_value = 0.8
+    nt.links.new(wv.outputs[1], th.inputs[0])
+    nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 9.0
+    nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
+    gt = nt.nodes.new('ShaderNodeMath'); gt.operation = 'GREATER_THAN'; gt.inputs[1].default_value = 0.42
+    nt.links.new(nz.outputs[0], gt.inputs[0])
+    mu = nt.nodes.new('ShaderNodeMath'); mu.operation = 'MULTIPLY'
+    nt.links.new(th.outputs[0], mu.inputs[0]); nt.links.new(gt.outputs[0], mu.inputs[1])
+    ad = nt.nodes.new('ShaderNodeMath'); ad.operation = 'MULTIPLY_ADD'; ad.inputs[1].default_value = estr; ad.inputs[2].default_value = 0.25
+    nt.links.new(mu.outputs[0], ad.inputs[0])
+    b.inputs['Emission Color'].default_value = (*c, 1)
+    nt.links.new(ad.outputs[0], b.inputs['Emission Strength'])
+    return m
+
+
+def window_grid(name, wall=(0.06, 0.065, 0.07), lit=(1.0, 0.78, 0.5), estr=3.0, cell=(3.0, 3.2), seed=0.0):
+    """远景楼体立面：世界坐标砖块纹理当窗格，随机一部分亮着（无字、无招牌）。"""
+    m, nt, b = new_mat(name)
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    mp = nt.nodes.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (1 / cell[0], 1 / cell[0], 1 / cell[1])
+    mp.inputs['Location'].default_value = (seed, seed, 0)
+    nt.links.new(tc.outputs['Object'], mp.inputs['Vector'])
+    br = nt.nodes.new('ShaderNodeTexBrick'); br.offset = 0.0
+    br.inputs['Scale'].default_value = 1.0; br.inputs['Mortar Size'].default_value = 0.3
+    br.inputs['Brick Width'].default_value = 1.0; br.inputs['Row Height'].default_value = 1.0
+    br.inputs['Color1'].default_value = (1, 1, 1, 1); br.inputs['Color2'].default_value = (0, 0, 0, 1)
+    br.inputs['Mortar'].default_value = (0, 0, 0, 1)
+    sep = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(mp.outputs[0], sep.inputs[0])
+    cm = nt.nodes.new('ShaderNodeCombineXYZ')
+    nt.links.new(sep.outputs[0], cm.inputs[0]); nt.links.new(sep.outputs[2], cm.inputs[1])
+    ad = nt.nodes.new('ShaderNodeVectorMath'); ad.operation = 'ADD'
+    nt.links.new(cm.outputs[0], ad.inputs[0])
+    sep2 = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(mp.outputs[0], sep2.inputs[0])
+    cm2 = nt.nodes.new('ShaderNodeCombineXYZ'); nt.links.new(sep2.outputs[1], cm2.inputs[0])
+    nt.links.new(cm2.outputs[0], ad.inputs[1])
+    nt.links.new(ad.outputs[0], br.inputs['Vector'])
+    wn = nt.nodes.new('ShaderNodeTexWhiteNoise'); wn.noise_dimensions = '3D'
+    fl = nt.nodes.new('ShaderNodeVectorMath'); fl.operation = 'FLOOR'
+    nt.links.new(ad.outputs[0], fl.inputs[0]); nt.links.new(fl.outputs[0], wn.inputs['Vector'])
+    on = nt.nodes.new('ShaderNodeMath'); on.operation = 'GREATER_THAN'; on.inputs[1].default_value = 0.62
+    nt.links.new(wn.outputs['Value'], on.inputs[0])
+    inv = nt.nodes.new('ShaderNodeMath'); inv.operation = 'SUBTRACT'; inv.inputs[0].default_value = 1.0
+    nt.links.new(br.outputs['Fac'], inv.inputs[1])   # Fac = 窗框（灰缝）；取反 = 窗洞
+    mu = nt.nodes.new('ShaderNodeMath'); mu.operation = 'MULTIPLY'
+    nt.links.new(inv.outputs[0], mu.inputs[0]); nt.links.new(on.outputs[0], mu.inputs[1])
+    b.inputs['Base Color'].default_value = (*wall, 1); b.inputs['Roughness'].default_value = 0.6
+    b.inputs['Emission Color'].default_value = (*lit, 1)
+    es = nt.nodes.new('ShaderNodeMath'); es.operation = 'MULTIPLY'; es.inputs[1].default_value = estr
+    nt.links.new(mu.outputs[0], es.inputs[0]); nt.links.new(es.outputs[0], b.inputs['Emission Strength'])
+    return m

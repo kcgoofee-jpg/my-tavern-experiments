@@ -98,7 +98,7 @@
           "alias": ["议会", "议事厅"] },
         "checkpoint_c": { "name": "层间检查点", "sub": "C 区 → 下层 7 号井", "name_en": "Inter-tier Checkpoint", "sub_en": "Zone C → Well 7 (Lower)", "tag": "set", "link": { "map": "tc_low", "marker": "well7", "label": "下到下层 · 7 号井", "label_en": "Down to Well 7 · Lower" },
           "src": "天城·中层：中层 C 区的层间检查点，通往下层 7 号井的通道（检查点的具体位置为推断；下层 7 号井画在同一平面位置）。跨层通行要持执政厅签发的通行许可（写明方向、持证人、随行与有效时段，编号为 P 加五位数）；中层与下层之间的检查点查验身份芯片与随身铭牌；下层商品进入中层缴 5% 入境税",
-          "alias": ["层间检查点", "检查点", "C区", "C 区", "中层C区", "中层 C 区"] },
+          "alias": ["层间检查点", "检查点", "C区", "C 区", "中层C区", "中层 C 区"] , "link3d": {"map": "lm_well7", "label": "查看三维模型", "label_en": "View 3D model"} },
         "tiancheng_univ": {"name": "天城大学", "sub": "设法学院", "name_en": "Tiancheng University", "sub_en": "Has a law school", "tag": "inf", "layer_src": "user-decision", "src": "人物·维多利亚：天城大学设法学院（她 16 岁跳级入学，母亲是法学院终身教授）；与星渊大学不是同一所。卡未写层与位置：放在中层是用户决定（2026-09-27），具体位置为仓库推断", "alias": ["天城大学", "天城大学法学院", "法学院"]},
         "knights_camp": {"name": "骑士团营区", "sub": "议会骑士团", "name_en": "Knights' Encampment", "sub_en": "Council Knights", "tag": "inf", "layer_src": "user-decision", "src": "军事与治安、人物·罗莎琳德：议会骑士团的营区（团长每天巡营）；卡未写位置，也未写与银冠堡是否同一处。放在中层是用户决定（2026-09-27）；画在上层银冠堡的正下方为仓库推断", "alias": ["骑士团营区", "骑士团营地"]},
         "supreme_court": {"name": "最高法院", "name_en": "Supreme Court", "tag": "inf", "src": "人物·维多利亚：她的公寓在中层高区、步行 15 分钟到最高法院，据此把法院放在中层高区（层与位置为仓库推断）", "alias": ["天城最高法院", "最高法院"]},
@@ -129,7 +129,7 @@
       "markers": {
         "well7": { "name": "7 号井黑市", "sub": "只收灰票", "name_en": "Well 7 Black Market", "sub_en": "Grey scrip only", "cls": "capital", "tag": "set", "link": { "map": "tc_mid", "marker": "checkpoint_c", "label": "上到中层 · C 区检查点", "label_en": "Up to Zone C Checkpoint · Middle" },
           "src": "天城·下层：「地基区 7 号井 · 只收灰票」；中层 C 区检查点的通道落在这里（井口与市集布局为推断）。井里的「老 K 杂货」只收灰票，黑市终端的主机名是「井下-07」；灰票是匿名芯片卡，天城只有下层黑市还用实体货币",
-          "alias": ["7号井", "7 号井", "七号井", "黑市", "灰票", "老K杂货", "老 K 杂货", "井下-07"] },
+          "alias": ["7号井", "7 号井", "七号井", "黑市", "灰票", "老K杂货", "老 K 杂货", "井下-07"] , "link3d": {"map": "lm_well7", "label": "查看三维模型", "label_en": "View 3D model"} },
         "blood_mill": { "name": "血肉磨坊", "sub": "黑拳场", "name_en": "The Bloodmill", "sub_en": "Underground fight pit", "tag": "set",
           "src": "天城·下层：黑拳场「血肉磨坊」（位置与形制为推断）",
           "alias": ["血肉磨坊", "黑拳场", "拳场"] },
@@ -168,6 +168,7 @@
     "lm_ruined_churches": {"title": "废弃教堂区（三维）", "title_en": "Derelict Church Quarter (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "ruined_churches", "src": "props/viewer3d.html", "alias": ["废弃教堂区（三维）"], "src_note": "开局四目的地的三维模型（标准版：标准档 + 低档 glb；旧时代石砌教区教堂废墟 + 残余以太场，层与位置为仓库推断）；从 tc_low.ruined_churches 标记的「查看三维模型」进。源：blender/landmarks/ruined_churches/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_old_apartment": {"title": "旧公寓楼（三维）", "title_en": "Old Apartment Block (3D)", "parent": "tc_mid", "kind": "estate", "viewer3d": "old_apartment", "src": "props/viewer3d.html", "alias": ["旧公寓楼（三维）"], "src_note": "开局六的地点的三维模型（标准版：标准档 + 低档 glb；老式步行梯公寓 + 早餐店、地铁口、雨后街道与玩家租的房间，具体位置为仓库推断）；从 tc_mid.old_apartment 标记的「查看三维模型」进。源：blender/landmarks/old_apartment/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_lower_quarter": {"title": "铁皮屋区与旧货市场（三维）", "title_en": "Tin Shacks & Junk Market (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "lower_quarter", "src": "props/viewer3d.html", "alias": ["铁皮屋区与旧货市场（三维）"], "src_note": "开局六提到的两处下层地点合成一个三维场景（标准版：标准档 + 低档 glb；铁皮屋区 + 旧货市场，具体位置为仓库推断）；从 tc_low.tin_shacks 标记的「查看三维模型」进。源：blender/landmarks/lower_quarter/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_well7": {"title": "层间检查点与 7 号井（三维）", "title_en": "Checkpoint & Well 7 (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "well7", "src": "props/viewer3d.html", "alias": ["层间检查点与 7 号井（三维）"], "src_note": "视觉样例里的层间检查点（中层 C 区）与 7 号井黑市（下层）画成一个竖向三维场景（标准版：标准档 + 低档 glb，布局为仓库推断）；两个标记的 link 已用于跨层直达，三维入口写在 link3d（查看器渲染由 UI v2 接）。源：blender/landmarks/well7/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_pm_residence": {
       "title": "首相府（三维）", "title_en": "Prime Minister's Residence (3D)", "parent": "tc_upper", "kind": "estate",
       "viewer3d": "pm_residence", "src": "props/viewer3d.html", "alias": ["首相府花园"],
