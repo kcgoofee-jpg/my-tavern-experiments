@@ -72,10 +72,11 @@ for gid, name, kind, c, sz, rot in L.GARDENS:
     else: ax.add_patch(Ellipse(c, 2*sz[0], 2*sz[1], angle=rot, **kw))
 for grp, col in ((L.MAIN, 'main'), (L.GUEST, 'guest'), (L.VILLAS, 'villa'), (L.GREYSTONE, 'grey'), (L.SERVICE, 'svc')):
     for b in grp: rect(b, GROUP_C[col])
-rect(L.BREAKERS, GROUP_C['breakers']); rect(L.CLUB, GROUP_C['club'])
+rect(L.BREAKERS, GROUP_C['breakers']); rect(L.CLUB, GROUP_C['club']); rect(L.WATERSIDE, GROUP_C['club'])
 ax.add_patch(Circle(L.ARC['c'], L.ARC['R'] + 4, fc='none', ec=EDGE, lw=6, alpha=.5, zorder=5))
 ax.add_patch(Circle(L.ARC['c'], L.ARC['R'] - 4, fc=GROUP_C['main'], ec='none', alpha=.0))
 for x, y, _ in L.TREEHOUSES: ax.add_patch(Circle((x, y), 4, fc='#c89b6b', ec=EDGE, lw=.6, zorder=5))
+x, y, r = L.ISLET; ax.add_patch(Circle((x, y), r, fc='#a9c48a', ec=EDGE, lw=.6, zorder=5)); ax.add_patch(Circle((x, y), 3.5, fc=GROUP_C['main'], ec=EDGE, lw=.6, zorder=6))
 x, y, r, _ = L.WATER_TOWER; ax.add_patch(Circle((x, y), r, fc='#cfe3ee', ec=EDGE, lw=.8, zorder=5))
 x, y, r = L.HELIPAD; ax.add_patch(Circle((x, y), r, fc='#cfcfcf', ec=EDGE, lw=.8, zorder=5))
 for x, y in L.BARRIER_STONES: ax.plot(x, y, marker='^', color='#6a3d9a', ms=7, zorder=6)
@@ -84,12 +85,12 @@ ax.add_patch(Circle((0, -256), 17, fc='#e0d8c8', ec=EDGE, lw=1, zorder=5))
 
 # 编号标签
 LAB = [
-    (1, (0, 0), '主楼：大厅·会客厅 / 书房·主卧·女仆长寝室 / B1–B2 见地下层图'),
+    (1, (0, 0), '主楼：大厅·会客厅 / 书房·主卧·女仆长寝室；B1–B2 见地下层图'),
     (2, (-17, -17), '观景塔（F5 眺望亭）'),
     (3, (-48, -2), '西翼：餐厅·备餐 / 厨房·洗衣 / F2 客房×2 / F3 新人寝室、女仆团宿舍'),
     (4, (-68, 32), '西角亭：物资仓库、清洗间、值班·监控室'),
     (5, (45, 0), '东翼：F2 东侧长廊、起居室·茶室 / F3 住客个人寝室×12、三楼浴室'),
-    (6, (63, 33), '东角亭：图书室 / B1 体能训练室 / B2 医务室（地下层见 _basement 图）'),
+    (6, (63, 33), '东角亭：图书室 + 观景室'),
     (7, (0, 30), '半圆回廊 + 后庭草坪（无水池）'),
     (8, (-62, 58), '露天训练场'),
     (9, (0, -113), '前庭 + 喷泉'),
@@ -99,9 +100,9 @@ LAB = [
     (13, (125, 10), '客房楼 g1–g4（有顶连廊）'),
     (14, (-104, -46), '水疗馆 + 西客房楼'),
     (15, (232, -148), 'Breakers 式宾客馆（长住访客）+ 海景泳池'),
-    (16, (-232, -100), 'Greystone 式旧宅（家族收藏）+ 三级台地花园'),
-    (17, (-12, 142), '人工湖'),
-    (18, (-64, 104), '凉亭'),
+    (16, (-232, -100), 'Greystone 式旧宅（家族收藏）+ 台地花园'),
+    (17, (-62, 138), '人工湖'),
+    (18, (-84, 118), '凉亭'),
     (19, (72, 134), '湖边俱乐部（缆车下崖）'),
     (20, (-168, 112), '服务区：仆役楼 / 车库 / 温室 / 菜园'),
     (21, (-214, 150), '机库 + 机坪'),
@@ -112,7 +113,9 @@ LAB = [
     (26, (-200, -150), '树篱迷宫'),
     (27, (205, 145), '果园'),
     (28, (300, 4), '崖边观景台 ×3'),
-    (29, (235, -165), '结界锚碑 ×4'),
+    (29, (235, -165), '结界锚碑 ×4（结界发生器在主楼 B2）'),
+    (30, (-22, 150), '湖心亭（湖心小岛 8 柱圆亭）'),
+    (31, (-34, 100), '水榭（湖岸石台敞亭）'),
 ]
 for n, (x, y), _ in LAB:
     ax.annotate(str(n), (x, y), fontsize=8, fontweight='bold', ha='center', va='center', zorder=9, color='white',
@@ -127,18 +130,18 @@ ax.annotate('N', (330, 250), fontsize=12, ha='center'); ax.annotate('', (330, 24
 lg = fig.add_axes([0.71, 0.0, 0.285, 0.97]); lg.axis('off')
 yy = 0.995
 for n, _, t in LAB:
-    lg.text(0, yy, f'{n:>2}  {t}', fontsize=7.2, va='top', wrap=True); yy -= .0215
+    lg.text(0, yy, f'{n:>2}  {t}', fontsize=7.2, va='top', wrap=True); yy -= .0205
 yy -= .01
 for c, t in (('#f2eee5', '白石 / 石灰华铺装台地'), ('#e0d6bd', '砾石林荫道 / 步道'), ('#99c773', '修剪草坪'), ('#a8b273', '外坡草甸'),
              ('#4d6e45', '混交林冠'), ('#335c38', '热带林下（别墅周边）'), ('#cc8c99', '季节花境'), ('#8c8275', '崖面 / 裸岩'),
              ('#e6d9b8', '湖岸沙砾'), ('#cdc7bd', '石挡土墙'), ('#73a6cc', '水渠 / 湖'),
              (GROUP_C['main'], '主楼群（白石 · 陶土红瓦）'), (GROUP_C['guest'], '客房 / 俱乐部'), (GROUP_C['villa'], '别墅'),
              (GROUP_C['grey'], 'Greystone 灰石'), (GROUP_C['svc'], '服务区')):
-    lg.add_patch(Rectangle((0, yy - .012), .05, .014, fc=c, ec=EDGE, transform=lg.transAxes)); lg.text(.07, yy, t, fontsize=7.2, va='top'); yy -= .0165
+    lg.add_patch(Rectangle((0, yy - .012), .05, .014, fc=c, ec=EDGE, transform=lg.transAxes)); lg.text(.07, yy, t, fontsize=7.2, va='top'); yy -= .0158
 for st, t in ((dict(color='#a0522d', lw=2.2), '有顶连廊（随地形）'), (dict(color='#7a5a3a', lw=.8, ls=(0, (3, 2))), '林间步道 / 仆从动线'),
               (dict(color='#222', lw=1.6, ls=(0, (1, 1))), '缆车'), (dict(color='#8b0000', lw=2), '索桥'), (dict(color='#2f6b2f', lw=1, ls='--'), '园林 / 场地分区'),
               (dict(color='#4a4a3a', lw=.5), '等高线 2 m（粗线 10 m）')):
-    lg.plot([0, .05], [yy - .006] * 2, transform=lg.transAxes, **st); lg.text(.07, yy, t, fontsize=7.2, va='top'); yy -= .0165
+    lg.plot([0, .05], [yy - .006] * 2, transform=lg.transAxes, **st); lg.text(.07, yy, t, fontsize=7.2, va='top'); yy -= .0158
 lg.text(0, yy - .01, '室内按卡「地上三层 + 地下两层」分翼落位；\n受限房间不标注。详表见 docs/eden-lore-space.md', fontsize=7, va='top', color='#555')
 lg.set_xlim(0, 1); lg.set_ylim(0, 1)
 fig.savefig(OUT + '.tmp.png', dpi=100)
@@ -149,19 +152,18 @@ print(OUT, os.path.getsize(OUT) // 1024, 'KB')
 
 # ---------------------------------------------------------------- 地下层（B1 / B2）
 OUTB = OUT.replace('.png', '_basement.png')
-fig, axs = plt.subplots(2, 2, figsize=(12, 7.2), dpi=100, gridspec_kw=dict(width_ratios=[40, 22]))
-fig.subplots_adjust(0.02, 0.06, 0.98, 0.88, 0.08, 0.28)
-COL = {'*': '#e3dcef', '酒窖': '#ead9c4', '档案室': '#dfe6ee', '储藏室': '#e8e4da', '体能训练室': '#dcead9', '医务室': '#d9e9ec'}
-for j, (bid, name) in enumerate((('hall', '1 主楼'), ('e_pav', '6 东角亭'))):
-    for i, lv in enumerate(('B1', 'B2')):
-        ax = axs[i, j]
-        for n, x0, y0, x1, y1 in L.BASEMENT[bid][lv]:
-            c = COL['*'] if '*' in n else COL.get(n, '#f3f1ec')
-            ax.add_patch(Rectangle((x0, y0), x1 - x0, y1 - y0, fc=c, ec='#4a3a2a', lw=1.2))
-            ax.text((x0 + x1) / 2, (y0 + y1) / 2, n, ha='center', va='center', fontsize=9)
-        b = [q for q in L.MAIN if q[0] == bid][0]
-        ax.set_xlim(-b[3] / 2 - 1, b[3] / 2 + 1); ax.set_ylim(-b[4] / 2 - 1, b[4] / 2 + 1); ax.set_aspect('equal'); ax.axis('off')
-        ax.set_title(f'{name} · {lv}（{"-4.5" if lv == "B1" else "-9.0"} m）  {b[3]}×{b[4]} m', fontsize=10, loc='left')
+fig, axs = plt.subplots(1, 2, figsize=(13, 4.6), dpi=100)
+fig.subplots_adjust(0.02, 0.08, 0.98, 0.84, 0.06)
+COL = {'*': '#e3dcef', '酒窖': '#ead9c4', '档案室': '#dfe6ee', '储藏室': '#e8e4da', '体能训练室': '#dcead9', '医务室': '#d9e9ec', '结界发生器': '#efe3c8'}
+b = [q for q in L.MAIN if q[0] == 'hall'][0]
+for i, lv in enumerate(('B1', 'B2')):
+    ax = axs[i]
+    for n, x0, y0, x1, y1 in L.BASEMENT['hall'][lv]:
+        c = COL['*'] if '*' in n else COL.get(n, '#f3f1ec')
+        ax.add_patch(Rectangle((x0, y0), x1 - x0, y1 - y0, fc=c, ec='#4a3a2a', lw=1.2))
+        ax.text((x0 + x1) / 2, (y0 + y1) / 2, n, ha='center', va='center', fontsize=10)
+    ax.set_xlim(-b[3] / 2 - 1, b[3] / 2 + 1); ax.set_ylim(-b[4] / 2 - 1, b[4] / 2 + 1); ax.set_aspect('equal'); ax.axis('off')
+    ax.set_title(f'1 主楼 · {lv}（{"-4.5" if lv == "B1" else "-9.0"} m）  {b[3]}×{b[4]} m', fontsize=11, loc='left')
 fig.suptitle('伊甸庄园 v2 · 地下层平面（卡：地上三层 + 地下两层）', fontsize=13, x=0.02, ha='left')
 fig.text(0.02, 0.015, L.BASEMENT_LINK + '；带 * 的为通用名房间，只保留几何与标签。下方 = 正面。', fontsize=8.5, color='#555')
 fig.savefig(OUTB + '.tmp.png', dpi=100)
