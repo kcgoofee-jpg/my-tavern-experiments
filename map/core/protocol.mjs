@@ -32,6 +32,8 @@ export const SCHEMA = {
   'eden-map:custom-sync': [V2H, { on: 'boolean?' }],
   'eden-map:varmap-set': [V2H, { user: 'object?' }],
   'eden-map:compose': [V2H, { text: 'string' }],
+  'eden-map:explore': [V2H, { map: 'string', name: 'string' }],   // 迷雾探索：记一次到访（只在开着时发）
+  'eden-map:explore-reset': [V2H, {}],
   // 宿主 → 查看器
   'eden-map:here': [H2V, { value: 'any' }],
   'eden-map:chat': [H2V, { id: 'any' }],
@@ -45,6 +47,7 @@ export const SCHEMA = {
   'eden-map:clock': [H2V, {}],
   'eden-map:outfit': [H2V, { items: 'object?' }],   // mvu.outfit()：{ 部位: 描述 } 或 null
   'eden-map:varmap': [H2V, {}],
+  'eden-map:fog': [H2V, { explored: 'object?' }],
   'eden-map:trips': [H2V, { items: 'array?' }],
   'eden-map:toast': [H2V, { items: 'array?' }],
   'eden-map:selfcheck': [H2V, { items: 'array?' }],
