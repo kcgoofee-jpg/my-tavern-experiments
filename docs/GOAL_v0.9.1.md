@@ -136,7 +136,9 @@
 - ☑ E4 面板 UI 体验测试：五个人设（手机 6、桌面剧情 7、视觉 5.5、无障碍 4.5、弱网 5）→ `docs/ui-audit.md`（A 组「现在修」31 条 + B 组「E5 统一重构」22 条 + 设计规范 v1 与 `tokens.css` 草案）。A 组里本机的全部修完并用 Playwright 复跑：没梯子不再被困在庄园（失败 0.6 s 给「重试 / 看平面图」，并记住）、省流预加载 ≈1 MB → 50 KB、进度不再提前 100%、切层 20 轮 DOM / 监听持平、切层不落空、竖屏可看全层、飞行落点不被遮、键盘从世界走到地标卡再 Esc、读屏播报、减少动效与花屏开关、触控 ≥ 44、手机顶栏收进「⋯」、首条已解除事件不丢、天城外事件落世界图、媒体改品红 + 大类形状；庄园页要配合的几条写进 NOTES。
 - ☑ E4b 复测：五个人设按 `docs/ui-audit.md` 的「现在修」清单复评（Opus）。平均 5.6 → 7.1（手机 6→7.5、剧情 7→7.5、视觉 5.5→6、无障碍 4.5→7、弱网 5→7.5）；本机 A 组 ✅25 / ⚠4 / ❌0；新发现 2 条 P1：屏幕正中 `#loading.over span` 透明死区（N01 带出来的回归，本机）、手机嵌入庄园时楼层条被层按钮盖住（本机 + 云端）。见 ui-audit 第五节。
 - ☐ E5 面板 UI 风格统一重构（放到最后，F 之前）：按 `docs/ui-audit.md` 的规范统一查看器、层切换器、事态横条、地点卡、庄园页 UI（庄园页由云端配合），再跑一遍 E4 的人设测试对比前后分数。
-- ☐ E6 本机扩展与隐私（纯本机，按 `docs/reviews/rp_value_study/adult_architect.md` 定范围）：自定义房间叫法按聊天分键（`edenMap:chat:<id>:custom`，全局兜底；已读标记同样分键并迁移旧键）；`EdenMap.setPrivacy`（中性标题、隐藏「当前地点」、角标数字 / 圆点 / 关、提示气泡开关）、`hideAll()` 一键隐藏 + 快捷键、`setInject('on'|'off')`（默认 on）；可选 `clearLocal`、`renameRoom`；护栏：URL 不带状态、不新增网络请求、无遥测，低调模式下 title / aria-label 也不留地点原文；Playwright 断言所有请求不含标记串。推后：`registerOverlay`、角色位置板、房间笔记。E5 完成后再改 viewer。已完成：去掉关键词过滤、`here.mjs` 支持自定义叫法（6dd392e）。
+- ☐ E6 v0.9.1 小调整（RP 价值研究 architect.md，约半天）：文档与代码对齐（扫描楼数、已去掉关键词过滤、ui-audit R01 / R02 状态）；省流设备不自动进 3D 庄园；事件窗口最小修（未解除的事件不因楼层旧而丢，`SCAN` 40 → 80）；本机扩展接口收窄为自定义叫法 + `EdenMap.on()`。不采纳：iOS 一律按省流（与用户「默认上调一档」冲突，iOS 保持自动档）。
+- ☐ E7 单手与无障碍（用户 2026-09-27：「难做的话放最后」）：左右手设置（缩放组、层条、抽屉把手、悬浮按钮镜像到拇指侧）、单指缩放（双击后按住上下拖）、控件集中在屏幕下半部拇指区；色盲友好配色开关（事件分类色换成色盲安全色板，形状区分已有）；已有：键盘可达、读屏播报、减少动效、焦点环、触控 ≥ 44 px、axe 0 违规。
+- ☐ E8 隐私（用户：「放最后，酒馆本身就隐私」）：按聊天分键的本机数据、`setPrivacy` / `hideAll()` / `setInject`，范围见 `docs/reviews/rp_value_study/adult_architect.md`；已完成：去掉关键词过滤、`here.mjs` 自定义叫法（6dd392e）。
 
 **H 流程工具（本机）**
 - ☑ 流程改进 1–7（用户 2026-09-27 批准）：① `tools/crops.sh` + 层脚本 `--crops` / `--crops-json`，一次 Blender 会话渲多块局部并核对尺寸；② `tools/review/` 人设模板（美术 5 / UI 5 / 庄园 4）+ 每轮现编人设 + 架构师汇总 + `pack.py` 简报；③ `tools/smoke.sh`；④ `tools/browser/`（Playwright 公共库 + `accept.mjs` E2 验收）；⑤ `tools/ship.sh`（smoke → 推送 → 预热 → 跟随预览，`--dry-run`）；⑥ `.gitattributes` NOTES union 合并（两边只追加）；⑦ 安静期锁 `tools/quiet.sh` / `quiet_wait.sh`。说明见 `docs/tooling.md`。
