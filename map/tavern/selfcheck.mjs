@@ -83,8 +83,8 @@ export function evaluate(f) {
 
   const w = f.worldbook;
   if (!w) out.push(item('worldbook', 'skip', '查不了世界书（酒馆助手没有世界书接口）', 'Cannot inspect lorebooks (no TavernHelper lorebook API)'));
-  else if (w.missing.length) out.push(item('worldbook', 'warn', `世界书附加条目缺少：${w.missing.join('、')}（导入「伊甸地图·世界书附加条目」并启用）`,
-    `Lorebook add-on entries missing: ${w.missing.join(', ')} (import and enable the Eden map add-on lorebook)`));
+  else if (w.missing.length) out.push(item('worldbook', 'warn', `世界书附加条目缺少：${w.missing.join('、')}（导入「伊甸地图·世界书附加条目」，并在世界书里设为全局、或绑定到当前角色 / 聊天；刚导入的话刷新一次页面）`,
+    `Lorebook add-on entries missing: ${w.missing.join(', ')} (import the Eden map add-on lorebook and activate it globally or bind it to this character / chat; refresh once after importing)`));
   else out.push(item('worldbook', 'ok', '世界书附加条目已启用', 'Lorebook add-on entries enabled'));
   if (w && w.lore && f.ejs === false) out.push(item('ejs', 'warn', '启用了「地图方位」条目，但没检测到「提示词模板」扩展：条目会原样发给模型（装上扩展，或关掉这几条）',
     'Map location lore entries enabled but the Prompt Template extension is missing: raw EJS would reach the model (install it or disable those entries)'));

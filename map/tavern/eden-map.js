@@ -721,7 +721,8 @@
   // 脚本被关闭或重载时清理注入的元素
   const cleanup = () => { clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); pdoc.removeEventListener('keydown', onKey);
     if (window.parent.EdenMap === api) delete window.parent.EdenMap; toastEl?.remove();
-    if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup; };
+    if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup;
+    try { window.parent.__edenMapLoads = (window.parent.__edenMapLoads || []).filter(u => u !== SELF); } catch (e) {} };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）
   window.parent.__edenMapCleanup = cleanup;
   window.addEventListener('pagehide', cleanup);
 })();
