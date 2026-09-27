@@ -100,6 +100,7 @@
 <!-- defer：地图库（277 KB）不再挡住首帧，慢网下先出加载提示与世界缩略图（E4 N07）；main() 等 DOMContentLoaded（此时两个脚本都已执行） -->
 <script defer src="vendor/openseadragon/openseadragon.min.js"></script>
 <script defer src="events.js"></script>
+<script defer src="chars.js"></script>
 <script>document.addEventListener('DOMContentLoaded', () => { if (window.top !== window) parent.postMessage({ type: 'eden-map:boot', pct: .6 }, '*'); });   // 地图库已下载（启动进度 60%）</script>
 <style>
   /* E5 统一重构：颜色、字号、圆角、间距、动效全部取 ui/tokens.css 的语义令牌（docs/ui-audit.md 第三部分）；这里只写组件，不写色值。
@@ -1103,7 +1104,7 @@ function onOpen() {
 function drawOverlays() {
   untrackAll(); viewer.clearOverlays();
   if (REG.maps[cur].kind === 'world') worldOverlays(); else pointOverlays();
-  TCEvents.render();   // 事件层（events.js）：聊天前端里的事件标签、外部数据源
+  TCEvents.render(); TCChars.render();   // 人物层（chars.js，v0.9.2）；事件层（events.js）：聊天前端里的事件标签、外部数据源
   applyOverlayToggle(); markHere($('#here').value); tabOrder(); declutter();
 }
 // 竖屏（手机）：允许缩到整张图横向放进屏幕（上下留边），不再只能看到半张图（E4 N13）
@@ -1120,13 +1121,13 @@ let declT = 0;
 // E5（R14 / L2）：事态点也参加避让。事态图标是可点的，永远保留并当作障碍：压在图标上的普通地标名隐藏（当前地点、首府除外）；
 // 世界图国名（.realm）排在首府之后保留，「中小国」小字最后；事态的文字标签和已保留的标签重叠时收起，只留图标
 function declutter() { clearTimeout(declT); declT = setTimeout(() => {
-  const mks = [...document.querySelectorAll('.mk')], evs = [...document.querySelectorAll('.ev')], words = [...document.querySelectorAll('.realm, .minor')];
+  const mks = [...document.querySelectorAll('.mk')], evs = [...document.querySelectorAll('.ev, .chm')], words = [...document.querySelectorAll('.realm, .minor')];
   if (!mks.length && !evs.length) return;
   const rank = e => e.classList.contains('here') || e.classList.contains('active') ? 0 : e.classList.contains('capital') || e.classList.contains('op') ? 1 : e.dataset.focus ? 2 : e.dataset.link ? 3 : 4;
   [...mks, ...evs, ...words].forEach(e => e.classList.remove('lhide'));
   const hit = (r, k, g = 4) => r.left < k.right + g && r.right > k.left - g && r.top < k.bottom + 2 && r.bottom > k.top - 2;
   const box = e => { const r = e?.getBoundingClientRect(); return r && r.width ? r : null; };
-  const ic = evs.map(e => [e, box(e.querySelector('i'))]).filter(x => x[1]), icons = ic.map(x => x[1]), kept = [];
+  const ic = evs.flatMap(e => [...e.querySelectorAll(':scope > i, :scope > .chg > i')].map(i => [e, box(i)])).filter(x => x[1]), icons = ic.map(x => x[1]), kept = [];
   const place = (e, r, avoidIcons) => { if (!r) return; if (kept.some(k => hit(r, k)) || (avoidIcons && icons.some(k => hit(r, k, 0)))) e.classList.add('lhide'); else kept.push(r); };
   const sorted = mks.sort((a, b) => rank(a) - rank(b));
   for (const e of sorted.filter(e => rank(e) <= 1)) place(e, box(e.querySelector('.lab')), false);
@@ -1385,11 +1386,11 @@ let showSet = () => {}, showLay = () => {};
 //   on('here' | 'events' | 'map', fn) / off(事件, fn?)：here {value, resolved}、events {items, floor, hereLayer}、map {map, title, kind}
 let chatId = '', enNames = null, emMap = null;
 const LS = (() => { try { return localStorage; } catch (e) { return null; } })();
-const emSubs = { here: new Set(), events: new Set(), map: new Set() };
+const emSubs = { here: new Set(), events: new Set(), map: new Set(), characters: new Set() };
 function emEmit(ev, data) { for (const f of emSubs[ev]) { try { f(data); } catch (e) { console.warn('[EdenMap]', e); } } if (ev === 'map') post({ type: 'eden-map:emit', ev, data }); }
 function emMapChanged() { if (cur === emMap) return; emMap = cur; const m = REG.maps[cur]; emEmit('map', { map: cur, title: nm(m, 'title'), kind: m.kind }); }
 function rebuildHere() { if (HX && REG) hereIdx = HX.buildIndex(REG, M, enNames, HX.readCustom(LS, chatId)); }
-function setChat(id) { id = String(id || ''); if (id === chatId) return; chatId = id; rebuildHere(); if (REG) { markHere($('#here').value); } }
+function setChat(id) { id = String(id || ''); if (id === chatId) return; chatId = id; rebuildHere(); TCChars.chatChanged(); if (REG) { markHere($('#here').value); } }
 function customChanged(name) { rebuildHere(); const v = $('#here').value || ''; markHere(v); if (name && v.includes(name)) jumpHere(v, true); }
 window.__edenMapChat = setChat;   // 宿主页转发调用前先同步聊天 id（同源 srcdoc，直接调用）
 // 设置里的「自检」一栏：✓ / ⚠ 列表（中 / EN）、新正式版的「本次切换」按钮、「自动更新到新正式版」开关（默认关，存本机 edenMapAutoUpdate）
@@ -1415,6 +1416,7 @@ function renderSelfCheck() {
 window.EdenMap = Object.freeze({
   setRoomAlias(name, room) { if (!HX || !LS) return false; const ok = HX.setRoomAlias(LS, chatId, name, room, hereIdx?.estate?.std || null); if (ok) customChanged(String(name).trim()); return ok; },
   removeRoomAlias(name) { if (!HX || !LS) return false; const ok = HX.removeRoomAlias(LS, chatId, name); if (ok) customChanged(''); return ok; },
+  setAvatar(name, src) { return TCChars.setAvatar(name, src); }, removeAvatar(name) { return TCChars.removeAvatar(name); },   // 人物头像：只存本机（v0.9.2）
   selfcheck() { return selfCheck ? { items: selfCheck.items.map(i => ({ ...i })) } : null; },   // 嵌在酒馆里才有（卡内脚本发来）
   getRooms() { return { rooms: [...(hereIdx?.estate?.std || [])], alias: HX ? HX.readCustom(LS, chatId).rooms : {}, chat: chatId || null }; },
   on(ev, fn) { if (emSubs[ev] && typeof fn === 'function') emSubs[ev].add(fn); return this; },
@@ -1509,6 +1511,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:open') go(e.data.map);
     if (e.data?.type === 'eden-map:events') { TCEvents.set(e.data); emEmit('events', { items: e.data.items, floor: e.data.floor, hereLayer: e.data.hereLayer }); }   // 卡内脚本从聊天里解析、合并好的事态 {items, floor, fly}
     if (e.data?.type === 'eden-map:chat') setChat(e.data.id);
+    if (e.data?.type === 'eden-map:chars') { TCChars.set(e.data); emEmit('characters', { items: e.data.items, floor: e.data.floor }); }   // 人物栏（v0.9.2）
     if (e.data?.type === 'eden-map:selfcheck') { selfCheck = e.data; renderSelfCheck(); }   // 卡内脚本的启动自检结果（E6）   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
     // 面板关闭时休眠：关掉底图（释放已解码的瓦片），脚本与数据留着；再打开时唤醒，重新打开当前地图
     if (e.data?.type === 'eden-map:sleep' && viewer) { saveView(); sleeping = cur || (bootT ? BOOT : null); clearTimeout(bootT); bootT = 0; cur = null; est?.frame.remove(); est = null; document.body.classList.remove('estate'); viewer.close(); untrackAll(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }

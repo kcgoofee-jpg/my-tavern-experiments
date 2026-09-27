@@ -1,4 +1,5 @@
 {
+  "_092": "人物栏", "ch.last": "Last seen", "ch.floor": "chat message #{n}", "ch.tab": "People", "ch.more": "+{n}", "ch.aria": "People: {s}", "ch.tag": "Person", "ch.with_you": "With you", "ch.show": "Show people on map", "ch.toggle_one": "Show {n} on map",
   "_说明": "Viewer UI strings (English). Same keys as zh.json; {x} are placeholders. names: world-map place names (Chinese → English); Tiancheng names live in maps.json (name_en / sub_en / title_en). Lore quotes on place cards stay in the original Chinese.",
   "page_title": "Tiancheng Map",
   "tier_save": "Lite",

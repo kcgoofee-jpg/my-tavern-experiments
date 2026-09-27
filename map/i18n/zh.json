@@ -1,4 +1,5 @@
 {
+  "_092": "人物栏", "ch.last": "最后出现", "ch.floor": "聊天第 {n} 楼", "ch.tab": "人物", "ch.more": "等 {n} 人", "ch.aria": "人物：{s}", "ch.tag": "人物", "ch.with_you": "和你在一起", "ch.show": "在地图上显示人物", "ch.toggle_one": "在地图上显示 {n}",
   "_说明": "查看器界面文字（中文）。键名与 en.json 一致；{x} 是占位符。地名的英文在 maps.json 的 name_en / sub_en / title_en，世界图地名在 en.json 的 names。",
   "page_title": "天城地图",
   "tier_save": "省流", "tier_std": "标准", "tier_hd": "清晰",
