@@ -38,7 +38,7 @@ const TCEvents = (() => {
     tc_low: [[/7号井|七号井|井口/, 4.6, -6.9], [/工业|工厂|货运|铁路|厂/, 7, -7.5], [/贫民|棚户|城寨|城中村/, -6, 1], [/哨所|前沿/, -12.3, -6.6], [/施粥|旧教堂/, 8.4, .5], [/拳场|磨坊/, -5.8, -3.3], [/地基/, 0, 0]],
     tc_upper: [],
   };
-  let items = [], floor = 0, feedItems = [], shown = true, flyId = null, open = false, EVM = null, lastFly = null, glitchLv = 0;
+  let tab = 'ev', items = [], floor = 0, feedItems = [], shown = true, flyId = null, open = false, EVM = null, lastFly = null, glitchLv = 0;
   const said = new Set();   // 已经播报过的新事件（读屏）
   const markersOf = {};                                    // 地图 id → 点位数据（按需加载）
   const hash = s => { let h = 2166136261; for (const c of String(s)) h = Math.imul(h ^ c.codePointAt(0), 16777619); return (h >>> 0) / 4294967296; };
@@ -71,6 +71,10 @@ const TCEvents = (() => {
     for (const [re, x, y] of ZONES[mid] || []) if (re.test(e.place)) return { nx: (x + 15) / 30 + (j - .5) * .04, ny: (9.375 - y) / 18.75 + (j2 - .5) * .06 };
     return { nx: .2 + .6 * j, ny: .2 + .6 * j2, approx: true };
   }
+  // 人物栏用（chars.js）：只知道城区时按城区关键词给一个大致坐标；认不出返回 null
+  function zoneXY(mid, place) { const j = hash(place), j2 = hash(place + '~');
+    for (const [re, x, y] of ZONES[mid] || []) if (re.test(place)) return { nx: (x + 15) / 30 + (j - .5) * .03, ny: (9.375 - y) / 18.75 + (j2 - .5) * .04, approx: true };
+    return null; }
   async function loadMarkers() {
     await Promise.all(Object.values(MAP_OF).filter(id => REG.maps[id]?.data && !markersOf[id] && REG.maps[id].status !== 'planned')
       .map(id => getJSON(REG.maps[id].data).then(d => { markersOf[id] = d?.markers || []; }).catch(() => {})));
@@ -200,14 +204,21 @@ const TCEvents = (() => {
   // ---------- 事态列表（底部横条，点开是列表） ----------
   function renderBar() {
     const bar = $('#evbar'), every = all().filter(e => REG.maps[mapOf(e)]), list = every.filter(e => !off.has(grpOf(e)));
-    bar.hidden = !every.length || !shown; if (bar.hidden) return;
+    // 人物页（v0.9.2，chars.js）：和事态同一条横条，两个页签；哪边都没有内容才藏起横条
+    const chN = typeof TCChars !== 'undefined' ? TCChars.count() : 0, hasEv = !!every.length && shown;
+    bar.hidden = !hasEv && !chN; if (bar.hidden) return;
+    if (tab === 'ev' && !hasEv) tab = 'ch'; if (tab === 'ch' && !chN) tab = 'ev';
+    bar.dataset.tab = tab;
+    const ct = bar.querySelector('.chtab'); ct.hidden = !chN; ct.setAttribute('aria-expanded', open && tab === 'ch' ? 'true' : 'false');
+    ct.innerHTML = `<i class="shp sh-circle" aria-hidden="true"></i>${esc(T('ch.tab', '人物'))}<em>${chN}</em>`;
+    if (open && tab === 'ch') TCChars.pane(bar.querySelector('.chpane'));
     if (!grpLoaded) { grpLoaded = true; mod().then(m => { if (m?.GROUPS) { GROUPS = m.GROUPS; ORDER = m.GROUP_ORDER || Object.keys(m.GROUPS).filter(g => g !== '其他'); if (m.SHAPES) SHAPES = m.SHAPES; renderBar(); } }); }   // 有事件时才取大类表
     const n = list.filter(live).length, fresh = list.filter(e => e.isNew).length, hid = ORDER.filter(g => off.has(g)).length + (off.has('其他') ? 1 : 0);
-    const tb = bar.querySelector(':scope > button'); tb.setAttribute('aria-expanded', open ? 'true' : 'false');
+    const tb = bar.querySelector(':scope > button'); tb.hidden = !hasEv; tb.setAttribute('aria-expanded', open && tab === 'ev' ? 'true' : 'false');
     // 左侧形状点 = 最新一条（进行中优先）的大类
     const top = list.filter(live).sort((a, b) => (b.last || 0) - (a.last || 0))[0] || list[0];
     tb.innerHTML = `<i class="shp ${shp(top ? grpOf(top) : '其他')}" style="--c:${top ? lk(top)[1] : 'var(--muted)'}" aria-hidden="true"></i><span class="sum">${esc(n ? T('ev.bar_live', '{n} 起进行中', { n }) : T('ev.bar_none', '暂无进行中'))}${list.length !== n ? ' · ' + esc(T('ev.bar_total', '共 {n} 起事态', { n: list.length })) : ''}${hid ? ' · ' + esc(T('ev.filtered', '已隐藏 {n} 类', { n: hid })) : ''}</span>${fresh ? `<span class="new">${esc(T('ev.bar_new', '{n} 条新', { n: fresh }))}</span>` : ''}<span class="sr-only">${esc(open ? T('ev.collapse', '收起') : T('ev.expand', '展开'))}</span><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg>`;
-    bar.dataset.open = open ? '1' : '0';
+    bar.dataset.open = open ? '1' : '0'; document.body.classList.toggle('evopen', open);   // 手机上列表展开时停靠栏 / 层条让位（v0.9.2 人物栏审阅 P1）
     // 图例：9 个大类都列出（没有事件的变淡），数字 = 该类条数；点一下隐藏 / 恢复
     const cnt = {}; for (const e of every) cnt[grpOf(e)] = (cnt[grpOf(e)] || 0) + 1;
     const gs = ORDER.concat(cnt.其他 ? ['其他'] : []).filter(g => cnt[g] || off.has(g));   // 只列有事件的大类和已隐藏的（v0.9.2：9 个空类占两行）
@@ -297,7 +308,13 @@ const TCEvents = (() => {
   #evbar[data-open="1"]{background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:var(--sh-3)}
   #evbar[hidden]{display:none}
   #evbar button{font:inherit;color:inherit;background:none;border:0;margin:0;text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none}
-  #evbar>button{box-sizing:border-box;display:flex;gap:var(--sp-4,8px);align-items:center;width:100%;min-height:36px;padding:0 var(--sp-5,12px);border-radius:var(--r-l,12px);transition:background var(--dur-1)}
+  #evbar{display:flex;flex-wrap:wrap;align-items:stretch}#evbar>.evleg,#evbar>ol,#evbar>.chpane{flex:1 0 100%}
+  #evbar[data-open="0"] .chpane,#evbar[data-tab="ch"] .evleg,#evbar[data-tab="ch"] ol,#evbar[data-tab="ev"] .chpane{display:none!important}
+  #evbar>button[hidden]{display:none}
+  #evbar>.chtab{flex:none;display:flex;gap:var(--sp-3,6px);align-items:center;min-height:36px;padding:0 var(--sp-5,12px);border-left:1px solid var(--line)!important;border-radius:0 var(--r-l,12px) var(--r-l,12px) 0;white-space:nowrap}
+  #evbar>.chtab .shp{width:10px;height:10px;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 2px var(--ink)}#evbar>.chtab em{font-style:normal;color:var(--muted);font-family:var(--font-mono)}
+  #evbar>.chtab[aria-expanded="true"],#evbar>button:first-child[aria-expanded="true"]{color:var(--accent)}
+  #evbar>button:first-child{box-sizing:border-box;display:flex;gap:var(--sp-4,8px);align-items:center;flex:1 1 auto;min-height:36px;padding:0 var(--sp-5,12px);border-radius:var(--r-l,12px);transition:background var(--dur-1)}
   #evbar>button:hover{background:var(--surface-2)}
   #evbar>button:active{transform:scale(.99)}
   #evbar>button:focus-visible,#evbar li>button:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
@@ -326,8 +343,8 @@ const TCEvents = (() => {
   #evbar li .nb{display:inline-block;margin-left:4px;padding:0 5px;border-radius:var(--r-s,4px);background:var(--accent-weak);color:var(--accent);font-size:var(--fs-micro,11px);font-weight:700;line-height:16px;vertical-align:1px}
   #evbar li em{font-style:normal;color:var(--muted);font-size:var(--fs-micro,11px)}
   /* 触屏：横条 44、列表行 44、图例 36（放在按钮样式之后，不被覆盖；E4b R05） */
-  @media (pointer:coarse),(max-width:640px){#evbar>button{min-height:44px} #evbar li>button{min-height:44px} .evleg button{min-height:44px;padding:0 12px}}
-  @media (max-width:640px){body #evbar{left:calc(var(--layers-w,0px) + 8px);right:8px;transform:none;width:auto;max-width:none;bottom:calc(var(--sp-5,12px) + env(safe-area-inset-bottom));z-index:9} body #evbar ol{max-height:34vh;max-height:34dvh}
+  @media (pointer:coarse),(max-width:640px){#evbar>button{min-height:44px}#evbar>.chtab{min-height:44px} #evbar li>button{min-height:44px} .evleg button{min-height:44px;padding:0 12px}}
+  @media (max-width:640px){body.evopen #dock,body.evopen #layers{visibility:hidden} body.evopen #evbar{right:8px!important;left:8px!important} body #evbar{left:calc(var(--layers-w,0px) + 8px);right:8px;transform:none;width:auto;max-width:none;bottom:calc(var(--sp-5,12px) + env(safe-area-inset-bottom));z-index:9} body #evbar ol{max-height:34vh;max-height:34dvh}
     body #glitchNote{top:60px;left:auto;right:8px;transform:none}}
   #glitchNote{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;padding:3px 10px;border-radius:var(--r-s,4px);background:rgba(6,20,26,.88);border:1px solid #3de0ff;color:#3de0ff;font:600 var(--fs-small,12px)/1.5 var(--font-mono,monospace);text-shadow:-1px 0 #ff3d9a,1px 0 #3de0ff;pointer-events:none}
   #glitchNote[hidden]{display:none}
@@ -354,13 +371,15 @@ const TCEvents = (() => {
 
   function init() {
     const stage = $('#stage');
-    if (!$('#evbar')) stage.insertAdjacentHTML('beforeend', '<div id="evbar" hidden data-open="0"><button type="button"></button><div class="evleg" role="group"></div><ol></ol></div><div id="glitchNote" hidden></div>');
+    if (!$('#evbar')) stage.insertAdjacentHTML('beforeend', '<div id="evbar" hidden data-open="0" data-tab="ev"><button type="button"></button><button type="button" class="chtab" hidden aria-controls="chpane"></button><div class="evleg" role="group"></div><ol></ol><div class="chpane" id="chpane"></div></div><div id="glitchNote" hidden></div>');
     $('#evbar .evleg').setAttribute('aria-label', T('ev.legend_aria', '按大类筛选'));
     $('#evbar .evleg').addEventListener('click', e => { const b = e.target.closest('button[data-g]'); if (!b) return;
       const g = b.dataset.g; off.has(g) ? off.delete(g) : off.add(g); try { localStorage.setItem(OFF_KEY, JSON.stringify([...off])); } catch (err) {}
       render(); renderBar(); badges(); });
     $('#evbar > button').setAttribute('aria-controls', 'evlist'); $('#evbar ol').id = 'evlist';
-    $('#evbar > button').addEventListener('click', () => { open = !open; renderBar(); });
+    $('#evbar > button').addEventListener('click', () => { open = !(open && tab === 'ev'); tab = 'ev'; renderBar(); });
+    $('#evbar .chtab').addEventListener('click', () => { open = !(open && tab === 'ch'); tab = 'ch'; renderBar(); });
+    const cp = $('#evbar .chpane'); cp.addEventListener('change', e => TCChars.onPane(e)); cp.addEventListener('click', e => TCChars.onPane(e));
     // 点列表项飞过去；卡片关闭（× / Esc）后焦点回到横条按钮（列表已收起）
     $('#evbar ol').addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (!b) return;
       kbdFly = e.detail === 0; if (typeof cardFrom !== 'undefined') cardFrom = $('#evbar > button'); flyTo(b.dataset.id); });
@@ -370,5 +389,5 @@ const TCEvents = (() => {
   const countOn = id => vis().filter(e => mapOf(e) === id && live(e)).length;
   const badges = () => { if (typeof updateLayerBadges === 'function') updateLayerBadges(); };
   const collapse = () => { if (!open) return; open = false; if ($('#evbar')) renderBar(); };
-  return { init, set, render: afterOpen, pollFeeds, flyTo, countOn, collapse, isOpen: () => open && !$('#evbar')?.hidden, get events() { return all(); } };
+  return { init, set, zoneXY, renderBar: () => $('#evbar') && renderBar(), render: afterOpen, pollFeeds, flyTo, countOn, collapse, isOpen: () => open && !$('#evbar')?.hidden, get events() { return all(); } };
 })();

@@ -351,6 +351,10 @@
   let events = [], floorNow = -1, seen = -1, injected = '', EVM = null;
   // 事态模块单独加载：加载失败只是没有事态功能，地图照常可用
   import(new URL('events.mjs', import.meta.url).href).then(m => { EVM = m; recompute(); }).catch(e => console.warn('[eden-map] 事态模块加载失败', e));
+  // 人物栏（v0.9.2）：人物位置标签 + MVU 人物表 → 每人最新位置；模块加载失败只是没有人物栏
+  let CHM = null, chars = [], charSig = '';
+  import(new URL('characters.mjs', import.meta.url).href).then(m => { CHM = m; recompute(); }).catch(e => console.warn('[eden-map] 人物模块加载失败', e));
+  const mvuStat = () => { try { return Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data || null; } catch (e) { return null; } };
   const chatKey = () => { try { return 'edenMapSeen:' + (SillyTavern.getContext().chatId || ''); } catch (e) { return 'edenMapSeen:'; } };
   function loadSeen() { try { seen = +localStorage.getItem(chatKey()); if (!Number.isFinite(seen)) seen = -1; } catch (e) { seen = -1; } }
   function recompute() {
@@ -363,10 +367,13 @@
         .map(m => ({ floor: m.message_id, text: String(m.message || '').replace(/<%[\s\S]*?%>/g, '') }));   // 原文里可能还留着 EJS 模板源码，里面的示例标签不算事件
     } catch (e) { floorNow = -1; }
     events = collect(msgs, floorNow);
+    if (CHM) { chars = CHM.collectChars(msgs, floorNow, CHM.mvuChars(mvuStat(), getHere()));
+      const sig = floorNow + '|' + chars.map(c => c.name + '@' + c.place + '#' + c.floor).join();
+      if (sig !== charSig) { charSig = sig; if (!panel.hidden && alive) sendChars(); emit('characters', { items: chars.map(c => ({ ...c })), floor: floorNow }); } }
     const fresh = events.filter(e => e.last > seen && e.tier !== 'fade').length;
     badge.hidden = !fresh; badge.textContent = fresh > 9 ? '9+' : fresh;
     if (fresh) tipOnce();
-    inject(summarize(events, layerOf(getHere())));
+    inject([summarize(events, layerOf(getHere())), CHM ? CHM.summarizeChars(chars) : ''].filter(Boolean).join('\n'));
     if (!panel.hidden && alive) sendEvents();
     if (subs.events.size) { const sig = floorNow + '|' + events.map(e => e.id + ':' + e.last + ':' + e.tier).join(); if (sig !== emEvSig) { emEvSig = sig; emit('events', { items: events.map(e => ({ ...e })), floor: floorNow, hereLayer: layerOf(here) }); } }
   }
@@ -385,9 +392,11 @@
     const items = events.map(e => ({ ...e, isNew: e.last > seen }));
     const fly = flyNext && !panel.hidden && !ghost ? items.find(e => e.isNew && e.tier !== 'fade')?.id || null : null;
     if (!panel.hidden && !ghost && (fly || floorNow >= 0)) flyNext = false;   // 刚载入时先发的空列表不消耗「打开时飞一次」（E5 r3 RP3-1）
+    sendChars();
     post({ type: 'eden-map:events', v: 1, floor: floorNow, hereLayer: EVM ? EVM.layerOf(here) : '', items, fly });
     if (!panel.hidden) { seen = floorNow; try { localStorage.setItem(chatKey(), String(seen)); } catch (e) {} badge.hidden = true; }
   }
+  function sendChars() { if (alive) post({ type: 'eden-map:chars', v: 1, floor: floorNow, items: chars }); }
   let tipShown = false; try { tipShown = !!localStorage.getItem('edenMapEvTip'); } catch (e) {}
   function tipOnce() {
     if (tipShown || !panel.hidden) return; tipShown = true; try { localStorage.setItem('edenMapEvTip', '1'); } catch (e) {}
@@ -402,10 +411,11 @@
   // 自定义叫法按聊天分开存（edenMap:chat:<聊天 id>:custom），拿不到聊天 id 时存全局 edenMap:custom。不联网、不上传、不进地址。
   // 宿主页上的方法都返回 Promise。on('here' | 'events' | 'map', fn)：here / events 由本脚本发（面板关着也发），map 由地图发。
   const chatId = () => { try { return String(SillyTavern.getContext().chatId || ''); } catch (e) { return ''; } };
-  const subs = { here: new Set(), events: new Set(), map: new Set() };
+  const subs = { here: new Set(), events: new Set(), map: new Set(), characters: new Set() };
   let emHere = null, emEvSig = '', roomsKnown = null, HXm = null;
   function emit(ev, data) { for (const f of subs[ev]) { try { f(data); } catch (e) { console.warn('[EdenMap]', e); } } }
   const hx = () => (HXm ??= import(SELF + 'here.mjs'));
+  let CXm = null; const chx = () => (CXm ??= import(SELF + 'tavern/characters.mjs'));
   const inner = () => { if (!alive) return null; try { const w = frame.contentWindow; if (!w?.EdenMap) return null; w.__edenMapChat?.(chatId()); return w.EdenMap; } catch (e) { return null; } };
   function knowRooms() { try { const r = inner()?.getRooms().rooms; if (r?.length) roomsKnown = r; } catch (e) {} }
   const store = () => { try { return window.parent.localStorage; } catch (e) { return null; } };
@@ -414,6 +424,10 @@
     async removeRoomAlias(name) { const v = inner(); if (v) return v.removeRoomAlias(name); const H = await hx(), st = store(); return !!st && H.removeRoomAlias(st, chatId(), name); },
     async getRooms() { const v = inner(); if (v) { const r = v.getRooms(); if (r.rooms?.length) roomsKnown = r.rooms; return r; }
       const H = await hx(); return { rooms: roomsKnown ? [...roomsKnown] : [], alias: H.readCustom(store(), chatId()).rooms, chat: chatId() || null }; },
+    // 人物头像（v0.9.2）：只存本机 localStorage（按聊天，拿不到聊天 id 时全局），不上传、不进地址；src = data:image/… 或 http(s) 图片地址
+    async setAvatar(name, src) { const v = inner(); if (v) return v.setAvatar(name, src); const C = await chx(), st = store(); return !!st && C.setAvatar(st, chatId(), name, src); },
+    async removeAvatar(name) { const v = inner(); if (v) return v.removeAvatar(name); const C = await chx(), st = store(); return !!st && C.removeAvatar(st, chatId(), name); },
+    async getCharacters() { return { items: chars.map(c => ({ ...c })), floor: floorNow }; },
     selfcheck: () => runCheck().then(() => ({ items: checkItems.map(i => ({ ...i })), at: checkAt })),   // 启动自检的结果（只在本机）
     on(ev, fn) { if (subs[ev] && typeof fn === 'function') subs[ev].add(fn); return api; },
     off(ev, fn) { if (subs[ev]) fn ? subs[ev].delete(fn) : subs[ev].clear(); return api; },
@@ -549,7 +563,7 @@
   pdoc.addEventListener('keydown', onKey);
 
   (async () => {
-    try { await waitGlobalInitialized('Mvu'); eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, () => pushSoon()); } catch (e) {}
+    try { await waitGlobalInitialized('Mvu'); eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, () => { pushSoon(); recomputeSoon(); }); } catch (e) {}   // MVU 人物表也会变（人物栏）
     eventOn(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     eventOn(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
     eventOn(tavern_events.CHAT_CHANGED, () => { injected = null; loadSeen(); recomputeSoon(300); });

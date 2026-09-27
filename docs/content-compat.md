@@ -21,6 +21,10 @@
   - 存本机 `localStorage`：有聊天 id 时按聊天分开存 `edenMap:chat:<聊天 id>:custom`，拿不到聊天 id 时存全局 `edenMap:custom`；值是 `{ rooms: { 自定义名: 标准房间名 } }`。
   - 只能指向标准房间，标准房间名本身不能改指别处；当前地点写自定义名时按对应房间落点（`here.mjs` 的 `buildIndex(…, custom)`），庄园页收到的是标准房间名。
   - 存储与校验在 `here.mjs`（`customKey` / `readCustom` / `setRoomAlias` / `removeRoomAlias`），单测 `tests/here.test.mjs`。
+- ✅ `EdenMap.setAvatar(人物名, 图片)` → true / false；`EdenMap.removeAvatar(人物名)`（v0.9.2 人物栏）：给人物栏的头像框换成自己的图。图片 = `data:image/png|jpeg|webp|gif;base64,…`（≤ 约 300 KB）或 http(s) 图片地址；其他（`javascript:` 等）拒绝。
+  - 只存本机 localStorage：有聊天 id 时 `edenMap:chat:<id>:avatars`，否则全局 `edenMap:avatars`（按聊天的覆盖全局）；不上传、不进地址、地图不为它发请求（http 地址的图由浏览器按用户给的地址加载，`referrerpolicy=no-referrer`）。
+  - 人物栏的显示开关同样只在本机：`edenMap:chat:<id>:chars` = `{ show, off: [人物名] }`。存储与校验在 `map/tavern/characters.mjs`，单测 `tests/characters.test.mjs`。
+- ✅ `EdenMap.getCharacters()` → `{ items: [{ name, place, floor, src: 'tag' | 'mvu', present? }], floor }`；`EdenMap.on('characters', fn)`：人物列表变化时推送同样的结构（面板关着也推）。
 - ✅ `EdenMap.on('here' | 'events' | 'map', fn)` / `EdenMap.off(事件, fn?)`：
   - `here` `{ value }`（查看器里另带 `resolved` 落点）；`events` `{ items, floor, hereLayer }`；`map` `{ map, title, kind }`。
   - 酒馆里 `here` / `events` 由卡内脚本发（面板关着也发），`map` 由地图发。
