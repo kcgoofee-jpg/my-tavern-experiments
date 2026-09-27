@@ -129,7 +129,9 @@
     #${ID} .em-bar .em-here { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
     #${ID} .em-bar .em-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
     #${ID} .em-bar .em-here { flex: 1 1 0; }
-    #${ID} .em-bar .em-line { white-space: nowrap; flex: none; }   /* 手机上标题、线路都不折行（用户实测：「没梯 / 子」断行） */
+    #${ID} .em-bar .em-line { white-space: nowrap; flex: none; max-width: 6.5em; overflow: hidden; text-overflow: ellipsis; }   /* 手机上标题、线路都不折行（用户实测：「没梯 / 子」断行） */
+    #${ID} .em-bar .em-title { max-width: 42%; }
+    #${ID} .em-bar .em-here { min-width: 4.5em; }   /* 线路按钮不再把「当前地点」挤成 0 宽（E5 r3 手机 N-01） */
     #${ID} .em-bar .em-close { width: 44px; height: 44px; }
     #${ID} .em-bar .em-close svg { width: 22px; height: 22px; }
   }
@@ -356,7 +358,7 @@
     if (!alive) return;
     const items = events.map(e => ({ ...e, isNew: e.last > seen }));
     const fly = flyNext && !panel.hidden && !ghost ? items.find(e => e.isNew && e.tier !== 'fade')?.id || null : null;
-    if (!panel.hidden && !ghost) flyNext = false;
+    if (!panel.hidden && !ghost && (fly || floorNow >= 0)) flyNext = false;   // 刚载入时先发的空列表不消耗「打开时飞一次」（E5 r3 RP3-1）
     post({ type: 'eden-map:events', v: 1, floor: floorNow, hereLayer: EVM ? EVM.layerOf(here) : '', items, fly });
     if (!panel.hidden) { seen = floorNow; try { localStorage.setItem(chatKey(), String(seen)); } catch (e) {} badge.hidden = true; }
   }
