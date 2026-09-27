@@ -22,7 +22,7 @@
 | P1 开局 | tc_mid | `old_apartment` | 旧公寓楼 | ✅ | 卡 + 推断位置 | — | — | 开局六 |
 | P1 开局 | tc_mid | `radiance_cathedral` | 辉光大教堂 | ✅ | 卡 | 辉光大教堂 `map/props/cathedral/` | 标准（r3 7.5 / 7） | 开局八 |
 | P1 开局 | tc_upper | `kelly_residence` | 凯莉的宅邸 | ✅ | 用户决定 | — | — | 开局三 |
-| P1 开局 | tc_upper | `pm_residence` | 首相府 | ✅ | 卡 + 推断位置 | 首相府 `map/props/pm_residence/` | 精简（仅低档）→ 升级中 | 开局五 |
+| P1 开局 | tc_upper | `pm_residence` | 首相府 | ✅ | 卡 + 推断位置 | 首相府 `map/props/pm_residence/` | 标准（r2 7 / 7） | 开局五 |
 | P2 机构 | tc_low | `amc_facility` | 资产管理委员会下层设施 | ✅ | 卡 | — | — |  |
 | P2 机构 | tc_low | `enforcement_low` | 执法局下层分局 | ✅ | 卡 | — | — |  |
 | P2 机构 | tc_low | `outpost` | 防卫军前沿哨所 | ✅ | 卡 | — | — |  |
