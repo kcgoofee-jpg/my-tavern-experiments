@@ -11,9 +11,17 @@ test('estate / viewer3d message listeners require e.source === parent', () => {
 
 test('viewer: host listener checks source, subframe posts use SUB_ORIGIN', () => {
   const v = rd('map/viewer.html');
-  assert.match(v, /const fromParent = e\.source === window\.parent;/);
-  assert.match(v, /if \(!est \|\| e\.source !== est\.frame\.contentWindow\) return;/);
+  assert.match(v, /function fromHost\(e\) \{[\s\S]{0,400}if \(e\.source === window\.parent\) return true;/);
+  assert.match(v, /if \(!fromHost\(e\) \|\| \(PR && !PR\.accept\(e\.data/);
+  assert.match(v, /if \(!est \|\| e\.source !== est\.frame\.contentWindow \|\| \(PR && !PR\.accept/);
   assert.ok(v.indexOf('const SUB_ORIGIN') > 0 && v.indexOf('const SUB_ORIGIN') < v.indexOf('SUB_ORIGIN)'), 'SUB_ORIGIN declared before first use');
   const bad = v.split('\n').filter(l => /(contentWindow\??|\bw)\.postMessage\([^;]*'\*'\)/.test(l));
   assert.deepEqual(bad, [], 'subframe postMessage with "*"');
+});
+
+test('compose.js 回执只认宿主（arch-v2 §6 第 3 步）', () => {
+  assert.match(rd('map/compose.js'), /eden-map:compose-done' \|\| !window\.__fromHost\?\.\(e\)\) return;/);
+});
+test('eden-map.js：只收本面板 iframe 的消息并按协议校验', () => {
+  assert.match(rd('map/tavern/eden-map.js'), /if \(e\.source !== frame\.contentWindow \|\| \(PRm && !PRm\.accept\(e\.data/);
 });
