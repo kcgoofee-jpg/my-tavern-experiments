@@ -88,7 +88,7 @@ export function buildIndex(reg, world = null, names = null, custom = null, plan 
   // 世界图地点
   const wid = Object.keys(maps).find(k => maps[k].kind === 'world');
   if (wid && world) for (const p of [...(world.places || []), ...(world.fiefs || []), ...(world.realms || [])]) {
-    const ww = [p.name, p.name_en, en(p.name)].filter(Boolean);
+    const ww = [p.name, p.name_en, en(p.name), ...(Array.isArray(p.alias) ? p.alias : [])].filter(Boolean);   // alias：卡里的别名（A23 灵枢秘派 → 虚灵古派）
     for (const [w, std] of Object.entries(custom?.world || {})) if (w && std === p.name && !ww.includes(w)) ww.push(w);   // v0.9.6：世界地名的自定义叫法
     idx.world.push({ map: wid, name: p.name, words: ww });
   }
