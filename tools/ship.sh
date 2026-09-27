@@ -31,6 +31,10 @@ if [ "$WARM" = 1 ]; then
     W=$(bash tools/warm_cdn.sh "$SHA" "$JOBS"); echo "$W" | sed 's/^/   /'
     BAD=$(echo "$W" | awk '$2 ~ /^[0-9]+$/ && $2 != 200 {s += $1} END {print s + 0}')
     WARMSUM="$N 个文件，非 200：$BAD"
+    # 2026-09-27 接手 review：以前非 200 只打印不失败，标签没生效 / 文件丢了也照样「发布成功」
+    [ "$BAD" = 0 ] || { echo "预热有 $BAD 个非 200，中止（先看上面的明细；标签可能要等 jsDelivr 缓存，或文件超过 20 MB）" >&2; exit 1; }
+    echo "-- 3.5/4 抽样校验 CDN @$SHORT"
+    bash tools/smoke.sh --cdn "$SHORT" || exit 1
   fi
 fi
 echo "   $WARMSUM"

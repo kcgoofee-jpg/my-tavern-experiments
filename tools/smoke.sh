@@ -16,6 +16,7 @@ step() { local name=$1; shift; local t=$SECONDS
   if "$@" > "$TMP/out" 2>&1; then echo "✓ $name ($((SECONDS - t))s)"; else echo "✗ $name"; tail -15 "$TMP/out" | sed 's/^/    /'; FAIL=1; fi; }
 
 step "check_maps" python3 tools/check_maps.py
+step "版本一致（VERSION ↔ build.json ↔ CHANGELOG ↔ README ↔ 标签）" python3 tools/check_version.py
 step "令牌内联一致（tokens.css ↔ viewer.html）" python3 tools/sync_tokens.py --check
 step "node --test tests/ ($(ls tests/*.test.mjs | wc -l | tr -d ' ') 个)" node --test tests/*.test.mjs
 
@@ -31,14 +32,17 @@ for m in re.finditer(r'<script(?P<a>[^>]*)>(?P<b>[\s\S]*?)</script>', html):
 print(n, 'inline scripts'); sys.exit(0 if n else 1)
 PY
   local f rc=0
-  for f in "$TMP"/inline*.*js map/*.js map/*.mjs map/tavern/*.js map/tavern/*.mjs; do
+  # 覆盖：viewer.html 内联、map/ 与 map/tavern/ 的脚本、庄园 three.js（map/estate/）、世界图数据 map/data/world.js。
+  # Node < 22 不做模块语法探测，所以先按脚本查、失败再按 ES 模块查，两个都不行才算失败。
+  for f in "$TMP"/inline*.*js map/*.js map/*.mjs map/tavern/*.js map/tavern/*.mjs map/estate/*.js map/data/*.js; do
     [ -f "$f" ] || continue
-    case "$f" in map/tavern/eden-map.js) node --input-type=module --check < "$f" || { echo "  $f"; rc=1; }; continue ;; esac
-    node --check "$f" || { echo "  $f"; rc=1; }
+    node --check "$f" >/dev/null 2>&1 && continue
+    node --input-type=module --check < "$f" >/dev/null 2>&1 && continue
+    echo "  $f"; node --check "$f" 2>&1 | head -3 | sed 's/^/    /'; rc=1
   done
   return $rc
 }
-step "node --check（viewer.html 内联 + map 脚本）" inline_check
+step "node --check（viewer.html 内联 + map 脚本 + 庄园 + 世界图数据）" inline_check
 
 json_check() { python3 - <<'PY'
 import json, glob, sys

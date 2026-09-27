@@ -37,7 +37,9 @@ BL=${BLENDER:-/Applications/Blender.app/Contents/MacOS/Blender}
 mkdir -p "$OUT"; OUT=$(cd "$OUT" && pwd); LOG="$OUT/${L}_crops.log"
 echo "== $L ${RES}px ${SAMPLES:-64} 采样，${#NAMES[@]} 块 → $OUT（日志 $LOG）"
 T0=$SECONDS
-"$BL" -b -P "$SCRIPT" -- --res "$RES" --samples "${SAMPLES:-64}" --crops "$SPEC" --out-dir "$OUT" ${EXTRA[@]+"${EXTRA[@]}"} > "$LOG" 2>&1 || true
+for i in "${!NAMES[@]}"; do rm -f "$OUT/${NAMES[$i]}.png"; done   # 先删旧图：否则渲染失败时上一轮的图会被当成本次结果（2026-09-27 接手 review）
+"$BL" -b -P "$SCRIPT" -- --res "$RES" --samples "${SAMPLES:-64}" --crops "$SPEC" --out-dir "$OUT" ${EXTRA[@]+"${EXTRA[@]}"} > "$LOG" 2>&1; RC=$?
+[ "$RC" = 0 ] || echo "警告：Blender 退出码 $RC（继续检查已产出的块）" >&2
 grep -E "Traceback|Error:" "$LOG" | head -5 || true
 H=$(python3 -c "print(round($RES * 18.75 / 30))")              # 与 tc_common 的 W / H 一致
 FAIL=0
