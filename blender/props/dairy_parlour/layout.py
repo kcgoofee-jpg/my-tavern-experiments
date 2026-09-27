@@ -19,7 +19,7 @@ STALL_PITCH = 1.1
 STALL_ANGLE = 35.0                   # 度
 STALL_X0 = -5.0                      # 第一个牛位中心 x
 
-MILK_LINE_Z = 1.65                   # 高位奶管，牛站台面以上（高位 1.5–1.8 m、中位 1.2–1.5 m、低位台面下 0.3 m；ScienceDirect Topics《Milking System》）
+MILK_LINE_Z = -0.08                  # 低位奶管：沿坑壁、比牛站台面低 8 cm（坑底以上约 0.87 m），现代鱼骨厅标准做法（用户 2026-09-27 否决高位）
 RECEIVER = (5.4, 0.0)                # 集乳罐 x, y（坑尾）
 
 MILK_ROOM_X = 6.0                    # 隔墙 x，右侧是奶罐间

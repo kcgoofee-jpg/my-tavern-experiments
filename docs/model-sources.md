@@ -40,6 +40,8 @@
 - 用 zsh 时 `cat > file <<EOF` 会写出空文件（环境里 cat/ls 被别名到 bat/eza），写文件改用 Write 或 /bin/cat。
 - Blender 5.2 里 Distribute Points on Faces 没有 “Density Factor” 输入，改用 Selection。Random Value 节点要按 socket 类型（VALUE/INT/VECTOR）找输入，不能按下标找。
 - 贴图自带的颜色会带偏：box_profile_metal_sheet 是红色，rubber_tiles 近乎全黑。先看一眼贴图，再决定要不要去饱和或乘色。
+- 奶管高度先问清系统类型：用户认为高位（1.65–1.95 m）明显不对，现代鱼骨厅按低位做（沿坑壁、比站台面略低）。
+- 杯组静止挂钩姿态：爪在上，杯倒挂、唇口朝下，短奶管从杯底（朝上）接到爪的进奶嘴。第一版把结构做反了，被用户指出。
 - 大地面网格会穿进坑里、盖住楼板，要把室内范围的顶点压到楼板下面。
 - 湿地面：遮罩覆盖太大会变成镜面地板。积水面积控制在 15–25%，过渡要宽。
 
