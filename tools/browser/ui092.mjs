@@ -15,7 +15,7 @@ const MSGS = [
   { message_id: 40, message: '<span style="display:none" data-tcmap="类型=骚乱;层=下层;地点=天城下层血肉磨坊;标题=拳场外人群推搡;等级=2;状态=发生中;来源=血肉磨坊"></span>' },
   { message_id: 41, message: '<span style="display:none">⌖人物 雷恩 @ 下层·7号井</span> <span style="display:none">⌖人物 艾琳 @ 中层·霓虹街</span>' },
 ];
-const STAT = { 在场人物: { 莉娜: { 身份: '向导' }, 卡尔: { 身份: '司机' } } };
+const STAT = { 在场人物: { 米拉: { 身份: '向导' }, 卡尔: { 身份: '司机' } } };
 // 重叠：两个元素的包围盒相交面积（px²）
 const overlap = (f, a, b) => f.evaluate(([a, b]) => { const A = document.querySelector(a)?.getBoundingClientRect(), Bx = document.querySelector(b)?.getBoundingClientRect();
   if (!A || !Bx || !A.width || !Bx.width) return 0; return Math.round(Math.max(0, Math.min(A.right, Bx.right) - Math.max(A.left, Bx.left)) * Math.max(0, Math.min(A.bottom, Bx.bottom) - Math.max(A.top, Bx.top))); }, [a, b]);

@@ -19,8 +19,8 @@ t('人物标签不会被当成事态', () => {
 });
 t('一楼最多 8 条', () => { assert.equal(C.parseChars(Array.from({ length: 12 }, (_, i) => `⌖人物 N${i} @ 中层`).join('\n')).length, 8); });
 t('MVU：位置字段 + 在场表（取第一处当前地点）', () => {
-  const r = C.mvuChars({ 世界: { 当前地点: 'x' }, 在场人物: { 莉娜: { 身份: '向导' } }, 角色: { 卡尔: { 位置: '上层·银冠堡' }, 空: 3 } }, '中层·霓虹街 / 下层·7号井');
-  assert.deepEqual(r, [{ name: '莉娜', place: '中层·霓虹街', present: true }, { name: '卡尔', place: '上层·银冠堡' }]);
+  const r = C.mvuChars({ 世界: { 当前地点: 'x' }, 在场人物: { 米拉: { 身份: '向导' } }, 角色: { 卡尔: { 位置: '上层·银冠堡' }, 空: 3 } }, '中层·霓虹街 / 下层·7号井');
+  assert.deepEqual(r, [{ name: '米拉', place: '中层·霓虹街', present: true }, { name: '卡尔', place: '上层·银冠堡' }]);
 });
 t('物品 / 势力表带位置字段也不算人物', () => {
   assert.deepEqual(C.mvuChars({ 物品: { 钥匙: { 位置: '中层' } }, 势力: { 骑士团: { 所在地: '上层' } } }, '中层'), []);
