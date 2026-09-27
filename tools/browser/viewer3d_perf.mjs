@@ -12,6 +12,8 @@ await ensureServer();
 const q = a => { const s = [...a].sort((x, y) => x - y); const at = p => s[Math.min(s.length - 1, Math.floor(p * s.length))]; return { p50: at(0.5), p95: at(0.95) }; };
 const fpsOf = ft => { const { p50, p95 } = q(ft); return { fps_p50: +(1000 / p50).toFixed(1), fps_p95: +(1000 / p95).toFixed(1), ms_p50: +p50.toFixed(1), ms_p95: +p95.toFixed(1) }; };
 const results = {};
+let crash = null;   // 运行异常 / 页面脚本错误 → 退出码 1（C-测试缺口：以前异常时浏览器不关、有错误也 exit 0）
+try {
 
 for (const preset of ['desktop', 'phone', 'desktopWk', 'iphone']) {
   const P = await newPage(preset);
@@ -61,7 +63,11 @@ for (const preset of ['desktop', 'phone', 'desktopWk', 'iphone']) {
   await wait(6000); await shot(P.page, SHOTS, 'embedded_flyTo_energiser');
   await P.close();
 }
+} catch (e) { crash = String(e?.stack || e); results.crash = crash; }
 await closeAll();
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, 'perf.json'), JSON.stringify(results, null, 1));
 console.log(JSON.stringify(results, null, 1));
+const errs = Object.entries(results).filter(([, r]) => r && r.errors?.length).map(([k, r]) => `${k}: ${r.errors[0]}`);
+if (crash || errs.length) { console.error('失败：' + (crash ? crash.split('\n')[0] : errs.join(' | '))); process.exit(1); }
+process.exit(0);
