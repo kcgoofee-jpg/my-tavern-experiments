@@ -227,6 +227,9 @@ export function updatePromptText(latest, channel, en = false) {
       : channel === 'locked' ? (en ? 'You locked the current version: turn off "Lock current version" in map settings › About, then reload.' : '你锁定了当前版本：到地图设置「关于」关掉「锁定当前版本」再刷新')
       : follow ? (en ? 'Your script follows the branch: reload the Tavern page to use it.' : '你的脚本跟随分支：刷新酒馆页面就会用上')
       : (en ? `Your script is pinned: re-import the new script "[Map] Eden map ${fmtVer(latest)}" (same name, overwrite).` : `你的脚本钉了版本：重新导入新版脚本「【地图】伊甸地图 ${fmtVer(latest)}」（同名覆盖）`),
+    // 主按钮：能刷新就用上的通道 =「刷新载入」；钉了版本 =「本次切换到新版本」；锁定 = 无主按钮（要先去设置解锁）
+    act: channel === 'locked' ? null : channel === 'latest' || follow ? (en ? 'Reload' : '刷新载入') : (en ? 'Switch for this session' : '本次切换到新版本'),
+    actKind: channel === 'locked' ? null : channel === 'latest' || follow ? 'reload' : 'switch',
     notes: en ? 'Release notes' : '更新说明', later: en ? 'Later' : '稍后', skip: en ? "Don't remind me for this version" : '此版本不再提示',
   };
 }

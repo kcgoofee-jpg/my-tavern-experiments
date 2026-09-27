@@ -117,7 +117,7 @@ function chromeLang() {
   C.sheet.label('info', esc(t('info')), esc(t('info').slice(0, 1)));
   if (!HS.length) C.sheet.label('parts', esc(t('parts')), esc(t('parts').slice(0, 1)));
   for (const [id, k] of [['zin', 'zin'], ['zout', 'zout'], ['zreset', 'reset'], ['pinBtn', 'pins']]) { const b = C.control(id); if (b) { b.title = t(k); b.setAttribute('aria-label', t(k)); } }
-  if (MAN) C.setTitle(L(MAN.title));
+  if (MAN) C.setTitle(cleanTitle(L(MAN.title)));
 }
 // ---------------- 语言 / 主题 ----------------
 const STR = {
@@ -130,12 +130,14 @@ const STR = {
 let LANG = (Q.get('lang') || (() => { try { return localStorage.getItem('edenMapLang'); } catch (e) { return null; } })() || 'zh').startsWith('en') ? 'en' : 'zh';
 const t = (k, v = {}) => (STR[LANG][k] || STR.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
 const L = o => (o && (o[LANG] || o.zh)) || '';
+// 玩家可见标题不带「测试」字样（清单 title 由建模侧维护，这里只在显示时去掉前缀与「模型交互」注记）
+const cleanTitle = s => String(s || '').replace(/^(测试[：:]\s*|Test:\s*)/i, '').replace(/\s*[（(](模型交互|model interaction)[）)]\s*$/i, '');
 function applyLang() {
   document.documentElement.lang = LANG === 'en' ? 'en' : 'zh';
   document.querySelectorAll('[data-t]').forEach(e => { e.textContent = t(e.dataset.t); });
   document.querySelectorAll('[data-ta]').forEach(e => e.setAttribute('aria-label', t(e.dataset.ta)));
   $('#c').setAttribute('aria-label', t('canvas')); chromeLang();
-  if (MAN) { document.title = L(MAN.title); $('#credit').textContent = L(MAN.credit); buildList(); if (sel) showCard(sel); }
+  if (MAN) { document.title = cleanTitle(L(MAN.title)); $('#credit').textContent = L(MAN.credit); buildList(); if (sel) showCard(sel); }
 }
 function setTheme(th) { document.documentElement.classList.toggle('light', th === 'light'); if (renderer) { scene.background = new THREE.Color(getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#101418'); dirty = true; } }
 document.documentElement.classList.toggle('light', (Q.get('theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')) === 'light');
@@ -144,7 +146,9 @@ document.documentElement.classList.toggle('light', (Q.get('theme') || (matchMedi
 const coarse = matchMedia('(pointer: coarse)').matches, small = Math.min(screen.width, screen.height) < 600;
 const mem = navigator.deviceMemory || 8;
 const TIER = Q.get('tier') || ((coarse && small) || mem <= 4 ? 'low' : 'high');
-const DPR_CAP = TIER === 'low' ? 1.25 : 2;   // 同旧庄园 DPR_CAP 思路：高 DPR 手机上像素数 ×4 不值
+const DPR_CAP = TIER === 'low' ? 1.25 : 2;
+// 低档 / 设置「三维画质 · 省电」：不用毛玻璃（Mac 低分辨率模式下 backdrop-filter 每帧重算模糊，v2 门控遗留）
+if (TIER === 'low' || LSg('edenMap3dQ') === '1') document.documentElement.classList.add('noblur');   // 同旧庄园 DPR_CAP 思路：高 DPR 手机上像素数 ×4 不值
 const MSAA = TIER !== 'low';
 
 // ---------------- 场景 ----------------

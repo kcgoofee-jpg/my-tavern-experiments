@@ -368,8 +368,9 @@
       (async () => { let cleaned = null; const st = store();
         if (e.data.type === 'eden-map:storage-clean' && BG && st && Date.now() - (window.__edenCleanAt || 0) > 10000) { window.__edenCleanAt = Date.now();   // 只认本面板 iframe（onMsg 的 e.source 检查）；10 秒内只清一次
           try { cleaned = BG.sweep(st, chatId(), 5); } catch (x) { console.warn('[eden-map] 清理失败', x); cleaned = { error: true, dropped: [], freed: 0 }; } }
+        else if (e.data.type === 'eden-map:storage-clean') cleaned = { limited: true, dropped: [], freed: 0, wait: Math.ceil((10000 - (Date.now() - (window.__edenCleanAt || 0))) / 1000) };   // 10 秒内再点：明确回「请稍后再试」，不再无声无息
         const [s, src] = await Promise.all([api.storage().catch(() => null), api.sources().catch(() => null)]);
-        post({ type: 'eden-map:storage-result', storage: s && { total: s.total, ours: s.ours, avatars: s.avatars, chats: Object.keys(s.chats || {}).length }, sources: src, cleaned: cleaned && { n: cleaned.dropped.length, bytes: cleaned.freed, error: !!cleaned.error } }); })(); }   // UI v2：线路选择在地图设置「高级」
+        post({ type: 'eden-map:storage-result', storage: s && { total: s.total, ours: s.ours, avatars: s.avatars, chats: Object.keys(s.chats || {}).length }, sources: src, cleaned: cleaned && { n: cleaned.dropped.length, bytes: cleaned.freed, error: !!cleaned.error, limited: !!cleaned.limited, wait: cleaned.wait || 0 } }); })(); }   // UI v2：线路选择在地图设置「高级」
     if (e.data?.type === 'eden-map:chrome') { chromeAt = { top: +e.data.top || 44, bottom: +e.data.bottom || 0 }; NT?.refresh(); }   // 抽屉高度：P2 提示放在它上方
     if (e.data?.type === 'eden-map:formbusy') { formBusy = !!e.data.on; NT?.refresh(); }
     if (e.data?.type === 'eden-map:notice' && e.data.n && typeof e.data.n === 'object') viewerNotice(e.data.n);   // 查看器的通知由宿主统一显示
@@ -1057,6 +1058,8 @@
       const acts = pdoc.createElement('div'); acts.className = 'em-acts nt-acts';
       const later = pdoc.createElement('button'); later.type = 'button'; later.className = 'em-later'; later.textContent = T.later; later.onclick = () => { try { window.parent.__edenMapUpdLater = u.latest; } catch (e) {} t.remove(); };
       const skip = pdoc.createElement('button'); skip.type = 'button'; skip.className = 'em-skip'; skip.textContent = T.skip; skip.onclick = () => { lsSet(UPD_SKIP_KEY, u.latest); t.remove(); };
+      if (T.act) { const go = pdoc.createElement('button'); go.type = 'button'; go.className = 'em-go nt-pri'; go.textContent = T.act;
+        go.onclick = () => { t.remove(); if (T.actKind === 'reload') { try { window.parent.location.reload(); } catch (e) {} } else switchVersion(); }; acts.append(go); }
       acts.append(later, skip); t.append(acts);
     }, true);
   }

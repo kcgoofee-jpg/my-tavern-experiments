@@ -46,6 +46,7 @@ const LOW = qTier != null ? /^(1|2|low|save)$/.test(qTier)
   : (LS('edenMapTierV2') === 'save' || !!conn.saveData || /(^|-)(2g|3g)$/.test(conn.effectiveType || '') || (navigator.deviceMemory || 8) <= 4);
 const tier = LOW ? 1 : 0;
 let DPR = Math.min(window.devicePixelRatio || 1, LS('edenMap3dQ') === '1' ? 1 : 2);   // 设置「显示 · 三维画质」省电 = 1 倍   // 手机也用 2（原先低档 1.5 + 关抗锯齿，边缘锯齿、贴图发糊）；持续帧率 < 30 再降到 1.5（见 loop）
+if (LS('edenMap3dQ') === '1') document.documentElement.classList.add('noblur');   // 省电画质：不用毛玻璃
 let lowRes = false;
 
 /* ---------------- 渲染器（烘焙光照：MeshBasic，无色调映射；室内体量用 Lambert + 两盏灯） ---------------- */
