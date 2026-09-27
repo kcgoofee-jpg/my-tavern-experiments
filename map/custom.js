@@ -53,7 +53,7 @@ const TCCustom = (() => {
   function night() { const m = document.body.dataset.map; document.body.classList.toggle('nighttint', !!clock?.night && nightOn() && (m === 'tc_upper' || m === 'tc_mid')); }
   new MutationObserver(night).observe(document.body, { attributes: true, attributeFilter: ['data-map'] });
 
-  // ---------- 剧情改名的一次性提示（事态横条上方，5 秒） ----------
+  // ---------- 剧情改名的一次性提示（地图顶部居中，5 秒；不压住展开的事态 / 人物列表） ----------
   function toast(items) {
     let el = document.getElementById('cuToast');
     if (!el) { el = document.createElement('div'); el.id = 'cuToast'; el.setAttribute('role', 'status'); document.getElementById('stage').appendChild(el); }
@@ -91,7 +91,8 @@ const TCCustom = (() => {
         + `<span class="cu-acts"><button type="submit" class="btn pri">${esc(T('cu.save', '保存'))}</button><button type="button" class="btn" data-cancel="1">${esc(T('cu.cancel', '取消'))}</button></span></form>`
         : `<button type="button" class="btn" data-add="1">${esc(T('cu.add', '添加'))}</button>`)
       + (embed && host ? `<label><span>${esc(T('cu.sync', '同步到世界书'))}</span><input type="checkbox" role="switch" id="cuSync" ${data.同步世界书 ? 'checked' : ''} ${host.wb ? '' : 'disabled'}></label>`
-        + `<small>${esc(host.wb ? T('cu.sync_hint', '打开后写入世界书「伊甸地图·自定义」（一个常驻条目）；默认关。关掉不删除该世界书') : T('cu.sync_noapi', '酒馆助手没有世界书接口，不能同步'))}</small>` : '')
+        + `<small>${esc(host.wb ? T('cu.sync_hint', '打开后写入世界书「伊甸地图·自定义」（一个常驻条目）；默认关。关掉不删除该世界书') : T('cu.sync_noapi', '酒馆助手没有世界书接口，不能同步'))}</small>`
+        + (data.同步世界书 && host.wbState === 'unbound' ? `<small class="cu-warn">${esc(T('cu.sync_unbound', '这个聊天已经绑定了别的聊天世界书：请在世界书设置里手动启用「伊甸地图·自定义」'))}</small>` : '') : '')
       + `<small>${esc(host ? (host.vars ? T('cu.store_chat', '存在这个聊天的变量里（换设备、导出聊天都跟着走）；摘要会作为背景发给模型') : T('cu.store_local', '酒馆助手没有变量接口：只存本机浏览器')) : T('cu.store_local2', '单独打开地图：只存本机浏览器'))}</small>`
       + `<label><span>${esc(T('cu.night', '夜间给上层、中层加一层夜色'))}</span><input type="checkbox" role="switch" id="optNight" ${nightOn() ? 'checked' : ''}></label>`;
     if (e) box.querySelector(editing ? 'input[name=name]' : 'input[name=key]')?.focus({ preventScroll: true });
@@ -127,7 +128,7 @@ const TCCustom = (() => {
   }
   function setSync(on) { if (embed && host) post({ type: 'eden-map:custom-sync', on: !!on }); }
   // 宿主推来的
-  function fromHost(d) { host = { vars: !!d.vars, wb: !!d.wb }; ready.then(M => { if (!M) return; data = M.normCustom(d.data); apply(); }); }
+  function fromHost(d) { host = { vars: !!d.vars, wb: !!d.wb, wbState: d.wbState || '' }; ready.then(M => { if (!M) return; data = M.normCustom(d.data); apply(); }); }
   function setClock(c) { clock = c; night(); }
   function setOutfit(o) { outfit = o && o.text ? o : null; }
   function chatChanged() { if (!host) ready.then(loadLocal); }
@@ -147,9 +148,10 @@ const TCCustom = (() => {
   #cuBox textarea{resize:vertical}#cuBox .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
   #card .cu-note,#card .cu-outfit{margin:0 0 var(--sp-3,6px);font-size:var(--fs-micro);line-height:1.5;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #card .cu-note{white-space:normal}#card .cu-note b{color:var(--muted);font-weight:600}
-  #cuToast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--sp-5,12px) + 56px);z-index:7;max-width:min(420px,calc(100% - 24px));box-sizing:border-box;padding:8px 14px;border-radius:var(--r-m,8px);
+  #cuToast{position:absolute;left:50%;transform:translateX(-50%);top:var(--sp-5,12px);z-index:7;max-width:min(420px,calc(100% - 24px));box-sizing:border-box;padding:8px 14px;border-radius:var(--r-m,8px);
     background:var(--surface);color:var(--ink);border:1px solid var(--accent);box-shadow:0 6px 20px rgba(0,0,0,.3);font-size:var(--fs-micro);line-height:1.5}
   #cuToast[hidden]{display:none}
+  #cuBox small.cu-warn{color:var(--alert,#ff5a5a)}
   body.nighttint #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 50% 40%,rgba(20,32,70,.18),rgba(6,10,28,.38));mix-blend-mode:multiply;transition:opacity .6s}
   @media (prefers-reduced-motion:reduce){body.nighttint #osd::after{transition:none}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);

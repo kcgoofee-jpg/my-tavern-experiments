@@ -152,6 +152,8 @@ export function wbContent(c) {
   return rows.length ? `<地图自定义>\n以下地点 / 人物有玩家起的名字或用途，正文里可以用这些叫法：\n${rows.join('\n')}\n</地图自定义>` : '';
 }
 export const WB_NAME = '伊甸地图·自定义', WB_ENTRY = '地图自定义';
+/** 按聊天分开的世界书名（多个聊天共用一本会互相串）：「伊甸地图·自定义·<聊天 id 的短哈希>」 */
+export function wbName(chat) { let h = 2166136261; for (const c of String(chat || '')) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return `${WB_NAME}·${(h >>> 0).toString(16).padStart(8, '0').slice(0, 6)}`; }
 
 // ---------------- 剧情标签：⌖改名 / ⌖用途 ----------------
 //   ⌖改名 书房 → 星图室        （→ / -> / ＞ / > 都认）

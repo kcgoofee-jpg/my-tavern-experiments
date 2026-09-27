@@ -9,6 +9,7 @@
 // 只做技术兼容：不按内容过滤任何名字或地点，原样显示。
 import { presentList } from './mvu.mjs';
 export const MAX_TAGS_PER_FLOOR = 8;
+export const PRESENT_TAG_FRESH = 20, INJECT_FRESH = 30;   // 在场的人：标签超过 20 楼就改按「和你同处」；注入只放 30 楼内的位置（v0.9.3 审阅）
 const LOC_KEYS = ['当前位置', '当前地点', '所在地', '所在位置', '位置', '地点', 'location', 'place'];
 const PEOPLE = /人物|角色|人员|同伴|成员|NPC|character|people|npc/i, PERSONISH = ['身份', '姓名', '年龄', '性别', '职业', '外貌', '内心想法', '好感'];
 const PRESENT = /^(在场人物|在场角色|当前在场|在场|同行人物|present)$/i;
@@ -59,8 +60,8 @@ export function mvuChars(stat, here) {
 export function collectChars(msgs, now, mvu = []) {
   const map = new Map();
   for (const { floor, text } of msgs) for (const c of parseChars(text)) map.set(c.name, { ...c, floor, src: 'tag' });
-  for (const c of mvu) {   // MVU 是最新楼的状态：写了位置就以它为准；在场但没写位置时，有标签用标签，没有才推断为和玩家同处
-    if (c.present && map.has(c.name)) continue;
+  for (const c of mvu) {   // MVU 是最新楼的状态：写了位置就以它为准；在场但没写位置时，有近期标签（≤ 20 楼）用标签，否则推断为和玩家同处
+    if (c.present && map.has(c.name) && now - map.get(c.name).floor <= PRESENT_TAG_FRESH) continue;
     map.set(c.name, { ...c, floor: now, src: c.present ? 'infer' : 'mvu' });
   }
   return [...map.values()].sort((a, b) => b.floor - a.floor || a.name.localeCompare(b.name));
@@ -82,8 +83,8 @@ export function initials(name) {
 }
 
 /** 注入给模型的一句：最多 8 人，和玩家同处的合成一项。没有人物返回 '' */
-export function summarizeChars(items, max = 8, maxLen = 160) {
-  const list = items.slice(0, max); if (!list.length) return '';
+export function summarizeChars(items, max = 8, maxLen = 160, now = null) {
+  const list = items.filter(c => now == null || c.present || now - c.floor <= INJECT_FRESH).slice(0, max); if (!list.length) return '';
   const with_ = list.filter(c => c.present).map(c => c.name), rest = list.filter(c => !c.present);
   const parts = []; if (with_.length) parts.push('与你同处：' + with_.join('、'));
   for (const c of rest) parts.push(`${c.name}@${c.place}`);
