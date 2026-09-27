@@ -198,6 +198,29 @@ else:
     for mid, m in maps.items():
         for k, v in (m.get('markers') or {}).items():
             if added(v) and f'{mid}.{k}' not in refs: err(f'{mid}.{k}：用户决定 / 仓库自设的地点，addon_places.json 里没有对应条目（世界书附加条目缺它）')
+# v0.9.6 卡设定分层房间（map/data/eden_estate_rooms.json）↔ 当前地点词表（map/here.mjs 第 1 级）：
+# 每个房间名都要能落到 eden_estate 的房间（带 std）；受限房间（不描述）不能出现在 maps.json eden_estate.rooms（那里的房间有描述）；
+# 房间叫法不能和庄园室外区域 / 整座庄园的叫法重名（否则抢走区域落点）
+er_path = os.path.join(ROOT, 'data', 'eden_estate_rooms.json')
+if exists(er_path) and 'eden_estate' in maps:
+    import shutil, subprocess
+    er = load(er_path).get('rooms', []); est = maps['eden_estate']
+    for r in er:
+        if not r.get('name') or not r.get('floor'): err(f"eden_estate_rooms.{r.get('id', '?')}: 缺 name / floor")
+        elif r.get('kind') == 'restricted' and r['name'] in (est.get('rooms') or []): err(f"eden_estate_rooms.{r['id']}: 受限房间「{r['name']}」也写在 maps.json eden_estate.rooms 里（受限房间只认名字、不描述）")
+    if shutil.which('node') is not None:
+        js = ("import('./map/here.mjs').then(H=>{const fs=require('fs'),J=f=>JSON.parse(fs.readFileSync('map/data/'+f,'utf8'));"
+              "const P=J('eden_estate_rooms.json'),m=J('maps.json').maps.eden_estate,i=H.buildIndex(J('maps.json'),J('world_markers.json'),null,null,P),bad=[];"
+              "const clash=new Set([...(m.areas||[]),...(m.areas_en||[]),...i.estate.whole]);"
+              "for(const r of P.rooms){const x=H.resolveHere(r.name,i);if(!x||x.level!==1||x.map!==i.estate.id||!x.std)bad.push('认不出房间「'+r.name+'」');"
+              "for(const w of H.planWords(r.name))if(clash.has(w))bad.push('房间叫法「'+w+'」与庄园区域 / 整座庄园的叫法重名');}"
+              "console.log(JSON.stringify([...new Set(bad)]))})")
+        try:
+            r = subprocess.run(['node', '-e', js], capture_output=True, text=True, cwd=os.path.join(ROOT, '..'), timeout=30)
+            if r.returncode != 0: err(f'here.mjs 加载失败（node 退出码 {r.returncode}）')
+            else:
+                for b in json.loads(r.stdout): err(f'eden_estate_rooms ↔ here.mjs：{b}')
+        except (ValueError, subprocess.TimeoutExpired) as e: err(f'here.mjs 检查失败：{type(e).__name__}: {e}')
 # 外部事件数据源（map/events.js 定时拉取）：feeds: [{label, url, every}]
 feeds = reg.get('feeds', [])
 if not isinstance(feeds, list): err('feeds 应为列表')

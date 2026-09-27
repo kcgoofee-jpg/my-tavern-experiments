@@ -22,7 +22,8 @@ const TCCustom = (() => {
   const name = key => (data.items?.[key]?.名) || key;
   const entry = key => data.items?.[key] || null;
   /** here.mjs buildIndex 的 custom 参数：房间 / 地标的自定义叫法 */
-  function index() { if (!MV) return null; return { rooms: MV.aliasMap(data, ['room']), marks: MV.aliasMap(data, ['landmark']) }; }
+  // v0.9.6：区域、层 / 大区、世界地名的叫法，和「未上图」里选了「忽略」的名字
+  function index() { if (!MV) return null; return { rooms: MV.aliasMap(data, ['room']), areas: MV.aliasMap(data, ['area']), marks: MV.aliasMap(data, ['landmark']), layers: MV.aliasMap(data, ['layer']), world: MV.aliasMap(data, ['world']), ignore: data.忽略 || [] }; }
   function apply() {
     if (typeof rebuildHere === 'function') rebuildHere();
     relabel(); renderUI();
@@ -71,7 +72,7 @@ const TCCustom = (() => {
   // ---------- 设置里的「自定义」一栏（入口 + 同步 / 存储 / 夜色）与「自定义」对话框（v0.9.5） ----------
   // 对话框三页：list 已有的自定义（卡片：原名 → 新名、用途摘要、来源；编辑 / 重置 / 在地图上看）→ pick 选择器（搜索 + 按层 / 楼层分组）→ edit 表单（校验、字数）。
   // 点卡片或选择器里的「在地图上看」= flyTo({ map, marker | room | area | character })。
-  const KIND = { room: ['cu.room', '房间'], area: ['cu.area', '区域'], landmark: ['cu.landmark', '地标'], character: ['cu.character', '人物'] };
+  const KIND = { room: ['cu.room', '房间'], area: ['cu.area', '区域'], landmark: ['cu.landmark', '地标'], character: ['cu.character', '人物'], layer: ['cu.layer', '层 / 大区'], world: ['cu.world', '世界地名'] };
   let listQ = '', PK = null, plan = null, view = 'list', editing = null, query = '', opener = null, resetArm = null, resetT = 0, flyMsg = '';
   const pk = () => (PK ? Promise.resolve(PK) : import(new URL('tavern/picker.mjs', document.baseURI).href).then(m => (PK = m)));
   const planP = () => (plan ? Promise.resolve(plan) : Promise.all([import(new URL('estate/plan.js', document.baseURI).href).catch(() => ({})), fetch(new URL('data/eden_estate_rooms.json', document.baseURI)).then(r => (r.ok ? r.json() : null)).catch(() => null)])
@@ -163,6 +164,7 @@ const TCCustom = (() => {
         + `<span class="cu-names">${e.名 ? `<s>${esc(k)}</s><i aria-hidden="true">→</i><b>${esc(e.名)}</b>` : `<b>${esc(k)}</b>`}</span>`
         + (e.用途 ? `<span class="cu-ex">${esc(excerpt(e.用途))}</span>` : '')
         + `<span class="cu-tags"><em>${esc(T(...(KIND[e.类] || KIND.landmark)))}</em><em class="src-${src[0]}">${esc(src[1])}</em></span></button>`
+        + ((e.别名 || []).length ? `<span class="cu-al"><small>${esc(T('cu.aliases', '也叫'))}</small>${e.别名.map(a => `<button type="button" class="chip" data-unalias="${esc(k)}" data-a="${esc(a)}" aria-label="${esc(T('cu.unalias', '去掉叫法 {a}', { a }))}">${esc(a)} ×</button>`).join('')}</span>` : '')   // v0.9.6：叫法（含「未上图」指派的）可单独去掉
         + `<span class="cu-acts"><button type="button" class="btn" data-edit="${esc(k)}">${ic(IC.edit)}<span>${esc(T('cu.edit', '编辑'))}</span></button>`
         + `<button type="button" class="btn${arm ? ' warn' : ''}" data-reset="${esc(k)}">${ic(IC.undo)}<span>${esc(arm ? T('cu.reset_sure', '确认重置') : T('cu.reset', '重置'))}</span></button>`
         + `<button type="button" class="btn" data-fly="${esc(k)}">${ic(IC.pin)}<span>${esc(T('cu.fly', '在地图上看'))}</span></button></span></li>`;
@@ -229,6 +231,7 @@ const TCCustom = (() => {
       resetArm = null; const k = d.reset; removeCustom(k).then(ok => { if (ok) say(T('cu.reset_done', '已重置 {n}', { n: k })); setTimeout(() => { if (!dlg.hidden) (dlg.querySelector('[data-edit]') || dlg.querySelector('.cu-add'))?.focus(); }, 60); });
     }
     else if (d.fly != null) fly(d.fly);
+    else if (d.unalias != null) { const k = d.unalias, a = d.a; setCustom(k, { unalias: a }).then(ok => { if (ok) say(T('cu.unalias_done', '已去掉叫法 {a}', { a })); }); }
   }
   function onKey(e) {
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (view !== 'list') { view = view === 'edit' && !entry(editing) ? 'pick' : 'list'; renderDlg(true); } else closeDlg(); return; }
@@ -346,6 +349,8 @@ const TCCustom = (() => {
   #cuDlg .cu-main{display:flex;flex-direction:column;align-items:stretch;gap:var(--sp-2);width:100%;min-height:var(--hit,44px);padding:var(--sp-4) var(--sp-5);border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
   #cuDlg .cu-main:hover{background:var(--accent-weak)}
   #cuDlg .cu-names{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--sp-3);font-size:var(--fs-body);word-break:break-all}
+  #cuDlg .cu-al{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2);padding:0 var(--sp-5) var(--sp-3)}
+  #cuDlg .cu-al small{color:var(--muted)}
   #cuDlg .cu-names s{text-decoration:none;color:var(--muted);font-size:var(--fs-small)}
   #cuDlg .cu-names i{font-style:normal;color:var(--muted)}
   #cuDlg .cu-names b{font-weight:600}

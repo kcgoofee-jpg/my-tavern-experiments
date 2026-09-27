@@ -22,11 +22,21 @@ function longest(v, words) {
   return best;
 }
 const len = w => (w ? [...w].length : 0);
+/** 卡设定房间名 → 叫法：原名、去掉括注 / 「 ×2」的名字、「 / 」两侧各自（两个字以上） */
+export function planWords(name) {
+  const n = String(name || '').trim(); if (!n) return [];
+  const base = n.replace(/[（(][^）)]*[）)]/g, '').replace(/\s*[×x]\s*\d+\s*$/, '').trim();
+  const out = [n, base, ...base.split(/\s*[\/／]\s*/)].map(s => s.trim()).filter(s => [...s].length >= 2);
+  return [...new Set(out)];
+}
 
 /** 由 maps.json（和可选的世界地点、英文名）建一次词表 */
 // custom：用户自定义的叫法（不进仓库、不上 CDN），{ rooms: { 自定义名: 标准房间名 }, marks?: { 自定义名: 标准地标名 } }（v0.9.3 起来自聊天变量 eden_map.自定义，见 tavern/mvu.mjs aliasMap）。
 // 当前地点写的是自定义名时，按对应的标准房间落点；来源见 viewer 的 EdenMap.setRoomAlias（存储见文件末尾 readCustom / setRoomAlias）。
-export function buildIndex(reg, world = null, names = null, custom = null) {
+// v0.9.6：custom 还可以有 areas / layers { 自定义名: 层名或大区名 } / world { 自定义名: 世界地名 } / ignore [名字]（未上图时选了「忽略」）。
+// plan：map/data/eden_estate_rooms.json（卡设定分层房间）。房间名（及去掉括注、「 / 」拆开的叫法）进庄园房间词表（第 1 级），
+//   落点带 std（标准房间名）与 floor（名字只在一层出现时），受限房间带 restricted（只认名字、画素框，不描述）。
+export function buildIndex(reg, world = null, names = null, custom = null, plan = null) {
   const maps = reg?.maps || {}, idx = { estate: null, marks: [], layers: [], tiancheng: null, world: [], ambiguous: [...(reg?.ambiguous?.words || [])] };
   const en = z => (names && names[z]) || null;
   // 庄园（kind=estate）：房间 / 区域词表；整座庄园的叫法 = alias 里不是房间也不是区域的词 + 标题 + 链接到它的地标（如上层的「伊甸庄园」）
@@ -37,8 +47,18 @@ export function buildIndex(reg, world = null, names = null, custom = null) {
     for (const L of Object.values(maps)) for (const k of Object.values(L.markers || {}))
       if (k.link?.map === id) for (const w of [k.name, k.name_en, ...(k.alias || [])]) if (w && !rooms.includes(w) && !areas.includes(w)) whole.add(w);
     whole.delete(undefined); whole.delete(null); whole.delete('');
-    const alias = {}; for (const [w, r] of Object.entries(custom?.rooms || {})) if (w && r && rooms.includes(r)) { alias[w] = r; rooms.push(w); }
-    idx.estate = { id, rooms, areas, whole: [...whole], alias, std: rooms.filter(w => !alias[w]) };
+    const std = [...rooms], floor = {}, restricted = new Set(), planStd = {};
+    for (const r of plan?.rooms || []) {
+      if (!r?.name) continue;
+      for (const w of planWords(r.name)) { if (!(w in planStd)) planStd[w] = r.name; if (!rooms.includes(w) && !areas.includes(w)) rooms.push(w); }
+      floor[r.name] = r.name in floor && floor[r.name] !== r.floor ? null : r.floor;
+      if (r.kind === 'restricted') restricted.add(r.name);
+    }
+    for (const w of rooms) if (!std.includes(w)) std.push(w);
+    const alias = {};
+    for (const [w, r] of Object.entries(custom?.rooms || {})) if (w && r && rooms.includes(r) && !std.includes(w)) { alias[w] = r; rooms.push(w); }
+    for (const [w, r] of Object.entries(custom?.areas || {})) if (w && r && areas.includes(r) && !areas.includes(w)) { alias[w] = r; areas.push(w); }
+    idx.estate = { id, rooms, areas, whole: [...whole], alias, std, floor, restricted: [...restricted], planStd };
     break;
   }
   const estateId = idx.estate?.id;
@@ -52,7 +72,9 @@ export function buildIndex(reg, world = null, names = null, custom = null) {
     const L = m.layer || {};
     // v0.9.3：地标的自定义显示名（custom.marks { 显示名: 标准地标名 }）也当成这个地标的叫法
     for (const [w, std] of Object.entries(custom?.marks || {})) { const k = idx.marks.find(x => x.map === id && x.words.includes(std)); if (w && k && !k.words.includes(w)) k.words.push(w); }
-    idx.layers.push({ map: id, words: [L.name, L.sub, L.sub_en, L.name_en && L.name_en + ' Tier', ...(m.districts || [])].filter(Boolean) });
+    const lw = [L.name, L.sub, L.sub_en, L.name_en && L.name_en + ' Tier', ...(m.districts || [])].filter(Boolean);
+    for (const [w, std] of Object.entries(custom?.layers || {})) if (w && (std === id || lw.includes(std)) && !lw.includes(w)) lw.push(w);   // v0.9.6：层 / 大区的自定义叫法
+    idx.layers.push({ map: id, words: lw });
   }
   // 「天城」：group 的标题（中英）+ 世界图上同名地点的英文名；落到该组第一张 points 地图
   for (const g of Object.values(reg?.groups || {})) {
@@ -62,8 +84,11 @@ export function buildIndex(reg, world = null, names = null, custom = null) {
   // 世界图地点
   const wid = Object.keys(maps).find(k => maps[k].kind === 'world');
   if (wid && world) for (const p of [...(world.places || []), ...(world.fiefs || []), ...(world.realms || [])]) {
-    idx.world.push({ map: wid, name: p.name, words: [p.name, p.name_en, en(p.name)].filter(Boolean) });
+    const ww = [p.name, p.name_en, en(p.name)].filter(Boolean);
+    for (const [w, std] of Object.entries(custom?.world || {})) if (w && std === p.name && !ww.includes(w)) ww.push(w);   // v0.9.6：世界地名的自定义叫法
+    idx.world.push({ map: wid, name: p.name, words: ww });
   }
+  idx.ignore = [...new Set((custom?.ignore || []).map(s => String(s || '').trim()).filter(Boolean))];
   return idx;
 }
 
@@ -106,6 +131,21 @@ export function resolveHere(value, idx) {
   if (tr) return { ...(tr.from || tr.to), transit: tr };
   return resolveOne(value, idx);
 }
+// 第 1 级落点：自定义叫法 → 标准房间名（custom）；卡设定房间 → std / floor / restricted
+function roomHit(E, v, w) {
+  const cu = E.alias?.[w], std = E.planStd?.[cu || w] || null;
+  const r = cu ? { level: 1, map: E.id, room: cu, word: w, custom: true } : { level: 1, map: E.id, room: v, word: w };
+  if (std) { r.std = std; if (E.floor?.[std]) r.floor = E.floor[std]; if (E.restricted?.includes(std)) r.restricted = true; }
+  return r;
+}
+/** 未上图：当前地点非空、认不出（含途中两端都认不出）、也没被「忽略」→ 返回要显示的名字（多处取第一处），否则 null */
+export function unmappedName(value, idx) {
+  const v = String(value || '').replace(/\{\{user\}\}/g, '').trim();
+  if (!v || !idx || resolveHere(v, idx)) return null;
+  const first = v.split(/\s*[\/／|｜]\s*/).filter(Boolean)[0] || v;
+  if ((idx.ignore || []).some(w => w === v || w === first)) return null;
+  return first;
+}
 function resolveOne(value, idx) {
   const v = String(value || '').replace(/\{\{user\}\}/g, '').trim();
   if (!v || !idx) return null;
@@ -119,8 +159,8 @@ function resolveOne(value, idx) {
   // 庄园：写了庄园（且没有更长的别处地标，如「财团家族庄园」），或只写了房间 / 区域而没有写别的层、地标
   const inEstate = E && ((eWhole && len(eWhole) >= len(mark?.word)) || (!eWhole && (eRoom || eArea) && !mark && !lay));
   if (inEstate) {
-    if (eRoom && len(eRoom) >= len(eArea) - 1) return E.alias?.[eRoom] ? { level: 1, map: E.id, room: E.alias[eRoom], word: eRoom, custom: true } : { level: 1, map: E.id, room: v, word: eRoom };   // 「后庭浴室」这类两者都有时偏向房间
-    if (eArea) return { level: 2, map: E.id, room: v, word: eArea };
+    if (eRoom && len(eRoom) >= len(eArea) - 1) return roomHit(E, v, eRoom);   // 「后庭浴室」这类两者都有时偏向房间
+    if (eArea) return E.alias?.[eArea] ? { level: 2, map: E.id, room: E.alias[eArea], word: eArea, custom: true } : { level: 2, map: E.id, room: v, word: eArea };
     return { level: 2, map: E.id, room: v, word: eWhole };
   }
   if (mark) return { level: 3, map: mark.map, marker: mark.marker, word: mark.word };
