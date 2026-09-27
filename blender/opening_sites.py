@@ -1,4 +1,4 @@
-# 开局地点的简易地图（v0.9.6）：大骑士领·圣都、原域（城区 / 诸神殿两层）、旷野高地、圆桌第二 / 三 / 四席封地。
+# 开局地点的简易地图（v0.9.6）：大骑士领·圣都、原域（城区 / 诸神殿两层）、旷野高地、圆桌第一至五席封地。
 # 程序生成的体块草模（地形 + 几座地标体块 + 道路 + 树），正俯视正交相机，与天城各层同一种取景方式；低采样，快出图。
 # 用法：blender -b -P blender/opening_sites.py -- --site kavalierki [--res 4000] [--samples 24] [--out map/art/site_kavalierki_full.png] [--data-only]
 # 坐标：每张图用归一化平面坐标 (u, v)，u 向右、v 向下，0…1；场景里 1 单位 = 图宽 / 40。
@@ -260,47 +260,106 @@ def site_highland():
     mk('highland_plateau', .3, .3, .15); mk('cliff_edge', .5, cliff(.5), .03); mk('trail_down', .75, .85, .02)
 
 def site_fief(n):
-    """圆桌骑士封地：卡里只说有独立封地与专属骑士团调动权；城堡、营地、村镇、地形都是推断，三块封地按世界图位置给不同地形。"""
-    kind = {2: 'coast', 3: 'river', 4: 'forest'}[n]
+    """圆桌骑士封地：卡里只说圆桌骑士现存五席、享有独立封地与专属骑士团调动权。地形、城堡形制、城镇形状全是仓库推断，五块各不相同：
+    1 北部湖山：湖岸山顶的星形棱堡 + 沿湖长条镇 + 梯田；2 西海岸：岬角海堡 + 港湾月牙镇 + 码头；3 河谷：河湾护城河方堡 + 桥头圆形城墙镇；
+    4 南部森林：林中狩猎城堡 + 林间空地小村 + 零散林地田；5 东北平原：同心圆城堡 + 棋盘街道镇 + 比武场 + 大片条田。"""
+    kind = {1: 'lake', 2: 'coast', 3: 'river', 4: 'forest', 5: 'plain'}[n]
+    CFG = {  # 城堡 ck、骑士团驻地 bx/by、城镇 vx/vy、农田框
+        1: ((.55, .3), (.72, .22), (.3, .55), (.62, .62, .9, .9)),
+        2: ((.3, .28), (.52, .2), (.35, .62), (.58, .45, .92, .8)),
+        3: ((.5, .38), (.72, .7), (.3, .58), (.6, .08, .92, .3)),
+        4: ((.62, .48), (.8, .3), (.28, .3), (.15, .6, .4, .85)),
+        5: ((.5, .5), (.78, .5), (.25, .35), (.05, .6, .95, .95)),
+    }[n]
+    ck, (bx, by), (vx, vy), FB = CFG
     river = lambda u: .45 + .12 * math.sin(u * 6 + n)
+    coast = lambda v: .2 + .05 * math.sin(v * 8)
+    lake = lambda u, v: ((u - .28) / .2) ** 2 + ((v - .3) / .18) ** 2 < 1 + .15 * noise(u, v, 2, 3)
     def h(u, v):
-        z = .4 + .45 * noise(u, v, .7, n) + 1.2 * math.exp(-((u - .42) ** 2 + (v - .42) ** 2) / .01)
-        if kind == 'coast' and u < .22 + .05 * math.sin(v * 8): z = -.5
-        if kind == 'river' and abs(v - river(u)) < .02: z = -.3
+        base = {1: 1.4 * max(0, 1 - math.hypot(u - .6, (v - .3) * ASP) / .3), 5: .08, 4: .3}.get(n, .4)
+        z = .3 + .35 * noise(u, v, .7, n) * (.3 if n == 5 else 1) + base + (1.0 * math.exp(-((u - ck[0]) ** 2 + (v - ck[1]) ** 2) / .008) if n in (2, 4) else 0)
+        if n == 1 and lake(u, v): z = -.5
+        if n == 2 and u < coast(v): z = -.5
+        if n == 3 and abs(v - river(u)) < .022: z = -.3
         return z
     TERRAIN['h'] = h
+    FC = {1: ('#8a9a4a', '#6f8a3e', '#a7a25a'), 2: ('#b8a45a', '#9aa55a', '#c9b872'), 3: ('#a8a456', '#7e9448', '#b89e5a', '#8a7a4a'),
+          4: ('#6f7f3e', '#7c8a44'), 5: ('#c9b060', '#a8a456', '#b89e5a', '#8e9a50', '#d0bd70')}[n]
+    GR = {1: ('#6d8045', '#58703a'), 2: ('#7a8a4a', '#667a40'), 3: ('#6d8a45', '#557038'), 4: ('#3f5a2e', '#344d28'), 5: ('#8a9a55', '#7a8c4a')}[n]
     def c(u, v, z):
-        if z <= -.29: return '#3a5a70'
-        if kind == 'coast' and u < .25 + .05 * math.sin(v * 8): return '#cbbd92'
-        f = noise(u, v, 2, n)
-        if .55 < u < .95 and .55 < v < .95:
+        if z <= -.29: return '#35566e' if n != 1 else '#2f5a6a'
+        if n == 2 and u < coast(v) + .03: return '#cbbd92'
+        if FB[0] < u < FB[2] and FB[1] < v < FB[3]:
+            if n == 5: return FC[int(_h(int(u * 60), int(v * 6), n) * len(FC))]          # 条田：细长
+            if n == 1: return FC[int(v * 40) % len(FC)]                                   # 梯田：横条
             cu, cv = u + .01 * noise(u, v, 3, 1), v + .01 * noise(u, v, 3, 2)
-            return ('#a8a456', '#7e9448', '#b89e5a', '#8a7a4a', '#9aa860')[int(_h(int(cu * 22), int(cv * 16), n) * 5)]
-        return mix('#6d8a45', '#557038', f + .4)
+            return FC[int(_h(int(cu * 22), int(cv * 16), n) * len(FC))]
+        if n == 1 and z > 1.4: return mix('#8a8676', '#9a9484', noise(u, v, 3))
+        return mix(GR[0], GR[1], noise(u, v, 2, n) + .4)
     TERRAIN['c'] = c; terrain(220)
-    if kind == 'coast':
-        B.box(mat('sea', '#2f5570', .15), .05, .5, .3, .8, .01, z=-.45)
-    ck = (.42, .42); z0 = zg(*ck)
-    B.box(mat('keep', '#a39c90', .7), ck[0], ck[1], .02, .02, 1.4, z=z0); B.ring(mat('cwall', '#8f887b', .8), ck[0], ck[1], .04, .004, .6, z=z0 - .3, seg=8)
-    for a in range(8): B.cyl(mat('towerc', '#958d80', .7), ck[0] + math.cos(a * math.pi / 4 + math.pi / 8) * .04, ck[1] + math.sin(a * math.pi / 4 + math.pi / 8) * .04 / ASP, .005, 1.0, z=z0 - .3, seg=10)
-    B.box(mat('banner', '#7a2b2b', .6), ck[0], ck[1], .006, .006, .3, z=z0 + 1.4)
-    bx, by = .62, .3
-    for k in range(6): B.box(mat('barr', '#b5a488', .8), bx + (k % 3) * .02, by + (k // 3) * .03, .016, .008, .3, z=zg(bx, by))
-    B.box(mat('yard', '#b9a77f', .95), bx + .02, by + .08, .06, .03, .015, z=zg(bx, by + .08))
-    B.ring(mat('pal', '#6b5a44', .9), bx + .02, by + .03, .06, .002, .25, z=zg(bx, by) - .1, seg=4)
-    vx, vy = .3, .72
-    houses(200, lambda u, v: math.hypot(u - vx, (v - vy) * ASP) < .06 and h(u, v) > -.2, (.003, .006), ('#c8b18a', '#b08f6a', '#9a4a36'), hmax=.3, box=(vx - .07, vy - .11, vx + .07, vy + .11))
+    if n in (1, 2): B.box(mat('sea', '#2f5570', .15), .25 if n == 1 else .05, .3 if n == 1 else .5, .45 if n == 1 else .3, .6 if n == 1 else .8, .01, z=-.45)
+    z0 = zg(*ck); stone = mat('keep', '#a39c90', .7); wallm = mat('cwall', '#8f887b', .8); towm = mat('towerc', '#958d80', .7)
+    if n == 1:      # 星形棱堡
+        B.box(stone, ck[0], ck[1], .018, .018, 1.2, z=z0, rot=.4)
+        for k in range(5):
+            a = k * 2 * math.pi / 5; B.box(wallm, ck[0] + math.cos(a) * .035, ck[1] + math.sin(a) * .035 / ASP, .022, .022, .5, z=z0 - .3, rot=a + math.pi / 4)
+        B.ring(wallm, ck[0], ck[1], .032, .004, .5, z=z0 - .3, seg=5)
+    elif n == 2:    # 岬角海堡：长方形 + 四角圆塔
+        B.box(stone, ck[0], ck[1], .03, .018, 1.0, z=z0)
+        for dx in (-.017, .017):
+            for dy in (-.015, .015): B.cyl(towm, ck[0] + dx, ck[1] + dy / ASP, .005, 1.4, z=z0, seg=12)
+    elif n == 3:    # 护城河方堡
+        B.box(mat('moat', '#2f5066', .2), ck[0], ck[1], .07, .07 / ASP * ASP, .02, z=z0 - .15)
+        B.box(wallm, ck[0], ck[1], .05, .05, .6, z=z0 - .1); B.box(mat('court', '#a89c84', .9), ck[0], ck[1], .044, .044, .62, z=z0 - .1)
+        B.box(stone, ck[0], ck[1], .014, .014, 1.4, z=z0)
+    elif n == 4:    # 林中狩猎城堡：不规则几座楼 + 圆塔
+        for dx, dy, w_, d_ in ((0, 0, .02, .012), (.014, .01, .01, .016), (-.012, -.008, .012, .01)): B.box(stone, ck[0] + dx, ck[1] + dy, w_, d_, .9, z=z0)
+        B.cyl(towm, ck[0] + .02, ck[1] - .012, .006, 1.5, z=z0, seg=12); B.cyl(mat('roofc', '#4a4f5a', .6), ck[0] + .02, ck[1] - .012, .006, .5, z=z0 + 1.5, seg=12, r2=0)
+    else:           # 同心圆城堡
+        for r, hh in ((.05, .5), (.034, .8)): B.ring(wallm, ck[0], ck[1], r, .004, hh, z=z0, seg=48)
+        for a in range(12): B.cyl(towm, ck[0] + math.cos(a * math.pi / 6) * .05, ck[1] + math.sin(a * math.pi / 6) * .05 / ASP, .004, .8, z=z0, seg=10)
+        B.cyl(stone, ck[0], ck[1], .014, 1.6, z=z0, seg=24)
+    B.box(mat('banner', '#7a2b2b', .6), ck[0], ck[1], .006, .006, .3, z=z0 + 1.6)
+    # 骑士团驻地：营房 + 校场
+    for k in range(6): B.box(mat('barr', '#b5a488', .8), bx + (k % 3) * .02 - .02, by + (k // 3) * .03 - .02, .016, .008, .3, z=zg(bx, by))
+    B.box(mat('yard', '#b9a77f', .95), bx, by + .06, .06, .03, .015, z=zg(bx, by + .06))
+    if n == 5: B.ring(mat('lists', '#d8cba6', .8), bx, by + .06, .05, .004, .25, z=zg(bx, by), ry=.03)      # 比武场
+    # 城镇
+    hc = ('#c8b18a', '#b08f6a', '#9a4a36', '#a8a090')
+    if n == 1:      # 沿湖长条镇
+        houses(260, lambda u, v: abs(v - (vy + (u - vx) * .3)) < .025 and abs(u - vx) < .14 and h(u, v) > -.2, (.003, .006), hc, hmax=.3, box=(vx - .15, vy - .07, vx + .15, vy + .07))
+    elif n == 2:    # 港湾月牙镇 + 码头
+        houses(300, lambda u, v: .03 < math.hypot(u - .18, (v - vy) * ASP) < .09 and u > coast(v) + .02, (.003, .006), hc, hmax=.3, box=(.15, vy - .2, .3, vy + .2))
+        for k in range(4): B.box(mat('pier', '#6b5a44', .9), coast(vy - .06 + k * .04) - .02, vy - .06 + k * .04, .03, .004, .1, z=-.1)
+    elif n == 3:    # 桥头圆形城墙镇
+        houses(360, lambda u, v: math.hypot(u - vx, (v - vy) * ASP) < .07 and h(u, v) > -.2, (.003, .006), hc, hmax=.35, box=(vx - .08, vy - .13, vx + .08, vy + .13))
+        B.ring(wallm, vx, vy, .075, .003, .4, z=zg(vx, vy) - .2, seg=40)
+        B.box(mat('bridge', '#8b8174', .8), vx + .06, river(vx + .06), .008, .05, .1, z=0)
+    elif n == 4:    # 林间空地小村
+        houses(90, lambda u, v: math.hypot(u - vx, (v - vy) * ASP) < .035, (.003, .006), hc, hmax=.25, box=(vx - .04, vy - .07, vx + .04, vy + .07))
+    else:           # 棋盘街道镇
+        for i in range(7):
+            for j in range(5):
+                u, v = vx - .09 + i * .03, vy - .07 + j * .035
+                for q in range(4): B.box(mat('house' + str(q), hc[q], .85), u + (q % 2) * .012 - .006, v + (q // 2) * .014 - .007, .009, .009, R.uniform(.15, .35), z=zg(u, v))
     B.cyl(mat('church', '#d8cfbf', .7), vx, vy, .006, .3, z=zg(vx, vy)); B.cyl(mat('spire', '#555555', .5), vx, vy, .003, .7, z=zg(vx, vy) + .3, seg=6, r2=0)
     road = mat('road', '#9d8e70', .95)
-    B.road(road, [(ck[0], ck[1] + .04 / ASP), (.35, .6), (vx, vy), (.3, 1.02)], .004)
-    B.road(road, [(ck[0] + .04, ck[1]), (bx, by + .03), (1.02, .25)], .004)
-    B.road(road, [(vx, vy), (.7, .75), (1.02, .8)], .003)
-    trees(4200 if kind == 'forest' else 1800, lambda u, v: h(u, v) > -.2 and math.hypot(u - ck[0], (v - ck[1]) * ASP) > .07 and math.hypot(u - vx, (v - vy) * ASP) > .08
-          and not (.55 < u < .95 and .55 < v < .95) and not (.58 < u < .72 and .25 < v < .45) and not (kind == 'coast' and u < .28))
-    mk(f'fief{n}_castle', ck[0], ck[1], .04); mk(f'fief{n}_order', bx + .02, by + .04, .05); mk(f'fief{n}_village', vx, vy, .06); mk(f'fief{n}_fields', .75, .75, .12)
+    B.road(road, [ck, ((ck[0] + vx) / 2, (ck[1] + vy) / 2 + .05), (vx, vy)], .004)
+    B.road(road, [ck, (bx, by), (1.02, by - .05)], .004)
+    B.road(road, [(vx, vy), (vx - .1, 1.02)] if n != 2 else [(vx, vy), (.6, 1.02)], .003)
+    if n == 5:
+        for k in range(8): B.road(road, [(vx - .1 + k * .03, vy - .08), (vx - .1 + k * .03, vy + .1)], .0015)
+    far = lambda u, v, x, y, r: math.hypot(u - x, (v - y) * ASP) > r
+    ntree = {1: 1600, 2: 1200, 3: 1800, 4: 6000, 5: 500}[n]
+    trees(ntree, lambda u, v: h(u, v) > -.2 and far(u, v, ck[0], ck[1], .07) and far(u, v, vx, vy, .1 if n != 4 else .045) and far(u, v, bx, by, .07)
+          and not (FB[0] < u < FB[2] and FB[1] < v < FB[3]) and not (n == 2 and u < coast(v) + .05) and not (n == 1 and zg(u, v) > 1.5),
+          (.004, .007) if n != 4 else (.005, .009), ('#3d5a2a', '#4a6b30', '#35502a') if n != 4 else ('#2c4522', '#34502a', '#28401f'))
+    mk(f'fief{n}_castle', ck[0], ck[1], .04); mk(f'fief{n}_order', bx, by + .03, .05); mk(f'fief{n}_village', vx, vy, .06)
+    mk(f'fief{n}_fields', (FB[0] + FB[2]) / 2, (FB[1] + FB[3]) / 2, .12)
+    if n == 5: mk('fief5_lists', bx, by + .06, .03)
 
 SITES = {'kavalierki': (site_kavalierki, 20000), 'yuanyu_city': (lambda: yuanyu_common('city'), 16000), 'yuanyu_sanctum': (lambda: yuanyu_common('sanctum'), 16000),
-         'highland': (site_highland, 8000), 'fief2': (lambda: site_fief(2), 6000), 'fief3': (lambda: site_fief(3), 6000), 'fief4': (lambda: site_fief(4), 6000)}
+         'highland': (site_highland, 8000), 'fief1': (lambda: site_fief(1), 6000), 'fief2': (lambda: site_fief(2), 6000), 'fief3': (lambda: site_fief(3), 6000), 'fief4': (lambda: site_fief(4), 6000), 'fief5': (lambda: site_fief(5), 6000)}
 fn, EXT = SITES[SITE]; fn(); B.flush()
 data = {'extent_m': [float(EXT), EXT * ASP], 'markers': [{'id': i, 'nx': u, 'ny': v, 'r': r} for i, u, v, r in MK]}
 json.dump(data, open(os.path.join(ROOT, 'map', 'data', f'site_{SITE}.json'), 'w'), indent=1)

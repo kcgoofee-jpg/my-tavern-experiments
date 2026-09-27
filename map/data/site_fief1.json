@@ -5,27 +5,27 @@
  ],
  "markers": [
   {
-   "id": "fief3_castle",
-   "nx": 0.5,
-   "ny": 0.38,
+   "id": "fief1_castle",
+   "nx": 0.55,
+   "ny": 0.3,
    "r": 0.04
   },
   {
-   "id": "fief3_order",
+   "id": "fief1_order",
    "nx": 0.72,
-   "ny": 0.73,
+   "ny": 0.25,
    "r": 0.05
   },
   {
-   "id": "fief3_village",
+   "id": "fief1_village",
    "nx": 0.3,
-   "ny": 0.58,
+   "ny": 0.55,
    "r": 0.06
   },
   {
-   "id": "fief3_fields",
+   "id": "fief1_fields",
    "nx": 0.76,
-   "ny": 0.19,
+   "ny": 0.76,
    "r": 0.12
   }
  ]
