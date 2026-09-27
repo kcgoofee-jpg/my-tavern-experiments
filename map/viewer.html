@@ -429,6 +429,14 @@
     #setPop .acts .btn { height: 44px; }
     #setPop .hrow { min-height: 44px; }
   }
+  /* ---- 云（方案 B，v0.9.2）：上层漂移云 + 《部落冲突》式切层。只动 transform / opacity，无 backdrop-filter。JS 见文末「云」脚本块 ---- */
+  .cl-drift { position: absolute; inset: 0; pointer-events: none; overflow: hidden; transition: opacity .3s; }
+  .cl-drift > div { position: absolute; inset: 0; will-change: transform; }
+  .cl-drift.fade { opacity: 0; }
+  .cl-drift img, #clCover img { position: absolute; left: 0; top: 0; pointer-events: none; will-change: transform, opacity; opacity: 0; user-select: none; }
+  #clCover { position: absolute; inset: 0; z-index: 6; overflow: hidden; pointer-events: none; visibility: hidden; }
+  #clCover.run { visibility: visible; pointer-events: auto; cursor: pointer; }
+  #clCover .w { position: absolute; inset: -5%; background: #f4f6fa; opacity: 0; will-change: opacity; }
 </style>
 </head>
 <body>
@@ -766,7 +774,7 @@ function fadeAway(el, cb) {
   viewer.addOnceHandler('tile-drawn', () => setTimeout(done, 60));
   setTimeout(done, 1500);   // 瓦片迟迟不到也不一直盖着
 }
-async function go(id) {
+async function go(id) {   // 云脚本块（文末）会包一层：天城各层之间切换时加《部落冲突》式转场
   const m = REG.maps[id]; if (!m || m.status === 'planned' || id === cur) return;
   const prev = cur && REG.maps[cur], fromEstate = prev?.kind === 'estate';
   saveView();
@@ -1502,6 +1510,130 @@ if (window.top !== window) {
   });
 }
 document.addEventListener('DOMContentLoaded', main);   // 两个 defer 脚本（地图库、事态层）执行完之后
+</script>
+<script>
+// ---------------- 云（方案 B，v0.9.2；原型 map/_proto/clouds.html，说明 docs/clouds.md §6）----------------
+// 自成一块，挂点只有两处：① 包一层全局 go()（天城层与层之间的切层转场）；② 监听 body[data-map] 与「显示下方城市」开关（漂移云显隐）。
+// (a) 漂移：只在上层、云开（没勾「显示下方城市」）时；远近两层，拖动视差 0.85 / 1.2。精灵 art/clouds/puff1–6.png 与瓦片同一基址（jsDelivr 线路也通），用到才加载。
+// (b) 切层：9 条斜带 × 3 团从两头扫入 → 全白里换层 → 往两侧散开；转场中点一下跳过。
+// 减少动态效果：不漂移、直接换层。省流（lean()）：不漂移、零精灵请求，切层用白幕淡入淡出。
+(() => {
+  const RMq = matchMedia('(prefers-reduced-motion: reduce)'), RM = () => RMq.matches;
+  const ANG = 35 * Math.PI / 180, UX = Math.cos(ANG), UY = -Math.sin(ANG), PX = -UY, PY = UX, AR = 440 / 800;
+  const SPR = k => `art/clouds/puff${k % 6 + 1}.png`;
+  // 默认视野下约 5–8 团看得见（原型太稀）：远层小、慢、淡，近层大、快、稍浓
+  const LAYERS = { far: { n: 11, size: [.42, .62], op: [.3, .45], dur: [70, 95], par: .85 }, near: { n: 6, size: [.62, .85], op: [.38, .5], dur: [42, 58], par: 1.2 } };
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const isTC = id => { const m = REG?.maps?.[id]; return !!m && m.kind === 'points' && m.group === 'tiancheng'; };
+  const want = () => cur === 'tc_upper' && !altOn('tc_upper') && !RM() && !lean();
+  let box = null, lay = {}, anims = [], shown = false, acc = { far: [0, 0], near: [0, 0] }, last = null, hooked = false;
+  const size = () => { const c = viewer.container; return [c.clientWidth, c.clientHeight]; };
+  function mount() {
+    if (box?.isConnected) return true;
+    const dc = viewer?.drawer?.canvas; if (!dc?.parentNode) return false;
+    box = document.createElement('div'); box.className = 'cl-drift'; box.setAttribute('aria-hidden', 'true');
+    for (const id of ['far', 'near']) { lay[id] = document.createElement('div'); box.appendChild(lay[id]); }
+    dc.after(box); return true;                                  // 底图画布之上、标记叠加层之下
+  }
+  function build() {
+    anims.forEach(a => a.cancel()); anims = []; for (const id in lay) lay[id].replaceChildren();
+    const [vw, vh] = size(), D = Math.hypot(vw, vh); let s = 0;
+    const nk = vw > vh ? .8 : 1;                                  // 横屏同样团数会显得挤：少 20 %
+    for (const [id, L] of Object.entries(LAYERS)) for (let k = 0, n = Math.round(L.n * nk); k < n; k++) {
+      const el = new Image(); el.alt = ''; el.decoding = 'async'; el.src = SPR(s++);
+      const w = D * rnd(...L.size), h = w * AR; el.style.width = w + 'px';
+      const off = (k / n - .5) * D * .95 + rnd(-.06, .06) * D;
+      const cx = vw / 2 + PX * off - w / 2, cy = vh / 2 + PY * off - h / 2, T = D * .6 + w * .5;
+      const op = rnd(...L.op), dur = rnd(...L.dur) * 1000;
+      lay[id].appendChild(el);
+      anims.push(el.animate([
+        { transform: `translate3d(${cx - UX * T}px,${cy - UY * T}px,0)`, opacity: 0 },
+        { opacity: op, offset: .12 }, { opacity: op, offset: .88 },
+        { transform: `translate3d(${cx + UX * T}px,${cy + UY * T}px,0)`, opacity: 0 }], { duration: dur, iterations: Infinity, delay: -((k * .618 + (id === 'near') * .31) % 1) * dur,   /* 黄金比例错相：可见团数稳定 */ easing: 'linear' }));
+    }
+  }
+  function pan() {                                                // 视差：按底图屏幕位移累加；超出半屏时淡出重排（不跳）
+    if (!shown) return;
+    const vp = viewer.viewport, c = vp.getCenter(true), sc = size()[0] / vp.getBounds(true).width;
+    if (last) { const dx = -(c.x - last.x) * sc, dy = -(c.y - last.y) * sc;
+      for (const id in LAYERS) { const a = acc[id], p = LAYERS[id].par; a[0] += dx * p; a[1] += dy * p; lay[id].style.transform = `translate3d(${a[0]}px,${a[1]}px,0)`; } }
+    last = c;
+    const [vw, vh] = size();
+    if (!box.classList.contains('fade') && (Math.abs(acc.near[0]) > vw * .6 || Math.abs(acc.near[1]) > vh * .6)) reset(true);
+  }
+  function reset(soft) {
+    const apply = () => { acc = { far: [0, 0], near: [0, 0] }; last = null; for (const id in lay) lay[id].style.transform = ''; if (shown) build(); box.classList.remove('fade'); };
+    if (soft) { box.classList.add('fade'); setTimeout(apply, 300); } else apply();
+  }
+  function hide() { shown = false; anims.forEach(a => a.cancel()); anims = []; if (box) { for (const id in lay) lay[id].replaceChildren(); box.hidden = true; } }
+  function sync() {
+    if (!viewer) return;
+    if (!hooked) { hooked = true;
+      viewer.addHandler('animation', pan); viewer.addHandler('viewport-change', pan);
+      let rt; viewer.addHandler('resize', () => { clearTimeout(rt); rt = setTimeout(() => shown && reset(false), 150); });
+      viewer.addHandler('close', () => { if (cur == null) hide(); });
+    }
+    if (!want()) return hide();
+    if (!shown && mount()) { shown = true; box.hidden = false; reset(false); }
+  }
+  new MutationObserver(() => setTimeout(sync, 0)).observe(document.body, { attributes: true, attributeFilter: ['data-map'] });
+  document.addEventListener('change', e => { if (e.target?.id === 'tgAltBox') setTimeout(sync, 0); });
+  RMq.addEventListener?.('change', sync);
+  document.addEventListener('visibilitychange', () => anims.forEach(a => document.hidden ? a.pause() : a.play()));
+
+  // ---------- 切层转场 ----------
+  let cover = null, white = null, coverEls = [], busy = false, skip = false;
+  const ROWS = 9, PER = 3;
+  const done = a => a.finished.catch(() => {}), wait = ms => new Promise(r => setTimeout(r, ms));
+  function mkCover() {
+    if (cover) return;
+    cover = document.createElement('div'); cover.id = 'clCover'; cover.setAttribute('aria-hidden', 'true');
+    white = document.createElement('div'); white.className = 'w'; cover.appendChild(white);
+    cover.addEventListener('pointerdown', () => { skip = true; cover.getAnimations({ subtree: true }).forEach(a => a.finish()); });
+    $('#stage').appendChild(cover);
+  }
+  const sprites = () => { if (!coverEls.length) for (let k = 0; k < ROWS * PER; k++) { const el = new Image(); el.alt = ''; el.src = SPR(k); cover.appendChild(el); coverEls.push(el); } return coverEls; };
+  const drawn = ms => new Promise(r => { const t = setTimeout(r, ms); viewer.addOnceHandler('tile-drawn', () => { clearTimeout(t); setTimeout(r, 40); }); });
+  async function fadeSwitch(run) {                                // 省流：白幕淡入 280 ms → 换层 → 淡出 420 ms（无精灵）
+    cover.classList.add('run');
+    const a = white.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 280, easing: 'ease-in', fill: 'forwards' }); await done(a);
+    await run(); await drawn(skip ? 300 : 1200);
+    const b = white.animate([{ opacity: 1 }, { opacity: 0 }], { duration: skip ? 1 : 420, easing: 'ease-out', fill: 'forwards' }); await done(b);
+    a.cancel(); b.cancel(); cover.classList.remove('run');
+  }
+  async function cocSwitch(run) {
+    const [vw, vh] = size(), D = Math.hypot(vw, vh), els = sprites(), anims = [];
+    cover.classList.add('run');
+    els.forEach((el, k) => {
+      const row = Math.floor(k / PER), j = k % PER, w = D * rnd(.5, .68), h = w * AR; el.style.width = w + 'px';
+      const off = (row / (ROWS - 1) - .5) * D + rnd(-.02, .02) * D, along = (j - (PER - 1) / 2) * D * .38 + rnd(-.06, .06) * D;
+      const cx = vw / 2 + PX * off + UX * along - w / 2, cy = vh / 2 + PY * off + UY * along - h / 2;
+      const side = row % 2 ? 1 : -1, T = D * rnd(.55, .8), sp = Math.sign(off || 1) * D * rnd(.4, .55);
+      el._p = [cx, cy, sp];
+      anims.push(el.animate([{ transform: `translate3d(${cx + side * UX * T}px,${cy + side * UY * T}px,0)`, opacity: 0 }, { opacity: 1, offset: .5 },
+        { transform: `translate3d(${cx}px,${cy}px,0)`, opacity: 1 }], { duration: 420, delay: Math.abs(row - (ROWS - 1) / 2) * 8 + j * 10, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' }));
+    });
+    anims.push(white.animate([{ opacity: 0 }, { opacity: 0, offset: .45 }, { opacity: 1 }], { duration: 500, easing: 'ease-in', fill: 'forwards' }));
+    await Promise.all(anims.map(done));
+    await run(); await Promise.all([drawn(skip ? 300 : 1200), wait(skip ? 0 : 150)]);   // 全白里换层，等新底图第一张瓦片
+    const out = els.map(el => { const [cx, cy, sp] = el._p; return el.animate([{ transform: `translate3d(${cx}px,${cy}px,0)`, opacity: 1 }, { opacity: .9, offset: .35 },
+      { transform: `translate3d(${cx + PX * sp}px,${cy + PY * sp}px,0)`, opacity: 0 }], { duration: skip ? 1 : 600, easing: 'cubic-bezier(.45,0,.2,1)', fill: 'forwards' }); });
+    out.push(white.animate([{ opacity: 1 }, { opacity: 0, offset: .4 }, { opacity: 0 }], { duration: skip ? 1 : 600, easing: 'ease-out', fill: 'forwards' }));
+    await Promise.all(out.map(done)); out.concat(anims).forEach(a => a.cancel()); cover.classList.remove('run');
+  }
+  const go0 = go;
+  go = async function (id, ...rest) {                             // 挂点 ①：只包天城层与层之间的切换，其余原样
+    if (busy || RM() || !viewer || id === cur || !isTC(cur) || !isTC(id)) return go0(id, ...rest);
+    busy = true; skip = false; mkCover();
+    let p; const run = () => (p = go0(id, ...rest));
+    try { await (lean() ? fadeSwitch(run) : cocSwitch(run)); } catch (e) { if (!p) run(); cover.classList.remove('run'); }
+    finally { busy = false; }
+    return p;
+  };
+  window.__clouds = { sync, state: () => ({ shown, drift: anims.length, busy, rm: RM(), lean: lean(), n: box ? box.querySelectorAll('img').length : 0,
+    visible: box && shown ? [...box.querySelectorAll('img')].filter(el => { const r = el.getBoundingClientRect(), s = viewer.container.getBoundingClientRect();
+      return +getComputedStyle(el).opacity > .15 && r.right > s.left + r.width * .3 && r.left < s.right - r.width * .3 && r.bottom > s.top + r.height * .3 && r.top < s.bottom - r.height * .3; }).length : 0 }) };
+})();
 </script>
 </body>
 </html>
