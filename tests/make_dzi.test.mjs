@@ -1,11 +1,12 @@
 // C-8：make_dzi 原子切片 + 校验（层数 / 瓦片数 / extent_m 宽高比）；已提交的底图金字塔都完整
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';   // .pathname 会把中文路径百分号编码（主 checkout 在「性能/」下）
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, unlinkSync, readdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const py = (...a) => spawnSync('python3', a, { cwd: ROOT, encoding: 'utf8' });
 const hasPIL = py('-c', 'import PIL').status === 0;
 

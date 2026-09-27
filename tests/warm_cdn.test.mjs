@@ -1,8 +1,9 @@
 // C-11：warm_cdn 只预热运行时文件
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';   // .pathname 会把中文路径百分号编码（主 checkout 在「性能/」下）
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const run = (...a) => execFileSync('bash', ['tools/warm_cdn.sh', 'HEAD', ...a], { cwd: ROOT, encoding: 'utf8' }).trim();
 
 test('warm list excludes non-runtime files, keeps runtime ones', () => {

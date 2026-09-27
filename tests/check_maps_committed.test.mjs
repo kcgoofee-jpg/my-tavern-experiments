@@ -1,11 +1,12 @@
 // C-1：check_maps --committed 看提交树而不是工作区——工作区里有、提交里没有的文件要报错
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';   // .pathname 会把中文路径百分号编码（主 checkout 在「性能/」下）
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const git = (args, env = {}) => execFileSync('git', args, { cwd: ROOT, env: { ...process.env, ...env }, encoding: 'utf8' }).trim();
 const check = (...a) => spawnSync('python3', ['tools/check_maps.py', ...a], { cwd: ROOT, encoding: 'utf8' });
 
