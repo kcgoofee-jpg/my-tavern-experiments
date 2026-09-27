@@ -154,5 +154,5 @@ const TCChars = (() => {
   @media (pointer:coarse),(max-width:640px){#evbar .chpane .chgo{min-height:44px}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   mod().then(loadPrefs);
-  return { portOn, setPortOn(on) { try { localStorage.setItem(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
+  return { color, portOn, setPortOn(on) { try { localStorage.setItem(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
 })();

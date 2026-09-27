@@ -464,6 +464,7 @@
   <label class="tg" id="tgOverlay"><span>国界</span><input type="checkbox" role="switch" id="tgBorders" checked></label>
   <label class="tg" id="tgAlt" hidden data-i18n-title="alt_title" title="高级：换成带下方城市的底图（图更大）"><span>显示下方城市</span><input type="checkbox" role="switch" id="tgAltBox"></label>
   <label class="tg" id="tgRoutes" hidden data-i18n-title="routes_title" title="上层航线（金色虚线）与银冠堡巡逻环（淡蓝点划线）"><span data-i18n="routes">航线</span><input type="checkbox" role="switch" id="tgRoutesBox"></label>
+  <label class="tg" id="tgTrips"><span data-i18n="trips">行程</span><input type="checkbox" role="switch" id="tgTripsBox" checked></label>
   <label class="tg"><span data-i18n="labels">地名</span><input type="checkbox" role="switch" id="tgLabels" checked></label>
   <label class="tg"><span data-i18n="markers">标记</span><input type="checkbox" role="switch" id="tgMarkers" checked></label>
 </div></div>
@@ -1546,6 +1547,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:clock') TCCustom.setClock(e.data);   // 世界时间 → 夜色
     if (e.data?.type === 'eden-map:outfit') TCCustom.setOutfit(e.data);   // 主角着装 → 本人地点卡
     if (e.data?.type === 'eden-map:fly') TCCustom.flyTo(e.data.target);   // v0.9.5 EdenMap.flyTo(target)
+    if (e.data?.type === 'eden-map:trips') TCTrips.set(e.data.items || []);   // v0.9.5 最近的行程（卡内脚本从每楼的地点和人物标签推出）
     if (e.data?.type === 'eden-map:toast') TCCustom.toast(e.data.items || []);   // 剧情改名 / 用途的一次性提示
     if (e.data?.type === 'eden-map:selfcheck') { selfCheck = e.data; renderSelfCheck(); }   // 卡内脚本的启动自检结果（E6）   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
     // 面板关闭时休眠：关掉底图（释放已解码的瓦片），脚本与数据留着；再打开时唤醒，重新打开当前地图

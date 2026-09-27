@@ -28,6 +28,21 @@ async function run(name, preset) {
     await vf.evaluate(() => { closeCard(); document.getElementById('here').value = '天城·中层·天城执法局总局前往某个没写过的地方'; go('tc_mid'); }); await B.wait(2500);
     const e = await vf.evaluate(() => ({ arc: document.querySelectorAll('svg.trip').length, lab: document.querySelector('.tripin.edge b')?.textContent }));
     rep.check(`${name} 终点认不出：起点「前往 …」，不画弧`, e.arc === 0 && /^前往 /.test(e.lab || ''), JSON.stringify(e));
+    // 最近的行程：原文里的 JSONPatch（MVU 那一楼拿不到地点时）+ 人物标签
+    const JP = pl => `<UpdateVariable><JSONPatch>[{"op":"replace","path":"/世界/当前地点","value":"${pl}"}]</JSONPatch></UpdateVariable>`;
+    await H.setMsgs([{ message_id: 10, message: JP('天城·中层·天城执法局总局') + '<span style="display:none">⌖人物 甲 @ 中层·天城执法局总局</span>' },
+      { message_id: 12, message: '坐悬浮车离开。' + JP('天城·中层·辉光大教堂') + '<span style="display:none">⌖人物 甲 @ 中层·辉光大教堂</span>' }], { 世界: { 当前地点: '' } });
+    await p.evaluate(() => { window.__stub.here = ''; window.__fire('r'); }); await B.wait(1200);
+    await vf.evaluate(() => { document.getElementById('here').value = ''; closeCard(); go('tc_mid'); }); await B.wait(2500);
+    const v = await H.vars(), tv = await vf.evaluate(() => ({ items: TCTrips.items, me: document.querySelectorAll('svg.trip.hist.m-air:not(.ch)').length, ch: document.querySelectorAll('svg.trip.hist.ch').length }));
+    rep.check(`${name} 行程：玩家一段（悬浮车 → 空中虚线弧）+ 人物一段（细线），存进聊天变量 eden_map.行程`, tv.me === 1 && tv.ch === 1 && v?.eden_map?.行程?.length === 2 && !('stat_data' in v), JSON.stringify({ tv, n: v?.eden_map?.行程?.length }));
+    await jpg(p, `tr_${name}_history`);
+    const card = await vf.evaluate(() => { document.querySelector('.tripin.hit')._open(); return document.querySelector('#card .sub').textContent; });
+    rep.check(`${name} 点一段行程：卡片写楼层与方式`, /第 1[02] 楼/.test(card) && /空中|方式未知/.test(card), card);
+    await vf.evaluate(() => { closeCard(); document.querySelector('#tgTripsBox').click(); }); await B.wait(200);
+    const off = await vf.evaluate(() => document.querySelectorAll('svg.trip.hist').length);
+    await vf.evaluate(() => document.querySelector('#tgTripsBox').click());
+    rep.check(`${name} 图层菜单「行程」关掉即隐藏（默认开）`, off === 0);
     rep.check(`${name} 无脚本错误`, !errs(P).length, errs(P).slice(0, 3).join(' | '));
   } catch (e) { rep.check(`${name} 运行`, false, e.message.split('\n')[0]); }
   finally { await P.close(); }

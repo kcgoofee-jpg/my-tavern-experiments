@@ -318,7 +318,7 @@
   const onMsg = e => {
     if (e.source !== frame.contentWindow) return;
     if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
-    if (e.data?.type === 'eden-map:ready') { alive = true; sentClock = sentOutfit = null; knowRooms(); sendCheck(); sendCustom(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:ready') { alive = true; sentClock = sentOutfit = null; knowRooms(); sendCheck(); sendCustom(); sendTrips(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
     if (e.data?.type === 'eden-map:ready' && flyQ) { const q = flyQ; flyQ = null; setTimeout(() => inner()?.flyTo?.(q), 0); }   // EdenMap.flyTo 排队的
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
     if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
@@ -409,7 +409,7 @@
     const fresh = events.filter(e => e.last > seen && e.tier !== 'fade').length;
     badge.hidden = !fresh; badge.textContent = fresh > 9 ? '9+' : fresh;
     if (fresh) tipOnce();
-    customTags(msgs);
+    customTags(msgs); computeTrips(msgs);
     inject([summarize(events, layerOf(getHere())), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : ''].filter(Boolean).join('\n'));
     if (!panel.hidden && alive) sendEvents();
     if (subs.events.size) { const sig = floorNow + '|' + events.map(e => e.id + ':' + e.last + ':' + e.tier).join(); if (sig !== emEvSig) { emEvSig = sig; emit('events', { items: events.map(e => ({ ...e })), floor: floorNow, hereLayer: layerOf(here) }); } }
@@ -433,6 +433,22 @@
     post({ type: 'eden-map:events', v: 1, floor: floorNow, hereLayer: EVM ? EVM.layerOf(here) : '', items, fly });
     if (!panel.hidden) { seen = floorNow; try { localStorage.setItem(chatKey(), String(seen)); } catch (e) {} badge.hidden = true; }
   }
+  // v0.9.5 行程：最近 30 楼每楼的地点（MVU 那一楼的变量，拿不到就读原文里的 JSONPatch）+ 人物标签 → 最近 5 段（玩家、人物各 5），存进 eden_map.行程
+  let TRm = null, trips = [], tripSig = ''; import(SELF + 'tavern/trips.mjs').then(m => { TRm = m; }).catch(() => {});
+  function computeTrips(msgs) {
+    if (!TRm || !MV || !custom || customChat !== chatId()) return;
+    const kw = TRm.keywords(TRm.DEFAULT_KEYWORDS, false), recentMsgs = msgs.slice(-30), seq = [], tags = [];
+    for (const m of recentMsgs) {
+      let st = null; try { st = Mvu.getMvuData({ type: 'message', message_id: m.floor })?.stat_data || null; } catch (e) {}
+      const place = String(MV.get(st, '世界.当前地点') ?? '').trim() || TRm.patchPlace(m.text);
+      seq.push({ floor: m.floor, place, text: m.text.slice(0, 4000), time: String(MV.get(st, '世界.当前时刻') ?? '') });
+      if (CHM) for (const c of CHM.parseChars(m.text)) tags.push({ floor: m.floor, name: c.name, place: c.place, text: m.text.slice(0, 4000) });
+    }
+    const tr = s => hereMod?.parseTransit?.(s) || null;
+    const next = TRm.recent([...TRm.playerTrips(seq, tr, kw), ...TRm.charTrips(tags, kw)], 5);
+    const sig = JSON.stringify(next); if (sig === tripSig) return; tripSig = sig; trips = next; saveRoot(); sendTrips();
+  }
+  function sendTrips() { if (alive) post({ type: 'eden-map:trips', items: trips }); }
   function sendChars() { if (alive) post({ type: 'eden-map:chars', v: 1, floor: floorNow, items: chars, rosters: roster, rep, stageOrder, portraits }); }
   // v0.9.5 名册（只读）：在场 / 成员 / 目标三张表的名字、身份、阶段；主角声望。阶段的先后顺序从卡自带的脚本 / 正则文本里找（每个聊天找一次）
   let roster = null, rep = null, stageOrder = null, stageChat = null, portraits = {}, portChat = null;
@@ -493,7 +509,7 @@
     }
     try { localStorage.setItem(lsCustomKey(), JSON.stringify(root)); return true; } catch (e) { return false; }
   }
-  const saveRoot = () => writeVars({ 自定义: custom, 标签楼: tagFloor, 标签记录: tagLog, 楼层指纹: tagSeen }, customChat);
+  const saveRoot = () => writeVars({ 自定义: custom, 标签楼: tagFloor, 标签记录: tagLog, 楼层指纹: tagSeen, 行程: trips }, customChat);
   // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
   // 只在这个聊天还没有 eden_map.自定义 时迁移一次（全局旧键不改名，靠这个条件避免每个聊天、每次刷新重复并入）
   async function migrateOld() {
@@ -745,7 +761,7 @@
     try { await waitGlobalInitialized('Mvu'); eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, () => { pushSoon(); recomputeSoon(); }); } catch (e) {}   // MVU 人物表也会变（人物栏）
     eventOn(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     eventOn(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    eventOn(tavern_events.CHAT_CHANGED, () => { injected = null; loadSeen(); custom = null; loadCustom().then(() => recomputeSoon(300)); });
+    eventOn(tavern_events.CHAT_CHANGED, () => { injected = null; trips = []; tripSig = ''; loadSeen(); custom = null; loadCustom().then(() => recomputeSoon(300)); });
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED']) if (tavern_events[k]) eventOn(tavern_events[k], () => recomputeSoon());   // 新楼、改楼、重 roll、删楼：重算
     if (tavern_events.GENERATION_AFTER_COMMANDS) eventOn(tavern_events.GENERATION_AFTER_COMMANDS, () => { clearTimeout(evT); recompute(); });   // 生成前同步一次，注入的是最新态势
     push(); loadSeen(); recompute();
