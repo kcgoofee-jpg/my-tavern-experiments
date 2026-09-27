@@ -35,7 +35,7 @@
       "title": "世界", "title_en": "World", "kind": "world", "base": "art/world.dzi",
       "overlay": { "type": "dzi", "src": "art/borders.dzi", "label": "国界", "label_en": "Borders" }
     },
-    "tc_upper": {
+    "tc_upper": { "econ": "以太元 Æ（植入芯片 / 个人终端无接触）；上层全面免税", "econ_en": "Aether credits Æ (implant chip / personal terminal, contactless); the upper tier is tax-free",
       "view": { "focus": "eden", "width_m": 1700, "min_width_m": 60, "extent_m": [3000, 1875], "phone": [0.16, 0.08, 0.8, 0.78] },
       "title": "天城 · 上层", "title_en": "Tiancheng · Upper Tier", "parent": "world", "group": "tiancheng",
       "layer": { "name": "上层", "sub": "悬浮庄园区", "alt": "800–1500 m", "alt_en": "800–1500 m", "name_en": "Upper", "sub_en": "Floating Estates" },
@@ -65,7 +65,7 @@
         "y_estate": {"name": "「Y」的庄园", "sub": "全天城最大 · 从不露面", "name_en": "Estate of \"Y\"", "sub_en": "Largest in the city · owner never seen", "tag": "inf", "layer_src": "repo-inferred", "src": "庄园主社交：全天城最大、从不露面、不入联盟的庄园主。卡未写具体位置：放在上层为仓库自设（仓库推断，2026-09-28）", "alias": ["「Y」的庄园", "Y的庄园", "Y 的庄园"]}
       }
     },
-    "tc_mid": {
+    "tc_mid": { "econ": "以太元 Æ（植入芯片 / 个人终端无接触）；资产持有税按阶梯", "econ_en": "Aether credits Æ (implant chip / personal terminal, contactless); tiered asset-holding tax",
       "view": { "focus": "enforcement_hq", "width_m": 2000, "min_width_m": 60, "extent_m": [3000, 1875], "phone": [0.03, 0.14, 0.86, 0.74] },
       "title": "天城 · 中层", "title_en": "Tiancheng · Middle Tier", "parent": "world", "group": "tiancheng",
       "layer": { "name": "中层", "sub": "钢铁霓虹区", "alt": "50–800 m", "alt_en": "50–800 m", "name_en": "Middle", "sub_en": "Steel & Neon" },
@@ -119,7 +119,7 @@
         "storm_hall": {"name": "风暴殿", "sub": "帝国最高战力 · 听命于议会", "name_en": "Storm Hall", "sub_en": "Top-tier force under the Council", "tag": "inf", "layer_src": "repo-inferred", "src": "奥伦帝国：由全部天灾级强者组成的最高战力机构，听命于天城议会。卡未写具体位置：放在中层核心区为仓库自设（仓库推断，2026-09-28）", "alias": ["风暴殿"]}
       }
     },
-    "tc_low": {
+    "tc_low": { "econ": "以太元 Æ；实体货币只在黑市（灰票，匿名芯片卡）；日薪约 80–150Æ；商品进中层缴 5% 入境税", "econ_en": "Aether credits Æ; cash only in the black market (grey scrip, anonymous chip cards); day wage about 80–150Æ; goods entering the middle tier pay 5% entry tax",
       "view": { "focus": "well7", "width_m": 1600, "min_width_m": 60, "extent_m": [3000, 1875], "phone": [0.08, 0.16, 0.82, 0.72] },
       "title": "天城 · 下层", "title_en": "Tiancheng · Lower Tier", "parent": "world", "group": "tiancheng",
       "layer": { "name": "下层", "sub": "地基区", "alt": "地面至 −200 m", "name_en": "Lower", "sub_en": "Foundations", "alt_en": "Ground to −200 m" },
@@ -127,7 +127,7 @@
       "focus": "well7",
       "districts": ["下层地基区", "下层_地基区", "地基区", "地基", "贫民区", "棚户", "城寨", "工业区", "下城", "廉价酒馆", "地下格斗", "非法赌场", "二手市场", "二手衣物市场", "工厂", "Foundations", "Slums"],
       "markers": {
-        "well7": { "name": "7 号井黑市", "sub": "只收灰票", "name_en": "Well 7 Black Market", "sub_en": "Grey scrip only", "cls": "capital", "tag": "set", "link": { "map": "tc_mid", "marker": "checkpoint_c", "label": "上到中层 · C 区检查点", "label_en": "Up to Zone C Checkpoint · Middle" },
+        "well7": { "name": "7 号井黑市", "sub": "只收灰票", "econ": "只收灰票（匿名芯片卡，实体货币）；查询费 15 灰票", "econ_en": "Grey scrip only (anonymous chip cards, physical cash); lookup fee 15 scrip", "name_en": "Well 7 Black Market", "sub_en": "Grey scrip only", "cls": "capital", "tag": "set", "link": { "map": "tc_mid", "marker": "checkpoint_c", "label": "上到中层 · C 区检查点", "label_en": "Up to Zone C Checkpoint · Middle" },
           "src": "天城·下层：「地基区 7 号井 · 只收灰票」；中层 C 区检查点的通道落在这里（井口与市集布局为推断）。井里的「老 K 杂货」只收灰票，黑市终端的主机名是「井下-07」；灰票是匿名芯片卡，天城只有下层黑市还用实体货币",
           "alias": ["7号井", "7 号井", "七号井", "黑市", "灰票", "老K杂货", "老 K 杂货", "井下-07"] , "link3d": {"map": "lm_well7", "label": "查看三维模型", "label_en": "View 3D model"} },
         "blood_mill": { "name": "血肉磨坊", "sub": "黑拳场", "name_en": "The Bloodmill", "sub_en": "Underground fight pit", "tag": "set",
