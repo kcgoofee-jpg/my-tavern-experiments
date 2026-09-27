@@ -12,9 +12,9 @@
 | 3 | P1 | 每次重算的代价：重取 ≤81 楼 + `computeTrips` 逐楼 `getMvuData` + 第二次 `parseChars` + 每条 2×`slice(0,4000)`；`pushMvu` 再 `refreshVarMap` 一次；`stageOrderFor` 只在成功时记忆。`GENERATION_AFTER_COMMANDS` 在发送路径上同步跑 | `eden-map.js` `recompute/computeTrips/pushMvu/stageOrderFor` | ⏳ 未修（见 README 遗留 1） |
 | 4 | P2 | `sendChars` 无变化检测 + `TCChars.set()` 无签名判断 → 面板开着时覆盖层与事态横条每 4 秒重建一次 | `eden-map.js`、`map/chars.js` | ✅ 宿主侧已修（按 `charSig` 才发）；查看器侧见 viewer_ui 遗留 |
 | 5 | P2 | `100dvh` 没有 `vh` 回退：不支持的引擎里 `top` 整条失效，`position: fixed` 回落到静态位置 → 按钮 / 面板可能跑到聊天末尾 | `eden-map.js` 58 / 83 / 145 / 769 | ✅ 已修 |
-| 6 | P2 | 查看器不校验 `e.source`/`e.origin`，宿主一律 `targetOrigin '*'`：同源的其他脚本能改地图显示状态，宿主也会把地点 / 聊天 id / 自定义内容投给任何进到这个 iframe 的文档 | `viewer.html` 收消息处、`eden-map.js` `post` | ⏳ 未修（先确认 iframe 是否 opaque origin） |
+| 6 | P2 | 查看器不校验 `e.source`/`e.origin`，宿主一律 `targetOrigin '*'`：同源的其他脚本能改地图显示状态，宿主也会把地点 / 聊天 id / 自定义内容投给任何进到这个 iframe 的文档 | `viewer.html` 收消息处、`eden-map.js` `post` | ✅ 子页只认 parent、下发用 self.origin（2026-09-28；宿主侧 eden-map.js targetOrigin 仍为 *）（先确认 iframe 是否 opaque origin） |
 | 7 | P2 | 裸人物标签把后面的叙述吃进地点：`⌖人物 雷恩 @ 下层·7号井，他推开铁门…` → 地点含整句；两个标签挨着写会吞掉后一个并留下「和」 | `characters.mjs` `parseChars` | ✅ 已修 + 单测 |
-| 8 | P2 | `cardTexts()` 假定 `getCharData` / `getTavernRegexes` 同步；真返回 Promise 时原作头像与阶段点静默失效，而宿主桩是同步的、测不出来 | `eden-map.js` `cardTexts/portraitsFor/stageOrderFor` | ⏳ 未修 |
+| 8 | P2 | `cardTexts()` 假定 `getCharData` / `getTavernRegexes` 同步；真返回 Promise 时原作头像与阶段点静默失效，而宿主桩是同步的、测不出来 | `eden-map.js` `cardTexts/portraitsFor/stageOrderFor` | ✅ thenable 处理 + roster095 异步用例（2026-09-28） |
 | 9 | P2 | `docs/map-events.md` 写了代码里没有的「处置中」三态与「处置中停止脉动」；无编号时的去重键写成「类型+地点+标题」（代码是「类型+层+地点」） | `docs/map-events.md` | ✅ 已改文档 |
 | 10 | P2 | 头像额度：文档写「约 300 KB / 160 px 压缩」，代码是 160 000 字符且只在查看器路径压缩；面板关着时 `EdenMap.setAvatar` 对 200 KB 的图直接返回 false | `docs/content-compat.md`、`characters.mjs`、`eden-map.js`、`map/chars.js` | ✅ 已修（两条路径都压）+ 文档按实改 |
 | 11 | P2 | 聊天变量写入失败后悄悄退回 localStorage，而 `readVars` 只读变量：UI 说保存成功、下次读回旧值，两个存储会永久分叉 | `eden-map.js` `readVars/writeVars/customChanged` | ⏳ 未修 |
