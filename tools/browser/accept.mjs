@@ -72,11 +72,13 @@ try {
       { floor: 100, text: '⌖火灾｜下层·7号井黑市｜3｜仓库起火' },
       { floor: 101, text: '⌖盗窃｜中层·霓虹街｜2｜珠宝店失窃' },
     ], e => JSON.stringify(e).includes('7号井'));
+    await B.wait(800); rep.check('事态到达不自动飞（用户 2026-09-28）', await p.evaluate(() => cur) === 'tc_upper', '');
+    await p.evaluate(() => TCEvents.flyTo(TCEvents.events.find(e => JSON.stringify(e).includes('7号井')).id));   // 模拟点事件
     await p.waitForFunction(() => cur === 'tc_low' && document.querySelector('#card') && !document.querySelector('#card').hidden, null, { timeout: 15000 }).catch(() => {});
     await B.wait(1200);
     const s = await B.viewerState(p);
     await B.shot(p, OUT, 'desk_fly');
-    rep.check('事态飞行（上层 → 下层 7 号井，开卡片）', s.map === 'tc_low' && s.card != null, `解析 ${items.length} 条；落在 ${s.map}；卡片「${s.card ?? '无'}」`);
+    rep.check('点事件飞行（上层 → 下层 7 号井，开卡片）', s.map === 'tc_low' && s.card != null, `解析 ${items.length} 条；落在 ${s.map}；卡片「${s.card ?? '无'}」`);
   });
 
   if (on('dead')) await step('死区（桌面）', async () => {

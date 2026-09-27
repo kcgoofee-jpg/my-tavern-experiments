@@ -12,8 +12,8 @@ async function run(name, preset, scheme = 'dark') {
   const P = await B.newPage(preset, { tier: 'std', scheme });
   try {
     await P.ctx.addInitScript(() => { if (window.top === window) window.__edenSplashCap = 8; });
-    // 庄园页面故意慢 20 秒：看进度卡在 100 以下
-    await P.page.route('**/estate/vendor/three.module.min.js', async r => { await new Promise(x => setTimeout(x, 20000)); r.continue().catch(() => {}); });
+    // 云图故意慢 20 秒：看进度卡在 100 以下
+    await P.page.route('**/art/clouds/puff1.png', async r => { await new Promise(x => setTimeout(x, 20000)); r.continue().catch(() => {}); });
     const H = await openHost(P, { here: '天城·中层·天城执法局总局', msgs: [], stat: {}, chat: 's95-' + name, splash: true });
     const p = P.page;
     await p.waitForSelector('#eden-map-root .em-splash', { timeout: 15000 });

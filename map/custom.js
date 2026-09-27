@@ -275,8 +275,6 @@ const TCCustom = (() => {
   async function flyTo(target) {
     const M = await pk().catch(() => null), t = M?.normTarget(target); if (!t || typeof REG === 'undefined' || !REG) return false;
     if (typeof closeCard === 'function') closeCard();
-    // 用户要看别处：这一次不再被「自动跳到当前地点」拉回去（面板刚打开 / 唤醒时宿主会再推一次当前地点）
-    try { hereFresh = false; lastJump = document.getElementById('here')?.value || ''; } catch (e) {}
     if (t.character) {
       const norm = s => String(s || '').trim().toLowerCase(), want = norm(MV?.findKey(data, t.character) || t.character);
       const c = typeof TCChars !== 'undefined' && TCChars.items.find(c => norm(c.name) === want); if (!c) return false;

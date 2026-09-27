@@ -93,7 +93,6 @@ const TCEvents = (() => {
     if (Array.isArray(d.items)) { items = d.items; floor = d.floor || 0; }
     else if (Array.isArray(d.list)) { const m = await mod(); if (!m) return;
       floor = d.last || 0; items = m.collect(d.list.map(o => ({ floor: o.mes ?? floor, text: tagText(o) })), floor); }
-    if (d.fly) flyId = d.fly;
     // 读屏播报：新出现的进行中事件（每条只播一次）
     const fresh = all().filter(e => live(e) && (e.isNew || (before.size && !before.has(e.id))) && !said.has(e.id));
     for (const e of fresh) said.add(e.id);
