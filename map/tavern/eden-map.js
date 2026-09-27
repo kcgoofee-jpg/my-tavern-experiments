@@ -397,7 +397,7 @@
     badge.hidden = !fresh; badge.textContent = fresh > 9 ? '9+' : fresh;
     if (fresh) tipOnce();
     customTags(msgs);
-    inject([summarize(events, layerOf(getHere())), CHM ? CHM.summarizeChars(chars) : '', MV && custom ? MV.summarizeCustom(custom) : ''].filter(Boolean).join('\n'));
+    inject([summarize(events, layerOf(getHere())), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : ''].filter(Boolean).join('\n'));
     if (!panel.hidden && alive) sendEvents();
     if (subs.events.size) { const sig = floorNow + '|' + events.map(e => e.id + ':' + e.last + ':' + e.tier).join(); if (sig !== emEvSig) { emEvSig = sig; emit('events', { items: events.map(e => ({ ...e })), floor: floorNow, hereLayer: layerOf(here) }); } }
   }
@@ -455,7 +455,8 @@
     if (varsOk()) { try { const v = getVariables({ type: 'chat' })?.[MV.VAR_ROOT]; return v && typeof v === 'object' ? v : {}; } catch (e) {} }
     try { return JSON.parse(localStorage.getItem(lsCustomKey()) || '{}') || {}; } catch (e) { return {}; }
   }
-  async function writeVars(root) {
+  async function writeVars(root, chat) {
+    if (chat !== chatId()) return false;   // 换聊天了：这次写入作废，不写进别的聊天
     if (varsOk()) {
       try {
         if (fnOk('updateVariablesWith')) await updateVariablesWith(v => { v[MV.VAR_ROOT] = root; return v; }, { type: 'chat' });
@@ -466,8 +467,9 @@
     }
     try { localStorage.setItem(lsCustomKey(), JSON.stringify(root)); return true; } catch (e) { return false; }
   }
-  const saveRoot = () => writeVars({ 自定义: custom, 标签楼: tagFloor });
+  const saveRoot = () => writeVars({ 自定义: custom, 标签楼: tagFloor, 标签记录: tagLog, 楼层指纹: tagSeen }, customChat);
   // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
+  // 只在这个聊天还没有 eden_map.自定义 时迁移一次（全局旧键不改名，靠这个条件避免每个聊天、每次刷新重复并入）
   async function migrateOld() {
     const H = await hx().catch(() => null), st = store(); if (!H || !st) return false;
     let any = false;
@@ -483,29 +485,33 @@
     if (!MV) return;
     const id = chatId(); customChat = id;
     const v = readVars(); custom = MV.normCustom(v.自定义); tagFloor = Number.isFinite(+v.标签楼) && v.标签楼 !== null ? +v.标签楼 : -1;
-    if (await migrateOld()) await saveRoot();
+    tagLog = Array.isArray(v.标签记录) ? v.标签记录.filter(r => r && Number.isFinite(r.floor) && typeof r.key === 'string').slice(-30) : [];
+    tagSeen = v.楼层指纹 && typeof v.楼层指纹 === 'object' ? { ...v.楼层指纹 } : {};
+    if (v.自定义 === undefined) { const mig = await migrateOld(); if (customChat !== id) return; if (mig) await saveRoot(); }
     if (customChat !== id) return;
     customChanged(false);
   }
   function customChanged(save = true) {
     if (save) saveRoot();
     sendCustom(); emit('custom', MV.normCustom(custom)); recomputeSoon(50);
-    if (custom?.同步世界书) syncWb().catch(e => console.warn('[eden-map] 同步世界书失败', e));
+    if (custom?.同步世界书 || wbState) syncWb(!!custom?.同步世界书).catch(e => console.warn('[eden-map] 同步世界书失败', e));
   }
-  function sendCustom() { if (alive && custom) post({ type: 'eden-map:custom', data: custom, vars: varsOk(), wb: wbOk() }); flushToasts(); }
+  function sendCustom() { if (alive && custom) post({ type: 'eden-map:custom', data: custom, vars: varsOk(), wb: wbOk(), wbState }); flushToasts(); }
   const wbOk = () => fnOk('createOrReplaceWorldbook') || fnOk('createWorldbook');
   let wbState = '';
-  async function syncWb() {
+  // 世界书按聊天分开（MV.wbName(聊天 id)），不然绑定了同一本的聊天会互相注入；关掉同步时把条目停用（不删世界书）
+  async function syncWb(on = true) {
     if (!wbOk()) { wbState = 'noapi'; return false; }
-    const content = MV.wbContent(custom);
-    const entry = { name: MV.WB_ENTRY, enabled: !!content, strategy: { type: 'constant', keys: [] }, position: { type: 'after_character_definition', order: 903 }, content: content || '（空）',
+    const content = MV.wbContent(custom), WBN = MV.wbName(customChat);
+    const entry = { name: MV.WB_ENTRY, enabled: on && !!content, strategy: { type: 'constant', keys: [] }, position: { type: 'after_character_definition', order: 903 }, content: content || '（空）',
       recursion: { prevent_incoming: true, prevent_outgoing: true } };
-    if (fnOk('createOrReplaceWorldbook')) await createOrReplaceWorldbook(MV.WB_NAME, [entry]); else await createWorldbook(MV.WB_NAME, [entry]);
+    if (fnOk('createOrReplaceWorldbook')) await createOrReplaceWorldbook(WBN, [entry]); else await createWorldbook(WBN, [entry]);
+    if (!on) { wbState = ''; sendCustom(); return true; }
     // 绑定：当前聊天没有聊天世界书时绑定到这个聊天；已有别的就不动（在地图设置里提示手动启用）
     let bound = false;
     try { const cur = fnOk('getChatWorldbookName') ? getChatWorldbookName('current') : null;
-      if (cur === MV.WB_NAME) bound = true; else if (!cur && fnOk('rebindChatWorldbook')) { await rebindChatWorldbook('current', MV.WB_NAME); bound = true; } } catch (e) {}
-    if (!bound) try { bound = (fnOk('getGlobalWorldbookNames') && getGlobalWorldbookNames().includes(MV.WB_NAME)); } catch (e) {}
+      if (cur === WBN) bound = true; else if (!cur && fnOk('rebindChatWorldbook')) { await rebindChatWorldbook('current', WBN); bound = true; } } catch (e) {}
+    if (!bound) try { bound = (fnOk('getGlobalWorldbookNames') && getGlobalWorldbookNames().includes(WBN)); } catch (e) {}
     wbState = bound ? 'bound' : 'unbound'; sendCustom(); return true;
   }
   // 标签用到的「类」：人物栏里的名字 → 人物；庄园房间 / 区域（maps.json）→ 房间 / 区域；其余当地标
@@ -518,21 +524,41 @@
     if (e?.rooms?.includes(key)) return 'room'; if (e?.areas?.includes(key)) return 'area';
     return 'landmark';
   }
+  // 已用过的标签记在 eden_map.标签记录 [{ floor, key, op, prev }]（最多 30 条），处理过的楼层原文指纹记在 eden_map.楼层指纹 { 楼: 指纹 }（最近 100 楼）。
+  // 某一楼的原文变了（重 roll / 编辑 / 删楼）：先撤销那一楼用过的标签，再按新原文重扫那一楼；比 标签楼 新的楼照常处理。
+  let tagLog = [], tagSeen = {};
+  const hashText = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
   function customTags(msgs) {
     if (!MV || !custom || customChat !== chatId()) return;
     if (floorNow >= 0 && floorNow < tagFloor) tagFloor = floorNow;   // 删过楼：之后的新楼照常处理
-    const r = MV.applyTags(custom, msgs, tagFloor, kindOf);
-    if (r.last === tagFloor && !r.applied.length) return;
-    custom = r.custom; tagFloor = r.last;
-    if (r.applied.length) { toastQ.push(...r.applied.map(MV.tagToast)); customChanged(true); } else saveRoot();
+    const lo = msgs.length ? msgs[0].floor : Infinity, have = new Map(msgs.map(m => [m.floor, m.text]));
+    const changed = new Set(Object.keys(tagSeen).map(Number).filter(f => f >= lo && f <= tagFloor && hashText(have.get(f) ?? '') !== tagSeen[f]));
+    let dirty = false, undone = 0;
+    if (changed.size) {
+      for (const r of tagLog.filter(r => changed.has(r.floor)).reverse()) {   // 倒序撤销：同一项被改过两次时回到最早的值
+        const nx = MV.setCustom(custom, r.key, r.op === 'name' ? { name: r.prev || '' } : { note: r.prev || '' }); if (nx) { custom = nx; undone++; } }
+      tagLog = tagLog.filter(r => !changed.has(r.floor)); dirty = true;
+    }
+    const todo = msgs.filter(m => changed.has(m.floor) || m.floor > tagFloor);
+    const applied = [];
+    for (const m of todo) {
+      const before = MV.normCustom(custom), r = MV.applyTags(custom, [m], m.floor - 1, kindOf);
+      for (const a of r.applied) { const e = before.items[a.key] || {}; tagLog.push({ floor: a.floor, key: a.key, op: a.op, prev: a.op === 'name' ? e.名 || '' : e.用途 || '' }); before.items[a.key] = { ...e, [a.op === 'name' ? '名' : '用途']: a.value }; }
+      custom = r.custom; applied.push(...r.applied); tagSeen[m.floor] = hashText(m.text); dirty = true;
+    }
+    for (const f of changed) if (!have.has(f)) delete tagSeen[f];
+    if (!dirty) return;
+    tagFloor = Math.max(tagFloor, ...todo.map(m => m.floor));
+    tagLog = tagLog.slice(-30); const keep = Object.keys(tagSeen).map(Number).sort((a, b) => b - a).slice(0, 100); tagSeen = Object.fromEntries(keep.map(f => [f, tagSeen[f]]));
+    if (applied.length || undone) { toastQ.push(...applied.map(MV.tagToast)); customChanged(true); } else saveRoot();
   }
   function flushToasts() { if (!alive || !toastQ.length) return; post({ type: 'eden-map:toast', items: toastQ.splice(0) }); }
   const api = Object.freeze({
     // v0.9.3 自定义名称与用途（聊天变量 eden_map.自定义）：key = 标准名（房间 / 区域 / 地标 / 人物）；patch = { name?, note?, kind? }，传 '' 清掉
     async setCustom(key, patch = {}) { if (!MV || !custom) await loadCustom(); if (!MV) return false; await reg(); const k = String(key || '').trim(), r = MV.setCustom(custom, k, { ...patch, kind: patch.kind || custom.items[k]?.类 || kindOf(k) }); if (!r) return false; custom = r; customChanged(true); return true; },
     async removeCustom(key) { if (!MV || !custom) await loadCustom(); if (!MV) return false; const r = MV.removeCustom(custom, MV.findKey(custom, key) || key); if (!r) return false; custom = r; customChanged(true); return true; },
-    async getCustom() { if (!MV || !custom) await loadCustom(); return { ...MV.normCustom(custom), storage: varsOk() ? 'chat' : 'local', worldbook: wbState || null }; },
-    async setWorldbookSync(on) { if (!MV || !custom) await loadCustom(); custom = { ...custom, 同步世界书: !!on }; customChanged(true); if (!on) wbState = ''; return true; },
+    async getCustom() { if (!MV || !custom) await loadCustom(); return { ...MV.normCustom(custom), storage: varsOk() ? 'chat' : 'local', worldbook: wbState ? { name: MV.wbName(customChat), state: wbState } : null }; },
+    async setWorldbookSync(on) { if (!MV || !custom) await loadCustom(); const was = !!custom.同步世界书; custom = { ...custom, 同步世界书: !!on }; if (!on && was && !wbState) wbState = 'off'; customChanged(true); return true; },
     // 旧名字保留（≤ 0.9.2）：房间叫法 = 该房间的自定义显示名
     async setRoomAlias(name, room) { const rooms = roomsKnown || Object.values((await reg())?.maps || {}).find(m => m.kind === 'estate')?.rooms || null;
       if (rooms && (!rooms.includes(String(room).trim()) || rooms.includes(String(name).trim()))) return false; return api.setCustom(room, { name, kind: 'room' }); },
