@@ -2,7 +2,7 @@
 # 构建地图版角色卡：读取 VERSION → 确认标签 map-v<版本> 已存在 → 输出「母畜庄园·地图版 v<版本>.png」并删掉旧版本
 set -euo pipefail
 cd "$(dirname "$0")/.."
-V=$(< VERSION); TAG="map-v$V"
+V=$(< VERSION); TAG=$(python3 -c "import sys; sys.path.insert(0, 'tools'); import verlib; print(verlib.tag_of(sys.argv[1]))" "$V")   # map-v<版本> / 新系列 map-s<n>-v<版本>（tools/verlib.py）
 SRC="$HOME/Library/Application Support/com.tauritavern.client/data/default-user/characters/母畜庄园 Yehehua二创版V1.5.png"
 DIR="$HOME/Downloads/酒馆/角色卡"; OUT="$DIR/母畜庄园·地图版 v$V.png"
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || { echo "缺少标签 $TAG：先 git tag $TAG && git push origin $TAG"; exit 1; }

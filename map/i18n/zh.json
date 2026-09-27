@@ -249,6 +249,7 @@
   "about.ch_local": "本地 / 单独打开",
   "about.line": "线路：{l}",
   "about.check": "检查更新",
+  "about.auto_check": "自动检查更新",
   "about.checking": "检查中…",
   "about.latest": "已是最新（v{v}）",
   "about.new": "有新版 v{v}",

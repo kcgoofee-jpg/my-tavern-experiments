@@ -16,15 +16,18 @@
   ].filter(l => l.enabled !== false);
   const LINE_KEY = 'edenMapLine';
   const swappable = /(^|\.)(jsdelivr\.net|jsdmirror\.com|npmmirror\.com)$/.test(new URL(SELF).host);
-  // 当前版本：gh 标签 map-v<版本>，或 npm 路径里的版本号
-  const VER = (SELF.match(/@map-v([\d.]+)\//) || SELF.match(new RegExp(`/${PKG}/([\\d.]+)/files/`)) || [])[1] || null;
+  // 当前版本：gh 标签 map-v<版本>（系列 1）或 map-s<n>-v<版本>（系列 ≥ 2，版本写成 'S2:0.1.0'），或 npm 路径里的版本号；标签规则见 docs/versioning.md（selfcheck.mjs tagOf 同一套）
+  const VER = (() => { const m = SELF.match(/@map-(?:s(\d+)-)?v([\d.]+)\//); if (m) return m[1] && +m[1] > 1 ? `S${+m[1]}:${m[2]}` : m[2];
+    return (SELF.match(new RegExp(`/${PKG}/([\\d.]+)/files/`)) || [])[1] || null; })();
+  const tagOf = v => { const m = /^S(\d+):(.+)$/.exec(v); return m && +m[1] > 1 ? `map-s${+m[1]}-v${m[2]}` : 'map-v' + (m ? m[2] : v); };
+  const plainVer = v => (v ? String(v).replace(/^S\d+:/, '') : v);
   let line = null; try { line = localStorage.getItem(LINE_KEY); } catch (e) {}
   if (!LINES.some(l => l.key === line)) line = null;
   const baseFor = key => {
     if (!swappable || !key) return SELF;
     const l = LINES.find(x => x.key === key);
-    if (l.url) return VER ? l.url(VER) : SELF;                    // npm 线路：需要知道版本号
-    if (VER) return `https://${l.host}/gh/${REPO}@map-v${VER}/map/`;
+    if (l.url) return VER ? l.url(plainVer(VER)) : SELF;                    // npm 线路：需要知道版本号
+    if (VER) return `https://${l.host}/gh/${REPO}@${tagOf(VER)}/map/`;
     const u = new URL(SELF); u.host = l.host; return u.href;     // 不知道版本（例如指向分支）：只换域名
   };
   let BASE = baseFor(line);
@@ -53,6 +56,14 @@
     padding: 10px 40px 10px 14px; border-radius: 10px; background: var(--em-bg); color: var(--em-ink); border: 1px solid var(--em-accent); box-shadow: 0 6px 20px rgba(0,0,0,.35); font: 12px/1.55 var(--em-font); }
   #${ID} .em-ctoast b { color: var(--em-accent); }
   #${ID} .em-ctoast button { position: absolute; right: 4px; top: 4px; width: 44px; height: 44px; border: 0; background: none; color: var(--em-muted); font: 18px/1 system-ui; cursor: pointer; }
+  /* 自动检查更新的提示（v0.9.7）：说明链接 + 「稍后」/「此版本不再提示」 */
+  #${ID} .em-ctoast a { color: var(--em-accent); }
+  #${ID} .em-ctoast.em-upd { bottom: auto; top: calc(env(safe-area-inset-top) + 12px); }
+  #${ID} .em-ctoast.em-force { border-color: var(--em-alert); }
+  #${ID} .em-ctoast.em-force > b { color: var(--em-alert); }
+  #${ID} .em-ctoast .em-acts { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  #${ID} .em-ctoast .em-acts button { position: static; width: auto; height: 32px; padding: 0 12px; border: 1px solid var(--em-line-2); border-radius: 8px; color: var(--em-ink); font: 12px/1 var(--em-font); }
+  #${ID} .em-ctoast .em-acts button:first-child { background: var(--em-accent); border-color: var(--em-accent); color: var(--em-on-accent); font-weight: 700; }
   #${ID} :focus-visible { outline: 2px solid var(--em-focus); outline-offset: 2px; }
   /* 只用视口单位定位：酒馆的 <html> 带 transform，会成为 fixed 的包含块且高度为 0 */
   #${ID} .em-fab { position: fixed; left: calc(100vw - 66px); top: calc(100vh - 144px); top: calc(100dvh - 144px); z-index: 30000; width: 48px; height: 48px; border-radius: 50%;
@@ -365,7 +376,7 @@
   const buildNow = () => aboutBuild ??= fetch(BASE + 'data/build.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
   async function sendAbout() { const b = await buildNow(), l = LINES.find(x => x.key === line);
     post({ type: 'eden-map:about', version: b?.version || SCRIPT.version || VER || null, code: b?.code || SCRIPT.code || null, channel: channel(),
-      ref: SCRIPT.ref || (VER ? 'map-v' + VER : refOf()), sha: SCRIPT.sha || null, line: l ? (UL === 'en' && l.name_en) || l.name : '' }); }
+      ref: SCRIPT.ref || (VER ? tagOf(VER) : refOf()), sha: SCRIPT.sha || null, line: l ? (UL === 'en' && l.name_en) || l.name : '' }); }
   // 查最新 map-v 标签（jsDelivr 数据接口，绕缓存），再取该标签的 build.json（走当前线路）；比较版本号。只报告，不安装
   async function checkUpdate() {
     try {
@@ -374,30 +385,34 @@
       const j = await fetch(SC.UPDATE_API(REPO) + '?t=' + Date.now(), { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', signal: ctl.signal }).then(r => r.ok ? r.json() : null).finally(() => clearTimeout(to));
       const latest = SC.latestTag(j); if (!latest) return { status: 'fail' };
       const host = (LINES.find(x => x.key === line) || LINES[0]).host || 'cdn.jsdelivr.net';
-      const lb = await fetch(`https://${host}/gh/${REPO}@map-v${latest}/map/data/build.json?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
-      const cur = (await buildNow())?.version || SCRIPT.version || VER;
-      return { ...SC.updateVerdict(cur, latest, channel()), code: lb?.code || null, notes: `https://github.com/${REPO}/blob/map-v${latest}/CHANGELOG.md` };
+      const lb = await fetch(`https://${host}/gh/${REPO}@${SC.tagOf(latest)}/map/data/build.json?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
+      const cur = SC.buildVer(await buildNow()) || SCRIPT.version || VER;
+      return { ...SC.updateVerdict(cur, latest, channel()), code: lb?.code || null, min: lb?.min_version || null, reason: lb?.force_reason || '', notes: `https://github.com/${REPO}/blob/${SC.tagOf(latest)}/CHANGELOG.md` };
     } catch (e) { return { status: 'fail' }; }
   }
   // ---------------- v0.9.5 变量映射（换卡兼容；tavern/adapter.mjs）：按角色卡存本机，缺了自动找；设置「变量映射」里可改 ----------------
   let varAD = null, varUser = {}, varMap = { location: '世界.当前地点' }, varSig = '', varCard = '';
+  // A-3：一轮（同一个同步任务）只取一次 stat_data 快照；push / refreshVarMap / recompute / 自检共用，微任务里作废
+  let statSnap;   // undefined = 本轮还没取
+  const mvuStat = () => { if (statSnap !== undefined) return statSnap; let v = null; try { v = Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data || null; } catch (e) {}
+    statSnap = v; queueMicrotask(() => { statSnap = undefined; }); return v; };
   const cardKey = () => { try { const c = SillyTavern.getContext(); return c.characters?.[c.characterId]?.avatar || c.name2 || ''; } catch (e) { return ''; } };
   import(SELF + 'tavern/adapter.mjs').then(m => { varAD = m; refreshVarMap(); push(); }).catch(() => {});
   function refreshVarMap() {
     if (!varAD) return; const card = cardKey(); if (card !== varCard) { varCard = card; varUser = varAD.readUser(localStorage, card); }
-    let st = null; try { st = Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data || null; } catch (e) {}
+    const st = mvuStat();
     varMap = varAD.effective(varUser, st);
     const sig = JSON.stringify([varMap, varUser, !!st]); if (sig !== varSig) { varSig = sig; sendVarMap(st); }
   }
   function sendVarMap(st) {
-    if (!alive || !varAD) return; if (st === undefined) try { st = Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data || null; } catch (e) { st = null; }
+    if (!alive || !varAD) return; if (st === undefined) st = mvuStat();
     post({ type: 'eden-map:varmap', card: varCard, paths: varAD.paths(st), map: varMap, user: varUser, detected: varAD.detect(st), fields: varAD.rowFields?.(st) || [], mode: varAD.mode(typeof Mvu !== 'undefined', st, varMap) });
   }
   function setVarUser(u) { if (!varAD) return; varUser = u && typeof u === 'object' ? u : {}; varAD.writeUser(localStorage, varCard, varUser); varSig = ''; refreshVarMap(); recomputeSoon(50); push(); if (checkP) checkP.then(() => { checkP = null; runCheck(); }); }   // 自检重跑，读法跟着变
   function getHere() {
     try {
-      const d = Mvu.getMvuData({ type: 'message', message_id: 'latest' });
-      return String(varAD ? varAD.get(d?.stat_data, varMap.location) ?? '' : _.get(d, 'stat_data.世界.当前地点', '') || '');
+      const st = mvuStat();
+      return String(varAD ? varAD.get(st, varMap.location) ?? '' : st?.世界?.当前地点 || '');
     } catch (e) { return ''; }
   }
   // 标题栏显示用：{{user}} 换成酒馆里的用户名，取不到就去掉（发给地图的仍是原值，地图自己处理）
@@ -425,7 +440,7 @@
   import(new URL('mvu.mjs', import.meta.url).href).then(m => { MV = m; push(); loadCustom(); }).catch(e => console.warn('[eden-map] MVU 模块加载失败', e));
   function pushMvu() {
     if (!MV) return;
-    refreshVarMap(); const st = mvuStat(), w = MV.worldTime(st, varMap), lb = MV.clockLabel(w);
+    const st = mvuStat(), w = MV.worldTime(st, varMap), lb = MV.clockLabel(w);
     clock = { ...w, ...lb, night: MV.isNight(w) };
     const cs = JSON.stringify(clock);
     if (cs !== clockSig) { clockSig = cs; clockEl.hidden = !lb.short; clockEl.textContent = lb.short; clockEl.title = lb.full; if (lb.full) clockEl.setAttribute('aria-label', lb.full); emit('clock', { ...clock }); sentClock = null; }
@@ -438,7 +453,7 @@
   let pushT = 0;
   const pushSoon = (ms = 150) => { clearTimeout(pushT); pushT = setTimeout(push, ms); };
   // 通读 R2：状态栏的删除按钮直接改 MVU（replaceMvuData），可能不发 VARIABLE_UPDATE_ENDED；面板开着时每 4 秒比一次变量的指纹，变了才重算
-  let statSig = ''; const pollT = setInterval(() => { if (panel.hidden || !alive) return; let s = ''; try { s = JSON.stringify(Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data || null); } catch (e) {}
+  let statSig = ''; const pollT = setInterval(() => { if (panel.hidden || !alive) return; let s = ''; try { s = JSON.stringify(mvuStat()); } catch (e) {}
     if (s !== statSig) { const first = !statSig; statSig = s; if (!first) { recomputeSoon(0); pushSoon(0); } } }, 4000);
   // 通读 R4：玩家启用了卡的「角色图鉴CG」时，它的面板在右下角（z 10050），我们的悬浮按钮让到它下面
   const cgYield = () => root.classList.toggle('em-yield', !!pdoc.querySelector('[id^="gallery-cg-root-"], [id^="gallery-cg-lightbox-"]'));
@@ -454,32 +469,56 @@
   // 人物栏（v0.9.2）：人物位置标签 + MVU 人物表 → 每人最新位置；模块加载失败只是没有人物栏
   let CHM = null, chars = [], charSig = '', charsSent = null;   // charsSent：上一次发给地图的人物签名（没变就不重发）
   import(new URL('characters.mjs', import.meta.url).href).then(m => { CHM = m; recompute(); }).catch(e => console.warn('[eden-map] 人物模块加载失败', e));
-  const mvuStat = () => { try { return Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data || null; } catch (e) { return null; } };
   const chatKey = () => { try { return 'edenMapSeen:' + (SillyTavern.getContext().chatId || ''); } catch (e) { return 'edenMapSeen:'; } };
   function loadSeen() { try { seen = +localStorage.getItem(chatKey()); if (!Number.isFinite(seen)) seen = -1; } catch (e) { seen = -1; } }
-  function recompute() {
-    if (!EVM || dead) return;
-    const { collect, summarize, layerOf } = EVM;
-    let msgs = [];
+  // A-3：每楼原文的解析按 (楼层, 原文) 缓存——原文没变就复用上次的 raw / text / 指纹 / 人物标签 / 行程条目；
+  // 整轮输入（楼层、各楼指纹、stat_data、映射、自定义……）的签名没变就直接跳过；发送路径（GENERATION_AFTER_COMMANDS）只做注入需要的部分，
+  // 标签改名 / 行程放到空闲时补做（restNow）。
+  const msgCache = new Map();
+  let roundSig = '', lastMsgs = [], restDue = false, restT = 0, custVer = 0;
+  const perf = (k, ms) => { const P = window.parent.__edenMapPerf; if (P) (P[k] ||= []).push(ms); };
+  function readMsgs() {
+    let out = [];
     try {
       floorNow = getLastMessageId();
-      if (floorNow >= 0) msgs = getChatMessages(`${Math.max(0, floorNow - SCAN)}-${floorNow}`, { role: 'assistant' })
-        .map(m => { const raw = String(m.message || '').replace(/<%[\s\S]*?%>/g, ''); return { floor: m.message_id, raw, text: raw.replace(/<UpdateVariable>[\s\S]*?(?:<\/UpdateVariable>|$)/gi, ' ') }; });   // 变量更新块（含没闭合的）不参与标签解析（通读 R6）；raw 留给行程读 JSONPatch   // 原文里可能还留着 EJS 模板源码，里面的示例标签不算事件
+      if (floorNow >= 0) out = getChatMessages(`${Math.max(0, floorNow - SCAN)}-${floorNow}`, { role: 'assistant' }).map(m => {
+        const msg = String(m.message || ''), c = msgCache.get(m.message_id);
+        if (c && c.msg === msg) return c.m;
+        const raw = msg.replace(/<%[\s\S]*?%>/g, '');   // 原文里可能还留着 EJS 模板源码，里面的示例标签不算事件
+        const e = { msg, m: { floor: m.message_id, raw, text: raw.replace(/<UpdateVariable>[\s\S]*?(?:<\/UpdateVariable>|$)/gi, ' ') } };   // 变量更新块（含没闭合的）不参与标签解析（通读 R6）；raw 留给行程读 JSONPatch
+        e.m.h = hashText(e.m.text) + (raw.length !== e.m.text.length ? '.' + hashText(raw) : ''); msgCache.set(m.message_id, e); return e.m;
+      });
     } catch (e) { floorNow = -1; }
+    if (msgCache.size > SCAN * 2) { const keep = new Set(out.map(m => m.floor)); for (const k of msgCache.keys()) if (!keep.has(k)) msgCache.delete(k); }
+    return out;
+  }
+  function recompute(lite = false) {
+    if (!EVM || dead) return;
+    const t0 = performance.now();
+    const { collect, summarize, layerOf } = EVM;
+    const msgs = readMsgs(), st = mvuStat(), hereNow = getHere();
+    let stSig = ''; try { stSig = JSON.stringify(st); } catch (e) {}
+    const sig = [floorNow, msgs.map(m => m.floor + ':' + m.h).join(), stSig, varSig, custVer, customChat, chatId(), seen, wbState, !!regNow, !!CHM, !!MV, !!TRm, !!hereMod, hereNow].join('|');
+    if (sig === roundSig) { if (!lite && restDue) restNow(); return; }
+    roundSig = sig; lastMsgs = msgs;
     events = collect(msgs, floorNow);
-    if (CHM) { const st = mvuStat(); const known = MV ? Object.values(MV.rosters(st, { present: varMap.present, members: varMap.members, targets: varMap.targets })).flatMap(r => r?.items?.map(i => i.name) || []) : [];
-      chars = CHM.collectChars(msgs, floorNow, CHM.mvuChars(st, getHere(), varMap.present), known);
+    if (CHM) { const known = MV ? Object.values(MV.rosters(st, { present: varMap.present, members: varMap.members, targets: varMap.targets })).flatMap(r => r?.items?.map(i => i.name) || []) : [];
+      chars = CHM.collectChars(msgs, floorNow, CHM.mvuChars(st, hereNow, varMap.present), known);
       if (MV) { roster = MV.rosters(st, { present: varMap.present, members: varMap.members, targets: varMap.targets, stageField: varMap.stageField, gradeField: varMap.gradeField, coreField: varMap.coreField }); rep = MV.reputation(st, varMap.reputation); stageOrderFor(roster); portraitsFor(); }
       const sig = floorNow + '|' + chars.map(c => c.name + '@' + c.place + '#' + c.floor).join() + '|' + JSON.stringify(roster) + Object.keys(portraits).length + rep + (stageOrder || []).join();
       if (sig !== charSig) { charSig = sig; if (!panel.hidden && alive) sendChars(); emit('characters', { items: chars.map(c => ({ ...c })), floor: floorNow }); } }
     const fresh = events.filter(e => e.last > seen && e.tier !== 'fade').length;
     badge.hidden = !fresh; badge.textContent = fresh > 9 ? '9+' : fresh;
     if (fresh) tipOnce();
-    customTags(msgs); computeTrips(msgs);
-    inject([summarize(events, layerOf(getHere())), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : ''].filter(Boolean).join('\n'));
+    restDue = true;
+    if (!lite) restNow();   // 标签改名、行程；发送路径上推迟到空闲
+    else { clearTimeout(restT); restT = setTimeout(() => (window.parent.requestIdleCallback || (f => f()))(() => { if (!dead && restDue) restNow(); }, { timeout: 1500 }), 0); }
+    inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : ''].filter(Boolean).join('\n'));
     if (!panel.hidden && alive) sendEvents();
     if (subs.events.size) { const sig = floorNow + '|' + events.map(e => e.id + ':' + e.last + ':' + e.tier).join(); if (sig !== emEvSig) { emEvSig = sig; emit('events', { items: events.map(e => ({ ...e })), floor: floorNow, hereLayer: layerOf(here) }); } }
+    perf(lite ? 'lite' : 'core', performance.now() - t0);
   }
+  function restNow() { restDue = false; const t0 = performance.now(); customTags(lastMsgs); computeTrips(lastMsgs); perf('rest', performance.now() - t0); }
   function inject(text) {
     if (dead) return;
     if (text === injected) return; injected = text;
@@ -509,10 +548,15 @@
     if (!TRm || !MV || !custom || customChat !== chatId()) return;
     const kw = TRm.keywords(varUser.keywords || TRm.DEFAULT_KEYWORDS, !!varUser.fantasy), lp = '/' + String(varMap.location || '世界.当前地点').split('.').join('/'), recentMsgs = msgs.slice(-30), seq = [], tags = [];
     for (const m of recentMsgs) {
-      let st = null; try { st = Mvu.getMvuData({ type: 'message', message_id: m.floor })?.stat_data || null; } catch (e) {}
-      const place = String(MV.get(st, varMap.location) ?? '').trim() || TRm.patchPlace(m.raw || m.text, lp);
-      seq.push({ floor: m.floor, place, text: m.text.slice(0, 4000), time: String(MV.get(st, varMap.time) ?? '') });
-      if (CHM) for (const c of CHM.parseChars(m.text)) tags.push({ floor: m.floor, name: c.name, place: c.place, text: m.text.slice(0, 4000) });
+      const e = msgCache.get(m.floor), key = lp + '|' + varMap.time + '|' + !!CHM;   // 按 (楼层, 原文) 缓存：那一楼的变量由那一楼的原文决定
+      if (!e?.trip || e.tripKey !== key || e.m !== m) {
+        let st = null; try { st = Mvu.getMvuData({ type: 'message', message_id: m.floor })?.stat_data || null; } catch (x) {}
+        const place = String(MV.get(st, varMap.location) ?? '').trim() || TRm.patchPlace(m.raw || m.text, lp), text = m.text.slice(0, 4000);
+        const trip = { seq: { floor: m.floor, place, text, time: String(MV.get(st, varMap.time) ?? '') }, tags: CHM ? CHM.parseChars(m.text).map(c => ({ floor: m.floor, name: c.name, place: c.place, text })) : [] };
+        if (!e || e.m !== m) { seq.push(trip.seq); tags.push(...trip.tags); continue; }
+        e.trip = trip; e.tripKey = key;
+      }
+      seq.push(e.trip.seq); tags.push(...e.trip.tags);
     }
     const tr = s => hereMod?.parseTransit?.(s) || null;
     const next = TRm.recent([...TRm.playerTrips(seq, tr, kw), ...TRm.charTrips(tags, kw)], 5);
@@ -521,16 +565,17 @@
   function sendTrips() { if (alive) post({ type: 'eden-map:trips', items: trips }); }
   function sendChars() { if (alive) post({ type: 'eden-map:chars', v: 1, floor: floorNow, items: chars, rosters: roster, rep, stageOrder, portraits }); }
   // v0.9.5 名册（只读）：在场 / 成员 / 目标三张表的名字、身份、阶段；主角声望。阶段的先后顺序从卡自带的脚本 / 正则文本里找（每个聊天找一次）
-  let roster = null, rep = null, stageOrder = null, stageChat = null, portraits = {}, portChat = null;
+  let roster = null, rep = null, stageOrder = null, stageChat = null, stageMiss = '', portraits = {}, portChat = null;
   const cardTexts = () => { const texts = [], walk = (o, d = 0) => { if (d > 8 || texts.length > 4000) return; if (typeof o === 'string') { if (o.length > 20) texts.push(o); } else if (o && typeof o === 'object') for (const v of Object.values(o)) walk(v, d + 1); };
     try { if (fnOk('getCharData')) walk(getCharData('current')?.data?.extensions); } catch (e) {}
     try { if (fnOk('getTavernRegexes')) walk(getTavernRegexes({ scope: 'character' })); } catch (e) {}
     return texts; };
   // 原作头像（v0.9.5）：卡自带脚本里的默认立绘表，只收作者 CDN 的 /sfw/ 地址；每个聊天读一次，不复制图片
   function portraitsFor() { if (portChat === chatId()) return; portChat = chatId(); portraits = MV.findPortraits(cardTexts()); }
-  function stageOrderFor(r) {
-    const vals = (r?.targets?.items || []).map(i => i.stage).filter(Boolean); if (!vals.length || (stageChat === chatId() && stageOrder && vals.every(v => stageOrder.includes(v)))) return;
-    stageChat = chatId(); stageOrder = MV.findStageOrder(cardTexts(), vals);
+  function stageOrderFor(r) {   // A-3：找不到也记住（同一聊天、同一组取值不再每轮扫一遍卡文本）
+    const vals = (r?.targets?.items || []).map(i => i.stage).filter(Boolean), chat = chatId(); if (!vals.length || (stageChat === chat && stageOrder && vals.every(v => stageOrder.includes(v)))) return;
+    const key = chat + '|' + [...new Set(vals)].sort().join('\u0001'); if (key === stageMiss) return;
+    stageChat = chat; stageOrder = MV.findStageOrder(cardTexts(), vals); stageMiss = stageOrder ? '' : key;
   }
   let tipShown = false; try { tipShown = !!localStorage.getItem('edenMapEvTip'); } catch (e) {}
   function tipOnce() {
@@ -563,9 +608,12 @@
   let custom = null, tagFloor = -1, customChat = null, toastQ = [], regP = null;
   const varsOk = () => fnOk('getVariables') && (fnOk('updateVariablesWith') || fnOk('replaceVariables') || fnOk('insertOrAssignVariables'));
   const lsCustomKey = () => 'edenMap:chat:' + (chatId() || '') + ':custom2';
+  // A-11：聊天变量写失败时退回本机；读的时候先看本机有没有这份退回的数据（有就是比聊天变量新的），下次写变量成功再删掉它
   function readVars() {
+    let fb = null; try { fb = JSON.parse(localStorage.getItem(lsCustomKey()) || 'null'); } catch (e) {}
+    if (fb && typeof fb === 'object') return fb;
     if (varsOk()) { try { const v = getVariables({ type: 'chat' })?.[MV.VAR_ROOT]; return v && typeof v === 'object' ? v : {}; } catch (e) {} }
-    try { return JSON.parse(localStorage.getItem(lsCustomKey()) || '{}') || {}; } catch (e) { return {}; }
+    return {};
   }
   async function writeVars(root, chat) {
     if (dead) return false;
@@ -575,10 +623,27 @@
         if (fnOk('updateVariablesWith')) await updateVariablesWith(v => { v[MV.VAR_ROOT] = root; return v; }, { type: 'chat' });
         else if (fnOk('replaceVariables')) { const all = { ...(getVariables({ type: 'chat' }) || {}) }; all[MV.VAR_ROOT] = root; await replaceVariables(all, { type: 'chat' }); }
         else await insertOrAssignVariables({ [MV.VAR_ROOT]: root }, { type: 'chat' });
+        try { localStorage.removeItem(lsCustomKey()); } catch (e) {}   // 之前退回本机的那份已经过时
         return true;
-      } catch (e) { console.warn('[eden-map] 写聊天变量失败，改存本机', e); }
+      } catch (e) { console.warn('[eden-map] 写聊天变量失败，改存本机', e); varsFailed = true; }
     }
-    try { localStorage.setItem(lsCustomKey(), JSON.stringify(root)); return true; } catch (e) { return false; }
+    const r = BG ? BG.safeSet(localStorage, lsCustomKey(), JSON.stringify(root), chat) : (() => { try { localStorage.setItem(lsCustomKey(), JSON.stringify(root)); return { ok: true }; } catch (e) { return { ok: false, reason: 'quota' }; } })();
+    if (!r.ok) { storeWarn(r.reason); return false; }
+    if (varsFailed) { varsFailed = false; storeWarn('vars'); }   // UI 不能再说「已保存到聊天」却悄悄存在本机
+    return true;
+  }
+  // ---------------- A-13 本机存储预算（tavern/budget.mjs）：LRU 清旧聊天的地图键、头像上限；出问题时告诉用户（面板开着走地图的提示条，关着走宿主小提示） ----------------
+  let BG = null, varsFailed = false; const warnAt = {};
+  import(new URL('budget.mjs', import.meta.url).href).then(m => { BG = m; }).catch(() => {});
+  function storeWarn(reason) {
+    if (dead || Date.now() - (warnAt[reason] || 0) < 60000) return; warnAt[reason] = Date.now();
+    const msg = BG ? BG.warnText(reason, UL === 'en') : '本机存储写入失败'; console.warn('[eden-map]', msg);
+    if (!panel.hidden && alive && !ghost) { toastQ.push(msg); flushToasts(); return; }
+    hostToast(UL === 'en' ? 'Map storage' : '地图存储', [msg], 12000);
+  }
+  function budgetSweep() {   // 启动空闲时：记下当前聊天刚用过，聊天数超了按 LRU 清最久的；量一下占用（EdenMap.storage() 可取）
+    if (!BG) return; const ls = store(); if (!ls) return;
+    BG.touch(ls, chatId()); const r = BG.sweep(ls, chatId()); if (r.dropped.length) console.info('[eden-map] 清理旧聊天的地图数据', r.dropped.length, '个聊天', r.freed, '字节');
   }
   const saveRoot = () => dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: tagFloor, 标签记录: tagLog, 楼层指纹: tagSeen, 行程: trips }, customChat);
   // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
@@ -608,7 +673,7 @@
     customChanged(false);
   }
   function customChanged(save = true) {
-    if (save) saveRoot();
+    custVer++; if (save) saveRoot();
     sendCustom(); emit('custom', MV.normCustom(custom)); recomputeSoon(50);
     if (custom?.同步世界书 || wbState) syncWb(!!custom?.同步世界书).catch(e => console.warn('[eden-map] 同步世界书失败', e));
   }
@@ -698,7 +763,13 @@
     getOutfit: async () => ({ items: outfitNow ? { ...outfitNow } : null, text: MV ? MV.outfitText(outfitNow) : '' }),   // 主角着装（只读 MVU 主角.着装）
     getClock: async () => (clock ? { ...clock } : null),   // 世界时间（只读 MVU 世界.当前日期 / 当前时刻 / 当日时段）
     // 人物头像（v0.9.2）：只存本机 localStorage（按聊天，拿不到聊天 id 时全局），不上传、不进地址；src = data:image/… 或 http(s) 图片地址
-    async setAvatar(name, src) { const v = inner(); if (v) return v.setAvatar(name, src); const C = await chx(), st = store(); return !!st && C.setAvatar(st, chatId(), name, await shrinkAvatar(src)); },
+    // 面板看得见时交给地图（它自己提示）；面板关着 / 后台预加载 / 休眠时在这里写，满了用宿主提示条告诉用户（地图里的提示条此时看不见，A-13），再让地图重读
+    async setAvatar(name, src) { const v = inner(); if (v && !panel.hidden && !ghost) return v.setAvatar(name, src); const C = await chx(), st = store(); if (!st) return false;
+      const img = await shrinkAvatar(src), r = C.setAvatarEx ? C.setAvatarEx(st, chatId(), name, img) : { ok: C.setAvatar(st, chatId(), name, img) };
+      if (!r.ok && (r.reason === 'cap' || r.reason === 'quota')) storeWarn(r.reason);
+      if (r.ok && v) try { await v.setAvatar(name, img); } catch (e) {}   // 地图重写同一张（已有这个名字，不占新额度）并重画
+      return r.ok; },
+    storage: async () => { const st = store(); return BG && st ? BG.measure(st) : null; },   // A-13：本机存储占用（字节，UTF-16）
     async removeAvatar(name) { const v = inner(); if (v) return v.removeAvatar(name); const C = await chx(), st = store(); return !!st && C.removeAvatar(st, chatId(), name); },
     async getCharacters() { return { items: chars.map(c => ({ ...c })), floor: floorNow, rosters: roster ? JSON.parse(JSON.stringify(roster)) : null, reputation: rep }; },   // v0.9.5：rosters / reputation 只读
     // 三维查看器飞到热点（v1.0 测试件：{ map: 'dairy', hotspot: 'tank' }）：面板没开就先打开；地图就绪后转发
@@ -752,14 +823,14 @@
         refreshVarMap(); const hp = varMap.location || SC.HERE_PATH;
         mvu = { stat: !!st && typeof st === 'object', path: hp, here: !!st && SC.getPath(st, hp) !== undefined, candidates: st ? SC.findPaths(st).filter(p => p !== hp) : [],
           fields: st && MV ? { present: !!MV.presentList(st, varMap.present), clock: !!MV.worldTime(st, varMap).time, outfit: MV.get(st, varMap.outfit || '主角.着装') !== undefined } : null }; } } catch (e) { mvu = { stat: false }; }
-      const varmode = varAD ? varAD.mode(typeof Mvu !== 'undefined' && !!Mvu?.getMvuData, (() => { try { return Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data; } catch (e) { return null; } })(), varMap) : null;
+      const varmode = varAD ? varAD.mode(typeof Mvu !== 'undefined' && !!Mvu?.getMvuData, mvuStat(), varMap) : null;
       const loads = [...new Set((window.parent.__edenMapLoads || []).filter(u => u !== SELF && u !== switchedFrom))];
       const ln = { swappable, name: (LINES.find(l => l.key === line) || {}).name || '',
         ok: !swappable ? null : lineP ? await lineP.then(ok => ok && fetchHtml().then(() => true, () => false), () => false) : html ? await html.then(() => true, () => false) : null };
       checkFacts = {
         api: { getChatMessages: fnOk('getChatMessages'), eventOn: fnOk('eventOn'), injectPrompts: fnOk('injectPrompts'), tavern_events: typeof tavern_events === 'object' },
         vars: varsOk(), ejs: (() => { try { return typeof (window.parent.EjsTemplate || globalThis.EjsTemplate) === 'object'; } catch (e) { return false; } })(),
-        mvu, varmode, dup: { others: loads, oldStyle, replaced: !root.isConnected }, line: ln, worldbook: await wbFacts(), version: { script: VER, viewer: viewerVer }, update: await updateFacts(),
+        mvu, varmode, dup: { others: loads, oldStyle, replaced: !root.isConnected }, line: ln, worldbook: await wbFacts(), version: { script: plainVer(VER), viewer: viewerVer }, update: await updateFacts(),
       };
       // 世界书「缺少」先别急着报：酒馆刚启动时全局世界书设置可能还没加载完（v0.9.6 误报），6 秒后再查一次
       if (checkFacts.worldbook?.missing?.length) { await new Promise(r => setTimeout(r, 6000)); if (dead) return; checkFacts.worldbook = await wbFacts(); }
@@ -790,7 +861,7 @@
         { key: 'estate', zh: '庄园三维页面', en: 'Estate 3D page', skip: lite, run: () => Promise.all(EST.map(get)) },
         { key: 'clouds', zh: '云图', en: 'Cloud sprites', skip: lite, run: () => Promise.all([1, 2, 3, 4, 5, 6].map(k => get(`art/clouds/puff${k}.png`))) },
       ],
-      onStart: () => { splash = null; if (panel.hidden || ghost) { if (ghost) endGhost(true); panel.hidden = false; loadViewer(); } }, onClose: () => { splash = null; } });
+      onStart: () => { splash = null; if (panel.hidden || ghost) { if (ghost) endGhost(true); panel.hidden = false; loadViewer(); } }, onClose: () => { splash = null; if (updWait) setTimeout(showUpdPrompt, 600); } });
     return true;
   }
   // 有 ⚠ 时弹一次小提示：同一版本、同一组警告只弹一次（点 × 或自动收起都算看过）；地图面板开着时不弹——
@@ -807,6 +878,63 @@
     t.innerHTML = `<b>${UL === 'en' ? 'Map self-check' : '地图自检'}</b><button type="button" aria-label="${UI[UL].close}">×</button>`;
     for (const w of warns) { const d = pdoc.createElement('div'); d.textContent = '⚠ ' + w[L]; t.appendChild(d); }
     t.querySelector('button').onclick = () => t.remove(); root.appendChild(t); setTimeout(() => t.remove(), 12000);
+  }
+  // 宿主页小提示（自检 / 存储 / 更新共用样式）：面板开着时不弹（会盖住设置 / 表单，v0.9.6 用户实测），调用方自己排队
+  let updEl = null;
+  function hostToast(title, lines, ms = 12000, extra = null, upd = false) {   // upd：更新提示单独一格（在上方），不和自检 / 存储提示互相顶掉
+    if (upd) updEl?.remove(); else toastEl?.remove(); const t = pdoc.createElement('div'); if (upd) updEl = t; else toastEl = t; t.setAttribute('role', 'status'); t.className = 'em-ctoast';
+    t.innerHTML = `<b></b><button type="button" aria-label="${UI[UL].close}">×</button>`; t.querySelector('b').textContent = title;
+    for (const l of lines) { const d = pdoc.createElement('div'); d.textContent = l; t.appendChild(d); }
+    if (extra) extra(t);
+    t.querySelector('button').onclick = () => t.remove(); root.appendChild(t); if (ms) setTimeout(() => t.remove(), ms); return t;
+  }
+  // ---------------- 自动检查更新（v0.9.7；设置「自动检查更新」默认开，存本机 edenMapAutoCheck）----------------
+  // 启动后空闲时查一次（每个会话一次，联网至少隔 6 小时，中间用缓存；走当前线路，和「检查更新」按钮同一个 checkUpdate）。
+  // 有新版就弹一个不挡操作的小提示：怎么更新（跟随分支：刷新；钉了版本：重新导入）+ 更新说明 +「稍后」/「此版本不再提示」。
+  // 地图面板开着（设置 / 表单可能开着）或开场自检卡开着时不弹，关上后再弹（和自检小提示同一条规则）。
+  const AUTO_CHECK_KEY = 'edenMapAutoCheck', AUTO_CACHE_KEY = 'edenMapUpdAuto', UPD_SKIP_KEY = 'edenMapUpdSkip';
+  let updPrompt = null, updWait = false;
+  async function autoCheck() {
+    SC ??= await import(SELF + 'tavern/selfcheck.mjs').catch(() => null); if (!SC?.autoCheckPlan || dead) return;
+    let cache = null; try { cache = JSON.parse(lsGet(AUTO_CACHE_KEY)); } catch (e) {}
+    let done = false; try { done = !!window.parent.__edenMapAutoChecked; } catch (e) {}   // 每个会话（页面加载）一次：挂在宿主页上，换版本 / 重注入脚本不重复查
+    const plan = SC.autoCheckPlan({ enabled: lsGet(AUTO_CHECK_KEY) !== '0', channel: channel(), sessionDone: done, cache, now: Date.now() });
+    if (plan === 'skip') return;
+    try { window.parent.__edenMapAutoChecked = true; } catch (e) {}
+    let latest = cache?.latest || null, code = cache?.code || null, min = cache?.min || null, reason = cache?.reason || '';
+    if (plan === 'fetch') { const r = await checkUpdate(); if (r.status !== 'fail') ({ latest, code, min, reason } = r); lsSet(AUTO_CACHE_KEY, JSON.stringify({ at: Date.now(), latest, code, min, reason })); }   // 失败也记时间：不在 6 小时内反复撞
+    const cur = SC.buildVer(await buildNow()) || SCRIPT.version || VER, v = SC.updateVerdict(cur, latest, channel());
+    if (dead) return;
+    // 强制更新：最新正式版声明了 min_version 且当前更旧 → 常驻提示，只能「本次关闭」（按会话记，下次加载再弹），没有「此版本不再提示」
+    let closed = null; try { closed = window.parent.__edenMapForceClosed || null; } catch (e) {}
+    if (SC.mustUpdate(cur, min)) { if (closed !== min) { updPrompt = { ...v, latest: v.latest || min, current: cur, code, min, reason, force: true, notes: `https://github.com/${REPO}/blob/${SC.tagOf(v.latest || min)}/CHANGELOG.md` }; showUpdPrompt(); } return; }
+    if (!SC.shouldPrompt(v, lsGet(UPD_SKIP_KEY))) return;
+    updPrompt = { ...v, code, notes: `https://github.com/${REPO}/blob/${SC.tagOf(v.latest)}/CHANGELOG.md` }; showUpdPrompt();
+  }
+  function showUpdPrompt() {
+    if (!updPrompt || dead) return;
+    if (splash || (!panel.hidden && !ghost)) { updWait = true; return; }   // 不盖住开着的面板 / 表单
+    updWait = false; const u = updPrompt; updPrompt = null;
+    if (u.force) {
+      const F = SC.forceText(u.current, u.min, u.latest, channel(), u.reason, UL === 'en');
+      return hostToast(F.title, F.lines, 0, t => {
+        t.classList.add('em-upd', 'em-force'); t.setAttribute('role', 'alert'); t.__upd = u;
+        const a = pdoc.createElement('a'); a.href = u.notes; a.target = '_blank'; a.rel = 'noopener'; a.textContent = F.notes; const d = pdoc.createElement('div'); d.append(a); t.append(d);
+        const acts = pdoc.createElement('div'), x = t.querySelector('button'); acts.className = 'em-acts';
+        const cl = pdoc.createElement('button'); cl.type = 'button'; cl.className = 'em-later'; cl.textContent = F.close;
+        cl.onclick = x.onclick = () => { try { window.parent.__edenMapForceClosed = u.min; } catch (e) {} t.remove(); };   // 只记在这次页面上：刷新后再弹
+        acts.append(cl); t.append(acts);
+      }, true);
+    }
+    const T = SC.updatePromptText(u.latest, channel(), UL === 'en');
+    hostToast(T.title + (u.code ? ` · ${u.code}` : ''), [T.how], 0, t => {
+      t.classList.add('em-upd'); t.__upd = u;
+      const a = pdoc.createElement('a'); a.href = u.notes; a.target = '_blank'; a.rel = 'noopener'; a.textContent = T.notes; const d = pdoc.createElement('div'); d.append(a); t.append(d);
+      const acts = pdoc.createElement('div'); acts.className = 'em-acts';
+      const later = pdoc.createElement('button'); later.type = 'button'; later.className = 'em-later'; later.textContent = T.later; later.onclick = () => t.remove();
+      const skip = pdoc.createElement('button'); skip.type = 'button'; skip.className = 'em-skip'; skip.textContent = T.skip; skip.onclick = () => { lsSet(UPD_SKIP_KEY, u.latest); t.remove(); };
+      acts.append(later, skip); t.append(acts);
+    }, true);
   }
   function switchVersion() {   // 本次会话换成新正式版：加载新标签的同一个脚本，它会清掉这一份（要长期用，重新导入新版脚本）
     const nv = updInfo?.latest, url = nv && SC?.swapVer(import.meta.url, nv);
@@ -854,11 +982,13 @@
     if (!saved && handPref === 'left') placeFab(.03, Math.max(0, (window.parent.innerHeight - 144) / Math.max(1, window.parent.innerHeight - 48))); }   // 没拖过：左手默认放左下
   applyHand(false);
   fab.addEventListener('pointerup', () => { if (dragged && handPref === 'auto') applyHand(false); });
-  const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; flyNext = true; sleepViewer(); if (toastWait && SC) setTimeout(toastOnce, 400); };
+  const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; flyNext = true; sleepViewer(); if (toastWait && SC) setTimeout(toastOnce, 400); if (updWait) setTimeout(showUpdPrompt, 600); };
   fab.addEventListener('click', async () => { if (dragged) return;
     if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); sent = null; charsSent = null; push(); sendEvents(); return; }   // 预加载中被点开：直接显示，重新推一次地点（这次可以进庄园）
     fab.classList.remove('fail'); fab.querySelectorAll('.em-tip').forEach(t => t.remove());   // 提示不留在面板后面（v0.9.2）
-    if (!panel.hidden) return close(); toastEl?.remove(); panel.hidden = false; await loadViewer(); });   // 面板打开：自检小提示不盖在面板上（v0.9.6）
+    if (!panel.hidden) return close(); toastEl?.remove();
+    if (updEl?.isConnected && updEl.__upd) { updPrompt = updEl.__upd; updWait = true; } updEl?.remove();   // 更新提示也不盖在面板上：关上面板后再弹
+    panel.hidden = false; await loadViewer(); });   // 面板打开：自检小提示不盖在面板上（v0.9.6）
   root.querySelector('.em-close').addEventListener('click', close);
   hereEl.addEventListener('click', () => { if (hereEl.title) hereEl.classList.toggle('em-full'); });
   // 宿主页的 Esc：只在焦点不在输入框里时关地图（在聊天框里按 Esc 不该把地图关掉，E5 r2 RP-6）
@@ -869,17 +999,18 @@
     try { await waitGlobalInitialized('Mvu'); listen(Mvu.events.VARIABLE_UPDATE_ENDED, () => { pushSoon(); recomputeSoon(); }); } catch (e) {}   // MVU 人物表也会变（人物栏）
     listen(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     listen(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    listen(tavern_events.CHAT_CHANGED, () => { injected = null; trips = []; tripSig = ''; loadSeen(); custom = null; loadCustom().then(() => recomputeSoon(300)); });
+    listen(tavern_events.CHAT_CHANGED, () => { try { BG?.touch(store(), chatId()); } catch (e) {} injected = null; trips = []; tripSig = ''; loadSeen(); custom = null; loadCustom().then(() => recomputeSoon(300)); });
     // 通读 R1：开局菜单用 setChatMessage(swipe_id) 换开场白，不一定触发 SWIPED；渲染 / 编辑事件也听，地点跟着刷新
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) if (tavern_events[k]) listen(tavern_events[k], () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
-    if (tavern_events.GENERATION_AFTER_COMMANDS) listen(tavern_events.GENERATION_AFTER_COMMANDS, () => { clearTimeout(evT); recompute(); });   // 生成前同步一次，注入的是最新态势
+    // 生成前同步一次，注入的是最新态势（A-3：只做注入需要的部分；输入没变直接跳过；标签改名 / 行程推到空闲）
+    if (tavern_events.GENERATION_AFTER_COMMANDS) listen(tavern_events.GENERATION_AFTER_COMMANDS, () => { clearTimeout(evT); recompute(true); });
     push(); loadSeen(); recompute();
-    (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => { if (dead) return; preload().catch(() => {}); if (splashDue()) showSplash(); else setTimeout(runCheck, 4000); });   // 打开聊天后空闲时：测速选线 + 预加载；稍后自检一次
+    (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => { if (dead) return; preload().catch(() => {}); try { budgetSweep(); } catch (e) {} setTimeout(() => { if (!dead) autoCheck().catch(() => {}); }, window.parent.__edenAutoCheckDelay ?? 6000); if (splashDue()) showSplash(); else setTimeout(runCheck, 4000); });   // 打开聊天后空闲时：测速选线 + 预加载；稍后自检一次
   })();
 
   // 脚本被关闭或重载时清理注入的元素
-  const cleanup = () => { if (dead) return; dead = true; unlisten(); clearInterval(pollT); cgObs.disconnect(); clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); clearTimeout(ghostT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
-    if (window.parent.EdenMap === api) delete window.parent.EdenMap; toastEl?.remove(); splash?.el?.remove();
+  const cleanup = () => { if (dead) return; dead = true; unlisten(); clearInterval(pollT); cgObs.disconnect(); clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); clearTimeout(restT); clearTimeout(ghostT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
+    if (window.parent.EdenMap === api) delete window.parent.EdenMap; toastEl?.remove(); updEl?.remove(); splash?.el?.remove();
     if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup;
     try { window.parent.__edenMapLoads = (window.parent.__edenMapLoads || []).filter(u => u !== SELF); } catch (e) {} };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）
   window.parent.__edenMapCleanup = cleanup;

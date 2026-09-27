@@ -142,34 +142,54 @@ export function evaluate(f) {
   else if (v.script !== v.viewer) out.push(item('version', 'warn', `脚本 v${v.script} 与地图 v${v.viewer} 版本不一致：可能是缓存，刷新页面或换线路`, `Script v${v.script} and map v${v.viewer} differ: probably a cache, reload or switch route`));
   else out.push(item('version', 'ok', `版本一致 v${v.script}`, `Versions match v${v.script}`));
   const u = f.update;
-  if (u && u.latest && cmpVer(u.latest, u.current) > 0) out.push(item('update', 'info', `有新版本 v${u.latest}（当前 v${u.current}）`, `New version v${u.latest} (current v${u.current})`));
+  if (u && u.latest && cmpVer(u.latest, u.current) > 0) out.push(item('update', 'info', `有新版本 ${fmtVer(u.latest)}（当前 ${fmtVer(u.current)}）`, `New version ${fmtVer(u.latest)} (current ${fmtVer(u.current)})`));
   return out;
 }
 
 // ---------------- 正式版更新检查（只对钉了标签 map-vX.Y.Z 的正式版脚本；跟分支的预览脚本不查） ----------------
 export const UPDATE_API = repo => `https://data.jsdelivr.com/v1/packages/gh/${repo}`;
 export const DAY = 24 * 3600 * 1000;
-/** 版本号比较：'0.10.0' > '0.9.1' */
+/** 版本号：X.Y.Z，或带第 4 段小修补丁 X.Y.Z.P（0.9.6 < 0.9.6.1 < 0.9.7）；系列（构建编码的 S<n>）≥ 2 时写成 'S2:0.1.0'（不带前缀 = S1）。
+ *  排序按（系列, 版本）：S2:0.1.0 > 0.9.9。标签：S1 = map-vX.Y.Z[.P]（沿用），S≥2 = map-s<n>-vX.Y.Z[.P]（不和 map-v0.x 撞）。见 docs/versioning.md */
+export const VER_RE = /^(?:S\d+:)?\d+\.\d+\.\d+(?:\.\d+)?$/;
+const TAG_RE = /^map-(?:s(\d+)-)?v(\d+\.\d+\.\d+(?:\.\d+)?)$/;
+/** 'S2:0.1.0' → { series: 2, ver: '0.1.0', parts: [0,1,0] }；'0.9.6' → series 1 */
+export function parseVer(v) {
+  const m = /^(?:S(\d+):)?(.*)$/.exec(String(v ?? '').trim()), ver = m[2];
+  return { series: m[1] ? +m[1] : 1, ver, parts: ver.split('.').map(Number) };
+}
+/** 规范写法：S1 不带前缀 */
+export const fullVer = (series, ver) => (+series > 1 ? `S${+series}:${ver}` : String(ver));
+/** build.json（{ version, code: 'S2-0100-R-0001' }）→ 规范版本 */
+export const buildVer = b => (b?.version ? fullVer((/^S(\d+)-/.exec(b.code || '') || [])[1] || 1, b.version) : null);
+/** 版本 → 标签 / 反过来 */
+export const tagOf = v => { const p = parseVer(v); return p.series > 1 ? `map-s${p.series}-v${p.ver}` : `map-v${p.ver}`; };
+export const verOfTag = t => { const m = TAG_RE.exec(String(t || '')); return m ? fullVer(m[1] || 1, m[2]) : null; };
+/** 给人看：'v0.9.6' / 'S2 v0.1.0' */
+export const fmtVer = v => { const p = parseVer(v); return (p.series > 1 ? `S${p.series} ` : '') + 'v' + p.ver; };
+/** 版本号比较：先比系列，再逐段比；缺的段按 0（0.9.6 == 0.9.6.0 < 0.9.6.1 < 0.9.7 < S2:0.1.0） */
 export function cmpVer(a, b) {
-  const x = String(a || '').split('.').map(Number), y = String(b || '').split('.').map(Number);
+  const A = parseVer(a), B = parseVer(b);
+  if (A.series !== B.series) return A.series > B.series ? 1 : -1;
+  const x = A.parts, y = B.parts;
   for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d > 0 ? 1 : -1; }
   return 0;
 }
-/** jsDelivr 数据接口的返回（新版 {versions:[{version}]} 或旧版 {versions:['…']}）→ 最新的 map-v 版本号（不带 map-v），没有返回 null */
+/** jsDelivr 数据接口的返回（新版 {versions:[{version}]} 或旧版 {versions:['…']}）→ 最新的正式版（规范写法，两种标签都认），没有返回 null */
 export function latestTag(json) {
   let best = null;
   for (const v of json?.versions || []) {
-    const m = String(typeof v === 'string' ? v : v?.version || '').match(/^map-v(\d+\.\d+\.\d+)$/);
-    if (m && (!best || cmpVer(m[1], best) > 0)) best = m[1];
+    const x = verOfTag(typeof v === 'string' ? v : v?.version);
+    if (x && (!best || cmpVer(x, best) > 0)) best = x;
   }
   return best;
 }
 /** 距上次检查（不论成败）满一天才再查 */
 export const dueCheck = (lastAt, now) => !(lastAt > 0) || now - lastAt >= DAY || now < lastAt;
-/** 脚本地址换成另一个标签版本（只认 gh 标签地址；npm / 分支地址返回 null） */
+/** 脚本地址换成另一个正式版（只认 gh 标签地址，两种标签；npm / 分支地址返回 null） */
 export function swapVer(url, to) {
-  const m = String(url).match(/@map-v(\d+\.\d+\.\d+)\//);
-  return m && /^\d+\.\d+\.\d+$/.test(String(to)) ? String(url).replace(m[0], `@map-v${to}/`) : null;
+  const m = String(url).match(/@(map-(?:s\d+-)?v\d+\.\d+\.\d+(?:\.\d+)?)\//);
+  return m && VER_RE.test(String(to)) ? String(url).replace(m[0], `@${tagOf(to)}/`) : null;
 }
 /** 需要弹一次提示的警告签名（同一组警告只提示一次，不按聊天重复） */
 export const warnSig = items => items.filter(i => i.status === 'warn').map(i => i.id).sort().join(',');
@@ -179,4 +199,35 @@ export function updateVerdict(current, latest, channel) {
   if (!latest) return { status: 'fail' };
   if (!current) return { status: 'new', latest, channel };
   return cmpVer(latest, current) > 0 ? { status: 'new', latest, current, channel } : { status: 'latest', latest, current, channel };
+}
+
+// ---------------- 自动检查更新（启动时；设置「自动检查更新」默认开） ----------------
+// 每个会话（页面）最多查一次，两次联网至少隔 AUTO_EVERY（6 小时，期间用上次的结果）；本地 / 单独打开不查。
+export const AUTO_EVERY = 6 * 3600 * 1000;
+/** 这次启动怎么办：'skip'（关了 / 本地 / 本会话查过）、'cached'（6 小时内查过，用缓存的 latest）、'fetch'（联网查） */
+export function autoCheckPlan({ enabled = true, channel = 'local', sessionDone = false, cache = null, now = Date.now() } = {}) {
+  if (!enabled || channel === 'local' || sessionDone) return 'skip';
+  const at = +cache?.at || 0;
+  return at > 0 && now >= at && now - at < AUTO_EVERY ? 'cached' : 'fetch';
+}
+/** 要不要弹「地图有新版」：有新版、不是用户说过「此版本不再提示」的那个版本 */
+export const shouldPrompt = (verdict, skipVer) => verdict?.status === 'new' && !!verdict.latest && verdict.latest !== skipVer;
+/** 提示文案：怎么更新取决于脚本是跟随分支（刷新即可）还是钉了版本（重新导入） */
+export function updatePromptText(latest, channel, en = false) {
+  const follow = channel === 'follow';
+  return {
+    title: en ? `New map version ${fmtVer(latest)}` : `地图有新版 ${fmtVer(latest)}`,
+    how: follow ? (en ? 'Your script follows the branch: reload the Tavern page to use it.' : '你的脚本跟随分支：刷新酒馆页面就会用上')
+      : (en ? `Your script is pinned: re-import the new script "[Map] Eden map ${fmtVer(latest)}" (same name, overwrite).` : `你的脚本钉了版本：重新导入新版脚本「【地图】伊甸地图 ${fmtVer(latest)}」（同名覆盖）`),
+    notes: en ? 'Release notes' : '更新说明', later: en ? 'Later' : '稍后', skip: en ? "Don't remind me for this version" : '此版本不再提示',
+  };
+}
+// ---------------- 强制更新（最新正式版的 build.json 里写 min_version / force_reason）----------------
+/** 正在用的版本低于 min_version → 需要强制提示（本次会话可以关，下次加载再弹；地图照常可用） */
+export const mustUpdate = (current, min) => !!current && !!min && VER_RE.test(String(min)) && cmpVer(current, min) < 0;
+export function forceText(current, min, latest, channel, reason = '', en = false) {
+  const p = updatePromptText(latest || min, channel, en);
+  return { title: en ? `Map ${fmtVer(current)} is no longer supported: please update` : `此版本（${fmtVer(current)}）已停止支持，请更新`,
+    lines: [reason ? String(reason).slice(0, 200) : (en ? `Minimum supported version: ${fmtVer(min)}.` : `最低支持版本 ${fmtVer(min)}`), p.how], notes: p.notes,
+    close: en ? 'Close for this session' : '本次关闭' };
 }

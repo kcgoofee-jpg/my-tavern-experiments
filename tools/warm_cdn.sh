@@ -4,7 +4,7 @@
 # 用法：bash tools/warm_cdn.sh [版本，默认 map-v$(cat VERSION)] [并发，默认 16]
 set -euo pipefail
 cd "$(dirname "$0")/.."
-REF=${1:-map-v$(< VERSION)}; JOBS=${2:-16}
+REF=${1:-$(python3 -c "import sys; sys.path.insert(0, 'tools'); import verlib; print(verlib.tag_of(open('VERSION').read().strip()))")}; JOBS=${2:-16}   # 标签规则见 tools/verlib.py
 BASE="https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@$REF"
 N=$(git ls-tree -r --name-only "$REF" -- map | grep -vE '\.(md|py)$' | wc -l | tr -d ' ')
 echo "预热 $REF：$N 个文件，并发 $JOBS"

@@ -6,7 +6,9 @@
 在用户面板上永久显示「脚本 vX 与地图 vY 版本不一致」；而构建号（编码里的 N）按「提交数 + 1」算，
 提交顺序一错就再也反查不回来。所以这里把能查的都查掉：
 
-  1. VERSION 是 X.Y.Z；
+  1. VERSION 是 X.Y.Z，或带第 4 段小修补丁 X.Y.Z.P（标签 map-vX.Y.Z.P，编码版本段 XYZZpP）；
+     新系列写 S<n>:X.Y.Z[.P]（标签 map-s<n>-vX.Y.Z[.P]，编码前缀 S<n>；规则在 tools/verlib.py，见 docs/versioning.md）；
+     build.json 可带 min_version（X.Y.Z[.P]，≤ version）/ force_reason：低于 min_version 的脚本弹「此版本已停止支持」；
   2. build.json 的 version == VERSION；
   3. build.json 的 code（S<赛季>-<版本>-<通道>-<构建号>）里的版本段 == VERSION；
   4. README 顶部「当前发布版本 `X.Y.Z`」== VERSION；
@@ -19,6 +21,8 @@
 退出码：0 通过（可能有警告）；1 有错误。
 """
 import argparse, json, os, re, subprocess, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import verlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 errors, warns = [], []
@@ -37,9 +41,11 @@ def main():
     if not os.path.exists(vp):
         print('错误 没有 VERSION 文件'); return 1
     ver = open(vp, encoding='utf-8').read().strip()
-    if not re.fullmatch(r'\d+\.\d+\.\d+', ver):
-        errors.append(f'VERSION「{ver}」不是 X.Y.Z')
-    tag = a.tag or f'map-v{ver}'
+    pv = verlib.parse(ver)
+    if not pv:
+        errors.append(f'VERSION「{ver}」不是 X.Y.Z[.P] 或 S<n>:X.Y.Z[.P]'); pv = (1, '0.0.0')
+    series, plain = pv
+    tag = a.tag or (verlib.tag_of(ver) if verlib.parse(ver) else f'map-v{ver}')
 
     # 2/3. build.json
     bp = os.path.join(ROOT, 'map', 'data', 'build.json')
@@ -50,22 +56,29 @@ def main():
         try: b = json.load(open(bp, encoding='utf-8'))
         except ValueError as e: errors.append(f'build.json 解析失败：{e}')
     if b:
-        if b.get('version') != ver:
-            errors.append(f'build.json 的 version「{b.get("version")}」≠ VERSION「{ver}」——'
+        if b.get('version') != plain:
+            errors.append(f'build.json 的 version「{b.get("version")}」≠ VERSION「{ver}」（build.json 不写系列前缀，应是「{plain}」）——'
                           f'用户自检会一直报「脚本与地图版本不一致」')
-        m = re.fullmatch(r'S(\d+)-(\d+)-([RBTD])-(\d{4})', str(b.get('code', '')))
+        m = verlib.CODE_RE.fullmatch(str(b.get('code', '')))
         if not m:
             errors.append(f'build.json 的 code「{b.get("code")}」不符合 S<赛季>-<版本>-<通道>-<构建号>')
         else:
-            major, minor, patch = (int(x) for x in ver.split('.'))
-            want = f'{major}{minor}{patch:02d}'
+            want = verlib.code_seg(plain)
+            if int(m.group(1)) != series:
+                errors.append(f'build.json 的 code 系列「S{m.group(1)}」≠ VERSION 的系列「S{series}」')
             if m.group(2) != want:
                 errors.append(f'build.json 的 code 版本段「{m.group(2)}」≠ VERSION 推出的「{want}」')
+
+        mv = b.get('min_version')
+        if mv is not None:
+            if not verlib.parse(mv): errors.append(f'build.json 的 min_version「{mv}」不是 X.Y.Z[.P] 或 S<n>:X.Y.Z[.P]')
+            elif verlib.key(mv) > verlib.key(ver):
+                errors.append(f'build.json 的 min_version {mv} 比本版 {ver} 还新：所有人（包括本版）都会被要求更新')
 
     # 4. README
     rp = os.path.join(ROOT, 'README.md')
     if os.path.exists(rp):
-        mt = re.search(r'当前发布版本\s*`([\d.]+)`', open(rp, encoding='utf-8').read())
+        mt = re.search(r'当前发布版本\s*`((?:S\d+:)?[\d.]+)`', open(rp, encoding='utf-8').read())
         if not mt: warns.append('README 顶部没找到「当前发布版本 `X.Y.Z`」')
         elif mt.group(1) != ver: errors.append(f'README「当前发布版本 {mt.group(1)}」≠ VERSION「{ver}」')
 
@@ -75,7 +88,7 @@ def main():
     if os.path.exists(cp):
         txt = open(cp, encoding='utf-8').read()
         for line in txt.splitlines():
-            if line.startswith(f'## {ver}'):
+            if re.match(rf'## {re.escape(ver)}(?![\d.])', line):   # 0.9.6 不能匹配到 0.9.6.1 的小节
                 head = line.strip(); break
         if head is None:
             errors.append(f'CHANGELOG 没有「## {ver}」小节')
@@ -96,7 +109,7 @@ def main():
                 if tb != b: errors.append(f'{tag} 里的 build.json 与当前工作区不一致（{tb} vs {b}）')
             except ValueError as e: errors.append(f'{tag} 里的 build.json 解析失败：{e}')
         # 构建号反查
-        if b and (m := re.fullmatch(r'S(\d+)-(\d+)-([RBTD])-(\d{4})', str(b.get('code', '')))):
+        if b and (m := verlib.CODE_RE.fullmatch(str(b.get('code', '')))):
             n = int(sh('git', 'rev-list', '--count', tag).stdout.strip() or 0)
             if n and n != int(m.group(4)):
                 errors.append(f'build.json 构建号 {int(m.group(4))} ≠ {tag} 的提交数 {n}'
