@@ -14,6 +14,7 @@ const STUB = `<script>
     window.getVariables = function (o) { return o && o.type === 'chat' ? JSON.parse(JSON.stringify(parent.__vars)) : {}; };
     window.updateVariablesWith = async function (f, o) { if (o && o.type === 'chat') parent.__vars = f(JSON.parse(JSON.stringify(parent.__vars))); return parent.__vars; };
     window.createOrReplaceWorldbook = async function (n, e) { (parent.__wb = parent.__wb || {})[n] = e; return true; };
+    window.getWorldbookNames = function () { return Object.keys(parent.__wb || {}); };
     window.getChatWorldbookName = function () { return parent.__chatWb || null; };
     window.rebindChatWorldbook = async function (c, n) { parent.__chatWb = n; };
   }

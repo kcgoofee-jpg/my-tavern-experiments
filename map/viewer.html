@@ -468,7 +468,7 @@
 </div></div>
 <div id="setPop" class="pop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置"><div class="acts" hidden><button type="button" class="btn" id="actUp" hidden></button><button type="button" class="btn" id="actClose" hidden data-i18n="act_close">关闭地图</button></div><div class="more"></div><label><span data-i18n="auto_here">打开地图时自动跳到当前地点</span><input type="checkbox" role="switch" id="optAutoHere" checked></label><small data-i18n="auto_here_hint">庄园房间直达对应楼层；地标、层、世界地名各自落到对应的图</small>
   <label class="row"><span data-i18n="no_fx">关闭花屏特效</span><input type="checkbox" role="switch" id="optNoFx"></label><small data-i18n="no_fx_hint">网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字</small>
-  <h3 class="a11y" data-i18n="a11y_h">单手</h3><div class="hrow"><span id="handLbl" data-i18n="hand">惯用手</span><div class="seg" id="handSeg" role="group" aria-labelledby="handLbl"><button type="button" data-hand="auto" data-i18n="hand_auto">自动</button><button type="button" data-hand="left" data-i18n="hand_left">左手</button><button type="button" data-hand="right" data-i18n="hand_right">右手</button></div></div><small data-i18n="hand_hint">手机上菜单、缩放、楼层条移到这只手的拇指一侧；自动 = 看地图悬浮按钮拖在哪边。单指缩放：双击后按住，上下拖</small></div>
+  <h3 class="a11y" data-i18n="a11y_h">单手</h3><div class="hrow"><span id="handLbl" data-i18n="hand">惯用手</span><div class="seg" id="handSeg" role="group" aria-labelledby="handLbl"><button type="button" data-hand="auto" data-i18n="hand_auto">自动</button><button type="button" data-hand="left" data-i18n="hand_left">左手</button><button type="button" data-hand="right" data-i18n="hand_right">右手</button></div></div></div>
 <div id="card" hidden role="dialog" aria-labelledby="cardTitle"><div class="grab" aria-hidden="true"></div><div class="top"><span class="tag"></span><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><h2 id="cardTitle" tabindex="-1"></h2><div class="sub"></div><div class="src"></div><div class="extra"></div></div>
 <div id="setMask" hidden></div>
 <div id="sr" class="sr-only" aria-live="polite"></div>
@@ -904,8 +904,9 @@ function estateLook() {
   w.postMessage({ type: 'estate:lang', lang: LANG }, '*');
   w.postMessage({ type: 'estate:theme', theme: document.documentElement.classList.contains('light') ? 'light' : 'dark' }, '*');
 }
+let estFocus = null;   // v0.9.5：「自定义」里点了某个房间 / 室外区域 → 庄园聚焦它（优先于当前地点，地点变了就清掉）
 function estateRoom() { if (!est?.ready) return; const v = ($('#here').value || '').replace('{{user}}', ''), r = hereRes(v);
-  est.frame.contentWindow?.postMessage({ type: 'estate:room', name: r?.custom ? r.room : v }, '*'); }   // 自定义叫法：庄园页收到的是对应的标准房间名
+  est.frame.contentWindow?.postMessage({ type: 'estate:room', name: estFocus || (r?.custom ? r.room : v) }, '*'); }   // 自定义叫法：庄园页收到的是对应的标准房间名
 window.addEventListener('message', e => {
   if (!est || e.source !== est.frame.contentWindow) return;
   if (e.data?.type === 'estate:ready') onEstateReady();
@@ -956,6 +957,7 @@ function stepLayer(d) {
     if (REG.maps[g.layers[j]].status !== 'planned') { pendingFocus = null; go(g.layers[j]); return; }
 }
 document.addEventListener('keydown', e => {
+  if (typeof TCCustom !== 'undefined' && TCCustom.dlgKey(e)) return;   // 「自定义」对话框开着：按键归它（Esc 逐页返回 / 关闭）
   // Esc 逐层关闭：设置 / 「⋯」菜单 → 事态列表 → 卡片；都没开时交给酒馆（关闭面板）（E4 N20）
   if (e.key === 'Escape') {
     if (!$('#setPop').hidden) { showSet(false); $('#setBtn').focus(); }
@@ -1436,7 +1438,7 @@ function v3dFly({ map, hotspot } = {}) {
 window.addEventListener('message', e => { if (e.data?.type !== 'estate:ready' || !est || e.source !== est.frame.contentWindow || !v3dPending) return;
   est.frame.contentWindow.postMessage({ type: 'v3d:fly', hotspot: v3dPending }, '*'); v3dPending = null; });
 window.EdenMap = Object.freeze({
-  flyTo(o) { return v3dFly(o || {}); },   // 目前只支持 viewer3d 地图：{ map: 'dairy', hotspot: 'tank' }
+  flyTo(o) { return o?.hotspot ? v3dFly(o) : TCCustom.flyTo(o); },   // viewer3d：{ map: 'dairy', hotspot: 'tank' }；v0.9.5 地图：{ map, marker | room | area | character }
   // v0.9.3 自定义名称与用途（custom.js）；旧名 setRoomAlias / removeRoomAlias 保留：房间叫法 = 该房间的显示名
   setCustom(key, patch) { return TCCustom.setCustom(key, patch || {}); }, removeCustom(key) { return TCCustom.removeCustom(key); }, getCustom() { return TCCustom.data; },
   setRoomAlias(name, room) { const std = hereIdx?.estate?.std || null; room = String(room || '').trim(); name = String(name || '').trim();
@@ -1531,7 +1533,7 @@ if (window.top !== window) {
   document.body.classList.add('embed');
   window.addEventListener('message', e => {
     // bg = 酒馆在后台预加载（面板不可见）：不进庄园，也不消耗「打开后第一次一定跳」的资格
-    if (e.data?.type === 'eden-map:here') { bgMode = !!e.data.bg; $('#here').value = e.data.value || ''; markHere(e.data.value);
+    if (e.data?.type === 'eden-map:here') { bgMode = !!e.data.bg; if (($('#here').value || '') !== (e.data.value || '')) estFocus = null; $('#here').value = e.data.value || ''; markHere(e.data.value);
       if (bootT) bootStart(); else if (!jumpHere(e.data.value || '', hereFresh)) focusStart(false);
       if (!bgMode) hereFresh = false; emEmit('here', { value: e.data.value || '', resolved: hereRes(e.data.value || '') }); }
     if (e.data?.type === 'eden-map:open') clearTimeout(bootT), bootT = 0;
@@ -1542,11 +1544,13 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:custom') TCCustom.fromHost(e.data);   // v0.9.3：自定义名称与用途（聊天变量）
     if (e.data?.type === 'eden-map:clock') TCCustom.setClock(e.data);   // 世界时间 → 夜色
     if (e.data?.type === 'eden-map:outfit') TCCustom.setOutfit(e.data);   // 主角着装 → 本人地点卡
+    if (e.data?.type === 'eden-map:fly') TCCustom.flyTo(e.data.target);   // v0.9.5 EdenMap.flyTo(target)
     if (e.data?.type === 'eden-map:toast') TCCustom.toast(e.data.items || []);   // 剧情改名 / 用途的一次性提示
     if (e.data?.type === 'eden-map:selfcheck') { selfCheck = e.data; renderSelfCheck(); }   // 卡内脚本的启动自检结果（E6）   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
     // 面板关闭时休眠：关掉底图（释放已解码的瓦片），脚本与数据留着；再打开时唤醒，重新打开当前地图
     if (e.data?.type === 'eden-map:sleep' && viewer) { saveView(); sleeping = cur || (bootT ? BOOT : null); clearTimeout(bootT); bootT = 0; cur = null; est?.frame.remove(); est = null; document.body.classList.remove('estate'); viewer.close(); untrackAll(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }
-    if (e.data?.type === 'eden-map:wake' && sleeping) { slowStop = true; const id = sleeping; sleeping = null; hereFresh = true; if (id === BOOT) bootLater(); else go(id); }
+    if (e.data?.type === 'eden-map:wake' && sleeping) { slowStop = true; const id = sleeping; sleeping = null; hereFresh = true; if (e.data.fly && id !== BOOT) TCCustom.flyTo(e.data.fly); else if (id === BOOT) bootLater(); else go(id); }
+    else if (e.data?.type === 'eden-map:wake' && e.data.fly) TCCustom.flyTo(e.data.fly);
   });
 }
 document.addEventListener('DOMContentLoaded', main);   // 两个 defer 脚本（地图库、事态层）执行完之后

@@ -46,8 +46,13 @@
   #${ID} { --em-gold: #e6c36a; --em-alert: #ff5a5a; --em-on-alert: #1a0606; --em-ok: #7bd88f; --em-focus: #63b4be;
     --em-bg: #151b20; --em-surface-2: rgba(255,255,255,.06); --em-line: rgba(255,255,255,.12); --em-line-2: rgba(255,255,255,.22); --em-ink: #d5dde4; --em-muted: #8591a0; --em-accent: #e6c36a; --em-on-accent: #1a1406;
     --em-font: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", system-ui, sans-serif; }
-  #${ID} .em-panel.em-light { --em-bg: #f8f5ee; --em-surface-2: rgba(20,23,26,.05); --em-line: rgba(20,23,26,.16); --em-line-2: rgba(20,23,26,.26); --em-ink: #1b1a17; --em-muted: #635e54;
+  #${ID}.em-light { --em-bg: #f8f5ee; --em-surface-2: rgba(20,23,26,.05); --em-line: rgba(20,23,26,.16); --em-line-2: rgba(20,23,26,.26); --em-ink: #1b1a17; --em-muted: #635e54;
     --em-accent: #7a5d22; --em-on-accent: #fff; --em-alert: #c0392b; --em-on-alert: #fff; --em-ok: #23733b; --em-focus: #2d6c75; }
+  /* 自检小提示：跟着面板的深 / 浅主题（v0.9.5，之前写死深色） */
+  #${ID} .em-ctoast { position: fixed; left: 50vw; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 76px); z-index: 30002; max-width: min(420px, 92vw); box-sizing: border-box;
+    padding: 10px 40px 10px 14px; border-radius: 10px; background: var(--em-bg); color: var(--em-ink); border: 1px solid var(--em-accent); box-shadow: 0 6px 20px rgba(0,0,0,.35); font: 12px/1.55 var(--em-font); }
+  #${ID} .em-ctoast b { color: var(--em-accent); }
+  #${ID} .em-ctoast button { position: absolute; right: 4px; top: 4px; width: 44px; height: 44px; border: 0; background: none; color: var(--em-muted); font: 18px/1 system-ui; cursor: pointer; }
   #${ID} :focus-visible { outline: 2px solid var(--em-focus); outline-offset: 2px; }
   /* 只用视口单位定位：酒馆的 <html> 带 transform，会成为 fixed 的包含块且高度为 0 */
   #${ID} .em-fab { position: fixed; left: calc(100vw - 66px); top: calc(100dvh - 144px); z-index: 30000; width: 48px; height: 48px; border-radius: 50%;
@@ -170,8 +175,13 @@
     en: { title: 'NC 2088', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%', open: 'Open world map', fab: 'World map' } };
   let UL = 'zh', mapTitle = ''; try { UL = localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) {}
   const U = k => UI[UL][k];
-  { let th = 'auto'; try { th = localStorage.getItem('edenMapTheme') || 'auto'; } catch (e) {}
-    panel.classList.toggle('em-light', th === 'light' || (th === 'auto' && window.parent.matchMedia?.('(prefers-color-scheme: light)').matches)); }
+  // 深 / 浅主题挂在根元素上（面板、自检提示一起换）；地图没开着时系统切换深浅也跟上（v0.9.5）
+  const themeMq = window.parent.matchMedia?.('(prefers-color-scheme: light)');
+  const hostTheme = th => root.classList.toggle('em-light', th === 'light' || (th === 'auto' && !!themeMq?.matches));
+  const storedTheme = () => { try { return localStorage.getItem('edenMapTheme') || 'auto'; } catch (e) { return 'auto'; } };
+  hostTheme(storedTheme());
+  const onThemeMq = () => { if (storedTheme() === 'auto') hostTheme('auto'); };
+  themeMq?.addEventListener?.('change', onThemeMq);
   const showLine = () => { const l = LINES.find(x => x.key === line); lineBtn.textContent = U('line') + (l ? (UL === 'en' && l.name_en) || l.name : U('unset')); };
   // v0.9.2：标题只写纪年，层名只在地图的面包屑里出现一次
   const showTitle = () => { titleEl.textContent = U('title'); root.querySelector('.em-close').setAttribute('aria-label', U('close'));
@@ -314,7 +324,7 @@
     if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
     if (e.data?.type === 'eden-map:state') {
       if (e.data.lang && e.data.lang !== UL && UI[e.data.lang]) { UL = e.data.lang; showLine(); push(); }
-      if (e.data.theme) panel.classList.toggle('em-light', e.data.theme === 'light');
+      if (e.data.theme) hostTheme(e.data.theme);
       if (e.data.hand && e.data.hand !== handPref) { handPref = e.data.hand; applyHand(true); }
       mapTitle = e.data.title || ''; showTitle(); }
     if (e.data?.type === 'eden-map:esc') close();   // 地图里没有可关的卡片 / 列表时，Esc 关闭面板
@@ -449,7 +459,7 @@
   // ---------------- v0.9.3 自定义名称与用途（聊天变量 eden_map.自定义；酒馆助手没有变量接口时退回本机 localStorage） ----------------
   // 不写进 stat_data：卡的 MVU zod 结构会丢掉未知键。删除一项要整块替换，所以写入优先用 updateVariablesWith / replaceVariables（insertOrAssignVariables 是深合并，删不掉键）。
   // 剧情标签 ⌖改名 / ⌖用途：只处理比 eden_map.标签楼 新的楼层，处理后记下楼层；每条在地图的事态横条上方提示一次。
-  // 「同步到世界书」默认关；打开时才建世界书「伊甸地图·自定义」（一个常驻条目），当前聊天没有绑定聊天世界书时绑定到这个聊天。
+  // 「同步到世界书」默认开（v0.9.5；自己关过的保持关）；有了第一项自定义才建世界书「伊甸地图·自定义·<聊天>」（一个常驻条目），当前聊天没有绑定聊天世界书时绑定到这个聊天。
   let custom = null, tagFloor = -1, customChat = null, toastQ = [], regP = null;
   const varsOk = () => fnOk('getVariables') && (fnOk('updateVariablesWith') || fnOk('replaceVariables') || fnOk('insertOrAssignVariables'));
   const lsCustomKey = () => 'edenMap:chat:' + (chatId() || '') + ':custom2';
@@ -490,6 +500,9 @@
     tagLog = Array.isArray(v.标签记录) ? v.标签记录.filter(r => r && Number.isFinite(r.floor) && typeof r.key === 'string').slice(-30) : [];
     tagSeen = v.楼层指纹 && typeof v.楼层指纹 === 'object' ? { ...v.楼层指纹 } : {};
     if (v.自定义 === undefined) { const mig = await migrateOld(); if (customChat !== id) return; if (mig) await saveRoot(); }
+    else if (v.自定义?.同步世界书 === false && !v.自定义.同步手动) {   // 0.9.3 的数据：建过这一本世界书 = 自己关掉的，保持关；否则按新默认（开）
+      const had = await wbExists(MV.wbName(id)); if (customChat !== id) return;
+      custom = MV.normCustom(MV.syncMigrate(v.自定义, had)); custom.同步手动 = true; await saveRoot(); }   // 迁移结果立刻写回（否则下次加载会把新建的世界书当成「自己关过」）
     if (customChat !== id) return;
     customChanged(false);
   }
@@ -500,11 +513,14 @@
   }
   function sendCustom() { if (alive && custom) post({ type: 'eden-map:custom', data: custom, vars: varsOk(), wb: wbOk(), wbState }); flushToasts(); }
   const wbOk = () => fnOk('createOrReplaceWorldbook') || fnOk('createWorldbook');
+  async function wbExists(n) { try { return fnOk('getWorldbookNames') ? (await getWorldbookNames() || []).includes(n) : false; } catch (e) { return false; } }
   let wbState = '';
   // 世界书按聊天分开（MV.wbName(聊天 id)），不然绑定了同一本的聊天会互相注入；关掉同步时把条目停用（不删世界书）
   async function syncWb(on = true) {
     if (!wbOk()) { wbState = 'noapi'; return false; }
     const content = MV.wbContent(custom), WBN = MV.wbName(customChat);
+    // 用到才建（v0.9.5）：还没有任何自定义时不建世界书；已经建过的照常写（条目停用）
+    if (!content && !(await wbExists(WBN))) { wbState = on ? 'empty' : ''; sendCustom(); return true; }
     const entry = { name: MV.WB_ENTRY, enabled: on && !!content, strategy: { type: 'constant', keys: [] }, position: { type: 'after_character_definition', order: 903 }, content: content || '（空）',
       recursion: { prevent_incoming: true, prevent_outgoing: true } };
     if (fnOk('createOrReplaceWorldbook')) await createOrReplaceWorldbook(WBN, [entry]); else await createWorldbook(WBN, [entry]);
@@ -560,7 +576,7 @@
     async setCustom(key, patch = {}) { if (!MV || !custom) await loadCustom(); if (!MV) return false; await reg(); const k = String(key || '').trim(), r = MV.setCustom(custom, k, { ...patch, kind: patch.kind || custom.items[k]?.类 || kindOf(k) }); if (!r) return false; custom = r; customChanged(true); return true; },
     async removeCustom(key) { if (!MV || !custom) await loadCustom(); if (!MV) return false; const r = MV.removeCustom(custom, MV.findKey(custom, key) || key); if (!r) return false; custom = r; customChanged(true); return true; },
     async getCustom() { if (!MV || !custom) await loadCustom(); return { ...MV.normCustom(custom), storage: varsOk() ? 'chat' : 'local', worldbook: wbState ? { name: MV.wbName(customChat), state: wbState } : null }; },
-    async setWorldbookSync(on) { if (!MV || !custom) await loadCustom(); const was = !!custom.同步世界书; custom = { ...custom, 同步世界书: !!on }; if (!on && was && !wbState) wbState = 'off'; customChanged(true); return true; },
+    async setWorldbookSync(on) { if (!MV || !custom) await loadCustom(); const was = !!custom.同步世界书; custom = { ...custom, 同步世界书: !!on, 同步手动: true }; if (!on && was && !wbState) wbState = 'off'; customChanged(true); return true; },
     // 旧名字保留（≤ 0.9.2）：房间叫法 = 该房间的自定义显示名
     async setRoomAlias(name, room) { const rooms = roomsKnown || Object.values((await reg())?.maps || {}).find(m => m.kind === 'estate')?.rooms || null;
       if (rooms && (!rooms.includes(String(room).trim()) || rooms.includes(String(name).trim()))) return false; return api.setCustom(room, { name, kind: 'room' }); },
@@ -649,12 +665,11 @@
   function sendCheck() { if (alive && checkItems.length) post({ type: 'eden-map:selfcheck', items: checkItems, canUpdate: !!(VER && swappable && SC?.swapVer(import.meta.url, VER)), autoUpdate: lsGet(AUTO_UPD_KEY) === '1' }); }
   function toastOnce() {   // 有 ⚠ 时弹一次小提示；同一组警告不再弹（换聊天也不弹）
     const sig = SC.warnSig(checkItems); if (!sig || sig === lsGet(TOAST_KEY)) return; lsSet(TOAST_KEY, sig);
-    toastEl?.remove(); const t = toastEl = pdoc.createElement('div'); t.setAttribute('role', 'status');
-    t.style.cssText = 'position:fixed;left:50vw;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 76px);z-index:30002;max-width:min(420px,92vw);box-sizing:border-box;padding:10px 40px 10px 14px;border-radius:10px;background:#151b20;color:#d5dde4;border:1px solid rgba(230,195,106,.6);box-shadow:0 6px 20px rgba(0,0,0,.35);font:12px/1.55 "PingFang SC","Noto Sans SC",system-ui,sans-serif';
+    toastEl?.remove(); const t = toastEl = pdoc.createElement('div'); t.setAttribute('role', 'status'); t.className = 'em-ctoast';
     const warns = checkItems.filter(i => i.status === 'warn'), L = UL === 'en' ? 'en' : 'zh';
-    t.innerHTML = `<b style="color:#e6c36a">${UL === 'en' ? 'Map self-check' : '地图自检'}</b><button type="button" aria-label="${UI[UL].close}" style="position:absolute;right:4px;top:4px;width:32px;height:32px;border:0;background:none;color:#8591a0;font:18px/1 system-ui;cursor:pointer">×</button>`;
+    t.innerHTML = `<b>${UL === 'en' ? 'Map self-check' : '地图自检'}</b><button type="button" aria-label="${UI[UL].close}">×</button>`;
     for (const w of warns) { const d = pdoc.createElement('div'); d.textContent = '⚠ ' + w[L]; t.appendChild(d); }
-    t.querySelector('button').onclick = () => t.remove(); pdoc.body.appendChild(t); setTimeout(() => t.remove(), 20000);
+    t.querySelector('button').onclick = () => t.remove(); root.appendChild(t); setTimeout(() => t.remove(), 20000);
   }
   function switchVersion() {   // 本次会话换成新正式版：加载新标签的同一个脚本，它会清掉这一份（要长期用，重新导入新版脚本）
     const nv = updInfo?.latest, url = nv && SC?.swapVer(import.meta.url, nv);
@@ -724,7 +739,7 @@
   })();
 
   // 脚本被关闭或重载时清理注入的元素
-  const cleanup = () => { clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); pdoc.removeEventListener('keydown', onKey);
+  const cleanup = () => { clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
     if (window.parent.EdenMap === api) delete window.parent.EdenMap; toastEl?.remove();
     if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup;
     try { window.parent.__edenMapLoads = (window.parent.__edenMapLoads || []).filter(u => u !== SELF); } catch (e) {} };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）
