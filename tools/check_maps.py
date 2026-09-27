@@ -38,7 +38,8 @@ for mid, m in maps.items():
         src = m.get('src', '')
         if not src or not os.path.exists(os.path.join(ROOT, src)): err(f'{mid}: 缺庄园页面 src {src!r}')
         if not m.get('parent'): err(f'{mid}: estate 地图要有 parent（面包屑回到哪一层）')
-        if not isinstance(m.get('alias'), list) or not m['alias']: err(f'{mid}: alias 应为非空列表（当前地点匹配房间用）')
+        if m.get('viewer3d') and not os.path.exists(os.path.join(ROOT, 'props', m['viewer3d'], 'manifest.json')): err(f"{mid}: viewer3d 清单 props/{m['viewer3d']}/manifest.json 不存在")
+        if not m.get('test') and (not isinstance(m.get('alias'), list) or not m['alias']): err(f'{mid}: alias 应为非空列表（当前地点匹配房间用）')
         if m.get('group') and not (m.get('layer') or {}).get('name'): err(f'{mid}: 在 group 里要有 layer.name（层切换器显示）')
         for f in ('rooms', 'rooms_en', 'areas', 'areas_en'):   # 当前地点 → 庄园房间 / 室外区域（map/here.mjs）
             if f in m and not (isinstance(m[f], list) and all(isinstance(w, str) and w for w in m[f])): err(f'{mid}.{f} 应为非空字符串列表')

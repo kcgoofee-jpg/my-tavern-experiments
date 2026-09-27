@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>三维查看器</title>
+<!--
+  通用三维查看器：viewer3d.html?model=<id> 读 <id>/manifest.json（glb、热点、网格分组、相机）。
+  渲染：随仓库的 three（../estate/vendor/），烘焙光照 → MeshBasicMaterial，无灯光、无阴影、无后处理。
+  嵌入（viewer.html 的 kind=estate + viewer3d 字段）：blob iframe，<base> 指向本目录；模型 id 由注入的 window.__V3D_MODEL 给。
+  消息（与旧庄园页同一套）：
+    宿主 → 本页：estate:lang {lang} / estate:theme {theme} / estate:inset {left} / v3d:fly {hotspot}
+    本页 → 宿主：estate:ready（界面就绪，模型自己显示进度）/ estate:fail {reason} / v3d:state {mode, hotspot}
+  调试：window.__v3d（stats、setMode、fly、orbitBench）。?tier=low|high 强制档位，?lang=en。
+-->
+<link rel="stylesheet" href="../ui/tokens.css">
+<script type="importmap">{ "imports": { "three": "../estate/vendor/three.module.min.js", "three/addons/": "../estate/vendor/jsm/" } }</script>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font: var(--fs-body)/1.45 var(--font-ui); -webkit-font-smoothing: antialiased; }
+  body { --inset: 0px; }
+  canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+  button { font: inherit; color: inherit; }
+  .btn { min-height: var(--hit); min-width: var(--hit); padding: 0 var(--sp-5); border: 1px solid var(--line); border-radius: var(--r-m); background: var(--surface-glass); color: var(--ink); cursor: pointer; }
+  .btn:hover { border-color: var(--line-strong); }
+  .btn[aria-pressed="true"], .seg button[aria-checked="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .panel { background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-2); }
+  @media (hover: hover) and (pointer: fine) { .panel { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); } }
+  #top { position: fixed; top: calc(var(--sp-4) + env(safe-area-inset-top)); left: calc(var(--sp-4) + var(--inset)); right: var(--sp-4); display: flex; flex-wrap: wrap; gap: var(--sp-4); align-items: flex-start; pointer-events: none; }
+  #top > * { pointer-events: auto; }
+  .seg { display: inline-flex; padding: 2px; gap: 2px; }
+  .seg button { min-height: 40px; min-width: 56px; border: 0; border-radius: var(--r-m); background: transparent; padding: 0 var(--sp-5); cursor: pointer; font-size: var(--fs-control); }
+  #cut { display: flex; align-items: center; gap: var(--sp-4); padding: 0 var(--sp-5); min-height: var(--hit); font-size: var(--fs-small); }
+  #cut[hidden] { display: none; }
+  #cut input { width: 140px; height: var(--hit); accent-color: var(--accent); }
+  #cut output { min-width: 3.5em; font-variant-numeric: tabular-nums; }
+  #listBtn { margin-left: auto; }
+  #list { position: fixed; top: calc(60px + env(safe-area-inset-top)); right: var(--sp-4); width: 240px; max-height: calc(100% - 140px); overflow: auto; padding: var(--sp-3); }
+  #list h2 { margin: var(--sp-3) var(--sp-4); font-size: var(--fs-small); color: var(--muted); font-weight: 600; }
+  #list ol { list-style: none; margin: 0; padding: 0; }
+  #list li button { display: flex; width: 100%; min-height: var(--hit); align-items: center; gap: var(--sp-4); padding: 0 var(--sp-4); border: 0; border-radius: var(--r-m); background: transparent; text-align: left; cursor: pointer; }
+  #list li button:hover { background: var(--surface-2); }
+  #list li button[aria-current="true"] { background: var(--accent-weak); color: var(--ink); box-shadow: inset 3px 0 var(--accent); }
+  #list li i { width: 20px; height: 20px; border-radius: 50%; flex: none; display: grid; place-items: center; font: 600 var(--fs-micro)/1 var(--font-ui); font-style: normal; background: var(--surface-2); border: 1px solid var(--line); }
+  #card { position: fixed; left: calc(var(--sp-4) + var(--inset)); bottom: calc(var(--sp-4) + env(safe-area-inset-bottom)); width: min(360px, calc(100% - 16px - var(--inset))); padding: var(--sp-5) var(--sp-6); box-sizing: border-box; }
+  #card h3 { margin: 0 44px var(--sp-2) 0; font-size: var(--fs-title); }
+  #card p { margin: 0; color: var(--ink-2); }
+  #card small { display: block; margin-top: var(--sp-3); color: var(--muted); font-size: var(--fs-small); }
+  #card .x { position: absolute; top: 2px; right: 2px; border: 0; background: transparent; }
+  #pins { position: fixed; inset: 0; pointer-events: none; }
+  .pin { position: absolute; left: 0; top: 0; width: var(--hit); height: var(--hit); margin: -22px 0 0 -22px; border: 0; padding: 0; background: transparent; pointer-events: auto; cursor: pointer; display: grid; place-items: center; }
+  .pin span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 600 var(--fs-micro)/1 var(--font-ui); background: var(--map-label-bg); color: var(--map-label-ink); border: 1.5px solid var(--gold); box-shadow: var(--sh-1); }
+  .pin.on span { background: var(--gold); color: #1a1406; transform: scale(1.15); }
+  .pin[hidden] { display: none; }
+  #credit { position: fixed; right: var(--sp-4); bottom: calc(var(--sp-2) + env(safe-area-inset-bottom)); font-size: var(--fs-micro); color: var(--muted); pointer-events: none; text-shadow: 0 0 3px var(--bg); }
+  #load { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); transition: opacity var(--dur-3); z-index: 5; }
+  #load.done { opacity: 0; pointer-events: none; }
+  #load > div { width: min(320px, 80%); text-align: center; }
+  #load .bar { height: 4px; margin: var(--sp-5) 0; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
+  #load .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width var(--dur-1); }
+  #load .acts { display: flex; gap: var(--sp-4); justify-content: center; }
+  #load .acts[hidden] { display: none; }
+  #fps { position: fixed; left: 50%; top: 4px; transform: translateX(-50%); font: var(--fs-micro) var(--font-mono); color: var(--muted); pointer-events: none; }
+  @media (max-width: 640px) {
+    #list { top: auto; right: var(--sp-4); left: var(--sp-4); width: auto; bottom: calc(var(--sp-4) + env(safe-area-inset-bottom)); max-height: 46%; }
+    #list[hidden] + #card, #card { bottom: calc(var(--sp-4) + env(safe-area-inset-bottom)); }
+    #cut input { width: 110px; }
+    .seg button { min-width: 48px; padding: 0 var(--sp-4); }
+    #credit { display: none; }
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="0" aria-label="三维模型"></canvas>
+<div id="pins" aria-hidden="false"></div>
+<div id="top">
+  <div class="seg panel" role="radiogroup" id="modes" aria-label="显示方式">
+    <button type="button" role="radio" data-mode="ext" aria-checked="true" data-t="mode_ext">外观</button>
+    <button type="button" role="radio" data-mode="xray" aria-checked="false" data-t="mode_xray">内透</button>
+    <button type="button" role="radio" data-mode="cut" aria-checked="false" data-t="mode_cut">剖切</button>
+  </div>
+  <label id="cut" class="panel" hidden><span data-t="cut_h">剖切高度</span><input type="range" id="cutH" min="0" max="6" step="0.05"><output id="cutV"></output></label>
+  <button type="button" class="btn panel" id="listBtn" aria-expanded="true" aria-controls="list" data-t="parts">部件</button>
+</div>
+<nav id="list" class="panel" aria-labelledby="listH"><h2 id="listH" data-t="parts_h">部件（点击飞过去）</h2><ol></ol></nav>
+<section id="card" class="panel" hidden aria-live="polite"><button type="button" class="btn x" aria-label="关闭" data-ta="close">✕</button><h3></h3><p></p><small></small></section>
+<div id="credit"></div>
+<div id="fps" hidden></div>
+<div id="load" role="status"><div><span class="txt">加载中…</span><div class="bar"><i></i></div><div class="acts" hidden><button type="button" class="btn" id="retry" data-t="retry">重试</button></div></div></div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+
+const Q = new URLSearchParams(location.search);
+const MODEL = window.__V3D_MODEL || Q.get('model') || 'dairy';
+const EMBED = window.top !== window;
+const $ = s => document.querySelector(s);
+let dirty = true;
+const post = m => { if (EMBED) try { parent.postMessage(m, '*'); } catch (e) {} };
+
+// ---------------- 语言 / 主题 ----------------
+const STR = {
+  zh: { mode_ext: '外观', mode_xray: '内透', mode_cut: '剖切', cut_h: '剖切高度', parts: '部件', parts_h: '部件（点击飞过去）', retry: '重试', close: '关闭',
+    loading: '加载模型 {p}', fail: '模型加载失败，请检查网络后重试', slow: '加载较慢…可以继续等，或重试', modes: '显示方式', canvas: '三维模型：拖动旋转，双指缩放' },
+  en: { mode_ext: 'Exterior', mode_xray: 'X-ray', mode_cut: 'Section', cut_h: 'Cut height', parts: 'Parts', parts_h: 'Parts (tap to fly)', retry: 'Retry', close: 'Close',
+    loading: 'Loading model {p}', fail: 'Model failed to load. Check the connection and retry.', slow: 'Still loading… keep waiting or retry', modes: 'View mode', canvas: '3D model: drag to orbit, pinch to zoom' },
+};
+let LANG = (Q.get('lang') || navigator.language || 'zh').startsWith('en') ? 'en' : 'zh';
+const t = (k, v = {}) => (STR[LANG][k] || STR.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
+const L = o => (o && (o[LANG] || o.zh)) || '';
+function applyLang() {
+  document.documentElement.lang = LANG === 'en' ? 'en' : 'zh';
+  document.querySelectorAll('[data-t]').forEach(e => { e.textContent = t(e.dataset.t); });
+  document.querySelectorAll('[data-ta]').forEach(e => e.setAttribute('aria-label', t(e.dataset.ta)));
+  $('#modes').setAttribute('aria-label', t('modes')); $('#c').setAttribute('aria-label', t('canvas'));
+  if (MAN) { document.title = L(MAN.title); $('#credit').textContent = L(MAN.credit); buildList(); if (sel) showCard(sel); }
+}
+function setTheme(th) { document.documentElement.classList.toggle('light', th === 'light'); if (renderer) { scene.background = new THREE.Color(getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#101418'); dirty = true; } }
+document.documentElement.classList.toggle('light', (Q.get('theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')) === 'light');
+
+// ---------------- 性能档位 ----------------
+const coarse = matchMedia('(pointer: coarse)').matches, small = Math.min(screen.width, screen.height) < 600;
+const mem = navigator.deviceMemory || 8;
+const TIER = Q.get('tier') || ((coarse && small) || mem <= 4 ? 'low' : 'high');
+const DPR_CAP = TIER === 'low' ? 1.25 : 2;   // 同旧庄园 DPR_CAP 思路：高 DPR 手机上像素数 ×4 不值
+const MSAA = TIER !== 'low';
+
+// ---------------- 场景 ----------------
+const canvas = $('#c');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: MSAA, powerPreference: TIER === 'low' ? 'low-power' : 'high-performance', stencil: false });
+} catch (e) { post({ type: 'estate:fail', reason: 'webgl' }); fail('webgl'); throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, DPR_CAP));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.NoToneMapping;   // 烘焙图已经过 AgX 视图变换
+renderer.localClippingEnabled = false;
+const scene = new THREE.Scene();
+setTheme(document.documentElement.classList.contains('light') ? 'light' : 'dark');
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 400);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.09; controls.screenSpacePanning = false;
+controls.zoomToCursor = true; controls.rotateSpeed = coarse ? 0.7 : 0.9;
+controls.addEventListener('change', () => { dirty = true; });
+
+// 共享着色器改动：高亮 / 压暗、墙体 X 光（抖动透明，无排序问题）、剖切背面封口
+const U = {
+  uXray: { value: 0 }, uXMin: { value: 0.2 }, uCenter: { value: new THREE.Vector3() }, uCamDir: { value: new THREE.Vector3(1, 0, 0) },
+  uCap: { value: new THREE.Color('#6b6358') }, uCapOn: { value: 0 }, uTime: { value: 0 },
+};
+function patch(mat, role) {
+  mat.userData.u = { uGain: { value: 1 }, uHi: { value: 0 }, uRoleX: { value: role === 'walls' ? 1 : 0 }, uFade: { value: 1 } };
+  mat.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, U, mat.userData.u);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+varying vec3 vWP; uniform float uGain, uHi, uRoleX, uFade, uXray, uXMin, uCapOn, uTime; uniform vec3 uCenter, uCamDir, uCap;
+float bayer4(vec2 p) { ivec2 q = ivec2(mod(p, 4.0)); int i = q.x + q.y * 4;
+  float m[16] = float[16](0.,8.,2.,10.,12.,4.,14.,6.,3.,11.,1.,9.,15.,7.,13.,5.); return (m[i] + 0.5) / 16.0; }`)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+{ float a = uFade;
+  if (uXray > 0.5 && uRoleX > 0.5) { float d = dot(vWP - uCenter, uCamDir); a *= mix(1.0, uXMin, smoothstep(-1.5, 1.0, d)); }
+  if (a < 0.999 && a <= bayer4(gl_FragCoord.xy)) discard;
+  diffuseColor.rgb *= uGain;
+  if (uHi > 0.0) { float p = 0.55 + 0.45 * sin(uTime * 4.0); diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 1.35 + vec3(0.30, 0.22, 0.05), uHi * p); }
+  if (uCapOn > 0.5 && !gl_FrontFacing) diffuseColor.rgb = uCap; }`);
+  };
+  mat.customProgramCacheKey = () => 'v3d';
+}
+
+// ---------------- 载入 ----------------
+let MAN = null, root = null, meshes = {}, HS = [], sel = null, mode = 'ext';
+const box = new THREE.Box3(), v3 = new THREE.Vector3();
+const stats = { glb: '', tier: TIER, dpr: renderer.getPixelRatio(), t0: performance.now(), tManifest: 0, tGlb: 0, tFirst: 0, bytes: 0, tris: 0, draws: 0, gpuMB: 0 };
+function setLoad(p, txt) { $('#load .bar i').style.width = Math.round(p * 100) + '%'; $('#load .txt').textContent = txt ?? t('loading', { p: Math.round(p * 100) + '%' }); }
+function fail(r) { const ld = $('#load'); ld.classList.remove('done'); $('#load .txt').textContent = t('fail'); $('#load .acts').hidden = false; stats.fail = r; }
+let slowT = 0, lastProg = 0;
+function watch() { clearInterval(slowT); lastProg = performance.now(); slowT = setInterval(() => { if (performance.now() - lastProg > 15000) { $('#load .txt').textContent = t('slow'); $('#load .acts').hidden = false; } }, 1000); }
+
+async function load() {
+  $('#load .acts').hidden = true; $('#load').classList.remove('done'); setLoad(0); watch();
+  try {
+    const mr = await fetch(`${MODEL}/manifest.json`, { cache: 'no-cache' }); if (!mr.ok) throw new Error('manifest ' + mr.status);
+    MAN = await mr.json(); stats.tManifest = performance.now() - stats.t0; applyLang();
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    const gltf = await new Promise((res, rej) => loader.load(`${MODEL}/${(TIER === 'low' && MAN.glb_low) || MAN.glb}`, res, e => { lastProg = performance.now(); if (e.total) { stats.bytes = e.total; setLoad(0.05 + 0.9 * e.loaded / e.total); } else setLoad(0.5, t('loading', { p: (e.loaded / 1048576).toFixed(1) + ' MB' })); }, rej));
+    stats.tGlb = performance.now() - stats.t0;
+    setup(gltf.scene);
+    clearInterval(slowT); setLoad(1);
+    renderer.render(scene, camera); stats.tFirst = performance.now() - stats.t0;
+    requestAnimationFrame(() => $('#load').classList.add('done'));
+    const h = flyWait || Q.get('hotspot'); flyWait = null; if (h) fly(h, true);
+  } catch (e) { console.error('[viewer3d]', e); clearInterval(slowT); fail(String(e && e.message || e)); }
+}
+$('#retry').onclick = () => { disposeRoot(); load(); };
+
+function roleOf(name) {
+  const g = MAN.groups || {};
+  if ((g.roof || []).includes(name)) return 'roof';
+  if ((g.walls || []).includes(name)) return 'walls';
+  if ((g.interior || []).includes(name)) return 'interior';
+  if ((g.floors || []).some(f => f.id === name)) return 'floor';
+  if ((g.site || []).includes(name)) return 'site';
+  return name.startsWith('props_') ? 'props' : 'other';
+}
+function setup(sc) {
+  root = sc; scene.add(root); root.updateMatrixWorld(true);
+  root.traverse(o => {
+    if (!o.isMesh) return;
+    const role = roleOf(o.name), map = o.material.map || null;
+    if (map) { map.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy()); map.colorSpace = THREE.SRGBColorSpace; }
+    o.material.dispose();
+    o.material = new THREE.MeshBasicMaterial({ map, side: THREE.DoubleSide });
+    patch(o.material, role);
+    o.userData.role = role; meshes[o.name] = o;
+    o.matrixAutoUpdate = false;   // 矩阵已由 root.updateMatrixWorld 算好（meshopt 量化把解码缩放放在节点上）
+    stats.tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+    stats.draws++;
+    const gpos = o.geometry.attributes; for (const k in gpos) stats.gpuMB += gpos[k].array.byteLength / 1048576;
+    if (o.geometry.index) stats.gpuMB += o.geometry.index.array.byteLength / 1048576;
+    if (map?.image) stats.gpuMB += map.image.width * map.image.height * 4 * 1.33 / 1048576;
+  });
+  // 墙体轮廓线（内透时保留）
+  const wallsLines = new THREE.Group(); wallsLines.name = '__edges';
+  for (const n of MAN.groups.walls || []) { const m = meshes[n]; if (!m) continue;
+    const eg = new THREE.EdgesGeometry(m.geometry, 35); const ln = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: 0xe6c36a, transparent: true, opacity: 0.55, depthTest: true }));
+    ln.matrixAutoUpdate = false; ln.matrix.copy(m.matrix); ln.visible = false; wallsLines.add(ln); }
+  scene.add(wallsLines); meshes.__edges = wallsLines;
+  const B = MAN.groups.building; U.uCenter.value.set((B.min[0] + B.max[0]) / 2, 0, (B.min[2] + B.max[2]) / 2);
+  HS = (MAN.hotspots || []).map((h, i) => { const m = meshes[h.mesh]; if (!m) return null;
+    box.setFromObject(m); const c = h.focus ? new THREE.Vector3(...h.focus) : box.getCenter(new THREE.Vector3());
+    const r = h.radius || box.getSize(v3).length() / 2;
+    return { ...h, n: i + 1, m, c, r }; }).filter(Boolean);
+  buildList(); buildPins();
+  // 起始视角：按 camera.frame 的网格自动取景
+  box.makeEmpty(); for (const n of MAN.camera.frame || []) if (meshes[n]) box.expandByObject(meshes[n]);
+  if (box.isEmpty()) box.setFromObject(root);
+  resize();
+  const c = box.getCenter(new THREE.Vector3()), R = box.getSize(v3).length() / 2;
+  START.t.copy(c); START.p.copy(c).addScaledVector(new THREE.Vector3(...MAN.camera.dir).normalize(), R / Math.sin(fitHalf()) * 0.8);
+  controls.target.copy(START.t); camera.position.copy(START.p);
+  controls.minDistance = MAN.camera.min || 1; controls.maxDistance = MAN.camera.max || 100; controls.maxPolarAngle = MAN.camera.maxPolar || 1.45;
+  SITE.setFromObject(root); SITE.expandByScalar(-2);
+  const s = MAN.section; if (s) { const r = $('#cutH'); r.min = s.min; r.max = s.max; r.value = s.default; showCut(); }
+  controls.update(); setMode(mode);
+}
+// 竖屏按水平视角取景（手机上横向才是短边）
+function fitHalf() { const v = THREE.MathUtils.degToRad(camera.fov / 2), a = innerWidth / innerHeight; return Math.min(v, Math.atan(Math.tan(v) * a)); }
+const START = { p: new THREE.Vector3(), t: new THREE.Vector3() }, SITE = new THREE.Box3();
+function disposeRoot() {
+  if (!root) return;
+  scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { o.material.map?.dispose(); o.material.dispose(); } });
+  scene.remove(root); if (meshes.__edges) scene.remove(meshes.__edges);
+  root = null; meshes = {}; HS = []; $('#pins').textContent = ''; stats.tris = stats.draws = stats.gpuMB = 0;
+}
+
+// ---------------- 列表 / 标记 / 卡片 ----------------
+function buildList() {
+  const ol = $('#list ol'); ol.textContent = '';
+  for (const h of HS) { const li = document.createElement('li'), b = document.createElement('button'); b.type = 'button';
+    b.innerHTML = `<i>${h.n}</i><span></span>`; b.querySelector('span').textContent = L(h.name); b.dataset.id = h.id;
+    if (sel === h.id) b.setAttribute('aria-current', 'true');
+    b.onclick = () => { fly(h.id); if (innerWidth <= 640) showList(false); }; li.appendChild(b); ol.appendChild(li); }
+  document.querySelectorAll('.pin').forEach(p => { const h = HS.find(x => x.id === p.dataset.id); if (h) p.setAttribute('aria-label', L(h.name)); });
+}
+function buildPins() {
+  const box = $('#pins'); box.textContent = '';
+  for (const h of HS) { const b = document.createElement('button'); b.type = 'button'; b.className = 'pin'; b.dataset.id = h.id; b.innerHTML = `<span>${h.n}</span>`;
+    b.setAttribute('aria-label', L(h.name)); b.onclick = e => { e.stopPropagation(); fly(h.id); }; box.appendChild(b); h.pin = b; }
+}
+const pv = new THREE.Vector3();
+function placePins() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  for (const s of HS) { pv.copy(s.c); pv.project(camera);
+    const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05 && !(mode === 'cut' && s.c.y > cutY() + 0.2);
+    s.pin.hidden = !vis; if (vis) s.pin.style.transform = `translate(${(pv.x + 1) / 2 * w}px, ${(1 - pv.y) / 2 * h}px)`;
+    s.pin.classList.toggle('on', sel === s.id); }
+}
+function showCard(id) {
+  const h = HS.find(x => x.id === id), c = $('#card'); if (!h) { c.hidden = true; return; }
+  c.querySelector('h3').textContent = L(h.name); c.querySelector('p').textContent = L(h.desc);
+  c.querySelector('small').textContent = LANG === 'en' ? h.name.zh : (h.name.en || ''); c.hidden = false;
+}
+$('#card .x').onclick = () => select(null);
+function showList(on) { $('#list').hidden = !on; $('#listBtn').setAttribute('aria-expanded', String(on)); $('#listBtn').setAttribute('aria-pressed', String(on)); }
+$('#listBtn').onclick = () => showList($('#list').hidden);
+if (innerWidth <= 640) showList(false);
+
+function select(id) {
+  sel = id;
+  for (const s of HS) s.m.material.userData.u.uHi.value = s.id === id ? 1 : 0;
+  for (const m of Object.values(meshes)) if (m.material?.userData?.u) m.material.userData.u.uGain.value = id && m.userData.role === 'props' && !HS.some(s => s.id === id && s.m === m) ? 0.72 : 1;
+  document.querySelectorAll('#list li button').forEach(b => b.toggleAttribute('aria-current', b.dataset.id === id));
+  showCard(id); dirty = true; post({ type: 'v3d:state', mode, hotspot: id });
+}
+
+// ---------------- 飞行 ----------------
+let tween = null;
+const ease = x => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+let flyWait = null;
+function fly(id, instant) {
+  if (!root) { flyWait = id; return true; }   // 模型还没到：到了再飞
+  const h = HS.find(x => x.id === id); if (!h) return false;
+  select(id);
+  let dir;
+  if (h.view) dir = new THREE.Vector3(...h.view).normalize();
+  else { dir = camera.position.clone().sub(controls.target); dir.y = 0; dir.normalize(); dir.y = Math.tan(THREE.MathUtils.degToRad(50)); dir.normalize(); }
+  const dist = Math.max(controls.minDistance * 1.5, h.r / Math.sin(fitHalf()));
+  const to = { t: h.c.clone(), p: h.c.clone().addScaledVector(dir, dist) };
+  if (mode === 'cut' && h.c.y > cutY()) setCut(Math.min(+$('#cutH').max, h.c.y + 0.8));
+  if (instant || matchMedia('(prefers-reduced-motion: reduce)').matches) { controls.target.copy(to.t); camera.position.copy(to.p); controls.update(); dirty = true; return true; }
+  tween = { t0: performance.now(), dur: 900, fp: camera.position.clone(), ft: controls.target.clone(), to };
+  return true;
+}
+function stepTween(now) {
+  if (!tween) return;
+  const k = Math.min(1, (now - tween.t0) / tween.dur), e = ease(k);
+  // 走弧线：中途抬高一点，避免穿墙的观感
+  const lift = Math.sin(Math.PI * k) * Math.min(6, tween.fp.distanceTo(tween.to.p) * 0.25);
+  camera.position.lerpVectors(tween.fp, tween.to.p, e); camera.position.y += lift;
+  controls.target.lerpVectors(tween.ft, tween.to.t, e);
+  controls.update(); dirty = true;
+  if (k >= 1) tween = null;
+}
+['pointerdown', 'wheel'].forEach(ev => canvas.addEventListener(ev, () => { tween = null; }, { passive: true }));
+
+// ---------------- 显示方式 ----------------
+const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1.6);
+const cutY = () => +$('#cutH').value;
+function showCut() { $('#cutV').textContent = (+$('#cutH').value).toFixed(1) + ' m'; }
+function setCut(y) { $('#cutH').value = y; showCut(); cutPlane.constant = y; dirty = true; }
+$('#cutH').addEventListener('input', () => setCut(cutY()));
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('#modes button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.mode === m)));
+  $('#cut').hidden = m !== 'cut';
+  U.uXray.value = m === 'xray' ? 1 : 0;
+  if (meshes.__edges) meshes.__edges.children.forEach(l => { l.visible = m === 'xray'; });
+  renderer.clippingPlanes = m === 'cut' ? [cutPlane] : [];
+  U.uCapOn.value = m === 'cut' ? 1 : 0;
+  if (m === 'cut') setCut(cutY());
+  dirty = true; post({ type: 'v3d:state', mode, hotspot: sel });
+}
+document.querySelectorAll('#modes button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+// (a) 屋顶自动掀开：外观模式下相机拉近到建筑里 / 附近时屋顶上移淡出；内透 / 剖切直接藏掉
+let roofK = 0;
+const BLD = new THREE.Box3();
+function updateRoof(dt) {
+  if (!MAN) return;
+  const B = MAN.groups.building; BLD.min.set(...B.min); BLD.max.set(...B.max);
+  const d = BLD.distanceToPoint(camera.position), near = BLD.containsPoint(controls.target) && camera.position.distanceTo(controls.target) < 16;
+  const want = mode !== 'ext' ? 1 : (near || d < 1.5 ? 1 : 0);
+  const k2 = roofK + Math.sign(want - roofK) * Math.min(Math.abs(want - roofK), dt / 350);
+  if (k2 === roofK) return; roofK = k2; dirty = true;
+  for (const n of MAN.groups.roof || []) { const m = meshes[n]; if (!m) continue;
+    m.visible = roofK < 0.999; m.material.userData.u.uFade.value = 1 - roofK;
+    m.userData.m0 ??= m.matrix.clone(); m.matrix.copy(m.userData.m0).premultiply(new THREE.Matrix4().makeTranslation(0, roofK * 3, 0)); }
+}
+
+// ---------------- 拾取 ----------------
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let down = null;
+canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+canvas.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 || performance.now() - down.t > 500) return; down = null;
+  const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const cand = Object.values(meshes).filter(m => m.isMesh && m.visible && m.userData.role !== 'site' && !(m.userData.role === 'roof' && roofK > 0.5) && !(mode === 'xray' && m.userData.role === 'walls'));
+  const hits = ray.intersectObjects(cand, false).filter(h => mode !== 'cut' || h.point.y <= cutY());
+  const hit = hits[0], hs = hit && HS.find(s => s.m === hit.object);
+  if (hs) fly(hs.id); else if (sel) select(null);
+});
+
+// ---------------- 循环 ----------------
+function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); dirty = true; }
+addEventListener('resize', resize);
+const FT = []; let last = performance.now(), running = true;
+function frame(now) {
+  if (!running) return;
+  requestAnimationFrame(frame);
+  const dt = Math.min(100, now - last); last = now;
+  stepTween(now); controls.update(); updateRoof(dt);
+  if (!SITE.isEmpty()) { const c = controls.target, d = c.clone().clamp(SITE.min, SITE.max).sub(c); if (d.lengthSq() > 0) { c.add(d); camera.position.add(d); } }   // 平移不出场地
+  if (camera.position.y < 0.3) camera.position.y = 0.3;
+  if (sel) { U.uTime.value = now / 1000; dirty = true; }
+  if (mode === 'xray') { const d = camera.position.clone().sub(U.uCenter.value); d.y = 0; if (d.lengthSq() > 1e-6) U.uCamDir.value.copy(d.normalize()); }
+  if (!dirty || !root) return;
+  dirty = false;
+  renderer.render(scene, camera); placePins();
+  FT.push(dt); if (FT.length > 600) FT.shift();
+  if (Q.has('fps')) { const f = $('#fps'); f.hidden = false; f.textContent = `${(1000 / (FT.slice(-30).reduce((a, b) => a + b, 0) / Math.min(30, FT.length))).toFixed(0)} fps · ${TIER} · dpr ${renderer.getPixelRatio()}`; }
+}
+requestAnimationFrame(frame);
+document.addEventListener('visibilitychange', () => { dirty = true; });
+addEventListener('pagehide', () => { running = false; disposeRoot(); renderer.dispose(); renderer.forceContextLoss?.(); });
+
+// ---------------- 宿主消息 ----------------
+let bench = null;
+addEventListener('message', e => {
+  const d = e.data || {};
+  if (d.type === 'estate:lang') { LANG = d.lang === 'en' ? 'en' : 'zh'; applyLang(); }
+  if (d.type === 'estate:theme') setTheme(d.theme);
+  if (d.type === 'estate:inset') { document.body.style.setProperty('--inset', Math.max(0, (d.left | 0) - 8) + 'px'); }
+  if (d.type === 'v3d:fly') fly(d.hotspot);
+  if (d.type === 'v3d:mode') setMode(d.mode);
+});
+
+// 调试 / 测量接口
+window.__v3d = {
+  stats, get ft() { return FT.slice(); }, setMode, fly, select, get mode() { return mode; }, get ready() { return !!root; }, info: () => renderer.info,
+  // 匀速绕目标转 ms 毫秒，返回帧时间（每帧强制渲染）
+  orbitBench(ms = 4000) { return new Promise(res => { const out = []; const t0 = performance.now(); let lt = t0;
+    const tick = now => { out.push(now - lt); lt = now; const a = (now - t0) / ms * Math.PI * 2 * 0.5;
+      const off = camera.position.clone().sub(controls.target); off.applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.01); camera.position.copy(controls.target).add(off); controls.update(); dirty = true;
+      if (now - t0 < ms) requestAnimationFrame(tick); else res(out.slice(2)); };
+    requestAnimationFrame(tick); }); },
+  home() { tween = null; camera.position.copy(START.p); controls.target.copy(START.t); controls.update(); dirty = true; },
+  view(p, tg) { camera.position.set(...p); controls.target.set(...tg); controls.update(); dirty = true; },
+};
+applyLang();
+post({ type: 'estate:ready' });   // 界面已就绪；模型进度在本页自己的加载层里显示（失败有「重试」）
+load();
+</script>
+</body>
+</html>

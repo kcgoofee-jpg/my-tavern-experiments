@@ -49,3 +49,11 @@
 - `fetch_assets.py` 的写法（Poly Haven 贴图 / HDRI / glTF，加 ambientCG 的 zip）可以直接照抄。
 - `build.py` 里的 `pbr()`、`steel()`、`galvanised()`、`rubber()`、`tube()`/`bent()`、`box()`（带倒角和 harden normals）、草地几何节点，都可以抽成公共模块，比如 `blender/props/common.py`。衣帽间要的金属挂杆、布料、木柜正好能用。
 - 流程：先做来源调查，再画平面图（和建模共用常量），然后 1000px 快速迭代，一轮审阅（美术总监加现编的行内人），最后出定稿。这套流程约 1.5 小时，能出一个可以看的写实测试件。
+
+
+## 教训：Blender → 浏览器交互（挤奶厅测试件，2026-09-27）
+- 流程：`build.py --blend` 存场景 → `export_glb.py`（按网格名正则分组 → 合并 → 按预算 decimate → Smart UV 新建 `bake` UV → Cycles COMBINED 烘焙，只要 diffuse 直射 + 间接 + 自发光 → 场景 AgX 视图变换存 8 位 → 每组一张图的新材质）→ gltf-transform **先 webp 后 meshopt**（反过来 webp 会把 meshopt 解掉）。256 spp，GPU 250 s。
+- 尺寸：73 万 → 27 万三角形，15 个网格 = 15 次 draw call；原始 15.3 MB → 4.8 MB（高档，2048² 为主，WebP q80）/ 2.8 MB（低档，1024²，q75）。KTX2 没用：vendor 里没有 basis 转码器，toktx 也没装。
+- 踩坑：① 不加 `--factory-startup` 时用户偏好是中文界面，默认节点名被翻译（'Principled BSDF' 找不到）——一律 `nodes.clear()` 后新建；② 金属 / 透射材质烘成黑，烘前改 metallic 0、roughness 1、去掉玻璃；③ 地面的「沉到楼板下」的点被 collapse decimate 拉起来盖住了坑——先删 z < -0.2 的点，再平面合并（57600 → 493 面）；④ meshopt 量化把解码缩放放在节点矩阵上，three 里设 `matrixAutoUpdate=false` 之前必须先 `updateMatrixWorld`，否则模型缩成一点；⑤ 几百个小零件的组（杯组）Smart UV 岛很碎，2048 图大半是空白——下次按零件类型分图或用 Lightmap Pack。
+- 可复用给伊甸 3D：`export_glb.py` 的分组表（改正则）、`map/props/viewer3d.html`（清单驱动，热点 / 分组 / 相机 / 低档 glb）、`tools/browser/viewer3d_perf.mjs`。网格命名约定 `roof / walls_ext[_N] / interior[_N] / floor_N / props_<id> / site_*`，内透建议见 `docs/reviews/dairy_interactive/xray.md`。
+- 接入：maps.json 里 kind=estate 的地图加 `"viewer3d": "<id>"` 就改走 `props/viewer3d.html` + `props/<id>/manifest.json`（查看器注入 `window.__V3D_MODEL`，其余沿用 estate:* 消息与 blob iframe）。伊甸切换 = 给 `eden_estate` 加一行 `"viewer3d": "eden"`；`test: true` 的地图只出现在设置弹层底部，不参与当前地点匹配。`EdenMap.flyTo({ map, hotspot })` 宿主页 / 地图页都有。
