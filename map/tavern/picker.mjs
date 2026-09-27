@@ -97,7 +97,7 @@ export function normTarget(t) {
   if (!t || typeof t !== 'object') return null;
   const s = v => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 80) : null), o = {};
   if (s(t.map)) o.map = s(t.map);
-  for (const k of ['character', 'room', 'area', 'marker']) if (s(t[k])) { o[k] = s(t[k]); return k === 'character' || o.map || k === 'room' || k === 'area' ? o : null; }
+  for (const k of ['character', 'room', 'area', 'marker']) if (s(t[k])) { o[k] = s(t[k]); if (k === 'room' && /^(B[12]|F[123])$/.test(t.floor || '')) o.floor = t.floor; return k === 'character' || o.map || k === 'room' || k === 'area' ? o : null; }
   return null;
 }
 

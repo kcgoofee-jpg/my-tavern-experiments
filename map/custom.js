@@ -277,7 +277,9 @@ const TCCustom = (() => {
       const name = t.room || t.area, eid = t.map && REG.maps[t.map]?.kind === 'estate' ? t.map : Object.keys(REG.maps).find(k => REG.maps[k].kind === 'estate');
       if (!eid) return false;
       if (!(typeof estFail !== 'undefined' && estFail) && REG.maps[eid].status !== 'planned') {
-        roomNote = null; estFocus = name; if (cur === eid) estateRoom(); else { pendingFocus = null; go(eid); } return true;
+        roomNote = null; estFocus = name;
+        const cr = t.floor && plan?.CARD?.rooms?.find(r => r.floor === t.floor && r.name === name);   // 卡设定分层房间：多边形随 estate:room 发给庄园页画框
+        window.estCard = cr ? { name, floor: cr.floor, kind: cr.kind, area: cr.area, poly: cr.poly, z: (plan.CARD.floors.find(f => f.id === cr.floor) || {}).z } : null; if (cur === eid) estateRoom(); else { pendingFocus = null; go(eid); } return true;
       }
       const s = estateStandIn(eid); if (!s) return false; roomNote = name; return flyMarker(s.map, s.marker);
     }
