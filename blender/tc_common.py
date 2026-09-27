@@ -14,7 +14,7 @@ T0 = time.time()
 def tick(msg): print(f'[{time.time() - T0:6.1f}s] {msg}', flush=True)
 
 
-FLAGS = ('--data-only', '--preview')              # 不带值的开关
+FLAGS = ('--data-only', '--preview', '--no-landmark-glow')   # 不带值的开关
 def parse_args(defaults):
     """Blender -b -P x.py -- --res 1600 ...，或 python3 x.py -- ...（pip 装的 bpy）。
     --键 值 成对出现；FLAGS 里的开关不带值。未知的键照样收下，由层脚本用 opt.get 读取。"""
@@ -329,6 +329,9 @@ class Layer:
         if seed is None: self.rng = rng                     # 不另起种子：沿用 SEED（上层）
         else: self.rng = np.random.default_rng(seed); random.seed(seed)
         self.markers = []
+        # --no-landmark-glow：去掉地标的装饰性光圈 / 描边灯 / 光晕（建筑本体与普通照明不动）；默认关（= 现状）。
+        # 各层脚本照常建完、照常消耗随机数，只在最后把这些元素过滤掉，所以随机序列与 map/data/*.json 都不变。
+        self.lm_glow = not self.opt.get('--no-landmark-glow')
     def f(self, key, default):                              # 读数值参数：layer.f('--glow', 1)
         return float(self.opt.get(key, default))
     def marker(self, id, pos, r=.3):
