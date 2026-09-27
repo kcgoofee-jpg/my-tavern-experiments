@@ -489,6 +489,7 @@
 </div></div>
 <div id="setPop" class="pop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置"><div class="sheet-h"><b data-i18n="settings_title">设置</b><button type="button" class="btn ic" id="setX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><div id="aboutBox"></div><div class="acts" hidden><button type="button" class="btn" id="actUp" hidden></button><button type="button" class="btn" id="actClose" hidden data-i18n="act_close">关闭地图</button></div><div class="more"></div><label><span data-i18n="auto_here">打开地图时自动跳到当前地点</span><input type="checkbox" role="switch" id="optAutoHere" checked></label><small data-i18n="auto_here_hint">庄园房间直达对应楼层；地标、层、世界地名各自落到对应的图</small>
   <label class="row"><span data-i18n="no_fx">关闭花屏特效</span><input type="checkbox" role="switch" id="optNoFx"></label><small data-i18n="no_fx_hint">网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字</small>
+  <label class="row"><span data-i18n="char_stats">人物栏显示数值</span><input type="checkbox" role="switch" id="optCharStats" checked></label><small data-i18n="char_stats_hint">名册里显示成员的等级与核心数值（字段在「变量映射」里指定或关闭）</small>
   <h3 class="a11y" data-i18n="a11y_h">单手</h3><div class="hrow"><span id="handLbl" data-i18n="hand">惯用手</span><div class="seg" id="handSeg" role="group" aria-labelledby="handLbl"><button type="button" data-hand="auto" data-i18n="hand_auto">自动</button><button type="button" data-hand="left" data-i18n="hand_left">左手</button><button type="button" data-hand="right" data-i18n="hand_right">右手</button></div></div><small class="orig" lang="zh">原作角色卡：Yehehua（类脑社区）· <a href="https://discord.com/channels/1380075940285124724/1534464824141025321" target="_blank" rel="noopener">原作发布帖</a>（地图为经作者同意的二次创作）</small></div>
 <div id="card" hidden role="dialog" aria-labelledby="cardTitle"><div class="grab" aria-hidden="true"></div><div class="top"><span class="tag"></span><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><h2 id="cardTitle" tabindex="-1"></h2><div class="sub"></div><div class="src"></div><div class="extra"></div></div>
 <div id="setMask" hidden></div>
@@ -1422,7 +1423,9 @@ function initSettings() {
     if (on) { showLay(false); if (!was) { pop.scrollTop = 0; firstIn(pop)?.focus({ preventScroll: true }); } } };
   $('#setX').onclick = e => { e.stopPropagation(); showSet(false); };
   btn.onclick = e => { e.stopPropagation(); showSet(pop.hidden); };
-  document.addEventListener('click', e => { if (!pop.hidden && !pop.contains(e.target) && !btn.contains(e.target)) showSet(false); });
+  // 目标已被重绘移出文档（如「检查更新」按钮点完即重绘）不算点在外面
+  const gone = t => t instanceof Node && !t.isConnected;
+  document.addEventListener('click', e => { if (!pop.hidden && !gone(e.target) && !pop.contains(e.target) && !btn.contains(e.target)) showSet(false); });
   // 「图层 ▾」弹层：挂在按钮下方、右对齐
   const lb = $('#layBtn'), lp = $('#layPop');
   showLay = on => { lp.hidden = !on; lb.setAttribute('aria-expanded', on ? 'true' : 'false');
@@ -1433,8 +1436,9 @@ function initSettings() {
     const f = [...el.querySelectorAll('button, input, [tabindex="0"]')].filter(x => x.offsetParent && !x.disabled); if (!f.length) return;
     const i = f.indexOf(document.activeElement);
     if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); } });
-  document.addEventListener('click', e => { if (!lp.hidden && !lp.contains(e.target) && !lb.contains(e.target)) showLay(false); });
+  document.addEventListener('click', e => { if (!lp.hidden && !gone(e.target) && !lp.contains(e.target) && !lb.contains(e.target)) showLay(false); });
   // 关闭花屏特效：只停动画和滤镜，「⚠ 数据链路受扰」文字照常显示；系统开了「减少动态效果」时默认勾上（E4 N24）
+  { const cs = $('#optCharStats'); try { cs.checked = localStorage.getItem('edenMapCharStats') !== '0'; } catch (e) {} cs.onchange = () => TCChars.setStatsOn(cs.checked); }   // v0.9.6 E2 / E13
   const fx = $('#optNoFx'); let nofx = matchMedia('(prefers-reduced-motion: reduce)').matches;
   try { const v = localStorage.getItem('edenMapNoFx'); if (v !== null) nofx = v === '1'; } catch (e) {}
   fx.checked = nofx; document.body.classList.toggle('nofx', nofx);
