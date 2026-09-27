@@ -9,6 +9,7 @@ import * as P from './plan.js';
 import * as BLD from './building.js';
 import * as SITE from './site.js';
 import * as FUR from './furniture.js';
+import { openGallery } from '../ui/gallery.js';
 
 const T0 = performance.now();
 const Q = new URLSearchParams(location.search);
@@ -305,8 +306,8 @@ function relabel() {
 
 /* ---------------- UI 文案 ---------------- */
 const TXT = {
-  zh: { ext: '外观', all: '全部', shafts: '竖井', tour: '传承', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '帕拉第奥五段式 · 204 m 立面', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位', floor: '楼层', size: '尺寸', use: '用途', src: '出处', thru: '贯穿各层', estate: '室外', dia: '直径', her: '传承细节', era: '年代', heritage: '传承件', loading: '加载中…', prev: '上一站', next: '下一站', close: '关闭', detail: '细节', cuWc: '马桶间', cuTowel: '毛巾与台面', pill: '◆ 传承导览' },
-  en: { ext: 'Exterior', all: 'All', shafts: 'Shafts', tour: 'Heritage', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Palladian five-part house · 204 m front', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset', floor: 'Floor', size: 'Size', use: 'Use', src: 'Source', thru: 'through the floors', estate: 'Grounds', dia: 'diameter', her: 'Heritage', era: 'Era', heritage: 'Heirloom', loading: 'Loading…', prev: 'Previous', next: 'Next', close: 'Close', detail: 'Detail', cuWc: 'WC', cuTowel: 'Towels & vanity', pill: '◆ Heritage tour' },
+  zh: { ext: '外观', all: '全部', shafts: '竖井', tour: '传承', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '帕拉第奥五段式 · 204 m 立面', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位', floor: '楼层', size: '尺寸', use: '用途', src: '出处', thru: '贯穿各层', estate: '室外', dia: '直径', her: '传承细节', era: '年代', heritage: '传承件', loading: '加载中…', prev: '上一站', next: '下一站', close: '关闭', detail: '细节', gallery: '图集', cuWc: '马桶间', cuTowel: '毛巾与台面', pill: '◆ 传承导览' },
+  en: { ext: 'Exterior', all: 'All', shafts: 'Shafts', tour: 'Heritage', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Palladian five-part house · 204 m front', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset', floor: 'Floor', size: 'Size', use: 'Use', src: 'Source', thru: 'through the floors', estate: 'Grounds', dia: 'diameter', her: 'Heritage', era: 'Era', heritage: 'Heirloom', loading: 'Loading…', prev: 'Previous', next: 'Next', close: 'Close', detail: 'Detail', gallery: 'Photos', cuWc: 'WC', cuTowel: 'Towels & vanity', pill: '◆ Heritage tour' },
 };
 const tx = (k) => TXT[LANG][k];
 const floorsEl = $('#floors'); const BTN = {};
@@ -535,6 +536,7 @@ function cardHTML(it) {
     if (d.era) h += `<div class="era">${tx('era')} <b>${esc(d.era)}</b></div>`;
   }
   if (it.kind === 'room' && it.close && it.close.length) h += `<div class="acts"><button class="cu" type="button">${tx('detail')} ›</button><span class="cun"></span></div>`;
+  if (d.gallery) h += `<div class="acts"><button class="gal" type="button">${tx('gallery')} ›</button></div>`;
   if (DEBUG && d.src) {
     const si = { '世界书': 0, 'ROADMAP': 1, '推断': 2 }[d.src] ?? 2;
     h += `<div class="src"><b class="s${si}">${esc(zh ? d.src : SRC_EN[d.src] || d.src)}</b>${zh && d.note ? esc(d.note) : ''}</div>`;
@@ -579,6 +581,13 @@ function goCloseup(it, k) {
   subDirty = true;
 }
 card.addEventListener('click', (e) => { if (e.target.closest('.cu') && cardFor) { e.stopPropagation(); goCloseup(cardFor); } });
+// 房间图集（map/data/room_galleries.json；plan.js 房间写 gallery: '<id>'），首次点击时才取数据
+let GALS = null;
+card.addEventListener('click', async (e) => {
+  if (!e.target.closest('.gal') || !cardFor?.d.gallery) return; e.stopPropagation();
+  GALS ||= await fetch('../data/room_galleries.json').then((r) => r.json()).catch(() => ({}));
+  openGallery(GALS[cardFor.d.gallery], { lang: LANG, base: '../' });
+});
 function placeCard() {
   if (!cardFor) return; let x, y;
   const w = card.offsetWidth, h = card.offsetHeight;
