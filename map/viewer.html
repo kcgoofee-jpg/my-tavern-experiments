@@ -112,6 +112,8 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <link rel="modulepreload" href="app/clouds.mjs">
 <link rel="modulepreload" href="app/scale.mjs">
 <link rel="modulepreload" href="app/storage-ui.mjs">
+<link rel="modulepreload" href="app/fog.mjs">
+<link rel="modulepreload" href="core/fog.mjs">
 <!-- OpenSeadragon 5.0.1（BSD-3，见 vendor/openseadragon/LICENSE.txt），随仓库版本固定 -->
 <!-- 启动文件和地图库并行开始下载（CDN 每个请求约 1 秒延迟，串行等待是打开慢的主因） -->
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/maps.json">
@@ -338,6 +340,8 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .mk.drill .lab { background: var(--gold); color: #1a1406; border-color: var(--gold); font-weight: 800; }
   .mk.op .pin { box-shadow: 0 0 0 3px var(--gold), 0 1px 4px #000a; } .mk.op .lab { border: 2px solid var(--gold); font-weight: 700; } .mk.op .lab::after { content: attr(data-op); margin-left: var(--sp-2); font-size: var(--fs-micro); color: var(--gold); }   /* 开局关键地点（maps.json 的 openings） */
   .mk.here .pin { background: var(--alert); }
+  /* 迷雾探索（app/fog.mjs）：没到过的地点变暗、地名收起（悬停 / 聚焦时仍显示） */
+  .mk.fogged { opacity: .45; } .mk.fogged .lab { visibility: hidden; } .mk.fogged:hover .lab, .mk.fogged:focus-visible .lab { visibility: visible; }
   .mk.here::after { content: ''; position: absolute; bottom: -6px; left: 50%; width: 22px; height: 22px; margin-left: -13px; border-radius: 50%; border: 2px solid var(--alert); animation: pulse 1.4s infinite; will-change: transform, opacity; }
   @media (prefers-reduced-motion: reduce) { .mk.here::after { animation: none !important; transform: scale(1.2); opacity: .6; } }
   .mk.active .lab { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -395,13 +399,14 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #card .extra:empty { display: none; }
   #card .extra { margin-top: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-2); }
   #card .extra p { margin: 0; display: contents; }
-  #card .extra [data-go], #card .extra .planned { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); min-height: 40px; box-sizing: border-box; padding: 0 var(--sp-5);
+  #card .extra [data-go], #card .extra [data-gallery], #card .extra .planned { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); min-height: 40px; box-sizing: border-box; padding: 0 var(--sp-5);
     border-radius: var(--r-m); border: 1px solid var(--line); background: var(--surface-2); color: var(--accent); font-weight: 600; text-decoration: none; cursor: pointer; user-select: none;
     transition: background var(--dur-1), border-color var(--dur-1), transform var(--dur-1); }
   #card .extra [data-go]::after { content: ''; width: 16px; height: 16px; flex: none; background: currentColor;
     -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8h10M9 4l4 4-4 4'/%3E%3C/svg%3E") center / contain no-repeat;
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8h10M9 4l4 4-4 4'/%3E%3C/svg%3E") center / contain no-repeat; }
-  #card .extra [data-go]:hover { border-color: var(--line-strong); background: var(--accent-weak); }
+  #card .extra [data-gallery] { cursor: pointer; }
+  #card .extra [data-go]:hover, #card .extra [data-gallery]:hover { border-color: var(--line-strong); background: var(--accent-weak); }
   #card .extra [data-go]:active { transform: scale(.97); }
   #card .extra .planned { color: var(--muted); cursor: default; font-weight: 400; }
   [data-go] { cursor: pointer; user-select: none; }
@@ -536,6 +541,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     <div class="hrow"><span id="handLbl" data-i18n="hand">惯用手</span><div class="seg" id="handSeg" role="group" aria-labelledby="handLbl"><button type="button" data-hand="auto" data-i18n="hand_auto">自动</button><button type="button" data-hand="left" data-i18n="hand_left">左手</button><button type="button" data-hand="right" data-i18n="hand_right">右手</button></div></div>
     <div class="hrow"><span id="rmLbl" data-i18n="s.rm">减少动态</span><div class="seg" id="rmSeg" role="group" aria-labelledby="rmLbl"><button type="button" data-rm="auto" data-i18n="s.follow_sys">跟随系统</button><button type="button" data-rm="on" data-i18n="s.on">开</button><button type="button" data-rm="off" data-i18n="s.off">关</button></div></div>
     <label class="row"><span data-i18n="no_fx">关闭花屏特效</span><input type="checkbox" role="switch" id="optNoFx"></label><small data-i18n="no_fx_hint">网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字</small>
+    <label class="row"><span data-i18n="s.fog">迷雾探索</span><input type="checkbox" role="switch" id="optFog"></label><small data-i18n="s.fog_hint">没去过的地点变暗、盖一层薄雾；按聊天记住去过哪里（存在这个聊天的变量里）</small><div class="hrow" id="fogRow" hidden><span data-i18n="s.fog_reset_l">清空这个聊天的探索记录</span><button type="button" class="btn" id="fogReset" data-i18n="s.fog_reset">清空</button></div>
     <div class="hrow"><span id="q3Lbl" data-i18n="s.q3d">三维画质</span><div class="seg" id="q3Seg" role="group" aria-labelledby="q3Lbl"><button type="button" data-q="auto" data-i18n="tier_auto">自动</button><button type="button" data-q="1" data-i18n="s.q_low">省电</button><button type="button" data-q="2" data-i18n="s.q_high">清晰</button></div></div><small data-i18n="s.q3d_hint">三维页的像素比上限：省电 = 1 倍，清晰 = 最多 2 倍（锯齿更少，更费电）</small>
   </section>
   <section class="spage" data-page="people" hidden>
@@ -1289,7 +1295,7 @@ function drawOverlays() {
   if (REG.maps[cur].kind === 'world') worldOverlays(); else pointOverlays();
   if (typeof TCSecurity !== 'undefined') TCSecurity.afterOpen();   // v0.9.6 安保叠加层
   TCEvents.render(); TCChars.render(); TCCustom.relabel(); TCTrips.render();   // 自定义显示名（v0.9.3）；人物层（chars.js，v0.9.2）；事件层（events.js）：聊天前端里的事件标签、外部数据源
-  applyOverlayToggle(); markHere($('#here').value); tabOrder(); declutter();
+  applyOverlayToggle(); markHere($('#here').value); tabOrder(); declutter(); window.TCFog?.paint();
 }
 // 竖屏（手机）：允许缩到整张图横向放进屏幕（上下留边），不再只能看到半张图（E4 N13）
 // v0.9.6：面板从预加载（桌面尺寸）变成手机全屏、横竖屏切换后，用户没动过就按新尺寸重新取景并居中（手机世界图偏到一边的 P1）
@@ -1548,6 +1554,7 @@ function markHere(v) {
   document.querySelectorAll('.mk').forEach(e => { const n = e.dataset.name, al = e.dataset.alias ? e.dataset.alias.split('|') : ALIAS[n] || [];
     const hit = !!v && (extra.has(n) || v.includes(n) || n.includes(v) || al.some(k => v.includes(k)));
     e.classList.toggle('here', hit); });
+  if (r) window.TCFog?.here(r);   // 迷雾探索：记一次到访（开着时）
   if (typeof TCUnmapped !== 'undefined') TCUnmapped.update(v);   // v0.9.6 未上图
   updateLayerBadges(); estateRoom(); if (typeof TCTrips !== 'undefined') TCTrips.render();   // v0.9.5 途中：两端之间的虚线弧
 }
@@ -1658,6 +1665,8 @@ function initSettings() {
   // 高级：三维抽屉自动收起（默认关，§10.5）、单字母快捷键（默认开）、调试帧率、线路（嵌入时由卡内脚本换线路）
   const sw = (id, key, def, fn) => { const c = $(id); let on = def; try { const v = TCStore.get(key); if (v !== null) on = v === '1'; } catch (e) {} c.checked = on;
     c.onchange = () => { try { TCStore.set(key, c.checked ? '1' : '0'); } catch (e) {} fn?.(c.checked); }; };
+  sw('#optFog', 'edenMapFog', false, v => { $('#fogRow').hidden = !v; window.TCFog?.toggle(v); }); $('#fogRow').hidden = TCStore.get('edenMapFog') !== '1';
+  $('#fogReset').onclick = () => window.TCFog?.reset();
   sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', true); sw('#optFps', 'edenMapFps', false, () => estateLook());
   $('#linePick').onclick = () => { showSet(false); post({ type: 'eden-map:line-pick' }); };
   $('#kbdBtn').onclick = () => kbdHelp($('#kbdHelp').hidden);
@@ -1982,7 +1991,8 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:hostbar') { const w = Math.max(0, Math.min(400, +e.data.w || 0)) + 'px', left = e.data.side === 'left' && narrowNow(); document.documentElement.style.setProperty('--hostbar-w', left ? '0px' : w); document.documentElement.style.setProperty('--hostbar-l', left ? w : '0px'); }   // 合并顶栏（§2.1）：宿主栏（地点胶囊 + ✕）浮在查看器顶栏右端
     if (e.data?.type === 'eden-map:key' && e.data.key === 'Escape') onEsc();   // 焦点在宿主页时宿主把 Esc 转过来（§10.14）
     if (e.data?.type === 'eden-map:line') $('#lineRow').hidden = !e.data.swappable;
-    if (e.data?.type === 'eden-map:storage-result') window.renderStorage?.(e.data);   // 线路选择在设置「高级」
+    if (e.data?.type === 'eden-map:storage-result') window.renderStorage?.(e.data);
+    if (e.data?.type === 'eden-map:fog') window.TCFog?.set(e.data.explored);   // 迷雾探索：这个聊天到过的地点   // 线路选择在设置「高级」
     if (e.data?.type === 'eden-map:settings' && typeof e.data.page === 'string') TCSettings.open(e.data.page);
     if (e.data?.type === 'eden-map:notice-act') { const a = ntActs[e.data.key]?.find(x => x.id === e.data.id); delete ntActs[e.data.key]; try { a?.run?.(); } catch (x) { console.warn('[地图] 通知按钮', x); } }   // 卡内脚本的启动自检结果（E6）   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
     // 面板关闭时休眠：关掉底图（释放已解码的瓦片），脚本与数据留着；再打开时唤醒，重新打开当前地图
@@ -2004,6 +2014,7 @@ document.addEventListener('DOMContentLoaded', main);   // 两个 defer 脚本（
 </script>
 <script type="module" src="app/cardlinks.mjs" onerror="console.warn('[地图] app/cardlinks.mjs 加载失败：地点卡只显示通道链接')"></script>
 <script type="module" src="app/clouds.mjs" onerror="console.warn('[地图] app/clouds.mjs 加载失败：切层转场与漂移云关闭')"></script>
+<script type="module" src="app/fog.mjs" onerror="console.warn('[地图] app/fog.mjs 加载失败：迷雾探索关闭')"></script>
 <script type="module" src="app/storage-ui.mjs" onerror="console.warn('[地图] app/storage-ui.mjs 加载失败：设置「数据与映射」不显示')"></script>
 <script type="module" src="app/scale.mjs" onerror="console.warn('[地图] app/scale.mjs 加载失败：世界 ↔ 天城缩放交接关闭')"></script>
 </body>

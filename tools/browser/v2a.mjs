@@ -5,6 +5,8 @@
 //   unmap   当前地点认不出：抽屉 / 右栏「地点」页给「放到地图上」
 //   link3d  地点卡同时显示通道 link 与三维 link3d（注册表里临时加一个 link3d）
 //   hint    第一次打开：三步提示横幅（P1，可关），关掉后再开不再出
+//   gallery 伊甸庄园地点卡「主卧衣帽间图集」：不进三维直接在地图面板里开图集，Esc 关、焦点回到入口
+//   fog     迷雾探索：默认关；开着时没到过的地点变暗 + 遮罩，当前地点记进聊天变量 eden_map.探索，已存的记录生效
 // 用法：node tools/browser/v2a.mjs <输出目录> [--only clean,more3d]
 import * as B from './lib.mjs';
 import { openHost } from './host_stub.mjs';
@@ -96,6 +98,40 @@ async function hint(preset) {
     rep.check(`${preset} 点「知道了」后再开不再出`, !/三步上手/.test(t2), t2.slice(0, 60));
   } finally { await P.ctx.close(); }
 }
+async function fog(preset) {
+  for (const onFog of [false, true]) {
+    const P = await B.newPage(preset, { tier: 'save' });
+    try {
+      const H = await openHost(P, { here: '天城·下层·7 号井黑市', chat: 'v2a-fog-' + onFog, ls: onFog ? { edenMapFog: '1' } : null, vars: { eden_map: { 探索: { tc_low: ['货运站'] } } } });
+      await H.open(); const vf = await H.viewer(); await vf.evaluate(() => go('tc_low')); await B.wait(6000);
+      const st = await vf.evaluate(() => ({ on: document.body.classList.contains('fogon'), cv: !!document.getElementById('fogCv'), fogged: document.querySelectorAll('.mk.fogged').length,
+        all: document.querySelectorAll('.mk').length, hereFog: !!document.querySelector('.mk.here.fogged'), opt: document.getElementById('optFog').checked }));
+      const ex = await P.page.evaluate(() => window.__vars?.eden_map?.探索 || null);
+      if (!onFog) { rep.check(`${preset} 迷雾默认关：无遮罩、无变暗、不写变量`, !st.on && !st.cv && !st.fogged && !st.opt && JSON.stringify(ex) === '{"tc_low":["货运站"]}', JSON.stringify({ st, ex })); await B.shot(P.page, OUT, `fog_off_${preset}`); continue; }
+      rep.check(`${preset} 迷雾开：遮罩 + 没到过的地点变暗，当前地点不暗`, st.on && st.cv && st.fogged > 0 && st.fogged < st.all && !st.hereFog, JSON.stringify(st));
+      rep.check(`${preset} 迷雾开：当前地点记进 eden_map.探索（保留已有记录）`, ex?.tc_low?.includes('7 号井黑市') && ex.tc_low.includes('货运站'), JSON.stringify(ex));
+      await B.shot(P.page, OUT, `fog_${preset}`);
+    } finally { await P.ctx.close(); }
+  }
+}
+
+async function gallery(preset) {
+  const P = await B.newPage(preset, { tier: 'save' });
+  try {
+    await B.openViewer(P, { map: 'tc_upper' }); await B.wait(1500); const p = P.page;
+    await p.evaluate(() => document.querySelector('.mk[data-name="伊甸庄园"]')._open()); await B.wait(500);
+    const a = p.locator('#card .extra [data-gallery="wardrobe"]');
+    rep.check(`${preset} 伊甸庄园地点卡有衣帽间图集入口`, await a.count() === 1 && /衣帽间/.test(await a.textContent()));
+    await a.click(); await p.waitForSelector('.rg .rg-img', { timeout: 8000 }).catch(() => {}); await B.wait(1500);
+    const g = await p.evaluate(() => { const i = document.querySelector('.rg .rg-img'); return { open: !!document.querySelector('.rg'), w: i?.naturalWidth || 0, map: cur, th: document.querySelectorAll('.rg .rg-th img').length }; });
+    rep.check(`${preset} 图集在地图面板里打开（不切到三维）、图片加载`, g.open && g.w > 0 && g.map === 'tc_upper' && g.th > 1, JSON.stringify(g));
+    await B.shot(p, OUT, `gallery_${preset}`);
+    await p.keyboard.press('Escape'); await B.wait(300);
+    const c = await p.evaluate(() => ({ open: !!document.querySelector('.rg'), focus: document.activeElement?.dataset?.gallery || '' }));
+    rep.check(`${preset} Esc 关图集、焦点回到入口`, !c.open && c.focus === 'wardrobe', JSON.stringify(c));
+  } finally { await P.ctx.close(); }
+}
+
 async function link3d() {
   const P = await B.newPage('desktop', { tier: 'save' });
   try {
@@ -111,6 +147,8 @@ async function link3d() {
   } finally { await P.ctx.close(); }
 }
 try {
+  if (on('gallery')) { await gallery('phone'); await gallery('desktop'); }
+  if (on('fog')) { await fog('phone'); await fog('desktop'); }
   if (on('link3d')) await link3d();
   if (on('hint')) { await hint('phone'); await hint('desktop'); }
   if (on('clean')) { await clean('phone'); await clean('desktop'); }

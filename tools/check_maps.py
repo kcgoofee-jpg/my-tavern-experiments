@@ -124,11 +124,14 @@ for mid, m in maps.items():
     de = data.get(mid, {}).get('extent_m')
     if de and [round(x) for x in de] != [round(x) for x in ext]: err(f'{mid}.view.extent_m {ext} 与渲染数据的 extent_m {de} 不一致')
 # 跨层通道
+GALLERIES = {k for k in json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'map', 'data', 'room_galleries.json'), encoding='utf-8')) if not k.startswith('_')}
 for mid, m in maps.items():
     for i, v in (m.get('markers') or {}).items():
         l3 = v.get('link3d')   # 可选的三维链接（与 link 并存）
         if l3 and l3.get('map') not in maps: err(f"{mid}.{i}.link3d → 地图 {l3.get('map')} 不存在")
         if l3 and not (maps.get(l3.get('map'), {}).get('viewer3d')): err(f"{mid}.{i}.link3d → {l3.get('map')} 不是 viewer3d 三维条目")
+        g = v.get('gallery')   # 可选的房间图集入口（data/room_galleries.json 的键）
+        if g and g.get('id') not in GALLERIES: err(f"{mid}.{i}.gallery → 图集 {g.get('id')} 不在 room_galleries.json")
         l = v.get('link')
         if not l: continue
         if l.get('map') not in maps: err(f"{mid}.{i}.link → 地图 {l.get('map')} 不存在"); continue

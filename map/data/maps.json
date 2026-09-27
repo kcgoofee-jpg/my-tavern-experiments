@@ -45,7 +45,7 @@
       "focus": "eden",
       "districts": ["上层悬浮庄园区", "上层_悬浮庄园区", "悬浮庄园区", "悬浮区", "悬浮岛", "浮岛", "上城", "Floating Estates"],
       "markers": {
-        "eden": { "name": "伊甸庄园", "sub": "{{user}} 的庄园", "name_en": "Eden Manor", "sub_en": "Your estate", "cls": "capital", "tag": "set", "link": { "map": "eden_estate", "label": "进入伊甸庄园", "label_en": "Enter Eden Manor" },
+        "eden": { "name": "伊甸庄园", "sub": "{{user}} 的庄园", "name_en": "Eden Manor", "sub_en": "Your estate", "cls": "capital", "tag": "set", "link": { "map": "eden_estate", "label": "进入伊甸庄园", "label_en": "Enter Eden Manor" }, "gallery": { "id": "wardrobe", "label": "主卧衣帽间图集", "label_en": "Master wardrobe gallery" },
           "cover": { "src": "art/covers/eden_1600.jpg", "src_800": "art/covers/eden_800.jpg", "alt": "伊甸庄园整岛斜俯航拍", "alt_en": "Aerial view of Eden Manor's floating isle" },
           "src": "庄园布局：位于天城上层悬浮区，独占一座悬浮岛屿；新古典主义白色石材建筑；前庭喷泉、后庭人工湖、访客停靠平台；全域结界。",
           "openings": [1, 2, 3, 4, 5], "alias": ["伊甸", "庄园", "书房", "主卧", "大厅", "餐厅", "会客厅", "客房", "寝", "浴室", "后庭", "前庭", "花园", "停靠平台"] },

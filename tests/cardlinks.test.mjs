@@ -37,3 +37,12 @@ test('查看器接线：标记卡用 linksHtml(meta)，模块标签在，check_m
   assert.match(v, /<script type="module" src="app\/cardlinks\.mjs"/);
   assert.match(readFileSync(new URL('../tools/check_maps.py', import.meta.url), 'utf8'), /link3d/);
 });
+test('房间图集入口 meta.gallery：标签、默认文案、坏 id 不出', async () => {
+  const { galleryHtml } = await import('../map/app/cardlinks.mjs');
+  const t2 = k => ({ gallery: '图集' }[k] || k), c = { ...ctx, t: t2 };
+  assert.match(linksHtml({ link: { map: 'tc_low' }, gallery: { id: 'wardrobe', label: '主卧衣帽间图集' } }, c), /data-go="tc_low"[\s\S]*data-gallery="wardrobe"[^>]*>主卧衣帽间图集</);
+  assert.match(galleryHtml({ id: 'wardrobe' }, c), />图集</);
+  assert.equal(galleryHtml({ id: '../x' }, c), ''); assert.equal(galleryHtml(null, c), '');
+  const m = JSON.parse(readFileSync(new URL('../map/data/maps.json', import.meta.url), 'utf8'));
+  assert.equal(m.maps.tc_upper.markers.eden.gallery.id, 'wardrobe');
+});

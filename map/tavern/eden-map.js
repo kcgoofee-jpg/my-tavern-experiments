@@ -9,6 +9,7 @@
   // 协议 v2（core/protocol.mjs，docs/design/arch-v2.md §3）：发出的消息盖 v；收到的消息按 schema 校验（模块没到时照旧处理）
   const PROTO = 2; let PRm = null;   // 与 core/protocol.mjs PROTO 一致（tests/protocol.test.mjs 检查）
   import(SELF + 'core/protocol.mjs').then(m => { PRm = m; }).catch(() => {});
+  let FOGm = null, explored = {}; import(SELF + 'core/fog.mjs').then(m => { FOGm = m; explored = m.norm(explored); }).catch(() => {});   // 迷雾探索（eden_map.探索）
   let SRCm = null; import(SELF + 'tavern/sources.mjs').then(m => { SRCm = m; }).catch(() => {});   // 数据源注册表（arch-v2 §6 第 8 步）
   // 线路：地图的图片和数据可以走不同的 CDN 节点。gh 线路路径格式相同，只换域名；npm 线路路径不同（包名 / 版本 / files/map/），单独拼。本地测试地址不换
   const PKG = 'tiancheng-map-assets', REPO = 'kcgoofee-jpg/my-tavern-experiments';
@@ -386,6 +387,8 @@
     // v0.9.3 自定义（地图设置里的「自定义」一栏）：地图只发请求，数据由这里写进聊天变量后再推回去
     if (e.data?.type === 'eden-map:custom-set') api.setCustom(e.data.key, e.data.patch || {});
     if (e.data?.type === 'eden-map:custom-reset') api.removeCustom(e.data.key);
+    if (e.data?.type === 'eden-map:explore' && FOGm && custom) { const r = FOGm.visit(explored, e.data.map, e.data.name); if (r.changed) { explored = r.ex; saveRoot(); } }   // 迷雾探索：只在查看器开着迷雾时才发
+    if (e.data?.type === 'eden-map:explore-reset' && custom) { explored = {}; saveRoot(); post({ type: 'eden-map:fog', explored }); }
     if (e.data?.type === 'eden-map:custom-sync') api.setWorldbookSync(!!e.data.on);
     if (e.data?.type === 'eden-map:splash') showSplash();   // 设置「重新显示开场自检」
     if (e.data?.type === 'eden-map:varmap-set') setVarUser(e.data.user);   // v0.9.5 设置「变量映射」
@@ -746,7 +749,7 @@
     if (!BG) return; const ls = store(); if (!ls) return;
     BG.touch(ls, chatId()); const r = BG.sweep(ls, chatId()); if (r.dropped.length) console.info('[eden-map] 清理旧聊天的地图数据', r.dropped.length, '个聊天', r.freed, '字节');
   }
-  const saveRoot = () => dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: tagFloor, 标签记录: tagLog, 楼层指纹: tagSeen, 行程: trips }, customChat);
+  const saveRoot = () => dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: tagFloor, 标签记录: tagLog, 楼层指纹: tagSeen, 行程: trips, ...(Object.keys(explored).length ? { 探索: explored } : {}) }, customChat);
   // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
   // 只在这个聊天还没有 eden_map.自定义 时迁移一次（全局旧键不改名，靠这个条件避免每个聊天、每次刷新重复并入）
   async function migrateOld() {
@@ -766,6 +769,7 @@
     const v = readVars(); custom = MV.normCustom(v.自定义); tagFloor = Number.isFinite(+v.标签楼) && v.标签楼 !== null ? +v.标签楼 : -1;
     tagLog = Array.isArray(v.标签记录) ? v.标签记录.filter(r => r && Number.isFinite(r.floor) && typeof r.key === 'string').slice(-30) : [];
     tagSeen = v.楼层指纹 && typeof v.楼层指纹 === 'object' ? { ...v.楼层指纹 } : {};
+    explored = FOGm ? FOGm.norm(v.探索) : (v.探索 && typeof v.探索 === 'object' ? v.探索 : {});
     if (v.自定义 === undefined) { const mig = await migrateOld(); if (customChat !== id) return; if (mig) await saveRoot(); }
     else if (v.自定义?.同步世界书 === false && !v.自定义.同步手动) {   // 0.9.3 的数据：建过这一本世界书 = 自己关掉的，保持关；否则按新默认（开）
       const had = await wbExists(MV.wbName(id)); if (customChat !== id) return;
@@ -778,7 +782,7 @@
     sendCustom(); emit('custom', MV.normCustom(custom)); recomputeSoon(50);
     if (custom?.同步世界书 || wbState) syncWb(!!custom?.同步世界书).catch(e => console.warn('[eden-map] 同步世界书失败', e));
   }
-  function sendCustom() { if (alive && custom) post({ type: 'eden-map:custom', data: custom, vars: varsOk(), wb: wbOk(), wbState }); flushToasts(); }
+  function sendCustom() { if (alive && custom) { post({ type: 'eden-map:custom', data: custom, vars: varsOk(), wb: wbOk(), wbState }); post({ type: 'eden-map:fog', explored }); } flushToasts(); }
   const wbOk = () => fnOk('createOrReplaceWorldbook') || fnOk('createWorldbook');
   async function wbExists(n) { try { return fnOk('getWorldbookNames') ? (await getWorldbookNames() || []).includes(n) : false; } catch (e) { return false; } }
   let wbState = '';
