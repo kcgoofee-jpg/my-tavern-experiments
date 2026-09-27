@@ -7,13 +7,18 @@
 条目（全部常驻，位置「角色定义之后」）：
   1 地图联动规范 v3：标签两种写法、字段、地点写法、频率、连锁、示范
   2 地图事件类型 v2：9 大类 66 种 + 稀有度
-  3 地图当前地点写法：MVU「世界.当前地点」怎么写才能落到房间 / 地标
+  3 地图当前地点 v2：MVU「世界.当前地点」怎么写才能落到房间 / 地标；剧情改名 / 用途标签（⌖改名 / ⌖用途，v0.9.3）
+  4 地图人物位置 v1（v0.9.3）：在场人物换地方时写人物标签。卡的 MVU zod 结构会丢掉在场人物对象里的未知键，
+    所以位置不写进变量（结构里本来就有「位置」字段时才同时更新），标签才是地图的来源
+  5–7 地图方位·上层 / 中层 / 下层（v0.9.3，EJS 条件）：「世界.当前地点」落在该层某个地标时，只展开那一处的中性方位
+    （名称、层、副标题、邻近地标）。要装「提示词模板」（ST-Prompt-Template）扩展；没装时自检会提示关掉这三条。
+我们的规则只提到我们自己的东西（人物标签、⌖改名 / ⌖用途、地图.*），不引用卡里的字段名或原文。
 示范标签只用 EXAMPLES 里的原文（模型照抄时地图不落点）。不写任何关键词过滤规则（地图不过滤内容，见 docs/content-compat.md）。
 
 用法：python3 tools/build_worldbook_addon.py [--version 0.9.1] [--out 路径] [--check 参照世界书.json]
 默认输出：~/Downloads/酒馆/世界书/伊甸地图·世界书附加条目 v<版本>.json；只用标准库 + node。
 """
-import argparse, json, os, subprocess, sys
+import argparse, json, os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RARE = {3: '罕', 4: '传'}
@@ -98,13 +103,71 @@ MVU「世界.当前地点」写到最具体的位置，地图打开时直接落�
   庄园内：伊甸庄园·房间名。房间：{"、".join(rooms)}。室外：{"、".join(areas)}。
   天城内：天城·层·地标（地标名同「地图联动规范」的【地点】），如「天城·中层·天城执法局总局」。
   天城以外：写世界地图上的地名。
-  玩家自己给房间起的叫法（在地图里设置，只存在玩家本机）照写即可。
-【人物位置】重要人物离开玩家、去了别处时，在正文末尾加一个隐藏标签，地图的人物栏就把他标在那里：
-  <span style="display:none">⌖人物 维克多 @ 下层·7号井</span>（示范原文不上图；名字、地点换成剧情内容，地点写法同上）
-  只在人物换地方时写，一楼最多几条；和玩家同处的人不用写。
+  玩家给地点起的叫法（地图设置里的「自定义」，背景里会列出）照写即可。
+【改名 / 用途】剧情里某个地点或人物被正式改了名字、改作别的用途时，在正文末尾加一个隐藏标签，地图会记下来：
+  <span style="display:none">⌖改名 原名 → 新名</span>　<span style="display:none">⌖用途 地点：用途</span>
+  （上面是写法模板，照抄不生效。）只在剧情里真的改名 / 改用途的那一楼写一次，不重复。
 </地图当前地点>'''
 
-    return [('地图联动规范 v3', rules, 900), ('地图事件类型 v2', types, 901), ('地图当前地点', here, 902)], n
+    # ---- 人物位置（v0.9.3）：标签是主来源；结构里有位置字段时才同时更新
+    who = f'''<地图人物位置>
+地图的人物栏按下面的隐藏标签标出每个人在哪里。标签写在正文末尾，读者看不到，正文不要提到它：
+  <span style="display:none">⌖人物 名字 @ 层·地点</span>
+  名字：和「在场人物」里的写法一致（全名）。地点：写法同「地图当前地点」，最好是「层·地标」或「伊甸庄园·房间」。
+何时写：
+  - 有人进入场景、而他所在的地方和玩家不同；
+  - 有人从一处去了另一处（包括跟着玩家换地方的同行者：写新地点）；
+  - 有人离开场景、去向已知（写去向）。去向不明就不写。
+  - 和玩家一直在同一处、没有移动的人不用写；同一个人同一地点不每楼重复。一楼最多 5 条。
+变量：只有当变量结构里本来就有「位置」这个字段时，才在同一次变量更新里一并改它（格式同上）；没有就不要新增字段，只写标签。
+</地图人物位置>'''
+
+    # ---- 方位（v0.9.3）：EJS 条件条目，每层一条；只展开当前地点所在的那一处
+    lore = []
+    for name, sub, mid in layers:
+        lore.append((f'地图方位·{name}', ejs_layer(reg, mid), 910 + len(lore)))
+
+
+    return [('地图联动规范 v3', rules, 900), ('地图事件类型 v2', types, 901), ('地图当前地点 v2', here, 902), ('地图人物位置 v1', who, 903)] + lore, n
+
+
+LAYER_RE = {'上层': '中层|下层', '中层': '上层|下层', '下层': '上层|中层'}
+
+
+def neighbours(reg, mid, k, n=3):
+    """同层最近的 n 个地标（按 data/<层>.json 的归一化坐标）"""
+    d = json.load(open(os.path.join(ROOT, 'map', reg[mid]['data']), encoding='utf-8'))
+    xy = {m['id']: (m.get('ax', m['nx']), m.get('ay', m['ny'])) for m in d['markers']}
+    if k not in xy: return []
+    x0, y0 = xy[k]
+    near = sorted((((x - x0) ** 2 + (y - y0) ** 2), i) for i, (x, y) in xy.items() if i != k)
+    return [reg[mid]['markers'][i]['name'].replace(' ', '') for _, i in near[:n] if i in reg[mid]['markers']]
+
+
+def lore_lines(reg, mid):
+    """每个地标一句中性方位：[(匹配词[], 描述)]；再加一句只写到层时的层概况"""
+    m, L = reg[mid], reg[mid]['layer']
+    rows = []
+    for k, v in m['markers'].items():
+        nm = v['name'].replace(' ', '')
+        sub = re.sub(r'\{\{user\}\}\s*', '玩家', v.get('sub') or '')
+        words = [w for w in dict.fromkeys([v['name'], nm, *v.get('alias', [])]) if len([*w]) >= 2]
+        nb = neighbours(reg, mid, k)
+        rows.append((words, f'{nm}：天城{L["name"]}（{L["sub"]}）' + (f'，{sub}' if sub else '') + (f'；附近：{"、".join(nb)}' if nb else '') + '。'))
+    layer = (L['name'], [L['name'], *m.get('districts', [])], f'天城{L["name"]}（{L["sub"]}，{L.get("alt", "")}）；主要地标：' + '、'.join(v['name'].replace(' ', '') for v in m['markers'].values()) + '。')
+    return rows, layer
+
+
+def ejs_layer(reg, mid):
+    """一层一条 EJS：当前地点含该层地标的叫法（取最长的）→ 那一处；只写了层名 / 大区 → 层概况；写了别的层 → 什么都不输出"""
+    rows, (lname, lwords, ltext) = lore_lines(reg, mid)
+    P = json.dumps([[w, t] for w, t in rows], ensure_ascii=False, separators=(',', ':'))
+    W = json.dumps([w for w in lwords if len([*w]) >= 2], ensure_ascii=False, separators=(',', ':'))
+    return ("<% { const h = String([].concat(getvar('stat_data.世界.当前地点', { defaults: '' }))[0] ?? ''); "
+            f"if (h && !(/{LAYER_RE[lname]}/.test(h) && !h.includes('{lname}'))) {{ const P = {P}; let t = '', n = 0; "
+            "for (const [ws, d] of P) for (const w of ws) if (w.length > n && h.includes(w)) { t = d; n = w.length; } "
+            f"if (!t && {W}.some(w => h.includes(w))) t = {json.dumps(ltext, ensure_ascii=False)}; "
+            "if (t) { %>[地图方位·仅背景] <%- t %><% } } } %>")
 
 
 FIELDS = dict(  # 与 SillyTavern 1.12+ 导出的世界书条目字段一致（参照 ~/Downloads/酒馆/世界书/ 里的现有文件）
@@ -168,6 +231,42 @@ console.log(JSON.stringify(out));"""
         + [f'当前地点 {k}→{got or "不动"}（应为 {want}）' for (k, want), got in zip(probes.items(), r['here']) if got != want]
     if not spans or not places or bad: sys.exit('自检失败：\n  ' + '\n  '.join(bad or ['没找到示范或地点清单']))
     print(f'自检通过：{len(spans)} 条示范都不上图，{len(places)} 个地标都能推断层，{len(probes)} 个当前地点示例落点正确')
+    return selftest_093(items)
+
+
+# 最小 EJS（<% %> / <%- %> / <%= %>），只用来在 node 里验证方位条目的输出；getvar 桩按 MVU 取 stat_data.世界.当前地点
+MINI_EJS = r"""const render = (tpl, here) => { let code = 'let __o = "";'; let i = 0; const re = /<%([-=]?)([\s\S]*?)%>/g; let m;
+  while ((m = re.exec(tpl))) { code += '__o += ' + JSON.stringify(tpl.slice(i, m.index)) + ';'; code += m[1] ? '__o += String(' + m[2] + ');' : m[2] + '\n'; i = re.lastIndex; }
+  code += '__o += ' + JSON.stringify(tpl.slice(i)) + '; return __o;';
+  const getvar = (k, o = {}) => (k === 'stat_data.世界.当前地点' ? (here === undefined ? o.defaults : here) : o.defaults);
+  return new Function('getvar', code)(getvar); };"""
+
+
+def selftest_093(items):
+    """v0.9.3：人物 / 改名示范不生效；方位条目按当前地点只展开一处，别的层、没写地点时为空；统计渲染后的 tokens"""
+    lore = [(c, t) for c, t, _ in items if c.startswith('地图方位')]
+    who, here = next(t for c, t, _ in items if c.startswith('地图人物位置')), next(t for c, t, _ in items if c.startswith('地图当前地点'))
+    probes = ['天城·中层·天城执法局总局', '中层·霓虹街', '下层·废弃教堂区', '伊甸庄园·书房', '主卧', '天城·上层', ['中层·霓虹街', '[旧格式]'], '世界地图上的某地', '']
+    js = MINI_EJS + """
+import * as C from './map/tavern/characters.mjs'; import * as V from './map/tavern/mvu.mjs'; import fs from 'node:fs';
+const a = JSON.parse(fs.readFileSync(0, 'utf8'));
+console.log(JSON.stringify({ tags: C.parseChars(a.who).length + V.parseCustomTags(a.here).length,
+  out: a.probes.map(h => a.lore.map(([c, t]) => render(t, h).trim())) }));"""
+    r = json.loads(subprocess.run(['node', '--input-type=module', '-e', js], cwd=ROOT, input=json.dumps({'who': who, 'here': here, 'lore': lore, 'probes': probes}),
+                                  capture_output=True, text=True, check=True).stdout)
+    bad = []
+    if r['tags']: bad.append(f'人物 / 改名示范原文会生效（{r["tags"]} 条）')
+    want = {0: '中层', 1: '中层', 2: '下层', 3: '上层', 4: '上层', 5: '上层'}   # 探针 → 应该展开的层（其余层为空）
+    for i, outs in enumerate(r['out']):
+        got = [c.split('·')[1] for (c, _), o in zip(lore, outs) if o]
+        exp = [want[i]] if i in want else ([] if i >= 7 else ['中层'])
+        if got != exp: bad.append(f'方位 {probes[i]!r} → {got}（应为 {exp}）')
+    if not r['out'][0][1].startswith('[地图方位·仅背景] 天城执法局总局：'): bad.append('中层地标行格式不对：' + r['out'][0][1][:40])
+    if bad: sys.exit('v0.9.3 自检失败：\n  ' + '\n  '.join(bad))
+    rendered = [max(tokens(o) for o in outs) for outs in zip(*r['out'])]
+    print(f'v0.9.3 自检通过：示范不生效；方位条目 {len(probes)} 个探针各只展开一层；渲染后每轮最多约 {max(rendered)} tokens')
+    print('  示例：' + next(o for o in r['out'][0] if o))
+    return max(rendered)
 
 
 def main():
@@ -177,7 +276,7 @@ def main():
     ap.add_argument('--check', metavar='参照.json', help='按一份现有世界书核对字段与类型')
     a = ap.parse_args()
     items, n = build(a.version)
-    selftest(items)
+    lore_max = selftest(items)
     book = to_book(items)
     out = a.out or os.path.expanduser(f'~/Downloads/酒馆/世界书/伊甸地图·世界书附加条目 v{a.version}.json')
     os.makedirs(os.path.dirname(out), exist_ok=True)
@@ -185,8 +284,10 @@ def main():
         json.dump(book, f, ensure_ascii=False, indent=2); f.write('\n')
     tot = 0
     for c, content, _ in items:
-        t = tokens(content); tot += t; print(f'  {c}：{len(content)} 字符，约 {t} tokens')
-    print(f'写入 {out}（{len(items)} 条，{n} 种类型，合计约 {tot} tokens）')
+        t = tokens(content); tot += 0 if c.startswith('地图方位') else t
+        print(f'  {c}：{len(content)} 字符，约 {t} tokens' + ('（EJS 源码，不直接发给模型）' if c.startswith('地图方位') else ''))
+    print(f'写入 {out}（{len(items)} 条，{n} 种类型）')
+    print(f'每轮发给模型：常驻约 {tot} tokens + 方位最多约 {lore_max} tokens（EJS 展开后；没装提示词模板扩展时方位条目会原样发出，自检会提示）')
     if a.check: check(book, a.check)
 
 
