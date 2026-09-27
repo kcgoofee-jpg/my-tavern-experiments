@@ -56,7 +56,7 @@
     padding: 10px 40px 10px 14px; border-radius: 10px; background: var(--em-bg); color: var(--em-ink); border: 1px solid var(--em-accent); box-shadow: 0 6px 20px rgba(0,0,0,.35); font: 12px/1.55 var(--em-font); }
   #${ID} .em-ctoast b { color: var(--em-accent); }
   #${ID} .em-ctoast button { position: absolute; right: 4px; top: 4px; width: 44px; height: 44px; border: 0; background: none; color: var(--em-muted); font: 18px/1 system-ui; cursor: pointer; }
-  /* 自动检查更新的提示（v0.9.7）：说明链接 + 「稍后」/「此版本不再提示」 */
+  /* 自动检查更新的提示（v0.9.6）：说明链接 + 「稍后」/「此版本不再提示」 */
   #${ID} .em-ctoast a { color: var(--em-accent); }
   #${ID} .em-ctoast.em-upd { bottom: auto; top: calc(env(safe-area-inset-top) + 12px); }
   #${ID} .em-ctoast.em-force { border-color: var(--em-alert); }
@@ -368,9 +368,17 @@
     if (e.data?.type === 'eden-map:custom-sync') api.setWorldbookSync(!!e.data.on);
     if (e.data?.type === 'eden-map:splash') showSplash();   // 设置「重新显示开场自检」
     if (e.data?.type === 'eden-map:varmap-set') setVarUser(e.data.user);   // v0.9.5 设置「变量映射」
+    if (e.data?.type === 'eden-map:compose' && typeof e.data.text === 'string') composeIn(e.data.text);   // v0.9.6 地图 → 聊天：只填不发
     if (e.data?.type === 'eden-map:check-update') checkUpdate().then(r => post({ type: 'eden-map:update-result', ...r }));   // v0.9.6「检查更新」
   };
   window.parent.addEventListener('message', onMsg);
+  // v0.9.6 地图 → 聊天（tavern/compose.mjs）：卡片上「去这里」「追问这件事」的句子填进酒馆输入框；从不调用发送
+  let CPm = null;
+  async function composeIn(text) {
+    try { CPm ??= await import(SELF + 'tavern/compose.mjs'); } catch (e) { return; }
+    const how = CPm.insert(window.parent, text, typeof triggerSlash === 'function' ? triggerSlash : null);
+    post({ type: 'eden-map:compose-done', ok: !!how, how });
+  }
   // ---------------- v0.9.6 版本与检查更新 ----------------
   // 版本信息：预览 / 正式脚本在 import 前写 window.__edenMapScript = { version, code, channel: tag | follow | ref, ref, sha }（tools/build_preview_script.py 烘进去）；
   // 没有（旧脚本、本地）时按脚本地址推断，版本号与构建号取当前线路的 data/build.json。
