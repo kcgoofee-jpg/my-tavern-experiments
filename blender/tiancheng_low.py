@@ -73,7 +73,26 @@ ZONE = np.array([2 if b['dk'] == 'village' else 1 if b['a'] > .015 else 0 for b 
 # 地面：水泥与泥地；路面沥青；荒掉的公园是泥地；水面发黑
 tc.road_plane((.075, .07, .065), z=0, m=td.city_mat('lowground', .9, ao=.02, grime=1.4))
 city.flat_polys('water', city.water, .002, (.01, .012, .012), mat('water_l', (.01, .012, .012), .1, spec=.6))
-city.flat_polys('mud', city.parks, .002, (.09, .075, .05), td.city_mat('mud', .95, .01, 1.5))
+# A7 可读性：荒掉的公园原来是和别处一样的褐色泥地，读不出是公园——改成枯草的暗橄榄色，撒一片稀疏的枯树 / 灌木（暗色树冠）；
+# 城中村的地面（楼缝、小巷）压暗一档，缺楼处不再露出一块块浅色地面。独立随机（9112），不动 R。
+city.flat_polys('mud', city.parks, .002, (.08, .086, .052), td.city_mat('mud', .95, .01, 1.6))
+_Pi = next(D['P'] for D in city.districts if D['kind'] == 'industrial')   # 工业带地面：偏冷的深灰水泥（与城中村的暖褐地面分开）
+city.flat_polys('ind_ground', [np.array(_Pi, np.float32)], .0011, (.058, .058, .058), td.city_mat('indground', .82, .01, 1.8))
+_Pv = next(D['P'] for D in city.districts if D['kind'] == 'village')
+city.flat_polys('village_ground', [np.array(_Pv, np.float32)], .0012, (.036, .033, .03), td.city_mat('vground', .95, .01, 1.7))
+_trng = np.random.default_rng(9112)
+def _compact(P_): return abs(tc_city.poly_area(P_)) / max(1e-6, float(np.sum(np.hypot(*(np.roll(P_, -1, 0) - P_).T))) ** 2)
+_bigp = [P_ for P_ in city.parks if abs(tc_city.poly_area(P_)) > .35 and _compact(P_) > .025]   # 细长的绿带（大道中间）不算   # 第 2 轮：只在大公园里（沿路的窄绿带上的枯树读成一团团黑斑）
+_dead = [(x_, y_, .0025 + r_ * .45, r_ * _trng.uniform(.6, 1.0)) for x_, y_, r_ in city.trees
+         if _trng.random() < .55 and any(point_in_poly(x_, y_, P_) for P_ in _bigp) and all(((x_ - lx) / (rx + .05)) ** 2 + ((y_ - ly) / (ry + .05)) ** 2 > 1 for lx, ly, rx, ry in LM)]
+tc.ico_mesh('dead_trees', _dead, mat('deadtree', (.04, .042, .026), .95))
+PARK_L = []                                                             # 大公园沿边几盏暗钠灯（小路的灯），公园的轮廓在缩小时读得出
+for P_ in _bigp:
+    for a_, b_ in zip(P_, np.roll(P_, -1, 0)):
+        L_ = float(np.hypot(*(b_ - a_)))
+        for t_ in np.arange(_trng.uniform(0, .3), L_, .32):
+            if _trng.random() < .45: continue
+            q_ = a_ + (b_ - a_) * t_ / max(L_, 1e-6); PARK_L.append((float(q_[0]), float(q_[1]), .0068, .045 * _trng.uniform(.7, 1.2), np.array(SODIUM2) * _trng.uniform(.4, .8)))
 city.flat_polys('ind_yard', city.industrial, .0015, (.13, .12, .1), td.city_mat('indyard', .9, .01, 1.6))   # 工业用地：混凝土 / 碎石场地
 city.roads_mesh('roads', .004, td.asphalt_mat('road', (.035, .033, .03), 1.3))
 
@@ -118,6 +137,18 @@ _vdrop = np.array([_vr.random() < .6 * (1 - vf(city.b[i]['cx'], city.b[i]['cy'])
 _vm = np.array([not amc_clear(city.b[i]['cx'], city.b[i]['cy'], .06) for i in vil], bool) & ~_vdrop
 vmat = td.city_mat('villagemat', .85, .012, 1.6)
 city.buildings_mesh('village', vil[_vm], 0, top_v[_vm], c_v[_vm], vmat)
+# A7：交界处去掉的握手楼原地留下拆了一半的地基 / 碎砖堆（暗、矮、比原楼小一圈），不再露出一块块浅色的空地。独立随机（9113）。
+_rbr = np.random.default_rng(9113); RB, RBC, RBR = [], [], []
+for i in vil[_vdrop]:
+    b = city.b[i]
+    if amc_clear(b['cx'], b['cy'], .06): continue
+    x, y, w, d, rot = b['obb']; r_ = _rbr.random()
+    if r_ < .55: RB.append((x, y, w * _rbr.uniform(.7, .95), d * _rbr.uniform(.7, .95), 0, _rbr.uniform(.002, .008))); RBR.append(rot); RBC.append(np.array((.075, .066, .056)) * _rbr.uniform(.55, .95))
+    elif r_ < .85:
+        for _ in range(int(_rbr.integers(3, 8))):
+            u_, v_ = _rbr.uniform(-.4, .4) * w, _rbr.uniform(-.4, .4) * d; cs, sn = math.cos(rot), math.sin(rot)
+            RB.append((x + u_ * cs - v_ * sn, y + u_ * sn + v_ * cs, _rbr.uniform(.01, .035), _rbr.uniform(.01, .03), 0, _rbr.uniform(.003, .014))); RBR.append(_rbr.uniform(0, math.pi)); RBC.append(np.array((.12, .09, .07)) * _rbr.uniform(.4, .9))
+tc.box_mesh('village_rubble', RB, np.array(RBC, np.float32).reshape(-1, 3), td.city_mat('rubble', .95, .006, 1.8), rot=np.array(RBR, np.float32))
 # A6：屋顶杂物的色相收窄到三类——铁锈（两档）、篷布蓝灰（两档）、褪色红，外加一档锈灰的旧铁皮（原来蓝、绿、橙、灰各一，太杂）。条数不变（R 的序列不变）。
 SHACK = np.array([(.3, .15, .09), (.22, .125, .08), (.15, .175, .21), (.2, .225, .25), (.33, .16, .13), (.24, .21, .19)], np.float32)
 shacks, shc2, shr, vtanks, sho, vto = [], [], [], [], [], []
@@ -170,23 +201,33 @@ TKC = np.array([(.36, .34, .31), (.42, .4, .37), (.3, .22, .16), (.22, .23, .22)
 TKC = TKC * .8 + TKC.mean(1, keepdims=True) * .2                        # 再压低 20% 饱和
 TK = [(x_ + _crng.normal(0, .007), y_ + _crng.normal(0, .007), z_, r_ * _crng.uniform(.85, 1.12), h_ * _crng.uniform(.8, 1.15)) for x_, y_, z_, r_, h_ in TK]   # 位置、尺寸不齐
 tc.cyl_mesh('tanks', TK, td.city_mat('tank', .5, .012, 2.2, .45), 24, colors=TKC[_crng.integers(len(TKC), size=len(TK))] * _crng.uniform(.6, 1.1, (len(TK), 1)))
-pipes = Batch('pipes', mat('pipe', (.24, .18, .12), .55, .6), smooth=True)   # 暗锈色：夜里只在灯下看得出，不成一条条亮线
+pipes = Batch('pipes', mat('pipe', (.1, .085, .07), .8, .3), smooth=True)   # A7：再压暗、去掉金属高光（原来铜色反光，直角管廊像一个个描边框）
 pipe_lamps = []
 def pipe_run(x0, y0, x1, y1, z, r):
     L = math.hypot(x1 - x0, y1 - y0); a = math.atan2(y1 - y0, x1 - x0)
     if L < 1e-3: return
     bmesh.ops.create_cone(pipes.bm, cap_ends=True, segments=10, radius1=r, radius2=r, depth=L,
                           matrix=Matrix.Translation(((x0 + x1) / 2, (y0 + y1) / 2, z)) @ Matrix.Rotation(a, 4, 'Z') @ Matrix.Rotation(math.pi / 2, 4, 'Y'))
-for i in ind[::4]:                                                     # 每四座厂房一束管道，走到最近的支柱
+# A7：管廊原来是每四座厂房两根并排的直角折线（先东西、再南北），缩小看是一个个描边的矩形框。改为：每六座厂房一根（离支柱 < 200 m 才接），
+# 走向跟厂房的街网方向（grid_rot）而不是正东西 / 正南北，拐角斜切 45°，中途在随机位置再折一次；灯更少。独立随机（9115）。
+_pip = np.random.default_rng(9115)
+def pipe_path(x, y, px, py, rot):
+    cs, sn = math.cos(rot), math.sin(rot); dx, dy = px - x, py - y; u = dx * cs + dy * sn; v = -dx * sn + dy * cs
+    f = _pip.uniform(.3, .7); ch = min(abs(u), abs(v), .12) * _pip.uniform(.4, 1.0)
+    pts_ = [(0, 0), (u * f, 0), (u * f, v * .5), (u, v * .5), (u, v)] if _pip.random() < .5 else [(0, 0), (u - math.copysign(ch, u), 0), (u, math.copysign(ch, v)), (u, v)]
+    return [(x + a * cs - b * sn, y + a * sn + b * cs) for a, b in pts_]
+for i in ind[::6]:
     x, y = city.b[i]['cx'], city.b[i]['cy']; px, py = min(PILLARS, key=lambda p: math.hypot(p[0] - x, p[1] - y))
-    for o in (0, .036): pipe_run(x, y + o, px, y + o, .17 + o * .3, .016); pipe_run(px + o, y, px + o, py, .18, .016)
-    for x0, y0, x1, y1, ox, oy in ((x, y, px, y, 0, .018), (px, y, px, py, .018, 0)):   # 沿管线每 40 m 一盏低功率钠灯：物资往支柱汇聚的线
+    if math.hypot(px - x, py - y) > 2.0: continue
+    path = pipe_path(x, y, px, py, city.b[i]['obb'][4])
+    for (x0, y0), (x1, y1) in zip(path[:-1], path[1:]):
+        pipe_run(x0, y0, x1, y1, .175, .014)
         L = math.hypot(x1 - x0, y1 - y0)
-        for t in np.arange(.3, L, .8)[::2]: pipe_lamps.append((x0 + (x1 - x0) * t / L + ox, y0 + (y1 - y0) * t / L + oy, .23, SODIUM2))
+        for t in np.arange(.4, L, 1.2): pipe_lamps.append((x0 + (x1 - x0) * t / L, y0 + (y1 - y0) * t / L, .23, SODIUM2))
 tick(f'tanks {len(TK)} + pipes')                                        # pipes 在「工业带的边角」一节里补上皮带廊后才生成
 
 # ---------------- 货运铁路：OSM 地面铁路 + 货运站 ----------------
-ballast = Batch('ballast', mat('ballast', (.17, .15, .12), .95))
+ballast = Batch('ballast', tc.noise_mat('ballast', (.06, .057, .052), (.12, .11, .095), 400, .95, .1))   # A7：道砟压暗、带碎石颗粒（原来是一条条浅褐色的带子）
 rails = Batch('rails', mat('rail', (.5, .48, .45), .25, 1))
 def track(x0, y0, x1, y1):
     L = math.hypot(x1 - x0, y1 - y0); a = math.atan2(y1 - y0, x1 - x0); mx, my = (x0 + x1) / 2, (y0 + y1) / 2
@@ -288,6 +329,40 @@ def lot(x, y, kind, rot):
     if kind in ('stack', 'scrap') and _frng.random() < .12:            # 堆场的工作灯（偏白）
         f_work.append((x, y, .16, srgb('#ffe2b8'))); f_heads.append((x, y, .012, .012, .12, .123))
 occ_f = set(); n_buf = n_lot = 0
+# A7：城中村成片地越过交界线伸进工业带（原来在 l2 一段城中村停在一条南北向大道上，直边）——交界线以西按一层确定性的起伏
+# 划出几块「舌头」（最深约 130 m），里面按握手楼的尺度补楼（楼贴楼、越往西越稀），屋顶带铁皮房、水箱、几盏昏暗的窗光。
+# 占位写进 occ_f，后面的堆场 / 工棚不叠上去。独立随机（9114），不动 R。
+_sp = np.random.default_rng(9114); SPB, SPZ, SPC, SPS, SPSC, SPSR, SPT, SPL = [], [], [], [], [], [], [], []
+from collections import Counter; _rej = Counter()
+def lobe(y): return max(0.0, 1.05 * math.sin(y * 1.45 + 2.6) + .45 * math.sin(y * 3.7 + .3) + .15)
+for gx in np.arange(-4.5, 3.0, .11):
+    for gy in np.arange(-9.2, 9.25, .11):
+        x = gx + _sp.uniform(-.02, .02); y = gy + _sp.uniform(-.02, .02)
+        d = SEAM(y) - x - seam_n(x, y); reach = lobe(y) * 1.6
+        if d < .02 or d > reach or _sp.random() > .97 * (1 - d / max(reach, 1e-6)) ** .45: continue
+        if abs(x) > W / 2 or abs(y) > H / 2 or in_zone(x, y) or amc_clear(x, y, .1): _rej['zone'] += 1; continue
+        if kd_road.find((x, y, 0))[2] < .075: _rej['road'] += 1; continue
+        if in_bldg(x, y, .03): _rej['bldg'] += 1; continue
+        if any(point_in_poly(x, y, q) for q in city.parks): _rej['park'] += 1; continue
+        rot = grid_rot(x, y) + _sp.normal(0, .05); cs, sn = math.cos(rot), math.sin(rot)
+        w_, d_ = _sp.uniform(.1, .145), _sp.uniform(.09, .14)
+        if any(kd_road.find((x + u * cs - v * sn, y + u * sn + v * cs, 0))[2] < .05 for u, v in ((-w_ / 2, -d_ / 2), (w_ / 2, -d_ / 2), (w_ / 2, d_ / 2), (-w_ / 2, d_ / 2))): continue
+        g = (round(x / .09), round(y / .09))
+        if g in occ_f: continue
+        for i_ in (-1, 0, 1):
+            for j_ in (-1, 0, 1): occ_f.add((g[0] + i_, g[1] + j_))
+        zt = float((.06 + _sp.uniform(18, 32) / 45 * .08) * (.55 + .45 * (1 - d / max(reach, 1e-6))) * np.clip(_sp.lognormal(0, .2), .65, 1.6))
+        SPB.append((x, y, w_, d_, 0, zt)); SPZ.append(rot); SPC.append(VIL[_sp.integers(len(VIL))] * _sp.uniform(.75, 1.15))
+        for _ in range(int(_sp.integers(0, 3))):
+            u, v = _sp.uniform(-.3, .3) * w_, _sp.uniform(-.3, .3) * d_
+            SPS.append((x + u * cs - v * sn, y + u * sn + v * cs, _sp.uniform(.02, .05), _sp.uniform(.02, .04), zt, zt + _sp.uniform(.006, .02))); SPSR.append(rot + _sp.normal(0, .08)); SPSC.append(SHACK[_sp.integers(len(SHACK))] * _sp.uniform(.7, 1.2))
+        if _sp.random() < .5: SPT.append((x + _sp.uniform(-.3, .3) * w_, y + _sp.uniform(-.3, .3) * d_, zt, .008, .012))
+        if _sp.random() < .06: SPL.append((x, y, zt + .04, SODIUM2))
+tc.box_mesh('village_spill', SPB, np.array(SPC, np.float32).reshape(-1, 3), vmat, rot=np.array(SPZ, np.float32))
+tc.box_mesh('village_spill_shacks', SPS, np.array(SPSC, np.float32).reshape(-1, 3), td.corrugated_mat('spillshack', .6, .35, 1500, 1.4), rot=np.array(SPSR, np.float32))
+tc.cyl_mesh('village_spill_tanks', SPT, td.city_mat('spilltank', .5, .004, 1.2, .4), 10, colors=(.3, .3, .3))
+tc.point_lights('village_spill_light', SPL, LAMP * .4 * GLOW * .8, .01)
+tick(f'village spill west of seam: {len(SPB)} buildings, rejected {dict(_rej)}')
 for gx in np.arange(-15.2, 2.8, .09):                                  # A6：交界线最东到 x ≈ 2.2
     for gy in np.arange(-9.3, 9.35, .09):
         x = gx + _frng.uniform(-.03, .03); y = gy + _frng.uniform(-.03, .03)
@@ -295,7 +370,7 @@ for gx in np.arange(-15.2, 2.8, .09):                                  # A6：�
         if d < .12: continue
         nz = .5 + .5 * math.sin(x * 2.3 + 1.1) * math.cos(y * 1.9 - .5)   # 成片、不均匀
         if d < 1.3: p = .9 * (1 - d / 1.3) ** 1.1 * (.55 + .45 * nz); buf = True
-        else: p = .07 * nz * nz * 2; buf = False
+        else: p = .07 * nz * nz * 2 * (1 + 1.2 * _ss((-5.0 - y) / 2.0) * _ss((-2.0 - x) / 3.0)); buf = False   # A7：西南空地多补一些堆场
         if _frng.random() > p: continue
         if abs(x) > W / 2 or abs(y) > H / 2 or in_zone(x, y) or kd_road.find((x, y, 0))[2] < .1 or in_bldg(x, y): continue
         g = (round(x / .09), round(y / .09))
@@ -350,7 +425,8 @@ if FURN:
         for t in np.arange(.25, L, .5): pipe_lamps.append((x0 + (x1 - x0) * t / max(L, 1e-6), y0 + (y1 - y0) * t / max(L, 1e-6), .24, SODIUM2))
     tick(f'steelworks at ({x:.2f}, {y:.2f})')
 pipes.done()
-tc.box_mesh('fill_lamp_heads', f_heads, np.tile(srgb('#ffc070'), (len(f_heads), 1)), emit_mat('filllamp', None, 3.0 * GLOW))
+_fh = tc.box_mesh('fill_lamp_heads', f_heads, np.tile(srgb('#ffc070'), (len(f_heads), 1)), emit_mat('filllamp', None, 3.0 * GLOW))
+if _fh: _fh.visible_shadow = False
 tc.point_lights('fill_lamps', f_lamp, LAMP * .5 * GLOW, .01)
 tc.point_lights('fill_work', f_work, LAMP * 3.5 * GLOW, .02)
 tc.point_lights('fill_fire', f_fire, LAMP * .7 * GLOW, .01)
@@ -360,10 +436,20 @@ lamp_heads, lamp_lights, extra_flood = [], [], []
 # A6：原来每条路单侧每 30 m 一盏、等距；改用 tc_city.street_lamps（按路级别定间距、两侧错开 / 单侧换边、间距抖动、路口转角补灯），
 # 独立随机（9108），不动 R。
 _lr9 = np.random.default_rng(9108)
-for x, y, ang, c, w in city.street_lamps(_lr9, CAR - {'service'}, side_offset=.008, scale=1.0, corner=.35, one_side=True):
+# A7：间距抖动加大、分幅干道 / 辅路的平行几排去重（min_sep）；工业带（交界线以西）是老式汞灯（偏绿的冷白，暗），城中村是钠灯——
+# 两个片区缩小看颜色就分得开；不投点光的灯头在地面上画一小片渐隐的光池（td.glow_pools）。独立随机（9108 接着用 / 9111）。
+MERC = srgb('#c6e6b4')                                                  # A7 第 2 轮：汞灯的偏绿要看得出（原来读成中性 LED 白）
+def is_ind(x, y): return x < SEAM(y) - seam_n(x, y) - .05
+def ruhr_east(x, y): return _ss((x - SEAM(y) + 4.2) / 3.2)             # 工业带东侧约 400 m：汞灯里混进钠灯，两片区的灯色渐变而不是一刀切（第 3 轮由 250 m 放宽）
+MERC_L = srgb('#dfe4d8')                                                # 汞灯投到地上的光：接近中性（绿只留在灯头和贴身的小光池里，工业带不再整片发绿）
+LPOOL = []; _pl9 = np.random.default_rng(9111); _headcol = {}
+for x, y, ang, c, w in city.street_lamps(_lr9, CAR - {'service'}, side_offset=.008, scale=1.0, corner=.35, one_side=True, jit=.42, min_sep=.17):
     if _lr9.random() < (.6 if blackout(x, y) else .22): continue       # 坏掉的路灯；断电片区大半不亮
     lamp_heads.append((x, y, .012, .012, .07, .073))
-    if _lr9.random() < .5: lamp_lights.append((x, y, .09, SODIUM if _lr9.random() < .7 else SODIUM2))   # 一半灯头投光（功率加倍补回）
+    col_ = (MERC if _pl9.random() < .85 - .5 * ruhr_east(x, y) else SODIUM2) if is_ind(x, y) else (SODIUM if _pl9.random() < .7 else SODIUM2)
+    _headcol[(round(x, 4), round(y, 4))] = col_
+    if _lr9.random() < .5: lamp_lights.append((x, y, .09, MERC_L if col_ == MERC else col_))   # 一半灯头投光（功率加倍补回）
+    elif _pl9.random() < .75: LPOOL.append((x, y, .0065, (.028 if col_ == MERC else .05) * _pl9.uniform(.8, 1.25), np.array(col_) * _pl9.uniform(.35, .8)))
 pil_lights = []
 for (px, py), (rot, w, d, top) in zip(PILLARS, PIL_TOP):             # 柱基旁两盏钠灯（方向随机，不成环；功率按原来一圈 9 盏的总量补回）
     for _ in range(2):
@@ -371,6 +457,7 @@ for (px, py), (rot, w, d, top) in zip(PILLARS, PIL_TOP):             # 柱基旁
         lu, lv = math.cos(a - rot), math.sin(a - rot)                  # 在柱墩的本地坐标里，保证灯落在墩外
         rr = max(rr, min(w / 2 / (abs(lu) + 1e-6), d / 2 / (abs(lv) + 1e-6)) + .03)
         lx, ly = px + rr * math.cos(a), py + rr * math.sin(a); pil_lights.append((lx, ly, .1, SODIUM)); lamp_heads.append((lx, ly, .012, .012, .07, .073))
+_fl9 = np.random.default_rng(9116)
 for i in ind:                                                          # 工业区的高杆泛光灯：偏白、更亮，成片照亮厂区；靠城中村交界 75 m 内多补一半
     if R.random() < (.175 if -.75 < city.b[i]['cx'] - SEAM(city.b[i]['cy']) < 0 else .45): continue
     b = city.b[i]; x, y = b['cx'] + R.uniform(-.1, .1), b['cy'] + R.uniform(-.1, .1)
@@ -380,15 +467,24 @@ for i in ind:                                                          # 工业�
     dx_, dy_ = dx_ / L_, dy_ / L_; cu_, su_ = math.cos(r_), math.sin(r_)
     t_ = min(w_ / 2 / (abs(dx_ * cu_ + dy_ * su_) + 1e-6), d_ / 2 / (abs(-dx_ * su_ + dy_ * cu_) + 1e-6)) + .05
     x, y = b['cx'] + dx_ * t_, b['cy'] + dy_ * t_
-    lamp_heads.append((x, y, .02, .02, .35, .353)); extra_flood.append((x, y, .4, srgb('#ffd7a0')))
-tc.box_mesh('lamp_heads', lamp_heads, np.tile(srgb('#ffc070'), (len(lamp_heads), 1)), emit_mat('lamphead', None, 6.0 * GLOW))
+    if _fl9.random() < .4: continue                                    # A7 第 2 轮：高杆灯少四成（R 的序列不变）；只留在厂门、堆场一带的够用
+    fc_ = MERC if _fl9.random() > .35 * ruhr_east(x, y) else SODIUM2
+    lamp_heads.append((x, y, .02, .02, .35, .353)); extra_flood.append((x, y, .4, MERC_L if fc_ == MERC else fc_)); _headcol[(round(x, 4), round(y, 4))] = fc_   # A7：厂区高杆灯改偏绿的汞灯（原来暖白，整张图一片橙褐）
+_hc = np.array([np.array(_headcol[(round(h_[0], 4), round(h_[1], 4))]) * (1.0 if _headcol[(round(h_[0], 4), round(h_[1], 4))] == MERC else 1.25)
+                if (round(h_[0], 4), round(h_[1], 4)) in _headcol else srgb('#ffc070') for h_ in lamp_heads], np.float32).reshape(-1, 3)   # A7：灯头颜色跟灯色走
+_lh = tc.box_mesh('lamp_heads', lamp_heads, _hc, emit_mat('lamphead', None, 6.0 * GLOW))
+if _lh: _lh.visible_shadow = False                                     # A7：灯头就在点光源正下方，挡出一圈圈黑斑（大道上一串圆形暗斑）
 tc.point_lights('sodium', lamp_lights, LAMP * 2 * GLOW, .01)
+td.glow_pools('park_pools', PARK_L, .3 * GLOW)
+tc.box_mesh('park_lamp_heads', [(x_, y_, .01, .01, .05, .052) for x_, y_, *_ in PARK_L], np.array([c_ for *_, c_ in PARK_L], np.float32).reshape(-1, 3), emit_mat('parklamp', None, 5.0 * GLOW))
+td.glow_pools('lamp_pools', LPOOL, .25 * GLOW)
 tc.point_lights('pillar_sodium', pil_lights, LAMP * 2 * GLOW * 4, .01)
 tc.point_lights('pipe_sodium', pipe_lamps, LAMP * .18 * GLOW, .01)
 # 棚屋区：昏暗的暖光与磷光绿（霉菌灯、黑市招牌）
 glim, gdots = [], []
 for (x, y, w, d, z0, z1), o_ in zip(shacks, sho):
     r, m_ = R.random(), .4 + .6 * vf(x, y); k_ = .5 + .5 * vf(x, y)    # 交界处灯少、也暗
+    m_ *= .35 + .65 * _ss((math.hypot(x - WELL7[0], y - WELL7[1]) - .9) / .8)   # A7：7 号井周围 ~120 m 城中村的窗光压暗，井口的冷光更显
     if amc_clear(x, y, .06) or o_ not in _vkeep: continue              # （R 照样取，保持序列）
     if r < .04 * m_: glim.append((x, y, z1 + .04, SODIUM2, k_)); gdots.append((x, y, .008, .008, z1, z1 + .002, *(np.array(SODIUM2) * k_)))
     elif r < .045 * m_: glim.append((x, y, z1 + .04, PHOS, k_)); gdots.append((x, y, .01, .006, z1, z1 + .002, *(np.array(PHOS) * k_)))
@@ -398,7 +494,7 @@ for q in range(4):                                                     # 亮度�
     if g_: tc.point_lights(f'slum_light{q}', g_, LAMP * .4 * GLOW * (lo + hi) / 2, .01)
 gd = np.array(gdots, np.float32).reshape(-1, 9)
 tc.box_mesh('slum_dots', gd[:, :6], gd[:, 6:], emit_mat('slumdot', None, 4.0 * GLOW))
-tc.point_lights('flood', extra_flood, LAMP * 6 * GLOW, .03)
+tc.point_lights('flood', extra_flood, LAMP * 3.6 * GLOW, .03)        # A7 第 2 轮：汞灯暗一些（不和 7 号井抢冷色焦点）
 # 西南角的暗区（A3）：稀疏的暖色窗光（楼边地面一小片光 + 门头 / 楼梯间的小亮块）、隔很远才一盏的暗钠灯、零星烧桶——暗但有内容。
 # 范围按 smoothstep 渐隐（nx < .15、ny > .8 附近最多）；单独的随机（9105），不动 R。
 _drng = np.random.default_rng(9105)
@@ -463,7 +559,7 @@ gr.box(x - .06, y + .05, .026, .16, .12, .05, .1)                     # 升降�
 for _ in range(7): gr.box(x + R.uniform(-.15, .15), y + R.uniform(-.15, .15), .026, R.uniform(.025, .05), R.uniform(.025, .05), R.uniform(.015, .03), R.uniform(0, 1.5))
 gr.done()
 stalls, stc, strot = [], [], []
-TARP = np.array([(.4, .12, .08), (.12, .22, .36), (.36, .3, .12), (.18, .3, .16), (.3, .3, .3)], np.float32)
+TARP = np.array([(.26, .14, .09), (.16, .18, .2), (.22, .15, .1), (.18, .19, .2), (.24, .22, .2)], np.float32)   # A7 第 3 轮：摊位篷布收成锈褐 / 篷布灰两类（原来五色撒点读成彩色纸屑）
 TARP = TARP * .8 + TARP.mean(1, keepdims=True) * .2                  # 篷布旧、褪色
 # 摊位：不以井为心排放射状，而是跟着周围街巷的方向摆成一段段的摊排（两排对着开，中间是走道），摊排之间散着零星的摊子
 GRID_W = grid_rot(x, y)
@@ -489,6 +585,7 @@ wg.done()
 # 竖井漏下来的一束冷色天光：整个下层唯一的自然光（参考米德加板下的「天窗」）；光源放在井筒口内，只照井底与近处
 shaft = bpy.data.lights.new('shaft_sky', 'AREA'); shaft.shape = 'DISK'; shaft.size = .55; shaft.energy = 7.0 * GLOW * LAMP / .3   # 井底被照成一块冷色的光斑：整张下层唯一的冷色焦点（A3：格栅改深色后略降，冷光落在格栅与井圈上，不再过曝）
 shaft.color = srgb('#cfe0ff'); so_ = bpy.data.objects.new('shaft_sky', shaft); so_.location = (x, y, .58); col_main.objects.link(so_)
+td.glow_pools('well7_pool', [(x, y, .0068, 1.1, srgb('#7aa6e0'))], .07 * GLOW, 32, 2.4)   # 第 3 轮：只留一圈外晕、降饱和（内圈叠上去像 UI 图标）   # A7：井口一圈冷光（缩小看 7 号井是全图唯一的冷色光斑）
 for _ in range(10): a, rr_ = R.uniform(0, 2 * math.pi), R.uniform(.45, .75); extra_lights.append((x + rr_ * math.cos(a), y + rr_ * math.sin(a), .1, SODIUM))
 for _ in range(2): a, rr_ = R.uniform(0, 2 * math.pi), R.uniform(.45, .75); extra_lights.append((x + rr_ * math.cos(a), y + rr_ * math.sin(a), .1, PHOS))
 layer.marker('well7', (x, y, 0), .8)
@@ -496,11 +593,11 @@ layer.marker('well7', (x, y, 0), .8)
 # 血肉磨坊：椭圆形地下拳场——锈铁外壳、阶梯看台、中央沙坑；刺眼的白光照着坑
 x, y = MILL
 ground(x, y, 1.2, .95)
-ml = Batch('mill', mat('mill_rust', (.26, .13, .08), .6, .6))
+ml = Batch('mill', mat('mill_rust', (.17, .125, .1), .7, .5))   # A7 第 3 轮：锈铁外壳降饱和（原来缩小看是一个粉红椭圆）
 for k, (rx, ry, hh) in enumerate(((.5, .38, .12), (.42, .31, .09), (.36, .26, .06), (.31, .22, .04))):
     ml.ring(x, y, 0, 1, .05, hh, 56, rx, ry)                           # 外壳 + 阶梯看台
 ml.done()
-pit = Batch('pit', mat('pit', (.2, .09, .06), .95)); pit.cyl(0, 0, 0, 1, .006, 48); po = pit.done()
+pit = Batch('pit', mat('pit', (.13, .1, .08), .95)); pit.cyl(0, 0, 0, 1, .006, 48); po = pit.done()   # A7：沙坑降饱和（原来是全区最红的一块，像 UI 图标）
 po.scale = (.27, .18, 1); po.location = (x, y, 0)                  # 中央沙坑（椭圆）
 lamps_irregular(x, y, .125, .5, .38, 9, WHITE, .014, .3)             # 看台顶上几盏照坑的灯
 extra_lights += [(x + dx, y + dy, .25, WHITE) for dx, dy in ((-.15, 0), (.15, 0), (0, .1), (0, -.1))]
@@ -514,7 +611,7 @@ for sx in (-1, 1): ef.box(x + sx * .6, y, 0, .03, 1.0, .06); ef.box(x, y + sx * 
 ef.box(x - .1, y + .1, 0, .6, .45, .2); ef.box(x + .38, y - .25, 0, .25, .3, .08)
 for k in range(6): ef.box(x - .35 + k * .12, y - .35, 0, .07, .035, .02)   # 装甲车
 ef.done()
-eb = Batch('enf_blue', emit_mat('enf_blue', BLUE, 5.0 * GLOW))       # 执法蓝：大门两盏 + 围墙四角（离散的灯，不描边）
+eb = Batch('enf_blue', emit_mat('enf_blue', tuple(.5 * c_ + .5 * w_ for c_, w_ in zip(BLUE, WHITE)), 2.2 * GLOW))   # A7：执法蓝压暗、降饱和（冷色焦点只留 7 号井）       # 执法蓝：大门两盏 + 围墙四角（离散的灯，不描边）
 for sx in (-1, 1):
     eb.box(x - .1 + sx * .06, y - .5, .06, .014, .014, .003)
     for sy in (-1, 1): eb.box(x + sx * .6, y + sy * .5, .06, .014, .014, .003)
@@ -607,13 +704,13 @@ for dx, dy in ((.4, .05), (.02, .27), (.3, -.27)): am_top.box(MB[0] + dx, MB[1] 
 am_top.cyl(MB[0] - .4, MB[1] - .22, .41, .006, .28, 8, r2=.002)          # 通信桅杆
 for dx in (-.15, 0, .15): am_top.box(x + .6 + dx, y + .2, .16, .05, .05, .015)   # 附楼屋顶的冷却塔格
 am_top.done()
-sky_ = Batch('amc_skylights', emit_mat('amc_fluor', srgb('#cfe2ff'), .07 * GLOW))  # 附楼的天窗里透出的日光灯：很暗的冷色细带，有几格灭着
+sky_ = Batch('amc_skylights', emit_mat('amc_fluor', srgb('#e6e8dc'), .06 * GLOW))   # A7：日光灯改中性偏暖（不做第二个冷色焦点）  # 附楼的天窗里透出的日光灯：很暗的冷色细带，有几格灭着
 skd_ = Batch('amc_skyglass', mat('amc_glass', (.03, .035, .04), .2, .6))
 for k in range(9):
     for j, (v0, v1) in enumerate(((-.2, -.02), (.02, .2))):
         (skd_ if (k * 2 + j) % 5 == 3 or (k * 2 + j) % 7 == 1 else sky_).box(x + .38 + k * .055, y + .2 + (v0 + v1) / 2, .1601, .007, v1 - v0, .0012)
 sky_.done(); skd_.done()
-extra_lights.append((MB[0], MB[1], .2, srgb('#dfefff')))                # 天井里冷白的灯光（窗里透出来的日光灯）
+extra_lights.append((MB[0], MB[1], .2, srgb('#efeadc')))                # 天井里冷白的灯光（窗里透出来的日光灯）
 ceq = Batch('amc_fence', mat('amc_fence', (.12, .12, .12), .6, .5))    # 外圈铁丝网（细），与围墙之间是碎石隔离带
 for sx in (-1, 1): ceq.box(x + sx * 1.33, y, 0, .008, 1.98, .06); ceq.box(x, y + sx * .98, 0, 2.66, .008, .06)
 ceq.done()
