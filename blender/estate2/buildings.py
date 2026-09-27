@@ -159,12 +159,13 @@ def _pool():
     m, t = mat_new('e2_pool')
     if t is None:
         return m
+    # r4b 泳池：绿松石
     v, _ = t.coords('Object', 1.0)
     n = t.new('ShaderNodeTexNoise', (-800, -200), **{'Scale': 0.6, 'Detail': 6.0})
     t.link(v, n.inputs['Vector'])
     bump = t.new('ShaderNodeBump', (-400, -200), Strength=0.1, Distance=0.1)
     t.link(n.outputs['Fac'], bump.inputs['Height'])
-    b = t.bsdf((200, 0), Roughness=0.03, **{'Base Color': (0.02, 0.13, 0.16, 1)})
+    b = t.bsdf((200, 0), Roughness=0.03, **{'Base Color': (0.04, 0.4, 0.45, 1)})
     t.link(bump.outputs['Normal'], b.inputs['Normal'])
     return m
 
@@ -225,6 +226,7 @@ def _spray():
 
 
 MATS = {}
+ROOF_OVR = {'g1': 'copper', 'g3': 'terracotta', 'spa': 'copper', 'w_g1': 'terracotta', 'svc_n': 'terracotta', 'svc_s': 'terracotta', 'svc_w': 'terracotta', 'svc_e': 'terracotta', 'club': 'copper'}
 
 
 def mats():
@@ -236,13 +238,13 @@ def mats():
         plain=_stone('e2_stone_plain', 'castle_brick_02_white', (0.94, 0.925, 0.88), 0.85, windows=False, grime=0.05),
         ashlar=_stone('e2_stone_ashlar', 'castle_brick_02_white', (0.93, 0.91, 0.86), 0.85, windows=False, grime=0.06, ashlar=True),
         honed=_honed(),
-        wallstone=_stone('e2_stone_wall', 'castle_wall_varriation', (0.8, 0.74, 0.62), 0.4, windows=False, grime=0.1),
+        wallstone=_stone('e2_stone_wall', 'castle_wall_varriation', (0.66, 0.61, 0.52), 0.3, windows=False, grime=0.22),
         beige=_stone('e2_stone_beige', 'castle_brick_02_white', (0.66, 0.56, 0.42), 0.7),
         grey=_stone('e2_stone_grey', 'castle_wall_varriation', (0.4, 0.39, 0.37), 0.35, grime=0.25),
         grey_plain=_stone('e2_stone_grey_plain', 'castle_wall_varriation', (0.4, 0.39, 0.37), 0.35, windows=False),
         # r3：屋顶从陶土红瓦改成浅灰石板（用户定）；键名沿用 terra 以少改调用处
         terra=_roof('e2_roof_lightslate', 'grey_roof_tiles_02', (0.2, 0.23, 0.27), 0.55, 1 / 1.2),   # r3b：中灰蓝石板，和白墙拉开
-        slate=_roof('e2_roof_slate', 'grey_roof_tiles_02', (0.13, 0.135, 0.15), 0.4, 1 / 2.0),
+        slate=_roof('e2_roof_slate', 'grey_roof_tiles_02', (0.2, 0.21, 0.23), 0.4, 1 / 2.0),
         wood=_wood(),
         bronze=_plain('e2_bronze', (0.18, 0.12, 0.07), 0.35, 0.9),
         gold=_plain('e2_gold', (0.85, 0.62, 0.25), 0.25, 1.0),
@@ -252,6 +254,11 @@ def mats():
         pool=_pool(),
         shutter=_plain('e2_window_glass', (0.05, 0.07, 0.09), 0.03, 0.65),
         hedge=_hedge(),
+        copper=_plain('e2_copper_verdigris', (0.22, 0.46, 0.38), 0.55, 0.2),
+        terracotta=_roof('e2_roof_terracotta', 'clay_roof_tiles_02', (0.5, 0.2, 0.1), 0.35, 1 / 1.2),
+        metal=_plain('e2_metal_roof', (0.55, 0.57, 0.58), 0.3, 0.8),
+        greenglass=_plain('e2_glasshouse', (0.55, 0.7, 0.68), 0.05, 0.3),
+        concrete=_stone('e2_concrete', 'castle_brick_02_white', (0.62, 0.62, 0.6), 0.9, windows=False, grime=0.1),
         lead=_plain('e2_lead', (0.52, 0.53, 0.54), 0.4, 0.3),
         steel=_plain('e2_steel', (0.03, 0.03, 0.032), 0.35, 0.8),
         spray=_spray(),
@@ -579,7 +586,7 @@ def building(spec, col, r):
     ht = floors * fh
     wall_m = M[mk]
     plain_m = M['grey_plain'] if mk == 'grey' else M['plain']
-    roof_m = M['slate'] if mk == 'grey' else M['terra']
+    roof_m = M['slate'] if mk == 'grey' else M[ROOF_OVR.get(bid, 'terra')]
     obs = []
     if roof == 'tower':
         bm = bmesh.new()
@@ -624,7 +631,7 @@ def building(spec, col, r):
         if mk != 'grey':
             rustication(bm, w, d, zmin - z0 - 1.5, min(fh, ht) - 0.1)
             quoins(bm, w, d, min(fh, ht), ht - 0.9)
-        if roof in ('hip', 'hip_low', 'flat'):
+        if roof in ('hip', 'hip_low', 'flat') and not bid.startswith('svc'):
             balustrade_rect(bm, w + 1.2, d + 1.2, ht, 0.2, 1.05)   # 屋顶女儿墙栏杆
     else:
         _box(bm, -w / 2 - 0.2, -d / 2 - 0.2, 0, w / 2 + 0.2, d / 2 + 0.2, 0.5)            # 勒脚
@@ -639,6 +646,28 @@ def building(spec, col, r):
     elif roof == 'hip_low':   # Breakers：低坡四坡顶 + 屋顶栏杆
         rise = _hip(bm_roof, w - 2.4, d - 2.4, ht + 0.4, 0.42, 0.0)
         ridge_pts = roof_details(bm_roof, bm, bm_lead, bm_sky, w - 2.4, d - 2.4, ht + 0.4, 0.42, r, dormers=True)
+    elif roof == 'barrel':   # r4b 机库：弧形金属顶（沿长边）
+        n = 16
+        R = d / 2 + 0.3
+        for i in range(n):
+            a0, a1 = math.pi * i / n, math.pi * (i + 1) / n
+            v = [bm_roof.verts.new((x, R * math.cos(a), ht + R * 0.55 * math.sin(a))) for x in (-w / 2 - 0.4, w / 2 + 0.4) for a in (a0, a1)]
+            bm_roof.faces.new([v[0], v[1], v[3], v[2]])
+            for k in range(1, 8):
+                x = -w / 2 + w * k / 8
+                pass
+        for k in range(9):   # 肋
+            x = -w / 2 + w * k / 8
+            for i in range(n):
+                a0, a1 = math.pi * i / n, math.pi * (i + 1) / n
+                _bar(bm_lead, (x, R * math.cos(a0), ht + 0.08 + R * 0.55 * math.sin(a0)), (x, R * math.cos(a1), ht + 0.08 + R * 0.55 * math.sin(a1)), 0.25, 0.15)
+    elif roof == 'glass':    # r4b 温室：白框玻璃双坡
+        v = [bm_roof.verts.new(p) for p in [(-w / 2, -d / 2, ht), (w / 2, -d / 2, ht), (w / 2, 0, ht + d * 0.35), (-w / 2, 0, ht + d * 0.35), (w / 2, d / 2, ht), (-w / 2, d / 2, ht)]]
+        bm_roof.faces.new([v[0], v[1], v[2], v[3]]); bm_roof.faces.new([v[3], v[2], v[4], v[5]])
+        for k in range(int(w / 1.2) + 1):
+            x = -w / 2 + k * 1.2
+            _bar(bm_lead, (x, -d / 2, ht), (x, 0, ht + d * 0.35), 0.12, 0.1)
+            _bar(bm_lead, (x, 0, ht + d * 0.35), (x, d / 2, ht), 0.12, 0.1)
     elif roof == 'flat':
         _box(bm_roof, -w / 2 + 0.3, -d / 2 + 0.3, ht - 0.1, -w / 2 + w * 0.45, d / 2 - 0.3, ht + 3.0)   # 屋顶小亭
     elif roof == 'gable':
@@ -650,6 +679,10 @@ def building(spec, col, r):
     obs.append(_obj(f'{bid}_sky', bm_sky, M['shutter'], (cx, cy, z0), rot, None, col))
     if roof == 'flat':
         obs.append(_obj(f'{bid}_roofbox', bm_roof, plain_m, (cx, cy, z0), rot, None, col))
+    elif roof == 'barrel':
+        obs.append(_obj(f'{bid}_roof', bm_roof, M['metal'], (cx, cy, z0), rot, None, col))
+    elif roof == 'glass':
+        obs.append(_obj(f'{bid}_roof', bm_roof, M['greenglass'], (cx, cy, z0), rot, None, col))
     else:
         obs.append(_obj(f'{bid}_roof', bm_roof, roof_m, (cx, cy, z0), rot, None, col))
     # 烟囱

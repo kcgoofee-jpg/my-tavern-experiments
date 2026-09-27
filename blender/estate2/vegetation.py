@@ -145,12 +145,13 @@ def _poisson(step, rs, box=(-350, 350, -270, 270)):
 # r4 树种（用户：树太多且雷同 → 减 50–60%，≥ 6 种各有分区）
 # kind: (原型 Poly Haven id 或 'proc_*', 高度 m, 色调 (H 偏移, S 倍, V 倍), 混色 (rgb, 量), 缩放 xy/z)
 KINDS = {
-    'oak':     [('island_tree_01', 14.0, (0.49, 1.15, 0.85), ((0.06, 0.12, 0.05), 0.15), (1.0, 1.0)),     # 冬青栎：深、偏蓝绿，外坡林带
-                ('island_tree_02', 12.0, (0.48, 1.15, 0.85), ((0.05, 0.11, 0.05), 0.2), (1.0, 1.0))],
-    'pine':    [('island_tree_03', 15.0, (0.47, 0.75, 1.15), ((0.24, 0.3, 0.18), 0.35), (1.7, 0.7))],   # 伞松：宽平冠、灰绿，草坪孤植
-    'olive':   [('searsia_burchellii', 6.0, (0.47, 0.75, 1.2), ((0.3, 0.38, 0.24), 0.4), (1.5, 1.0))],  # 橄榄：银灰绿，台地树阵
+    'oak':     [('island_tree_01', 14.0, (0.49, 1.15, 1.0), ((0.06, 0.12, 0.05), 0.15), (1.0, 1.0)),     # 冬青栎：深、偏蓝绿，外坡林带
+                ('island_tree_02', 12.0, (0.47, 1.1, 1.0), ((0.05, 0.11, 0.05), 0.2), (1.0, 1.0))],
+    'pine':    [('island_tree_03', 15.0, (0.46, 0.7, 1.35), ((0.3, 0.36, 0.2), 0.4), (1.7, 0.7))],   # 伞松：宽平冠、灰绿，草坪孤植
+    'olive':   [('searsia_burchellii', 6.0, (0.47, 0.35, 1.5), ((0.5, 0.55, 0.46), 0.55), (1.5, 1.0))],  # 橄榄：银灰绿，台地树阵
     'bloom':   [('island_tree_02', 10.0, (0.5, 1.0, 1.0), ((0.42, 0.3, 0.75), 0.8), (1.1, 0.9)),       # 蓝花楹
-                ('island_tree_02', 9.0, (0.5, 1.0, 1.0), ((0.95, 0.9, 0.9), 0.75), (1.0, 0.9))],        # 白玉兰
+                ('island_tree_02', 9.0, (0.5, 1.0, 1.0), ((0.95, 0.9, 0.9), 0.75), (1.0, 0.9)),         # 白玉兰
+                ('island_tree_01', 12.0, (0.5, 1.0, 1.0), ((0.62, 0.22, 0.07), 0.7), (1.0, 1.0))],       # 秋色（红叶山毛榉 / 枫）
     'cypress': [('proc_cypress', 14.0, None, None, (1.0, 1.0))],                                      # 意大利柏：柱状，大道与台地
     'palm':    [('proc_palm', 11.0, None, None, (1.3, 1.0))],                                         # 棕榈：别墅、湖边俱乐部、Breakers
 }
@@ -183,7 +184,7 @@ def plan_points(seed=7, density=1.0):
     X, Y = _poisson(9.0 / math.sqrt(density), rs)
     ok, H = _ok_ground(X, Y, 3.0)
     wm = L.wood_mask(X, Y)
-    ok &= rs.uniform(0, 1, X.shape) < wm * 0.95
+    ok &= (wm > 0.5) & (rs.uniform(0, 1, X.shape) < 0.93)
     for b in L.VILLAS:
         ok &= np.hypot(X - b[1], Y - b[2]) > 20
     out.append(('oak', X[ok], Y[ok], H[ok], rs.randint(0, 2, ok.sum()), rs.uniform(0.8, 1.35, ok.sum())))
@@ -203,7 +204,7 @@ def plan_points(seed=7, density=1.0):
             (160, 110), (-120, -150), (120, -140), (-80, -230), (85, -225), (250, -40), (-270, -80), (-230, 125), (125, 185), (-150, 20)]
     X, Y = _pts(spec, rs, 3)
     ok, H = _ok_ground(X, Y, 6.0)
-    out.append(('pine', X[ok], Y[ok], H[ok], np.zeros(ok.sum(), int), rs.uniform(0.9, 1.25, ok.sum())))
+    out.append(('pine', X[ok], Y[ok], H[ok], np.zeros(ok.sum(), int), rs.uniform(1.25, 1.6, ok.sum())))
     # 4) 意大利柏：大道两侧行列、前庭台地四角、Greystone 与 Breakers 的引道
     cyp = []
     for y in np.arange(-248, -150, 8):
@@ -216,7 +217,7 @@ def plan_points(seed=7, density=1.0):
         cyp.append((-205 + 30 * t, -125 + 40 * t)); cyp.append((190 + 30 * t, -115 - 25 * t))
     X, Y = _pts(cyp, rs, 0.3)
     ok, H = _ok_ground(X, Y, 2.0, allow_lawn=True)
-    out.append(('cypress', X[ok], Y[ok], H[ok], np.zeros(ok.sum(), int), rs.uniform(0.9, 1.1, ok.sum())))
+    out.append(('cypress', X[ok], Y[ok], H[ok], np.zeros(ok.sum(), int), rs.uniform(1.25, 1.4, ok.sum())))
     # 5) 橄榄树阵：大道外侧坡地（梅花形 10 m）+ 前庭台地东西两端
     ol = []
     for sx in (-1, 1):
@@ -229,10 +230,11 @@ def plan_points(seed=7, density=1.0):
     out.append(('olive', X[ok], Y[ok], H[ok], np.zeros(ok.sum(), int), rs.uniform(0.85, 1.15, ok.sum())))
     # 6) 开花树点缀：湖岸、主台地后侧、客房楼前
     bl = [(-80, 105), (50, 108), (-100, 170), (20, 190), (-45, 60), (45, 58), (108, -58), (-120, -60), (135, 40), (-150, -30),
-          (-92, -128), (92, -128), (-20, 118), (100, 160)]
+          (-92, -128), (92, -128), (-20, 118), (100, 160), (-175, -40), (170, -40), (-60, 150), (75, 105), (-130, 95), (215, 150),
+          (-255, 60), (260, -20), (-40, -150), (45, -150), (0, 160), (-210, -110), (150, -150), (-165, 150)]
     X, Y = _pts(bl, rs, 2)
     ok, H = _ok_ground(X, Y, 4.0, allow_lawn=True)
-    out.append(('bloom', X[ok], Y[ok], H[ok], (np.arange(ok.sum()) % 2), rs.uniform(0.9, 1.2, ok.sum())))
+    out.append(('bloom', X[ok], Y[ok], H[ok], (np.arange(ok.sum()) % 3), rs.uniform(1.1, 1.45, ok.sum())))
     # 7) 棕榈：别墅泳池侧、湖边俱乐部、Breakers 草坪、回廊院
     pa = []
     for b in L.VILLAS:

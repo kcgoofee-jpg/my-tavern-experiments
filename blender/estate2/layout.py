@@ -231,6 +231,8 @@ def cover(x, y, padmask, lake):
     paved = np.maximum(paved, ((sd_pl > -4) & (sd_pl < -1.5) & (y < 25)).astype(float))
     arc_r = np.hypot(x - ARC['c'][0], y - ARC['c'][1])
     paved *= 1 - ((arc_r < ARC['R'] - ARC['depth'] / 2 - 3) & (y > ARC['c'][1])).astype(float)   # 回廊院内留草坪
+    paved = np.maximum(paved, (_sd_rect(x, y, -201, 132, 34, 24, math.radians(35), 2.0) < 0).astype(float))   # r4b 机库停机坪
+    paved = np.maximum(paved, (_sd_rect(x, y, -168, 112, 24, 10, math.radians(35), 1.0) < 0).astype(float))   # r4b 服务院内院
     beds = np.zeros_like(paved)
     parterre_gravel = np.zeros_like(paved)
     for gid, _, kind, c, sz, rot in GARDENS:
@@ -257,13 +259,19 @@ def cover(x, y, padmask, lake):
     meadow = np.maximum(meadow, clearing(x, y) * (1 - padmask) * (1 - lake))
     wm = wood_mask(x, y)
     meadow = np.maximum(meadow * wm, (1 - wm) * (1 - lake))   # r4：林带外全是草甸 / 园地
-    return dict(paved=np.maximum(paved, parterre_gravel), beds=beds, rill=rill, sand=sand, meadow=meadow * (1 - under), tropic=under)
+    grove = ((np.abs(x) > 46) & (np.abs(x) < 108) & (y > -246) & (y < -144)).astype(float) * (1 - wood_mask(x, y))
+    rimb = smooth01((16 - e) / 6) * (1 - padmask)
+    kg = _sd_rect(x, y, -118, 150, 80, 52, math.radians(20), 1.0) < 0
+    kitchen = kg.astype(float)
+    meadow = meadow * (1 - kitchen)
+    rill = np.maximum(rill, 0 * rimb)
+    return dict(grove=grove, rimb=rimb, kitchen=kitchen, paved=np.maximum(paved, parterre_gravel), beds=beds, rill=rill, sand=sand, meadow=meadow * (1 - under), tropic=under)
 
 
 def wood_mask(x, y):
     """r4（用户：树太多且雷同）：林地只留外坡林带 + 别墅周边 + 沟谷，其余是草坪 / 草甸 / 设计过的树阵。"""
     e = edge_dist(x, y)
-    belt = smooth01((52 + 14 * fbm(x, y, 60, 2, 61) - e) / 10)
+    belt = smooth01((52 + 14 * fbm(x, y, 60, 2, 61) + 22 * fbm(x, y, 22, 2, 67) - e) / 5)
     for b in VILLAS:
         belt = np.maximum(belt, smooth01((46 - np.hypot(x - b[1], y - b[2])) / 10))
     belt = np.maximum(belt, smooth01((22 - poly_dist(x, y, RAVINE)) / 8))
@@ -336,13 +344,10 @@ MAIN = [  # 海湖式主楼群（高台）
 ARC = dict(c=(0, 30), R=31, depth=8, a0=12, a1=168, floors=1.6)   # 半圆回廊（院内是草坪 + 棕榈，不做水池）
 
 GUEST = [  # 沿东侧等高线的客房楼，有顶连廊相接
-    ('g1', 100, -44, 16, 11, 2, -35, 'hip', 'white'),
-    ('g2', 126, -12, 15, 11, 2, -55, 'hip', 'white'),
-    ('g3', 141, 26, 15, 11, 2, -70, 'hip', 'white'),
-    ('g4', 150, 64, 15, 10, 2, -80, 'hip', 'white'),
-    ('spa', -104, -46, 22, 13, 1.5, 20, 'hip', 'white'),
-    ('w_g1', -140, -12, 15, 11, 2, 50, 'hip', 'white'),
-    ('w_g2', -166, 30, 15, 11, 2, 62, 'hip', 'white'),
+    ('g1', 100, -44, 18, 12, 2, -35, 'hip', 'white'),
+    ('g3', 141, 26, 20, 13, 2, -70, 'hip', 'white'),
+    ('spa', -104, -46, 26, 12, 1.5, 20, 'hip', 'white'),
+    ('w_g1', -140, -12, 13, 17, 2.5, 50, 'hip', 'white'),
 ]
 VILLAS = [  # 林中散落别墅（平顶带屋顶露台 or 红瓦四坡）
     ('v1', 200, 110, 22, 23, 2, 25, 'sketch', 'white'),
@@ -373,10 +378,8 @@ WALKWAYS = [  # 有顶连廊（跟地形）
     [(48, -6), (72, -28), (88, -40)],
     [(72, -28), (104, -30), (118, -16)],
     [(118, -16), (132, 6), (138, 18)],
-    [(138, 18), (148, 42), (150, 56)],
     [(-52, -8), (-78, -30), (-94, -40)],
     [(-94, -40), (-122, -30), (-134, -16)],
-    [(-134, -16), (-152, 6), (-160, 22)],
     [(20, 38), (34, 60), (34, 76)],          # 回廊 → 崖顶观景台 / 缆车站
 ]
 
@@ -384,10 +387,14 @@ WALKWAYS = [  # 有顶连廊（跟地形）
 # ---------------------------------------------------------------- v2：设定空间落位（docs/eden-lore-space.md）
 # 服务区（西北，湖西侧林后；主人动线不经过），载具停靠坪给私人悬浮载具（卡里没有飞艇；车库、停靠坪是用户要求加的）
 SERVICE = [
-    ('svc_house', -168, 112, 40, 13, 2.5, 35, 'hip', 'white'),     # 仆役楼：女仆团后勤、布草、员工餐厅
-    ('hangar', -214, 150, 30, 20, 2, 35, 'flat', 'white'),          # 悬浮载具库（载具停靠坪在旁）
+    # r4b 服务院：四翼围合的院落（中心 (-168, 112)，转 35°）——取代原「仆役楼」，服务功能分到四翼（见下方 PROGRAM 的 svc_n）
+    ('svc_n', -168 - 9 * math.sin(math.radians(35)), 112 + 9 * math.cos(math.radians(35)), 34, 8, 2, 35, 'hip', 'white'),
+    ('svc_s', -168 + 9 * math.sin(math.radians(35)), 112 - 9 * math.cos(math.radians(35)), 34, 8, 2, 35, 'hip', 'white'),
+    ('svc_w', -168 - 13 * math.cos(math.radians(35)), 112 - 13 * math.sin(math.radians(35)), 8, 10, 2, 35, 'hip', 'white'),
+    ('svc_e', -168 + 13 * math.cos(math.radians(35)), 112 + 13 * math.sin(math.radians(35)), 8, 10, 2, 35, 'hip', 'white'),
+    ('hangar', -214, 150, 30, 20, 2, 35, 'barrel', 'white'),          # 悬浮载具库（载具停靠坪在旁）
     ('garage', -140, 138, 26, 10, 1.2, 35, 'hip', 'white'),         # 悬浮车库（用户要求）
-    ('greenhouse', -118, 168, 34, 9, 1.4, 20, 'flat', 'white'),    # 温室 / 橘园（菜园北墙）
+    ('greenhouse', -118, 180, 34, 9, 1.4, 20, 'glass', 'white'),    # 温室 / 橘园（菜园北墙）
 ]
 WATERSIDE = ('waterside', -34, 100, 16, 9, 1.2, -4, 'hip', 'white')   # 水榭：湖南岸石台敞亭，半挑出水面
 ISLET = (-22, 150, 9)                       # 湖心小岛 (x, y, 半径)；岛上 8 柱圆亭 = 湖心亭
@@ -428,7 +435,7 @@ PROGRAM = {
     'gs_main':   {'F1': ['旧宅：家族藏书与收藏']},
     'spa':       {'F1': ['水疗馆']},
     'club':      {'F1': ['湖边俱乐部']},
-    'svc_house': {'F1': ['仆役厅', '员工餐厅', '附属用房']},
+    'svc_n': {'F1': ['仆役厅', '员工餐厅', '附属用房']},
     'waterside': {'F1': ['水榭']},
 }
 # 地下层平面（主楼 hall 40×24、东角亭 e_pav 20×16 下方），格子 = (名称, x0, y0, x1, y1) 局部米，−y 为正面

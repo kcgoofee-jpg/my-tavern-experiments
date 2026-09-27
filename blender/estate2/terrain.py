@@ -38,49 +38,72 @@ def mat_terrain():
     gc, gr, gn = tex('aerial_grass_rock', 18.0, 1400)
     # r4：林带外是园地草甸（不是枯黄荒坡）：长草绿底 + 大尺度干湿斑 + 少量野花团
     pc_, _pr, _pn = tex('leafy_grass', 4.0, 1600, 0.4)
-    park = t.mix(0.55, pc_, (0.075, 0.14, 0.035), 'MIX', (-1500, 1600))
-    wild = t.mix(0.5, gc, (0.13, 0.17, 0.05), 'MIX', (-1500, 1400))
-    patch = t.new('ShaderNodeMapRange', (-1600, 1500), **{'From Min': 0.45, 'From Max': 0.62})
-    t.link(noise(0.022, 1500, 3.0), patch.inputs['Value'])
-    meadow = t.mix(t.math('MULTIPLY', patch.outputs[0], 0.7), park, wild, loc=(-1350, 1450))
-    meadow = t.mix(t.math('MULTIPLY', big, 0.6), meadow, (0.1, 0.16, 0.05), loc=(-1320, 1400))
-    fl = t.new('ShaderNodeMapRange', (-1600, 1200), **{'From Min': 0.7, 'From Max': 0.73})
-    t.link(noise(1.8, 1200, 2.0), fl.inputs['Value'])
-    fl2 = t.math('MULTIPLY', fl.outputs[0], t.math('MULTIPLY', patch.outputs[0], 0.8))
-    meadow = t.mix(fl2, meadow, (0.75, 0.7, 0.8), loc=(-1300, 1300))
+    park = t.mix(0.55, pc_, (0.13, 0.19, 0.07), 'MIX', (-1500, 1600))          # 鼠尾草绿
+    wild = t.mix(0.6, gc, (0.42, 0.32, 0.12), 'MIX', (-1500, 1400))             # 金黄 / 稻草
+    patch = t.new('ShaderNodeMapRange', (-1600, 1500), **{'From Min': 0.5, 'From Max': 0.62})
+    t.link(noise(0.018, 1500, 3.0), patch.inputs['Value'])
+    meadow = t.mix(patch.outputs[0], park, wild, loc=(-1350, 1450))
+    straw = t.new('ShaderNodeMapRange', (-1600, 1350), **{'From Min': 0.55, 'From Max': 0.62})
+    t.link(noise(0.05, 1350, 2.0), straw.inputs['Value'])
+    meadow = t.mix(t.math('MULTIPLY', straw.outputs[0], 0.7), meadow, (0.55, 0.47, 0.28), loc=(-1320, 1400))
+    # 野花带：薰衣草紫 / 虞美人红 / 白，成片（drift）而不是撒点
+    for i, (sc_, col_) in enumerate(((0.06, (0.36, 0.25, 0.6)), (0.07, (0.6, 0.08, 0.05)), (0.05, (0.85, 0.83, 0.78)))):
+        dm = t.new('ShaderNodeMapRange', (-1600, 1200 - 60 * i), **{'From Min': 0.66, 'From Max': 0.7})
+        t.link(noise(sc_ * (1 + i * 0.3), 1200 - 60 * i, 3.0), dm.inputs['Value'])
+        speck = t.new('ShaderNodeMapRange', (-1600, 1100 - 60 * i), **{'From Min': 0.45, 'From Max': 0.6})
+        t.link(noise(2.0, 1100 - 60 * i, 2.0), speck.inputs['Value'])
+        meadow = t.mix(t.math('MULTIPLY', dm.outputs[0], t.math('ADD', 0.35, t.math('MULTIPLY', speck.outputs[0], 0.6))), meadow, col_, loc=(-1300, 1300 - 40 * i))
     # 修剪草坪：真实草贴图，亮绿 + 割草条纹
     lc, lr, ln = tex('leafy_grass', 2.5, 800, 0.4)
-    lawn = t.mix(0.25, lc, (0.05, 0.13, 0.03), 'MIX', (-1500, 800))
+    lawn = t.mix(0.4, lc, (0.07, 0.2, 0.035), 'MIX', (-1500, 800))
     sep = t.new('ShaderNodeSeparateXYZ', (-2200, 600))
     t.link(ob, sep.inputs[0])
     stripe = t.math('GREATER_THAN', t.math('SINE', t.math('MULTIPLY', sep.outputs['X'], 0.52)), 0.0, (-1700, 600))
-    lawn = t.mix(t.math('MULTIPLY', stripe, 0.08), lawn, (0.3, 0.45, 0.14), loc=(-1300, 800))
-    lawn = t.mix(t.math('MULTIPLY', big, 0.5), lawn, (0.09, 0.15, 0.04), loc=(-1200, 800))
+    lawn = t.mix(t.math('MULTIPLY', stripe, 0.16), lawn, (0.22, 0.4, 0.1), loc=(-1300, 800))
+    lawn = t.mix(t.math('MULTIPLY', big, 0.2), lawn, (0.09, 0.17, 0.04), loc=(-1200, 800))
     # 砾石
     grc, grr, grn = tex('gravel_floor', 2.5, 200, 0.5)
-    gravel = t.mix(0.3, grc, (0.8, 0.73, 0.6), loc=(-1500, 200))
+    gravel = t.mix(0.5, grc, (0.86, 0.78, 0.6), loc=(-1500, 200))
     sand = t.mix(0.6, grc, (0.85, 0.79, 0.64), loc=(-1500, 0))
     # 白石铺装（石灰华板）
     pc, pr, pn = tex('castle_brick_02_white', 2.2, -400, 0.5)
     # r4：石灰华大板（2.4 × 1.2 m，错缝，暗缝 6 cm）+ 每板色差，俯视能读出铺装
     sepp = t.new('ShaderNodeSeparateXYZ', (-2000, -300)); t.link(ob, sepp.inputs[0])
     cvp = t.new('ShaderNodeCombineXYZ', (-1850, -300)); t.link(sepp.outputs['X'], cvp.inputs[0]); t.link(sepp.outputs['Y'], cvp.inputs[1])
-    brk = t.new('ShaderNodeTexBrick', (-1700, -300), **{'Scale': 1.0, 'Mortar Size': 0.035, 'Brick Width': 2.4, 'Row Height': 1.2, 'Color1': (0.84, 0.8, 0.72, 1), 'Color2': (0.78, 0.74, 0.66, 1), 'Mortar': (0.62, 0.58, 0.51, 1)})
+    brk = t.new('ShaderNodeTexBrick', (-1700, -300), **{'Scale': 1.0, 'Mortar Size': 0.035, 'Brick Width': 2.4, 'Row Height': 1.2, 'Color1': (0.9, 0.87, 0.8, 1), 'Color2': (0.85, 0.82, 0.74, 1), 'Mortar': (0.66, 0.62, 0.55, 1)})
     t.link(cvp.outputs[0], brk.inputs['Vector'])
     paved = t.mix(0.35, brk.outputs['Color'], pc, 'MULTIPLY', (-1500, -400))
     paved = t.mix(0.5, paved, brk.outputs['Color'], 'MIX', (-1450, -400))
     # 花境：深土 + 花色斑
-    hue = noise(2.5, -800, 2.0)
+    vor = t.new('ShaderNodeTexVoronoi', (-1800, -800), **{'Scale': 0.45})
+    t.link(ob, vor.inputs['Vector'])
     ramp = t.new('ShaderNodeValToRGB', (-1600, -800))
+    ramp.color_ramp.interpolation = 'CONSTANT'
     els = ramp.color_ramp.elements
-    els[0].position, els[0].color = 0.35, (0.5, 0.1, 0.16, 1)
-    els[1].position, els[1].color = 0.65, (0.92, 0.9, 0.86, 1)
-    e3 = els.new(0.5); e3.color = (0.45, 0.3, 0.6, 1)
-    t.link(hue, ramp.inputs[0])
-    beds = t.mix(t.math('GREATER_THAN', noise(6.0, -1000, 2.0), 0.42), (0.03, 0.07, 0.02), ramp.outputs[0], loc=(-1300, -800))
+    els[0].position, els[0].color = 0.0, (0.75, 0.25, 0.38, 1)     # 玫瑰粉
+    els[1].position, els[1].color = 0.66, (0.88, 0.86, 0.82, 1)    # 白
+    e3 = els.new(0.33); e3.color = (0.42, 0.33, 0.66, 1)            # 薰衣草
+    sepc = t.new('ShaderNodeSeparateColor', (-1750, -900)); t.link(vor.outputs['Color'], sepc.inputs[0])
+    t.link(sepc.outputs[0], ramp.inputs[0])
+    beds = t.mix(t.math('MULTIPLY', t.math('GREATER_THAN', noise(5.0, -1000, 2.0), 0.5), 0.35), ramp.outputs[0], (0.05, 0.1, 0.03), loc=(-1300, -800))
+    # r4b 橄榄园：浅色干土 + 稀草
+    grove = t.mix(t.math('MULTIPLY', noise(0.6, -1100, 3.0), 0.8), (0.55, 0.47, 0.34), (0.3, 0.3, 0.16), loc=(-1300, -1100))
+    grove = t.mix(0.4, grove, grc, 'MULTIPLY', (-1250, -1100))
+    # r4b 岛缘沙石带 + 露头岩
+    rim = t.mix(t.math('MULTIPLY', noise(0.3, -1200, 4.0), 0.9), (0.7, 0.64, 0.52), (0.48, 0.46, 0.42), loc=(-1300, -1200))
+    # r4b 菜园：土垄条纹（深褐土 / 生菜绿 / 甘蓝蓝绿）
+    sepk = t.new('ShaderNodeSeparateXYZ', (-2000, -1300)); t.link(ob, sepk.inputs[0])
+    rows = t.math('FRACT', t.math('MULTIPLY', t.math('ADD', t.math('MULTIPLY', sepk.outputs['X'], 0.94), t.math('MULTIPLY', sepk.outputs['Y'], 0.34)), 0.4))
+    kr = t.new('ShaderNodeValToRGB', (-1600, -1300)); kr.color_ramp.interpolation = 'CONSTANT'
+    ke = kr.color_ramp.elements
+    ke[0].position, ke[0].color = 0.0, (0.16, 0.1, 0.05, 1)
+    ke[1].position, ke[1].color = 0.6, (0.2, 0.36, 0.08, 1)
+    k3 = ke.new(0.3); k3.color = (0.14, 0.26, 0.2, 1)
+    t.link(rows, kr.inputs[0])
+    kitchen = kr.outputs[0]
     # 崖石
     rc, rr, rn = tex('rock_face_03', 20.0, -1400, 1.0)
-    rock = t.mix(0.65, rc, (0.26, 0.26, 0.27), 'MIX', (-1500, -1400))   # r3：浅石灰岩崖，不再是一整块褐土
+    rock = t.mix(0.5, rc, (0.5, 0.48, 0.44), 'MIX', (-1500, -1400))   # r3：浅石灰岩崖，不再是一整块褐土
     # 挡土墙
     wc, wr, wn = tex('castle_wall_varriation', 3.0, -1800, 0.8)
     wall = t.mix(0.45, wc, (0.78, 0.72, 0.6), loc=(-1500, -1800))
@@ -90,12 +113,18 @@ def mat_terrain():
     steep = t.new('ShaderNodeMapRange', (-1800, -2200), **{'From Min': 0.8, 'From Max': 0.55})
     t.link(sn.outputs['Z'], steep.inputs['Value'])
     A = {k: t.attr(k, loc=(-1000, 2600 - 120 * i)).outputs['Fac'] for i, k in enumerate(
-        ('lawn', 'gravel', 'built', 'under', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic'))}
+        ('lawn', 'gravel', 'built', 'under', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic', 'grove', 'rimb', 'kitchen'))}
     col = t.mix(A['tropic'], forest, tropic, loc=(-700, 600))
     col = t.mix(A['meadow'], col, meadow, loc=(-600, 600))
     col = t.mix(A['lawn'], col, lawn, loc=(-500, 600))
     col = t.mix(A['gravel'], col, gravel, loc=(-400, 600))
     col = t.mix(A['sand'], col, sand, loc=(-350, 600))
+    col = t.mix(A['grove'], col, grove, loc=(-330, 700))
+    rocky = t.new('ShaderNodeMapRange', (-600, 900), **{'From Min': 0.62, 'From Max': 0.66})
+    t.link(noise(0.035, 900, 4.0), rocky.inputs['Value'])
+    col = t.mix(t.math('MULTIPLY', rocky.outputs[0], t.math('MULTIPLY', A['meadow'], 0.9)), col, rock, loc=(-320, 800))
+    col = t.mix(A['rimb'], col, rim, loc=(-310, 700))
+    col = t.mix(A['kitchen'], col, kitchen, loc=(-305, 700))
     col = t.mix(A['paved'], col, paved, loc=(-300, 600))
     col = t.mix(A['beds'], col, beds, loc=(-250, 600))
     rockish = t.math('MAXIMUM', steep.outputs[0], A['under'], (-600, -1600))
@@ -125,7 +154,7 @@ def mat_water():
     t.link(v, n.inputs['Vector'])
     bump = t.new('ShaderNodeBump', (-500, -300), Strength=0.08, Distance=0.3)
     t.link(n.outputs['Fac'], bump.inputs['Height'])
-    b = t.bsdf((300, 0), Roughness=0.04, IOR=1.33, **{'Base Color': (0.012, 0.045, 0.05, 1)})
+    b = t.bsdf((300, 0), Roughness=0.03, IOR=1.33, **{'Base Color': (0.03, 0.09, 0.1, 1)})
     t.link(bump.outputs['Normal'], b.inputs['Normal'])
     return m
 
@@ -229,7 +258,7 @@ def build_island(res_m=1.0, n_theta=1800):
 
     def pad(v):
         return np.concatenate([v.ravel(), np.zeros(nu * n_theta), [0, 0]])
-    attrs = dict(under=under, **{k: pad(at[k]) for k in ('lawn', 'gravel', 'built', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic')})
+    attrs = dict(under=under, **{k: pad(at[k]) for k in ('lawn', 'gravel', 'built', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic', 'grove', 'rimb', 'kitchen')})
     m = mat_terrain()
     ob = _mesh_from_grid('island', co, quads, attrs, m)
     ob2 = _mesh_from_grid('island_caps', co, tris, attrs, m)
