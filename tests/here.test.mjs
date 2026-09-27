@@ -137,4 +137,12 @@ t('设定对齐：罗斯柴尔德庄园 · 悬浮岛 R-02；MVU 默认值「User
   is('伊甸庄园·悬浮车库', 2, 'eden_estate', { word: '悬浮车库' }); is('伊甸庄园·载具停靠坪', 2, 'eden_estate', { word: '载具停靠坪' });
 });
 
+t('v0.9.5 五路通读：下层泛称、联盟会所别名、歧义词', () => {
+  for (const v of ['贫民窟', '下层贫民窟的后巷', '廉价酒馆', '非法赌场', '地下格斗场', '二手市场', '工厂']) is(v, 4, 'tc_low');   // 近似：落到下层
+  is('联盟会所', 3, 'tc_upper', { marker: 'league_club' });
+  assert.equal(R('品鉴宴'), null);                                                        // 品鉴宴由庄园主轮流做东，不落会所
+  is('罗斯柴尔德庄园品鉴宴', 3, 'tc_upper', { marker: 'zaibatsu_estate' });
+  for (const v of ['区议会', '骑士团营区']) assert.equal(R(v), null, v);                     // 卡没写位置：歧义词，不跳转
+});
+
 console.log(`\n${n} passed`);
