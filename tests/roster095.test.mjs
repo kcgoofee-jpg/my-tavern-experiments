@@ -23,4 +23,9 @@ t('阶段顺序：在脚本文本里找含全部取值的数组', () => {
   assert.deepEqual(V.findStageOrder([src], ['第二步', '第一步']), ['第一步', '第二步', '第三步']);
   assert.equal(V.findStageOrder([src], ['第九步']), null); assert.equal(V.findStageOrder([], ['x']), null);
 });
+t('原作头像表：只收作者 CDN 的 /sfw/ 地址', () => {
+  const ok = 'https://cdn.jsdelivr.net/gh/Yehehua1311/repo@main/A/sfw/A_1.png';
+  const src = `var defaultPortraits = { "甲": "${ok}", "乙": "https://cdn.jsdelivr.net/gh/Yehehua1311/repo@main/B/other/B_1.png", "丙": "https://example.com/sfw/c.png" };`;
+  assert.deepEqual(V.findPortraits([src]), { 甲: ok }); assert.deepEqual(V.findPortraits(['无']), {});
+});
 console.log(`${n} passed`);

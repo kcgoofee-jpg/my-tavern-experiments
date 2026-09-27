@@ -242,3 +242,15 @@ export function findStageOrder(texts, values) {
   }
   return null;
 }
+
+/** 卡自带脚本里的默认立绘表（`defaultPortraits = { "名字": "地址", … }`）：只收原作者 CDN 上 /sfw/ 路径的 https 地址；找不到返回 {} */
+export const PORTRAIT_OK = u => /^https:\/\/cdn\.jsdelivr\.net\/gh\/Yehehua1311\/[^?#]*\/sfw\/[^?#]+\.(png|jpe?g|webp)$/i.test(u);
+export function findPortraits(texts) {
+  const out = {};
+  for (const t of texts || []) {
+    const i = String(t).search(/defaultPortraits\s*=\s*\{/); if (i < 0) continue;
+    const blk = String(t).slice(i, String(t).indexOf('}', i) + 1);
+    for (const m of blk.matchAll(/["']([^"'\n]{1,40})["']\s*:\s*["']([^"'\s]+)["']/g)) if (PORTRAIT_OK(m[2])) out[clean(m[1])] = m[2];
+  }
+  return out;
+}

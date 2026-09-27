@@ -10,10 +10,13 @@ B.quietWait(); const srv = await B.ensureServer(); const rep = B.reporter(OUT);
 const jpg = async (page, name) => { await B.shot(page, OUT, name); if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name + '.jpg'), type: 'jpeg', quality: 72, scale: 'css' }); };
 const STAT = { 世界: { 当前地点: '天城·上层·伊甸庄园' }, 主角: { 声望: 62 },
   表一: { 甲一: { 身份: '园丁' }, 甲二: { 身份: '厨师' } }, 在场人物: { 乙一: { 身份: '访客' } }, 表三: { 丙一: { 身份: '商人', 进度: '第二步' } } };
-const CHAR = { data: { extensions: { scripts: [{ content: "const S = z.enum(['第一步', '第二步', '第三步', '第四步']);" }] } } };
+const PURL = 'https://cdn.jsdelivr.net/gh/Yehehua1311/placeholder@main/A/sfw/A_1.png';
+const CHAR = { data: { extensions: { scripts: [{ content: "const S = z.enum(['第一步', '第二步', '第三步', '第四步']);" }, { content: `const defaultPortraits = { "甲一": "${PURL}" };` }] } } };
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
 async function run(name, preset) {
   const P = await B.newPage(preset, { tier: 'save' });
   try {
+    await P.page.route('https://cdn.jsdelivr.net/gh/Yehehua1311/**', r => r.fulfill({ contentType: 'image/png', body: PNG }));
     const H = await openHost(P, { here: '天城·上层·伊甸庄园', msgs: [], stat: STAT, chat: 'r95-' + name, charData: CHAR });
     const p = P.page; await B.wait(1200);
     const api = await p.evaluate(() => window.EdenMap.getCharacters());
@@ -27,6 +30,14 @@ async function run(name, preset) {
     rep.check(`${name} 人物页签：在场 / 庄园成员 / 目标三组，身份显示`, g.length === 3 && g[0].g === 'present' && g[1].n === 2 && g[2].n === 1 && /园丁|厨师/.test(await vf.evaluate(() => document.querySelector('#evbar .chgrp[data-g=members]').textContent)), JSON.stringify(g));
     rep.check(`${name} 目标的阶段小签：原样文字 + 按卡里顺序的进度点（2 / 4）`, chip?.t === '第二步' && chip.dots === 4 && chip.on === 2, JSON.stringify(chip));
     await jpg(p, `ro_${name}_pane`);
+    const lean0 = await vf.evaluate(() => TCChars.portOn());   // 省流档（测试用 save）默认关
+    await vf.evaluate(() => { showSet(true); document.querySelector('#optPort').click(); showSet(false); }); await B.wait(300);
+    const av = await vf.evaluate(() => document.querySelector('#evbar .chgrp[data-g=members] img')?.getAttribute('src') || '');
+    await vf.evaluate(() => { showSet(true); document.querySelector('#optPort').click(); showSet(false); }); await B.wait(300);
+    const av2 = await vf.evaluate(() => document.querySelector('#evbar .chgrp[data-g=members] .av').textContent);
+    await vf.evaluate(() => { showSet(true); document.querySelector('#optPort').click(); showSet(false); });
+    const dbg = await vf.evaluate(() => [TCChars.hasPortraits, TCChars.portOn(), document.querySelector('#evbar .chgrp[data-g=members] .av')?.outerHTML]);
+    rep.check(`${name} 原作头像：卡里立绘表的 /sfw/ 地址；省流默认关；打开后用卡里立绘表的 /sfw/ 地址；关掉退回首字`, lean0 === false && av === PURL && av2 === '甲', JSON.stringify({ lean0, av, av2, dbg }));
     await vf.evaluate(() => document.querySelector('#evbar .chgrp[data-g=members] summary').click()); await B.wait(200);
     const cl = await vf.evaluate(() => [document.querySelector('#evbar .chgrp[data-g=members]').open, localStorage.getItem('edenMapChGroups')]);
     rep.check(`${name} 分组可折叠，折叠状态记在本机`, cl[0] === false && /members/.test(cl[1] || ''), JSON.stringify(cl));
@@ -39,6 +50,6 @@ async function run(name, preset) {
   } catch (e) { rep.check(`${name} 运行`, false, e.message.split('\n')[0]); }
   finally { await P.close(); }
 }
-try { await run('desk', 'desktop'); await run('deskwk', 'desktopWk'); await run('phone', 'phone'); await run('iphone', 'iphone'); }
+try { await run('desk', 'desktop'); if (!process.env.ONE) { await run('deskwk', 'desktopWk'); await run('phone', 'phone'); await run('iphone', 'iphone'); } }
 finally { await B.closeAll(); srv.stop(); }
 const ok = rep.save(); console.log(`${ok ? '全部通过' : '有失败'} → ${OUT}/summary.md`); process.exit(ok ? 0 : 1);

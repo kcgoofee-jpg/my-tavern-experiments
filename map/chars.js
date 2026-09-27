@@ -5,7 +5,7 @@
 // 读查看器的全局：viewer、REG、cur、curData、aspect、placeN、hereRes、estateStandIn、go、trackEl、untrack、showCard、closeCard、declutter、esc、$、M、toImg、LS、chatId。
 const TCChars = (() => {
   const T = (k, zh, v = {}) => { const r = window.I18N?.t?.(k, v); if (r && r !== k) return r; return Object.entries(v).reduce((s, [a, b]) => s.split('{' + a + '}').join(b), zh); };
-  let rosters = null, rep = null, stageOrder = null, items = [], floor = 0, CM = null, prefs = { show: true, off: [] }, avatars = {}, els = [], flyName = null;
+  let portraits = {}, rosters = null, rep = null, stageOrder = null, items = [], floor = 0, CM = null, prefs = { show: true, off: [] }, avatars = {}, els = [], flyName = null;
   const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/characters.mjs', document.baseURI).href).then(m => (CM = m)).catch(() => null);
   const chat = () => (typeof chatId === 'string' ? chatId : '');
   const store = () => (typeof LS !== 'undefined' ? LS : null);
@@ -13,6 +13,11 @@ const TCChars = (() => {
   const savePrefs = () => CM?.writeCharPrefs(store(), chat(), prefs);
   const color = n => CM ? CM.colorOf(n) : '#888';
   const ini = n => CM ? CM.initials(n) : String(n)[0];
+  // 头像：本机设置的优先；否则「使用原作头像」开着时用卡自带的立绘表（只收作者 CDN 的 /sfw/ 地址，懒加载，失败退回首字）
+  const PK_ = 'edenMapPortraits', portOn = () => { try { const v = localStorage.getItem(PK_); return v == null ? !(typeof leanBg === 'function' && leanBg()) : v === '1'; } catch (e) { return true; } };
+  const okUrl = u => /^https:\/\/cdn\.jsdelivr\.net\/gh\/Yehehua1311\/[^?#]*\/sfw\/[^?#]+\.(png|jpe?g|webp)$/i.test(u || '');
+  const avOf = n => avatars[n] || (portOn() && okUrl(portraits[n]) ? portraits[n] : '');
+  const avImg = n => { const u = avOf(n); return u ? `<img alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" src="${esc(u)}" data-i="${esc(ini(n))}" onerror="this.replaceWith(this.dataset.i)">` : ''; };
   const visible = c => prefs.show && !prefs.off.includes(c.name);
   // v0.9.3：显示名（自定义，custom.js）与位置来源：MVU（在场人物的位置字段）/ 标签（聊天里的人物标签）/ 推断（在场但没写位置，按和你同处）
   const dn = n => (typeof TCCustom !== 'undefined' ? TCCustom.name(n) : n);
@@ -31,7 +36,7 @@ const TCChars = (() => {
     return z ? { map: r.map, ...z } : { map: r.map };
   }
 
-  async function set(d) { await mod(); if (!Array.isArray(d.items)) return; items = d.items.slice(0, 60); rosters = d.rosters || null; rep = Number.isFinite(d.rep) ? d.rep : null; stageOrder = Array.isArray(d.stageOrder) ? d.stageOrder : null; floor = d.floor || 0; loadPrefs(); await render(); bar(); if (flyName && cur) fly(flyName); }
+  async function set(d) { await mod(); if (!Array.isArray(d.items)) return; const hadP = Object.values(portraits).some(okUrl); items = d.items.slice(0, 60); rosters = d.rosters || null; rep = Number.isFinite(d.rep) ? d.rep : null; stageOrder = Array.isArray(d.stageOrder) ? d.stageOrder : null; portraits = d.portraits && typeof d.portraits === 'object' ? d.portraits : {}; if (hadP !== Object.values(portraits).some(okUrl) && typeof TCCustom !== 'undefined') TCCustom.renderUI(); floor = d.floor || 0; loadPrefs(); await render(); bar(); if (flyName && cur) fly(flyName); }
   let seq = 0;
   async function render() {
     for (const el of els) { if (typeof untrack === 'function') untrack(el); viewer?.removeOverlay(el); } els = [];
@@ -41,7 +46,7 @@ const TCChars = (() => {
       const k = w.nx.toFixed(3) + ',' + w.ny.toFixed(3); if (!groups.has(k)) groups.set(k, { w, list: [] }); groups.get(k).list.push(c); }
     for (const { w, list } of groups.values()) {
       const el = document.createElement('div'); el.className = 'chm' + (w.approx ? ' approx' : ''); el.dataset.chars = list.map(c => c.name).join('|');
-      el.innerHTML = '<span class="chg">' + list.slice(0, 3).map((c, i) => `<i class="av" style="--c:${color(c.name)};z-index:${3 - i}">${avatars[c.name] ? `<img alt="" referrerpolicy="no-referrer" src="${esc(avatars[c.name])}">` : esc(ini(c.name))}</i>`).join('')
+      el.innerHTML = '<span class="chg">' + list.slice(0, 3).map((c, i) => `<i class="av" style="--c:${color(c.name)};z-index:${3 - i}">${avImg(c.name) || esc(ini(c.name))}</i>`).join('')
         + (list.length > 3 ? `<i class="av more">+${list.length - 3}</i>` : '') + `<b>${esc(dn(list[0].name))}${list.length > 1 ? ' ' + esc(T('ch.more', '等 {n} 人', { n: list.length })) : ''}</b>` + '</span>';
       const label = list.map(c => `${dn(c.name)}（${c.place}）`).join('、');
       if (typeof trackEl === 'function') trackEl(el, () => card(list), T('ch.aria', '人物：{s}', { s: label }));
@@ -79,12 +84,12 @@ const TCChars = (() => {
     return `<span class="chstage" ${i >= 0 ? `style="--p:${(i + 1) / n}" title="${esc(T('ch.stage_of', '第 {i} / {n} 步', { i: i + 1, n }))}"` : ''}>${i >= 0 ? `<i aria-hidden="true">${Array.from({ length: n }, (_, k) => `<b class="${k <= i ? 'on' : ''}"></b>`).join('')}</i>` : ''}${esc(s)}</span>`; };
   function row(c) {
     const id = identity(c.name);
-    return `<li><button type="button" class="chgo" data-n="${esc(c.name)}"><i class="av" style="--c:${color(c.name)}">${avatars[c.name] ? `<img alt="" referrerpolicy="no-referrer" src="${esc(avatars[c.name])}">` : esc(ini(c.name))}</i><b>${esc(dn(c.name))}</b><em><span class="chsrc src-${esc(c.src || 'infer')}">${esc(srcOf(c))}</span> ${esc(when(c))}</em><small>${esc((id ? id + ' · ' : '') + c.place)}</small></button>`
+    return `<li><button type="button" class="chgo" data-n="${esc(c.name)}"><i class="av" style="--c:${color(c.name)}">${avImg(c.name) || esc(ini(c.name))}</i><b>${esc(dn(c.name))}</b><em><span class="chsrc src-${esc(c.src || 'infer')}">${esc(srcOf(c))}</span> ${esc(when(c))}</em><small>${esc((id ? id + ' · ' : '') + c.place)}</small></button>`
       + `<input type="checkbox" role="switch" data-n="${esc(c.name)}" aria-label="${esc(T('ch.toggle_one', '在地图上显示 {n}', { n: c.name }))}" ${prefs.off.includes(c.name) ? '' : 'checked'} ${prefs.show ? '' : 'disabled'}></li>`;
   }
   function rosterRow(it) {
     const c = items.find(x => x.name === it.name);
-    const body = `<i class="av" style="--c:${color(it.name)}">${avatars[it.name] ? `<img alt="" referrerpolicy="no-referrer" src="${esc(avatars[it.name])}">` : esc(ini(it.name))}</i><b>${esc(dn(it.name))}</b><em>${stageChip(it.stage)}</em><small>${esc(it.identity || '')}${c ? ' · ' + esc(c.place) : ''}</small>`;
+    const body = `<i class="av" style="--c:${color(it.name)}">${avImg(it.name) || esc(ini(it.name))}</i><b>${esc(dn(it.name))}</b><em>${stageChip(it.stage)}</em><small>${esc(it.identity || '')}${c ? ' · ' + esc(c.place) : ''}</small>`;
     return c ? `<li><button type="button" class="chgo" data-n="${esc(it.name)}">${body}</button></li>` : `<li><div class="chgo chro">${body}</div></li>`;
   }
   function group(id, label, n, inner) {
@@ -149,5 +154,5 @@ const TCChars = (() => {
   @media (pointer:coarse),(max-width:640px){#evbar .chpane .chgo{min-height:44px}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   mod().then(loadPrefs);
-  return { get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
+  return { portOn, setPortOn(on) { try { localStorage.setItem(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
 })();
