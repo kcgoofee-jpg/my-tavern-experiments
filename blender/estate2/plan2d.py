@@ -154,18 +154,18 @@ print(OUT, os.path.getsize(OUT) // 1024, 'KB')
 OUTB = OUT.replace('.png', '_basement.png')
 fig, axs = plt.subplots(1, 2, figsize=(13, 4.6), dpi=100)
 fig.subplots_adjust(0.02, 0.08, 0.98, 0.84, 0.06)
-COL = {'*': '#e3dcef', '酒窖': '#ead9c4', '档案室': '#dfe6ee', '储藏室': '#e8e4da', '体能训练室': '#dcead9', '医务室': '#d9e9ec', '结界发生器': '#efe3c8'}
+COL = {'受限': '#d9d4cc', '恒温酒窖': '#ead9c4', '档案室': '#dfe6ee', '储藏室': '#e8e4da', '体能训练室': '#dcead9', '医疗室': '#d9e9ec'}
 b = [q for q in L.MAIN if q[0] == 'hall'][0]
 for i, lv in enumerate(('B1', 'B2')):
     ax = axs[i]
     for n, x0, y0, x1, y1 in L.BASEMENT['hall'][lv]:
-        c = COL['*'] if '*' in n else COL.get(n, '#f3f1ec')
+        c = COL['受限'] if n.startswith('受限') else COL.get(n, '#f3f1ec')
         ax.add_patch(Rectangle((x0, y0), x1 - x0, y1 - y0, fc=c, ec='#4a3a2a', lw=1.2))
-        ax.text((x0 + x1) / 2, (y0 + y1) / 2, n, ha='center', va='center', fontsize=10)
+        ax.text((x0 + x1) / 2, (y0 + y1) / 2, n, ha='center', va='center', fontsize=7, wrap=True)
     ax.set_xlim(-b[3] / 2 - 1, b[3] / 2 + 1); ax.set_ylim(-b[4] / 2 - 1, b[4] / 2 + 1); ax.set_aspect('equal'); ax.axis('off')
     ax.set_title(f'1 主楼 · {lv}（{"-4.5" if lv == "B1" else "-9.0"} m）  {b[3]}×{b[4]} m', fontsize=11, loc='left')
 fig.suptitle('伊甸庄园 v2 · 地下层平面（卡：地上三层 + 地下两层）', fontsize=13, x=0.02, ha='left')
-fig.text(0.02, 0.015, L.BASEMENT_LINK + '；带 * 的为通用名房间，只保留几何与标签。下方 = 正面。', fontsize=8.5, color='#555')
+fig.text(0.02, 0.015, L.BASEMENT_LINK + '；房间取 map/data/eden_estate_rooms.json（卡 §6）。下方 = 正面。', fontsize=8.5, color='#555')
 fig.savefig(OUTB + '.tmp.png', dpi=100)
 Image.open(OUTB + '.tmp.png').convert('RGB').quantize(64).save(OUTB, optimize=True); os.remove(OUTB + '.tmp.png')
 print(OUTB, os.path.getsize(OUTB) // 1024, 'KB')

@@ -500,14 +500,21 @@ PROGRAM = {   # r5：按 floorplans.py（卡 §6）重排；卡未写的体量�
     'svc_n': {'F1': ['仆役厅', '员工餐厅', '附属用房']},
     'waterside': {'F1': ['水榭']},
 }
-# 地下层平面（主楼 hall 40×24、东角亭 e_pav 20×16 下方），格子 = (名称, x0, y0, x1, y1) 局部米，−y 为正面
-BASEMENT = {
-    'hall': {'B1': [('酒窖', -20, -12, -10, 0), ('体能训练室', -10, -12, 6, 0), ('附属室 A*', 6, -12, 20, 0),
-                    ('楼梯 / 电梯厅', -20, 0, -10, 12), ('走廊', -10, 0, 6, 12), ('附属室 B*', 6, 0, 13, 12), ('附属室 C*', 13, 0, 20, 12)],
-             'B2': [('档案室', -20, -12, -10, 0), ('医务室', -10, -12, 6, 0), ('附属室 D*', 6, -12, 20, 0),
-                    ('储藏室', -20, 0, -10, 12), ('结界发生器', -10, 0, 6, 12), ('楼梯 / 电梯厅', 6, 0, 20, 12)]},
-}
-BASEMENT_LINK = '地下两层只在主楼下方；仆役楼梯与主人专用电梯都通到 B2'
+# 地下层平面：r5 起从 map/data/eden_estate_rooms.json（floorplans.py 生成，卡 §6）读，格子 = (名称, x0, y0, x1, y1) 主楼局部米（主楼中心 (0, −4)），−y 为正面
+def _basement():
+    import json, os
+    p = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'map', 'data', 'eden_estate_rooms.json')
+    out = {'hall': {'B1': [], 'B2': []}}
+    try:
+        for r in json.load(open(p, encoding='utf-8'))['rooms']:
+            if r['floor'] in ('B1', 'B2') and r['kind'] != 'circ':
+                xs = [q[0] for q in r['poly']]; ys = [q[1] + 4 for q in r['poly']]
+                out['hall'][r['floor']].append((r['name'], min(xs), min(ys), max(xs), max(ys)))
+    except (OSError, ValueError, KeyError):
+        pass
+    return out
+BASEMENT = _basement()
+BASEMENT_LINK = '地下两层只在主楼下方；仆役核、主人专用通道、东端疏散楼梯通到 B2；受限房间不描述'
 # 林中别墅：留给以后入住的外部人物（卡未写入住，先不定人）
 VILLA_NOTE = '别墅 V1 / V2 / V3 / V8（r4c 起共 4 栋；西侧改农业台地、东崖 V4 改崖顶草甸） 与客房楼 g1–g4 / w_g1–w_g2 预留给外部人物长住（伊莎贝拉、维多利亚、克洛伊、塞拉菲娜、神宫寺凛、叶梨莎、玛嘉烈等）'
 

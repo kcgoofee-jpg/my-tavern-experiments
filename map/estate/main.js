@@ -829,10 +829,33 @@ window.addEventListener('keydown', (e) => {
   if (IN_FRAME) { post({ type: 'estate:key', key: e.key }); return; }
   const up = e.key === 'PageUp' || e.key === ']'; let i = SEQ.indexOf(mode === 'all' ? 'ext' : mode); i = Math.max(0, Math.min(SEQ.length - 1, i + (up ? 1 : -1))); setMode(SEQ[i], { fly: true });
 });
+/* 卡设定分层房间（map/data/eden_estate_rooms.json，layout 坐标 x 东 / y 北）：画一个素色半透明框 + 名字；受限房间只写「不描述」。
+ * 模型轴：x 相同，z = −(y + 4)（主楼中心对齐）；楼面：F1–F3 取 FLOORS，B1 / B2 在 F1 下 4.5 / 9 m。位置是示意（三维模型是 v1 布局）。 */
+let cardG = null, cardTag = null;
+function cardBox(c) {
+  if (cardG) { scene.remove(cardG); cardG.traverse((o) => { o.geometry?.dispose(); o.material?.dispose(); }); cardG = null; }
+  cardTag?.remove(); cardTag = null; needs = true;
+  if (!c || !Array.isArray(c.poly) || c.poly.length < 3) return;
+  const fi = { F1: 0, F2: 1, F3: 2 }[c.floor], y0 = fi != null ? FLOORS[fi].y : FLOORS[0].y + (c.z || 0);
+  const shp = new THREE.Shape(c.poly.map(([x, y]) => new THREE.Vector2(x, y + 4)));
+  const geo = new THREE.ExtrudeGeometry(shp, { depth: 3.2, bevelEnabled: false }); geo.rotateX(Math.PI / 2); geo.translate(0, y0 + 3.2, 0);
+  const col = c.kind === 'restricted' ? '#9a948a' : '#e2c58a';
+  cardG = new THREE.Group();
+  cardG.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.35, depthTest: false })));
+  cardG.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: col, depthTest: false })));
+  cardG.renderOrder = 999; scene.add(cardG);
+  if (fi != null && mode !== fi) setMode(fi);
+  const xs = c.poly.map((p) => p[0]), ys = c.poly.map((p) => p[1]), cx = (Math.min(...xs) + Math.max(...xs)) / 2, cz = -((Math.min(...ys) + Math.max(...ys)) / 2 + 4);
+  flyTo({ target: new THREE.Vector3(cx, y0, cz), zoom: fitZoom(Math.max(...xs) - Math.min(...xs) + 14, Math.max(...ys) - Math.min(...ys) + 14), theta: null, phi: null });
+  cardTag = document.createElement('div');
+  cardTag.style.cssText = 'position:fixed;left:50%;top:12px;transform:translateX(-50%);padding:6px 12px;border-radius:8px;background:rgba(20,20,20,.78);color:#fff;font:13px/1.4 system-ui,sans-serif;z-index:50;pointer-events:none';
+  cardTag.textContent = `${c.floor} · ${c.name}` + (c.area ? ` · ${Math.round(c.area)} m²` : '') + (c.kind === 'restricted' ? ' · 不描述' : '') + (fi == null ? '（地下，示意位置）' : '（卡设定平面，示意位置）');
+  document.body.appendChild(cardTag);
+}
 function post(msg) { if (IN_FRAME) try { window.parent.postMessage(msg, '*'); } catch (e) { } }
 window.addEventListener('message', (e) => {
   const d = e.data; if (!d || typeof d !== 'object' || typeof d.type !== 'string' || !d.type.startsWith('estate:')) return;
-  if (d.type === 'estate:room') { const it = findByName(d.name); if (it) focusItem(it); else unpin(); }
+  if (d.type === 'estate:room') { cardBox(d.card && d.card.name === d.name ? d.card : null); if (d.card?.name === d.name) return; const it = findByName(d.name); if (it) focusItem(it); else unpin(); }
   else if (d.type === 'estate:floor') { const m = parseFloor(d.floor); if (m != null) setMode(m, { fly: true }); }
   else if (d.type === 'estate:inset' && Number.isFinite(d.left)) { document.documentElement.style.setProperty('--inset', Math.max(6, d.left) + 'px'); frustum(); needs = true; }
   else if (d.type === 'estate:lang' && (d.lang === 'en' || d.lang === 'zh')) setLang(d.lang);

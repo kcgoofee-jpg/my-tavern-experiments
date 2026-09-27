@@ -946,7 +946,7 @@ function estateLook() {
 }
 let estFocus = null;   // v0.9.5：「自定义」里点了某个房间 / 室外区域 → 庄园聚焦它（优先于当前地点，地点变了就清掉）
 function estateRoom() { if (!est?.ready) return; const v = ($('#here').value || '').replace('{{user}}', ''), r = hereRes(v);
-  est.frame.contentWindow?.postMessage({ type: 'estate:room', name: estFocus || (r?.custom ? r.room : v) }, '*'); }   // 自定义叫法：庄园页收到的是对应的标准房间名
+  est.frame.contentWindow?.postMessage({ type: 'estate:room', name: estFocus || (r?.custom ? r.room : v), card: estFocus && window.estCard?.name === estFocus ? window.estCard : null }, '*'); }   // 自定义叫法：庄园页收到的是对应的标准房间名
 window.addEventListener('message', e => {
   if (!est || e.source !== est.frame.contentWindow) return;
   if (e.data?.type === 'estate:ready') onEstateReady();
