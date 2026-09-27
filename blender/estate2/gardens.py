@@ -275,10 +275,10 @@ def tennis(col):
     from .common import mat_new
     court, t = mat_new('e2_court')
     if t is not None:
-        t.bsdf((200, 0), Roughness=0.7, **{'Base Color': (0.05, 0.16, 0.1, 1)})
+        t.bsdf((200, 0), Roughness=0.8, **{'Base Color': (0.42, 0.14, 0.07, 1)})
     inner, t = mat_new('e2_court_in')
     if t is not None:
-        t.bsdf((200, 0), Roughness=0.7, **{'Base Color': (0.06, 0.16, 0.32, 1)})
+        t.bsdf((200, 0), Roughness=0.8, **{'Base Color': (0.5, 0.18, 0.08, 1)})
     white, t = mat_new('e2_line')
     if t is not None:
         t.bsdf((200, 0), Roughness=0.6, **{'Base Color': (0.9, 0.9, 0.88, 1)})
@@ -355,7 +355,42 @@ def parterre_box(col):
     ob.location.z = z
 
 
+def kerbs(col):
+    """r4b 主车道两侧石路缘（0.3 m 宽，高出 0.15 m），375 px 下给路一条亮边。"""
+    M = mats()
+    for k, (pts, w) in enumerate(L.DRIVES[:4]):
+        from .buildings import _resample
+        ss = _resample(pts, 2.0)
+        for sgn in (-1, 1):
+            q = []
+            for j, (x, y) in enumerate(ss):
+                a = ss[max(j - 1, 0)]; b = ss[min(j + 1, len(ss) - 1)]
+                tx, ty = b[0] - a[0], b[1] - a[1]; ln = math.hypot(tx, ty) or 1
+                px, py = x - ty / ln * sgn * (w / 2 + 0.15), y + tx / ln * sgn * (w / 2 + 0.15)
+                q.append((px, py, L.ground_z(px, py) + 0.02))
+            sweep(f'kerb{k}_{sgn}', q, [(-0.18, -0.3), (-0.18, 0.15), (0.18, 0.15), (0.18, -0.3)], M['ashlar'], col)
+
+
+def grey_terraces(col):
+    """r4b Greystone 下方台地花园：修剪黄杨方格 + 中轴园路 + 两排修剪紫杉锥。"""
+    M = mats()
+    p = [q for q in L.PADS if q['id'] == 'grey_t1'][0]
+    (cx, cy), (w, d), rot = p['c'], p['s'], p['rot']
+    z = p['zv']
+    bm = bmesh.new()
+    for i in range(6):
+        for j in range(2):
+            bx = -w / 2 + 6 + i * (w - 12) / 5.0
+            by = -d / 2 + 5.5 + j * (d - 11)
+            _hedge_rect(bm, bx, by, 8, 7, 0.3, 0.6)
+            _cone(bm, bx, by, 0.0, 0.8, 2.4)
+    ob = bm_to_obj(bm, 'grey_terr_box', col, M['hedge'])
+    ob.location = (cx, cy, z); ob.rotation_euler.z = rot
+
+
 def build(col):
+    kerbs(col)
+    grey_terraces(col)
     canal(col)
     tennis(col)
     pergolas(col)
