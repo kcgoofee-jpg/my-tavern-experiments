@@ -181,6 +181,8 @@ else:
     ap = load(ap_path).get('places', [])
     refs = {r for p in ap for r in p.get('refs', [])}
     est = maps.get('eden_estate', {}); est_words = set(est.get('rooms', [])) | set(est.get('areas', []))
+    _erp = os.path.join(ROOT, 'data', 'eden_estate_rooms.json')   # 分层房间（含用户设定房间，如地下医疗中心）也算庄园房间
+    if exists(_erp): est_words |= {r['name'] for r in load(_erp).get('rooms', []) if r.get('kind') != 'restricted'}
     for p in ap:
         for f in ('id', 'name', 'src', 'text'):
             if not p.get(f): err(f"addon_places.{p.get('id', '?')}: 缺 {f}")

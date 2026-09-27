@@ -4,6 +4,7 @@
 0.9.1 起：不改角色卡，发「外挂脚本（钉在标签 `map-v<版本>`）+ 世界书附加条目」。
 
 ## 0.9.6（未发版）
+- 地下医疗中心（B2，用户设定）：主楼 B2 未定用途机电体量东段 16 × 11 m 划出医疗中心前厅 / 器械洗消间 / 缓冲更衣间 / 无菌处置室（eden_estate_rooms.json kind=user、src=用户设定，当前地点第 1 级认得出）；模型 `blender/estate2/medical_b2.py`（庄园坐标，待合进主楼室内 glb）；草图 `docs/drafts/b2_medical_{cleanroom,anteroom}.jpg`；参考板 `docs/b2-medical-references.md`；世界书附加条目「地下医疗中心（B2）」；check_maps 的庄园条目 alias 也认分层房间名。
 - 开局地点的简易地图：大骑士领·圣都（三环）、原域（诸神殿 / 城区两层）、旷野高地、圆桌第一至五席封地（湖山棱堡 / 海岸海堡 / 河谷护城河方堡 / 林中狩猎城堡 / 平原同心城堡）。世界图上点地点 → 「进入」，或在该地点附近放大到头再推，都会进入它的地图；缩到最远有「<地名>周边」过渡环，再缩回到世界图（与天城同一套交接）。程序生成的 Blender 体块草模（blender/opening_sites.py），地标位置与形制多为仓库推断；每张图在世界书附加条目里有一条「地图补充-…（地图）」
 - 未上图的地点：当前地点（MVU 或 ⌖ 标签）认不出时不跳转，标题栏显示「未上图：<名字>」；点开小选择器把它指派到地标、层 / 大区、庄园房间 / 室外或世界地名，或「忽略」。存进聊天变量 eden_map.自定义（`别名` / `忽略`），立刻生效（map/unmapped.js、here.mjs `unmappedName`）
 - 自定义叫法扩展到地标、区域、层 / 大区、世界地名（`buildIndex` 的 custom.areas / layers / world / ignore；mvu.mjs 新类 layer / world，`setCustom` 的 alias / unalias / ignore）；自定义面板列出叫法并可单独去掉

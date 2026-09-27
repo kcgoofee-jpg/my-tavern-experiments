@@ -1,5 +1,5 @@
 {
- "_说明": "伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 卡设定房间 / restricted 受限房间（不描述）/ support 辅助 / circ 走廊 / open 卡未写 / owner 主人专用。",
+ "_说明": "伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 卡设定房间 / restricted 受限房间（不描述）/ support 辅助 / circ 走廊 / open 卡未写 / owner 主人专用 / user 用户设定（src=用户设定）。",
  "version": 1,
  "src": "docs/card-digest.md §6",
  "units": "m",
@@ -777,7 +777,7 @@
    "name": "设备（卡未写）",
    "kind": "support",
    "block": "hall",
-   "area": 374.0,
+   "area": 198.0,
    "card_area": null,
    "card_range": null,
    "card_id": null,
@@ -789,11 +789,11 @@
      -3
     ],
     [
-     20,
+     4,
      -3
     ],
     [
-     20,
+     4,
      8
     ],
     [
@@ -4413,6 +4413,138 @@
     [
      43.0,
      -15.0
+    ]
+   ]
+  },
+  {
+   "no": null,
+   "src": "用户设定",
+   "id": "B2-119",
+   "floor": "B2",
+   "name": "医疗中心前厅",
+   "kind": "user",
+   "block": "hall",
+   "area": 44.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "地下医疗中心（B2）入口：接诊台、转运床停放；南接主廊，东墙气密患者转运门进无菌处置室、另一门进器械洗消间",
+   "access": "主人 / 女仆长 / 医护",
+   "poly": [
+    [
+     4,
+     -3
+    ],
+    [
+     8,
+     -3
+    ],
+    [
+     8,
+     8
+    ],
+    [
+     4,
+     8
+    ]
+   ]
+  },
+  {
+   "no": null,
+   "src": "用户设定",
+   "id": "B2-120",
+   "floor": "B2",
+   "name": "器械洗消间",
+   "kind": "user",
+   "block": "hall",
+   "area": 27.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "器械清洗、灭菌柜；传递窗通无菌处置室",
+   "access": "主人 / 女仆长 / 医护",
+   "poly": [
+    [
+     8,
+     -3
+    ],
+    [
+     14,
+     -3
+    ],
+    [
+     14,
+     1.5
+    ],
+    [
+     8,
+     1.5
+    ]
+   ]
+  },
+  {
+   "no": null,
+   "src": "用户设定",
+   "id": "B2-121",
+   "floor": "B2",
+   "name": "缓冲更衣间",
+   "kind": "user",
+   "block": "hall",
+   "area": 27.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "气闸 + 更衣：两道互锁密闭门、风淋、洁净服柜、刷手槽；南门接主人通道前室",
+   "access": "主人 / 女仆长 / 医护",
+   "poly": [
+    [
+     14,
+     -3
+    ],
+    [
+     20,
+     -3
+    ],
+    [
+     20,
+     1.5
+    ],
+    [
+     14,
+     1.5
+    ]
+   ]
+  },
+  {
+   "no": null,
+   "src": "用户设定",
+   "id": "B2-122",
+   "floor": "B2",
+   "name": "无菌处置室",
+   "kind": "user",
+   "block": "hall",
+   "area": 78.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "急救 / 处置 / 小手术：手术台、无影灯、吊塔监护、呼吸机、除颤、抢救车、医用气体、洁净送风天花",
+   "access": "主人 / 女仆长 / 医护",
+   "poly": [
+    [
+     8,
+     1.5
+    ],
+    [
+     20,
+     1.5
+    ],
+    [
+     20,
+     8
+    ],
+    [
+     8,
+     8
     ]
    ]
   }
