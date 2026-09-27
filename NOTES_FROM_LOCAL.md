@@ -523,3 +523,8 @@
 - 请本机重跑上层：`bash tools/render_all.sh upper --res 8000 --samples 128`。
 
 **可以重跑：upper**
+
+## 2026-09-27 云端：任务 8 进度（架构与脚手架）
+- 新建 `blender/estate/`：约定 `CONTRACT.md`（单位与标高、模块分工、接口签名、集合与剖切标记、材质名、命令行、多边形导出格式、CC0 素材规则、设定里不明确处的决定），平面数据 `plan.py`（91 个房间，与设定 74 条坐标逐条核对，maps.json 的 rooms / areas 叫法全部命中），其余模块是能跑通的桩。
+- `blender/eden_manor.py` 改成薄入口：`blender -b -P blender/eden_manor.py -- --view ext|all|F1..F5 --res 2000 --samples 32 --out …`（支持 `--crops`、`--room ID --closeup`）；旧实现移到 `blender/estate/legacy_manor.py`，上层底图的 `build_eden_manor` 照旧可用，外观不变。
+- 新数据文件 `map/data/eden_estate_tiles.json`（剖切图房间多边形，桩相机下生成；格式见 CONTRACT §7）。查看器暂不用改，等正式图出来再通知本机。
