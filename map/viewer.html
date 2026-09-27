@@ -510,11 +510,11 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   <div class="sheet-h"><button type="button" class="btn" id="setBack" hidden><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg><span class="lbl" data-i18n="settings_title">设置</span></button><b id="setTitle" data-i18n="settings_title">设置</b><button type="button" class="btn ic" id="setX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
   <section class="spage" data-page="home">
     <div class="acts" hidden><button type="button" class="btn" id="actUp" hidden></button><button type="button" class="btn" id="actHere" hidden data-i18n="here_go">当前位置</button><button type="button" class="btn" id="actClose" hidden data-i18n="act_close">关闭地图</button></div>
-    <h3 class="qlab" data-i18n="s.quick_layers">切换层</h3><div class="qlayers"></div>
-    <h3 class="morelab" data-i18n="layers_menu">图层</h3><div class="more"></div>
     <input type="search" id="setQ" data-i18n-ph="s.search" placeholder="搜索设置" autocomplete="off">
     <div id="setHits"></div>
     <nav class="sgroups"><button type="button" data-page="display"><b data-i18n="s.display">显示</b><span data-i18n="s.display_sub">主题 · 语言 · 清晰度 · 惯用手 · 动态</span></button><button type="button" data-page="people"><b data-i18n="s.people">人物</b><span data-i18n="s.people_sub">数值 · 更多资料 · 来源</span></button><button type="button" data-page="data"><b data-i18n="s.data">数据与映射</b><span data-i18n="s.data_sub">变量映射 · 别名 · 模板 · 存储</span></button><button type="button" data-page="update"><b data-i18n="s.update">更新与版本</b><span id="updSub"></span></button><button type="button" data-page="adv"><b data-i18n="s.adv">高级</b><span data-i18n="s.adv_sub">线路 · 三维抽屉 · 快捷键 · 调试</span></button></nav>
+    <h3 class="qlab" data-i18n="s.quick_layers">切换层</h3><div class="qlayers"></div>
+    <h3 class="morelab" data-i18n="layers_menu">图层</h3><div class="more"></div>
     <small class="orig" lang="zh">原作角色卡：Yehehua（类脑社区）· <a href="https://discord.com/channels/1380075940285124724/1534464824141025321" target="_blank" rel="noopener">原作发布帖</a>（地图为经作者同意的二次创作）</small>
   </section>
   <section class="spage" data-page="display" hidden>
@@ -1486,7 +1486,9 @@ function focusStart(immediately) {
   }
   // U2（spec §2.5）：手机竖屏第一次进入、没有要聚焦的地点时，按 view.phone（核心区 [x, y, w, h]，归一化）取景，四周「周边」只在缩远时出现
   const core = m.view?.phone, hereMk = m.kind !== 'world' && document.querySelector('.mk.here');
-  if (core && cs.y > cs.x && !pendingFocus && !hereMk) { viewer.viewport.fitBounds(new OpenSeadragon.Rect(core[0], core[1] * aspect, core[2], core[3] * aspect), immediately); return; }
+  if (core && cs.y > cs.x && !pendingFocus && !hereMk) {   // 竖屏：按核心区的高度取景（按宽 fit 会缩成一条横带，产品评审 P1）
+    const cw = Math.max(core[3] * aspect * cs.x / cs.y, core[2] * .55), chh = cw * cs.y / cs.x, cx = core[0] + core[2] / 2, cy = (core[1] + core[3] / 2) * aspect;   // 不比核心区宽度的 55% 更近：留出放大余地
+    viewer.viewport.fitBounds(new OpenSeadragon.Rect(cx - cw / 2, cy - chh / 2, cw, chh), immediately); return; }
   // view：初始可见宽度按米给（每张图自己的尺度）；竖屏时让可见「高度」等于这个宽度，手机上不会一打开就缩得很小
   const vw = viewNorm(m, 'width_m');
   if (vw) w = cs.y > cs.x ? vw * cs.x / cs.y : vw;

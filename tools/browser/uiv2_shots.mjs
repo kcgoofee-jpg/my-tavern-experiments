@@ -29,14 +29,16 @@ try {
     await B.wait(800); await B.shot(P.page, OUT, 's4-notices-p1-p2');
     await P.page.evaluate(() => TCNotify({ key: 'f', level: 0, title: '需要更新', lines: ['当前版本低于最低要求，更新后继续使用。'], actions: [{ label: '更新日志' }, { label: '立即更新', primary: true }] }));
     await B.wait(600); await B.shot(P.page, OUT, 's4-notices-p0'); await done(P); }
-  // s5 庄园三维：手机剖切 F1、点房间半开；桌面
-  for (const pre of ['phone', 'desktop']) { const P = await B.newPage(pre); const r = await B.openEstate(P, {}); const f = P.page.mainFrame();
-    await f.evaluate(() => window.__estate.setMode(2)); await B.wait(2500); await B.shot(P.page, OUT, `s5-estate-F1-${pre}`);
-    await f.evaluate(() => window.postMessage({ type: 'estate:room', name: '大厅' }, '*')); await B.wait(1500); await B.shot(P.page, OUT, `s5-estate-room-${pre}`); await done(P); }
-  // s6 道具查看器（挤奶厅）：默认收起；点热点 → 说明
-  for (const pre of ['phone', 'desktop']) { const P = await B.newPage(pre); await P.page.goto(`${B.BASE}props/viewer3d.html?model=dairy`);
-    await P.page.waitForFunction(() => window.__v3d?.ready, null, { timeout: 120000 }); await B.wait(1500); await B.shot(P.page, OUT, `s6-props-dairy-${pre}`);
-    await P.page.evaluate(() => __v3d.fly(document.querySelector('.pin').dataset.id, true)); await B.wait(900); await B.shot(P.page, OUT, `s6-props-dairy-hotspot-${pre}`); await done(P); }
+  // s5 / s6 三维页：在查看器里（真实使用场景：顶栏标题 + 状态点 + ⚙/⋯，宿主栏 ✕），外加道具页单独打开
+  for (const pre of ['phone', 'desktop']) { const P = await viewer(pre, 'tc_upper'); await P.page.evaluate(() => go('eden_estate'));
+    await P.page.waitForFunction(() => document.querySelector('#estate.on'), null, { timeout: 90000 }).catch(() => {}); await B.wait(2500);
+    const f = P.page.frames().find(x => x.parentFrame() === P.page.mainFrame());
+    await f?.evaluate(() => window.__estate.setMode(2)); await B.wait(2000); await B.shot(P.page, OUT, `s5-estate-F1-${pre}`);
+    await f?.evaluate(() => window.postMessage({ type: 'estate:room', name: '大厅' }, '*')); await B.wait(1500); await B.shot(P.page, OUT, `s5-estate-room-${pre}`);
+    await P.page.evaluate(() => go('dairy')); await P.page.waitForFunction(() => document.querySelector('#estate.on'), null, { timeout: 90000 }).catch(() => {}); await B.wait(4000);
+    await B.shot(P.page, OUT, `s6-props-dairy-${pre}`);
+    const g = P.page.frames().find(x => x.parentFrame() === P.page.mainFrame());
+    await g?.evaluate(() => __v3d.fly(document.querySelector('.pin').dataset.id, true)); await B.wait(900); await B.shot(P.page, OUT, `s6-props-dairy-hotspot-${pre}`); await done(P); }
   // s7 未上图：顶栏 chip + 选择器（桌面单独打开）
   { const P = await viewer('desktop', 'tc_upper', { here: '月之暗面观测站' }); await B.wait(800); await B.shot(P.page, OUT, 's7-unmapped-chip');
     await P.page.evaluate(() => document.getElementById('unmapped')?.click()); await B.wait(600); await B.shot(P.page, OUT, 's7-unmapped-picker'); await done(P); }
