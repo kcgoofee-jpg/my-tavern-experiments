@@ -190,7 +190,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   label.tg, #setPop label { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); min-height: 40px; cursor: pointer; color: var(--ink); font-size: var(--fs-control); }
   label.tg[hidden] { display: none; }
   input[type="checkbox"] { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 34px; height: 20px; margin: 0; border-radius: var(--r-pill);
-    background: var(--surface-2); border: 1px solid var(--line-strong); cursor: pointer; transition: background var(--dur-1), border-color var(--dur-1); }
+    background: var(--surface-2); border: 1px solid var(--muted); cursor: pointer; transition: background var(--dur-1), border-color var(--dur-1); }   /* 关着的开关边框 ≥ 3:1（§10.11 实测） */
   input[type="checkbox"]::before { content: ''; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); transition: transform var(--dur-2) var(--ease-out), background var(--dur-1); }
   input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
   input[type="checkbox"]:checked::before { transform: translateX(14px); background: var(--on-accent); }
@@ -1096,7 +1096,7 @@ function escTop() {
   if (!$('#card').hidden) { closeCard(true); return true; }
   return false;
 }
-function onEsc() { if (!escTop()) post({ type: 'eden-map:esc' }); }
+function onEsc() { if (NT?.blocking) return; if (!escTop()) post({ type: 'eden-map:esc' }); }   // P0 阻断卡开着：Esc 不关任何东西
 const keysOn = () => { try { return localStorage.getItem('edenMapKeys') !== '0'; } catch (e) { return true; } };
 document.addEventListener('keydown', e => {
   if (typeof TCCustom !== 'undefined' && TCCustom.dlgKey(e)) return;   // 「自定义」对话框开着：按键归它（Esc 逐页返回 / 关闭）
@@ -1551,6 +1551,7 @@ function setPage(pg, quiet) {
   if (pg === 'update') renderSelfCheck();
   if (pg === 'people') { const n = typeof TCChars !== 'undefined' ? TCChars.count() : 0; $('#chSrc').textContent = tx('s.ch_src_n', `当前聊天 ${n} 人`, { n }); }
   if (pg === 'adv') v3dEntries();
+  if (pg === 'data') { if (window.top !== window) post({ type: 'eden-map:storage-info' }); else renderStorage(null); }
 }
 const TCSettings = window.TCSettings = {
   registerSection(page, el, o = {}) { const pg = document.querySelector(`#setPop .spage[data-page="${page}"]`) || document.querySelector('#setPop .spage[data-page="adv"]'); if (!pg || !el) return;
@@ -1621,6 +1622,23 @@ function initSettings() {
   sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', true); sw('#optFps', 'edenMapFps', false, () => estateLook());
   $('#linePick').onclick = () => { showSet(false); post({ type: 'eden-map:line-pick' }); };
   $('#kbdBtn').onclick = () => kbdHelp($('#kbdHelp').hidden);
+}
+// 设置「数据与映射」：本机存储占用（EdenMap.storage()）与当前数据来源（EdenMap.sources()），只读；「清理旧聊天」只留最近 5 个聊天的地图数据
+function renderStorage(d) {
+  const box = $('#storBox'); if (!box) return;
+  const kb = n => (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB', s = d?.storage, src = d?.sources;
+  if (!d) { box.innerHTML = `<h3>${esc(tx('s.stor', '存储与数据来源'))}</h3><small>${esc(tx('s.stor_local', '单独打开时没有聊天数据；嵌在酒馆里才显示'))}</small>`; return; }
+  const loc = { mvu: tx('s.src_mvu', 'MVU 变量'), db: tx('s.src_db', '数据库插件表'), none: tx('s.src_none', '聊天标签 / 未读到') }[src?.location] || '—';
+  const ch = src?.characters ? Object.entries(src.characters).map(([k, v]) => `${k} ${v}`).join(' · ') : '—';
+  box.innerHTML = `<h3>${esc(tx('s.stor', '存储与数据来源'))}</h3>`
+    + `<div class="hrow"><span>${esc(tx('s.stor_used', '地图占用本机存储'))}</span><b>${s ? esc(kb(s.ours)) : '—'}</b></div>`
+    + (s ? `<small>${esc(tx('s.stor_detail', '全站共 {t}；头像 {a}；{n} 个聊天', { t: kb(s.total), a: kb(s.avatars), n: s.chats }))}</small>` : '')
+    + `<div class="hrow"><span>${esc(tx('s.src_loc', '当前地点来自'))}</span><span>${esc(loc)}</span></div>`
+    + `<div class="hrow"><span>${esc(tx('s.src_mode', '变量读取方式'))}</span><span>${esc(src?.mvu?.mode || '—')}</span></div>`
+    + `<div class="hrow"><span>${esc(tx('s.src_chars', '人物来源'))}</span><span>${esc(ch)}</span></div>`
+    + `<div class="hrow"><span>${esc(tx('s.stor_clean', '清理旧聊天的地图数据'))}</span><button type="button" class="btn" id="storClean">${esc(tx('s.stor_clean_btn', '清理'))}</button></div>`
+    + (d.cleaned ? `<small role="status">${esc(tx('s.stor_cleaned', '已清理 {n} 个聊天，释放 {b}', { n: d.cleaned.n, b: kb(d.cleaned.bytes) }))}</small>` : '');
+  $('#storClean').onclick = () => post({ type: 'eden-map:storage-clean' });
 }
 function kbdHelp(on) {
   const b = $('#kbdHelp'); b.hidden = !on; $('#kbdBtn').setAttribute('aria-expanded', on ? 'true' : 'false'); if (!on) return;
@@ -1806,13 +1824,14 @@ const formBusy = () => { const a = document.activeElement; return !!a && !$('#se
 function initNotices() {
   if (window.top !== window) return;
   import(new URL('ui/notice.mjs', document.baseURI).href).then(m => {
-    NT = m.createNotices({ doc: document, mount: document.body, baseCls: 'vw-nt', en: LANG === 'en', busy: formBusy,
+    NT = m.createNotices({ doc: document, mount: document.body, baseCls: 'vw-nt', en: LANG === 'en', busy: formBusy, inertEls: () => [$('#app'), $('#setPop'), $('#layPop')],
       anchor: () => { const st = $('#stage').getBoundingClientRect(); return { left: st.left, top: st.top, width: st.width - (parseFloat(getComputedStyle($('#stage')).getPropertyValue('--rail-w-now')) || 0), height: st.height, top0: 0, bottom0: window.TCSheet && !TCSheet.el.hidden && TCSheet.mode === 'sheet' ? TCSheet.el.offsetHeight : 0, modal: true }; } });
     for (const n of ntQ.splice(0)) NT.push(n);
   }).catch(() => {});
 }
 function notify(n) {   // n = { key, level, title, lines, actions: [{ label, run | msg }] }
-  if (window.top !== window) { post({ type: 'eden-map:notice', n: { ...n, actions: (n.actions || []).map(a => ({ label: a.label, primary: a.primary, id: a.id })) } }); if (n.actions?.length) ntActs[n.key] = n.actions; return; }
+  if (window.top !== window) { n = { ...n, actions: (n.actions || []).map((a, i) => ({ ...a, id: a.id ?? 'a' + i })) };
+    post({ type: 'eden-map:notice', n: { ...n, actions: n.actions.map(a => ({ label: a.label, primary: a.primary, id: a.id })) } }); if (n.actions.length) { ntActs[n.key] = n.actions; const ks = Object.keys(ntActs); if (ks.length > 20) delete ntActs[ks[0]]; } return; }
   if (NT) NT.push(n); else ntQ.push(n);
 }
 const ntActs = {};
@@ -1907,9 +1926,10 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:selfcheck') { const first = !selfCheck; selfCheck = e.data; renderSelfCheck(); updSub(); if (first && !selfCheck.items?.some(i => i.status === 'warn')) flashOk(); }   // 自检全部正常：只在状态点闪一次 ✓（§3）
     if (e.data?.type === 'eden-map:hostbar') { const w = Math.max(0, Math.min(400, +e.data.w || 0)) + 'px', left = e.data.side === 'left' && narrowNow(); document.documentElement.style.setProperty('--hostbar-w', left ? '0px' : w); document.documentElement.style.setProperty('--hostbar-l', left ? w : '0px'); }   // 合并顶栏（§2.1）：宿主栏（地点胶囊 + ✕）浮在查看器顶栏右端
     if (e.data?.type === 'eden-map:key' && e.data.key === 'Escape') onEsc();   // 焦点在宿主页时宿主把 Esc 转过来（§10.14）
-    if (e.data?.type === 'eden-map:line') $('#lineRow').hidden = !e.data.swappable;   // 线路选择在设置「高级」
+    if (e.data?.type === 'eden-map:line') $('#lineRow').hidden = !e.data.swappable;
+    if (e.data?.type === 'eden-map:storage-result') renderStorage(e.data);   // 线路选择在设置「高级」
     if (e.data?.type === 'eden-map:settings' && typeof e.data.page === 'string') TCSettings.open(e.data.page);
-    if (e.data?.type === 'eden-map:notice-act') { const a = ntActs[e.data.key]?.find(x => x.id === e.data.id); try { a?.run?.(); } catch (x) {} }   // 卡内脚本的启动自检结果（E6）   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
+    if (e.data?.type === 'eden-map:notice-act') { const a = ntActs[e.data.key]?.find(x => x.id === e.data.id); delete ntActs[e.data.key]; try { a?.run?.(); } catch (x) { console.warn('[地图] 通知按钮', x); } }   // 卡内脚本的启动自检结果（E6）   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
     // 面板关闭时休眠：关掉底图（释放已解码的瓦片），脚本与数据留着；再打开时唤醒，重新打开当前地图
     if (e.data?.type === 'eden-map:sleep' && viewer) { saveView(); sleeping = cur || REG?.start || null; cur = null; if (est?.ready && !lean()) { dropParked(); estParked = est; est.frame.style.visibility = 'hidden'; est.frame.contentWindow?.postMessage({ type: 'estate:pause' }, SUB_ORIGIN); } else est?.frame.remove(); est = null; document.body.classList.remove('estate'); viewer.close(); untrackAll(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }
     if (e.data?.type === 'eden-map:wake' && sleeping) { slowStop = true; const id = sleeping; sleeping = null; go(id); if (e.data.fly) TCCustom.flyTo(e.data.fly); }   // 先开图再飞：fly 目标认不出时不会留下空舞台（接手 review P2）

@@ -17,6 +17,8 @@
 .uis[data-state="half"]{height:var(--sheet-half,40%)}
 .uis[data-state="full"]{height:var(--sheet-full,80%)}
 .uis.drag{transition:none}
+@media (prefers-reduced-motion:reduce){.uis{transition:none}}
+html.rm .uis{transition:none}
 .uis-grip{flex:none;height:18px;margin-bottom:-6px;display:grid;place-items:center;cursor:grab;touch-action:none}
 .uis-grip::before{content:'';position:absolute;left:0;right:0;top:0;height:48px}
 .uis-grip i{width:36px;height:4px;border-radius:999px;background:color-mix(in srgb,var(--ink,#d5dde4) 55%,transparent)}
@@ -99,9 +101,10 @@
       report();
     }
     // 占位报告：宿主（控制列、通知层）按抽屉实际占的高度 / 宽度避让
-    let lastRep = '';
+    let lastRep = '', repQ = false;
     function report() {
-      requestAnimationFrame(() => {
+      if (repQ) return; repQ = true;   // 同一帧只量一次
+      requestAnimationFrame(() => { repQ = false;
         const r = el.hidden ? null : el.getBoundingClientRect(), m = mode();
         const h = !r ? 0 : m === 'rail' ? 0 : Math.round(r.height), w = !r ? 0 : m === 'rail' ? Math.round(r.width) : 0;
         const k = [h, w, state, m, tab].join('|'); if (k === lastRep) return; lastRep = k;
@@ -160,13 +163,14 @@
     let ts = null;
     body.addEventListener('touchstart', e => { ts = body.scrollTop <= 0 && e.touches.length === 1 ? e.touches[0].clientY : null; }, { passive: true });
     body.addEventListener('touchmove', e => { if (ts == null || mode() === 'rail') return; if (e.touches[0].clientY - ts > 56) { ts = null; down(); } }, { passive: true });
-    mq.addEventListener?.('change', () => paint());
-    addEventListener('resize', () => { if (mode() === 'rail' && railW > innerWidth * .5) railW = Math.max(280, Math.round(innerWidth * .5)); paint(); });
-    new ResizeObserver(report).observe(el);
+    const onMq = () => paint(), onRs = () => { if (mode() === 'rail' && railW > innerWidth * .5) railW = Math.max(280, Math.round(innerWidth * .5)); paint(); };
+    mq.addEventListener?.('change', onMq); addEventListener('resize', onRs);
+    const ro = new ResizeObserver(report); ro.observe(el);
+    const destroy = () => { mq.removeEventListener?.('change', onMq); removeEventListener('resize', onRs); ro.disconnect(); el.remove(); };
     for (const t of o.tabs || []) addTab(t);
     o.host.appendChild(el); paintTabs(); paint();
     return {
-      el, head, body, lead, grip, set, setTab, down, cycle, label, showTab, addTab, report,
+      el, head, body, lead, grip, set, setTab, destroy, down, cycle, label, showTab, addTab, report,
       panel: id => tabs.get(id)?.p || null, button: id => tabs.get(id)?.b || null,
       get state() { return state; }, get tab() { return tab; }, get mode() { return mode(); }, get open() { return state !== 'peek'; },
       text(t) { Object.assign(T, t); paint(); }, hide(on) { el.hidden = !!on; report(); },

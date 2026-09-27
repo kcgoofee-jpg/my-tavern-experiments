@@ -29,7 +29,9 @@
 #c3 .uis{pointer-events:auto}
 #c3 :focus-visible{outline:2px solid var(--focus,#63b4be);outline-offset:2px}
 body.c3full #c3 .c3-col{visibility:hidden}
-@media (max-width:640px){#c3 .c3-col button{width:44px;height:44px}#c3 .c3-title{display:none}#c3 .c3-seg button,#c3 .c3-sub button{min-width:44px;padding:0 var(--sp-4,8px)}}
+@media (max-width:640px),(pointer:coarse){#c3 .c3-col button{width:44px;height:44px}#c3 .c3-seg button,#c3 .c3-sub button{min-height:44px;min-width:44px;padding:0 var(--sp-4,8px)}}
+@media (max-width:640px){#c3 .c3-title{display:none}}
+@media (prefers-reduced-transparency:reduce){#c3 *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}}
 @media (min-width:641px){#c3 .c3-top{align-items:flex-end}#c3.c3-embed .c3-top{align-items:center}}
 @media (pointer:coarse){#c3 .c3-col,#c3 .c3-seg,#c3 .c3-sub{-webkit-backdrop-filter:none;backdrop-filter:none}}
 `;
@@ -42,6 +44,7 @@ body.c3full #c3 .c3-col{visibility:hidden}
     document.body.appendChild(root);
     const seg = root.querySelector('.c3-seg'), sub = root.querySelector('.c3-sub'), col = root.querySelector('.c3-col'), titleEl = root.querySelector('.c3-title');
     if (!o.embed && o.title) titleEl.textContent = o.title;
+    root.setAttribute('role', 'region'); if (o.title) root.setAttribute('aria-label', o.title); seg.setAttribute('aria-label', (o.text && o.text.views) || '视图');
     if (o.sub) sub.appendChild(o.sub);
     let view = o.view || o.views?.[0]?.id;
     function paintViews() { for (const b of seg.children) { const on = b.dataset.v === view; b.setAttribute('aria-checked', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1; } }
@@ -64,12 +67,12 @@ body.c3full #c3 .c3-col{visibility:hidden}
     if (o.tabs?.length) sheet.setTab(o.tabs[0].id);
     const insets = () => { const cs = getComputedStyle(root); return { bottom: parseFloat(cs.getPropertyValue('--sheet-h')) || 0, right: parseFloat(cs.getPropertyValue('--rail-w-now')) || 0 }; };
     // Esc：抽屉降一档；已收起就交给页面（嵌入时再交给查看器）
-    addEventListener('keydown', e => { if (e.key !== 'Escape' || e.isComposing) return; if (document.querySelector('.rg')) return; e.preventDefault(); if (!sheet.down()) o.onEsc?.(); else if (sheet.state === 'peek') sheet.el.querySelector('.uis-tog')?.focus(); });
+    addEventListener('keydown', e => { if (e.key !== 'Escape' || e.isComposing) return; if (document.querySelector('.rg, .nt-p0:not([hidden]) > *')) return; e.preventDefault(); if (!sheet.down()) o.onEsc?.(); else if (sheet.state === 'peek') sheet.el.querySelector('.uis-tog')?.focus(); });
     let auto = false, dragT = 0;
     return {
       root, sheet, seg, sub, col, insets, onInsets: f => ins.add(f),
       setView(id) { view = id; paintViews(); }, get view() { return view; }, setViews, setControls,
-      showSub(on) { sub.hidden = !on; }, setTitle(t) { if (!o.embed) titleEl.textContent = t || ''; }, setText(t) { sheet.text(t); },
+      showSub(on) { sub.hidden = !on; }, setTitle(t) { if (!o.embed) titleEl.textContent = t || ''; if (t) root.setAttribute('aria-label', t); }, setText(t) { sheet.text(t); },
       setAuto(on) { auto = !!on; },
       dragStart() { clearTimeout(dragT); dragT = setTimeout(() => { if (auto && sheet.open && sheet.mode === 'sheet') sheet.set('peek'); }, 300); }, dragEnd() { clearTimeout(dragT); },
       control: id => col.querySelector('#' + id),

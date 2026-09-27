@@ -27,10 +27,10 @@ async function run(name, preset) {
     rep.check(`${name} 测速取 build.json（带时间戳），两条线路都测`, probes.length >= 2 && probes.some(s => s.startsWith('cdn.jsdelivr.net')) && probes.some(s => s.startsWith('cdn.jsdmirror.com')), JSON.stringify({ probes, mapsProbe: mapsProbe.length }));
     rep.check(`${name} 快的胜出（jsDelivr），慢的被取消`, ls.line === 'vpn' && aborted.includes('cdn.jsdmirror.com') && ls.at > 0, JSON.stringify({ ls, aborted }));
     seen.length = 0; await P.page.reload(); await P.page.waitForSelector('#eden-map-root .em-fab'); await B.wait(5000);
-    rep.check(`${name} 24 小时内再打开：不重测`, !seen.some(s => /build\.json\?/.test(s)), JSON.stringify(seen));
+    rep.check(`${name} 24 小时内再打开：不重测`, !seen.some(s => /build\.json\?probe=/.test(s))   /* 只看测速请求（build.json?t= 是关于 / 检查更新，不算测速） */, JSON.stringify(seen));
     await P.page.evaluate(() => { localStorage.setItem('edenMapLine', 'cn'); localStorage.setItem('edenMapLineManual', '1'); localStorage.removeItem('edenMapLineAt'); });
     seen.length = 0; await P.page.reload(); await P.page.waitForSelector('#eden-map-root .em-fab'); await B.wait(5000);
-    rep.check(`${name} 手动选过：不测、不改`, !seen.some(s => /build\.json\?/.test(s)) && (await P.page.evaluate(() => localStorage.getItem('edenMapLine'))) === 'cn', JSON.stringify(seen));
+    rep.check(`${name} 手动选过：不测、不改`, !seen.some(s => /build\.json\?probe=/.test(s))   /* 只看测速请求（build.json?t= 是关于 / 检查更新，不算测速） */ && (await P.page.evaluate(() => localStorage.getItem('edenMapLine'))) === 'cn', JSON.stringify(seen));
   } catch (e) { rep.check(`${name} 运行`, false, e.message.split('\n')[0]); }
   finally { await P.close(); }
 }

@@ -493,5 +493,18 @@
   "ev.short": "E",
   "ch.short": "C",
   "s.labels_on": "Labels shown",
-  "s.labels_off": "Labels hidden"
+  "s.labels_off": "Labels hidden",
+  "s.stor": "Storage & data sources",
+  "s.stor_local": "Standalone: no chat data (shown when embedded in SillyTavern)",
+  "s.src_mvu": "MVU variables",
+  "s.src_db": "Database plugin table",
+  "s.src_none": "Chat tags / not found",
+  "s.stor_used": "Map storage used",
+  "s.stor_detail": "Site total {t}; avatars {a}; {n} chats",
+  "s.src_loc": "Location from",
+  "s.src_mode": "Variable mode",
+  "s.src_chars": "Character sources",
+  "s.stor_clean": "Clean up old chats’ map data",
+  "s.stor_clean_btn": "Clean up",
+  "s.stor_cleaned": "Cleaned {n} chats, freed {b}"
 }

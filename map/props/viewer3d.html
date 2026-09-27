@@ -15,8 +15,8 @@
   调试：window.__v3d（stats、setMode、fly、orbitBench）。?tier=low|high 强制档位，?lang=en。
 -->
 <link rel="stylesheet" href="../ui/tokens.css">
-<script src="../ui/sheet.js"></script>
-<script src="../ui/chrome3d.js"></script>
+<script defer src="../ui/sheet.js"></script>
+<script defer src="../ui/chrome3d.js"></script>
 <script type="importmap">{ "imports": { "three": "../estate/vendor/three.module.min.js", "three/addons/": "../estate/vendor/jsm/" } }</script>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font: var(--fs-body)/1.45 var(--font-ui); -webkit-font-smoothing: antialiased; }
@@ -104,7 +104,8 @@ const C = UI3D.create({ embed: EMBED, views: [{ id: 'ext', label: '外观' }, { 
   onEsc: () => post({ type: 'estate:key', key: 'Escape' }) });
 C.sheet.showTab('flows', false);
 C.setAuto(LSg('edenMap3dAuto') === '1');
-C.onInsets(() => resize());
+let lastIns = '';
+C.onInsets(i => { const k = i.bottom + ',' + i.right; if (k === lastIns) return; lastIns = k; camera.setViewOffset(innerWidth, innerHeight, i.right / 2, i.bottom / 2, innerWidth, innerHeight); camera.updateProjectionMatrix(); dirty = true; });   // 只换取景偏移，不重分配画布
 let flowTabOn = false;
 new MutationObserver(() => { const on = C.sheet.tab === 'flows' && C.sheet.open; if (on !== flowTabOn) { flowTabOn = on; if (!flowPin) setFlows(on); } }).observe(C.sheet.el, { attributes: true, attributeFilter: ['data-state', 'data-tab'], subtree: true });
 function dolly(f) { const d = camera.position.clone().sub(controls.target).multiplyScalar(f); if (d.length() < controls.minDistance || d.length() > controls.maxDistance) return; camera.position.copy(controls.target).add(d); controls.update(); camTouched = true; dirty = true; }

@@ -18,8 +18,9 @@ async function run(name, preset) {
     const chip = await p.evaluate(() => document.querySelector('#eden-map-root .em-here .em-nm')?.textContent);
     rep.check(`${name} 标题栏：「罗斯柴尔德岛 → 伊甸庄园（途中）」`, chip === '罗斯柴尔德岛 → 伊甸庄园（途中）', chip);
     await H.open(); const vf = await H.viewer(); await B.wait(1500);
+    await vf.evaluate(() => jumpHere(document.getElementById('here').value)); await B.wait(2500);   // 用户 2026-09-28：打开总是先世界图，跳到当前地点要点「当前位置」
     const d = await vf.evaluate(() => ({ cur, arc: document.querySelectorAll('svg.trip.transit').length, you: document.querySelectorAll('.tripin.you').length }));
-    rep.check(`${name} 自动落到上层，两端之间一条虚线弧 + 玩家点`, d.cur === 'tc_upper' && d.arc === 1 && d.you === 1, JSON.stringify(d));
+    rep.check(`${name} 「当前位置」落到上层，两端之间一条虚线弧 + 玩家点`, d.cur === 'tc_upper' && d.arc === 1 && d.you === 1, JSON.stringify(d));
     await jpg(p, `tr_${name}_transit`);
     await vf.evaluate(() => { document.querySelector('.tripin.you')._open(); }); await B.wait(300);
     const c = await vf.evaluate(() => document.querySelector('#card').hidden ? '' : document.querySelector('#card h2').textContent);
