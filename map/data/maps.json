@@ -6,9 +6,11 @@
     "kavalierki": {"title": "大骑士领·圣都", "title_en": "Kavalierki", "layers": ["site_kavalierki"], "place": "kavalierki"},
     "yuanyu": {"title": "原域", "title_en": "Yuanyu", "layers": ["yuanyu_sanctum", "yuanyu_city"], "place": "yuanyu", "upper": ["yuanyu_sanctum"]},
     "highland": {"title": "旷野高地", "title_en": "Wild Highlands", "layers": ["site_highland"], "place": "highland"},
+    "fief1": {"title": "圆桌第一席封地", "title_en": "First Seat Fief", "layers": ["site_fief1"], "place": "fief1"},
     "fief2": {"title": "圆桌第二席封地", "title_en": "Second Seat Fief", "layers": ["site_fief2"], "place": "fief2"},
     "fief3": {"title": "圆桌第三席封地", "title_en": "Third Seat Fief", "layers": ["site_fief3"], "place": "fief3"},
-    "fief4": {"title": "圆桌第四席封地", "title_en": "Fourth Seat Fief", "layers": ["site_fief4"], "place": "fief4"}
+    "fief4": {"title": "圆桌第四席封地", "title_en": "Fourth Seat Fief", "layers": ["site_fief4"], "place": "fief4"},
+    "fief5": {"title": "圆桌第五席封地", "title_en": "Fifth Seat Fief", "layers": ["site_fief5"], "place": "fief5"}
   },
   "unplaced": {"_说明": "卡里有、但没写层与位置的机构与地点：地图不落点（不猜），附加条目里写明「位置未写」，免得模型自行定位。见 docs/card-omissions.md", "items": [{"name": "法师塔", "name_en": "Mage Tower", "src": "人物·神宫寺凛：法师塔首席"}, {"name": "施奈德精密改造诊所", "name_en": "Schneider Precision Clinic", "src": "人物·伊薇特（视觉样例里写作「施奈德生物改造诊所」）"}, {"name": "新生工坊", "name_en": "Rebirth Workshop", "src": "人物·伊薇特：天城最大的同类改造中心"}, {"name": "天城贵族管家学院", "name_en": "Tiancheng Butler Academy", "src": "人物·绫濑遥：她从这里毕业并任顾问"}, {"name": "天城执政厅", "name_en": "Tiancheng Executive Office", "src": "天城：行政机构，签发跨层通行许可"}, {"name": "天城政务院", "name_en": "Tiancheng Administrative Council", "src": "人物·阿斯特丽德：18 岁在这里实习（与执政厅是否同一机构，卡没说明）"}, {"name": "天城中央储备署", "name_en": "Central Reserve Office", "src": "货币与贸易：发行以太元，隶属议会"}, {"name": "天城文化署", "name_en": "Culture Office", "src": "文学与文化：出版审核"}, {"name": "军事学院", "name_en": "Military Academy", "src": "军事与治安：骑士团与防卫军的人才来源"}, {"name": "维克多庄园", "name_en": "Victor Estate", "src": "人物·凯莉：亡夫的庄园，现已不属于她"}, {"name": "猎季营地", "name_en": "Hunting-season camp", "src": "文学与文化：秋季野外的猎季营地"}, {"name": "「Y」的庄园", "name_en": "Estate of \"Y\"", "src": "庄园主社交：全天城最大、从不露面、不入联盟的庄园主"}]},
   "ambiguous": {
@@ -235,6 +237,47 @@
         "trail_down": {"name": "下山小径", "name_en": "Trail down", "tag": "inf", "src": "仓库推断：崖下通往低地的小径（苍穹要回的修道院方向卡没写）", "alias": ["下山小径"], "canon": false}
       }
     },
+    "site_fief1": {
+      "view": {"focus": "fief1_castle", "width_m": 6000, "min_width_m": 150, "extent_m": [6000, 3750.0]},
+      "title": "圆桌第一席封地",
+      "title_en": "First Seat Fief",
+      "parent": "world",
+      "group": "fief1",
+      "layer": {"name": "第一席封地", "sub": "湖山", "alt": "光辉联邦", "name_en": "First Seat Fief", "sub_en": "Lakes & hills", "alt_en": "Federation"},
+      "kind": "points",
+      "site": true,
+      "base": "art/site_fief1.dzi",
+      "data": "data/site_fief1.json",
+      "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
+      "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
+      "markers": {
+        "fief1_castle": {"name": "第一席城堡", "name_en": "First Seat Castle", "tag": "inf", "src": "光辉联邦：圆桌骑士现存五席，享有独立封地（城堡形制与地形为仓库推断）", "alias": ["第一席城堡", "圆桌第一席城堡"], "canon": false, "sub": "圆桌第一席封地", "sub_en": "First Seat Fief", "cls": "capital"},
+        "fief1_order": {"name": "第一席骑士团驻地", "name_en": "First Seat Order Barracks", "tag": "inf", "src": "光辉联邦：圆桌骑士享有专属骑士团调动权（驻地位置为仓库推断）", "alias": ["第一席骑士团驻地", "第一席骑士团"], "canon": false},
+        "fief1_village": {"name": "第一席领地城镇", "name_en": "First Seat Town", "tag": "inf", "src": "仓库推断：封地里的城镇", "alias": ["第一席领地城镇", "第一席领地村镇"], "canon": false},
+        "fief1_fields": {"name": "第一席领地农田", "name_en": "First Seat Fields", "tag": "inf", "src": "仓库推断：封地的农田", "alias": ["第一席领地农田"], "canon": false}
+      }
+    },
+    "site_fief5": {
+      "view": {"focus": "fief5_castle", "width_m": 6000, "min_width_m": 150, "extent_m": [6000, 3750.0]},
+      "title": "圆桌第五席封地",
+      "title_en": "Fifth Seat Fief",
+      "parent": "world",
+      "group": "fief5",
+      "layer": {"name": "第五席封地", "sub": "平原", "alt": "光辉联邦", "name_en": "Fifth Seat Fief", "sub_en": "Plains", "alt_en": "Federation"},
+      "kind": "points",
+      "site": true,
+      "base": "art/site_fief5.dzi",
+      "data": "data/site_fief5.json",
+      "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
+      "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
+      "markers": {
+        "fief5_castle": {"name": "第五席城堡", "name_en": "Fifth Seat Castle", "tag": "inf", "src": "光辉联邦：圆桌骑士现存五席，享有独立封地（城堡形制与地形为仓库推断）", "alias": ["第五席城堡", "圆桌第五席城堡"], "canon": false, "sub": "圆桌第五席封地", "sub_en": "Fifth Seat Fief", "cls": "capital"},
+        "fief5_order": {"name": "第五席骑士团驻地", "name_en": "Fifth Seat Order Barracks", "tag": "inf", "src": "光辉联邦：圆桌骑士享有专属骑士团调动权（驻地位置为仓库推断）", "alias": ["第五席骑士团驻地", "第五席骑士团"], "canon": false},
+        "fief5_village": {"name": "第五席领地城镇", "name_en": "Fifth Seat Town", "tag": "inf", "src": "仓库推断：封地里的城镇", "alias": ["第五席领地城镇", "第五席领地村镇"], "canon": false},
+        "fief5_fields": {"name": "第五席领地农田", "name_en": "Fifth Seat Fields", "tag": "inf", "src": "仓库推断：封地的农田", "alias": ["第五席领地农田"], "canon": false},
+        "fief5_lists": {"name": "第五席比武场", "name_en": "Fifth Seat Lists", "tag": "inf", "src": "仓库推断：骑士团驻地旁的比武场（联邦是骑士竞赛之地，卡：大骑士领·圣都为全球骑士竞赛中枢）", "alias": ["第五席比武场"], "canon": false}
+      }
+    },
     "site_fief2": {
       "view": {"focus": "fief2_castle", "width_m": 6000, "min_width_m": 150, "extent_m": [6000, 3750.0]},
       "title": "圆桌第二席封地",
@@ -249,9 +292,9 @@
       "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
       "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
       "markers": {
-        "fief2_castle": {"name": "第二席城堡", "name_en": "Second Seat Castle", "tag": "inf", "src": "光辉联邦：圆桌骑士现存五席，享有独立封地（城堡与地形为仓库推断）", "alias": ["第二席城堡", "圆桌第二席城堡"], "sub": "圆桌第二席封地", "sub_en": "Second Seat Fief", "canon": false, "cls": "capital"},
+        "fief2_castle": {"name": "第二席城堡", "name_en": "Second Seat Castle", "tag": "inf", "src": "光辉联邦：圆桌骑士现存五席，享有独立封地（城堡形制与地形为仓库推断）", "alias": ["第二席城堡", "圆桌第二席城堡"], "canon": false, "sub": "圆桌第二席封地", "sub_en": "Second Seat Fief", "cls": "capital"},
         "fief2_order": {"name": "第二席骑士团驻地", "name_en": "Second Seat Order Barracks", "tag": "inf", "src": "光辉联邦：圆桌骑士享有专属骑士团调动权（驻地位置为仓库推断）", "alias": ["第二席骑士团驻地", "第二席骑士团"], "canon": false},
-        "fief2_village": {"name": "第二席领地村镇", "name_en": "Second Seat Village", "tag": "inf", "src": "仓库推断：封地里的村镇", "alias": ["第二席领地村镇"], "canon": false},
+        "fief2_village": {"name": "第二席领地城镇", "name_en": "Second Seat Town", "tag": "inf", "src": "仓库推断：封地里的城镇", "alias": ["第二席领地城镇", "第二席领地村镇"], "canon": false},
         "fief2_fields": {"name": "第二席领地农田", "name_en": "Second Seat Fields", "tag": "inf", "src": "仓库推断：封地的农田", "alias": ["第二席领地农田"], "canon": false}
       }
     },
@@ -269,9 +312,9 @@
       "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
       "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
       "markers": {
-        "fief3_castle": {"name": "第三席城堡", "name_en": "Third Seat Castle", "tag": "inf", "src": "光辉联邦：圆桌骑士现存五席，享有独立封地（城堡与地形为仓库推断）", "alias": ["第三席城堡", "圆桌第三席城堡"], "sub": "圆桌第三席封地", "sub_en": "Third Seat Fief", "canon": false, "cls": "capital"},
+        "fief3_castle": {"name": "第三席城堡", "name_en": "Third Seat Castle", "tag": "inf", "src": "光辉联邦：圆桌骑士现存五席，享有独立封地（城堡形制与地形为仓库推断）", "alias": ["第三席城堡", "圆桌第三席城堡"], "canon": false, "sub": "圆桌第三席封地", "sub_en": "Third Seat Fief", "cls": "capital"},
         "fief3_order": {"name": "第三席骑士团驻地", "name_en": "Third Seat Order Barracks", "tag": "inf", "src": "光辉联邦：圆桌骑士享有专属骑士团调动权（驻地位置为仓库推断）", "alias": ["第三席骑士团驻地", "第三席骑士团"], "canon": false},
-        "fief3_village": {"name": "第三席领地村镇", "name_en": "Third Seat Village", "tag": "inf", "src": "仓库推断：封地里的村镇", "alias": ["第三席领地村镇"], "canon": false},
+        "fief3_village": {"name": "第三席领地城镇", "name_en": "Third Seat Town", "tag": "inf", "src": "仓库推断：封地里的城镇", "alias": ["第三席领地城镇", "第三席领地村镇"], "canon": false},
         "fief3_fields": {"name": "第三席领地农田", "name_en": "Third Seat Fields", "tag": "inf", "src": "仓库推断：封地的农田", "alias": ["第三席领地农田"], "canon": false}
       }
     },
@@ -289,9 +332,9 @@
       "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
       "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
       "markers": {
-        "fief4_castle": {"name": "第四席城堡", "name_en": "Fourth Seat Castle", "tag": "inf", "src": "光辉联邦：圆桌骑士现存五席，享有独立封地（城堡与地形为仓库推断）", "alias": ["第四席城堡", "圆桌第四席城堡"], "sub": "圆桌第四席封地", "sub_en": "Fourth Seat Fief", "canon": false, "cls": "capital"},
+        "fief4_castle": {"name": "第四席城堡", "name_en": "Fourth Seat Castle", "tag": "inf", "src": "光辉联邦：圆桌骑士现存五席，享有独立封地（城堡形制与地形为仓库推断）", "alias": ["第四席城堡", "圆桌第四席城堡"], "canon": false, "sub": "圆桌第四席封地", "sub_en": "Fourth Seat Fief", "cls": "capital"},
         "fief4_order": {"name": "第四席骑士团驻地", "name_en": "Fourth Seat Order Barracks", "tag": "inf", "src": "光辉联邦：圆桌骑士享有专属骑士团调动权（驻地位置为仓库推断）", "alias": ["第四席骑士团驻地", "第四席骑士团"], "canon": false},
-        "fief4_village": {"name": "第四席领地村镇", "name_en": "Fourth Seat Village", "tag": "inf", "src": "仓库推断：封地里的村镇", "alias": ["第四席领地村镇"], "canon": false},
+        "fief4_village": {"name": "第四席领地城镇", "name_en": "Fourth Seat Town", "tag": "inf", "src": "仓库推断：封地里的城镇", "alias": ["第四席领地城镇", "第四席领地村镇"], "canon": false},
         "fief4_fields": {"name": "第四席领地农田", "name_en": "Fourth Seat Fields", "tag": "inf", "src": "仓库推断：封地的农田", "alias": ["第四席领地农田"], "canon": false}
       }
     }

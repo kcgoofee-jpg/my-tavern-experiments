@@ -24,7 +24,7 @@ for (const preset of ['phone', 'desktop']) {
   }
   const groups = await ev(p, () => Object.entries(REG.groups).filter(([k, g]) => g.place && k !== 'tiancheng').map(([k, g]) => ({ gid: k, place: g.place, layers: g.layers,
     name: [...M.places, ...M.fiefs].find(q => q.id === g.place)?.name })));
-  rep.check(`${tag}_site_groups`, groups.length >= 6, groups.map(g => g.gid).join(','));
+  rep.check(`${tag}_site_groups`, groups.length >= 8, groups.map(g => g.gid).join(','));
   for (const g of groups) {
     await B.goMap(p, 'world'); await B.wait(600);
     // 2 世界图上点这个地点 → 卡片里每一层都有「进入」

@@ -219,7 +219,7 @@ layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/
 
 ## 开局地点的简易地图（v0.9.6）
 
-- 地图：`site_kavalierki`（大骑士领·圣都）、`yuanyu_sanctum` / `yuanyu_city`（原域，两层）、`site_highland`（旷野高地）、`site_fief2` / `site_fief3` / `site_fief4`（圆桌第二至四席封地）。`maps.json` 里 `site: true`，各自一个 group，`groups.<id>.place` 指世界图的地点 / 封地 id（封地 id 为 `fief1`–`fief5`）。
-- 渲染：`blender -b -P blender/opening_sites.py -- --site <kavalierki|yuanyu_city|yuanyu_sanctum|highland|fief2|fief3|fief4> --res 4000 --samples 24 --out <png>`，同时导出 `map/data/site_<id>.json`；再 `python3 tools/make_dzi.py <png> map/art/site_<id>`。每张在 M 系列上约 30 秒。
+- 地图：`site_kavalierki`（大骑士领·圣都）、`yuanyu_sanctum` / `yuanyu_city`（原域，两层）、`site_highland`（旷野高地）、`site_fief1`–`site_fief5`（圆桌第一至五席封地，五块地形、城堡形制、城镇形状各不相同）。`maps.json` 里 `site: true`，各自一个 group，`groups.<id>.place` 指世界图的地点 / 封地 id（封地 id 为 `fief1`–`fief5`）。
+- 渲染：`blender -b -P blender/opening_sites.py -- --site <kavalierki|yuanyu_city|yuanyu_sanctum|highland|fief1|…|fief5> --res 4000 --samples 24 --out <png>`，同时导出 `map/data/site_<id>.json`；再 `python3 tools/make_dzi.py <png> map/art/site_<id>`。每张在 M 系列上约 30 秒。
 - 尺度交接：`TCScale`（viewer.html）按 group 的 place 泛化：世界图最大放大时离视野中心最近的地点（视野宽 30% 以内）再推 → 进入该组上次看的那层；组内各层缩到最远有「<组名>周边」环，再推 → 回世界图、该地点居中。环宽 = RING_W × 该图 extent_m 宽。
 - 同步：每张开局地点地图在 `addon_places.json` 里至少有一条 `site: true` 的条目引用它的地标（check_maps 检查）；浏览器验收 `tools/browser/sites096.mjs`。

@@ -19,7 +19,7 @@ export function buildGroups({ reg, plan = null, chars = [], lang = 'zh' } = {}) 
   const pts = maps.filter(([, m]) => m.kind === 'points' && m.status !== 'planned')
     .sort(([a], [b]) => (TIER[a] ? Object.keys(TIER).indexOf(a) : 9) - (TIER[b] ? Object.keys(TIER).indexOf(b) : 9));
   for (const [id, m] of pts) {
-    const t = TIER[id] || [m.title?.name || id, m.title_en?.name || m.title?.name_en || id];
+    const t = TIER[id] || [typeof m.title === 'string' ? m.title : m.title?.name || id, typeof m.title_en === 'string' ? m.title_en : m.title_en?.name || m.title?.name_en || id];   // v0.9.6 开局地点地图的 title 是字符串
     const g = { id: 'lm:' + id, label: en ? `${t[1]} · landmarks` : `${t[0]} · 地标`, short: en ? t[1] : t[0], items: [] };
     for (const [mk, v] of Object.entries(m.markers || {})) add(g, { key: v.name, kind: 'landmark', target: { map: id, marker: mk }, sub: macro(en ? (v.sub_en || v.sub || '') : (v.sub || '')), en: v.name_en || '', alias: v.alias || [] });
     if (g.items.length) out.push(g);
