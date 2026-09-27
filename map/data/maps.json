@@ -31,7 +31,7 @@
       "alias": ["伊甸庄园", "伊甸", "庄园", "书房", "主卧", "大厅", "餐厅", "会客厅", "客房", "前庭", "后庭", "花园", "停靠平台", "储藏室", "人工湖", "喷泉"]
     },
     "world": {
-      "view": { "focus": "tiancheng", "width_m": 4000000, "min_width_m": 700000, "extent_m": [12000000, 7500000] },
+      "view": { "focus": "tiancheng", "width_m": 4000000, "min_width_m": 700000, "extent_m": [12000000, 7500000], "phone": [0.08, 0.16, 0.82, 0.72], "phone": [0.03, 0.14, 0.86, 0.74], "phone": [0.16, 0.08, 0.8, 0.78] },
       "title": "世界", "title_en": "World", "kind": "world", "base": "art/world.dzi",
       "overlay": { "type": "dzi", "src": "art/borders.dzi", "label": "国界", "label_en": "Borders" }
     },

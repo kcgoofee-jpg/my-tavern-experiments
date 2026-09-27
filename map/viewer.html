@@ -730,7 +730,7 @@ async function mainInner() {
   // 航线开关：记在本机（默认关，用户 2026-09-27 定：和云雾一样做成选项）；没有 routes 的图上隐藏开关
   { let on = false; try { on = localStorage.getItem('edenMapRoutes') === '1'; } catch (e) {}
     $('#tgRoutesBox').checked = on; document.body.classList.toggle('noroutes', !on);
-    $('#tgRoutesBox').onchange = e => { document.body.classList.toggle('noroutes', !e.target.checked); try { localStorage.setItem('edenMapRoutes', e.target.checked ? '1' : '0'); } catch (err) {} }; }
+    $('#tgRoutesBox').onchange = e => { document.body.classList.toggle('noroutes', !e.target.checked); routeGaps(); try { localStorage.setItem('edenMapRoutes', e.target.checked ? '1' : '0'); } catch (err) {} }; }
   $('#tgMarkers').onchange = e => document.body.classList.toggle('nomarkers', !e.target.checked);
   $('#here').oninput = () => markHere($('#here').value);
   $('#here').onchange = () => { markHere($('#here').value); emEmit('here', { value: $('#here').value, resolved: hereRes($('#here').value) }); };   // 单独打开查看器时：输入框改完（回车 / 失焦）= 模拟 MVU 地点更新
@@ -1298,7 +1298,14 @@ function declutter() { clearTimeout(declT); declT = setTimeout(() => {
   for (const e of sorted.filter(e => rank(e) > 1)) { const r = box(e.querySelector('.lab')), pin = box(e.querySelector('.pin'));
     if (pin && icons.some(k => hit(pin, k, 6))) e.classList.add('lhide'); else place(e, r, true); }
   for (const e of words.filter(e => e.classList.contains('minor'))) place(e, box(e), true);
+  routeGaps();
 }, 80); }
+function routeGaps() {
+  const svg = document.querySelector('.routes'); if (!svg || document.body.classList.contains('noroutes')) return;
+  const g = svg.querySelector('.gaps'), m = svg.getScreenCTM?.(); if (!g || !m) return; const inv = m.inverse(), P = (x, y) => new DOMPoint(x, y).matrixTransform(inv);
+  const rs = [...document.querySelectorAll('.mk:not(.lhide) .lab, .chm .av, .ev:not(.lhide) b')].map(e => e.getBoundingClientRect()).filter(r => r.width);
+  g.innerHTML = rs.map(r => { const a = P(r.left - 3, r.top - 3), b = P(r.right + 3, r.bottom + 3); return `<rect x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" width="${(b.x - a.x).toFixed(1)}" height="${(b.y - a.y).toFixed(1)}" rx="4" fill="#000"/>`; }).join('');
+}
 function applyOverlayToggle() {
   const on = $('#tgBorders').checked, m = REG.maps[cur];
   if (m?.overlay?.type === 'dzi') viewer.world.getItemAt(1)?.setOpacity(on ? 1 : 0);
@@ -1417,10 +1424,12 @@ function pointOverlays() {
   if (d.routes?.length) {
     const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg'), VW = 1000, VH = 1000 * aspect;
     svg.setAttribute('viewBox', `0 0 ${VW} ${VH}`); svg.setAttribute('preserveAspectRatio', 'none'); svg.classList.add('routes');
+    // U8（spec §2.6）：航线在地名标签、人物头像处断开——遮罩里的黑块由 routeGaps() 按标签实际位置更新
+    svg.innerHTML = `<defs><mask id="rtGap" maskUnits="userSpaceOnUse" x="0" y="0" width="${VW}" height="${VH}"><rect x="0" y="0" width="${VW}" height="${VH}" fill="#fff"/><g class="gaps"></g></mask></defs><g mask="url(#rtGap)" class="rtg"></g>`;
     const dOf = r => r.pts.map(([x, y], j) => `${j ? 'L' : 'M'}${(x * VW).toFixed(1)},${(y * VH).toFixed(1)}`).join('') + (r.kind !== 'lane' && r.from === r.to ? 'Z' : '');
     for (const pass of ['halo', 'line']) for (const r of d.routes) { if (!(r.pts?.length > 1)) continue;
       const e = document.createElementNS(ns, 'path'); e.setAttribute('d', dOf(r));
-      e.setAttribute('class', pass === 'halo' ? 'halo' : ['lane', 'patrol', 'patrol_city'].includes(r.kind) ? r.kind : 'lane'); svg.appendChild(e); }
+      e.setAttribute('class', pass === 'halo' ? 'halo' : ['lane', 'patrol', 'patrol_city'].includes(r.kind) ? r.kind : 'lane'); svg.querySelector('.rtg').appendChild(e); }
     viewer.addOverlay({ element: svg, location: new OpenSeadragon.Rect(0, 0, 1, aspect) });
   }
   // link：跨层通道（如中层检查点 ↔ 下层 7 号井），地点卡里给一个直达链接
@@ -1473,6 +1482,9 @@ function focusStart(immediately) {
     const id = pendingFocus || Object.entries(m.markers || {}).find(([, v]) => v.name === here)?.[0] || m.view?.focus || m.focus;
     const k = mk.find(q => q.id === id) || { nx: .5, ny: .5 }; nx = k.nx; ny = k.ny; w = .3;
   }
+  // U2（spec §2.5）：手机竖屏第一次进入、没有要聚焦的地点时，按 view.phone（核心区 [x, y, w, h]，归一化）取景，四周「周边」只在缩远时出现
+  const core = m.view?.phone, hereMk = m.kind !== 'world' && document.querySelector('.mk.here');
+  if (core && cs.y > cs.x && !pendingFocus && !hereMk) { viewer.viewport.fitBounds(new OpenSeadragon.Rect(core[0], core[1] * aspect, core[2], core[3] * aspect), immediately); return; }
   // view：初始可见宽度按米给（每张图自己的尺度）；竖屏时让可见「高度」等于这个宽度，手机上不会一打开就缩得很小
   const vw = viewNorm(m, 'width_m');
   if (vw) w = cs.y > cs.x ? vw * cs.x / cs.y : vw;
@@ -2102,7 +2114,8 @@ const TCScale = (() => {
     const g = REG.groups[gid], lt = lastTier[gid], id = lt && isTier(lt) ? lt : g.layers.find(isTier); if (!id) return;
     const vp = viewer.viewport, c = vp.getCenter(true), [nx, ny] = ptOf(gid), cs = vp.getContainerSize(), T_M = T_Mof(id);
     const dx = Math.max(-4, Math.min(4, (c.x - nx) * W_M / T_M)), dy = Math.max(-2.5, Math.min(2.5, (c.y - ny * aspect) * W_M / T_M));
-    const a = REG.maps[id], asp = (a.view?.extent_m?.[1] || 1875) / (a.view?.extent_m?.[0] || 3000), w = RING_W * .96, h = w * cs.y / cs.x;
+    const a = REG.maps[id], asp = (a.view?.extent_m?.[1] || 1875) / (a.view?.extent_m?.[0] || 3000), port = cs.y > cs.x && a.view?.phone;
+    const w = port ? a.view.phone[2] : RING_W * .96, h = w * cs.y / cs.x;   // U2：手机竖屏从世界图进城，落在核心区而不是最远一档（四周一大圈云雾）
     groupView[gid] = new OpenSeadragon.Rect(.5 + dx - w / 2, asp / 2 + dy - h / 2, w, h);
     const sp = vp.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true);
     window.__snapFx = { ox: sp.x, oy: sp.y, scale: 5 }; pendingFocus = null; pendingHome = false; go(id);
