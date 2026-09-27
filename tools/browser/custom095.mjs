@@ -67,10 +67,10 @@ async function run(name, preset) {
     const alias = await vf.evaluate(() => [...document.querySelectorAll('#cuRes .cu-row b')].map(b => b.textContent));
     rep.check(`${name} 搜索别名「门厅」→ 大厅`, alias.includes('大厅') || alias.includes('门厅'), JSON.stringify(alias));   // estate2 起「门厅」在卡分层房间表里是独立条目
     // 键盘：↓ 到第一行，Enter 进编辑
-    await vf.locator('#cuQ').fill('书房'); await B.wait(150);
+    await vf.locator('#cuQ').fill('主人书房'); await B.wait(150);
     await vf.locator('#cuQ').press('ArrowDown'); await vf.evaluate(() => document.activeElement.click()); await B.wait(300);
     const ed = await vf.evaluate(() => ({ t: document.querySelector('#cuDlg .cu-target b')?.textContent, foc: document.activeElement?.id, cnt: document.querySelector('#cuNoteCnt')?.textContent }));
-    rep.check(`${name} 键盘 ↓ + 回车进编辑页，焦点在显示名，字数 0 / 200`, ed.t === '书房' && ed.foc === 'cuName' && ed.cnt === '0 / 200', JSON.stringify(ed));
+    rep.check(`${name} 键盘 ↓ + 回车进编辑页，焦点在显示名，字数 0 / 200`, ed.t === '主人书房' && ed.foc === 'cuName' && ed.cnt === '0 / 200', JSON.stringify(ed));
     // 4 校验：重名、都空
     await vf.locator('#cuName').fill('大厅'); await B.wait(100);
     const e1 = await vf.evaluate(() => document.querySelector('#cuNameErr').textContent);
@@ -82,24 +82,24 @@ async function run(name, preset) {
     await jpg(p, `cu_${name}_edit`);
     await vf.evaluate(() => document.querySelector('#cuDlg form').requestSubmit()); await B.wait(900);
     const v1 = await H.vars(), wb1 = await H.wb(), bn = Object.keys(wb1.books)[0] || '';
-    rep.check(`${name} 保存 → 聊天变量 eden_map（来源 手动）；字数 11 / 200`, v1?.eden_map?.自定义?.items?.书房?.名 === '星图室' && v1.eden_map.自定义.items.书房.源 === '手动' && cnt === '11 / 200' && !('stat_data' in v1), JSON.stringify({ cnt, it: v1?.eden_map?.自定义?.items?.书房 }));
+    rep.check(`${name} 保存 → 聊天变量 eden_map（来源 手动）；字数 11 / 200`, v1?.eden_map?.自定义?.items?.主人书房?.名 === '星图室' && v1.eden_map.自定义.items.主人书房.源 === '手动' && cnt === '11 / 200' && !('stat_data' in v1), JSON.stringify({ cnt, it: v1?.eden_map?.自定义?.items?.主人书房 }));
     rep.check(`${name} 第一项自定义后才建世界书，并绑定到聊天`, /^伊甸地图·自定义·[0-9a-f]{6}$/.test(bn) && wb1.books[bn][0].enabled && /星图室/.test(wb1.books[bn][0].content) && wb1.chat === bn, JSON.stringify({ bn, chat: wb1.chat }));
     // 5 列表卡片：剧情标签来源
     await H.setMsgs([{ message_id: 5, message: '<span style="display:none">⌖用途 温室：冬天在这里喝茶</span>' }]); await B.wait(900);
     const cards = await vf.evaluate(() => [...document.querySelectorAll('#cuDlg .cu-card')].map(c => ({ n: c.querySelector('.cu-names').textContent, src: c.querySelector('.cu-tags em:last-child').textContent, acts: c.querySelectorAll('.cu-acts .btn').length, h: Math.min(...[...c.querySelectorAll('.cu-acts .btn, .cu-main')].map(b => b.getBoundingClientRect().height)) })));
-    rep.check(`${name} 卡片：原名 → 新名、来源（手动 / 剧情标签）、编辑 / 重置 / 在地图上看，触控 ≥ 44 px`, cards.length === 2 && cards.some(c => /书房→星图室/.test(c.n) && c.src === '手动') && cards.some(c => /温室/.test(c.n) && c.src === '剧情标签') && cards.every(c => c.acts === 3 && c.h >= 44), JSON.stringify(cards));
+    rep.check(`${name} 卡片：原名 → 新名、来源（手动 / 剧情标签）、编辑 / 重置 / 在地图上看，触控 ≥ 44 px`, cards.length === 2 && cards.some(c => /主人书房→星图室/.test(c.n) && c.src === '手动') && cards.some(c => /温室/.test(c.n) && c.src === '剧情标签') && cards.every(c => c.acts === 3 && c.h >= 44), JSON.stringify(cards));
     await jpg(p, `cu_${name}_list`);
     // 6 重置：二次确认
     await vf.evaluate(() => document.querySelector('#cuDlg [data-reset="温室"]').click()); await B.wait(200);
     const arm = await vf.evaluate(() => ({ t: document.querySelector('#cuDlg [data-reset="温室"]').textContent, n: document.querySelectorAll('#cuDlg .cu-card').length }));
     await vf.evaluate(() => document.querySelector('#cuDlg [data-reset="温室"]').click()); await B.wait(800);
     const v2 = await H.vars();
-    rep.check(`${name} 重置：第一下变「确认重置」，第二下才删`, arm.t === '确认重置' && arm.n === 2 && !v2.eden_map.自定义.items.温室 && v2.eden_map.自定义.items.书房, JSON.stringify(arm));
+    rep.check(`${name} 重置：第一下变「确认重置」，第二下才删`, arm.t === '确认重置' && arm.n === 2 && !v2.eden_map.自定义.items.温室 && v2.eden_map.自定义.items.主人书房, JSON.stringify(arm));
     // 7 Tab 焦点困在对话框里；Esc 从编辑页回列表、再 Esc 关掉，焦点回到入口按钮
     const trap = await vf.evaluate(() => { const d = document.querySelector('#cuDlg'); const f = [...d.querySelectorAll('button, input, textarea')].filter(x => x.offsetParent); f.at(-1).focus(); return f.length; });
     await vf.locator(':focus').press('Tab');
     const inDlg = await vf.evaluate(() => document.querySelector('#cuDlg').contains(document.activeElement));
-    await vf.evaluate(() => document.querySelector('#cuDlg [data-edit="书房"]').click()); await B.wait(200);
+    await vf.evaluate(() => document.querySelector('#cuDlg [data-edit="主人书房"]').click()); await B.wait(200);
     await vf.locator(':focus').press('Escape'); await B.wait(150);
     const back = await vf.evaluate(() => !!document.querySelector('#cuDlg .cu-cards'));
     await vf.locator(':focus').press('Escape'); await B.wait(150);
@@ -120,16 +120,16 @@ async function run(name, preset) {
     const f3 = await vf.evaluate(() => TCCustom.flyTo({ character: '不在场的人' }));
     rep.check(`${name} 人物不在人物栏：flyTo 返回 false（面板里给提示）`, f3 === false);
     // 庄园房间：庄园不可用（本次会话失败过）→ 上层伊甸地点卡写房间
-    await vf.evaluate(() => { setEstFail(true); TCCustom.flyTo({ map: 'eden_estate', room: '书房' }); }); await B.wait(3500);
+    await vf.evaluate(() => { setEstFail(true); TCCustom.flyTo({ map: 'eden_estate', room: '主人书房' }); }); await B.wait(3500);
     const f4 = await vf.evaluate(() => ({ cur, card: document.querySelector('#card').hidden ? '' : document.querySelector('#card h2').textContent, room: document.querySelector('#card .cu-room')?.textContent || '' }));
-    rep.check(`${name} 庄园房间（庄园不可用）：落到上层伊甸，地点卡写「要看的房间 星图室（书房）」`, f4.cur === 'tc_upper' && /伊甸/.test(f4.card) && /星图室（书房）/.test(f4.room), JSON.stringify(f4));
+    rep.check(`${name} 庄园房间（庄园不可用）：落到上层伊甸，地点卡写「要看的房间 星图室（主人书房）」`, f4.cur === 'tc_upper' && /伊甸/.test(f4.card) && /星图室（主人书房）/.test(f4.room), JSON.stringify(f4));
     await jpg(p, `cu_${name}_fly_room_standin`);
     // 庄园可用：宿主 EdenMap.flyTo → 进庄园，estate:room 发的是这间房
     await vf.evaluate(() => setEstFail(false));
-    await p.evaluate(() => window.EdenMap.flyTo({ map: 'eden_estate', room: '书房' }));
+    await p.evaluate(() => window.EdenMap.flyTo({ map: 'eden_estate', room: '主人书房' }));
     const seen = []; for (let i = 0; i < 18 && !(await vf.evaluate(() => !!est?.ready)); i++) { await B.wait(500); seen.push(await vf.evaluate(() => cur)); }
     const f5 = await vf.evaluate(() => ({ cur, focus: estFocus, ready: !!est?.ready })); f5.seen = [...new Set(seen)];
-    rep.check(`${name} EdenMap.flyTo({map:'eden_estate', room}) → 进庄园并聚焦该房间`, f5.cur === 'eden_estate' && f5.focus === '书房', JSON.stringify(f5));
+    rep.check(`${name} EdenMap.flyTo({map:'eden_estate', room}) → 进庄园并聚焦该房间`, f5.cur === 'eden_estate' && f5.focus === '主人书房', JSON.stringify(f5));
     if (f5.ready) await jpg(p, `cu_${name}_fly_room_estate`);
     await vf.evaluate(() => go('tc_mid')); await B.wait(2500);
     // 面板关着时调 EdenMap.flyTo：先打开面板，再飞（不被「自动跳到当前地点」拉回）
@@ -174,7 +174,7 @@ async function run(name, preset) {
 async function runMigrate(name, preset) {
   const P = await B.newPage(preset, { tier: 'save' });
   try {
-    const chat = 'c95m-' + name, old = { eden_map: { 自定义: { items: { 书房: { 类: 'room', 名: '星图室' } }, 同步世界书: false }, 标签楼: -1 } };
+    const chat = 'c95m-' + name, old = { eden_map: { 自定义: { items: { 主人书房: { 类: 'room', 名: '星图室' } }, 同步世界书: false }, 标签楼: -1 } };
     const H = await openHost(P, { here: '', msgs: [], stat: {}, chat, vars: old });
     await B.wait(1500);
     const a = await P.page.evaluate(() => window.EdenMap.getCustom());
