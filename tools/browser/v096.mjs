@@ -15,7 +15,7 @@ const ev = (p, f, a) => p.evaluate(f, a);
 // ---------- 手机 375×812 ----------
 {
   const P = await B.newPage('phone', { scheme: 'light' }), p = P.page;
-  await B.openViewer(P, { map: 'world' }); await B.wait(2000);   // v0.9.6 起不带参数打开是伊甸庄园
+  await B.openViewer(P, { map: 'world' }); await B.wait(2000);
   // 1 世界图取景：视野在图内、图铺满视口（不再偏到一边留空）
   const fit = () => ev(p, () => { const b = viewer.viewport.getBounds(true), it = viewer.world.getItemAt(0).getBounds(true);
     return { inX: b.x >= it.x - 1e-3 && b.x + b.width <= it.x + it.width + 1e-3, inY: b.y >= it.y - 1e-3 && b.y + b.height <= it.y + it.height + 1e-3 }; });

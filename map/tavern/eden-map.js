@@ -566,18 +566,14 @@
       if (text) injectPrompts([{ id: INJECT_ID, position: 'in_chat', depth: 4, role: 'system', content: text, should_scan: false }]);
     } catch (e) {}
   }
-  // 发给地图：isNew = 上次打开面板之后才出现 / 更新的；fly = 打开时要飞过去的最新未读事件
-  // fly 只在打开面板的那一次带上：面板开着时新楼的事件只更新列表和点，不把地图拉走、不关玩家正在看的卡（E5 r2 RP P1）
-  let flyNext = true;
+  // 发给地图：isNew = 上次打开面板之后才出现 / 更新的。打开时不再自动飞向未读事件（用户 2026-09-28：只在点了事件时飞）
   function sendEvents() {
     if (!alive) return;
     const visible = !panel.hidden && !ghost;   // 后台预加载（ghost）只把面板设成 visibility:hidden，panel.hidden 仍是 false——不能算「用户在看」
     const items = events.map(e => ({ ...e, isNew: e.last > seen }));
-    const fly = visible && flyNext ? items.find(e => e.isNew && e.tier !== 'fade')?.id || null : null;
-    if (visible && (fly || floorNow >= 0)) flyNext = false;   // 刚载入时先发的空列表不消耗「打开时飞一次」（E5 r3 RP3-1）
     if (charSig !== charsSent) { charsSent = charSig; sendChars(); }
     cardBindFor(); sendBind();   // v0.9.7 卡原名绑定（每个聊天一次；地图重开后补发）   // 人物没变就不重发：面板开着时每 4 秒重建一次覆盖层与横条（2026-09-27 接手 review P2）
-    post({ type: 'eden-map:events', v: 1, floor: floorNow, hereLayer: EVM ? EVM.layerOf(here) : '', items, fly });
+    post({ type: 'eden-map:events', v: 1, floor: floorNow, hereLayer: EVM ? EVM.layerOf(here) : '', items });
     // 只有用户真的看着面板才吃掉未读水位、清角标、记 localStorage（2026-09-27 接手 review P1：
     // 以前后台预加载会把水位推到最新并持久化，角标与「打开时飞向最新未读」从此永久失效——iPhone 走省流路径不预加载，所以手机上看不出来）
     if (visible) { if (floorNow >= 0) { seen = floorNow; try { localStorage.setItem(chatKey(), String(seen)); } catch (e) {} } badge.hidden = true; }
@@ -929,14 +925,11 @@
   async function showSplash() {
     SPm ??= await import(SELF + 'tavern/splash.mjs').catch(() => null); if (!SPm) return false;
     const lite = lean(), get = f => fetch(BASE + f, { cache: 'force-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
-    const EST = ['estate/index.html', 'estate/main.js', 'estate/model/manifest.json', 'estate/model/zones.json', 'data/eden_estate_rooms.json', 'estate/vendor/three.module.min.js',
-      'estate/vendor/jsm/controls/OrbitControls.js', 'estate/vendor/jsm/renderers/CSS2DRenderer.js', 'estate/vendor/jsm/loaders/GLTFLoader.js', 'estate/vendor/jsm/libs/meshopt_decoder.module.js', 'estate/vendor/jsm/utils/BufferGeometryUtils.js', 'estate/model/site.glb'];   // 整岛模型标准档一并预热（省流时整项跳过）
     const bi = await buildNow();
     splash = SPm.openSplash({ root, id: ID, pdoc, ver: VER, en: UL === 'en', about: { version: bi?.version || SCRIPT.version || VER, code: bi?.code || SCRIPT.code, channel: channel(), ref: SCRIPT.ref || refOf() }, store: localStorage, cap: window.parent.__edenSplashCap || 25,
       checks: () => runCheck().then(() => checkItems),
       tasks: [
         { key: 'map', zh: '地图程序与当前一层的图块', en: 'Map program and current-layer tiles', run: () => { if (panel.hidden && !alive && !ghost) preload().catch(() => {}); return preP; } },
-        { key: 'estate', zh: '庄园三维页面', en: 'Estate 3D page', skip: lite, run: () => Promise.all(EST.map(get)) },
         { key: 'clouds', zh: '云图', en: 'Cloud sprites', skip: lite, run: () => Promise.all([1, 2, 3, 4, 5, 6].map(k => get(`art/clouds/puff${k}.png`))) },
       ],
       onStart: () => { splash = null; if (panel.hidden || ghost) { if (ghost) endGhost(true); panel.hidden = false; loadViewer(); } }, onClose: () => { splash = null; if (updWait) setTimeout(showUpdPrompt, 600); } });
@@ -1060,7 +1053,7 @@
     if (!saved && handPref === 'left') placeFab(.03, Math.max(0, (window.parent.innerHeight - 144) / Math.max(1, window.parent.innerHeight - 48))); }   // 没拖过：左手默认放左下
   applyHand(false);
   fab.addEventListener('pointerup', () => { if (dragged && handPref === 'auto') applyHand(false); });
-  const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; flyNext = true; sleepViewer(); if (toastWait && SC) setTimeout(toastOnce, 400); if (updWait) setTimeout(showUpdPrompt, 600); };
+  const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; sleepViewer(); if (toastWait && SC) setTimeout(toastOnce, 400); if (updWait) setTimeout(showUpdPrompt, 600); };
   fab.addEventListener('click', async () => { if (dragged) return;
     if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); sent = null; charsSent = null; push(); sendEvents(); return; }   // 预加载中被点开：直接显示，重新推一次地点（这次可以进庄园）
     fab.classList.remove('fail'); fab.querySelectorAll('.em-tip').forEach(t => t.remove());   // 提示不留在面板后面（v0.9.2）

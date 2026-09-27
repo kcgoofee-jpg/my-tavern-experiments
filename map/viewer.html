@@ -22,10 +22,10 @@
     d.dataset.hand = h; return h; };
   window.__applyHand();
   window.__i18n = fetch('i18n/' + lg + '.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));   // 和启动数据并行取
-  // 首图一定是世界图（独立打开、没有 ?map= / ?here=）时才预取世界底图的描述文件与 1200px 缩略图；嵌入酒馆时首图由当前地点决定，不预取（省流，E4 N04）
+  // 首图总是世界图（没有 ?map= 时）：预取世界底图的描述文件与 1200px 缩略图
   // dzi 带 crossorigin：凭据模式与 OSD 的请求一致，预取的结果才用得上
   if ((navigator.deviceMemory || 8) <= 4) d.classList.add('lowmem');   // 低内存：不用毛玻璃（backdrop-filter 很贵）
-  window.__worldFirst = window.top === window && !q.get('map') && !q.get('here');
+  window.__worldFirst = !q.get('map');   // 总是先开世界图（用户 2026-09-28）
   if (window.__worldFirst) for (const [h, as, co] of [['art/world.dzi', 'fetch', 1], ['art/borders.dzi', 'fetch', 1], ['art/world_1k.jpg', 'image', 0]]) {
     const l = document.createElement('link'); l.rel = 'preload'; l.as = as; l.href = h; if (co) l.crossOrigin = 'anonymous'; document.head.appendChild(l); }
 })();
@@ -474,6 +474,7 @@
     <nav id="crumbs" data-i18n-aria="crumbs_aria" aria-label="位置"></nav>
     <div class="seg" id="tiers" role="group" data-i18n-aria="tier_group" aria-label="清晰度"></div><span id="tierState" aria-live="polite"></span>
     <span class="grow"></span>
+    <button type="button" class="btn" id="hereGo" hidden data-i18n="here_go">当前位置</button>
     <div id="layWrap"><button type="button" class="btn" id="layBtn" aria-expanded="false" aria-controls="layPop"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2L1.8 5.3 8 8.6l6.2-3.3z"/><path d="M1.8 8.4L8 11.7l6.2-3.3"/></svg><span data-i18n="layers_menu">图层</span><svg class="ico chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></button></div>
     <div class="seg" id="langSeg" role="group" data-i18n-aria="lang_title" data-i18n-title="lang_title" title="界面语言"><button type="button" data-lang="zh">中</button><button type="button" data-lang="en">EN</button></div>
     <button type="button" class="btn ic" id="themeBtn" data-i18n-title="theme_title" title="界面主题"></button>
@@ -493,7 +494,7 @@
   <label class="tg"><span data-i18n="labels">地名</span><input type="checkbox" role="switch" id="tgLabels" checked></label>
   <label class="tg"><span data-i18n="markers">标记</span><input type="checkbox" role="switch" id="tgMarkers" checked></label>
 </div></div>
-<div id="setPop" class="pop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置"><div class="sheet-h"><b data-i18n="settings_title">设置</b><button type="button" class="btn ic" id="setX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><div id="aboutBox"></div><div class="acts" hidden><button type="button" class="btn" id="actUp" hidden></button><button type="button" class="btn" id="actClose" hidden data-i18n="act_close">关闭地图</button></div><div class="more"></div><label><span data-i18n="auto_here">打开地图时自动跳到当前地点</span><input type="checkbox" role="switch" id="optAutoHere" checked></label><small data-i18n="auto_here_hint">庄园房间直达对应楼层；地标、层、世界地名各自落到对应的图</small>
+<div id="setPop" class="pop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置"><div class="sheet-h"><b data-i18n="settings_title">设置</b><button type="button" class="btn ic" id="setX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><div id="aboutBox"></div><div class="acts" hidden><button type="button" class="btn" id="actUp" hidden></button><button type="button" class="btn" id="actClose" hidden data-i18n="act_close">关闭地图</button></div><div class="more"></div>
   <label class="row"><span data-i18n="no_fx">关闭花屏特效</span><input type="checkbox" role="switch" id="optNoFx"></label><small data-i18n="no_fx_hint">网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字</small>
   <label class="row"><span data-i18n="char_stats">人物栏显示数值</span><input type="checkbox" role="switch" id="optCharStats" checked></label><small data-i18n="char_stats_hint">名册里显示成员的等级与核心数值（字段在「变量映射」里指定或关闭）</small>
   <label class="row"><span data-i18n="char_more">人物卡显示更多资料</span><input type="checkbox" role="switch" id="optCharMore" checked></label><small data-i18n="char_more_hint">人物卡里可展开的一栏：代号、社会身份、身高 / 体重、外界知情、饰物（字段在「变量映射」里指定或关闭）</small>
@@ -687,7 +688,7 @@ async function mainInner() {
     $('#tgRoutesBox').onchange = e => { document.body.classList.toggle('noroutes', !e.target.checked); try { localStorage.setItem('edenMapRoutes', e.target.checked ? '1' : '0'); } catch (err) {} }; }
   $('#tgMarkers').onchange = e => document.body.classList.toggle('nomarkers', !e.target.checked);
   $('#here').oninput = () => markHere($('#here').value);
-  $('#here').onchange = () => { jumpHere($('#here').value, true); emEmit('here', { value: $('#here').value, resolved: hereRes($('#here').value) }); };   // 单独打开查看器时：输入框改完（回车 / 失焦）= 模拟 MVU 地点更新
+  $('#here').onchange = () => { markHere($('#here').value); emEmit('here', { value: $('#here').value, resolved: hereRes($('#here').value) }); };   // 单独打开查看器时：输入框改完（回车 / 失焦）= 模拟 MVU 地点更新
   initSettings(); initE7();
   { let ct = 0; const cb = $('#creditBtn'), cr = $('#credit');
     const show = on => { cr.hidden = !on; cb.setAttribute('aria-expanded', on); clearTimeout(ct); if (on) ct = setTimeout(() => show(false), 6000); };
@@ -696,8 +697,8 @@ async function mainInner() {
   const qs = new URLSearchParams(location.search), q = qs.get('map');
   if (qs.get('here')) $('#here').value = qs.get('here');   // 调试：?here=主卧
   if (REG.maps[q] && REG.maps[q].status !== 'planned') go(q);
-  else if (window.top !== window && !qs.get('here')) bootLater();   // 嵌入酒馆：先等卡内脚本推当前地点（≤ 0.6 s），不先下载世界图再跳（E4b R10）
-  else bootStart();
+  else go(REG.start);   // 用户 2026-09-28：总是先开世界图；跳到当前地点只在点「当前位置」时
+  $('#hereGo').onclick = () => jumpHere($('#here').value);
   TCEvents.init(); TCEvents.pollFeeds();   // 事态横条与花屏提示；外部事件数据源（maps.json 的 feeds，默认没有）
   post({ type: 'eden-map:ready' });
   // 首张地图画出来后，空闲时预热其他地图：描述文件、点位数据、最粗的几层瓦片（切过去立刻有模糊版）
@@ -1413,6 +1414,7 @@ function focusStart(immediately) {
 const ALIAS = { '天城': ['天城', '伊甸', '庄园', '书房', '主卧', '大厅', '餐厅', '会客厅', '客房', '寝', '浴室', '后庭', '前庭', '上层', '中层', '下层', '钢铁霓虹', '地基', '公寓', '银冠堡'] };
 function markHere(v) {
   v = (v || '').replace('{{user}}', '');
+  $('#hereGo').hidden = !hereRes(v);
   // 解析出的落点也算：庄园里的任何地方 → 上层的「伊甸庄园」标记与世界图的「天城」；天城任一层 → 「天城」；地标 → 该标记
   const r = hereRes(v), tcLayers = REG?.groups?.tiancheng?.layers || [], m = cur && REG.maps[cur];
   const extra = new Set();
@@ -1444,25 +1446,19 @@ function onCardBind(d) {
 }
 function estateBind() { if (est?.ready && cardBind) est.frame.contentWindow?.postMessage({ type: 'estate:bind', names: cardBind.rooms }, SUB_ORIGIN); }
 window.cardBindLabel = id => (cardBind?.specs?.[id] || [])[0] || null;   // 剖面标签等按 id 取（section.B1 / section.B2）
-let HX = null, hereIdx = null, lastJump = null, hereFresh = true, bgMode = false;   // bgMode：酒馆在后台预加载（面板不可见）
-const AUTO_KEY = 'edenMapAutoHere';
-const autoHere = () => { try { return localStorage.getItem(AUTO_KEY) !== '0'; } catch (e) { return true; } };
+let HX = null, hereIdx = null;
 const hereRes = v => (HX && hereIdx ? HX.resolveHere(v, hereIdx) : null);
-function jumpHere(v, force) {
+function jumpHere(v) {   // 只由「当前位置」按钮调用（不再在打开 / 地点更新时自动跳）
   let r = hereRes(v);
-  if (!r || !autoHere() || !REG?.maps[r.map] || REG.maps[r.map].status === 'planned') return false;
-  if (!force && v === lastJump) return false;
-  // 后台预加载时、本次会话庄园三维加载失败过、或省流设备（含 iOS 这类拿不到网络信息的触屏）：不自动进庄园，落到它的平面替身（上层的伊甸地标），地点卡里有「进入庄园」由用户决定（E4 N01、N03，E6）
-  if (REG.maps[r.map].kind === 'estate' && (bgMode || estFail || leanBg())) { const sub = estateStandIn(r.map); if (sub) r = { ...r, map: sub.map, marker: sub.marker }; }
-  if (!bgMode) lastJump = v;   // 后台那次不算「已经跳过」：用户真正打开面板时还会跳
+  if (!r || !REG?.maps[r.map] || REG.maps[r.map].status === 'planned') return false;
+  // 本次会话庄园三维加载失败过、或省流设备：落到它的平面替身（上层的伊甸地标），地点卡里有「进入庄园」
+  if (REG.maps[r.map].kind === 'estate' && (estFail || leanBg())) { const sub = estateStandIn(r.map); if (sub) r = { ...r, map: sub.map, marker: sub.marker }; }
   if (r.map !== cur) { pendingFocus = r.marker || null; pendingHome = !r.marker && !r.place; go(r.map); return true; }
   if ((r.marker || r.place) && viewer?.world.getItemCount()) { userMoved = false; markHere(v); focusStart(false); }   // 同一张图：飞到地标 / 世界地名
   return true;
 }
 function initSettings() {
-  const btn = $('#setBtn'), pop = $('#setPop'), box = $('#optAutoHere');
-  box.checked = autoHere();
-  box.onchange = () => { try { localStorage.setItem(AUTO_KEY, box.checked ? '1' : '0'); } catch (e) {} if (box.checked) jumpHere($('#here').value, true); };
+  const btn = $('#setBtn'), pop = $('#setPop');
   // 打开弹层时焦点进到第一个控件（弹层在 DOM 里排在整张地图之后，不这样要按十几下 Tab，E5 r2 无障碍 P1）；窄屏有真正的遮罩，点遮罩关、不穿透到地图
   const firstIn = el => el.querySelector('button:not([hidden]), input, [tabindex="0"]');
   const mask = $('#setMask');
@@ -1670,13 +1666,6 @@ function initCardSwipe() {
   const end = e => { if (!s || e.pointerId !== s.id) return; const dy = e.clientY - s.y; s = null; c.style.transform = ''; if (dy > 60 && e.type === 'pointerup') closeCard(true); };
   c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end);
 }
-// 首张图：有当前地点就直接去它的图，否则去注册表的起始图（世界）
-let bootT = 0; const BOOT = '#boot';
-// v0.9.6：起始图是伊甸庄园（maps.json start）；后台预加载 / 三维加载失败过 / 省流设备时落到它的平面替身（上层的伊甸地标），和自动跳转同一规则
-function bootStart() { clearTimeout(bootT); bootT = 0; if (cur) return; if (jumpHere($('#here').value, true)) return;
-  const s = REG.maps[REG.start]?.kind === 'estate' && (bgMode || estFail || leanBg()) && estateStandIn(REG.start);
-  if (s) { pendingFocus = s.marker; go(s.map); } else go(REG.start); }
-function bootLater() { clearTimeout(bootT); bootT = setTimeout(bootStart, 600); }
 // 嵌入酒馆（悬浮按钮面板）的消息接口：
 //   酒馆 → 地图：eden-map:here {value}（当前地点）、eden-map:open {map}（直接打开某张地图）
 //   地图 → 酒馆：eden-map:ready（可以撤掉加载遮罩）、eden-map:state {map, title}（当前地图，用于面板标题）
@@ -1691,13 +1680,9 @@ if (window.top !== window) {
     const tok = (() => { try { return window.__edenHostToken || null; } catch (x) { return null; } })();
     if (!fromParent && !(tok && e.data && e.data.t === tok)) return;
     // bg = 酒馆在后台预加载（面板不可见）：不进庄园，也不消耗「打开后第一次一定跳」的资格
-    if (e.data?.type === 'eden-map:here') { bgMode = !!e.data.bg; if (($('#here').value || '') !== (e.data.value || '')) estFocus = null; $('#here').value = e.data.value || ''; markHere(e.data.value);
-      // 休眠（面板关着）时只记住新位置，不 go()：否则会在面板不可见时重新拉瓦片、还把 sleeping 变成陈旧的那张图（接手 review P1）
-      if (!cur && sleeping) { const nid = hereRes(e.data.value || '')?.map; if (nid) sleeping = nid; if (!bgMode) hereFresh = false; return; }
-      if (bootT) bootStart(); else if (!jumpHere(e.data.value || '', hereFresh)) focusStart(false);
-      if (!bgMode) hereFresh = false; emEmit('here', { value: e.data.value || '', resolved: hereRes(e.data.value || '') }); }
+    if (e.data?.type === 'eden-map:here') { if (($('#here').value || '') !== (e.data.value || '')) estFocus = null; $('#here').value = e.data.value || ''; markHere(e.data.value);
+      emEmit('here', { value: e.data.value || '', resolved: hereRes(e.data.value || '') }); }
     if (e.data?.type === 'eden-map:unmapped-pick' && typeof TCUnmapped !== 'undefined') TCUnmapped.open();   // v0.9.6 标题栏「未上图」
-    if (e.data?.type === 'eden-map:open') clearTimeout(bootT), bootT = 0;
     if (e.data?.type === 'eden-map:open') go(e.data.map);
     if (e.data?.type === 'eden-map:events') { TCEvents.set(e.data); emEmit('events', { items: e.data.items, floor: e.data.floor, hereLayer: e.data.hereLayer }); }   // 卡内脚本从聊天里解析、合并好的事态 {items, floor, fly}
     if (e.data?.type === 'eden-map:chat') setChat(e.data.id);
@@ -1715,8 +1700,8 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:toast') TCCustom.toast(e.data.items || []);   // 剧情改名 / 用途的一次性提示
     if (e.data?.type === 'eden-map:selfcheck') { selfCheck = e.data; renderSelfCheck(); }   // 卡内脚本的启动自检结果（E6）   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
     // 面板关闭时休眠：关掉底图（释放已解码的瓦片），脚本与数据留着；再打开时唤醒，重新打开当前地图
-    if (e.data?.type === 'eden-map:sleep' && viewer) { saveView(); sleeping = cur || (bootT ? BOOT : null); clearTimeout(bootT); bootT = 0; cur = null; if (est?.ready && !lean()) { dropParked(); estParked = est; est.frame.style.visibility = 'hidden'; est.frame.contentWindow?.postMessage({ type: 'estate:pause' }, SUB_ORIGIN); } else est?.frame.remove(); est = null; document.body.classList.remove('estate'); viewer.close(); untrackAll(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }
-    if (e.data?.type === 'eden-map:wake' && sleeping) { slowStop = true; const id = sleeping; sleeping = null; hereFresh = true; if (id === BOOT) bootLater(); else go(id); if (e.data.fly) TCCustom.flyTo(e.data.fly); }   // 先开图再飞：fly 目标认不出时不会留下空舞台（接手 review P2）
+    if (e.data?.type === 'eden-map:sleep' && viewer) { saveView(); sleeping = cur || REG?.start || null; cur = null; if (est?.ready && !lean()) { dropParked(); estParked = est; est.frame.style.visibility = 'hidden'; est.frame.contentWindow?.postMessage({ type: 'estate:pause' }, SUB_ORIGIN); } else est?.frame.remove(); est = null; document.body.classList.remove('estate'); viewer.close(); untrackAll(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }
+    if (e.data?.type === 'eden-map:wake' && sleeping) { slowStop = true; const id = sleeping; sleeping = null; go(id); if (e.data.fly) TCCustom.flyTo(e.data.fly); }   // 先开图再飞：fly 目标认不出时不会留下空舞台（接手 review P2）
     else if (e.data?.type === 'eden-map:wake' && e.data.fly) TCCustom.flyTo(e.data.fly);
   });
 }

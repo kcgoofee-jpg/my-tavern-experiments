@@ -13,15 +13,10 @@ const drawn = p => p.waitForFunction(() => !!viewer?.world.getItemCount() && vie
 
 for (const preset of ['phone', 'desktop']) {
   const P = await B.newPage(preset), p = P.page, tag = preset === 'phone' ? '375' : 'desktop';
-  // 1 起始：不带参数打开 → 伊甸庄园（省流 / 触屏时是上层的伊甸地标），面包屑能回到世界
+  // 1 起始：不带参数打开 → 世界图（用户 2026-09-28：总是先开世界图）
   await B.openViewer(P, {}); await B.wait(2500);
-  const st = await ev(p, () => ({ cur, crumb: document.getElementById('crumbs').textContent, focus: pendingFocus }));
-  rep.check(`${tag}_start_eden`, st.cur === 'eden_estate' || st.cur === 'tc_upper', JSON.stringify(st));
-  rep.check(`${tag}_start_crumb_up`, /世界/.test(st.crumb) && /天城/.test(st.crumb), st.crumb);
-  if (st.cur === 'tc_upper') {
-    const c = await ev(p, () => { const k = curData.markers.find(q => q.id === 'eden'), b = viewer.viewport.getBounds(true); return { dx: Math.abs(b.getCenter().x - k.nx), w: b.width }; });
-    rep.check(`${tag}_start_on_eden`, c.dx < c.w * .3, JSON.stringify(c));
-  }
+  const st = await ev(p, () => ({ cur }));
+  rep.check(`${tag}_start_world`, st.cur === 'world', JSON.stringify(st));
   const groups = await ev(p, () => Object.entries(REG.groups).filter(([k, g]) => g.place && k !== 'tiancheng').map(([k, g]) => ({ gid: k, place: g.place, layers: g.layers,
     name: [...M.places, ...M.fiefs].find(q => q.id === g.place)?.name })));
   rep.check(`${tag}_site_groups`, groups.length >= 8, groups.map(g => g.gid).join(','));

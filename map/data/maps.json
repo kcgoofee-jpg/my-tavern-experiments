@@ -1,6 +1,6 @@
 {
   "_说明": "地图注册表。base = 底图 DZI；parent = 上一级地图（面包屑）；group = 同组多层（天城三层）；alt = 同一张图的另一版底图（查看器里一个开关，只换底图）；credit = 数据署名（查看器右上角显示）；view = 尺度与默认缩放（focus 初始聚焦的标记、width_m 初始可见宽度、min_width_m 最大放大时的可见宽度、extent_m 整张图的实际宽高，单位米）；overlay = 可开关叠加层（from = 取另一张地图的数据，如中层的「上层投影」取上层岛屿）；status=planned 表示制作中（切换器里置灰）。kind=estate 是三维庄园剖面（不用瓦片）：src = 嵌入页面（相对 map/），查看器把它放进 iframe，并用 estate:room 消息按 alias 高亮房间；rooms / areas（及 _en）= 庄园房间 / 室外区域的叫法，当前地点按它判断直达庄园哪里（map/here.mjs）。districts = 该层的大区叫法与卡里列举的场所类型泛称（当前地点只写到这些词时落到这一层，是近似落点）；sub_src = 副标题的来源（user-design 为用户自设形制，repo-design 为仓库自设，缺省表示出自卡或 src 所述）。markers 里的 nx/ny 由渲染脚本导出的数据文件提供，这里只写名称、设定出处和当前地点别名；link = 跨层通道（点开地点卡可直接去另一张图的对应地点）。字段说明见 docs/tiancheng-maps.md，改完跑 python3 tools/check_maps.py。 groups.<id>.place = 世界图上对应的地点 id（有它的组可以从世界图缩放进入，并有「周边」过渡环；upper = 云海之上的层，过渡环以云为主）；site:true = 开局地点的简易地图（blender/opening_sites.py），每张在 addon_places.json 里至少有一条 refs。 groups.<id>.place = 世界图上对应的地点 id（有它的组可以从世界图缩放进入，并有「周边」过渡环；upper = 云海之上的层，过渡环以云为主）；site:true = 开局地点的简易地图（blender/opening_sites.py），每张在 addon_places.json 里至少有一条 refs。 groups.<id>.place = 世界图上对应的地点 id（有它的组可以从世界图缩放进入，并有「周边」过渡环；upper = 云海之上的层，过渡环以云为主）；site:true = 开局地点的简易地图（blender/opening_sites.py），每张在 addon_places.json 里至少有一条 refs。",
-  "start": "eden_estate",
+  "start": "world",
   "groups": {
     "tiancheng": {"title": "天城", "title_en": "Tiancheng", "layers": ["eden_estate", "tc_upper", "tc_mid", "tc_low"], "place": "tiancheng", "upper": ["tc_upper"]},
     "kavalierki": {"title": "大骑士领·圣都", "title_en": "Kavalierki", "layers": ["site_kavalierki"], "place": "kavalierki"},
