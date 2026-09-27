@@ -3,7 +3,7 @@
 用法（仓库根目录）：
   /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup \
       --python blender/props/dairy_parlour/build.py -- --cam c1 --res 1000 --samples 24 --out /tmp/x.png
-cam: c1 室内沿坑 / c2 杯组特写 / c3 外景围场。素材先跑 python3 blender/props/fetch_assets.py。
+cam: c1 室内沿坑 / c2 杯组特写 / c3 外景围场 / c4 奶罐间 / c5 计量瓶 / c6 集乳罐 / c7 坑道回望；--liquid milk|wash 出管内有液体的静帧。素材先跑 python3 blender/props/fetch_assets.py。
 """
 import math, os, random, sys
 import bpy, bmesh
@@ -15,7 +15,7 @@ from layout import *  # noqa
 
 DATA = os.path.abspath(os.path.join(HERE, '..', '..', 'data', 'props'))
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
-ARGS = dict(cam='c1', res='1000', samples='24', out='/tmp/dairy.png', blend='')
+ARGS = dict(cam='c1', res='1000', samples='24', out='/tmp/dairy.png', blend='', liquid='none')   # liquid: none | milk | wash（管里有液体的静帧）
 for k, v in zip(argv[::2], argv[1::2]):
     ARGS[k.lstrip('-')] = v
 random.seed(7)
@@ -594,6 +594,7 @@ def cluster(tag, C, face):
     return out1, C + Vector((0, 0, 0.07))
 
 
+LONGMILK, METERS = [], []
 for s in (1, -1):
     ym = s * (PY1 + 0.05)
     yml = s * (PY1 - 0.09)   # 低位奶管贴坑壁
@@ -612,7 +613,16 @@ for s in (1, -1):
         pipe(f'hook_{s}_{i}', [(cx, s * (PY1 + 0.14), 0.62), (cx, s * (PY1 - 0.05), 0.62), (cx, cy, 0.5), (cx, cy, cz + 0.078), (cx + 0.02, cy, cz + 0.1)], 0.005, M['steel'], rad=0.03)
         outlet, ptop = cluster(f'{s}_{i}', (cx, cy, cz), (0, s))
         # 长奶管 Ø16（透明）：侧出口 → 下垂 → 上到奶管上半部的进奶口
-        tube(f'longmilk_{s}_{i}', [tuple(outlet), tuple(outlet + Vector((0.03, s * 0.02, -0.08))), (cx - 0.05, s * (PY1 - 0.06), 0.1), (x + 0.05, yml, MILK_LINE_Z + 0.03)], 0.008, M['hose'])
+        lp = [tuple(outlet), tuple(outlet + Vector((0.03, s * 0.02, -0.08))), (cx - 0.05, s * (PY1 - 0.06), 0.1), (x + 0.05, yml, MILK_LINE_Z + 0.03)]
+        tube(f'longmilk_{s}_{i}', lp, 0.008, M['hose']); LONGMILK.append(lp)
+        # 在线计量瓶（电子计量器）：长奶管中段穿过，挂在坑壁支架上；透明视窗看得到奶位
+        mx, my, mz = cx - 0.05, s * (PY1 - 0.06), 0.1
+        box(f'meter_body_{s}_{i}', mx - 0.045, mx + 0.045, my - 0.035, my + 0.035, mz - 0.1, mz + 0.06, M['grey_box'], 0.012)
+        cyl(f'meter_window_{s}_{i}', (mx, my - s * 0.036, mz - 0.02), 0.022, 0.1, M['psu'], bev=0.006)
+        box(f'meter_bracket_{s}_{i}', mx - 0.02, mx + 0.02, min(my, s * PY1), max(my, s * PY1), mz + 0.02, mz + 0.035, M['steel'], 0.002)
+        METERS.append((mx, my - s * 0.036, mz - 0.02))
+        # 奶管托夹：长奶管在坑沿下方用不锈钢 C 形夹托住，不压扁、不打折
+        cyl(f'hose_hanger_{s}_{i}', (cx - 0.05, s * (PY1 - 0.03), 0.3), 0.012, 0.03, M['steel'], axis='Y', bev=0.002)
         cyl(f'inlet_{s}_{i}', (x + 0.05, yml, MILK_LINE_Z + 0.02), 0.012, 0.05, M['steel'])
         # 双脉动长管（黑，两根并在一起）：分配器 → 脉动器
         for off in (-0.0065, 0.0065):
@@ -628,6 +638,57 @@ for s in (1, -1):
             jo.rotation_euler = (random.uniform(-0.05, 0.05), random.uniform(-0.05, 0.05), 0)
             cyl(f'jetter_hole_{s}_{i}_{k}', (cx + dx, jy, jz + 0.0405), 0.023, 0.002, M['frame'], bev=0, seg=24)
             pipe(f'jet_feed_{s}_{i}_{k}', [(cx + dx, jy, jz - 0.04), (cx + dx, jy, jz - 0.12), (cx + dx, yw, -0.62)], 0.006, M['steel'], rad=0.03)
+
+# ---------------------------------------------------------------- 坑道细化（2026-09-27）：坑壁护板、操作员扶手、坑沿 LED、排水、冲洗软管卷盘
+for s in (1, -1):
+    yy = s * (PY1 - 0.012)
+    for k in range(int((PX1 - PX0) / 1.2) + 1):                 # 坑壁下半截白色 FRP 护板（1.2 m 一块，接缝留 6 mm），易冲洗
+        x0 = PX0 + k * 1.2
+        box(f'pitwall_panel_{s}_{k}', x0 + 0.003, min(PX1, x0 + 1.197), min(yy, yy - s * 0.008), max(yy, yy - s * 0.008), -D + 0.02, -D + 0.62, M['white_pvc'], 0.002)
+    box(f'pitwall_capstrip_{s}', PX0, PX1, min(yy, yy - s * 0.014), max(yy, yy - s * 0.014), -D + 0.62, -D + 0.64, M['steel'], 0.002)
+    # 操作员扶手：坑壁中段一根不锈钢圆管，隔 1.1 m 一个支座
+    pipe(f'pitrail_{s}', [(PX0 + 0.2, s * (PY1 - 0.07), -0.42), (PX1 - 0.2, s * (PY1 - 0.07), -0.42)], 0.016, M['steel'])
+    for x in SX:
+        cyl_between(f'pitrail_post_{s}_{x:.1f}', (x, s * PY1, -0.42), (x, s * (PY1 - 0.07), -0.42), 0.008, M['steel'])
+    # 坑沿 LED 灯带：藏在不锈钢包边下面，照坑壁和杯组，不直射操作员眼睛
+    box(f'pitled_housing_{s}', PX0 + 0.1, PX1 - 0.1, min(s * (PY1 - 0.045), s * PY1), max(s * (PY1 - 0.045), s * PY1), -0.075, -0.035, M['steel'], 0.003)
+    box(f'pitled_strip_{s}', PX0 + 0.12, PX1 - 0.12, min(s * (PY1 - 0.043), s * (PY1 - 0.01)), max(s * (PY1 - 0.043), s * (PY1 - 0.01)), -0.079, -0.074, M['lamp'], 0)
+    ld = bpy.data.lights.new(f'pitled_l_{s}', 'AREA'); ld.shape = 'RECTANGLE'; ld.size = PX1 - PX0 - 0.3; ld.size_y = 0.03
+    ld.energy = 90; ld.color = (1.0, 0.97, 0.92)
+    lo = link(bpy.data.objects.new(f'pitled_l_{s}', ld)); lo.location = ((PX0 + PX1) / 2, s * (PY1 - 0.03), -0.085)
+# 排水：坑底中线的篦子沟向东 1 % 坡，尽头是集水井（带沉渣篮）+ 出水管穿墙去污水池
+sx_, D2 = PX1 - 0.25, D + 0.35
+box('drain_sump', sx_ - 0.2, sx_ + 0.2, -0.2, 0.2, -D2, -D + 0.001, M['floor'], 0)
+box('drain_sump_rim', sx_ - 0.22, sx_ + 0.22, -0.22, 0.22, -D - 0.004, -D + 0.004, M['steel'], 0.002)
+for k in range(9):
+    box(f'grate_sump_{k}', sx_ - 0.19 + k * 0.045, sx_ - 0.19 + k * 0.045 + 0.01, -0.19, 0.19, -D - 0.015, -D + 0.005, M['steel'], 0)
+cyl('drain_basket', (sx_, 0, -D - 0.2), 0.12, 0.2, M['galv'], bev=0.004)
+pipe('drain_outlet', [(sx_, 0.2, -D2 + 0.1), (sx_, PY1 + 0.6, -D2 + 0.1), (sx_, PY1 + 0.6, -D2 - 0.3)], 0.05, M['frame'])
+# 冲洗软管卷盘（坑西端墙上）：挤奶后冲坑壁与站台
+wx, wy = PX0 + 0.35, -(PY1 - 0.02)
+cyl('washreel_drum', (wx, wy + 0.12, -0.3), 0.2, 0.12, M['red'], axis='Y', bev=0.01)
+cyl('washreel_hub', (wx, wy + 0.18, -0.3), 0.06, 0.02, M['steel'], axis='Y', bev=0.004)
+tube('washreel_hose', [(wx + 0.2, wy + 0.12, -0.3), (wx + 0.35, wy + 0.2, -0.6), (wx + 0.45, wy + 0.35, -D + 0.03), (wx + 0.9, wy + 0.5, -D + 0.03)], 0.012, M['rubber'])
+pipe('washreel_feed', [(wx, wy, -0.3), (wx, wy, 0.9)], 0.012, M['steel'])
+
+# ---------------------------------------------------------------- 管内液体（--liquid milk | wash）：静帧用；导出 glb 时保持 none
+LIQ = ARGS['liquid']
+if LIQ != 'none':
+    m, nt, b = new_mat('liquid_' + LIQ)
+    if LIQ == 'milk':
+        b.inputs['Base Color'].default_value = (0.93, 0.91, 0.84, 1); b.inputs['Roughness'].default_value = 0.15
+        b.inputs['Subsurface Weight'].default_value = 1.0; b.inputs['Subsurface Radius'].default_value = (1.0, 0.8, 0.55); b.inputs['Subsurface Scale'].default_value = 0.004
+    else:   # 清洗液：带一点蓝绿的透明水 + 少量气泡感（粗糙度略高）
+        b.inputs['Base Color'].default_value = (0.8, 0.93, 0.95, 1); b.inputs['Transmission Weight'].default_value = 0.95
+        b.inputs['Roughness'].default_value = 0.08; b.inputs['IOR'].default_value = 1.33
+    for k, lp in enumerate(LONGMILK):
+        tube(f'liq_long_{k}', lp, 0.0062, m)
+    for k, (x_, y_, z_) in enumerate(METERS):                        # 计量瓶里的液位
+        cyl(f'liq_meter_{k}', (x_, y_, z_ - 0.02), 0.019, 0.05, m, bev=0.003)
+    cyl('liq_receiver', (rx_ := RECEIVER[0], RECEIVER[1], -0.56), 0.162, 0.26, m, bev=0.01)   # 集乳罐里约一半
+    for s in (1, -1):                                               # 奶管下半截是液体（半管流）
+        yml = s * (PY1 - 0.09)
+        tube(f'liq_line_{s}', [(PX0 - 0.3, yml, MILK_LINE_Z + 0.04 - 0.01), (PX1 + 0.1, yml, MILK_LINE_Z - 0.05 - 0.01)], 0.016, m, smooth=False)
 
 # 集乳罐 + 奶泵
 rx, ry = RECEIVER
@@ -1027,6 +1088,9 @@ CAMS = {
     'c2': ((SX[3] + 0.6, -(PY1 - 0.85), 0.5), (SX[3] + 0.3, -(PY1 - 0.17), 0.26), 40),
     'c3': ((-12.5, 15.5, 1.55), (-2.0, 6.5, 1.3), 24),
     'c4': ((X1 - 0.5, 5.3, 1.7), (TANK[0], TANK[1] - 0.5, 1.0), 20),
+    'c5': ((SX[3] + 0.75, -(PY1 - 0.55), 0.3), (SX[3] + 0.25, -(PY1 - 0.06), 0.05), 35),      # 计量瓶 + 长奶管（液体静帧）
+    'c6': ((RECEIVER[0] - 1.3, -0.45, 0.35), (RECEIVER[0], 0.15, -0.4), 28),                   # 集乳罐 / 隔离罐（液体静帧）
+    'c7': ((PX1 - 0.15, 0.35, -0.05), (PX0 + 1.0, -0.2, -0.55), 18),                           # 坑道东端回望：护板、扶手、LED、排水
 }
 pos, tgt, lens = CAMS[ARGS['cam']]
 cd = bpy.data.cameras.new('cam'); cd.lens = lens; cd.sensor_width = 36
@@ -1036,7 +1100,7 @@ cam.rotation_euler = dvec.to_track_quat('-Z', 'Y').to_euler()
 if ARGS['cam'] == 'c2':
     cd.dof.use_dof = True; cd.dof.focus_distance = dvec.length; cd.dof.aperture_fstop = 5.6
 sc.camera = cam
-if ARGS['cam'] in ('c1', 'c2', 'c4'):
+if ARGS['cam'] in ('c1', 'c2', 'c4', 'c5', 'c6', 'c7'):
     sc.view_settings.exposure = 0.3
 res = int(ARGS['res'])
 sc.render.resolution_x = res; sc.render.resolution_y = int(res * 2 / 3)
