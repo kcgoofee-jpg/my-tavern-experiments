@@ -2,9 +2,11 @@
 // 默认 = 这张卡；缺了就按常见字段名自动找（地点 / 位置 / location、时刻 / 时间 / time、日期 / date、在场 / present……）；
 // 用户可以在设置「变量映射」里从实际的 stat_data 树里另选，按角色卡存本机（edenMap:varmap:<卡>）。没有 MVU：一切退回聊天标签。
 // 纯函数；不过滤任何值。
-export const FIELDS = ['location', 'time', 'period', 'date', 'outfit', 'present', 'members', 'targets', 'reputation', 'stageField'];
+export const FIELDS = ['location', 'time', 'period', 'date', 'outfit', 'present', 'members', 'targets', 'reputation', 'stageField', 'gradeField', 'coreField'];
+// v0.9.6（E2 / E13）：名册行里的「等级」「核心数值」字段名（不是路径）。默认是这张卡的字段名；别的卡可另选，选「关闭」存 '-'
+export const NAME_FIELDS = ['gradeField', 'coreField'], OFF = '-';
 export const DEFAULT_MAP = { location: '世界.当前地点', time: '世界.当前时刻', period: '世界.当日时段', date: '世界.当前日期', outfit: '主角.着装',
-  present: '', members: '', targets: '', reputation: '', stageField: '' };   // 空 = 按位置 / 通用字段名自动发现（mvu.mjs rosters / reputation）
+  present: '', members: '', targets: '', reputation: '', stageField: '', gradeField: '母畜等级', coreField: '母畜值' };   // 空 = 按位置 / 通用字段名自动发现（mvu.mjs rosters / reputation）
 const plain = o => !!o && typeof o === 'object' && !Array.isArray(o);
 const val = v => (Array.isArray(v) && v.length === 2 && typeof v[1] === 'string' && (v[0] === null || typeof v[0] !== 'object') ? v[0] : v);
 export function get(obj, path) { let o = obj; for (const k of String(path || '').split('.').filter(Boolean)) { o = val(o); if (!plain(o) || !(k in o)) return undefined; o = o[k]; } return val(o); }
@@ -27,10 +29,17 @@ export function paths(stat, depth = 3) {
 const RX = { location: [/当前地点|所在地|地点|位置|location|place/i, 'text'], time: [/时刻|时间|time|clock/i, 'text'], period: [/时段|period|phase/i, 'text'],
   date: [/日期|date/i, 'text'], outfit: [/着装|服装|衣着|outfit|clothes/i, 'object'], present: [/在场|present|nearby/i, 'table'], reputation: [/声望|reputation|名望/i, 'number'] };
 /** 自动映射：默认路径存在就用它，否则在路径清单里按字段名找（浅的优先）；找不到留 '' */
+/** 名册表（以名字为键的表）行里出现过的字段名，供「等级 / 核心数值」下拉用 */
+export function rowFields(stat) {
+  const out = new Set(); if (!plain(stat)) return [];
+  for (const t of Object.values(stat)) if (isTable(t)) for (const r of Object.values(val(t))) for (const k of Object.keys(val(r))) if (!k.startsWith('$')) out.add(k);
+  return [...out];
+}
 export function detect(stat) {
-  const ps = paths(stat), out = {};
+  const ps = paths(stat), out = {}, rf = rowFields(stat);
   for (const f of FIELDS) {
     const d = DEFAULT_MAP[f];
+    if (NAME_FIELDS.includes(f)) { out[f] = rf.includes(d) ? d : ''; continue; }
     const r = RX[f], dv = d ? get(stat, d) : undefined;
     if (d && dv !== undefined && dv !== '') { out[f] = d; continue; }
     if (!r) { out[f] = ''; continue; }

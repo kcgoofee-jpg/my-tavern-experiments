@@ -9,7 +9,7 @@ const si = process.argv.indexOf('--shots'), SHOTS = si > 0 ? path.resolve(proces
 B.quietWait(); const srv = await B.ensureServer(); const rep = B.reporter(OUT);
 const jpg = async (page, name) => { await B.shot(page, OUT, name); if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name + '.jpg'), type: 'jpeg', quality: 72, scale: 'css' }); };
 const STAT = { 世界: { 当前地点: '天城·上层·伊甸庄园' }, 主角: { 声望: 62 },
-  表一: { 甲一: { 身份: '园丁' }, 甲二: { 身份: '厨师' } }, 在场人物: { 乙一: { 身份: '访客' } }, 表三: { 丙一: { 身份: '商人', 进度: '第二步' } } };
+  表一: { 甲一: { 身份: '园丁', 级别: 'B', 数值: 72 }, 甲二: { 身份: '厨师' } }, 在场人物: { 乙一: { 身份: '访客' } }, 表三: { 丙一: { 身份: '商人', 进度: '第二步' } } };
 const PURL = 'https://cdn.jsdelivr.net/gh/Yehehua1311/placeholder@main/A/sfw/A_1.png';
 const CHAR = { data: { extensions: { scripts: [{ content: "const S = z.enum(['第一步', '第二步', '第三步', '第四步']);" }, { content: `const defaultPortraits = { "甲一": "${PURL}" };` }] } } };
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
@@ -30,6 +30,15 @@ async function run(name, preset) {
     rep.check(`${name} 人物页签：在场 / 庄园成员 / 目标三组，身份显示`, g.length === 3 && g[0].g === 'present' && g[1].n === 2 && g[2].n === 1 && /园丁|厨师/.test(await vf.evaluate(() => document.querySelector('#evbar .chgrp[data-g=members]').textContent)), JSON.stringify(g));
     rep.check(`${name} 目标的阶段小签：原样文字 + 按卡里顺序的进度点（2 / 4）`, chip?.t === '第二步' && chip.dots === 4 && chip.on === 2, JSON.stringify(chip));
     await jpg(p, `ro_${name}_pane`);
+    // v0.9.6 E2 / E13：成员的等级 / 核心数值（字段名走变量映射；这里的中性字段默认不认，映射后显示「档 n」），设置开关可关
+    const st0 = await vf.evaluate(() => !!document.querySelector('#evbar .chstat'));
+    await vf.evaluate(() => post({ type: 'eden-map:varmap-set', user: { gradeField: '级别', coreField: '数值' } }));
+    await vf.waitForFunction(() => !!document.querySelector('#evbar .chgrp[data-g=members] .chstat'), null, { timeout: 8000 }).catch(() => {});
+    const st1 = await vf.evaluate(() => document.querySelector('#evbar .chgrp[data-g=members] .chstat')?.textContent || '');
+    await vf.evaluate(() => { showSet(true); document.querySelector('#optCharStats').click(); showSet(false); }); await B.wait(300);
+    const st2 = await vf.evaluate(() => !!document.querySelector('#evbar .chstat'));
+    await vf.evaluate(() => { showSet(true); document.querySelector('#optCharStats').click(); showSet(false); post({ type: 'eden-map:varmap-set', user: {} }); }); await B.wait(300);
+    rep.check(`${name} 名册数值：映射前不显示；映射后「B · 档 4 72」；「人物栏显示数值」关掉即隐藏`, !st0 && st1 === 'B · 档 4 72' && !st2, JSON.stringify({ st0, st1, st2 }));
     const lean0 = await vf.evaluate(() => TCChars.portOn());   // 省流档（测试用 save）默认关
     await vf.evaluate(() => { showSet(true); document.querySelector('#optPort').click(); showSet(false); }); await B.wait(300);
     const av = await vf.evaluate(() => document.querySelector('#evbar .chgrp[data-g=members] img')?.getAttribute('src') || '');

@@ -117,9 +117,11 @@ const ev = (p, f, a) => p.evaluate(f, a);
   await vf.evaluate(() => document.getElementById('thumbBtn').click()); await B.wait(500);
   const ab = await vf.evaluate(() => document.getElementById('aboutBox').textContent);
   rep.check('embed_about', /地图版本 v/.test(ab) && /检查更新/.test(ab), ab);
-  await vf.evaluate(() => document.getElementById('updBtn').click());
+  await vf.locator('#updBtn').click();   // 真实点击：按钮点完即重绘，设置弹层不能因此关掉
+  rep.check('embed_update_keeps_sheet', await vf.evaluate(() => !document.getElementById('setPop').hidden));
   await vf.waitForFunction(() => /有新版|已是最新|检查失败/.test(document.getElementById('aboutBox').textContent), null, { timeout: 15000 }).catch(() => {});
   const res = await vf.evaluate(() => document.getElementById('aboutBox').textContent);
+  rep.check('embed_update_result_inline', await vf.evaluate(() => !document.getElementById('setPop').hidden && !!document.querySelector('#aboutBox .res')));
   rep.check('embed_check_update', /有新版 v9\.9\.9/.test(res) && /更新说明/.test(res), res);
   if (shotTag) await B.shot(p, SHOTS, `v096_${shotTag}_about_375`);
   rep.check('embed_no_errors', !P.errors.filter(e => !/favicon|jsdelivr|jsdmirror/.test(e)).length, P.errors.slice(0, 3).join(' | '));

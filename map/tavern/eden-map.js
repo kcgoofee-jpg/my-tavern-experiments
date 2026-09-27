@@ -391,7 +391,7 @@
   }
   function sendVarMap(st) {
     if (!alive || !varAD) return; if (st === undefined) try { st = Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data || null; } catch (e) { st = null; }
-    post({ type: 'eden-map:varmap', card: varCard, paths: varAD.paths(st), map: varMap, user: varUser, detected: varAD.detect(st), mode: varAD.mode(typeof Mvu !== 'undefined', st, varMap) });
+    post({ type: 'eden-map:varmap', card: varCard, paths: varAD.paths(st), map: varMap, user: varUser, detected: varAD.detect(st), fields: varAD.rowFields?.(st) || [], mode: varAD.mode(typeof Mvu !== 'undefined', st, varMap) });
   }
   function setVarUser(u) { if (!varAD) return; varUser = u && typeof u === 'object' ? u : {}; varAD.writeUser(localStorage, varCard, varUser); varSig = ''; refreshVarMap(); recomputeSoon(50); push(); if (checkP) checkP.then(() => { checkP = null; runCheck(); }); }   // 自检重跑，读法跟着变
   function getHere() {
@@ -469,7 +469,7 @@
     events = collect(msgs, floorNow);
     if (CHM) { const st = mvuStat(); const known = MV ? Object.values(MV.rosters(st, { present: varMap.present, members: varMap.members, targets: varMap.targets })).flatMap(r => r?.items?.map(i => i.name) || []) : [];
       chars = CHM.collectChars(msgs, floorNow, CHM.mvuChars(st, getHere(), varMap.present), known);
-      if (MV) { roster = MV.rosters(st, { present: varMap.present, members: varMap.members, targets: varMap.targets, stageField: varMap.stageField }); rep = MV.reputation(st, varMap.reputation); stageOrderFor(roster); portraitsFor(); }
+      if (MV) { roster = MV.rosters(st, { present: varMap.present, members: varMap.members, targets: varMap.targets, stageField: varMap.stageField, gradeField: varMap.gradeField, coreField: varMap.coreField }); rep = MV.reputation(st, varMap.reputation); stageOrderFor(roster); portraitsFor(); }
       const sig = floorNow + '|' + chars.map(c => c.name + '@' + c.place + '#' + c.floor).join() + '|' + JSON.stringify(roster) + Object.keys(portraits).length + rep + (stageOrder || []).join();
       if (sig !== charSig) { charSig = sig; if (!panel.hidden && alive) sendChars(); emit('characters', { items: chars.map(c => ({ ...c })), floor: floorNow }); } }
     const fresh = events.filter(e => e.last > seen && e.tier !== 'fade').length;

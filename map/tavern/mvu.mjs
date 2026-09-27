@@ -205,22 +205,36 @@ export const tagToast = a => (a.op === 'name' ? `${a.key} 改名为「${a.value}
 const plain = o => !!o && typeof o === 'object' && !Array.isArray(o);
 const IDENT = /身份|identity|role|职业|头衔|title/i, STAGE = /进度|阶段|stage|progress/i, REP = /声望|reputation|名望/i;
 const isRoster = t => { t = val(t); return plain(t) && Object.values(t).every(v => plain(val(v))); };
-function rows(tbl, stageKey) {
+// v0.9.6（E2 / E13）：核心数值（0–100）按卡的 5 档阈值（≤20 / ≤40 / ≤60 / ≤80 / ≤100，docs/card-digest.md）换算档位名。
+// 档名只对默认字段（这张卡）用卡自己的叫法，第 5 档由运行时读到的字段名派生；别的卡的字段一律「档 n」。
+export const CORE_CUTS = [20, 40, 60, 80, 100], CORE_DEFAULT = '母畜值';
+const CORE_NAMES = ['抗拒', '动摇', '接受', '沉溺'];
+export function coreStage(field, n) {
+  if (typeof n !== 'number' || !Number.isFinite(n)) return '';
+  const i = CORE_CUTS.findIndex(c => n <= c), k = i < 0 ? 4 : i;
+  if (field !== CORE_DEFAULT) return `档 ${k + 1}`;
+  return k < 4 ? CORE_NAMES[k] : /值$/.test(field) ? '完全' + field.slice(0, -1) + '化' : `档 ${k + 1}`;
+}
+const num = v => (typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? +v : NaN);
+function rows(tbl, stageKey, fk = {}) {
   const t = val(tbl); if (!plain(t)) return [];
   return Object.entries(t).filter(([n]) => clean(n) && [...n].length <= 40).map(([n, raw]) => {
     const o = val(raw) || {}, ik = Object.keys(o).find(k => IDENT.test(k)), sk = stageKey || Object.keys(o).find(k => STAGE.test(k));
     const it = { name: clean(n), identity: str(val(o[ik])) };
     if (sk) { const s = str(val(o[sk])); if (s) it.stage = s; }
+    const gk = fk.gradeField, ck = fk.coreField;
+    if (gk && gk !== '-' && gk in o) { const g = str(val(o[gk])); if (g) it.grade = g; }
+    if (ck && ck !== '-' && ck in o) { const n = num(val(o[ck])); if (Number.isFinite(n)) { it.core = n; it.coreKey = ck; it.coreStage = coreStage(ck, n); } }
     return it;
   });
 }
-/** stat_data → { present, members, targets }：每项 { key: 表名, items: [{ name, identity, stage? }] } 或 null；map = { present, members, targets } 表名覆盖 */
+/** stat_data → { present, members, targets }：每项 { key: 表名, items: [{ name, identity, stage?, grade?, core?, coreKey?, coreStage? }] } 或 null；map = { present, members, targets } 表名覆盖，gradeField / coreField 行内字段名（'-' = 关闭） */
 export function rosters(stat, map = {}) {
   const out = { present: null, members: null, targets: null }; if (!plain(stat)) return out;
   const keys = Object.keys(stat), pres = map.present || PRESENT_KEYS.find(k => k in stat) || keys.find(k => /在场|present/i.test(k));
   const others = keys.slice(2).filter(k => k !== pres && isRoster(stat[k]));
   const pick = { present: pres, members: map.members || others[0], targets: map.targets || others.filter(k => k !== map.members)[map.members ? 0 : 1] };
-  for (const [g, k] of Object.entries(pick)) if (k && k in stat && isRoster(stat[k])) out[g] = { key: k, items: rows(stat[k], g === 'targets' ? map.stageField : null) };
+  for (const [g, k] of Object.entries(pick)) if (k && k in stat && isRoster(stat[k])) out[g] = { key: k, items: rows(stat[k], g === 'targets' ? map.stageField : null, map) };
   return out;
 }
 /** 主角（第 2 个顶层键）的声望（0–100 的数字）；没有返回 null。path 可指定（变量映射） */

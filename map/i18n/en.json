@@ -385,5 +385,9 @@
   "about.notes": "Release notes",
   "about.how_follow": "The follow-branch script picks it up automatically: just reload the page",
   "about.how_tag": "Pinned scripts don't change by themselves: import the new script \"【地图】伊甸地图 v{v}\" (it replaces the old one)",
-  "about.fail": "Check failed: update service unreachable, try later"
+  "about.fail": "Check failed: update service unreachable, try later",
+  "ch.grade": "Grade",
+  "vm.off": "Off",
+  "char_stats": "Show stats in people bar",
+  "char_stats_hint": "Show members' grade and core stat in the roster (pick or turn off the fields in Variable mapping)"
 }
