@@ -95,12 +95,15 @@ export function outfitText(o, max = 48) {
 // 形状：{ items: { 标准名: { 类: 'room' | 'area' | 'landmark' | 'character', 名?: 显示名, 用途?: 备注, 别名?: [旧叫法], 源?: '手动' | '标签' } }, 同步世界书: bool, 同步手动?: true }
 // v0.9.5：「同步到世界书」默认开。没动过开关（没有 同步手动）一律当开；自己关过的（同步手动 + 同步世界书 false）保持关。
 export const VAR_ROOT = 'eden_map';   // 聊天变量顶层键：{ 自定义: {...}, 标签楼: 已处理到的楼层 }
-export const KINDS = ['room', 'area', 'landmark', 'character'];
+// v0.9.6：layer（层 / 大区）、world（世界地名）——「未上图」地点指派用；忽略 = 未上图时选了「忽略」的名字（不再提示）
+export const KINDS = ['room', 'area', 'landmark', 'character', 'layer', 'world'];
+export const MAX_IGNORE = 50;
 export const MAX_NAME = 40, MAX_NOTE = 200;
 export function normCustom(raw) {
   const out = { items: {}, 同步世界书: true };
   if (!raw || typeof raw !== 'object') return out;
   if (raw.同步手动 === true) { out.同步手动 = true; out.同步世界书 = raw.同步世界书 === true; }
+  if (Array.isArray(raw.忽略)) { const ig = [...new Set(raw.忽略.map(clean).filter(a => a && [...a].length <= MAX_NAME))].slice(-MAX_IGNORE); if (ig.length) out.忽略 = ig; }
   for (const [k0, it] of Object.entries(raw.items || {})) {
     const k = clean(k0); if (!k || !it || typeof it !== 'object') continue;
     const e = { 类: KINDS.includes(it.类) ? it.类 : 'landmark' };
@@ -114,14 +117,23 @@ export function normCustom(raw) {
   }
   return out;
 }
-/** 设置 / 修改一项（返回新对象；无效返回 null）。patch = { name?, note?, kind? }；name / note 传 '' = 清掉该项 */
+/** 设置 / 修改一项（返回新对象；无效返回 null）。patch = { name?, note?, kind?, alias?, unalias?, ignore? }；name / note 传 '' = 清掉该项
+ *  v0.9.6：alias = 给标准名 key 加一个叫法（进 别名，不改显示名；「未上图」指派用）；unalias = 去掉一个叫法；
+ *  ignore: true / false = 把 key 这个名字记进 / 移出「忽略」（不动 items） */
 export function setCustom(c, key, patch = {}) {
   key = clean(key); if (!key || [...key].length > MAX_NAME) return null;
-  const n = normCustom(c), cur = { ...(n.items[key] || { 类: 'landmark' }) };
+  const n = normCustom(c);
+  if ('ignore' in patch) { const ig = (n.忽略 || []).filter(a => a !== key); if (patch.ignore) ig.push(key); n.忽略 = ig; return normCustom(n); }
+  const cur = { ...(n.items[key] || { 类: 'landmark' }) };
+  if ('alias' in patch) { const a = clean(patch.alias); if (!a || a === key || [...a].length > MAX_NAME) return null;
+    for (const [k, e] of Object.entries(n.items)) if (k !== key && e.别名?.includes(a)) e.别名 = e.别名.filter(x => x !== a);   // 一个叫法只指向一处
+    if (cur.名 !== a) cur.别名 = [...new Set([...(cur.别名 || []), a])].slice(-10);
+    if (n.忽略) n.忽略 = n.忽略.filter(x => x !== a); }
+  if ('unalias' in patch) { const a = clean(patch.unalias); cur.别名 = (cur.别名 || []).filter(x => x !== a); }
   if (patch.kind && KINDS.includes(patch.kind)) cur.类 = patch.kind;
   if (patch.source === 'tag' || patch.source === 'manual') cur.源 = patch.source === 'tag' ? '标签' : '手动';
   if ('name' in patch) { const v = clean(patch.name); if ([...v].length > MAX_NAME) return null;
-    if (cur.名 && v && v !== key && cur.名 !== v) cur.别名 = [...new Set([...(cur.别名 || []), cur.名])].slice(-5);   // 改名：旧显示名留作旧叫法，之前楼层里的叫法仍认得
+    if (cur.名 && v && v !== key && cur.名 !== v) cur.别名 = [...new Set([...(cur.别名 || []), cur.名])].slice(-10);   // 改名：旧显示名留作旧叫法，之前楼层里的叫法仍认得
     if (v && v !== key) cur.名 = v; else delete cur.名; }
   if ('note' in patch) { const v = String(patch.note ?? '').trim(); if ([...v].length > MAX_NOTE) return null; if (v) cur.用途 = v; else delete cur.用途; }
   n.items[key] = cur; return normCustom(n);

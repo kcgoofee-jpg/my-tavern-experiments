@@ -51,6 +51,11 @@
 
 这些接口不联网、不上传、不写进地址；仓库里只有接口本身，没有任何用户数据。
 
+## 未上图的地点与扩展叫法（v0.9.6）
+- 当前地点认不出（`here.mjs` `unmappedName(value, idx)` 非 null）：不跳转；酒馆标题栏显示「未上图：<名字>」（地图发 `eden-map:unmapped {name}`，点标题栏回发 `eden-map:unmapped-pick`），单独打开时显示在查看器页头。
+- 指派 = `setCustom(标准名, { alias: 名字, kind })`，kind = landmark / layer / room / area / world；写进 `eden_map.自定义.items[标准名].别名`，一个叫法只指向一处；`{ unalias }` 去掉；「忽略」= `setCustom(名字, { ignore: true })`，存 `eden_map.自定义.忽略`（最多 50 个）。
+- `buildIndex(reg, world, names, custom, plan)`：custom = { rooms, areas, marks, layers, world, ignore }；plan = `map/data/eden_estate_rooms.json`，房间名（去括注、「 / 」拆开）进第 1 级，落点带 `std`、`floor`（只在一层时）、`restricted`。
+
 ## 换卡兼容（v0.9.5）
 
 地图要读的 MVU 字段不再写死，改成一份「变量映射」（`map/tavern/adapter.mjs`）：

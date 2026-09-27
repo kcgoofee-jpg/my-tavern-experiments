@@ -103,6 +103,7 @@
 <script defer src="chars.js"></script>
 <script defer src="custom.js"></script>
 <script defer src="trips.js"></script>
+<script defer src="unmapped.js"></script>
 <script defer src="varmap.js"></script>
 <script>document.addEventListener('DOMContentLoaded', () => { if (window.top !== window) parent.postMessage({ type: 'eden-map:boot', pct: .6 }, '*'); });   // 地图库已下载（启动进度 60%）</script>
 <style>
@@ -607,7 +608,8 @@ async function mainInner() {
   // v0.9.6：选了 EN 但英文词典没取到时，整页退回中文（以前 LANG 仍是 en：面包屑英文、界面中文、变量映射英文，混在一起）
   if (!DICT || !Object.keys(DICT).length) { const zh = await getJSON('i18n/zh.json'); if (LANG !== 'zh') { LANG = 'zh'; document.documentElement.lang = 'zh-CN'; } DICT = zh || {}; }
   jsonCache.set('i18n/' + LANG + '.json', Promise.resolve(DICT));
-  enNames = enDict?.names || null; rebuildHere();   // 当前地点 → 落点的词表（中英都认；加上本机自定义叫法）
+  enNames = enDict?.names || null; rebuildHere();
+  getJSON('data/eden_estate_rooms.json').then(p => { if (!p?.rooms) return; estPlan = p; rebuildHere(); markHere($('#here').value); }).catch(() => {});   // v0.9.6：卡设定分层房间进当前地点词表（不挡启动）   // 当前地点 → 落点的词表（中英都认；加上本机自定义叫法）
   post({ type: 'eden-map:boot', pct: .9 });   // 数据文件已到
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点
   if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland);
@@ -955,7 +957,10 @@ function estateLook() {
 }
 let estFocus = null;   // v0.9.5：「自定义」里点了某个房间 / 室外区域 → 庄园聚焦它（优先于当前地点，地点变了就清掉）
 function estateRoom() { if (!est?.ready) return; const v = ($('#here').value || '').replace('{{user}}', ''), r = hereRes(v);
-  est.frame.contentWindow?.postMessage({ type: 'estate:room', name: estFocus || (r?.custom ? r.room : v), card: estFocus && window.estCard?.name === estFocus ? window.estCard : null }, SUB_ORIGIN); }   // 自定义叫法：庄园页收到的是对应的标准房间名
+  // v0.9.6：卡设定分层房间（r.std + r.floor）→ 按 { room, floor } 落点：庄园页切到该层并画框（受限房间只画素框）
+  const cr = !estFocus && r?.std && r.floor ? estPlan?.rooms?.find(x => x.floor === r.floor && x.name === r.std) : null;
+  const cc = cr ? { name: cr.name, floor: cr.floor, kind: cr.kind, area: cr.area, poly: cr.poly, z: (estPlan.floors.find(f => f.id === cr.floor) || {}).z } : null;
+  est.frame.contentWindow?.postMessage({ type: 'estate:room', name: estFocus || (cc ? cc.name : r?.custom ? r.room : v), card: estFocus && window.estCard?.name === estFocus ? window.estCard : cc }, SUB_ORIGIN); }   // 自定义叫法：庄园页收到的是对应的标准房间名
 window.addEventListener('message', e => {
   if (!est || e.source !== est.frame.contentWindow) return;
   if (e.data?.type === 'estate:ready') onEstateReady();
@@ -1399,11 +1404,13 @@ function markHere(v) {
   document.querySelectorAll('.mk').forEach(e => { const n = e.dataset.name, al = e.dataset.alias ? e.dataset.alias.split('|') : ALIAS[n] || [];
     const hit = !!v && (extra.has(n) || v.includes(n) || n.includes(v) || al.some(k => v.includes(k)));
     e.classList.toggle('here', hit); });
+  if (typeof TCUnmapped !== 'undefined') TCUnmapped.update(v);   // v0.9.6 未上图
   updateLayerBadges(); estateRoom(); if (typeof TCTrips !== 'undefined') TCTrips.render();   // v0.9.5 途中：两端之间的虚线弧
 }
 // ---------------- 自动跳到当前地点（map/here.mjs 六级落点；设置里可关，默认开） ----------------
 // 庄园房间 / 区域 → 庄园（房间由 estate:room 高亮，切楼层由庄园页自己做）；地标 → 该层并打开地点卡；层 / 大区 / 天城 → 该层默认视野；世界地名 → 世界图；匹配不到不动。
 // 打开面板（或唤醒）后的第一条地点一定跳；之后只有地点变了才跳，不打断用户自己在别的图上浏览。
+let estPlan = null;   // v0.9.6 map/data/eden_estate_rooms.json
 let HX = null, hereIdx = null, lastJump = null, hereFresh = true, bgMode = false;   // bgMode：酒馆在后台预加载（面板不可见）
 const AUTO_KEY = 'edenMapAutoHere';
 const autoHere = () => { try { return localStorage.getItem(AUTO_KEY) !== '0'; } catch (e) { return true; } };
@@ -1464,7 +1471,7 @@ const emSubs = { here: new Set(), events: new Set(), map: new Set(), characters:
 function emEmit(ev, data) { for (const f of emSubs[ev]) { try { f(data); } catch (e) { console.warn('[EdenMap]', e); } } if (ev === 'map') post({ type: 'eden-map:emit', ev, data }); }
 function emMapChanged() { if (cur === emMap) return; emMap = cur; const m = REG.maps[cur]; emEmit('map', { map: cur, title: nm(m, 'title'), kind: m.kind }); }
 // v0.9.3：自定义叫法来自 custom.js（聊天变量 eden_map.自定义，或单独打开时的本机存储）；custom.js 还没就绪时退回旧版本机叫法
-function rebuildHere() { if (HX && REG) hereIdx = HX.buildIndex(REG, M, enNames, (typeof TCCustom !== 'undefined' && TCCustom.index()) || HX.readCustom(LS, chatId)); }
+function rebuildHere() { if (HX && REG) hereIdx = HX.buildIndex(REG, M, enNames, (typeof TCCustom !== 'undefined' && TCCustom.index()) || HX.readCustom(LS, chatId), estPlan); }
 function setChat(id) { id = String(id || ''); if (id === chatId) return; chatId = id; rebuildHere(); TCChars.chatChanged(); TCCustom.chatChanged(); if (REG) { markHere($('#here').value); } }
 window.__edenMapChat = setChat;   // 宿主页转发调用前先同步聊天 id（同源 srcdoc，直接调用）
 // v0.9.6「关于 / 检查更新」：卡内脚本发来 eden-map:about { version, code, channel: tag | follow | ref | local, ref, sha, line }；
@@ -1655,6 +1662,7 @@ if (window.top !== window) {
       if (!cur && sleeping) { const nid = hereRes(e.data.value || '')?.map; if (nid) sleeping = nid; if (!bgMode) hereFresh = false; return; }
       if (bootT) bootStart(); else if (!jumpHere(e.data.value || '', hereFresh)) focusStart(false);
       if (!bgMode) hereFresh = false; emEmit('here', { value: e.data.value || '', resolved: hereRes(e.data.value || '') }); }
+    if (e.data?.type === 'eden-map:unmapped-pick' && typeof TCUnmapped !== 'undefined') TCUnmapped.open();   // v0.9.6 标题栏「未上图」
     if (e.data?.type === 'eden-map:open') clearTimeout(bootT), bootT = 0;
     if (e.data?.type === 'eden-map:open') go(e.data.map);
     if (e.data?.type === 'eden-map:events') { TCEvents.set(e.data); emEmit('events', { items: e.data.items, floor: e.data.floor, hereLayer: e.data.hereLayer }); }   // 卡内脚本从聊天里解析、合并好的事态 {items, floor, fly}
