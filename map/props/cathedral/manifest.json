@@ -1,11 +1,11 @@
 {
- "_说明": "viewer3d.html?model=cathedral 的清单（精简版：只有低档 glb，glb 与 glb_low 同一文件）。坐标 = glTF（Y 朝上，米；Blender (x, y, z) → (x, z, -y)）。由 blender/landmarks/cathedral/build.py + blender/landmarks/export_glb.py 生成。",
+ "_说明": "viewer3d.html?model=cathedral 的清单（标准档 cathedral.glb + 低档 cathedral_low.glb）。坐标 = glTF（Y 朝上，米；Blender (x, y, z) → (x, z, -y)）。由 blender/landmarks/cathedral/build.py + blender/landmarks/export_glb.py 生成；周边中层街区（bg_*）只在成图里，不导出。",
  "id": "cathedral",
  "title": {
   "zh": "辉光大教堂",
   "en": "Radiance Cathedral"
  },
- "glb": "cathedral_low.glb",
+ "glb": "cathedral.glb",
  "glb_low": "cathedral_low.glb",
  "credit": {
   "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
@@ -36,14 +36,14 @@
   ],
   "building": {
    "min": [
-    -92.4,
+    -93.5,
     -0.5,
-    -36.4
+    -36.6
    ],
    "max": [
     59.6,
     118,
-    79.1
+    79.5
    ]
   }
  },
@@ -77,8 +77,8 @@
     "en": "West front & twin towers"
    },
    "desc": {
-    "zh": "哥特式西立面：两座方塔带三段收分的角扶壁，上接八角钟楼层和镂空石尖塔（八根角肋、水平环与圆形窗花，塔尖约 118 m）。双塔之间是主门、玫瑰窗和尖山墙；三个门洞都是层层内收的尖拱券，门楣上有尖山花。",
-    "en": "Gothic west front: two square towers with stepped corner buttresses, octagonal belfry stages and openwork stone spires (eight ribs, horizontal rings and round tracery; tips about 118 m). Between them are the main portal, the rose window and a pointed gable; all three portals have receding pointed orders under gables."
+    "zh": "哥特式西立面：两座方塔的外角各有三段收分的角扶壁（每段带披水与滴水线），上接八角钟楼层和实心石尖塔（棱上卷叶饰、塔脚四个山墙老虎窗，塔尖约 118 m）。双塔之间是主门、方框里的玫瑰窗和尖山墙；三个门洞层层内收（中门六重、侧门五重拱券），门上有尖山花。",
+    "en": "Gothic west front: each tower has setback angle buttresses stepping back three times (with weatherings and drip courses), rising to an octagonal belfry and a solid stone spire with crockets and four gabled lucarnes (tip about 118 m). Between the towers: the main portal, a rose window in a square frame and a pointed gable; the three portals are deeply splayed (six orders at the centre, five at the sides) under gables."
    },
    "view": [
     -0.8,
@@ -94,8 +94,8 @@
     "en": "Flying buttresses"
    },
    "desc": {
-    "zh": "中殿、唱诗堂和后殿外侧的扶壁墩与双层飞扶壁：拱券把高墙拱顶的侧推力越过侧廊屋顶传到外侧墩上，墩顶的小尖塔增加压重。",
-    "en": "Piers and double flying buttresses along the nave, choir and apse: the arches carry the outward thrust of the high vaults over the aisle roofs to the outer piers, whose pinnacles add weight."
+    "zh": "中殿、唱诗堂和后殿外侧的独立扶壁墩（离侧廊墙约 2 m，顶上有小尖塔压重），各用一道约 45° 的四分之一拱飞扶壁把高墙拱顶的侧推力越过侧廊屋顶传到墩上，落点在高墙檐口下方。",
+    "en": "Free-standing piers (about 2 m clear of the aisle walls, weighted by pinnacles) along the nave, choir and apse; each carries one quadrant-arch flying buttress at about 45°, landing just below the clerestory cornice, taking the vault thrust over the aisle roofs."
    },
    "view": [
     0.1,
@@ -111,8 +111,8 @@
     "en": "Crossing dome"
    },
    "desc": {
-    "zh": "交叉处方座上的鼓座：外围 32 根柱的柱廊、16 个圆拱窗，上承铜绿穹顶、16 道镀金肋和镀金采光亭。",
-    "en": "Over the crossing, a drum ringed by a 32-column colonnade with 16 round-headed windows carries a verdigris dome with 16 gilded ribs and a gilded lantern."
+    "zh": "交叉处先是一座带角扶壁和成对尖窗的方塔（约 44 m），再上一层带角尖塔的八角层，最上是鼓座：外围 28 根柱的柱廊、圆拱窗，上承氧化铜绿穹顶、细镀金肋和镀金采光亭。",
+    "en": "Over the crossing: a square tower with angle buttresses and paired lancets (about 44 m), an octagonal stage with corner pinnacles, then the drum ringed by 28 columns, carrying an oxidised-copper dome with slim gilded ribs and a gilded lantern."
    },
    "view": [
     0.4,
