@@ -28,6 +28,20 @@ export function buildGroups({ reg, plan = null, chars = [], lang = 'zh' } = {}) 
   for (const [eid, m] of maps.filter(([, m]) => m.kind === 'estate')) {
     const title = en ? (m.title?.name_en || 'Eden Manor') : (m.title?.name || '伊甸庄园');
     const floors = plan?.FLOORS || [], rooms = plan?.ROOMS || [], byFloor = new Map(), other = [], taken = new Set();
+    if (plan?.CARD?.rooms?.length) {   // 卡设定分层（map/data/eden_estate_rooms.json）：B2 / B1 / F1 / F2 / F3，只列卡房间；受限房间只有名字（不描述）
+      const seen = new Set(), cardNames = new Set(plan.CARD.rooms.map(r => r.name));
+      const legacy = (m.rooms || []).filter(n => !cardNames.has(n));
+      for (const f of plan.CARD.floors || []) {
+        const g = { id: `room:${f.id}`, label: `${title} · ${f.id}${en ? '' : ' ' + f.name}`, short: f.id, items: [] };
+        for (const r of plan.CARD.rooms.filter(r => r.floor === f.id && (r.kind === 'card' || r.kind === 'restricted'))) {
+          const k = r.name; if (seen.has(f.id + k)) continue; seen.add(f.id + k);
+          add(g, { key: k, kind: 'room', target: { map: eid, room: k, floor: f.id }, sub: r.kind === 'restricted' ? (en ? 'not described' : '不描述') : (r.note || '').split('；')[0], en: '', alias: [] });
+        }
+        if (g.items.length) out.push(g);
+      }
+      if (legacy.length) { const g = { id: 'room:other', label: en ? `${title} · other names` : `${title} · 其他叫法`, short: en ? 'Other' : '其他', items: [] }; legacy.forEach(n => add(g, { key: n, kind: 'room', target: { map: eid, room: n }, sub: '', en: '', alias: [] })); if (g.items.length) out.push(g); }
+    }
+    else {
     for (const name of m.rooms || []) {
       const r = rooms.find(x => x.name === name || (x.alias || []).includes(name));
       if (r && taken.has(r.id)) { const it = byFloor.get(r.floor)?.find(i => i.pid === r.id); if (it && !it.alias.includes(name)) it.alias.push(name); continue; }
@@ -42,6 +56,7 @@ export function buildGroups({ reg, plan = null, chars = [], lang = 'zh' } = {}) 
       if (g.items.length) out.push(g);
     }
     if (other.length) { const g = { id: 'room:other', label: en ? `${title} · B1–B2 / other rooms` : `${title} · B1–B2 / 其他房间`, short: en ? 'B1–B2 / other' : 'B1–B2 / 其他', items: [] }; other.forEach(it => add(g, it)); if (g.items.length) out.push(g); }
+    }
     const areas = plan?.AREAS || [], atk = new Set(), ga = { id: 'area:' + eid, label: en ? `${title} · outdoors` : `${title} · 室外`, short: en ? 'Outdoors' : '室外', items: [] };
     for (const name of m.areas || []) {
       const a = areas.find(x => x.name === name || (x.alias || []).includes(name));
