@@ -49,6 +49,7 @@ export const PRESETS = {
   desktop: { engine: 'chromium', ctx: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 } },
   phone: { engine: 'chromium', ctx: { viewport: { width: 375, height: 812 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true,
     userAgent: 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36' } },
+  desktopWk: { engine: 'webkit', ctx: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 } },
   iphone: { engine: 'webkit', ctx: () => ({ ...pw.devices['iPhone 13'], viewport: { width: 375, height: 812 } }) },
 };
 const browsers = {};

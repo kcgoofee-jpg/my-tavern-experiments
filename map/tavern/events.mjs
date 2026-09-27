@@ -127,7 +127,8 @@ export function parseMarks(raw) {
   for (const [, e] of found.sort((a, b) => a[0] - b[0])) {
     const loc = norm(e.loc), layer = layerGuess(loc);
     if (!layer) continue;
-    const place = loc.slice(loc.startsWith(layer) ? layer.length : 0).replace(/^·+/, '');
+    // 地点里再写一遍层（「下层·天城下层血肉磨坊」「天城·下层·7号井」）：去掉重复的层前缀（v0.9.2）
+    const place = loc.slice(loc.startsWith(layer) ? layer.length : 0).replace(/^·+/, '').replace(new RegExp('^(天城)?·?' + layer + '·?'), '').replace(/^天城·/, '').replace(/^·+/, '');
     const { line, loc: _, ...rest } = e;
     const c = CATS[e.cat], g = e.cat === '其他' && GROUPS[e.grpHint] ? e.grpHint : c.g;   // 只写了大类名（「类型=人物」）：类型记「其他」，颜色按该大类
     const { grpHint: _g, ...rest2 } = rest;
