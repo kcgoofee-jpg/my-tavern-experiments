@@ -27,6 +27,10 @@ BUDGET = {
     'props_residence': (20000, 1024), 'props_piazza': (12000, 1024),
     'props_door': (8000, 1024), 'props_railings': (20000, 1024), 'props_chimneys': (4000, 512),
     'props_gate': (12000, 1024), 'props_colonnade': (30000, 1024),
+    'windows': (20000, 1024), 'props_balconies': (40000, 1024), 'props_shops': (30000, 1024),
+    'props_breakfast': (20000, 1024), 'props_signs': (10000, 1024), 'props_metro': (15000, 1024),
+    'props_room': (20000, 1024), 'props_car': (8000, 512), 'site_trees': (30000, 1024),
+    'props_people': (20000, 512),
 }
 
 
