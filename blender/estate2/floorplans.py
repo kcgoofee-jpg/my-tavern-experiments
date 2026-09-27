@@ -65,9 +65,9 @@ def area(p):
 ROOMS = []
 
 
-def room(fl, name, poly, kind, card_area=None, note='', access='', furn=(), cid=None, rng=None, block='hall'):
+def room(fl, name, poly, kind, card_area=None, note='', access='', furn=(), cid=None, rng=None, block='hall', src=None):
     ROOMS.append(dict(floor=fl, name=name, poly=poly, kind=kind, card_area=card_area, range=rng, note=note, access=access,
-                      furn=list(furn), card_id=cid, block=block))
+                      furn=list(furn), card_id=cid, block=block, src=src))
 
 
 def beds(x0, y0, n, dx=0.0, dy=0.0, w=1.0, l=2.0):
@@ -103,11 +103,10 @@ room('B2', '储藏室', R(10, 16, -10.67, -6), 'card', 30, note='备用设备、
 room('B2', '设备间', R(1.25, 10, -14, -6), 'support', note='卡未写')
 room('B2', '设备间', R(-20, -10, -14, -6), 'support', note='卡未写')
 room('B2', '疏散楼梯', R(16, 20, -14, -10), 'support', note='第二安全出口：B2–B1，经东侧下沉天井上到室外地坪（卡未写，建筑必需）')
-room('B2', '设备（卡未写）', R(-14, 20, -3, 8), 'support', note='卡未写；地下机电')
+room('B2', '设备（卡未写）', R(-14, 4, -3, 8), 'support', note='卡未写；地下机电')
 room('B2', '仆役前室', R(-20, -14, 3, 8), 'support')
 room('B2', '走廊', R(-20, -14, -6, -3), 'circ')
 room('B2', '主人通道前室', R(16, 20, -6, -3), 'owner', note='B2 受限楼层前室：门禁（主人 / 女仆长芯片）', access='仅主人 / 女仆长 / 被带去的人')
-
 # ======================================================================== B1
 cores('B1')
 room('B1', '走廊', R(-20, 20, -6, -3), 'circ')
@@ -219,6 +218,18 @@ for fl in ('F1', 'F2'):
             room(fl, '东翼一层', R(22, 48, -13.5, 1.5), 'open', note='卡未写用途；仓库推断中性用途', block=bid); continue
         room(fl, BLK_CN[bid] + ('一层' if fl == 'F1' else '二层'), blk_poly(bid), 'open', note='卡未写用途；仓库推断中性用途', block=bid)
 
+# ======================================================================== B2 用户设定（放在最后，房间 id 不挪）
+# 地下医疗中心（B2）——用户设定 2026-09-28：原「设备（卡未写）」未定用途体量的东段 16 × 11 m（不占卡房间 / 受限房间）。
+# 2088 年的庄园急救 / 医疗设施（再生医学、假肢与仿生肢适配、诊断）；模型 blender/estate2/medical_b2.py，同一坐标。
+# 洁净流线：医护 主廊 → 主人通道前室 → 缓冲更衣间（气闸、更衣、刷手）→ 无菌处置室；患者 主廊 → 前厅 → 气密转运门；器械 前厅 → 洗消间 → 传递窗。
+MED_U = dict(src='用户设定', access='主人 / 女仆长 / 医护')
+room('B2', '医疗中心前厅', R(4, 8, -3, 8), 'user', note='地下医疗中心（B2）入口：接诊台、转运床停放；南接主廊，东墙气密患者转运门进无菌处置室、另一门进器械洗消间', **MED_U)
+room('B2', '器械洗消间', R(8, 14, -3, 1.5), 'user', note='器械清洗、灭菌柜；传递窗通无菌处置室', **MED_U)
+room('B2', '缓冲更衣间', R(14, 20, -3, 1.5), 'user', note='气闸 + 更衣：两道互锁密闭门、风淋、洁净服柜、刷手槽；南门接主人通道前室', **MED_U)
+room('B2', '无菌处置室', R(8, 20, 1.5, 8), 'user', note='急救 / 处置 / 小手术：手术台、无影灯、吊塔监护、呼吸机、除颤、抢救车、医用气体、洁净送风天花',
+     furn=[(13.1, 14.9, 3.8, 5.8), (8.3, 9.0, 3.0, 7.0)], **MED_U)
+
+
 # ======================================================================== 输出
 INFER = lambda r: '未定用途体量'
 for _r in ROOMS:
@@ -226,14 +237,14 @@ for _r in ROOMS:
         _r['name'] = INFER(_r); _r['kind'] = 'inferred'
     if _r['block'] not in ('hall', 'porch', 'tower', 'w_low', 'n_link') and _r['kind'] == 'inferred':
         _r['note'] += '；与相邻体块直接相通（门洞在两体块相接的墙上）'
-    if _r['kind'] in ('support', 'circ', 'owner') and '卡未写' not in _r['note'] and not _r['name'].startswith(('主人', '仆役核')):
+    if _r['kind'] in ('support', 'circ', 'owner') and not _r.get('src') and '卡未写' not in _r['note'] and not _r['name'].startswith(('主人', '仆役核')):
         _r['note'] = (_r['note'] + '；' if _r['note'] else '') + '仓库推断，卡未写'
 _n = 0
 for _r in ROOMS:
     if _r['name'] == '个人寝室':
         _n += 1; _r['no'] = _n
-KIND_C = {'card': '#f4ecd8', 'restricted': '#d9d4cc', 'support': '#e3e6ea', 'circ': '#fbfaf7', 'open': '#efefef', 'inferred': '#e4ecd9', 'owner': '#e6dcef'}
-KIND_CN = {'card': '卡设定房间', 'restricted': '受限房间（不描述）', 'support': '辅助：楼梯 / 电梯 / 卫浴 / 设备（仓库推断，卡未写）', 'circ': '走廊 / 过厅', 'open': '卡未写用途（留白）', 'inferred': '未定用途体量（卡未写）', 'owner': '主人专用通道'}
+KIND_C = {'card': '#f4ecd8', 'restricted': '#d9d4cc', 'support': '#e3e6ea', 'circ': '#fbfaf7', 'open': '#efefef', 'inferred': '#e4ecd9', 'owner': '#e6dcef', 'user': '#dcecef'}
+KIND_CN = {'card': '卡设定房间', 'restricted': '受限房间（不描述）', 'support': '辅助：楼梯 / 电梯 / 卫浴 / 设备（仓库推断，卡未写）', 'circ': '走廊 / 过厅', 'open': '卡未写用途（留白）', 'inferred': '未定用途体量（卡未写）', 'owner': '主人专用通道', 'user': '用户设定房间（卡未写）'}
 
 
 def check():
@@ -410,7 +421,7 @@ def main():
     # 数据
     data = dict(
         _说明='伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；'
-              '楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 卡设定房间 / restricted 受限房间（不描述）/ support 辅助 / circ 走廊 / open 卡未写 / owner 主人专用。',
+              '楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 卡设定房间 / restricted 受限房间（不描述）/ support 辅助 / circ 走廊 / open 卡未写 / owner 主人专用 / user 用户设定（src=用户设定）。',
         version=1, src='docs/card-digest.md §6', units='m',
         floors=[dict(id=i, name=n, z=z) for i, n, z in FLOORS],
         blocks=[dict(id=b, name=BLK_CN[b], storeys=STOREYS[b], poly=blk_poly(b)) for b in BLK],
@@ -418,7 +429,7 @@ def main():
         cores=[dict(id='stair', name='主楼梯（塔楼）', floors=['F1', 'F2', 'F3'], poly=TOWER, access='主人 / 访客 / 住客'),
                dict(id='service', name='仆役核', floors=['B2', 'B1', 'F1', 'F2', 'F3'], poly=SVC, access='仆从动线；B2 门禁'),
                dict(id='owner', name='主人专用通道', floors=['B2', 'B1', 'F1', 'F2'], poly=OWN, access='仅主人')],
-        rooms=[dict(no=r.get('no'), src='卡' if r['kind'] in ('card', 'restricted') else '仓库推断（卡未写）', id=f"{r['floor']}-{k:02d}", floor=r['floor'], name=r['name'], kind=r['kind'], block=r['block'], area=r['area'],
+        rooms=[dict(no=r.get('no'), src=r['src'] or ('卡' if r['kind'] in ('card', 'restricted') else '仓库推断（卡未写）'), id=f"{r['floor']}-{k:02d}", floor=r['floor'], name=r['name'], kind=r['kind'], block=r['block'], area=r['area'],
                     card_area=r['card_area'], card_range=r['range'], card_id=r['card_id'], note=r['note'], access=r['access'],
                     poly=[list(p) for p in r['poly']])
                for k, r in enumerate(ROOMS)],
