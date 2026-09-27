@@ -24,3 +24,4 @@ blender/data/real3d/raw/
 # 浏览器测试依赖（cd tools/browser && npm install）
 tools/browser/node_modules/
 tools/browser/package-lock.json
+blender/data/estate2/
