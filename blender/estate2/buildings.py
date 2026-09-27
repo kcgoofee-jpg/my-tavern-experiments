@@ -963,8 +963,8 @@ def balustrades(col):
             continue
         z = p['zv'] if not isinstance(p['zv'], tuple) else p['zv'][1]
         base = lambda x, y: True
-        if p['id'] == 'plateau':
-            base = lambda x, y: y < 24
+        if p['id'] == 'plateau':   # r5：两座贴墙梯的梯顶（|x| 29–34.5）断开栏杆
+            base = lambda x, y: y < 24 and not (y < -50 and 28.6 < abs(x) < 35.0)
         elif p['id'] == 'terrace':
             base = lambda x, y: y < -66 and not (abs(x) < 8 and y > -70)
         # 只在台地真实存在处立栏杆（岛缘附近台地被淡出，栏杆会悬空）
