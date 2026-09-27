@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>伊甸家族府邸 · 剖切模型</title>
 <!--
   伊甸庄园 · 交互式剖切模型（three.js 0.160，程序生成，无外部模型 / 图片）
@@ -72,6 +72,8 @@
   #stats { position: absolute; right: 56px; bottom: 14px; font: 11px/1.4 ui-monospace, Menlo, monospace; color: var(--muted); background: var(--panel); padding: 5px 8px; border-radius: 5px; white-space: pre; display: none; }
   #loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); letter-spacing: .2em; font-size: 12px; transition: opacity .4s; pointer-events: none; }
   #loading.done { opacity: 0; }
+  #floors button:focus-visible, #zoom button:focus-visible, #tour button:focus-visible, #tourPill:focus-visible, #card .acts button:focus-visible, #loading .fail button:focus-visible { outline: 2px solid #63b4be; outline-offset: 2px; }
+  [data-theme="light"] #floors button:focus-visible, [data-theme="light"] #zoom button:focus-visible, [data-theme="light"] #tour button:focus-visible, [data-theme="light"] #card .acts button:focus-visible { outline-color: #2d6c75; }
 
   html, body { overscroll-behavior: none; touch-action: none; }
   body:not(.embed) { background: radial-gradient(120% 95% at 50% 32%, #2a2c30 0%, #171a20 58%, #0c0e12 100%); }
@@ -170,6 +172,7 @@
       el.innerHTML = '<div class="fail"><span>' + (en ? 'Failed to load' : '加载失败') + '</span><button type="button">' + (en ? 'Retry' : '重试') + '</button></div>';
       el.querySelector('button').onclick = function () { location.reload(); };
       if (why) console.warn('estate load:', why);
+      if (parent !== window) try { parent.postMessage({ type: 'estate:fail', reason: String(why) }, '*'); } catch (e) {}
     }
     window.__estateFail = fail;
     var t = setTimeout(function () { fail('timeout'); }, 8000);

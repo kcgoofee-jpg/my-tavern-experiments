@@ -344,6 +344,7 @@ function viewFor(m) {
   return { target: new THREE.Vector3(0, FLOORS[m].y, EXT.cz), zoom: P_ ? fitZoom(w * 0.9, 1) : fitZoom(w * 1.04, h * 1.1), theta: AZ, phi: 0.8 };
 }
 function setMode(m, o = {}) {
+  cuOff();
   if (typeof m === 'string' && /^\d$/.test(m)) m = +m;
   mode = m;
   if (typeof m === 'number') { ensureCut(m); ensureFurn(m); }
@@ -560,8 +561,9 @@ function makeCloseups(fi) {
     const center = (x, z) => { for (const q of rects) if (x >= q[0] && x <= q[1] && z >= q[2] && z <= q[3]) return [(q[0] + q[1]) / 2, (q[2] + q[3]) / 2]; return [it.cx, it.cz]; };
     const th = (x, z) => { const [cx, cz] = center(x, z), dx = cx - x, dz = cz - z; return Math.hypot(dx, dz) < 0.4 ? AZ : Math.atan2(dx, dz); };
     const list = [];
-    clusters(pr.wc.filter(inR), 0.7).filter((c) => c.n >= 2).forEach((c) => list.push({ kind: 'wc', x: c.x, y: f.y + 0.45, z: c.z, H: 2.2, theta: th(c.x, c.z), phi: 1.0 }));
+    clusters(pr.wc.filter(inR), 0.7).filter((c) => c.n >= 2).forEach((c) => list.push({ kind: 'wc', x: c.x, y: f.y + 0.75, z: c.z, H: 2.7, theta: th(c.x, c.z), phi: 1.05 }));
     clusters(pr.towel.filter(inR), 1.0).sort((a, b) => b.n - a.n).slice(0, 2).forEach((c) => list.push({ kind: 'towel', x: c.x, y: f.y + Math.min(1.1, c.y), z: c.z, H: 1.8, theta: th(c.x, c.z), phi: 0.85 }));
+    list.sort((a, b) => (a.kind === 'wc') - (b.kind === 'wc'));   // 先看毛巾与台面，马桶间放后
     if (list.length) it.close = list; else delete it.close;
   }
 }
@@ -571,7 +573,8 @@ function goCloseup(it, k) {
   if (pinned !== it) pin(it, false);
   it.cuI = ((k ?? (it.cuI ?? -1) + 1) + it.close.length) % it.close.length;
   const c = it.close[it.cuI];
-  flyTo({ target: new THREE.Vector3(c.x, c.y, c.z), zoom: fitZoom(0.1, c.H), theta: c.theta, phi: c.phi }, 900);
+  flyTo({ target: new THREE.Vector3(c.x, c.y, c.z), zoom: fitZoom(0.1, c.H), theta: c.theta, phi: c.phi, cu: true }, 900);
+  CU_CLIP.constant = FLOORS[it.floor].y + 2.9; renderer.clippingPlanes = [CU_CLIP]; cuOn = true;   // 近景里剪掉 2.9 m 以上的吊灯 / 灯笼，不挡马桶和毛巾
   const n = card.querySelector('.cun'); if (n) n.textContent = `${it.cuI + 1} / ${it.close.length} · ${tx(c.kind === 'wc' ? 'cuWc' : 'cuTowel')}`;
   subDirty = true;
 }
@@ -636,7 +639,11 @@ function findByName(name) {
 /* ---------------- 飞行动画 ---------------- */
 let tween = null;
 const sph = new THREE.Spherical();
+const CU_CLIP = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0); let cuOn = false;
+function cuOff() { if (!cuOn) return; cuOn = false; renderer.clippingPlanes = []; needs = true; }
 function flyTo(v, dur = 650) {
+  if (REDUCED) dur = 1;   // 减少动效：直接到位
+  if (!v.cu) cuOff();
   sph.setFromVector3(camera.position.clone().sub(controls.target));
   const to = { target: v.target.clone(), zoom: clamp(v.zoom, minZoom, maxZ()), theta: v.theta ?? sph.theta, phi: v.phi ?? sph.phi };
   let dt = to.theta - sph.theta; dt = Math.atan2(Math.sin(dt), Math.cos(dt));
@@ -868,7 +875,7 @@ function loop(now) {
 }
 function onFirstFrame() {
   window.__estateFirstFrame = true; if (window.__estateWatchdog) window.__estateWatchdog();
-  const ld = $('#loading'); ld.classList.add('done'); setTimeout(() => { ld.innerHTML = ''; }, 500);
+  const ld = $('#loading'); ld.classList.add('done'); setTimeout(() => { ld.innerHTML = ''; ld.hidden = true; }, 500);
   window.__estate.firstFrameMs = performance.now() - T0;
   post({ type: 'estate:ready', floors: FLOORS.map((f) => f.id), rooms: ROOMS.filter((r) => !r.minor).map((r) => ({ name: r.name, en: enOf(r.name)[0], floor: FLOORS[r.floor].id, alias: r.alias })).concat(AREAS.map((a) => ({ name: a.name, en: enOf(a.name)[0], floor: 'ext', alias: a.alias }))) });
   // 开场推近：约 2 s（嵌入、减少动态、直接进楼层时不做）
