@@ -232,7 +232,7 @@ const isRoster = t => { t = val(t); return plain(t) && Object.values(t).every(v 
 // v0.9.6（E2 / E13）：核心数值（0–100）按卡的 5 档阈值（≤20 / ≤40 / ≤60 / ≤80 / ≤100，docs/card-digest.md）换算档位名。
 // 档名只对默认字段（这张卡）用卡自己的叫法，第 5 档由运行时读到的字段名派生；别的卡的字段一律「档 n」。
 export const CORE_CUTS = [20, 40, 60, 80, 100], CORE_DEFAULT = '母畜值';
-const CORE_NAMES = ['抗拒', '动摇', '接受', '沉溺'];
+const CORE_NAMES = ['抗拒期', '动摇期', '接受期', '沉溺期'];   // 卡原文的档名（变量更新规则 category，2026-09-28 对账：原先去掉了「期」）
 export function coreStage(field, n) {
   if (typeof n !== 'number' || !Number.isFinite(n)) return '';
   const i = CORE_CUTS.findIndex(c => n <= c), k = i < 0 ? 4 : i;
