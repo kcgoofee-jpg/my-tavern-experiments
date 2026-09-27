@@ -55,6 +55,8 @@
   - [x] 奶牛挤奶厅（2026-09-27）：`blender/props/dairy_parlour/`，全自建 + Poly Haven / ambientCG CC0 贴图；成图 `docs/drafts/props_dairy_parlour*.jpg`，来源调查与经验 `docs/model-sources.md`；3D 查看器 `map/props/viewer3d.html`（`docs/reviews/dairy_interactive/`）
   - [ ] 公务机、汽水罐小屋：用户暂停
 - [ ] **衣帽间（用户 2026-09-27，v0.9.2 发版后马上开始）**：独立于庄园建模的单间，Blender 真实材质渲染；先给 3–4 个真实豪宅衣帽间参考图让用户挑（参考板已出：`docs/wardrobe-references.md`，等用户挑）；地图面板单独入口 + 庄园「衣帽间」房间入口，先出高清图、以后可加 360° 全景；材质测试件：金色金字塔铆钉尖头高跟鞋（不写品牌、不仿专利造型）、自创伊甸纹章老花半透明丝袜（不用 LV 商标）、真丝睡袍 / 丝巾；只放衣鞋包首饰等日常奢侈品，不放情趣 / 束缚道具
+  - [x] 方案 A（Modenese 意式古典）成图（2026-09-27）：`docs/drafts/wardrobe_A_{wide,island,shoes,silk,tray}.jpg`（2400 px、128 采样）；出图脚本 `blender/props/wardrobe_a/render.py`，丝袜字母纹贴图 `blender/props/wardrobe_a/eden_monogram.png`（自创）；blend / glb 是本地素材（`blender/data/props/wardrobe_a/`，不进仓库）
+  - [ ] 地图面板入口 + 庄园「衣帽间」房间入口；360° 全景
 - [x] **伊甸参考补课（用户 2026-09-27）**：Nekajui 项目页细读（9 张效果图）与其他顶奢度假酒店参考已写进 `docs/eden-references.md`；Greystone / Warner 两节来自 r4d 调研
 - [ ] 伊甸庄园 Blender 从头重建（`CLOUD_TASK8.md`）：剖切等轴瓦片（预览点 ⑥）+ glTF 3D 模式彩蛋（预览点 ⑦）
   - [x] 外观 / 俯视风格帧 r4（三层：`docs/drafts/eden2_r4_topdown.jpg`、`_close`、`_gym`、`_vs_map`；评审 `docs/reviews/eden2_r4/` 7 / 7 / 7.5 / 7，用满 3 轮）。代码在 `blender/estate2/`（layout / terrain / buildings / gardens / vegetation / warner / gym / sketchfab / zones），2026-09-27 已并入 `cloud/tc-mid-low`（原分支 `cloud/estate2-r4`，rebase 后保留）
@@ -72,6 +74,7 @@
   - [ ] 底图 skill：OSM 路网 + Blender 管线的参数化模板（城市 / 庄园 / 群岛），附轻量方案
   - [ ] 教程：外挂接入、内置接入、自定义地图与事件、本机扩展；以本卡为示范
   - [ ] 公开仓库整理：README 改为通用介绍，本卡内容放 `examples/`
+- [ ] **挤奶厅坑道细化（2026-09-27）**：坑道设备细节加密（杯组与奶管 / 真空管走向、计量瓶、护栏、坑壁与坑底材质、排水沟、照明）；每个热点写更长的中性技术说明（作用、牛奶与清洗水下一步流向哪里）
 
 ## 现状（地图 v0.7.0）
 - **世界地图（已上线）**
