@@ -251,6 +251,7 @@
     color: var(--ink); font-size: var(--fs-control); font-variant-numeric: tabular-nums; }
   /* 世界图首屏：瓦片还没到时先铺一张 1200px 缩略图（压暗 + 模糊） */
   #loading.thumb { background: linear-gradient(rgba(10,12,16,.55), rgba(10,12,16,.55)), url(art/world_1k.jpg) center / cover; }
+  #loading.cover { background: linear-gradient(rgba(10,12,16,.55), rgba(10,12,16,.55)), var(--loading-cover, none) center / cover; }
   #loading .acts { display: flex; gap: var(--sp-4); justify-content: center; margin-top: 10px; }
   #loading .acts[hidden] { display: none; }
   #loading .acts button { height: 40px; background: var(--surface); box-shadow: var(--sh-2); }   /* 次按钮实底：浅色云海上也看得见（E5 r3 现编） */
@@ -319,6 +320,8 @@
   #card .tag.data { color: #111; font-weight: 700; }
   #card .x { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; border: 0; border-radius: var(--r-m); background: transparent; color: var(--muted); cursor: pointer; position: relative; }
   #card .x:hover { background: var(--surface-2); color: var(--ink); }
+  #card .cover { display: block; width: calc(100% + 28px); margin: var(--sp-4) -14px 0; max-width: none; aspect-ratio: 16/10; object-fit: cover; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  #card .cover[hidden] { display: none; }
   #card h2 { margin: var(--sp-4) 0 2px; font: 700 var(--fs-title)/1.35 var(--font-ui); color: var(--ink); }
   #card h2:focus { outline: none; }
   #card h2:focus-visible { outline: 2px solid var(--focus); border-radius: var(--r-s); }
@@ -491,7 +494,7 @@
   <label class="row"><span data-i18n="no_fx">关闭花屏特效</span><input type="checkbox" role="switch" id="optNoFx"></label><small data-i18n="no_fx_hint">网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字</small>
   <label class="row"><span data-i18n="char_stats">人物栏显示数值</span><input type="checkbox" role="switch" id="optCharStats" checked></label><small data-i18n="char_stats_hint">名册里显示成员的等级与核心数值（字段在「变量映射」里指定或关闭）</small>
   <h3 class="a11y" data-i18n="a11y_h">单手</h3><div class="hrow"><span id="handLbl" data-i18n="hand">惯用手</span><div class="seg" id="handSeg" role="group" aria-labelledby="handLbl"><button type="button" data-hand="auto" data-i18n="hand_auto">自动</button><button type="button" data-hand="left" data-i18n="hand_left">左手</button><button type="button" data-hand="right" data-i18n="hand_right">右手</button></div></div><small class="orig" lang="zh">原作角色卡：Yehehua（类脑社区）· <a href="https://discord.com/channels/1380075940285124724/1534464824141025321" target="_blank" rel="noopener">原作发布帖</a>（地图为经作者同意的二次创作）</small></div>
-<div id="card" hidden role="dialog" aria-labelledby="cardTitle"><div class="grab" aria-hidden="true"></div><div class="top"><span class="tag"></span><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><h2 id="cardTitle" tabindex="-1"></h2><div class="sub"></div><div class="src"></div><div class="extra"></div></div>
+<div id="card" hidden role="dialog" aria-labelledby="cardTitle"><div class="grab" aria-hidden="true"></div><div class="top"><span class="tag"></span><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><img class="cover" hidden loading="lazy" decoding="async" alt=""><h2 id="cardTitle" tabindex="-1"></h2><div class="sub"></div><div class="src"></div><div class="extra"></div></div>
 <div id="setMask" hidden></div>
 <div id="sr" class="sr-only" aria-live="polite"></div>
 <div id="status"></div>
@@ -830,7 +833,7 @@ async function go(id) {   // 云脚本块（文末）会包一层：天城各层
   $('#tgRoutes').hidden = !(cd?.routes?.length);
   // 从别的地图切过来（有旧画面或庄园盖着）：不上整屏遮罩，只看顶部进度条；首次打开才显示遮罩
   const snap = !fromEstate && prev ? snapshot() : null, quiet = !!(snap || oldFrame);
-  $('#loading').classList.remove('done', 'over'); $('#loading').classList.toggle('thumb', id === 'world'); $('#loading span').textContent = t('loading_map', { title: nm(m, 'title') });
+  $('#loading').classList.remove('done', 'over', 'cover'); $('#loading').classList.toggle('thumb', id === 'world'); $('#loading span').textContent = t('loading_map', { title: nm(m, 'title') });
   if (quiet) $('#loading').classList.add('done');
   const srcs = [{ tileSource: baseOf(id) }];
   if (m.overlay?.type === 'dzi') srcs.push({ tileSource: m.overlay.src, opacity: $('#tgBorders').checked ? 1 : 0 });
@@ -889,6 +892,8 @@ async function openEstate(id, m, hadPrev) {
   document.body.classList.add('estate'); renderNav();
   $('#credit').textContent = $('#credit').title = nm(m, 'credit'); $('#creditBtn').hidden = !nm(m, 'credit'); window.__creditShow?.(false);
   const ld = $('#loading'), ti = nm(m, 'title'); ld.classList.remove('done', 'thumb'); ld.classList.remove('over'); estateActs('');   // v0.9.6：三维页加载时用整屏加载页，不再露出上一张图 + 一个「加载中」小条
+  if (m.cover) { ld.style.setProperty('--loading-cover', `url(${matchMedia('(max-width: 600px)').matches ? m.cover.src_800 || m.cover.src : m.cover.src})`); ld.classList.add('cover'); }
+  else { ld.classList.remove('cover'); ld.style.removeProperty('--loading-cover'); }
   ld.querySelector('span').textContent = tx('estate.loading', `加载 ${ti}…`, { title: ti });
   postState();
   const url = new URL(m.viewer3d ? 'props/viewer3d.html' : m.src, document.baseURI).href;   // viewer3d：通用三维查看器 + props/<id>/manifest.json（见 v3d 段）
@@ -1224,23 +1229,25 @@ function untrackAll() { const all = trackers; trackers = []; for (const tk of al
 let cardFrom = null;   // 打开卡片的元素：卡片关闭后焦点回到这里
 // 开局编号：标签上连续的写成区间（开局一至五）；opening_dest = 该开局的目的地（起点在庄园书房），卡片里逐个列出
 const OPN = n => LANG === 'en' ? 'Opening ' + n : '开局' + ('一二三四五六七八九十'[n - 1] || n);   // 开局只写编号，不带开局标题
-function markerEl({ name, sub, cls = '', tag = 'set', src, extra = '', alias, name_en, sub_en, openings, opening_dest }) {
+function markerEl({ name, sub, cls = '', tag = 'set', src, extra = '', alias, name_en, sub_en, openings, opening_dest, cover }) {
   const el = document.createElement('div'); el.className = 'mk ' + cls + (tag === 'inf' ? ' inf' : '');
   const dn = LANG === 'en' ? name_en || tr(name) : name, ds = sub && (LANG === 'en' ? sub_en || tr(sub) : sub);   // 显示名随语言；dataset.name 保持中文（当前地点匹配用）
   el.innerHTML = `<div class="lab">${esc(dn)}${ds ? '<small> · ' + esc(ds) + '</small>' : ''}</div><div class="pin"></div>`;
   el.dataset.name = name; if (alias) el.dataset.alias = alias.join('|');
   if (openings?.length) { const o = openings.map(OPN).join(' · '); el.classList.add('op'); const a = [...openings].sort((x, y) => x - y), run = a.length > 2 && a.at(-1) - a[0] === a.length - 1;
     el.querySelector('.lab').dataset.op = run ? (LANG === 'en' ? `Openings ${a[0]}–${a.at(-1)}` : OPN(a[0]) + '至' + OPN(a.at(-1)).slice(2)) : o; extra = `<p class="op">${esc(o)}${opening_dest ? esc(LANG === 'en' ? ' · destination (starts in the study)' : ' · 目的地（从庄园书房出发）') : ''}</p>` + extra; }
-  el._open = () => showCard(el, dn, tag, src, extra, ds);
+  el._open = () => showCard(el, dn, tag, src, extra, ds, cover);
   trackEl(el, el._open, dn + (ds ? ' · ' + ds : ''));
   return el;
 }
 function marker(o) { const el = markerEl(o); place(el, o.x, o.y); return el; }
 // 卡片：顶行 tag + 关闭；标题；副标题；正文（设定原文）或字段区；链接行（规范 3.2）
-function showCard(el, name, tag, src, extra, sub) {
+function showCard(el, name, tag, src, extra, sub, cover) {
   document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); el && el.classList.add('active');
   const c = $('#card'); c.hidden = false; document.body.classList.add('cardopen');
   const tg = c.querySelector('.tag'); tg.textContent = t(tag === 'inf' ? 'tag_inf' : 'tag_set'); tg.className = 'tag' + (tag === 'inf' ? ' inf' : ''); tg.removeAttribute('style');   // 事态卡的数据色不带到地点卡
+  const cv = c.querySelector('.cover');
+  if (cv) { if (cover?.src_800) { cv.hidden = false; cv.src = cover.src_800; cv.alt = (LANG === 'en' ? (cover.alt_en || cover.alt) : cover.alt) || ''; } else { cv.hidden = true; cv.removeAttribute('src'); cv.alt = ''; } }
   c.querySelector('.sub').textContent = sub || '';
   const sv = c.querySelector('.src'); c.querySelector('h2').textContent = name; sv.textContent = src || '';
   if (LANG === 'en' && /[\u4e00-\u9fff]/.test(src || '') && t('src_note')) sv.dataset.note = t('src_note'); else delete sv.dataset.note;   // 英文界面：设定原文保持中文，加一行说明
