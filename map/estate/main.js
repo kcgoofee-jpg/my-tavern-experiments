@@ -248,7 +248,12 @@ siteG.traverse((o) => {
   o.material.dispose();
   const shell = o.name.startsWith('house_shell');
   o.material = new THREE.MeshBasicMaterial({ map, vertexColors: !map && !!o.geometry.attributes.color, side: shell ? THREE.DoubleSide : THREE.FrontSide, clippingPlanes: shell ? [shellClip] : null });
-  if (o.material.vertexColors) o.material.color.setScalar(1.22);   // 顶点色烘焙逐点平均了阴影面，整体偏暗：提一点与贴图烘焙对齐
+  if (o.material.vertexColors) o.material.color.setScalar(1.22);
+  if (o.material.vertexColors) {   // 烘焙漏洞：个别顶点色是纯黑（湖岸东侧建筑屋顶成黑块）→ 补成石板屋顶灰
+    const c = o.geometry.attributes.color, n = c.count; let k = 0;
+    for (let i = 0; i < n; i++) if (c.getX(i) + c.getY(i) + c.getZ(i) < 0.03) { c.setXYZ(i, 0.36, 0.345, 0.33); k++; }
+    if (k) { c.needsUpdate = true; STAT.blackFix = (STAT.blackFix || 0) + k; }
+  }   // 顶点色烘焙逐点平均了阴影面，整体偏暗：提一点与贴图烘焙对齐
   if (shell) darkBack(o.material, [0.55, 0.52, 0.47]);   // 剖切面：浅灰截面（原先近黑，F2 剖切时翼楼成了黑块）
   MESH[o.name] = o; STAT.tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
 });
