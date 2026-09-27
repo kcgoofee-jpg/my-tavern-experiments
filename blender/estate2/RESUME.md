@@ -1,3 +1,12 @@
+# estate2 · 风格帧 r3（2026-09-27）
+
+- 成片：`docs/drafts/eden2_style_frame_r3.jpg`（主楼近景）、`_r3_wide.jpg`（整岛）、`_r3_terrace.jpg`（露台人眼小景，1600px）。审稿：`docs/reviews/eden2_r3/`。
+- 运行：`blender -b -P blender/estate2/style_frame.py -- --view crop|wide|terrace|stairs|aerial|top --light sunset|day --res 2000 --samples 56 --out …`（约 30–60 s）。需要 `fetch_assets.py` 的 CC0 素材，以及用户给的 Sketchfab zip 解压到 `blender/data/estate2/sketchfab/<zip 名>/`（不入库）。
+- r3 改动：屋顶改中灰蓝石板（Greystone 仍深板岩）；白石改石灰岩琢石砌（Brick 节点）、三叠檐口、屋顶栏杆、首层横缝石 + 隅石、首层拱形钢框落地窗、翼楼柱廊；`gardens.py`：双跑贴墙大台阶 + 壁泉、带水三层喷泉 + 弧形水柱、黄杨花坛、大道绿篱、东翼磨面石露台；`sketchfab.py`：别墅三变体（原样 / 镜像 + 白石 / 胡桃木 + 石灰华）+ 石基座、Maybach / DB11（删标）停门廊前、停靠平台、车库；植被：林冠分层 + 突出木、林中空地 + 孤植、别墅周边热带林下层、白花灌木团；云海改极坐标积云高度场 + 岛周云领；岩基改崖唇 + 内收倒锥；kiara_8_sunset 黄昏光（默认）。
+- 已知遗留（审稿意见）：岩基仍像“蛋糕底”、云海仍是高度场不是体积；露台地面像瓷砖、拱窗有台阶锯齿、白花灌木噪；塔楼比例；挡土墙大面积空白。
+
+---
+
 # estate2 · 状态（2026-09-27 更新：风格帧已出，等用户认可）
 
 - 设定清单：`docs/eden-lore-space.md`；总平面：`docs/drafts/eden2_plan.png` + `eden2_plan_basement.png`（`plan2d.py` 生成）。

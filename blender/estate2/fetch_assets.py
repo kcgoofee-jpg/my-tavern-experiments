@@ -24,7 +24,7 @@ PH_TEX = [
     ('bark_brown_02', '树皮（连廊木构、树屋）'),
     ('leafy_grass', '修剪草坪（主台地、前庭、大道）'),
 ]
-PH_HDRI = [('kloofendal_48d_partly_cloudy_puresky', '2k', '天光 HDRI')]
+PH_HDRI = [('kloofendal_48d_partly_cloudy_puresky', '2k', '天光 HDRI'), ('kiara_8_sunset', '2k', 'r3 黄昏低太阳 HDRI')]
 # Poly Haven 扫描树 / 灌木模型（glTF 1k，单个 19–84 MB，只在本机，不进仓库）
 PH_MODELS = [
     ('island_tree_01', '阔叶树（林冠主体）'),

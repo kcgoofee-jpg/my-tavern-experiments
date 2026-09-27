@@ -232,10 +232,15 @@ def cover(x, y, padmask, lake):
     arc_r = np.hypot(x - ARC['c'][0], y - ARC['c'][1])
     paved *= 1 - ((arc_r < ARC['R'] - ARC['depth'] / 2 - 3) & (y > ARC['c'][1])).astype(float)   # 回廊院内留草坪
     beds = np.zeros_like(paved)
+    parterre_gravel = np.zeros_like(paved)
     for gid, _, kind, c, sz, rot in GARDENS:
         if gid in ('rose', 'rose_w'):
-            r = np.hypot((x - c[0]) / sz[0], (y - c[1]) / sz[1])
-            beds = np.maximum(beds, ((r < 1) & (np.abs(np.sin(np.arctan2(y - c[1], x - c[0]) * 4)) > 0.25) & (r > 0.25)).astype(float))
+            lx, ly = np.abs(x - c[0]), np.abs(y - c[1])
+            inside = (lx < sz[0]) & (ly < sz[1])
+            path = inside & ((lx < 1.5) | (ly < 1.5) | (lx > sz[0] - 2.6) | (ly > sz[1] - 2.6) | (np.hypot(x - c[0], y - c[1]) < 3.2))
+            beds = np.maximum(beds, (inside & ~path).astype(float))
+            parterre_gravel = np.maximum(parterre_gravel, path.astype(float))
+            parterre_gravel = np.maximum(parterre_gravel, ((lx < sz[0] + 3.5) & (ly < sz[1] + 3.5) & ~inside).astype(float))
     beds = np.maximum(beds, ((np.abs(np.abs(x) - 27.5) < 1.6) & (y > -246) & (y < -148)).astype(float))   # 大道两侧花境
     beds = np.maximum(beds, ((sd_te > -11) & (sd_te < -8) & (np.abs(x) > 12)).astype(float))            # 前庭沿墙花境
     rill = ((np.abs(x) < 0.45) & (y > -246) & (y < -150)).astype(float)            # 大道中轴水渠
@@ -249,7 +254,15 @@ def cover(x, y, padmask, lake):
         under = np.maximum(under, smooth01((24 - np.hypot(x - b[1], y - b[2])) / 8))
     for tx, ty, _ in TREEHOUSES:
         under = np.maximum(under, smooth01((20 - np.hypot(x - tx, y - ty)) / 8))
-    return dict(paved=paved, beds=beds, rill=rill, sand=sand, meadow=meadow * (1 - under), tropic=under)
+    meadow = np.maximum(meadow, clearing(x, y) * (1 - padmask) * (1 - lake))
+    return dict(paved=np.maximum(paved, parterre_gravel), beds=beds, rill=rill, sand=sand, meadow=meadow * (1 - under), tropic=under)
+
+
+def clearing(x, y):
+    """r3：林中空地（草甸），打破均匀林冠；别墅 / 主台地附近不开。"""
+    c = smooth01((fbm(x, y, 85, 2, 41) - 0.28) / 0.12)
+    c *= smooth01((np.hypot(x / 1.2, y) - 150) / 30)
+    return c
 
 
 # ---------------------------------------------------------------- 路网
@@ -293,14 +306,14 @@ def gravel_mask(x, y):
 MAIN = [  # 海湖式主楼群（高台）
     ('hall', 0, -4, 40, 24, 3, 0, 'hip', 'white'),
     ('porch', 0, -20, 16, 9, 2, 0, 'hip', 'white'),
-    ('tower', -17, -17, 9, 9, 6, 0, 'tower', 'white'),
+    ('tower', -17, -17, 10, 10, 4.3, 0, 'tower', 'white'),
     ('w_wing_a', -37, -8, 30, 14, 2, 0, 'hip', 'white'),
     ('w_wing_b', -58, 7, 14, 28, 2.5, 12, 'hip', 'white'),
     ('w_pav', -68, 32, 20, 17, 3, 12, 'hip', 'white'),
     ('e_wing_a', 35, -6, 26, 15, 2, 0, 'hip', 'white'),
     ('e_wing_b', 55, 8, 14, 26, 2, -10, 'hip', 'white'),
     ('e_pav', 63, 33, 20, 16, 3, -10, 'hip', 'white'),
-    ('belvedere', 47, -19, 7, 7, 4, 0, 'tower', 'white'),
+    ('belvedere', 47, -19, 8, 8, 3.2, 0, 'tower', 'white'),
     ('n_link', 0, 12, 22, 10, 2, 0, 'hip', 'white'),
     ('w_low', -24, 6, 14, 12, 1.5, 0, 'hip', 'white'),
     ('e_low', 24, 6, 14, 12, 1.5, 0, 'hip', 'white'),
@@ -317,17 +330,18 @@ GUEST = [  # 沿东侧等高线的客房楼，有顶连廊相接
     ('w_g2', -166, 30, 15, 11, 2, 62, 'hip', 'white'),
 ]
 VILLAS = [  # 林中散落别墅（平顶带屋顶露台 or 红瓦四坡）
-    ('v1', 200, 110, 12, 10, 2, 25, 'hip', 'white'),
-    ('v2', 262, 50, 12, 9, 1, -15, 'flat', 'white'),
-    ('v3', 196, -40, 13, 9, 2, 40, 'hip', 'white'),
-    ('v4', 240, 20, 11, 9, 1, 10, 'flat', 'white'),
-    ('v5', -208, 82, 12, 10, 2, -20, 'hip', 'white'),
-    ('v6', -268, 34, 11, 9, 1, 30, 'flat', 'white'),
-    ('v7', -150, 152, 12, 9, 2, -40, 'hip', 'white'),
-    ('v8', 105, 208, 11, 9, 1, 10, 'flat', 'white'),
-    ('v9', -95, 200, 12, 9, 1, -10, 'flat', 'white'),
-    ('v10', -290, -40, 11, 9, 1, 60, 'flat', 'white'),
+    ('v1', 200, 110, 22, 23, 2, 25, 'sketch', 'white'),
+    ('v2', 262, 50, 22, 23, 2, -15, 'sketch', 'white'),
+    ('v3', 196, -40, 22, 23, 2, 40, 'sketch', 'white'),
+    ('v4', 240, 20, 22, 23, 2, 10, 'sketch', 'white'),
+    ('v5', -208, 82, 22, 23, 2, -20, 'sketch', 'white'),
+    ('v6', -268, 34, 22, 23, 2, 30, 'sketch', 'white'),
+    ('v7', -150, 152, 22, 23, 2, -40, 'sketch', 'white'),
+    ('v8', 105, 208, 22, 23, 2, 10, 'sketch', 'white'),
+    ('v9', -95, 200, 22, 23, 2, -10, 'sketch', 'white'),
+    ('v10', -290, -40, 22, 23, 2, 60, 'sketch', 'white'),
 ]
+VILLAS = [(b[0], b[1], b[2], b[3], b[4], b[5], round(math.degrees(math.atan2(b[2], b[1]))) - 90, *b[7:]) for b in VILLAS]   # 露台 / 泳池（模型 +y）朝岛外
 TREEHOUSES = [(-185, 120, 20), (160, 150, -30), (40, 222, 5), (-255, 70, 45), (285, 70, -60), (-60, 225, 15)]
 CLUB = ('club', 72, 134, 24, 11, 1.5, -25, 'hip', 'white')
 BREAKERS = ('breakers', 232, -148, 50, 32, 4, -26, 'hip_low', 'beige')
@@ -368,8 +382,8 @@ GARDENS = [  # (id, 名称, kind, 中心, 尺寸, 旋转°)
     ('training', '露天训练场', 'rect', (-62, 58), (28, 14), 8),
     ('rear_lawn', '后庭草坪', 'ellipse', (0, 44), (20, 12), 0),
     ('pavilion', '凉亭', 'circle', (-84, 118), (5, 5), 0),
-    ('rose', '玫瑰园（白玫瑰）', 'ellipse', (58, -104), (18, 14), 0),
-    ('rose_w', '玫瑰园（西）', 'ellipse', (-58, -104), (18, 14), 0),
+    ('rose', '玫瑰园（白玫瑰）', 'rect', (58, -104), (14, 19), 0),      # r3：黄杨花坛（半宽, 半深）
+    ('rose_w', '玫瑰园（西）', 'rect', (-58, -104), (14, 19), 0),
     ('kitchen_garden', '菜园（厨房花园）', 'rect', (-118, 150), (40, 26), 20),
     ('maze', '树篱迷宫', 'rect', (-200, -150), (30, 30), 20),
     ('orchard', '果园', 'ellipse', (205, 145), (28, 20), 0),

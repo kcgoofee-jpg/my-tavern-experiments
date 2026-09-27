@@ -6,6 +6,7 @@ from . import layout as L
 from .common import NT, mat_new, link_obj, coll
 
 SUN_DIR = (0.0, 0.0, 1.0)   # style_frame 设置
+WARM = False                # r3 黄昏光：云海染暖
 
 
 # ---------------------------------------------------------------- 材质
@@ -62,10 +63,10 @@ def mat_terrain():
     els[1].position, els[1].color = 0.65, (0.92, 0.9, 0.86, 1)
     e3 = els.new(0.5); e3.color = (0.45, 0.3, 0.6, 1)
     t.link(hue, ramp.inputs[0])
-    beds = t.mix(t.math('GREATER_THAN', noise(6.0, -1000, 2.0), 0.72), (0.03, 0.07, 0.02), ramp.outputs[0], loc=(-1300, -800))
+    beds = t.mix(t.math('GREATER_THAN', noise(6.0, -1000, 2.0), 0.42), (0.03, 0.07, 0.02), ramp.outputs[0], loc=(-1300, -800))
     # 崖石
     rc, rr, rn = tex('rock_face_03', 20.0, -1400, 1.0)
-    rock = t.mix(0.5, rc, (0.2, 0.18, 0.16), 'MULTIPLY', (-1500, -1400))
+    rock = t.mix(0.65, rc, (0.26, 0.26, 0.27), 'MIX', (-1500, -1400))   # r3：浅石灰岩崖，不再是一整块褐土
     # 挡土墙
     wc, wr, wn = tex('castle_wall_varriation', 3.0, -1800, 0.8)
     wall = t.mix(0.45, wc, (0.78, 0.72, 0.6), loc=(-1500, -1800))
@@ -124,20 +125,26 @@ def mat_cloudsea():
     dot = t.new('ShaderNodeVectorMath', (-1000, 0), operation='DOT_PRODUCT')
     t.link(geo.outputs['Normal'], dot.inputs[0])
     dot.inputs[1].default_value = SUN_DIR
-    lam = t.new('ShaderNodeMapRange', (-800, 0), **{'From Min': -0.2, 'From Max': 1.0})
+    lam = t.new('ShaderNodeMapRange', (-800, 0), **{'From Min': -1.3, 'From Max': 1.0})
     t.link(dot.outputs['Value'], lam.inputs['Value'])
     tc = t.new('ShaderNodeTexCoord', (-1400, -400))
     n = t.new('ShaderNodeTexNoise', (-1200, -400), **{'Scale': 0.0012, 'Detail': 6.0, 'Roughness': 0.55})
     t.link(tc.outputs['Object'], n.inputs['Vector'])
     ramp = t.new('ShaderNodeValToRGB', (-600, 0))
-    ramp.color_ramp.elements[0].color = (0.3, 0.37, 0.5, 1)
-    ramp.color_ramp.elements[1].color = (1.0, 0.94, 0.86, 1)
+    ramp.color_ramp.elements[0].color = (0.26, 0.32, 0.45, 1) if not WARM else (0.3, 0.3, 0.42, 1)
+    ramp.color_ramp.elements[1].color = (1.0, 0.94, 0.86, 1) if not WARM else (1.0, 0.8, 0.6, 1)
     t.link(lam.outputs[0], ramp.inputs[0])
     col = t.mix(t.math('MULTIPLY', n.outputs['Fac'], 0.25), ramp.outputs[0], (0.72, 0.76, 0.84), loc=(-350, 0))
+    # r3：谷底暗、团顶亮（假自遮蔽），让云有体积
+    ch = t.attr('ch', loc=(-900, -700)).outputs['Fac']
+    occ = t.new('ShaderNodeMapRange', (-600, -700), **{'From Min': 0.0, 'From Max': 0.75, 'To Min': 0.72, 'To Max': 1.08})
+    t.link(ch, occ.inputs['Value'])
+    col = t.mix(1.0, col, occ.outputs[0], 'MULTIPLY', (-250, 0))
+    col = t.mix(t.math('MULTIPLY', t.math('SUBTRACT', 1.0, ch), 0.35), col, (0.42, 0.5, 0.66), 'MIX', (-200, 0))
     lp = t.new('ShaderNodeLightPath', (-900, 400))
     haze = t.new('ShaderNodeMapRange', (-600, 400), **{'From Min': 4000, 'From Max': 30000})
     t.link(lp.outputs['Ray Length'], haze.inputs['Value'])
-    col = t.mix(haze.outputs[0], col, (0.78, 0.84, 0.93), loc=(-150, 0))
+    col = t.mix(haze.outputs[0], col, (0.78, 0.84, 0.93) if not WARM else (0.92, 0.8, 0.74), loc=(-150, 0))
     em = t.new('ShaderNodeEmission', (300, 0), Strength=1.05)
     t.link(col, em.inputs['Color'])
     t.link(em.outputs[0], t.out.inputs['Surface'])
@@ -164,7 +171,7 @@ def _mesh_from_grid(name, co, faces, attrs, mat):
 
 
 def build_island(res_m=1.0, n_theta=1800):
-    rho_max = 1.035
+    rho_max = 1.008   # r3：只留几米崖唇，下面立刻是内收岩基
     nr = int(290 * rho_max / res_m)
     rho = np.linspace(0.003, rho_max, nr)
     th = np.linspace(-math.pi, math.pi, n_theta, endpoint=False)
@@ -180,9 +187,10 @@ def build_island(res_m=1.0, n_theta=1800):
     rn = np.sin(3 * thu + 1.1) * 0.05 + np.sin(7 * thu + 0.4) * 0.03 + np.sin(17 * thu + 2.0) * 0.015
     zb = -215 - 40 * (np.sin(2 * thu + 0.6) * 0.5 + np.sin(5 * thu) * 0.3)
     S = s[:, None]
-    rr = rho_max * (1 - S ** 1.25) ** 0.62 * (1 + rn * (0.4 + S)) + 0.004
+    rr = rho_max * (1 - S) ** 1.05 * (1 + rn * (0.4 + S)) + 0.004   # r3：岩基从崖口立刻内收（倒锥），俯视看不到一整圈竖崖
     rr = rr * (1 + 0.02 * np.sin(40 * thu + 9 * S))                # 竖向岩纹
-    zz = rim_z[None, :] * (1 - S) + zb * S - 14 * np.sin(math.pi * S) * (1 + np.sin(4 * thu))
+    Sz = S ** 0.75   # 崖口先有一段陡唇，再往下收
+    zz = rim_z[None, :] * (1 - Sz) + zb * Sz - 6 * np.sin(math.pi * S) * (1 + 0.5 * np.sin(4 * thu))
     Ru = L.outline_R(thu)
     Xu, Yu = rr * Ru * np.cos(thu), rr * Ru * np.sin(thu)
     X = np.concatenate([X, Xu], 0)
@@ -229,32 +237,39 @@ def build_lake():
     return link_obj('lake', me, None, mat_water())
 
 
-def build_cloudsea(z=-430.0, size=40000.0, n=800):
-    import bmesh
-    bm = bmesh.new()
-    bmesh.ops.create_grid(bm, x_segments=n, y_segments=n, size=size / 2)
-    me = bpy.data.meshes.new('cloudsea')
-    bm.to_mesh(me)
-    bm.free()
-    for p in me.polygons:
-        p.use_smooth = True
-    ob = link_obj('cloudsea', me, None, mat_cloudsea())
+def build_cloudsea(z=-380.0, r_max=26000.0, n_r=620, n_t=1440):
+    """r3 云海：极坐标网格（近处约 5 m 一格，远处渐粗），numpy + mathutils.noise 直接算积云高度：
+    大团块（1.1 km）+ 中尺度（330 m）+ 翻卷的“菜花”细节（1-|noise|，95 m / 30 m，远处衰减）。
+    高度写成属性 ch 给着色器做谷底暗部；仍是自发光手算明暗，不接收岛影（用户规则：上层云海不画岛影）。"""
+    from mathutils import noise, Vector
+    r = np.concatenate([[0.0], 40 * np.geomspace(1, r_max / 40, n_r - 1)])
+    th = np.linspace(0, 2 * math.pi, n_t, endpoint=False)
+    R, T = np.meshgrid(r, th, indexing='ij')
+    X, Y = R * np.cos(T), R * np.sin(T)
+    xs, ys = X.ravel(), Y.ravel()
+    A = np.empty((len(xs), 4))
+    nf, V = noise.noise, Vector
+    for k in range(len(xs)):
+        x, y = xs[k], ys[k]
+        A[k, 0] = nf(V((x / 1100, y / 1100, 0.3)))
+        A[k, 1] = nf(V((x / 330, y / 330, 5.1)))
+        A[k, 2] = nf(V((x / 95, y / 95, 9.7)))
+        A[k, 3] = nf(V((x / 30, y / 30, 2.3)))
+    w = np.clip(1 - R.ravel() / 7000, 0.15, 1)
+    big = np.clip(A[:, 0] * 0.9 + 0.5, 0, 1)
+    # billow（|noise|）= 圆鼓的团顶 + 谷底折痕 = 积云；1-|noise| 会变成沙丘脊线，不用
+    h = 150 * big ** 1.4 + 90 * A[:, 1] ** 2 * (0.4 + big)
+    h += (55 * np.abs(A[:, 2]) + 16 * np.abs(A[:, 3])) * w * (0.4 + big)
+    # 岛周云领：云在岛缘外堆高，吞掉岩基下半截（不做岛影）
+    dist = R.ravel() - L.outline_R(T.ravel())
+    h += 170 * np.exp(-(np.maximum(dist, 0) / 420) ** 2) * (0.8 + 0.4 * A[:, 1] ** 2)
+    Z = h
+    co = np.stack([xs, ys, Z], 1)
+    idx = np.arange(len(xs)).reshape(n_r, n_t)
+    a = idx[:-1]; b = idx[1:]
+    quads = np.stack([a, np.roll(a, -1, 1), np.roll(b, -1, 1), b], -1).reshape(-1, 4)
+    hn = (h - h.min()) / (np.ptp(h) + 1e-6)
+    ob = _mesh_from_grid('cloudsea', co, quads, dict(ch=hn), mat_cloudsea())
     ob.location.z = z
-    tex = bpy.data.textures.new('e2_cloud_tex', 'CLOUDS')
-    tex.noise_scale = 700
-    tex.noise_depth = 5
-    tex.noise_basis = 'ORIGINAL_PERLIN'
-    d = ob.modifiers.new('disp', 'DISPLACE')
-    d.texture = tex
-    d.texture_coords = 'GLOBAL'
-    d.strength = 320
-    d.mid_level = 0.5
-    tex2 = bpy.data.textures.new('e2_cloud_tex2', 'CLOUDS')
-    tex2.noise_scale = 160
-    tex2.noise_depth = 4
-    d2 = ob.modifiers.new('disp2', 'DISPLACE')
-    d2.texture = tex2
-    d2.texture_coords = 'GLOBAL'
-    d2.strength = 70
     ob.visible_shadow = False
     return ob
