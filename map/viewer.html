@@ -1839,7 +1839,7 @@ const TCScale = (() => {
       let k = Math.min(1, Math.max(0, (n - base) * 2.2 + edge * .95));
       const i = (y * CW + x) * 4, L = (D[i] * .3 + D[i + 1] * .59 + D[i + 2] * .11);
       for (let j = 0; j < 3; j++) { const b = D[i + j] * .6 + L * .4; D[i + j] = b + ([244, 246, 250][j] - b) * k; }
-      const ex = Math.min(x, CW - 1 - x) / (CW * .12), ey = Math.min(y, CH - 1 - y) / (CH * .12), outer = Math.min(1, ex, ey);   // 环的外缘淡出，不留方框硬边
+      const er = Math.hypot((x + .5) / CW * 2 - 1, (y + .5) / CH * 2 - 1) + (n - .45) * .12, outer = Math.min(1, Math.max(0, (.97 - er) / .32));   // 环的外缘按椭圆 + 噪声柔化淡出（以前按矩形，四角看得出方框）
       D[i + 3] = d >= 0 ? Math.round(255 * outer * outer * (3 - 2 * outer)) : Math.round(255 * k * Math.max(0, 1 + d / 3.5) * .85);   // 城内：只留 3–4 px 宽的云边，盖住底图硬边
     }
     g.putImageData(id, 0, 0); return c;
