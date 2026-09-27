@@ -45,6 +45,8 @@ BUDGET = {
     # amc_facility（资产管理委员会下层设施；walls_ext / site_ground / props_gate / props_lights 共用上面的预算）
     'props_wall': (30000, 2048), 'props_works': (50000, 2048), 'props_post': (12000, 1024),
     'props_vehicles': (20000, 1024), 'props_roof': (6000, 512),
+    # enforcement_low（执法局下层分局；walls_ext / site_ground / props_gate / props_lights / props_vehicles 共用上面的预算）
+    'props_counter': (6000, 1024), 'props_motorpool': (20000, 1024), 'props_security': (12000, 1024),
 }
 
 

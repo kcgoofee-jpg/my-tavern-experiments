@@ -135,7 +135,7 @@
           "alias": ["血肉磨坊", "黑拳场", "拳场"] },
         "enforcement_low": { "name": "执法局下层分局", "sub": "名义六个，实际运转三个", "name_en": "Enforcement Bureau, Lower Branch", "sub_en": "Six on paper, three running", "tag": "set",
           "src": "天城·下层：执法局下层分局名义上有六个，实际运转的只有三个（图上只画一个，位置为推断）",
-          "alias": ["下层分局", "执法局下层分局"] },
+          "alias": ["下层分局", "执法局下层分局"] , "link": {"map": "lm_enforcement_low", "label": "查看三维模型", "label_en": "View 3D model"} },
         "soup_kitchen": { "name": "圣光教会施粥站", "sub": "下层教区", "name_en": "Holy Light Soup Kitchen", "sub_en": "Lower parish", "tag": "set",
           "src": "天城·下层：圣光教会在下层有三个教区，教堂多半荒废，靠施粥站维持（图上画一处，位置为推断）；教会在下层办的孤儿收容所与免费诊所也并入本处",
           "alias": ["施粥站", "粥站", "下层教区", "孤儿收容所", "免费诊所"] },
@@ -171,6 +171,7 @@
     "lm_well7": {"title": "层间检查点与 7 号井（三维）", "title_en": "Checkpoint & Well 7 (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "well7", "src": "props/viewer3d.html", "alias": ["层间检查点与 7 号井（三维）"], "src_note": "视觉样例里的层间检查点（中层 C 区）与 7 号井黑市（下层）画成一个竖向三维场景（标准版：标准档 + 低档 glb，布局为仓库推断）；两个标记的 link 已用于跨层直达，三维入口写在 link3d（查看器渲染由 UI v2 接）。源：blender/landmarks/well7/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_highland": {"title": "旷野高地（三维）", "title_en": "Wild Highlands (3D)", "parent": "site_highland", "kind": "estate", "viewer3d": "highland", "src": "props/viewer3d.html", "alias": ["旷野高地（三维）"], "src_note": "开局七地点的三维模型（标准版：标准档 + 低档 glb；台地、崖壁、下山小径、焦黑地面，地形为仓库推断）；从 site_highland.highland_plateau 标记的「查看三维模型」进。源：blender/landmarks/highland/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_amc_facility": {"title": "资产管理委员会下层设施（三维）", "title_en": "Asset Management Committee, Lower Facility (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "amc_facility", "src": "props/viewer3d.html", "alias": ["资产管理委员会下层设施（三维）"], "src_note": "只画外观的机构院落三维（标准版：标准档 + 低档 glb；行政中心、中央工坊、门岗、执法分队驻点、缓冲街道，位置与形制为仓库推断）；从 tc_low.amc_facility 标记的「查看三维模型」进。源：blender/landmarks/amc_facility/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_enforcement_low": {"title": "执法局下层分局（三维）", "title_en": "Enforcement Bureau, Lower Branch (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "enforcement_low", "src": "props/viewer3d.html", "alias": ["执法局下层分局（三维）"], "src_note": "只画外观的下层分局三维（标准版：标准档 + 低档 glb；加固破旧的分局主楼、封板西翼、双道闸口、车场，位置与形制为仓库推断）；从 tc_low.enforcement_low 标记的「查看三维模型」进。源：blender/landmarks/enforcement_low/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_pm_residence": {
       "title": "首相府（三维）", "title_en": "Prime Minister's Residence (3D)", "parent": "tc_upper", "kind": "estate",
       "viewer3d": "pm_residence", "src": "props/viewer3d.html", "alias": ["首相府花园"],
