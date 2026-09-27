@@ -17,7 +17,7 @@ const HERE = '天城·中层·天城执法局总局';
 const STAT = {
   世界: { 当前日期: '新历2088年01月12日', 当前时刻: '23:30', 当日时段: '就寝' },
   主角: { 着装: { 衣服: '深灰风衣', 裤子: '黑色长裤', 鞋子: '短靴' } },
-  在场人物: { 莉娜: { 身份: '向导', 位置: '下层·7号井' }, 卡尔: { 身份: '司机' }, 奥托: { 身份: '书记员' } },
+  在场人物: { 米拉: { 身份: '向导', 位置: '下层·7号井' }, 卡尔: { 身份: '司机' }, 奥托: { 身份: '书记员' } },
 };
 const MSGS = [{ message_id: 40, message: '<span style="display:none">⌖人物 卡尔 @ 中层·霓虹街</span>' }];
 const jpg = async (page, name) => { await B.shot(page, OUT, name); if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true });
@@ -57,7 +57,7 @@ async function run(name, preset) {
     await vf.evaluate(() => { closeCard(); document.querySelector('#evbar .chtab')?.click(); }); await B.wait(400);
     const src = await vf.evaluate(() => Object.fromEntries(TCChars.items.map(c => [c.name, c.src + '@' + c.place])));
     const lab = await vf.evaluate(() => [...document.querySelectorAll('#evbar .chpane .chsrc')].map(x => x.textContent));
-    rep.check(`${name} 人物位置：MVU > 标签 > 推断，列表标来源`, src.莉娜 === 'mvu@下层·7号井' && src.卡尔 === 'tag@中层·霓虹街' && /^infer@/.test(src.奥托 || '') && ['MVU', '标签', '推断'].every(x => lab.includes(x)), JSON.stringify({ src, lab }));
+    rep.check(`${name} 人物位置：MVU > 标签 > 推断，列表标来源`, src.米拉 === 'mvu@下层·7号井' && src.卡尔 === 'tag@中层·霓虹街' && /^infer@/.test(src.奥托 || '') && ['MVU', '标签', '推断'].every(x => lab.includes(x)), JSON.stringify({ src, lab }));
     await jpg(p, `mvu_${name}_people`);
     // 2 EdenMap.setCustom：地标改名 + 用途 → 聊天变量、地图标签、注入摘要
     // 换聊天后的迁移：全局旧键只在聊天还没有 eden_map 时并入一次（不会把重置过的项每次刷新都加回来）

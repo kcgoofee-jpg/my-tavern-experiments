@@ -16,7 +16,7 @@ const MSGS = [
   { message_id: 40, message: '<span style="display:none" data-tcmap="类型=骚乱;层=下层;地点=血肉磨坊;标题=拳场外人群推搡;等级=2;状态=发生中"></span>⌖人物 艾琳 @ 下层·7号井' },
   { message_id: 41, message: '<span style="display:none">⌖人物 雷恩 @ 下层·7号井</span> <span style="display:none">⌖人物 艾琳 @ 中层·霓虹街</span>' },
 ];
-const STAT = { 在场人物: { 莉娜: { 身份: '向导' }, 卡尔: { 身份: '司机' } } };
+const STAT = { 在场人物: { 米拉: { 身份: '向导' }, 卡尔: { 身份: '司机' } } };
 const jpg = async (page, name) => { await B.shot(page, OUT, name); if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true });
   await page.screenshot({ path: path.join(SHOTS, name + '.jpg'), type: 'jpeg', quality: 70, scale: 'css' }); };
 
@@ -29,7 +29,7 @@ async function run(name, preset) {
     await vf.evaluate(() => { closeCard(); go('tc_low'); }); await B.wait(2500);
     const s0 = await vf.evaluate(() => ({ n: TCChars.count(), names: TCChars.items.map(c => c.name + '@' + c.place + '#' + c.floor), chm: document.querySelectorAll('.chm').length, groups: [...document.querySelectorAll('.chm')].map(e => e.dataset.chars) }));
     rep.check(`${name} 自动发现 4 人（标签最新楼为准 + MVU 在场）`, s0.n === 4 && s0.names.includes('艾琳@中层·霓虹街#41'), JSON.stringify(s0.names));
-    rep.check(`${name} 下层画出头像框，同处多人成一组`, s0.groups.includes('雷恩') && s0.groups.some(g => g.includes('莉娜') && g.includes('卡尔')), JSON.stringify(s0.groups));
+    rep.check(`${name} 下层画出头像框，同处多人成一组`, s0.groups.includes('雷恩') && s0.groups.some(g => g.includes('米拉') && g.includes('卡尔')), JSON.stringify(s0.groups));
     const shape = await vf.evaluate(() => { const a = document.querySelector('.chm .av'), e = document.querySelector('.ev i'); return { av: getComputedStyle(a).borderRadius, ev: e ? getComputedStyle(e).width : null }; });
     rep.check(`${name} 人物是圆形头像框（与事态方块不同）`, shape.av === '50%', JSON.stringify(shape));
     const ov = await vf.evaluate(() => { const r = [...document.querySelectorAll('.chm .av, .ev i')].map(x => x.getBoundingClientRect()); let n = 0;
