@@ -18,6 +18,8 @@ from tc_common import W, H, tick
 CLOUD_ZENITH, CLOUD_SUN_ANGLE = 8, 2.5           # 云用太阳：天顶角（度）、太阳圆盘角（度，越大影子越虚）。B2 第 2 轮：14 → 8、5 → 2.5，z 7.4 的岛影偏移 ≤ 0.95 单位，保得住岬角
 ISLAND_SHADOWS = False   # 用户指示（2026-09-27）：岛不往云上投影，只留白色云层对岛底的遮挡；用户批准后再改 True
 EDEN_RING = False        # 用户决定：去掉伊甸外圈亮云环（伊甸靠尺寸与结界圈已最显眼）；True 恢复
+CLOUD_STYLE = 'toon'     # 'toon'（发布版，metaball 云海）| 'veil'（《部落冲突》式薄纱云原型，待用户批准；命令行 --clouds veil 临时切换）。
+                         # veil：下方是城市（强制 --below city），城市上方两层半透明的斜向云板 + 岛缘一圈柔白云边；岛不往城市上投影。见 build_veil
 
 # 两种风格的云团参数：间距 S、主团半径 R0 + R1 × 浓度、周围小团个数与相对半径、顶上鼓包个数
 STYLES = {
@@ -294,3 +296,71 @@ def build_cloud_sea(layer, islands, sun):
                 o.visible_diffuse = o.visible_glossy = o.visible_transmission = o.visible_shadow = o.visible_volume_scatter = False
         tick('island-ghost: islands camera-only')
     tick(f'cloud sea ({style}): {len(P)} puffs')
+
+# ---------------- 《部落冲突》式薄纱云（CLOUD_STYLE='veil' 原型）----------------
+VEIL_LAYERS = (   # (z, 覆盖率, 不透明度范围, 云板尺寸倍数, 种子)：低层密、高层稀薄；岛最低 z = 1.0，都在岛下面
+    (.62, .38, (.35, .65), 1.0, 7301),
+    (.88, .20, (.15, .3), 1.35, 7302),
+)
+VEIL_EMIT = 1.0   # 自发光增益（Standard 视图下 1.0 = 贴图原色）
+
+def _veil_image(name, rgba):
+    h, w = rgba.shape[:2]; img = bpy.data.images.new(name, w, h, alpha=True, float_buffer=True)
+    px = rgba[::-1].copy(); px[..., :3] = px[..., :3] ** 2.2                      # 贴图按显示色设计 → 线性；Blender 图像原点在左下
+    img.colorspace_settings.name = 'Non-Color'; img.pixels.foreach_set(px.astype(np.float32).ravel()); img.update()
+    return img
+
+def _veil_plane(name, img, z, col):
+    """铺满画面的平面：颜色 = 贴图 RGB 自发光，不透明度 = 贴图 alpha。不受光、不投影 → 岛与城市都不在它上面留影子。"""
+    bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, z)); o = bpy.context.active_object; o.name = name; o.scale = (W, H, 1)
+    for c in o.users_collection: c.objects.unlink(o)
+    col.objects.link(o)
+    m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; N, L = nt.nodes, nt.links
+    out = next(n for n in N if n.type == 'OUTPUT_MATERIAL'); N.remove(tc.bsdf_of(m))
+    tx = N.new('ShaderNodeTexImage'); tx.image = img; tx.interpolation = 'Cubic'; tx.extension = 'CLIP'
+    em = N.new('ShaderNodeEmission'); em.inputs['Strength'].default_value = VEIL_EMIT; L.new(tx.outputs['Color'], em.inputs['Color'])
+    tr = N.new('ShaderNodeBsdfTransparent'); mx = N.new('ShaderNodeMixShader')
+    L.new(tx.outputs['Alpha'], mx.inputs['Fac']); L.new(tr.outputs['BSDF'], mx.inputs[1]); L.new(em.outputs['Emission'], mx.inputs[2])
+    L.new(mx.outputs['Shader'], out.inputs['Surface'])
+    if hasattr(m, 'blend_method'): m.blend_method = 'BLEND'
+    o.data.materials.append(m)
+    o.visible_shadow = o.visible_diffuse = o.visible_glossy = False
+    return o
+
+def _lip_rgba(islands, h, w, rng):
+    """岛缘柔白云边：岛轮廓外一圈约 0.1–0.2 单位宽、alpha ≤ .6、边缘很虚的白（岛面本身会盖住轮廓里面）；沿岸用噪声调浓淡，南侧略厚。"""
+    import tc_estates as te, cloud_veil as cv
+    u = w / W; mask = np.zeros((h, w), np.float32); ys, xs = np.mgrid[0:h, 0:w]
+    for i in islands:
+        O = np.array(i['isle'].outline_world(1.0, 128)); P = np.stack([(O[:, 0] / W + .5) * w, (.5 - O[:, 1] / H) * h], 1)
+        x0, x1 = int(max(0, P[:, 0].min() - 2)), int(min(w, P[:, 0].max() + 2)); y0, y1 = int(max(0, P[:, 1].min() - 2)), int(min(h, P[:, 1].max() + 2))
+        if x0 >= x1 or y0 >= y1: continue
+        mask[y0:y1, x0:x1] = np.maximum(mask[y0:y1, x0:x1], te.pip_np(xs[y0:y1, x0:x1] + .5, ys[y0:y1, x0:x1] + .5, [tuple(p) for p in P]).astype(np.float32))
+    a = cv._blur(mask, .1 * u, .1 * u)
+    nz = cv._lowfreq(h, w, rng, 22)
+    a = np.clip(a * 2.4, 0, 1) * (.5 + .5 * nz) * .6
+    out = np.zeros((h, w, 4), np.float32); out[..., :3] = cv.TOP; out[..., 3] = a
+    return out
+
+def build_veil(layer, islands, sun, below):
+    """《部落冲突》式薄纱云（原型）：城市上方两层半透明斜向云板，岛缘柔白云边；岛不往城市上投影。
+    below：下方城市（及霾）的对象集合——主太阳不照它们，另一盏同向的「城市太阳」只照它们、也只被它们自己挡（楼影照旧，岛影没有）。"""
+    import cloud_veil as cv
+    col = bpy.data.collections.new('clouds'); layer.sc.collection.children.link(col)
+    tw = int(min(layer.res, 4096)); th = int(round(tw * H / W)); u = tw / W
+    for k, (z, cover, op, size, seed) in enumerate(VEIL_LAYERS if layer.opt.get('--no-veil') is None else ()):   # --no-veil：只留岛缘云边（动效底图用）
+        rng = np.random.default_rng(seed)
+        sl = cv.field_slabs(th, tw, rng, u, cover=cover, op=op, size=size)
+        rgba = cv.paint(th, tw, sl, blur=(5 * u / 40 * size, 3 * u / 40 * size), soft=3 * u / 40)
+        _veil_plane(f'veil_{k}', _veil_image(f'veil_{k}', rgba), z, col); tick(f'veil {k}: {len(sl)} slabs')
+    if layer.opt.get('--no-lip') is None:
+        _veil_plane('veil_lip', _veil_image('veil_lip', _lip_rgba(islands, th, tw, np.random.default_rng(4412))), .97, col)
+    below = [o for o in below if o.type == 'MESH']
+    ex = bpy.data.collections.new('city_ex'); rx = bpy.data.collections.new('city_rx')
+    for o in below:
+        ex.objects.link(o); ex.collection_objects[-1].light_linking.link_state = 'EXCLUDE'; rx.objects.link(o)
+    sun.light_linking.receiver_collection = ex
+    cs = bpy.data.lights.new('city_sun', 'SUN'); cs.energy = sun.data.energy; cs.color = sun.data.color; cs.angle = sun.data.angle
+    co = bpy.data.objects.new('city_sun', cs); col.objects.link(co); co.rotation_euler = sun.rotation_euler
+    co.light_linking.receiver_collection = rx; co.light_linking.blocker_collection = rx   # 只有城市自己挡城市的光：没有岛影
+    tick(f'veil clouds: {len(below)} city objects re-lit without island shadows')

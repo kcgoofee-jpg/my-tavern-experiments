@@ -345,8 +345,9 @@ class Layer:
         if glare_opts and not self.opt.get('--preview'): glare(self.sc, **glare_opts)
         ex = {'layer': self.name}
         ex.update(extra(co) if callable(extra) else (extra or {}))
-        write_data(self.name, self.sc, co, self.markers, ex)
-        tick(f'data map/data/{self.name}.json ({len(self.markers)} markers)')
+        if not self.opt.get('--no-data'):                   # --no-data：草稿 / 原型渲染不覆盖 map/data 下的发布数据
+            write_data(self.name, self.sc, co, self.markers, ex)
+            tick(f'data map/data/{self.name}.json ({len(self.markers)} markers)')
         if self.data_only: print('DATA-ONLY', self.name); return co
         if self.crops:                                      # 多块局部：场景只建一次，逐块改边框和输出路径
             os.makedirs(self.crop_dir, exist_ok=True)

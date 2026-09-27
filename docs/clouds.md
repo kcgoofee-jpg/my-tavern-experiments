@@ -114,6 +114,19 @@
 
 本机重跑：`bash tools/render_all.sh upper --res 8000 --samples 128`
 
+## 6. 《部落冲突》式薄纱云原型（2026-09-27，待用户批准；发布版仍是 toon）
+
+用户否掉 toon 云海（「这他妈的也不是云啊」），参考 CoC：半透明、沿等轴测斜向叠起的圆角云板、边缘虚、白到浅冷灰、低对比、无描边，地面透得出来；切层时云合拢到全白再散开。
+
+- 开关：`blender/tc_clouds.py` 的 `CLOUD_STYLE = 'toon'`（默认不变）；原型用 `--clouds veil` 临时切换（强制 `--below city`）。云板的形状与明暗在 `blender/cloud_veil.py`（纯 numpy，Blender 与精灵脚本共用）。
+- 静态（Blender）：城市上方两层自发光半透明平面（z .62 / .88，岛最低 z 1.0），贴图 = 斜向 35° 的圆角云板（长宽比约 2–3，侧面 ≈ #D5DBE5）；岛缘一圈柔白云边（`veil_lip`，alpha ≤ .6）。云不受光、不投影；城市由另一盏只被城市自己挡的「城市太阳」照亮 → 没有岛影。`--no-veil` 只留云边；`--no-data` 不写 `map/data/*.json` 与自检 json（草稿用）。霾降到 .15。
+- 草稿（2000px / 32 采样，约 35 秒）：`docs/drafts/clouds_coc_static_full.jpg`、`_crop.jpg`、`_lip_only.jpg`、`_vs_toon.jpg`；第 1 轮偏「雾 / 运动模糊」的版本留作对照：`_r1_fog.jpg`。
+  `Blender -b -P blender/tiancheng_upper.py -- --res 2000 --samples 32 --clouds veil --no-data --selfcheck warn --out /tmp/veil.png [--no-veil]`
+- 动效（原型页，未接入查看器）：`map/_proto/clouds.html`（`http://localhost:5178/_proto/clouds.html`）。精灵 `map/_proto/clouds/puff1–6.png` 由 `tools/proto_cloud_sprites.py` 生成（Blender 自带 Python）。
+  (a) 两层漂移（远层慢、淡，近层快、浓；拖动时视差 0.85 / 1.2）；(b) CoC 式切层：9 条斜带 × 3 团从两头交错扫入约 420 ms → 全白停 150 ms 换层 → 往两侧散开 600 ms，转场中点一下可跳过；(c) 淡入淡出 280 / 420 ms。只动 transform / opacity；`prefers-reduced-motion` → 立即换层、无漂移；`saveData` / `deviceMemory ≤ 2` → 无漂移、不加载精灵、切层用白幕淡入淡出。
+- 测量：`node tools/browser/proto_clouds.mjs`：375 宽 Chromium 与 WebKit（iPhone）漂移 / CoC 转场 / 淡入淡出都约 60 fps（p95 16.7–18 ms），截图序列 `docs/drafts/clouds_coc_anim_1_drift … 4_parting.jpg`。
+- 评审：`docs/reviews/clouds_coc/`（美术总监有条件通过，推荐 B：只烘云边的底图 + 动态漂移，切层用 CoC 式；玩家：第 1 轮条纹像模糊滤镜，要一坨一坨的形状，转场要能跳过）。第 2 轮已按两份意见改：云板变短变厚、模糊减到约 1/3、覆盖率与不透明度下调、侧面提亮、云边收窄、霾降低、可跳过。
+
 ## 参考
 
 - [Art of 'Sky: Children of the Light'（GDC Vault）](https://gdcvault.com/play/1026903/Art-of-Sky-Children-of)

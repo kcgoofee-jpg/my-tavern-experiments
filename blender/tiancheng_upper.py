@@ -14,8 +14,12 @@ from tc_common import W, H, mat, noise_mat, tick
 from mathutils import Vector, Matrix
 
 layer = tc.Layer('tc_upper', city='upper')                        # 解析参数、清空场景、生成城市（第一个随机调用）；岛屿沿用同一种子的 random 序列
-sc, col_main, city, HAZE = layer.sc, layer.col, layer.city, layer.f('--haze', .25)
+sc, col_main, city = layer.sc, layer.col, layer.city
 BELOW = str(layer.opt.get('--below', 'clouds'))
+import tc_clouds
+CLOUD_STYLE = str(layer.opt.get('--clouds', tc_clouds.CLOUD_STYLE))
+if CLOUD_STYLE == 'veil': BELOW = 'city'                  # 薄纱云原型：云是半透明的，下面必须是城市
+HAZE = layer.f('--haze', .15 if CLOUD_STYLE == 'veil' else .25)   # 薄纱云：云缝里城市保持原色，只留很淡的霾
 
 # ---------------- 材质 ----------------
 M = {
@@ -127,6 +131,7 @@ def below_clouds():
         if name == 'cloud_wisps': o.visible_shadow = False
     tick('clouds below')
 below_city() if BELOW == 'city' else below_clouds()
+BELOW_OBJS = set(bpy.data.objects) if CLOUD_STYLE == 'veil' else None   # 薄纱云：此前建的都是下方城市（重新打光，去掉岛影）
 
 # ---------------- 悬浮岛与庄园（blender/tc_estates.py；伊甸府邸 blender/eden_manor.py）----------------
 import tc_estates as te
@@ -241,12 +246,11 @@ def selfcheck(routes_out, mk):
         ax, ay = m['anchor']
         if any(te.pip(ax, ay, P) for _, P in allb): bad.append(f"标记 {m['id']} 的锚点落在建筑外包里")
     R['markers_with_anchor'] = sum('anchor' in m for m in mk)
-    import tc_clouds
     off = {i['id']: round((i['z'] - .7) * math.tan(math.radians(tc_clouds.CLOUD_ZENITH)), 2) for i in I if i['z'] > 6}; R['shadow_offset_z_gt6'] = off
     if tc_clouds.ISLAND_SHADOWS and any(v > 1.0 for v in off.values()): bad.append(f'z > 6 的岛影子偏移 > 1.0：{off}')
     R['suzhou_pool_ratio'] = {e.id: round(e.pool_ratio, 3) for e in isl if hasattr(e, 'pool_ratio')}
     R['lingnan_pond_ratio'] = {e.id: round(e.pond_ratio, 3) for e in isl if hasattr(e, 'pond_ratio')}
-    json.dump(R, open(os.path.join(tc.HERE, '..', 'docs', 'drafts', 'upper_v5_selfcheck.json'), 'w'), ensure_ascii=False, indent=1, default=str)
+    if not layer.opt.get('--no-data'): json.dump(R, open(os.path.join(tc.HERE, '..', 'docs', 'drafts', 'upper_v5_selfcheck.json'), 'w'), ensure_ascii=False, indent=1, default=str)
     print('SELFCHECK', json.dumps({k: v for k, v in R.items() if k not in ('coverage', 'routes')}, ensure_ascii=False, default=str))
     print('SELFCHECK coverage min', min(cov.items(), key=lambda kv: kv[1]), 'routes', [(r[0], r[1], r[2], r[3], r[4]) for r in rep])
     if bad:
@@ -257,7 +261,8 @@ def selfcheck(routes_out, mk):
 # ---------------- 光照与相机 ----------------
 sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = 3.2; sun.angle = math.radians(1.2); sun.color = (1, .96, .9)
 so = bpy.data.objects.new('sun', sun); col_main.objects.link(so); so.rotation_euler = tc.SUN_ROT   # 三层共用的太阳方向
-if BELOW == 'clouds': __import__('tc_clouds').build_cloud_sea(layer, islands, so)   # 云海与岛影（blender/tc_clouds.py，--clouds toon|soft）
+if CLOUD_STYLE == 'veil': tc_clouds.build_veil(layer, islands, so, BELOW_OBJS)   # 《部落冲突》式薄纱云原型（未批准，发布版不走这里）
+elif BELOW == 'clouds': tc_clouds.build_cloud_sea(layer, islands, so)   # 云海与岛影（blender/tc_clouds.py，--clouds toon|soft）
 # 标记与岛屿轮廓（归一化图像坐标，左上原点）：查看器用来放标记、画结界圈和航线。标记另带 ax / ay 锚点（针脚落点：伊甸 = 停靠平台，其余 = 主楼外、离岸 0.8 r 的南侧空地）
 def export(co):
     norm = lambda p: tc.norm(sc, co, p)
