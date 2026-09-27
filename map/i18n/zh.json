@@ -241,6 +241,7 @@
   "tiles_failed": "地图图块加载失败：当前线路连不上。可以重试，或在标题栏换一条线路",
   "credit_aria": "署名",
   "ring": "天城周边",
+  "ring_of": "{name}周边",
   "about.title": "地图版本",
   "about.ch_tag": "固定版本 {ref}",
   "about.ch_follow": "跟随分支 {ref}（每次打开取最新提交）",

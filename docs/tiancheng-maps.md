@@ -216,3 +216,10 @@ layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/
 - `tools/build_worldbook_addon.py` 为每一处生成一条**关键词触发**的「地图补充-名称」条目（位置、深度照卡里设定条目：角色定义之前、深度 4，order 440 起），内容末尾标「地图附加设定，原卡没有」；卡里已有、地图常用的口径拆成「天城常识-*」「庄园常识-*」关键词条目（order 420 起）。
 - **维护规则**：`maps.json` 里 `canon:false`、有 `sub_src` / `layer_src`、或 `src` 含「仓库自设」「用户」的标记，必须出现在某一条的 `refs` 里；条目引用的标记必须存在。`python3 tools/check_maps.py` 检查这两条——**加、改、删地点时 `maps.json`、`addon_places.json`、世界书三处一起改**，改完重跑附加条目脚本。
 - 手工落点（不在渲染脚本里、直接写进 `map/data/tc_<层>.json` 的点）带 `manual: true`；`blender/tc_common.write_data` 重导出时保留它们。
+
+## 开局地点的简易地图（v0.9.6）
+
+- 地图：`site_kavalierki`（大骑士领·圣都）、`yuanyu_sanctum` / `yuanyu_city`（原域，两层）、`site_highland`（旷野高地）、`site_fief2` / `site_fief3` / `site_fief4`（圆桌第二至四席封地）。`maps.json` 里 `site: true`，各自一个 group，`groups.<id>.place` 指世界图的地点 / 封地 id（封地 id 为 `fief1`–`fief5`）。
+- 渲染：`blender -b -P blender/opening_sites.py -- --site <kavalierki|yuanyu_city|yuanyu_sanctum|highland|fief2|fief3|fief4> --res 4000 --samples 24 --out <png>`，同时导出 `map/data/site_<id>.json`；再 `python3 tools/make_dzi.py <png> map/art/site_<id>`。每张在 M 系列上约 30 秒。
+- 尺度交接：`TCScale`（viewer.html）按 group 的 place 泛化：世界图最大放大时离视野中心最近的地点（视野宽 30% 以内）再推 → 进入该组上次看的那层；组内各层缩到最远有「<组名>周边」环，再推 → 回世界图、该地点居中。环宽 = RING_W × 该图 extent_m 宽。
+- 同步：每张开局地点地图在 `addon_places.json` 里至少有一条 `site: true` 的条目引用它的地标（check_maps 检查）；浏览器验收 `tools/browser/sites096.mjs`。
