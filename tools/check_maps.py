@@ -2,6 +2,7 @@
 """地图注册表与渲染数据的一致性检查（不依赖 Blender / Pillow）。
 
 用法：python3 tools/check_maps.py            # 有错误时退出码 1
+      python3 tools/check_maps.py --committed [REV]   # 校验提交内容（默认 HEAD）而不是工作区：文件没 git add 就算缺（C-1，ship.sh 用）
 检查：
   - maps.json 结构：start / parent / group / overlay.from / link 指向的地图都存在
   - 已上线的地图：底图 DZI 与瓦片目录存在；points 地图的数据文件存在
@@ -19,10 +20,26 @@ import json, os, sys
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'map')
 errors, warns = [], []
+# --committed：路径存在性与 JSON 读取都走 git 的提交树（新切的瓦片 / 数据没提交也能过门控 = C-1）
+import subprocess as _sp
+REV = None
+if '--committed' in sys.argv:
+    i = sys.argv.index('--committed'); REV = sys.argv[i + 1] if len(sys.argv) > i + 1 and not sys.argv[i + 1].startswith('-') else 'HEAD'
+    _top = os.path.join(ROOT, '..')
+    _files = set(_sp.run(['git', 'ls-tree', '-r', '--name-only', REV, '--', 'map'], cwd=_top, capture_output=True, text=True, check=True).stdout.split('\n')) - {''}
+    _dirs = {f.rsplit('/', n)[0] for f in _files for n in range(1, f.count('/') + 1)}
+def _rel(p): return os.path.relpath(os.path.normpath(p), os.path.join(ROOT, '..')).replace(os.sep, '/')
+def exists(p): return os.path.exists(p) if REV is None else (_rel(p) in _files or _rel(p) in _dirs)
+def isdir(p): return os.path.isdir(p) if REV is None else _rel(p) in _dirs
+def load(p):
+    if REV is None: return json.load(open(p, encoding='utf-8'))
+    r = _sp.run(['git', 'show', f'{REV}:{_rel(p)}'], cwd=os.path.join(ROOT, '..'), capture_output=True)
+    if r.returncode: raise FileNotFoundError(f'{_rel(p)} 不在 {REV} 里')
+    return json.loads(r.stdout.decode('utf-8'))
 def err(m): errors.append(m)
 def warn(m): warns.append(m)
 
-reg = json.load(open(os.path.join(ROOT, 'data', 'maps.json')))
+reg = load(os.path.join(ROOT, 'data', 'maps.json'))
 maps = reg['maps']
 if reg.get('start') not in maps: err(f"start 指向不存在的地图 {reg.get('start')}")
 for gid, g in reg.get('groups', {}).items():
@@ -36,9 +53,9 @@ for mid, m in maps.items():
     if m.get('kind') not in ('world', 'points', 'estate'): err(f"{mid}.kind 应为 world / points / estate，现在是 {m.get('kind')}")
     if m.get('kind') == 'estate':
         src = m.get('src', '')
-        if not src or not os.path.exists(os.path.join(ROOT, src)): err(f'{mid}: 缺庄园页面 src {src!r}')
+        if not src or not exists(os.path.join(ROOT, src)): err(f'{mid}: 缺庄园页面 src {src!r}')
         if not m.get('parent'): err(f'{mid}: estate 地图要有 parent（面包屑回到哪一层）')
-        if m.get('viewer3d') and not os.path.exists(os.path.join(ROOT, 'props', m['viewer3d'], 'manifest.json')): err(f"{mid}: viewer3d 清单 props/{m['viewer3d']}/manifest.json 不存在")
+        if m.get('viewer3d') and not exists(os.path.join(ROOT, 'props', m['viewer3d'], 'manifest.json')): err(f"{mid}: viewer3d 清单 props/{m['viewer3d']}/manifest.json 不存在")
         if not m.get('test') and (not isinstance(m.get('alias'), list) or not m['alias']): err(f'{mid}: alias 应为非空列表（当前地点匹配房间用）')
         if m.get('group') and not (m.get('layer') or {}).get('name'): err(f'{mid}: 在 group 里要有 layer.name（层切换器显示）')
         for f in ('rooms', 'rooms_en', 'areas', 'areas_en'):   # 当前地点 → 庄园房间 / 室外区域（map/here.mjs）
@@ -48,19 +65,19 @@ for mid, m in maps.items():
         continue
     base = m.get('base')
     if not base: err(f'{mid} 没有 base'); continue
-    if not os.path.exists(os.path.join(ROOT, base)): err(f'{mid}: 缺底图 {base}')
-    if base.endswith('.dzi') and not os.path.isdir(os.path.join(ROOT, base[:-4] + '_files')): err(f'{mid}: 缺瓦片目录 {base[:-4]}_files/')
+    if not exists(os.path.join(ROOT, base)): err(f'{mid}: 缺底图 {base}')
+    if base.endswith('.dzi') and not isdir(os.path.join(ROOT, base[:-4] + '_files')): err(f'{mid}: 缺瓦片目录 {base[:-4]}_files/')
     alt = m.get('alt') or {}
-    if alt and not os.path.exists(os.path.join(ROOT, alt.get('base', ''))): warn(f"{mid}: alt 底图 {alt.get('base')} 还没渲染（查看器里的开关会提示并自动关掉）")
+    if alt and not exists(os.path.join(ROOT, alt.get('base', ''))): warn(f"{mid}: alt 底图 {alt.get('base')} 还没渲染（查看器里的开关会提示并自动关掉）")
     ov = m.get('overlay') or {}
-    if ov.get('type') == 'dzi' and not os.path.exists(os.path.join(ROOT, ov.get('src', ''))): err(f"{mid}: 缺叠加层 {ov.get('src')}")
+    if ov.get('type') == 'dzi' and not exists(os.path.join(ROOT, ov.get('src', ''))): err(f"{mid}: 缺叠加层 {ov.get('src')}")
     if ov.get('from') and ov['from'] not in maps: err(f"{mid}.overlay.from → {ov['from']} 不存在")
     if m.get('kind') != 'points': continue
     if 'districts' in m and not (isinstance(m['districts'], list) and all(isinstance(w, str) and w for w in m['districts'])): err(f'{mid}.districts 应为非空字符串列表（当前地点只写到大区时落到这一层）')
     if not m.get('data'): err(f'{mid}: points 地图没有 data'); continue
     p = os.path.join(ROOT, m['data'])
-    if not os.path.exists(p): err(f"{mid}: 缺数据 {m['data']}"); continue
-    d = data[mid] = json.load(open(p))
+    if not exists(p): err(f"{mid}: 缺数据 {m['data']}"); continue
+    d = data[mid] = load(p)
     ids = {k['id']: k for k in d.get('markers', [])}
     meta = m.get('markers', {})
     for i, k in ids.items():
@@ -89,7 +106,7 @@ for mid, m in maps.items():
         bad = [q for q in o if not (isinstance(q, (list, tuple)) and len(q) == 2 and all(isinstance(v, (int, float)) and 0 <= v <= 1 for v in q))]
         if bad: err(f'{mid}.islands.{iid}: outline 有 {len(bad)} 个点不是 0…1 内的 [x, y]（如 {bad[0]}）')
 # view：尺度与默认缩放
-wm = json.load(open(os.path.join(ROOT, 'data', 'world_markers.json')))
+wm = load(os.path.join(ROOT, 'data', 'world_markers.json'))
 place_ids = {p.get('id') for p in wm.get('places', [])}
 for mid, m in maps.items():
     v = m.get('view')
@@ -133,8 +150,8 @@ for mid, m in maps.items():
 i18n = {}
 for lg in ('zh', 'en'):
     fp = os.path.join(ROOT, 'i18n', f'{lg}.json')
-    if not os.path.exists(fp): err(f'缺界面语言文件 map/i18n/{lg}.json'); continue
-    i18n[lg] = json.load(open(fp, encoding='utf-8'))
+    if not exists(fp): err(f'缺界面语言文件 map/i18n/{lg}.json'); continue
+    i18n[lg] = load(fp)
 if len(i18n) == 2:
     for k in (set(i18n['zh']) ^ set(i18n['en'])) - {'names'}: err(f'i18n：键 {k} 只在一种语言里有')
     # 事件体系（map/tavern/events.mjs 的 GROUPS / CATS）：每个大类、每种类型在 en.json 的 names 里要有英文（英文界面的图例、事件卡用）
@@ -159,9 +176,9 @@ if len(i18n) == 2:
 # 地图补充地点 ↔ 世界书附加条目（map/data/addon_places.json → tools/build_worldbook_addon.py「地图补充-*」）：
 # 用户决定 / 仓库自设的标记都要有一条；条目引用的标记要存在；庄园条目的叫法要能落到 eden_estate（加、改、删地点时三处同步）
 ap_path = os.path.join(ROOT, 'data', 'addon_places.json')
-if not os.path.exists(ap_path): err('缺 map/data/addon_places.json（地图补充地点，世界书附加条目从它生成）')
+if not exists(ap_path): err('缺 map/data/addon_places.json（地图补充地点，世界书附加条目从它生成）')
 else:
-    ap = json.load(open(ap_path, encoding='utf-8')).get('places', [])
+    ap = load(ap_path).get('places', [])
     refs = {r for p in ap for r in p.get('refs', [])}
     est = maps.get('eden_estate', {}); est_words = set(est.get('rooms', [])) | set(est.get('areas', []))
     for p in ap:
@@ -193,5 +210,5 @@ else:
 for w in warns: print('警告', w)
 for e in errors: print('错误', e)
 n = sum(len(d.get('markers', [])) for d in data.values())
-print(f"检查完：{len(maps)} 张地图、{n} 个渲染标记；{len(errors)} 个错误，{len(warns)} 个警告")
+print(f"检查完{'（提交 ' + REV + '）' if REV else ''}：{len(maps)} 张地图、{n} 个渲染标记；{len(errors)} 个错误，{len(warns)} 个警告")
 sys.exit(1 if errors else 0)
