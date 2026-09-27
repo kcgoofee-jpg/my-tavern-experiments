@@ -5,13 +5,15 @@
   python3 tools/build_preview_script.py <git ref>        # 例如提交号 aa16346、标签 map-v0.9.1
   python3 tools/build_preview_script.py <git ref> --out 目录
   python3 tools/build_preview_script.py --follow cloud/tc-mid-low   # 可复用：每次打开时取该分支最新提交，推送后不用重新导入
-  python3 tools/build_preview_script.py --tag map-v0.9.1            # 正式发版脚本：钉在发版标签（不改角色卡时随世界书附加条目一起发给用户）
+  python3 tools/build_preview_script.py --tag map-v0.9.1            # 正式发版脚本（小修补丁 map-v0.9.1.1；新系列 map-s2-v0.1.0）；：钉在发版标签（不改角色卡时随世界书附加条目一起发给用户）
 输出：~/Downloads/酒馆/脚本/【地图】预览-<ref>.json；--tag 输出 【地图】伊甸地图 v<版本>.json（单个脚本 JSON，酒馆助手「导入脚本」可直接导入）。
 --tag 不创建标签：标签不存在（本地与 origin 都没有）、或与 VERSION 不一致时**退出码 2、不产出文件**（2026-09-27 起；以前只提醒）；发版前先打标签、推送、预热 CDN。
 脚本内容与卡内相同（tools/add_script_to_card.py 的多线路写法）：依次尝试国内镜像 jsdmirror → 官方 jsDelivr，加载成功就停。
 注意：jsDelivr 对分支名会缓存（最长约 12 小时），带「/」的分支名也可能解析不了；预览最好用提交号或标签。只用标准库。
 """
 import argparse, json, os, re, sys, uuid
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import verlib
 
 REPO = 'kcgoofee-jpg/my-tavern-experiments'
 HOSTS = ['cdn.jsdmirror.com', 'cdn.jsdelivr.net']   # 与卡内顺序一致：先国内镜像，再官方 CDN
@@ -48,10 +50,11 @@ def build(ref, channel='ref'):
 
 def build_release(tag):
     """正式版：与 build() 同样的多线路加载，钉在发版标签；id 固定，下个版本导入时覆盖旧版而不是多一份。"""
-    ver = tag[len('map-v'):] if tag.startswith('map-v') else tag
+    ver = verlib.ver_of_tag(tag) or tag
+    shown = verlib.display(ver) if verlib.parse(ver) else ver   # v0.9.6 / v0.9.6.1 / S2 v0.1.0
     d = build(tag, 'tag')
-    d.update(name=f'【地图】伊甸地图 v{ver}', id=str(uuid.uuid5(uuid.NAMESPACE_URL, 'eden-map-release')),
-             info=f'伊甸地图 v{ver}（外挂脚本，不改角色卡）：加载 {REPO}@{tag} 的 map/tavern/eden-map.js（jsdmirror → jsDelivr）。'
+    d.update(name=f'【地图】伊甸地图 {shown}', id=str(uuid.uuid5(uuid.NAMESPACE_URL, 'eden-map-release')),
+             info=f'伊甸地图 {shown}（外挂脚本，不改角色卡）：加载 {REPO}@{tag} 的 map/tavern/eden-map.js（jsdmirror → jsDelivr）。'
                   '配合世界书「伊甸地图·世界书附加条目」使用。升级时导入新版同名脚本会覆盖本条；请停用各种预览版地图脚本，避免两个悬浮按钮互相替换。' + CREDIT)
     return d
 
@@ -103,16 +106,17 @@ def main():
     if a.tag:
         import subprocess
         tag = a.tag.strip()
-        if not re.fullmatch(r'map-v\d+\.\d+\.\d+', tag): sys.exit(f'发版标签应形如 map-v0.9.1：{a.tag!r}')
+        if not verlib.ver_of_tag(tag): sys.exit(f'发版标签应形如 map-v0.9.1（小修补丁 map-v0.9.1.1；新系列 map-s2-v0.1.0）：{a.tag!r}')
         local = subprocess.run(['git', 'rev-parse', '-q', '--verify', f'refs/tags/{tag}'], capture_output=True, text=True).returncode == 0
         remote = local or bool(subprocess.run(['git', 'ls-remote', '--tags', 'origin', tag], capture_output=True, text=True).stdout.strip())
         # 2026-09-27 接手 review：以前标签不存在只提醒、仍然 exit 0，生成出来的脚本地址 404，用户那边只看到一句 console.warn。
         # 现在标签不存在、或标签和 VERSION 不一致 → 退出码 2，不产出交付物。
         ver = open('VERSION', encoding='utf-8').read().strip() if os.path.exists('VERSION') else ''
         if not remote: print(f'发版脚本中止：标签 {tag} 本地与 origin 都没有；先打标签、推送、预热 CDN（bash tools/smoke.sh --cdn {tag}）', file=sys.stderr); sys.exit(2)
-        if ver and tag != f'map-v{ver}': print(f'发版脚本中止：标签 {tag} 与 VERSION（{ver}，应是 map-v{ver}）不一致', file=sys.stderr); sys.exit(2)
+        want = verlib.tag_of(ver) if ver and verlib.parse(ver) else f'map-v{ver}'
+        if ver and tag != want: print(f'发版脚本中止：标签 {tag} 与 VERSION（{ver}，应是 {want}）不一致', file=sys.stderr); sys.exit(2)
         os.makedirs(a.out, exist_ok=True)
-        path = os.path.join(a.out, f"【地图】伊甸地图 v{tag[len('map-v'):]}.json")
+        path = os.path.join(a.out, f"【地图】伊甸地图 {verlib.display(verlib.ver_of_tag(tag))}.json")
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(build_release(tag), f, ensure_ascii=False, indent=2); f.write('\n')
         print(f'写入 {path}'); return

@@ -37,7 +37,7 @@
 ## 遗留（未修，已分优先级；下次开工可以直接挑）
 
 **代码**
-1. `eden-map.js` 每次重算的代价（A-3，P1）：重算会重取 ≤81 楼、`computeTrips` 再逐楼 `Mvu.getMvuData`
+1. ~~`eden-map.js` 每次重算的代价（A-3，P1）~~ 已修（0.9.6：快照 / 按楼缓存 / 无变化跳过 / 空闲补做，基准 tools/browser/perf_a3.mjs）：重算会重取 ≤81 楼、`computeTrips` 再逐楼 `Mvu.getMvuData`
   + 第二次 `parseChars` + 每条 2 次 `slice(0,4000)`，`pushMvu` 又调一次 `refreshVarMap`；
   `stageOrderFor` 只在成功时记忆，失败时每次重算都走一遍 `cardTexts()`。
   `GENERATION_AFTER_COMMANDS` 在发送路径上同步跑，直接加在发送延迟里（4.1–4.5 ms 的旧测量早于 `computeTrips`）。
@@ -46,8 +46,8 @@
   建议：查看器要求 `e.source === parent`，宿主用具体 origin（先确认 iframe 不是 opaque origin）。
 3. `cardTexts()` 假定 `getCharData` / `getTavernRegexes` 同步（A-8）：真返回 Promise 时原作头像与阶段点会静默失效，
    而仓库里的宿主桩是同步的，浏览器测试测不出来。建议 thenable 时 await，或在自检里加一行。
-4. 聊天变量写入失败后悄悄退回 localStorage、`readVars` 又只读变量（A-11）：UI 说保存成功、下次读回旧值。
-5. 本地存储没有预算（A-13）：头像按聊一个个存、每聊天键永不清理，约 30 张就顶到 5 MB 共享额度，可能连带把卡自己的状态栏写入挤掉。
+4. ~~聊天变量写入失败后悄悄退回 localStorage、`readVars` 又只读变量（A-11）~~ 已修（0.9.6）：UI 说保存成功、下次读回旧值。
+5. ~~本地存储没有预算（A-13）~~ 已修（0.9.6，map/tavern/budget.mjs）：头像按聊一个个存、每聊天键永不清理，约 30 张就顶到 5 MB 共享额度，可能连带把卡自己的状态栏写入挤掉。
 6. `map/section.js`（只有独立页 `map/tiancheng.html` 用）没有测试也没有数据校验，缺 `D.SECTION.items` 条目会在绘制中途抛错（A-测试缺口）。
 
 **工具链**

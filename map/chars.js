@@ -130,7 +130,10 @@ const TCChars = (() => {
       const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k)); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
       const w = c.toDataURL('image/webp', .82); return w.startsWith('data:image/webp') ? w : c.toDataURL('image/jpeg', .82); } catch (e) { return src; }
   }
-  async function setAvatar(name, src) { src = await shrink(src); const C = await mod(); const ok = !!C && !!store() && C.setAvatar(store(), chat(), name, src); if (ok) { loadPrefs(); render(); bar(); } return ok; }
+  async function setAvatar(name, src) { src = await shrink(src); const C = await mod(); if (!C || !store()) return false;
+    const r = C.setAvatarEx ? C.setAvatarEx(store(), chat(), name, src) : { ok: C.setAvatar(store(), chat(), name, src) }, ok = r.ok;
+    if (!ok && C.warnText && (r.reason === 'cap' || r.reason === 'quota') && typeof TCCustom !== 'undefined') TCCustom.toast([C.warnText(r.reason, typeof LANG !== 'undefined' && LANG === 'en')]);   // A-13：满了要说，不悄悄失败
+    if (ok) { loadPrefs(); render(); bar(); } return ok; }
   async function removeAvatar(name) { const C = await mod(); const ok = !!C && !!store() && C.removeAvatar(store(), chat(), name); if (ok) { loadPrefs(); render(); bar(); } return ok; }
   function chatChanged() { loadPrefs(); render(); bar(); }
 

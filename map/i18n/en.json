@@ -380,6 +380,7 @@
   "about.ch_local": "Local / standalone",
   "about.line": "Route: {l}",
   "about.check": "Check for updates",
+  "about.auto_check": "Check for updates automatically",
   "about.checking": "Checking…",
   "about.latest": "Up to date (v{v})",
   "about.new": "New version v{v}",

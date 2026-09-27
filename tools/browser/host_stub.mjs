@@ -21,7 +21,7 @@ const STUB = `<script>
   if (S.charData) window.getCharData = function () { return S.charData; };
   window._ = { get: function (o, p, d) { var v = p.split('.').reduce(function (a, k) { return a == null ? a : a[k]; }, o); return v == null ? d : v; } };
   window.SillyTavern = { getContext: function () { return { name1: 'Player', chatId: S.chat || 'stub' }; } };
-  window.tavern_events = { CHAT_CHANGED: 'c', MESSAGE_SWIPED: 's', MESSAGE_RECEIVED: 'r', MESSAGE_UPDATED: 'u', MESSAGE_DELETED: 'd' };
+  window.tavern_events = { CHAT_CHANGED: 'c', MESSAGE_SWIPED: 's', MESSAGE_RECEIVED: 'r', MESSAGE_UPDATED: 'u', MESSAGE_DELETED: 'd', GENERATION_AFTER_COMMANDS: 'g' };
   window.eventOn = function (k, f) { (H[k] = H[k] || []).push(f); }; parent.__fire = function (k) { (H[k] || []).forEach(function (f) { f(); }); };
   window.waitGlobalInitialized = async function () {};
   window.injectPrompts = function (a) { parent.__injected = a.map(function (x) { return x.content; }).join('\\n'); }; window.uninjectPrompts = function () { parent.__injected = ''; };

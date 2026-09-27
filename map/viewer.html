@@ -1486,6 +1486,11 @@ function renderAbout() {
       : esc(tx('about.fail', '检查失败：连不上更新接口，稍后再试'))}</div>`;
   }
   box.innerHTML = h;
+  if (window.top !== window) {   // v0.9.7「自动检查更新」（默认开；卡内脚本启动时读 edenMapAutoCheck，同源 localStorage）
+    const lb = document.createElement('label'); lb.innerHTML = `<span>${esc(tx('about.auto_check', '自动检查更新'))}</span><input type="checkbox" role="switch" id="optAutoCheck">`;
+    const cb = lb.querySelector('input'); let on = true; try { on = localStorage.getItem('edenMapAutoCheck') !== '0'; } catch (e) {}
+    cb.checked = on; cb.onchange = () => { try { localStorage.setItem('edenMapAutoCheck', cb.checked ? '1' : '0'); } catch (e) {} }; box.appendChild(lb);
+  }
   const b = $('#updBtn'); if (b) b.onclick = () => { updBusy = true; updRes = null; renderAbout(); post({ type: 'eden-map:check-update' }); setTimeout(() => { if (updBusy && !updRes) { updBusy = false; updRes = { status: 'fail' }; renderAbout(); } }, 15000); };
   if (updRes) updBusy = false;
 }

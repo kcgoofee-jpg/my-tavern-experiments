@@ -8,6 +8,8 @@
 //   来源 src：'mvu'（MVU 位置）→ 'tag'（聊天标签）→ 'infer'（在场但没写位置：推断和玩家同处）。
 // 只做技术兼容：不按内容过滤任何名字或地点，原样显示。
 import { presentList } from './mvu.mjs';
+import { AVATARS_PER_CHAT, AVATAR_TOTAL, measure, bytesOf, freeUp, safeSet, touch } from './budget.mjs';
+export { warnText } from './budget.mjs';
 export const MAX_TAGS_PER_FLOOR = 8;
 export const PRESENT_TAG_FRESH = 20, INJECT_FRESH = 30;   // 在场的人：标签超过 20 楼就改按「和你同处」；注入只放 30 楼内的位置（v0.9.3 审阅）
 const LOC_KEYS = ['当前位置', '当前地点', '所在地', '所在位置', '位置', '地点', 'location', 'place'];
@@ -111,11 +113,19 @@ const readJ = (st, k) => { try { const o = JSON.parse(st?.getItem(k) || 'null');
 export function readAvatars(st, chat) { return { ...(readJ(st, avatarKey('')) || {}), ...(chat ? readJ(st, avatarKey(chat)) || {} : {}) }; }
 export const AVATAR_MAX = 160000;   // v0.9.5（通读 R3）：和状态栏共用同一份 localStorage 额度，单张 data URL 上限约 160 KB（查看器会先压缩）
 const okImg = s => typeof s === 'string' && (s.startsWith('data:') ? s.length <= AVATAR_MAX : s.length <= 2000) && /^(data:image\/(png|jpe?g|webp|gif);base64,|https?:\/\/|blob:)/i.test(s);
-export function setAvatar(st, chat, name, src) {
-  name = clean(name); if (!name || [...name].length > 40 || !okImg(src)) return false;
-  const k = avatarKey(chat), o = readJ(st, k) || {}; o[name] = src;
-  try { st.setItem(k, JSON.stringify(o)); return true; } catch (e) { return false; }
+// A-13：每个聊天最多 AVATARS_PER_CHAT 张；所有聊天合计超过 AVATAR_TOTAL 时先清最久没用的聊天的头像；撞额度按 LRU 腾地方再试（budget.mjs）
+// 返回 { ok, reason?: 'invalid' | 'cap' | 'quota' | 'error' }，调用方据此告诉用户；setAvatar 仍返回布尔
+export function setAvatarEx(st, chat, name, src) {
+  name = clean(name); if (!st || !name || [...name].length > 40 || !okImg(src)) return { ok: false, reason: 'invalid' };
+  const k = avatarKey(chat), o = readJ(st, k) || {};
+  if (!(name in o) && Object.keys(o).length >= AVATARS_PER_CHAT) return { ok: false, reason: 'cap' };
+  o[name] = src; const v = JSON.stringify(o);
+  const was = (() => { try { return st.getItem(k) || ''; } catch (e) { return ''; } })();
+  const over = () => measure(st).avatars - (was ? bytesOf(k, was) : 0) + bytesOf(k, v) - AVATAR_TOTAL;
+  if (over() > 0) { freeUp(st, chat, over(), /:avatars$/); if (over() > 0) return { ok: false, reason: 'quota' }; }
+  const r = safeSet(st, k, v, chat); if (r.ok) touch(st, chat); return r;
 }
+export const setAvatar = (st, chat, name, src) => setAvatarEx(st, chat, name, src).ok;
 export function removeAvatar(st, chat, name) {
   name = clean(name); const k = avatarKey(chat), o = readJ(st, k) || {};
   if (!(name in o)) return false; delete o[name];
