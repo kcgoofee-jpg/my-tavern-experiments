@@ -72,6 +72,18 @@ async function run(name, preset) {
       rep.check(`${name} 设置关掉「更多资料」后不显示`, await vf.evaluate(() => !document.querySelector('#card details.chmore')));
       await vf.evaluate(() => { const c = document.getElementById('optCharMore'); c.checked = true; c.onchange(); });
     }
+    if (on('tod')) {
+      await vf.evaluate(() => { closeCard(); go('tc_mid'); }); await B.wait(2500);
+      const res = {};
+      for (const [per, want] of [['晨起', 'dawn'], ['日间', ''], ['侍寝时段', 'dusk'], ['就寝', 'night']]) {
+        await H.setMsgs([], { ...STAT, 世界: { ...STAT.世界, 当日时段: per } }); await B.wait(900);
+        res[per] = await vf.evaluate(() => ({ tod: document.body.dataset.tod || '', night: document.body.classList.contains('nighttint'), bg: getComputedStyle(document.getElementById('osd'), '::after').backgroundImage.slice(0, 40) }));
+        rep.check(`${name} 时段「${per}」→ 色调 ${want || '无'}`, res[per].tod === want && res[per].night === (want === 'night') && (want ? res[per].bg !== 'none' : true), JSON.stringify(res[per]));
+        if (want) await B.shot(p, OUT, `tod_${name}_${want}`);
+      }
+      await vf.evaluate(() => go('tc_low')); await B.wait(2000);
+      rep.check(`${name} 下层不加色调`, await vf.evaluate(() => !document.body.dataset.tod));
+    }
     rep.check(`${name} 无页面错误`, !errs(P).length, errs(P).join(' | ').slice(0, 300));
   } catch (e) { rep.check(`${name} 运行`, false, String(e).slice(0, 300)); }
   finally { await P.ctx.close(); }

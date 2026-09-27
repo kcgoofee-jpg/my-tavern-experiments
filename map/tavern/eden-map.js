@@ -469,7 +469,7 @@
   function pushMvu() {
     if (!MV) return;
     const st = mvuStat(), w = MV.worldTime(st, varMap), lb = MV.clockLabel(w);
-    clock = { ...w, ...lb, night: MV.isNight(w) };
+    clock = { ...w, ...lb, night: MV.isNight(w), tod: MV.todPhase?.(w) || '' };   // tod：时段色调（v0.9.6）
     const cs = JSON.stringify(clock);
     if (cs !== clockSig) { clockSig = cs; clockEl.hidden = !lb.short; clockEl.textContent = lb.short; clockEl.title = lb.full; if (lb.full) clockEl.setAttribute('aria-label', lb.full); emit('clock', { ...clock }); sentClock = null; }
     if (alive && sentClock !== clockSig) { sentClock = clockSig; post({ type: 'eden-map:clock', ...clock }); }

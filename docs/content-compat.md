@@ -38,7 +38,7 @@
 - ✅ v0.9.3 自定义名称与用途（**存聊天变量，跟着聊天走**，不再只在本机）：`EdenMap.setCustom(标准名, { name?, note?, kind? })` → true / false（`name` / `note` 传 '' 清掉；`kind` = room / area / landmark / character，不传按地图数据推断）；`EdenMap.removeCustom(标准名或显示名)`；`EdenMap.getCustom()` → `{ items: { 标准名: { 类, 名?, 用途?, 别名? } }, 同步世界书, storage: 'chat' | 'local', worldbook }`；`EdenMap.setWorldbookSync(true / false)`；`EdenMap.on('custom', fn)`。
   - 旧名保留：`setRoomAlias(显示名, 标准房间名)` = 给该房间设显示名；`removeRoomAlias(显示名)`；`getRooms().alias` = `{ 显示名: 标准房间名 }`。旧的本机叫法第一次加载时迁移进聊天变量，旧键改名为 `*.migrated`（不删）。
   - 「同步到世界书」默认关；打开时才用 `createOrReplaceWorldbook` 建「伊甸地图·自定义·<聊天 id 短哈希>」（每个聊天一本、一个常驻条目，避免绑定同一本的聊天互相串），当前聊天没有聊天世界书时绑定到这个聊天，已有就不动（设置里提示手动启用）；关掉时把条目停用，不删世界书。同步且已绑定时，态势注入里不再重复自定义摘要。
-- ✅ v0.9.3 `EdenMap.getOutfit()` → `{ items: { 衣服, 裤子, 鞋子 } | null, text }`、`on('outfit', fn)`；`EdenMap.getClock()` → `{ date, time, period, short, full, night }`、`on('clock', fn)`。只读 MVU。
+- ✅ v0.9.3 `EdenMap.getOutfit()` → `{ items: { 衣服, 裤子, 鞋子 } | null, text }`、`on('outfit', fn)`；`EdenMap.getClock()` → `{ date, time, period, short, full, night, tod }`（`tod` = 'dawn' | 'day' | 'dusk' | 'night' | ''，v0.9.6 时段色调）、`on('clock', fn)`。只读 MVU。
 - ✅ `EdenMap.getCharacters()` → `{ items: [{ name, place, floor, src: 'mvu' | 'tag' | 'infer', present? }], floor }`（v0.9.3 加了 `infer`）；`EdenMap.on('characters', fn)`：人物列表变化时推送同样的结构（面板关着也推）。
 - ✅ `EdenMap.on('here' | 'events' | 'map', fn)` / `EdenMap.off(事件, fn?)`：
   - `here` `{ value }`（查看器里另带 `resolved` 落点）；`events` `{ items, floor, hereLayer }`；`map` `{ map, title, kind }`。

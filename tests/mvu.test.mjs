@@ -79,3 +79,12 @@ t('注入摘要与世界书条目：紧凑、有上限、空时为空', () => {
   assert.match(V.wbContent(c), /书房：玩家称为「星图室」；用途：看星图/);
 });
 console.log(`mvu: ${n} 项通过`);
+
+{   // todPhase：卡的五时段与时刻 → 晨 / 日 / 暮 / 夜（v0.9.6）
+  const todPhase = V.todPhase;
+  const P = p => todPhase({ period: p, time: '' });
+  assert.equal(P('晨起'), 'dawn'); assert.equal(P('晨间报到'), 'dawn'); assert.equal(P('日间'), 'day'); assert.equal(P('侍寝时段'), 'dusk'); assert.equal(P('就寝'), 'night');
+  const T = t => todPhase({ period: '', time: t });
+  assert.equal(T('05:30'), 'dawn'); assert.equal(T('12:00'), 'day'); assert.equal(T('18:10'), 'dusk'); assert.equal(T('23:00'), 'night'); assert.equal(T('03:00'), 'night');
+  assert.equal(todPhase({ period: '', time: '' }), ''); assert.equal(todPhase(null), '');
+}

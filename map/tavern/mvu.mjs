@@ -60,6 +60,18 @@ export function isNight(w) {
   if (/晨|日间|白天|午|day|morning/i.test(w.period || '')) return false;
   const h = hourOf(w.time); return h != null && (h >= 22 || h < 5);
 }
+/** v0.9.6（B11 / C1）时段色调：'dawn' | 'day' | 'dusk' | 'night' | ''（读不到）。时段文字优先（卡的五时段：晨起 / 晨间报到 → dawn、日间 → day、
+ *  侍寝时段 → dusk、就寝 → night；通用：清晨 / 早 / 午 / 傍晚 / 黄昏 / 夜 / 凌晨），否则按时刻：05–07 dawn、07–17 day、17–20 dusk、其余 night */
+export function todPhase(w) {
+  if (!w) return '';
+  const p = String(w.period || '');
+  if (/就寝|深夜|夜|凌晨|night|midnight/i.test(p) && !/侍寝/.test(p)) return 'night';
+  if (/侍寝|傍晚|黄昏|暮|dusk|evening/i.test(p)) return 'dusk';
+  if (/晨|黎明|清晨|早|dawn|morning/i.test(p)) return 'dawn';
+  if (/日间|白天|午|day|noon|afternoon/i.test(p)) return 'day';
+  const h = hourOf(w.time); if (h == null) return '';
+  return h >= 5 && h < 7 ? 'dawn' : h >= 7 && h < 17 ? 'day' : h >= 17 && h < 20 ? 'dusk' : 'night';
+}
 /** 标题栏里的紧凑写法：「01.01 08:00」；全文（带年份与时段）放在 title */
 export function clockLabel(w) {
   if (!w) return { short: '', full: '' };
