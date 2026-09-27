@@ -64,4 +64,11 @@ t('优先级：更长的别处地标压过「庄园」二字', () => {
   assert.equal(r.level, 3); assert.equal(r.marker, 'zaibatsu_estate');
   is('首相府', 3, 'tc_upper', { marker: 'pm_residence' }); is('大主教府邸', 3, 'tc_upper', { marker: 'archbishop_palace' });
 });
+t('自定义房间叫法（本机）：落到对应的标准房间', () => {
+  const ci = buildIndex(J('data/maps.json'), J('data/world_markers.json'), J('i18n/en.json').names, { rooms: { '我的秘密书斋': '书房', '坏名': '不存在的房间' } });
+  const r = resolveHere('我的秘密书斋', ci);
+  assert.equal(r.level, 1); assert.equal(r.room, '书房'); assert.equal(r.custom, true);
+  assert.equal(resolveHere('坏名', ci), null);   // 指向不存在房间的自定义名不生效
+  assert.equal(R('我的秘密书斋'), null);          // 不传自定义表时照旧
+});
 console.log(`\n${n} passed`);

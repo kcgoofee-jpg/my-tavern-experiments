@@ -27,7 +27,7 @@ t('代码块与示范原文不上图', () => {
   assert.equal(parseMarks('```\n⌖火灾｜中层·C区｜2｜示例\n```').length, 0);
   assert.equal(parseMarks(span('⌖检查点管控｜中层·C区检查点｜2｜查验身份芯片与资产铭牌｜执法局')).length, 0);
 });
-t('内容硬边界', () => { assert.equal(parseMarks('⌖通缉｜中层·商业区｜2｜逃跑的母畜').length, 0); });
+t('不做关键词过滤：正文原样保留', () => { const r = parseMarks('⌖通缉｜中层·商业区｜2｜任意正文 ABC'); assert.equal(r.length, 1); assert.equal(r[0].text, '任意正文 ABC'); });
 t('一楼最多 3 条', () => { assert.equal(parseMarks('⌖火灾｜中层·A｜1｜a ⌖火灾｜中层·B｜1｜b ⌖火灾｜中层·C｜1｜c ⌖火灾｜中层·D｜1｜d').length, 3); });
 
 t('合并：15 楼内同类同地 = 更新；0 = 平息', () => {
@@ -153,9 +153,8 @@ t('只写大类名：类型记「其他」，颜色按大类；认不出的仍�
   const [b] = parseMarks('⌖流星雨｜上层·伊甸庄园｜1｜夜空里一串蓝光'); assert.equal(b.grp, '其他');
   assert.equal(parseMarks('⌖治安｜中层·商业区｜1｜巡逻')[0].color, GROUPS.治安);
 });
-t('v2 人物类仍受内容硬边界约束；示范原文仍被忽略', () => {
-  assert.equal(parseMarks('⌖丑闻曝光｜上层·银冠堡｜3｜将军与项圈').length, 0);
-  assert.equal(parseMarks('<span data-tcmap="类型=公开行程;地点=中层 天城议会;标题=某千金被调教;等级=1"></span>').length, 0);
+t('v2 人物类照常解析；示范原文仍被忽略', () => {
+  assert.equal(parseMarks('⌖丑闻曝光｜上层·银冠堡｜3｜某某丑闻').length, 1);
   assert.equal(parseMarks('⌖首相出席｜中层·天城议会｜2｜首相出席浮空港落成礼').length, 1);
   for (const x of EXAMPLES) {
     const raw = x.startsWith('⌖') ? span(x) : `<span style="display:none" data-tcmap="${x}"></span>`;
