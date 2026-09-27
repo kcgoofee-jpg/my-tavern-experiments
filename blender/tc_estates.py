@@ -108,7 +108,7 @@ def mats():
         'boulder': nm('rock_boulder', (.36, .34, .31), (.52, .49, .45), 20, .95, .6),    # 裸岩、假山石（也不投影到云上）
         'rockery': nm('rock_rockery', (.46, .46, .44), (.64, .63, .60), 40, .9, .8),     # 太湖石假山（偏白灰）
         'car': m('bl_car', (.10, .11, .14), .2, metal=.8),
-        'airship': m('bl_airship', (.80, .80, .78), .45),                                 # 伊甸访客飞艇（浅色，3 : 1）
+        'airship': m('bl_airship', (.80, .80, .78), .45),                                 # 悬浮载具（浅色车身；卡里没有飞艇）
         'roof_lead': m('bl_roof_lead', (.40, .42, .45), .5, metal=.3),
         'marble_d': m('st_marble_d', (.70, .69, .65), .5),                                      # 伊甸岛缘栏杆（压暗）
         'aether': tc.emit_mat('bl_aether', (.45, .9, 1.0), 4.0),                                    # 以太晶簇（自发光青）
@@ -403,6 +403,11 @@ class Isle:
         X, Y = self.world(lx, ly)
         bmesh.ops.create_icosphere(B('airship', True).bm, subdivisions=2, radius=1,
                                    matrix=Matrix.Translation((X, Y, z)) @ Matrix.Rotation(self.rot + ang, 4, 'Z') @ Matrix.Diagonal((L / 2, L / 6, L / 7.5, 1)))
+    def hover(self, lx, ly, z, L, ang):
+        """悬浮载具：扁平流线车身（长 L，宽 L/2.6，高 L/9），贴着停靠面。"""
+        X, Y = self.world(lx, ly)
+        bmesh.ops.create_icosphere(B('airship', True).bm, subdivisions=2, radius=1,
+                                   matrix=Matrix.Translation((X, Y, z + L / 18)) @ Matrix.Rotation(self.rot + ang, 4, 'Z') @ Matrix.Diagonal((L / 2, L / 5.2, L / 18, 1)))
     def wall_line(self, key, pts, t, h, closed=False, dz=0.0):
         n = len(pts)
         for i in range(n if closed else n - 1):
@@ -458,6 +463,7 @@ class Isle:
                 pick = th; break
         th = pick; rr = self.r(th); cx, cy = math.cos(th) * (rr + rad * .35), math.sin(th) * (rr + rad * .35)
         zs = self.Z(math.cos(th) * rr * .96, math.sin(th) * rr * .96); dz = zs - self.Z(cx, cy)
+        self.dock_z = zs + .002                                                              # 平台顶面（放载具用）
         self.wl += 1
         self.cyl('pad', cx, cy, rad, .006, 40, dz=dz - .004); self.cyl('gold', cx, cy, rad * 1.04, .004, 40, dz=dz - .0065)
         self.box('pad', math.cos(th) * rr * .9, math.sin(th) * rr * .9, rr * .12 + rad * .2, .014, .004, th, dz=0)
@@ -694,7 +700,7 @@ class Isle:
         if t: self.cyl('stone', t[0], t[1], .018, .12, 8); self.cyl('dark', t[0], t[1], .026, .02, 8, dz=.12); self.claim(t[0], t[1], .03)
         return lx, ly, a, L, L * .75
 
-    # 财团家族庄园：玻璃塔楼别墅 + 叠落白色平台 + 无边泳池（宽 8 m）+ 岸外私人飞艇港（科技一轨）
+    # 财团家族庄园（罗斯柴尔德庄园 R-02）：玻璃塔楼别墅 + 叠落白色平台 + 无边泳池（宽 8 m）+ 岸外私人悬浮载具停靠平台
     def role_zaibatsu_estate(self):
         F = max(self.F, .5); L = .6 * F; lx, ly, a, P = self._frame(L * .6)
         for k in range(6):
@@ -709,7 +715,7 @@ class Isle:
         self.wl += 1
         for k in range(12): t = k / 12 * TAU; self.cyl('gold', cx + math.cos(t) * .08 * F, cy + math.sin(t) * .08 * F, .004, .008, 6)
         self.wl -= 1
-        X, Y = self.world(cx, cy); B('car', True).ico(X, Y, self.Z(lx, ly) + .015, .035 * F, sz=.35)
+        for k in (-1, 1): self.hover(cx + k * .03 * F, cy, self.dock_z, .06, .6)                     # 两台悬浮载具停在平台上
         for _ in range(6):                                                                            # 雕塑庭院
             q = self.spot(.02, near=(lx, ly, L * 1.2))
             if q: self.cyl('marble', q[0], q[1], .006, .02, 8); self.claim(q[0], q[1], .015)
@@ -772,7 +778,9 @@ class Isle:
             k = kinds[int(R.integers(len(kinds)))]; rr = {'glass': .07, 'stable': .09, 'staff': .06, 'gazebo': .03, 'hangar': .09}[k] * max(F, .5)
             p = self.spot(rr, smax=.72)
             if not p: continue
-            lx, ly = p; a = R.uniform(0, math.pi); self.claim(lx, ly, rr)
+            lx, ly = p; a = R.uniform(0, math.pi)
+            if not self._fits([(lx, ly, rr * 1.9, rr * 1.9, a)], .9): continue          # 整栋附属建筑都要在岛内（inside .92 自检）
+            self.claim(lx, ly, rr)
             if k == 'glass':                                                                 # 温室：白框玻璃长屋
                 self.box('glass', lx, ly, rr * 1.6, rr * .6, .012, a); self.box('whitewall', lx, ly, rr * 1.65, .004, .014, a)
             elif k == 'stable':                                                              # 马厩院：四面围合 + 中间院子
@@ -782,7 +790,7 @@ class Isle:
                     c_, s_ = math.cos(a), math.sin(a); self.house(key, lx + dx * c_ - dy * s_, ly + dx * s_ + dy * c_, ww, dd, .018, a, col, ridge=min(ww, dd) * .35)
             elif k == 'staff': self.house(key, lx, ly, rr * 1.5, rr * .6, .022, a, col)
             elif k == 'gazebo': self.cyl('marble', lx, ly, rr * .6, .012, 12); self.cyl('dark', lx, ly, rr * .75, .01, 12, dz=.012, r2=.002)
-            else:                                                                            # 机库 + 停机坪（天城的私人飞艇）
+            else:                                                                            # 悬浮载具库 + 停靠坪
                 self.box('pad', lx, ly, rr * 1.8, rr * 1.2, .003, a); self.house('stone', lx + math.cos(a) * rr * .4, ly + math.sin(a) * rr * .4, rr * .9, rr * .7, .02, a, (.3, .31, .33), ridge=rr * .15)
                 X, Y = self.world(lx - math.cos(a) * rr * .5, ly - math.sin(a) * rr * .5)
                 B('car', True).ico(X, Y, self.Z(lx, ly) + .01, rr * .25, sz=.45)
@@ -897,7 +905,7 @@ class Isle:
                     self.patch('water', [pl[i], pl[i + 1], pr[i + 1], pr[i]], dz=.003, rings=1)
                 self.claim_poly(lake); self.lake_poly = lake
                 end = pl[-1]; tp = (end[0] + math.cos(gdir) * .03, end[1] + math.sin(gdir) * .03)       # 湖端的圆形 tholos：8 柱 + 穹顶
-                if self.inside(*tp, .88) and self.free(tp[0], tp[1], .02, .9):
+                if self.inside(*tp, .84) and self.free(tp[0], tp[1], .02, .9):
                     rt = .012 + .008 * F; self.cyl('stone_warm', tp[0], tp[1], rt * 1.3, .004, 16)
                     for k in range(8): t = k / 8 * TAU; self.cyl('marble', tp[0] + math.cos(t) * rt, tp[1] + math.sin(t) * rt, .0025, .014, 6, dz=.004)
                     self.cyl('roof_lead', tp[0], tp[1], rt * 1.15, .008, 16, dz=.018, r2=rt * .3); self.claim(tp[0], tp[1], rt * 1.6)
@@ -926,7 +934,7 @@ class Isle:
                         if pip(q[0], q[1], wp): self.box('beds' if (i + j) % 2 else 'lawn2', *q, w / n * .8, w / n * .8, .002, ga)
                 self.box('glass', *Q(0, w / 2 - .012), w * .7, .014, .01, ga)
         elif fam == 'folly':                                                                 # 眺望塔（folly）：远端小丘上的塔 + 割出来的草径
-            p = self.spot(.03, smax=.78)
+            p = self.spot(.03, smax=.74)
             if p:
                 self.cyl('stone_warm', p[0], p[1], .014 + .006 * F, .06, 8); self.cyl('dark', p[0], p[1], .02 + .006 * F, .02, 8, dz=.06, r2=.003); self.claim(p[0], p[1], .04)
                 self.wall_line('lawn', [(lx + (p[0] - lx) * t + .03 * math.sin(t * 5), ly + (p[1] - ly) * t) for t in np.linspace(.3, .95, 10)], .008, .0015)
@@ -1563,7 +1571,7 @@ def build_eden(isle, layer):
             for xx in (.27, .34): e.tree(sx * xx, yy, .042, 'tree2')
         for j in range(int(Ln / .16)): e.box('marble', sx * .228, y0 - .08 - j * .16, .01, .01, .018)
     e.claim_rect(0, ym, .76, Ln, 0)
-    # 访客停靠平台：直径 52 m，白石 + 金环；候机亭；两艘浅色长飞艇（3 : 1）
+    # 访客停靠平台：直径 52 m，白石 + 金环；平台边小亭；两台悬浮载具
     rad = .26; pc = (0, edge_y - rad * .35)
     e.wl += 1
     zs = e.Z(0, edge_y * .97)
@@ -1571,7 +1579,7 @@ def build_eden(isle, layer):
     e.cyl('marble', *pc, rad, .01, 64, dz=zs - e.Z(*pc) - .004); e.cyl('gold', *pc, rad * 1.035, .006, 64, dz=zs - e.Z(*pc) - .006)
     e.cyl('stone', *pc, rad * .55, .002, 48, dz=zs - e.Z(*pc) + .006)
     e.cyl('marble', pc[0], pc[1] + rad * .55, .03, .015, 12, dz=zs - e.Z(*pc)); e.cyl('gold', pc[0], pc[1] + rad * .55, .032, .004, 12, dz=zs - e.Z(*pc) + .015)
-    for sx in (-1, 1): e.blimp(pc[0] + sx * rad * .45, pc[1] - rad * .1, zs + .03, .15, math.pi / 2)
+    for sx in (-1, 1): e.hover(pc[0] + sx * rad * .4, pc[1] - rad * .1, zs + .006, .07, math.pi / 2)
     e.wl -= 1
     e.dock = (pc[0], pc[1], rad, -math.pi / 2); e.claim(*pc, rad + .03)
     # 后庭：花园厅台阶直接下来的连续白石台地 + 人工湖（不规则）+ 湖心圆亭 + 水榭
