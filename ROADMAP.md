@@ -70,6 +70,8 @@
 - 真实路网改造（OSM，署名 © OpenStreetMap contributors）、上层默认云海 + 「显示下方城市」开关：见 `CLOUD_TASK2.md`。
 - npm 发布 + npmmirror 国内线路（用户注册 npm 账号后由本机发布）。
 
+- （用户 2026-09-27）地标光圈 / 描边**不去掉**（去掉后太黑，对比图 `docs/drafts/landmark_glow_compare_*.jpg`），以后慢慢打磨成不像 UI 图标的真实照明：光源藏进建筑、光池不规则、降饱和。开关 `--no-landmark-glow` 保留，默认不加。
+
 ### P2 · 伊甸庄园
 - **（用户 2026-09-27 定）** 现在的 three.js 剖切版冻结不再改；下个版本起用 Blender 从头建模（按 `docs/eden-estate.md` 设定，接 CC0 真实素材），再决定网页端怎么呈现。叠加层、衣帽间合并都随之移到 Blender 版。
   - 定了（用户 2026-09-27）：主方案 = Blender 剖切等轴图切瓦片（预览点 ⑥，庄园地图正式底图，本机 GPU 渲 8K）；彩蛋 = glTF 烘焙光照的 3D 模式（预览点 ⑦，`map/estate3d/`）。见 `CLOUD_TASK8.md`。
