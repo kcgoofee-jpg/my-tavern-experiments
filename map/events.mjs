@@ -3,8 +3,17 @@
 //            ②可选的外部数据源（maps.json 的 feeds），也交给 events.mjs 解析，和聊天事件一起显示。
 // 一条事件（events.mjs 的输出）：{ id, key, cat, layer, place, lvl, text, src, code, time, scope, dur, xy, status, first, last, count, closed, tier, isNew }
 // 本文件只负责：落点（地名 → 坐标）、图标、事态列表、飞过去、网络攻击花屏、世界图角标。设计见 docs/map-events.md。
-// 读查看器的全局变量：viewer、REG、cur、curData、aspect、getJSON、placeN、showCard、esc、go、coarse、$。
+// 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 // 界面文字走查看器的 window.I18N（键在 i18n/*.json 的 ev.*）；类别、大类、层、状态名英文在 en.json 的 names。事件标题、地点、发布方是剧情原文，不翻译。
+import { M, REG, aspect, cur, viewer } from './app/state.mjs';
+import { $, announce, coarse, esc, getJSON, toImg } from './app/util.mjs';
+import { declutter, tabOrder } from './app/tiers.mjs';
+import { go } from './app/nav.mjs';
+import { updateLayerBadges } from './app/layers.mjs';
+import { cardFrom, closeCard, placeN, setCardFrom, showCard, trackEl, untrack } from './app/markers.mjs';
+import { setUserMoved, userMoved } from './app/locate.mjs';
+import { sheetVis } from './app/shell.mjs';
+import { P, register } from './app/plugins.mjs';
 const TCEvents = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const tn = z => (z && window.I18N?.tr?.(z)) || z || '';
@@ -152,7 +161,7 @@ const TCEvents = (() => {
     const rare = e.rare >= 4 ? T('ev.rare4', '（传说级）') : e.rare >= 3 ? T('ev.rare3', '（罕见）') : '';
     const lv = Math.max(1, e.lvl);
     showCard(null, e.text || tn(e.cat), 'inf', '', '', `${tn(e.cat)}${rare}`);   // 大类只在顶上的色块里出现一次（v0.9.2）
-    if (typeof TCCompose !== 'undefined') TCCompose.attach({ go: e.place || '', ask: e.text || tn(e.cat) });   // v0.9.6 地图 → 聊天
+    if (typeof P.TCCompose !== 'undefined') P.TCCompose.attach({ go: e.place || '', ask: e.text || tn(e.cat) });   // v0.9.6 地图 → 聊天
     const rows = [
       [T('ev.k_place', '地点'), esc(whereHere(e)) + (p.approx ? `<br><small>${esc(T('ev.approx', '（位置不详，按所在层大致标出）'))}</small>` : '')],
       [T('ev.k_state', '等级 / 状态'), `<span class="bars" aria-label="${esc(T('ev.k_lvl', '等级') + ' ' + lv + '/3')}">${'▮'.repeat(lv)}${'▯'.repeat(3 - lv)}</span>　${esc(st)}`],
@@ -180,7 +189,7 @@ const TCEvents = (() => {
     // 落点放在「卡片以外的可见区域」中心：桌面扣掉右侧卡片，手机扣掉底部抽屉（约 45%），再扣掉底部横条
     const nar = innerWidth <= 640, occR = nar ? 0 : Math.min(334, W * .5), occB = nar ? H * .45 : 44;
     const ox = occR / 2 / W * w, oy = occB / 2 / H * h;
-    userMoved = true;
+    setUserMoved(true);
     const vp = viewer.viewport, target = new OpenSeadragon.Rect(p.nx + ox - w / 2, p.ny * aspect + oy - h / 2, w, h), now = vp.getBounds(true);
     // 飞行：离得远就先拉远（把起点和目标一起框进来），再俯冲下去；近的直接平移。落地时雷达扫描 + 定位环收缩
     const far = Math.hypot(now.x + now.width / 2 - p.nx, now.y + now.height / 2 - p.ny * aspect) > Math.max(now.width, w) * .9;
@@ -214,14 +223,14 @@ const TCEvents = (() => {
     const S = SH(); if (!S) return;
     const bar = S.el, every = all().filter(e => REG.maps[mapOf(e)]), list = every.filter(e => !off.has(grpOf(e)));
     // 人物页（v0.9.2，chars.js）：和事态同一个抽屉，两个页签；地点页（卡片）由查看器管
-    const chN = typeof TCChars !== 'undefined' ? TCChars.count() : 0, hasEv = !!every.length && shown;
+    const chN = typeof P.TCChars !== 'undefined' ? P.TCChars.count() : 0, hasEv = !!every.length && shown;
     S.showTab('ev', hasEv); S.showTab('ch', !!chN);
     if (typeof sheetVis === 'function') sheetVis();
     if (!S.tab || S.button(S.tab)?.hidden) { const nx = hasEv ? 'ev' : chN ? 'ch' : null; if (nx) S.setTab(nx); }
     tab = S.tab || tab; const open = S.open;
     S.label('ch', `<i class="shp sh-circle" aria-hidden="true"></i>${esc(T('ch.tab', '人物'))} <em>${chN}</em>`, `${esc(T('ch.short', '人'))}<br>${chN}`);
-    if (open && S.tab === 'ch') TCChars.pane(bar.querySelector('.chpane'));
-    if (!grpLoaded) { grpLoaded = true; mod().then(m => { if (m?.GROUPS) { GROUPS = m.GROUPS; ORDER = m.GROUP_ORDER || Object.keys(m.GROUPS).filter(g => g !== '其他'); if (m.SHAPES) SHAPES = m.SHAPES; renderBar(); } }); }   // 有事件时才取大类表
+    if (open && S.tab === 'ch') P.TCChars.pane(bar.querySelector('.chpane'));
+    if (!grpLoaded && every.length) { grpLoaded = true; mod().then(m => { if (m?.GROUPS) { GROUPS = m.GROUPS; ORDER = m.GROUP_ORDER || Object.keys(m.GROUPS).filter(g => g !== '其他'); if (m.SHAPES) SHAPES = m.SHAPES; renderBar(); } }); }   // 有事件时才取大类表
     const n = list.filter(live).length, fresh = list.filter(e => e.isNew).length, hid = ORDER.filter(g => off.has(g)).length + (off.has('其他') ? 1 : 0);
     // 标签：大类形状点（最新一条，进行中优先）+「事态 N」+ 新事态红点；完整摘要在面板第一行
     const top = list.filter(live).sort((a, b) => (b.last || 0) - (a.last || 0))[0] || list[0];
@@ -375,10 +384,10 @@ const TCEvents = (() => {
     pe.querySelector('.evleg').addEventListener('click', e => { const b = e.target.closest('button[data-g]'); if (!b) return;
       const g = b.dataset.g; off.has(g) ? off.delete(g) : off.add(g); try { TCStore.set(OFF_KEY, JSON.stringify([...off])); } catch (err) {}
       render(); renderBar(); badges(); });
-    pc.addEventListener('change', e => TCChars.onPane(e)); pc.addEventListener('click', e => TCChars.onPane(e));
+    pc.addEventListener('change', e => P.TCChars.onPane(e)); pc.addEventListener('click', e => P.TCChars.onPane(e));
     // 点列表项飞过去；卡片关闭（× / Esc）后焦点回到事态标签
     pe.querySelector('ol').addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (!b) return;
-      kbdFly = e.detail === 0; if (typeof cardFrom !== 'undefined') cardFrom = S.button('ev'); flyTo(b.dataset.id); });
+      kbdFly = e.detail === 0; if (typeof cardFrom !== 'undefined') setCardFrom(S.button('ev')); flyTo(b.dataset.id); });
     if (coarse) document.body.classList.add('coarse');
   }
   // 层切换器上的事态数：某张地图上未解除的事件条数（查看器的 updateLayerBadges 读取）
@@ -387,3 +396,5 @@ const TCEvents = (() => {
   const collapse = () => { const S = SH(); if (S?.open) S.set('peek'); };
   return { init, set, zoneXY, renderBar: () => $('#evbar') && renderBar(), render: afterOpen, pollFeeds, flyTo, countOn, collapse, isOpen: () => isOpenNow() && !SH()?.el.hidden, get events() { return all(); } };
 })();
+register('TCEvents', TCEvents);
+export { TCEvents };

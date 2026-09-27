@@ -1,6 +1,10 @@
 // 天城 · 地图 → 聊天（v0.9.6）：地点卡 / 事件卡 / 人物卡底部两个按钮「去这里」「追问这件事」，把模板句（tavern/compose.mjs）
 // 发给卡内脚本填进酒馆输入框——**只填不发**。只在嵌在酒馆里时显示。设置里「填入聊天的模板」可改（本机）。
-// 读查看器的全局：esc、post、LANG、$。
+// 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
+import { esc, post } from './app/util.mjs';
+import { LANG } from './app/i18n.mjs';
+import { TCSettings } from './app/settings.mjs';
+import { P, register } from './app/plugins.mjs';
 const TCCompose = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let CM = null, open = false;
@@ -28,7 +32,7 @@ const TCCompose = (() => {
   document.addEventListener('click', onClick);
   // 卡内脚本回话：填进去了没有
   addEventListener('message', e => { if (e.data?.type !== 'eden-map:compose-done' || !window.__fromHost?.(e)) return;   // 只认宿主（arch-v2：以前任何窗口都能弹这条提示）
-    if (typeof TCCustom !== 'undefined') TCCustom.toast([e.data.ok ? T('cmp.done', '已填入聊天输入框（未发送）') : T('cmp.fail', '没找到酒馆输入框')]); });
+    if (typeof P.TCCustom !== 'undefined') P.TCCustom.toast([e.data.ok ? T('cmp.done', '已填入聊天输入框（未发送）') : T('cmp.fail', '没找到酒馆输入框')]); });
   // ---------- 设置：填入聊天的模板 ----------
   async function renderUI() {
     const pop = document.getElementById('setPop'); if (!pop || !embedded()) return;
@@ -63,3 +67,5 @@ const TCCompose = (() => {
   mod(); document.addEventListener('DOMContentLoaded', () => renderUI());
   return { attach, renderUI };
 })();
+register('TCCompose', TCCompose);
+export { TCCompose };

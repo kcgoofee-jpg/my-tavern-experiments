@@ -13,5 +13,5 @@ test('C6 / C10 / C15：三层都有中英结算说明，7 号井黑市只收灰�
   for (const id of ['tc_upper', 'tc_mid', 'tc_low']) assert.ok(REG.maps[id].econ && REG.maps[id].econ_en, id);
   assert.match(REG.maps.tc_upper.econ, /免税/); assert.match(REG.maps.tc_low.econ, /灰票/);
   assert.match(REG.maps.tc_low.markers.well7.econ, /只收灰票/);
-  assert.match(readFileSync(new URL('../map/viewer.html', import.meta.url), 'utf8'), /extra: econHtml\(meta\) \+ links\(meta\)/);
+  assert.match(readFileSync(new URL('../map/app/markers.mjs', import.meta.url), 'utf8'), /extra: econHtml\(meta\) \+ links\(meta\)/);
 });

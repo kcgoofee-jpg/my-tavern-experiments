@@ -62,7 +62,7 @@ cdn_check() {
   local base="https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@$CDN"
   git rev-parse --verify -q "$CDN^{commit}" >/dev/null || git fetch -q origin "$CDN" 2>/dev/null || true
   local list; list=$(git ls-tree -r --name-only "$CDN" -- map 2>/dev/null) || { echo "本地没有 $CDN（先 git fetch）"; return 1; }
-  { printf '%s\n' map/viewer.html map/ui/tokens.css map/tavern/eden-map.js map/data/maps.json map/events.js
+  { printf '%s\n' map/viewer.html map/ui/tokens.css map/tavern/eden-map.js map/data/maps.json map/events.mjs map/app/boot.mjs
     grep -E '_files/[0-9]+/' <<<"$list" | python3 -c "import sys,random; l=sys.stdin.read().split(); random.shuffle(l); print('\n'.join(l[:$CDN_N]))"
   } | grep -vE '\.(md|py)$' | sort -u > "$TMP/cdn"
   local bad=0 u c

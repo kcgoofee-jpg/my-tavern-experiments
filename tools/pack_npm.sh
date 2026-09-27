@@ -46,7 +46,7 @@ cat > "$TMP/package.json" <<EOF
   "license": "$LICENSE_FIELD",
   "repository": { "type": "git", "url": "git+https://github.com/kcgoofee-jpg/my-tavern-experiments.git" },
   "homepage": "https://github.com/kcgoofee-jpg/my-tavern-experiments",
-  "files": ["map/viewer.html", "map/events.js", "map/tavern/", "map/data/", "map/i18n/", "map/ui/", "map/estate/", "map/vendor/", "map/art/", "README.md"],
+  "files": ["map/viewer.html", "map/*.js", "map/*.mjs", "map/app/", "map/core/", "map/props/", "map/tavern/", "map/data/", "map/i18n/", "map/ui/", "map/estate/", "map/vendor/", "map/art/", "README.md"],
   "keywords": ["sillytavern", "map", "deepzoom", "openseadragon"]
 }
 EOF

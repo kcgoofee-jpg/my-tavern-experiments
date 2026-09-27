@@ -2,7 +2,14 @@
 //   不跳转；标题栏显示「未上图：<名字>」（嵌在酒馆里时由卡内脚本的标题栏显示，点它发 eden-map:unmapped-pick；单独打开时显示在查看器页头）。
 //   点开 = 小选择器：把这个名字指派给一个地标、层 / 大区、庄园房间（含卡设定分层房间）/ 室外区域，或世界地名；也可以「忽略」。
 //   存在聊天变量 eden_map.自定义（mvu.mjs setCustom 的 alias / ignore；单独打开时存本机），存完立刻重建词表并跳过去。
-// 读查看器的全局：REG、M、HX、hereIdx、estPlan、TCCustom、jumpHere、esc、post、LANG、$。这里不过滤任何文字（textContent / esc）。
+// 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。这里不过滤任何文字（textContent / esc）。
+import { M, REG } from './app/state.mjs';
+import { announce, esc, post } from './app/util.mjs';
+import { LANG } from './app/i18n.mjs';
+import { HX, estPlan, hereIdx, jumpHere } from './app/locate.mjs';
+import { showSet } from './app/settings.mjs';
+import { sheetVis } from './app/shell.mjs';
+import { P, register } from './app/plugins.mjs';
 const TCUnmapped = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const embed = window.top !== window;
@@ -91,16 +98,16 @@ const TCUnmapped = (() => {
     box.innerHTML = h || `<p class="um-more">${esc(T('um.none', '没有找到'))}</p>`;
   }
   async function assign(key, kind) {
-    const n = name; if (!n || typeof TCCustom === 'undefined') return;
-    const ok = await TCCustom.setCustom(key, { alias: n, kind });
+    const n = name; if (!n || typeof P.TCCustom === 'undefined') return;
+    const ok = await P.TCCustom.setCustom(key, { alias: n, kind });
     if (!ok) { dlg.querySelector('.um-live').textContent = T('um.fail', '没存上，再试一次'); return; }
     waitFor = value; close();
     if (typeof announce === 'function') announce(T('um.done', '「{n}」→ {k}', { n, k: key }));
     update(value);   // 单独打开时已经生效；嵌在酒馆里等宿主推回新的自定义（apply → markHere → update）
   }
   async function ignore() {
-    const n = name; if (!n || typeof TCCustom === 'undefined') return;
-    await TCCustom.setCustom(n, { ignore: true }); close(); update(value);
+    const n = name; if (!n || typeof P.TCCustom === 'undefined') return;
+    await P.TCCustom.setCustom(n, { ignore: true }); close(); update(value);
   }
   function close() { if (!dlg || dlg.hidden) return; dlg.hidden = true; try { (opener && opener.isConnected ? opener : chip)?.focus?.({ preventScroll: true }); } catch (e) {} }
 
@@ -130,3 +137,5 @@ const TCUnmapped = (() => {
 
   return { update, open, close, get name() { return name; } };
 })();
+register('TCUnmapped', TCUnmapped);
+export { TCUnmapped };
