@@ -1,3 +1,14 @@
+# estate2 · 状态（2026-09-27 更新：风格帧已出，等用户认可）
+
+- 设定清单：`docs/eden-lore-space.md`；总平面：`docs/drafts/eden2_plan.png` + `eden2_plan_basement.png`（`plan2d.py` 生成）。
+- 风格帧：`docs/drafts/eden2_style_frame.jpg`（2000px 航拍）+ `eden2_style_frame_crop.jpg`（主楼群近景）。
+- 运行：`python3 blender/estate2/fetch_assets.py`（约 285 MB，不入库），然后 `blender -b -P blender/estate2/style_frame.py -- --view aerial|crop|top --res 2000 --samples 48 --out …`（Metal GPU，约 40 s）。
+- 植被：Poly Haven 扫描树 island_tree_01/02/03 + searsia_burchellii，几何节点 Instance on Points，约 4800 株实例，每株随机色相。searsia_lucida 叶片无透明通道，已弃用。
+- 已知遗留：云海仍是位移平面 + 自发光（不是体积云）；岛体侧面是一刀切的崖壁；别墅只有一个样式；喷泉水面偏灰。
+- 下一步必须等用户认可风格帧后再建模。
+
+---
+
 # estate2 · 伊甸庄园风格帧：暂停记录（2026-09-27，用户叫停）
 
 任务：按 `docs/eden-references.md` 已定方向，在 Blender 里出 1 张 2000px 3/4 航拍风格帧，可以的话再加一张俯视图，然后停下等用户认可。
