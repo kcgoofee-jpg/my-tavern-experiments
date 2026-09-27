@@ -18,7 +18,7 @@ from tc_common import W, H, tick
 CLOUD_ZENITH, CLOUD_SUN_ANGLE = 8, 2.5           # 云用太阳：天顶角（度）、太阳圆盘角（度，越大影子越虚）。B2 第 2 轮：14 → 8、5 → 2.5，z 7.4 的岛影偏移 ≤ 0.95 单位，保得住岬角
 ISLAND_SHADOWS = False   # 用户指示（2026-09-27）：岛不往云上投影，只留白色云层对岛底的遮挡；用户批准后再改 True
 EDEN_RING = False        # 用户决定：去掉伊甸外圈亮云环（伊甸靠尺寸与结界圈已最显眼）；True 恢复
-CLOUD_STYLE = 'toon'     # 'toon'（发布版，metaball 云海）| 'veil'（《部落冲突》式薄纱云原型，待用户批准；命令行 --clouds veil 临时切换）。
+CLOUD_STYLE = 'white'    # 'white'（发布版，方案 B：不动的纯白云底 + 岛缘柔白云边，见 build_white_floor）| 'toon'（旧 metaball 云海）| 'veil'（薄纱云原型）。命令行 --clouds 临时切换。
                          # veil：下方是城市（强制 --below city），城市上方两层半透明的斜向云板 + 岛缘一圈柔白云边；岛不往城市上投影。见 build_veil
 
 # 两种风格的云团参数：间距 S、主团半径 R0 + R1 × 浓度、周围小团个数与相对半径、顶上鼓包个数
@@ -327,7 +327,7 @@ def _veil_plane(name, img, z, col):
     o.visible_shadow = o.visible_diffuse = o.visible_glossy = False
     return o
 
-def _lip_rgba(islands, h, w, rng):
+def _lip_rgba(islands, h, w, rng, gain=.6, col=None):
     """岛缘柔白云边：岛轮廓外一圈约 0.1–0.2 单位宽、alpha ≤ .6、边缘很虚的白（岛面本身会盖住轮廓里面）；沿岸用噪声调浓淡，南侧略厚。"""
     import tc_estates as te, cloud_veil as cv
     u = w / W; mask = np.zeros((h, w), np.float32); ys, xs = np.mgrid[0:h, 0:w]
@@ -338,8 +338,8 @@ def _lip_rgba(islands, h, w, rng):
         mask[y0:y1, x0:x1] = np.maximum(mask[y0:y1, x0:x1], te.pip_np(xs[y0:y1, x0:x1] + .5, ys[y0:y1, x0:x1] + .5, [tuple(p) for p in P]).astype(np.float32))
     a = cv._blur(mask, .1 * u, .1 * u)
     nz = cv._lowfreq(h, w, rng, 22)
-    a = np.clip(a * 2.4, 0, 1) * (.5 + .5 * nz) * .6
-    out = np.zeros((h, w, 4), np.float32); out[..., :3] = cv.TOP; out[..., 3] = a
+    a = np.clip(a * 2.4, 0, 1) * (.5 + .5 * nz) * gain
+    out = np.zeros((h, w, 4), np.float32); out[..., :3] = cv.TOP if col is None else col; out[..., 3] = a
     return out
 
 def build_veil(layer, islands, sun, below):
@@ -355,6 +355,11 @@ def build_veil(layer, islands, sun, below):
         _veil_plane(f'veil_{k}', _veil_image(f'veil_{k}', rgba), z, col); tick(f'veil {k}: {len(sl)} slabs')
     if layer.opt.get('--no-lip') is None:
         _veil_plane('veil_lip', _veil_image('veil_lip', _lip_rgba(islands, th, tw, np.random.default_rng(4412))), .97, col)
+    relight_city(sun, below, col)
+
+def relight_city(sun, below, col):
+    """下方城市换一盏同向的「城市太阳」：主太阳不照城市，城市太阳只照城市、也只被城市自己挡 → 楼影照旧，岛影没有（用户硬规定：岛不投影）。
+    薄纱原型与 upper_city（--below city）共用。"""
     below = [o for o in below if o.type == 'MESH']
     ex = bpy.data.collections.new('city_ex'); rx = bpy.data.collections.new('city_rx')
     for o in below:
@@ -363,4 +368,30 @@ def build_veil(layer, islands, sun, below):
     cs = bpy.data.lights.new('city_sun', 'SUN'); cs.energy = sun.data.energy; cs.color = sun.data.color; cs.angle = sun.data.angle
     co = bpy.data.objects.new('city_sun', cs); col.objects.link(co); co.rotation_euler = sun.rotation_euler
     co.light_linking.receiver_collection = rx; co.light_linking.blocker_collection = rx   # 只有城市自己挡城市的光：没有岛影
-    tick(f'veil clouds: {len(below)} city objects re-lit without island shadows')
+    tick(f'city: {len(below)} objects re-lit without island shadows')
+
+# ---------------- 方案 B：不动的纯白云底（CLOUD_STYLE='white'，发布版）----------------
+# 用户批准方案 B：「底图可以做个不动的纯白云铺满」。岛下面一整片不透明的近白云底（只有极轻的低频起伏，不透城市、没有灰纱），
+# 岛缘一圈柔白云边（同薄纱原型的 lip_only）。云底与云边都是自发光、不受光 → 岛不可能在云上投影（硬规定）。
+# 岛本身的建模、材质、主太阳与 toon 版完全一样（岩体同样不投影）；漂移的云由查看器 map/viewer.html 实时叠加。
+WHITE_FLOOR = ((.885, .905, .935), (.965, .972, .985))   # 显示色：云谷 ≈ #E2E7EE / 云顶 ≈ #F6F8FB（对比约 8 %：仍读作一片亮白，但比漂移精灵暗，精灵看得见；评审 r1）
+WHITE_LIP = (1.0, 1.0, 1.0)                           # 云边比云底更白：在白底上也看得出「岛缘有一圈云」
+
+def build_white_floor(layer, islands, sun):
+    import cloud_veil as cv
+    for n in ('cloud_floor', 'cloud_wisps'):
+        o = bpy.data.objects.get(n)
+        if o: bpy.data.objects.remove(o, do_unlink=True)
+    for o in list(layer.sc.objects):
+        if o.type == 'MESH' and any(ms and ms.name.startswith('rock') for ms in o.data.materials): o.visible_shadow = False
+    if layer.data_only: return
+    col = bpy.data.collections.new('clouds'); layer.sc.collection.children.link(col)
+    tw = int(min(layer.res, 4096)); th = int(round(tw * H / W)); rng = np.random.default_rng(5150)
+    f = .45 * cv._lowfreq(th, tw, rng, 9) + .55 * cv._lowfreq(th, tw, rng, 26)   # 柔和的云团起伏（团约为岛的 0.5–1.5 倍，无细碎噪点）
+    f = np.clip((f - .3) / .4, 0, 1); f = cv._blur(f * f * (3 - 2 * f), th / 90, th / 90)[..., None]   # smoothstep：云顶成片、云谷收窄；再高斯模糊去掉插值网格的方块感
+    rgba = np.ones((th, tw, 4), np.float32); rgba[..., :3] = np.array(WHITE_FLOOR[0]) * (1 - f) + np.array(WHITE_FLOOR[1]) * f
+    fl = _veil_plane('white_floor', _veil_image('white_floor', rgba), -.6, col); fl.scale = (W * 1.3, H * 1.3, 1)
+    fl.data.materials[0].node_tree.nodes['Image Texture'].extension = 'EXTEND'
+    if layer.opt.get('--no-lip') is None:
+        _veil_plane('white_lip', _veil_image('white_lip', _lip_rgba(islands, th, tw, np.random.default_rng(4412), layer.f('--lip-gain', 1.0), WHITE_LIP)), .97, col)
+    tick('white cloud floor + lip')

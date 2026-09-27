@@ -131,7 +131,7 @@ def below_clouds():
         if name == 'cloud_wisps': o.visible_shadow = False
     tick('clouds below')
 below_city() if BELOW == 'city' else below_clouds()
-BELOW_OBJS = set(bpy.data.objects) if CLOUD_STYLE == 'veil' else None   # 薄纱云：此前建的都是下方城市（重新打光，去掉岛影）
+BELOW_OBJS = set(bpy.data.objects) if BELOW == 'city' else None   # 此前建的都是下方城市（重新打光，去掉岛影；薄纱原型与 upper_city 共用）
 
 # ---------------- 悬浮岛与庄园（blender/tc_estates.py；伊甸府邸 blender/eden_manor.py）----------------
 import tc_estates as te
@@ -262,6 +262,9 @@ def selfcheck(routes_out, mk):
 sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = 3.2; sun.angle = math.radians(1.2); sun.color = (1, .96, .9)
 so = bpy.data.objects.new('sun', sun); col_main.objects.link(so); so.rotation_euler = tc.SUN_ROT   # 三层共用的太阳方向
 if CLOUD_STYLE == 'veil': tc_clouds.build_veil(layer, islands, so, BELOW_OBJS)   # 《部落冲突》式薄纱云原型（未批准，发布版不走这里）
+elif BELOW == 'city' and not layer.data_only:   # upper_city：城市只被城市自己挡光 → 没有岛影（用户硬规定）
+    _cc = bpy.data.collections.new('city_light'); layer.sc.collection.children.link(_cc); tc_clouds.relight_city(so, BELOW_OBJS, _cc)
+elif BELOW == 'clouds' and CLOUD_STYLE == 'white': tc_clouds.build_white_floor(layer, islands, so)   # 方案 B（发布版）：纯白云底 + 岛缘云边，无岛影
 elif BELOW == 'clouds': tc_clouds.build_cloud_sea(layer, islands, so)   # 云海与岛影（blender/tc_clouds.py，--clouds toon|soft）
 # 标记与岛屿轮廓（归一化图像坐标，左上原点）：查看器用来放标记、画结界圈和航线。标记另带 ax / ay 锚点（针脚落点：伊甸 = 停靠平台，其余 = 主楼外、离岸 0.8 r 的南侧空地）
 def export(co):
