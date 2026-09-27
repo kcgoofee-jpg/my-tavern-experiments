@@ -14,9 +14,9 @@
 |---|---|---|---|---|---|---|---|---|
 | P1 开局 | site_highland | `cliff_edge` | 崖壁 | ✅ | 卡 | — | — | 开局七 |
 | P1 开局 | site_highland | `highland_plateau` | 旷野高地 | ✅ | 卡 | — | — | 开局七 |
-| P1 开局 | tc_low | `junk_market` | 旧货市场 | ✅ | 卡 + 推断位置 | — | — | 开局六 |
+| P1 开局 | tc_low | `junk_market` | 旧货市场 | ✅ | 卡 + 推断位置 | 铁皮屋区与旧货市场 `map/props/lower_quarter/` | 标准（r3 7 / 7） | 开局六 |
 | P1 开局 | tc_low | `ruined_churches` | 废弃教堂区 | ✅ | 卡 + 推断位置 | 废弃教堂区 `map/props/ruined_churches/` | 标准（r2 7 / 8） | 开局四 |
-| P1 开局 | tc_low | `tin_shacks` | 铁皮屋区 | ✅ | 卡 + 推断位置 | — | — | 开局六 |
+| P1 开局 | tc_low | `tin_shacks` | 铁皮屋区 | ✅ | 卡 + 推断位置 | 铁皮屋区与旧货市场 `map/props/lower_quarter/` | 标准（r3 7 / 7） | 开局六 |
 | P1 开局 | tc_low | `well7` | 7 号井黑市 | ✅ | 卡 | — | — | 视觉样例 / 开局 |
 | P1 开局 | tc_mid | `checkpoint_c` | 层间检查点 | ✅ | 卡 | — | — | 视觉样例 / 开局 |
 | P1 开局 | tc_mid | `old_apartment` | 旧公寓楼 | ✅ | 卡 + 推断位置 | 旧公寓楼 `map/props/old_apartment/` | 标准（r3 7.5 / 7） | 开局六 |

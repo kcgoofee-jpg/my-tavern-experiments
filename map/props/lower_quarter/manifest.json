@@ -1,0 +1,226 @@
+{
+ "_说明": "viewer3d.html?model=lower_quarter 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。铁皮屋区（x −34..−2）与旧货市场（x 2..28）画在同一场景；中层底面、支撑柱、远处工厂（bg_*）只在成图里。开局六提到的两处下层地点；具体位置为仓库推断。",
+ "id": "lower_quarter",
+ "title": {
+  "zh": "铁皮屋区与旧货市场",
+  "en": "Tin Shacks & Junk Market"
+ },
+ "glb": "lower_quarter.glb",
+ "glb_low": "lower_quarter_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "props_shacks_a",
+   "props_shacks_b"
+  ],
+  "interior": [],
+  "floors": [
+   {
+    "id": "floor_0",
+    "name": {
+     "zh": "地面",
+     "en": "Ground"
+    },
+    "y0": -0.5,
+    "y1": 12
+   }
+  ],
+  "site": [
+   "site_ground",
+   "props_alleys",
+   "props_pipes",
+   "props_lights"
+  ],
+  "building": {
+   "min": [
+    -34,
+    0,
+    -16
+   ],
+   "max": [
+    28,
+    12,
+    16
+   ]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 12,
+  "default": 4
+ },
+ "camera": {
+  "frame": [
+   "props_shacks_a",
+   "props_shacks_b",
+   "props_market"
+  ],
+  "dir": [
+   0.35,
+   0.6,
+   -0.7
+  ],
+  "min": 3,
+  "max": 250,
+  "maxPolar": 1.48
+ },
+ "hotspots": [
+  {
+   "id": "shacks_a",
+   "mesh": "props_shacks_a",
+   "name": {
+    "zh": "铁皮屋区西片",
+    "en": "Tin shacks, west"
+   },
+   "desc": {
+    "zh": "铁皮屋区西片：共墙叠建的铁皮屋，锈迹与补丁层层叠叠。",
+    "en": "Tin-shack quarter, west: rusted, patched shacks sharing walls and stacked upward."
+   },
+   "view": [
+    -0.5,
+    0.5,
+    -0.7
+   ]
+  },
+  {
+   "id": "shacks_b",
+   "mesh": "props_shacks_b",
+   "name": {
+    "zh": "铁皮屋区东片",
+    "en": "Tin shacks, east"
+   },
+   "desc": {
+    "zh": "铁皮屋区东片：薄墙相隔，从巷子里能望见高悬的中层。",
+    "en": "Tin-shack quarter, east: thin-walled homes; the mid tier hangs far overhead."
+   },
+   "view": [
+    0.3,
+    0.5,
+    -0.8
+   ]
+  },
+  {
+   "id": "alleys",
+   "mesh": "props_alleys",
+   "name": {
+    "zh": "窄巷",
+    "en": "Narrow alleys"
+   },
+   "desc": {
+    "zh": "窄巷：排水沟、积水、水桶、晾挂的布和乱拉的电线。",
+    "en": "Narrow alleys: drains, puddles, water drums, hanging cloth and tangled cables."
+   },
+   "view": [
+    0.2,
+    0.8,
+    -0.5
+   ]
+  },
+  {
+   "id": "pipes",
+   "mesh": "props_pipes",
+   "name": {
+    "zh": "检修管廊",
+    "en": "Maintenance pipes"
+   },
+   "desc": {
+    "zh": "检修管廊：老旧管道常年滴水，下面积着水洼。",
+    "en": "Maintenance pipes: old pipes drip constantly into puddles below."
+   },
+   "view": [
+    0.2,
+    0.4,
+    -0.9
+   ]
+  },
+  {
+   "id": "market",
+   "mesh": "props_market",
+   "name": {
+    "zh": "旧货市场棚",
+    "en": "Junk market shed"
+   },
+   "desc": {
+    "zh": "旧货市场棚：回收钢材搭起的有顶市场。",
+    "en": "Junk market shed: a covered hall built from salvaged steel."
+   },
+   "view": [
+    0.6,
+    0.4,
+    -0.7
+   ]
+  },
+  {
+   "id": "stalls",
+   "mesh": "props_stalls",
+   "name": {
+    "zh": "露天摊位",
+    "en": "Open-air stalls"
+   },
+   "desc": {
+    "zh": "露天摊位：竹竿撑起的防水布棚；其中一个纸品摊上摆着折起来的地图。",
+    "en": "Open-air stalls under tarps on poles; one paper stall has a folded map laid out."
+   },
+   "view": [
+    0.3,
+    0.5,
+    -0.8
+   ]
+  },
+  {
+   "id": "goods",
+   "mesh": "props_goods",
+   "name": {
+    "zh": "二手货",
+    "en": "Second-hand goods"
+   },
+   "desc": {
+    "zh": "二手货：旧电器、收音机、工具、锅具、衣物、废料堆和纸张。",
+    "en": "Second-hand goods: old appliances, radios, tools, pots, clothes, scrap heaps and paper."
+   },
+   "view": [
+    0.4,
+    0.6,
+    -0.7
+   ]
+  },
+  {
+   "id": "lights",
+   "mesh": "props_lights",
+   "name": {
+    "zh": "灯光",
+    "en": "Lights"
+   },
+   "desc": {
+    "zh": "暖色裸灯泡、钠灯与冷色工作灯；下层几乎没有自然光。",
+    "en": "Warm bare bulbs, sodium lamps and cold work lights; almost no natural light reaches the lower tier."
+   },
+   "view": [
+    0.3,
+    0.4,
+    -0.85
+   ]
+  },
+  {
+   "id": "ground",
+   "mesh": "site_ground",
+   "name": {
+    "zh": "下层地面",
+    "en": "Lower-tier ground"
+   },
+   "desc": {
+    "zh": "下层地面：潮湿开裂的混凝土与泥地。",
+    "en": "Lower-tier ground: damp, cracked concrete and dirt."
+   },
+   "view": [
+    0.2,
+    0.8,
+    -0.5
+   ]
+  }
+ ]
+}

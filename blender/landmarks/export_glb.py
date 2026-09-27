@@ -31,6 +31,10 @@ BUDGET = {
     'props_breakfast': (20000, 1024), 'props_signs': (10000, 1024), 'props_metro': (15000, 1024),
     'props_room': (20000, 1024), 'props_car': (8000, 512), 'site_trees': (30000, 1024),
     'props_people': (20000, 512),
+    # lower_quarter（铁皮屋区 + 旧货市场）
+    'props_shacks_a': (40000, 2048), 'props_shacks_b': (40000, 2048), 'props_alleys': (20000, 1024),
+    'props_pipes': (12000, 1024),
+    'props_market': (8000, 1024), 'props_stalls': (8000, 1024), 'props_goods': (16000, 1024), 'props_lights': (10000, 512),
 }
 
 
