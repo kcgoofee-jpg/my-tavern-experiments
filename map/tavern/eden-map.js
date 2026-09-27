@@ -542,7 +542,7 @@
       const mc = CHM.mvuChars(st, hereNow, varMap.present), dd = DBm ? dbData() : null;
       if (dd) { const have = new Set(mc.map(c => c.name)); for (const c of DBm.characters(dd)) if (!have.has(c.name)) mc.push(c); }   // 数据库插件人物表里的位置（只读，MVU 优先）
       chars = CHM.collectChars(msgs, floorNow, mc, known);
-      if (MV) { roster = MV.rosters(st, { present: varMap.present, members: varMap.members, targets: varMap.targets, stageField: varMap.stageField, gradeField: varMap.gradeField, coreField: varMap.coreField, codeField: varMap.codeField, socialField: varMap.socialField, heightField: varMap.heightField, weightField: varMap.weightField, knownField: varMap.knownField, accessoryField: varMap.accessoryField }); rep = MV.reputation(st, varMap.reputation); stageOrderFor(roster); portraitsFor(); }
+      if (MV) { roster = MV.rosters(st, { present: varMap.present, members: varMap.members, targets: varMap.targets, stageField: varMap.stageField, gradeField: varMap.gradeField, coreField: varMap.coreField, codeField: varMap.codeField, socialField: varMap.socialField, heightField: varMap.heightField, weightField: varMap.weightField, knownField: varMap.knownField, accessoryField: varMap.accessoryField, tierField: varMap.tierField }); rep = MV.reputation(st, varMap.reputation); stageOrderFor(roster); portraitsFor(); }
       const sig = floorNow + '|' + chars.map(c => c.name + '@' + c.place + '#' + c.floor).join() + '|' + JSON.stringify(roster) + Object.keys(portraits).length + rep + (stageOrder || []).join();
       if (sig !== charSig) { charSig = sig; if (!panel.hidden && alive) sendChars(); emit('characters', { items: chars.map(c => ({ ...c })), floor: floorNow }); } }
     const fresh = events.filter(e => e.last > seen && e.tier !== 'fade').length;

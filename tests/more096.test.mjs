@@ -28,3 +28,17 @@ test('关闭（-）不读；全关没有 more', () => {
   const one = rosters(CARD, effective({ codeField: OFF }, CARD)).members.items[0];
   assert.equal(one.more.code, undefined); assert.equal(one.more.social, '讲师');
 });
+
+import { combatTier, tierText } from '../map/tavern/mvu.mjs';
+test('E1 战力小签：只认卡里写明的，不编造', () => {
+  assert.equal(tierText('超凡三阶'), '超凡 3 阶'); assert.equal(tierText('超凡 5 阶'), '超凡 5 阶'); assert.equal(tierText('天灾级'), '天灾');
+  assert.equal(tierText('普通人'), '普通人'); assert.equal(tierText('一个普通人家的孩子'), ''); assert.equal(tierText('教授'), '');
+  assert.equal(combatTier({ 身份: '骑士团战斗修女，代号「天灾」' }), ''); assert.equal(combatTier({ 身份: '天灾级战力' }), '天灾');
+  assert.equal(combatTier({ 身份: '园丁' }), '');
+  assert.equal(combatTier({ 战力: '普通人' }, '战力'), '普通人');
+  assert.equal(combatTier({ 身份: '超凡四阶影卫' }, '', true), '');
+  const d = detect({ 世界: {}, 主角: {}, 表: { 甲: { 战力: '超凡二阶' } } });
+  assert.equal(d.tierField, '战力');
+  assert.equal(rosters({ 世界: {}, 主角: {}, 表: { 甲: { 战力: '超凡二阶' } } }, d).members.items[0].tier, '超凡 2 阶');
+  assert.equal(rosters(CARD, detect(CARD)).members.items[0].tier, undefined);
+});

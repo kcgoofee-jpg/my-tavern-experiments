@@ -434,5 +434,6 @@
   "ch.m_known": "Publicly known",
   "ch.m_yes": "Yes",
   "ch.m_no": "No",
-  "ch.m_acc": "Accessories"
+  "ch.m_acc": "Accessories",
+  "ch.tier": "Combat tier"
 }
