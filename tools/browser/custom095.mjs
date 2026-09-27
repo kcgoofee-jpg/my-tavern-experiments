@@ -15,7 +15,7 @@ const si = process.argv.indexOf('--shots'), SHOTS = si > 0 ? path.resolve(proces
 B.quietWait();
 const srv = await B.ensureServer();
 const rep = B.reporter(OUT);
-const STAT = { 在场人物: { 莉娜: { 身份: '向导', 位置: '下层·7号井' } } };
+const STAT = { 在场人物: { 米拉: { 身份: '向导', 位置: '下层·7号井' } } };
 const jpg = async (page, name) => { await B.shot(page, OUT, name); if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true });
   await page.screenshot({ path: path.join(SHOTS, name + '.jpg'), type: 'jpeg', quality: 72, scale: 'css' }); };
 const errs = P => P.errors.filter(e => !/http 404/.test(e));
@@ -114,9 +114,9 @@ async function run(name, preset) {
     rep.check(`${name} 选择器里点「在地图上看」：切到下层并打开 7 号井黑市的地点卡`, f1.cur === 'tc_low' && f1.dlg && f1.set && /7 号井/.test(f1.card), JSON.stringify(f1));
     await jpg(p, `cu_${name}_fly_marker`);
     // 人物
-    const f2ok = await vf.evaluate(() => TCCustom.flyTo({ character: '莉娜' })); await B.wait(1500);
+    const f2ok = await vf.evaluate(() => TCCustom.flyTo({ character: '米拉' })); await B.wait(1500);
     const f2 = await vf.evaluate(() => ({ cur, card: document.querySelector('#card').hidden ? '' : document.querySelector('#card h2').textContent }));
-    rep.check(`${name} 人物：飞到莉娜（人物栏的位置）`, f2ok && f2.cur === 'tc_low' && /莉娜/.test(f2.card), JSON.stringify(f2));
+    rep.check(`${name} 人物：飞到米拉（人物栏的位置）`, f2ok && f2.cur === 'tc_low' && /米拉/.test(f2.card), JSON.stringify(f2));
     const f3 = await vf.evaluate(() => TCCustom.flyTo({ character: '不在场的人' }));
     rep.check(`${name} 人物不在人物栏：flyTo 返回 false（面板里给提示）`, f3 === false);
     // 庄园房间：庄园不可用（本次会话失败过）→ 上层伊甸地点卡写房间

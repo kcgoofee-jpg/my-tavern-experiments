@@ -103,6 +103,7 @@
 <script defer src="chars.js"></script>
 <script defer src="custom.js"></script>
 <script defer src="trips.js"></script>
+<script defer src="varmap.js"></script>
 <script>document.addEventListener('DOMContentLoaded', () => { if (window.top !== window) parent.postMessage({ type: 'eden-map:boot', pct: .6 }, '*'); });   // 地图库已下载（启动进度 60%）</script>
 <style>
   /* E5 统一重构：颜色、字号、圆角、间距、动效全部取 ui/tokens.css 的语义令牌（docs/ui-audit.md 第三部分）；这里只写组件，不写色值。
@@ -1547,6 +1548,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:clock') TCCustom.setClock(e.data);   // 世界时间 → 夜色
     if (e.data?.type === 'eden-map:outfit') TCCustom.setOutfit(e.data);   // 主角着装 → 本人地点卡
     if (e.data?.type === 'eden-map:fly') TCCustom.flyTo(e.data.target);   // v0.9.5 EdenMap.flyTo(target)
+    if (e.data?.type === 'eden-map:varmap') TCVarMap.set(e.data);   // v0.9.5 变量映射（换卡兼容）
     if (e.data?.type === 'eden-map:trips') TCTrips.set(e.data.items || []);   // v0.9.5 最近的行程（卡内脚本从每楼的地点和人物标签推出）
     if (e.data?.type === 'eden-map:toast') TCCustom.toast(e.data.items || []);   // 剧情改名 / 用途的一次性提示
     if (e.data?.type === 'eden-map:selfcheck') { selfCheck = e.data; renderSelfCheck(); }   // 卡内脚本的启动自检结果（E6）   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）

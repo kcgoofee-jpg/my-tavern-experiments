@@ -1,7 +1,7 @@
 // v0.9.5「自定义」面板的纯函数：可自定义对象的分组清单（选择器）、搜索、飞行目标。查看器 custom.js 与 node 单测共用。
 // 数据来源：maps.json（各层地标 markers、庄园 rooms / areas）、estate/plan.js（房间所在楼层，只用来分组）、人物栏的名字。
 // 飞行目标 target = { map, marker | room | area | character }：
-//   地标 { map: 'tc_mid', marker: 'enforcement_hq' }；庄园房间 { map: 'eden_estate', room: '书房' }；室外 { map: 'eden_estate', area: '前庭' }；人物 { character: '莉娜' }。
+//   地标 { map: 'tc_mid', marker: 'enforcement_hq' }；庄园房间 { map: 'eden_estate', room: '书房' }；室外 { map: 'eden_estate', area: '前庭' }；人物 { character: '米拉' }。
 //   新庄园接入时只要换掉查看器里 room / area 的处理，目标的形状不变。
 // 不过滤任何文字；这里只做字符串比较。
 
