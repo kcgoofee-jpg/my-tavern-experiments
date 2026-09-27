@@ -26,6 +26,9 @@
   调试：window.__estate（setMode / focus / find / focusCard / stats）
   依赖：three@0.160.0 在 vendor/（importmap 用相对路径，<base href> 嵌入时同样可用）；GLTFLoader + meshopt 解码器
 -->
+<link rel="stylesheet" href="../ui/tokens.css">
+<script src="../ui/sheet.js"></script>
+<script src="../ui/chrome3d.js"></script>
 <style>
   :root { --inset: 12px; --paper: #101418; --ink: #e9e4d8; --muted: #8e98a2; --gold: #e6c36a; --panel: rgba(16,20,24,.84); --line: rgba(230,195,106,.22); --btn: rgba(255,255,255,.04); --lbl: rgba(12,15,18,.62); --lblink: #f3eee2; }
   :root[data-theme="light"] { --paper: #f6f7f5; --ink: #14171a; --muted: #6b7178; --gold: #8f6f2e; --panel: rgba(255,255,255,.9); --line: rgba(143,111,46,.28); --btn: rgba(20,23,26,.04); --lbl: rgba(255,255,255,.84); --lblink: #14171a; }
@@ -140,6 +143,27 @@
     #tourPill { bottom: 66px; }
     #hint, #stats { display: none !important; }
   }
+  /* ---- UI v2（ui/chrome3d.js，spec §4）：视图分段在顶上、剖切楼层是二级条、控制列一处、房间 / 图例 / 关于进唯一抽屉；原大标题与格言进「关于」 ---- */
+  html, body { background: transparent; }
+  #title, #hint, #tour, #tourPill { display: none !important; }
+  #zoom { position: static; display: contents; }
+  #floors { position: static; transform: none; display: flex; flex-direction: row; gap: 2px; padding: 0; background: none; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  #floors button { all: unset; box-sizing: border-box; cursor: pointer; flex: none; min-height: 40px; min-width: 44px; padding: 0 10px; display: grid; place-items: center; border-radius: 4px; color: var(--ink); font: 500 13px/1 var(--font-ui, system-ui); opacity: 1; }
+  #floors button small, #floors hr, #floors .cap { display: none; }
+  #floors button.on { background: var(--gold); color: #17130a; }
+  #floors button:focus-visible { outline: 2px solid var(--focus, #63b4be); outline-offset: 2px; }
+  #tip { position: absolute; z-index: 5; pointer-events: none; max-width: 270px; background: var(--panel); border: 1px solid var(--line); border-left: 2px solid var(--gold); border-radius: 6px; padding: 8px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.28); opacity: 0; transition: opacity .15s; font-size: 12px; }
+  #tip.on { opacity: 1; }
+  #tip h3 { margin: 0; font-size: 14px; font-family: "Songti SC", "STSong", serif; letter-spacing: .08em; }
+  #tip .sub { font-size: 11px; color: var(--muted); }
+  #tip .row, #tip .src, #tip .acts, #tip .gold, #tip .her, #tip .era { display: none; }
+  #card { position: static !important; opacity: 1 !important; transform: none !important; max-width: none; pointer-events: auto; background: none; border: 0; border-radius: 0; box-shadow: none; padding: 4px 8px; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  #card:empty + #cardEmpty { display: block; } #cardEmpty { display: none; color: var(--muted); font-size: 12px; padding: 12px 8px; margin: 0; }
+  #legend ul { list-style: none; margin: 0; padding: 4px 8px; display: grid; gap: 6px; font-size: 12.5px; }
+  #legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
+  #about { padding: 6px 8px; } #about h2 { margin: 0; font: 600 18px/1.3 "Songti SC", "STSong", serif; letter-spacing: .24em; }
+  #about .motto { color: var(--gold); letter-spacing: .14em; font-size: 12px; margin: 4px 0; } #about p { margin: 4px 0; color: var(--muted); font-size: 12px; }
+  @media (max-width: 640px) { #tip { display: none; } }
 </style>
 </head>
 <body>
@@ -148,7 +172,7 @@
 <div id="title"><div class="crest"><svg viewBox="0 0 22 26" aria-hidden="true"><path d="M1.5 1.5h19v10.5c0 6.4-4.3 10.3-9.5 12.5C5.8 22.3 1.5 18.4 1.5 12z" fill="#2c4f86" stroke="#e6c36a" stroke-width="1.3"/><path d="M11 20.5v-7.2" stroke="#e6c36a" stroke-width="1.4"/><circle cx="11" cy="9.6" r="3.6" fill="#e6c36a"/><circle cx="8.6" cy="11.2" r=".75" fill="#2c4f86"/><circle cx="13.2" cy="8.6" r=".75" fill="#2c4f86"/><path d="M3.6 8.6c1.6-.2 2.9.4 3.6 1.8-1.5-.3-2.6 0-3.6.9m14.8-2.7c-1.6-.2-2.9.4-3.6 1.8 1.5-.3 2.6 0 3.6.9" fill="none" stroke="#e6c36a" stroke-width="1.1" stroke-linecap="round"/><path d="M8 20.6h6" stroke="#e6c36a" stroke-width="1.1"/></svg><h1>伊甸家族府邸</h1></div><p class="motto">始建约一百九十年 · HORTUS SUPRA NUBES</p><p class="sub">浮岛庄园 · 主楼地上三层 + 地下两层</p><i></i></div>
 <nav id="floors"></nav>
 <div id="zoom"><button id="lblBtn" type="button" aria-pressed="true" title="标注（L）">标</button><button id="zin" title="放大">+</button><button id="zout" title="缩小">−</button><button id="zreset" title="复位"><svg viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 1 0 1.7-4"/><path d="M2 2.5v3h3"/></svg></button></div>
-<div id="card"></div>
+<div id="card"></div><div id="tip" aria-hidden="true"></div>
 <div id="tour"><button class="prev" type="button" aria-label="上一站">‹</button><div class="tx"><b></b><span></span></div><button class="next" type="button" aria-label="下一站">›</button><button class="x" type="button" aria-label="关闭">✕</button></div>
 <button id="tourPill" type="button">◆ 传承导览</button>
 <div id="hint"></div>

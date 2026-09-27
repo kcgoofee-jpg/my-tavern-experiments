@@ -15,6 +15,8 @@
   调试：window.__v3d（stats、setMode、fly、orbitBench）。?tier=low|high 强制档位，?lang=en。
 -->
 <link rel="stylesheet" href="../ui/tokens.css">
+<script src="../ui/sheet.js"></script>
+<script src="../ui/chrome3d.js"></script>
 <script type="importmap">{ "imports": { "three": "../estate/vendor/three.module.min.js", "three/addons/": "../estate/vendor/jsm/" } }</script>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font: var(--fs-body)/1.45 var(--font-ui); -webkit-font-smoothing: antialiased; }
@@ -26,39 +28,33 @@
   .btn[aria-pressed="true"], .seg button[aria-checked="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
   .panel { background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-2); }
   @media (hover: hover) and (pointer: fine) { .panel { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); } }
-  #top { position: fixed; top: calc(var(--sp-4) + env(safe-area-inset-top)); left: calc(var(--sp-4) + var(--inset)); right: var(--sp-4); display: flex; flex-wrap: wrap; gap: var(--sp-4); align-items: flex-start; pointer-events: none; }
-  #top > * { pointer-events: auto; }
-  .seg { display: inline-flex; padding: 2px; gap: 2px; }
-  .seg button { min-height: 40px; min-width: 56px; border: 0; border-radius: var(--r-m); background: transparent; padding: 0 var(--sp-5); cursor: pointer; font-size: var(--fs-control); }
-  #cut { display: flex; align-items: center; gap: var(--sp-4); padding: 0 var(--sp-5); min-height: var(--hit); font-size: var(--fs-small); }
+  /* UI v2：视图切换在顶上（ui/chrome3d.js），部件 / 流向 / 说明是唯一抽屉的三页（默认收起，U12） */
+  #cut { display: flex; align-items: center; gap: var(--sp-4); padding: 0 var(--sp-5); min-height: 40px; font-size: var(--fs-small); }
   #cut[hidden] { display: none; }
-  #cut input { width: 140px; height: var(--hit); accent-color: var(--accent); }
+  #cut input { width: 140px; height: 40px; accent-color: var(--accent); }
   #cut output { min-width: 3.5em; font-variant-numeric: tabular-nums; }
-  #listBtn { margin-left: auto; }
-  #list { position: fixed; top: calc(60px + env(safe-area-inset-top)); right: var(--sp-4); width: 240px; max-height: calc(100% - 140px); overflow: auto; padding: var(--sp-3); }
-  #flows { position: fixed; top: calc(60px + env(safe-area-inset-top)); left: calc(var(--sp-4) + var(--inset, 0px)); width: 230px; padding: var(--sp-3); }
-  #flows ol { list-style: none; margin: 0; padding: 0; }
-  #flows li button { display: flex; width: 100%; min-height: var(--hit); align-items: center; gap: var(--sp-4); padding: 0 var(--sp-4); border: 0; border-radius: var(--r-m); background: transparent; text-align: left; cursor: pointer; }
-  #flows li button:hover { background: var(--surface-2); }
+  #flows ol, #list ol { list-style: none; margin: 0; padding: 0; }
+  #flows li button, #list li button { display: flex; width: 100%; min-height: var(--hit); align-items: center; gap: var(--sp-4); padding: 0 var(--sp-4); border: 0; border-radius: var(--r-m); background: transparent; text-align: left; cursor: pointer; }
+  #flows li button:hover, #list li button:hover { background: var(--surface-2); }
+  #flows li button[aria-current], #list li button[aria-current="true"] { background: var(--accent-weak); color: var(--ink); box-shadow: inset 3px 0 var(--accent); }
   #flows i { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
-  #flows h2 { margin: var(--sp-3) var(--sp-4); font-size: var(--fs-small); color: var(--muted); font-weight: 600; }
-  #list h2 { margin: var(--sp-3) var(--sp-4); font-size: var(--fs-small); color: var(--muted); font-weight: 600; }
-  #list ol { list-style: none; margin: 0; padding: 0; }
-  #list li button { display: flex; width: 100%; min-height: var(--hit); align-items: center; gap: var(--sp-4); padding: 0 var(--sp-4); border: 0; border-radius: var(--r-m); background: transparent; text-align: left; cursor: pointer; }
-  #list li button:hover { background: var(--surface-2); }
-  #list li button[aria-current="true"] { background: var(--accent-weak); color: var(--ink); box-shadow: inset 3px 0 var(--accent); }
+  #flows h2, #list h2 { margin: var(--sp-3) var(--sp-4); font-size: var(--fs-small); color: var(--muted); font-weight: 600; }
+  #flows .fhead { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); }
   #list li i { width: 20px; height: 20px; border-radius: 50%; flex: none; display: grid; place-items: center; font: 600 var(--fs-micro)/1 var(--font-ui); font-style: normal; background: var(--surface-2); border: 1px solid var(--line); }
-  #card { position: fixed; left: calc(var(--sp-4) + var(--inset)); bottom: calc(var(--sp-4) + env(safe-area-inset-bottom)); width: min(360px, calc(100% - 16px - var(--inset))); padding: var(--sp-5) var(--sp-6); box-sizing: border-box; }
+  #card { position: relative; padding: var(--sp-3) var(--sp-4); }
   #card h3 { margin: 0 44px var(--sp-2) 0; font-size: var(--fs-title); }
   #card p { margin: 0; color: var(--ink-2); }
   #card small { display: block; margin-top: var(--sp-3); color: var(--muted); font-size: var(--fs-small); }
-  #card .x { position: absolute; top: 2px; right: 2px; border: 0; background: transparent; }
+  #card .x { position: absolute; top: 0; right: 0; border: 0; background: transparent; }
+  #cardEmpty { color: var(--muted); font-size: var(--fs-small); padding: var(--sp-5) var(--sp-4); margin: 0; }
+  #card:not([hidden]) + #cardEmpty { display: none; }
+  body.nopins .pin { display: none !important; }
   #pins { position: fixed; inset: 0; pointer-events: none; }
   .pin { position: absolute; left: 0; top: 0; width: var(--hit); height: var(--hit); margin: -22px 0 0 -22px; border: 0; padding: 0; background: transparent; pointer-events: auto; cursor: pointer; display: grid; place-items: center; }
   .pin span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 600 var(--fs-micro)/1 var(--font-ui); background: var(--map-label-bg); color: var(--map-label-ink); border: 1.5px solid var(--gold); box-shadow: var(--sh-1); }
   .pin.on span { background: var(--gold); color: #1a1406; transform: scale(1.15); }
   .pin[hidden] { display: none; }
-  #credit { position: fixed; right: var(--sp-4); bottom: calc(var(--sp-2) + env(safe-area-inset-bottom)); font-size: var(--fs-micro); color: var(--muted); pointer-events: none; text-shadow: 0 0 3px var(--bg); }
+  #credit { position: fixed; left: var(--sp-4); bottom: calc(var(--sp-2) + env(safe-area-inset-bottom)); font-size: var(--fs-micro); color: var(--muted); pointer-events: none; text-shadow: 0 0 3px var(--bg); max-width: 40%; }
   #load { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); transition: opacity var(--dur-3); z-index: 5; }
   #load.done { opacity: 0; pointer-events: none; }
   #load > div { width: min(320px, 80%); text-align: center; }
@@ -68,42 +64,20 @@
   #load .acts[hidden] { display: none; }
   #fps { position: fixed; left: 50%; top: 4px; transform: translateX(-50%); font: var(--fs-micro) var(--font-mono); color: var(--muted); pointer-events: none; }
   @media (max-width: 640px) {
-    #list { top: auto; right: var(--sp-4); left: var(--sp-4); width: auto; bottom: calc(var(--sp-4) + env(safe-area-inset-bottom)); max-height: 46%; }
-    #list[hidden] + #card, #card { bottom: calc(var(--sp-4) + env(safe-area-inset-bottom)); }
     #cut input { width: 110px; }
-    .seg button { min-width: 48px; padding: 0 var(--sp-4); }
     #credit { display: none; }
-    /* U12：手机上说明卡改为底部面板（≤40% 高，可拖下关闭）；热点编号缩小；视图条紧凑 */
-    #card { left: 0; right: 0; bottom: 0; width: auto; max-height: 40vh; overflow: auto; border-radius: var(--r-l) var(--r-l) 0 0; padding: var(--sp-6) var(--sp-5) calc(var(--sp-4) + env(safe-area-inset-bottom)); }
-    #card .grip { display: block; }
-    #flows { top: calc(56px + env(safe-area-inset-top)); width: min(260px, calc(100% - 32px)); max-height: 50%; overflow: auto; }
     .pin span { width: 17px; height: 17px; font-size: 10px; border-width: 1px; }
-    .seg button { min-height: 36px; min-width: 40px; padding: 0 var(--sp-3); }
-    #top .btn { min-height: 40px; padding: 0 var(--sp-4); }
-    #top { gap: var(--sp-3); }
   }
-  #card .grip { display: none; position: absolute; top: 0; left: 0; right: 0; height: 22px; cursor: grab; touch-action: none; }
-  #card .grip::before { content: ''; position: absolute; left: 50%; top: 8px; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--line-strong); }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
 <canvas id="c" tabindex="0" aria-label="三维模型"></canvas>
 <div id="pins" aria-hidden="false"></div>
-<div id="top">
-  <div class="seg panel" role="radiogroup" id="modes" aria-label="显示方式">
-    <button type="button" role="radio" data-mode="ext" aria-checked="true" data-t="mode_ext">外观</button>
-    <button type="button" role="radio" data-mode="xray" aria-checked="false" data-t="mode_xray">内透</button>
-    <button type="button" role="radio" data-mode="cut" aria-checked="false" data-t="mode_cut">剖切</button>
-  </div>
-  <label id="cut" class="panel" hidden><span data-t="cut_h">剖切高度</span><input type="range" id="cutH" min="0" max="6" step="0.05"><output id="cutV"></output></label>
-  <button type="button" class="btn panel" id="flowBtn" aria-pressed="false" aria-controls="flows" hidden data-t="flows">流向</button>
-  <button type="button" class="btn panel" id="legendBtn" aria-expanded="false" aria-controls="flows" hidden data-t="legend">图例</button>
-  <button type="button" class="btn panel" id="listBtn" aria-expanded="true" aria-controls="list" data-t="parts">部件</button>
-</div>
-<nav id="flows" class="panel" hidden aria-labelledby="flowsH"><h2 id="flowsH" data-t="flows_h">流向（示意，点一条看说明）</h2><ol></ol></nav>
-<nav id="list" class="panel" aria-labelledby="listH"><h2 id="listH" data-t="parts_h">部件（点击飞过去）</h2><ol></ol></nav>
-<section id="card" class="panel" hidden aria-live="polite"><div class="grip" aria-hidden="true"></div><button type="button" class="btn x" aria-label="关闭" data-ta="close">✕</button><h3></h3><p></p><small></small></section>
+<label id="cut" hidden><span data-t="cut_h">剖切高度</span><input type="range" id="cutH" min="0" max="6" step="0.05"><output id="cutV"></output></label>
+<nav id="flows" aria-labelledby="flowsH"><div class="fhead"><h2 id="flowsH" data-t="flows_h">流向（示意，点一条看说明）</h2><button type="button" class="btn" id="flowBtn" aria-pressed="false" data-t="flow_pin">固定显示</button></div><ol></ol></nav>
+<nav id="list" aria-labelledby="listH"><h2 id="listH" data-t="parts_h">部件（点击飞过去）</h2><ol></ol></nav>
+<div id="info"><section id="card" hidden aria-live="polite"><button type="button" class="btn x" aria-label="关闭" data-ta="close">✕</button><h3></h3><p></p><small></small></section><p id="cardEmpty" data-t="info_empty">点模型上的编号或「部件」列表里的一项，这里显示说明</p></div>
 <div id="credit"></div>
 <div id="fps" hidden></div>
 <div id="load" role="status"><div><span class="txt">加载中…</span><div class="bar"><i></i></div><div class="acts" hidden><button type="button" class="btn" id="retry" data-t="retry">重试</button></div></div></div>
@@ -120,11 +94,35 @@ const $ = s => document.querySelector(s);
 let dirty = true;
 const post = m => { if (EMBED) try { parent.postMessage(m, '*'); } catch (e) {} };
 
+// ---------------- UI v2 外壳（ui/chrome3d.js）：视图分段 + 剖切高度二级条 + 控制列 + 唯一抽屉（部件 · 流向 · 说明）----------------
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const LSg = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const C = UI3D.create({ embed: EMBED, views: [{ id: 'ext', label: '外观' }, { id: 'xray', label: '内透' }, { id: 'cut', label: '剖切' }], view: 'ext', onView: m => setMode(m), sub: document.getElementById('cut'),
+  tabs: [{ id: 'parts', btnClass: 'partsTab', panel: document.getElementById('list') }, { id: 'flows', btnClass: 'flowsTab', panel: document.getElementById('flows') }, { id: 'info', btnClass: 'infoTab', panel: document.getElementById('info') }],
+  controls: [{ id: 'zin', icon: 'in', onClick: () => dolly(1 / 1.4) }, { id: 'zout', icon: 'out', onClick: () => dolly(1.4) }, { id: 'zreset', icon: 'reset', onClick: () => { select(null); camTouched = false; frameStart(); } },
+    { id: 'pinBtn', icon: 'label', pressed: true, onClick: () => setPins(document.body.classList.contains('nopins')) }],
+  onEsc: () => post({ type: 'estate:key', key: 'Escape' }) });
+C.sheet.showTab('flows', false);
+C.setAuto(LSg('edenMap3dAuto') === '1');
+C.onInsets(() => resize());
+let flowTabOn = false;
+new MutationObserver(() => { const on = C.sheet.tab === 'flows' && C.sheet.open; if (on !== flowTabOn) { flowTabOn = on; if (!flowPin) setFlows(on); } }).observe(C.sheet.el, { attributes: true, attributeFilter: ['data-state', 'data-tab'], subtree: true });
+function dolly(f) { const d = camera.position.clone().sub(controls.target).multiplyScalar(f); if (d.length() < controls.minDistance || d.length() > controls.maxDistance) return; camera.position.copy(controls.target).add(d); controls.update(); camTouched = true; dirty = true; }
+function setPins(on) { document.body.classList.toggle('nopins', !on); C.control('pinBtn')?.setAttribute('aria-pressed', String(on)); }
+addEventListener('keydown', e => { if ((e.key === 'l' || e.key === 'L') && !e.ctrlKey && !e.metaKey && !e.target.closest?.('input,textarea') && LSg('edenMapKeys') !== '0') setPins(document.body.classList.contains('nopins')); });
+function chromeLang() {
+  C.setViews([{ id: 'ext', label: t('mode_ext') }, { id: 'xray', label: t('mode_xray') }, { id: 'cut', label: t('mode_cut') }]); C.setView(mode);
+  C.setText({ expand: t('expand'), collapse: t('collapse'), region: t('region') }); C.seg.setAttribute('aria-label', t('modes'));
+  C.sheet.label('info', esc(t('info')), esc(t('info').slice(0, 1)));
+  if (!HS.length) C.sheet.label('parts', esc(t('parts')), esc(t('parts').slice(0, 1)));
+  for (const [id, k] of [['zin', 'zin'], ['zout', 'zout'], ['zreset', 'reset'], ['pinBtn', 'pins']]) { const b = C.control(id); if (b) { b.title = t(k); b.setAttribute('aria-label', t(k)); } }
+  if (MAN) C.setTitle(L(MAN.title));
+}
 // ---------------- 语言 / 主题 ----------------
 const STR = {
-  zh: { mode_ext: '外观', mode_xray: '内透', mode_cut: '剖切', cut_h: '剖切高度', parts: '部件', parts_h: '部件（点击飞过去）', flows: '流向', legend: '图例', flows_h: '流向（示意，点一条看说明）', retry: '重试', close: '关闭',
+  zh: { mode_ext: '外观', mode_xray: '内透', mode_cut: '剖切', cut_h: '剖切高度', parts: '部件', parts_h: '部件（点击飞过去）', flows: '流向', legend: '图例', flows_h: '流向（示意，点一条看说明）', flow_pin: '固定显示', info: '说明', info_empty: '点模型上的编号或「部件」列表里的一项，这里显示说明', expand: '展开', collapse: '收起', zin: '放大', zout: '缩小', reset: '复位视角', pins: '热点编号（L）', region: '部件、流向与说明', retry: '重试', close: '关闭',
     loading: '加载模型 {p}', fail: '模型加载失败，请检查网络后重试', slow: '加载较慢…可以继续等，或重试', modes: '显示方式', canvas: '三维模型：拖动旋转，双指缩放' },
-  en: { mode_ext: 'Exterior', mode_xray: 'X-ray', mode_cut: 'Section', cut_h: 'Cut height', parts: 'Parts', parts_h: 'Parts (tap to fly)', flows: 'Flows', legend: 'Legend', flows_h: 'Flows (schematic, tap for details)', retry: 'Retry', close: 'Close',
+  en: { mode_ext: 'Exterior', mode_xray: 'X-ray', mode_cut: 'Section', cut_h: 'Cut height', parts: 'Parts', parts_h: 'Parts (tap to fly)', flows: 'Flows', legend: 'Legend', flows_h: 'Flows (schematic, tap for details)', flow_pin: 'Keep shown', info: 'Details', info_empty: 'Tap a number on the model or an item under Parts to see details here', expand: 'Expand', collapse: 'Collapse', zin: 'Zoom in', zout: 'Zoom out', reset: 'Reset view', pins: 'Hotspot numbers (L)', region: 'Parts, flows and details', retry: 'Retry', close: 'Close',
     loading: 'Loading model {p}', fail: 'Model failed to load. Check the connection and retry.', slow: 'Still loading… keep waiting or retry', modes: 'View mode', canvas: '3D model: drag to orbit, pinch to zoom' },
 };
 // v0.9.6：语言先看地图的设置（同源本机存储 edenMapLang），再看系统语言；嵌入时查看器还会发 estate:lang
@@ -135,7 +133,7 @@ function applyLang() {
   document.documentElement.lang = LANG === 'en' ? 'en' : 'zh';
   document.querySelectorAll('[data-t]').forEach(e => { e.textContent = t(e.dataset.t); });
   document.querySelectorAll('[data-ta]').forEach(e => e.setAttribute('aria-label', t(e.dataset.ta)));
-  $('#modes').setAttribute('aria-label', t('modes')); $('#c').setAttribute('aria-label', t('canvas'));
+  $('#c').setAttribute('aria-label', t('canvas')); chromeLang();
   if (MAN) { document.title = L(MAN.title); $('#credit').textContent = L(MAN.credit); buildList(); if (sel) showCard(sel); }
 }
 function setTheme(th) { document.documentElement.classList.toggle('light', th === 'light'); if (renderer) { scene.background = new THREE.Color(getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#101418'); dirty = true; } }
@@ -154,7 +152,7 @@ let renderer;
 try {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: MSAA, powerPreference: TIER === 'low' ? 'low-power' : 'high-performance', stencil: false });
 } catch (e) { post({ type: 'estate:fail', reason: 'webgl' }); fail('webgl'); throw e; }
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, DPR_CAP));
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, LSg('edenMap3dQ') === '1' ? 1 : LSg('edenMap3dQ') === '2' ? 2 : DPR_CAP));   // 设置「显示 · 三维画质」
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NoToneMapping;   // 烘焙图已经过 AgX 视图变换
 renderer.localClippingEnabled = false;
@@ -305,7 +303,8 @@ function buildList() {
   for (const h of HS) { const li = document.createElement('li'), b = document.createElement('button'); b.type = 'button';
     b.innerHTML = `<i>${h.n}</i><span></span>`; b.querySelector('span').textContent = L(h.name); b.dataset.id = h.id;
     if (sel === h.id) b.setAttribute('aria-current', 'true');
-    b.onclick = () => { fly(h.id); if (innerWidth <= 640) showList(false); }; li.appendChild(b); ol.appendChild(li); }
+    b.onclick = () => fly(h.id); li.appendChild(b); ol.appendChild(li); }
+  C.sheet.label('parts', `${esc(t('parts'))} <em>${HS.length}</em>`, `${esc(t('parts').slice(0, 1))}<br>${HS.length}`);
   document.querySelectorAll('.pin').forEach(p => { const h = HS.find(x => x.id === p.dataset.id); if (h) p.setAttribute('aria-label', L(h.name)); });
 }
 function buildPins() {
@@ -348,7 +347,7 @@ function buildFlows() {
   for (const x of FL) { const li = document.createElement('li'), b = document.createElement('button'); b.type = 'button'; b.dataset.id = x.f.id;
     b.innerHTML = `<i style="background:${x.f.color}"></i><span></span>`; b.querySelector('span').textContent = L(x.f.name);
     b.onclick = () => showFlow(x.f.id); li.appendChild(b); ol.appendChild(li); }
-  $('#flowBtn').hidden = !FL.length;
+  C.sheet.showTab('flows', FL.length > 0); C.sheet.label('flows', `${esc(t('flows'))} <em>${FL.length}</em>`, `${esc(t('flows').slice(0, 1))}<br>${FL.length}`);
 }
 const _m4 = new THREE.Matrix4();
 function stepFlows(now) {
@@ -356,10 +355,12 @@ function stepFlows(now) {
     for (let k = 0; k < x.n; k++) { const u = ((k / x.n) + now / 1000 * sp) % 1; _m4.makeTranslation(x.path.getPointAt(u)); x.dots.setMatrixAt(k, _m4); }
     x.dots.instanceMatrix.needsUpdate = true; }
 }
+// UI v2（spec §4）：流向开关与流向图例合并——打开抽屉「流向」页即显示流向线，离开即隐藏；页内「固定显示」让它一直开着
+let flowPin = false;
 function setFlows(on) {
-  flowOn = on; flowG.visible = on; $('#legendBtn').hidden = !on; showLegend(on && !PHONE()); $('#flowBtn').setAttribute('aria-pressed', String(on));
-  if (on) { if (mode === 'ext') setMode('xray'); showList(false); }
-  else { for (const x of FL) x.tube.material.opacity = 0.45; if (!sel) $('#card').hidden = true; }
+  flowOn = on; flowG.visible = on; $('#flowBtn').setAttribute('aria-pressed', String(flowPin));
+  if (on) { if (mode === 'ext') setMode('xray'); }
+  else { for (const x of FL) { x.tube.material.opacity = 0.45; x.dots.visible = true; } document.querySelectorAll('#flows li button').forEach(b => b.removeAttribute('aria-current')); }
   dirty = true; post({ type: 'v3d:state', mode, hotspot: sel, flows: on });
 }
 function showFlow(id) {
@@ -368,38 +369,22 @@ function showFlow(id) {
   c.querySelector('h3').textContent = L(x.f.name); c.querySelector('p').textContent = L(x.f.desc);
   c.querySelector('small').textContent = LANG === 'en' ? x.f.name.zh : (x.f.name.en || ''); c.hidden = false;
   document.querySelectorAll('#flows li button').forEach(b => b.toggleAttribute('aria-current', b.dataset.id === id)); dirty = true;
-  if (PHONE()) showLegend(false);
 }
-// U12：手机上流向图例 / 部件列表默认收起，一点即开；点画面或选中后自动收起
 const PHONE = () => innerWidth <= 640;
-function showLegend(on) { $('#flows').hidden = !on; $('#legendBtn').setAttribute('aria-expanded', String(on)); $('#legendBtn').setAttribute('aria-pressed', String(on)); }
-$('#legendBtn').onclick = () => { const on = $('#flows').hidden; showLegend(on); if (on && PHONE()) showList(false); };
-document.addEventListener('pointerdown', e => { if (PHONE() && !e.target.closest('#list, #flows, #top')) { showList(false); showLegend(false); } }, { passive: true });
-{ // 底部面板往下拖 > 60px 关闭
-  const g = $('#card .grip'), c = $('#card'); let y0 = null;
-  g.addEventListener('pointerdown', e => { y0 = e.clientY; g.setPointerCapture(e.pointerId); });
-  g.addEventListener('pointermove', e => { if (y0 != null) c.style.transform = `translateY(${Math.max(0, e.clientY - y0)}px)`; });
-  const end = e => { if (y0 == null) return; const d = e.clientY - y0; y0 = null; c.style.transform = '';
-    if (d > 60) { if (sel) select(null); else c.hidden = true; } };
-  g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end);
-}
-$('#flowBtn').onclick = () => setFlows(!flowOn);
+$('#flowBtn').onclick = () => { flowPin = !flowPin; setFlows(flowPin || (C.sheet.tab === 'flows' && C.sheet.open)); };
 function showCard(id) {
   const h = HS.find(x => x.id === id), c = $('#card'); if (!h) { c.hidden = true; return; }
   c.querySelector('h3').textContent = L(h.name); c.querySelector('p').textContent = L(h.desc);
   c.querySelector('small').textContent = LANG === 'en' ? h.name.zh : (h.name.en || ''); c.hidden = false;
+  C.sheet.setTab('info', C.sheet.state === 'full' ? 'full' : 'half');   // 点热点 → 抽屉半开到「说明」，取景让开抽屉（C.onInsets）
 }
 $('#card .x').onclick = () => select(null);
-function showList(on) { $('#list').hidden = !on; $('#listBtn').setAttribute('aria-expanded', String(on)); $('#listBtn').setAttribute('aria-pressed', String(on)); }
-$('#listBtn').onclick = () => { const on = $('#list').hidden; showList(on); if (on && PHONE()) showLegend(false); };
-if (innerWidth <= 640) showList(false);
-
 function select(id) {
   sel = id;
   for (const s of HS) s.m.material.userData.u.uHi.value = s.id === id ? 1 : 0;
   for (const m of Object.values(meshes)) if (m.material?.userData?.u) m.material.userData.u.uGain.value = id && m.userData.role === 'props' && !HS.some(s => s.id === id && s.m === m) ? 0.72 : 1;
   document.querySelectorAll('#list li button').forEach(b => b.toggleAttribute('aria-current', b.dataset.id === id));
-  if (id && innerWidth <= 640) { showList(false); showLegend(false); }
+  if (!id && C.sheet.tab === 'info') C.sheet.set('peek');
   showCard(id); dirty = true; post({ type: 'v3d:state', mode, hotspot: id });
 }
 
@@ -432,6 +417,7 @@ function stepTween(now) {
   if (k >= 1) tween = null;
 }
 ['pointerdown', 'wheel'].forEach(ev => canvas.addEventListener(ev, () => { tween = null; camTouched = true; }, { passive: true }));
+canvas.addEventListener('pointerdown', () => C.dragStart()); addEventListener('pointerup', () => C.dragEnd());
 
 // ---------------- 显示方式 ----------------
 const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1.6);
@@ -441,7 +427,7 @@ function setCut(y) { $('#cutH').value = y; showCut(); cutPlane.constant = y; dir
 $('#cutH').addEventListener('input', () => setCut(cutY()));
 function setMode(m) {
   mode = m;
-  document.querySelectorAll('#modes button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.mode === m)));
+  C.setView(m); C.showSub(m === 'cut');
   $('#cut').hidden = m !== 'cut';
   U.uXray.value = m === 'xray' ? 1 : 0;
   if (meshes.__edges) meshes.__edges.children.forEach(l => { l.visible = m === 'xray'; });
@@ -450,7 +436,6 @@ function setMode(m) {
   if (m === 'cut') setCut(cutY());
   dirty = true; post({ type: 'v3d:state', mode, hotspot: sel });
 }
-document.querySelectorAll('#modes button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
 // (a) 屋顶自动掀开：外观模式下相机拉近到建筑里 / 附近时屋顶上移淡出；内透 / 剖切直接藏掉
 let roofK = 0;
 const BLD = new THREE.Box3();
@@ -481,7 +466,9 @@ canvas.addEventListener('pointerup', e => {
 });
 
 // ---------------- 循环 ----------------
-function resize() { const w = innerWidth, h = innerHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); dirty = true;
+function resize() { const w = innerWidth, h = innerHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h;
+  const ins = C.insets(); camera.setViewOffset(w, h, ins.right / 2, ins.bottom / 2, w, h);   // 取景中心让开抽屉 / 右栏
+  camera.updateProjectionMatrix(); dirty = true;
   if (root && !camTouched && !tween && !sel) frameStart(); }
 addEventListener('resize', resize);
 const FT = []; let last = performance.now(), running = true;
@@ -499,7 +486,7 @@ function frame(now) {
   dirty = false;
   renderer.render(scene, camera); placePins();
   FT.push(dt); if (FT.length > 600) FT.shift();
-  if (Q.has('fps')) { const f = $('#fps'); f.hidden = false; f.textContent = `${(1000 / (FT.slice(-30).reduce((a, b) => a + b, 0) / Math.min(30, FT.length))).toFixed(0)} fps · ${TIER} · dpr ${renderer.getPixelRatio()}`; }
+  if (Q.has('fps') || LSg('edenMapFps') === '1') { const f = $('#fps'); f.hidden = false; f.textContent = `${(1000 / (FT.slice(-30).reduce((a, b) => a + b, 0) / Math.min(30, FT.length))).toFixed(0)} fps · ${TIER} · dpr ${renderer.getPixelRatio()}`; }
 }
 requestAnimationFrame(frame);
 document.addEventListener('visibilitychange', () => { dirty = true; });
