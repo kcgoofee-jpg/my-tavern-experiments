@@ -41,10 +41,14 @@ def mat_terrain():
     park = t.mix(0.55, pc_, (0.13, 0.19, 0.07), 'MIX', (-1500, 1600))          # 鼠尾草绿
     wild = t.mix(0.6, gc, (0.42, 0.32, 0.12), 'MIX', (-1500, 1400))             # 金黄 / 稻草
     patch = t.new('ShaderNodeMapRange', (-1600, 1500), **{'From Min': 0.5, 'From Max': 0.62})
-    t.link(noise(0.018, 1500, 3.0), patch.inputs['Value'])
+    nzp = t.new('ShaderNodeTexNoise', (-1900, 1500), **{'Scale': 0.05, 'Detail': 8.0, 'Roughness': 0.72, 'Distortion': 1.5})
+    t.link(ob, nzp.inputs['Vector'])
+    t.link(nzp.outputs['Fac'], patch.inputs['Value'])
     meadow = t.mix(patch.outputs[0], park, wild, loc=(-1350, 1450))
     straw = t.new('ShaderNodeMapRange', (-1600, 1350), **{'From Min': 0.55, 'From Max': 0.62})
-    t.link(noise(0.05, 1350, 2.0), straw.inputs['Value'])
+    nzs = t.new('ShaderNodeTexNoise', (-1900, 1350), **{'Scale': 0.11, 'Detail': 8.0, 'Roughness': 0.75, 'Distortion': 2.0})
+    t.link(ob, nzs.inputs['Vector'])
+    t.link(nzs.outputs['Fac'], straw.inputs['Value'])
     meadow = t.mix(t.math('MULTIPLY', straw.outputs[0], 0.7), meadow, (0.55, 0.47, 0.28), loc=(-1320, 1400))
     # 野花带：薰衣草紫 / 虞美人红 / 白，成片（drift）而不是撒点
     for i, (sc_, col_) in enumerate(((0.06, (0.36, 0.25, 0.6)), (0.07, (0.6, 0.08, 0.05)), (0.05, (0.85, 0.83, 0.78)))):
@@ -101,6 +105,19 @@ def mat_terrain():
     k3 = ke.new(0.3); k3.color = (0.14, 0.26, 0.2, 1)
     t.link(rows, kr.inputs[0])
     kitchen = kr.outputs[0]
+    # r4c 农业台地：按等高线分台（每 2.8 m 高差一台），台沿干砌石墙，台面轮换葡萄园（顺等高线的行）/ 薰衣草带 / 麦茬
+    agz = t.attr('agz', loc=(-2000, -1500)).outputs['Fac']
+    zz = t.math('DIVIDE', agz, 11.0)
+    tid = t.math('FLOOR', zz); tf = t.math('FRACT', zz)
+    hsh = t.math('FRACT', t.math('MULTIPLY', t.math('SINE', t.math('MULTIPLY', tid, 12.9898)), 43758.5))
+    vrow = t.math('GREATER_THAN', t.math('SINE', t.math('MULTIPLY', agz, 2.5)), 0.1)   # 顺等高线的行
+    vine = t.mix(vrow, (0.42, 0.34, 0.22), (0.12, 0.2, 0.05), loc=(-1300, -1500))
+    lav = t.mix(vrow, (0.3, 0.26, 0.2), (0.36, 0.26, 0.6), loc=(-1300, -1560))
+    stub = t.mix(t.math('MULTIPLY', noise(1.5, -1600, 3.0), 0.6), (0.62, 0.52, 0.3), (0.45, 0.4, 0.22), loc=(-1300, -1620))
+    ag = t.mix(t.math('GREATER_THAN', hsh, 0.45), vine, lav, loc=(-1200, -1500))
+    ag = t.mix(t.math('GREATER_THAN', hsh, 0.8), ag, stub, loc=(-1150, -1500))
+    wallm = t.math('LESS_THAN', tf, 0.05)
+    agri = t.mix(wallm, ag, (0.62, 0.58, 0.5), loc=(-1100, -1500))
     # 崖石
     rc, rr, rn = tex('rock_face_03', 20.0, -1400, 1.0)
     rock = t.mix(0.5, rc, (0.5, 0.48, 0.44), 'MIX', (-1500, -1400))   # r3：浅石灰岩崖，不再是一整块褐土
@@ -113,7 +130,7 @@ def mat_terrain():
     steep = t.new('ShaderNodeMapRange', (-1800, -2200), **{'From Min': 0.8, 'From Max': 0.55})
     t.link(sn.outputs['Z'], steep.inputs['Value'])
     A = {k: t.attr(k, loc=(-1000, 2600 - 120 * i)).outputs['Fac'] for i, k in enumerate(
-        ('lawn', 'gravel', 'built', 'under', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic', 'grove', 'rimb', 'kitchen'))}
+        ('lawn', 'gravel', 'built', 'under', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic', 'grove', 'rimb', 'kitchen', 'agri'))}
     col = t.mix(A['tropic'], forest, tropic, loc=(-700, 600))
     col = t.mix(A['meadow'], col, meadow, loc=(-600, 600))
     col = t.mix(A['lawn'], col, lawn, loc=(-500, 600))
@@ -123,8 +140,9 @@ def mat_terrain():
     rocky = t.new('ShaderNodeMapRange', (-600, 900), **{'From Min': 0.62, 'From Max': 0.66})
     t.link(noise(0.035, 900, 4.0), rocky.inputs['Value'])
     col = t.mix(t.math('MULTIPLY', rocky.outputs[0], t.math('MULTIPLY', A['meadow'], 0.9)), col, rock, loc=(-320, 800))
-    col = t.mix(A['rimb'], col, rim, loc=(-310, 700))
+    col = t.mix(A['agri'], col, agri, loc=(-308, 700))
     col = t.mix(A['kitchen'], col, kitchen, loc=(-305, 700))
+    col = t.mix(A['rimb'], col, rim, loc=(-303, 700))
     col = t.mix(A['paved'], col, paved, loc=(-300, 600))
     col = t.mix(A['beds'], col, beds, loc=(-250, 600))
     rockish = t.math('MAXIMUM', steep.outputs[0], A['under'], (-600, -1600))
@@ -258,7 +276,7 @@ def build_island(res_m=1.0, n_theta=1800):
 
     def pad(v):
         return np.concatenate([v.ravel(), np.zeros(nu * n_theta), [0, 0]])
-    attrs = dict(under=under, **{k: pad(at[k]) for k in ('lawn', 'gravel', 'built', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic', 'grove', 'rimb', 'kitchen')})
+    attrs = dict(under=under, **{k: pad(at[k]) for k in ('lawn', 'gravel', 'built', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic', 'grove', 'rimb', 'kitchen', 'agri', 'agz')})
     m = mat_terrain()
     ob = _mesh_from_grid('island', co, quads, attrs, m)
     ob2 = _mesh_from_grid('island_caps', co, tris, attrs, m)

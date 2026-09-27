@@ -123,13 +123,22 @@ PADS = [
     dict(id='esplanade', kind='rect', c=(0, -196), s=(92, 104), z=(8.5, 19.2), blend=12, edge='soft', r=6),
     dict(id='dock', kind='ellipse', c=(0, -256), r=(30, 18), z=8.5, blend=8, edge='soft'),
     dict(id='breakers', kind='ellipse', c=(236, -152), r=(70, 46), rot=-0.45, z='auto+2', blend=1.6, edge='stone'),
-    dict(id='grey_house', kind='rect', c=(-232, -100), s=(64, 40), rot=0.35, z='auto+4', blend=1.6, edge='stone', r=3),
-    dict(id='grey_t1', kind='rect', c=(-243, -134), s=(64, 22), rot=0.35, z='prev-3', blend=1.6, edge='stone', r=2),
+    dict(id='grey_house', kind='rect', c=(-228, -98), s=(94, 58), rot=0.349, z='auto+3', blend=1.6, edge='stone', r=3),
+    dict(id='grey_t1', kind='rect', c=(-213.6, -137.5), s=(88, 22), rot=0.349, z='prev-3', blend=1.6, edge='stone', r=2),
+    dict(id='gs_upper', kind='rect', c=(-247.8, -43.5), s=(74, 24), rot=0.349, z='auto+0', blend=1.6, edge='stone', r=2),
+    dict(id='gs_motor', kind='ellipse', c=(-238.9, -67.9), r=(13, 13), z='auto+0', blend=3, edge='soft'),
+    dict(id='court_a', kind='rect', c=(-186, -12), s=(22, 40), rot=0.384, z='auto+0', blend=4, edge='soft', r=1),
+    dict(id='court_b', kind='rect', c=(-230, 95), s=(22, 40), rot=-0.349, z='auto+0', blend=4, edge='soft', r=1),
+    dict(id='court_c', kind='rect', c=(168, -100), s=(22, 40), rot=-0.489, z='auto+0', blend=4, edge='soft', r=1),
+    dict(id='dairy', kind='rect', c=(-276, 8), s=(52, 40), rot=1.5708, z='auto+0', blend=6, edge='soft', r=4),
     dict(id='islet', kind='ellipse', c=(-22, 150), r=(9, 8), z=WATER_Z + 1.3, blend=3, edge='soft'),
     dict(id='club', kind='ellipse', c=(70, 132), r=(18, 12), z=WATER_Z + 1.2, blend=1.2, edge='stone'),
     dict(id='view_rear', kind='ellipse', c=(34, 84), r=(13, 10), z=PLATEAU_Z, blend=1.2, edge='stone'),
     dict(id='view_east', kind='ellipse', c=(300, 4), r=(14, 11), z='auto+1', blend=1.2, edge='stone'),
     dict(id='view_ne', kind='ellipse', c=(222, 122), r=(12, 9), z='auto+4', blend=1.2, edge='stone'),
+    dict(id='cottage', kind='ellipse', c=(-160, -82), r=(32, 20), rot=0.35, z='auto+0.5', blend=6, edge='soft'),
+    dict(id='look_sw', kind='ellipse', c=(-120, -212), r=(10, 10), z='auto+0.5', blend=1.2, edge='stone'),
+    dict(id='look_se', kind='ellipse', c=(125, -210), r=(10, 10), z='auto+0.5', blend=1.2, edge='stone'),
 ]
 
 
@@ -203,8 +212,8 @@ def terrain(x, y):
             built = np.maximum(built, ring)
         elif p['edge'] == 'mixed':   # 主台地：南半圈白石墙，北半圈天然崖
             built = np.maximum(built, ring * (y < 25))
-        if p['id'] in ('plateau', 'terrace', 'breakers', 'grey_house', 'grey_t1', 'grey_t2', 'view_rear',
-                       'view_east', 'view_ne', 'club'):
+        if p['id'] in ('plateau', 'terrace', 'breakers', 'grey_house', 'grey_t1', 'grey_t2', 'view_rear', 'cottage', 'dairy', 'gs_upper',
+                       'view_east', 'view_ne', 'club', 'look_sw', 'look_se'):
             lawn = np.maximum(lawn, inner)
         if p['id'] == 'esplanade':
             lawn = np.maximum(lawn, (np.abs(x) < 26).astype(float) * (sd < -3))
@@ -233,6 +242,8 @@ def cover(x, y, padmask, lake):
     paved *= 1 - ((arc_r < ARC['R'] - ARC['depth'] / 2 - 3) & (y > ARC['c'][1])).astype(float)   # 回廊院内留草坪
     paved = np.maximum(paved, (_sd_rect(x, y, -201, 132, 34, 24, math.radians(35), 2.0) < 0).astype(float))   # r4b 机库停机坪
     paved = np.maximum(paved, (_sd_rect(x, y, -168, 112, 24, 10, math.radians(35), 1.0) < 0).astype(float))   # r4b 服务院内院
+    paved = np.maximum(paved, (_sd_ellipse(x, y, -238.9, -67.9, 12, 12) < 0).astype(float))   # Greystone 车场
+    paved = np.maximum(paved, (_sd_rect(x, y, -132.5, 127.4, 32, 14, math.radians(35), 1.0) < 0).astype(float))   # r4d 车库前院
     beds = np.zeros_like(paved)
     parterre_gravel = np.zeros_like(paved)
     for gid, _, kind, c, sz, rot in GARDENS:
@@ -259,22 +270,59 @@ def cover(x, y, padmask, lake):
     meadow = np.maximum(meadow, clearing(x, y) * (1 - padmask) * (1 - lake))
     wm = wood_mask(x, y)
     meadow = np.maximum(meadow * wm, (1 - wm) * (1 - lake))   # r4：林带外全是草甸 / 园地
-    grove = ((np.abs(x) > 46) & (np.abs(x) < 108) & (y > -246) & (y < -144)).astype(float) * (1 - wood_mask(x, y))
-    rimb = smooth01((16 - e) / 6) * (1 - padmask)
+    grove = (_sd_rect(x, y, 170, 5, 44, 44, 0.0, 3.0) < 0).astype(float)
+    rimb = np.maximum(smooth01((16 - e) / 6) * (1 - padmask), crag(x, y))
+    rimb = np.maximum(rimb, smooth01((30 - e) / 10) * agri(x, y) * smooth01(0.5 + 3 * fbm(x, y, 18, 2, 71)))   # 西缘石灰岩露头
+    rimb = np.maximum(rimb, east_top(x, y) * smooth01(0.3 + 2.5 * fbm(x, y, 14, 2, 73)))
+    sp = smooth01((-y - 95) / 25) * smooth01((215 - np.abs(x)) / 35)
+    paved = np.maximum(paved, ((e > 4) & (e < 8.5)).astype(float) * (sp > 0.5) * (1 - padmask))   # 南侧崖边步道
+    for pid in ('view_rear', 'view_east', 'view_ne', 'look_sw', 'look_se'):
+        pp = [q for q in PADS if q['id'] == pid][0]
+        paved = np.maximum(paved, (pad_sd(pp, x, y) < -0.5).astype(float))
     kg = _sd_rect(x, y, -118, 150, 80, 52, math.radians(20), 1.0) < 0
     kitchen = kg.astype(float)
     meadow = meadow * (1 - kitchen)
     rill = np.maximum(rill, 0 * rimb)
-    return dict(grove=grove, rimb=rimb, kitchen=kitchen, paved=np.maximum(paved, parterre_gravel), beds=beds, rill=rill, sand=sand, meadow=meadow * (1 - under), tropic=under)
+    ag = agri(x, y) * (1 - padmask) * (1 - kitchen)
+    meadow = meadow * (1 - ag)
+    return dict(agz=agri_z(x, y), agri=ag, grove=grove, rimb=rimb, kitchen=kitchen, paved=np.maximum(paved, parterre_gravel), beds=beds, rill=rill, sand=sand, meadow=meadow * (1 - under), tropic=under)
+
+
+def agri(x, y):
+    """r4c 区 A：西侧三分之一改地中海农业台地（葡萄园 / 薰衣草 / 干砌石墙 / 橄榄行）。"""
+    return smooth01((-114 - x) / 15) * smooth01((y + 150) / 15) * smooth01((np.hypot((x + 160) / 1.3, y + 82) - 26) / 6)
+
+
+def agri_z(x, y):
+    """台地分台用的平滑“等高线”：以离岛缘距离为主（台地沿岛缘同心展开），加大尺度起伏，1 单位 ≈ 1 m。"""
+    return edge_dist(x, y) + 9 * fbm(x, y, 160, 2, 81)
+
+
+def east_top(x, y):
+    """r4c 区 B：东崖观景台前的崖顶草甸（原 V4）。"""
+    return smooth01((42 - np.hypot(x - 252, y - 14)) / 10)
+
+
+def open_sides(x, y):
+    south = smooth01((-y - 95) / 25) * smooth01((215 - np.abs(x)) / 35)
+    north = smooth01((y - 150) / 15) * smooth01((165 - np.abs(x)) / 30)
+    return np.maximum(south, north)
+
+
+def crag(x, y):
+    """北崖（湖上方）裸岩岬角：岛缘 40 m 内。"""
+    return smooth01((y - 150) / 15) * smooth01((165 - np.abs(x)) / 30) * smooth01((40 - edge_dist(x, y)) / 12)
 
 
 def wood_mask(x, y):
     """r4（用户：树太多且雷同）：林地只留外坡林带 + 别墅周边 + 沟谷，其余是草坪 / 草甸 / 设计过的树阵。"""
     e = edge_dist(x, y)
     belt = smooth01((52 + 14 * fbm(x, y, 60, 2, 61) + 22 * fbm(x, y, 22, 2, 67) - e) / 5)
+    belt *= (1 - open_sides(x, y)) * (1 - agri(x, y)) * (1 - east_top(x, y))   # r4c：南侧（到达序列）与北崖（湖上）全开敞
     for b in VILLAS:
         belt = np.maximum(belt, smooth01((46 - np.hypot(x - b[1], y - b[2])) / 10))
     belt = np.maximum(belt, smooth01((22 - poly_dist(x, y, RAVINE)) / 8))
+    belt *= (1 - agri(x, y)) * (1 - east_top(x, y))
     # 视线走廊：主楼 → 湖、主楼 → 停靠平台，保持开敞
     belt *= 1 - smooth01((70 - np.abs(x)) / 12) * ((y > 30) & (y < 110))
     belt *= 1 - smooth01((60 - np.abs(x)) / 10) * (y < -60)
@@ -307,6 +355,11 @@ FOOTPATHS = [
     [(-110, -50), (-150, -110), (-190, -140), (-200, -150)],   # → 迷宫
     [(-128, 118), (-100, 96), (-66, 60), (-62, 58)],            # 服务区 → 训练场（仆从动线）
     [(-40, 110), (-80, 205), (-40, 222), (20, 220), (70, 205)],
+    # r4c 农场砾石路
+    [(-110, -50), (-165, -25), (-225, 5), (-285, -5)],
+    [(-165, -25), (-185, 35), (-240, 58), (-280, 80)],
+    [(-128, 118), (-175, 70), (-185, 35)],
+    [(-252, 10), (-240, 58), (-205, 92), (-180, 106)],   # 农场 → 服务院
 ]
 FOUNTAIN = (0.0, -113.0)
 COURT_R = 26.0
@@ -353,23 +406,28 @@ VILLAS = [  # 林中散落别墅（平顶带屋顶露台 or 红瓦四坡）
     ('v1', 200, 110, 22, 23, 2, 25, 'sketch', 'white'),
     ('v2', 262, 50, 22, 23, 2, -15, 'sketch', 'white'),
     ('v3', 196, -40, 22, 23, 2, 40, 'sketch', 'white'),
-    ('v4', 240, 20, 22, 23, 2, 10, 'sketch', 'white'),
-    ('v5', -208, 82, 22, 23, 2, -20, 'sketch', 'white'),
-    ('v6', -268, 34, 22, 23, 2, 30, 'sketch', 'white'),
-    ('v7', -150, 152, 22, 23, 2, -40, 'sketch', 'white'),
     ('v8', 105, 208, 22, 23, 2, 10, 'sketch', 'white'),
-    ('v9', -95, 200, 22, 23, 2, -10, 'sketch', 'white'),
-    ('v10', -290, -40, 22, 23, 2, 60, 'sketch', 'white'),
 ]
 VILLAS = [(b[0], b[1], b[2], b[3], b[4], b[5], round(math.degrees(math.atan2(b[2], b[1]))) - 90, *b[7:]) for b in VILLAS]   # 露台 / 泳池（模型 +y）朝岛外
-TREEHOUSES = [(-185, 120, 20), (160, 150, -30), (40, 222, 5), (-255, 70, 45), (285, 70, -60), (-60, 225, 15)]
+TREEHOUSES = [(160, 150, -30), (40, 222, 5), (285, 70, -60), (-60, 225, 15)]
 CLUB = ('club', 72, 134, 24, 11, 1.5, -25, 'hip', 'white')
 BREAKERS = ('breakers', 232, -148, 50, 32, 4, -26, 'hip_low', 'beige')
-GREYSTONE = [  # 都铎灰石老宅：几组陡山墙
-    ('gs_main', -230, -98, 36, 13, 2.5, 20, 'gable', 'grey'),
-    ('gs_wing', -246, -90, 12, 26, 2.5, 20, 'gable', 'grey'),
-    ('gs_east', -213, -104, 11, 20, 2, 20, 'gable', 'grey'),
-    ('gs_tower', -238, -110, 6, 6, 3.5, 20, 'gable', 'grey'),
+GS_C, GS_ROT = (-228, -98), 20
+GS_CASCADE = [(-211.6, -26.1), (-200, -38), (-188, -50), (-176, -60), (-162, -68), (-148, -73)]   # 上台地东端 → 客舍岩洞泳池的跌水溪   # r4d Greystone：按真实比例放大（约 76 × 46 m，E 形平面，朝南）
+
+
+def _gs(u, v):
+    a = math.radians(GS_ROT)
+    return GS_C[0] + u * math.cos(a) - v * math.sin(a), GS_C[1] + u * math.sin(a) + v * math.cos(a)
+
+
+GREYSTONE = [  # 都铎复兴灰石大宅：主楼 + 东西翼 + 中翼 + 塔楼，陡板岩山墙
+    ('gs_main', *_gs(0, 0), 72, 14, 3, GS_ROT, 'gable', 'grey'),
+    ('gs_wing', *_gs(-29, 13), 14, 32, 3, GS_ROT, 'gable', 'grey'),
+    ('gs_east', *_gs(29, 10), 14, 26, 2.5, GS_ROT, 'gable', 'grey'),
+    ('gs_mid', *_gs(0, 12), 12, 20, 2.5, GS_ROT, 'gable', 'grey'),
+    ('gs_tower', *_gs(-10, -8), 8, 8, 4.5, GS_ROT, 'gable', 'grey'),
+    ('gs_bay', *_gs(14, -9), 10, 5, 2.5, GS_ROT, 'gable', 'grey'),
 ]
 FUNICULAR = ((34, 90), (66, 126))   # 崖顶站 → 湖边俱乐部
 ROPE_BRIDGE = ((180, 30), (216, 12))
@@ -393,13 +451,13 @@ SERVICE = [
     ('svc_w', -168 - 13 * math.cos(math.radians(35)), 112 - 13 * math.sin(math.radians(35)), 8, 10, 2, 35, 'hip', 'white'),
     ('svc_e', -168 + 13 * math.cos(math.radians(35)), 112 + 13 * math.sin(math.radians(35)), 8, 10, 2, 35, 'hip', 'white'),
     ('hangar', -214, 150, 30, 20, 2, 35, 'barrel', 'white'),          # 悬浮载具库（载具停靠坪在旁）
-    ('garage', -140, 138, 26, 10, 1.2, 35, 'hip', 'white'),         # 悬浮车库（用户要求）
+    ('garage', -140, 138, 32, 12, 1.5, 35, 'hip', 'white'),         # 悬浮车库（用户要求；r4d 放大，前院停 Maybach / DB11）
     ('greenhouse', -118, 180, 34, 9, 1.4, 20, 'glass', 'white'),    # 温室 / 橘园（菜园北墙）
 ]
 WATERSIDE = ('waterside', -34, 100, 16, 9, 1.2, -4, 'hip', 'white')   # 水榭：湖南岸石台敞亭，半挑出水面
 ISLET = (-22, 150, 9)                       # 湖心小岛 (x, y, 半径)；岛上 8 柱圆亭 = 湖心亭
 WATER_TOWER = (-196, 88, 5.5, 22)          # 以太凝水塔：圆塔 (x, y, 半径, 高)，给喷泉供水
-HELIPAD = (-190, 176, 14)                  # 载具停靠坪 (x, y, 半径)（用户要求）
+HELIPAD = (-186, 170, 11)                  # 载具停靠坪 (x, y, 半径)（用户要求）
 GARDENS = [  # (id, 名称, kind, 中心, 尺寸, 旋转°)
     ('training', '露天训练场', 'rect', (-62, 58), (28, 14), 8),
     ('rear_lawn', '后庭草坪', 'ellipse', (0, 44), (20, 12), 0),
@@ -410,7 +468,9 @@ GARDENS = [  # (id, 名称, kind, 中心, 尺寸, 旋转°)
     ('maze', '树篱迷宫', 'rect', (-200, -150), (30, 30), 20),
     ('orchard', '果园', 'ellipse', (205, 145), (28, 20), 0),
 ]
-COURTS = [(-168, -72, 22), (168, -100, -28), (-230, 95, -20)]   # r4 网球场 (x, y, 旋转°)，36.6 × 18.3 m 含外场
+DAIRY = (-262, 8, 90)   # r4d 奶牛农场：props/dairy_parlour 整套（挤奶厅 + 奶罐间 + 电围栏围场），+y 朝西
+COTTAGE = (-160, -82, 20)   # r4d Greystone 客舍（Tudor）+ 岩洞泳池 + 锦鲤池
+COURTS = [(-186, -12, 22), (168, -100, -28), (-230, 95, -20)]   # r4 网球场 (x, y, 旋转°)，36.6 × 18.3 m 含外场
 BARRIER_STONES = [(-235, -165), (235, -165), (-235, 165), (235, 165)]   # 结界锚碑
 
 # 主楼群按翼 / 层落位（B2…F3 对应卡里的地上三层 + 地下两层；观景塔是屋顶眺望亭，不算楼层，键名沿用 F5）
@@ -447,7 +507,7 @@ BASEMENT = {
 }
 BASEMENT_LINK = '地下两层只在主楼下方；仆役楼梯与主人专用电梯都通到 B2'
 # 林中别墅：留给以后入住的外部人物（卡未写入住，先不定人）
-VILLA_NOTE = '别墅 V1–V10 与客房楼 g1–g4 / w_g1–w_g2 预留给外部人物长住（伊莎贝拉、维多利亚、克洛伊、塞拉菲娜、神宫寺凛、叶梨莎、玛嘉烈等）'
+VILLA_NOTE = '别墅 V1 / V2 / V3 / V8（r4c 起共 4 栋；西侧改农业台地、东崖 V4 改崖顶草甸） 与客房楼 g1–g4 / w_g1–w_g2 预留给外部人物长住（伊莎贝拉、维多利亚、克洛伊、塞拉菲娜、神宫寺凛、叶梨莎、玛嘉烈等）'
 
 
 def all_buildings():
@@ -473,6 +533,7 @@ def footprint_sd(x, y, pad=0.0):
     d = np.minimum(d, np.abs(np.hypot(x - ARC['c'][0], y - ARC['c'][1]) - ARC['R']) - ARC['depth'] / 2 - pad)
     for tx, ty, _ in TREEHOUSES:
         d = np.minimum(d, np.hypot(x - tx, y - ty) - 5 - pad)
+    d = np.minimum(d, np.hypot(x + 160, y + 82) - 24 - pad)
     for cx, cy, a in COURTS:
         d = np.minimum(d, _sd_rect(x, y, cx, cy, 20 + 2 * pad, 38 + 2 * pad, math.radians(a), 1.0))
     d = np.minimum(d, _sd_rect(x, y, 0, -198, 9 + 2 * pad, 100, 0, 1.0))   # 大道水渠

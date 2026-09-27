@@ -378,7 +378,7 @@ def grey_terraces(col):
     (cx, cy), (w, d), rot = p['c'], p['s'], p['rot']
     z = p['zv']
     bm = bmesh.new()
-    for i in range(6):
+    for i in (0, 1, 4, 5):
         for j in range(2):
             bx = -w / 2 + 6 + i * (w - 12) / 5.0
             by = -d / 2 + 5.5 + j * (d - 11)
@@ -388,7 +388,153 @@ def grey_terraces(col):
     ob.location = (cx, cy, z); ob.rotation_euler.z = rot
 
 
+def helipad(col):
+    """r4d 停机坪：混凝土圆台 + 白圈 + H（机库旁，和停靠平台 O-03 分开）。"""
+    M = mats()
+    x, y, r = L.HELIPAD
+    z = L.ground_z(x, y)
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=64, radius1=r, radius2=r, depth=1.4, matrix=Matrix.Translation((x, y, z - 0.5)))
+    bm_to_obj(bm, 'helipad_deck', col, M['concrete'])
+    from .common import mat_new
+    wm, t = mat_new('e2_line_w')
+    if t is not None:
+        t.bsdf((200, 0), Roughness=0.6, **{'Base Color': (0.92, 0.92, 0.9, 1)})
+    bm = bmesh.new()
+    for k in range(64):
+        a0, a1 = 2 * math.pi * k / 64, 2 * math.pi * (k + 1) / 64
+        from .buildings import _bar
+        _bar(bm, (x + (r - 1.2) * math.cos(a0), y + (r - 1.2) * math.sin(a0), z + 0.22), (x + (r - 1.2) * math.cos(a1), y + (r - 1.2) * math.sin(a1), z + 0.22), 0.5, 0.04)
+    _box(bm, x - 3.2, y - 4.5, z + 0.2, x - 2.0, y + 4.5, z + 0.24)
+    _box(bm, x + 2.0, y - 4.5, z + 0.2, x + 3.2, y + 4.5, z + 0.24)
+    _box(bm, x - 2.0, y - 0.6, z + 0.2, x + 2.0, y + 0.6, z + 0.24)
+    bm_to_obj(bm, 'helipad_marks', col, wm)
+
+
+def dairy(col):
+    """r4d 奶牛农场：导入 props/dairy_parlour 的整套（由 e4r/dairy_save.py 另跑 build.py 存成 .blend，不改原文件）。"""
+    import os
+    path = os.environ.get('E2_DAIRY_BLEND', '')
+    if not path or not os.path.exists(path):
+        print('[dairy] 缺 .blend，跳过'); return
+    with bpy.data.libraries.load(path) as (src, dst):
+        dst.objects = [n for n in src.objects if n != 'ground']
+    fx, fy, rd = L.DAIRY
+    z = L.ground_z(fx, fy)
+    emp = bpy.data.objects.new('dairy_root', None); col.objects.link(emp)
+    emp.location = (fx, fy, z); emp.rotation_euler.z = math.radians(rd)
+    fc = bpy.data.collections.new('dairy'); col.children.link(fc)
+    for o in dst.objects:
+        if o is None or o.type in ('CAMERA', 'LIGHT'):
+            continue
+        fc.objects.link(o)
+        if o.parent is None:
+            o.parent = emp
+    print(f'[dairy] {len(dst.objects)} 件')
+
+
+def _gsw(u, v):
+    a = math.radians(L.GS_ROT)
+    return L.GS_C[0] + u * math.cos(a) - v * math.sin(a), L.GS_C[1] + u * math.sin(a) + v * math.cos(a)
+
+
+def greystone_gardens(col):
+    """r4d Greystone 园林（Thiene 式）：上台地黄杨花坛 + 长倒影池 + 喷泉；车场圆形喷泉；南侧双石阶；下花园锦鲤倒影池；跌水溪。"""
+    M = mats()
+    rot = math.radians(L.GS_ROT)
+    up = [q for q in L.PADS if q['id'] == 'gs_upper'][0]
+    zu = up['zv']
+    bmh, bms, bmw = bmesh.new(), bmesh.new(), bmesh.new()
+    cx, cy = up['c']
+    def put(bm, M_):
+        bmesh.ops.transform(bm, matrix=M_, verts=bm.verts)
+    # 上台地：中轴长倒影池 30 × 4 + 两端喷泉；两侧四块黄杨花坛
+    loc = Matrix.Translation((cx, cy, zu)) @ Matrix.Rotation(rot, 4, 'Z')
+    a, b, w_ = bmesh.new(), bmesh.new(), bmesh.new()
+    _box(a, -16, -2.8, -0.6, 16, 2.8, 0.35)
+    w_.faces.new([w_.verts.new(v) for v in [(-15.3, -2.1, 0.4), (15.3, -2.1, 0.4), (15.3, 2.1, 0.4), (-15.3, 2.1, 0.4)]])
+    for sx in (-1, 1):
+        bmesh.ops.create_cone(a, cap_ends=True, segments=32, radius1=2.6, radius2=2.6, depth=0.7, matrix=Matrix.Translation((sx * 19, 0, 0)))
+        bmesh.ops.create_circle(w_, cap_ends=True, segments=32, radius=2.2, matrix=Matrix.Translation((sx * 19, 0, 0.37)))
+        bmesh.ops.create_cone(a, cap_ends=True, segments=12, radius1=0.35, radius2=0.25, depth=2.0, matrix=Matrix.Translation((sx * 19, 0, 1.0)))
+        for sy in (-1, 1):
+            _hedge_rect(b, sx * 8, sy * 7.5, 13, 5.5, 0.3, 0.6)
+            _hedge_rect(b, sx * 8, sy * 7.5, 8, 2.5, 0.25, 0.5)
+            for k in range(4):
+                _cone(b, sx * (3 + k * 3.5), sy * 11, 0.0, 0.7, 3.0)   # 柱状紫杉
+    for bm_ in (a, b, w_):
+        put(bm_, loc)
+    bm_to_obj(a, 'gs_upper_stone', col, M['plain'])
+    bm_to_obj(b, 'gs_upper_box', col, M['hedge'])
+    bm_to_obj(w_, 'gs_upper_water', col, M['pool'])
+    # 车场：圆形石铺 + 中央喷泉
+    mx, my = [q for q in L.PADS if q['id'] == 'gs_motor'][0]['c']
+    zm = L.ground_z(mx, my)
+    a, w_ = bmesh.new(), bmesh.new()
+    bmesh.ops.create_cone(a, cap_ends=True, segments=40, radius1=3.2, radius2=3.2, depth=0.8, matrix=Matrix.Translation((mx, my, zm)))
+    bmesh.ops.create_cone(a, cap_ends=True, segments=16, radius1=0.4, radius2=0.3, depth=2.2, matrix=Matrix.Translation((mx, my, zm + 1.2)))
+    bmesh.ops.create_circle(w_, cap_ends=True, segments=40, radius=2.8, matrix=Matrix.Translation((mx, my, zm + 0.42)))
+    bm_to_obj(a, 'gs_motor_fountain', col, M['plain']); bm_to_obj(w_, 'gs_motor_water', col, M['pool'])
+    # 南侧弧形双石阶（主楼台地 → 下花园）
+    hz = [q for q in L.PADS if q['id'] == 'grey_house'][0]['zv']
+    lz = [q for q in L.PADS if q['id'] == 'grey_t1'][0]['zv']
+    a = bmesh.new()
+    for sx in (-1, 1):
+        for k in range(10):
+            t = k / 10
+            u = sx * (14 + 6 * math.sin(t * math.pi / 2)); v = -29.5 - t * 7
+            z = hz - (hz - lz) * t
+            x, y = _gsw(u, v)
+            _box(a, x - 3, y - 0.5, z - 3, x + 3, y + 0.5, z)
+    bm_to_obj(a, 'gs_stairs', col, M['plain'])
+    # 下花园：中央锦鲤倒影池 26 × 6（加锦鲤）
+    lo = [q for q in L.PADS if q['id'] == 'grey_t1'][0]
+    loc = Matrix.Translation((*lo['c'], lz)) @ Matrix.Rotation(rot, 4, 'Z')
+    a, w_, f = bmesh.new(), bmesh.new(), bmesh.new()
+    _box(a, -13.6, -3.6, -0.6, 13.6, 3.6, 0.35)
+    w_.faces.new([w_.verts.new(v) for v in [(-13, -3, 0.4), (13, -3, 0.4), (13, 3, 0.4), (-13, 3, 0.4)]])
+    rs = np.random.RandomState(9)
+    for k in range(18):
+        bmesh.ops.create_icosphere(f, subdivisions=1, radius=0.22, matrix=Matrix.Translation((rs.uniform(-12, 12), rs.uniform(-2.5, 2.5), 0.42)) @ Matrix.Rotation(rs.uniform(0, 3), 4, 'Z') @ Matrix.Diagonal((2.2, 0.8, 0.3, 1)))
+    for bm_ in (a, w_, f):
+        put(bm_, loc)
+    bm_to_obj(a, 'gs_lower_pool_stone', col, M['plain'])
+    from .common import mat_new
+    kd, t = mat_new('e2_koi_water')
+    if t is not None:
+        t.bsdf((200, 0), Roughness=0.03, **{'Base Color': (0.03, 0.08, 0.06, 1)})
+    bm_to_obj(w_, 'gs_lower_pool_water', col, kd)
+    km, t = mat_new('e2_koi')
+    if t is not None:
+        t.bsdf((200, 0), Roughness=0.4, **{'Base Color': (0.9, 0.35, 0.05, 1)})
+    bm_to_obj(f, 'gs_lower_koi', col, km)
+    # 跌水溪：沿坡一串小池（岩边）+ 池间白水
+    a, w_, sp = bmesh.new(), bmesh.new(), bmesh.new()
+    pts = L.GS_CASCADE
+    prev = None
+    for i, (x, y) in enumerate(pts[:-1]):
+        z = L.ground_z(x, y)
+        r = 3.2 + 0.6 * (i % 2)
+        for k in range(10):
+            ang = 2 * math.pi * k / 10
+            bmesh.ops.create_icosphere(a, subdivisions=1, radius=rs.uniform(0.6, 1.1), matrix=Matrix.Translation((x + (r + 0.5) * math.cos(ang), y + (r + 0.5) * math.sin(ang), z + 0.1)))
+        bmesh.ops.create_circle(w_, cap_ends=True, segments=24, radius=r, matrix=Matrix.Translation((x, y, z + 0.15)))
+        if prev:
+            px_, py_, pz = prev
+            dx, dy = x - px_, y - py_; ln = math.hypot(dx, dy)
+            nx, ny = -dy / ln * 0.8, dx / ln * 0.8
+            v = [sp.verts.new(p) for p in [(px_ + nx, py_ + ny, pz + 0.2), (px_ - nx, py_ - ny, pz + 0.2), (x - nx, y - ny, z + 0.2), (x + nx, y + ny, z + 0.2)]]
+            sp.faces.new(v)
+        prev = (x, y, z)
+    bm_to_obj(a, 'gs_cascade_rocks', col, M['rock'])
+    bm_to_obj(w_, 'gs_cascade_water', col, M['pool'])
+    bm_to_obj(sp, 'gs_cascade_white', col, M['spray'])
+
+
 def build(col):
+    greystone_gardens(col)
+    helipad(col)
+    dairy(col)
     kerbs(col)
     grey_terraces(col)
     canal(col)

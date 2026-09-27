@@ -21,6 +21,8 @@ VIEWS = {
     'terrace': ((18.5, -27.6, 31.8), (52, -20.5, 33.6), 24),  # r3：主楼东翼柱廊前的露台角，人眼高度     # r3：整岛（停靠平台 + 湖 / 俱乐部 / 缆车 + 林中别墅）
     'top': ((0, 0, 1500), (0, 0, 0), 0),
     'map': ((0, 0, 1500), (0, 0, 0), 0),          # r4：与上层地图同一正交俯视（tc_common：0.375 m/px，+y 朝上），2000×1500 = 750 × 562.5 m
+    'cottage': ((-126, -110, 16), (-162, -80, 3), 34),
+    'greystone': ((-160, -200, 55), (-222, -108, 6), 32),   # r4d Greystone 客舍，相对地面高度
     'close': ((-120, -120, 125), (0, 0, 30), 38),  # r4：主楼黄昏斜俯近景
 }
 MAP_MPP = 0.375   # 上层地图：3000 m / 8000 px
@@ -140,9 +142,12 @@ def camera(scene, view, res):
     cam = bpy.data.objects.new('cam', cd)
     scene.collection.objects.link(cam)
     scene.camera = cam
+    if view in ('cottage', 'greystone'):
+        g = L.ground_z(*tgt[:2])
+        pos = (pos[0], pos[1], pos[2] + g); tgt = (tgt[0], tgt[1], tgt[2] + g)
     cam.location = pos
     cam.rotation_euler = (Vector(tgt) - Vector(pos)).to_track_quat('-Z', 'Y').to_euler()
-    cd.clip_start, cd.clip_end = (0.1 if view == 'terrace' else 5), 30000
+    cd.clip_start, cd.clip_end = (0.1 if view in ('terrace', 'cottage', 'greystone') else 5), 30000
     if view == 'map':
         cd.type = 'ORTHO'
         cam.rotation_euler = (0, 0, 0)
@@ -156,8 +161,56 @@ def camera(scene, view, res):
     else:
         cd.lens = lens
         cd.sensor_width = 36
-        scene.render.resolution_x, scene.render.resolution_y = res, int(res * (0.667 if view == 'terrace' else 0.625))
+        scene.render.resolution_x, scene.render.resolution_y = res, int(res * (0.667 if view in ('terrace', 'cottage', 'greystone') else 0.625))
     scene.render.resolution_percentage = 100
+
+
+def _plight(name, loc, power, col=(1.0, 0.72, 0.45), radius=0.6):
+    ld = bpy.data.lights.new(name, 'POINT'); ld.energy = power; ld.color = col; ld.shadow_soft_size = radius
+    ob = bpy.data.objects.new(name, ld); bpy.context.scene.collection.objects.link(ob); ob.location = loc
+    return ob
+
+
+def night(scene):
+    """r4c 夜景：月光（同一方向，冷色弱光）+ 暖窗光 + 园路 / 大道灯 + 泳池水下灯 + 喷泉灯。克制，不用霓虹。"""
+    import numpy as np
+    for o in scene.objects:
+        if o.type == 'LIGHT' and o.data.type == 'SUN':
+            o.data.energy = 0.09; o.data.color = (0.62, 0.72, 1.0)
+    bg = next(n for n in scene.world.node_tree.nodes if n.type == 'BACKGROUND')
+    bg.inputs['Strength'].default_value = 0.012
+    fl = bpy.data.materials.get('e2_white_floor')
+    if fl:
+        next(n for n in fl.node_tree.nodes if n.type == 'EMISSION').inputs['Color'].default_value = (0.022, 0.028, 0.045, 1)
+    M = buildings.mats()
+    for k, c, st in (('shutter', (1.0, 0.66, 0.36), 7.0), ('glass', (1.0, 0.66, 0.36), 5.0), ('greenglass', (1.0, 0.75, 0.45), 2.0)):
+        b = next(n for n in M[k].node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
+        b.inputs['Emission Color'].default_value = (*c, 1); b.inputs['Emission Strength'].default_value = st
+    b = next(n for n in M['pool'].node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
+    b.inputs['Emission Color'].default_value = (0.15, 0.75, 0.85, 1); b.inputs['Emission Strength'].default_value = 0.8
+    n = 0
+    for spec in L.all_buildings():   # 窗光溢到露台：每栋四角外 2.5 m、离地 3 m 的暖点光
+        bid, cx, cy, w, d, fl_, rd, *_ = spec
+        z = L.ground_z(cx, cy)
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                x, y = buildings.rot2(sx * (w / 2 + 2.5), sy * (d / 2 + 2.5), math.radians(rd))
+                _plight(f'win{n}', (cx + x, cy + y, z + 3.0), 500 if w * d > 300 else 260); n += 1
+    lamps = []
+    for pts, w in L.DRIVES[:4]:
+        for sgn in (-1, 1):
+            lamps += [(x + 0, y, sgn) for x, y in buildings._resample(pts, 14.0)]
+    lamps = [(x + (w / 2 + 1.2) * 0, y) for x, y, _ in lamps]
+    for pts in L.FOOTPATHS:
+        lamps += [tuple(p) for p in buildings._resample(pts, 16.0)]
+    for y in np.arange(-246, -150, 12):   # 大道灯
+        lamps += [(-36.5, y), (36.5, y), (-4.5, y), (4.5, y)]
+    for x, y in lamps:
+        _plight(f'lamp{n}', (x, y, L.ground_z(x, y) + 3.2), 60, (1.0, 0.78, 0.52), 0.15); n += 1
+    fx, fy = L.FOUNTAIN
+    for a in range(6):
+        _plight(f'fount{a}', (fx + 6 * math.cos(a), fy + 6 * math.sin(a), L.TERRACE_Z + 1.2), 250, (1.0, 0.9, 0.75)); n += 1
+    print(f'[night] {n} 盏灯')
 
 
 def mist(scene):
@@ -174,12 +227,12 @@ def main():
     reset()
     scene = bpy.context.scene
     gpu(scene, a.samples)
-    world(scene, 'map' if a.view == 'map' else a.light)
+    world(scene, 'map' if a.view == 'map' else (a.light if a.light != 'night' else 'sunset'))
     if a.view == 'map':   # 与地图管线一致：Standard 视图变换
         scene.view_settings.view_transform = 'Standard'
         scene.view_settings.look = 'None'
         scene.view_settings.exposure = 0.0
-    terrain.build_island(res_m=1.0 if a.view in ('crop', 'close') else (0.6 if a.view == 'map' and a.res > 1500 else 1.0 if a.view == 'map' else 1.2))
+    terrain.build_island(res_m=0.6 if a.view in ('cottage', 'greystone') else 1.0 if a.view in ('crop', 'close') else (0.6 if a.view == 'map' and a.res > 1500 else 1.0 if a.view == 'map' else 1.2))
     terrain.build_lake()
     if a.view == 'map':
         terrain.build_white_floor()
@@ -191,6 +244,11 @@ def main():
     print(f'[style_frame] 建筑完成 {time.time() - t0:.0f}s')
     vegetation.build(a.density, tropic_protos=tropic)
     print(f'[style_frame] 植被完成 {time.time() - t0:.0f}s')
+    if a.light == 'night':
+        night(scene)
+        scene.view_settings.view_transform = 'AgX'
+        scene.view_settings.look = 'AgX - Medium High Contrast'
+        scene.view_settings.exposure = 1.3
     camera(scene, a.view, a.res)
     scene.render.image_settings.file_format = 'PNG'
     scene.render.filepath = a.out
