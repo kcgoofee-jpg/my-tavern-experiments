@@ -126,6 +126,8 @@ def mats():
         'ln_hepin': nm('gr_ln_hepin', (.27, .26, .23), (.33, .31, .27), 160, .85, .08),       # 禾坪（偏暗，不当停车场读）
         'ln_lane': nm('gr_ln_lane', (.20, .19, .18), (.26, .25, .23), 200, .85, .08),        # 巷道暗砖
         'ln_ground': nm('gr_ln_ground', (.07, .13, .05), (.12, .19, .075), 60, .9, .1),     # 园地（苔绿，计入园林覆盖）
+        'ln_water': m('wt_ln_water', (.04, .09, .07), .05, spec=.7),                              # 岭南塘水：偏绿褐的浑水（不当泳池读）
+        'ln_curb': nm('gr_ln_curb', (.24, .23, .21), (.31, .30, .27), 90, .9, .2),          # 麻石驳岸（暗、不规则）
         'ln_timber': m('ln_timber', (.30, .13, .08), .6),                                     # 木构（亭柱、水榭）
     })
     return _M
@@ -1379,7 +1381,7 @@ class _LnKit:
         """半月塘：直边在 v（靠祠堂 / 禾坪一侧），弧向前（-v）；石砌塘岸。"""
         pts = [self.P(u + R * math.cos(t), v - .8 * R * math.sin(t)) for t in np.linspace(0, math.pi, 22)]; self.polys.append(pts)
         if not self.draw: return
-        e = self.e; e.patch('water', pts, dz=.003, rings=2); e.wall_line('stone', pts, .005, .005, closed=True); self.claims.append(pts)
+        e = self.e; e.patch('ln_water', pts, dz=.003, rings=2); e.wall_line('ln_curb', pts, .006, .004, closed=True); self.claims.append(pts)
         c = self.P(u, v - .4 * R); e.water.append((c[0], c[1], R * self.s * 1.05, .5 * R * self.s, self.a)); self.water_area += math.pi * R * R * .4 * self.s ** 2
     def pond(self, u, v, A, Bb, rot=0.0, wob=.12, rocks=True):
         """曲岸池：绕池心的谐波多边形，岸边零散湖石。"""
@@ -1390,23 +1392,23 @@ class _LnKit:
             pts.append(self.P(u + du * cr - dv * sr, v + du * sr + dv * cr))
         self.polys.append(pts)
         if not self.draw: return pts
-        e = self.e; e.patch('water', pts, dz=.003, rings=3); c = self.P(u, v); self.claims.append(pts)
+        e = self.e; e.patch('ln_water', pts, dz=.003, rings=3); c = self.P(u, v); self.claims.append(pts)
         e.water.append((c[0], c[1], A * self.s, Bb * self.s, self.a + rot)); self.water_area += poly_area(pts)
         if rocks:
             for k in range(0, 40, 3):
                 if self.rng2.random() < .55:
                     x, y = pts[k]; X, Y = e.world(x, y); B('rockery', True).ico(X, Y, e.Z(x, y) + .002, float(self.rng2.uniform(.005, .01)), sz=1.4)
         return pts
-    def rectpond(self, u, v, w, d, key='water'):
+    def rectpond(self, u, v, w, d, key='ln_water'):
         self.polys.append(self.rp(u, v, w, d))
         if not self.draw: return
         e = self.e; x, y = self.P(u, v); e.box(key, x, y, w * self.s, d * self.s, .003, self.a); self.claims.append(self.rp(u, v, w, d))
-        e.wall_line('stone', rect_pts(x, y, w * self.s + .006, d * self.s + .006, self.a), .004, .005, closed=True)
+        e.wall_line('ln_curb', rect_pts(x, y, w * self.s + .006, d * self.s + .006, self.a), .004, .005, closed=True)
         e.water.append((x, y, w * self.s / 2, d * self.s / 2, self.a)); self.water_area += w * d * self.s ** 2
     def octpond(self, u, v, r):
         pts = [self.P(u + r * math.cos(t), v + r * math.sin(t)) for t in np.linspace(math.pi / 8, TAU + math.pi / 8, 8, endpoint=False)]; self.polys.append(pts)
         if not self.draw: return
-        e = self.e; e.patch('water', pts, dz=.003, rings=1); e.wall_line('stone', pts, .004, .005, closed=True); self.claims.append(pts)
+        e = self.e; e.patch('ln_water', pts, dz=.003, rings=1); e.wall_line('ln_curb', pts, .006, .004, closed=True); self.claims.append(pts)
         c = self.P(u, v); e.water.append((c[0], c[1], r * self.s, r * self.s, 0)); self.water_area += poly_area(pts)
     def waterside(self, u, v, w, d, along=0.0):
         """水榭：伸进池里的石台 + 敞轩（卷棚顶，不带镬耳）。"""
@@ -1587,7 +1589,9 @@ def build_eden(isle, layer):
     cx_, cy_, w, d = -1.75, .15, 1.05, .95                                                   # 西：方形，花境 + 坡面 + 中央水池 + 四角小丛林
     e.wall_line('hedge', rect_pts(cx_, cy_, w, d, 0), .012, .01, closed=True)
     for bw_, key, hh in ((w - .03, 'flowers', .0022), (w - .11, 'lawn_e2', .0025), (w - .19, 'lawn_e', .0028)): e.box(key, cx_, cy_, bw_, bw_ * d / w, hh)
-    e.box('gravel', cx_, cy_, w - .19, .02, .0031); e.box('gravel', cx_, cy_, .02, d - .19, .0031)
+    e.box('gravel', cx_, cy_, w - .19, .06, .0031); e.box('gravel', cx_, cy_, .06, d - .19, .0031)   # 宽砾石十字园路（四分园），不是细线十字
+    for sx in (-1, 1):
+        for sy in (-1, 1): e.box('flowers', cx_ + sx * (w - .19) / 4 + sx * .015, cy_ + sy * (d - .19) / 4 + sy * .015, (w - .19) / 2 - .09, (d - .19) / 2 - .09, .0032)
     e.cyl('marble', cx_, cy_, .085, .004, 32); e.disc('water_l', cx_, cy_, .075, .075, dz=.0045, seg=32)
     for dx in (-1, 1):
         for dy in (-1, 1):
@@ -1597,14 +1601,10 @@ def build_eden(isle, layer):
     cx_ = 1.75                                                                              # 东：椭圆，gazon coupé（草坪里切出砾石卷草纹）+ 中心雕像 + 四角树团
     e.wall_line('hedge', ell_pts(cx_, cy_, .5, .45, 0, 40), .012, .01, closed=True)
     e.disc('flowers', cx_, cy_, .48, .43, dz=.0022, seg=64); e.disc('lawn_e2', cx_, cy_, .44, .39, dz=.0024, seg=64); e.disc('lawn_e', cx_, cy_, .39, .34, dz=.0026, seg=64)
-    # B2 第 3 轮：原来 4 条同向弯折的砾石臂（只有 90° 旋转对称、没有镜像对称）改成东西 / 南北都镜像对称的图案：
-    # 同心砾石环 + 直十字园路 + 左右成对（沿东西轴镜像）的卷草花境
-    e.wall_line('gravel', ell_pts(cx_, cy_, .27, .235, 0, 48), .012, .0028, closed=True)
-    e.box('gravel', cx_, cy_, .76, .014, .0028); e.box('gravel', cx_, cy_, .014, .66, .0028)
-    e.disc('flowers', cx_, cy_, .13, .115, dz=.0027, seg=48); e.disc('lawn_e', cx_, cy_, .1, .088, dz=.0028, seg=48)   # 内圈花环
-    for sx in (-1, 1):
-        for sy in (-1, 1): e.disc('flowers', cx_ + sx * .19, cy_ + sy * .16, .04, .03, dz=.0029, seg=16)   # 四象限各一块椭圆花床（互为镜像）
-    e.disc('gravel', cx_, cy_, .06, .06, dz=.0029, seg=24); e.cyl('marble', cx_, cy_, .018, .03, 12)
+    # B2 第 3 轮：原来 4 条同向弯折的砾石臂（只有 90° 旋转对称）→ 镜像对称的圆形花园；再按合规审阅去掉「环 + 贯穿十字 + 中心点」的准星读法：
+    # 外砾石环 + 四条只连外环与绿篱的短轴路（不穿圆心）+ 中心实心花床（直径为外环的 ~55 %）+ 喷泉池；45° 方向不放任何点状物
+    for sx in (-1, 1): e.disc('flowers', cx_ + sx * .13, cy_, .15, .2, dz=.0027, seg=40)      # 左右两片镜像的椭圆花床（不留十字、刻度、同心细环：避免准星 / 靶心读法）
+    e.cyl('marble', cx_, cy_, .012, .02, 12)                                                 # 中央雕像
     for dx in (-1, 1):
         for dy in (-1, 1):
             for k in range(3): e.tree(cx_ + dx * (.46 + .05 * (k % 2)), cy_ + dy * (.41 + .05 * (k // 2)), .045, 'tree6')
@@ -1632,8 +1632,7 @@ def build_eden(isle, layer):
     e.claim(-.9, .25, .2); e.claim(.9, .25, .22); e.claim(-.66, .25, .06); e.claim(.66, .25, .06)
     # 玫瑰园（东前）、迷园（西前）：移到前庭花坛外侧；果园（东北，梅花形）
     rc = (1.28, -.74)
-    e.disc('lawn', rc[0], rc[1], .24, .24, dz=.0022, seg=64)
-    for k in range(4): e.box('gravel', rc[0], rc[1], .46, .012, .0026, k * math.pi / 4)
+    e.disc('flowers', rc[0], rc[1], .24, .24, dz=.0022, seg=64)                                 # 玫瑰园：整片花床 + 外圈花架（不再有 8 辐、也不做同心细环）
     for k in range(40): t = k / 40 * TAU; e.disc('flowers', rc[0] + math.cos(t) * .18, rc[1] + math.sin(t) * .18, .016, .016, dz=.003, seg=10)
     for k in range(24): t = k / 24 * TAU; e.box('dark', rc[0] + math.cos(t) * .235, rc[1] + math.sin(t) * .235, .004, .004, .02, t)
     e.cyl('dark', rc[0], rc[1], .02, .02, 8); e.claim(*rc, .27)

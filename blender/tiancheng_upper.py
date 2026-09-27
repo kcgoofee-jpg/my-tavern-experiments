@@ -220,7 +220,7 @@ def selfcheck(routes_out, mk):
     cr = [(c[0], c[1], e.id) for e in isl for c in e.crowns if c is not None and c[1] not in te.TOPIARY]; R['crown_min'] = round(min(r for r, _, _ in cr), 4); R['trees'] = len(cr)
     if R['crown_min'] < te.CROWN_MIN - 1e-6: bad.append(f"树冠半径最小 {R['crown_min']} < .04：{[c for c in cr if c[0] < .04][:5]}")
     R['faces'] = FACES; R['faces_ratio_r4'] = round(FACES / FACES_R4, 3)
-    if FACES > FACES_R4 * 1.2: bad.append(f'面数 {FACES} > r4 × 1.2')
+    if FACES > FACES_R4 * 1.2 and BELOW != 'city': bad.append(f'面数 {FACES} > r4 × 1.2')   # 预算只管岛与庄园：--below city 时面数含下方城市，只报告不断言
     ed = by['eden']['isle']; R['eden_anchors'] = len(ed.anchors); R['eden_belvedere_rear'] = bool(ed.belvederes); R['eden_dock_diam_m'] = round(ed.dock[2] * 200)
     if len(ed.anchors) != 4 or not ed.belvederes or ed.dock[2] * 200 < 45: bad.append('伊甸锚碑 / 观景台 / 停靠平台不合格')
     OLf = [(e, e.outline_world(1.0, 128)) for e in isl]
