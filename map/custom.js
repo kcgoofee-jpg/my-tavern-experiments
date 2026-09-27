@@ -74,7 +74,8 @@ const TCCustom = (() => {
   const KIND = { room: ['cu.room', '房间'], area: ['cu.area', '区域'], landmark: ['cu.landmark', '地标'], character: ['cu.character', '人物'] };
   let listQ = '', PK = null, plan = null, view = 'list', editing = null, query = '', opener = null, resetArm = null, resetT = 0, flyMsg = '';
   const pk = () => (PK ? Promise.resolve(PK) : import(new URL('tavern/picker.mjs', document.baseURI).href).then(m => (PK = m)));
-  const planP = () => (plan ? Promise.resolve(plan) : import(new URL('estate/plan.js', document.baseURI).href).then(m => (plan = m)).catch(() => (plan = {})));
+  const planP = () => (plan ? Promise.resolve(plan) : Promise.all([import(new URL('estate/plan.js', document.baseURI).href).catch(() => ({})), fetch(new URL('data/eden_estate_rooms.json', document.baseURI)).then(r => (r.ok ? r.json() : null)).catch(() => null)])
+    .then(([m, card]) => (plan = { ...m, CARD: card })));   // 卡设定分层房间（B2–F3）
   function groups() {
     if (!PK || typeof REG === 'undefined' || !REG) return [];
     return PK.buildGroups({ reg: REG, plan, chars: typeof TCChars !== 'undefined' ? TCChars.items.map(c => c.name) : [], lang: typeof LANG !== 'undefined' ? LANG : 'zh' });
