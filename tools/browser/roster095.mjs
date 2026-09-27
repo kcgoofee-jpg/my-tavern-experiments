@@ -13,11 +13,11 @@ const STAT = { 世界: { 当前地点: '天城·上层·伊甸庄园' }, 主角:
 const PURL = 'https://cdn.jsdelivr.net/gh/Yehehua1311/placeholder@main/A/sfw/A_1.png';
 const CHAR = { data: { extensions: { scripts: [{ content: "const S = z.enum(['第一步', '第二步', '第三步', '第四步']);" }, { content: `const defaultPortraits = { "甲一": "${PURL}" };` }] } } };
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
-async function run(name, preset) {
+async function run(name, preset, charAsync = false) {
   const P = await B.newPage(preset, { tier: 'save' });
   try {
     await P.page.route('https://cdn.jsdelivr.net/gh/Yehehua1311/**', r => r.fulfill({ contentType: 'image/png', body: PNG }));
-    const H = await openHost(P, { here: '天城·上层·伊甸庄园', msgs: [], stat: STAT, chat: 'r95-' + name, charData: CHAR });
+    const H = await openHost(P, { here: '天城·上层·伊甸庄园', msgs: [], stat: STAT, chat: 'r95-' + name, charData: CHAR, charAsync });
     const p = P.page; await B.wait(1200);
     const api = await p.evaluate(() => window.EdenMap.getCharacters());
     rep.check(`${name} EdenMap.getCharacters：rosters / reputation（只读）`, api.rosters?.members?.items?.length === 2 && api.rosters.targets.items[0].stage === '第二步' && api.reputation === 62, JSON.stringify({ r: api.rosters?.targets, rep: api.reputation }));
@@ -59,6 +59,6 @@ async function run(name, preset) {
   } catch (e) { rep.check(`${name} 运行`, false, e.message.split('\n')[0]); }
   finally { await P.close(); }
 }
-try { await run('desk', 'desktop'); if (!process.env.ONE) { await run('deskwk', 'desktopWk'); await run('phone', 'phone'); await run('iphone', 'iphone'); } }
+try { await run('desk', 'desktop'); await run('deskasync', 'desktop', true); if (!process.env.ONE) { await run('deskwk', 'desktopWk'); await run('phone', 'phone'); await run('iphone', 'iphone'); } }
 finally { await B.closeAll(); srv.stop(); }
 const ok = rep.save(); console.log(`${ok ? '全部通过' : '有失败'} → ${OUT}/summary.md`); process.exit(ok ? 0 : 1);
