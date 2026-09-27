@@ -1,0 +1,228 @@
+{
+ "_说明": "viewer3d.html?model=ruined_churches 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。由 blender/landmarks/ruined_churches/build.py + blender/landmarks/export_glb.py 生成；地基层的支撑柱、中层底面、城边断崖与围墙（bg_*）只在成图里。层与位置为仓库推断（卡只写「天城边缘」）。",
+ "id": "ruined_churches",
+ "title": {
+  "zh": "废弃教堂区",
+  "en": "Derelict Church Quarter"
+ },
+ "glb": "ruined_churches.glb",
+ "glb_low": "ruined_churches_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [
+   "roof"
+  ],
+  "walls": [
+   "walls_ext",
+   "props_tower"
+  ],
+  "interior": [],
+  "floors": [
+   {
+    "id": "floor_0",
+    "name": {
+     "zh": "地坪",
+     "en": "Ground"
+    },
+    "y0": -0.3,
+    "y1": 17
+   }
+  ],
+  "site": [
+   "site_ground",
+   "props_churchyard",
+   "props_rubble",
+   "site_vegetation"
+  ],
+  "building": {
+   "min": [
+    -22.8,
+    -0.1,
+    -17.5
+   ],
+   "max": [
+    18.5,
+    28.6,
+    6.7
+   ]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 29,
+  "default": 8
+ },
+ "camera": {
+  "frame": [
+   "walls_ext",
+   "props_tower",
+   "props_chapel"
+  ],
+  "dir": [
+   0.55,
+   0.5,
+   -0.65
+  ],
+  "min": 3,
+  "max": 300,
+  "maxPolar": 1.48
+ },
+ "hotspots": [
+  {
+   "id": "walls",
+   "mesh": "walls_ext",
+   "name": {
+    "zh": "主堂残墙",
+    "en": "Ruined church walls"
+   },
+   "desc": {
+    "zh": "旧时代的石砌教区教堂，屋顶已失：尖拱窗洞、带隅石的扶壁，墙顶参差断裂，墙根一圈潮湿与苔藓，窗洞上方有烟熏痕。",
+    "en": "An older-era stone parish church, roofless: pointed window openings, buttresses with dressed quoins, ragged broken wall tops, a damp moss band at the base and soot stains above the openings."
+   },
+   "view": [
+    0.5,
+    0.45,
+    -0.75
+   ]
+  },
+  {
+   "id": "roof",
+   "mesh": "roof",
+   "name": {
+    "zh": "残存屋架",
+    "en": "Remaining roof"
+   },
+   "desc": {
+    "zh": "焦黑开裂的木桁架残段与铁拉杆搭在墙顶，东端还留着一小片板岩屋面。",
+    "en": "Charred, split truss stubs and iron tie-rods on the wall plates, with a small patch of slate left at the east end."
+   },
+   "view": [
+    0.3,
+    0.8,
+    -0.5
+   ]
+  },
+  {
+   "id": "tower",
+   "mesh": "props_tower",
+   "name": {
+    "zh": "断顶钟塔",
+    "en": "Broken bell tower"
+   },
+   "desc": {
+    "zh": "西端方形钟塔，顶部断折，尖顶只剩歪斜的骨架，一截塌落在塔脚。",
+    "en": "The square west tower with a broken top; only a leaning frame is left of the spire, and a section has fallen at its foot."
+   },
+   "view": [
+    -0.8,
+    0.35,
+    -0.5
+   ]
+  },
+  {
+   "id": "tracery",
+   "mesh": "props_tracery",
+   "name": {
+    "zh": "窗花格与祭台",
+    "en": "Tracery & altar plinth"
+   },
+   "desc": {
+    "zh": "残破的窗花格、中梃残段和门拱套；东端高坛上是一座空的石祭台，东墙上方一个破损的圆窗。",
+    "en": "Broken tracery, mullion stubs and door surrounds; on the chancel step stands an empty stone altar plinth, under a broken oculus in the east gable."
+   },
+   "view": [
+    0.9,
+    0.3,
+    0.1
+   ]
+  },
+  {
+   "id": "aether",
+   "mesh": "props_aether",
+   "name": {
+    "zh": "残余以太场",
+    "en": "Residual aether"
+   },
+   "desc": {
+    "zh": "高坛一带地面的冷蓝色发光裂纹、悬浮的微光点和几道薄光幕，离祭台越远越淡——旧时代留下的以太场还没散尽。",
+    "en": "Cold-blue glowing cracks in the chancel floor, floating motes and a few thin light veils, fading with distance from the altar: an aether field from the older era that has not yet dispersed."
+   },
+   "view": [
+    0.7,
+    0.4,
+    -0.6
+   ]
+  },
+  {
+   "id": "chapel",
+   "mesh": "props_chapel",
+   "name": {
+    "zh": "小礼拜堂",
+    "en": "Side chapel"
+   },
+   "desc": {
+    "zh": "北侧的小礼拜堂，半边屋顶还在，东端是半圆后殿。",
+    "en": "A small chapel on the north side with half its roof intact and a round apse."
+   },
+   "view": [
+    0.4,
+    0.4,
+    -0.8
+   ]
+  },
+  {
+   "id": "churchyard",
+   "mesh": "props_churchyard",
+   "name": {
+    "zh": "墓园与有顶木门",
+    "en": "Churchyard & lychgate"
+   },
+   "desc": {
+    "zh": "部分坍塌的墓园围墙、带小屋顶的木门，院里是素面的墓碑和平卧石板。",
+    "en": "A partly collapsed churchyard wall and a roofed wooden lychgate; plain headstones and ledger slabs in the yard."
+   },
+   "view": [
+    0.2,
+    0.6,
+    0.8
+   ]
+  },
+  {
+   "id": "rubble",
+   "mesh": "props_rubble",
+   "name": {
+    "zh": "塌落的石堆",
+    "en": "Fallen masonry"
+   },
+   "desc": {
+    "zh": "墙根塌落的石块堆、板岩碎片和倒下的石柱段。",
+    "en": "Heaps of fallen stone at the wall bases, slate fragments and a toppled column drum."
+   },
+   "view": [
+    0.5,
+    0.7,
+    0.5
+   ]
+  },
+  {
+   "id": "vegetation",
+   "mesh": "site_vegetation",
+   "name": {
+    "zh": "杂草与枯树",
+    "en": "Weeds & dead tree"
+   },
+   "desc": {
+    "zh": "石缝里的杂草丛、墙上的常春藤，院里一棵几乎没有光照的枯树。",
+    "en": "Weed tufts in the cracks, ivy on the walls, and a dead tree in the yard where almost no light reaches."
+   },
+   "view": [
+    0.6,
+    0.5,
+    0.6
+   ]
+  }
+ ]
+}

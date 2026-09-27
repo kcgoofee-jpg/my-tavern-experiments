@@ -147,7 +147,7 @@
           "alias": ["委员会下层设施", "公共收容设施"] },
         "ruined_churches": { "name": "废弃教堂区", "sub": "天城边缘 · 以太场残留", "name_en": "Derelict Church Quarter", "sub_en": "City edge · residual aether", "tag": "inf", "openings": [4], "opening_dest": true, 
           "src": "卡：「天城边缘的废弃教堂区」，已荒废但仍有以太场残留；下层教区的教堂多半荒废，故画在下层边缘（层与位置为推断）",
-          "alias": ["废弃教堂区", "废弃教堂", "Derelict Church"] },
+          "alias": ["废弃教堂区", "废弃教堂", "Derelict Church"] , "link": {"map": "lm_ruined_churches", "label": "查看三维模型", "label_en": "View 3D model"} },
         "freight_yard": { "name": "货运站", "sub": "旧地面轨道枢纽", "name_en": "Freight Yard", "sub_en": "Old surface rail hub", "tag": "inf",
           "src": "天城·下层：「老旧地面轨道、货运通道、步行为主」；货运站与轨道枢纽的位置为推断",
           "alias": ["货运站", "货运", "铁路", "轨道枢纽"] },
@@ -165,6 +165,7 @@
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
     "lm_kelly_residence": {"title": "凯莉的宅邸（三维）", "title_en": "Kelly's Residence (3D)", "parent": "tc_upper", "kind": "estate", "viewer3d": "kelly_residence", "src": "props/viewer3d.html", "alias": ["凯莉宅邸门廊", "凯莉宅邸花园"], "src_note": "开局三目的地的三维模型（标准版：标准档 + 低档 glb；摄政风白灰泥别墅，形制为仓库推断）；从 tc_upper.kelly_residence 标记的「查看三维模型」进。源：blender/landmarks/kelly_residence/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_ruined_churches": {"title": "废弃教堂区（三维）", "title_en": "Derelict Church Quarter (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "ruined_churches", "src": "props/viewer3d.html", "alias": ["废弃教堂区（三维）"], "src_note": "开局四目的地的三维模型（标准版：标准档 + 低档 glb；旧时代石砌教区教堂废墟 + 残余以太场，层与位置为仓库推断）；从 tc_low.ruined_churches 标记的「查看三维模型」进。源：blender/landmarks/ruined_churches/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_pm_residence": {
       "title": "首相府（三维）", "title_en": "Prime Minister's Residence (3D)", "parent": "tc_upper", "kind": "estate",
       "viewer3d": "pm_residence", "src": "props/viewer3d.html", "alias": ["首相府花园"],
