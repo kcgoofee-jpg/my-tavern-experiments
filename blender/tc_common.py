@@ -208,12 +208,43 @@ def camera_and_render(sc, RES, SAMPLES, OUT, opt, view='Standard', exposure=0.0,
     if not sc.cycles.use_denoising: print('no OpenImageDenoise in this build: denoising off')
     sc.view_settings.view_transform = view; sc.view_settings.look = 'None'; sc.view_settings.exposure = exposure
     if '--crop' in opt:                                     # 只渲染一块区域（归一化 x0,y0,x1,y1，左上原点），用于在最终分辨率下检查细节
-        x0, y0, x1, y1 = map(float, opt['--crop'].split(','))
-        sc.render.use_border = True; sc.render.use_crop_to_border = True
-        sc.render.border_min_x, sc.render.border_max_x, sc.render.border_min_y, sc.render.border_max_y = x0, x1, 1 - y1, 1 - y0
+        set_crop(sc, parse_box(opt['--crop']))
     sc.render.image_settings.file_format = 'PNG'; os.makedirs(os.path.dirname(OUT), exist_ok=True); sc.render.filepath = OUT
     bpy.context.view_layer.update()
     return co
+def parse_box(s):
+    """'x0,y0,x1,y1'（归一化，左上原点）→ 元组；越界或反向时报错退出（别让一个坏参数渲出整张 8K）。"""
+    try: b = tuple(float(v) for v in str(s).split(','))
+    except ValueError: b = ()
+    if len(b) != 4 or not (0 <= b[0] < b[2] <= 1 and 0 <= b[1] < b[3] <= 1):
+        sys.exit(f'bad crop box {s!r}: need x0,y0,x1,y1 with 0 <= x0 < x1 <= 1, 0 <= y0 < y1 <= 1')
+    return b
+def parse_crops(opt):
+    """多块局部（一次建场景、逐块渲染）：
+        --crops "x0,y0,x1,y1:名字;x0,y0,x1,y1:名字"
+        --crops-json 文件：[{"name": "seam", "box": [x0, y0, x1, y1]}, ...] 或 {"seam": [x0, y0, x1, y1], ...}
+    返回 [(名字, box)]；没有给时返回 []。名字只能是字母数字 _ - .，不能重复。"""
+    import re
+    items = []
+    if opt.get('--crops') not in (None, True):
+        for part in str(opt['--crops']).split(';'):
+            part = part.strip()
+            if not part: continue
+            box, _, name = part.partition(':')
+            items.append((name.strip() or f'crop{len(items) + 1}', box))
+    if opt.get('--crops-json') not in (None, True):
+        d = json.load(open(opt['--crops-json'], encoding='utf-8'))
+        items += list(d.items()) if isinstance(d, dict) else [(x.get('name') or f'crop{i + 1}', x['box']) for i, x in enumerate(d)]
+    out, seen = [], set()
+    for name, box in items:
+        if not re.fullmatch(r'[\w.\-]+', name) or name in seen: sys.exit(f'bad or duplicate crop name {name!r}')
+        seen.add(name)
+        out.append((name, parse_box(','.join(map(str, box)) if isinstance(box, (list, tuple)) else box)))
+    return out
+def set_crop(sc, box):
+    x0, y0, x1, y1 = box
+    sc.render.use_border = True; sc.render.use_crop_to_border = True
+    sc.render.border_min_x, sc.render.border_max_x, sc.render.border_min_y, sc.render.border_max_y = x0, x1, 1 - y1, 1 - y0
 def norm(sc, co, p):
     """平面坐标 → 归一化图像坐标（左上原点）。"""
     v = world_to_camera_view(sc, co, Vector(p)); return round(v.x, 4), round(1 - v.y, 4)
@@ -276,6 +307,8 @@ class Layer:
         ... 用 layer.city / layer.rng / layer.opt 建本层内容；layer.marker(id, (x, y, z), r) 登记地标 ...
         layer.finish(world=(颜色, 强度), glare={...}, extra={...})          # 相机 → 导出 map/data/<name>.json → 渲染
     命令行（所有层一致）：--res N --samples N --out 路径 --crop x0,y0,x1,y1 --preview（800px / 8 采样）--data-only（只导出点位，不渲染）
+        多块局部（一次建场景）：--crops "x0,y0,x1,y1:名字;..." 或 --crops-json 文件，输出 <--out-dir 或 --out 所在目录>/<名字>.png；
+        推荐用 tools/crops.sh 调用（参数已正确加引号）
     """
     def __init__(self, name, defaults=None, seed=None, bounces=None, city='mid'):
         self.name, self.bounces = name, bounces
@@ -286,6 +319,9 @@ class Layer:
         self.opt = parse_args(d)
         self.res, self.samples, self.out = int(self.opt['--res']), int(self.opt['--samples']), os.path.abspath(self.opt['--out'])
         self.data_only = bool(self.opt.get('--data-only'))
+        self.crops = parse_crops(self.opt)                  # 先校验，出错时还没花时间建场景
+        if self.crops and '--crop' in self.opt: sys.exit('use either --crop or --crops/--crops-json, not both')
+        self.crop_dir = os.path.abspath(self.opt.get('--out-dir') or os.path.dirname(self.out))
         rng, self.sc, self.col = setup()
         import tc_city
         self.city = tc_city.City(rng, city)           # city：取哪一层的城区拼接（mid / low / upper）                       # OSM 城市骨架；必须是第一个随机调用（缺高度的楼按同一随机序列补），三层才对得上
@@ -309,6 +345,13 @@ class Layer:
         write_data(self.name, self.sc, co, self.markers, ex)
         tick(f'data map/data/{self.name}.json ({len(self.markers)} markers)')
         if self.data_only: print('DATA-ONLY', self.name); return co
+        if self.crops:                                      # 多块局部：场景只建一次，逐块改边框和输出路径
+            os.makedirs(self.crop_dir, exist_ok=True)
+            for i, (cname, box) in enumerate(self.crops):
+                set_crop(self.sc, box); path = os.path.join(self.crop_dir, cname + '.png'); self.sc.render.filepath = path
+                tick(f'crop {i + 1}/{len(self.crops)} {cname} {box}')
+                render(self.sc, path, f'crop {cname}')
+            return co
         render(self.sc, self.out, label or f'markers {len(self.markers)}')
         return co
 

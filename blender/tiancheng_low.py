@@ -1,5 +1,5 @@
 # 天城 · 下层（地基区，地面）· Blender 正俯视写实渲染（夜景草稿）
-# 用法：Blender -b -P tiancheng_low.py -- [--res 1600] [--samples 64] [--out path.png] [--crop x0,y0,x1,y1] [--preview] [--data-only]
+# 用法：Blender -b -P tiancheng_low.py -- [--res 1600] [--samples 64] [--out path.png] [--crop x0,y0,x1,y1 | --crops "x0,y0,x1,y1:名字;..." | --crops-json 文件] [--out-dir 目录] [--preview] [--data-only]
 #       [--glow 1]（发光体倍数）[--lamp .3]（钠灯功率）[--ambient .12]（天光）
 #       或 python3 tiancheng_low.py -- ...（pip 装的 bpy）。参数与导出格式三层一致，见 docs/tiancheng-maps.md
 # 与上层、中层同一相机、同一平面坐标、同一套 OSM 路网与建筑轮廓（tc_city，© OpenStreetMap contributors）：

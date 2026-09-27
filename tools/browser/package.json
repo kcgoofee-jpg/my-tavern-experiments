@@ -1,0 +1,8 @@
+{
+  "name": "eden-map-browser-tests",
+  "private": true,
+  "type": "module",
+  "description": "Playwright harness for map/viewer.html and map/estate (see README.md)",
+  "scripts": { "accept": "node accept.mjs" },
+  "devDependencies": { "playwright": "^1.63.0" }
+}

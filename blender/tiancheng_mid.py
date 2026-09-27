@@ -1,5 +1,5 @@
 # 天城 · 中层（钢铁霓虹区，约 700 m 以下）· Blender 正俯视写实渲染（夜景草稿）
-# 用法：Blender -b -P tiancheng_mid.py -- [--res 1600] [--samples 64] [--out path.png] [--crop x0,y0,x1,y1] [--preview] [--data-only]
+# 用法：Blender -b -P tiancheng_mid.py -- [--res 1600] [--samples 64] [--out path.png] [--crop x0,y0,x1,y1 | --crops "x0,y0,x1,y1:名字;..." | --crops-json 文件] [--out-dir 目录] [--preview] [--data-only]
 #       [--glow 1]（所有发光的倍数）[--ambient .7]（天光）
 #       或 python3 tiancheng_mid.py -- ...（pip 装的 bpy）。参数与导出格式三层一致，见 docs/tiancheng-maps.md
 # 与上层同一相机、同一平面坐标、同一片城市（tc_city：OpenStreetMap 真实路网与建筑轮廓，© OpenStreetMap contributors）。
