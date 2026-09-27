@@ -210,6 +210,26 @@ ZDATA.zones.forEach((z) => {
   it.label = mkLabel(zoneG, z.x, z.z + z.h, -z.y, 'area'); it.pri = z.pri * 1000 + z.r;
   ITEMS.push(it);
 });
+// 庄园悬浮车（卡里的交通是悬浮车 / 悬浮载具，没有地面车）：主楼门廊前车道两辆，程序生成（无轮、离地悬停 + 柔光），可点
+const CARS = [[5.5, -37.5, 90], [-6.0, -37.8, 90]];
+const carG = new THREE.Group(); carG.name = 'hovercars'; scene.add(carG);
+{
+  const body = new THREE.MeshLambertMaterial({ color: '#2b2f36' }), glass = new THREE.MeshLambertMaterial({ color: '#8fa6b4' }), trim = new THREE.MeshLambertMaterial({ color: '#c9a45c' });
+  const glow = new THREE.MeshBasicMaterial({ color: '#9fe6ff', transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending });
+  const bodyG = new THREE.CapsuleGeometry(0.72, 3.9, 4, 12).rotateZ(Math.PI / 2).scale(1, 0.62, 1.25);
+  const cabG = new THREE.CapsuleGeometry(0.55, 1.7, 4, 12).rotateZ(Math.PI / 2).scale(1, 0.7, 1.15);
+  const glowG = new THREE.CircleGeometry(1, 32).scale(2.9, 1.2, 1).rotateX(-Math.PI / 2);
+  CARS.forEach(([x, y, a], i) => {
+    const gz = F1Y, g = new THREE.Group(); g.position.copy(V(x, y, gz)); g.rotation.y = (a * Math.PI) / 180 - Math.PI / 2;
+    const b = new THREE.Mesh(bodyG, body); b.position.y = 1.05; const c = new THREE.Mesh(cabG, glass); c.position.set(-0.3, 1.5, 0);
+    const t = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.05, 0.05), trim); t.position.set(0, 1.0, 0.92); const t2 = t.clone(); t2.position.z = -0.92;
+    const gl = new THREE.Mesh(glowG, glow); gl.position.y = 0.06; gl.renderOrder = 3;
+    g.add(b, c, t, t2, gl); carG.add(g);
+    const it = { kind: 'car', d: { name: '庄园悬浮车', en: 'Estate hover car', id: 'hovercar' + i }, floor: null, cx: g.position.x, cz: g.position.z, w: 6, dd: 6, y: gz };
+    const pk = new THREE.Mesh(new THREE.BoxGeometry(6, 2.6, 2.6), pickMat); pk.position.y = 1.2; pk.userData.item = it; g.add(pk); it.pick = pk;
+    it.label = mkLabel(g, 0, 3, 0, 'area'); it.pri = 100; it.rank = 3; ITEMS.push(it);
+  });
+}
 function mkLabel(parent, x, y, z, cls) {
   const el = document.createElement('div'); el.className = 'lbl ' + cls; el.appendChild(document.createElement('span'));
   const o = new CSS2DObject(el); o.position.set(x, y, z); o.center.set(0.5, 0.5); o.visible = false; parent.add(o); return o;
@@ -217,7 +237,7 @@ function mkLabel(parent, x, y, z, cls) {
 const enName = (d) => d.en || (d.kind === 'restricted' ? 'Restricted room' : '');
 const nameOf = (it) => {
   const d = it.d;
-  if (it.kind === 'area') return LANG === 'en' ? d.en || d.name : d.name;
+  if (it.kind === 'area' || it.kind === 'car') return LANG === 'en' ? d.en || d.name : d.name;
   const nm = d.name + (d.no ? ` ${d.no}` : '');
   return LANG === 'en' && enName(d) ? enName(d) : nm;
 };
@@ -276,7 +296,7 @@ function applyMode() {
   plates.forEach((ps, i) => ps.forEach((p) => { p.visible = fl ? i === m : m === 'xray'; }));
   for (const mt of Object.values(plateMats)) mt.opacity = m === 'xray' ? 0.35 : 0.55;
   houseFloors.forEach((ms, i) => ms.forEach((o) => { o.visible = fl ? i === m : m === 'xray' && i >= 2; }));
-  zoneG.visible = m === 'ext';
+  zoneG.visible = m === 'ext'; carG.visible = m === 'ext';
   floorTags.forEach((o, i) => { o.visible = m === 'xray' && i >= 2; });
   needs = true;
 }
@@ -293,7 +313,7 @@ function setMode(m, o = {}) {
 }
 const modeKey = (m) => (isFloor(m) ? FLOORS[m].id : m);
 function itemVisible(it) {
-  if (it.kind === 'area') return mode === 'ext';
+  if (it.kind === 'area' || it.kind === 'car') return mode === 'ext';
   return mode === it.floor || (mode === 'xray' && it.floor >= 2);
 }
 function parseFloor(f) {
@@ -361,6 +381,7 @@ function showHi(h, it) {
   const u = h.userData;
   let poly, y;
   if (it.kind === 'room') { poly = it.poly; y = it.y + 0.12; }
+  else if (it.kind === 'car') { const n = 32; poly = Array.from({ length: n }, (_, k) => [it.cx + 3.4 * Math.cos(2 * Math.PI * k / n), -it.cz + 3.4 * Math.sin(2 * Math.PI * k / n)]); y = it.y + 0.2; }
   else { const n = 48, z = it.d; poly = Array.from({ length: n }, (_, k) => [z.x + z.r * Math.cos(2 * Math.PI * k / n), z.y + z.r * Math.sin(2 * Math.PI * k / n)]); y = z.z + 0.6; }
   const fill = new THREE.Mesh(flatGeo(poly, y), u.fm); fill.renderOrder = 6;
   const pts = poly.map(([x, yy]) => V(x, yy, y + 0.02)); pts.push(pts[0].clone());
@@ -376,6 +397,10 @@ const card = $('#card');
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function cardHTML(it) {
   const d = it.d, zh = LANG === 'zh';
+  if (it.kind === 'car') {
+    return zh ? `<h3>庄园悬浮车</h3><div class="sub">室外 · 主楼门廊前车道</div><div class="row"><em>说明</em>庄园自用的悬浮代步车：没有车轮，离地悬停行驶，底部有柔和的推进光。</div><div class="row"><em>停放</em>悬浮车库（服务院旁）/ 载具停靠坪</div><div class="acts"><button class="garage" type="button">去悬浮车库 ›</button></div>`
+      : `<h3>Estate hover car</h3><div class="sub">Grounds · drive in front of the portico</div><div class="row"><em>Notes</em>The estate's own hover cars: no wheels, they float just above the ground on a soft thruster glow.</div><div class="row"><em>Parking</em>Hover Garage (by the service court) / Vehicle Pad</div><div class="acts"><button class="garage" type="button">Go to the garage ›</button></div>`;
+  }
   if (it.kind === 'area') {
     return `<h3>${esc(nameOf(it))}</h3><div class="sub">${esc(tx('estate'))}${zh && d.en ? ' · ' + esc(d.en) : ''}</div>` + (d.alias?.length && zh ? `<div class="row"><em>别名</em>${esc(d.alias.filter((a) => /[一-鿿]/.test(a)).slice(0, 4).join('、'))}</div>` : '');
   }
@@ -394,6 +419,7 @@ function showCard(it, x, y) {
   if (cardFor !== it) { card.innerHTML = cardHTML(it); cardFor = it; }
   cardAt = x == null ? null : [x, y]; card.classList.toggle('pinned', it === pinned && x == null); placeCard(); card.classList.add('on');
 }
+card.addEventListener('click', (e) => { if (!e.target.closest('.garage')) return; e.stopPropagation(); const g = ITEMS.find((it) => it.kind === 'area' && it.d.id === 'garage'); if (g) focusItem(g); });
 let GALS = null;
 card.addEventListener('click', async (e) => {
   if (!e.target.closest('.gal') || !cardFor) return; e.stopPropagation();
@@ -418,7 +444,7 @@ function pickAt(cx, cy) {
   const list = []; for (const it of ITEMS) if (itemVisible(it)) list.push(it.pick);
   const hits = ray.intersectObjects(list, false);
   if (!hits.length) return null;
-  if (mode === 'ext') hits.sort((a, b) => a.object.userData.item.d.r - b.object.userData.item.d.r);   // 区域：最具体（最小）的优先
+  if (mode === 'ext') hits.sort((a, b) => (a.object.userData.item.d.r ?? 0) - (b.object.userData.item.d.r ?? 0));   // 区域：最具体（最小）的优先
   return hits[0].object.userData.item;
 }
 let pinned = null, hover = null, pinT = 0;
@@ -433,7 +459,7 @@ function focusView(it) {
 }
 function focusItem(it) {
   if (it.kind === 'room' && mode !== it.floor) setMode(it.floor);
-  if (it.kind === 'area' && mode !== 'ext') setMode('ext');
+  if ((it.kind === 'area' || it.kind === 'car') && mode !== 'ext') setMode('ext');
   pin(it, true);
 }
 const norm = (s) => String(s || '').trim().toLowerCase();

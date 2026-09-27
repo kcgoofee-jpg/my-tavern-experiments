@@ -7,7 +7,7 @@
 | 文件 | 内容 | 生成 |
 |---|---|---|
 | `model/site.glb` / `site_low.glb` | 整岛外观：地面（俯视渲染贴图）、岩基、主楼外壳 `house_shell(_vc)`、中 / 西 / 东三区建筑 `site_{c,w,e}(_vc)` | `blender/estate2/web_scene.py` → `export_web.py` → gltf-transform（webp + meshopt；低档 resize + simplify） |
-| `model/house.glb` / `house_low.glb` | 主楼室内体量 B2–F3（每层 `f_<层>_struct` / `f_<层>_furn`），进内透 / 剖切才加载 | `blender/estate2/house_web.py` |
+| `model/house.glb` | 主楼室内体量 B2–F3（每层 `f_<层>_struct` / `f_<层>_furn`，B2 医疗中心 `f_B2_med`），进内透 / 剖切才加载；两档同一个文件（0.5 MB） | `house_web.py` + `medical_web.py`（medical_b2.py），gltf-transform merge --merge-scenes + meshopt |
 | `model/zones.json` | 室外热点（名字 / 别名对齐 maps.json 的 areas） | `blender/estate2/web_zones.py` |
 | `model/manifest.json` | 档位文件名、F1 标高（30 m） | 手写 |
 | `../data/eden_estate_rooms.json` | 房间精确多边形（楼层条、拾取、高亮、飞行） | `blender/estate2/floorplans.py` |
