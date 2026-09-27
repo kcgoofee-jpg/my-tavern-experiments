@@ -55,7 +55,7 @@
         "climate_tower": { "name": "以太气候调节塔", "name_en": "Aether Climate Tower", "tag": "inf",
           "src": "天城：气候由以太气候调节塔人工维持（塔的位置为推断）",
           "alias": ["气候调节塔", "气候塔"] },
-        "pm_residence": { "name": "首相府", "name_en": "Prime Minister's Residence", "sub": "首相官邸 · 唐宁街式砖砌联排", "sub_en": "PM's residence · Downing-Street-style terrace", "tag": "inf", "sub_src": "user-design", "src": "首相在首相府开会；卡未写首相府的位置，放在上层为地图推断；副标题的唐宁街式外观是用户 2026-09-27 自设，卡里没有形制描写", "openings": [5], "opening_dest": true, "alias": ["首相府", "首相官邸"] },
+        "pm_residence": { "name": "首相府", "name_en": "Prime Minister's Residence", "sub": "首相官邸 · 唐宁街式砖砌联排", "sub_en": "PM's residence · Downing-Street-style terrace", "tag": "inf", "sub_src": "user-design", "src": "首相在首相府开会；卡未写首相府的位置，放在上层为地图推断；副标题的唐宁街式外观是用户 2026-09-27 自设，卡里没有形制描写", "openings": [5], "opening_dest": true, "link": { "map": "lm_pm_residence", "label": "查看三维模型", "label_en": "View 3D model" }, "alias": ["首相府", "首相官邸"] },
         "general_residence": { "name": "将军官邸", "name_en": "General's Residence", "sub": "防卫军统帅", "sub_en": "Defense Force command", "tag": "inf", "canon": false, "src": "仓库自设：卡中没有此地点（防卫军没有具名统帅）；位置紧邻银冠堡为推断", "alias": ["将军官邸", "将军府"] },
         "zaibatsu_estate": { "name": "罗斯柴尔德庄园", "name_en": "Rothschild Estate", "sub": "悬浮岛 R-02 · 私人悬浮载具停靠平台", "sub_en": "Floating isle R-02 · private vehicle landing", "tag": "inf", "src": "视觉样例·请柬：罗斯柴尔德庄园 · 悬浮岛 R-02，伊莎贝拉家族的庄园、冬季宴会举办地；在上层的具体位置为推断", "alias": ["罗斯柴尔德庄园", "罗斯柴尔德", "悬浮岛 R-02", "悬浮岛R-02", "R-02", "财团家族庄园", "财团庄园", "财阀庄园"] },
         "league_club": { "name": "庄园主联盟会所", "name_en": "Estate Lords' League Club", "sub": "联盟聚会处", "sub_en": "League meeting house", "tag": "inf", "sub_src": "repo-design", "src": "卡有庄园主联盟（举办拍卖会与品鉴会），没有固定会所；品鉴宴由庄园主轮流做东（样例在罗斯柴尔德庄园 R-02），所以「品鉴宴」「会所」不作别名。会所本身与上层位置均为地图推断", "alias": ["联盟会所"] },
@@ -77,6 +77,7 @@
           "alias": ["执法局总局", "执法局", "总局"] },
         "radiance_cathedral": { "name": "辉光大教堂", "sub": "圣光教会总部", "name_en": "Radiance Cathedral", "sub_en": "Church of Holy Light HQ", "tag": "set",
           "src": "天城·中层：圣光教会总部辉光大教堂，位于中层高区（具体位置为推断）。视觉样例里的「天城主教座堂」按用户 2026-09-27 的决定视为同一处；大主教府邸卡里有、位置未写，并入本处。主教塞拉菲娜·阿尔贝蒂在这里",
+          "link": { "map": "lm_cathedral", "label": "查看三维模型", "label_en": "View 3D model" },
           "openings": [8], "alias": ["辉光大教堂", "大教堂", "教堂", "圣光教会", "教会总部", "天城主教座堂", "主教座堂", "大主教府邸", "大主教府", "大主教"] },
         "iron_cradle": { "name": "圣铁摇篮", "sub": "战斗修女修道院", "name_en": "Holy Iron Cradle", "sub_en": "Battle-sisters' convent", "tag": "set",
           "src": "天城·中层：战斗修女的修道院「圣铁摇篮」，中层高区的独立院落（具体位置为推断）",
@@ -141,6 +142,18 @@
         "tin_shacks": {"name": "铁皮屋区", "name_en": "Tin-shack Quarter", "tag": "inf", "src": "下层的铁皮屋区（层按开场白，具体位置为仓库推断）", "alias": ["铁皮屋区", "铁皮屋"]},
         "junk_market": {"name": "旧货市场", "name_en": "Junk Market", "tag": "inf", "src": "下层的旧货市场，卖旧物，也有中层地图（层按开场白，具体位置为仓库推断）", "alias": ["旧货市场", "旧货摊"]}
       }
+    },
+    "lm_cathedral": {
+      "title": "辉光大教堂（三维）", "title_en": "Radiance Cathedral (3D)", "parent": "tc_mid", "kind": "estate",
+      "viewer3d": "cathedral", "src": "props/viewer3d.html", "alias": ["大教堂回廊", "辉光大教堂回廊"],
+      "src_note": "开局地标三维模型（精简版，方案 A：哥特双塔 + 交叉处穹顶 + 南侧扇形拱顶回廊）；从中层 radiance_cathedral 标记的「查看三维模型」进。源：blender/landmarks/cathedral/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_pm_residence": {
+      "title": "首相府（三维）", "title_en": "Prime Minister's Residence (3D)", "parent": "tc_upper", "kind": "estate",
+      "viewer3d": "pm_residence", "src": "props/viewer3d.html", "alias": ["首相府花园"],
+      "src_note": "开局地标三维模型（精简版，方案 A：唐宁街式乔治时代砖砌联排 + 花园柱廊）；从上层 pm_residence 标记的「查看三维模型」进。源：blender/landmarks/pm_residence/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
     "dairy": {
       "title": "测试：模型交互（挤奶厅）", "title_en": "Test: model interaction (dairy)", "parent": "world", "kind": "estate", "test": true,

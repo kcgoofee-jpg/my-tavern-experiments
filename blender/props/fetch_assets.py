@@ -11,7 +11,10 @@ OUT = os.path.join(ROOT, 'data', 'props')
 UA = {'User-Agent': 'eden-props-test'}
 TEX = ['concrete_wall_008', 'smooth_concrete_floor', 'hangar_concrete_floor',
        'rubber_tiles', 'concrete_floor_worn_001', 'box_profile_metal_sheet',
-       'grass_ground', 'dirt_floor', 'rough_wood']
+       'grass_ground', 'dirt_floor', 'rough_wood',
+       # blender/landmarks/*（大教堂、首相府）
+       'white_sandstone_blocks_02', 'dark_brick_wall', 'roof_slates_02', 'white_stucco',
+       'precast_stone_paving', 'asphalt_02', 'patterned_paving']
 HDRI = ['dry_field', 'rostock_laage_airport', 'farmland_overcast']
 # Poly Haven 模型（glTF 1k，CC0）：挤奶厅 / 牧场可直接摆的配件
 MODELS = ['garden_hose_wall_mounted_01', 'modular_industrial_pipes_01',
