@@ -18,7 +18,7 @@ const STUB = `<script>
     window.getChatWorldbookName = function () { return parent.__chatWb || null; };
     window.rebindChatWorldbook = async function (c, n) { parent.__chatWb = n; };
   }
-  if (S.charData) window.getCharData = function () { return S.charData; };
+  if (S.charData) window.getCharData = function () { return S.charAsync ? new Promise(function (r) { setTimeout(function () { r(S.charData); }, 50); }) : S.charData; };   // charAsync：宿主 API 返回 Promise（A-8）
   window._ = { get: function (o, p, d) { var v = p.split('.').reduce(function (a, k) { return a == null ? a : a[k]; }, o); return v == null ? d : v; } };
   window.SillyTavern = { getContext: function () { return { name1: 'Player', chatId: S.chat || 'stub' }; } };
   window.tavern_events = { CHAT_CHANGED: 'c', MESSAGE_SWIPED: 's', MESSAGE_RECEIVED: 'r', MESSAGE_UPDATED: 'u', MESSAGE_DELETED: 'd', GENERATION_AFTER_COMMANDS: 'g' };
