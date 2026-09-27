@@ -1,0 +1,155 @@
+<!doctype html>
+<!-- 自定义 v2 低保真示意（不是产品代码）。?s=card|v3d|conflict|hub  &theme=dark|light  &lang=zh|en
+     只引用 map/ui/tokens.css 的语义令牌；布局是示意，尺寸以 custom-v2.md 为准。 -->
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>自定义 v2 示意</title>
+<link rel="stylesheet" href="../../../map/ui/tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font: var(--fs-body)/1.5 var(--font-ui); }
+  .stage { position: relative; min-height: 100vh; overflow: hidden; }
+  .fake { position: absolute; inset: 0; background: repeating-linear-gradient(45deg, var(--surface-2) 0 12px, transparent 12px 24px); }
+  .fake i { position: absolute; font-style: normal; font-size: var(--fs-small); color: var(--muted); left: 16px; top: 12px; }
+  .pin { position: absolute; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-weight: 700; box-shadow: var(--sh-2); }
+  .card { position: absolute; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-3); padding: var(--sp-6); width: 360px; }
+  .card h3 { margin: 0; font-size: var(--fs-title); display: flex; align-items: center; gap: 8px; }
+  .std { color: var(--muted); font-size: var(--fs-small); font-weight: 400; }
+  .note { margin: 6px 0 0; color: var(--ink-2); }
+  .note b { color: var(--muted); font-weight: 400; margin-right: 4px; }
+  .badge { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: var(--r-pill); border: 1px solid var(--line); font-size: var(--fs-micro); color: var(--muted); }
+  .badge.tag { color: var(--accent); border-color: var(--accent); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .btn { min-height: var(--hit); min-width: var(--hit); padding: 0 14px; border-radius: var(--r-m); border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font: inherit; font-size: var(--fs-control); display: inline-flex; align-items: center; gap: 6px; }
+  .btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; font-weight: 600; }
+  .btn.ghost { background: transparent; }
+  .btn.edit { border-style: dashed; color: var(--accent); border-color: var(--accent); }
+  .sheet { position: absolute; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l) var(--r-l) 0 0; box-shadow: var(--sh-3); padding: var(--sp-6); }
+  .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--line); margin: -4px auto 10px; }
+  .sheet h4 { margin: 0 0 4px; font-size: var(--fs-title); }
+  .field { display: block; margin-top: 12px; }
+  .field > span { display: flex; justify-content: space-between; font-size: var(--fs-small); color: var(--muted); margin-bottom: 4px; }
+  .inp { width: 100%; min-height: var(--hit); padding: 10px 12px; border-radius: var(--r-m); border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; }
+  .inp.ta { min-height: 72px; }
+  .inp.focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .preview { margin-top: 12px; padding: 10px 12px; border-radius: var(--r-m); background: var(--surface-2); border-left: 3px solid var(--accent); font: var(--fs-small)/1.5 var(--font-mono); color: var(--ink-2); }
+  .preview > b { display: block; font: 600 var(--fs-micro) var(--font-ui); color: var(--muted); margin-bottom: 2px; letter-spacing: .02em; }
+  .preview mark { background: none; color: var(--accent); }
+  .actions { display: flex; gap: 8px; margin-top: 14px; }
+  .actions .btn { flex: 1; justify-content: center; }
+  .clr { display: inline-flex; align-items: center; min-height: var(--hit); margin-top: 4px; color: var(--alert); font-size: var(--fs-small); text-decoration: underline; }
+  .hint { position: absolute; background: var(--accent); color: var(--on-accent); padding: 10px 12px; border-radius: var(--r-m); font-size: var(--fs-small); box-shadow: var(--sh-2); width: 230px; }
+  .hint:after { content: ""; position: absolute; top: -6px; left: 24px; border: 6px solid transparent; border-top: 0; border-bottom-color: var(--accent); }
+  .hint .x { float: right; margin: -4px -4px 0 8px; font-weight: 700; }
+  .flow { position: absolute; left: 16px; right: 16px; bottom: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); padding: 10px 12px; box-shadow: var(--sh-2); }
+  .steps { display: flex; gap: 6px; overflow: hidden; }
+  .step { flex: 0 0 auto; min-height: var(--hit); padding: 4px 10px; border-radius: var(--r-m); border: 1px solid var(--line); font-size: var(--fs-small); display: flex; flex-direction: column; justify-content: center; }
+  .step.on { border-color: var(--accent); color: var(--accent); }
+  .step small { color: var(--muted); font-size: var(--fs-micro); }
+  .modes { position: absolute; top: 12px; left: 12px; display: flex; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-m); }
+  .modes span { padding: 0 12px; line-height: var(--hit); font-size: var(--fs-control); }
+  .modes .on { background: var(--accent); color: var(--on-accent); border-radius: var(--r-m); }
+  .hub { position: absolute; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); padding: var(--sp-6); }
+  .hub h2 { margin: 0; font-size: var(--fs-display); display: flex; justify-content: space-between; align-items: center; }
+  .tabs { display: flex; gap: 6px; margin: 12px 0; }
+  .tabs span { padding: 0 12px; line-height: 36px; border-radius: var(--r-pill); border: 1px solid var(--line); font-size: var(--fs-small); }
+  .tabs .on { background: var(--surface-2); border-color: var(--accent); color: var(--accent); }
+  .li { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+  .li .t { font-weight: 600; }
+  .li .t s { color: var(--muted); font-weight: 400; text-decoration: none; font-size: var(--fs-small); margin-left: 6px; }
+  .li .n { grid-column: 1; color: var(--ink-2); font-size: var(--fs-small); }
+  .li .m { grid-row: 1 / span 2; grid-column: 2; }
+  .conf { border: 1px solid var(--alert); border-radius: var(--r-m); padding: 10px 12px; margin-top: 12px; }
+  .conf p { margin: 0 0 6px; }
+  .hist { margin-top: 12px; font-size: var(--fs-small); }
+  .hist div { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-top: 1px dashed var(--line); }
+  .hist em { color: var(--muted); font-style: normal; }
+  .toast { position: absolute; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 8px 8px 14px; border-radius: var(--r-m); display: flex; gap: 12px; align-items: center; font-size: var(--fs-small); box-shadow: var(--sh-3); white-space: nowrap; }
+  .toast .btn { white-space: nowrap; min-height: 36px; background: transparent; color: var(--bg); border-color: var(--bg); }
+  .lbl { position: absolute; background: var(--map-label-bg); color: var(--map-label-ink); padding: 2px 8px; border-radius: var(--r-s); font-size: var(--fs-small); }
+  .lbl s { text-decoration: none; opacity: .7; margin-left: 4px; font-size: var(--fs-micro); }
+  /* 手机：卡片变底部抽屉，编辑页贴底 */
+  @media (max-width: 640px) {
+    .card, .hub { left: 0 !important; right: 0 !important; width: auto !important; top: auto !important; bottom: 0 !important; border-radius: var(--r-l) var(--r-l) 0 0; }
+    .hub { top: 0 !important; border-radius: 0; }
+    .sheet { left: 0 !important; right: 0 !important; width: auto !important; bottom: 0 !important; }
+    .hide-m { display: none !important; }
+    .flow { bottom: auto; top: 64px; }
+    .toast { max-width: calc(100% - 32px); white-space: normal; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style></head>
+<body><div class="stage" id="st"></div>
+<script>
+const Q = new URLSearchParams(location.search), S = Q.get('s') || 'card', EN = Q.get('lang') === 'en';
+if (Q.get('theme') === 'light') document.documentElement.classList.add('light');
+const t = (zh, en) => EN ? en : zh, M = matchMedia('(max-width: 640px)').matches;
+const preview = (line) => `<div class="preview"><b>${t('模型会看到（下一条消息起）', 'The model will see (from next message)')}</b>${line}</div>`;
+const V = {
+card: () => `
+  <div class="fake"><i>${t('地图（上层）', 'Map (upper)')}</i></div>
+  <div class="lbl" style="left:120px;top:150px">星图室<s>书房</s></div>
+  <div class="pin" style="left:150px;top:176px">★</div>
+  <div class="hint hide-m" style="left:420px;top:282px"><span class="x">×</span>${t('任何卡片上的 ✎ 都能改叫法、写用途；模型会当作背景。', 'Tap ✎ on any card to rename or add a purpose; the model uses it as background.')}</div>
+  <div class="card hide-m" style="left:40px;top:220px">
+    <h3>星图室 <span class="std">${t('标准名：书房', 'Standard: 书房')}</span></h3>
+    <p class="note"><b>${t('用途', 'Purpose')}</b>夜里看星图，整理旧地图</p>
+    <div class="row"><span class="badge">${t('房间 · 2F', 'Room · 2F')}</span><span class="badge">${t('手动', 'Manual')}</span></div>
+    <div class="row"><button class="btn edit">✎ ${t('自定义', 'Customise')}</button><button class="btn ghost">${t('进入', 'Enter')}</button></div>
+  </div>
+  <div class="sheet" style="left:420px;bottom:0;width:380px">
+    <div class="grab"></div>
+    <h4>${t('自定义 · 书房', 'Customise · 书房')}</h4>
+    <span class="std">${t('标准名不变，剧情和存档都认它；这里只加你的叫法。', 'The standard name never changes; this only adds your label.')}</span>
+    <label class="field"><span>${t('你的叫法', 'Your name')}<em>3/40</em></span><input class="inp focus" value="星图室"></label>
+    <label class="field"><span>${t('用途（一句话）', 'Purpose (one line)')}<em>11/200</em></span><textarea class="inp ta">夜里看星图，整理旧地图</textarea></label>
+    ${preview('书房→<mark>星图室</mark>（<mark>夜里看星图，整理旧地图</mark>）')}
+    <a class="clr">${t('清除这一项', 'Clear this item')}</a><div class="actions"><button class="btn ghost">${t('取消', 'Cancel')}</button><button class="btn pri">${t('保存', 'Save')}</button></div>
+  </div>`,
+v3d: () => `
+  <div class="fake"><i>${t('三维 · 挤奶厅', '3D · Dairy parlour')}</i></div>
+  <div class="modes"><span>${t('外观', 'Exterior')}</span><span>${t('内透', 'X-ray')}</span><span class="on">${t('流程', 'Flow')}</span></div>
+  <div class="pin" style="left:48%;top:44%">5</div>
+  <div class="flow"><div class="steps">
+    <div class="step">1 集乳罐 / 卫生隔离罐</div>
+    <div class="step on">2 老白<small>${t('奶罐与制冷', 'Bulk tank')}</small></div>
+    <div class="step">3 呼噜机<small>${t('真空泵', 'Vacuum pump')}</small></div>
+    <div class="step">4 CIP</div></div></div>
+  <div class="card" style="left:16px;top:240px;width:380px">
+    <h3>老白 <span class="std">${t('奶罐与制冷', 'Bulk tank & cooling')}</span></h3>
+    <p class="note">6000 L ${t('卧式冷却罐', 'horizontal cooling tank')}</p>
+    <p class="note"><b>${t('用途', 'Purpose')}</b>每晚 10 点前要降到 4 °C</p>
+    <div class="row"><span class="badge">${t('三维部件', '3D part')}</span><span class="badge">${t('手动', 'Manual')}</span></div>
+    <div class="row"><button class="btn edit">✎ ${t('自定义', 'Customise')}</button><button class="btn ghost">${t('在流程里看', 'Show in flow')}</button></div>
+  </div>`,
+conflict: () => `
+  <div class="fake"><i>${t('地图', 'Map')}</i></div>
+  <div class="toast" style="top:16px">${t('剧情想把「星图室」改成「观星台」', 'Story wants to rename 星图室 → 观星台')}<button class="btn">${t('查看', 'Review')}</button></div>
+  <div class="card" style="left:40px;top:84px;width:400px">
+    <h3>星图室 <span class="std">${t('标准名：书房', 'Standard: 书房')}</span></h3>
+    <div class="row"><span class="badge">${t('手动', 'Manual')}</span><span class="badge tag">${t('剧情标签待确认', 'Story tag pending')}</span></div>
+    <div class="conf"><p>${t('第 214 楼：⌖改名 书房 → 观星台', 'Msg #214: ⌖改名 书房 → 观星台')}</p>
+      <span class="std">${t('在你决定前，模型看到：星图室（剧情里也叫观星台）。', 'Until you decide, the model sees: 星图室 (story also calls it 观星台).')}</span><br>
+      <span class="std">${t('你手动起的名字优先。接受后「星图室」留作旧叫法。', 'Your manual name wins. Accepting keeps 星图室 as an old alias.')}</span>
+      <div class="row"><button class="btn">${t('保留星图室', 'Keep 星图室')}</button><button class="btn pri">${t('用观星台', 'Use 观星台')}</button></div></div>
+    <div class="hist"><b>${t('历史', 'History')}</b>
+      <div><span>星图室 <em>· ${t('手动 · 今天 21:04', 'manual · today 21:04')}</em></span><span class="badge">${t('当前', 'Current')}</span></div>
+      <div><span>藏书间 <em>· ${t('剧情 #188', 'story #188')}</em></span><button class="btn ghost">${t('恢复', 'Restore')}</button></div>
+      <div><button class="btn ghost">${t('展开 1 条', 'Show 1 more')}</button></div></div>
+  </div>
+  <div class="toast hide-m" style="bottom:24px">${t('已重置「温室」', 'Reset 温室')}<button class="btn">${t('撤销', 'Undo')}</button></div>`,
+hub: () => `
+  <div class="fake"><i>${t('设置', 'Settings')}</i></div>
+  <div class="hub" style="left:40px;top:24px;width:460px;bottom:24px">
+    <h2>${t('自定义', 'Custom')} <span class="std">${t('5 项 · 世界书同步 开', '5 items · worldbook sync on')}</span></h2>
+    <input class="inp" style="margin-top:12px" placeholder="${t('搜索名称、叫法或用途', 'Search names or purposes')}">
+    <div class="tabs"><span class="on">${t('全部', 'All')}</span><span>${t('地点', 'Places')}</span><span>${t('人物', 'People')}</span><span>${t('三维部件', '3D parts')}</span><span>${t('待确认 1', 'Pending 1')}</span></div>
+    <div class="li"><span class="t">星图室<s>书房</s></span><span class="n">夜里看星图 · ${t('手动', 'manual')}</span><button class="btn ghost m">›</button></div>
+    <div class="li"><span class="t">老白<s>奶牛场 · 奶罐与制冷</s></span><span class="n">每晚 10 点前降到 4 °C · ${t('手动', 'manual')}</span><button class="btn ghost m">›</button></div>
+    <div class="li"><span class="t">呼噜机<s>奶牛场 · 真空泵</s></span><span class="n">${t('手动', 'manual')}</span><button class="btn ghost m">›</button></div>
+    <div class="li"><span class="t">温室</span><span class="n">冬天在这里喝茶 · ${t('剧情', 'story')}</span><button class="btn ghost m">›</button></div>
+    ${preview('[地图自定义·玩家起的名字与用途] 书房→星图室（夜里看星图）；温室（冬天在这里喝茶）；奶牛场·奶罐与制冷→老白（每晚 10 点前降到 4 °C）…')}
+    <div class="row"><button class="btn">+ ${t('添加', 'Add')}</button><button class="btn ghost">${t('同步设置', 'Sync settings')}</button></div>
+  </div>`,
+};
+document.getElementById('st').innerHTML = V[S]();
+</script></body></html>
