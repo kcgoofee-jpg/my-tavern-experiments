@@ -392,7 +392,7 @@ async function main() {
   viewer = OpenSeadragon({
     element: $('#osd'), drawer: 'canvas', prefixUrl: 'vendor/openseadragon/images/',
     showNavigator: !narrow, showFullPageControl: false, navigatorPosition: 'BOTTOM_RIGHT', visibilityRatio: 1, constrainDuringPan: true, homeFillsViewer: true, minZoomImageRatio: 1,
-    maxZoomPixelRatio: 2.5, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: 16, maxImageCacheCount: coarse ? 30 : 60,   /* 512px 瓦片：并发拉取，缓存约 60 MB */ minPixelRatio: effTier().ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true }, gestureSettingsTouch: { pinchRotate: false, flickEnabled: true },
+    maxZoomPixelRatio: 1.25, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: 16, maxImageCacheCount: coarse ? 30 : 60,   /* 512px 瓦片：并发拉取，缓存约 60 MB */ minPixelRatio: effTier().ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true }, gestureSettingsTouch: { pinchRotate: false, flickEnabled: true },
     smoothTileEdgesMinZoom: Infinity,   // 瓦片有 1px 重叠，不需要放大时整屏再画一遍去接缝
   });
   viewer.addHandler('open', onOpen);
@@ -407,7 +407,7 @@ async function main() {
     document.body.classList.toggle('far', px < 1700); document.body.classList.toggle('tiny', px < 800); }); };
   viewer.addHandler('animation', rescale); viewer.addHandler('resize', rescale); viewer.addHandler('open', () => setTimeout(rescale, 0));
   viewer.addHandler('animation-finish', autoTier); viewer.addHandler('resize', autoTier);
-  viewer.addHandler('animation-finish', declutter); viewer.addHandler('resize', () => { homeMode(); declutter(); });
+  viewer.addHandler('animation-finish', declutter); viewer.addHandler('resize', () => { homeMode(); declutter(); applyZoomLimit(); });
   initProgress();
   $('#tgBorders').onchange = applyOverlayToggle;
   $('#tgAltBox').onchange = e => { try { localStorage.setItem(ALT_KEY + cur, e.target.checked ? '1' : '0'); } catch (err) {} swapBase(); };
@@ -980,7 +980,11 @@ let userMoved = false;
 // 地图的实际尺度（maps.json 的 view.extent_m）：米 → 占图宽的比例
 const viewNorm = (m, key) => { const v = m.view; return v?.[key] && v.extent_m?.[0] ? v[key] / v.extent_m[0] : null; };
 // 最大放大：按 view.min_width_m（最大放大时还能看见多宽）；没有 view 的图沿用全局的 maxZoomPixelRatio
-function applyZoomLimit() { const mw = viewNorm(REG.maps[cur], 'min_width_m'); viewer.viewport.maxZoomLevel = mw ? 1 / mw : null; }
+// 另加像素上限：最多放大到底图 1 像素 ≈ 1.25 个屏幕像素（CSS），再放大只是糊（用户 2026-09-27 同意），取两者中更「远」的那个
+const MAX_PX = 1.25;
+function applyZoomLimit() { if (REG.maps[cur]?.kind === 'estate') return; const it = viewer.world.getItemAt(0); if (!it) return;
+  const mw = viewNorm(REG.maps[cur], 'min_width_m') || 0, pw = viewer.container.clientWidth / (it.getContentSize().x * MAX_PX);
+  viewer.viewport.maxZoomLevel = 1 / Math.max(mw, pw); viewer.viewport.applyConstraints(); }
 function focusStart(immediately) {
   if (userMoved || !viewer || !viewer.world.getItemCount()) return;
   const m = REG.maps[cur], cs = viewer.viewport.getContainerSize();
