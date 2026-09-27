@@ -969,6 +969,8 @@ function pointOverlays() {
   // link：跨层通道（如中层检查点 ↔ 下层 7 号井），地点卡里给一个直达链接
   const linkHtml = l => l && REG.maps[l.map] && REG.maps[l.map].status !== 'planned'
     ? `<p><a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}" role="button" tabindex="0">${esc(nm(l, 'label') || t('goto', { title: nm(REG.maps[l.map], 'title') }))} →</a></p>` : '';
+  // 上层导出了标记锚点 ax / ay（岸边停靠平台或主楼旁的空地），图钉落在锚点上，不再压住岛心的主楼；聚焦、飞行也用它（B2 第 2 轮本机 P1）
+  for (const k of d.markers || []) if (k.ax != null && k.ay != null) { k.nx = k.ax; k.ny = k.ay; }
   for (const k of d.markers || []) { const meta = m.markers?.[k.id]; if (!meta) continue;
     const el = markerEl({ ...meta, sub: (meta.sub || '').replace(/\{\{user\}\}\s*/g, t('you')), extra: linkHtml(meta.link) });
     if (k.id === (m.view?.focus || m.focus)) el.dataset.focus = '1'; if (meta.link) el.dataset.link = '1';   // 标签避让的优先级
