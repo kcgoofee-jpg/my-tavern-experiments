@@ -57,6 +57,14 @@ export function evaluate(f) {
     out.push(item('mvu', 'warn', `MVU 里没有「${HERE_PATH}」${c ? `（是不是改名成了 ${c}？）` : ''}：地图无法跟随当前地点`,
       `MVU has no "${HERE_PATH}"${c ? ` (renamed to ${(m.candidates || []).join(', ')}?)` : ''}: the map cannot follow the current location`));
   } else out.push(item('mvu', 'ok', `MVU「${HERE_PATH}」可读`, `MVU "${HERE_PATH}" readable`));
+  if (m && m.stat && m.fields) {   // v0.9.3：人物栏 / 世界时间 / 着装读的字段；缺了不算错，只说明哪些功能不显示
+    const F = [['present', '在场人物', 'present characters', '人物栏只用聊天标签', 'panel uses chat tags only'], ['clock', '世界.当前时刻', 'world clock', '不显示世界时间与夜色', 'no clock or night tint'], ['outfit', '主角.着装', 'outfit', '不显示着装', 'no outfit line']];
+    const miss = F.filter(f => !m.fields[f[0]]);
+    out.push(miss.length ? item('mvu_fields', 'skip', `MVU 没有 ${miss.map(f => f[1]).join('、')}：${miss.map(f => f[3]).join('；')}`, `MVU lacks ${miss.map(f => f[2]).join(', ')}: ${miss.map(f => f[4]).join('; ')}`)
+      : item('mvu_fields', 'ok', 'MVU 在场人物 / 世界时间 / 着装可读', 'MVU present characters / clock / outfit readable'));
+  }
+  if ('vars' in f) out.push(f.vars ? item('vars', 'ok', '自定义名称存在聊天变量（跟着聊天走）', 'Custom names stored in chat variables')
+    : item('vars', 'warn', '酒馆助手没有聊天变量接口：自定义名称只存本机浏览器（请更新酒馆助手）', 'No TavernHelper chat-variable API: custom names stay in this browser only (update TavernHelper)'));
 
   const d = f.dup || {};
   if (d.oldStyle || d.replaced || (d.others || []).length) out.push(item('dup', 'warn', '检测到另一个地图脚本（如旧卡「地图版 v0.6.1」自带的「【地图】世界地图」）：请只启用一个，否则两个悬浮按钮会互相替换',

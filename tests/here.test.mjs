@@ -108,4 +108,8 @@ t('开局地点（v0.9.2）：卡里开场白写的当前地点都能落点', ()
   is('天城第一学府', 3, 'tc_mid', { marker: 'starabyss_univ' });                           // 开局二
   is('首相府', 3, 'tc_upper', { marker: 'pm_residence' });                                 // 开局三
 });
+t('v0.9.3：地标的自定义显示名也能落点', () => {
+  const ix = buildIndex(J('data/maps.json'), null, null, { rooms: {}, marks: { 蓝塔: '天城执法局总局' } });
+  const r = resolveHere('天城·中层·蓝塔', ix); assert.equal(r.map, 'tc_mid'); assert.equal(r.marker, 'enforcement_hq');
+});
 console.log(`\n${n} passed`);

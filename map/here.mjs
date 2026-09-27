@@ -24,7 +24,7 @@ function longest(v, words) {
 const len = w => (w ? [...w].length : 0);
 
 /** 由 maps.json（和可选的世界地点、英文名）建一次词表 */
-// custom：用户在本机自定义的房间叫法（不进仓库、不上 CDN），{ rooms: { 自定义名: 标准房间名 } }。
+// custom：用户自定义的叫法（不进仓库、不上 CDN），{ rooms: { 自定义名: 标准房间名 }, marks?: { 自定义名: 标准地标名 } }（v0.9.3 起来自聊天变量 eden_map.自定义，见 tavern/mvu.mjs aliasMap）。
 // 当前地点写的是自定义名时，按对应的标准房间落点；来源见 viewer 的 EdenMap.setRoomAlias（存储见文件末尾 readCustom / setRoomAlias）。
 export function buildIndex(reg, world = null, names = null, custom = null) {
   const maps = reg?.maps || {}, idx = { estate: null, marks: [], layers: [], tiancheng: null, world: [] };
@@ -50,6 +50,8 @@ export function buildIndex(reg, world = null, names = null, custom = null) {
       idx.marks.push({ map: id, marker: mk, words: [k.name, k.name_en, ...(k.alias || [])].filter(Boolean) });
     }
     const L = m.layer || {};
+    // v0.9.3：地标的自定义显示名（custom.marks { 显示名: 标准地标名 }）也当成这个地标的叫法
+    for (const [w, std] of Object.entries(custom?.marks || {})) { const k = idx.marks.find(x => x.map === id && x.words.includes(std)); if (w && k && !k.words.includes(w)) k.words.push(w); }
     idx.layers.push({ map: id, words: [L.name, L.sub, L.sub_en, L.name_en && L.name_en + ' Tier', ...(m.districts || [])].filter(Boolean) });
   }
   // 「天城」：group 的标题（中英）+ 世界图上同名地点的英文名；落到该组第一张 points 地图
