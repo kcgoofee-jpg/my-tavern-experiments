@@ -1,12 +1,12 @@
 {
-  "_说明": "地图注册表。base = 底图 DZI；parent = 上一级地图（面包屑）；group = 同组多层（天城三层）；alt = 同一张图的另一版底图（查看器里一个开关，只换底图）；credit = 数据署名（查看器右上角显示）；view = 尺度与默认缩放（focus 初始聚焦的标记、width_m 初始可见宽度、min_width_m 最大放大时的可见宽度、extent_m 整张图的实际宽高，单位米）；overlay = 可开关叠加层（from = 取另一张地图的数据，如中层的「上层投影」取上层岛屿）；status=planned 表示制作中（切换器里置灰）。kind=estate 是三维庄园剖面（不用瓦片）：src = 嵌入页面（相对 map/），查看器把它放进 iframe，并用 estate:room 消息按 alias 高亮房间；rooms / areas（及 _en）= 庄园房间 / 室外区域的叫法，当前地点按它判断直达庄园哪里（map/here.mjs）。districts = 该层的大区叫法（当前地点只写到大区时落到这一层）。markers 里的 nx/ny 由渲染脚本导出的数据文件提供，这里只写名称、设定出处和当前地点别名；link = 跨层通道（点开地点卡可直接去另一张图的对应地点）。字段说明见 docs/tiancheng-maps.md，改完跑 python3 tools/check_maps.py。",
+  "_说明": "地图注册表。base = 底图 DZI；parent = 上一级地图（面包屑）；group = 同组多层（天城三层）；alt = 同一张图的另一版底图（查看器里一个开关，只换底图）；credit = 数据署名（查看器右上角显示）；view = 尺度与默认缩放（focus 初始聚焦的标记、width_m 初始可见宽度、min_width_m 最大放大时的可见宽度、extent_m 整张图的实际宽高，单位米）；overlay = 可开关叠加层（from = 取另一张地图的数据，如中层的「上层投影」取上层岛屿）；status=planned 表示制作中（切换器里置灰）。kind=estate 是三维庄园剖面（不用瓦片）：src = 嵌入页面（相对 map/），查看器把它放进 iframe，并用 estate:room 消息按 alias 高亮房间；rooms / areas（及 _en）= 庄园房间 / 室外区域的叫法，当前地点按它判断直达庄园哪里（map/here.mjs）。districts = 该层的大区叫法与卡里列举的场所类型泛称（当前地点只写到这些词时落到这一层，是近似落点）；sub_src = 副标题的来源（user-design 为用户自设形制，repo-design 为仓库自设，缺省表示出自卡或 src 所述）。markers 里的 nx/ny 由渲染脚本导出的数据文件提供，这里只写名称、设定出处和当前地点别名；link = 跨层通道（点开地点卡可直接去另一张图的对应地点）。字段说明见 docs/tiancheng-maps.md，改完跑 python3 tools/check_maps.py。",
   "start": "world",
   "groups": {
     "tiancheng": { "title": "天城", "title_en": "Tiancheng", "layers": ["eden_estate", "tc_upper", "tc_mid", "tc_low"] }
   },
   "ambiguous": {
     "_说明": "当前地点里出现这些泛称、又没有更长的具体地标名时，不落到任何地标（卡里同名的地方不止一处）：写了层名就落到该层，否则不跳转。见 map/here.mjs",
-    "words": ["大学", "天城大学", "法学院", "分局", "执法局分局", "中层分局", "修道院", "普通修道院", "委员会", "资产管理委员会", "骑士团", "议会骑士团", "骑士团巡逻据点", "凯莉的宅邸", "凯莉宅邸"]
+    "words": ["大学", "天城大学", "法学院", "分局", "执法局分局", "中层分局", "修道院", "普通修道院", "委员会", "资产管理委员会", "骑士团", "议会骑士团", "骑士团巡逻据点", "凯莉的宅邸", "凯莉宅邸", "区议会", "区级议会", "骑士团营区", "营区", "圣殿骑士团"]
   },
   "maps": {
     "eden_estate": {
@@ -44,10 +44,10 @@
         "climate_tower": { "name": "以太气候调节塔", "name_en": "Aether Climate Tower", "tag": "inf",
           "src": "天城：气候由以太气候调节塔人工维持（塔的位置为推断）",
           "alias": ["气候调节塔", "气候塔"] },
-        "pm_residence": { "name": "首相府", "name_en": "Prime Minister's Residence", "sub": "首相官邸 · 唐宁街式砖砌联排", "sub_en": "PM's residence · Downing-Street-style terrace", "tag": "inf", "src": "开局五：首相去首相府开会；卡未写首相府的位置，放在上层为地图推断", "openings": [5], "opening_dest": true, "alias": ["首相府", "首相官邸"] },
+        "pm_residence": { "name": "首相府", "name_en": "Prime Minister's Residence", "sub": "首相官邸 · 唐宁街式砖砌联排", "sub_en": "PM's residence · Downing-Street-style terrace", "tag": "inf", "sub_src": "user-design", "src": "开局五：首相去首相府开会；卡未写首相府的位置，放在上层为地图推断；副标题的唐宁街式外观是用户 2026-09-27 自设，卡里没有形制描写", "openings": [5], "opening_dest": true, "alias": ["首相府", "首相官邸"] },
         "general_residence": { "name": "将军官邸", "name_en": "General's Residence", "sub": "防卫军统帅", "sub_en": "Defense Force command", "tag": "inf", "canon": false, "src": "仓库自设：卡中没有此地点（防卫军没有具名统帅）；位置紧邻银冠堡为推断", "alias": ["将军官邸", "将军府"] },
         "zaibatsu_estate": { "name": "罗斯柴尔德庄园", "name_en": "Rothschild Estate", "sub": "悬浮岛 R-02 · 私人悬浮载具停靠平台", "sub_en": "Floating isle R-02 · private vehicle landing", "tag": "inf", "src": "视觉样例·请柬：罗斯柴尔德庄园 · 悬浮岛 R-02，伊莎贝拉家族的庄园、冬季宴会举办地；在上层的具体位置为推断", "alias": ["罗斯柴尔德庄园", "罗斯柴尔德", "悬浮岛 R-02", "悬浮岛R-02", "R-02", "财团家族庄园", "财团庄园", "财阀庄园"] },
-        "league_club": { "name": "庄园主联盟会所", "name_en": "Estate Lords' League Club", "sub": "品鉴宴会场", "sub_en": "Tasting banquets", "tag": "inf", "src": "卡有庄园主联盟（举办拍卖会与品鉴会），未写会所位置；放在上层为地图推断", "alias": ["联盟会所", "会所", "品鉴宴"] },
+        "league_club": { "name": "庄园主联盟会所", "name_en": "Estate Lords' League Club", "sub": "联盟聚会处", "sub_en": "League meeting house", "tag": "inf", "sub_src": "repo-design", "src": "卡有庄园主联盟（举办拍卖会与品鉴会），没有固定会所；品鉴宴由庄园主轮流做东（样例在罗斯柴尔德庄园 R-02），所以「品鉴宴」「会所」不作别名。会所本身与上层位置均为地图推断", "alias": ["联盟会所"] },
         "aether_institute": { "name": "以太研究院", "name_en": "Aether Institute", "sub": "气候塔旁", "sub_en": "Beside the climate tower", "tag": "inf", "canon": false, "src": "仓库自设：卡中没有此机构；位置为推断", "alias": ["以太研究院", "研究院"] }
       }
     },
@@ -92,7 +92,7 @@
       "layer": { "name": "下层", "sub": "地基区", "alt": "地面至 −200 m", "name_en": "Lower", "sub_en": "Foundations", "alt_en": "Ground to −200 m" },
       "kind": "points", "base": "art/tc_low.dzi", "credit": "城市骨架 © OpenStreetMap contributors (ODbL)", "credit_en": "City layout © OpenStreetMap contributors (ODbL)", "data": "data/tc_low.json",
       "focus": "well7",
-      "districts": ["地基区", "地基", "贫民区", "棚户", "城寨", "工业区", "下城", "Foundations", "Slums"],
+      "districts": ["地基区", "地基", "贫民区", "贫民窟", "棚户", "城寨", "工业区", "下城", "廉价酒馆", "地下格斗", "非法赌场", "二手市场", "二手衣物市场", "工厂", "Foundations", "Slums"],
       "markers": {
         "well7": { "name": "7 号井黑市", "sub": "只收灰票", "name_en": "Well 7 Black Market", "sub_en": "Grey scrip only", "cls": "capital", "tag": "set", "link": { "map": "tc_mid", "marker": "checkpoint_c", "label": "上到中层 · C 区检查点", "label_en": "Up to Zone C Checkpoint · Middle" },
           "src": "天城·下层：「地基区 7 号井 · 只收灰票」；中层 C 区检查点的通道落在这里（井口与市集布局为推断）",
