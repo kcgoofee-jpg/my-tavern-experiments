@@ -366,9 +366,10 @@
     if (e.data?.type === 'eden-map:line-pick') showPicker();
     if (e.data?.type === 'eden-map:storage-info' || e.data?.type === 'eden-map:storage-clean') {   // 设置「数据与映射」：存储占用、数据来源；清理 = 只留最近 5 个聊天的地图数据
       (async () => { let cleaned = null; const st = store();
-        if (e.data.type === 'eden-map:storage-clean' && BG && st) { try { cleaned = BG.sweep(st, chatId(), 5); } catch (x) {} }
+        if (e.data.type === 'eden-map:storage-clean' && BG && st && Date.now() - (window.__edenCleanAt || 0) > 10000) { window.__edenCleanAt = Date.now();   // 只认本面板 iframe（onMsg 的 e.source 检查）；10 秒内只清一次
+          try { cleaned = BG.sweep(st, chatId(), 5); } catch (x) { console.warn('[eden-map] 清理失败', x); cleaned = { error: true, dropped: [], freed: 0 }; } }
         const [s, src] = await Promise.all([api.storage().catch(() => null), api.sources().catch(() => null)]);
-        post({ type: 'eden-map:storage-result', storage: s && { total: s.total, ours: s.ours, avatars: s.avatars, chats: Object.keys(s.chats || {}).length }, sources: src, cleaned: cleaned && { n: cleaned.dropped.length, bytes: cleaned.freed } }); })(); }   // UI v2：线路选择在地图设置「高级」
+        post({ type: 'eden-map:storage-result', storage: s && { total: s.total, ours: s.ours, avatars: s.avatars, chats: Object.keys(s.chats || {}).length }, sources: src, cleaned: cleaned && { n: cleaned.dropped.length, bytes: cleaned.freed, error: !!cleaned.error } }); })(); }   // UI v2：线路选择在地图设置「高级」
     if (e.data?.type === 'eden-map:chrome') { chromeAt = { top: +e.data.top || 44, bottom: +e.data.bottom || 0 }; NT?.refresh(); }   // 抽屉高度：P2 提示放在它上方
     if (e.data?.type === 'eden-map:formbusy') { formBusy = !!e.data.on; NT?.refresh(); }
     if (e.data?.type === 'eden-map:notice' && e.data.n && typeof e.data.n === 'object') viewerNotice(e.data.n);   // 查看器的通知由宿主统一显示
@@ -980,7 +981,7 @@
       { key: 'selfcheck', actions: [{ label: UL === 'en' ? 'View' : '查看', primary: true, run: () => openSettings('update') }] });
   }
   let setQ = null;   // 面板还没就绪时排队，eden-map:ready 后发（和 flyQ 一样）
-  function openSettings(page) { if (alive && !panel.hidden && !ghost) { post({ type: 'eden-map:settings', page }); return; } setQ = page; if (panel.hidden || ghost) fab.click(); else if (alive) { post({ type: 'eden-map:settings', page }); setQ = null; } }
+  function openSettings(page) { if (alive && !panel.hidden && !ghost) { post({ type: 'eden-map:settings', page }); return; } setQ = page; if (panel.hidden || ghost) fab.click(); }
   // 通知层模块加载失败时的兜底（强制更新等不能悄悄丢）：最简单的一张卡，文字 + 自带按钮 + ×（P0 无 ×）
   function fallbackToast(title, lines, extra, o = {}) {
     const t = pdoc.createElement('div'); t.className = 'em-ctoast'; t.setAttribute('role', o.level === 0 ? 'alertdialog' : 'status');

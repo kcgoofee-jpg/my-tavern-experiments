@@ -57,7 +57,7 @@ export function createNotices({ doc = document, mount, root = 'body', baseCls = 
   let p0Ret = null, inertOn = false, dead = false;
   const setInert = on => { inertOn = on; for (const n of (typeof inertEls === 'function' ? inertEls() : [])) { try { n.inert = on; } catch (e) {} } };
   p0.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); return; } if (e.key !== 'Tab') return;
-    const f = [...p0.querySelectorAll('button, a[href]')]; if (!f.length) return; const i = f.indexOf(doc.activeElement);
+    const f = [...p0.querySelectorAll('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled); if (!f.length) return; const i = f.indexOf(doc.activeElement);
     if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && (i === f.length - 1 || i < 0)) { e.preventDefault(); f[0].focus(); } });
   const items = new Map(); let p2Cur = null, p2T = 0, p2Left = 0, p2Start = 0, p1Open = false, lang = en;
   const txt = (zh, e) => (lang ? e : zh);
@@ -101,7 +101,7 @@ export function createNotices({ doc = document, mount, root = 'body', baseCls = 
     const top0 = z[0] || null;
     for (const i of z) if (i !== top0 && i.el.isConnected) detach(i.el);
     if (top0 && !top0.el.isConnected) { p0.replaceChildren(top0.el); if (!p0Ret) p0Ret = doc.activeElement; setInert(true); setTimeout(() => (top0.el.querySelector('.nt-pri') || top0.el.querySelector('button'))?.focus({ preventScroll: true }), 30); }
-    if (!top0) { p0.replaceChildren(); if (p0Ret !== undefined && p0Ret !== null || inertOn) { setInert(false); const r = p0Ret; p0Ret = null; try { r?.isConnected && r.focus({ preventScroll: true }); } catch (e) {} } }
+    if (!top0) { p0.replaceChildren(); if (p0Ret || inertOn) { setInert(false); const r = p0Ret; p0Ret = null; try { r?.isConnected && r.focus({ preventScroll: true }); } catch (e) {} } }
     p0.hidden = !top0;
     // P1：一条横幅 + 「还有 N 条」
     const ones = all.filter(i => i.level === 1);

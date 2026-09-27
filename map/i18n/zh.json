@@ -375,5 +375,8 @@
   "s.src_chars": "人物来源",
   "s.stor_clean": "清理旧聊天的地图数据",
   "s.stor_clean_btn": "清理",
-  "s.stor_cleaned": "已清理 {n} 个聊天，释放 {b}"
+  "s.stor_cleaned": "已清理 {n} 个聊天，释放 {b}",
+  "s.stor_none": "没有可清理的旧聊天",
+  "s.stor_confirm": "再点一次确认：删除 {n} 个旧聊天的地图数据（不能撤销）",
+  "s.stor_fail": "清理失败"
 }

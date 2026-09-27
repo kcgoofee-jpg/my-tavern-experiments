@@ -506,5 +506,8 @@
   "s.src_chars": "Character sources",
   "s.stor_clean": "Clean up old chats’ map data",
   "s.stor_clean_btn": "Clean up",
-  "s.stor_cleaned": "Cleaned {n} chats, freed {b}"
+  "s.stor_cleaned": "Cleaned {n} chats, freed {b}",
+  "s.stor_none": "No old chats to clean",
+  "s.stor_confirm": "Tap again to confirm: delete map data of {n} old chats (cannot be undone)",
+  "s.stor_fail": "Clean-up failed"
 }
