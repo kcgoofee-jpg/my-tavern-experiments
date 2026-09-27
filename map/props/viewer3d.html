@@ -10,7 +10,8 @@
   嵌入（viewer.html 的 kind=estate + viewer3d 字段）：blob iframe，<base> 指向本目录；模型 id 由注入的 window.__V3D_MODEL 给。
   消息（与旧庄园页同一套）：
     宿主 → 本页：estate:lang {lang} / estate:theme {theme} / estate:inset {left} / v3d:fly {hotspot}
-    本页 → 宿主：estate:ready（界面就绪，模型自己显示进度）/ estate:fail {reason} / v3d:state {mode, hotspot}
+    本页 → 宿主：estate:ready（界面就绪，模型自己显示进度）/ estate:fail {reason} / v3d:state {mode, hotspot, flows}
+    宿主 → 本页（续）：v3d:flows {on}（流向模式：manifest.flows 的示意折线 + 沿线移动的小球）
   调试：window.__v3d（stats、setMode、fly、orbitBench）。?tier=low|high 强制档位，?lang=en。
 -->
 <link rel="stylesheet" href="../ui/tokens.css">
@@ -35,6 +36,12 @@
   #cut output { min-width: 3.5em; font-variant-numeric: tabular-nums; }
   #listBtn { margin-left: auto; }
   #list { position: fixed; top: calc(60px + env(safe-area-inset-top)); right: var(--sp-4); width: 240px; max-height: calc(100% - 140px); overflow: auto; padding: var(--sp-3); }
+  #flows { position: fixed; top: calc(60px + env(safe-area-inset-top)); left: calc(var(--sp-4) + var(--inset, 0px)); width: 230px; padding: var(--sp-3); }
+  #flows ol { list-style: none; margin: 0; padding: 0; }
+  #flows li button { display: flex; width: 100%; min-height: var(--hit); align-items: center; gap: var(--sp-4); padding: 0 var(--sp-4); border: 0; border-radius: var(--r-m); background: transparent; text-align: left; cursor: pointer; }
+  #flows li button:hover { background: var(--surface-2); }
+  #flows i { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+  #flows h2 { margin: var(--sp-3) var(--sp-4); font-size: var(--fs-small); color: var(--muted); font-weight: 600; }
   #list h2 { margin: var(--sp-3) var(--sp-4); font-size: var(--fs-small); color: var(--muted); font-weight: 600; }
   #list ol { list-style: none; margin: 0; padding: 0; }
   #list li button { display: flex; width: 100%; min-height: var(--hit); align-items: center; gap: var(--sp-4); padding: 0 var(--sp-4); border: 0; border-radius: var(--r-m); background: transparent; text-align: left; cursor: pointer; }
@@ -80,8 +87,10 @@
     <button type="button" role="radio" data-mode="cut" aria-checked="false" data-t="mode_cut">剖切</button>
   </div>
   <label id="cut" class="panel" hidden><span data-t="cut_h">剖切高度</span><input type="range" id="cutH" min="0" max="6" step="0.05"><output id="cutV"></output></label>
+  <button type="button" class="btn panel" id="flowBtn" aria-pressed="false" aria-controls="flows" hidden data-t="flows">流向</button>
   <button type="button" class="btn panel" id="listBtn" aria-expanded="true" aria-controls="list" data-t="parts">部件</button>
 </div>
+<nav id="flows" class="panel" hidden aria-labelledby="flowsH"><h2 id="flowsH" data-t="flows_h">流向（示意，点一条看说明）</h2><ol></ol></nav>
 <nav id="list" class="panel" aria-labelledby="listH"><h2 id="listH" data-t="parts_h">部件（点击飞过去）</h2><ol></ol></nav>
 <section id="card" class="panel" hidden aria-live="polite"><button type="button" class="btn x" aria-label="关闭" data-ta="close">✕</button><h3></h3><p></p><small></small></section>
 <div id="credit"></div>
@@ -102,9 +111,9 @@ const post = m => { if (EMBED) try { parent.postMessage(m, '*'); } catch (e) {} 
 
 // ---------------- 语言 / 主题 ----------------
 const STR = {
-  zh: { mode_ext: '外观', mode_xray: '内透', mode_cut: '剖切', cut_h: '剖切高度', parts: '部件', parts_h: '部件（点击飞过去）', retry: '重试', close: '关闭',
+  zh: { mode_ext: '外观', mode_xray: '内透', mode_cut: '剖切', cut_h: '剖切高度', parts: '部件', parts_h: '部件（点击飞过去）', flows: '流向', flows_h: '流向（示意，点一条看说明）', retry: '重试', close: '关闭',
     loading: '加载模型 {p}', fail: '模型加载失败，请检查网络后重试', slow: '加载较慢…可以继续等，或重试', modes: '显示方式', canvas: '三维模型：拖动旋转，双指缩放' },
-  en: { mode_ext: 'Exterior', mode_xray: 'X-ray', mode_cut: 'Section', cut_h: 'Cut height', parts: 'Parts', parts_h: 'Parts (tap to fly)', retry: 'Retry', close: 'Close',
+  en: { mode_ext: 'Exterior', mode_xray: 'X-ray', mode_cut: 'Section', cut_h: 'Cut height', parts: 'Parts', parts_h: 'Parts (tap to fly)', flows: 'Flows', flows_h: 'Flows (schematic, tap for details)', retry: 'Retry', close: 'Close',
     loading: 'Loading model {p}', fail: 'Model failed to load. Check the connection and retry.', slow: 'Still loading… keep waiting or retry', modes: 'View mode', canvas: '3D model: drag to orbit, pinch to zoom' },
 };
 // v0.9.6：语言先看地图的设置（同源本机存储 edenMapLang），再看系统语言；嵌入时查看器还会发 estate:lang
@@ -245,7 +254,7 @@ function setup(sc) {
     if (!h.focus) { const pos = m.geometry.attributes.position, p = new THREE.Vector3(); let best = Infinity; const step = Math.max(1, Math.floor(pos.count / 4000));
       for (let k = 0; k < pos.count; k += step) { p.fromBufferAttribute(pos, k).applyMatrix4(m.matrixWorld); const d = p.distanceToSquared(c); if (d < best) { best = d; a = p.clone(); } } }
     return { ...h, n: i + 1, m, c, r, a }; }).filter(Boolean);
-  buildList(); buildPins();
+  buildList(); buildPins(); buildFlows();
   // 起始视角：按 camera.frame 的网格自动取景
   box.makeEmpty(); for (const n of MAN.camera.frame || []) if (meshes[n]) box.expandByObject(meshes[n]);
   if (box.isEmpty()) box.setFromObject(root);
@@ -306,6 +315,47 @@ function placePins() {
     for (let k = 0; k < 16 && placed.some(p => Math.hypot(p[0] - x, p[1] - y) < 30); k++) { const ang = -Math.PI / 2 + (k % 8) * Math.PI / 4, r = 32 * (1 + (k >> 3)); x = x0 + Math.cos(ang) * r; y = y0 + Math.sin(ang) * r; }
     placed.push([x, y]); s.pin.style.transform = `translate(${x}px, ${y}px)`; }
 }
+// ---------------- 流向模式（manifest.flows：折线 + 沿线移动的小球，示意牛奶 / 清洗液 / 真空 / 排水的走向）----------------
+let FL = [], flowOn = false; const flowG = new THREE.Group(); flowG.visible = false; flowG.renderOrder = 10;
+function buildFlows() {
+  scene.add(flowG); FL = [];
+  for (const f of MAN.flows || []) {
+    const path = new THREE.CurvePath(); const P = f.pts.map(p => new THREE.Vector3(...p));
+    for (let i = 0; i < P.length - 1; i++) if (P[i].distanceTo(P[i + 1]) > 1e-4) path.add(new THREE.LineCurve3(P[i], P[i + 1]));
+    const col = new THREE.Color(f.color || '#ffffff'), len = path.getLength();
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(path, Math.max(8, path.curves.length * 6), 0.025, 6, false),
+      new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.45, depthTest: false }));
+    tube.renderOrder = 10; flowG.add(tube);
+    const n = Math.max(6, Math.round(len / 0.45)), dots = new THREE.InstancedMesh(new THREE.SphereGeometry(0.055, 10, 8), new THREE.MeshBasicMaterial({ color: col, depthTest: false }), n);
+    dots.renderOrder = 11; flowG.add(dots);
+    FL.push({ f, path, len, dots, n, tube });
+  }
+  const ol = $('#flows ol'); ol.textContent = '';
+  for (const x of FL) { const li = document.createElement('li'), b = document.createElement('button'); b.type = 'button'; b.dataset.id = x.f.id;
+    b.innerHTML = `<i style="background:${x.f.color}"></i><span></span>`; b.querySelector('span').textContent = L(x.f.name);
+    b.onclick = () => showFlow(x.f.id); li.appendChild(b); ol.appendChild(li); }
+  $('#flowBtn').hidden = !FL.length;
+}
+const _m4 = new THREE.Matrix4();
+function stepFlows(now) {
+  for (const x of FL) { const sp = (x.f.speed || 0.6) / Math.max(1, x.len);
+    for (let k = 0; k < x.n; k++) { const u = ((k / x.n) + now / 1000 * sp) % 1; _m4.makeTranslation(x.path.getPointAt(u)); x.dots.setMatrixAt(k, _m4); }
+    x.dots.instanceMatrix.needsUpdate = true; }
+}
+function setFlows(on) {
+  flowOn = on; flowG.visible = on; $('#flows').hidden = !on; $('#flowBtn').setAttribute('aria-pressed', String(on));
+  if (on) { if (mode === 'ext') setMode('xray'); showList(false); }
+  else { for (const x of FL) x.tube.material.opacity = 0.45; if (!sel) $('#card').hidden = true; }
+  dirty = true; post({ type: 'v3d:state', mode, hotspot: sel, flows: on });
+}
+function showFlow(id) {
+  const x = FL.find(y => y.f.id === id), c = $('#card'); if (!x) return;
+  for (const y of FL) { y.tube.material.opacity = y === x ? 0.8 : 0.2; y.dots.visible = y === x; }
+  c.querySelector('h3').textContent = L(x.f.name); c.querySelector('p').textContent = L(x.f.desc);
+  c.querySelector('small').textContent = LANG === 'en' ? x.f.name.zh : (x.f.name.en || ''); c.hidden = false;
+  document.querySelectorAll('#flows li button').forEach(b => b.toggleAttribute('aria-current', b.dataset.id === id)); dirty = true;
+}
+$('#flowBtn').onclick = () => setFlows(!flowOn);
 function showCard(id) {
   const h = HS.find(x => x.id === id), c = $('#card'); if (!h) { c.hidden = true; return; }
   c.querySelector('h3').textContent = L(h.name); c.querySelector('p').textContent = L(h.desc);
@@ -414,6 +464,7 @@ function frame(now) {
   if (!SITE.isEmpty()) { const c = controls.target, d = c.clone().clamp(SITE.min, SITE.max).sub(c); if (d.lengthSq() > 0) { c.add(d); camera.position.add(d); } }   // 平移不出场地
   if (camera.position.y < 0.3) camera.position.y = 0.3;
   if (sel) { U.uTime.value = now / 1000; dirty = true; }
+  if (flowOn) { stepFlows(now); dirty = true; }
   if (mode === 'xray') { const d = camera.position.clone().sub(U.uCenter.value); d.y = 0; if (d.lengthSq() > 1e-6) U.uCamDir.value.copy(d.normalize()); }
   if (!dirty || !root) return;
   dirty = false;
@@ -434,11 +485,12 @@ addEventListener('message', e => {
   if (d.type === 'estate:inset') { document.body.style.setProperty('--inset', Math.max(0, (d.left | 0) - 8) + 'px'); }
   if (d.type === 'v3d:fly') fly(d.hotspot);
   if (d.type === 'v3d:mode') setMode(d.mode);
+  if (d.type === 'v3d:flows') setFlows(!!d.on);
 });
 
 // 调试 / 测量接口
 window.__v3d = {
-  stats, get ft() { return FT.slice(); }, setMode, fly, select, get mode() { return mode; }, get ready() { return !!root; }, info: () => renderer.info,
+  stats, get ft() { return FT.slice(); }, setMode, fly, select, setFlows, showFlow, get flows() { return flowOn; }, get mode() { return mode; }, get ready() { return !!root; }, info: () => renderer.info,
   // 匀速绕目标转 ms 毫秒，返回帧时间（每帧强制渲染）
   orbitBench(ms = 4000) { return new Promise(res => { const out = []; const t0 = performance.now(); let lt = t0;
     const tick = now => { out.push(now - lt); lt = now; const a = (now - t0) / ms * Math.PI * 2 * 0.5;
