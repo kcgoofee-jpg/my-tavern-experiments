@@ -319,7 +319,7 @@
   // 打开：休眠中的地图直接唤醒；否则创建。关闭：先休眠（地图关掉底图、释放瓦片内存，脚本和数据留着），超时再销毁
   async function loadViewer() {
     clearTimeout(killT); if (typeof recomputeSoon === 'function') { recomputeSoon(0); pushSoon(0); }
-    if (typeof autoCheck === 'function' && !ghost) setTimeout(() => { if (!dead) autoCheck().catch(() => {}); }, 3000);   // 每次打开地图查一次更新（提示等面板关上再弹）   // 通读 R1 / R2：打开面板时重读一次（开局切换、状态栏改变量可能没发事件）
+    if (typeof autoCheck === 'function' && !ghost) setTimeout(() => { if (!dead) { autoCheck().catch(() => {}); followCheck().catch(() => {}); } }, 3000);   // 每次打开地图查一次更新（提示等面板关上再弹）   // 通读 R1 / R2：打开面板时重读一次（开局切换、状态栏改变量可能没发事件）
     if (swappable && !line) return showPicker();   // 还没选线路：先选
     if (alive) { post({ type: 'eden-map:wake', fly: flyQ }); flyQ = null; sent = null; push(); sendEvents(); return; }   // fly：EdenMap.flyTo 唤醒面板时直接飞过去，不先回上次的图
     startProg(); htmlProg = f => setProg(f * 20);
@@ -481,7 +481,7 @@
   let pushT = 0;
   const pushSoon = (ms = 150) => { clearTimeout(pushT); pushT = setTimeout(push, ms); };
   // 通读 R2：状态栏的删除按钮直接改 MVU（replaceMvuData），可能不发 VARIABLE_UPDATE_ENDED；面板开着时每 4 秒比一次变量的指纹，变了才重算
-  const updT = setInterval(() => { if (!panel.hidden && !ghost && alive) autoCheck().catch(() => {}); }, 10 * 60 * 1000);   // 面板开着：每 10 分钟查一次更新
+  const updT = setInterval(() => { if (!panel.hidden && !ghost && alive) { autoCheck().catch(() => {}); followCheck().catch(() => {}); } }, 10 * 60 * 1000);   // 面板开着：每 10 分钟查一次更新
   let statSig = ''; const pollT = setInterval(() => { if (panel.hidden || !alive) return; let s = ''; try { s = JSON.stringify(mvuStat()); } catch (e) {}
     if (s !== statSig) { const first = !statSig; statSig = s; if (!first) { recomputeSoon(0); pushSoon(0); } } }, 4000);
   // 通读 R4：玩家启用了卡的「角色图鉴CG」时，它的面板在右下角（z 10050），我们的悬浮按钮让到它下面
@@ -966,6 +966,17 @@
   const AUTO_CHECK_KEY = 'edenMapAutoCheck', UPD_SKIP_KEY = 'edenMapUpdSkip';
   let updPrompt = null, updWait = false;
   const updChannel = () => channel() === 'latest' && SCRIPT.locked ? 'locked' : channel();
+  // 跟随分支预览（用户 2026-09-28）：打开时与面板开着每 10 分钟查分支最新提交；比加载的提交新 → 提示「有更新，刷新载入」（面板开着也弹，不自动刷新）
+  let followSeen = null;
+  async function followCheck() {
+    if (dead || channel() !== 'follow' || !SCRIPT.sha || !SCRIPT.ref) return;
+    const j = await fetch(`https://api.github.com/repos/${REPO}/commits/${encodeURIComponent(SCRIPT.ref)}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
+    const sha = typeof j?.sha === 'string' ? j.sha : ''; if (!sha || sha.startsWith(SCRIPT.sha) || sha === followSeen || dead) return;
+    followSeen = sha; const en = UL === 'en';
+    hostToast(en ? 'Update available — reload to load it' : '有更新，刷新载入', [(en ? 'Latest commit ' : '分支最新提交 ') + sha.slice(0, 7)], 0, t => {
+      t.classList.add('em-upd', 'em-follow'); const acts = pdoc.createElement('div'), b = pdoc.createElement('button'); acts.className = 'em-acts';
+      b.type = 'button'; b.textContent = en ? 'Reload' : '刷新载入'; b.onclick = () => window.parent.location.reload(); acts.append(b); t.append(acts); }, true);
+  }
   async function autoCheck() {
     SC ??= await import(SELF + 'tavern/selfcheck.mjs').catch(() => null); if (!SC?.autoCheckPlan || dead) return;
     let lastAt = 0; try { lastAt = window.parent.__edenMapCheckAt || 0; } catch (e) {}   // 挂在宿主页上：换版本 / 重注入脚本不重复查
