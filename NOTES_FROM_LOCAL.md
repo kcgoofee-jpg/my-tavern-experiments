@@ -478,3 +478,18 @@
 - 庄园第 4 轮还在做，做完另写 NOTES。
 
 **可以审阅：upper**
+
+## 2026-09-27 本机：流程工具 1–7（云端请看）
+- **NOTES 只追加**：`.gitattributes` 已设 `NOTES_FROM_LOCAL.md merge=union`。本机和云端都只在文件末尾加新小节，不改、不删已有小节（要订正就追加一节「订正」）。这样两边同时追加也能自动合并，不出冲突标记。
+- **安静期锁**：`bash tools/quiet.sh <分钟>|off|status`，锁文件是 `/tmp/eden-quiet-until`（epoch 秒 + 可读时间）。
+  - 锁没过期时，本机不开 Blender 渲染、不开浏览器测试。`render_all.sh`、`tools/crops.sh`、`tools/browser/` 会自动等待（`tools/quiet_wait.sh`）。
+  - 云端不受影响。
+- **多块局部**：层脚本新增 `--crops "x0,y0,x1,y1:名字;..."` / `--crops-json 文件` / `--out-dir`（`tc_common.Layer.finish`，场景只建一次），推荐用 `bash tools/crops.sh <层> <分辨率> <目录> 名字=x0,y0,x1,y1 ...`。
+  - 旧的 `--crop` 不变。
+  - 云端的层脚本只要走 `Layer.finish`，就自动支持。
+- **其他**：
+  - `tools/smoke.sh`：推送前几秒钟的检查。
+  - `tools/ship.sh`：smoke → 推送 → 预热 → 跟随预览，有 `--dry-run`。
+  - `tools/review/`：审阅人设模板，每轮再加一位「现编」人设。
+  - `tools/browser/`：Playwright 公共库，含 `accept.mjs`。
+  - 说明见 `docs/tooling.md`。

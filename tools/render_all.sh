@@ -8,6 +8,7 @@
 #       bash tools/render_all.sh low -- --lamp .4 --ambient .1    # 调层参数
 #   --bpy：不用 Blender 程序，改用 pip 装的 bpy 模块（python3 script.py -- ...）。找不到 Blender 时自动走这条路。
 #          例：pip install bpy==4.2.0（要求 Python 3.11）；系统自带的 Blender 没有 OpenImageDenoise 时也建议用它。
+# 开渲前遵守安静期锁（tools/quiet.sh；等待由 tools/quiet_wait.sh 完成）。多块局部用 tools/crops.sh。
 # 最后跑 tools/check_maps.py 检查注册表、点位与瓦片是否对得上。
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -23,6 +24,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ ${#LAYERS[@]} -eq 0 ] && LAYERS=(upper upper_city mid low)
+[ "$DATA_ONLY" = 1 ] || bash tools/quiet_wait.sh          # 安静期（tools/quiet.sh）内先等
 BL=${BLENDER:-}
 [ -z "$BL" ] && [ -x /Applications/Blender.app/Contents/MacOS/Blender ] && BL=/Applications/Blender.app/Contents/MacOS/Blender
 [ -z "$BL" ] && BL=$(command -v blender || true)

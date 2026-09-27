@@ -1,0 +1,2 @@
+# 协作记录：本机与云端都只在文件末尾追加新小节，合并时两边的追加都保留（git 内置 union 驱动，不产生冲突标记）
+NOTES_FROM_LOCAL.md merge=union

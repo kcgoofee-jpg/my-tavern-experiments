@@ -20,6 +20,7 @@
 - 记忆里的美术与审阅约定：
   - 只用 Blender 写实渲染，不用代码手绘。
   - 大改或卡住时，派不同人设的审阅代理，再加一个架构师汇总。
+  - **每轮审阅还要加一位「现编」审阅者**（用户 2026-09-27：固定提示词会漏掉新问题）：由编排代理根据本轮 git diff、NOTES 最后几节、GOAL 里用户最新的话现编，每轮不同，写明为什么选他，检查点必须落在本轮改动上，分数同等计入门控。模板与流程见 `tools/review/`（`fresh_persona.md`、`pack.py`）。
 
 ### 分工
 - **本机（你）**：分城区城市与上层庄园的渲染脚本、草稿、8K 渲染、切瓦片、查看器和卡内脚本、合并云端分支、发版。
@@ -136,6 +137,9 @@
 - ☑ E4b 复测：五个人设按 `docs/ui-audit.md` 的「现在修」清单复评（Opus）。平均 5.6 → 7.1（手机 6→7.5、剧情 7→7.5、视觉 5.5→6、无障碍 4.5→7、弱网 5→7.5）；本机 A 组 ✅25 / ⚠4 / ❌0；新发现 2 条 P1：屏幕正中 `#loading.over span` 透明死区（N01 带出来的回归，本机）、手机嵌入庄园时楼层条被层按钮盖住（本机 + 云端）。见 ui-audit 第五节。
 - ☐ E5 面板 UI 风格统一重构（放到最后，F 之前）：按 `docs/ui-audit.md` 的规范统一查看器、层切换器、事态横条、地点卡、庄园页 UI（庄园页由云端配合），再跑一遍 E4 的人设测试对比前后分数。
 
+**H 流程工具（本机）**
+- ☑ 流程改进 1–7（用户 2026-09-27 批准）：① `tools/crops.sh` + 层脚本 `--crops` / `--crops-json`，一次 Blender 会话渲多块局部并核对尺寸；② `tools/review/` 人设模板（美术 5 / UI 5 / 庄园 4）+ 每轮现编人设 + 架构师汇总 + `pack.py` 简报；③ `tools/smoke.sh`；④ `tools/browser/`（Playwright 公共库 + `accept.mjs` E2 验收）；⑤ `tools/ship.sh`（smoke → 推送 → 预热 → 跟随预览，`--dry-run`）；⑥ `.gitattributes` NOTES union 合并（两边只追加）；⑦ 安静期锁 `tools/quiet.sh` / `quiet_wait.sh`。说明见 `docs/tooling.md`。
+
 **F 发版（本机，全部轨道完成后）**
 - ☐ F1 VERSION 0.9.1、CHANGELOG（合并两版内容）、version_code、标签、`build_card.sh`、CDN 预热全 200。
 - ☐ F2 `tools/build_worldbook.py` 合并版世界书（含事件视觉样例、v2 类型清单）。
@@ -161,6 +165,10 @@
   6. 后庭湖面晨雾：水榭与背立面倒影，人眼高透视，2560×1440。
   7. 书房 / 主卧人眼透视：Cycles 全局光照、窗光体积光，2560×1600——房间卡配图。
   8. 屋顶露台与穹顶灯亭俯瞰下方城市，2560×1440——5F 眺望层主图。
+
+### 安静期（用户在真机上测试 / 录屏 / 跑基准时）
+- 用户或代理运行 `bash tools/quiet.sh <分钟>` 写锁 `/tmp/eden-quiet-until`（epoch 秒 + 可读时间）；`bash tools/quiet.sh off` 解除，`status` 查看。
+- 锁没过期时，不启动 Blender 渲染，也不开 Playwright 浏览器：`render_all.sh`、`crops.sh`、`tools/browser/` 已自动调用 `tools/quiet_wait.sh` 等待；代理手写的渲染 / 浏览器脚本开工前也先跑它。云端不受影响（锁只在本机）。
 
 ### 用户门控（只有这些情况停下来找用户）
 - **npm 正式发布**：需要用户在终端运行 `npm publish` 并在浏览器确认两步验证。发布后撤回测试包 `0.0.1-test.1`，截止约 2026-09-29 16:40，过了就跳过。
