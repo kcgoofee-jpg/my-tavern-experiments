@@ -76,6 +76,24 @@
    "ax": 0.8324,
    "ay": 0.4565,
    "manual": true
+  },
+  {
+   "id": "victor_estate",
+   "nx": 0.862,
+   "ny": 0.089,
+   "r": 0.029,
+   "manual": true,
+   "ax": 0.862,
+   "ay": 0.089
+  },
+  {
+   "id": "y_estate",
+   "nx": 0.596,
+   "ny": 0.821,
+   "r": 0.033,
+   "manual": true,
+   "ax": 0.596,
+   "ay": 0.821
   }
  ],
  "layer": "tc_upper",

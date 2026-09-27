@@ -66,6 +66,27 @@
    "ny": 0.68,
    "r": 0.02,
    "manual": true
+  },
+  {
+   "id": "lower_bar",
+   "nx": 0.365,
+   "ny": 0.725,
+   "r": 0.012,
+   "manual": true
+  },
+  {
+   "id": "slums",
+   "nx": 0.7,
+   "ny": 0.6,
+   "r": 0.035,
+   "manual": true
+  },
+  {
+   "id": "prison",
+   "nx": 0.24,
+   "ny": 0.44,
+   "r": 0.02,
+   "manual": true
   }
  ],
  "layer": "tc_low"

@@ -12,10 +12,10 @@
     "fief4": {"title": "圆桌第四席封地", "title_en": "Fourth Seat Fief", "layers": ["site_fief4"], "place": "fief4"},
     "fief5": {"title": "圆桌第五席封地", "title_en": "Fifth Seat Fief", "layers": ["site_fief5"], "place": "fief5"}
   },
-  "unplaced": {"_说明": "卡里有、但没写层与位置的机构与地点：地图不落点（不猜），附加条目里写明「位置未写」，免得模型自行定位。见 docs/card-omissions.md", "items": [{"name": "法师塔", "name_en": "Mage Tower", "src": "人物·神宫寺凛：法师塔首席"}, {"name": "施奈德精密改造诊所", "name_en": "Schneider Precision Clinic", "src": "人物·伊薇特（视觉样例里写作「施奈德生物改造诊所」）"}, {"name": "新生工坊", "name_en": "Rebirth Workshop", "src": "人物·伊薇特：天城最大的同类改造中心"}, {"name": "天城贵族管家学院", "name_en": "Tiancheng Butler Academy", "src": "人物·绫濑遥：她从这里毕业并任顾问"}, {"name": "天城执政厅", "name_en": "Tiancheng Executive Office", "src": "天城：行政机构，签发跨层通行许可"}, {"name": "天城政务院", "name_en": "Tiancheng Administrative Council", "src": "人物·阿斯特丽德：18 岁在这里实习（与执政厅是否同一机构，卡没说明）"}, {"name": "天城中央储备署", "name_en": "Central Reserve Office", "src": "货币与贸易：发行以太元，隶属议会"}, {"name": "天城文化署", "name_en": "Culture Office", "src": "文学与文化：出版审核"}, {"name": "军事学院", "name_en": "Military Academy", "src": "军事与治安：骑士团与防卫军的人才来源"}, {"name": "维克多庄园", "name_en": "Victor Estate", "src": "人物·凯莉：亡夫的庄园，现已不属于她"}, {"name": "猎季营地", "name_en": "Hunting-season camp", "src": "文学与文化：秋季野外的猎季营地"}, {"name": "「Y」的庄园", "name_en": "Estate of \"Y\"", "src": "庄园主社交：全天城最大、从不露面、不入联盟的庄园主"}]},
+  "unplaced": {"_说明": "卡里有、但没写层与位置、地图也不落点的机构与地点（附加条目里写明「位置未写」）。2026-09-28 起用户要求卡里每处建筑都上图：原来这里的 12 处已全部落点（层与位置标为仓库推断，见 docs/card-buildings.md），列表为空", "items": []},
   "ambiguous": {
     "_说明": "当前地点里出现这些泛称、又没有更长的具体地标名时，不落到任何地标（卡里同名的地方不止一处）：写了层名就落到该层，否则不跳转。见 map/here.mjs",
-    "words": ["大学", "分局", "执法局分局", "中层分局", "修道院", "普通修道院", "委员会", "资产管理委员会", "骑士团", "议会骑士团", "骑士团巡逻据点", "区议会", "区级议会", "营区", "维克多庄园", "圣殿骑士团", "庄园主联盟"]
+    "words": ["大学", "分局", "执法局分局", "中层分局", "修道院", "普通修道院", "委员会", "资产管理委员会", "骑士团", "议会骑士团", "骑士团巡逻据点", "区议会", "区级议会", "营区", "圣殿骑士团", "庄园主联盟"]
   },
   "maps": {
     "eden_estate": {
@@ -60,7 +60,9 @@
         "zaibatsu_estate": { "name": "罗斯柴尔德庄园", "name_en": "Rothschild Estate", "sub": "悬浮岛 R-02 · 私人悬浮载具停靠平台", "sub_en": "Floating isle R-02 · private vehicle landing", "tag": "inf", "src": "视觉样例·请柬：罗斯柴尔德庄园 · 悬浮岛 R-02，伊莎贝拉家族的庄园、冬季宴会举办地；在上层的具体位置为推断", "alias": ["罗斯柴尔德庄园", "罗斯柴尔德", "悬浮岛 R-02", "悬浮岛R-02", "R-02", "财团家族庄园", "财团庄园", "财阀庄园"] },
         "league_club": { "name": "庄园主联盟会所", "name_en": "Estate Lords' League Club", "sub": "联盟聚会处", "sub_en": "League meeting house", "tag": "inf", "sub_src": "repo-design", "src": "卡有庄园主联盟（举办拍卖会与品鉴会），没有固定会所；品鉴宴由庄园主轮流做东（样例在罗斯柴尔德庄园 R-02），所以「品鉴宴」「会所」不作别名。会所本身与上层位置均为地图推断", "alias": ["联盟会所"] },
         "aether_institute": { "name": "以太研究院", "name_en": "Aether Institute", "sub": "气候塔旁", "sub_en": "Beside the climate tower", "tag": "inf", "canon": false, "src": "仓库自设：卡中没有此机构；位置为推断", "alias": ["以太研究院", "研究院"] },
-        "kelly_residence": {"name": "凯莉的宅邸", "sub": "凯莉·露易丝的居所", "name_en": "Kelly's Residence", "sub_en": "Kelly Louise's home", "tag": "inf", "layer_src": "user-decision", "src": "凯莉·露易丝的居所；卡未写层与位置。放在上层是用户决定（2026-09-27）；所在的悬浮岛为仓库推断。凯莉亡夫的维克多庄园是另一处（卡未写位置，不落点）", "openings": [3], "opening_dest": true, "alias": ["凯莉的宅邸", "凯莉宅邸", "露易丝宅邸"]}
+        "kelly_residence": {"name": "凯莉的宅邸", "sub": "凯莉·露易丝的居所", "name_en": "Kelly's Residence", "sub_en": "Kelly Louise's home", "tag": "inf", "layer_src": "user-decision", "src": "凯莉·露易丝的居所；卡未写层与位置。放在上层是用户决定（2026-09-27）；所在的悬浮岛为仓库推断。凯莉亡夫的维克多庄园是另一处（卡未写位置；地图 2026-09-28 起另标 victor_estate，位置为仓库推断）", "openings": [3], "opening_dest": true, "alias": ["凯莉的宅邸", "凯莉宅邸", "露易丝宅邸"]},
+        "victor_estate": {"name": "维克多庄园", "sub": "凯莉亡夫的庄园 · 现已不属于她", "name_en": "Victor Estate", "sub_en": "Kelly's late husband's estate", "tag": "inf", "layer_src": "repo-inferred", "src": "人物·凯莉：亡夫的庄园，现已不属于她。卡未写具体位置：放在上层为仓库自设（仓库推断，2026-09-28）", "alias": ["维克多庄园"]},
+        "y_estate": {"name": "「Y」的庄园", "sub": "全天城最大 · 从不露面", "name_en": "Estate of \"Y\"", "sub_en": "Largest in the city · owner never seen", "tag": "inf", "layer_src": "repo-inferred", "src": "庄园主社交：全天城最大、从不露面、不入联盟的庄园主。卡未写具体位置：放在上层为仓库自设（仓库推断，2026-09-28）", "alias": ["「Y」的庄园", "Y的庄园", "Y 的庄园"]}
       }
     },
     "tc_mid": {
@@ -78,7 +80,7 @@
         "radiance_cathedral": { "name": "辉光大教堂", "sub": "圣光教会总部", "name_en": "Radiance Cathedral", "sub_en": "Church of Holy Light HQ", "tag": "set",
           "src": "天城·中层：圣光教会总部辉光大教堂，位于中层高区（具体位置为推断）。视觉样例里的「天城主教座堂」按用户 2026-09-27 的决定视为同一处；大主教府邸卡里有、位置未写，并入本处。主教塞拉菲娜·阿尔贝蒂在这里",
           "link": { "map": "lm_cathedral", "label": "查看三维模型", "label_en": "View 3D model" },
-          "openings": [8], "alias": ["辉光大教堂", "大教堂", "教堂", "圣光教会", "教会总部", "天城主教座堂", "主教座堂", "大主教府邸", "大主教府", "大主教"] },
+          "openings": [8], "alias": ["辉光大教堂", "大教堂", "教堂", "圣光教会", "教会总部", "天城主教座堂", "主教座堂", "大主教府邸", "大主教府", "大主教", "枢机院"] },
         "iron_cradle": { "name": "圣铁摇篮", "sub": "战斗修女修道院", "name_en": "Holy Iron Cradle", "sub_en": "Battle-sisters' convent", "tag": "set",
           "src": "天城·中层：战斗修女的修道院「圣铁摇篮」，中层高区的独立院落（具体位置为推断）",
           "alias": ["圣铁摇篮", "战斗修女院", "战斗修女修道院", "战斗修女"] },
@@ -104,7 +106,17 @@
         "merc_guild": {"name": "佣兵公会", "name_en": "Mercenary Guild", "tag": "set", "src": "军事与治安：雇佣兵经中层的佣兵公会接单（具体位置为仓库推断）", "alias": ["佣兵公会"]},
         "mid_monastery": {"name": "中层修道院", "sub": "中层五座普通修道院之一", "name_en": "Middle Tier Monastery", "sub_en": "One of five in the Middle Tier", "tag": "set", "src": "圣光教会：中层有 12 个教区（每区一座主教堂和若干礼拜堂）与 5 座普通修道院；卡未写各自位置，图上只画一处作代表（位置为仓库推断）", "alias": ["中层修道院"]},
         "mid_hospital": {"name": "中层公立医院", "name_en": "Middle Tier Public Hospital", "tag": "set", "src": "人物·伊薇特：中层公立医院（具体位置为仓库推断）", "alias": ["中层公立医院", "公立医院"]},
-        "mid_care_home": {"name": "中层养老院", "name_en": "Middle Tier Care Home", "tag": "set", "src": "人物·顾衍容：中层的养老院（具体位置为仓库推断）", "alias": ["中层养老院", "养老院"]}
+        "mid_care_home": {"name": "中层养老院", "name_en": "Middle Tier Care Home", "tag": "set", "src": "人物·顾衍容：中层的养老院（具体位置为仓库推断）", "alias": ["中层养老院", "养老院"]},
+        "mage_tower": {"name": "法师塔", "sub": "首席：神宫寺凛", "name_en": "Mage Tower", "sub_en": "Head: Jinguji Rin", "tag": "inf", "layer_src": "repo-inferred", "src": "人物·神宫寺凛：法师塔首席。卡未写具体位置：放在中层为仓库自设（仓库推断，2026-09-28）", "alias": ["法师塔", "天城法师塔"]},
+        "schneider_clinic": {"name": "施奈德精密改造诊所", "sub": "只接受预约", "name_en": "Schneider Precision Clinic", "sub_en": "Appointment only", "tag": "inf", "layer_src": "repo-inferred", "src": "人物·伊薇特：她开的私人诊所，只接受预约（视觉样例里写作「施奈德生物改造诊所」）。卡未写具体位置：放在中层高区为仓库自设（仓库推断，2026-09-28）", "alias": ["施奈德精密改造诊所", "施奈德诊所", "施奈德生物改造诊所"]},
+        "rebirth_workshop": {"name": "新生工坊", "sub": "天城最大的同类改造中心", "name_en": "Rebirth Workshop", "sub_en": "Largest modification centre", "tag": "inf", "layer_src": "repo-inferred", "src": "人物·伊薇特：天城最大的同类改造中心。卡未写具体位置：放在中层低区为仓库自设（仓库推断，2026-09-28）", "alias": ["新生工坊"]},
+        "butler_academy": {"name": "天城贵族管家学院", "sub": "绫濑遥毕业并任顾问", "name_en": "Tiancheng Butler Academy", "sub_en": "Ayase Haruka's alma mater", "tag": "inf", "layer_src": "repo-inferred", "src": "人物·绫濑遥：她从这里毕业并任顾问。卡未写具体位置：放在中层高区为仓库自设（仓库推断，2026-09-28）", "alias": ["天城贵族管家学院", "贵族管家学院", "管家学院"]},
+        "executive_office": {"name": "天城执政厅", "sub": "行政机构 · 签发跨层通行许可", "name_en": "Tiancheng Executive Office", "sub_en": "Administration · cross-tier permits", "tag": "inf", "layer_src": "repo-inferred", "src": "天城：行政机构，签发跨层通行许可。卡未写具体位置：放在中层核心区为仓库自设（仓库推断，2026-09-28）", "alias": ["天城执政厅", "执政厅"]},
+        "admin_council": {"name": "天城政务院", "sub": "阿斯特丽德早年实习处", "name_en": "Tiancheng Administrative Council", "sub_en": "Astrid's early internship", "tag": "inf", "layer_src": "repo-inferred", "src": "人物·阿斯特丽德：18 岁在这里实习（与执政厅是否同一机构，卡没说明）。卡未写具体位置：放在中层核心区为仓库自设（仓库推断，2026-09-28）", "alias": ["天城政务院", "政务院"]},
+        "reserve_office": {"name": "天城中央储备署", "sub": "发行以太元 · 隶属议会", "name_en": "Central Reserve Office", "sub_en": "Issues the Aether Yuan", "tag": "inf", "layer_src": "repo-inferred", "src": "货币与贸易：发行以太元，隶属议会。卡未写具体位置：放在中层核心区为仓库自设（仓库推断，2026-09-28）", "alias": ["天城中央储备署", "中央储备署", "储备署"]},
+        "culture_office": {"name": "天城文化署", "sub": "出版审核", "name_en": "Culture Office", "sub_en": "Publication review", "tag": "inf", "layer_src": "repo-inferred", "src": "文学与文化：出版审核。卡未写具体位置：放在中层为仓库自设（仓库推断，2026-09-28）", "alias": ["天城文化署", "文化署"]},
+        "military_academy": {"name": "军事学院", "sub": "骑士团与防卫军的人才来源", "name_en": "Military Academy", "sub_en": "Feeds the knights and defence army", "tag": "inf", "layer_src": "repo-inferred", "src": "军事与治安：骑士团与防卫军的人才来源。卡未写具体位置：放在中层外围为仓库自设（仓库推断，2026-09-28）", "alias": ["军事学院", "天城军事学院"]},
+        "storm_hall": {"name": "风暴殿", "sub": "帝国最高战力 · 听命于议会", "name_en": "Storm Hall", "sub_en": "Top-tier force under the Council", "tag": "inf", "layer_src": "repo-inferred", "src": "奥伦帝国：由全部天灾级强者组成的最高战力机构，听命于天城议会。卡未写具体位置：放在中层核心区为仓库自设（仓库推断，2026-09-28）", "alias": ["风暴殿"]}
       }
     },
     "tc_low": {
@@ -113,7 +125,7 @@
       "layer": { "name": "下层", "sub": "地基区", "alt": "地面至 −200 m", "name_en": "Lower", "sub_en": "Foundations", "alt_en": "Ground to −200 m" },
       "kind": "points", "base": "art/tc_low.dzi", "credit": "城市骨架 © OpenStreetMap contributors (ODbL)", "credit_en": "City layout © OpenStreetMap contributors (ODbL)", "data": "data/tc_low.json",
       "focus": "well7",
-      "districts": ["下层地基区", "下层_地基区", "地基区", "地基", "贫民区", "贫民窟", "棚户", "城寨", "工业区", "下城", "廉价酒馆", "地下格斗", "非法赌场", "二手市场", "二手衣物市场", "工厂", "Foundations", "Slums"],
+      "districts": ["下层地基区", "下层_地基区", "地基区", "地基", "贫民区", "棚户", "城寨", "工业区", "下城", "廉价酒馆", "地下格斗", "非法赌场", "二手市场", "二手衣物市场", "工厂", "Foundations", "Slums"],
       "markers": {
         "well7": { "name": "7 号井黑市", "sub": "只收灰票", "name_en": "Well 7 Black Market", "sub_en": "Grey scrip only", "cls": "capital", "tag": "set", "link": { "map": "tc_mid", "marker": "checkpoint_c", "label": "上到中层 · C 区检查点", "label_en": "Up to Zone C Checkpoint · Middle" },
           "src": "天城·下层：「地基区 7 号井 · 只收灰票」；中层 C 区检查点的通道落在这里（井口与市集布局为推断）。井里的「老 K 杂货」只收灰票，黑市终端的主机名是「井下-07」；灰票是匿名芯片卡，天城只有下层黑市还用实体货币",
@@ -140,7 +152,10 @@
           "src": "天城·下层：「老旧地面轨道、货运通道、步行为主」；货运站与轨道枢纽的位置为推断",
           "alias": ["货运站", "货运", "铁路", "轨道枢纽"] },
         "tin_shacks": {"name": "铁皮屋区", "name_en": "Tin-shack Quarter", "tag": "inf", "src": "下层的铁皮屋区（层按开场白，具体位置为仓库推断）", "alias": ["铁皮屋区", "铁皮屋"]},
-        "junk_market": {"name": "旧货市场", "name_en": "Junk Market", "tag": "inf", "src": "下层的旧货市场，卖旧物，也有中层地图（层按开场白，具体位置为仓库推断）", "alias": ["旧货市场", "旧货摊"]}
+        "junk_market": {"name": "旧货市场", "name_en": "Junk Market", "tag": "inf", "src": "下层的旧货市场，卖旧物，也有中层地图（层按开场白，具体位置为仓库推断）", "alias": ["旧货市场", "旧货摊"]},
+        "lower_bar": {"name": "下层区酒吧", "sub": "瑞秋过去的经历", "name_en": "Lower-tier Bar", "sub_en": "Rachel's past", "tag": "inf", "layer_src": "repo-inferred", "src": "人物·瑞秋：她过去的经历发生在下层区的酒吧。卡未写具体位置：放在下层为仓库自设（仓库推断，2026-09-28）", "alias": ["下层区酒吧", "下层酒吧"]},
+        "slums": {"name": "贫民窟", "sub": "瑞秋的出生地", "name_en": "Slums", "sub_en": "Rachel's birthplace", "tag": "inf", "layer_src": "repo-inferred", "src": "人物·瑞秋：出生在下层的贫民窟。卡未写具体位置：放在下层为仓库自设（仓库推断，2026-09-28）", "alias": ["贫民窟", "下层贫民窟"]},
+        "prison": {"name": "监狱", "sub": "维多利亚的弟弟被送进这里", "name_en": "Prison", "sub_en": "Victoria's brother was sent here", "tag": "inf", "layer_src": "repo-inferred", "src": "人物·维多利亚：她把弟弟送进了监狱。卡未写具体位置：放在下层为仓库自设（仓库推断，2026-09-28）", "alias": ["监狱", "天城监狱"]}
       }
     },
     "lm_cathedral": {
@@ -186,7 +201,8 @@
         "rust_outskirts": {"name": "铁锈与落败领", "name_en": "Rust and the Fallen", "tag": "set", "src": "大骑士领·圣都：外环「铁锈与落败领」（位置与形制为仓库推断）", "alias": ["铁锈与落败领", "落败领"], "sub": "外环", "sub_en": "Outer ring"},
         "clearing_depot": {"name": "清算转运站", "name_en": "Clearing Depot", "tag": "set", "src": "大骑士领·圣都：外环的「败者资产清算转运站」（卡原名；商业联合会设立；画成铁路编组场是仓库推断）", "alias": ["败者资产清算转运站", "资产清算转运站", "清算转运站", "转运站"]},
         "free_knight_camp": {"name": "独立骑士黑市营地", "name_en": "Free Knights Camp", "tag": "set", "src": "大骑士领·圣都：外环的「独立骑士黑市营地」（卡原名；2026-09-28 校名，原先少了「黑市」；廉价旅馆与二手零件市场；帐篷营地是仓库推断）", "alias": ["独立骑士黑市营地", "黑市营地", "独立骑士营地"]},
-        "linguang_post": {"name": "临光家族外城驻所", "name_en": "Linguang Outer Residence", "tag": "set", "src": "大骑士领·圣都：外环的临光家族外城驻所（位置与形制为仓库推断）", "alias": ["临光家族外城驻所", "外城驻所"]}
+        "linguang_post": {"name": "临光家族外城驻所", "name_en": "Linguang Outer Residence", "tag": "set", "src": "大骑士领·圣都：外环的临光家族外城驻所（位置与形制为仓库推断）", "alias": ["临光家族外城驻所", "外城驻所"]},
+        "arms_rnd": {"name": "魔导军工研发中心", "sub": "以太回路装甲 · 智能锁", "name_en": "Magitech Arms R&D Centre", "sub_en": "Aether-circuit armour", "tag": "inf", "layer_src": "repo-inferred", "src": "大骑士领·圣都：魔导军工研发中心，研制以太回路装甲与智能锁。卡未写具体位置：放在圣都为仓库自设（仓库推断，2026-09-28）", "alias": ["魔导军工研发中心", "军工研发中心"]}
       }
     },
     "yuanyu_sanctum": {

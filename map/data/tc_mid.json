@@ -108,6 +108,76 @@
    "ny": 0.608,
    "r": 0.012,
    "manual": true
+  },
+  {
+   "id": "mage_tower",
+   "nx": 0.305,
+   "ny": 0.285,
+   "r": 0.015,
+   "manual": true
+  },
+  {
+   "id": "schneider_clinic",
+   "nx": 0.7,
+   "ny": 0.43,
+   "r": 0.01,
+   "manual": true
+  },
+  {
+   "id": "rebirth_workshop",
+   "nx": 0.35,
+   "ny": 0.845,
+   "r": 0.018,
+   "manual": true
+  },
+  {
+   "id": "butler_academy",
+   "nx": 0.8,
+   "ny": 0.25,
+   "r": 0.015,
+   "manual": true
+  },
+  {
+   "id": "executive_office",
+   "nx": 0.47,
+   "ny": 0.555,
+   "r": 0.016,
+   "manual": true
+  },
+  {
+   "id": "admin_council",
+   "nx": 0.575,
+   "ny": 0.53,
+   "r": 0.014,
+   "manual": true
+  },
+  {
+   "id": "reserve_office",
+   "nx": 0.435,
+   "ny": 0.47,
+   "r": 0.014,
+   "manual": true
+  },
+  {
+   "id": "culture_office",
+   "nx": 0.6,
+   "ny": 0.665,
+   "r": 0.012,
+   "manual": true
+  },
+  {
+   "id": "military_academy",
+   "nx": 0.085,
+   "ny": 0.39,
+   "r": 0.02,
+   "manual": true
+  },
+  {
+   "id": "storm_hall",
+   "nx": 0.3,
+   "ny": 0.56,
+   "r": 0.016,
+   "manual": true
   }
  ],
  "layer": "tc_mid"
