@@ -265,7 +265,7 @@
     <div class="seg" id="tiers"></div><span id="tierState" aria-live="polite"></span>
     <label class="tg" id="tgOverlay"><input type="checkbox" id="tgBorders" checked><span>国界</span></label>
     <label class="tg" id="tgAlt" hidden data-i18n-title="alt_title" title="高级：换成带下方城市的底图（图更大）"><input type="checkbox" id="tgAltBox"><span>显示下方城市</span></label>
-    <label class="tg" id="tgRoutes" hidden data-i18n-title="routes_title" title="上层航线（金色虚线）与银冠堡巡逻环（淡蓝点划线）"><input type="checkbox" id="tgRoutesBox" checked><span data-i18n="routes">航线</span></label>
+    <label class="tg" id="tgRoutes" hidden data-i18n-title="routes_title" title="上层航线（金色虚线）与银冠堡巡逻环（淡蓝点划线）"><input type="checkbox" id="tgRoutesBox"><span data-i18n="routes">航线</span></label>
     <label class="tg"><input type="checkbox" id="tgLabels" checked><span data-i18n="labels">地名</span></label>
     <label class="tg"><input type="checkbox" id="tgMarkers" checked><span data-i18n="markers">标记</span></label>
     <div class="seg" id="langSeg" data-i18n-title="lang_title" title="界面语言"><button type="button" data-lang="zh">中</button><button type="button" data-lang="en">EN</button></div>
@@ -412,8 +412,8 @@ async function main() {
   $('#tgBorders').onchange = applyOverlayToggle;
   $('#tgAltBox').onchange = e => { try { localStorage.setItem(ALT_KEY + cur, e.target.checked ? '1' : '0'); } catch (err) {} swapBase(); };
   $('#tgLabels').onchange = e => document.body.classList.toggle('nolabels', !e.target.checked);
-  // 航线开关：记在本机（默认开）；没有 routes 的图上隐藏开关
-  { let on = true; try { on = localStorage.getItem('edenMapRoutes') !== '0'; } catch (e) {}
+  // 航线开关：记在本机（默认关，用户 2026-09-27 定：和云雾一样做成选项）；没有 routes 的图上隐藏开关
+  { let on = false; try { on = localStorage.getItem('edenMapRoutes') === '1'; } catch (e) {}
     $('#tgRoutesBox').checked = on; document.body.classList.toggle('noroutes', !on);
     $('#tgRoutesBox').onchange = e => { document.body.classList.toggle('noroutes', !e.target.checked); try { localStorage.setItem('edenMapRoutes', e.target.checked ? '1' : '0'); } catch (err) {} }; }
   $('#tgMarkers').onchange = e => document.body.classList.toggle('nomarkers', !e.target.checked);
