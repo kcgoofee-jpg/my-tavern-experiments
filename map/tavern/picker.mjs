@@ -41,7 +41,7 @@ export function buildGroups({ reg, plan = null, chars = [], lang = 'zh' } = {}) 
       for (const it of list) { delete it.pid; add(g, it); }
       if (g.items.length) out.push(g);
     }
-    if (other.length) { const g = { id: 'room:other', label: en ? `${title} · B1 / other rooms` : `${title} · B1 / 其他房间`, short: en ? 'B1 / other' : 'B1 / 其他', items: [] }; other.forEach(it => add(g, it)); if (g.items.length) out.push(g); }
+    if (other.length) { const g = { id: 'room:other', label: en ? `${title} · B1–B2 / other rooms` : `${title} · B1–B2 / 其他房间`, short: en ? 'B1–B2 / other' : 'B1–B2 / 其他', items: [] }; other.forEach(it => add(g, it)); if (g.items.length) out.push(g); }
     const areas = plan?.AREAS || [], atk = new Set(), ga = { id: 'area:' + eid, label: en ? `${title} · outdoors` : `${title} · 室外`, short: en ? 'Outdoors' : '室外', items: [] };
     for (const name of m.areas || []) {
       const a = areas.find(x => x.name === name || (x.alias || []).includes(name));
