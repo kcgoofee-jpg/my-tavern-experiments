@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UI v2 草图</title>
+<style>
+:root{--font-ui:"PingFang SC","Hiragino Sans GB","Noto Sans SC",system-ui,sans-serif;--bg:#101418;--surface:#151b20;--surface-2:rgba(255,255,255,.06);--line:rgba(255,255,255,.14);--ink:#d5dde4;--muted:#8591a0;--accent:#e6c36a;--alert:#ff5a5a;--ok:#7bd88f;--focus:#63b4be;--r:8px}
+body{margin:0;background:#2a2e33;color:var(--ink);font:13px/1.45 var(--font-ui);padding:16px}
+h1{font-size:18px;margin:0 0 4px}h2{font-size:15px;margin:0 0 8px;color:var(--accent)}p.n{color:#aab;margin:4px 0 10px;max-width:980px}
+.scene{background:#1d2126;border-radius:10px;padding:14px;margin:0 0 18px;display:inline-block;vertical-align:top}
+.row{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.lbl{font-size:11px;color:#99a;margin-bottom:4px}
+.fr{position:relative;overflow:hidden;background:var(--bg);border:1px solid #444;border-radius:14px}
+.ph{width:375px;height:720px}.dt{width:960px;height:600px;border-radius:6px}
+.map{position:absolute;inset:0;background:
+ repeating-linear-gradient(0deg,transparent 0 38px,rgba(255,255,255,.035) 38px 39px),repeating-linear-gradient(90deg,transparent 0 38px,rgba(255,255,255,.035) 38px 39px),radial-gradient(60% 50% at 50% 45%,#27313a,#12171b)}
+.model{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:62%;aspect-ratio:1.6;border:2px dashed #6b7885;border-radius:10px;display:grid;place-items:center;color:#8a96a3;background:rgba(255,255,255,.03)}
+.top{position:absolute;left:0;right:0;top:0;height:44px;display:flex;align-items:center;gap:6px;padding:0 8px;background:rgba(21,27,32,.94);border-bottom:1px solid var(--line);z-index:5}
+.top .t{font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b{display:inline-grid;place-items:center;min-width:34px;height:32px;padding:0 8px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--ink);font-size:12px;white-space:nowrap}
+.b.on{background:var(--accent);color:#1a1406;border-color:var(--accent)}
+.chip{border-color:var(--alert);color:#ffb3b3}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+.col{position:absolute;display:flex;flex-direction:column;gap:6px;z-index:4}
+.col .b{width:44px;height:44px;padding:0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}.seg .b{border:0;border-radius:0}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);border-radius:14px 14px 0 0;z-index:6;box-shadow:0 -8px 24px rgba(0,0,0,.35)}
+.handle{height:22px;display:grid;place-items:center}.handle i{width:36px;height:4px;border-radius:2px;background:#6d7884;display:block}
+.tabs{display:flex;gap:4px;padding:0 10px 8px;align-items:center}.tabs .b{height:30px}.tabs .sp{flex:1}
+.list{padding:0 10px}.it{display:flex;gap:8px;align-items:center;min-height:40px;border-bottom:1px solid var(--line);font-size:12px}
+.it i{width:10px;height:10px;border-radius:50%;background:var(--alert);flex:none}.it small{color:var(--muted);margin-left:auto}
+.rail{position:absolute;right:0;top:44px;bottom:0;width:340px;background:var(--surface);border-left:1px solid var(--line);z-index:6}
+.rail.c{width:48px}
+.mk{position:absolute;padding:2px 6px;border-radius:4px;background:rgba(12,14,18,.85);font-size:11px;border:1px solid rgba(255,255,255,.2)}
+.mk.here{border-color:var(--alert)}
+.route{position:absolute;height:0;border-top:2px dashed rgba(230,195,106,.6);transform-origin:0 0}
+.ban{position:absolute;left:8px;right:8px;top:52px;z-index:7;background:#232b33;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--r);padding:8px 10px;display:flex;gap:8px;align-items:center;font-size:12px}
+.ban .x{margin-left:auto}
+.toast{position:absolute;left:50%;transform:translateX(-50%);z-index:7;background:#2a333c;border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:12px;white-space:nowrap}
+.modal{position:absolute;inset:44px 0 0 0;background:rgba(0,0,0,.55);display:grid;place-items:center;z-index:8}
+.modal>div{width:78%;max-width:380px;background:var(--surface);border:1px solid var(--alert);border-radius:12px;padding:14px}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+.set{position:absolute;inset:0;background:var(--bg);z-index:9}
+.set .grp{margin:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.set .g{display:flex;align-items:center;min-height:48px;padding:0 12px;border-bottom:1px solid var(--line)}.set .g:last-child{border:0}.set .g small{color:var(--muted);margin-left:8px;flex:1}
+.tg{width:34px;height:20px;border-radius:10px;background:var(--accent);margin-left:auto;position:relative}.tg::after{content:"";position:absolute;right:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#1a1406}.tg.off{background:#3a434c}.tg.off::after{left:2px;right:auto;background:#aab}
+.note{position:absolute;z-index:10;background:#ffe89a;color:#222;font-size:11px;padding:3px 6px;border-radius:4px;max-width:200px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.pin{position:absolute;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--accent);background:rgba(12,14,18,.85);font-size:11px;display:grid;place-items:center}
+.flow{position:absolute;height:3px;border-radius:2px}
+.inp{margin:10px;height:36px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;padding:0 10px;color:var(--muted)}
+</style></head><body>
+<h1>天城地图 · UI v2 低保真草图</h1>
+<p class="n">第一阶段交互草图（2026-09-28），只示意布局与交互，不代表最终视觉。配套 <code>spec.md</code>。黄色便签 = 交互说明。左：手机 375；右：桌面。</p>
+<div id="out"></div>
+<script>
+const T=(t,extra='')=>`<div class="top"><span class="b">‹</span><span class="t">${t}</span>${extra}<span class="dot" title="状态"></span><span class="b">图层</span><span class="b">⚙</span><span class="b">✕</span></div>`;
+const mapBg=(ph)=>`<div class="map"></div>
+<div class="mk" style="left:${ph?120:420}px;top:${ph?210:190}px">中央塔</div><div class="mk here" style="left:${ph?200:560}px;top:${ph?300:280}px">● 伊甸庄园</div><div class="mk" style="left:${ph?60:300}px;top:${ph?360:330}px">港区</div>
+<div class="route" style="left:${ph?80:320}px;top:${ph?400:360}px;width:${ph?110:230}px;transform:rotate(-38deg)"></div>`;
+const col=(ph,bottom,extra='')=>ph?`<div class="col" style="right:10px;bottom:${Math.min(bottom,330)}px"><span class="b" title="层 / 图层 / 标注">⋯</span><span class="b">＋</span><span class="b">－</span><span class="b">⌂</span>${extra}</div>`:`<div class="col" style="right:14px;bottom:${bottom}px"><span class="b" title="层">上层▾</span><span class="b">＋</span><span class="b">－</span><span class="b">⌂</span><span class="b">🏷</span>${extra}</div>`;
+const Tp=(t,extra='')=>`<div class="top"><span class="t">${t}</span>${extra}<span class="dot"></span><span class="b" style="min-width:44px;height:40px">✕</span></div>`;
+const evItems=['<i></i>港区检查点管控<small>进行中</small>','<i style="background:var(--accent)"></i>中环会谈<small>2 小时前</small>','<i style="background:#63b4be"></i>下层集市<small>昨天</small>','<i></i>上层航线临时封闭<small>进行中</small>','<i style="background:#63b4be"></i>学院开放日<small>3 天前</small>'];
+const sheet=(state,tabs,items)=>{const h={peek:64,half:300,full:560}[state];return `<div class="sheet" style="height:${h}px"><div class="handle"><i></i></div><div class="tabs">${tabs}<span class="sp"></span><span class="b">${state==='peek'?'展开 ▴':'收起 ▾'}</span></div>${state==='peek'?'':`<div class="list">${items.map(x=>`<div class="it">${x}</div>`).join('')}</div>`}</div>`};
+const evTabs='<span class="b">中层 ▾</span><span class="b on">事态 3</span><span class="b">人物 5</span><span class="b">地点</span>';
+const note=(x,y,t)=>`<div class="note" style="left:${x}px;top:${y}px">${t}</div>`;
+const fr=(cls,inner,lbl)=>`<div><div class="lbl">${lbl}</div><div class="fr ${cls}">${inner}</div></div>`;
+const rail=(state,inner)=>state==='c'?`<div class="rail c"><div style="padding:10px 4px;color:var(--ink);text-align:center;font-size:12px">◂<br><br>事<br>3<br><br>人<br>5</div></div>`:`<div class="rail"><div class="tabs" style="padding-top:10px">${evTabs}<span class="sp"></span><span class="b">▸ 收起</span></div><div class="list">${inner}</div></div>`;
+const S=[];
+const scene=(id,title,desc,frames)=>S.push(`<section class="scene" id="${id}"><h2>${title}</h2><p class="n">${desc}</p><div class="row">${frames.join('')}</div></section>`);
+
+// 1 tier map default
+scene('s1-tier-default','1 · 层地图默认态','一条顶栏（宿主栏与查看器顶栏合并）；控制列在拇指侧；底部只有收起态抽屉；桌面抽屉在右侧栏。航线在标签处断开（U8）。',[
+ fr('ph',Tp('天城 · 上层')+mapBg(1)+col(1,80)+sheet('peek',evTabs,[])+note(150,60,'手机顶栏只留标题 + ✕；上一级、图层、设置收进 ⋯')+note(160,560,'控制列只常驻 ⋯ + − ⌂；半开时最高到屏幕中线'),'手机 375'),
+ fr('dt',T('世界 › 天城 › <b>上层</b>','<span class="b">清晰度 自动</span>')+mapBg(0)+col(0,20).replace('right:14px','right:360px')+rail('o',evItems.slice(0,4).map(x=>`<div class="it">${x}</div>`).join(''))+note(620,60,'桌面：右侧栏，可收成 48px 竖条'),'桌面 960')]);
+
+// 2 sheet states
+scene('s2-sheet-states','2 · 底部抽屉三档（U1）','收起 64 / 半开 40% / 全开 ≤ 80%（按 iframe 容器高度）。柄可拖；「收起 ▾」文字按钮；点地图空白或 Esc 降一档；列表滚到顶继续下拉 = 降一档。',[
+ fr('ph',Tp('天城 · 中层')+mapBg(1)+col(1,80)+sheet('peek',evTabs,[]),'收起'),
+ fr('ph',Tp('天城 · 中层')+mapBg(1)+col(1,316)+sheet('half',evTabs,evItems)+note(120,390,'半开：地图仍露出 ≥ 55%'),'半开'),
+ fr('ph',Tp('天城 · 中层')+mapBg(1)+sheet('full',evTabs,evItems.concat(evItems))+note(140,100,'全开：控制列隐藏；顶栏始终可见'),'全开'),
+ fr('dt',T('世界 › 天城 › <b>中层</b>')+mapBg(0)+col(0,20).replace('right:14px','right:62px')+rail('c'),'桌面：侧栏收起态')]);
+
+// 3 settings
+const setHome=`<div class="set">${T('设置','').replace(/<span class="b">图层.*?✕<\/span>/,'<span class="b">✕</span>')}<div style="height:44px"></div><div class="inp">🔍 搜索设置</div><div class="grp">${[['显示','主题 · 语言 · 清晰度 · 惯用手 · 动态'],['人物','数值 · 更多资料'],['数据与映射','变量映射 · 别名 · 模板 · 存储'],['更新与版本','v0.9.7 · 自检 1 项 ⚠'],['高级','自动跳转 · 线路 · 调试']].map(([a,b])=>`<div class="g">${a}<small>${b}</small>›</div>`).join('')}</div><div style="margin:10px;color:var(--muted);font-size:11px">关于 · 原作角色卡：Yehehua · 原作发布帖</div></div>`;
+const setUpd=`<div class="set"><div class="top"><span class="b">‹ 设置</span><span class="t">更新与版本</span><span class="b">✕</span></div><div style="height:44px"></div><div class="grp"><div class="g">当前版本<small>v0.9.7</small></div><div class="g">检查更新<span class="b" style="margin-left:auto">立即检查</span></div><div class="g">自动检查<div class="tg"></div></div><div class="g">自动更新<div class="tg off"></div></div><div class="g">锁定版本<div class="tg off"></div></div></div><div class="grp"><div class="g">自检<small>1 项需要注意</small><span class="b">重新运行</span></div><div class="g" style="color:#ffcf7a">⚠ 世界书未启用<small></small>›</div></div></div>`;
+scene('s3-settings','3 · 设置分页（U10）','首屏分组列表，点进子页，‹ 返回。模块向页注册，不再往一页里塞。手机全屏，桌面右侧 480px 面板。',[
+ fr('ph',setHome,'手机：首屏'),fr('ph',setUpd,'手机：更新与版本'),
+ fr('dt',T('世界 › 天城 › <b>上层</b>')+mapBg(0)+`<div class="rail" style="width:480px">${setUpd.replace('class="set"','class="set" style="position:absolute;inset:0"').replace(/<div class="top">.*?<\/div><div style="height:44px"><\/div>/,'<div class="tabs" style="padding-top:10px"><span class="b">‹ 设置</span><b style="margin-left:6px">更新与版本</b><span class="sp"></span><span class="b">✕</span></div>')}</div>`,'桌面：右侧面板')]);
+
+// 4 notifications
+scene('s4-notices','4 · 通知层叠放规则','同时最多 1 个 P0 + 1 条 P1 横幅 + 1 条 P2 toast；P0 时其余排队；多条 P1 折叠为「还有 N 条」。自检正常不弹卡。',[
+ fr('ph',Tp('天城 · 上层')+mapBg(1)+`<div class="ban">⬆ 有新版本 v0.9.8<span class="b">更新</span><span class="b x">✕</span></div><div class="ban" style="top:100px;border-left-color:#555;opacity:.85">还有 2 条：存储将满 · 自检 1 项 ⚠<span class="b x">展开</span></div>`+col(1,80)+`<div class="toast" style="bottom:76px">港区有新事态 · 查看</div>`+sheet('peek',evTabs,[])+note(170,160,'P1 横幅：每版本 / 每组警告关一次'),'P1 + P2 并存'),
+ fr('ph',Tp('天城 · 上层')+mapBg(1)+`<div class="modal"><div><b style="color:var(--alert)">需要更新</b><p style="margin:6px 0 0">当前版本低于最低要求，更新后继续使用。</p><div class="acts"><span class="b">更新日志</span><span class="b on">立即更新</span></div></div></div>`+note(40,560,'P0：不能关；主按钮在右；其余通知暂停'),'P0 强制更新'),
+ fr('ph',Tp('伊甸庄园')+`<div class="map" style="filter:brightness(.6)"></div><div class="modal"><div style="border-color:var(--line)"><b>地图加载较慢 · 56%</b><div style="height:6px;background:#333;border-radius:3px;margin:8px 0"><i style="display:block;width:56%;height:100%;background:var(--accent);border-radius:3px"></i></div><small style="color:var(--muted)">线路：有梯子</small><div class="acts"><span class="b">换线路</span><span class="b">看平面图</span><span class="b on">重试</span></div></div></div>`+note(40,540,'U3：加载 / 失败统一用通知卡，按钮位置与 P0 一致'),'加载慢（U3）')]);
+
+// 5 estate 3D
+const v3top=(t,segs)=>`<div class="top"><span class="b">‹</span><span class="t">${t}</span><span class="seg">${segs}</span><span class="b">⚙</span><span class="b">✕</span></div>`;
+const eSeg='<span class="b">外观</span><span class="b">内透</span><span class="b on">剖切</span>';
+const floors=`<div style="position:absolute;top:50px;left:50%;transform:translateX(-50%);z-index:4" class="seg">${['B2','B1','F1','F2','F3'].map(f=>`<span class="b${f==='F1'?' on':''}">${f}</span>`).join('')}</div>`;
+const col3=(ph,b,right)=>`<div class="col" style="right:${right}px;bottom:${b}px"><span class="b">＋</span><span class="b">－</span><span class="b">⟲</span><span class="b">🏷</span><span class="b">◆</span></div>`;
+scene('s5-estate','5 · 庄园三维（U7 / U11）','视图切换在顶栏；剖切楼层是顶栏下的二级条；控制列一处；导览、房间说明、图例都进底部抽屉。原大标题、格言移到「关于这里」。',[
+ fr('ph',v3top('伊甸家族府邸',eSeg)+`<div class="map"></div><div class="model">庄园模型</div>`+floors+col3(1,80,10)+sheet('peek','<span class="b on">房间</span><span class="b">图例</span><span class="b">导览</span><span class="b">关于</span>',[])+note(20,470,'原四处控件 → 顶栏 1 + 控制列 1 + 抽屉 1'),'手机：剖切 F1'),
+ fr('ph',v3top('伊甸家族府邸',eSeg)+`<div class="map"></div><div class="model" style="top:28%">庄园模型</div>`+floors+col3(1,316,10)+sheet('half','<span class="b on">房间</span><span class="b">图例</span><span class="b">导览</span>',['<b>主客厅</b><small>F1 · 120㎡</small>','说明：……','出入：大厅 / 露台','<span class="b">图集 8</span><span class="b">去这里</span>']),'手机：点房间 → 半开'),
+ fr('dt',v3top('世界 › 天城 › 上层 › <b>伊甸家族府邸</b>',eSeg)+`<div class="map"></div><div class="model" style="left:40%">庄园模型</div>`+floors.replace('left:50%','left:40%')+col3(0,20,356)+`<div class="rail"><div class="tabs" style="padding-top:10px"><span class="b on">房间</span><span class="b">图例</span><span class="b">导览</span><span class="sp"></span><span class="b">▸</span></div><div class="list"><div class="it"><b>主客厅</b><small>F1</small></div><div class="it">说明：……</div><div class="it"><span class="b">图集 8</span></div></div></div>`,'桌面')]);
+
+// 6 props dairy
+const dSeg='<span class="b on">外观</span><span class="b">剖切</span>';
+const pins=(ph)=>[1,2,3,4,5,6].map((n,i)=>`<div class="pin" style="left:${(ph?90:300)+i*(ph?38:70)}px;top:${(ph?250:230)+(i%2)*40}px">${n}</div>`).join('');
+const flows=(ph)=>['#e6c36a','#63b4be','#c77dff','#7bd88f'].map((c,i)=>`<div class="flow" style="background:${c};left:${ph?70:260}px;top:${(ph?230:210)+i*28}px;width:${ph?230:420}px;opacity:.8"></div>`).join('');
+const dairyBefore=`<div class="map"></div><div class="model">挤奶厅模型</div>${pins(1)}${flows(1)}<div class="top" style="gap:4px"><span class="seg">${dSeg}</span><span class="b on">流向</span><span class="b on">部件</span></div><div style="position:absolute;left:8px;top:56px;width:200px;height:170px;background:var(--surface);border:1px solid var(--line);border-radius:8px;z-index:5;padding:6px;font-size:11px">流向（示意）<br>● 奶液<br>● 清洗水<br>● 饲料<br>● 人员</div><div style="position:absolute;left:8px;right:8px;bottom:8px;height:320px;background:var(--surface);border:1px solid var(--line);border-radius:8px;z-index:5;padding:6px;font-size:11px">部件（点击飞过去）<br>1 挤奶位<br>2 集乳管<br>3 储奶罐<br>4 清洗间<br>…</div><div style="position:absolute;left:8px;bottom:200px;width:300px;height:110px;background:#1f272e;border:1px solid var(--line);border-radius:8px;z-index:6;padding:8px;font-size:11px">说明卡 ✕</div>`+note(210,300,'现状：图例 + 部件 + 说明卡同时展开，模型被挡住大半');
+scene('s6-props-dairy','6 · 道具三维：挤奶厅（U12）','左：现状。中 / 右：v2——部件、流向、说明在同一抽屉的三页，默认收起；打开「流向」页时显示流向线，抽屉半开且模型自动上移；拖动模型抽屉自动收起；🏷 隐藏编号。',[
+ fr('ph',dairyBefore,'现状（问题）'),
+ fr('ph',v3top('挤奶厅',dSeg)+`<div class="map"></div><div class="model">挤奶厅模型</div>`+pins(1)+col3(1,80,10)+sheet('peek','<span class="b on">部件 12</span><span class="b">流向 4</span><span class="b">说明</span>',[])+note(20,480,'默认：抽屉收起，模型全可见'),'v2 默认'),
+ fr('ph',v3top('挤奶厅',dSeg)+`<div class="map"></div><div class="model" style="top:26%">挤奶厅模型</div>`+flows(1).replace(/top:(\d+)px/g,(m,a)=>`top:${a-110}px`)+col3(1,316,10)+sheet('half','<span class="b">部件</span><span class="b on">流向 4</span><span class="b">说明</span>',['<i style="background:#e6c36a"></i>奶液：挤奶位 → 集乳管 → 储奶罐','<i style="background:#63b4be"></i>清洗水','<i style="background:#c77dff"></i>饲料','<i style="background:#7bd88f"></i>人员','<span class="b">固定显示流向</span>']),'v2 流向页（半开）'),
+ fr('dt',v3top('世界 › 天城 › <b>挤奶厅</b>',dSeg)+`<div class="map"></div><div class="model" style="left:40%">挤奶厅模型</div>`+flows(0).replace(/width:420px/g,'width:360px').replace(/left:260px/g,'left:150px')+col3(0,20,356)+`<div class="rail"><div class="tabs" style="padding-top:10px"><span class="b">部件 12</span><span class="b on">流向 4</span><span class="b">说明</span><span class="sp"></span><span class="b">▸</span></div><div class="list">${['奶液','清洗水','饲料','人员'].map((x,i)=>`<div class="it"><i style="background:${['#e6c36a','#63b4be','#c77dff','#7bd88f'][i]}"></i>${x}</div>`).join('')}</div></div>`,'桌面')]);
+
+// 7 unmapped
+const picker=`<div class="sheet" style="height:560px"><div class="handle"><i></i></div><div class="tabs"><b>把「旧码头仓库」放到地图上</b><span class="sp"></span><span class="b">✕</span></div><div class="inp" style="margin:0 10px 8px">🔍 搜索地标 / 房间 / 地名</div><div class="tabs"><span class="b on">全部</span><span class="b">地标</span><span class="b">层</span><span class="b">庄园房间</span><span class="b">世界</span></div><div class="list">${['港区 <small>地标 · 下层</small>','港区仓储带 <small>地标 · 下层</small>','天城 · 下层 <small>层</small>','地下仓库 <small>庄园房间 · B1</small>','东港 <small>世界地名</small>'].map(x=>`<div class="it">${x}</div>`).join('')}</div><div class="acts" style="padding:10px"><span class="b">忽略这个名字</span></div></div>`;
+scene('s7-unmapped','7 · 未上图选择器','顶栏 chip（持久状态，不是通知）→ 选择器在底部抽屉全开（手机）/ 侧栏（桌面）。指派后立即跳过去，P2 toast「已放到 港区 · 撤销」。',[
+ fr('ph',Tp('天城 · 下层','<span class="b chip">未上图：旧码头仓库</span>')+mapBg(1)+col(1,80)+sheet('peek',evTabs,[])+note(120,60,'chip 在顶栏；窄屏时缩成「未上图 ·1」'),'手机：chip'),
+ fr('ph',Tp('天城 · 下层','<span class="b chip">未上图 ·1</span>')+mapBg(1)+picker,'手机：选择器'),
+ fr('dt',T('世界 › 天城 › <b>下层</b>','<span class="b chip">未上图：旧码头仓库</span>')+mapBg(0)+`<div class="rail">${picker.replace('class="sheet" style="height:560px"','style=""').replace('<div class="handle"><i></i></div>','<div style="height:10px"></div>')}</div>`+`<div class="toast" style="bottom:20px;left:300px">已放到 港区 · 撤销</div>`,'桌面')]);
+
+document.getElementById('out').innerHTML=S.join('');
+</script>
+</body></html>
