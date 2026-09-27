@@ -27,7 +27,7 @@ const len = w => (w ? [...w].length : 0);
 // custom：用户自定义的叫法（不进仓库、不上 CDN），{ rooms: { 自定义名: 标准房间名 }, marks?: { 自定义名: 标准地标名 } }（v0.9.3 起来自聊天变量 eden_map.自定义，见 tavern/mvu.mjs aliasMap）。
 // 当前地点写的是自定义名时，按对应的标准房间落点；来源见 viewer 的 EdenMap.setRoomAlias（存储见文件末尾 readCustom / setRoomAlias）。
 export function buildIndex(reg, world = null, names = null, custom = null) {
-  const maps = reg?.maps || {}, idx = { estate: null, marks: [], layers: [], tiancheng: null, world: [] };
+  const maps = reg?.maps || {}, idx = { estate: null, marks: [], layers: [], tiancheng: null, world: [], ambiguous: [...(reg?.ambiguous?.words || [])] };
   const en = z => (names && names[z]) || null;
   // 庄园（kind=estate）：房间 / 区域词表；整座庄园的叫法 = alias 里不是房间也不是区域的词 + 标题 + 链接到它的地标（如上层的「伊甸庄园」）
   for (const [id, m] of Object.entries(maps)) {
@@ -81,6 +81,9 @@ function resolveOne(value, idx) {
   const E = idx.estate, eWhole = E && longest(v, E.whole), eRoom = E && longest(v, E.rooms), eArea = E && longest(v, E.areas);
   let mark = null; for (const k of idx.marks) { const w = longest(v, k.words); if (w && len(w) > len(mark?.word)) mark = { ...k, word: w }; }
   let lay = null; for (const k of idx.layers) { const w = longest(v, k.words); if (w && len(w) > len(lay?.word)) lay = { ...k, word: w }; }
+  // 泛称（maps.json ambiguous：大学、分局、修道院……卡里同名的地方不止一处）不短于地标词时不落地标：有层名落层，否则不跳转
+  const amb = idx.ambiguous?.length ? longest(v, idx.ambiguous) : null;
+  if (amb && len(amb) >= len(mark?.word) && !(E && eWhole && len(eWhole) > len(amb))) { mark = null; if (!lay) return null; }
   // 庄园：写了庄园（且没有更长的别处地标，如「财团家族庄园」），或只写了房间 / 区域而没有写别的层、地标
   const inEstate = E && ((eWhole && len(eWhole) >= len(mark?.word)) || (!eWhole && (eRoom || eArea) && !mark && !lay));
   if (inEstate) {
