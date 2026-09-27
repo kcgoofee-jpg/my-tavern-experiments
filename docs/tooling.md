@@ -56,13 +56,14 @@ bash tools/smoke.sh --cdn <提交>    # 另外 HEAD 一组 jsDelivr 地址（入
 - `accept.mjs <目录>`：E2 验收全套，约 2.5 分钟。输出 `results.json`、`summary.md` 和截图。
 - 开浏览器前遵守安静期锁。
 
-## 5. 一条命令发布到预览
+## 5. 一条命令发布到预览（**不是发版**）
 ```bash
 bash tools/ship.sh --dry-run   # 演练：smoke、git push --dry-run、列出要预热的文件数、预览脚本写到临时目录
 bash tools/ship.sh             # smoke → git push 当前分支 → warm_cdn.sh <HEAD> → build_preview_script.py --follow <分支> --out ~/Downloads/酒馆/预览
 ```
 - 只推送已提交的内容，工作区有改动时会提醒。
-- 汇总里列出提交号、CDN 预热中非 200 的个数，以及预览脚本的位置。
+- 汇总里列出提交号、CDN 预热中非 200 的个数，以及预览脚本的位置；**非 200 > 0 时退出码 1**（2026-09-27 起）。
+- 它推的是**分支 + HEAD 提交**、发的是「跟随分支」预览脚本：导入一次，之后刷新酒馆就拿到最新提交。正式发版要打标签、发钉标签的脚本和世界书附加条目，见第 8 节——**ship.sh 不能当发版用**。
 
 ## 6. NOTES 合并
 - `.gitattributes`：`NOTES_FROM_LOCAL.md merge=union`（git 内置驱动）。
@@ -83,12 +84,39 @@ bash tools/quiet_wait.sh     # 等锁过去（--check 只判断不等；--max N 
 - 代理自己写的渲染或浏览器脚本，开工前也先跑 `bash tools/quiet_wait.sh`。
 - 用途：用户在真机上测试、录屏或跑基准时，不要让后台任务抢 CPU / GPU。
 
-## 8. 发版交付（不改角色卡，v0.9.1 起）
-```bash
-python3 tools/build_preview_script.py --tag map-v0.9.1        # → ~/Downloads/酒馆/脚本/【地图】伊甸地图 v0.9.1.json（钉标签；不创建标签，标签不存在时只提醒）
-python3 tools/build_worldbook_addon.py --version 0.9.1 \
-  --check ~/Downloads/酒馆/世界书/华伦天奴世界书.json          # → ~/Downloads/酒馆/世界书/伊甸地图·世界书附加条目 v0.9.1.json
-```
+## 8. 发版（不改角色卡，v0.9.1 起）
+
+**发版顺序（2026-09-27 接手时核对过一遍；✱ 的步骤以前没有人管，现在由 `tools/check_version.py` 与 `smoke.sh` 兜住）**
+
+1. 内容冻结：工作区干净、`git status` 无未跟踪的大文件；`bash tools/smoke.sh` 全绿。
+2. 一起改（**缺一样就会出「脚本 vX 与地图 vY 版本不一致」的永久警告**）：
+   - `VERSION` → `X.Y.Z`；
+   - `CHANGELOG.md` 的 `## X.Y.Z（未发版）` 去掉「未发版」；
+   - `README.md` 顶部「当前发布版本」；
+   - `ROADMAP.md` 对应小节；
+   - `python3 tools/version_code.py R` 重写 `map/data/build.json`（编码里的构建号 = 分支提交数 + 1，**必须在发版提交前跑、并和发版提交一起提交**，否则反查对不上）；
+   - 发版提交本身只包含上面这些 + 必要的文档，别混功能改动（构建号按提交数算）。
+3. `bash tools/smoke.sh` 再跑一次（其中 `tools/check_version.py` 会核对 VERSION / build.json / CHANGELOG / 标签是否一致 ✱）。
+4. 打标签并推：
+   ```bash
+   git tag map-vX.Y.Z && git push origin cloud/tc-mid-low && git push origin map-vX.Y.Z
+   ```
+5. CDN 校验与预热（**没做这一步就等于没发**）：
+   ```bash
+   bash tools/smoke.sh --cdn map-vX.Y.Z        # 抽样 HEAD 该标签下的入口与瓦片，要求全部 200
+   bash tools/warm_cdn.sh map-vX.Y.Z           # 全量预热；有非 200 就修，别继续
+   ```
+6. 生成交付物：
+   ```bash
+   python3 tools/build_preview_script.py --tag map-vX.Y.Z   # → ~/Downloads/酒馆/脚本/【地图】伊甸地图 vX.Y.Z.json（标签不存在或与 VERSION 不符时退出码 2）
+   python3 tools/build_worldbook_addon.py --version X.Y.Z \
+     --check ~/Downloads/酒馆/世界书/华伦天奴世界书.json      # → ~/Downloads/酒馆/世界书/伊甸地图·世界书附加条目 vX.Y.Z.json
+   ```
+7. 用户实测：`docs/tt-test-checklist.md`（正文是 v0.9.1 基线，8b / 8c / 8d 是后续版本新增项）；浏览器验收 `node tools/browser/accept.mjs <目录>`（需先 `cd tools/browser && npm install`，浏览器用 `npx playwright install chromium webkit`）。
+8. 发布帖：首帖附原作者帖链接（见 `README.md`「原作与授权」）。
+
 - 发版脚本的 id 固定，下个版本导入时覆盖旧的一条。
-- 世界书附加条目只含地图的 3 个常驻条目（联动规范 v3、事件类型 v2、当前地点写法），类型、地标、房间、示范都从 `events.mjs` / `maps.json` 生成；生成时自检：示范原文不上图、每个地标能推断出层、当前地点示例落点正确；`--check` 按一份现有世界书核对字段。
-- 用户实测清单：`docs/tt-test-checklist.md`。
+- 世界书附加条目：3 条常驻（联动规范 v3、事件类型 v2、当前地点写法）+ 人物位置 1 条 + 方位 3 条（EJS 条件触发，v0.9.5 起不常驻），类型、地标、房间、示范都从 `events.mjs` / `maps.json` 生成；生成时自检：示范原文不上图、每个地标能推断出层、当前地点示例落点正确；`--check` 按一份现有世界书核对字段。
+- npm 正式发布与 npmmirror 线路另算（用户两步验证），见 `ROADMAP.md`。
+- `tools/build_card.sh` 是 0.6.x 时代的卡片构建，0.9.1 起不再使用（保留只作历史）。
+

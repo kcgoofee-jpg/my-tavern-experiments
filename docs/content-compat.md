@@ -31,7 +31,8 @@
   - 存本机 `localStorage`：有聊天 id 时按聊天分开存 `edenMap:chat:<聊天 id>:custom`，拿不到聊天 id 时存全局 `edenMap:custom`；值是 `{ rooms: { 自定义名: 标准房间名 } }`。
   - 只能指向标准房间，标准房间名本身不能改指别处；当前地点写自定义名时按对应房间落点（`here.mjs` 的 `buildIndex(…, custom)`），庄园页收到的是标准房间名。
   - 存储与校验在 `here.mjs`（`customKey` / `readCustom` / `setRoomAlias` / `removeRoomAlias`），单测 `tests/here.test.mjs`。
-- ✅ `EdenMap.setAvatar(人物名, 图片)` → true / false；`EdenMap.removeAvatar(人物名)`（v0.9.2 人物栏）：给人物栏的头像框换成自己的图。图片 = `data:image/png|jpeg|webp|gif;base64,…`（≤ 约 300 KB）或 http(s) 图片地址；其他（`javascript:` 等）拒绝。
+- ✅ `EdenMap.setAvatar(人物名, 图片)` → true / false；`EdenMap.removeAvatar(人物名)`（v0.9.2 人物栏）：给人物栏的头像框换成自己的图。图片 = `data:image/png|jpeg|webp|gif;base64,…` 或 http(s) 图片地址；其他（`javascript:` 等）拒绝。
+  - 额度（2026-09-27 核对）：data URL 头像**先压到 160 px 的 webp / jpeg** 再存（`characters.mjs` 的 `AVATAR_MAX = 160000` 字符是压缩后的上限，和状态栏共用同一份 localStorage 额度）；压缩在地图面板路径（`map/chars.js`）和 `EdenMap.setAvatar` 路径都会做，超过上限返回 false。http(s) 地址不压缩、限 2000 字符。
   - 只存本机 localStorage：有聊天 id 时 `edenMap:chat:<id>:avatars`，否则全局 `edenMap:avatars`（按聊天的覆盖全局）；不上传、不进地址、地图不为它发请求（http 地址的图由浏览器按用户给的地址加载，`referrerpolicy=no-referrer`）。
   - 人物栏的显示开关同样只在本机：`edenMap:chat:<id>:chars` = `{ show, off: [人物名] }`。存储与校验在 `map/tavern/characters.mjs`，单测 `tests/characters.test.mjs`。
 - ✅ v0.9.3 自定义名称与用途（**存聊天变量，跟着聊天走**，不再只在本机）：`EdenMap.setCustom(标准名, { name?, note?, kind? })` → true / false（`name` / `note` 传 '' 清掉；`kind` = room / area / landmark / character，不传按地图数据推断）；`EdenMap.removeCustom(标准名或显示名)`；`EdenMap.getCustom()` → `{ items: { 标准名: { 类, 名?, 用途?, 别名? } }, 同步世界书, storage: 'chat' | 'local', worldbook }`；`EdenMap.setWorldbookSync(true / false)`；`EdenMap.on('custom', fn)`。
