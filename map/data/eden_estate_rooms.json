@@ -1,0 +1,4301 @@
+{
+ "_说明": "伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 卡设定房间 / restricted 受限房间（不描述）/ support 辅助 / circ 走廊 / open 卡未写 / owner 主人专用。",
+ "version": 1,
+ "src": "docs/card-digest.md §6",
+ "units": "m",
+ "floors": [
+  {
+   "id": "B2",
+   "name": "地下二层",
+   "z": -9.0
+  },
+  {
+   "id": "B1",
+   "name": "地下一层",
+   "z": -4.5
+  },
+  {
+   "id": "F1",
+   "name": "一层",
+   "z": 0.0
+  },
+  {
+   "id": "F2",
+   "name": "二层",
+   "z": 4.5
+  },
+  {
+   "id": "F3",
+   "name": "三层",
+   "z": 9.0
+  }
+ ],
+ "blocks": [
+  {
+   "id": "hall",
+   "name": "主楼",
+   "storeys": 3,
+   "poly": [
+    [
+     -20.0,
+     -16.0
+    ],
+    [
+     20.0,
+     -16.0
+    ],
+    [
+     20.0,
+     8.0
+    ],
+    [
+     -20.0,
+     8.0
+    ]
+   ]
+  },
+  {
+   "id": "porch",
+   "name": "门廊",
+   "storeys": 1,
+   "poly": [
+    [
+     -8.0,
+     -24.5
+    ],
+    [
+     8.0,
+     -24.5
+    ],
+    [
+     8.0,
+     -15.5
+    ],
+    [
+     -8.0,
+     -15.5
+    ]
+   ]
+  },
+  {
+   "id": "tower",
+   "name": "塔楼",
+   "storeys": 3,
+   "poly": [
+    [
+     -22.0,
+     -22.0
+    ],
+    [
+     -12.0,
+     -22.0
+    ],
+    [
+     -12.0,
+     -12.0
+    ],
+    [
+     -22.0,
+     -12.0
+    ]
+   ]
+  },
+  {
+   "id": "w_wing_a",
+   "name": "西翼",
+   "storeys": 2,
+   "poly": [
+    [
+     -52.0,
+     -15.0
+    ],
+    [
+     -22.0,
+     -15.0
+    ],
+    [
+     -22.0,
+     -1.0
+    ],
+    [
+     -52.0,
+     -1.0
+    ]
+   ]
+  },
+  {
+   "id": "w_wing_b",
+   "name": "西北翼",
+   "storeys": 2,
+   "poly": [
+    [
+     -61.936,
+     -8.149
+    ],
+    [
+     -48.242,
+     -5.239
+    ],
+    [
+     -54.064,
+     22.149
+    ],
+    [
+     -67.758,
+     19.239
+    ]
+   ]
+  },
+  {
+   "id": "w_pav",
+   "name": "西角亭",
+   "storeys": 3,
+   "poly": [
+    [
+     -76.014,
+     21.607
+    ],
+    [
+     -56.451,
+     25.765
+    ],
+    [
+     -59.986,
+     42.393
+    ],
+    [
+     -79.549,
+     38.235
+    ]
+   ]
+  },
+  {
+   "id": "e_wing_a",
+   "name": "东翼",
+   "storeys": 2,
+   "poly": [
+    [
+     22.0,
+     -13.5
+    ],
+    [
+     48.0,
+     -13.5
+    ],
+    [
+     48.0,
+     1.5
+    ],
+    [
+     22.0,
+     1.5
+    ]
+   ]
+  },
+  {
+   "id": "e_wing_b",
+   "name": "东北翼",
+   "storeys": 2,
+   "poly": [
+    [
+     45.849,
+     -3.587
+    ],
+    [
+     59.636,
+     -6.018
+    ],
+    [
+     64.151,
+     19.587
+    ],
+    [
+     50.364,
+     22.018
+    ]
+   ]
+  },
+  {
+   "id": "e_pav",
+   "name": "东角亭",
+   "storeys": 3,
+   "poly": [
+    [
+     51.763,
+     26.858
+    ],
+    [
+     71.459,
+     23.385
+    ],
+    [
+     74.237,
+     39.142
+    ],
+    [
+     54.541,
+     42.615
+    ]
+   ]
+  },
+  {
+   "id": "belvedere",
+   "name": "东望楼",
+   "storeys": 3,
+   "poly": [
+    [
+     43.0,
+     -23.0
+    ],
+    [
+     51.0,
+     -23.0
+    ],
+    [
+     51.0,
+     -15.0
+    ],
+    [
+     43.0,
+     -15.0
+    ]
+   ]
+  },
+  {
+   "id": "n_link",
+   "name": "北廊楼",
+   "storeys": 2,
+   "poly": [
+    [
+     -11.0,
+     7.0
+    ],
+    [
+     11.0,
+     7.0
+    ],
+    [
+     11.0,
+     17.0
+    ],
+    [
+     -11.0,
+     17.0
+    ]
+   ]
+  },
+  {
+   "id": "w_low",
+   "name": "西连楼",
+   "storeys": 1,
+   "poly": [
+    [
+     -31.0,
+     0.0
+    ],
+    [
+     -17.0,
+     0.0
+    ],
+    [
+     -17.0,
+     12.0
+    ],
+    [
+     -31.0,
+     12.0
+    ]
+   ]
+  },
+  {
+   "id": "e_low",
+   "name": "东连楼",
+   "storeys": 1,
+   "poly": [
+    [
+     17.0,
+     0.0
+    ],
+    [
+     31.0,
+     0.0
+    ],
+    [
+     31.0,
+     12.0
+    ],
+    [
+     17.0,
+     12.0
+    ]
+   ]
+  }
+ ],
+ "basement": [
+  [
+   -20,
+   -14
+  ],
+  [
+   20,
+   -14
+  ],
+  [
+   20,
+   8
+  ],
+  [
+   -20,
+   8
+  ]
+ ],
+ "cores": [
+  {
+   "id": "stair",
+   "name": "主楼梯（塔楼）",
+   "floors": [
+    "F1",
+    "F2",
+    "F3"
+   ],
+   "poly": [
+    [
+     -22,
+     -22
+    ],
+    [
+     -12,
+     -22
+    ],
+    [
+     -12,
+     -12
+    ],
+    [
+     -22,
+     -12
+    ]
+   ],
+   "access": "主人 / 访客 / 住客"
+  },
+  {
+   "id": "service",
+   "name": "仆役核",
+   "floors": [
+    "B2",
+    "B1",
+    "F1",
+    "F2",
+    "F3"
+   ],
+   "poly": [
+    [
+     -20,
+     -3
+    ],
+    [
+     -14,
+     -3
+    ],
+    [
+     -14,
+     3
+    ],
+    [
+     -20,
+     3
+    ]
+   ],
+   "access": "仆从动线；B2 门禁"
+  },
+  {
+   "id": "owner",
+   "name": "主人专用通道",
+   "floors": [
+    "B2",
+    "B1",
+    "F1",
+    "F2"
+   ],
+   "poly": [
+    [
+     16,
+     -10
+    ],
+    [
+     20,
+     -10
+    ],
+    [
+     20,
+     -6
+    ],
+    [
+     16,
+     -6
+    ]
+   ],
+   "access": "仅主人"
+  }
+ ],
+ "rooms": [
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B2-00",
+   "floor": "B2",
+   "name": "仆役核",
+   "kind": "support",
+   "block": "hall",
+   "area": 36.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "仆役楼梯 + 食梯 + 服务电梯，B2–F3 贯通；B2 楼梯间门禁：仅主人、女仆长芯片",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -20,
+     -3
+    ],
+    [
+     -14,
+     -3
+    ],
+    [
+     -14,
+     3
+    ],
+    [
+     -20,
+     3
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B2-01",
+   "floor": "B2",
+   "name": "主人通道",
+   "kind": "owner",
+   "block": "hall",
+   "area": 16.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "主人专用通道：螺旋梯 + 单人电梯，B2–F2；F1 与会客厅暗门相接，F2 开进主卧衣帽间",
+   "access": "仅主人",
+   "poly": [
+    [
+     16,
+     -10
+    ],
+    [
+     20,
+     -10
+    ],
+    [
+     20,
+     -6
+    ],
+    [
+     16,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B2-02",
+   "floor": "B2",
+   "name": "走廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 90.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -14,
+     -6
+    ],
+    [
+     16,
+     -6
+    ],
+    [
+     16,
+     -3
+    ],
+    [
+     -14,
+     -3
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "B2-03",
+   "floor": "B2",
+   "name": "受限房间",
+   "kind": "restricted",
+   "block": "hall",
+   "area": 40.0,
+   "card_area": 40,
+   "card_range": null,
+   "card_id": "B2-受限",
+   "note": "无窗；不描述",
+   "access": "主人 / 女仆长 / 被带去的人",
+   "poly": [
+    [
+     -10,
+     -14
+    ],
+    [
+     -5,
+     -14
+    ],
+    [
+     -5,
+     -6
+    ],
+    [
+     -10,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "B2-04",
+   "floor": "B2",
+   "name": "医疗室",
+   "kind": "card",
+   "block": "hall",
+   "area": 50.0,
+   "card_area": 50,
+   "card_range": null,
+   "card_id": "B2-医疗室",
+   "note": "体检、手术、恢复舱",
+   "access": "主人 / 女仆长 / 被带去的人",
+   "poly": [
+    [
+     -5,
+     -14
+    ],
+    [
+     1.25,
+     -14
+    ],
+    [
+     1.25,
+     -6
+    ],
+    [
+     -5,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "B2-05",
+   "floor": "B2",
+   "name": "档案室",
+   "kind": "card",
+   "block": "hall",
+   "area": 20.0,
+   "card_area": 20,
+   "card_range": null,
+   "card_id": "B2-档案室",
+   "note": "协议原件、影像服务器；只有主人和女仆长能进",
+   "access": "仅主人 / 女仆长",
+   "poly": [
+    [
+     10,
+     -14
+    ],
+    [
+     16,
+     -14
+    ],
+    [
+     16,
+     -10.67
+    ],
+    [
+     10,
+     -10.67
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "B2-06",
+   "floor": "B2",
+   "name": "储藏室",
+   "kind": "card",
+   "block": "hall",
+   "area": 28.0,
+   "card_area": 30,
+   "card_range": null,
+   "card_id": "B2-储藏室",
+   "note": "备用设备、季节衣物、紧急医疗包",
+   "access": "主人 / 女仆长 / 被带去的人",
+   "poly": [
+    [
+     10,
+     -10.67
+    ],
+    [
+     16,
+     -10.67
+    ],
+    [
+     16,
+     -6
+    ],
+    [
+     10,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B2-07",
+   "floor": "B2",
+   "name": "设备间",
+   "kind": "support",
+   "block": "hall",
+   "area": 70.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写",
+   "access": "",
+   "poly": [
+    [
+     1.25,
+     -14
+    ],
+    [
+     10,
+     -14
+    ],
+    [
+     10,
+     -6
+    ],
+    [
+     1.25,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B2-08",
+   "floor": "B2",
+   "name": "设备间",
+   "kind": "support",
+   "block": "hall",
+   "area": 80.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写",
+   "access": "",
+   "poly": [
+    [
+     -20,
+     -14
+    ],
+    [
+     -10,
+     -14
+    ],
+    [
+     -10,
+     -6
+    ],
+    [
+     -20,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B2-09",
+   "floor": "B2",
+   "name": "设备间",
+   "kind": "support",
+   "block": "hall",
+   "area": 16.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     16,
+     -14
+    ],
+    [
+     20,
+     -14
+    ],
+    [
+     20,
+     -10
+    ],
+    [
+     16,
+     -10
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B2-10",
+   "floor": "B2",
+   "name": "设备（卡未写）",
+   "kind": "support",
+   "block": "hall",
+   "area": 374.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写；地下机电",
+   "access": "",
+   "poly": [
+    [
+     -14,
+     -3
+    ],
+    [
+     20,
+     -3
+    ],
+    [
+     20,
+     8
+    ],
+    [
+     -14,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B2-11",
+   "floor": "B2",
+   "name": "仆役前室",
+   "kind": "support",
+   "block": "hall",
+   "area": 30.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -20,
+     3
+    ],
+    [
+     -14,
+     3
+    ],
+    [
+     -14,
+     8
+    ],
+    [
+     -20,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B2-12",
+   "floor": "B2",
+   "name": "走廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 18.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -20,
+     -6
+    ],
+    [
+     -14,
+     -6
+    ],
+    [
+     -14,
+     -3
+    ],
+    [
+     -20,
+     -3
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B2-13",
+   "floor": "B2",
+   "name": "走廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 12.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     16,
+     -6
+    ],
+    [
+     20,
+     -6
+    ],
+    [
+     20,
+     -3
+    ],
+    [
+     16,
+     -3
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B1-14",
+   "floor": "B1",
+   "name": "仆役核",
+   "kind": "support",
+   "block": "hall",
+   "area": 36.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "仆役楼梯 + 食梯 + 服务电梯，B2–F3 贯通",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -20,
+     -3
+    ],
+    [
+     -14,
+     -3
+    ],
+    [
+     -14,
+     3
+    ],
+    [
+     -20,
+     3
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B1-15",
+   "floor": "B1",
+   "name": "主人通道",
+   "kind": "owner",
+   "block": "hall",
+   "area": 16.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "主人专用通道：螺旋梯 + 单人电梯，B2–F2；F1 与会客厅暗门相接，F2 开进主卧衣帽间",
+   "access": "仅主人",
+   "poly": [
+    [
+     16,
+     -10
+    ],
+    [
+     20,
+     -10
+    ],
+    [
+     20,
+     -6
+    ],
+    [
+     16,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B1-16",
+   "floor": "B1",
+   "name": "走廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 120.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -20,
+     -6
+    ],
+    [
+     20,
+     -6
+    ],
+    [
+     20,
+     -3
+    ],
+    [
+     -20,
+     -3
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "B1-17",
+   "floor": "B1",
+   "name": "受限房间 A",
+   "kind": "restricted",
+   "block": "hall",
+   "area": 80.0,
+   "card_area": 80,
+   "card_range": null,
+   "card_id": "B1-受限A",
+   "note": "不描述",
+   "access": "",
+   "poly": [
+    [
+     -10,
+     -14
+    ],
+    [
+     0,
+     -14
+    ],
+    [
+     0,
+     -6
+    ],
+    [
+     -10,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "B1-18",
+   "floor": "B1",
+   "name": "受限房间 B",
+   "kind": "restricted",
+   "block": "hall",
+   "area": 30.0,
+   "card_area": 30,
+   "card_range": null,
+   "card_id": "B1-受限B",
+   "note": "不描述",
+   "access": "",
+   "poly": [
+    [
+     0,
+     -14
+    ],
+    [
+     3.75,
+     -14
+    ],
+    [
+     3.75,
+     -6
+    ],
+    [
+     0,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "B1-19",
+   "floor": "B1",
+   "name": "受限房间 C",
+   "kind": "restricted",
+   "block": "hall",
+   "area": 25.2,
+   "card_area": 25,
+   "card_range": null,
+   "card_id": "B1-受限C",
+   "note": "不描述",
+   "access": "",
+   "poly": [
+    [
+     3.75,
+     -14
+    ],
+    [
+     6.9,
+     -14
+    ],
+    [
+     6.9,
+     -6
+    ],
+    [
+     3.75,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "B1-20",
+   "floor": "B1",
+   "name": "体能训练室",
+   "kind": "card",
+   "block": "hall",
+   "area": 60.0,
+   "card_area": 60,
+   "card_range": null,
+   "card_id": "B1-体能训练室",
+   "note": "健身、柔韧训练；加固型格斗区和武器架",
+   "access": "住客（按任务开放）",
+   "poly": [
+    [
+     -8,
+     -3
+    ],
+    [
+     -2,
+     -3
+    ],
+    [
+     -2,
+     7
+    ],
+    [
+     -8,
+     7
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "B1-21",
+   "floor": "B1",
+   "name": "恒温酒窖",
+   "kind": "card",
+   "block": "hall",
+   "area": 30.0,
+   "card_area": 30,
+   "card_range": null,
+   "card_id": "B1-酒窖",
+   "note": "藏酒两千余瓶",
+   "access": "",
+   "poly": [
+    [
+     -14,
+     -3
+    ],
+    [
+     -8,
+     -3
+    ],
+    [
+     -8,
+     2
+    ],
+    [
+     -14,
+     2
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B1-22",
+   "floor": "B1",
+   "name": "设备间",
+   "kind": "support",
+   "block": "hall",
+   "area": 24.8,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     6.9,
+     -14
+    ],
+    [
+     10,
+     -14
+    ],
+    [
+     10,
+     -6
+    ],
+    [
+     6.9,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B1-23",
+   "floor": "B1",
+   "name": "更衣 / 淋浴",
+   "kind": "support",
+   "block": "hall",
+   "area": 48.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "训练室配套",
+   "access": "",
+   "poly": [
+    [
+     10,
+     -14
+    ],
+    [
+     16,
+     -14
+    ],
+    [
+     16,
+     -6
+    ],
+    [
+     10,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B1-24",
+   "floor": "B1",
+   "name": "设备间",
+   "kind": "support",
+   "block": "hall",
+   "area": 16.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     16,
+     -14
+    ],
+    [
+     20,
+     -14
+    ],
+    [
+     20,
+     -10
+    ],
+    [
+     16,
+     -10
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B1-25",
+   "floor": "B1",
+   "name": "设备间",
+   "kind": "support",
+   "block": "hall",
+   "area": 80.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写",
+   "access": "",
+   "poly": [
+    [
+     -20,
+     -14
+    ],
+    [
+     -10,
+     -14
+    ],
+    [
+     -10,
+     -6
+    ],
+    [
+     -20,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B1-26",
+   "floor": "B1",
+   "name": "设备（卡未写）",
+   "kind": "support",
+   "block": "hall",
+   "area": 242.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写",
+   "access": "",
+   "poly": [
+    [
+     -2,
+     -3
+    ],
+    [
+     20,
+     -3
+    ],
+    [
+     20,
+     8
+    ],
+    [
+     -2,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B1-27",
+   "floor": "B1",
+   "name": "走廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 6.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -8,
+     7
+    ],
+    [
+     -2,
+     7
+    ],
+    [
+     -2,
+     8
+    ],
+    [
+     -8,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B1-28",
+   "floor": "B1",
+   "name": "仆役前室",
+   "kind": "support",
+   "block": "hall",
+   "area": 30.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -20,
+     3
+    ],
+    [
+     -14,
+     3
+    ],
+    [
+     -14,
+     8
+    ],
+    [
+     -20,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "B1-29",
+   "floor": "B1",
+   "name": "走廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 36.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -14,
+     2
+    ],
+    [
+     -8,
+     2
+    ],
+    [
+     -8,
+     8
+    ],
+    [
+     -14,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-30",
+   "floor": "F1",
+   "name": "主楼梯（塔楼）",
+   "kind": "support",
+   "block": "tower",
+   "area": 100.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "石材双跑梯，F1–F3；F3 再上一跑到屋顶眺望亭（屋顶构筑物，仓库自设）",
+   "access": "主人 / 访客 / 住客",
+   "poly": [
+    [
+     -22,
+     -22
+    ],
+    [
+     -12,
+     -22
+    ],
+    [
+     -12,
+     -12
+    ],
+    [
+     -22,
+     -12
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-31",
+   "floor": "F1",
+   "name": "仆役核",
+   "kind": "support",
+   "block": "hall",
+   "area": 36.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "仆役楼梯 + 食梯 + 服务电梯，B2–F3 贯通",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -20,
+     -3
+    ],
+    [
+     -14,
+     -3
+    ],
+    [
+     -14,
+     3
+    ],
+    [
+     -20,
+     3
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-32",
+   "floor": "F1",
+   "name": "主人通道",
+   "kind": "owner",
+   "block": "hall",
+   "area": 16.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "主人专用通道：螺旋梯 + 单人电梯，B2–F2；F1 与会客厅暗门相接，F2 开进主卧衣帽间",
+   "access": "仅主人",
+   "poly": [
+    [
+     16,
+     -10
+    ],
+    [
+     20,
+     -10
+    ],
+    [
+     20,
+     -6
+    ],
+    [
+     16,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-33",
+   "floor": "F1",
+   "name": "门廊（正门）",
+   "kind": "support",
+   "block": "porch",
+   "area": 136.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "柱廊；车道落客",
+   "access": "",
+   "poly": [
+    [
+     -8,
+     -24.5
+    ],
+    [
+     8,
+     -24.5
+    ],
+    [
+     8,
+     -16
+    ],
+    [
+     -8,
+     -16
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F1-34",
+   "floor": "F1",
+   "name": "大厅",
+   "kind": "card",
+   "block": "hall",
+   "area": 200.0,
+   "card_area": 200,
+   "card_range": null,
+   "card_id": "F1-大厅",
+   "note": "正门入口、接待；中央圆形下沉区（晨间报到）；墙面全息屏",
+   "access": "全体（新人可进）",
+   "poly": [
+    [
+     -10,
+     -16
+    ],
+    [
+     10,
+     -16
+    ],
+    [
+     10,
+     -6
+    ],
+    [
+     -10,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F1-35",
+   "floor": "F1",
+   "name": "会客厅",
+   "kind": "card",
+   "block": "hall",
+   "area": 60.0,
+   "card_area": 60,
+   "card_range": null,
+   "card_id": "F1-会客厅",
+   "note": "壁炉、隔音；北墙暗门通主人专用通道",
+   "access": "主人 / 访客",
+   "poly": [
+    [
+     10,
+     -16
+    ],
+    [
+     20,
+     -16
+    ],
+    [
+     20,
+     -10
+    ],
+    [
+     10,
+     -10
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-36",
+   "floor": "F1",
+   "name": "衣帽寄存 / 访客卫生间",
+   "kind": "support",
+   "block": "hall",
+   "area": 24.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     10,
+     -10
+    ],
+    [
+     16,
+     -10
+    ],
+    [
+     16,
+     -6
+    ],
+    [
+     10,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-37",
+   "floor": "F1",
+   "name": "塔楼前厅",
+   "kind": "circ",
+   "block": "hall",
+   "area": 8.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -12,
+     -16
+    ],
+    [
+     -10,
+     -16
+    ],
+    [
+     -10,
+     -12
+    ],
+    [
+     -12,
+     -12
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-38",
+   "floor": "F1",
+   "name": "接待前室 / 衣帽间",
+   "kind": "support",
+   "block": "hall",
+   "area": 60.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -20,
+     -12
+    ],
+    [
+     -10,
+     -12
+    ],
+    [
+     -10,
+     -6
+    ],
+    [
+     -20,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-39",
+   "floor": "F1",
+   "name": "主廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 120.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "主人动线：大厅 ↔ 餐厅 ↔ 东西翼",
+   "access": "",
+   "poly": [
+    [
+     -20,
+     -6
+    ],
+    [
+     20,
+     -6
+    ],
+    [
+     20,
+     -3
+    ],
+    [
+     -20,
+     -3
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F1-40",
+   "floor": "F1",
+   "name": "餐厅",
+   "kind": "card",
+   "block": "hall",
+   "area": 88.0,
+   "card_area": 80,
+   "card_range": null,
+   "card_id": "F1-餐厅",
+   "note": "胡桃木长桌可坐 20 人",
+   "access": "主人",
+   "poly": [
+    [
+     -10,
+     -3
+    ],
+    [
+     -2,
+     -3
+    ],
+    [
+     -2,
+     8
+    ],
+    [
+     -10,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F1-41",
+   "floor": "F1",
+   "name": "备餐间",
+   "kind": "card",
+   "block": "hall",
+   "area": 44.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": "F1-备餐间",
+   "note": "餐厅独立备餐间（卡未写面积）",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -14,
+     -3
+    ],
+    [
+     -10,
+     -3
+    ],
+    [
+     -10,
+     8
+    ],
+    [
+     -14,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-42",
+   "floor": "F1",
+   "name": "服务过道",
+   "kind": "circ",
+   "block": "hall",
+   "area": 30.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "厨房 ↔ 仆役核 ↔ 备餐间",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -20,
+     3
+    ],
+    [
+     -14,
+     3
+    ],
+    [
+     -14,
+     8
+    ],
+    [
+     -20,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-43",
+   "floor": "F1",
+   "name": "北过厅",
+   "kind": "circ",
+   "block": "hall",
+   "area": 44.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "通北廊楼、后庭园",
+   "access": "",
+   "poly": [
+    [
+     -2,
+     -3
+    ],
+    [
+     2,
+     -3
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     -2,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-44",
+   "floor": "F1",
+   "name": "东后厅",
+   "kind": "open",
+   "block": "hall",
+   "area": 198.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     2,
+     -3
+    ],
+    [
+     20,
+     -3
+    ],
+    [
+     20,
+     8
+    ],
+    [
+     2,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F1-45",
+   "floor": "F1",
+   "name": "厨房",
+   "kind": "card",
+   "block": "w_low",
+   "area": 132.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": "F1-厨房",
+   "note": "自动烹饪（厨房与后勤区）",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -31,
+     0
+    ],
+    [
+     -20,
+     0
+    ],
+    [
+     -20,
+     12
+    ],
+    [
+     -31,
+     12
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F1-46",
+   "floor": "F1",
+   "name": "衣物清洗维护间",
+   "kind": "card",
+   "block": "w_wing_a",
+   "area": 100.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": "F1-洗衣",
+   "note": "厨房与后勤区",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -52,
+     -15
+    ],
+    [
+     -42,
+     -15
+    ],
+    [
+     -42,
+     -5
+    ],
+    [
+     -52,
+     -5
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F1-47",
+   "floor": "F1",
+   "name": "器具清洗消毒间",
+   "kind": "card",
+   "block": "w_wing_a",
+   "area": 80.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": "F1-消毒",
+   "note": "厨房与后勤区",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -42,
+     -15
+    ],
+    [
+     -34,
+     -15
+    ],
+    [
+     -34,
+     -5
+    ],
+    [
+     -42,
+     -5
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F1-48",
+   "floor": "F1",
+   "name": "物资仓库",
+   "kind": "card",
+   "block": "w_wing_a",
+   "area": 120.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": "F1-仓库",
+   "note": "厨房与后勤区",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -34,
+     -15
+    ],
+    [
+     -22,
+     -15
+    ],
+    [
+     -22,
+     -5
+    ],
+    [
+     -34,
+     -5
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-49",
+   "floor": "F1",
+   "name": "服务走廊",
+   "kind": "circ",
+   "block": "w_wing_a",
+   "area": 120.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -52,
+     -5
+    ],
+    [
+     -22,
+     -5
+    ],
+    [
+     -22,
+     -1
+    ],
+    [
+     -52,
+     -1
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-50",
+   "floor": "F1",
+   "name": "服务连廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 22.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -22,
+     -12
+    ],
+    [
+     -20,
+     -12
+    ],
+    [
+     -20,
+     -1
+    ],
+    [
+     -22,
+     -1
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-51",
+   "floor": "F1",
+   "name": "北廊楼（通后庭）",
+   "kind": "circ",
+   "block": "n_link",
+   "area": 198.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "廊厅；通后庭园与半圆回廊",
+   "access": "",
+   "poly": [
+    [
+     -11,
+     8
+    ],
+    [
+     11,
+     8
+    ],
+    [
+     11,
+     17
+    ],
+    [
+     -11,
+     17
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-52",
+   "floor": "F1",
+   "name": "东连楼",
+   "kind": "open",
+   "block": "e_low",
+   "area": 115.5,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     20,
+     1.5
+    ],
+    [
+     31,
+     1.5
+    ],
+    [
+     31,
+     12
+    ],
+    [
+     20,
+     12
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-53",
+   "floor": "F1",
+   "name": "东连廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 27.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     20,
+     -13.5
+    ],
+    [
+     22,
+     -13.5
+    ],
+    [
+     22,
+     0
+    ],
+    [
+     20,
+     0
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-54",
+   "floor": "F2",
+   "name": "主楼梯（塔楼）",
+   "kind": "support",
+   "block": "tower",
+   "area": 100.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "石材双跑梯，F1–F3；F3 再上一跑到屋顶眺望亭（屋顶构筑物，仓库自设）",
+   "access": "主人 / 访客 / 住客",
+   "poly": [
+    [
+     -22,
+     -22
+    ],
+    [
+     -12,
+     -22
+    ],
+    [
+     -12,
+     -12
+    ],
+    [
+     -22,
+     -12
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-55",
+   "floor": "F2",
+   "name": "仆役核",
+   "kind": "support",
+   "block": "hall",
+   "area": 36.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "仆役楼梯 + 食梯 + 服务电梯，B2–F3 贯通",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -20,
+     -3
+    ],
+    [
+     -14,
+     -3
+    ],
+    [
+     -14,
+     3
+    ],
+    [
+     -20,
+     3
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-56",
+   "floor": "F2",
+   "name": "主人通道",
+   "kind": "owner",
+   "block": "hall",
+   "area": 16.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "主人专用通道：螺旋梯 + 单人电梯，B2–F2；F1 与会客厅暗门相接，F2 开进主卧衣帽间",
+   "access": "仅主人",
+   "poly": [
+    [
+     16,
+     -10
+    ],
+    [
+     20,
+     -10
+    ],
+    [
+     20,
+     -6
+    ],
+    [
+     16,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F2-57",
+   "floor": "F2",
+   "name": "主卧",
+   "kind": "card",
+   "block": "hall",
+   "area": 104.0,
+   "card_area": 100,
+   "card_range": null,
+   "card_id": "F2-主卧",
+   "note": "带衣帽间和独立浴室；床头呼叫面板；东北角是主人专用通道",
+   "access": "主人",
+   "poly": [
+    [
+     8,
+     -16
+    ],
+    [
+     20,
+     -16
+    ],
+    [
+     20,
+     -10
+    ],
+    [
+     16,
+     -10
+    ],
+    [
+     16,
+     -6
+    ],
+    [
+     8,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F2-58",
+   "floor": "F2",
+   "name": "书房",
+   "kind": "card",
+   "block": "hall",
+   "area": 50.0,
+   "card_area": 50,
+   "card_range": null,
+   "card_id": "F2-书房",
+   "note": "全息终端、监控总览屏、南向落地窗（门廊上方）",
+   "access": "主人（上锁）",
+   "poly": [
+    [
+     -2,
+     -16
+    ],
+    [
+     8,
+     -16
+    ],
+    [
+     8,
+     -11
+    ],
+    [
+     -2,
+     -11
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-59",
+   "floor": "F2",
+   "name": "书房前等候廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 50.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡：门外走廊是等候位",
+   "access": "",
+   "poly": [
+    [
+     -2,
+     -11
+    ],
+    [
+     8,
+     -11
+    ],
+    [
+     8,
+     -6
+    ],
+    [
+     -2,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F2-60",
+   "floor": "F2",
+   "name": "客房",
+   "kind": "card",
+   "block": "hall",
+   "area": 30.0,
+   "card_area": 30,
+   "card_range": null,
+   "card_id": "F2-客房1",
+   "note": "访客短住",
+   "access": "",
+   "poly": [
+    [
+     -12,
+     -16
+    ],
+    [
+     -7,
+     -16
+    ],
+    [
+     -7,
+     -10
+    ],
+    [
+     -12,
+     -10
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F2-61",
+   "floor": "F2",
+   "name": "客房",
+   "kind": "card",
+   "block": "hall",
+   "area": 30.0,
+   "card_area": 30,
+   "card_range": null,
+   "card_id": "F2-客房2",
+   "note": "访客短住",
+   "access": "",
+   "poly": [
+    [
+     -7,
+     -16
+    ],
+    [
+     -2,
+     -16
+    ],
+    [
+     -2,
+     -10
+    ],
+    [
+     -7,
+     -10
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-62",
+   "floor": "F2",
+   "name": "客房卫浴 ×2",
+   "kind": "support",
+   "block": "hall",
+   "area": 40.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -12,
+     -10
+    ],
+    [
+     -2,
+     -10
+    ],
+    [
+     -2,
+     -6
+    ],
+    [
+     -12,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-63",
+   "floor": "F2",
+   "name": "布草 / 服务间",
+   "kind": "support",
+   "block": "hall",
+   "area": 48.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -20,
+     -12
+    ],
+    [
+     -12,
+     -12
+    ],
+    [
+     -12,
+     -6
+    ],
+    [
+     -20,
+     -6
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-64",
+   "floor": "F2",
+   "name": "主廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 120.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "女仆长寝室与主卧隔此走廊相对（专用直通门）",
+   "access": "",
+   "poly": [
+    [
+     -20,
+     -6
+    ],
+    [
+     20,
+     -6
+    ],
+    [
+     20,
+     -3
+    ],
+    [
+     -20,
+     -3
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F2-65",
+   "floor": "F2",
+   "name": "女仆长寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 40.2,
+   "card_area": 40,
+   "card_range": null,
+   "card_id": "F2-女仆长寝室",
+   "note": "住处兼管理终端；与主卧隔走廊相对，有专用直通门",
+   "access": "女仆长",
+   "poly": [
+    [
+     10,
+     -3
+    ],
+    [
+     16,
+     -3
+    ],
+    [
+     16,
+     3.7
+    ],
+    [
+     10,
+     3.7
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-66",
+   "floor": "F2",
+   "name": "女仆长卫浴",
+   "kind": "support",
+   "block": "hall",
+   "area": 25.8,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     10,
+     3.7
+    ],
+    [
+     16,
+     3.7
+    ],
+    [
+     16,
+     8
+    ],
+    [
+     10,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-67",
+   "floor": "F2",
+   "name": "二层北厅",
+   "kind": "open",
+   "block": "hall",
+   "area": 264.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     -14,
+     -3
+    ],
+    [
+     10,
+     -3
+    ],
+    [
+     10,
+     8
+    ],
+    [
+     -14,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-68",
+   "floor": "F2",
+   "name": "东后间",
+   "kind": "open",
+   "block": "hall",
+   "area": 44.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     16,
+     -3
+    ],
+    [
+     20,
+     -3
+    ],
+    [
+     20,
+     8
+    ],
+    [
+     16,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-69",
+   "floor": "F2",
+   "name": "仆役前室",
+   "kind": "support",
+   "block": "hall",
+   "area": 30.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -20,
+     3
+    ],
+    [
+     -14,
+     3
+    ],
+    [
+     -14,
+     8
+    ],
+    [
+     -20,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-70",
+   "floor": "F2",
+   "name": "西翼二层",
+   "kind": "open",
+   "block": "w_wing_a",
+   "area": 420.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     -52,
+     -15
+    ],
+    [
+     -22,
+     -15
+    ],
+    [
+     -22,
+     -1
+    ],
+    [
+     -52,
+     -1
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-71",
+   "floor": "F2",
+   "name": "连廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 22.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -22,
+     -12
+    ],
+    [
+     -20,
+     -12
+    ],
+    [
+     -20,
+     -1
+    ],
+    [
+     -22,
+     -1
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-72",
+   "floor": "F2",
+   "name": "连廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 27.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     20,
+     -13.5
+    ],
+    [
+     22,
+     -13.5
+    ],
+    [
+     22,
+     0
+    ],
+    [
+     20,
+     0
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-73",
+   "floor": "F2",
+   "name": "东翼走廊",
+   "kind": "circ",
+   "block": "e_wing_a",
+   "area": 117.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     22,
+     -3
+    ],
+    [
+     48,
+     -3
+    ],
+    [
+     48,
+     1.5
+    ],
+    [
+     22,
+     1.5
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-74",
+   "floor": "F2",
+   "name": "东翼二层",
+   "kind": "open",
+   "block": "e_wing_a",
+   "area": 273.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     22,
+     -13.5
+    ],
+    [
+     48,
+     -13.5
+    ],
+    [
+     48,
+     -3
+    ],
+    [
+     22,
+     -3
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F2-75",
+   "floor": "F2",
+   "name": "东侧长廊",
+   "kind": "card",
+   "block": "e_wing_b",
+   "area": 182.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": "F2-东侧长廊",
+   "note": "整面落地窗朝东：早上看云海，夜里看中层灯火（卡未写楼层，仓库放 F2）",
+   "access": "",
+   "poly": [
+    [
+     52.743,
+     -4.803
+    ],
+    [
+     59.636,
+     -6.018
+    ],
+    [
+     64.151,
+     19.587
+    ],
+    [
+     57.257,
+     20.803
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-76",
+   "floor": "F2",
+   "name": "东北翼二层",
+   "kind": "open",
+   "block": "e_wing_b",
+   "area": 182.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     45.849,
+     -3.587
+    ],
+    [
+     52.743,
+     -4.803
+    ],
+    [
+     57.257,
+     20.803
+    ],
+    [
+     50.364,
+     22.018
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-77",
+   "floor": "F2",
+   "name": "北廊楼二层",
+   "kind": "open",
+   "block": "n_link",
+   "area": 198.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     -11,
+     8
+    ],
+    [
+     11,
+     8
+    ],
+    [
+     11,
+     17
+    ],
+    [
+     -11,
+     17
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F3-78",
+   "floor": "F3",
+   "name": "主楼梯（塔楼）",
+   "kind": "support",
+   "block": "tower",
+   "area": 100.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "石材双跑梯，F1–F3；F3 再上一跑到屋顶眺望亭（屋顶构筑物，仓库自设）",
+   "access": "主人 / 访客 / 住客",
+   "poly": [
+    [
+     -22,
+     -22
+    ],
+    [
+     -12,
+     -22
+    ],
+    [
+     -12,
+     -12
+    ],
+    [
+     -22,
+     -12
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F3-79",
+   "floor": "F3",
+   "name": "仆役核",
+   "kind": "support",
+   "block": "hall",
+   "area": 36.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "仆役楼梯 + 食梯 + 服务电梯，B2–F3 贯通",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -20,
+     -3
+    ],
+    [
+     -14,
+     -3
+    ],
+    [
+     -14,
+     3
+    ],
+    [
+     -20,
+     3
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-80",
+   "floor": "F3",
+   "name": "个人寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 18.0,
+   "card_area": null,
+   "card_range": [
+    15,
+    20
+   ],
+   "card_id": "F3-个人寝室",
+   "note": "正式住客每人一间；门是单向玻璃；南窗",
+   "access": "正式住客",
+   "poly": [
+    [
+     -12.0,
+     -16
+    ],
+    [
+     -8.4,
+     -16
+    ],
+    [
+     -8.4,
+     -11
+    ],
+    [
+     -12.0,
+     -11
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-81",
+   "floor": "F3",
+   "name": "个人寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 18.0,
+   "card_area": null,
+   "card_range": [
+    15,
+    20
+   ],
+   "card_id": "F3-个人寝室",
+   "note": "正式住客每人一间；门是单向玻璃；南窗",
+   "access": "正式住客",
+   "poly": [
+    [
+     -8.4,
+     -16
+    ],
+    [
+     -4.8,
+     -16
+    ],
+    [
+     -4.8,
+     -11
+    ],
+    [
+     -8.4,
+     -11
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-82",
+   "floor": "F3",
+   "name": "个人寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 18.0,
+   "card_area": null,
+   "card_range": [
+    15,
+    20
+   ],
+   "card_id": "F3-个人寝室",
+   "note": "正式住客每人一间；门是单向玻璃；南窗",
+   "access": "正式住客",
+   "poly": [
+    [
+     -4.8,
+     -16
+    ],
+    [
+     -1.1999999999999993,
+     -16
+    ],
+    [
+     -1.1999999999999993,
+     -11
+    ],
+    [
+     -4.8,
+     -11
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-83",
+   "floor": "F3",
+   "name": "个人寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 18.0,
+   "card_area": null,
+   "card_range": [
+    15,
+    20
+   ],
+   "card_id": "F3-个人寝室",
+   "note": "正式住客每人一间；门是单向玻璃；南窗",
+   "access": "正式住客",
+   "poly": [
+    [
+     -1.1999999999999993,
+     -16
+    ],
+    [
+     2.4000000000000004,
+     -16
+    ],
+    [
+     2.4000000000000004,
+     -11
+    ],
+    [
+     -1.1999999999999993,
+     -11
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-84",
+   "floor": "F3",
+   "name": "个人寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 18.0,
+   "card_area": null,
+   "card_range": [
+    15,
+    20
+   ],
+   "card_id": "F3-个人寝室",
+   "note": "正式住客每人一间；门是单向玻璃；南窗",
+   "access": "正式住客",
+   "poly": [
+    [
+     2.4000000000000004,
+     -16
+    ],
+    [
+     6.0,
+     -16
+    ],
+    [
+     6.0,
+     -11
+    ],
+    [
+     2.4000000000000004,
+     -11
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-85",
+   "floor": "F3",
+   "name": "个人寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 18.0,
+   "card_area": null,
+   "card_range": [
+    15,
+    20
+   ],
+   "card_id": "F3-个人寝室",
+   "note": "正式住客每人一间；门是单向玻璃；南窗",
+   "access": "正式住客",
+   "poly": [
+    [
+     6.0,
+     -16
+    ],
+    [
+     9.600000000000001,
+     -16
+    ],
+    [
+     9.600000000000001,
+     -11
+    ],
+    [
+     6.0,
+     -11
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-86",
+   "floor": "F3",
+   "name": "个人寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 18.0,
+   "card_area": null,
+   "card_range": [
+    15,
+    20
+   ],
+   "card_id": "F3-个人寝室",
+   "note": "正式住客每人一间；门是单向玻璃；南窗",
+   "access": "正式住客",
+   "poly": [
+    [
+     9.600000000000001,
+     -16
+    ],
+    [
+     13.2,
+     -16
+    ],
+    [
+     13.2,
+     -11
+    ],
+    [
+     9.600000000000001,
+     -11
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-87",
+   "floor": "F3",
+   "name": "个人寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 18.0,
+   "card_area": null,
+   "card_range": [
+    15,
+    20
+   ],
+   "card_id": "F3-个人寝室",
+   "note": "正式住客每人一间；门是单向玻璃；南窗",
+   "access": "正式住客",
+   "poly": [
+    [
+     13.2,
+     -16
+    ],
+    [
+     16.8,
+     -16
+    ],
+    [
+     16.8,
+     -11
+    ],
+    [
+     13.2,
+     -11
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-88",
+   "floor": "F3",
+   "name": "个人寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 18.0,
+   "card_area": null,
+   "card_range": [
+    15,
+    20
+   ],
+   "card_id": "F3-个人寝室",
+   "note": "正式住客每人一间；门是单向玻璃；北窗",
+   "access": "正式住客",
+   "poly": [
+    [
+     -7,
+     3
+    ],
+    [
+     -3.4,
+     3
+    ],
+    [
+     -3.4,
+     8
+    ],
+    [
+     -7,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-89",
+   "floor": "F3",
+   "name": "个人寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 18.0,
+   "card_area": null,
+   "card_range": [
+    15,
+    20
+   ],
+   "card_id": "F3-个人寝室",
+   "note": "正式住客每人一间；门是单向玻璃；北窗",
+   "access": "正式住客",
+   "poly": [
+    [
+     -3.4,
+     3
+    ],
+    [
+     0.2,
+     3
+    ],
+    [
+     0.2,
+     8
+    ],
+    [
+     -3.4,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-90",
+   "floor": "F3",
+   "name": "个人寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 18.0,
+   "card_area": null,
+   "card_range": [
+    15,
+    20
+   ],
+   "card_id": "F3-个人寝室",
+   "note": "正式住客每人一间；门是单向玻璃；北窗",
+   "access": "正式住客",
+   "poly": [
+    [
+     0.2,
+     3
+    ],
+    [
+     3.8,
+     3
+    ],
+    [
+     3.8,
+     8
+    ],
+    [
+     0.2,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-91",
+   "floor": "F3",
+   "name": "个人寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 18.0,
+   "card_area": null,
+   "card_range": [
+    15,
+    20
+   ],
+   "card_id": "F3-个人寝室",
+   "note": "正式住客每人一间；门是单向玻璃；北窗",
+   "access": "正式住客",
+   "poly": [
+    [
+     3.8,
+     3
+    ],
+    [
+     7.4,
+     3
+    ],
+    [
+     7.4,
+     8
+    ],
+    [
+     3.8,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-92",
+   "floor": "F3",
+   "name": "个人寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 19.0,
+   "card_area": null,
+   "card_range": [
+    15,
+    20
+   ],
+   "card_id": "F3-个人寝室",
+   "note": "正式住客每人一间；门是单向玻璃；北窗",
+   "access": "正式住客",
+   "poly": [
+    [
+     7.4,
+     3
+    ],
+    [
+     11.2,
+     3
+    ],
+    [
+     11.2,
+     8
+    ],
+    [
+     7.4,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-93",
+   "floor": "F3",
+   "name": "个人寝室",
+   "kind": "card",
+   "block": "hall",
+   "area": 19.0,
+   "card_area": null,
+   "card_range": [
+    15,
+    20
+   ],
+   "card_id": "F3-个人寝室",
+   "note": "正式住客每人一间；门是单向玻璃；北窗",
+   "access": "正式住客",
+   "poly": [
+    [
+     11.2,
+     3
+    ],
+    [
+     15,
+     3
+    ],
+    [
+     15,
+     8
+    ],
+    [
+     11.2,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-94",
+   "floor": "F3",
+   "name": "新人公共寝区",
+   "kind": "card",
+   "block": "hall",
+   "area": 40.0,
+   "card_area": 40,
+   "card_range": null,
+   "card_id": "F3-新人寝区",
+   "note": "4 床；入住第一个月的住处",
+   "access": "新人",
+   "poly": [
+    [
+     -15,
+     3
+    ],
+    [
+     -7,
+     3
+    ],
+    [
+     -7,
+     8
+    ],
+    [
+     -15,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-95",
+   "floor": "F3",
+   "name": "三楼公共浴室",
+   "kind": "card",
+   "block": "hall",
+   "area": 48.0,
+   "card_area": 50,
+   "card_range": null,
+   "card_id": "F3-公共浴室",
+   "note": "住客共用（顶部天窗）",
+   "access": "住客 / 新人",
+   "poly": [
+    [
+     -14,
+     -9
+    ],
+    [
+     -8,
+     -9
+    ],
+    [
+     -8,
+     -1
+    ],
+    [
+     -14,
+     -1
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-96",
+   "floor": "F3",
+   "name": "女仆团集体间",
+   "kind": "card",
+   "block": "hall",
+   "area": 80.0,
+   "card_area": 80,
+   "card_range": null,
+   "card_id": "F3-女仆团集体间",
+   "note": "大通铺；东窗；北端是公共清洁间",
+   "access": "女仆团",
+   "poly": [
+    [
+     15,
+     -11
+    ],
+    [
+     20,
+     -11
+    ],
+    [
+     20,
+     5
+    ],
+    [
+     15,
+     5
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-97",
+   "floor": "F3",
+   "name": "公共清洁间",
+   "kind": "card",
+   "block": "hall",
+   "area": 15.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": "F3-清洁间",
+   "note": "集体间尽头",
+   "access": "女仆团",
+   "poly": [
+    [
+     15,
+     5
+    ],
+    [
+     20,
+     5
+    ],
+    [
+     20,
+     8
+    ],
+    [
+     15,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F3-98",
+   "floor": "F3",
+   "name": "集体间储物",
+   "kind": "support",
+   "block": "hall",
+   "area": 16.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     16.8,
+     -16
+    ],
+    [
+     20,
+     -16
+    ],
+    [
+     20,
+     -11
+    ],
+    [
+     16.8,
+     -11
+    ]
+   ]
+  },
+  {
+   "src": "卡",
+   "id": "F3-99",
+   "floor": "F3",
+   "name": "三楼公共区（穹顶采光厅）",
+   "kind": "card",
+   "block": "hall",
+   "area": 230.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": "F3-公共区",
+   "note": "卡：「F3 公共区」；屋顶穹顶开天窗采光",
+   "access": "住客 / 新人",
+   "poly": [
+    [
+     -8,
+     -9
+    ],
+    [
+     15,
+     -9
+    ],
+    [
+     15,
+     1
+    ],
+    [
+     -8,
+     1
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F3-100",
+   "floor": "F3",
+   "name": "前廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 54.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -12,
+     -11
+    ],
+    [
+     15,
+     -11
+    ],
+    [
+     15,
+     -9
+    ],
+    [
+     -12,
+     -9
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F3-101",
+   "floor": "F3",
+   "name": "后廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 58.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -14,
+     1
+    ],
+    [
+     15,
+     1
+    ],
+    [
+     15,
+     3
+    ],
+    [
+     -14,
+     3
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F3-102",
+   "floor": "F3",
+   "name": "仆役前室 / 布草",
+   "kind": "support",
+   "block": "hall",
+   "area": 54.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "仆从动线",
+   "poly": [
+    [
+     -20,
+     -12
+    ],
+    [
+     -14,
+     -12
+    ],
+    [
+     -14,
+     -3
+    ],
+    [
+     -20,
+     -3
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F3-103",
+   "floor": "F3",
+   "name": "走廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 6.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -14,
+     -12
+    ],
+    [
+     -12,
+     -12
+    ],
+    [
+     -12,
+     -9
+    ],
+    [
+     -14,
+     -9
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F3-104",
+   "floor": "F3",
+   "name": "布草间",
+   "kind": "support",
+   "block": "hall",
+   "area": 25.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -20,
+     3
+    ],
+    [
+     -15,
+     3
+    ],
+    [
+     -15,
+     8
+    ],
+    [
+     -20,
+     8
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F3-105",
+   "floor": "F3",
+   "name": "走廊",
+   "kind": "circ",
+   "block": "hall",
+   "area": 12.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "",
+   "access": "",
+   "poly": [
+    [
+     -14,
+     -1
+    ],
+    [
+     -8,
+     -1
+    ],
+    [
+     -8,
+     1
+    ],
+    [
+     -14,
+     1
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F3-106",
+   "floor": "F3",
+   "name": "西角亭三层",
+   "kind": "open",
+   "block": "w_pav",
+   "area": 340.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     -76.014,
+     21.607
+    ],
+    [
+     -56.451,
+     25.765
+    ],
+    [
+     -59.986,
+     42.393
+    ],
+    [
+     -79.549,
+     38.235
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F3-107",
+   "floor": "F3",
+   "name": "东角亭三层",
+   "kind": "open",
+   "block": "e_pav",
+   "area": 320.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     51.763,
+     26.858
+    ],
+    [
+     71.459,
+     23.385
+    ],
+    [
+     74.237,
+     39.142
+    ],
+    [
+     54.541,
+     42.615
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F3-108",
+   "floor": "F3",
+   "name": "东望楼三层",
+   "kind": "open",
+   "block": "belvedere",
+   "area": 64.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     43.0,
+     -23.0
+    ],
+    [
+     51.0,
+     -23.0
+    ],
+    [
+     51.0,
+     -15.0
+    ],
+    [
+     43.0,
+     -15.0
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-109",
+   "floor": "F1",
+   "name": "西北翼一层",
+   "kind": "open",
+   "block": "w_wing_b",
+   "area": 392.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     -61.936,
+     -8.149
+    ],
+    [
+     -48.242,
+     -5.239
+    ],
+    [
+     -54.064,
+     22.149
+    ],
+    [
+     -67.758,
+     19.239
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-110",
+   "floor": "F1",
+   "name": "西角亭一层",
+   "kind": "open",
+   "block": "w_pav",
+   "area": 340.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     -76.014,
+     21.607
+    ],
+    [
+     -56.451,
+     25.765
+    ],
+    [
+     -59.986,
+     42.393
+    ],
+    [
+     -79.549,
+     38.235
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-111",
+   "floor": "F1",
+   "name": "东角亭一层",
+   "kind": "open",
+   "block": "e_pav",
+   "area": 320.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     51.763,
+     26.858
+    ],
+    [
+     71.459,
+     23.385
+    ],
+    [
+     74.237,
+     39.142
+    ],
+    [
+     54.541,
+     42.615
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-112",
+   "floor": "F1",
+   "name": "东望楼一层",
+   "kind": "open",
+   "block": "belvedere",
+   "area": 64.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     43.0,
+     -23.0
+    ],
+    [
+     51.0,
+     -23.0
+    ],
+    [
+     51.0,
+     -15.0
+    ],
+    [
+     43.0,
+     -15.0
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-113",
+   "floor": "F1",
+   "name": "东翼一层",
+   "kind": "open",
+   "block": "e_wing_a",
+   "area": 390.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     22,
+     -13.5
+    ],
+    [
+     48,
+     -13.5
+    ],
+    [
+     48,
+     1.5
+    ],
+    [
+     22,
+     1.5
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F1-114",
+   "floor": "F1",
+   "name": "东北翼一层",
+   "kind": "open",
+   "block": "e_wing_b",
+   "area": 364.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     45.849,
+     -3.587
+    ],
+    [
+     59.636,
+     -6.018
+    ],
+    [
+     64.151,
+     19.587
+    ],
+    [
+     50.364,
+     22.018
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-115",
+   "floor": "F2",
+   "name": "西北翼二层",
+   "kind": "open",
+   "block": "w_wing_b",
+   "area": 392.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     -61.936,
+     -8.149
+    ],
+    [
+     -48.242,
+     -5.239
+    ],
+    [
+     -54.064,
+     22.149
+    ],
+    [
+     -67.758,
+     19.239
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-116",
+   "floor": "F2",
+   "name": "西角亭二层",
+   "kind": "open",
+   "block": "w_pav",
+   "area": 340.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     -76.014,
+     21.607
+    ],
+    [
+     -56.451,
+     25.765
+    ],
+    [
+     -59.986,
+     42.393
+    ],
+    [
+     -79.549,
+     38.235
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-117",
+   "floor": "F2",
+   "name": "东角亭二层",
+   "kind": "open",
+   "block": "e_pav",
+   "area": 320.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     51.763,
+     26.858
+    ],
+    [
+     71.459,
+     23.385
+    ],
+    [
+     74.237,
+     39.142
+    ],
+    [
+     54.541,
+     42.615
+    ]
+   ]
+  },
+  {
+   "src": "仓库推断（卡未写）",
+   "id": "F2-118",
+   "floor": "F2",
+   "name": "东望楼二层",
+   "kind": "open",
+   "block": "belvedere",
+   "area": 64.0,
+   "card_area": null,
+   "card_range": null,
+   "card_id": null,
+   "note": "卡未写用途",
+   "access": "",
+   "poly": [
+    [
+     43.0,
+     -23.0
+    ],
+    [
+     51.0,
+     -23.0
+    ],
+    [
+     51.0,
+     -15.0
+    ],
+    [
+     43.0,
+     -15.0
+    ]
+   ]
+  }
+ ]
+}
