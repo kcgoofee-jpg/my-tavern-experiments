@@ -197,3 +197,48 @@ export function applyTags(c, msgs, after, kindOf = () => 'landmark') {
 }
 /** 一次性提示的文字 */
 export const tagToast = a => (a.op === 'name' ? `${a.key} 改名为「${a.value}」` : `${a.key} 的用途已更新`);
+
+// ---------------- v0.9.5 人物栏的名册（只读）：按表的位置 / 通用字段名发现，不认具体卡的字段内容 ----------------
+// stat_data 顶层：第 1 个键 = 世界、第 2 个键 = 主角（按位置）；在场表按 PRESENT_KEYS / 「在场 / present」认；
+// 其余「以名字为键、值是对象」的表按出现顺序：第 1 张 = 成员（members），第 2 张 = 目标（targets）。map 参数可以指定（变量映射，见 docs/content-compat.md「换卡兼容」）。
+const plain = o => !!o && typeof o === 'object' && !Array.isArray(o);
+const IDENT = /身份|identity|role|职业|头衔|title/i, STAGE = /进度|阶段|stage|progress/i, REP = /声望|reputation|名望/i;
+const isRoster = t => { t = val(t); return plain(t) && Object.values(t).every(v => plain(val(v))); };
+function rows(tbl, stageKey) {
+  const t = val(tbl); if (!plain(t)) return [];
+  return Object.entries(t).filter(([n]) => clean(n) && [...n].length <= 40).map(([n, raw]) => {
+    const o = val(raw) || {}, ik = Object.keys(o).find(k => IDENT.test(k)), sk = stageKey || Object.keys(o).find(k => STAGE.test(k));
+    const it = { name: clean(n), identity: str(val(o[ik])) };
+    if (sk) { const s = str(val(o[sk])); if (s) it.stage = s; }
+    return it;
+  });
+}
+/** stat_data → { present, members, targets }：每项 { key: 表名, items: [{ name, identity, stage? }] } 或 null；map = { present, members, targets } 表名覆盖 */
+export function rosters(stat, map = {}) {
+  const out = { present: null, members: null, targets: null }; if (!plain(stat)) return out;
+  const keys = Object.keys(stat), pres = map.present || PRESENT_KEYS.find(k => k in stat) || keys.find(k => /在场|present/i.test(k));
+  const others = keys.slice(2).filter(k => k !== pres && isRoster(stat[k]));
+  const pick = { present: pres, members: map.members || others[0], targets: map.targets || others.filter(k => k !== map.members)[map.members ? 0 : 1] };
+  for (const [g, k] of Object.entries(pick)) if (k && k in stat && isRoster(stat[k])) out[g] = { key: k, items: rows(stat[k], g === 'targets' ? map.stageField : null) };
+  return out;
+}
+/** 主角（第 2 个顶层键）的声望（0–100 的数字）；没有返回 null。path 可指定（变量映射） */
+export function reputation(stat, path = '') {
+  if (!plain(stat)) return null;
+  let v;
+  if (path) v = val(get(stat, path));
+  else { const p = val(stat[Object.keys(stat)[1]]); if (!plain(p)) return null; const k = Object.keys(p).find(k => REP.test(k)); v = k ? val(p[k]) : undefined; }
+  const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? +v : NaN;
+  return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : null;
+}
+/** 阶段的先后顺序：在卡自带的脚本 / 正则文本里找一个含有 values 全部取值的字符串数组（z.enum([...]) 或 ['…', …]），3–10 项；找不到返回 null */
+export function findStageOrder(texts, values) {
+  const want = [...new Set((values || []).filter(Boolean))]; if (!want.length) return null;
+  for (const t of texts || []) {
+    for (const m of String(t).matchAll(/\[\s*((?:(["'`])[^"'`\n]{1,24}\2\s*,\s*){2,9}(["'`])[^"'`\n]{1,24}\3)\s*,?\s*\]/g)) {
+      const arr = [...m[1].matchAll(/(["'`])([^"'`\n]{1,24})\1/g)].map(x => x[2]);
+      if (want.every(v => arr.includes(v))) return arr;
+    }
+  }
+  return null;
+}

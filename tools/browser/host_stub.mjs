@@ -18,6 +18,7 @@ const STUB = `<script>
     window.getChatWorldbookName = function () { return parent.__chatWb || null; };
     window.rebindChatWorldbook = async function (c, n) { parent.__chatWb = n; };
   }
+  if (S.charData) window.getCharData = function () { return S.charData; };
   window._ = { get: function (o, p, d) { var v = p.split('.').reduce(function (a, k) { return a == null ? a : a[k]; }, o); return v == null ? d : v; } };
   window.SillyTavern = { getContext: function () { return { name1: 'Player', chatId: S.chat || 'stub' }; } };
   window.tavern_events = { CHAT_CHANGED: 'c', MESSAGE_SWIPED: 's', MESSAGE_RECEIVED: 'r', MESSAGE_UPDATED: 'u', MESSAGE_DELETED: 'd' };
@@ -30,9 +31,9 @@ const STUB = `<script>
 const HOST = `<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><body style="margin:0;background:#2a2a2a;height:100vh;color:#aaa;font:14px sans-serif"><p style="padding:12px">tavern host (stub)</p>
 <iframe id=card style="display:none" srcdoc="${STUB.replace(/"/g, '&quot;')}"></iframe></body>`;
 
-export async function openHost(P, { here = '', stat = {}, msgs = [], chat = 'stub', vars = {}, noVars = false, ls = null } = {}) {
+export async function openHost(P, { here = '', stat = {}, msgs = [], chat = 'stub', vars = {}, noVars = false, ls = null, charData = null } = {}) {
   const p = P.page;
-  await P.ctx.addInitScript(s => { if (window.top === window) { window.__stub = s; if (s.ls && !sessionStorage.getItem('__lsSeeded')) { sessionStorage.setItem('__lsSeeded', '1'); for (const [k, v] of Object.entries(s.ls)) localStorage.setItem(k, v); } } }, { here, stat, msgs, chat, vars, noVars, ls });
+  await P.ctx.addInitScript(s => { if (window.top === window) { window.__stub = s; if (s.ls && !sessionStorage.getItem('__lsSeeded')) { sessionStorage.setItem('__lsSeeded', '1'); for (const [k, v] of Object.entries(s.ls)) localStorage.setItem(k, v); } } }, { here, stat, msgs, chat, vars, noVars, ls, charData });
   await p.route(B.BASE + '__stubhost.html', r => r.fulfill({ contentType: 'text/html; charset=utf-8', body: HOST }));
   await p.goto(B.BASE + '__stubhost.html');
   await p.waitForSelector('#eden-map-root .em-fab', { timeout: 15000 });

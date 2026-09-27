@@ -402,8 +402,9 @@
         .map(m => ({ floor: m.message_id, text: String(m.message || '').replace(/<%[\s\S]*?%>/g, '') }));   // 原文里可能还留着 EJS 模板源码，里面的示例标签不算事件
     } catch (e) { floorNow = -1; }
     events = collect(msgs, floorNow);
-    if (CHM) { chars = CHM.collectChars(msgs, floorNow, CHM.mvuChars(mvuStat(), getHere()));
-      const sig = floorNow + '|' + chars.map(c => c.name + '@' + c.place + '#' + c.floor).join();
+    if (CHM) { const st = mvuStat(); chars = CHM.collectChars(msgs, floorNow, CHM.mvuChars(st, getHere()));
+      if (MV) { roster = MV.rosters(st); rep = MV.reputation(st); stageOrderFor(roster); }
+      const sig = floorNow + '|' + chars.map(c => c.name + '@' + c.place + '#' + c.floor).join() + '|' + JSON.stringify(roster) + rep + (stageOrder || []).join();
       if (sig !== charSig) { charSig = sig; if (!panel.hidden && alive) sendChars(); emit('characters', { items: chars.map(c => ({ ...c })), floor: floorNow }); } }
     const fresh = events.filter(e => e.last > seen && e.tier !== 'fade').length;
     badge.hidden = !fresh; badge.textContent = fresh > 9 ? '9+' : fresh;
@@ -432,7 +433,16 @@
     post({ type: 'eden-map:events', v: 1, floor: floorNow, hereLayer: EVM ? EVM.layerOf(here) : '', items, fly });
     if (!panel.hidden) { seen = floorNow; try { localStorage.setItem(chatKey(), String(seen)); } catch (e) {} badge.hidden = true; }
   }
-  function sendChars() { if (alive) post({ type: 'eden-map:chars', v: 1, floor: floorNow, items: chars }); }
+  function sendChars() { if (alive) post({ type: 'eden-map:chars', v: 1, floor: floorNow, items: chars, rosters: roster, rep, stageOrder }); }
+  // v0.9.5 名册（只读）：在场 / 成员 / 目标三张表的名字、身份、阶段；主角声望。阶段的先后顺序从卡自带的脚本 / 正则文本里找（每个聊天找一次）
+  let roster = null, rep = null, stageOrder = null, stageChat = null;
+  function stageOrderFor(r) {
+    const vals = (r?.targets?.items || []).map(i => i.stage).filter(Boolean); if (!vals.length || (stageChat === chatId() && stageOrder && vals.every(v => stageOrder.includes(v)))) return;
+    stageChat = chatId(); const texts = [], walk = (o, d = 0) => { if (d > 8 || texts.length > 4000) return; if (typeof o === 'string') { if (o.length > 20) texts.push(o); } else if (o && typeof o === 'object') for (const v of Object.values(o)) walk(v, d + 1); };
+    try { if (fnOk('getCharData')) walk(getCharData('current')?.data?.extensions); } catch (e) {}
+    try { if (fnOk('getTavernRegexes')) walk(getTavernRegexes({ scope: 'character' })); } catch (e) {}
+    stageOrder = MV.findStageOrder(texts, vals);
+  }
   let tipShown = false; try { tipShown = !!localStorage.getItem('edenMapEvTip'); } catch (e) {}
   function tipOnce() {
     if (tipShown || !panel.hidden) return; tipShown = true; try { localStorage.setItem('edenMapEvTip', '1'); } catch (e) {}
@@ -588,7 +598,7 @@
     // 人物头像（v0.9.2）：只存本机 localStorage（按聊天，拿不到聊天 id 时全局），不上传、不进地址；src = data:image/… 或 http(s) 图片地址
     async setAvatar(name, src) { const v = inner(); if (v) return v.setAvatar(name, src); const C = await chx(), st = store(); return !!st && C.setAvatar(st, chatId(), name, src); },
     async removeAvatar(name) { const v = inner(); if (v) return v.removeAvatar(name); const C = await chx(), st = store(); return !!st && C.removeAvatar(st, chatId(), name); },
-    async getCharacters() { return { items: chars.map(c => ({ ...c })), floor: floorNow }; },
+    async getCharacters() { return { items: chars.map(c => ({ ...c })), floor: floorNow, rosters: roster ? JSON.parse(JSON.stringify(roster)) : null, reputation: rep }; },   // v0.9.5：rosters / reputation 只读
     // 三维查看器飞到热点（v1.0 测试件：{ map: 'dairy', hotspot: 'tank' }）：面板没开就先打开；地图就绪后转发
     async flyTo(t) { flyQ = t || null; if (panel.hidden && !ghost) { panel.hidden = false; await loadViewer(); } else if (ghost) fab.click();
       if (!flyQ) return true; const v = inner(); if (v?.flyTo) { flyQ = null; return v.flyTo(t); } return true; },

@@ -43,6 +43,10 @@ const TCCustom = (() => {
     const key = el?.dataset?.name || title, e = entry(key), ex = c.querySelector('.extra');
     if (e?.名) { c.querySelector('h2').textContent = e.名; const sb = c.querySelector('.sub'); sb.textContent = key + (sb.textContent ? ' · ' + sb.textContent : ''); }
     if (e?.用途) { const p = document.createElement('p'); p.className = 'cu-note'; p.innerHTML = `<b>${esc(T('cu.note', '用途'))}</b> `; p.append(document.createTextNode(e.用途)); ex.prepend(p); }
+    const isEden = el?.dataset?.name && typeof REG !== 'undefined' && Object.values(REG.maps).some(m => Object.values(m.markers || {}).some(v => v.name === el.dataset.name && v.link && REG.maps[v.link.map]?.kind === 'estate'));
+    const rp = typeof TCChars !== 'undefined' ? TCChars.rep : null;
+    if (isEden && rp != null) { const p = document.createElement('p'); p.className = 'cu-rep';   // v0.9.5 主角声望（只读，0–100）
+      p.innerHTML = `<b>${esc(T('ch.rep', '庄园声望'))}</b><meter min="0" max="100" low="30" high="70" optimum="100" value="${rp}"></meter><span>${Math.round(rp)}</span>`; ex.prepend(p); }
     if (roomNote && el?.dataset?.name && typeof REG !== 'undefined' && Object.values(REG.maps).some(m => Object.values(m.markers || {}).some(v => v.name === el.dataset.name && v.link && REG.maps[v.link.map]?.kind === 'estate'))) {
       const r = roomNote, re = entry(r), p = document.createElement('p'); p.className = 'cu-note cu-room'; roomNote = null;
       p.innerHTML = `<b>${esc(T('cu.room_here', '要看的房间'))}</b> `; p.append(document.createTextNode((re?.名 ? `${re.名}（${r}）` : r) + (re?.用途 ? ' · ' + re.用途 : ''))); ex.prepend(p); }
@@ -394,7 +398,8 @@ const TCCustom = (() => {
     #cuDlg .cu-form .cu-acts{position:sticky;bottom:calc(-1 * var(--sp-5));margin:var(--sp-5) calc(-1 * var(--sp-6)) calc(-1 * var(--sp-5));padding:var(--sp-4) var(--sp-6) var(--sp-5);background:var(--surface);border-top:1px solid var(--line)}
   }
   #card .cu-note,#card .cu-outfit{margin:0 0 var(--sp-3,6px);font-size:var(--fs-micro);line-height:1.5;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #card .cu-note{white-space:normal}#card .cu-note b{color:var(--muted);font-weight:600}
+  #card .cu-note{white-space:normal}
+  #card .cu-rep{display:flex;align-items:center;gap:var(--sp-4);margin:0 0 var(--sp-3);font-size:var(--fs-micro)}#card .cu-rep b{color:var(--muted);font-weight:600}#card .cu-rep meter{flex:1;max-width:140px;height:8px}#card .cu-rep span{font-variant-numeric:tabular-nums;color:var(--ink)}#card .cu-note b{color:var(--muted);font-weight:600}
   #cuToast{position:absolute;left:50%;transform:translateX(-50%);top:var(--sp-5,12px);z-index:7;max-width:min(420px,calc(100% - 24px));box-sizing:border-box;padding:8px 14px;border-radius:var(--r-m,8px);
     background:var(--surface);color:var(--ink);border:1px solid var(--accent);box-shadow:0 6px 20px rgba(0,0,0,.3);font-size:var(--fs-micro);line-height:1.5}
   #cuToast[hidden]{display:none}
