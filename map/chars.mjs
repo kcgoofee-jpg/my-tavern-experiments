@@ -4,7 +4,7 @@
 // 开关和头像只存本机 localStorage（按聊天分开）；不发请求（头像是用户自己给的 data: / http 地址时由浏览器加载那张图）。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 import { M, REG, aspect, cur, curData, pendingFocus, setPendingFocus, viewer } from './app/state.mjs';
-import { esc, getJSON, toImg } from './app/util.mjs';
+import { afterLoadIdle, esc, getJSON, toImg } from './app/util.mjs';
 import { declutter, leanBg } from './app/tiers.mjs';
 import { LANG } from './app/i18n.mjs';
 import { go } from './app/nav.mjs';
@@ -16,7 +16,7 @@ import { P, register } from './app/plugins.mjs';
 const TCChars = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let portraits = {}, rosters = null, rep = null, stageOrder = null, items = [], floor = 0, CM = null, prefs = { show: true, off: [] }, avatars = {}, els = [], flyName = null;
-  const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/characters.mjs', document.baseURI).href).then(m => { CM = m; loadPrefs(); return m; }).catch(() => null);   // 第一次用到才取（有人物 / 改头像时）；取到就读本机偏好
+  const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/characters.mjs', document.baseURI).href).then(m => { CM = m; loadPrefs(); return m; }).catch(() => null);   // 首屏不取：页面 load 后空闲时预取，或第一次用到（有人物 / 改头像）时取；取到就读本机偏好
   const chat = () => (typeof chatId === 'string' ? chatId : '');
   const store = () => (typeof LS !== 'undefined' ? LS : null);
   function loadPrefs() { if (!CM) return; prefs = CM.readCharPrefs(store(), chat()); avatars = CM.readAvatars(store(), chat()); }
@@ -225,6 +225,7 @@ const TCChars = (() => {
   #evbar .chpane .chsw{flex:none;display:grid;place-items:center;min-width:44px;min-height:44px;margin:0}
   @media (pointer:coarse),(max-width:640px){#evbar .chpane .chgo{min-height:44px}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+  afterLoadIdle(mod);
   return { color, portOn, setMoreOn(on) { try { TCStore.set(MO_KEY, on ? '1' : '0'); } catch (e) {} }, cardOf, setStatsOn(on) { try { TCStore.set('edenMapCharStats', on ? '1' : '0'); } catch (e) {} bar(); }, get statsOn() { return statsOn(); }, setPortOn(on) { try { TCStore.set(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
 })();
 register('TCChars', TCChars);

@@ -41,10 +41,14 @@ def err(m): errors.append(m)
 def warn(m): warns.append(m)
 
 reg = load(os.path.join(ROOT, 'data', 'maps.json'))
-# JSON Schema（map/data/schema/）：先查结构（字段、类型、枚举），下面再查跨文件一致性。schema 是规范本身，永远读工作区（--committed 时也一样）
+# JSON Schema（map/data/schema/）：先查结构（字段、类型、枚举），下面再查跨文件一致性。--committed 时 schema 也读提交树（与数据同一版本），提交里还没有 schema 时退回工作区
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from jsonschema_lite import validate as _validate
-_SCHEMA = {n: json.load(open(os.path.join(ROOT, 'data', 'schema', n + '.schema.json'), encoding='utf-8')) for n in ('maps', 'points', 'addon_places')}
+def _schema(n):
+    p = os.path.join(ROOT, 'data', 'schema', n + '.schema.json')
+    try: return load(p)
+    except FileNotFoundError: return json.load(open(p, encoding='utf-8'))
+_SCHEMA = {n: _schema(n) for n in ('maps', 'points', 'addon_places')}
 def schema_check(name, doc, label):
     for e in _validate(doc, _SCHEMA[name]): err(f'schema {label}：{e}')
 schema_check('maps', reg, 'maps.json')
