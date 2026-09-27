@@ -8,6 +8,7 @@
 
 // 事件体系 v2：9 个大类（地图图例 9 种颜色，v2 加「人物」），具体类型靠图标字区分。稀有度：1 常见、2 少见、3 罕见、4 传说。完整设计见 docs/event-taxonomy.md
 // v1（8 类）的类型名全部保留，旧标签照常解析；v1 查看器里用过的旧名（结界事故、空域巡查、执法管控……）在 ALIAS_CAT 里。
+import { timeKey } from './mvu.mjs';
 export const GROUPS = {
   空防: '#d9a441', 气候: '#7fd6ff', 治安: '#3d7dff', 政治: '#6f9be0', 媒体: '#d03ca8', 民生: '#e8d08a', 军事: '#a3b18a', 灾害: '#ff5a2a', 人物: '#d7a6e8', 其他: '#cfd8e0',
 };
@@ -160,7 +161,8 @@ export function collect(msgs, now) {
     }
   }
   const all = [...done, ...open.values()].map(e => ({ ...e, tier: tierOf(now - e.last, e.closed || !!e.stale) })).filter(e => e.tier);
-  return all.sort((a, b) => b.last - a.last || b.lvl - a.lvl);
+  // v0.9.3：两条都写了剧情内时间（字段「时间」）时按剧情时间新的在前，否则按楼层新的在前
+  return all.sort((a, b) => { const ta = timeKey(a.time), tb = timeKey(b.time); return (ta != null && tb != null && ta !== tb ? tb - ta : 0) || b.last - a.last || b.lvl - a.lvl; });
 }
 // ended = 已解除，或被同类同地点的新事件接替。未结束的事件永远不返回 ''（窗口由调用方给的楼层决定）
 export function tierOf(age, ended) {
