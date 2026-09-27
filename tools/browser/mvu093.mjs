@@ -64,8 +64,8 @@ async function run(name, preset) {
     const ok = await p.evaluate(() => window.EdenMap.setCustom('天城执法局总局', { name: '蓝塔', note: '接头地点', kind: 'landmark' })); await B.wait(700);
     const v1 = await H.vars(), lb = await vf.evaluate(() => [...document.querySelectorAll('.mk')].find(e => e.dataset.name === '天城执法局总局')?.querySelector('.lab')?.firstChild?.nodeValue);
     await p.evaluate(() => window.__fire('r')); await B.wait(700);
-    const inj = await H.injected();
-    rep.check(`${name} setCustom → 聊天变量 + 地图标签换名 + 注入摘要`, ok && v1.eden_map.自定义.items.天城执法局总局.名 === '蓝塔' && lb === '蓝塔' && /天城执法局总局→蓝塔（接头地点）/.test(inj), JSON.stringify({ ok, lb, inj: inj.slice(-90) }));
+    const inj = await H.injected(), wbc = Object.values((await H.wb()).books)[0]?.[0]?.content || '';   // v0.9.5：同步到世界书默认开，摘要进世界书，不再重复注入
+    rep.check(`${name} setCustom → 聊天变量 + 地图标签换名 + 摘要（注入或世界书）`, ok && v1.eden_map.自定义.items.天城执法局总局.名 === '蓝塔' && lb === '蓝塔' && (/天城执法局总局→蓝塔（接头地点）/.test(inj) || /天城执法局总局：玩家称为「蓝塔」；用途：接头地点/.test(wbc)), JSON.stringify({ ok, lb, inj: inj.slice(-90), wbc: wbc.slice(-80) }));
     const al = await p.evaluate(async () => [await window.EdenMap.setRoomAlias('小书斋', '书房'), (await window.EdenMap.getRooms()).alias]);
     rep.check(`${name} 旧名 setRoomAlias / getRooms 仍可用`, al[0] === true && al[1].小书斋 === '书房', JSON.stringify(al));
     // 2 剧情标签 → 更新 + 一次性提示
@@ -85,29 +85,21 @@ async function run(name, preset) {
     await H.setMsgs([...MSGS, { message_id: 41, message: T41 }, { message_id: 42, message: '无标签' }]); await B.wait(900);
     const sw3 = (await H.vars()).eden_map.自定义.items.客房 || null;
     rep.check(`${name} 再 roll 回带标签的原文：重新生效`, sw3?.名 === '画室' && sw3.用途 === '放画架', JSON.stringify(sw3));
-    // 2 设置栏：编辑 / 重置 / 添加
-    await vf.evaluate(() => showSet(true)); await B.wait(300);
-    const rows = await vf.evaluate(() => document.querySelectorAll('#cuBox li').length);
-    await vf.evaluate(() => document.querySelector('#cuBox [data-add]').click()); await B.wait(200);
-    await vf.evaluate(() => { const f = document.querySelector('#cuBox form'); f.elements.key.value = '主卧'; f.elements.name.value = '东卧'; f.elements.note.value = '朝东，早上有光'; f.requestSubmit(); }); await B.wait(700);
-    const v3 = await H.vars();
-    await vf.evaluate(() => document.querySelector('#cuBox [data-reset="客房"]').click()); await B.wait(700);
-    const v4 = await H.vars(), rows2 = await vf.evaluate(() => document.querySelectorAll('#cuBox li').length);
-    rep.check(`${name} 设置「自定义」：列表、添加（类=房间）、重置`, rows === 3 && v3.eden_map.自定义.items.主卧?.名 === '东卧' && v3.eden_map.自定义.items.主卧.类 === 'room' && !v4.eden_map.自定义.items.客房 && rows2 === 3, JSON.stringify({ rows, rows2 }));
-    await vf.evaluate(() => document.querySelector('#setPop').scrollTop = 9999);
-    await jpg(p, `mvu_${name}_settings`);
-    // 2 同步到世界书（默认关，打开才建）
-    const wb0 = await H.wb();
-    await vf.evaluate(() => document.querySelector('#cuSync').click()); await B.wait(900);
+    // 2 设置栏的编辑 / 重置 / 添加：v0.9.5 改成对话框，见 tools/browser/custom095.mjs；这里只用接口
+    await p.evaluate(() => window.EdenMap.setCustom('主卧', { name: '东卧', note: '朝东，早上有光' })); await B.wait(700);
+    const v3 = await H.vars(); await p.evaluate(() => window.EdenMap.removeCustom('客房')); await B.wait(700); const v4 = await H.vars();
+    rep.check(`${name} 自定义：添加（类=房间）、重置`, v3.eden_map.自定义.items.主卧?.名 === '东卧' && v3.eden_map.自定义.items.主卧.类 === 'room' && !v4.eden_map.自定义.items.客房);
+    // 2 同步到世界书（v0.9.5 默认开：有自定义就已经建了、绑定了）
     const wb1 = await H.wb(), bn = Object.keys(wb1.books)[0] || '', e = wb1.books[bn]?.[0];
-    const inj2 = await p.evaluate(async () => { window.__fire('r'); await new Promise(r => setTimeout(r, 700)); return window.__injected || ''; });
-    rep.check(`${name} 同步到世界书：默认不建；打开后建「伊甸地图·自定义·<聊天>」并绑定到聊天，注入不再重复摘要`, !Object.keys(wb0.books).length && /^伊甸地图·自定义·[0-9a-f]{6}$/.test(bn) && e?.name === '地图自定义' && e.enabled && /东卧/.test(e.content) && wb1.chat === bn && !/地图自定义/.test(inj2), JSON.stringify({ bn, chat: wb1.chat, c: e?.content?.slice(0, 60) }));
-    await vf.evaluate(() => document.querySelector('#cuSync').click()); await B.wait(900);
+    rep.check(`${name} 同步到世界书（默认开）：建「伊甸地图·自定义·<聊天>」并绑定到聊天`, /^伊甸地图·自定义·[0-9a-f]{6}$/.test(bn) && e?.enabled && /东卧/.test(e.content) && wb1.chat === bn, JSON.stringify({ bn, chat: wb1.chat }));
+    await vf.evaluate(() => { showSet(true); document.querySelector('#cuSync').click(); }); await B.wait(900);
     const wb2 = await H.wb();
     rep.check(`${name} 关掉同步：条目停用（不删世界书）`, wb2.books[bn]?.[0]?.enabled === false, JSON.stringify(wb2.books[bn]?.[0]?.enabled));
     // 文字原样显示、不当 HTML
     await p.evaluate(() => window.EdenMap.setCustom('餐厅', { name: '<img src=x onerror="window.__xss=1">', note: '<b>粗</b>' })); await B.wait(700);
-    const xss = await vf.evaluate(() => ({ x: !!window.__xss || !!parent.__xss, img: !!document.querySelector('#cuBox img'), txt: [...document.querySelectorAll('#cuBox li b')].some(b => b.textContent.includes('<img')) }));
+    await vf.evaluate(() => { document.querySelector('#cuBox .cu-open').click(); }); await B.wait(600);
+    const xss = await vf.evaluate(() => ({ x: !!window.__xss || !!parent.__xss, img: !!document.querySelector('#cuDlg img'), txt: [...document.querySelectorAll('#cuDlg .cu-names b')].some(b => b.textContent.includes('<img')) }));
+    await vf.evaluate(() => document.querySelector('#cuDlg [data-close]').click());
     rep.check(`${name} 自定义文字按纯文本显示（不执行、不插入元素）`, !xss.x && !xss.img && xss.txt, JSON.stringify(xss));
     // 夜色开关
     await vf.evaluate(() => { const c = document.querySelector('#optNight'); c.click(); }); await B.wait(200);
