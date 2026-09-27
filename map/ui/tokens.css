@@ -13,6 +13,9 @@
   --dur-1: 120ms; --dur-2: 200ms; --dur-3: 320ms;
   --ease-out: cubic-bezier(.2, .8, .2, 1); --ease-in: cubic-bezier(.4, 0, 1, 1);
   --hit: 44px;
+  /* v2 布局令牌（docs/design/ui-v2/spec.md §7）：顶栏、抽屉三档、桌面右栏、控制列。抽屉高度在 iframe 里按容器 % 算（dvh 不可靠），这里的 dvh 只是单独打开时的上限 */
+  --bar-h: 44px; --sheet-peek: 56px; --sheet-half: 40%; --sheet-full: 80%; --rail-w: 360px; --rail-full: 480px; --col-w: 48px;
+  --bg-3d: var(--bg);
   /* 全局色（不跟层变） */
   --focus: #63b4be;
   --alert: #ff5a5a; --on-alert: #1a0606;          /* 全站唯一的红：当前地点、事态计数、危险 / 失败 */
@@ -52,6 +55,11 @@
 }
 /* 通用 */
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* 减少动态：系统设置或设置「显示 · 减少动态」→ html.rm（瞬切，不飞行只跳转）；高对比 / 减少动态时去掉霓虹重影 */
+html.rm *, html.rm *::before, html.rm *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; }
+html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none; }
+@media (prefers-contrast: more) { :root, body, body[data-map] { --glow-text: none; --glow: none; } }
 @media (prefers-reduced-motion: reduce) {
+  :root, body, body[data-map] { --glow-text: none; }
   *, *::before, *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; }
 }

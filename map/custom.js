@@ -66,11 +66,12 @@ const TCCustom = (() => {
   new MutationObserver(night).observe(document.body, { attributes: true, attributeFilter: ['data-map'] });
 
   // ---------- 剧情改名的一次性提示（地图顶部居中，5 秒；不压住展开的事态 / 人物列表） ----------
-  function toast(items) {
+  function toast(items) {   // UI v2：走唯一通知层（P2，嵌入时由宿主统一显示）；旧的 #cuToast 只在通知层不可用时兜底
+    const msg = items.join('；'); if (!msg) return;
+    if (typeof window.TCNotify === 'function') { window.TCNotify({ level: 2, key: 'cu-' + Date.now(), title: msg }); return; }
     let el = document.getElementById('cuToast');
     if (!el) { el = document.createElement('div'); el.id = 'cuToast'; el.setAttribute('role', 'status'); document.getElementById('stage').appendChild(el); }
-    el.textContent = items.join('；'); el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, 5000);
-    if (typeof announce === 'function') announce(el.textContent);
+    el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, 5000);
   }
 
   // ---------- 设置里的「自定义」一栏（入口 + 同步 / 存储 / 夜色）与「自定义」对话框（v0.9.5） ----------
@@ -100,7 +101,7 @@ const TCCustom = (() => {
   function renderUI() {
     const pop = document.getElementById('setPop'); if (!pop) return;
     let box = document.getElementById('cuBox');
-    if (!box) { box = document.createElement('div'); box.id = 'cuBox'; const sc = document.getElementById('selfCheck'); sc ? pop.insertBefore(box, sc) : pop.appendChild(box);
+    if (!box) { box = document.createElement('div'); box.id = 'cuBox'; if (window.TCSettings) TCSettings.registerSection('data', box, { order: 20 }); else { const sc = document.getElementById('selfCheck'); sc ? pop.insertBefore(box, sc) : pop.appendChild(box); }
       box.addEventListener('click', e => { const b = e.target.closest('[data-open]'); if (b) { e.stopPropagation(); openDlg(b); } }); box.addEventListener('change', onChange); }
     const n = Object.keys(data.items || {}).length;
     box.innerHTML = `<h3>${esc(T('cu.title', '自定义'))}</h3>`

@@ -2,14 +2,14 @@
 // 大图懒加载（当前张 + 预取相邻两张），手机左右滑，桌面 ← → / Esc。
 let el = null, st = null;
 const CSS = `
-.rg{position:fixed;inset:0;z-index:50;box-sizing:border-box;padding:calc(56px + env(safe-area-inset-top,0px)) 0 8px;background:rgba(8,7,5,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#eee4cc;font:13px/1.5 system-ui,sans-serif;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.rg{position:fixed;inset:0;z-index:50;box-sizing:border-box;padding:calc(var(--bar-h,44px) + 12px + env(safe-area-inset-top,0px)) 0 8px;background:rgba(8,7,5,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#eee4cc;font:13px/1.5 system-ui,sans-serif;touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .rg .rg-img{max-width:min(96vw,1600px);max-height:calc(100vh - 206px - env(safe-area-inset-top,0px));object-fit:contain;border-radius:4px;box-shadow:0 10px 40px rgba(0,0,0,.5);background:#1b1812;-webkit-user-drag:none}
-.rg .rg-cap{margin:10px 16px 6px;text-align:center;max-width:720px}.rg .rg-cap b{color:#c9a45c;font-weight:500;margin-right:8px}
+.rg .rg-cap{margin:10px 16px 6px;text-align:center;max-width:720px}.rg .rg-cap b{color:var(--gold,#e6c36a);font-weight:500;margin-right:8px}
 .rg .rg-th{display:flex;gap:6px;overflow-x:auto;max-width:96vw;padding:4px}
-.rg .rg-th img{width:72px;height:48px;object-fit:cover;opacity:.5;cursor:pointer;border:1px solid transparent;border-radius:3px}.rg .rg-th img.on{opacity:1;border-color:#c9a45c}
+.rg .rg-th img{width:72px;height:48px;object-fit:cover;opacity:.5;cursor:pointer;border:1px solid transparent;border-radius:3px}.rg .rg-th img.on{opacity:1;border-color:var(--gold,#e6c36a)}
 .rg button{all:unset;cursor:pointer;position:absolute;color:#eee4cc;font-size:28px;line-height:1;padding:10px 14px;border-radius:50%;background:rgba(0,0,0,.35)}
-.rg button:hover,.rg button:focus-visible{background:rgba(201,164,92,.5)}
-.rg .rg-x{top:calc(8px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));font-size:22px}.rg .rg-p{left:12px;top:50%}.rg .rg-n{right:12px;top:50%}
+.rg button:focus-visible{outline:2px solid var(--focus,#63b4be);outline-offset:2px}.rg button:hover,.rg button:focus-visible{background:color-mix(in srgb,var(--gold,#e6c36a) 50%,transparent)}
+.rg button{min-width:var(--hit,44px);min-height:var(--hit,44px);box-sizing:border-box;text-align:center}.rg .rg-x{top:calc(8px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));font-size:22px}.rg .rg-p{left:12px;top:50%}.rg .rg-n{right:12px;top:50%}
 @media (max-width:640px){.rg .rg-p,.rg .rg-n{display:none}}`;
 const url = (im, t = '') => st.base + st.set.dir + im.f + t + '.jpg';
 function show(i) {

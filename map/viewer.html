@@ -48,6 +48,9 @@
   --dur-1: 120ms; --dur-2: 200ms; --dur-3: 320ms;
   --ease-out: cubic-bezier(.2, .8, .2, 1); --ease-in: cubic-bezier(.4, 0, 1, 1);
   --hit: 44px;
+  /* v2 布局令牌（docs/design/ui-v2/spec.md §7）：顶栏、抽屉三档、桌面右栏、控制列。抽屉高度在 iframe 里按容器 % 算（dvh 不可靠），这里的 dvh 只是单独打开时的上限 */
+  --bar-h: 44px; --sheet-peek: 56px; --sheet-half: 40%; --sheet-full: 80%; --rail-w: 360px; --rail-full: 480px; --col-w: 48px;
+  --bg-3d: var(--bg);
   /* 全局色（不跟层变） */
   --focus: #63b4be;
   --alert: #ff5a5a; --on-alert: #1a0606;          /* 全站唯一的红：当前地点、事态计数、危险 / 失败 */
@@ -87,7 +90,12 @@
 }
 /* 通用 */
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* 减少动态：系统设置或设置「显示 · 减少动态」→ html.rm（瞬切，不飞行只跳转）；高对比 / 减少动态时去掉霓虹重影 */
+html.rm *, html.rm *::before, html.rm *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; }
+html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none; }
+@media (prefers-contrast: more) { :root, body, body[data-map] { --glow-text: none; --glow: none; } }
 @media (prefers-reduced-motion: reduce) {
+  :root, body, body[data-map] { --glow-text: none; }
   *, *::before, *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; }
 }
 </style>
@@ -99,6 +107,7 @@
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/derived.json">
 <!-- defer：地图库（277 KB）不再挡住首帧，慢网下先出加载提示与世界缩略图（E4 N07）；main() 等 DOMContentLoaded（此时两个脚本都已执行） -->
 <script defer src="vendor/openseadragon/openseadragon.min.js"></script>
+<script defer src="ui/sheet.js"></script>
 <script defer src="events.js"></script>
 <script defer src="chars.js"></script>
 <script defer src="custom.js"></script>
@@ -118,7 +127,7 @@
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
   /* ---------- 工具栏（桌面 48 / 手机 44，一行，不横向滚动） ---------- */
-  header { display: flex; flex-wrap: nowrap; gap: var(--sp-4); align-items: center; min-height: 48px; box-sizing: border-box; padding: 0 var(--sp-5);
+  header { display: flex; flex-wrap: nowrap; gap: var(--sp-4); align-items: center; min-height: var(--bar-h); padding-right: calc(var(--sp-5) + var(--hostbar-w, 0px)) !important; box-sizing: border-box; padding: 0 var(--sp-5);
     background: var(--surface-glass); border-bottom: 1px solid var(--line); position: relative; z-index: 12;
     transition: background var(--dur-3), color var(--dur-3), border-color var(--dur-3); }
   header .grow { flex: 1 1 0; min-width: 0; }
@@ -160,17 +169,25 @@
   body.hdrc #layWrap { display: none; }   /* 放不下（窄窗口、放大 200%、EN）：档位 / 图层 / 语言 / 主题收进 ⚙ 菜单，不再挤出屏幕 */
   @media (max-width: 1180px) { .where { display: none; } }
 
-  /* ---------- 弹层（图层 ▾、设置 ⚙ / 手机「⋯」）：Panel 规格 ---------- */
-  .pop { position: fixed; z-index: 13; top: calc(var(--hdr, 48px) + var(--sp-3)); width: 260px; max-width: calc(100vw - 24px); box-sizing: border-box;
+  /* ---------- 状态点（P3，§2.1）：加载 / 慢 / 失败 / ✓；手机只显示点，桌面带短字 ---------- */
+  #stDot { flex: none; display: inline-flex; align-items: center; gap: var(--sp-3); min-height: 32px; min-width: 32px; padding: 0 var(--sp-3); border: 0; border-radius: var(--r-m); background: transparent; color: var(--muted); cursor: default; font: inherit; }
+  #stDot > i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; transition: background var(--dur-2); }
+  #stDot:has(#tierState.busy) > i { background: var(--accent); } #stDot:has(#tierState.stuck) > i { background: var(--alert); } #stDot:has(#tierState.stuck) { cursor: pointer; }
+  #stDot.flash > i { box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 35%, transparent); }
+  #upBtn[hidden], #stDot[hidden] { display: none; }
+  /* ---------- 弹层：图层 ▾（桌面）；设置 = 分组首页 + 子页（§5）：桌面占右栏那一列，手机全屏 ---------- */
+  .pop { position: fixed; z-index: 13; top: calc(var(--hdr, 44px) + var(--sp-3)); width: 260px; max-width: calc(100vw - 24px); box-sizing: border-box;
     background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r-l); padding: var(--sp-5) 14px; box-shadow: var(--sh-3);
     font-size: var(--fs-control); line-height: 1.5; }
   .pop[hidden], #setPop [hidden] { display: none !important; }
   #layPop { width: 220px; padding: var(--sp-3) var(--sp-4); }
-  #setPop { right: var(--sp-5); max-height: calc(100dvh - var(--hdr, 48px) - 16px); overflow-y: auto; }   /* 矮窗口（放大 200%）里菜单能滚动 */
-  .pop h3 { margin: 0 0 var(--sp-3); font: 600 var(--fs-micro)/1.4 var(--font-ui); color: var(--muted); letter-spacing: .06em; }
+  #setPop { top: var(--hdr, 44px); right: 0; bottom: 0; width: max(var(--rail-w-now, 0px), 360px); max-width: 100vw; border-radius: 0; border-width: 0 0 0 1px; box-shadow: var(--sh-2);
+    overflow-y: auto; overscroll-behavior: contain; padding: 0 var(--sp-6) calc(var(--sp-6) + env(safe-area-inset-bottom)); z-index: 14; }
+  body.setopen #evbar { visibility: hidden; }
+  .pop h3 { margin: var(--sp-5) 0 var(--sp-3); font: 600 var(--fs-micro)/1.4 var(--font-ui); color: var(--muted); letter-spacing: .06em; }
   html[lang="en"] .pop h3 { letter-spacing: 0; }
   /* 开关（Toggle）：整行 label 是热区；34 × 20 胶囊 */
-  label.tg, #setPop label { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); min-height: 36px; cursor: pointer; color: var(--ink); font-size: var(--fs-control); }
+  label.tg, #setPop label { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); min-height: 40px; cursor: pointer; color: var(--ink); font-size: var(--fs-control); }
   label.tg[hidden] { display: none; }
   input[type="checkbox"] { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 34px; height: 20px; margin: 0; border-radius: var(--r-pill);
     background: var(--surface-2); border: 1px solid var(--line-strong); cursor: pointer; transition: background var(--dur-1), border-color var(--dur-1); }
@@ -178,23 +195,40 @@
   input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
   input[type="checkbox"]:checked::before { transform: translateX(14px); background: var(--on-accent); }
   #setPop small { display: block; color: var(--muted); font-size: var(--fs-micro); line-height: 1.45; margin: -2px 48px var(--sp-4) 0; }
-  #setPop .more { display: flex; flex-direction: column; gap: var(--sp-5); margin-bottom: var(--sp-5); padding-bottom: var(--sp-5); border-bottom: 1px solid var(--line); }
+  #setPop .more { display: flex; flex-direction: column; gap: var(--sp-3); margin-bottom: var(--sp-5); padding-bottom: var(--sp-5); border-bottom: 1px solid var(--line); }
   #setPop .more:empty { display: none; }
-  /* v0.9.6：菜单 / 设置是有标题栏、能关的抽屉（标题栏吸顶，滚动时内容不会被裁成半行） */
-  #setPop .sheet-h { position: sticky; top: calc(-1 * var(--sp-5)); z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4);
-    margin: calc(-1 * var(--sp-5)) -14px var(--sp-4); padding: var(--sp-3) var(--sp-3) var(--sp-3) 14px; background: var(--surface); border-bottom: 1px solid var(--line); font-size: var(--fs-control); }
-  #setPop .sheet-h .btn { width: 40px; height: 40px; border: 0; }
+  #setPop .more #layList { display: flex; flex-direction: column; }
+  #setPop .sheet-h { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: var(--sp-4); min-height: var(--bar-h);
+    margin: 0 calc(-1 * var(--sp-6)) var(--sp-4); padding: 0 var(--sp-3) 0 var(--sp-4); background: var(--surface); border-bottom: 1px solid var(--line); font-size: var(--fs-body); }
+  #setPop .sheet-h b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #setPop .sheet-h .btn { height: 36px; min-width: 36px; }
+  #setBack .lbl { display: inline !important; }
+  #setQ { width: 100%; box-sizing: border-box; height: 40px; padding: 0 var(--sp-5); margin-bottom: var(--sp-5); border: 1px solid var(--line); border-radius: var(--r-m); background: var(--surface-2); color: var(--ink); font: inherit; }
+  .sgroups { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-l); overflow: hidden; margin-bottom: var(--sp-5); }
+  .sgroups button { display: flex; align-items: center; gap: var(--sp-4); min-height: 48px; padding: var(--sp-3) var(--sp-5); border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  .sgroups button:first-child { border-top: 0; }
+  .sgroups button:hover { background: var(--surface-2); }
+  .sgroups button b { flex: none; font-weight: 600; }
+  .sgroups button span { flex: 1; min-width: 0; color: var(--muted); font-size: var(--fs-micro); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sgroups button span.warn { color: var(--alert); }
+  .sgroups button::after { content: '›'; color: var(--muted); }
+  #setHits { display: flex; flex-direction: column; gap: var(--sp-2); margin-bottom: var(--sp-5); }
+  #setHits:empty { display: none; }
+  #setHits button { text-align: left; justify-content: flex-start; height: auto; min-height: 40px; white-space: normal; }
+  #setHits button small { display: inline; margin: 0 0 0 var(--sp-3); }
+  .spage > .row, .spage .hrow { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); min-height: 40px; color: var(--ink); }
+  .spage .seg { height: 36px; }
+  .spage .found { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-s); }
   #aboutBox { font-size: var(--fs-small); color: var(--ink-2); margin-bottom: var(--sp-5); padding-bottom: var(--sp-5); border-bottom: 1px solid var(--line); line-height: 1.55; }
   #aboutBox:empty { display: none; } #aboutBox b { color: var(--ink); } #aboutBox .btn { margin-top: var(--sp-3); } #aboutBox .res { margin-top: var(--sp-3); } #aboutBox a { color: var(--accent); }
-  /* 自检（E6，只在嵌入酒馆时出现） */
   #selfCheck { margin-top: var(--sp-5); padding-top: var(--sp-5); border-top: 1px solid var(--line); font-size: var(--fs-micro); line-height: 1.5; color: var(--ink); }
   #selfCheck b { display: block; font-size: var(--fs-control); margin-bottom: var(--sp-2, 4px); } #selfCheck ul { list-style: none; margin: 0 0 var(--sp-4) 0; padding: 0; }
   #selfCheck li.ok::first-letter { color: var(--ok, #7bd88f); } #selfCheck li.warn { color: var(--alert, #ff5a5a); } #selfCheck li.skip { color: var(--muted); } #selfCheck li.info { color: var(--accent); }
   #selfCheck .btn { min-height: 36px; margin: 2px 0 var(--sp-2, 4px); }
-  #setPop .more > .seg, #setPop .more > .btn, #setPop .more > #build { align-self: flex-start; }
-  #setPop .more .btn .lbl { display: inline; }
-  #setPop .more .btn.ic { width: auto; padding: 0 var(--sp-5); }
-  #setPop .more #layList { display: flex; flex-direction: column; }
+  #setPop .btn .lbl { display: inline; }
+  #setPop small.orig { margin: var(--sp-5) 0 0; }
+  #kbdHelp dl { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-2) var(--sp-5); margin: 0; font-size: var(--fs-small); }
+  #kbdHelp dt { font-family: var(--font-mono); color: var(--accent); } #kbdHelp dd { margin: 0; color: var(--ink-2); }
 
   /* ---------- 地图区 ---------- */
   #stage { position: relative; min-height: 0; }
@@ -203,18 +237,23 @@
   #osd .openseadragon-canvas { z-index: 0; }   /* 地图叠加物不画到小地图上 */
   #osd .navigator { border: 1px solid var(--line) !important; border-radius: var(--r-m); overflow: hidden; background: var(--bg) !important; box-shadow: var(--sh-2); margin: 0 var(--sp-5) var(--sp-5) 0 !important; }
   #osd .displayregion { border: 1.5px solid var(--accent) !important; border-radius: 2px; }
-  /* 缩放组（替代 OSD 自带的拟物 + − ⌂）：Panel 规格，纵向 3 个 32 × 32 图标按钮，右下角小地图上方 */
-  #zoom { position: absolute; right: var(--sp-5); bottom: calc(var(--nav-h, 0px) + 20px); z-index: 6; display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2);
-    background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-2); }
-  #zoom button { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: var(--r-m); background: transparent; color: var(--ink); cursor: pointer; position: relative;
+  /* ---------- 浮动控制列 C（§2.3 / §10.1）：手机 = 拇指侧 ⋯ + − ⌂，跟着抽屉高度上移；桌面 = 右下（右栏左侧）层切换 + − ⌂ 🏷 ---------- */
+  #dock { position: absolute; z-index: 9; right: calc(var(--rail-w-now, 0px) + var(--sp-5)); bottom: calc(var(--sheet-h, 0px) + var(--sp-5)); display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-4); pointer-events: none;
+    transition: bottom var(--dur-2) var(--ease-out), right var(--dur-2) var(--ease-out); }
+  #dock > * { pointer-events: auto; }
+  #dock[hidden], body.estate #dock { display: none; }
+  #zoom { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-2); }
+  #zoom button { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: var(--r-m); background: transparent; color: var(--ink); cursor: pointer; position: relative;
     transition: background var(--dur-1), transform var(--dur-1); }
   #zoom button:hover { background: var(--surface-2); color: var(--accent); }
   #zoom button:active { transform: scale(.97); }
-  body.estate #zoom, #zoom[hidden] { display: none; }
-  @media (pointer: coarse) { #zoom { display: none !important; } }   /* v0.9.6：触屏用双指 / 单指缩放，不再在右侧常驻 + − ⌂ */
+  #zoom button[aria-pressed="false"] { color: var(--muted); }
+  #zoom[hidden] { display: none; }
+  #thumbBtn { display: none; }
+  #osd .navigator { margin: 0 0 var(--sp-5) var(--sp-5) !important; }
 
   /* ---------- 层切换器（纵向分段）：一个 Panel 容器；选中 = 弱底 + 左 3 px 强调线 + 强调色字 + aria-current ---------- */
-  #layers { position: absolute; left: var(--sp-5); top: 50%; transform: translateY(-50%); z-index: 9;   /* 浮在加载遮罩（8）之上：庄园加载失败或很慢时也能切层 */
+  #layers { position: relative; z-index: 9;
     display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-2);
     -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
   #layers[hidden] { display: none; }
@@ -312,11 +351,11 @@
   body.nolabels .realm, body.nolabels .minor { display: none; }
 
   /* ---------- 卡片（地点卡 / 事态卡）：Panel 规格，宽 320；手机 = 底部实底抽屉 ---------- */
-  #card { position: fixed; right: 14px; top: calc(var(--hdr, 48px) + var(--sp-5)); width: 320px; max-width: calc(100vw - 28px); box-sizing: border-box; z-index: 10;
-    background: var(--surface-glass); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-2);
-    padding: var(--sp-5) 14px 14px; font-size: var(--fs-body); line-height: 1.6; color: var(--ink); max-height: calc(100% - var(--hdr, 48px) - 40px); overflow-y: auto; }
+  /* 地点卡在抽屉「地点」页里（UI v2：不再单独贴底 / 右上） */
+  #card { box-sizing: border-box; padding: 0 var(--sp-3) var(--sp-3); font-size: var(--fs-body); line-height: 1.6; color: var(--ink); }
+  #cardEmpty { color: var(--muted); font-size: var(--fs-small); padding: var(--sp-5) var(--sp-3); }
+  #card:not([hidden]) + #cardEmpty { display: none; }
   #card[hidden] { display: none; }
-  #card .grab { display: none; }
   #card .top { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); margin: -2px -6px 0 0; }
   #card .tag { display: inline-block; font: 600 var(--fs-micro)/1.4 var(--font-ui); padding: 2px var(--sp-4); border-radius: var(--r-s); background: var(--accent-weak); color: var(--accent); letter-spacing: .04em; }
   html[lang="en"] #card .tag { letter-spacing: 0; }
@@ -356,7 +395,7 @@
 
   /* ---------- 页脚：版本号（左下，--fs-micro，磨砂底）；署名在右上 ---------- */
   /* 页脚：版本号 + 署名，一条，左下；署名单行省略，全文在 title（E5 3.2「版权、版本号、状态合成一条页脚」） */
-  #foot { position: absolute; left: var(--sp-4); bottom: var(--sp-4); z-index: 4; display: flex; gap: var(--sp-4); align-items: center; max-width: calc(50% - 260px); pointer-events: none; }
+  #foot { position: absolute; left: var(--sp-4); top: var(--sp-4); z-index: 4; display: flex; gap: var(--sp-4); align-items: flex-start; max-width: calc(100% - var(--rail-w-now, 0px) - 80px); pointer-events: none; }
   #foot > * { pointer-events: auto; }
   #build { flex: none; white-space: nowrap; font: 500 var(--fs-micro)/1.4 var(--font-mono); color: var(--muted); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-s); padding: 1px var(--sp-3); cursor: pointer; }
   #build:hover { color: var(--ink); }
@@ -371,93 +410,66 @@
   #creditBtn[hidden] { display: none; }
   #credit { white-space: normal !important; max-width: min(360px, calc(100vw - 80px)); }
 
-  /* ---------- 窄屏（≤ 640）：顶栏一行只留面包屑、状态、「⋯」；卡片与「⋯」菜单是底部抽屉 ---------- */
+  /* ---------- 手机（≤ 640，§10.1）：顶栏只留 标题 + 状态点（嵌入时宿主栏带 ✕）；上一级、图层、设置、层切换、标注收进控制列的「⋯」 ---------- */
   @media (max-width: 640px) {
-    header { min-height: 44px; gap: var(--sp-3); padding: 0 var(--sp-4); }
-    #crumbs { font-size: var(--fs-control); }
-    #tierState { min-width: 0; }
-    #layWrap { display: none !important; }
-    .btn { height: 36px; }
-    .btn.ic { width: 36px; }
+    header { gap: var(--sp-3); padding-left: var(--sp-4); }
+    #crumbs { font-size: var(--fs-body); }
+    #crumbs > a, #crumbs > .sep, #crumbs .ringc { display: none; }
+    #crumbs b { font-weight: 700; }
+    #tierState { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    #stDot { min-width: 44px; min-height: 44px; justify-content: center; padding: 0; }
+    #upBtn, #layWrap, #hereGo, #unmapped { display: none !important; }
+    body:not(.estate) #setBtn { display: none; }
+    .btn { height: 36px; } .btn.ic { width: 36px; }
     .seg { height: 40px; }
-    #layers { left: var(--sp-4); top: auto; bottom: calc(var(--sp-5) + env(safe-area-inset-bottom)); transform: none; gap: var(--sp-2); }
-    #layers button { min-width: 0; min-height: 40px; padding: var(--sp-2) 10px; font-size: var(--fs-small); }
-    #layers button small { display: none; }
-    /* v0.9.6：手机上层切换器默认只显示当前层（一个胶囊），点它展开；选完或点别处收起 */
-    #layers.compact button:not(.on) { display: none; }
-    #layers.compact button.on::after { content: '▴'; margin-left: 6px; font-size: 10px; opacity: .7; }
-    #layers.compact.evs button.on::before { content: ''; position: absolute; right: 4px; top: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--alert); inset: auto; }
-    /* 手机进庄园（ui-audit R02 / R11）：层按钮改成底部一行，庄园 iframe 让出这一条 */
-    body.estate #layers { top: auto; bottom: calc(3px + env(safe-area-inset-bottom)); flex-direction: row; gap: var(--sp-2); padding: 2px; touch-action: none; }
-    body.estate #layers button { flex: none; min-height: 36px; }
-    body.estate #estate { bottom: auto; height: calc(100% - 46px - env(safe-area-inset-bottom)); }
-    /* 缩放组放左上角（原 OSD 按钮的位置），横排；署名从 150 px 起，不压住它（E4b R04） */
-    #zoom { right: auto; left: var(--sp-4); top: var(--sp-4); bottom: auto; flex-direction: row; }
-    #zoom button { width: 36px; height: 36px; }
-    #foot { left: 150px; right: var(--sp-4); top: var(--sp-3); bottom: auto; max-width: none; justify-content: flex-end; }
-    #credit { text-align: right; cursor: pointer; }
-    #credit.full { white-space: normal; text-overflow: clip; }   /* 手机没有 title 悬停：点一下展开全文 */
-    #card { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-width: none; max-height: 45%; border-radius: var(--r-l) var(--r-l) 0 0; border-bottom: 0;
-      background: var(--surface); box-shadow: var(--sh-3); -webkit-backdrop-filter: none; backdrop-filter: none;
-      padding: var(--sp-2) var(--sp-6) calc(14px + env(safe-area-inset-bottom)); }
-    #card .grab { display: block; width: 36px; height: 4px; margin: 2px auto var(--sp-3); border-radius: var(--r-pill); background: var(--line-strong); }
-    #setPop { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-width: none; max-height: 60%; max-height: 60dvh; overflow-y: auto; border-radius: var(--r-l) var(--r-l) 0 0; border-bottom: 0;
-      padding: var(--sp-5) var(--sp-6) calc(var(--sp-6) + env(safe-area-inset-bottom)); box-shadow: var(--sh-3); }
-    #setMask:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 12; background: rgba(0,0,0,.35); }
-    body.cardopen #layers { visibility: hidden; }   /* 卡片抽屉打开时层切换器不从抽屉上沿露出一截 */
-    #setPop { max-height: 72%; max-height: 72dvh; z-index: 14; }
-    .mk .lab { font-size: var(--fs-micro); }
-  }
-  /* 触屏 / 低内存：不用毛玻璃，面板实底（TT 实测：WebKit 上 backdrop-filter 是最贵的 CSS 之一） */
-  @media (pointer: coarse) { #layers, #card, #evbar { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--surface) !important; } }
-  html.lowmem :is(#layers, #card, #evbar) { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--surface) !important; }
-  /* ---------- 触屏：触控目标 ≥ 44 px，用透明扩展热区，相邻热区不重叠（E4 N25） ---------- */
-  @media (pointer: coarse), (max-width: 640px) {
-    #layers button::before { content: ''; position: absolute; inset: -2px 0; }
-    label.tg, #setPop label { min-height: 44px; }
-    #card .x { width: 44px; height: 44px; margin: -8px -8px -8px 0; }
-    #card .extra [data-go], #card .extra .planned { min-height: 44px; }
-    #crumbs a { position: relative; }
-    #crumbs a::before { content: ''; position: absolute; inset: -13px -6px; }
-    .btn, .seg { min-height: 40px; }
-    .btn::before, #zoom button::before { content: ''; position: absolute; inset: -4px -2px; }
-    .btn { position: relative; }
-    #langSeg button { min-width: 44px; }
-    #build { min-height: 32px; }
-  }
-  /* ---------- 单手（E7）：手机上菜单、缩放、楼层条收进拇指一侧的底部停靠栏 #dock（脚本把 #zoom、#layers 挪进去）；html[data-hand] = left / right ----------
-     桌面 #dock 是 display: contents，布局不变。顶栏只剩状态；菜单（原顶栏「⋯」）、上一级、关闭地图都能在底部够到 */
-  #dock { display: contents; }
-  #thumbBtn, #setPop .acts { display: none; }
-  #setPop .hrow { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); min-height: 36px; color: var(--ink); font-size: var(--fs-control); }
-  #setPop h3.a11y { margin-top: var(--sp-5); padding-top: var(--sp-5); border-top: 1px solid var(--line); }
-  @media (max-width: 640px) {
-    #dock { position: absolute; z-index: 9; right: var(--sp-4); bottom: calc(var(--sp-5) + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-4); pointer-events: none; }
-    #dock > * { pointer-events: auto; }
-    #dock > #layers, #dock > #zoom { position: static; transform: none; }
-    #dock > #zoom { flex-direction: column; }
     #thumbBtn { display: inline-flex; width: 44px; height: 44px; border-radius: var(--r-l); background: var(--surface); box-shadow: var(--sh-2); }
+    #dock { right: var(--sp-4); }
     html[data-hand="left"] #dock { right: auto; left: var(--sp-4); align-items: flex-start; }
-    body.cardopen #dock { visibility: hidden; }
-    body.estate #dock { left: var(--sp-4); right: var(--sp-4); bottom: calc(3px + env(safe-area-inset-bottom)); flex-direction: row; justify-content: flex-end; align-items: flex-end; gap: var(--sp-2); }
-    html[data-hand="left"] body.estate #dock { flex-direction: row-reverse; }
-    body.estate #thumbBtn { order: 9; width: 40px; height: 40px; }
-    #foot { left: var(--sp-4); }   /* 缩放组不在左上角了 */
-    html[data-hand="right"] body #evbar { left: var(--sp-4); right: calc(var(--layers-w, 0px) + 8px); }   /* 事态横条让出右边的停靠栏 */
-    /* 抽屉：把手和关闭按钮在拇指一侧；把手、顶行可以往下拖着关 */
-    #card .grab { box-sizing: content-box; padding: var(--sp-4) 0; margin: -6px 28px 0 auto; background-clip: content-box; }
-    html[data-hand="left"] #card .grab { margin: -6px auto 0 28px; }
-    #card .grab, #card .top { touch-action: none; }
-    html[data-hand="left"] #card .top { flex-direction: row-reverse; margin: -2px 0 0 -6px; }
-    html[data-hand="left"] #card .x { margin: -8px 0 -8px -8px; }
+    #zoom button { width: 44px; height: 44px; }
+    #zoom #lblTog { display: none; }
+    /* 半开时控制列最高到屏幕中线；再高就横排贴在抽屉上沿（§10.1）；全开时隐藏（inert） */
+    #dock.row { flex-direction: row-reverse; align-items: flex-end; }
+    #dock.row #zoom { flex-direction: row-reverse; }
+    html[data-hand="left"] #dock.row, html[data-hand="left"] #dock.row #zoom { flex-direction: row; }
+    body.sheetfull #dock { visibility: hidden; }
+    /* 层切换：抽屉摘要行左侧的层名胶囊「中层 ▾」，一次点开往上展开（§10.14） */
+    #evbar .uis-lead #layers { flex-direction: column-reverse; padding: 0; border: 0; background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+    #evbar .uis-lead #layers button { min-width: 0; min-height: 44px; padding: 0 10px; font-size: var(--fs-control); border: 1px solid var(--line); background: var(--surface); }
+    #evbar .uis-lead #layers button small { display: none; }
+    #evbar .uis-lead #layers:not(.compact) { position: absolute; left: var(--sp-4); bottom: calc(100% - 4px); padding: var(--sp-2); gap: var(--sp-2); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-3); }
+    #layers.compact button:not(.on) { display: none; }
+    #layers.compact button.on::after { content: '▾'; margin-left: 6px; font-size: 10px; opacity: .7; }
+    #layers.compact.evs button.on::before { content: ''; position: absolute; right: 4px; top: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--alert); inset: auto; }
+    /* 设置 = 全屏页（盖住顶栏；左上 ‹ 返回，右上 ×） */
+    #setPop { top: 0; left: 0; width: 100vw; border-left: 0; }
     #setPop .acts { display: flex; flex-wrap: wrap; gap: var(--sp-4); margin-bottom: var(--sp-5); padding-bottom: var(--sp-5); border-bottom: 1px solid var(--line); }
     html[data-hand="right"] #setPop .acts { justify-content: flex-end; }
     #setPop .acts .btn { height: 44px; }
-    #setPop .hrow { min-height: 44px; }
+    .spage > .row, .spage .hrow, label.tg, #setPop label { min-height: 44px; }
+    #setQ { display: none; }
+    #foot { top: var(--sp-3); }
+    .mk .lab { font-size: var(--fs-micro); }
   }
-  /* v0.9.6：手机上收起的事态 / 人物横条只占内容宽度（贴拇指另一侧），不再横跨整个底边 */
-  @media (max-width: 640px) { body #evbar[data-open="0"] { width: max-content !important; max-width: calc(100% - var(--layers-w, 0px) - 16px); }
-    html[data-hand="left"] body #evbar[data-open="0"] { left: auto !important; right: 8px !important; } }
+  @media (min-width: 641px) { #setPop .acts { display: none; } }
+  #setPop .qlayers { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+  #setPop .qlayers:empty { display: none; }
+  #setPop .qlayers .btn.on { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  @media (min-width: 641px) { #setPop .qlayers, #setPop .qlab { display: none; } }
+  #setPop h3.morelab:has(+ .more:empty) { display: none; }
+  body.estate #setPop .qlayers, body.estate #setPop .qlab { display: flex; } body.estate #setPop h3.qlab { display: block; }
+  /* 触屏 / 低内存：不用毛玻璃，面板实底（TT 实测：WebKit 上 backdrop-filter 是最贵的 CSS 之一） */
+  @media (pointer: coarse) { #layers, #zoom { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--surface) !important; } }
+  html.lowmem :is(#layers, #zoom) { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--surface) !important; }
+  /* ---------- 触屏：触控目标 ≥ 44 px ---------- */
+  @media (pointer: coarse), (max-width: 640px) {
+    #layers button::before { content: ''; position: absolute; inset: -2px 0; }
+    #card .x { width: 44px; height: 44px; margin: -8px -8px -8px 0; }
+    #card .extra [data-go], #card .extra .planned { min-height: 44px; }
+    .btn, .seg { min-height: 40px; }
+    .btn { position: relative; }
+    #langSeg button { min-width: 44px; }
+  }
+  html[data-hand="left"] #card .top { flex-direction: row-reverse; }
   /* ---- 云（方案 B，v0.9.2）：上层漂移云 + 《部落冲突》式切层。只动 transform / opacity，无 backdrop-filter。JS 见文末「云」脚本块 ---- */
   .cl-drift { position: absolute; inset: 0; pointer-events: none; overflow: hidden; transition: opacity .3s; }
   .cl-drift > div { position: absolute; inset: 0; will-change: transform; }
@@ -471,18 +483,17 @@
 <body>
 <div id="app">
   <header>
+    <button type="button" class="btn ic" id="upBtn" hidden><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg></button>
     <nav id="crumbs" data-i18n-aria="crumbs_aria" aria-label="位置"></nav>
-    <div class="seg" id="tiers" role="group" data-i18n-aria="tier_group" aria-label="清晰度"></div><span id="tierState" aria-live="polite"></span>
     <span class="grow"></span>
     <button type="button" class="btn" id="hereGo" hidden data-i18n="here_go">当前位置</button>
+    <button type="button" id="stDot"><i aria-hidden="true"></i><span id="tierState" aria-live="polite"></span></button>
     <div id="layWrap"><button type="button" class="btn" id="layBtn" aria-expanded="false" aria-controls="layPop"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2L1.8 5.3 8 8.6l6.2-3.3z"/><path d="M1.8 8.4L8 11.7l6.2-3.3"/></svg><span data-i18n="layers_menu">图层</span><svg class="ico chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></button></div>
-    <div class="seg" id="langSeg" role="group" data-i18n-aria="lang_title" data-i18n-title="lang_title" title="界面语言"><button type="button" data-lang="zh">中</button><button type="button" data-lang="en">EN</button></div>
-    <button type="button" class="btn ic" id="themeBtn" data-i18n-title="theme_title" title="界面主题"></button>
     <button type="button" class="btn ic" id="setBtn" data-i18n-title="settings_title" title="设置" aria-expanded="false" aria-controls="setPop"></button>
     <div class="where"><span data-i18n="here">当前地点</span> <input id="here" data-i18n-ph="here_ph" placeholder="模拟 MVU：世界.当前地点" value=""></div>
   </header>
-  <div id="stage" role="main" data-i18n-aria="page_title" aria-label="天城地图"><div id="osd"></div><div id="foot"><button type="button" id="build" data-i18n-title="build_title" title="版本编码，点击复制诊断信息"></button><button type="button" id="creditBtn" aria-expanded="false" aria-controls="credit" data-i18n-aria="credit_aria" aria-label="署名">ⓘ</button><div id="credit" hidden></div></div><nav id="layers" hidden data-i18n-aria="layers_aria" aria-label="楼层"></nav>
-    <div id="zoom" role="group" data-i18n-aria="zoom_group" aria-label="缩放"><button type="button" id="zIn" data-i18n-aria="zoom_in" aria-label="放大" data-i18n-title="zoom_in" title="放大"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button><button type="button" id="zOut" data-i18n-aria="zoom_out" aria-label="缩小" data-i18n-title="zoom_out" title="缩小"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10"/></svg></button><button type="button" id="zHome" data-i18n-aria="zoom_home" aria-label="复位" data-i18n-title="zoom_home" title="复位视野"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5L8 3l5.5 4.5M4 6.5V13h8V6.5"/></svg></button></div>
+  <div id="stage" role="main" data-i18n-aria="page_title" aria-label="天城地图"><div id="osd"></div><div id="foot"><button type="button" id="creditBtn" aria-expanded="false" aria-controls="credit" data-i18n-aria="credit_aria" aria-label="署名">ⓘ</button><div id="credit" hidden></div></div><nav id="layers" hidden data-i18n-aria="layers_aria" aria-label="楼层"></nav>
+    <div id="zoom" role="group" data-i18n-aria="zoom_group" aria-label="缩放"><button type="button" id="zIn" data-i18n-aria="zoom_in" aria-label="放大" data-i18n-title="zoom_in" title="放大"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button><button type="button" id="zOut" data-i18n-aria="zoom_out" aria-label="缩小" data-i18n-title="zoom_out" title="缩小"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10"/></svg></button><button type="button" id="zHome" data-i18n-aria="zoom_home" aria-label="复位" data-i18n-title="zoom_home" title="复位视野"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5L8 3l5.5 4.5M4 6.5V13h8V6.5"/></svg></button><button type="button" id="lblTog" aria-pressed="true" data-i18n-aria="labels_tog" aria-label="标注" data-i18n-title="labels_tog_t" title="标注（L）"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h6.2l4.8 4.5-4.8 4.5H2.5z"/><circle cx="5.5" cy="8" r=".9"/></svg></button></div>
     <div id="prog" hidden><i></i></div><div id="loading"><div><span data-i18n="loading">加载中…</span><div class="acts" hidden><button type="button" class="btn" id="estRetry" data-i18n="estate.retry">重试</button><button type="button" class="btn" id="estPlan" data-i18n="estate.plan">看平面图</button><button type="button" class="btn" id="tileRetry" hidden data-i18n="estate.retry">重试</button></div></div></div></div>
   <script>if (window.__worldFirst) document.getElementById('loading').classList.add('thumb');</script>
 </div>
@@ -494,13 +505,44 @@
   <label class="tg"><span data-i18n="labels">地名</span><input type="checkbox" role="switch" id="tgLabels" checked></label>
   <label class="tg"><span data-i18n="markers">标记</span><input type="checkbox" role="switch" id="tgMarkers" checked></label>
 </div></div>
-<div id="setPop" class="pop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置"><div class="sheet-h"><b data-i18n="settings_title">设置</b><button type="button" class="btn ic" id="setX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><div id="aboutBox"></div><div class="acts" hidden><button type="button" class="btn" id="actUp" hidden></button><button type="button" class="btn" id="actClose" hidden data-i18n="act_close">关闭地图</button></div><div class="more"></div>
-  <label class="row"><span data-i18n="no_fx">关闭花屏特效</span><input type="checkbox" role="switch" id="optNoFx"></label><small data-i18n="no_fx_hint">网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字</small>
-  <label class="row"><span data-i18n="char_stats">人物栏显示数值</span><input type="checkbox" role="switch" id="optCharStats" checked></label><small data-i18n="char_stats_hint">名册里显示成员的等级与核心数值（字段在「变量映射」里指定或关闭）</small>
-  <label class="row"><span data-i18n="char_more">人物卡显示更多资料</span><input type="checkbox" role="switch" id="optCharMore" checked></label><small data-i18n="char_more_hint">人物卡里可展开的一栏：代号、社会身份、身高 / 体重、外界知情、饰物（字段在「变量映射」里指定或关闭）</small>
-  <h3 class="a11y" data-i18n="a11y_h">单手</h3><div class="hrow"><span id="handLbl" data-i18n="hand">惯用手</span><div class="seg" id="handSeg" role="group" aria-labelledby="handLbl"><button type="button" data-hand="auto" data-i18n="hand_auto">自动</button><button type="button" data-hand="left" data-i18n="hand_left">左手</button><button type="button" data-hand="right" data-i18n="hand_right">右手</button></div></div><small class="orig" lang="zh">原作角色卡：Yehehua（类脑社区）· <a href="https://discord.com/channels/1380075940285124724/1534464824141025321" target="_blank" rel="noopener">原作发布帖</a>（地图为经作者同意的二次创作）</small></div>
-<div id="card" hidden role="dialog" aria-labelledby="cardTitle"><div class="grab" aria-hidden="true"></div><div class="top"><span class="tag"></span><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><img class="cover" hidden loading="lazy" decoding="async" alt=""><h2 id="cardTitle" tabindex="-1"></h2><div class="sub"></div><div class="src"></div><div class="extra"></div></div>
-<div id="setMask" hidden></div>
+<div id="setPop" class="pop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置" aria-labelledby="setTitle">
+  <div class="sheet-h"><button type="button" class="btn" id="setBack" hidden><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg><span class="lbl" data-i18n="settings_title">设置</span></button><b id="setTitle" data-i18n="settings_title">设置</b><button type="button" class="btn ic" id="setX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+  <section class="spage" data-page="home">
+    <div class="acts" hidden><button type="button" class="btn" id="actUp" hidden></button><button type="button" class="btn" id="actHere" hidden data-i18n="here_go">当前位置</button><button type="button" class="btn" id="actClose" hidden data-i18n="act_close">关闭地图</button></div>
+    <h3 class="qlab" data-i18n="s.quick_layers">切换层</h3><div class="qlayers"></div>
+    <h3 class="morelab" data-i18n="layers_menu">图层</h3><div class="more"></div>
+    <input type="search" id="setQ" data-i18n-ph="s.search" placeholder="搜索设置" autocomplete="off">
+    <div id="setHits"></div>
+    <nav class="sgroups"><button type="button" data-page="display"><b data-i18n="s.display">显示</b><span data-i18n="s.display_sub">主题 · 语言 · 清晰度 · 惯用手 · 动态</span></button><button type="button" data-page="people"><b data-i18n="s.people">人物</b><span data-i18n="s.people_sub">数值 · 更多资料 · 来源</span></button><button type="button" data-page="data"><b data-i18n="s.data">数据与映射</b><span data-i18n="s.data_sub">变量映射 · 别名 · 模板 · 存储</span></button><button type="button" data-page="update"><b data-i18n="s.update">更新与版本</b><span id="updSub"></span></button><button type="button" data-page="adv"><b data-i18n="s.adv">高级</b><span data-i18n="s.adv_sub">线路 · 三维抽屉 · 快捷键 · 调试</span></button></nav>
+    <small class="orig" lang="zh">原作角色卡：Yehehua（类脑社区）· <a href="https://discord.com/channels/1380075940285124724/1534464824141025321" target="_blank" rel="noopener">原作发布帖</a>（地图为经作者同意的二次创作）</small>
+  </section>
+  <section class="spage" data-page="display" hidden>
+    <div class="hrow"><span id="themeLbl" data-i18n="theme_title">界面主题</span><div class="seg" id="themeSeg" role="group" aria-labelledby="themeLbl"><button type="button" data-th="auto" data-i18n="theme_auto">自动</button><button type="button" data-th="light" data-i18n="theme_light">浅色</button><button type="button" data-th="dark" data-i18n="theme_dark">深色</button></div></div>
+    <div class="hrow"><span id="langLbl" data-i18n="lang_title">界面语言</span><div class="seg" id="langSeg" role="group" aria-labelledby="langLbl"><button type="button" data-lang="zh">中</button><button type="button" data-lang="en">EN</button></div></div>
+    <div class="hrow"><span id="tierLbl" data-i18n="tier_group">清晰度</span><div class="seg" id="tiers" role="group" aria-labelledby="tierLbl"></div></div>
+    <div class="hrow"><span id="handLbl" data-i18n="hand">惯用手</span><div class="seg" id="handSeg" role="group" aria-labelledby="handLbl"><button type="button" data-hand="auto" data-i18n="hand_auto">自动</button><button type="button" data-hand="left" data-i18n="hand_left">左手</button><button type="button" data-hand="right" data-i18n="hand_right">右手</button></div></div>
+    <div class="hrow"><span id="rmLbl" data-i18n="s.rm">减少动态</span><div class="seg" id="rmSeg" role="group" aria-labelledby="rmLbl"><button type="button" data-rm="auto" data-i18n="s.follow_sys">跟随系统</button><button type="button" data-rm="on" data-i18n="s.on">开</button><button type="button" data-rm="off" data-i18n="s.off">关</button></div></div>
+    <label class="row"><span data-i18n="no_fx">关闭花屏特效</span><input type="checkbox" role="switch" id="optNoFx"></label><small data-i18n="no_fx_hint">网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字</small>
+    <div class="hrow"><span id="q3Lbl" data-i18n="s.q3d">三维画质</span><div class="seg" id="q3Seg" role="group" aria-labelledby="q3Lbl"><button type="button" data-q="auto" data-i18n="tier_auto">自动</button><button type="button" data-q="1" data-i18n="s.q_low">省电</button><button type="button" data-q="2" data-i18n="s.q_high">清晰</button></div></div><small data-i18n="s.q3d_hint">三维页的像素比上限：省电 = 1 倍，清晰 = 最多 2 倍（锯齿更少，更费电）</small>
+  </section>
+  <section class="spage" data-page="people" hidden>
+    <label class="row"><span data-i18n="char_stats">人物栏显示数值</span><input type="checkbox" role="switch" id="optCharStats" checked></label><small data-i18n="char_stats_hint">名册里显示成员的等级与核心数值（字段在「变量映射」里指定或关闭）</small>
+    <label class="row"><span data-i18n="char_more">人物卡显示更多资料</span><input type="checkbox" role="switch" id="optCharMore" checked></label><small data-i18n="char_more_hint">人物卡里可展开的一栏：代号、社会身份、身高 / 体重、外界知情、饰物（字段在「变量映射」里指定或关闭）</small>
+    <div class="hrow"><span data-i18n="s.ch_src">人物来源</span><span id="chSrc" class="muted"></span></div>
+  </section>
+  <section class="spage" data-page="data" hidden><div id="storBox"></div></section>
+  <section class="spage" data-page="update" hidden><div id="aboutBox"></div><div class="hrow"><span data-i18n="s.build">版本编码</span><button type="button" id="build" class="btn" data-i18n-title="build_title" title="版本编码，点击复制诊断信息"></button></div></section>
+  <section class="spage" data-page="adv" hidden>
+    <div class="hrow" id="lineRow" hidden><span data-i18n="s.line">加载线路</span><button type="button" class="btn" id="linePick" data-i18n="s.line_pick">选择线路</button></div>
+    <label class="row"><span data-i18n="s.auto3d">三维抽屉：拖动模型时自动收起</span><input type="checkbox" role="switch" id="optAuto3d"></label>
+    <label class="row"><span data-i18n="s.keys">单字母快捷键（L、M、/、?）</span><input type="checkbox" role="switch" id="optKeys" checked></label>
+    <div class="hrow"><span data-i18n="s.kbd">快捷键</span><button type="button" class="btn" id="kbdBtn" data-i18n="s.kbd_show">查看</button></div>
+    <div id="kbdHelp" hidden></div>
+    <label class="row"><span data-i18n="s.fps">调试：显示帧率</span><input type="checkbox" role="switch" id="optFps"></label>
+    <div id="v3dTests"></div>
+  </section>
+</div>
+<div id="card" hidden role="region" aria-labelledby="cardTitle"><div class="top"><span class="tag"></span><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><img class="cover" hidden loading="lazy" decoding="async" alt=""><h2 id="cardTitle" tabindex="-1"></h2><div class="sub"></div><div class="src"></div><div class="extra"></div></div>
 <div id="sr" class="sr-only" aria-live="polite"></div>
 <div id="status"></div>
 <script>
@@ -581,11 +623,12 @@ function applyI18n() {
   document.querySelectorAll('[data-i18n-ph]').forEach(e => e.placeholder = t(e.dataset.i18nPh));
   document.querySelectorAll('[data-i18n-aria]').forEach(e => e.setAttribute('aria-label', t(e.dataset.i18nAria)));
   tierLabels();
-  document.querySelectorAll('#langSeg button').forEach(b => { b.classList.toggle('on', b.dataset.lang === LANG); b.setAttribute('aria-pressed', b.dataset.lang === LANG); });
-  const th = window.__theme; $('#themeBtn').innerHTML = ico(th) + `<span class="lbl">${esc(t('theme_' + th))}</span>`;
-  $('#themeBtn').setAttribute('aria-label', t('theme_title') + '：' + t('theme_' + th));
-  $('#setBtn').setAttribute('aria-label', t(narrowNow() ? 'more' : 'settings_title'));
-  renderSelfCheck(); renderAbout();
+  paintSegs();
+  $('#setBtn').setAttribute('aria-label', tx('settings_title', '设置'));
+  $('#upBtn').setAttribute('aria-label', tx('s.up', '上一级')); $('#upBtn').title = tx('s.up', '上一级');
+  window.TCSheet?.text({ expand: tx('s.expand', '展开'), collapse: tx('s.collapse', '收起'), region: tx('s.sheet', '事态、人物与地点') });
+  if (window.TCSheet) { TCSheet.label('pl', esc(tx('s.place', '地点')), esc(tx('s.place_short', '地'))); $('#cardEmpty').textContent = tx('s.place_empty', '点地图上的地点，这里显示它的介绍'); }
+  stDotLabel(); renderSelfCheck(); renderAbout(); setPage(setPageNow, true);
 }
 async function setLang(l) {
   if (l === LANG) return;
@@ -595,10 +638,17 @@ async function setLang(l) {
   applyI18n(); closeCard(); estateLook();
   if (cur) { mapChrome(REG.maps[cur]); renderNav(); if (viewer.world.getItemCount()) { drawOverlays(); applyTier(); } postState(); }
 }
-function cycleTheme() {
-  const order = ['auto', 'light', 'dark']; window.__theme = order[(order.indexOf(window.__theme) + 1) % 3];
+function setTheme(th) {
+  if (!['auto', 'light', 'dark'].includes(th)) return; window.__theme = th;
   try { localStorage.setItem('edenMapTheme', window.__theme); } catch (e) {}
-  window.__applyTheme(); applyI18n(); estateLook(); postState();
+  window.__applyTheme(); paintSegs(); estateLook(); postState();
+}
+const cycleTheme = () => setTheme(['auto', 'light', 'dark'][(['auto', 'light', 'dark'].indexOf(window.__theme) + 1) % 3]);
+// 设置「显示」页的分段控件：主题、减少动态、三维画质（语言、清晰度、惯用手各自有 paint）
+function paintSegs() {
+  const on = (sel, attr, v) => document.querySelectorAll(sel).forEach(b => { const x = b.dataset[attr] === v; b.classList.toggle('on', x); b.setAttribute('aria-pressed', x); });
+  on('#themeSeg button', 'th', window.__theme); on('#rmSeg button', 'rm', rmPref()); on('#q3Seg button', 'q', q3Pref());
+  document.querySelectorAll('#langSeg button').forEach(b => { b.classList.toggle('on', b.dataset.lang === LANG); b.setAttribute('aria-pressed', b.dataset.lang === LANG); });
 }
 const themeNow = () => document.documentElement.classList.contains('light') ? 'light' : 'dark';
 // 当前地图、标题、语言、主题 → 酒馆（面板标题栏跟着换语言和深浅）
@@ -627,7 +677,7 @@ async function mainInner() {
   const seg = $('#tiers');
   for (const x of [{ key: 'auto' }, ...TIERS]) { const b = document.createElement('button'); b.dataset.k = x.key;
     b.onclick = () => setTier(x.key); seg.appendChild(b); }
-  layoutHeader(); addEventListener('resize', layoutHeader);
+  initShell(); layoutHeader(); addEventListener('resize', layoutHeader);
   applyI18n(); $('#status').textContent = t('loading');
   $('#estRetry').onclick = retryEstate; $('#estPlan').onclick = estatePlan;
   // Tab 到视野外的地标 / 事件点：浏览器会去滚动 OSD 的容器（overflow:hidden），这里撤掉滚动、改为平移地图把它带进视野
@@ -639,12 +689,7 @@ async function mainInner() {
     if (p.x < b.x + mx || p.x > b.x + b.width - mx || p.y < b.y + my || p.y > b.y + b.height - my) viewer.viewport.panTo(new OpenSeadragon.Point(p.x, p.y)); });
   // 工具栏换行（英文更宽、窄窗口）时，信息卡跟着工具栏的实际高度往下挪，不压住第二行
   const hdr = $('header'); new ResizeObserver(() => document.documentElement.style.setProperty('--hdr', hdr.offsetHeight + 'px')).observe(hdr);
-  // 手机上事态横条从层切换器右边开始（层切换器宽度随语言、角标变）
-  // E7：手机上层切换器在拇指侧的停靠栏 #dock 里，横条让出整个停靠栏的宽度
-  const lay = $('#layers'), dock = makeDock(), layW = () => narrowNow() ? dock.offsetWidth + 8 : lay.hidden ? 0 : lay.offsetWidth + 8;
-  const layRO = new ResizeObserver(() => document.documentElement.style.setProperty('--layers-w', layW() + 'px')); layRO.observe(lay); layRO.observe(dock);
   document.querySelectorAll('#langSeg button').forEach(b => b.onclick = () => setLang(b.dataset.lang));
-  $('#themeBtn').onclick = cycleTheme;
   matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => setTimeout(() => { estateLook(); postState(); }, 0));   // 自动主题跟随系统切换时
   // 画布像素密度随档位封顶：高分屏（手机 3x）上省流只画 1.25x，填充的像素少一半以上，选瓦片的层级也跟着降
   const devDpr = OpenSeadragon.getCurrentPixelDensityRatio;
@@ -704,23 +749,22 @@ async function mainInner() {
   // 首张地图画出来后，空闲时预热其他地图：描述文件、点位数据、最粗的几层瓦片（切过去立刻有模糊版）
   viewer.addOnceHandler('tile-drawn', () => setTimeout(warmOthers, 1500));
 }
-// ---------------- 窄屏工具栏：放不下的都搬进「⋯」菜单（原 ⚙ 设置弹层），不再横向滚动（E4 N27） ----------------
-// 桌面：图层开关在「图层 ▾」弹层里；窄屏：档位、图层开关、语言、主题、版本号都进「⋯」底部抽屉
-const moreEls = () => [$('#tiers'), $('#layList'), $('#langSeg'), $('#themeBtn'), $('#build')].filter(Boolean);
+// ---------------- 顶栏（UI v2 §2.1）：清晰度、语言、主题、版本号都在设置「显示 / 更新与版本」里，顶栏不再放 ----------------
+// 图层开关：桌面在「图层 ▾」弹层；手机（或桌面放不下：窄窗口、EN、放大 200%）进「⋯」设置首页的快捷区
+const moreEls = () => [$('#layList')].filter(Boolean);
 function layoutHeader() {
   const box = $('#setPop .more'), hdr = $('header');
   const put = nar => { for (const el of moreEls()) {
     if (nar && el.parentElement !== box) { el._ph ??= document.createComment('slot'); el.before(el._ph); box.appendChild(el); }
     else if (!nar && el.parentElement === box && el._ph?.isConnected) el._ph.replaceWith(el);
   } };
-  // 桌面宽度下先全部放回工具栏，量一下放不放得下（面包屑按全长算）；放不下就和手机一样收进菜单（641–860 px、EN、页面放大 200%，E5 r2 无障碍 P1）
   let nar = narrowNow(); document.body.classList.remove('hdrc'); put(nar);
   if (!nar) { const cs = getComputedStyle(hdr), kids = [...hdr.children].filter(e => e.offsetParent && !e.classList.contains('grow'));
     const need = kids.reduce((a, e) => a + (e.id === 'crumbs' ? [...e.children].reduce((w, c) => w + c.scrollWidth + 6, 0) : e.offsetWidth), 0) + (kids.length - 1) * parseFloat(cs.columnGap || 8) + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
     if (need > hdr.clientWidth) { nar = true; put(true); document.body.classList.add('hdrc'); } }
   if (nar) showLay(false);
-  $('#setBtn').innerHTML = ico(nar ? 'more' : 'set'); $('#setBtn').setAttribute('aria-label', t(nar ? 'more' : 'settings_title'));
-  $('#setBtn').setAttribute('aria-label', t(nar ? 'more' : 'settings_title'));
+  $('#setBtn').innerHTML = ico(narrowNow() ? 'more' : 'set'); $('#setBtn').setAttribute('aria-label', tx(narrowNow() ? 'more' : 'settings_title', '设置'));
+  placeLayers();
 }
 // 面板收起（休眠）时的慢速预取：把另一版底图（如上层「显示下方城市」）按当前清晰度上限一张一张取进缓存，
 // 每张间隔 250ms、同时只取 1 张，不和聊天抢带宽；面板打开就停，下次收起从没取过的继续
@@ -964,8 +1008,7 @@ function leaveEstate() {
 }
 function estateInset() {
   if (!est?.ready) return;
-  const nav = $('#layers'), r = nav.hidden || narrowNow() ? null : nav.getBoundingClientRect(), st = $('#stage').getBoundingClientRect();
-  est.frame.contentWindow?.postMessage({ type: 'estate:inset', left: r ? Math.round(r.right - st.left + 8) : 6 }, SUB_ORIGIN);
+  est.frame.contentWindow?.postMessage({ type: 'estate:inset', left: 6 }, SUB_ORIGIN);   // UI v2：三维页自带控制列与抽屉，查看器在庄园时不放层切换器
 }
 const narrowNow = () => innerWidth <= 640;
 // 庄园页的语言与主题跟着查看器（庄园页在 srcdoc 里读不到 URL 参数，所以载入后与切换时发消息）
@@ -984,7 +1027,8 @@ window.addEventListener('message', e => {
   if (!est || e.source !== est.frame.contentWindow) return;
   if (e.data?.type === 'estate:ready') onEstateReady();
   if (e.data?.type === 'estate:fail') onEstateFail(e.data.reason);
-  if (e.data?.type === 'estate:key') stepLayer({ PageUp: -1, '[': -1, PageDown: 1, ']': 1 }[e.data.key] || 0);
+  if (e.data?.type === 'estate:key' && e.data.key === 'Escape') onEsc();
+  else if (e.data?.type === 'estate:key') stepLayer({ PageUp: -1, '[': -1, PageDown: 1, ']': 1 }[e.data.key] || 0);
 });
 addEventListener('resize', () => estateInset());
 // v0.9.6 手机层切换器：收起时点当前层 = 展开；展开后点任一层 = 切过去并收起；点别处收起
@@ -1007,7 +1051,11 @@ function renderNav() {
   if (g) nav.innerHTML = g.layers.map(k => { const L = REG.maps[k], planned = L.status === 'planned';
     return `<button type="button" data-go="${k}" class="${k === cur ? 'on' : ''}" ${k === cur ? 'aria-current="page"' : ''} ${planned ? `disabled title="${esc(tx('layers.planned', '制作中'))}"` : ''}>${esc(nm(L.layer))}<i class="hd" title="${esc(tx('layers.here', '当前地点在这一层'))}"></i><em class="evn"></em><small>${esc(planned ? tx('layers.planned', '制作中') : nm(L.layer, 'alt'))}</small></button>`; }).join('');
   nav.classList.add('compact');
-  updateLayerBadges();
+  // 上一级（桌面顶栏 ‹）与「⋯」首页的切层快捷（手机、三维页）
+  const par = m.parent && REG.maps[m.parent]; $('#upBtn').hidden = !par; if (par) { $('#upBtn').dataset.go = m.parent; $('#upBtn').title = tx('act_up', `返回${nm(par, 'title')}`, { title: nm(par, 'title') }); }
+  $('#setPop .qlayers').innerHTML = g ? g.layers.map(k => { const L = REG.maps[k], pl = L.status === 'planned';
+    return `<button type="button" class="btn${k === cur ? ' on' : ''}" data-go="${k}" ${k === cur ? 'aria-current="page"' : ''} ${pl ? 'disabled' : ''}>${esc(nm(L.layer))}</button>`; }).join('') : '';
+  updateLayerBadges(); placeLayers();
   if (!narrowNow()) requestAnimationFrame(layoutHeader);   // 面包屑变长（切到更深的图）后重新量工具栏放不放得下（E5 r3 设计 D8 / 无障碍 F-14）
 }
 // 当前地点在同组的哪一层：各层地标名 / 别名、庄园的房间别名里最长的匹配；匹配不到再看有没有写「上层 / 中层 / 下层」
@@ -1038,22 +1086,41 @@ function stepLayer(d) {
   for (let j = g.layers.indexOf(cur) + d; j >= 0 && j < g.layers.length; j += d)
     if (REG.maps[g.layers[j]].status !== 'planned') { pendingFocus = null; go(g.layers[j]); return; }
 }
+// Esc 只作用于最上面一层（§10.6）：对话框 > 设置 > 图层菜单 > 展开的层列表 > 抽屉降一档 > 地点卡；都没有时交给酒馆（关面板）。嵌入时不冒泡给酒馆
+function escTop() {
+  if (!$('#setPop').hidden) { showSet(false); ($(narrowNow() ? '#thumbBtn' : '#setBtn'))?.focus(); return true; }
+  if (!$('#layPop').hidden) { showLay(false); $('#layBtn').focus(); return true; }
+  const lay = $('#layers'); if (narrowNow() && !lay.hidden && !lay.classList.contains('compact')) { lay.classList.add('compact'); lay.querySelector('button.on')?.focus(); return true; }
+  const S = window.TCSheet; if (S && !S.el.hidden && S.down()) { if (S.state === 'peek') S.el.querySelector('.uis-tog')?.focus({ preventScroll: true }); return true; }
+  if (!$('#card').hidden) { closeCard(true); return true; }
+  return false;
+}
+function onEsc() { if (!escTop()) post({ type: 'eden-map:esc' }); }
+const keysOn = () => { try { return localStorage.getItem('edenMapKeys') !== '0'; } catch (e) { return true; } };
 document.addEventListener('keydown', e => {
   if (typeof TCCustom !== 'undefined' && TCCustom.dlgKey(e)) return;   // 「自定义」对话框开着：按键归它（Esc 逐页返回 / 关闭）
-  // Esc 逐层关闭：设置 / 「⋯」菜单 → 事态列表 → 卡片；都没开时交给酒馆（关闭面板）（E4 N20）
+  if (e.isComposing || e.keyCode === 229) return;   // 输入法组字中
   if (e.key === 'Escape') {
-    if (!$('#setPop').hidden) { showSet(false); $('#setBtn').focus(); }
-    else if (!$('#layPop').hidden) { showLay(false); $('#layBtn').focus(); }
-    else if (TCEvents.isOpen?.()) { TCEvents.collapse(); $('#evbar > button')?.focus(); }
-    else if (!$('#card').hidden) closeCard(true);
-    else post({ type: 'eden-map:esc' });
-    e.preventDefault(); return;
+    if (document.querySelector('#umDlg:not([hidden])')) return;   // 未上图选择器自己处理
+    e.preventDefault(); e.stopPropagation(); onEsc(); return;
   }
   if (e.target.closest?.('input, textarea, select, [contenteditable]') || e.ctrlKey || e.metaKey || e.altKey) return;
   // 站内跳转（面包屑、「进入上层」、跨层通道）是 role=button 的链接：Enter / 空格触发
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-go][role="button"]')) { e.preventDefault(); e.target.click(); return; }
-  const d = { PageUp: -1, '[': -1, PageDown: 1, ']': 1 }[e.key];
-  if (d) { e.preventDefault(); kbdGo = true; stepLayer(d); }
+  const d = { PageUp: -1, PageDown: 1 }[e.key] ?? (keysOn() ? { '[': -1, ']': 1 }[e.key] : undefined);
+  if (d) { e.preventDefault(); kbdGo = true; stepLayer(d); return; }
+  if (!keysOn() || e.key.length !== 1) return;
+  // 单字符快捷键（§6、§10.7；设置「高级」可关，WCAG 2.1.4）：只在查看器有焦点、不在输入框时
+  const k = e.key.toLowerCase(), vp = viewer?.viewport, estate = document.body.classList.contains('estate');
+  if ((k === '+' || k === '=') && vp && !estate) { userMoved = true; vp.zoomBy(1.5); vp.applyConstraints(); }
+  else if (k === '-' && vp && !estate) { userMoved = true; vp.zoomBy(1 / 1.5); vp.applyConstraints(); }
+  else if (k === '0' && vp && !estate) { userMoved = false; pendingHome = false; focusStart(false); }
+  else if (k === 'l' && !estate) toggleLabels();
+  else if (k === 'm') { TCSettings.open('data'); setTimeout(() => { const v = $('#vmBox'); if (v) { v.open = true; v.querySelector('summary')?.focus(); v.scrollIntoView({ block: 'start' }); } }, 30); }
+  else if (k === '/') { TCSettings.open('home'); setTimeout(() => $('#setQ')?.focus(), 30); }
+  else if (k === '?') { TCSettings.open('adv'); kbdHelp(true); }
+  else return;
+  e.preventDefault();
 }, true);
 // 键盘触发的站内跳转（click 的 detail = 0）：新图打开后把焦点放到卡片标题或当前层按钮，不掉到 body（E4b R06）
 let kbdGo = false;
@@ -1272,6 +1339,7 @@ function marker(o) { const el = markerEl(o); place(el, o.x, o.y); return el; }
 function showCard(el, name, tag, src, extra, sub, cover) {
   document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); el && el.classList.add('active');
   const c = $('#card'); c.hidden = false; c.classList.remove('person2'); document.body.classList.add('cardopen');
+  cardSheet(true);   // UI v2：地点卡 = 抽屉「地点」页，半开（已经全开就保持）
   const tg = c.querySelector('.tag'); tg.textContent = t(tag === 'inf' ? 'tag_inf' : 'tag_set'); tg.className = 'tag' + (tag === 'inf' ? ' inf' : ''); tg.removeAttribute('style');   // 事态卡的数据色不带到地点卡
   const cv = c.querySelector('.cover');
   if (cv) { if (cover?.src_800) { cv.hidden = false; cv.src = cover.src_800; cv.alt = (LANG === 'en' ? (cover.alt_en || cover.alt) : cover.alt) || ''; } else { cv.hidden = true; cv.removeAttribute('src'); cv.alt = ''; } }
@@ -1288,6 +1356,7 @@ function showCard(el, name, tag, src, extra, sub, cover) {
 function closeCard(user) {
   const c = $('#card'), had = !c.hidden, inCard = c.contains(document.activeElement);
   c.hidden = true; document.body.classList.remove('cardopen'); document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active'));
+  if (had) cardSheet(false);
   if (had && (user === true || inCard) && cardFrom?.isConnected) cardFrom.focus({ preventScroll: true });
   if (had) declutter();
 }
@@ -1457,38 +1526,94 @@ function jumpHere(v) {   // 只由「当前位置」按钮调用（不再在打�
   if ((r.marker || r.place) && viewer?.world.getItemCount()) { userMoved = false; markHere(v); focusStart(false); }   // 同一张图：飞到地标 / 世界地名
   return true;
 }
+// ---------------- 设置（UI v2 §5）：首页 = 分组列表（+ 手机上的快捷：上一级、当前位置、关闭地图、切层、图层开关）；子页 显示 / 人物 / 数据与映射 / 更新与版本 / 高级 ----------------
+// 模块向指定页注册自己的一栏：TCSettings.registerSection(page, el, { order })，不再 insertBefore(#selfCheck)。
+let setPageNow = 'home', setPrev = null;
+const PAGES = { home: ['settings_title', '设置'], display: ['s.display', '显示'], people: ['s.people', '人物'], data: ['s.data', '数据与映射'], update: ['s.update', '更新与版本'], adv: ['s.adv', '高级'] };
+function setPage(pg, quiet) {
+  if (!PAGES[pg]) pg = 'home'; setPageNow = pg;
+  document.querySelectorAll('#setPop .spage').forEach(x => { x.hidden = x.dataset.page !== pg; });
+  $('#setBack').hidden = pg === 'home'; $('#setTitle').textContent = tx(...PAGES[pg]);
+  if (!quiet) { $('#setPop').scrollTop = 0; const f = pg === 'home' ? ($('#setQ')?.offsetParent ? $('#setQ') : $('#setPop .sgroups button')) : $('#setBack'); f?.focus({ preventScroll: true }); }
+  if (pg === 'update') renderSelfCheck();
+  if (pg === 'people') { const n = typeof TCChars !== 'undefined' ? TCChars.count() : 0; $('#chSrc').textContent = tx('s.ch_src_n', `当前聊天 ${n} 人`, { n }); }
+  if (pg === 'adv') v3dEntries();
+}
+const TCSettings = window.TCSettings = {
+  registerSection(page, el, o = {}) { const pg = document.querySelector(`#setPop .spage[data-page="${page}"]`) || document.querySelector('#setPop .spage[data-page="adv"]'); if (!pg || !el) return;
+    el.dataset.order = o.order ?? 50; const after = [...pg.children].find(c => c.dataset.order != null && +c.dataset.order > +el.dataset.order); after ? pg.insertBefore(el, after) : pg.appendChild(el); },
+  open(page = 'home') { showSet(true); setPage(page); },
+  get page() { return setPageNow; },
+};
+// 设置里的搜索（桌面首屏顶，§5）：按每一行的文字找，结果点一下进那一页并高亮那一行
+function setSearch(q) {
+  const box = $('#setHits'); box.innerHTML = ''; q = q.trim().toLowerCase(); $('#setPop .sgroups').hidden = !!q; if (!q) return;
+  const rows = []; for (const pg of document.querySelectorAll('#setPop .spage:not([data-page="home"])'))
+    for (const r of pg.querySelectorAll(':scope > .row, :scope > .hrow, :scope > label, details > summary, #aboutBox > label, #selfCheck > b, #cuBox .cu-open, #cmpBox > summary')) {
+      const txt = (r.textContent || '').trim(); if (txt && txt.toLowerCase().includes(q)) rows.push([pg.dataset.page, r, txt.slice(0, 40)]); }
+  if (!rows.length) { box.innerHTML = `<small>${esc(tx('s.no_hit', '没有找到'))}</small>`; return; }
+  for (const [pg, r, txt] of rows.slice(0, 12)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn';
+    b.innerHTML = `${esc(txt)}<small>${esc(tx(...PAGES[pg]))}</small>`;
+    b.onclick = () => { setPage(pg); r.closest('details')?.setAttribute('open', ''); r.scrollIntoView({ block: 'center' }); r.classList.add('found'); setTimeout(() => r.classList.remove('found'), 1600); (r.querySelector('input, button') || r).focus?.({ preventScroll: true }); };
+    box.appendChild(b); }
+}
+const rmPref = () => { try { return localStorage.getItem('edenMapRM') || 'auto'; } catch (e) { return 'auto'; } };
+const q3Pref = () => { try { return localStorage.getItem('edenMap3dQ') || 'auto'; } catch (e) { return 'auto'; } };
+const rmNow = () => rmPref() === 'on' || (rmPref() === 'auto' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+function applyRM() { document.documentElement.classList.toggle('rm', rmPref() === 'on'); window.__rm = rmNow(); estateLook(); }
 function initSettings() {
   const btn = $('#setBtn'), pop = $('#setPop');
-  // 打开弹层时焦点进到第一个控件（弹层在 DOM 里排在整张地图之后，不这样要按十几下 Tab，E5 r2 无障碍 P1）；窄屏有真正的遮罩，点遮罩关、不穿透到地图
   const firstIn = el => el.querySelector('button:not([hidden]), input, [tabindex="0"]');
-  const mask = $('#setMask');
-  mask.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); showSet(false); });
-  mask.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); });
-  showSet = on => { const was = !pop.hidden; pop.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); mask.hidden = !(on && narrowNow());
-    if (on) { showLay(false); if (!was) { pop.scrollTop = 0; firstIn(pop)?.focus({ preventScroll: true }); } } };
+  let opener = null;
+  showSet = (on, page) => { const was = !pop.hidden; pop.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); $('#thumbBtn')?.setAttribute('aria-expanded', on ? 'true' : 'false');
+    document.body.classList.toggle('setopen', !!on);
+    if (on) { showLay(false); if (!was) { opener = document.activeElement; setPrev = window.TCSheet ? { tab: TCSheet.tab, top: TCSheet.body.scrollTop } : null; setPage(page || 'home', true); pop.scrollTop = 0; firstIn(pop)?.focus({ preventScroll: true }); setActs(); } }
+    else if (was) { $('#setQ').value = ''; setSearch(''); if (setPrev && window.TCSheet) { if (setPrev.tab) TCSheet.setTab(setPrev.tab); TCSheet.body.scrollTop = setPrev.top; } setPrev = null; noticeRefresh(); } };
   $('#setX').onclick = e => { e.stopPropagation(); showSet(false); };
+  $('#setBack').onclick = e => { e.stopPropagation(); setPage('home'); };
+  pop.querySelector('.sgroups').addEventListener('click', e => { const b = e.target.closest('button[data-page]'); if (b) setPage(b.dataset.page); });
+  $('#setQ').addEventListener('input', e => setSearch(e.target.value));
   btn.onclick = e => { e.stopPropagation(); showSet(pop.hidden); };
   // 目标已被重绘移出文档（如「检查更新」按钮点完即重绘）不算点在外面
   const gone = t => t instanceof Node && !t.isConnected;
-  document.addEventListener('click', e => { if (!pop.hidden && !gone(e.target) && !pop.contains(e.target) && !btn.contains(e.target)) showSet(false); });
+  document.addEventListener('click', e => { if (!pop.hidden && !narrowNow() && !gone(e.target) && !pop.contains(e.target) && !btn.contains(e.target) && !e.target.closest?.('#thumbBtn, .rg, #cuDlg, #umDlg')) showSet(false); });
   // 「图层 ▾」弹层：挂在按钮下方、右对齐
   const lb = $('#layBtn'), lp = $('#layPop');
   showLay = on => { lp.hidden = !on; lb.setAttribute('aria-expanded', on ? 'true' : 'false');
     if (on) { showSet(false); const r = lb.getBoundingClientRect(); lp.style.left = Math.max(8, Math.min(innerWidth - lp.offsetWidth - 8, r.right - lp.offsetWidth)) + 'px'; firstIn(lp)?.focus({ preventScroll: true }); } };
   lb.onclick = e => { e.stopPropagation(); showLay(lp.hidden); };
-  // 弹层里 Tab 循环，不跑回地图
+  // 弹层里 Tab 循环，不跑回地图（焦点陷阱，关闭后回到入口）
   for (const el of [pop, lp]) el.addEventListener('keydown', e => { if (e.key !== 'Tab') return;
-    const f = [...el.querySelectorAll('button, input, [tabindex="0"]')].filter(x => x.offsetParent && !x.disabled); if (!f.length) return;
+    const f = [...el.querySelectorAll('button, input, summary, select, [tabindex="0"]')].filter(x => x.offsetParent && !x.disabled); if (!f.length) return;
     const i = f.indexOf(document.activeElement);
     if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); } });
   document.addEventListener('click', e => { if (!lp.hidden && !gone(e.target) && !lp.contains(e.target) && !lb.contains(e.target)) showLay(false); });
-  // 关闭花屏特效：只停动画和滤镜，「⚠ 数据链路受扰」文字照常显示；系统开了「减少动态效果」时默认勾上（E4 N24）
+  // 表单正在编辑时通知先不出（§3）
+  pop.addEventListener('focusin', noticeRefresh); pop.addEventListener('focusout', () => setTimeout(noticeRefresh, 0));
   { const cs = $('#optCharStats'); try { cs.checked = localStorage.getItem('edenMapCharStats') !== '0'; } catch (e) {} cs.onchange = () => TCChars.setStatsOn(cs.checked); }   // v0.9.6 E2 / E13
   { const cm = $('#optCharMore'); try { cm.checked = localStorage.getItem('edenMapCharMore') !== '0'; } catch (e) {} cm.onchange = () => TCChars.setMoreOn(cm.checked); }   // v0.9.6 E13 其余字段
-  const fx = $('#optNoFx'); let nofx = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // 关闭花屏特效：只停动画和滤镜，「⚠ 数据链路受扰」文字照常显示；系统开了「减少动态效果」时默认勾上（E4 N24）
+  const fx = $('#optNoFx'); let nofx = matchMedia('(prefers-reduced-motion: reduce)').matches || rmPref() === 'on';
   try { const v = localStorage.getItem('edenMapNoFx'); if (v !== null) nofx = v === '1'; } catch (e) {}
   fx.checked = nofx; document.body.classList.toggle('nofx', nofx);
   fx.onchange = () => { document.body.classList.toggle('nofx', fx.checked); try { localStorage.setItem('edenMapNoFx', fx.checked ? '1' : '0'); } catch (e) {} };
+  // 显示：主题、减少动态（跟随系统 / 开 / 关）、三维画质（三维页像素比上限）
+  $('#themeSeg').addEventListener('click', e => { const b = e.target.closest('button[data-th]'); if (b) setTheme(b.dataset.th); });
+  $('#rmSeg').addEventListener('click', e => { const b = e.target.closest('button[data-rm]'); if (!b) return; try { localStorage.setItem('edenMapRM', b.dataset.rm); } catch (x) {} applyRM(); paintSegs(); });
+  $('#q3Seg').addEventListener('click', e => { const b = e.target.closest('button[data-q]'); if (!b) return; try { localStorage.setItem('edenMap3dQ', b.dataset.q); } catch (x) {} paintSegs(); estateLook(); });
+  matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', applyRM); applyRM();
+  // 高级：三维抽屉自动收起（默认关，§10.5）、单字母快捷键（默认开）、调试帧率、线路（嵌入时由卡内脚本换线路）
+  const sw = (id, key, def, fn) => { const c = $(id); let on = def; try { const v = localStorage.getItem(key); if (v !== null) on = v === '1'; } catch (e) {} c.checked = on;
+    c.onchange = () => { try { localStorage.setItem(key, c.checked ? '1' : '0'); } catch (e) {} fn?.(c.checked); }; };
+  sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', true); sw('#optFps', 'edenMapFps', false, () => estateLook());
+  $('#linePick').onclick = () => { showSet(false); post({ type: 'eden-map:line-pick' }); };
+  $('#kbdBtn').onclick = () => kbdHelp($('#kbdHelp').hidden);
+}
+function kbdHelp(on) {
+  const b = $('#kbdHelp'); b.hidden = !on; $('#kbdBtn').setAttribute('aria-expanded', on ? 'true' : 'false'); if (!on) return;
+  const K = [['Esc', tx('k.esc', '关闭最上面一层 / 抽屉降一档')], ['[ ]  PgUp PgDn', tx('k.layer', '切换上下层')], ['L', tx('k.l', '标注开关')], ['+ −', tx('k.zoom', '缩放')], ['0', tx('k.home', '复位视野')],
+    ['/', tx('k.search', '设置搜索')], ['M', tx('k.m', '变量映射')], ['?', tx('k.help', '快捷键表')]];
+  b.innerHTML = `<dl>${K.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;
 }
 let showSet = () => {}, showLay = () => {};
 // ---------------- 本机扩展接口 window.EdenMap（E6，docs/content-compat.md） ----------------
@@ -1525,7 +1650,7 @@ function renderAbout() {
       : r.status === 'new' ? `${esc(tx('about.new', '有新版 v{v}', { v: r.latest }))}${r.code ? ' · ' + esc(r.code) : ''}<br><a href="${esc(r.notes || '')}" target="_blank" rel="noopener">${esc(tx('about.notes', '更新说明'))}</a><br>${esc(how)}`
       : esc(tx('about.fail', '检查失败：连不上更新接口，稍后再试'))}</div>`;
   }
-  box.innerHTML = h;
+  box.innerHTML = h; updSub();
   if (window.top !== window) {   // v0.9.6「自动检查更新」（默认开；卡内脚本启动时读 edenMapAutoCheck，同源 localStorage）
     const lb = document.createElement('label'); lb.innerHTML = `<span>${esc(tx('about.auto_check', '自动检查更新'))}</span><input type="checkbox" role="switch" id="optAutoCheck">`;
     const cb = lb.querySelector('input'); let on = true; try { on = localStorage.getItem('edenMapAutoCheck') !== '0'; } catch (e) {}
@@ -1541,14 +1666,18 @@ function renderAbout() {
 }
 // 设置里的「自检」一栏：✓ / ⚠ 列表（中 / EN）、新正式版的「本次切换」按钮、「自动更新到新正式版」开关（默认关，存本机 edenMapAutoUpdate）
 let selfCheck = null;
+// 设置首页「更新与版本」那一行的摘要：版本号 + 自检 ⚠ 数
+function updSub() { const el = $('#updSub'); if (!el) return; const v = about?.version || buildInfo?.version || '', w = (selfCheck?.items || []).filter(i => i.status === 'warn').length;
+  el.textContent = [v ? 'v' + String(v).replace(/^S\d+:/, '') : '', w ? tx('s.sc_warn', `自检 ${w} 项 ⚠`, { n: w }) : tx('s.update_sub', '检查更新 · 自检')].filter(Boolean).join(' · '); el.classList.toggle('warn', !!w); }
 function renderSelfCheck() {
   if (!selfCheck?.items) return;
   let box = document.getElementById('selfCheck');
-  if (!box) { box = document.createElement('div'); box.id = 'selfCheck'; $('#setPop').appendChild(box); }
+  if (!box) { box = document.createElement('div'); box.id = 'selfCheck'; TCSettings.registerSection('update', box, { order: 80 }); }
   const L = LANG === 'en' ? 'en' : 'zh', mark = { ok: '✓', warn: '⚠', skip: '–', info: '↑' };
   box.innerHTML = `<b>${esc(tx('selfcheck.title', '自检'))}</b><ul>${selfCheck.items.map(i => `<li class="${esc(i.status)}">${mark[i.status] || ''} ${esc(i[L] || i.zh)}</li>`).join('')}</ul>`;
   { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'splashAgain'; b.textContent = tx('selfcheck.splash', '重新显示开场自检');   // v0.9.5
     b.onclick = () => { showSet(false); post({ type: 'eden-map:splash' }); }; box.appendChild(b); }
+  updSub();
   if (selfCheck.items.some(i => i.id === 'update')) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = tx('selfcheck.update_now', '本次切换到新版本');
     b.onclick = () => post({ type: 'eden-map:update-now' }); box.appendChild(b);
@@ -1570,10 +1699,9 @@ function v3dEntries() {
   for (const [id, m] of Object.entries(REG.maps)) { if (!m.test || !m.viewer3d) continue;
     let b = document.getElementById('v3dTest_' + id);
     if (!b) { b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'v3dTest_' + id; b.style.marginTop = 'var(--sp-4)';
-      b.onclick = () => { showSet(false); go(id); }; $('#setPop').appendChild(b); }
+      b.onclick = () => { showSet(false); go(id); }; $('#v3dTests').appendChild(b); }
     b.textContent = nm(m, 'title'); }
 }
-new MutationObserver(() => { if (!$('#setPop').hidden) v3dEntries(); }).observe($('#setPop'), { attributes: true, attributeFilter: ['hidden'] });
 function v3dFly({ map, hotspot } = {}) {
   if (!REG?.maps[map]?.viewer3d) return false;
   if (cur === map && est?.ready) { est.frame.contentWindow?.postMessage({ type: 'v3d:fly', hotspot }, SUB_ORIGIN); return true; }
@@ -1595,25 +1723,94 @@ window.EdenMap = Object.freeze({
   on(ev, fn) { if (emSubs[ev] && typeof fn === 'function') emSubs[ev].add(fn); return this; },
   off(ev, fn) { if (emSubs[ev]) fn ? emSubs[ev].delete(fn) : emSubs[ev].clear(); return this; },
 });
-// ---------------- 单手（E7） ----------------
-// 停靠栏：菜单按钮（顶栏「⋯」的底部替身）+ 缩放组 + 层切换器；手机上是拇指一侧的一列（庄园里是底部一行），桌面 display: contents 不影响布局
+// ---------------- 外壳（UI v2）：控制列、唯一抽屉、通知层、状态点 ----------------
+// 控制列 #dock：手机 = ⋯（设置首页，含上一级 / 关闭地图 / 切层）+ 缩放；桌面 = 层切换 + 缩放 + 标注。位置跟着抽屉（--sheet-h）/ 右栏（--rail-w-now）
 function makeDock() {
   const dock = document.createElement('div'), tb = document.createElement('button'); dock.id = 'dock';
   tb.type = 'button'; tb.id = 'thumbBtn'; tb.className = 'btn ic'; tb.dataset.i18nAria = tb.dataset.i18nTitle = 'more';
   tb.setAttribute('aria-controls', 'setPop'); tb.setAttribute('aria-expanded', 'false'); tb.innerHTML = ico('more');
   tb.setAttribute('aria-label', t('more')); tb.title = t('more');
-  dock.append(tb, $('#zoom'), $('#layers')); $('#stage').appendChild(dock); return dock;
+  dock.append(tb, $('#layers'), $('#zoom')); $('#stage').appendChild(dock); return dock;
 }
+// 层切换器：手机放在抽屉摘要行左侧（「中层 ▾」一次点开），桌面在控制列顶上常展开
+function placeLayers() {
+  const lay = $('#layers'), S = window.TCSheet; if (!lay || !S) return;
+  const want = narrowNow() ? S.lead : $('#dock'); if (lay.parentElement !== want) { if (want === $('#dock')) want.insertBefore(lay, $('#zoom')); else want.appendChild(lay); }
+  lay.classList.add('compact'); sheetVis();
+}
+function toggleLabels(on) {
+  const cb = $('#tgLabels'); cb.checked = on ?? !cb.checked; document.body.classList.toggle('nolabels', !cb.checked);
+  $('#lblTog').setAttribute('aria-pressed', cb.checked ? 'true' : 'false'); announce(tx(cb.checked ? 's.labels_on' : 's.labels_off', cb.checked ? '标注已显示' : '标注已隐藏'));
+}
+// 抽屉可见性：有事态、人物、地点卡、或手机上要放层名胶囊时显示；三维页（庄园）用它自己的抽屉
+function sheetVis() {
+  const S = window.TCSheet; if (!S) return;
+  const estate = document.body.classList.contains('estate'), ev = !S.button('ev').hidden, ch = !S.button('ch').hidden, card = !$('#card').hidden;
+  const layChip = narrowNow() && !$('#layers').hidden;
+  S.hide(estate || !(ev || ch || card || layChip));
+  S.showTab('pl', ev || ch || card);
+}
+function cardSheet(open) {
+  const S = window.TCSheet; if (!S) return; sheetVis();
+  if (open) { S.setTab('pl', S.state === 'full' ? 'full' : 'half'); return; }
+  if (S.tab === 'pl') { const nx = !S.button('ev').hidden ? 'ev' : !S.button('ch').hidden ? 'ch' : null; if (nx) S.setTab(nx); S.set('peek'); }
+}
+function initShell() {
+  const dock = makeDock();
+  const place = document.createElement('div'); place.id = 'placePane'; place.append($('#card'));
+  const empty = document.createElement('p'); empty.id = 'cardEmpty'; place.append(empty);
+  const S = window.TCSheet = UISheet.create({ host: $('#stage'), id: 'evbar', railKey: 'edenMapRailW',
+    tabs: [{ id: 'ev', btnClass: 'evtab' }, { id: 'ch', btnClass: 'chtab' }, { id: 'pl', btnClass: 'pltab', panel: place }],
+    onState: ({ state, tab, mode, h }) => {
+      S.el.dataset.open = state === 'peek' ? '0' : '1'; S.el.dataset.tab = tab || ''; document.body.classList.toggle('evopen', state !== 'peek');
+      document.body.classList.toggle('sheetfull', state === 'full' && mode === 'sheet'); dock.inert = state === 'full' && mode === 'sheet';
+      // 半开时控制列最高到屏幕中线，超过就横排贴在抽屉上沿（§10.1）
+      const st = $('#stage').getBoundingClientRect(); dock.classList.remove('row');
+      if (mode === 'sheet' && state === 'half' && h + dock.offsetHeight + 12 > st.height * .5 + 1) dock.classList.add('row');
+      if (tab === 'ch' || tab === 'ev') TCEvents.renderBar();
+      post({ type: 'eden-map:chrome', bottom: h, top: $('header').offsetHeight }); noticeRefresh();
+    } });
+  S.label('pl', esc(tx('s.place', '地点')), esc(tx('s.place_short', '地'))); S.showTab('ev', false); S.showTab('ch', false); S.hide(true);
+  // 点地图空白 = 抽屉回到收起（只认移动 < 8 px、< 250 ms 的轻点；点到地标 / 事态按地标处理，§10.4）
+  let tp = null;
+  $('#osd').addEventListener('pointerdown', e => { tp = e.isPrimary ? { x: e.clientX, y: e.clientY, t: e.timeStamp, on: !!e.target.closest?.('.mk, .ev, .realm, .chm, .tripin, .tc-ring a') } : null; }, true);
+  $('#osd').addEventListener('pointerup', e => { if (!tp) return; const q = tp; tp = null;
+    if (q.on || e.timeStamp - q.t > 250 || Math.hypot(e.clientX - q.x, e.clientY - q.y) > 8) return;
+    if (S.open && S.mode === 'sheet') S.set('peek'); }, true);
+  $('#lblTog').onclick = () => toggleLabels();
+  $('#tgLabels').addEventListener('change', () => $('#lblTog').setAttribute('aria-pressed', $('#tgLabels').checked ? 'true' : 'false'));
+  $('#stDot').onclick = () => { const ts = $('#tierState'); if (ts.classList.contains('stuck')) ts.click(); };
+  new MutationObserver(stDotLabel).observe($('#tierState'), { attributes: true, childList: true, characterData: true, subtree: true });
+  addEventListener('resize', () => { placeLayers(); });
+  initNotices();
+}
+function stDotLabel() { const ts = $('#tierState'), d = $('#stDot'); if (!d) return; const txt = ts.textContent || tx('loaded', '✓ 已加载');
+  d.setAttribute('aria-label', tx('s.status', '状态') + '：' + txt); d.title = ts.classList.contains('stuck') ? txt : txt; }
+function flashOk() { const d = $('#stDot'); d.classList.add('flash'); setTimeout(() => d.classList.remove('flash'), 1400); }
+// ---------------- 通知（§3）：嵌入时交给宿主统一显示（eden-map:notice）；单独打开时自己渲染同一个组件 ui/notice.mjs ----------------
+let NT = null, ntQ = [];
+const formBusy = () => { const a = document.activeElement; return !!a && !$('#setPop').hidden && $('#setPop').contains(a) && a.matches('input:not([type=checkbox]), textarea, select, [contenteditable]'); };
+function initNotices() {
+  if (window.top !== window) return;
+  import(new URL('ui/notice.mjs', document.baseURI).href).then(m => {
+    NT = m.createNotices({ doc: document, mount: document.body, baseCls: 'vw-nt', en: LANG === 'en', busy: formBusy,
+      anchor: () => { const st = $('#stage').getBoundingClientRect(); return { left: st.left, top: st.top, width: st.width - (parseFloat(getComputedStyle($('#stage')).getPropertyValue('--rail-w-now')) || 0), height: st.height, top0: 0, bottom0: window.TCSheet && !TCSheet.el.hidden && TCSheet.mode === 'sheet' ? TCSheet.el.offsetHeight : 0, modal: true }; } });
+    for (const n of ntQ.splice(0)) NT.push(n);
+  }).catch(() => {});
+}
+function notify(n) {   // n = { key, level, title, lines, actions: [{ label, run | msg }] }
+  if (window.top !== window) { post({ type: 'eden-map:notice', n: { ...n, actions: (n.actions || []).map(a => ({ label: a.label, primary: a.primary, id: a.id })) } }); if (n.actions?.length) ntActs[n.key] = n.actions; return; }
+  if (NT) NT.push(n); else ntQ.push(n);
+}
+const ntActs = {};
+function noticeRefresh() { NT?.refresh(); if (window.top !== window) post({ type: 'eden-map:formbusy', on: formBusy() }); }
+window.TCNotify = notify;
 function initE7() {
   const tb = $('#thumbBtn'), pop = $('#setPop');
-  // 菜单：底部按钮和顶栏按钮开同一个抽屉；抽屉顶上是够得着的「返回上一级」「关闭地图」（手机上顶栏和酒馆面板的 × 都在最上面）
-  const base = showSet;
-  showSet = on => { base(on); tb.setAttribute('aria-expanded', on ? 'true' : 'false'); if (on) acts(); };
+  // 「⋯」：设置首页，顶上是够得着的「返回上一级」「当前位置」「关闭地图」（手机上顶栏和酒馆面板的 × 都在最上面）
   tb.onclick = e => { e.stopPropagation(); showSet(pop.hidden); };
-  const acts = () => { const up = $('#actUp'), cl = $('#actClose'), par = cur && REG?.maps[cur]?.parent, nar = narrowNow();
-    up.hidden = !(nar && par && REG.maps[par]); if (!up.hidden) { up.dataset.go = par; up.textContent = t('act_up', { title: nm(REG.maps[par], 'title') }); }
-    cl.hidden = !nar || window.top === window; $('#setPop .acts').hidden = up.hidden && cl.hidden; };
   $('#actUp').addEventListener('click', () => showSet(false));
+  $('#actHere').onclick = () => { showSet(false); jumpHere($('#here').value); };
   $('#actClose').onclick = () => { showSet(false); post({ type: 'eden-map:esc' }); };   // 卡内脚本收到 esc 就关面板（旧版卡内脚本也认）
   // 惯用手
   const hs = $('#handSeg');
@@ -1623,8 +1820,12 @@ function initE7() {
     window.__applyHand(); paint(); postState(); });
   paint();
   addEventListener('storage', e => { if (e.key === 'edenMapFabPos' && window.__hand === 'auto') window.__applyHand(); });   // 自动：悬浮按钮拖到另一边，地图跟着换
-  initQuickZoom(); initCardSwipe();
+  initQuickZoom();
 }
+function setActs() { const up = $('#actUp'), cl = $('#actClose'), hg = $('#actHere'), par = cur && REG?.maps[cur]?.parent, nar = narrowNow();
+  up.hidden = !(nar && par && REG.maps[par]); if (!up.hidden) { up.dataset.go = par; up.textContent = t('act_up', { title: nm(REG.maps[par], 'title') }); }
+  hg.hidden = !(nar && !$('#hereGo').hidden);
+  cl.hidden = !nar || window.top === window; $('#setPop .acts').hidden = up.hidden && cl.hidden && hg.hidden; }
 // 单指缩放（像 Google 地图）：双击后第二下按住不放，往下拖放大、往上拖缩小；双击不拖 = 放大一倍。
 // 只接手机触摸（pointerType = touch）、只在瓦片地图 #osd 上（庄园 iframe 不在里面）；第二下按下时截住事件，不让地图库当成平移；多指捏合照旧
 function initQuickZoom() {
@@ -1658,14 +1859,6 @@ function initQuickZoom() {
   box.addEventListener('pointerup', up, true); box.addEventListener('pointercancel', up, true);
   box.addEventListener('dblclick', e => { if (performance.now() - lastQz < 600) e.stopPropagation(); }, true);   // 浏览器补发的 dblclick 不再让地图库再放大一次
 }
-// 手机上的卡片抽屉：按住把手 / 顶行往下拖超过 60 px 就关（不用伸手去点 ×）
-function initCardSwipe() {
-  const c = $('#card'); let s = null;
-  c.addEventListener('pointerdown', e => { if (!narrowNow() || e.pointerType === 'mouse' || !e.target.closest('.grab, .top') || e.target.closest('button')) return; s = { id: e.pointerId, y: e.clientY }; });
-  c.addEventListener('pointermove', e => { if (!s || e.pointerId !== s.id) return; const dy = Math.max(0, e.clientY - s.y); c.style.transform = dy ? `translateY(${dy}px)` : ''; });
-  const end = e => { if (!s || e.pointerId !== s.id) return; const dy = e.clientY - s.y; s = null; c.style.transform = ''; if (dy > 60 && e.type === 'pointerup') closeCard(true); };
-  c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end);
-}
 // 嵌入酒馆（悬浮按钮面板）的消息接口：
 //   酒馆 → 地图：eden-map:here {value}（当前地点）、eden-map:open {map}（直接打开某张地图）
 //   地图 → 酒馆：eden-map:ready（可以撤掉加载遮罩）、eden-map:state {map, title}（当前地图，用于面板标题）
@@ -1698,7 +1891,12 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:varmap') TCVarMap.set(e.data);   // v0.9.5 变量映射（换卡兼容）
     if (e.data?.type === 'eden-map:trips') TCTrips.set(e.data.items || []);   // v0.9.5 最近的行程（卡内脚本从每楼的地点和人物标签推出）
     if (e.data?.type === 'eden-map:toast') TCCustom.toast(e.data.items || []);   // 剧情改名 / 用途的一次性提示
-    if (e.data?.type === 'eden-map:selfcheck') { selfCheck = e.data; renderSelfCheck(); }   // 卡内脚本的启动自检结果（E6）   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
+    if (e.data?.type === 'eden-map:selfcheck') { const first = !selfCheck; selfCheck = e.data; renderSelfCheck(); updSub(); if (first && !selfCheck.items?.some(i => i.status === 'warn')) flashOk(); }   // 自检全部正常：只在状态点闪一次 ✓（§3）
+    if (e.data?.type === 'eden-map:hostbar') document.documentElement.style.setProperty('--hostbar-w', Math.max(0, Math.min(400, +e.data.w || 0)) + 'px');   // 合并顶栏（§2.1）：宿主栏（地点胶囊 + ✕）浮在查看器顶栏右端
+    if (e.data?.type === 'eden-map:key' && e.data.key === 'Escape') onEsc();   // 焦点在宿主页时宿主把 Esc 转过来（§10.14）
+    if (e.data?.type === 'eden-map:line') $('#lineRow').hidden = !e.data.swappable;   // 线路选择在设置「高级」
+    if (e.data?.type === 'eden-map:settings' && typeof e.data.page === 'string') TCSettings.open(e.data.page);
+    if (e.data?.type === 'eden-map:notice-act') { const a = ntActs[e.data.key]?.find(x => x.id === e.data.id); try { a?.run?.(); } catch (x) {} }   // 卡内脚本的启动自检结果（E6）   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
     // 面板关闭时休眠：关掉底图（释放已解码的瓦片），脚本与数据留着；再打开时唤醒，重新打开当前地图
     if (e.data?.type === 'eden-map:sleep' && viewer) { saveView(); sleeping = cur || REG?.start || null; cur = null; if (est?.ready && !lean()) { dropParked(); estParked = est; est.frame.style.visibility = 'hidden'; est.frame.contentWindow?.postMessage({ type: 'estate:pause' }, SUB_ORIGIN); } else est?.frame.remove(); est = null; document.body.classList.remove('estate'); viewer.close(); untrackAll(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }
     if (e.data?.type === 'eden-map:wake' && sleeping) { slowStop = true; const id = sleeping; sleeping = null; go(id); if (e.data.fly) TCCustom.flyTo(e.data.fly); }   // 先开图再飞：fly 目标认不出时不会留下空舞台（接手 review P2）
