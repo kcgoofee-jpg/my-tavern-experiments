@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# （旧，0.8.0 用；v0.9.1 起不改角色卡，改用 tools/build_worldbook_addon.py 生成只含地图条目的附加世界书。
+#  注意：下面「边界」一段的关键词丢弃说法已过时——地图不再过滤内容，见 docs/content-compat.md）
 # 在云端给的《母畜庄园世界书_地图联动版》上补本机审阅定下的规则，输出新版 JSON（不改源文件）。
 # 用法：python3 tools/build_worldbook.py <源.json> <输出.json>
 # 改动：

@@ -82,3 +82,13 @@ bash tools/quiet_wait.sh     # 等锁过去（--check 只判断不等；--max N 
   - `tools/browser/` 的所有脚本（`quietWait()`）。
 - 代理自己写的渲染或浏览器脚本，开工前也先跑 `bash tools/quiet_wait.sh`。
 - 用途：用户在真机上测试、录屏或跑基准时，不要让后台任务抢 CPU / GPU。
+
+## 8. 发版交付（不改角色卡，v0.9.1 起）
+```bash
+python3 tools/build_preview_script.py --tag map-v0.9.1        # → ~/Downloads/酒馆/脚本/【地图】伊甸地图 v0.9.1.json（钉标签；不创建标签，标签不存在时只提醒）
+python3 tools/build_worldbook_addon.py --version 0.9.1 \
+  --check ~/Downloads/酒馆/世界书/华伦天奴世界书.json          # → ~/Downloads/酒馆/世界书/伊甸地图·世界书附加条目 v0.9.1.json
+```
+- 发版脚本的 id 固定，下个版本导入时覆盖旧的一条。
+- 世界书附加条目只含地图的 3 个常驻条目（联动规范 v3、事件类型 v2、当前地点写法），类型、地标、房间、示范都从 `events.mjs` / `maps.json` 生成；生成时自检：示范原文不上图、每个地标能推断出层、当前地点示例落点正确；`--check` 按一份现有世界书核对字段。
+- 用户实测清单：`docs/tt-test-checklist.md`。
