@@ -157,6 +157,7 @@ layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/
 调参（都能透传给 render_all：`bash tools/render_all.sh mid -- --glow .8`）：
 - 中层：`--glow` 所有发光的倍数，`--ambient` 天光。
 - 下层：`--glow`、`--lamp` 钠灯功率、`--ambient`。
+- 中 / 下层：`--no-landmark-glow` 去掉地标的装饰性光圈 / 描边灯 / 光晕（建筑本体和普通照明不动，随机序列与 `map/data/*.json` 不变）；默认不加 = 现状。对比图 `docs/drafts/landmark_glow_compare_*.jpg`。
 - 上层：`--haze` 中层远景上那层霾的浓度。
 
 ## 5. 性能
