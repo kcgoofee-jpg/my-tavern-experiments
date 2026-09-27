@@ -1,5 +1,5 @@
 # 天城 · 上层（悬浮庄园区，离地 800–1500 m）· Blender 正俯视写实渲染（第二版：可读性优先）
-# 用法：Blender -b -P tiancheng_upper.py -- [--res 1600] [--samples 64] [--out path.png] [--below clouds|city] [--haze .25] [--crop x0,y0,x1,y1] [--preview] [--data-only]
+# 用法：Blender -b -P tiancheng_upper.py -- [--res 1600] [--samples 64] [--out path.png] [--below clouds|city] [--haze .25] [--crop x0,y0,x1,y1] [--preview] [--data-only] [--tod day|dawn|dusk|night]
 #       --below clouds（默认）：岛屿下方是一片云海，看不到中层城市；图小、加载快。
 #       --below city：下方是中层城市（OSM 真实路网与建筑轮廓，© OpenStreetMap contributors），压在一层霾下作远景。
 #       或 python3 tiancheng_upper.py -- ...（pip 装的 bpy）。参数与导出格式三层一致，见 docs/tiancheng-maps.md
@@ -259,8 +259,17 @@ def selfcheck(routes_out, mk):
         else: raise AssertionError(msg)
 
 # ---------------- 光照与相机 ----------------
-sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = 3.2; sun.angle = math.radians(1.2); sun.color = (1, .96, .9)
-so = bpy.data.objects.new('sun', sun); col_main.objects.link(so); so.rotation_euler = tc.SUN_ROT   # 三层共用的太阳方向
+# 时段（--tod，准备中，默认 day 与此前完全一致）：只改太阳高度 / 颜色 / 强度、天光与云的自发光亮度；太阳方位角不变（三层共用）。
+TOD = {   # 天顶角（度）、太阳颜色、太阳强度、天光颜色、天光强度、云自发光倍数、云色调（None = 不染）
+    'day':   (40, (1, .96, .9), 3.2, (.55, .65, .8), .35, 1.0, None),
+    'dawn':  (72, (1, .78, .6), 2.2, (.62, .6, .72), .28, .9, (1, .9, .86)),
+    'dusk':  (76, (1, .62, .42), 2.0, (.5, .45, .6), .24, .85, (1, .8, .7)),
+    'night': (40, (.55, .65, 1), .25, (.08, .1, .18), .12, .3, (.6, .68, .9)),
+}
+TOD_NAME = str(layer.opt.get('--tod', 'day')); _tz, _tc, _te, _wc, _ws, _ce, _ct = TOD[TOD_NAME]
+tc_clouds.VEIL_EMIT = _ce; tc_clouds.VEIL_TINT = _ct
+sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = _te; sun.angle = math.radians(1.2); sun.color = _tc
+so = bpy.data.objects.new('sun', sun); col_main.objects.link(so); so.rotation_euler = (math.radians(_tz), 0, tc.SUN_ROT[2])   # 三层共用的太阳方位
 if CLOUD_STYLE == 'veil': tc_clouds.build_veil(layer, islands, so, BELOW_OBJS)   # 《部落冲突》式薄纱云原型（未批准，发布版不走这里）
 elif BELOW == 'city' and not layer.data_only:   # upper_city：城市只被城市自己挡光 → 没有岛影（用户硬规定）
     _cc = bpy.data.collections.new('city_light'); layer.sc.collection.children.link(_cc); tc_clouds.relight_city(so, BELOW_OBJS, _cc)
@@ -283,4 +292,4 @@ def export(co):
                              **({'layout': i['isle'].layout, 'plan': i['isle'].plan} if i['isle'].layout else {}),
                              outline=i['isle'].export(norm), **({'role': i['isle'].d['role']} if i['isle'].d.get('role') else {})) for i in islands],
             'routes': rts}
-layer.finish(world=((.55, .65, .8), .35), extra=export, label=f'islands {len(islands)}')
+layer.finish(world=(_wc, _ws), extra=export, label=f'islands {len(islands)}')

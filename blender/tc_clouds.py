@@ -303,6 +303,7 @@ VEIL_LAYERS = (   # (z, 覆盖率, 不透明度范围, 云板尺寸倍数, 种�
     (.88, .20, (.15, .3), 1.35, 7302),
 )
 VEIL_EMIT = 1.0   # 自发光增益（Standard 视图下 1.0 = 贴图原色）
+VEIL_TINT = None  # 时段色调（tiancheng_upper --tod 设置；None = 不染色，与此前一致）
 
 def _veil_image(name, rgba):
     h, w = rgba.shape[:2]; img = bpy.data.images.new(name, w, h, alpha=True, float_buffer=True)
@@ -318,7 +319,11 @@ def _veil_plane(name, img, z, col):
     m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; N, L = nt.nodes, nt.links
     out = next(n for n in N if n.type == 'OUTPUT_MATERIAL'); N.remove(tc.bsdf_of(m))
     tx = N.new('ShaderNodeTexImage'); tx.image = img; tx.interpolation = 'Cubic'; tx.extension = 'CLIP'
-    em = N.new('ShaderNodeEmission'); em.inputs['Strength'].default_value = VEIL_EMIT; L.new(tx.outputs['Color'], em.inputs['Color'])
+    em = N.new('ShaderNodeEmission'); em.inputs['Strength'].default_value = VEIL_EMIT
+    if VEIL_TINT is None: L.new(tx.outputs['Color'], em.inputs['Color'])
+    else:
+        mu = N.new('ShaderNodeMix'); mu.data_type = 'RGBA'; mu.blend_type = 'MULTIPLY'; mu.inputs['Factor'].default_value = 1.0
+        L.new(tx.outputs['Color'], mu.inputs[6]); mu.inputs[7].default_value = (*VEIL_TINT, 1); L.new(mu.outputs[2], em.inputs['Color'])
     tr = N.new('ShaderNodeBsdfTransparent'); mx = N.new('ShaderNodeMixShader')
     L.new(tx.outputs['Alpha'], mx.inputs['Fac']); L.new(tr.outputs['BSDF'], mx.inputs[1]); L.new(em.outputs['Emission'], mx.inputs[2])
     L.new(mx.outputs['Shader'], out.inputs['Surface'])
