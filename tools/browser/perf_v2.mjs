@@ -41,6 +41,7 @@ async function run(i) {
     const cold = await B.openViewer(P); await B.wait(1500);
     r.coldList = P.net.list.map(([u, b]) => [u.split('?')[0], b]);
     r.desktopCold = { ms: cold.loadingDoneMs, firstTileMs: cold.firstTileMs, bytes: P.net.bytes, requests: P.net.n };
+    await B.wait(8000); r.desktopCold.settleBytes = P.net.bytes; r.desktopCold.settleReq = P.net.n;   // 开图后 ~10 s 内总流量（含后台预热）
     r.heapLoad = await heap(P);
     for (let k = 0; k < 10; k++) await B.goMap(P.page, LAYERS[(k + 1) % 3]);
     await B.wait(1000); r.heap10 = await heap(P);
@@ -50,6 +51,7 @@ async function run(i) {
   { const P = await B.newPage('phone');
     const cold = await B.openViewer(P); await B.wait(1500);
     r.phoneCold = { ms: cold.loadingDoneMs, firstTileMs: cold.firstTileMs, bytes: P.net.bytes, requests: P.net.n };
+    await B.wait(8000); r.phoneCold.settleBytes = P.net.bytes; r.phoneCold.settleReq = P.net.n;
     const warm = await B.openViewer(P); await B.wait(1000);
     r.phoneWarm = { ms: warm.loadingDoneMs, bytes: P.net.bytes, requests: P.net.n };
     await P.close(); }
@@ -78,8 +80,8 @@ await B.closeAll(); srv.stop();
 
 const g = f => med(runs.map(f));
 const M = {
-  desktopCold: { ms: g(r => r.desktopCold.ms), bytes: g(r => r.desktopCold.bytes), requests: g(r => r.desktopCold.requests) },
-  phoneCold: { ms: g(r => r.phoneCold.ms), bytes: g(r => r.phoneCold.bytes), requests: g(r => r.phoneCold.requests) },
+  desktopCold: { ms: g(r => r.desktopCold.ms), firstTileMs: g(r => r.desktopCold.firstTileMs), bytes: g(r => r.desktopCold.bytes), requests: g(r => r.desktopCold.requests), settleBytes: g(r => r.desktopCold.settleBytes), settleReq: g(r => r.desktopCold.settleReq) },
+  phoneCold: { ms: g(r => r.phoneCold.ms), firstTileMs: g(r => r.phoneCold.firstTileMs), bytes: g(r => r.phoneCold.bytes), requests: g(r => r.phoneCold.requests), settleBytes: g(r => r.phoneCold.settleBytes), settleReq: g(r => r.phoneCold.settleReq) },
   desktopWarm: { ms: g(r => r.desktopWarm.ms), bytes: g(r => r.desktopWarm.bytes), requests: g(r => r.desktopWarm.requests) },
   phoneWarm: { ms: g(r => r.phoneWarm.ms), bytes: g(r => r.phoneWarm.bytes), requests: g(r => r.phoneWarm.requests) },
   heapLoad: { heapMB: g(r => r.heapLoad.heapMB), domNodes: g(r => r.heapLoad.domNodes), listeners: g(r => r.heapLoad.listeners) },
