@@ -70,7 +70,7 @@ async function run(name, preset) {
     rep.check(`${name} 旧名 setRoomAlias / getRooms 仍可用`, al[0] === true && al[1].小书斋 === '书房', JSON.stringify(al));
     // 2 剧情标签 → 更新 + 一次性提示
     await H.setMsgs([...MSGS, { message_id: 41, message: '<span style="display:none">⌖改名 客房 → 画室</span><span style="display:none">⌖用途 客房：放画架</span>' }]); await B.wait(900);
-    const v2 = await H.vars(), tt = await vf.evaluate(() => { const t = document.getElementById('cuToast'); return t && !t.hidden ? t.textContent : ''; });
+    const v2 = await H.vars(), tt = await p.evaluate(() => [...document.querySelectorAll('#eden-map-root .nt-p2 .nt-item, #eden-map-root .nt-p1 .nt-item')].map(t => t.textContent).join(' '));   // UI v2：嵌入时提示由宿主通知层显示
     rep.check(`${name} 剧情标签 ⌖改名 / ⌖用途：写入并提示一次`, v2.eden_map.自定义.items.客房?.名 === '画室' && v2.eden_map.自定义.items.客房?.用途 === '放画架' && v2.eden_map.标签楼 === 41 && /客房 改名为「画室」/.test(tt), JSON.stringify({ tt, f: v2.eden_map.标签楼 }));
     await jpg(p, `mvu_${name}_toast`);
     const T41 = '<span style="display:none">⌖改名 客房 → 画室</span><span style="display:none">⌖用途 客房：放画架</span>';

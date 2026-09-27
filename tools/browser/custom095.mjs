@@ -139,13 +139,13 @@ async function run(name, preset) {
     const shown = await p.evaluate(() => !document.querySelector('#eden-map-root .em-panel').hidden);
     rep.check(`${name} 面板关着时 EdenMap.flyTo：打开面板并落到目标（不被当前地点拉回）`, shown && f6.cur === 'tc_low' && /7 号井/.test(f6.card), JSON.stringify({ shown, ...f6 }));
     // 9 主题：切到浅色，宿主面板 / 查看器 / 对话框 / 输入框一起换；对比度 ≥ 4.5
-    await vf.evaluate(() => { showSet(true); document.querySelector('#cuBox .cu-open').click(); }); await B.wait(400);
+    await vf.evaluate(() => { TCSettings.open('data'); document.querySelector('#cuBox .cu-open').click(); }); await B.wait(400);   // UI v2：自定义在设置「数据与映射」页
     await vf.evaluate(() => { document.querySelector('#cuDlg .cu-add').click(); }); await B.wait(300);
     for (const want of ['light', 'dark']) {
-      await vf.evaluate(w => { while ((document.documentElement.classList.contains('light') ? 'light' : 'dark') !== w || window.__theme === 'auto') cycleTheme(); }, want); await B.wait(400);
+      await vf.evaluate(w => { while ((document.documentElement.classList.contains('light') ? 'light' : 'dark') !== w || window.__theme === 'auto') cycleTheme(); }, want); await B.wait(900);
       const r = await vf.evaluate(src => { const C = eval(src); const q = s => document.querySelector(s);
         return { cs: getComputedStyle(document.documentElement).colorScheme, csb: getComputedStyle(document.body).colorScheme, inCs: getComputedStyle(q('#cuQ')).colorScheme,
-          title: C(q('#cuDlgT')), row: C(q('#cuRes .cu-row b')), sub: C(q('#cuRes h4')), input: C(q('#cuQ')), chip: C(q('#cuDlg .chip')), set: C(q('#setPop label span')), small: C(q('#cuBox small')) }; }, CONTRAST);
+          title: C(q('#cuDlgT')), row: C(q('#cuRes .cu-row b')), sub: C(q('#cuRes h4')), input: C(q('#cuQ')), chip: C(q('#cuDlg .chip')), set: C(q('#setPop .spage:not([hidden]) label span')), small: C(q('#cuBox small')) }; }, CONTRAST);
       const host = await p.evaluate(src => { const C = eval(src); const r = document.querySelector('#eden-map-root'); return { light: r.classList.contains('em-light'), bar: C(r.querySelector('.em-title') || r.querySelector('.em-bar')) }; }, CONTRAST);
       const nums = Object.entries(r).filter(([, v]) => typeof v === 'number');
       rep.check(`${name} 主题 ${want}：color-scheme = ${want}（原生控件跟着换），宿主面板同步`, r.cs === want && r.csb === want && r.inCs === want && host.light === (want === 'light'), JSON.stringify({ cs: r.cs, csb: r.csb, inCs: r.inCs, host }));

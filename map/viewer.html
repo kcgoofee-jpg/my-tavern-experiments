@@ -127,7 +127,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
   /* ---------- 工具栏（桌面 48 / 手机 44，一行，不横向滚动） ---------- */
-  header { display: flex; flex-wrap: nowrap; gap: var(--sp-4); align-items: center; min-height: var(--bar-h); padding-right: calc(var(--sp-5) + var(--hostbar-w, 0px)) !important; box-sizing: border-box; padding: 0 var(--sp-5);
+  header { display: flex; flex-wrap: nowrap; gap: var(--sp-4); align-items: center; min-height: var(--bar-h); padding-right: calc(var(--sp-5) + var(--hostbar-w, 0px)) !important; padding-left: calc(var(--sp-5) + var(--hostbar-l, 0px)) !important; box-sizing: border-box; padding: 0 var(--sp-5);
     background: var(--surface-glass); border-bottom: 1px solid var(--line); position: relative; z-index: 12;
     transition: background var(--dur-3), color var(--dur-3), border-color var(--dur-3); }
   header .grow { flex: 1 1 0; min-width: 0; }
@@ -418,7 +418,8 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     #crumbs b { font-weight: 700; }
     #tierState { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
     #stDot { min-width: 44px; min-height: 44px; justify-content: center; padding: 0; }
-    #upBtn, #layWrap, #hereGo, #unmapped { display: none !important; }
+    #upBtn, #layWrap, #hereGo { display: none !important; }
+    #unmapped { max-width: 42%; overflow: hidden; text-overflow: ellipsis; min-height: 44px; }   /* 未上图是持久状态（§3），手机顶栏也留着 */
     body:not(.estate) #setBtn { display: none; }
     .btn { height: 36px; } .btn.ic { width: 36px; }
     .seg { height: 40px; }
@@ -698,7 +699,7 @@ async function mainInner() {
   OpenSeadragon.pixelDensityRatio = OpenSeadragon.getCurrentPixelDensityRatio();
   viewer = OpenSeadragon({
     element: $('#osd'), drawer: 'canvas', prefixUrl: 'vendor/openseadragon/images/',
-    showNavigator: !narrow, showFullPageControl: false, showNavigationControl: false, navigatorPosition: 'BOTTOM_RIGHT', navigatorWidth: '180px', navigatorHeight: '120px',   // 自绘缩放组 #zoom 替代 OSD 的拟物按钮（E5 V01）
+    showNavigator: !narrow, showFullPageControl: false, showNavigationControl: false, navigatorPosition: 'BOTTOM_LEFT', navigatorWidth: '180px', navigatorHeight: '120px',   // 自绘缩放组 #zoom 替代 OSD 的拟物按钮（E5 V01）
     visibilityRatio: 1, constrainDuringPan: true, homeFillsViewer: true, minZoomImageRatio: 1,   // v0.9.6：这几项以前被上一行的注释吞掉了，手机世界图因此能被推到一边、留出大片空白
     maxZoomPixelRatio: 1.25, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: coarse ? 6 : 16,   /* 手机 / 低内存并发少一些（TT WebKit 实测） */ maxImageCacheCount: coarse ? 30 : 60,   /* 512px 瓦片：并发拉取，缓存约 60 MB */ minPixelRatio: effTier().ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true }, gestureSettingsTouch: { pinchRotate: false, flickEnabled: true },
     smoothTileEdgesMinZoom: Infinity,   // 瓦片有 1px 重叠，不需要放大时整屏再画一遍去接缝
@@ -1904,7 +1905,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:trips') TCTrips.set(e.data.items || []);   // v0.9.5 最近的行程（卡内脚本从每楼的地点和人物标签推出）
     if (e.data?.type === 'eden-map:toast') TCCustom.toast(e.data.items || []);   // 剧情改名 / 用途的一次性提示
     if (e.data?.type === 'eden-map:selfcheck') { const first = !selfCheck; selfCheck = e.data; renderSelfCheck(); updSub(); if (first && !selfCheck.items?.some(i => i.status === 'warn')) flashOk(); }   // 自检全部正常：只在状态点闪一次 ✓（§3）
-    if (e.data?.type === 'eden-map:hostbar') document.documentElement.style.setProperty('--hostbar-w', Math.max(0, Math.min(400, +e.data.w || 0)) + 'px');   // 合并顶栏（§2.1）：宿主栏（地点胶囊 + ✕）浮在查看器顶栏右端
+    if (e.data?.type === 'eden-map:hostbar') { const w = Math.max(0, Math.min(400, +e.data.w || 0)) + 'px', left = e.data.side === 'left' && narrowNow(); document.documentElement.style.setProperty('--hostbar-w', left ? '0px' : w); document.documentElement.style.setProperty('--hostbar-l', left ? w : '0px'); }   // 合并顶栏（§2.1）：宿主栏（地点胶囊 + ✕）浮在查看器顶栏右端
     if (e.data?.type === 'eden-map:key' && e.data.key === 'Escape') onEsc();   // 焦点在宿主页时宿主把 Esc 转过来（§10.14）
     if (e.data?.type === 'eden-map:line') $('#lineRow').hidden = !e.data.swappable;   // 线路选择在设置「高级」
     if (e.data?.type === 'eden-map:settings' && typeof e.data.page === 'string') TCSettings.open(e.data.page);

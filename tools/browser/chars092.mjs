@@ -37,7 +37,7 @@ async function run(name, preset) {
     rep.metric(name + '_icon_overlap', ov);
     // 页签
     await vf.evaluate(() => document.querySelector('#evbar .chtab').click()); await B.wait(300);
-    const pane = await vf.evaluate(() => ({ tab: document.querySelector('#evbar').dataset.tab, rows: document.querySelectorAll('#evbar .chpane li').length, evListHidden: getComputedStyle(document.querySelector('#evbar ol')).display === 'none' }));
+    const pane = await vf.evaluate(() => ({ tab: document.querySelector('#evbar').dataset.tab, rows: document.querySelectorAll('#evbar .chpane li').length, evListHidden: !!document.querySelector('#evbar ol').closest('[role=tabpanel]')?.hidden }));   // UI v2：事态列表在另一个标签页
     rep.check(`${name} 「人物」页签：同一横条、4 行、事态列表收起`, pane.tab === 'ch' && pane.rows === 4 && pane.evListHidden, JSON.stringify(pane));
     await jpg(p, `chars_${name}_pane`);
     // 逐人开关
