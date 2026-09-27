@@ -60,8 +60,8 @@ export const catOf = s => { s = String(s || '').trim(); if (CATS[s]) return s; i
   const c = longestIn(s, CAT_KEYS); if (c) return c; const a = longestIn(s, ALIAS_KEYS); return a ? ALIAS_CAT[a] : '其他'; };
 // 地点 → 层：先看显式前缀，再按设定地名推断（地名表见 maps.json）
 const layerGuess = loc => LAYERS.find(l => loc.startsWith(l)) || LAYERS.find(l => l !== '天城外' && loc.includes(l)) ||
-  (/庄园|悬浮岛|浮岛|伊甸|银冠|气候调节塔|骑士团|首相府|将军官邸|财团|大主教府|联盟会所|以太研究院/.test(loc) ? '上层' : /井|地基|血肉磨坊|施粥|哨所|货运|下层分局|资产管理委员会下层/.test(loc) ? '下层'
-    : /霓虹|C区|检查点|执法局总局|大教堂|圣铁摇篮|军营|星渊|议会|商业区/.test(loc) ? '中层' : /圣都|原域|旷野|大陆/.test(loc) ? '天城外' : '');
+  (/庄园|悬浮岛|浮岛|伊甸|银冠|气候调节塔|骑士团|首相府|将军官邸|财团|大主教府|联盟会所|以太研究院/.test(loc) ? '上层' : /井|地基|血肉磨坊|施粥|废弃教堂|哨所|货运|下层分局|资产管理委员会下层/.test(loc) ? '下层'
+    : /霓虹|C区|检查点|执法局总局|大教堂|圣铁摇篮|军营|星渊|议会|商业区|旧公寓/.test(loc) ? '中层' : /圣都|原域|旷野|大陆/.test(loc) ? '天城外' : '');
 const CLOSED = /解除|结束|恢复|扑灭|已控制|平息/;
 export const LAYERS = ['上层', '中层', '下层', '天城外'];
 export const LAYER_MAP = { 上层: 'tc_upper', 中层: 'tc_mid', 下层: 'tc_low', 天城外: 'world' };
@@ -174,7 +174,7 @@ export function layerOf(here) {
   const s = String(here);
   for (const l of LAYERS) if (s.includes(l)) return l;
   if (/伊甸|庄园|悬浮岛|银冠|骑士团|上城|首相府|将军官邸|财团|大主教府|联盟会所|以太研究院/.test(s)) return '上层';
-  if (/井|地基|血肉磨坊|施粥|灰票|下城/.test(s)) return '下层';
+  if (/井|地基|血肉磨坊|施粥|废弃教堂|灰票|下城/.test(s)) return '下层';
   if (/霓虹|执法局总局|大教堂|星渊|议会|检查点|中城/.test(s)) return '中层';
   if (/圣都|原域|旷野|大陆/.test(s)) return '天城外';
   return '';
