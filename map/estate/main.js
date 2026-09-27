@@ -60,18 +60,14 @@ const FI = Object.fromEntries(FLOORS.map((f, i) => [f.id, i]));
 const FLOOR_EN = { B2: 'Basement 2', B1: 'Basement 1', F1: 'Ground floor', F2: 'First floor', F3: 'Second floor' };
 const CUT = 1.5;                                             // 剖切高度（楼面以上）
 const V = (x, y, z) => new THREE.Vector3(x, z, -y);          // layout (x 东, y 北, z 上) → three
-// 旧版房间名 / 查看器词表 → 卡分层房间名（maps.json 的 rooms 词表里有旧模型的名字）
+// 庄园页搜索用的英文名（房间名本身和卡里的其他写法在数据的 name / words 里；仓库以前自编的旧名只经 retired_names 解析，不再列出）
 const ALIAS = {
-  '主卧': ['主卧室', '卧室', '更衣室', '衣帽间', '步入式衣帽间', '313', 'Master Bedroom', 'Dressing Room', 'Walk-in Wardrobe'],
-  '大厅': ['门厅', '玄关', 'Grand Hall', 'Entrance Hall'], '塔楼前厅': ['楼梯厅', 'Stair Hall'], '会客厅': ['客厅', '沙龙', 'Drawing Room'],
-  '餐厅': ['饭厅', 'Dining Room'], '备餐间': ['Servery'], '厨房': ['Kitchen'], '书房': ['图书室', '监控室', '监控中心', '安保室', 'Library', 'Study', 'Security Room'],
-  '女仆长寝室': ['女仆长办公室', "Head Maid's Office", "Head Maid's Room"], '客房': ['Guest Room'], '个人寝室': ['寝', '寝室', '宿舍', 'Bedroom'],
-  '女仆团集体间': ['集体宿舍', '女仆团宿舍', '女仆宿舍'], '新人公共寝区': ['新人寝室'], '三楼公共浴室': ['公共浴室', '浴室', '浴池', '盥洗室', 'Bathroom'],
-  '恒温酒窖': ['酒窖', 'Wine Cellar'], '医疗室': ['医务室'], '衣物清洗维护间': ['洗衣房', 'Laundry'], '器具清洗消毒间': ['清洗消毒间'], '物资仓库': ['仓库'],
-  '东侧长廊': ['长廊', 'Gallery'], '体能训练室': ['健身房', 'Gym'], '主人通道': ['主人专用通道'], '储藏室': ['Storeroom'],
-  '受限房间 A': ['附属室A'], '受限房间 B': ['附属室B'], '受限房间 C': ['附属室C'], '受限房间': ['附属室', '附属室D'],
+  '主人主卧': ['Master Bedroom', 'Dressing Room'], '大厅': ['Grand Hall', 'Entrance Hall'], '会客厅': ['Drawing Room'], '餐厅': ['Dining Room'],
+  '厨房与后勤区': ['Kitchen'], '主人书房': ['Library', 'Study'], '女仆长寝室': ["Head Maid's Room"], '客房': ['Guest Room'], '个人寝室': ['Bedroom'],
+  '三楼公共浴室': ['Bathroom'], '恒温酒窖': ['Wine Cellar'], '衣物清洗与维护间': ['Laundry'], '东侧长廊': ['Gallery'], '体能训练室': ['Gym'],
+  '主人通道': ['主人专用通道'], '储藏室': ['Storeroom'],
 };
-const GALLERY = { '主卧': 'wardrobe' };   // 房间图集（map/data/room_galleries.json）：衣帽间在主卧里
+const GALLERY = { '主人主卧': 'wardrobe' };   // 房间图集（map/data/room_galleries.json）：衣帽间在主卧里
 const KIND_COL = { card: '#d9c29a', restricted: '#9d9a94', support: '#aab3bb', circ: '#e9e4d8', owner: '#a79bb6', inferred: '#c8cfbd', open: '#c8cfbd' };
 
 /* ---------------- 相机与控制（正交；缩放以光标为中心） ---------------- */
@@ -112,8 +108,8 @@ const HC = V((HOUSE_BOX.x0 + HOUSE_BOX.x1) / 2, (HOUSE_BOX.y0 + HOUSE_BOX.y1) / 
 
 /* ---------------- UI 文案 ---------------- */
 const TXT = {
-  zh: { ext: '外观', xray: '内透', sect: '剖切', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '浮岛庄园 · 主楼地上三层 + 地下两层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位', size: '面积', use: '说明', access: '出入', estate: '室外', loading: '加载中…', loadingP: '加载模型 {p}', gallery: '图集', restricted: '受限房间 · 不描述', card: '卡设定', inferred: '仓库推断（卡未写）', houseLoading: '载入室内…' },
-  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Floating-isle estate · house: 3 floors + 2 basements', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset', size: 'Area', use: 'Notes', access: 'Access', estate: 'Grounds', loading: 'Loading…', loadingP: 'Loading model {p}', gallery: 'Photos', restricted: 'Restricted room · not described', card: 'From the card', inferred: 'Repository inference (not in card)', houseLoading: 'Loading interior…' },
+  zh: { ext: '外观', xray: '内透', sect: '剖切', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '浮岛庄园 · 主楼地上三层 + 地下两层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位', size: '面积', use: '说明', access: '出入', estate: '室外', loading: '加载中…', loadingP: '加载模型 {p}', gallery: '图集', restricted: '按原卡 · 不描述', card: '卡设定', inferred: '仓库推断（卡未写）', houseLoading: '载入室内…' },
+  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Floating-isle estate · house: 3 floors + 2 basements', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset', size: 'Area', use: 'Notes', access: 'Access', estate: 'Grounds', loading: 'Loading…', loadingP: 'Loading model {p}', gallery: 'Photos', restricted: 'Per the card · not described', card: 'From the card', inferred: 'Repository inference (not in card)', houseLoading: 'Loading interior…' },
 };
 const tx = (k, v = {}) => (TXT[LANG][k] || TXT.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
 const floorName = (i) => LANG === 'en' ? `${FLOORS[i].id} · ${FLOOR_EN[FLOORS[i].id]}` : `${FLOORS[i].id} · ${FLOORS[i].name}`;
@@ -234,7 +230,8 @@ function mkLabel(parent, x, y, z, cls) {
   const el = document.createElement('div'); el.className = 'lbl ' + cls; el.appendChild(document.createElement('span'));
   const o = new CSS2DObject(el); o.position.set(x, y, z); o.center.set(0.5, 0.5); o.visible = false; parent.add(o); return o;
 }
-const enName = (d) => d.en || (d.kind === 'restricted' ? 'Restricted room' : '');
+const PH = '（按原卡）';   // 名字不入库的卡房间：占位（map/card-bind.mjs）；查看器发来 estate:bind 后换成用户卡里的原名（只在本机）
+const enName = (d) => d.en || (d.name === PH ? 'Per card' : '');
 const nameOf = (it) => {
   const d = it.d;
   if (it.kind === 'area' || it.kind === 'car') return LANG === 'en' ? d.en || d.name : d.name;
@@ -468,9 +465,12 @@ function keysOf(it) {
   const d = it.d;
   if (it.kind === 'area') return [d.name, d.en, ...(d.alias || [])];
   const base = d.name.replace(/[（(][^）)]*[）)]/g, '').replace(/\s*[×x]\s*\d+\s*$/, '').trim();   // 同 here.mjs planWords：去括注 / 「 ×2」，「 / 」两侧各算一个叫法
-  return [d.name, d.id, d.card_id, base, ...base.split(/\s*[\/／]\s*/).filter((w) => [...w].length >= 2), ...(ALIAS[d.name] || [])];
+  return [d.name === PH ? null : d.name, d.id, d.card_id, d.name === PH ? null : base, ...(d.name === PH ? [] : base.split(/\s*[\/／]\s*/).filter((w) => [...w].length >= 2)), ...(d.words || []), ...(d.synonyms || []), ...(ALIAS[d.name] || [])];
 }
+// 旧编号 / 仓库以前自编的旧名（聊天里存过的）→ 现在的卡编号
+const OLD = { ...(CARD.card_id_alias || {}), ...(CARD.retired_names || {}) };
 function findByName(name, floor) {
+  if (OLD[name]) name = OLD[name];
   const s = norm(name); if (!s) return null;
   let best = null, score = -1;
   for (const it of ITEMS) {
@@ -636,11 +636,22 @@ function focusRoomMsg(name, c) {
   if (!it) it = findByName(name);
   if (it) focusItem(it); else unpin();
 }
+// 卡房间原名（查看器从用户自己的卡里按结构取到的，见 map/card-bind.mjs）：只换显示名 / 搜索词，不存盘
+function bindNames(names) {
+  let n = 0;
+  for (const it of ITEMS) {
+    const nm = it.kind === 'room' && typeof names[it.d.card_id] === 'string' ? names[it.d.card_id].slice(0, 40) : null; if (!nm || nm === it.d.name) continue;
+    const words = [...(it.d.words || [])]; if (it.d.name !== PH && !words.includes(it.d.name)) words.push(it.d.name);
+    it.d = { ...it.d, name: nm, words }; n++;
+  }
+  if (n) { relabel(); needs = true; }
+}
 function post(msg) { if (IN_FRAME) try { window.parent.postMessage(msg, '*'); } catch (e) { } }
 window.addEventListener('message', (e) => {
   if (IN_FRAME && e.source !== window.parent) return;
   const d = e.data; if (!d || typeof d !== 'object' || typeof d.type !== 'string' || !d.type.startsWith('estate:')) return;
   if (d.type === 'estate:room') focusRoomMsg(d.name, d.card);
+  else if (d.type === 'estate:bind' && d.names && typeof d.names === 'object') bindNames(d.names);
   else if (d.type === 'estate:floor') { const m = parseFloor(d.floor); if (m != null) setMode(m, { fly: true }); }
   else if (d.type === 'estate:inset' && Number.isFinite(d.left)) { document.documentElement.style.setProperty('--inset', Math.max(6, d.left) + 'px'); frustum(); needs = true; }
   else if (d.type === 'estate:lang' && (d.lang === 'en' || d.lang === 'zh')) setLang(d.lang);
@@ -677,7 +688,7 @@ function onFirstFrame() {
   loadEl.classList.add('done'); setTimeout(() => { loadEl.innerHTML = ''; loadEl.hidden = true; }, 500);
   window.__estate.firstFrameMs = performance.now() - T0;
   const seen = new Set();
-  const rooms = ITEMS.filter((it) => it.kind === 'room' && (it.d.kind === 'card' || it.d.kind === 'restricted') && !seen.has(it.d.floor + it.d.name) && seen.add(it.d.floor + it.d.name))
+  const rooms = ITEMS.filter((it) => it.kind === 'room' && (it.d.kind === 'card' || it.d.kind === 'restricted') && it.d.name !== PH && !seen.has(it.d.floor + it.d.name) && seen.add(it.d.floor + it.d.name))
     .map((it) => ({ name: it.d.name, en: enName(it.d), floor: it.d.floor, alias: ALIAS[it.d.name] || [] }));
   post({ type: 'estate:ready', floors: FLOORS.map((f) => f.id), rooms: rooms.concat(ITEMS.filter((it) => it.kind === 'area').map((it) => ({ name: it.d.name, en: it.d.en, floor: 'ext', alias: it.d.alias }))) });
   if (mode === 'ext' && !EMBED && !REDUCED && !tween) { const v = viewFor('ext'); v.ease = 'out'; flyTo(v, 2000); }

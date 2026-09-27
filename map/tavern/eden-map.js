@@ -348,7 +348,7 @@
   const onMsg = e => {
     if (e.source !== frame.contentWindow) return;
     if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
-    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: UL }); sendAbout(); alive = true; sentClock = sentOutfit = charsSent = null; knowRooms(); sendCheck(); sendCustom(); sendTrips(); varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: UL }); sendAbout(); alive = true; sentClock = sentOutfit = charsSent = bindSent = null; knowRooms(); sendCheck(); sendCustom(); sendTrips(); varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
     if (e.data?.type === 'eden-map:ready' && flyQ) { const q = flyQ; flyQ = null; setTimeout(() => inner()?.flyTo?.(q), 0); }   // EdenMap.flyTo 排队的
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
     if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
@@ -542,7 +542,8 @@
       const mc = CHM.mvuChars(st, hereNow, varMap.present), dd = DBm ? dbData() : null;
       if (dd) { const have = new Set(mc.map(c => c.name)); for (const c of DBm.characters(dd)) if (!have.has(c.name)) mc.push(c); }   // 数据库插件人物表里的位置（只读，MVU 优先）
       chars = CHM.collectChars(msgs, floorNow, mc, known);
-      if (MV) { roster = MV.rosters(st, { present: varMap.present, members: varMap.members, targets: varMap.targets, stageField: varMap.stageField, gradeField: varMap.gradeField, coreField: varMap.coreField, codeField: varMap.codeField, socialField: varMap.socialField, heightField: varMap.heightField, weightField: varMap.weightField, knownField: varMap.knownField, accessoryField: varMap.accessoryField, tierField: varMap.tierField }); rep = MV.reputation(st, varMap.reputation); stageOrderFor(roster); portraitsFor(); }
+      cardBindFor();
+      if (MV) { roster = MV.rosters(st, { present: varMap.present, members: varMap.members, targets: varMap.targets, stageField: varMap.stageField, gradeField: varMap.gradeField, coreField: varMap.coreField, coreCats: coreCatsFor(varMap.coreField), codeField: varMap.codeField, socialField: varMap.socialField, heightField: varMap.heightField, weightField: varMap.weightField, knownField: varMap.knownField, accessoryField: varMap.accessoryField, tierField: varMap.tierField }); rep = MV.reputation(st, varMap.reputation); stageOrderFor(roster); portraitsFor(); }
       const sig = floorNow + '|' + chars.map(c => c.name + '@' + c.place + '#' + c.floor).join() + '|' + JSON.stringify(roster) + Object.keys(portraits).length + rep + (stageOrder || []).join();
       if (sig !== charSig) { charSig = sig; if (!panel.hidden && alive) sendChars(); emit('characters', { items: chars.map(c => ({ ...c })), floor: floorNow }); } }
     const fresh = events.filter(e => e.last > seen && e.tier !== 'fade').length;
@@ -574,7 +575,8 @@
     const items = events.map(e => ({ ...e, isNew: e.last > seen }));
     const fly = visible && flyNext ? items.find(e => e.isNew && e.tier !== 'fade')?.id || null : null;
     if (visible && (fly || floorNow >= 0)) flyNext = false;   // 刚载入时先发的空列表不消耗「打开时飞一次」（E5 r3 RP3-1）
-    if (charSig !== charsSent) { charsSent = charSig; sendChars(); }   // 人物没变就不重发：面板开着时每 4 秒重建一次覆盖层与横条（2026-09-27 接手 review P2）
+    if (charSig !== charsSent) { charsSent = charSig; sendChars(); }
+    cardBindFor(); sendBind();   // v0.9.7 卡原名绑定（每个聊天一次；地图重开后补发）   // 人物没变就不重发：面板开着时每 4 秒重建一次覆盖层与横条（2026-09-27 接手 review P2）
     post({ type: 'eden-map:events', v: 1, floor: floorNow, hereLayer: EVM ? EVM.layerOf(here) : '', items, fly });
     // 只有用户真的看着面板才吃掉未读水位、清角标、记 localStorage（2026-09-27 接手 review P1：
     // 以前后台预加载会把水位推到最新并持久化，角标与「打开时飞向最新未读」从此永久失效——iPhone 走省流路径不预加载，所以手机上看不出来）
@@ -613,6 +615,31 @@
   const withTexts = f => { const t = cardTexts(); if (typeof t?.then !== 'function') return f(t); t.then(x => { f(x); sendChars(); }, () => {}); };
   // 原作头像（v0.9.5）：卡自带脚本里的默认立绘表，只收作者 CDN 的 /sfw/ 地址；每个聊天读一次，不复制图片
   function portraitsFor() { if (portChat === chatId()) return; portChat = chatId(); withTexts(t => { portraits = MV.findPortraits(t); }); }
+  // v0.9.7 卡原名绑定（map/card-bind.mjs）：按聊天读一次当前角色卡的世界书 + 关联世界书，按结构取回卡的原名（庄园房间、地标 / 分区别名、剖面标签），
+  // 以及名册核心数值的档名；结果只在本机内存里发给地图 iframe（eden-map:card-bind），不存盘、不上传。取不到就什么都不发，地图保持中性占位。
+  let CBm = null, bindChat = null, bindTexts = null, bindRes = null, bindSent = null, coreCatsKey = null, coreCats = null;
+  function cardBindFor() {
+    if (bindChat === chatId()) return; bindChat = chatId(); bindTexts = null; bindRes = null; coreCatsKey = null; coreCats = null;
+    const texts = [], take = e => { const c = typeof e === 'string' ? e : e?.content; if (typeof c === 'string' && c.length > 40) texts.push(c); };
+    const book = b => { const es = Array.isArray(b) ? b : b?.entries ? (Array.isArray(b.entries) ? b.entries : Object.values(b.entries)) : []; es.forEach(take); };
+    const jobs = [];
+    try { if (fnOk('getCharData')) jobs.push(Promise.resolve(getCharData('current')).then(c => book(c?.data?.character_book))); } catch (e) {}
+    try {
+      if (fnOk('getCharWorldbookNames')) jobs.push(Promise.resolve(getCharWorldbookNames('current')).then(n => Promise.all([n?.primary, ...(n?.additional || [])].filter(Boolean)
+        .map(w => Promise.resolve(fnOk('getWorldbook') ? getWorldbook(w) : fnOk('getLorebookEntries') ? getLorebookEntries(w) : null).then(book, () => {})))));
+    } catch (e) {}
+    const chat = bindChat;
+    Promise.all([import(SELF + 'card-bind.mjs'), fetch(BASE + 'data/eden_estate_rooms.json').then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(BASE + 'data/card_bind.json').then(r => r.ok ? r.json() : null).catch(() => null), ...jobs.map(j => j.catch(() => {}))])
+      .then(([m, plan, spec]) => {
+        if (chat !== bindChat || dead) return; CBm = m; bindTexts = texts;
+        const rooms = plan ? m.bindCardRooms(plan.card_rooms, texts) : { names: {}, bound: 0, want: 0, misses: [] }, specs = spec ? m.bindSpecs(spec, texts) : { names: {}, bound: 0, want: 0, misses: [] };
+        bindRes = { rooms: rooms.names, specs: specs.names, stat: { rooms: [rooms.bound, rooms.want], specs: [specs.bound, specs.want] } };
+        sendBind(); roundSig = null; recomputeSoon(0);   // 档名可能变了：重算名册
+      }).catch(() => {});
+  }
+  function sendBind() { if (!alive || !bindRes) return; const sig = bindChat + JSON.stringify(bindRes.stat); if (sig === bindSent) return; bindSent = sig; post({ type: 'eden-map:card-bind', v: 1, ...bindRes }); }
+  function coreCatsFor(field) { if (!CBm || !bindTexts || !field || field === '-') return null; if (coreCatsKey !== field) { coreCatsKey = field; coreCats = CBm.findCoreCategories(bindTexts, field); } return coreCats; }
   function stageOrderFor(r) {   // A-3：找不到也记住（同一聊天、同一组取值不再每轮扫一遍卡文本）
     const vals = (r?.targets?.items || []).map(i => i.stage).filter(Boolean), chat = chatId(); if (!vals.length || (stageChat === chat && stageOrder && vals.every(v => stageOrder.includes(v)))) return;
     const key = chat + '|' + [...new Set(vals)].sort().join('\u0001'); if (key === stageMiss) return;

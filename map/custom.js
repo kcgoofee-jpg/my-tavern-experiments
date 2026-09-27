@@ -81,9 +81,11 @@ const TCCustom = (() => {
   const pk = () => (PK ? Promise.resolve(PK) : import(new URL('tavern/picker.mjs', document.baseURI).href).then(m => (PK = m)));
   const planP = () => (plan ? Promise.resolve(plan) : Promise.all([import(new URL('estate/plan.js', document.baseURI).href).catch(() => ({})), fetch(new URL('data/eden_estate_rooms.json', document.baseURI)).then(r => (r.ok ? r.json() : null)).catch(() => null)])
     .then(([m, card]) => (plan = { ...m, CARD: card })));   // 卡设定分层房间（B2–F3）
+  // v0.9.7：查看器套上本机卡原名绑定后的房间数据（estPlan，见 viewer bindPlan）优先；没有就用原始数据（占位「（按原卡）」）
+  const cardPlan = () => (typeof estPlan !== 'undefined' && estPlan) || plan?.CARD || null;
   function groups() {
     if (!PK || typeof REG === 'undefined' || !REG) return [];
-    return PK.buildGroups({ reg: REG, plan, chars: typeof TCChars !== 'undefined' ? TCChars.items.map(c => c.name) : [], lang: typeof LANG !== 'undefined' ? LANG : 'zh' });
+    return PK.buildGroups({ reg: REG, plan: plan && { ...plan, CARD: cardPlan() }, chars: typeof TCChars !== 'undefined' ? TCChars.items.map(c => c.name) : [], lang: typeof LANG !== 'undefined' ? LANG : 'zh' });
   }
   const allKeys = () => groups().flatMap(g => g.items.map(i => i.key));
   function targetOf(key) {
@@ -285,8 +287,8 @@ const TCCustom = (() => {
       if (!eid) return false;
       if (!(typeof estFail !== 'undefined' && estFail) && REG.maps[eid].status !== 'planned') {
         roomNote = null; estFocus = name;
-        const cr = t.floor && plan?.CARD?.rooms?.find(r => r.floor === t.floor && r.name === name);   // 卡设定分层房间：多边形随 estate:room 发给庄园页画框
-        window.estCard = cr ? { name, floor: cr.floor, kind: cr.kind, area: cr.area, poly: cr.poly, z: (plan.CARD.floors.find(f => f.id === cr.floor) || {}).z } : null; if (cur === eid) estateRoom(); else { pendingFocus = null; go(eid); } return true;
+        const CP = cardPlan(), cr = t.floor && CP?.rooms?.find(r => r.floor === t.floor && (r.name === name || r.card_id === name));   // 卡设定分层房间：多边形随 estate:room 发给庄园页画框
+        window.estCard = cr ? { name, floor: cr.floor, kind: cr.kind, area: cr.area, poly: cr.poly, z: (CP.floors.find(f => f.id === cr.floor) || {}).z } : null; if (cur === eid) estateRoom(); else { pendingFocus = null; go(eid); } return true;
       }
       const s = estateStandIn(eid); if (!s) return false; roomNote = name; return flyMarker(s.map, s.marker);
     }

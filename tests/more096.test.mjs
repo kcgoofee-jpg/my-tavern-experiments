@@ -4,13 +4,13 @@ import assert from 'node:assert/strict';
 import { detect, effective, MORE_FIELDS, NAME_FIELDS, DEFAULT_MAP, OFF } from '../map/tavern/adapter.mjs';
 import { rosters } from '../map/tavern/mvu.mjs';
 
-const CARD = { 世界: { 当前地点: 'x' }, 主角: {}, 表一: { 甲: { 社会身份: '讲师', 母畜代号: '青鸟', 身高: 168, 体重: 52, 外界知情: false, 项圈: '银链' } } };
+const CARD = { 世界: { 当前地点: 'x' }, 主角: {}, 表一: { 甲: { 社会身份: '讲师', 园丁代号: '青鸟', 身高: 168, 体重: 52, 外界知情: false, 项圈: '银链' } } };
 const OTHER = { 世界: {}, 主角: {}, 名册: { 乙: { 身份: '园丁', 代号: 'K', height: '170', 饰物: '胸针' } } };
 
 test('默认字段名在行里就用它', () => {
-  assert.ok(MORE_FIELDS.every(f => NAME_FIELDS.includes(f) && DEFAULT_MAP[f]));
+  assert.ok(MORE_FIELDS.every(f => NAME_FIELDS.includes(f) && (DEFAULT_MAP[f] || f === 'codeField')));   // v0.9.7：代号字段不写死卡原文，按「…代号」自动找
   const d = detect(CARD);
-  assert.deepEqual(MORE_FIELDS.map(f => d[f]), ['母畜代号', '社会身份', '身高', '体重', '外界知情', '项圈']);
+  assert.deepEqual(MORE_FIELDS.map(f => d[f]), ['园丁代号', '社会身份', '身高', '体重', '外界知情', '项圈']);
   const it = rosters(CARD, d).members.items[0];
   assert.deepEqual(it.more, { code: '青鸟', social: '讲师', height: 168, weight: 52, known: false, accessory: '银链' });
 });

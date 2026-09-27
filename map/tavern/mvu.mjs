@@ -229,15 +229,15 @@ export const tagToast = a => (a.op === 'name' ? `${a.key} 改名为「${a.value}
 const plain = o => !!o && typeof o === 'object' && !Array.isArray(o);
 const IDENT = /身份|identity|role|职业|头衔|title/i, STAGE = /进度|阶段|stage|progress/i, REP = /声望|reputation|名望/i;
 const isRoster = t => { t = val(t); return plain(t) && Object.values(t).every(v => plain(val(v))); };
-// v0.9.6（E2 / E13）：核心数值（0–100）按卡的 5 档阈值（≤20 / ≤40 / ≤60 / ≤80 / ≤100，docs/card-digest.md）换算档位名。
-// 档名只对默认字段（这张卡）用卡自己的叫法，第 5 档由运行时读到的字段名派生；别的卡的字段一律「档 n」。
-export const CORE_CUTS = [20, 40, 60, 80, 100], CORE_DEFAULT = '母畜值';
-const CORE_NAMES = ['抗拒期', '动摇期', '接受期', '沉溺期'];   // 卡原文的档名（变量更新规则 category，2026-09-28 对账：原先去掉了「期」）
-export function coreStage(field, n) {
+// v0.9.6（E2 / E13）：核心数值（0–100）按 5 档阈值（≤20 / ≤40 / ≤60 / ≤80 / ≤100，docs/card-digest.md）换算档位。
+// v0.9.7：档名不写死——运行时从卡的变量更新规则里按结构取（card-bind.mjs findCoreCategories：「<字段>: … category: a-b: 名」），
+// 取到就用卡自己的叫法（cats = [{ max, name }]），取不到一律「档 n」。
+export const CORE_CUTS = [20, 40, 60, 80, 100];
+export function coreStage(field, n, cats = null) {
   if (typeof n !== 'number' || !Number.isFinite(n)) return '';
+  if (Array.isArray(cats) && cats.length) { const c = cats.find(c => n <= c.max) || cats[cats.length - 1]; if (c?.name) return c.name; }
   const i = CORE_CUTS.findIndex(c => n <= c), k = i < 0 ? 4 : i;
-  if (field !== CORE_DEFAULT) return `档 ${k + 1}`;
-  return k < 4 ? CORE_NAMES[k] : /值$/.test(field) ? '完全' + field.slice(0, -1) + '化' : `档 ${k + 1}`;
+  return `档 ${k + 1}`;
 }
 const num = v => (typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? +v : NaN);
 function rows(tbl, stageKey, fk = {}) {
@@ -248,7 +248,7 @@ function rows(tbl, stageKey, fk = {}) {
     if (sk) { const s = str(val(o[sk])); if (s) it.stage = s; }
     const gk = fk.gradeField, ck = fk.coreField;
     if (gk && gk !== '-' && gk in o) { const g = str(val(o[gk])); if (g) it.grade = g; }
-    if (ck && ck !== '-' && ck in o) { const n = num(val(o[ck])); if (Number.isFinite(n)) { it.core = n; it.coreKey = ck; it.coreStage = coreStage(ck, n); } }
+    if (ck && ck !== '-' && ck in o) { const n = num(val(o[ck])); if (Number.isFinite(n)) { it.core = n; it.coreKey = ck; it.coreStage = coreStage(ck, n, fk.coreCats); } }
     const more = {};   // v0.9.6 E13 其余字段（人物卡「更多资料」）：只读，原样取值；布尔的外界知情保留 true / false
     for (const [f, k] of Object.entries(MORE_KEYS)) { const fk_ = fk[f]; if (!fk_ || fk_ === '-' || !(fk_ in o)) continue; const v = val(o[fk_]);
       if (typeof v === 'boolean') more[k] = v; else if (typeof v === 'number' && Number.isFinite(v)) more[k] = v; else { const s = str(v); if (s) more[k] = s.slice(0, 80); } }
