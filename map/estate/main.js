@@ -854,6 +854,7 @@ function cardBox(c) {
 }
 function post(msg) { if (IN_FRAME) try { window.parent.postMessage(msg, '*'); } catch (e) { } }
 window.addEventListener('message', (e) => {
+  if (IN_FRAME && e.source !== window.parent) return;   // 只认嵌入它的查看器（A-6）
   const d = e.data; if (!d || typeof d !== 'object' || typeof d.type !== 'string' || !d.type.startsWith('estate:')) return;
   if (d.type === 'estate:room') { cardBox(d.card && d.card.name === d.name ? d.card : null); if (d.card?.name === d.name) return; const it = findByName(d.name); if (it) focusItem(it); else unpin(); }
   else if (d.type === 'estate:floor') { const m = parseFloor(d.floor); if (m != null) setMode(m, { fly: true }); }

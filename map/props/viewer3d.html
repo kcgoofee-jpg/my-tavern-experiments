@@ -479,6 +479,7 @@ addEventListener('pagehide', () => { running = false; disposeRoot(); renderer.di
 // ---------------- 宿主消息 ----------------
 let bench = null;
 addEventListener('message', e => {
+  if (e.source !== parent) return;   // 只认嵌入它的查看器（A-6）
   const d = e.data || {};
   if (d.type === 'estate:lang') { LANG = d.lang === 'en' ? 'en' : 'zh'; applyLang(); }
   if (d.type === 'estate:theme') setTheme(d.theme);
