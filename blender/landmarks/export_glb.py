@@ -42,6 +42,9 @@ BUDGET = {
     # highland（旷野高地：台地 / 峭壁 / 小径 / 石块 / 焦土 / 丛草与树）
     'site_plateau': (55000, 2048), 'site_cliff': (80000, 2048), 'site_trail': (5000, 1024),
     'props_rocks': (30000, 1024), 'props_scorch': (12000, 1024), 'site_vegetation': (60000, 1024),
+    # amc_facility（资产管理委员会下层设施；walls_ext / site_ground / props_gate / props_lights 共用上面的预算）
+    'props_wall': (30000, 2048), 'props_works': (50000, 2048), 'props_post': (12000, 1024),
+    'props_vehicles': (20000, 1024), 'props_roof': (6000, 512),
 }
 
 
