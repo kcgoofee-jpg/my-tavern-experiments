@@ -48,5 +48,29 @@ try {
     rep.check(`${tag}：无脚本错误`, !P.errors.length, P.errors.slice(0, 3).join(' | '));
     await P.close();
   }
+  // 查看器休眠 / 唤醒：庄园 iframe 留着（隐藏 + 暂停），唤醒不再出加载页；第一帧 < 100 ms。再冷开一次：glb 从 Cache API 取
+  {
+    const P = await B.newPage('desktop');
+    const V = await B.openInHost(P, B.BASE + 'viewer.html?map=tc_upper', { frameH: 760 });   // eden-map:* 只认宿主（parent）
+    await V.waitForFunction(() => typeof go === 'function' && REG, null, { timeout: 30000 });
+    await V.evaluate(() => go('eden_estate')); await V.waitForFunction(() => document.querySelector('#estate.on'), null, { timeout: 60000 });
+    const hostPost = (m) => P.page.evaluate((m) => document.getElementById('f').contentWindow.postMessage(m, '*'), m);
+    await hostPost({ type: 'eden-map:sleep' }); await B.wait(800);
+    const fr = P.page.frames().find((x) => x.parentFrame() === V);
+    const sl = { kept: !!fr, paused: fr ? await fr.evaluate(() => window.__estate.paused()) : null };
+    await V.evaluate(() => { window.__ldSeen = false; const ld = document.getElementById('loading'); window.__mo = new MutationObserver(() => { if (!ld.classList.contains('done')) window.__ldSeen = true; }); window.__mo.observe(ld, { attributes: true }); });
+    await hostPost({ type: 'eden-map:wake' }); await B.wait(800);
+    const fr2 = P.page.frames().find((x) => x.parentFrame() === V);
+    const wk = await V.evaluate(() => ({ cur, ld: window.__ldSeen, vis: document.getElementById('estate')?.style.visibility || 'visible' }));
+    const rf = fr2 ? await fr2.evaluate(() => ({ same: !!window.__estate, resumeMs: Math.round(window.__estate.resumeFrameMs ?? -1), paused: window.__estate.paused() })) : null;
+    rep.metric('sleep_wake', { sl, wk, rf });
+    rep.check('休眠：庄园 iframe 保留并暂停渲染', sl.kept && sl.paused === true, JSON.stringify(sl));
+    rep.check('唤醒：不出加载页，第一帧 < 100 ms', wk.cur === 'eden_estate' && !wk.ld && wk.vis !== 'hidden' && rf && !rf.paused && rf.resumeMs >= 0 && rf.resumeMs < 100, JSON.stringify({ wk, rf }));
+    await P.close();
+    const Q2 = await B.newPage('desktop'); await B.openEstate(Q2, { stats: false }); await Q2.page.reload({ waitUntil: 'commit' }); await Q2.page.waitForFunction(() => window.__ffAt, null, { timeout: 90000 });
+    const c = await Q2.page.evaluate(() => window.__estate.stats().files.cached || 0);
+    rep.check('冷开：glb 从 Cache API 取（不重下）', c >= 1, `cached=${c}`);
+    await Q2.close();
+  }
 } finally { await B.closeAll(); srv.stop(); }
 const ok = rep.save(); console.log(`${ok ? '全部通过' : '有失败'} → ${OUT}/summary.md`); process.exit(ok ? 0 : 1);

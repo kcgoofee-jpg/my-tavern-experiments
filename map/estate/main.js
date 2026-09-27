@@ -216,8 +216,18 @@ function addBackdrop(root) {
 const loadEl = $('#loading');
 const setLoadText = (s) => { const sp = loadEl.querySelector('span'); if (sp) sp.textContent = s; };
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-function loadGlb(file, onProg) {
-  return new Promise((res, rej) => loader.load(url('model/' + file), res, (e) => { kick('glb'); onProg && onProg(e); }, rej));
+// 模型缓存（Cache API，键 = 地址 + ?estv=manifest.v）：关掉面板再冷开也不重下；重出模型时改 manifest.json 的 v。拿不到 caches（file:// / 老浏览器）就直接下载
+const GLB_CACHE = 'eden-estate-glb';
+async function loadGlb(file, onProg) {
+  const u = url('model/' + file), key = u + (u.includes('?') ? '&' : '?') + 'estv=' + (MAN.v || '0');
+  let cache = null; try { cache = self.caches && await caches.open(GLB_CACHE); } catch (e) { }
+  if (cache) try {
+    const hit = await cache.match(key);
+    if (hit) { const buf = await hit.arrayBuffer(); STAT.cached = (STAT.cached || 0) + 1; kick('glb'); return await loader.parseAsync(buf, u.replace(/[^/]*$/, '')); }
+  } catch (e) { }
+  const g = await new Promise((res, rej) => new THREE.FileLoader().setResponseType('arraybuffer').load(u, res, (e) => { kick('glb'); onProg && onProg(e); }, rej));
+  if (cache) cache.put(key, new Response(g.slice(0), { headers: { 'content-type': 'model/gltf-binary' } })).then(() => cache.keys()).then((ks) => ks.forEach((r) => { if (r.url.startsWith(u) && r.url !== key) cache.delete(r); })).catch(() => { });
+  return loader.parseAsync(g, u.replace(/[^/]*$/, ''));
 }
 const TB = {};
 const STAT = { tris: 0, bytes: 0, site: '', house: '' };
@@ -764,6 +774,8 @@ window.addEventListener('message', (e) => {
   else if (d.type === 'estate:bind' && d.names && typeof d.names === 'object') bindNames(d.names);
   else if (d.type === 'estate:floor') { const m = parseFloor(d.floor); if (m != null) setMode(m, { fly: true }); }
   else if (d.type === 'estate:inset' && Number.isFinite(d.left)) { document.documentElement.style.setProperty('--inset', Math.max(6, d.left) + 'px'); frustum(); needs = true; }
+  else if (d.type === 'estate:pause') { paused = true; }   // 查看器休眠：停渲染循环，模型与 GPU 资源留着
+  else if (d.type === 'estate:resume' && paused) { paused = false; resumeT = performance.now(); needs = true; requestAnimationFrame(loop); }
   else if (d.type === 'estate:lang' && (d.lang === 'en' || d.lang === 'zh')) setLang(d.lang);
   else if (d.type === 'estate:theme' && (d.theme === 'light' || d.theme === 'dark')) { THEME = d.theme; document.documentElement.dataset.theme = THEME; paintSky(); }
 });
@@ -773,7 +785,9 @@ addEventListener('resize', () => { frustum(); renderer.setSize(innerWidth, inner
 /* ---------------- 循环（按需渲染） ---------------- */
 const statsEl = $('#stats'); if (STATS) statsEl.style.display = 'block';
 let frames = 0, fpsT = performance.now(), fps = 0, first = true, lastInfo = { calls: 0, triangles: 0 }, lastPulse = 0;
+let paused = false, resumeT = 0;
 function loop(now) {
+  if (paused) return;
   requestAnimationFrame(loop);
   let moving = stepTween(now);
   if (!moving) moving = controls.update(); else controls.update();
@@ -792,6 +806,7 @@ function loop(now) {
   if (cardFor && !cardAt) placeCard();
   frames++;
   if (first) { first = false; onFirstFrame(); }
+  if (resumeT) { window.__estate.resumeFrameMs = performance.now() - resumeT; resumeT = 0; }
   if (STATS && now - fpsT > 500) { fps = frames * 1000 / (now - fpsT); frames = 0; fpsT = now; statsEl.textContent = `T${tier} · ${fps.toFixed(0)} fps\n${lastInfo.calls} calls\n${(lastInfo.triangles / 1000).toFixed(0)}k tris\n${STAT.site}${STAT.house ? ' + ' + STAT.house : ''}`; }
 }
 // 自适应清晰度：连续动画 / 拖动时统计 2 秒，帧率 < 30 就把像素比降到 1.5（只降一次）
@@ -821,7 +836,7 @@ window.__estate = {
   setMode: (m) => setMode(parseFloor(m) ?? m, { fly: true }), focus: (n) => { const it = findByName(n); if (it) focusItem(it); return !!it; },
   find: (n) => { const it = findByName(n); return it ? { kind: it.kind, name: it.d.name, id: it.d.id, floor: it.floor != null ? FLOORS[it.floor].id : null } : null; },
   focusCard: (c) => focusRoomMsg(c.name, c), mode: () => mode, houseState: () => houseState, pinned: () => pinned && { kind: pinned.kind, name: pinned.d.name, id: pinned.d.id },
-  tier: () => tier, dpr: () => DPR,
+  tier: () => tier, dpr: () => DPR, paused: () => paused,
   stats: () => ({ ...lastInfo, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length, tier, low: LOW, files: STAT, times: TB, firstFrameMs: window.__estate.firstFrameMs, tris: STAT.tris }),
   camera, controls, renderer, scene, setLang,
 };

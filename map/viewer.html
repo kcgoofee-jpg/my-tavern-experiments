@@ -832,6 +832,7 @@ async function go(id) {   // 云脚本块（文末）会包一层：天城各层
   saveView();
   cur = id; userMoved = false; closeCard(); TCEvents.collapse?.(); document.body.dataset.map = id;
   if (m.kind === 'estate') return openEstate(id, m, !!prev);
+  dropParked();
   // 离开庄园：iframe 留到新底图画出来再淡出
   const oldFrame = leaveEstate();
   // 叠加层可以取别的地图的数据（overlay.from），例如中层的「上层投影」用上层的岛屿轮廓
@@ -873,6 +874,10 @@ function mapChrome(m) {
 // 三维库（three 0.160.0）随仓库放在 map/estate/vendor/，庄园页的 importmap 用相对路径，跟着 <base>（当前线路）走，没梯子也能加载。
 // 兜底：旧版庄园页 importmap 里若还写着 jsDelivr / jsdmirror 的 npm 地址，注入 srcdoc 前改写成同一线路下的 estate/vendor/（E4 N01）。
 let est = null;   // { id, frame, ready }
+// 休眠时把画好的庄园留着（隐藏 + 暂停渲染，GPU 资源不放）：再打开面板直接接着用，不再「加载 伊甸庄园…」。
+// 宿主 SLEEP_MS（3 分钟）后整页卸载时才真正释放；省流 / 低内存（lean()）照旧休眠即拆。
+let estParked = null;
+function dropParked() { if (estParked) { estParked.frame.remove(); estParked = null; } }
 // 本次会话里庄园三维加载失败过：之后「自动跳到当前地点」不再进庄园，改落上层的伊甸地标（记在会话存储，重试成功后清掉）
 const EST_FAIL_KEY = 'edenMapEstateFail';
 let estFail = (() => { try { return sessionStorage.getItem(EST_FAIL_KEY) === '1'; } catch (e) { return false; } })();
@@ -900,6 +905,15 @@ function estatePlan() {   // 看平面图：回上层并聚焦伊甸（打开它
 }
 async function openEstate(id, m, hadPrev) {
   document.body.classList.add('estate'); renderNav();
+  if (estParked?.id === id) {   // 从休眠里接回来：取消隐藏、恢复渲染，走一遍 ready 之后的同步
+    est = estParked; estParked = null; const f = est.frame; f.style.visibility = '';
+    $('#loading').classList.add('done'); estateActs('');
+    f.contentWindow?.postMessage({ type: 'estate:resume' }, SUB_ORIGIN);
+    $('#credit').textContent = $('#credit').title = nm(m, 'credit'); $('#creditBtn').hidden = !nm(m, 'credit');
+    estateBind(); estateLook(); estateInset(); estateRoom(); focusAfterGo(); postState(); post({ type: 'eden-map:loaded' });
+    return;
+  }
+  dropParked();
   $('#credit').textContent = $('#credit').title = nm(m, 'credit'); $('#creditBtn').hidden = !nm(m, 'credit'); window.__creditShow?.(false);
   const ld = $('#loading'), ti = nm(m, 'title'); ld.classList.remove('done', 'thumb'); ld.classList.remove('over'); estateActs('');   // v0.9.6：三维页加载时用整屏加载页，不再露出上一张图 + 一个「加载中」小条
   if (m.cover) { ld.style.setProperty('--loading-cover', `url(${matchMedia('(max-width: 600px)').matches ? m.cover.src_800 || m.cover.src : m.cover.src})`); ld.classList.add('cover'); }
@@ -1701,7 +1715,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:toast') TCCustom.toast(e.data.items || []);   // 剧情改名 / 用途的一次性提示
     if (e.data?.type === 'eden-map:selfcheck') { selfCheck = e.data; renderSelfCheck(); }   // 卡内脚本的启动自检结果（E6）   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
     // 面板关闭时休眠：关掉底图（释放已解码的瓦片），脚本与数据留着；再打开时唤醒，重新打开当前地图
-    if (e.data?.type === 'eden-map:sleep' && viewer) { saveView(); sleeping = cur || (bootT ? BOOT : null); clearTimeout(bootT); bootT = 0; cur = null; est?.frame.remove(); est = null; document.body.classList.remove('estate'); viewer.close(); untrackAll(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }
+    if (e.data?.type === 'eden-map:sleep' && viewer) { saveView(); sleeping = cur || (bootT ? BOOT : null); clearTimeout(bootT); bootT = 0; cur = null; if (est?.ready && !lean()) { dropParked(); estParked = est; est.frame.style.visibility = 'hidden'; est.frame.contentWindow?.postMessage({ type: 'estate:pause' }, SUB_ORIGIN); } else est?.frame.remove(); est = null; document.body.classList.remove('estate'); viewer.close(); untrackAll(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }
     if (e.data?.type === 'eden-map:wake' && sleeping) { slowStop = true; const id = sleeping; sleeping = null; hereFresh = true; if (id === BOOT) bootLater(); else go(id); if (e.data.fly) TCCustom.flyTo(e.data.fly); }   // 先开图再飞：fly 目标认不出时不会留下空舞台（接手 review P2）
     else if (e.data?.type === 'eden-map:wake' && e.data.fly) TCCustom.flyTo(e.data.fly);
   });
