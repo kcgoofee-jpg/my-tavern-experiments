@@ -100,7 +100,7 @@
 
 ## 原作与授权
 
-- 原作：角色卡《母畜庄园》，作者 **Yehehua**，发布于 Discord「类脑」社区：<https://discord.com/channels/1380075940285124724/1534464824141025321>。
+- 原作：**Yehehua** 的原作角色卡，发布于 Discord「类脑」社区：<https://discord.com/channels/1380075940285124724/1534464824141025321>。
 - 本仓库的地图、脚本与世界书附加条目是二次创作，不包含也不修改原卡。作者于 2026-09-27 通过 Discord 同意，条件是**发布时首帖附上面的原作帖链接**。
 - 同一行署名也写在地图脚本说明（`tools/build_preview_script.py`）、世界书附加条目（`tools/build_worldbook_addon.py`）和查看器设置面板底部。
 
