@@ -73,7 +73,7 @@ def coords(nt, scale):
     return mp.outputs[0]
 
 
-def pbr(name, aid, tile, tint=None, rough_mul=1.0, wet=0.0, nstr=1.0, metal=0.0, desat=False):
+def pbr(name, aid, tile, tint=None, rough_mul=1.0, wet=0.0, nstr=1.0, metal=0.0, desat=False, grime=False):
     """box 投影 PBR；wet>0 时用噪声做积水（压暗 + 降粗糙度）。"""
     m, nt, b = new_mat(name)
     c = coords(nt, 1.0 / tile)
@@ -123,6 +123,25 @@ def pbr(name, aid, tile, tint=None, rough_mul=1.0, wet=0.0, nstr=1.0, metal=0.0,
         nt.links.new(ramp.outputs[0], nf.inputs['Factor'])
         nf.inputs[2].default_value = nstr; nf.inputs[3].default_value = 0.1
         nt.links.new(nf.outputs[0], nm.inputs['Strength'])
+    if grime:
+        # 墙根泥溅：世界 z 0–0.6 m 渐变 × 噪声，压暗偏棕、变粗糙
+        gp = nt.nodes.new('ShaderNodeNewGeometry'); sz = nt.nodes.new('ShaderNodeSeparateXYZ')
+        nt.links.new(gp.outputs['Position'], sz.inputs[0])
+        mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['From Min'].default_value = 0.05; mr.inputs['From Max'].default_value = 0.65
+        mr.inputs['To Min'].default_value = 1.0; mr.inputs['To Max'].default_value = 0.0
+        nt.links.new(sz.outputs[2], mr.inputs['Value'])
+        gn = nt.nodes.new('ShaderNodeTexNoise'); gn.inputs['Scale'].default_value = 7; gn.inputs['Detail'].default_value = 12
+        nt.links.new(gp.outputs['Position'], gn.inputs['Vector'])
+        gm_ = nt.nodes.new('ShaderNodeMath'); gm_.operation = 'MULTIPLY'
+        nt.links.new(mr.outputs[0], gm_.inputs[0])
+        g2 = nt.nodes.new('ShaderNodeMath'); g2.operation = 'MULTIPLY_ADD'; g2.inputs[1].default_value = 1.6; g2.inputs[2].default_value = -0.2
+        nt.links.new(gn.outputs[0], g2.inputs[0]); nt.links.new(g2.outputs[0], gm_.inputs[1])
+        cl = nt.nodes.new('ShaderNodeMath'); cl.operation = 'MINIMUM'; cl.inputs[1].default_value = 1.0
+        nt.links.new(gm_.outputs[0], cl.inputs[0])
+        gmix = nt.nodes.new('ShaderNodeMix'); gmix.data_type = 'RGBA'
+        nt.links.new(cl.outputs[0], gmix.inputs['Factor']); nt.links.new(col, gmix.inputs[6])
+        gmix.inputs[7].default_value = (0.16, 0.12, 0.08, 1)
+        col = gmix.outputs[2]
     nt.links.new(col, b.inputs['Base Color'])
     nt.links.new(rough, b.inputs['Roughness'])
     b.inputs['Metallic'].default_value = metal
@@ -241,13 +260,13 @@ M = {}
 M['floor'] = pbr('floor_wet', 'concrete_floor_worn_001', 2.5, rough_mul=0.9, wet=0.55, tint=(0.5, 0.5, 0.5), desat=True)
 M['yard'] = pbr('yard', 'concrete_floor_worn_001', 3.0, wet=0.3)
 M['mat'] = pbr('rubber_mat', 'rubber_tiles', 0.6, wet=0.4, rough_mul=0.9)
-M['block'] = pbr('block', 'concrete_wall_008', 2.0, tint=(0.95, 0.95, 0.93))
+M['block'] = pbr('block', 'concrete_wall_008', 2.0, tint=(0.95, 0.95, 0.93), grime=True)
 M['pitwall'] = pbr('pitwall', 'smooth_concrete_floor', 1.5, tint=(0.62, 0.63, 0.62), wet=0.3, desat=True)
 M['clad'] = pbr('cladding', 'box_profile_metal_sheet', 1.5, tint=(0.62, 0.66, 0.64), metal=0.5, desat=True)
 M['wood'] = pbr('post_wood', 'rough_wood', 0.8, tint=(0.8, 0.72, 0.62))
 M['grass_ground'] = pbr('grass_ground', 'grass_ground', 2.0)
 M['steel'] = steel('steel_brushed')
-M['steel_polish'] = steel('steel_polished', base_rough=0.26, tile=0.3)
+M['steel_polish'] = steel('steel_polished', base_rough=0.24, tile=0.1)
 M['tank'] = steel('tank_brushed', base_rough=0.24, tile=1.0)
 M['galv'] = galvanised()
 M['rubber'] = rubber('rubber_black')
@@ -471,37 +490,91 @@ for x in [PX0 - 0.2] + [PX0 + 2.2 * k for k in range(1, 5)] + [PX1 + 0.2]:
     pipe(f'gantry_{x:.1f}', [(x, -(PY1 + 0.14), 2.35), (x, PY1 + 0.14, 2.35)], 0.035, M['galv'])
 
 # ---------------------------------------------------------------- 奶管 / 脉动管 / 杯组
+def cyl_between(name, p0, p1, r, mat, r2=None, bev=0.002, seg=24):
+    p0, p1 = Vector(p0), Vector(p1)
+    o = cyl(name, tuple((p0 + p1) / 2), r, (p1 - p0).length, mat, seg=seg, bev=bev, r2=r2)
+    o.rotation_mode = 'QUATERNION'
+    o.rotation_quaternion = (p1 - p0).to_track_quat('Z', 'Y')
+    return o
+
+
+PULSE_Z = MILK_LINE_Z + 0.25
+GZ = 2.35
+
+
+def cluster(tag, C, face):
+    """现代杯组，静止挂在钩上：爪在上，四个奶杯靠短奶管垂在下面，杯口（衬垫唇口）朝下。
+    C = 爪中心；face = 朝坑外（牛那侧）的单位向量（x, y）。返回 (出奶口, 脉动分配器顶) 位置。"""
+    C = Vector(C)
+    # 爪：不锈钢底座 + 透明聚砜上罩 + 顶上黑色脉动分配器 + 挂环
+    cyl(f'claw_base_{tag}', tuple(C + Vector((0, 0, -0.022))), 0.062, 0.03, M['steel_polish'], seg=48, bev=0.012)
+    sphere(f'claw_bowl_{tag}', tuple(C + Vector((0, 0, 0.0))), 0.06, M['glass'], (1, 1, 0.75))
+    cyl(f'distrib_{tag}', tuple(C + Vector((0, 0, 0.055))), 0.017, 0.03, M['grey_box'], bev=0.005)
+    ring = C + Vector((0, 0, 0.078))
+    cyl(f'claw_ring_{tag}', tuple(ring), 0.012, 0.004, M['steel'], axis='X', bev=0)
+    # 出奶口（侧面，朝钩那边）
+    fx, fy = face
+    out0 = C + Vector((fx * 0.055, fy * 0.055, -0.015))
+    out1 = C + Vector((fx * 0.085, fy * 0.085, -0.02))
+    cyl_between(f'claw_outlet_{tag}', out0, out1, 0.009, M['steel'])
+    for k in range(4):
+        a = math.pi / 4 + k * math.pi / 2
+        d = Vector((math.cos(a), math.sin(a), 0))
+        # 爪上的短进奶嘴：斜向上外
+        n0 = C + d * 0.04 + Vector((0, 0, 0.02))
+        n1 = n0 + (d * 0.7 + Vector((0, 0, 0.7))).normalized() * 0.035
+        cyl_between(f'nipple_{tag}_{k}', n0, n1, 0.0055, M['steel'])
+        # 奶杯倒挂：杯壳长 145 mm、Ø 40 mm；上端是衬垫出口（短奶管），下端是唇口
+        jitter = random.uniform(-0.01, 0.01)
+        top = C + d * (0.085 + jitter) + Vector((0, 0, -0.035 + random.uniform(-0.01, 0.01)))
+        tilt = d * 0.08 + Vector((random.uniform(-0.03, 0.03), random.uniform(-0.03, 0.03), 0))
+        axis = (Vector((0, 0, -1)) + tilt).normalized()
+        bot = top + axis * 0.145
+        cyl_between(f'shell_{tag}_{k}', top, bot, 0.02, M['steel_polish'], bev=0.004, seg=32)
+        # 唇口：软黑橡胶，比壳粗一圈；中间是乳头孔
+        lip1 = bot + axis * 0.028
+        cyl_between(f'mouth_{tag}_{k}', bot - axis * 0.004, lip1, 0.0245, M['rubber'], bev=0.009, seg=32)
+        cyl_between(f'mouthhole_{tag}_{k}', lip1 - axis * 0.002, lip1 + axis * 0.0005, 0.009, M['frame'], bev=0, seg=16)
+        # 衬垫从杯壳上端伸出变成短奶管，拐弯接到爪上的进奶嘴
+        stub = top - axis * 0.018
+        cyl_between(f'linerstub_{tag}_{k}', top + axis * 0.004, stub, 0.011, M['rubber'], bev=0.003)
+        tube(f'shortmilk_{tag}_{k}', [tuple(stub), tuple(stub - axis * 0.03 + d * 0.01), tuple(n1 + (n1 - n0).normalized() * 0.03), tuple(n1)], 0.0065, M['rubber'], res=16)
+        # 杯壳侧面脉动嘴 + 细短脉动管到分配器
+        side = top + axis * 0.02 + d * 0.021
+        cyl_between(f'pnip_{tag}_{k}', side, side + d * 0.012, 0.003, M['steel'], bev=0)
+        dist = C + Vector((0, 0, 0.055)) + d * 0.017
+        tube(f'shortpulse_{tag}_{k}', [tuple(side + d * 0.012), tuple(side + d * 0.04 + Vector((0, 0, 0.05))), tuple(dist + d * 0.03 + Vector((0, 0, 0.02))), tuple(dist)], 0.0028, M['rubber'], res=16)
+    return out1, C + Vector((0, 0, 0.07))
+
+
 for s in (1, -1):
     ym = s * (PY1 + 0.05)
     pipe(f'milkline_{s}', [(PX0 - 0.3, ym, MILK_LINE_Z), (PX1 + 0.1, ym, MILK_LINE_Z), (RECEIVER[0], s * 0.22, MILK_LINE_Z - 0.2), (RECEIVER[0], s * 0.22, -0.05)], 0.025, M['steel'], rad=0.25)
-    pipe(f'pulseline_{s}', [(PX0 - 0.3, ym, 2.22), (PX1 + 0.3, ym, 2.22)], 0.019, M['white_pvc'])
+    pipe(f'pulseline_{s}', [(PX0 - 0.3, ym, PULSE_Z), (PX1 + 0.3, ym, PULSE_Z)], 0.019, M['white_pvc'])
     for x in [PX0 + 1.1 * k for k in range(11)]:
-        cyl(f'clamp_{s}_{x:.1f}', (x, ym, 2.08), 0.006, 0.28, M['steel'])
+        cyl(f'clamp_{s}_{x:.1f}', (x, ym, (MILK_LINE_Z + GZ) / 2), 0.006, GZ - MILK_LINE_Z, M['steel'])
+    # 坑壁清洗托（jetter）供水管
+    yw = s * (PY1 - 0.05)
+    pipe(f'washline_{s}', [(PX0 - 0.2, yw, -0.42), (PX1 + 0.3, yw, -0.42)], 0.02, M['steel'])
     for i, x in enumerate(SX):
-        cx, cy, cz = x + 0.3, s * (PY1 - 0.16), 0.32     # 爪（挂在坑沿上）
-        # 挂钩
-        pipe(f'hook_{s}_{i}', [(cx, s * (PY1 + 0.14), 0.62), (cx, s * (PY1 - 0.02), 0.62), (cx, cy, 0.5), (cx, cy, cz + 0.07)], 0.006, M['steel'], rad=0.05)
-        # 集乳爪：下半不锈钢、上半透明
-        sphere(f'claw_{s}_{i}', (cx, cy, cz), 0.065, M['glass'], (1, 1, 0.62))
-        cyl(f'claw_top_{s}_{i}', (cx, cy, cz + 0.03), 0.06, 0.03, M['steel'], bev=0.01)
-        cyl(f'claw_out_{s}_{i}', (cx, cy, cz - 0.045), 0.012, 0.04, M['steel'])
-        # 四个奶杯：杯口朝下自然下垂
-        for k in range(4):
-            a = math.pi / 4 + k * math.pi / 2 + random.uniform(-0.15, 0.15)
-            ox, oy = math.cos(a) * 0.075, math.sin(a) * 0.075
-            tilt = (math.sin(a) * 0.18, -math.cos(a) * 0.18, 0)
-            px, py, top = cx + ox * 1.25, cy + oy * 1.25, cz - 0.07
-            cyl(f'shell_{s}_{i}_{k}', (px, py, top - 0.09), 0.021, 0.15, M['steel_polish'], rot=(-tilt[1] * 0.5, tilt[0] * 0.5, 0), bev=0.004, r2=0.016)
-            cyl(f'liner_{s}_{i}_{k}', (px, py, top - 0.175), 0.027, 0.035, M['rubber'], rot=(-tilt[1] * 0.5, tilt[0] * 0.5, 0), bev=0.008)
-            tube(f'shortmilk_{s}_{i}_{k}', [(px, py, top - 0.005), (px + ox * 0.15, py + oy * 0.15, cz - 0.01), (cx + ox * 0.45, cy + oy * 0.45, cz + 0.04)], 0.005, M['rubber'], res=16)
-        # 长奶管（透明）+ 双脉动管（黑）上到管线
-        tube(f'longmilk_{s}_{i}', [(cx, cy, cz - 0.04), (cx - 0.1, s * (PY1 - 0.25), 0.02), (cx - 0.15, s * (PY1 + 0.02), 0.75), (x + 0.05, s * (PY1 + 0.05), MILK_LINE_Z - 0.03)], 0.011, M['hose'])
-        for dz, off in ((0, -0.012), (0.01, 0.012)):
-            tube(f'pulse_{s}_{i}_{off}', [(cx + off, cy + s * 0.04, cz + 0.04), (cx - 0.06 + off, s * (PY1 - 0.1), 0.25 + dz), (cx - 0.1 + off, s * (PY1 + 0.03), 0.9), (x + 0.2 + off, s * (PY1 + 0.05), 2.18)], 0.0065, M['rubber'])
-        # 脉动器（黑盒）
-        box(f'pulsator_{s}_{i}', x + 0.14, x + 0.26, s * (PY1 + 0.02) - 0.04, s * (PY1 + 0.02) + 0.04, 2.1, 2.2, M['grey_box'], 0.008)
-        # 进奶口
-        cyl(f'inlet_{s}_{i}', (x + 0.05, ym, MILK_LINE_Z - 0.02), 0.012, 0.06, M['steel'])
+        cx, cy, cz = x + 0.3, s * (PY1 - 0.17), 0.36
+        # 杯组挂钩：从臀栏伸进坑、向下弯出钩，钩住爪顶挂环
+        pipe(f'hook_{s}_{i}', [(cx, s * (PY1 + 0.14), 0.62), (cx, s * (PY1 - 0.05), 0.62), (cx, cy, 0.5), (cx, cy, cz + 0.078), (cx + 0.02, cy, cz + 0.1)], 0.005, M['steel'], rad=0.03)
+        outlet, ptop = cluster(f'{s}_{i}', (cx, cy, cz), (0, s))
+        # 长奶管 Ø16（透明）：侧出口 → 下垂 → 上到奶管上半部的进奶口
+        tube(f'longmilk_{s}_{i}', [tuple(outlet), tuple(outlet + Vector((0.02, s * 0.02, -0.06))), (cx - 0.08, s * (PY1 - 0.02), 0.25), (cx - 0.15, s * (PY1 + 0.04), 0.9), (x + 0.05, ym, MILK_LINE_Z + 0.03)], 0.008, M['hose'])
+        cyl(f'inlet_{s}_{i}', (x + 0.05, ym, MILK_LINE_Z + 0.02), 0.012, 0.05, M['steel'])
+        # 双脉动长管（黑，两根并在一起）：分配器 → 脉动器
+        for off in (-0.0065, 0.0065):
+            tube(f'pulse_{s}_{i}_{off}', [tuple(ptop + Vector((off, 0, 0))), tuple(ptop + Vector((off - 0.02, s * 0.04, 0.12))), (cx - 0.1 + off, s * (PY1 + 0.03), 0.95), (x + 0.2 + off, s * (PY1 + 0.05), PULSE_Z - 0.08)], 0.0062, M['rubber'])
+        box(f'pulsator_{s}_{i}', x + 0.14, x + 0.26, s * (PY1 + 0.05) - 0.04, s * (PY1 + 0.05) + 0.04, PULSE_Z - 0.1, PULSE_Z - 0.02, M['grey_box'], 0.008)
+        # 清洗托：坑壁上一组四个开口朝上的白色清洗杯
+        box(f'jet_bracket_{s}_{i}', cx - 0.14, cx + 0.14, min(yw, yw - s * 0.05), max(yw, yw - s * 0.05), -0.3, -0.28, M['steel'], 0.003)
+        for k, dx in enumerate((-0.105, -0.035, 0.035, 0.105)):
+            jy = yw - s * 0.06
+            cyl(f'jetter_{s}_{i}_{k}', (cx + dx, jy, -0.25), 0.03, 0.08, M['white_pvc'], bev=0.006, seg=32, r2=0.026)
+            cyl(f'jetter_hole_{s}_{i}_{k}', (cx + dx, jy, -0.2095), 0.021, 0.002, M['frame'], bev=0, seg=24)
+            pipe(f'jet_feed_{s}_{i}_{k}', [(cx + dx, jy, -0.29), (cx + dx, jy, -0.36), (cx + dx, yw, -0.42)], 0.006, M['steel'], rad=0.03)
 
 # 集乳罐 + 奶泵
 rx, ry = RECEIVER
@@ -539,6 +612,30 @@ box('condenser', X1 - 0.75, X1 - 0.12, -5.2, -3.9, 0, 0.8, M['frame'], 0.02)
 cyl('condenser_fan', (X1 - 0.75, -4.55, 0.42), 0.26, 0.02, M['galv'], axis='X')
 for k in range(5):
     cyl(f'grille_{k}', (X1 - 0.765, -4.55, 0.42), 0.05 + k * 0.05, 0.004, M['steel'], axis='X', seg=48, bev=0)
+# 卫生阱（奶和真空之间的不锈钢小罐）+ 真空稳压罐 + 真空泵机组
+stx, sty = MILK_ROOM_X + 0.7, 3.2
+cyl('san_trap', (stx, sty, 1.2), 0.13, 0.36, M['steel_polish'], seg=48, bev=0.02)
+cyl('san_trap_lid', (stx, sty, 1.395), 0.14, 0.03, M['steel'], seg=48, bev=0.008)
+cyl('san_trap_valve', (stx, sty, 0.95), 0.03, 0.14, M['steel'])
+for k in range(3):
+    a = k * 2 * math.pi / 3
+    cyl(f'san_leg_{k}', (stx + math.cos(a) * 0.12, sty + math.sin(a) * 0.12, 0.5), 0.012, 1.0, M['steel'])
+pipe('san_to_vac', [(stx, sty, 1.41), (stx, sty, 2.6), (MILK_ROOM_X + 1.5, sty, 2.6)], 0.03, M['white_pvc'])
+vrx, vry = MILK_ROOM_X + 1.5, 4.6
+cyl('vac_receiver', (vrx, vry, 0.85), 0.2, 0.8, M['steel'], seg=48, bev=0.03)
+sphere('vac_receiver_top', (vrx, vry, 1.25), 0.2, M['steel'], (1, 1, 0.35))
+cyl('vac_gauge', (vrx, vry - 0.2, 1.05), 0.045, 0.02, M['white_pvc'], axis='Y', bev=0.004)
+for k in range(3):
+    a = k * 2 * math.pi / 3 + 0.5
+    cyl(f'vac_leg_{k}', (vrx + math.cos(a) * 0.17, vry + math.sin(a) * 0.17, 0.225), 0.015, 0.45, M['steel'])
+pipe('vac_drop', [(MILK_ROOM_X + 1.5, 3.8, 1.0), (vrx, 3.8, 1.35), (vrx, vry, 1.35)], 0.035, M['white_pvc'])
+box('vac_pump_base', X1 - 1.9, X1 - 0.6, 4.2, 5.1, 0, 0.12, M['frame'], 0.01)
+cyl('vac_motor', (X1 - 1.0, 4.65, 0.4), 0.17, 0.5, M['frame'], axis='X', seg=48, bev=0.02)
+for k in range(10):
+    cyl(f'vac_fin_{k}', (X1 - 1.2 + k * 0.045, 4.65, 0.4), 0.18, 0.008, M['frame'], axis='X', seg=48, bev=0)
+cyl('vac_pump', (X1 - 1.55, 4.65, 0.4), 0.2, 0.3, M['steel'], axis='X', seg=48, bev=0.02)
+box('vac_motor_foot', X1 - 1.3, X1 - 0.8, 4.5, 4.8, 0.12, 0.25, M['frame'], 0.01)
+pipe('vac_pump_line', [(X1 - 1.55, 4.65, 0.6), (X1 - 1.55, 4.65, 0.9), (vrx + 0.2, vry, 0.9)], 0.03, M['white_pvc'])
 # 奶罐间配件：配电柜、冲洗水管、筐
 import_gltf('utility_box_01', (X1 - 0.3, 2.5, 0.0), rot=(math.pi / 2, 0, math.pi / 2))
 import_gltf('garden_hose_wall_mounted_01', (MILK_ROOM_X + 0.05, 4.5, 1.4), rot=(math.pi / 2, 0, 0))
@@ -577,7 +674,15 @@ wall('wall_n', X0, X1, Y1, Y1 + WT, [(3.4, 5.4, 2.6)])
 wall('wall_w', X0 - WT, X0, Y0, Y1, [(-PY1 - PLATFORM_W, -PY1 - 0.1, 2.4), (-0.7, 0.7, 2.2), (PY1 + 0.1, PY1 + PLATFORM_W, 2.4)])
 wall('wall_e', X1, X1 + WT, Y0, Y1, [])
 wall('partition', MILK_ROOM_X - 0.1, MILK_ROOM_X + 0.1, Y0, Y1, [(-0.45, 0.45, 2.1), (1.8, 2.8, 2.1)])
-# 北墙开口加防鸟网（镀锌方格）
+# 檐沟 + 落水管
+for s_ in (1, -1):
+    gy = s_ * (Y1 + 0.5)
+    cyl(f'gutter_{s_}', ((X0 + X1) / 2, gy, EAVE - 0.08), 0.07, X1 - X0 + 0.8, M['galv'], axis='X', seg=24, bev=0.004)
+    for gx in (X0 + 0.4, (X0 + X1) / 2, X1 - 0.4):
+        wy = s_ * (Y1 + WT + 0.07)
+        pipe(f'downpipe_{s_}_{gx:.1f}', [(gx, gy, EAVE - 0.12), (gx, gy, EAVE - 0.35), (gx, wy, EAVE - 0.6), (gx, wy, 0.2), (gx, s_ * (Y1 + WT + 0.25), 0.03)], 0.045, M['galv'], rad=0.12)
+        for bz in (1.0, 2.2, 3.4):
+            box(f'dp_clip_{s_}_{gx:.1f}_{bz}', gx - 0.06, gx + 0.06, min(wy, s_ * (Y1 + WT)), max(wy, s_ * (Y1 + WT)), bz, bz + 0.03, M['galv'], 0.002)
 # 钢门架（I 型钢简化：翼缘 + 腹板）
 for x in range(int(X0), int(X1) + 1, 5):
     for s in (1, -1):
@@ -736,7 +841,7 @@ qx0, qx1, qy0, qy1 = PADDOCK
 def fence_line(a, b, skip=()):
     ax, ay = a; bx, by = b
     L = math.hypot(bx - ax, by - ay)
-    n = max(1, round(L / POST_STEP))
+    n = max(1, math.ceil(L / POST_STEP - 0.05))
     return [(ax + (bx - ax) * k / n, ay + (by - ay) * k / n) for k in range(n + 1)]
 
 
@@ -771,7 +876,23 @@ for si, (a, b) in enumerate(sides):
 for (x, y) in postset.values():
     corner = (x in (qx0, qx1)) and (y in (qy0, qy1))
     gate = abs(abs(x) - GATE[1]) < 0.01 and abs(y - qy0) < 0.01
-    r = (0.075 if corner or gate else 0.05) * random.uniform(0.85, 1.2)
+    r = (0.1 if corner or gate else 0.06) * random.uniform(0.9, 1.15)
+    if corner or gate:
+        # 撑桩：沿每条相邻边斜撑一根木撑（上端 1.0 m 顶桩，下端 2.2 m 外入地）
+        for (dx, dy) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            tx_, ty_ = x + dx * 2.2, y + dy * 2.2
+            if not (qx0 - 0.01 <= tx_ <= qx1 + 0.01 and qy0 - 0.01 <= ty_ <= qy1 + 0.01):
+                continue
+            if abs(ty_ - y) > 0 and not (abs(x - qx0) < 0.01 or abs(x - qx1) < 0.01):
+                continue
+            if abs(tx_ - x) > 0 and not (abs(y - qy0) < 0.01 or abs(y - qy1) < 0.01):
+                continue
+            if gate and abs(ty_ - y) > 0:
+                continue
+            if gate and (GATE[0] < tx_ < GATE[1]):
+                continue
+            pipe(f'brace_{x:.1f}_{y:.1f}_{dx}_{dy}', [(x + dx * r, y + dy * r, 1.0), (tx_, ty_, -0.05)], 0.045, M['wood'])
+            cyl(f'brace_block_{x:.1f}_{y:.1f}_{dx}_{dy}', (tx_, ty_, -0.02), 0.09, 0.06, M['wood'], bev=0.01)
     p = cyl(f'post_{x:.1f}_{y:.1f}', (x, y, POST_H / 2 - 0.15), r, POST_H + 0.3, M['wood'], seg=16, bev=0.008)
     p.rotation_euler = (random.uniform(-0.03, 0.03), random.uniform(-0.03, 0.03), random.uniform(0, 6.28))
     cxm, cym = (qx0 + qx1) / 2, (qy0 + qy1) / 2
@@ -832,7 +953,7 @@ for k in range(2):
 # ---------------------------------------------------------------- 相机
 CAMS = {
     'c1': ((PX0 - 1.0, -0.35, 0.95), (PX1, 0.35, 0.3), 16),
-    'c2': ((SX[3] + 0.9, -(PY1 - 0.55), 0.5), (SX[3] + 0.3, -(PY1 - 0.16), 0.2), 55),
+    'c2': ((SX[3] + 0.6, -(PY1 - 0.85), 0.5), (SX[3] + 0.3, -(PY1 - 0.17), 0.26), 40),
     'c3': ((-12.5, 15.5, 1.55), (-2.0, 6.5, 1.3), 24),
     'c4': ((X1 - 0.5, 5.3, 1.7), (TANK[0], TANK[1] - 0.5, 1.0), 20),
 }
@@ -842,7 +963,7 @@ cam = link(bpy.data.objects.new('cam', cd)); cam.location = pos
 dvec = Vector(tgt) - Vector(pos)
 cam.rotation_euler = dvec.to_track_quat('-Z', 'Y').to_euler()
 if ARGS['cam'] == 'c2':
-    cd.dof.use_dof = True; cd.dof.focus_distance = dvec.length; cd.dof.aperture_fstop = 4.0
+    cd.dof.use_dof = True; cd.dof.focus_distance = dvec.length; cd.dof.aperture_fstop = 5.6
 sc.camera = cam
 if ARGS['cam'] in ('c1', 'c2', 'c4'):
     sc.view_settings.exposure = 0.3
