@@ -5,6 +5,8 @@
 
 ## 0.9.6（未发版）
 - 地下医疗中心（B2，用户设定）：主楼 B2 未定用途机电体量东段 16 × 11 m 划出医疗中心前厅 / 器械洗消间 / 缓冲更衣间 / 无菌处置室（eden_estate_rooms.json kind=user、src=用户设定，当前地点第 1 级认得出）；模型 `blender/estate2/medical_b2.py`（庄园坐标，待合进主楼室内 glb）；草图 `docs/drafts/b2_medical_{cleanroom,anteroom}.jpg`；参考板 `docs/b2-medical-references.md`；世界书附加条目「地下医疗中心（B2）」；check_maps 的庄园条目 alias 也认分层房间名。
+- 表格数据库插件兼容（只读，自动检测）：MVU 读不到当前地点时改读它的全局表（当前详细地点 → 地区），它的人物表有位置时补进人物栏；它的「正文优化」改写丢掉的 ⌖ 标签从原文补回；它的全屏界面打开时隐藏地图悬浮按钮；自检一行「数据库插件：已检测 / 兼容模式」。从不写它的数据（map/tavern/shujuku.mjs、tests/shujuku.test.mjs；隔离 SillyTavern 1.19.0 + 酒馆助手 + 插件 9.2.5 + 离线模拟模型实测）
+- 修：没装 MVU 时脚本一直等 MVU 初始化，楼层 / 聊天事件监听全没挂上——只用聊天标签的聊天里，新楼、改楼、重 roll 后地图不更新。现在 MVU 监听另行挂，不挡其他事件
 - 开局地点的简易地图：大骑士领·圣都（三环）、原域（诸神殿 / 城区两层）、旷野高地、圆桌第一至五席封地（湖山棱堡 / 海岸海堡 / 河谷护城河方堡 / 林中狩猎城堡 / 平原同心城堡）。世界图上点地点 → 「进入」，或在该地点附近放大到头再推，都会进入它的地图；缩到最远有「<地名>周边」过渡环，再缩回到世界图（与天城同一套交接）。程序生成的 Blender 体块草模（blender/opening_sites.py），地标位置与形制多为仓库推断；每张图在世界书附加条目里有一条「地图补充-…（地图）」
 - 未上图的地点：当前地点（MVU 或 ⌖ 标签）认不出时不跳转，标题栏显示「未上图：<名字>」；点开小选择器把它指派到地标、层 / 大区、庄园房间 / 室外或世界地名，或「忽略」。存进聊天变量 eden_map.自定义（`别名` / `忽略`），立刻生效（map/unmapped.js、here.mjs `unmappedName`）
 - 自定义叫法扩展到地标、区域、层 / 大区、世界地名（`buildIndex` 的 custom.areas / layers / world / ignore；mvu.mjs 新类 layer / world，`setCustom` 的 alias / unalias / ignore）；自定义面板列出叫法并可单独去掉

@@ -85,6 +85,7 @@ export async function collectWorldbook(f) {
  *   worldbook: null（查不了）| { missing: [条目名], lore: 启用了「地图方位」EJS 条目 },
  *   vars: 酒馆助手聊天变量接口可用（自定义名称存聊天变量；否则存本机）, ejs: 「提示词模板」扩展（EjsTemplate）在,
  *   mvu.fields: { present: 有在场人物表, clock: 有世界.当前时刻, outfit: 有主角.着装 }（v0.9.3，缺了只是对应功能不显示）,
+ *   db: null（没有表格数据库插件）| { tables, location: MVU 没地点时读了它的地点, chars: 它的表里有位置的人物数 }（tavern/shujuku.mjs）,
  *   version: { script: 脚本版本或 null（跟分支 / 本地）, viewer: 地图 build.json 的 version 或 null（还没打开过） },
  *   update: null | { current, latest }（有新正式版时多一项 status 'info'，不弹提示）
  * }
@@ -96,7 +97,9 @@ export function evaluate(f) {
     : item('api', 'ok', '酒馆助手接口齐全', 'TavernHelper API present'));
 
   const m = f.mvu, HP = (m && m.path) || HERE_PATH;
-  if (!m) out.push(item('mvu', 'warn', 'MVU 变量框架未加载：地图无法跟随当前地点', 'MVU not loaded: the map cannot follow the current location'));
+  const db = f.db || null;   // 表格数据库插件（tavern/shujuku.mjs）：null = 没检测到
+  if (!m && db?.location) out.push(item('mvu', 'skip', 'MVU 变量框架未加载：当前地点改读数据库插件的表', 'MVU not loaded: current location comes from the table database plugin'));
+  else if (!m) out.push(item('mvu', 'warn', 'MVU 变量框架未加载：地图无法跟随当前地点', 'MVU not loaded: the map cannot follow the current location'));
   else if (!m.stat) out.push(item('mvu', 'skip', '这个聊天还没有 MVU 变量（新聊天？）', 'No MVU variables in this chat yet (new chat?)'));
   else if (!m.here) {
     const c = (m.candidates || []).join('、');
@@ -112,10 +115,13 @@ export function evaluate(f) {
   // v0.9.5 变量映射：现在用哪种读法（设置「变量映射」可改）
   if (f.varmode === 'mvu') out.push(item('varmap', 'ok', `读法：MVU（地点 ${HP}）`, `Mode: MVU (location ${HP})`));
   else if (f.varmode === 'mvu-partial') out.push(item('varmap', 'warn', '有 MVU，但没找到地点字段：到设置「变量映射」里选一个', 'MVU found, but no location field: pick one under Settings → Variable mapping'));
+  else if (f.varmode === 'tags' && f.db?.location) out.push(item('varmap', 'skip', '读法：当前地点读数据库插件的表；事态、人物读聊天标签（没有 MVU）', 'Mode: location from the table database plugin; events and people from chat tags (no MVU)'));
   else if (f.varmode === 'tags') out.push(item('varmap', 'skip', '读法：聊天标签（没有 MVU；事态、人物、当前地点都从聊天里的标签读）', 'Mode: chat tags (no MVU; events, people and location come from chat tags)'));
   if ('vars' in f) out.push(f.vars ? item('vars', 'ok', '自定义名称存在聊天变量（跟着聊天走）', 'Custom names stored in chat variables')
     : item('vars', 'warn', '酒馆助手没有聊天变量接口：自定义名称只存本机浏览器（请更新酒馆助手）', 'No TavernHelper chat-variable API: custom names stay in this browser only (update TavernHelper)'));
 
+  if (db) out.push(item('shujuku', 'ok', `数据库插件：已检测 / 兼容模式（只读，${db.tables} 张表${db.location ? '；当前地点读自它的表' : ''}${db.chars ? `；人物位置 ${db.chars} 人` : ''}）`,
+    `Table database plugin: detected / compatible mode (read-only, ${db.tables} tables${db.location ? '; current location read from its table' : ''}${db.chars ? `; ${db.chars} character locations` : ''})`));
   const d = f.dup || {};
   if (d.oldStyle || d.replaced || (d.others || []).length) out.push(item('dup', 'warn', '检测到另一个地图脚本（如旧卡「地图版 v0.6.1」自带的「【地图】世界地图」）：请只启用一个，否则两个悬浮按钮会互相替换',
     'Another map script detected (e.g. the old v0.6.1 card\'s built-in map script): enable only one, or the two buttons keep replacing each other'));
