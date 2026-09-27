@@ -76,6 +76,7 @@
   - [ ] 公开仓库整理：README 改为通用介绍，本卡内容放 `examples/`
 - [ ] **上层其他岛屿按设定要改的**（2026-09-27 整理；来源 `docs/card-digest.md`、`docs/card-omissions.md`、`map/data/maps.json`；【卡】= 卡里写的，【推断】= 仓库推断 / 自设，【用户】= 用户决定）
   - 全层通用：每岛一座私人庄园、各带结界【卡】；岛间只有私人悬浮载具、无公共交通【卡】→ 岸外停靠平台只放悬浮载具（v7 已改：罗斯柴尔德、伊甸访客平台；附属「机库」改悬浮载具库）；航线叠加层用户已决定永久推迟【用户】；上层俯瞰中层「像铺在脚下的电路板」、清晨有云海【卡】（多时段草稿已备）
+  - **进度 2026-09-28（upper_islands r1）**：七座岛（isle30 R-02 / 29 / 25 / 9 / 10 / 6 / 2）已出参考板 `docs/upper-islands-references.md` + 体块草稿 `blender/upper_islands/<id>.py` → `docs/drafts/upper_isle_<id>_draft.jpg`；未动瓦片、未出 8K；两人设评审待记入 `docs/reviews/upper_islands_r1.md`
   - 伊甸（eden）：v7 底图已贴 estate2 r4 俯视（`tools/eden_into_upper.py`）【用户】；标记锚点已改取 estate2 的停靠平台坐标、岛轮廓改为 estate2 岛缘（`tools/eden_anchor_upper.py`，tests/eden_anchor.test.mjs 校验）【推断】；下次整图重渲时把伊甸岛改为只出岛体（或直接跳过旧伊甸），重渲后再跑一次该工具（`--data-only` 导出会写回旧锚点）
   - isle2：原「大主教府邸」礼拜堂已随 v7 去掉【卡：上层没有教区；大主教府邸并入辉光大教堂别名】；现在是普通英式庄园，无标记【推断】
   - isle6 首相府：卡只写首相去首相府开会、未写位置【卡】；放上层【推断】；形制改为唐宁街式乔治时代砖砌联排【用户】→ 现 `role_pm_residence` 是「对称官邸 + 两翼 + 荣誉庭院」，要改成联排街面 + 背面花园。**用户 2026-09-28 已选方案 A**，三维精简版已建（`blender/landmarks/pm_residence/`，`map/props/pm_residence/`）：**上层 isle6 底图必须跟着改成这个形制**（深色砖三层 + 阁楼联排、街口铁门 + 岗亭、花园侧白色灰泥柱廊），下次上层重渲时做；「公务停靠平台」保留、只放悬浮载具
