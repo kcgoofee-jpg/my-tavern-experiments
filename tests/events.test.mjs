@@ -214,7 +214,7 @@ t('设定对齐：层推断（card-digest §10 第 5、12、13、14 条）', () 
   for (const p of ['光辉联邦', '大骑士领·圣都', '第三帝国', '灵枢秘派', '虚灵古派', '原域', '海外']) { assert.equal(L(p), '天城外', p); assert.equal(layerOf(p), '天城外', p); }
   assert.equal(L('奥伦帝国'), '');                                                       // 国都就是天城，不算天城外
   assert.equal(L('最高法院'), '中层'); assert.equal(L('佣兵公会'), '中层'); assert.equal(L('公共收容设施'), '下层');
-  assert.equal(L('法师塔'), ''); assert.equal(L('天城执政厅'), '');                       // 卡没写层：不猜
+  assert.equal(L('法师塔'), '中层'); assert.equal(L('天城执政厅'), '中层');                   // 卡没写层：2026-09-28 起按地图的仓库推断层
   assert.equal(L('旧公寓楼'), '中层'); assert.equal(L('废弃教堂区'), '下层');             // 之前的修正保留
   assert.equal(L('中层第三分局'), '中层'); assert.equal(L('下层分局'), '下层');
 });
@@ -239,7 +239,7 @@ t('v0.9.6 卡遗漏补全：新类型、别名与用户决定的层', () => {
   for (const p of ['天城大学', '天城大学法学院', '骑士团营区', '维多利亚的公寓', '中层公立医院', '中层养老院', '中层修道院']) assert.equal(L(p), '中层', p);   // 天城大学 / 骑士团营区：用户决定在中层
   assert.equal(L('凯莉的宅邸'), '上层');                                                   // 用户决定在上层
   for (const p of ['铁皮屋区', '旧货市场', '孤儿收容所', '老K杂货']) assert.equal(L(p), '下层', p);
-  assert.equal(L('新生工坊'), ''); assert.equal(L('天城文化署'), ''); assert.equal(L('维克多庄园'), '');   // 卡没写层：仍不猜
+  assert.equal(L('新生工坊'), '中层'); assert.equal(L('天城文化署'), '中层'); assert.equal(L('维克多庄园'), '上层');   // 仓库推断层（docs/card-buildings.md）
 });
 
 console.log(`\n${n} passed`);
