@@ -22,7 +22,7 @@
       "overlay": { "type": "dzi", "src": "art/borders.dzi", "label": "国界", "label_en": "Borders" }
     },
     "tc_upper": {
-      "view": { "focus": "eden", "width_m": 800, "min_width_m": 60, "extent_m": [3000, 1875] },
+      "view": { "focus": "eden", "width_m": 1700, "min_width_m": 60, "extent_m": [3000, 1875] },
       "title": "天城 · 上层", "title_en": "Tiancheng · Upper Tier", "parent": "world", "group": "tiancheng",
       "layer": { "name": "上层", "sub": "悬浮庄园区", "alt": "800–1500 m", "name_en": "Upper", "sub_en": "Floating Estates" },
       "kind": "points", "base": "art/tc_upper.dzi", "data": "data/tc_upper.json",
