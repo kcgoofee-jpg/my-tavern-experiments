@@ -36,10 +36,18 @@ def mat_terrain():
     tropic = t.mix(0.6, fc, (0.03, 0.09, 0.03), 'MULTIPLY', (-1500, 1800))
     # 外坡草甸：草石航拍图偏黄绿 + 野花斑点
     gc, gr, gn = tex('aerial_grass_rock', 18.0, 1400)
-    meadow = t.mix(0.35, gc, (0.2, 0.22, 0.08), 'OVERLAY', (-1500, 1400))
-    fl = t.new('ShaderNodeMapRange', (-1600, 1200), **{'From Min': 0.68, 'From Max': 0.72})
+    # r4：林带外是园地草甸（不是枯黄荒坡）：长草绿底 + 大尺度干湿斑 + 少量野花团
+    pc_, _pr, _pn = tex('leafy_grass', 4.0, 1600, 0.4)
+    park = t.mix(0.55, pc_, (0.075, 0.14, 0.035), 'MIX', (-1500, 1600))
+    wild = t.mix(0.5, gc, (0.13, 0.17, 0.05), 'MIX', (-1500, 1400))
+    patch = t.new('ShaderNodeMapRange', (-1600, 1500), **{'From Min': 0.45, 'From Max': 0.62})
+    t.link(noise(0.022, 1500, 3.0), patch.inputs['Value'])
+    meadow = t.mix(t.math('MULTIPLY', patch.outputs[0], 0.7), park, wild, loc=(-1350, 1450))
+    meadow = t.mix(t.math('MULTIPLY', big, 0.6), meadow, (0.1, 0.16, 0.05), loc=(-1320, 1400))
+    fl = t.new('ShaderNodeMapRange', (-1600, 1200), **{'From Min': 0.7, 'From Max': 0.73})
     t.link(noise(1.8, 1200, 2.0), fl.inputs['Value'])
-    meadow = t.mix(t.math('MULTIPLY', fl.outputs[0], 0.6), meadow, (0.8, 0.75, 0.5), loc=(-1300, 1300))
+    fl2 = t.math('MULTIPLY', fl.outputs[0], t.math('MULTIPLY', patch.outputs[0], 0.8))
+    meadow = t.mix(fl2, meadow, (0.75, 0.7, 0.8), loc=(-1300, 1300))
     # 修剪草坪：真实草贴图，亮绿 + 割草条纹
     lc, lr, ln = tex('leafy_grass', 2.5, 800, 0.4)
     lawn = t.mix(0.25, lc, (0.05, 0.13, 0.03), 'MIX', (-1500, 800))
@@ -54,7 +62,13 @@ def mat_terrain():
     sand = t.mix(0.6, grc, (0.85, 0.79, 0.64), loc=(-1500, 0))
     # 白石铺装（石灰华板）
     pc, pr, pn = tex('castle_brick_02_white', 2.2, -400, 0.5)
-    paved = t.mix(0.4, pc, (0.9, 0.85, 0.76), 'MIX', (-1500, -400))
+    # r4：石灰华大板（2.4 × 1.2 m，错缝，暗缝 6 cm）+ 每板色差，俯视能读出铺装
+    sepp = t.new('ShaderNodeSeparateXYZ', (-2000, -300)); t.link(ob, sepp.inputs[0])
+    cvp = t.new('ShaderNodeCombineXYZ', (-1850, -300)); t.link(sepp.outputs['X'], cvp.inputs[0]); t.link(sepp.outputs['Y'], cvp.inputs[1])
+    brk = t.new('ShaderNodeTexBrick', (-1700, -300), **{'Scale': 1.0, 'Mortar Size': 0.035, 'Brick Width': 2.4, 'Row Height': 1.2, 'Color1': (0.84, 0.8, 0.72, 1), 'Color2': (0.78, 0.74, 0.66, 1), 'Mortar': (0.62, 0.58, 0.51, 1)})
+    t.link(cvp.outputs[0], brk.inputs['Vector'])
+    paved = t.mix(0.35, brk.outputs['Color'], pc, 'MULTIPLY', (-1500, -400))
+    paved = t.mix(0.5, paved, brk.outputs['Color'], 'MIX', (-1450, -400))
     # 花境：深土 + 花色斑
     hue = noise(2.5, -800, 2.0)
     ramp = t.new('ShaderNodeValToRGB', (-1600, -800))
@@ -271,5 +285,20 @@ def build_cloudsea(z=-380.0, r_max=26000.0, n_r=620, n_t=1440):
     hn = (h - h.min()) / (np.ptp(h) + 1e-6)
     ob = _mesh_from_grid('cloudsea', co, quads, dict(ch=hn), mat_cloudsea())
     ob.location.z = z
+    ob.visible_shadow = False
+    return ob
+
+
+def build_white_floor(z=-60.0):
+    """r4：上层地图的纯白云底（tc_clouds.build_white_floor 的颜色，sRGB ≈ 231/236/242），自发光，不接收岛影。"""
+    me = bpy.data.meshes.new('white_floor')
+    r = 3000
+    me.from_pydata([(-r, -r, z), (r, -r, z), (r, r, z), (-r, r, z)], [], [(0, 1, 2, 3)])
+    m, t = mat_new('e2_white_floor')
+    if t is not None:
+        em = t.new('ShaderNodeEmission', (300, 0), Strength=1.0)
+        em.inputs['Color'].default_value = (0.80, 0.84, 0.89, 1)
+        t.link(em.outputs[0], t.out.inputs['Surface'])
+    ob = link_obj('white_floor', me, None, m)
     ob.visible_shadow = False
     return ob

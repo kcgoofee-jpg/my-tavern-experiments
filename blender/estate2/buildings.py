@@ -241,7 +241,7 @@ def mats():
         grey=_stone('e2_stone_grey', 'castle_wall_varriation', (0.4, 0.39, 0.37), 0.35, grime=0.25),
         grey_plain=_stone('e2_stone_grey_plain', 'castle_wall_varriation', (0.4, 0.39, 0.37), 0.35, windows=False),
         # r3：屋顶从陶土红瓦改成浅灰石板（用户定）；键名沿用 terra 以少改调用处
-        terra=_roof('e2_roof_lightslate', 'grey_roof_tiles_02', (0.3, 0.335, 0.38), 0.6, 1 / 2.0),   # r3b：中灰蓝石板，和白墙拉开
+        terra=_roof('e2_roof_lightslate', 'grey_roof_tiles_02', (0.2, 0.23, 0.27), 0.55, 1 / 1.2),   # r3b：中灰蓝石板，和白墙拉开
         slate=_roof('e2_roof_slate', 'grey_roof_tiles_02', (0.13, 0.135, 0.15), 0.4, 1 / 2.0),
         wood=_wood(),
         bronze=_plain('e2_bronze', (0.18, 0.12, 0.07), 0.35, 0.9),
@@ -252,6 +252,7 @@ def mats():
         pool=_pool(),
         shutter=_plain('e2_window_glass', (0.05, 0.07, 0.09), 0.03, 0.65),
         hedge=_hedge(),
+        lead=_plain('e2_lead', (0.52, 0.53, 0.54), 0.4, 0.3),
         steel=_plain('e2_steel', (0.03, 0.03, 0.032), 0.35, 0.8),
         spray=_spray(),
         rock=_stone('e2_rock', 'rock_face_03', (0.22, 0.2, 0.18), 0.45, windows=False, grime=0.3),
@@ -304,6 +305,73 @@ def _hip(bm, w, d, z, pitch, ov):
         bm.faces.new([b[i], b[(i + 1) % 4], c[(i + 1) % 4], c[i]])
     bm.faces.new(b[::-1])
     return rise
+
+
+def _bar(bm, p0, p1, w, h):
+    """p0→p1 的细长方条（屋脊 / 斜脊铅皮压顶）。"""
+    from mathutils import Vector as V
+    a, b = V(p0), V(p1)
+    d = b - a
+    ln = d.length
+    if ln < 1e-3:
+        return
+    q = d.to_track_quat('X', 'Z')
+    M = Matrix.Translation((a + b) / 2) @ q.to_matrix().to_4x4() @ Matrix.Diagonal((ln, w, h, 1))
+    bmesh.ops.create_cube(bm, size=1.0, matrix=M)
+
+
+def roof_details(bm_roof, bm_trim, bm_lead, bm_glass, w, d, z, pitch, r, dormers=True, skylights=False):
+    """r4 俯视可读的屋面细部：铅皮屋脊 / 斜脊、老虎窗（小四坡顶）、天窗、脊上烟囱。局部坐标同 _hip。"""
+    W, D = w / 2, d / 2
+    swap = W < D
+    if swap:
+        W, D = D, W
+    rise = D * pitch
+    rr = W - D
+    P = (lambda x, y, zz: (y, x, zz)) if swap else (lambda x, y, zz: (x, y, zz))
+    top = [P(-rr, 0, z + rise), P(rr, 0, z + rise)]
+    c = [P(-W, -D, z), P(W, -D, z), P(W, D, z), P(-W, D, z)]
+    _bar(bm_lead, top[0], top[1], 0.45, 0.35)
+    for a, b in ((c[0], top[0]), (c[3], top[0]), (c[1], top[1]), (c[2], top[1])):
+        _bar(bm_lead, a, b, 0.4, 0.3)
+    if dormers and D > 4.5:
+        n = int((2 * rr + D) // 4.8)
+        xs = [(-(n - 1) / 2 + i) * 4.8 for i in range(n)]
+        for sy in (-1, 1):
+            for x in xs:
+                if abs(x) > rr + D * 0.35:
+                    continue
+                t = 0.42
+                y0 = sy * D * (1 - t)
+                zc = z + rise * t
+                lo = [P(x - 0.8, y0, zc - 0.2), P(x + 0.8, y0, zc - 0.2)]
+                # 竖窗墙：向屋脊方向伸 2 m
+                y1 = y0 - sy * 2.2
+                for (xa, ya, za, xb, yb, zb) in [(x - 0.8, min(y0, y1), zc - 0.4, x + 0.8, max(y0, y1), zc + 1.5)]:
+                    q = [P(xa, ya, za), P(xb, yb, zb)]
+                    bm = bm_trim
+                    lo3 = [min(q[0][k], q[1][k]) for k in range(3)]
+                    hi3 = [max(q[0][k], q[1][k]) for k in range(3)]
+                    _box(bm, *lo3, *hi3)
+                # 小双坡顶
+                gy = sy * 0.12
+                ap = [bm_roof.verts.new(P(x - 1.05, y0 + gy, zc + 1.45)), bm_roof.verts.new(P(x, y0 + gy, zc + 2.2)),
+                      bm_roof.verts.new(P(x + 1.05, y0 + gy, zc + 1.45)), bm_roof.verts.new(P(x - 1.05, y1, zc + 1.45)),
+                      bm_roof.verts.new(P(x, y1, zc + 2.2)), bm_roof.verts.new(P(x + 1.05, y1, zc + 1.45))]
+                bm_roof.faces.new([ap[0], ap[1], ap[4], ap[3]])
+                bm_roof.faces.new([ap[1], ap[2], ap[5], ap[4]])
+                bm_glass.faces.new([bm_glass.verts.new(P(x - 0.55, y0 + sy * 0.02, zc - 0.1)), bm_glass.verts.new(P(x + 0.55, y0 + sy * 0.02, zc - 0.1)),
+                                    bm_glass.verts.new(P(x + 0.55, y0 + sy * 0.02, zc + 1.2)), bm_glass.verts.new(P(x - 0.55, y0 + sy * 0.02, zc + 1.2))])
+    if skylights and rr > 3:
+        for x in (-rr * 0.6, -rr * 0.2, rr * 0.2, rr * 0.6):
+            for sy in (-1, 1):
+                t = 0.72
+                y0, y1 = sy * D * (1 - t) - sy * 1.2, sy * D * (1 - t) + sy * 1.2
+                z0, z1 = z + rise * (1 - abs(y0) / D) + 0.08, z + rise * (1 - abs(y1) / D) + 0.08
+                v = [bm_glass.verts.new(P(x - 1.0, y0, z0)), bm_glass.verts.new(P(x + 1.0, y0, z0)),
+                     bm_glass.verts.new(P(x + 1.0, y1, z1)), bm_glass.verts.new(P(x - 1.0, y1, z1))]
+                bm_glass.faces.new(v)
+    return [P(x, 0, z + rise) for x in (-rr * 0.75, rr * 0.75)] if rr > 2 else [P(0, 0, z + rise)]
 
 
 def _gable(bm_roof, bm_wall, w, d, z, pitch, ov):
@@ -562,10 +630,15 @@ def building(spec, col, r):
         _box(bm, -w / 2 - 0.2, -d / 2 - 0.2, 0, w / 2 + 0.2, d / 2 + 0.2, 0.5)            # 勒脚
     rise = 0
     bm_roof = bmesh.new()
+    bm_lead, bm_sky = bmesh.new(), bmesh.new()
+    ridge_pts = []
     if roof == 'hip':
-        rise = _hip(bm_roof, w - 1.0, d - 1.0, ht + 0.3, 0.36, 0.0)   # 栏杆后的低坡石板顶
+        rise = _hip(bm_roof, w - 1.0, d - 1.0, ht + 0.3, 0.5, 0.0)   # 栏杆后的低坡石板顶
+        ridge_pts = roof_details(bm_roof, bm, bm_lead, bm_sky, w - 1.0, d - 1.0, ht + 0.3, 0.5, r,
+                                 dormers=bid not in ('v1',) and min(w, d) > 10, skylights=bid in ('hall', 'n_link', 'e_wing_a', 'w_wing_a', 'spa'))
     elif roof == 'hip_low':   # Breakers：低坡四坡顶 + 屋顶栏杆
         rise = _hip(bm_roof, w - 2.4, d - 2.4, ht + 0.4, 0.42, 0.0)
+        ridge_pts = roof_details(bm_roof, bm, bm_lead, bm_sky, w - 2.4, d - 2.4, ht + 0.4, 0.42, r, dormers=True)
     elif roof == 'flat':
         _box(bm_roof, -w / 2 + 0.3, -d / 2 + 0.3, ht - 0.1, -w / 2 + w * 0.45, d / 2 - 0.3, ht + 3.0)   # 屋顶小亭
     elif roof == 'gable':
@@ -573,6 +646,8 @@ def building(spec, col, r):
         rise = _gable(bm_roof, bm_w2, w, d, ht, 1.05, 0.5)
         obs.append(_obj(f'{bid}_gables', bm_w2, plain_m, (cx, cy, z0), rot, None, col))
     obs.append(_obj(f'{bid}_trim', bm, plain_m, (cx, cy, z0), rot, None, col))
+    obs.append(_obj(f'{bid}_lead', bm_lead, M['lead'], (cx, cy, z0), rot, None, col))
+    obs.append(_obj(f'{bid}_sky', bm_sky, M['shutter'], (cx, cy, z0), rot, None, col))
     if roof == 'flat':
         obs.append(_obj(f'{bid}_roofbox', bm_roof, plain_m, (cx, cy, z0), rot, None, col))
     else:
@@ -585,6 +660,9 @@ def building(spec, col, r):
             if roof == 'hip_low':
                 px = (-1 if i % 2 else 1) * (w / 2 - 5 - (i // 2) * 9)
                 py = (-1 if i % 3 else 1) * (d / 2 - 4)
+            elif ridge_pts and roof == 'hip':
+                rp = ridge_pts[i % len(ridge_pts)]
+                px, py = rp[0] + (0 if i < len(ridge_pts) else r.uniform(-1, 1) * 2), rp[1]
             else:
                 px = r.uniform(-0.4, 0.4) * w
                 py = r.uniform(-0.3, 0.3) * d

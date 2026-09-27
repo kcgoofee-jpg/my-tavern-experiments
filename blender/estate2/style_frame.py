@@ -20,7 +20,10 @@ VIEWS = {
     'stairs': ((-45, -135, 42), (0, -72, 24), 35),     # 调试：双跑台阶 + 喷泉
     'terrace': ((18.5, -27.6, 31.8), (52, -20.5, 33.6), 24),  # r3：主楼东翼柱廊前的露台角，人眼高度     # r3：整岛（停靠平台 + 湖 / 俱乐部 / 缆车 + 林中别墅）
     'top': ((0, 0, 1500), (0, 0, 0), 0),
+    'map': ((0, 0, 1500), (0, 0, 0), 0),          # r4：与上层地图同一正交俯视（tc_common：0.375 m/px，+y 朝上），2000×1500 = 750 × 562.5 m
+    'close': ((-120, -120, 125), (0, 0, 30), 38),  # r4：主楼黄昏斜俯近景
 }
+MAP_MPP = 0.375   # 上层地图：3000 m / 8000 px
 SUN_ELEV, SUN_AZ = 24.0, 132.0   # 度；方位从 +x 逆时针，太阳在东南偏南，逆光给建筑侧光
 
 
@@ -76,6 +79,8 @@ LIGHTS = {
     # hdri, 太阳高度°, 方位°(从 +x 逆时针，太阳所在方向), 太阳能量, 颜色, HDRI 强度
     'day': ('kloofendal_48d_partly_cloudy_puresky_2k.hdr', 24.0, 132.0, 5.5, (1.0, 0.87, 0.72), 0.4),
     'sunset': ('kiara_8_sunset_2k.hdr', 11.0, -52.0, 5.0, (1.0, 0.66, 0.4), 0.55),
+    # r4：上层地图的太阳（tc_common.SUN_ROT = (40°, 0, 215°) → 高度 50°、方位 125°，能量 3.2，色 (1, .96, .9)）
+    'map': ('kloofendal_48d_partly_cloudy_puresky_2k.hdr', 50.0, 125.0, 3.2, (1.0, 0.96, 0.9), 0.35),
 }
 
 
@@ -107,7 +112,7 @@ def world(scene, light='sunset'):
     env.image = bpy.data.images.load(os.path.join(DATA, 'hdri', hdr))
     tc = N.new('ShaderNodeTexCoord')
     mp = N.new('ShaderNodeMapping')
-    rz = math.radians(SUN_AZ - 90) if light == 'day' else _hdri_sun_az(env.image) - math.radians(SUN_AZ)
+    rz = math.radians(SUN_AZ - 90) if light in ('day', 'map') else _hdri_sun_az(env.image) - math.radians(SUN_AZ)
     mp.inputs['Rotation'].default_value = (0, 0, rz)
     Lk.new(tc.outputs['Generated'], mp.inputs['Vector'])
     Lk.new(mp.outputs['Vector'], env.inputs['Vector'])
@@ -138,7 +143,13 @@ def camera(scene, view, res):
     cam.location = pos
     cam.rotation_euler = (Vector(tgt) - Vector(pos)).to_track_quat('-Z', 'Y').to_euler()
     cd.clip_start, cd.clip_end = (0.1 if view == 'terrace' else 5), 30000
-    if view == 'top':
+    if view == 'map':
+        cd.type = 'ORTHO'
+        cam.rotation_euler = (0, 0, 0)
+        w = res
+        cd.ortho_scale = MAP_MPP * 2000 * (1.0)   # 画幅固定 750 m 宽；--res 只改像素数
+        scene.render.resolution_x, scene.render.resolution_y = w, int(w * 0.75)
+    elif view == 'top':
         cd.type = 'ORTHO'
         cd.ortho_scale = 720
         scene.render.resolution_x, scene.render.resolution_y = res, int(res * 0.78)
@@ -163,10 +174,17 @@ def main():
     reset()
     scene = bpy.context.scene
     gpu(scene, a.samples)
-    world(scene, a.light)
-    terrain.build_island(res_m=1.0 if a.view == 'crop' else 1.2)
+    world(scene, 'map' if a.view == 'map' else a.light)
+    if a.view == 'map':   # 与地图管线一致：Standard 视图变换
+        scene.view_settings.view_transform = 'Standard'
+        scene.view_settings.look = 'None'
+        scene.view_settings.exposure = 0.0
+    terrain.build_island(res_m=1.0 if a.view in ('crop', 'close') else (0.6 if a.view == 'map' and a.res > 1500 else 1.0 if a.view == 'map' else 1.2))
     terrain.build_lake()
-    terrain.build_cloudsea()
+    if a.view == 'map':
+        terrain.build_white_floor()
+    else:
+        terrain.build_cloudsea()
     buildings.build_all()
     M = buildings.mats()
     tropic = sketchfab.build(M['plain'], M['wallstone'])

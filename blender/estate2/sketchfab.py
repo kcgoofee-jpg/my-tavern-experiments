@@ -177,6 +177,11 @@ def place_villas(v, plinth_mat):
         ob.rotation_euler.z = rot
         ob.scale.x = mirror
         col.objects.link(ob)
+        # r4：每栋别墅露台外一池（10 × 4 m）+ 石灰华池岸，俯视可读
+        from .buildings import plunge_pool
+        py = hi[1] * 0.92 + 4.5
+        px, pyw = cx - math.sin(rot) * py, cy + math.cos(rot) * py
+        plunge_pool(f'pool_{bid}', px, pyw, rot_deg + 90, z0 + 0.05, col, 4.0, 11.0)
     return col
 
 
