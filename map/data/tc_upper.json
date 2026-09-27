@@ -410,7 +410,7 @@
    "shape": "long",
    "rim": "cliff",
    "terrain": "meadow",
-   "layout": "avenue",
+   "layout": "kitchen",
    "plan": "L",
    "outline": [
     [
@@ -893,8 +893,8 @@
    "shape": "cape",
    "rim": "hedge",
    "terrain": "meadow",
-   "layout": "kitchen",
-   "plan": "L",
+   "layout": "folly",
+   "plan": "H",
    "outline": [
     [
      0.5747,
@@ -1054,8 +1054,8 @@
    "shape": "long",
    "rim": "cliff",
    "terrain": "crag",
-   "layout": "kitchen",
-   "plan": "H",
+   "layout": "avenue",
+   "plan": "L",
    "outline": [
     [
      0.9621,
@@ -1216,8 +1216,8 @@
    "shape": "cape",
    "rim": "hedge",
    "terrain": "terrace",
-   "layout": "folly",
-   "plan": "H",
+   "layout": "avenue",
+   "plan": "E",
    "outline": [
     [
      0.3397,
@@ -1700,8 +1700,8 @@
    "shape": "cape",
    "rim": "roots",
    "terrain": "lake",
-   "layout": "avenue",
-   "plan": "E",
+   "layout": "kitchen",
+   "plan": "court",
    "outline": [
     [
      0.8271,
@@ -2183,8 +2183,8 @@
    "shape": "round",
    "rim": "cliff",
    "terrain": "crag",
-   "layout": "kitchen",
-   "plan": "court",
+   "layout": "orchard",
+   "plan": "L",
    "outline": [
     [
      0.296,
@@ -2988,8 +2988,8 @@
    "shape": "twin",
    "rim": "roots",
    "terrain": "lake",
-   "layout": "orchard",
-   "plan": "L",
+   "layout": "boathouse",
+   "plan": "H",
    "outline": [
     [
      0.039,
@@ -3310,8 +3310,8 @@
    "shape": "twin",
    "rim": "hedge",
    "terrain": "meadow",
-   "layout": "boathouse",
-   "plan": "H",
+   "layout": "kitchen",
+   "plan": "E",
    "outline": [
     [
      0.4386,
@@ -3793,8 +3793,8 @@
    "shape": "cape",
    "rim": "cliff",
    "terrain": "meadow",
-   "layout": "kitchen",
-   "plan": "E",
+   "layout": "deerpark",
+   "plan": "court",
    "outline": [
     [
      0.9456,
@@ -4115,8 +4115,8 @@
    "shape": "long",
    "rim": "roots",
    "terrain": "meadow",
-   "layout": "orchard",
-   "plan": "E",
+   "layout": "kitchen",
+   "plan": "H",
    "outline": [
     [
      0.8613,
@@ -4760,8 +4760,8 @@
    "shape": "round",
    "rim": "roots",
    "terrain": "meadow",
-   "layout": "boathouse",
-   "plan": "court",
+   "layout": "orchard",
+   "plan": "E",
    "outline": [
     [
      0.3385,
