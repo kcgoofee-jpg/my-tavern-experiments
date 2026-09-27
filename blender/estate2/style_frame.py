@@ -21,7 +21,8 @@ VIEWS = {
     'terrace': ((18.5, -27.6, 31.8), (52, -20.5, 33.6), 24),  # r3：主楼东翼柱廊前的露台角，人眼高度     # r3：整岛（停靠平台 + 湖 / 俱乐部 / 缆车 + 林中别墅）
     'top': ((0, 0, 1500), (0, 0, 0), 0),
     'map': ((0, 0, 1500), (0, 0, 0), 0),          # r4：与上层地图同一正交俯视（tc_common：0.375 m/px，+y 朝上），2000×1500 = 750 × 562.5 m
-    'cottage': ((-126, -110, 16), (-162, -80, 3), 34),
+    'cottage': ((-132, -106, 19), (-160, -80, 1.5), 42),
+    'gym': ((170, -134, 16), (188, -110, 0.5), 30),
     'greystone': ((-160, -200, 55), (-222, -108, 6), 32),   # r4d Greystone 客舍，相对地面高度
     'close': ((-120, -120, 125), (0, 0, 30), 38),  # r4：主楼黄昏斜俯近景
 }
@@ -142,12 +143,12 @@ def camera(scene, view, res):
     cam = bpy.data.objects.new('cam', cd)
     scene.collection.objects.link(cam)
     scene.camera = cam
-    if view in ('cottage', 'greystone'):
+    if view in ('cottage', 'greystone', 'gym'):
         g = L.ground_z(*tgt[:2])
         pos = (pos[0], pos[1], pos[2] + g); tgt = (tgt[0], tgt[1], tgt[2] + g)
     cam.location = pos
     cam.rotation_euler = (Vector(tgt) - Vector(pos)).to_track_quat('-Z', 'Y').to_euler()
-    cd.clip_start, cd.clip_end = (0.1 if view in ('terrace', 'cottage', 'greystone') else 5), 30000
+    cd.clip_start, cd.clip_end = (0.1 if view in ('terrace', 'cottage', 'greystone', 'gym') else 5), 30000
     if view == 'map':
         cd.type = 'ORTHO'
         cam.rotation_euler = (0, 0, 0)
@@ -161,7 +162,7 @@ def camera(scene, view, res):
     else:
         cd.lens = lens
         cd.sensor_width = 36
-        scene.render.resolution_x, scene.render.resolution_y = res, int(res * (0.667 if view in ('terrace', 'cottage', 'greystone') else 0.625))
+        scene.render.resolution_x, scene.render.resolution_y = res, int(res * (0.667 if view in ('terrace', 'cottage', 'greystone', 'gym') else 0.625))
     scene.render.resolution_percentage = 100
 
 
@@ -232,7 +233,7 @@ def main():
         scene.view_settings.view_transform = 'Standard'
         scene.view_settings.look = 'None'
         scene.view_settings.exposure = 0.0
-    terrain.build_island(res_m=0.6 if a.view in ('cottage', 'greystone') else 1.0 if a.view in ('crop', 'close') else (0.6 if a.view == 'map' and a.res > 1500 else 1.0 if a.view == 'map' else 1.2))
+    terrain.build_island(res_m=0.6 if a.view in ('cottage', 'greystone', 'gym') else 1.0 if a.view in ('crop', 'close') else (0.6 if a.view == 'map' and a.res > 1500 else 1.0 if a.view == 'map' else 1.2))
     terrain.build_lake()
     if a.view == 'map':
         terrain.build_white_floor()

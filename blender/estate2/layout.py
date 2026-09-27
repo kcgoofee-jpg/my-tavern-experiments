@@ -129,7 +129,8 @@ PADS = [
     dict(id='gs_motor', kind='ellipse', c=(-238.9, -67.9), r=(13, 13), z='auto+0', blend=3, edge='soft'),
     dict(id='court_a', kind='rect', c=(-186, -12), s=(22, 40), rot=0.384, z='auto+0', blend=4, edge='soft', r=1),
     dict(id='court_b', kind='rect', c=(-230, 95), s=(22, 40), rot=-0.349, z='auto+0', blend=4, edge='soft', r=1),
-    dict(id='court_c', kind='rect', c=(168, -100), s=(22, 40), rot=-0.489, z='auto+0', blend=4, edge='soft', r=1),
+    dict(id='court_c', kind='rect', c=(168, -100), s=(22, 40), rot=-0.489, z='auto+0', blend=12, edge='soft', r=1),
+    dict(id='gym', kind='rect', c=(187.4, -110.3), s=(28, 20), rot=-0.489, z='auto+0', blend=14, edge='soft', r=2),
     dict(id='dairy', kind='rect', c=(-276, 8), s=(52, 40), rot=1.5708, z='auto+0', blend=6, edge='soft', r=4),
     dict(id='islet', kind='ellipse', c=(-22, 150), r=(9, 8), z=WATER_Z + 1.3, blend=3, edge='soft'),
     dict(id='club', kind='ellipse', c=(70, 132), r=(18, 12), z=WATER_Z + 1.2, blend=1.2, edge='stone'),
@@ -240,7 +241,7 @@ def cover(x, y, padmask, lake):
     paved = np.maximum(paved, ((sd_pl > -4) & (sd_pl < -1.5) & (y < 25)).astype(float))
     arc_r = np.hypot(x - ARC['c'][0], y - ARC['c'][1])
     paved *= 1 - ((arc_r < ARC['R'] - ARC['depth'] / 2 - 3) & (y > ARC['c'][1])).astype(float)   # 回廊院内留草坪
-    paved = np.maximum(paved, (_sd_rect(x, y, -201, 132, 34, 24, math.radians(35), 2.0) < 0).astype(float))   # r4b 机库停机坪
+    paved = np.maximum(paved, (_sd_rect(x, y, -201, 132, 34, 24, math.radians(35), 2.0) < 0).astype(float))   # r4b 悬浮载具库前坪
     paved = np.maximum(paved, (_sd_rect(x, y, -168, 112, 24, 10, math.radians(35), 1.0) < 0).astype(float))   # r4b 服务院内院
     paved = np.maximum(paved, (_sd_ellipse(x, y, -238.9, -67.9, 12, 12) < 0).astype(float))   # Greystone 车场
     paved = np.maximum(paved, (_sd_rect(x, y, -132.5, 127.4, 32, 14, math.radians(35), 1.0) < 0).astype(float))   # r4d 车库前院
@@ -457,7 +458,7 @@ SERVICE = [
 WATERSIDE = ('waterside', -34, 100, 16, 9, 1.2, -4, 'hip', 'white')   # 水榭：湖南岸石台敞亭，半挑出水面
 ISLET = (-22, 150, 9)                       # 湖心小岛 (x, y, 半径)；岛上 8 柱圆亭 = 湖心亭
 WATER_TOWER = (-196, 88, 5.5, 22)          # 以太凝水塔：圆塔 (x, y, 半径, 高)，给喷泉供水
-HELIPAD = (-186, 170, 11)                  # 载具停靠坪 (x, y, 半径)（用户要求）
+HELIPAD = (-186, 170, 11)                  # 载具停靠坪 (x, y, 半径)（用户要求，src: user）
 GARDENS = [  # (id, 名称, kind, 中心, 尺寸, 旋转°)
     ('training', '露天训练场', 'rect', (-62, 58), (28, 14), 8),
     ('rear_lawn', '后庭草坪', 'ellipse', (0, 44), (20, 12), 0),
@@ -468,6 +469,7 @@ GARDENS = [  # (id, 名称, kind, 中心, 尺寸, 旋转°)
     ('maze', '树篱迷宫', 'rect', (-200, -150), (30, 30), 20),
     ('orchard', '果园', 'ellipse', (205, 145), (28, 20), 0),
 ]
+GYM = (187.4, -110.3, -28)   # r4e 玻璃健身亭（src: user），东南网球场旁
 DAIRY = (-262, 8, 90)   # r4d 奶牛农场：props/dairy_parlour 整套（挤奶厅 + 奶罐间 + 电围栏围场），+y 朝西
 COTTAGE = (-160, -82, 20)   # r4d Greystone 客舍（Tudor）+ 岩洞泳池 + 锦鲤池
 COURTS = [(-186, -12, 22), (168, -100, -28), (-230, 95, -20)]   # r4 网球场 (x, y, 旋转°)，36.6 × 18.3 m 含外场
@@ -534,6 +536,7 @@ def footprint_sd(x, y, pad=0.0):
     for tx, ty, _ in TREEHOUSES:
         d = np.minimum(d, np.hypot(x - tx, y - ty) - 5 - pad)
     d = np.minimum(d, np.hypot(x + 160, y + 82) - 24 - pad)
+    d = np.minimum(d, _sd_rect(x, y, 187.4, -110.3, 28 + 2 * pad, 20 + 2 * pad, math.radians(-28), 1.0))
     for cx, cy, a in COURTS:
         d = np.minimum(d, _sd_rect(x, y, cx, cy, 20 + 2 * pad, 38 + 2 * pad, math.radians(a), 1.0))
     d = np.minimum(d, _sd_rect(x, y, 0, -198, 9 + 2 * pad, 100, 0, 1.0))   # 大道水渠
