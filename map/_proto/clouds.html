@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>云 · 部落冲突式原型</title>
+<!-- 原型页（待用户批准）：《部落冲突》式云的动效层。只用 transform / opacity；不接入 map/viewer.html。
+     底图：clouds/base_veil.jpg（Blender 静态薄纱云草稿）或 clouds/base_plain.jpg（只有岛缘云边）；中层：clouds/mid.jpg。
+     参数：?fps=1 显示帧率；?rm=1 模拟「减少动态效果」；?lite=1 模拟低内存 / 省流量；?base=veil 默认底图换成静态薄纱版（默认只有岛缘云边 + 动态漂移）。 -->
+<style>
+:root { --ink: #1d2433; --panel: rgba(255,255,255,.86); --btn: #fff; --btn-on: #2d5bd7; --btn-on-ink: #fff; --line: rgba(29,36,51,.14); }
+@media (prefers-color-scheme: dark) { :root { --ink: #e8ecf4; --panel: rgba(22,26,36,.86); --btn: #2a3040; --btn-on: #6d8cff; --btn-on-ink: #0d1020; --line: rgba(255,255,255,.14); } }
+html, body { margin: 0; height: 100%; background: #9aa6b6; overflow: hidden; font: 14px/1.35 -apple-system, "PingFang SC", "Noto Sans SC", system-ui, sans-serif; color: var(--ink); }
+#stage { position: fixed; inset: 0; overflow: hidden; touch-action: none; cursor: grab; }
+#stage.drag { cursor: grabbing; }
+.pan { position: absolute; inset: 0; will-change: transform; }
+#world img { position: absolute; left: 50%; top: 50%; width: max(100vw, 160vh); height: max(100vh, 62.5vw); transform: translate(-50%, -50%); user-select: none; -webkit-user-drag: none; }
+#world img.b { opacity: 0; }
+#world img.on { opacity: 1; }
+.cloud { position: absolute; left: 0; top: 0; pointer-events: none; will-change: transform, opacity; opacity: 0; }
+#cover { position: fixed; inset: 0; pointer-events: none; visibility: hidden; }
+#cover.run { visibility: visible; pointer-events: auto; }
+#white { position: absolute; inset: -5%; background: #f4f6fa; opacity: 0; will-change: opacity; }
+#ui { position: fixed; left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 5; }
+#ui button { flex: 1 1 auto; min-height: 36px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--btn); color: var(--ink); font: inherit; cursor: pointer; }
+#ui button[aria-pressed="true"] { background: var(--btn-on); color: var(--btn-on-ink); border-color: transparent; }
+#ui button:disabled { opacity: .45; cursor: default; }
+#tag { position: fixed; left: 8px; top: calc(8px + env(safe-area-inset-top)); padding: 4px 10px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); z-index: 5; font-size: 13px; }
+#fps { position: fixed; right: 8px; top: calc(8px + env(safe-area-inset-top)); padding: 4px 8px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); z-index: 5; font: 12px ui-monospace, Menlo, monospace; display: none; }
+</style>
+</head>
+<body>
+<div id="stage" aria-label="天城上层地图（原型）">
+  <div class="pan" id="world">
+    <img class="b on" id="imgUpper" alt="上层" draggable="false">
+    <img class="b" id="imgMid" src="clouds/mid.jpg" alt="中层" draggable="false">
+  </div>
+  <div class="pan" id="far"></div>
+  <div class="pan" id="near"></div>
+</div>
+<div id="cover"><div id="white"></div></div>
+<div id="tag">上层</div>
+<div id="fps"></div>
+<div id="ui">
+  <button id="bDrift" aria-pressed="true">云漂移</button>
+  <button id="bCoc">切层（部落冲突式）</button>
+  <button id="bFade">切层（淡入淡出）</button>
+  <button id="bBase">底图</button>
+</div>
+<script>
+(() => {
+  const Q = new URLSearchParams(location.search);
+  const RM = Q.has('rm') || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const conn = navigator.connection || {};
+  const LITE = Q.has('lite') || conn.saveData === true || (navigator.deviceMemory && navigator.deviceMemory <= 2);
+  const $ = id => document.getElementById(id);
+  const ANG = 35 * Math.PI / 180, UX = Math.cos(ANG), UY = -Math.sin(ANG);   // 云的长轴：向右上
+  const PX = -UY, PY = UX;                                                    // 垂直于长轴（向右下）
+  const SPR = [1, 2, 3, 4, 5, 6].map(k => `clouds/puff${k}.png`);
+  const SPR_AR = 440 / 800;
+  const vw = () => innerWidth, vh = () => innerHeight;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+
+  // ---------- 底图 ----------
+  let base = Q.get('base') === 'veil' ? 'veil' : 'plain', layer = 'upper';   // 默认 = 推荐组合 B：只有云边的底图 + 动态漂移
+  const setBase = () => {
+    $('imgUpper').src = `clouds/base_${base}.jpg`;
+    $('bBase').textContent = '底图：' + (base === 'veil' ? '静态薄纱' : '只有云边');
+    tag();
+  };
+  const tag = () => $('tag').textContent = (layer === 'upper' ? '上层 · ' + (base === 'veil' ? '静态薄纱' : '只有云边') : '中层') + (RM ? ' · 减少动态' : '') + (LITE ? ' · 省流模式' : '');
+  $('bBase').onclick = () => { base = base === 'veil' ? 'plain' : 'veil'; setBase(); };
+  setBase();
+  addEventListener('load', () => { const i = new Image(); i.src = `clouds/base_${base === 'veil' ? 'plain' : 'veil'}.jpg`; });
+
+  // ---------- 拖动平移（视差：远层 0.85、近层 1.2 倍）----------
+  let px = 0, py = 0, drag = null;
+  const img = $('imgUpper');
+  const clampPan = () => {
+    const ar = 2000 / 1250, w = Math.max(vw(), vh() * ar), h = Math.max(vh(), vw() / ar);
+    const mx = (w - vw()) / 2, my = (h - vh()) / 2; px = Math.max(-mx, Math.min(mx, px)); py = Math.max(-my, Math.min(my, py));
+  };
+  const applyPan = () => {
+    clampPan();
+    $('world').style.transform = `translate3d(${px}px,${py}px,0)`;
+    $('far').style.transform = `translate3d(${px * .85}px,${py * .85}px,0)`;
+    $('near').style.transform = `translate3d(${px * 1.2}px,${py * 1.2}px,0)`;
+  };
+  const center = () => { const ar = 2000 / 1250, w = Math.max(vw(), vh() * ar), h = Math.max(vh(), vw() / ar); px = (.5 - .55) * w; py = (.5 - .46) * h; applyPan(); };  // 伊甸居中
+  $('stage').addEventListener('pointerdown', e => { drag = { x: e.clientX - px, y: e.clientY - py }; $('stage').classList.add('drag'); $('stage').setPointerCapture(e.pointerId); });
+  $('stage').addEventListener('pointermove', e => { if (!drag) return; px = e.clientX - drag.x; py = e.clientY - drag.y; applyPan(); });
+  const end = () => { drag = null; $('stage').classList.remove('drag'); };
+  $('stage').addEventListener('pointerup', end); $('stage').addEventListener('pointercancel', end);
+
+  // ---------- (a) 漂移：两层，沿斜向往右上慢慢飘；远层小、慢、淡，近层大、快、稍浓 ----------
+  let driftOn = !(RM || LITE), driftAnims = [];
+  const LAYERS = { far: { n: 8, size: [.5, .75], op: [.35, .5], dur: [70, 95] }, near: { n: 5, size: [.8, 1.1], op: [.45, .62], dur: [42, 58] } };
+  function buildDrift() {
+    driftAnims.forEach(a => a.cancel()); driftAnims = [];
+    for (const id of ['far', 'near']) $(id).replaceChildren();
+    if (!driftOn) return;
+    const D = Math.hypot(vw(), vh());
+    for (const [id, L] of Object.entries(LAYERS)) {
+      for (let k = 0; k < L.n; k++) {
+        const el = new Image(); el.className = 'cloud'; el.src = SPR[(k * 2 + (id === 'near')) % SPR.length]; el.alt = '';
+        const w = D * rnd(...L.size), h = w * SPR_AR; el.style.width = w + 'px';
+        const off = (k / L.n - .5) * D * 1.1 + rnd(-.08, .08) * D;              // 垂直于长轴的错位：铺开到整个画面
+        const cx = vw() / 2 + PX * off - w / 2, cy = vh() / 2 + PY * off - h / 2, T = D * .75 + w * .6;
+        const op = rnd(...L.op), dur = rnd(...L.dur) * 1000;
+        $(id).appendChild(el);
+        driftAnims.push(el.animate([
+          { transform: `translate3d(${cx - UX * T}px,${cy - UY * T}px,0)`, opacity: 0 },
+          { opacity: op, offset: .18 }, { opacity: op, offset: .82 },
+          { transform: `translate3d(${cx + UX * T}px,${cy + UY * T}px,0)`, opacity: 0 },
+        ], { duration: dur, iterations: Infinity, delay: -Math.random() * dur, easing: 'linear' }));
+      }
+    }
+  }
+  const setDrift = on => { driftOn = on; $('bDrift').setAttribute('aria-pressed', String(on)); buildDrift(); };
+  $('bDrift').onclick = () => setDrift(!driftOn);
+
+  // ---------- 切层：换底图（上层 ⇄ 中层）----------
+  const swapLayer = () => {
+    layer = layer === 'upper' ? 'mid' : 'upper';
+    $('imgUpper').classList.toggle('on', layer === 'upper'); $('imgMid').classList.toggle('on', layer === 'mid'); tag();
+  };
+  let busy = false;
+  const lock = on => { busy = on; for (const b of ['bCoc', 'bFade']) $(b).disabled = on; };
+  const done = a => a.finished.catch(() => {});
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+
+  // (b) 《部落冲突》式：云从左下、右上两头沿斜向合拢到全白（约 450 ms），停一下换层，再往两侧（垂直于长轴）散开（约 600 ms）
+  // 转场中点一下画面：立即跳到结束（玩家反馈：第 10 次会嫌烦）
+  let skip = false;
+  $('cover').addEventListener('pointerdown', () => { skip = true; document.getAnimations().forEach(a => { if (a.effect && a.effect.getTiming().iterations !== Infinity) a.finish(); }); });
+  const ROWS = 9, PER = 3, COVER_N = ROWS * PER; let coverEls = [];            // 9 条斜带 × 每带 3 团，中等大小：合拢时读得出一块块云板
+  function coverSprites() {
+    if (coverEls.length) return coverEls;
+    for (let k = 0; k < COVER_N; k++) { const el = new Image(); el.className = 'cloud'; el.src = SPR[k % SPR.length]; el.alt = ''; $('cover').appendChild(el); coverEls.push(el); }
+    return coverEls;
+  }
+  async function coc() {
+    if (busy) return; lock(true);
+    if (RM) { swapLayer(); lock(false); return; }                               // 减少动态：直接换
+    if (LITE) { await fade(true); lock(false); return; }                        // 省流：不加载大云，只用白幕淡入淡出
+    skip = false; const D = Math.hypot(vw(), vh()), els = coverSprites(), anims = [];
+    $('cover').classList.add('run');
+    els.forEach((el, k) => {
+      const row = Math.floor(k / PER), j = k % PER;
+      const w = D * rnd(.5, .68), h = w * SPR_AR; el.style.width = w + 'px';
+      const off = (row / (ROWS - 1) - .5) * D * 1.0 + rnd(-.02, .02) * D, along = (j - (PER - 1) / 2) * D * .38 + rnd(-.06, .06) * D;
+      const cx = vw() / 2 + PX * off + UX * along - w / 2, cy = vh() / 2 + PY * off + UY * along - h / 2;
+      const side = row % 2 ? 1 : -1, T = D * rnd(.55, .8), sp = Math.sign(off || 1) * D * rnd(.4, .55);   // 相邻斜带从两头交错扫进来
+      el._pos = [cx, cy, sp];
+      anims.push(el.animate([
+        { transform: `translate3d(${cx + side * UX * T}px,${cy + side * UY * T}px,0)`, opacity: 0 },
+        { opacity: 1, offset: .5 },
+        { transform: `translate3d(${cx}px,${cy}px,0)`, opacity: 1 },
+      ], { duration: 420, delay: Math.abs(row - (ROWS - 1) / 2) * 8 + j * 10, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' }));
+    });
+    anims.push($('white').animate([{ opacity: 0 }, { opacity: 0, offset: .45 }, { opacity: 1 }], { duration: 500, easing: 'ease-in', fill: 'forwards' }));
+    await Promise.all(anims.map(done));
+    swapLayer(); await wait(skip ? 0 : 150);                                     // 全白里换层（停 150 ms）
+    const out = els.map(el => { const [cx, cy, sp] = el._pos; return el.animate([
+      { transform: `translate3d(${cx}px,${cy}px,0)`, opacity: 1 },
+      { opacity: .9, offset: .35 },
+      { transform: `translate3d(${cx + PX * sp}px,${cy + PY * sp}px,0)`, opacity: 0 },
+    ], { duration: skip ? 1 : 600, easing: 'cubic-bezier(.45,0,.2,1)', fill: 'forwards' }); });
+    out.push($('white').animate([{ opacity: 1 }, { opacity: 0, offset: .4 }, { opacity: 0 }], { duration: skip ? 1 : 600, easing: 'ease-out', fill: 'forwards' }));
+    await Promise.all(out.map(done));
+    out.concat(anims).forEach(a => a.cancel()); $('cover').classList.remove('run'); lock(false);
+  }
+
+  // (c) 淡入淡出：白幕（加几团静止的云）淡入 280 ms → 换层 → 淡出 420 ms
+  async function fade(inner) {
+    if (!inner) { if (busy) return; lock(true); }
+    if (RM) { swapLayer(); if (!inner) lock(false); return; }
+    const els = LITE ? [] : coverSprites().filter((_, k) => k % PER === 1).slice(1, 7), D = Math.hypot(vw(), vh());
+    $('cover').classList.add('run');
+    els.forEach((el, k) => { const w = D * .9, h = w * SPR_AR; el.style.width = w + 'px'; const off = (k / 5 - .5) * D * .9;
+      el.style.transform = `translate3d(${vw() / 2 + PX * off - w / 2}px,${vh() / 2 + PY * off - h / 2}px,0)`; });
+    const tgt = [$('white'), ...els];
+    let a = tgt.map(el => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 280, easing: 'ease-in', fill: 'forwards' }));
+    await Promise.all(a.map(done)); swapLayer(); await wait(120);
+    const b = tgt.map(el => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 420, easing: 'ease-out', fill: 'forwards' }));
+    await Promise.all(b.map(done)); a.concat(b).forEach(x => x.cancel()); els.forEach(el => el.style.transform = '');
+    $('cover').classList.remove('run'); if (!inner) lock(false);
+  }
+  $('bCoc').onclick = () => coc(); $('bFade').onclick = () => fade(false);
+
+  // ---------- 帧率（?fps=1 显示；window.__measure(ms) 给测试脚本用）----------
+  const frames = []; let last = 0;
+  (function tick(t) { if (last) { frames.push(t - last); if (frames.length > 600) frames.shift(); } last = t; requestAnimationFrame(tick); })(0);
+  window.__measure = ms => new Promise(r => { const s = []; let p = 0, t0 = performance.now();
+    (function f(t) { if (p) s.push(t - p); p = t; if (t - t0 < ms) requestAnimationFrame(f); else { const q = [...s].sort((a, b) => a - b);
+      r({ fps: +(1000 * s.length / s.reduce((a, b) => a + b, 0)).toFixed(1), p95: +q[Math.floor(q.length * .95)].toFixed(1), max: +q[q.length - 1].toFixed(1), n: s.length }); } })(t0); });
+  window.__coc = coc; window.__fade = () => fade(false); window.__state = () => ({ layer, base, driftOn, RM, LITE, drift: driftAnims.length });
+  if (Q.has('fps')) { $('fps').style.display = 'block'; setInterval(() => { const s = frames.slice(-60); if (s.length) $('fps').textContent = (1000 * s.length / s.reduce((a, b) => a + b, 0)).toFixed(0) + ' fps'; }, 500); }
+
+  if (RM || LITE) { $('bDrift').setAttribute('aria-pressed', 'false'); if (LITE) $('bDrift').disabled = true; }
+  center(); buildDrift(); tag();
+  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { applyPan(); buildDrift(); }, 150); });
+})();
+</script>
+</body>
+</html>
