@@ -297,7 +297,7 @@
   async function loadViewer() {
     clearTimeout(killT);
     if (swappable && !line) return showPicker();   // 还没选线路：先选
-    if (alive) { post({ type: 'eden-map:wake' }); sent = null; push(); sendEvents(); return; }
+    if (alive) { post({ type: 'eden-map:wake', fly: flyQ }); flyQ = null; sent = null; push(); sendEvents(); return; }   // fly：EdenMap.flyTo 唤醒面板时直接飞过去，不先回上次的图
     startProg(); htmlProg = f => setProg(f * 20);
     let doc;
     try { doc = await fetchHtml(); setProg(20); }
@@ -591,7 +591,7 @@
     async getCharacters() { return { items: chars.map(c => ({ ...c })), floor: floorNow }; },
     // 三维查看器飞到热点（v1.0 测试件：{ map: 'dairy', hotspot: 'tank' }）：面板没开就先打开；地图就绪后转发
     async flyTo(t) { flyQ = t || null; if (panel.hidden && !ghost) { panel.hidden = false; await loadViewer(); } else if (ghost) fab.click();
-      const v = inner(); if (v?.flyTo) { flyQ = null; return v.flyTo(t); } return true; },
+      if (!flyQ) return true; const v = inner(); if (v?.flyTo) { flyQ = null; return v.flyTo(t); } return true; },
     selfcheck: () => runCheck().then(() => ({ items: checkItems.map(i => ({ ...i })), at: checkAt })),   // 启动自检的结果（只在本机）
     on(ev, fn) { if (subs[ev] && typeof fn === 'function') subs[ev].add(fn); return api; },
     off(ev, fn) { if (subs[ev]) fn ? subs[ev].delete(fn) : subs[ev].clear(); return api; },
