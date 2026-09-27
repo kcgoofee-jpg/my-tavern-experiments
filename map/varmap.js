@@ -6,7 +6,8 @@ const TCVarMap = (() => {
   let d = null, open = false;
   const F = [['location', '当前地点', 'Location'], ['time', '时刻', 'Time'], ['period', '时段', 'Period'], ['date', '日期', 'Date'], ['outfit', '主角着装', 'Outfit'],
     ['present', '在场人物表', 'Present table'], ['members', '成员表', 'Members table'], ['targets', '目标表', 'Targets table'], ['reputation', '声望', 'Reputation'], ['stageField', '阶段字段名', 'Stage field'],
-    ['gradeField', '成员等级字段', 'Member grade field'], ['coreField', '成员核心数值字段', 'Member core stat field']];   // v0.9.6 E2 / E13：行内字段名，可关闭
+    ['gradeField', '成员等级字段', 'Member grade field'], ['coreField', '成员核心数值字段', 'Member core stat field'],
+    ['codeField', '代号字段', 'Codename field'], ['socialField', '社会身份字段', 'Public identity field'], ['heightField', '身高字段', 'Height field'], ['weightField', '体重字段', 'Weight field'], ['knownField', '外界知情字段', 'Publicly known field'], ['accessoryField', '饰物字段', 'Accessory field']];   // v0.9.6 E2 / E13：行内字段名，可关闭
   const MODES = [['air', '空中（虚线弧）', 'Air (dashed arc)'], ['rail', '轨道（实线）', 'Rail (solid)'], ['road', '地面（实线）', 'Ground (solid)'], ['underground', '地下（点线）', 'Underground (dotted)'], ['teleport', '传送（只画两端）', 'Teleport (endpoints only)']];
   const DEF_KW = { air: '私人悬浮载具、悬浮载具、悬浮车、悬浮机动装置、飞行器、飞艇', rail: '跨城高速运输管道、运输管道、悬浮轨道、地面轨道、轨道', road: '步行连廊、货运通道、步行、走路', underground: '地铁、地道、地下通道', teleport: '' };
   const en = () => (typeof LANG !== 'undefined' && LANG === 'en');
@@ -24,7 +25,7 @@ const TCVarMap = (() => {
     box.innerHTML = `<summary><h3>${esc(T('vm.title', '变量映射'))}</h3><small>${esc(T(...(MODE_T[d.mode] || MODE_T.tags)))}</small></summary>`
       + `<small>${esc(T('vm.hint', '换了别的角色卡、字段名不一样时，在这里指定地图读哪个变量。按角色卡存在本机；「自动」= 默认或自动找到的'))}</small>`
       + F.map(f => { const u = d.user?.[f[0]] || '', auto = d.detected?.[f[0]] || '';
-        if (f[0] === 'gradeField' || f[0] === 'coreField') return `<label class="vm-row"><span>${esc(L(f))}</span><select data-f="${f[0]}"><option value="">${esc(T('vm.auto', '自动：{p}', { p: auto || T('vm.none', '无') }))}</option><option value="-" ${u === '-' ? 'selected' : ''}>${esc(T('vm.off', '关闭'))}</option>${(d.fields || []).map(k => `<option value="${esc(k)}" ${k === u ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></label>`;
+        if (/Field$/.test(f[0]) && f[0] !== 'stageField') return `<label class="vm-row"><span>${esc(L(f))}</span><select data-f="${f[0]}"><option value="">${esc(T('vm.auto', '自动：{p}', { p: auto || T('vm.none', '无') }))}</option><option value="-" ${u === '-' ? 'selected' : ''}>${esc(T('vm.off', '关闭'))}</option>${(d.fields || []).map(k => `<option value="${esc(k)}" ${k === u ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></label>`;
         return `<label class="vm-row"><span>${esc(L(f))}</span><select data-f="${f[0]}"><option value="">${esc(T('vm.auto', '自动：{p}', { p: auto || T('vm.none', '无') }))}</option>${(d.paths || []).map(p => opt(p, u)).join('')}</select></label>`; }).join('')
       + `<h4>${esc(T('vm.kw', '交通方式关键词（顿号或逗号分隔）'))}</h4>`
       + MODES.map(m => `<label class="vm-row vm-kw"><span>${esc(L(m))}</span><input type="text" data-kw="${m[0]}" value="${esc((kw?.[m[0]] || (kw ? [] : null))?.join?.('、') ?? DEF_KW[m[0]])}"></label>`).join('')

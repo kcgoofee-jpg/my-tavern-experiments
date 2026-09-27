@@ -4,6 +4,7 @@
 0.9.1 起：不改角色卡，发「外挂脚本（钉在标签 `map-v<版本>`）+ 世界书附加条目」。
 
 ## 0.9.6（未发版）
+- 人物卡「更多资料」（E13 其余字段 / E16）：代号、社会身份（与身份不同时）、身高 / 体重、外界知情、饰物，放在可展开的一栏；字段名走变量映射（默认这张卡的字段名，别的卡按字段名自动找，可「关闭」），设置「人物卡显示更多资料」默认开；名册里不在图上的成员点一下也能开人物卡（tests/more096.test.mjs、v097 --only more）
 - 地图 → 聊天：地点卡 / 事件卡 / 人物卡上「去这里」「追问这件事」把一句中性模板（默认「前往<地点>。」/「关于<事件>，」）填进酒馆输入框，接在草稿后面，**从不自动发送**；模板在设置「填入聊天的模板」里可改（本机）。没有 #send_textarea 时退回 `/setinput`（map/compose.js、map/tavern/compose.mjs、tests/compose097.test.mjs、tools/browser/v097.mjs）
 - 地下医疗中心（B2，用户设定）：主楼 B2 未定用途机电体量东段 16 × 11 m 划出医疗中心前厅 / 器械洗消间 / 缓冲更衣间 / 无菌处置室（eden_estate_rooms.json kind=user、src=用户设定，当前地点第 1 级认得出）；模型 `blender/estate2/medical_b2.py`（庄园坐标，待合进主楼室内 glb）；草图 `docs/drafts/b2_medical_{cleanroom,anteroom}.jpg`；参考板 `docs/b2-medical-references.md`；世界书附加条目「地下医疗中心（B2）」；check_maps 的庄园条目 alias 也认分层房间名。
 - 表格数据库插件兼容（只读，自动检测）：MVU 读不到当前地点时改读它的全局表（当前详细地点 → 地区），它的人物表有位置时补进人物栏；它的「正文优化」改写丢掉的 ⌖ 标签从原文补回；它的全屏界面打开时隐藏地图悬浮按钮；自检一行「数据库插件：已检测 / 兼容模式」。从不写它的数据（map/tavern/shujuku.mjs、tests/shujuku.test.mjs；隔离 SillyTavern 1.19.0 + 酒馆助手 + 插件 9.2.5 + 离线模拟模型实测）

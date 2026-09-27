@@ -237,9 +237,14 @@ function rows(tbl, stageKey, fk = {}) {
     const gk = fk.gradeField, ck = fk.coreField;
     if (gk && gk !== '-' && gk in o) { const g = str(val(o[gk])); if (g) it.grade = g; }
     if (ck && ck !== '-' && ck in o) { const n = num(val(o[ck])); if (Number.isFinite(n)) { it.core = n; it.coreKey = ck; it.coreStage = coreStage(ck, n); } }
+    const more = {};   // v0.9.6 E13 其余字段（人物卡「更多资料」）：只读，原样取值；布尔的外界知情保留 true / false
+    for (const [f, k] of Object.entries(MORE_KEYS)) { const fk_ = fk[f]; if (!fk_ || fk_ === '-' || !(fk_ in o)) continue; const v = val(o[fk_]);
+      if (typeof v === 'boolean') more[k] = v; else if (typeof v === 'number' && Number.isFinite(v)) more[k] = v; else { const s = str(v); if (s) more[k] = s.slice(0, 80); } }
+    if (Object.keys(more).length) it.more = more;
     return it;
   });
 }
+const MORE_KEYS = { codeField: 'code', socialField: 'social', heightField: 'height', weightField: 'weight', knownField: 'known', accessoryField: 'accessory' };
 /** stat_data → { present, members, targets }：每项 { key: 表名, items: [{ name, identity, stage?, grade?, core?, coreKey?, coreStage? }] } 或 null；map = { present, members, targets } 表名覆盖，gradeField / coreField 行内字段名（'-' = 关闭） */
 export function rosters(stat, map = {}) {
   const out = { present: null, members: null, targets: null }; if (!plain(stat)) return out;

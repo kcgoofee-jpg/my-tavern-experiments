@@ -64,7 +64,10 @@ const TCChars = (() => {
     const tg = document.querySelector('#card .tag'); tg.textContent = T('ch.tag', '人物'); tg.className = 'tag data'; tg.style.background = color(list[0].name);
     const sv = document.querySelector('#card .src'); delete sv.dataset.note;
     const note = c => { const e = typeof TCCustom !== 'undefined' && TCCustom.entry(c.name); return e?.用途 ? ` · ${e.用途}` : ''; };
-    if (list.length === 1) { const c = list[0]; const id = identity(c.name); sv.innerHTML = `<dl class="fields">${id ? `<dt>${esc(T('ch.identity', '身份'))}</dt><dd>${esc(id)}</dd>` : ''}<dt>${esc(T('ch.last', '最后出现'))}</dt><dd>${esc(c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor }))}</dd><dt>${esc(T('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd></dl>`; return; }
+    if (list.length === 1) { const c = list[0]; const id = identity(c.name), it = rosterItem(c.name);
+      sv.innerHTML = `<dl class="fields">${id ? `<dt>${esc(T('ch.identity', '身份'))}</dt><dd>${esc(id)}</dd>` : ''}${c.roster ? (c.place ? `<dt>${esc(T('ev.k_place', '地点'))}</dt><dd>${esc(c.place)}</dd>` : '') : `<dt>${esc(T('ch.last', '最后出现'))}</dt><dd>${esc(c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor }))}</dd><dt>${esc(T('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd>`}</dl>${moreHtml(it, id)}`;
+      sv.querySelector('details.chmore')?.addEventListener('toggle', e => { try { localStorage.setItem(MO_OPEN, e.target.open ? '1' : '0'); } catch (x) {} });
+      return; }
     sv.innerHTML = `<dl class="fields">${list.map(c => `<dt>${esc(dn(c.name))}</dt><dd>${esc(when(c) + ' · ' + srcOf(c))}</dd>`).join('')}</dl>`;
   }
   // 飞过去：在别的图上就先切图，打开后再平移；只知道层的，切到那一层就好
@@ -77,6 +80,8 @@ const TCChars = (() => {
     vp.fitBounds(new OpenSeadragon.Rect(w.nx - wd / 2, w.ny * aspect - h / 2, wd, h));
     setTimeout(() => card(items.filter(x => x.place === c.place && visible(x)).length ? items.filter(x => x.place === c.place) : [c]), 650);
   }
+  /** 名册里的人（不一定在图上）开人物卡 */
+  function cardOf(name) { const c = items.find(x => x.name === name); if (c) return fly(name); if (!rosterItem(name)) return; card([{ name, place: '', floor: 0, roster: true }]); }
   function afterOpen() { render().then(() => { if (flyName) fly(flyName); }); }
 
   // ---------- 横条里的「人物」页 ----------
@@ -84,6 +89,23 @@ const TCChars = (() => {
   function bar() { if (typeof TCEvents !== 'undefined') TCEvents.renderBar?.(); }
   // v0.9.5 名册（只读，卡内脚本按表的位置发现）：身份、阶段；分组可折叠（折叠状态存本机）
   const identity = n => { for (const g of ['present', 'members', 'targets']) { const it = rosters?.[g]?.items?.find(i => i.name === n); if (it?.identity) return it.identity; } return ''; };
+  const rosterItem = n => { for (const g of ['present', 'members', 'targets']) { const it = rosters?.[g]?.items?.find(i => i.name === n); if (it) return it; } return null; };
+  // v0.9.6（E13 其余字段 / E16）：人物卡「更多资料」——代号、社会身份（公开身份）、身高 / 体重、外界知情、饰物；只读，字段名走变量映射（可关闭）；设置「人物卡显示更多资料」（本机 edenMapCharMore，默认开）
+  const MO_KEY = 'edenMapCharMore', MO_OPEN = 'edenMapCharMoreOpen';
+  const moreOn = () => { try { return localStorage.getItem(MO_KEY) !== '0'; } catch (e) { return true; } };
+  const moreOpen = () => { try { return localStorage.getItem(MO_OPEN) === '1'; } catch (e) { return false; } };
+  function moreRows(it, id = '') {
+    const m = it?.more; if (!m) return [];
+    const r = [], hw = [m.height != null && m.height !== '' ? (typeof m.height === 'number' ? m.height + ' cm' : m.height) : '', m.weight != null && m.weight !== '' ? (typeof m.weight === 'number' ? m.weight + ' kg' : m.weight) : ''].filter(Boolean).join(' · ');
+    if (m.code) r.push([T('ch.m_code', '代号'), m.code]);
+    if (m.social && m.social !== id) r.push([T('ch.m_social', '社会身份'), m.social]);
+    if (hw) r.push([T('ch.m_hw', '身高 / 体重'), hw]);
+    if (m.known != null) r.push([T('ch.m_known', '外界知情'), m.known === true || m.known === '是' || m.known === 'true' ? T('ch.m_yes', '知情') : m.known === false || m.known === '否' || m.known === 'false' ? T('ch.m_no', '不知情') : String(m.known)]);
+    if (m.accessory) r.push([T('ch.m_acc', '饰物'), m.accessory]);
+    return r;
+  }
+  const moreHtml = (it, id) => { if (!moreOn()) return ''; const r = moreRows(it, id); if (!r.length) return '';
+    return `<details class="chmore" ${moreOpen() ? 'open' : ''}><summary>${esc(T('ch.more_h', '更多资料'))}</summary><dl class="fields">${r.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></details>`; };
   const GK = 'edenMapChGroups', closed = (() => { try { return new Set(JSON.parse(localStorage.getItem(GK) || '[]')); } catch (e) { return new Set(); } })();
   const stageChip = s => { if (!s) return ''; const i = stageOrder ? stageOrder.indexOf(s) : -1, n = stageOrder?.length || 0;
     return `<span class="chstage" ${i >= 0 ? `style="--p:${(i + 1) / n}" title="${esc(T('ch.stage_of', '第 {i} / {n} 步', { i: i + 1, n }))}"` : ''}>${i >= 0 ? `<i aria-hidden="true">${Array.from({ length: n }, (_, k) => `<b class="${k <= i ? 'on' : ''}"></b>`).join('')}</i>` : ''}${esc(s)}</span>`; };
@@ -100,7 +122,7 @@ const TCChars = (() => {
   function rosterRow(it) {
     const c = items.find(x => x.name === it.name);
     const body = `<i class="av" style="--c:${color(it.name)}">${avImg(it.name) || esc(ini(it.name))}</i><b>${esc(dn(it.name))}</b><em>${stageChip(it.stage)}${statChip(it)}</em><small>${esc(it.identity || '')}${c ? ' · ' + esc(c.place) : ''}</small>`;
-    return c ? `<li><button type="button" class="chgo" data-n="${esc(it.name)}">${body}</button></li>` : `<li><div class="chgo chro">${body}</div></li>`;
+    return c ? `<li><button type="button" class="chgo" data-n="${esc(it.name)}">${body}</button></li>` : `<li><button type="button" class="chgo chro" data-card="${esc(it.name)}">${body}</button></li>`;   // v0.9.6：不在图上的名册成员也能开人物卡
   }
   function group(id, label, n, inner) {
     return `<details class="chgrp" data-g="${id}" ${closed.has(id) ? '' : 'open'}><summary>${esc(label)} <small>${n}</small></summary><ul>${inner}</ul></details>`;
@@ -121,7 +143,7 @@ const TCChars = (() => {
       else { const n = inp.dataset.n; prefs.off = inp.checked ? prefs.off.filter(x => x !== n) : [...prefs.off, n]; }
       savePrefs(); render(); bar(); return;
     }
-    const b = e.type === 'click' && e.target.closest('button.chgo'); if (b) { if (typeof TCEvents !== 'undefined') TCEvents.collapse(); fly(b.dataset.n); }
+    const b = e.type === 'click' && e.target.closest('button.chgo'); if (b) { if (typeof TCEvents !== 'undefined') TCEvents.collapse(); if (b.dataset.card) cardOf(b.dataset.card); else fly(b.dataset.n); }
   }
   // 本机头像（EdenMap.setAvatar / removeAvatar 转到这里）
   // data URL 头像先压到 160 px 的 webp / jpeg（和状态栏共用 localStorage 额度，通读 R3）
@@ -157,7 +179,14 @@ const TCChars = (() => {
   #evbar .chpane summary{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 var(--sp-3,6px);cursor:pointer;font-size:var(--fs-small,12px);font-weight:600;color:var(--ink-2);border-top:1px solid var(--line)}
   #evbar .chpane summary small{color:var(--muted);font-weight:400;font-size:var(--fs-micro,11px)}
   #evbar .chpane summary{list-style:none}#evbar .chpane summary::-webkit-details-marker{display:none}#evbar .chpane summary::before{content:'';width:6px;height:6px;border:solid var(--muted);border-width:0 1.5px 1.5px 0;transform:rotate(-45deg);margin:0 4px 0 2px;transition:transform var(--dur-1,120ms)}#evbar .chpane details[open]>summary::before{transform:rotate(45deg)}
-  #evbar .chpane .chro{cursor:default}
+  #evbar .chpane .chro{cursor:pointer}
+  #card details.chmore{margin-top:var(--sp-4);border-top:1px solid var(--line)}
+  #card details.chmore summary{display:flex;align-items:center;gap:6px;min-height:36px;cursor:pointer;list-style:none;font-size:var(--fs-small);color:var(--ink-2);font-weight:600}
+  #card details.chmore summary::-webkit-details-marker{display:none}
+  #card details.chmore summary::before{content:'';width:6px;height:6px;border:solid var(--muted);border-width:0 1.5px 1.5px 0;transform:rotate(-45deg);margin:0 4px 0 2px;transition:transform var(--dur-1,120ms)}
+  #card details.chmore[open] summary::before{transform:rotate(45deg)}
+  #card details.chmore dl.fields{margin-top:0}
+  @media (pointer:coarse),(max-width:640px){#card details.chmore summary{min-height:44px}}
   #evbar .chpane .chstage{display:inline-flex;align-items:center;gap:4px;padding:0 6px;border:1px solid var(--line-strong,rgba(255,255,255,.25));border-radius:var(--r-pill,999px);font-size:var(--fs-micro,11px);line-height:15px;color:var(--ink-2)}
   #evbar .chpane .chstat{display:inline-flex;align-items:center;margin-left:4px;padding:0 6px;border:1px solid var(--line-strong,rgba(255,255,255,.25));border-radius:var(--r-pill,999px);font-size:var(--fs-micro,11px);line-height:15px;color:var(--ink-2);font-variant-numeric:tabular-nums}
   #evbar .chpane .chstage i{display:inline-flex;gap:2px}#evbar .chpane .chstage i b{width:5px;height:5px;border-radius:50%;background:var(--line-strong,rgba(255,255,255,.25))}
@@ -176,5 +205,5 @@ const TCChars = (() => {
   @media (pointer:coarse),(max-width:640px){#evbar .chpane .chgo{min-height:44px}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   mod().then(loadPrefs);
-  return { color, portOn, setStatsOn(on) { try { localStorage.setItem('edenMapCharStats', on ? '1' : '0'); } catch (e) {} bar(); }, get statsOn() { return statsOn(); }, setPortOn(on) { try { localStorage.setItem(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
+  return { color, portOn, setMoreOn(on) { try { localStorage.setItem(MO_KEY, on ? '1' : '0'); } catch (e) {} }, cardOf, setStatsOn(on) { try { localStorage.setItem('edenMapCharStats', on ? '1' : '0'); } catch (e) {} bar(); }, get statsOn() { return statsOn(); }, setPortOn(on) { try { localStorage.setItem(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
 })();
