@@ -92,7 +92,7 @@
           "alias": ["星渊大学", "星渊", "天城第一学府", "第一学府"] },
         "old_apartment": { "name": "旧公寓楼", "sub": "钢铁霓虹区 · 出租公寓", "name_en": "Old Apartment Block", "sub_en": "Steel & Neon · rented rooms", "tag": "inf", "openings": [6],
           "src": "中层钢铁霓虹区的旧公寓楼，出租的房间（开场白里的地点；具体位置为推断）",
-          "alias": ["旧公寓楼", "旧公寓", "Old Apartment"] },
+          "alias": ["旧公寓楼", "旧公寓", "Old Apartment"] , "link": {"map": "lm_old_apartment", "label": "查看三维模型", "label_en": "View 3D model"} },
         "council": { "name": "天城议会", "name_en": "Tiancheng Council", "tag": "inf",
           "src": "卡有天城议会（立法机构），未写位置；放在中层为地图推断",
           "alias": ["议会", "议事厅"] },
@@ -166,6 +166,7 @@
     },
     "lm_kelly_residence": {"title": "凯莉的宅邸（三维）", "title_en": "Kelly's Residence (3D)", "parent": "tc_upper", "kind": "estate", "viewer3d": "kelly_residence", "src": "props/viewer3d.html", "alias": ["凯莉宅邸门廊", "凯莉宅邸花园"], "src_note": "开局三目的地的三维模型（标准版：标准档 + 低档 glb；摄政风白灰泥别墅，形制为仓库推断）；从 tc_upper.kelly_residence 标记的「查看三维模型」进。源：blender/landmarks/kelly_residence/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_ruined_churches": {"title": "废弃教堂区（三维）", "title_en": "Derelict Church Quarter (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "ruined_churches", "src": "props/viewer3d.html", "alias": ["废弃教堂区（三维）"], "src_note": "开局四目的地的三维模型（标准版：标准档 + 低档 glb；旧时代石砌教区教堂废墟 + 残余以太场，层与位置为仓库推断）；从 tc_low.ruined_churches 标记的「查看三维模型」进。源：blender/landmarks/ruined_churches/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_old_apartment": {"title": "旧公寓楼（三维）", "title_en": "Old Apartment Block (3D)", "parent": "tc_mid", "kind": "estate", "viewer3d": "old_apartment", "src": "props/viewer3d.html", "alias": ["旧公寓楼（三维）"], "src_note": "开局六的地点的三维模型（标准版：标准档 + 低档 glb；老式步行梯公寓 + 早餐店、地铁口、雨后街道与玩家租的房间，具体位置为仓库推断）；从 tc_mid.old_apartment 标记的「查看三维模型」进。源：blender/landmarks/old_apartment/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_pm_residence": {
       "title": "首相府（三维）", "title_en": "Prime Minister's Residence (3D)", "parent": "tc_upper", "kind": "estate",
       "viewer3d": "pm_residence", "src": "props/viewer3d.html", "alias": ["首相府花园"],

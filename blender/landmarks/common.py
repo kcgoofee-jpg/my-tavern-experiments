@@ -574,3 +574,28 @@ def tree(B, x, y, h, r, kind='oak', seed=0, z=0.0):
             s = 0.045
             B.poly([tuple(p - tt * s - w * s), tuple(p + tt * s - w * s), tuple(p + tt * s + w * s), tuple(p - tt * s + w * s)],
                    [(0, 1, 2, 3)], M['yew'])
+
+
+# ---------------------------------------------------------------- 全息 / 灯箱（无文字：只有色块、渐变、扫描线）
+def holo(name, c1, c2, estr=6.0, alpha=0.55, scan=6.0, scale=0.6):
+    """半透明自发光面板：两色噪声渐变 + 世界 z 方向扫描线；alpha = 不透明度。"""
+    m = bpy.data.materials.new(name)
+    nt = m.node_tree; nt.nodes.clear()
+    out = nt.nodes.new('ShaderNodeOutputMaterial')
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = scale; nz.inputs['Detail'].default_value = 2
+    nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
+    col = _mix(nt, tuple(c1), tuple(c2), nz.outputs[0])
+    wv = nt.nodes.new('ShaderNodeTexWave'); wv.wave_type = 'BANDS'; wv.bands_direction = 'Z'
+    wv.inputs['Scale'].default_value = scan
+    nt.links.new(tc.outputs['Object'], wv.inputs['Vector'])
+    mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['To Min'].default_value = 0.55; mr.inputs['To Max'].default_value = 1.0
+    nt.links.new(wv.outputs[0], mr.inputs['Value'])
+    em = nt.nodes.new('ShaderNodeEmission'); nt.links.new(col, em.inputs['Color'])
+    ms = nt.nodes.new('ShaderNodeMath'); ms.operation = 'MULTIPLY'; ms.inputs[1].default_value = estr
+    nt.links.new(mr.outputs[0], ms.inputs[0]); nt.links.new(ms.outputs[0], em.inputs['Strength'])
+    tr = nt.nodes.new('ShaderNodeBsdfTransparent')
+    mx = nt.nodes.new('ShaderNodeMixShader'); mx.inputs[0].default_value = alpha
+    nt.links.new(tr.outputs[0], mx.inputs[1]); nt.links.new(em.outputs[0], mx.inputs[2])
+    nt.links.new(mx.outputs[0], out.inputs[0])
+    return m
