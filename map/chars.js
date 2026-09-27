@@ -14,6 +14,10 @@ const TCChars = (() => {
   const color = n => CM ? CM.colorOf(n) : '#888';
   const ini = n => CM ? CM.initials(n) : String(n)[0];
   const visible = c => prefs.show && !prefs.off.includes(c.name);
+  // v0.9.3：显示名（自定义，custom.js）与位置来源：MVU（在场人物的位置字段）/ 标签（聊天里的人物标签）/ 推断（在场但没写位置，按和你同处）
+  const dn = n => (typeof TCCustom !== 'undefined' ? TCCustom.name(n) : n);
+  const srcOf = c => c.src === 'mvu' ? T('ch.src_mvu', 'MVU') : c.src === 'tag' ? T('ch.src_tag', '标签') : T('ch.src_infer', '推断');
+  const when = c => c.present ? T('ch.with_you', '和你在一起') : T('ev.floor', '第 {n} 楼', { n: c.floor });
 
   // 地点 → { map, nx, ny } / { map }（只知道层）/ null
   const markerXY = async (map, id) => { const m = REG.maps[map]; if (!m?.data) return null; const d = map === cur ? curData : await getJSON(m.data);
@@ -38,19 +42,20 @@ const TCChars = (() => {
     for (const { w, list } of groups.values()) {
       const el = document.createElement('div'); el.className = 'chm' + (w.approx ? ' approx' : ''); el.dataset.chars = list.map(c => c.name).join('|');
       el.innerHTML = '<span class="chg">' + list.slice(0, 3).map((c, i) => `<i class="av" style="--c:${color(c.name)};z-index:${3 - i}">${avatars[c.name] ? `<img alt="" referrerpolicy="no-referrer" src="${esc(avatars[c.name])}">` : esc(ini(c.name))}</i>`).join('')
-        + (list.length > 3 ? `<i class="av more">+${list.length - 3}</i>` : '') + `<b>${esc(list[0].name)}${list.length > 1 ? ' ' + esc(T('ch.more', '等 {n} 人', { n: list.length })) : ''}</b>` + '</span>';
-      const label = list.map(c => `${c.name}（${c.place}）`).join('、');
+        + (list.length > 3 ? `<i class="av more">+${list.length - 3}</i>` : '') + `<b>${esc(dn(list[0].name))}${list.length > 1 ? ' ' + esc(T('ch.more', '等 {n} 人', { n: list.length })) : ''}</b>` + '</span>';
+      const label = list.map(c => `${dn(c.name)}（${c.place}）`).join('、');
       if (typeof trackEl === 'function') trackEl(el, () => card(list), T('ch.aria', '人物：{s}', { s: label }));
       placeN(el, w.nx, w.ny, OpenSeadragon.Placement.CENTER); els.push(el);
     }
     if (typeof declutter === 'function') declutter();
   }
   function card(list) {
-    showCard(null, list.map(c => c.name).join('、'), 'inf', '', '', list[0].place);
+    showCard(null, list.map(c => dn(c.name)).join('、'), 'inf', '', '', list[0].place);
     const tg = document.querySelector('#card .tag'); tg.textContent = T('ch.tag', '人物'); tg.className = 'tag data'; tg.style.background = color(list[0].name);
     const sv = document.querySelector('#card .src'); delete sv.dataset.note;
-    if (list.length === 1) { const c = list[0]; sv.innerHTML = `<dl class="fields"><dt>${esc(T('ch.last', '最后出现'))}</dt><dd>${esc(c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor }))}</dd></dl>`; return; }
-    sv.innerHTML = `<dl class="fields">${list.map(c => `<dt>${esc(c.name)}</dt><dd>${esc(c.present ? T('ch.with_you', '和你在一起') : T('ev.floor', '第 {n} 楼', { n: c.floor }))}</dd>`).join('')}</dl>`;
+    const note = c => { const e = typeof TCCustom !== 'undefined' && TCCustom.entry(c.name); return e?.用途 ? ` · ${e.用途}` : ''; };
+    if (list.length === 1) { const c = list[0]; sv.innerHTML = `<dl class="fields"><dt>${esc(T('ch.last', '最后出现'))}</dt><dd>${esc(c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor }))}</dd><dt>${esc(T('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd></dl>`; return; }
+    sv.innerHTML = `<dl class="fields">${list.map(c => `<dt>${esc(dn(c.name))}</dt><dd>${esc(when(c) + ' · ' + srcOf(c))}</dd>`).join('')}</dl>`;
   }
   // 飞过去：在别的图上就先切图，打开后再平移；只知道层的，切到那一层就好
   async function fly(name) {
@@ -69,7 +74,7 @@ const TCChars = (() => {
   function bar() { if (typeof TCEvents !== 'undefined') TCEvents.renderBar?.(); }
   function pane(el) {
     el.innerHTML = `<label class="tg chall"><span>${esc(T('ch.show', '在地图上显示人物'))}</span><input type="checkbox" role="switch" ${prefs.show ? 'checked' : ''}></label>`
-      + `<ul>${items.map(c => `<li><button type="button" class="chgo" data-n="${esc(c.name)}"><i class="av" style="--c:${color(c.name)}">${avatars[c.name] ? `<img alt="" referrerpolicy="no-referrer" src="${esc(avatars[c.name])}">` : esc(ini(c.name))}</i><b>${esc(c.name)}</b><em>${esc(c.present ? T('ch.with_you', '和你在一起') : T('ev.floor', '第 {n} 楼', { n: c.floor }))}</em><small>${esc(c.place)}</small></button>`
+      + `<ul>${items.map(c => `<li><button type="button" class="chgo" data-n="${esc(c.name)}"><i class="av" style="--c:${color(c.name)}">${avatars[c.name] ? `<img alt="" referrerpolicy="no-referrer" src="${esc(avatars[c.name])}">` : esc(ini(c.name))}</i><b>${esc(dn(c.name))}</b><em><span class="chsrc src-${esc(c.src || 'infer')}">${esc(srcOf(c))}</span> ${esc(when(c))}</em><small>${esc(c.place)}</small></button>`
         + `<input type="checkbox" role="switch" data-n="${esc(c.name)}" aria-label="${esc(T('ch.toggle_one', '在地图上显示 {n}', { n: c.name }))}" ${prefs.off.includes(c.name) ? '' : 'checked'} ${prefs.show ? '' : 'disabled'}></li>`).join('')}</ul>`;
   }
   function onPane(e) {
@@ -107,6 +112,8 @@ const TCChars = (() => {
   #evbar .chpane .chgo .av{grid-row:1/3}
   #evbar .chpane .chgo b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #evbar .chpane .chgo em{font-style:normal;color:var(--muted);font-size:var(--fs-micro,11px);white-space:nowrap}
+  #evbar .chpane .chsrc{display:inline-block;padding:0 5px;margin-right:2px;border:1px solid var(--line-strong,rgba(255,255,255,.25));border-radius:var(--r-pill,999px);font-size:10px;line-height:15px}
+  #evbar .chpane .chsrc.src-mvu{border-color:var(--accent);color:var(--accent)}
   #evbar .chpane .chgo small{grid-column:2/-1;color:var(--muted);font-size:var(--fs-micro,11px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   @media (pointer:coarse),(max-width:640px){#evbar .chpane .chgo{min-height:44px}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);

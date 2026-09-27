@@ -28,7 +28,9 @@ t('物品 / 势力表带位置字段也不算人物', () => {
 });
 t('每人最新一楼为准；MVU 是最新状态', () => {
   const r = C.collectChars([{ floor: 10, text: '⌖人物 甲 @ 中层·霓虹街 ⌖人物 乙 @ 下层·7号井' }, { floor: 20, text: '⌖人物 甲 @ 上层·银冠堡' }], 25, [{ name: '乙', place: '中层', present: true }]);
-  assert.deepEqual(r.map(c => [c.name, c.place, c.floor, c.src]), [['乙', '中层', 25, 'mvu'], ['甲', '上层·银冠堡', 20, 'tag']]);
+  assert.deepEqual(r.map(c => [c.name, c.place, c.floor, c.src]), [['甲', '上层·银冠堡', 20, 'tag'], ['乙', '下层·7号井', 10, 'tag']]);   // v0.9.3：在场但没写位置 → 标签优先
+  const r2 = C.collectChars([{ floor: 10, text: '⌖人物 乙 @ 下层·7号井' }], 25, [{ name: '乙', place: '上层·银冠堡' }, { name: '丙', place: '中层', present: true }]);
+  assert.deepEqual(r2.map(c => [c.name, c.place, c.src]), [['丙', '中层', 'infer'], ['乙', '上层·银冠堡', 'mvu']]);
 });
 t('颜色：色相离事态 9 大类都 ≥ 18°', () => {
   const ev = Object.values(GROUPS).map(C.hueOf).filter(h => h != null);

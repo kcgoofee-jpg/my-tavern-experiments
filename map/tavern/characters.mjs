@@ -4,7 +4,10 @@
 //   <span style="display:none" data-tcmap="人物=名字;地点=层·地点"></span>
 // MVU：stat_data 里任何「人物名 → 对象」的表，对象里有 位置 / 当前位置 / 当前地点 / 所在地 / 地点 / location 字段 → 该人物在那里；
 //      名字叫「在场人物 / 在场角色 / 当前在场」这类表（没有位置字段）→ 这些人和玩家在同一处（世界.当前地点的第一处）。
+// v0.9.3：在场表每一项的「位置」字段（附加世界书教模型维护，格式「层·地点」）优先；表项是字符串也认（mvu.mjs presentList）。
+//   来源 src：'mvu'（MVU 位置）→ 'tag'（聊天标签）→ 'infer'（在场但没写位置：推断和玩家同处）。
 // 只做技术兼容：不按内容过滤任何名字或地点，原样显示。
+import { presentList } from './mvu.mjs';
 export const MAX_TAGS_PER_FLOOR = 8;
 const LOC_KEYS = ['当前位置', '当前地点', '所在地', '所在位置', '位置', '地点', 'location', 'place'];
 const PEOPLE = /人物|角色|人员|同伴|成员|NPC|character|people|npc/i, PERSONISH = ['身份', '姓名', '年龄', '性别', '职业', '外貌', '内心想法', '好感'];
@@ -36,9 +39,12 @@ export function parseChars(raw) {
 export function mvuChars(stat, here) {
   const out = [], first = String(here || '').split(/\s*[\/／|｜]\s*/)[0].trim();
   if (!stat || typeof stat !== 'object') return out;
+  const pres = presentList(stat), done = new Set();
+  for (const p of pres || []) { done.add(p.name); if (p.place) out.push({ name: p.name, place: p.place }); else if (first) out.push({ name: p.name, place: first, present: true }); }
   for (const [tk, tbl] of Object.entries(stat)) {
     if (!tbl || typeof tbl !== 'object' || Array.isArray(tbl) || tk === '世界') continue;
     for (const [name, o] of Object.entries(tbl)) {
+      if (done.has(clean(name))) continue;
       if (!o || typeof o !== 'object' || Array.isArray(o) || !clean(name) || [...name].length > 40) continue;
       const k = LOC_KEYS.find(k => typeof o[k] === 'string' && o[k].trim());
       const person = PEOPLE.test(tk) || PERSONISH.some(f => f in o);   // 只认人物表（或行里有人物字段）；物品 / 势力表带「位置」也不当人物
@@ -49,11 +55,14 @@ export function mvuChars(stat, here) {
   return out;
 }
 
-/** 最近若干楼 [{floor, text}] + MVU（最新楼的状态）→ 每人最新位置 [{name, place, floor, src, present?}]，新的在前。同一楼里 MVU 优先于标签 */
+/** 最近若干楼 [{floor, text}] + MVU（最新楼的状态）→ 每人最新位置 [{name, place, floor, src: 'mvu'|'tag'|'infer', present?}]，新的在前 */
 export function collectChars(msgs, now, mvu = []) {
   const map = new Map();
   for (const { floor, text } of msgs) for (const c of parseChars(text)) map.set(c.name, { ...c, floor, src: 'tag' });
-  for (const c of mvu) map.set(c.name, { ...c, floor: now, src: "mvu" });   // MVU 是最新楼的状态：总是最新
+  for (const c of mvu) {   // MVU 是最新楼的状态：写了位置就以它为准；在场但没写位置时，有标签用标签，没有才推断为和玩家同处
+    if (c.present && map.has(c.name)) continue;
+    map.set(c.name, { ...c, floor: now, src: c.present ? 'infer' : 'mvu' });
+  }
   return [...map.values()].sort((a, b) => b.floor - a.floor || a.name.localeCompare(b.name));
 }
 
