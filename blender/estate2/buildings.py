@@ -73,11 +73,12 @@ def _roof(name, tex, tint, amt, scale=1 / 2.2):
     if t is None:
         return m
     v, tc = t.coords('Object', scale, (-1800, 0))
-    c, r, n = t.pbr_tex(tex, v, (-1400, 200), 0.9)
+    c, r, n = t.pbr_tex(tex, v, (-1400, 200), 1.6)
     oi = t.new('ShaderNodeObjectInfo', (-1400, 600))
     hue = t.new('ShaderNodeHueSaturation', (-900, 300))
+    hue.inputs['Saturation'].default_value = 0.85
     t.link(t.math('ADD', t.math('MULTIPLY', oi.outputs['Random'], 0.06), 0.47), hue.inputs['Hue'])
-    t.link(t.math('ADD', t.math('MULTIPLY', oi.outputs['Random'], 0.3), 0.85), hue.inputs['Value'])
+    t.link(t.math('ADD', t.math('MULTIPLY', oi.outputs['Random'], 0.25), 0.72), hue.inputs['Value'])
     t.link(t.mix(amt, c, tint, loc=(-1100, 300)), hue.inputs['Color'])
     # 瓦面积灰 / 青苔斑
     nz = t.new('ShaderNodeTexNoise', (-1100, -300), **{'Scale': 0.9, 'Detail': 5.0})
@@ -151,20 +152,23 @@ def mats():
     if MATS:
         return MATS
     MATS.update(
-        white=_stone('e2_stone_white', 'castle_brick_02_white', (0.86, 0.845, 0.8), 0.55),
-        plain=_stone('e2_stone_plain', 'castle_brick_02_white', (0.87, 0.855, 0.81), 0.6, windows=False),
+        white=_stone('e2_stone_white', 'castle_brick_02_white', (0.86, 0.83, 0.76), 0.5),
+        plain=_stone('e2_stone_plain', 'castle_brick_02_white', (0.84, 0.8, 0.72), 0.35, windows=False),
+        wallstone=_stone('e2_stone_wall', 'castle_wall_varriation', (0.8, 0.74, 0.62), 0.4, windows=False, grime=0.1),
         beige=_stone('e2_stone_beige', 'castle_brick_02_white', (0.66, 0.56, 0.42), 0.7),
         grey=_stone('e2_stone_grey', 'castle_wall_varriation', (0.4, 0.39, 0.37), 0.35, grime=0.25),
         grey_plain=_stone('e2_stone_grey_plain', 'castle_wall_varriation', (0.4, 0.39, 0.37), 0.35, windows=False),
-        terra=_roof('e2_roof_terracotta', 'clay_roof_tiles_02', (0.42, 0.13, 0.06), 0.35),
-        slate=_roof('e2_roof_slate', 'grey_roof_tiles_02', (0.13, 0.135, 0.15), 0.4, 1 / 1.6),
+        terra=_roof('e2_roof_terracotta', 'clay_roof_tiles_02', (0.42, 0.19, 0.08), 0.3, 1 / 2.4),
+        slate=_roof('e2_roof_slate', 'grey_roof_tiles_02', (0.13, 0.135, 0.15), 0.4, 1 / 2.0),
         wood=_wood(),
         bronze=_plain('e2_bronze', (0.18, 0.12, 0.07), 0.35, 0.9),
         gold=_plain('e2_gold', (0.85, 0.62, 0.25), 0.25, 1.0),
-        dark=_plain('e2_dark_recess', (0.03, 0.03, 0.035), 0.6),
+        dark=_plain('e2_dark_recess', (0.16, 0.13, 0.1), 0.8),
         glass=_plain('e2_glass', (0.05, 0.07, 0.08), 0.05),
         awning=_awning(),
         pool=_pool(),
+        shutter=_plain('e2_window_dark', (0.035, 0.05, 0.045), 0.25),
+        rock=_stone('e2_rock', 'rock_face_03', (0.22, 0.2, 0.18), 0.45, windows=False, grime=0.3),
     )
     return MATS
 
@@ -234,6 +238,47 @@ def _gable(bm_roof, bm_wall, w, d, z, pitch, ov):
     return rise
 
 
+def _facade_detail(bm, w, d, ht, fh, bay, zbase, bg=None):
+    """窗套（侧框 + 窗楣 + 窗台，外凸 0.18 m，和着色器画的暗窗对齐）、每层腰线、双层檐口。"""
+    pr = 0.18
+    for face in ('x-', 'x+', 'y-', 'y+'):
+        L_ = d if face[0] == 'x' else w
+        half_o = (w if face[0] == 'x' else d) / 2
+        sgn = -1 if face[1] == '-' else 1
+        nb = int((L_ / 2 - bay * 0.35) // bay)
+        us = [k * bay for k in range(-nb, nb + 1)]
+
+        def B(u0, u1, z0, z1, o0, o1, tgt=None):
+            tb = tgt or bm
+            if face[0] == 'x':
+                _box(tb, sgn * half_o + (o0 if sgn > 0 else -o1), u0, z0, sgn * half_o + (o1 if sgn > 0 else -o0), u1, z1)
+            else:
+                _box(tb, u0, sgn * half_o + (o0 if sgn > 0 else -o1), z0, u1, sgn * half_o + (o1 if sgn > 0 else -o0), z1)
+        nf = int(round((ht) / fh))
+        for f in range(nf):
+            zf = f * fh
+            z0, z1 = zf + 0.24 * fh, zf + 0.8 * fh
+            if z1 > ht - 1.0 or z0 < 0.4:
+                continue
+            for u in us:
+                hw = 0.2 * bay
+                B(u - hw - 0.22, u - hw, z0, z1, 0, pr)          # 侧框
+                B(u + hw, u + hw + 0.22, z0, z1, 0, pr)
+                B(u - hw - 0.35, u + hw + 0.35, z1, z1 + 0.32, 0, pr + 0.08)   # 窗楣
+                B(u - hw - 0.3, u + hw + 0.3, z0 - 0.14, z0, 0, pr + 0.1)      # 窗台
+                if bg is not None:
+                    B(u - hw, u + hw, z0, z1, 0, 0.03, bg)                       # 玻璃
+                    B(u - 0.05, u + 0.05, z0, z1, 0, 0.08)                       # 竖梃
+                    zt = z0 + (z1 - z0) * 0.7
+                    B(u - hw, u + hw, zt - 0.05, zt + 0.05, 0, 0.08)             # 横档
+                    B(u - hw - 0.55, u - hw - 0.22, z0, z1, 0, 0.1, bg)          # 百叶窗（深色）
+                    B(u + hw + 0.22, u + hw + 0.55, z0, z1, 0, 0.1, bg)
+            if f > 0:
+                B(-L_ / 2 - 0.12, L_ / 2 + 0.12, zf - 0.12, zf + 0.1, 0, 0.12)   # 腰线
+        B(-L_ / 2 - 0.25, L_ / 2 + 0.25, ht - 1.0, ht - 0.75, 0, 0.25)            # 檐下线脚
+        B(-L_ / 2 - 0.2, L_ / 2 + 0.2, zbase, 0.6, 0, 0.15)                       # 勒脚
+
+
 def site_z(cx, cy, w, d, rot):
     pts = [(0, 0)] + [rot2(sx * w / 2, sy * d / 2, rot) for sx in (-1, 1) for sy in (-1, 1)]
     zs = [L.ground_z(cx + px, cy + py) for px, py in pts]
@@ -264,7 +309,12 @@ def building(spec, col, r):
             for sy in (-1, 1):
                 _box(bm, sx * w / 2 - (p if sx > 0 else 0), sy * d / 2 - (p if sy > 0 else 0), ht - fh,
                      sx * w / 2 + (p if sx < 0 else 0), sy * d / 2 + (p if sy < 0 else 0), ht)
+        for f in (-1 / 6, 1 / 6):   # 每面两根中柱 → 三开间敞廊
+            for sx in (-1, 1):
+                _box(bm, w * f - 0.3, sx * d / 2 - 0.3, ht - fh, w * f + 0.3, sx * d / 2 + 0.3, ht)
+                _box(bm, sx * w / 2 - 0.3, d * f - 0.3, ht - fh, sx * w / 2 + 0.3, d * f + 0.3, ht)
         _box(bm, -w / 2 - 0.3, -d / 2 - 0.3, ht - fh - 0.4, w / 2 + 0.3, d / 2 + 0.3, ht - fh)   # 腰线
+        _box(bm, -w / 2, -d / 2, ht - fh, w / 2, d / 2, ht - fh + 1.0)                            # 敞廊栏板
         _box(bm, -w / 2 - 0.4, -d / 2 - 0.4, ht, w / 2 + 0.4, d / 2 + 0.4, ht + 0.5)
         obs.append(_obj(f'{bid}_loggia', bm, plain_m, (cx, cy, z0), rot, None, col))
         bm = bmesh.new()
@@ -278,6 +328,9 @@ def building(spec, col, r):
     _box(bm, -w / 2, -d / 2, zmin - z0 - 1.5, w / 2, d / 2, ht)
     obs.append(_obj(f'{bid}_body', bm, wall_m, (cx, cy, z0), rot, dict(bay=3.4 if mk != 'grey' else 3.0, fh=fh, top=ht), col))
     bm = bmesh.new()
+    bmg = bmesh.new()
+    _facade_detail(bm, w, d, ht, fh, 3.4 if mk != 'grey' else 3.0, zmin - z0 - 1.5, bmg)
+    obs.append(_obj(f'{bid}_glass', bmg, M['shutter'] if mk != 'grey' else M['glass'], (cx, cy, z0), rot, None, col))
     if roof != 'gable':
         _box(bm, -w / 2 - 0.45, -d / 2 - 0.45, ht - 0.55, w / 2 + 0.45, d / 2 + 0.45, ht)   # 檐口
     else:
@@ -321,6 +374,65 @@ def building(spec, col, r):
             _box(bm, px - 0.9, py - 0.7, hh, px + 0.9, py + 0.7, hh + 0.4)
         obs.append(_obj(f'{bid}_chimneys', bm, plain_m, (cx, cy, z0), rot, None, col))
     return obs, z0
+
+
+def portico(col):
+    """主楼正门门廊：6 根科林斯式大柱（简化为带柱础柱头的圆柱）+ 额枋 + 三角山花，朝 −y。"""
+    M = mats()
+    spec = [b for b in L.MAIN if b[0] == 'porch'][0]
+    _, cx, cy, w, d, *_r = spec
+    z0, _zmin = site_z(cx, cy, w, d, 0)
+    H = 9.0
+    y0, y1 = cy - d / 2, cy + d / 2
+    bm = bmesh.new()
+    _box(bm, cx - w / 2 - 1, y0 - 2.5, z0 - 1.5, cx + w / 2 + 1, y1, z0 + 0.6)          # 基座
+    for k in range(4):                                                                   # 台阶
+        _box(bm, cx - 5, y0 - 2.5 - (k + 1) * 0.5, z0 - 1.5, cx + 5, y0 - 2.5 - k * 0.5, z0 + 0.6 - (k + 1) * 0.15)
+    for i in range(6):
+        x = cx - w / 2 + 1 + i * (w - 2) / 5
+        for yy in (y0 + 0.9, y0 + 4.2):
+            bmesh.ops.create_cone(bm, cap_ends=True, segments=20, radius1=0.62, radius2=0.52, depth=H - 1.2,
+                                  matrix=Matrix.Translation((x, yy, z0 + 0.6 + (H - 1.2) / 2 + 0.3)))
+            _box(bm, x - 0.8, yy - 0.8, z0 + 0.6, x + 0.8, yy + 0.8, z0 + 0.95)               # 柱础
+            _box(bm, x - 0.8, yy - 0.8, z0 + H - 0.4, x + 0.8, yy + 0.8, z0 + H)              # 柱头
+    _box(bm, cx - w / 2, y0, z0 + H, cx + w / 2, y1, z0 + H + 1.4)                          # 额枋
+    _box(bm, cx - w / 2 - 0.4, y0 - 0.4, z0 + H + 1.4, cx + w / 2 + 0.4, y1, z0 + H + 1.8)  # 檐口
+    zt = z0 + H + 1.8
+    a = [bm.verts.new(v) for v in [(cx - w / 2 - 0.4, y0 - 0.4, zt), (cx + w / 2 + 0.4, y0 - 0.4, zt), (cx, y0 - 0.4, zt + 3.4)]]
+    bm.faces.new(a)                                                                       # 山花
+    bm_to_obj(bm, 'portico', col, M['plain'])
+    bm = bmesh.new()
+    v = [bm.verts.new(p) for p in [(cx - w / 2 - 0.8, y0 - 0.8, zt - 0.1), (cx + w / 2 + 0.8, y0 - 0.8, zt - 0.1), (cx, y0 - 0.8, zt + 3.5),
+                                    (cx - w / 2 - 0.8, y1 + 1, zt - 0.1), (cx + w / 2 + 0.8, y1 + 1, zt - 0.1), (cx, y1 + 1, zt + 3.5)]]
+    bm.faces.new([v[0], v[3], v[5], v[2]])
+    bm.faces.new([v[1], v[2], v[5], v[4]])
+    bm_to_obj(bm, 'portico_roof', col, M['terra'])
+    bm = bmesh.new()   # 门廊后的深色门洞
+    _box(bm, cx - 2.2, y1 - 0.05, z0 + 0.6, cx + 2.2, y1 + 0.05, z0 + 5.5)
+    bm_to_obj(bm, 'portico_door', col, M['shutter'])
+
+
+def dome(col):
+    """大厅上方的鼓座 + 穹顶 + 灯亭（设定：大厅穹顶挂以太水晶吊灯）。"""
+    M = mats()
+    spec = [b for b in L.MAIN if b[0] == 'hall'][0]
+    _, cx, cy, w, d, fl, *_r = spec
+    z0, _ = site_z(cx, cy, w, d, 0)
+    zb = z0 + fl * FH + 3.0
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=48, radius1=6.2, radius2=6.2, depth=4.5, matrix=Matrix.Translation((cx, cy + 2, zb + 2.25)))
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=48, radius1=6.7, radius2=6.7, depth=0.6, matrix=Matrix.Translation((cx, cy + 2, zb + 4.8)))
+    for k in range(12):
+        a = 2 * math.pi * k / 12
+        _box(bm, cx + 6.25 * math.cos(a) - 0.3, cy + 2 + 6.25 * math.sin(a) - 0.3, zb, cx + 6.25 * math.cos(a) + 0.3, cy + 2 + 6.25 * math.sin(a) + 0.3, zb + 4.5)
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=16, radius1=1.1, radius2=1.1, depth=2.0, matrix=Matrix.Translation((cx, cy + 2, zb + 10.2)))
+    bm_to_obj(bm, 'dome_drum', col, M['plain'])
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=16, radius=6.2, matrix=Matrix.Translation((cx, cy + 2, zb + 5.1)) @ Matrix.Diagonal((1, 1, 0.85, 1)))
+    bm_to_obj(bm, 'dome_shell', col, M['slate'])
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=8, radius=0.5, matrix=Matrix.Translation((cx, cy + 2, zb + 11.6)))
+    bm_to_obj(bm, 'dome_finial', col, M['gold'])
 
 
 def arc_colonnade(col):
@@ -427,7 +539,7 @@ def walkway(i, pts, col):
     zs = np.maximum(zs, z)
     base = [(x, y, zz) for (x, y), zz in zip(s, zs)]
     sweep(f'walk{i}_roof', [(x, y, zz + 3.4) for x, y, zz in base],
-          [(-2.0, -0.1), (-2.0, 0.0), (0, 0.7), (2.0, 0.0), (2.0, -0.1)], M['terra'], col)
+          [(-2.0, -0.1), (-2.0, 0.0), (0, 0.7), (2.0, 0.0), (2.0, -0.1)], M['slate'], col)
     sweep(f'walk{i}_floor', [(x, y, zz + 0.15) for x, y, zz in base],
           [(-1.6, -1.2), (-1.6, 0.0), (1.6, 0.0), (1.6, -1.2)], M['plain'], col)
     bm = bmesh.new()
@@ -453,6 +565,26 @@ def balustrade_path(name, pts, z, col, h=1.05, closed=False):
     zz = z if not callable(z) else None
     sweep(name, [(x, y, (zz if zz is not None else z(x, y))) for x, y in s],
           [(-0.22, -0.3), (-0.22, h), (0.22, h), (0.22, -0.3)], M['plain'], col)
+
+
+def retaining_wall(name, pts, z, c, col):
+    """台地挡土墙：真实砌石墙面（从台面到外侧地面以下 1 m）+ 外挑压顶。"""
+    M = mats()
+    s = _resample(pts, 2.0)
+    bm = bmesh.new()
+    top, bot, off = [], [], []
+    for x, y in s:
+        dx, dy = x - c[0], y - c[1]
+        ln = math.hypot(dx, dy) or 1
+        ox, oy = x + dx / ln * 1.8, y + dy / ln * 1.8     # 台地坡脚在轮廓外 0–1.6 m，墙面放在坡外把它挡住
+        off.append((x + dx / ln * 0.95, y + dy / ln * 0.95))
+        zb = min(L.ground_z(x + dx / ln * 4, y + dy / ln * 4), z - 0.5) - 1.0
+        top.append(bm.verts.new((ox, oy, z + 0.02)))
+        bot.append(bm.verts.new((ox, oy, zb)))
+    for i in range(len(s) - 1):
+        bm.faces.new([bot[i], bot[i + 1], top[i + 1], top[i]])
+    bm_to_obj(bm, name, col, M['wallstone'])
+    sweep(name + '_coping', [(x, y, z + 0.05) for x, y in off], [(-1.2, -0.35), (-1.2, 0.0), (1.2, 0.0), (1.2, -0.35)], M['plain'], col)
 
 
 def pad_outline(p, n=160, filt=None):
@@ -496,14 +628,17 @@ def balustrades(col):
         if p['edge'] not in ('stone', 'mixed') or p['id'] == 'club':
             continue
         z = p['zv'] if not isinstance(p['zv'], tuple) else p['zv'][1]
-        filt = None
+        base = lambda x, y: True
         if p['id'] == 'plateau':
-            filt = lambda x, y: y < 24 and abs(x) > 8
+            base = lambda x, y: y < 24 and abs(x) > 8
         elif p['id'] == 'terrace':
-            filt = lambda x, y: y < -66 and not (abs(x) < 8 and y > -70)
+            base = lambda x, y: y < -66 and not (abs(x) < 8 and y > -70)
+        # 只在台地真实存在处立栏杆（岛缘附近台地被淡出，栏杆会悬空）
+        filt = lambda x, y, b=base, zz=z: b(x, y) and float(L.edge_dist(x, y)) > 8 and abs(L.ground_z(x, y) - zz) < 2.5
         for k, seg in enumerate(pad_outline(p, filt=filt)):
             if len(seg) > 1:
                 balustrade_path(f'bal_{p["id"]}_{k}', seg, z - 0.1, col)
+                retaining_wall(f'wall_{p["id"]}_{k}', seg, z, p['c'], col)
 
 
 def grand_stairs(col):
@@ -545,7 +680,14 @@ def dock(col):
     cx, cy, z = 0.0, -268.0, 8.5
     bm = bmesh.new()
     bmesh.ops.create_cone(bm, cap_ends=True, segments=72, radius1=20, radius2=20, depth=1.4, matrix=Matrix.Translation((cx, cy, z - 0.7)))
+    bm_to_obj(bm, 'dock_deck', col, M['wallstone'])
+    bm = bmesh.new()
     bmesh.ops.create_cone(bm, cap_ends=True, segments=72, radius1=19.5, radius2=4, depth=22, matrix=Matrix.Translation((cx, cy, z - 12.4)))
+    ob = bm_to_obj(bm, 'dock_rockbase', col, M['rock'])
+    tx = bpy.data.textures.new('e2_dock_rock', 'CLOUDS'); tx.noise_scale = 3.0
+    ob.modifiers.new('sub', 'SUBSURF').levels = 2
+    dm = ob.modifiers.new('disp', 'DISPLACE'); dm.texture = tx; dm.strength = 2.5
+    bm = bmesh.new()
     bmesh.ops.create_cone(bm, cap_ends=True, segments=24, radius1=3.2, radius2=3.2, depth=4.2, matrix=Matrix.Translation((cx, cy + 12, z + 2.1)))
     bm_to_obj(bm, 'dock_stone', col, M['plain'])
     bm = bmesh.new()
@@ -650,14 +792,38 @@ def awning(name, spec, z0, face, col, frac=0.6):
     _obj(name, bm, M['awning'], (cx, cy, z0), rot, None, col)
 
 
+def rotunda(col):
+    """湖心亭：湖心小岛上的 8 柱圆亭（台基 + 柱 + 檐 + 铅灰穹顶）。"""
+    M = mats()
+    x, y, r = L.ISLET
+    z = L.ground_z(x, y)
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=48, radius1=4.4, radius2=4.4, depth=0.8, matrix=Matrix.Translation((x, y, z + 0.4)))
+    for k in range(8):
+        a = 2 * math.pi * k / 8
+        bmesh.ops.create_cone(bm, cap_ends=True, segments=12, radius1=0.26, radius2=0.22, depth=4.2,
+                              matrix=Matrix.Translation((x + 3.6 * math.cos(a), y + 3.6 * math.sin(a), z + 2.9)))
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=48, radius1=4.3, radius2=4.3, depth=0.7, matrix=Matrix.Translation((x, y, z + 5.35)))
+    bm_to_obj(bm, 'rotunda_stone', col, M['plain'])
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=12, radius=4.2, matrix=Matrix.Translation((x, y, z + 5.7)) @ Matrix.Diagonal((1, 1, 0.55, 1)))
+    bm_to_obj(bm, 'rotunda_dome', col, M['slate'])
+
+
 def build_all():
     col = coll('buildings')
     r = rng(5)
     zmap = {}
     for spec in L.all_buildings():
+        if spec[0] == 'porch':
+            zmap['porch'] = site_z(*spec[1:5], 0)[0]
+            continue
         _, z0 = building(spec, col, r)
         zmap[spec[0]] = z0
     arc_colonnade(col)
+    rotunda(col)
+    portico(col)
+    dome(col)
     for i, pts in enumerate(L.WALKWAYS):
         walkway(i, pts, col)
     balustrades(col)

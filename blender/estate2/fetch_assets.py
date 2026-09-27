@@ -21,9 +21,18 @@ PH_TEX = [
     ('aerial_grass_rock', '林下与坡地草石'),
     ('forest_leaves_02', '林地落叶'),
     ('gravel_floor', '车道与步道砾石'),
-    ('bark_brown_02', '树皮（阔叶树、棕榈）'),
+    ('bark_brown_02', '树皮（连廊木构、树屋）'),
+    ('leafy_grass', '修剪草坪（主台地、前庭、大道）'),
 ]
 PH_HDRI = [('kloofendal_48d_partly_cloudy_puresky', '2k', '天光 HDRI')]
+# Poly Haven 扫描树 / 灌木模型（glTF 1k，单个 19–84 MB，只在本机，不进仓库）
+PH_MODELS = [
+    ('island_tree_01', '阔叶树（林冠主体）'),
+    ('island_tree_02', '阔叶树（林冠主体）'),
+    ('island_tree_03', '大阔叶树（孤植 / 园林）'),
+    ('searsia_lucida', '灌木（林缘 / 花园）'),
+    ('searsia_burchellii', '小乔木（林缘）'),
+]
 ACG = [('Leaf001', '1K-JPG', '树叶贴图（带透明度）')]
 MAPS = {'Diffuse': 'diff', 'nor_gl': 'nor_gl', 'Rough': 'rough'}
 
@@ -54,6 +63,14 @@ def main():
             files = json.loads(get(f'https://api.polyhaven.com/files/{aid}'))
             save(p, get(files['hdri'][res]['hdr']['url']))
         total += os.path.getsize(p)
+    for aid, _ in PH_MODELS:
+        g = json.loads(get(f'https://api.polyhaven.com/files/{aid}'))['gltf']['1k']['gltf']
+        d = os.path.join(OUT, 'models', aid)
+        for rel, info in [(os.path.basename(g['url']), g)] + list(g['include'].items()):
+            p = os.path.join(d, rel)
+            if not os.path.exists(p):
+                save(p, get(info['url']))
+            total += os.path.getsize(p)
     for aid, attr, _ in ACG:
         d = os.path.join(OUT, 'tex', aid)
         if not os.path.isdir(d):
