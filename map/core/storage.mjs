@@ -8,7 +8,7 @@ export const KEYS = {
   edenMapTierV2: { owner: 'viewer' }, 'edenMapAlt:': { owner: 'viewer', prefix: true }, edenMapBarriers: { owner: 'viewer' }, edenMapRoutes: { owner: 'viewer' },
   edenMapKeys: { owner: 'viewer', def: '1' }, edenMapRM: { owner: 'viewer', def: 'auto' }, edenMap3dQ: { owner: 'viewer', def: 'auto' }, edenMap3dAuto: { owner: 'viewer', def: '0' },
   edenMapFps: { owner: 'viewer', def: '0' }, edenMapNoFx: { owner: 'viewer' }, edenMapCharStats: { owner: 'viewer' }, edenMapCharMore: { owner: 'viewer' },
-  edenMapAutoCheck: { owner: 'viewer' }, edenMapAutoUpdate: { owner: 'viewer', def: '0' }, edenMapLockTag: { owner: 'viewer' }, edenMapRailW: { owner: 'viewer' }, edenMapHint: { owner: 'viewer' },
+  edenMapAutoCheck: { owner: 'viewer' }, edenMapAutoUpdate: { owner: 'viewer', def: '0' }, edenMapLockTag: { owner: 'viewer' }, edenMapRailW: { owner: 'viewer' }, edenMapHint: { owner: 'viewer' }, edenMapHintN: { owner: 'viewer' },
   edenMapEstateFail: { owner: 'viewer', scope: 'session' },
   // 查看器外挂脚本
   edenMapEvOff: { owner: 'events.js' }, edenMapLegHint: { owner: 'events.js' }, edenMapPortraits: { owner: 'chars.js' }, edenMapChGroups: { owner: 'chars.js' },

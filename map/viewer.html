@@ -119,7 +119,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <script defer src="varmap.js"></script>
 <script defer src="compose.js"></script>
 <script defer src="security.js"></script>
-<script>document.addEventListener('DOMContentLoaded', () => { if (window.top !== window) parent.postMessage({ type: 'eden-map:boot', pct: .6 }, '*'); });   // 地图库已下载（启动进度 60%）</script>
+<script>document.addEventListener('DOMContentLoaded', () => { if (window.top !== window) parent.postMessage({ type: 'eden-map:boot', pct: .6, v: 2 }, '*'); });   // 地图库已下载（启动进度 60%）</script>
 <style>
   /* E5 统一重构：颜色、字号、圆角、间距、动效全部取 ui/tokens.css 的语义令牌（docs/ui-audit.md 第三部分）；这里只写组件，不写色值。
      例外（规范允许）：地图标签的深色胶囊（两种主题都深）、事态大类的数据色、花屏提示的青色、世界图国名的描边。 */
@@ -336,6 +336,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .mk:focus-visible .lab { outline: 2px solid var(--focus); outline-offset: 2px; }
   @keyframes pulse { 0% { transform: scale(.4); opacity: .9; } 100% { transform: scale(1.8); opacity: 0; } }
   .mk.lhide .lab { visibility: hidden; }
+  .mk.undock:not(.here):not(.active) { visibility: hidden; pointer-events: none; }
   body.far .mk:not(.active) .lab small { display: none; }
   body.nomarkers .mk { display: none; }
   /* 世界图国名：字号随地图显示比例缩放；深色描边，雪地、亮海面上也读得清（E4 N31） */
@@ -540,6 +541,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     <label class="row"><span data-i18n="s.auto3d">三维抽屉：拖动模型时自动收起</span><input type="checkbox" role="switch" id="optAuto3d"></label>
     <label class="row"><span data-i18n="s.keys">单字母快捷键（L、M、/、?）</span><input type="checkbox" role="switch" id="optKeys" checked></label>
     <div class="hrow"><span data-i18n="s.kbd">快捷键</span><button type="button" class="btn" id="kbdBtn" data-i18n="s.kbd_show">查看</button></div>
+    <div class="hrow"><span data-i18n="s.hint_again">上手提示</span><button type="button" class="btn" id="hintAgain" data-i18n="s.hint_show">再看一次</button></div>
     <div id="kbdHelp" hidden></div>
     <label class="row"><span data-i18n="s.fps">调试：显示帧率</span><input type="checkbox" role="switch" id="optFps"></label>
     <div id="v3dTests"></div>
@@ -752,7 +754,7 @@ async function mainInner() {
   TCEvents.init(); TCEvents.pollFeeds();   // 事态横条与花屏提示；外部事件数据源（maps.json 的 feeds，默认没有）
   post({ type: 'eden-map:ready', proto: PROTO });
   // 首张地图画出来后，空闲时预热其他地图：描述文件、点位数据、最粗的几层瓦片（切过去立刻有模糊版）
-  const warmSoon = ms => setTimeout(() => (window.requestIdleCallback || (f => f()))(() => warmOthers(), { timeout: 3000 }), ms);
+  let warmT = 0; const warmSoon = ms => (clearTimeout(warmT), warmT = setTimeout(() => (window.requestIdleCallback || (f => f()))(() => warmOthers(), { timeout: 3000 }), ms));
   viewer.addOnceHandler('tile-drawn', () => { warmSoon(1500); setTimeout(firstRunHint, 1600); viewer.addHandler('open', () => warmSoon(2500)); });   // 每到一张新图，再预热它的邻居（已预热过的跳过）
 }
 // ---------------- 顶栏（UI v2 §2.1）：清晰度、语言、主题、版本号都在设置「显示 / 更新与版本」里，顶栏不再放 ----------------
@@ -828,28 +830,31 @@ $('#build').addEventListener('click', () => {
 const getText = url => { if (!textCache.has(url)) textCache.set(url, fetch(url).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }).catch(e => { textCache.delete(url); throw e; })); return textCache.get(url); };   // 失败不留在缓存里（接手 review P1）
 // 大版本 2（docs/perf/v2.md）：只预热「走一步就到」的图——同组各层、上级、直接下级；测试件（test）不预热。
 // 同组各层取到 L10（切层最常用），其余只取 L8–9（先有个粗底，真打开时 OSD 再补细层），冷开总流量约少三成。
-const warmed = new Set();
+const warmed = new Map();
 async function warmOthers() {
   const thin = leanBg();   // 省流（含拿不到网络信息的触屏）：只取 JSON 与庄园页 HTML，不取 dzi、不取瓦片
-  const c = REG.maps[cur], gl = new Set(c?.group ? REG.groups[c.group]?.layers || [] : []);
+  const c0 = cur, c = REG.maps[cur], gl = new Set(c?.group ? REG.groups[c.group]?.layers || [] : []);
   const near = id => { const m = REG.maps[id]; return gl.has(id) || id === c?.parent || m.parent === cur; };
   for (const [id, m] of Object.entries(REG.maps)) {
-    if (id === cur || m.test || !near(id) || warmed.has(id)) continue; warmed.add(id);
-    if (m.kind === 'estate' && m.src) { getText(new URL(m.src, document.baseURI).href).catch(() => {}); continue; }   // 庄园页面文本（三维库本身不预取）
+    if (cur !== c0) return;   // 预热途中切了图：交给新图那一轮
+    const want = gl.has(id) ? 10 : 9;   // warmed：id → 已取到的最细层（按层记，后来进了同组还会补 L10）
+    if (id === cur || m.test || !near(id) || (warmed.get(id) || 0) >= want) continue;
+    if (m.kind === 'estate' && m.src) { warmed.set(id, 99); getText(new URL(m.src, document.baseURI).href).catch(() => {}); continue; }   // 庄园页面文本（三维库本身不预取）
     if (m.status === 'planned' || !m.base) continue;
     if (m.data) getJSON(m.data);
-    if (thin) continue;
+    if (thin) continue;   // 省流时不记：网络好了以后还会补
     try {
       const x = await fetch(m.base).then(r => r.text());
       const T = +x.match(/TileSize="(\d+)"/)[1], f = x.match(/Format="(\w+)"/)[1];
       const W = +x.match(/Width="(\d+)"/)[1], H = +x.match(/Height="(\d+)"/)[1], top = Math.ceil(Math.log2(Math.max(W, H)));
       const dir = m.base.replace(/\.dzi$/, '_files/');
-      for (let L = 8; L <= Math.min(top, gl.has(id) ? 10 : 9); L++) {   // 最粗几层：总共几张瓦片
+      for (let L = (warmed.get(id) || 7) + 1; L <= Math.min(top, want); L++) {   // 最粗几层（只补还没取过的层）
         const s = 2 ** (top - L), w = Math.ceil(W / s), h = Math.ceil(H / s);
         for (let c = 0; c < Math.ceil(w / T); c++) for (let r = 0; r < Math.ceil(h / T); r++) {
           const img = new Image(); img.crossOrigin = 'anonymous'; img.src = `${dir}${L}/${c}_${r}.${f}`;   // 与 OSD 的跨域方式一致，才能命中缓存
         }
       }
+      warmed.set(id, want);   // dzi 解析成功才记
     } catch (e) {}
   }
 }
@@ -1301,7 +1306,7 @@ function declutter() { clearTimeout(declT); declT = setTimeout(() => {
   const place = (e, r, avoidIcons) => { if (!r) return; if (kept.some(k => hit(r, k)) || (avoidIcons && icons.some(k => hit(r, k, 0)))) e.classList.add('lhide'); else kept.push(r); };
   const sorted = mks.sort((a, b) => rank(a) - rank(b));
   // 控制列（手机半开抽屉时横排贴在抽屉上沿）当障碍：压在它下面的地名收起，不再被按钮盖住（v2 门控遗留）
-  const dk = $('#dock'); if (dk && !dk.hidden && getComputedStyle(dk).display !== 'none') for (const c of dk.children) { const r = c.offsetParent && box(c); if (r) kept.push(r); }
+  const dk = $('#dock'), dockR = []; if (dk && !dk.hidden && getComputedStyle(dk).display !== 'none') for (const c of dk.children) { const r = c.offsetParent && box(c); if (r) { kept.push(r); dockR.push(r); } }
   for (const e of sorted.filter(e => rank(e) <= 1)) place(e, box(e.querySelector('.lab')), false);
   for (const e of words.filter(e => e.classList.contains('realm'))) { const r = box(e.querySelector('b')); if (r) kept.push(r); }
   // v0.9.2：事态标题先于普通地名：事态点所在的地名收起，只留一条标签（事态标题）
@@ -1310,7 +1315,8 @@ function declutter() { clearTimeout(declT); declT = setTimeout(() => {
     if (kept.some(k => hit(r, k)) || ic.some(([x, k]) => x !== e && hit(r, k, 0))) e.classList.add('lhide'); else kept.push(r);
   }
   for (const e of sorted.filter(e => rank(e) > 1)) { const r = box(e.querySelector('.lab')), pin = box(e.querySelector('.pin'));
-    if (pin && icons.some(k => hit(pin, k, 6))) e.classList.add('lhide'); else place(e, r, true); }
+    if (pin && icons.some(k => hit(pin, k, 6))) e.classList.add('lhide'); else place(e, r, true);
+    e.classList.toggle('undock', !!(pin && dockR.some(k => hit(pin, k, 4)))); }   // 图钉压在控制列下：整个标记让开（免得点到按钮下面的图钉）
   for (const e of words.filter(e => e.classList.contains('minor'))) place(e, box(e), true);
   routeGaps(box);
 }, 80); }
@@ -1640,6 +1646,7 @@ function initSettings() {
   sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', true); sw('#optFps', 'edenMapFps', false, () => estateLook());
   $('#linePick').onclick = () => { showSet(false); post({ type: 'eden-map:line-pick' }); };
   $('#kbdBtn').onclick = () => kbdHelp($('#kbdHelp').hidden);
+  $('#hintAgain').onclick = () => { try { localStorage.removeItem('edenMapHint'); localStorage.removeItem('edenMapHintN'); } catch (e) {} showSet(false); firstRunHint(); };
 }
 // 设置「数据与映射」：本机存储占用（EdenMap.storage()）与当前数据来源（EdenMap.sources()），只读；「清理旧聊天」只留最近 5 个聊天的地图数据
 function renderStorage(d) {
@@ -1808,9 +1815,10 @@ function sheetVis() {
 }
 function placeEmpty(um) {
   const e = $('#cardEmpty'); if (!e || e.dataset.um === (um || '')) return; e.dataset.um = um || '';
-  if (!um) { e.textContent = tx('s.place_empty', '点地图上的地点，这里显示它的介绍'); return; }
-  e.textContent = tx('um.empty', '当前地点「{n}」还不在地图上。', { n: um }) + ' ';
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = tx('um.empty_btn', '放到地图上'); b.onclick = () => TCUnmapped.open(); e.append(b);
+  if (!um) { e.textContent = ''; e.textContent = tx('s.place_empty', '点地图上的地点，这里显示它的介绍'); return; }
+  let s = e.querySelector('span.umq'), b = e.querySelector('button');
+  if (!s) { e.textContent = ''; s = document.createElement('span'); s.className = 'umq'; b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.onclick = () => TCUnmapped.open(); e.append(s, ' ', b); announce(tx('um.empty', '当前地点「{n}」还不在地图上。', { n: um })); }
+  s.textContent = tx('um.empty', '当前地点「{n}」还不在地图上。', { n: um }) + tx('um.empty_sub', '指派一次，这个聊天之后都会记住。'); b.textContent = tx('um.empty_btn', '放到地图上');   // 节点复用：焦点不丢
 }
 function cardSheet(open) {
   const S = window.TCSheet; if (!S) return; sheetVis();
@@ -1863,6 +1871,7 @@ function initNotices() {
 }
 function notify(n) {   // n = { key, level, title, lines, actions: [{ label, run | msg }] }
   if (window.top !== window) { n = { ...n, actions: (n.actions || []).map((a, i) => ({ ...a, id: a.id ?? 'a' + i })) };
+    const { onClose, build, ...plain } = n; n = plain;   // 函数不能 postMessage（DataCloneError）；嵌入时由宿主渲染，关闭回调不跨窗口
     post({ type: 'eden-map:notice', n: { ...n, actions: n.actions.map(a => ({ label: a.label, primary: a.primary, id: a.id })) } }); if (n.actions.length) { ntActs[n.key] = n.actions; const ks = Object.keys(ntActs); if (ks.length > 20) delete ntActs[ks[0]]; } return; }
   if (NT) NT.push(n); else ntQ.push(n);
 }
@@ -1875,11 +1884,12 @@ function firstRunHint() {
   if (seen) return; const done = () => { try { localStorage.setItem('edenMapHint', '1'); } catch (e) {} };
   const emb = window.top !== window;
   notify({ key: 'hint', level: 1, title: tx('hint.title', '三步上手'), onClose: done, lines: [
-    tx('hint.1', '① 点地图上的地标看介绍。') + (emb ? tx('hint.1b', '卡片底部的「去这里」「追问这件事」只填进聊天输入框，不会替你发送。') : ''),
+    tx('hint.1', '① 点地图上的地标看介绍；有三维模型的地点（如伊甸庄园）从卡片进三维视图。') + (emb ? tx('hint.1b', '卡片底部的「去这里」「追问这件事」只填进聊天输入框，不会替你发送。') : ''),
     tx('hint.2', '② 地图会自动跳到你现在的位置并高亮它；地点认不出时会显示「未上图」，点它就能放到地图上。'),
-    tx('hint.3', '③ 切层、标注、人物、三维画质都在设置里（手机上是右下角 ⋯）。')],
+    (narrowNow() ? tx('hint.3', '③ 切层、标注、人物、三维画质都在设置里（手机上是右下角 ⋯）。') : tx('hint.3d', '③ 切层、标注、人物、三维画质都在右上角的设置里。'))],
     actions: [{ label: tx('hint.settings', '打开设置'), run: () => { done(); TCSettings.open('home'); } }, { label: tx('hint.ok', '知道了'), primary: true, run: done }] });
-  done();   // 出过一次就算（关掉、点按钮、或者不理它都不再出）
+  // 只有关掉或点了按钮才算看过；没理它，下次打开还会出（最多 3 次，之后不再打扰）
+  try { const n = +(localStorage.getItem('edenMapHintN') || 0) + 1; localStorage.setItem('edenMapHintN', String(n)); if (n >= 3) done(); } catch (e) {}
 }
 function initE7() {
   const tb = $('#thumbBtn'), pop = $('#setPop');
@@ -1998,7 +2008,7 @@ function bootFail(e) {
 }
 document.addEventListener('DOMContentLoaded', main);   // 两个 defer 脚本（地图库、事态层）执行完之后
 </script>
-<script type="module" src="app/clouds.mjs"></script>
-<script type="module" src="app/scale.mjs"></script>
+<script type="module" src="app/clouds.mjs" onerror="console.warn('[地图] app/clouds.mjs 加载失败：切层转场与漂移云关闭')"></script>
+<script type="module" src="app/scale.mjs" onerror="console.warn('[地图] app/scale.mjs 加载失败：世界 ↔ 天城缩放交接关闭')"></script>
 </body>
 </html>
