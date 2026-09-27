@@ -110,7 +110,7 @@
 
   /* ---------- 地图区 ---------- */
   #stage { position: relative; min-height: 0; }
-  #osd { position: absolute; inset: 0; }
+  #osd { position: absolute; inset: 0; z-index: 0; }   /* 自成层叠上下文：地图上的标签 / 针脚 / 事态点永远在固定界面（层切换器、缩放组、页脚、横条）之下（E5 R14） */
   /* 小地图：--r-m、1 px --line，视口框 1.5 px 强调色（替换 OSD 默认的灰框红框） */
   #osd .navigator { border: 1px solid var(--line) !important; border-radius: var(--r-m); overflow: hidden; background: var(--bg) !important; box-shadow: var(--sh-2); margin: 0 var(--sp-5) var(--sp-5) 0 !important; }
   #osd .displayregion { border: 1.5px solid var(--accent) !important; border-radius: 2px; }
@@ -262,7 +262,7 @@
   /* 页脚：版本号 + 署名，一条，左下；署名单行省略，全文在 title（E5 3.2「版权、版本号、状态合成一条页脚」） */
   #foot { position: absolute; left: var(--sp-4); bottom: var(--sp-4); z-index: 4; display: flex; gap: var(--sp-4); align-items: center; max-width: calc(50% - 260px); pointer-events: none; }
   #foot > * { pointer-events: auto; }
-  #build { font: 500 var(--fs-micro)/1.4 var(--font-mono); color: var(--muted); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-s); padding: 1px var(--sp-3); cursor: pointer; }
+  #build { flex: none; white-space: nowrap; font: 500 var(--fs-micro)/1.4 var(--font-mono); color: var(--muted); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-s); padding: 1px var(--sp-3); cursor: pointer; }
   #build:hover { color: var(--ink); }
   #build:active { transform: scale(.97); }
   #build:empty { display: none; }
