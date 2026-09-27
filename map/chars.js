@@ -5,7 +5,7 @@
 // 读查看器的全局：viewer、REG、cur、curData、aspect、placeN、hereRes、estateStandIn、go、trackEl、untrack、showCard、closeCard、declutter、esc、$、M、toImg、LS、chatId。
 const TCChars = (() => {
   const T = (k, zh, v = {}) => { const r = window.I18N?.t?.(k, v); if (r && r !== k) return r; return Object.entries(v).reduce((s, [a, b]) => s.split('{' + a + '}').join(b), zh); };
-  let items = [], floor = 0, CM = null, prefs = { show: true, off: [] }, avatars = {}, els = [], flyName = null;
+  let rosters = null, rep = null, stageOrder = null, items = [], floor = 0, CM = null, prefs = { show: true, off: [] }, avatars = {}, els = [], flyName = null;
   const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/characters.mjs', document.baseURI).href).then(m => (CM = m)).catch(() => null);
   const chat = () => (typeof chatId === 'string' ? chatId : '');
   const store = () => (typeof LS !== 'undefined' ? LS : null);
@@ -31,7 +31,7 @@ const TCChars = (() => {
     return z ? { map: r.map, ...z } : { map: r.map };
   }
 
-  async function set(d) { await mod(); if (!Array.isArray(d.items)) return; items = d.items.slice(0, 60); floor = d.floor || 0; loadPrefs(); await render(); bar(); if (flyName && cur) fly(flyName); }
+  async function set(d) { await mod(); if (!Array.isArray(d.items)) return; items = d.items.slice(0, 60); rosters = d.rosters || null; rep = Number.isFinite(d.rep) ? d.rep : null; stageOrder = Array.isArray(d.stageOrder) ? d.stageOrder : null; floor = d.floor || 0; loadPrefs(); await render(); bar(); if (flyName && cur) fly(flyName); }
   let seq = 0;
   async function render() {
     for (const el of els) { if (typeof untrack === 'function') untrack(el); viewer?.removeOverlay(el); } els = [];
@@ -54,7 +54,7 @@ const TCChars = (() => {
     const tg = document.querySelector('#card .tag'); tg.textContent = T('ch.tag', '人物'); tg.className = 'tag data'; tg.style.background = color(list[0].name);
     const sv = document.querySelector('#card .src'); delete sv.dataset.note;
     const note = c => { const e = typeof TCCustom !== 'undefined' && TCCustom.entry(c.name); return e?.用途 ? ` · ${e.用途}` : ''; };
-    if (list.length === 1) { const c = list[0]; sv.innerHTML = `<dl class="fields"><dt>${esc(T('ch.last', '最后出现'))}</dt><dd>${esc(c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor }))}</dd><dt>${esc(T('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd></dl>`; return; }
+    if (list.length === 1) { const c = list[0]; const id = identity(c.name); sv.innerHTML = `<dl class="fields">${id ? `<dt>${esc(T('ch.identity', '身份'))}</dt><dd>${esc(id)}</dd>` : ''}<dt>${esc(T('ch.last', '最后出现'))}</dt><dd>${esc(c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor }))}</dd><dt>${esc(T('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd></dl>`; return; }
     sv.innerHTML = `<dl class="fields">${list.map(c => `<dt>${esc(dn(c.name))}</dt><dd>${esc(when(c) + ' · ' + srcOf(c))}</dd>`).join('')}</dl>`;
   }
   // 飞过去：在别的图上就先切图，打开后再平移；只知道层的，切到那一层就好
@@ -70,12 +70,34 @@ const TCChars = (() => {
   function afterOpen() { render().then(() => { if (flyName) fly(flyName); }); }
 
   // ---------- 横条里的「人物」页 ----------
-  const count = () => items.length;
+  const count = () => items.length + (rosters?.members?.items?.length || 0) + (rosters?.targets?.items?.length || 0);
   function bar() { if (typeof TCEvents !== 'undefined') TCEvents.renderBar?.(); }
+  // v0.9.5 名册（只读，卡内脚本按表的位置发现）：身份、阶段；分组可折叠（折叠状态存本机）
+  const identity = n => { for (const g of ['present', 'members', 'targets']) { const it = rosters?.[g]?.items?.find(i => i.name === n); if (it?.identity) return it.identity; } return ''; };
+  const GK = 'edenMapChGroups', closed = (() => { try { return new Set(JSON.parse(localStorage.getItem(GK) || '[]')); } catch (e) { return new Set(); } })();
+  const stageChip = s => { if (!s) return ''; const i = stageOrder ? stageOrder.indexOf(s) : -1, n = stageOrder?.length || 0;
+    return `<span class="chstage" ${i >= 0 ? `style="--p:${(i + 1) / n}" title="${esc(T('ch.stage_of', '第 {i} / {n} 步', { i: i + 1, n }))}"` : ''}>${i >= 0 ? `<i aria-hidden="true">${Array.from({ length: n }, (_, k) => `<b class="${k <= i ? 'on' : ''}"></b>`).join('')}</i>` : ''}${esc(s)}</span>`; };
+  function row(c) {
+    const id = identity(c.name);
+    return `<li><button type="button" class="chgo" data-n="${esc(c.name)}"><i class="av" style="--c:${color(c.name)}">${avatars[c.name] ? `<img alt="" referrerpolicy="no-referrer" src="${esc(avatars[c.name])}">` : esc(ini(c.name))}</i><b>${esc(dn(c.name))}</b><em><span class="chsrc src-${esc(c.src || 'infer')}">${esc(srcOf(c))}</span> ${esc(when(c))}</em><small>${esc((id ? id + ' · ' : '') + c.place)}</small></button>`
+      + `<input type="checkbox" role="switch" data-n="${esc(c.name)}" aria-label="${esc(T('ch.toggle_one', '在地图上显示 {n}', { n: c.name }))}" ${prefs.off.includes(c.name) ? '' : 'checked'} ${prefs.show ? '' : 'disabled'}></li>`;
+  }
+  function rosterRow(it) {
+    const c = items.find(x => x.name === it.name);
+    const body = `<i class="av" style="--c:${color(it.name)}">${avatars[it.name] ? `<img alt="" referrerpolicy="no-referrer" src="${esc(avatars[it.name])}">` : esc(ini(it.name))}</i><b>${esc(dn(it.name))}</b><em>${stageChip(it.stage)}</em><small>${esc(it.identity || '')}${c ? ' · ' + esc(c.place) : ''}</small>`;
+    return c ? `<li><button type="button" class="chgo" data-n="${esc(it.name)}">${body}</button></li>` : `<li><div class="chgo chro">${body}</div></li>`;
+  }
+  function group(id, label, n, inner) {
+    return `<details class="chgrp" data-g="${id}" ${closed.has(id) ? '' : 'open'}><summary>${esc(label)} <small>${n}</small></summary><ul>${inner}</ul></details>`;
+  }
   function pane(el) {
-    el.innerHTML = `<label class="tg chall"><span>${esc(T('ch.show', '在地图上显示人物'))}</span><input type="checkbox" role="switch" ${prefs.show ? 'checked' : ''}></label>`
-      + `<ul>${items.map(c => `<li><button type="button" class="chgo" data-n="${esc(c.name)}"><i class="av" style="--c:${color(c.name)}">${avatars[c.name] ? `<img alt="" referrerpolicy="no-referrer" src="${esc(avatars[c.name])}">` : esc(ini(c.name))}</i><b>${esc(dn(c.name))}</b><em><span class="chsrc src-${esc(c.src || 'infer')}">${esc(srcOf(c))}</span> ${esc(when(c))}</em><small>${esc(c.place)}</small></button>`
-        + `<input type="checkbox" role="switch" data-n="${esc(c.name)}" aria-label="${esc(T('ch.toggle_one', '在地图上显示 {n}', { n: c.name }))}" ${prefs.off.includes(c.name) ? '' : 'checked'} ${prefs.show ? '' : 'disabled'}></li>`).join('')}</ul>`;
+    const presNames = new Set(items.map(c => c.name)), mem = rosters?.members?.items || [], tgt = rosters?.targets?.items || [];
+    const extra = (rosters?.present?.items || []).filter(i => !presNames.has(i.name));
+    el.innerHTML = `<label class="tg chall"><span>${esc(T('ch.show', '在地图上显示人物'))}</span><input type="checkbox" role="switch" ${prefs.show ? 'checked' : ''}></label><div class="chgrps">`
+      + group('present', T('ch.g_present', '在场'), items.length + extra.length, items.map(row).join('') + extra.map(rosterRow).join(''))
+      + (mem.length ? group('members', T('ch.g_members', '庄园成员'), mem.length, mem.map(rosterRow).join('')) : '')
+      + (tgt.length ? group('targets', T('ch.g_targets', '目标'), tgt.length, tgt.map(rosterRow).join('')) : '') + '</div>';
+    for (const d of el.querySelectorAll('details.chgrp')) d.addEventListener('toggle', () => { d.open ? closed.delete(d.dataset.g) : closed.add(d.dataset.g); try { localStorage.setItem(GK, JSON.stringify([...closed])); } catch (e) {} });
   }
   function onPane(e) {
     const inp = e.target.closest('input[type=checkbox]');
@@ -105,7 +127,16 @@ const TCChars = (() => {
   @media (pointer:coarse),(max-width:640px){.chm::before{content:'';position:absolute;left:-9px;top:50%;width:44px;height:44px;margin-top:-22px}}
   #evbar .chpane{padding:0 var(--sp-3,6px) var(--sp-3,6px)}
   #evbar .chpane .chall{padding:0 12px 0 var(--sp-3,6px);border-top:1px solid var(--line)}
-  #evbar .chpane ul{list-style:none;margin:0;padding:0;max-height:34vh;max-height:34dvh;overflow-y:auto}
+  #evbar .chpane .chgrps{max-height:40vh;max-height:40dvh;overflow-y:auto}
+  #evbar .chpane ul{list-style:none;margin:0;padding:0}
+  #evbar .chpane summary{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 var(--sp-3,6px);cursor:pointer;font-size:var(--fs-small,12px);font-weight:600;color:var(--ink-2);border-top:1px solid var(--line)}
+  #evbar .chpane summary small{color:var(--muted);font-weight:400}
+  #evbar .chpane summary{list-style:none}#evbar .chpane summary::-webkit-details-marker{display:none}#evbar .chpane summary::before{content:'';width:6px;height:6px;border:solid var(--muted);border-width:0 1.5px 1.5px 0;transform:rotate(-45deg);margin:0 4px 0 2px;transition:transform var(--dur-1,120ms)}#evbar .chpane details[open]>summary::before{transform:rotate(45deg)}
+  #evbar .chpane .chro{cursor:default}
+  #evbar .chpane .chstage{display:inline-flex;align-items:center;gap:4px;padding:0 6px;border:1px solid var(--line-strong,rgba(255,255,255,.25));border-radius:var(--r-pill,999px);font-size:10px;line-height:15px;color:var(--ink-2)}
+  #evbar .chpane .chstage i{display:inline-flex;gap:2px}#evbar .chpane .chstage i b{width:5px;height:5px;border-radius:50%;background:var(--line-strong,rgba(255,255,255,.25))}
+  #evbar .chpane .chstage i b.on{background:var(--accent)}
+  @media (pointer:coarse),(max-width:640px){#evbar .chpane summary{min-height:44px}}
   #evbar .chpane li{display:flex;align-items:center;gap:var(--sp-5,12px);border-top:1px solid var(--line);padding-right:12px}
   #evbar .chpane .chgo{flex:1;min-width:0;display:grid;grid-template-columns:30px 1fr auto;gap:0 var(--sp-4,8px);align-items:center;padding:var(--sp-3,6px);border-radius:var(--r-m,8px);min-height:40px}
   #evbar .chpane .chgo:hover{background:var(--surface-2)}
@@ -118,5 +149,5 @@ const TCChars = (() => {
   @media (pointer:coarse),(max-width:640px){#evbar .chpane .chgo{min-height:44px}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   mod().then(loadPrefs);
-  return { set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
+  return { get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
 })();
