@@ -4,6 +4,7 @@ import * as B from './lib.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { openHost } from './host_stub.mjs';
+import { FIELDS } from '../../map/tavern/adapter.mjs';   // 设置里每个可映射字段一个下拉框（v0.9.6 起 12 个，不写死）
 const OUT = process.argv[2]; if (!OUT || OUT.startsWith('--')) { console.log('用法：node tools/browser/varmap095.mjs <输出目录>'); process.exit(2); }
 const si = process.argv.indexOf('--shots'), SHOTS = si > 0 ? path.resolve(process.argv[si + 1]) : null;
 B.quietWait(); const srv = await B.ensureServer(); const rep = B.reporter(OUT);
@@ -21,7 +22,7 @@ async function run(name, preset) {
     await H.open(); const vf = await H.viewer(); await B.wait(800);
     await vf.evaluate(() => { closeCard(); showSet(true); document.querySelector('#vmBox').open = true; }); await B.wait(200);
     const ui = await vf.evaluate(() => ({ mode: document.querySelector('#vmBox summary small')?.textContent, n: document.querySelectorAll('#vmBox select').length, auto: document.querySelector('#vmBox select[data-f=location] option')?.textContent }));
-    rep.check(`${name} 设置「变量映射」：读法 MVU、自动 = world.location`, ui.mode === 'MVU' && ui.n === 10 && /world\.location/.test(ui.auto || ''), JSON.stringify(ui));
+    rep.check(`${name} 设置「变量映射」：读法 MVU、自动 = world.location`, ui.mode === 'MVU' && ui.n === FIELDS.length && /world\.location/.test(ui.auto || ''), JSON.stringify(ui));
     await jpg(p, `vm_${name}_settings`);
     await vf.evaluate(() => { const s = document.querySelector('#vmBox select[data-f=location]'); s.value = 'world.alt'; s.dispatchEvent(new Event('change', { bubbles: true })); }); await B.wait(900);
     const chip2 = await p.evaluate(() => document.querySelector('#eden-map-root .em-here .em-nm')?.textContent || '');
