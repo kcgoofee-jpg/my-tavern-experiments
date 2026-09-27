@@ -1,6 +1,6 @@
 // UI v2 §10.11 对比度实测：深 / 浅 / 高对比（深色 + prefers-contrast: more）× 世界 / 上层 / 中层 / 下层。
 // 文字 ≥ 4.5（顶栏、抽屉标签、选中标签、抽屉正文、设置行、说明小字、通知）；非文字 ≥ 3（抽屉柄对抽屉底、选中标签底对抽屉底、开关边框）。
-// 用法：node tools/browser/contrast_v2.mjs <输出目录>
+// 手动跑（不在 smoke 里，要开浏览器）。用法：node tools/browser/contrast_v2.mjs <输出目录>
 import * as B from './lib.mjs';
 const OUT = process.argv[2] || '/tmp/contrast_v2';
 const srv = await B.ensureServer(); const rep = B.reporter(OUT);

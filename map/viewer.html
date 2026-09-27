@@ -1305,7 +1305,8 @@ function routeGaps() {
   const svg = document.querySelector('.routes'); if (!svg || document.body.classList.contains('noroutes')) return;
   const g = svg.querySelector('.gaps'), m = svg.getScreenCTM?.(); if (!g || !m) return; const inv = m.inverse(), P = (x, y) => new DOMPoint(x, y).matrixTransform(inv);
   const rs = [...document.querySelectorAll('.mk:not(.lhide) .lab, .chm .av, .ev:not(.lhide) b')].map(e => e.getBoundingClientRect()).filter(r => r.width);
-  g.innerHTML = rs.map(r => { const a = P(r.left - 3, r.top - 3), b = P(r.right + 3, r.bottom + 3); return `<rect x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" width="${(b.x - a.x).toFixed(1)}" height="${(b.y - a.y).toFixed(1)}" rx="4" fill="#000"/>`; }).join('');
+  const html = rs.map(r => { const a = P(r.left - 3, r.top - 3), b = P(r.right + 3, r.bottom + 3); return `<rect x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" width="${(b.x - a.x).toFixed(1)}" height="${(b.y - a.y).toFixed(1)}" rx="4" fill="#000"/>`; }).join('');
+  if (html !== g.__h) { g.__h = html; g.innerHTML = html; }   // 没变就不重写遮罩（WebKit 重栅格化）
 }
 function applyOverlayToggle() {
   const on = $('#tgBorders').checked, m = REG.maps[cur];
@@ -1637,8 +1638,13 @@ function renderStorage(d) {
     + `<div class="hrow"><span>${esc(tx('s.src_mode', '变量读取方式'))}</span><span>${esc(src?.mvu?.mode || '—')}</span></div>`
     + `<div class="hrow"><span>${esc(tx('s.src_chars', '人物来源'))}</span><span>${esc(ch)}</span></div>`
     + `<div class="hrow"><span>${esc(tx('s.stor_clean', '清理旧聊天的地图数据'))}</span><button type="button" class="btn" id="storClean">${esc(tx('s.stor_clean_btn', '清理'))}</button></div>`
-    + (d.cleaned ? `<small role="status">${esc(tx('s.stor_cleaned', '已清理 {n} 个聊天，释放 {b}', { n: d.cleaned.n, b: kb(d.cleaned.bytes) }))}</small>` : '');
-  $('#storClean').onclick = () => post({ type: 'eden-map:storage-clean' });
+    + (d.cleaned ? `<small role="status">${esc(d.cleaned.error ? tx('s.stor_fail', '清理失败') : tx('s.stor_cleaned', '已清理 {n} 个聊天，释放 {b}', { n: d.cleaned.n, b: kb(d.cleaned.bytes) }))}</small>` : '');
+  // 清理不可撤销：第一次点只变成「再点一次确认（删除 N 个旧聊天）」，5 秒内再点才发（架构评审 P1）
+  const cb = $('#storClean'), old = Math.max(0, (s?.chats || 0) - 5); let armed = 0;
+  if (!old) { cb.disabled = true; cb.title = tx('s.stor_none', '没有可清理的旧聊天'); }
+  cb.onclick = () => { if (Date.now() - armed < 5000) { armed = 0; cb.disabled = true; post({ type: 'eden-map:storage-clean' }); return; }
+    armed = Date.now(); cb.textContent = tx('s.stor_confirm', `再点一次确认：删除 ${old} 个旧聊天的地图数据（不能撤销）`, { n: old });
+    setTimeout(() => { if (armed && Date.now() - armed >= 5000 && cb.isConnected) { armed = 0; cb.textContent = tx('s.stor_clean_btn', '清理'); } }, 5100); };
 }
 function kbdHelp(on) {
   const b = $('#kbdHelp'); b.hidden = !on; $('#kbdBtn').setAttribute('aria-expanded', on ? 'true' : 'false'); if (!on) return;
