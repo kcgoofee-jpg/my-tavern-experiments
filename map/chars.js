@@ -65,7 +65,8 @@ const TCChars = (() => {
     const sv = document.querySelector('#card .src'); delete sv.dataset.note;
     const note = c => { const e = typeof TCCustom !== 'undefined' && TCCustom.entry(c.name); return e?.用途 ? ` · ${e.用途}` : ''; };
     if (list.length === 1) { const c = list[0]; const id = identity(c.name), it = rosterItem(c.name);
-      sv.innerHTML = `<dl class="fields">${id ? `<dt>${esc(T('ch.identity', '身份'))}</dt><dd>${esc(id)}</dd>` : ''}${c.roster ? (c.place ? `<dt>${esc(T('ev.k_place', '地点'))}</dt><dd>${esc(c.place)}</dd>` : '') : `<dt>${esc(T('ch.last', '最后出现'))}</dt><dd>${esc(c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor }))}</dd><dt>${esc(T('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd>`}</dl>${moreHtml(it, id)}`;
+      sv.innerHTML = `<dl class="fields">${id ? `<dt>${esc(T('ch.identity', '身份'))}</dt><dd>${esc(id)}</dd>` : ''}${it?.tier ? `<dt>${esc(T('ch.tier', '战力'))}</dt><dd><span class="chtier">${esc(it.tier)}</span></dd>` : ''}${c.roster ? (c.place ? `<dt>${esc(T('ev.k_place', '地点'))}</dt><dd>${esc(c.place)}</dd>` : '') : `<dt>${esc(T('ch.last', '最后出现'))}</dt><dd>${esc(c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor }))}</dd><dt>${esc(T('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd>`}</dl>${moreHtml(it, id)}`;
+      document.getElementById('card').classList.toggle('person2', !!sv.querySelector('details.chmore'));   // 桌面：有「更多资料」时人物卡两栏
       sv.querySelector('details.chmore')?.addEventListener('toggle', e => { try { localStorage.setItem(MO_OPEN, e.target.open ? '1' : '0'); } catch (x) {} });
       return; }
     sv.innerHTML = `<dl class="fields">${list.map(c => `<dt>${esc(dn(c.name))}</dt><dd>${esc(when(c) + ' · ' + srcOf(c))}</dd>`).join('')}</dl>`;
@@ -119,9 +120,11 @@ const TCChars = (() => {
   const statChip = it => { if (!statsOn() || (!it.grade && it.core == null)) return '';
     const t = [it.grade, it.core != null ? `${it.coreStage ? it.coreStage + ' ' : ''}${it.core}` : ''].filter(Boolean).join(' · ');
     return `<span class="chstat" title="${esc([it.grade ? T('ch.grade', '等级') + ' ' + it.grade : '', it.core != null ? `${it.coreKey || ''} ${it.core}` : ''].filter(Boolean).join(' · '))}">${esc(t)}</span>`; };
+  // v0.9.6 E1 战力小签（只读，卡里写明才有）
+  const tierChip = it => it?.tier ? `<span class="chtier" title="${esc(T('ch.tier', '战力'))}">${esc(it.tier)}</span>` : '';
   function rosterRow(it) {
     const c = items.find(x => x.name === it.name);
-    const body = `<i class="av" style="--c:${color(it.name)}">${avImg(it.name) || esc(ini(it.name))}</i><b>${esc(dn(it.name))}</b><em>${stageChip(it.stage)}${statChip(it)}</em><small>${esc(it.identity || '')}${c ? ' · ' + esc(c.place) : ''}</small>`;
+    const body = `<i class="av" style="--c:${color(it.name)}">${avImg(it.name) || esc(ini(it.name))}</i><b>${esc(dn(it.name))}</b><em>${stageChip(it.stage)}${statChip(it)}${tierChip(it)}</em><small>${esc(it.identity || '')}${c ? ' · ' + esc(c.place) : ''}</small>`;
     return c ? `<li><button type="button" class="chgo" data-n="${esc(it.name)}">${body}</button></li>` : `<li><button type="button" class="chgo chro" data-card="${esc(it.name)}">${body}</button></li>`;   // v0.9.6：不在图上的名册成员也能开人物卡
   }
   function group(id, label, n, inner) {
@@ -186,6 +189,14 @@ const TCChars = (() => {
   #card details.chmore summary::before{content:'';width:6px;height:6px;border:solid var(--muted);border-width:0 1.5px 1.5px 0;transform:rotate(-45deg);margin:0 4px 0 2px;transition:transform var(--dur-1,120ms)}
   #card details.chmore[open] summary::before{transform:rotate(45deg)}
   #card details.chmore dl.fields{margin-top:0}
+  .chtier,#evbar .chpane .chtier{display:inline-flex;align-items:center;margin-left:4px;padding:0 6px;border:1px solid var(--accent);border-radius:var(--r-pill,999px);font-size:var(--fs-micro,11px);line-height:15px;color:var(--accent);white-space:nowrap}
+  #card dd .chtier{margin-left:0}
+  @media (min-width:900px) and (pointer:fine){
+    #card.person2{width:560px}
+    #card.person2 .src{display:grid;grid-template-columns:1fr 1fr;gap:0 var(--sp-6,16px);align-items:start}
+    #card.person2 details.chmore{margin-top:var(--sp-4);border-top:0;border-left:1px solid var(--line);padding-left:var(--sp-5,12px)}
+    #card.person2 details.chmore summary{min-height:28px}
+  }
   @media (pointer:coarse),(max-width:640px){#card details.chmore summary{min-height:44px}}
   #evbar .chpane .chstage{display:inline-flex;align-items:center;gap:4px;padding:0 6px;border:1px solid var(--line-strong,rgba(255,255,255,.25));border-radius:var(--r-pill,999px);font-size:var(--fs-micro,11px);line-height:15px;color:var(--ink-2)}
   #evbar .chpane .chstat{display:inline-flex;align-items:center;margin-left:4px;padding:0 6px;border:1px solid var(--line-strong,rgba(255,255,255,.25));border-radius:var(--r-pill,999px);font-size:var(--fs-micro,11px);line-height:15px;color:var(--ink-2);font-variant-numeric:tabular-nums}

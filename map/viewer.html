@@ -1254,7 +1254,7 @@ function marker(o) { const el = markerEl(o); place(el, o.x, o.y); return el; }
 // 卡片：顶行 tag + 关闭；标题；副标题；正文（设定原文）或字段区；链接行（规范 3.2）
 function showCard(el, name, tag, src, extra, sub, cover) {
   document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); el && el.classList.add('active');
-  const c = $('#card'); c.hidden = false; document.body.classList.add('cardopen');
+  const c = $('#card'); c.hidden = false; c.classList.remove('person2'); document.body.classList.add('cardopen');
   const tg = c.querySelector('.tag'); tg.textContent = t(tag === 'inf' ? 'tag_inf' : 'tag_set'); tg.className = 'tag' + (tag === 'inf' ? ' inf' : ''); tg.removeAttribute('style');   // 事态卡的数据色不带到地点卡
   const cv = c.querySelector('.cover');
   if (cv) { if (cover?.src_800) { cv.hidden = false; cv.src = cover.src_800; cv.alt = (LANG === 'en' ? (cover.alt_en || cover.alt) : cover.alt) || ''; } else { cv.hidden = true; cv.removeAttribute('src'); cv.alt = ''; } }

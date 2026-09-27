@@ -303,5 +303,6 @@
   "ch.m_known": "外界知情",
   "ch.m_yes": "知情",
   "ch.m_no": "不知情",
-  "ch.m_acc": "饰物"
+  "ch.m_acc": "饰物",
+  "ch.tier": "战力"
 }

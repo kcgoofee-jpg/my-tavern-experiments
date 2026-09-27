@@ -241,8 +241,25 @@ function rows(tbl, stageKey, fk = {}) {
     for (const [f, k] of Object.entries(MORE_KEYS)) { const fk_ = fk[f]; if (!fk_ || fk_ === '-' || !(fk_ in o)) continue; const v = val(o[fk_]);
       if (typeof v === 'boolean') more[k] = v; else if (typeof v === 'number' && Number.isFinite(v)) more[k] = v; else { const s = str(v); if (s) more[k] = s.slice(0, 80); } }
     if (Object.keys(more).length) it.more = more;
+    { const tk = fk.tierField; const t = combatTier(o, tk && tk !== '-' ? tk : '', tk === '-'); if (t) it.tier = t; }
     return it;
   });
+}
+// v0.9.6 E1 战力小签：只从卡里写明的内容推（战力字段，或任一文字字段里明写的「天灾级 / 超凡 N 阶 / 普通人」），不编造；读不到返回 ''。
+// 阶梯：普通人 < 超凡一阶至五阶 < 天灾级（docs/card-digest.md）。off = 映射里关掉了（连文字也不扫）
+const CN = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5 };
+export function tierText(s) {
+  s = String(s ?? ''); let m;
+  if (/天灾级/.test(s)) return '天灾';   // 只认「天灾级」；「代号『天灾』」之类不算
+  if ((m = s.match(/超凡\s*([一二三四五1-5])\s*阶/))) return `超凡 ${CN[m[1]] || m[1]} 阶`;
+  if (/^\s*普通人\s*$|战力[:：]?\s*普通人/.test(s)) return '普通人';
+  return '';
+}
+export function combatTier(o, key = '', off = false) {
+  if (off || !plain(o)) return '';
+  if (key && key in o) { const v = val(o[key]); const t = tierText(v); return t || (typeof v === 'string' && v.trim() && v.trim().length <= 12 ? v.trim() : ''); }
+  for (const [k, v] of Object.entries(o)) { if (k.startsWith('$')) continue; const x = val(v); if (typeof x === 'string') { const t = tierText(x); if (t && t !== '普通人') return t; } }
+  return '';
 }
 const MORE_KEYS = { codeField: 'code', socialField: 'social', heightField: 'height', weightField: 'weight', knownField: 'known', accessoryField: 'accessory' };
 /** stat_data → { present, members, targets }：每项 { key: 表名, items: [{ name, identity, stage?, grade?, core?, coreKey?, coreStage? }] } 或 null；map = { present, members, targets } 表名覆盖，gradeField / coreField 行内字段名（'-' = 关闭） */

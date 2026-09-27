@@ -61,6 +61,13 @@ async function run(name, preset) {
         return { t: document.querySelector('#card h2').textContent, rows: [...d.querySelectorAll('dt')].map((x, i) => x.textContent + '=' + d.querySelectorAll('dd')[i].textContent) }; });
       rep.check(`${name} 名册成员（不在图上）也能开人物卡，「更多资料」列出代号 / 身高体重 / 外界知情 / 饰物`, m && m.t === '甲一' && ['代号=青鸟', '身高 / 体重=168 cm · 52 kg', '外界知情=不知情', '饰物=银色细链'].every(r => m.rows.includes(r)), JSON.stringify(m));
       await B.wait(200); await B.shot(p, OUT, `more_${name}_card`);
+      const tc = await vf.evaluate(() => ({ card: document.querySelector('#card dd .chtier')?.textContent, two: getComputedStyle(document.querySelector('#card .src')).gridTemplateColumns.split(' ').length, w: document.getElementById('card').getBoundingClientRect().width }));
+      rep.check(`${name} 战力小签「超凡 3 阶」（卡里写明才有）`, tc.card === '超凡 3 阶', JSON.stringify(tc));
+      rep.check(`${name} 人物卡：桌面两栏，手机一栏`, name === 'desk' ? tc.two === 2 && tc.w > 500 : tc.two !== 2, JSON.stringify(tc));
+      await vf.evaluate(() => { closeCard(); document.querySelector('#evbar .chtab').click(); }); await B.wait(500);
+      const chip = await vf.evaluate(() => [...document.querySelectorAll('#evbar .chpane .chtier')].map(x => x.textContent));
+      await B.shot(p, OUT, `more_${name}_roster`); await vf.evaluate(() => document.querySelector('#evbar .chtab').click());
+      rep.check(`${name} 人物栏名册行有战力小签`, chip.includes('超凡 3 阶'), JSON.stringify(chip));
       await vf.evaluate(() => { const c = document.getElementById('optCharMore'); c.checked = false; c.onchange(); closeCard(); TCChars.cardOf('甲一'); }); await B.wait(300);
       rep.check(`${name} 设置关掉「更多资料」后不显示`, await vf.evaluate(() => !document.querySelector('#card details.chmore')));
       await vf.evaluate(() => { const c = document.getElementById('optCharMore'); c.checked = true; c.onchange(); });
