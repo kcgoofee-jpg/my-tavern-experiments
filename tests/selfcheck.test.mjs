@@ -39,8 +39,8 @@ t('线路：本地不测、连不上警告、还没测跳过', () => {
 });
 t('世界书：查不了就跳过；缺条目警告；按名字前缀、要启用', () => {
   assert.equal(st(evaluate({ ...good, worldbook: null })).worldbook, 'skip');
-  assert.deepEqual(wbMissing([{ name: '地图联动规范 v3' }, { name: '地图事件类型 v2' }, { name: '地图当前地点', enabled: false }]), ['地图当前地点']);
-  assert.deepEqual(wbMissing([{ name: '地图联动规范 v4' }, { name: '地图事件类型 v2' }, { name: '地图当前地点' }]), []);
+  assert.deepEqual(wbMissing([{ name: '地图联动规范 v3' }, { name: '地图事件类型 v2' }, { name: '地图当前地点', enabled: false }, { name: '地图人物位置 v1' }]), ['地图当前地点']);
+  assert.deepEqual(wbMissing([{ name: '地图联动规范 v4' }, { name: '地图事件类型 v2' }, { name: '地图当前地点' }, { name: '地图人物位置 v1' }]), []);
   const r = evaluate({ ...good, worldbook: { missing: ['地图当前地点'] } }); assert.equal(st(r).worldbook, 'warn');
 });
 t('版本：一致 ok、不一致警告、跟分支或没开过跳过', () => {
@@ -73,5 +73,14 @@ t('更新检查：最新标签、版本比较、一天一次、换标签地址',
   assert.equal(it.status, 'info'); assert.match(it.zh, /有新版本 v0\.9\.2/);
   assert.equal(evaluate({ ...good, update: { current: '0.9.1', latest: '0.9.1' } }).some(i => i.id === 'update'), false);
   assert.equal(warnSig(evaluate({ ...good, update: { current: '0.9.1', latest: '0.9.2' } })), '');   // 新版本不弹警告提示
+});
+t('v0.9.3：MVU 字段缺了只提示（skip）、聊天变量接口、EJS 条目没有扩展时警告', () => {
+  const m = { stat: true, here: true, candidates: [] };
+  assert.equal(st(evaluate({ ...good, mvu: { ...m, fields: { present: true, clock: true, outfit: true } } })).mvu_fields, 'ok');
+  const r = evaluate({ ...good, mvu: { ...m, fields: { present: false, clock: true, outfit: false } } }).find(i => i.id === 'mvu_fields');
+  assert.equal(r.status, 'skip'); assert.match(r.zh, /在场人物、主角\.着装/);
+  assert.equal(st(evaluate({ ...good, vars: false })).vars, 'warn'); assert.equal(st(evaluate({ ...good, vars: true })).vars, 'ok');
+  assert.equal(st(evaluate({ ...good, worldbook: { missing: [], lore: true }, ejs: false })).ejs, 'warn');
+  assert.equal(st(evaluate({ ...good, worldbook: { missing: [], lore: true }, ejs: true })).ejs, undefined);
 });
 console.log(`\n${n} passed`);

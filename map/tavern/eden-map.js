@@ -574,7 +574,7 @@
         : fnOk('getLorebookEntries') ? async n => (await getLorebookEntries(n) || []).map(e => ({ name: e.comment, enabled: e.enabled })) : null;
       if (!listed || !get) return null;
       const entries = []; for (const n of names) { try { entries.push(...await get(n)); } catch (e) {} }
-      return { missing: SC.wbMissing(entries) };
+      return { missing: SC.wbMissing(entries), lore: entries.some(e => e && e.enabled !== false && String(e.name || '').startsWith(SC.LORE_PREFIX)) };
     } catch (e) { return null; }
   }
   async function updateFacts() {   // 正式版才查；一天最多一次（不论成败），结果记在本机

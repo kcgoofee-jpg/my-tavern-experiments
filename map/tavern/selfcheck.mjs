@@ -4,8 +4,10 @@
 // 唯一的额外请求：正式版每天最多一次查 jsDelivr 数据接口的最新标签（UPDATE_API，不带 referrer、不带凭据）。
 
 export const HERE_PATH = '世界.当前地点';
-// 附加世界书（tools/build_worldbook_addon.py）的 3 个条目：按名字前缀认，版本号可以不同
-export const WB_ENTRIES = ['地图联动规范', '地图事件类型', '地图当前地点'];
+// 附加世界书（tools/build_worldbook_addon.py）的必需条目：按名字前缀认，版本号可以不同（v0.9.3 加了「地图人物位置」）
+export const WB_ENTRIES = ['地图联动规范', '地图事件类型', '地图当前地点', '地图人物位置'];
+// 按当前地点注入方位的 EJS 条目（可选；要「提示词模板」扩展才会展开）
+export const LORE_PREFIX = '地图方位';
 
 const item = (id, status, zh, en) => ({ id, status, zh, en });
 
@@ -38,7 +40,9 @@ export function wbMissing(entries) {
  *   mvu: null（没有 MVU）| { stat: 能不能读到 stat_data, here: 当前地点路径是否存在, candidates: [像地点的路径] },
  *   dup: { others: 本页加载过的其他地图脚本地址[], oldStyle: 有不带清理钩子的旧版脚本（v0.6.1）, replaced: 我们的按钮被别的脚本换掉 },
  *   line: { swappable, ok: true / false / null（还不知道）, name },
- *   worldbook: null（查不了）| { missing: [条目名] },
+ *   worldbook: null（查不了）| { missing: [条目名], lore: 启用了「地图方位」EJS 条目 },
+ *   vars: 酒馆助手聊天变量接口可用（自定义名称存聊天变量；否则存本机）, ejs: 「提示词模板」扩展（EjsTemplate）在,
+ *   mvu.fields: { present: 有在场人物表, clock: 有世界.当前时刻, outfit: 有主角.着装 }（v0.9.3，缺了只是对应功能不显示）,
  *   version: { script: 脚本版本或 null（跟分支 / 本地）, viewer: 地图 build.json 的 version 或 null（还没打开过） },
  *   update: null | { current, latest }（有新正式版时多一项 status 'info'，不弹提示）
  * }
@@ -82,6 +86,8 @@ export function evaluate(f) {
   else if (w.missing.length) out.push(item('worldbook', 'warn', `世界书附加条目缺少：${w.missing.join('、')}（导入「伊甸地图·世界书附加条目」并启用）`,
     `Lorebook add-on entries missing: ${w.missing.join(', ')} (import and enable the Eden map add-on lorebook)`));
   else out.push(item('worldbook', 'ok', '世界书附加条目已启用', 'Lorebook add-on entries enabled'));
+  if (w && w.lore && f.ejs === false) out.push(item('ejs', 'warn', '启用了「地图方位」条目，但没检测到「提示词模板」扩展：条目会原样发给模型（装上扩展，或关掉这几条）',
+    'Map location lore entries enabled but the Prompt Template extension is missing: raw EJS would reach the model (install it or disable those entries)'));
 
   const v = f.version || {};
   if (!v.script || !v.viewer) out.push(item('version', 'skip', !v.script ? '脚本跟随分支或本地，不比对版本' : '地图还没打开过，版本待比对', !v.script ? 'Script follows a branch or local copy, version not compared' : 'Map not opened yet, version not compared'));
