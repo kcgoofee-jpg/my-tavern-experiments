@@ -17,56 +17,56 @@
    "nx": 0.1833,
    "ny": 0.7933,
    "r": 0.05,
-   "ax": 0.2222,
-   "ay": 0.7577
+   "ax": 0.1833,
+   "ay": 0.804
   },
   {
    "id": "archbishop_palace",
    "nx": 0.7003,
    "ny": 0.1425,
    "r": 0.0237,
-   "ax": 0.7003,
-   "ay": 0.165
+   "ax": 0.7053,
+   "ay": 0.1486
   },
   {
    "id": "pm_residence",
    "nx": 0.9541,
    "ny": 0.5527,
    "r": 0.0333,
-   "ax": 0.9345,
-   "ay": 0.5481
+   "ax": 0.9563,
+   "ay": 0.56
   },
   {
    "id": "league_club",
    "nx": 0.1916,
    "ny": 0.1954,
    "r": 0.0251,
-   "ax": 0.2104,
-   "ay": 0.2092
+   "ax": 0.1944,
+   "ay": 0.1977
   },
   {
    "id": "aether_institute",
    "nx": 0.862,
    "ny": 0.7376,
    "r": 0.0257,
-   "ax": 0.862,
-   "ay": 0.7759
+   "ax": 0.8606,
+   "ay": 0.7346
   },
   {
    "id": "general_residence",
    "nx": 0.3306,
    "ny": 0.8427,
    "r": 0.0239,
-   "ax": 0.3306,
-   "ay": 0.8738
+   "ax": 0.3316,
+   "ay": 0.8506
   },
   {
    "id": "zaibatsu_estate",
    "nx": 0.9536,
    "ny": 0.3287,
    "r": 0.0292,
-   "ax": 0.924,
-   "ay": 0.3381
+   "ax": 0.957,
+   "ay": 0.3233
   },
   {
    "id": "climate_tower",
@@ -74,7 +74,7 @@
    "ny": 0.7667,
    "r": 0.0067,
    "ax": 0.7833,
-   "ay": 0.796
+   "ay": 0.7805
   }
  ],
  "layer": "tc_upper",
@@ -1377,8 +1377,8 @@
    "shape": "cape",
    "rim": "hedge",
    "terrain": "meadow",
-   "layout": "front",
-   "plan": "3x3",
+   "layout": "village",
+   "plan": "c1x2",
    "outline": [
     [
      0.4808,
@@ -2022,8 +2022,8 @@
    "shape": "long",
    "rim": "hedge",
    "terrain": "meadow",
-   "layout": "side",
-   "plan": "3x2",
+   "layout": "ancestral",
+   "plan": "c2x2",
    "outline": [
     [
      0.9127,
@@ -2344,8 +2344,8 @@
    "shape": "round",
    "rim": "hedge",
    "terrain": "meadow",
-   "layout": "court",
-   "plan": "2x3",
+   "layout": "tower",
+   "plan": "c0",
    "outline": [
     [
      0.1229,
@@ -2825,7 +2825,7 @@
    "alt_m": 970,
    "estate_style": "chateau",
    "shape": "cape",
-   "rim": "hedge",
+   "rim": "wall",
    "terrain": "meadow",
    "layout": "tcanal",
    "plan": "U",
@@ -3148,9 +3148,9 @@
    "estate_style": "lingnan",
    "shape": "twin",
    "rim": "cliff",
-   "terrain": "meadow",
-   "layout": "front",
-   "plan": "3x3",
+   "terrain": "lake",
+   "layout": "boathall",
+   "plan": "c0",
    "outline": [
     [
      0.7977,
@@ -3632,7 +3632,7 @@
    "shape": "round",
    "rim": "roots",
    "terrain": "lake",
-   "layout": "bay",
+   "layout": "court",
    "plan": "three",
    "outline": [
     [
@@ -3953,9 +3953,9 @@
    "estate_style": "lingnan",
    "shape": "cape",
    "rim": "roots",
-   "terrain": "meadow",
-   "layout": "side",
-   "plan": "3x2",
+   "terrain": "crag",
+   "layout": "rockery",
+   "plan": "c0",
    "outline": [
     [
      0.87,
@@ -4438,7 +4438,7 @@
    "shape": "long",
    "rim": "wall",
    "terrain": "lake",
-   "layout": "islet",
+   "layout": "hill",
    "plan": "two",
    "outline": [
     [
@@ -4599,7 +4599,7 @@
    "shape": "round",
    "rim": "cliff",
    "terrain": "meadow",
-   "layout": "twin",
+   "layout": "bay",
    "plan": "three",
    "outline": [
     [
@@ -5082,8 +5082,8 @@
    "alt_m": 997,
    "estate_style": "chateau",
    "shape": "round",
-   "rim": "hedge",
-   "terrain": "terrace",
+   "rim": "cliff",
+   "terrain": "meadow",
    "layout": "axis",
    "plan": "range",
    "outline": [
@@ -5245,8 +5245,8 @@
    "shape": "round",
    "rim": "cliff",
    "terrain": "meadow",
-   "layout": "court",
-   "plan": "2x3",
+   "layout": "twinpond",
+   "plan": "c2x1",
    "outline": [
     [
      0.7909,

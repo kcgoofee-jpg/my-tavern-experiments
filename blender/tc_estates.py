@@ -813,7 +813,12 @@ class Isle:
         k = 0
         while k < n:
             a = R.uniform(0, TAU)
-            if st == 'chateau' and self.F < .35: break                                     # 小法式岛：不撒外圈树（不再是一圈甜甜圈树环），园外只留规则丛林块
+            if st == 'chateau' and self.F < .35:                                             # 小法式岛：不撒外圈树团（不再是甜甜圈树环），改成沿岸一圈等距修剪树的环园林荫道，中轴两端留视线缺口
+                a0 = getattr(self, 'axis', (0, 0, 0.0))[2] + math.pi / 2
+                for t in np.arange(0, TAU, .07 / max(self.F * .8, .1)):
+                    if min(abs(math.remainder(t - a0, TAU)), abs(math.remainder(t - a0 - math.pi, TAU))) < .35: continue
+                    self.plant(math.cos(t) * self.r(t) * .8, math.sin(t) * self.r(t) * .8, .04, 'tree2', .9, .3)
+                break
             if st == 'chateau': d = R.uniform(.87, .95)
             elif st == 'english' and R.random() < .6: d = .75 + .2 * R.random()
             else: d = math.sqrt(R.random()) * .93
