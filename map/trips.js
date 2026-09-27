@@ -5,9 +5,9 @@
 // 线画在一个铺满两端外框的 SVG 叠加层里（OSD Rect 叠加层，随缩放伸缩；线宽、虚线用 non-scaling-stroke 保持屏幕像素）。
 // 读查看器的全局：viewer、REG、cur、curData、aspect、estateStandIn、hereRes、esc、$、trackEl、untrack、showCard。
 const TCTrips = (() => {
-  const T = (k, zh, v = {}) => { const r = window.I18N?.t?.(k, v); if (r && r !== k) return r; return Object.entries(v).reduce((s, [a, b]) => s.split('{' + a + '}').join(b), zh); };
+  const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let els = [], fitFor = null, trips = [];
-  const TK = 'edenMapTrips', on = () => { try { return localStorage.getItem(TK) !== '0'; } catch (e) { return true; } };
+  const TK = 'edenMapTrips', on = () => { try { return TCStore.get(TK) !== '0'; } catch (e) { return true; } };
   // 落点 → 当前图上的归一化坐标（地标；庄园 → 它在上层的替身地标）；不在当前图返回 null
   function xy(r) {
     if (!r || typeof REG === 'undefined' || !REG || !cur) return null;
@@ -66,7 +66,7 @@ const TCTrips = (() => {
   const dn = n => (typeof TCCustom !== 'undefined' ? TCCustom.name(n) : n);
   const charColor = n => (typeof TCChars !== 'undefined' && TCChars.color ? TCChars.color(n) : '#888');
   function set(items) { trips = Array.isArray(items) ? items.slice(-10) : []; render(); }
-  function setOn(v) { try { localStorage.setItem(TK, v ? '1' : '0'); } catch (e) {} render(); }
+  function setOn(v) { try { TCStore.set(TK, v ? '1' : '0'); } catch (e) {} render(); }
   document.addEventListener('DOMContentLoaded', () => { const b = document.getElementById('tgTripsBox'); if (b) { b.checked = on(); b.addEventListener('change', () => setOn(b.checked)); } });
   function render() {
     clear();

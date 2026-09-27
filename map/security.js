@@ -2,11 +2,11 @@
 // 开着时：层级图上有安保事实的地点（data/security.json）图钉旁多一个小盾牌签（结 / 监 / 门 / 警），地点卡里多一栏「安保」列出结界 / 监控 / 门禁 / 警报规则。
 // 只读、中性措辞；数据只来自卡里写明的规则。读查看器的全局：REG、cur、getJSON、esc、LANG、$。
 const TCSecurity = (() => {
-  const T = (k, zh, v = {}) => { const r = window.I18N?.t?.(k, v); if (r && r !== k) return r; return Object.entries(v).reduce((s, [a, b]) => s.split('{' + a + '}').join(b), zh); };
+  const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const KEY = 'edenMapSecurity';
   let data = null, loading = null;
   const en = () => typeof LANG !== 'undefined' && LANG === 'en';
-  const isOn = () => { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } };
+  const isOn = () => { try { return TCStore.get(KEY) === '1'; } catch (e) { return false; } };
   const load = () => data ? Promise.resolve(data) : (loading ??= fetch(new URL('data/security.json', document.baseURI)).then(r => r.ok ? r.json() : null).then(d => (data = d)).catch(() => null));
   const kindName = k => { const n = data?.kinds?.[k]; return n ? (en() ? n[1] : n[0]) : k; };
   /** 当前图某个标记名（中文 dataset.name）的事实 */
@@ -37,7 +37,7 @@ const TCSecurity = (() => {
     box.innerHTML = `<b>${esc(T('sec.title', '安保'))}</b><dl class="fields">${f.map(x => `<dt>${esc(kindName(x.kind))}</dt><dd>${esc(en() ? x.text_en || x.text : x.text)}${x.src ? `<small>${esc(x.src)}</small>` : ''}</dd>`).join('')}</dl>`;
     c.querySelector('.extra').before(box);
   }
-  function set(on) { try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (e) {} load().then(render); }
+  function set(on) { try { TCStore.set(KEY, on ? '1' : '0'); } catch (e) {} load().then(render); }
   // 图层菜单里的开关（只在层级图上显示）
   function initToggle() {
     const list = document.getElementById('layList'); if (!list || document.getElementById('tgSec')) return;

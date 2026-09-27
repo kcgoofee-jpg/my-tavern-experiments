@@ -4,7 +4,7 @@
 // 开关和头像只存本机 localStorage（按聊天分开）；不发请求（头像是用户自己给的 data: / http 地址时由浏览器加载那张图）。
 // 读查看器的全局：viewer、REG、cur、curData、aspect、placeN、hereRes、estateStandIn、go、trackEl、untrack、showCard、closeCard、declutter、esc、$、M、toImg、LS、chatId。
 const TCChars = (() => {
-  const T = (k, zh, v = {}) => { const r = window.I18N?.t?.(k, v); if (r && r !== k) return r; return Object.entries(v).reduce((s, [a, b]) => s.split('{' + a + '}').join(b), zh); };
+  const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let portraits = {}, rosters = null, rep = null, stageOrder = null, items = [], floor = 0, CM = null, prefs = { show: true, off: [] }, avatars = {}, els = [], flyName = null;
   const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/characters.mjs', document.baseURI).href).then(m => (CM = m)).catch(() => null);
   const chat = () => (typeof chatId === 'string' ? chatId : '');
@@ -14,7 +14,7 @@ const TCChars = (() => {
   const color = n => CM ? CM.colorOf(n) : '#888';
   const ini = n => CM ? CM.initials(n) : String(n)[0];
   // 头像：本机设置的优先；否则「使用原作头像」开着时用卡自带的立绘表（只收作者 CDN 的 /sfw/ 地址，懒加载，失败退回首字）
-  const PK_ = 'edenMapPortraits', portOn = () => { try { const v = localStorage.getItem(PK_); return v == null ? !(typeof leanBg === 'function' && leanBg()) : v === '1'; } catch (e) { return true; } };
+  const PK_ = 'edenMapPortraits', portOn = () => { try { const v = TCStore.get(PK_); return v == null ? !(typeof leanBg === 'function' && leanBg()) : v === '1'; } catch (e) { return true; } };
   const okUrl = u => /^https:\/\/cdn\.jsdelivr\.net\/gh\/Yehehua1311\/[^?#]*\/sfw\/[^?#]+\.(png|jpe?g|webp)$/i.test(u || '');
   // 状态栏里玩家自己设的头像（卡的状态栏存在同源 localStorage：eden_custom_portraits = { 名: 地址 }、eden_portrait_<名> = data URL），只读
   const barAv = n => { try { const short = String(n).split(/[·・]/)[0]; for (const k of [n, short]) { const d = localStorage.getItem('eden_portrait_' + k); if (d && d.startsWith('data:image/')) return d; }
@@ -67,7 +67,7 @@ const TCChars = (() => {
     if (list.length === 1) { const c = list[0]; const id = identity(c.name), it = rosterItem(c.name);
       sv.innerHTML = `<dl class="fields">${id ? `<dt>${esc(T('ch.identity', '身份'))}</dt><dd>${esc(id)}</dd>` : ''}${it?.tier ? `<dt>${esc(T('ch.tier', '战力'))}</dt><dd><span class="chtier">${esc(it.tier)}</span></dd>` : ''}${c.roster ? (c.place ? `<dt>${esc(T('ev.k_place', '地点'))}</dt><dd>${esc(c.place)}</dd>` : '') : `<dt>${esc(T('ch.last', '最后出现'))}</dt><dd>${esc(c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor }))}</dd><dt>${esc(T('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd>`}</dl>${moreHtml(it, id)}`;
       document.getElementById('card').classList.toggle('person2', !!sv.querySelector('details.chmore'));   // 桌面：有「更多资料」时人物卡两栏
-      sv.querySelector('details.chmore')?.addEventListener('toggle', e => { try { localStorage.setItem(MO_OPEN, e.target.open ? '1' : '0'); } catch (x) {} });
+      sv.querySelector('details.chmore')?.addEventListener('toggle', e => { try { TCStore.set(MO_OPEN, e.target.open ? '1' : '0'); } catch (x) {} });
       return; }
     sv.innerHTML = `<dl class="fields">${list.map(c => `<dt>${esc(dn(c.name))}</dt><dd>${esc(when(c) + ' · ' + srcOf(c))}</dd>`).join('')}</dl>`;
   }
@@ -93,8 +93,8 @@ const TCChars = (() => {
   const rosterItem = n => { for (const g of ['present', 'members', 'targets']) { const it = rosters?.[g]?.items?.find(i => i.name === n); if (it) return it; } return null; };
   // v0.9.6（E13 其余字段 / E16）：人物卡「更多资料」——代号、社会身份（公开身份）、身高 / 体重、外界知情、饰物；只读，字段名走变量映射（可关闭）；设置「人物卡显示更多资料」（本机 edenMapCharMore，默认开）
   const MO_KEY = 'edenMapCharMore', MO_OPEN = 'edenMapCharMoreOpen';
-  const moreOn = () => { try { return localStorage.getItem(MO_KEY) !== '0'; } catch (e) { return true; } };
-  const moreOpen = () => { try { return localStorage.getItem(MO_OPEN) === '1'; } catch (e) { return false; } };
+  const moreOn = () => { try { return TCStore.get(MO_KEY) !== '0'; } catch (e) { return true; } };
+  const moreOpen = () => { try { return TCStore.get(MO_OPEN) === '1'; } catch (e) { return false; } };
   function moreRows(it, id = '') {
     const m = it?.more; if (!m) return [];
     const r = [], hw = [m.height != null && m.height !== '' ? (typeof m.height === 'number' ? m.height + ' cm' : m.height) : '', m.weight != null && m.weight !== '' ? (typeof m.weight === 'number' ? m.weight + ' kg' : m.weight) : ''].filter(Boolean).join(' · ');
@@ -107,7 +107,7 @@ const TCChars = (() => {
   }
   const moreHtml = (it, id) => { if (!moreOn()) return ''; const r = moreRows(it, id); if (!r.length) return '';
     return `<details class="chmore" ${moreOpen() ? 'open' : ''}><summary>${esc(T('ch.more_h', '更多资料'))}</summary><dl class="fields">${r.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></details>`; };
-  const GK = 'edenMapChGroups', closed = (() => { try { return new Set(JSON.parse(localStorage.getItem(GK) || '[]')); } catch (e) { return new Set(); } })();
+  const GK = 'edenMapChGroups', closed = (() => { try { return new Set(JSON.parse(TCStore.get(GK) || '[]')); } catch (e) { return new Set(); } })();
   const stageChip = s => { if (!s) return ''; const i = stageOrder ? stageOrder.indexOf(s) : -1, n = stageOrder?.length || 0;
     return `<span class="chstage" ${i >= 0 ? `style="--p:${(i + 1) / n}" title="${esc(T('ch.stage_of', '第 {i} / {n} 步', { i: i + 1, n }))}"` : ''}>${i >= 0 ? `<i aria-hidden="true">${Array.from({ length: n }, (_, k) => `<b class="${k <= i ? 'on' : ''}"></b>`).join('')}</i>` : ''}${esc(s)}</span>`; };
   function row(c) {
@@ -116,7 +116,7 @@ const TCChars = (() => {
       + `<label class="chsw"><input type="checkbox" role="switch" data-n="${esc(c.name)}" aria-label="${esc(T('ch.toggle_one', '在地图上显示 {n}', { n: c.name }))}" ${prefs.off.includes(c.name) ? '' : 'checked'} ${prefs.show ? '' : 'disabled'}></label></li>`;
   }
   // v0.9.6（E2 / E13）：名册行的等级、核心数值与档位名（字段名由变量映射定，只读）；设置「人物栏显示数值」关掉就不显示（本机 edenMapCharStats，默认开）
-  const statsOn = () => { try { return localStorage.getItem('edenMapCharStats') !== '0'; } catch (e) { return true; } };
+  const statsOn = () => { try { return TCStore.get('edenMapCharStats') !== '0'; } catch (e) { return true; } };
   const statChip = it => { if (!statsOn() || (!it.grade && it.core == null)) return '';
     const t = [it.grade, it.core != null ? `${it.coreStage ? it.coreStage + ' ' : ''}${it.core}` : ''].filter(Boolean).join(' · ');
     return `<span class="chstat" title="${esc([it.grade ? T('ch.grade', '等级') + ' ' + it.grade : '', it.core != null ? `${it.coreKey || ''} ${it.core}` : ''].filter(Boolean).join(' · '))}">${esc(t)}</span>`; };
@@ -137,7 +137,7 @@ const TCChars = (() => {
       + group('present', T('ch.g_present', '在场'), items.length + extra.length, items.map(row).join('') + extra.map(rosterRow).join(''))
       + (mem.length ? group('members', T('ch.g_members', '庄园成员'), mem.length, mem.map(rosterRow).join('')) : '')
       + (tgt.length ? group('targets', T('ch.g_targets', '目标'), tgt.length, tgt.map(rosterRow).join('')) : '') + '</div>';
-    for (const d of el.querySelectorAll('details.chgrp')) d.addEventListener('toggle', () => { d.open ? closed.delete(d.dataset.g) : closed.add(d.dataset.g); try { localStorage.setItem(GK, JSON.stringify([...closed])); } catch (e) {} });
+    for (const d of el.querySelectorAll('details.chgrp')) d.addEventListener('toggle', () => { d.open ? closed.delete(d.dataset.g) : closed.add(d.dataset.g); try { TCStore.set(GK, JSON.stringify([...closed])); } catch (e) {} });
   }
   function onPane(e) {
     const inp = e.target.closest('input[type=checkbox]');
@@ -216,5 +216,5 @@ const TCChars = (() => {
   @media (pointer:coarse),(max-width:640px){#evbar .chpane .chgo{min-height:44px}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   mod().then(loadPrefs);
-  return { color, portOn, setMoreOn(on) { try { localStorage.setItem(MO_KEY, on ? '1' : '0'); } catch (e) {} }, cardOf, setStatsOn(on) { try { localStorage.setItem('edenMapCharStats', on ? '1' : '0'); } catch (e) {} bar(); }, get statsOn() { return statsOn(); }, setPortOn(on) { try { localStorage.setItem(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
+  return { color, portOn, setMoreOn(on) { try { TCStore.set(MO_KEY, on ? '1' : '0'); } catch (e) {} }, cardOf, setStatsOn(on) { try { TCStore.set('edenMapCharStats', on ? '1' : '0'); } catch (e) {} bar(); }, get statsOn() { return statsOn(); }, setPortOn(on) { try { TCStore.set(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
 })();

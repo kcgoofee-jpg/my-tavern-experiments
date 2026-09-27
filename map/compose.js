@@ -2,7 +2,7 @@
 // 发给卡内脚本填进酒馆输入框——**只填不发**。只在嵌在酒馆里时显示。设置里「填入聊天的模板」可改（本机）。
 // 读查看器的全局：esc、post、LANG、$。
 const TCCompose = (() => {
-  const T = (k, zh, v = {}) => { const r = window.I18N?.t?.(k, v); if (r && r !== k) return r; return Object.entries(v).reduce((s, [a, b]) => s.split('{' + a + '}').join(b), zh); };
+  const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let CM = null, open = false;
   const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/compose.mjs', document.baseURI).href).then(m => (CM = m)).catch(() => null);
   const embedded = () => window.top !== window || !!window.__composeTest;

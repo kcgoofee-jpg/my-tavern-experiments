@@ -4,7 +4,7 @@
 // 纯函数在 tavern/mvu.mjs（数据）与 tavern/picker.mjs（v0.9.5 选择器分组、搜索、飞行目标、校验）。这里不过滤任何文字，原样显示（textContent / esc）。
 // 读查看器的全局：REG、cur、hereIdx、rebuildHere、markHere、chatId、LS、esc、tx、post、LANG、showSet。
 const TCCustom = (() => {
-  const T = (k, zh, v = {}) => { const r = window.I18N?.t?.(k, v); if (r && r !== k) return r; return Object.entries(v).reduce((s, [a, b]) => s.split('{' + a + '}').join(b), zh); };
+  const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const embed = window.top !== window;
   let MV = null, data = { items: {}, 同步世界书: true }, host = null, clock = null, outfit = null, toastT = 0;
   const ready = import(new URL('tavern/mvu.mjs', document.baseURI).href).then(m => { MV = m; if (!host) loadLocal(); return m; }).catch(() => null);
@@ -57,7 +57,7 @@ const TCCustom = (() => {
 
   // ---------- 夜色（上层、中层；设置里可关，默认开） ----------
   const NIGHT_KEY = 'edenMapNight';
-  const nightOn = () => { try { return localStorage.getItem(NIGHT_KEY) !== '0'; } catch (e) { return true; } };
+  const nightOn = () => { try { return TCStore.get(NIGHT_KEY) !== '0'; } catch (e) { return true; } };
   // v0.9.6（B11 / C1）：按时段分四档（晨 / 日 / 暮 / 夜）；颜色只参考 docs/drafts/upper_tod_*.jpg 的整体色调，不另出图。夜档保留旧的 nighttint 类
   function night() { const m = document.body.dataset.map, tier = m === 'tc_upper' || m === 'tc_mid', on = nightOn() && tier;
     const tod = on ? (clock?.tod || (clock?.night ? 'night' : '')) : '';
@@ -115,7 +115,7 @@ const TCCustom = (() => {
     if (dlg && !dlg.hidden) renderDlg(false);
   }
   function onChange(ev) {
-    if (ev.target.id === 'optNight') { try { localStorage.setItem(NIGHT_KEY, ev.target.checked ? '1' : '0'); } catch (e) {} night(); }
+    if (ev.target.id === 'optNight') { try { TCStore.set(NIGHT_KEY, ev.target.checked ? '1' : '0'); } catch (e) {} night(); }
     if (ev.target.id === 'cuSync') setSync(ev.target.checked);
     if (ev.target.id === 'optPort') TCChars.setPortOn(ev.target.checked);
   }

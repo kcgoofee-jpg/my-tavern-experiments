@@ -6,8 +6,7 @@
 // 读查看器的全局变量：viewer、REG、cur、curData、aspect、getJSON、placeN、showCard、esc、go、coarse、$。
 // 界面文字走查看器的 window.I18N（键在 i18n/*.json 的 ev.*）；类别、大类、层、状态名英文在 en.json 的 names。事件标题、地点、发布方是剧情原文，不翻译。
 const TCEvents = (() => {
-  const T = (k, zh, v = {}) => { const r = window.I18N?.t?.(k, v); if (r && r !== k) return r;
-    return Object.entries(v).reduce((s, [a, b]) => s.split('{' + a + '}').join(b), zh); };
+  const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const tn = z => (z && window.I18N?.tr?.(z)) || z || '';
   const where = e => tn(e.layer) + (e.place ? '·' + e.place : '');
   // 当前这一层的事件不再写层名（面包屑、层按钮已经说了）；别的层照写（v0.9.2）
@@ -28,7 +27,7 @@ const TCEvents = (() => {
   let SHAPES = { 空防: 'hex', 气候: 'circle', 治安: 'square', 政治: 'penta', 媒体: 'diamond', 民生: 'octa', 军事: 'tri-down', 灾害: 'tri', 人物: 'ring', 其他: 'square' };
   const shp = g => 'sh-' + (SHAPES[g] || 'square');
   const OFF_KEY = 'edenMapEvOff';
-  const off = new Set((() => { try { return JSON.parse(localStorage.getItem(OFF_KEY)) || []; } catch (e) { return []; } })());
+  const off = new Set((() => { try { return JSON.parse(TCStore.get(OFF_KEY)) || []; } catch (e) { return []; } })());
   const grpOf = e => e.grp || '其他';
   let grpLoaded = false;
   const MAP_OF = { 上层: 'tc_upper', 中层: 'tc_mid', 下层: 'tc_low', 天城外: 'world' };
@@ -239,7 +238,7 @@ const TCEvents = (() => {
   }
   // 图例提示只在第一次展开时出现一行（之后在 title 里），不常驻占一行（v0.9.2）
   let hintSeen = null;
-  function hintOnce() { if (!isOpenNow()) return false; if (hintSeen === null) { try { hintSeen = !!localStorage.getItem('edenMapLegHint'); localStorage.setItem('edenMapLegHint', '1'); } catch (e) { hintSeen = true; } } return !hintSeen; }
+  function hintOnce() { if (!isOpenNow()) return false; if (hintSeen === null) { try { hintSeen = !!TCStore.get('edenMapLegHint'); TCStore.set('edenMapLegHint', '1'); } catch (e) { hintSeen = true; } } return !hintSeen; }
   function updateToggle() {
     let tg = document.getElementById('tgEvents');
     if (!tg) {
@@ -374,7 +373,7 @@ const TCEvents = (() => {
     pc.classList.add('chpane'); pc.id = 'chpane';
     pe.querySelector('.evleg').setAttribute('aria-label', T('ev.legend_aria', '按大类筛选'));
     pe.querySelector('.evleg').addEventListener('click', e => { const b = e.target.closest('button[data-g]'); if (!b) return;
-      const g = b.dataset.g; off.has(g) ? off.delete(g) : off.add(g); try { localStorage.setItem(OFF_KEY, JSON.stringify([...off])); } catch (err) {}
+      const g = b.dataset.g; off.has(g) ? off.delete(g) : off.add(g); try { TCStore.set(OFF_KEY, JSON.stringify([...off])); } catch (err) {}
       render(); renderBar(); badges(); });
     pc.addEventListener('change', e => TCChars.onPane(e)); pc.addEventListener('click', e => TCChars.onPane(e));
     // 点列表项飞过去；卡片关闭（× / Esc）后焦点回到事态标签
