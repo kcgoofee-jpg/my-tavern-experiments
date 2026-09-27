@@ -103,3 +103,39 @@ def car_lights(cars, dirs):
             rot.append(a)
             head.append((x + dx * .021 + nx * s, y + dy * .021 + ny * s, .005, .005, z1, z1 + .001)); tail.append((x - dx * .021 + nx * s, y - dy * .021 + ny * s, .005, .005, z1, z1 + .001))
     return np.array(head, np.float32).reshape(-1, 6), np.array(tail, np.float32).reshape(-1, 6), np.array(rot, np.float32)
+
+# ---------------- A7：路灯的地面光池（加性、边缘渐隐的发光圆盘，不挡住下面的路面）----------------
+def glow_pools(name, P, strength=1.0, seg=14, fall=2.2):
+    """P: [(x, y, z, 半径, (r, g, b))]。每个光池一个扇形圆盘：圆心亮、边缘为零（按 fall 次方衰减），
+    材质 = 透明 + 自发光（加性），圆盘不挡光、不投影；路灯底下的路面、人行道被照出一小片暖光，而不是只有一个亮点。"""
+    P = list(P); n = len(P)
+    if n == 0: return None
+    a = np.linspace(0, 2 * np.pi, seg, endpoint=False); ca, sa = np.cos(a), np.sin(a)
+    X = np.array([p[0] for p in P], np.float32); Y = np.array([p[1] for p in P], np.float32); Z = np.array([p[2] for p in P], np.float32)
+    Rr = np.array([p[3] for p in P], np.float32); C = np.array([p[4] for p in P], np.float32).reshape(-1, 3)
+    V = np.empty((n, seg + 1, 3), np.float32)
+    V[:, 0, 0], V[:, 0, 1] = X, Y; V[:, 1:, 0] = X[:, None] + ca * Rr[:, None]; V[:, 1:, 1] = Y[:, None] + sa * Rr[:, None]; V[:, :, 2] = Z[:, None]
+    k = np.arange(seg, dtype=np.int32); tri = np.stack([np.zeros(seg, np.int32), k + 1, (k + 1) % seg + 1], 1)
+    F = (tri[None] + (np.arange(n, dtype=np.int32) * (seg + 1))[:, None, None]).reshape(-1, 3)
+    me = bpy.data.meshes.new(name); me.vertices.add(n * (seg + 1)); me.vertices.foreach_set('co', V.ravel())
+    me.loops.add(F.size); me.loops.foreach_set('vertex_index', F.ravel())
+    me.polygons.add(len(F)); me.polygons.foreach_set('loop_start', np.arange(0, F.size, 3, dtype=np.int32)); me.polygons.foreach_set('loop_total', np.full(len(F), 3, np.int32))
+    me.update(calc_edges=True)
+    pc = me.color_attributes.new('pc', 'FLOAT_COLOR', 'POINT'); pf = me.color_attributes.new('pf', 'FLOAT_COLOR', 'POINT')
+    pc.data.foreach_set('color', np.repeat(np.c_[C, np.ones(n, np.float32)], seg + 1, 0).ravel())
+    fv = np.zeros((n, seg + 1, 4), np.float32); fv[:, 0, :] = 1; fv[:, :, 3] = 1; pf.data.foreach_set('color', fv.ravel())
+    m = bpy.data.materials.new(name + '_m'); m.use_nodes = True; nt = m.node_tree
+    for nd in list(nt.nodes):
+        if nd.type != 'OUTPUT_MATERIAL': nt.nodes.remove(nd)
+    out = next(nd for nd in nt.nodes if nd.type == 'OUTPUT_MATERIAL')
+    a1 = nt.nodes.new('ShaderNodeAttribute'); a1.attribute_name = 'pc'; a2 = nt.nodes.new('ShaderNodeAttribute'); a2.attribute_name = 'pf'
+    pw = nt.nodes.new('ShaderNodeMath'); pw.operation = 'POWER'; pw.inputs[1].default_value = fall; nt.links.new(a2.outputs['Fac'], pw.inputs[0])
+    em = nt.nodes.new('ShaderNodeEmission'); nt.links.new(a1.outputs['Color'], em.inputs['Color'])
+    sm = nt.nodes.new('ShaderNodeMath'); sm.operation = 'MULTIPLY'; sm.inputs[1].default_value = strength; nt.links.new(pw.outputs[0], sm.inputs[0]); nt.links.new(sm.outputs[0], em.inputs['Strength'])
+    tr = nt.nodes.new('ShaderNodeBsdfTransparent'); ad = nt.nodes.new('ShaderNodeAddShader')
+    nt.links.new(tr.outputs['BSDF'], ad.inputs[0]); nt.links.new(em.outputs['Emission'], ad.inputs[1]); nt.links.new(ad.outputs['Shader'], out.inputs['Surface'])
+    o = bpy.data.objects.new(name, me); bpy.context.scene.collection.objects.link(o); o.data.materials.append(m)
+    o.visible_shadow = False
+    try: o.visible_diffuse = False; o.visible_glossy = False     # 只给相机看：不当成光源去照别的东西（省采样、不出噪点）
+    except Exception: pass
+    return o
