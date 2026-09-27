@@ -3,7 +3,7 @@
 查看器（`map/viewer.html`）与庄园（`map/estate/`）的浏览器测试都从这里取零件，不再每轮在 scratchpad 里重写。
 
 ## 准备
-- 本地服务：`http://localhost:5178/`（`map/` 目录，`python3 tools/cors_server.py 5178 map`，或 `.claude/launch.json` 的 `map`）。`ensureServer()` 发现没在跑会自己起一个，跑完关掉。
+- 本地服务：`map/` 目录，端口默认按本工作树路径哈希到 5200–5999（每个 worktree 固定且互不相同），`EDEN_PORT` 可指定、`EDEN_BASE` 可指向任意地址（不校验）。`ensureServer()` 只复用 `/__root`（`tools/cors_server.py` 提供）等于本工作树 `map/` 的服务，否则自己起一个（端口被占就往后找），跑完关掉。
 - Playwright：`cd tools/browser && npm install`，浏览器 `npx playwright install chromium webkit`。没装时会自动找 `~/.npm/_npx/*/node_modules/playwright`，也可设 `PLAYWRIGHT_DIR`。
 - 安静期：每个脚本开头调 `quietWait()`（即 `tools/quiet_wait.sh`），用户用 `bash tools/quiet.sh <分钟>` 占住机器时会先等。
 - 后台有 Blender 在渲时，WebGL 与计时会偏慢；`reporter` 会在结果里记下「Blender 在渲」。`GPU=1` 用本机 Chrome + Metal。
