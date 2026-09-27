@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>天城地图</title>
+<!-- 设计令牌（E5）：颜色、字号、圆角、间距、动效；和查看器同一线路，最先下载 -->
+<link rel="stylesheet" href="ui/tokens.css">
 <script>
 // 主题（默认跟随系统）与界面语言（中 / EN）：首帧之前定好，避免先闪一下深色或中文。?theme=light|dark|auto、?lang=en 可覆盖
 (function () {
@@ -32,255 +34,317 @@
 <script defer src="events.js"></script>
 <script>document.addEventListener('DOMContentLoaded', () => { if (window.top !== window) parent.postMessage({ type: 'eden-map:boot', pct: .6 }, '*'); });   // 地图库已下载（启动进度 60%）</script>
 <style>
-  /* 每层界面配色取自《天城视觉规范》：上层夜墨琥珀、中层夜紫霓虹（唯一允许发光）、下层井黑磷光绿（等宽字） */
-  body[data-map="tc_upper"], body[data-map="eden_estate"] { --bg: #101418; --panel: rgba(16,20,24,.92); --gold: #d9a441; --muted: #7d8a96; --ink: #cfd8e0; }
-  body[data-map="tc_mid"] { --bg: #120a1f; --panel: rgba(18,10,31,.9); --gold: #ff3d9a; --muted: #a99bc0; --ink: #f3e6ff; }
-  body[data-map="tc_mid"] #crumbs b, body[data-map="tc_mid"] #layers button.on { text-shadow: -1px 0 #3de0ff, 1px 0 #ff3d9a, 0 0 10px rgba(255,61,154,.7); }
-  body[data-map="tc_mid"] #prog i { box-shadow: 0 0 8px #ff3d9a; }
-  body[data-map="tc_low"] { --bg: #0b0b0b; --panel: rgba(11,11,11,.92); --gold: #9fe870; --muted: #5a8a3c; --ink: #d8e8cc; }
-  body[data-map="tc_low"] #crumbs, body[data-map="tc_low"] #layers, body[data-map="tc_low"] #tierState { font-family: ui-monospace, Menlo, monospace; }
-  header, #layers button, #card { transition: background .3s, color .3s, border-color .3s; }
-  /* 档位旁的加载状态：切换清晰度后看得到有没有在加载、加载完了没有 */
-  #tierState { font-size: 12px; color: var(--muted); min-width: 5.5em; white-space: nowrap; }
-  #tierState.busy { color: var(--gold); }
-  #tierState.ok { color: var(--ok); }
-  #tierState.stuck { color: var(--bad); cursor: pointer; text-decoration: underline; }
-  :root { --bg: #14171c; --panel: rgba(20,23,28,.88); --line: rgba(255,255,255,.14); --ink: #eef1f4; --muted: #9aa3ad; --gold: #e6c36a; --inf: #ffb347; }
-  :root { --on-gold: #1a1406; --field: rgba(255,255,255,.06); --hover: rgba(255,255,255,.08); --track: rgba(255,255,255,.08); --src: #c9d1d9; --ok: #7bd88f; --bad: #ff7a7a; }
-  /* 浅色主题：取《天城视觉规范》的浅色变量（纸面 #f6f7f5、墨 #14171a、金 #8f6f2e）；每层保留自己的强调色，换成在浅底上读得清的深一档 */
-  html.light { --bg: #e9ebe8; --panel: rgba(246,247,245,.94); --line: rgba(20,23,26,.16); --ink: #14171a; --muted: #5d666b; --gold: #8f6f2e; --inf: #b06000;
-    --on-gold: #fff; --field: rgba(20,23,26,.05); --hover: rgba(20,23,26,.06); --track: rgba(20,23,26,.1); --src: #3b4247; --ok: #2e8b4a; --bad: #c0392b; }
-  html.light body[data-map="tc_upper"], html.light body[data-map="eden_estate"] { --bg: #efeae0; --panel: rgba(246,243,236,.94); --gold: #8f6f2e; --muted: #6b665c; --ink: #1b1a17; }
-  html.light body[data-map="tc_mid"] { --bg: #f1ecf7; --panel: rgba(247,244,251,.94); --gold: #b3155f; --muted: #6d5a86; --ink: #1d1230; }
-  html.light body[data-map="tc_low"] { --bg: #f4f1e8; --panel: rgba(244,241,232,.95); --gold: #3f7a22; --muted: #5a6b4c; --ink: #1b2414; }
-  html.light body[data-map="tc_mid"] #crumbs b, html.light body[data-map="tc_mid"] #layers button.on { text-shadow: none; }
-  html.light body[data-map="tc_mid"] #prog i { box-shadow: none; }
-  #langSeg button { padding: 6px 9px; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif; }
+  /* E5 统一重构：颜色、字号、圆角、间距、动效全部取 ui/tokens.css 的语义令牌（docs/ui-audit.md 第三部分）；这里只写组件，不写色值。
+     例外（规范允许）：地图标签的深色胶囊（两种主题都深）、事态大类的数据色、花屏提示的青色、世界图国名的描边。 */
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: var(--fs-body); }
+  button { font-family: inherit; }
   #app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; }
-  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
-  header h1 { font-size: 15px; margin: 0 10px 0 0; letter-spacing: 2px; }
-  .seg { flex: none; display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-  .seg button { white-space: nowrap; }
-  .seg button, .btn { background: transparent; color: var(--ink); border: 0; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
-  .seg button + button { border-left: 1px solid var(--line); }
-  .seg button.on { background: var(--gold); color: var(--on-gold); font-weight: 700; }
-  .btn { border: 1px solid var(--line); border-radius: 8px; flex: none; white-space: nowrap; }   /* 不换行、不被挤扁（手机上「◐ 自动」曾被挤成竖排三行） */
-  label.tg { font-size: 13px; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; cursor: pointer; flex: none; white-space: nowrap; }
-  .where { margin-left: auto; display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
-  .where input { background: var(--field); border: 1px solid var(--line); color: var(--ink); border-radius: 6px; padding: 5px 8px; width: 150px; font: inherit; }
+  .ico { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+  /* ---------- 工具栏（桌面 48 / 手机 44，一行，不横向滚动） ---------- */
+  header { display: flex; flex-wrap: nowrap; gap: var(--sp-4); align-items: center; min-height: 48px; box-sizing: border-box; padding: 0 var(--sp-5);
+    background: var(--surface-glass); border-bottom: 1px solid var(--line); position: relative; z-index: 12;
+    transition: background var(--dur-3), color var(--dur-3), border-color var(--dur-3); }
+  header .grow { flex: 1 1 0; min-width: 0; }
+  #crumbs { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-body); white-space: nowrap; min-width: 0; flex: 0 1 auto; overflow: hidden; }
+  #crumbs a { color: var(--accent); cursor: pointer; text-decoration: none; border-radius: var(--r-s); }
+  #crumbs a:hover { text-decoration: underline; }
+  #crumbs a:active { opacity: .6; }
+  #crumbs .sep { color: var(--muted); }
+  #crumbs b { font-weight: 700; overflow: hidden; text-overflow: ellipsis; text-shadow: var(--glow-text); }
+  #crumbs b:focus { outline: none; }
+  /* 按钮：高 32（手机 36），1 px 描边，透明底；悬停 --surface-2 + --line-strong；按下 scale(.97)；选中 / 展开 = 强调色 */
+  .btn { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-3); height: 32px; box-sizing: border-box; padding: 0 var(--sp-5);
+    border: 1px solid var(--line); border-radius: var(--r-m); background: transparent; color: var(--ink); font: 500 var(--fs-control)/1.2 var(--font-ui);
+    white-space: nowrap; cursor: pointer; transition: background var(--dur-1), border-color var(--dur-1), color var(--dur-1), transform var(--dur-1); }
+  .btn:hover { background: var(--surface-2); border-color: var(--line-strong); }
+  .btn:active { transform: scale(.97); }
+  .btn[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+  .btn.ic { width: 32px; padding: 0; }
+  .btn .lbl { display: none; }
+  .btn .chev { width: 12px; height: 12px; transition: transform var(--dur-2); }
+  .btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  /* 分段控件：清晰度、语言共用；选中 = 强调色实底 + --on-accent + 700 + aria-pressed（中层加光晕） */
+  .seg { flex: none; display: inline-flex; gap: var(--sp-1); padding: var(--sp-1); border: 1px solid var(--line); border-radius: var(--r-m); box-sizing: border-box; height: 32px; }
+  .seg button { flex: none; white-space: nowrap; border: 0; border-radius: var(--r-s); background: transparent; color: var(--ink); padding: 0 10px; font: 500 var(--fs-control)/1 var(--font-ui);
+    cursor: pointer; transition: background var(--dur-1), transform var(--dur-1); }
+  .seg button:not(.on):hover { background: var(--surface-2); }
+  .seg button:active { transform: scale(.97); }
+  .seg button.on { background: var(--accent); color: var(--on-accent); font-weight: 700; box-shadow: var(--glow); }
+  #langSeg button { min-width: 36px; }
+  /* 档位旁的加载状态：数字用等宽；✓ 已加载在遮罩消失后才出现，1.5 秒后淡成 --muted */
+  #tierState { font: var(--fs-small)/1.5 var(--font-ui); font-variant-numeric: tabular-nums; color: var(--muted); min-width: 5.5em; white-space: nowrap; transition: color var(--dur-3); }
+  #tierState.busy { color: var(--accent); }
+  #tierState.ok { color: var(--ok); }
+  #tierState.stuck { color: var(--alert); cursor: pointer; text-decoration: underline; }
+  .where { flex: none; display: flex; gap: var(--sp-3); align-items: center; font-size: var(--fs-control); color: var(--muted); }
+  .where input { background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); border-radius: var(--r-m); height: 32px; box-sizing: border-box; padding: 0 var(--sp-4); width: 150px; font: inherit; }
+  body.embed .where { display: none; }
+  @media (max-width: 1180px) { .where { display: none; } }
+
+  /* ---------- 弹层（图层 ▾、设置 ⚙ / 手机「⋯」）：Panel 规格 ---------- */
+  .pop { position: fixed; z-index: 13; top: calc(var(--hdr, 48px) + var(--sp-3)); width: 260px; max-width: calc(100vw - 24px); box-sizing: border-box;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r-l); padding: var(--sp-5) 14px; box-shadow: var(--sh-3);
+    font-size: var(--fs-control); line-height: 1.5; }
+  .pop[hidden], #setPop [hidden] { display: none !important; }
+  #layPop { width: 220px; padding: var(--sp-3) var(--sp-4); }
+  #setPop { right: var(--sp-5); }
+  .pop h3 { margin: 0 0 var(--sp-3); font: 600 var(--fs-micro)/1.4 var(--font-ui); color: var(--muted); letter-spacing: .06em; }
+  html[lang="en"] .pop h3 { letter-spacing: 0; }
+  /* 开关（Toggle）：整行 label 是热区；34 × 20 胶囊 */
+  label.tg, #setPop label { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); min-height: 36px; cursor: pointer; color: var(--ink); font-size: var(--fs-control); }
+  label.tg[hidden] { display: none; }
+  input[type="checkbox"] { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 34px; height: 20px; margin: 0; border-radius: var(--r-pill);
+    background: var(--surface-2); border: 1px solid var(--line-strong); cursor: pointer; transition: background var(--dur-1), border-color var(--dur-1); }
+  input[type="checkbox"]::before { content: ''; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); transition: transform var(--dur-2) var(--ease-out), background var(--dur-1); }
+  input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
+  input[type="checkbox"]:checked::before { transform: translateX(14px); background: var(--on-accent); }
+  #setPop small { display: block; color: var(--muted); font-size: var(--fs-micro); line-height: 1.45; margin: -2px 48px var(--sp-4) 0; }
+  #setPop .more { display: flex; flex-direction: column; gap: var(--sp-5); margin-bottom: var(--sp-5); padding-bottom: var(--sp-5); border-bottom: 1px solid var(--line); }
+  #setPop .more:empty { display: none; }
+  #setPop .more > .seg, #setPop .more > .btn, #setPop .more > #build { align-self: flex-start; }
+  #setPop .more .btn .lbl { display: inline; }
+  #setPop .more .btn.ic { width: auto; padding: 0 var(--sp-5); }
+  #setPop .more #layList { display: flex; flex-direction: column; }
+
+  /* ---------- 地图区 ---------- */
   #stage { position: relative; min-height: 0; }
   #osd { position: absolute; inset: 0; }
-  /* 面包屑：世界 › 天城 · 上层 */
-  #crumbs { display: flex; align-items: center; gap: 6px; font-size: 14px; margin-right: 8px; white-space: nowrap; }
-  #crumbs a { color: var(--gold); cursor: pointer; text-decoration: none; }
-  #crumbs a:hover { text-decoration: underline; }
-  #crumbs .sep { color: var(--muted); }
-  #crumbs b { font-weight: 700; }
-  /* 同组多层切换器（天城上 / 中 / 下层）：左侧竖排，像电梯按钮 */
-  #layers { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 9;   /* 浮在加载遮罩（8）之上：庄园加载失败或很慢时也能切层 */ display: flex; flex-direction: column; gap: 6px; }
-  #layers[hidden], .tg[hidden] { display: none; }
-  #layers button { min-width: 92px; white-space: nowrap; transition: border-color .15s, background .15s, transform .08s; text-align: left; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; line-height: 1.3; }
-  #layers button small { display: block; font-size: 11px; color: var(--muted); }
-  #layers button:not(:disabled):hover { border-color: rgba(230,195,106,.7); }
-  #layers button:not(:disabled):active { transform: scale(.96); }
-  /* 站内跳转链接（进入某层、跨层通道）没有 href，要手动给手指光标和点击反馈 */
-  [data-go] { cursor: pointer; user-select: none; }
-  #card a[data-go], #crumbs a { transition: opacity .1s; }
-  #card a[data-go]:hover, #crumbs a:hover { text-decoration: underline; }
-  #card a[data-go]:active, #crumbs a:active { opacity: .6; }
-  .seg button { transition: background .15s; }
-  .seg button:not(.on):hover { background: var(--hover); }
-  .seg button:active { opacity: .7; }
-  #layers button.on { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold); }
-  /* 层按钮上的标记：红点 = 当前地点在这一层；数字 = 这一层未解除的事态数 */
-  #layers .hd { display: none; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: #ff5a5a; box-shadow: 0 0 6px rgba(255,90,90,.8); vertical-align: 1px; }
-  #layers button.here .hd { display: inline-block; }
-  #layers .evn { display: inline-block; margin-left: 5px; min-width: 15px; height: 15px; padding: 0 4px; box-sizing: border-box; border-radius: 8px; background: #e0182d; color: #fff; font: 700 10px/15px "PingFang SC", sans-serif; font-style: normal; text-align: center; vertical-align: 1px; text-shadow: none; }
-  #layers .evn:empty { display: none; }
-  /* 庄园剖面（kind=estate）：三维页面放在 iframe 里盖住瓦片地图；切换时淡入淡出，不闪 */
-  #estate { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: 5; background: transparent; opacity: 0; transition: opacity .2s; }
-  #estate.on { opacity: 1; }
-  body.estate #tiers, body.estate #tierState, body.estate header .tg, body.estate #evbar, body.estate #glitchNote, body.estate #status { display: none; }
-  /* 切层淡入：旧底图的截图盖在上面，新底图画出第一张瓦片后淡出（≤ 220 ms） */
-  .snap { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; transition: opacity .22s; }
-  .snap.out { opacity: 0; }
+  /* 小地图：--r-m、1 px --line，视口框 1.5 px 强调色（替换 OSD 默认的灰框红框） */
+  #osd .navigator { border: 1px solid var(--line) !important; border-radius: var(--r-m); overflow: hidden; background: var(--bg) !important; box-shadow: var(--sh-2); margin: 0 var(--sp-5) var(--sp-5) 0 !important; }
+  #osd .displayregion { border: 1.5px solid var(--accent) !important; border-radius: 2px; }
+  /* 缩放组（替代 OSD 自带的拟物 + − ⌂）：Panel 规格，纵向 3 个 32 × 32 图标按钮，右下角小地图上方 */
+  #zoom { position: absolute; right: var(--sp-5); bottom: calc(var(--nav-h, 0px) + 20px); z-index: 6; display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2);
+    background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-2); }
+  #zoom button { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: var(--r-m); background: transparent; color: var(--ink); cursor: pointer; position: relative;
+    transition: background var(--dur-1), transform var(--dur-1); }
+  #zoom button:hover { background: var(--surface-2); color: var(--accent); }
+  #zoom button:active { transform: scale(.97); }
+  body.estate #zoom, #zoom[hidden] { display: none; }
+
+  /* ---------- 层切换器（纵向分段）：一个 Panel 容器；选中 = 弱底 + 左 3 px 强调线 + 强调色字 + aria-current ---------- */
+  #layers { position: absolute; left: var(--sp-5); top: 50%; transform: translateY(-50%); z-index: 9;   /* 浮在加载遮罩（8）之上：庄园加载失败或很慢时也能切层 */
+    display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-2);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  #layers[hidden] { display: none; }
+  #layers button { position: relative; min-width: 96px; min-height: 36px; box-sizing: border-box; white-space: nowrap; text-align: left; padding: var(--sp-3) var(--sp-5) var(--sp-3) 10px;
+    border: 0; border-radius: var(--r-m); background: transparent; color: var(--ink); font: 500 var(--fs-control)/1.3 var(--font-ui); cursor: pointer;
+    transition: background var(--dur-1), color var(--dur-1), transform var(--dur-1); }
+  #layers button small { display: block; font: 400 var(--fs-micro)/1.4 var(--font-ui); color: var(--muted); }
+  #layers button:not(:disabled):hover { background: var(--surface-2); }
+  #layers button:not(:disabled):active { transform: scale(.97); }
+  #layers button.on { background: var(--accent-weak); box-shadow: inset 3px 0 0 var(--accent); color: var(--accent); font-weight: 700; text-shadow: var(--glow-text); }
   #layers button:disabled { opacity: .45; cursor: default; }
-  /* 加载进度：顶部细条 + 首屏居中提示 */
-  #prog { position: absolute; left: 0; right: 0; top: 0; height: 4px; z-index: 7; background: var(--track); }
+  /* 层按钮上的标记：6 px 红点 = 当前地点在这一层；胶囊角标 = 这一层未解除的事态数（全站唯一的红） */
+  #layers .hd { display: none; width: 6px; height: 6px; margin-left: var(--sp-3); border-radius: 50%; background: var(--alert); vertical-align: 2px; }
+  #layers button.here .hd { display: inline-block; }
+  #layers .evn { display: inline-block; margin-left: var(--sp-3); min-width: 16px; height: 16px; padding: 0 5px; box-sizing: border-box; border-radius: var(--r-pill); background: var(--alert); color: var(--on-alert);
+    font: 700 var(--fs-micro)/16px var(--font-mono); font-style: normal; text-align: center; vertical-align: 1px; text-shadow: none; }
+  #layers .evn:empty { display: none; }
+
+  /* ---------- 庄园剖面（kind=estate）：三维页面放在 iframe 里盖住瓦片地图 ---------- */
+  #estate { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: 5; background: transparent; opacity: 0; transition: opacity var(--dur-2); }
+  #estate.on { opacity: 1; }
+  body.estate #tiers, body.estate #tierState, body.estate #layWrap, body.estate #layList, body.estate #evbar, body.estate #glitchNote, body.estate #build { display: none !important; }
+  .snap { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; transition: opacity var(--dur-2); }
+  .snap.out { opacity: 0; }
+
+  /* ---------- 加载进度：顶部 3 px 细条 + 实底提示条 ---------- */
+  #prog { position: absolute; left: 0; right: 0; top: 0; height: 3px; z-index: 7; background: var(--line); }
   #prog[hidden] { display: none; }
-  #prog i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .2s; }
-  #loading { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: var(--bg); color: var(--muted); font-size: 14px; transition: opacity .3s; }
+  #prog i { display: block; height: 100%; width: 0; background: var(--accent); box-shadow: var(--glow); transition: width var(--dur-2); }
+  #loading { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: var(--bg); color: var(--ink); transition: opacity var(--dur-3); }
   #loading.done { opacity: 0; pointer-events: none; }
-  /* 第一张图块画出来后：遮罩变透明、进度变成浮动卡片，直到 100% 才淡出（不论快慢都看得到进度） */
   #loading.over { background: transparent; pointer-events: none; }
-  #loading.over span { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; color: var(--ink); text-shadow: none; }
-  /* 世界图首屏：瓦片还没到时先铺一张 1200px 缩略图（压暗 + 模糊），不再是一片黑 */
-  #loading.thumb { background: linear-gradient(rgba(10,12,16,.55), rgba(10,12,16,.55)), url(art/world_1k.jpg) center / cover; color: #eef1f4; text-shadow: 0 1px 4px #000; }
+  #loading > div { text-align: center; }
+  #loading span { display: inline-block; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); padding: 10px var(--sp-6); box-shadow: var(--sh-2);
+    color: var(--ink); font-size: var(--fs-control); font-variant-numeric: tabular-nums; }
+  /* 世界图首屏：瓦片还没到时先铺一张 1200px 缩略图（压暗 + 模糊） */
+  #loading.thumb { background: linear-gradient(rgba(10,12,16,.55), rgba(10,12,16,.55)), url(art/world_1k.jpg) center / cover; }
+  #loading .acts { display: flex; gap: var(--sp-4); justify-content: center; margin-top: 10px; }
+  #loading .acts[hidden] { display: none; }
+  #loading .acts button { height: 40px; }
+  #loading .acts button:first-child { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
+  /* 只在加载中接收点击；.done 后整块穿透，否则正中会留一块吃掉滚轮 / 拖动的死区（E4b R01） */
+  #loading.over:not(.done) .acts, #loading.over:not(.done) span { pointer-events: auto; }
+
+  /* ---------- 地图叠加物 ---------- */
   .barriers :is(ellipse, path) { fill: rgba(120,220,255,.06); stroke: rgba(140,230,255,.75); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
-  .barriers .eden { stroke: var(--gold); stroke-width: 2; fill: rgba(230,195,106,.08); }
+  .barriers .eden { stroke: var(--gold); stroke-width: 2; fill: color-mix(in srgb, var(--gold) 8%, transparent); }
   .barriers.proj :is(ellipse, path) { fill: rgba(0,0,0,.12); stroke: rgba(190,205,230,.5); stroke-width: 1; stroke-dasharray: 5 4; }
-  .barriers.proj .eden { stroke: rgba(230,195,106,.7); fill: rgba(0,0,0,.12); }
-  /* 上层航线叠加层（data 的 routes）：航线 = 细金色虚线，骑士团巡逻环 = 淡蓝点划线；non-scaling-stroke 让线宽与虚线节奏不随缩放变；底下一道暗色描边，手机上也看得清 */
+  .barriers.proj .eden { stroke: color-mix(in srgb, var(--gold) 70%, transparent); fill: rgba(0,0,0,.12); }
+  /* 上层航线（默认关）：航线 = 细金色虚线，骑士团巡逻环 = 淡蓝点划线 */
   .routes { pointer-events: none; overflow: visible; }
   .routes path { fill: none; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
   .routes .halo { stroke: rgba(8,10,14,.28); stroke-width: 2.8; }
-  .routes .lane { stroke: #e6c36a; stroke-width: 1.4; stroke-dasharray: 7 5; opacity: .9; }
+  .routes .lane { stroke: var(--gold); stroke-width: 1.4; stroke-dasharray: 7 5; opacity: .9; }
   .routes .patrol, .routes .patrol_city { stroke: #a8d8ff; stroke-width: 1.4; stroke-dasharray: 10 4 2 4; opacity: .85; }
   .routes .patrol_city { opacity: .6; }
   body.noroutes .routes { visibility: hidden; }   /* OSD 给叠加层写内联 display，所以用 visibility */
-  /* 标记 */
-  .mk { position: relative; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none; }
-  /* OSD 会给叠加层写内联 display:block，flex 居中失效，所以针脚自己居中 */
-  .mk .pin { margin: 0 auto; width: 14px; height: 14px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #4dabf7; border: 2px solid #fff; box-shadow: 0 1px 4px #000a; }
-  .mk .lab { width: max-content; margin: 0 auto 4px; padding: 2px 8px; border-radius: 10px; background: rgba(12,14,18,.78); border: 1px solid rgba(255,255,255,.25); font-size: 12px; white-space: nowrap; color: #fff; }
-  .mk.capital .pin { background: var(--gold); width: 16px; height: 16px; }
-  .mk.capital .lab { font-size: 14px; font-weight: 800; border-color: var(--gold); }
-  .mk.inf .pin { background: var(--inf); }
-  .mk.inf .lab { color: #ffd9a8; }
-  .mk.drill .lab { background: rgba(230,195,106,.92); color: #1a1406; font-weight: 800; }
-  .mk.here .pin { background: #ff5a5a; }
-  .mk.here::after { content: ''; position: absolute; bottom: -6px; left: 50%; width: 22px; height: 22px; margin-left: -13px; border-radius: 50%; border: 2px solid #ff5a5a; animation: pulse 1.4s infinite; will-change: transform, opacity; }
-  @media (prefers-reduced-motion: reduce) { .mk.here::after { animation: none; transform: scale(1.2); opacity: .6; } }
-  .mk.active .lab { outline: 2px solid var(--gold); }
-  @keyframes pulse { 0% { transform: scale(.4); opacity: .9; } 100% { transform: scale(1.8); opacity: 0; } }
-  .realm { transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; text-align: center; white-space: nowrap; color: #fff;
-    text-shadow: 0 0 6px #000, 0 0 3px #000, 0 2px 8px #000c; }
-  /* 字号随地图实际显示比例缩放（--rs = 屏幕像素 / 地图单位 × 1600 / 1100） */
-  .realm b, .realm span { -webkit-text-stroke: 3px rgba(0,0,0,.72); paint-order: stroke fill; }   /* 描边：雪地、亮海面上也读得清（E4 N31） */
-  .realm b { display: block; font-size: clamp(13px, calc(30px * var(--rs, 1)), 40px); letter-spacing: calc(12px * min(var(--rs, 1), 1)); font-weight: 900; }
-  .realm span { font-size: clamp(10px, calc(13px * var(--rs, 1)), 15px); letter-spacing: 2px; opacity: .9; }
-  body.tiny .realm span, body.tiny .minor { display: none; }
-  html[lang="en"] .realm b { letter-spacing: calc(3px * min(var(--rs, 1), 1)); }   /* 拉丁字母不能用中文的大字距 */
-  html[lang="en"] .realm span { letter-spacing: .5px; }
-  .realm.oren b { font-family: "PingFang SC", sans-serif; color: #ffe2a8; }
-  .realm.fed b { font-family: "Songti SC", "STSong", serif; color: #cfe3ff; }
-  .realm.xl b { font-family: "Kaiti SC", "STKaiti", serif; color: #e6d6ff; }
-  .minor { transform: translate(-50%, -50%); font-size: 12px; color: #fff; text-shadow: 0 0 4px #000, 0 0 2px #000; -webkit-text-stroke: 2.5px rgba(0,0,0,.7); paint-order: stroke fill; white-space: nowrap; }
-  body.nolabels .realm, body.nolabels .minor { display: none; }
-  body.nomarkers .mk { display: none; }
-  body.embed .where { display: none; }
-  /* 缩远：不再整体隐藏地标名，而是按优先级避让（labelDeclutter，只隐藏和更重要的标签重叠的那些）；副标题收起 */
-  .mk.lhide .lab { visibility: hidden; }
-  body.far .mk:not(.active) .lab small { display: none; }
-  /* 信息卡 */
-  #card { position: fixed; right: 14px; top: calc(var(--hdr, 50px) + 14px); width: 320px; max-width: calc(100vw - 28px); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.65; z-index: 10; }
-  #card[hidden] { display: none; }
-  /* 设置（⚙）：浮在工具栏下方的小面板；放在 header 外面，手机上工具栏横向滚动时不被裁掉 */
-  #setPop { position: fixed; right: 12px; top: calc(var(--hdr, 50px) + 6px); z-index: 11; width: 260px; max-width: calc(100vw - 32px); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.5; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
-  #setPop[hidden] { display: none; }
-  #setPop label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
-  #setPop input { margin: 3px 0 0; flex: none; width: 16px; height: 16px; }
-  #setPop small { display: block; color: var(--muted); font-size: 11.5px; margin: 2px 0 0 24px; }
-  #setBtn { padding: 6px 10px; }
-  #setBtn[aria-expanded="true"] { border-color: var(--gold); color: var(--gold); }
-  #card .tag { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 4px; background: #2f6f4f; color: #fff; }
-  #card .tag.inf { background: #b06000; }
-  #card h2 { margin: 6px 0 4px; font-size: 17px; }
-  #card .src { color: var(--src); white-space: pre-line; }
-  #card .src[data-note]::before { content: attr(data-note); display: block; font-size: 11px; color: var(--muted); }
-  #card .x { position: absolute; right: 8px; top: 6px; background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; min-width: 32px; min-height: 32px; }
-  #card a { color: var(--gold); }
-  /* 窄屏：工具栏压缩成一行可横向滑动，信息卡改为底部抽屉 */
-  @media (max-width: 640px) {
-    header { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 6px 8px; scrollbar-width: none; }
-    header::-webkit-scrollbar { display: none; }
-    .where { display: none; }
-    #crumbs { font-size: 13px; flex: none; }
-    /* 手机：一列紧凑小按钮，只显示层名 */
-    #layers { left: 6px; top: auto; bottom: 30px; transform: none; gap: 8px; }
-    #layers button { min-width: 0; padding: 4px 9px; font-size: 12px; min-height: 36px; }
-    #layers button small { display: none; }
-    /* 手机进庄园（ui-audit R02 / R11）：层按钮改成底部一行，庄园 iframe 让出这一条，庄园的楼层条、导览条、房间卡都不再被盖住 */
-    body.estate #layers { top: auto; bottom: calc(5px + env(safe-area-inset-bottom)); flex-direction: row; gap: 6px; touch-action: none; }
-    body.estate #layers button { flex: none; }
-    body.estate #estate { bottom: auto; height: calc(100% - 46px - env(safe-area-inset-bottom)); }
-    .seg button { padding: 7px 10px; }
-    label.tg { flex: none; font-size: 12px; }
-    #tierState { min-width: 0; }
-    label.tg input { width: 16px; height: 16px; margin: 0; }
-    #card { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-width: none; max-height: 45%; overflow-y: auto; border-radius: 12px 12px 0 0; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
-    #card .x { font-size: 24px; padding: 4px 8px; }
-    .mk .lab { font-size: 11px; }
-    #status { display: none; }
-  }
-  #credit { position: absolute; right: 8px; top: 6px; z-index: 4; font-size: 10px; color: rgba(255,255,255,.55); text-shadow: 0 0 3px #000; pointer-events: none; }
-  #credit:empty { display: none; }
-  /* 手机上署名只占一行、从左上角 + − ⌂ 右侧开始，不再盖住缩放按钮（E4b R04；用户实测修正） */
-  @media (max-width: 640px) { #credit { left: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; color: rgba(255,255,255,.8); text-shadow: 0 0 3px #000, 0 0 2px #000; } }
-  /* 左下角：版本号在最下，状态行在它上方（原来两者叠在一起）；都加面板底，地图亮处也读得清（E4 N28） */
-  #build { position: absolute; left: 6px; bottom: 6px; z-index: 4; font: 11px/1.4 ui-monospace, Menlo, monospace; color: var(--muted); background: var(--panel); border: 0; border-radius: 4px; padding: 1px 5px; cursor: pointer; }
-  #build:hover { color: var(--ink); }
-  #build:active { transform: translateY(1px); }
-  #build:empty { display: none; }
-  #status { position: fixed; left: 6px; bottom: 30px; font-size: 12px; color: var(--ink); background: var(--panel); border-radius: 4px; padding: 1px 6px; z-index: 5; }
-  #status:empty { display: none; }
-  body.estate #build { display: none; }
-  /* ---------- E4「现在修」：焦点、读屏、触控、菜单、庄园失败 ---------- */
-  :root { --focus: #63b4be; } html.light { --focus: #2d6c75; }
-  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  /* 标记：针脚默认强调色，当前地点 --alert 加脉冲；标签 = 深色胶囊（--map-label-*，两种主题都深） */
+  .mk { position: relative; z-index: 1; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none; }
+  .mk .pin { margin: 0 auto; width: 14px; height: 14px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); border: 2px solid var(--map-label-ink); box-shadow: var(--sh-1), 0 1px 4px #000a; }
+  .mk .lab { width: max-content; margin: 0 auto var(--sp-2); padding: 2px var(--sp-4); border-radius: var(--r-pill); background: var(--map-label-bg); border: 1px solid var(--map-label-line);
+    font: 500 var(--fs-small)/1.5 var(--font-ui); white-space: nowrap; color: var(--map-label-ink); box-shadow: var(--sh-1); }
+  .mk .lab small { font-size: max(var(--fs-micro), .85em); opacity: .82; }
+  .mk.capital .pin { width: 16px; height: 16px; }
+  .mk.capital .lab { font-size: var(--fs-body); font-weight: 800; border-color: var(--gold); }
+  .mk.inf .pin { background: var(--map-label-bg); border-color: var(--accent); }   /* 传闻（推断）：空心针 */
+  .mk.drill .lab { background: var(--gold); color: #1a1406; border-color: var(--gold); font-weight: 800; }
+  .mk.here .pin { background: var(--alert); }
+  .mk.here::after { content: ''; position: absolute; bottom: -6px; left: 50%; width: 22px; height: 22px; margin-left: -13px; border-radius: 50%; border: 2px solid var(--alert); animation: pulse 1.4s infinite; will-change: transform, opacity; }
+  @media (prefers-reduced-motion: reduce) { .mk.here::after { animation: none !important; transform: scale(1.2); opacity: .6; } }
+  .mk.active .lab { outline: 2px solid var(--accent); outline-offset: 1px; }
   .mk:focus-visible, .ev:focus-visible { outline: none; }
   .mk:focus-visible .lab { outline: 2px solid var(--focus); outline-offset: 2px; }
-  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  @keyframes pulse { 0% { transform: scale(.4); opacity: .9; } 100% { transform: scale(1.8); opacity: 0; } }
+  .mk.lhide .lab { visibility: hidden; }
+  body.far .mk:not(.active) .lab small { display: none; }
+  body.nomarkers .mk { display: none; }
+  /* 世界图国名：字号随地图显示比例缩放；深色描边，雪地、亮海面上也读得清（E4 N31） */
+  .realm { transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; text-align: center; white-space: nowrap; color: #fff; text-shadow: 0 0 6px #000, 0 0 3px #000, 0 2px 8px #000c; }
+  .realm b, .realm span { -webkit-text-stroke: 3px rgba(0,0,0,.72); paint-order: stroke fill; }
+  .realm b { display: block; font-size: clamp(13px, calc(30px * var(--rs, 1)), 40px); letter-spacing: calc(12px * min(var(--rs, 1), 1)); font-weight: 900; }
+  .realm span { font-size: clamp(var(--fs-micro), calc(13px * var(--rs, 1)), 15px); letter-spacing: 2px; }
+  body.tiny .realm span, body.tiny .minor { display: none; }
+  html[lang="en"] .realm b { letter-spacing: calc(3px * min(var(--rs, 1), 1)); }
+  html[lang="en"] .realm span { letter-spacing: .5px; }
+  .realm.oren b { color: #ffe2a8; }
+  .realm.fed b { font-family: var(--font-serif); color: #cfe3ff; }
+  .realm.xl b { font-family: "Kaiti SC", "STKaiti", serif; color: #e6d6ff; }
+  .realm.lhide, .minor.lhide { visibility: hidden; }
+  .minor { transform: translate(-50%, -50%); font-size: var(--fs-small); color: #fff; text-shadow: 0 0 4px #000, 0 0 2px #000; -webkit-text-stroke: 2.5px rgba(0,0,0,.7); paint-order: stroke fill; white-space: nowrap; }
+  body.nolabels .realm, body.nolabels .minor { display: none; }
+
+  /* ---------- 卡片（地点卡 / 事态卡）：Panel 规格，宽 320；手机 = 底部实底抽屉 ---------- */
+  #card { position: fixed; right: 14px; top: calc(var(--hdr, 48px) + var(--sp-5)); width: 320px; max-width: calc(100vw - 28px); box-sizing: border-box; z-index: 10;
+    background: var(--surface-glass); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-2);
+    padding: var(--sp-5) 14px 14px; font-size: var(--fs-body); line-height: 1.6; color: var(--ink); max-height: calc(100% - var(--hdr, 48px) - 40px); overflow-y: auto; }
+  #card[hidden] { display: none; }
+  #card .grab { display: none; }
+  #card .top { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); margin: -2px -6px 0 0; }
+  #card .tag { display: inline-block; font: 600 var(--fs-micro)/1.4 var(--font-ui); padding: 2px var(--sp-4); border-radius: var(--r-s); background: var(--accent-weak); color: var(--accent); letter-spacing: .04em; }
+  html[lang="en"] #card .tag { letter-spacing: 0; }
+  #card .tag.data { color: #111; font-weight: 700; }
+  #card .x { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; border: 0; border-radius: var(--r-m); background: transparent; color: var(--muted); cursor: pointer; position: relative; }
+  #card .x:hover { background: var(--surface-2); color: var(--ink); }
+  #card h2 { margin: var(--sp-4) 0 2px; font: 700 var(--fs-title)/1.35 var(--font-ui); color: var(--ink); }
   #card h2:focus { outline: none; }
-  #card h2:focus-visible { outline: 2px solid var(--focus); }
-  [data-go][role="button"] { cursor: pointer; }
-  /* 庄园加载失败 / 太慢：出路按钮（重试、看平面图） */
-  #loading .acts { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
-  #loading .acts[hidden] { display: none; }
-  #loading .acts button { font: inherit; font-size: 13px; padding: 8px 14px; min-height: 40px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
-  #loading .acts button:hover { border-color: var(--gold); }
-  /* 只在加载中接收点击；.done 后整块穿透，否则正中会留一块吃掉滚轮 / 拖动的死区（E4b R01） */
-  #loading.over:not(.done) .acts, #loading.over:not(.done) span { pointer-events: auto; }
-  #loading > div { text-align: center; }
-  /* 「⋯」菜单（窄屏）：工具栏放不下的档位、开关、语言、主题、版本号都搬进设置弹层 */
-  #setPop .more { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-  #setPop .more:empty { display: none; }
-  #setPop [hidden] { display: none !important; }   /* 搬进菜单的开关里，本图用不到的（如世界图没有「显示下方城市」）照样隐藏 */
-  input[type="checkbox"] { accent-color: var(--gold); }
-  #setPop .more > * { align-self: flex-start; }
-  #setPop .more #build { position: static; }
-  #setPop .row { margin-top: 10px; }
-  /* 触屏与窄屏：触控目标 ≥ 44 px，用透明扩展热区，尽量不改视觉（E4 N25） */
+  #card h2:focus-visible { outline: 2px solid var(--focus); border-radius: var(--r-s); }
+  #card .sub { font-size: var(--fs-small); color: var(--muted); margin-bottom: var(--sp-4); }
+  #card .sub:empty { display: none; }
+  #card .src { color: var(--ink-2); white-space: pre-line; margin-top: var(--sp-4); }
+  #card .src[data-note]::before { content: attr(data-note); display: block; font-size: var(--fs-micro); color: var(--muted); }
+  #card .src:empty { display: none; }
+  /* 字段区：两列网格 5.5em 1fr（事态卡） */
+  #card dl.fields { display: grid; grid-template-columns: 5.5em 1fr; gap: var(--sp-2) var(--sp-4); margin: var(--sp-4) 0 0; white-space: normal; font-size: var(--fs-small); line-height: 1.55; }
+  html[lang="en"] #card dl.fields { grid-template-columns: 6.5em 1fr; }
+  #card dl.fields dt { color: var(--muted); }
+  #card dl.fields dd { margin: 0; color: var(--ink); }
+  #card dl.fields dd .bars { color: var(--alert); letter-spacing: 1px; }
+  /* 链接行：每条一个 ≥ 40 高的行按钮（触屏 44），强调色字 + SVG 箭头 */
+  #card .extra:empty { display: none; }
+  #card .extra { margin-top: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-2); }
+  #card .extra p { margin: 0; display: contents; }
+  #card .extra [data-go], #card .extra .planned { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); min-height: 40px; box-sizing: border-box; padding: 0 var(--sp-5);
+    border-radius: var(--r-m); border: 1px solid var(--line); background: var(--surface-2); color: var(--accent); font-weight: 600; text-decoration: none; cursor: pointer; user-select: none;
+    transition: background var(--dur-1), border-color var(--dur-1), transform var(--dur-1); }
+  #card .extra [data-go]::after { content: ''; width: 16px; height: 16px; flex: none; background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8h10M9 4l4 4-4 4'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8h10M9 4l4 4-4 4'/%3E%3C/svg%3E") center / contain no-repeat; }
+  #card .extra [data-go]:hover { border-color: var(--line-strong); background: var(--accent-weak); }
+  #card .extra [data-go]:active { transform: scale(.97); }
+  #card .extra .planned { color: var(--muted); cursor: default; font-weight: 400; }
+  [data-go] { cursor: pointer; user-select: none; }
+
+  /* ---------- 页脚：版本号（左下，--fs-micro，磨砂底）；署名在右上 ---------- */
+  /* 页脚：版本号 + 署名，一条，左下；署名单行省略，全文在 title（E5 3.2「版权、版本号、状态合成一条页脚」） */
+  #foot { position: absolute; left: var(--sp-4); bottom: var(--sp-4); z-index: 4; display: flex; gap: var(--sp-4); align-items: center; max-width: calc(50% - 260px); pointer-events: none; }
+  #foot > * { pointer-events: auto; }
+  #build { font: 500 var(--fs-micro)/1.4 var(--font-mono); color: var(--muted); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-s); padding: 1px var(--sp-3); cursor: pointer; }
+  #build:hover { color: var(--ink); }
+  #build:active { transform: scale(.97); }
+  #build:empty { display: none; }
+  #status { display: none; }
+  #credit { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: var(--fs-micro)/1.4 var(--font-ui); color: var(--muted); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-s); padding: 1px var(--sp-3); }
+  #credit:empty { display: none; }
+
+  /* ---------- 窄屏（≤ 640）：顶栏一行只留面包屑、状态、「⋯」；卡片与「⋯」菜单是底部抽屉 ---------- */
+  @media (max-width: 640px) {
+    header { min-height: 44px; gap: var(--sp-3); padding: 0 var(--sp-4); }
+    #crumbs { font-size: var(--fs-control); }
+    #tierState { min-width: 0; }
+    #layWrap { display: none !important; }
+    .btn { height: 36px; }
+    .btn.ic { width: 36px; }
+    .seg { height: 40px; }
+    #layers { left: var(--sp-4); top: auto; bottom: calc(var(--sp-5) + env(safe-area-inset-bottom)); transform: none; gap: var(--sp-2); }
+    #layers button { min-width: 0; min-height: 40px; padding: var(--sp-2) 10px; font-size: var(--fs-small); }
+    #layers button small { display: none; }
+    /* 手机进庄园（ui-audit R02 / R11）：层按钮改成底部一行，庄园 iframe 让出这一条 */
+    body.estate #layers { top: auto; bottom: calc(3px + env(safe-area-inset-bottom)); flex-direction: row; gap: var(--sp-2); padding: 2px; touch-action: none; }
+    body.estate #layers button { flex: none; min-height: 36px; }
+    body.estate #estate { bottom: auto; height: calc(100% - 46px - env(safe-area-inset-bottom)); }
+    /* 缩放组放左上角（原 OSD 按钮的位置），横排；署名从 150 px 起，不压住它（E4b R04） */
+    #zoom { right: auto; left: var(--sp-4); top: var(--sp-4); bottom: auto; flex-direction: row; }
+    #zoom button { width: 36px; height: 36px; }
+    #foot { left: 150px; right: var(--sp-4); top: var(--sp-3); bottom: auto; max-width: none; justify-content: flex-end; }
+    #credit { text-align: right; }
+    #card { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-width: none; max-height: 45%; border-radius: var(--r-l) var(--r-l) 0 0; border-bottom: 0;
+      background: var(--surface); box-shadow: var(--sh-3); -webkit-backdrop-filter: none; backdrop-filter: none;
+      padding: var(--sp-2) var(--sp-6) calc(14px + env(safe-area-inset-bottom)); }
+    #card .grab { display: block; width: 36px; height: 4px; margin: 2px auto var(--sp-3); border-radius: var(--r-pill); background: var(--line-strong); }
+    #setPop { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-width: none; max-height: 70%; overflow-y: auto; border-radius: var(--r-l) var(--r-l) 0 0; border-bottom: 0;
+      padding: var(--sp-5) var(--sp-6) calc(var(--sp-6) + env(safe-area-inset-bottom)); box-shadow: var(--sh-3), 0 0 0 100vmax rgba(0,0,0,.35); }
+    #setPop::before { content: ''; display: block; width: 36px; height: 4px; margin: -4px auto var(--sp-5); border-radius: var(--r-pill); background: var(--line-strong); }
+    .mk .lab { font-size: var(--fs-micro); }
+  }
+  /* ---------- 触屏：触控目标 ≥ 44 px，用透明扩展热区，相邻热区不重叠（E4 N25） ---------- */
   @media (pointer: coarse), (max-width: 640px) {
-    #layers button { position: relative; }
-    #layers button::before { content: ''; position: absolute; inset: -4px -4px; }
-    label.tg { min-height: 44px; padding: 0 4px; }
-    #setPop label { min-height: 44px; align-items: center; }
-    #setPop input { margin: 0; }
-    #setPop small { margin-top: -8px; }
-    #card .x { min-width: 44px; min-height: 44px; right: 2px; top: 2px; }
-    #card a[data-go] { display: inline-flex; align-items: center; min-height: 44px; }
+    #layers button::before { content: ''; position: absolute; inset: -2px 0; }
+    label.tg, #setPop label { min-height: 44px; }
+    #card .x { width: 44px; height: 44px; margin: -8px -8px -8px 0; }
+    #card .extra [data-go], #card .extra .planned { min-height: 44px; }
     #crumbs a { position: relative; }
-    #crumbs a::before { content: ''; position: absolute; inset: -13px -8px; }
-    .seg button, .btn { min-height: 40px; }
+    #crumbs a::before { content: ''; position: absolute; inset: -13px -6px; }
+    .btn, .seg { min-height: 40px; }
+    .btn::before, #zoom button::before { content: ''; position: absolute; inset: -4px -2px; }
+    .btn { position: relative; }
     #langSeg button { min-width: 44px; }
+    #build { min-height: 32px; }
   }
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <nav id="crumbs"></nav>
-    <div class="seg" id="tiers"></div><span id="tierState" aria-live="polite"></span>
-    <label class="tg" id="tgOverlay"><input type="checkbox" id="tgBorders" checked><span>国界</span></label>
-    <label class="tg" id="tgAlt" hidden data-i18n-title="alt_title" title="高级：换成带下方城市的底图（图更大）"><input type="checkbox" id="tgAltBox"><span>显示下方城市</span></label>
-    <label class="tg" id="tgRoutes" hidden data-i18n-title="routes_title" title="上层航线（金色虚线）与银冠堡巡逻环（淡蓝点划线）"><input type="checkbox" id="tgRoutesBox"><span data-i18n="routes">航线</span></label>
-    <label class="tg"><input type="checkbox" id="tgLabels" checked><span data-i18n="labels">地名</span></label>
-    <label class="tg"><input type="checkbox" id="tgMarkers" checked><span data-i18n="markers">标记</span></label>
-    <div class="seg" id="langSeg" data-i18n-title="lang_title" title="界面语言"><button type="button" data-lang="zh">中</button><button type="button" data-lang="en">EN</button></div>
-    <button type="button" class="btn" id="themeBtn" data-i18n-title="theme_title" title="界面主题"></button>
-    <button type="button" class="btn" id="setBtn" data-i18n-title="settings_title" title="设置" aria-expanded="false" aria-controls="setPop">⚙</button>
+    <nav id="crumbs" data-i18n-aria="crumbs_aria" aria-label="位置"></nav>
+    <div class="seg" id="tiers" role="group" data-i18n-aria="tier_group" aria-label="清晰度"></div><span id="tierState" aria-live="polite"></span>
+    <span class="grow"></span>
+    <div id="layWrap"><button type="button" class="btn" id="layBtn" aria-expanded="false" aria-controls="layPop"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2L1.8 5.3 8 8.6l6.2-3.3z"/><path d="M1.8 8.4L8 11.7l6.2-3.3"/></svg><span data-i18n="layers_menu">图层</span><svg class="ico chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></button></div>
+    <div class="seg" id="langSeg" role="group" data-i18n-aria="lang_title" data-i18n-title="lang_title" title="界面语言"><button type="button" data-lang="zh">中</button><button type="button" data-lang="en">EN</button></div>
+    <button type="button" class="btn ic" id="themeBtn" data-i18n-title="theme_title" title="界面主题"></button>
+    <button type="button" class="btn ic" id="setBtn" data-i18n-title="settings_title" title="设置" aria-expanded="false" aria-controls="setPop"></button>
     <div class="where"><span data-i18n="here">当前地点</span> <input id="here" data-i18n-ph="here_ph" placeholder="模拟 MVU：世界.当前地点" value="旷野高地"></div>
   </header>
-  <div id="stage"><div id="osd"></div><div id="credit"></div><button id="build" data-i18n-title="build_title" title="版本编码，点击复制诊断信息"></button><nav id="layers" hidden></nav><div id="prog" hidden><i></i></div><div id="loading"><div><span data-i18n="loading">加载中…</span><div class="acts" hidden><button type="button" id="estRetry" data-i18n="estate.retry">重试</button><button type="button" id="estPlan" data-i18n="estate.plan">看平面图</button></div></div></div></div>
+  <div id="stage" role="main" data-i18n-aria="page_title" aria-label="天城地图"><div id="osd"></div><div id="foot"><button type="button" id="build" data-i18n-title="build_title" title="版本编码，点击复制诊断信息"></button><div id="credit"></div></div><nav id="layers" hidden data-i18n-aria="layers_aria" aria-label="楼层"></nav>
+    <div id="zoom" role="group" data-i18n-aria="zoom_group" aria-label="缩放"><button type="button" id="zIn" data-i18n-aria="zoom_in" aria-label="放大" data-i18n-title="zoom_in" title="放大"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button><button type="button" id="zOut" data-i18n-aria="zoom_out" aria-label="缩小" data-i18n-title="zoom_out" title="缩小"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10"/></svg></button><button type="button" id="zHome" data-i18n-aria="zoom_home" aria-label="复位" data-i18n-title="zoom_home" title="复位视野"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5L8 3l5.5 4.5M4 6.5V13h8V6.5"/></svg></button></div>
+    <div id="prog" hidden><i></i></div><div id="loading"><div><span data-i18n="loading">加载中…</span><div class="acts" hidden><button type="button" class="btn" id="estRetry" data-i18n="estate.retry">重试</button><button type="button" class="btn" id="estPlan" data-i18n="estate.plan">看平面图</button></div></div></div></div>
   <script>if (window.__worldFirst) document.getElementById('loading').classList.add('thumb');</script>
 </div>
-<div id="setPop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置"><div class="more"></div><label><input type="checkbox" id="optAutoHere" checked><span data-i18n="auto_here">打开地图时自动跳到当前地点</span></label><small data-i18n="auto_here_hint">庄园房间直达对应楼层；地标、层、世界地名各自落到对应的图</small>
-  <label class="row"><input type="checkbox" id="optNoFx"><span data-i18n="no_fx">关闭花屏特效</span></label><small data-i18n="no_fx_hint">网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字</small></div>
-<div id="card" hidden role="dialog" aria-labelledby="cardTitle"><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭">×</button><span class="tag"></span><h2 id="cardTitle" tabindex="-1"></h2><div class="src"></div><div class="extra"></div></div>
+<div id="layPop" class="pop" hidden role="dialog" data-i18n-aria="layers_menu" aria-label="图层"><div id="layList">
+  <label class="tg" id="tgOverlay"><span>国界</span><input type="checkbox" role="switch" id="tgBorders" checked></label>
+  <label class="tg" id="tgAlt" hidden data-i18n-title="alt_title" title="高级：换成带下方城市的底图（图更大）"><span>显示下方城市</span><input type="checkbox" role="switch" id="tgAltBox"></label>
+  <label class="tg" id="tgRoutes" hidden data-i18n-title="routes_title" title="上层航线（金色虚线）与银冠堡巡逻环（淡蓝点划线）"><span data-i18n="routes">航线</span><input type="checkbox" role="switch" id="tgRoutesBox"></label>
+  <label class="tg"><span data-i18n="labels">地名</span><input type="checkbox" role="switch" id="tgLabels" checked></label>
+  <label class="tg"><span data-i18n="markers">标记</span><input type="checkbox" role="switch" id="tgMarkers" checked></label>
+</div></div>
+<div id="setPop" class="pop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置"><div class="more"></div><label><span data-i18n="auto_here">打开地图时自动跳到当前地点</span><input type="checkbox" role="switch" id="optAutoHere" checked></label><small data-i18n="auto_here_hint">庄园房间直达对应楼层；地标、层、世界地名各自落到对应的图</small>
+  <label class="row"><span data-i18n="no_fx">关闭花屏特效</span><input type="checkbox" role="switch" id="optNoFx"></label><small data-i18n="no_fx_hint">网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字</small></div>
+<div id="card" hidden role="dialog" aria-labelledby="cardTitle"><div class="grab" aria-hidden="true"></div><div class="top"><span class="tag"></span><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><h2 id="cardTitle" tabindex="-1"></h2><div class="sub"></div><div class="src"></div><div class="extra"></div></div>
 <div id="sr" class="sr-only" aria-live="polite"></div>
-<div id="status">加载中…</div>
+<div id="status"></div>
 <script>
 // 多地图查看器：地图注册表 data/maps.json（世界 → 天城三层 → 以后的庄园剖面……）。
 // 底图都是 DZI 瓦片金字塔，只加载屏幕里看得见的部分；解码内存由屏幕大小和瓦片缓存上限决定。
@@ -304,6 +368,15 @@ const $ = s => document.querySelector(s);
 // 界面文字：有 window.I18N（英文 / 浅色界面分支）时走 I18N.t(键)，否则用这里的中文
 const tx = (key, zh, vars) => { const r = window.I18N?.t?.(key, vars); return r && r !== key ? r : zh; };
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// SVG 描线图标（16 px、1.5 px 描线，规范 3.2；替换 ☾ ☀ ◐ ⚙ × 等 Unicode 字符，大小、基线一致）
+const ICON = {
+  auto: '<circle cx="8" cy="8" r="5.5"/><path d="M8 2.5a5.5 5.5 0 0 1 0 11z" fill="currentColor"/>',
+  light: '<circle cx="8" cy="8" r="2.8"/><path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1"/>',
+  dark: '<path d="M13.3 10.1A5.7 5.7 0 0 1 5.9 2.7a5.7 5.7 0 1 0 7.4 7.4z"/>',
+  set: '<path d="M2.5 4.5h7M12.5 4.5h1M2.5 11.5h1M6.5 11.5h7"/><circle cx="11" cy="4.5" r="1.5"/><circle cx="5" cy="11.5" r="1.5"/>',
+  more: '<path d="M3.5 8h.01M8 8h.01M12.5 8h.01" stroke-width="2.4"/>',
+};
+const ico = k => `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true">${ICON[k]}</svg>`;
 let narrow = false;
 // 触屏或低内存设备：瓦片缓存减半（约 30 MB），避免手机 WebView 因内存被回收
 const coarse = matchMedia('(pointer: coarse)').matches || (navigator.deviceMemory || 8) <= 4;   // 手机 / 窄面板：隐藏小地图（信息卡的底部抽屉由 CSS 媒体查询处理）
@@ -315,7 +388,10 @@ const post = msg => { if (window.top !== window) parent.postMessage(msg, '*'); }
 const lean = () => { const c = navigator.connection || {};
   return !!c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || '') || (navigator.deviceMemory || 8) <= 4 || tier === 'save'; };
 // 读屏播报（aria-live）：新事态、花屏开始
-function announce(msg) { const el = $('#sr'); if (!el || !msg) return; el.textContent = ''; setTimeout(() => { el.textContent = msg; }, 60); }
+// 同一时刻的几条（新事态 + 花屏）合并成一句播报，后一条不再覆盖前一条（E4b R09）
+let srQ = [], srT = 0;
+function announce(msg) { if (!msg) return; srQ.push(msg); clearTimeout(srT);
+  srT = setTimeout(() => { const el = $('#sr'); if (!el) return; const s = srQ.join('；'); srQ = []; el.textContent = ''; setTimeout(() => { el.textContent = s; }, 60); }, 120); }
 // 数据文件只取一次：切换地图、面板休眠后唤醒都不再重复请求
 const jsonCache = new Map();
 const getJSON = url => { if (!jsonCache.has(url)) jsonCache.set(url, fetch(url).then(r => r.ok ? r.json() : null).catch(() => null)); return jsonCache.get(url); };
@@ -335,7 +411,8 @@ function applyI18n() {
   document.querySelectorAll('[data-i18n-aria]').forEach(e => e.setAttribute('aria-label', t(e.dataset.i18nAria)));
   tierLabels();
   document.querySelectorAll('#langSeg button').forEach(b => { b.classList.toggle('on', b.dataset.lang === LANG); b.setAttribute('aria-pressed', b.dataset.lang === LANG); });
-  $('#themeBtn').textContent = t('theme_' + window.__theme);
+  const th = window.__theme; $('#themeBtn').innerHTML = ico(th) + `<span class="lbl">${esc(t('theme_' + th))}</span>`;
+  $('#themeBtn').setAttribute('aria-label', t('theme_title') + '：' + t('theme_' + th));
   $('#setBtn').setAttribute('aria-label', t(narrowNow() ? 'more' : 'settings_title'));
 }
 async function setLang(l) {
@@ -344,13 +421,16 @@ async function setLang(l) {
   LANG = l; DICT = dict; document.documentElement.lang = l === 'en' ? 'en' : 'zh-CN';
   try { localStorage.setItem('edenMapLang', l); } catch (e) {}
   applyI18n(); closeCard(); estateLook();
-  if (cur) { mapChrome(REG.maps[cur]); renderNav(); if (viewer.world.getItemCount()) { drawOverlays(); applyTier(); } post({ type: 'eden-map:state', map: cur, title: nm(REG.maps[cur], 'title'), lang: LANG }); }
+  if (cur) { mapChrome(REG.maps[cur]); renderNav(); if (viewer.world.getItemCount()) { drawOverlays(); applyTier(); } postState(); }
 }
 function cycleTheme() {
   const order = ['auto', 'light', 'dark']; window.__theme = order[(order.indexOf(window.__theme) + 1) % 3];
   try { localStorage.setItem('edenMapTheme', window.__theme); } catch (e) {}
-  window.__applyTheme(); applyI18n(); estateLook();
+  window.__applyTheme(); applyI18n(); estateLook(); postState();
 }
+const themeNow = () => document.documentElement.classList.contains('light') ? 'light' : 'dark';
+// 当前地图、标题、语言、主题 → 酒馆（面板标题栏跟着换语言和深浅）
+function postState() { if (cur && REG?.maps[cur]) post({ type: 'eden-map:state', map: cur, title: nm(REG.maps[cur], 'title'), lang: LANG, theme: themeNow() }); }
 
 async function main() {
   // 三个启动文件并行取（之前 derived.json 要等前两个取完才开始）
@@ -381,9 +461,11 @@ async function main() {
     if (p.x < b.x + mx || p.x > b.x + b.width - mx || p.y < b.y + my || p.y > b.y + b.height - my) viewer.viewport.panTo(new OpenSeadragon.Point(p.x, p.y)); });
   // 工具栏换行（英文更宽、窄窗口）时，信息卡跟着工具栏的实际高度往下挪，不压住第二行
   const hdr = $('header'); new ResizeObserver(() => document.documentElement.style.setProperty('--hdr', hdr.offsetHeight + 'px')).observe(hdr);
+  // 手机上事态横条从层切换器右边开始（层切换器宽度随语言、角标变）
+  const lay = $('#layers'); new ResizeObserver(() => document.documentElement.style.setProperty('--layers-w', (lay.hidden ? 0 : lay.offsetWidth + 8) + 'px')).observe(lay);
   document.querySelectorAll('#langSeg button').forEach(b => b.onclick = () => setLang(b.dataset.lang));
   $('#themeBtn').onclick = cycleTheme;
-  matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => setTimeout(estateLook, 0));   // 自动主题跟随系统切换时
+  matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => setTimeout(() => { estateLook(); postState(); }, 0));   // 自动主题跟随系统切换时
   // 画布像素密度随档位封顶：高分屏（手机 3x）上省流只画 1.25x，填充的像素少一半以上，选瓦片的层级也跟着降
   const devDpr = OpenSeadragon.getCurrentPixelDensityRatio;
   OpenSeadragon.getCurrentPixelDensityRatio = () => Math.min(devDpr(), effTier().dpr);
@@ -391,11 +473,17 @@ async function main() {
   OpenSeadragon.pixelDensityRatio = OpenSeadragon.getCurrentPixelDensityRatio();
   viewer = OpenSeadragon({
     element: $('#osd'), drawer: 'canvas', prefixUrl: 'vendor/openseadragon/images/',
-    showNavigator: !narrow, showFullPageControl: false, navigatorPosition: 'BOTTOM_RIGHT', visibilityRatio: 1, constrainDuringPan: true, homeFillsViewer: true, minZoomImageRatio: 1,
+    showNavigator: !narrow, showFullPageControl: false, showNavigationControl: false, navigatorPosition: 'BOTTOM_RIGHT', navigatorWidth: '180px', navigatorHeight: '120px',   // 自绘缩放组 #zoom 替代 OSD 的拟物按钮（E5 V01） visibilityRatio: 1, constrainDuringPan: true, homeFillsViewer: true, minZoomImageRatio: 1,
     maxZoomPixelRatio: 1.25, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: 16, maxImageCacheCount: coarse ? 30 : 60,   /* 512px 瓦片：并发拉取，缓存约 60 MB */ minPixelRatio: effTier().ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true }, gestureSettingsTouch: { pinchRotate: false, flickEnabled: true },
     smoothTileEdgesMinZoom: Infinity,   // 瓦片有 1px 重叠，不需要放大时整屏再画一遍去接缝
   });
   viewer.addHandler('open', onOpen);
+  // 缩放组：+ / − 以视野中心缩放，复位 = 本图的初始视野
+  $('#zIn').onclick = () => { userMoved = true; viewer.viewport.zoomBy(1.5); viewer.viewport.applyConstraints(); };
+  $('#zOut').onclick = () => { userMoved = true; viewer.viewport.zoomBy(1 / 1.5); viewer.viewport.applyConstraints(); };
+  $('#zHome').onclick = () => { userMoved = false; pendingHome = false; focusStart(false); };
+  const navH = () => document.documentElement.style.setProperty('--nav-h', (viewer.navigator?.element?.offsetHeight || 0) + 'px');
+  viewer.addHandler('open', () => setTimeout(navH, 0)); addEventListener('resize', navH);
   viewer.addHandler('open-failed', e => { $('#loading span').textContent = t('load_failed', { msg: e.message || '' }); });
   viewer.addHandler('canvas-drag', () => userMoved = true); viewer.addHandler('canvas-scroll', () => userMoved = true); viewer.addHandler('canvas-pinch', () => userMoved = true);
   let lastRs = 0, queued = false;
@@ -424,24 +512,24 @@ async function main() {
   const qs = new URLSearchParams(location.search), q = qs.get('map');
   if (qs.get('here')) $('#here').value = qs.get('here');   // 调试：?here=主卧
   if (REG.maps[q] && REG.maps[q].status !== 'planned') go(q);
-  else if (!jumpHere($('#here').value, true)) go(REG.start);
+  else if (window.top !== window && !qs.get('here')) bootLater();   // 嵌入酒馆：先等卡内脚本推当前地点（≤ 0.6 s），不先下载世界图再跳（E4b R10）
+  else bootStart();
   TCEvents.init(); TCEvents.pollFeeds();   // 事态横条与花屏提示；外部事件数据源（maps.json 的 feeds，默认没有）
   post({ type: 'eden-map:ready' });
   // 首张地图画出来后，空闲时预热其他地图：描述文件、点位数据、最粗的几层瓦片（切过去立刻有模糊版）
   viewer.addOnceHandler('tile-drawn', () => setTimeout(warmOthers, 1500));
 }
 // ---------------- 窄屏工具栏：放不下的都搬进「⋯」菜单（原 ⚙ 设置弹层），不再横向滚动（E4 N27） ----------------
-const moreEls = () => [$('#tiers'), $('#tgOverlay'), $('#tgAlt'), $('#tgRoutes'), $('#tgLabels').closest('label'), $('#tgMarkers').closest('label'), $('#tgEvents'), $('#langSeg'), $('#themeBtn'), $('#build')].filter(Boolean);
+// 桌面：图层开关在「图层 ▾」弹层里；窄屏：档位、图层开关、语言、主题、版本号都进「⋯」底部抽屉
+const moreEls = () => [$('#tiers'), $('#layList'), $('#langSeg'), $('#themeBtn'), $('#build')].filter(Boolean);
 function layoutHeader() {
   const nar = narrowNow(), box = $('#setPop .more');
   for (const el of moreEls()) {
     if (nar && el.parentElement !== box) { el._ph ??= document.createComment('slot'); el.before(el._ph); box.appendChild(el); }
-    else if (!nar && el.parentElement === box) {
-      if (el._ph?.isConnected) el._ph.replaceWith(el);
-      else $('#tgMarkers').closest('label').after(el);   // 在菜单里才创建的「事态」开关：回到「标记」后面
-    }
+    else if (!nar && el.parentElement === box && el._ph?.isConnected) el._ph.replaceWith(el);
   }
-  $('#setBtn').textContent = nar ? '⋯' : '⚙';
+  if (nar) showLay(false);
+  $('#setBtn').innerHTML = ico(nar ? 'more' : 'set');
   $('#setBtn').setAttribute('aria-label', t(nar ? 'more' : 'settings_title'));
 }
 // 面板收起（休眠）时的慢速预取：把另一版底图（如上层「显示下方城市」）按当前清晰度上限一张一张取进缓存，
@@ -570,11 +658,11 @@ async function go(id) {
   if (m.overlay?.type === 'dzi') srcs.push({ tileSource: m.overlay.src, opacity: $('#tgBorders').checked ? 1 : 0 });
   viewer.open(srcs);
   fadeAway(snap); fadeAway(oldFrame);
-  post({ type: 'eden-map:state', map: id, title: nm(m, 'title'), lang: LANG });
+  postState();
 }
 // 随地图变的工具栏文字（叠加层、另一版底图的开关名）
 function mapChrome(m) {
-  $('#credit').textContent = nm(m, 'credit');
+  $('#credit').textContent = $('#credit').title = nm(m, 'credit');
   $('#tgOverlay span').textContent = m.overlay ? nm(m.overlay, 'label') || t('overlay') : t('overlay'); $('#tgOverlay').hidden = !m.overlay;
   $('#tgAlt').hidden = !m.alt; if (m.alt) $('#tgAlt span').textContent = nm(m.alt, 'label') || t('alt_base');
 }
@@ -615,10 +703,10 @@ function estatePlan() {   // 看平面图：回上层并聚焦伊甸（打开它
 }
 async function openEstate(id, m, hadPrev) {
   document.body.classList.add('estate'); renderNav();
-  $('#credit').textContent = nm(m, 'credit');
+  $('#credit').textContent = $('#credit').title = nm(m, 'credit');
   const ld = $('#loading'), ti = nm(m, 'title'); ld.classList.remove('done', 'thumb'); ld.classList.toggle('over', hadPrev); estateActs('');
   ld.querySelector('span').textContent = tx('estate.loading', `加载 ${ti}…`, { title: ti });
-  post({ type: 'eden-map:state', map: id, title: ti, lang: LANG });
+  postState();
   const url = new URL(m.src, document.baseURI).href;
   let html;
   try { html = await getText(url); } catch (e) { textCache.delete(url); html = null; }
@@ -641,7 +729,7 @@ function onEstateFail() {
 }
 function onEstateReady() {
   const f = est.frame; est.ready = true; if (estFail) setEstFail(false);
-  f.classList.add('on'); estateActs(''); $('#loading').classList.add('done');
+  f.classList.add('on'); estateActs(''); $('#loading').classList.add('done'); focusAfterGo();
   estateLook(); estateInset(); estateRoom();
   post({ type: 'eden-map:loaded' });
   // 庄园淡入完成后再关掉瓦片地图（释放解码内存）
@@ -720,6 +808,7 @@ document.addEventListener('keydown', e => {
   // Esc 逐层关闭：设置 / 「⋯」菜单 → 事态列表 → 卡片；都没开时交给酒馆（关闭面板）（E4 N20）
   if (e.key === 'Escape') {
     if (!$('#setPop').hidden) { showSet(false); $('#setBtn').focus(); }
+    else if (!$('#layPop').hidden) { showLay(false); $('#layBtn').focus(); }
     else if (TCEvents.isOpen?.()) { TCEvents.collapse(); $('#evbar > button')?.focus(); }
     else if (!$('#card').hidden) closeCard(true);
     else post({ type: 'eden-map:esc' });
@@ -731,11 +820,18 @@ document.addEventListener('keydown', e => {
   const d = { PageUp: -1, '[': -1, PageDown: 1, ']': 1 }[e.key];
   if (d) { e.preventDefault(); stepLayer(d); }
 }, true);
-document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a && !a.disabled) { e.preventDefault(); pendingFocus = a.dataset.focus || null; go(a.dataset.go); } });
+// 键盘触发的站内跳转（click 的 detail = 0）：新图打开后把焦点放到卡片标题或当前层按钮，不掉到 body（E4b R06）
+let kbdGo = false;
+document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a && !a.disabled) { e.preventDefault(); pendingFocus = a.dataset.focus || null; kbdGo = e.detail === 0 && a.dataset.go !== cur; go(a.dataset.go); } });
+function focusAfterGo() {
+  if (!kbdGo) return; kbdGo = false;
+  const el = !$('#card').hidden ? $('#cardTitle') : $('#layers:not([hidden]) button[aria-current]') || $('#crumbs b');
+  if (el) { if (el.tagName === 'B') el.tabIndex = -1; el.focus({ preventScroll: true }); }
+}
 
 // ---------------- 加载进度：已完成 / (已完成 + 正在加载) ----------------
 function initProgress() {
-  let done = 0, hideT = 0, tsT = 0, firstLoaded = false;
+  let done = 0, hideT = 0, firstLoaded = false;
   const ts = $('#tierState');
   const upd = () => {
     let busy = 0; for (let i = 0; i < viewer.world.getItemCount(); i++) busy += viewer.world.getItemAt(i)._tilesLoading || 0;
@@ -745,8 +841,8 @@ function initProgress() {
     $('#prog').hidden = !busy; $('#prog i').style.width = pct + '%';
     if (!$('#loading').classList.contains('done') && REG.maps[cur]?.kind !== 'estate') $('#loading span').textContent = t('loading_pct', { title: nm(REG.maps[cur], 'title'), pct });
     if (!firstLoaded) post({ type: 'eden-map:progress', pct });
-    if (busy) { clearTimeout(tsT); ts.textContent = t('busy_pct', { pct }); ts.className = 'busy'; }
-    else if (ts.className === 'busy') { ts.textContent = t('loaded'); ts.className = 'ok'; clearTimeout(tsT); tsT = setTimeout(() => { ts.textContent = ''; ts.className = ''; }, 2500); }
+    if (busy) { clearTimeout(tsT2); ts.textContent = t('busy_pct', { pct }); ts.className = 'busy'; }
+    else if (ts.className === 'busy') tsOk();
     // 当前地图首屏瓦片都到了：告诉酒馆（后台预加载据此收尾）
     if (!busy && done && !firstLoaded) { firstLoaded = true; post({ type: 'eden-map:loaded' }); }
     // 在 100% 停一下再淡出；期间换了地图（例如跳去庄园）就不撤，免得撤掉庄园的遮罩（E4 N08）
@@ -771,6 +867,15 @@ function initProgress() {
   viewer.addHandler('tile-drawn', () => $('#loading').classList.add('over'));
 }
 
+// 「✓ 已加载」：只在加载遮罩消失之后出现（E5 V13），--ok 色 1.5 秒后淡成 --muted，再 1.5 秒收起
+let tsT2 = 0;
+function tsOk(n = 0) {
+  const ts = $('#tierState'); clearTimeout(tsT2);
+  if (!$('#loading').classList.contains('done') && n < 40) { ts.textContent = ''; ts.className = ''; tsT2 = setTimeout(() => tsOk(n + 1), 400); return; }
+  ts.textContent = t('loaded'); ts.className = 'ok';
+  tsT2 = setTimeout(() => { if (ts.className !== 'ok') return; ts.className = '';
+    tsT2 = setTimeout(() => { if (ts.textContent === t('loaded') && !ts.className) ts.textContent = ''; }, 1500); }, 1500);
+}
 // ---------------- 清晰度上限 ----------------
 // 不能改 source.maxLevel（OSD 会按它重算每层比例，请求不存在的瓦片），所以包一层选层函数（OSD 5.0.1 内部方法，已随仓库固定版本）。
 function capLevels(it) {
@@ -787,9 +892,10 @@ function setTier(key) {
 function tierLabels() {
   const tt = effTier(), base = viewer?.world.getItemAt(0), px = base ? Math.min(tt.cap, base.source.dimensions.x) : tt.cap;
   document.querySelectorAll('#tiers button').forEach(b => { b.classList.toggle('on', b.dataset.k === tier); b.setAttribute('aria-pressed', b.dataset.k === tier);
-    b.textContent = b.dataset.k === 'auto' && tier === 'auto' ? t('tier_auto_on', { px }) : t('tier_' + b.dataset.k);
-    b.title = b.dataset.k === 'auto' ? t('tier_auto_title') : ''; });
-  if (cur && REG?.maps[cur]) $('#status').textContent = t(tier === 'auto' ? 'tier_status_auto' : 'tier_status', { title: nm(REG.maps[cur], 'title'), px });
+    b.textContent = t('tier_' + b.dataset.k);   // 像素数对玩家没意义，放进 title（E5 V21）
+    const cap = (TIERS.find(x => x.key === b.dataset.k) || tt).cap;
+    b.title = b.dataset.k === 'auto' ? t('tier_auto_title') + (tier === 'auto' ? ' · ' + t('tier_now', { px }) : '') : t('tier_cap', { px: cap }); });
+  if (cur && REG?.maps[cur]) $('#tiers').title = t(tier === 'auto' ? 'tier_status_auto' : 'tier_status', { title: nm(REG.maps[cur], 'title'), px });
 }
 // 自动档：屏幕实际需要的像素 = 视口宽 × devicePixelRatio ÷ 可见部分占图宽的比例，取刚好够用的一档；只升不降
 function autoTier(force) {
@@ -817,14 +923,15 @@ function applyTier() {
   // 切档后如果没有新瓦片要拉（降档或已缓存），也给一个明确的「已加载」
   const ts = $('#tierState'); ts.textContent = t('switching'); ts.className = 'busy';
   setTimeout(() => { let busy = 0; for (let i = 0; i < viewer.world.getItemCount(); i++) busy += viewer.world.getItemAt(i)._tilesLoading || 0;
-    if (!busy && ts.textContent === t('switching')) { ts.textContent = t('loaded'); ts.className = 'ok'; setTimeout(() => { if (ts.className === 'ok') { ts.textContent = ''; ts.className = ''; } }, 2500); } }, 900);
+    if (!busy && ts.textContent === t('switching')) tsOk(); }, 900);
 }
 function onOpen() {
   if (REG.maps[cur]?.kind === 'estate') return;   // 打开旧底图期间已经切去庄园
   const it = viewer.world.getItemAt(0), sz = it.getContentSize(); aspect = sz.y / sz.x;
   applyTier(); applyZoomLimit(); homeMode(); drawOverlays(); focusStart(true); autoTier();
   if (pendingFocus) { const el = [...document.querySelectorAll('.mk')].find(e => e.dataset.name === REG.maps[cur].markers?.[pendingFocus]?.name);
-    pendingFocus = null; el?._open(); }
+    pendingFocus = null; if (el) { cardFrom = el; el._open(); } }
+  focusAfterGo();
 }
 // 叠加层（标记、结界圈、事件）：打开地图时画；切换语言时重画
 function drawOverlays() {
@@ -844,14 +951,25 @@ function tabOrder() {
 }
 // 地标名避让：按优先级（当前地点 / 选中 > 首府、钻入 > 本层默认聚焦 > 有跨层通道 > 其余）保留，和更重要的标签重叠的才隐藏（E4 N13）
 let declT = 0;
+// E5（R14 / L2）：事态点也参加避让。事态图标是可点的，永远保留并当作障碍：压在图标上的普通地标名隐藏（当前地点、首府除外）；
+// 世界图国名（.realm）排在首府之后保留，「中小国」小字最后；事态的文字标签和已保留的标签重叠时收起，只留图标
 function declutter() { clearTimeout(declT); declT = setTimeout(() => {
-  const els = [...document.querySelectorAll('.mk')]; if (!els.length) return;
+  const mks = [...document.querySelectorAll('.mk')], evs = [...document.querySelectorAll('.ev')], words = [...document.querySelectorAll('.realm, .minor')];
+  if (!mks.length && !evs.length) return;
   const rank = e => e.classList.contains('here') || e.classList.contains('active') ? 0 : e.classList.contains('capital') ? 1 : e.dataset.focus ? 2 : e.dataset.link ? 3 : 4;
-  els.forEach(e => e.classList.remove('lhide'));
-  const kept = [];
-  for (const e of els.sort((a, b) => rank(a) - rank(b))) {
-    const r = e.querySelector('.lab')?.getBoundingClientRect(); if (!r || !r.width) continue;
-    if (kept.some(k => r.left < k.right + 4 && r.right > k.left - 4 && r.top < k.bottom + 2 && r.bottom > k.top - 2)) e.classList.add('lhide'); else kept.push(r);
+  [...mks, ...evs, ...words].forEach(e => e.classList.remove('lhide'));
+  const hit = (r, k, g = 4) => r.left < k.right + g && r.right > k.left - g && r.top < k.bottom + 2 && r.bottom > k.top - 2;
+  const box = e => { const r = e?.getBoundingClientRect(); return r && r.width ? r : null; };
+  const ic = evs.map(e => [e, box(e.querySelector('i'))]).filter(x => x[1]), icons = ic.map(x => x[1]), kept = [];
+  const place = (e, r, avoidIcons) => { if (!r) return; if (kept.some(k => hit(r, k)) || (avoidIcons && icons.some(k => hit(r, k, 0)))) e.classList.add('lhide'); else kept.push(r); };
+  const sorted = mks.sort((a, b) => rank(a) - rank(b));
+  for (const e of sorted.filter(e => rank(e) <= 1)) place(e, box(e.querySelector('.lab')), false);
+  for (const e of words.filter(e => e.classList.contains('realm'))) { const r = box(e.querySelector('b')); if (r) kept.push(r); }
+  for (const e of sorted.filter(e => rank(e) > 1)) place(e, box(e.querySelector('.lab')), true);
+  for (const e of words.filter(e => e.classList.contains('minor'))) place(e, box(e), true);
+  for (const e of evs.sort((a, b) => (+b.className.match(/sev(\d)/)?.[1] || 0) - (+a.className.match(/sev(\d)/)?.[1] || 0))) {
+    const b = e.querySelector('b'), r = b && getComputedStyle(b).display !== 'none' ? box(b) : null; if (!r) continue;
+    if (kept.some(k => hit(r, k)) || ic.some(([x, k]) => x !== e && hit(r, k, 0))) e.classList.add('lhide'); else kept.push(r);
   }
 }, 80); }
 function applyOverlayToggle() {
@@ -883,16 +1001,18 @@ function markerEl({ name, sub, cls = '', tag = 'set', src, extra = '', alias, na
   const dn = LANG === 'en' ? name_en || tr(name) : name, ds = sub && (LANG === 'en' ? sub_en || tr(sub) : sub);   // 显示名随语言；dataset.name 保持中文（当前地点匹配用）
   el.innerHTML = `<div class="lab">${esc(dn)}${ds ? '<small> · ' + esc(ds) + '</small>' : ''}</div><div class="pin"></div>`;
   el.dataset.name = name; if (alias) el.dataset.alias = alias.join('|');
-  el._open = () => showCard(el, dn, tag, src, extra);
+  el._open = () => showCard(el, dn, tag, src, extra, ds);
   trackEl(el, el._open, dn + (ds ? ' · ' + ds : ''));
   return el;
 }
 function marker(o) { const el = markerEl(o); place(el, o.x, o.y); return el; }
-function showCard(el, name, tag, src, extra) {
+// 卡片：顶行 tag + 关闭；标题；副标题；正文（设定原文）或字段区；链接行（规范 3.2）
+function showCard(el, name, tag, src, extra, sub) {
   document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); el && el.classList.add('active');
   const c = $('#card'); c.hidden = false;
-  c.querySelector('.tag').textContent = t(tag === 'inf' ? 'tag_inf' : 'tag_set'); c.querySelector('.tag').className = 'tag' + (tag === 'inf' ? ' inf' : '');
-  const sv = c.querySelector('.src'); c.querySelector('h2').textContent = name; sv.textContent = src;
+  const tg = c.querySelector('.tag'); tg.textContent = t(tag === 'inf' ? 'tag_inf' : 'tag_set'); tg.className = 'tag' + (tag === 'inf' ? ' inf' : ''); tg.removeAttribute('style');   // 事态卡的数据色不带到地点卡
+  c.querySelector('.sub').textContent = sub || '';
+  const sv = c.querySelector('.src'); c.querySelector('h2').textContent = name; sv.textContent = src || '';
   if (LANG === 'en' && /[\u4e00-\u9fff]/.test(src || '') && t('src_note')) sv.dataset.note = t('src_note'); else delete sv.dataset.note;   // 英文界面：设定原文保持中文，加一行说明
   c.querySelector('.extra').innerHTML = extra || '';
   declutter();
@@ -914,8 +1034,8 @@ function worldOverlays() {
   { const el = document.createElement('div'); el.className = 'realm'; el.innerHTML = `<b style="font-size:20px;letter-spacing:${LANG === 'en' ? 2 : 6}px">${esc(tr('海外诸地'))}</b><span>${esc(tr('稀有矿物 · 异域人员输出地'))}</span>`;
     trackEl(el, () => showCard(null, tr('海外诸地'), 'inf', '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）；陆块形状与位置为推断'), tr('海外诸地'));
     place(el, M.overseas[0], M.overseas[1], OpenSeadragon.Placement.CENTER); }
-  const enter = id => { const g = REG.groups.tiancheng; return `<p>${g.layers.map(k => { const L = REG.maps[k];
-    return L.status === 'planned' ? `<span style="opacity:.5">${esc(nm(L.layer))}${esc(t('planned_paren'))}</span>` : `<a data-go="${k}" role="button" tabindex="0">${esc(t('enter', { name: nm(L.layer) }))}</a>`; }).join(' · ')}</p>`; };
+  const enter = id => { const g = REG.groups.tiancheng; return g.layers.map(k => { const L = REG.maps[k];
+    return L.status === 'planned' ? `<span class="planned">${esc(nm(L.layer))}${esc(t('planned_paren'))}</span>` : `<a data-go="${k}" role="button" tabindex="0">${esc(t('enter', { name: nm(L.layer) }))}</a>`; }).join(''); };
   for (const p of M.places) {
     if (p.type === 'capital') marker({ name: p.name, sub: p.sub, cls: 'capital' + (p.id === 'tiancheng' ? ' drill' : ''), tag: p.tag, src: p.src, x: p.x, y: p.y,
       extra: p.id === 'tiancheng' ? enter() : '' });
@@ -968,7 +1088,7 @@ function pointOverlays() {
   }
   // link：跨层通道（如中层检查点 ↔ 下层 7 号井），地点卡里给一个直达链接
   const linkHtml = l => l && REG.maps[l.map] && REG.maps[l.map].status !== 'planned'
-    ? `<p><a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}" role="button" tabindex="0">${esc(nm(l, 'label') || t('goto', { title: nm(REG.maps[l.map], 'title') }))} →</a></p>` : '';
+    ? `<a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}" role="button" tabindex="0">${esc((nm(l, 'label') || t('goto', { title: nm(REG.maps[l.map], 'title') })).replace(/\s*[→›>]\s*$/, ''))}</a>` : '';
   // 上层导出了标记锚点 ax / ay（岸边停靠平台或主楼旁的空地），图钉落在锚点上，不再压住岛心的主楼；聚焦、飞行也用它（B2 第 2 轮本机 P1）
   for (const k of d.markers || []) if (k.ax != null && k.ay != null) { k.nx = k.ax; k.ny = k.ay; }
   for (const k of d.markers || []) { const meta = m.markers?.[k.id]; if (!meta) continue;
@@ -1060,16 +1180,26 @@ function initSettings() {
   const btn = $('#setBtn'), pop = $('#setPop'), box = $('#optAutoHere');
   box.checked = autoHere();
   box.onchange = () => { try { localStorage.setItem(AUTO_KEY, box.checked ? '1' : '0'); } catch (e) {} if (box.checked) jumpHere($('#here').value, true); };
-  showSet = on => { pop.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); };
+  showSet = on => { pop.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); if (on) showLay(false); };
   btn.onclick = e => { e.stopPropagation(); showSet(pop.hidden); };
-  document.addEventListener('click', e => { if (!pop.hidden && !pop.contains(e.target) && e.target !== btn) showSet(false); });
+  document.addEventListener('click', e => { if (!pop.hidden && !pop.contains(e.target) && !btn.contains(e.target)) showSet(false); });
+  // 「图层 ▾」弹层：挂在按钮下方、右对齐
+  const lb = $('#layBtn'), lp = $('#layPop');
+  showLay = on => { lp.hidden = !on; lb.setAttribute('aria-expanded', on ? 'true' : 'false');
+    if (on) { showSet(false); const r = lb.getBoundingClientRect(); lp.style.left = Math.max(8, Math.min(innerWidth - lp.offsetWidth - 8, r.right - lp.offsetWidth)) + 'px'; } };
+  lb.onclick = e => { e.stopPropagation(); showLay(lp.hidden); };
+  document.addEventListener('click', e => { if (!lp.hidden && !lp.contains(e.target) && !lb.contains(e.target)) showLay(false); });
   // 关闭花屏特效：只停动画和滤镜，「⚠ 数据链路受扰」文字照常显示；系统开了「减少动态效果」时默认勾上（E4 N24）
   const fx = $('#optNoFx'); let nofx = matchMedia('(prefers-reduced-motion: reduce)').matches;
   try { const v = localStorage.getItem('edenMapNoFx'); if (v !== null) nofx = v === '1'; } catch (e) {}
   fx.checked = nofx; document.body.classList.toggle('nofx', nofx);
   fx.onchange = () => { document.body.classList.toggle('nofx', fx.checked); try { localStorage.setItem('edenMapNoFx', fx.checked ? '1' : '0'); } catch (e) {} };
 }
-let showSet = () => {};
+let showSet = () => {}, showLay = () => {};
+// 首张图：有当前地点就直接去它的图，否则去注册表的起始图（世界）
+let bootT = 0; const BOOT = '#boot';
+function bootStart() { clearTimeout(bootT); bootT = 0; if (cur) return; if (!jumpHere($('#here').value, true)) go(REG.start); }
+function bootLater() { clearTimeout(bootT); bootT = setTimeout(bootStart, 600); }
 // 嵌入酒馆（悬浮按钮面板）的消息接口：
 //   酒馆 → 地图：eden-map:here {value}（当前地点）、eden-map:open {map}（直接打开某张地图）
 //   地图 → 酒馆：eden-map:ready（可以撤掉加载遮罩）、eden-map:state {map, title}（当前地图，用于面板标题）
@@ -1077,12 +1207,15 @@ if (window.top !== window) {
   document.body.classList.add('embed');
   window.addEventListener('message', e => {
     // bg = 酒馆在后台预加载（面板不可见）：不进庄园，也不消耗「打开后第一次一定跳」的资格
-    if (e.data?.type === 'eden-map:here') { bgMode = !!e.data.bg; $('#here').value = e.data.value || ''; markHere(e.data.value); if (!jumpHere(e.data.value || '', hereFresh)) focusStart(false); if (!bgMode) hereFresh = false; }
+    if (e.data?.type === 'eden-map:here') { bgMode = !!e.data.bg; $('#here').value = e.data.value || ''; markHere(e.data.value);
+      if (bootT) bootStart(); else if (!jumpHere(e.data.value || '', hereFresh)) focusStart(false);
+      if (!bgMode) hereFresh = false; }
+    if (e.data?.type === 'eden-map:open') clearTimeout(bootT), bootT = 0;
     if (e.data?.type === 'eden-map:open') go(e.data.map);
     if (e.data?.type === 'eden-map:events') TCEvents.set(e.data);   // 卡内脚本从聊天里解析、合并好的事态 {items, floor, fly}
     // 面板关闭时休眠：关掉底图（释放已解码的瓦片），脚本与数据留着；再打开时唤醒，重新打开当前地图
-    if (e.data?.type === 'eden-map:sleep' && viewer) { saveView(); sleeping = cur; cur = null; est?.frame.remove(); est = null; document.body.classList.remove('estate'); viewer.close(); untrackAll(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }
-    if (e.data?.type === 'eden-map:wake' && sleeping) { slowStop = true; const id = sleeping; sleeping = null; hereFresh = true; go(id); }
+    if (e.data?.type === 'eden-map:sleep' && viewer) { saveView(); sleeping = cur || (bootT ? BOOT : null); clearTimeout(bootT); bootT = 0; cur = null; est?.frame.remove(); est = null; document.body.classList.remove('estate'); viewer.close(); untrackAll(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }
+    if (e.data?.type === 'eden-map:wake' && sleeping) { slowStop = true; const id = sleeping; sleeping = null; hereFresh = true; if (id === BOOT) bootLater(); else go(id); }
   });
 }
 document.addEventListener('DOMContentLoaded', main);   // 两个 defer 脚本（地图库、事态层）执行完之后

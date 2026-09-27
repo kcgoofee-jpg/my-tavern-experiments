@@ -55,10 +55,14 @@ try {
   if (on('cloud')) await step('云雾开关', async () => {
     await B.goMap(p, 'tc_upper');
     const b0 = (await B.viewerState(p)).base;
+    // E5：图层开关收进「图层 ▾」弹层（窄屏在「⋯」里），先打开
+    const openLay = () => p.evaluate(() => { if (!document.querySelector('#tgAlt').offsetParent) showLay(true); });
+    await openLay();
     await p.locator('#tgAlt').click(); await B.wait(2500);
     const b1 = (await B.viewerState(p)).base; await B.shot(p, OUT, 'desk_cloud_city');
-    await p.locator('#tgAlt').click(); await B.wait(2000);
+    await openLay(); await p.locator('#tgAlt').click(); await B.wait(2000);
     const b2 = (await B.viewerState(p)).base;
+    await p.evaluate(() => showLay(false));
     rep.check('云雾开关（上层 ↔ 显示下方城市）', !/upper_city/.test(b0) && /upper_city/.test(b1) && !/upper_city/.test(b2), [b0, b1, b2].map(x => x.replace(/\/$/, '').split('/').pop()).join(' → '));
   });
 
