@@ -315,7 +315,8 @@
   if (line || !swappable) (window.parent.requestIdleCallback || (f => setTimeout(f, 2000)))(() => fetchHtml().catch(() => {}));
   // 打开：休眠中的地图直接唤醒；否则创建。关闭：先休眠（地图关掉底图、释放瓦片内存，脚本和数据留着），超时再销毁
   async function loadViewer() {
-    clearTimeout(killT); if (typeof recomputeSoon === 'function') { recomputeSoon(0); pushSoon(0); }   // 通读 R1 / R2：打开面板时重读一次（开局切换、状态栏改变量可能没发事件）
+    clearTimeout(killT); if (typeof recomputeSoon === 'function') { recomputeSoon(0); pushSoon(0); }
+    if (typeof autoCheck === 'function' && !ghost) setTimeout(() => { if (!dead) autoCheck().catch(() => {}); }, 3000);   // 每次打开地图查一次更新（提示等面板关上再弹）   // 通读 R1 / R2：打开面板时重读一次（开局切换、状态栏改变量可能没发事件）
     if (swappable && !line) return showPicker();   // 还没选线路：先选
     if (alive) { post({ type: 'eden-map:wake', fly: flyQ }); flyQ = null; sent = null; push(); sendEvents(); return; }   // fly：EdenMap.flyTo 唤醒面板时直接飞过去，不先回上次的图
     startProg(); htmlProg = f => setProg(f * 20);
@@ -376,7 +377,7 @@
   const buildNow = () => aboutBuild ??= fetch(BASE + 'data/build.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
   async function sendAbout() { const b = await buildNow(), l = LINES.find(x => x.key === line);
     post({ type: 'eden-map:about', version: b?.version || SCRIPT.version || VER || null, code: b?.code || SCRIPT.code || null, channel: channel(),
-      ref: SCRIPT.ref || (VER ? tagOf(VER) : refOf()), sha: SCRIPT.sha || null, line: l ? (UL === 'en' && l.name_en) || l.name : '' }); }
+      ref: SCRIPT.ref || (VER ? tagOf(VER) : refOf()), sha: SCRIPT.sha || null, locked: !!SCRIPT.locked, line: l ? (UL === 'en' && l.name_en) || l.name : '' }); }
   // 查最新 map-v 标签（jsDelivr 数据接口，绕缓存），再取该标签的 build.json（走当前线路）；比较版本号。只报告，不安装
   async function checkUpdate() {
     try {
@@ -453,6 +454,7 @@
   let pushT = 0;
   const pushSoon = (ms = 150) => { clearTimeout(pushT); pushT = setTimeout(push, ms); };
   // 通读 R2：状态栏的删除按钮直接改 MVU（replaceMvuData），可能不发 VARIABLE_UPDATE_ENDED；面板开着时每 4 秒比一次变量的指纹，变了才重算
+  const updT = setInterval(() => { if (!panel.hidden && !ghost && alive) autoCheck().catch(() => {}); }, 10 * 60 * 1000);   // 面板开着：每 10 分钟查一次更新
   let statSig = ''; const pollT = setInterval(() => { if (panel.hidden || !alive) return; let s = ''; try { s = JSON.stringify(mvuStat()); } catch (e) {}
     if (s !== statSig) { const first = !statSig; statSig = s; if (!first) { recomputeSoon(0); pushSoon(0); } } }, 4000);
   // 通读 R4：玩家启用了卡的「角色图鉴CG」时，它的面板在右下角（z 10050），我们的悬浮按钮让到它下面
@@ -812,7 +814,7 @@
         if (r.ok) latest = SC.latestTag(await r.json()) || latest; } catch (e) {}
       c = { at: Date.now(), latest }; lsSet(UPD_KEY, JSON.stringify(c));
     }
-    return c?.latest ? { current: VER, latest: c.latest } : null;
+    return c?.latest ? { current: VER, latest: c.latest, channel: updChannel() } : null;
   }
   function runCheck() {
     return checkP ??= (async () => {
@@ -844,7 +846,7 @@
     for (const i of checkItems) if (i.status === 'warn') console.warn('[eden-map] 自检', i.zh);
     sendCheck(); toastOnce();
   }
-  function sendCheck() { if (alive && checkItems.length) post({ type: 'eden-map:selfcheck', items: checkItems, canUpdate: !!(VER && swappable && SC?.swapVer(import.meta.url, VER)), autoUpdate: lsGet(AUTO_UPD_KEY) === '1' }); }
+  function sendCheck() { if (alive && checkItems.length) post({ type: 'eden-map:selfcheck', items: checkItems, canUpdate: channel() !== 'latest' && !!(VER && swappable && SC?.swapVer(import.meta.url, VER)), autoUpdate: lsGet(AUTO_UPD_KEY) === '1' }); }
   // ---------------- v0.9.5 开场自检卡（tavern/splash.mjs）：导入后 / 换版本后第一次打开聊天时显示；不挡聊天 ----------------
   let SPm = null, splash = null;
   const splashDue = () => { try { return localStorage.getItem('edenMapSplashSeen') !== String(VER || 'dev'); } catch (e) { return false; } };
@@ -888,27 +890,27 @@
     if (extra) extra(t);
     t.querySelector('button').onclick = () => t.remove(); root.appendChild(t); if (ms) setTimeout(() => t.remove(), ms); return t;
   }
-  // ---------------- 自动检查更新（v0.9.7；设置「自动检查更新」默认开，存本机 edenMapAutoCheck）----------------
-  // 启动后空闲时查一次（每个会话一次，联网至少隔 6 小时，中间用缓存；走当前线路，和「检查更新」按钮同一个 checkUpdate）。
-  // 有新版就弹一个不挡操作的小提示：怎么更新（跟随分支：刷新；钉了版本：重新导入）+ 更新说明 +「稍后」/「此版本不再提示」。
+  // ---------------- 自动检查更新（设置「自动检查更新」默认开，存本机 edenMapAutoCheck）----------------
+  // 实时：脚本加载后、每次打开地图时查一次，面板开着时每 10 分钟再查（两次至少隔 1 分钟）；一次 = jsDelivr 标签列表 + 新标签的 build.json（各约 1 KB，绕缓存），
+  // 走当前线路，和「检查更新」按钮同一个 checkUpdate。有新版弹不挡操作的小提示：怎么更新 + 更新说明 +「稍后」（本次页面不再提示这个版本）/「此版本不再提示」。
   // 地图面板开着（设置 / 表单可能开着）或开场自检卡开着时不弹，关上后再弹（和自检小提示同一条规则）。
-  const AUTO_CHECK_KEY = 'edenMapAutoCheck', AUTO_CACHE_KEY = 'edenMapUpdAuto', UPD_SKIP_KEY = 'edenMapUpdSkip';
+  const AUTO_CHECK_KEY = 'edenMapAutoCheck', UPD_SKIP_KEY = 'edenMapUpdSkip';
   let updPrompt = null, updWait = false;
+  const updChannel = () => channel() === 'latest' && SCRIPT.locked ? 'locked' : channel();
   async function autoCheck() {
     SC ??= await import(SELF + 'tavern/selfcheck.mjs').catch(() => null); if (!SC?.autoCheckPlan || dead) return;
-    let cache = null; try { cache = JSON.parse(lsGet(AUTO_CACHE_KEY)); } catch (e) {}
-    let done = false; try { done = !!window.parent.__edenMapAutoChecked; } catch (e) {}   // 每个会话（页面加载）一次：挂在宿主页上，换版本 / 重注入脚本不重复查
-    const plan = SC.autoCheckPlan({ enabled: lsGet(AUTO_CHECK_KEY) !== '0', channel: channel(), sessionDone: done, cache, now: Date.now() });
-    if (plan === 'skip') return;
-    try { window.parent.__edenMapAutoChecked = true; } catch (e) {}
-    let latest = cache?.latest || null, code = cache?.code || null, min = cache?.min || null, reason = cache?.reason || '';
-    if (plan === 'fetch') { const r = await checkUpdate(); if (r.status !== 'fail') ({ latest, code, min, reason } = r); lsSet(AUTO_CACHE_KEY, JSON.stringify({ at: Date.now(), latest, code, min, reason })); }   // 失败也记时间：不在 6 小时内反复撞
-    const cur = SC.buildVer(await buildNow()) || SCRIPT.version || VER, v = SC.updateVerdict(cur, latest, channel());
+    let lastAt = 0; try { lastAt = window.parent.__edenMapCheckAt || 0; } catch (e) {}   // 挂在宿主页上：换版本 / 重注入脚本不重复查
+    if (SC.autoCheckPlan({ enabled: lsGet(AUTO_CHECK_KEY) !== '0', channel: channel(), lastAt, now: Date.now() }) === 'skip') return;
+    try { window.parent.__edenMapCheckAt = Date.now(); } catch (e) {}
+    const r = await checkUpdate(); if (r.status === 'fail') return;
+    const { latest, code, min, reason } = r;
+    const cur = SC.buildVer(await buildNow()) || SCRIPT.version || VER, v = SC.updateVerdict(cur, latest, updChannel());
     if (dead) return;
     // 强制更新：最新正式版声明了 min_version 且当前更旧 → 常驻提示，只能「本次关闭」（按会话记，下次加载再弹），没有「此版本不再提示」
     let closed = null; try { closed = window.parent.__edenMapForceClosed || null; } catch (e) {}
     if (SC.mustUpdate(cur, min)) { if (closed !== min) { updPrompt = { ...v, latest: v.latest || min, current: cur, code, min, reason, force: true, notes: `https://github.com/${REPO}/blob/${SC.tagOf(v.latest || min)}/CHANGELOG.md` }; showUpdPrompt(); } return; }
-    if (!SC.shouldPrompt(v, lsGet(UPD_SKIP_KEY))) return;
+    let later = null; try { later = window.parent.__edenMapUpdLater || null; } catch (e) {}
+    if (!SC.shouldPrompt(v, lsGet(UPD_SKIP_KEY)) || v.latest === later || updEl?.isConnected) return;
     updPrompt = { ...v, code, notes: `https://github.com/${REPO}/blob/${SC.tagOf(v.latest)}/CHANGELOG.md` }; showUpdPrompt();
   }
   function showUpdPrompt() {
@@ -916,7 +918,7 @@
     if (splash || (!panel.hidden && !ghost)) { updWait = true; return; }   // 不盖住开着的面板 / 表单
     updWait = false; const u = updPrompt; updPrompt = null;
     if (u.force) {
-      const F = SC.forceText(u.current, u.min, u.latest, channel(), u.reason, UL === 'en');
+      const F = SC.forceText(u.current, u.min, u.latest, updChannel(), u.reason, UL === 'en');
       return hostToast(F.title, F.lines, 0, t => {
         t.classList.add('em-upd', 'em-force'); t.setAttribute('role', 'alert'); t.__upd = u;
         const a = pdoc.createElement('a'); a.href = u.notes; a.target = '_blank'; a.rel = 'noopener'; a.textContent = F.notes; const d = pdoc.createElement('div'); d.append(a); t.append(d);
@@ -926,12 +928,12 @@
         acts.append(cl); t.append(acts);
       }, true);
     }
-    const T = SC.updatePromptText(u.latest, channel(), UL === 'en');
+    const T = SC.updatePromptText(u.latest, updChannel(), UL === 'en');
     hostToast(T.title + (u.code ? ` · ${u.code}` : ''), [T.how], 0, t => {
       t.classList.add('em-upd'); t.__upd = u;
       const a = pdoc.createElement('a'); a.href = u.notes; a.target = '_blank'; a.rel = 'noopener'; a.textContent = T.notes; const d = pdoc.createElement('div'); d.append(a); t.append(d);
       const acts = pdoc.createElement('div'); acts.className = 'em-acts';
-      const later = pdoc.createElement('button'); later.type = 'button'; later.className = 'em-later'; later.textContent = T.later; later.onclick = () => t.remove();
+      const later = pdoc.createElement('button'); later.type = 'button'; later.className = 'em-later'; later.textContent = T.later; later.onclick = () => { try { window.parent.__edenMapUpdLater = u.latest; } catch (e) {} t.remove(); };
       const skip = pdoc.createElement('button'); skip.type = 'button'; skip.className = 'em-skip'; skip.textContent = T.skip; skip.onclick = () => { lsSet(UPD_SKIP_KEY, u.latest); t.remove(); };
       acts.append(later, skip); t.append(acts);
     }, true);
@@ -1009,7 +1011,7 @@
   })();
 
   // 脚本被关闭或重载时清理注入的元素
-  const cleanup = () => { if (dead) return; dead = true; unlisten(); clearInterval(pollT); cgObs.disconnect(); clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); clearTimeout(restT); clearTimeout(ghostT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
+  const cleanup = () => { if (dead) return; dead = true; unlisten(); clearInterval(pollT); clearInterval(updT); cgObs.disconnect(); clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); clearTimeout(restT); clearTimeout(ghostT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
     if (window.parent.EdenMap === api) delete window.parent.EdenMap; toastEl?.remove(); updEl?.remove(); splash?.el?.remove();
     if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup;
     try { window.parent.__edenMapLoads = (window.parent.__edenMapLoads || []).filter(u => u !== SELF); } catch (e) {} };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）

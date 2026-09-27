@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import * as BG from '../map/tavern/budget.mjs';
 import * as C from '../map/tavern/characters.mjs';
-import { autoCheckPlan, shouldPrompt, updatePromptText, updateVerdict, AUTO_EVERY } from '../map/tavern/selfcheck.mjs';
+import { autoCheckPlan, shouldPrompt, updatePromptText, updateVerdict } from '../map/tavern/selfcheck.mjs';
 
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
 // 有额度的假 localStorage（按 UTF-16 字节算），超了抛 QuotaExceededError
@@ -62,22 +62,22 @@ t('头像：写入撞浏览器额度 → quota（不抛，调用方提示）', (
 t('warnText：中 / EN 都有', () => { for (const r of ['quota', 'cap', 'vars', 'x']) { assert.ok(BG.warnText(r)); assert.ok(BG.warnText(r, true)); } });
 
 // ---------- 自动检查更新 ----------
-t('autoCheckPlan：关了 / 本地 / 本会话查过 → skip；6 小时内 → cached；否则 fetch', () => {
+t('autoCheckPlan：关了 / 本地 → skip；离上次不到 1 分钟 → skip；否则每次都查（实时）', () => {
   const now = 1e12;
   assert.equal(autoCheckPlan({ enabled: false, channel: 'tag', now }), 'skip');
   assert.equal(autoCheckPlan({ channel: 'local', now }), 'skip');
-  assert.equal(autoCheckPlan({ channel: 'follow', sessionDone: true, now }), 'skip');
-  assert.equal(autoCheckPlan({ channel: 'follow', now }), 'fetch');
-  assert.equal(autoCheckPlan({ channel: 'tag', cache: { at: now - AUTO_EVERY + 1000 }, now }), 'cached');
-  assert.equal(autoCheckPlan({ channel: 'tag', cache: { at: now - AUTO_EVERY }, now }), 'fetch');
-  assert.equal(autoCheckPlan({ channel: 'tag', cache: { at: now + 5000 }, now }), 'fetch');   // 时钟回拨
+  assert.equal(autoCheckPlan({ channel: 'latest', now }), 'fetch');
+  assert.equal(autoCheckPlan({ channel: 'follow', lastAt: now - 30e3, now }), 'skip');
+  assert.equal(autoCheckPlan({ channel: 'follow', lastAt: now - 61e3, now }), 'fetch');
+  assert.equal(autoCheckPlan({ channel: 'tag', lastAt: now + 5000, now }), 'fetch');   // 时钟回拨
 });
 t('shouldPrompt：有新版且不是「此版本不再提示」的版本', () => {
   const v = updateVerdict('0.9.6', '0.9.7', 'tag');
   assert.equal(shouldPrompt(v, null), true); assert.equal(shouldPrompt(v, '0.9.7'), false); assert.equal(shouldPrompt(v, '0.9.6'), true);
   assert.equal(shouldPrompt(updateVerdict('0.9.7', '0.9.7', 'tag'), null), false); assert.equal(shouldPrompt({ status: 'fail' }, null), false);
 });
-t('updatePromptText：跟随分支 = 刷新；钉了版本 = 重新导入', () => {
+t('updatePromptText：跟随分支 / 最新版加载器 = 刷新；锁定 = 去解锁；钉了版本 = 重新导入', () => {
+  assert.match(updatePromptText('0.9.7', 'latest').how, /刷新/); assert.match(updatePromptText('0.9.7', 'locked').how, /锁定当前版本/);
   assert.match(updatePromptText('0.9.7', 'follow').how, /刷新/); assert.match(updatePromptText('0.9.7', 'tag').how, /重新导入.*v0\.9\.7/);
   assert.match(updatePromptText('0.9.7', 'tag', true).title, /v0\.9\.7/); assert.equal(updatePromptText('1.0.0', 'ref').skip, '此版本不再提示');
 });

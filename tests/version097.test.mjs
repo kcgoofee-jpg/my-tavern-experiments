@@ -89,7 +89,39 @@ t('build_preview_script.py --tag：认 map-v0.9.6.1 / map-s2-v0.1.0，拒绝别�
   let r = run(d, 'build_preview_script.py', '--tag', 'map-v0.9.6.1.2.3', '--out', d); assert.notEqual(r.status, 0); assert.match(r.stderr, /发版标签应形如/);
   execFileSync('git', ['tag', 'map-s2-v0.1.0'], { cwd: d });
   r = run(d, 'build_preview_script.py', '--tag', 'map-s2-v0.1.0', '--out', d); assert.equal(r.status, 0, r.stderr);
-  const j = JSON.parse(fs.readFileSync(path.join(d, '【地图】伊甸地图 S2 v0.1.0.json'), 'utf-8')); assert.equal(j.name, '【地图】伊甸地图 S2 v0.1.0'); assert.match(j.content, /@map-s2-v0\.1\.0\/map\/tavern\/eden-map\.js/);
+  const j = JSON.parse(fs.readFileSync(path.join(d, '【地图】伊甸地图 S2 v0.1.0.json'), 'utf-8')); assert.equal(j.name, '【地图】伊甸地图'); assert.match(j.content, /BAKED = "map-s2-v0\.1\.0"/);
   r = run(d, 'build_preview_script.py', '--tag', 'map-v0.9.6.1', '--out', d); assert.equal(r.status, 2);   // 与 VERSION 不一致（且标签不存在）
 });
+// ---------- 正式版加载器（build_preview_script.py --tag 的脚本内容）：每次加载解析最新正式版，离线退回烘进来的标签 ----------
+import vm from 'node:vm';
+const loaderSrc = (() => { const d = tmpRepo('0.9.6'); execFileSync('git', ['tag', 'map-v0.9.6'], { cwd: d });
+  const r = run(d, 'build_preview_script.py', '--tag', 'map-v0.9.6', '--out', d, '--pointer', 'main'); assert.equal(r.status, 0, r.stderr);
+  return JSON.parse(fs.readFileSync(path.join(d, '【地图】伊甸地图 v0.9.6.json'), 'utf-8')).content; })();
+async function load({ list = null, pointer = null, ls = {}, failImport = [] } = {}) {
+  const store = { ...ls }, imported = [], fetched = [];
+  const win = { localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } },
+    fetch: async u => { fetched.push(u); if (u.startsWith('https://data.jsdelivr.com/') && list) return { ok: true, json: async () => ({ versions: list.map(v => ({ version: v })) }) };
+      if (u.includes('/map/data/latest.json') && pointer) return { ok: true, json: async () => pointer }; throw new Error('offline'); },
+    __edenMapImport: async u => { imported.push(u); if (failImport.some(f => u.includes(f))) throw new Error('404'); } };
+  win.window = win; const ctx = vm.createContext({ ...win, AbortController, setTimeout, clearTimeout, console: { warn() {}, info() {} } });
+  ctx.window = ctx; vm.runInContext(loaderSrc.replace(/\(async \(\) => \{/, 'globalThis.__done = (async () => {'), ctx); await ctx.__done;
+  return { imported, fetched, store, script: ctx.__edenMapScript };
+}
+const tagIn = u => (u.match(/@(map-[^/]+)\//) || [])[1];
+const tests = [
+  ['标签列表有更新的正式版 → 加载它（含第 4 段与新系列）', async () => {
+    let r = await load({ list: ['map-v0.9.5', 'map-v0.9.6', 'map-v0.9.6.1', 'main'] }); assert.equal(tagIn(r.imported[0]), 'map-v0.9.6.1'); assert.equal(r.imported.length, 1);
+    assert.equal(r.script.version, '0.9.6.1'); assert.equal(r.store.edenMapLatestTag, 'map-v0.9.6.1');
+    r = await load({ list: ['map-v0.9.9', 'map-s2-v0.1.0'] }); assert.equal(tagIn(r.imported[0]), 'map-s2-v0.1.0'); assert.equal(r.script.version, 'S2:0.1.0'); }],
+  ['标签列表取不到 → 读 latest.json 指针', async () => { const r = await load({ pointer: { tag: 'map-v0.9.7' } }); assert.equal(tagIn(r.imported[0]), 'map-v0.9.7'); assert.ok(r.fetched.some(u => u.includes('@main/map/data/latest.json'))); }],
+  ['全离线 → 上次成功的；再没有 → 烘进来的标签', async () => {
+    assert.equal(tagIn((await load({ ls: { edenMapLatestTag: 'map-v0.9.8' } })).imported[0]), 'map-v0.9.8');
+    assert.equal(tagIn((await load()).imported[0]), 'map-v0.9.6'); }],
+  ['不会比烘进来的更旧；新标签的代码加载失败 → 退回烘进来的标签', async () => {
+    assert.equal(tagIn((await load({ list: ['map-v0.9.1'] })).imported[0]), 'map-v0.9.6');
+    const r = await load({ list: ['map-v0.9.7'], failImport: ['map-v0.9.7'] }); assert.deepEqual([...new Set(r.imported.map(tagIn))], ['map-v0.9.7', 'map-v0.9.6']); }],
+  ['锁定当前版本 → 不联网，固定用锁定的标签', async () => {
+    const r = await load({ list: ['map-v0.9.9'], ls: { edenMapLockTag: 'map-v0.9.6' } }); assert.equal(tagIn(r.imported[0]), 'map-v0.9.6'); assert.equal(r.fetched.length, 0); assert.equal(r.script.locked, true); }],
+];
+for (const [name, f] of tests) { await f(); n++; console.log('ok 加载器：' + name); }
 console.log(`${n} 项通过`);
