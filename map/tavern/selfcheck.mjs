@@ -142,7 +142,8 @@ export function evaluate(f) {
   else if (v.script !== v.viewer) out.push(item('version', 'warn', `脚本 v${v.script} 与地图 v${v.viewer} 版本不一致：可能是缓存，刷新页面或换线路`, `Script v${v.script} and map v${v.viewer} differ: probably a cache, reload or switch route`));
   else out.push(item('version', 'ok', `版本一致 v${v.script}`, `Versions match v${v.script}`));
   const u = f.update;
-  if (u && u.latest && cmpVer(u.latest, u.current) > 0) out.push(item('update', 'info', `有新版本 ${fmtVer(u.latest)}（当前 ${fmtVer(u.current)}）`, `New version ${fmtVer(u.latest)} (current ${fmtVer(u.current)})`));
+  if (u && u.latest && cmpVer(u.latest, u.current) > 0) { const zh = u.channel === 'latest' ? '：刷新酒馆页面即可' : u.channel === 'locked' ? '：你锁定了当前版本，到「关于」解锁后刷新' : '', en = u.channel === 'latest' ? ': reload the Tavern page' : u.channel === 'locked' ? ': unlock the version in About, then reload' : '';
+    out.push(item('update', 'info', `有新版本 ${fmtVer(u.latest)}（当前 ${fmtVer(u.current)}）${zh}`, `New version ${fmtVer(u.latest)} (current ${fmtVer(u.current)})${en}`)); }
   return out;
 }
 
@@ -201,14 +202,13 @@ export function updateVerdict(current, latest, channel) {
   return cmpVer(latest, current) > 0 ? { status: 'new', latest, current, channel } : { status: 'latest', latest, current, channel };
 }
 
-// ---------------- 自动检查更新（启动时；设置「自动检查更新」默认开） ----------------
-// 每个会话（页面）最多查一次，两次联网至少隔 AUTO_EVERY（6 小时，期间用上次的结果）；本地 / 单独打开不查。
-export const AUTO_EVERY = 6 * 3600 * 1000;
-/** 这次启动怎么办：'skip'（关了 / 本地 / 本会话查过）、'cached'（6 小时内查过，用缓存的 latest）、'fetch'（联网查） */
-export function autoCheckPlan({ enabled = true, channel = 'local', sessionDone = false, cache = null, now = Date.now() } = {}) {
-  if (!enabled || channel === 'local' || sessionDone) return 'skip';
-  const at = +cache?.at || 0;
-  return at > 0 && now >= at && now - at < AUTO_EVERY ? 'cached' : 'fetch';
+// ---------------- 自动检查更新（设置「自动检查更新」默认开） ----------------
+// 实时：脚本加载时、每次打开地图时查一次，面板开着时每 AUTO_EVERY（10 分钟）再查；两次之间至少隔 AUTO_MIN（1 分钟）。本地 / 单独打开不查。
+export const AUTO_EVERY = 10 * 60 * 1000, AUTO_MIN = 60 * 1000;
+/** 这次要不要查：'skip'（关了 / 本地 / 离上次不到 1 分钟）或 'fetch' */
+export function autoCheckPlan({ enabled = true, channel = 'local', lastAt = 0, now = Date.now() } = {}) {
+  if (!enabled || channel === 'local') return 'skip';
+  return lastAt > 0 && now >= lastAt && now - lastAt < AUTO_MIN ? 'skip' : 'fetch';
 }
 /** 要不要弹「地图有新版」：有新版、不是用户说过「此版本不再提示」的那个版本 */
 export const shouldPrompt = (verdict, skipVer) => verdict?.status === 'new' && !!verdict.latest && verdict.latest !== skipVer;
@@ -217,7 +217,9 @@ export function updatePromptText(latest, channel, en = false) {
   const follow = channel === 'follow';
   return {
     title: en ? `New map version ${fmtVer(latest)}` : `地图有新版 ${fmtVer(latest)}`,
-    how: follow ? (en ? 'Your script follows the branch: reload the Tavern page to use it.' : '你的脚本跟随分支：刷新酒馆页面就会用上')
+    how: channel === 'latest' ? (en ? 'Reload the Tavern page to use it (the script always loads the latest release).' : '刷新酒馆页面就会用上（脚本每次加载最新正式版）')
+      : channel === 'locked' ? (en ? 'You locked the current version: turn off "Lock current version" in map settings › About, then reload.' : '你锁定了当前版本：到地图设置「关于」关掉「锁定当前版本」再刷新')
+      : follow ? (en ? 'Your script follows the branch: reload the Tavern page to use it.' : '你的脚本跟随分支：刷新酒馆页面就会用上')
       : (en ? `Your script is pinned: re-import the new script "[Map] Eden map ${fmtVer(latest)}" (same name, overwrite).` : `你的脚本钉了版本：重新导入新版脚本「【地图】伊甸地图 ${fmtVer(latest)}」（同名覆盖）`),
     notes: en ? 'Release notes' : '更新说明', later: en ? 'Later' : '稍后', skip: en ? "Don't remind me for this version" : '此版本不再提示',
   };

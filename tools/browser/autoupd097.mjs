@@ -28,7 +28,9 @@ async function page({ latest = 'map-v9.9.9', build = { version: '9.9.9', code: '
   const skip = await p.evaluate(() => ({ el: !!document.querySelector('#eden-map-root .em-upd'), ls: localStorage.getItem('edenMapUpdSkip') }));
   rep.check('skip_version', !skip.el && skip.ls === '9.9.9', JSON.stringify(skip));
   await p.reload(); await p.waitForSelector('#eden-map-root .em-fab'); await B.wait(2500);
-  rep.check('skip_persists_and_cached', !(await q(p, '#eden-map-root .em-upd')) && hits.api === 1, JSON.stringify(hits));   // 6 小时内不再联网
+  rep.check('skip_persists_realtime', !(await q(p, '#eden-map-root .em-upd')) && hits.api === 2, JSON.stringify(hits));   // 实时：每次加载都查（不再 6 小时节流），跳过的版本不再弹
+  await p.evaluate(() => { window.__edenMapCheckAt = 0; }); await p.click('#eden-map-root .em-fab'); await B.wait(5000);
+  rep.check('check_on_open', hits.api === 3, JSON.stringify(hits));
   await P.ctx.close();
 }
 // 2 面板开着不弹，关上再弹；「稍后」只关这一次；钉版本文案 = 重新导入
@@ -42,6 +44,14 @@ async function page({ latest = 'map-v9.9.9', build = { version: '9.9.9', code: '
   rep.check('shows_after_close', !!t && /重新导入新版脚本「【地图】伊甸地图 v9\.9\.9」/.test(t.text), JSON.stringify(t));
   await p.click('#eden-map-root .em-upd .em-later');
   rep.check('later_closes', !(await q(p, '#eden-map-root .em-upd')));
+  await P.ctx.close();
+}
+// 2b 正式版加载器（channel latest）：文案 = 刷新即可；锁定时 = 去解锁
+{
+  const { P, p } = await page({ channel: 'latest' });
+  await p.waitForSelector('#eden-map-root .em-upd', { timeout: 15000 }).catch(() => {});
+  const t = await q(p, '#eden-map-root .em-upd');
+  rep.check('latest_loader_text', !!t && /脚本每次加载最新正式版/.test(t.text), JSON.stringify(t));
   await P.ctx.close();
 }
 // 3 强制更新：min_version 高于当前 → 红框、role=alert、没有「此版本不再提示」；本次关闭后刷新再弹

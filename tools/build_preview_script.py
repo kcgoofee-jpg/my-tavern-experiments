@@ -5,7 +5,7 @@
   python3 tools/build_preview_script.py <git ref>        # 例如提交号 aa16346、标签 map-v0.9.1
   python3 tools/build_preview_script.py <git ref> --out 目录
   python3 tools/build_preview_script.py --follow cloud/tc-mid-low   # 可复用：每次打开时取该分支最新提交，推送后不用重新导入
-  python3 tools/build_preview_script.py --tag map-v0.9.1            # 正式发版脚本（小修补丁 map-v0.9.1.1；新系列 map-s2-v0.1.0）；：钉在发版标签（不改角色卡时随世界书附加条目一起发给用户）
+  python3 tools/build_preview_script.py --tag map-v0.9.6            # 正式版加载器（0.9.6 起：每次加载最新正式版，离线退回该标签；小修补丁 map-v0.9.6.1；新系列 map-s2-v0.1.0）；：钉在发版标签（不改角色卡时随世界书附加条目一起发给用户）
 输出：~/Downloads/酒馆/脚本/【地图】预览-<ref>.json；--tag 输出 【地图】伊甸地图 v<版本>.json（单个脚本 JSON，酒馆助手「导入脚本」可直接导入）。
 --tag 不创建标签：标签不存在（本地与 origin 都没有）、或与 VERSION 不一致时**退出码 2、不产出文件**（2026-09-27 起；以前只提醒）；发版前先打标签、推送、预热 CDN。
 脚本内容与卡内相同（tools/add_script_to_card.py 的多线路写法）：依次尝试国内镜像 jsdmirror → 官方 jsDelivr，加载成功就停。
@@ -48,14 +48,45 @@ def build(ref, channel='ref'):
     }
 
 
-def build_release(tag):
-    """正式版：与 build() 同样的多线路加载，钉在发版标签；id 固定，下个版本导入时覆盖旧版而不是多一份。"""
+LOADER = r"""// 伊甸地图正式版加载器（0.9.6 起）：每次加载取最新正式版标签（map-v* / map-s<n>-v*），加载那个标签的代码；
+// 取不到（离线 / 接口挂了）用上次成功的，再不行用生成时烘进来的标签。设置「锁定当前版本」（edenMapLockTag）时固定用锁定的标签。
+(async () => {
+  const REPO = %(repo)s, BAKED = %(tag)s, PTR = %(ptr)s, HOSTS = %(hosts)s, KEY = 'edenMapLatestTag';
+  const imp = window.__edenMapImport || (u => import(u));
+  const RE = /^map-(?:s(\d+)-)?v(\d+\.\d+\.\d+(?:\.\d+)?)$/;
+  const key = t => { const m = RE.exec(String(t || '')); if (!m) return null; const p = m[2].split('.').map(Number); while (p.length < 4) p.push(0); return [+(m[1] || 1), ...p]; };
+  const cmp = (a, b) => { const x = key(a), y = key(b); for (let i = 0; i < 5; i++) if (x[i] !== y[i]) return x[i] > y[i] ? 1 : -1; return 0; };
+  const get = async u => { const c = new AbortController(), to = setTimeout(() => c.abort(), 4000);
+    try { const r = await fetch(u, { cache: 'no-store', credentials: 'omit', signal: c.signal }); return r.ok ? await r.json() : null; } catch (e) { return null; } finally { clearTimeout(to); } };
+  const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; };
+  let tag = key(ls('edenMapLockTag')) ? ls('edenMapLockTag') : null, locked = !!tag;
+  if (!tag) {
+    const j = await get(`https://data.jsdelivr.com/v1/packages/gh/${REPO}?t=${Date.now()}`);
+    tag = ((j && j.versions) || []).map(v => (typeof v === 'string' ? v : v && v.version)).filter(key).sort(cmp).pop() || null;
+    for (const h of tag ? [] : HOSTS) { const p = await get(`https://${h}/gh/${REPO}@${PTR}/map/data/latest.json?t=${Date.now()}`); if (p && key(p.tag)) { tag = p.tag; break; } }
+    if (!tag && key(ls(KEY))) tag = ls(KEY);
+    if (!tag || cmp(tag, BAKED) < 0) tag = BAKED;   // 不会比生成时的版本还旧
+    ls(KEY, tag);
+  }
+  try { const m = RE.exec(tag); Object.assign(window.__edenMapScript, { ref: tag, version: (+(m[1] || 1) > 1 ? 'S' + m[1] + ':' : '') + m[2], locked }); } catch (e) {}
+  for (const t of tag === BAKED ? [tag] : [tag, BAKED]) for (const h of HOSTS) {
+    const u = `https://${h}/gh/${REPO}@${t}/map/tavern/eden-map.js`;
+    try { await imp(u); return; } catch (e) { console.warn('[地图] 线路不可用，换下一个', u); }
+  }
+})();
+"""
+
+
+def build_release(tag, pointer='main'):
+    """正式版（0.9.6 起）：加载器——每次加载解析最新正式版标签再加载，离线退回烘进来的标签；id 固定，导入新版时覆盖旧版而不是多一份。
+    pointer：latest.json 所在分支（jsDelivr 标签列表取不到时的第二来源；tools/ship.sh --release 更新并清缓存）。"""
     ver = verlib.ver_of_tag(tag) or tag
     shown = verlib.display(ver) if verlib.parse(ver) else ver   # v0.9.6 / v0.9.6.1 / S2 v0.1.0
-    d = build(tag, 'tag')
-    d.update(name=f'【地图】伊甸地图 {shown}', id=str(uuid.uuid5(uuid.NAMESPACE_URL, 'eden-map-release')),
-             info=f'伊甸地图 {shown}（外挂脚本，不改角色卡）：加载 {REPO}@{tag} 的 map/tavern/eden-map.js（jsdmirror → jsDelivr）。'
-                  '配合世界书「伊甸地图·世界书附加条目」使用。升级时导入新版同名脚本会覆盖本条；请停用各种预览版地图脚本，避免两个悬浮按钮互相替换。' + CREDIT)
+    d = build(tag, 'latest')
+    d['content'] = stamp(about('latest', tag)) + LOADER % {'repo': json.dumps(REPO), 'tag': json.dumps(tag), 'ptr': json.dumps(pointer), 'hosts': json.dumps(HOSTS)}
+    d.update(name='【地图】伊甸地图', id=str(uuid.uuid5(uuid.NAMESPACE_URL, 'eden-map-release')),
+             info=f'伊甸地图（外挂脚本，不改角色卡；生成于 {shown}）：每次打开自动加载最新正式版（{REPO} 的 map-v* 标签），刷新酒馆即更新，不用重新导入；'
+                  '连不上时用上次的版本。地图设置「关于」里可以「锁定当前版本」。配合世界书「伊甸地图·世界书附加条目」使用。请停用各种预览版地图脚本，避免两个悬浮按钮互相替换。' + CREDIT)
     return d
 
 
@@ -93,6 +124,7 @@ def main():
     ap.add_argument('ref', nargs='?', help='git 提交号 / 标签 / 分支名')
     ap.add_argument('--follow', metavar='分支', help='生成跟随分支最新提交的可复用预览脚本')
     ap.add_argument('--tag', metavar='标签', help='生成钉在发版标签的正式脚本（如 map-v0.9.1；不创建标签）')
+    ap.add_argument('--pointer', help='--tag：latest.json 所在分支（默认当前分支；要和 tools/ship.sh --release 发版时的分支一致）')
     ap.add_argument('--out', default=os.path.expanduser('~/Downloads/酒馆/脚本'), help='输出目录（默认 ~/Downloads/酒馆/脚本）')
     a = ap.parse_args()
     if a.follow:
@@ -118,7 +150,7 @@ def main():
         os.makedirs(a.out, exist_ok=True)
         path = os.path.join(a.out, f"【地图】伊甸地图 {verlib.display(verlib.ver_of_tag(tag))}.json")
         with open(path, 'w', encoding='utf-8') as f:
-            json.dump(build_release(tag), f, ensure_ascii=False, indent=2); f.write('\n')
+            json.dump(build_release(tag, a.pointer or (subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True).stdout.strip() or 'main')), f, ensure_ascii=False, indent=2); f.write('\n')
         print(f'写入 {path}'); return
     if not a.ref: ap.error('需要 ref、--follow 或 --tag')
     ref = a.ref.strip()
