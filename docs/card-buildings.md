@@ -24,7 +24,7 @@
 | P1 开局 | tc_upper | `kelly_residence` | 凯莉的宅邸 | ✅ | 用户决定 | 凯莉的宅邸 `map/props/kelly_residence/` | 标准（r2 7 / 8） | 开局三 |
 | P1 开局 | tc_upper | `pm_residence` | 首相府 | ✅ | 卡 + 推断位置 | 首相府 `map/props/pm_residence/` | 标准（r2 7 / 7） | 开局五 |
 | P2 机构 | tc_low | `amc_facility` | 资产管理委员会下层设施 | ✅ | 卡 | 委员会下层设施 `map/props/amc_facility/` | 标准（r3 7 / 8） |  |
-| P2 机构 | tc_low | `enforcement_low` | 执法局下层分局 | ✅ | 卡 | — | — |  |
+| P2 机构 | tc_low | `enforcement_low` | 执法局下层分局 | ✅ | 卡 | 执法局下层分局 `map/props/enforcement_low/` | 标准（r3 7.5 / 7） |  |
 | P2 机构 | tc_low | `outpost` | 防卫军前沿哨所 | ✅ | 卡 | — | — |  |
 | P2 机构 | tc_low | `prison` | 监狱 | 🆕 | 仓库推断 | — | — |  |
 | P2 机构 | tc_low | `soup_kitchen` | 圣光教会施粥站 | ✅ | 卡 | — | — |  |
