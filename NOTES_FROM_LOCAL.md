@@ -607,3 +607,50 @@
 - **遗留（v0.9.2 精修）**：云海重做（P0，等参考图）；压边云像棉花垫、云沟槽描线；苏州仍偏同模板；小法式像「楼 + 水池」；方块丛林块心仍成格；九曲桥到处用；伊甸各园像图章；岭南三进等宽、镬耳剪影弱；SW 要塞岛 3 黑点像炮位（可选）；气候塔光晕像 UI；lineup 工具不居中。
 - 发版条件：C2 查看器 375 px 带标记截图（对比度 ≥ 4.5）；C3 切片后实测标准档 ≤ 1.5 MB、省流首屏 ≤ 3 s。
 - 上层 8K 需按当前 HEAD 重渲（伊甸椭圆、玫瑰园、岭南塘都变了）：`bash tools/render_all.sh upper upper_city --res 8000 --samples 64`。
+
+## 2026-09-27 接手（DSH 会话）：阅读理解 + 三路 review + 收尾 + 继续开发
+
+**接手时的状态**：本地 `cloud/tc-mid-low` 落后 origin 36 个提交、工作区有一个 27 MB 未跟踪的
+`blender/data/landmarks/`、一堆指向 `/private/tmp` 的失效 worktree；`cloud/estate2-r4`（伊甸 r4，5 个提交）
+已经推到 GitHub 但没并进主线；`VERSION` 0.9.4、CHANGELOG 里 0.9.5 未发版。最后一次本机活动是 18:34（props/dairy r3）。
+
+**收尾做了什么**
+1. `git fetch --all --prune --tags` + 快进到 origin（36 个提交）；`git worktree prune` 清掉 13 个失效 worktree。
+2. `blender/data/landmarks/` 收进 `.gitignore`（与 `estate2/`、`props/`、`tex/` 一致：本地素材缓存，仓库里没有任何脚本按这个路径取用）。文件保留在本机。
+3. **estate2 r4 并入主线**：`cloud/estate2-r4` rebase 到 `origin/cloud/tc-mid-low` 后快进合并（rebase 前 tip `efd1be6`，
+   rebase 后 `942ef36`；原分支保留、`--force-with-lease` 同步）。四处冲突按「主线更新的设定对齐措辞 + 分支的新结构」解：
+   `layout.py`（服务院四翼取代仆役楼、机库→悬浮载具库、机库顶 barrel）、`plan2d.py`（访客停靠平台、服务区标注改「服务院四翼」）、
+   `docs/eden-lore-space.md`（保留主线的「推断」标注）。合并后 `smoke` 全绿。
+4. 验证基线：`tools/smoke.sh` 全绿（注册表、令牌内联、11 个单测、语法、JSON）；补装 `tools/browser` 的 Playwright 依赖后
+   `tools/browser/accept.mjs` **15/15 通过**（省流首屏 440 ms、无死区、庄园 146 draw calls、手机 375/iPhone 各 434/494 ms）。
+
+**review（三路只读审阅，报告在 `docs/reviews/takeover_095/`）**：运行时（酒馆脚本）、查看器与界面、工具链与测试。
+无 P0；运行时无 P1 之外的结构性问题；工具链的问题几乎全在**发版链路**（校验工作区而非提交、五处版本号无人核对、CDN 失败不致命）。
+本次已修：运行时两个 P1（后台预加载吃掉未读水位、页面内换版本留下双实例）+ 五个 P2（重复发人物、`dvh` 回退、
+裸标签吃叙述、头像两路径不一致、bfcache）、文档三处与代码不符、发版链路六项（新增 `tools/check_version.py` 等）。
+未修项按优先级列在 `docs/reviews/takeover_095/README.md` 末尾。
+
+**接着做（用户 2026-09-27 21:3x 选定顺序）**
+1. 文档与仓库整理（本次已做 README / ROADMAP / tooling / tt-checklist / 两处代码-文档不符；浏览器依赖已恢复）。
+2. v0.9.5 发版收尾（VERSION / build.json / CHANGELOG / 标签 / CDN 预热 / 两个交付物；TT 实测由用户做）。
+3. 上层 8K 重渲 + 3 条设定对齐（去 isle2 礼拜堂、罗斯柴尔德飞艇港改悬浮载具停靠平台、府邸标签按 maps.json）。
+4. 云海 CoC 方案落地（原型 `map/_proto/clouds.html` 已提交、评审有条件通过；落地要接进 `tc_clouds.py` 并重渲上层）。
+
+**注意**：伊甸庄园现在有两条并行实现——`blender/estate2/`（能出图：外观 / 俯视 / 近景 / 夜景，r4 已并入）与
+`blender/estate/`（CLOUD_TASK8 的模块化脚手架：CONTRACT、91 房间平面、房间多边形导出，除 `plan.py` / `legacy_manor.py` 外多是桩）。
+CLOUD_TASK8 的剖切等轴 ⑥ 与 glTF ⑦ 还没开始，下一步做伊甸时先把这两条合成一条（以 estate2 的外观为准）。
+
+## 2026-09-27 接手（续）：v0.9.5 已发版；渲染按用户要求暂缓
+
+- **发版完成**：`VERSION` 0.9.5、`map/data/build.json` = `S1-0905-R-0280`（构建号 = `map-v0.9.5` 的提交数 280，`tools/check_version.py` 已核对）、
+  CHANGELOG 去掉「未发版」并补了接手修补条目、README / ROADMAP 同步；标签 `map-v0.9.5` 已推。
+  `bash tools/smoke.sh --cdn map-v0.9.5` 通过（jsDelivr 认这个标签，25 s），`bash tools/warm_cdn.sh map-v0.9.5 24` 全量预热。
+- **交付物**（在本机 `~/Downloads/酒馆/`）：
+  - 脚本 `脚本/【地图】伊甸地图 v0.9.5.json`（钉 `map-v0.9.5`；`build_preview_script.py` 现在标签不存在或与 VERSION 不符会退出码 2）
+  - 世界书 `世界书/伊甸地图·世界书附加条目 v0.9.5.json`（7 条：3 条常驻 + 人物位置 + 方位 3 条 EJS 条件；82 种事件类型；
+    对现有 v0.9.1 世界书做过结构核对，通过）
+- **用户 2026-09-27 决定：渲染先不做**。因此下面两件事**没有开始**，留给下次：
+  1. 上层 8K 重渲 + 3 条设定对齐（去 isle2 礼拜堂、罗斯柴尔德飞艇港→悬浮载具停靠平台、府邸标签）——命令已备好：
+     `bash tools/render_all.sh upper upper_city --res 8000 --samples 64`（`render_all.sh` 现在会传播 check_maps 的失败）。
+  2. 云海 CoC 方案落地（原型与评审在 `docs/reviews/clouds_coc/r1.md`，`map/_proto/clouds.html`）。
+- TT 实测仍由用户按 `docs/tt-test-checklist.md` 做（0–7 节是 0.9.1 基线，8b/8c/8d 是 0.9.2/0.9.3/0.9.5 新增）。
