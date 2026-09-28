@@ -141,7 +141,7 @@
           "alias": ["施粥站", "粥站", "下层教区", "孤儿收容所", "免费诊所"] },
         "outpost": { "name": "防卫军前沿哨所", "name_en": "Defense Force Forward Outpost", "tag": "set",
           "src": "天城·下层：天城防卫军的前沿哨所（位置为推断）",
-          "alias": ["前沿哨所", "哨所"] },
+          "alias": ["前沿哨所", "哨所"] , "link": {"map": "lm_outpost", "label": "查看三维模型", "label_en": "View 3D model"} },
         "amc_facility": { "name": "资产管理委员会下层设施", "sub": "直管设施 · 另有管理中心与集中工厂", "name_en": "Asset Management Committee, Lower Facility", "sub_en": "Directly run · plus an admin centre and a central works", "tag": "set",
           "src": "天城·下层：资产管理委员会直管的下层公共收容设施，周边有执法分队驻守（委员会总部位置卡未写；图上只画有围墙的建筑外观，位置为推断）。卡里下层另有委员会的公共设施管理中心与一座集中工厂，和直管设施是不同的设施，图上合画为一处。下层帮派控制大部分地盘，唯一相对安全的是委员会直管设施的周边",
           "alias": ["委员会下层设施", "公共收容设施"] , "link": {"map": "lm_amc_facility", "label": "查看三维模型", "label_en": "View 3D model"} },
@@ -172,6 +172,7 @@
     "lm_highland": {"title": "旷野高地（三维）", "title_en": "Wild Highlands (3D)", "parent": "site_highland", "kind": "estate", "viewer3d": "highland", "src": "props/viewer3d.html", "alias": ["旷野高地（三维）"], "src_note": "开局七地点的三维模型（标准版：标准档 + 低档 glb；台地、崖壁、下山小径、焦黑地面，地形为仓库推断）；从 site_highland.highland_plateau 标记的「查看三维模型」进。源：blender/landmarks/highland/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_amc_facility": {"title": "资产管理委员会下层设施（三维）", "title_en": "Asset Management Committee, Lower Facility (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "amc_facility", "src": "props/viewer3d.html", "alias": ["资产管理委员会下层设施（三维）"], "src_note": "只画外观的机构院落三维（标准版：标准档 + 低档 glb；行政中心、中央工坊、门岗、执法分队驻点、缓冲街道，位置与形制为仓库推断）；从 tc_low.amc_facility 标记的「查看三维模型」进。源：blender/landmarks/amc_facility/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_enforcement_low": {"title": "执法局下层分局（三维）", "title_en": "Enforcement Bureau, Lower Branch (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "enforcement_low", "src": "props/viewer3d.html", "alias": ["执法局下层分局（三维）"], "src_note": "只画外观的下层分局三维（标准版：标准档 + 低档 glb；加固破旧的分局主楼、封板西翼、双道闸口、车场，位置与形制为仓库推断）；从 tc_low.enforcement_low 标记的「查看三维模型」进。源：blender/landmarks/enforcement_low/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_outpost": {"title": "防卫军前沿哨所（三维）", "title_en": "Defense Force Forward Outpost (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "outpost", "src": "props/viewer3d.html", "alias": ["防卫军前沿哨所（三维）"], "src_note": "只画外观的前沿哨所三维（标准版：标准档 + 低档 glb；集装箱指挥所、观察塔、防御围墙、外墙缺口处的反兽障碍带，位置与形制为仓库推断）；从 tc_low.outpost 标记的「查看三维模型」进。源：blender/landmarks/outpost/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_pm_residence": {
       "title": "首相府（三维）", "title_en": "Prime Minister's Residence (3D)", "parent": "tc_upper", "kind": "estate",
       "viewer3d": "pm_residence", "src": "props/viewer3d.html", "alias": ["首相府花园"],

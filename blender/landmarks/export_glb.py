@@ -47,6 +47,9 @@ BUDGET = {
     'props_vehicles': (20000, 1024), 'props_roof': (6000, 512),
     # enforcement_low（执法局下层分局；walls_ext / site_ground / props_gate / props_lights / props_vehicles 共用上面的预算）
     'props_counter': (6000, 1024), 'props_motorpool': (20000, 1024), 'props_security': (12000, 1024),
+    # outpost（防卫军前沿哨所；walls_ext / site_ground / props_gate / props_lights / props_vehicles 共用上面的预算）
+    'props_tower': (8000, 1024), 'props_perimeter': (40000, 2048), 'props_barricade': (30000, 2048),
+    'props_utility': (8000, 1024), 'props_breach': (20000, 2048),
 }
 
 
