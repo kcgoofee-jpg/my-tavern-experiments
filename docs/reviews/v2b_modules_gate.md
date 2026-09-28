@@ -7,7 +7,7 @@
 | 架构 / 代码质量 | 8.5 | 0 |
 | 性能 | 8 | 0 |
 
-## 第 1 轮 P2 与处理（提交 7d17a20）
+## 第 1 轮 P2 与处理（提交 669d2ee）
 - 架构：「求值期不碰别的块」没有测试护栏 → 加了 `tests/app_modules.test.mjs`。它在桩 DOM 下把核心与全部外挂求值一遍；人为在顶层引用别的块的 let 时会报 TDZ，已验证能报出来。同一个测试还固定了 bridge 名单。
 - 架构：`--committed` 模式下 schema 读的是工作区 → 改为读提交树。
 - 架构：并行加标记的 agent 容易撞上 `additionalProperties:false` → 每个对象都放行 `_` 注释键，并写明「同一提交里先登记字段」。
@@ -39,7 +39,7 @@
 - 庄园第一帧最后一次测出 657 ms，比前几次（398–467）明显高。庄园页没有改动，可能是测量噪声，发版后应在 CDN 上复测。
 
 ## 提交
-- 4424580 模块化（核心拆分 + 外挂 ES 模块 + 懒加载补偿 + 测试 / 工具更新）
-- e01c192 JSON Schema + jsonschema_lite + check_maps + arch-v2 §1.3
-- afe4a71 modulepreload 排序
-- 7d17a20 门控修复
+- c52359c 模块化（核心拆分 + 外挂 ES 模块 + 懒加载补偿 + 测试 / 工具更新）
+- ed8aef7 JSON Schema + jsonschema_lite + check_maps + arch-v2 §1.3
+- 3d9e047 modulepreload 排序
+- 669d2ee 门控修复
