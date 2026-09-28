@@ -4,6 +4,7 @@ blender/data/*.i16
 map/art/world_test.png
 *.blend1
 .claude/
+.pi/
 map/art/world_8k.png
 map/tavern/test-*.html
 map/art/tc_upper_preview.png
