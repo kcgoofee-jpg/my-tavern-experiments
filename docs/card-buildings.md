@@ -27,7 +27,7 @@
 | P2 机构 | tc_low | `enforcement_low` | 执法局下层分局 | ✅ | 卡 | 执法局下层分局 `map/props/enforcement_low/` | 标准（r3 7.5 / 7） |  |
 | P2 机构 | tc_low | `outpost` | 防卫军前沿哨所 | ✅ | 卡 | 防卫军前沿哨所 `map/props/outpost/` | 标准（r1 7 / 7） |  |
 | P2 机构 | tc_low | `prison` | 监狱 | 🆕 | 仓库推断 | 监狱（外观）`map/props/prison/` | 标准（r1 7 / 7） |  |
-| P2 机构 | tc_low | `soup_kitchen` | 圣光教会施粥站 | ✅ | 卡 | — | — |  |
+| P2 机构 | tc_low | `soup_kitchen` | 圣光教会施粥站 | ✅ | 卡 | 施粥站 `map/props/soup_kitchen/` | 标准（r1 7 / 7） |  |
 | P2 机构 | tc_mid | `admin_council` | 天城政务院 | 🆕 | 仓库推断 | — | — |  |
 | P2 机构 | tc_mid | `barracks_ring` | 环城军营带 | ✅ | 卡 | — | — |  |
 | P2 机构 | tc_mid | `butler_academy` | 天城贵族管家学院 | 🆕 | 仓库推断 | — | — |  |
