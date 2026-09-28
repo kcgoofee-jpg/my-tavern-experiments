@@ -94,9 +94,10 @@ python3 tools/cors_server.py <端口> map   # 并行 worktree 各用不同端口
 
 ## 5. Blender：模型、草稿、审阅、定稿、glb、底图
 
-**GPU 规矩**：开渲前等别人的 Blender 退出（`pgrep -x Blender` 为空）和安静期锁（`tools/quiet_wait.sh`）；只 kill 自己的 PID，绝不 `pkill` / `killall`。统一用启动器：
+**GPU 规矩**：开渲前等别人的 Blender 退出（`pgrep -x Blender` 为空）、锁文件排队、安静期锁（`tools/quiet_wait.sh`）；ASCII TMPDIR；崩溃重试一次；只 kill 自己的 PID，绝不 `pkill` / `killall`。统一用启动器 `tools/blender_run.sh`（`skills/card-map/blender_run.sh` 是转发到它的旧路径，保留兼容）：
 ```bash
-bash skills/card-map/blender_run.sh <S>/x.log -b --factory-startup --python-expr \
+bash tools/blender_run.sh --log <S>/x.log --asset <建筑> --kind draft --res 900 --spp 24 -- \
+  -b --factory-startup --python-expr \
   "import runpy; runpy.run_path('blender/landmarks/<建筑>/build.py', run_name='__main__')" -- --res 900 --samples 24 --out <S>/x_draft.jpg --blend <S>/x.blend
 #   PID 写在 <S>/x.log.pid
 ```

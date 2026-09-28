@@ -22,14 +22,15 @@ GOOD_ENOUGH = [  # 渲染「够用」门槛（用户 2026-09-27 同意，见 doc
     '严格：TT 内性能——省流首屏 ≤ 3 s、单层标准档 ≤ 1.5 MB、开关面板 20 次 JS 堆不增长；标准档下无明显瑕疵（只判有 / 无）',
     '参考（不阻断）：写实度（≥ 6 为宜）、园林与建筑史、拼缝与重复；8K 局部只抽查明显瑕疵，不打分',
     '每条问题标注在哪一档可见（省流 2000 / 标准 4000 / 清晰 8000）；只在清晰档可见的自动降为 P2',
-    '轮次：每个资产每个版本最多 2 轮；一轮提升 < 0.5 分就提前停；到上限按最高分版本发；遗留进 backlog，不开新轨道',
+    '轮次：默认 1 轮；只有出现 P0 或有人设打分 < 7 才开第 2 轮，2 轮为上限；一轮提升 < 0.5 分就提前停；到上限按最高分版本发；遗留进 backlog，不开新轨道',
+    '任何 < 7 分必须附一条可复现的截图文件名 + 图内具体位置，不许凭印象扣分；给不出证据的 < 7 分按 7 分处理并要求补证据',
     '`art/rp_glance`（RP 玩家扫一眼）可以否决「再开一轮」',
 ]
 STAGES = {
-    'city': (['art/rp_glance', 'art/setting', 'art/readability', 'art/realistic_aerial', 'art/seams'],
+    'city': (['art/rp_glance', 'art/setting', 'art/readability', 'art/realistic_aerial', 'art/seams', 'art/phone', 'art/fidelity'],
              ['渲染无报错；`python3 tools/check_maps.py` 通过', *GOOD_ENOUGH,
               '没有穿模或压在路上的楼；中层检查点与下层 7 号井平面位置不变']),
-    'upper': (['art/rp_glance', 'art/setting', 'art/readability', 'art/realistic_aerial', 'art/seams', 'art/garden_history'],
+    'upper': (['art/rp_glance', 'art/setting', 'art/readability', 'art/realistic_aerial', 'art/seams', 'art/garden_history', 'art/phone', 'art/fidelity'],
               [*GOOD_ENOUGH, '伊甸在默认视野里一眼最显眼；英式 / 法式 800 m、苏州 / 岭南约 400 m 视野能认出（严格）',
                '不做岛影（用户未批准）；航线不计门控']),
     'clouds': (['art/rp_glance', 'art/readability', 'art/realistic_aerial'],
@@ -37,12 +38,12 @@ STAGES = {
     'render8k': (['art/rp_glance', 'art/seams'],
                  ['四张都生成；`check_maps.py` 通过', '每层抽 3 处 8K 局部：只查明显瑕疵（锯齿、橘皮、断线、怪影），不打分',
                   '浏览器（`node tools/browser/accept.mjs <目录>`）：省流首屏 ≤ 3 s、切层、云雾开关、事态飞行正常；桌面与 375 手机截图']),
-    'estate': (['art/rp_glance', 'estate/architect', 'estate/interior', 'estate/luxury_marketer', 'estate/interaction_perf'],
+    'estate': (['art/rp_glance', 'estate/architect', 'estate/interior', 'estate/luxury_marketer', 'estate/interaction_perf', 'estate/phone', 'estate/fidelity'],
                [*GOOD_ENOUGH, '庄园重点：马桶、毛巾近景「清楚有质感」（严格）；不再要求每位 ≥ 8']),
     # card-map 技能（任意卡的建筑草稿）：建筑可信度 + 与卡一致，另加每轮现编人设
     'landmark': (['card/architect', 'card/fidelity'],
-                 ['与卡一致 ≥ 7（严格）；建筑可信度 ≥ 6', '每个资产每个版本最多 2 轮；一轮提升 < 0.5 分就停',
-                  '只评建筑、构图与设定一致性']),
+                 ['与卡一致 ≥ 7（严格）；建筑可信度 ≥ 6', '默认 1 轮；只有 P0 或有人设 < 7 才开第 2 轮，2 轮为上限；一轮提升 < 0.5 分就停',
+                  '< 7 分必须附可复现截图 + 位置', '只评建筑、构图与设定一致性']),
     'ui': (['ui/phone', 'ui/rp', 'ui/design', 'ui/a11y', 'ui/weak_net'],
            ['与上轮同步骤复跑，逐条确认 `docs/ui-audit.md` 的编号（✅ / ⚠ / ❌）',
             '没有新的 P0 / P1 回归；E5 前后对比每位人设的分数',
@@ -107,7 +108,29 @@ def main():
     ap.add_argument('--changes', default='', help='本轮改动的一段话（给审阅者看）')
     ap.add_argument('--facts', help='设定事实 / 额外说明文件（原样并入简报）')
     ap.add_argument('--personas', help='只用这些人设（逗号分隔，如 art/seams,art/setting）')
+    ap.add_argument('--log-scores', metavar='CSV', help='把定稿分数追加到这个 CSV（一般是 logs/review_scores.csv，列：date,stage,round,persona,score,note）；配 --scores persona=分数[,persona=分数...] 使用')
+    ap.add_argument('--scores', help='与 --log-scores 搭配：persona=分数 列表，逗号分隔，如 art/seams=7.5,art/setting=8')
     a = ap.parse_args()
+
+    if a.log_scores:
+        import csv, datetime
+        rows = []
+        for item in (a.scores or '').split(','):
+            item = item.strip()
+            if not item or '=' not in item: continue
+            persona, score = item.split('=', 1)
+            rows.append([datetime.date.today().isoformat(), a.stage, a.round, persona.strip(), score.strip(), ''])
+        if rows:
+            logp = os.path.join(ROOT, a.log_scores)
+            os.makedirs(os.path.dirname(logp), exist_ok=True)
+            new = not os.path.exists(logp)
+            with open(logp, 'a', newline='', encoding='utf-8') as f:
+                w = csv.writer(f)
+                if new: w.writerow(['date', 'stage', 'round', 'persona', 'score', 'note'])
+                w.writerows(rows)
+            print(f'{len(rows)} 条分数写入 {logp}')
+        else:
+            print('--log-scores 需要同时给 --scores persona=分数[,...]', file=sys.stderr)
 
     out = os.path.abspath(a.out); os.makedirs(os.path.join(out, 'prompts'), exist_ok=True); os.makedirs(os.path.join(out, 'reports'), exist_ok=True)
     personas, gates = STAGES[a.stage]
@@ -129,7 +152,8 @@ def main():
              f'仓库 `{ROOT}`，分支 `{sh("git", "rev-parse", "--abbrev-ref", "HEAD")}`，HEAD `{sh("git", "rev-parse", "--short", "HEAD")}`，对比基准 `{since}`。',
              '只读：不改仓库文件、不做 git 操作。图片用 Read 打开。', '',
              '## 门控阈值（docs/GOAL_v0.9.1.md）', *[f'- {g}' for g in gates],
-             '- 每轮除固定人设外，还有一位根据本轮改动现编的审阅者（`tools/review/fresh_persona.md`），分数同等计入。', '',
+             '- 每轮除固定人设外，还有一位根据本轮改动现编的审阅者（`tools/review/fresh_persona.md`），分数同等计入。',
+             '- 每个人设提示词必须先读 `docs/rejected.md`（用户已否决清单），逐条确认本轮没有复发；复发记 P0。', '',
              '## 图片 / 材料', *(img_lines or ['（未给图片）']), '']
     if a.changes: brief += ['## 本轮改动（编排者说明）', a.changes, '']
     brief += ['## 提交记录', '```', sh('git', 'log', '--oneline', f'{since}..HEAD') or '（无）', '```', '',

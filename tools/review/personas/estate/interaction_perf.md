@@ -5,6 +5,7 @@
 测法：`tools/browser/lib.mjs`（`openEstate`、`estateStats`、`wheelDriftEstate`、`openInHost`、`parentScrollY`、`deadZones`），或直接跑 `tools/browser/accept.mjs --only estate,embed`。
 
 共同规则：
+- 先读 `docs/rejected.md`（用户已否决清单），逐条确认本轮没有复发；复发记 P0。
 - 只读，不改文件、不做 git 操作。先读简报 `{{BRIEF}}`（截图清单、实测数据 `measurements.md`、设定 `docs/eden-estate.md`、上轮裁决）。
 - 截图以 1440×900 + GPU 为准（不带 `?stats`）；需要自己看时用 `tools/browser/lib.mjs` 的 `openEstate` / `estateStats`。
 - 按用户原话的绝对标准打分（「顶奢」「传承」「马桶、毛巾清楚有质感」），不按进步幅度。这是第 {{ROUND}} 轮。
