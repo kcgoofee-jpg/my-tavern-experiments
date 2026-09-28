@@ -30,7 +30,7 @@
 | P2 机构 | tc_low | `soup_kitchen` | 圣光教会施粥站 | ✅ | 卡 | 施粥站 `map/props/soup_kitchen/` | 标准（r1 7 / 7） |  |
 | P2 机构 | tc_mid | `admin_council` | 天城政务院 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `barracks_ring` | 环城军营带 | ✅ | 卡 | 军营带与军事学院 `map/props/barracks/` | 标准（r2 7.5 / 7.5） |  |
-| P2 机构 | tc_mid | `butler_academy` | 天城贵族管家学院 | 🆕 | 仓库推断 | — | — |  |
+| P2 机构 | tc_mid | `butler_academy` | 天城贵族管家学院 | 🆕 | 仓库推断 | 天城贵族管家学院 `map/props/butler_academy/` | 标准（r1 7 / 7.5） |  |
 | P2 机构 | tc_mid | `council` | 天城议会 | ✅ | 卡 + 推断位置 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `culture_office` | 天城文化署 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `enforcement_hq` | 天城执法局总局 | ✅ | 卡 | 执法局总局 `map/props/enforcement_hq/` | 标准（r3 7 / 7.5） |  |
