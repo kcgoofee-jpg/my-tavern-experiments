@@ -115,7 +115,7 @@ run_once() {
     rc=0
   else
     "$BL" "${ARGS[@]}" >"$LOG" 2>&1 &
-    PID=$!; echo "$PID" >"$LOG.pid"; echo "Blender PID $PID（只 kill 这个），日志 $LOG"
+    PID=$!; echo "$PID" >"$LOG.pid"; echo "Blender PID ${PID}（只 kill 这个），日志 ${LOG}"
     wait "$PID"; rc=$?
   fi
   echo $((SECONDS - t0))
@@ -126,7 +126,7 @@ MIN0=$SECONDS
 run_once; rc=$?
 MINUTES=$(( (SECONDS - MIN0 + 30) / 60 ))
 if [ $rc -ne 0 ] && [ "$DRY_RUN" != 1 ]; then
-  echo "第一次崩溃（退出码 $rc），重试一次…" >&2
+  echo "第一次崩溃（退出码 ${rc}），重试一次…" >&2
   MIN0=$SECONDS
   run_once; rc=$?
   MINUTES=$(( (SECONDS - MIN0 + 30) / 60 ))

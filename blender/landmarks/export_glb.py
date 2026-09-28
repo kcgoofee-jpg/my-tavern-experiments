@@ -14,7 +14,7 @@ import json, math, os, sys, traceback
 import bpy
 
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
-ARGS = dict(out='/tmp/lm_raw.glb', samples='32', scale='0.5', log='')
+ARGS = dict(out='/tmp/lm_raw.glb', samples='32', scale='0.5', log='', budget_json='')
 for k, v in zip(argv[::2], argv[1::2]):
     ARGS[k.lstrip('-')] = v
 
@@ -78,6 +78,13 @@ BUDGET = {
     'site_dock': (20000, 2048), 'props_hovercar': (6000, 1024), 'props_magitech': (16000, 1024),
     'props_ward': (8000, 1024),
 }
+
+
+# --budget-json <文件>：{组名: [三角形, 贴图边长]}，覆盖 / 补充 BUDGET（tools/landmark.py final 从 map/props/<id>/manifest.json 的 budgets 写出）
+ARGS['budget_json'] = ARGS.get('budget_json') or ARGS.get('budget-json', '')
+if ARGS['budget_json']:
+    with open(ARGS['budget_json']) as _f:
+        BUDGET.update({k: tuple(v) for k, v in json.load(_f).items()})
 
 
 def main():
