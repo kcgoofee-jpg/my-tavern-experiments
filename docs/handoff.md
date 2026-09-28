@@ -75,3 +75,15 @@
 ## 提醒
 - 云端按量计费 ¥1.58/时；不用时关机前先确认没有代理在用；余额约 ¥20，上层 16K 前够用。云端目前按用户要求保持开机，不要关。
 - 用户在 Clash Verge 加了 DOMAIN-SUFFIX,seetacloud.com,DIRECT；需要 Homebrew rsync；.claude/settings.local.json 放行了 `bash tools/cloud/*`。
+
+## 会话收尾状态（2026-09-28 深夜，pi 重启前）
+- 本机环境：python3(homebrew) 丢失 Pillow 已装回（`pip install --user --break-system-packages Pillow`，现 12.3.0），smoke 全绿；`.pi/` 已进 .gitignore。
+- render-deps 4 条告警（upper/upper_city/mid/low 的 dzi 落后上游）：主因 b6a92c7d 渲染守卫重构碰了脚本但没改视觉，误报性质；中下层白天版渲完后自然消，上层等 v18。无需动作。
+- 原域圣山 glb 预览三视角已看图判定（docs/drafts/world_v2_yuanyu_glb_preview{,_ground,_summit}.jpg）：整体成立，可作圣都风格基线；新增 2 精修点（大教堂背面白色凸出方块、雕像圈个别雕像悬出平台）＋既有遗留（楼型单一、城市外缘硬边、步道悬空）。
+- 中层夜景草稿 map/art/_mid_night_draft.png（worktree agent-ab82fcbc59b7d3a5b 未提交）已看图：整体成立；3 疑点待查：右上暖黄矩形亮斑（疑似自发光面贴错）、左上环形竞技场全黑无灯、两角死黑。
+- 在途代理 4 个（重启后按分支/worktree 收，结果文件在 /var/folders/_9/5rp6wlhn4kvcfqvcp24g5dlw0000gn/T/acp-delegate/）：
+  - del_mula96f9_secj viewer3d UI 小修 → fix-viewer3d-ui-0928（/tmp/eden_wt_viewer3d），before/after 截图待看图判定
+  - del_mula96fd_ph0r 浏览器测试对齐 → fix-browser-tests-wbauto（/tmp/eden_wt_btests）
+  - del_mula96fc_173a 原域预览（已出图）＋圣都镜头清单 docs/drafts/holy_city_shotlist_draft.md → holy-city-shotlist（/tmp/eden_wt_world）
+  - del_mulahqeq_j51b 中下层 --day 白天版＋2 张 2000px 草稿 → day-version-mid-low（/tmp/eden_wt_day），出图待用户看
+- 下一步（重启后）：收 4 代理结果看图判定 → 用户确认白天版草稿＋圣都清单 → 中下层白天 8K 上云 → viewer3d 小修合入走 0.9.5.x。

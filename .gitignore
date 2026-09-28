@@ -38,3 +38,4 @@ tools/cloud/hosts/*.env
 !tools/cloud/hosts/example.env.example
 # 云脚本本地锁文件
 tools/cloud/.locks/
+.pi/
