@@ -121,3 +121,6 @@ map/packs/<id>/
 - 本机存储预算清理（`tavern/budget.mjs` 的 LRU）只认 `edenMap*` 前缀，其它包的按聊天数据不会被自动清理。
 - 界面文案（`map/i18n/*.json`）是核心共用的，个别地方还带天城的说法（例如设置里的说明、占位提示「模拟 MVU：世界.当前地点」），首次打开就能看到。包的 `strings` 字段已经预留，但还没接入。
 - 三维子页（`props/viewer3d.html`）读的是 eden 的语言键，在其它包里会退回中文。
+- `viewer.html` 里写死的三条数据预取（`data/maps.json` 等）是 eden 的；其它包打开时这三份也会下载一次（不影响功能，手机上多几十 KB）。
+- 历史键 `edenEstateLabels`（庄园标注开关）不在 `edenMap*` 命名空间里，其它包与 eden 共用；新包没有庄园页，目前不会写它。
+- id 规则与键前缀规则在 `core/pack.mjs`、`viewer.html` 首帧前置、`tavern/eden-map.js` 各有一份同步副本（首帧与宿主都不能等模块），`tests/pack.test.mjs` 对照。

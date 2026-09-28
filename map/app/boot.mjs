@@ -28,7 +28,7 @@ import { initSettings } from './settings.mjs';
 import { emEmit, enNames, rebuildHere, setEnNames } from './extapi.mjs';
 import { firstRunHint, initE7, initShell } from './shell.mjs';
 import { P } from './plugins.mjs';
-import { initPack, packData, rebase } from './pack.mjs';
+import { initPack, packData, packEvents, rebase } from './pack.mjs';
 // 多地图查看器：地图注册表 data/maps.json（世界 → 天城三层 → 以后的庄园剖面……）。
 // 底图都是 DZI 瓦片金字塔，只加载屏幕里看得见的部分；解码内存由屏幕大小和瓦片缓存上限决定。
 // 档位 = 清晰度上限：最多加载到相当于 cap 像素宽的那一层瓦片（放大后差别明显）。
@@ -41,7 +41,7 @@ async function mainInner() {
   const opt = k => (packData(k) ? getJSON(packData(k)) : Promise.resolve(null));
   [reg, mk, d, dict, hx, enDict] = await Promise.all([getJSON(packData('maps')).then(rebase), opt('world'), opt('derived'), window.__i18n,
     import(new URL('here.mjs', document.baseURI).href).catch(() => null), LANG === 'en' ? window.__i18n : getJSON('i18n/en.json'),
-    import(new URL('core/protocol.mjs', document.baseURI).href).then(m => { setPR(m); }, () => null)]);
+    import(new URL('core/protocol.mjs', document.baseURI).href).then(m => { setPR(m); }, () => null), packEvents]);
   setREG(reg); setM(mk || { places: [], fiefs: [], realms: [] });   // 没有世界图的包：空的世界地点表
   setDICT(dict); setHX(hx);
   // v0.9.6：选了 EN 但英文词典没取到时，整页退回中文（以前 LANG 仍是 en：面包屑英文、界面中文、变量映射英文，混在一起）

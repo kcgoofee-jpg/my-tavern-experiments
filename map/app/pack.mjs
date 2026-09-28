@@ -4,6 +4,7 @@ import { EDEN_RESOLVED, load, currentId, rebaseRegistry } from '../core/pack.mjs
 export let PACK = EDEN_RESOLVED;
 export const packData = k => { const p = PACK.data?.[k]; return p && p !== 'builtin' ? p : null; };
 export const isEden = () => PACK.id === 'eden';
+export let packEvents = null;
 export async function initPack(getJSON) {
   const id = currentId(window);
   if (id === 'eden') return PACK;
@@ -11,10 +12,8 @@ export async function initPack(getJSON) {
   document.documentElement.dataset.pack = PACK.id;
   if (PACK.theme?.accent) document.documentElement.style.setProperty('--pack-accent', PACK.theme.accent);
   // 包自带事件分类：换掉 tavern/events.mjs 的内置天城分类（查看器事态横条、图例同一个模块实例）
-  if (packData('events')) {
-    const [m, tax] = await Promise.all([import('../tavern/events.mjs'), getJSON(packData('events'))]);
-    if (tax) m.configure(tax, PACK.id);
-  }
+  // 不挡数据请求：boot 把 packEvents 和注册表等放进同一个 Promise.all（性能评审 P2：少一个串行往返）
+  packEvents = packData('events') ? Promise.all([import('../tavern/events.mjs'), getJSON(packData('events'))]).then(([m, tax]) => { if (tax) m.configure(tax, PACK.id); }).catch(() => {}) : null;
   return PACK;
 }
 export const rebase = reg => rebaseRegistry(reg, PACK.base);
