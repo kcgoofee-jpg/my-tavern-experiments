@@ -572,19 +572,21 @@ def tree(B, x, y, h, r, kind='oak', seed=0, z=0.0):
 
 
 # ---------------------------------------------------------------- 全息 / 灯箱（无文字：只有色块、渐变、扫描线）
-def holo(name, c1, c2, estr=6.0, alpha=0.55, scan=6.0, scale=0.6):
-    """半透明自发光面板：两色噪声渐变 + 世界 z 方向扫描线；alpha = 不透明度。"""
+def holo(name, c1, c2, estr=6.0, alpha=0.55, scan=2.5, scale=0.6):
+    """半透明自发光面板：两色噪声渐变 + 世界 z 方向扫描线；alpha = 不透明度。
+    2026-09-28：扫描线默认 6.0 → 2.5（band 太密，烘进 512/1024 贴图再过 JPEG + AgX 就被压成纯色，
+    查看器里像没贴图的白块 / 粉条）；对 0.55 → 0.18、噪声 Detail 2 → 4，让图案在烘焙后仍可见。"""
     m = bpy.data.materials.new(name)
     nt = m.node_tree; nt.nodes.clear()
     out = nt.nodes.new('ShaderNodeOutputMaterial')
     tc = nt.nodes.new('ShaderNodeTexCoord')
-    nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = scale; nz.inputs['Detail'].default_value = 2
+    nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = scale; nz.inputs['Detail'].default_value = 4
     nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
     col = _mix(nt, tuple(c1), tuple(c2), nz.outputs[0])
     wv = nt.nodes.new('ShaderNodeTexWave'); wv.wave_type = 'BANDS'; wv.bands_direction = 'Z'
     wv.inputs['Scale'].default_value = scan
     nt.links.new(tc.outputs['Object'], wv.inputs['Vector'])
-    mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['To Min'].default_value = 0.55; mr.inputs['To Max'].default_value = 1.0
+    mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['To Min'].default_value = 0.18; mr.inputs['To Max'].default_value = 1.0
     nt.links.new(wv.outputs[0], mr.inputs['Value'])
     em = nt.nodes.new('ShaderNodeEmission'); nt.links.new(col, em.inputs['Color'])
     ms = nt.nodes.new('ShaderNodeMath'); ms.operation = 'MULTIPLY'; ms.inputs[1].default_value = estr
