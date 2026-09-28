@@ -12,7 +12,7 @@ const OUT = process.argv[2]; if (!OUT || OUT.startsWith('--')) { console.log('�
 B.quietWait(); const srv = await B.ensureServer(); const rep = B.reporter(OUT);
 
 // 发布物（map/data/worldbook_addon.json）：当前版本号；再造一本内容相同、eden_ver 落后的旧书，给第二个场景测「版本变了静默同步」
-const SHIP = JSON.parse(readFileSync(new URL('../../map/data/worldbook_addon.json', import.meta.url), 'utf8'));
+let SHIP; try { SHIP = JSON.parse(readFileSync(new URL('../../map/data/worldbook_addon.json', import.meta.url), 'utf8')); } catch (e) { console.error('读 map/data/worldbook_addon.json 失败：', e.message); process.exit(1); }
 const SHIP_VER = SHIP.ver;
 const SEED_OLD = wbShipped(SHIP).entries.map((e, i) => ({ ...e, uid: i + 1, enabled: true, extra: { ...e.extra, eden_ver: 'test-0.0.0' } }));
 
@@ -107,6 +107,7 @@ async function run(name, preset) {
     // 手动写入照常。先重载一个新脚本实例：自检结果第一次跑完就缓存（checkP memo），只有重载后才重新收集；
     // 此时书已被撤销、总开关关着、有墓碑 → 书不会自动回来 → 自检红线带「一键写入世界书」按钮（书没了才 warn）
     await P.page.reload(); await p.waitForSelector('#eden-map-root .em-fab', { timeout: 15000 }); await B.wait(500);
+    await p.evaluate(() => { window.__stub.here = '伊甸庄园·书房'; window.__th.chat[0].variables[0].stat_data.世界.当前地点 = '伊甸庄园·书房'; window.__fire('v'); });   // reload 把桩重置回了初始地点：重演 B8 的地点变化
     await p.evaluate(() => window.EdenMap.selfcheck());   // 等第一次自检跑完（含「世界书缺失」6 秒后的复查）
     await H.open(); vf = await H.viewer(); await B.wait(800);
     await vf.evaluate(() => { TCSettings.open('update'); }); await B.wait(500);
