@@ -6,6 +6,9 @@
 cam: c1 室内沿坑 / c2 杯组特写 / c3 外景围场 / c4 奶罐间 / c5 计量瓶 / c6 集乳罐 / c7 坑道回望；--liquid milk|wash 出管内有液体的静帧。素材先跑 python3 blender/props/fetch_assets.py。
 """
 import math, os, random, sys
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))))
+import tc_common
 import bpy, bmesh
 from mathutils import Vector
 
@@ -24,12 +27,7 @@ random.seed(7)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 sc = bpy.context.scene
 sc.render.engine = 'CYCLES'
-prefs = bpy.context.preferences.addons['cycles'].preferences
-prefs.compute_device_type = 'METAL'
-prefs.get_devices()
-for d in prefs.devices:
-    d.use = d.type != 'CPU'
-sc.cycles.device = 'GPU'
+tc_common.pick_gpu(sc)
 sc.cycles.samples = int(ARGS['samples'])
 sc.cycles.use_denoising = True
 sc.cycles.max_bounces = 8

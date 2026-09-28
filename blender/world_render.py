@@ -2,6 +2,9 @@
 # 用法：Blender -b -P world_render.py -- [--res 3200] [--samples 128] [--out path.png]
 # 输入：data/ 下由 map/world.html?export 导出的高度场与势力归属（与代码地图同一份地理）
 import bpy, json, math, os, sys
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+import tc_common
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -392,12 +395,7 @@ sc.render.resolution_y = int(RES * (MH * math.cos(tilt) * .97) / (MW * .985))
 
 # 渲染设置：Cycles + Metal GPU + 降噪
 sc.render.engine = 'CYCLES'
-try:
-    prefs = bpy.context.preferences.addons['cycles'].preferences
-    prefs.compute_device_type = 'METAL'; prefs.get_devices()
-    for d in prefs.devices: d.use = True
-    sc.cycles.device = 'GPU'
-except Exception as e: print('GPU setup failed, CPU fallback:', e)
+tc_common.pick_gpu(sc, hybrid=True)
 sc.cycles.samples = SAMPLES; sc.cycles.use_denoising = True
 try: sc.view_settings.view_transform = 'Standard'; sc.view_settings.look = 'None'; sc.view_settings.exposure = -0.35
 except Exception: sc.view_settings.view_transform = 'Filmic'

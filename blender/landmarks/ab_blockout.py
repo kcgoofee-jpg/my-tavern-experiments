@@ -2,6 +2,9 @@
 blender -b -P blender/landmarks/ab_blockout.py -- <cathA|cathB|pmA|pmB> <out.png>
 Neutral architecture only, no text/logos. Comparison sheets: blender/landmarks/ab_sheet.py"""
 import bpy, sys, math
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+import tc_common
 from mathutils import Vector
 
 V, OUT = sys.argv[sys.argv.index('--') + 1:][:2]
@@ -229,13 +232,7 @@ W = bpy.data.worlds.new('w'); S.world = W; wn = W.node_tree; wn.nodes.clear()
 bg = wn.nodes.new('ShaderNodeBackground'); wn.links.new(bg.outputs[0], wn.nodes.new('ShaderNodeOutputWorld').inputs[0])
 bg.inputs[0].default_value = (.55, .68, .85, 1); bg.inputs[1].default_value = .9
 S.render.engine = 'CYCLES'; S.cycles.samples = 32; S.cycles.use_denoising = True
-try:
-    p = bpy.context.preferences.addons['cycles'].preferences; p.compute_device_type = 'METAL'; p.get_devices()
-    for dv in p.devices:
-        dv.use = True
-    S.cycles.device = 'GPU'
-except Exception as e:
-    print('cpu fallback', e)
+tc_common.pick_gpu(S, hybrid=True)
 S.render.resolution_x = 1400; S.render.resolution_y = 1000
 S.view_settings.view_transform = 'AgX'
 S.render.filepath = OUT

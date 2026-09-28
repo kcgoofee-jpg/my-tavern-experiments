@@ -4,6 +4,9 @@ Run one:  blender -b --python-expr "import runpy;runpy.run_path('blender/upper_i
 Run all:  blender -b --python-expr "import runpy;runpy.run_path('blender/upper_islands/render_all.py')" -- docs/drafts
 Draft settings: 1200x800, 32 spp Cycles, 3/4 aerial. Units = metres (island ~ 140-220 m across)."""
 import bpy, math, sys, random
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+import tc_common
 from mathutils import Vector
 
 MATS = {}
@@ -156,11 +159,7 @@ def scene(cam_dist=None, cam_h=None, az=-35, target=(0, 0, 10), lens=50, res=(12
     cam_dist = cam_dist or R[0] * 2.9; cam_h = cam_h or R[0] * 1.35
     S = bpy.context.scene
     S.render.engine = 'CYCLES'
-    try:
-        bpy.context.preferences.addons['cycles'].preferences.compute_device_type = 'METAL'
-        S.cycles.device = 'GPU'
-    except Exception:
-        pass
+    tc_common.pick_gpu(S)
     S.cycles.samples = spp; S.cycles.use_denoising = True
     S.render.resolution_x, S.render.resolution_y = res; S.render.resolution_percentage = 100
     S.view_settings.view_transform = 'AgX' if 'AgX' in [i.identifier for i in S.view_settings.bl_rna.properties['view_transform'].enum_items] else 'Filmic'

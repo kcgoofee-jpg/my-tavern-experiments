@@ -171,15 +171,13 @@ def upper_islands():
     return [(i['id'], (i['nx'] - .5) * W, (.5 - i['ny']) * H, i['rx'] * W, i['ry'] * H, i['rot'], i.get('alt_m', 1000)) for i in d['islands']]
 
 # ---------------- 相机、渲染、导出 ----------------
-def camera_and_render(sc, RES, SAMPLES, OUT, opt, view='Standard', exposure=0.0, bounces=None):
-    cam = bpy.data.cameras.new('cam'); cam.type = 'ORTHO'; cam.ortho_scale = W; cam.clip_end = 200
-    co = bpy.data.objects.new('cam', cam); sc.collection.objects.link(co); sc.camera = co; co.location = (0, 0, 60)
-    sc.render.resolution_x = RES; sc.render.resolution_y = int(round(RES * H / W))
-    sc.render.engine = 'CYCLES'
+def pick_gpu(sc, hybrid=False):
+    """选 Cycles GPU 后端并设 sc.cycles.device；返回是否用上 GPU。其他脚本也调用它（sys.path 加 blender/ 后 import tc_common）。
+    EDEN_CYCLES_DEVICE：本地 Mac 默认 METAL；云端（AutoDL 等）设 OPTIX 或 CUDA 优先探测该类型，找不到再按 METAL→OPTIX→CUDA→HIP→ONEAPI→CPU 退回。
+    hybrid=True 时 CPU 也参与渲染。"""
     gpu = False
     try:
         prefs = bpy.context.preferences.addons['cycles'].preferences
-        # EDEN_CYCLES_DEVICE：本地 Mac 默认 METAL；云端（AutoDL 等）设 OPTIX 或 CUDA 优先探测该类型，找不到再退回默认顺序
         want = os.environ.get('EDEN_CYCLES_DEVICE', '').strip().upper()
         order = ('METAL', 'OPTIX', 'CUDA', 'HIP', 'ONEAPI')
         if want in order:
@@ -188,13 +186,21 @@ def camera_and_render(sc, RES, SAMPLES, OUT, opt, view='Standard', exposure=0.0,
             try: prefs.compute_device_type = kind
             except TypeError: continue
             prefs.get_devices()
-            devs = [d for d in prefs.devices if d.type != 'CPU']
-            if devs:
-                # 设备：默认只用 GPU。CPU + GPU 混合在 M 系列上 CPU 占满 5–6 核，实测未必更快（见 docs/render-performance.md，用 tools/bench_render.sh 验证）
-                hybrid = str(opt.get('--devices', os.environ.get('TC_DEVICES', 'gpu'))) == 'hybrid'
+            if any(d.type != 'CPU' for d in prefs.devices):
                 for d in prefs.devices: d.use = hybrid or d.type != 'CPU'
-                gpu = True; break
+                gpu = True; print('cycles compute', kind, flush=True); break
     except Exception as e: print('GPU probe failed', e)
+    if not gpu: print('cycles compute CPU', flush=True)
+    sc.cycles.device = 'GPU' if gpu else 'CPU'
+    return gpu
+
+def camera_and_render(sc, RES, SAMPLES, OUT, opt, view='Standard', exposure=0.0, bounces=None):
+    cam = bpy.data.cameras.new('cam'); cam.type = 'ORTHO'; cam.ortho_scale = W; cam.clip_end = 200
+    co = bpy.data.objects.new('cam', cam); sc.collection.objects.link(co); sc.camera = co; co.location = (0, 0, 60)
+    sc.render.resolution_x = RES; sc.render.resolution_y = int(round(RES * H / W))
+    sc.render.engine = 'CYCLES'
+    # 设备：默认只用 GPU。CPU + GPU 混合在 M 系列上 CPU 占满 5–6 核，实测未必更快（见 docs/render-performance.md，用 tools/bench_render.sh 验证）
+    gpu = pick_gpu(sc, str(opt.get('--devices', os.environ.get('TC_DEVICES', 'gpu'))) == 'hybrid')
     sc.cycles.device = 'GPU' if gpu else 'CPU'; print('device', sc.cycles.device)
     sc.cycles.samples = SAMPLES
     # 自适应采样：干净的区域提前停；阈值可调（--noise 0.02 更快，0.01 默认更干净）

@@ -4,6 +4,9 @@
 # 坐标：每张图用归一化平面坐标 (u, v)，u 向右、v 向下，0…1；场景里 1 单位 = 图宽 / 40。
 # 地标位置、形制绝大多数是仓库推断（卡只给了名字与少量描述），标记数据写到 map/data/site_<id>.json（nx / ny = u / v）。
 import bpy, bmesh, math, os, sys, json, random
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+import tc_common
 
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.join(HERE, '..')
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
@@ -373,11 +376,7 @@ wd = bpy.data.worlds.new('w'); sc.world = wd; wd.use_nodes = True; wd.node_tree.
 cam = bpy.data.cameras.new('cam'); cam.type = 'ORTHO'; cam.ortho_scale = W; cam.clip_end = 200
 co = bpy.data.objects.new('cam', cam); sc.collection.objects.link(co); sc.camera = co; co.location = (0, 0, 60)
 sc.render.resolution_x = RES; sc.render.resolution_y = int(round(RES * ASP)); sc.render.engine = 'CYCLES'
-try:
-    pr = bpy.context.preferences.addons['cycles'].preferences; pr.compute_device_type = 'METAL'; pr.get_devices()
-    for dv in pr.devices: dv.use = dv.type != 'CPU'
-    sc.cycles.device = 'GPU'
-except Exception as e: print('gpu', e)
+tc_common.pick_gpu(sc)
 sc.cycles.samples = SAMPLES; sc.cycles.use_denoising = True; sc.cycles.max_bounces = 4
 sc.view_settings.view_transform = 'AgX' if 'AgX' in [v.identifier for v in sc.view_settings.bl_rna.properties['view_transform'].enum_items] else 'Filmic'
 sc.render.image_settings.file_format = 'PNG'; sc.render.filepath = OUT

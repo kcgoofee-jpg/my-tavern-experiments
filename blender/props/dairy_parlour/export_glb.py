@@ -20,6 +20,9 @@
 浏览器端用 MeshBasicMaterial（无灯光）直接贴烘焙图。
 """
 import json, math, os, re, sys
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))))
+import tc_common
 import bpy
 
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
@@ -57,12 +60,7 @@ SAMPLES = int(ARGS['samples'])
 
 sc = bpy.context.scene
 sc.render.engine = 'CYCLES'
-prefs = bpy.context.preferences.addons['cycles'].preferences
-prefs.compute_device_type = 'METAL'
-prefs.get_devices()
-for d in prefs.devices:
-    d.use = d.type != 'CPU'
-sc.cycles.device = 'GPU'
+tc_common.pick_gpu(sc)
 sc.cycles.samples = SAMPLES
 sc.cycles.use_denoising = False
 sc.render.bake.margin = 6

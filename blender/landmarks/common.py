@@ -5,6 +5,9 @@ box 投影贴图的尺度就是米。每个 Batch = 一个对象 = export_glb.py
 中立建筑：不放任何文字、标志、宗教或机构符号。
 """
 import math, os, sys
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+import tc_common
 import bpy, bmesh
 from mathutils import Vector, Matrix
 
@@ -24,15 +27,7 @@ def setup(samples):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     sc = bpy.context.scene
     sc.render.engine = 'CYCLES'
-    try:
-        prefs = bpy.context.preferences.addons['cycles'].preferences
-        prefs.compute_device_type = 'METAL'
-        prefs.get_devices()
-        for d in prefs.devices:
-            d.use = d.type != 'CPU'
-        sc.cycles.device = 'GPU'
-    except Exception as e:  # noqa
-        print('cpu fallback', e)
+    tc_common.pick_gpu(sc)
     sc.cycles.samples = int(samples)
     sc.cycles.use_denoising = True
     sc.cycles.max_bounces = 8

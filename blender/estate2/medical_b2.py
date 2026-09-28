@@ -10,6 +10,9 @@
     blender -b --python-expr "import runpy,sys;sys.argv=['x','--','--view','cleanroom','--out','/tmp/a.jpg'];runpy.run_path('blender/estate2/medical_b2.py',run_name='__main__')"
 """
 import json, math, os, sys
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+import tc_common
 
 import bpy, bmesh
 from mathutils import Matrix, Vector
@@ -649,13 +652,7 @@ def render(view, out, res=1400, samples=64):
     p = Vector((loc[0], loc[1], loc[2] + B2_DZ)); t = Vector((tgt[0], tgt[1], tgt[2] + B2_DZ))
     cam.location = p; cam.rotation_euler = (t - p).to_track_quat('-Z', 'Y').to_euler()
     sc.render.engine = 'CYCLES'; sc.cycles.samples = samples; sc.cycles.use_denoising = True
-    try:
-        sc.cycles.device = 'GPU'
-        pr = bpy.context.preferences.addons['cycles'].preferences; pr.compute_device_type = 'METAL'; pr.get_devices()
-        for d in pr.devices:
-            d.use = True
-    except Exception:
-        pass
+    tc_common.pick_gpu(sc, hybrid=True)
     sc.render.resolution_x = res; sc.render.resolution_y = int(res * 0.625)
     sc.view_settings.view_transform = 'AgX'; sc.view_settings.look = 'AgX - Medium High Contrast'; sc.view_settings.exposure = -1.45
     sc.render.image_settings.file_format = 'JPEG'; sc.render.image_settings.quality = 88

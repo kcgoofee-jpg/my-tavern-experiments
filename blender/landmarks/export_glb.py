@@ -11,6 +11,9 @@ bg_* 对象（远处地面，只为渲染时挡地平线）不导出。
         && $G meshopt /tmp/w.glb map/props/<id>/<id>_low.glb --level medium
 """
 import json, math, os, sys, traceback
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+import tc_common
 import bpy
 
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
@@ -94,14 +97,7 @@ def main():
     SCALE = float(ARGS['scale'])
     sc = bpy.context.scene
     sc.render.engine = 'CYCLES'
-    try:
-        prefs = bpy.context.preferences.addons['cycles'].preferences
-        prefs.compute_device_type = 'METAL'; prefs.get_devices()
-        for d in prefs.devices:
-            d.use = d.type != 'CPU'
-        sc.cycles.device = 'GPU'
-    except Exception as e:  # noqa
-        print('cpu', e)
+    tc_common.pick_gpu(sc)
     sc.cycles.samples = int(ARGS['samples'])
     sc.cycles.use_denoising = False
     for o in list(bpy.data.objects):

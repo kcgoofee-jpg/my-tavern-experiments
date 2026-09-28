@@ -6,6 +6,9 @@
 cam: wide 全景 / island 中岛 / shoes 鞋墙 / silk 睡袍 / tray 中岛玻璃抽屉里的丝袜（伊甸字母纹）。blend 与 glb 是本地素材（blender/data/ 不进仓库）。
 """
 import math, sys
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))))
+import tc_common
 import bpy
 from mathutils import Vector
 
@@ -33,12 +36,7 @@ cam = sc.camera
 cam.location = pos
 cam.rotation_euler = (Vector(tgt) - Vector(pos)).to_track_quat('-Z', 'Y').to_euler()
 cam.data.lens = lens
-prefs = bpy.context.preferences.addons['cycles'].preferences
-prefs.compute_device_type = 'METAL'
-prefs.get_devices()
-for d in prefs.devices:
-    d.use = d.type != 'CPU'
-sc.cycles.device = 'GPU'
+tc_common.pick_gpu(sc)
 r = int(A['res'])
 sc.render.resolution_x, sc.render.resolution_y = r, round(r * 2 / 3)
 sc.render.resolution_percentage = 100
