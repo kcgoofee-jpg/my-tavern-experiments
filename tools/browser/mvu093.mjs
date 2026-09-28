@@ -47,14 +47,16 @@ async function run(name, preset) {
     await vf.evaluate(() => go('tc_mid')); await B.wait(2000);
     rep.check(`${name} 夜色：中层加、下层不加`, n1 && !n2, JSON.stringify({ n1, n2 }));
     await jpg(p, `mvu_${name}_night`);
-    // 5 着装：本人地点卡
+    // 5 着装：fix3（用户 2026-09-28）起不再挂地点卡——改在人物页顶部「你（主角）」一行（chars.mjs .chme）
     const card = await vf.evaluate(() => { const el = [...document.querySelectorAll('.mk.here')][0]; if (!el) return null; el._open(); const c = document.querySelector('#card'); return { h: c.querySelector('h2').textContent, o: c.querySelector('.cu-outfit')?.textContent || '' }; });
-    rep.check(`${name} 本人地点卡显示「着装：…」`, card && /^着装：深灰风衣 \/ 黑色长裤 \/ 短靴/.test(card.o), JSON.stringify(card));
+    rep.check(`${name} 本人地点卡不再显示着装（着装属于人）`, card && card.o === '', JSON.stringify(card));
     await jpg(p, `mvu_${name}_outfit_card`);
     const go1 = await p.evaluate(() => window.EdenMap.getOutfit());
     rep.check(`${name} EdenMap.getOutfit()`, go1?.text === '深灰风衣 / 黑色长裤 / 短靴' && go1.items.鞋子 === '短靴', JSON.stringify(go1));
     // 1 人物来源
     await vf.evaluate(() => { closeCard(); document.querySelector('#evbar .chtab')?.click(); }); await B.wait(400);
+    const me = await vf.evaluate(() => { const el = document.querySelector('#evbar .chpane .chme'); return el ? { b: el.querySelector('b')?.textContent, o: el.querySelector('small')?.textContent || '' } : null; });
+    rep.check(`${name} 人物页「你（主角）」行显示着装`, me?.b === '你（主角）' && /^着装：深灰风衣 \/ 黑色长裤 \/ 短靴/.test(me.o), JSON.stringify(me));
     const src = await vf.evaluate(() => Object.fromEntries(TCChars.items.map(c => [c.name, c.src + '@' + c.place])));
     const lab = await vf.evaluate(() => [...document.querySelectorAll('#evbar .chpane .chsrc')].map(x => x.textContent));
     rep.check(`${name} 人物位置：MVU > 标签 > 推断，列表标来源`, src.米拉 === 'mvu@下层·7号井' && src.卡尔 === 'tag@中层·霓虹街' && /^infer@/.test(src.奥托 || '') && ['MVU', '标签', '推断'].every(x => lab.includes(x)), JSON.stringify({ src, lab }));
