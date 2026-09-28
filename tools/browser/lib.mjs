@@ -168,7 +168,9 @@ export async function wheelDriftEstate(page, x, y, frame = page.mainFrame(), tic
   const before = await frame.evaluate(([x, y]) => { const { camera: c, renderer: r } = window.__estate; const rc = r.domElement.getBoundingClientRect();
     window.__w = c.position.clone().set(((x - rc.left) / rc.width) * 2 - 1, -((y - rc.top) / rc.height) * 2 + 1, 0).unproject(c); return c.zoom; }, [x, y]);
   const off = frame === page.mainFrame() ? { x: 0, y: 0 } : await (await frame.frameElement()).boundingBox();
-  await page.mouse.move(x + off.x, y + off.y); for (let i = 0; i < ticks; i++) { await page.mouse.wheel(0, -120); await wait(60); } await wait(500);
+  await page.mouse.move(x + off.x, y + off.y);
+  await page.keyboard.down('Control');   // 9718673c：庄园滚轮分工——普通滚轮 = 平移，ctrl+滚轮（触控板捏合）= 缩放到光标，缩放测试得带 ctrlKey
+  for (let i = 0; i < ticks; i++) { await page.mouse.wheel(0, -120); await wait(60); } await page.keyboard.up('Control'); await wait(500);
   const after = await frame.evaluate(() => { const { camera: c, renderer: r } = window.__estate; const rc = r.domElement.getBoundingClientRect(); const v = window.__w.clone().project(c);
     return { zoom: c.zoom, sx: (v.x + 1) / 2 * rc.width + rc.left, sy: (1 - v.y) / 2 * rc.height + rc.top }; });
   return { zoom0: +before.toFixed(3), zoom1: +after.zoom.toFixed(3), drift_px: +Math.hypot(after.sx - x, after.sy - y).toFixed(2) };
