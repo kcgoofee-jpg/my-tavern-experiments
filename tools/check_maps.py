@@ -69,6 +69,13 @@ for _mid, _m in reg['maps'].items():                      # 纵深系统（docs/
             for _k in _dd.get('islands', {}):
                 if _k not in _ids: err(f"{_m['depth']}: 岛 {_k} 不在岛表 blender/data/tc_islands.json")
             for _k in _ids - set(_dd.get('islands', {})): err(f"岛表里的 {_k} 没有纵深条目（{_m['depth']}）：新岛要在同一提交里加")
+            _us = {}
+            for _i in _isl:                                    # 岛底规格（斜视）不许两座岛完全相同（用户 v15：每座岛的岛底要各有性格）
+                if _i.get('underside'):
+                    _k = json.dumps(_i['underside'], sort_keys=True)
+                    if _k in _us: err(f"岛表 {_i['id']} 的 underside 与 {_us[_k]} 完全相同")
+                    _us[_k] = _i['id']
+                elif (_dd.get('view') or {}).get('mode') == 'oblique': err(f"岛表 {_i['id']} 缺 underside（view: oblique 需要）")
             for _i in _isl:
                 if _i.get('marker') and _i['marker'] not in (_m.get('markers') or {}): err(f"岛表 {_i['id']} 的 marker {_i['marker']} 不是 {_mid} 的标记")
             if _m.get('data') and exists(os.path.join(ROOT, _m['data'])):   # Blender ↔ 前端：导出的岛与岛表一致（底图未重渲时只警告）

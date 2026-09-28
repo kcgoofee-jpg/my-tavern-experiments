@@ -117,7 +117,10 @@
    "sensor_mm": 36,
    "aspect": 1.6,
    "focus": "eden",
-   "focus_frame": null
+   "focus_frame": [
+    0.382,
+    0.64
+   ]
   },
   "margin": 0.05,
   "anchor_dz_m": 20,

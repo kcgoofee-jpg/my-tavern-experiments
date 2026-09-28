@@ -157,13 +157,17 @@ for d in ISLES:
     if d['id'] in ('eden', 'silver_crown'): markers.append({'id': d['id'], 'pos': (e.x, e.y, e.z), 'r': max(e.rx, e.ry), 'anchor': e.world(*e.anchor())})
     if d.get('role'): markers.append({'id': d['role'], 'pos': (e.x, e.y, e.z), 'r': max(e.rx, e.ry), 'anchor': e.world(*e.anchor())})   # 地标府邸（首相府、将军官邸……），名称在 maps.json
 # 以太气候调节塔：从中层伸到约 950 m。深色塔身（直径 40 m）、两圈外伸环台、塔顶以太晶冠；塔下云面一圈淡青光晕
-TOWER = (8.5, -5.0)
+TOWER = tuple((lambda a: (a['x'], a['y']))(json.load(open(os.environ.get('TC_ISLANDS') or os.path.join(tc.HERE, 'data', 'tc_islands.json'))).get('anchors', {}).get('climate_tower', {'x': 8.5, 'y': -5.0})))   # 位置在岛表 anchors
+TR = .09 if os.environ.get('TC_OBLIQUE') else .2   # v15：斜视里塔身变细（用户：太抢）
 _pre_tower = set(bpy.data.objects)
-cyl(*TOWER, -7, .2, 9.4, M['darkstone'], 40)
+cyl(*TOWER, -7, TR, 9.4, M['darkstone'], 40)
+if os.environ.get('TC_OBLIQUE'):                              # 塔身细节：竖向肋 + 每 40 m 一道金属箍 + 窄窗带
+    for _j in range(8): _t = _j / 8 * 2 * math.pi; cyl(TOWER[0] + math.cos(_t) * TR, TOWER[1] + math.sin(_t) * TR, -7, .012, 9.4, M['pad'], 6)
+    for _z in [i * .4 for i in range(-15, 6)]: cyl(*TOWER, _z, TR + .012, .012, M['pad'], 32)
 for k, zz in enumerate((.9, 1.7)):
-    cyl(*TOWER, zz, .34 - k * .05, .025, M['pad'], 48); cyl(*TOWER, zz + .025, .31 - k * .05, .012, M['darkstone'], 48)
-    for j in range(12): t = j / 12 * 2 * math.pi; cyl(TOWER[0] + math.cos(t) * (.33 - k * .05), TOWER[1] + math.sin(t) * (.33 - k * .05), zz + .02, .008, .012, te.mats()['aether'], 6)
-cyl(*TOWER, 2.4, .22, .05, M['gold'], 40)
+    cyl(*TOWER, zz, (.34 - k * .05) * TR / .2, .025, M['pad'], 48); cyl(*TOWER, zz + .025, (.31 - k * .05) * TR / .2, .012, M['darkstone'], 48)
+    for j in range(12): t = j / 12 * 2 * math.pi; cyl(TOWER[0] + math.cos(t) * (.33 - k * .05) * TR / .2, TOWER[1] + math.sin(t) * (.33 - k * .05) * TR / .2, zz + .02, .008, .012, te.mats()['aether'], 6)
+cyl(*TOWER, 2.4, .22 * TR / .2, .05, M['gold'], 40)
 aet = te.mats()['aether']
 for j in range(9):
     t = j / 9 * 2 * math.pi; rr = .06 + .07 * (j % 3) / 2
@@ -215,7 +219,7 @@ if os.environ.get('TC_MAGITECH'):
             for k in range(6 if i['id'] != 'silver_crown' else 9):
                 x, y = O[rnd_m.randrange(len(O))]
                 LC.crystal_cluster(MG, x, y, e.z - .02, rnd_m.uniform(.04, .07), m_cry, seed=k + len(i['id']))
-    m_pipe, m_node = LC.flat('mt_pipe', (0.08, 0.09, 0.11), 0.4, metal=0.7), LC.glow('mt_node', estr=2.0)
+    m_pipe, m_node = LC.flat('mt_pipe', (0.06, 0.065, 0.075), 0.5, metal=0.6), LC.glow('mt_node', estr=0.8)
     def _seg_d(p, a, b):
         ax, ay = b[0] - a[0], b[1] - a[1]; t = max(0, min(1, ((p[0] - a[0]) * ax + (p[1] - a[1]) * ay) / (ax * ax + ay * ay)))
         return math.hypot(a[0] + ax * t - p[0], a[1] + ay * t - p[1])
@@ -227,8 +231,8 @@ if os.environ.get('TC_MAGITECH'):
         if tid in by_id:
             t = by_id[tid]; P_ = t['isle'].outline_world(1.0, 180); th = math.atan2(TOWER[1] - t['y'], TOWER[0] - t['x'])
             ex_, ey_ = max(P_, key=lambda q: (q[0] - t['x']) * math.cos(th) + (q[1] - t['y']) * math.sin(th))   # 接到岛朝塔一侧的崖底，不从岛面上过
-            LC.conduit(RL, TOWER, (ex_, ey_), 1.4, t['z'] - .35, .012, m_pipe, m_node)
-    LC.field_rings(RL, *TOWER, 7.6, (.45, .8, 1.2, 1.65), .02, LC.glow('mt_field', estr=2.5, alpha=.6))
+            LC.conduit(RL, TOWER, (ex_, ey_), 1.4, t['z'] - .35, .006, m_pipe, m_node)   # v15：更细更暗，只输能，不读成交通线
+    LC.field_rings(RL, *TOWER, 7.6, (.3, .55, .85), .012, LC.glow('mt_field', estr=1.6, alpha=.45))
     for o in LC.Batch.build_all(): o.visible_shadow = False
     if os.environ.get('TC_DUMP_OUTLINES'):                   # 给 tools/upper_depth_post.py：每岛世界坐标轮廓（逐岛蒙版）
         json.dump({i['id']: i['isle'].outline_world(1.06, 96) for i in islands}, open(os.environ['TC_DUMP_OUTLINES'], 'w'))
