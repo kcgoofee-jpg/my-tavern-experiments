@@ -6,7 +6,7 @@
 
 ## 提示词
 
-你在 `/Users/davidzhao/dev1/cctest1/性能/threejs`（分支 `cloud/tc-mid-low`，公开仓库 kcgoofee-jpg/my-tavern-experiments）。目标是交付 **v0.9.1**：一张可以直接导入酒馆的角色卡，加一份世界书，达到「真实、优美、加载快、稳定」。尽量全自动推进，不要问可以用默认值解决的问题。
+你在 `/Users/davidzhao/dev1/cctest1/eden-map`（分支 `cloud/tc-mid-low`，公开仓库 kcgoofee-jpg/my-tavern-experiments）。目标是交付 **v0.9.1**：一张可以直接导入酒馆的角色卡，加一份世界书，达到「真实、优美、加载快、稳定」。尽量全自动推进，不要问可以用默认值解决的问题。
 
 ### 开始前
 - 如果另一个会话正在后台渲染（`pgrep -f "[M]acOS/Blender -b"` 有结果），先不要启动任何 Blender 渲染，也不要提交 `map/art`。

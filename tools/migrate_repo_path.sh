@@ -19,7 +19,7 @@ DRY_RUN="${DRY_RUN:-0}"
 # Claude Code's project-memory dirname scheme: every character that is not
 # [A-Za-z0-9] (this includes '/', non-ASCII CJK, and literal '-') becomes '-'.
 encode_claude_dirname() {
-  printf '%s' "$1" | LC_ALL=C perl -pe 's/[^A-Za-z0-9]/-/g'
+  printf '%s' "$1" | perl -CS -pe 's/[^A-Za-z0-9]/-/g'
 }
 
 OLD_MEMDIR_NAME="$(encode_claude_dirname "$OLD_PATH")"
