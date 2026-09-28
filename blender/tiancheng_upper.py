@@ -143,6 +143,7 @@ for d in ISLES:
     e = te.Isle(d); e.build_body(col_main)
     if d['id'] == 'eden': te.build_eden(e, layer)
     elif d['id'] == 'silver_crown': te.build_silver_crown(e)
+    elif d.get('cutout'): e.main = (0.0, 0.0)             # v8：卡里有的岛只建岛体，建筑由三维模型的俯视抠图贴上（tools/isles_into_upper.py）
     else: e.build_estate()
     islands.append({'id': d['id'], 'x': e.x, 'y': e.y, 'z': e.z, 'rx': e.rx, 'ry': e.ry, 'rot': e.rot, 'estate_style': e.style, 'isle': e})
     if d['id'] in ('eden', 'silver_crown'): markers.append({'id': d['id'], 'pos': (e.x, e.y, e.z), 'r': max(e.rx, e.ry), 'anchor': e.world(*e.anchor())})
@@ -197,19 +198,14 @@ def selfcheck(routes_out, mk):
     cnt = {}
     for i in I: cnt[i['estate_style']] = cnt.get(i['estate_style'], 0) + 1
     R['style_counts'] = cnt
-    if [cnt.get(k, 0) for k in ('english', 'chateau', 'suzhou', 'lingnan')] != [11, 8, 6, 6]: bad.append(f'风格计数 {cnt} ≠ 11/8/6/6')
-    nn = _near2(I); same = [(a, b) for a, v in nn.items() for _, b in v if by[a]['estate_style'] == by[b]['estate_style']]
-    R['near2_same_style'] = same
-    if same: bad.append(f'最近 2 邻同风格：{same}')
+    if set(cnt) - {'english', 'neoclassical', 'fortress'}: bad.append(f'v8 普通岛只用英式填充：{cnt}')   # 2026-09-28：卡里没有的岛不再分四种风格
     tup = {}
     for e in isl:
-        if e.d.get('role') or e.style in ('neoclassical', 'fortress'): continue
+        if e.d.get('role') or e.d.get('cutout') or e.style in ('neoclassical', 'fortress'): continue
         k = (e.style, e.shape, e.rim, e.terrain, e.layout, e.plan)
         if k in tup: bad.append(f'五元组重复：{e.id} 与 {tup[k]} {k}')
         tup[k] = e.id
     R['tuples'] = len(tup)
-    for st in ('suzhou', 'lingnan'):
-        if not any(e.style == st and e.rx >= .7 for e in isl): bad.append(f'{st} 没有 rx ≥ .7 的样板岛')
     viol = {}
     for e in isl:
         v = [(k, P) for k, P in e.fp if not all(e.inside(x, y, .92) for x, y in P + [(sum(p[0] for p in P) / len(P), sum(p[1] for p in P) / len(P))])]
@@ -218,8 +214,8 @@ def selfcheck(routes_out, mk):
     if viol: print('SELFCHECK inside92 detail', {e.id: [(k, [tuple(round(c, 3) for c in e.world(*q)) for q in P[:2]]) for k, P in e.fp if not all(e.inside(x, y, .92) for x, y in P)] for e in isl if e.id in viol})
     if viol: bad.append(f'inside(.92) 不过：{viol}')
     cov = {e.id: round(e.coverage(), 3) for e in isl}; R['coverage'] = cov
-    low = {k: v for k, v in cov.items() if v < .5 and k not in ('eden', 'silver_crown')}
-    if low: bad.append(f'园林覆盖 < 50 %：{low}')
+    low = {k: v for k, v in cov.items() if v < .45 and k not in ('eden', 'silver_crown') and not by[k]['isle'].d.get('cutout')}
+    if low: bad.append(f'园林覆盖 < 45 %：{low}')   # v8：小岛英式填充（原苏州式 isle21）约 48 %
     spans = [s for e in isl for s in e.terrace_spans]; R['terrace_spans_deg'] = [round(s) for s in spans]
     if any(s > 220 for s in spans): bad.append('台地墙弧跨 > 220°')
     cr = [(c[0], c[1], e.id) for e in isl for c in e.crowns if c is not None and c[1] not in te.TOPIARY]; R['crown_min'] = round(min(r for r, _, _ in cr), 4); R['trees'] = len(cr)

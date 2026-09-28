@@ -91,13 +91,12 @@
 | P3 其他 | tc_mid | `rebirth_workshop` | 新生工坊 | 🆕 | 仓库推断 | — | — |  |
 | P3 其他 | tc_mid | `schneider_clinic` | 施奈德精密改造诊所 | 🆕 | 仓库推断 | — | — |  |
 | P3 其他 | tc_mid | `victoria_apartment` | 维多利亚的公寓 | ✅ | 卡 | — | — |  |
-| P3 其他 | tc_upper | `aether_institute` | 以太研究院 | ✅ | 仓库自设 | — | — |  |
 | P3 其他 | tc_upper | `eden` | 伊甸庄园 | ✅ | 卡 | — | — |  |
-| P3 其他 | tc_upper | `general_residence` | 将军官邸 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | tc_upper | `league_club` | 庄园主联盟会所 | ✅ | 卡 + 推断位置 | — | — |  |
-| P3 其他 | tc_upper | `victor_estate` | 维克多庄园 | 🆕 | 仓库推断 | — | — |  |
-| P3 其他 | tc_upper | `y_estate` | 「Y」的庄园 | 🆕 | 仓库推断 | — | — |  |
-| P3 其他 | tc_upper | `zaibatsu_estate` | 罗斯柴尔德庄园 | ✅ | 卡 + 推断位置 | — | — |  |
+| P3 其他 | tc_upper | `league_club` | 庄园主联盟会所 | ✅ | 卡 + 推断位置 | 庄园主联盟会所 `map/props/league_club/` | 草稿（r1 自查；glb 待第 4 步） | isle9；宫殿式会所 + 顶光拍卖厅 |
+| P3 其他 | tc_upper | `victor_estate` | 维克多庄园 | 🆕 | 仓库推断 | — | — | 只标记；所在岛（isle4）是通用英式填充 |
+| P3 其他 | tc_upper | `y_estate` | 「Y」的庄园 | 🆕 | 仓库推断 | — | — | 只标记；所在岛（isle5）是通用英式填充 |
+| P3 其他 | tc_upper | `zaibatsu_estate` | 罗斯柴尔德庄园 | ✅ | 卡 + 推断位置 | 罗斯柴尔德庄园 `map/props/rothschild_estate/` | 草稿（r1 自查；glb 待第 4 步） | isle30；府邸 + 冬季宴会厅 |
+| P3 其他 | tc_upper | `elite_academy` | 精英学院 | 🆕 | 卡 + 推断位置 | 精英学院 `map/props/elite_academy/` | 草稿（r1 自查；glb 待第 4 步） | isle25（Q11） |
 | P3 其他 | world | `hunting_camp` | 猎季营地 | 🆕 | 仓库推断 | — | — |  |
 | P3 其他 | yuanyu_city | `city_gate` | 原域东门 | ✅ | 仓库自设 | — | — |  |
 | P3 其他 | yuanyu_city | `dome_quarter` | 穹顶区 | ✅ | 仓库自设 | — | — |  |
@@ -127,3 +126,18 @@
 
 12 处全部落点（`maps.json` 的 `unplaced.items` 现为空，世界书「天城常识-位置未写」条目随之不再生成）：法师塔、施奈德精密改造诊所、新生工坊、天城贵族管家学院、天城执政厅、天城政务院、天城中央储备署、天城文化署、军事学院（中层）；维克多庄园、「Y」的庄园（上层悬浮岛）；猎季营地（世界图）。地点卡与附加条目都写明「卡没写层与位置，地图位置为仓库推断」。
 
+
+## 上层 v8（2026-09-28）
+
+- 卡里有的上层岛：伊甸（estate2）、首相府（isle6）、凯莉的宅邸（isle10）、罗斯柴尔德庄园（isle30）、庄园主联盟会所（isle9）、精英学院（isle25）。上层底图里这几座岛只建岛体，建筑用各自三维模型的正交俯视抠图贴上（`blender/landmarks/map_cutout.py` → `tools/isles_into_upper.py`；伊甸走 `tools/eden_into_upper.py`）。
+- 其余岛（含维克多庄园、「Y」的庄园所在的岛）一律通用英式庄园填充（`tc_estates.est_english`，同一套脚本，不单独评审）。
+- 三座新模型（`blender/landmarks/upper_estates.py` 共用部件）本轮按用户要求省额度：一稿 + 自查（对照已否决清单：无岛影、无飞艇、无礼拜堂、无自编名字、无文字 / 徽记），没开人设子代理。
+
+## DLC 预备（卡里没有，已从地图撤下，2026-09-28 用户：「卡没有的先不放进去，作为 dlc 预备」）
+
+| id | 名称 | 原位置 | 撤下内容 | 旧存档 |
+|---|---|---|---|---|
+| `general_residence` | 将军官邸 | 上层 isle29（银冠堡旁） | `maps.json` 标记、`tc_upper.json` 标记、`addon_places.json` 附加条目、`tc_islands.json` 的 role（岛改为通用英式填充） | 当前地点写着这个名字时认不出 → 标题栏「未上图：将军官邸」，可手动指派 |
+| `aether_institute` | 以太研究院 | 上层 isle25（气候塔旁） | 同上；isle25 改给精英学院 | 同上（「未上图：以太研究院」） |
+
+`blender/tc_estates.py` 的 `role_general_residence` / `role_aether_institute` 与 `blender/upper_islands/isle25.py`、`isle29.py` 草稿保留不删，DLC 启用时直接接回。
