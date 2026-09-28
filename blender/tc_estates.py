@@ -270,7 +270,7 @@ class Isle:
         elif k == 'ridge':                                   # 长脊：一端收尖、脊线微弯
             g = 1 + .10 * np.cos(th - ph) - .06 * np.cos(2 * (th - ph)) + .015 * np.sin(13 * th)
         elif k == 'crescent':                                # 新月：朝 dir 的一侧挖一个深湾（湾里是云，水景园沿内弧）
-            dd = np.angle(np.exp(1j * (th - ph))); g = 1 - .52 * np.exp(-(dd / .62) ** 2) + .01 * np.sin(11 * th)
+            dd = np.angle(np.exp(1j * (th - ph))); g = 1 - sil.get('depth', .52) * np.exp(-(dd / sil.get('width', .62)) ** 2) + .01 * np.sin(11 * th)   # v17：depth / width 可在表里调（R-02 深湾）
         elif k == 'plateau':                                 # 平台：方正、圆角、几乎无碎口
             g = 1 + .008 * np.sin(9 * th + .4)
         elif k == 'fortress':                                # 要塞：更方、四角略凸（角楼位）
