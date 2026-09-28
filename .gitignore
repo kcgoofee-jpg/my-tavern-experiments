@@ -32,6 +32,7 @@ node_modules
 # 云渲染 SSH 连接信息（真实 HOST/PORT/KEY），照 tools/cloud/remote.env.example 填
 tools/cloud/remote.env
 blender/islands/out/
+blender/world/out/
 # 多实例云渲染连接信息（tools/cloud/hosts/<名>.env），照 tools/cloud/hosts/example.env.example 填
 tools/cloud/hosts/*.env
 !tools/cloud/hosts/example.env.example
