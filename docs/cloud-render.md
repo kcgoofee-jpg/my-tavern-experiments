@@ -84,6 +84,10 @@ tools/render_queue.sh dispatch --once   # 派一轮；不加 --once 是常驻循
 
 派工规则：`draft` 优先 Mac，Mac 忙时借云端；`final` 优先云端（多实例挑先空的那台），云端全忙时借 Mac；`any` 谁先空派谁。派云端任务前会检查本地文件有没有比上次 `sync.sh` 新（`tools/cloud/.locks/<实例>.last_sync` 的 mtime 戳），有新改动会先自动 `sync.sh` 再渲。队列文件在 `logs/queue/{pending,running,done}/`（`logs/` 整体已 gitignore）。队列空了会提醒「记得关云端省钱」，除非该实例已经开了 `idle_guard.sh`。
 
+看板 `tools/pipeline_status.sh`（薄包装，实际逻辑在 `tools/pipeline_status.py`，仅需 `python3`）只读展示本机/云端各实例/队列/任务/最近完成/提醒：`tools/pipeline_status.sh [--once|--interval N|--no-color|--no-cloud|--compact|--only mac|cloud|tasks]`；它自己不派工、不写队列文件——**唯一的写入方永远是 `tools/render_queue.sh dispatch`**，看板只读 `logs/queue/` 和各 `hosts/*.env` 展示状态。
+
+
+
 ## 场景缓存（`--cache-blend`）
 
 搭场景（`bpy` 生成几何体/贴图/BVH）是纯 CPU，8K/16K 定稿里经常比显卡渲染本身还慢（实测一次基准：搭建 59s、显卡渲染只 7s，见 `skills/card-map/HOW-IT-WORKS.md`「渲染时 token/CPU/内存/显卡各干什么」）。
