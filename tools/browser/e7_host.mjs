@@ -27,7 +27,7 @@ const fabBox = page => page.evaluate(() => { const r = document.querySelector('#
 
 try {
   for (const preset of ['phone', 'iphone']) {
-    const P = await B.newPage(preset, { tier: 'save', init: [() => { try { if (!sessionStorage.getItem('__h')) { sessionStorage.setItem('__h', '1'); localStorage.clear(); localStorage.setItem('edenMapHand', 'left'); localStorage.setItem('edenMapLine', 'vpn'); localStorage.setItem('edenMapSplashSeen', 'dev'); } } catch (e) {} }] });   // 开场自检卡（v0.9.5，每版一次）盖在面板上会吃掉点击：与 host_stub 一样预先标记已看过
+    const P = await B.newPage(preset, { tier: 'save', init: [() => { try { if (!sessionStorage.getItem('__h')) { sessionStorage.setItem('__h', '1'); localStorage.clear(); localStorage.setItem('edenMapHand', 'left'); localStorage.setItem('edenMapLine', 'vpn'); localStorage.setItem('edenMapSplashSeen', 'dev'); localStorage.setItem('edenMapHint', '1'); } } catch (e) {} }] });   // 开场自检卡（v0.9.5，每版一次）与上手提示横幅（v2 P1，2026-09-29 起四条更长）都盖在面板上会吃掉点击：与 host_stub 一样预先标记已看过
     const p = P.page, W = p.viewportSize().width;
     await p.route(B.BASE + '__e7host.html', r => r.fulfill({ contentType: 'text/html; charset=utf-8', body: HOST }));
     await p.goto(B.BASE + '__e7host.html'); await p.waitForSelector('#eden-map-root .em-fab', { timeout: 15000 });

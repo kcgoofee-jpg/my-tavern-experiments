@@ -38,7 +38,7 @@ const HOST = `<!doctype html><meta charset=utf-8><meta name=viewport content="wi
 <iframe id=card style="display:none" srcdoc="${STUB.replace(/"/g, '&quot;')}"></iframe></body>`;
 
 export async function openHost(P, { here = '', stat = {}, msgs = [], chat = 'stub', vars = {}, noVars = false, ls = null, charData = null, rawStat = false, splash = false, scriptBase = null, pack = null } = {}) {
-  if (!splash) await P.ctx.addInitScript(() => { try { if (!sessionStorage.getItem('__splashSeeded')) { sessionStorage.setItem('__splashSeeded', '1'); localStorage.setItem('edenMapSplashSeen', 'dev'); } } catch (e) {} });   // v0.9.5 开场自检卡：别的测试里不弹
+  if (!splash) await P.ctx.addInitScript(() => { try { if (!sessionStorage.getItem('__splashSeeded')) { sessionStorage.setItem('__splashSeeded', '1'); localStorage.setItem('edenMapSplashSeen', 'dev'); localStorage.setItem('edenMapHint', '1'); } } catch (e) {} });   // v0.9.5 开场自检卡 + v2 P1 三步上手横幅：别的测试里不弹（横幅盖在面板上会吃掉点击，见 e7_host）
   const p = P.page;
   await P.ctx.addInitScript(s => { if (window.top === window) { window.__stub = s; if (s.ls && !sessionStorage.getItem('__lsSeeded')) { sessionStorage.setItem('__lsSeeded', '1'); for (const [k, v] of Object.entries(s.ls)) localStorage.setItem(k, v); } } }, { here, stat, msgs, chat, vars, noVars, ls, charData, rawStat, pack });
   await p.route(B.BASE + '__stubhost.html', r => r.fulfill({ contentType: 'text/html; charset=utf-8', body: HOST.split('__SCRIPT_BASE__').join(scriptBase || B.BASE) }));
