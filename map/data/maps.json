@@ -83,7 +83,7 @@
           "openings": [8], "alias": ["辉光大教堂", "大教堂", "教堂", "圣光教会", "教会总部", "天城主教座堂", "主教座堂", "大主教府邸", "大主教府", "大主教", "枢机院"] },
         "iron_cradle": { "name": "圣铁摇篮", "sub": "战斗修女修道院", "name_en": "Holy Iron Cradle", "sub_en": "Battle-sisters' convent", "tag": "set",
           "src": "天城·中层：战斗修女的修道院「圣铁摇篮」，中层高区的独立院落（具体位置为推断）",
-          "alias": ["圣铁摇篮", "战斗修女院", "战斗修女修道院", "战斗修女"] },
+          "alias": ["圣铁摇篮", "战斗修女院", "战斗修女修道院", "战斗修女"] , "link": {"map": "lm_iron_cradle", "label": "查看三维模型", "label_en": "View 3D model"} },
         "barracks_ring": { "name": "环城军营带", "sub": "天城防卫军驻地", "name_en": "Ring Barracks", "sub_en": "Defense Force garrison", "tag": "set",
           "src": "天城·中层：天城防卫军驻扎在中层外围的环城军营带（图上是沿片区西缘的一段，走向为推断）",
           "alias": ["环城军营带", "军营", "防卫军驻地", "防卫军"] },
@@ -177,6 +177,7 @@
     "lm_soup_kitchen": {"title": "圣光教会施粥站（三维）", "title_en": "Church Soup Kitchen (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "soup_kitchen", "src": "props/viewer3d.html", "alias": ["圣光教会施粥站（三维）"], "src_note": "施粥站 + 孤儿收容所 + 免费诊所合画的三维（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 tc_low.soup_kitchen 标记的「查看三维模型」进。源：blender/landmarks/soup_kitchen/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_civic_core": {"title": "中层政务区（三维）", "title_en": "Government Quarter (3D)", "parent": "tc_mid", "kind": "estate", "viewer3d": "civic_core", "src": "props/viewer3d.html", "alias": ["中层政务区（三维）"], "src_note": "中层核心区政务区三维：天城议会、执政厅、政务院、中央储备署、文化署同在一个场景（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 tc_mid.council 标记的「查看三维模型」进。源：blender/landmarks/civic_core/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_enforcement_hq": {"title": "天城执法局总局（三维）", "title_en": "Enforcement Bureau HQ (3D)", "parent": "tc_mid", "kind": "estate", "viewer3d": "enforcement_hq", "src": "props/viewer3d.html", "alias": ["天城执法局总局（三维）"], "src_note": "只画外观的执法局总局三维（标准版：标准档 + 低档 glb；花岗岩钢塔、台座大厅与 18 格辖区状态屏、前庭安检、车库、悬浮车库，具体位置与形制为仓库推断）；从 tc_mid.enforcement_hq 标记的「查看三维模型」进。源：blender/landmarks/enforcement_hq/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_iron_cradle": {"title": "圣铁摇篮（三维）", "title_en": "Iron Cradle (3D)", "parent": "tc_mid", "kind": "estate", "viewer3d": "iron_cradle", "src": "props/viewer3d.html", "alias": ["圣铁摇篮（三维）"], "src_note": "战斗修女修道院三维（标准版：标准档 + 低档 glb；封闭的石砌修院、操练场、坐骑机库，位置与形制为仓库推断）；从 tc_mid.iron_cradle 标记的「查看三维模型」进。源：blender/landmarks/iron_cradle/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_pm_residence": {
       "title": "首相府（三维）", "title_en": "Prime Minister's Residence (3D)", "parent": "tc_upper", "kind": "estate",
       "viewer3d": "pm_residence", "src": "props/viewer3d.html", "alias": ["首相府花园"],
