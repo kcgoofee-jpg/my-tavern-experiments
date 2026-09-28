@@ -11,5 +11,8 @@
   },
   "theme": {
     "accent": "#63b4be"
+  },
+  "vars": {
+    "location": "世界.当前地点"
   }
 }

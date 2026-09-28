@@ -74,7 +74,7 @@
 - [x] 迷雾数据放哪：聊天变量 eden_map.探索（脚本自存，不进 stat_data）
 
 ### 长期
-- [ ] 通用化（等用户 approve 再开始）：拆出核心（查看器、事件解析、定位、扩展接口）与设定分离；接入 skill 自动生成 `maps.json` / 事件分类 / 联动规范条目；底图 skill（OSM + Blender 参数化模板）；教程（外挂 / 内置接入、自定义地图与事件）；公开仓库整理（README 通用化，本卡内容放 `examples/`）
+- [~] 通用化（v1 已落地：`map/core/pack.mjs` + `map/packs/`，示例包 town，`tools/new_pack.py` / `check_pack.py` / `draft_pack_from_card.py`，教程 `docs/generalize/README.md`；剩余见该文「已知限制」）：拆出核心（查看器、事件解析、定位、扩展接口）与设定分离；接入 skill 自动生成 `maps.json` / 事件分类 / 联动规范条目；底图 skill（OSM + Blender 参数化模板）；教程（外挂 / 内置接入、自定义地图与事件）；公开仓库整理（README 通用化，本卡内容放 `examples/`）
 - [ ] 几个大版本后与作者商量统一 MVU 结构（位置字段等），草稿 `docs/author-compat.md`，现在不发
 - [ ] 肖像廊画框与作者 CG 联动（伏笔，大概率不做）
 - 正式发布 / npm 发布：等与卡原作者谈妥后再定

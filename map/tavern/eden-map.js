@@ -458,7 +458,7 @@
   const mvuStat = () => { if (statSnap !== undefined) return statSnap; let v = null; try { v = Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data || null; } catch (e) {}
     statSnap = v; queueMicrotask(() => { statSnap = undefined; }); return v; };
   const cardKey = () => { try { const c = SillyTavern.getContext(); return c.characters?.[c.characterId]?.avatar || c.name2 || ''; } catch (e) { return ''; } };
-  import(SELF + 'tavern/adapter.mjs').then(m => { varAD = m; refreshVarMap(); push(); }).catch(() => {});
+  import(SELF + 'tavern/adapter.mjs').then(m => { if (PACK_IN) m.useDefaults(PACK_IN.manifest?.vars); varAD = m; refreshVarMap(); push(); }).catch(() => {});
   function refreshVarMap() {
     if (!varAD) return; const card = cardKey(); if (card !== varCard) { varCard = card; varUser = varAD.readUser(LS || localStorage, card); }
     const st = mvuStat();
