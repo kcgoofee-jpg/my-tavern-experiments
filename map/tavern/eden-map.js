@@ -302,7 +302,7 @@
     if (!panel.hidden || alive) { fab.classList.remove('prep'); preDone(); return; }   // 测速期间用户已经点开了
     if (lean()) {
       htmlProg = f => fab.style.setProperty('--p', Math.round(f * 80));
-      try { await fetchHtml(); await Promise.all(['data/maps.json', 'data/world_markers.json', 'data/derived.json'].map(u => cdnFetch(BASE + u).catch(() => null)));
+      try { await fetchHtml(); await Promise.all(['packs/eden/manifest.json', 'data/maps.json', 'data/world_markers.json', 'data/derived.json'].map(u => cdnFetch(BASE + u).catch(() => null)));
         fab.classList.remove('prep'); fab.title = '世界地图'; }
       catch (e) { fab.classList.remove('prep'); fab.classList.add('fail'); fab.title = '地图预加载失败，点开重试'; }
       finally { htmlProg = null; preDone(); }

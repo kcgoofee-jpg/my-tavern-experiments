@@ -12,14 +12,17 @@ import * as AD from '../map/tavern/adapter.mjs';
 const rd = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 const js = p => JSON.parse(rd(p));
 
-test('eden 清单 = 内置 EDEN；eden 的键与聊天变量原样（老用户数据不迁移也能读）', () => {
-  const m = js('map/packs/eden/manifest.json'); delete m.$schema; delete m._说明;
-  assert.deepEqual(JSON.parse(JSON.stringify(PK.EDEN)), m);
+test('eden 清单是唯一定义（没有内置 EDEN 常量）；eden 的键与聊天变量原样（老用户数据不迁移也能读）', async () => {
+  const m = js('map/packs/eden/manifest.json');
+  assert.equal(PK.EDEN, undefined); assert.equal(PK.EDEN_RESOLVED, undefined);
+  let asked = null; const R = await PK.load('eden', { fetchJSON: async u => { asked = u; return m; } });
+  assert.equal(asked, 'packs/eden/manifest.json'); assert.equal(R.base, ''); assert.equal(R.chatVar, 'eden_map'); assert.equal(R.prefix, 'edenMap');
+  assert.deepEqual(R.data, { maps: 'data/maps.json', world: 'data/world_markers.json', derived: 'data/derived.json', rooms: 'data/eden_estate_rooms.json', events: 'builtin' });
+  assert.match(rd('map/viewer.html'), /<link rel="preload" as="fetch" crossorigin="anonymous" href="packs\/eden\/manifest\.json">/);
   assert.equal(PK.nsKey('edenMapFog', 'eden'), 'edenMapFog');
   assert.equal(PK.nsKey('edenMap:chat:1:fog', undefined), 'edenMap:chat:1:fog');
   assert.equal(PK.chatVarOf('eden'), 'eden_map');
-  assert.equal(PK.EDEN_RESOLVED.data.maps, 'data/maps.json');
-  assert.deepEqual(PK.validate(PK.EDEN), []);
+  assert.deepEqual(PK.validate(m), []);
 });
 
 test('其它包：键换到 tcp.<id>.*，聊天变量默认 tc_<id>，路径补包目录', () => {

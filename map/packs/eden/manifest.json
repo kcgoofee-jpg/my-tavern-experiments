@@ -1,6 +1,6 @@
 {
   "$schema": "../../data/schema/pack.schema.json",
-  "_说明": "内置包：map/core/pack.mjs 的 EDEN 与本文件一致（tests/pack.test.mjs）。数据文件留在 map/data（路径相对 map/），不搬家。",
+  "_说明": "伊甸包的唯一定义（C2：core/pack.mjs 不再内置 EDEN 常量，查看器启动时取本文件）。数据文件留在 map/data（路径相对 map/），不搬家。",
   "id": "eden",
   "schema": 1,
   "title": "伊甸庄园 · 天城",

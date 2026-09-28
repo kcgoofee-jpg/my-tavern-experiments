@@ -38,7 +38,7 @@ export async function main() { try { await mainInner(); } catch (e) { bootFail(e
 async function mainInner() {
   // 三个启动文件并行取（之前 derived.json 要等前两个取完才开始）
   let d, enDict, reg, mk, dict, hx;
-  await initPack(getJSON);   // 设定包（core/pack.mjs）：eden 内置不发请求；其它包先取清单
+  await initPack(getJSON);   // 设定包（core/pack.mjs）：一律取清单（eden 的在 viewer.html preload）
   const opt = k => (packData(k) ? getJSON(packData(k)) : Promise.resolve(null));
   [reg, mk, d, dict, hx, enDict] = await Promise.all([getJSON(packData('maps')).then(rebase), opt('world'), opt('derived'), window.__i18n,
     import(new URL('here.mjs', document.baseURI).href).catch(() => null), LANG === 'en' ? window.__i18n : getJSON('i18n/en.json'),

@@ -1,6 +1,6 @@
 // 设定包（pack）配置接口（通用化，docs/generalize/README.md）：核心只通过这里拿「这张卡」的东西——
 // 数据文件路径（地图注册表、世界地点、派生数据、房间平面、卡原名绑定、事件分类）、本机存储键前缀、聊天变量顶层键、CDN 仓库、主题强调色、标题。
-// 包 = map/packs/<id>/manifest.json（结构见 map/data/schema/pack.schema.json）。内置的 eden 包不用额外请求（EDEN 与 packs/eden/manifest.json 一致，tests/pack.test.mjs 检查）。
+// 包 = map/packs/<id>/manifest.json（结构见 map/data/schema/pack.schema.json）。eden 也走清单（packs/eden/manifest.json 是伊甸唯一定义，C2；查看器 <link rel=preload> 让它与模块并行取，不多串行往返）。
 // 纯函数 + 一个可选的 fetch：查看器（app/boot.mjs）、宿主（tavern/eden-map.js）、node 单测、tools/*.py 的校验共用同一套规则。
 export const DEFAULT_ID = 'eden';
 export const ID_RE = /^[a-z][a-z0-9_-]{1,31}$/;
@@ -13,16 +13,6 @@ export function nsKey(k, id) {
 }
 /** 聊天变量顶层键：eden 历史名 eden_map；其它包默认 tc_<id>（清单 chat.var 可改） */
 export const chatVarOf = (id, m) => m?.chat?.var || (!id || id === DEFAULT_ID ? 'eden_map' : `tc_${id.replace(/-/g, '_')}`);
-
-// 内置 eden 包（与 map/packs/eden/manifest.json 同步；数据文件仍在 map/data，另一条线还在往里加地标，不搬家）
-export const EDEN = Object.freeze({
-  id: 'eden', schema: 1, title: '伊甸庄园 · 天城', title_en: 'Eden Manor · Tiancheng',
-  chat: { var: 'eden_map' },
-  data: { maps: 'data/maps.json', world: 'data/world_markers.json', derived: 'data/derived.json', rooms: 'data/eden_estate_rooms.json', events: 'builtin' },
-  cdn: { repo: 'kcgoofee-jpg/my-tavern-experiments', npm: 'tiancheng-map-assets' },
-  theme: { accent: '#e6c36a' },
-  worldbook: { addon: 'tools/build_worldbook_addon.py' },
-});
 
 const str = (v, max = 200) => typeof v === 'string' && v.length > 0 && v.length <= max;
 const relOk = p => str(p, 200) && !/^[a-z]+:|^\/|(^|\/)\.\.(\/|$)|\\/i.test(p);   // 只收包内 / map 内相对路径，不收外链与上跳
@@ -55,16 +45,14 @@ export function resolve(m, base = m?.id === DEFAULT_ID ? '' : `packs/${m?.id}/`)
     strings: m.strings || {},
   };
 }
-export const EDEN_RESOLVED = resolve(EDEN, '');
 /** 当前包 id：宿主注入的 window.__tcPack.id > 地址 ?pack= > eden。不合法的 id 退回 eden。 */
 export function currentId(w = globalThis) {
   let id = null;
   try { id = w.__tcPack?.id || new URLSearchParams(w.location?.search || '').get('pack'); } catch (e) {}
   return id && ID_RE.test(id) ? id : DEFAULT_ID;
 }
-/** 取包：eden 直接返回内置；其它包 fetch packs/<id>/manifest.json（宿主注入了完整清单时不再请求）。失败抛错，由调用方退回 eden 或报错。 */
+/** 取包：fetch packs/<id>/manifest.json（eden 也一样，数据文件路径相对 map/；宿主注入了完整清单时不再请求）。失败抛错，由调用方重试或报错。 */
 export async function load(id = currentId(), { base = '', fetchJSON, injected } = {}) {
-  if (id === DEFAULT_ID) return EDEN_RESOLVED;
   let m = injected?.manifest;
   if (!m) {
     const get = fetchJSON || (u => fetch(u, { credentials: 'omit', referrerPolicy: 'no-referrer' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }));

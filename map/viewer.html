@@ -113,6 +113,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 </style>
 <!-- OpenSeadragon 5.0.1（BSD-3，见 vendor/openseadragon/LICENSE.txt），随仓库版本固定 -->
 <!-- 启动文件和地图库并行开始下载（CDN 每个请求约 1 秒延迟，串行等待是打开慢的主因） -->
+<link rel="preload" as="fetch" crossorigin="anonymous" href="packs/eden/manifest.json">
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/maps.json">
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/world_markers.json">
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/derived.json">
