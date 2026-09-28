@@ -29,3 +29,5 @@ blender/data/props/
 # 地标 / 庄园建模用的 CC0 贴图与 HDRI（2026-09-27 下载，27 MB；仓库里没有脚本按这个路径取用，属于本地素材缓存）
 blender/data/landmarks/
 node_modules
+# 云渲染 SSH 连接信息（真实 HOST/PORT/KEY），照 tools/cloud/remote.env.example 填
+tools/cloud/remote.env

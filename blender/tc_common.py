@@ -179,7 +179,12 @@ def camera_and_render(sc, RES, SAMPLES, OUT, opt, view='Standard', exposure=0.0,
     gpu = False
     try:
         prefs = bpy.context.preferences.addons['cycles'].preferences
-        for kind in ('METAL', 'OPTIX', 'CUDA', 'HIP', 'ONEAPI'):
+        # EDEN_CYCLES_DEVICE：本地 Mac 默认 METAL；云端（AutoDL 等）设 OPTIX 或 CUDA 优先探测该类型，找不到再退回默认顺序
+        want = os.environ.get('EDEN_CYCLES_DEVICE', '').strip().upper()
+        order = ('METAL', 'OPTIX', 'CUDA', 'HIP', 'ONEAPI')
+        if want in order:
+            order = (want,) + tuple(k for k in order if k != want)
+        for kind in order:
             try: prefs.compute_device_type = kind
             except TypeError: continue
             prefs.get_devices()
