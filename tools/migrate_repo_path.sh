@@ -47,12 +47,13 @@ cd "$NEW_PATH"
 
 log "1) Rewriting occurrences of the old absolute path in repo files"
 # NUL-delimited to survive filenames/paths with spaces or non-ASCII.
-mapfile -d '' -t HIT_FILES < <(
+HIT_FILES=()
+while IFS= read -r -d '' f; do HIT_FILES+=("$f"); done < <(
   grep -rlZ --binary-files=without-match -F "$OLD_PATH" . \
     --exclude-dir=.git 2>/dev/null || true
 )
 log "   found ${#HIT_FILES[@]} file(s) containing the old path"
-for f in "${HIT_FILES[@]}"; do
+for f in ${HIT_FILES[@]+"${HIT_FILES[@]}"}; do
   log "   - $f"
   if [ "$DRY_RUN" != "1" ]; then
     perl -pi -e "s{\Q$OLD_PATH\E}{$NEW_PATH}g" "$f"
@@ -91,7 +92,8 @@ log "   $OLD_MEMDIR"
 log "-> $NEW_MEMDIR"
 if [ -d "$OLD_MEMDIR" ]; then
   run mkdir -p "$(dirname "$NEW_MEMDIR")"
-  run cp -R "$OLD_MEMDIR" "$NEW_MEMDIR"
+  run mkdir -p "$NEW_MEMDIR"
+  run cp -Rn "$OLD_MEMDIR/." "$NEW_MEMDIR/"
 else
   log "   WARN: old memory dir not found, skipping copy"
 fi
