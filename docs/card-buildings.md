@@ -44,7 +44,7 @@
 | P2 机构 | tc_mid | `mid_monastery` | 中层修道院 | ✅ | 卡 | 中层关怀带 `map/props/care_cluster/` | 标准（r1 7 / 7） |  |
 | P2 机构 | tc_mid | `military_academy` | 军事学院 | 🆕 | 仓库推断 | 军营带与军事学院 `map/props/barracks/` | 标准（r2 7.5 / 7.5） |  |
 | P2 机构 | tc_mid | `reserve_office` | 天城中央储备署 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
-| P2 机构 | tc_mid | `starabyss_univ` | 星渊大学 | ✅ | 卡 | — | — |  |
+| P2 机构 | tc_mid | `starabyss_univ` | 星渊大学 | ✅ | 卡 | 星渊大学 `map/props/starabyss_univ/` | 标准（r1 7 / 7.5） |  |
 | P2 机构 | tc_mid | `storm_hall` | 风暴殿 | 🆕 | 仓库推断 | — | — |  |
 | P2 机构 | tc_mid | `supreme_court` | 最高法院 | ✅ | 卡 + 推断位置 | — | — |  |
 | P2 机构 | tc_mid | `tiancheng_univ` | 天城大学 | ✅ | 用户决定 | — | — |  |
