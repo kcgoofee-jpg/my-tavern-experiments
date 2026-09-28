@@ -31,10 +31,10 @@ if [ "$REL" = 1 ]; then
   fi
 fi
 
-echo "-- 2/4 推送"
-if [ "$DRY" = 1 ]; then git push --dry-run origin "HEAD:refs/heads/$BR" 2>&1 | sed 's/^/   /'
-else git push origin "HEAD:refs/heads/$BR" 2>&1 | sed 's/^/   /'; fi
-PUSH=${PIPESTATUS[0]}; [ "$PUSH" = 0 ] || { echo "推送失败"; exit 1; }
+echo "-- 2/4 推送（先 rebase、写跟随分支头指针 map/data/head.json，tools/bump_head.py）"
+if [ "$DRY" = 1 ]; then git push --dry-run origin "HEAD:refs/heads/$BR" 2>&1 | sed 's/^/   /'; PUSH=${PIPESTATUS[0]}
+else python3 tools/bump_head.py --push 2>&1 | sed 's/^/   /'; PUSH=${PIPESTATUS[0]}; SHA=$(git rev-parse HEAD^); SHORT=${SHA:0:12}; fi   # 加载器按 head.json 里的内容提交（HEAD^）加载
+[ "$PUSH" = 0 ] || { echo "推送失败"; exit 1; }
 
 [ "$REL" = 1 ] && [ "$DRY" = 0 ] && { SHA=$(git rev-parse HEAD); SHORT=${SHA:0:12}
   for h in purge.jsdelivr.net; do curl -fsS "https://$h/gh/kcgoofee-jpg/my-tavern-experiments@$BR/map/data/latest.json" >/dev/null && echo "   已清 jsDelivr 缓存：@$BR/map/data/latest.json" || echo "   清缓存失败（最长约 12 小时后自然更新；加载器先查标签列表，不受影响）"; done; }
@@ -44,7 +44,7 @@ if [ "$WARM" = 1 ]; then
   N=$(bash tools/warm_cdn.sh "$SHA" --count)
   if [ "$DRY" = 1 ]; then WARMSUM="演练：将预热 $N 个文件（bash tools/warm_cdn.sh $SHA $JOBS）"
   else
-    W=$(bash tools/warm_cdn.sh "$SHA" "$JOBS"); echo "$W" | sed 's/^/   /'
+    W=$(bash tools/warm_cdn.sh "$SHA" "$JOBS" --purge-branch "$BR"); echo "$W" | sed 's/^/   /'
     BAD=$(echo "$W" | awk '$2 ~ /^[0-9]+$/ && $2 != 200 {s += $1} END {print s + 0}')
     WARMSUM="$N 个文件，非 200：$BAD"
     # 2026-09-27 接手 review：以前非 200 只打印不失败，标签没生效 / 文件丢了也照样「发布成功」
