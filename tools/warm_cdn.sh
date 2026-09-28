@@ -19,7 +19,7 @@ files() { git ls-tree -r --name-only "$REF" -- map | grep -vE "$EXCL" || true; }
 N=$(files | wc -l | tr -d ' ')
 [ "$MODE" = --count ] && { echo "$N"; exit 0; }
 [ "$MODE" = --list ] && { files; exit 0; }
-echo "预热 $REF：$N 个文件，并发 $JOBS"
+echo "预热 ${REF}：${N} 个文件，并发 ${JOBS}"
 # 000 = curl 本身出错（连接被重置 / 超时，jsDelivr 首次回源慢时偶发，每次十几个、不固定）：每个请求自带退避重试，
 # 仍失败的逐个列出（状态码、curl 退出码、路径），以低并发再补一轮。
 get() { curl -s -o /dev/null --max-time 90 --retry 3 --retry-all-errors --retry-delay 3 -w "%{http_code} %{exitcode} {}\n" "$BASE/$1" | sed "s#{}#$1#"; }
