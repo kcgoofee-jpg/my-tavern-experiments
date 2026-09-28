@@ -15,7 +15,7 @@ const results = {};
 let crash = null;   // 运行异常 / 页面脚本错误 → 退出码 1（C-测试缺口：以前异常时浏览器不关、有错误也 exit 0）
 try {
 
-for (const preset of ['desktop', 'phone', 'desktopWk', 'iphone']) {
+for (const preset of ['desktop', 'phone']) {   // 2026-09-28 用户决定：砍掉 iPhone 相关工作，跳过 desktopWk / iphone，只留桌面 + 375 手机
   const P = await newPage(preset);
   const r = results[preset] = {};
   if (preset === 'phone') { const cdp = await P.ctx.newCDPSession(P.page); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 }); r.cpuThrottle = 4; }
