@@ -4,7 +4,7 @@
 每座岛同时有一张**建模草稿**（Blender 体块，3/4 鸟瞰，1200 px 32 spp）：脚本 `blender/upper_islands/<id>.py`，
 图 `docs/drafts/upper_isle_<id>_draft.jpg`。一次全部重出：
 `blender -b --python-expr "import runpy;runpy.run_path('blender/upper_islands/render_all.py')" -- docs/drafts`。
-**这些只是草稿**：不动上层瓦片、不出 8K；用户点头后再并进 `tiancheng_upper.py` 的下一次整图重渲。
+**这些只是草稿**：不动上层瓦片、不出 8K；glm 看图代理自检通过后即并进 `tiancheng_upper.py` 的下一次整图重渲（2026-09-29 起全自动）。
 
 标注：【卡】= 卡里写的（`docs/card-digest.md`），【推断】= 仓库推断，【用户】= 用户决定。只用卡原名；建筑一律中性（无文字、无徽记、无人物）。
 全层通用【卡】：每岛一座私人庄园、各带结界；岛间只有私人悬浮载具 → 每岛只画一处「停靠平台」+ 通用密封式悬浮载具（无旋翼、无机翼，不画飞艇）。

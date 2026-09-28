@@ -39,3 +39,4 @@ tools/cloud/hosts/*.env
 # 云脚本本地锁文件
 tools/cloud/.locks/
 .pi/
+.cache/
