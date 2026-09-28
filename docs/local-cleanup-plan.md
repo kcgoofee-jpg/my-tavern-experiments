@@ -1,13 +1,13 @@
 # 本地清理计划（Mac，2026-09-28）
 
-> 状态：只测量，没删任何东西；条目按用户 2026-09-28 的格式，一行一条，做完的在原句上用 ~~删除线~~ ✅ 划掉（不删、不另起文件），文首这行更新状态；后续实施的代理负责回去划。排进 `docs/project-design.md` 的整理顺序，见文末。
+> 状态（2026-09-28）：worktree 已删 33 个（留 wt-mid/wt18/wtw + 2 个代理），Homebrew 缓存已清；其余待做；条目按用户 2026-09-28 的格式，一行一条，做完的在原句上用 ~~删除线~~ ✅ 划掉（不删、不另起文件），文首这行更新状态；后续实施的代理负责回去划。排进 `docs/project-design.md` 的整理顺序，见文末。
 
 ## 清单（每条：是什么 / 大小 / 能不能删 / 命令 / 是否要全体代理空闲）
 
-- scratchpad worktree（`git worktree list`，33 个，`/private/tmp/claude-501/.../scratchpad/wt*`）：本次会话各代理各自开的隔离工作区，共约 **12.4 GB**（单个 250M–950M 不等，最大的是 `wt-bld` 950M、`wt17` 606M、`wt18` 544M）；大部分已经合并进 `cloud/tc-mid-low` 或已经废弃（分支名能看出来，比如 `mirror-fix`、`gallery-fix` 这些像是已经收尾的）——安全删除前必须逐个确认对应分支已经 merge 或者确认丢弃不可惜，不能批量删；命令：`git worktree list` 核对每个的分支和 `git log --oneline origin/cloud/tc-mid-low..<分支>` 看有没有没推的提交，确认没有再 `git worktree remove <路径>`（还留着的分支再 `git branch -D <分支>`）；**需要对应那个 worktree 的代理已经结束/空闲**，不需要全局停机（`docs/project-design.md` 的 C3 才需要全局停机，这条不是）。
+- ~~scratchpad worktree（`git worktree list`，33 个，`/private/tmp/claude-501/.../scratchpad/wt*`）：本次会话各代理各自开的隔离工作区，共约 **12.4 GB**（单个 250M–950M 不等，最大的是 `wt-bld` 950M、`wt17` 606M、`wt18` 544M）；大部分已经合并进 `cloud/tc-mid-low` 或已经废弃（分支名能看出来，比如 `mirror-fix`、`gallery-fix` 这些像是已经收尾的）——安全删除前必须逐个确认对应分支已经 merge 或者确认丢弃不可惜，不能批量删；命令：`git worktree list` 核对每个的分支和 `git log --oneline origin/cloud/tc-mid-low..<分支>` 看有没有没推的提交，确认没有再 `git worktree remove <路径>`（还留着的分支再 `git branch -D <分支>`）；**需要对应那个 worktree 的代理已经结束/空闲**，不需要全局停机（`docs/project-design.md` 的 C3 才需要全局停机，这条不是）。~~ ✅
 - `/private/tmp/bl_tmp`（`tools/blender_run.sh` 用的 ASCII TMPDIR，绕开中文路径的 Metal 内核缓存崩溃）：只 **196 KB**，小到不值得管；命令：`rm -rf /private/tmp/bl_tmp`（下次渲染会自动重建）；随时可删，不需要空闲。
 - Blender 内核缓存（`~/Library/Caches/blender`）：**472 KB**，也很小；命令：`rm -rf ~/Library/Caches/blender`（Blender 下次启动会重新编译内核，第一次渲染会慢一点）；建议等 **本机没有 Blender 在跑**（`tools/blender_run.sh` 的锁空闲）再删，不需要全局停机。
-- `~/Library/Caches/Homebrew`：**1.6 GB**，纯下载缓存，删了不影响已装的包；命令：`brew cleanup --prune=all`（顺带清过期版本，比手动 rm 更干净）；随时可删，不需要空闲。
+- ~~`~/Library/Caches/Homebrew`：**1.6 GB**，纯下载缓存，删了不影响已装的包；命令：`brew cleanup --prune=all`（顺带清过期版本，比手动 rm 更干净）；随时可删，不需要空闲。~~ ✅
 - `tools/browser/node_modules`（浏览器测试用的依赖，仓库根 `node_modules` 现在不存在，只有这一个）：**18 MB**，`npm install` 能重建；命令：`rm -rf tools/browser/node_modules`（下次跑浏览器测试前 `cd tools/browser && npm install`）；建议等 **没有浏览器测试在跑** 再删，不需要全局停机。
 - `docs/drafts` 里的图片（草图/参考图，`estate_v*_desk_*_<房间中文>.jpg` 这批也在这，同时是 §5.2 命名违规清单里要改名的对象）：**158 MB**；能不能删要看每张图是不是还在被文档引用——不是无脑能删的一批，建议先 `grep -rl "docs/drafts/" docs/ map/` 找出还被引用的文件名单，没在名单里的草稿图才删；命令：`du -sh docs/drafts/*` 逐个核对后 `rm`；不需要全局停机，但建议跟 C3 改名一起处理（改名清单里已经点名了这批文件）。
 - `.git` 仓库本体：**606 MB**（历史里应该攒了不少大文件，瓦片 / 渲染图之类）；这个**不是「删文件」能处理的**，是 `git gc` / 历史重写（BFG 或 `git filter-repo` 把大 blob 挪出主仓库历史）才能真正瘦身，风险高（改写历史，所有人要重新 clone）；命令先只测量：`git count-objects -vH`、`git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | sort -k3 -n -r | head -20`（找最大的历史 blob）；**这条就是 `docs/project-design.md` 里的 C4（git 瘦身 + 瓦片出主仓），必须全局停机，且排在 C3 改名之后**，不要在这个清理计划里单独动。
