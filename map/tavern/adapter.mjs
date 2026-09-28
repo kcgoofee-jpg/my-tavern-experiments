@@ -14,6 +14,12 @@ export const MORE_RX = { gradeField: /.等级$|^grade$|rank/i, coreField: /..值
 export const DEFAULT_MAP = { location: '世界.当前地点', time: '世界.当前时刻', period: '世界.当日时段', date: '世界.当前日期', outfit: '主角.着装',
   present: '', members: '', targets: '', reputation: '', stageField: '', gradeField: '', coreField: '',
   codeField: '', socialField: '社会身份', heightField: '身高', weightField: '体重', knownField: '外界知情', accessoryField: '项圈', tierField: '' };   // 空 = 按位置 / 通用字段名自动发现（mvu.mjs rosters / reputation）
+/** 设定包（通用化）：换默认路径。非 eden 包先全部清空（按字段名自动发现），再套清单 vars 里给的（只收已知字段、字符串值） */
+export function useDefaults(vars) {
+  for (const k of Object.keys(DEFAULT_MAP)) DEFAULT_MAP[k] = '';
+  for (const [k, v] of Object.entries(vars || {})) if (k in DEFAULT_MAP && typeof v === 'string' && v.length <= 80) DEFAULT_MAP[k] = v;
+  return DEFAULT_MAP;
+}
 const plain = o => !!o && typeof o === 'object' && !Array.isArray(o);
 const val = v => (Array.isArray(v) && v.length === 2 && typeof v[1] === 'string' && (v[0] === null || typeof v[0] !== 'object') ? v[0] : v);
 export function get(obj, path) { let o = obj; for (const k of String(path || '').split('.').filter(Boolean)) { o = val(o); if (!plain(o) || !(k in o)) return undefined; o = o[k]; } return val(o); }

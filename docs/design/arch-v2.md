@@ -73,6 +73,7 @@ DOMContentLoaded → main()（app/boot.mjs）
 
 依赖方向：外挂 → 核心 用显式 import；核心 → 外挂、外挂 ↔ 外挂 一律经 `P.TC*`（外挂可能没加载 / 按需加载，调用处保留守卫）。核心各块之间是互相 import 的（原来就是一个作用域），但**求值期**只碰 `state` / `util` / `plugins` 与自己的绑定，其余引用都在函数体里——`import` 顺序即原内联脚本的执行顺序，所以求值期没有 TDZ。
 `map/core/*` 仍然只放与卡无关的通用服务（协议、存储、迷雾纯函数）；卡相关的数据与配置在 `map/data` 与 `map/tavern` 适配层。
+**通用化（设定包）**：`core/pack.mjs` 是核心读「这张卡」的唯一接口（数据路径、存储前缀、聊天变量、事件分类、CDN、主题）；`app/pack.mjs` 在 boot 最前解析当前包（eden 内置不发请求）。包在 `map/packs/<id>/`，写法见 `docs/generalize/README.md`。
 
 
 ### 1.2 其它文件

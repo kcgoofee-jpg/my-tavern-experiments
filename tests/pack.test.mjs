@@ -7,6 +7,7 @@ import * as PK from '../map/core/pack.mjs';
 import * as EV from '../map/tavern/events.mjs';
 import * as MV from '../map/tavern/mvu.mjs';
 import * as ST from '../map/core/storage.mjs';
+import * as AD from '../map/tavern/adapter.mjs';
 
 const rd = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 const js = p => JSON.parse(rd(p));
@@ -92,4 +93,10 @@ test('聊天变量顶层键 / 世界书名可换（默认 eden 原名）', () =>
 test('tools/check_pack.py：全部包通过', () => {
   const out = execFileSync('python3', ['tools/check_pack.py'], { cwd: new URL('..', import.meta.url), encoding: 'utf8' });
   assert.match(out, /town：通过/); assert.match(out, /eden：通过/);
+});
+
+test('清单 vars：换 MVU 默认路径（其余清空、按字段名自动发现）', () => {
+  const keep = { ...AD.DEFAULT_MAP };
+  try { AD.useDefaults({ location: '状态.地点', nope: 'x' }); assert.equal(AD.DEFAULT_MAP.location, '状态.地点'); assert.equal(AD.DEFAULT_MAP.outfit, ''); assert.ok(!('nope' in AD.DEFAULT_MAP)); }
+  finally { Object.assign(AD.DEFAULT_MAP, keep); }
 });
