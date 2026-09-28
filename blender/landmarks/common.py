@@ -809,3 +809,116 @@ def tree_fine(B, x, y, h, r, seed=0, z=0.0, n=520, size=0.16):
         B.tube([(x, y, z + tz - 0.2), e], 0.06 + h * 0.006, M['bark'], n=5)
         _cards(B, rnd, e, (r * 0.55, r * 0.55, r * 0.45), per, size, leaves, shell=0.75)
     _cards(B, rnd, (x, y, z + h * 0.8), (r * 0.6, r * 0.6, h * 0.2), per, size, leaves, shell=0.75)
+
+
+# ================================================================ 魔导科技（2088：以太魔法与科技并行，card-digest L28 / L32）
+# 上层浮岛共用：以太悬浮核心、符文环、导能脉、能量晶簇、结界六角格边、停靠信标、悬浮轨道、气候场环。
+# 坐标单位由调用方决定（地标模型用米，上层底图用 100 m）：尺寸参数一律按调用方单位给。中立：无文字、无徽记。
+AETHER_C = (0.55, 0.88, 1.0)
+
+
+def glow(name, c=AETHER_C, estr=6.0, alpha=1.0):
+    """自发光材质；alpha < 1 时半透明（结界、场环），不投影由调用方对物体设 visible_shadow = False。"""
+    m, nt, b = new_mat(name)
+    b.inputs['Base Color'].default_value = (*c, 1)
+    b.inputs['Emission Color'].default_value = (*c, 1); b.inputs['Emission Strength'].default_value = estr
+    b.inputs['Alpha'].default_value = alpha
+    if alpha < 1 and hasattr(m, 'blend_method'): m.blend_method = 'BLEND'
+    return m
+
+
+def hex_ward_mat(name='ward_hex', c=AETHER_C, estr=2.5, alpha=0.5, scale=40.0):
+    """结界：六角格线（Voronoi 距离边 → 细线）+ 其余全透明；对象坐标缩放 scale。"""
+    m, nt, b = new_mat(name)
+    out = next(n for n in nt.nodes if n.type == 'OUTPUT_MATERIAL')
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    vo = nt.nodes.new('ShaderNodeTexVoronoi'); vo.feature = 'DISTANCE_TO_EDGE'; vo.inputs['Scale'].default_value = scale
+    vo.inputs['Randomness'].default_value = 0.0
+    nt.links.new(tc.outputs['Object'], vo.inputs['Vector'])
+    mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['From Min'].default_value = 0.0; mr.inputs['From Max'].default_value = 0.06
+    mr.inputs['To Min'].default_value = alpha; mr.inputs['To Max'].default_value = 0.0
+    nt.links.new(vo.outputs['Distance'], mr.inputs['Value'])
+    em = nt.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value = (*c, 1); em.inputs['Strength'].default_value = estr
+    tr = nt.nodes.new('ShaderNodeBsdfTransparent'); mx = nt.nodes.new('ShaderNodeMixShader')
+    nt.links.new(mr.outputs['Result'], mx.inputs['Fac']); nt.links.new(tr.outputs[0], mx.inputs[1]); nt.links.new(em.outputs[0], mx.inputs[2])
+    nt.links.new(mx.outputs[0], out.inputs['Surface'])
+    if hasattr(m, 'blend_method'): m.blend_method = 'BLEND'
+    return m
+
+
+def ring_pts(cx, cy, rfun, n=96, s=1.0):
+    """rfun(角度) → 半径；返回闭合轮廓点"""
+    return [(cx + math.cos(a) * rfun(a) * s, cy + math.sin(a) * rfun(a) * s) for a in (i * math.tau / n for i in range(n))]
+
+
+def rune_ring(B, pts, z, w, m, dash=3):
+    """符文环：沿轮廓的发光虚线（每 dash 段亮 2 段），比岛缘略外一圈，俯视可读"""
+    n = len(pts)
+    for i in range(n):
+        if i % dash == dash - 1: continue
+        (xa, ya), (xb, yb) = pts[i], pts[(i + 1) % n]
+        B.strip([(xa, ya, z), (xb, yb, z)], w, w * 0.5, m)
+
+
+def hex_ward(B, pts, z0, h, m):
+    """结界边：沿岛缘立起的一圈六角格光墙（上沿向内收 12 %，成低矮穹边）"""
+    n = len(pts); cx = sum(p[0] for p in pts) / n; cy = sum(p[1] for p in pts) / n
+    top = [(cx + (x - cx) * 0.88, cy + (y - cy) * 0.88) for x, y in pts]
+    vs = [(x, y, z0) for x, y in pts] + [(x, y, z0 + h) for x, y in top]
+    B.poly(vs, [(i, (i + 1) % n, n + (i + 1) % n, n + i) for i in range(n)], m)
+
+
+def aether_core(B, x, y, z, r, m_rock, m_glow, m_ring, seed=0):
+    """岛底以太悬浮核心：倒悬岩锥里嵌一颗发光核 + 两圈符文环 + 向上的导能脉"""
+    import random as _r
+    rnd = _r.Random(seed)
+    B.cyl(x, y, z - r * 2.2, r * 0.9, r * 2.2, m_rock, 10, r2=r * 0.25, smooth=False)
+    B.sphere(x, y, z - r * 2.4, r * 0.55, m_glow, seg=16, rings=8)
+    for k, rr in enumerate((r * 0.95, r * 1.25)):
+        B.cyl(x, y, z - r * (2.3 + 0.35 * k), rr, r * 0.06, m_ring, 32, r2=rr, cap=False)
+    for k in range(5):
+        a = rnd.uniform(0, math.tau)
+        B.tube([(x + math.cos(a) * r * 0.4, y + math.sin(a) * r * 0.4, z - r * 2.0), (x + math.cos(a) * r * 1.4, y + math.sin(a) * r * 1.4, z - r * 0.2)], r * 0.035, m_glow, n=6)
+
+
+def crystal_cluster(B, x, y, z, s, m, seed=0, down=False):
+    """能量晶簇：5–9 根六棱锥，朝外斜伸（down=True 时从岩底向下）"""
+    import random as _r
+    rnd = _r.Random(seed); sg = -1 if down else 1
+    for k in range(rnd.randint(5, 9)):
+        a = rnd.uniform(0, math.tau); t = rnd.uniform(0.2, 0.6); L = s * rnd.uniform(0.6, 1.4); rr = s * rnd.uniform(0.1, 0.18)
+        bx, by = x + math.cos(a) * s * 0.25, y + math.sin(a) * s * 0.25
+        tip = (bx + math.cos(a) * L * t, by + math.sin(a) * L * t, z + sg * L)
+        base = [(bx + rr * math.cos(i * math.tau / 6), by + rr * math.sin(i * math.tau / 6), z) for i in range(6)]
+        B.poly(base + [tip], [(i, (i + 1) % 6, 6) if not down else ((i + 1) % 6, i, 6) for i in range(6)], m)
+
+
+def beacon_ring(B, x, y, z, r, m, n=8, s=None):
+    """停靠平台引导信标：一圈发光短柱 + 一条外侧光环"""
+    s = s or r * 0.06
+    for k in range(n):
+        a = k * math.tau / n
+        B.cyl(x + math.cos(a) * r, y + math.sin(a) * r, z, s, s * 3, m, 8)
+    B.cyl(x, y, z, r * 1.08, s * 0.4, m, 48, r2=r * 1.08, cap=False)
+
+
+def light_rail(B, p0, p1, z0, z1, w, m_rail, m_node, sag=0.0, n=24, gap=None):
+    """悬浮轨道 / 导能管（card-digest L12 有悬浮轨道）：两条平行发光轨 + 每隔一段一个悬浮环节点"""
+    gap = gap or w * 3
+    (x0, y0), (x1, y1) = p0, p1; L = math.hypot(x1 - x0, y1 - y0) or 1; nx, ny = -(y1 - y0) / L, (x1 - x0) / L
+    for o in (-gap / 2, gap / 2):
+        pts = []
+        for i in range(n + 1):
+            t = i / n; z = z0 + (z1 - z0) * t - sag * 4 * t * (1 - t)
+            pts.append((x0 + (x1 - x0) * t + nx * o, y0 + (y1 - y0) * t + ny * o, z))
+        B.strip(pts, w, w * 0.5, m_rail)
+    for i in range(1, n, 4):
+        t = i / n; z = z0 + (z1 - z0) * t - sag * 4 * t * (1 - t)
+        B.cyl(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, z - w, gap * 0.9, w * 0.8, m_node, 24, r2=gap * 0.9, cap=False)
+
+
+def field_rings(B, x, y, z, radii, w, m):
+    """以太场：同心发光细环（气候调节塔向外放场）"""
+    for r in radii:
+        B.cyl(x, y, z, r, w * 0.3, m, 96, r2=r, cap=False)
+        B.cyl(x, y, z, r - w / 2, w * 0.1, m, 96, r2=r + w / 2, cap=False)

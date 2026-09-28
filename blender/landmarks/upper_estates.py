@@ -272,6 +272,8 @@ class Kit:
             DK.cyl(p0[0], p0[1], 0.0, 0.035, 1.08, M['iron'], 6)
         for k in range(6):
             a = k * math.tau / 6; DK.cyl(px + (r + 0.05) * math.cos(a), py + (r + 0.05) * math.sin(a), -0.1, 0.12, 0.2, M['aether'], 10)
+        C.beacon_ring(DK, px, py, 0.0, r + 1.2, M['aether'], n=10, s=0.25)
+        DK.strip([(bx0, by0, 0.3), (px, py, 0.3)], 0.25, 0.1, M['aether'])   # 进场引导光带
         # 悬浮车（无轮、无旋翼：流线车身 + 底部四个悬浮环）
         cx, cy, cz = px, py, 1.35; HC = self.HC
         rot = C.Matrix.Rotation(ang, 4, 'Z') if hasattr(C, 'Matrix') else None
@@ -281,6 +283,43 @@ class Kit:
             HC.cyl(cx + ex * 1.7, cy + ey * 1.2, cz - 0.3, 0.55, 0.3, M['car'], 20)
             HC.cyl(cx + ex * 1.7, cy + ey * 1.2, cz - 0.33, 0.42, 0.02, M['aether'], 16)
         return (px, py), (bx0, by0)
+
+
+    # ------------------------------------------------ 2088 魔导科技层（用户 2026-09-28 v11：英式庄园 × 玻璃 / 合金 / 全息园灯 / 悬浮构件）
+    def magitech(self, P, seed=1, avoid=()):
+        """岛缘符文环 + 结界六角格边 + 岛底以太悬浮核心与晶簇 + 悬浮玻璃亭 + 全息园灯 + 悬浮光球花钵"""
+        M = self.M; rnd = random.Random(seed)
+        if 'glow' not in M:
+            M['glow'] = C.glow('aether_glow', estr=8.0); M['rune'] = C.glow('rune', estr=5.0)
+            M['ward'] = C.hex_ward_mat('ward_hex', scale=0.08, alpha=0.45)
+            M['crystal'] = C.flat('aether_crystal', (0.5, 0.85, 1.0), 0.1, emit=C.AETHER_C, estr=3.0)
+            M['alloy'] = C.flat('alloy', (0.62, 0.64, 0.68), 0.25, metal=0.9)
+            M['holo'] = C.glow('holo_light', c=(0.7, 0.95, 1.0), estr=4.0)
+        MG = C.Batch('props_magitech'); WD = C.Batch('props_ward'); UN = C.Batch('props_underside')
+        n = len(P); cx = sum(p[0] for p in P) / n; cy = sum(p[1] for p in P) / n
+        C.rune_ring(MG, [(cx + (x - cx) * 1.015, cy + (y - cy) * 1.015) for x, y in P], 0.35, 0.5, M['rune'])
+        C.hex_ward(WD, [(cx + (x - cx) * 1.05, cy + (y - cy) * 1.05) for x, y in P], -0.5, 9.0, M['ward'])
+        R = max(math.hypot(x - cx, y - cy) for x, y in P)
+        for k in range(3):                                   # 岛底核心（俯视看不到，斜俯与三维里看得到）
+            a = k * math.tau / 3 + 0.4; d = R * 0.35
+            C.aether_core(UN, cx + math.cos(a) * d, cy + math.sin(a) * d, -18, 7.0, M['rock'], M['glow'], M['rune'], seed=seed + k)
+        for k in range(7):                                   # 岛缘晶簇（从崖边斜伸出去，俯视可见）
+            i = rnd.randrange(n); x, y = P[i]
+            C.crystal_cluster(MG, cx + (x - cx) * 1.02, cy + (y - cy) * 1.02, -1.5, rnd.uniform(4, 7), M['crystal'], seed=seed * 10 + k)
+            C.crystal_cluster(UN, cx + (x - cx) * 0.8, cy + (y - cy) * 0.8, -10, rnd.uniform(5, 9), M['crystal'], seed=seed * 20 + k, down=True)
+        free = lambda x, y: not any(a <= x <= b and c <= y <= d for a, b, c, d in avoid)
+        placed = 0
+        for t in range(200):                                 # 悬浮玻璃亭：合金圆台 + 玻璃穹，离地 6 m，下面一圈光环
+            if placed >= 2: break
+            i = rnd.randrange(n); f = rnd.uniform(.45, .7); x, y = cx + (P[i][0] - cx) * f, cy + (P[i][1] - cy) * f
+            if not free(x, y): continue
+            MG.cyl(x, y, 6.0, 4.5, 0.5, M['alloy'], 32); MG.sphere(x, y, 6.5, 4.0, M['glass_roof'], sz=0.8, seg=24, rings=12, zmin=0.0)
+            MG.cyl(x, y, 5.7, 4.8, 0.1, M['rune'], 32, r2=4.8, cap=False); placed += 1
+        for k in range(28):                                  # 全息园灯（细光柱）+ 悬浮光球花钵
+            i = rnd.randrange(n); f = rnd.uniform(.3, .85); x, y = cx + (P[i][0] - cx) * f, cy + (P[i][1] - cy) * f
+            if not free(x, y): continue
+            if k % 3: MG.cyl(x, y, 0.0, 0.12, 2.6, M['holo'], 6)
+            else: MG.sphere(x, y, 3.2, 0.9, M['holo'], seg=12, rings=6); MG.cyl(x, y, 2.2, 0.8, 0.5, M['alloy'], 12)
 
     # ------------------------------------------------ 背景 + 光 + 相机
     def finish(self, cams, P):
@@ -300,7 +339,7 @@ class Kit:
         C.Batch.build_all()
         import bpy
         for ob in bpy.data.objects:
-            if ob.name.startswith('bg_clouds'): ob.visible_shadow = False
+            if ob.name.startswith('bg_clouds') or ob.name.startswith('props_ward') or ob.name.startswith('props_magitech'): ob.visible_shadow = False
         C.sky_sun(self.sc, 'day', sun_az=125.0, sun_el=40.0)        # 与上层底图同一太阳方位（东南偏南，逆光少）
         self.sc.view_settings.exposure = float(A['exposure']) if A['exposure'] else -0.2
         pos, tgt, lens = cams[A['cam']]
@@ -461,6 +500,8 @@ def run(site):
         xs, ys = [p[0] for p in P], [p[1] for p in P]; print('ISLAND BBOX', site, round(min(xs)), round(max(xs)), round(min(ys)), round(max(ys)))
         K = Kit(sc); K.ground(P)
         cams = SITES[site](K, P, toward)
+        if os.environ.get('UE_MAGITECH', '1') == '1': K.magitech(P, seed=len(site), avoid=[(-70, 70, -50, 50)])
+        import bpy as _b
         K.finish(cams, P)
     except Exception:
         msg = traceback.format_exc()

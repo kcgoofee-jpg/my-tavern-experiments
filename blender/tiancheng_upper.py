@@ -178,6 +178,41 @@ def halo_mat():
 bpy.ops.mesh.primitive_circle_add(vertices=64, radius=1.1, fill_type='NGON', location=(*TOWER, 1.05)); halo = bpy.context.active_object; halo.name = 'tower_halo'
 halo.data.materials.append(halo_mat()); halo.visible_shadow = False
 markers.append({'id': 'climate_tower', 'pos': (*TOWER, 2.2), 'r': .2, 'anchor': (TOWER[0], TOWER[1] - .26)})   # B2 第 3 轮：锚点落在上层环台（半径 .21–.29）上，不再落在云面
+
+# ---------------- v11 魔导科技层（TC_MAGITECH=1；部件在 blender/landmarks/common.py，单位 100 m）----------------
+# 每岛：岛缘符文环、结界六角格边、崖边能量晶簇；卡里的岛之间：悬浮轨道 / 导能管（card-digest L12）；气候塔：以太场环。伊甸不加（伊甸不动，也避开已否决的「伊甸光环」）。
+if os.environ.get('TC_MAGITECH'):
+    import importlib.util as _ilu
+    _sp = _ilu.spec_from_file_location('lm_common', os.path.join(tc.HERE, 'landmarks', 'common.py')); LC = _ilu.module_from_spec(_sp); _sp.loader.exec_module(LC)
+    MG = LC.Batch('mt_islands'); WD = LC.Batch('mt_wards'); RL = LC.Batch('mt_rails')
+    m_rune, m_cry = LC.glow('mt_rune', estr=5.0), LC.flat('mt_crystal', (0.5, 0.85, 1.0), 0.1, emit=LC.AETHER_C, estr=3.5)
+    m_ward = LC.hex_ward_mat('mt_ward', scale=7.0, alpha=0.5, estr=2.2)
+    m_rail, m_node = LC.glow('mt_rail', estr=4.0), LC.glow('mt_node', c=(0.8, 0.95, 1.0), estr=3.0)
+    SELF = {'isle30', 'isle9', 'isle25'}                     # 这三座的魔导层在模型抠图里
+    by_id = {i['id']: i for i in islands}
+    rnd_m = random.Random(2088)
+    for i in islands:
+        e = i['isle']
+        if i['id'] == 'eden': continue
+        if i['id'] not in SELF:
+            LC.rune_ring(MG, e.outline_world(1.015, 120), e.z + .004, .006, m_rune)
+            LC.hex_ward(WD, e.outline_world(1.05, 120), e.z - .005, .09, m_ward)
+            O = e.outline_world(1.02, 60)
+            for k in range(6 if i['id'] != 'silver_crown' else 9):
+                x, y = O[rnd_m.randrange(len(O))]
+                LC.crystal_cluster(MG, x, y, e.z - .02, rnd_m.uniform(.04, .07), m_cry, seed=k + len(i['id']))
+    def _edge(a, b):
+        """a 朝 b 的岛缘点"""
+        ea = a['isle']; th = math.atan2(b['y'] - a['y'], b['x'] - a['x']); P = ea.outline_world(1.0, 180)
+        return max(P, key=lambda q: (q[0] - a['x']) * math.cos(th) + (q[1] - a['y']) * math.sin(th))
+    LINKS = [('eden', 'isle30'), ('eden', 'isle6'), ('eden', 'isle10'), ('eden', 'isle25'), ('eden', 'isle9'),
+             ('silver_crown', 'isle9'), ('silver_crown', 'isle25'), ('isle6', 'isle25')]
+    for a_, b_ in LINKS:
+        if a_ in by_id and b_ in by_id:
+            A_, B_ = by_id[a_], by_id[b_]
+            LC.light_rail(RL, _edge(A_, B_), _edge(B_, A_), A_['z'] + .02, B_['z'] + .02, .012, m_rail, m_node, sag=.3, n=32, gap=.05)
+    LC.field_rings(RL, *TOWER, 2.3, (.45, .8, 1.2, 1.65), .02, LC.glow('mt_field', estr=2.5, alpha=.6))
+    for o in LC.Batch.build_all(): o.visible_shadow = False
 flush_trees(); tick(f'islands + estates ({te.flush()} trees)')
 FACES = sum(len(o.data.polygons) for o in bpy.data.objects if o.type == 'MESH')
 FACES_R4 = 352151                                           # r4（B2 第 1 轮）同口径的面数
