@@ -46,7 +46,7 @@ def main():
         ys, xs = np.nonzero(idmap == n)
         I[k]['visible_top_uv'] = [round(float(xs[ys.argmin()]) / FW, 4), round(float(ys.min()) / FH, 4)] if len(ys) else None
     # ② 纵深通道：只在该岛可见像素上做（羽化）
-    CLOUD = np.array(CFG['channels']['haze'].get('color', [236, 239, 245]), np.float32)
+    CLOUD = np.array(DP.haze_color(CFG), np.float32)
     for n, k in enumerate(order):
         if k == 'eden' or k not in CFG['islands']: continue
         c = DP.island(k, CFG); t = c['tint']; hz = c['haze']

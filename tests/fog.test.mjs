@@ -1,8 +1,8 @@
-// 迷雾探索（core/fog.mjs + app/fog.mjs + 宿主 eden_map.探索）
+// 迷雾探索（core/depth.mjs + app/fog.mjs + 宿主 eden_map.探索）
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { norm, visit, known, count, MAX_PER_MAP } from '../map/core/fog.mjs';
+import { norm, visit, known, count, MAX_PER_MAP } from '../map/core/depth.mjs';
 
 test('norm：坏数据不抛，只留合法 id / 名字，去重', () => {
   assert.deepEqual(norm(null), {}); assert.deepEqual(norm([1]), {}); assert.deepEqual(norm('x'), {});

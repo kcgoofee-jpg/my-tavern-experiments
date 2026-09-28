@@ -40,6 +40,11 @@ def channel(name, d, cfg, ov=None):
     return _r(_lerp(ch['near'], ch['far'], d))
 
 
+def haze_color(cfg):
+    """雾色（合成用）：channels.haze.color，缺省 [236, 239, 245]。oblique_post / upper_depth_post 共用，别处不再写死"""
+    return cfg['channels']['haze'].get('color', [236, 239, 245])
+
+
 def clouds_above(alt, cfg):
     return [c['id'] for c in sorted(cfg.get('cloud_sheets', []), key=lambda c: -c['alt']) if c['alt'] > alt]
 

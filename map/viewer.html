@@ -152,7 +152,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <link rel="modulepreload" href="app/storage-ui.mjs">
 <link rel="modulepreload" href="app/th-ui.mjs">
 <link rel="modulepreload" href="app/fog.mjs">
-<link rel="modulepreload" href="core/fog.mjs">
+<link rel="modulepreload" href="core/depth.mjs">
 <!-- 查看器本体（arch-v2 §6）：app/boot.mjs 按原顺序拉起核心各块；功能外挂各自一个模块标签（加载失败只少那一块）。模块标签与 defer 同一队列、按文档顺序执行：地图库、抽屉 → 核心 → 外挂 → 叶子模块，之后 DOMContentLoaded → main() -->
 <script type="module" src="app/boot.mjs" onerror="var s=document.querySelector('#loading span');if(s)s.textContent='地图脚本没取到，检查网络后重试'"></script>
 <script type="module" src="events.mjs"></script>

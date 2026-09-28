@@ -5,7 +5,7 @@
 import { REG, cur, viewer } from './state.mjs';
 import { $, post } from './util.mjs';
 import { markHere } from './locate.mjs';
-import { norm, visit, known, count } from '../core/fog.mjs';
+import { norm, visit, known, count } from '../core/depth.mjs';
 const KEY = 'edenMapFog', LOCAL = 'edenMap:chat:local:fog';
 const embedded = () => window.top !== window;
 let ex = embedded() ? {} : norm(TCStore.json(LOCAL, {}));

@@ -56,4 +56,4 @@
 | U16 | 上层视差 / 漂浮 | 云 c1 / c2 / c3 与近 / 中 / 远岛组分层视差（系数取 upper_depth.json 的 parallax 通道）；漂浮 ±2 px、周期 8–14 s，遵守 prefers-reduced-motion；默认 Mac 开、手机关（Q-新 6） |
 | U17 | 上层标签 / 悬停 | 标签不透明度按 d（label 通道），远岛点按才全显；悬停聚焦；热点与叠加层同一个 transform；读 map/core/depth.mjs，不再实现一遍公式 |
 | U18 | 图例 | 结界、导能管、停靠平台、调节塔、云层说明（设定稿 §4 图例；小样取成图裁片） |
-| U19 | fog 合并 | map/app/fog.mjs 与 map/core/fog.mjs 合并并调用 depth 模块（架构评审 §2） |
+| U19 | fog 合并 | ~~map/app/fog.mjs 与 map/core/fog.mjs 合并并调用 depth 模块（架构评审 §2）~~ ✅ C2：纯数据并入 core/depth.mjs，app/fog.mjs 只剩 DOM 层；Python 雾色走 blender/depth.py haze_color |

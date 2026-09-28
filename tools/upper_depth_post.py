@@ -34,7 +34,7 @@ def main():
     a = p.parse_args()
     im = Image.open(a.full).convert('RGB'); FW, FH = im.size; px = FW / W_U
     D = json.load(open(a.islands, encoding='utf-8')); I = {d['id']: d for d in D['islands']}; CFG = DP.load()
-    CH = {iid: DP.island(iid, CFG) for iid in I}; CLOUD = np.array(CFG['channels']['haze'].get('color', [236, 239, 245]), np.float32)
+    CH = {iid: DP.island(iid, CFG) for iid in I}; CLOUD = np.array(DP.haze_color(CFG), np.float32)
     OL = json.load(open(a.outlines))
     to_px = lambda x, y: ((x / W_U + .5) * FW, (.5 - y / H_U) * FH)
     arr = np.asarray(im, np.float32)
