@@ -73,6 +73,10 @@ BUDGET = {
     # silver_crown（银冠堡；walls_ext / props_gate / props_ranges / props_yard / props_dock 用上面的）
     'props_curtain': (60000, 2048), 'props_hangars': (12000, 1024), 'props_pad': (4000, 1024),
     'props_craft': (20000, 1024), 'site_island': (20000, 2048), 'props_underside': (20000, 2048),
+    # upper_estates（罗斯柴尔德庄园 / 庄园主联盟会所 / 精英学院；walls_ext / roof / windows / props_chimneys /
+    # site_ground / site_garden / site_trees / props_railings 共用上面的预算）
+    'site_dock': (20000, 2048), 'props_hovercar': (6000, 1024), 'props_magitech': (16000, 1024),
+    'props_ward': (8000, 1024),
 }
 
 
