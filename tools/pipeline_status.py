@@ -188,6 +188,20 @@ ASSET_ARG_RE = re.compile(r"--asset\s+(\S+)")
 OUT_ARG_RE = re.compile(r"--out\s+(\S+)")
 RUNPATH_RE = re.compile(r"run_path\('([^']+)'\)")
 SAMPLE_RE = re.compile(r"Sample\s+(\d+)\s*/\s*(\d+)")
+ETIME_RE = re.compile(r"^(?:(\d+)-)?(?:(\d+):)?(\d+):(\d+)$")
+
+
+def parse_etime(s: str) -> int:
+    """解析 ps 的 ELAPSED 字段：`[[DD-]HH:]MM:SS`（不是秒数）。macOS/BSD ps 不认识
+    Linux 才有的 `etimes`（直接秒数）关键字——传了会被 ps 悄悄丢弹，导致后面的列错位，
+    之前就是拿 PID 当成了秒数，显示出离谱的「跑了 18h」。两边都用 `etime` 这个 BSD/GNU
+    都认的关键字，统一在这里解析。"""
+    s = s.strip()
+    m = ETIME_RE.match(s)
+    if not m:
+        return 0
+    d, h, mn, sec = m.groups()
+    return (int(d or 0) * 86400) + (int(h or 0) * 3600) + (int(mn) * 60) + int(sec)
 
 
 def job_name_from_argv(argv: str) -> str:
@@ -230,7 +244,7 @@ def parse_progress(log_path: str):
 
 def find_local_job():
     """本机：找 blender_run.sh 包装进程，解析出 --log/--asset，回 dict 或 None。"""
-    out = run(["ps", "-eo", "etimes,pid,args"])
+    out = run(["ps", "-eo", "etime,pid,args"])
     for line in out.splitlines():
         line = line.strip()
         if not line or not BLENDER_WRAPPER_RE.search(line) or "grep" in line:
@@ -238,11 +252,8 @@ def find_local_job():
         parts = line.split(None, 2)
         if len(parts) < 3:
             continue
-        etimes, pid, argv = parts
-        try:
-            elapsed = int(etimes)
-        except ValueError:
-            elapsed = 0
+        etime, pid, argv = parts
+        elapsed = parse_etime(etime)
         log_m = LOG_ARG_RE.search(argv)
         log_path = log_m.group(1) if log_m else None
         if log_path and not os.path.isabs(log_path):
@@ -283,14 +294,22 @@ def cloud_host_names():
 CLOUD_QUERY = (
     "nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total --format=csv,noheader 2>&1; "
     "echo '--jobs--'; "
-    "ps -eo etimes,args | grep '[t]ools/blender_run.sh' || true; "
+    "ps -eo etime,args | grep '[t]ools/blender_run.sh' || true; "
     "echo '--uptime--'; "
-    "cat /proc/uptime 2>/dev/null | awk '{print $1}'"
+    "cat /proc/uptime 2>/dev/null | awk '{print $1}'; "
+    "echo '--tail--'; "
+    "TAIL_LOG=$(ps -eo args | grep '[t]ools/blender_run.sh' | grep -oE -- '--log [^ ]+' | head -1 | cut -d' ' -f2); "
+    "[ -n \"$TAIL_LOG\" ] && tail -c 8000 \"$TAIL_LOG\" 2>/dev/null || true"
 )
 
+# 单次 ssh 里连 GPU/任务/开机时长/日志尾一起查完（要求：每次刷新每个云实例只发一次 ssh），
+# 避免再发一次单独的 ssh 去 tail 日志。
+CLOUD_CONNECT_TIMEOUT = 15  # 跟 tools/cloud/lib.sh 的 ssh_opts() 里的 ConnectTimeout 对齐（那份文件不归这里改）
+CLOUD_OVERALL_TIMEOUT = 20  # 给 ssh handshake（实测代理下 3~6s）+ 远端命令执行留够余量，比 ConnectTimeout 更宽
 
-def query_cloud_host(host_name: str, timeout: int = 5):
-    """跑一次 lib.sh 的 run_ssh（单次 ssh），解析 GPU / 任务行 / 开机时长。失败抛异常。"""
+
+def query_cloud_host(host_name: str, timeout: int = CLOUD_OVERALL_TIMEOUT):
+    """跑一次 lib.sh 的 run_ssh（单次 ssh），解析 GPU / 任务行 / 开机时长 / 日志尾。失败抛异常并带 stderr。"""
     host_flag = [] if host_name == "default" else ["--host", host_name]
     script = (
         f"cd {json.dumps(CLOUD_DIR)} && "
@@ -298,10 +317,13 @@ def query_cloud_host(host_name: str, timeout: int = 5):
         f"cloud_parse_host {' '.join(host_flag)} && "
         f"run_ssh {json.dumps(CLOUD_QUERY)} && echo PRICE=$PRICE_PER_HOUR"
     )
-    r = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=timeout)
+    try:
+        r = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"ssh 超过 {timeout}s 没有返回（可能是代理握手慢，或远端真的连不上）")
     out = r.stdout
     if r.returncode != 0 and not out.strip():
-        raise RuntimeError(r.stderr.strip() or "ssh 失败")
+        raise RuntimeError(r.stderr.strip() or f"ssh 退出码 {r.returncode}（无输出）")
     price = 1.58
     pm = re.search(r"^PRICE=([\d.]+)\s*$", out, re.M)
     if pm:
@@ -327,32 +349,27 @@ def query_cloud_host(host_name: str, timeout: int = 5):
             parts = line.split(None, 1)
             if len(parts) < 2:
                 continue
-            etimes, argv = parts
-            try:
-                elapsed = int(etimes)
-            except ValueError:
-                elapsed = 0
+            etime, argv = parts
+            elapsed = parse_etime(etime)
             log_m = LOG_ARG_RE.search(argv)
             job = {"name": job_name_from_argv(argv), "elapsed": elapsed, "log": log_m.group(1) if log_m else None}
             break
     uptime_m = re.search(r"--uptime--\n([\d.]+)", out)
     uptime_s = float(uptime_m.group(1)) if uptime_m else None
+    # 日志尾（--tail-- 之后到结尾）跟上面这些一起是同一次 ssh 拿到的，不用再发一次 ssh。
+    tail_section = out.split("--tail--\n", 1)
+    tail = tail_section[1] if len(tail_section) == 2 else ""
+    if job is not None and tail:
+        matches = SAMPLE_RE.findall(tail)
+        if matches:
+            n, m = matches[-1]
+            try:
+                n, m = int(n), int(m)
+                if m > 0:
+                    job["progress"] = (min(100.0, n / m * 100.0), f"{n}/{m}")
+            except ValueError:
+                pass
     return {"gpu_pct": gpu_pct, "job": job, "uptime_s": uptime_s, "price": price, "ok": True}
-
-
-def tail_remote_log(host_name: str, log_path: str, timeout: int = 5):
-    host_flag = [] if host_name == "default" else ["--host", host_name]
-    script = (
-        f"cd {json.dumps(CLOUD_DIR)} && "
-        "source ./lib.sh >/dev/null 2>&1 && "
-        f"cloud_parse_host {' '.join(host_flag)} && "
-        f"run_ssh {json.dumps('tail -c 8000 ' + log_path + ' 2>/dev/null')}"
-    )
-    try:
-        r = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=timeout)
-        return r.stdout
-    except Exception:
-        return ""
 
 
 class CloudPoller:
@@ -377,31 +394,20 @@ class CloudPoller:
         self.busy.add(host)
         try:
             data = query_cloud_host(host)
-            if data.get("job") and data["job"].get("log"):
-                tail = tail_remote_log(host, data["job"]["log"])
-                if tail:
-                    matches = SAMPLE_RE.findall(tail)
-                    if matches:
-                        n, m = matches[-1]
-                        try:
-                            n, m = int(n), int(m)
-                            if m > 0:
-                                data["job"]["progress"] = (min(100.0, n / m * 100.0), f"{n}/{m}")
-                        except ValueError:
-                            pass
             data["ts"] = time.time()
             data["stale"] = False
             with self.lock:
                 self.results[host] = data
-        except Exception:
+        except Exception as e:
             with self.lock:
                 old = self.results.get(host)
                 if old:
                     old = dict(old)
                     old["stale"] = True
+                    old["error"] = str(e)
                     self.results[host] = old
                 else:
-                    self.results[host] = {"ok": False, "ts": time.time(), "stale": True}
+                    self.results[host] = {"ok": False, "ts": time.time(), "stale": True, "error": str(e)}
         finally:
             self.busy.discard(host)
 
@@ -634,7 +640,8 @@ class Renderer:
                         continue
                     if not d.get("ok"):
                         age = int(time.time() - d.get("ts", time.time()))
-                        lines.append(f"  {h}：{c.red('连不上')}（{age}s 前）")
+                        err = d.get("error") or "原因未知"
+                        lines.append(truncate(f"  {h}：{c.red('连不上')}（{age}s 前，{err}）", cols))
                         continue
                     stale = f"  {c.dim('(%ds 前)' % int(time.time() - d['ts']))}" if d.get("stale") else ""
                     bar = gpu_bar(c, d.get("gpu_pct", 0.0))
@@ -684,17 +691,24 @@ class Renderer:
             lines.append(c.bold("【最近完成】"))
             header, rows = read_recent_renders(5)
             if header and rows:
-                # tools/blender_run.sh 实际写的是 date,asset,kind,res,spp,minutes,exit（7 列），
-                # 但 render_times.csv 现有表头是旧的 date,label,spp,res,minutes,status（6 列）——
-                # 表头和实际数据列数不一致时按 blender_run.sh 的真实写法（7 列）按位取，不信表头。
-                WRITER_FIELDS = ["date", "label", "kind", "res", "spp", "minutes", "exit"]
+                # render_times.csv 现在混着两种行形状（表头本身是旧的、跟不上写入端，不能信表头，
+                # 按实际字段数猜列名）：
+                #   7 列（本地 tools/blender_run.sh）：date,label,kind,res,spp,minutes,exit
+                #   8 列（云端 tools/cloud/render.sh，多带一个 host）：
+                #       date,label,kind,res,spp,minutes|NA,exit,host
+                # TODO(不归这个看板改): render.sh/blender_run.sh 两边目前各写各的列数和 minutes
+                #   是否为 NA 不统一，理想情况应该改成同一个写 CSV 的地方、字段数固定；这两个
+                #   脚本在 tools/cloud/ 和 tools/blender_run.sh，改动超出这次看板重写的范围。
+                FIELDS_7 = ["date", "label", "kind", "res", "spp", "minutes", "exit"]
+                FIELDS_8 = FIELDS_7 + ["host"]
 
                 def col(row, name, default=""):
-                    names = WRITER_FIELDS if len(row) == len(WRITER_FIELDS) else header
+                    names = FIELDS_8 if len(row) == 8 else (FIELDS_7 if len(row) == 7 else header)
                     try:
-                        return row[names.index(name)]
+                        v = row[names.index(name)]
                     except (ValueError, IndexError):
                         return default
+                    return default if v in ("", "NA") else v
 
                 disp_rows = []
                 for row in rows:
@@ -702,10 +716,12 @@ class Renderer:
                     kind = col(row, "kind") or col(row, "status")
                     res = col(row, "res")
                     spp = col(row, "spp")
-                    minutes = col(row, "minutes")
-                    disp_rows.append([label, kind, res, spp, minutes])
-                widths = fit_widths(["标签", "类型", "分辨率", "spp", "分钟"], disp_rows, cols - 2)
-                for row in draw_table(["标签", "类型", "分辨率", "spp", "分钟"], disp_rows, widths, c):
+                    minutes = col(row, "minutes", "—") or "—"
+                    host = col(row, "host", "—") or "—"
+                    disp_rows.append([label, kind, res, spp, minutes, host])
+                headers5 = ["标签", "类型", "分辨率", "spp", "分钟", "host"]
+                widths = fit_widths(headers5, disp_rows, cols - 2)
+                for row in draw_table(headers5, disp_rows, widths, c):
                     lines.append("  " + row)
             else:
                 lines.append("  （logs/render_times.csv 无记录）")
@@ -789,7 +805,10 @@ def main():
     if args.once:
         if renderer.show_cloud:
             renderer.poller.poll_once()
-            time.sleep(min(4, args.interval))
+            # 等后台 ssh 线程真的跑完（而不是固定睡几秒）：最多等到单次查询的超时上限。
+            deadline = time.time() + CLOUD_OVERALL_TIMEOUT + 2
+            while renderer.poller.busy and time.time() < deadline:
+                time.sleep(0.2)
         sys.stdout.write(renderer.render() + "\n")
         return
 
