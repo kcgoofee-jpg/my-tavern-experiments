@@ -11,7 +11,7 @@
               └─→ 云海层（map/art/tc_clouds*、ISLAND_SHADOWS 开关）
                     └─→ 分时段变体（白天 / 黄昏 / 夜景等 tc_*_dusk / tc_*_night 一类文件，若存在）
 
-中 / 下层建筑（blender/landmarks/**、tiancheng_mid.py 里引用的建筑模块）
+中 / 下层地形与基础建筑（blender/tiancheng_mid.py、blender/tiancheng_low.py）
   └─→ 中 / 下层 8K 合成（map/art/tc_mid.dzi、map/art/tc_low.dzi）
         └─→ 中 / 下层 8K 精修（region_patch 产出，仍写回同一 .dzi）
               └─→ 分时段变体（若存在）
@@ -27,12 +27,14 @@
 | 产物（下游，git 记录时间） | 上游源文件（一个或多个，任一比产物新就警告） |
 |---|---|
 | `map/art/tc_upper.dzi`, `map/art/tc_upper_city.dzi` | `blender/tiancheng_upper.py`, `blender/upper_islands/*.py`, `map/estate/plan.js`, `blender/estate2/*.py` |
-| `map/art/tc_mid.dzi` | `blender/tiancheng_mid.py`, `blender/landmarks/**/*.py` |
-| `map/art/tc_low.dzi` | `blender/tiancheng_low.py`, `blender/landmarks/**/*.py` |
+| `map/art/tc_mid.dzi` | `blender/tiancheng_mid.py` |
+| `map/art/tc_low.dzi` | `blender/tiancheng_low.py` |
 | `map/art/tc_clouds.dzi`（若存在） | `map/art/tc_upper.dzi` |
 | `map/estate/site.glb`, `map/estate/house.glb` | `blender/estate2/*.py` |
 
-窄例外（`check_render_deps.py` 的 `NOT_UPSTREAM`，只写确切路径）：`blender/landmarks/export_glb.py` 只导出 glb，不算 `tc_mid` / `tc_low` 底图的上游。
+`blender/landmarks/**/*.py` 不算 `tc_mid` / `tc_low` 底图的上游：地标走 `tools/landmark.py` 流水线，产物是独立 glb（`map/props/<id>/`），`tiancheng_mid.py` / `tiancheng_low.py` 不 import 它们；只有 `ship --patch-basemap` 才会真的改底图，那一步会直接改到 `.dzi` 本身（`.dzi` 自己的提交时间会跟着变新，不需要靠这张表来发现）。以前把整个 `blender/landmarks/**/*.py` 都列成上游，每加一个不进底图的新地标就会误报「底图落后」（head #54：knights_camp 是独立 glb 地标，误报过一次）。
+
+窄例外（`check_render_deps.py` 的 `NOT_UPSTREAM`，只写确切路径，给以后万一又把 landmarks 通配符加回来的情况留个后备）：`blender/landmarks/export_glb.py` 只导出 glb、`blender/landmarks/lm_anchors.py` 只算看板标签锚点，都不参与底图渲染。
 
 ## 检查工具
 

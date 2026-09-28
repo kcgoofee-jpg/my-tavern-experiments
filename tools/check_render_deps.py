@@ -11,8 +11,12 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 DEPS = {
     'map/art/tc_upper.dzi': ['blender/tiancheng_upper.py', 'blender/upper_islands/*.py', 'map/estate/plan.js', 'blender/estate2/*.py'],
     'map/art/tc_upper_city.dzi': ['blender/tiancheng_upper.py', 'blender/upper_islands/*.py', 'map/estate/plan.js', 'blender/estate2/*.py'],
-    'map/art/tc_mid.dzi': ['blender/tiancheng_mid.py', 'blender/landmarks/**/*.py'],
-    'map/art/tc_low.dzi': ['blender/tiancheng_low.py', 'blender/landmarks/**/*.py'],
+    # tiancheng_mid.py / tiancheng_low.py 不 import blender/landmarks 下的模块——地标走 tools/landmark.py 流水线，
+    # 产物是独立 glb（map/props/<id>/），默认不进底图；只有 ship --patch-basemap 才会改底图，且那一步会直接改到 .dzi 本身
+    # （.dzi 自己的提交时间就会比那次 build.py 新）。所以这里不再把 blender/landmarks/**/*.py 全部当成底图上游，
+    # 避免每加一个不进底图的新地标都误报（head #54：knights_camp 是这种独立 glb 地标，不该让 tc_mid.dzi 显示落后）。
+    'map/art/tc_mid.dzi': ['blender/tiancheng_mid.py'],
+    'map/art/tc_low.dzi': ['blender/tiancheng_low.py'],
     'map/art/tc_clouds.dzi': ['map/art/tc_upper.dzi'],
     'map/estate/site.glb': ['blender/estate2/*.py'],
     'map/estate/house.glb': ['blender/estate2/*.py'],
@@ -20,9 +24,10 @@ DEPS = {
 
 # 窄例外：匹配上面 glob 但不影响该产物的文件（只列确切路径，不写通配）。
 # export_glb.py 只把地标导出成 glb（道具查看器用），不参与 tc_mid / tc_low 底图渲染，改它不需要重渲 .dzi。
+# lm_anchors.py 只算板上标签的锚点位置，不参与底图渲染，改它同样不需要重渲 .dzi。
 NOT_UPSTREAM = {
-    'map/art/tc_mid.dzi': {'blender/landmarks/export_glb.py'},
-    'map/art/tc_low.dzi': {'blender/landmarks/export_glb.py'},
+    'map/art/tc_mid.dzi': {'blender/landmarks/export_glb.py', 'blender/landmarks/lm_anchors.py'},
+    'map/art/tc_low.dzi': {'blender/landmarks/export_glb.py', 'blender/landmarks/lm_anchors.py'},
 }
 
 

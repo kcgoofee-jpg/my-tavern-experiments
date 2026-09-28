@@ -24,7 +24,12 @@ const STUB = `<script>
   window.tavern_events = { CHAT_CHANGED: 'c', MESSAGE_SWIPED: 's', MESSAGE_RECEIVED: 'r', MESSAGE_UPDATED: 'u', MESSAGE_DELETED: 'd', GENERATION_AFTER_COMMANDS: 'g' };
   window.eventOn = function (k, f) { (H[k] = H[k] || []).push(f); }; parent.__fire = function (k) { (H[k] || []).forEach(function (f) { f(); }); };
   window.waitGlobalInitialized = async function () {};
-  window.injectPrompts = function (a) { parent.__injected = a.map(function (x) { return x.content; }).join('\\n'); }; window.uninjectPrompts = function () { parent.__injected = ''; };
+  // 真实酒馆助手按 id 分槽（多处各用自己的 id 调 inject/uninject，互不影响）；早前这里不分 id、整段覆盖，
+  // 一处调 uninjectPrompts 会把别处刚注入的内容也冲掉（B14：状态注入 eden-map-state 紧跟事态注入 eden-map-events 之后调用就会复现）。
+  parent.__injMap = parent.__injMap || {};
+  var recalcInjected = function () { parent.__injected = Object.keys(parent.__injMap).map(function (k) { return parent.__injMap[k]; }).filter(Boolean).join('\\n'); };
+  window.injectPrompts = function (a) { a.forEach(function (x) { parent.__injMap[x.id] = x.content; }); recalcInjected(); };
+  window.uninjectPrompts = function (ids) { (ids || []).forEach(function (id) { delete parent.__injMap[id]; }); recalcInjected(); };
   window.getLastMessageId = function () { return S.msgs.length ? S.msgs[S.msgs.length - 1].message_id : -1; };
   window.getChatMessages = function () { return S.msgs; };
   if (parent.__thInstall) parent.__thInstall(window);   // 测试可在宿主页 addInitScript 定义 __thInstall(w)，往卡片 iframe 里补更多酒馆助手接口（tools/browser/th_adopt.mjs）

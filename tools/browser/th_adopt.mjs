@@ -73,9 +73,12 @@ async function run(name, preset) {
     await vf.evaluate(() => document.querySelector('#scWbGo').click()); await B.wait(500);
     const back = await vf.evaluate(() => ({ page: TCSettings.page, wb: !!document.querySelector('#thWb .thdiff') }));
     rep.check(`${name} 点「一键写入世界书」跳到数据与映射并打开看差异`, back.page === 'data' && back.wb, JSON.stringify(back));
+    // 世界书全自动（用户 2026-09-28）：脚本加载后空闲时就会自己把书建好，不用等用户点；所以这里点第一下前 writes 可能已经是 1（后台自动建的那次）。
+    // 断言改成看「手动点第一下」本身没有另外再写一次（二次确认还没点第二下）。
+    const pre = await p.evaluate(() => window.__th.writes.length);
     await vf.evaluate(() => document.querySelector('#wbGo').click()); await B.wait(300);
     const before = await p.evaluate(() => window.__th.writes.length);
-    rep.check(`${name} B1 第一次点只是「再点一次确认」`, before === 0, String(before));
+    rep.check(`${name} B1 第一次点只是「再点一次确认」`, before === pre, JSON.stringify({ pre, before }));
     // 默认绑定选项现在优先「当前角色」；这里手动选「全局」，跟原来的断言对齐（char 需要 rebindCharWorldbooks，这个宿主桩没有提供）——第一次点会重绘一次，选择要放在重绘之后
     await vf.evaluate(() => { const r = document.querySelector('input[name="wbWhere"][value="global"]'); if (r) r.checked = true; });
     await vf.evaluate(() => document.querySelector('#wbGo').click()); await B.wait(2000);
