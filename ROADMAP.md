@@ -26,7 +26,7 @@
 - **世界地图**：Blender 卫星风底图（程序化地形 + 侵蚀 + 矢量河流），四档清晰度；国界层、地点标记；与 MVU 当前地点联动。默认打开先到世界图（0.9.6 起）。
 - **天城三层**：上层已到 8K v7（isle 定稿 + 云海）；中层、下层仍是 2000px 云端草稿，本机 8000px 正式渲染未做。
 - **伊甸庄园**：冻结的 three.js 剖切版已弃用，改为 Blender 建模 → 网页 glTF 3D（`map/estate3d/`），Phase 1/2 已上线；原定的「剖切等轴瓦片」底图方案未再推进，`blender/estate/`（CONTRACT / 91 房间平面桩件）与已上线的 `blender/estate2/` 不再需要合并——以 estate2 为唯一实现。
-- **发布流程**：改 `VERSION`、`CHANGELOG.md` → 提交 → `git tag map-vX.Y.Z` → `tools/build_card.sh`。0.9.1 起交付形式是外挂脚本（钉标签）+ 世界书附加条目，不再生成角色卡。
+- **发布流程**：改 `VERSION`、`CHANGELOG.md` → 提交 → `git tag map-vX.Y.Z` → `bash tools/ship.sh --release`。交付只有外挂脚本（加载器）+ 世界书附加条目，不生成角色卡（旧角色卡工具在 `tools/legacy/`，勿用）。见 docs/onboarding.md。
 
 ## 经验
 1. **代码画出来的图元就是卡通风**：SVG/Canvas 画的「美术」两次被否。代码只做交互层，美术只来自渲染（Blender）或绘图工具。
