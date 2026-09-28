@@ -10,7 +10,7 @@
 0. ~~世界书真正全自动（用户 2026-09-28 明确要求：打开地图时没有这本书就自动建好并挂到当前角色的附加世界书，版本变了静默同步，只一次提示，数据与映射里一个总开关可关）+ 旧对话兼容（别名表单一来源、退役条目降优先级、每聊天版本提醒、「你改过，上游也改了」）。head #52 只做了按钮和附加绑定，写入仍需点击——代理出于谨慎没做全自动，需要新任务按用户决定实现并先给架构评审。~~ ✅ 分支 feat/worldbook-auto（待合进 cloud/tc-mid-low；浏览器验收 tools/browser/th_adopt.mjs 未在本机跑）。
 1. 上层 v18 交付 → 用户确认 → 全景合成草图 → 云端 16K 定稿 + 切瓦片。
 2. 恢复世界层：原域（worktree scratchpad/wtw，分支 world-yuanyu-2；待修：雾像黑烟、上半山像方盒（已改未复查）、鼓楼/礼拜堂/地面道路）→ 云端定稿 → 用户确认后 glb → 圣都 3–4 景。
-3. 中层剩 2 座：骑士团营区（草图在 scratchpad/wt-mid，分支 mid-buildings）、维多利亚的公寓 —— 走 tools/landmark.py。
+3. ~~中层剩 2 座：骑士团营区（草图在 scratchpad/wt-mid，分支 mid-buildings）、维多利亚的公寓 —— 走 tools/landmark.py。~~ ✅ head #54：new/draft/board/gapcheck（r1 建筑 7 / 卡 7.5）/final/ship 全过，标准+低档 glb、世界书条目、card-buildings 都接好；顺带把中层 8K/128spp 底图按 head #51 配方重渲 + 切瓦片；修了 tools/render_queue.sh 的一处中文粘连 unbound variable。
 4. 纵深系统浏览体验 U15–U18（视差/漂浮、悬停放大、按远近显示标签、图例、手机缩小按钮）+ ~~合并 4 套云雾（U19）~~ ✅ C2。
 5. 庄园地下室 B1/B2 精修（单独一条，不并行）→ 本地道具包接口（用户自带 glb、本地存储、点选放置、只做技术校验）。
 6. 下层 4 处（等用户批准）。
@@ -58,5 +58,5 @@
 - 下层 4 处开工批准。
 
 ## 提醒
-- 云端按量计费 ¥1.58/时；不用时关机前先确认没有代理在用；余额约 ¥20，上层 16K 前够用。
+- 云端按量计费 ¥1.58/时；不用时关机前先确认没有代理在用；余额约 ¥20，上层 16K 前够用。云端目前按用户要求保持开机，不要关。
 - 用户在 Clash Verge 加了 DOMAIN-SUFFIX,seetacloud.com,DIRECT；需要 Homebrew rsync；.claude/settings.local.json 放行了 `bash tools/cloud/*`。
