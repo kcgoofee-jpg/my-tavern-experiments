@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "pack.schema.json",
   "title": "设定包清单 map/packs/<id>/manifest.json",
-  "description": "一张卡 = 一个设定包：核心（查看器、事件解析、定位、扩展接口）只经 map/core/pack.mjs 读这里。路径相对清单所在目录（eden 相对 map/）。写法见 docs/generalize/README.md；tools/check_pack.py 校验结构与跨文件一致性。",
+  "description": "一张卡 = 一个设定包：核心（查看器、事件解析、定位、扩展接口）只经 map/core/pack.mjs 读这里。路径相对清单所在目录（eden 相对 map/）。写法见 docs/generalize/README.md；tools/check_pack.py 校验结构与跨文件一致性。v1 已冻结（2026-09-28，docs/pack-schema-v1.md）：只许加可选字段，改名 / 删字段 / 改必填要升 schema 2 并写迁移；tests/pack_schema_v1.test.mjs 把关。",
   "type": "object",
   "required": ["id", "schema", "title", "data"],
   "additionalProperties": false,
