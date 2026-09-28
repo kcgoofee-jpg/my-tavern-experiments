@@ -1,15 +1,25 @@
 // 酒馆助手采纳（docs/tavernhelper-audit.md）+ 交互方式 (a)(d)(e)（docs/interaction-modes.md）在模拟宿主页里验收（桌面）：
-// 脚本按钮、getScriptId 身份与孤儿清扫、偏好写脚本变量、initializeGlobal、类宏、eden-map:moved 广播、设置「数据与映射」世界书写入（看差异 → 二次确认 → 只写我们的书）、
-// 撤销 / 改绑定按钮、自动同步开关（直接切换，不弹确认框；真正的写入仍要走看差异 → 二次确认）、状态注入（固定 id、只一份、按深度）。
+// 脚本按钮、getScriptId 身份与孤儿清扫、偏好写脚本变量、initializeGlobal、类宏、eden-map:moved 广播；
+// 世界书全自动（host-th.mjs createWbAuto，用户 2026-09-28）：打开聊天空闲时自动建书并挂到当前角色的附加世界书、
+// 同版本静默不重写、版本变了静默同步且每个版本只提示一次、总开关关掉不自动做（删过书立墓碑也不再重建）；
+// 手动写入照常：看差异 → 第一次点只是「再点一次确认」→ 只写我们的书并按选择绑定；撤销（删书）也要二次确认。
 // 用法：node tools/browser/th_adopt.mjs <输出目录>
 import * as B from './lib.mjs';
 import { openHost } from './host_stub.mjs';
+import { readFileSync } from 'node:fs';
+import { shipped as wbShipped } from '../../map/tavern/wbsync.mjs';
 const OUT = process.argv[2]; if (!OUT || OUT.startsWith('--')) { console.log('用法：node tools/browser/th_adopt.mjs <输出目录>'); process.exit(2); }
 B.quietWait(); const srv = await B.ensureServer(); const rep = B.reporter(OUT);
 
-// 装进卡片 iframe 的酒馆助手接口（状态都放宿主页 window.__th，测试从这里读）
-function install() {
-  window.__th = { script: {}, books: { '卡自带世界书': [{ uid: 1, name: '设定', content: '原作', enabled: true }] }, global: [], writes: [], buttons: [], macros: {}, emitted: [], globals: {}, info: '', inject: {}, chat: [{ is_user: false, swipe_id: 0, variables: [{ stat_data: { 世界: { 当前地点: '天城·中层·霓虹街', 当前时刻: '21:00' }, 在场人物: ['安娜'] } }] }] };
+// 发布物（map/data/worldbook_addon.json）：当前版本号；再造一本内容相同、eden_ver 落后的旧书，给第二个场景测「版本变了静默同步」
+const SHIP = JSON.parse(readFileSync(new URL('../../map/data/worldbook_addon.json', import.meta.url), 'utf8'));
+const SHIP_VER = SHIP.ver;
+const SEED_OLD = wbShipped(SHIP).entries.map((e, i) => ({ ...e, uid: i + 1, enabled: true, extra: { ...e.extra, eden_ver: 'test-0.0.0' } }));
+
+// 装进卡片 iframe 的酒馆助手接口（状态都放宿主页 window.__th，测试从这里读）；seedEntries：预装的旧版本附加世界书（runUpd 用）
+function install(seedEntries) {
+  window.__th = { script: {}, books: { '卡自带世界书': [{ uid: 1, name: '设定', content: '原作', enabled: true }] }, charWb: { primary: null, additional: [] }, global: [], writes: [], removes: [], buttons: [], macros: {}, emitted: [], globals: {}, info: '', inject: {}, chat: [{ is_user: false, swipe_id: 0, variables: [{ stat_data: { 世界: { 当前地点: '天城·中层·霓虹街', 当前时刻: '21:00' }, 在场人物: ['安娜'] } }] }] };
+  if (Array.isArray(seedEntries) && seedEntries.length) window.__th.books['伊甸地图·世界书附加条目'] = JSON.parse(JSON.stringify(seedEntries));
   window.__thInstall = w => {
     const T = window.__th, cl = o => JSON.parse(JSON.stringify(o));
     w.getScriptId = () => 'script-eden-1';
@@ -30,7 +40,9 @@ function install() {
     w.updateWorldbookWith = async (n, f) => { T.writes.push(n); T.books[n] = cl(await f(cl(T.books[n]))); return T.books[n]; };
     w.replaceWorldbook = async (n, l) => { T.writes.push(n); T.books[n] = cl(l); };
     w.getGlobalWorldbookNames = () => [...T.global]; w.rebindGlobalWorldbooks = async l => { T.writes.push('*global'); T.global = [...l]; };
-    w.getCharWorldbookNames = () => ({ primary: null, additional: [] });
+    w.getCharWorldbookNames = () => cl(T.charWb);   // 附加世界书状态化：全自动挂到这里，只有 rebind 才变
+    w.rebindCharWorldbooks = async (c, spec) => { T.charWb = cl(spec); };
+    w.deleteWorldbook = async n => { if (!(n in T.books)) return false; T.removes.push(n); delete T.books[n]; T.global = T.global.filter(x => x !== n); T.charWb = { primary: T.charWb.primary === n ? null : T.charWb.primary, additional: T.charWb.additional.filter(x => x !== n) }; return true; };
     w.injectPrompts = a => { for (const x of a) T.inject[x.id] = x; window.__injected = Object.values(T.inject).map(x => x.content).join('\n'); return { uninject() {} }; };
     w.uninjectPrompts = ids => { for (const i of ids) delete T.inject[i]; };
   };
@@ -39,7 +51,7 @@ function install() {
 async function run(name, preset) {
   const P = await B.newPage(preset, { tier: 'save' });
   try {
-    await P.ctx.addInitScript(install);
+    await P.ctx.addInitScript(install, null);
     // 孤儿：上一个实例（别的身份）留下的节点
     await P.ctx.addInitScript(() => { if (window.top === window) document.addEventListener('DOMContentLoaded', () => { const d = document.createElement('div'); d.id = 'orphan'; d.setAttribute('data-eden-owner', 's:dead-instance'); document.body.appendChild(d); }); });
     const H = await openHost(P, { here: '天城·中层·霓虹街', stat: { 在场人物: ['安娜'] }, msgs: [{ message_id: 1, message: '到了。' }], chat: 'th-' + name, ls: { edenMapLine: 'cn', edenMapHand: 'left' } });
@@ -55,42 +67,68 @@ async function run(name, preset) {
     await p.evaluate(() => { window.__stub.here = '伊甸庄园·书房'; window.__th.chat[0].variables[0].stat_data.世界.当前地点 = '伊甸庄园·书房'; window.__fire('v'); }); await B.wait(900);
     const em = await p.evaluate(() => window.__th.emitted.filter(e => e[0] === 'eden-map:moved'));
     rep.check(`${name} B8 eden-map:moved 只带地点`, em.length === 1 && em[0][1].from === '天城·中层·霓虹街' && em[0][1].to === '伊甸庄园·书房' && Object.keys(em[0][1]).sort().join() === 'at,from,map,source,to', JSON.stringify(em));
+    // ---- 世界书全自动：脚本加载空闲时（≈8s）自己把书建好并挂到当前角色附加世界书，不等用户点 ----
+    await p.waitForFunction(v => localStorage.getItem('edenMapWbNoticeVer') === v, SHIP_VER, { timeout: 30000 }).catch(() => {});
+    const auto1 = await p.evaluate(() => ({ writes: window.__th.writes, book: (window.__th.books['伊甸地图·世界书附加条目'] || []).length, charWb: window.__th.charWb, global: window.__th.global, other: window.__th.books['卡自带世界书'], notice: localStorage.getItem('edenMapWbNoticeVer'), sync: JSON.parse(localStorage.getItem('edenMapWbSync') || 'null') }));
+    rep.check(`${name} B1 全自动：书已自动建好、卡自带书不动`, auto1.writes.join() === '伊甸地图·世界书附加条目' && auto1.book === SEED_OLD.length && auto1.other[0].content === '原作', JSON.stringify({ writes: auto1.writes, n: auto1.book }));
+    rep.check(`${name} B1 全自动：挂到当前角色的附加世界书（不动全局）`, (auto1.charWb?.additional || []).includes('伊甸地图·世界书附加条目') && !auto1.global.length, JSON.stringify(auto1.charWb));
+    rep.check(`${name} B1 全自动：装书提示只出这一次（记下提示版本、自动同步留痕）`, auto1.notice === SHIP_VER && auto1.sync?.auto === true && auto1.sync?.at > 0, JSON.stringify({ notice: auto1.notice, sync: auto1.sync }));
+    await p.waitForFunction(() => document.body.innerText.includes('已自动装好地图世界书附加条目'), null, { timeout: 5000 }).catch(() => {});
+    const toast0 = await p.evaluate(() => document.body.innerText.includes('已自动装好地图世界书附加条目'));
+    rep.check(`${name} B1 全自动：装书提示弹出`, toast0, String(toast0));
+    // 同版本再自动一轮（换聊天触发）：静默不重写、不重复提示
+    await p.evaluate(() => window.__fire('c')); await B.wait(4500);
+    const auto2 = await p.evaluate(() => ({ writes: window.__th.writes.length, notice: localStorage.getItem('edenMapWbNoticeVer'), at: JSON.parse(localStorage.getItem('edenMapWbSync') || 'null')?.at }));
+    rep.check(`${name} B1 同版本再自动一轮：不重写、不再提示`, auto2.writes === 1 && auto2.notice === SHIP_VER && auto2.at === auto1.sync.at, JSON.stringify(auto2));
     // 打开地图 → 设置「数据与映射」
-    await H.open(); const vf = await H.viewer(); await B.wait(800);
+    await H.open(); let vf = await H.viewer(); await B.wait(800);
     await vf.evaluate(() => { try { closeCard(); } catch (e) {} TCSettings.open('data'); }); await B.wait(500);
     const has = await vf.evaluate(() => ({ wb: !!document.querySelector('#thWb'), inj: !!document.querySelector('#thInj #thInjOn'), injOn: document.querySelector('#thInjOn')?.checked, adv: !!document.querySelector('#thAdv #thDepth') }));
     rep.check(`${name} 设置：世界书 / 状态注入两栏，注入默认开，深度在高级`, has.wb && has.inj && has.injOn && has.adv, JSON.stringify(has));
-    // B1：看差异 → 写入需要二次确认 → 只写我们的书并按选择绑定
+    // 全自动建好的书是当前版本：看差异 = 已是最新、没有变化，只写这一本书（看差异后书的状态才进设置，撤销按钮也在这时出现）
     await vf.evaluate(() => document.querySelector('#wbDiff, #wbLook').click()); await B.wait(1500);
-    const diff = await vf.evaluate(() => document.querySelector('#thWb .thdiff')?.textContent || document.querySelector('#thWb')?.textContent || '');
-    rep.check(`${name} B1 写前给差异`, /新建一本书|New book/.test(diff) && /只写这一本书|Only this book/.test(diff), diff.slice(0, 160));
-    await vf.evaluate(() => document.querySelector('#thWb').scrollIntoView()); await B.shot(p, OUT, `${name}_wb_diff`);
-    // 自检红线上的「一键写入世界书」按钮：这时书还没建，自检应该报 worldbook:warn 并带这个按钮；点它要跳回「数据与映射」并打开看差异（用户 2026-09-28 UI 小修）
-    await p.evaluate(() => window.EdenMap.selfcheck()); await B.wait(300);
+    const diff0 = await vf.evaluate(() => ({ box: document.querySelector('#thWb')?.textContent || '', diff: document.querySelector('#thWb .thdiff')?.textContent || '' }));
+    rep.check(`${name} B1 全自动后看差异：已是最新、没有变化`, /已是最新/.test(diff0.box) && /没有变化/.test(diff0.diff) && /只写这一本书/.test(diff0.diff), (diff0.box + '｜' + diff0.diff).slice(0, 160));
+    const hasUndo = await vf.evaluate(() => !!document.querySelector('#wbUndo'));
+    rep.check(`${name} 撤销按钮存在（书已建好）`, hasUndo, String(hasUndo));
+    // 总开关（默认开）：关掉写 '0'（本机 + 脚本变量）；关了就不自动做
+    await vf.evaluate(() => { const c = document.querySelector('#wbOn'); c.checked = false; c.dispatchEvent(new Event('change')); }); await B.wait(400);
+    const post = await p.evaluate(() => ({ ls: localStorage.getItem('edenMapWbOn'), sv: window.__th.script.eden_prefs?.edenMapWbOn }));
+    rep.check(`${name} 世界书总开关：可关（本机 + 脚本变量）`, post.ls === '0' && post.sv === '0', JSON.stringify({ post }));
+    // 撤销（删书）也要二次确认；删过立墓碑
+    await vf.evaluate(() => document.querySelector('#wbUndo').click()); await B.wait(400);
+    await vf.evaluate(() => document.querySelector('#wbUndo').click()); await B.wait(1000);
+    const del = await p.evaluate(() => ({ removes: window.__th.removes, has: '伊甸地图·世界书附加条目' in window.__th.books, tomb: localStorage.getItem('edenMapWbTomb') }));
+    rep.check(`${name} B1 撤销：二次确认删书并立墓碑`, del.removes.join() === '伊甸地图·世界书附加条目' && !del.has && del.tomb === '1', JSON.stringify(del));
+    // 总开关关着（+ 墓碑）：再自动一轮也不重建、不同步、不提示
+    await p.evaluate(() => window.__fire('c')); await B.wait(4500);
+    const offRun = await p.evaluate(() => ({ has: '伊甸地图·世界书附加条目' in window.__th.books, writes: window.__th.writes.length, notice: localStorage.getItem('edenMapWbNoticeVer') }));
+    rep.check(`${name} B1 总开关关掉：不自动建、不同步、不提示`, !offRun.has && offRun.writes === 1 && offRun.notice === SHIP_VER, JSON.stringify(offRun));
+    // 手动写入照常。先重载一个新脚本实例：自检结果第一次跑完就缓存（checkP memo），只有重载后才重新收集；
+    // 此时书已被撤销、总开关关着、有墓碑 → 书不会自动回来 → 自检红线带「一键写入世界书」按钮（书没了才 warn）
+    await P.page.reload(); await p.waitForSelector('#eden-map-root .em-fab', { timeout: 15000 }); await B.wait(500);
+    await p.evaluate(() => window.EdenMap.selfcheck());   // 等第一次自检跑完（含「世界书缺失」6 秒后的复查）
+    await H.open(); vf = await H.viewer(); await B.wait(800);
     await vf.evaluate(() => { TCSettings.open('update'); }); await B.wait(500);
     const sc0 = await vf.evaluate(() => ({ warn: !!document.querySelector('#selfCheck li.warn'), go: !!document.querySelector('#scWbGo'), fb: document.querySelectorAll('.fb-open').length }));
     rep.check(`${name} 自检红线带「一键写入世界书」按钮；反馈按钮只有一个`, sc0.warn && sc0.go && sc0.fb === 1, JSON.stringify(sc0));
     await vf.evaluate(() => document.querySelector('#scWbGo').click()); await B.wait(500);
     const back = await vf.evaluate(() => ({ page: TCSettings.page, wb: !!document.querySelector('#thWb .thdiff') }));
     rep.check(`${name} 点「一键写入世界书」跳到数据与映射并打开看差异`, back.page === 'data' && back.wb, JSON.stringify(back));
-    // 世界书全自动（用户 2026-09-28）：脚本加载后空闲时就会自己把书建好，不用等用户点；所以这里点第一下前 writes 可能已经是 1（后台自动建的那次）。
-    // 断言改成看「手动点第一下」本身没有另外再写一次（二次确认还没点第二下）。
+    const diff1 = await vf.evaluate(() => document.querySelector('#thWb .thdiff')?.textContent || '');
+    rep.check(`${name} B1 写前给差异（新建一本书）`, /新建一本书|New book/.test(diff1) && /只写这一本书|Only this book/.test(diff1), diff1.slice(0, 160));
+    await vf.evaluate(() => document.querySelector('#thWb').scrollIntoView()); await B.shot(p, OUT, `${name}_wb_diff`);
+    // 第一次点只是「再点一次确认」：总开关关着、没有后台自动写，这个断言是确定性的
     const pre = await p.evaluate(() => window.__th.writes.length);
     await vf.evaluate(() => document.querySelector('#wbGo').click()); await B.wait(300);
+    const armed = await vf.evaluate(() => ({ label: document.querySelector('#wbGo')?.textContent || '' }));
     const before = await p.evaluate(() => window.__th.writes.length);
-    rep.check(`${name} B1 第一次点只是「再点一次确认」`, before === pre, JSON.stringify({ pre, before }));
-    // 默认绑定选项现在优先「当前角色」；这里手动选「全局」，跟原来的断言对齐（char 需要 rebindCharWorldbooks，这个宿主桩没有提供）——第一次点会重绘一次，选择要放在重绘之后
+    rep.check(`${name} B1 第一次点只是「再点一次确认」`, before === pre && /再点一次确认/.test(armed.label), JSON.stringify({ pre, before, label: armed.label }));
+    // 默认绑定选项现在优先「当前角色」；这里手动选「全局」，再点第二次才真的写
     await vf.evaluate(() => { const r = document.querySelector('input[name="wbWhere"][value="global"]'); if (r) r.checked = true; });
     await vf.evaluate(() => document.querySelector('#wbGo').click()); await B.wait(2000);
-    const w = await p.evaluate(() => ({ writes: window.__th.writes, global: window.__th.global, books: Object.keys(window.__th.books), n: (window.__th.books['伊甸地图·世界书附加条目'] || []).length, other: window.__th.books['卡自带世界书'] }));
-    rep.check(`${name} B1 只写「伊甸地图·世界书附加条目」并绑定全局；卡自带书不动`, w.writes.every(x => x === '伊甸地图·世界书附加条目' || x === '*global') && w.global.includes('伊甸地图·世界书附加条目') && w.n > 4 && w.other[0].content === '原作', JSON.stringify({ writes: w.writes, global: w.global, n: w.n }));
-    // 撤销 / 改绑定：一栏应该在书存在时出现（不测真的删，只测按钮在，且要点两次才生效——同一套二次确认规矩）
-    const hasUndo = await vf.evaluate(() => !!document.querySelector('#wbUndo'));
-    rep.check(`${name} 撤销按钮存在（书已建好）`, hasUndo, String(hasUndo));
-    // 全自动总开关（默认开）：关掉写 '0'（本机 + 脚本变量）
-    await vf.evaluate(() => { const c = document.querySelector('#wbOn'); c.checked = false; c.dispatchEvent(new Event('change')); }); await B.wait(400);
-    const post = await p.evaluate(() => ({ ls: localStorage.getItem('edenMapWbOn'), sv: window.__th.script.eden_prefs?.edenMapWbOn }));
-    rep.check(`${name} 世界书总开关：可关（本机 + 脚本变量）`, post.ls === '0' && post.sv === '0', JSON.stringify({ post }));
+    const w = await p.evaluate(() => ({ writes: window.__th.writes, global: window.__th.global, n: (window.__th.books['伊甸地图·世界书附加条目'] || []).length, other: window.__th.books['卡自带世界书'], tomb: localStorage.getItem('edenMapWbTomb') }));
+    rep.check(`${name} B1 只写「伊甸地图·世界书附加条目」并绑定全局；卡自带书不动`, w.writes.every(x => x === '伊甸地图·世界书附加条目' || x === '*global') && w.global.includes('伊甸地图·世界书附加条目') && w.n > 4 && w.other[0].content === '原作' && w.tomb === '0', JSON.stringify({ writes: w.writes, global: w.global, n: w.n }));
     // 类宏开关
     await vf.evaluate(() => { const c = document.querySelector('#thMacro'); c.checked = true; c.dispatchEvent(new Event('change')); }); await B.wait(600);
     const mac = await p.evaluate(() => { const f = window.__th.macros['\\{\\{eden_here\\}\\}']; return f ? f({}, '{{eden_here}}') : null; });
@@ -113,6 +151,28 @@ async function run(name, preset) {
   } catch (e) { rep.check(`${name} 运行`, false, e.message.split('\n')[0]); }
   finally { await P.close(); }
 }
-try { await run('desk', 'desktop'); }
+
+// 第二个场景：预装一本旧版本的附加世界书 → 载入即「版本变了」：静默同步到当前版本，更新提示只出一次；再自动一轮不再提示
+async function runUpd(name, preset) {
+  const P = await B.newPage(preset, { tier: 'save' });
+  try {
+    await P.ctx.addInitScript(install, SEED_OLD);
+    const H = await openHost(P, { here: '天城·中层·霓虹街', stat: { 在场人物: ['安娜'] }, msgs: [{ message_id: 1, message: '到了。' }], chat: 'th-upd', ls: { edenMapLine: 'cn' } });
+    const p = P.page;
+    await p.waitForFunction(v => localStorage.getItem('edenMapWbNoticeVer') === v, SHIP_VER, { timeout: 30000 }).catch(() => {});
+    const up = await p.evaluate(() => { const b = window.__th.books['伊甸地图·世界书附加条目'] || []; return { writes: window.__th.writes, ver: b[0]?.extra?.eden_ver, n: b.length, notice: localStorage.getItem('edenMapWbNoticeVer'), global: window.__th.global, charWb: window.__th.charWb, other: window.__th.books['卡自带世界书'] }; });
+    rep.check(`${name} 版本变了：静默同步到当前版本，只写这一本书、绑定不动`, up.writes.join() === '伊甸地图·世界书附加条目' && up.ver === SHIP_VER && up.n === SEED_OLD.length && !up.global.length && !(up.charWb?.additional || []).length && up.other[0].content === '原作', JSON.stringify({ writes: up.writes, ver: up.ver, n: up.n }));
+    await p.waitForFunction(() => document.body.innerText.includes('地图世界书附加条目已更新'), null, { timeout: 6000 }).catch(() => {});
+    const t1 = await p.evaluate(() => document.body.innerText.includes('地图世界书附加条目已更新'));
+    rep.check(`${name} 更新提示只出这一次`, t1, String(t1));
+    await p.evaluate(() => window.__fire('c')); await B.wait(4500);
+    const up2 = await p.evaluate(() => ({ writes: window.__th.writes.length, ver: (window.__th.books['伊甸地图·世界书附加条目'] || [])[0]?.extra?.eden_ver, notice: localStorage.getItem('edenMapWbNoticeVer') }));
+    rep.check(`${name} 同版本再自动一轮：不重写、不再提示`, up2.writes === 1 && up2.ver === SHIP_VER && up2.notice === SHIP_VER, JSON.stringify(up2));
+    rep.check(`${name} 无脚本错误`, !P.errors.filter(e => !/http 404/.test(e)).length, P.errors.slice(0, 3).join(' | '));
+  } catch (e) { rep.check(`${name} 运行`, false, e.message.split('\n')[0]); }
+  finally { await P.close(); }
+}
+
+try { await run('desk', 'desktop'); await runUpd('wbupd', 'desktop'); }
 finally { await B.closeAll(); srv.stop(); }
 const ok = rep.save(); console.log(`${ok ? '全部通过' : '有失败'} → ${OUT}/summary.md`); process.exit(ok ? 0 : 1);
