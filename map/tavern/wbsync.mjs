@@ -125,3 +125,5 @@ export async function sync(fn, ship, o = {}) {
 }
 /** 删旧书（用户第二次确认才调）：只允许带版本号的旧名 */
 export async function deleteLegacy(fn, name) { if (!LEGACY_RE.test(name) || !fn('deleteWorldbook')) return false; try { return !!(await fn('deleteWorldbook')(name)); } catch (e) { return false; } }
+/** 撤销：删除我们自己的书（用户在「数据与映射」二次确认才调） */
+export async function removeBook(fn) { if (!fn('deleteWorldbook')) return false; try { return !!(await fn('deleteWorldbook')(BOOK)); } catch (e) { return false; } }

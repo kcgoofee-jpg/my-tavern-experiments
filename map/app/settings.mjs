@@ -177,10 +177,14 @@ export function renderSelfCheck() {
   let box = document.getElementById('selfCheck');
   if (!box) { box = document.createElement('div'); box.id = 'selfCheck'; TCSettings.registerSection('update', box, { order: 80 }); }
   const L = LANG === 'en' ? 'en' : 'zh', mark = { ok: '✓', warn: '⚠', skip: '–', info: '↑' };
-  box.innerHTML = `<b>${esc(tx('selfcheck.title', '自检'))}</b><ul>${selfCheck.items.map(i => `<li class="${esc(i.status)}">${mark[i.status] || ''} ${esc(i[L] || i.zh)}</li>`).join('')}</ul>`;
+  // 世界书那一条红线（自检项 worldbook，warn）：加一个「一键写入世界书」按钮，跳到「数据与映射」页并打开看差异（跟点 wbLook/wbDiff 一样）；
+  // API 不可用（自检文案已经只剩手动导入提示）时不出这个按钮，只留手动那行小字
+  const wbWarn = selfCheck.items.find(i => i.id === 'worldbook' && i.status === 'warn');
+  box.innerHTML = `<b>${esc(tx('selfcheck.title', '自检'))}</b><ul>${selfCheck.items.map(i => `<li class="${esc(i.status)}">${mark[i.status] || ''} ${esc(i[L] || i.zh)}`
+    + (i === wbWarn ? `<div class="hrow"><span></span><button type="button" class="btn primary" id="scWbGo">${esc(tx('selfcheck.wb_go', '一键写入世界书'))}</button></div><small>${esc(tx('selfcheck.wb_manual', '也可以照旧手动导入「伊甸地图·世界书附加条目」并在世界书里设为全局'))}</small>` : '') + `</li>`).join('')}</ul>`;
   { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'splashAgain'; b.textContent = tx('selfcheck.splash', '重新显示开场自检');   // v0.9.5
     b.onclick = () => { showSet(false); post({ type: 'eden-map:splash' }); }; box.appendChild(b); }
-  mountFeedbackButton(box);
+  $('#scWbGo')?.addEventListener('click', () => { setPage('data'); const el = document.getElementById('thWb'); el?.scrollIntoView({ block: 'center' }); ($('#wbDiff') || $('#wbLook'))?.click(); });
   updSub();
   if (selfCheck.items.some(i => i.id === 'update')) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = tx('selfcheck.update_now', '本次切换到新版本');

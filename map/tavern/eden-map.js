@@ -1228,7 +1228,7 @@
     if (r.ok) { wbLast = { at: Date.now(), ver: r.plan?.to || null, add: r.plan?.add?.length || 0, update: r.plan?.update?.length || 0, keep: r.plan?.keep?.length || 0, auto: !!o.auto }; lsSet('edenMapWbSync', JSON.stringify(wbLast)); if (r.bound) lsSet('edenMapWbWhere', r.bound); prefSync(); }
     return r;
   }
-  async function wbAuto() {   // 启动空闲时：开了自动同步、书在、版本标记和 CDN 上的不同 → 更新
+  async function wbAuto() {   // 启动空闲时：开了自动同步、书在（用户之前手动确认写入过）、版本标记和 CDN 上的不同 → 更新。不会替用户新建书——那一步必须用户在「数据与映射」看差异后点确认
     if (lsGet('edenMapWbAuto') !== '1' || dead) return null;
     const st = await wbStatus(true); if (!st.api || !st.exists || !st.plan || !st.plan.changed) return st;
     const r = await wbWrite({ auto: true });
@@ -1246,11 +1246,13 @@
       if ('depth' in P) put('edenMapStateDepth', Math.max(0, Math.min(20, Math.round(+P.depth) || 0)));
       if ('budget' in P) put('edenMapStateBudget', Math.max(40, Math.min(400, Math.round(+P.budget) || 150)));
       if ('macros' in P) { put('edenMapMacros', P.macros ? '1' : '0'); macroSet(!!P.macros); }
-      if ('wbAuto' in P) put('edenMapWbAuto', P.wbAuto ? '1' : '0');   // 开启前查看器里已经确认过一次（同意对话框）
+      if ('wbAuto' in P) put('edenMapWbAuto', P.wbAuto ? '1' : '0');   // 只影响「已存在的书」以后要不要自动更新；新建书永远要用户在「看差异」后手动确认
       prefSync(); if (typeof stateInject === 'function') stateInject(); return sendTh();
     }
     if (op === 'wb-inspect') return sendTh({ wb: await wbStatus(true) });
     if (op === 'wb-write') { const r = await wbWrite({ where: ['global', 'char', 'chat'].includes(d.where) ? d.where : null, migrate: typeof d.migrate === 'string' ? d.migrate : null }); return sendTh({ wb: await wbStatus(true), result: { ok: r.ok, reason: r.reason || null, bound: r.bound || null } }); }
+    if (op === 'wb-rebind' && ['global', 'char', 'chat'].includes(d.where)) { const W = await wbMod(); const ok = !!W && await W.bind(thFn, W.BOOK, d.where); if (ok) lsSet('edenMapWbWhere', d.where); return sendTh({ wb: await wbStatus(true), result: { ok, reason: ok ? null : 'error' } }); }
+    if (op === 'wb-remove') { const W = await wbMod(); const ok = !!W && await W.removeBook(thFn); if (ok) { wbLast = null; try { (LS || localStorage).removeItem('edenMapWbSync'); } catch (e) {} prefSync(); } return sendTh({ wb: await wbStatus(true), result: { ok, reason: ok ? 'deleted' : 'error' } }); }
     if (op === 'wb-del-legacy' && typeof d.name === 'string') { const W = await wbMod(); const ok = !!W && await W.deleteLegacy(thFn, d.name); return sendTh({ wb: await wbStatus(true), result: { ok, reason: ok ? 'deleted' : 'error' } }); }
   }
 

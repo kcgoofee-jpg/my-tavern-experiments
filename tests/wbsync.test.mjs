@@ -97,6 +97,14 @@ test('旧的带版本号的书：迁移时把它的绑定换成稳定名（位�
   assert.equal(await W.deleteLegacy(t.fn, old), true); assert.ok(!t.B[old]);
 });
 
+test('撤销：removeBook 只删我们自己的书；没有删接口时不动', async () => {
+  const t = fakeTH({ [W.BOOK]: [{ uid: 1, name: 'x', content: 'y', enabled: true }], ...OTHER });
+  assert.equal(await W.removeBook(t.fn), true); assert.ok(!t.B[W.BOOK]); assert.ok(t.B['卡自带世界书']);
+  const t2 = fakeTH({ [W.BOOK]: [] });
+  const noDel = n => (n === 'deleteWorldbook' ? undefined : t2.fn(n));
+  assert.equal(await W.removeBook(noDel), false);
+});
+
 test('离线 / 失败 / 没接口：不抛，给出原因（界面回退到手动导入）', async () => {
   const t = fakeTH();
   assert.equal((await W.sync(t.fn, null, { consent: true })).reason, 'offline');

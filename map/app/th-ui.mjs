@@ -4,7 +4,7 @@
 import { $, esc, post, tx } from './util.mjs';
 
 const W = { global: ['th.wb_global', '全局'], char: ['th.wb_char', '当前角色的附加世界书'], chat: ['th.wb_chat', '当前聊天'] };
-let S = { prefs: null, wb: null, last: null, result: null, api: null }, diffShown = false, armed = 0, consentOpen = false, delArmed = '';
+let S = { prefs: null, wb: null, last: null, result: null, api: null }, diffShown = false, armed = 0, delArmed = '';
 
 function sec(page, id, order) {
   let el = document.getElementById(id);
@@ -37,18 +37,15 @@ function renderWb() {
         + (p.user ? `<div>${esc(tx('th.wb_user', '你自己加的 {n} 条原样保留', { n: p.user }))}</div>` : '')
         + (!p.changed ? `<div>${esc(tx('th.wb_nochange', '没有变化'))}</div>` : '')
         + `<small>${esc(tx('th.wb_only', '只写这一本书，不碰其它世界书和角色卡'))}</small></div>`;
-      if (!w.where) {
-        const def = P.wbWhere || 'global';
-        h += `<fieldset class="thwhere"><legend>${esc(tx('th.wb_where', '写完绑定到'))}</legend>` + ['global', 'char', 'chat'].map(k => `<label><input type="radio" name="wbWhere" value="${k}" ${k === def ? 'checked' : ''}> ${esc(tx(...W[k]))}</label>`).join('')
-          + `<label><input type="radio" name="wbWhere" value="" ${def === 'none' ? 'checked' : ''}> ${esc(tx('th.wb_nobind', '先不绑定'))}</label></fieldset>`;
-      }
+      const def = P.wbWhere || w.where || 'char';
+      h += `<fieldset class="thwhere"><legend>${esc(w.where ? tx('th.wb_rebind_to', '改绑定到') : tx('th.wb_where', '写完绑定到'))}</legend>` + ['char', 'chat', 'global'].map(k => `<label><input type="radio" name="wbWhere" value="${k}" ${k === def ? 'checked' : ''}> ${esc(tx(...W[k]))}</label>`).join('') + `</fieldset>`;
       if (w.legacy?.length) h += `<label class="row"><input type="checkbox" id="wbMig" checked> ${esc(tx('th.wb_mig', '把旧书「{n}」的绑定换成新书（旧书留着）', { n: w.legacy[0] }))}</label>`;
-      if (p.changed || !w.where) h += `<div class="hrow"><span></span><button type="button" class="btn primary" id="wbGo">${esc(armed ? tx('th.wb_confirm', '再点一次确认写入') : tx('th.wb_write', '写入世界书'))}</button></div>`;
+      h += `<div class="hrow"><span></span><button type="button" class="btn primary" id="wbGo">${esc(armed ? tx('th.wb_confirm', '再点一次确认写入') : w.exists ? tx('th.wb_rebind_go', '改绑定') : tx('th.wb_write', '写入世界书'))}</button></div>`;
     } else h += `<div class="hrow"><span>${esc(tx('th.wb_state', '状态'))}</span><button type="button" class="btn" id="wbDiff">${esc(tx('th.wb_preview', '看差异'))}</button></div>`;
-    if (S.result) h += `<small role="status">${esc(S.result.ok ? (S.result.reason === 'deleted' ? tx('th.wb_deleted', '已删除旧书') : tx('th.wb_done', '已写入')) : tx('th.wb_fail', '没写成（{r}）：可以照旧手动导入', { r: S.result.reason || '?' }))}</small>`;
-    h += `<label class="row"><input type="checkbox" id="wbAuto" ${P.wbAuto ? 'checked' : ''} ${w.exists ? '' : 'disabled'}> ${esc(tx('th.wb_autosync', '自动同步世界书（地图更新时自动更新这本书）'))}</label>`;
-    if (consentOpen) h += `<div class="thconsent" role="alertdialog"><p>${esc(tx('th.wb_consent', '以后地图有新版本时，自动更新「{b}」：只改这一本书里地图自己的条目；你改过的条目和你自己加的条目保留；不碰其它书；绑定保持不变。随时可以在这里关掉。', { b: w.book || '' }))}</p>`
-      + `<button type="button" class="btn primary" id="wbYes">${esc(tx('th.agree', '同意并开启'))}</button> <button type="button" class="btn" id="wbNo">${esc(tx('th.cancel', '取消'))}</button></div>`;
+    if (S.result) h += `<small role="status">${esc(S.result.ok ? (S.result.reason === 'deleted' ? tx('th.wb_deleted', '已撤销（删除了这本书）') : tx('th.wb_done', '已写入')) : tx('th.wb_fail', '没写成（{r}）：可以照旧手动导入', { r: S.result.reason || '?' }))}</small>`;
+    h += `<label class="row"><input type="checkbox" id="wbAuto" ${P.wbAuto !== false ? 'checked' : ''}> ${esc(tx('th.wb_autosync', '自动管理地图世界书'))}</label>`
+      + `<small>${esc(tx('th.wb_autosync_hint', '开启自动同步世界书后，以后地图更新会自动更新这本书'))}</small>`;
+    if (w.exists) h += `<div class="hrow"><span></span><button type="button" class="btn" id="wbUndo">${esc(delArmed === '__book__' ? tx('th.wb_undo_confirm', '再点一次：撤销（删除这本书，不能撤销）') : tx('th.wb_undo', '撤销（删除这本书）'))}</button></div>`;
     for (const n of w.legacy || []) h += `<div class="hrow"><span>${esc(tx('th.wb_legacy', '旧书 {n}', { n }))}</span><button type="button" class="btn" data-del="${esc(n)}">${esc(delArmed === n ? tx('th.wb_del_confirm', '再点一次：删除（不能撤销）') : tx('th.wb_del', '删除旧书'))}</button></div>`;
   }
   box.innerHTML = h;
@@ -56,11 +53,11 @@ function renderWb() {
   $('#wbDiff')?.addEventListener('click', () => { diffShown = true; S.result = null; post({ type: 'eden-map:th', op: 'wb-inspect' }); });
   const go = $('#wbGo'); if (go) go.onclick = () => {
     if (!armed || Date.now() - armed > 6000) { armed = Date.now(); renderWb(); return; }
-    armed = 0; go.disabled = true; const r = box.querySelector('input[name="wbWhere"]:checked');
-    post({ type: 'eden-map:th', op: 'wb-write', where: r ? r.value || null : null, migrate: $('#wbMig')?.checked ? S.wb.legacy[0] : null }); };
-  const au = $('#wbAuto'); if (au) au.onchange = () => { if (au.checked && !S.prefs?.wbAuto) { au.checked = false; consentOpen = true; renderWb(); return; } post({ type: 'eden-map:th', op: 'prefs', prefs: { wbAuto: au.checked } }); };
-  $('#wbYes')?.addEventListener('click', () => { consentOpen = false; post({ type: 'eden-map:th', op: 'prefs', prefs: { wbAuto: true } }); });
-  $('#wbNo')?.addEventListener('click', () => { consentOpen = false; renderWb(); });
+    armed = 0; go.disabled = true; const r = box.querySelector('input[name="wbWhere"]:checked'), where = r ? r.value || null : null;
+    if (S.wb?.exists && !(S.wb.plan && S.wb.plan.changed)) post({ type: 'eden-map:th', op: 'wb-rebind', where });
+    else post({ type: 'eden-map:th', op: 'wb-write', where, migrate: $('#wbMig')?.checked ? S.wb.legacy[0] : null }); };
+  const au = $('#wbAuto'); if (au) au.onchange = () => post({ type: 'eden-map:th', op: 'prefs', prefs: { wbAuto: au.checked } });
+  $('#wbUndo')?.addEventListener('click', () => { if (delArmed !== '__book__') { delArmed = '__book__'; renderWb(); return; } delArmed = ''; S.result = null; post({ type: 'eden-map:th', op: 'wb-remove' }); });
   for (const b of box.querySelectorAll('button[data-del]')) b.onclick = () => { const n = b.dataset.del; if (delArmed !== n) { delArmed = n; renderWb(); return; } delArmed = ''; b.disabled = true; post({ type: 'eden-map:th', op: 'wb-del-legacy', name: n }); };
 }
 

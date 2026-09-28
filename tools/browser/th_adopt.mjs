@@ -1,6 +1,6 @@
 // 酒馆助手采纳（docs/tavernhelper-audit.md）+ 交互方式 (a)(d)(e)（docs/interaction-modes.md）在模拟宿主页里验收（桌面）：
 // 脚本按钮、getScriptId 身份与孤儿清扫、偏好写脚本变量、initializeGlobal、类宏、eden-map:moved 广播、设置「数据与映射」世界书写入（看差异 → 二次确认 → 只写我们的书）、
-// 自动同步同意框、状态注入（固定 id、只一份、按深度）。
+// 撤销 / 改绑定按钮、自动同步开关（直接切换，不弹确认框；真正的写入仍要走看差异 → 二次确认）、状态注入（固定 id、只一份、按深度）。
 // 用法：node tools/browser/th_adopt.mjs <输出目录>
 import * as B from './lib.mjs';
 import { openHost } from './host_stub.mjs';
@@ -65,18 +65,29 @@ async function run(name, preset) {
     const diff = await vf.evaluate(() => document.querySelector('#thWb .thdiff')?.textContent || document.querySelector('#thWb')?.textContent || '');
     rep.check(`${name} B1 写前给差异`, /新建一本书|New book/.test(diff) && /只写这一本书|Only this book/.test(diff), diff.slice(0, 160));
     await vf.evaluate(() => document.querySelector('#thWb').scrollIntoView()); await B.shot(p, OUT, `${name}_wb_diff`);
+    // 自检红线上的「一键写入世界书」按钮：这时书还没建，自检应该报 worldbook:warn 并带这个按钮；点它要跳回「数据与映射」并打开看差异（用户 2026-09-28 UI 小修）
+    await p.evaluate(() => window.EdenMap.selfcheck()); await B.wait(300);
+    await vf.evaluate(() => { TCSettings.open('update'); }); await B.wait(500);
+    const sc0 = await vf.evaluate(() => ({ warn: !!document.querySelector('#selfCheck li.warn'), go: !!document.querySelector('#scWbGo'), fb: document.querySelectorAll('.fb-open').length }));
+    rep.check(`${name} 自检红线带「一键写入世界书」按钮；反馈按钮只有一个`, sc0.warn && sc0.go && sc0.fb === 1, JSON.stringify(sc0));
+    await vf.evaluate(() => document.querySelector('#scWbGo').click()); await B.wait(500);
+    const back = await vf.evaluate(() => ({ page: TCSettings.page, wb: !!document.querySelector('#thWb .thdiff') }));
+    rep.check(`${name} 点「一键写入世界书」跳到数据与映射并打开看差异`, back.page === 'data' && back.wb, JSON.stringify(back));
     await vf.evaluate(() => document.querySelector('#wbGo').click()); await B.wait(300);
     const before = await p.evaluate(() => window.__th.writes.length);
     rep.check(`${name} B1 第一次点只是「再点一次确认」`, before === 0, String(before));
+    // 默认绑定选项现在优先「当前角色」；这里手动选「全局」，跟原来的断言对齐（char 需要 rebindCharWorldbooks，这个宿主桩没有提供）——第一次点会重绘一次，选择要放在重绘之后
+    await vf.evaluate(() => { const r = document.querySelector('input[name="wbWhere"][value="global"]'); if (r) r.checked = true; });
     await vf.evaluate(() => document.querySelector('#wbGo').click()); await B.wait(2000);
     const w = await p.evaluate(() => ({ writes: window.__th.writes, global: window.__th.global, books: Object.keys(window.__th.books), n: (window.__th.books['伊甸地图·世界书附加条目'] || []).length, other: window.__th.books['卡自带世界书'] }));
     rep.check(`${name} B1 只写「伊甸地图·世界书附加条目」并绑定全局；卡自带书不动`, w.writes.every(x => x === '伊甸地图·世界书附加条目' || x === '*global') && w.global.includes('伊甸地图·世界书附加条目') && w.n > 4 && w.other[0].content === '原作', JSON.stringify({ writes: w.writes, global: w.global, n: w.n }));
-    // 自动同步：勾选先弹同意框，同意后才记下
-    await vf.evaluate(() => { const c = document.querySelector('#wbAuto'); c.checked = true; c.dispatchEvent(new Event('change')); }); await B.wait(300);
-    const dlg = await vf.evaluate(() => !!document.querySelector('#thWb .thconsent')); const pre = await p.evaluate(() => localStorage.getItem('edenMapWbAuto'));
-    await vf.evaluate(() => document.querySelector('#wbYes').click()); await B.wait(800);
+    // 撤销 / 改绑定：一栏应该在书存在时出现（不测真的删，只测按钮在，且要点两次才生效——同一套二次确认规矩）
+    const hasUndo = await vf.evaluate(() => !!document.querySelector('#wbUndo'));
+    rep.check(`${name} 撤销按钮存在（书已建好）`, hasUndo, String(hasUndo));
+    // 自动同步：直接切换开关（不再要求先同意一个弹框；真正的写入 / 建书永远要走上面「看差异 → 二次确认」）
+    await vf.evaluate(() => { const c = document.querySelector('#wbAuto'); c.checked = true; c.dispatchEvent(new Event('change')); }); await B.wait(400);
     const post = await p.evaluate(() => ({ ls: localStorage.getItem('edenMapWbAuto'), sv: window.__th.script.eden_prefs?.edenMapWbAuto }));
-    rep.check(`${name} 自动同步：先同意，再开启（本机 + 脚本变量）`, dlg && pre !== '1' && post.ls === '1' && post.sv === '1', JSON.stringify({ dlg, pre, post }));
+    rep.check(`${name} 自动同步：直接开启（本机 + 脚本变量），不再弹确认框`, post.ls === '1' && post.sv === '1', JSON.stringify({ post }));
     // 类宏开关
     await vf.evaluate(() => { const c = document.querySelector('#thMacro'); c.checked = true; c.dispatchEvent(new Event('change')); }); await B.wait(600);
     const mac = await p.evaluate(() => { const f = window.__th.macros['\\{\\{eden_here\\}\\}']; return f ? f({}, '{{eden_here}}') : null; });
