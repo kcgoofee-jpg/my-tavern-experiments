@@ -9,6 +9,7 @@ import { untrackAll } from './markers.mjs';
 import { estPlan, hereRes } from './locate.mjs';
 import { q3Pref, showSet } from './settings.mjs';
 import * as TCCvd from './cvd.mjs';
+import { chatId } from './extapi.mjs';
 // ---------------- 庄园剖面（kind=estate） ----------------
 // 嵌入接口（换版时保持）：maps.json 的 src 指向页面（相对 map/）。这里 fetch 页面文本、在 <head> 后插入 <base href="页面所在目录">、
 // 用 blob: iframe 显示（见 openEstate 里的说明；查看器本身是 srcdoc + <base> 加载的；jsDelivr 的 gh 线路把 .html 当纯文本返回，不能直接 iframe src）。
@@ -119,6 +120,7 @@ export function estateLook() {
   w.postMessage({ type: 'estate:cvd', mode: TCCvd.mode() }, SUB_ORIGIN);   // 色觉模式（E7）：庄园 / 三维页换配色，不重载
   let fps = false; try { fps = window.TCStore?.get('edenMapFps') === '1'; } catch (e) {}
   w.postMessage({ type: 'estate:fps', on: fps }, SUB_ORIGIN);   // 调试：显示帧率——庄园页 / props 查看器各自画在自己的画布角上
+  w.postMessage({ type: 'estate:chat', id: chatId || '' }, SUB_ORIGIN);   // 房间图集「按聊天」作用域用：庄园页读不到 SillyTavern 上下文，靠这条消息拿 chatId
 }
 export let estFocus = null;   // v0.9.5：「自定义」里点了某个房间 / 室外区域 → 庄园聚焦它（优先于当前地点，地点变了就清掉）
 export function estateRoom() { if (!est?.ready) return; const v = ($('#here').value || '').replace('{{user}}', ''), r = hereRes(v);
