@@ -21,6 +21,8 @@ python3 tools/cors_server.py 8123 map
 python3 tools/check_pack.py harbor
 
 # 4 发给酒馆：先提交并推送到公开 GitHub 仓库（脚本从 jsDelivr 按提交号取核心与包）
+#   没有本仓库的推送权限：先 fork，清单里写 cdn.repo = 你的 fork，推到 fork
+#   推送后 jsDelivr 通常几十秒内能取到这个提交；先在浏览器打开 https://cdn.jsdelivr.net/gh/<repo>@<提交号>/map/packs/<id>/manifest.json 确认
 git add map/packs/harbor && git commit -m "包 harbor" && git push
 python3 tools/build_preview_script.py $(git rev-parse --short HEAD) --pack harbor   # 产出酒馆助手脚本 JSON
 python3 tools/build_worldbook_addon.py --pack harbor                                 # 产出世界书附加条目 JSON
@@ -28,7 +30,8 @@ python3 tools/build_worldbook_addon.py --pack harbor                            
 
 - 用自己的 fork：清单里写 `"cdn": { "repo": "<你>/<仓库>" }`，再用 fork 上的提交号生成（jsDelivr 的 `gh/<repo>@<提交号>` 线路）。
 - 草稿里的「未分层」要先手动挪进真正的层；层名是中文时地图 id 是 `<id>_l1`、`<id>_l2`，想要可读 id 就在草稿每层写 `"id"`。改地图 id 要同时改 maps.json、`<地图 id>.json` 文件名、底图、events.json 的 `layers[].map`。
-- 地点坐标先是随机的：打开查看器，在控制台用 `viewer.viewport.pointFromPixel` 取点，或直接改 `<地图 id>.json` 的 nx / ny 后刷新。
+- 地点坐标先是随机的。取点：打开查看器，在浏览器控制台粘贴下面这行，之后点地图就会打印 nx / ny，填进 `<地图 id>.json` 再刷新：
+  `viewer.addHandler('canvas-click', e => { const p = viewer.viewport.pointFromPixel(e.position), b = viewer.world.getItemAt(0).getBounds(); console.log(((p.x - b.x) / b.width).toFixed(4), ((p.y - b.y) / b.height).toFixed(4)); })`
 
 ## 包的目录
 
