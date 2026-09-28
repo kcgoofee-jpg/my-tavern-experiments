@@ -50,6 +50,8 @@ BUDGET = {
     # outpost（防卫军前沿哨所；walls_ext / site_ground / props_gate / props_lights / props_vehicles 共用上面的预算）
     'props_tower': (8000, 1024), 'props_perimeter': (40000, 2048), 'props_barricade': (30000, 2048),
     'props_utility': (8000, 1024), 'props_breach': (20000, 2048),
+    # prison（下层监狱外观；walls_ext / site_ground / props_wall / props_lights / props_vehicles 共用上面的预算）
+    'props_blocks': (40000, 2048), 'props_towers': (10000, 1024), 'props_yard': (25000, 1024),
 }
 
 
