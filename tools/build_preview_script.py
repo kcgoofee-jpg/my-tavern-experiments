@@ -84,7 +84,7 @@ LOADER = r"""// 伊甸地图正式版加载器（0.9.6 起）：每次加载取�
   const key = t => { const m = RE.exec(String(t || '')); if (!m) return null; const p = m[2].split('.').map(Number); while (p.length < 4) p.push(0); return [+(m[1] || 1), ...p]; };
   const cmp = (a, b) => { const x = key(a), y = key(b); for (let i = 0; i < 5; i++) if (x[i] !== y[i]) return x[i] > y[i] ? 1 : -1; return 0; };
   const get = async u => { const c = new AbortController(), to = setTimeout(() => c.abort(), 4000);
-    try { const r = await fetch(u, { cache: 'no-store', credentials: 'omit', signal: c.signal }); return r.ok ? await r.json() : null; } catch (e) { return null; } finally { clearTimeout(to); } };
+    try { const r = await fetch(u, { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', signal: c.signal }); return r.ok ? await r.json() : null; } catch (e) { return null; } finally { clearTimeout(to); } };
   const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; };
   let tag = key(ls('edenMapLockTag')) ? ls('edenMapLockTag') : null, locked = !!tag;
   if (!tag) {

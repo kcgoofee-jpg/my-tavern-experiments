@@ -26,9 +26,16 @@ export const KEYS = {
   // 宿主（tavern/eden-map.js）
   edenMapLine: { owner: 'host', prefix: true }, edenMapFabPos: { owner: 'host' }, edenMapEvTip: { owner: 'host' }, edenMapUpdSkip: { owner: 'host' },
   edenMapCheckToast: { owner: 'host' }, edenMapUpdate: { owner: 'host' }, edenMapSplashSeen: { owner: 'tavern/splash.mjs' },
+  // 酒馆助手采纳（docs/tavernhelper-audit.md，docs/interaction-modes.md）：状态注入 (a)、类宏 B9、世界书附加条目同步 B1
+  edenMapStateInj: { owner: 'host', def: '1' }, edenMapStateDepth: { owner: 'host', def: '2' }, edenMapStateBudget: { owner: 'host', def: '150' }, edenMapMacros: { owner: 'host', def: '0' },
+  edenMapWbAuto: { owner: 'host', def: '0' }, edenMapWbSync: { owner: 'host' }, edenMapWbWhere: { owner: 'host' },
   // 三维
   edenEstateLabels: { owner: 'estate', legacy: true }, edenMap3dRailW: { owner: 'ui/chrome3d.js' },
 };
+// 地基 A4：这些偏好的真相在酒馆助手脚本变量（type:'script'，变量名 eden_prefs）：读脚本变量优先、本机回退，本版两边都写（下一版再去掉本机这份）。
+// 宿主 tavern/eden-map.js PREF_KEYS 是同一份（tests/storage.test.mjs 对照）；查看器仍读写本机，宿主在启动时把脚本变量写回本机、本机一变就同步回脚本变量。
+export const SCRIPT_KEYS = ['edenMapLine', 'edenMapHand', 'edenMapLang', 'edenMapTheme', 'edenMapFabPos', 'edenMapStateInj', 'edenMapStateDepth', 'edenMapStateBudget', 'edenMapMacros', 'edenMapWbAuto', 'edenMapWbSync', 'edenMapWbWhere'];
+export const SCRIPT_VAR = 'eden_prefs';
 /** 键是否登记（前缀键按前缀匹配；edenMapLine 覆盖 edenMapLineManual / edenMapLineAt） */
 export function known(k) {
   if (Object.hasOwn(KEYS, k)) return true;

@@ -6,6 +6,8 @@
 // v0.9.3 MVU 联动（mvu.mjs）：只读 stat_data（世界时间、主角着装、在场人物）；自定义名称与用途存在聊天变量顶层键 eden_map（不进 stat_data，见 docs/content-compat.md）。
 (() => {
   const SELF = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
+  // 地基 A1（docs/tavernhelper-audit.md §6）：所有外部请求走这一个包装——不带凭据、不带 Referer；与 tavern/th.mjs cdnFetch 同一规则（tests/cdnfetch.test.mjs 对照、并禁止裸 fetch）
+  const cdnFetch = (u, o = {}) => fetch(u, { ...o, credentials: 'omit', referrerPolicy: 'no-referrer' });
   // 设定包（通用化，core/pack.mjs）：tools/build_preview_script.py --pack <id> 生成的脚本在导入前写 window.__tcPack = { id, manifest, events }（解析好的清单与事件分类，同步可用）。
   // 没有 = 内置 eden：存储键、聊天变量、世界书名、事件分类都和以前一样（老用户的数据原样可读）。NS / LS 与 core/pack.mjs nsKey / nsStore 同一规则（tests/pack.test.mjs 对照）。
   const PACK_IN = (() => { const p = window.__tcPack; return p && typeof p === 'object' && /^[a-z][a-z0-9_-]{1,31}$/.test(p.id || '') && p.id !== 'eden' ? p : null; })();
@@ -48,13 +50,34 @@
   // 自检用（E6）：旧版脚本（v0.6.1）用同一个 id 但没有清理钩子；本页加载过哪些地图脚本地址；是不是「更新到新版本」切过来的
   const oldStyle = !!pdoc.getElementById('eden-map-root') && !window.parent.__edenMapCleanup;
   const switchedFrom = window.parent.__edenMapSwitch || null;
-  try { (window.parent.__edenMapLoads ||= []).push(SELF); } catch (e) {}
+  // 地基 A3：多实例身份用 getScriptId()（同一脚本换版本 / 重载 id 不变，不再误报「另一个地图脚本」）；没有这个接口时退回脚本地址。登记在 __edenMapIds { 身份: 地址 }
+  const thFn = n => { try { const g = window[n] ?? globalThis[n]; if (typeof g === 'function') return g; const t = window.TavernHelper; return typeof t?.[n] === 'function' ? t[n].bind(t) : null; } catch (e) { return null; } };
+  const OWNER = (() => { try { const id = thFn('getScriptId')?.(); if (typeof id === 'string' && id) return 's:' + id; } catch (e) {} return 'u:' + SELF; })();
+  try { (window.parent.__edenMapIds ||= {})[OWNER] = SELF; } catch (e) {}
+  // 地基 A4：偏好存脚本变量（type:'script'，随酒馆设置同步；iPhone / TauriTavern 清浏览器存储不丢）。读：脚本变量优先，本机回退；写：两边都写（本版双写，下一版再去本机）。
+  // 查看器与本机同源读 localStorage，所以启动时先把脚本变量里的值写回本机；只在本机有的补进脚本变量。键表登记在 core/storage.mjs SCRIPT_KEYS（同一份，tests/storage.test.mjs 对照）
+  const PREF_KEYS = ['edenMapLine', 'edenMapHand', 'edenMapLang', 'edenMapTheme', 'edenMapFabPos', 'edenMapStateInj', 'edenMapStateDepth', 'edenMapStateBudget', 'edenMapMacros', 'edenMapWbAuto', 'edenMapWbSync', 'edenMapWbWhere'];
+  let prefObj = null;
+  const lsRaw = () => { try { return (LS || localStorage); } catch (e) { return null; } };
+  try { const gv = thFn('getVariables'); if (gv) { const v = gv({ type: 'script' })?.eden_prefs; prefObj = v && typeof v === 'object' && !Array.isArray(v) ? { ...v } : {}; let add = false;
+    for (const k of PREF_KEYS) { const l = lsRaw()?.getItem(k) ?? null; if (prefObj[k] != null) { if (String(prefObj[k]) !== l) lsRaw()?.setItem(k, String(prefObj[k])); } else if (l != null) { prefObj[k] = l; add = true; } }
+    if (add) thFn('insertOrAssignVariables')?.({ eden_prefs: prefObj }, { type: 'script' }); } } catch (e) { prefObj = null; }
+  { const pl = prefObj?.edenMapLine; if (pl && pl !== line && LINES.some(l => l.key === pl)) { line = pl; BASE = baseFor(line); } }   // 线路在上面已按本机读过：脚本变量优先
+  // 本机值变了（宿主自己写、或查看器同源写）→ 有差异才写脚本变量
+  let prefT = 0;
+  const prefSync = () => { clearTimeout(prefT); prefT = setTimeout(() => { if (!prefObj) return; let ch = false; const nx = { ...prefObj };
+    for (const k of PREF_KEYS) { let l = null; try { l = lsRaw()?.getItem(k) ?? null; } catch (e) {} if (l == null) { if (k in nx) { delete nx[k]; ch = true; } } else if (String(nx[k]) !== l) { nx[k] = l; ch = true; } }
+    if (!ch) return; prefObj = nx; try { const u = thFn('updateVariablesWith'); if (u) u(v => { v.eden_prefs = nx; return v; }, { type: 'script' }); else thFn('insertOrAssignVariables')?.({ eden_prefs: nx }, { type: 'script' }); } catch (e) {} }, 300); };
+  const onStorage = e => { if (!e.key || PREF_KEYS.some(k => e.key === k || e.key.endsWith('.' + k.slice(7)))) prefSync(); };
+  window.addEventListener('storage', onStorage);
   // 幂等：脚本被重复注入（换卡、热重载）时先清掉上一份的元素和全部监听，只留一个悬浮按钮、一套监听
   try { window.parent.__edenMapCleanup?.(); } catch (e) {}
   pdoc.getElementById(ID)?.remove();
+  // 地基 A2：父页面上的节点都打 data-eden-owner；启动时清掉不属于本实例的（子 iframe 被异常移除、pagehide 没派发时留下的孤儿）
+  try { for (const el of [...pdoc.querySelectorAll('[data-eden-owner]')]) if (el.getAttribute('data-eden-owner') !== OWNER || el.id === ID) el.remove(); } catch (e) {}
 
   const root = pdoc.createElement('div');
-  root.id = ID;
+  root.id = ID; root.setAttribute('data-eden-owner', OWNER);
   root.innerHTML = `
 <style>
   /* 设计令牌（map/ui/tokens.css 的同名值；宿主页里不另发请求，所以内联一份）：唯一的金 #e6c36a、唯一的红 #ff5a5a；面板跟随地图的深 / 浅主题（E5） */
@@ -229,7 +252,7 @@
       const b = pdoc.createElement('button'); b.innerHTML = `<b>${l.name}</b><small>${l.sub}</small><span class="ms">测速中…</span>`;
       b.onclick = () => chooseLine(l.key); row.appendChild(b);
       const ms = b.querySelector('.ms'), t0 = performance.now(), ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
-      fetch(baseFor(l.key) + 'data/maps.json', { cache: 'no-store', signal: ctl.signal })
+      cdnFetch(baseFor(l.key) + 'data/maps.json', { cache: 'no-store', signal: ctl.signal })
         .then(r => { if (!r.ok) throw 0; const t = (performance.now() - t0) / 1000; ms.textContent = `延迟 ${t.toFixed(1)} 秒`; ms.className = 'ms ' + (t < 3 ? 'ok' : '');
           // 先测完的就是更快的线路：标「推荐」
           if (!row.querySelector('.rec')) ms.insertAdjacentHTML('beforeend', ' · <b class="rec">推荐</b>'); })
@@ -238,7 +261,7 @@
     pickEl.hidden = false; loadEl.hidden = true;
   }
   function chooseLine(key) {
-    const changed = key !== line; line = key; try { (LS || localStorage).setItem(LINE_KEY, key); (LS || localStorage).setItem(LINE_KEY + 'Manual', '1'); } catch (e) {}
+    const changed = key !== line; line = key; try { (LS || localStorage).setItem(LINE_KEY, key); (LS || localStorage).setItem(LINE_KEY + 'Manual', '1'); } catch (e) {} prefSync();
     showLine(); pickEl.hidden = true;
     if (changed) { BASE = baseFor(key); html = null; unloadViewer(); }
     loadViewer();
@@ -250,7 +273,7 @@
   const LINE_TTL = 24 * 3600e3, LINE_AT = LINE_KEY + 'At';
   function probe(key, ctl) {
     const to = setTimeout(() => ctl.abort(), 6000);
-    return fetch(baseFor(key) + 'data/build.json?probe=' + Date.now(), { cache: 'no-store', signal: ctl.signal })
+    return cdnFetch(baseFor(key) + 'data/build.json?probe=' + Date.now(), { cache: 'no-store', signal: ctl.signal })
       .then(r => { if (!r.ok) throw 0; return key; }).finally(() => clearTimeout(to));
   }
   async function autoLine(force = false) {
@@ -262,7 +285,7 @@
     const key = await Promise.any(LINES.map((l, i) => probe(l.key, ctls[i]).then(k => { ctls.forEach((c, j) => { if (j !== i) c.abort(); }); return k; }))).catch(() => null);
     if (!key) return false;
     try { (LS || localStorage).setItem(LINE_AT, String(Date.now())); } catch (e) {}
-    if (key !== line) { line = key; BASE = baseFor(key); html = null; try { (LS || localStorage).setItem(LINE_KEY, key); } catch (e) {} showLine(); }
+    if (key !== line) { line = key; BASE = baseFor(key); html = null; try { (LS || localStorage).setItem(LINE_KEY, key); } catch (e) {} prefSync(); showLine(); }
     return true;
   }
   // 预加载：在看不见的面板里把地图程序、数据和首屏瓦片加载一遍（进浏览器缓存），然后休眠释放内存。点按钮时基本秒开
@@ -279,7 +302,7 @@
     if (!panel.hidden || alive) { fab.classList.remove('prep'); preDone(); return; }   // 测速期间用户已经点开了
     if (lean()) {
       htmlProg = f => fab.style.setProperty('--p', Math.round(f * 80));
-      try { await fetchHtml(); await Promise.all(['data/maps.json', 'data/world_markers.json', 'data/derived.json'].map(u => fetch(BASE + u).catch(() => null)));
+      try { await fetchHtml(); await Promise.all(['data/maps.json', 'data/world_markers.json', 'data/derived.json'].map(u => cdnFetch(BASE + u).catch(() => null)));
         fab.classList.remove('prep'); fab.title = '世界地图'; }
       catch (e) { fab.classList.remove('prep'); fab.classList.add('fail'); fab.title = '地图预加载失败，点开重试'; }
       finally { htmlProg = null; preDone(); }
@@ -324,7 +347,7 @@
   // 页面 HTML 只取一次；脚本加载后空闲时预取，第一次打开少等一个请求
   let htmlProg = null;   // 当前这次打开的进度回调（预取和打开共用一个请求）
   const fetchHtml = () => html ??= (async () => {
-    const r = await fetch(BASE + 'viewer.html'); if (!r.ok) throw new Error(r.status);
+    const r = await cdnFetch(BASE + 'viewer.html'); if (!r.ok) throw new Error(r.status);
     const total = +r.headers.get('content-length') || 0; let t;
     if (r.body && total) {   // 按已收字节算进度
       const rd = r.body.getReader(), parts = []; let n = 0;
@@ -333,7 +356,11 @@
     } else t = await r.text();
     return t.replace('<head>', `<head><base href="${BASE}">` + (PACK_IN ? `<script>window.__tcPack=${JSON.stringify(PACK_IN).replace(/</g, '\\u003c')}</script>` : ''));
   })().catch(e => { html = null; throw e; });
-  if (line || !swappable) (window.parent.requestIdleCallback || (f => setTimeout(f, 2000)))(() => fetchHtml().catch(() => {}));
+  // 地基 A5：空闲预取在生成期间暂停（聊天首屏与流式输出优先），GENERATION_ENDED / STOPPED 后再补做
+  const idleQ = [];
+  const afterGen = f => { if (typeof GEN !== 'undefined' && GEN.generating) idleQ.push(f); else f(); };
+  const flushIdle = () => { for (const f of idleQ.splice(0)) { try { if (!dead) f(); } catch (e) {} } };
+  if (line || !swappable) (window.parent.requestIdleCallback || (f => setTimeout(f, 2000)))(() => afterGen(() => fetchHtml().catch(() => {})));
   // 打开：休眠中的地图直接唤醒；否则创建。关闭：先休眠（地图关掉底图、释放瓦片内存，脚本和数据留着），超时再销毁
   async function loadViewer() {
     clearTimeout(killT); if (typeof recomputeSoon === 'function') { recomputeSoon(0); pushSoon(0); }
@@ -372,7 +399,7 @@
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
     if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
     if (e.data?.type === 'eden-map:state') {
-      if (e.data.lang && e.data.lang !== UL && UI[e.data.lang]) { UL = e.data.lang; try { (LS || localStorage).setItem('edenMapLang', UL); } catch (x) {} showLine(); push(); }   // 地图里切了语言：标题栏跟着换并记下（两边只有一个设置）
+      if (e.data.lang && e.data.lang !== UL && UI[e.data.lang]) { UL = e.data.lang; try { (LS || localStorage).setItem('edenMapLang', UL); } catch (x) {} prefSync(); showLine(); push(); }   // 地图里切了语言：标题栏跟着换并记下（两边只有一个设置）
       if (e.data.theme) hostTheme(e.data.theme);
       if (e.data.hand && e.data.hand !== handPref) { handPref = e.data.hand; applyHand(true); }
       mapTitle = e.data.title || ''; showTitle(); }
@@ -436,7 +463,7 @@
   const refOf = () => (SELF.match(/@([^/]+)\/map\/$/) || [])[1] || '';
   const channel = () => SCRIPT.channel || (VER ? 'tag' : swappable ? 'ref' : 'local');
   let aboutBuild = null;
-  const buildNow = () => aboutBuild ??= fetch(BASE + 'data/build.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
+  const buildNow = () => aboutBuild ??= cdnFetch(BASE + 'data/build.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
   async function sendAbout() { const b = await buildNow(), l = LINES.find(x => x.key === line);
     post({ type: 'eden-map:about', version: b?.version || SCRIPT.version || VER || null, code: b?.code || SCRIPT.code || null, channel: channel(),
       ref: SCRIPT.ref || (VER ? tagOf(VER) : refOf()), sha: SCRIPT.sha || null, build: Number.isInteger(SCRIPT.build) ? SCRIPT.build : null, source: SCRIPT.source || null, locked: !!SCRIPT.locked, line: l ? (UL === 'en' && l.name_en) || l.name : '' }); }
@@ -449,10 +476,10 @@
     try {
       SC ??= await import(SELF + 'tavern/selfcheck.mjs');
       const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 10000);
-      const j = await fetch(SC.UPDATE_API(REPO) + '?t=' + Date.now(), { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', signal: ctl.signal }).then(r => r.ok ? r.json() : null).finally(() => clearTimeout(to));
+      const j = await cdnFetch(SC.UPDATE_API(REPO) + '?t=' + Date.now(), { cache: 'no-store', signal: ctl.signal }).then(r => r.ok ? r.json() : null).finally(() => clearTimeout(to));
       const latest = SC.latestTag(j); if (!latest) return { status: 'fail' };
       const host = (LINES.find(x => x.key === line) || LINES[0]).host || 'cdn.jsdelivr.net';
-      const lb = await fetch(`https://${host}/gh/${REPO}@${SC.tagOf(latest)}/map/data/build.json?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
+      const lb = await cdnFetch(`https://${host}/gh/${REPO}@${SC.tagOf(latest)}/map/data/build.json?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
       const cur = SC.buildVer(await buildNow()) || SCRIPT.version || VER;
       return { ...SC.updateVerdict(cur, latest, channel()), code: lb?.code || null, min: lb?.min_version || null, reason: lb?.force_reason || '', notes: `https://github.com/${REPO}/blob/${SC.tagOf(latest)}/CHANGELOG.md` };
     } catch (e) { return { status: 'fail' }; }
@@ -802,7 +829,7 @@
     wbState = bound ? 'bound' : 'unbound'; sendCustom(); return true;
   }
   // 标签用到的「类」：人物栏里的名字 → 人物；庄园房间 / 区域（maps.json）→ 房间 / 区域；其余当地标
-  const reg = () => (regP ??= fetch(BASE + 'data/maps.json').then(r => r.ok ? r.json() : null).catch(() => null));
+  const reg = () => (regP ??= cdnFetch(BASE + 'data/maps.json').then(r => r.ok ? r.json() : null).catch(() => null));
   let regNow = null; reg().then(r => { regNow = r; });
   // 注：reg() 用的是当前线路的 maps.json（与地图同一份）；取不到时一律当地标
   function kindOf(key) {
@@ -922,7 +949,7 @@
     if (SC.dueCheck(c?.at, Date.now())) {
       let latest = c?.latest || null;
       try { const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 8000);
-        const r = await fetch(SC.UPDATE_API(REPO), { credentials: 'omit', referrerPolicy: 'no-referrer', signal: ctl.signal }).finally(() => clearTimeout(to));
+        const r = await cdnFetch(SC.UPDATE_API(REPO), { signal: ctl.signal }).finally(() => clearTimeout(to));
         if (r.ok) latest = SC.latestTag(await r.json()) || latest; } catch (e) {}
       c = { at: Date.now(), latest }; lsSet(UPD_KEY, JSON.stringify(c));
     }
@@ -938,7 +965,7 @@
         mvu = { stat: !!st && typeof st === 'object', path: hp, here: !!st && SC.getPath(st, hp) !== undefined, candidates: st ? SC.findPaths(st).filter(p => p !== hp) : [],
           fields: st && MV ? { present: !!MV.presentList(st, varMap.present), clock: !!MV.worldTime(st, varMap).time, outfit: MV.get(st, varMap.outfit || '主角.着装') !== undefined } : null }; } } catch (e) { mvu = { stat: false }; }
       const varmode = varAD ? varAD.mode(typeof Mvu !== 'undefined' && !!Mvu?.getMvuData, mvuStat(), varMap) : null;
-      const loads = [...new Set((window.parent.__edenMapLoads || []).filter(u => u !== SELF && u !== switchedFrom))];
+      const loads = [...new Set(Object.entries(window.parent.__edenMapIds || {}).filter(([k, u]) => k !== OWNER && u !== switchedFrom).map(([, u]) => u))];   // A3：按脚本身份，不按地址
       const ln = { swappable, name: (LINES.find(l => l.key === line) || {}).name || '',
         ok: !swappable ? null : lineP ? await lineP.then(ok => ok && fetchHtml().then(() => true, () => false), () => false) : html ? await html.then(() => true, () => false) : null };
       checkFacts = {
@@ -965,7 +992,7 @@
   const splashDue = () => { try { return (LS || localStorage).getItem('edenMapSplashSeen') !== String(VER || 'dev'); } catch (e) { return false; } };
   async function showSplash() {
     SPm ??= await import(SELF + 'tavern/splash.mjs').catch(() => null); if (!SPm) return false;
-    const lite = lean(), get = f => fetch(BASE + f, { cache: 'force-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
+    const lite = lean(), get = f => cdnFetch(BASE + f, { cache: 'force-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
     const bi = await buildNow();
     splash = SPm.openSplash({ root, id: ID, pdoc, ver: VER, en: UL === 'en', about: { version: bi?.version || SCRIPT.version || VER, code: bi?.code || SCRIPT.code, channel: channel(), ref: SCRIPT.ref || refOf() }, store: localStorage, cap: window.parent.__edenSplashCap || 25,
       checks: () => runCheck().then(() => checkItems),
@@ -1023,7 +1050,7 @@
   // 2026-09-28：没梯子时 GitHub 接口不通 → 改用 tavern/follow.mjs（分支 head.json：jsdmirror / jsDelivr / raw 取构建号最大的，最后才 GitHub），和加载器同一套
   let FW = null;
   const fwGet = async u => { const c = new AbortController(), to = setTimeout(() => c.abort(), 5000);
-    try { const r = await fetch(u, { cache: 'no-store', credentials: 'omit', signal: c.signal }); return r.ok ? await r.json() : null; } catch (e) { return null; } finally { clearTimeout(to); } };
+    try { const r = await cdnFetch(u, { cache: 'no-store', signal: c.signal }); return r.ok ? await r.json() : null; } catch (e) { return null; } finally { clearTimeout(to); } };
   async function followHead() {
     FW ??= await import(SELF + 'tavern/follow.mjs').catch(() => null); if (!FW || !SCRIPT.ref) return null;
     return FW.resolveFollow(REPO, SCRIPT.ref, fwGet, null).catch(() => null);
@@ -1109,7 +1136,7 @@
       placeFab((last.clientX - drag.dx) / (vw - 48), (last.clientY - drag.dy) / (vh - 48)); }); });
   fab.addEventListener('pointerup', e => { if (!drag) return; drag = null;
     if (dragged) { const r = fab.getBoundingClientRect(), vw = window.parent.innerWidth, vh = window.parent.innerHeight;
-      const p = placeFab(r.left / (vw - 48), r.top / (vh - 48)); try { (LS || localStorage).setItem(POS_KEY, JSON.stringify(p)); } catch (err) {} } });
+      const p = placeFab(r.left / (vw - 48), r.top / (vh - 48)); try { (LS || localStorage).setItem(POS_KEY, JSON.stringify(p)); } catch (err) {} prefSync(); } });
 
   // 单手（E7）：惯用手在地图设置里改（同源 localStorage；改了地图发 eden-map:state {hand}）
   // 惯用手选了左 / 右：悬浮按钮挪到那一侧（高度不变）并记住；自动 = 不动它（地图反过来按它在哪一半判断左右手）
@@ -1119,7 +1146,7 @@
   const applyHand = move => {
     if (move && (handPref === 'left' || handPref === 'right')) {
       const r = fab.getBoundingClientRect(), vh = window.parent.innerHeight, y = vh > 48 ? r.top / (vh - 48) : .85;
-      const p = placeFab(handPref === 'left' ? .03 : .97, y); try { (LS || localStorage).setItem(POS_KEY, JSON.stringify(p)); } catch (e) {}
+      const p = placeFab(handPref === 'left' ? .03 : .97, y); try { (LS || localStorage).setItem(POS_KEY, JSON.stringify(p)); } catch (e) {} prefSync();
     }
     panel.classList.toggle('em-left', handPref === 'left' || (handPref === 'auto' && fabLeft())); if (typeof sendBar === 'function' && alive) sendBar();
   };
@@ -1127,7 +1154,7 @@
     if (!saved && handPref === 'left') placeFab(.03, Math.max(0, (window.parent.innerHeight - 144) / Math.max(1, window.parent.innerHeight - 48))); }   // 没拖过：左手默认放左下
   applyHand(false);
   fab.addEventListener('pointerup', () => { if (dragged && handPref === 'auto') applyHand(false); });
-  const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; sleepViewer(); if (toastWait && SC) setTimeout(toastOnce, 400); if (updWait) setTimeout(showUpdPrompt, 600); };
+  const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; sleepViewer(); prefSync(); if (toastWait && SC) setTimeout(toastOnce, 400); if (updWait) setTimeout(showUpdPrompt, 600); };
   fab.addEventListener('click', async () => { if (dragged) return;
     if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); sent = null; charsSent = null; push(); sendEvents(); return; }   // 预加载中被点开：直接显示，重新推一次地点（这次可以进庄园）
     fab.classList.remove('fail'); NT?.remove('newev');   // 提示不留在面板后面（v0.9.2）
@@ -1153,20 +1180,22 @@
     // 生成前同步一次，注入的是最新态势（A-3：只做注入需要的部分；输入没变直接跳过；标签改名 / 行程推到空闲）
     // v0.9.9：生成状态（pending 指示）+ swipe 删除 + 切回前台（被系统挂起 / 断网恢复后事件可能丢了）→ 从聊天记录与楼层变量重新推导
     if (tavern_events.GENERATION_STARTED) listen(tavern_events.GENERATION_STARTED, (t, o, dry) => { if (!dry) { GEN.since = Date.now(); pushSoon(0); } });
-    for (const k of ['GENERATION_ENDED', 'GENERATION_STOPPED']) if (tavern_events[k]) listen(tavern_events[k], () => { GEN.since = 0; recomputeSoon(); pushSoon(300); });
+    for (const k of ['GENERATION_ENDED', 'GENERATION_STOPPED']) if (tavern_events[k]) listen(tavern_events[k], () => { GEN.since = 0; setTimeout(flushIdle, 800); recomputeSoon(); pushSoon(300); });
     if (tavern_events.MESSAGE_SWIPE_DELETED) listen(tavern_events.MESSAGE_SWIPE_DELETED, () => { recomputeSoon(); pushSoon(300); });
     { const wake = () => { if (pdoc.visibilityState !== 'hidden' && !dead) { statSig = ''; recomputeSoon(0); pushSoon(0); } }; pdoc.addEventListener('visibilitychange', wake); window.parent.addEventListener('pageshow', wake); window.parent.addEventListener('online', wake);
       offs.push([null, null, () => { pdoc.removeEventListener('visibilitychange', wake); window.parent.removeEventListener('pageshow', wake); window.parent.removeEventListener('online', wake); }]); }
     if (tavern_events.GENERATION_AFTER_COMMANDS) listen(tavern_events.GENERATION_AFTER_COMMANDS, () => { clearTimeout(evT); recompute(true); });
     push(); loadSeen(); recompute();
-    (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => { if (dead) return; preload().catch(() => {}); try { budgetSweep(); } catch (e) {} setTimeout(() => { if (!dead) autoCheck().catch(() => {}); }, window.parent.__edenAutoCheckDelay ?? 6000); if (splashDue()) { lsSet('edenMapSplashSeen', String(VER || 'dev')); runCheck(); } else setTimeout(runCheck, 4000); });   // 打开聊天后空闲时：测速选线 + 预加载；稍后自检一次
+    (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => { if (dead) return; afterGen(() => preload().catch(() => {})); try { budgetSweep(); } catch (e) {} setTimeout(() => { if (!dead) autoCheck().catch(() => {}); }, window.parent.__edenAutoCheckDelay ?? 6000); if (splashDue()) { lsSet('edenMapSplashSeen', String(VER || 'dev')); runCheck(); } else setTimeout(runCheck, 4000); });   // 打开聊天后空闲时：测速选线 + 预加载；稍后自检一次
   })();
 
   // 脚本被关闭或重载时清理注入的元素
-  const cleanup = () => { if (dead) return; dead = true; unlisten(); clearInterval(pollT); clearInterval(updT); cgObs.disconnect(); acuObs.disconnect(); try { dbApiRef?.unregisterTableUpdateCallback?.(dbCb); } catch (e) {} clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); clearTimeout(restT); clearTimeout(ghostT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
+  const cleanup = () => { if (dead) return; dead = true; unlisten(); clearInterval(watchT); clearTimeout(quietT); clearInterval(pollT); clearInterval(updT); cgObs.disconnect(); acuObs.disconnect(); try { dbApiRef?.unregisterTableUpdateCallback?.(dbCb); } catch (e) {} clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); clearTimeout(restT); clearTimeout(ghostT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
     if (window.parent.EdenMap === api) delete window.parent.EdenMap; toastEl?.remove(); updEl?.remove(); splash?.el?.remove(); try { NT?.destroy(); barRO?.disconnect(); } catch (e) {}
     if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup;
-    try { window.parent.__edenMapLoads = (window.parent.__edenMapLoads || []).filter(u => u !== SELF); } catch (e) {} };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）
+    try { const R = window.parent.__edenMapIds; if (R && R[OWNER] === SELF) delete R[OWNER]; } catch (e) {}   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」
+    try { for (const el of [...pdoc.querySelectorAll('[data-eden-owner]')]) if (el.getAttribute('data-eden-owner') === OWNER) el.remove(); } catch (e) {}
+    clearTimeout(prefT); window.removeEventListener('storage', onStorage); };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）
   window.parent.__edenMapCleanup = cleanup;
   window.addEventListener('pagehide', e => { if (!e.persisted) cleanup(); });   // bfcache（pageshow 回来）时别把界面拆了：模块不会重新求值，拆了就再也回不来（接手 review P2）
 })();

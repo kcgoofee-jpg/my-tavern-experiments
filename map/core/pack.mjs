@@ -67,7 +67,7 @@ export async function load(id = currentId(), { base = '', fetchJSON, injected } 
   if (id === DEFAULT_ID) return EDEN_RESOLVED;
   let m = injected?.manifest;
   if (!m) {
-    const get = fetchJSON || (u => fetch(u).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }));
+    const get = fetchJSON || (u => fetch(u, { credentials: 'omit', referrerPolicy: 'no-referrer' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }));
     m = await get(`${base}packs/${id}/manifest.json`);
   }
   const errs = validate(m); if (m.id !== id) errs.push(`清单 id（${m.id}）与请求的包（${id}）不一致`);
