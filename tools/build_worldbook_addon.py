@@ -259,6 +259,23 @@ def to_book(items):
     return {'_credit': CREDIT, 'entries': entries}   # 酒馆导入只读 entries；_credit 是原作署名
 
 
+SHIP = os.environ.get('EDEN_SHIP_OUT') or os.path.join(ROOT, 'map', 'data', 'worldbook_addon.json')   # 测试可改到临时文件
+
+
+def to_ship(book, version):
+    """随地图发到 CDN 的附加条目（map/tavern/wbsync.mjs 读，按酒馆助手 WorldbookEntry 形状）：id = 去掉「 vN」后缀的条目名（稳定编号），ver = 版本 + 内容指纹。"""
+    import hashlib
+    POS = {0: 'before_character_definition', 1: 'after_character_definition', 2: 'before_author_note', 3: 'after_author_note', 4: 'at_depth', 5: 'before_example_messages', 6: 'after_example_messages'}
+    ents = []
+    for e in book['entries'].values():
+        ents.append({'id': re.sub(r'\s+v\d+$', '', e['comment']), 'name': e['comment'], 'enabled': not e['disable'], 'content': e['content'],
+                     'strategy': {'type': 'constant' if e['constant'] else 'selective', 'keys': list(e['key'])},
+                     'position': {'type': POS.get(e['position'], 'after_character_definition'), 'role': 'system', 'depth': e['depth'], 'order': e['order']},
+                     'probability': e['probability'], 'recursion': {'prevent_incoming': bool(e['excludeRecursion']), 'prevent_outgoing': bool(e['preventRecursion'])}})
+    h = hashlib.sha1(json.dumps(ents, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:8]
+    return {'book': '伊甸地图·世界书附加条目', 'version': version, 'ver': f'{re.sub(r"-dev$", "", version)}+{h}', 'entries': ents}
+
+
 def tokens(s):
     """粗估：中日韩字符约 1 token / 字，其余约 4 字符 / token（各家分词器差别大，只作量级参考）。"""
     cjk = sum(1 for c in s if '⺀' <= c <= '鿿' or '＀' <= c <= '￯' or '　' <= c <= '〿')
@@ -364,6 +381,7 @@ def main():
     ap.add_argument('--out')
     ap.add_argument('--check', metavar='参照.json', help='按一份现有世界书核对字段与类型')
     ap.add_argument('--force', action='store_true', help='允许写已发布版本（有 map-v<版本> 标签）的文件')
+    ap.add_argument('--ship', action='store_true', help='另写 map/data/worldbook_addon.json（随地图发到 CDN，设置「写入世界书」与自动同步用；版本号不带 -dev）')
     ap.add_argument('--pack', help='设定包 id（通用化）：打包 map/packs/<id>/worldbook.json 的条目，外加由包的 events.json / maps.json 生成的类型表与地点表')
     a = ap.parse_args()
     if a.pack and a.pack != 'eden': return build_pack(a.pack, a.out)
@@ -390,6 +408,9 @@ def main():
     print(f'写入 {out}（{len(items)} 条，{n} 种类型）')
     print(f'每轮发给模型：常驻约 {tot} tokens + 方位最多约 {lore_max} tokens（EJS 展开后；没装提示词模板扩展时方位条目会原样发出，自检会提示）；关键词条目合计约 {kw} tokens，只在提到时发')
     if a.check: check(book, a.check)
+    if a.ship:
+        with open(SHIP, 'w', encoding='utf-8') as f: json.dump(to_ship(book, a.version), f, ensure_ascii=False, indent=1); f.write('\n')
+        print(f'写入 {os.path.relpath(SHIP, ROOT)}（随地图发布）')
 
 
 if __name__ == '__main__':

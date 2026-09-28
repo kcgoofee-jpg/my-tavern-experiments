@@ -150,6 +150,17 @@ export function evaluate(f) {
   const u = f.update;
   if (u && u.latest && cmpVer(u.latest, u.current) > 0) { const zh = u.channel === 'latest' ? '：刷新酒馆页面即可' : u.channel === 'locked' ? '：你锁定了当前版本，到「关于」解锁后刷新' : '', en = u.channel === 'latest' ? ': reload the Tavern page' : u.channel === 'locked' ? ': unlock the version in About, then reload' : '';
     out.push(item('update', 'info', `有新版本 ${fmtVer(u.latest)}（当前 ${fmtVer(u.current)}）${zh}`, `New version ${fmtVer(u.latest)} (current ${fmtVer(u.current)})${en}`)); }
+  // 酒馆助手采纳（docs/tavernhelper-audit.md B3 / B4 / B7）：卡身份、宿主版本只报告（兼容判断仍靠功能探测）；正则只读
+  if (f.card) out.push(item('card', 'info', `角色卡：${f.card.name}${f.card.version ? ` ${f.card.version}` : ''}`, `Character card: ${f.card.name}${f.card.version ? ` ${f.card.version}` : ''}`));
+  if (f.host && (f.host.th || f.host.st)) out.push(item('host', 'info', `酒馆助手 ${f.host.th || '?'} · 酒馆 ${f.host.st || '?'}`, `TavernHelper ${f.host.th || '?'} · SillyTavern ${f.host.st || '?'}`));
+  if (f.regex) out.push(f.regex.hidesVars ? item('regex', 'ok', `角色卡正则 ${f.regex.n} 条：变量更新块在显示时隐藏`, `${f.regex.n} character regex(es): variable-update blocks hidden in display`)
+    : item('regex', 'skip', `角色卡正则 ${f.regex.n} 条：没有隐藏变量更新块的显示正则（只影响正文显示，地图照常读取）`, `${f.regex.n} character regex(es): none hides variable-update blocks in display (display only; the map still reads them)`));
+  // 交互方式 (d) 标签对账：MVU 与正文地点标签不一致的楼层（以 MVU 为准，这里只列出来）
+  if (Array.isArray(f.conflicts) && f.conflicts.length) out.push(item('conflict', 'info', `地点不一致 ${f.conflicts.length} 楼（按 MVU）：${f.conflicts.slice(-3).map(c => `#${c.floor} MVU「${c.mvu}」≠ 标签「${c.tag}」`).join('；')}`,
+    `${f.conflicts.length} floor(s) where the location tag disagrees with MVU (MVU wins): ${f.conflicts.slice(-3).map(c => `#${c.floor} MVU "${c.mvu}" vs tag "${c.tag}"`).join('; ')}`));
+  // 交互方式 (e) 检查点：上次确认的楼层 / swipe 和现在对不上（中途被杀、切了 swipe）→ 已从聊天记录重新推导
+  if (f.checkpoint && f.checkpoint.reason && !['match', 'none'].includes(f.checkpoint.reason)) out.push(item('checkpoint', 'info', `上次确认到第 ${f.checkpoint.floor} 楼（${{ ahead: '之后的楼层还没有变量快照', swiped: '那一楼换了 swipe', missing: '那一楼已不存在' }[f.checkpoint.reason] || f.checkpoint.reason}），已从聊天记录重新推导`,
+    `Last confirmed floor ${f.checkpoint.floor} (${{ ahead: 'later floors have no variable snapshot yet', swiped: 'that floor was swiped', missing: 'that floor no longer exists' }[f.checkpoint.reason] || f.checkpoint.reason}); re-derived from chat`));
   return out;
 }
 

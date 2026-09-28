@@ -73,7 +73,7 @@ test('A4 偏好迁移：脚本变量优先、本机回退、双写；键表与�
   // 第一次（脚本变量空）：本机的补进脚本变量
   let r = T.mergePrefs(null, lsGet, S.SCRIPT_KEYS);
   assert.ok(r.changed); assert.deepEqual(r.script, { edenMapLine: 'cn', edenMapHand: 'left' }); assert.deepEqual(r.toLS, {});
-  // iPhone 清了本机：脚本变量写回本机
+  // 本机存储被清：脚本变量写回本机
   ls.clear(); r = T.mergePrefs({ edenMapLine: 'cn', edenMapHand: 'left' }, lsGet, S.SCRIPT_KEYS);
   assert.deepEqual(r.toLS, { edenMapLine: 'cn', edenMapHand: 'left' }); assert.ok(!r.changed);
   // 两边不一致：脚本变量赢

@@ -34,6 +34,7 @@ export const SCHEMA = {
   'eden-map:compose': [V2H, { text: 'string' }],
   'eden-map:explore': [V2H, { map: 'string', name: 'string' }],   // 迷雾探索：记一次到访（只在开着时发）
   'eden-map:explore-reset': [V2H, {}],
+  'eden-map:th': [V2H, { op: 'string' }],   // 酒馆助手设置（app/th-ui.mjs）：state / prefs / wb-inspect / wb-write / wb-del-legacy
   // 宿主 → 查看器
   'eden-map:here': [H2V, { value: 'any' }],
   'eden-map:chat': [H2V, { id: 'any' }],
@@ -60,6 +61,7 @@ export const SCHEMA = {
   'eden-map:sleep': [H2V, {}],
   'eden-map:wake': [H2V, {}],
   'eden-map:compose-done': [H2V, { ok: 'boolean?' }],
+  'eden-map:th-state': [H2V, { prefs: 'object?', wb: 'object?', last: 'object?', result: 'object?' }],
   'eden-map:open': [H2V, { map: 'string' }],   // 本机扩展入口（docs/content-compat.md），仓库内无发送方
   'eden-map:fly': [H2V, {}],                     // 同上
   // 查看器 ↔ 庄园 / 三维子页

@@ -148,6 +148,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <link rel="modulepreload" href="app/clouds.mjs">
 <link rel="modulepreload" href="app/scale.mjs">
 <link rel="modulepreload" href="app/storage-ui.mjs">
+<link rel="modulepreload" href="app/th-ui.mjs">
 <link rel="modulepreload" href="app/fog.mjs">
 <link rel="modulepreload" href="core/fog.mjs">
 <!-- 查看器本体（arch-v2 §6）：app/boot.mjs 按原顺序拉起核心各块；功能外挂各自一个模块标签（加载失败只少那一块）。模块标签与 defer 同一队列、按文档顺序执行：地图库、抽屉 → 核心 → 外挂 → 叶子模块，之后 DOMContentLoaded → main() -->
@@ -612,6 +613,7 @@ if (window.top !== window) { document.body.classList.add('embed'); window.__earl
 <script type="module" src="app/clouds.mjs" onerror="console.warn('[地图] app/clouds.mjs 加载失败：切层转场与漂移云关闭')"></script>
 <script type="module" src="app/fog.mjs" onerror="console.warn('[地图] app/fog.mjs 加载失败：迷雾探索关闭')"></script>
 <script type="module" src="app/storage-ui.mjs" onerror="console.warn('[地图] app/storage-ui.mjs 加载失败：设置「数据与映射」不显示')"></script>
+<script type="module" src="app/th-ui.mjs" onerror="console.warn('[地图] app/th-ui.mjs 加载失败：设置里的世界书同步 / 状态注入不显示')"></script>
 <script type="module" src="app/scale.mjs" onerror="console.warn('[地图] app/scale.mjs 加载失败：世界 ↔ 天城缩放交接关闭')"></script>
 <script type="module" src="app/cvd.mjs" onerror="console.warn('[地图] app/cvd.mjs 加载失败：色觉模式关闭')"></script>
 </body>
