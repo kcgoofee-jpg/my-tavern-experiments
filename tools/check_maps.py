@@ -207,7 +207,7 @@ else:
     refs = {r for p in ap for r in p.get('refs', [])}
     est = maps.get('eden_estate', {}); est_words = set(est.get('rooms', [])) | set(est.get('areas', []))
     _erp = os.path.join(ROOT, 'data', 'eden_estate_rooms.json')   # 分层房间（含用户设定房间，如地下医疗中心）也算庄园房间
-    if exists(_erp): est_words |= {r['name'] for r in load(_erp).get('rooms', []) if r.get('kind') != 'restricted' and r.get('name') != '（按原卡）'}
+    if exists(_erp): est_words |= {r['name'] for r in load(_erp).get('rooms', []) if r.get('kind') != 'restricted'}
     for p in ap:
         for f in ('id', 'name', 'src', 'text'):
             if not p.get(f): err(f"addon_places.{p.get('id', '?')}: 缺 {f}")
@@ -226,29 +226,29 @@ else:
         for k, v in (m.get('markers') or {}).items():
             if added(v) and f'{mid}.{k}' not in refs: err(f'{mid}.{k}：用户决定 / 仓库自设的地点，addon_places.json 里没有对应条目（世界书附加条目缺它）')
 # v0.9.6 卡设定分层房间（map/data/eden_estate_rooms.json）↔ 当前地点词表（map/here.mjs 第 1 级）：
-# 每个房间名都要能落到 eden_estate 的房间（带 std）；名字不入库的卡房间只存占位「（按原卡）」（不进词表）；每间卡房间都有编号（card_rooms）；
+# 每个房间名都要能落到 eden_estate 的房间（带 std）；卡房间名照抄卡原名（2026-09-28 用户决定，不用占位、不做运行时绑定）；每间卡房间都有编号（card_rooms）；
 # 仓库自编的旧名（受限房间 X、附属室 X 等）只能留在 retired_names；
 # 房间叫法不能和庄园室外区域 / 整座庄园的叫法重名（否则抢走区域落点）
 er_path = os.path.join(ROOT, 'data', 'eden_estate_rooms.json')
 if exists(er_path) and 'eden_estate' in maps:
     import shutil, subprocess
     er = load(er_path).get('rooms', []); est = maps['eden_estate']
-    PH = '（按原卡）'   # 占位 ≠ 名字（map/card-bind.mjs）
+    PH = re.compile(r'按原卡|^（.*）$')   # 占位不是名字：房间名一律写卡原名
     erd = load(er_path); crs = erd.get('card_rooms') or []; cids = {c.get('cid') for c in crs}
     retired = erd.get('retired_names') or {}
     # 仓库以前自己编的房间名（不是卡的写法）：只允许出现在 retired_names（读旧聊天数据），不能再当房间名 / 识别词
     INVENTED = re.compile(r'受限房间|附属室')
     for r in er:
         if not r.get('name') or not r.get('floor'): err(f"eden_estate_rooms.{r.get('id', '?')}: 缺 name / floor")
-        elif r.get('kind') == 'restricted' and r['name'] != PH: err(f"eden_estate_rooms.{r['id']}: restricted 房间的 name 只能是占位「{PH}」（原名运行时从用户的卡绑定，不入库）")
+        elif PH.search(r['name']): err(f"eden_estate_rooms.{r['id']}: 「{r['name']}」是占位，不是名字（照抄卡原名）")
         if r.get('kind') in ('card', 'restricted') and r.get('card_id') not in cids: err(f"eden_estate_rooms.{r['id']}: 卡房间 card_id「{r.get('card_id')}」不在 card_rooms 里")
         for w in [r.get('name') or '', *(r.get('words') or [])]:
             if INVENTED.search(w) or w in retired: err(f"eden_estate_rooms.{r['id']}: 「{w}」是仓库以前自编的名字（retired_names），不能再用")
-    # 每间卡房间：有编号（楼层-C两位序号）、有名字或（占位 + bind 结构定位）；室内房间至少一个多边形
+    # 每间卡房间：有编号（楼层-C两位序号）、有卡原名（不是占位）；室内房间至少一个多边形
     for c in crs:
         cid = c.get('cid') or ''
         if not re.fullmatch(r'(F[1-3]|B[12]|EX)-C\d{2}', cid): err(f"card_rooms: 编号「{cid}」格式不对（楼层-C序号）")
-        if c.get('name') == PH and not (c.get('bind') or {}).get('floor'): err(f"card_rooms.{cid}: 占位房间没有 bind 结构定位，运行时绑不到卡里的原名")
+        if not c.get('name') or PH.search(c['name']): err(f"card_rooms.{cid}: 名字缺失或是占位「{c.get('name')}」（照抄卡原名）")
         if c.get('floor') != 'ext' and not c.get('poly_ids'): err(f"card_rooms.{cid}: 没有对应的房间多边形")
         for w in [c.get('name') or '', *(c.get('words') or [])]:
             if INVENTED.search(w) or w in retired: err(f"card_rooms.{cid}: 「{w}」是仓库自编的名字")
@@ -260,7 +260,7 @@ if exists(er_path) and 'eden_estate' in maps:
         js = ("import('./map/here.mjs').then(H=>{const fs=require('fs'),J=f=>JSON.parse(fs.readFileSync('map/data/'+f,'utf8'));"
               "const P=J('eden_estate_rooms.json'),m=J('maps.json').maps.eden_estate,i=H.buildIndex(J('maps.json'),J('world_markers.json'),null,null,P),bad=[];"
               "const clash=new Set([...(m.areas||[]),...(m.areas_en||[]),...i.estate.whole]);"
-              "for(const r of P.rooms){if(r.name==='（按原卡）')continue;const x=H.resolveHere(r.name,i);if(!x||x.level!==1||x.map!==i.estate.id||!x.std)bad.push('认不出房间「'+r.name+'」');"
+              "for(const r of P.rooms){const x=H.resolveHere(r.name,i);if(!x||x.level!==1||x.map!==i.estate.id||!x.std)bad.push('认不出房间「'+r.name+'」');"
               "for(const w of H.planWords(r.name))if(clash.has(w))bad.push('房间叫法「'+w+'」与庄园区域 / 整座庄园的叫法重名');}"
               "console.log(JSON.stringify([...new Set(bad)]))})")
         try:

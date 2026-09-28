@@ -8,7 +8,7 @@ python3 blender/estate2/house_web.py --out /tmp/house_raw.glb [--doors /tmp/door
   楼板（按房间 kind 着中性色）、墙（相邻房间共用墙只出一次；外墙 0.45 m、内墙 0.2 m）、门洞（按走廊可达规则推断）、外墙窗洞（地上层）、
   竖向交通（塔楼双跑梯、仆役梯 + 服务电梯、主人螺旋梯 + 单人电梯、疏散梯）、穹顶四墩（B2–F3）、F3 顶上的鼓座转换梁框、门廊柱、大厅下沉圆区、
   中性家具块（floorplans 里的 furn 矩形；只按尺寸给高度，没有任何具体道具）。
-按原卡的房间（kind = restricted，名字是占位「（按原卡）」）：只有空白楼板 + 墙 + 一个通走廊的门洞，没有家具和细节。
+只写名字的卡房间（kind = restricted，名字照抄卡）：只有空白楼板 + 墙 + 一个通走廊的门洞，没有家具和细节。
 坐标：floorplans / layout 是 x 东、y 北、z 上（F1 地坪 = 0）；glTF 是 Y 上：(x, z, −y)。
 网格：每层两块 f_<层>_struct / f_<层>_furn（每块一次 draw call），颜色在顶点色里（含一层便宜的墙脚 AO 渐变）。
 """

@@ -10,7 +10,6 @@
 // 词表来自 maps.json：庄园地图的 rooms / areas（中英）与 alias；points 地图的 markers（name / alias / name_en）、layer、districts；
 // 世界图的地点来自 world_markers.json（places / fiefs / realms），英文名来自 i18n/en.json 的 names（可选）。
 
-const PLACEHOLDER = '（按原卡）';   // 同 card-bind.mjs PLACEHOLDER
 const low = s => String(s || '').toLowerCase();
 // v 里包含的 words 中最长的一个（长度按字符数）；没有返回 null
 function longest(v, words) {
@@ -37,7 +36,6 @@ export function planWords(name) {
 // v0.9.6：custom 还可以有 areas / layers { 自定义名: 层名或大区名 } / world { 自定义名: 世界地名 } / ignore [名字]（未上图时选了「忽略」）。
 // plan：map/data/eden_estate_rooms.json（卡设定分层房间）。房间名（及去掉括注、「 / 」拆开的叫法）进庄园房间词表（第 1 级），
 //   落点带 std（标准房间名）与 floor（名字只在一层出现时），restricted 房间带 restricted（只认名字、画素框，不描述）。
-//   名字不入库的卡房间 name 是占位「（按原卡）」，不进词表；调用方先用 card-bind.mjs 的 applyBinding 换成用户卡里的原名再传进来。
 //   房间的 words（卡里的其他写法）也进词表；custom 里指向旧编号 / 旧名（card_id_alias / retired_names）的叫法换成现在的名字。
 export function buildIndex(reg, world = null, names = null, custom = null, plan = null) {
   const maps = reg?.maps || {}, idx = { estate: null, marks: [], layers: [], tiancheng: null, world: [], ambiguous: [...(reg?.ambiguous?.words || [])] };
@@ -52,14 +50,14 @@ export function buildIndex(reg, world = null, names = null, custom = null, plan 
     whole.delete(undefined); whole.delete(null); whole.delete('');
     const std = [...rooms], floor = {}, restricted = new Set(), planStd = {};
     for (const r of plan?.rooms || []) {
-      if (!r?.name || r.name === PLACEHOLDER) continue;   // 占位不是名字：没从用户的卡绑定到原名的房间不进词表（见 card-bind.mjs）
+      if (!r?.name) continue;
       for (const w of [...planWords(r.name), ...(r.words || []), ...(r.synonyms || [])]) { if (!(w in planStd)) planStd[w] = r.name; if (!rooms.includes(w) && !areas.includes(w)) rooms.push(w); }
       floor[r.name] = r.name in floor && floor[r.name] !== r.floor ? null : r.floor;
       if (r.kind === 'restricted') restricted.add(r.name);
     }
     for (const w of rooms) if (!std.includes(w)) std.push(w);
     const alias = {};
-    const oldName = r => { const cid = plan?.card_id_alias?.[r] || plan?.retired_names?.[r]; const c = cid && (plan.card_rooms || []).find(x => x.cid === cid); return c && c.name !== PLACEHOLDER ? c.name : null; };   // 旧编号 / 旧名（聊天里存过的）→ 现在的卡房间名
+    const oldName = r => { const cid = plan?.card_id_alias?.[r] || plan?.retired_names?.[r]; const c = cid && (plan.card_rooms || []).find(x => x.cid === cid); return c?.name || null; };   // 旧编号 / 旧名（聊天里存过的）→ 现在的卡房间名
     for (const [w, r0] of Object.entries(custom?.rooms || {})) { const r = r0 && !rooms.includes(r0) ? oldName(r0) : r0; if (w && r && rooms.includes(r) && !std.includes(w)) { alias[w] = r; rooms.push(w); } }
     for (const [w, r] of Object.entries(custom?.areas || {})) if (w && r && areas.includes(r) && !areas.includes(w)) { alias[w] = r; areas.push(w); }
     idx.estate = { id, rooms, areas, whole: [...whole], alias, std, floor, restricted: [...restricted], planStd };

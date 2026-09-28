@@ -1,5 +1,5 @@
 {
- "_说明": "伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 卡设定房间 / restricted 按原卡、不描述（name 是占位「（按原卡）」，原名运行时从用户的卡绑定）/ support 辅助 / circ 走廊 / open 卡未写 / owner 主人专用 / user 用户设定（src=用户设定）。",
+ "_说明": "伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 卡设定房间 / restricted 卡设定房间、只写名字不描述（name 照抄卡原名）/ support 辅助 / circ 走廊 / open 卡未写 / owner 主人专用 / user 用户设定（src=用户设定）。",
  "version": 1,
  "src": "docs/card-digest.md §6",
  "units": "m",
@@ -455,7 +455,6 @@
    "access": "仆从动线",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -491,7 +490,6 @@
    "access": "仅主人",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      16,
@@ -527,7 +525,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -14,
@@ -552,7 +549,7 @@
    "src": "卡",
    "id": "B2-03",
    "floor": "B2",
-   "name": "（按原卡）",
+   "name": "惩罚室",
    "kind": "restricted",
    "block": "hall",
    "area": 40.0,
@@ -563,11 +560,6 @@
    "access": "主人 / 女仆长 / 被带去的人",
    "words": [],
    "synonyms": [],
-   "bind": {
-    "floor": "B2",
-    "n": 1,
-    "area": 40
-   },
    "poly": [
     [
      -10,
@@ -603,7 +595,6 @@
    "access": "主人 / 女仆长 / 被带去的人",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -5,
@@ -639,7 +630,6 @@
    "access": "仅主人 / 女仆长",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      10,
@@ -675,7 +665,6 @@
    "access": "主人 / 女仆长 / 被带去的人",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      10,
@@ -711,7 +700,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      1.25,
@@ -747,7 +735,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -783,7 +770,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      16,
@@ -819,7 +805,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -14,
@@ -855,7 +840,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -891,7 +875,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -927,7 +910,6 @@
    "access": "仅主人 / 女仆长 / 被带去的人",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      16,
@@ -963,7 +945,6 @@
    "access": "仆从动线",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -999,7 +980,6 @@
    "access": "仅主人",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      16,
@@ -1035,7 +1015,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -1060,7 +1039,7 @@
    "src": "卡",
    "id": "B1-17",
    "floor": "B1",
-   "name": "（按原卡）",
+   "name": "主调教室",
    "kind": "restricted",
    "block": "hall",
    "area": 80.0,
@@ -1071,11 +1050,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": {
-    "floor": "B1",
-    "n": 1,
-    "area": 80
-   },
    "poly": [
     [
      -10,
@@ -1100,7 +1074,7 @@
    "src": "卡",
    "id": "B1-18",
    "floor": "B1",
-   "name": "（按原卡）",
+   "name": "私人调教室",
    "kind": "restricted",
    "block": "hall",
    "area": 30.0,
@@ -1111,11 +1085,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": {
-    "floor": "B1",
-    "n": 2,
-    "area": 30
-   },
    "poly": [
     [
      0,
@@ -1140,7 +1109,7 @@
    "src": "卡",
    "id": "B1-19",
    "floor": "B1",
-   "name": "（按原卡）",
+   "name": "性技巧训练室",
    "kind": "restricted",
    "block": "hall",
    "area": 25.2,
@@ -1151,11 +1120,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": {
-    "floor": "B1",
-    "n": 4,
-    "area": 25
-   },
    "poly": [
     [
      3.75,
@@ -1193,7 +1157,6 @@
    "synonyms": [
     "健身房"
    ],
-   "bind": null,
    "poly": [
     [
      -8,
@@ -1231,7 +1194,6 @@
     "酒窖"
    ],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -14,
@@ -1267,7 +1229,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      6.9,
@@ -1303,7 +1264,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      10,
@@ -1339,7 +1299,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      16,
@@ -1375,7 +1334,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -1411,7 +1369,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -2,
@@ -1447,7 +1404,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -8,
@@ -1483,7 +1439,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -1519,7 +1474,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -14,
@@ -1555,7 +1509,6 @@
    "access": "主人 / 访客 / 住客",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -22,
@@ -1591,7 +1544,6 @@
    "access": "仆从动线",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -1627,7 +1579,6 @@
    "access": "仅主人",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      16,
@@ -1663,7 +1614,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -8,
@@ -1702,7 +1652,6 @@
     "门厅",
     "玄关"
    ],
-   "bind": null,
    "poly": [
     [
      -10,
@@ -1741,7 +1690,6 @@
     "客厅",
     "沙龙"
    ],
-   "bind": null,
    "poly": [
     [
      10,
@@ -1777,7 +1725,6 @@
    "access": "仅主人",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      10,
@@ -1813,7 +1760,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -12,
@@ -1849,7 +1795,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -1885,7 +1830,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -1923,7 +1867,6 @@
    "synonyms": [
     "饭厅"
    ],
-   "bind": null,
    "poly": [
     [
      -10,
@@ -1961,7 +1904,6 @@
     "食物准备间"
    ],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -14,
@@ -1997,7 +1939,6 @@
    "access": "仆从动线",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -2033,7 +1974,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -2,
@@ -2069,7 +2009,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      2,
@@ -2107,7 +2046,6 @@
     "厨房"
    ],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -31,
@@ -2145,7 +2083,6 @@
    "synonyms": [
     "洗衣房"
    ],
-   "bind": null,
    "poly": [
     [
      -52,
@@ -2181,7 +2118,6 @@
    "access": "仆从动线",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -42,
@@ -2219,7 +2155,6 @@
    "synonyms": [
     "仓库"
    ],
-   "bind": null,
    "poly": [
     [
      -34,
@@ -2255,7 +2190,6 @@
    "access": "仆从动线",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -52,
@@ -2291,7 +2225,6 @@
    "access": "仆从动线",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -22,
@@ -2327,7 +2260,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -11,
@@ -2363,7 +2295,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      20,
@@ -2399,7 +2330,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      20,
@@ -2435,7 +2365,6 @@
    "access": "主人 / 访客 / 住客",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -22,
@@ -2471,7 +2400,6 @@
    "access": "仆从动线",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -2507,7 +2435,6 @@
    "access": "仅主人",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      16,
@@ -2551,7 +2478,6 @@
     "私人衣帽间",
     "更衣室"
    ],
-   "bind": null,
    "poly": [
     [
      8,
@@ -2599,7 +2525,6 @@
    "synonyms": [
     "图书室"
    ],
-   "bind": null,
    "poly": [
     [
      -2,
@@ -2635,7 +2560,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -2,
@@ -2671,7 +2595,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -12,
@@ -2707,7 +2630,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -7,
@@ -2743,7 +2665,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -12,
@@ -2779,7 +2700,6 @@
    "access": "仆从动线",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -2815,7 +2735,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -2851,7 +2770,6 @@
    "access": "女仆长",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      10,
@@ -2887,7 +2805,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      10,
@@ -2923,7 +2840,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -14,
@@ -2959,7 +2875,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      16,
@@ -2995,7 +2910,6 @@
    "access": "仆从动线",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -3031,7 +2945,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -52,
@@ -3067,7 +2980,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -22,
@@ -3103,7 +3015,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      20,
@@ -3139,7 +3050,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      22,
@@ -3175,7 +3085,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      22,
@@ -3213,7 +3122,6 @@
    "synonyms": [
     "长廊"
    ],
-   "bind": null,
    "poly": [
     [
      52.743,
@@ -3249,7 +3157,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      45.849,
@@ -3285,7 +3192,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -11,
@@ -3321,7 +3227,6 @@
    "access": "主人 / 访客 / 住客",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -22,
@@ -3357,7 +3262,6 @@
    "access": "仆从动线",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -3382,7 +3286,7 @@
    "src": "卡",
    "id": "F3-80",
    "floor": "F3",
-   "name": "个人寝室",
+   "name": "正式母畜个人寝室",
    "kind": "card",
    "block": "hall",
    "area": 18.0,
@@ -3394,17 +3298,14 @@
    "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
-   "words": [],
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly": [
     [
      -12.0,
@@ -3429,7 +3330,7 @@
    "src": "卡",
    "id": "F3-81",
    "floor": "F3",
-   "name": "个人寝室",
+   "name": "正式母畜个人寝室",
    "kind": "card",
    "block": "hall",
    "area": 18.0,
@@ -3441,17 +3342,14 @@
    "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
-   "words": [],
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly": [
     [
      -8.4,
@@ -3476,7 +3374,7 @@
    "src": "卡",
    "id": "F3-82",
    "floor": "F3",
-   "name": "个人寝室",
+   "name": "正式母畜个人寝室",
    "kind": "card",
    "block": "hall",
    "area": 18.0,
@@ -3488,17 +3386,14 @@
    "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
-   "words": [],
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly": [
     [
      -4.8,
@@ -3523,7 +3418,7 @@
    "src": "卡",
    "id": "F3-83",
    "floor": "F3",
-   "name": "个人寝室",
+   "name": "正式母畜个人寝室",
    "kind": "card",
    "block": "hall",
    "area": 18.0,
@@ -3535,17 +3430,14 @@
    "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
-   "words": [],
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly": [
     [
      -1.1999999999999993,
@@ -3570,7 +3462,7 @@
    "src": "卡",
    "id": "F3-84",
    "floor": "F3",
-   "name": "个人寝室",
+   "name": "正式母畜个人寝室",
    "kind": "card",
    "block": "hall",
    "area": 18.0,
@@ -3582,17 +3474,14 @@
    "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
-   "words": [],
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly": [
     [
      2.4000000000000004,
@@ -3617,7 +3506,7 @@
    "src": "卡",
    "id": "F3-85",
    "floor": "F3",
-   "name": "个人寝室",
+   "name": "正式母畜个人寝室",
    "kind": "card",
    "block": "hall",
    "area": 18.0,
@@ -3629,17 +3518,14 @@
    "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
-   "words": [],
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly": [
     [
      6.0,
@@ -3664,7 +3550,7 @@
    "src": "卡",
    "id": "F3-86",
    "floor": "F3",
-   "name": "个人寝室",
+   "name": "正式母畜个人寝室",
    "kind": "card",
    "block": "hall",
    "area": 18.0,
@@ -3676,17 +3562,14 @@
    "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
-   "words": [],
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly": [
     [
      9.600000000000001,
@@ -3711,7 +3594,7 @@
    "src": "卡",
    "id": "F3-87",
    "floor": "F3",
-   "name": "个人寝室",
+   "name": "正式母畜个人寝室",
    "kind": "card",
    "block": "hall",
    "area": 18.0,
@@ -3723,17 +3606,14 @@
    "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；南窗",
    "access": "正式住客",
-   "words": [],
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly": [
     [
      13.2,
@@ -3758,7 +3638,7 @@
    "src": "卡",
    "id": "F3-88",
    "floor": "F3",
-   "name": "个人寝室",
+   "name": "正式母畜个人寝室",
    "kind": "card",
    "block": "hall",
    "area": 18.0,
@@ -3770,17 +3650,14 @@
    "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；北窗",
    "access": "正式住客",
-   "words": [],
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly": [
     [
      -7,
@@ -3805,7 +3682,7 @@
    "src": "卡",
    "id": "F3-89",
    "floor": "F3",
-   "name": "个人寝室",
+   "name": "正式母畜个人寝室",
    "kind": "card",
    "block": "hall",
    "area": 18.0,
@@ -3817,17 +3694,14 @@
    "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；北窗",
    "access": "正式住客",
-   "words": [],
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly": [
     [
      -3.4,
@@ -3852,7 +3726,7 @@
    "src": "卡",
    "id": "F3-90",
    "floor": "F3",
-   "name": "个人寝室",
+   "name": "正式母畜个人寝室",
    "kind": "card",
    "block": "hall",
    "area": 18.0,
@@ -3864,17 +3738,14 @@
    "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；北窗",
    "access": "正式住客",
-   "words": [],
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly": [
     [
      0.2,
@@ -3899,7 +3770,7 @@
    "src": "卡",
    "id": "F3-91",
    "floor": "F3",
-   "name": "个人寝室",
+   "name": "正式母畜个人寝室",
    "kind": "card",
    "block": "hall",
    "area": 18.0,
@@ -3911,17 +3782,14 @@
    "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；北窗",
    "access": "正式住客",
-   "words": [],
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly": [
     [
      3.8,
@@ -3946,7 +3814,7 @@
    "src": "卡",
    "id": "F3-92",
    "floor": "F3",
-   "name": "个人寝室",
+   "name": "正式母畜个人寝室",
    "kind": "card",
    "block": "hall",
    "area": 19.0,
@@ -3958,17 +3826,14 @@
    "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；北窗",
    "access": "正式住客",
-   "words": [],
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly": [
     [
      7.4,
@@ -3993,7 +3858,7 @@
    "src": "卡",
    "id": "F3-93",
    "floor": "F3",
-   "name": "个人寝室",
+   "name": "正式母畜个人寝室",
    "kind": "card",
    "block": "hall",
    "area": 19.0,
@@ -4005,17 +3870,14 @@
    "card_id": "F3-C01",
    "note": "正式住客每人一间；门是单向玻璃；北窗",
    "access": "正式住客",
-   "words": [],
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly": [
     [
      11.2,
@@ -4053,7 +3915,6 @@
     "新进寝区"
    ],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -15,
@@ -4096,7 +3957,6 @@
     "浴池",
     "盥洗室"
    ],
-   "bind": null,
    "poly": [
     [
      -14,
@@ -4137,7 +3997,6 @@
     "集体宿舍",
     "女仆宿舍"
    ],
-   "bind": null,
    "poly": [
     [
      15,
@@ -4173,7 +4032,6 @@
    "access": "女仆团",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      15,
@@ -4209,7 +4067,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      16.8,
@@ -4245,7 +4102,6 @@
    "access": "住客 / 新人",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -8,
@@ -4281,7 +4137,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -12,
@@ -4317,7 +4172,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -14,
@@ -4353,7 +4207,6 @@
    "access": "仆从动线",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -4389,7 +4242,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -14,
@@ -4425,7 +4277,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -20,
@@ -4461,7 +4312,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -14,
@@ -4497,7 +4347,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -76.014,
@@ -4533,7 +4382,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      51.763,
@@ -4569,7 +4417,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      43.0,
@@ -4605,7 +4452,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -61.936,
@@ -4641,7 +4487,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -76.014,
@@ -4677,7 +4522,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      51.763,
@@ -4713,7 +4557,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      43.0,
@@ -4749,7 +4592,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      22,
@@ -4785,7 +4627,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      45.849,
@@ -4821,7 +4662,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -61.936,
@@ -4857,7 +4697,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      -76.014,
@@ -4893,7 +4732,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      51.763,
@@ -4929,7 +4767,6 @@
    "access": "",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      43.0,
@@ -4965,7 +4802,6 @@
    "access": "主人 / 女仆长 / 医护",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      4,
@@ -5001,7 +4837,6 @@
    "access": "主人 / 女仆长 / 医护",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      8,
@@ -5037,7 +4872,6 @@
    "access": "主人 / 女仆长 / 医护",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      14,
@@ -5073,7 +4907,6 @@
    "access": "主人 / 女仆长 / 医护",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly": [
     [
      8,
@@ -5105,7 +4938,6 @@
     "门厅",
     "玄关"
    ],
-   "bind": null,
    "poly_ids": [
     "F1-34"
    ]
@@ -5119,7 +4951,6 @@
    "synonyms": [
     "饭厅"
    ],
-   "bind": null,
    "poly_ids": [
     "F1-40"
    ]
@@ -5133,7 +4964,6 @@
     "食物准备间"
    ],
    "synonyms": [],
-   "bind": null,
    "poly_ids": [
     "F1-41"
    ]
@@ -5148,7 +4978,6 @@
     "客厅",
     "沙龙"
    ],
-   "bind": null,
    "poly_ids": [
     "F1-35"
    ]
@@ -5162,7 +4991,6 @@
     "厨房"
    ],
    "synonyms": [],
-   "bind": null,
    "poly_ids": [
     "F1-45"
    ]
@@ -5176,7 +5004,6 @@
    "synonyms": [
     "洗衣房"
    ],
-   "bind": null,
    "poly_ids": [
     "F1-46"
    ]
@@ -5188,7 +5015,6 @@
    "name": "道具清洗消毒间",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly_ids": [
     "F1-47"
    ]
@@ -5202,7 +5028,6 @@
    "synonyms": [
     "仓库"
    ],
-   "bind": null,
    "poly_ids": [
     "F1-48"
    ]
@@ -5222,7 +5047,6 @@
     "私人衣帽间",
     "更衣室"
    ],
-   "bind": null,
    "poly_ids": [
     "F2-57"
    ]
@@ -5238,7 +5062,6 @@
    "synonyms": [
     "图书室"
    ],
-   "bind": null,
    "poly_ids": [
     "F2-58"
    ]
@@ -5250,7 +5073,6 @@
    "name": "女仆长寝室",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly_ids": [
     "F2-65"
    ]
@@ -5262,7 +5084,6 @@
    "name": "客房",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly_ids": [
     "F2-60"
    ]
@@ -5274,7 +5095,6 @@
    "name": "客房",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly_ids": [
     "F2-61"
    ]
@@ -5288,7 +5108,6 @@
    "synonyms": [
     "长廊"
    ],
-   "bind": null,
    "poly_ids": [
     "F2-75"
    ]
@@ -5297,18 +5116,15 @@
    "cid": "F3-C01",
    "floor": "F3",
    "order": 1,
-   "name": "个人寝室",
-   "words": [],
+   "name": "正式母畜个人寝室",
+   "words": [
+    "个人寝室"
+   ],
    "synonyms": [
     "寝室",
     "寝",
     "宿舍"
    ],
-   "bind": {
-    "floor": "F3",
-    "n": 1,
-    "area": 15
-   },
    "poly_ids": [
     "F3-80",
     "F3-81",
@@ -5335,7 +5151,6 @@
     "新进寝区"
    ],
    "synonyms": [],
-   "bind": null,
    "poly_ids": [
     "F3-94"
    ]
@@ -5354,7 +5169,6 @@
     "浴池",
     "盥洗室"
    ],
-   "bind": null,
    "poly_ids": [
     "F3-95"
    ]
@@ -5371,7 +5185,6 @@
     "集体宿舍",
     "女仆宿舍"
    ],
-   "bind": null,
    "poly_ids": [
     "F3-96"
    ]
@@ -5383,7 +5196,6 @@
    "name": "公共清洁间",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly_ids": [
     "F3-97"
    ]
@@ -5392,14 +5204,9 @@
    "cid": "B1-C01",
    "floor": "B1",
    "order": 1,
-   "name": "（按原卡）",
+   "name": "主调教室",
    "words": [],
    "synonyms": [],
-   "bind": {
-    "floor": "B1",
-    "n": 1,
-    "area": 80
-   },
    "poly_ids": [
     "B1-17"
    ]
@@ -5408,14 +5215,9 @@
    "cid": "B1-C02",
    "floor": "B1",
    "order": 2,
-   "name": "（按原卡）",
+   "name": "私人调教室",
    "words": [],
    "synonyms": [],
-   "bind": {
-    "floor": "B1",
-    "n": 2,
-    "area": 30
-   },
    "poly_ids": [
     "B1-18"
    ]
@@ -5429,7 +5231,6 @@
    "synonyms": [
     "健身房"
    ],
-   "bind": null,
    "poly_ids": [
     "B1-20"
    ]
@@ -5438,14 +5239,9 @@
    "cid": "B1-C04",
    "floor": "B1",
    "order": 4,
-   "name": "（按原卡）",
+   "name": "性技巧训练室",
    "words": [],
    "synonyms": [],
-   "bind": {
-    "floor": "B1",
-    "n": 4,
-    "area": 25
-   },
    "poly_ids": [
     "B1-19"
    ]
@@ -5459,7 +5255,6 @@
     "酒窖"
    ],
    "synonyms": [],
-   "bind": null,
    "poly_ids": [
     "B1-21"
    ]
@@ -5468,14 +5263,9 @@
    "cid": "B2-C01",
    "floor": "B2",
    "order": 1,
-   "name": "（按原卡）",
+   "name": "惩罚室",
    "words": [],
    "synonyms": [],
-   "bind": {
-    "floor": "B2",
-    "n": 1,
-    "area": 40
-   },
    "poly_ids": [
     "B2-03"
    ]
@@ -5487,7 +5277,6 @@
    "name": "医疗与改造室",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly_ids": [
     "B2-04"
    ]
@@ -5499,7 +5288,6 @@
    "name": "档案室",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly_ids": [
     "B2-05"
    ]
@@ -5511,7 +5299,6 @@
    "name": "储藏室",
    "words": [],
    "synonyms": [],
-   "bind": null,
    "poly_ids": [
     "B2-06"
    ]
@@ -5525,7 +5312,6 @@
     "前庭"
    ],
    "synonyms": [],
-   "bind": null,
    "poly_ids": []
   },
   {
@@ -5537,7 +5323,6 @@
     "后庭"
    ],
    "synonyms": [],
-   "bind": null,
    "poly_ids": []
   }
  ],

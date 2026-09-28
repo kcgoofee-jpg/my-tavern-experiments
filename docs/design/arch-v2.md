@@ -30,7 +30,7 @@
 | ↳ 层导航与键盘 | `renderNav`、`stepLayer`、`onEsc` |
 | ↳ 档位与叠加层 | `setTier`、`drawOverlays`、`declutter`、`routeGaps` |
 | ↳ 标记与卡片 | `trackEl/untrack`、`marker/showCard/closeCard` |
-| ↳ 当前地点 | `focusStart`、`markHere`、卡原名绑定、`jumpHere` |
+| ↳ 当前地点 | `focusStart`、`markHere`、`jumpHere` |
 | ↳ 设置 | `setPage`、`TCSettings.registerSection`、`initSettings`、`renderStorage` |
 | ↳ 本机扩展 | `window.EdenMap`（`flyTo`、`on(here/events/map/characters)`） |
 | ↳ 外壳 | `makeDock`、`sheetVis`、`initShell`、通知、单手模式 |
@@ -63,7 +63,7 @@ DOMContentLoaded → main()（app/boot.mjs）
 | `app/estate.mjs` | 庄园 / 三维子页宿主：`openEstate`、`EST_HOOK`、子页消息、viewer3d 入口 | |
 | `app/layers.mjs` | 层切换条、Esc 分层、单字符快捷键 | |
 | `app/markers.mjs` | `placeN/trackEl/marker/showCard/closeCard`、世界图与点位图叠加 | |
-| `app/locate.mjs` | 初始视角、`markHere`、卡原名绑定、here.mjs 落点、`jumpHere` | |
+| `app/locate.mjs` | 初始视角、`markHere`、here.mjs 落点、`jumpHere` | |
 | `app/settings.mjs` | 设置弹层、`TCSettings`、搜索、关于 / 检查更新、自检 | |
 | `app/extapi.mjs` | `window.EdenMap`、聊天 id、`emEmit` | |
 | `app/shell.mjs` | 控制列、抽屉 / 右栏胶水、通知层、状态点、单手、双击缩放 | |
@@ -82,7 +82,7 @@ DOMContentLoaded → main()（app/boot.mjs）
 |---|---|---|
 | `map/events.mjs` / `chars.mjs` / `custom.mjs` / `trips.mjs` / `unmapped.mjs` | ES 模块外挂（v2b 起；之前是经典 IIFE） | 事态、人物栏、自定义名称 / 夜色 / 着装、行程线、未上图。核心状态与工具显式 import，自己经 `app/plugins.mjs` 的 `register` 登记为 `P.TC*` |
 | `map/varmap.mjs` / `compose.mjs` / `security.mjs` | ES 模块外挂 | 变量映射页、「去这里 / 追问」、安保叠加层。varmap / compose **按需加载**（只在嵌入时写出模块标签，见 §6.3） |
-| `map/here.mjs` / `card-bind.mjs` | ES 模块 | 当前地点解析（六级落点）；卡原名绑定 |
+| `map/here.mjs` | ES 模块 | 当前地点解析（六级落点） |
 | `map/core/protocol.mjs`（v2 新增） | ES 模块 | 协议版本 `PROTO`、消息 schema、`validate`、`createBus` |
 | `map/core/storage.mjs`（v2 新增） | ES 模块 | 本机存储服务：`KEYS` 键表（默认值 / 作用域），带 try/catch 的 `get/set/json/remove` |
 | `map/tavern/eden-map.js` | ES 模块（宿主入口） | 悬浮按钮、面板、线路 / BASE、srcdoc 加载、宿主令牌、数据采集、自检、更新、通知层 |
@@ -154,7 +154,7 @@ DOMContentLoaded → main()（app/boot.mjs）
 
 ### 3.2 宿主 → 查看器（宿主 `post()` 自动附 `t: HOST_TOKEN`、`v: PROTO`）
 
-`here{value}`、`chat{id}`、`lang{lang}`、`about`、`update-result`、`card-bind`、`chars`、`events`、`custom`、`clock`、`outfit`、`varmap`、`trips{items}`、`toast{items}`、`selfcheck`、`hostbar{w,side}`、`line`、`key{key}`、`storage-result{storage,sources,cleaned,cleanable}`、`settings{page}`、`notice-act{key,id}`、`unmapped-pick`、`sleep`、`wake{fly}`、`compose-done{ok,how}`、`open{map}`、`fly{target}`。
+`here{value}`、`chat{id}`、`lang{lang}`、`about`、`update-result`、`chars`、`events`、`custom`、`clock`、`outfit`、`varmap`、`trips{items}`、`toast{items}`、`selfcheck`、`hostbar{w,side}`、`line`、`key{key}`、`storage-result{storage,sources,cleaned,cleanable}`、`settings{page}`、`notice-act{key,id}`、`unmapped-pick`、`sleep`、`wake{fly}`、`compose-done{ok,how}`、`open{map}`、`fly{target}`。
 
 `open`、`fly` 在仓库里没有发送方。它们是写在 `docs/content-compat.md` 的本机扩展入口，**保留**。
 
@@ -192,7 +192,6 @@ DOMContentLoaded → main()（app/boot.mjs）
 1. **数据源**（全部在宿主侧解析，以消息推给查看器）
    - MVU：`tavern/mvu.mjs` 加 `adapter.mjs`（变量映射 `DEFAULT_MAP/detect/effective`，用户覆盖值存 `edenMap:varmap:<card>`）。
    - 数据库插件：`tavern/shujuku.mjs`。
-   - 卡原名绑定：`card-bind.mjs`（宿主计算，查看器 `applyToRegistry`）。
    - 聊天标签：`tavern/events.mjs`、`characters.mjs`、`trips.mjs`、`mvu.parseCustomTags`。
    - 下一步：`tavern/sources/index.mjs`，统一成 `{ id, detect(ctx), read(ctx) }` 注册表，让自检和变量映射从同一处枚举。
 2. **地图注册表**：`map/data/maps.json`（`maps.<id>.{kind, base, alt, overlay, group, parent, status, src, viewer3d, markers…}`、`groups.<id>.{layers, place, upper}`），由 `tools/check_maps.py` 校验。

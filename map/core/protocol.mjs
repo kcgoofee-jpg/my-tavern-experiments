@@ -40,7 +40,6 @@ export const SCHEMA = {
   'eden-map:lang': [H2V, { lang: 'string' }],
   'eden-map:about': [H2V, {}],
   'eden-map:update-result': [H2V, {}],
-  'eden-map:card-bind': [H2V, {}],
   'eden-map:chars': [H2V, { items: 'array?' }],
   'eden-map:events': [H2V, { items: 'array?' }],
   'eden-map:custom': [H2V, {}],
@@ -65,7 +64,6 @@ export const SCHEMA = {
   'eden-map:fly': [H2V, {}],                     // 同上
   // 查看器 ↔ 庄园 / 三维子页
   'estate:room': [V2S, { name: 'any' }],
-  'estate:bind': [V2S, { names: 'any' }],
   'estate:inset': [V2S, { left: 'number?' }],
   'estate:lang': [V2S, { lang: 'string' }],
   'estate:theme': [V2S, { theme: 'string' }],

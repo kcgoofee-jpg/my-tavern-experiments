@@ -6,7 +6,7 @@ import { getText, textCache } from './topbar.mjs';
 import { go } from './nav.mjs';
 import { focusAfterGo, onEsc, renderNav, stepLayer } from './layers.mjs';
 import { untrackAll } from './markers.mjs';
-import { estPlan, estateBind, hereRes } from './locate.mjs';
+import { estPlan, hereRes } from './locate.mjs';
 import { q3Pref, showSet } from './settings.mjs';
 // ---------------- 庄园剖面（kind=estate） ----------------
 // 嵌入接口（换版时保持）：maps.json 的 src 指向页面（相对 map/）。这里 fetch 页面文本、在 <head> 后插入 <base href="页面所在目录">、
@@ -53,7 +53,7 @@ export async function openEstate(id, m, hadPrev) {
     $('#loading').classList.add('done'); estateActs('');
     f.contentWindow?.postMessage({ type: 'estate:resume' }, SUB_ORIGIN);
     $('#credit').textContent = $('#credit').title = nm(m, 'credit'); $('#creditBtn').hidden = !nm(m, 'credit');
-    estateBind(); estateLook(); estateInset(); estateRoom(); focusAfterGo(); postState(); post({ type: 'eden-map:loaded' });
+    estateLook(); estateInset(); estateRoom(); focusAfterGo(); postState(); post({ type: 'eden-map:loaded' });
     return;
   }
   dropParked();
@@ -91,7 +91,7 @@ function onEstateFail(reason) {
 function onEstateReady() {
   const f = est.frame; est.ready = true; if (estFail) setEstFail(false);
   f.classList.add('on'); estateActs(''); $('#loading').classList.add('done'); focusAfterGo();
-  estateBind(); estateLook(); estateInset(); estateRoom();   // v0.9.7 estateBind：庄园页先换上本机卡原名，再发当前房间
+  estateLook(); estateInset(); estateRoom();
   post({ type: 'eden-map:loaded' });
   // 庄园淡入完成后再关掉瓦片地图（释放解码内存）
   setTimeout(() => { if (est?.frame === f && REG.maps[cur]?.kind === 'estate') { viewer.close(); untrackAll(); viewer.clearOverlays(); } }, 240);

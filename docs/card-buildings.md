@@ -2,7 +2,7 @@
 
 用户 2026-09-28：卡里提到的**每一处**建筑 / 地点都要 (a) 在地图上有标记，(b) 有合乎背景的**标准质量**三维模型（标准档 glb + 低档 glb，从标记的「查看三维模型」进 `map/props/viewer3d.html`，清单带中立热点；草稿 → 两人设评审：建筑写实 ≥7、卡忠实度 ≥7 → 定稿）。
 
-来源：`docs/card-digest.md`「全部具名地点」、`docs/card-omissions.md` A 节、`maps.json` 原 `unplaced`，加上 2026-09-28 对本地卡副本的补读（地名后缀检索 + 段落精读；新增项见下文「补读新增」）。成人化的原名只以地图 id 出现，运行时由 `map/card-bind.mjs` 按用户自己的卡绑定。
+来源：`docs/card-digest.md`「全部具名地点」、`docs/card-omissions.md` A 节、`maps.json` 原 `unplaced`，加上 2026-09-28 对本地卡副本的补读（地名后缀检索 + 段落精读；新增项见下文「补读新增」）。地名一律照抄卡原名（2026-09-28 用户决定，不再用运行时绑定）。
 
 列说明：
 - **标记**：✅ 已有；🆕 本轮新加（层与位置为**仓库推断**，`layer_src: repo-inferred`，世界书附加条目 `addon_places.json` 同步）。
@@ -35,7 +35,7 @@
 | P2 机构 | tc_mid | `culture_office` | 天城文化署 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `enforcement_hq` | 天城执法局总局 | ✅ | 卡 | 执法局总局 `map/props/enforcement_hq/` | 标准（r3 7 / 7.5） |  |
 | P2 机构 | tc_mid | `executive_office` | 天城执政厅 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
-| P2 机构 | tc_mid | `iron_cradle` | 圣铁摇篮 | ✅ | 卡 | 圣铁摇篮 `map/props/iron_cradle/` | 标准（r2 7 / 7） |  |
+| P2 机构 | tc_mid | `iron_cradle` | 圣铁摇篮 | ✅ | 卡 | — | — |  |
 | P2 机构 | tc_mid | `knights_camp` | 骑士团营区 | ✅ | 用户决定 | — | — |  |
 | P2 机构 | tc_mid | `mage_tower` | 法师塔 | 🆕 | 仓库推断 | — | — |  |
 | P2 机构 | tc_mid | `merc_guild` | 佣兵公会 | ✅ | 卡 | — | — |  |

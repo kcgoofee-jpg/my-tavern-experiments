@@ -60,9 +60,6 @@ BUDGET = {
     'props_reserve': (25000, 2048), 'props_culture': (20000, 1024), 'site_plaza': (45000, 2048),
     # enforcement_hq（中层核心区执法局总局；其余组用上面的）
     'props_podium': (10000, 2048), 'props_garage': (6000, 1024), 'props_dock': (10000, 2048),
-    # iron_cradle（圣铁摇篮战斗修女院；walls_ext / site_ground / props_cloister / props_yard 用上面的）
-    'props_ranges': (16000, 2048), 'props_hall': (12000, 2048), 'props_hangar': (8000, 1024),
-    'props_wall_gate': (6000, 2048), 'props_garden': (60000, 1024),
 }
 
 

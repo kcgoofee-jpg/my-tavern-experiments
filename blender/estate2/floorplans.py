@@ -4,8 +4,8 @@ python3 blender/estate2/floorplans.py            → docs/drafts/eden2_plan_{B2,
                                                   + map/data/eden_estate_rooms.json
 坐标与 layout.py 相同：x 向东、y 向北（−y 是正面 / 入口），单位 m；体块取 layout.MAIN（外观一致）。
 规则：卡里的房间用卡的名字；楼梯 / 电梯 / 走廊 / 卫生间 / 机房这类建筑必需空间标「辅助」；卡没写用途的体量标「卡未写」，不编用途。
-卡房间编号（card_id）= 楼层 + 卡内顺序（如 B1-C01），见 CARD_ROOMS；卡里名字能公开的房间用卡的原名，其余只存占位「（按原卡）」+ 结构定位 bind，
-运行时由 map/card-bind.mjs 从用户自己的卡里取回原名（仓库不存）。这些房间只画空白框，不画任何家具、不描述。
+卡房间编号（card_id）= 楼层 + 卡内顺序（如 B1-C01），见 CARD_ROOMS；房间名一律照抄卡的原名（2026-09-28 用户决定：按原卡，不转换）。
+kind = restricted 的房间只写名字：只画空白框，不画任何家具、不描述。
 """
 import json, math, os, sys
 import numpy as np
@@ -25,22 +25,21 @@ for f in ('/System/Library/Fonts/Hiragino Sans GB.ttc', '/System/Library/Fonts/S
         fm.fontManager.addfont(f); plt.rcParams['font.family'] = fm.FontProperties(fname=f).get_name(); break
 
 # ---------------------------------------------------------------- 卡房间表（卡「庄园布局」条目的房间，按卡内顺序编号）
-PH = '（按原卡）'   # 名字不入库的卡房间：占位，不是名字；原名运行时从用户的卡取（map/card-bind.mjs）
-# cid, 楼层, 卡原名（None = 不入库，用 PH）, 卡里的其他写法（只收卡原文出现过的）, 结构定位 bind（楼层段内第 n 个带面积的房间 + 面积）
+# cid, 楼层, 卡原名（照抄卡），卡里的其他写法（只收卡原文出现过的）
 CARD_ROOMS = [
-    ('F1-C01', 'F1', '大厅', [], None), ('F1-C02', 'F1', '餐厅', [], None), ('F1-C03', 'F1', '独立食物准备间', ['食物准备间'], None),
-    ('F1-C04', 'F1', '会客厅', [], None), ('F1-C05', 'F1', '厨房与后勤区', ['厨房'], None), ('F1-C06', 'F1', '衣物清洗与维护间', [], None),
-    ('F1-C07', 'F1', '道具清洗消毒间', [], None), ('F1-C08', 'F1', '物资仓库', [], None),
-    ('F2-C01', 'F2', '主人主卧', ['主卧'], None), ('F2-C02', 'F2', '主人书房', ['书房'], None), ('F2-C03', 'F2', '女仆长寝室', [], None),
-    ('F2-C04', 'F2', '客房', [], None), ('F2-C05', 'F2', '客房', [], None), ('F2-C06', 'F2', '东侧长廊', [], None),
-    ('F3-C01', 'F3', '个人寝室', [], dict(floor='F3', n=1, area=15)),   # 卡权限表写「个人寝室」；完整原名运行时绑定
-    ('F3-C02', 'F3', '新进公共寝区', ['新进寝区'], None), ('F3-C03', 'F3', '三楼公共浴室', ['三楼浴室'], None),
-    ('F3-C04', 'F3', '杂鱼女仆集体间', ['集体间'], None), ('F3-C05', 'F3', '公共清洁间', [], None),
-    ('B1-C01', 'B1', None, [], dict(floor='B1', n=1, area=80)), ('B1-C02', 'B1', None, [], dict(floor='B1', n=2, area=30)),
-    ('B1-C03', 'B1', '体能训练室', [], None), ('B1-C04', 'B1', None, [], dict(floor='B1', n=4, area=25)), ('B1-C05', 'B1', '恒温酒窖', ['酒窖'], None),
-    ('B2-C01', 'B2', None, [], dict(floor='B2', n=1, area=40)), ('B2-C02', 'B2', '医疗与改造室', [], None),
-    ('B2-C03', 'B2', '档案室', [], None), ('B2-C04', 'B2', '储藏室', [], None),
-    ('EX-C01', 'ext', '前庭花园', ['前庭'], None), ('EX-C02', 'ext', '后庭园', ['后庭'], None),   # 室外：maps.json eden_estate.areas / zones.json
+    ('F1-C01', 'F1', '大厅', []), ('F1-C02', 'F1', '餐厅', []), ('F1-C03', 'F1', '独立食物准备间', ['食物准备间']),
+    ('F1-C04', 'F1', '会客厅', []), ('F1-C05', 'F1', '厨房与后勤区', ['厨房']), ('F1-C06', 'F1', '衣物清洗与维护间', []),
+    ('F1-C07', 'F1', '道具清洗消毒间', []), ('F1-C08', 'F1', '物资仓库', []),
+    ('F2-C01', 'F2', '主人主卧', ['主卧']), ('F2-C02', 'F2', '主人书房', ['书房']), ('F2-C03', 'F2', '女仆长寝室', []),
+    ('F2-C04', 'F2', '客房', []), ('F2-C05', 'F2', '客房', []), ('F2-C06', 'F2', '东侧长廊', []),
+    ('F3-C01', 'F3', '正式母畜个人寝室', ['个人寝室']),   # 卡权限表也写「个人寝室」
+    ('F3-C02', 'F3', '新进公共寝区', ['新进寝区']), ('F3-C03', 'F3', '三楼公共浴室', ['三楼浴室']),
+    ('F3-C04', 'F3', '杂鱼女仆集体间', ['集体间']), ('F3-C05', 'F3', '公共清洁间', []),
+    ('B1-C01', 'B1', '主调教室', []), ('B1-C02', 'B1', '私人调教室', []),
+    ('B1-C03', 'B1', '体能训练室', []), ('B1-C04', 'B1', '性技巧训练室', []), ('B1-C05', 'B1', '恒温酒窖', ['酒窖']),
+    ('B2-C01', 'B2', '惩罚室', []), ('B2-C02', 'B2', '医疗与改造室', []),
+    ('B2-C03', 'B2', '档案室', []), ('B2-C04', 'B2', '储藏室', []),
+    ('EX-C01', 'ext', '前庭花园', ['前庭']), ('EX-C02', 'ext', '后庭园', ['后庭']),   # 室外：maps.json eden_estate.areas / zones.json
 ]
 # 通用叫法（不是卡原文，是这些卡房间的普通说法，如「卧室」「浴室」）：只作识别词，一律落到对应的卡房间（std = 卡名），不另成房间
 SYNONYMS = {'F1-C01': ['门厅', '玄关'], 'F1-C02': ['饭厅'], 'F1-C04': ['客厅', '沙龙'], 'F1-C08': ['仓库'], 'F1-C06': ['洗衣房'],
@@ -129,7 +128,7 @@ def cores(fl):
 # ======================================================================== B2
 cores('B2')
 room('B2', '走廊', R(-14, 16, -6, -3), 'circ')
-room('B2', PH, R(-10, -5, -14, -6), 'restricted', 40, note='无窗；不描述', access='主人 / 女仆长 / 被带去的人', cid='B2-C01')
+room('B2', '惩罚室', R(-10, -5, -14, -6), 'restricted', 40, note='无窗；不描述', access='主人 / 女仆长 / 被带去的人', cid='B2-C01')
 room('B2', '医疗与改造室', R(-5, 1.25, -14, -6), 'card', 50, note='体检、手术、恢复舱', access='主人 / 女仆长 / 被带去的人', cid='B2-C02',
      furn=[(-4.0, -1.8, -12.5, -11.7), (-1.0, 0.8, -13.6, -9.6)])
 room('B2', '档案室', R(10, 16, -14, -10.67), 'card', 20, note='协议原件、影像服务器；只有主人和女仆长能进', access='仅主人 / 女仆长', cid='B2-C03',
@@ -146,9 +145,9 @@ room('B2', '主人通道前室', R(16, 20, -6, -3), 'owner', note='B2 受限楼�
 # ======================================================================== B1
 cores('B1')
 room('B1', '走廊', R(-20, 20, -6, -3), 'circ')
-room('B1', PH, R(-10, 0, -14, -6), 'restricted', 80, note='不描述', cid='B1-C01')
-room('B1', PH, R(0, 3.75, -14, -6), 'restricted', 30, note='不描述', cid='B1-C02')
-room('B1', PH, R(3.75, 6.9, -14, -6), 'restricted', 25, note='不描述', cid='B1-C04')
+room('B1', '主调教室', R(-10, 0, -14, -6), 'restricted', 80, note='不描述', cid='B1-C01')
+room('B1', '私人调教室', R(0, 3.75, -14, -6), 'restricted', 30, note='不描述', cid='B1-C02')
+room('B1', '性技巧训练室', R(3.75, 6.9, -14, -6), 'restricted', 25, note='不描述', cid='B1-C04')
 room('B1', '体能训练室', R(-8, -2, -3, 7), 'card', 60, note='健身、柔韧训练；加固型格斗区和武器架', access='住客（按任务开放）', cid='B1-C03',
      furn=[(-7.6, -4.6, 3.6, 6.6), (-3.0, -2.4, -2.6, 2.0)])
 room('B1', '恒温酒窖', R(-14, -8, -3, 2), 'card', 30, note='藏酒两千余瓶', cid='B1-C05',
@@ -224,10 +223,10 @@ room('F2', '北廊楼二层', R(-11, 11, 8, 17), 'open', note='卡未写用途�
 cores('F3')
 _xs = [-12 + 3.6 * i for i in range(9)]
 for i in range(8):
-    room('F3', '个人寝室', R(_xs[i], _xs[i + 1], -16, -11), 'card', None, rng=(15, 20), note='正式住客每人一间；门是单向玻璃；南窗', access='正式住客',
+    room('F3', '正式母畜个人寝室', R(_xs[i], _xs[i + 1], -16, -11), 'card', None, rng=(15, 20), note='正式住客每人一间；门是单向玻璃；南窗', access='正式住客',
          cid='F3-C01', furn=[(_xs[i] + 0.3, _xs[i] + 1.3, -15.6, -13.6), (_xs[i + 1] - 1.0, _xs[i + 1] - 0.4, -15.6, -14.4)])
 for x0, x1 in ((-7, -3.4), (-3.4, 0.2), (0.2, 3.8), (3.8, 7.4), (7.4, 11.2), (11.2, 15)):
-    room('F3', '个人寝室', R(x0, x1, 3, 8), 'card', None, rng=(15, 20), note='正式住客每人一间；门是单向玻璃；北窗', access='正式住客',
+    room('F3', '正式母畜个人寝室', R(x0, x1, 3, 8), 'card', None, rng=(15, 20), note='正式住客每人一间；门是单向玻璃；北窗', access='正式住客',
          cid='F3-C01', furn=[(x0 + 0.3, x0 + 1.3, 5.6, 7.6), (x1 - 1.0, x1 - 0.4, 6.4, 7.6)])
 room('F3', '新进公共寝区', R(-15, -7, 3, 8), 'card', 40, note='4 床；入住第一个月的住处', access='新人', cid='F3-C02',
      furn=beds(-14.6, 5.6, 4, dx=2.0, w=0.9))
@@ -277,10 +276,10 @@ for _r in ROOMS:
         _r['note'] = (_r['note'] + '；' if _r['note'] else '') + '仓库推断，卡未写'
 _n = 0
 for _r in ROOMS:
-    if _r['name'] == '个人寝室':
+    if _r['card_id'] == 'F3-C01':
         _n += 1; _r['no'] = _n
 KIND_C = {'card': '#f4ecd8', 'restricted': '#d9d4cc', 'support': '#e3e6ea', 'circ': '#fbfaf7', 'open': '#efefef', 'inferred': '#e4ecd9', 'owner': '#e6dcef', 'user': '#dcecef'}
-KIND_CN = {'card': '卡设定房间', 'restricted': '按原卡（不描述）', 'support': '辅助：楼梯 / 电梯 / 卫浴 / 设备（仓库推断，卡未写）', 'circ': '走廊 / 过厅', 'open': '卡未写用途（留白）', 'inferred': '未定用途体量（卡未写）', 'owner': '主人专用通道', 'user': '用户设定房间（卡未写）'}
+KIND_CN = {'card': '卡设定房间', 'restricted': '卡设定房间（只写名字，不描述）', 'support': '辅助：楼梯 / 电梯 / 卫浴 / 设备（仓库推断，卡未写）', 'circ': '走廊 / 过厅', 'open': '卡未写用途（留白）', 'inferred': '未定用途体量（卡未写）', 'owner': '主人专用通道', 'user': '用户设定房间（卡未写）'}
 
 
 def check():
@@ -378,7 +377,7 @@ def draw(fl, ax, title=True, small=False):
         xs = [p[0] for p in r['poly']]; ys = [p[1] for p in r['poly']]
         cx, cy = sum(xs) / len(xs), sum(ys) / len(ys)
         w = max(xs) - min(xs); h = max(ys) - min(ys)
-        nm = r['name'] if r['name'] != PH else f"{r['card_id']}\n{PH}"   # 按原卡的房间：标编号 + 占位
+        nm = r['name']
         if r['kind'] in ('circ',) and area(r['poly']) < 30:
             continue
         lab = nm if 'no' not in r else f"寝{r['no']}"
@@ -455,10 +454,10 @@ def main():
     fig.text(0.40, 0.985, NOTE, fontsize=8, va='top', color='#555', wrap=True)
     fig.savefig(os.path.join(out, 'eden2_plans_sheet.png'), facecolor='white'); plt.close(fig)
     # 数据
-    WORDS = {c: w for c, f, n, w, b in CARD_ROOMS}; BIND = {c: b for c, f, n, w, b in CARD_ROOMS}
+    WORDS = {c: w for c, f, n, w in CARD_ROOMS}
     data = dict(
         _说明='伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；'
-              '楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 卡设定房间 / restricted 按原卡、不描述（name 是占位「（按原卡）」，原名运行时从用户的卡绑定）/ support 辅助 / circ 走廊 / open 卡未写 / owner 主人专用 / user 用户设定（src=用户设定）。',
+              '楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 卡设定房间 / restricted 卡设定房间、只写名字不描述（name 照抄卡原名）/ support 辅助 / circ 走廊 / open 卡未写 / owner 主人专用 / user 用户设定（src=用户设定）。',
         version=1, src='docs/card-digest.md §6', units='m',
         floors=[dict(id=i, name=n, z=z) for i, n, z in FLOORS],
         blocks=[dict(id=b, name=BLK_CN[b], storeys=STOREYS[b], poly=blk_poly(b)) for b in BLK],
@@ -468,10 +467,10 @@ def main():
                dict(id='owner', name='主人专用通道', floors=['B2', 'B1', 'F1', 'F2'], poly=OWN, access='仅主人')],
         rooms=[dict(no=r.get('no'), src=r['src'] or ('卡' if r['kind'] in ('card', 'restricted') else '仓库推断（卡未写）'), id=f"{r['floor']}-{k:02d}", floor=r['floor'], name=r['name'], kind=r['kind'], block=r['block'], area=r['area'],
                     card_area=r['card_area'], card_range=r['range'], card_id=r['card_id'], note=r['note'], access=r['access'],
-                    words=WORDS.get(r['card_id'], []), synonyms=SYNONYMS.get(r['card_id'], []), bind=BIND.get(r['card_id']), poly=[list(p) for p in r['poly']])
+                    words=WORDS.get(r['card_id'], []), synonyms=SYNONYMS.get(r['card_id'], []), poly=[list(p) for p in r['poly']])
                for k, r in enumerate(ROOMS)],
-        card_rooms=[dict(cid=c, floor=f, order=int(c[-2:]), name=n or PH, words=w, synonyms=SYNONYMS.get(c, []), bind=b,
-                         poly_ids=[f"{r['floor']}-{k:02d}" for k, r in enumerate(ROOMS) if r['card_id'] == c]) for c, f, n, w, b in CARD_ROOMS],
+        card_rooms=[dict(cid=c, floor=f, order=int(c[-2:]), name=n, words=w, synonyms=SYNONYMS.get(c, []),
+                         poly_ids=[f"{r['floor']}-{k:02d}" for k, r in enumerate(ROOMS) if r['card_id'] == c]) for c, f, n, w in CARD_ROOMS],
         card_id_alias=CARD_ID_ALIAS, retired_names=RETIRED_NAMES,
     )
     with open(os.path.join(ROOT, 'map', 'data', 'eden_estate_rooms.json'), 'w') as f:

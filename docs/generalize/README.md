@@ -57,7 +57,7 @@ map/packs/<id>/
 | `data.maps` | 是 | 地图注册表 |
 | `data.events` | 否 | 事件分类；不写就没有事件功能。`builtin` 只给 eden 用 |
 | `data.worldbook` | 否 | 世界书附加条目 |
-| `data.world` / `derived` / `rooms` / `cardBind` | 否 | 世界图地点、派生数据、分层房间平面、卡原名绑定；eden 在用，新包一般不需要 |
+| `data.world` / `derived` / `rooms` | 否 | 世界图地点、派生数据、分层房间平面；eden 在用，新包一般不需要 |
 | `chat.var` | 否 | 聊天变量顶层键，默认 `tc_<id>` |
 | `vars` | 否 | MVU `stat_data` 的默认路径，例如 `{ "location": "世界.当前地点" }`。键见 `tavern/adapter.mjs` 的 `FIELDS`；没写的键按字段名自动找，用户也能在设置「变量映射」里改 |
 | `cdn.repo` / `cdn.npm` | 否 | 你自己的 GitHub 仓库（jsDelivr gh 线路）；不写就用本仓库 |

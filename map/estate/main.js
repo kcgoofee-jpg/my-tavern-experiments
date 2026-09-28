@@ -359,8 +359,7 @@ function mkLabel(parent, x, y, z, cls) {
   const el = document.createElement('div'); el.className = 'lbl ' + cls; el.appendChild(document.createElement('span'));
   const o = new CSS2DObject(el); o.position.set(x, y, z); o.center.set(0.5, 0.5); o.visible = false; parent.add(o); return o;
 }
-const PH = '（按原卡）';   // 名字不入库的卡房间：占位（map/card-bind.mjs）；查看器发来 estate:bind 后换成用户卡里的原名（只在本机）
-const enName = (d) => d.en || (d.name === PH ? 'Per card' : '');
+const enName = (d) => d.en || '';
 const nameOf = (it) => {
   const d = it.d;
   if (it.kind === 'area' || it.kind === 'car') return LANG === 'en' ? d.en || d.name : d.name;
@@ -384,7 +383,7 @@ function buildNav() {
   C3.setText({ expand: zh ? '展开' : 'Expand', collapse: zh ? '收起' : 'Collapse', region: zh ? '房间、图例与关于' : 'Room, legend and about' });
   C3.sheet.label('room', zh ? '房间' : 'Room', zh ? '房' : 'R'); C3.sheet.label('legend', zh ? '图例' : 'Legend', zh ? '图' : 'L'); C3.sheet.label('about', zh ? '关于' : 'About', zh ? '关' : 'A');
   $('#cardEmpty').textContent = zh ? '点模型上的房间或区域，这里显示说明' : 'Tap a room or area on the model to see it here';
-  const KL = zh ? { card: '卡设定房间', owner: '主人区域', support: '服务 / 后勤', circ: '走廊 / 楼梯', restricted: '不描述（按原卡）', inferred: '仓库推断' } : { card: 'Rooms from the card', owner: "Owner's areas", support: 'Service', circ: 'Corridors / stairs', restricted: 'Not described (per card)', inferred: 'Inferred' };
+  const KL = zh ? { card: '卡设定房间', owner: '主人区域', support: '服务 / 后勤', circ: '走廊 / 楼梯', restricted: '卡设定房间（不描述）', inferred: '仓库推断' } : { card: 'Rooms from the card', owner: "Owner's areas", support: 'Service', circ: 'Corridors / stairs', restricted: 'Not described (per card)', inferred: 'Inferred' };
   legendEl.innerHTML = '<ul>' + Object.entries(KL).map(([k, v]) => `<li><i style="background:${KIND_COL[k]}"></i>${v}</li>`).join('') + '</ul>';
   aboutEl.innerHTML = `<h2>${tx('title')}</h2><div class="motto">${tx('motto')}</div><p>${tx('sub')}</p><p>${tx('hint')}</p>`;
   C3.setTitle(tx('title'));
@@ -613,7 +612,7 @@ function keysOf(it) {
   const d = it.d;
   if (it.kind === 'area') return [d.name, d.en, ...(d.alias || [])];
   const base = d.name.replace(/[（(][^）)]*[）)]/g, '').replace(/\s*[×x]\s*\d+\s*$/, '').trim();   // 同 here.mjs planWords：去括注 / 「 ×2」，「 / 」两侧各算一个叫法
-  return [d.name === PH ? null : d.name, d.id, d.card_id, d.name === PH ? null : base, ...(d.name === PH ? [] : base.split(/\s*[\/／]\s*/).filter((w) => [...w].length >= 2)), ...(d.alias || []), ...(d.words || []), ...(d.synonyms || []), ...(ALIAS[d.name] || [])];
+  return [d.name, d.id, d.card_id, base, ...(base.split(/\s*[\/／]\s*/).filter((w) => [...w].length >= 2)), ...(d.alias || []), ...(d.words || []), ...(d.synonyms || []), ...(ALIAS[d.name] || [])];
 }
 // 旧编号 / 仓库以前自编的旧名（聊天里存过的）→ 现在的卡编号
 const OLD = { ...(CARD.card_id_alias || {}), ...(CARD.retired_names || {}) };
@@ -786,22 +785,11 @@ function focusRoomMsg(name, c) {
   if (!it) it = findByName(name);
   if (it) focusItem(it); else unpin();
 }
-// 卡房间原名（查看器从用户自己的卡里按结构取到的，见 map/card-bind.mjs）：只换显示名 / 搜索词，不存盘
-function bindNames(names) {
-  let n = 0;
-  for (const it of ITEMS) {
-    const nm = it.kind === 'room' && typeof names[it.d.card_id] === 'string' ? names[it.d.card_id].slice(0, 40) : null; if (!nm || nm === it.d.name) continue;
-    const words = [...(it.d.words || [])]; if (it.d.name !== PH && !words.includes(it.d.name)) words.push(it.d.name);
-    it.d = { ...it.d, name: nm, words }; n++;
-  }
-  if (n) { relabel(); needs = true; }
-}
 function post(msg) { if (IN_FRAME) try { window.parent.postMessage(msg, '*'); } catch (e) { } }
 window.addEventListener('message', (e) => {
   if (IN_FRAME && e.source !== window.parent) return;
   const d = e.data; if (!d || typeof d !== 'object' || typeof d.type !== 'string' || !d.type.startsWith('estate:')) return;
   if (d.type === 'estate:room') focusRoomMsg(d.name, d.card);
-  else if (d.type === 'estate:bind' && d.names && typeof d.names === 'object') bindNames(d.names);
   else if (d.type === 'estate:floor') { const m = parseFloor(d.floor); if (m != null) setMode(m, { fly: true }); }
   else if (d.type === 'estate:inset' && Number.isFinite(d.left)) { document.documentElement.style.setProperty('--inset', Math.max(6, d.left) + 'px'); frustum(); needs = true; }
   else if (d.type === 'estate:pause') { paused = true; }   // 查看器休眠：停渲染循环，模型与 GPU 资源留着
@@ -856,7 +844,7 @@ function onFirstFrame() {
   loadEl.classList.add('done'); setTimeout(() => { loadEl.innerHTML = ''; loadEl.hidden = true; }, 500);
   window.__estate.firstFrameMs = performance.now() - T0;
   const seen = new Set();
-  const rooms = ITEMS.filter((it) => it.kind === 'room' && (it.d.kind === 'card' || it.d.kind === 'restricted') && it.d.name !== PH && !seen.has(it.d.floor + it.d.name) && seen.add(it.d.floor + it.d.name))
+  const rooms = ITEMS.filter((it) => it.kind === 'room' && (it.d.kind === 'card' || it.d.kind === 'restricted') && !seen.has(it.d.floor + it.d.name) && seen.add(it.d.floor + it.d.name))
     .map((it) => ({ name: it.d.name, en: enName(it.d), floor: it.d.floor, alias: ALIAS[it.d.name] || [] }));
   post({ type: 'estate:ready', floors: FLOORS.map((f) => f.id), rooms: rooms.concat(ITEMS.filter((it) => it.kind === 'area').map((it) => ({ name: it.d.name, en: it.d.en, floor: 'ext', alias: it.d.alias }))) });
   if (mode === 'ext' && !EMBED && !REDUCED && !tween) { const v = viewFor('ext'); v.ease = 'out'; flyTo(v, 2000); }

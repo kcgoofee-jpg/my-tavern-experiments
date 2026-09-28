@@ -21,7 +21,6 @@
         "world": { "$ref": "#/$defs/path", "description": "世界图地点（places / fiefs / realms）；没有世界图的包不写" },
         "derived": { "$ref": "#/$defs/path" },
         "rooms": { "$ref": "#/$defs/path", "description": "分层房间平面（庄园类室内图）" },
-        "cardBind": { "$ref": "#/$defs/path", "description": "卡原名绑定规则（仓库不写卡原文，运行时从卡读）" },
         "events": { "anyOf": [ { "const": "builtin" }, { "$ref": "#/$defs/path" } ], "description": "事件分类（结构 = events.schema.json）；builtin = 核心自带的天城分类（只有 eden 用）" },
         "worldbook": { "$ref": "#/$defs/path", "description": "世界书附加条目源文件（给模型的地图联动规范）" }
       } },

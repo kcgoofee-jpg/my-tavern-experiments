@@ -234,14 +234,13 @@ const plain = o => !!o && typeof o === 'object' && !Array.isArray(o);
 const IDENT = /身份|identity|role|职业|头衔|title/i, STAGE = /进度|阶段|stage|progress/i, REP = /声望|reputation|名望/i;
 const isRoster = t => { t = val(t); return plain(t) && Object.values(t).every(v => plain(val(v))); };
 // v0.9.6（E2 / E13）：核心数值（0–100）按 5 档阈值（≤20 / ≤40 / ≤60 / ≤80 / ≤100，docs/card-digest.md）换算档位。
-// v0.9.7：档名不写死——运行时从卡的变量更新规则里按结构取（card-bind.mjs findCoreCategories：「<字段>: … category: a-b: 名」），
-// 取到就用卡自己的叫法（cats = [{ max, name }]），取不到一律「档 n」。
-export const CORE_CUTS = [20, 40, 60, 80, 100];
-export function coreStage(field, n, cats = null) {
+// 档名只对这张卡的默认字段用卡原文（变量更新规则 category，照抄）；别的卡的字段一律「档 n」。
+export const CORE_CUTS = [20, 40, 60, 80, 100], CORE_DEFAULT = '母畜值';
+const CORE_NAMES = ['抗拒期', '动摇期', '接受期', '沉溺期', '完全母畜化'];
+export function coreStage(field, n) {
   if (typeof n !== 'number' || !Number.isFinite(n)) return '';
-  if (Array.isArray(cats) && cats.length) { const c = cats.find(c => n <= c.max) || cats[cats.length - 1]; if (c?.name) return c.name; }
   const i = CORE_CUTS.findIndex(c => n <= c), k = i < 0 ? 4 : i;
-  return `档 ${k + 1}`;
+  return field === CORE_DEFAULT ? CORE_NAMES[k] : `档 ${k + 1}`;
 }
 const num = v => (typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? +v : NaN);
 function rows(tbl, stageKey, fk = {}) {
@@ -252,7 +251,7 @@ function rows(tbl, stageKey, fk = {}) {
     if (sk) { const s = str(val(o[sk])); if (s) it.stage = s; }
     const gk = fk.gradeField, ck = fk.coreField;
     if (gk && gk !== '-' && gk in o) { const g = str(val(o[gk])); if (g) it.grade = g; }
-    if (ck && ck !== '-' && ck in o) { const n = num(val(o[ck])); if (Number.isFinite(n)) { it.core = n; it.coreKey = ck; it.coreStage = coreStage(ck, n, fk.coreCats); } }
+    if (ck && ck !== '-' && ck in o) { const n = num(val(o[ck])); if (Number.isFinite(n)) { it.core = n; it.coreKey = ck; it.coreStage = coreStage(ck, n); } }
     const more = {};   // v0.9.6 E13 其余字段（人物卡「更多资料」）：只读，原样取值；布尔的外界知情保留 true / false
     for (const [f, k] of Object.entries(MORE_KEYS)) { const fk_ = fk[f]; if (!fk_ || fk_ === '-' || !(fk_ in o)) continue; const v = val(o[fk_]);
       if (typeof v === 'boolean') more[k] = v; else if (typeof v === 'number' && Number.isFinite(v)) more[k] = v; else { const s = str(v); if (s) more[k] = s.slice(0, 80); } }
