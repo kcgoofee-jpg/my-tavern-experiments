@@ -111,13 +111,16 @@ export function renderAbout() {
     latest: a.locked ? tx('about.ch_locked', `已锁定 ${a.ref || ''}`, { ref: a.ref || '' }) : tx('about.ch_latest', `自动用最新正式版（当前 ${a.ref || ''}）`, { ref: a.ref || '' }),
     ref: tx('about.ch_ref', `预览提交 ${a.ref || ''}`, { ref: a.ref || '' }), local: tx('about.ch_local', '本地 / 单独打开') }[a.channel || (window.top === window ? 'local' : '')] || '';
   let h = `<b>${esc(tx('about.title', '地图版本'))}</b> v${esc(ver || '?')}${code ? ` · <span style="font-family:var(--font-mono)">${esc(code)}</span>` : ''}`;
-  if (ch) h += `<br>${esc(ch)}${a.sha ? ` · ${esc(String(a.sha).slice(0, 7))}` : ''}`;
+  const SRC = { jsdmirror: 'jsdmirror', jsdelivr: 'jsDelivr', raw: 'GitHub raw', github: 'GitHub API', cache: tx('about.src_cache', '本机缓存'), baked: tx('about.src_baked', '脚本内置') };
+  if (ch) h += `<br>${esc(ch)}${a.channel === 'follow' && a.build != null ? ` · ${esc(tx('about.follow_build', '构建 #{n} · 来源 {s}', { n: a.build, s: SRC[a.source] || a.source || '?' }))}` : ''}${a.sha ? ` · ${esc(String(a.sha).slice(0, 7))}` : ''}`;
   if (a.line) h += `<br>${esc(tx('about.line', '线路：{l}', { l: a.line }))}`;
   if (window.top !== window) h += `<br><button type="button" class="btn" id="updBtn" ${updBusy ? 'disabled' : ''}>${esc(updBusy ? tx('about.checking', '检查中…') : tx('about.check', '检查更新'))}</button>`;
   const r = updRes;
   if (r) {
     const how = a.channel === 'follow' ? tx('about.how_follow', '跟随版会自动用上新版本：刷新酒馆页面即可') : tx('about.how_tag', '固定版不会自己变：导入新版脚本「【地图】伊甸地图 v{v}」（同名覆盖）', { v: r.latest || '' });
-    h += `<div class="res" role="status">${r.status === 'latest' ? esc(tx('about.latest', '已是最新（v{v}）', { v: r.latest || ver }))
+    if (r.follow) h += `<div class="res" role="status">${esc(r.status === 'fail' ? tx('about.fail', '检查失败：连不上更新接口，稍后再试')
+      : tx(r.status === 'new' ? 'about.follow_new' : 'about.follow_latest', r.status === 'new' ? '分支有新构建 #{n}（来源 {s}）：刷新酒馆页面即可' : '已是最新（最新构建 #{n} · 来源 {s}）', { n: r.build, s: SRC[r.source] || r.source || '?' }))}</div>`;
+    else h += `<div class="res" role="status">${r.status === 'latest' ? esc(tx('about.latest', '已是最新（v{v}）', { v: r.latest || ver }))
       : r.status === 'new' ? `${esc(tx('about.new', '有新版 v{v}', { v: r.latest }))}${r.code ? ' · ' + esc(r.code) : ''}<br><a href="${esc(r.notes || '')}" target="_blank" rel="noopener">${esc(tx('about.notes', '更新说明'))}</a><br>${esc(how)}`
       : esc(tx('about.fail', '检查失败：连不上更新接口，稍后再试'))}</div>`;
   }

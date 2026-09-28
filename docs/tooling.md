@@ -59,11 +59,24 @@ bash tools/smoke.sh --cdn <提交>    # 另外 HEAD 一组 jsDelivr 地址（入
 ## 5. 一条命令发布到预览（**不是发版**）
 ```bash
 bash tools/ship.sh --dry-run   # 演练：smoke、git push --dry-run、列出要预热的文件数、预览脚本写到临时目录
-bash tools/ship.sh             # smoke → git push 当前分支 → warm_cdn.sh <HEAD> → build_preview_script.py --follow <分支> --out ~/Downloads/酒馆/预览
+bash tools/ship.sh             # smoke → bump_head.py --push（rebase + head.json + 推送）→ warm_cdn.sh <内容提交> --purge-branch <分支> → build_preview_script.py --follow <分支> --out ~/Downloads/酒馆/预览
 ```
 - 只推送已提交的内容，工作区有改动时会提醒。
 - 汇总里列出提交号、CDN 预热中非 200 的个数，以及预览脚本的位置；**非 200 > 0 时退出码 1**（2026-09-27 起）。
 - 它推的是**分支 + HEAD 提交**、发的是「跟随分支」预览脚本：导入一次，之后刷新酒馆就拿到最新提交。正式发版要打标签、发钉标签的脚本和世界书附加条目，见第 8 节——**ship.sh 不能当发版用**。
+
+### 5.1 跟随分支的头指针 `map/data/head.json`（2026-09-28，没梯子卡在旧提交的修复）
+**每次推送跟随分支前的最后一步**（ship.sh 已自带；手动推送的 agent 用它代替 `git push`）：
+```bash
+python3 tools/bump_head.py --push            # fetch → rebase 到 origin/<分支> → 写 head.json 并单独提交「head #N」→ push（被拒自动重来）
+bash tools/warm_cdn.sh <head.json 里的 sha> 16 --purge-branch <分支>   # 预热内容提交 + 清分支路径 head.json / 加载器入口的 jsDelivr 缓存
+```
+- 内容：`{"build": N, "sha": "<内容提交>", "branch", "at"}`。`sha` 是 head 提交的**父提交**：文件写不进自己所在提交的提交号，而两者只差 head.json 本身，按父提交加载的代码完全一样。所以必须在 rebase **之后**写（否则 sha 指向不会推上去的提交），`--push` 已按这个顺序做。
+- 为什么这样：国内没梯子时 `api.github.com` 常不通；jsDelivr 解析接口对带「/」的分支名返回 `version: null`；旧加载器因此一直用本机记住的旧提交（用户卡在 4a52335，落后 79 个提交，还显示「已是最新」）。而**分支路径的文件**（`cdn.jsdmirror.com/gh/<仓库>@<分支>/map/data/head.json`、jsDelivr 同路径、raw.githubusercontent）国内能取到。
+- 读取（`map/tavern/follow.mjs` 的 `resolveFollow`，加载器原样嵌入同一段）：jsdmirror / jsDelivr / raw 三路**并行**取，取**构建号最大**的（某一路缓存旧了也不影响）；都不行问 GitHub contents 接口；本机记住的**只在构建号更大时**才用（CDN 旧缓存不会让人倒退，本机旧值也不会盖过新构建）。再按提交号加载 `eden-map.js`（提交号不可变，不受分支缓存影响；失败退回生成时烘进的提交）。
+- 分支路径在 jsDelivr 上最长缓存约 12 小时，所以 warm_cdn `--purge-branch` 调 purge.jsdelivr.net 清掉 head.json 与入口文件；jsdmirror 没有公开的清缓存接口，靠 raw 与「取最大」兜底。
+- 地图里：`followCheck`（打开 / 每 10 分钟）和设置「检查更新」都走同一条链；设置「关于」显示「跟随分支 … · 构建 #N · 来源 jsdmirror」。
+- **旧的跟随脚本要重新导入一次**：旧加载器的解析写死在脚本里（GitHub 接口 → jsDelivr 解析接口 → 本机旧提交），远端没法改它；它加载到的旧提交里的地图代码也是旧的。重新导入（同一个固定 id，覆盖）后就不用再导。
 
 ## 6. NOTES 合并
 - `.gitattributes`：`NOTES_FROM_LOCAL.md merge=union`（git 内置驱动）。

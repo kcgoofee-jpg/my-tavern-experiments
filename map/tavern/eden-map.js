@@ -400,7 +400,7 @@
     if (e.data?.type === 'eden-map:splash') showSplash();   // 设置「重新显示开场自检」
     if (e.data?.type === 'eden-map:varmap-set') setVarUser(e.data.user);   // v0.9.5 设置「变量映射」
     if (e.data?.type === 'eden-map:compose' && typeof e.data.text === 'string') composeIn(e.data.text);   // v0.9.6 地图 → 聊天：只填不发
-    if (e.data?.type === 'eden-map:check-update') checkUpdate().then(r => post({ type: 'eden-map:update-result', ...r }));   // v0.9.6「检查更新」
+    if (e.data?.type === 'eden-map:check-update') (channel() === 'follow' && SCRIPT.ref ? followUpdate() : checkUpdate()).then(r => post({ type: 'eden-map:update-result', ...r }));   // v0.9.6「检查更新」
   };
   window.parent.addEventListener('message', onMsg);
   // 合并顶栏：宿主栏的宽度告诉查看器，查看器顶栏右端让出这一段；线路按钮移进查看器设置「高级」
@@ -437,8 +437,12 @@
   const buildNow = () => aboutBuild ??= fetch(BASE + 'data/build.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
   async function sendAbout() { const b = await buildNow(), l = LINES.find(x => x.key === line);
     post({ type: 'eden-map:about', version: b?.version || SCRIPT.version || VER || null, code: b?.code || SCRIPT.code || null, channel: channel(),
-      ref: SCRIPT.ref || (VER ? tagOf(VER) : refOf()), sha: SCRIPT.sha || null, locked: !!SCRIPT.locked, line: l ? (UL === 'en' && l.name_en) || l.name : '' }); }
+      ref: SCRIPT.ref || (VER ? tagOf(VER) : refOf()), sha: SCRIPT.sha || null, build: Number.isInteger(SCRIPT.build) ? SCRIPT.build : null, source: SCRIPT.source || null, locked: !!SCRIPT.locked, line: l ? (UL === 'en' && l.name_en) || l.name : '' }); }
   // 查最新 map-v 标签（jsDelivr 数据接口，绕缓存），再取该标签的 build.json（走当前线路）；比较版本号。只报告，不安装
+  async function followUpdate() {   // 跟随分支：设置里「检查更新」走 head.json 链（和加载器、followCheck 一样；不看正式版标签）
+    const h = await followHead(); if (!h) return { status: 'fail', follow: true };
+    return { status: followNewer(h) ? 'new' : 'latest', follow: true, build: h.build, sha: String(h.sha).slice(0, 12), source: h.source, cur: SCRIPT.build ?? null };
+  }
   async function checkUpdate() {
     try {
       SC ??= await import(SELF + 'tavern/selfcheck.mjs');
@@ -1003,12 +1007,21 @@
   const updChannel = () => channel() === 'latest' && SCRIPT.locked ? 'locked' : channel();
   // 跟随分支预览（用户 2026-09-28）：打开时与面板开着每 10 分钟查分支最新提交；比加载的提交新 → 提示「有更新，刷新载入」（面板开着也弹，不自动刷新）
   let followSeen = null;
+  // 2026-09-28：没梯子时 GitHub 接口不通 → 改用 tavern/follow.mjs（分支 head.json：jsdmirror / jsDelivr / raw 取构建号最大的，最后才 GitHub），和加载器同一套
+  let FW = null;
+  const fwGet = async u => { const c = new AbortController(), to = setTimeout(() => c.abort(), 5000);
+    try { const r = await fetch(u, { cache: 'no-store', credentials: 'omit', signal: c.signal }); return r.ok ? await r.json() : null; } catch (e) { return null; } finally { clearTimeout(to); } };
+  async function followHead() {
+    FW ??= await import(SELF + 'tavern/follow.mjs').catch(() => null); if (!FW || !SCRIPT.ref) return null;
+    return FW.resolveFollow(REPO, SCRIPT.ref, fwGet, null).catch(() => null);
+  }
+  // 比加载的新：有构建号比构建号；老加载器（没有构建号）比提交号
+  const followNewer = h => !!h && (Number.isInteger(SCRIPT.build) ? h.build > SCRIPT.build : !!SCRIPT.sha && !String(h.sha).startsWith(SCRIPT.sha));
   async function followCheck() {
-    if (dead || channel() !== 'follow' || !SCRIPT.sha || !SCRIPT.ref) return;
-    const j = await fetch(`https://api.github.com/repos/${REPO}/commits/${encodeURIComponent(SCRIPT.ref)}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
-    const sha = typeof j?.sha === 'string' ? j.sha : ''; if (!sha || sha.startsWith(SCRIPT.sha) || sha === followSeen || dead) return;
-    followSeen = sha; const en = UL === 'en';
-    hostToast(en ? 'Update available — reload to load it' : '有更新，刷新载入', [(en ? 'Latest commit ' : '分支最新提交 ') + sha.slice(0, 7)], 0, t => {
+    if (dead || channel() !== 'follow' || !SCRIPT.ref) return;
+    const h = await followHead(); if (!followNewer(h) || h.sha === followSeen || dead) return;
+    followSeen = h.sha; const en = UL === 'en';
+    hostToast(en ? 'Update available — reload to load it' : '有更新，刷新载入', [(en ? `Latest build #${h.build} · ` : `分支最新构建 #${h.build} · `) + String(h.sha).slice(0, 7)], 0, t => {
       t.classList.add('em-upd', 'em-follow'); const acts = pdoc.createElement('div'), b = pdoc.createElement('button'); acts.className = 'em-acts nt-acts'; b.className = 'nt-pri';
       b.type = 'button'; b.textContent = en ? 'Reload' : '刷新载入'; b.onclick = () => window.parent.location.reload(); acts.append(b); t.append(acts); }, true);
   }

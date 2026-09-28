@@ -94,16 +94,23 @@ async function page({ latest = 'map-v9.9.9', build = { version: '9.9.9', code: '
   rep.check('avatar_cap_warns', r.last === false && r.ok === 24 && !!t && /头像已达上限/.test(t.text), JSON.stringify({ ...r, st: r.st && { ours: r.st.ours, avatars: r.st.avatars }, t }));
   await P.ctx.close();
 }
-// 跟随分支：面板开着，分支有更新的提交 → 「有更新，刷新载入」（不自动刷新）；同一提交不提示
-for (const [newer, want] of [['bbbbbbbbbbbb0000', true], ['aaaaaaaaaaaa0000', false]]) {
+// 跟随分支（2026-09-28 起走 head.json 链）：GitHub 不通、jsDelivr 解析接口 null，jsdmirror 分支路径的 head.json 构建号更大 → 「有更新，刷新载入」；同构建不提示
+for (const [build, want] of [[81, true], [80, false]]) {
   const P = await B.newPage('desktop', { tier: 'save' });
-  await P.ctx.addInitScript(() => { if (window.top === window) { window.__edenMapScript = { channel: 'follow', ref: 'cloud/test', sha: 'aaaaaaaaaaaa' }; window.__edenAutoCheckDelay = 999999; } });
-  await P.ctx.route('https://api.github.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ sha: newer }) }));
-  await P.ctx.route('https://data.jsdelivr.com/**', r => r.fulfill({ contentType: 'application/json', body: '{"versions":[]}' }));
-  const H = await openHost(P, { here: '天城·中层·辉光大教堂', chat: 'fol' + want }); await H.open(); await B.wait(5000);
+  await P.ctx.addInitScript(() => { if (window.top === window) { window.__edenMapScript = { channel: 'follow', ref: 'cloud/test', sha: 'aaaaaaaaaaaa', build: 80, source: 'jsdmirror' }; window.__edenAutoCheckDelay = 999999; } });
+  await P.ctx.route('https://api.github.com/**', r => r.abort());
+  await P.ctx.route('https://raw.githubusercontent.com/**', r => r.abort());
+  await P.ctx.route('https://data.jsdelivr.com/**', r => r.fulfill({ contentType: 'application/json', body: '{"versions":[],"version":null}' }));
+  await P.ctx.route(/\/gh\/[^@]+@cloud\/test\/map\/data\/head\.json/, r => r.request().url().includes('jsdmirror') ? r.fulfill({ contentType: 'application/json', body: JSON.stringify({ build, sha: 'b'.repeat(40) }) }) : r.abort());
+  const H = await openHost(P, { here: '天城·中层·辉光大教堂', chat: 'fol' + want }); await H.open();
+  if (want) await P.page.waitForSelector('#eden-map-root .em-follow', { timeout: 15000 }).catch(() => {}); else await B.wait(8000);
   const t = await q(P.page, '#eden-map-root .em-follow');
-  rep.check(`follow_${want ? 'newer' : 'same'}`, want ? !!t && /有更新，刷新载入/.test(t.text) : !t, JSON.stringify(t));
+  rep.check(`follow_${want ? 'newer' : 'same'}`, want ? !!t && /有更新，刷新载入/.test(t.text) && /#81/.test(t.text) : !t, JSON.stringify(t));
   if (want) await B.shot(P.page, OUT, 'follow_notice');
+  // 「检查更新」同一条链：回 update-result { follow, build, source }
+  const r = await P.page.evaluate(() => new Promise(res => { const f = document.querySelector('#eden-map-root iframe'); const on = e => { if (e.data?.type === 'eden-map:update-result') { removeEventListener('message', on); res(e.data); } };
+    f.contentWindow.addEventListener('message', on); f.contentWindow.Function("parent.postMessage({ type: 'eden-map:check-update' }, '*')")(); setTimeout(() => res(null), 8000); }));
+  rep.check(`follow_check_${want ? 'new' : 'latest'}`, !!r && r.follow && r.build === build && r.source === 'jsdmirror' && r.status === (want ? 'new' : 'latest'), JSON.stringify(r));
   await P.ctx.close();
 }
 const ok = rep.save(); await B.closeAll(); srv.stop(); process.exit(ok ? 0 : 1);

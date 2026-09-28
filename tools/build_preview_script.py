@@ -117,30 +117,50 @@ def build_release(tag, pointer='main'):
     return d
 
 
-def build_follow(branch, fallback):
-    """跟随分支：启动时解析分支最新提交号（GitHub API → jsDelivr 解析接口 → 上次成功的 → 生成时的提交），再按提交号加载。
-    按提交号加载可以绕开 jsDelivr 对分支名的缓存。"""
-    js = """// 地图预览（跟随分支 %(b)s）：取最新提交号，再依次尝试各线路
+def follow_src():
+    """map/tavern/follow.mjs 的 resolveFollow（去掉 export 与注释行），原样嵌进加载器：加载器和地图里的 followCheck 用同一套解析顺序。"""
+    src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'map', 'tavern', 'follow.mjs'), encoding='utf-8').read()
+    return '\n'.join(l for l in src.replace('export async function', 'async function').splitlines() if not l.startswith('//')).strip()
+
+
+def head_of(ref):
+    """生成时的兜底：ref 上的 map/data/head.json（没有 → 构建号 0、提交号 = ref 解析出的提交）。"""
+    try: h = json.loads(subprocess.run(['git', 'show', f'{ref}:map/data/head.json'], capture_output=True, text=True, check=True).stdout)
+    except Exception: h = {}
+    return h
+
+
+def build_follow(branch, fallback, baked=None):
+    """跟随分支（2026-09-28 改）：分支路径上的 map/data/head.json（构建号 + 内容提交号，tools/bump_head.py 推送前写）
+    从 jsdmirror / jsDelivr / raw.githubusercontent 并行取、取构建号最大的，都不行问 GitHub 接口；本机记住的只在构建号更大时用。
+    再按提交号加载（提交号不可变，绕开 jsDelivr 对分支名的缓存；带「/」的分支名 jsDelivr 解析接口返回 null，不再用它）。"""
+    baked = baked if isinstance(baked, dict) and isinstance(baked.get('build'), int) and baked.get('sha') else {'build': 0, 'sha': fallback}
+    js = """// 地图预览（跟随分支 %(b)s）：取分支最新构建（head.json），再按提交号依次尝试各线路
 (async () => {
-  const REPO = %(repo)s, BR = %(b)s, KEY = 'edenMapPreviewSha', HOSTS = %(hosts)s;
-  const tryJson = async (u, pick) => { try { const r = await fetch(u, { cache: 'no-store' }); if (r.ok) return pick(await r.json()); } catch (e) {} return null; };
-  let sha = await tryJson(`https://api.github.com/repos/${REPO}/commits/${encodeURIComponent(BR)}`, j => j.sha)
-         || await tryJson(`https://data.jsdelivr.com/v1/packages/gh/${REPO}/resolved?specifier=${encodeURIComponent(BR)}`, j => j.version);
-  try { if (sha) localStorage.setItem(KEY, sha); else sha = localStorage.getItem(KEY); } catch (e) {}
-  sha = (sha || %(fb)s).slice(0, 12);
-  try { window.__edenMapScript = Object.assign(window.__edenMapScript || {}, { sha }); } catch (e) {}
-  console.info('[地图] 预览提交', sha);
-  for (const h of HOSTS) {
-    const u = `https://${h}/gh/${REPO}@${sha}/map/tavern/eden-map.js`;
-    try { await import(u); return; } catch (e) { console.warn('[地图] 线路不可用，换下一个', u); }
+  const REPO = %(repo)s, BR = %(b)s, KEY = 'edenMapFollowHead', HOSTS = %(hosts)s, BAKED = %(baked)s;
+  const imp = window.__edenMapImport || (u => import(u));
+  const getJson = async u => { const c = new AbortController(), to = setTimeout(() => c.abort(), 5000);
+    try { const r = await (window.__edenMapFetch || fetch)(u, { cache: 'no-store', credentials: 'omit', signal: c.signal }); return r.ok ? await r.json() : null; } catch (e) { return null; } finally { clearTimeout(to); } };
+  %(resolve)s
+  let stored = null; try { stored = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+  if (!stored || !(stored.build >= BAKED.build)) stored = { ...BAKED, source: 'baked' };
+  const h = (await resolveFollow(REPO, BR, getJson, stored)) || stored;
+  if (h.source !== 'cache' && h.source !== 'baked') try { localStorage.setItem(KEY, JSON.stringify({ build: h.build, sha: h.sha })); } catch (e) {}
+  const sha = String(h.sha).slice(0, 12);
+  try { window.__edenMapScript = Object.assign(window.__edenMapScript || {}, { sha, build: h.build, source: h.source === 'cache' && stored.source === 'baked' ? 'baked' : h.source }); } catch (e) {}
+  console.info('[地图] 预览构建', '#' + h.build, sha, h.source);
+  for (const s of sha === BAKED.sha.slice(0, 12) ? [sha] : [sha, BAKED.sha.slice(0, 12)]) for (const x of HOSTS) {
+    const u = `https://${x}/gh/${REPO}@${s}/map/tavern/eden-map.js`;
+    try { await imp(u); return; } catch (e) { console.warn('[地图] 线路不可用，换下一个', u); }
   }
 })();
-""" % {'b': json.dumps(branch), 'repo': json.dumps(REPO), 'hosts': json.dumps(HOSTS), 'fb': json.dumps(fallback)}
+""" % {'b': json.dumps(branch), 'repo': json.dumps(REPO), 'hosts': json.dumps(HOSTS), 'baked': json.dumps({'build': baked['build'], 'sha': baked['sha']}),
+       'resolve': follow_src().replace('\n', '\n  ')}
     return {
         'type': 'script', 'enabled': True, 'name': f'【地图】世界地图（预览 · 跟随 {branch}）',
         'id': str(uuid.uuid5(uuid.NAMESPACE_URL, f'eden-map-preview-follow:{branch}')),
         'content': stamp(about('follow', branch)) + js,
-        'info': f'地图预览版（可复用）：每次打开时加载 {REPO} 分支 {branch} 的最新提交。推送新版本后刷新酒馆即可，不用重新导入。'
+        'info': f'地图预览版（可复用）：每次打开时加载 {REPO} 分支 {branch} 的最新构建（国内镜像优先，不需要梯子）。推送新版本后刷新酒馆即可，不用重新导入。'
                 '试用完请删除或停用，避免和卡内的「【地图】世界地图」同时运行。' + CREDIT,
         'button': {'enabled': False, 'buttons': []}, 'data': {}, 'export_with': {'button': True, 'data': True},
     }
@@ -161,8 +181,8 @@ def main():
         os.makedirs(a.out, exist_ok=True)
         path = os.path.join(a.out, f"【地图】预览-跟随-{a.follow.replace('/', '-')}.json")
         with open(path, 'w', encoding='utf-8') as f:
-            json.dump(packed(build_follow(a.follow, fb), a.pack), f, ensure_ascii=False, indent=2); f.write('\n')
-        print(f'写入 {path}（兜底提交 {fb[:12]}）'); return
+            json.dump(packed(build_follow(a.follow, fb, head_of('origin/' + a.follow)), a.pack), f, ensure_ascii=False, indent=2); f.write('\n')
+        print(f'写入 {path}（兜底提交 {fb[:12]}，构建 #{head_of("origin/" + a.follow).get("build", 0)}）'); return
     if a.tag:
         import subprocess
         tag = a.tag.strip()
