@@ -24,7 +24,7 @@
 - ~~中层 8K 底图重渲（含 7 座新建筑，head #51）~~ ✅
 - ~~地标一键流水线 tools/landmark.py（new/draft/board/gapcheck/final/ship/status）~~ ✅
 - ~~标注审图 tools/annotate_board.py；设定漏项检查写进 agent-brief~~ ✅
-- ~~渲染管线看板 tools/pipeline_status.sh（任务表 logs/pipeline_tasks.md）~~ ✅
+- ~~渲染管线看板~~（2026-09-28 用户要求删除；查状态用 tools/cloud/status.sh + tools/render_queue.sh status）
 - ~~token 统计 tools/token_report.py + docs/reports/token-usage.html~~ ✅
 - ~~项目设计总览 docs/project-design.md；本机清理计划 docs/local-cleanup-plan.md~~ ✅
 - ~~CI + 反馈按钮；4 个过时测试 + 跟随版自动检查更新 bug~~ ✅
