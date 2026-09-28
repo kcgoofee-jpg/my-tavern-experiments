@@ -1,6 +1,6 @@
 # 天城 · 中层（钢铁霓虹区，约 700 m 以下）· Blender 正俯视写实渲染（夜景草稿）
 # 用法：Blender -b -P tiancheng_mid.py -- [--res 1600] [--samples 64] [--out path.png] [--crop x0,y0,x1,y1 | --crops "x0,y0,x1,y1:名字;..." | --crops-json 文件] [--out-dir 目录] [--preview] [--data-only]
-#       [--glow 1]（所有发光的倍数）[--ambient .7]（天光）[--no-landmark-glow]（去掉地标围墙上连成框 / 圈的灯）[--day]（白天版：日光 + 天光，霓虹 / 轨道光带熄灭或改暗）
+#       [--glow 1]（所有发光的倍数）[--ambient .7]（天光）[--no-landmark-glow]（去掉地标围墙上连成框 / 圈的灯）[--day]（白天版：日光 + 天光，霓虹 / 轨道光带熄灭或改暗；[--sun 4.2] 太阳能量、[--dayexp .5] 白天曝光档可调）
 #       或 python3 tiancheng_mid.py -- ...（pip 装的 bpy）。参数与导出格式三层一致，见 docs/tiancheng-maps.md
 # 与上层同一相机、同一平面坐标、同一片城市（tc_city：OpenStreetMap 真实路网与建筑轮廓，© OpenStreetMap contributors）。
 # 设定：「层层叠叠的立体建筑群」「全息广告覆盖外墙」「日照被上层遮住，靠人造光」「悬浮轨道是主要公共交通工具，四通八达」。
@@ -883,13 +883,76 @@ _tight = tuple(map(float, str(layer.opt.get('--tight', '.8,6.5,1.8')).split(',')
 _fog = tuple(map(float, str(layer.opt.get('--fog', '.7,9.5,-.6')).split(',')))
 # A7：楼高层次——全漫射的天光下楼顶只按颜色分高低，缩小看核心区是一片均匀的灰。加一盏很弱的冷色平行光（上层浮岛之间漏下来的天光，
 # 方向与三层共用的太阳相同、软影），高楼在矮楼顶和街道上投下柔和的影子，楼高一眼读得出；天光相应略降，总亮度不变。
+def _day_tune():
+    """--day 渲染前的材质收尾（评审 4/10 的 B / C 两项）：只改材质与屋面顶点色——不动几何、随机序列与 map/data 导出；
+    不带 --day 不进这段，夜景不变。
+    - 绿地 / 草坪 / 树冠：单色平涂换成双色噪声斑驳 + 降饱和（左上的纯绿矩形不再是一块色板）；
+    - 屋面顶点色：偏红的暖色屋面（暗底上读成粉色小方块）向亮度去饱和；
+    - 四个地标给白天读法：教堂铅皮屋顶 / 石材提亮（十字平面读得出）、大学石墙提亮、军营操场换沙土色、检查点井圈换浅混凝土（井口保持纯黑）。"""
+
+    def _fix(c, k, desat):                                     # 乘 k 后按 desat 向亮度收敛（降饱和）
+        l = (.2126 * c[0] + .7152 * c[1] + .0722 * c[2]) * k
+        return tuple(min(1.0, l + (v * k - l) * (1 - desat)) for v in c)
+
+    def cmul(name, k=1.0, desat=0.0, rough=None, metal=None, c=None):
+        """平色材质（mat()）改 Base Color；双色 ramp（stone()）改两端；接了纹理链的（city_mat 系）不动顶点链接。"""
+        m = bpy.data.materials.get(name)
+        if m is None: return
+        b = tc.bsdf_of(m); ramp = next((nd for nd in m.node_tree.nodes if nd.type == 'VALTORGB'), None)
+        if ramp is not None:
+            for el in ramp.color_ramp.elements: el.color = (*_fix(el.color[:3], k, desat), 1)
+        elif not b.inputs['Base Color'].links:
+            b.inputs['Base Color'].default_value = (*(c if c is not None else _fix(b.inputs['Base Color'].default_value[:3], k, desat)), 1)
+        if rough is not None: tc.set_in(b, 'Roughness', rough)
+        if metal is not None: tc.set_in(b, 'Metallic', metal)
+
+    def lawn(name, c1, c2, scale=25):                          # 单色绿地 → 双色噪声（草的深浅斑驳 + 微凹凸）
+        m = bpy.data.materials.get(name)
+        if m is None: return
+        nt = m.node_tree; b = tc.bsdf_of(m)                # 保留 Principled 与输出节点，只摘掉旧纹理链
+        for nd in list(nt.nodes):
+            if nd != b and nd.type != 'OUTPUT_MATERIAL': nt.nodes.remove(nd)
+        out = next(nd for nd in nt.nodes if nd.type == 'OUTPUT_MATERIAL')
+        nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = scale; nz.inputs['Detail'].default_value = 6
+        ramp = nt.nodes.new('ShaderNodeValToRGB'); ramp.color_ramp.elements[0].color = (*c1, 1); ramp.color_ramp.elements[1].color = (*c2, 1)
+        nt.links.new(nz.outputs['Fac'], ramp.inputs['Fac'])
+        bp = nt.nodes.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = .08
+        nt.links.new(nz.outputs['Fac'], bp.inputs['Height']); nt.links.new(bp.outputs['Normal'], b.inputs['Normal'])
+        nt.links.new(ramp.outputs['Color'], b.inputs['Base Color']); nt.links.new(b.outputs['BSDF'], out.inputs['Surface'])
+        tc.set_in(b, 'Roughness', .9)
+
+    def desat_vcol(objs, desat=.6, mul=1.0):                   # 屋面顶点色：向亮度去饱和（可选整体乘）
+        for n_ in objs:
+            o = bpy.data.objects.get(n_)
+            if o is None or o.data.color_attributes.get('col') is None: continue
+            ca = o.data.color_attributes['col']
+            c = np.zeros(len(ca.data) * 4, np.float32); ca.data.foreach_get('color', c); c = c.reshape(-1, 4)
+            l = (c[:, :3] @ np.array([.2126, .7152, .0722], np.float32))[:, None]
+            c[:, :3] = np.clip(mul * (l + (c[:, :3] - l) * (1 - desat)), 0, 1)
+            ca.data.foreach_set('color', c.ravel())
+
+    lawn('univ_lawn', (.028, .045, .022), (.055, .072, .034))          # 大学校园：草坪降饱和 + 斑驳
+    lawn('parkmat', (.022, .036, .020), (.050, .064, .030))            # 全城公园绿地同处理
+    lawn('roof_garden', (.026, .042, .020), (.048, .060, .028))        # 天台花园
+    cmul('treeu', 1.8, .2); cmul('treeu2', 1.8, .2); cmul('treen', 2.2, .2); cmul('roof_treen', 2.2, .2)   # 树冠提一档、降饱和
+    desat_vcol([f'city{k_}' for k_ in range(4)] + [f'city{k_}_real' for k_ in range(4)])                   # 暖色屋面去饱和（粉色小方块）
+    desat_vcol(['cath_roofs'], desat=.25, mul=2.2)                     # 教堂铅皮屋顶整体提亮：十字平面在暗屋顶里读得出
+    cmul('cath_stone', 1.5); cmul('cath_spire', 1.5); cmul('cath_dome', 1.15, .1)                          # 教堂石材 / 尖塔提亮，铜绿穹顶只微调
+    cmul('univ_wall', 1.5); cmul('univ_wall2', 1.5); cmul('univ_slate2', 1.4)                              # 大学校园：石墙 / 钟楼顶提亮
+    cmul('yard', c=(.115, .104, .080), rough=.88); cmul('barracks_roof', c=(.135, .145, .128))             # 军营环带：操场换沙土色、营房屋面提亮
+    cmul('ck', c=(.30, .29, .265), rough=.6, metal=0)                  # 检查点：井圈 / 闸楼浅混凝土（井口 shaft 保持纯黑）
+    cmul('ck_canopy', c=(.30, .185, .065), rough=.55)                  # 井口雨棚：琥珀警示色，暗部里的颜色锚点
+
 if DAY:
     # --day：白天版——太阳走 tc.sun_rot() 白天几何（215° 方位不变，天顶角 35° / 高度角 55°，比夜景 40° 更高：tc_common SUN_ROT_DAY），
     # 高楼与浮岛遮挡板把直射光挡在外面：楼顶亮、街道峡谷暗的强对比；天光用与上层白天一致的天蓝；夜景灯光全拆、发光面改暗色漆面。
     tc.day_reset()
-    _sun = bpy.data.lights.new('sun', 'SUN'); _sun.energy = layer.f('--sun', 3.2); _sun.angle = math.radians(1.2); _sun.color = (1, .96, .9)
+    # 评审（白天草稿 4/10）A 项·欠曝约 2 档：太阳 3.2→4.2、天光 .35→1.0 同步抬，再走 finish 的 exposure ≈ +.5 档
+    # （阴影靠天光抬起来，直射面不至于全剪；--sun / --dayexp 可调）。夜景与 map/data 不走这段。
+    _sun = bpy.data.lights.new('sun', 'SUN'); _sun.energy = layer.f('--sun', 4.2); _sun.angle = math.radians(1.2); _sun.color = (1, .96, .9)
     _so = bpy.data.objects.new('sun', _sun); col_main.objects.link(_so); _so.rotation_euler = tc.sun_rot()
-    layer.finish(world=((.55, .65, .8), .35))
+    _day_tune()
+    layer.finish(world=((.55, .65, .8), 1.0), exposure=layer.f('--dayexp', .5))
 else:
     _sky = bpy.data.lights.new('gap_skylight', 'SUN'); _sky.energy = layer.f('--gapsun', .8); _sky.angle = math.radians(6); _sky.color = (.72, .8, 1.0)
     _so = bpy.data.objects.new('gap_skylight', _sky); col_main.objects.link(_so); _so.rotation_euler = tc.SUN_ROT
