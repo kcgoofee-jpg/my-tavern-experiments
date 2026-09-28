@@ -138,7 +138,7 @@
           "alias": ["下层分局", "执法局下层分局"] , "link": {"map": "lm_enforcement_low", "label": "查看三维模型", "label_en": "View 3D model"} },
         "soup_kitchen": { "name": "圣光教会施粥站", "sub": "下层教区", "name_en": "Holy Light Soup Kitchen", "sub_en": "Lower parish", "tag": "set",
           "src": "天城·下层：圣光教会在下层有三个教区，教堂多半荒废，靠施粥站维持（图上画一处，位置为推断）；教会在下层办的孤儿收容所与免费诊所也并入本处",
-          "alias": ["施粥站", "粥站", "下层教区", "孤儿收容所", "免费诊所"] },
+          "alias": ["施粥站", "粥站", "下层教区", "孤儿收容所", "免费诊所"] , "link": {"map": "lm_soup_kitchen", "label": "查看三维模型", "label_en": "View 3D model"} },
         "outpost": { "name": "防卫军前沿哨所", "name_en": "Defense Force Forward Outpost", "tag": "set",
           "src": "天城·下层：天城防卫军的前沿哨所（位置为推断）",
           "alias": ["前沿哨所", "哨所"] , "link": {"map": "lm_outpost", "label": "查看三维模型", "label_en": "View 3D model"} },
@@ -174,6 +174,7 @@
     "lm_enforcement_low": {"title": "执法局下层分局（三维）", "title_en": "Enforcement Bureau, Lower Branch (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "enforcement_low", "src": "props/viewer3d.html", "alias": ["执法局下层分局（三维）"], "src_note": "只画外观的下层分局三维（标准版：标准档 + 低档 glb；加固破旧的分局主楼、封板西翼、双道闸口、车场，位置与形制为仓库推断）；从 tc_low.enforcement_low 标记的「查看三维模型」进。源：blender/landmarks/enforcement_low/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_outpost": {"title": "防卫军前沿哨所（三维）", "title_en": "Defense Force Forward Outpost (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "outpost", "src": "props/viewer3d.html", "alias": ["防卫军前沿哨所（三维）"], "src_note": "只画外观的前沿哨所三维（标准版：标准档 + 低档 glb；集装箱指挥所、观察塔、防御围墙、外墙缺口处的反兽障碍带，位置与形制为仓库推断）；从 tc_low.outpost 标记的「查看三维模型」进。源：blender/landmarks/outpost/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_prison": {"title": "监狱（三维）", "title_en": "Prison (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "prison", "src": "props/viewer3d.html", "alias": ["监狱（三维）"], "src_note": "中立的机构建筑外观三维（标准版：标准档 + 低档 glb；卡里只顺带提到，层与位置为仓库推断）；从 tc_low.prison 标记的「查看三维模型」进。源：blender/landmarks/prison/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_soup_kitchen": {"title": "圣光教会施粥站（三维）", "title_en": "Church Soup Kitchen (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "soup_kitchen", "src": "props/viewer3d.html", "alias": ["圣光教会施粥站（三维）"], "src_note": "施粥站 + 孤儿收容所 + 免费诊所合画的三维（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 tc_low.soup_kitchen 标记的「查看三维模型」进。源：blender/landmarks/soup_kitchen/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_pm_residence": {
       "title": "首相府（三维）", "title_en": "Prime Minister's Residence (3D)", "parent": "tc_upper", "kind": "estate",
       "viewer3d": "pm_residence", "src": "props/viewer3d.html", "alias": ["首相府花园"],

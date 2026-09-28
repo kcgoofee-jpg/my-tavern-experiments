@@ -52,6 +52,9 @@ BUDGET = {
     'props_utility': (8000, 1024), 'props_breach': (20000, 2048),
     # prison（下层监狱外观；walls_ext / site_ground / props_wall / props_lights / props_vehicles 共用上面的预算）
     'props_blocks': (40000, 2048), 'props_towers': (10000, 1024), 'props_yard': (25000, 1024),
+    # soup_kitchen（施粥站 + 收容所 + 义诊；walls_ext / roof / site_ground / props_lights / props_utility / props_yard 用上面的）
+    'props_canopy': (8000, 1024), 'props_serving': (16000, 1024), 'props_tables': (4000, 1024), 'props_queue': (10000, 512),
+    'props_clinic': (4000, 1024), 'props_shelter': (6000, 1024),
 }
 
 
