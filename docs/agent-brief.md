@@ -8,6 +8,7 @@
 - 评审默认一轮、自检对照 `docs/rejected.md`；中层/下层不等用户确认；上层与重点资产先设定稿 → 预览 → 用户点头。
 - 不做 iPhone 专项；桌面优先，375 px 只过一遍。
 - 测试：改哪测哪——`node --test` + `tools/smoke.sh` 必跑；浏览器测试只跑相关的，批次末再跑全量。
+- CI runs node --test + smoke on push; agents only need to run tests relevant to their change locally, then check the CI result with `gh run list --branch cloud/tc-mid-low -L 1`.
 - **推送要攒批**：每次推送 = 新提交号 = CDN 全量预热约 2000 个文件。连做多项时每 2–3 项推一次：`git fetch && git rebase origin/cloud/tc-mid-low` → `python3 tools/bump_head.py --push --branch cloud/tc-mid-low` → `bash tools/warm_cdn.sh "$(git rev-parse HEAD^)" 16 --purge-branch cloud/tc-mid-low`。
 - CHANGELOG 与 logs/*.csv 已设 union 合并，rebase 冲突少；只在末尾追加。
 - 提交：`git -c user.email=kcgoofee-jpg@users.noreply.github.com commit -F msg`，中文，结尾 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`。推送被拦就停下报告。

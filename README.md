@@ -1,5 +1,7 @@
 # 技术路线图
 
+[![CI](https://github.com/kcgoofee-jpg/my-tavern-experiments/actions/workflows/ci.yml/badge.svg?branch=cloud/tc-mid-low)](https://github.com/kcgoofee-jpg/my-tavern-experiments/actions/workflows/ci.yml)
+
 > 状态：开发中 · 当前发布版本 `0.9.5`（标签 `map-v0.9.5`） · 下一版进行中（分支 `cloud/tc-mid-low`）
 > 详细门控与任务分轨：[`docs/GOAL_v0.9.1.md`](docs/GOAL_v0.9.1.md)（0.9.1 门控记录） · 产品待办：[`ROADMAP.md`](ROADMAP.md) · 变更记录：[`CHANGELOG.md`](CHANGELOG.md) · 本机 ↔ 云端协作与接手记录：[`NOTES_FROM_LOCAL.md`](NOTES_FROM_LOCAL.md) · 卡设定遗漏清单：[`docs/card-omissions.md`](docs/card-omissions.md)
 

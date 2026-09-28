@@ -9,6 +9,7 @@ import { P } from './plugins.mjs';
 import * as TCCvd from './cvd.mjs';
 import { setFpsMeter } from './fps.mjs';
 import { MAINTAINER_MODE_KEY } from '../core/room-gallery-logic.mjs';
+import { mountFeedbackButton } from './feedback.mjs';
 // ---------------- 设置（UI v2 §5）：首页 = 分组列表（+ 手机上的快捷：上一级、当前位置、关闭地图、切层、图层开关）；子页 显示 / 人物 / 数据与映射 / 更新与版本 / 高级 ----------------
 // 模块向指定页注册自己的一栏：TCSettings.registerSection(page, el, { order })，不再 insertBefore(#selfCheck)。
 export let setPageNow = 'home', setPrev = null;
@@ -150,7 +151,7 @@ export function renderAbout() {
       : r.status === 'new' ? `${esc(tx('about.new', '有新版 v{v}', { v: r.latest }))}${r.code ? ' · ' + esc(r.code) : ''}<br><a href="${esc(r.notes || '')}" target="_blank" rel="noopener">${esc(tx('about.notes', '更新说明'))}</a><br>${esc(how)}`
       : esc(tx('about.fail', '检查失败：连不上更新接口，稍后再试'))}</div>`;
   }
-  box.innerHTML = h; updSub();
+  box.innerHTML = h; updSub(); mountFeedbackButton(box);
   if (window.top !== window) {   // v0.9.6「自动检查更新」（默认开；卡内脚本启动时读 edenMapAutoCheck，同源 localStorage）
     const lb = document.createElement('label'); lb.innerHTML = `<span>${esc(tx('about.auto_check', '自动检查更新'))}</span><input type="checkbox" role="switch" id="optAutoCheck">`;
     const cb = lb.querySelector('input'); let on = true; try { on = TCStore.get('edenMapAutoCheck') !== '0'; } catch (e) {}
@@ -179,6 +180,7 @@ export function renderSelfCheck() {
   box.innerHTML = `<b>${esc(tx('selfcheck.title', '自检'))}</b><ul>${selfCheck.items.map(i => `<li class="${esc(i.status)}">${mark[i.status] || ''} ${esc(i[L] || i.zh)}</li>`).join('')}</ul>`;
   { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'splashAgain'; b.textContent = tx('selfcheck.splash', '重新显示开场自检');   // v0.9.5
     b.onclick = () => { showSet(false); post({ type: 'eden-map:splash' }); }; box.appendChild(b); }
+  mountFeedbackButton(box);
   updSub();
   if (selfCheck.items.some(i => i.id === 'update')) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = tx('selfcheck.update_now', '本次切换到新版本');

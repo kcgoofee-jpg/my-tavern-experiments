@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [cloud/tc-mid-low]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      CI_HEADLESS: "1"   # smoke.sh：跳过本地才有的路径 / 网络探测
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+          cache-dependency-path: tools/browser/package.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: node --test
+        run: node --test tests/*.test.mjs
+
+      - name: smoke（check_maps + check_pack 等）
+        run: bash tools/smoke.sh
+
+  # 可选：轻量 playwright 冒烟，不阻塞主测试
+  browser-smoke:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: false   # 目前没有轻量到可无脑跑的浏览器用例；先占位，需要时去掉这行
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+          cache-dependency-path: tools/browser/package.json
+      - run: npm ci --prefix tools/browser
+      - run: npx --prefix tools/browser playwright install --with-deps chromium
+      - run: echo "占位：轻量 playwright 冒烟"
