@@ -6,6 +6,7 @@ import { estateLook, narrowNow, v3dEntries } from './estate.mjs';
 import { firstRunHint, noticeRefresh, setActs } from './shell.mjs';
 import { P } from './plugins.mjs';
 import * as TCCvd from './cvd.mjs';
+import { setFpsMeter } from './fps.mjs';
 // ---------------- 设置（UI v2 §5）：首页 = 分组列表（+ 手机上的快捷：上一级、当前位置、关闭地图、切层、图层开关）；子页 显示 / 人物 / 数据与映射 / 更新与版本 / 高级 ----------------
 // 模块向指定页注册自己的一栏：TCSettings.registerSection(page, el, { order })，不再 insertBefore(#selfCheck)。
 export let setPageNow = 'home', setPrev = null;
@@ -92,7 +93,7 @@ export function initSettings() {
   // U14（2026-09-28）：左下角小地图默认关；实时切换靠 body.nominimap 这个 CSS 类（不用重开地图）
   sw('#optMinimap', 'edenMapMinimap', false, v => document.body.classList.toggle('nominimap', !v));
   document.body.classList.toggle('nominimap', TCStore.get('edenMapMinimap') !== '1');
-  sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', false); sw('#optFps', 'edenMapFps', false, () => estateLook());
+  sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', false); sw('#optFps', 'edenMapFps', false, v => { setFpsMeter(v); estateLook(); });
   $('#linePick').onclick = () => { showSet(false); post({ type: 'eden-map:line-pick' }); };
   $('#kbdBtn').onclick = () => kbdHelp($('#kbdHelp').hidden);
   $('#hintAgain').onclick = () => { try { TCStore.remove('edenMapHint'); TCStore.remove('edenMapHintN'); } catch (e) {} showSet(false); firstRunHint(); };

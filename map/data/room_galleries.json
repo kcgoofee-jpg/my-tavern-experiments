@@ -1,13 +1,3 @@
 {
-  "_说明": "房间图集：plan.js 的房间写 gallery: '<id>'，房间卡上出现「图集」按钮。图片放 map/art/rooms/<id>/：每张 1600 px 大图 <f>.jpg（≤300 KB）+ 360 px 缩略图 <f>_t.jpg。说明文字保持中性描述。",
-  "wardrobe": {
-    "title": "衣帽间", "title_en": "Walk-in Wardrobe", "dir": "art/rooms/wardrobe/",
-    "images": [
-      { "f": "wide", "zh": "衣帽间全景：白漆柜体、镀金藻井下的水晶吊灯、中岛", "en": "Overview: white cabinetry, crystal chandelier under a gilt coffered ceiling, central island" },
-      { "f": "island", "zh": "大理石台面的中岛与抽屉", "en": "The marble-topped island and its drawers" },
-      { "f": "shoes", "zh": "鞋柜：玻璃层板与灯带", "en": "Shoe cabinet with glass shelves and strip lighting" },
-      { "f": "silk", "zh": "中岛旁挂着一件丝质长裙", "en": "A silk gown hanging beside the island" },
-      { "f": "tray", "zh": "中岛里的玻璃盖饰品托盘", "en": "Glass-topped accessory tray in the island" }
-    ]
-  }
+  "_说明": "旧机制：仓库自带渲染图的房间图集（曾用于衣帽间）。衣帽间渲染图已移出通用图集，改走 closet/ 的三维 / 热点入口；这里先清空，留给以后要挂仓库渲染图的房间用。用户自己上传的图片走 map/core/room-gallery-logic.mjs + IndexedDB（本地）与 map/data/gallery.json（公开投稿清单），两套互不影响。"
 }

@@ -69,6 +69,7 @@ export const SCHEMA = {
   'estate:theme': [V2S, { theme: 'string' }],
   'estate:cvd': [V2S, { mode: 'string' }],        // 色觉模式：0 关 / rg 红绿 / by 蓝黄，同步给庄园 / 三维子页（E7）
   'estate:quality': [V2S, { q: 'string' }],       // 设置「三维画质」auto / 1 省电 / 2 高：不重载即生效（毛玻璃 + 像素比）
+  'estate:fps': [V2S, { on: 'boolean' }],         // 调试：显示帧率——设置「显示帧率」实时同步给庄园 / props 三维子页（U，2026-09-28）
   'estate:pause': [V2S, {}],
   'estate:resume': [V2S, {}],
   'estate:floor': ['both', { floor: 'any' }],     // 下行 = 直嵌 / 调试接口；上行 = 用户切了楼层（直嵌时给外层页）

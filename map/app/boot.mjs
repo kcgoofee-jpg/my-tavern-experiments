@@ -15,6 +15,7 @@ import './extapi.mjs';
 import './shell.mjs';
 import './host.mjs';
 import './bridge.mjs';
+import { initFpsMeter } from './fps.mjs';
 import { M, REG, cur, pendingHome, setM, setPendingHome, setREG, setViewer, viewer } from './state.mjs';
 import { $, PR, PROTO, coarse, getJSON, jsonCache, narrow, post, setNarrow, setPR } from './util.mjs';
 import { TIERS, applyOverlayToggle, autoTier, declutter, effTier, homeMode, initProgress, onOpen, refit, routeGaps, setTier } from './tiers.mjs';
@@ -118,7 +119,7 @@ async function mainInner() {
   $('#tgMarkers').onchange = e => document.body.classList.toggle('nomarkers', !e.target.checked);
   $('#here').oninput = () => markHere($('#here').value);
   $('#here').onchange = () => { markHere($('#here').value); emEmit('here', { value: $('#here').value, resolved: hereRes($('#here').value) }); };   // 单独打开查看器时：输入框改完（回车 / 失焦）= 模拟 MVU 地点更新
-  initSettings(); initE7();
+  initSettings(); initE7(); initFpsMeter();
   { let ct = 0; const cb = $('#creditBtn'), cr = $('#credit');
     const show = on => { cr.hidden = !on; cb.setAttribute('aria-expanded', on); clearTimeout(ct); if (on) ct = setTimeout(() => show(false), 6000); };
     cb.onclick = e => { e.stopPropagation(); show(cr.hidden); }; cr.onclick = () => show(false); window.__creditShow = show; }

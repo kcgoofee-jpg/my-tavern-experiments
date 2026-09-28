@@ -43,6 +43,7 @@ test('房间图集入口 meta.gallery：标签、默认文案、坏 id 不出', 
   assert.match(linksHtml({ link: { map: 'tc_low' }, gallery: { id: 'wardrobe', label: '主卧衣帽间图集' } }, c), /data-go="tc_low"[\s\S]*data-gallery="wardrobe"[^>]*>主卧衣帽间图集</);
   assert.match(galleryHtml({ id: 'wardrobe' }, c), />图集</);
   assert.equal(galleryHtml({ id: '../x' }, c), ''); assert.equal(galleryHtml(null, c), '');
+  // 衣帽间渲染图已移出通用图集（U，2026-09-28）：eden 标记不再挂 gallery 字段，走 closet/ 的三维 / 热点入口
   const m = JSON.parse(readFileSync(new URL('../map/data/maps.json', import.meta.url), 'utf8'));
-  assert.equal(m.maps.tc_upper.markers.eden.gallery.id, 'wardrobe');
+  assert.equal(m.maps.tc_upper.markers.eden.gallery, undefined);
 });
