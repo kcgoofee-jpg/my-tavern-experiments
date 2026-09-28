@@ -67,6 +67,9 @@ BUDGET = {
     'props_barracks': (70000, 2048), 'props_parade': (4000, 1024), 'props_edge': (18000, 1024),
     'props_academy_main': (16000, 2048), 'props_academy_blocks': (35000, 2048), 'props_academy_sports': (6000, 1024),
     'props_trees': (40000, 1024),
+    # climate_tower（以太气候调节塔顶段；walls_ext / props_lights 用上面的）
+    'props_rings': (40000, 2048), 'props_vanes': (20000, 1024), 'props_crown': (15000, 2048),
+    'props_crystals': (2000, 512), 'props_docks': (12000, 1024), 'props_services': (30000, 1024),
 }
 
 
