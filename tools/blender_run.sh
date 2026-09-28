@@ -4,9 +4,15 @@
 # - 用 ASCII 的 TMPDIR（/private/tmp/bl_tmp），避开中文仓库路径「性能/」触发的 Metal 内核缓存崩溃。
 # - 崩溃（非零退出）重试一次；仍失败才返回失败。
 # - 把自己的 PID 写进 <日志>.pid；要中止时只 kill 这个 PID，绝不 pkill / killall Blender（别的代理可能正在渲）。
-# - 追加一行到 logs/render_times.csv：date,asset,kind,res,spp,minutes,exit
+# - 追加一行到 logs/render_times.csv：date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
+# - 渲染守卫（docs/cloud-render.md「渲染守卫」）：起 Blender 前跑 tools/render_preflight.py（参数语法 / 必须用设备 helper / 脚本参数表）；
+#   在任何脚本之前注入 blender/eden_guard.install()（EDEN_PHASE / EDEN_DEVICE / EDEN_PROGRESS 自报 + 渲染开始时是 CPU 就中止）；
+#   同时起 tools/render_watchdog.py 看门狗（按阶段判断：搭建超时 / 渲染时显卡空闲 / 进度停滞），只杀这次的 Blender PID。
+#   结论写 <日志>.verdict（status/reason/minutes/wasted_min/wasted_cny），失败时退出非零并打印中文原因和日志尾巴。
+#   只有真正的崩溃（status=crash）才重试一次；看门狗终止 / CPU 中止 / 参数错误都不重试，也绝不自动改用 CPU 重跑。
 #
-# 用法：bash tools/blender_run.sh --log <日志> --asset <名字> [--kind draft|final|patch] [--res N] [--spp N] [--cache-blend <目录>] -- <blender 参数...>
+# 用法：bash tools/blender_run.sh --log <日志> --asset <名字> [--kind draft|final|patch] [--res N] [--spp N] [--cache-blend <目录>] [--allow-cpu] -- <blender 参数...>
+#   --allow-cpu：明确允许没有 GPU 时用 CPU 渲（设 EDEN_ALLOW_CPU=1）；默认不允许
 #   例：bash tools/blender_run.sh --log /tmp/x.log --asset tc_upper --kind final --res 8000 --spp 64 -- \
 #         -b --factory-startup --python-expr "import runpy; runpy.run_path('blender/tiancheng_upper.py', run_name='__main__')" -- --res 8000 --samples 64 --out /tmp/x.png
 #   旧参数形式（仅日志 + 透传，不记 CSV 资产信息）仍兼容：bash tools/blender_run.sh <日志> <blender 参数...>
@@ -22,6 +28,8 @@
 #     哈希 / 环境变量 / 保存这套管子接好，脚本按 docs/cloud-render.md「场景缓存」一节的示例接进去才会生效。
 #   - 不管命不命中，跑完都会在末尾追加一个 --python-expr 把当前场景存成该哈希对应的 .blend（供下次判断复用）。
 # 环境变量：WAIT_MAX（秒，默认 7200）、POLL（秒，默认 30）、EDEN_GPU_LOCK（默认 /tmp/eden_gpu.lock）、DRY_RUN=1（不真的起 Blender，只演练锁 / 日志 / CSV，供测试用）
+#   EDEN_PRICE_PER_HOUR（算浪费的钱，云端 render.sh 传 1.58，Mac 默认 0）、EDEN_HOST_TAG（CSV host 列）、EDEN_PREFLIGHT_DONE=1（提交端已查过）、
+#   EDEN_WATCHDOG=0（关看门狗，仅调试）、EDEN_WD_ARGS（透传给看门狗的额外参数，测试用）、EDEN_PY（指定跑检查 / 看门狗的 python）
 set -u
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 BL=${BLENDER:-$(command -v blender || echo /Applications/Blender.app/Contents/MacOS/Blender)}
@@ -29,10 +37,11 @@ WAIT_MAX=${WAIT_MAX:-7200}; POLL=${POLL:-30}
 LOCK=${EDEN_GPU_LOCK:-/tmp/eden_gpu.lock}
 DRY_RUN=${DRY_RUN:-0}
 
-LOG=""; ASSET=""; KIND="final"; RES=""; SPP=""; CACHE_BLEND=""; ARGS=()
+LOG=""; ASSET=""; KIND="final"; RES=""; SPP=""; CACHE_BLEND=""; ARGS=(); ALLOW_CPU=0; LEGACY=0
+ORIG_ARGS=("$@")
 if [ "${1:-}" != "--log" ] && [ $# -ge 1 ]; then
   # 旧用法：blender_run.sh <日志> <blender 参数...>
-  LOG=$1; shift; ARGS=("$@")
+  LOG=$1; shift; ARGS=("$@"); LEGACY=1
 else
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -42,12 +51,67 @@ else
       --res) RES=$2; shift 2 ;;
       --spp) SPP=$2; shift 2 ;;
       --cache-blend) CACHE_BLEND=$2; shift 2 ;;
+      --allow-cpu) ALLOW_CPU=1; shift ;;
       --) shift; ARGS=("$@"); break ;;
       *) echo "未知参数 $1" >&2; exit 2 ;;
     esac
   done
 fi
-[ -n "$LOG" ] || { echo "用法：tools/blender_run.sh --log <日志> --asset <名字> [--kind draft|final|patch] [--res N] [--spp N] [--cache-blend <目录>] -- <blender 参数...>" >&2; exit 2; }
+[ -n "$LOG" ] || { echo "用法：tools/blender_run.sh --log <日志> --asset <名字> [--kind draft|final|patch] [--res N] [--spp N] [--cache-blend <目录>] [--allow-cpu] -- <blender 参数...>" >&2; exit 2; }
+[ "$ALLOW_CPU" = 1 ] && export EDEN_ALLOW_CPU=1
+PRICE=${EDEN_PRICE_PER_HOUR:-0}
+HOST_TAG=${EDEN_HOST_TAG:-$(uname -s | tr 'A-Z' 'a-z')}
+CSV="$ROOT/logs/render_times.csv"
+CSV_HEADER='date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny'
+
+# 跑检查 / 看门狗用的 python：云端没有系统 python3，用 Blender 自带的
+eden_py() {
+  if [ -n "${EDEN_PY:-}" ]; then echo "$EDEN_PY"; return; fi
+  command -v python3 2>/dev/null && return
+  local p
+  for p in "$(dirname "$BL")"/*/python/bin/python3* /opt/blender/*/python/bin/python3*; do
+    case "$p" in *-config) continue ;; esac
+    [ -x "$p" ] && { echo "$p"; return; }
+  done
+}
+PY=$(eden_py)
+
+# 写结论：<日志>.verdict + CSV 一行。$1=status $2=reason $3=分钟（小数） $4=退出码
+record() {
+  local st=$1 reason=$2 mins=$3 rc=$4 wmin=0 wcny=0
+  if [ "$st" != ok ]; then
+    wmin=$mins; wcny=$(awk -v m="$mins" -v p="$PRICE" 'BEGIN{printf "%.2f", m/60*p}')
+  fi
+  mkdir -p "$(dirname "$LOG")" "$ROOT/logs"
+  { echo "status=$st"; echo "reason=$reason"; echo "minutes=$mins"; echo "wasted_min=$wmin"; echo "wasted_cny=$wcny"; echo "exit=$rc"
+    echo "device=$(grep -o '^EDEN_DEVICE=[A-Z_]*' "$LOG" 2>/dev/null | tail -1 | cut -d= -f2)"; echo "host=$HOST_TAG"; } > "$LOG.verdict"
+  [ -f "$CSV" ] || echo "$CSV_HEADER" > "$CSV"
+  echo "$(date +%Y-%m-%d),${ASSET:-unknown},$KIND,${RES:-},${SPP:-},$mins,$rc,$HOST_TAG,$st,$wmin,$wcny" >> "$CSV"
+}
+
+# 静态检查（提交端已查过就跳过；找不到 python 也跳过，由提交端负责）
+if [ "$LEGACY" = 0 ] && [ -z "${EDEN_PREFLIGHT_DONE:-}" ] && [ -n "$PY" ]; then
+  if ! PF=$("$PY" "$ROOT/tools/render_preflight.py" check -- "${ORIG_ARGS[@]}" 2>&1); then
+    echo "$PF" >&2
+    code=$(grep -o 'EDEN_PREFLIGHT=[a-z_]*' <<<"$PF" | cut -d= -f2)
+    mkdir -p "$(dirname "$LOG")"; : > "$LOG"
+    record "${code:-arg_error}" "$(grep '渲染提交被拒' <<<"$PF" | head -1)" 0 2
+    exit 2
+  fi
+fi
+
+# 注入守卫：在第一个 --python/-P/--python-expr 之前（没有就在第一个 -- 之前）加一段 eden_guard.install()，
+# 让没调用 helper 的脚本也有阶段自报和「渲染开始时是 CPU 就中止」。
+GUARD_EXPR="import sys; sys.path.insert(0, '$ROOT/blender'); import eden_guard; eden_guard.install()"
+GI=-1
+for idx in "${!ARGS[@]}"; do
+  case "${ARGS[$idx]}" in -P|--python|--python-expr|--) GI=$idx; break ;; esac
+done
+if [ "$GI" -ge 0 ]; then
+  NEW_ARGS=("${ARGS[@]:0:$GI}" --python-expr "$GUARD_EXPR" "${ARGS[@]:$GI}"); ARGS=("${NEW_ARGS[@]}")
+else
+  ARGS+=(--python-expr "$GUARD_EXPR")
+fi
 
 BLEND_CACHE_FILE=""
 if [ -n "$CACHE_BLEND" ]; then
@@ -100,15 +164,26 @@ done
 # 锁文件：短暂持有，防止两个启动器同时通过上面的 pgrep 检查后一起起 Blender。
 LOCK_WAIT=0
 while ! ( set -o noclobber; echo $$ > "$LOCK" ) 2>/dev/null; do
-  [ "$LOCK_WAIT" -ge "$WAIT_MAX" ] && { echo "等锁 ${LOCK}（$(cat "$LOCK" 2>/dev/null)）超时"; exit 3; }
+  LP=$(command cat "$LOCK" 2>/dev/null)
+  if [ -n "$LP" ] && ! kill -0 "$LP" 2>/dev/null; then echo "GPU 锁 ${LOCK} 的持有者 ${LP} 已不在，清掉残留锁"; rm -f "$LOCK"; continue; fi
+  [ "$LOCK_WAIT" -ge "$WAIT_MAX" ] && { echo "等锁 ${LOCK}（${LP}）超时"; exit 3; }
   sleep 2; LOCK_WAIT=$((LOCK_WAIT + 2))
 done
-release_lock() { [ "$(cat "$LOCK" 2>/dev/null)" = "$$" ] && rm -f "$LOCK"; }
+release_lock() { [ "$(command cat "$LOCK" 2>/dev/null)" = "$$" ] && rm -f "$LOCK"; }
+PID=""; WD_PID=""; CANCELLED=0
+on_cancel() {
+  CANCELLED=1
+  [ -n "$PID" ] && kill "$PID" 2>/dev/null
+  [ -n "$WD_PID" ] && kill "$WD_PID" 2>/dev/null
+}
 trap release_lock EXIT
+trap on_cancel INT TERM
 
 cd "$ROOT"
+RUN_SECS=0
 run_once() {
   local t0=$SECONDS
+  rm -f "$LOG.wdkill" "$LOG.wdstate" "$LOG.verdict"
   if [ "$DRY_RUN" = 1 ]; then
     echo "[DRY_RUN] 会执行：$BL ${ARGS[*]}" | tee "$LOG"
     echo "DRY_RUN" > "$LOG.pid"
@@ -116,26 +191,60 @@ run_once() {
   else
     "$BL" "${ARGS[@]}" >"$LOG" 2>&1 &
     PID=$!; echo "$PID" >"$LOG.pid"; echo "Blender PID ${PID}（只 kill 这个），日志 ${LOG}"
+    WD_PID=""
+    if [ -n "$PY" ] && [ "${EDEN_WATCHDOG:-1}" != 0 ]; then
+      WDA=(watch --log "$LOG" --pid "$PID" --kind "$KIND" --host "$HOST_TAG" --csv "$CSV")
+      [ -n "$ASSET" ] && WDA+=(--asset "$ASSET"); [ -n "$RES" ] && WDA+=(--res "$RES"); [ -n "$SPP" ] && WDA+=(--spp "$SPP")
+      [ "$ALLOW_CPU" = 1 ] && WDA+=(--allow-cpu)
+      # shellcheck disable=SC2206
+      [ -n "${EDEN_WD_ARGS:-}" ] && WDA+=(${EDEN_WD_ARGS})
+      "$PY" "$ROOT/tools/render_watchdog.py" "${WDA[@]}" &
+      WD_PID=$!
+    else
+      echo "（没找到 python 或 EDEN_WATCHDOG=0：本次不起看门狗）"
+    fi
     wait "$PID"; rc=$?
+    # 被 Ctrl-C / TERM 打断的 wait 会提前返回：再等一次，退出码记 130
+    if [ "$CANCELLED" = 1 ]; then wait "$PID" 2>/dev/null; rc=130; fi
+    if [ -n "$WD_PID" ]; then kill "$WD_PID" 2>/dev/null; wait "$WD_PID" 2>/dev/null; fi
+    PID=""; WD_PID=""
   fi
-  echo $((SECONDS - t0))
+  RUN_SECS=$((RUN_SECS + SECONDS - t0))
   return $rc
 }
 
-MIN0=$SECONDS
+# 这次运行的结论：看门狗终止 > 进程内中止（EDEN_ABORT=）> 取消 > 成功 > 崩溃
+classify() {
+  local rc=$1 a
+  if [ -s "$LOG.wdkill" ]; then STATUS=$(head -1 "$LOG.wdkill"); REASON="看门狗：$(sed -n 2p "$LOG.wdkill")"
+  elif a=$(grep -m1 '^EDEN_ABORT=' "$LOG" 2>/dev/null); then STATUS=$(cut -d' ' -f1 <<<"$a" | cut -d= -f2); REASON="进程内守卫：$(cut -d' ' -f2- <<<"$a")"
+  elif [ "$CANCELLED" = 1 ]; then STATUS=cancelled; REASON="被 Ctrl-C / TERM 取消"
+  elif [ "$rc" = 0 ]; then STATUS=ok; REASON=""
+  else STATUS=crash; REASON="Blender 退出码 ${rc}"
+  fi
+}
+
 run_once; rc=$?
-MINUTES=$(( (SECONDS - MIN0 + 30) / 60 ))
-if [ $rc -ne 0 ] && [ "$DRY_RUN" != 1 ]; then
+classify "$rc"
+if [ "$STATUS" = crash ] && [ "$DRY_RUN" != 1 ]; then
   echo "第一次崩溃（退出码 ${rc}），重试一次…" >&2
-  MIN0=$SECONDS
   run_once; rc=$?
-  MINUTES=$(( (SECONDS - MIN0 + 30) / 60 ))
+  classify "$rc"
 fi
-release_lock; trap - EXIT
+release_lock; trap - EXIT INT TERM
 
-if [ "$DRY_RUN" != 1 ]; then grep -E '^WROTE|Error|Traceback' "$LOG" | tail -5; fi
+if [ "$DRY_RUN" != 1 ]; then grep -E '^WROTE|Error|Traceback|^EDEN_DEVICE=' "$LOG" | tail -5; fi
 
-CSV="$ROOT/logs/render_times.csv"
-[ -f "$CSV" ] || echo 'date,asset,kind,res,spp,minutes,exit' > "$CSV"
-echo "$(date +%Y-%m-%d),${ASSET:-unknown},$KIND,${RES:-},${SPP:-},$MINUTES,$rc" >> "$CSV"
-exit $rc
+MINUTES=$(awk -v s="$RUN_SECS" 'BEGIN{printf "%.1f", s/60}')
+record "$STATUS" "$REASON" "$MINUTES" "$rc"
+if [ "$STATUS" != ok ]; then
+  W=$(grep '^wasted_cny=' "$LOG.verdict" | cut -d= -f2)
+  {
+    echo "渲染失败（${STATUS}）：${REASON}"
+    echo "耗时 ${MINUTES} 分钟，按 ${PRICE} 元/小时计浪费约 ¥${W}；只动了本任务的 PID，实例没停，GPU 锁已释放。不会自动改用 CPU 重跑。"
+    echo "--- 日志尾巴（${LOG}）---"
+    tail -20 "$LOG" 2>/dev/null
+  } >&2
+  case "$STATUS" in crash) exit "$rc" ;; cancelled) exit 130 ;; *) exit 70 ;; esac
+fi
+exit 0

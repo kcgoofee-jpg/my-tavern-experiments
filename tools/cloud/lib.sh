@@ -31,11 +31,20 @@ cloud_parse_host() {
   done
 }
 
+# git worktree 里没有 remote.env / .locks（都被 .gitignore）：用主工作区的那份，保证所有 worktree 共用同一把本地锁。
+_common=$(git -C "$ROOT" rev-parse --git-common-dir 2>/dev/null)
+case "$_common" in
+  "") MAIN_CLOUD=$CLOUD_ROOT ;;
+  /*) MAIN_CLOUD="$(dirname "$_common")/tools/cloud" ;;
+  *) MAIN_CLOUD="$(cd "$ROOT/$_common/.." && pwd)/tools/cloud" ;;
+esac
+[ -d "$MAIN_CLOUD" ] || MAIN_CLOUD=$CLOUD_ROOT
 if [ "$HOST_NAME" = default ]; then
   ENV_FILE="$CLOUD_ROOT/remote.env"
 else
   ENV_FILE="$CLOUD_ROOT/hosts/${HOST_NAME}.env"
 fi
+[ -f "$ENV_FILE" ] || [ ! -f "$MAIN_CLOUD/${ENV_FILE#"$CLOUD_ROOT"/}" ] || ENV_FILE="$MAIN_CLOUD/${ENV_FILE#"$CLOUD_ROOT"/}"
 
 if [ -f "$ENV_FILE" ]; then
   # shellcheck source=/dev/null
@@ -102,7 +111,7 @@ scp_up() {
 
 # --- 本地锁：防止两个云脚本（同一实例）同时跑撞车 ---
 # 用法：cloud_lock_acquire "sync"；脚本退出（含 Ctrl-C）时用 trap 自动释放，不需要手动调用 release。
-LOCK_DIR="$CLOUD_ROOT/.locks"
+LOCK_DIR="$MAIN_CLOUD/.locks"
 _LOCK_FILE=""
 cloud_lock_acquire() {
   local name=${1:-cloud}

@@ -171,28 +171,14 @@ def upper_islands():
     return [(i['id'], (i['nx'] - .5) * W, (.5 - i['ny']) * H, i['rx'] * W, i['ry'] * H, i['rot'], i.get('alt_m', 1000)) for i in d['islands']]
 
 # ---------------- 相机、渲染、导出 ----------------
+import eden_guard                                          # 同目录（blender/）；设备选择 + 阶段自报的唯一实现
+def setup_render_device(sc=None, hybrid=False, allow_cpu=None):
+    """渲染脚本唯一的设备入口（smoke 与提交端会检查）：OPTIX → CUDA → METAL → …，打印 EDEN_DEVICE= 行、注册阶段处理器；
+    没有 GPU 时只有 --allow-cpu（EDEN_ALLOW_CPU=1）才退 CPU，否则立即中止。返回是否用上 GPU。hybrid=True 时 CPU 也参与。"""
+    return eden_guard.setup_render_device(sc, hybrid=hybrid, allow_cpu=allow_cpu)
 def pick_gpu(sc, hybrid=False):
-    """选 Cycles GPU 后端并设 sc.cycles.device；返回是否用上 GPU。其他脚本也调用它（sys.path 加 blender/ 后 import tc_common）。
-    EDEN_CYCLES_DEVICE：本地 Mac 默认 METAL；云端（AutoDL 等）设 OPTIX 或 CUDA 优先探测该类型，找不到再按 METAL→OPTIX→CUDA→HIP→ONEAPI→CPU 退回。
-    hybrid=True 时 CPU 也参与渲染。"""
-    gpu = False
-    try:
-        prefs = bpy.context.preferences.addons['cycles'].preferences
-        want = os.environ.get('EDEN_CYCLES_DEVICE', '').strip().upper()
-        order = ('METAL', 'OPTIX', 'CUDA', 'HIP', 'ONEAPI')
-        if want in order:
-            order = (want,) + tuple(k for k in order if k != want)
-        for kind in order:
-            try: prefs.compute_device_type = kind
-            except TypeError: continue
-            prefs.get_devices()
-            if any(d.type != 'CPU' for d in prefs.devices):
-                for d in prefs.devices: d.use = hybrid or d.type != 'CPU'
-                gpu = True; print('cycles compute', kind, flush=True); break
-    except Exception as e: print('GPU probe failed', e)
-    if not gpu: print('cycles compute CPU', flush=True)
-    sc.cycles.device = 'GPU' if gpu else 'CPU'
-    return gpu
+    """= setup_render_device（各脚本已在用的名字，保留）。"""
+    return setup_render_device(sc, hybrid=hybrid)
 
 def camera_and_render(sc, RES, SAMPLES, OUT, opt, view='Standard', exposure=0.0, bounces=None):
     cam = bpy.data.cameras.new('cam'); cam.type = 'ORTHO'; cam.ortho_scale = W; cam.clip_end = 200

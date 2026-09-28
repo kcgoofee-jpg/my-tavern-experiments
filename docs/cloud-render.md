@@ -86,6 +86,43 @@ tools/render_queue.sh dispatch --once   # 派一轮；不加 --once 是常驻循
 
 看板（`tools/pipeline_status.*`）已于 2026-09-28 按用户要求删除；查状态用 `tools/cloud/status.sh`（云端）和 `tools/render_queue.sh status`（队列），任务分配看 `logs/pipeline_tasks.md`。
 
+## 渲染守卫（静态预检 + 自报 + 看门狗，2026-09-28）
+
+起因：原域圣山脚本经 `landmarks/common.setup()` 写死 `METAL`，在云端抛 TypeError 被吞掉，4080 利用率 0%、显存 1 MiB，CPU 白渲 20 分钟；另一次死于 blender_run.sh 的「未知参数 --out」。不用「1 分钟 GPU 为 0 就杀」这种土办法：纯 CPU 的场景搭建本来就要几分钟，而且它抓不到卡死。
+
+**1. 唯一的设备 helper**：`tc_common.setup_render_device(sc, hybrid=False)`（旧名 `pick_gpu` 等价；实现在 `blender/eden_guard.py`，只依赖 bpy）。
+- 按 OPTIX → CUDA → METAL → HIP → ONEAPI 探测（`EDEN_CYCLES_DEVICE` 可提前某一种），打印 `EDEN_DEVICE=<OPTIX|CUDA|METAL|CPU> gpus=<名字> allow_cpu=0|1 src=setup`。
+- 没有 GPU：只有 `blender_run.sh --allow-cpu`（= 环境变量 `EDEN_ALLOW_CPU=1`）才退 CPU，否则立即 `EDEN_ABORT=cpu_fallback`、退出码 86。不读脚本 argv（免得撞各脚本自己的参数解析）。
+- **新渲染脚本必须调用它**；`tools/smoke.sh` 里 `render_preflight.py lint` 检查：调用 `bpy.ops.render.render(` 的文件必须同时调用 `setup_render_device(` / `pick_gpu(`，除 `eden_guard.py` 外不许写 `compute_device_type`。还没迁完的旧文件列在 `tools/render_preflight.py` 的 `PENDING`（只警告），迁完就删。
+
+**2. 自报**：`eden_guard.install()` 注册 `bpy.app.handlers`（@persistent，按函数名去重，`read_factory_settings` 之后仍在）：
+`EDEN_PHASE=build`（安装时）/`render`（render_init、render_pre）/`post`/`write`/`done`/`cancel`；`render_stats` 节流打印 `EDEN_PROGRESS stage=<sync|kernels|sample|denoise|finished> sample=a/b tile=c/d note=…`（Blender 5 的 `-b` 模式本身不再打印采样进度）。
+render_pre 时按场景**真实状态**再报一次 `EDEN_DEVICE=… src=render_pre`；是 CPU 且没允许 → 立即中止。`blender_run.sh` 在任何脚本之前注入 `install()`，所以没调用 helper 的旧脚本也有阶段标记和这道 CPU 闸。
+
+**3. 静态预检** `tools/render_preflight.py check -- <blender_run.sh 参数>`：按 blender_run.sh 的语法解析（第一个 `--` 前只能是 `--log/--asset/--kind/--res/--spp/--cache-blend/--allow-cpu`）；找到入口脚本，它或它 import 的本仓库模块必须调用 helper；脚本参数（第二个 `--` 之后）对照声明的参数表（模块级 `EDEN_ARGS`，或 `args(dict(...))` 的键，或 tc.Layer 家族里出现的 `--xxx`；都没有就跳过并提示），拼错给「是不是 --samples？」。
+在 `render_queue.sh submit`（拒收）、`tools/cloud/render.sh`（上传前，拒绝时记 CSV `arg_error`/`no_device_helper`、0 元）、`blender_run.sh`（本机；云端由提交端设 `EDEN_PREFLIGHT_DONE=1` 跳过）三处跑。
+
+**4. 看门狗** `tools/render_watchdog.py`：`blender_run.sh` 起 Blender 后自动拉起（Mac 与云端同一套；云端没有系统 python3，用 Blender 自带的 python），读日志里的 EDEN_ 行，按阶段判断：
+
+| 阶段 | 显卡空闲 | 规则 |
+|---|---|---|
+| build（开始、每次 done 之后） | 正常 | 累计 > 3×预计 → 警告；> 硬上限 max(6×预计, 30 分钟)（`EDEN_BUILD_CAP_MIN` 可改）→ 杀 `build_timeout` |
+| render | 不正常 | 设备行是 CPU 且没允许 → 立即杀 `cpu_fallback`；每 10 s 采 nvidia-smi，所有卡利用率 0 **且**显存 < 100 MiB（优先用本 PID 的显存）连续 60 s → 杀 `gpu_idle`。本次渲染出现 `stage=sample` 后（或进入渲染 5 分钟后）才开始判，避开首次 OptiX 编译内核 / 大场景同步 |
+| render / post / write | — | 进度（stage/采样/分块）10 分钟不动 → 杀 `stall`（编内核阶段 20 分钟，post/write 15 分钟） |
+| 全程 | — | 总时长 > 3×预计 → 只警告 |
+
+预计时长来自 `logs/render_times.csv`：同资产（先同机型）→ 同类型，按 res²×spp 折算（系数夹 0.2–5）→ 默认 10 分钟，下限 3 分钟。`minutes` 是总时长，当搭建预算偏宽（宁可晚杀不误杀）。云端由 `render.sh` 用本地完整历史算好经 `EDEN_EST_MIN` 传过去。
+Mac 上 nvidia-smi 不存在：`ioreg` 的利用率只记录不判死（统一内存，显存阈值无意义），Mac 靠设备行 + render_pre 闸 + 停滞判断。
+输出：`<日志>.watchdog`（中文事件）、`<日志>.wdstate`（一行当前状态 + `hb=` 心跳，`tools/cloud/status.sh` 显示；心跳超过 60 s 说明看门狗没在跑）、杀之前写 `<日志>.wdkill`。
+
+**5. 失败时**：只杀 `<日志>.pid` 里这次的 Blender PID（先 TERM 后 KILL，且进程名要含 `lender`），绝不停实例；`blender_run.sh` 释放 GPU 锁（残留锁的持有者已死会自动清），`render.sh` 退出时释放本地锁，队列继续。
+结论写 `<日志>.verdict`（status / reason / minutes / wasted_min / wasted_cny / device），`logs/render_times.csv` 追加一行 `date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny`（status：`ok`、`cpu_fallback`、`gpu_idle`、`stall`、`build_timeout`、`arg_error`、`no_device_helper`、`crash`、`cancelled`、`unknown`；浪费按 `PRICE_PER_HOUR`，默认 1.58 元/时，Mac 记 0）。云端的行由本地 `render.sh` 按远端结论写（不再写 `minutes=NA`）。
+退出非零（看门狗 / 守卫 70，参数 2，取消 130，崩溃原码），打印中文原因和日志尾巴。**只有 `crash` 重试一次；不自动改用 CPU 重跑。**
+旧行的列布局有 6 / 7 / 8 列三种，`render_watchdog.read_history` 都认；只在末尾追加。
+
+**6. 测试**：`python3 tools/test_render_guard.py`（smoke 会跑）：状态机各阶段与各失败方式（假时钟）、估时（各种列布局）、预检（含「--out 放错位置」回归）、假 nvidia-smi + 假 Blender 进程的驱动测试，以及原域圣山事故回归。
+手动验证：`EDEN_CYCLES_DEVICE=CPU bash tools/cloud/render.sh …` 应在渲染阶段开始时被中止（status=cpu_fallback）；再加 `EDEN_GUARD_NO_INPROC=1`（仅测试用）则由看门狗杀。
+
 
 
 ## 场景缓存（`--cache-blend`）

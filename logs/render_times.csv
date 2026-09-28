@@ -1,4 +1,4 @@
-date,label,spp,res,minutes,status
+date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
 2026-09-28 11:55,eden_aerial,64,2400,1.35,ok
 2026-09-28 11:57,eden_greystone,64,2400,1.63,ok
 2026-09-28 12:01,eden_map6k,64,6000,4.42,ok

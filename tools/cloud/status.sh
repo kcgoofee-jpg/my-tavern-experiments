@@ -30,16 +30,23 @@ R=$(run_ssh "
   echo '--gpu--'; nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader 2>&1
   echo '--disk--'; df -h ${REMOTE_DIR%/*} | awk 'NR==2{print \$3,\"/\",\$2,\"(\"\$5\" 已用)\"}'
   echo '--uptime--'; ps -o etimes= -p 1 | tr -d ' '
+  echo '--guard--'; now=\$(date +%s)
+  for f in \$(command ls -t ${REMOTE_DIR}/logs/*.wdstate 2>/dev/null | head -2); do
+    hb=\$(sed -n 's/^hb=\\([0-9]*\\).*/\\1/p' \$f); echo \"\${f##*/} 心跳 \$((now - \${hb:-0}))s 前：\$(cut -d' ' -f2- \$f)\"
+  done
+  for f in \$(command ls -t ${REMOTE_DIR}/logs/*.verdict 2>/dev/null | head -1); do echo \"最近结论 \${f##*/}：\$(tr '\\n' ' ' < \$f)\"; done
 ")
 
 jobs=$(sed -n '/--jobs--/,/--gpu--/p' <<<"$R" | sed '1d;$d')
 gpu=$(sed -n '/--gpu--/,/--disk--/p' <<<"$R" | sed '1d;$d')
 disk=$(sed -n '/--disk--/,/--uptime--/p' <<<"$R" | sed '1d;$d')
-uptime_s=$(sed -n '/--uptime--/,$p' <<<"$R" | sed '1d' | head -1)
+uptime_s=$(sed -n '/--uptime--/,/--guard--/p' <<<"$R" | sed '1d;$d' | head -1)
+guard=$(sed -n '/--guard--/,$p' <<<"$R" | sed '1d')
 
 echo "-- 远端任务 --"; echo "$jobs" | sed 's/^/  /'
 echo "-- GPU 占用（利用率%,已用显存MiB,总显存MiB,温度C）--"; echo "$gpu" | sed 's/^/  /'
 echo "-- 磁盘（${REMOTE_DIR%/*}）--"; echo "$disk" | sed 's/^/  /'
+echo "-- 渲染看门狗（<日志>.wdstate；心跳超过 60s 说明看门狗没在跑）--"; echo "${guard:-（没有记录）}" | sed 's/^/  /'
 
 if [[ "$uptime_s" =~ ^[0-9.]+$ ]]; then
   hours=$(awk -v s="$uptime_s" 'BEGIN{printf "%.2f", s/3600}')
