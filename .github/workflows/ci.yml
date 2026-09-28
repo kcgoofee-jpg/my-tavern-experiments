@@ -23,6 +23,9 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Python 依赖（check_pack.py 用到 Pillow）
+        run: pip install Pillow
+
       - name: node --test
         run: node --test tests/*.test.mjs
 
