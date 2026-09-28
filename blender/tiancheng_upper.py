@@ -1,5 +1,5 @@
 # 天城 · 上层（悬浮庄园区，离地 800–1500 m）· Blender 正俯视写实渲染（第二版：可读性优先）
-# 用法：Blender -b -P tiancheng_upper.py -- [--res 1600] [--samples 64] [--out path.png] [--below clouds|city] [--haze .25] [--crop x0,y0,x1,y1] [--preview] [--data-only] [--tod day|dawn|dusk|night]
+# 用法：Blender -b -P tiancheng_upper.py -- [--res 1600] [--samples 64] [--out path.png] [--below clouds|city] [--crop x0,y0,x1,y1] [--preview] [--data-only] [--tod day|dawn|dusk|night]
 #       --below clouds（默认）：岛屿下方是一片云海，看不到中层城市；图小、加载快。
 #       --below city：下方是中层城市（OSM 真实路网与建筑轮廓，© OpenStreetMap contributors），压在一层霾下作远景。
 #       或 python3 tiancheng_upper.py -- ...（pip 装的 bpy）。参数与导出格式三层一致，见 docs/tiancheng-maps.md
@@ -19,7 +19,9 @@ BELOW = str(layer.opt.get('--below', 'clouds'))
 import tc_clouds
 CLOUD_STYLE = str(layer.opt.get('--clouds', tc_clouds.CLOUD_STYLE))
 if CLOUD_STYLE == 'veil': BELOW = 'city'                  # 薄纱云原型：云是半透明的，下面必须是城市
-HAZE = layer.f('--haze', .15 if CLOUD_STYLE == 'veil' else .25)   # 薄纱云：云缝里城市保持原色，只留很淡的霾
+import depth as DP                                          # 纵深系统（docs/design/depth-system.md）：海拔、远近缩放、霾都从这里取
+DCFG = DP.load()
+HAZE = .15 if CLOUD_STYLE == 'veil' else DP.channel('haze', 1.0, DCFG)   # 下方城市在最远处（d = 1）；原 --haze 旗标已退役，改 map/data/upper_depth.json
 
 # ---------------- 材质 ----------------
 M = {
@@ -137,6 +139,9 @@ BELOW_OBJS = set(bpy.data.objects) if BELOW == 'city' else None   # 此前建的
 import tc_estates as te
 markers, islands = layer.markers, []
 ISLES = json.load(open(os.environ.get('TC_ISLANDS') or os.path.join(tc.HERE, 'data', 'tc_islands.json')))['islands']   # 布局是数据，可以直接手改（见 docs/upper-estates.md）
+for _d in ISLES:                                           # 纵深：z 由海拔派生，rx / ry = 岛表真实尺寸 × scale；岛表里没有 z
+    _c = DP.island(_d['id'], DCFG); _d['z'] = round((DCFG['islands'][_d['id']]['alt'] - 700) / 100, 3)
+    _d['rx'], _d['ry'] = _d['rx'] * _c['scale'], _d['ry'] * _c['scale']; _d['depth'] = _c
 te.assign_families(ISLES)                                   # 同风格普通岛按 id 轮流分配布局族 / 主楼平面（数据里写了就用数据）
 te.HUB = next(((d['x'], d['y']) for d in ISLES if d['id'] == 'eden'), None)
 for d in ISLES:
@@ -153,6 +158,7 @@ for d in ISLES:
     if d.get('role'): markers.append({'id': d['role'], 'pos': (e.x, e.y, e.z), 'r': max(e.rx, e.ry), 'anchor': e.world(*e.anchor())})   # 地标府邸（首相府、将军官邸……），名称在 maps.json
 # 以太气候调节塔：从中层伸到约 950 m。深色塔身（直径 40 m）、两圈外伸环台、塔顶以太晶冠；塔下云面一圈淡青光晕
 TOWER = (8.5, -5.0)
+_pre_tower = set(bpy.data.objects)
 cyl(*TOWER, -7, .2, 9.4, M['darkstone'], 40)
 for k, zz in enumerate((.9, 1.7)):
     cyl(*TOWER, zz, .34 - k * .05, .025, M['pad'], 48); cyl(*TOWER, zz + .025, .31 - k * .05, .012, M['darkstone'], 48)
@@ -164,6 +170,11 @@ for j in range(9):
     bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=.05 + .02 * (j % 2), location=(TOWER[0] + math.cos(t) * rr, TOWER[1] + math.sin(t) * rr, 2.5 + .08 * (j % 3)))
     o = bpy.context.active_object; o.scale = (1, 1, 2.6); o.data.materials.append(aet)
 bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=.09, location=(*TOWER, 2.7)); o = bpy.context.active_object; o.scale = (1, 1, 2.2); o.data.materials.append(aet)
+if os.environ.get('TC_MAGITECH'):                          # v2：塔冠约 1500 m（z 8），略高于伊甸（1450 m）——塔竖向拉长，晶冠不变形
+    _k = 15.0 / 9.4
+    for _o in set(bpy.data.objects) - _pre_tower:
+        _o.location.z = -7 + (_o.location.z + 7) * _k
+        if _o.dimensions.z > 5: _o.scale.z *= _k
 def halo_mat():
     m = bpy.data.materials.new('tower_halo'); m.use_nodes = True; nt = m.node_tree; N, L = nt.nodes, nt.links
     out = next(n for n in N if n.type == 'OUTPUT_MATERIAL'); N.remove(tc.bsdf_of(m))
@@ -179,40 +190,41 @@ bpy.ops.mesh.primitive_circle_add(vertices=64, radius=1.1, fill_type='NGON', loc
 halo.data.materials.append(halo_mat()); halo.visible_shadow = False
 markers.append({'id': 'climate_tower', 'pos': (*TOWER, 2.2), 'r': .2, 'anchor': (TOWER[0], TOWER[1] - .26)})   # B2 第 3 轮：锚点落在上层环台（半径 .21–.29）上，不再落在云面
 
-# ---------------- v11 魔导科技层（TC_MAGITECH=1；部件在 blender/landmarks/common.py，单位 100 m）----------------
-# 每岛：岛缘符文环、结界六角格边、崖边能量晶簇；卡里的岛之间：悬浮轨道 / 导能管（card-digest L12）；气候塔：以太场环。伊甸不加（伊甸不动，也避开已否决的「伊甸光环」）。
+# ---------------- v12 魔导科技层 + 纵深（TC_MAGITECH=1；部件在 blender/landmarks/common.py，单位 100 m；docs/upper-setting.md v2）----------------
+# 每岛：岛缘符文环、结界六角格边（强度 = derived.ward_alpha，随距离衰减；伊甸 0；「Y」保留一道冷光细边）、崖边能量晶簇。
+# 以太导能管：只从调节塔出，最多 3 条，暗管 + 节点微光，走在岛底下，不连伊甸、不连停靠平台（v2 Q1）。调节塔：以太场环。
 if os.environ.get('TC_MAGITECH'):
     import importlib.util as _ilu
     _sp = _ilu.spec_from_file_location('lm_common', os.path.join(tc.HERE, 'landmarks', 'common.py')); LC = _ilu.module_from_spec(_sp); _sp.loader.exec_module(LC)
-    MG = LC.Batch('mt_islands'); WD = LC.Batch('mt_wards'); RL = LC.Batch('mt_rails')
-    m_rune, m_cry = LC.glow('mt_rune', estr=5.0), LC.flat('mt_crystal', (0.5, 0.85, 1.0), 0.1, emit=LC.AETHER_C, estr=3.5)
-    m_ward = LC.hex_ward_mat('mt_ward', scale=7.0, alpha=0.5, estr=2.2)
-    m_rail, m_node = LC.glow('mt_rail', estr=4.0), LC.glow('mt_node', c=(0.8, 0.95, 1.0), estr=3.0)
-    SELF = {'isle30', 'isle9', 'isle25'}                     # 这三座的魔导层在模型抠图里
+    MG = LC.Batch('mt_islands'); WD = LC.Batch('mt_wards'); RL = LC.Batch('mt_conduits')
+    m_rune, m_cry = LC.glow('mt_rune', estr=4.0), LC.flat('mt_crystal', (0.5, 0.85, 1.0), 0.1, emit=LC.AETHER_C, estr=3.0)
+    SELF = {'isle30', 'isle9', 'isle25'}                     # 这三座的符文环 / 晶簇在模型抠图里（结界格边仍在这里画，好按深度统一衰减）
     by_id = {i['id']: i for i in islands}
     rnd_m = random.Random(2088)
     for i in islands:
-        e = i['isle']
-        if i['id'] == 'eden': continue
+        e = i['isle']; dv = e.d.get('depth', {})
+        if i['id'] == 'eden': continue                      # 伊甸不画任何结界边（v2；避开已否决的「伊甸光环」）
+        wa = float(dv.get('ward', .3))
+        if dv.get('ward_edge') == 'cold':                        # 「Y」：远景里唯一可见的结界——一道冷光细边
+            LC.rune_ring(WD, e.outline_world(1.05, 160), e.z + .004, .008, LC.glow('mt_ward_cold', c=(0.62, 0.72, 1.0), estr=3.0), dash=999)
+        elif wa > .02:
+            LC.hex_ward(WD, e.outline_world(1.05, 120), e.z - .005, .09, LC.hex_ward_mat('mt_ward_' + i['id'], scale=7.0, alpha=min(.6, wa * 1.1), estr=2.2))
         if i['id'] not in SELF:
             LC.rune_ring(MG, e.outline_world(1.015, 120), e.z + .004, .006, m_rune)
-            LC.hex_ward(WD, e.outline_world(1.05, 120), e.z - .005, .09, m_ward)
             O = e.outline_world(1.02, 60)
             for k in range(6 if i['id'] != 'silver_crown' else 9):
                 x, y = O[rnd_m.randrange(len(O))]
                 LC.crystal_cluster(MG, x, y, e.z - .02, rnd_m.uniform(.04, .07), m_cry, seed=k + len(i['id']))
-    def _edge(a, b):
-        """a 朝 b 的岛缘点"""
-        ea = a['isle']; th = math.atan2(b['y'] - a['y'], b['x'] - a['x']); P = ea.outline_world(1.0, 180)
-        return max(P, key=lambda q: (q[0] - a['x']) * math.cos(th) + (q[1] - a['y']) * math.sin(th))
-    LINKS = [('eden', 'isle30'), ('eden', 'isle6'), ('eden', 'isle10'), ('eden', 'isle25'), ('eden', 'isle9'),
-             ('silver_crown', 'isle9'), ('silver_crown', 'isle25'), ('isle6', 'isle25')]
-    for a_, b_ in LINKS:
-        if a_ in by_id and b_ in by_id:
-            A_, B_ = by_id[a_], by_id[b_]
-            LC.light_rail(RL, _edge(A_, B_), _edge(B_, A_), A_['z'] + .02, B_['z'] + .02, .012, m_rail, m_node, sag=.3, n=32, gap=.05)
-    LC.field_rings(RL, *TOWER, 2.3, (.45, .8, 1.2, 1.65), .02, LC.glow('mt_field', estr=2.5, alpha=.6))
+    m_pipe, m_node = LC.flat('mt_pipe', (0.08, 0.09, 0.11), 0.4, metal=0.7), LC.glow('mt_node', estr=2.0)
+    for tid in ('isle25', 'isle6', 'isle30'):                # 最多 3 条：精英学院、首相府、罗斯柴尔德（都在塔附近；不连伊甸）
+        if tid in by_id:
+            t = by_id[tid]; P_ = t['isle'].outline_world(1.0, 180); th = math.atan2(TOWER[1] - t['y'], TOWER[0] - t['x'])
+            ex_, ey_ = max(P_, key=lambda q: (q[0] - t['x']) * math.cos(th) + (q[1] - t['y']) * math.sin(th))   # 接到岛朝塔一侧的崖底，不从岛面上过
+            LC.conduit(RL, TOWER, (ex_, ey_), 1.4, t['z'] - .35, .012, m_pipe, m_node)
+    LC.field_rings(RL, *TOWER, 7.6, (.45, .8, 1.2, 1.65), .02, LC.glow('mt_field', estr=2.5, alpha=.6))
     for o in LC.Batch.build_all(): o.visible_shadow = False
+    if os.environ.get('TC_DUMP_OUTLINES'):                   # 给 tools/upper_depth_post.py：每岛世界坐标轮廓（逐岛蒙版）
+        json.dump({i['id']: i['isle'].outline_world(1.06, 96) for i in islands}, open(os.environ['TC_DUMP_OUTLINES'], 'w'))
 flush_trees(); tick(f'islands + estates ({te.flush()} trees)')
 FACES = sum(len(o.data.polygons) for o in bpy.data.objects if o.type == 'MESH')
 FACES_R4 = 352151                                           # r4（B2 第 1 轮）同口径的面数
@@ -332,3 +344,10 @@ if layer.opt.get('--city-only') and BELOW == 'city':   # 只渲下方城市（�
     for o in layer.sc.objects:
         if o.type == 'MESH' and o not in BELOW_OBJS: o.hide_render = True
 layer.finish(world=(_wc, _ws), extra=export, label=f'islands {len(islands)}')
+if not layer.data_only:                                     # 成图 meta：记录输入哈希（改了纵深 / 岛表就知道要重渲；arch review §3）
+    import hashlib
+    _h = lambda p: hashlib.sha256(open(p, 'rb').read()).hexdigest()[:16]
+    json.dump({'script': 'blender/tiancheng_upper.py', 'upper_depth': _h(os.path.join(tc.HERE, '..', 'map', 'data', 'upper_depth.json')),
+               'tc_islands': _h(os.environ.get('TC_ISLANDS') or os.path.join(tc.HERE, 'data', 'tc_islands.json')),
+               'res': layer.res, 'samples': layer.samples, 'below': BELOW, 'blender': bpy.app.version_string},
+              open(layer.out + '.meta.json', 'w'), indent=1)

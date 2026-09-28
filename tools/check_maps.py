@@ -48,7 +48,7 @@ def _schema(n):
     p = os.path.join(ROOT, 'data', 'schema', n + '.schema.json')
     try: return load(p)
     except FileNotFoundError: return json.load(open(p, encoding='utf-8'))
-_SCHEMA = {n: _schema(n) for n in ('maps', 'points', 'addon_places')}
+_SCHEMA = {n: _schema(n) for n in ('maps', 'points', 'addon_places', 'depth')}
 def schema_check(name, doc, label):
     for e in _validate(doc, _SCHEMA[name]): err(f'schema {label}：{e}')
 schema_check('maps', reg, 'maps.json')
@@ -58,6 +58,22 @@ if not isinstance(reg.get('maps'), dict) or not reg['maps']:
 for _mid, _m in reg['maps'].items():
     if isinstance(_m, dict) and _m.get('data') and _m.get('status') != 'planned' and exists(os.path.join(ROOT, _m['data'])):
         schema_check('points', load(os.path.join(ROOT, _m['data'])), _m['data'])
+for _mid, _m in reg['maps'].items():                      # 纵深系统（docs/design/depth-system.md）：schema；岛 id ↔ 唯一岛表双向对齐（新岛必须同一提交加 depth 条目）
+    if isinstance(_m, dict) and _m.get('depth'):
+        if not exists(os.path.join(ROOT, _m['depth'])): err(f"{_mid}: depth 文件 {_m['depth']} 不存在"); continue
+        _dd = load(os.path.join(ROOT, _m['depth'])); schema_check('depth', _dd, _m['depth'])
+        if _dd.get('layer') != _mid: err(f"{_m['depth']}: layer 应为 {_mid}")
+        _tbl = os.path.join(ROOT, '..', 'blender', 'data', 'tc_islands.json') if _mid == 'tc_upper' else None
+        if _tbl and os.path.exists(_tbl):
+            _isl = json.load(open(_tbl, encoding='utf-8'))['islands']; _ids = {i['id'] for i in _isl}
+            for _k in _dd.get('islands', {}):
+                if _k not in _ids: err(f"{_m['depth']}: 岛 {_k} 不在岛表 blender/data/tc_islands.json")
+            for _k in _ids - set(_dd.get('islands', {})): err(f"岛表里的 {_k} 没有纵深条目（{_m['depth']}）：新岛要在同一提交里加")
+            for _i in _isl:
+                if _i.get('marker') and _i['marker'] not in (_m.get('markers') or {}): err(f"岛表 {_i['id']} 的 marker {_i['marker']} 不是 {_mid} 的标记")
+            if _m.get('data') and exists(os.path.join(ROOT, _m['data'])):   # Blender ↔ 前端：导出的岛与岛表一致（底图未重渲时只警告）
+                _fe = {i['id'] for i in load(os.path.join(ROOT, _m['data'])).get('islands', [])}
+                if _fe != _ids: warn(f"{_mid}: {_m['data']} 的岛（{len(_fe)}）与岛表（{len(_ids)}）不一致——底图 / 点位待按新岛表重渲（render_all.sh upper）")
 if exists(os.path.join(ROOT, 'data', 'addon_places.json')): schema_check('addon_places', load(os.path.join(ROOT, 'data', 'addon_places.json')), 'addon_places.json')
 maps = reg['maps']
 if reg.get('start') not in maps: err(f"start 指向不存在的地图 {reg.get('start')}")

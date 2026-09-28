@@ -1,0 +1,253 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "纵深系统数据（docs/design/depth-system.md）",
+ "type": "object",
+ "required": [
+  "schema",
+  "layer",
+  "camera",
+  "channels",
+  "islands"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "_说明": {
+   "type": "string"
+  },
+  "schema": {
+   "const": 1
+  },
+  "layer": {
+   "type": "string",
+   "minLength": 1
+  },
+  "units": {
+   "type": "object",
+   "properties": {
+    "xy": {
+     "type": "string"
+    },
+    "alt": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false
+  },
+  "camera": {
+   "type": "object",
+   "required": [
+    "alt_near",
+    "alt_far"
+   ],
+   "properties": {
+    "alt_near": {
+     "type": "number"
+    },
+    "alt_far": {
+     "type": "number"
+    }
+   },
+   "additionalProperties": false
+  },
+  "channels": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "scale": {
+     "type": "object",
+     "required": [
+      "near",
+      "far"
+     ],
+     "properties": {
+      "near": {
+       "type": "number"
+      },
+      "far": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false
+    },
+    "haze": {
+     "type": "object",
+     "required": [
+      "near",
+      "far"
+     ],
+     "properties": {
+      "near": {
+       "type": "number"
+      },
+      "far": {
+       "type": "number"
+      },
+      "color": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 3
+      }
+     },
+     "additionalProperties": false
+    },
+    "tint": {
+     "type": "object",
+     "required": [
+      "near",
+      "far"
+     ],
+     "properties": {
+      "near": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 3
+      },
+      "far": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 3
+      },
+      "sat_far": {
+       "type": "number"
+      },
+      "gamma_far": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false
+    },
+    "label": {
+     "type": "object",
+     "required": [
+      "opacity_near",
+      "opacity_far"
+     ],
+     "properties": {
+      "opacity_near": {
+       "type": "number"
+      },
+      "opacity_far": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false
+    },
+    "parallax": {
+     "type": "object",
+     "required": [
+      "near",
+      "far"
+     ],
+     "properties": {
+      "near": {
+       "type": "number"
+      },
+      "far": {
+       "type": "number"
+      },
+      "enabled": {
+       "type": "boolean"
+      }
+     },
+     "additionalProperties": false
+    },
+    "ward": {
+     "type": "object",
+     "required": [
+      "near",
+      "far"
+     ],
+     "properties": {
+      "near": {
+       "type": "number"
+      },
+      "far": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false
+    }
+   }
+  },
+  "cloud_sheets": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "alt"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "alt": {
+      "type": "number"
+     },
+     "cover": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "islands": {
+   "type": "object",
+   "minProperties": 1,
+   "additionalProperties": {
+    "type": "object",
+    "required": [
+     "alt"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "alt": {
+      "type": "number"
+     },
+     "d": {
+      "type": [
+       "number",
+       "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+     },
+     "overrides": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+       "scale": {
+        "type": "number"
+       },
+       "haze": {
+        "type": "number"
+       },
+       "ward": {
+        "type": "number"
+       },
+       "parallax": {
+        "type": "number"
+       },
+       "ward_edge": {
+        "enum": [
+         "cold"
+        ]
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

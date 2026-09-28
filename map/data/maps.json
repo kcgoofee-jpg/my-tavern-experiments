@@ -39,7 +39,7 @@
       "view": { "focus": "eden", "width_m": 1700, "min_width_m": 60, "extent_m": [3000, 1875], "phone": [0.16, 0.08, 0.8, 0.78] },
       "title": "天城 · 上层", "title_en": "Tiancheng · Upper Tier", "parent": "world", "group": "tiancheng",
       "layer": { "name": "上层", "sub": "悬浮庄园区", "alt": "800–1500 m", "alt_en": "800–1500 m", "name_en": "Upper", "sub_en": "Floating Estates" },
-      "kind": "points", "base": "art/tc_upper.dzi", "data": "data/tc_upper.json",
+      "kind": "points", "base": "art/tc_upper.dzi", "data": "data/tc_upper.json", "depth": "data/upper_depth.json",
       "alt": { "label": "显示下方城市", "label_en": "Show city below", "base": "art/tc_upper_city.dzi" }, "credit": "城市骨架 © OpenStreetMap contributors (ODbL)；核心区建筑几何：NYC 3-D Building Model（2014），© City of New York / Office of Technology and Innovation，NYC Open Data；经投影、旋转、缩放并叠加生成内容", "credit_en": "City layout © OpenStreetMap contributors (ODbL); Core-district building geometry: NYC 3-D Building Model (2014), City of New York / Office of Technology and Innovation, via NYC Open Data; reprojected, rotated, scaled and combined with generated content",
       "overlay": { "type": "barriers", "label": "结界", "label_en": "Wards" },
       "focus": "eden",

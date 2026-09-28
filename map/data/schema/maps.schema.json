@@ -67,6 +67,7 @@
         "parent": { "$ref": "#/$defs/id" }, "group": { "$ref": "#/$defs/id" }, "layer": { "$ref": "#/$defs/layer" },
         "base": { "allOf": [{ "$ref": "#/$defs/path" }, { "pattern": "\\.dzi$" }] },
         "data": { "allOf": [{ "$ref": "#/$defs/path" }, { "pattern": "\\.json$" }], "description": "points 地图的渲染数据（schema/points.schema.json）" },
+        "depth": { "type": "string", "pattern": "^data/[a-z0-9_]+_depth\\.json$", "description": "纵深系统数据（schema/depth.schema.json，docs/design/depth-system.md）" },
         "src": { "$ref": "#/$defs/path", "description": "kind=estate：子页（相对 map/）" }, "src_note": { "type": "string" },
         "viewer3d": { "$ref": "#/$defs/id", "description": "props/<id>/manifest.json 的三维条目" },
         "test": { "type": "boolean" }, "site": { "type": "boolean" },

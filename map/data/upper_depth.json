@@ -1,0 +1,110 @@
+{
+ "_说明": "纵深系统唯一数据源（docs/design/depth-system.md；接口按 docs/reviews/arch_overall_review.md §3）。只放纵深字段，岛的 x / y / 半径在唯一岛表 blender/data/tc_islands.json，按岛 id 引用。数学见 map/core/depth.mjs 与 blender/depth.py（同一规格，tests/fixtures/depth_golden.json 对拍）。海拔按 docs/upper-setting.md v2 合并表（用户 2026-09-28 批准）。",
+ "schema": 1,
+ "layer": "tc_upper",
+ "units": {
+  "xy": "100m",
+  "alt": "m"
+ },
+ "camera": {
+  "alt_near": 1450,
+  "alt_far": 820
+ },
+ "channels": {
+  "scale": {
+   "near": 1.0,
+   "far": 0.58
+  },
+  "haze": {
+   "near": 0.0,
+   "far": 0.45,
+   "color": [
+    236,
+    239,
+    245
+   ]
+  },
+  "tint": {
+   "near": [
+    1.04,
+    1.0,
+    0.92
+   ],
+   "far": [
+    0.9,
+    0.95,
+    1.05
+   ],
+   "sat_far": -0.4,
+   "gamma_far": 0.8
+  },
+  "label": {
+   "opacity_near": 1.0,
+   "opacity_far": 0.65
+  },
+  "parallax": {
+   "near": 1.0,
+   "far": 0.2,
+   "enabled": false
+  },
+  "ward": {
+   "near": 0.55,
+   "far": 0.0
+  }
+ },
+ "cloud_sheets": [
+  {
+   "id": "c1",
+   "alt": 1150,
+   "cover": 0.15
+  },
+  {
+   "id": "c2",
+   "alt": 1020,
+   "cover": 0.22
+  },
+  {
+   "id": "c3",
+   "alt": 930,
+   "cover": 0.3
+  }
+ ],
+ "islands": {
+  "eden": {
+   "alt": 1450,
+   "overrides": {
+    "haze": 0,
+    "ward": 0
+   }
+  },
+  "isle10": {
+   "alt": 1360
+  },
+  "isle6": {
+   "alt": 1300
+  },
+  "isle30": {
+   "alt": 1250
+  },
+  "isle25": {
+   "alt": 1180
+  },
+  "isle9": {
+   "alt": 1080
+  },
+  "isle4": {
+   "alt": 960
+  },
+  "isle5": {
+   "alt": 880,
+   "d": 1.0,
+   "overrides": {
+    "ward_edge": "cold"
+   }
+  },
+  "silver_crown": {
+   "alt": 820,
+   "d": 0.85
+  }
+ }
+}

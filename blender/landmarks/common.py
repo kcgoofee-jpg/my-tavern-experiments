@@ -922,3 +922,11 @@ def field_rings(B, x, y, z, radii, w, m):
     for r in radii:
         B.cyl(x, y, z, r, w * 0.3, m, 96, r2=r, cap=False)
         B.cyl(x, y, z, r - w / 2, w * 0.1, m, 96, r2=r + w / 2, cap=False)
+
+
+def conduit(B, p0, p1, z0, z1, r, m_pipe, m_node, n=20, sag=0.0):
+    """以太导能管（只输能，不载人）：暗色细管 + 每隔几段一个点状微光节点"""
+    (x0, y0), (x1, y1) = p0, p1
+    pts = [(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, z0 + (z1 - z0) * t - sag * 4 * t * (1 - t)) for t in (i / n for i in range(n + 1))]
+    B.tube(pts, r, m_pipe, n=8)
+    for p in pts[2:-2:3]: B.sphere(p[0], p[1], p[2], r * 1.8, m_node, seg=10, rings=6)

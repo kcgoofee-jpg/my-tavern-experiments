@@ -93,7 +93,7 @@ layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/
 | `--preview` | 800px / 8 采样、不加光晕；显式给的 `--res` / `--samples` 优先 |
 | `--data-only` | 只导出点位 JSON，不渲染（几秒） |
 | `--below clouds\|city` | 仅上层：岛屿下方是云海（默认）还是中层城市（`tc_upper_city`，查看器的「显示下方城市」开关） |
-| 层参数 | 中层 `--glow` `--ambient`；下层 `--glow` `--lamp` `--ambient`；上层 `--haze` |
+| 层参数 | 中层 `--glow` `--ambient`；下层 `--glow` `--lamp` `--ambient`；上层霾改由 `map/data/upper_depth.json` 的 haze 通道决定（纵深系统） |
 
 运行方式：`blender -b -P blender/tiancheng_mid.py -- ...`，或 `python3 blender/tiancheng_mid.py -- ...`（pip 装的 `bpy`，自带 OpenImageDenoise）。批量用 `bash tools/render_all.sh [upper mid low] [--res] [--samples] [--data-only] [--bpy] [-- 层参数]`。
 
@@ -160,7 +160,7 @@ layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/
 - 中层：`--glow` 所有发光的倍数，`--ambient` 天光。
 - 下层：`--glow`、`--lamp` 钠灯功率、`--ambient`。
 - 中 / 下层：`--no-landmark-glow` 去掉地标的装饰性光圈 / 描边灯 / 光晕（建筑本体和普通照明不动，随机序列与 `map/data/*.json` 不变）；默认不加 = 现状。对比图 `docs/drafts/landmark_glow_compare_*.jpg`。
-- 上层：`--haze` 中层远景上那层霾的浓度。
+- 上层：下方城市那层霾 = 纵深系统 haze 通道 d = 1 的值（`map/data/upper_depth.json`，`blender/depth.py`），不再有 `--haze`。
 
 ## 5. 性能
 

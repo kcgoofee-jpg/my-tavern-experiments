@@ -1,0 +1,370 @@
+{
+ "_说明": "纵深数学对拍：map/core/depth.mjs 与 blender/depth.py 都必须算出 expected（tests/depth.test.mjs、tools/test_depth.py；smoke）。cfg 是冻结副本，调 upper_depth.json 不影响这里。改公式时两边同改，再用 python3 tools/test_depth.py --regen 重生成。",
+ "cfg": {
+  "schema": 1,
+  "layer": "tc_upper",
+  "units": {
+   "xy": "100m",
+   "alt": "m"
+  },
+  "camera": {
+   "alt_near": 1450,
+   "alt_far": 820
+  },
+  "channels": {
+   "scale": {
+    "near": 1.0,
+    "far": 0.58
+   },
+   "haze": {
+    "near": 0.0,
+    "far": 0.45,
+    "color": [
+     236,
+     239,
+     245
+    ]
+   },
+   "tint": {
+    "near": [
+     1.04,
+     1.0,
+     0.92
+    ],
+    "far": [
+     0.9,
+     0.95,
+     1.05
+    ],
+    "sat_far": -0.4,
+    "gamma_far": 0.8
+   },
+   "label": {
+    "opacity_near": 1.0,
+    "opacity_far": 0.65
+   },
+   "parallax": {
+    "near": 1.0,
+    "far": 0.2,
+    "enabled": false
+   },
+   "ward": {
+    "near": 0.55,
+    "far": 0.0
+   }
+  },
+  "cloud_sheets": [
+   {
+    "id": "c1",
+    "alt": 1150
+   },
+   {
+    "id": "c2",
+    "alt": 1020
+   },
+   {
+    "id": "c3",
+    "alt": 930
+   }
+  ],
+  "islands": {
+   "eden": {
+    "alt": 1450,
+    "overrides": {
+     "haze": 0,
+     "ward": 0
+    }
+   },
+   "isle10": {
+    "alt": 1360
+   },
+   "isle6": {
+    "alt": 1300
+   },
+   "isle30": {
+    "alt": 1250
+   },
+   "isle25": {
+    "alt": 1180
+   },
+   "isle9": {
+    "alt": 1080
+   },
+   "isle4": {
+    "alt": 960
+   },
+   "isle5": {
+    "alt": 880,
+    "d": 1.0,
+    "overrides": {
+     "ward_edge": "cold"
+    }
+   },
+   "silver_crown": {
+    "alt": 820,
+    "d": 0.85
+   },
+   "t_low": {
+    "alt": 700
+   },
+   "t_high": {
+    "alt": 1600
+   },
+   "t_mid": {
+    "alt": 1135,
+    "overrides": {
+     "scale": 0.5
+    }
+   }
+  }
+ },
+ "expected": {
+  "eden": {
+   "d": 0.0,
+   "scale": 1.0,
+   "haze": 0.0,
+   "tint": {
+    "mul": [
+     1.04,
+     1.0,
+     0.92
+    ],
+    "sat": 0.0,
+    "gamma": 1.0
+   },
+   "label": 1.0,
+   "parallax": 1.0,
+   "ward": 0.0,
+   "clouds": [],
+   "ward_edge": null
+  },
+  "isle10": {
+   "d": 0.1429,
+   "scale": 0.94,
+   "haze": 0.0643,
+   "tint": {
+    "mul": [
+     1.02,
+     0.9929,
+     0.9386
+    ],
+    "sat": -0.0572,
+    "gamma": 0.9714
+   },
+   "label": 0.95,
+   "parallax": 0.8857,
+   "ward": 0.4714,
+   "clouds": [],
+   "ward_edge": null
+  },
+  "isle6": {
+   "d": 0.2381,
+   "scale": 0.9,
+   "haze": 0.1071,
+   "tint": {
+    "mul": [
+     1.0067,
+     0.9881,
+     0.951
+    ],
+    "sat": -0.0952,
+    "gamma": 0.9524
+   },
+   "label": 0.9167,
+   "parallax": 0.8095,
+   "ward": 0.419,
+   "clouds": [],
+   "ward_edge": null
+  },
+  "isle30": {
+   "d": 0.3175,
+   "scale": 0.8667,
+   "haze": 0.1429,
+   "tint": {
+    "mul": [
+     0.9956,
+     0.9841,
+     0.9613
+    ],
+    "sat": -0.127,
+    "gamma": 0.9365
+   },
+   "label": 0.8889,
+   "parallax": 0.746,
+   "ward": 0.3754,
+   "clouds": [],
+   "ward_edge": null
+  },
+  "isle25": {
+   "d": 0.4286,
+   "scale": 0.82,
+   "haze": 0.1929,
+   "tint": {
+    "mul": [
+     0.98,
+     0.9786,
+     0.9757
+    ],
+    "sat": -0.1714,
+    "gamma": 0.9143
+   },
+   "label": 0.85,
+   "parallax": 0.6571,
+   "ward": 0.3143,
+   "clouds": [],
+   "ward_edge": null
+  },
+  "isle9": {
+   "d": 0.5873,
+   "scale": 0.7533,
+   "haze": 0.2643,
+   "tint": {
+    "mul": [
+     0.9578,
+     0.9706,
+     0.9963
+    ],
+    "sat": -0.2349,
+    "gamma": 0.8825
+   },
+   "label": 0.7944,
+   "parallax": 0.5302,
+   "ward": 0.227,
+   "clouds": [
+    "c1"
+   ],
+   "ward_edge": null
+  },
+  "isle4": {
+   "d": 0.7778,
+   "scale": 0.6733,
+   "haze": 0.35,
+   "tint": {
+    "mul": [
+     0.9311,
+     0.9611,
+     1.0211
+    ],
+    "sat": -0.3111,
+    "gamma": 0.8444
+   },
+   "label": 0.7278,
+   "parallax": 0.3778,
+   "ward": 0.1222,
+   "clouds": [
+    "c1",
+    "c2"
+   ],
+   "ward_edge": null
+  },
+  "isle5": {
+   "d": 1.0,
+   "scale": 0.58,
+   "haze": 0.45,
+   "tint": {
+    "mul": [
+     0.9,
+     0.95,
+     1.05
+    ],
+    "sat": -0.4,
+    "gamma": 0.8
+   },
+   "label": 0.65,
+   "parallax": 0.2,
+   "ward": 0.0,
+   "clouds": [
+    "c1",
+    "c2",
+    "c3"
+   ],
+   "ward_edge": "cold"
+  },
+  "silver_crown": {
+   "d": 0.85,
+   "scale": 0.643,
+   "haze": 0.3825,
+   "tint": {
+    "mul": [
+     0.921,
+     0.9575,
+     1.0305
+    ],
+    "sat": -0.34,
+    "gamma": 0.83
+   },
+   "label": 0.7025,
+   "parallax": 0.32,
+   "ward": 0.0825,
+   "clouds": [
+    "c1",
+    "c2",
+    "c3"
+   ],
+   "ward_edge": null
+  },
+  "t_low": {
+   "d": 1.0,
+   "scale": 0.58,
+   "haze": 0.45,
+   "tint": {
+    "mul": [
+     0.9,
+     0.95,
+     1.05
+    ],
+    "sat": -0.4,
+    "gamma": 0.8
+   },
+   "label": 0.65,
+   "parallax": 0.2,
+   "ward": 0.0,
+   "clouds": [
+    "c1",
+    "c2",
+    "c3"
+   ],
+   "ward_edge": null
+  },
+  "t_high": {
+   "d": 0.0,
+   "scale": 1.0,
+   "haze": 0.0,
+   "tint": {
+    "mul": [
+     1.04,
+     1.0,
+     0.92
+    ],
+    "sat": 0.0,
+    "gamma": 1.0
+   },
+   "label": 1.0,
+   "parallax": 1.0,
+   "ward": 0.55,
+   "clouds": [],
+   "ward_edge": null
+  },
+  "t_mid": {
+   "d": 0.5,
+   "scale": 0.5,
+   "haze": 0.225,
+   "tint": {
+    "mul": [
+     0.97,
+     0.975,
+     0.985
+    ],
+    "sat": -0.2,
+    "gamma": 0.9
+   },
+   "label": 0.825,
+   "parallax": 0.6,
+   "ward": 0.275,
+   "clouds": [
+    "c1"
+   ],
+   "ward_edge": null
+  }
+ }
+}

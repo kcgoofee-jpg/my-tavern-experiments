@@ -17,7 +17,7 @@ from make_dzi import verify as dzi_verify
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAP = os.path.join(ROOT, 'map')
-SCH = {n: json.load(open(os.path.join(MAP, 'data', 'schema', n + '.schema.json'), encoding='utf-8')) for n in ('pack', 'maps', 'points', 'events')}
+SCH = {n: json.load(open(os.path.join(MAP, 'data', 'schema', n + '.schema.json'), encoding='utf-8')) for n in ('pack', 'maps', 'points', 'events', 'depth')}
 
 
 def check(pid):
@@ -40,6 +40,12 @@ def check(pid):
     if reg:
         errs += [f'{pid}/maps.json {e}' for e in validate(reg, SCH['maps'])]
         maps = reg.get('maps', {})
+        for mid_, mm_ in maps.items():                   # 纵深系统数据（可选，每层一份）
+            if isinstance(mm_, dict) and mm_.get('depth'):
+                dd_ = load(mm_['depth'])
+                if dd_ is not None:
+                    errs += [f'{pid}/{mm_["depth"]} {e}' for e in validate(dd_, SCH['depth'])]
+                    errs += [f'{pid}: {mm_["depth"]} 的岛 {i.get("id")} 不是 {mid_} 的标记' for i in dd_.get('islands', []) if i.get('id') not in (mm_.get('markers') or {})]
         if reg.get('start') not in maps: errs.append(f'{pid}: start {reg.get("start")!r} 不是包里的地图')
         for gid, g in reg.get('groups', {}).items():
             for l in g.get('layers', []):

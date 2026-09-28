@@ -31,6 +31,7 @@ def island(site):
     """(轮廓点 [(x, y) 米，岛心为原点，+y 北], 朝伊甸的单位向量)"""
     import tc_estates as te
     d = next(i for i in json.load(open(os.environ.get('TC_ISLANDS') or os.path.join(HERE, '..', 'data', 'tc_islands.json')))['islands'] if i['id'] == ISLE[site])
+    d = dict(d); d.setdefault('z', 0.0)                 # v12：岛表不再有 z（海拔在 map/data/upper_depth.json）；模型只要轮廓
     e = te.Isle(d)
     P = [((x - e.x) * 100, (y - e.y) * 100) for x, y in e.outline_world(1.0, 128)]
     hx, hy = 1.5 - e.x, 0.8 - e.y; n = math.hypot(hx, hy)
