@@ -1,0 +1,116 @@
+{
+ "_说明": "斜视投影对拍：map/core/project.mjs 与 blender/project.py（tests/project.test.mjs、tools/test_project.py；smoke）。cam 由 fit_camera 求出后冻结。",
+ "view": {
+  "mode": "oblique",
+  "camera": {
+   "az_deg": 165,
+   "pitch_deg": 35,
+   "lens_mm": 50,
+   "sensor_mm": 36,
+   "aspect": 1.6,
+   "focus": "eden",
+   "focus_frame": [
+    0.5,
+    0.618
+   ]
+  },
+  "margin": 0.05,
+  "anchor_dz_m": 20,
+  "occlusion": {
+   "hide_ratio": 0.4,
+   "lift_label": true,
+   "dot_when_hidden": true
+  }
+ },
+ "cam": {
+  "pos": [
+   1235.3564,
+   -4610.4128,
+   5184.4247
+  ],
+  "right": [
+   0.9659,
+   0.2588,
+   0.0
+  ],
+  "up": [
+   -0.1485,
+   0.554,
+   0.8192
+  ],
+  "fwd": [
+   -0.212,
+   0.7912,
+   -0.5736
+  ],
+  "lens_mm": 50,
+  "sensor_mm": 36,
+  "aspect": 1.6
+ },
+ "points": [
+  [
+   0,
+   0,
+   1450
+  ],
+  [
+   1200,
+   -600,
+   1100
+  ],
+  [
+   -1300,
+   700,
+   900
+  ],
+  [
+   800,
+   800,
+   1300
+  ]
+ ],
+ "uv": [
+  [
+   0.5,
+   0.6181,
+   6051.7202
+  ],
+  [
+   0.7524,
+   0.9502,
+   5523.3602
+  ],
+  [
+   0.2926,
+   0.5591,
+   7196.6402
+  ],
+  [
+   0.7061,
+   0.5404,
+   6601.1202
+  ]
+ ],
+ "rules": [
+  [
+   0,
+   "dot"
+  ],
+  [
+   0.2,
+   "lift"
+  ],
+  [
+   0.39,
+   "lift"
+  ],
+  [
+   0.4,
+   "normal"
+  ],
+  [
+   0.9,
+   "normal"
+  ]
+ ]
+}

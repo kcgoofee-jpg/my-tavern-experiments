@@ -216,7 +216,14 @@ if os.environ.get('TC_MAGITECH'):
                 x, y = O[rnd_m.randrange(len(O))]
                 LC.crystal_cluster(MG, x, y, e.z - .02, rnd_m.uniform(.04, .07), m_cry, seed=k + len(i['id']))
     m_pipe, m_node = LC.flat('mt_pipe', (0.08, 0.09, 0.11), 0.4, metal=0.7), LC.glow('mt_node', estr=2.0)
-    for tid in ('isle25', 'isle6', 'isle30'):                # 最多 3 条：精英学院、首相府、罗斯柴尔德（都在塔附近；不连伊甸）
+    def _seg_d(p, a, b):
+        ax, ay = b[0] - a[0], b[1] - a[1]; t = max(0, min(1, ((p[0] - a[0]) * ax + (p[1] - a[1]) * ay) / (ax * ax + ay * ay)))
+        return math.hypot(a[0] + ax * t - p[0], a[1] + ay * t - p[1])
+    _ed = by_id.get('eden')
+    _cands = sorted((i for i in islands if i['id'] not in ('eden',)), key=lambda i: math.hypot(i['x'] - TOWER[0], i['y'] - TOWER[1]))
+    CONDUITS = [i['id'] for i in _cands if not _ed or _seg_d((_ed['x'], _ed['y']), TOWER, (i['x'], i['y'])) > max(_ed['rx'], _ed['ry']) * 1.15][:3]
+    print('CONDUITS', CONDUITS)                             # 规则（设定 v3）：最近的 3 座、连线不从伊甸上方 / 下方经过
+    for tid in CONDUITS:
         if tid in by_id:
             t = by_id[tid]; P_ = t['isle'].outline_world(1.0, 180); th = math.atan2(TOWER[1] - t['y'], TOWER[0] - t['x'])
             ex_, ey_ = max(P_, key=lambda q: (q[0] - t['x']) * math.cos(th) + (q[1] - t['y']) * math.sin(th))   # 接到岛朝塔一侧的崖底，不从岛面上过
@@ -343,6 +350,10 @@ def export(co):
 if layer.opt.get('--city-only') and BELOW == 'city':   # 只渲下方城市（岛全部隐藏）：给 tools/eden_into_upper.py 补旧伊甸岛下面的城市用，配合 --crop
     for o in layer.sc.objects:
         if o.type == 'MESH' and o not in BELOW_OBJS: o.hide_render = True
+if os.environ.get('TC_OBLIQUE'):                             # 斜视主地图（view: oblique）：blender/oblique.py 接管相机、岛底、模型、水、云片与 meta
+    import oblique
+    oblique.finish(layer, islands, so, (_wc, _ws), TOWER, DCFG)
+    sys.exit(0)
 layer.finish(world=(_wc, _ws), extra=export, label=f'islands {len(islands)}')
 if not layer.data_only:                                     # 成图 meta：记录输入哈希（改了纵深 / 岛表就知道要重渲；arch review §3）
     import hashlib

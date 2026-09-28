@@ -107,5 +107,24 @@
    "alt": 820,
    "d": 0.85
   }
+ },
+ "view": {
+  "mode": "oblique",
+  "camera": {
+   "az_deg": 165,
+   "pitch_deg": 35,
+   "lens_mm": 50,
+   "sensor_mm": 36,
+   "aspect": 1.6,
+   "focus": "eden",
+   "focus_frame": null
+  },
+  "margin": 0.05,
+  "anchor_dz_m": 20,
+  "occlusion": {
+   "hide_ratio": 0.4,
+   "lift_label": true,
+   "dot_when_hidden": true
+  }
  }
 }

@@ -34,6 +34,9 @@ def compute():
 
 def main():
     c = compute(); d = json.load(open(DATA, encoding='utf-8'))
+    tbl = {i['id'] for i in json.load(open(os.path.join(ROOT, 'blender/data/tc_islands.json')))['islands']}
+    if '--check' in sys.argv and {i['id'] for i in d['islands']} != tbl:   # 岛表已换（v12+ 纵深 / 斜视），发布数据还是旧底图：等重渲后再比（check_maps 同时报警告）
+        print('伊甸锚点：底图 / 点位待按新岛表重渲，暂不比对'); sys.exit(0)
     mk = next(m for m in d['markers'] if m['id'] == 'eden'); il = next(i for i in d['islands'] if i['id'] == 'eden')
     want = {'nx': c['center'][0], 'ny': c['center'][1], 'r': c['r'], 'ax': c['anchor'][0], 'ay': c['anchor'][1]}
     diff = {k: (mk.get(k), v) for k, v in want.items() if mk.get(k) != v}

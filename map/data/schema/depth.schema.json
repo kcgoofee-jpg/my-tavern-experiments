@@ -248,6 +248,86 @@
      }
     }
    }
+  },
+  "view": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "mode"
+   ],
+   "properties": {
+    "mode": {
+     "enum": [
+      "top",
+      "oblique"
+     ]
+    },
+    "camera": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "az_deg",
+      "pitch_deg",
+      "lens_mm"
+     ],
+     "properties": {
+      "az_deg": {
+       "type": "number"
+      },
+      "pitch_deg": {
+       "type": "number"
+      },
+      "lens_mm": {
+       "type": "number"
+      },
+      "sensor_mm": {
+       "type": "number"
+      },
+      "aspect": {
+       "type": "number"
+      },
+      "focus": {
+       "type": "string"
+      },
+      "focus_frame": {
+       "type": [
+        "array",
+        "null"
+       ],
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      }
+     }
+    },
+    "margin": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 0.3
+    },
+    "anchor_dz_m": {
+     "type": "number"
+    },
+    "occlusion": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "hide_ratio": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 1
+      },
+      "lift_label": {
+       "type": "boolean"
+      },
+      "dot_when_hidden": {
+       "type": "boolean"
+      }
+     }
+    }
+   }
   }
  }
 }

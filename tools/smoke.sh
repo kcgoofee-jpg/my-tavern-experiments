@@ -19,6 +19,7 @@ step "check_maps" python3 tools/check_maps.py
 python3 tools/check_render_deps.py | sed 's/^/  [警告] /'   # 只警告，不计入 FAIL（docs/render-deps.md）
 step "check_pack（设定包）" python3 tools/check_pack.py
 step "纵深数学对拍（python ↔ golden；JS 侧在 node --test）" python3 tools/test_depth.py
+step "斜视投影对拍（python ↔ golden）" python3 tools/test_project.py
 # 空文件守卫：已跟踪的 .mjs/.js/.py/.json/.md 不许是 0 字节（shell 里 cat 被别名成 bat 时 `cat > f <<EOF` 会悄悄写出空文件，stats096 就这样空了两天）；确有需要的空文件写进 EMPTY_OK
 EMPTY_OK='^$'
 step "无空的已跟踪源文件" bash -c "! git ls-files -- '*.mjs' '*.js' '*.py' '*.json' '*.md' | while IFS= read -r f; do [ -f \"\$f\" ] && [ ! -s \"\$f\" ] && echo \"空文件：\$f\"; done | grep -vE '$EMPTY_OK' | grep ."
