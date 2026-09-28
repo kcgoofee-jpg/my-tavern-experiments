@@ -3,7 +3,7 @@
 import { MAX_DIM, WEBP_QUALITY, DEFAULT_QUOTA_BYTES, scopeKey, makeImageMeta, reorder, buildExportManifest, buildIssueUrl } from '../core/room-gallery-logic.mjs';
 import * as DB from '../core/room-gallery-db.mjs';
 
-const REPO = 'Yehehua/eden-map';   // 导出投稿的 GitHub issue 仓库；换卡/换仓库时改这里
+const REPO = 'kcgoofee-jpg/my-tavern-experiments';   // 导出投稿的 GitHub issue 仓库；换卡/换仓库时改这里
 const CUSTOM_KEY = 'edenRoomCustomV1';
 const SCOPE_KEY = 'edenGalleryScope';
 
