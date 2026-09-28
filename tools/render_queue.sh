@@ -74,7 +74,7 @@ cmd_submit() {
   id="$(date +%Y%m%d_%H%M%S)_$$_$RANDOM"
   local f="$PEND/${id}.job"
   printf '%s\t%s\n' "$tag" "${q# }" > "$f"
-  echo "提交：${f}（tag=$tag）"
+  echo "提交：${f}（tag=${tag}）"
 }
 
 cmd_list() {
@@ -93,7 +93,7 @@ cmd_status() {
     [ -n "$h" ] || continue
     any_host=1
     local b; b=$(cloud_busy "$h")
-    echo "  $h：${b:-未知（连不上或没配置）}"
+    echo "  ${h}：${b:-未知（连不上或没配置）}"
   done < <(cloud_hosts)
   [ "$any_host" = 1 ] || echo "  （没配置任何实例，见 tools/cloud/remote.env.example）"
   echo "== 队列 =="
@@ -141,7 +141,7 @@ run_job_cloud() {
   local jobfile=$1 args=$2 runfile=$3 host=$4
   (
     if need_sync "$host"; then
-      echo "本地有改动，先 sync（$host）" >> "${runfile}.log"
+      echo "本地有改动，先 sync（${host}）" >> "${runfile}.log"
       DRY_RUN="$DRY_RUN" bash "$CLOUD/sync.sh" --host "$host" >> "${runfile}.log" 2>&1
       mark_synced "$host"
     fi
@@ -191,7 +191,7 @@ cmd_dispatch_once() {
     local id; id=$(basename "$f" .job)
     local runfile="$RUN/${id}.job"
     mv "$f" "$runfile" || continue
-    echo "派工：$id（tag=$tag）→ $target"
+    echo "派工：${id}（tag=${tag}）→ $target"
     if [ "$target" = mac ]; then
       mb=1  # 这一轮内不要把第二个任务也派去 Mac
       run_job_mac "$runfile" "$args" "$RUN/${id}"
@@ -210,7 +210,7 @@ cmd_dispatch_once() {
       while IFS= read -r h; do
         [ -n "$h" ] || continue
         if idle_guard_on "$h"; then continue; fi
-        echo "提醒：队列空了，云实例 $h 没开自动空闲关机（tools/cloud/idle_guard.sh --idle-shutdown 30 --host $h），记得手动关机省钱"
+        echo "提醒：队列空了，云实例 $h 没开自动空闲关机（tools/cloud/idle_guard.sh --idle-shutdown 30 --host ${h}），记得手动关机省钱"
       done < <(cloud_hosts)
     fi
   fi
@@ -232,5 +232,5 @@ case "${1:-}" in
     fi
     ;;
   ""|-h|--help) usage ;;
-  *) echo "未知命令 $1（submit|list|status|dispatch）" >&2; exit 2 ;;
+  *) echo "未知命令 ${1}（submit|list|status|dispatch）" >&2; exit 2 ;;
 esac
