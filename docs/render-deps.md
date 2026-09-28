@@ -32,6 +32,8 @@
 | `map/art/tc_clouds.dzi`（若存在） | `map/art/tc_upper.dzi` |
 | `map/estate/site.glb`, `map/estate/house.glb` | `blender/estate2/*.py` |
 
+窄例外（`check_render_deps.py` 的 `NOT_UPSTREAM`，只写确切路径）：`blender/landmarks/export_glb.py` 只导出 glb，不算 `tc_mid` / `tc_low` 底图的上游。
+
 ## 检查工具
 
 ```bash

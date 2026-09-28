@@ -18,6 +18,13 @@ DEPS = {
     'map/estate/house.glb': ['blender/estate2/*.py'],
 }
 
+# 窄例外：匹配上面 glob 但不影响该产物的文件（只列确切路径，不写通配）。
+# export_glb.py 只把地标导出成 glb（道具查看器用），不参与 tc_mid / tc_low 底图渲染，改它不需要重渲 .dzi。
+NOT_UPSTREAM = {
+    'map/art/tc_mid.dzi': {'blender/landmarks/export_glb.py'},
+    'map/art/tc_low.dzi': {'blender/landmarks/export_glb.py'},
+}
+
 
 def commit_time(path):
     """最近一次提交该路径的时间戳（epoch 秒），没有提交记录返回 None。"""
@@ -26,12 +33,13 @@ def commit_time(path):
     return int(out) if out.isdigit() else None
 
 
-def newest(patterns):
-    """一组 glob 模式里，最新提交时间最大的那个文件（路径, 时间戳）；都没有提交记录返回 (None, None)。"""
+def newest(patterns, skip=()):
+    """一组 glob 模式里（跳过 skip 里的确切路径），最新提交时间最大的那个文件（路径, 时间戳）；都没有提交记录返回 (None, None)。"""
     best = (None, None)
     for pat in patterns:
         for f in glob.glob(os.path.join(ROOT, pat), recursive=True):
             rel = os.path.relpath(f, ROOT)
+            if rel in skip: continue
             t = commit_time(rel)
             if t is not None and (best[1] is None or t > best[1]):
                 best = (rel, t)
@@ -51,7 +59,7 @@ def main():
         down_t = commit_time(down)
         if down_t is None:
             continue  # 本地新产物，还没提交，不比较
-        up_file, up_t = newest(ups)
+        up_file, up_t = newest(ups, NOT_UPSTREAM.get(down, ()))
         if up_file is not None and up_t > down_t:
             warnings.append(f'{down} 落后于上游 {up_file}（上游提交更新，可能需要重渲；见 docs/render-deps.md）')
 
