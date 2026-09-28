@@ -32,8 +32,8 @@ async function run(name, preset) {
     const p = P.page;
     await B.wait(1500);
     // 4 世界时间：标题栏
-    const clk = await p.evaluate(() => { const c = document.querySelector('#eden-map-root .em-clock'); return { t: c.textContent, hid: c.hidden, full: c.title }; });
-    rep.check(`${name} 标题栏世界时间（紧凑，全文在 title）`, clk.t === '01.12 23:30' && !clk.hid && /就寝/.test(clk.full), JSON.stringify(clk));
+    const clk = await p.evaluate(() => { const c = document.querySelector('#eden-map-root .em-clock'); return { t: c.textContent, hid: c.hidden, full: c.title, svg: !!c.querySelector('svg') }; });
+    rep.check(`${name} 标题栏世界时间（紧凑，全文在 title，带时钟图标）`, clk.t === '1月12日 23:30' && !clk.hid && clk.svg && /就寝/.test(clk.full), JSON.stringify(clk));
     // 2 旧叫法迁移进聊天变量
     const v0 = await H.vars();
     rep.check(`${name} 旧本机叫法迁移到聊天变量 eden_map（不在 stat_data）`, v0?.eden_map?.自定义?.items?.书房?.名 === '星图室' && !('stat_data' in (v0 || {})), JSON.stringify(v0).slice(0, 160));

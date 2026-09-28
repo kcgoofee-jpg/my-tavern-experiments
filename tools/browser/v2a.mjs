@@ -5,7 +5,7 @@
 //   unmap   当前地点认不出：抽屉 / 右栏「地点」页给「放到地图上」
 //   link3d  地点卡同时显示通道 link 与三维 link3d（注册表里临时加一个 link3d）
 //   hint    第一次打开：三步提示横幅（P1，可关），关掉后再开不再出
-//   gallery 伊甸庄园地点卡「主卧衣帽间图集」：不进三维直接在地图面板里开图集，Esc 关、焦点回到入口
+//   gallery 伊甸庄园地点卡不再挂衣帽间图集入口（2026-09-28 移除）：衣帽间改走三维庄园里的热点（主卧套间子区域），不挂通用图集按钮
 //   fog     迷雾探索：默认关；开着时没到过的地点变暗 + 遮罩，当前地点记进聊天变量 eden_map.探索，已存的记录生效
 // 用法：node tools/browser/v2a.mjs <输出目录> [--only clean,more3d]
 import * as B from './lib.mjs';
@@ -121,14 +121,22 @@ async function gallery(preset) {
     await B.openViewer(P, { map: 'tc_upper' }); await B.wait(1500); const p = P.page;
     await p.evaluate(() => document.querySelector('.mk[data-name="伊甸庄园"]')._open()); await B.wait(500);
     const a = p.locator('#card .extra [data-gallery="wardrobe"]');
-    rep.check(`${preset} 伊甸庄园地点卡有衣帽间图集入口`, await a.count() === 1 && /衣帽间/.test(await a.textContent()));
-    await a.click(); await p.waitForSelector('.rg .rg-img', { timeout: 8000 }).catch(() => {}); await B.wait(1500);
-    const g = await p.evaluate(() => { const i = document.querySelector('.rg .rg-img'); return { open: !!document.querySelector('.rg'), w: i?.naturalWidth || 0, map: cur, th: document.querySelectorAll('.rg .rg-th img').length }; });
-    rep.check(`${preset} 图集在地图面板里打开（不切到三维）、图片加载`, g.open && g.w > 0 && g.map === 'tc_upper' && g.th > 1, JSON.stringify(g));
-    await B.shot(p, OUT, `gallery_${preset}`);
+    rep.check(`${preset} 地点卡不再有衣帽间图集入口（渲染图走三维 closet/ 热点，图集机制留给用户自己上传的照片）`, await a.count() === 0);
     await p.keyboard.press('Escape'); await B.wait(300);
-    const c = await p.evaluate(() => ({ open: !!document.querySelector('.rg'), focus: document.activeElement?.dataset?.gallery || '' }));
-    rep.check(`${preset} Esc 关图集、焦点回到入口`, !c.open && c.focus === 'wardrobe', JSON.stringify(c));
+    // 衣帽间改走三维庄园：主卧套间（F2-57）里的子区域热点，不挂通用图集按钮（GALLERY 已清空）
+    await B.goMap(p, 'eden_estate', 60000); await B.wait(1500);
+    const f = await B.estateFrame(p);
+    const ok = f && await f.waitForFunction(() => window.__estate, null, { timeout: 30000 }).then(() => true).catch(() => false);
+    rep.check(`${preset} 进入三维庄园`, ok);
+    if (ok) {
+      // 衣帽间是主卧套间（F2）里的子区域：先切到 F2 剖切层把室内模型（含房间条目）加载出来，再按名字找
+      await f.evaluate(() => window.__estate.setMode('F2'));
+      await f.waitForFunction(() => window.__estate.houseState() !== 1, null, { timeout: 30000 }).catch(() => {}); await B.wait(1000);
+      await p.evaluate(() => document.getElementById('estate').contentWindow.postMessage({ type: 'estate:room', name: '衣帽间' }, '*')); await B.wait(1200);
+      const g = await f.evaluate(() => ({ pin: window.__estate.pinned(), gal: !!document.querySelector('#card .gal') }));
+      rep.check(`${preset} 衣帽间走三维热点进（主卧套间子区域），不挂通用图集按钮`, g.pin?.name === '衣帽间' && !g.gal, JSON.stringify(g));
+      await B.shot(p, OUT, `gallery_${preset}`);
+    }
   } finally { await P.ctx.close(); }
 }
 

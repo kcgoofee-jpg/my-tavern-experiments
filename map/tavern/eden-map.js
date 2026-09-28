@@ -361,10 +361,12 @@
   const afterGen = f => { if (typeof GEN !== 'undefined' && GEN.generating) idleQ.push(f); else f(); };
   const flushIdle = () => { for (const f of idleQ.splice(0)) { try { if (!dead) f(); } catch (e) {} } };
   if (line || !swappable) (window.parent.requestIdleCallback || (f => setTimeout(f, 2000)))(() => afterGen(() => fetchHtml().catch(() => {})));
+  // 每次真正打开地图（不是后台幽灵预加载）查一次更新：提示等面板关上再弹。通读 R1 / R2：打开面板时重读一次（开局切换、状态栏改变量可能没发事件）
+  function scheduleAutoCheck() { if (typeof autoCheck === 'function') setTimeout(() => { if (!dead) { autoCheck().catch(() => {}); followCheck().catch(() => {}); } }, 3000); }
   // 打开：休眠中的地图直接唤醒；否则创建。关闭：先休眠（地图关掉底图、释放瓦片内存，脚本和数据留着），超时再销毁
   async function loadViewer() {
     clearTimeout(killT); if (typeof recomputeSoon === 'function') { recomputeSoon(0); pushSoon(0); }
-    if (typeof autoCheck === 'function' && !ghost) setTimeout(() => { if (!dead) { autoCheck().catch(() => {}); followCheck().catch(() => {}); } }, 3000);   // 每次打开地图查一次更新（提示等面板关上再弹）   // 通读 R1 / R2：打开面板时重读一次（开局切换、状态栏改变量可能没发事件）
+    if (!ghost) scheduleAutoCheck();   // ghost（后台预加载）时跳过：真正打开时（fab 点开）补一次，见 fab click 里的 ghost 分支
     if (swappable && !line) return showPicker();   // 还没选线路：先选
     if (alive) { post({ type: 'eden-map:wake', fly: flyQ }); flyQ = null; sent = null; push(); sendEvents(); return; }   // fly：EdenMap.flyTo 唤醒面板时直接飞过去，不先回上次的图
     startProg(); htmlProg = f => setProg(f * 20);
@@ -1293,7 +1295,7 @@
   fab.addEventListener('pointerup', () => { if (dragged && handPref === 'auto') applyHand(false); });
   const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; sleepViewer(); prefSync(); if (toastWait && SC) setTimeout(toastOnce, 400); if (updWait) setTimeout(showUpdPrompt, 600); };
   fab.addEventListener('click', async () => { if (dragged) return;
-    if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); sent = null; charsSent = null; push(); sendEvents(); return; }   // 预加载中被点开：直接显示，重新推一次地点（这次可以进庄园）
+    if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); sent = null; charsSent = null; push(); sendEvents(); scheduleAutoCheck(); return; }   // 预加载中被点开：直接显示，重新推一次地点（这次可以进庄园）；loadViewer 当时因为还在 ghost 跳过了查更新，这里补一次
     fab.classList.remove('fail'); NT?.remove('newev');   // 提示不留在面板后面（v0.9.2）
     if (!panel.hidden) return close(); toastEl?.remove();
     if (updEl?.isConnected && updEl.__upd) { updPrompt = updEl.__upd; updWait = true; } updEl?.remove();   // 更新提示也不盖在面板上：关上面板后再弹
