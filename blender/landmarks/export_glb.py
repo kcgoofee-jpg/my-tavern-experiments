@@ -55,6 +55,9 @@ BUDGET = {
     # soup_kitchen（施粥站 + 收容所 + 义诊；walls_ext / roof / site_ground / props_lights / props_utility / props_yard 用上面的）
     'props_canopy': (8000, 1024), 'props_serving': (16000, 1024), 'props_tables': (4000, 1024), 'props_queue': (10000, 512),
     'props_clinic': (4000, 1024), 'props_shelter': (6000, 1024),
+    # civic_core（中层核心区政务区；site_ground / props_lights / props_signs 用上面的）
+    'props_council': (70000, 2048), 'props_executive': (35000, 2048), 'props_admin': (30000, 2048),
+    'props_reserve': (25000, 2048), 'props_culture': (20000, 1024), 'site_plaza': (45000, 2048),
 }
 
 

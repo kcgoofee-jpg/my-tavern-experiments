@@ -736,3 +736,48 @@ def rock(B, x, y, z, r, m, seed=0, seg=9, rings=6, sz=0.7, rough=0.35, facet=0.0
             a, b = k * seg + i, k * seg + (i + 1) % seg
             fs.append((a, a + seg, b + seg, b))
     return B.poly(vs, fs, m, smooth=facet == 0)
+
+
+# ---------------------------------------------------------------- 程序化方整石（civic_core 起加）
+def ashlar(name, c=(0.62, 0.62, 0.6), course=0.75, block=1.6, joint=0.012, jc=(0.3, 0.3, 0.3), var=0.06,
+           rough=0.75, rustic=0.0):
+    """世界坐标方整石砌：错缝砖纹（u = x+y，v = z），灰缝细、石块间微色差；rustic>0 → 灰缝加深并加凹凸（粗面石）。"""
+    m, nt, b = new_mat(name)
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    sep = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(tc.outputs['Object'], sep.inputs[0])
+    ad = nt.nodes.new('ShaderNodeMath'); ad.operation = 'ADD'
+    nt.links.new(sep.outputs[0], ad.inputs[0]); nt.links.new(sep.outputs[1], ad.inputs[1])
+    cm = nt.nodes.new('ShaderNodeCombineXYZ')
+    nt.links.new(ad.outputs[0], cm.inputs[0]); nt.links.new(sep.outputs[2], cm.inputs[1])
+    br = nt.nodes.new('ShaderNodeTexBrick'); br.offset = 0.5; br.offset_frequency = 2
+    br.inputs['Scale'].default_value = 1.0
+    br.inputs['Brick Width'].default_value = block; br.inputs['Row Height'].default_value = course
+    br.inputs['Mortar Size'].default_value = joint + rustic * 0.03
+    br.inputs['Mortar Smooth'].default_value = 0.3
+    br.inputs['Color1'].default_value = (*[x * (1 + var) for x in c], 1)
+    br.inputs['Color2'].default_value = (*[x * (1 - var) for x in c], 1)
+    br.inputs['Mortar'].default_value = (*jc, 1)
+    nt.links.new(cm.outputs[0], br.inputs['Vector'])
+    nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 2.5; nz.inputs['Detail'].default_value = 8
+    nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
+    mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['To Min'].default_value = 0.85; mr.inputs['To Max'].default_value = 1.08
+    nt.links.new(nz.outputs[0], mr.inputs['Value'])
+    mul = nt.nodes.new('ShaderNodeMix'); mul.data_type = 'RGBA'; mul.blend_type = 'MULTIPLY'
+    mul.inputs['Factor'].default_value = 1.0
+    nt.links.new(br.outputs['Color'], mul.inputs[6])
+    cc = nt.nodes.new('ShaderNodeCombineColor')
+    for i in range(3):
+        nt.links.new(mr.outputs[0], cc.inputs[i])
+    nt.links.new(cc.outputs[0], mul.inputs[7])
+    nt.links.new(mul.outputs[2], b.inputs['Base Color'])
+    b.inputs['Roughness'].default_value = rough
+    bump = nt.nodes.new('ShaderNodeBump'); bump.inputs['Strength'].default_value = 0.35 + rustic * 0.5
+    inv = nt.nodes.new('ShaderNodeMath'); inv.operation = 'SUBTRACT'; inv.inputs[0].default_value = 1.0
+    nt.links.new(br.outputs['Fac'], inv.inputs[1])
+    h = inv.outputs[0]
+    if rustic:
+        hm = nt.nodes.new('ShaderNodeMath'); hm.operation = 'MULTIPLY_ADD'; hm.inputs[2].default_value = 0.0
+        nt.links.new(inv.outputs[0], hm.inputs[0]); nt.links.new(nz.outputs[0], hm.inputs[1])
+        h = hm.outputs[0]
+    nt.links.new(h, bump.inputs['Height']); nt.links.new(bump.outputs[0], b.inputs['Normal'])
+    return m
