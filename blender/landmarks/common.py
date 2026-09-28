@@ -781,3 +781,13 @@ def ashlar(name, c=(0.62, 0.62, 0.6), course=0.75, block=1.6, joint=0.012, jc=(0
         h = hm.outputs[0]
     nt.links.new(h, bump.inputs['Height']); nt.links.new(bump.outputs[0], b.inputs['Normal'])
     return m
+
+
+def clear_glass(name, tint=(0.85, 0.9, 0.92), rough=0.02):
+    """透明大厅玻璃（真透射，可看到厅内）；只用于能看进去的门厅幕墙。"""
+    m, nt, b = new_mat(name)
+    b.inputs['Base Color'].default_value = (*tint, 1)
+    b.inputs['Roughness'].default_value = rough
+    b.inputs['Transmission Weight'].default_value = 1.0
+    b.inputs['IOR'].default_value = 1.45
+    return m

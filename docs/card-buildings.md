@@ -33,7 +33,7 @@
 | P2 机构 | tc_mid | `butler_academy` | 天城贵族管家学院 | 🆕 | 仓库推断 | — | — |  |
 | P2 机构 | tc_mid | `council` | 天城议会 | ✅ | 卡 + 推断位置 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `culture_office` | 天城文化署 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
-| P2 机构 | tc_mid | `enforcement_hq` | 天城执法局总局 | ✅ | 卡 | — | — |  |
+| P2 机构 | tc_mid | `enforcement_hq` | 天城执法局总局 | ✅ | 卡 | 执法局总局 `map/props/enforcement_hq/` | 标准（r3 7 / 7.5） |  |
 | P2 机构 | tc_mid | `executive_office` | 天城执政厅 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `iron_cradle` | 圣铁摇篮 | ✅ | 卡 | — | — |  |
 | P2 机构 | tc_mid | `knights_camp` | 骑士团营区 | ✅ | 用户决定 | — | — |  |
