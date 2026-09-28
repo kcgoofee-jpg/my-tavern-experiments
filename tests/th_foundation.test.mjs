@@ -5,9 +5,10 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import * as T from '../map/tavern/th.mjs';
 import * as S from '../map/core/storage.mjs';
+import { HOST_SRC } from './_host_src.mjs';
 
 const rd = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
-const HOST = rd('map/tavern/eden-map.js');
+const HOST = HOST_SRC;   // 入口 + host-*.mjs（C2 拆分）
 
 test('A1 cdnFetch：不带凭据、不带 Referer，调用方的选项保留但不能覆盖这两项', async () => {
   const seen = []; await T.cdnFetch('https://cdn.jsdelivr.net/x', { cache: 'no-store', credentials: 'include', referrerPolicy: 'origin' }, (u, o) => { seen.push([u, o]); return Promise.resolve({ ok: true }); });
@@ -98,7 +99,7 @@ test('A5 cleanup 清 watchT；生成期间空闲预取排队、结束后补做',
   // 行为：把 afterGen / flushIdle 抠出来跑
   const src = /const idleQ = \[\];\n([\s\S]*?)\n  if \(line/.exec(HOST)[1];
   const GEN = { generating: true }; let dead = false; const ran = [];
-  const { afterGen, flushIdle } = new Function('GEN', 'dead', 'const idleQ = [];\n' + src + '\nreturn { afterGen, flushIdle };')(GEN, dead);
+  const { afterGen, flushIdle } = new Function('GEN', 'life', 'const idleQ = [];\n' + src + '\nreturn { afterGen, flushIdle };')(GEN, { dead });   // C2：dead 在 host-lifecycle 的 life 上
   afterGen(() => ran.push('a')); assert.deepEqual(ran, []);
   GEN.generating = false; flushIdle(); assert.deepEqual(ran, ['a']);
   afterGen(() => ran.push('b')); assert.deepEqual(ran, ['a', 'b']);

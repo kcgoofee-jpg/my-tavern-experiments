@@ -8,6 +8,7 @@ import * as EV from '../map/tavern/events.mjs';
 import * as MV from '../map/tavern/mvu.mjs';
 import * as ST from '../map/core/storage.mjs';
 import * as AD from '../map/tavern/adapter.mjs';
+import { HOST_SRC } from './_host_src.mjs';
 
 const rd = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 const js = p => JSON.parse(rd(p));
@@ -55,7 +56,7 @@ test('清单校验：拒收外链、上跳路径、坏 id；load 检查 id 与�
 });
 
 test('同步副本一致：viewer.html 首帧前置、宿主 eden-map.js 的 NS 与 core/pack.mjs 同一规则', () => {
-  const v = rd('map/viewer.html'), h = rd('map/tavern/eden-map.js');
+  const v = rd('map/viewer.html'), h = HOST_SRC;
   for (const src of [v, h]) {
     assert.match(src, /\/\^\[a-z\]\[a-z0-9_-\]\{1,31\}\$\//, 'id 规则');
     assert.match(src, /'tcp\.' \+ (window\.__packId|PACK_ID) \+ '\.' \+ k\.slice\(7\)/, '前缀规则');

@@ -54,6 +54,6 @@ test('B5 脚本说明；B6 initializeGlobal + 旧别名；B8 只广播地点；B
 });
 
 test('不用的接口：installExtension / builtin / 角色卡写接口 / generate*', () => {
-  for (const f of ['map/tavern/eden-map.js', 'map/tavern/th.mjs', 'map/tavern/wbsync.mjs', 'map/tavern/modes.mjs'].map(p => { try { return readFileSync(new URL('../' + p, import.meta.url), 'utf8'); } catch (e) { return ''; } }))
+  for (const f of ['map/tavern/eden-map.js', 'map/tavern/host-th.mjs', 'map/tavern/host-routes.mjs', 'map/tavern/host-lifecycle.mjs', 'map/tavern/th.mjs', 'map/tavern/wbsync.mjs', 'map/tavern/modes.mjs'].map(p => { try { return readFileSync(new URL('../' + p, import.meta.url), 'utf8'); } catch (e) { return ''; } }))
     assert.ok(!/installExtension\(|builtin\.|replaceCharacter\(|importRawCharacter\(|updateCharacterWith\(|\bgenerate(Raw)?\(/.test(f));
 });

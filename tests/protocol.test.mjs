@@ -42,7 +42,7 @@ test('envelope 盖版本；总线：来源检查 + 校验 + 分发 + dispose', (
   assert.ok(sameOrigin({ origin: 'null' }, self) && sameOrigin({ origin: 'https://o' }, self) && !sameOrigin({ origin: 'https://evil' }, self));
 });
 test('静态清点：仓库里每个发送的消息类型都登记在 SCHEMA', () => {
-  const files = ['map/viewer.html', 'map/tavern/eden-map.js', 'map/estate/main.js', 'map/estate/index.html', 'map/props/viewer3d.html',
+  const files = ['map/viewer.html', 'map/tavern/eden-map.js', 'map/tavern/host-th.mjs', 'map/tavern/host-routes.mjs', 'map/tavern/host-lifecycle.mjs', 'map/estate/main.js', 'map/estate/index.html', 'map/props/viewer3d.html',
     ...readdirSync(new URL('../map/', import.meta.url)).filter(f => /\.(js|mjs)$/.test(f)).map(f => 'map/' + f),
     ...readdirSync(new URL('../map/app/', import.meta.url)).filter(f => f.endsWith('.mjs')).map(f => 'map/app/' + f)];
   const miss = new Set();
