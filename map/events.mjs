@@ -14,6 +14,7 @@ import { cardFrom, closeCard, placeN, setCardFrom, showCard, trackEl, untrack } 
 import { setUserMoved, userMoved } from './app/locate.mjs';
 import { sheetVis } from './app/shell.mjs';
 import { P, register } from './app/plugins.mjs';
+import { isEden } from './app/pack.mjs';
 const TCEvents = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const tn = z => (z && window.I18N?.tr?.(z)) || z || '';
@@ -56,7 +57,8 @@ const TCEvents = (() => {
   const RE_RING = /外围|城外|郊|异兽|兽潮|野兽|清剿|荒野|边境|防线/;
   const isRing = e => e.layer === '天城外' && RE_RING.test((e.place || '') + (e.cat || '')) && !worldPos(e.place);
   const tierNow = () => { const S = window.TCScale; return S?.isTier(cur) ? cur : S?.lastTier || 'tc_mid'; };
-  const mapOf = e => (isRing(e) ? tierNow() : MAP_OF[e.layer] || 'tc_mid');
+  // 设定包（通用化）：层 → 地图取包的事件分类（tavern/events.mjs LAYER_MAP，configure 过）；认不出层时落在包的首图
+  const mapOf = e => (EVM && EVM.packId !== 'eden' ? EVM.LAYER_MAP[e.layer] || REG.start : isRing(e) ? tierNow() : MAP_OF[e.layer] || 'tc_mid');
   const live = e => !e.closed && e.tier !== 'fade';
 
   // 地点 → 坐标：①显式坐标 ②该层地图的地标名 / 别名（最长匹配）③城区关键词 ④只知道层：按地点哈希放在中部一圈，标成「位置不详」
@@ -90,7 +92,7 @@ const TCEvents = (() => {
     for (const [re, x, y] of ZONES[mid] || []) if (re.test(place)) return { nx: (x + 15) / 30 + (j - .5) * .03, ny: (9.375 - y) / 18.75 + (j2 - .5) * .04, approx: true };
     return null; }
   async function loadMarkers() {
-    await Promise.all(Object.values(MAP_OF).filter(id => REG.maps[id]?.data && !markersOf[id] && REG.maps[id].status !== 'planned')
+    await Promise.all(Object.values(EVM && EVM.packId !== 'eden' ? EVM.LAYER_MAP : MAP_OF).filter(id => REG.maps[id]?.data && !markersOf[id] && REG.maps[id].status !== 'planned')
       .map(id => getJSON(REG.maps[id].data).then(d => { markersOf[id] = d?.markers || []; }).catch(() => {})));
   }
 
@@ -98,7 +100,7 @@ const TCEvents = (() => {
   // 卡内脚本发来：{ items, floor, fly }（旧版云端协议 { list, last } 也兼容：交给 events.mjs 重新解析）
   async function set(d) {
     const before = new Set(all().map(e => e.id));
-    if (Array.isArray(d.items)) { items = d.items; floor = d.floor || 0; }
+    if (Array.isArray(d.items)) { if (!isEden()) await mod(); items = d.items; floor = d.floor || 0; }   // 设定包：层 → 地图要用包的分类（mapOf）
     else if (Array.isArray(d.list)) { const m = await mod(); if (!m) return;
       floor = d.last || 0; items = m.collect(d.list.map(o => ({ floor: o.mes ?? floor, text: tagText(o) })), floor); }
     // 读屏播报：新出现的进行中事件（每条只播一次）

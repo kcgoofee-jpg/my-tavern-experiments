@@ -6,13 +6,20 @@
 // v0.9.3 MVU 联动（mvu.mjs）：只读 stat_data（世界时间、主角着装、在场人物）；自定义名称与用途存在聊天变量顶层键 eden_map（不进 stat_data，见 docs/content-compat.md）。
 (() => {
   const SELF = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
+  // 设定包（通用化，core/pack.mjs）：tools/build_preview_script.py --pack <id> 生成的脚本在导入前写 window.__tcPack = { id, manifest, events }（解析好的清单与事件分类，同步可用）。
+  // 没有 = 内置 eden：存储键、聊天变量、世界书名、事件分类都和以前一样（老用户的数据原样可读）。NS / LS 与 core/pack.mjs nsKey / nsStore 同一规则（tests/pack.test.mjs 对照）。
+  const PACK_IN = (() => { const p = window.__tcPack; return p && typeof p === 'object' && /^[a-z][a-z0-9_-]{1,31}$/.test(p.id || '') && p.id !== 'eden' ? p : null; })();
+  const PACK_ID = PACK_IN ? PACK_IN.id : 'eden';
+  const NS = k => (PACK_IN && typeof k === 'string' && k.startsWith('edenMap') ? 'tcp.' + PACK_ID + '.' + k.slice(7) : k);
+  const wrapLS = get => ({ getItem: k => get().getItem(NS(k)), setItem: (k, v) => get().setItem(NS(k), v), removeItem: k => get().removeItem(NS(k)), key: i => get().key(i), get length() { return get().length; } });
+  const LS = PACK_IN ? wrapLS(() => localStorage) : null;   // eden：下面的 LS 调用走原生 localStorage（同一对象，行为不变）
   // 协议 v2（core/protocol.mjs，docs/design/arch-v2.md §3）：发出的消息盖 v；收到的消息按 schema 校验（模块没到时照旧处理）
   const PROTO = 2; let PRm = null;   // 与 core/protocol.mjs PROTO 一致（tests/protocol.test.mjs 检查）
   import(SELF + 'core/protocol.mjs').then(m => { PRm = m; }).catch(() => {});
   let FOGm = null, explored = {}; import(SELF + 'core/fog.mjs').then(m => { FOGm = m; explored = m.norm(explored); }).catch(() => {});   // 迷雾探索（eden_map.探索）
   let SRCm = null; import(SELF + 'tavern/sources.mjs').then(m => { SRCm = m; }).catch(() => {});   // 数据源注册表（arch-v2 §6 第 8 步）
   // 线路：地图的图片和数据可以走不同的 CDN 节点。gh 线路路径格式相同，只换域名；npm 线路路径不同（包名 / 版本 / files/map/），单独拼。本地测试地址不换
-  const PKG = 'tiancheng-map-assets', REPO = 'kcgoofee-jpg/my-tavern-experiments';
+  const PKG = PACK_IN?.manifest?.cdn?.npm || 'tiancheng-map-assets', REPO = PACK_IN?.manifest?.cdn?.repo || 'kcgoofee-jpg/my-tavern-experiments';
   const LINES = [
     { key: 'vpn', name: '有梯子', name_en: 'Global CDN', short_en: 'Global', sub: '官方 CDN · jsDelivr', host: 'cdn.jsdelivr.net' },
     { key: 'cn', name: '没梯子', name_en: 'CN mirror', short_en: 'CN', sub: '国内镜像 · jsdmirror', host: 'cdn.jsdmirror.com' },
@@ -26,7 +33,7 @@
     return (SELF.match(new RegExp(`/${PKG}/([\\d.]+)/files/`)) || [])[1] || null; })();
   const tagOf = v => { const m = /^S(\d+):(.+)$/.exec(v); return m && +m[1] > 1 ? `map-s${+m[1]}-v${m[2]}` : 'map-v' + (m ? m[2] : v); };
   const plainVer = v => (v ? String(v).replace(/^S\d+:/, '') : v);
-  let line = null; try { line = localStorage.getItem(LINE_KEY); } catch (e) {}
+  let line = null; try { line = (LS || localStorage).getItem(LINE_KEY); } catch (e) {}
   if (!LINES.some(l => l.key === line)) line = null;
   const baseFor = key => {
     if (!swappable || !key) return SELF;
@@ -197,12 +204,12 @@
   // 标题栏跟着地图的语言与深浅主题（地图在 srcdoc 里，与酒馆页同源，设置存在同一个 localStorage；切换时地图发 eden-map:state {lang, theme}）
   const UI = { zh: { title: '新历 2088', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%', open: '打开世界地图', fab: '世界地图', unm: '未上图：', unm_tip: '点这里把它放到地图上' },
     en: { title: 'NC 2088', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%', open: 'Open world map', fab: 'World map', unm: 'Not on map: ', unm_tip: 'Tap to place it on the map' } };
-  let UL = 'zh', mapTitle = ''; try { UL = localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) {}
+  let UL = 'zh', mapTitle = ''; try { UL = (LS || localStorage).getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) {}
   const U = k => UI[UL][k];
   // 深 / 浅主题挂在根元素上（面板、自检提示一起换）；地图没开着时系统切换深浅也跟上（v0.9.5）
   const themeMq = window.parent.matchMedia?.('(prefers-color-scheme: light)');
   const hostTheme = th => root.classList.toggle('em-light', th === 'light' || (th === 'auto' && !!themeMq?.matches));
-  const storedTheme = () => { try { return localStorage.getItem('edenMapTheme') || 'auto'; } catch (e) { return 'auto'; } };
+  const storedTheme = () => { try { return (LS || localStorage).getItem('edenMapTheme') || 'auto'; } catch (e) { return 'auto'; } };
   hostTheme(storedTheme());
   const onThemeMq = () => { if (storedTheme() === 'auto') hostTheme('auto'); };
   themeMq?.addEventListener?.('change', onThemeMq);
@@ -229,7 +236,7 @@
     pickEl.hidden = false; loadEl.hidden = true;
   }
   function chooseLine(key) {
-    const changed = key !== line; line = key; try { localStorage.setItem(LINE_KEY, key); localStorage.setItem(LINE_KEY + 'Manual', '1'); } catch (e) {}
+    const changed = key !== line; line = key; try { (LS || localStorage).setItem(LINE_KEY, key); (LS || localStorage).setItem(LINE_KEY + 'Manual', '1'); } catch (e) {}
     showLine(); pickEl.hidden = true;
     if (changed) { BASE = baseFor(key); html = null; unloadViewer(); }
     loadViewer();
@@ -246,14 +253,14 @@
   }
   async function autoLine(force = false) {
     if (!swappable) return true;
-    let manual = false, at = 0; try { manual = localStorage.getItem(LINE_KEY + 'Manual') === '1'; at = +localStorage.getItem(LINE_AT) || 0; } catch (e) {}
+    let manual = false, at = 0; try { manual = (LS || localStorage).getItem(LINE_KEY + 'Manual') === '1'; at = +(LS || localStorage).getItem(LINE_AT) || 0; } catch (e) {}
     if (manual && line) return true;
     if (!force && line && Date.now() - at < LINE_TTL) return true;   // 24 小时内测过：直接用
     const ctls = LINES.map(() => new AbortController());
     const key = await Promise.any(LINES.map((l, i) => probe(l.key, ctls[i]).then(k => { ctls.forEach((c, j) => { if (j !== i) c.abort(); }); return k; }))).catch(() => null);
     if (!key) return false;
-    try { localStorage.setItem(LINE_AT, String(Date.now())); } catch (e) {}
-    if (key !== line) { line = key; BASE = baseFor(key); html = null; try { localStorage.setItem(LINE_KEY, key); } catch (e) {} showLine(); }
+    try { (LS || localStorage).setItem(LINE_AT, String(Date.now())); } catch (e) {}
+    if (key !== line) { line = key; BASE = baseFor(key); html = null; try { (LS || localStorage).setItem(LINE_KEY, key); } catch (e) {} showLine(); }
     return true;
   }
   // 预加载：在看不见的面板里把地图程序、数据和首屏瓦片加载一遍（进浏览器缓存），然后休眠释放内存。点按钮时基本秒开
@@ -322,7 +329,7 @@
       for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); n += value.length; htmlProg?.(n / total); }
       t = new TextDecoder().decode(await new Blob(parts).arrayBuffer());
     } else t = await r.text();
-    return t.replace('<head>', `<head><base href="${BASE}">`);
+    return t.replace('<head>', `<head><base href="${BASE}">` + (PACK_IN ? `<script>window.__tcPack=${JSON.stringify(PACK_IN).replace(/</g, '\\u003c')}</script>` : ''));
   })().catch(e => { html = null; throw e; });
   if (line || !swappable) (window.parent.requestIdleCallback || (f => setTimeout(f, 2000)))(() => fetchHtml().catch(() => {}));
   // 打开：休眠中的地图直接唤醒；否则创建。关闭：先休眠（地图关掉底图、释放瓦片内存，脚本和数据留着），超时再销毁
@@ -334,7 +341,7 @@
     startProg(); htmlProg = f => setProg(f * 20);
     let doc;
     try { doc = await fetchHtml(); setProg(20); }
-    catch (e) { try { localStorage.removeItem(LINE_AT); } catch (x) {} autoLine(true).catch(() => {});   // 这条线路失败：下次重测（v0.9.5）
+    catch (e) { try { (LS || localStorage).removeItem(LINE_AT); } catch (x) {} autoLine(true).catch(() => {});   // 这条线路失败：下次重测（v0.9.5）
       hintEl.textContent = '地图程序下载失败，可以重试或换一条线路'; actsEl.hidden = false; clearInterval(watchT); if (ghost) endGhost(false); return; }
     finally { htmlProg = null; }
     if (panel.hidden) return;   // 取页面期间面板又被关了
@@ -363,7 +370,7 @@
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
     if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
     if (e.data?.type === 'eden-map:state') {
-      if (e.data.lang && e.data.lang !== UL && UI[e.data.lang]) { UL = e.data.lang; try { localStorage.setItem('edenMapLang', UL); } catch (x) {} showLine(); push(); }   // 地图里切了语言：标题栏跟着换并记下（两边只有一个设置）
+      if (e.data.lang && e.data.lang !== UL && UI[e.data.lang]) { UL = e.data.lang; try { (LS || localStorage).setItem('edenMapLang', UL); } catch (x) {} showLine(); push(); }   // 地图里切了语言：标题栏跟着换并记下（两边只有一个设置）
       if (e.data.theme) hostTheme(e.data.theme);
       if (e.data.hand && e.data.hand !== handPref) { handPref = e.data.hand; applyHand(true); }
       mapTitle = e.data.title || ''; showTitle(); }
@@ -453,7 +460,7 @@
   const cardKey = () => { try { const c = SillyTavern.getContext(); return c.characters?.[c.characterId]?.avatar || c.name2 || ''; } catch (e) { return ''; } };
   import(SELF + 'tavern/adapter.mjs').then(m => { varAD = m; refreshVarMap(); push(); }).catch(() => {});
   function refreshVarMap() {
-    if (!varAD) return; const card = cardKey(); if (card !== varCard) { varCard = card; varUser = varAD.readUser(localStorage, card); }
+    if (!varAD) return; const card = cardKey(); if (card !== varCard) { varCard = card; varUser = varAD.readUser(LS || localStorage, card); }
     const st = mvuStat();
     varMap = varAD.effective(varUser, st);
     const sig = JSON.stringify([varMap, varUser, !!st]); if (sig !== varSig) { varSig = sig; sendVarMap(st); }
@@ -462,7 +469,7 @@
     if (!alive || !varAD) return; if (st === undefined) st = mvuStat();
     post({ type: 'eden-map:varmap', card: varCard, paths: varAD.paths(st), map: varMap, user: varUser, detected: varAD.detect(st), fields: varAD.rowFields?.(st) || [], mode: varAD.mode(typeof Mvu !== 'undefined', st, varMap) });
   }
-  function setVarUser(u) { if (!varAD) return; varUser = u && typeof u === 'object' ? u : {}; varAD.writeUser(localStorage, varCard, varUser); varSig = ''; refreshVarMap(); recomputeSoon(50); push(); if (checkP) checkP.then(() => { checkP = null; runCheck(); }); }   // 自检重跑，读法跟着变
+  function setVarUser(u) { if (!varAD) return; varUser = u && typeof u === 'object' ? u : {}; varAD.writeUser(LS || localStorage, varCard, varUser); varSig = ''; refreshVarMap(); recomputeSoon(50); push(); if (checkP) checkP.then(() => { checkP = null; runCheck(); }); }   // 自检重跑，读法跟着变
   // 表格数据库插件（tavern/shujuku.mjs）：只读。MVU 读不到地点时，当前地点改读它的「全局 / 主角」表；它的表更新时重算
   let DBm = null, dbCb = null, dbApiRef = null, hereFromDb = false;
   import(SELF + 'tavern/shujuku.mjs').then(m => { DBm = m; dbHook(); pushSoon(0); recomputeSoon(0); }).catch(() => {});
@@ -506,7 +513,7 @@
   }
   // ---------------- v0.9.3：世界时间（标题栏 + 地图夜色）与主角着装（本人地点卡）；只读 stat_data，缺字段就不显示 ----------------
   let MV = null, clockSig = null, outfitSig = null, clock = null, outfitNow = null;
-  import(new URL('mvu.mjs', import.meta.url).href).then(m => { MV = m; push(); loadCustom(); }).catch(e => console.warn('[eden-map] MVU 模块加载失败', e));
+  import(new URL('mvu.mjs', import.meta.url).href).then(m => { MV = m; if (PACK_IN) { m.setVarRoot(PACK_IN.chatVar || 'tc_' + PACK_ID.replace(/-/g, '_')); m.setWbName(PACK_IN.manifest?.title || PACK_ID); } push(); loadCustom(); }).catch(e => console.warn('[eden-map] MVU 模块加载失败', e));
   function pushMvu() {
     if (!MV) return;
     const st = mvuStat(), w = MV.worldTime(st, varMap), lb = MV.clockLabel(w);
@@ -539,12 +546,12 @@
   const badge = root.querySelector('.em-badge');
   let events = [], floorNow = -1, seen = -1, injected = '', EVM = null;
   // 事态模块单独加载：加载失败只是没有事态功能，地图照常可用
-  import(new URL('events.mjs', import.meta.url).href).then(m => { EVM = m; recompute(); }).catch(e => console.warn('[eden-map] 事态模块加载失败', e));
+  import(new URL('events.mjs', import.meta.url).href).then(m => { if (PACK_IN?.events) m.configure(PACK_IN.events, PACK_ID); EVM = m; recompute(); }).catch(e => console.warn('[eden-map] 事态模块加载失败', e));
   // 人物栏（v0.9.2）：人物位置标签 + MVU 人物表 → 每人最新位置；模块加载失败只是没有人物栏
   let CHM = null, chars = [], charSig = '', charsSent = null;   // charsSent：上一次发给地图的人物签名（没变就不重发）
   import(new URL('characters.mjs', import.meta.url).href).then(m => { CHM = m; recompute(); }).catch(e => console.warn('[eden-map] 人物模块加载失败', e));
   const chatKey = () => { try { return 'edenMapSeen:' + (SillyTavern.getContext().chatId || ''); } catch (e) { return 'edenMapSeen:'; } };
-  function loadSeen() { try { seen = +localStorage.getItem(chatKey()); if (!Number.isFinite(seen)) seen = -1; } catch (e) { seen = -1; } }
+  function loadSeen() { try { seen = +(LS || localStorage).getItem(chatKey()); if (!Number.isFinite(seen)) seen = -1; } catch (e) { seen = -1; } }
   // A-3：每楼原文的解析按 (楼层, 原文) 缓存——原文没变就复用上次的 raw / text / 指纹 / 人物标签 / 行程条目；
   // 整轮输入（楼层、各楼指纹、stat_data、映射、自定义……）的签名没变就直接跳过；发送路径（GENERATION_AFTER_COMMANDS）只做注入需要的部分，
   // 标签改名 / 行程放到空闲时补做（restNow）。
@@ -617,7 +624,7 @@
     post({ type: 'eden-map:events', v: 1, floor: floorNow, hereLayer: EVM ? EVM.layerOf(here) : '', items });
     // 只有用户真的看着面板才吃掉未读水位、清角标、记 localStorage（2026-09-27 接手 review P1：
     // 以前后台预加载会把水位推到最新并持久化，角标与「打开时飞向最新未读」从此永久失效——iPhone 走省流路径不预加载，所以手机上看不出来）
-    if (visible) { if (floorNow >= 0) { seen = floorNow; try { localStorage.setItem(chatKey(), String(seen)); } catch (e) {} } badge.hidden = true; }
+    if (visible) { if (floorNow >= 0) { seen = floorNow; try { (LS || localStorage).setItem(chatKey(), String(seen)); } catch (e) {} } badge.hidden = true; }
   }
   // v0.9.5 行程：最近 30 楼每楼的地点（MVU 那一楼的变量，拿不到就读原文里的 JSONPatch）+ 人物标签 → 最近 5 段（玩家、人物各 5），存进 eden_map.行程
   let TRm = null, trips = [], tripSig = ''; import(SELF + 'tavern/trips.mjs').then(m => { TRm = m; }).catch(() => {});
@@ -682,9 +689,9 @@
     const key = chat + '|' + [...new Set(vals)].sort().join('\u0001'); if (key === stageMiss) return;
     stageChat = chat; stageMiss = key; withTexts(t => { stageOrder = MV.findStageOrder(t, vals); stageMiss = stageOrder ? '' : key; });   // A-8：卡文本可能异步到
   }
-  let tipShown = false; try { tipShown = !!localStorage.getItem('edenMapEvTip'); } catch (e) {}
+  let tipShown = false; try { tipShown = !!(LS || localStorage).getItem('edenMapEvTip'); } catch (e) {}
   function tipOnce() {
-    if (tipShown || !panel.hidden) return; tipShown = true; try { localStorage.setItem('edenMapEvTip', '1'); } catch (e) {}
+    if (tipShown || !panel.hidden) return; tipShown = true; try { (LS || localStorage).setItem('edenMapEvTip', '1'); } catch (e) {}
     hostToast(UL === 'en' ? 'New events in Tiancheng' : '天城有新事态', [], 10000, null, false, { key: 'newev', level: 2, actions: [{ label: UL === 'en' ? 'View' : '查看', primary: true, run: () => fab.click() }] });   // UI v2：P2，不再挂在悬浮按钮上
   }
   let evT = 0;
@@ -703,7 +710,7 @@
   let CXm = null; const chx = () => (CXm ??= import(SELF + 'tavern/characters.mjs'));
   const inner = () => { if (!alive) return null; try { const w = frame.contentWindow; if (!w?.EdenMap) return null; w.__edenMapChat?.(chatId()); return w.EdenMap; } catch (e) { return null; } };
   function knowRooms() { try { const r = inner()?.getRooms().rooms; if (r?.length) roomsKnown = r; } catch (e) {} }
-  const store = () => { try { return window.parent.localStorage; } catch (e) { return null; } };
+  const store = () => { try { return PACK_IN ? wrapLS(() => window.parent.localStorage) : window.parent.localStorage; } catch (e) { return null; } };
 
   // ---------------- v0.9.3 自定义名称与用途（聊天变量 eden_map.自定义；酒馆助手没有变量接口时退回本机 localStorage） ----------------
   // 不写进 stat_data：卡的 MVU zod 结构会丢掉未知键。删除一项要整块替换，所以写入优先用 updateVariablesWith / replaceVariables（insertOrAssignVariables 是深合并，删不掉键）。
@@ -714,7 +721,7 @@
   const lsCustomKey = () => 'edenMap:chat:' + (chatId() || '') + ':custom2';
   // A-11：聊天变量写失败时退回本机；读的时候先看本机有没有这份退回的数据（有就是比聊天变量新的），下次写变量成功再删掉它
   function readVars() {
-    let fb = null; try { fb = JSON.parse(localStorage.getItem(lsCustomKey()) || 'null'); } catch (e) {}
+    let fb = null; try { fb = JSON.parse((LS || localStorage).getItem(lsCustomKey()) || 'null'); } catch (e) {}
     if (fb && typeof fb === 'object') return fb;
     if (varsOk()) { try { const v = getVariables({ type: 'chat' })?.[MV.VAR_ROOT]; return v && typeof v === 'object' ? v : {}; } catch (e) {} }
     return {};
@@ -727,11 +734,11 @@
         if (fnOk('updateVariablesWith')) await updateVariablesWith(v => { v[MV.VAR_ROOT] = root; return v; }, { type: 'chat' });
         else if (fnOk('replaceVariables')) { const all = { ...(getVariables({ type: 'chat' }) || {}) }; all[MV.VAR_ROOT] = root; await replaceVariables(all, { type: 'chat' }); }
         else await insertOrAssignVariables({ [MV.VAR_ROOT]: root }, { type: 'chat' });
-        try { localStorage.removeItem(lsCustomKey()); } catch (e) {}   // 之前退回本机的那份已经过时
+        try { (LS || localStorage).removeItem(lsCustomKey()); } catch (e) {}   // 之前退回本机的那份已经过时
         return true;
       } catch (e) { console.warn('[eden-map] 写聊天变量失败，改存本机', e); varsFailed = true; }
     }
-    const r = BG ? BG.safeSet(localStorage, lsCustomKey(), JSON.stringify(root), chat) : (() => { try { localStorage.setItem(lsCustomKey(), JSON.stringify(root)); return { ok: true }; } catch (e) { return { ok: false, reason: 'quota' }; } })();
+    const r = BG ? BG.safeSet(LS || localStorage, lsCustomKey(), JSON.stringify(root), chat) : (() => { try { (LS || localStorage).setItem(lsCustomKey(), JSON.stringify(root)); return { ok: true }; } catch (e) { return { ok: false, reason: 'quota' }; } })();
     if (!r.ok) { storeWarn(r.reason); return false; }
     if (varsFailed) { varsFailed = false; storeWarn('vars'); }   // UI 不能再说「已保存到聊天」却悄悄存在本机
     return true;
@@ -904,7 +911,7 @@
   // 除了这一个查询，不发任何请求；不上传、不统计。
   let SC = null, checkP = null, checkFacts = null, checkItems = [], checkAt = 0, viewerVer = null, updInfo = null, toastEl = null;
   const UPD_KEY = 'edenMapUpdate', AUTO_UPD_KEY = 'edenMapAutoUpdate', TOAST_KEY = 'edenMapCheckToast';
-  const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  const lsGet = k => { try { return (LS || localStorage).getItem(k); } catch (e) { return null; } }, lsSet = (k, v) => { try { (LS || localStorage).setItem(k, v); } catch (e) {} };
   const fnOk = n => { try { return typeof window[n] === 'function' || typeof globalThis[n] === 'function'; } catch (e) { return false; } };
   // 换版本 / 关脚本时旧实例必须彻底停掉（2026-09-27 接手 review P1）：cleanup 只摘了 DOM 和计时器，
   // 没摘酒馆助手的事件监听，switchVersion 在同一页面 import 新脚本后会留下两个活实例——扫描与注入跑两遍，
@@ -964,7 +971,7 @@
   function sendCheck() { if (alive && checkItems.length) post({ type: 'eden-map:selfcheck', items: checkItems, canUpdate: channel() !== 'latest' && !!(VER && swappable && SC?.swapVer(import.meta.url, VER)), autoUpdate: lsGet(AUTO_UPD_KEY) === '1' }); }
   // ---------------- v0.9.5 开场自检卡（tavern/splash.mjs）：导入后 / 换版本后第一次打开聊天时显示；不挡聊天 ----------------
   let SPm = null, splash = null;
-  const splashDue = () => { try { return localStorage.getItem('edenMapSplashSeen') !== String(VER || 'dev'); } catch (e) { return false; } };
+  const splashDue = () => { try { return (LS || localStorage).getItem('edenMapSplashSeen') !== String(VER || 'dev'); } catch (e) { return false; } };
   async function showSplash() {
     SPm ??= await import(SELF + 'tavern/splash.mjs').catch(() => null); if (!SPm) return false;
     const lite = lean(), get = f => fetch(BASE + f, { cache: 'force-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
@@ -1089,7 +1096,7 @@
     fab.style.left = `calc(${x} * (100vw - 48px))`; fab.style.top = `calc(${y} * (${vh} - 48px))`;
     return [x, y];
   };
-  try { const p = JSON.parse(localStorage.getItem(POS_KEY)); if (p) placeFab(p[0], p[1]); } catch (e) {}
+  try { const p = JSON.parse((LS || localStorage).getItem(POS_KEY)); if (p) placeFab(p[0], p[1]); } catch (e) {}
   let drag = null, dragged = false;
   fab.addEventListener('pointerdown', e => { const r = fab.getBoundingClientRect(); drag = { dx: e.clientX - r.left, dy: e.clientY - r.top, x0: e.clientX, y0: e.clientY };
     dragged = false; fab.setPointerCapture(e.pointerId); });
@@ -1102,21 +1109,21 @@
       placeFab((last.clientX - drag.dx) / (vw - 48), (last.clientY - drag.dy) / (vh - 48)); }); });
   fab.addEventListener('pointerup', e => { if (!drag) return; drag = null;
     if (dragged) { const r = fab.getBoundingClientRect(), vw = window.parent.innerWidth, vh = window.parent.innerHeight;
-      const p = placeFab(r.left / (vw - 48), r.top / (vh - 48)); try { localStorage.setItem(POS_KEY, JSON.stringify(p)); } catch (err) {} } });
+      const p = placeFab(r.left / (vw - 48), r.top / (vh - 48)); try { (LS || localStorage).setItem(POS_KEY, JSON.stringify(p)); } catch (err) {} } });
 
   // 单手（E7）：惯用手在地图设置里改（同源 localStorage；改了地图发 eden-map:state {hand}）
   // 惯用手选了左 / 右：悬浮按钮挪到那一侧（高度不变）并记住；自动 = 不动它（地图反过来按它在哪一半判断左右手）
   const HAND_KEY = 'edenMapHand';
-  let handPref = 'auto'; try { handPref = localStorage.getItem(HAND_KEY) || 'auto'; } catch (e) {}
+  let handPref = 'auto'; try { handPref = (LS || localStorage).getItem(HAND_KEY) || 'auto'; } catch (e) {}
   const fabLeft = () => { const r = fab.getBoundingClientRect(); return r.left + r.width / 2 < window.parent.innerWidth / 2; };
   const applyHand = move => {
     if (move && (handPref === 'left' || handPref === 'right')) {
       const r = fab.getBoundingClientRect(), vh = window.parent.innerHeight, y = vh > 48 ? r.top / (vh - 48) : .85;
-      const p = placeFab(handPref === 'left' ? .03 : .97, y); try { localStorage.setItem(POS_KEY, JSON.stringify(p)); } catch (e) {}
+      const p = placeFab(handPref === 'left' ? .03 : .97, y); try { (LS || localStorage).setItem(POS_KEY, JSON.stringify(p)); } catch (e) {}
     }
     panel.classList.toggle('em-left', handPref === 'left' || (handPref === 'auto' && fabLeft())); if (typeof sendBar === 'function' && alive) sendBar();
   };
-  { let saved = null; try { saved = localStorage.getItem(POS_KEY); } catch (e) {}
+  { let saved = null; try { saved = (LS || localStorage).getItem(POS_KEY); } catch (e) {}
     if (!saved && handPref === 'left') placeFab(.03, Math.max(0, (window.parent.innerHeight - 144) / Math.max(1, window.parent.innerHeight - 48))); }   // 没拖过：左手默认放左下
   applyHand(false);
   fab.addEventListener('pointerup', () => { if (dragged && handPref === 'auto') applyHand(false); });

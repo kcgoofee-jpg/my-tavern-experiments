@@ -106,7 +106,8 @@ export function outfitText(o, max = 48) {
 // ---------------- 2 自定义名称与用途（聊天变量 eden_map.自定义，在 stat_data 之外） ----------------
 // 形状：{ items: { 标准名: { 类: 'room' | 'area' | 'landmark' | 'character', 名?: 显示名, 用途?: 备注, 别名?: [旧叫法], 源?: '手动' | '标签' } }, 同步世界书: bool, 同步手动?: true }
 // v0.9.5：「同步到世界书」默认开。没动过开关（没有 同步手动）一律当开；自己关过的（同步手动 + 同步世界书 false）保持关。
-export const VAR_ROOT = 'eden_map';   // 聊天变量顶层键：{ 自定义: {...}, 标签楼: 已处理到的楼层 }
+export let VAR_ROOT = 'eden_map';   // 聊天变量顶层键：{ 自定义: {...}, 标签楼: 已处理到的楼层 }；设定包可改（core/pack.mjs chatVar，setVarRoot）
+export function setVarRoot(k) { if (typeof k === 'string' && /^[A-Za-z_][A-Za-z0-9_]{0,31}$/.test(k)) VAR_ROOT = k; return VAR_ROOT; }
 // v0.9.6：layer（层 / 大区）、world（世界地名）——「未上图」地点指派用；忽略 = 未上图时选了「忽略」的名字（不再提示）
 export const KINDS = ['room', 'area', 'landmark', 'character', 'layer', 'world'];
 export const MAX_IGNORE = 50;
@@ -186,7 +187,10 @@ export function syncMigrate(raw, wbExists) {
   if (!raw || typeof raw !== 'object' || raw.同步手动 || raw.同步世界书 !== false || !wbExists) return raw;
   return { ...raw, 同步手动: true };
 }
-export const WB_NAME = '伊甸地图·自定义', WB_ENTRY = '地图自定义';
+export let WB_NAME = '伊甸地图·自定义';
+export const WB_ENTRY = '地图自定义';
+/** 设定包：世界书名换成「<包标题>·自定义」（eden 不调用，保持原名） */
+export function setWbName(title) { if (typeof title === 'string' && title.trim()) WB_NAME = title.trim().slice(0, 40) + '·自定义'; return WB_NAME; }
 /** 按聊天分开的世界书名（多个聊天共用一本会互相串）：「伊甸地图·自定义·<聊天 id 的短哈希>」 */
 export function wbName(chat) { let h = 2166136261; for (const c of String(chat || '')) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return `${WB_NAME}·${(h >>> 0).toString(16).padStart(8, '0').slice(0, 6)}`; }
 

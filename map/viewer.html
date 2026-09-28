@@ -5,13 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>天城地图</title>
 <script>
+// 设定包：core/pack.mjs currentId / nsKey 的同步副本（tests/pack.test.mjs 对照）。宿主注入 window.__tcPack 或地址 ?pack=<id>；非 eden 包的 edenMap* 键换成 tcp.<id>.*（eden 原样，老用户的键不动）
+window.__packId = (() => { let id = null; try { id = (window.__tcPack && window.__tcPack.id) || new URLSearchParams(location.search).get('pack'); } catch (e) {} return id && /^[a-z][a-z0-9_-]{1,31}$/.test(id) ? id : 'eden'; })();
+window.__nsKey = k => (window.__packId !== 'eden' && typeof k === 'string' && k.startsWith('edenMap') ? 'tcp.' + window.__packId + '.' + k.slice(7) : k);
+</script>
+<script>
 // 本机存储（arch-v2 §4 / §6 第 5 步）：core/storage.mjs 的同步经典镜像——经典脚本要在首帧前同步读，不能 import 模块。
 // get 与 localStorage.getItem 同义（没有 = null，不套默认值）；set / remove 永不抛（隐私模式、额度满）。键都要在 core/storage.mjs 的 KEYS 登记（tests/storage.test.mjs）。
-window.TCStore = (() => { const A = s => { try { return s ? sessionStorage : localStorage; } catch (e) { return null; } }, ses = k => k === 'edenMapEstateFail';
-  return { get: k => { try { return A(ses(k))?.getItem(k) ?? null; } catch (e) { return null; } },
-    set: (k, v) => { try { A(ses(k))?.setItem(k, String(v)); return true; } catch (e) { return false; } },
-    remove: k => { try { A(ses(k))?.removeItem(k); } catch (e) {} },
-    json: (k, d = null) => { try { const v = A(ses(k))?.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } } }; })();
+window.TCStore = (() => { const A = s => { try { return s ? sessionStorage : localStorage; } catch (e) { return null; } }, ses = k => k === 'edenMapEstateFail', N = window.__nsKey;
+  return { key: N, get: k => { try { return A(ses(k))?.getItem(N(k)) ?? null; } catch (e) { return null; } },
+    set: (k, v) => { try { A(ses(k))?.setItem(N(k), String(v)); return true; } catch (e) { return false; } },
+    remove: k => { try { A(ses(k))?.removeItem(N(k)); } catch (e) {} },
+    json: (k, d = null) => { try { const v = A(ses(k))?.getItem(N(k)); return v == null ? d : JSON.parse(v); } catch (e) { return d; } } }; })();
 // 主题（默认跟随系统）与界面语言（中 / EN）：首帧之前定好，避免先闪一下深色或中文。?theme=light|dark|auto、?lang=en 可覆盖
 (function () {
   const q = new URLSearchParams(location.search), d = document.documentElement; let th = 'auto', lg = 'zh';
@@ -132,6 +137,8 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <link rel="modulepreload" href="app/bridge.mjs">
 <link rel="modulepreload" href="app/plugins.mjs">
 <link rel="modulepreload" href="app/boot.mjs">
+<link rel="modulepreload" href="app/pack.mjs">
+<link rel="modulepreload" href="core/pack.mjs">
 <link rel="modulepreload" href="here.mjs">
 <link rel="modulepreload" href="core/protocol.mjs">
 <link rel="modulepreload" href="app/cardlinks.mjs">

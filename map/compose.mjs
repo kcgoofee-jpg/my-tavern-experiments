@@ -1,6 +1,7 @@
 // 天城 · 地图 → 聊天（v0.9.6）：地点卡 / 事件卡 / 人物卡底部两个按钮「去这里」「追问这件事」，把模板句（tavern/compose.mjs）
 // 发给卡内脚本填进酒馆输入框——**只填不发**。只在嵌在酒馆里时显示。设置里「填入聊天的模板」可改（本机）。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
+import { nsStore } from './core/pack.mjs';
 import { esc, post } from './app/util.mjs';
 import { LANG } from './app/i18n.mjs';
 import { TCSettings } from './app/settings.mjs';
@@ -11,7 +12,7 @@ const TCCompose = (() => {
   const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/compose.mjs', document.baseURI).href).then(m => (CM = m)).catch(() => null);
   const embedded = () => window.top !== window || !!window.__composeTest;
   const lang = () => (typeof LANG !== 'undefined' && LANG === 'en' ? 'en' : 'zh');
-  const st = () => { try { return localStorage; } catch (e) { return null; } };
+  const st = () => { try { return nsStore(localStorage, window.__packId); } catch (e) { return null; } };
   /** 卡片底部的按钮行：o = { go: 地点名（可空）, ask: 主题名（可空） }；o 为空 = 去掉 */
   function attach(o) {
     const c = document.getElementById('card'); if (!c) return;

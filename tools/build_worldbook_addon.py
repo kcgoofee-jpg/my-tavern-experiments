@@ -338,13 +338,35 @@ console.log(JSON.stringify({ tags: C.parseChars(a.who).length + V.parseCustomTag
     return max(rendered)
 
 
+def build_pack(pid, out=None):
+    """非 eden 包：条目 = 包的 worldbook.json + 自动生成的「事件类型」「地点叫法」两条（和地图解析同一份数据）。不带原作署名（那是 eden 的）。"""
+    d = os.path.join(ROOT, 'map', 'packs', pid)
+    man = json.load(open(os.path.join(d, 'manifest.json'), encoding='utf-8')); data = man['data']
+    wb = json.load(open(os.path.join(d, data['worldbook']), encoding='utf-8')) if data.get('worldbook') else {'entries': []}
+    items = [(e['name'], e['content'], 100 + i) for i, e in enumerate(wb['entries'])]
+    if data.get('events'):
+        ev = json.load(open(os.path.join(d, data['events']), encoding='utf-8'))
+        rows = [f"{g}：" + '、'.join(k for k, v in ev['types'].items() if v['g'] == g) for g in (ev.get('order') or ev['groups'])]
+        items.append((f"{man['title']}·事件类型", '【地图事件类型】标签的「类别」写下面的类型名之一：\n' + '\n'.join(rows), 200))
+    reg = json.load(open(os.path.join(d, data['maps']), encoding='utf-8'))
+    rows = [f"{m.get('layer', {}).get('name', mid)}：" + '、'.join(v['name'] for v in (m.get('markers') or {}).values()) for mid, m in reg['maps'].items() if m.get('kind') == 'points']
+    items.append((f"{man['title']}·地图地点", '【地图地点】当前地点写成「层·地点」，地图认得这些叫法：\n' + '\n'.join(rows), 210))
+    book = to_book(items); book.pop('_credit', None)
+    out = out or os.path.expanduser(f"~/Downloads/酒馆/世界书/{man['title']}·地图附加条目.json")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with open(out, 'w', encoding='utf-8') as f: json.dump(book, f, ensure_ascii=False, indent=2); f.write('\n')
+    print(f'写入 {out}（{len(items)} 条）')
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--version', help='默认取 VERSION；已发布则 <VERSION>-dev')
     ap.add_argument('--out')
     ap.add_argument('--check', metavar='参照.json', help='按一份现有世界书核对字段与类型')
     ap.add_argument('--force', action='store_true', help='允许写已发布版本（有 map-v<版本> 标签）的文件')
+    ap.add_argument('--pack', help='设定包 id（通用化）：打包 map/packs/<id>/worldbook.json 的条目，外加由包的 events.json / maps.json 生成的类型表与地点表')
     a = ap.parse_args()
+    if a.pack and a.pack != 'eden': return build_pack(a.pack, a.out)
     released = lambda v: subprocess.run(['git', 'rev-parse', '-q', '--verify', f'refs/tags/map-v{v}'], cwd=ROOT, capture_output=True).returncode == 0
     if a.version is None:
         v = open(os.path.join(ROOT, 'VERSION')).read().strip() if os.path.exists(os.path.join(ROOT, 'VERSION')) else '0.9.1'

@@ -25,6 +25,7 @@ cp map/ui/*.css map/ui/*.js map/ui/*.mjs "$TMP/map/ui/"
 rsync -a --exclude NOTES.md --exclude reviews map/estate "$TMP/map/"
 [ -d map/props ] && rsync -a --exclude '*.blend' --exclude '*.md' map/props "$TMP/map/"
 cp -R map/vendor "$TMP/map/"
+[ -d map/packs ] && cp -R map/packs "$TMP/map/"   # 设定包（通用化）
 [ -f map/art/world_1k.jpg ] && cp map/art/world_1k.jpg "$TMP/map/art/"
 for d in map/art/*.dzi; do
   b=${d%.dzi}; cp "$d" "$TMP/map/art/"
@@ -46,7 +47,7 @@ cat > "$TMP/package.json" <<EOF
   "license": "$LICENSE_FIELD",
   "repository": { "type": "git", "url": "git+https://github.com/kcgoofee-jpg/my-tavern-experiments.git" },
   "homepage": "https://github.com/kcgoofee-jpg/my-tavern-experiments",
-  "files": ["map/viewer.html", "map/*.js", "map/*.mjs", "map/app/", "map/core/", "map/props/", "map/tavern/", "map/data/", "map/i18n/", "map/ui/", "map/estate/", "map/vendor/", "map/art/", "README.md"],
+  "files": ["map/viewer.html", "map/*.js", "map/*.mjs", "map/app/", "map/core/", "map/props/", "map/tavern/", "map/data/", "map/i18n/", "map/ui/", "map/estate/", "map/vendor/", "map/art/", "map/packs/", "README.md"],
   "keywords": ["sillytavern", "map", "deepzoom", "openseadragon"]
 }
 EOF

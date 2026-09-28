@@ -1,0 +1,13 @@
+{
+  "$schema": "../../data/schema/pack.schema.json",
+  "_说明": "内置包：map/core/pack.mjs 的 EDEN 与本文件一致（tests/pack.test.mjs）。数据文件留在 map/data（路径相对 map/），不搬家。",
+  "id": "eden",
+  "schema": 1,
+  "title": "伊甸庄园 · 天城",
+  "title_en": "Eden Manor · Tiancheng",
+  "chat": { "var": "eden_map" },
+  "data": { "maps": "data/maps.json", "world": "data/world_markers.json", "derived": "data/derived.json", "rooms": "data/eden_estate_rooms.json", "cardBind": "data/card_bind.json", "events": "builtin" },
+  "cdn": { "repo": "kcgoofee-jpg/my-tavern-experiments", "npm": "tiancheng-map-assets" },
+  "theme": { "accent": "#e6c36a" },
+  "worldbook": { "addon": "tools/build_worldbook_addon.py" }
+}

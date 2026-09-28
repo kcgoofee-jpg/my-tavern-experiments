@@ -11,7 +11,7 @@
 脚本内容与卡内相同（tools/add_script_to_card.py 的多线路写法）：依次尝试国内镜像 jsdmirror → 官方 jsDelivr，加载成功就停。
 注意：jsDelivr 对分支名会缓存（最长约 12 小时），带「/」的分支名也可能解析不了；预览最好用提交号或标签。只用标准库。
 """
-import argparse, json, os, re, sys, uuid
+import argparse, json, os, re, subprocess, sys, uuid
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import verlib
 
@@ -32,6 +32,31 @@ def about(channel, ref):
 
 def stamp(info):
     return 'window.__edenMapScript = ' + json.dumps(info, ensure_ascii=False) + ';\n'
+
+
+def pack_stamp(pid):
+    """设定包（通用化）：脚本在导入 eden-map.js 前写 window.__tcPack（清单 + 事件分类 + 聊天变量），宿主同步可用。eden / 不给 = 空串（与以前逐字相同）。"""
+    if not pid or pid == 'eden': return ''
+    if not re.fullmatch(r'[a-z][a-z0-9_-]{1,31}', pid): sys.exit(f'包 id 不合法：{pid!r}')
+    d = os.path.join('map', 'packs', pid)
+    if not os.path.exists(os.path.join(d, 'manifest.json')): sys.exit(f'没有这个包：{d}/manifest.json（先 python3 tools/new_pack.py {pid} …）')
+    if subprocess.run([sys.executable, 'tools/check_pack.py', pid], capture_output=True).returncode: sys.exit(f'包 {pid} 没通过 tools/check_pack.py，先修好')
+    man = json.load(open(os.path.join(d, 'manifest.json'), encoding='utf-8'))
+    ev = man['data'].get('events')
+    events = json.load(open(os.path.join(d, ev), encoding='utf-8')) if ev and ev != 'builtin' else None
+    cv = (man.get('chat') or {}).get('var') or 'tc_' + pid.replace('-', '_')
+    info = {'id': pid, 'chatVar': cv, 'manifest': man, 'events': events}
+    return 'window.__tcPack = ' + json.dumps(info, ensure_ascii=False, separators=(',', ':')).replace('<', '\\u003c') + ';\n'
+
+
+def packed(d, pid):
+    """给脚本 JSON 套上包：内容前加 __tcPack、名字与 id 带上包 id（和 eden 的脚本可以并存导入，但同时只该启用一个）。"""
+    if not pid or pid == 'eden': return d
+    d['content'] = pack_stamp(pid) + d['content']
+    d['name'] = d['name'].replace('【地图】', f'【地图·{pid}】', 1)
+    d['id'] = str(uuid.uuid5(uuid.NAMESPACE_URL, f'tc-pack:{pid}:' + d['id']))
+    d['info'] = f'设定包 {pid}。' + d['info'].replace(CREDIT, '')
+    return d
 
 
 def build(ref, channel='ref'):
@@ -125,6 +150,7 @@ def main():
     ap.add_argument('--follow', metavar='分支', help='生成跟随分支最新提交的可复用预览脚本')
     ap.add_argument('--tag', metavar='标签', help='生成钉在发版标签的正式脚本（如 map-v0.9.1；不创建标签）')
     ap.add_argument('--pointer', help='--tag：latest.json 所在分支（默认当前分支；要和 tools/ship.sh --release 发版时的分支一致）')
+    ap.add_argument('--pack', help='设定包 id（map/packs/<id>；默认 eden = 原来的脚本）')
     ap.add_argument('--out', default=os.path.expanduser('~/Downloads/酒馆/脚本'), help='输出目录（默认 ~/Downloads/酒馆/脚本）')
     a = ap.parse_args()
     if a.follow:
@@ -133,7 +159,7 @@ def main():
         os.makedirs(a.out, exist_ok=True)
         path = os.path.join(a.out, f"【地图】预览-跟随-{a.follow.replace('/', '-')}.json")
         with open(path, 'w', encoding='utf-8') as f:
-            json.dump(build_follow(a.follow, fb), f, ensure_ascii=False, indent=2); f.write('\n')
+            json.dump(packed(build_follow(a.follow, fb), a.pack), f, ensure_ascii=False, indent=2); f.write('\n')
         print(f'写入 {path}（兜底提交 {fb[:12]}）'); return
     if a.tag:
         import subprocess
@@ -150,7 +176,7 @@ def main():
         os.makedirs(a.out, exist_ok=True)
         path = os.path.join(a.out, f"【地图】伊甸地图 {verlib.display(verlib.ver_of_tag(tag))}.json")
         with open(path, 'w', encoding='utf-8') as f:
-            json.dump(build_release(tag, a.pointer or (subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True).stdout.strip() or 'main')), f, ensure_ascii=False, indent=2); f.write('\n')
+            json.dump(packed(build_release(tag, a.pointer or (subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True).stdout.strip() or 'main')), a.pack), f, ensure_ascii=False, indent=2); f.write('\n')
         print(f'写入 {path}'); return
     if not a.ref: ap.error('需要 ref、--follow 或 --tag')
     ref = a.ref.strip()
@@ -159,9 +185,9 @@ def main():
     if '/' in ref:
         print(f'提醒：{ref} 带「/」，jsDelivr 可能解析不了；建议改用提交号（git rev-parse --short {ref}）', file=sys.stderr)
     os.makedirs(a.out, exist_ok=True)
-    path = os.path.join(a.out, f"【地图】预览-{ref.replace('/', '-')}.json")
+    path = os.path.join(a.out, f"【地图{'·' + a.pack if a.pack and a.pack != 'eden' else ''}】预览-{ref.replace('/', '-')}.json")
     with open(path, 'w', encoding='utf-8') as f:
-        json.dump(build(ref), f, ensure_ascii=False, indent=2)
+        json.dump(packed(build(ref), a.pack), f, ensure_ascii=False, indent=2)
         f.write('\n')
     print(f'写入 {path}')
 

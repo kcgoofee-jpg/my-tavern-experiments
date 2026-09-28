@@ -7,6 +7,7 @@ import { est, estFail, estateRoom, estateStandIn } from './estate.mjs';
 import { updateLayerBadges } from './layers.mjs';
 import { rebuildHere } from './extapi.mjs';
 import { P } from './plugins.mjs';
+import { packData } from './pack.mjs';
 // ---------------- 初始视角与当前地点 ----------------
 export let userMoved = false;
 // 地图的实际尺度（maps.json 的 view.extent_m）：米 → 占图宽的比例
@@ -88,7 +89,7 @@ export function bindPlan() { estPlan = estPlanRaw && CBmod && cardBind ? CBmod.a
 export function onCardBind(d) {
   const clean = o => Object.fromEntries(Object.entries(o && typeof o === 'object' ? o : {}).filter(([k, v]) => typeof k === 'string' && (typeof v === 'string' || Array.isArray(v))).slice(0, 200));
   cardBind = { rooms: clean(d.rooms), specs: clean(d.specs) };
-  Promise.all([CBmod || import(new URL('card-bind.mjs', document.baseURI).href), cardSpec || getJSON('data/card_bind.json').catch(() => null)]).then(([m, sp]) => {
+  Promise.all([CBmod || import(new URL('card-bind.mjs', document.baseURI).href), cardSpec || (packData('cardBind') ? getJSON(packData('cardBind')).catch(() => null) : null)]).then(([m, sp]) => {
     CBmod = m; cardSpec = sp; bindPlan(); rebuildHere(); markHere($('#here').value); estateBind();
   }).catch(() => {});
 }
