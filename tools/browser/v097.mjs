@@ -49,7 +49,7 @@ async function run(name, preset) {
       await p.evaluate(() => { document.getElementById('send_textarea').value = ''; });
       await vf.evaluate(() => TCChars.fly('乙一')); await B.wait(1500);
       const pc = await vf.evaluate(() => ({ t: document.querySelector('#card h2').textContent, b: [...document.querySelectorAll('#card .cmp [data-cmp]')].map(b => b.dataset.name) }));
-      rep.check(`${name} 人物卡：去这里 = 其位置，追问 = 人物名`, pc.b.length === 2 && pc.b[1] === '乙一', JSON.stringify(pc));
+      rep.check(`${name} 人物卡：开局前无「去这里」（和你在一起待开局推断），追问 = 人物名`, pc.b.length === 1 && pc.b[0] === '乙一', JSON.stringify(pc));   // b993733e：开局前不推断和你在一起 → place='' → 「去这里」钮不渲染，只剩追问
       await vf.locator('#card .cmp [data-cmp="ask"]').click(); await B.wait(600);
       rep.check(`${name} 人物卡追问`, (await p.evaluate(() => document.getElementById('send_textarea').value)) === '关于乙一，');
       const sent = await p.evaluate(() => !!window.__sent);
