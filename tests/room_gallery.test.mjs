@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   fitSize, scopeKey, imageRecordKey, checkQuota, makeImageMeta, reorder, buildExportManifest, buildIssueUrl, MAX_DIM,
+  isValidGalleryFile, safeGalleryImagePath, readMaintainerMode, MAINTAINER_MODE_KEY,
 } from '../map/core/room-gallery-logic.mjs';
 
 test('fitSize 不放大小图，长边封顶 1600', () => {
@@ -69,4 +70,33 @@ test('buildIssueUrl 生成预填 GitHub issue 链接', () => {
   const url = buildIssueUrl({ repo: 'someone/eden-map', roomId: 'bedroom', count: 3 });
   assert.match(url, /^https:\/\/github\.com\/someone\/eden-map\/issues\/new\?title=/);
   assert.match(url, /bedroom/);
+});
+
+test('isValidGalleryFile 只认扁平文件名 + 白名单类型', () => {
+  assert.equal(isValidGalleryFile('bedroom_01.webp'), true);
+  assert.equal(isValidGalleryFile('a.jpg'), true);
+  assert.equal(isValidGalleryFile('a.JPG'), true);
+  assert.equal(isValidGalleryFile('../x.png'), false);
+  assert.equal(isValidGalleryFile('a/b.png'), false);
+  assert.equal(isValidGalleryFile('.hidden.png'), false);
+  assert.equal(isValidGalleryFile('a.svg'), false);
+  assert.equal(isValidGalleryFile(''), false);
+  assert.equal(isValidGalleryFile(null), false);
+});
+
+test('safeGalleryImagePath 只拼 map/art/gallery/<roomId>/<file>，非法输入返回 null', () => {
+  assert.equal(safeGalleryImagePath('bedroom', 'a.webp'), 'art/gallery/bedroom/a.webp');
+  assert.equal(safeGalleryImagePath('bedroom', '../../etc/passwd'), null);
+  assert.equal(safeGalleryImagePath('', 'a.webp'), null);
+  assert.equal(safeGalleryImagePath('bedroom', 'https://evil.example/a.png'), null);
+});
+
+test('readMaintainerMode 默认关闭，只在本机 localStorage 显式打开时为 true', () => {
+  const store = new Map();
+  const ls = { getItem: k => (store.has(k) ? store.get(k) : null) };
+  assert.equal(readMaintainerMode(ls), false);
+  store.set(MAINTAINER_MODE_KEY, '1');
+  assert.equal(readMaintainerMode(ls), true);
+  assert.equal(readMaintainerMode(null), false);
+  assert.equal(readMaintainerMode(undefined), false);
 });

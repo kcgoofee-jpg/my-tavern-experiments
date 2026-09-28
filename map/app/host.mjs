@@ -5,7 +5,7 @@ import { lean } from './tiers.mjs';
 import { setLang } from './i18n.mjs';
 import { setSlowStop, slowStop, slowWarmAlt } from './topbar.mjs';
 import { go, saveView } from './nav.mjs';
-import { dropParked, est, estFocus, estParked, narrowNow, setEst, setEstFocus, setEstParked } from './estate.mjs';
+import { dropParked, est, estFocus, estParked, estateLook, narrowNow, setEst, setEstFocus, setEstParked } from './estate.mjs';
 import { onEsc } from './layers.mjs';
 import { untrackAll } from './markers.mjs';
 import { hereRes, markHere } from './locate.mjs';
@@ -39,7 +39,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:unmapped-pick' && typeof P.TCUnmapped !== 'undefined') P.TCUnmapped.open();   // v0.9.6 标题栏「未上图」
     if (e.data?.type === 'eden-map:open') go(e.data.map);
     if (e.data?.type === 'eden-map:events') { P.TCEvents.set(e.data); emEmit('events', { items: e.data.items, floor: e.data.floor, hereLayer: e.data.hereLayer }); }   // 卡内脚本从聊天里解析、合并好的事态 {items, floor, fly}
-    if (e.data?.type === 'eden-map:chat') setChat(e.data.id);
+    if (e.data?.type === 'eden-map:chat') { setChat(e.data.id); estateLook(); }   // 聊天切换：庄园页（三维）里房间图集「仅本聊天」作用域用的 chatId 得跟着重发一次，不然还在用切换前那个聊天的 id（bug fix）
     if (e.data?.type === 'eden-map:lang' && ['zh', 'en'].includes(e.data.lang)) setLang(e.data.lang);   // v0.9.6：嵌入时语言以卡内脚本（标题栏）为准，两边只有一个设置
     if (e.data?.type === 'eden-map:about') { setAbout(e.data); renderAbout(); }   // v0.9.6 版本与检查更新
     if (e.data?.type === 'eden-map:update-result') { setUpdBusy(false); setUpdRes(e.data); renderAbout(); }

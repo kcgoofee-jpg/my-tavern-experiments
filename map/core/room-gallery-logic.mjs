@@ -64,11 +64,41 @@ export function buildExportManifest({ roomId, images, author = '', note = '' }) 
   };
 }
 
-// GitHub issue/PR 预填链接：让作者手动把导出包合并进 map/data/gallery.json，本仓库没有服务器接收上传
+// GitHub issue/PR 预填链接：只给维护者模式用的自用快捷方式（见 room-gallery-panel.js），不面向陌生访客——
+// 本函数不做任何身份判断，是否显示由调用方按维护者模式开关决定。
 export function buildIssueUrl({ repo, roomId, count }) {
   const title = encodeURIComponent(`[图集投稿] ${roomId} · ${count} 张`);
   const body = encodeURIComponent(
     `房间：${roomId}\n图片数：${count}\n\n请把附件里的 manifest.json + 图片文件合并进 map/data/gallery.json 与对应目录（见 docs 里图集说明）。`
   );
   return `https://github.com/${repo}/issues/new?title=${title}&body=${body}`;
+}
+
+// ---------------- 公开图集来源守卫（真正的「谁能发布」由 GitHub 仓库权限把关：只有仓库所有者能提交 map/data/gallery.json，
+// 客户端脚本没法安全鉴权任何人——这里只保证查看器自己绝不去显示 gallery.json 之外、或不在 map/art/gallery/ 目录下的图） ----------------
+export const GALLERY_DIR = 'art/gallery/';
+export const GALLERY_MAX_BYTES = 3 * 1024 * 1024;
+export const GALLERY_EXT = ['.webp', '.jpg', '.jpeg', '.png'];
+
+// 校验 gallery.json 里一条 { file } 记录的文件名本身合法（不含路径穿越、类型在白名单里）
+export function isValidGalleryFile(file) {
+  if (!file || typeof file !== 'string') return false;
+  if (file.includes('/') || file.includes('\\') || file.startsWith('.')) return false;
+  const ext = (file.match(/\.[a-zA-Z0-9]+$/) || [''])[0].toLowerCase();
+  return GALLERY_EXT.includes(ext);
+}
+
+// 拼出公开图的相对地址，并同时保证落在 map/art/gallery/<roomId>/ 下——查看器渲染前必须过这一步，
+// 不接受 gallery.json 之外的任何来源（例如直接把某个外部 URL 塞进 note/file 字段）。返回 null 表示拒绝显示。
+export function safeGalleryImagePath(roomId, file) {
+  if (!roomId || typeof roomId !== 'string') return null;
+  if (!isValidGalleryFile(file)) return null;
+  return `${GALLERY_DIR}${encodeURIComponent(roomId)}/${encodeURIComponent(file)}`;
+}
+
+// 本机「维护者模式」开关：默认关闭，只有仓库所有者自己在 设置→高级 里手动打开，才会看到「投稿」「导出」相关 UI。
+// 这不是安全边界（客户端脚本没法鉴权），只是给所有者自己用的工作流开关；普通用户看不到「公开」这个概念，图片永远本地私有。
+export const MAINTAINER_MODE_KEY = 'edenGalleryMaintainerMode';
+export function readMaintainerMode(storage) {
+  try { return storage?.getItem(MAINTAINER_MODE_KEY) === '1'; } catch (e) { return false; }
 }

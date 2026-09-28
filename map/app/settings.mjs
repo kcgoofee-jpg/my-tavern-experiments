@@ -7,6 +7,7 @@ import { firstRunHint, noticeRefresh, setActs } from './shell.mjs';
 import { P } from './plugins.mjs';
 import * as TCCvd from './cvd.mjs';
 import { setFpsMeter } from './fps.mjs';
+import { MAINTAINER_MODE_KEY } from '../core/room-gallery-logic.mjs';
 // ---------------- 设置（UI v2 §5）：首页 = 分组列表（+ 手机上的快捷：上一级、当前位置、关闭地图、切层、图层开关）；子页 显示 / 人物 / 数据与映射 / 更新与版本 / 高级 ----------------
 // 模块向指定页注册自己的一栏：TCSettings.registerSection(page, el, { order })，不再 insertBefore(#selfCheck)。
 export let setPageNow = 'home', setPrev = null;
@@ -94,6 +95,8 @@ export function initSettings() {
   sw('#optMinimap', 'edenMapMinimap', false, v => document.body.classList.toggle('nominimap', !v));
   document.body.classList.toggle('nominimap', TCStore.get('edenMapMinimap') !== '1');
   sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', false); sw('#optFps', 'edenMapFps', false, v => { setFpsMeter(v); estateLook(); });
+  // 房间图集「维护者模式」：经 TCStore（core/storage.mjs 的同步镜像，本文件不直接碰 localStorage）；纯设备级开关，只是给仓库所有者自己用的工作流开关，不是权限校验（见 viewer.html 里的说明文字）
+  sw('#optGalleryMaintainer', MAINTAINER_MODE_KEY, false);
   $('#linePick').onclick = () => { showSet(false); post({ type: 'eden-map:line-pick' }); };
   $('#kbdBtn').onclick = () => kbdHelp($('#kbdHelp').hidden);
   $('#hintAgain').onclick = () => { try { TCStore.remove('edenMapHint'); TCStore.remove('edenMapHintN'); } catch (e) {} showSet(false); firstRunHint(); };

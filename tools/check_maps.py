@@ -294,6 +294,38 @@ else:
         if not f.get('label'): warn(f'feeds[{j}] 没有 label（地点卡里的「来源」会空着）')
         if 'every' in f and not (isinstance(f['every'], (int, float)) and f['every'] >= 60): err(f'feeds[{j}].every 应为 ≥ 60 的秒数')
 
+# 房间图集公开清单（map/data/gallery.json）：每条 rooms.<roomId>.images[] 必须指向 map/art/gallery/<roomId>/<file>，
+# 类型白名单 webp/jpg/jpeg/png，单文件 ≤ GALLERY_MAX_BYTES——防止 gallery.json 被改成指向仓库外/任意路径的图（查看器只信这里通过检查的清单）。
+GALLERY_MAX_BYTES = 3 * 1024 * 1024
+GALLERY_EXT = {'.webp', '.jpg', '.jpeg', '.png'}
+def _filesize(p):
+    if REV is None: return os.path.getsize(p)
+    r = _sp.run(['git', 'cat-file', '-s', f'{REV}:{_rel(p)}'], cwd=os.path.join(ROOT, '..'), capture_output=True, text=True)
+    if r.returncode: return -1
+    try: return int(r.stdout.strip())
+    except ValueError: return -1
+_gal_path = os.path.join(ROOT, 'data', 'gallery.json')
+if exists(_gal_path):
+    try: gal = load(_gal_path)
+    except (json.JSONDecodeError, FileNotFoundError) as e: gal = None; err(f'gallery.json 读取失败：{e}')
+    if gal is not None:
+        if not isinstance(gal.get('rooms'), dict): err('gallery.json: rooms 应为对象')
+        else:
+            for rid, rr in gal['rooms'].items():
+                imgs = (rr or {}).get('images')
+                if not isinstance(imgs, list): err(f'gallery.json.rooms.{rid}: images 应为列表'); continue
+                for i, im in enumerate(imgs):
+                    fn = (im or {}).get('file')
+                    if not fn or not isinstance(fn, str) or '/' in fn or '\\' in fn or fn.startswith('.'):
+                        err(f'gallery.json.rooms.{rid}[{i}]: file 必须是仅文件名（不能带路径/以.开头）：{fn!r}'); continue
+                    ext = os.path.splitext(fn)[1].lower()
+                    if ext not in GALLERY_EXT: err(f'gallery.json.rooms.{rid}[{i}]: 文件类型 {ext} 不在白名单 {sorted(GALLERY_EXT)}'); continue
+                    fp = os.path.join(ROOT, 'art', 'gallery', rid, fn)
+                    if not exists(fp): err(f'gallery.json.rooms.{rid}[{i}]: 找不到文件 map/art/gallery/{rid}/{fn}'); continue
+                    sz = _filesize(fp)
+                    if sz < 0: err(f'gallery.json.rooms.{rid}[{i}]: 读不到文件大小 map/art/gallery/{rid}/{fn}')
+                    elif sz > GALLERY_MAX_BYTES: err(f'gallery.json.rooms.{rid}[{i}]: 文件 {sz} 字节超过上限 {GALLERY_MAX_BYTES}（map/art/gallery/{rid}/{fn}）')
+
 for w in warns: print('警告', w)
 for e in errors: print('错误', e)
 n = sum(len(d.get('markers', [])) for d in data.values())
