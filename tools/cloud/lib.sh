@@ -49,7 +49,9 @@ run_rsync() {
     return 0
   fi
   require_host
-  rsync -e "ssh $(ssh_opts)" "$@"
+  local RS=rsync; [ -x /opt/homebrew/bin/rsync ] && RS=/opt/homebrew/bin/rsync
+  if "$RS" --version 2>&1 | head -1 | grep -q openrsync; then echo "macOS 自带 openrsync 与云端不兼容：先运行 brew install rsync" >&2; exit 3; fi
+  "$RS" -e "ssh $(ssh_opts)" "$@"
 }
 
 scp_up() {
