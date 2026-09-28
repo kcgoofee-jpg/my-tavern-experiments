@@ -1,6 +1,6 @@
 # 天城 · 中层（钢铁霓虹区，约 700 m 以下）· Blender 正俯视写实渲染（夜景草稿）
 # 用法：Blender -b -P tiancheng_mid.py -- [--res 1600] [--samples 64] [--out path.png] [--crop x0,y0,x1,y1 | --crops "x0,y0,x1,y1:名字;..." | --crops-json 文件] [--out-dir 目录] [--preview] [--data-only]
-#       [--glow 1]（所有发光的倍数）[--ambient .7]（天光）[--no-landmark-glow]（去掉地标围墙上连成框 / 圈的灯）
+#       [--glow 1]（所有发光的倍数）[--ambient .7]（天光）[--no-landmark-glow]（去掉地标围墙上连成框 / 圈的灯）[--day]（白天版：日光 + 天光，霓虹 / 轨道光带熄灭或改暗）
 #       或 python3 tiancheng_mid.py -- ...（pip 装的 bpy）。参数与导出格式三层一致，见 docs/tiancheng-maps.md
 # 与上层同一相机、同一平面坐标、同一片城市（tc_city：OpenStreetMap 真实路网与建筑轮廓，© OpenStreetMap contributors）。
 # 设定：「层层叠叠的立体建筑群」「全息广告覆盖外墙」「日照被上层遮住，靠人造光」「悬浮轨道是主要公共交通工具，四通八达」。
@@ -16,7 +16,8 @@ from mathutils import Matrix
 from mathutils.kdtree import KDTree
 
 layer = tc.Layer('tc_mid', seed=7001, bounces=4)   # 城市在这里生成（第一个随机调用）；本层自己的随机另起种子，不影响城市布局
-sc, col_main, city, R, GLOW = layer.sc, layer.col, layer.city, layer.rng, layer.f('--glow', 1)
+DAY = layer.day                                    # --day：白天版（日光；夜景元素熄灭 / 改暗，几何与随机序列不变，见文末与各处 DAY 分支）
+sc, col_main, city, R, GLOW = layer.sc, layer.col, layer.city, layer.rng, 0 if DAY else layer.f('--glow', 1)   # --day：发光倍数置 0
 
 def srgb(h):                                   # '#ff3d9a' → 线性 RGB
     c = [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]
@@ -374,7 +375,7 @@ for x, y, *_ in city.along(.35, CORR):                                 # 商业�
     if glow_w(x, y) > .6: spill.append((x + R.uniform(-.04, .04), y + R.uniform(-.04, .04), ZG + .25, NEON[R.choice(3)]))
 tc.box_mesh('neon_strips', strips, scol, emit_mat('neon', None, 5.0 * GLOW), rot=np.array(srot, np.float32))
 tc.box_mesh('neon_signs', signs, sigc, emit_mat('signs', None, 4.0 * GLOW), rot=np.array(sgrot, np.float32))
-tc.box_mesh('holo_ads', holo, np.array(holc).reshape(-1, 3) * .9, emit_mat('holo', None, .55 * GLOW, stripes=220, alpha=.25), rot=np.array(hrot, np.float32))
+tc.box_mesh('holo_ads', holo, np.array(holc).reshape(-1, 3) * .9, tc.shade_mat('holo', (.85, .87, .9), .45) if DAY else emit_mat('holo', None, .55 * GLOW, stripes=220, alpha=.25), rot=np.array(hrot, np.float32))   # --day：全息广告改半透明白板
 lampsR = ROOF_DOT + PADL                                               # 楼顶小灯、天窗透光（已打散、亮度不一）+ 停机坪边的暗灯
 tc.box_mesh('roof_dots', [(x, y, .008, .008, z, z + .002) for x, y, z, k in lampsR], np.array([np.array(srgb('#ffd9a0')) * k for *_, k in lampsR], np.float32).reshape(-1, 3), emit_mat('dots', None, 2.5 * GLOW))
 warn = [(x, y, .008, .008, z, z + .003) for x, y, z in kit['towers'] if z > -.6 and R.random() < .6]   # 最高的塔顶才有航空障碍灯（红）
@@ -464,8 +465,9 @@ def curve_obj(name, pts, z, bevel, m):
     o = bpy.data.objects.new(name, cu); col_main.objects.link(o); o.data.materials.append(m)
     return o
 guide_m = mat('guideway', (.05, .055, .06), .35, .7)
-rail_m = emit_mat('railglow', ICE, 1.2 * GLOW)                    # A7：导轨光带压暗约一半（原来像矢量描线），车站仍是轨道上最亮的点
-rail_m2 = emit_mat('railglow2', tuple(.55 * c_ + .45 * i_ for c_, i_ in zip(CYAN, ICE)), 1.0 * GLOW)
+# --day：轨道发光线改金属反光（一套几何两套材质）；夜景照旧
+rail_m = mat('railglow', (.5, .52, .55), .28, 1) if DAY else emit_mat('railglow', ICE, 1.2 * GLOW)                    # A7：导轨光带压暗约一半（原来像矢量描线），车站仍是轨道上最亮的点
+rail_m2 = mat('railglow2', (.42, .44, .47), .32, 1) if DAY else emit_mat('railglow2', tuple(.55 * c_ + .45 * i_ for c_, i_ in zip(CYAN, ICE)), 1.0 * GLOW)
 trains, trc, trrot, plat, platrot = [], [], [], [], []
 for k, r in enumerate(ROUTES):
     pts = catmull(r); zt = .22 + .05 * (k % 3)                  # 不同线路高度错开，交叉处上下穿行
@@ -760,7 +762,7 @@ FLOOD += [(x + .45, y - .65, ZG + 3.7, srgb('#fff0d0')), (x + .7, y + .7, ZG + 3
 KEY_SOFT = [(x - .3, y - .75, MAIN + .08, srgb('#fff0d0')), (x + .35, y - .7, MAIN + .15, srgb('#fff0d0'))]   # 议会：投光弱一些（石材浅，容易过曝）
 layer.marker('council', (x, y, 0), .9)
 
-L_ = [l for i, l in enumerate(LMP) if layer.lm_glow or i not in LMP_DROP]
+L_ = [l for i, l in enumerate(LMP) if (layer.lm_glow and not DAY) or i not in LMP_DROP]   # --day：地标围墙灯圈白天关闭
 tc.box_mesh('landmark_lamps', [(x, y, s, s, z, z + .003) for x, y, z, s, c in L_], np.array([c for *_, c in L_], np.float32).reshape(-1, 3), emit_mat('lm_lamp', None, 3.2 * GLOW))
 RG = np.array(RIDGE, np.float32).reshape(-1, 7)
 tc.box_mesh('landmark_ridges', RG[:, :6], np.tile((.22, .22, .21), (len(RG), 1)), td.city_mat('ridgem', .5, 0, 1.2, .4), rot=RG[:, 6])
@@ -881,6 +883,14 @@ _tight = tuple(map(float, str(layer.opt.get('--tight', '.8,6.5,1.8')).split(',')
 _fog = tuple(map(float, str(layer.opt.get('--fog', '.7,9.5,-.6')).split(',')))
 # A7：楼高层次——全漫射的天光下楼顶只按颜色分高低，缩小看核心区是一片均匀的灰。加一盏很弱的冷色平行光（上层浮岛之间漏下来的天光，
 # 方向与三层共用的太阳相同、软影），高楼在矮楼顶和街道上投下柔和的影子，楼高一眼读得出；天光相应略降，总亮度不变。
-_sky = bpy.data.lights.new('gap_skylight', 'SUN'); _sky.energy = layer.f('--gapsun', .8); _sky.angle = math.radians(6); _sky.color = (.72, .8, 1.0)
-_so = bpy.data.objects.new('gap_skylight', _sky); col_main.objects.link(_so); _so.rotation_euler = tc.SUN_ROT
-layer.finish(world=((.35, .42, .6), layer.f('--ambient', .58)), glare_opts=dict(threshold=_fog[0], size=_fog[1], mix=_fog[2], tight=_tight))
+if DAY:
+    # --day：白天版——太阳走 tc.sun_rot() 白天几何（215° 方位不变，天顶角 35° / 高度角 55°，比夜景 40° 更高：tc_common SUN_ROT_DAY），
+    # 高楼与浮岛遮挡板把直射光挡在外面：楼顶亮、街道峡谷暗的强对比；天光用与上层白天一致的天蓝；夜景灯光全拆、发光面改暗色漆面。
+    tc.day_reset()
+    _sun = bpy.data.lights.new('sun', 'SUN'); _sun.energy = layer.f('--sun', 3.2); _sun.angle = math.radians(1.2); _sun.color = (1, .96, .9)
+    _so = bpy.data.objects.new('sun', _sun); col_main.objects.link(_so); _so.rotation_euler = tc.sun_rot()
+    layer.finish(world=((.55, .65, .8), .35))
+else:
+    _sky = bpy.data.lights.new('gap_skylight', 'SUN'); _sky.energy = layer.f('--gapsun', .8); _sky.angle = math.radians(6); _sky.color = (.72, .8, 1.0)
+    _so = bpy.data.objects.new('gap_skylight', _sky); col_main.objects.link(_so); _so.rotation_euler = tc.SUN_ROT
+    layer.finish(world=((.35, .42, .6), layer.f('--ambient', .58)), glare_opts=dict(threshold=_fog[0], size=_fog[1], mix=_fog[2], tight=_tight))
