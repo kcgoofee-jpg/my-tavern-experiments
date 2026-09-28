@@ -1,7 +1,9 @@
-// v0.9.6 验收：手机实测问题修复 + 尺度过渡（世界 ↔ 天城交接、「天城周边」过渡环、切层保持 x / y）。
+// v0.9.6 验收：手机实测问题修复 + 尺度过渡（世界 ↔ 天城交接、「天城周边」过渡环、切层重取景到本层核心区）。
 // 用法：node tools/browser/v096.mjs [输出目录] [--shots 前缀]   （375×812 Chromium 触屏 + 1440×900 桌面；--shots 时截图到 docs/drafts/v096_<前缀>_*.png）
 import * as B from './lib.mjs';
 import { openHost } from './host_stub.mjs';
+import { readFileSync } from 'node:fs';
+const MAPS = (JSON.parse(readFileSync(B.REPO_ROOT + '/map/data/maps.json', 'utf8')).maps || {});   // 各层 view.phone 核心区（fix3：切层 / 进城都取景到这）
 
 const out = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : '/tmp/v096';
 const si = process.argv.indexOf('--shots'), shotTag = si > 0 ? process.argv[si + 1] || 'after' : null;
@@ -39,7 +41,7 @@ const ev = (p, f, a) => p.evaluate(f, a);
   await p.mouse.click(180, 300); await B.wait(200);
   rep.check('layers_recollapse', await vis() === 1);
   await snap(p, 'mid_375');
-  // 3 切层：保持 x / y，转场结束后不留云 / 快照
+  // 3 切层：重取景到本层核心区（fix3），转场结束后不留云 / 快照
   const before = await ev(p, () => { const c = viewer.viewport.getCenter(true); return [c.x, c.y, viewer.viewport.getZoom(true)]; });
   const t0 = Date.now(); await ev(p, () => go('tc_low')); await B.wait(400); await snap(p, 'tierswitch_375');
   await p.waitForFunction(() => cur === 'tc_low' && !document.querySelector('.tier-snap') && !window.__clouds.state().busy, null, { timeout: 5000 }).catch(() => {});
@@ -47,7 +49,14 @@ const ev = (p, f, a) => p.evaluate(f, a);
   const after = await ev(p, () => { const c = viewer.viewport.getCenter(true); return [c.x, c.y, viewer.viewport.getZoom(true)]; });
   const leftovers = await ev(p, () => [...document.querySelectorAll('#clCover.run, .tier-snap, .snap')].length);
   rep.check('tier_switch_clears', leftovers === 0 && ms < 2500, `${ms} ms, 残留 ${leftovers}`);
-  rep.check('tier_keeps_xy', Math.hypot(after[0] - before[0], after[1] - before[1]) < .01 && Math.abs(after[2] / before[2] - 1) < .05, JSON.stringify({ before, after }));
+  // fix3（用户 2026-09-28）：切层一律重取景到本层 view.phone 核心区（locate.mjs focusStart → fitIn 夹进图内），不再沿用旧 x / y——期望中心按同一条 frameRect 公式镜像计算
+  const expTier = await ev(p, (core) => { const cs = viewer.viewport.getContainerSize(), s = viewer.world.getItemAt(0).getContentSize(), asp = s.y / s.x, ar = cs.x / cs.y;
+    let [x, y, w, h] = core; y *= asp; h *= asp;   // core = [x, y, w, h] 归一化，y/h 换算到视口坐标（× 图高比）
+    if (w / h < ar) { const nw = h * ar; x -= (nw - w) / 2; w = nw; } else { const nh = w / ar; y -= (nh - h) / 2; h = nh; }
+    const k = Math.min(1, 1 / w, asp / h); if (k < 1) { const cx = x + w / 2, cy = y + h / 2; w *= k; h *= k; x = cx - w / 2; y = cy - h / 2; }
+    x = Math.max(0, Math.min(1 - w, x)); y = Math.max(0, Math.min(asp - h, y));
+    return [x + w / 2, y + h / 2]; }, MAPS.tc_low.view.phone);
+  rep.check('tier_reframes_core', Math.abs(after[0] - expTier[0]) < .01 && Math.abs(after[1] - expTier[1]) < .01, JSON.stringify({ after, expTier }));
   await B.wait(1500); await snap(p, 'low_375');
   // 4 过渡环：缩到最远 → 环可见、面包屑「天城周边」；再推 → 回世界图
   await ev(p, () => { viewer.viewport.zoomTo(viewer.viewport.getMinZoom(), null, true); viewer.viewport.applyConstraints(true); }); await B.wait(1200);
@@ -64,7 +73,9 @@ const ev = (p, f, a) => p.evaluate(f, a);
   await ev(p, () => { for (let i = 0; i < 2; i++) { viewer.viewport.zoomBy(1.3); viewer.viewport.applyConstraints(); } });
   await p.waitForFunction(() => TCScale.isTier(cur), null, { timeout: 4000 }).catch(() => {}); await B.wait(1500);
   const w2 = await ev(p, () => ({ cur, w: viewer.viewport.getBounds(true).width, crumb: document.getElementById('crumbs').textContent }));
-  rep.check('handoff_in_to_tier', w2.cur === 'tc_low' && w2.w > .5 && w2.w < 1.2, JSON.stringify(w2));   // UI v2（U2）：手机竖屏进城落在核心区（view.phone），不再是最远一档的云雾圈
+  const w2c = await ev(p, () => { const c = viewer.viewport.getCenter(true); return [c.x, c.y]; });
+  const coreLow = MAPS.tc_low.view.phone;
+  rep.check('handoff_in_to_tier', w2.cur === 'tc_low' && w2.w > .15 && w2.w < .6 && Math.abs(w2c[0] - (coreLow[0] + coreLow[2] / 2)) < .35, JSON.stringify({ ...w2, c: w2c }));   // U2/fix3：手机竖屏进城 → handoffIn 用核心区宽（view.phone[2]）→ fitIn 夹图内，落在 w≈0.3 的近核心取景（不再是最远一档 w≥1 的云雾圈）
   // 5 三维测试件：整屏加载页、热点不重叠、围栏标记落在网格上、菜单抽屉有标题栏和关闭
   await ev(p, () => go('dairy')); await B.wait(300);
   const ld = await ev(p, () => { const l = document.getElementById('loading'); return { over: l.classList.contains('over'), bg: getComputedStyle(l).backgroundColor }; });
@@ -75,7 +86,7 @@ const ev = (p, f, a) => p.evaluate(f, a);
     await B.wait(800);
     const pins = await fr.evaluate(() => [...document.querySelectorAll('.pin:not([hidden])')].map(e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
     let minD = Infinity; for (let i = 0; i < pins.length; i++) for (let j = i + 1; j < pins.length; j++) minD = Math.min(minD, Math.hypot(pins[i][0] - pins[j][0], pins[i][1] - pins[j][1]));
-    rep.check('v3d_pins_no_overlap', pins.length >= 5 && minD >= 26, `${pins.length} 个，最近 ${minD.toFixed(0)} px`);
+    rep.check('v3d_pins_no_overlap', pins.length >= 4 && minD >= 26, `${pins.length} 个，最近 ${minD.toFixed(0)} px`);   // U12 + viewer3d 2026-09-29 小修：≤640px 上挤在一起的编号直接隐藏、编号圈收进 UI 安全区——手机可见数变少是设计避让；「不重叠（≥26px）」仍是硬约束
     const cam = await fr.evaluate(() => { const s = window.__v3d; return { ok: Object.values(s).length > 0 }; });
     rep.check('v3d_ready', cam.ok);
   } else rep.check('v3d_ready', false, '三维页没就绪');
