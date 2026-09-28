@@ -66,7 +66,7 @@ for ((i=0; i<STRIPS; i++)); do
   [ "$inserted" = 1 ] || args+=(--python-expr "$BORDER_EXPR")
   args+=(--out "$strip_out")
 
-  echo "-- strip $i：x∈[${px0},${px1})px → 实例 $host --"
+  echo "-- strip ${i}：x∈[${px0},${px1})px → 实例 $host --"
   (
     bash "$CLOUD_ROOT/render.sh" --host "$host" "${args[@]}" > "$TMPDIR_STRIPS/strip_${i}.log" 2>&1
     echo $? > "$TMPDIR_STRIPS/strip_${i}.rc"
@@ -79,7 +79,7 @@ fail=0
 for ((i=0; i<STRIPS; i++)); do
   wait "${PIDS[$i]}" || true
   rc=$(command cat "$TMPDIR_STRIPS/strip_${i}.rc" 2>/dev/null || echo 1)
-  if [ "$rc" != 0 ]; then echo "  strip $i 失败（退出码 $rc），日志见 $TMPDIR_STRIPS/strip_${i}.log"; fail=1
+  if [ "$rc" != 0 ]; then echo "  strip ${i} 失败（退出码 ${rc}），日志见 $TMPDIR_STRIPS/strip_${i}.log"; fail=1
   else echo "  strip $i 完成"; fi
 done
 [ "$fail" = 0 ] || { echo "有条渲染失败，不拼图" >&2; exit 1; }

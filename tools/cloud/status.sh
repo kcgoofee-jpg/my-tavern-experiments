@@ -10,7 +10,7 @@ cloud_parse_host "$@"; set -- "${REMAIN[@]+"${REMAIN[@]}"}"
 BUSY_ONLY=0
 for a in "$@"; do [ "$a" = "--busy-check" ] && BUSY_ONLY=1; done
 
-if [ "$BUSY_ONLY" != 1 ]; then echo "== 实例 $HOST_NAME（${HOST:-<未配置>}）=="; fi
+if [ "$BUSY_ONLY" != 1 ]; then echo "== 实例 ${HOST_NAME}（${HOST:-<未配置>}）=="; fi
 
 if [ "$DRY_RUN" = 1 ]; then
   [ "$BUSY_ONLY" = 1 ] && { echo IDLE; exit 0; }
@@ -29,7 +29,7 @@ R=$(run_ssh "
   echo '--jobs--'; pgrep -fal '[t]ools/blender_run.sh|/opt/[b]lender/blender' || echo '（空闲，没有 blender 在跑）'
   echo '--gpu--'; nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader 2>&1
   echo '--disk--'; df -h ${REMOTE_DIR%/*} | awk 'NR==2{print \$3,\"/\",\$2,\"(\"\$5\" 已用)\"}'
-  echo '--uptime--'; cat /proc/uptime | awk '{print \$1}'
+  echo '--uptime--'; command cat /proc/uptime | awk '{print \$1}'
 ")
 
 jobs=$(sed -n '/--jobs--/,/--gpu--/p' <<<"$R" | sed '1d;$d')
@@ -48,5 +48,5 @@ if [[ "$uptime_s" =~ ^[0-9.]+$ ]]; then
   echo "-- 开机时长 --"
   echo "  约 ${mins} 分钟（${hours} 小时）；按 ${PRICE_PER_HOUR} 元/小时估算，本次开机已花约 ¥${cost}（不含关机后的存储费）"
 else
-  echo "-- 开机时长 -- 取不到 uptime（$uptime_s）"
+  echo "-- 开机时长 -- 取不到 uptime（${uptime_s}）"
 fi

@@ -21,17 +21,17 @@ while [ $# -gt 0 ]; do
 done
 
 if [ "$OFF" = 1 ]; then
-  echo "== 实例 $HOST_NAME：卸掉空闲看门狗 =="
+  echo "== 实例 ${HOST_NAME}：卸掉空闲看门狗 =="
   run_ssh "pkill -f eden_idle_guard.sh 2>/dev/null; rm -f /root/eden_idle_guard.sh; (crontab -l 2>/dev/null | grep -v eden_idle_guard) | crontab - 2>/dev/null; echo 已卸载"
   exit $?
 fi
 
 [ -n "$MINUTES" ] || { echo "用法：--idle-shutdown <分钟>（装）或 --off（卸）。默认不装看门狗。" >&2; exit 2; }
 
-echo "== 实例 $HOST_NAME：装空闲看门狗（GPU 连续空闲 ${MINUTES} 分钟后 shutdown） =="
-REMOTE_CMD=$(cat <<EOF
+echo "== 实例 ${HOST_NAME}：装空闲看门狗（GPU 连续空闲 ${MINUTES} 分钟后 shutdown） =="
+REMOTE_CMD=$(command cat <<EOF
 set -eu
-cat > /root/eden_idle_guard.sh <<'SH'
+command cat > /root/eden_idle_guard.sh <<'SH'
 #!/bin/bash
 # 每分钟检查一次 GPU 利用率，连续 IDLE_MIN 分钟利用率为 0 就 shutdown。
 IDLE_MIN=${MINUTES}

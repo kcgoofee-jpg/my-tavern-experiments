@@ -41,7 +41,7 @@ REMOTE_PIDFILE="$REMOTE_DIR/logs/cloud_render_$$.pid"
 # 导致永远判断为“还在跑”，直到 WAIT_MAX 超时（2026-09-28 排查的自匹配 bug）。
 QUOTED=""
 for a in "${PASS[@]}"; do QUOTED+=" $(printf '%q' "$a")"; done
-REMOTE_CMD="cd '$REMOTE_DIR' && mkdir -p logs && EDEN_CYCLES_DEVICE=OPTIX nohup bash tools/blender_run.sh$QUOTED > '$REMOTE_LOG.nohup' 2>&1 & echo \$! > '$REMOTE_PIDFILE'; echo REMOTE_PID=\$(cat '$REMOTE_PIDFILE')"
+REMOTE_CMD="cd '$REMOTE_DIR' && mkdir -p logs && EDEN_CYCLES_DEVICE=OPTIX nohup bash tools/blender_run.sh$QUOTED > '$REMOTE_LOG.nohup' 2>&1 & echo \$! > '$REMOTE_PIDFILE'; echo REMOTE_PID=\$(command cat '$REMOTE_PIDFILE')"
 
 echo "--- 远端起渲染 ---"
 if [ "$DRY_RUN" = 1 ]; then
@@ -57,9 +57,9 @@ fi
 # 轮询：远端 blender_run.sh 自己会把 CSV 行追加在完成时；这里轮询它退出（用透传的 --log 对应的远端路径判断更准，
 # 但 blender_run.sh 的 --log 是本地相对路径概念，云端语境下我们改为轮询 REMOTE_CMD 里起的那个 bash 进程本身）
 if [ "$DRY_RUN" != 1 ]; then
-  echo "--- 轮询远端渲染进程（pidfile: $REMOTE_PIDFILE）---"
+  echo "--- 轮询远端渲染进程（pidfile: ${REMOTE_PIDFILE}）---"
   t=0
-  while run_ssh "test -f '$REMOTE_PIDFILE' && kill -0 \$(cat '$REMOTE_PIDFILE') 2>/dev/null" ; do
+  while run_ssh "test -f '$REMOTE_PIDFILE' && kill -0 \$(command cat '$REMOTE_PIDFILE') 2>/dev/null" ; do
     [ "$t" -ge "$WAIT_MAX" ] && { echo "等了 ${WAIT_MAX}s 还没完，先退出脚本（远端继续跑，之后可单独 rsync 结果回来）"; break; }
     sleep 30; t=$((t+30))
     echo "  渲染中… 已 ${t}s；显卡占用 $(run_ssh "nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader" 2>/dev/null)"

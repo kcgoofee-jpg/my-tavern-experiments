@@ -12,7 +12,7 @@ cloud_parse_host "$@"; set -- "${REMAIN[@]+"${REMAIN[@]}"}"
 YES=0
 while [ $# -gt 0 ]; do case "$1" in --yes) YES=1; shift ;; *) echo "未知参数 $1" >&2; exit 2 ;; esac; done
 
-echo "== 实例 $HOST_NAME：查找我们的 blender 任务 =="
+echo "== 实例 ${HOST_NAME}：查找我们的 blender 任务 =="
 if [ "$DRY_RUN" = 1 ]; then
   echo "[DRY_RUN] 会 ssh pgrep -fal '[t]ools/blender_run.sh|/opt/[b]lender/blender' 并 kill 匹配 PID"
   exit 0
