@@ -12,6 +12,7 @@
 - **推送要攒批**：每次推送 = 新提交号 = CDN 全量预热约 2000 个文件。连做多项时每 2–3 项推一次：`git fetch && git rebase origin/cloud/tc-mid-low` → `python3 tools/bump_head.py --push --branch cloud/tc-mid-low` → `bash tools/warm_cdn.sh "$(git rev-parse HEAD^)" 16 --purge-branch cloud/tc-mid-low`。
 - CHANGELOG 与 logs/*.csv 已设 union 合并，rebase 冲突少；只在末尾追加。
 - 提交：`git -c user.email=kcgoofee-jpg@users.noreply.github.com commit -F msg`，中文，结尾 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`。推送被拦就停下报告。
+- **设定缺口核对（上层岛必做）**：标注板定稿前，由独立评审把该岛设定全文（卡里写的 + 仓库推断，含 §9.3/§9.4 表格行）逐条对照板上条目，列出缺失或矛盾，修完再出板；仍没做的条目在板上标「缺」。
 - 报告：英文、简短（≤10 行），只写结果、测试、需要决定的事；截图路径给出即可。
 - 深入资料：`docs/onboarding.md`（全貌）、`docs/render-retro.md`（渲染规则）、`docs/design/depth-system.md`（上层纵深/斜视）。
 - **报告格式（用户 2026-09-28）**：写建议 / 清单类文档时每条独立成行；做完的在原文上用 ~~删除线~~ ✅ 划掉（不删、不另起文件），文首一行写状态说明；后续实施的代理负责回去划掉。

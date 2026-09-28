@@ -1,4 +1,4 @@
-"""凯莉的宅邸 v17（设定 docs/upper-setting.md §4.5、§8 台地、§9.3 细溪瀑、§9.4；清单 docs/upper-islands-checklist.md）。
+"""凯莉的宅邸 v18（设定 docs/upper-setting.md §4.5、§8 台地、§9.3 细溪瀑、§9.4；清单 docs/upper-islands-checklist.md）。
 卡：凯莉·露易丝，贵族寡妇、首相之妹，住自己的宅邸；放在上层是用户决定【卡 L85、L177、L403】。
 其余全部仓库推断：
   岛面 —— 圆角近方台地（轮廓加不规则起伏 + 崖缘岩突，破「方蛋糕」）；自南向北三层果园梯台，台缘是弧线砂岩挡墙 + 下方草岩陡坎（高差夸张）；
@@ -6,7 +6,7 @@
           砖墙围合菜园；合金骨架弧形玻璃的果园温室长廊；中轴路两侧光球花钵；
           路网分级：米色碎石中轴 > 次级碎石路 > 窄土径；地被：粉白落花 + 嫩绿 + 米色碎石，绿色不占主导；
           水：宅邸东侧泉池 → 石砌溪沟（每道挡墙一段小跌水）→ 下层台的池塘 → 东南崖口宽约 7 m 的溪瀑（带水雾）。
-  岛底 —— 浅而宽的蜂蜜色砂岩碗，水平层理 + 层檐，两道小台阶（呼应梯台）；崖缘土层 + 垂根 + 苔；垂藤带粉白花；一颗暖金核、只有一道符文环。
+  岛底 —— 小而浅的蜂蜜色砂岩锥（v18 由深碗改回），水平层理 + 层檐，两道小台阶（呼应梯台）；崖缘土层 + 垂根 + 苔；垂藤带粉白花；一颗暖金核、只有一道符文环。
 """
 import math, os, random, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -23,20 +23,20 @@ LEVELS = (0.0, 13.0, 28.0)          # 三层梯台（高差夸张）
 WALL_H = 3.0                         # 挡墙露出高度；其余高差由墙下陡坎承担
 BANK = 24.0                          # 陡坎水平宽
 
-BOARD_TITLE = '凯莉的宅邸 —— v17 设定对照'
+BOARD_TITLE = '凯莉的宅邸 —— v18 设定对照'
 ITEMS = [
     ('card_home', '凯莉·露易丝的宅邸（贵族寡妇、首相之妹，住自己的宅邸）', '卡原文', '✓'),
     ('outline', '圆角近方台地，缓台阶角；轮廓起伏 + 崖缘岩突', '仓库推断', '✓'),
     ('terraces', '自南向北三层果园梯台，弧线砂岩挡墙；宅邸在最高台', '仓库推断', '✓'),
-    ('water', '细溪：泉池 → 石砌溪沟逐级跌水 → 池塘 → 东南崖溪瀑', '仓库推断', '✓'),
+    ('water', '细溪：泉池 → 石砌溪沟逐级跌水 → 池塘 → 东南崖很细的安静溪瀑', '仓库推断', '✓'),
     ('orchard', '果树成行（分块成团），粉白花冠；行间全息防霜灯', '仓库推断', '✓'),
     ('kitchen', '砖墙围合菜园，畦垄成条', '仓库推断', '✓'),
-    ('palette', '地面：粉白落花 + 嫩绿 + 米色碎石，魔导极少（浅绿面积仍偏大）', '仓库推断', '弱'),
+    ('palette', '地面：粉白落花 + 米色碎石地被为主，绿色只作点缀；魔导极少', '仓库推断', '✓'),
     ('villa', '摄政风白灰泥别墅：半圆弓窗、浅坡石板顶、铁艺阳台', '仓库推断', '✓'),
     ('glasshouse', '2088 层：果园温室长廊 + 光球花钵，无晶簇', '仓库推断', '✓'),
-    ('dock', '西缘单座小平台，一辆密封悬浮车', '仓库推断', '✓'),
+    ('dock', '西缘单座小平台，朝伊甸方向，一辆密封悬浮车', '仓库推断', '✓'),
     ('ward', '结界：近档，淡青六角格边清楚', '仓库推断', '✓'),
-    ('under', '岛底：蜂蜜色砂岩碗，层檐 + 副岩锥、下部暗湿、垂根垂藤；一核一环', '仓库推断', '✓'),
+    ('under', '岛底：小而浅的蜂蜜色砂岩锥，水平层理层檐、下部暗湿、垂根垂藤；一核一环', '仓库推断', '✓'),
 ]
 
 
@@ -140,7 +140,7 @@ def underside(ctx):
     mr = ctx.m('rock', lambda: tame_joints(K_.rock_v17('k10_rock17', ROCK, ROCK2, .035, moss=(.24, .34, .1), moss_amt=.85, soil_z=400.0, lichen=(.86, .8, .64)), big=.012, fine=.18))
     mw = ctx.m('rockw', lambda: tame_joints(K_.rock_v17('k10_rock17w', (.5, .37, .24), (.33, .24, .16), .035, moss=(.2, .3, .1), moss_amt=.6, soil_z=400.0, lichen=(.6, .58, .5)), big=.012, fine=.18))
     ms = ctx.m('soil', lambda: K_.rock_v17('k10_soil17', (.3, .2, .12), (.18, .12, .07), .05, moss=(.24, .33, .1), moss_amt=.7, soil_z=400.0))
-    mg = ctx.m('core', lambda: C.glow('k10_core', c=(1.0, .8, .45), estr=4.5))
+    mg = ctx.m('core', lambda: C.glow('k10_core', c=(1.0, .7, .3), estr=4.5))
     mring = ctx.m('ring', lambda: C.glow('k10_ring', c=(1.0, .82, .5), estr=1.6))
     mvine = ctx.m('vine', lambda: C.flat('k10_vine', (.2, .32, .1), .9, noise=.4))
     mroot = ctx.m('root', lambda: C.flat('k10_root', (.22, .15, .09), .9, noise=.5))
@@ -148,14 +148,14 @@ def underside(ctx):
     P = S.pts(180); cliff = 20
     P1 = cliff_soil(ctx, B, P, cliff, mr, ms, soil_d=4.5, dz=1.4, ledge=.035, period=4.5, amp=.022, spur=.05)
     # 浅碗：两道水平小台阶（呼应梯台），再圆收到浅底；层檐密
-    prof = [(.96, .03), (.86, .06), (.85, .11), (.74, .13), (.7, .19), (.56, .26), (.4, .33), (.22, .4), (.08, .45), (0, .47)]
+    prof = [(.96, .03), (.86, .045), (.84, .075), (.72, .09), (.68, .12), (.54, .15), (.4, .18), (.26, .21), (.12, .24), (0, .26)]   # v18：小而浅的锥（直边收尖，不再是深碗）
     rings, apex = K_.body_v17(ctx, P1, prof, cliff, dz=2.4, ledge=.075, period=4.5, amp=.04, lo=(.13, .045))
     h = len(rings) // 2                                             # 上半本色砂岩，下半更暗、更湿
     K_.loft(B, rings[:h + 1], mr); K_.loft(B, rings[h:], mw, apex=apex)
-    for q, (fr, dd, L, rr) in enumerate(((.18, .2, .16, .09), (.43, .26, .12, .07), (.62, .16, .1, .06), (.9, .3, .14, .08))):   # 几根短副岩锥
+    for q, (fr, dd, L, rr) in enumerate(((.18, .16, .09, .07), (.62, .13, .07, .05), (.9, .2, .08, .06))):   # 几根短副岩锥
         zc = -cliff - dd * R; pc = K_.ring_at(rings, zc); cx, cy = pc[int(len(pc) * fr)]
         K_.cone(B, cx * .9 - ox * .9 + ox, cy * .9, zc + 4, R * rr, R * L, mw, seed=40 + q, rough=.35, ledge=.06)
-    z = -cliff - .2 * R; pts = K_.ring_at(rings, z)
+    z = -cliff - .14 * R; pts = K_.ring_at(rings, z)
     x, y = pts[int(len(pts) * .72)]; K_.glow_orb(B, x, y, z, R * .035, mg)
     K_.band(B, pts, z, R * .005, mring, 1.03, ox)
     ctx.anchor('under', x, y, z)
@@ -176,7 +176,7 @@ CREEK2 = [(46, -99), (60, -108), (74, -118)]
 def fruit_tree(B, M, x, y, z, h, r, seed):
     rnd = random.Random(seed)
     B.tube([(x, y, z - .2), (x + rnd.uniform(-.3, .3), y + rnd.uniform(-.3, .3), z + h * .45)], .17, C.tree_mats()['bark'], n=6)
-    C._cards(B, rnd, (x, y, z + h * .72), (r, r, r * .75), 90, .5, [M['blossom_a'], M['blossom_a'], M['blossom_b'], M['blossom_b'], M['blossom_g']], shell=.6)
+    C._cards(B, rnd, (x, y, z + h * .72), (r, r, r * .75), 90, .5, [M['blossom_a'], M['blossom_a'], M['blossom_b'], M['blossom_b'], M['blossom_b']], shell=.6)
 
 
 def water_line(tr, pts, step=1.5):
@@ -190,15 +190,15 @@ def water_line(tr, pts, step=1.5):
 def top(ctx):
     S, K, M = ctx.S, ctx.K, ctx.M; R = S.R
     PINK, CREAM = (.95, .74, .8), (.97, .93, .86)
-    M['meadow'] = K_.ground_v17('k10_meadow17', [(.36, .52, .18), (.5, .58, .26), (.3, .46, .15)], dry=(.66, .6, .38), soil=(.42, .32, .22),
-                                rock=(.7, .58, .4), dots=[PINK, CREAM], dot_dens=.2, dot_scale=.7)
-    M['petal'] = K_.ground_v17('k10_petal17', [(.78, .5, .56), (.42, .56, .22), (.82, .6, .6)], dry=(.7, .6, .42), soil=(.45, .34, .24),
+    M['meadow'] = K_.ground_v17('k10_meadow17', [(.64, .54, .4), (.78, .52, .56), (.46, .54, .26)], dry=(.62, .52, .38), soil=(.42, .32, .22),
+                                rock=(.7, .58, .4), dots=[PINK, (.8, .72, .58)], dot_dens=.2, dot_scale=.8)
+    M['petal'] = K_.ground_v17('k10_petal17', [(.84, .56, .62), (.7, .6, .46), (.88, .66, .7)], dry=(.7, .6, .42), soil=(.45, .34, .24),
                                rock=(.7, .58, .4), dots=[PINK, (.98, .88, .9)], dot_dens=.3, dot_scale=.9)
-    M['bloom'] = K_.ground_v17('k10_bloom17', [(.84, .46, .58), (.88, .6, .66), (.44, .56, .24)], dry=(.74, .6, .52), soil=(.45, .34, .24),
+    M['bloom'] = K_.ground_v17('k10_bloom17', [(.86, .46, .58), (.9, .64, .7), (.72, .6, .46)], dry=(.74, .6, .52), soil=(.45, .34, .24),
                                rock=(.72, .6, .42), dots=[(.95, .5, .66), (.98, .9, .9)], dot_dens=.4, dot_scale=1.1)
     M['lawn'] = K_.ground_v17('k10_lawn17', [(.36, .52, .2), (.42, .56, .24), (.33, .48, .18)], dry=(.62, .6, .4), dots=[CREAM, PINK], dot_dens=.08,
                               stripe=((.4, .56, .22), (.35, .5, .19), 5.0), slope_rock=False)
-    M['bank'] = K_.ground_v17('k10_bank17', [(.34, .46, .18), (.46, .5, .24), (.3, .4, .16)], dry=(.62, .56, .36), soil=(.36, .26, .17),
+    M['bank'] = K_.ground_v17('k10_bank17', [(.64, .54, .38), (.46, .5, .26), (.72, .6, .5)], dry=(.66, .56, .4), soil=(.36, .26, .17),
                               rock=(.62, .48, .32), dots=[PINK, CREAM], dot_dens=.2)
     M['gravel_cream'] = C.flat('k10_gravel', (.9, .85, .74), .9, noise=.35)
     M['gravel_2'] = C.flat('k10_gravel2', (.84, .78, .66), .92, noise=.45)
@@ -238,7 +238,7 @@ def top(ctx):
     tr.rect(36, 108, 36, 104, 'soil')
     tr.ell(px, py, pa + 3.5, pb + 3.5, 'gravel_2')                                                        # 池岸碎石
     # 路网：中轴（6 m 米色碎石）> 次级碎石路（3.5 m）> 窄土径（1.6 m）
-    dock_ang = math.atan2(-.5, -1.0); de = S.edge(dock_ang, .93)
+    dock_ang = math.atan2(-2.5, -7.5); de = S.edge(dock_ang, .93)   # 朝伊甸：tc_islands.json 伊甸 (-2,-7) − 本岛 (5.5,-4.5)，世界坐标即 json x/y
     main = [(0, -S.ry * 1.05), (0, 52)]
     sec = [[(-2, -78), (-40, -74), (-80, -70), de], [(2, -8), (40, -2), (78, -12), (104, -6)], [(-2, -12), (-50, -20), (-96, -18)],
            [(0, 40), (-30, 50), (-118, 50)], [(4, 44), (30, 46), (SPRING[0] - 4, SPRING[1])]]
@@ -330,16 +330,16 @@ def top(ctx):
     ez = tr.h(ex, ey)
     ux, uy = math.cos(ang), math.sin(ang); fx, fy = ex + ux * 7, ey + uy * 7          # 水舌先抛出崖口几米，再垂落，避开崖檐
     lip = [(ex + ux * t, ey + uy * t, ez - .1 - .09 * t * t) for t in (0, 2, 4, 5.5, 7)]
-    for a, b in zip(lip, lip[1:]): W.strip([a, b], 9.0, .5, M['foam'])
-    K_.waterfall(fx, fy, lip[-1][2], ang, 10.0, R * .85, 2.4, .92, name='k10_creek')
-    K_.waterfall(fx + ux, fy + uy, lip[-1][2] - .3, ang, 4.0, R * .6, 2.8, .95, name='k10_creek_core')
-    K_.waterfall(fx - ux, fy - uy, lip[-1][2] - 1, ang, 16.0, R * .95, 1.2, .45, name='k10_creek_splay')    # 外层散帘：越往下越宽
+    for a, b in zip(lip, lip[1:]): W.strip([a, b], 3.5, .4, M['foam'])
+    K_.waterfall(fx, fy, lip[-1][2], ang, 3.0, R * .45, 1.0, .9, name='k10_creek')
+    K_.waterfall(fx + ux, fy + uy, lip[-1][2] - .3, ang, 1.4, R * .3, 1.2, .95, name='k10_creek_core')
+    K_.waterfall(fx - ux, fy - uy, lip[-1][2] - 1, ang, 4.5, R * .5, .6, .35, name='k10_creek_splay')    # 外层散帘：越往下越宽
     rt = random.Random(5)
-    for q in range(26):                                              # 翻白的崖口水舌
-        t = rt.uniform(0, 7); w_ = rt.uniform(-4.5, 4.5)
-        W.sphere(ex + ux * t - uy * w_, ey + uy * t + ux * w_, ez - .09 * t * t + .2, rt.uniform(.8, 1.6), M['foam'], sz=.5, seg=8, rings=5)
-    for q in range(14):                                              # 水雾羽：沿水帘向下越来越大
-        t = q / 13; zq = lip[-1][2] - 4 - t * R * .8; rq = 4 + t * 14
+    for q in range(10):                                              # 翻白的崖口水舌
+        t = rt.uniform(0, 7); w_ = rt.uniform(-1.5, 1.5)
+        W.sphere(ex + ux * t - uy * w_, ey + uy * t + ux * w_, ez - .09 * t * t + .2, rt.uniform(.5, 1.0), M['foam'], sz=.5, seg=8, rings=5)
+    for q in range(0):                                               # 水雾羽（v18 细溪瀑不要雾团）：沿水帘向下越来越大
+        t = q / 5; zq = lip[-1][2] - 4 - t * R * .4; rq = 2 + t * 5
         W.sphere(fx + ux * (2 + t * 8) - uy * rt.uniform(-4, 4) * (1 + t), fy + uy * (2 + t * 8) + ux * rt.uniform(-4, 4) * (1 + t), zq, rq, M['mist'], sz=.8, seg=20, rings=12)
     ctx.anchor('water', ex, ey, ez - 8)
     # ---- 果园：行列，但按噪声分成几块（中间留空地、花甸）；行间低矮全息防霜灯（稀）
@@ -356,7 +356,7 @@ def top(ctx):
                         and all(K_.seg_dist(x, yb, s) > 4.5 for s in sec[:3]) and tr.zone(x, yb) not in ('bloom', 'footpath'):
                     z = tr.h(x, yb); fruit_tree(OT, M, x + rnd.uniform(-.4, .4), yb, z - .1, rnd.uniform(4.4, 5.8), rnd.uniform(2.7, 3.5), 5000 + k); k += 1
                     if first is None and x > 10: first = (x, yb, z + 5)
-                    if k % 7 == 0: L_z = tr.h(x + 3.2, yb + 3.5); Lb.cyl(x + 3.2, yb + 3.5, L_z, .15, 1.2, M['alloy'], 6); Lb.sphere(x + 3.2, yb + 3.5, L_z + 1.35, .4, M['frost'], seg=8, rings=4)
+                    if k % 7 == 0: L_z = tr.h(x + 3.2, yb + 3.5); Lb.cyl(x + 3.2, yb + 3.5, L_z, .15, 1.2, M['alloy'], 6); Lb.sphere(x + 3.2, yb + 3.5, L_z + 1.35, .6, M['frost'], seg=8, rings=4)
                 x += 8.5
             y += 9.0
             if band_i == 0 and y > cut_y(0, 0) - BANK: break
@@ -368,7 +368,7 @@ def top(ctx):
         for sx in (-1, 1):
             x = sx * 5.2; z = tr.h(x, y); Lb.cyl(x, y, z + 1.3, .9, .5, M['alloy'], 16, r2=1.2)
             C._cards(Lb, random.Random(int(y * 10 + sx)), (x, y, z + 2.0), (1.0, 1.0, .5), 25, .3, [M['blossom_a'], M['blossom_b'], M['blossom_g']], shell=.5)
-            Lb.sphere(x, y, z + .7, .38, M['orb'], seg=10, rings=6)
+            Lb.sphere(x, y, z + 2.9, .7, M['orb'], seg=10, rings=6)
     # 成团的庭荫树（不绕岛一圈）：宅后一团、西北一团、东坡一团
     for (cx, cy, n, sd) in ((-50, 100, 6, 1), (20, 112, 5, 2), (100, -40, 4, 3), (-100, -30, 3, 4)):
         r2 = random.Random(sd)

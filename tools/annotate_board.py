@@ -43,7 +43,7 @@ annotate_board.py —— 生成带编号标注的审查看板（review board）
     ]
   }
   - key 用于和锚点 JSON 里的 points 对应；在任意一张渲染图里都找不到锚点的条目，
-    图例里会强制显示为红色「缺」状态，不管 JSON 里写的 status 是什么。
+    图例里会强制显示为红色「缺」状态；例外：status 为「不做」「—」（非可视 / 按设定不建）的条目不需要锚点。
 
 输出：
   JPEG，quality=90，总宽度约 2400–3200px。多张渲染图在左侧纵向堆叠对齐到统一
@@ -248,7 +248,7 @@ def build_board(renders, items_data, title_override, out_path):
 
     for it in items:
         it["_has_anchor"] = len(item_global_points[it["_num"]]) > 0
-        if not it["_has_anchor"]:
+        if not it["_has_anchor"] and it.get("status") not in ("不做", "—"):
             it["_status_eff"] = "缺"
         else:
             it["_status_eff"] = it.get("status", "✓")
