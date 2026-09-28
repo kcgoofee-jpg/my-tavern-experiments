@@ -28,7 +28,9 @@ EXCLUDES=(
 # --info=progress2 是每个文件都刷新一整行；在非 TTY（Claude 桌面终端、日志文件、CI）下不会原地覆盖，
 # 会把几千行进度全部打印出来刷屏。TTY 下保留原生单行滚动；非 TTY 下改成 rsync 自己按 --out-format
 # 只在文件完成时打一行，外面再用 awk 节流成大约每 5 秒或 25/50/75/100% 打一条总结。
-RSYNC_ARGS=(-azL --partial --delete-excluded "${EXCLUDES[@]}")
+# docs/ 被排除，但云端渲染的产出（docs/drafts/*）就写在那里：--delete-excluded 会把它们删掉（2026-09-28 原域定稿主图被另一次 sync 删了）。
+# 用 protect 过滤规则保护远端 docs/ 与 logs/ 不被删；过滤规则要放在 exclude 前面。
+RSYNC_ARGS=(-azL --partial --delete-excluded --filter='P docs/' --filter='P logs/' "${EXCLUDES[@]}")
 
 echo "--- 同步到 [$HOST_NAME] ${REMOTE_DIR}（第一次约 3GB @ ~8MB/s 约 3.5 分钟，之后只传改动） ---"
 

@@ -39,9 +39,14 @@ REMOTE_PIDFILE="$REMOTE_DIR/logs/cloud_render_$$.pid"
 # 用 pidfile 记录后台 PID，轮询时用 kill -0 判断是否还活着——不要用 pgrep -f 'tools/blender_run.sh'：
 # 这条 ssh 远程命令的命令行本身就带有这段文本，pgrep -f 会连自己（发起轮询的那个 ssh/bash 进程）一起匹配上，
 # 导致永远判断为“还在跑”，直到 WAIT_MAX 超时（2026-09-28 排查的自匹配 bug）。
+# sync.sh 排除了 docs/，远端没有 docs/drafts 等输出目录 → blender 写不出、rsync 回传报 dir missing；起渲染前先建好 --out 所在目录
+OUT_DIR_REMOTE=""
+if [ -n "$OUT" ]; then OUT_DIR_REMOTE=$(dirname "${OUT#"$ROOT"/}"); fi
+MKDIR_OUT=""
+[ -n "$OUT_DIR_REMOTE" ] && MKDIR_OUT=" && mkdir -p $(printf '%q' "$OUT_DIR_REMOTE")"
 QUOTED=""
 for a in "${PASS[@]}"; do QUOTED+=" $(printf '%q' "$a")"; done
-REMOTE_CMD="cd '$REMOTE_DIR' && mkdir -p logs && EDEN_CYCLES_DEVICE=OPTIX nohup bash tools/blender_run.sh$QUOTED > '$REMOTE_LOG.nohup' 2>&1 & echo \$! > '$REMOTE_PIDFILE'; echo REMOTE_PID=\$(command cat '$REMOTE_PIDFILE')"
+REMOTE_CMD="cd '$REMOTE_DIR' && mkdir -p logs$MKDIR_OUT && EDEN_CYCLES_DEVICE=OPTIX nohup bash tools/blender_run.sh$QUOTED > '$REMOTE_LOG.nohup' 2>&1 & echo \$! > '$REMOTE_PIDFILE'; echo REMOTE_PID=\$(command cat '$REMOTE_PIDFILE')"
 
 echo "--- 远端起渲染 ---"
 if [ "$DRY_RUN" = 1 ]; then
@@ -72,6 +77,10 @@ if [ -n "$OUT" ]; then
   REL_OUT=${OUT#"$ROOT"/}
   mkdir -p "$(dirname "$ROOT/$REL_OUT")" 2>/dev/null || true
   run_rsync -avz "${REMOTE_USER}@${HOST:-<HOST>}:${REMOTE_DIR}/${REL_OUT}" "$ROOT/$REL_OUT"
+  # 同前缀的副产物（<名>_summit.jpg、_anchors.json、_items.json 等）一起拉回
+  OUT_STEM=$(basename "${REL_OUT%.*}")
+  run_rsync -avz --include="${OUT_STEM}*" --exclude='*' \
+    "${REMOTE_USER}@${HOST:-<HOST>}:${REMOTE_DIR}/$(dirname "$REL_OUT")/" "$ROOT/$(dirname "$REL_OUT")/" || true
 else
   echo "没解析到 --out，跳过自动回传；可手动 rsync ${REMOTE_DIR}/<输出路径> 到本地对应路径"
 fi
