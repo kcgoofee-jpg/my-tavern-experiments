@@ -152,7 +152,44 @@ test('别名表单一来源：发布物里的 aliases 与 map/data/worldbook_ali
   const src = JSON.parse(readFileSync(new URL('worldbook_aliases.json', root), 'utf8')), shipd = JSON.parse(readFileSync(new URL('worldbook_addon.json', root), 'utf8'));
   assert.deepEqual(shipd.aliases, { ids: src.ids });
   const ids = new Set(shipd.entries.map(e => e.id));
-  for (const [a, b] of Object.entries(src.ids)) { assert.ok(!ids.has(a), `${a} 还在发`); assert.ok(ids.has(b), `${b} 不在发布物里`); }
+  // 目标是英文点号编号；「天城常识-位置未写」只在 maps.json 有未定位机构时才发，所以不要求目标都在发布物里
+  for (const [a, b] of Object.entries(src.ids)) { assert.ok(!ids.has(a), `${a} 还在发`); assert.match(b, /^[a-z0-9][a-z0-9.-]*$/, b); }
+  for (const id of ids) assert.match(id, /^[a-z0-9][a-z0-9.-]*$/, `发布编号 ${id} 不是英文点号编号`);
+  assert.equal(new Set(Object.values(src.ids)).size, Object.keys(src.ids).length, '两个旧编号指到同一个新编号');
+});
+
+test('英文编号迁移（2026-09-28）：旧中文编号的书（含用户改过的一条）→ 新编号，不重复、保留改动与冲突标记，二次同步无操作', async () => {
+  const { readFileSync } = await import('node:fs');
+  const real = JSON.parse(readFileSync(new URL('../map/data/worldbook_addon.json', import.meta.url), 'utf8'));
+  const back = Object.fromEntries(Object.entries(real.aliases.ids).map(([a, b]) => [b, a]));
+  // 旧书：同样的条目，但编号是旧的中文编号、旧版本标记
+  const oldShip = { ...real, ver: '0.9.5+old', aliases: { ids: {} }, entries: real.entries.map(e => ({ ...e, id: back[e.id] })) };
+  assert.ok(oldShip.entries.every(e => typeof e.id === 'string' && /[^\x00-\x7f]/.test(e.id)));
+  const t = fakeTH({ [W.BOOK]: W.merge([], oldShip).map((e, i) => ({ ...e, uid: i + 1 })) }, { global: [W.BOOK] });
+  const bk = t.B[W.BOOK], n0 = bk.length;
+  const ed = bk.find(e => e.extra.eden_id === '地图当前地点'); ed.content = '用户改过的当前地点';
+  const cf = bk.find(e => e.extra.eden_id === '地图联动规范'); cf.content = '用户改过的联动规范';
+  // 上游也改了联动规范 → 应当带冲突标记
+  const S = { ...real, entries: real.entries.map(e => (e.id === 'map.link-rules' ? { ...e, content: e.content + '\n（上游新增）' } : e)) };
+  const p = W.plan(t.B[W.BOOK], S);
+  assert.deepEqual(p.add, []); assert.deepEqual(p.retire, []); assert.equal(p.alias, n0); assert.equal(p.dup, 0);
+  const r = await W.autoRun(t.fn, S, { charKey: 'a', boundChars: ['a'] });
+  assert.ok(r.ok && r.wrote);
+  const after = t.B[W.BOOK], ids = after.map(e => e.extra.eden_id);
+  assert.equal(after.length, n0); assert.equal(new Set(ids).size, ids.length);
+  assert.deepEqual([...ids].sort(), real.entries.map(e => e.id).sort());
+  const cur = after.find(e => e.extra.eden_id === 'map.current-location');
+  assert.equal(cur.content, '用户改过的当前地点'); assert.equal(cur.uid, ed.uid); assert.equal(cur.name, ed.name);
+  const link = after.find(e => e.extra.eden_id === 'map.link-rules');
+  assert.equal(link.content, '用户改过的联动规范'); assert.ok(link.extra.eden_conflict); assert.equal(link.uid, cf.uid);
+  assert.deepEqual(W.conflicts(after).map(x => x.name), [cf.name]);
+  // 条目名（用户 / 模型看得到的）不变
+  for (const e of real.entries) assert.equal(after.find(x => x.extra.eden_id === e.id).name, e.name);
+  // 二次同步：无操作
+  const snap = clone(after), w0 = t.writes.length;
+  const p2 = W.plan(after, S); assert.equal(p2.changed, false); assert.equal(p2.alias, 0);
+  const r2 = await W.autoRun(t.fn, S, { charKey: 'a', boundChars: ['a'] });
+  assert.ok(r2.ok); assert.ok(!r2.wrote); assert.equal(t.writes.length, w0); assert.deepEqual(t.B[W.BOOK], snap);
 });
 
 test('每聊天版本提醒：新聊天不提醒，版本变了提醒', () => {

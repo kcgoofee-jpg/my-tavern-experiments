@@ -265,19 +265,21 @@ SHIP = os.environ.get('EDEN_SHIP_OUT') or os.path.join(ROOT, 'map', 'data', 'wor
 
 def to_ship(book, version):
     """随地图发到 CDN 的附加条目（map/tavern/wbsync.mjs 读，按酒馆助手 WorldbookEntry 形状）：id = 去掉「 vN」后缀的条目名（稳定编号），ver = 版本 + 内容指纹。"""
-    import hashlib
+    import hashlib, os
     POS = {0: 'before_character_definition', 1: 'after_character_definition', 2: 'before_author_note', 3: 'after_author_note', 4: 'at_depth', 5: 'before_example_messages', 6: 'after_example_messages'}
+    # 旧对话兼容：条目别名表（旧编号 → 新编号）单一来源 map/data/worldbook_aliases.json，原样嵌进发布物（wbsync.mjs 合并前先换编号）。
+    # 发布的稳定编号 = 别名表里的英文点号编号（用户 2026-09-28）；条目名 / 关键词不变
+    ap = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'map', 'data', 'worldbook_aliases.json')
+    with open(ap, encoding='utf-8') as f: al = json.load(f)
     ents = []
     for e in book['entries'].values():
-        ents.append({'id': re.sub(r'\s+v\d+$', '', e['comment']), 'name': e['comment'], 'enabled': not e['disable'], 'content': e['content'],
+        base = re.sub(r'\s+v\d+$', '', e['comment']); eid = al.get('ids', {}).get(base, base)
+        assert re.fullmatch(r'[a-z0-9][a-z0-9.-]*', eid), f'条目「{base}」没有英文编号：在 map/data/worldbook_aliases.json 的 ids 里加「{base}: 英文.点号.编号」'
+        ents.append({'id': eid, 'name': e['comment'], 'enabled': not e['disable'], 'content': e['content'],
                      'strategy': {'type': 'constant' if e['constant'] else 'selective', 'keys': list(e['key'])},
                      'position': {'type': POS.get(e['position'], 'after_character_definition'), 'role': 'system', 'depth': e['depth'], 'order': e['order']},
                      'probability': e['probability'], 'recursion': {'prevent_incoming': bool(e['excludeRecursion']), 'prevent_outgoing': bool(e['preventRecursion'])}})
     h = hashlib.sha1(json.dumps(ents, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:8]
-    # 旧对话兼容：条目别名表（旧编号 → 新编号）单一来源 map/data/worldbook_aliases.json，原样嵌进发布物（wbsync.mjs 合并前先换编号）
-    import os
-    ap = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'map', 'data', 'worldbook_aliases.json')
-    with open(ap, encoding='utf-8') as f: al = json.load(f)
     return {'book': '伊甸地图·世界书附加条目', 'version': version, 'ver': f'{re.sub(r"-dev$", "", version)}+{h}', 'aliases': {'ids': al.get('ids', {})}, 'entries': ents}
 
 
