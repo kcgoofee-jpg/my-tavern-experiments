@@ -1,4 +1,4 @@
-# 脚本 ↔ 卡 交互方式评估（设计稿，未实施）
+# 脚本 ↔ 卡 交互方式评估（(a)(d)(e) 已实施，见文末「实施记录」）
 
 目标：长聊天里模型注意力衰减导致变量 / 标签漂移或漏写；以及被杀、卡死、断网、swipe/重生/编辑/分支时仍然正确并能恢复。内容中立：所有方案只处理「状态字段」，不看、不过滤正文内容。源码依据见 `docs/mvu-integration.md`。
 
@@ -63,3 +63,29 @@
 1. **(a) 紧凑注入**：先做，收益最大、成本最低、全平台一致。
 2. **(d) 标签对账**：随后，作为 MVU 缺失时的确定性兜底。
 3. (e) 只保留「最后确认楼层」这一最小检查点；(b)(c) 不自建，交给 MVU / 数据库插件，地图保持只读。
+
+## 实施记录（2026-09-28，(a) + (d) + (e)）
+
+纯逻辑在 `map/tavern/modes.mjs`（node 单测 `tests/modes.test.mjs`），接线在 `map/tavern/eden-map.js`「交互方式 (a)(d)(e)」一节；浏览器验收 `tools/browser/th_adopt.mjs`。
+
+### (a) 紧凑状态注入
+- 一行：`[地图状态] 地点：…；在场：…；时间：…；行程：…`。粗估 token 超过上限时，先砍行程，再砍在场名单，地点始终保留。
+- 固定 id `eden-map-state`，`in_chat`、`role: system`、`should_scan: false`；每次先 `uninjectPrompts` 再 `injectPrompts`，重生 / swipe / 重载都只有一条。TH 在 pagehide 时会撤掉全部注入，新实例启动时重新注入一次。
+- 选哪一楼的状态：普通发送用 `pickStat(最后一楼)`；`GENERATION_AFTER_COMMANDS` 的 type 是 `swipe` / `regenerate` 且最后一楼是助手楼时，从它的前一楼开始找，因为被替换那一楼的变量是旧回复写的。
+- 快照是 pending / stale 时，来自快照的字段标「（未确认）」。
+- 去重：读 `getCharData('current')` 的描述、场景、系统提示、历史后指令、示例、开场白和卡内世界书。文本里引用了 `stat_data.<路径>`、`get_message_variable` / `getvar` 读了该字段，或者整个 `stat_data` 进了提示词时，跳过那个字段。行程永远注入。
+- 设置：「数据与映射 → 状态注入」开关（默认开，`edenMapStateInj`）；「高级 → 状态注入」深度（默认 2，`edenMapStateDepth`）与 token 上限（默认 150，`edenMapStateBudget`）。三项都走脚本变量偏好。
+- 原有的「事态」注入（`eden-map-events`，深度 4）不变，两条并存。
+
+### (d) 标签对账
+- MVU 为准。最新一楼 MVU 没有快照（pending / stale / 读不到地点），而这一楼正文里有明确的玩家地点标签时，改用标签值。标签可以写成 `⌖地点 层·地点`（隐藏 span 或裸写），也可以写成 `data-tcmap="地点=…"`（不带 人物 / 类型 / 标题）。这时 `hereSrc = 'tag'`，`eden-map:moved` 的 source 也是 `tag`。
+- 世界书附加条目「地图当前地点」加了一行【地点标签】说明，模板原文不生效。
+- 自检新增一项 `conflict`（info）：最近 30 楼里 MVU 地点和标签不一致的楼层，最多 10 条，只列出、不改。
+
+### (e) 最小检查点
+- `eden_map.检查点 = { 楼, swipe }`：只有快照 ok、而且就在最新楼时才前进。内容没变不写，跟着 `saveRoot` 走，本来就是幂等写。
+- 启动（`loadCustom`）时对照：
+  - `match`：不处理。
+  - `ahead`：之后有助手楼没有快照，按「未确认」显示并重推。
+  - `swiped` / `missing`：检查点作废，从聊天记录重推，下次确认时重写。
+- 除 `match` / `none` 外，自检多一项 `checkpoint`（info）。检查点只用来发现不一致，数据仍然从聊天数组和楼层变量推导。

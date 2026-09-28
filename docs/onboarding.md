@@ -23,7 +23,7 @@
 ## 硬规则
 
 1. 地名、房间、变量一律**照抄原卡**（含成人向字样），不编名、不做占位或运行时转换；自己补的设定标「仓库推断」。
-2. 地图上新增 / 改地点，同一次提交里改 `map/data/addon_places.json` 并用 `tools/build_worldbook_addon.py` 重建世界书附加条目；`check_maps` 会拦不同步。
+2. 地图上新增 / 改地点，同一次提交里改 `map/data/addon_places.json` 并用 `tools/build_worldbook_addon.py --ship` 重建世界书附加条目（同时更新随地图发布的 `map/data/worldbook_addon.json`，设置里的「写入世界书」/ 自动同步读它）；`check_maps` 会拦不同步。
 3. 不过滤用户聊天内容；地图写聊天只填输入框，不自动发送。
 4. 不做性相关或束缚类道具与细节（名字照抄除外）。
 5. 已发布的世界书 / 脚本文件不覆盖（工具会输出 `-dev`）。

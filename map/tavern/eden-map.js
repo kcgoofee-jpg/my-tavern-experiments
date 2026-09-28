@@ -490,12 +490,12 @@
   // A-3：一轮（同一个同步任务）只取一次 stat_data 快照；push / refreshVarMap / recompute / 自检共用，微任务里作废
   let statSnap;   // undefined = 本轮还没取
   // v0.9.9（docs/mvu-integration.md）：最新楼的当前 swipe 没有快照（生成中 / 新 swipe / 生成断在半路 / 解析失败）时，往前取最近一份快照并标「未确认」，不再读成空
-  let SNP = null, snapState = 'ok'; const GEN = { since: 0, get generating() { return !!this.since && Date.now() - this.since < 180000; } };
+  let SNP = null, snapState = 'ok', snapFloor = -1, snapTop = -1; const GEN = { since: 0, get generating() { return !!this.since && Date.now() - this.since < 180000; } };
   import(new URL('snapshot.mjs', import.meta.url).href).then(m => { SNP = m; pushSoon(0); }).catch(() => {});
   const readFloor = i => { const c = SillyTavern?.chat?.[i]; return c ? { vars: c.variables?.[c.swipe_id ?? 0], system: !!c.is_system, role: c.is_user ? 'user' : 'assistant' } : null; };
   const mvuStat = () => { if (statSnap !== undefined) return statSnap; let v = null, stt = 'ok';
     try { v = Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data || null; } catch (e) {}
-    if (SNP) { try { const ch = SillyTavern?.chat; if (Array.isArray(ch) && ch.length) { const r = SNP.pickStat(readFloor, ch.length - 1, { generating: GEN.generating }); if (!v || r.floor === r.top) v = r.stat || v; stt = v ? r.state : (typeof Mvu === 'undefined' ? 'ok' : r.state); } } catch (e) {} }
+    if (SNP) { try { const ch = SillyTavern?.chat; if (Array.isArray(ch) && ch.length) { const r = SNP.pickStat(readFloor, ch.length - 1, { generating: GEN.generating }); snapFloor = r.floor; snapTop = r.top; if (!v || r.floor === r.top) v = r.stat || v; stt = v ? r.state : (typeof Mvu === 'undefined' ? 'ok' : r.state); } } catch (e) {} }
     snapState = stt; statSnap = v; queueMicrotask(() => { statSnap = undefined; }); return v; };
   const cardKey = () => { try { const c = SillyTavern.getContext(); return c.characters?.[c.characterId]?.avatar || c.name2 || ''; } catch (e) { return ''; } };
   import(SELF + 'tavern/adapter.mjs').then(m => { if (PACK_IN) m.useDefaults(PACK_IN.manifest?.vars); varAD = m; refreshVarMap(); push(); }).catch(() => {});
@@ -526,7 +526,10 @@
       const st = mvuStat();
       v = String(varAD ? varAD.get(st, varMap.location) ?? '' : st?.世界?.当前地点 || '');
     } catch (e) {}
-    hereFromDb = false;
+    hereFromDb = false; hereSrc = 'mvu';
+    // 交互方式 (d) 标签对账：MVU 为准；本楼 MVU 还没有快照（生成中 / 缺快照）或读不到地点时，改用最新一楼正文里明确写的地点标签（⌖地点 …），标「来自正文」
+    if (MDm && (snapState !== 'ok' || !v.trim()) && snapTop >= 0 && floorNow >= snapTop) { const e = msgCache.get(floorNow), t = e ? MDm.parseHereTag(e.m.raw) : null;
+      if (t && floorNow > snapFloor) { const r = MDm.reconcile({ place: v, state: snapState }, t); if (r.source === 'tag') { v = r.place; hereSrc = 'tag'; } } }
     if (!v.trim() && DBm) { const d = dbData(); if (d) { v = DBm.protagonist(d).location; hereFromDb = !!v; } }
     return v;
   }
@@ -643,6 +646,7 @@
     if (!lite) restNow();   // 标签改名、行程；发送路径上推迟到空闲
     else { clearTimeout(restT); restT = setTimeout(() => (window.parent.requestIdleCallback || (f => f()))(() => { if (!dead && restDue) restNow(); }, { timeout: 1500 }), 0); }
     inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : ''].filter(Boolean).join('\n'));
+    if (!lite) { stateInject(); checkpointStep(); }
     if (!panel.hidden && alive) sendEvents();
     if (subs.events.size) { const sig = floorNow + '|' + events.map(e => e.id + ':' + e.last + ':' + e.tier).join(); if (sig !== emEvSig) { emEvSig = sig; emit('events', { items: events.map(e => ({ ...e })), floor: floorNow, hereLayer: layerOf(here) }); } }
     perf(lite ? 'lite' : 'core', performance.now() - t0);
@@ -775,7 +779,7 @@
     if (!BG) return; const ls = store(); if (!ls) return;
     BG.touch(ls, chatId()); const r = BG.sweep(ls, chatId()); if (r.dropped.length) console.info('[eden-map] 清理旧聊天的地图数据', r.dropped.length, '个聊天', r.freed, '字节');
   }
-  const saveRoot = () => dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: tagFloor, 标签记录: tagLog, 楼层指纹: tagSeen, 行程: trips, ...(Object.keys(explored).length ? { 探索: explored } : {}) }, customChat);
+  const saveRoot = () => dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: tagFloor, 标签记录: tagLog, 楼层指纹: tagSeen, 行程: trips, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}) }, customChat);
   // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
   // 只在这个聊天还没有 eden_map.自定义 时迁移一次（全局旧键不改名，靠这个条件避免每个聊天、每次刷新重复并入）
   async function migrateOld() {
@@ -796,6 +800,7 @@
     tagLog = Array.isArray(v.标签记录) ? v.标签记录.filter(r => r && Number.isFinite(r.floor) && typeof r.key === 'string').slice(-30) : [];
     tagSeen = v.楼层指纹 && typeof v.楼层指纹 === 'object' ? { ...v.楼层指纹 } : {};
     explored = FOGm ? FOGm.norm(v.探索) : (v.探索 && typeof v.探索 === 'object' ? v.探索 : {});
+    checkpointResume(v.检查点);
     if (v.自定义 === undefined) { const mig = await migrateOld(); if (customChat !== id) return; if (mig) await saveRoot(); }
     else if (v.自定义?.同步世界书 === false && !v.自定义.同步手动) {   // 0.9.3 的数据：建过这一本世界书 = 自己关掉的，保持关；否则按新默认（开）
       const had = await wbExists(MV.wbName(id)); if (customChat !== id) return;
@@ -978,6 +983,7 @@
         card: THm ? await THm.cardIdentity(thFn, () => SillyTavern.getContext()).catch(() => null) : null, host: THm ? THm.hostVersions(thFn) : null,
         regex: THm && thFn('getTavernRegexes') ? await Promise.resolve(thFn('getTavernRegexes')({ type: 'character', name: 'current' })).then(l => THm.regexFacts(l), () => null) : null,
       };
+      checkFacts.conflicts = conflictsNow(); checkFacts.checkpoint = cpResume;   // (d)(e)
       cardId = checkFacts.card;
       // 世界书「缺少」先别急着报：酒馆刚启动时全局世界书设置可能还没加载完（v0.9.6 误报），6 秒后再查一次
       if (checkFacts.worldbook?.missing?.length) { await new Promise(r => setTimeout(r, 6000)); if (dead) return; checkFacts.worldbook = await wbFacts(); }
@@ -1120,6 +1126,56 @@
     import(url).catch(e => { console.warn('[eden-map] 切换到新版本失败', e); window.parent.__edenMapSwitch = switchedFrom; });
   }
 
+  // ---------------- 交互方式 (a)(d)(e)（docs/interaction-modes.md；纯逻辑在 tavern/modes.mjs） ----------------
+  // (a) 每次生成前把「地点、在场、时间、行程」压成一行（≤ 设置的 token 上限，默认 150）按固定 id、固定深度注入；重生 / swipe / 重载都覆盖同一条，不叠。
+  //     数据没确认（pending / stale）时标「未确认」；卡的提示词里已经有的字段跳过；设置「数据与映射」开关（默认开），深度与上限在「高级」。
+  // (e) 最小检查点：eden_map.检查点 = { 楼, swipe }（最后确认的楼层与 swipe），只在确认前进时写（幂等）；启动时对照，楼 / swipe 对不上就作废并从聊天记录重推。
+  let MDm = null, stateNow = '', cardSkip = null, cardSkipChat = null, cp = null, cpResume = null;
+  import(SELF + 'tavern/modes.mjs').then(m => { MDm = m; stateInject(); }).catch(() => {});
+  async function cardSkipFor() {   // 卡的提示词文本（角色描述、场景、系统提示、历史后指令、卡内世界书）里引用了哪些 stat_data 字段；每个聊天算一次
+    const c = chatId(); if (cardSkipChat === c && cardSkip) return cardSkip; cardSkipChat = c; cardSkip = {};
+    try { const d = await Promise.resolve(thFn('getCharData')?.('current')); const x = d?.data || d || {};
+      const texts = [x.description, x.personality, x.scenario, x.system_prompt, x.post_history_instructions, x.mes_example, x.first_mes, ...((x.character_book?.entries) || []).map(e => e?.content)];
+      cardSkip = MDm ? MDm.cardHas(texts, varMap) : {}; } catch (e) {}
+    return cardSkip;
+  }
+  function stateText(type) {
+    const ch = SillyTavern?.chat; if (!MDm || !SNP || !Array.isArray(ch)) return '';
+    const r = MDm.snapFor(SNP.pickStat, readFloor, ch.length - 1, { type });
+    const st = r.stat, get = p => (st && varAD ? varAD.get(st, p) : undefined);
+    let place = String(get(varMap.location) ?? '').trim(), state = r.state;
+    if (hereSrc === 'tag' && type !== 'swipe' && type !== 'regenerate') { place = here; }   // (d) 正文标签兜底的地点
+    const pres = MV && st ? (MV.presentList(st, varMap.present) || []).map(x => x.name) : [];
+    const wt = MV && st ? MV.worldTime(st, varMap) : null, time = wt ? [wt.date, wt.time, wt.period].filter(Boolean).join(' ') : '';
+    return MDm.stateLine({ here: userName(place), present: pres, time, trips: (trips || []).map(t => ({ ...t })), state, skip: cardSkip || {} }, +(lsGet('edenMapStateBudget') || 150));
+  }
+  function stateInject(type = 'normal') {
+    if (dead || !MDm) return;
+    const on = lsGet('edenMapStateInj') !== '0', text = on ? stateText(type) : '', depth = +(lsGet('edenMapStateDepth') ?? 2);
+    const key = text + '|' + depth; if (key === stateNow) return; stateNow = key;
+    MDm.applyState(thFn, text, depth);
+    if (on && cardSkipChat !== chatId()) cardSkipFor().then(() => { stateNow = ''; stateInject(type); });
+  }
+  function checkpointStep() {   // 确认前进时写检查点（内容没变不写）
+    if (!MDm || !custom || customChat !== chatId()) return;
+    const top = snapTop, sw = SillyTavern?.chat?.[top]?.swipe_id;
+    const n = MDm.nextCheckpoint(cp, { floor: snapFloor, top, swipe: sw, state: snapState });
+    if (n !== cp) { cp = n; saveRoot(); }
+  }
+  function checkpointResume(v) {   // loadCustom 里：读检查点并对照聊天
+    cp = v && typeof v === 'object' && Number.isInteger(v.楼) ? { 楼: v.楼, swipe: Number.isInteger(v.swipe) ? v.swipe : 0 } : null; cpResume = null;
+    if (!MDm) return; const ch = SillyTavern?.chat; if (!Array.isArray(ch)) return;
+    cpResume = MDm.resume(cp, i => { const c = ch[i]; if (!c) return null; const sv = c.variables?.[c.swipe_id ?? 0]; return { swipe: c.swipe_id ?? 0, hasStat: !!sv?.stat_data, role: c.is_user ? 'user' : 'assistant' }; }, ch.length - 1);
+    if (cpResume.reason === 'swiped' || cpResume.reason === 'missing') cp = null;   // 作废：下次确认时重写
+    if (cpResume.reason !== 'match' && cpResume.reason !== 'none') { statSig = ''; recomputeSoon(0); pushSoon(0); }
+  }
+  function conflictsNow() {   // 自检：最近 30 楼里 MVU 地点与正文地点标签不一致的楼（只列出，不改）
+    if (!MDm || typeof Mvu === 'undefined') return [];
+    const fl = []; for (const m of lastMsgs.slice(-30)) { let st = null; try { st = Mvu.getMvuData({ type: 'message', message_id: m.floor })?.stat_data || null; } catch (e) {}
+      const mv = st && varAD ? String(varAD.get(st, varMap.location) ?? '') : ''; if (mv) fl.push({ floor: m.floor, mvu: mv, raw: m.raw }); }
+    return MDm.conflicts(fl, 10);
+  }
+
   // ---------------- 酒馆助手采纳（docs/tavernhelper-audit.md §2，B1–B9）：全部功能探测，缺接口静默跳过 ----------------
   let THm = null, WBm = null, macroOff = null, thBtns = null, cardId = null;
   const thReady = import(SELF + 'tavern/th.mjs').then(m => { THm = m; thInit(); return m; }).catch(() => null);
@@ -1251,7 +1307,7 @@
     try { Promise.resolve(waitGlobalInitialized('Mvu')).then(() => listen(Mvu.events.VARIABLE_UPDATE_ENDED, () => { pushSoon(); recomputeSoon(); }), () => {}); } catch (e) {}   // MVU 人物表也会变（人物栏）
     listen(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     listen(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    listen(tavern_events.CHAT_CHANGED, () => { try { BG?.touch(store(), chatId()); } catch (e) {} injected = null; trips = []; tripSig = ''; loadSeen(); custom = null; loadCustom().then(() => recomputeSoon(300)); });
+    listen(tavern_events.CHAT_CHANGED, () => { try { BG?.touch(store(), chatId()); } catch (e) {} injected = null; stateNow = ''; cardSkip = null; cp = null; trips = []; tripSig = ''; loadSeen(); custom = null; loadCustom().then(() => recomputeSoon(300)); });
     // 通读 R1：开局菜单用 setChatMessage(swipe_id) 换开场白，不一定触发 SWIPED；渲染 / 编辑事件也听，地点跟着刷新
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) if (tavern_events[k]) listen(tavern_events[k], () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
     // 生成前同步一次，注入的是最新态势（A-3：只做注入需要的部分；输入没变直接跳过；标签改名 / 行程推到空闲）
@@ -1261,7 +1317,7 @@
     if (tavern_events.MESSAGE_SWIPE_DELETED) listen(tavern_events.MESSAGE_SWIPE_DELETED, () => { recomputeSoon(); pushSoon(300); });
     { const wake = () => { if (pdoc.visibilityState !== 'hidden' && !dead) { statSig = ''; recomputeSoon(0); pushSoon(0); } }; pdoc.addEventListener('visibilitychange', wake); window.parent.addEventListener('pageshow', wake); window.parent.addEventListener('online', wake);
       offs.push([null, null, () => { pdoc.removeEventListener('visibilitychange', wake); window.parent.removeEventListener('pageshow', wake); window.parent.removeEventListener('online', wake); }]); }
-    if (tavern_events.GENERATION_AFTER_COMMANDS) listen(tavern_events.GENERATION_AFTER_COMMANDS, () => { clearTimeout(evT); recompute(true); });
+    if (tavern_events.GENERATION_AFTER_COMMANDS) listen(tavern_events.GENERATION_AFTER_COMMANDS, (type) => { clearTimeout(evT); recompute(true); stateNow = ''; stateInject(typeof type === 'string' ? type : 'normal'); });   // (a) 重生 / swipe：用被替换那一楼之前的状态
     push(); loadSeen(); recompute();
     (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => { if (dead) return; afterGen(() => preload().catch(() => {})); try { budgetSweep(); } catch (e) {} setTimeout(() => { if (!dead) autoCheck().catch(() => {}); }, window.parent.__edenAutoCheckDelay ?? 6000); if (splashDue()) { lsSet('edenMapSplashSeen', String(VER || 'dev')); runCheck(); } else setTimeout(runCheck, 4000); setTimeout(() => { if (!dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动同步失败', e))); }, 8000); });   // 打开聊天后空闲时：测速选线 + 预加载；稍后自检一次
   })();
@@ -1272,7 +1328,7 @@
     if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup;
     try { const R = window.parent.__edenMapIds; if (R && R[OWNER] === SELF) delete R[OWNER]; } catch (e) {}   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」
     try { for (const el of [...pdoc.querySelectorAll('[data-eden-owner]')]) if (el.getAttribute('data-eden-owner') === OWNER) el.remove(); } catch (e) {}
-    clearTimeout(prefT); window.removeEventListener('storage', onStorage); try { macroOff?.(); } catch (e) {} };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）
+    clearTimeout(prefT); window.removeEventListener('storage', onStorage); try { macroOff?.(); } catch (e) {} try { MDm?.applyState(thFn, '', 0); } catch (e) {} };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）
   window.parent.__edenMapCleanup = cleanup;
   window.addEventListener('pagehide', e => { if (!e.persisted) cleanup(); });   // bfcache（pageshow 回来）时别把界面拆了：模块不会重新求值，拆了就再也回不来（接手 review P2）
 })();

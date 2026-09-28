@@ -9,10 +9,11 @@ B.quietWait(); const srv = await B.ensureServer(); const rep = B.reporter(OUT);
 
 // 装进卡片 iframe 的酒馆助手接口（状态都放宿主页 window.__th，测试从这里读）
 function install() {
-  window.__th = { script: {}, books: { '卡自带世界书': [{ uid: 1, name: '设定', content: '原作', enabled: true }] }, global: [], writes: [], buttons: [], macros: {}, emitted: [], globals: {}, info: '', inject: {} };
+  window.__th = { script: {}, books: { '卡自带世界书': [{ uid: 1, name: '设定', content: '原作', enabled: true }] }, global: [], writes: [], buttons: [], macros: {}, emitted: [], globals: {}, info: '', inject: {}, chat: [{ is_user: false, swipe_id: 0, variables: [{ stat_data: { 世界: { 当前地点: '天城·中层·霓虹街', 当前时刻: '21:00' }, 在场人物: ['安娜'] } }] }] };
   window.__thInstall = w => {
     const T = window.__th, cl = o => JSON.parse(JSON.stringify(o));
     w.getScriptId = () => 'script-eden-1';
+    w.SillyTavern.chat = T.chat;
     const gv = w.getVariables; w.getVariables = o => (o && o.type === 'script' ? cl(T.script) : gv(o));
     const uv = w.updateVariablesWith; w.updateVariablesWith = async (f, o) => { if (o && o.type === 'script') { T.script = f(cl(T.script)); return T.script; } return uv(f, o); };
     w.insertOrAssignVariables = async (v, o) => { if (o && o.type === 'script') Object.assign(T.script, cl(v)); };
@@ -51,7 +52,7 @@ async function run(name, preset) {
     rep.check(`${name} B6 initializeGlobal('EdenMap') + 旧别名`, s1.th.globals.EdenMap === true && await p.evaluate(() => !!window.EdenMap), JSON.stringify(s1.th.globals));
     rep.check(`${name} B9 类宏默认关`, !Object.keys(s1.th.macros).length, JSON.stringify(Object.keys(s1.th.macros)));
     // B8：地点变化 → 广播（只有地点字段）
-    await p.evaluate(() => { window.__stub.here = '伊甸庄园·书房'; window.__fire('v'); }); await B.wait(900);
+    await p.evaluate(() => { window.__stub.here = '伊甸庄园·书房'; window.__th.chat[0].variables[0].stat_data.世界.当前地点 = '伊甸庄园·书房'; window.__fire('v'); }); await B.wait(900);
     const em = await p.evaluate(() => window.__th.emitted.filter(e => e[0] === 'eden-map:moved'));
     rep.check(`${name} B8 eden-map:moved 只带地点`, em.length === 1 && em[0][1].from === '天城·中层·霓虹街' && em[0][1].to === '伊甸庄园·书房' && Object.keys(em[0][1]).sort().join() === 'at,from,map,source,to', JSON.stringify(em));
     // 打开地图 → 设置「数据与映射」
@@ -80,6 +81,16 @@ async function run(name, preset) {
     await vf.evaluate(() => { const c = document.querySelector('#thMacro'); c.checked = true; c.dispatchEvent(new Event('change')); }); await B.wait(600);
     const mac = await p.evaluate(() => { const f = window.__th.macros['\\{\\{eden_here\\}\\}']; return f ? f({}, '{{eden_here}}') : null; });
     rep.check(`${name} B9 开了类宏：{{eden_here}} = 当前地点`, mac === '伊甸庄园·书房', String(mac));
+    // (a) 状态注入：固定 id 只有一条、默认深度 2；高级里改深度 → 同一条换深度；关掉 → 撤掉
+    const inj1 = await p.evaluate(() => { window.__fire('g'); return Object.values(window.__th.inject).filter(x => x.id === 'eden-map-state'); });
+    rep.check(`${name} (a) 状态注入：一条、深度 2、带地点与在场`, inj1.length === 1 && inj1[0].depth === 2 && /\[地图状态\] 地点：伊甸庄园·书房/.test(inj1[0].content) && /在场：安娜/.test(inj1[0].content), JSON.stringify(inj1));
+    await vf.evaluate(() => { TCSettings.open('adv'); const i = document.querySelector('#thDepth'); i.value = '4'; i.dispatchEvent(new Event('change')); }); await B.wait(600);
+    const inj2 = await p.evaluate(() => { window.__fire('g'); window.__fire('g'); return Object.values(window.__th.inject).filter(x => x.id === 'eden-map-state'); });
+    rep.check(`${name} (a) 改深度 4：仍只有一条`, inj2.length === 1 && inj2[0].depth === 4, JSON.stringify(inj2.map(x => x.depth)));
+    await vf.evaluate(() => { TCSettings.open('data'); const c = document.querySelector('#thInjOn'); c.checked = false; c.dispatchEvent(new Event('change')); }); await B.wait(600);
+    const inj3 = await p.evaluate(() => { window.__fire('g'); return Object.values(window.__th.inject).filter(x => x.id === 'eden-map-state').length; });
+    rep.check(`${name} (a) 关掉 → 撤掉`, inj3 === 0, String(inj3));
+    await vf.evaluate(() => { const c = document.querySelector('#thInjOn'); c.checked = true; c.dispatchEvent(new Event('change')); }); await B.wait(400);
     // 自检：卡 / 宿主版本；脚本说明
     await B.wait(1500); const sc = await p.evaluate(async () => (await window.EdenMap.selfcheck()).items.map(i => i.id + ':' + i.status));
     const info = await p.evaluate(() => window.__th.info);

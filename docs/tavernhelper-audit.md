@@ -98,3 +98,40 @@ TH 已把 `lorebook` 系列标 `@deprecated`、`eventOn` 返回值由函数改�
 3. 身份与多实例：`getScriptId()`（有则用）替代 `__edenMapLoads`；`initializeGlobal('EdenMap', api)` 发布接口。
 4. 偏好迁移到脚本变量（读：脚本变量 → localStorage 回退；写：两边都写一个版本期后再去 localStorage）。
 5. cleanup 补 `clearInterval(watchT)`；生成期间暂停空闲预取。
+
+## 7. 实施记录（2026-09-28）
+
+### 地基修复（§6 五项，全部完成）
+1. **cdnFetch**：`eden-map.js` 顶部的内联包装与 `map/tavern/th.mjs cdnFetch` 同一规则，固定 `credentials:'omit', referrerPolicy:'no-referrer'`，调用方覆盖不了。宿主侧所有外部请求都走它。`core/pack.mjs` 的兜底取 JSON、加载器（`tools/build_preview_script.py`）取 head.json 也带同样两项。`tests/th_foundation.test.mjs` 会静态清点 `map/tavern`、`map/core` 里的裸 `fetch(`。
+2. **孤儿清扫**：根节点打 `data-eden-owner=<身份>`。启动时清掉身份不同的节点，cleanup 时清掉自己的。
+3. **身份**：`getScriptId()` → `s:<id>`，没有这个接口时用 `u:<脚本地址>`。登记在 `window.parent.__edenMapIds`，替代 `__edenMapLoads`，同一脚本换版本不再误报重复。
+4. **偏好迁到脚本变量**：变量名 `eden_prefs`（`type:'script'`），键表是 `core/storage.mjs SCRIPT_KEYS`，宿主 `PREF_KEYS` 同一份，由测试对照。
+   - 启动时：脚本变量里有的写回本机（查看器同源读本机）；只在本机有的补进脚本变量。线路也按脚本变量优先。
+   - 本机值变化时有差异才写脚本变量，触发点是宿主自己写、`storage` 事件和面板关闭。
+   - 本版双写，下一版再去掉本机这份。
+5. **cleanup 与空闲预取**：cleanup 清 `watchT` / `quietT`。空闲预取（查看器页面、预加载、世界书自动同步）在生成期间排队，`GENERATION_ENDED` / `STOPPED` 后补做。
+
+### 采纳 B1–B9
+- **B1 世界书附加条目写入与自动同步**（`map/tavern/wbsync.mjs`，设置 UI 在 `map/app/th-ui.mjs`，单测 `tests/wbsync.test.mjs`）
+  - 只写 `伊甸地图·世界书附加条目` 这一本，调用 `createWorldbook` / `updateWorldbookWith`（没有前者时用 `createOrReplaceWorldbook`，没有后者时用 `replaceWorldbook`）。
+  - 条目随地图发布：`map/data/worldbook_addon.json`，用 `build_worldbook_addon.py --ship` 生成。`id` 是去掉「 vN」的条目名，`ver` 是版本加内容指纹。
+  - 每个条目的 `extra` 里带 `{eden_id, eden_ver, eden_hash}`，更新时按 `eden_id` 对应：
+    - 内容指纹变了（用户改过）的条目保留；
+    - 没有 `eden_id` 的条目（用户自己加的）保留；
+    - 用户关掉的开关保留；
+    - 新版不再发的条目停用，不删。
+  - 写之前：「看差异」列出新增 / 更新 / 保留 / 停用 / 用户条目；「写入世界书」要连点两次。第一次写入时选择绑定到全局、角色附加世界书或聊天；已经有绑定就保持原样。
+  - 旧的带版本号的书（`伊甸地图·世界书附加条目 v…`）：可以把它在各处的绑定原位换成新名，旧书保留；再确认一次才删除，而且只允许删带版本号的名字。
+  - 「自动同步世界书」默认关，勾选时先弹同意说明。开启后，启动空闲时如果版本标记和 CDN 上的不同就更新；书被删了不会替用户重建。设置里显示上次同步的时间和版本。
+  - 失败、离线或没有接口时，界面提示照旧手动导入。
+- **B2** 脚本按钮「地图」「地图自检」（`appendInexistentScriptButtons` + `getButtonEvent`，句柄走 `listen`）。加载器不需要改。
+- **B3 卡身份**：`getCharData('current')` 取卡名（照抄）和 `character_version`，进自检 `card`（info）。没有这个接口时回退到上下文里的 `name2`。变量映射仍按原来的键（头像名）存。
+- **B4 宿主版本**：`getTavernHelperVersion` / `getTavernVersion` 进自检 `host`（info），只做报告，兼容判断仍靠功能探测。
+- **B5 脚本库说明**：`replaceScriptInfo` 写版本 / 构建号、通道和最后一次自检结论。
+- **B6 全局入口**：`initializeGlobal('EdenMap', api)`；`window.parent.EdenMap` 别名保留一个版本。
+- **B7 正则自检**：`getTavernRegexes({type:'character', name:'current'})` 只读，判断有没有在显示时隐藏变量更新块的正则，结果进自检 `regex`。
+- **B8 广播**：地点变化时 `eventEmit('eden-map:moved', {from, to, map, source, at})`，只带地点，不写 MVU 或数据库。
+- **B9 类宏**：`{{eden_here}}`、`{{eden_route}}`（最近一段玩家行程），通过 `registerMacroLike` 注册，默认关，在设置「数据与映射」里开；关掉或 cleanup 时撤销。
+
+### 仍然不用
+`installExtension`、`builtin`、角色卡写接口、`generate*`；`tests/th_adopt.test.mjs` 做静态检查。
