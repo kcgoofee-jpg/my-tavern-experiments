@@ -1,0 +1,221 @@
+{
+ "_说明": "viewer3d.html?model=civic_core 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。中层核心区的政务区：天城议会、执政厅、政务院、中央储备署、文化署五栋建筑同在一个场景，各自一个热点；五个中层标记都接到这里。周边巨构楼群、上层甲板、悬浮轨道（bg_*）只在成图里。位置与形制为仓库推断。",
+ "id": "civic_core",
+ "title": {
+  "zh": "中层政务区",
+  "en": "Government Quarter"
+ },
+ "glb": "civic_core.glb",
+ "glb_low": "civic_core_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "props_council",
+   "props_executive",
+   "props_admin",
+   "props_reserve",
+   "props_culture"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "site_plaza",
+   "site_ground",
+   "props_lights",
+   "props_signs"
+  ],
+  "building": {
+   "min": [
+    -161.0,
+    -7.0,
+    -151.0
+   ],
+   "max": [
+    161.0,
+    155.4,
+    151.0
+   ]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 155,
+  "default": 155
+ },
+ "camera": {
+  "frame": [
+   "props_council",
+   "props_executive",
+   "props_reserve",
+   "props_culture",
+   "props_admin"
+  ],
+  "dir": [
+   0.2,
+   0.6,
+   -0.75
+  ],
+  "min": 10,
+  "max": 800,
+  "maxPolar": 1.48
+ },
+ "hotspots": [
+  {
+   "id": "council",
+   "mesh": "props_council",
+   "name": {
+    "zh": "天城议会",
+    "en": "Council"
+   },
+   "desc": {
+    "zh": "广场北侧的立法大厅：高台基、宽阔台阶、青铜大门、柱廊门廊与钢肋发光鼓座穹顶；议会握有戒严权，中央储备署隶属议会。",
+    "en": "The legislative hall north of the plaza: raised podium, broad steps, bronze doors, a portico and a steel-ribbed glowing dome. The Council holds the power of martial law; the Central Reserve Office reports to it."
+   },
+   "view": [
+    0.0,
+    0.3,
+    -0.95
+   ]
+  },
+  {
+   "id": "executive",
+   "mesh": "props_executive",
+   "name": {
+    "zh": "天城执政厅",
+    "en": "Executive Office"
+   },
+   "desc": {
+    "zh": "退台式行政塔楼，底层是办理跨层通行许可的大厅：安检门、闸机与防撞柱。",
+    "en": "A stepped-back administrative tower whose base is the hall that issues cross-tier permits, with security portals, turnstiles and bollards."
+   },
+   "view": [
+    0.3,
+    0.3,
+    -0.9
+   ]
+  },
+  {
+   "id": "admin",
+   "mesh": "props_admin",
+   "name": {
+    "zh": "天城政务院",
+    "en": "Administrative Council"
+   },
+   "desc": {
+    "zh": "合院式部委楼，天桥跨过大道连向执政厅（与执政厅是否同一机构卡没说明，地图分开标）。",
+    "en": "A courtyard ministry block linked to the Executive Office by a skybridge (the card does not say whether they are the same body; the map marks them separately)."
+   },
+   "view": [
+    0.8,
+    0.4,
+    -0.4
+   ]
+  },
+  {
+   "id": "reserve",
+   "mesh": "props_reserve",
+   "name": {
+    "zh": "天城中央储备署",
+    "en": "Central Reserve Office"
+   },
+   "desc": {
+    "zh": "发行以太元的金库式建筑：粗面石基座、少窗、青铜大门与运钞装卸口。",
+    "en": "The vault-like building that issues the Aether Yuan: rusticated base, few windows, bronze doors and a loading bay."
+   },
+   "view": [
+    -0.3,
+    0.3,
+    -0.9
+   ]
+  },
+  {
+   "id": "culture",
+   "mesh": "props_culture",
+   "name": {
+    "zh": "天城文化署",
+    "en": "Culture Office"
+   },
+   "desc": {
+    "zh": "负责出版审查：锯齿天窗的阅览大厅与实墙档案翼。",
+    "en": "Handles publication review: a reading hall with sawtooth rooflights and a solid archive wing."
+   },
+   "view": [
+    -0.8,
+    0.4,
+    -0.4
+   ]
+  },
+  {
+   "id": "plaza",
+   "mesh": "site_plaza",
+   "name": {
+    "zh": "礼仪广场",
+    "en": "Ceremonial plaza"
+   },
+   "desc": {
+    "zh": "中央喷泉、两侧反射池、绿篱花池与行道树。",
+    "en": "A central fountain, reflecting pools, hedged planters and trees."
+   },
+   "view": [
+    0.0,
+    0.8,
+    -0.6
+   ]
+  },
+  {
+   "id": "ground",
+   "mesh": "site_ground",
+   "name": {
+    "zh": "街道与甲板",
+    "en": "Streets & deck"
+   },
+   "desc": {
+    "zh": "政务区的大道、侧街与人行道，建在中层核心区的甲板上。",
+    "en": "Avenues, side streets and pavements of the government quarter, on a deck in the mid-tier core."
+   },
+   "view": [
+    0.3,
+    0.7,
+    -0.65
+   ]
+  },
+  {
+   "id": "lights",
+   "mesh": "props_lights",
+   "name": {
+    "zh": "街具与灯",
+    "en": "Street furniture & lights"
+   },
+   "desc": {
+    "zh": "路灯、矮柱灯、护柱、长椅与候车亭。",
+    "en": "Street lights, bollard lamps, barrier posts, benches and a transit shelter."
+   },
+   "view": [
+    0.3,
+    0.5,
+    -0.8
+   ]
+  },
+  {
+   "id": "signs",
+   "mesh": "props_signs",
+   "name": {
+    "zh": "全息屏",
+    "en": "Hologram panels"
+   },
+   "desc": {
+    "zh": "纯色全息屏与纯色垂幅（无文字）。",
+    "en": "Plain-colour hologram panels and solid banners (no text)."
+   },
+   "view": [
+    0.3,
+    0.5,
+    -0.8
+   ]
+  }
+ ]
+}

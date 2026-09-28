@@ -28,13 +28,13 @@
 | P2 机构 | tc_low | `outpost` | 防卫军前沿哨所 | ✅ | 卡 | 防卫军前沿哨所 `map/props/outpost/` | 标准（r1 7 / 7） |  |
 | P2 机构 | tc_low | `prison` | 监狱 | 🆕 | 仓库推断 | 监狱（外观）`map/props/prison/` | 标准（r1 7 / 7） |  |
 | P2 机构 | tc_low | `soup_kitchen` | 圣光教会施粥站 | ✅ | 卡 | 施粥站 `map/props/soup_kitchen/` | 标准（r1 7 / 7） |  |
-| P2 机构 | tc_mid | `admin_council` | 天城政务院 | 🆕 | 仓库推断 | — | — |  |
+| P2 机构 | tc_mid | `admin_council` | 天城政务院 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `barracks_ring` | 环城军营带 | ✅ | 卡 | — | — |  |
 | P2 机构 | tc_mid | `butler_academy` | 天城贵族管家学院 | 🆕 | 仓库推断 | — | — |  |
-| P2 机构 | tc_mid | `council` | 天城议会 | ✅ | 卡 + 推断位置 | — | — |  |
-| P2 机构 | tc_mid | `culture_office` | 天城文化署 | 🆕 | 仓库推断 | — | — |  |
+| P2 机构 | tc_mid | `council` | 天城议会 | ✅ | 卡 + 推断位置 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
+| P2 机构 | tc_mid | `culture_office` | 天城文化署 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `enforcement_hq` | 天城执法局总局 | ✅ | 卡 | — | — |  |
-| P2 机构 | tc_mid | `executive_office` | 天城执政厅 | 🆕 | 仓库推断 | — | — |  |
+| P2 机构 | tc_mid | `executive_office` | 天城执政厅 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `iron_cradle` | 圣铁摇篮 | ✅ | 卡 | — | — |  |
 | P2 机构 | tc_mid | `knights_camp` | 骑士团营区 | ✅ | 用户决定 | — | — |  |
 | P2 机构 | tc_mid | `mage_tower` | 法师塔 | 🆕 | 仓库推断 | — | — |  |
@@ -43,7 +43,7 @@
 | P2 机构 | tc_mid | `mid_hospital` | 中层公立医院 | ✅ | 卡 | — | — |  |
 | P2 机构 | tc_mid | `mid_monastery` | 中层修道院 | ✅ | 卡 | — | — |  |
 | P2 机构 | tc_mid | `military_academy` | 军事学院 | 🆕 | 仓库推断 | — | — |  |
-| P2 机构 | tc_mid | `reserve_office` | 天城中央储备署 | 🆕 | 仓库推断 | — | — |  |
+| P2 机构 | tc_mid | `reserve_office` | 天城中央储备署 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `starabyss_univ` | 星渊大学 | ✅ | 卡 | — | — |  |
 | P2 机构 | tc_mid | `storm_hall` | 风暴殿 | 🆕 | 仓库推断 | — | — |  |
 | P2 机构 | tc_mid | `supreme_court` | 最高法院 | ✅ | 卡 + 推断位置 | — | — |  |
