@@ -74,7 +74,8 @@
    "alt": 1450,
    "overrides": {
     "haze": 0,
-    "ward": 0
+    "ward": 0,
+    "scale": 1.35
    }
   },
   "isle10": {

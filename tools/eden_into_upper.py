@@ -28,47 +28,53 @@ def main():
     p.add_argument('--out', default='')
     p.add_argument('--dzi', default='')
     p.add_argument('--grow', type=int, default=240)
+    p.add_argument('--no-inpaint', action='store_true', help='底图里本来就没画旧伊甸（TC_EDEN_CUT）时不补洞')
+    p.add_argument('--scale', type=float, default=0.0, help='伊甸画出比例（0 = 取纵深系统 upper_depth.json 的 eden scale；v13 伊甸 1.35）')
     p.add_argument('--fill', default='', help='upper_city 用：tiancheng_upper.py --below city --city-only 1 --crop x0,y0,x1,y1 渲出的纯城市块，用它补旧岛（不用模糊）')
     p.add_argument('--fill-box', default='', help='--fill 的归一化 crop 框 x0,y0,x1,y1（与渲染时 --crop 相同）')
     a = p.parse_args()
     full = Image.open(a.full).convert('RGB'); FW, FH = full.size
     isl = next(i for i in json.load(open(os.environ.get('TC_ISLANDS') or os.path.join(ROOT, 'blender/data/tc_islands.json')))['islands'] if i['id'] == 'eden')
     ed = next(i for i in json.load(open(os.path.join(ROOT, 'map/data/tc_upper.json')))['islands'] if i['id'] == 'eden')
-    # ① 旧岛掩膜 → 归一化模糊补洞（在 1/8 尺度上算，再放大）
-    m = Image.new('L', (FW, FH), 0)
-    ImageDraw.Draw(m).polygon([(x * FW, y * FH) for x, y in ed['outline']], fill=255)
-    m = m.filter(ImageFilter.MaxFilter(1)).filter(ImageFilter.GaussianBlur(a.grow / 2)).point(lambda v: 255 if v > 8 else 0)
-    bb = m.getbbox(); pad = 400
-    box = (max(0, bb[0] - pad), max(0, bb[1] - pad), min(FW, bb[2] + pad), min(FH, bb[3] + pad))
-    reg = np.asarray(full.crop(box), np.float32); mk = np.asarray(m.crop(box), np.float32) / 255
-    s = 8; sw, sh = reg.shape[1] // s, reg.shape[0] // s
-    small = np.asarray(Image.fromarray(reg.astype(np.uint8)).resize((sw, sh), Image.BOX), np.float32)
-    keep = 1 - np.asarray(Image.fromarray((mk * 255).astype(np.uint8)).resize((sw, sh), Image.BOX), np.float32) / 255
-    keep = (keep > .999).astype(np.float32)
-    keep = np.asarray(Image.fromarray((keep * 255).astype(np.uint8)).filter(ImageFilter.MinFilter(5)), np.float32) / 255   # 离洞边再退 2 格，避开残留的岛缘白边
-    num = np.zeros_like(small); den = np.zeros_like(keep)
-    for c in range(3):
-        num[..., c] = _blur(small[..., c] * keep, 40)
-    den = _blur(keep, 40)
-    num = np.where(keep[..., None] > .5, small, num / np.maximum(den[..., None], 1e-4))
-    big = np.asarray(Image.fromarray(np.clip(num, 0, 255).astype(np.uint8)).resize((reg.shape[1], reg.shape[0]), Image.BICUBIC), np.float32)
-    soft = np.asarray(Image.fromarray((mk * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(40)), np.float32)[..., None] / 255
-    reg = reg * (1 - soft) + big * soft
-    full.paste(Image.fromarray(reg.astype(np.uint8)), box[:2])
-    if a.fill:                                             # 纯城市块：旧岛掩膜再外扩 160 px（盖住上一步的模糊带），但不碰其他岛
-        x0, y0, x1, y1 = [float(v) for v in a.fill_box.split(',')]
-        fl = Image.open(a.fill).convert('RGB'); L_, T_ = round(x0 * FW), round(y0 * FH)
-        fm = m.filter(ImageFilter.GaussianBlur(80)).point(lambda v: 255 if v > 4 else 0).filter(ImageFilter.GaussianBlur(20))
-        other = Image.new('L', (FW, FH), 0); dr = ImageDraw.Draw(other)
-        for i in json.load(open(os.path.join(ROOT, 'map/data/tc_upper.json')))['islands']:
-            if i['id'] != 'eden': dr.polygon([(x * FW, y * FH) for x, y in i['outline']], fill=255)
-        other = other.filter(ImageFilter.MaxFilter(1)).filter(ImageFilter.GaussianBlur(30)).point(lambda v: 255 if v > 8 else 0)
-        fm = Image.fromarray((np.asarray(fm, np.float32) * (1 - np.asarray(other, np.float32) / 255)).astype(np.uint8))
-        full.paste(fl, (L_, T_), fm.crop((L_, T_, L_ + fl.width, T_ + fl.height)))
+    if not a.no_inpaint:
+        # ① 旧岛掩膜 → 归一化模糊补洞（在 1/8 尺度上算，再放大）
+        m = Image.new('L', (FW, FH), 0)
+        ImageDraw.Draw(m).polygon([(x * FW, y * FH) for x, y in ed['outline']], fill=255)
+        m = m.filter(ImageFilter.MaxFilter(1)).filter(ImageFilter.GaussianBlur(a.grow / 2)).point(lambda v: 255 if v > 8 else 0)
+        bb = m.getbbox(); pad = 400
+        box = (max(0, bb[0] - pad), max(0, bb[1] - pad), min(FW, bb[2] + pad), min(FH, bb[3] + pad))
+        reg = np.asarray(full.crop(box), np.float32); mk = np.asarray(m.crop(box), np.float32) / 255
+        s = 8; sw, sh = reg.shape[1] // s, reg.shape[0] // s
+        small = np.asarray(Image.fromarray(reg.astype(np.uint8)).resize((sw, sh), Image.BOX), np.float32)
+        keep = 1 - np.asarray(Image.fromarray((mk * 255).astype(np.uint8)).resize((sw, sh), Image.BOX), np.float32) / 255
+        keep = (keep > .999).astype(np.float32)
+        keep = np.asarray(Image.fromarray((keep * 255).astype(np.uint8)).filter(ImageFilter.MinFilter(5)), np.float32) / 255   # 离洞边再退 2 格，避开残留的岛缘白边
+        num = np.zeros_like(small); den = np.zeros_like(keep)
+        for c in range(3):
+            num[..., c] = _blur(small[..., c] * keep, 40)
+        den = _blur(keep, 40)
+        num = np.where(keep[..., None] > .5, small, num / np.maximum(den[..., None], 1e-4))
+        big = np.asarray(Image.fromarray(np.clip(num, 0, 255).astype(np.uint8)).resize((reg.shape[1], reg.shape[0]), Image.BICUBIC), np.float32)
+        soft = np.asarray(Image.fromarray((mk * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(40)), np.float32)[..., None] / 255
+        reg = reg * (1 - soft) + big * soft
+        full.paste(Image.fromarray(reg.astype(np.uint8)), box[:2])
+        if a.fill:                                             # 纯城市块：旧岛掩膜再外扩 160 px（盖住上一步的模糊带），但不碰其他岛
+            x0, y0, x1, y1 = [float(v) for v in a.fill_box.split(',')]
+            fl = Image.open(a.fill).convert('RGB'); L_, T_ = round(x0 * FW), round(y0 * FH)
+            fm = m.filter(ImageFilter.GaussianBlur(80)).point(lambda v: 255 if v > 4 else 0).filter(ImageFilter.GaussianBlur(20))
+            other = Image.new('L', (FW, FH), 0); dr = ImageDraw.Draw(other)
+            for i in json.load(open(os.path.join(ROOT, 'map/data/tc_upper.json')))['islands']:
+                if i['id'] != 'eden': dr.polygon([(x * FW, y * FH) for x, y in i['outline']], fill=255)
+            other = other.filter(ImageFilter.MaxFilter(1)).filter(ImageFilter.GaussianBlur(30)).point(lambda v: 255 if v > 8 else 0)
+            fm = Image.fromarray((np.asarray(fm, np.float32) * (1 - np.asarray(other, np.float32) / 255)).astype(np.uint8))
+            full.paste(fl, (L_, T_), fm.crop((L_, T_, L_ + fl.width, T_ + fl.height)))
     # ② 抠图按岛心贴上（抠图画幅 = 750 m 宽，与整图同一 m/px 时不缩放）
     cut = Image.open(a.cut).convert('RGBA')
-    mpp_full = W_U * 100 / FW; mpp_cut = 750.0 / cut.width
-    if abs(mpp_cut / mpp_full - 1) > 1e-3:
+    if not a.scale:
+        sys.path.insert(0, os.path.join(ROOT, 'blender')); import depth as DP
+        a.scale = DP.island('eden', DP.load())['scale']
+    mpp_full = W_U * 100 / FW; mpp_cut = 750.0 / cut.width * a.scale
+    if abs(mpp_cut / mpp_full - 1) > 1e-3:   # 抠图按 750 m 画幅 × scale 缩放到整图比例
         cut = cut.resize((round(cut.width * mpp_cut / mpp_full), round(cut.height * mpp_cut / mpp_full)), Image.LANCZOS)
     cx, cy = (isl['x'] / W_U + .5) * FW, (.5 - isl['y'] / H_U) * FH
     out = full.convert('RGBA'); out.alpha_composite(cut, (round(cx - cut.width / 2), round(cy - cut.height / 2)))

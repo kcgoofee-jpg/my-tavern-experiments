@@ -245,17 +245,39 @@ class Isle:
     def _pick(self, opts): return opts[int(self.R.integers(len(opts)))]
     # 轮廓：极坐标半径（本地角度）
     def r(self, th):
+        if self.d.get('silhouette'): return float(self.r_np(np.array([th]))[0])
         c, s = math.cos(th), math.sin(th)
         base = 1 / math.sqrt((c / (self.rx * self.ex)) ** 2 + (s / (self.ry * self.ey)) ** 2)
         f = 1 + sum(a * math.sin(k * th + p) for k, a, p in self.harm)
         if self.shape == 'twin': f *= .42 + .6 * abs(c) ** .7                              # 葫芦形：腰宽 ≤ 两头的 55 %
         return base * f
     def r_np(self, th):
-        c, s = np.cos(th), np.sin(th)
+        th = np.asarray(th, float); c, s = np.cos(th), np.sin(th)
+        sil = self.d.get('silhouette')
+        if sil: return self._sil(th, c, s, sil)
         base = 1 / np.sqrt((c / (self.rx * self.ex)) ** 2 + (s / (self.ry * self.ey)) ** 2)
         f = 1 + sum(a * np.sin(k * th + p) for k, a, p in self.harm)
         if self.shape == 'twin': f = f * (.42 + .6 * np.abs(c) ** .7)
         return base * f
+    # v13 设计过的岛形（docs/upper-setting.md「岛形」节，仓库推断）：超椭圆底 + 按类型的修饰；角度是岛的本地角（rot 另算）
+    SIL_N = {'terrace': 3.2, 'ridge': 2.6, 'crescent': 2.2, 'plateau': 4.5, 'jagged': 2.0, 'fortress': 5.0}
+    def _sil(self, th, c, s, sil):
+        k = sil['kind']; n = sil.get('n', self.SIL_N.get(k, 2.4)); rx, ry = self.rx, self.ry
+        base = (np.abs(c / rx) ** n + np.abs(s / ry) ** n) ** (-1 / n)
+        g = np.ones_like(th); ph = sil.get('dir', 0.0)
+        if k == 'terrace':                                   # 台地：四个缓台阶角 + 细碎崖口
+            g = 1 + .035 * np.sin(4 * (th - ph)) + .012 * np.sin(17 * th + 1.3)
+        elif k == 'ridge':                                   # 长脊：一端收尖、脊线微弯
+            g = 1 + .10 * np.cos(th - ph) - .06 * np.cos(2 * (th - ph)) + .015 * np.sin(13 * th)
+        elif k == 'crescent':                                # 新月：朝 dir 的一侧挖一个深湾（湾里是云，水景园沿内弧）
+            dd = np.angle(np.exp(1j * (th - ph))); g = 1 - .52 * np.exp(-(dd / .62) ** 2) + .01 * np.sin(11 * th)
+        elif k == 'plateau':                                 # 平台：方正、圆角、几乎无碎口
+            g = 1 + .008 * np.sin(9 * th + .4)
+        elif k == 'fortress':                                # 要塞：更方、四角略凸（角楼位）
+            g = 1 + .03 * np.cos(4 * (th - ph)) ** 7
+        elif k == 'jagged':                                  # 冷峻锯齿：不规则尖角
+            g = 1 + .11 * np.abs(np.sin(5 * th + .7)) ** 3 - .06 * np.abs(np.sin(9 * th + 2.1)) + .05 * np.sin(23 * th)
+        return base * g
     def inside(self, lx, ly, s=1.0): return math.hypot(lx, ly) <= s * self.r(math.atan2(ly, lx))
     def sfrac(self, lx, ly): return math.hypot(lx, ly) / max(1e-6, self.r(math.atan2(ly, lx)))
     def world(self, lx, ly):
