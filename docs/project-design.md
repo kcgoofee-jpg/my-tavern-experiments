@@ -98,8 +98,8 @@ graph LR
 - `map/data/eden_estate_rooms.json` 中文键 / id 约 44 处（房间 id 与 `_说明`）。
 - `map/packs/town/events.json` 中文键 12 处（示例包，如 `市政`）。
 - `map/data/*.json`、`blender/data/tc_islands*.json`、`map/packs/*/manifest.json` 的注释键 `_说明`（非版本信息，但属于数据字段名；统一改 `_note`）。
-- `docs/drafts/estate_v*_desk_*_<房间中文>.jpg`：36 个草图文件名带中文。
-- `skills/card-map/guides/{NSFW指引,建筑指引,面板UI指引,风格指引}.md`：4 个中文文件名。
+- ~~`docs/drafts/estate_v*_desk_*_<房间中文>.jpg`：36 个草图文件名带中文。~~ ✅ 9 张有引用（`estate_v3_close_*`）改英文，其余 27 张全仓库无任何引用，按规则删除（见 handoff）。
+- ~~`skills/card-map/guides/{NSFW指引,建筑指引,面板UI指引,风格指引}.md`：4 个中文文件名。~~ ✅ 已改 `nsfw.md`/`architecture.md`/`panel-ui.md`/`style.md`。
 - 旧世界书书名带版本号（`… v0.9.5`）：显示名里混了版本，迁移后不再在书名里写版本。
 - 已符合：版本号 `0.9.5`、标签 `map-v*`、编码 `S1-0905-R-0280`、`head #N` 提交、分支 `cloud/tc-mid-low`、head.json 字段。
 - 不改：历史标签与已发布文件（规则 5 不覆盖已发布物）；提交说明正文仍写中文（不是版本信息）。
