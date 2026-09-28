@@ -147,12 +147,25 @@ def main():
     for J in meshes:
         before, after, size = info[J.name]
         me = J.data
+        if len(me.polygons) == 0:
+            print('SKIP empty', J.name, flush=True)
+            bpy.data.objects.remove(J, do_unlink=True)
+            continue
         uv = me.uv_layers.new(name='bake'); me.uv_layers.active = uv
         bpy.ops.object.select_all(action='DESELECT')
         J.select_set(True); bpy.context.view_layer.objects.active = J
         bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='SELECT')
-        bpy.ops.uv.smart_project(angle_limit=math.radians(60), island_margin=0.002, area_weight=0.0)
-        bpy.ops.uv.pack_islands(margin=0.002, rotate=True)
+        # Blender 5.x 后台模式：uv.smart_project / pack_islands 的 poll 要一个 VIEW_3D 区域的 context
+        # override，纯 -b 下 bpy.context.area 是 None 会报 poll 失败；找当前 window 的 VIEW_3D 区域包一层。
+        _v3d = next((a for a in bpy.context.window.screen.areas if a.type == 'VIEW_3D'), None)
+        _ctx = bpy.context.temp_override(area=_v3d, region=next((r for r in _v3d.regions if r.type == 'WINDOW'), None)) if _v3d else None
+        if _ctx:
+            with _ctx:
+                bpy.ops.uv.smart_project(angle_limit=math.radians(60), island_margin=0.002, area_weight=0.0)
+                bpy.ops.uv.pack_islands(margin=0.002, rotate=True)
+        else:
+            bpy.ops.uv.smart_project(angle_limit=math.radians(60), island_margin=0.002, area_weight=0.0)
+            bpy.ops.uv.pack_islands(margin=0.002, rotate=True)
         bpy.ops.object.mode_set(mode='OBJECT')
         img = bpy.data.images.new(f'bake_{J.name}', size, size, float_buffer=True)
         added = []

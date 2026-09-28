@@ -37,7 +37,7 @@
 | P2 机构 | tc_mid | `executive_office` | 天城执政厅 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `iron_cradle` | 圣铁摇篮 | ✅ | 卡 | 圣铁摇篮 `map/props/iron_cradle/` | 标准（r2 7 / 7） |  |
 | P2 机构 | tc_mid | `knights_camp` | 骑士团营区 | ✅ | 用户决定 | — | — |  |
-| P2 机构 | tc_mid | `mage_tower` | 法师塔 | 🆕 | 仓库推断 | — | — |  |
+| P2 机构 | tc_mid | `mage_tower` | 法师塔 | 🆕 | 仓库推断 | 法师塔 `map/props/mage_tower/` | 标准（r1 7 / 7.5） |  |
 | P2 机构 | tc_mid | `merc_guild` | 佣兵公会 | ✅ | 卡 | — | — |  |
 | P2 机构 | tc_mid | `mid_care_home` | 中层养老院 | ✅ | 卡 | — | — |  |
 | P2 机构 | tc_mid | `mid_hospital` | 中层公立医院 | ✅ | 卡 | — | — |  |
