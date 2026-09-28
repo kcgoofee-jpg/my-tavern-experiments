@@ -10,6 +10,7 @@ import { q3Pref, renderAbout, renderSelfCheck, rmPref, setPage, setPageNow } fro
 import { emMapChanged } from './extapi.mjs';
 import { placeEmpty, stDotLabel } from './shell.mjs';
 import { P } from './plugins.mjs';
+import * as TCCvd from './cvd.mjs';
 // ---------------- 界面语言（中 / EN）与主题（自动 / 浅色 / 深色）----------------
 // 界面文字在 i18n/zh.json、en.json；地名的英文在 maps.json 的 *_en 字段，世界图地名在 en.json 的 names。设定原文（地点卡正文）不翻译。
 export let LANG = window.__lang || 'zh', DICT = {};
@@ -52,7 +53,7 @@ export function setTheme(th) {
 // 设置「显示」页的分段控件：主题、减少动态、三维画质（语言、清晰度、惯用手各自有 paint）
 export function paintSegs() {
   const on = (sel, attr, v) => document.querySelectorAll(sel).forEach(b => { const x = b.dataset[attr] === v; b.classList.toggle('on', x); b.setAttribute('aria-pressed', x); });
-  on('#themeSeg button', 'th', window.__theme); on('#rmSeg button', 'rm', rmPref()); on('#q3Seg button', 'q', q3Pref());
+  on('#themeSeg button', 'th', window.__theme); on('#rmSeg button', 'rm', rmPref()); on('#q3Seg button', 'q', q3Pref()); on('#cvdSeg button', 'cvd', TCCvd.mode());
   document.querySelectorAll('#langSeg button').forEach(b => { b.classList.toggle('on', b.dataset.lang === LANG); b.setAttribute('aria-pressed', b.dataset.lang === LANG); });
 }
 const themeNow = () => document.documentElement.classList.contains('light') ? 'light' : 'dark';

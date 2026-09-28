@@ -165,6 +165,40 @@ try {
     await P.close();
   });
 
+  // 色觉模式（E7 补做）：设置「显示 → 色觉模式」关 / 红绿 / 蓝黄，事态图例换色板 + 持久化；手机 375 与桌面各跑一遍。截图只存本机脚手架目录，不进 git（见 CVD_SHOTS）
+  const CVD_SHOTS = process.env.CVD_SHOTS || null;
+  async function cvdShot(page, name) { if (!CVD_SHOTS) return; fs.mkdirSync(CVD_SHOTS, { recursive: true }); await page.screenshot({ path: path.join(CVD_SHOTS, `cvd_${name}.png`) }); }
+  async function cvdCheck(preset, tag) {
+    const P = await B.newPage(preset, { tier: 'save' });
+    const p = P.page; await B.openViewer(P, { map: 'tc_mid' }); await B.wait(1000);
+    await B.postEvents(p.mainFrame(), EV); await B.wait(600);
+    const before = await p.evaluate(() => document.documentElement.classList.contains('cvd'));
+    rep.check(`${tag} 默认关闭`, before === false);
+    // 打开设置 → 显示 → 色觉模式：红绿
+    await p.locator('#thumbBtn').click().catch(() => {}); await B.wait(200);
+    await p.locator('#setBtn').click().catch(() => {}); await B.wait(200);
+    await p.locator('#setPop .sgroups button[data-page="display"]').click(); await B.wait(200);
+    await p.locator('#cvdSeg button[data-cvd="rg"]').click(); await B.wait(300);
+    const rg = await p.evaluate(() => ({ cls: document.documentElement.classList.contains('cvd-rg'), stored: localStorage.getItem('edenMapCvd'),
+      leg: [...document.querySelectorAll('.evleg button')].map(b => getComputedStyle(b).getPropertyValue('--c') || b.style.getPropertyValue('--c')) }));
+    rep.check(`${tag} 红绿模式：html.cvd-rg、本机存 rg、图例换色`, rg.cls && rg.stored === 'rg' && rg.leg.length > 0, JSON.stringify(rg).slice(0, 200));
+    await cvdShot(p, `${tag}_rg`);
+    // 蓝黄
+    await p.locator('#cvdSeg button[data-cvd="by"]').click(); await B.wait(300);
+    const by = await p.evaluate(() => ({ cls: document.documentElement.classList.contains('cvd-by'), stored: localStorage.getItem('edenMapCvd') }));
+    rep.check(`${tag} 蓝黄模式：html.cvd-by、本机存 by`, by.cls && by.stored === 'by');
+    await cvdShot(p, `${tag}_by`);
+    // 持久化：刷新后仍是蓝黄
+    await p.reload(); await p.waitForFunction(() => document.getElementById('loading')?.classList.contains('done'), null, { timeout: 20000 }).catch(() => {});
+    const after = await p.evaluate(() => document.documentElement.classList.contains('cvd-by'));
+    rep.check(`${tag} 刷新后仍是蓝黄（本机持久化）`, after);
+    // 关回去，不影响其它测试
+    await p.locator('#cvdSeg button[data-cvd="0"]').click().catch(() => {});
+    await P.close();
+  }
+  await step('色觉模式（手机 375）', () => cvdCheck('phone', 'cvd_phone375'));
+  await step('色觉模式（桌面）', () => cvdCheck('desktop', 'cvd_desktop'));
+
   // 桌面：控制列在右下（右栏左侧），层切换器在控制列顶上常展开
   await step('桌面布局不变', async () => {
     const P = await B.newPage('desktop', { tier: 'save', init: [() => { try { localStorage.setItem('edenMapHand', 'left'); } catch (e) {} }] });

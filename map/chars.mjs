@@ -13,6 +13,7 @@ import { closeCard, placeN, showCard, trackEl, untrack } from './app/markers.mjs
 import { hereRes, setUserMoved, userMoved } from './app/locate.mjs';
 import { LS, chatId } from './app/extapi.mjs';
 import { P, register } from './app/plugins.mjs';
+import * as TCCvd from './app/cvd.mjs';
 const TCChars = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let portraits = {}, rosters = null, rep = null, stageOrder = null, items = [], floor = 0, CM = null, prefs = { show: true, off: [] }, avatars = {}, els = [], flyName = null;
@@ -21,7 +22,8 @@ const TCChars = (() => {
   const store = () => (typeof LS !== 'undefined' ? LS : null);
   function loadPrefs() { if (!CM) return; prefs = CM.readCharPrefs(store(), chat()); avatars = CM.readAvatars(store(), chat()); }
   const savePrefs = () => CM?.writeCharPrefs(store(), chat(), prefs);
-  const color = n => CM ? CM.colorOf(n) : '#888';
+  // 色觉模式（E7）：颜色只用来分组、不代表状态，但换一套色相表更容易在红绿 / 蓝黄色弱下彼此分开；每个框本来就有首字/头像做第二线索
+  const color = n => CM ? CM.colorOf(n, TCCvd.charHues() || undefined) : '#888';
   const ini = n => CM ? CM.initials(n) : String(n)[0];
   // 头像：本机设置的优先；否则「使用原作头像」开着时用卡自带的立绘表（只收作者 CDN 的 /sfw/ 地址，懒加载，失败退回首字）
   const PK_ = 'edenMapPortraits', portOn = () => { try { const v = TCStore.get(PK_); return v == null ? !(typeof leanBg === 'function' && leanBg()) : v === '1'; } catch (e) { return true; } };
@@ -226,6 +228,7 @@ const TCChars = (() => {
   @media (pointer:coarse),(max-width:640px){#evbar .chpane .chgo{min-height:44px}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   afterLoadIdle(mod);
+  TCCvd.onChange(() => afterOpen());   // 换色觉模式（E7）后头像框重新取色
   return { color, portOn, setMoreOn(on) { try { TCStore.set(MO_KEY, on ? '1' : '0'); } catch (e) {} }, cardOf, setStatsOn(on) { try { TCStore.set('edenMapCharStats', on ? '1' : '0'); } catch (e) {} bar(); }, get statsOn() { return statsOn(); }, setPortOn(on) { try { TCStore.set(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
 })();
 register('TCChars', TCChars);

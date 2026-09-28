@@ -15,6 +15,7 @@ import { setUserMoved, userMoved } from './app/locate.mjs';
 import { sheetVis } from './app/shell.mjs';
 import { P, register } from './app/plugins.mjs';
 import { isEden } from './app/pack.mjs';
+import * as TCCvd from './app/cvd.mjs';
 const TCEvents = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const tn = z => (z && window.I18N?.tr?.(z)) || z || '';
@@ -29,10 +30,12 @@ const TCEvents = (() => {
     政策: ['政', '#6f9be0'], 公共直播: ['播', '#e0182d'], 民生: ['民', '#e8d08a'], 军事调动: ['军', '#a3b18a'], 急救: ['救', '#37c5b0'], 其他: ['!', '#cfd8e0'],
   };
   const look = c => LOOK[c] || LOOK.其他;
-  const lk = e => e.ch && e.color ? [e.ch, e.color] : look(e.cat);   // events.mjs 给的图标字与大类颜色优先（v2：9 个大类 = 9 种颜色）
+  // 色觉模式（E7）：开着时大类颜色换成 TCCvd 的安全色板，形状（SHAPES）与图标字不变；lk() 结果的颜色统一走 gcol(grp) 而不是原始色
+  const lk = e => { const r = e.ch && e.color ? [e.ch, e.color] : look(e.cat); return TCCvd.on() ? [r[0], gcol(grpOf(e))] : r; };
   // 图例与筛选（v2）：9 个大类的颜色；点一个大类 = 在地图、列表、层计数里隐藏它（记在本机）。大类表在 events.mjs 加载后取，加载前用这份
   let GROUPS = { 空防: '#d9a441', 气候: '#7fd6ff', 治安: '#3d7dff', 政治: '#6f9be0', 媒体: '#d03ca8', 民生: '#e8d08a', 军事: '#a3b18a', 灾害: '#ff5a2a', 人物: '#d7a6e8' };
   let ORDER = Object.keys(GROUPS);
+  const gcol = g => TCCvd.groupColor(g, GROUPS[g] || '#cfd8e0');   // 关时原色板，开时 CVD 安全色板
   // 大类形状（色弱也分得清，E4 N30）：与 events.mjs 的 SHAPES 一致，模块加载后以模块为准
   let SHAPES = { 空防: 'hex', 气候: 'circle', 治安: 'square', 政治: 'penta', 媒体: 'diamond', 民生: 'octa', 军事: 'tri-down', 灾害: 'tri', 人物: 'ring', 其他: 'square' };
   const shp = g => 'sh-' + (SHAPES[g] || 'square');
@@ -141,7 +144,7 @@ const TCEvents = (() => {
       const a = n * 2.4, r = n > 1 ? .006 * Math.sqrt(n) : 0, [ch, color] = lk(e);
       const el = document.createElement('div');
       el.className = `ev ${shp(grpOf(e))} ${e.closed ? 'ev-cleared' : 'ev-active'} sev${Math.max(1, e.lvl)} tier-${e.tier}${p.approx ? ' approx' : ''}${e.isNew && live(e) ? ' ev-new' : ''}`;
-      el.style.setProperty('--c', color); el.dataset.ev = e.id;
+      el.style.setProperty('--c', color); el.style.setProperty('--k', TCCvd.inkOn(color)); el.dataset.ev = e.id;
       el.innerHTML = `<i aria-hidden="true">${esc(ch)}</i><b>${esc(e.text || e.cat)}</b>`;
       el.title = `${tn(e.cat)} · ${e.place || tn(e.layer)}`;
       const label = `${tn(e.cat)}${e.closed ? '（' + T('ev.cleared', '已解除') + '）' : ''} · ${e.text || ''} · ${where(e)}`;
@@ -173,7 +176,7 @@ const TCEvents = (() => {
     ].filter(Boolean);
     const sv = document.querySelector('#card .src'); delete sv.dataset.note;   // 事态卡不是设定原文，不加「原文（中文）」说明
     sv.innerHTML = `<dl class="fields">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>`;
-    const t = document.querySelector('#card .tag'); t.textContent = e.grp ? tn(e.grp) : T('ev.tag', '天城事态'); t.className = 'tag data'; t.style.background = lk(e)[1];
+    const t = document.querySelector('#card .tag'); t.textContent = e.grp ? tn(e.grp) : T('ev.tag', '天城事态'); t.className = 'tag data'; t.style.background = lk(e)[1]; t.style.color = TCCvd.inkOn(lk(e)[1]);
     if (kbdFly) { kbdFly = false; document.getElementById('cardTitle')?.focus({ preventScroll: true }); }
   }
   function flyTo(id) {
@@ -242,7 +245,7 @@ const TCEvents = (() => {
     // 图例：9 个大类都列出（没有事件的变淡），数字 = 该类条数；点一下隐藏 / 恢复
     const cnt = {}; for (const e of every) cnt[grpOf(e)] = (cnt[grpOf(e)] || 0) + 1;
     const gs = ORDER.concat(cnt.其他 ? ['其他'] : []).filter(g => cnt[g] || off.has(g));   // 只列有事件的大类和已隐藏的（v0.9.2：9 个空类占两行）
-    bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${GROUPS[g] || '#cfd8e0'}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i class="shp ${shp(g)}" aria-hidden="true"></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join('')
+    bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${gcol(g)}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i class="shp ${shp(g)}" aria-hidden="true"></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join('')
       + (hintOnce() ? `<small>${esc(T('ev.legend_hint', '点大类可隐藏 / 显示'))}</small>` : ''); bar.querySelector('.evleg').title = T('ev.legend_hint', '点大类可隐藏 / 显示');
     // 列表项：li 里包一个真正的 <button>（原来 li 上的 role=button 让 axe 报 list / aria-allowed-role，E4b R08）
     bar.querySelector('ol').innerHTML = list.map(e => `<li class="tier-${e.tier}${e.isNew ? ' isnew' : ''}${e.closed ? ' closed' : ''}" style="--c:${lk(e)[1]}"><button type="button" data-id="${esc(e.id)}"><i class="shp ${shp(grpOf(e))}" aria-hidden="true"></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(T('ev.cleared', '已解除')) : ''}${e.isNew ? `<span class="nb">${esc(T('ev.new', '新'))}</span>` : ''} <em>${esc(whereHere(e))}</em></b><em>${esc(e.feed ? T('ev.feed', '数据源') : T('ev.floor', '第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${srcNew(e) ? ' —— ' + esc(srcNew(e)) : ''}</small></button></li>`).join('');
@@ -281,7 +284,10 @@ const TCEvents = (() => {
   const css = `
   .ev{--c:#fff;position:relative;display:flex;align-items:center;gap:4px;transform:translate(-11px,-11px);pointer-events:auto;cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
   /* 图标 = 大类色的形状底（i::before，按大类裁成圆 / 方 / 菱 / 三角……，色弱也分得清）+ 类型字；描边和光晕在 i 上，不被裁掉 */
-  .ev i{width:20px;height:20px;display:grid;place-items:center;font:700 11px/1 var(--font-ui,sans-serif);font-style:normal;color:#0b0b0b;position:relative;z-index:0;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 4px var(--c))}
+  .ev i{width:20px;height:20px;display:grid;place-items:center;font:700 11px/1 var(--font-ui,sans-serif);font-style:normal;color:var(--k,#0b0b0b);position:relative;z-index:0;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 4px var(--c))}
+  /* 色觉模式（E7）：图标加黑描边 + 白外晕，任何底图上都留出对比度（tests/cvd.test.mjs），形状（i::before 的裁形）本来就是第二线索 */
+  html.cvd .ev i{filter:drop-shadow(1.2px 0 0 #000) drop-shadow(-1.2px 0 0 #000) drop-shadow(0 1.2px 0 #000) drop-shadow(0 -1.2px 0 #000) drop-shadow(0 0 1.5px #fff)}
+  html.cvd .evleg button i,html.cvd #evbar li i{box-shadow:0 0 0 1px rgba(0,0,0,.55)}
   .ev i::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:4px;background:linear-gradient(145deg,#fff 0,var(--c) 45%,color-mix(in srgb,var(--c) 60%,#000) 100%)}
   .ev.sev2 i{width:22px;height:22px}.ev.sev3 i{width:25px;height:25px;font-size:13px}
   .ev.sh-circle i::before,.ev.sh-ring i::before,i.shp.sh-circle,i.shp.sh-ring{border-radius:50%}
@@ -396,6 +402,8 @@ const TCEvents = (() => {
   const countOn = id => vis().filter(e => mapOf(e) === id && live(e)).length;
   const badges = () => { if (typeof updateLayerBadges === 'function') updateLayerBadges(); };
   const collapse = () => { const S = SH(); if (S?.open) S.set('peek'); };
+  // 换色觉模式（设置 → 显示）后重画点、图例、事态横条（E7）
+  TCCvd.onChange(() => { afterOpen(); if ($('#evbar')) renderBar(); });
   return { init, set, zoneXY, renderBar: () => $('#evbar') && renderBar(), render: afterOpen, pollFeeds, flyTo, countOn, collapse, isOpen: () => isOpenNow() && !SH()?.el.hidden, get events() { return all(); } };
 })();
 register('TCEvents', TCEvents);

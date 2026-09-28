@@ -88,7 +88,7 @@ export function hueOf(hex) {
   if (!d) return null; let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; return h < 0 ? h + 360 : h;
 }
 const fnv = s => { let h = 2166136261; for (const c of s) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
-export const colorOf = name => `hsl(${CHAR_HUES[fnv(String(name)) % CHAR_HUES.length]} 58% 46%)`;
+export const colorOf = (name, hues = CHAR_HUES) => `hsl(${hues[fnv(String(name)) % hues.length]} 58% 46%)`;
 /** 头像框里的字：中文取第一个字，西文取首字母（最多两个） */
 export function initials(name) {
   const s = clean(name); if (!s) return '?';

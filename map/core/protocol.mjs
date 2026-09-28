@@ -67,6 +67,7 @@ export const SCHEMA = {
   'estate:inset': [V2S, { left: 'number?' }],
   'estate:lang': [V2S, { lang: 'string' }],
   'estate:theme': [V2S, { theme: 'string' }],
+  'estate:cvd': [V2S, { mode: 'string' }],        // 色觉模式：0 关 / rg 红绿 / by 蓝黄，同步给庄园 / 三维子页（E7）
   'estate:quality': [V2S, { q: 'string' }],       // 设置「三维画质」auto / 1 省电 / 2 高：不重载即生效（毛玻璃 + 像素比）
   'estate:pause': [V2S, {}],
   'estate:resume': [V2S, {}],

@@ -5,6 +5,7 @@ import { buildInfo } from './topbar.mjs';
 import { estateLook, narrowNow, v3dEntries } from './estate.mjs';
 import { firstRunHint, noticeRefresh, setActs } from './shell.mjs';
 import { P } from './plugins.mjs';
+import * as TCCvd from './cvd.mjs';
 // ---------------- 设置（UI v2 §5）：首页 = 分组列表（+ 手机上的快捷：上一级、当前位置、关闭地图、切层、图层开关）；子页 显示 / 人物 / 数据与映射 / 更新与版本 / 高级 ----------------
 // 模块向指定页注册自己的一栏：TCSettings.registerSection(page, el, { order })，不再 insertBefore(#selfCheck)。
 export let setPageNow = 'home', setPrev = null;
@@ -81,6 +82,7 @@ export function initSettings() {
   $('#themeSeg').addEventListener('click', e => { const b = e.target.closest('button[data-th]'); if (b) setTheme(b.dataset.th); });
   $('#rmSeg').addEventListener('click', e => { const b = e.target.closest('button[data-rm]'); if (!b) return; try { TCStore.set('edenMapRM', b.dataset.rm); } catch (x) {} applyRM(); paintSegs(); });
   $('#q3Seg').addEventListener('click', e => { const b = e.target.closest('button[data-q]'); if (!b) return; try { TCStore.set('edenMap3dQ', b.dataset.q); } catch (x) {} paintSegs(); estateLook(); });
+  $('#cvdSeg').addEventListener('click', e => { const b = e.target.closest('button[data-cvd]'); if (!b) return; TCCvd.setMode(b.dataset.cvd); paintSegs(); estateLook(); });
   matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', applyRM); applyRM();
   // 高级：三维抽屉自动收起（默认关，§10.5）、单字母快捷键（默认开）、调试帧率、线路（嵌入时由卡内脚本换线路）
   const sw = (id, key, def, fn) => { const c = $(id); let on = def; try { const v = TCStore.get(key); if (v !== null) on = v === '1'; } catch (e) {} c.checked = on;
