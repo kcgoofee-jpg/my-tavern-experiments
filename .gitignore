@@ -31,3 +31,4 @@ blender/data/landmarks/
 node_modules
 # 云渲染 SSH 连接信息（真实 HOST/PORT/KEY），照 tools/cloud/remote.env.example 填
 tools/cloud/remote.env
+blender/islands/out/
