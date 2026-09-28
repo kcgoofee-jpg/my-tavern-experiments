@@ -5,6 +5,7 @@
 - shell 的 `cat`/`ls` 是坏别名：用 `command cat` / Write 工具；提交信息写文件用 `-F`；非 ASCII 路径用 fileURLToPath。
 - 名字照抄原卡；自补内容标「仓库推断」；卡里没有的地点不建模（DLC）。
 - Blender 一律 `tools/blender_run.sh`（等显卡锁、ASCII TMPDIR、崩溃重试一次、只杀自己 PID）；草图 16 spp ~2000 px，定稿 64 spp；改动 <25% 用 `tools/region_patch.py`。
+- 渲染任务交给队列 `tools/render_queue.sh submit <draft|final|any> -- <参数>`，不要直接调 `tools/blender_run.sh` 或 `tools/cloud/render.sh`（队列负责派给 Mac 还是云端、避免两台撞车）；云端细节见 `docs/cloud-render.md`。
 - 评审默认一轮、自检对照 `docs/rejected.md`；中层/下层不等用户确认；上层与重点资产先设定稿 → 预览 → 用户点头。
 - 不做 iPhone 专项；桌面优先，375 px 只过一遍。
 - 测试：改哪测哪——`node --test` + `tools/smoke.sh` 必跑；浏览器测试只跑相关的，批次末再跑全量。

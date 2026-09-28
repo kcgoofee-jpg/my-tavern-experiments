@@ -62,6 +62,7 @@ graph LR
 
 - C1 地标一键管线（卡内行号 → 参考板 → 灰模 → 渲染 → glb → props 接入 → 世界书）；可与 R1 并行，且 R1 剩余项可以先用它。
 - C2 架构整理：fog 合并进 `core/depth`（U19）→ Eden 包只留 manifest（删 `core/pack.mjs` 的 EDEN 常量）→ 冻结 pack schema v1 → 拆 `eden-map.js`（入口 / 线路 / 生命周期 / TH 适配）。四步内部串行。
+- **C2.5 本地清理**（`docs/local-cleanup-plan.md`，只测量不删，2026-09-28 加）：scratchpad worktree、`/private/tmp/bl_tmp`、Blender 内核缓存、Homebrew 缓存、`tools/browser/node_modules`、`map/art` 旧基准产物、`logs/queue/done` 这些低风险项，不需要全局停机，各条各自标了要不要等对应代理空闲；`docs/drafts` 草图改名/是否删并入 C3 一起做；`.git` 瘦身仍属于 C4，不提前。放在 C2 之后、C3 之前，减少 C3 停机窗口要处理的杂项。
 - C3 改名 + 命名统一（见 §5）：必须所有代理空闲、所有 worktree 已合并或丢弃、GPU 空闲时单独做，是全项目唯一的全局停机点。
 - C4 git 瘦身 + 瓦片出主仓：放在 C3 之后（路径已稳定），并在下一次整层重渲之前完成。
 - C5 上层真 3D 模式：依赖 R2 逐岛资产和 C2 的 depth 合并。
@@ -70,8 +71,8 @@ graph LR
 ### 4.3 并行 / 串行一览
 
 - 可并行：R1 ∥ C1 ∥ C2（最多 2–3 个代理）。
-- 可并行：R2 ∥ C2 后半 ∥ UI 重构待办（U15–U18）。
-- 必须串行：C2 → C3 → C4；R2 → C5 → C6。
+- 可并行：R2 ∥ C2 后半 ∥ UI 重构待办（U15–U18）；C2.5 本地清理本身内部各条互相独立，可以随时和其它任何一项一起做。
+- 必须串行：C2 → C2.5 → C3 → C4（原来是 C2 → C3 → C4，2026-09-28 插入 C2.5，理由见上）；R2 → C5 → C6。
 - 全局停机：C3（改名）要求所有代理空闲；C4 改写历史时同样停机。
 - 推送攒批：每 2–3 项推一次；纯文档推送不需要 bump_head。
 

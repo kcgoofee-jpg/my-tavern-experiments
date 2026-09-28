@@ -6,6 +6,8 @@
 #   3. map/viewer.html 的内联脚本抽出来 node --check；map/*.js、map/*.mjs、map/tavern/*.js|mjs 也 node --check
 #   4. map/data/*.json、map/i18n/*.json 能解析
 #   5. 可选 --cdn <ref>：对该 ref 下 map/ 的一组文件（固定几个入口 + 随机瓦片）发 HEAD 到 jsDelivr，要求全部 200
+#   6. tools/**/*.sh lint：`$var` 紧跟非 ASCII 字符（macOS bash 3.2 下会被吞进变量名报 unbound variable）；
+#      裸 cat/ls（用户 shell 把 cat/ls 起了坏别名，脚本要用 `command cat`/`command ls`）
 set -uo pipefail
 cd "$(dirname "$0")/.."
 CDN=""; CDN_N=12
@@ -74,6 +76,51 @@ cdn_check() {
   echo "$(wc -l < "$TMP/cdn" | tr -d ' ') 个 URL"; return $bad
 }
 [ -n "$CDN" ] && step "jsDelivr HEAD @$CDN" cdn_check
+
+shell_lint() {
+  # BSD grep（macOS 自带）没有 -P（PCRE），非 ASCII 判断也不好写可移植的 POSIX 正则，改用 python3。
+  python3 - <<'PY'
+import re, subprocess, sys
+files = subprocess.run(['git', 'ls-files', 'tools/**/*.sh'], capture_output=True, text=True).stdout.split()
+var_re = re.compile(r'\$[A-Za-z_][A-Za-z0-9_]*(?=[^\x00-\x7F])')
+bare_re = re.compile(r'(^|[;&|(]|\bthen\b|\bdo\b)\s*(cat|ls)(\s|$)')
+skip_bare = re.compile(r'\b(command|which|type)\s+(cat|ls)\b')
+bad = False
+for f in files:
+    try:
+        lines = open(f, encoding='utf-8').read().splitlines()
+    except OSError:
+        continue
+    var_hits = []
+    bare_hits = []
+    for i, line in enumerate(lines, 1):
+        stripped = line.lstrip()
+        if stripped.startswith('#'):
+            continue
+        for m in var_re.finditer(line):
+            # 排除 ${...} 形式（已用花括号转义，是安全写法）
+            if m.start() > 0 and line[m.start()-1:m.start()+2] == '${':
+                continue
+            if line[m.start():m.start()+2] == '${':
+                continue
+            var_hits.append((i, line.strip()))
+            break
+        if bare_re.search(line) and not skip_bare.search(line):
+            bare_hits.append((i, line.strip()))
+    if var_hits:
+        bad = True
+        print(f"  [变量粘连] {f}：")
+        for i, l in var_hits:
+            print(f"    {i}: {l}")
+    if bare_hits:
+        bad = True
+        print(f"  [裸 cat/ls] {f}：")
+        for i, l in bare_hits:
+            print(f"    {i}: {l}")
+sys.exit(1 if bad else 0)
+PY
+}
+step "shell lint（变量+中文粘连 / 裸 cat|ls，见 docs/agent-brief.md 里的坏别名坑）" shell_lint
 
 [ $FAIL = 0 ] && echo "smoke: 全部通过" || echo "smoke: 有失败"
 exit $FAIL

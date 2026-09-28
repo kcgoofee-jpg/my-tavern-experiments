@@ -8,9 +8,11 @@ set -u
 CLOUD_ROOT=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=./lib.sh
 source "$CLOUD_ROOT/lib.sh"
+cloud_parse_host "$@"; set -- "${REMAIN[@]+"${REMAIN[@]}"}"
+cloud_lock_acquire "render"
 POLL=${POLL:-30}; WAIT_MAX=${WAIT_MAX:-7200}
 
-[ $# -ge 1 ] || { echo "用法：tools/cloud/render.sh <tools/blender_run.sh 参数...>" >&2; exit 2; }
+[ $# -ge 1 ] || { echo "用法：tools/cloud/render.sh [--host <实例名>] <tools/blender_run.sh 参数...>" >&2; exit 2; }
 
 # 从参数里把 --log/--asset/--kind/--out 摘出来，用于回传和记账；其余原样透传给远端的 blender_run.sh
 ASSET="unknown"; KIND="final"; OUT=""; PASS=("$@")
@@ -76,6 +78,16 @@ fi
 # 顺带把远端产出目录常见位置（map/art、blender/out）同步回来，覆盖没显式给 --out 的情况
 run_rsync -avz --include='*/' --include='*.png' --include='*.exr' --exclude='*' \
   "${REMOTE_USER}@${HOST:-<HOST>}:${REMOTE_DIR}/map/art/" "$ROOT/map/art/" 2>/dev/null || true
+
+echo "--- meta.json / 相机矩阵回传 ---"
+# blender_run.sh 惯例：产出 <out>.meta.json（相机矩阵 / 分辨率等），跟 --out 同目录同前缀
+if [ -n "$OUT" ]; then
+  META_REL="${REL_OUT}.meta.json"
+  run_rsync -avz "${REMOTE_USER}@${HOST:-<HOST>}:${REMOTE_DIR}/${META_REL}" "$ROOT/$META_REL" 2>/dev/null \
+    && echo "  拉回 $META_REL" || echo "  没有 ${META_REL}（该资产可能不写 meta，正常）"
+else
+  echo "  没解析到 --out，跳过 meta.json 回传"
+fi
 
 echo "--- 记 logs/render_times.csv ---"
 CSV="$ROOT/logs/render_times.csv"
