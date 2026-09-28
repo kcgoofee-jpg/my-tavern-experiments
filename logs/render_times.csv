@@ -19,3 +19,17 @@ date,label,spp,res,minutes,status
 2026-09-28 12:04,upper_2k,16,2000,0.33,fail1
 2026-09-28 12:05,upper_2k,16,2000,0.3,fail2
 2026-09-28 12:05,upper_2k,16,2000,0.33,ok
+2026-09-28 13:13,v9A_cut_rothschild_estate,16,1443,0.13,ok
+2026-09-28 13:13,v9A_cut_league_club,16,1386,0.08,ok
+2026-09-28 13:13,v9A_cut_elite_academy,16,1350,0.1,ok
+2026-09-28 13:14,v9A_upper_2k,16,2000,0.72,ok
+2026-09-28 13:14,v9B_cut_rothschild_estate,16,1443,0.12,ok
+2026-09-28 13:14,v9B_cut_league_club,16,1386,0.1,ok
+2026-09-28 13:14,v9B_cut_elite_academy,16,1350,0.1,ok
+2026-09-28 13:15,v9B_upper_2k,16,2000,0.65,ok
+2026-09-28 13:16,v9A_upper_2k,16,2000,0.67,fail1
+2026-09-28 13:17,v9A_upper_2k,16,2000,0.68,fail2
+2026-09-28 13:17,v9B_upper_2k,16,2000,0.62,fail1
+2026-09-28 13:18,v9B_upper_2k,16,2000,0.65,fail2
+2026-09-28 13:19,v9A_upper_2k,16,2000,0.82,ok
+2026-09-28 13:20,v9B_upper_2k,16,2000,0.78,ok

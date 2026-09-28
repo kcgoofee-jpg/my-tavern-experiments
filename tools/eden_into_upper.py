@@ -32,7 +32,7 @@ def main():
     p.add_argument('--fill-box', default='', help='--fill 的归一化 crop 框 x0,y0,x1,y1（与渲染时 --crop 相同）')
     a = p.parse_args()
     full = Image.open(a.full).convert('RGB'); FW, FH = full.size
-    isl = next(i for i in json.load(open(os.path.join(ROOT, 'blender/data/tc_islands.json')))['islands'] if i['id'] == 'eden')
+    isl = next(i for i in json.load(open(os.environ.get('TC_ISLANDS') or os.path.join(ROOT, 'blender/data/tc_islands.json')))['islands'] if i['id'] == 'eden')
     ed = next(i for i in json.load(open(os.path.join(ROOT, 'map/data/tc_upper.json')))['islands'] if i['id'] == 'eden')
     # ① 旧岛掩膜 → 归一化模糊补洞（在 1/8 尺度上算，再放大）
     m = Image.new('L', (FW, FH), 0)

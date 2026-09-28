@@ -67,6 +67,21 @@ GRASS = {   # 岛面草色（暗, 亮）：英式深绿草场、法式修剪浅�
     'suzhou': ((.12, .16, .065), (.19, .24, .10)), 'lingnan': ((.045, .10, .03), (.09, .16, .045)),
     'neoclassical': ((.13, .25, .075), (.21, .33, .11)), 'fortress': ((.17, .19, .11), (.25, .26, .17)),
 }
+# v9 群落（biome）：岛面主色决定俯视整体色调（用户 2026-09-28：不要每座岛都是绿草坪）。(暗, 亮) + 岩面露头比例 + 树种替换
+GRASS.update({
+    'meadow':   ((.16, .22, .06), (.30, .33, .10)),    # 野花草甸：黄绿
+    'autumn':   ((.20, .11, .03), (.38, .22, .07)),    # 秋林：赭 / 橙
+    'conifer':  ((.04, .08, .05), (.08, .13, .08)),    # 针叶 / 高山：冷墨绿
+    'rock':     ((.24, .22, .19), (.40, .37, .33)),    # 崖壁碎石：灰褐
+    'heath':    ((.16, .09, .12), (.26, .16, .17)),    # 石南荒原：紫褐
+    'vineyard': ((.20, .16, .08), (.30, .26, .13)),    # 葡萄梯田：土黄
+    'water':    ((.06, .16, .07), (.12, .26, .12)),    # 水景园：浓绿
+    'orchard':  ((.11, .18, .05), (.20, .28, .09)),    # 果园：中绿
+})
+BIOME_TREES = {   # 群落 → 树种替换（tree1/tree2 → 该群落的冠色）
+    'autumn': ('tree_au1', 'tree_au2'), 'conifer': ('tree_cf', 'tree_cf'), 'rock': ('tree_cf', 'tree_cf'),
+    'heath': ('tree_heath', 'tree_cf'), 'orchard': ('tree_orch', 'tree_orch'), 'vineyard': ('tree_orch', 'tree2'),
+}
 TOPIARY = {'topiary'}                 # 修剪紫杉 / 黄杨球：冠幅下限的白名单
 CROWN_MIN = .04                       # 其余树冠半径 ≥ 4 m
 NOCOV = {'lawn', 'lawn2', 'lawn_e', 'lawn_e2', 'meadow'}   # 「空草坪」：不计入园林覆盖
@@ -112,6 +127,8 @@ def mats():
         'roof_lead': m('bl_roof_lead', (.40, .42, .45), .5, metal=.3),
         'marble_d': m('st_marble_d', (.70, .69, .65), .5),                                      # 伊甸岛缘栏杆（压暗）
         'aether': tc.emit_mat('bl_aether', (.45, .9, 1.0), 4.0),                                    # 以太晶簇（自发光青）
+        'tree_au1': m('tr_au1', (.42, .16, .04), .9), 'tree_au2': m('tr_au2', (.50, .32, .06), .9), 'tree_cf': m('tr_cf', (.02, .06, .04), .9),
+        'tree_heath': m('tr_heath', (.10, .10, .05), .9), 'tree_orch': m('tr_orch', (.14, .22, .06), .9),
         'tree1': m('tr_oak', (.05, .12, .04), .9), 'tree2': m('tr_lime', (.085, .17, .05), .9),
         'tree3': m('tr_bamboo', (.13, .23, .07), .9), 'tree4': m('tr_banyan', (.03, .085, .03), .9),
         'tree5': m('tr_blossom', (.52, .36, .40), .9), 'tree6': m('tr_conifer', (.03, .08, .045), .9),
@@ -365,6 +382,8 @@ class Isle:
             for i in range(n): bm.faces.new((a_[i - 1], b_[i - 1], b_[i], a_[i]))
         self._rec(key, P)
     def tree(self, lx, ly, r, kind='tree1', dz=0.0, sz=None):
+        bt = BIOME_TREES.get(self.d.get('biome'))
+        if bt and kind in ('tree1', 'tree2', 'tree6'): kind = bt[0] if kind != 'tree2' else bt[1]
         X, Y = self.world(lx, ly); TREES.setdefault(kind, []).append((X, Y, self.Z(lx, ly) + dz + r * .55, r))
         self.crowns.append((r, kind)); self._mark_circle(lx, ly, r * .9); self._tix.append((kind, len(TREES[kind]) - 1, lx, ly, r, len(self.crowns) - 1))
     def prune_trees(self, P, f=.6):
@@ -531,7 +550,7 @@ class Isle:
             F += [(a0 + i, a1 + i, a1 + (i + 1) % NA, a0 + (i + 1) % NA) for i in range(NA)]
         me = bpy.data.meshes.new('top_' + self.id); me.from_pydata(V, [], F); me.update()
         me.polygons.foreach_set('use_smooth', [True] * len(me.polygons))
-        top = bpy.data.objects.new('top_' + self.id, me); col.objects.link(top); me.materials.append(top_mat(self.style))
+        top = bpy.data.objects.new('top_' + self.id, me); col.objects.link(top); me.materials.append(top_mat(self.d.get('biome') or self.style))
         # 岛底岩体：从岸线往下收成倒锥；第 1 层缩到 .86，抖动后也不超出岸线（不在影子反方向露边）
         depth = (self.rx + self.ry) * .85
         UV, UF = [], []

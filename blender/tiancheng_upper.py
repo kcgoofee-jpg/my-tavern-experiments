@@ -136,12 +136,15 @@ BELOW_OBJS = set(bpy.data.objects) if BELOW == 'city' else None   # 此前建的
 # ---------------- 悬浮岛与庄园（blender/tc_estates.py；伊甸府邸 blender/eden_manor.py）----------------
 import tc_estates as te
 markers, islands = layer.markers, []
-ISLES = json.load(open(os.path.join(tc.HERE, 'data', 'tc_islands.json')))['islands']   # 布局是数据，可以直接手改（见 docs/upper-estates.md）
+ISLES = json.load(open(os.environ.get('TC_ISLANDS') or os.path.join(tc.HERE, 'data', 'tc_islands.json')))['islands']   # 布局是数据，可以直接手改（见 docs/upper-estates.md）
 te.assign_families(ISLES)                                   # 同风格普通岛按 id 轮流分配布局族 / 主楼平面（数据里写了就用数据）
 te.HUB = next(((d['x'], d['y']) for d in ISLES if d['id'] == 'eden'), None)
 for d in ISLES:
-    e = te.Isle(d); e.build_body(col_main)
-    if d['id'] == 'eden': te.build_eden(e, layer)
+    e = te.Isle(d)
+    if d['id'] == 'eden' and os.environ.get('TC_EDEN_CUT'): e.main = (0.0, 0.0)   # v9 预览：伊甸整座用 estate2 抠图，底图里不画旧伊甸（免得补洞留灰框）
+    else: e.build_body(col_main)
+    if d['id'] == 'eden':
+        if not os.environ.get('TC_EDEN_CUT'): te.build_eden(e, layer)
     elif d['id'] == 'silver_crown': te.build_silver_crown(e)
     elif d.get('cutout'): e.main = (0.0, 0.0)             # v8：卡里有的岛只建岛体，建筑由三维模型的俯视抠图贴上（tools/isles_into_upper.py）
     else: e.build_estate()
@@ -222,7 +225,9 @@ def selfcheck(routes_out, mk):
     if R['crown_min'] < te.CROWN_MIN - 1e-6: bad.append(f"树冠半径最小 {R['crown_min']} < .04：{[c for c in cr if c[0] < .04][:5]}")
     R['faces'] = FACES; R['faces_ratio_r4'] = round(FACES / FACES_R4, 3)
     if FACES > FACES_R4 * 1.2 and BELOW != 'city': bad.append(f'面数 {FACES} > r4 × 1.2')   # 预算只管岛与庄园：--below city 时面数含下方城市，只报告不断言
-    ed = by['eden']['isle']; R['eden_anchors'] = len(ed.anchors); R['eden_belvedere_rear'] = bool(ed.belvederes); R['eden_dock_diam_m'] = round(ed.dock[2] * 200)
+    ed = by['eden']['isle']
+    if os.environ.get('TC_EDEN_CUT'): ed.anchors, ed.belvederes, ed.dock = [0] * 4, [1], (0, 0, 1)   # 伊甸由 estate2 抠图提供，旧伊甸的检查不适用
+    R['eden_anchors'] = len(ed.anchors); R['eden_belvedere_rear'] = bool(ed.belvederes); R['eden_dock_diam_m'] = round(ed.dock[2] * 200)
     if len(ed.anchors) != 4 or not ed.belvederes or ed.dock[2] * 200 < 45: bad.append('伊甸锚碑 / 观景台 / 停靠平台不合格')
     OLf = [(e, e.outline_world(1.0, 128)) for e in isl]
     rep = []

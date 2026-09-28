@@ -23,7 +23,7 @@ def main():
     a = p.parse_args()
     full = Image.open(a.full).convert('RGBA'); FW, FH = full.size
     mpp_full = W_U * 100 / FW
-    isl = {i['id']: i for i in json.load(open(os.path.join(ROOT, 'blender/data/tc_islands.json')))['islands']}
+    isl = {i['id']: i for i in json.load(open(os.environ.get('TC_ISLANDS') or os.path.join(ROOT, 'blender/data/tc_islands.json')))['islands']}
     for spec in a.cuts:
         iid, rest = spec.split('=', 1); parts = rest.split('@')
         path, width = parts[0], float(parts[1]); ox, oy = (float(v) for v in parts[2].split(',')) if len(parts) > 2 else (0.0, 0.0)
