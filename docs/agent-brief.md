@@ -30,3 +30,5 @@
 - 核心（查看器与宿主共用，`map/core/`）：`depth.mjs` 纵深数学 + 迷雾探索数据（雾 / 霾唯一实现）；`pack.mjs` 设定包加载（伊甸只在 `map/packs/eden/manifest.json`，schema v1 冻结见 `docs/pack-schema-v1.md`）；`protocol.mjs` 消息表；`storage.mjs` 键登记。
 - 查看器（`map/viewer.html` + `map/app/*`）：`boot` 启动、`pack` 当前包、`fog` 迷雾 DOM 层、`clouds` 云与切层转场、`nav` 切图、`markers` 标记、`settings` 设置页。
 - 渲染依赖：`tools/check_render_deps.py`（`NOT_UPSTREAM` 放窄例外，只写确切路径）。
+## Shell 写法（worktree 代理）
+- git 命令一条一行单独跑：不用 `&&` 串联、不用 `$(git ...)` 嵌套、不接管道。需要的值先单独跑一条拿到，再写进下一条。否则隔离检查会拒绝，白白多一个来回。

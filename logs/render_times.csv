@@ -191,3 +191,4 @@ date,label,spp,res,minutes,status
 2026-09-28,lm_victoria_apartment,patch,0,32,0,0
 2026-09-28,lm_victoria_apartment,patch,0,32,0,0
 2026-09-28,tc_mid,final,8000,128,NA,0,autodl-NVIDIA-GeForce-RTX-4080-SUPER
+2026-09-28,tc_low,final,8000,128,NA,0,autodl-NVIDIA-GeForce-RTX-4080-SUPER
