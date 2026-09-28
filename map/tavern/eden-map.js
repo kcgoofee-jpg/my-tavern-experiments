@@ -123,6 +123,7 @@
   #${ID} .em-bar .em-here.em-full .em-nm { white-space: normal; }
   #${ID} .em-bar .em-here.em-unm { color: var(--em-ink); cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
   #${ID} .em-bar .em-here.em-unm::before { background: var(--em-muted); }
+  #${ID} .em-bar .em-here.em-unsure { opacity: .6; font-style: italic; }
   #${ID} .em-bar .em-here::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--em-alert); vertical-align: 1px; }
   #${ID} .em-bar .em-here:empty { display: none; }
   #${ID} .em-bar .em-here.em-full { white-space: normal; max-width: 60%; line-height: 1.35; padding: 4px 0; }   /* 触屏没有悬停：点一下看全文 */
@@ -202,8 +203,8 @@
   const pickEl = root.querySelector('.em-pick'), lineBtn = root.querySelector('.em-line'), clockEl = root.querySelector('.em-clock');
   lineBtn.hidden = !swappable;
   // 标题栏跟着地图的语言与深浅主题（地图在 srcdoc 里，与酒馆页同源，设置存在同一个 localStorage；切换时地图发 eden-map:state {lang, theme}）
-  const UI = { zh: { title: '新历 2088', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%', open: '打开世界地图', fab: '世界地图', unm: '未上图：', unm_tip: '点这里把它放到地图上' },
-    en: { title: 'NC 2088', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%', open: 'Open world map', fab: 'World map', unm: 'Not on map: ', unm_tip: 'Tap to place it on the map' } };
+  const UI = { zh: { title: '新历 2088', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%', open: '打开世界地图', fab: '世界地图', unm: '未上图：', unm_tip: '点这里把它放到地图上', pend: '等待本楼变量更新', stale: '本楼没有变量快照，显示的是上一楼的' },
+    en: { title: 'NC 2088', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%', open: 'Open world map', fab: 'World map', unm: 'Not on map: ', unm_tip: 'Tap to place it on the map', pend: 'waiting for this reply\'s variable update', stale: 'no variable snapshot on this reply; showing the previous one' } };
   let UL = 'zh', mapTitle = ''; try { UL = (LS || localStorage).getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) {}
   const U = k => UI[UL][k];
   // 深 / 浅主题挂在根元素上（面板、自检提示一起换）；地图没开着时系统切换深浅也跟上（v0.9.5）
@@ -459,8 +460,14 @@
   let varAD = null, varUser = {}, varMap = { location: '世界.当前地点' }, varSig = '', varCard = '';
   // A-3：一轮（同一个同步任务）只取一次 stat_data 快照；push / refreshVarMap / recompute / 自检共用，微任务里作废
   let statSnap;   // undefined = 本轮还没取
-  const mvuStat = () => { if (statSnap !== undefined) return statSnap; let v = null; try { v = Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data || null; } catch (e) {}
-    statSnap = v; queueMicrotask(() => { statSnap = undefined; }); return v; };
+  // v0.9.9（docs/mvu-integration.md）：最新楼的当前 swipe 没有快照（生成中 / 新 swipe / 生成断在半路 / 解析失败）时，往前取最近一份快照并标「未确认」，不再读成空
+  let SNP = null, snapState = 'ok'; const GEN = { since: 0, get generating() { return !!this.since && Date.now() - this.since < 180000; } };
+  import(new URL('snapshot.mjs', import.meta.url).href).then(m => { SNP = m; pushSoon(0); }).catch(() => {});
+  const readFloor = i => { const c = SillyTavern?.chat?.[i]; return c ? { vars: c.variables?.[c.swipe_id ?? 0], system: !!c.is_system, role: c.is_user ? 'user' : 'assistant' } : null; };
+  const mvuStat = () => { if (statSnap !== undefined) return statSnap; let v = null, stt = 'ok';
+    try { v = Mvu.getMvuData({ type: 'message', message_id: 'latest' })?.stat_data || null; } catch (e) {}
+    if (SNP) { try { const ch = SillyTavern?.chat; if (Array.isArray(ch) && ch.length) { const r = SNP.pickStat(readFloor, ch.length - 1, { generating: GEN.generating }); if (!v || r.floor === r.top) v = r.stat || v; stt = v ? r.state : (typeof Mvu === 'undefined' ? 'ok' : r.state); } } catch (e) {} }
+    snapState = stt; statSnap = v; queueMicrotask(() => { statSnap = undefined; }); return v; };
   const cardKey = () => { try { const c = SillyTavern.getContext(); return c.characters?.[c.characterId]?.avatar || c.name2 || ''; } catch (e) { return ''; } };
   import(SELF + 'tavern/adapter.mjs').then(m => { if (PACK_IN) m.useDefaults(PACK_IN.manifest?.vars); varAD = m; refreshVarMap(); push(); }).catch(() => {});
   function refreshVarMap() {
@@ -504,9 +511,11 @@
     // 一个地点胶囊：MVU 里写了多处（「A / B」）只显示第一处，全文在 title；右侧省略
     const full = userName(here), parts = full.split(/\s*[\/／|｜]\s*/).filter(Boolean);
     hereEl.innerHTML = ''; if (parts[0]) { const a = pdoc.createElement('span'); a.className = 'em-nm'; a.textContent = unm ? U('unm') + userName(unm) : hereMod?.transitLabel?.(parts[0], UL === 'en') || parts[0]; hereEl.append(a); }
+    hereEl.classList.toggle('em-unsure', snapState !== 'ok' && snapState !== 'none' && !!parts[0]);   // 未确认：显示上一份快照，灰掉 + 提示（不显示空白、不猜）
     hereEl.classList.toggle('em-unm', !!unm && !!parts[0]); if (unm && parts[0]) { hereEl.setAttribute('role', 'button'); hereEl.tabIndex = 0; } else { hereEl.removeAttribute('role'); hereEl.removeAttribute('tabindex'); }   // 途中（v0.9.5）：「A → B（途中）」
     if (parts.length > 1) { const b = pdoc.createElement('span'); b.className = 'em-more'; b.textContent = ` +${parts.length - 1}`; hereEl.append(b); } hereEl.title = full ? U('here') + full : '';
     if (full) hereEl.setAttribute('aria-label', unm ? U('unm') + userName(unm) + ' · ' + U('unm_tip') : U('here') + full); else hereEl.removeAttribute('aria-label');
+    if (full && hereEl.classList.contains('em-unsure')) { const t = U(snapState === 'pending' ? 'pend' : 'stale'); hereEl.title += ' · ' + t; hereEl.setAttribute('aria-label', hereEl.getAttribute('aria-label') + ' · ' + t); }
     if (here !== hereShown) { hereShown = here; hereEl.classList.remove('em-full'); }   // 地点没变就别把用户刚点开的长胶囊收回去（接手 review P2）
     fab.classList.toggle('here', !!here);
     // bg：后台预加载中（面板不可见），地图据此不自动进庄园（E4 N03）
@@ -709,6 +718,8 @@
     if (chat !== chatId()) return false;   // 换聊天了：这次写入作废，不写进别的聊天
     if (varsOk()) {
       try {
+        let same = false; try { same = JSON.stringify(getVariables({ type: 'chat' })?.[MV.VAR_ROOT]) === JSON.stringify(root); } catch (e) {}   // 幂等：内容没变不写（重放事件 / 两个实例不重复触发保存）
+        if (same) { try { (LS || localStorage).removeItem(lsCustomKey()); } catch (e) {} return true; }
         if (fnOk('updateVariablesWith')) await updateVariablesWith(v => { v[MV.VAR_ROOT] = root; return v; }, { type: 'chat' });
         else if (fnOk('replaceVariables')) { const all = { ...(getVariables({ type: 'chat' }) || {}) }; all[MV.VAR_ROOT] = root; await replaceVariables(all, { type: 'chat' }); }
         else await insertOrAssignVariables({ [MV.VAR_ROOT]: root }, { type: 'chat' });
@@ -897,7 +908,7 @@
   // 所以：所有 eventOn 都走 listen 登记句柄，cleanup 里 unlisten + 置 dead，之后旧实例的所有出口都变成空操作。
   let dead = false; const offs = [];
   const listen = (ev, fn) => { if (dead) return; try { offs.push([ev, fn, eventOn(ev, fn)]); } catch (e) {} };
-  const unlisten = () => { for (const [ev, fn, h] of offs.splice(0)) { try { if (fnOk('eventRemoveListener')) eventRemoveListener(ev, fn, h); else if (fnOk('eventOff')) eventOff(ev, fn); } catch (e) {} } };
+  const unlisten = () => { for (const [ev, fn, h] of offs.splice(0)) { try { if (ev === null) h(); else if (fnOk('eventRemoveListener')) eventRemoveListener(ev, fn, h); else if (fnOk('eventOff')) eventOff(ev, fn); } catch (e) {} } };
   // 世界书（v0.9.6）：判定与接口兼容都在 selfcheck.mjs 的 collectWorldbook（node 单测 tests/worldbook096.test.mjs）；这里只把接口交给它：
   // 全局函数优先，其次酒馆助手的 TavernHelper 命名空间（有的版本不挂全局）。出错 → null（跳过）
   const hostFn = n => { try { const g = window[n] ?? globalThis[n]; if (typeof g === 'function') return g;
@@ -1138,6 +1149,12 @@
     // 通读 R1：开局菜单用 setChatMessage(swipe_id) 换开场白，不一定触发 SWIPED；渲染 / 编辑事件也听，地点跟着刷新
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) if (tavern_events[k]) listen(tavern_events[k], () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
     // 生成前同步一次，注入的是最新态势（A-3：只做注入需要的部分；输入没变直接跳过；标签改名 / 行程推到空闲）
+    // v0.9.9：生成状态（pending 指示）+ swipe 删除 + 切回前台（被系统挂起 / 断网恢复后事件可能丢了）→ 从聊天记录与楼层变量重新推导
+    if (tavern_events.GENERATION_STARTED) listen(tavern_events.GENERATION_STARTED, (t, o, dry) => { if (!dry) { GEN.since = Date.now(); pushSoon(0); } });
+    for (const k of ['GENERATION_ENDED', 'GENERATION_STOPPED']) if (tavern_events[k]) listen(tavern_events[k], () => { GEN.since = 0; recomputeSoon(); pushSoon(300); });
+    if (tavern_events.MESSAGE_SWIPE_DELETED) listen(tavern_events.MESSAGE_SWIPE_DELETED, () => { recomputeSoon(); pushSoon(300); });
+    { const wake = () => { if (pdoc.visibilityState !== 'hidden' && !dead) { statSig = ''; recomputeSoon(0); pushSoon(0); } }; pdoc.addEventListener('visibilitychange', wake); window.parent.addEventListener('pageshow', wake); window.parent.addEventListener('online', wake);
+      offs.push([null, null, () => { pdoc.removeEventListener('visibilitychange', wake); window.parent.removeEventListener('pageshow', wake); window.parent.removeEventListener('online', wake); }]); }
     if (tavern_events.GENERATION_AFTER_COMMANDS) listen(tavern_events.GENERATION_AFTER_COMMANDS, () => { clearTimeout(evT); recompute(true); });
     push(); loadSeen(); recompute();
     (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => { if (dead) return; preload().catch(() => {}); try { budgetSweep(); } catch (e) {} setTimeout(() => { if (!dead) autoCheck().catch(() => {}); }, window.parent.__edenAutoCheckDelay ?? 6000); if (splashDue()) { lsSet('edenMapSplashSeen', String(VER || 'dev')); runCheck(); } else setTimeout(runCheck, 4000); });   // 打开聊天后空闲时：测速选线 + 预加载；稍后自检一次
