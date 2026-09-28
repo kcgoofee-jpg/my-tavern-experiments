@@ -10,7 +10,7 @@ source "$CLOUD_ROOT/lib.sh"
 # 本地 blender 的大版本号，作为云端要装的目标版本（见 tools/blender_run.sh 里 BLENDER 的取法）
 LOCAL_BL=${BLENDER:-$(command -v blender || echo /Applications/Blender.app/Contents/MacOS/Blender)}
 if [ -x "$LOCAL_BL" ] || command -v "$LOCAL_BL" >/dev/null 2>&1; then
-  LOCAL_VER=$("$LOCAL_BL" --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
+  LOCAL_VER=$("$LOCAL_BL" --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
 fi
 BL_VERSION=${BL_VERSION:-${LOCAL_VER:-4.2}}
 BL_MAJOR=${BL_VERSION%.*}
