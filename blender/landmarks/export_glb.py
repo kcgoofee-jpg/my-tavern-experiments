@@ -70,6 +70,9 @@ BUDGET = {
     # climate_tower（以太气候调节塔顶段；walls_ext / props_lights 用上面的）
     'props_rings': (40000, 2048), 'props_vanes': (20000, 1024), 'props_crown': (15000, 2048),
     'props_crystals': (2000, 512), 'props_docks': (12000, 1024), 'props_services': (30000, 1024),
+    # silver_crown（银冠堡；walls_ext / props_gate / props_ranges / props_yard / props_dock 用上面的）
+    'props_curtain': (60000, 2048), 'props_hangars': (12000, 1024), 'props_pad': (4000, 1024),
+    'props_craft': (20000, 1024), 'site_island': (20000, 2048), 'props_underside': (20000, 2048),
 }
 
 

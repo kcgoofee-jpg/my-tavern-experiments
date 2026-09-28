@@ -51,7 +51,7 @@
           "openings": [1, 2, 3, 4, 5], "alias": ["伊甸", "庄园", "书房", "主卧", "大厅", "餐厅", "会客厅", "客房", "寝", "浴室", "后庭", "前庭", "花园", "停靠平台"] },
         "silver_crown": { "name": "银冠堡", "sub": "议会骑士团总部", "name_en": "Silvercrown Keep", "sub_en": "Council Knights HQ", "tag": "set",
           "src": "军事与治安：议会直属骑士团总部位于上层与中层交界的悬浮要塞「银冠堡」；负责上层悬浮区空域巡防。卡里写的是上层与中层交界，地图归入上层",
-          "alias": ["银冠堡", "议会骑士团总部", "骑士团总部"] },
+          "alias": ["银冠堡", "议会骑士团总部", "骑士团总部"] , "link": {"map": "lm_silver_crown", "label": "查看三维模型", "label_en": "View 3D model"} },
         "climate_tower": { "name": "以太气候调节塔", "name_en": "Aether Climate Tower", "tag": "inf",
           "src": "天城：气候由以太气候调节塔人工维持（塔的位置为推断）",
           "alias": ["气候调节塔", "气候塔"] , "link": {"map": "lm_climate_tower", "label": "查看三维模型", "label_en": "View 3D model"} },
@@ -180,6 +180,7 @@
     "lm_iron_cradle": {"title": "圣铁摇篮（三维）", "title_en": "Iron Cradle (3D)", "parent": "tc_mid", "kind": "estate", "viewer3d": "iron_cradle", "src": "props/viewer3d.html", "alias": ["圣铁摇篮（三维）"], "src_note": "战斗修女修道院三维（标准版：标准档 + 低档 glb；封闭的石砌修院、操练场、坐骑机库，位置与形制为仓库推断）；从 tc_mid.iron_cradle 标记的「查看三维模型」进。源：blender/landmarks/iron_cradle/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_barracks": {"title": "环城军营带与军事学院（三维）", "title_en": "Ring Barracks & Military Academy (3D)", "parent": "tc_mid", "kind": "estate", "viewer3d": "barracks", "src": "props/viewer3d.html", "alias": ["环城军营带与军事学院（三维）"], "src_note": "中层外围的环城军营带一段与军事学院三维（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 tc_mid.barracks_ring 标记的「查看三维模型」进。源：blender/landmarks/barracks/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_climate_tower": {"title": "以太气候调节塔（三维）", "title_en": "Aether Climate Tower (3D)", "parent": "tc_upper", "kind": "estate", "viewer3d": "climate_tower", "src": "props/viewer3d.html", "alias": ["以太气候调节塔（三维）"], "src_note": "以太气候调节塔塔顶与晶冠三维（标准版：标准档 + 低档 glb；与上层底图一致，位置为仓库推断）；从 tc_upper.climate_tower 标记的「查看三维模型」进。源：blender/landmarks/climate_tower/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_silver_crown": {"title": "银冠堡（三维）", "title_en": "Silvercrown Keep (3D)", "parent": "tc_upper", "kind": "estate", "viewer3d": "silver_crown", "src": "props/viewer3d.html", "alias": ["银冠堡（三维）"], "src_note": "议会骑士团总部银冠堡三维（标准版：标准档 + 低档 glb；与上层底图一致，形制细节为仓库推断）；从 tc_upper.silver_crown 标记的「查看三维模型」进。源：blender/landmarks/silver_crown/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_pm_residence": {
       "title": "首相府（三维）", "title_en": "Prime Minister's Residence (3D)", "parent": "tc_upper", "kind": "estate",
       "viewer3d": "pm_residence", "src": "props/viewer3d.html", "alias": ["首相府花园"],

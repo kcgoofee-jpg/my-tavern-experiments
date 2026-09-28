@@ -49,7 +49,7 @@
 | P2 机构 | tc_mid | `supreme_court` | 最高法院 | ✅ | 卡 + 推断位置 | — | — |  |
 | P2 机构 | tc_mid | `tiancheng_univ` | 天城大学 | ✅ | 用户决定 | — | — |  |
 | P2 机构 | tc_upper | `climate_tower` | 以太气候调节塔 | ✅ | 卡 + 推断位置 | 气候调节塔 `map/props/climate_tower/` | 标准（r2 7 / 8） |  |
-| P2 机构 | tc_upper | `silver_crown` | 银冠堡 | ✅ | 卡 | — | — |  |
+| P2 机构 | tc_upper | `silver_crown` | 银冠堡 | ✅ | 卡 | 银冠堡 `map/props/silver_crown/` | 标准（r1 7 / 7.5） |  |
 | P3 其他 | site_fief1 | `fief1_castle` | 第一席城堡 | ✅ | 仓库自设 | — | — |  |
 | P3 其他 | site_fief1 | `fief1_fields` | 第一席领地农田 | ✅ | 仓库自设 | — | — |  |
 | P3 其他 | site_fief1 | `fief1_order` | 第一席骑士团驻地 | ✅ | 仓库自设 | — | — |  |
