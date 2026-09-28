@@ -450,7 +450,11 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
     if (CHM) { const known = MV ? Object.values(MV.rosters(st, { present: varMap.present, members: varMap.members, targets: varMap.targets })).flatMap(r => r?.items?.map(i => i.name) || []) : [];
       const mc = CHM.mvuChars(st, hereNow, varMap.present), dd = DBm ? dbData() : null;
       if (dd) { const have = new Set(mc.map(c => c.name)); for (const c of DBm.characters(dd)) if (!have.has(c.name)) mc.push(c); }   // 数据库插件人物表里的位置（只读，MVU 优先）
-      chars = CHM.collectChars(msgs, floorNow, mc, known);
+      // 在场表最后一次更新在哪一楼：扫窗口内各楼的变量更新块（raw 保留了 UpdateVariable）里有没有提到在场表名；从没提过 = 至少整个窗口没变（2026-09-28 待查 2）
+      let presentFloor = Infinity;
+      const pk = varMap.present ? String(varMap.present).split('.').pop() : '';
+      if (pk) { presentFloor = -1; for (const m of msgs) if (m.raw && m.raw.includes(pk)) presentFloor = m.floor; if (presentFloor < 0) presentFloor = msgs.length ? msgs[0].floor - 1 : floorNow; }
+      chars = CHM.collectChars(msgs, floorNow, mc, known, presentFloor);
       if (MV) { roster = MV.rosters(st, { present: varMap.present, members: varMap.members, targets: varMap.targets, stageField: varMap.stageField, gradeField: varMap.gradeField, coreField: varMap.coreField, codeField: varMap.codeField, socialField: varMap.socialField, heightField: varMap.heightField, weightField: varMap.weightField, knownField: varMap.knownField, accessoryField: varMap.accessoryField, tierField: varMap.tierField }); rep = MV.reputation(st, varMap.reputation); stageOrderFor(roster); portraitsFor(); }
       const sig = floorNow + '|' + chars.map(c => c.name + '@' + c.place + '#' + c.floor).join() + '|' + JSON.stringify(roster) + Object.keys(portraits).length + rep + (stageOrder || []).join();
       if (sig !== charSig) { charSig = sig; if (!panel.hidden && alive) sendChars(); emit('characters', { items: chars.map(c => ({ ...c })), floor: floorNow }); } }

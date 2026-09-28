@@ -38,7 +38,16 @@ const TCChars = (() => {
   // v0.9.3：显示名（自定义，custom.js）与位置来源：MVU（在场人物的位置字段）/ 标签（聊天里的人物标签）/ 推断（在场但没写位置，按和你同处）
   const dn = n => (typeof P.TCCustom !== 'undefined' ? P.TCCustom.name(n) : n);
   const srcOf = c => c.src === 'mvu' ? T('ch.src_mvu', 'MVU') : c.src === 'tag' ? T('ch.src_tag', '标签') : T('ch.src_infer', '推断');
-  const when = c => c.present ? T('ch.with_you', '和你在一起') : T('ev.floor', '第 {n} 楼', { n: c.floor });
+  // 2026-09-28 待查 1/2/6：开局前不推断「和你在一起」；在场表久未变降级为未知；「推断」加悬停说明来源和楼层
+  const when = c => c.prelude ? T('ch.pre', '开局前 · 卡初始值') : c.stale ? T('ch.stale', '未知 · 在场表 {n} 楼未变', { n: c.stale }) : c.present ? T('ch.with_you', '和你在一起') : T('ev.floor', '第 {n} 楼', { n: c.floor });
+  const lastSeen = c => c.prelude ? T('ch.pre', '开局前 · 卡初始值') : c.stale ? T('ch.stale', '未知 · 在场表 {n} 楼未变', { n: c.stale }) : c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor });
+  const srcTip = c => {
+    if (c.src !== 'infer' && !c.stale) return '';
+    const s = c.prelude ? T('ch.infer_pre', '剧情还没开始：这是卡的初始在场表，开始后按聊天标签 / MVU 更新')
+      : c.stale ? T('ch.infer_stale', '在场表 {n} 楼没变，不再推断和你同处；上次明确位置在第 {f} 楼', { n: c.stale, f: c.floor })
+      : T('ch.infer_hint', '人在在场表里但没写位置，按和你同处推断');
+    return ` title="${esc(s)}"`;
+  };
 
   // 地点 → { map, nx, ny } / { map }（只知道层）/ null
   const markerXY = async (map, id) => { const m = REG.maps[map]; if (!m?.data) return null; const d = map === cur ? curData : await getJSON(m.data);
@@ -77,7 +86,7 @@ const TCChars = (() => {
     const sv = document.querySelector('#card .src'); delete sv.dataset.note;
     const note = c => { const e = typeof P.TCCustom !== 'undefined' && P.TCCustom.entry(c.name); return e?.用途 ? ` · ${e.用途}` : ''; };
     if (list.length === 1) { const c = list[0]; const id = identity(c.name), it = rosterItem(c.name);
-      sv.innerHTML = `<dl class="fields">${id ? `<dt>${esc(T('ch.identity', '身份'))}</dt><dd>${esc(id)}</dd>` : ''}${it?.tier ? `<dt>${esc(T('ch.tier', '战力'))}</dt><dd><span class="chtier">${esc(it.tier)}</span></dd>` : ''}${c.roster ? (c.place ? `<dt>${esc(T('ev.k_place', '地点'))}</dt><dd>${esc(c.place)}</dd>` : '') : `<dt>${esc(T('ch.last', '最后出现'))}</dt><dd>${esc(c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor }))}</dd><dt>${esc(T('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd>`}</dl>${moreHtml(it, id)}`;
+      sv.innerHTML = `<dl class="fields">${id ? `<dt>${esc(T('ch.identity', '身份'))}</dt><dd>${esc(id)}</dd>` : ''}${it?.tier ? `<dt>${esc(T('ch.tier', '战力'))}</dt><dd><span class="chtier">${esc(it.tier)}</span></dd>` : ''}${c.roster ? (c.place ? `<dt>${esc(T('ev.k_place', '地点'))}</dt><dd>${esc(c.place)}</dd>` : '') : `<dt>${esc(T('ch.last', '最后出现'))}</dt><dd>${esc(lastSeen(c))}</dd><dt>${esc(T('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd>`}</dl>${moreHtml(it, id)}`;
       document.getElementById('card').classList.toggle('person2', !!sv.querySelector('details.chmore'));   // 桌面：有「更多资料」时人物卡两栏
       sv.querySelector('details.chmore')?.addEventListener('toggle', e => { try { TCStore.set(MO_OPEN, e.target.open ? '1' : '0'); } catch (x) {} });
       return; }
@@ -124,7 +133,7 @@ const TCChars = (() => {
     return `<span class="chstage" ${i >= 0 ? `style="--p:${(i + 1) / n}" title="${esc(T('ch.stage_of', '第 {i} / {n} 步', { i: i + 1, n }))}"` : ''}>${i >= 0 ? `<i aria-hidden="true">${Array.from({ length: n }, (_, k) => `<b class="${k <= i ? 'on' : ''}"></b>`).join('')}</i>` : ''}${esc(s)}</span>`; };
   function row(c) {
     const id = identity(c.name), it = rosterItem(c.name);
-    return `<li><button type="button" class="chgo" data-n="${esc(c.name)}"><i class="av" style="--c:${color(c.name)}">${avImg(c.name) || esc(ini(c.name))}${c.present ? `<s class="avb" title="${esc(T('ch.with_you', '和你在一起'))}"></s>` : ''}</i><b>${esc(dn(c.name))}</b><em><span class="chsrc src-${esc(c.src || 'infer')}">${esc(srcOf(c))}</span> ${esc(when(c))}${it ? stageChip(it.stage) + statChip(it) + tierChip(it) : ''}</em><small>${esc((id ? id + ' · ' : '') + c.place)}</small></button>`
+    return `<li><button type="button" class="chgo" data-n="${esc(c.name)}"><i class="av" style="--c:${color(c.name)}">${avImg(c.name) || esc(ini(c.name))}${c.present ? `<s class="avb" title="${esc(T('ch.with_you', '和你在一起'))}"></s>` : ''}</i><b>${esc(dn(c.name))}</b><em><span class="chsrc src-${esc(c.src || 'infer')}"${srcTip(c)}>${esc(srcOf(c))}</span> ${esc(when(c))}${it ? stageChip(it.stage) + statChip(it) + tierChip(it) : ''}</em><small>${esc((id ? id + ' · ' : '') + c.place)}</small></button>`
       + `<label class="chsw"><input type="checkbox" role="switch" data-n="${esc(c.name)}" aria-label="${esc(T('ch.toggle_one', '在地图上显示 {n}', { n: c.name }))}" ${prefs.off.includes(c.name) ? '' : 'checked'} ${prefs.show ? '' : 'disabled'}></label></li>`;
   }
   // v0.9.6（E2 / E13）：名册行的等级、核心数值与档位名（字段名由变量映射定，只读）；设置「人物栏显示数值」关掉就不显示（本机 edenMapCharStats，默认开）

@@ -40,9 +40,8 @@ export function presentList(stat, path = '') {
   if (!t || typeof t !== 'object') return out;
   for (const [n, raw] of Object.entries(t)) {
     const o = val(raw);
-    if (typeof o === 'string') add(n, looksPlace(o) ? o : '');
-    else if (o && typeof o === 'object' && !Array.isArray(o)) add(n, posOf(o));
-    else add(n, '');
+    if (typeof o === 'string') { if (clean(o)) add(n, looksPlace(o) ? o : ''); }   // 空字符串 = 卡模板占位 / 未填槽，不算在场人物（2026-09-28 待查 3，只按结构不按内容）
+    else if (o && typeof o === 'object' && !Array.isArray(o)) add(n, posOf(o));   // null / 数字等原始值 = 空槽，跳过
   }
   return out;
 }

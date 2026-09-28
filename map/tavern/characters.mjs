@@ -11,7 +11,7 @@ import { presentList } from './mvu.mjs';
 import { AVATARS_PER_CHAT, AVATAR_TOTAL, measure, bytesOf, freeUp, safeSet, touch } from './budget.mjs';
 export { warnText } from './budget.mjs';
 export const MAX_TAGS_PER_FLOOR = 8;
-export const PRESENT_TAG_FRESH = 20, INJECT_FRESH = 30;   // 在场的人：标签超过 20 楼就改按「和你同处」；注入只放 30 楼内的位置（v0.9.3 审阅）
+export const PRESENT_TAG_FRESH = 20, INJECT_FRESH = 30, PRESENT_STALE = 30;   // 在场的人：标签超过 20 楼就改按「和你同处」；注入只放 30 楼内的位置（v0.9.3 审阅）；在场表超过 30 楼没变就不再推断同处（2026-09-28 待查 2）
 const LOC_KEYS = ['当前位置', '当前地点', '所在地', '所在位置', '位置', '地点', 'location', 'place'];
 const PEOPLE = /人物|角色|人员|同伴|成员|NPC|character|people|npc/i, PERSONISH = ['身份', '姓名', '年龄', '性别', '职业', '外貌', '内心想法', '好感'];
 const PRESENT = /^(在场人物|在场角色|当前在场|在场|同行人物|present)$/i;
@@ -70,12 +70,17 @@ export function mvuChars(stat, here, presentPath = '') {
   return out;
 }
 
-/** 最近若干楼 [{floor, text}] + MVU（最新楼的状态）→ 每人最新位置 [{name, place, floor, src: 'mvu'|'tag'|'infer', present?}]，新的在前 */
-export function collectChars(msgs, now, mvu = [], known = []) {
+/** 最近若干楼 [{floor, text}] + MVU（最新楼的状态）→ 每人最新位置 [{name, place, floor, src: 'mvu'|'tag'|'infer', present?}]，新的在前。
+ *  presentFloor = 在场表最后一次更新的楼（默认 Infinity = 不衰减）。2026-09-28 待查 1/2/6：
+ *  开局前（now ≤ 0，还没有玩家楼）在场表有人不推断「和你同处」，标 prelude；在场表超过 PRESENT_STALE 楼没变时降级为
+ *  位置未知（place=''，stale=隔了几天楼），floor 保留上次明确位置所在楼，UI 可显示「上次明确位置 N 楼前」。 */
+export function collectChars(msgs, now, mvu = [], known = [], presentFloor = Infinity) {
   const map = new Map(), names = [...new Set([...mvu.map(c => c.name), ...known])];
   for (const { floor, text } of msgs) for (const c of parseChars(text)) { const n = canonName(c.name, names); map.delete(c.name); map.set(n, { ...c, name: n, floor, src: 'tag' }); }
   for (const c of mvu) {   // MVU 是最新楼的状态：写了位置就以它为准；在场但没写位置时，有近期标签（≤ 20 楼）用标签，否则推断为和玩家同处
     if (c.present && map.has(c.name) && now - map.get(c.name).floor <= PRESENT_TAG_FRESH) continue;
+    if (c.present && now <= 0) { map.set(c.name, { name: c.name, place: '', floor: now, src: 'infer', prelude: true }); continue; }   // 开局前：不推断同处，显示「开局前 · 卡初始」
+    if (c.present && now - presentFloor > PRESENT_STALE) { const last = map.get(c.name); map.set(c.name, { name: c.name, place: '', floor: last?.floor ?? now, src: 'infer', stale: now - presentFloor }); continue; }   // 在场表久未变：降级未知
     map.set(c.name, { ...c, floor: now, src: c.present ? 'infer' : 'mvu' });
   }
   return [...map.values()].sort((a, b) => b.floor - a.floor || a.name.localeCompare(b.name));
@@ -98,7 +103,7 @@ export function initials(name) {
 
 /** 注入给模型的一句：最多 8 人，和玩家同处的合成一项。没有人物返回 '' */
 export function summarizeChars(items, max = 8, maxLen = 160, now = null) {
-  const list = items.filter(c => now == null || c.present || now - c.floor <= INJECT_FRESH).slice(0, max); if (!list.length) return '';
+  const list = items.filter(c => (now == null || c.present || now - c.floor <= INJECT_FRESH) && (c.place || c.present)).slice(0, max); if (!list.length) return '';
   const with_ = list.filter(c => c.present).map(c => c.name), rest = list.filter(c => !c.present);
   const parts = []; if (with_.length) parts.push('与你同处：' + with_.join('、'));
   for (const c of rest) parts.push(`${c.name}@${c.place}`);

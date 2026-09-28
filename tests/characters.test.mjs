@@ -68,4 +68,23 @@ t('裸标签只取到句读：不把后面的叙述吃进地点（2026-09-27 接
   assert.deepEqual(C.parseChars('⌖人物 甲 @ 中层·C区检查点 和 ⌖人物 乙 @ 上层·银冠堡'),
     [{ name: '甲', place: '中层·C区检查点' }, { name: '乙', place: '上层·银冠堡' }]);
 });
+t('开局前（卡初始）：在场表有人也不推断和你同处（2026-09-28 待查 1）', () => {
+  const r = C.collectChars([], 0, C.mvuChars({ 在场人物: { 米拉: { 身份: '向导' } } }, '中层·霓虹街'));
+  assert.deepEqual(r.map(c => [c.name, c.place, c.src, c.floor]), [['米拉', '', 'infer', 0]]);
+  assert.equal(r[0].prelude, true);   // UI 显示「开局前 · 卡初始」，不显示「和你在一起」
+  assert.equal(C.summarizeChars(r, 8, 160, 0), '');   // 不注入「与你同处」
+});
+t('在场表久未变：降级为未知，保留上次明确楼（2026-09-28 待查 2）', () => {
+  const msgs = [{ floor: 10, text: '⌖人物 乙 @ 下层·7号井' }];
+  const stale = C.collectChars(msgs, 60, [{ name: '乙', place: '中层', present: true }], [], 5);   // 在场表第 5 楼后没变
+  assert.deepEqual(stale.map(c => [c.name, c.place, c.floor]), [['乙', '', 10]]);   // 保留上次明确位置所在楼
+  assert.equal(stale[0].stale, 55); assert.equal(stale[0].present, undefined);
+  assert.equal(C.summarizeChars(stale, 8, 160, 60), '');
+  const fresh = C.collectChars(msgs, 60, [{ name: '乙', place: '中层', present: true }], [], 55);   // 近期更新过：照旧推断
+  assert.deepEqual(fresh.map(c => [c.place, c.src]), [['中层', 'infer']]);
+});
+t('占位 / 空槽不算在场人物（只按结构，2026-09-28 待查 3）', () => {
+  const r = C.mvuChars({ 在场人物: { '临时-01': '', '临时-02': null, '临时-03': 3, 甲: { 身份: 'x' } } }, '中层');
+  assert.deepEqual(r.map(c => c.name), ['甲']);
+});
 console.log(`characters: ${n} 项通过`);
