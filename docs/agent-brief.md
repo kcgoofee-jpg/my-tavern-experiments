@@ -13,3 +13,4 @@
 - 提交：`git -c user.email=kcgoofee-jpg@users.noreply.github.com commit -F msg`，中文，结尾 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`。推送被拦就停下报告。
 - 报告：英文、简短（≤10 行），只写结果、测试、需要决定的事；截图路径给出即可。
 - 深入资料：`docs/onboarding.md`（全貌）、`docs/render-retro.md`（渲染规则）、`docs/design/depth-system.md`（上层纵深/斜视）。
+- **报告格式（用户 2026-09-28）**：写建议 / 清单类文档时每条独立成行；做完的在原文上用 ~~删除线~~ ✅ 划掉（不删、不另起文件），文首一行写状态说明；后续实施的代理负责回去划掉。

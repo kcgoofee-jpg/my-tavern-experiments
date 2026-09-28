@@ -1,5 +1,6 @@
 # 酒馆助手（TH）地基检测：用满平台能力 + 地基加固
 
+> 状态（2026-09-28）：~~删除线~~ ✅ = 已完成（实施记录见 §7）；没划掉的 = 未做。§3.4 的 iPhone 项已按用户决定暂停。
 读的版本：酒馆助手 JS-Slash-Runner `830ebc8`（2026-09-28），路径相对该仓库根；地图代码为本分支 `map/tavern/*`。与 `docs/mvu-integration.md`（MVU 生命周期）互补，不重复其内容。纯技术文档，不涉及任何内容过滤。
 
 ## 1. 能力矩阵
@@ -34,18 +35,18 @@
 ## 2. 采纳清单
 
 ### 现在（小、稳、收益大）
-- **A1 世界书附加条目一键写入（征得同意）**：自检发现缺附加条目时，给「写入 / 更新」按钮；点了才调 `createWorldbook`（新书）或 `createWorldbookEntries` / `updateWorldbookWith`（按条目 uid / 名称幂等覆盖），并可选 `rebindCharWorldbooks('current', …)` 挂到卡的附加书。条目内容取 CDN 上与脚本同 sha 的 `addon` 产物，写前展示 diff 条数；只动我们自己名下的书，永不改卡自带世界书。失败回退为现有「下载手动导入」。
-- **A2 脚本按钮**：`appendInexistentScriptButtons([{name:'地图',visible:true},{name:'地图自检',visible:true}])` + `eventOn(getButtonEvent('地图'), open)`（`iframe/script.d.ts:13,76`）。浮动按钮被主题 / 其它脚本遮挡或 iPhone 上拖丢时，还有 TH 自带入口。事件句柄走现有 `listen`，自动随 cleanup 撤。
-- **A3 读卡识别**：用 `getCharData('current')` 的 `name / data.character_version / data.extensions` 精确判断「是不是伊甸卡、哪个版本」，替代按世界书名 / 楼层文本猜；判断写进自检。
-- **A4 版本写进自检**：`getTavernHelperVersion()`、`getTavernVersion()` 入自检报告；兼容逻辑仍靠功能探测。
-- **A5 脚本说明**：`replaceScriptInfo` 写当前版本、通道、最后一次自检结论，用户在脚本库里就能看到，不用打开地图。
+- ~~**A1 世界书附加条目一键写入（征得同意）**：自检发现缺附加条目时，给「写入 / 更新」按钮；点了才调 `createWorldbook`（新书）或 `createWorldbookEntries` / `updateWorldbookWith`（按条目 uid / 名称幂等覆盖），并可选 `rebindCharWorldbooks('current', …)` 挂到卡的附加书。条目内容取 CDN 上与脚本同 sha 的 `addon` 产物，写前展示 diff 条数；只动我们自己名下的书，永不改卡自带世界书。失败回退为现有「下载手动导入」。~~ ✅
+- ~~**A2 脚本按钮**：`appendInexistentScriptButtons([{name:'地图',visible:true},{name:'地图自检',visible:true}])` + `eventOn(getButtonEvent('地图'), open)`（`iframe/script.d.ts:13,76`）。浮动按钮被主题 / 其它脚本遮挡或 iPhone 上拖丢时，还有 TH 自带入口。事件句柄走现有 `listen`，自动随 cleanup 撤。~~ ✅
+- ~~**A3 读卡识别**：用 `getCharData('current')` 的 `name / data.character_version / data.extensions` 精确判断「是不是伊甸卡、哪个版本」，替代按世界书名 / 楼层文本猜；判断写进自检。~~ ✅
+- ~~**A4 版本写进自检**：`getTavernHelperVersion()`、`getTavernVersion()` 入自检报告；兼容逻辑仍靠功能探测。~~ ✅
+- ~~**A5 脚本说明**：`replaceScriptInfo` 写当前版本、通道、最后一次自检结论，用户在脚本库里就能看到，不用打开地图。~~ ✅
 
 ### 下一步
-- **A6 脚本变量替代部分 localStorage**：跨设备 / 跨浏览器需要保留的偏好（手型、线路、语言）改存 `type:'script'` 变量（随 ST 设置同步，TauriTavern 与 iPhone 不会因 WebKit 清存储丢）；大体积缓存仍留浏览器侧。
-- **A7 `initializeGlobal('EdenMap', api)`**：给其它脚本 / 状态栏一个正式、可等待的入口（`waitGlobalInitialized('EdenMap')`），替代直接挂 `window.parent.EdenMap`。
-- **A8 类宏 `{{eden_here}}`/`{{eden_route}}`**：卡或预设作者可自行引用，地图不必再用注入决定位置；与现有注入并存，默认不启用。
-- **A9 正则只读自检**：`getTavernRegexes({type:'character'})` 检查是否有隐藏变量块 / 地图标签的正则，缺了提示（不写）。
-- **A10 MVU / 数据库插件协作**：在 `Mvu.events.VARIABLE_UPDATE_ENDED` 之外，用 `eventEmit('eden-map:moved', {…})` 广播地图内移动，让状态栏类脚本可以订阅；只发事件，不写对方数据。
+- ~~**A6 脚本变量替代部分 localStorage**：跨设备 / 跨浏览器需要保留的偏好（手型、线路、语言）改存 `type:'script'` 变量（随 ST 设置同步，TauriTavern 与 iPhone 不会因 WebKit 清存储丢）；大体积缓存仍留浏览器侧。~~ ✅
+- ~~**A7 `initializeGlobal('EdenMap', api)`**：给其它脚本 / 状态栏一个正式、可等待的入口（`waitGlobalInitialized('EdenMap')`），替代直接挂 `window.parent.EdenMap`。~~ ✅
+- ~~**A8 类宏 `{{eden_here}}`/`{{eden_route}}`**：卡或预设作者可自行引用，地图不必再用注入决定位置；与现有注入并存，默认不启用。~~ ✅
+- ~~**A9 正则只读自检**：`getTavernRegexes({type:'character'})` 检查是否有隐藏变量块 / 地图标签的正则，缺了提示（不写）。~~ ✅
+- ~~**A10 MVU / 数据库插件协作**：在 `Mvu.events.VARIABLE_UPDATE_ENDED` 之外，用 `eventEmit('eden-map:moved', {…})` 广播地图内移动，让状态栏类脚本可以订阅；只发事件，不写对方数据。~~ ✅
 
 ### 以后
 - 后台预加载 + Cache API（§4）；`playAudio` 环境音；用户点击触发的 `generateRaw` 摘要（明示耗额度，默认关）。
@@ -85,19 +86,19 @@ TH 已把 `lorebook` 系列标 `@deprecated`、`eventOn` 返回值由函数改�
 - 何时重没问题：地图打开后（用户明确要看）；空闲预取只在非计量网络、非省电模式（`navigator.connection.saveData`）下进行。何时不行：聊天首屏与生成期间——应推迟预取到 `GENERATION_ENDED` 之后。
 
 ## 5. 当前代码风险排序
-1. **CDN 请求 Referer 泄露宿主 origin**（§3.6）——修法小，属边界卫生。
-2. **父页面孤儿节点**：子 iframe 异常移除时无兜底清扫（§3.1）。
-3. **偏好存 localStorage，iPhone / TT 易丢**（§3.4）。
-4. **多实例身份靠全局数组**，切版本失败路径下可能误报（`:1085-1086`）；改用 `getScriptId()`。
+1. ~~**CDN 请求 Referer 泄露宿主 origin**（§3.6）——修法小，属边界卫生。~~ ✅
+2. ~~**父页面孤儿节点**：子 iframe 异常移除时无兜底清扫（§3.1）。~~ ✅
+3. ~~**偏好存 localStorage，iPhone / TT 易丢**（§3.4）。~~ ✅
+4. ~~**多实例身份靠全局数组**，切版本失败路径下可能误报（`:1085-1086`）；改用 `getScriptId()`。~~ ✅
 5. **`eden-map.js` 单文件 1170 行、单行超长**：可读性与审阅成本高；按功能继续拆模块（注入、fab、更新提示）。
-6. `watchT` 未在 cleanup 显式清（影响极小）。
+6. ~~`watchT` 未在 cleanup 显式清（影响极小）。~~ ✅
 
 ## 6. 地基修复清单
-1. 统一 `cdnFetch(url, opts)`：默认 `credentials:'omit', referrerPolicy:'no-referrer'`，所有外部请求走它；加测试断言源码里不再有裸 `fetch(` 指向外部域。
-2. 父页面节点打 `data-eden-owner`，启动时清扫非本实例节点；cleanup 同时清。
-3. 身份与多实例：`getScriptId()`（有则用）替代 `__edenMapLoads`；`initializeGlobal('EdenMap', api)` 发布接口。
-4. 偏好迁移到脚本变量（读：脚本变量 → localStorage 回退；写：两边都写一个版本期后再去 localStorage）。
-5. cleanup 补 `clearInterval(watchT)`；生成期间暂停空闲预取。
+1. ~~统一 `cdnFetch(url, opts)`：默认 `credentials:'omit', referrerPolicy:'no-referrer'`，所有外部请求走它；加测试断言源码里不再有裸 `fetch(` 指向外部域。~~ ✅
+2. ~~父页面节点打 `data-eden-owner`，启动时清扫非本实例节点；cleanup 同时清。~~ ✅
+3. ~~身份与多实例：`getScriptId()`（有则用）替代 `__edenMapLoads`；`initializeGlobal('EdenMap', api)` 发布接口。~~ ✅
+4. ~~偏好迁移到脚本变量（读：脚本变量 → localStorage 回退；写：两边都写一个版本期后再去 localStorage）。~~ ✅
+5. ~~cleanup 补 `clearInterval(watchT)`；生成期间暂停空闲预取。~~ ✅
 
 ## 7. 实施记录（2026-09-28）
 
