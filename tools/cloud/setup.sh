@@ -14,7 +14,7 @@ if [ -x "$LOCAL_BL" ] || command -v "$LOCAL_BL" >/dev/null 2>&1; then
 fi
 BL_VERSION=${BL_VERSION:-${LOCAL_VER:-4.2}}
 BL_MAJOR=${BL_VERSION%.*}
-echo "目标 Blender 版本：$BL_VERSION（大版本 $BL_MAJOR，来自本地 $LOCAL_BL）"
+echo "目标 Blender 版本：${BL_VERSION}（大版本 ${BL_MAJOR}，来自本地 ${LOCAL_BL}）"
 
 REMOTE_CMD=$(cat <<EOF
 set -eu
@@ -94,7 +94,7 @@ if [ $rc -eq 42 ]; then
   echo "远程下载不了 Blender 官方/镜像源，走 scp 上传兜底："
   LOCAL_TARBALL="$HOME/Downloads/blender-$BL_VERSION-linux-x64.tar.xz"
   if [ ! -f "$LOCAL_TARBALL" ]; then
-    echo "先手动下载 Linux 版 Blender $BL_VERSION 到 $LOCAL_TARBALL，再重跑本脚本" >&2
+    echo "先手动下载 Linux 版 Blender $BL_VERSION 到 ${LOCAL_TARBALL}，再重跑本脚本" >&2
     exit 42
   fi
   scp_up "$LOCAL_TARBALL" "/tmp/blender-$BL_VERSION-linux-x64.tar.xz"

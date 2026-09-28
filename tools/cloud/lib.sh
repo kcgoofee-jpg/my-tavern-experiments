@@ -12,7 +12,7 @@ if [ -f "$ENV_FILE" ]; then
   # shellcheck source=/dev/null
   source "$ENV_FILE"
 elif [ "$DRY_RUN" != 1 ]; then
-  echo "缺 $ENV_FILE：先 cp tools/cloud/remote.env.example tools/cloud/remote.env 并填值" >&2
+  echo "缺 ${ENV_FILE}：先 cp tools/cloud/remote.env.example tools/cloud/remote.env 并填值" >&2
   exit 2
 fi
 

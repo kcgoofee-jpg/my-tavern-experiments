@@ -35,7 +35,7 @@ if [ "$DRY_RUN" = 1 ]; then
 fi
 
 if [ $rc -ne 0 ]; then
-  echo "基准渲染失败（退出码 $rc），不记价格" >&2
+  echo "基准渲染失败（退出码 ${rc}），不记价格" >&2
   exit $rc
 fi
 
