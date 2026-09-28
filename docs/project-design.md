@@ -14,10 +14,10 @@
 
 格式：负责文件 ｜ 接口 ｜ 数据 ｜ 测试。
 
-- **S1 图层 / 地图包**：`map/core/pack.mjs`、`map/app/layers.mjs`、`map/app/pack.mjs`、`map/packs/{eden,town}/manifest.json`、`tools/new_pack.py` ｜ pack manifest（schema 待冻结 v1）、maps.json 层定义 ｜ `map/data/maps.json`、`tc_{upper,mid,low}.json`、`site_*.json`、`map/data/schema/` ｜ `tests/pack.test.mjs`、`schema_maps.test.mjs`、`tools/check_pack.py`、`tools/browser/pack_town.mjs`。
+- **S1 图层 / 地图包**：`map/core/pack.mjs`、`map/app/layers.mjs`、`map/app/pack.mjs`、`map/packs/{eden,town}/manifest.json`、`tools/new_pack.py` ｜ pack manifest（schema v1 已冻结，docs/pack-schema-v1.md）、maps.json 层定义 ｜ `map/data/maps.json`、`tc_{upper,mid,low}.json`、`site_*.json`、`map/data/schema/` ｜ `tests/pack.test.mjs`、`schema_maps.test.mjs`、`tools/check_pack.py`、`tools/browser/pack_town.mjs`。
 - **S2 纵深 + 斜视**：`map/core/depth.mjs`、`map/core/project.mjs`、`blender/depth.py`、`blender/project.py`、`blender/oblique.py`、`tools/oblique_post.py`、`tools/upper_depth_post.py` ｜ `depthOf/channel/cloudsAbove`、`fit_camera/project/label_rule`、`<out>.meta.json` ｜ `map/data/upper_depth.json`、`blender/data/tc_islands*.json`、`tc_upper_markers.json` ｜ `tests/depth.test.mjs`、`project.test.mjs`、`fixtures/*_golden.json`、`tools/test_depth.py`、`test_project.py`。
 - **S3 查看器 UI**：`map/viewer.html`、`map/app/*`（boot/shell/topbar/markers/nav/settings/fog…）、`map/ui/*`（sheet、notice、chrome3d、icons、progress、tokens.css）、`map/i18n/` ｜ `TCSettings.registerSection`、通知层 P0–P3、`app/plugins.mjs` + `extapi.mjs` ｜ maps.json `view.phone` ｜ `app_modules.test.mjs`、`i18n_parity.test.mjs`、`fog.test.mjs`、`tools/browser/fix3.mjs`、`v2a.mjs`、`uiv2_shots.mjs`。
-- **S4 酒馆集成（MVU / TH / 世界书同步）**：`map/tavern/eden-map.js`（1340 行入口）、`mvu.mjs`、`th.mjs`、`wbsync.mjs`、`modes.mjs`、`snapshot.mjs`、`selfcheck.mjs`、`adapter.mjs`、`follow.mjs`、`map/core/protocol.mjs` ｜ postMessage 协议 PROTO=2（`eden-map:*`、`estate:*`）、`initializeGlobal('EdenMap')`、`eden-map:moved`、宏 `{{eden_here}}` ｜ `addon_places.json` → `tools/build_worldbook_addon.py --ship` → `worldbook_addon.json`、`core/storage.mjs SCRIPT_KEYS` ｜ `mvu.test.mjs`、`wbsync.test.mjs`、`th_foundation.test.mjs`、`protocol.test.mjs`、`postmessage.test.mjs`、`selfcheck.test.mjs`、`tools/browser/th_adopt.mjs`。
+- **S4 酒馆集成（MVU / TH / 世界书同步）**：`map/tavern/eden-map.js`（入口，约 1100 行）+ `host-routes.mjs` / `host-lifecycle.mjs` / `host-th.mjs`、`mvu.mjs`、`th.mjs`、`wbsync.mjs`、`modes.mjs`、`snapshot.mjs`、`selfcheck.mjs`、`adapter.mjs`、`follow.mjs`、`map/core/protocol.mjs` ｜ postMessage 协议 PROTO=2（`eden-map:*`、`estate:*`）、`initializeGlobal('EdenMap')`、`eden-map:moved`、宏 `{{eden_here}}` ｜ `addon_places.json` → `tools/build_worldbook_addon.py --ship` → `worldbook_addon.json`、`core/storage.mjs SCRIPT_KEYS` ｜ `mvu.test.mjs`、`wbsync.test.mjs`、`th_foundation.test.mjs`、`protocol.test.mjs`、`postmessage.test.mjs`、`selfcheck.test.mjs`、`tools/browser/th_adopt.mjs`。
 - **S5 庄园三维**：`map/estate/{index.html,main.js,plan.js}`、`blender/estate2/*`（export_web、web_scene、zones…）、`app/estate.mjs` ｜ `estate:*` 消息、chrome3d 外壳 ｜ `eden_estate_rooms.json`、`eden_estate_tiles.json`、`map/estate/model/*.glb` ｜ `tools/browser/estate3d.mjs`、`viewer3d_perf.mjs`。
 - **S6 地标（单体建筑三维）**：`blender/landmarks/<id>/`、`common.py`、`export_glb.py`、`map_cutout.py`、`map/props/<id>/` + `viewer3d.html` ｜ 道具查看器 URL 参数 + chrome3d ｜ `docs/card-buildings.md`、`docs/landmarks/*.md` ｜ `tools/browser/props_u12.mjs`；一键管线待建。
 - **S7 图集**：`map/ui/gallery.js`、`room-gallery-panel.js`、`map/core/room-gallery-{db,logic}.mjs`、`tools/gallery_review.py` ｜ IndexedDB 本地图、`safeGalleryImagePath`、维护者模式 ｜ `gallery.json`、`room_galleries.json`、`map/art/gallery/<roomId>/` ｜ `room_gallery.test.mjs`、`tools/browser/{gallery,room_gallery_ui}.mjs`、check_maps 门控。
@@ -61,7 +61,7 @@ graph LR
 ### 4.2 代码 / 文档线
 
 - C1 地标一键管线（卡内行号 → 参考板 → 灰模 → 渲染 → glb → props 接入 → 世界书）；可与 R1 并行，且 R1 剩余项可以先用它。
-- C2 架构整理：fog 合并进 `core/depth`（U19）→ Eden 包只留 manifest（删 `core/pack.mjs` 的 EDEN 常量）→ 冻结 pack schema v1 → 拆 `eden-map.js`（入口 / 线路 / 生命周期 / TH 适配）。四步内部串行。
+- ~~C2 架构整理：fog 合并进 `core/depth`（U19）→ Eden 包只留 manifest（删 `core/pack.mjs` 的 EDEN 常量）→ 冻结 pack schema v1 → 拆 `eden-map.js`（入口 / 线路 / 生命周期 / TH 适配）。四步内部串行。~~ ✅ 2026-09-28（模块地图见 docs/agent-brief.md；schema 见 docs/pack-schema-v1.md）
 - **C2.5 本地清理**（`docs/local-cleanup-plan.md`，只测量不删，2026-09-28 加）：scratchpad worktree、`/private/tmp/bl_tmp`、Blender 内核缓存、Homebrew 缓存、`tools/browser/node_modules`、`map/art` 旧基准产物、`logs/queue/done` 这些低风险项，不需要全局停机，各条各自标了要不要等对应代理空闲；`docs/drafts` 草图改名/是否删并入 C3 一起做；`.git` 瘦身仍属于 C4，不提前。放在 C2 之后、C3 之前，减少 C3 停机窗口要处理的杂项。
 - C3 改名 + 命名统一（见 §5）：必须所有代理空闲、所有 worktree 已合并或丢弃、GPU 空闲时单独做，是全项目唯一的全局停机点。
 - C4 git 瘦身 + 瓦片出主仓：放在 C3 之后（路径已稳定），并在下一次整层重渲之前完成。
@@ -116,7 +116,7 @@ graph LR
 
 ## 6. 减少并行扩散的 5 条简化
 
-- 1. 一个概念一个真相源：岛表只留 `map/data/` 一份（v9 / v10 变体进 history），fog / haze 只走 depth 模块，Eden 只留 manifest。
+- 1. 一个概念一个真相源：岛表只留 `map/data/` 一份（v9 / v10 变体进 history），~~fog / haze 只走 depth 模块，Eden 只留 manifest~~ ✅（C2）。
 - 2. 并发上限写死：同时最多 1 条渲染 + 2 条代码代理；全局停机项（C3、C4）排进日程而不是临时插队。
 - 3. 地标一律走一键管线（C1），不再每个建筑单独派代理手工拼流程与评审。
 - 4. 文档退役：reviews / drafts 按月归档，本页 + agent-brief + onboarding 是唯一现行入口，其他文档头标「现行 / 已取代」。
