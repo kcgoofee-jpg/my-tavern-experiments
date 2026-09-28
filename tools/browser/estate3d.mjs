@@ -42,6 +42,31 @@ try {
       const lb = await P.page.evaluate(() => ({ off: document.body.classList.contains('nolabels'), ls: localStorage.getItem('edenEstateLabels') }));
       await P.page.keyboard.press('l');
       rep.check('标注开关（L 键，本机记住）', lb.off && lb.ls === '0', JSON.stringify(lb));
+      // 相机控制（U，2026-09-28）：滚轮缩放到光标（ctrlKey=捏合）、双击换轨道目标、视角预设按钮
+      await f.evaluate(() => window.__estate.setMode('ext'));
+      await B.wait(600);
+      const cvs = await f.evaluate(() => { const r = document.getElementById('app').getBoundingClientRect(); return { x: Math.round(r.left + r.width * 0.55), y: Math.round(r.top + r.height * 0.5) }; });
+      const zBefore = await f.evaluate(() => window.__estate.camera.zoom);
+      await P.page.mouse.move(cvs.x, cvs.y);
+      await P.page.keyboard.down('Control');
+      await P.page.mouse.wheel(0, -180);
+      await P.page.keyboard.up('Control');
+      await B.wait(200);
+      const zAfter = await f.evaluate(() => window.__estate.camera.zoom);
+      rep.check('滚轮捏合（ctrlKey）缩放到光标：zoom 变化', Math.abs(zAfter - zBefore) > 1e-6, `${zBefore} → ${zAfter}`);
+      const tgBefore = await f.evaluate(() => window.__estate.controls.target.toArray());
+      await P.page.mouse.dblclick(cvs.x, cvs.y);
+      await B.wait(900);
+      const tgAfter = await f.evaluate(() => window.__estate.controls.target.toArray());
+      const moved = Math.hypot(...tgAfter.map((v, i) => v - tgBefore[i]));
+      rep.check('双击换轨道目标（controls.target 位移）', moved > 0.05, `Δ=${moved.toFixed(2)}`);
+      const presetsOk = await f.evaluate(() => {
+        const btns = [...document.querySelectorAll('.cc-presets button')];
+        if (btns.length !== 4) return { n: btns.length };
+        btns.find((b) => b.textContent === '俯视')?.click();
+        return { n: btns.length, phi: 0 };
+      });
+      rep.check('视角预设按钮（俯视/斜视45°/正面/自由）存在且可点', presetsOk.n === 4, JSON.stringify(presetsOk));
     }
     rep.metric('errors_' + tag, P.errors.slice(0, 10));
     rep.check(`${tag}：无脚本错误`, !P.errors.length, P.errors.slice(0, 3).join(' | '));
@@ -65,6 +90,17 @@ try {
     rep.metric('sleep_wake', { sl, wk, rf });
     rep.check('休眠：庄园 iframe 保留并暂停渲染', sl.kept && sl.paused === true, JSON.stringify(sl));
     rep.check('唤醒：不出加载页，第一帧 < 100 ms', wk.cur === 'eden_estate' && !wk.ld && wk.vis !== 'hidden' && rf && !rf.paused && rf.resumeMs >= 0 && rf.resumeMs < 100, JSON.stringify({ wk, rf }));
+    // FPS 只留一份（U，2026-09-28）：开着庄园三维子页时，外层顶栏那个绿色读数该让位给子页自己画的那份
+    const fpsDup = await V.evaluate(async () => {
+      window.TCStore.set('edenMapFps', '1');
+      const [{ setFpsMeter }, { estateLook }] = await Promise.all([import('./app/fps.mjs'), import('./app/estate.mjs')]);
+      setFpsMeter(true); estateLook();
+      await new Promise((r) => setTimeout(r, 300));
+      const outer = document.getElementById('fpsMeter');
+      return { outerVisible: !!outer && outer.style.display !== 'none' };
+    });
+    const innerFps = fr2 ? await fr2.evaluate(() => { const s = document.getElementById('stats'); return { innerVisible: s?.style.display === 'block' }; }) : null;
+    rep.check('FPS 只留一份（外层顶栏让位给子页自己的读数）', !fpsDup.outerVisible && innerFps?.innerVisible, JSON.stringify({ fpsDup, innerFps }));
     await P.close();
     const Q2 = await B.newPage('desktop'); await B.openEstate(Q2, { stats: false }); await Q2.page.reload({ waitUntil: 'commit' }); await Q2.page.waitForFunction(() => window.__ffAt, null, { timeout: 90000 });
     const c = await Q2.page.evaluate(() => window.__estate.stats().files.cached || 0);

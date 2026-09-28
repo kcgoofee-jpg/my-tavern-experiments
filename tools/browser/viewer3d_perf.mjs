@@ -36,6 +36,31 @@ for (const preset of ['desktop', 'phone']) {   // 2026-09-28 用户决定：砍�
   }
   await P.page.evaluate(() => { __v3d.setMode('ext'); __v3d.fly('tank'); });
   await wait(1500); await shot(P.page, SHOTS, `${preset}_fly_tank`);
+  if (preset === 'desktop') {   // 相机控制（U，2026-09-28）：滚轮缩放到光标（距离变化）、双击换目标、视角预设、提示卡/指北针、只有一个 FPS 元素
+    r.checks = {};
+    await P.page.evaluate(() => { __v3d.setMode('ext'); __v3d.home(); });
+    await wait(500);
+    const box = await P.page.evaluate(() => { const r = document.getElementById('c').getBoundingClientRect(); return { x: Math.round(r.left + r.width * 0.5), y: Math.round(r.top + r.height * 0.5) }; });
+    await P.page.mouse.move(box.x, box.y);
+    const distBefore = await P.page.evaluate(() => __v3d.camDist);
+    await P.page.keyboard.down('Control'); await P.page.mouse.wheel(0, -200); await P.page.keyboard.up('Control');
+    await wait(300);
+    const distAfter = await P.page.evaluate(() => __v3d.camDist);
+    r.checks.wheelZoomChangesDistance = distAfter < distBefore - 1e-6;
+    r.checks.presets = await P.page.evaluate(() => document.querySelectorAll('.cc-presets button').length);
+    r.checks.hintCardPresent = await P.page.evaluate(() => !!document.querySelector('.cc-hint'));
+    r.checks.compassPresent = await P.page.evaluate(() => !!document.querySelector('.cc-compass'));
+    await P.page.evaluate(() => { __v3d.setMode('ext'); __v3d.home(); });
+    await wait(500);
+    const pinBox = await P.page.evaluate(() => { const p = document.querySelector('.pin:not([hidden])'); if (!p) return null; const r = p.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; });
+    const tgBefore = await P.page.evaluate(() => __v3d.target);
+    if (pinBox) await P.page.mouse.dblclick(pinBox.x, pinBox.y); else await P.page.evaluate(() => __v3d.fly('tank'));
+    await wait(900);
+    const tgAfter = await P.page.evaluate(() => __v3d.target);
+    r.checks.dblclickChangesTarget = Math.hypot(...tgAfter.map((v, i) => v - tgBefore[i])) > 0.01;
+    r.checks.singleFps = await P.page.evaluate(() => document.querySelectorAll('#fps, #fpsMeter').length <= 1);
+    if (Object.values(r.checks).some((v) => v === false || (typeof v === 'number' && v < 1))) P.errors.push('camera-controls check failed: ' + JSON.stringify(r.checks));
+  }
   r.errors = P.errors;
   await P.close();
 }

@@ -31,6 +31,8 @@ export const KEYS = {
   edenMapWbAuto: { owner: 'host', def: '0' }, edenMapWbSync: { owner: 'host' }, edenMapWbWhere: { owner: 'host' },
   // 三维
   edenEstateLabels: { owner: 'estate', legacy: true }, edenMap3dRailW: { owner: 'ui/chrome3d.js' },
+  // 相机控制（U，2026-09-28）：视角预设/指北针/首次提示卡/空闲自动旋转，庄园页与通用三维查看器共用（ui/camera-controls.js）
+  edenEstateHintSeen: { owner: 'estate', legacy: true }, edenMapV3dHintSeen: { owner: 'props/viewer3d.html' }, edenMap3dAutoRotate: { owner: 'ui/camera-controls.js', def: '0' },
 };
 // 地基 A4：这些偏好的真相在酒馆助手脚本变量（type:'script'，变量名 eden_prefs）：读脚本变量优先、本机回退，本版两边都写（下一版再去掉本机这份）。
 // 宿主 tavern/eden-map.js PREF_KEYS 是同一份（tests/storage.test.mjs 对照）；查看器仍读写本机，宿主在启动时把脚本变量写回本机、本机一变就同步回脚本变量。
