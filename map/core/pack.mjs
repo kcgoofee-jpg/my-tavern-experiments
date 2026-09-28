@@ -91,9 +91,14 @@ export function rebaseRegistry(reg, base) {
   }
   return { ...reg, maps };
 }
-/** 本机存储的包命名空间：包一层 getItem / setItem / removeItem（eden 原样返回同一个对象）。length / key(i) 透传原始键（预算清理只认 eden 前缀，见 docs/generalize/README.md「已知限制」）。 */
+/** 反向：实际键 → 核心里的 edenMap* 名；本包的键还原，eden 的原生 edenMap* 键藏起来（null），别的键原样。预算清理（tavern/budget.mjs）因此只看见、只清本包的数据。 */
+export function unNsKey(k, id) {
+  if (typeof k !== 'string' || !id || id === DEFAULT_ID) return k;
+  const p = prefixOf(id); return k.startsWith(p) ? 'edenMap' + k.slice(p.length) : k.startsWith('edenMap') || k === 'edenEstateLabels' ? null : k;
+}
+/** 本机存储的包命名空间：包一层 Storage（eden 原样返回同一个对象）。key(i) 走 unNsKey，调用方遍历时跳过 null。 */
 export function nsStore(ls, id) {
   if (!ls || !id || id === DEFAULT_ID) return ls;
   const N = k => nsKey(k, id);
-  return { getItem: k => ls.getItem(N(k)), setItem: (k, v) => ls.setItem(N(k), v), removeItem: k => ls.removeItem(N(k)), key: i => ls.key(i), get length() { return ls.length; } };
+  return { getItem: k => ls.getItem(N(k)), setItem: (k, v) => ls.setItem(N(k), v), removeItem: k => ls.removeItem(N(k)), key: i => unNsKey(ls.key(i), id), get length() { return ls.length; } };
 }
