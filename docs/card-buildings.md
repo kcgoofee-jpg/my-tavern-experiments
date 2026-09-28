@@ -36,7 +36,7 @@
 | P2 机构 | tc_mid | `enforcement_hq` | 天城执法局总局 | ✅ | 卡 | 执法局总局 `map/props/enforcement_hq/` | 标准（r3 7 / 7.5） |  |
 | P2 机构 | tc_mid | `executive_office` | 天城执政厅 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `iron_cradle` | 圣铁摇篮 | ✅ | 卡 | 圣铁摇篮 `map/props/iron_cradle/` | 标准（r2 7 / 7） |  |
-| P2 机构 | tc_mid | `knights_camp` | 骑士团营区 | ✅ | 用户决定 | — | — |  |
+| P2 机构 | tc_mid | `knights_camp` | 骑士团营区 | ✅ | 用户决定 | 骑士团营区 `map/props/knights_camp/` | 标准（r1 7 / 7.5） |  |
 | P2 机构 | tc_mid | `mage_tower` | 法师塔 | 🆕 | 仓库推断 | 法师塔 `map/props/mage_tower/` | 标准（r1 7 / 7.5） |  |
 | P2 机构 | tc_mid | `merc_guild` | 佣兵公会 | ✅ | 卡 | 佣兵公会 `map/props/merc_guild/` | 标准（r1 7 / 7） |  |
 | P2 机构 | tc_mid | `mid_care_home` | 中层养老院 | ✅ | 卡 | 中层关怀带 `map/props/care_cluster/` | 标准（r1 7 / 7） |  |
@@ -90,7 +90,7 @@
 | P3 其他 | tc_low | `slums` | 贫民窟 | 🆕 | 仓库推断 | — | — |  |
 | P3 其他 | tc_mid | `rebirth_workshop` | 新生工坊 | 🆕 | 仓库推断 | — | — |  |
 | P3 其他 | tc_mid | `schneider_clinic` | 施奈德精密改造诊所 | 🆕 | 仓库推断 | — | — |  |
-| P3 其他 | tc_mid | `victoria_apartment` | 维多利亚的公寓 | ✅ | 卡 | — | — |  |
+| P3 其他 | tc_mid | `victoria_apartment` | 维多利亚的公寓 | ✅ | 卡 | 维多利亚的公寓 `map/props/victoria_apartment/` | 标准（r1 7 / 7.5） |  |
 | P3 其他 | tc_upper | `eden` | 伊甸庄园 | ✅ | 卡 | — | — |  |
 | P3 其他 | tc_upper | `league_club` | 庄园主联盟会所 | ✅ | 卡 + 推断位置 | 庄园主联盟会所 `map/props/league_club/` | 标准（glb 已导出，r1 自查未开评审） | isle9；宫殿式会所 + 顶光拍卖厅 |
 | P3 其他 | tc_upper | `victor_estate` | 维克多庄园 | 🆕 | 仓库推断 | — | — | 只标记；所在岛（isle4）是通用英式填充 |

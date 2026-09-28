@@ -72,7 +72,7 @@ cmd_submit() {
   id="$(date +%Y%m%d_%H%M%S)_$$_$RANDOM"
   local f="$PEND/${id}.job"
   printf '%s\t%s\n' "$tag" "${q# }" > "$f"
-  echo "提交：$f（tag=$tag）"
+  echo "提交：${f}（tag=$tag）"
 }
 
 cmd_list() {
