@@ -41,6 +41,8 @@ def pack_stamp(pid):
     d = os.path.join('map', 'packs', pid)
     if not os.path.exists(os.path.join(d, 'manifest.json')): sys.exit(f'没有这个包：{d}/manifest.json（先 python3 tools/new_pack.py {pid} …）')
     if subprocess.run([sys.executable, 'tools/check_pack.py', pid], capture_output=True).returncode: sys.exit(f'包 {pid} 没通过 tools/check_pack.py，先修好')
+    if subprocess.run(['git', 'ls-files', '--error-unmatch', os.path.join(d, 'manifest.json')], capture_output=True).returncode:
+        print(f'提醒：{d} 还没提交。脚本从 CDN 按提交号取包，先提交并推送到 cdn.repo 指的仓库，再用那个提交号生成', file=sys.stderr)
     man = json.load(open(os.path.join(d, 'manifest.json'), encoding='utf-8'))
     ev = man['data'].get('events')
     events = json.load(open(os.path.join(d, ev), encoding='utf-8')) if ev and ev != 'builtin' else None

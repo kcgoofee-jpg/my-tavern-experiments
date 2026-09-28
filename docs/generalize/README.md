@@ -14,16 +14,21 @@ python3 tools/new_pack.py harbor --title 某港 --title-en Harbor --layers 上�
 python3 tools/draft_pack_from_card.py ~/卡.json --layers 上城,下城 --out ~/Downloads/harbor.draft.json
 python3 tools/new_pack.py harbor --title 某港 --from-draft ~/Downloads/harbor.draft.json
 
-# 2 本机看：静态服务 map/ 目录，打开 viewer.html?pack=harbor
-python3 tools/cors_server.py    # 或任意静态服务器
+# 2 本机看：在仓库根目录起静态服务，服务 map/，浏览器打开 http://localhost:8123/viewer.html?pack=harbor
+python3 tools/cors_server.py 8123 map
 
 # 3 校验（smoke.sh 也会跑）
 python3 tools/check_pack.py harbor
 
-# 4 发给酒馆：生成带包的酒馆助手脚本 + 世界书附加条目
-python3 tools/build_preview_script.py <提交号> --pack harbor
-python3 tools/build_worldbook_addon.py --pack harbor
+# 4 发给酒馆：先提交并推送到公开 GitHub 仓库（脚本从 jsDelivr 按提交号取核心与包）
+git add map/packs/harbor && git commit -m "包 harbor" && git push
+python3 tools/build_preview_script.py $(git rev-parse --short HEAD) --pack harbor   # 产出酒馆助手脚本 JSON
+python3 tools/build_worldbook_addon.py --pack harbor                                 # 产出世界书附加条目 JSON
 ```
+
+- 用自己的 fork：清单里写 `"cdn": { "repo": "<你>/<仓库>" }`，再用 fork 上的提交号生成（jsDelivr 的 `gh/<repo>@<提交号>` 线路）。
+- 草稿里的「未分层」要先手动挪进真正的层；层名是中文时地图 id 是 `<id>_l1`、`<id>_l2`，想要可读 id 就在草稿每层写 `"id"`。改地图 id 要同时改 maps.json、`<地图 id>.json` 文件名、底图、events.json 的 `layers[].map`。
+- 地点坐标先是随机的：打开查看器，在控制台用 `viewer.viewport.pointFromPixel` 取点，或直接改 `<地图 id>.json` 的 nx / ny 后刷新。
 
 ## 包的目录
 
@@ -114,5 +119,5 @@ map/packs/<id>/
 
 - 世界图（`kind: world`）、庄园剖面、天城尺度环（`app/scale.mjs`）、人物名册、安保层都还是 eden 专用。新包目前只支持同组多层的 points 地图、事件、当前地点、自定义叫法、迷雾、行程和 viewer3d 三维。
 - 本机存储预算清理（`tavern/budget.mjs` 的 LRU）只认 `edenMap*` 前缀，其它包的按聊天数据不会被自动清理。
-- 界面文案（`map/i18n/*.json`）是核心共用的，个别地方还带天城的说法（例如设置里的说明）。包的 `strings` 字段已经预留，但还没接入。
+- 界面文案（`map/i18n/*.json`）是核心共用的，个别地方还带天城的说法（例如设置里的说明、占位提示「模拟 MVU：世界.当前地点」），首次打开就能看到。包的 `strings` 字段已经预留，但还没接入。
 - 三维子页（`props/viewer3d.html`）读的是 eden 的语言键，在其它包里会退回中文。

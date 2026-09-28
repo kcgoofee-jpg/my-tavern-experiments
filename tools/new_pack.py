@@ -3,6 +3,7 @@
 
 用法：
   python3 tools/new_pack.py <id> --title 标题 [--title-en EN] [--layers 上城,下城] [--places 3] [--extent 1600x1000] [--no-art] [--force]
+  层名是中文时地图 id 为 <id>_l1、<id>_l2…；想要可读的 id，用草稿并给每层写 "id"（例如 "up" → <id>_up）
   python3 tools/new_pack.py <id> ... --from-draft 草稿.json      # 用 tools/draft_pack_from_card.py 的草稿填层与地点
 
 产出（全部是占位，按 docs/generalize/README.md 改成你的设定）：
@@ -69,17 +70,23 @@ def main():
     ap.add_argument('--places', type=int, default=3, help='每层占位地点数')
     ap.add_argument('--extent', default='1600x1000', help='每层实际尺寸（米）宽x高，也是底图宽高比')
     ap.add_argument('--from-draft', help='tools/draft_pack_from_card.py 产出的草稿（层 / 地点 / 别名）')
-    ap.add_argument('--no-art', action='store_true'); ap.add_argument('--force', action='store_true')
-    ap.add_argument('--out', default=os.path.join(ROOT, 'map', 'packs'))
+    ap.add_argument('--no-art', action='store_true', help='不画占位底图（没装 Pillow / numpy 时用）')
+    ap.add_argument('--force', action='store_true', help='目录已存在时覆盖生成的文件（会覆盖你在 <层>.json 里改过的坐标）')
     a = ap.parse_args()
     if not ID_RE.match(a.id) or a.id == 'eden': sys.exit(f'包 id 要是小写字母开头的 2–32 位 a-z0-9_-，且不能是 eden：{a.id!r}')
-    d = os.path.join(a.out, a.id)
+    d = os.path.join(ROOT, 'map', 'packs', a.id)   # 包只能在 map/packs/<id>（查看器、check_pack、发布脚本都按这里找）
     if os.path.exists(d) and not a.force: sys.exit(f'{d} 已存在（--force 覆盖生成的文件）')
-    os.makedirs(os.path.join(d, 'art'), exist_ok=True)
-    W, H = (float(x) for x in a.extent.lower().split('x'))
+    m = re.fullmatch(r'\s*(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)\s*', a.extent or '')
+    if not m or not float(m[1]) or not float(m[2]): sys.exit(f'--extent 要写成 宽x高（米），例如 1600x1000：{a.extent!r}')
+    W, H = float(m[1]), float(m[2])
+    if not a.no_art:
+        try: import numpy, PIL  # noqa: F401
+        except ImportError: sys.exit('画占位底图要 Pillow 与 numpy（pip3 install --user pillow numpy），或加 --no-art 先不画')
     draft = json.load(open(a.from_draft, encoding='utf-8')) if a.from_draft else None
     layers = [(l['name'], l.get('places', []), l.get('id')) for l in draft['layers']] if draft else [(n.strip(), [], None) for n in a.layers.split(',') if n.strip()]
     if not layers: sys.exit('至少一层')
+    if any(l[0] == '未分层' for l in layers): print('提醒：草稿里有「未分层」——先把这些地点挪到真正的层里再生成，否则会多出一层叫「未分层」的地图', file=sys.stderr)
+    os.makedirs(os.path.join(d, 'art'), exist_ok=True)
     gid = a.id.replace('-', '_')
     maps, ev_layers = {}, []
     for li, (lname, places, lid) in enumerate(layers):

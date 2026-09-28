@@ -223,6 +223,10 @@ const BUILTIN = { GROUPS: { ...GROUPS }, GROUP_ORDER: [...GROUP_ORDER], SHAPES: 
   EXAMPLES: [...EXAMPLES], guess: guessByName, CLOSED, CFG: { ...CFG } };
 export let packId = 'eden';
 export function configure(tax, id = tax ? 'pack' : 'eden') {
+  // 坏的分类不能拖垮启动：缺必需字段就警告并退回内置分类（结构的完整校验在 tools/check_pack.py）
+  const okObj = o => !!o && typeof o === 'object' && !Array.isArray(o) && Object.keys(o).length > 0;
+  if (tax && !(okObj(tax.groups) && okObj(tax.types) && Array.isArray(tax.layers) && tax.layers.length && tax.layers.every(l => l && typeof l.name === 'string' && typeof l.map === 'string'))) {
+    console.warn('[地图] 设定包的事件分类不合格，改用内置分类', id); tax = null; id = 'eden'; }
   let n;
   if (!tax) n = BUILTIN;
   else {

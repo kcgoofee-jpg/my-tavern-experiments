@@ -34,6 +34,9 @@ test('其它包：键换到 tcp.<id>.*，聊天变量默认 tc_<id>，路径补�
   const mem = new Map(), ls = { getItem: k => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, String(v)), removeItem: k => mem.delete(k), key: i => [...mem.keys()][i], get length() { return mem.size; } };
   PK.nsStore(ls, 'town').setItem('edenMapLine', 'cn'); assert.deepEqual([...mem.keys()], ['tcp.town.Line']);
   assert.equal(PK.nsStore(ls, 'eden'), ls);
+  mem.set('edenMap:chat:a:fog', '{}'); mem.set('other', '1');
+  const ns = PK.nsStore(ls, 'town'), seen = []; for (let i = 0; i < ns.length; i++) seen.push(ns.key(i));
+  assert.deepEqual(seen, ['edenMapLine', null, 'other'], '预算遍历：本包键还原、eden 键藏起来');
 });
 
 test('清单校验：拒收外链、上跳路径、坏 id；load 检查 id 与目录一致', async () => {
@@ -81,6 +84,11 @@ test('事件分类可换：town 的 3 类解析、落层；恢复后天城分类
   } finally { EV.configure(null); }
   assert.deepEqual({ g: Object.keys(EV.GROUPS).length, c: Object.keys(EV.CATS).length, l: [...EV.LAYERS] }, before);
   assert.equal(EV.parseMarks('⌖火灾｜天城·下层·7号井｜2｜仓库起火')[0].layer, '下层');
+});
+
+test('坏的事件分类退回内置（不拖垮启动）', () => {
+  EV.configure({ groups: {}, types: {}, layers: [] }, 'bad');
+  assert.equal(EV.packId, 'eden'); assert.equal(EV.LAYER_MAP.下层, 'tc_low');
 });
 
 test('聊天变量顶层键 / 世界书名可换（默认 eden 原名）', () => {
