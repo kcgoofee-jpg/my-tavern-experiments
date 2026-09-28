@@ -32,3 +32,4 @@
 - 渲染依赖：`tools/check_render_deps.py`（`NOT_UPSTREAM` 放窄例外，只写确切路径）。
 ## Shell 写法（worktree 代理）
 - git 命令一条一行单独跑：不用 `&&` 串联、不用 `$(git ...)` 嵌套、不接管道。需要的值先单独跑一条拿到，再写进下一条。否则隔离检查会拒绝，白白多一个来回。
+- 等渲染 / 长任务：用 Bash 的 run_in_background 跑 tools/cloud/render.sh 等命令，完成时会自动通知；不要写 sleep / seq 轮询循环（会被中断，反复重开浪费来回）。等待时做别的事。
