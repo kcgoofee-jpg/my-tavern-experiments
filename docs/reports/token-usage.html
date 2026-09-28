@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Token 记账报告</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #666; --card: #f6f6f7; --border: #e0e0e0;
+    --c1:#4f7cff; --c2:#38b28e; --c3:#f2a53c; --c4:#e0607e; --c5:#9066d6; --c6:#8a8f98;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#14161a; --fg:#eaeaea; --muted:#a0a0a8; --card:#1e2126; --border:#2c2f36; }
+  }
+  body { background:var(--bg); color:var(--fg); font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; margin:0; padding:24px 16px 60px; }
+  h1 { font-size:1.4rem; margin:0 0 4px; }
+  .status { color:var(--muted); font-size:0.85rem; margin-bottom:24px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; max-width:1100px; margin:0 auto 32px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
+  .card h2 { font-size:1rem; margin:0 0 12px; }
+  table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+  th, td { text-align:right; padding:4px 6px; border-bottom:1px solid var(--border); }
+  th:first-child, td:first-child { text-align:left; }
+  .legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; font-size:0.78rem; }
+  .legend span.sw { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:middle; }
+  .wide { max-width:1100px; margin:0 auto 32px; }
+  .note { color:var(--muted); font-size:0.8rem; max-width:1100px; margin:0 auto; line-height:1.6; }
+  svg text { fill: var(--fg); }
+  .bar-label { font-size:11px; }
+</style>
+</head>
+<body>
+<h1>Token 记账报告</h1>
+<div class="status">状态：初版已生成（2026-09-28，实测数据来自 tools/token_report.py 一次全量扫描，513 个 agent / 666 个文件）</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>总量（按大类，fresh tokens）</h2>
+    <div id="pie-top"></div>
+  </div>
+  <div class="card">
+    <h2>建模/渲染 细分</h2>
+    <div id="pie-model"></div>
+  </div>
+</div>
+
+<div class="wide card">
+  <h2>各大类明细（实测）</h2>
+  <table id="tbl-top">
+    <thead><tr><th>大类</th><th>fresh</th><th>cache_read</th><th>成本权重</th><th>agents</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="wide card">
+  <h2>优化措施：估算节省（单 agent 平均 fresh tokens，相对早期基线）</h2>
+  <div id="bar-savings"></div>
+  <div class="note">柱状图为估算对比（详见 token-usage.md「优化措施与前后对比」一节）；除「中层建筑」一项有实测后值外，其余均为估算区间取中值，仅示意趋势。</div>
+</div>
+
+<div class="note">
+  数据来源：~/.claude/projects/-Users-davidzhao-dev1-cctest1----threejs/**/*.jsonl（主会话 + 子代理）+ /private/tmp/claude-501/.../tasks/*.output（云端子代理）。
+  成本权重 = input×1 + cache_read×0.1 + cache_creation×1.25 + output×5，相对换算示意，不是账单金额。
+  可重跑：python3 tools/token_report.py。完整数据与口径说明见同目录 token-usage.md。
+</div>
+
+<script>
+const COLORS = ["var(--c1)","var(--c2)","var(--c3)","var(--c4)","var(--c5)","var(--c6)"];
+
+const topData = [
+  {name:"建模/渲染", fresh:186006791, cache_read:4297051401, cost:666791605, agents:250},
+  {name:"主对话/协调", fresh:26204774, cache_read:2227427997, cost:280402339, agents:1},
+  {name:"流程/工具", fresh:34373318, cache_read:930001870, cost:136279448, agents:14},
+  {name:"代码", fresh:19730851, cache_read:518169869, cost:77189752, agents:66},
+  {name:"文档/设定", fresh:3359830, cache_read:23740118, cost:6729285, agents:14},
+  {name:"未分类", fresh:2727581, cache_read:32958153, cost:6839811, agents:15},
+];
+
+const modelData = [
+  {name:"其他(岛屿/贴图/DZI)", fresh:89938390},
+  {name:"庄园", fresh:53357317},
+  {name:"中层建筑", fresh:29453301},
+  {name:"上层岛", fresh:13257783},
+];
+
+function pie(container, data, key) {
+  const total = data.reduce((s,d)=>s+d[key],0);
+  const cx=110, cy=110, r=90;
+  let angle = -Math.PI/2;
+  let svg = `<svg viewBox="0 0 260 220" width="100%" height="220" role="img">`;
+  data.forEach((d,i)=>{
+    const frac = d[key]/total;
+    const a2 = angle + frac*2*Math.PI;
+    const x1 = cx + r*Math.cos(angle), y1 = cy + r*Math.sin(angle);
+    const x2 = cx + r*Math.cos(a2), y2 = cy + r*Math.sin(a2);
+    const large = (a2-angle) > Math.PI ? 1 : 0;
+    const path = frac >= 0.999
+      ? `M ${cx} ${cy-r} A ${r} ${r} 0 1 1 ${cx-0.01} ${cy-r} Z`
+      : `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
+    svg += `<path d="${path}" fill="${COLORS[i%COLORS.length]}" stroke="var(--card)" stroke-width="1.5"><title>${d.name}: ${(frac*100).toFixed(1)}%</title></path>`;
+    angle = a2;
+  });
+  svg += `</svg>`;
+  let legend = `<div class="legend">` + data.map((d,i)=>
+    `<div><span class="sw" style="background:${COLORS[i%COLORS.length]}"></span>${d.name} (${(d[key]/total*100).toFixed(1)}%)</div>`
+  ).join("") + `</div>`;
+  document.getElementById(container).innerHTML = svg + legend;
+}
+
+pie("pie-top", topData, "fresh");
+pie("pie-model", modelData, "fresh");
+
+const tbody = document.querySelector("#tbl-top tbody");
+topData.forEach(d=>{
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td>${d.name}</td><td>${d.fresh.toLocaleString()}</td><td>${d.cache_read.toLocaleString()}</td><td>${d.cost.toLocaleString()}</td><td>${d.agents}</td>`;
+  tbody.appendChild(tr);
+});
+
+// Bar chart: before/after estimated avg fresh tokens per agent for optimisation targets
+const bars = [
+  {name:"中层建筑 (brief 前，估算)", val:1750000, measured:false},
+  {name:"中层建筑 (brief 后，实测)", val:433137, measured:true},
+  {name:"上层岛 (未拆分批次，估算)", val:1955182, measured:false},
+  {name:"上层岛 (按岛拆分，实测)", val:946984, measured:true},
+  {name:"庄园局部修复 (region_patch，实测)", val:437355, measured:true},
+];
+function barChart(container, data) {
+  const w=900,barH=28,gap=14,labelW=260,max=Math.max(...data.map(d=>d.val));
+  const h = data.length*(barH+gap)+20;
+  let svg = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">`;
+  data.forEach((d,i)=>{
+    const y = i*(barH+gap)+10;
+    const bw = (d.val/max)*(w-labelW-80);
+    const color = d.measured ? "var(--c2)" : "var(--c3)";
+    svg += `<text x="${labelW-8}" y="${y+barH*0.68}" text-anchor="end" class="bar-label">${d.name}</text>`;
+    svg += `<rect x="${labelW}" y="${y}" width="${bw}" height="${barH}" rx="4" fill="${color}"><title>${d.val.toLocaleString()} (${d.measured?'实测':'估算'})</title></rect>`;
+    svg += `<text x="${labelW+bw+8}" y="${y+barH*0.68}" class="bar-label">${d.val.toLocaleString()}${d.measured?'':' (估算)'}</text>`;
+  });
+  svg += `</svg>`;
+  document.getElementById(container).innerHTML = svg;
+}
+barChart("bar-savings", bars);
+</script>
+</body>
+</html>
