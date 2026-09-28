@@ -21,6 +21,29 @@ def entries(doc):
     return list(es.values()) if isinstance(es, dict) else list(es or [])
 
 
+LOCKEY = re.compile(r'^(当前地点|当前位置|所在地点|所在位置|地点|位置|location|current_location)$', re.I)
+MVUHINT = re.compile(r'mvu|变量|stat_data|initvar', re.I)
+
+
+def guess_vars(es):
+    """MVU 变量结构里「当前地点」的键路径候选。只看标题 / 触发词像变量说明的条目，只输出键名路径，不输出任何值或正文。"""
+    for e in es:
+        if not isinstance(e, dict): continue
+        hay = str(e.get('comment') or e.get('name') or '') + ' ' + ' '.join(map(str, e.get('keys') or e.get('key') or []))
+        if not MVUHINT.search(hay): continue
+        stack = []
+        for line in str(e.get('content', '')).splitlines():
+            m = re.match(r'^(\s*)["\']?([^:："\'#]+?)["\']?\s*[:：]', line)
+            if not m: continue
+            ind, key = len(m.group(1).expandtabs(2)), m.group(2).strip()
+            while stack and stack[-1][0] >= ind: stack.pop()
+            stack.append((ind, key))
+            if LOCKEY.match(key):
+                path = [k for _, k in stack if k != 'stat_data']
+                return {'location': '.'.join(path)}
+    return None
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('src'); ap.add_argument('--out'); ap.add_argument('--layers', default='')
@@ -46,12 +69,16 @@ def main():
         seen.add(nm)
         hay = title + ' ' + ' '.join(keys)
         lay = next((l for l in layers if l in hay), '未分层')
-        buckets[lay].append({'name': nm, 'alias': sorted({k for k in keys if k != nm and len(k) <= 20})[:8], 'src': '草稿：来自卡世界书条目标题（请核对）'})
+        # 层名本身不当地点别名（否则「山上」会同时命中该层所有地点）
+        buckets[lay].append({'name': nm, 'alias': sorted({k for k in keys if k != nm and k not in layers and len(k) <= 20})[:8], 'src': '草稿：来自卡世界书条目标题（请核对）'})
+    vars_ = guess_vars(entries(doc))
     draft = {'_说明': f'由 {os.path.basename(a.src)} 的世界书条目标题 / 触发词生成的草稿（不含正文）。核对后：python3 tools/new_pack.py <id> --title … --from-draft 本文件',
              'layers': [{'name': l, 'places': ps[:a.max]} for l, ps in buckets.items() if ps]}
+    if vars_: draft['vars'] = vars_
     os.makedirs(os.path.dirname(out), exist_ok=True)
     json.dump(draft, open(out, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
-    print(f'写入 {out}：' + ('，'.join(f"{l['name']} {len(l['places'])} 处" for l in draft['layers']) or '没有认出地点'))
+    print(f'写入 {out}：' + ('，'.join(f"{l['name']} {len(l['places'])} 处" for l in draft['layers']) or '没有认出地点')
+          + (f'；变量路径候选 {vars_}' if vars_ else '；没认出 MVU 当前地点路径（清单 vars 手填或留空让用户在设置里映射）'))
 
 
 if __name__ == '__main__':

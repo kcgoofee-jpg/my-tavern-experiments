@@ -123,7 +123,8 @@ def main():
             '发生值得上图的事件时，在正文末尾加一行隐藏标签：<span style="display:none">⌖类别｜层·地点｜等级｜一句话｜发布方</span>\n'
             f'类别用：{"、".join(SAMPLE_EVENTS["types"])}；等级 1–3，0 = 已平息。每楼最多 3 条，不要照抄本条示例。'}]})
     jdump(os.path.join(d, 'manifest.json'), {'$schema': '../../data/schema/pack.schema.json', 'id': a.id, 'schema': 1, 'title': a.title, 'title_en': a.title_en or a.title,
-                                             'data': {'maps': 'maps.json', 'events': 'events.json', 'worldbook': 'worldbook.json'}, 'theme': {'accent': '#63b4be'}})
+                                             'data': {'maps': 'maps.json', 'events': 'events.json', 'worldbook': 'worldbook.json'}, 'theme': {'accent': '#63b4be'},
+                                             **({'vars': draft['vars']} if draft and draft.get('vars') else {})})
     print(f'写入 {d}（{len(maps)} 层，{sum(len(m["markers"]) for m in maps.values())} 个地点）')
     r = subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'check_pack.py'), a.id], cwd=ROOT)
     sys.exit(r.returncode)

@@ -19,3 +19,13 @@ test('卡 → 草稿：地点候选按层分组，不带正文；--out 在仓库
   const bad = spawnSync('python3', ['tools/draft_pack_from_card.py', card, '--out', 'map/packs/x.json'], { cwd, encoding: 'utf8' });
   assert.notEqual(bad.status, 0); assert.match(bad.stderr, /不写进仓库/);
 });
+test('草稿：层名不当别名；MVU 当前地点路径只出键名不出值', () => {
+  const d = mkdtempSync(join(tmpdir(), 'draft-')), card = join(d, 'card.json'), out = join(d, 'd.json');
+  writeFileSync(card, JSON.stringify({ data: { name: 'T', character_book: { entries: [
+    { comment: '码头·鱼市', keys: ['鱼市', '码头'], content: 'x' },
+    { comment: '[mvu_update]变量', keys: [], content: 'stat_data:\n  世界:\n    当前地点: SECRET-LOC\n    时间: 早' }] } } }));
+  const r = spawnSync('python3', ['tools/draft_pack_from_card.py', card, '--layers', '码头', '--out', out], { cwd, encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  const txt = readFileSync(out, 'utf8'), dr = JSON.parse(txt); assert.doesNotMatch(txt, /SECRET/);
+  assert.deepEqual(dr.layers[0].places[0].alias, []); assert.deepEqual(dr.vars, { location: '世界.当前地点' });
+});

@@ -4,7 +4,7 @@
 用法：
   python3 tools/review/pack.py --stage city --round 2 --out <目录> --images 'scratch/r2/*.png' docs/drafts/v7_*.jpg \
       [--since <上轮提交>] [--changes "本轮改了什么"] [--facts facts.md]
-  --stage：city（阶段 1 中 / 下层）· upper（阶段 2 上层庄园）· clouds（阶段 3）· render8k（阶段 4）· estate（伊甸庄园 C3）· ui（面板 E4 / E5）
+  --stage：city（阶段 1 中 / 下层）· upper（阶段 2 上层庄园）· clouds（阶段 3）· render8k（阶段 4）· estate（伊甸庄园 C3）· ui（面板 E4 / E5）· landmark（card-map 技能：任意卡的建筑草稿）
 产出：
   <目录>/brief.md                        图片清单（尺寸）、本轮改动（git log / diff --stat）、NOTES 最后两节、GOAL 近况与用户原话、门控阈值
   <目录>/prompts/<人设>.md               固定人设提示词（{{BRIEF}} {{ROUND}} {{OUT}} 已替换），报告写到 <目录>/reports/<人设>.md
@@ -39,6 +39,10 @@ STAGES = {
                   '浏览器（`node tools/browser/accept.mjs <目录>`）：省流首屏 ≤ 3 s、切层、云雾开关、事态飞行正常；桌面与 375 手机截图']),
     'estate': (['art/rp_glance', 'estate/architect', 'estate/interior', 'estate/luxury_marketer', 'estate/interaction_perf'],
                [*GOOD_ENOUGH, '庄园重点：马桶、毛巾近景「清楚有质感」（严格）；不再要求每位 ≥ 8']),
+    # card-map 技能（任意卡的建筑草稿）：建筑可信度 + 与卡一致，另加每轮现编人设
+    'landmark': (['card/architect', 'card/fidelity'],
+                 ['与卡一致 ≥ 7（严格）；建筑可信度 ≥ 6', '每个资产每个版本最多 2 轮；一轮提升 < 0.5 分就停',
+                  '只评建筑、构图与设定一致性']),
     'ui': (['ui/phone', 'ui/rp', 'ui/design', 'ui/a11y', 'ui/weak_net'],
            ['与上轮同步骤复跑，逐条确认 `docs/ui-audit.md` 的编号（✅ / ⚠ / ❌）',
             '没有新的 P0 / P1 回归；E5 前后对比每位人设的分数',
