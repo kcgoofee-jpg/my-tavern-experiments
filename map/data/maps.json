@@ -86,7 +86,7 @@
           "alias": ["圣铁摇篮", "战斗修女院", "战斗修女修道院", "战斗修女"] , "link": {"map": "lm_iron_cradle", "label": "查看三维模型", "label_en": "View 3D model"} },
         "barracks_ring": { "name": "环城军营带", "sub": "天城防卫军驻地", "name_en": "Ring Barracks", "sub_en": "Defense Force garrison", "tag": "set",
           "src": "天城·中层：天城防卫军驻扎在中层外围的环城军营带（图上是沿片区西缘的一段，走向为推断）",
-          "alias": ["环城军营带", "军营", "防卫军驻地", "防卫军"] },
+          "alias": ["环城军营带", "军营", "防卫军驻地", "防卫军"] , "link": {"map": "lm_barracks", "label": "查看三维模型", "label_en": "View 3D model"} },
         "starabyss_univ": { "name": "星渊大学", "sub": "天城第一学府", "name_en": "Xingyuan (Star Abyss) University", "sub_en": "Tiancheng's first university", "tag": "set",
           "src": "人物：星渊大学，天城第一学府，设有医学院（另有教务处、行政处）；卡未写位置，放在中层为地图推断。与「天城大学」（设法学院）不是同一所",
           "alias": ["星渊大学", "星渊", "天城第一学府", "第一学府"] },
@@ -115,7 +115,7 @@
         "admin_council": {"name": "天城政务院", "sub": "阿斯特丽德早年实习处", "name_en": "Tiancheng Administrative Council", "sub_en": "Astrid's early internship", "tag": "inf", "layer_src": "repo-inferred", "src": "人物·阿斯特丽德：18 岁在这里实习（与执政厅是否同一机构，卡没说明）。卡未写具体位置：放在中层核心区为仓库自设（仓库推断，2026-09-28）", "alias": ["天城政务院", "政务院"], "link": {"map": "lm_civic_core", "label": "查看三维模型", "label_en": "View 3D model"} },
         "reserve_office": {"name": "天城中央储备署", "sub": "发行以太元 · 隶属议会", "name_en": "Central Reserve Office", "sub_en": "Issues the Aether Yuan", "tag": "inf", "layer_src": "repo-inferred", "src": "货币与贸易：发行以太元，隶属议会。卡未写具体位置：放在中层核心区为仓库自设（仓库推断，2026-09-28）", "alias": ["天城中央储备署", "中央储备署", "储备署"], "link": {"map": "lm_civic_core", "label": "查看三维模型", "label_en": "View 3D model"} },
         "culture_office": {"name": "天城文化署", "sub": "出版审核", "name_en": "Culture Office", "sub_en": "Publication review", "tag": "inf", "layer_src": "repo-inferred", "src": "文学与文化：出版审核。卡未写具体位置：放在中层为仓库自设（仓库推断，2026-09-28）", "alias": ["天城文化署", "文化署"], "link": {"map": "lm_civic_core", "label": "查看三维模型", "label_en": "View 3D model"} },
-        "military_academy": {"name": "军事学院", "sub": "骑士团与防卫军的人才来源", "name_en": "Military Academy", "sub_en": "Feeds the knights and defence army", "tag": "inf", "layer_src": "repo-inferred", "src": "军事与治安：骑士团与防卫军的人才来源。卡未写具体位置：放在中层外围为仓库自设（仓库推断，2026-09-28）", "alias": ["军事学院", "天城军事学院"]},
+        "military_academy": {"name": "军事学院", "sub": "骑士团与防卫军的人才来源", "name_en": "Military Academy", "sub_en": "Feeds the knights and defence army", "tag": "inf", "layer_src": "repo-inferred", "src": "军事与治安：骑士团与防卫军的人才来源。卡未写具体位置：放在中层外围为仓库自设（仓库推断，2026-09-28）", "alias": ["军事学院", "天城军事学院"], "link": {"map": "lm_barracks", "label": "查看三维模型", "label_en": "View 3D model"} },
         "storm_hall": {"name": "风暴殿", "sub": "帝国最高战力 · 听命于议会", "name_en": "Storm Hall", "sub_en": "Top-tier force under the Council", "tag": "inf", "layer_src": "repo-inferred", "src": "奥伦帝国：由全部天灾级强者组成的最高战力机构，听命于天城议会。卡未写具体位置：放在中层核心区为仓库自设（仓库推断，2026-09-28）", "alias": ["风暴殿"]}
       }
     },
@@ -178,6 +178,7 @@
     "lm_civic_core": {"title": "中层政务区（三维）", "title_en": "Government Quarter (3D)", "parent": "tc_mid", "kind": "estate", "viewer3d": "civic_core", "src": "props/viewer3d.html", "alias": ["中层政务区（三维）"], "src_note": "中层核心区政务区三维：天城议会、执政厅、政务院、中央储备署、文化署同在一个场景（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 tc_mid.council 标记的「查看三维模型」进。源：blender/landmarks/civic_core/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_enforcement_hq": {"title": "天城执法局总局（三维）", "title_en": "Enforcement Bureau HQ (3D)", "parent": "tc_mid", "kind": "estate", "viewer3d": "enforcement_hq", "src": "props/viewer3d.html", "alias": ["天城执法局总局（三维）"], "src_note": "只画外观的执法局总局三维（标准版：标准档 + 低档 glb；花岗岩钢塔、台座大厅与 18 格辖区状态屏、前庭安检、车库、悬浮车库，具体位置与形制为仓库推断）；从 tc_mid.enforcement_hq 标记的「查看三维模型」进。源：blender/landmarks/enforcement_hq/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_iron_cradle": {"title": "圣铁摇篮（三维）", "title_en": "Iron Cradle (3D)", "parent": "tc_mid", "kind": "estate", "viewer3d": "iron_cradle", "src": "props/viewer3d.html", "alias": ["圣铁摇篮（三维）"], "src_note": "战斗修女修道院三维（标准版：标准档 + 低档 glb；封闭的石砌修院、操练场、坐骑机库，位置与形制为仓库推断）；从 tc_mid.iron_cradle 标记的「查看三维模型」进。源：blender/landmarks/iron_cradle/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_barracks": {"title": "环城军营带与军事学院（三维）", "title_en": "Ring Barracks & Military Academy (3D)", "parent": "tc_mid", "kind": "estate", "viewer3d": "barracks", "src": "props/viewer3d.html", "alias": ["环城军营带与军事学院（三维）"], "src_note": "中层外围的环城军营带一段与军事学院三维（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 tc_mid.barracks_ring 标记的「查看三维模型」进。源：blender/landmarks/barracks/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_pm_residence": {
       "title": "首相府（三维）", "title_en": "Prime Minister's Residence (3D)", "parent": "tc_upper", "kind": "estate",
       "viewer3d": "pm_residence", "src": "props/viewer3d.html", "alias": ["首相府花园"],

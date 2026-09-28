@@ -44,7 +44,7 @@ BUDGET = {
     'props_rocks': (30000, 1024), 'props_scorch': (12000, 1024), 'site_vegetation': (60000, 1024),
     # amc_facility（资产管理委员会下层设施；walls_ext / site_ground / props_gate / props_lights 共用上面的预算）
     'props_wall': (30000, 2048), 'props_works': (50000, 2048), 'props_post': (12000, 1024),
-    'props_vehicles': (20000, 1024), 'props_roof': (6000, 512),
+    'props_vehicles': (30000, 1024), 'props_roof': (6000, 512),
     # enforcement_low（执法局下层分局；walls_ext / site_ground / props_gate / props_lights / props_vehicles 共用上面的预算）
     'props_counter': (6000, 1024), 'props_motorpool': (20000, 1024), 'props_security': (12000, 1024),
     # outpost（防卫军前沿哨所；walls_ext / site_ground / props_gate / props_lights / props_vehicles 共用上面的预算）
@@ -63,6 +63,10 @@ BUDGET = {
     # iron_cradle（圣铁摇篮战斗修女院；walls_ext / site_ground / props_cloister / props_yard 用上面的）
     'props_ranges': (16000, 2048), 'props_hall': (12000, 2048), 'props_hangar': (8000, 1024),
     'props_wall_gate': (6000, 2048), 'props_garden': (60000, 1024),
+    # barracks（环城军营带 + 军事学院；site_ground / props_lights / props_motorpool / props_vehicles 共用上面的预算）
+    'props_barracks': (70000, 2048), 'props_parade': (4000, 1024), 'props_edge': (18000, 1024),
+    'props_academy_main': (16000, 2048), 'props_academy_blocks': (35000, 2048), 'props_academy_sports': (6000, 1024),
+    'props_trees': (40000, 1024),
 }
 
 

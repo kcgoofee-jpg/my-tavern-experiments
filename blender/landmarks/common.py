@@ -791,3 +791,21 @@ def clear_glass(name, tint=(0.85, 0.9, 0.92), rough=0.02):
     b.inputs['Transmission Weight'].default_value = 1.0
     b.inputs['IOR'].default_value = 1.45
     return m
+
+
+def tree_fine(B, x, y, h, r, seed=0, z=0.0, n=520, size=0.16):
+    """细叶行道树：主干 + 3–4 根主枝 + 若干小叶卡簇（叶卡比 tree() 小、数量适中，适合近景且三角面省）"""
+    import random as _r
+    rnd = _r.Random(seed)
+    M = tree_mats()
+    leaves = [M['leaf_a'], M['leaf_b'], M['leaf_c']]
+    tz = h * 0.4
+    B.tube([(x, y, z - 0.2), (x, y, z + tz)], 0.1 + h * 0.015, M['bark'], n=7)
+    k = rnd.randint(3, 4)
+    per = n // (k + 1)
+    for i in range(k):
+        a = i * math.tau / k + rnd.uniform(-0.3, 0.3)
+        e = (x + r * 0.5 * math.cos(a), y + r * 0.5 * math.sin(a), z + h * rnd.uniform(0.6, 0.72))
+        B.tube([(x, y, z + tz - 0.2), e], 0.06 + h * 0.006, M['bark'], n=5)
+        _cards(B, rnd, e, (r * 0.55, r * 0.55, r * 0.45), per, size, leaves, shell=0.75)
+    _cards(B, rnd, (x, y, z + h * 0.8), (r * 0.6, r * 0.6, h * 0.2), per, size, leaves, shell=0.75)
