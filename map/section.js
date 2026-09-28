@@ -25,9 +25,6 @@ export function normSection(sec) {
     districts: s.districts || missing('18 辖区'), towers: s.towers || missing('塔') };
 }
 
-// v0.9.7：庄园地下两层的分区名按原卡（card_bind.json section.B1 / section.B2），仓库不写；
-// 嵌在酒馆里时查看器会提供本机绑定到的原名（window.cardBindLabel），单独打开时显示中性占位。
-const secLabel = id => { try { return (typeof window !== 'undefined' && window.cardBindLabel?.(id)) || '（按原卡）'; } catch (e) { return '（按原卡）'; } };
 export function drawSection(root, el, tip, D) {
   const R = mulberry32(2088);
   const X0 = 60, X1 = 630, PW = X1 - X0;
@@ -272,8 +269,8 @@ export function drawSection(root, el, tip, D) {
     for (const x of [-20, 18]) { el('line', { x1: cx + x, y1: cy + 18, x2: cx + x, y2: cy + 42, stroke: '#6d7a8c', 'stroke-width': .6 }, cut); }
     for (const x of [-26, -2, 26]) { el('line', { x1: cx + x, y1: cy + 45, x2: cx + x, y2: cy + 68, stroke: '#6d5a78', 'stroke-width': .6 }, cut); }
     el('rect', { x: cx + 40, y: cy - 20, width: 5, height: 88, fill: '#e6c36a', opacity: .85 }, cut);              // 主人专用电梯（推断）
-    el('text', { x: cx - 50, y: cy + 34, 'font-size': 9, fill: '#d8e2ee', stroke: 'none' }, cut, 'B1 ' + secLabel('section.B1'));
-    el('text', { x: cx - 50, y: cy + 60, 'font-size': 9, fill: '#e2d4ee', stroke: 'none' }, cut, 'B2 ' + secLabel('section.B2'));
+    el('text', { x: cx - 50, y: cy + 34, 'font-size': 9, fill: '#d8e2ee', stroke: 'none' }, cut, 'B1 调教与训练区');
+    el('text', { x: cx - 50, y: cy + 60, 'font-size': 9, fill: '#e2d4ee', stroke: 'none' }, cut, 'B2 惩罚与特殊区域');
     el('rect', { x: cx + 6, y: cy + 51, width: 12, height: 12, fill: '#3ee6ff', opacity: .7, filter: 'url(#s-glow)' }, cut);   // 结界发生器（推断）
     // 后庭园：人工湖 + 凉亭 + 训练场（在建筑后方）
     el('ellipse', { cx: cx - 62, cy: cy - 18, rx: 24, ry: 7, fill: '#6fbfe0', stroke: '#e8f6fb', 'stroke-width': .8 }, g);
@@ -315,7 +312,7 @@ export function drawSection(root, el, tip, D) {
       [px + 22, py - 12, '访客悬浮载具降落平台', '前庭花园内的访客停靠平台（位置在岛缘为推断）', 'set'],
       [cx + rx - 10, py - 20, '警卫岗', '庄园驻防：中低阶人员 + 结界 + AI 监控；岗亭位置推断', 'inf'],
       [cx - rx + 22, cy - 92, '外层结界', '覆盖整座悬浮岛，隔绝一切外部探查与入侵', 'set'],
-      [cx - 64, cy + 30, '剖切：地下两层', 'B1 / B2 分区名按原卡（本机从你的卡里读，仓库不写）', 'set'],
+      [cx - 64, cy + 30, '剖切：地下两层', 'B1 调教与训练区 / B2 惩罚与特殊区域（卡原名）', 'set'],
       [cx + 56, cy + 30, '主人专用电梯', '主人经专用通道可达任何房间；电梯井为推断', 'inf'],
       [cx + 24, cy + 57, '结界发生器', '以太驱动持续供能；放在 B2 为推断', 'inf'],
       [isl.tip[0] + 12, isl.tip[1] + 4, '以太驱动引擎', '天城·上层：悬浮岛由以太驱动引擎维持悬浮', 'set'],

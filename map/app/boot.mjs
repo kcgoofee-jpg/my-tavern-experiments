@@ -23,7 +23,7 @@ import { layoutHeader, warmOthers } from './topbar.mjs';
 import { ALT_KEY, go, swapBase } from './nav.mjs';
 import { estateLook, estatePlan, retryEstate } from './estate.mjs';
 import { closeCard } from './markers.mjs';
-import { ALIAS, applyZoomLimit, bindPlan, estPlanRaw, focusStart, hereRes, jumpHere, markHere, setEstPlanRaw, setHX, setUserMoved, userMoved } from './locate.mjs';
+import { ALIAS, applyZoomLimit, focusStart, hereRes, jumpHere, markHere, setEstPlan, setHX, setUserMoved, userMoved } from './locate.mjs';
 import { initSettings } from './settings.mjs';
 import { emEmit, enNames, rebuildHere, setEnNames } from './extapi.mjs';
 import { firstRunHint, initE7, initShell } from './shell.mjs';
@@ -48,7 +48,7 @@ async function mainInner() {
   if (!DICT || !Object.keys(DICT).length) { const zh = await getJSON('i18n/zh.json'); if (LANG !== 'zh') { setLANG('zh'); document.documentElement.lang = 'zh-CN'; } setDICT(zh || {}); }
   jsonCache.set('i18n/' + LANG + '.json', Promise.resolve(DICT));
   setEnNames(enDict?.names || null); rebuildHere();
-  if (packData('rooms')) getJSON(packData('rooms')).then(p => { if (!p?.rooms) return; setEstPlanRaw(p); bindPlan(); rebuildHere(); markHere($('#here').value); }).catch(() => {});   // v0.9.6：卡设定分层房间进当前地点词表（不挡启动）   // 当前地点 → 落点的词表（中英都认；加上本机自定义叫法）
+  if (packData('rooms')) getJSON(packData('rooms')).then(p => { if (!p?.rooms) return; setEstPlan(p); rebuildHere(); markHere($('#here').value); }).catch(() => {});   // v0.9.6：卡设定分层房间进当前地点词表（不挡启动）   // 当前地点 → 落点的词表（中英都认；加上本机自定义叫法）
   post({ type: 'eden-map:boot', pct: .9 });   // 数据文件已到
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点
   if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland);

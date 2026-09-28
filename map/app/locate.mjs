@@ -1,13 +1,12 @@
-// 初始视角与当前地点：focusStart、markHere、卡原名绑定、here.mjs 六级落点、jumpHere。
+// 初始视角与当前地点：focusStart、markHere、here.mjs 六级落点、jumpHere。
 import { M, REG, aspect, cur, curData, pendingFocus, pendingHome, setPendingFocus, setPendingHome, viewer } from './state.mjs';
-import { $, SUB_ORIGIN, getJSON, toImg } from './util.mjs';
+import { $, toImg } from './util.mjs';
 import { leanBg } from './tiers.mjs';
 import { go, groupView } from './nav.mjs';
-import { est, estFail, estateRoom, estateStandIn } from './estate.mjs';
+import { estFail, estateRoom, estateStandIn } from './estate.mjs';
 import { updateLayerBadges } from './layers.mjs';
 import { rebuildHere } from './extapi.mjs';
 import { P } from './plugins.mjs';
-import { packData } from './pack.mjs';
 // ---------------- 初始视角与当前地点 ----------------
 export let userMoved = false;
 // 地图的实际尺度（maps.json 的 view.extent_m）：米 → 占图宽的比例
@@ -82,19 +81,7 @@ export function markHere(v) {
 // ---------------- 自动跳到当前地点（map/here.mjs 六级落点；设置里可关，默认开） ----------------
 // 庄园房间 / 区域 → 庄园（房间由 estate:room 高亮，切楼层由庄园页自己做）；地标 → 该层并打开地点卡；层 / 大区 / 天城 → 该层默认视野；世界地名 → 世界图；匹配不到不动。
 // 打开面板（或唤醒）后的第一条地点一定跳；之后只有地点变了才跳，不打断用户自己在别的图上浏览。
-export let estPlan = null, estPlanRaw = null;   // v0.9.6 map/data/eden_estate_rooms.json（estPlan = 套上本机卡原名绑定之后的，见 bindPlan）
-// v0.9.7 卡原名绑定：卡内脚本从用户自己的卡里按结构取回的原名（eden-map:card-bind），只在本页内存里用，不存盘
-export let cardBind = null, CBmod = null, cardSpec = null;
-export function bindPlan() { estPlan = estPlanRaw && CBmod && cardBind ? CBmod.applyBinding(estPlanRaw, cardBind.rooms) : estPlanRaw; }
-export function onCardBind(d) {
-  const clean = o => Object.fromEntries(Object.entries(o && typeof o === 'object' ? o : {}).filter(([k, v]) => typeof k === 'string' && (typeof v === 'string' || Array.isArray(v))).slice(0, 200));
-  cardBind = { rooms: clean(d.rooms), specs: clean(d.specs) };
-  Promise.all([CBmod || import(new URL('card-bind.mjs', document.baseURI).href), cardSpec || (packData('cardBind') ? getJSON(packData('cardBind')).catch(() => null) : null)]).then(([m, sp]) => {
-    CBmod = m; cardSpec = sp; bindPlan(); rebuildHere(); markHere($('#here').value); estateBind();
-  }).catch(() => {});
-}
-export function estateBind() { if (est?.ready && cardBind) est.frame.contentWindow?.postMessage({ type: 'estate:bind', names: cardBind.rooms }, SUB_ORIGIN); }
-window.cardBindLabel = id => (cardBind?.specs?.[id] || [])[0] || null;   // 剖面标签等按 id 取（section.B1 / section.B2）
+export let estPlan = null;   // v0.9.6 map/data/eden_estate_rooms.json（卡设定分层房间，房间名照抄卡）
 export let HX = null, hereIdx = null;
 export const hereRes = v => (HX && hereIdx ? HX.resolveHere(v, hereIdx) : null);
 export function jumpHere(v) {   // 只由「当前位置」按钮调用（不再在打开 / 地点更新时自动跳）
@@ -108,5 +95,5 @@ export function jumpHere(v) {   // 只由「当前位置」按钮调用（不再
 }
 export function setUserMoved(v) { return (userMoved = v); }
 export function setHereIdx(v) { return (hereIdx = v); }
-export function setEstPlanRaw(v) { return (estPlanRaw = v); }
+export function setEstPlan(v) { return (estPlan = v); }
 export function setHX(v) { return (HX = v); }

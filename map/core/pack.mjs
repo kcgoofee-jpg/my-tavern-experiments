@@ -18,7 +18,7 @@ export const chatVarOf = (id, m) => m?.chat?.var || (!id || id === DEFAULT_ID ? 
 export const EDEN = Object.freeze({
   id: 'eden', schema: 1, title: '伊甸庄园 · 天城', title_en: 'Eden Manor · Tiancheng',
   chat: { var: 'eden_map' },
-  data: { maps: 'data/maps.json', world: 'data/world_markers.json', derived: 'data/derived.json', rooms: 'data/eden_estate_rooms.json', cardBind: 'data/card_bind.json', events: 'builtin' },
+  data: { maps: 'data/maps.json', world: 'data/world_markers.json', derived: 'data/derived.json', rooms: 'data/eden_estate_rooms.json', events: 'builtin' },
   cdn: { repo: 'kcgoofee-jpg/my-tavern-experiments', npm: 'tiancheng-map-assets' },
   theme: { accent: '#e6c36a' },
   worldbook: { addon: 'tools/build_worldbook_addon.py' },

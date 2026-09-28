@@ -25,7 +25,7 @@ try {
     }
     if (tag === 'desktop') {
       // 查看器「自定义 → 在地图上看」：卡设定房间带 floor + poly
-      await f.evaluate(() => window.postMessage({ type: 'estate:room', name: '个人寝室', card: { name: '个人寝室', floor: 'F3', poly: [[3.8, 3], [7.4, 3], [7.4, 8], [3.8, 8]] } }, '*'));
+      await f.evaluate(() => window.postMessage({ type: 'estate:room', name: '正式母畜个人寝室', card: { name: '正式母畜个人寝室', floor: 'F3', poly: [[3.8, 3], [7.4, 3], [7.4, 8], [3.8, 8]] } }, '*'));
       await B.wait(1200);
       const pr = await f.evaluate(() => ({ mode: window.__estate.mode(), pin: window.__estate.pinned() }));
       rep.check('卡设定房间飞行（F3 个人寝室，按多边形取那一间）', pr.mode === 4 && pr.pin?.id === 'F3-91', JSON.stringify(pr));

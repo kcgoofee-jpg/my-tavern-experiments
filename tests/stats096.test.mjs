@@ -1,8 +1,7 @@
 // v0.9.6 E2 / E13：名册行内「等级 / 核心数值」——coreStage 5 档阈值、adapter 的 gradeField / coreField 自动发现、「关闭」('-')、rowFields()
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { coreStage, CORE_CUTS, rosters } from '../map/tavern/mvu.mjs';
-import { findCoreCategories } from '../map/card-bind.mjs';
+import { coreStage, CORE_CUTS, CORE_DEFAULT, rosters } from '../map/tavern/mvu.mjs';
 import { detect, effective, rowFields, NAME_FIELDS, OFF, DEFAULT_MAP } from '../map/tavern/adapter.mjs';
 
 test('coreStage: thresholds ≤20 / ≤40 / ≤60 / ≤80 / ≤100', () => {
@@ -12,14 +11,10 @@ test('coreStage: thresholds ≤20 / ≤40 / ≤60 / ≤80 / ≤100', () => {
   assert.equal(coreStage(f, NaN), ''); assert.equal(coreStage(f, '50'), '');
 });
 
-test('coreStage: names come from the card\'s own category table (runtime), else 档 n', () => {
-  // 合成的中性样例：结构同卡的变量更新规则（字段: type / range / category: a-b: 名）
-  const rule = ['变量规则:', '  园艺值:', '    type: number', '    range: 0~100', '    category:', '      0-20: 萌芽', '      21-40: 抽枝', '      41-60: 开花', '      61-80: 结果', '      81-100: 丰收', '    check:', '      - 无'].join('\n');
-  const cats = findCoreCategories(['无关文本', rule], '园艺值');
-  assert.deepEqual(cats.map(c => c.max), [20, 40, 60, 80, 100]);
-  assert.deepEqual([10, 30, 50, 70, 90, 120].map(n => coreStage('园艺值', n, cats)), ['萌芽', '抽枝', '开花', '结果', '丰收', '丰收']);
-  assert.equal(coreStage('园艺值', 50), '档 3');   // 没取到档名
-  assert.equal(findCoreCategories([rule], '别的值'), null);
+test('coreStage: the card\'s default field uses the card\'s own stage names (verbatim), other fields 档 n', () => {
+  assert.equal(CORE_DEFAULT, DEFAULT_MAP.coreField);
+  assert.deepEqual([10, 30, 50, 70, 90, 120].map(n => coreStage(CORE_DEFAULT, n)), ['抗拒期', '动摇期', '接受期', '沉溺期', '完全母畜化', '完全母畜化']);
+  assert.equal(coreStage('园艺值', 50), '档 3');
 });
 
 const STAT = { 世界: { 当前地点: 'x' }, 主角: { 声望: 5 },
@@ -30,9 +25,9 @@ test('rowFields: field names seen in roster rows, $-keys skipped', () => {
   assert.deepEqual(rowFields(null), []); assert.deepEqual(rowFields({ a: 1 }), []);
 });
 
-test('detect: gradeField / coreField found by field-name shape (no card wording in the repo)', () => {
+test('detect: gradeField / coreField default to the card field names, else found by field-name shape', () => {
   assert.ok(NAME_FIELDS.includes('gradeField') && NAME_FIELDS.includes('coreField'));
-  assert.equal(DEFAULT_MAP.gradeField, ''); assert.equal(DEFAULT_MAP.coreField, ''); assert.equal(DEFAULT_MAP.codeField, '');
+  assert.equal(DEFAULT_MAP.gradeField, '母畜等级'); assert.equal(DEFAULT_MAP.coreField, '母畜值'); assert.equal(DEFAULT_MAP.codeField, '母畜代号');
   let d = detect(STAT); assert.equal(d.gradeField, ''); assert.equal(d.coreField, '');   // 「级别」「数值」太泛，不自动认
   const own = { ...STAT, 表一: { 甲: { 身份: 'a', 园丁等级: 'S', 园艺值: 30, 身高: 170 } } };
   d = detect(own); assert.equal(d.gradeField, '园丁等级'); assert.equal(d.coreField, '园艺值');

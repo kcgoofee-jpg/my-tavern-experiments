@@ -8,7 +8,7 @@ import { go, saveView } from './nav.mjs';
 import { dropParked, est, estFocus, estParked, narrowNow, setEst, setEstFocus, setEstParked } from './estate.mjs';
 import { onEsc } from './layers.mjs';
 import { untrackAll } from './markers.mjs';
-import { hereRes, markHere, onCardBind } from './locate.mjs';
+import { hereRes, markHere } from './locate.mjs';
 import { TCSettings, about, renderAbout, renderSelfCheck, selfCheck, setAbout, setSelfCheck, setUpdBusy, setUpdRes, updBusy, updRes, updSub } from './settings.mjs';
 import { emEmit, setChat } from './extapi.mjs';
 import { flashOk, ntActs } from './shell.mjs';
@@ -43,7 +43,6 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:lang' && ['zh', 'en'].includes(e.data.lang)) setLang(e.data.lang);   // v0.9.6：嵌入时语言以卡内脚本（标题栏）为准，两边只有一个设置
     if (e.data?.type === 'eden-map:about') { setAbout(e.data); renderAbout(); }   // v0.9.6 版本与检查更新
     if (e.data?.type === 'eden-map:update-result') { setUpdBusy(false); setUpdRes(e.data); renderAbout(); }
-    if (e.data?.type === 'eden-map:card-bind') onCardBind(e.data);   // v0.9.7 卡原名绑定（本机）
     if (e.data?.type === 'eden-map:chars') { P.TCChars.set(e.data); emEmit('characters', { items: e.data.items, floor: e.data.floor }); }   // 人物栏（v0.9.2）
     if (e.data?.type === 'eden-map:custom') P.TCCustom.fromHost(e.data);   // v0.9.3：自定义名称与用途（聊天变量）
     if (e.data?.type === 'eden-map:clock') P.TCCustom.setClock(e.data);   // 世界时间 → 夜色

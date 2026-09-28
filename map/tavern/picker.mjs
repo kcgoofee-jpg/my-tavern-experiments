@@ -28,14 +28,13 @@ export function buildGroups({ reg, plan = null, chars = [], lang = 'zh' } = {}) 
   for (const [eid, m] of maps.filter(([, m]) => m.kind === 'estate')) {
     const title = en ? (m.title?.name_en || 'Eden Manor') : (m.title?.name || '伊甸庄园');
     const floors = plan?.FLOORS || [], rooms = plan?.ROOMS || [], byFloor = new Map(), other = [], taken = new Set();
-    if (plan?.CARD?.rooms?.length) {   // 卡设定分层（map/data/eden_estate_rooms.json）：B2 / B1 / F1 / F2 / F3，只列卡房间（按卡房间编号）；按原卡的房间不描述
-      // 名字不入库的卡房间：绑到用户卡里的原名就用原名（applyBinding 之后的 plan），否则显示占位「（按原卡）」+ 编号，落点用编号
-      const PH = '（按原卡）', seen = new Set();
+    if (plan?.CARD?.rooms?.length) {   // 卡设定分层（map/data/eden_estate_rooms.json）：B2 / B1 / F1 / F2 / F3，只列卡房间（按卡房间编号）；restricted 房间只写名字、不描述
+      const seen = new Set();
       for (const f of plan.CARD.floors || []) {
         const g = { id: `room:${f.id}`, label: `${title} · ${f.id}${en ? '' : ' ' + f.name}`, short: f.id, items: [] };
         for (const r of plan.CARD.rooms.filter(r => r.floor === f.id && (r.kind === 'card' || r.kind === 'restricted'))) {
-          const ph = r.name === PH, k = ph ? `${PH} ${r.card_id}` : r.name; if (seen.has(f.id + k)) continue; seen.add(f.id + k);
-          add(g, { key: k, kind: 'room', target: { map: eid, room: ph ? r.card_id : r.name, floor: f.id }, sub: r.kind === 'restricted' ? (en ? 'not described' : '不描述') : (r.note || '').split('；')[0], en: '', alias: [...(r.words || []), ...(r.synonyms || [])] });
+          const k = r.name; if (seen.has(f.id + k)) continue; seen.add(f.id + k);
+          add(g, { key: k, kind: 'room', target: { map: eid, room: r.name, floor: f.id }, sub: r.kind === 'restricted' ? (en ? 'not described' : '不描述') : (r.note || '').split('；')[0], en: '', alias: [...(r.words || []), ...(r.synonyms || [])] });
         }
         if (g.items.length) out.push(g);
       }

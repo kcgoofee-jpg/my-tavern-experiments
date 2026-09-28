@@ -93,7 +93,6 @@ const TCCustom = (() => {
   const pk = () => (PK ? Promise.resolve(PK) : import(new URL('tavern/picker.mjs', document.baseURI).href).then(m => (PK = m)));
   const planP = () => (plan ? Promise.resolve(plan) : !isEden() ? Promise.resolve(plan = {}) : Promise.all([import(new URL('estate/plan.js', document.baseURI).href).catch(() => ({})), fetch(new URL('data/eden_estate_rooms.json', document.baseURI)).then(r => (r.ok ? r.json() : null)).catch(() => null)])
     .then(([m, card]) => (plan = { ...m, CARD: card })));   // 卡设定分层房间（B2–F3）
-  // v0.9.7：查看器套上本机卡原名绑定后的房间数据（estPlan，见 viewer bindPlan）优先；没有就用原始数据（占位「（按原卡）」）
   const cardPlan = () => (typeof estPlan !== 'undefined' && estPlan) || plan?.CARD || null;
   function groups() {
     if (!PK || typeof REG === 'undefined' || !REG) return [];
