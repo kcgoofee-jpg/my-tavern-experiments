@@ -46,8 +46,8 @@
 | P2 机构 | tc_mid | `reserve_office` | 天城中央储备署 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `starabyss_univ` | 星渊大学 | ✅ | 卡 | 星渊大学 `map/props/starabyss_univ/` | 标准（r1 7 / 7.5） |  |
 | P2 机构 | tc_mid | `storm_hall` | 风暴殿 | 🆕 | 仓库推断 | — | — |  |
-| P2 机构 | tc_mid | `supreme_court` | 最高法院 | ✅ | 卡 + 推断位置 | — | — |  |
-| P2 机构 | tc_mid | `tiancheng_univ` | 天城大学 | ✅ | 用户决定 | — | — |  |
+| P2 机构 | tc_mid | `supreme_court` | 最高法院 | ✅ | 卡 + 推断位置 | 天城大学与最高法院 `map/props/tiancheng_univ_court/` | 标准（r1 7.5 / 7.5） |  |
+| P2 机构 | tc_mid | `tiancheng_univ` | 天城大学 | ✅ | 用户决定 | 天城大学与最高法院 `map/props/tiancheng_univ_court/` | 标准（r1 7.5 / 7.5） |  |
 | P2 机构 | tc_upper | `climate_tower` | 以太气候调节塔 | ✅ | 卡 + 推断位置 | 气候调节塔 `map/props/climate_tower/` | 标准（r2 7 / 8） |  |
 | P2 机构 | tc_upper | `silver_crown` | 银冠堡 | ✅ | 卡 | 银冠堡 `map/props/silver_crown/` | 标准（r1 7 / 7.5） |  |
 | P3 其他 | site_fief1 | `fief1_castle` | 第一席城堡 | ✅ | 仓库自设 | — | — |  |
