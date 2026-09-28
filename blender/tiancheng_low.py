@@ -767,7 +767,7 @@ tick('landmarks')
 if DAY:
     tc.day_reset()                                             # 夜景灯光全拆（含 7 号井的竖井冷光）、发光面改暗色漆面
     _sun = bpy.data.lights.new('sun', 'SUN'); _sun.energy = layer.f('--sun', 1.8); _sun.angle = math.radians(2.5); _sun.color = (1, .9, .78)
-    _so = bpy.data.objects.new('sun', _sun); col_main.objects.link(_so); _so.rotation_euler = tc.SUN_ROT   # 与三层共用方位一致（tc.SUN_ROT）
+    _so = bpy.data.objects.new('sun', _sun); col_main.objects.link(_so); _so.rotation_euler = tc.sun_rot()   # 三层共用方位；--day 走白天几何（tc.SUN_ROT_DAY）
     layer.finish(world=((.44, .41, .36), layer.f('--ambient', .32)))
 else:
     layer.finish(world=((.5, .38, .25), layer.f('--ambient', .12)), glare_opts=dict(threshold=.75, size=9.5, mix=-.7, tight=(.6, 7, .45)))

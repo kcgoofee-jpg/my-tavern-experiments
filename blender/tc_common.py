@@ -352,16 +352,17 @@ class Layer:
         # 各层脚本照常建完、照常消耗随机数，只在最后把这些元素过滤掉，所以随机序列与 map/data/*.json 都不变。
         self.lm_glow = not self.opt.get('--no-landmark-glow')
         self.day = bool(self.opt.get('--day'))              # --day：白天版（日光 + 材质切换，各层脚本自己处理；默认夜景，行为不变）
+        global DAY; DAY = self.day                          # tc_common 层面切太阳几何（sun_rot / sun_dir）：--day 白天几何，默认夜景不变
     def f(self, key, default):                              # 读数值参数：layer.f('--glow', 1)
         return float(self.opt.get(key, default))
     def marker(self, id, pos, r=.3):
         """登记地标：pos 为平面坐标 (x, y, z)，r 为占地半径（平面单位，导出时归一化到图宽）。"""
         self.markers.append({'id': id, 'pos': tuple(pos), 'r': r})
-    def finish(self, world=None, glare_opts=None, extra=None, label=''):
+    def finish(self, world=None, glare_opts=None, extra=None, label='', exposure=0.0):
         if world:
             w = bpy.data.worlds.new('sky'); self.sc.world = w; w.use_nodes = True; bg = w.node_tree.nodes['Background']
             bg.inputs['Color'].default_value = (*world[0], 1); bg.inputs['Strength'].default_value = world[1]
-        co = camera_and_render(self.sc, self.res, self.samples, self.out, self.opt, bounces=self.bounces)
+        co = camera_and_render(self.sc, self.res, self.samples, self.out, self.opt, bounces=self.bounces, exposure=exposure)
         if glare_opts and not self.opt.get('--preview'): glare(self.sc, **glare_opts)
         ex = {'layer': self.name}
         ex.update(extra(co) if callable(extra) else (extra or {}))
@@ -381,13 +382,22 @@ class Layer:
 
 # ---------------- 太阳：三层共用一个方向（上层的岛影、中层的投影都按它偏移）----------------
 SUN_ROT = (math.radians(40), 0, math.radians(215))
-def sun_dir():
-    """太阳光的传播方向（单位向量，朝下）。"""
+# --day 白天版专用太阳：方位不变（215°），天顶角 35°（高度角 55°，比夜景/数据投影共用的 40° 更高）——
+# 投影长度从 0.84h 缩到 0.70h，楼间峡谷被楼影盖住的比例下降，白天图整体更亮。
+# 夜景（中层 gap_skylight 等）与 map/data 的 shadow_offset 仍走 SUN_ROT：不带 --day 时逐字节不变。
+SUN_ROT_DAY = (math.radians(35), 0, math.radians(215))
+DAY = False        # 由 Layer.__init__ 按 --day 置位：sun_rot / sun_dir 切到白天几何；不碰随机序列，也不进 map/data
+def sun_rot():
+    """太阳物体的旋转欧拉角，按脚本模式切换：--day 走白天几何 SUN_ROT_DAY，其余（夜景、数据投影）走 SUN_ROT。"""
+    return SUN_ROT_DAY if DAY else SUN_ROT
+def sun_dir(rot=None):
+    """太阳光的传播方向（单位向量，朝下）。不传 rot 时按脚本模式切换（--day 白天几何，云等渲染元素跟随）；
+    数据 / 叠加层投影要夜景几何时显式传 SUN_ROT（shadow_offset 已这么做）。"""
     from mathutils import Euler
-    v = Vector((0, 0, -1)); v.rotate(Euler(SUN_ROT)); return v
+    v = Vector((0, 0, -1)); v.rotate(Euler(sun_rot() if rot is None else rot)); return v
 def shadow_offset(height):
     """高 height（平面单位）处的物体，影子落在其下方平面上时的水平偏移 (dx, dy)。"""
-    d = sun_dir(); t = height / -d.z; return d.x * t, d.y * t
+    d = sun_dir(SUN_ROT); t = height / -d.z; return d.x * t, d.y * t   # 显式夜景几何：map/data 导出不随 --day 变
 
 # ---------------- 批量球体（树冠）：一次建网格，比逐个 bmesh 快两个数量级 ----------------
 _ICO = None

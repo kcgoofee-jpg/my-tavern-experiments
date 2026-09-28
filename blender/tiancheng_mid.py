@@ -863,11 +863,11 @@ _fog = tuple(map(float, str(layer.opt.get('--fog', '.7,9.5,-.6')).split(',')))
 # A7：楼高层次——全漫射的天光下楼顶只按颜色分高低，缩小看核心区是一片均匀的灰。加一盏很弱的冷色平行光（上层浮岛之间漏下来的天光，
 # 方向与三层共用的太阳相同、软影），高楼在矮楼顶和街道上投下柔和的影子，楼高一眼读得出；天光相应略降，总亮度不变。
 if DAY:
-    # --day：白天版——太阳走 tc_common 三层共用的方位（tc.SUN_ROT，40° 天顶角，上午偏中午；同上层 --tod day 的参数），
+    # --day：白天版——太阳走 tc.sun_rot() 白天几何（215° 方位不变，天顶角 35° / 高度角 55°，比夜景 40° 更高：tc_common SUN_ROT_DAY），
     # 高楼与浮岛遮挡板把直射光挡在外面：楼顶亮、街道峡谷暗的强对比；天光用与上层白天一致的天蓝；夜景灯光全拆、发光面改暗色漆面。
     tc.day_reset()
     _sun = bpy.data.lights.new('sun', 'SUN'); _sun.energy = layer.f('--sun', 3.2); _sun.angle = math.radians(1.2); _sun.color = (1, .96, .9)
-    _so = bpy.data.objects.new('sun', _sun); col_main.objects.link(_so); _so.rotation_euler = tc.SUN_ROT
+    _so = bpy.data.objects.new('sun', _sun); col_main.objects.link(_so); _so.rotation_euler = tc.sun_rot()
     layer.finish(world=((.55, .65, .8), .35))
 else:
     _sky = bpy.data.lights.new('gap_skylight', 'SUN'); _sky.energy = layer.f('--gapsun', .8); _sky.angle = math.radians(6); _sky.color = (.72, .8, 1.0)
