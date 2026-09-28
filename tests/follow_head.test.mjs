@@ -22,6 +22,19 @@ test('CDN 全不通 → GitHub contents 接口（base64 的 head.json）', async
   const h = await resolveFollow(R, B, mock({ 'api.github.com/repos/o/r/contents/map/data/head.json?ref=cloud%2Ftc-mid-low': { content: b64(H(9, 'd')) } }), null);
   assert.deepEqual(h, { build: 9, sha: 'd'.repeat(40), source: 'github' });
 });
+test('新增镜像（fastly / gcore / testingcf）也参与取最大；jsdmirror 落后不影响结果', async () => {
+  const h = await resolveFollow(R, B, mock({ jsdmirror: H(1, 'a'), 'cdn.jsdelivr.net': H(1, 'a'), 'fastly.jsdelivr.net': H(1, 'a'), 'gcore.jsdelivr.net': H(12, 'c'), 'testingcf.jsdelivr.net': H(1, 'a'), raw: H(1, 'a') }), null);
+  assert.deepEqual(h, { build: 12, sha: 'c'.repeat(40), source: 'gcore' });
+});
+test('缓存破坏参数按分钟取整，且每个源的 URL 里都带着', async () => {
+  const seen = [];
+  await resolveFollow(R, B, async u => { seen.push(u); return null; }, null).catch(() => {});
+  const headUrls = seen.filter(u => u.includes('head.json') && !u.includes('api.github.com'));
+  assert.equal(headUrls.length, 6);
+  for (const u of headUrls) assert.match(u, /[?&](t|v)=\d+/);
+  const nums = headUrls.map(u => Number(u.match(/[?&](?:t|v)=(\d+)/)[1]));
+  assert.ok(nums.every(n => n === nums[0]));
+});
 test('本机记住的只在构建号更大时赢；什么都取不到才用本机', async () => {
   assert.equal((await resolveFollow(R, B, mock({ jsdmirror: H(3) }), H(10))).source, 'cache');
   assert.equal((await resolveFollow(R, B, mock({ jsdmirror: H(11) }), H(10))).source, 'jsdmirror');
