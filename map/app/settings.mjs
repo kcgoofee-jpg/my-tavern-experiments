@@ -110,9 +110,12 @@ export function renderAbout() {
   const ch = { tag: tx('about.ch_tag', `固定版本 ${a.ref || ''}`, { ref: a.ref || '' }), follow: tx('about.ch_follow', `跟随分支 ${a.ref || ''}（每次打开取最新提交）`, { ref: a.ref || '' }),
     latest: a.locked ? tx('about.ch_locked', `已锁定 ${a.ref || ''}`, { ref: a.ref || '' }) : tx('about.ch_latest', `自动用最新正式版（当前 ${a.ref || ''}）`, { ref: a.ref || '' }),
     ref: tx('about.ch_ref', `预览提交 ${a.ref || ''}`, { ref: a.ref || '' }), local: tx('about.ch_local', '本地 / 单独打开') }[a.channel || (window.top === window ? 'local' : '')] || '';
-  let h = `<b>${esc(tx('about.title', '地图版本'))}</b> v${esc(ver || '?')}${code ? ` · <span style="font-family:var(--font-mono)">${esc(code)}</span>` : ''}`;
   const SRC = { jsdmirror: 'jsdmirror', jsdelivr: 'jsDelivr', raw: 'GitHub raw', github: 'GitHub API', cache: tx('about.src_cache', '本机缓存'), baked: tx('about.src_baked', '脚本内置') };
-  if (ch) h += `<br>${esc(ch)}${a.channel === 'follow' && a.build != null ? ` · ${esc(tx('about.follow_build', '构建 #{n} · 来源 {s}', { n: a.build, s: SRC[a.source] || a.source || '?' }))}` : ''}${a.sha ? ` · ${esc(String(a.sha).slice(0, 7))}` : ''}`;
+  // 跟随分支预览：标题直接说「跟随分支预览 · 构建 #N」，不挂正式版号（v0.9.5 之类），免得被当成已发版本（2026-09-28 修）
+  let h = a.channel === 'follow' && a.build != null
+    ? `<b>${esc(tx('about.title_follow', '跟随分支预览'))}</b> · ${esc(tx('about.follow_build', '构建 #{n} · 来源 {s}', { n: a.build, s: SRC[a.source] || a.source || '?' }))}`
+    : `<b>${esc(tx('about.title', '地图版本'))}</b> v${esc(ver || '?')}${code ? ` · <span style="font-family:var(--font-mono)">${esc(code)}</span>` : ''}`;
+  if (ch) h += `<br>${esc(ch)}${a.sha ? ` · ${esc(String(a.sha).slice(0, 7))}` : ''}`;
   if (a.line) h += `<br>${esc(tx('about.line', '线路：{l}', { l: a.line }))}`;
   if (window.top !== window) h += `<br><button type="button" class="btn" id="updBtn" ${updBusy ? 'disabled' : ''}>${esc(updBusy ? tx('about.checking', '检查中…') : tx('about.check', '检查更新'))}</button>`;
   const r = updRes;

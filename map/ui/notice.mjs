@@ -21,7 +21,7 @@ ${root} .nt-item .nt-x{position:absolute;right:2px;top:2px;width:44px;height:44p
 ${root} .nt-item .nt-x:hover{color:var(--nt-ink,#d5dde4)}
 ${root} .nt-acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;justify-content:flex-end}
 ${root} .nt-acts button{height:36px;min-width:44px;padding:0 14px;border:1px solid var(--nt-line,rgba(255,255,255,.22));border-radius:8px;background:transparent;color:var(--nt-ink,#d5dde4);font:inherit;font-weight:500;cursor:pointer}
-${root} .nt-acts button.nt-pri{background:var(--nt-accent,#e6c36a);border-color:var(--nt-accent,#e6c36a);color:var(--nt-on-accent,#1a1406);font-weight:700}
+${root} .nt-acts button.nt-pri{background:var(--nt-accent,#e6c36a)!important;border-color:var(--nt-accent,#e6c36a)!important;color:var(--nt-on-accent,#1a1406)!important;font-weight:700}
 ${root} .nt-item :focus-visible{outline:2px solid var(--nt-focus,#63b4be);outline-offset:2px}
 ${root} .nt-p1{position:absolute;left:8px;right:8px;display:flex;flex-direction:column;gap:6px;align-items:center}
 ${root} .nt-p1 .nt-item{width:min(560px,100%);border-left:3px solid var(--nt-accent,#e6c36a)}

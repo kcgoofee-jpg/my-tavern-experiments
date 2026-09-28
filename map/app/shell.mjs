@@ -110,7 +110,7 @@ export function firstRunHint() {
   const emb = window.top !== window;
   notify({ key: 'hint', level: 1, title: tx('hint.title', '三步上手'), onClose: done, lines: [
     tx('hint.1', '① 点地图上的地标看介绍；有三维模型的地点（如伊甸庄园）从卡片进三维视图。') + (emb ? tx('hint.1b', '卡片底部的「去这里」「追问这件事」只填进聊天输入框，不会替你发送。') : ''),
-    tx('hint.2', '② 地图会自动跳到你现在的位置并高亮它；地点认不出时会显示「未上图」，点它就能放到地图上。'),
+    tx('hint.2', '② 地图默认打开世界地图；想看你现在在哪，点「当前位置」跳过去并高亮；地点认不出时会显示「未上图」，点它就能放到地图上。'),
     (narrowNow() ? tx('hint.3', '③ 切层、标注、人物、三维画质都在设置里（手机上是右下角 ⋯）。') : tx('hint.3d', '③ 切层、标注、人物、三维画质都在右上角的设置里。'))],
     actions: [{ label: tx('hint.settings', '打开设置'), run: () => { done(); TCSettings.open('home'); } }, { label: tx('hint.ok', '知道了'), primary: true, run: done }] });
   // 只有关掉或点了按钮才算看过；没理它，下次打开还会出（最多 3 次，之后不再打扰）
