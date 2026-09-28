@@ -102,12 +102,12 @@ async function fog(preset) {
   for (const onFog of [false, true]) {
     const P = await B.newPage(preset, { tier: 'save' });
     try {
-      const H = await openHost(P, { here: '天城·下层·7 号井黑市', chat: 'v2a-fog-' + onFog, ls: onFog ? { edenMapFog: '1' } : null, vars: { eden_map: { 探索: { tc_low: ['货运站'] } } } });
+      const H = await openHost(P, { here: '天城·下层·7 号井黑市', chat: 'v2a-fog-' + onFog, ls: { edenMapFog: onFog ? '1' : '0' }, vars: { eden_map: { 探索: { tc_low: ['货运站'] } } } });
       await H.open(); const vf = await H.viewer(); await vf.evaluate(() => go('tc_low')); await B.wait(6000);
       const st = await vf.evaluate(() => ({ on: document.body.classList.contains('fogon'), cv: !!document.getElementById('fogCv'), fogged: document.querySelectorAll('.mk.fogged').length,
         all: document.querySelectorAll('.mk').length, hereFog: !!document.querySelector('.mk.here.fogged'), opt: document.getElementById('optFog').checked }));
       const ex = await P.page.evaluate(() => window.__vars?.eden_map?.探索 || null);
-      if (!onFog) { rep.check(`${preset} 迷雾默认关：无遮罩、无变暗、不写变量`, !st.on && !st.cv && !st.fogged && !st.opt && JSON.stringify(ex) === '{"tc_low":["货运站"]}', JSON.stringify({ st, ex })); await B.shot(P.page, OUT, `fog_off_${preset}`); continue; }
+      if (!onFog) { rep.check(`${preset} 迷雾手动关：无遮罩、无变暗、不写变量`, !st.on && !st.cv && !st.fogged && !st.opt && JSON.stringify(ex) === '{"tc_low":["货运站"]}', JSON.stringify({ st, ex })); await B.shot(P.page, OUT, `fog_off_${preset}`); continue; }
       rep.check(`${preset} 迷雾开：遮罩 + 没到过的地点变暗，当前地点不暗`, st.on && st.cv && st.fogged > 0 && st.fogged < st.all && !st.hereFog, JSON.stringify(st));
       rep.check(`${preset} 迷雾开：当前地点记进 eden_map.探索（保留已有记录）`, ex?.tc_low?.includes('7 号井黑市') && ex.tc_low.includes('货运站'), JSON.stringify(ex));
       await B.shot(P.page, OUT, `fog_${preset}`);
