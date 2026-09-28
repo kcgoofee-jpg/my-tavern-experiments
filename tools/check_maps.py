@@ -114,6 +114,16 @@ for mid, m in maps.items():
     ov = m.get('overlay') or {}
     if ov.get('type') == 'dzi' and not exists(os.path.join(ROOT, ov.get('src', ''))): err(f"{mid}: 缺叠加层 {ov.get('src')}")
     if ov.get('from') and ov['from'] not in maps: err(f"{mid}.overlay.from → {ov['from']} 不存在")
+    for ins in m.get('insets') or []:                     # 局部高清插图（伊甸庄园等）：底图存在、切过瓦片、边界合法、指向的标记存在
+        iid, ibase = ins.get('id'), ins.get('base', '')
+        if not iid: err(f'{mid}: insets 里有一项没有 id'); continue
+        if not exists(os.path.join(ROOT, ibase)): err(f'{mid}.insets.{iid}: 缺底图 {ibase}')
+        elif ibase.endswith('.dzi') and not isdir(os.path.join(ROOT, ibase[:-4] + '_files')): err(f'{mid}.insets.{iid}: 缺瓦片目录 {ibase[:-4]}_files/')
+        b = ins.get('bounds')
+        if not (isinstance(b, list) and len(b) == 4 and 0 <= b[0] < b[2] <= 1 and 0 <= b[1] < b[3] <= 1): err(f'{mid}.insets.{iid}: bounds 应为 [x0,y0,x1,y1]（0..1，x0<x1，y0<y1）')
+        if ins.get('marker') and ins['marker'] not in (m.get('markers') or {}): err(f"{mid}.insets.{iid}.marker → {ins.get('marker')} 不存在")
+        res = ins.get('res_px')
+        if not (isinstance(res, list) and len(res) == 2 and all(isinstance(x, (int, float)) and x > 0 for x in res)): err(f'{mid}.insets.{iid}: res_px 应为 [宽, 高]（像素，用于清晰度上限）')
     if m.get('kind') != 'points': continue
     if 'districts' in m and not (isinstance(m['districts'], list) and all(isinstance(w, str) and w for w in m['districts'])): err(f'{mid}.districts 应为非空字符串列表（当前地点只写到大区时落到这一层）')
     if not m.get('data'): err(f'{mid}: points 地图没有 data'); continue

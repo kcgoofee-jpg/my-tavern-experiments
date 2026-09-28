@@ -152,6 +152,7 @@
   "load_failed": "Map failed to load: {msg}",
   "busy_pct": "Loading {pct}%",
   "loaded": "✓ Loaded",
+  "zoom_hint": "This is as sharp as the map gets — open {name} for more detail",
   "switching": "Switching…",
   "slow": "Slow network… {pct}",
   "stuck": "Stuck? Tap to retry",

@@ -132,6 +132,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <link rel="modulepreload" href="app/layers.mjs">
 <link rel="modulepreload" href="app/markers.mjs">
 <link rel="modulepreload" href="app/locate.mjs">
+<link rel="modulepreload" href="app/insets.mjs">
 <link rel="modulepreload" href="app/settings.mjs">
 <link rel="modulepreload" href="app/feedback.mjs">
 <link rel="modulepreload" href="app/feedback-report.mjs">
@@ -333,6 +334,12 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   body.estate #tierState, body.estate #layWrap, body.estate #layList, body.estate #evbar, body.estate #glitchNote { display: none !important; }   /* fix3：清晰度 / 版本编码在三维页不再隐藏（设置里灰掉 + 写原因 / 照常显示） */
   .snap { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; transition: opacity var(--dur-2); }
   .snap.out { opacity: 0; }
+
+  /* ---------- 放大到头的小提示（清晰度上限，locate.mjs zoomHint） ---------- */
+  #zoomHint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 6; max-width: 86%;
+    padding: 6px 12px; border-radius: 999px; background: color-mix(in srgb, var(--bg) 82%, transparent); color: var(--ink);
+    border: 1px solid var(--line); font-size: 12.5px; text-align: center; pointer-events: none; box-shadow: var(--shadow-1, 0 2px 8px rgba(0,0,0,.25)); }
+  #zoomHint[hidden] { display: none; }
 
   /* ---------- 加载进度：顶部 3 px 细条 + 实底提示条 ---------- */
   #prog { position: absolute; left: 0; right: 0; top: 0; height: 3px; z-index: 7; background: var(--line); }
@@ -559,7 +566,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   </header>
   <div id="stage" role="main" data-i18n-aria="page_title" aria-label="天城地图"><div id="osd"></div><div id="foot"><button type="button" id="creditBtn" aria-expanded="false" aria-controls="credit" data-i18n-aria="credit_aria" aria-label="署名"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/></svg></button><div id="credit" hidden></div></div><nav id="layers" hidden data-i18n-aria="layers_aria" aria-label="楼层"></nav>
     <div id="zoom" role="group" data-i18n-aria="zoom_group" aria-label="缩放"><button type="button" id="zIn" data-i18n-aria="zoom_in" aria-label="放大" data-i18n-title="zoom_in" title="放大"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg></button><button type="button" id="zOut" data-i18n-aria="zoom_out" aria-label="缩小" data-i18n-title="zoom_out" title="缩小"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/></svg></button><button type="button" id="zHome" data-i18n-aria="zoom_home" aria-label="复位视野" data-i18n-title="zoom_home" title="复位视野"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"/><circle cx="12" cy="12" r="2.5"/></svg></button><button type="button" id="lblTog" aria-pressed="true" data-i18n-aria="labels_tog" aria-label="显示标注" data-i18n-title="labels_tog_t" title="显示标注（L）"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 18l4.5-12L12 18M4.7 14h5.6"/><path d="M20.5 18v-5.2a2.6 2.6 0 0 0-5 0M20.5 15.2c-3.4-.4-5.5.4-5.5 1.6 0 .9.8 1.4 1.9 1.4 1.8 0 3.6-1.2 3.6-3"/></svg></button></div>
-    <div id="prog" hidden><i></i></div><div id="loading"><div><span data-i18n="loading">加载中…</span><div class="acts" hidden><button type="button" class="btn" id="estRetry" data-i18n="estate.retry">重试</button><button type="button" class="btn" id="estPlan" data-i18n="estate.plan">看平面图</button><button type="button" class="btn" id="tileRetry" hidden data-i18n="estate.retry">重试</button></div></div></div></div>
+    <div id="prog" hidden><i></i></div><div id="zoomHint" hidden aria-live="polite"></div><div id="loading"><div><span data-i18n="loading">加载中…</span><div class="acts" hidden><button type="button" class="btn" id="estRetry" data-i18n="estate.retry">重试</button><button type="button" class="btn" id="estPlan" data-i18n="estate.plan">看平面图</button><button type="button" class="btn" id="tileRetry" hidden data-i18n="estate.retry">重试</button></div></div></div></div>
   <script>if (window.__worldFirst) document.getElementById('loading').classList.add('thumb');</script>
 </div>
 <div id="layPop" class="pop" hidden role="dialog" data-i18n-aria="layers_menu" aria-label="图层"><div id="layList">

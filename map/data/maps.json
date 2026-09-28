@@ -595,7 +595,16 @@
       "label_en": "View 3D model"
      }
     }
-   }
+   },
+   "insets": [
+    {
+     "id": "eden_hi",
+     "marker": "eden",
+     "base": "art/tc_upper_eden.dzi",
+     "bounds": [0.43, 0.304, 0.661, 0.582],
+     "res_px": [6000, 4500]
+    }
+   ]
   },
   "tc_mid": {
    "econ": "以太元 Æ（植入芯片 / 个人终端无接触）；资产持有税按阶梯",

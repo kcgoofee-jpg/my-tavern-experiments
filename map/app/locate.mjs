@@ -6,6 +6,8 @@ import { go, groupView } from './nav.mjs';
 import { estFail, estateRoom, estateStandIn } from './estate.mjs';
 import { updateLayerBadges } from './layers.mjs';
 import { rebuildHere } from './extapi.mjs';
+import { activeInset } from './insets.mjs';
+import { nm, t } from './i18n.mjs';
 import { P } from './plugins.mjs';
 // ---------------- 初始视角与当前地点 ----------------
 export let userMoved = false;
@@ -13,13 +15,35 @@ let focusHere = false;   // 「当前位置」在同一张图上：飞到当前�
 // 地图的实际尺度（maps.json 的 view.extent_m）：米 → 占图宽的比例
 const viewNorm = (m, key) => { const v = m.view; return v?.[key] && v.extent_m?.[0] ? v[key] / v.extent_m[0] : null; };
 // 最大放大：按 view.min_width_m（最大放大时还能看见多宽）；没有 view 的图沿用全局的 maxZoomPixelRatio
-// 另加像素上限：最多放大到底图 1 像素 ≈ 1.25 个屏幕像素（CSS），再放大只是糊（用户 2026-09-27 同意），取两者中更「远」的那个
-export const MAX_PX = 1.25, RING_W = 10;
+// 另加像素上限：最多放大到底图 1 像素 ≈ 1.5 个屏幕像素（CSS），再放大只是糊（2026-09-28 从 1.25 调到 1.5，配合局部高清插图收紧），取两者中更「远」的那个。
+// 放大到某个地方（伊甸庄园等）另外渲了一张局部高清插图（maps.json insets[]）时，这条像素上限改按插图自己的分辨率算，
+// 而不是按底图——插图分辨率够高，允许再多放大一些（目标：插图最深处约 1 源像素 ≈ 1 屏幕像素）；插图本身见 app/insets.mjs。
+export const MAX_PX = 1.5, INSET_MAX_PX = 1, RING_W = 10;
 export function applyZoomLimit() { if (REG.maps[cur]?.kind === 'estate') return; const it = viewer.world.getItemAt(0); if (!it) return;
-  const mw = viewNorm(REG.maps[cur], 'min_width_m') || 0, pw = viewer.container.clientWidth / (it.getContentSize().x * MAX_PX);
+  const mw = viewNorm(REG.maps[cur], 'min_width_m') || 0, cw = viewer.container.clientWidth;
+  const ins = activeInset();
+  // 插图覆盖的范围只占底图的一小块（bounds 宽度），像素上限要按「那一小块在屏幕上能占多宽」折算，不能直接拿插图像素宽比整张底图宽
+  const pw = ins ? cw / (ins.res_px[0] / (ins.bounds[2] - ins.bounds[0]) * INSET_MAX_PX) : cw / (it.getContentSize().x * MAX_PX);
   // v0.9.6「天城周边」：天城各层最远能缩到 RING_W 倍图宽（约 30 km），城边拖得出去（visibilityRatio 放宽），不再撞到硬边
   const ring = window.TCScale?.isTier(cur); viewer.viewport.minZoomLevel = ring ? 1 / RING_W : null; viewer.viewport.visibilityRatio = ring ? .15 : 1;
-  viewer.viewport.maxZoomLevel = 1 / Math.max(mw, pw); viewer.viewport.applyConstraints(); }
+  viewer.viewport.maxZoomLevel = 1 / Math.max(mw, pw); viewer.viewport.applyConstraints();
+  zoomHint(ins);
+}
+// 到清晰度上限、且这个地方有自己的细节页（link，比如庄园的三维页）时给个小提示：放大已经到头，点进去才有更细的画面
+// 有插图的地方（比如伊甸庄园）用插图登记的 marker；没有插图但视野中心就落在某个带 link 的地标上（半径 r 内）也算，
+// 这样不用为每个地标都建插图才有提示
+function zoomHint(ins) {
+  const el = document.getElementById('zoomHint'); if (!el) return;
+  const m = REG.maps[cur], atCap = viewer.viewport.getZoom(true) >= viewer.viewport.getMaxZoom() - 1e-6;
+  let mk = ins?.marker && m?.markers?.[ins.marker];
+  if (!mk && atCap && m?.kind === 'points') {
+    const c = viewer.viewport.getCenter(true);
+    const near = (curData?.markers || []).find(k => Math.hypot(k.nx - c.x, k.ny - c.y / aspect) <= (k.r || .02) * 1.5);
+    mk = near && m.markers?.[near.id];
+  }
+  if (atCap && mk?.link) { el.textContent = t('zoom_hint', { name: nm(mk, 'name') }); el.hidden = false; }
+  else el.hidden = true;
+}
 export function focusStart(immediately) {
   if (userMoved || !viewer || !viewer.world.getItemCount()) return;
   const m = REG.maps[cur], cs = viewer.viewport.getContainerSize();

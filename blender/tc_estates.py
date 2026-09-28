@@ -1775,7 +1775,12 @@ class RouteGrid:
             blk = self.dout < buf
             for (x, y) in (A, Bp):                                                          # 端点（停靠平台）附近的岛外格子放行
                 j, i = self.idx(x, y); r = int(.55 / self.cell) + 1
-                jj, ii = np.mgrid[max(0, j - r):min(self.ny, j + r + 1), max(0, i - r):min(self.nx, i + r + 1)]
+                # 端点落在栅格范围外（岛表改动导致坐标超出 RouteGrid 的固定外扩边界）时，邻域窗口会反算成负尺寸——夹一下范围，
+                # 越界到没有邻域可放行就跳过这个端点（那段路线退化成直线，不崩渲染；2026-09-28 排查）
+                lo_j, hi_j = max(0, j - r), min(self.ny, j + r + 1)
+                lo_i, hi_i = max(0, i - r), min(self.nx, i + r + 1)
+                if hi_j <= lo_j or hi_i <= lo_i: continue
+                jj, ii = np.mgrid[lo_j:hi_j, lo_i:hi_i]
                 m = ((jj - j) ** 2 + (ii - i) ** 2 <= r * r) & (self.dout[jj, ii] > .025)
                 blk[jj[m], ii[m]] = False
             p = self._astar(blk, self.idx(*A), self.idx(*Bp))

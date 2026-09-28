@@ -7,6 +7,7 @@ import { go } from './nav.mjs';
 import { focusAfterGo } from './layers.mjs';
 import { cardFrom, pointOverlays, setCardFrom, untrackAll, worldOverlays } from './markers.mjs';
 import { applyZoomLimit, focusStart, markHere, setUserMoved, userMoved } from './locate.mjs';
+import { resetInsets, updateInsets } from './insets.mjs';
 import { P } from './plugins.mjs';
 export const TIERS = [   // 名称在 i18n/*.json 的 tier_<key>
   { key: 'save', cap: 2000, ratio: 1, dpr: 1.25 },
@@ -159,9 +160,10 @@ export function applyTier() {
     if (!busy && ts.textContent === t('switching')) tsOk(); }, 900);
 }
 export function onOpen() {
+  resetInsets();   // 旧世界已经被 viewer.open() 整个换掉，插图记录清空，新地图按需重新补上
   if (REG.maps[cur]?.kind === 'estate') return;   // 打开旧底图期间已经切去庄园
   const it = viewer.world.getItemAt(0), sz = it.getContentSize(); setAspect(sz.y / sz.x);
-  applyTier(); applyZoomLimit(); homeMode(); drawOverlays(); focusStart(true); autoTier();
+  applyTier(); applyZoomLimit(); homeMode(); drawOverlays(); focusStart(true); autoTier(); updateInsets();
   if (pendingFocus) { const el = [...document.querySelectorAll('.mk')].find(e => e.dataset.name === REG.maps[cur].markers?.[pendingFocus]?.name);
     setPendingFocus(null); if (el) { setCardFrom(el); el._open(); } }
   focusAfterGo();

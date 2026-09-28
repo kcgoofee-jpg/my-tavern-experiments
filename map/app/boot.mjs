@@ -17,6 +17,7 @@ import './host.mjs';
 import './bridge.mjs';
 import { initFpsMeter } from './fps.mjs';
 import { M, REG, cur, pendingHome, setM, setPendingHome, setREG, setViewer, viewer } from './state.mjs';
+import { updateInsets } from './insets.mjs';
 import { $, PR, PROTO, coarse, getJSON, jsonCache, narrow, post, setNarrow, setPR } from './util.mjs';
 import { TIERS, applyOverlayToggle, autoTier, declutter, effTier, homeMode, initProgress, onOpen, refit, routeGaps, setTier } from './tiers.mjs';
 import { DICT, LANG, applyI18n, postState, setDICT, setLANG, setLang, t } from './i18n.mjs';
@@ -107,6 +108,8 @@ async function mainInner() {
   viewer.addHandler('animation', rescale); viewer.addHandler('resize', rescale); viewer.addHandler('open', () => setTimeout(rescale, 0));
   viewer.addHandler('animation-finish', autoTier); viewer.addHandler('resize', autoTier);
   viewer.addHandler('animation-finish', declutter); viewer.addHandler('resize', () => { homeMode(); declutter(); applyZoomLimit(); refit(); });
+  // 插图命中范围会随平移 / 缩放变化，清晰度上限（是否按插图的分辨率放宽）也要跟着重算
+  viewer.addHandler('animation-finish', () => { updateInsets(); applyZoomLimit(); });
   initProgress();
   // 岛屿结界轮廓（barriers）默认关（用户 2026-09-27，和航线一样；两者永久推迟，不再打磨），开了记在本机；世界图国界（dzi）照旧默认开
   $('#tgBorders').onchange = e => { if (REG.maps[cur]?.overlay?.type === 'barriers') try { TCStore.set('edenMapBarriers', e.target.checked ? '1' : '0'); } catch (err) {} applyOverlayToggle(); };
