@@ -104,11 +104,13 @@ html.rm .uis{transition:none}
     function setName(id, n) { const x = tabs.get(id); if (x) x.base = n; }
     function showTab(id, on) { const x = tabs.get(id); if (!x) return; x.b.hidden = !on; if (!on && tab === id) { const nx = [...tabs.keys()].find(k => !tabs.get(k).b.hidden); if (nx) setTab(nx, state === 'peek' ? null : state); else tab = null; } paintTabs(); }
     function paintTabs() {
-      for (const [k, x] of tabs) { const on = k === tab; x.b.setAttribute('aria-selected', on ? 'true' : 'false'); x.b.tabIndex = on ? 0 : -1; x.p.hidden = !on; }
+      const lit = state !== 'peek';   // 收起时全部熄灭：高亮与实际打开状态一致（用户 2026-09-28：(i) 亮着却没开面板）
+      for (const [k, x] of tabs) { const on = lit && k === tab; x.b.setAttribute('aria-selected', on ? 'true' : 'false'); x.b.tabIndex = on ? 0 : -1; x.p.hidden = !on; }
       if (!tab || tabs.get(tab)?.b.hidden) { const f = [...tabs.values()].find(x => !x.b.hidden); if (f) f.b.tabIndex = 0; }
     }
     function paint() {
       const m = mode(); el.classList.toggle('rail', m === 'rail'); el.dataset.state = state; el.dataset.mode = m;
+      paintTabs();   // 状态一变就刷新页签高亮（收起 = 全灭）
       const open = state !== 'peek'; tog.setAttribute('aria-expanded', open ? 'true' : 'false');
       tog.querySelector('.t').textContent = open ? T.collapse : T.expand;
       tog.querySelector('.a').innerHTML = window.UIIcon ? UIIcon.svg(m === 'rail' ? (open ? 'chevR' : 'chevL') : (open ? 'chevD' : 'chevU')) : '';

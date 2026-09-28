@@ -109,7 +109,7 @@ def glow_pools(name, P, strength=1.0, seg=14, fall=2.2):
     """P: [(x, y, z, 半径, (r, g, b))]。每个光池一个扇形圆盘：圆心亮、边缘为零（按 fall 次方衰减），
     材质 = 透明 + 自发光（加性），圆盘不挡光、不投影；路灯底下的路面、人行道被照出一小片暖光，而不是只有一个亮点。"""
     P = list(P); n = len(P)
-    if n == 0: return None
+    if n == 0 or strength <= 0: return None   # strength<=0（--day / --glow 0）：白天没有灯光光池
     a = np.linspace(0, 2 * np.pi, seg, endpoint=False); ca, sa = np.cos(a), np.sin(a)
     X = np.array([p[0] for p in P], np.float32); Y = np.array([p[1] for p in P], np.float32); Z = np.array([p[2] for p in P], np.float32)
     Rr = np.array([p[3] for p in P], np.float32); C = np.array([p[4] for p in P], np.float32).reshape(-1, 3)

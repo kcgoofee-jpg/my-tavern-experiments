@@ -4,11 +4,13 @@ blender/data/*.i16
 map/art/world_test.png
 *.blend1
 .claude/
+.pi/
 map/art/world_8k.png
 map/tavern/test-*.html
 map/art/tc_upper_preview.png
 map/art/tc_upper_8k.png
 map/art/tc_*_full.png
+map/art/_*.png
 map/art/tc_upper_8k.png
 __pycache__/
 
@@ -38,3 +40,5 @@ tools/cloud/hosts/*.env
 !tools/cloud/hosts/example.env.example
 # 云脚本本地锁文件
 tools/cloud/.locks/
+.pi/
+.cache/

@@ -9,7 +9,7 @@
 运行（仓库根目录，经 tools/blender_run.sh）：
   blender -b --factory-startup --python blender/world/yuanyu_holy_mount.py -- --res 2000 --samples 16 --out docs/drafts/world_v1_yuanyu_holy_mount.jpg
   → <out>（斜俯视主图）、<out 去扩展名>_ground.jpg（城区仰视）、各自 _anchors.json 与 _items.json（交 tools/annotate_board.py）
-  --save 1 另存 blender/world/out/<ID>.blend（glb 等用户批准后再导出：--glb 1）
+  --save 1 另存 blender/world/out/<ID>.blend；--glb 1 导出 glb（原域 v2 用户 2026-09-28 已确认；2026-09-29 起全线全自动不再等批）
 """
 import math, os, random, sys, json
 import bpy

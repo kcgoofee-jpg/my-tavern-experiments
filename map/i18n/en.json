@@ -559,6 +559,7 @@
   "hint.2": "2. The map opens on the world map by default; tap “Current location” to jump to where you are and highlight it. If a place isn’t recognised you’ll see “Not on map: …” — tap it to place it.",
   "hint.3": "3. Layers, labels, characters and 3D quality are in Settings (⋯ at the bottom right on phones).",
   "hint.3d": "3. Layers, labels, characters and 3D quality are in Settings at the top right.",
+  "hint.4": "4. Editing history floors / regenerating: swipes, deleting or editing buildings and branching a map all recompute automatically — except position text you hand-edit on a history floor. Edit on the newest floor, or branch from that floor and regenerate.",
   "um.empty_sub": " Place it once and this chat remembers it.",
   "s.hint_again": "Getting-started tips",
   "s.hint_show": "Show again",

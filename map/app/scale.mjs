@@ -98,7 +98,7 @@ const TCScale = (() => {
     window.__snapFx = { ox: sp.x || cs.x / 2, oy: sp.y || cs.y / 2, scale: .2 }; window.__worldTC = REG.groups[grp(cur)]?.place || true; setPendingFocus(null); go('world');
   }
   function onZoom(e) {
-    if (busy || !REG || !cur || !viewer.world.getItemCount() || !e || !isFinite(e.zoom)) return;
+    if (busy || !REG || !cur || !viewer.world.getItemCount() || !e || !Number.isFinite(e.zoom)) return;
     const vp = viewer.viewport, m = REG.maps[cur], z = vp.getZoom(true), now = performance.now();
     let dir = 0;
     let tgt = null;
