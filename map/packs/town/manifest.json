@@ -1,0 +1,15 @@
+{
+  "$schema": "../../data/schema/pack.schema.json",
+  "id": "town",
+  "schema": 1,
+  "title": "雾港镇",
+  "title_en": "Mistport",
+  "data": {
+    "maps": "maps.json",
+    "events": "events.json",
+    "worldbook": "worldbook.json"
+  },
+  "theme": {
+    "accent": "#63b4be"
+  }
+}

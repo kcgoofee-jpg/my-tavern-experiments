@@ -16,6 +16,7 @@ step() { local name=$1; shift; local t=$SECONDS
   if "$@" > "$TMP/out" 2>&1; then echo "✓ $name ($((SECONDS - t))s)"; else echo "✗ $name"; tail -15 "$TMP/out" | sed 's/^/    /'; FAIL=1; fi; }
 
 step "check_maps" python3 tools/check_maps.py
+step "check_pack（设定包）" python3 tools/check_pack.py
 # 空文件守卫：已跟踪的 .mjs/.js/.py/.json/.md 不许是 0 字节（shell 里 cat 被别名成 bat 时 `cat > f <<EOF` 会悄悄写出空文件，stats096 就这样空了两天）；确有需要的空文件写进 EMPTY_OK
 EMPTY_OK='^$'
 step "无空的已跟踪源文件" bash -c "! git ls-files -- '*.mjs' '*.js' '*.py' '*.json' '*.md' | while IFS= read -r f; do [ -f \"\$f\" ] && [ ! -s \"\$f\" ] && echo \"空文件：\$f\"; done | grep -vE '$EMPTY_OK' | grep ."

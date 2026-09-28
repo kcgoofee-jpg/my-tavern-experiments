@@ -1,4 +1,5 @@
 // 本机扩展接口 window.EdenMap 与聊天 id（E6，docs/content-compat.md）。
+import { nsStore } from '../core/pack.mjs';
 import { M, REG, cur } from './state.mjs';
 import { $, post } from './util.mjs';
 import { nm } from './i18n.mjs';
@@ -11,7 +12,7 @@ import { P } from './plugins.mjs';
 //   setRoomAlias(自定义名, 标准房间名) → true / false；removeRoomAlias(自定义名)；getRooms() → { rooms: 标准房间名[], alias: { 自定义名: 标准房间名 }, chat }
 //   on('here' | 'events' | 'map', fn) / off(事件, fn?)：here {value, resolved}、events {items, floor, hereLayer}、map {map, title, kind}
 export let chatId = '', enNames = null, emMap = null;
-export const LS = (() => { try { return localStorage; } catch (e) { return null; } })();
+export const LS = (() => { try { return nsStore(localStorage, window.__packId); } catch (e) { return null; } })();   // 设定包命名空间（eden 原样）
 const emSubs = { here: new Set(), events: new Set(), map: new Set(), characters: new Set() };
 export function emEmit(ev, data) { for (const f of emSubs[ev]) { try { f(data); } catch (e) { console.warn('[EdenMap]', e); } } if (ev === 'map') post({ type: 'eden-map:emit', ev, data }); }
 export function emMapChanged() { if (cur === emMap) return; emMap = cur; const m = REG.maps[cur]; emEmit('map', { map: cur, title: nm(m, 'title'), kind: m.kind }); }

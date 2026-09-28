@@ -70,7 +70,7 @@ const ALIAS_CAT = { 巡查: '巡空令', 巡空: '巡空令', 空域巡查: '巡
   品鉴展: '品鉴宴', 季度拍卖: '拍卖季', 资产登记: '登记年检', 年检: '登记年检', 登记: '登记年检', 查验: '检查点管控', 检查点: '检查点管控', 治安检查点: '检查点管控', 层间检查点: '检查点管控', 临时封控: '临时管控', 快讯: '舆情', 黑市兑价: '兑价波动' };
 // 类型文字 → 具体类型：完全相同 > 别名完全相同 > 包含某个类型名（取最长，一样长取靠前）> 包含某个别名（同上）> 其他
 const longestIn = (s, keys) => { let b = '', bi = 0; for (const k of keys) { const i = s.indexOf(k); if (i >= 0 && (k.length > b.length || (k.length === b.length && i < bi))) { b = k; bi = i; } } return b; };   // 一样长取更靠前的（「装甲部队调动」→ 装甲）
-const CAT_KEYS = Object.keys(CATS).filter(k => k !== '其他'), ALIAS_KEYS = Object.keys(ALIAS_CAT);
+let CAT_KEYS = Object.keys(CATS).filter(k => k !== '其他'), ALIAS_KEYS = Object.keys(ALIAS_CAT);
 export const catOf = s => { s = String(s || '').trim(); if (CATS[s]) return s; if (ALIAS_CAT[s]) return ALIAS_CAT[s];
   const c = longestIn(s, CAT_KEYS); if (c) return c; const a = longestIn(s, ALIAS_KEYS); return a ? ALIAS_CAT[a] : '其他'; };
 // 地点 → 层：先看显式前缀，再按设定地名推断（地名表见 maps.json）
@@ -84,9 +84,11 @@ const RE_UP = /悬浮庄园|伊甸庄园|罗斯柴尔德庄园|悬浮岛|浮岛|
 const RE_LOW = /井|地基|血肉磨坊|施粥|废弃教堂|哨所|货运|下层分局|委员会下层|公共收容设施|量产|灰票|下城|贫民窟|贫民区|廉价酒馆|地下格斗|非法赌场|二手市场|二手衣物|工厂|铁皮屋|旧货市场|孤儿收容所|老K杂货|井下-07|下层区酒吧|监狱/;
 const RE_MID = /霓虹|C区|检查点|执法局总局|大教堂|主教座堂|大主教|圣铁摇篮|战斗修女院|军营|星渊|天城议会|商业区|旧公寓|最高法院|佣兵公会|中城|天城大学|法学院|骑士团营区|维多利亚的公寓|公立医院|养老院|中层修道院|法师塔|施奈德|新生工坊|管家学院|执政厅|政务院|储备署|文化署|军事学院|风暴殿|枢机院/;
 const RE_OUT = /光辉联邦|大骑士领|圣都|第三帝国|灵枢秘派|虚灵古派|原域|诸神殿|临光家族|圆桌骑士封地|伦敦|英国|海外|旷野|猎季营地|魔导军工|大陆|异兽|野兽潮|兽潮|外围|城外/;
-const guessByName = s => (RE_UP.test(s) ? '上层' : RE_LOW.test(s) ? '下层' : RE_MID.test(s) ? '中层' : RE_OUT.test(s) ? '天城外' : '');
-const layerGuess = loc => LAYERS.find(l => loc.startsWith(l)) || LAYERS.find(l => l !== '天城外' && loc.includes(l)) || guessByName(loc);
-const CLOSED = /解除|结束|恢复|扑灭|已控制|平息/;
+let guessByName = s => (RE_UP.test(s) ? '上层' : RE_LOW.test(s) ? '下层' : RE_MID.test(s) ? '中层' : RE_OUT.test(s) ? '天城外' : '');
+const layerGuess = loc => LAYERS.find(l => loc.startsWith(l)) || LAYERS.find(l => l !== CFG.outside && loc.includes(l)) || guessByName(loc);
+let CLOSED = /解除|结束|恢复|扑灭|已控制|平息/;
+// 设定包可改的措辞（configure）：地区名（地点前缀里去掉）、界外层名、注入句的标签
+const CFG = { region: '天城', outside: '天城外', tag: '天城事态', upAlias: /上城/ };
 export const LAYERS = ['上层', '中层', '下层', '天城外'];
 export const LAYER_MAP = { 上层: 'tc_upper', 中层: 'tc_mid', 下层: 'tc_low', 天城外: 'world' };
 export const AGE = { live: 7, after: 20, fade: 40 };        // 楼层差：≤7 活跃、≤20 余波、>20 淡出（只在列表）；已解除 / 被新事件接替的 >40 丢弃
@@ -152,7 +154,7 @@ export function parseMarks(raw) {
     const loc = norm(e.loc), layer = layerGuess(loc);
     if (!layer) continue;
     // 地点里再写一遍层（「下层·天城下层血肉磨坊」「天城·下层·7号井」）：去掉重复的层前缀（v0.9.2）
-    const place = loc.slice(loc.startsWith(layer) ? layer.length : 0).replace(/^·+/, '').replace(new RegExp('^(天城)?·?' + layer + '·?'), '').replace(/^天城·/, '').replace(/^·+/, '');
+    const place = loc.slice(loc.startsWith(layer) ? layer.length : 0).replace(/^·+/, '').replace(new RegExp('^(' + reEsc(CFG.region) + ')?·?' + reEsc(layer) + '·?'), '').replace(new RegExp('^' + reEsc(CFG.region) + '·'), '').replace(/^·+/, '');
     const { line, loc: _, ...rest } = e;
     const c = CATS[e.cat], g = e.cat === '其他' && GROUPS[e.grpHint] ? e.grpHint : c.g;   // 只写了大类名（「类型=人物」）：类型记「其他」，颜色按该大类
     const { grpHint: _g, ...rest2 } = rest;
@@ -198,7 +200,7 @@ export function layerOf(here) {
   if (!here) return '';
   const s = String(here);
   for (const l of LAYERS) if (s.includes(l)) return l;
-  if (/上城/.test(s)) return '上层';
+  if (CFG.upAlias?.test(s)) return '上层';
   return guessByName(s);
 }
 
@@ -209,5 +211,35 @@ export function summarize(items, hereLayer, maxLen = 80) {
   if (!live.length) return '';
   let s = live.map(e => `${e.layer}${e.place ? '·' + e.place : ''}：${e.src ? e.src + '通报' : ''}${e.cat}${e.lvl >= 3 ? '（严重）' : ''}${e.text ? '，' + e.text : ''}`).join('；');
   if (s.length > maxLen) s = s.slice(0, maxLen - 1) + '…';
-  return `[天城事态·仅背景，不要求提及，已标记的事件勿重复标记] ${s}。`;
+  return `[${CFG.tag}·仅背景，不要求提及，已标记的事件勿重复标记] ${s}。`;
+}
+
+// ---------------- 设定包（通用化，docs/generalize/README.md）：换一套事件分类 ----------------
+// tax = packs/<id>/events.json（map/data/schema/events.schema.json）；null = 恢复内置的天城分类。
+// 导出的表（GROUPS / CATS / LAYERS…）原地改，已 import 的模块看到的是同一个对象。
+const reEsc = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const refill = (o, n) => { for (const k of Object.keys(o)) delete o[k]; Object.assign(o, n); };
+const BUILTIN = { GROUPS: { ...GROUPS }, GROUP_ORDER: [...GROUP_ORDER], SHAPES: { ...SHAPES }, CATS: { ...CATS }, ALIAS_CAT: { ...ALIAS_CAT }, LAYERS: [...LAYERS], LAYER_MAP: { ...LAYER_MAP },
+  EXAMPLES: [...EXAMPLES], guess: guessByName, CLOSED, CFG: { ...CFG } };
+export let packId = 'eden';
+export function configure(tax, id = tax ? 'pack' : 'eden') {
+  let n;
+  if (!tax) n = BUILTIN;
+  else {
+    const groups = { ...tax.groups, 其他: tax.groups.其他 || '#cfd8e0' };
+    const cats = {};
+    for (const [k, v] of Object.entries(tax.types || {})) cats[k] = { g: groups[v.g] ? v.g : '其他', ch: v.ch, src: v.src || '', rare: v.rare || 1 };
+    cats.其他 ||= { g: '其他', ch: '!', src: '', rare: 1 };
+    for (const v of Object.values(cats)) v.color = groups[v.g];
+    const layers = tax.layers.map(l => l.name), res = tax.layers.map(l => [l.name, (l.match || []).filter(Boolean)]);
+    n = { GROUPS: groups, GROUP_ORDER: tax.order || Object.keys(tax.groups).filter(g => g !== '其他'), SHAPES: { 其他: 'square', ...(tax.shapes || {}) }, CATS: cats,
+      ALIAS_CAT: Object.fromEntries(Object.entries(tax.alias || {}).filter(([, v]) => cats[v])), LAYERS: layers, LAYER_MAP: Object.fromEntries(tax.layers.map(l => [l.name, l.map])),
+      EXAMPLES: tax.examples || [], guess: s => (res.find(([, ws]) => ws.some(w => s.includes(w))) || [''])[0],
+      CLOSED: tax.closed?.length ? new RegExp(tax.closed.map(reEsc).join('|')) : BUILTIN.CLOSED,
+      CFG: { region: tax.region || '', outside: tax.outside || '', tag: tax.tag || '地图事态', upAlias: null } };
+  }
+  refill(GROUPS, n.GROUPS); GROUP_ORDER.splice(0, GROUP_ORDER.length, ...n.GROUP_ORDER); refill(SHAPES, n.SHAPES); refill(CATS, n.CATS); refill(ALIAS_CAT, n.ALIAS_CAT);
+  LAYERS.splice(0, LAYERS.length, ...n.LAYERS); refill(LAYER_MAP, n.LAYER_MAP); EXAMPLES.clear(); for (const x of n.EXAMPLES) EXAMPLES.add(x);
+  guessByName = n.guess; CLOSED = n.CLOSED; Object.assign(CFG, n.CFG);
+  CAT_KEYS = Object.keys(CATS).filter(k => k !== '其他'); ALIAS_KEYS = Object.keys(ALIAS_CAT); packId = id;
 }

@@ -1,0 +1,126 @@
+{
+  "_说明": "设定包 town 的地图注册表（路径相对本目录）。字段见 map/data/schema/maps.schema.json",
+  "start": "town_hill",
+  "groups": {
+    "town": {
+      "title": "雾港镇",
+      "title_en": "Mistport",
+      "layers": [
+        "town_hill",
+        "town_harbour"
+      ]
+    }
+  },
+  "maps": {
+    "town_hill": {
+      "title": "雾港镇 · 山上",
+      "title_en": "Mistport · 山上",
+      "group": "town",
+      "layer": {
+        "name": "山上",
+        "name_en": "山上"
+      },
+      "kind": "points",
+      "base": "art/town_hill.dzi",
+      "data": "town_hill.json",
+      "credit": "占位底图（tools/new_pack.py 程序生成）",
+      "view": {
+        "extent_m": [
+          1600.0,
+          1000.0
+        ],
+        "width_m": 1600.0,
+        "focus": "keep"
+      },
+      "markers": {
+        "keep": {
+          "name": "旧堡",
+          "name_en": "Old Keep",
+          "tag": "inf",
+          "src": "示例包：虚构小镇的制高点",
+          "alias": [
+            "城堡",
+            "堡垒",
+            "旧堡"
+          ]
+        },
+        "market": {
+          "name": "集市广场",
+          "name_en": "Market Square",
+          "tag": "inf",
+          "src": "示例包：每周集市",
+          "alias": [
+            "广场",
+            "集市",
+            "集市广场"
+          ],
+          "link": {
+            "map": "town_harbour",
+            "marker": "fish",
+            "label": "下到码头 · 鱼市",
+            "label_en": "Down to the Fish Market"
+          }
+        },
+        "clock": {
+          "name": "钟楼",
+          "name_en": "Clock Tower",
+          "tag": "inf",
+          "src": "示例包：镇中心钟楼",
+          "alias": [
+            "钟塔",
+            "钟楼"
+          ]
+        }
+      }
+    },
+    "town_harbour": {
+      "title": "雾港镇 · 码头",
+      "title_en": "Mistport · 码头",
+      "group": "town",
+      "layer": {
+        "name": "码头",
+        "name_en": "码头"
+      },
+      "kind": "points",
+      "base": "art/town_harbour.dzi",
+      "data": "town_harbour.json",
+      "credit": "占位底图（tools/new_pack.py 程序生成）",
+      "view": {
+        "extent_m": [
+          1600.0,
+          1000.0
+        ],
+        "width_m": 1600.0,
+        "focus": "fish"
+      },
+      "markers": {
+        "fish": {
+          "name": "鱼市",
+          "name_en": "Fish Market",
+          "tag": "inf",
+          "src": "示例包：清晨开市",
+          "alias": [
+            "鱼市",
+            "鱼市场"
+          ],
+          "link": {
+            "map": "town_hill",
+            "marker": "market",
+            "label": "上到山上 · 集市广场",
+            "label_en": "Up to Market Square"
+          }
+        },
+        "light": {
+          "name": "灯塔",
+          "name_en": "Lighthouse",
+          "tag": "inf",
+          "src": "示例包：港口入口",
+          "alias": [
+            "灯塔",
+            "航标灯"
+          ]
+        }
+      }
+    }
+  }
+}

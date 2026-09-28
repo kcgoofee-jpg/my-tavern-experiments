@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "events.schema.json",
+  "title": "设定包事件分类 map/packs/<id>/events.json",
+  "description": "事件标签（⌖类别｜层·地点｜等级｜一句话｜发布方 或 data-tcmap）的类型表：大类（颜色 / 形状 = 图例）、具体类型、别名、层与地名推断。map/tavern/events.mjs configure() 读入；eden 用内置表。",
+  "type": "object",
+  "required": ["groups", "types", "layers"],
+  "additionalProperties": false,
+  "patternProperties": { "^_": {} },
+  "properties": {
+    "groups": { "type": "object", "minProperties": 1, "additionalProperties": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }, "description": "大类 → 颜色" },
+    "order": { "type": "array", "items": { "type": "string" }, "description": "图例顺序（缺省 = groups 的键顺序）" },
+    "shapes": { "type": "object", "additionalProperties": { "enum": ["hex", "circle", "square", "penta", "diamond", "octa", "tri-down", "tri", "ring"] } },
+    "types": { "type": "object", "minProperties": 1, "additionalProperties": { "type": "object", "required": ["g", "ch"], "additionalProperties": false,
+      "properties": { "g": { "type": "string" }, "ch": { "type": "string", "minLength": 1 }, "src": { "type": "string" }, "rare": { "type": "integer", "minimum": 1, "maximum": 4 } } } },
+    "alias": { "type": "object", "additionalProperties": { "type": "string" } },
+    "layers": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["name", "map"], "additionalProperties": false,
+      "properties": { "name": { "type": "string", "minLength": 1 }, "map": { "type": "string" }, "match": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "地名里出现这些词就算这一层" } } } },
+    "closed": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "状态写这些词 = 事件结束（缺省 = 核心的 解除 / 结束 / 恢复…）" },
+    "region": { "type": "string", "description": "地区名：地点前缀里写了就去掉（「雾港镇·码头·鱼市」→ 码头 / 鱼市）" },
+    "outside": { "type": "string", "description": "界外层名（地名包含层名时不按包含匹配这一层）" },
+    "tag": { "type": "string", "description": "注入给模型那句话的方括号标签（缺省「地图事态」）" },
+    "examples": { "type": "array", "items": { "type": "string" }, "description": "世界书里的示范标记原文：模型照抄时不上图" }
+  }
+}

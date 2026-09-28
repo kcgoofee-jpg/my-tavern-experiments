@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pack.schema.json",
+  "title": "设定包清单 map/packs/<id>/manifest.json",
+  "description": "一张卡 = 一个设定包：核心（查看器、事件解析、定位、扩展接口）只经 map/core/pack.mjs 读这里。路径相对清单所在目录（eden 相对 map/）。写法见 docs/generalize/README.md；tools/check_pack.py 校验结构与跨文件一致性。",
+  "type": "object",
+  "required": ["id", "schema", "title", "data"],
+  "additionalProperties": false,
+  "patternProperties": { "^_": {} },
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{1,31}$", "description": "包 id = 目录名；本机存储前缀由它推出（eden → edenMap，其它 → tcp.<id>.），不可另配" },
+    "schema": { "const": 1, "description": "清单格式版本" },
+    "title": { "type": "string", "minLength": 1, "description": "地图面板标题" },
+    "title_en": { "type": "string" },
+    "chat": { "type": "object", "additionalProperties": false, "description": "聊天变量（酒馆助手 chat 变量；从不写卡自己的 stat_data）",
+      "properties": { "var": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$", "description": "顶层键；默认 tc_<id>（eden 为历史名 eden_map）。键内结构（自定义 / 探索 / 行程…）由核心定义" } } },
+    "data": { "type": "object", "required": ["maps"], "additionalProperties": false, "description": "数据文件（相对清单目录）；缺省 = 这项功能不开",
+      "properties": {
+        "maps": { "$ref": "#/$defs/path", "description": "地图注册表（结构 = maps.schema.json；里面的 base / data 路径也相对包目录）" },
+        "world": { "$ref": "#/$defs/path", "description": "世界图地点（places / fiefs / realms）；没有世界图的包不写" },
+        "derived": { "$ref": "#/$defs/path" },
+        "rooms": { "$ref": "#/$defs/path", "description": "分层房间平面（庄园类室内图）" },
+        "cardBind": { "$ref": "#/$defs/path", "description": "卡原名绑定规则（仓库不写卡原文，运行时从卡读）" },
+        "events": { "anyOf": [ { "const": "builtin" }, { "$ref": "#/$defs/path" } ], "description": "事件分类（结构 = events.schema.json）；builtin = 核心自带的天城分类（只有 eden 用）" },
+        "worldbook": { "$ref": "#/$defs/path", "description": "世界书附加条目源文件（给模型的地图联动规范）" }
+      } },
+    "cdn": { "type": "object", "additionalProperties": false,
+      "properties": { "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", "description": "GitHub owner/repo（jsDelivr gh 线路）" }, "npm": { "type": "string" } } },
+    "theme": { "type": "object", "additionalProperties": false,
+      "properties": { "accent": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "强调色（悬浮按钮、选中态）" } } },
+    "features": { "type": "object", "additionalProperties": { "type": "boolean" }, "description": "开关覆盖（world / estate…），默认按有没有对应数据推出" },
+    "strings": { "type": "object", "additionalProperties": { "type": "string" }, "description": "包内文案（悬浮按钮提示等），键名见 docs/generalize/README.md" },
+    "worldbook": { "type": "object", "additionalProperties": false, "properties": { "addon": { "type": "string" } }, "description": "（eden 历史字段）附加条目生成脚本" }
+  },
+  "$defs": {
+    "path": { "type": "string", "minLength": 1, "pattern": "^(?![a-zA-Z]+:)(?!/)(?!.*\\.\\.)[^\\s\\\\]+$" }
+  }
+}

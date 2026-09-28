@@ -2,6 +2,9 @@
 // KEYS = 全部键的唯一登记处（所有者、作用域、默认值）；tests/storage.test.mjs 静态清点仓库里出现的每个 edenMap* 键都必须在这里登记。
 // get / set / json / remove：带 try/catch（隐私模式、额度满、被禁用都不抛）。新代码用这里；旧的经典脚本逐步迁（arch-v2 §6 第 5 步）。
 // 以 edenMap 开头的键参与存储预算（tavern/budget.mjs）；edenEstateLabels 是历史遗留名，预算里也按我们的算。
+import { nsKey } from './pack.mjs';
+// 设定包命名空间（core/pack.mjs）：非 eden 包时 edenMap* 键实际读写 tcp.<id>.*；登记处仍按 edenMap* 写
+const N = k => nsKey(k, globalThis.__packId);
 export const KEYS = {
   // 查看器（viewer.html）
   edenMapTheme: { owner: 'viewer', def: 'auto' }, edenMapLang: { owner: 'viewer', def: 'zh' }, edenMapHand: { owner: 'viewer', def: 'auto' },
@@ -31,8 +34,8 @@ export function known(k) {
 }
 const area = (scope, S = globalThis) => { try { return scope === 'session' ? S.sessionStorage : S.localStorage; } catch (e) { return null; } };
 const spec = k => KEYS[k] || Object.entries(KEYS).find(([p, o]) => o.prefix && k.startsWith(p))?.[1] || {};
-export function get(k, def, S) { const s = spec(k); try { const v = area(s.scope, S)?.getItem(k); return v ?? (def !== undefined ? def : s.def ?? null); } catch (e) { return def ?? s.def ?? null; } }
-export function set(k, v, S) { const a = area(spec(k).scope, S); if (!a) return false; try { a.setItem(k, String(v)); return true; } catch (e) { return false; } }
-export function remove(k, S) { try { area(spec(k).scope, S)?.removeItem(k); } catch (e) {} }
+export function get(k, def, S) { const s = spec(k); try { const v = area(s.scope, S)?.getItem(N(k)); return v ?? (def !== undefined ? def : s.def ?? null); } catch (e) { return def ?? s.def ?? null; } }
+export function set(k, v, S) { const a = area(spec(k).scope, S); if (!a) return false; try { a.setItem(N(k), String(v)); return true; } catch (e) { return false; } }
+export function remove(k, S) { try { area(spec(k).scope, S)?.removeItem(N(k)); } catch (e) {} }
 export function json(k, def = null, S) { try { const v = get(k, null, S); return v == null ? def : JSON.parse(v); } catch (e) { return def; } }
 export const flag = (k, S) => get(k, undefined, S) === '1';

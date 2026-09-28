@@ -522,7 +522,7 @@
   "um.empty": "Current location “{n}” is not on the map yet.",
   "um.empty_btn": "Put it on the map",
   "hint.title": "Three quick tips",
-  "hint.1": "1. Tap a landmark to read about it; places with a 3D model (e.g. the Eden estate) open in 3D from the card.",
+  "hint.1": "1. Tap a landmark to read about it; places with a 3D model open in 3D from the card.",
   "hint.1b": " “Go here” and “Ask about this” at the bottom of a card only fill the chat box — they never send for you.",
   "hint.2": "2. The map jumps to where you are now and highlights it. If a place isn’t recognised you’ll see “Not on map: …” — tap it to place it.",
   "hint.3": "3. Layers, labels, characters and 3D quality are in Settings (⋯ at the bottom right on phones).",
