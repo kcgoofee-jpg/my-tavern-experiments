@@ -92,11 +92,11 @@
 | P3 其他 | tc_mid | `schneider_clinic` | 施奈德精密改造诊所 | 🆕 | 仓库推断 | — | — |  |
 | P3 其他 | tc_mid | `victoria_apartment` | 维多利亚的公寓 | ✅ | 卡 | — | — |  |
 | P3 其他 | tc_upper | `eden` | 伊甸庄园 | ✅ | 卡 | — | — |  |
-| P3 其他 | tc_upper | `league_club` | 庄园主联盟会所 | ✅ | 卡 + 推断位置 | 庄园主联盟会所 `map/props/league_club/` | 草稿（r1 自查；glb 待第 4 步） | isle9；宫殿式会所 + 顶光拍卖厅 |
+| P3 其他 | tc_upper | `league_club` | 庄园主联盟会所 | ✅ | 卡 + 推断位置 | 庄园主联盟会所 `map/props/league_club/` | 草稿（r1 自查；glb 暂缓，用户 2026-09-28） | isle9；宫殿式会所 + 顶光拍卖厅 |
 | P3 其他 | tc_upper | `victor_estate` | 维克多庄园 | 🆕 | 仓库推断 | — | — | 只标记；所在岛（isle4）是通用英式填充 |
 | P3 其他 | tc_upper | `y_estate` | 「Y」的庄园 | 🆕 | 仓库推断 | — | — | 只标记；所在岛（isle5）是通用英式填充 |
-| P3 其他 | tc_upper | `zaibatsu_estate` | 罗斯柴尔德庄园 | ✅ | 卡 + 推断位置 | 罗斯柴尔德庄园 `map/props/rothschild_estate/` | 草稿（r1 自查；glb 待第 4 步） | isle30；府邸 + 冬季宴会厅 |
-| P3 其他 | tc_upper | `elite_academy` | 精英学院 | 🆕 | 卡 + 推断位置 | 精英学院 `map/props/elite_academy/` | 草稿（r1 自查；glb 待第 4 步） | isle25（Q11） |
+| P3 其他 | tc_upper | `zaibatsu_estate` | 罗斯柴尔德庄园 | ✅ | 卡 + 推断位置 | 罗斯柴尔德庄园 `map/props/rothschild_estate/` | 草稿（r1 自查；glb 暂缓，用户 2026-09-28） | isle30；府邸 + 冬季宴会厅 |
+| P3 其他 | tc_upper | `elite_academy` | 精英学院 | 🆕 | 卡 + 推断位置 | 精英学院 `map/props/elite_academy/` | 草稿（r1 自查；glb 暂缓，用户 2026-09-28） | isle25（Q11） |
 | P3 其他 | world | `hunting_camp` | 猎季营地 | 🆕 | 仓库推断 | — | — |  |
 | P3 其他 | yuanyu_city | `city_gate` | 原域东门 | ✅ | 仓库自设 | — | — |  |
 | P3 其他 | yuanyu_city | `dome_quarter` | 穹顶区 | ✅ | 仓库自设 | — | — |  |

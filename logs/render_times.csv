@@ -33,3 +33,7 @@ date,label,spp,res,minutes,status
 2026-09-28 13:18,v9B_upper_2k,16,2000,0.65,fail2
 2026-09-28 13:19,v9A_upper_2k,16,2000,0.82,ok
 2026-09-28 13:20,v9B_upper_2k,16,2000,0.78,ok
+2026-09-28 13:25,v10_cut_rothschild_estate,16,1443,0.1,ok
+2026-09-28 13:25,v10_cut_league_club,16,1110,0.08,ok
+2026-09-28 13:25,v10_cut_elite_academy,16,1350,0.08,ok
+2026-09-28 13:26,v10_upper_2k,16,2000,0.37,ok

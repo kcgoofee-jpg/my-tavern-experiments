@@ -23,7 +23,7 @@ def main():
     for t, amt in HAZE.items():
         m = Image.new('L', (FW, FH), 0); dr = ImageDraw.Draw(m)
         for d in I:
-            if d.get('tier') != t or d.get('cutout') or d['id'] == 'eden': continue
+            if d.get('tier') != t or d['id'] in ('eden', 'silver_crown'): continue
             cx, cy = (d['x'] / W_U + .5) * FW, (.5 - d['y'] / H_U) * FH; r = max(d['rx'], d['ry']) * 1.3 * px
             dr.ellipse((cx - r, cy - r, cx + r, cy + r), fill=255)
         m = np.asarray(m.filter(ImageFilter.GaussianBlur(px * .25)), np.float32)[..., None] / 255
