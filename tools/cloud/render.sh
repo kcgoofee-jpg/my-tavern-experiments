@@ -42,6 +42,7 @@ if [ "$DRY_RUN" = 1 ]; then
   echo "[DRY_RUN] ssh ... -- \"$REMOTE_CMD\""
 else
   require_host
+  run_ssh "test -f ${REMOTE_DIR}/tools/blender_run.sh" || { echo "云端还没有项目文件：先运行 bash tools/cloud/sync.sh" >&2; exit 4; }
   # shellcheck disable=SC2046
   START_OUT=$(ssh $(ssh_opts) "${REMOTE_USER}@${HOST}" -- "$REMOTE_CMD")
   echo "$START_OUT"
@@ -54,8 +55,8 @@ if [ "$DRY_RUN" != 1 ]; then
   t=0
   while run_ssh "pgrep -f 'tools/blender_run.sh' >/dev/null" ; do
     [ "$t" -ge "$WAIT_MAX" ] && { echo "等了 ${WAIT_MAX}s 还没完，先退出脚本（远端继续跑，之后可单独 rsync 结果回来）"; break; }
-    sleep "$POLL"; t=$((t+POLL))
-    [ $((t % 300)) -eq 0 ] && echo "还在跑…（${t}s）"
+    sleep 30; t=$((t+30))
+    echo "  渲染中… 已 ${t}s；显卡占用 $(run_ssh "nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader" 2>/dev/null)"
   done
   echo "远端渲染进程已结束（或轮询超时）"
 fi

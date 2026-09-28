@@ -47,7 +47,7 @@ else
   ok=0
   for u in "\${URLS[@]}"; do
     echo "试： \$u"
-    if wget -q --timeout=30 -O "\$TARBALL" "\$u" && [ -s "\$TARBALL" ]; then ok=1; break; fi
+    if wget -q --show-progress --progress=dot:mega --timeout=30 -O "\$TARBALL" "\$u" && [ -s "\$TARBALL" ]; then ok=1; break; fi
     rm -f "\$TARBALL"
   done
   if [ "\$ok" != 1 ]; then

@@ -17,9 +17,12 @@ EXCLUDES=(
   --exclude __pycache__/
   --exclude '*.blend1'
   --exclude .DS_Store
+  --exclude docs/
+  --exclude "map/tiles*"
+  --exclude "*.jpg.bak"
 )
 
-RSYNC_ARGS=(-avzL --delete-excluded "${EXCLUDES[@]}")
+RSYNC_ARGS=(-azL --partial --info=progress2,stats1 --delete-excluded "${EXCLUDES[@]}")
 
-echo "--- 同步仓库到 ${REMOTE_DIR} ---"
+echo "--- 同步到 ${REMOTE_DIR}（第一次约 3GB，之后只传改动；下面一行是总进度） ---"
 run_rsync "${RSYNC_ARGS[@]}" "$ROOT/" "${REMOTE_USER}@${HOST:-<HOST>}:${REMOTE_DIR}/"
