@@ -22,9 +22,11 @@ export function placeLayers() {
   const want = narrowNow() ? S.lead : $('#dock'); if (lay.parentElement !== want) { if (want === $('#dock')) want.insertBefore(lay, $('#zoom')); else want.appendChild(lay); }
   lay.classList.add('compact'); sheetVis();
 }
+// 标注开关：开 =「Aa」+ 强调底色；关 = 带斜杠的「Aa」+ 灰色（不只靠颜色区分）
+export function paintLbl() { const on = $('#tgLabels').checked, b = $('#lblTog'); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.innerHTML = ico(on ? 'labels' : 'labelsOff'); }
 export function toggleLabels(on) {
   const cb = $('#tgLabels'); cb.checked = on ?? !cb.checked; document.body.classList.toggle('nolabels', !cb.checked);
-  $('#lblTog').setAttribute('aria-pressed', cb.checked ? 'true' : 'false'); announce(tx(cb.checked ? 's.labels_on' : 's.labels_off', cb.checked ? '标注已显示' : '标注已隐藏'));
+  paintLbl(); announce(tx(cb.checked ? 's.labels_on' : 's.labels_off', cb.checked ? '标注已显示' : '标注已隐藏'));
 }
 // 抽屉可见性：有事态、人物、地点卡、或手机上要放层名胶囊时显示；三维页（庄园）用它自己的抽屉
 export function sheetVis() {
@@ -53,7 +55,8 @@ export function initShell() {
   const place = document.createElement('div'); place.id = 'placePane'; place.append($('#card'));
   const empty = document.createElement('p'); empty.id = 'cardEmpty'; place.append(empty);
   const S = window.TCSheet = UISheet.create({ host: $('#stage'), id: 'evbar', railKey: 'edenMapRailW',
-    tabs: [{ id: 'ev', btnClass: 'evtab' }, { id: 'ch', btnClass: 'chtab' }, { id: 'pl', btnClass: 'pltab', panel: place }],
+    tabs: [{ id: 'ev', btnClass: 'evtab', icon: 'bell' }, { id: 'ch', btnClass: 'chtab', icon: 'users' }, { id: 'pl', btnClass: 'pltab', icon: 'pin', panel: place }],
+    freshText: n => tx('ev.bar_new', '{n} 条新', { n }),
     onState: ({ state, tab, mode, h }) => {
       S.el.dataset.open = state === 'peek' ? '0' : '1'; S.el.dataset.tab = tab || ''; document.body.classList.toggle('evopen', state !== 'peek');
       document.body.classList.toggle('sheetfull', state === 'full' && mode === 'sheet'); dock.inert = state === 'full' && mode === 'sheet';
@@ -64,7 +67,7 @@ export function initShell() {
       if (tab === 'ch' || tab === 'ev') P.TCEvents.renderBar();
       post({ type: 'eden-map:chrome', bottom: h, top: $('header').offsetHeight }); noticeRefresh();
     } });
-  S.label('pl', esc(tx('s.place', '地点')), esc(tx('s.place_short', '地'))); S.showTab('ev', false); S.showTab('ch', false); S.hide(true);
+  S.label('pl', esc(tx('s.place', '地点')), {}); S.showTab('ev', false); S.showTab('ch', false); S.hide(true);
   // 点地图空白 = 抽屉回到收起（只认移动 < 8 px、< 250 ms 的轻点；点到地标 / 事态按地标处理，§10.4）
   let tp = null;
   $('#osd').addEventListener('pointerdown', e => { tp = e.isPrimary ? { x: e.clientX, y: e.clientY, t: e.timeStamp, on: !!e.target.closest?.('.mk, .ev, .realm, .chm, .tripin, .tc-ring a') } : null; }, true);
@@ -72,7 +75,7 @@ export function initShell() {
     if (q.on || e.timeStamp - q.t > 250 || Math.hypot(e.clientX - q.x, e.clientY - q.y) > 8) return;
     if (S.open && S.mode === 'sheet') S.set('peek'); }, true);
   $('#lblTog').onclick = () => toggleLabels();
-  $('#tgLabels').addEventListener('change', () => $('#lblTog').setAttribute('aria-pressed', $('#tgLabels').checked ? 'true' : 'false'));
+  $('#tgLabels').addEventListener('change', paintLbl);
   $('#stDot').onclick = () => { const ts = $('#tierState'); if (ts.classList.contains('stuck')) ts.click(); };
   new MutationObserver(stDotLabel).observe($('#tierState'), { attributes: true, childList: true, characterData: true, subtree: true });
   addEventListener('resize', () => { placeLayers(); });

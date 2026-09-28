@@ -118,6 +118,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <link rel="preload" as="fetch" crossorigin="anonymous" href="data/derived.json">
 <!-- defer：地图库（277 KB）不再挡住首帧，慢网下先出加载提示与世界缩略图（E4 N07）；main() 等 DOMContentLoaded（此时两个脚本都已执行） -->
 <script defer src="vendor/openseadragon/openseadragon.min.js"></script>
+<script defer src="ui/icons.js"></script>
 <script defer src="ui/sheet.js"></script>
 <!-- 核心模块图一次性预取（排在地图库之后）：boot.mjs 的 import 不再逐级发现 -->
 <link rel="modulepreload" href="app/state.mjs">
@@ -166,7 +167,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: var(--fs-body); }
   button { font-family: inherit; }
   #app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; grid-template-columns: minmax(0, 1fr); }   /* 工具栏再宽也不撑宽整页（E5 r2 无障碍 P1） */
-  .ico { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .ico { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
   /* ---------- 工具栏（桌面 48 / 手机 44，一行，不横向滚动） ---------- */
@@ -290,11 +291,12 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #dock > * { pointer-events: auto; }
   #dock[hidden], body.estate #dock { display: none; }
   #zoom { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-2); }
-  #zoom button { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: var(--r-m); background: transparent; color: var(--ink); cursor: pointer; position: relative;
+  #zoom button { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: var(--r-m); background: transparent; color: var(--ink); cursor: pointer; position: relative;
     transition: background var(--dur-1), transform var(--dur-1); }
   #zoom button:hover { background: var(--surface-2); color: var(--accent); }
   #zoom button:active { transform: scale(.97); }
   #zoom button[aria-pressed="false"] { color: var(--muted); }
+  #zoom button[aria-pressed="true"] { background: var(--accent-weak); color: var(--accent); }
   #zoom[hidden] { display: none; }
   #thumbBtn { display: none; }
   #osd .navigator { margin: 0 0 var(--sp-5) var(--sp-5) !important; }
@@ -535,17 +537,17 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <body>
 <div id="app">
   <header>
-    <button type="button" class="btn ic" id="upBtn" hidden><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg></button>
+    <button type="button" class="btn ic" id="upBtn" hidden><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14.5 6l-6 6 6 6"/></svg></button>
     <nav id="crumbs" data-i18n-aria="crumbs_aria" aria-label="位置"></nav>
     <span class="grow"></span>
     <button type="button" class="btn" id="hereGo" hidden data-i18n="here_go">当前位置</button>
     <button type="button" id="stDot"><i aria-hidden="true"></i><span id="tierState" aria-live="polite"></span></button>
-    <div id="layWrap"><button type="button" class="btn" id="layBtn" aria-expanded="false" aria-controls="layPop"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2L1.8 5.3 8 8.6l6.2-3.3z"/><path d="M1.8 8.4L8 11.7l6.2-3.3"/></svg><span data-i18n="layers_menu">图层</span><svg class="ico chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></button></div>
+    <div id="layWrap"><button type="button" class="btn" id="layBtn" aria-expanded="false" aria-controls="layPop"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3.5L3 8.5l9 5 9-5z"/><path d="M3 12.5l9 5 9-5"/></svg><span data-i18n="layers_menu">图层</span><svg class="ico chev" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9.5l6 6 6-6"/></svg></button></div>
     <button type="button" class="btn ic" id="setBtn" data-i18n-title="settings_title" title="设置" aria-expanded="false" aria-controls="setPop"></button>
     <div class="where"><span data-i18n="here">当前地点</span> <input id="here" data-i18n-ph="here_ph" placeholder="模拟 MVU：世界.当前地点" value=""></div>
   </header>
-  <div id="stage" role="main" data-i18n-aria="page_title" aria-label="天城地图"><div id="osd"></div><div id="foot"><button type="button" id="creditBtn" aria-expanded="false" aria-controls="credit" data-i18n-aria="credit_aria" aria-label="署名">ⓘ</button><div id="credit" hidden></div></div><nav id="layers" hidden data-i18n-aria="layers_aria" aria-label="楼层"></nav>
-    <div id="zoom" role="group" data-i18n-aria="zoom_group" aria-label="缩放"><button type="button" id="zIn" data-i18n-aria="zoom_in" aria-label="放大" data-i18n-title="zoom_in" title="放大"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button><button type="button" id="zOut" data-i18n-aria="zoom_out" aria-label="缩小" data-i18n-title="zoom_out" title="缩小"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10"/></svg></button><button type="button" id="zHome" data-i18n-aria="zoom_home" aria-label="复位" data-i18n-title="zoom_home" title="复位视野"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5L8 3l5.5 4.5M4 6.5V13h8V6.5"/></svg></button><button type="button" id="lblTog" aria-pressed="true" data-i18n-aria="labels_tog" aria-label="标注" data-i18n-title="labels_tog_t" title="标注（L）"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h6.2l4.8 4.5-4.8 4.5H2.5z"/><circle cx="5.5" cy="8" r=".9"/></svg></button></div>
+  <div id="stage" role="main" data-i18n-aria="page_title" aria-label="天城地图"><div id="osd"></div><div id="foot"><button type="button" id="creditBtn" aria-expanded="false" aria-controls="credit" data-i18n-aria="credit_aria" aria-label="署名"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/></svg></button><div id="credit" hidden></div></div><nav id="layers" hidden data-i18n-aria="layers_aria" aria-label="楼层"></nav>
+    <div id="zoom" role="group" data-i18n-aria="zoom_group" aria-label="缩放"><button type="button" id="zIn" data-i18n-aria="zoom_in" aria-label="放大" data-i18n-title="zoom_in" title="放大"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg></button><button type="button" id="zOut" data-i18n-aria="zoom_out" aria-label="缩小" data-i18n-title="zoom_out" title="缩小"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/></svg></button><button type="button" id="zHome" data-i18n-aria="zoom_home" aria-label="复位视野" data-i18n-title="zoom_home" title="复位视野"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"/><circle cx="12" cy="12" r="2.5"/></svg></button><button type="button" id="lblTog" aria-pressed="true" data-i18n-aria="labels_tog" aria-label="显示标注" data-i18n-title="labels_tog_t" title="显示标注（L）"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 18l4.5-12L12 18M4.7 14h5.6"/><path d="M20.5 18v-5.2a2.6 2.6 0 0 0-5 0M20.5 15.2c-3.4-.4-5.5.4-5.5 1.6 0 .9.8 1.4 1.9 1.4 1.8 0 3.6-1.2 3.6-3"/></svg></button></div>
     <div id="prog" hidden><i></i></div><div id="loading"><div><span data-i18n="loading">加载中…</span><div class="acts" hidden><button type="button" class="btn" id="estRetry" data-i18n="estate.retry">重试</button><button type="button" class="btn" id="estPlan" data-i18n="estate.plan">看平面图</button><button type="button" class="btn" id="tileRetry" hidden data-i18n="estate.retry">重试</button></div></div></div></div>
   <script>if (window.__worldFirst) document.getElementById('loading').classList.add('thumb');</script>
 </div>
@@ -558,7 +560,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   <label class="tg"><span data-i18n="markers">标记</span><input type="checkbox" role="switch" id="tgMarkers" checked></label>
 </div></div>
 <div id="setPop" class="pop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置" aria-labelledby="setTitle">
-  <div class="sheet-h"><button type="button" class="btn" id="setBack" hidden><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg><span class="lbl" data-i18n="settings_title">设置</span></button><b id="setTitle" data-i18n="settings_title">设置</b><button type="button" class="btn ic" id="setX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+  <div class="sheet-h"><button type="button" class="btn" id="setBack" hidden><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14.5 6l-6 6 6 6"/></svg><span class="lbl" data-i18n="settings_title">设置</span></button><b id="setTitle" data-i18n="settings_title">设置</b><button type="button" class="btn ic" id="setX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <section class="spage" data-page="home">
     <div class="acts" hidden><button type="button" class="btn" id="actUp" hidden></button><button type="button" class="btn" id="actHere" hidden data-i18n="here_go">当前位置</button><button type="button" class="btn" id="actClose" hidden data-i18n="act_close">关闭地图</button></div>
     <input type="search" id="setQ" data-i18n-ph="s.search" placeholder="搜索设置" autocomplete="off">
@@ -599,7 +601,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     <div id="v3dTests"></div>
   </section>
 </div>
-<div id="card" hidden role="region" aria-labelledby="cardTitle"><div class="top"><span class="tag"></span><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><img class="cover" hidden loading="lazy" decoding="async" alt=""><h2 id="cardTitle" tabindex="-1"></h2><div class="sub"></div><div class="src"></div><div class="extra"></div></div>
+<div id="card" hidden role="region" aria-labelledby="cardTitle"><div class="top"><span class="tag"></span><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><img class="cover" hidden loading="lazy" decoding="async" alt=""><h2 id="cardTitle" tabindex="-1"></h2><div class="sub"></div><div class="src"></div><div class="extra"></div></div>
 <div id="sr" class="sr-only" aria-live="polite"></div>
 <div id="status"></div>
 <script>

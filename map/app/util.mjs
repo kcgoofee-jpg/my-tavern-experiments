@@ -5,15 +5,8 @@ export const $ = s => document.querySelector(s);
 // 界面文字：有 window.I18N（英文 / 浅色界面分支）时走 I18N.t(键)，否则用这里的中文
 export const tx = (key, zh, vars) => { const r = window.I18N?.t?.(key, vars); return r && r !== key ? r : zh; };
 export const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-// SVG 描线图标（16 px、1.5 px 描线，规范 3.2；替换 ☾ ☀ ◐ ⚙ × 等 Unicode 字符，大小、基线一致）
-const ICON = {
-  auto: '<circle cx="8" cy="8" r="5.5"/><path d="M8 2.5a5.5 5.5 0 0 1 0 11z" fill="currentColor"/>',
-  light: '<circle cx="8" cy="8" r="2.8"/><path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1"/>',
-  dark: '<path d="M13.3 10.1A5.7 5.7 0 0 1 5.9 2.7a5.7 5.7 0 1 0 7.4 7.4z"/>',
-  set: '<path d="M2.5 4.5h7M12.5 4.5h1M2.5 11.5h1M6.5 11.5h7"/><circle cx="11" cy="4.5" r="1.5"/><circle cx="5" cy="11.5" r="1.5"/>',
-  more: '<path d="M3.5 8h.01M8 8h.01M12.5 8h.01" stroke-width="2.4"/>',
-};
-export const ico = k => `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true">${ICON[k]}</svg>`;
+// 图标：唯一图标集 ui/icons.js（window.UIIcon，24 格、1.75 描线；docs/design/ui-v2/icons.md）
+export const ico = k => window.UIIcon ? window.UIIcon.svg(k) : '';
 export let narrow = false;
 // 触屏或低内存设备：瓦片缓存减半（约 30 MB），避免手机 WebView 因内存被回收
 export const coarse = matchMedia('(pointer: coarse)').matches || (navigator.deviceMemory || 8) <= 4;   // 手机 / 窄面板：隐藏小地图（信息卡的底部抽屉由 CSS 媒体查询处理）

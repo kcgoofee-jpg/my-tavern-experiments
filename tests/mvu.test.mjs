@@ -25,7 +25,7 @@ t('人物栏：MVU 位置 > 标签 > 推断；来源标注', () => {
 });
 t('世界时间、标题栏写法、夜间判断', () => {
   const w = V.worldTime({ 世界: { 当前日期: '新历2088年01月01日', 当前时刻: '08:00', 当日时段: '日间' } });
-  assert.deepEqual(V.clockLabel(w), { short: '01.01 08:00', full: '新历2088年01月01日 08:00 日间' });
+  assert.deepEqual(V.clockLabel(w), { short: '1月1日 08:00', full: '新历2088年01月01日 08:00 日间' }); assert.equal(V.clockLabel(w, 'en').short, 'Jan 1 08:00');
   assert.equal(V.isNight(w), false);
   assert.equal(V.isNight({ period: '就寝', time: '' }), true);
   assert.equal(V.isNight({ period: '', time: '23:30' }), true); assert.equal(V.isNight({ period: '', time: '03:00' }), true);

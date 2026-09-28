@@ -72,10 +72,12 @@ export function todPhase(w) {
   const h = hourOf(w.time); if (h == null) return '';
   return h >= 5 && h < 7 ? 'dawn' : h >= 7 && h < 17 ? 'day' : h >= 17 && h < 20 ? 'dusk' : 'night';
 }
-/** 标题栏里的紧凑写法：「01.01 08:00」；全文（带年份与时段）放在 title */
-export function clockLabel(w) {
+/** 标题栏里的紧凑写法：zh「1月1日 08:00」、en「Jan 1 08:00」（读起来是日期，用户 2026-09-28）；全文（带年份与时段）放在 title */
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export function clockLabel(w, lang = 'zh') {
   if (!w) return { short: '', full: '' };
-  const d = String(w.date || '').match(/(\d{1,2})\s*[月.\-/]\s*(\d{1,2})/), md = d ? `${d[1].padStart(2, '0')}.${d[2].padStart(2, '0')}` : '';
+  const d = String(w.date || '').match(/(\d{1,2})\s*[月.\-/]\s*(\d{1,2})/);
+  const md = !d ? '' : lang === 'en' ? `${MON[(+d[1] - 1) % 12] || d[1]} ${+d[2]}` : `${+d[1]}月${+d[2]}日`;
   const short = [md, w.time].filter(Boolean).join(' '), full = [w.date, w.time, w.period].filter(Boolean).join(' ');
   return { short, full };
 }

@@ -2,7 +2,7 @@
 // 平面图查看器（viewer.html：事态 · 人物 · 地点）和三维外壳（ui/chrome3d.js：部件 · 流向 · 说明）共用。普通脚本，挂 window.UISheet。
 //   const s = UISheet.create({ host, id, tabs: [{ id, label, short, btnClass }], lead, text: { expand, collapse, region }, railKey, onState });
 //   s.set('peek' | 'half' | 'full', { focus }) · s.down() → 降一档（已收起返回 false）· s.cycle() · s.setTab(id, state?) · s.tab · s.state · s.mode（'sheet' | 'rail'）
-//   s.label(id, html, short?) · s.showTab(id, on) · s.panel(id) · s.button(id) · s.el · s.head · s.lead
+//   s.label(id, html, short?)（short = { n, fresh }：右栏收起时显示 图标 + 数字角标；fresh > 0 = 红色「新」角标，其余是中性色计数） · s.showTab(id, on) · s.panel(id) · s.button(id) · s.el · s.head · s.lead
 // 三档：收起（柄 + 一行摘要）/ 半开（容器 40%）/ 全开（容器 80%）；高度按 iframe 容器算（dvh 在酒馆 iframe 里不可靠）。
 // 桌面 ≥ 900 或横屏矮屏（高 < 480）：右栏（收起 = 48 px 竖条；半开 360；全开 480，左边缘可拖宽到 min(720, 50vw)，按本机记住）。
 // 等价操作（WCAG 2.5.7）：文字按钮循环 收起 → 半开 → 全开；拖柄、列表到顶继续下拉只是加速方式。
@@ -58,6 +58,16 @@ html.rm .uis{transition:none}
 .uis.rail[data-state="peek"] .uis-tog{order:-1;justify-content:center;padding:0}
 .uis.rail[data-state="peek"] .uis-tog .t{display:none}
 .uis-tabs [role=tab] .s{display:none}
+/* 右栏收起：图标 + 角标（用户 2026-09-28：不用单字「事 / 人 / 地」）。已看过 = 中性色计数；有新 = 右上角红色实心圆 + 新条数（色觉模式下靠位置 / 形状 / 数字区分） */
+.uis.rail[data-state="peek"] .uis-tabs [role=tab] .s{position:relative;display:grid;place-items:center;width:40px;height:44px}
+.uis-tabs .s .ico{width:22px;height:22px}
+.uis-tabs .s .bdg{position:absolute;right:0;bottom:1px;display:grid;place-items:center;min-width:17px;height:17px;padding:0 3px;box-sizing:border-box;border-radius:9px;background:var(--surface-2,#222a31);border:1px solid var(--line-strong,rgba(255,255,255,.24));color:var(--ink,#d5dde4);font:700 10px/1 var(--font-ui,system-ui,sans-serif)}
+.uis-tabs .s .bdg.new{top:1px;bottom:auto;background:var(--alert,#ff5a5a);border:2px solid var(--surface,#151b20);color:var(--on-alert,#1a0606)}
+.uis-tabs [role=tab][aria-selected=true] .s .bdg:not(.new){background:transparent;border-color:currentColor;color:inherit}
+.uis-tog .a{display:inline-grid;place-items:center}
+.uis-tog .a .ico{width:20px;height:20px}
+.uis.rail[data-state="peek"] .uis-tog{min-height:40px;width:40px;align-self:center}
+.uis.rail .uis-tog{min-height:40px;min-width:40px}
 .uis.rail[data-state="full"] .uis-body.two{columns:2;column-gap:var(--sp-6,16px)}
 `;
   const RAIL_MQ = '(min-width: 900px), (max-height: 480px) and (orientation: landscape)';
@@ -81,10 +91,17 @@ html.rm .uis{transition:none}
       if (t.btnClass) b.className = t.btnClass; b.dataset.tab = t.id; b.setAttribute('aria-selected', 'false'); b.tabIndex = -1;
       const p = t.panel || document.createElement('div'); p.setAttribute('role', 'tabpanel'); if (!p.id) p.id = (o.id || 'uis') + '-p-' + t.id; p.hidden = true;
       p.setAttribute('aria-labelledby', b.id); b.setAttribute('aria-controls', p.id);
-      tabsEl.appendChild(b); body.appendChild(p); tabs.set(t.id, { b, p }); label(t.id, t.label || t.id, t.short);
+      tabsEl.appendChild(b); body.appendChild(p); tabs.set(t.id, { b, p, icon: t.icon || null, base: t.name || '' }); label(t.id, t.label || t.id, t.short);
       b.addEventListener('click', () => { if (tab === t.id && state !== 'peek') set('peek', { focus: true }); else setTab(t.id, state === 'peek' ? prevOpen : state); });
     }
-    function label(id, html, short) { const x = tabs.get(id); if (!x) return; x.b.innerHTML = `<span class="l">${html}</span><span class="s" aria-hidden="true">${short != null ? short : ''}</span>`; }
+    function label(id, html, short) { const x = tabs.get(id); if (!x) return;
+      const I = window.UIIcon, ic = x.icon && I ? I.svg(x.icon) : '', plain = (() => { const d = document.createElement('div'); d.innerHTML = html; return d.textContent.replace(/\s+/g, ' ').trim(); })();
+      let s = short != null && typeof short !== 'object' ? String(short) : '', name = plain;
+      if (ic) { const n = short && typeof short === 'object' ? short.n : typeof short === 'string' ? +(short.match(/(\d+)\s*$/) || [])[1] || null : null, fr = short && typeof short === 'object' ? +short.fresh || 0 : 0;
+        s = ic + (fr ? `<b class="bdg new">${fr > 99 ? '99+' : fr}</b>` : n ? `<b class="bdg">${n > 99 ? '99+' : n}</b>` : '');
+        name = (x.base || plain.replace(/\s*\d+$/, '')) + (n ? ' ' + n : '') + (fr ? ' · ' + (o.freshText ? o.freshText(fr) : fr + ' new') : ''); }
+      x.b.innerHTML = `<span class="l">${html}</span><span class="s" aria-hidden="true">${s}</span>`; x.b.title = name; x.b.setAttribute('aria-label', name); }
+    function setName(id, n) { const x = tabs.get(id); if (x) x.base = n; }
     function showTab(id, on) { const x = tabs.get(id); if (!x) return; x.b.hidden = !on; if (!on && tab === id) { const nx = [...tabs.keys()].find(k => !tabs.get(k).b.hidden); if (nx) setTab(nx, state === 'peek' ? null : state); else tab = null; } paintTabs(); }
     function paintTabs() {
       for (const [k, x] of tabs) { const on = k === tab; x.b.setAttribute('aria-selected', on ? 'true' : 'false'); x.b.tabIndex = on ? 0 : -1; x.p.hidden = !on; }
@@ -94,8 +111,8 @@ html.rm .uis{transition:none}
       const m = mode(); el.classList.toggle('rail', m === 'rail'); el.dataset.state = state; el.dataset.mode = m;
       const open = state !== 'peek'; tog.setAttribute('aria-expanded', open ? 'true' : 'false');
       tog.querySelector('.t').textContent = open ? T.collapse : T.expand;
-      tog.querySelector('.a').textContent = m === 'rail' ? (open ? '▸' : '◂') : (open ? '▾' : '▴');
-      tog.title = open ? T.collapse : T.expand; if (m === 'rail' && !open) tog.setAttribute('aria-label', T.expand); else tog.removeAttribute('aria-label');
+      tog.querySelector('.a').innerHTML = window.UIIcon ? UIIcon.svg(m === 'rail' ? (open ? 'chevR' : 'chevL') : (open ? 'chevD' : 'chevU')) : '';
+      tog.title = open ? T.collapse : T.expand; if (m === 'rail') tog.setAttribute('aria-label', tog.title); else tog.removeAttribute('aria-label');
       if (m === 'rail') el.style.setProperty('--rail-now', (state === 'full' ? Math.max(railW, 480) : railW) + 'px'); else el.style.removeProperty('--rail-now');
       body.classList.toggle('two', !!o.twoColumns);
       report();
@@ -170,7 +187,7 @@ html.rm .uis{transition:none}
     for (const t of o.tabs || []) addTab(t);
     o.host.appendChild(el); paintTabs(); paint();
     return {
-      el, head, body, lead, grip, set, setTab, destroy, down, cycle, label, showTab, addTab, report,
+      el, head, body, lead, grip, set, setTab, destroy, down, cycle, label, setName, showTab, addTab, report,
       panel: id => tabs.get(id)?.p || null, button: id => tabs.get(id)?.b || null,
       get state() { return state; }, get tab() { return tab; }, get mode() { return mode(); }, get open() { return state !== 'peek'; },
       text(t) { Object.assign(T, t); paint(); }, hide(on) { el.hidden = !!on; report(); },

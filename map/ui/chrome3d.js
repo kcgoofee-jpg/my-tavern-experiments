@@ -4,7 +4,7 @@
 //   C.setView(id) · C.showSub(on) · C.sheet（UISheet）· C.insets() → { bottom, right }（抽屉 / 右栏占的像素，模型取景时让开）· C.onInsets(fn)
 //   C.dragged()：模型被拖动 / 旋转超过 300 ms 时调；设置「高级 · 三维抽屉自动收起」开了（默认关，§10.5）才收起抽屉
 // 布局：顶上一条（独立打开时带标题）= 视图分段（外观 / 内透 / 剖切），剖切时下面一条二级条（楼层按钮或高度滑条）；
-// 右下控制列 + − ⟲ 🏷（导览等）；底部唯一抽屉（桌面右栏），默认收起、首次打开也不展开（U12）。
+// 右下控制列 标注 + − 复位（导览等），图标都来自 ui/icons.js（docs/design/ui-v2/icons.md）；底部唯一抽屉（桌面右栏），默认收起、首次打开也不展开（U12）。
 (function () {
   if (window.UI3D) return;
   const CSS = `
@@ -25,7 +25,8 @@
 #c3 .c3-col button:hover{background:var(--surface-2,rgba(255,255,255,.06));color:var(--accent,#e6c36a)}
 #c3 .c3-col button[aria-pressed=false]{color:var(--muted,#8591a0)}
 #c3 .c3-col button[hidden]{display:none}
-#c3 .c3-col svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#c3 .c3-col svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+#c3 .c3-col button[aria-pressed=true]{background:var(--accent-weak,rgba(230,195,106,.16));color:var(--accent,#e6c36a)}
 #c3 .uis{pointer-events:auto}
 #c3 :focus-visible{outline:2px solid var(--focus,#63b4be);outline-offset:2px}
 body.c3full #c3 .c3-col{visibility:hidden}
@@ -36,8 +37,10 @@ html.noblur *,html.noblur *::before,html.noblur *::after{-webkit-backdrop-filter
 @media (min-width:641px){#c3 .c3-top{align-items:flex-end}#c3.c3-embed .c3-top{align-items:center}}
 @media (pointer:coarse){#c3 .c3-col,#c3 .c3-seg,#c3 .c3-sub{-webkit-backdrop-filter:none;backdrop-filter:none}}
 `;
-  const ICON = { in: '<path d="M8 3v10M3 8h10"/>', out: '<path d="M3 8h10"/>', reset: '<path d="M2.5 8a5.5 5.5 0 1 0 1.7-4"/><path d="M2 2.5v3h3"/>', label: '<path d="M2.5 3.5h6.2l4.8 4.5-4.8 4.5H2.5z"/><circle cx="5.5" cy="8" r=".9"/>', tour: '<path d="M8 2l2 6-2 6-2-6z"/>' };
-  const svg = k => `<svg viewBox="0 0 16 16" aria-hidden="true">${ICON[k] || ''}</svg>`;
+  // 旧键名 → 图标集名；复位 = 取景框（fit），标注 = Aa（关时带斜杠，按 aria-pressed 自动换）
+  const ICON = { in: 'plus', out: 'minus', reset: 'fit', label: 'labels', labels: 'labels', tour: 'tour' };
+  const TAB_ICON = { room: 'room', legend: 'legend', about: 'info', info: 'info', parts: 'parts', flows: 'flows' };
+  const svg = k => (window.UIIcon ? UIIcon.svg(ICON[k] || k) : '');
   function create(o) {
     if (!document.getElementById('c3-css')) { const s = document.createElement('style'); s.id = 'c3-css'; s.textContent = CSS; document.head.appendChild(s); }
     const root = document.createElement('div'); root.id = 'c3'; if (o.embed) root.classList.add('c3-embed');
@@ -59,11 +62,15 @@ html.noblur *,html.noblur *::before,html.noblur *::after{-webkit-backdrop-filter
     setViews(o.views);
     function setControls(list) {
       col.innerHTML = ''; for (const c of list || []) { const b = document.createElement('button'); b.type = 'button'; if (c.id) b.id = c.id; b.innerHTML = c.html || svg(c.icon); b.title = c.title || ''; b.setAttribute('aria-label', c.title || c.label || '');
-        if (c.pressed != null) b.setAttribute('aria-pressed', String(!!c.pressed)); b.onclick = c.onClick; col.appendChild(b); }
+        if (c.pressed != null) b.setAttribute('aria-pressed', String(!!c.pressed)); if (c.icon === 'label' || c.icon === 'labels') b.dataset.lbl = '1'; b.onclick = c.onClick; col.appendChild(b); }
+      paintLbl();
     }
+    // 标注按钮：aria-pressed 一变就换图标（开 = Aa，关 = 斜杠 Aa），调用方只管 aria-pressed
+    function paintLbl() { for (const b of col.querySelectorAll('[data-lbl]')) { const on = b.getAttribute('aria-pressed') !== 'false'; if (b.dataset.on !== String(on)) { b.dataset.on = String(on); b.innerHTML = svg(on ? 'labels' : 'labelsOff'); } } }
+    new MutationObserver(paintLbl).observe(col, { subtree: true, attributes: true, attributeFilter: ['aria-pressed'] });
     setControls(o.controls);
     const ins = new Set();
-    const sheet = UISheet.create({ host: root, id: o.sheetId || 'c3sheet', tabs: o.tabs || [], text: o.text, railKey: 'edenMap3dRailW',
+    const sheet = UISheet.create({ host: root, id: o.sheetId || 'c3sheet', tabs: (o.tabs || []).map(t => ({ icon: TAB_ICON[t.id], ...t })), text: o.text, railKey: 'edenMap3dRailW',
       onState: ({ state, mode }) => { document.body.classList.toggle('c3full', state === 'full' && mode === 'sheet'); col.inert = state === 'full' && mode === 'sheet'; for (const f of ins) try { f(insets()); } catch (e) {} } });
     if (o.tabs?.length) sheet.setTab(o.tabs[0].id);
     const insets = () => { const cs = getComputedStyle(root); return { bottom: parseFloat(cs.getPropertyValue('--sheet-h')) || 0, right: parseFloat(cs.getPropertyValue('--rail-w-now')) || 0 }; };

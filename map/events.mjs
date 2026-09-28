@@ -15,7 +15,14 @@ import { setUserMoved, userMoved } from './app/locate.mjs';
 import { sheetVis } from './app/shell.mjs';
 import { P, register } from './app/plugins.mjs';
 import { isEden } from './app/pack.mjs';
+import { chatId } from './app/extapi.mjs';
 import * as TCCvd from './app/cvd.mjs';
+// 抽屉标签角标的「看过」（用户 2026-09-28）：按聊天记在 edenMap:chat:<id>:tabseen（core/storage.mjs 按聊天前缀登记，参与 LRU）。
+// ev = 看过的「事件 id@最后更新」；ch = 看过的人物名。某个聊天第一次记录时把当前人物当作已看过，只有后来出现的才标红
+const seenKey = () => 'edenMap:chat:' + (chatId || '-') + ':tabseen';
+let seenMem = null, seenFor = null;
+function seenGet() { if (seenFor !== seenKey()) { seenFor = seenKey(); let o = null; try { o = JSON.parse(window.TCStore?.get(seenFor)); } catch (e) {} seenMem = o && typeof o === 'object' ? { ev: new Set(o.ev || []), ch: o.ch ? new Set(o.ch) : null } : { ev: new Set(), ch: null }; } return seenMem; }
+function seenSave() { const v = JSON.stringify({ ev: [...seenMem.ev].slice(-400), ch: [...(seenMem.ch || [])].slice(-200) }); try { window.TCStore?.set(seenFor, v); } catch (e) {} }
 const TCEvents = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const tn = z => (z && window.I18N?.tr?.(z)) || z || '';
@@ -233,13 +240,18 @@ const TCEvents = (() => {
     if (typeof sheetVis === 'function') sheetVis();
     if (!S.tab || S.button(S.tab)?.hidden) { const nx = hasEv ? 'ev' : chN ? 'ch' : null; if (nx) S.setTab(nx); }
     tab = S.tab || tab; const open = S.open;
-    S.label('ch', `<i class="shp sh-circle" aria-hidden="true"></i>${esc(T('ch.tab', '人物'))} <em>${chN}</em>`, `${esc(T('ch.short', '人'))}<br>${chN}`);
+    const SEEN = seenGet(), chNames = chN ? (P.TCChars.items || []).map(c => c.name || c.名字 || '').filter(Boolean) : [];
+    if (!SEEN.ch) { SEEN.ch = new Set(chNames); seenSave(); }
+    if (open && S.tab === 'ch' && chNames.some(n => !SEEN.ch.has(n))) { chNames.forEach(n => SEEN.ch.add(n)); seenSave(); }
+    const chFresh = chNames.filter(n => !SEEN.ch.has(n)).length;
+    S.label('ch', `<i class="shp sh-circle" aria-hidden="true"></i>${esc(T('ch.tab', '人物'))} <em>${chN}</em>${chFresh ? `<b class="nd" aria-hidden="true"></b>` : ''}`, { n: chN, fresh: chFresh });
     if (open && S.tab === 'ch') P.TCChars.pane(bar.querySelector('.chpane'));
     if (!grpLoaded && every.length) { grpLoaded = true; mod().then(m => { if (m?.GROUPS) { GROUPS = m.GROUPS; ORDER = m.GROUP_ORDER || Object.keys(m.GROUPS).filter(g => g !== '其他'); if (m.SHAPES) SHAPES = m.SHAPES; renderBar(); } }); }   // 有事件时才取大类表
-    const n = list.filter(live).length, fresh = list.filter(e => e.isNew).length, hid = ORDER.filter(g => off.has(g)).length + (off.has('其他') ? 1 : 0);
+    const n = list.filter(live).length, evk = e => e.id + '@' + (e.last || 0), fresh0 = list.filter(e => e.isNew && !SEEN.ev.has(evk(e))),
+      fresh = open && S.tab === 'ev' ? (fresh0.forEach(e => SEEN.ev.add(evk(e))), fresh0.length && seenSave(), 0) : fresh0.length, hid = ORDER.filter(g => off.has(g)).length + (off.has('其他') ? 1 : 0);
     // 标签：大类形状点（最新一条，进行中优先）+「事态 N」+ 新事态红点；完整摘要在面板第一行
     const top = list.filter(live).sort((a, b) => (b.last || 0) - (a.last || 0))[0] || list[0];
-    S.label('ev', `<i class="shp ${shp(top ? grpOf(top) : '其他')}" style="--c:${top ? lk(top)[1] : 'var(--muted)'}" aria-hidden="true"></i>${esc(T('ev.tab', '事态'))} <em>${n || list.length}</em>${fresh ? `<b class="nd" aria-label="${esc(T('ev.bar_new', '{n} 条新', { n: fresh }))}"></b>` : ''}`, `${esc(T('ev.short', '事'))}<br>${n || list.length}`);
+    S.label('ev', `<i class="shp ${shp(top ? grpOf(top) : '其他')}" style="--c:${top ? lk(top)[1] : 'var(--muted)'}" aria-hidden="true"></i>${esc(T('ev.tab', '事态'))} <em>${n || list.length}</em>${fresh ? `<b class="nd" aria-label="${esc(T('ev.bar_new', '{n} 条新', { n: fresh }))}"></b>` : ''}`, { n: n || list.length, fresh });
     const sum = bar.querySelector('.evsum');
     if (sum) sum.innerHTML = `<span class="sum">${esc(n ? T('ev.bar_live', '{n} 起进行中', { n }) : T('ev.bar_none', '暂无进行中'))}${list.length !== n ? ' · ' + esc(T('ev.bar_total', '共 {n} 起事态', { n: list.length })) : ''}${hid ? ' · ' + esc(T('ev.filtered', '已隐藏 {n} 类', { n: hid })) : ''}</span>${fresh ? `<span class="new">${esc(T('ev.bar_new', '{n} 条新', { n: fresh }))}</span>` : ''}`;
     // 图例：9 个大类都列出（没有事件的变淡），数字 = 该类条数；点一下隐藏 / 恢复

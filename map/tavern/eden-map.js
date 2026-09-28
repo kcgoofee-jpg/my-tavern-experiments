@@ -133,7 +133,8 @@
   #${ID} .em-bar .em-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
   #${ID} .em-bar, #${ID} .em-body { min-width: 0; }   /* 标题栏的长地点 / 线路按钮不再把面板撑出屏幕（E5 r2 P0：关闭按钮曾被推到 404–585 px） */
   #${ID} .em-bar .em-title { min-width: 0; }
-  #${ID} .em-bar .em-clock { flex: none; color: var(--em-muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: -4px; }
+  #${ID} .em-bar .em-clock { flex: none; display: inline-flex; align-items: center; gap: 4px; color: var(--em-muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: -4px; cursor: help; }
+  #${ID} .em-bar .em-clock svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
   #${ID} .em-bar .em-clock[hidden] { display: none; }
   #${ID} .em-body { position: relative; min-height: 0; contain: strict; }
   #${ID} iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--em-bg); }
@@ -192,7 +193,7 @@
   <span class="em-badge" hidden></span>
 </button>
 <div class="em-panel" hidden>
-  <div class="em-bar" role="toolbar"><b class="em-title">新历 2088</b><span class="em-clock" hidden></span><span class="em-here"></span><button class="em-line" title="切换加载线路"></button><button class="em-close" aria-label="关闭"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+  <div class="em-bar" role="toolbar"><b class="em-title">新历 2088</b><span class="em-clock" role="img" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.2 1.4"/></svg><span class="em-clock-t"></span></span><span class="em-here"></span><button class="em-line" title="切换加载线路"></button><button class="em-close" aria-label="关闭"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
   <div class="em-body"><iframe class="em-frame" title="地图"></iframe><div class="em-load" hidden><div><span class="txt">加载地图 0%</span><div class="bar"><i></i></div><div class="hint"></div><div class="acts" hidden><button class="retry">重试</button><button class="swap">换线路</button></div></div></div>
     <div class="em-pick" hidden><div><h3>选择加载线路</h3><p>地图图片较多，按你的网络选一条更快的线路；之后可以点标题栏的「线路」切换</p><div class="row"></div></div></div></div>
 </div>`;
@@ -203,8 +204,8 @@
   const pickEl = root.querySelector('.em-pick'), lineBtn = root.querySelector('.em-line'), clockEl = root.querySelector('.em-clock');
   lineBtn.hidden = !swappable;
   // 标题栏跟着地图的语言与深浅主题（地图在 srcdoc 里，与酒馆页同源，设置存在同一个 localStorage；切换时地图发 eden-map:state {lang, theme}）
-  const UI = { zh: { title: '新历 2088', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%', open: '打开世界地图', fab: '世界地图', unm: '未上图：', unm_tip: '点这里把它放到地图上', pend: '等待本楼变量更新', stale: '本楼没有变量快照，显示的是上一楼的' },
-    en: { title: 'NC 2088', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%', open: 'Open world map', fab: 'World map', unm: 'Not on map: ', unm_tip: 'Tap to place it on the map', pend: 'waiting for this reply\'s variable update', stale: 'no variable snapshot on this reply; showing the previous one' } };
+  const UI = { zh: { title: '新历 2088', clock: '世界时间', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%', open: '打开世界地图', fab: '世界地图', unm: '未上图：', unm_tip: '点这里把它放到地图上', pend: '等待本楼变量更新', stale: '本楼没有变量快照，显示的是上一楼的' },
+    en: { title: 'NC 2088', clock: 'World time', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%', open: 'Open world map', fab: 'World map', unm: 'Not on map: ', unm_tip: 'Tap to place it on the map', pend: 'waiting for this reply\'s variable update', stale: 'no variable snapshot on this reply; showing the previous one' } };
   let UL = 'zh', mapTitle = ''; try { UL = (LS || localStorage).getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) {}
   const U = k => UI[UL][k];
   // 深 / 浅主题挂在根元素上（面板、自检提示一起换）；地图没开着时系统切换深浅也跟上（v0.9.5）
@@ -529,10 +530,11 @@
   import(new URL('mvu.mjs', import.meta.url).href).then(m => { MV = m; if (PACK_IN) { m.setVarRoot(PACK_IN.chatVar || 'tc_' + PACK_ID.replace(/-/g, '_')); m.setWbName(PACK_IN.manifest?.title || PACK_ID); } push(); loadCustom(); }).catch(e => console.warn('[eden-map] MVU 模块加载失败', e));
   function pushMvu() {
     if (!MV) return;
-    const st = mvuStat(), w = MV.worldTime(st, varMap), lb = MV.clockLabel(w);
+    const st = mvuStat(), w = MV.worldTime(st, varMap), lb = MV.clockLabel(w, UL);
     clock = { ...w, ...lb, night: MV.isNight(w), tod: MV.todPhase?.(w) || '' };   // tod：时段色调（v0.9.6）
     const cs = JSON.stringify(clock);
-    if (cs !== clockSig) { clockSig = cs; clockEl.hidden = !lb.short; clockEl.textContent = lb.short; clockEl.title = lb.full; if (lb.full) clockEl.setAttribute('aria-label', lb.full); emit('clock', { ...clock }); sentClock = null; }
+    if (cs !== clockSig) { clockSig = cs; const cap = (UI[UL] || UI.zh).clock; clockEl.hidden = !lb.short; clockEl.lastChild.textContent = lb.short;   // 用户 2026-09-28：时钟图标 + 「世界时间」提示，日期写成「1月3日」
+      clockEl.title = lb.full ? cap + '：' + lb.full : cap; clockEl.setAttribute('aria-label', clockEl.title); emit('clock', { ...clock }); sentClock = null; }
     if (alive && sentClock !== clockSig) { sentClock = clockSig; post({ type: 'eden-map:clock', ...clock }); }
     const o = MV.outfit(st, varMap.outfit), os = JSON.stringify(o);
     if (os !== outfitSig) { outfitSig = os; outfitNow = o; emit('outfit', { items: o ? { ...o } : null, text: MV.outfitText(o) }); sentOutfit = null; }

@@ -34,7 +34,7 @@ export function applyI18n() {
   $('#setBtn').setAttribute('aria-label', tx('settings_title', '设置'));
   $('#upBtn').setAttribute('aria-label', tx('s.up', '上一级')); $('#upBtn').title = tx('s.up', '上一级');
   window.TCSheet?.text({ expand: tx('s.expand', '展开'), collapse: tx('s.collapse', '收起'), region: tx('s.sheet', '事态、人物与地点') });
-  if (window.TCSheet) { TCSheet.label('pl', esc(tx('s.place', '地点')), esc(tx('s.place_short', '地'))); $('#cardEmpty').dataset.um = '-'; placeEmpty(typeof P.TCUnmapped !== 'undefined' ? P.TCUnmapped.name : null); }
+  if (window.TCSheet) { TCSheet.label('pl', esc(tx('s.place', '地点')), {}); $('#cardEmpty').dataset.um = '-'; placeEmpty(typeof P.TCUnmapped !== 'undefined' ? P.TCUnmapped.name : null); }
   stDotLabel(); renderSelfCheck(); renderAbout(); setPage(setPageNow, true);
 }
 export async function setLang(l) {

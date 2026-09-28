@@ -78,7 +78,7 @@ const TCUnmapped = (() => {
     dlg.querySelector('#umH').textContent = T('um.title', '把「{n}」放到地图上', { n });
     dlg.querySelector('.um-lead').textContent = T('um.lead', '选一个地方，以后当前地点写「{n}」就落到那里（只存在这个聊天里）。', { n });
     const qi = dlg.querySelector('#umQ'); qi.value = ''; qi.placeholder = T('um.search', '搜索地标、层、房间或世界地名'); qi.setAttribute('aria-label', qi.placeholder);
-    dlg.querySelector('.um-x').setAttribute('aria-label', T('um.close', '关闭')); dlg.querySelector('.um-x').textContent = '×';
+    dlg.querySelector('.um-x').setAttribute('aria-label', T('um.close', '关闭')); dlg.querySelector('.um-x').innerHTML = window.UIIcon ? UIIcon.svg('close') : '×';
     dlg.querySelector('footer [data-ignore]').textContent = T('um.ignore', '忽略');
     dlg.querySelector('footer [data-close]').textContent = T('um.cancel', '取消');
     list(); dlg.hidden = false; if (typeof showSet === 'function') showSet(false);
