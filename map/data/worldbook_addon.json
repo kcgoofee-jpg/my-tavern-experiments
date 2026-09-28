@@ -2,6 +2,9 @@
  "book": "伊甸地图·世界书附加条目",
  "version": "0.9.5-dev",
  "ver": "0.9.5+4a6f0ccc",
+ "aliases": {
+  "ids": {}
+ },
  "entries": [
   {
    "id": "地图联动规范",

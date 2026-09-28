@@ -84,10 +84,10 @@ async function run(name, preset) {
     // 撤销 / 改绑定：一栏应该在书存在时出现（不测真的删，只测按钮在，且要点两次才生效——同一套二次确认规矩）
     const hasUndo = await vf.evaluate(() => !!document.querySelector('#wbUndo'));
     rep.check(`${name} 撤销按钮存在（书已建好）`, hasUndo, String(hasUndo));
-    // 自动同步：直接切换开关（不再要求先同意一个弹框；真正的写入 / 建书永远要走上面「看差异 → 二次确认」）
-    await vf.evaluate(() => { const c = document.querySelector('#wbAuto'); c.checked = true; c.dispatchEvent(new Event('change')); }); await B.wait(400);
-    const post = await p.evaluate(() => ({ ls: localStorage.getItem('edenMapWbAuto'), sv: window.__th.script.eden_prefs?.edenMapWbAuto }));
-    rep.check(`${name} 自动同步：直接开启（本机 + 脚本变量），不再弹确认框`, post.ls === '1' && post.sv === '1', JSON.stringify({ post }));
+    // 全自动总开关（默认开）：关掉写 '0'（本机 + 脚本变量）
+    await vf.evaluate(() => { const c = document.querySelector('#wbOn'); c.checked = false; c.dispatchEvent(new Event('change')); }); await B.wait(400);
+    const post = await p.evaluate(() => ({ ls: localStorage.getItem('edenMapWbOn'), sv: window.__th.script.eden_prefs?.edenMapWbOn }));
+    rep.check(`${name} 世界书总开关：可关（本机 + 脚本变量）`, post.ls === '0' && post.sv === '0', JSON.stringify({ post }));
     // 类宏开关
     await vf.evaluate(() => { const c = document.querySelector('#thMacro'); c.checked = true; c.dispatchEvent(new Event('change')); }); await B.wait(600);
     const mac = await p.evaluate(() => { const f = window.__th.macros['\\{\\{eden_here\\}\\}']; return f ? f({}, '{{eden_here}}') : null; });

@@ -274,7 +274,11 @@ def to_ship(book, version):
                      'position': {'type': POS.get(e['position'], 'after_character_definition'), 'role': 'system', 'depth': e['depth'], 'order': e['order']},
                      'probability': e['probability'], 'recursion': {'prevent_incoming': bool(e['excludeRecursion']), 'prevent_outgoing': bool(e['preventRecursion'])}})
     h = hashlib.sha1(json.dumps(ents, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:8]
-    return {'book': '伊甸地图·世界书附加条目', 'version': version, 'ver': f'{re.sub(r"-dev$", "", version)}+{h}', 'entries': ents}
+    # 旧对话兼容：条目别名表（旧编号 → 新编号）单一来源 map/data/worldbook_aliases.json，原样嵌进发布物（wbsync.mjs 合并前先换编号）
+    import os
+    ap = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'map', 'data', 'worldbook_aliases.json')
+    with open(ap, encoding='utf-8') as f: al = json.load(f)
+    return {'book': '伊甸地图·世界书附加条目', 'version': version, 'ver': f'{re.sub(r"-dev$", "", version)}+{h}', 'aliases': {'ids': al.get('ids', {})}, 'entries': ents}
 
 
 def tokens(s):

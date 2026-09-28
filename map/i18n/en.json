@@ -578,7 +578,7 @@
   "th.wb_add": "Add {n}",
   "th.wb_upd": "Update {n}",
   "th.wb_keep": "Keep {n} you edited",
-  "th.wb_retire": "Disable {n} no longer used (not deleted)",
+  "th.wb_retire": "{n} entries no longer shipped get lowest priority (not deleted)",
   "th.wb_user": "Keep {n} of your own entries",
   "th.wb_nochange": "No changes",
   "th.wb_only": "Only this book is written; other worldbooks and the character card are never touched",
@@ -593,8 +593,6 @@
   "th.wb_deleted": "Undone (book deleted)",
   "th.wb_done": "Written",
   "th.wb_fail": "Not written ({r}): you can still import manually",
-  "th.wb_autosync": "Manage the map worldbook automatically",
-  "th.wb_autosync_hint": "With auto-sync on, future map updates will update this book automatically",
   "th.wb_undo": "Undo (delete this book)",
   "th.wb_undo_confirm": "Click again: undo (delete this book, cannot be undone)",
   "th.wb_consent": "When the map updates, \"{b}\" is updated automatically: only the map's own entries in this one book change; entries you edited or added are kept; no other book is touched; bindings stay as they are. You can turn this off here any time.",
@@ -633,5 +631,9 @@
   "s.line_unset": "not set",
   "s.line_manual": "chosen manually",
   "s.line_auto": "auto-picked by speed test (valid 24 h)",
-  "cu.loading": "Preparing places and rooms…"
+  "cu.loading": "Preparing places and rooms…",
+  "th.wb_on": "Manage the map worldbook automatically (master switch)",
+  "th.wb_on_hint": "When on: loading the map creates this book and attaches it to the current character's additional worldbooks; map updates sync silently (one notice per version). Off = nothing automatic.",
+  "th.wb_tomb": "You deleted this book, so it will not be recreated automatically; use \"Write to worldbook\" below to bring it back",
+  "th.wb_conflict": "You edited these {n}, and upstream changed them too (yours kept; upstream text stored on the entry)"
 }
