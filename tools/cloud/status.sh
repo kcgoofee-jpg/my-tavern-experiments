@@ -29,7 +29,7 @@ R=$(run_ssh "
   echo '--jobs--'; pgrep -fal '[t]ools/blender_run.sh|/opt/[b]lender/blender' || echo '（空闲，没有 blender 在跑）'
   echo '--gpu--'; nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader 2>&1
   echo '--disk--'; df -h ${REMOTE_DIR%/*} | awk 'NR==2{print \$3,\"/\",\$2,\"(\"\$5\" 已用)\"}'
-  echo '--uptime--'; command cat /proc/uptime | awk '{print \$1}'
+  echo '--uptime--'; ps -o etimes= -p 1 | tr -d ' '
 ")
 
 jobs=$(sed -n '/--jobs--/,/--gpu--/p' <<<"$R" | sed '1d;$d')

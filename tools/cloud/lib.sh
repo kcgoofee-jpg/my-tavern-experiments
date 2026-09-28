@@ -51,7 +51,7 @@ fi
 
 HOST=${HOST:-}; PORT=${PORT:-22}; REMOTE_USER=${USER_OVERRIDE:-${USER:-root}}; KEY=${KEY:-~/.ssh/autodl_ed25519}
 REMOTE_DIR=${REMOTE_DIR:-/root/autodl-tmp/eden}
-PRICE_PER_HOUR=${PRICE_PER_HOUR:-2.5}   # 元/小时；status.sh 算已花费用这个，可在各 hosts/*.env 里覆盖
+PRICE_PER_HOUR=${PRICE_PER_HOUR:-1.58}   # 元/小时；status.sh 算已花费用这个，可在各 hosts/*.env 里覆盖
 KEY_EXPANDED=${KEY/#\~/$HOME}
 
 require_host() {
