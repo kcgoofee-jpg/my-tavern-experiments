@@ -76,7 +76,7 @@
       "markers": {
         "enforcement_hq": { "name": "天城执法局总局", "sub": "中层核心区", "name_en": "Enforcement Bureau HQ", "sub_en": "Middle Tier core", "cls": "capital", "tag": "set",
           "src": "天城·中层：天城执法局总局位于中层核心区（在核心区内的具体位置为推断）。中层按高度分 18 个辖区，每区一个执法分局；议会骑士团 12 个分队的巡逻据点在中层高区（数目是卡的设定，图上不逐个画）",
-          "alias": ["执法局总局", "执法局", "总局"] },
+          "alias": ["执法局总局", "执法局", "总局"] , "link": {"map": "lm_enforcement_hq", "label": "查看三维模型", "label_en": "View 3D model"} },
         "radiance_cathedral": { "name": "辉光大教堂", "sub": "圣光教会总部", "name_en": "Radiance Cathedral", "sub_en": "Church of Holy Light HQ", "tag": "set",
           "src": "天城·中层：圣光教会总部辉光大教堂，位于中层高区（具体位置为推断）。视觉样例里的「天城主教座堂」按用户 2026-09-27 的决定视为同一处；大主教府邸卡里有、位置未写，并入本处。主教塞拉菲娜·阿尔贝蒂在这里",
           "link": { "map": "lm_cathedral", "label": "查看三维模型", "label_en": "View 3D model" },
@@ -176,6 +176,7 @@
     "lm_prison": {"title": "监狱（三维）", "title_en": "Prison (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "prison", "src": "props/viewer3d.html", "alias": ["监狱（三维）"], "src_note": "中立的机构建筑外观三维（标准版：标准档 + 低档 glb；卡里只顺带提到，层与位置为仓库推断）；从 tc_low.prison 标记的「查看三维模型」进。源：blender/landmarks/prison/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_soup_kitchen": {"title": "圣光教会施粥站（三维）", "title_en": "Church Soup Kitchen (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "soup_kitchen", "src": "props/viewer3d.html", "alias": ["圣光教会施粥站（三维）"], "src_note": "施粥站 + 孤儿收容所 + 免费诊所合画的三维（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 tc_low.soup_kitchen 标记的「查看三维模型」进。源：blender/landmarks/soup_kitchen/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_civic_core": {"title": "中层政务区（三维）", "title_en": "Government Quarter (3D)", "parent": "tc_mid", "kind": "estate", "viewer3d": "civic_core", "src": "props/viewer3d.html", "alias": ["中层政务区（三维）"], "src_note": "中层核心区政务区三维：天城议会、执政厅、政务院、中央储备署、文化署同在一个场景（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 tc_mid.council 标记的「查看三维模型」进。源：blender/landmarks/civic_core/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_enforcement_hq": {"title": "天城执法局总局（三维）", "title_en": "Enforcement Bureau HQ (3D)", "parent": "tc_mid", "kind": "estate", "viewer3d": "enforcement_hq", "src": "props/viewer3d.html", "alias": ["天城执法局总局（三维）"], "src_note": "只画外观的执法局总局三维（标准版：标准档 + 低档 glb；花岗岩钢塔、台座大厅与 18 格辖区状态屏、前庭安检、车库、悬浮车库，具体位置与形制为仓库推断）；从 tc_mid.enforcement_hq 标记的「查看三维模型」进。源：blender/landmarks/enforcement_hq/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_pm_residence": {
       "title": "首相府（三维）", "title_en": "Prime Minister's Residence (3D)", "parent": "tc_upper", "kind": "estate",
       "viewer3d": "pm_residence", "src": "props/viewer3d.html", "alias": ["首相府花园"],

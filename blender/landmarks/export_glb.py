@@ -58,6 +58,8 @@ BUDGET = {
     # civic_core（中层核心区政务区；site_ground / props_lights / props_signs 用上面的）
     'props_council': (70000, 2048), 'props_executive': (35000, 2048), 'props_admin': (30000, 2048),
     'props_reserve': (25000, 2048), 'props_culture': (20000, 1024), 'site_plaza': (45000, 2048),
+    # enforcement_hq（中层核心区执法局总局；其余组用上面的）
+    'props_podium': (10000, 2048), 'props_garage': (6000, 1024), 'props_dock': (10000, 2048),
 }
 
 
