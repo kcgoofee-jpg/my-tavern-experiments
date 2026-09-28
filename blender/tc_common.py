@@ -14,7 +14,7 @@ T0 = time.time()
 def tick(msg): print(f'[{time.time() - T0:6.1f}s] {msg}', flush=True)
 
 
-FLAGS = ('--data-only', '--preview', '--no-landmark-glow')   # 不带值的开关
+FLAGS = ('--data-only', '--preview', '--no-landmark-glow', '--day')   # 不带值的开关
 def parse_args(defaults):
     """Blender -b -P x.py -- --res 1600 ...，或 python3 x.py -- ...（pip 装的 bpy）。
     --键 值 成对出现；FLAGS 里的开关不带值。未知的键照样收下，由层脚本用 opt.get 读取。"""
@@ -302,6 +302,23 @@ def point_lights(name, pts, power, radius=.02):
         o = bpy.data.objects.new(name, datas[key]); o.location = (x, y, z); bpy.context.scene.collection.objects.link(o)
 
 
+def day_reset():
+    """--day 收尾（建完场景、建太阳之前调用）：拆掉全部夜景灯光（点光 / 区域光；太阳由层脚本自己另建），
+    并把夜景自发光材质（--glow 置 0 后是纯黑的霓虹 / 招牌 / 灯头 / 灯带）统一换成暗色漆面——白天读成
+    暗色灯箱、熄灭的灯罩，而不是一块块死黑。要在建的时候就换材质的（如轨道发光线改金属），各层脚本自己条件建。"""
+    for o in [o for o in bpy.data.objects if o.type == 'LIGHT']:
+        bpy.data.objects.remove(o, do_unlink=True)
+    for m in bpy.data.materials:
+        nt = getattr(m, 'node_tree', None)
+        if nt is None or not any(nd.type == 'EMISSION' for nd in nt.nodes): continue
+        for nd in list(nt.nodes):
+            if nd.type != 'OUTPUT_MATERIAL': nt.nodes.remove(nd)
+        b = nt.nodes.new('ShaderNodeBsdfPrincipled')
+        set_in(b, 'Base Color', (.16, .16, .17, 1)); set_in(b, 'Roughness', .72); set_in(b, 'Metallic', 0)
+        nt.links.new(b.outputs['BSDF'], next(nd for nd in nt.nodes if nd.type == 'OUTPUT_MATERIAL').inputs['Surface'])
+        if hasattr(m, 'blend_method'): m.blend_method = 'OPAQUE'
+
+
 # ---------------- 层运行器：三层脚本的统一骨架 ----------------
 class Layer:
     """每层脚本的统一结构（接口见 docs/tiancheng-maps.md）：
@@ -334,6 +351,7 @@ class Layer:
         # --no-landmark-glow：去掉地标的装饰性光圈 / 描边灯 / 光晕（建筑本体与普通照明不动）；默认关（= 现状）。
         # 各层脚本照常建完、照常消耗随机数，只在最后把这些元素过滤掉，所以随机序列与 map/data/*.json 都不变。
         self.lm_glow = not self.opt.get('--no-landmark-glow')
+        self.day = bool(self.opt.get('--day'))              # --day：白天版（日光 + 材质切换，各层脚本自己处理；默认夜景，行为不变）
     def f(self, key, default):                              # 读数值参数：layer.f('--glow', 1)
         return float(self.opt.get(key, default))
     def marker(self, id, pos, r=.3):
