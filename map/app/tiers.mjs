@@ -1,4 +1,5 @@
 // 清晰度档位、省流判断、加载进度、叠加层与标注避让（原内联主脚本「清晰度上限」「加载进度」两区 + 档位常量）。
+import { lp } from './loadprog.mjs';
 import { REG, aspect, cur, pendingFocus, setAspect, setCur, setPendingFocus, viewer } from './state.mjs';
 import { $, announce, post, setSrQ, srQ, srT } from './util.mjs';
 import { nm, t } from './i18n.mjs';
@@ -39,7 +40,7 @@ export function initProgress() {
     if (!busy && bad && !ok) { tilesFailed(); clearTimeout(hideT); hideT = setTimeout(() => { done = ok = bad = 0; }, 200); return; }
     const pct = busy ? Math.round(done / (done + busy) * 100) : 100;
     $('#prog').hidden = !busy; $('#prog i').style.width = pct + '%';
-    if (!$('#loading').classList.contains('done') && REG.maps[cur]?.kind !== 'estate') $('#loading span').textContent = t('loading_pct', { title: nm(REG.maps[cur], 'title'), pct });
+    if (!$('#loading').classList.contains('done') && REG.maps[cur]?.kind !== 'estate') { lp().label(t('loading_title', { title: nm(REG.maps[cur], 'title') })).set(done, done + busy); lp().el.dataset.unit = 'tiles'; }   // fix3：统一进度组件，瓦片 已到 / 需要
     if (!firstLoaded) post({ type: 'eden-map:progress', pct });
     if (busy) { clearTimeout(tsT2); ts.textContent = t('busy_pct', { pct }); ts.className = 'busy'; }
     else if (ts.className === 'busy') tsOk();
@@ -48,7 +49,7 @@ export function initProgress() {
     // 在 100% 停一下再淡出；期间换了地图（例如跳去庄园）就不撤，免得撤掉庄园的遮罩（E4 N08）
     clearTimeout(hideT); if (!busy) { if (done) { const at = cur; setTimeout(() => { if (cur === at && REG.maps[cur]?.kind !== 'estate') $('#loading').classList.add('done'); }, 350); } hideT = setTimeout(() => { done = ok = bad = 0; $('#prog').hidden = true; }, 200); }
   };
-  viewer.addHandler('open', () => { done = ok = bad = 0; tileActs(false); upd(); });
+  viewer.addHandler('open', () => { done = ok = bad = 0; tileActs(false); if (REG.maps[cur]?.kind !== 'estate') lp().reset(); upd(); });
   viewer.addHandler('tile-loaded', () => { done++; ok++; lastTile = Date.now(); tileActs(false); upd(); });
   // 卡住提示：还有图块在加载，但 8 秒没有新图块到达 → 网络慢；20 秒 → 可点击重试（重新请求当前地图的图块）
   let lastTile = Date.now();
@@ -74,7 +75,7 @@ function tileActs(on) { const b = $('#tileRetry'); if (!b || b.hidden === !on) r
 function tilesFailed() {
   const ts = $('#tierState'); clearTimeout(tsT2); ts.textContent = t('stuck'); ts.className = 'busy stuck'; $('#prog').hidden = true;
   if (REG.maps[cur]?.kind === 'estate') return;
-  const first = $('#tileRetry').hidden, ld = $('#loading'); ld.classList.remove('done'); $('#loading span').textContent = t('tiles_failed'); tileActs(true);
+  const first = $('#tileRetry').hidden, ld = $('#loading'); ld.classList.remove('done'); lp().fail(t('tiles_failed')); tileActs(true);
   if (first) announce(t('tiles_failed'));   // 每批失败都会进来：只在第一次播报（E5 r3 无障碍 F-13）
 }
 function retryTiles() {   // 失败的瓦片 OSD 不会再请求（resetItems 不清失败记录），所以按原视野重新打开当前地图
@@ -111,6 +112,23 @@ export function tierLabels() {
     const cap = (TIERS.find(x => x.key === b.dataset.k) || tt).cap;
     b.title = b.dataset.k === 'auto' ? t('tier_auto_title') + (tier === 'auto' ? ' · ' + t('tier_now', { px }) : '') : t('tier_cap', { px: cap }); });
   if (cur && REG?.maps[cur]) $('#tiers').title = t(tier === 'auto' ? 'tier_status_auto' : 'tier_status', { title: nm(REG.maps[cur], 'title'), px });
+  tierAvail();
+}
+// fix3（用户 2026-09-28）：不适用的档位不再悄悄消失，而是灰掉并写明原因——三维页（清晰度只管平面瓦片）/ 地图还没打开 / 本图原图不够大（和低一档一样）
+export function tierAvail() {
+  const why = $('#tierWhy'), bs = [...document.querySelectorAll('#tiers button')]; if (!bs.length) return;
+  const est = document.body.classList.contains('estate') || REG?.maps?.[cur]?.kind === 'estate', base = viewer?.world?.getItemAt(0), W = base?.source?.dimensions?.x || 0;
+  let msg = '';
+  if (est) msg = t('tier_na_3d');
+  else if (!base) msg = t('tier_na_none');
+  for (const b of bs) {
+    let off = !!msg, tip = '';
+    const i = TIERS.findIndex(x => x.key === b.dataset.k);
+    if (!off && i > 0 && W && TIERS[i - 1].cap >= W && tier !== b.dataset.k) { off = true; tip = t('tier_na_small', { px: W, prev: t('tier_' + TIERS[i - 1].key) }); }
+    b.disabled = off; b.setAttribute('aria-disabled', off ? 'true' : 'false'); if (tip) b.title = tip;
+    if (tip && !msg) msg = tip;
+  }
+  if (why) { why.textContent = msg; why.hidden = !msg; }
 }
 // 自动档：屏幕实际需要的像素 = 视口宽 × devicePixelRatio ÷ 可见部分占图宽的比例，取刚好够用的一档；只升不降
 export function autoTier(force) {

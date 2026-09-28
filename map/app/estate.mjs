@@ -1,4 +1,5 @@
 // 庄园 / 三维子页宿主：openEstate（blob iframe + <base> + 失败钩子）、子页消息、通用三维查看器入口。
+import { lp } from './loadprog.mjs';
 import { REG, cur, pendingFocus, setPendingFocus, viewer } from './state.mjs';
 import { $, PR, SUB_ORIGIN, announce, post, tx } from './util.mjs';
 import { LANG, nm, postState } from './i18n.mjs';
@@ -40,8 +41,8 @@ const EST_HOOK = `<script>(function(){var f=0;function fail(r){if(f)return;f=1;t
 function estateActs(state) {   // state: '' 隐藏；'slow' 仍在加载；'fail' 失败
   const ld = $('#loading'), acts = ld.querySelector('.acts'), ti = nm(REG.maps[cur] || {}, 'title');
   acts.hidden = !state; $('#estRetry').hidden = $('#estPlan').hidden = false; $('#tileRetry').hidden = true;
-  if (state === 'slow') ld.querySelector('span').textContent = tx('estate.slow', '庄园三维模型加载较慢…可以继续等，或先看平面图');
-  if (state === 'fail') { ld.querySelector('span').textContent = tx('estate.failed', '庄园三维模型加载失败：当前网络连不上三维库'); ld.classList.remove('done'); }
+  if (state === 'slow') lp().slow(tx('estate.slow', '庄园三维模型加载较慢…可以继续等，或先看平面图'));
+  if (state === 'fail') { lp().fail(tx('estate.failed', '庄园三维模型加载失败：当前网络连不上三维库')); ld.classList.remove('done'); }
   if (state) { ld.classList.add('over'); announce(ld.querySelector('span').textContent); }
 }
 export function retryEstate() { const id = cur, m = REG.maps[id]; if (m?.kind !== 'estate') return; setEstFail(false); est?.frame.remove(); est = null; openEstate(id, m, true); }
@@ -54,22 +55,22 @@ export async function openEstate(id, m, hadPrev) {
     est = estParked; estParked = null; const f = est.frame; f.style.visibility = '';
     $('#loading').classList.add('done'); estateActs('');
     f.contentWindow?.postMessage({ type: 'estate:resume' }, SUB_ORIGIN);
-    $('#credit').textContent = $('#credit').title = nm(m, 'credit'); $('#creditBtn').hidden = !nm(m, 'credit');
+    $('#credit').textContent = nm(m, 'credit'); $('#credit').removeAttribute('title');   // fix3：署名只用展开的文字框，不再叠一个原生 title 提示 $('#creditBtn').hidden = !nm(m, 'credit');
     estateLook(); estateInset(); estateRoom(); focusAfterGo(); postState(); post({ type: 'eden-map:loaded' });
     return;
   }
   dropParked();
-  $('#credit').textContent = $('#credit').title = nm(m, 'credit'); $('#creditBtn').hidden = !nm(m, 'credit'); window.__creditShow?.(false);
+  $('#credit').textContent = nm(m, 'credit'); $('#credit').removeAttribute('title');   // fix3：署名只用展开的文字框，不再叠一个原生 title 提示 $('#creditBtn').hidden = !nm(m, 'credit'); window.__creditShow?.(false);
   const ld = $('#loading'), ti = nm(m, 'title'); ld.classList.remove('done', 'thumb'); ld.classList.remove('over'); estateActs('');   // v0.9.6：三维页加载时用整屏加载页，不再露出上一张图 + 一个「加载中」小条
   if (m.cover) { ld.style.setProperty('--loading-cover', `url(${matchMedia('(max-width: 600px)').matches ? m.cover.src_800 || m.cover.src : m.cover.src})`); ld.classList.add('cover'); }
   else { ld.classList.remove('cover'); ld.style.removeProperty('--loading-cover'); }
-  ld.querySelector('span').textContent = tx('estate.loading', `加载 ${ti}…`, { title: ti });
+  lp().reset(tx('estate.loading', `加载 ${ti}…`, { title: ti }));   // fix3：统一进度组件——先不确定（已用时间），三维页报来字节进度后显示百分比
   postState();
   const url = new URL(m.viewer3d ? 'props/viewer3d.html' : m.src, document.baseURI).href;   // viewer3d：通用三维查看器 + props/<id>/manifest.json（见 v3d 段）
   let html;
   for (let i = 0; i < 2 && !html; i++) { try { html = await getText(url); } catch (e) { textCache.delete(url); if (!i) await new Promise(r => setTimeout(r, 400)); } }   // 预热失败过一次也再试一次（接手 review P1）
   if (cur !== id) return;
-  if (!html) { estateActs('fail'); ld.querySelector('span').textContent = tx('estate.fail', '庄园页面加载失败'); return; }
+  if (!html) { estateActs('fail'); lp().fail(tx('estate.fail', '庄园页面加载失败')); return; }
   const old = est?.frame; if (old && old.parentNode) old.remove();
   const f = document.createElement('iframe'); f.id = 'estate'; f.title = nm(m, 'title');
   const vend = new URL('vendor/', url).href;
@@ -92,7 +93,7 @@ function onEstateFail(reason) {
 }
 function onEstateReady() {
   const f = est.frame; est.ready = true; if (estFail) setEstFail(false);
-  f.classList.add('on'); estateActs(''); $('#loading').classList.add('done'); focusAfterGo();
+  f.classList.add('on'); estateActs(''); lp().done(); $('#loading').classList.add('done'); focusAfterGo();
   estateLook(); estateInset(); estateRoom();
   post({ type: 'eden-map:loaded' });
   // 庄园淡入完成后再关掉瓦片地图（释放解码内存）
@@ -132,6 +133,7 @@ window.addEventListener('message', e => {
   if (!est || e.source !== est.frame.contentWindow || (PR && !PR.accept(e.data, '（子页 → 查看器）'))) return;
   if (e.data?.type === 'estate:ready') onEstateReady();
   if (e.data?.type === 'estate:fail') onEstateFail(e.data.reason);
+  if (e.data?.type === 'estate:progress' && !est.ready) lp().set(e.data.loaded, e.data.total, 'bytes');   // fix3：glb 字节进度
   if (e.data?.type === 'estate:key' && e.data.key === 'Escape') onEsc();
   else if (e.data?.type === 'estate:key') stepLayer({ PageUp: -1, '[': -1, PageDown: 1, ']': 1 }[e.data.key] || 0);
 });

@@ -52,7 +52,7 @@ export const SCHEMA = {
   'eden-map:toast': [H2V, { items: 'array?' }],
   'eden-map:selfcheck': [H2V, { items: 'array?' }],
   'eden-map:hostbar': [H2V, { side: 'string?' }],
-  'eden-map:line': [H2V, { swappable: 'boolean?' }],
+  'eden-map:line': [H2V, { swappable: 'boolean?', name: 'string?', manual: 'boolean?' }],
   'eden-map:key': [H2V, { key: 'string' }],
   'eden-map:storage-result': [H2V, { storage: 'object?', sources: 'object?', cleaned: 'object?', cleanable: 'number?' }],
   'eden-map:settings': [H2V, { page: 'string?' }],
@@ -81,6 +81,7 @@ export const SCHEMA = {
   'v3d:flows': [V2S, { on: 'boolean?' }],
   'estate:ready': [S2V, {}],
   'estate:fail': [S2V, { reason: 'string?' }],
+  'estate:progress': [S2V, { loaded: 'number', total: 'number?', what: 'string?' }],   // fix3：三维模型下载字节进度（total 0 = 不知道总大小）
   'estate:key': [S2V, { key: 'string' }],
   'estate:select': [S2V, { name: 'string?' }],   // 直嵌接口
   'v3d:state': [S2V, {}],                        // 直嵌接口

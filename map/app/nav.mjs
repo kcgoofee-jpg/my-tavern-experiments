@@ -70,7 +70,7 @@ export async function go(id) {   // 云脚本块（文末）会包一层：天�
 }
 // 随地图变的工具栏文字（叠加层、另一版底图的开关名）
 export function mapChrome(m) {
-  $('#credit').textContent = $('#credit').title = nm(m, 'credit'); $('#creditBtn').hidden = !nm(m, 'credit'); window.__creditShow?.(false);
+  $('#credit').textContent = nm(m, 'credit'); $('#credit').removeAttribute('title');   // fix3：署名只用展开的文字框，不再叠一个原生 title 提示 $('#creditBtn').hidden = !nm(m, 'credit'); window.__creditShow?.(false);
   if (m.overlay) { let on = m.overlay.type !== 'barriers'; if (!on) try { on = TCStore.get('edenMapBarriers') === '1'; } catch (e) {} $('#tgBorders').checked = on; }
   $('#tgOverlay span').textContent = m.overlay ? nm(m.overlay, 'label') || t('overlay') : t('overlay'); $('#tgOverlay').hidden = !m.overlay;
   $('#tgAlt').hidden = !m.alt; if (m.alt) $('#tgAlt span').textContent = nm(m.alt, 'label') || t('alt_base');

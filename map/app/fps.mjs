@@ -8,7 +8,7 @@ function ensureEl() {
   el.id = 'fpsMeter';
   el.setAttribute('aria-hidden', 'true');
   Object.assign(el.style, {
-    position: 'fixed', top: '4px', left: '4px', zIndex: 99999,
+    position: 'fixed', top: 'calc(var(--bar-h, 44px) + 6px)', left: '50%', transform: 'translateX(-50%)', zIndex: 99999,   // fix3：以前在左上角压住「上一级」按钮；改到顶栏下方正中（署名 ⓘ 在左上、控制列在右）
     font: '11px/1.4 monospace', color: '#0f0', background: 'rgba(0,0,0,.55)',
     padding: '1px 5px', borderRadius: '3px', pointerEvents: 'none', letterSpacing: '.02em',
   });

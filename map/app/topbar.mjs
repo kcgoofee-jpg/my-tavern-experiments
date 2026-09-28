@@ -69,7 +69,7 @@ fetch('data/build.json').then(r => r.ok ? r.json() : null).then(b => { buildInfo
   buildCode = ((b && b.code) || 'S0-0000-D-0000') + '-' + clientTail();
   post({ type: 'eden-map:build', version: b?.version || null, code: b?.code || null });   // 给卡内脚本的自检比对版本（E6）
   $('#build').textContent = buildCode;
-}).catch(() => {});
+}).catch(() => { buildCode = 'S0-0000-D-0000-' + clientTail(); $('#build').textContent = buildCode; $('#build').title = t('build_na'); });   // fix3：读不到 build.json 也显示诊断码（不留空白），原因在 title
 $('#build').addEventListener('click', () => {
   const d = [buildCode, 'map=' + (cur || sleeping), 'tier=' + tier + (tier === 'auto' ? ':' + autoKey : ''), 'dpr=' + devicePixelRatio,
     'view=' + innerWidth + 'x' + innerHeight, 'base=' + document.baseURI, 'ua=' + navigator.userAgent].join('\n');

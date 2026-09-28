@@ -4,6 +4,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const J = p => JSON.parse(fs.readFileSync(new URL('../map/' + p, import.meta.url), 'utf8'));
+// 例外（fix3，用户 2026-09-28）：人物页「开局前 · 卡初始值」标注说明数据来源，不是开局编号
+const PRE_OK = new Set(['ch.pre', 'ch.pre_tip']);
 const BAD = /开局|Opening/i, VIS = ['name', 'sub', 'src', 'name_en', 'sub_en', 'title', 'title_en', 'label', 'label_en'];
 test('地点可见文字不含开局', () => {
   const bad = [], reg = J('data/maps.json'), wm = J('data/world_markers.json');
@@ -15,7 +17,7 @@ test('地点可见文字不含开局', () => {
   const wjs = fs.readFileSync(new URL('../map/data/world.js', import.meta.url), 'utf8');
   for (const m of wjs.matchAll(/(?:name|sub|src): '([^']*)'/g)) if (BAD.test(m[1])) bad.push('world.js: ' + m[1].slice(0, 30));
   for (const lg of ['zh', 'en']) { const d = J(`i18n/${lg}.json`);
-    for (const [k, v] of Object.entries(d)) if (k !== '_说明' && typeof v === 'string' && BAD.test(v)) bad.push(`i18n/${lg}.${k}`);
+    for (const [k, v] of Object.entries(d)) if (k !== '_说明' && !PRE_OK.has(k) && typeof v === 'string' && BAD.test(v)) bad.push(`i18n/${lg}.${k}`);
     for (const [k, v] of Object.entries(d.names || {})) if (BAD.test(k) || BAD.test(v)) bad.push(`i18n/${lg}.names.${k}`); }
   assert.deepEqual(bad, []);
 });

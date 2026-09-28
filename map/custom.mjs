@@ -7,6 +7,7 @@ import { REG, aspect, cur, curData, pendingFocus, setPendingFocus, viewer } from
 import { isEden } from './app/pack.mjs';
 import { esc, post } from './app/util.mjs';
 import { LANG } from './app/i18n.mjs';
+import { mountProgress } from './ui/progress.mjs';
 import { go } from './app/nav.mjs';
 import { estFail, estFocus, estateRoom, estateStandIn, setEstFocus } from './app/estate.mjs';
 import { cardFrom, closeCard, setCardFrom } from './app/markers.mjs';
@@ -49,7 +50,7 @@ const TCCustom = (() => {
       const e = entry(el.dataset.name); tn.nodeValue = e?.名 || el.dataset.dn; el.classList.toggle('cu', !!e?.名);
     }
   }
-  // 地点卡：显示名 + 标准名、用途；本人所在地点的卡再加一行着装（截断，全文在 title）
+  // 地点卡：显示名 + 标准名、用途
   function decorateCard(el, title) {
     const c = document.getElementById('card'); if (!c || c.hidden) return;
     const key = el?.dataset?.name || title, e = entry(key), ex = c.querySelector('.extra');
@@ -62,8 +63,7 @@ const TCCustom = (() => {
     if (roomNote && el?.dataset?.name && typeof REG !== 'undefined' && Object.values(REG.maps).some(m => Object.values(m.markers || {}).some(v => v.name === el.dataset.name && v.link && REG.maps[v.link.map]?.kind === 'estate'))) {
       const r = roomNote, re = entry(r), p = document.createElement('p'); p.className = 'cu-note cu-room'; roomNote = null;
       p.innerHTML = `<b>${esc(T('cu.room_here', '要看的房间'))}</b> `; p.append(document.createTextNode((re?.名 ? `${re.名}（${r}）` : r) + (re?.用途 ? ' · ' + re.用途 : ''))); ex.prepend(p); }
-    if (outfit?.text && el?.classList?.contains('here')) { const p = document.createElement('p'); p.className = 'cu-outfit'; p.textContent = T('cu.outfit', '着装：{s}', { s: outfit.text });
-      if (outfit.items) p.title = Object.entries(outfit.items).map(([k, v]) => `${k}：${v}`).join('\n'); ex.prepend(p); }
+    // fix3（用户 2026-09-28）：着装属于人，不挂在地点卡上——改在人物页顶部「你（主角）」一行显示（chars.mjs）
   }
 
   // ---------- 夜色（上层、中层；设置里可关，默认开） ----------
@@ -112,7 +112,8 @@ const TCCustom = (() => {
     const pop = document.getElementById('setPop'); if (!pop) return;
     let box = document.getElementById('cuBox');
     if (!box) { box = document.createElement('div'); box.id = 'cuBox'; if (window.TCSettings) TCSettings.registerSection('data', box, { order: 20 }); else { const sc = document.getElementById('selfCheck'); sc ? pop.insertBefore(box, sc) : pop.appendChild(box); }
-      box.addEventListener('click', e => { const b = e.target.closest('[data-open]'); if (b) { e.stopPropagation(); openDlg(b); } }); box.addEventListener('change', onChange); }
+      box.addEventListener('click', e => { const b = e.target.closest('[data-open]'); if (b) { e.stopPropagation(); openDlg(b); } }); box.addEventListener('change', onChange);
+      for (const ev of ['pointerenter', 'focusin']) box.addEventListener(ev, () => { if (!depsOk) (window.requestIdleCallback || setTimeout)(warm); }, { once: true }); }
     const n = Object.keys(data.items || {}).length;
     box.innerHTML = `<h3>${esc(T('cu.title', '自定义'))}</h3>`
       + `<button type="button" class="btn cu-open" data-open="1"><span>${esc(T('cu.manage', '名称与用途'))}</span><em>${esc(n ? T('cu.count', '{n} 项', { n }) : T('cu.none', '还没有'))}</em></button>`
@@ -139,11 +140,18 @@ const TCCustom = (() => {
     dlg.addEventListener('click', onDlgClick); dlg.addEventListener('input', onInput); dlg.addEventListener('submit', e => { e.preventDefault(); save(); });
     dlg.addEventListener('keydown', onKey);
   }
+  // fix3（用户 2026-09-28「打开自定义卡顿」）：以前先等 选择器模块 + 庄园房间表（eden_estate_rooms.json）+ MVU 模块全部到齐才开对话框；
+  // 现在列表页立刻打开（只用已有数据），这些在后台取，进「选一个对象 / 编辑」时才等（等的时候显示统一加载组件）；设置「数据与映射」一打开就空闲预取
+  const deps = () => Promise.all([pk(), planP(), ready]).catch(() => {});
+  let depsOk = false; const warm = () => deps().then(() => { depsOk = true; });
   async function openDlg(from, v = 'list', key = null) {
-    await Promise.all([pk(), planP(), ready]).catch(() => {});
     if (!dlg) mkDlg(); opener = from || document.activeElement; view = v; editing = key; query = ''; flyMsg = ''; resetArm = null;
-    dlg.hidden = false; document.body.classList.add('cudlg'); renderDlg(true);
+    dlg.hidden = false; document.body.classList.add('cudlg');
+    if (v !== 'list' && !depsOk) { loadingBody(); await warm(); if (dlg.hidden) return; }
+    renderDlg(true); if (!depsOk) warm();
   }
+  function loadingBody() { const b = dlg.querySelector('.cu-body'); b.innerHTML = ''; mountProgress(b, { lang: LANG }).label(T('cu.loading', '正在准备地点与房间列表…')); }
+  async function go2(v) { if (!depsOk) { view = v; loadingBody(); await warm(); if (dlg.hidden || view !== v) return; } view = v; renderDlg(true); }
   function closeDlg(restore = true) {
     if (!dlg || dlg.hidden) return; dlg.hidden = true; document.body.classList.remove('cudlg');
     if (!restore) return;
@@ -239,9 +247,9 @@ const TCCustom = (() => {
     const d = b.dataset;
     if (d.close) closeDlg();
     else if (d.back) { view = view === 'edit' && !entry(editing) ? 'pick' : 'list'; renderDlg(true); }
-    else if (d.pick) { view = 'pick'; renderDlg(true); }
-    else if (d.pickkey != null) { editing = d.pickkey; view = 'edit'; renderDlg(true); }
-    else if (d.edit != null) { editing = d.edit; view = 'edit'; renderDlg(true); }
+    else if (d.pick) go2('pick');
+    else if (d.pickkey != null) { editing = d.pickkey; go2('edit'); }
+    else if (d.edit != null) { editing = d.edit; go2('edit'); }
     else if (d.jump) { const s = dlg.querySelector(`section[data-g="${CSS.escape(d.jump)}"]`); s?.scrollIntoView({ block: 'start' }); s?.querySelector('button')?.focus({ preventScroll: true }); }
     else if (d.reset != null) {
       if (resetArm !== d.reset) { resetArm = d.reset; clearTimeout(resetT); resetT = setTimeout(() => { resetArm = null; if (!dlg.hidden && view === 'list') renderDlg(false); }, 4000); renderDlg(false); dlg.querySelector(`[data-reset="${CSS.escape(d.reset)}"]`)?.focus(); return; }
@@ -326,8 +334,9 @@ const TCCustom = (() => {
   function setSync(on) { if (embed && host) post({ type: 'eden-map:custom-sync', on: !!on }); }
   // 宿主推来的
   function fromHost(d) { host = { vars: !!d.vars, wb: !!d.wb, wbState: d.wbState || '' }; ready.then(M => { if (!M) return; data = M.normCustom(d.data); apply(); }); }
-  function setClock(c) { clock = c; night(); }
-  function setOutfit(o) { outfit = o && o.text ? o : null; }
+  const preTag = () => document.body.classList.toggle('prestart', !!clock?.pre);   // 开局前（卡初始值）：宿主标题栏的时钟另有标注
+  function setClock(c) { const was = !!clock?.pre; clock = c; night(); if (was !== !!c?.pre) { P.TCEvents?.renderBar?.(); preTag(); } }
+  function setOutfit(o) { outfit = o && o.text ? o : null; P.TCEvents?.renderBar?.(); }
   function chatChanged() { if (!host) ready.then(loadLocal); }
 
   const css = `
@@ -338,6 +347,9 @@ const TCCustom = (() => {
   /* 对话框：桌面居中 560 宽；≤ 640 全屏底板 */
   #cuDlg{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 55%,transparent);color:var(--ink);font-family:var(--font-ui)}
   #cuDlg[hidden]{display:none}
+  #cuDlg .cu-res section,#cuDlg .cu-cards>li{content-visibility:auto;contain-intrinsic-size:auto 220px}   /* fix3：长列表只排版看得见的部分 */
+  #cuDlg .cu-cards>li{contain-intrinsic-size:auto 120px}
+  #cuDlg .cu-body .uiprog{margin:var(--sp-6) auto}
   #cuDlg .cu-sheet{width:min(560px,calc(100vw - 32px));max-height:min(86vh,760px);display:flex;flex-direction:column;background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);border-radius:var(--r-l);box-shadow:var(--sh-3);overflow:hidden}
   #cuDlg header{display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-5);border-bottom:1px solid var(--line)}
   #cuDlg header h2{flex:1;margin:0;font-size:var(--fs-title);font-weight:600;outline:none}

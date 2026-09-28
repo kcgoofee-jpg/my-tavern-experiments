@@ -256,7 +256,7 @@ er_path = os.path.join(ROOT, 'data', 'eden_estate_rooms.json')
 if exists(er_path) and 'eden_estate' in maps:
     import shutil, subprocess
     er = load(er_path).get('rooms', []); est = maps['eden_estate']
-    PH = re.compile(r'按原卡|^（.*）$')   # 占位不是名字：房间名一律写卡原名
+    PH = re.compile(r'按原卡|^（.*）$|（[^）]*(卡未写|未写|待定|占位|TODO)[^）]*）')   # 占位不是名字：房间名一律写卡原名；「X（卡未写）」式标签也算占位
     erd = load(er_path); crs = erd.get('card_rooms') or []; cids = {c.get('cid') for c in crs}
     retired = erd.get('retired_names') or {}
     # 仓库以前自己编的房间名（不是卡的写法）：只允许出现在 retired_names（读旧聊天数据），不能再当房间名 / 识别词

@@ -2,6 +2,7 @@
 import { $, esc, post, tx } from './util.mjs';
 import { LANG, paintSegs, setTheme } from './i18n.mjs';
 import { buildInfo } from './topbar.mjs';
+import { tierAvail } from './tiers.mjs';
 import { estateLook, narrowNow, v3dEntries } from './estate.mjs';
 import { firstRunHint, noticeRefresh, setActs } from './shell.mjs';
 import { P } from './plugins.mjs';
@@ -19,7 +20,8 @@ export function setPage(pg, quiet) {
   if (!quiet) { $('#setPop').scrollTop = 0; const f = pg === 'home' ? ($('#setQ')?.offsetParent ? $('#setQ') : $('#setPop .sgroups button')) : $('#setBack'); f?.focus({ preventScroll: true }); }
   if (pg === 'update') renderSelfCheck();
   if (pg === 'people') { const n = typeof P.TCChars !== 'undefined' ? P.TCChars.count() : 0; $('#chSrc').textContent = tx('s.ch_src_n', `当前聊天 ${n} 人`, { n }); }
-  if (pg === 'adv') v3dEntries();
+  if (pg === 'adv') { v3dEntries(); renderLine(); }
+  if (pg === 'display') tierAvail();
   if (pg === 'data') { if (window.top !== window) post({ type: 'eden-map:storage-info' }); else window.renderStorage?.(null); }
 }
 export const TCSettings = window.TCSettings = {
@@ -109,6 +111,18 @@ export function kbdHelp(on) {
   b.innerHTML = `<dl>${K.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;
 }
 export let showSet = () => {}, showLay = () => {};
+// fix3（用户 2026-09-28）：「加载线路」一直显示——当前线路 + 自动测速 / 手动选择；不能换线路时灰掉并写原因（单独打开 / 脚本地址固定）
+let lineInfo = null;
+export function setLine(d) { lineInfo = d; renderLine(); }
+export function renderLine() {
+  const b = $('#linePick'), n = $('#lineNow'); if (!b || !n) return;
+  const emb = window.top !== window, d = lineInfo;
+  if (!emb) { b.disabled = true; n.textContent = tx('s.line_na_solo', '单独打开地图时不适用：线路由酒馆里的卡内脚本选择'); return; }
+  if (!d) { b.disabled = true; n.textContent = tx('s.line_wait', '等待卡内脚本报告线路…'); return; }
+  if (!d.swappable) { b.disabled = true; n.textContent = tx('s.line_na_fixed', '不可切换：当前脚本从固定地址加载（本地 / 预览），没有备用线路'); return; }
+  b.disabled = false;
+  n.innerHTML = esc(tx('s.line_now', '当前：')) + `<b>${esc(d.name || tx('s.line_unset', '未选'))}</b> · ` + esc(d.manual ? tx('s.line_manual', '手动选择') : tx('s.line_auto', '自动测速选中（24 小时内有效）'));
+}
 // v0.9.6「关于 / 检查更新」：卡内脚本发来 eden-map:about { version, code, channel: tag | follow | ref | local, ref, sha, line }；
 // 「检查更新」发 eden-map:check-update，卡内脚本查最新 map-v 标签的 build.json（走当前线路、绕缓存）后回 eden-map:update-result。不自动安装。
 // 单独打开（不在酒馆里）时只显示地图自己的 build.json。

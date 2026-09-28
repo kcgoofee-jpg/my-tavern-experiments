@@ -40,16 +40,30 @@ const TCCompose = (() => {
     const M = await mod(); if (!M) return;
     let box = document.getElementById('cmpBox');
     if (!box) { box = document.createElement('details'); box.id = 'cmpBox'; if (window.TCSettings) TCSettings.registerSection('data', box, { order: 30 }); else { const at = document.getElementById('vmBox') || document.getElementById('selfCheck'); at ? pop.insertBefore(box, at) : pop.appendChild(box); }
-      box.addEventListener('toggle', () => { open = box.open; }); box.addEventListener('change', onChange); box.addEventListener('click', ev => { if (ev.target.closest('[data-cmpreset]')) { ev.stopPropagation(); M.write(st(), {}); renderUI(); } }); }
+      box.addEventListener('toggle', () => { open = box.open; }); box.addEventListener('change', onChange); box.addEventListener('click', ev => { if (ev.target.closest('[data-cmpreset]')) { ev.stopPropagation(); M.write(st(), {}); renderUI(); }
+        const x = ev.target.closest('[data-cmpex]'); if (x) { ev.stopPropagation(); const e = EX[lang()][+x.dataset.cmpex]; M.write(st(), { go: e.go, ask: e.ask }); renderUI(); } });
+      box.addEventListener('input', preview); }
     box.open = open;
     const cur = M.read(st(), lang()), d = M.DEFAULTS[lang()];
     box.innerHTML = `<summary><h3>${esc(T('cmp.title', '填入聊天的模板'))}</h3></summary>`
       + `<small>${esc(T('cmp.hint', '卡片上的「去这里」「追问这件事」把这句话填进酒馆输入框，不会自动发送。{name} = 地点 / 事件 / 人物名'))}</small>`
+      + `<dl class="cmp-ph"><dt><code>{name}</code></dt><dd>${esc(T('cmp.ph_name', '卡片上的名字（地点 / 事件 / 人物）；模板里没写 {name} 时，名字接在句尾'))}</dd></dl>`
+      + `<div class="cmp-ex" role="group" aria-label="${esc(T('cmp.ex', '示例（点一下套用）'))}"><small>${esc(T('cmp.ex', '示例（点一下套用）'))}</small>${EX[lang()].map((x, i) => `<button type="button" class="btn" data-cmpex="${i}" title="${esc(x.go + ' / ' + x.ask)}">${esc(x.label)}</button>`).join('')}</div>`
       + `<label class="vm-row"><span>${esc(T('cmp.go', '去这里'))}</span><input type="text" data-cmpk="go" maxlength="120" placeholder="${esc(d.go)}" value="${esc(cur.go === d.go ? '' : cur.go)}"></label>`
       + `<label class="vm-row"><span>${esc(T('cmp.ask', '追问这件事'))}</span><input type="text" data-cmpk="ask" maxlength="120" placeholder="${esc(d.ask)}" value="${esc(cur.ask === d.ask ? '' : cur.ask)}"></label>`
+      + `<div class="cmp-pv" aria-live="polite"></div>`
       + `<button type="button" class="btn" data-cmpreset="1">${esc(T('cmp.reset', '恢复默认'))}</button>`;
+    preview();
   }
-  function onChange(e) { e.stopPropagation(); if (!CM) return; const o = {}; for (const i of document.querySelectorAll('#cmpBox input[data-cmpk]')) o[i.dataset.cmpk] = i.value; CM.write(st(), o); }
+  // fix3（用户 2026-09-28）：示例模板（点一下套用）+ 实时预览（按示例名字「伊甸庄园」填出来的句子）
+  const EX = { zh: [{ label: '默认', go: '前往{name}。', ask: '关于{name}，' }, { label: '第一人称', go: '我动身前往{name}。', ask: '我想多了解一下{name}：' }, { label: '旁白提示', go: '（场景切换到{name}）', ask: '（请详细描写{name}的情况）' }],
+    en: [{ label: 'Default', go: 'Go to {name}. ', ask: 'About {name}, ' }, { label: 'First person', go: 'I head to {name}. ', ask: 'I want to know more about {name}: ' }, { label: 'Narrator cue', go: '(Scene moves to {name}) ', ask: '(Describe {name} in detail) ' }] };
+  function preview() {
+    const pv = document.querySelector('#cmpBox .cmp-pv'); if (!pv || !CM) return; const d = CM.DEFAULTS[lang()], name = T('cmp.pv_name', '伊甸庄园');
+    const v = k => document.querySelector(`#cmpBox input[data-cmpk="${k}"]`)?.value.trim() || d[k];
+    pv.innerHTML = `<small>${esc(T('cmp.pv', '预览（名字 = {name}）', { name }))}</small>` + ['go', 'ask'].map(k => `<div><b>${esc(k === 'go' ? T('cmp.go', '去这里') : T('cmp.ask', '追问这件事'))}</b><q>${esc(CM.fill(v(k), name))}</q></div>`).join('');
+  }
+  function onChange(e) { e.stopPropagation(); if (!CM) return; const o = {}; for (const i of document.querySelectorAll('#cmpBox input[data-cmpk]')) o[i.dataset.cmpk] = i.value; CM.write(st(), o); preview(); }
   const css = `
   #card .cmp{display:flex;flex-wrap:wrap;gap:var(--sp-4);margin-top:var(--sp-5)}
   #card .cmp .btn{flex:1 1 auto;min-height:40px;padding:0 var(--sp-5);font-size:var(--fs-small)}
@@ -63,7 +77,13 @@ const TCCompose = (() => {
   #cmpBox .vm-row{display:grid;grid-template-columns:minmax(6em,auto) 1fr;gap:var(--sp-4);align-items:center;min-height:var(--hit,44px)}
   #cmpBox .vm-row span{font-size:var(--fs-small);color:var(--ink-2)}
   #cmpBox input[type=text]{min-width:0;width:100%;min-height:36px;box-sizing:border-box;font:inherit;font-size:var(--fs-control);color:var(--ink);background:var(--bg);border:1px solid var(--line-strong);border-radius:var(--r-m);padding:4px 8px}
-  #cmpBox .btn{margin-top:var(--sp-4);min-height:var(--hit,44px)}`;
+  #cmpBox .btn{margin-top:var(--sp-4);min-height:var(--hit,44px)}
+  #cmpBox .cmp-ph{display:grid;grid-template-columns:auto 1fr;gap:2px var(--sp-4);margin:var(--sp-4) 0;font-size:var(--fs-micro)}
+  #cmpBox .cmp-ph dd{margin:0;color:var(--ink-2)}#cmpBox code{font-family:var(--font-mono);color:var(--accent)}
+  #cmpBox .cmp-ex{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-3)}#cmpBox .cmp-ex small{flex-basis:100%;color:var(--muted)}
+  #cmpBox .cmp-ex .btn{margin-top:0;min-height:36px;font-size:var(--fs-small)}
+  #cmpBox .cmp-pv{margin-top:var(--sp-4);padding:var(--sp-3) var(--sp-4);border:1px dashed var(--line-strong);border-radius:var(--r-m);font-size:var(--fs-small)}
+  #cmpBox .cmp-pv small{display:block;color:var(--muted)}#cmpBox .cmp-pv b{font-weight:600;margin-right:var(--sp-4);color:var(--ink-2)}#cmpBox .cmp-pv q{quotes:'「' '」'}`;
   const s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
   mod(); document.addEventListener('DOMContentLoaded', () => renderUI());
   return { attach, renderUI };

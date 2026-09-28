@@ -1,5 +1,6 @@
 // 通用房间图集：openGallery(set, { lang, base, start, onClose })，set 取自 map/data/room_galleries.json 的一项。
 // 大图懒加载（当前张 + 预取相邻两张），手机左右滑，桌面 ← → / Esc。
+import { mountProgress } from './progress.mjs';   // fix3：统一加载进度组件（大图加载中 / 失败重试）
 let el = null, st = null;
 const CSS = `
 .rg{position:fixed;inset:0;z-index:50;box-sizing:border-box;padding:calc(var(--bar-h,44px) + 12px + env(safe-area-inset-top,0px)) 0 8px;background:rgba(8,7,5,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#eee4cc;font:13px/1.5 system-ui,sans-serif;touch-action:pan-y;user-select:none;-webkit-user-select:none}
@@ -10,12 +11,17 @@ const CSS = `
 .rg button{all:unset;cursor:pointer;position:absolute;color:#eee4cc;font-size:28px;line-height:1;padding:10px 14px;border-radius:50%;background:rgba(0,0,0,.35)}
 .rg button:focus-visible{outline:2px solid var(--focus,#63b4be);outline-offset:2px}.rg button:hover,.rg button:focus-visible{background:color-mix(in srgb,var(--gold,#e6c36a) 50%,transparent)}
 .rg button{min-width:var(--hit,44px);min-height:var(--hit,44px);box-sizing:border-box;text-align:center}.rg .rg-x{top:calc(8px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));font-size:22px}.rg .rg-p{left:12px;top:50%}.rg .rg-n{right:12px;top:50%}
-@media (max-width:640px){.rg .rg-p,.rg .rg-n{display:none}}`;
+@media (max-width:640px){.rg .rg-p,.rg .rg-n{display:none}}
+.rg .rg-lp{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);padding:10px 16px;border-radius:10px;background:rgba(0,0,0,.55)}.rg .rg-lp[hidden]{display:none}
+.rg .rg-lp .uiprog-retry{position:static;font-size:13px;line-height:1;border-radius:8px;padding:8px 14px;background:var(--gold,#e6c36a);color:#111}`;
 const url = (im, t = '') => st.base + st.set.dir + im.f + t + '.jpg';
 function show(i) {
   const imgs = st.set.images, n = imgs.length; st.i = ((i % n) + n) % n;
   const im = imgs[st.i], cap = st.lang === 'en' ? im.en || im.zh : im.zh;
-  const img = el.querySelector('.rg-img'); img.src = url(im); img.alt = cap;
+  const img = el.querySelector('.rg-img'), lp = st.lp, zh = st.lang !== 'en';
+  lp.el.hidden = false; lp.reset(zh ? `加载第 ${st.i + 1} / ${n} 张…` : `Loading ${st.i + 1} / ${n}…`);
+  img.onload = () => { lp.done(); lp.el.hidden = true; }; img.onerror = () => lp.fail(zh ? '图片加载失败' : 'Image failed to load');
+  img.src = url(im); img.alt = cap; if (img.complete && img.naturalWidth) { lp.done(); lp.el.hidden = true; }
   const c = el.querySelector('.rg-cap'); c.innerHTML = `<b>${st.i + 1} / ${n}</b>`; c.append(cap);
   el.querySelectorAll('.rg-th img').forEach((t, k) => t.classList.toggle('on', k === st.i));
   for (const d of [1, -1]) new Image().src = url(imgs[(st.i + d + n) % n]);
@@ -40,6 +46,7 @@ export function openGallery(set, { lang = 'zh', base = '', start = 0, onClose } 
     `<button class="rg-x" type="button" aria-label="${zh ? '关闭' : 'Close'}">✕</button>` +
     `<button class="rg-p" type="button" aria-label="${zh ? '上一张' : 'Previous'}">‹</button>` +
     `<button class="rg-n" type="button" aria-label="${zh ? '下一张' : 'Next'}">›</button>`;
+  st.lp = mountProgress(el, { lang, onRetry: () => { const i = st.i; el.querySelector('.rg-img').removeAttribute('src'); show(i); } }); st.lp.el.classList.add('rg-lp');
   const th = el.querySelector('.rg-th');
   set.images.forEach((im, k) => {
     const i = document.createElement('img'); i.loading = 'lazy'; i.alt = ''; i.src = url(im, '_t');

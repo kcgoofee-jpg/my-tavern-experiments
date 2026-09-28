@@ -9,6 +9,7 @@ import { rebuildHere } from './extapi.mjs';
 import { P } from './plugins.mjs';
 // ---------------- 初始视角与当前地点 ----------------
 export let userMoved = false;
+let focusHere = false;   // 「当前位置」在同一张图上：飞到当前地点而不是核心区
 // 地图的实际尺度（maps.json 的 view.extent_m）：米 → 占图宽的比例
 const viewNorm = (m, key) => { const v = m.view; return v?.[key] && v.extent_m?.[0] ? v[key] / v.extent_m[0] : null; };
 // 最大放大：按 view.min_width_m（最大放大时还能看见多宽）；没有 view 的图沿用全局的 maxZoomPixelRatio
@@ -22,20 +23,16 @@ export function applyZoomLimit() { if (REG.maps[cur]?.kind === 'estate') return;
 export function focusStart(immediately) {
   if (userMoved || !viewer || !viewer.world.getItemCount()) return;
   const m = REG.maps[cur], cs = viewer.viewport.getContainerSize();
-  // 同组切层：沿用上一层的视野（跨层通道 link 带 pendingFocus 时仍然聚焦到目标地点）
+  // fix3（用户 2026-09-28）：切层 / 切图一律按本层核心区取景并夹在图内（不露空白 / 白边）；只有从世界图放大进城（handoffIn 给的 groupView）沿用交接视野，同样夹在图内
   const gv = m.group && m.kind === 'points' && groupView[m.group];
   const home = pendingHome; setPendingHome(false);
-  if (gv && immediately && !pendingFocus && !home) {
-    viewer.viewport.fitBounds(gv, true); userMoved = true;
-    // v0.9.6：各层平面范围相同（3000×1875 m），切层严格保持当前 x / y 与缩放（批准的尺度过渡设计），不再自动平移到最近的地标
-    return;
-  }
+  if (gv && gv.handoff && immediately && !pendingFocus && !home) { delete groupView[m.group]; fitIn(gv, true); userMoved = true; return; }
   let nx, ny, w;
   if (m.kind === 'world' && window.__worldTC) {   // v0.9.6 从天城缩出来：世界图最大放大、天城居中
     const pid = typeof window.__worldTC === 'string' ? window.__worldTC : 'tiancheng'; window.__worldTC = false;
     const p = [...M.places, ...M.fiefs].find(q => q.id === pid) || M.places.find(q => q.id === 'tiancheng'); [nx, ny] = toImg(p.x, p.y);
     const w0 = (viewNorm(m, 'min_width_m') || .06) * (cs.y > cs.x ? cs.x / cs.y : 1), h0 = w0 * cs.y / cs.x;
-    viewer.viewport.fitBounds(new OpenSeadragon.Rect(nx - w0 / 2, ny * aspect - h0 / 2, w0, h0), immediately); viewer.viewport.applyConstraints(true); return;
+    fitIn(new OpenSeadragon.Rect(nx - w0 / 2, ny * aspect - h0 / 2, w0, h0), immediately); return;
   }
   if (m.kind === 'world') {
     const el = document.querySelector('.mk.here') || [...document.querySelectorAll('.mk')].find(e => e.dataset.name === '天城');
@@ -46,17 +43,22 @@ export function focusStart(immediately) {
     const id = pendingFocus || Object.entries(m.markers || {}).find(([, v]) => v.name === here)?.[0] || m.view?.focus || m.focus;
     const k = mk.find(q => q.id === id) || { nx: .5, ny: .5 }; nx = k.nx; ny = k.ny; w = .3;
   }
-  // U2（spec §2.5）：手机竖屏第一次进入、没有要聚焦的地点时，按 view.phone（核心区 [x, y, w, h]，归一化）取景，四周「周边」只在缩远时出现
-  const core = m.view?.phone, hereMk = m.kind !== 'world' && document.querySelector('.mk.here');
-  if (core && cs.y > cs.x && !pendingFocus && !hereMk) {   // 竖屏：按核心区的高度取景（按宽 fit 会缩成一条横带，产品评审 P1）
-    const cw = Math.max(core[3] * aspect * cs.x / cs.y, core[2] * .55), chh = cw * cs.y / cs.x, cx = core[0] + core[2] / 2, cy = (core[1] + core[3] / 2) * aspect;   // 不比核心区宽度的 55% 更近：留出放大余地
-    viewer.viewport.fitBounds(new OpenSeadragon.Rect(cx - cw / 2, cy - chh / 2, cw, chh), immediately); return; }
-  // view：初始可见宽度按米给（每张图自己的尺度）；竖屏时让可见「高度」等于这个宽度，手机上不会一打开就缩得很小
+  // U2 / fix3：没有要聚焦的地点时，按 view.phone（核心区 [x, y, w, h]，归一化）取景——桌面与手机都用；没有核心区的图（世界图、封地）沿用 view.width_m
+  const core = m.view?.phone, toHere = focusHere; focusHere = false;
+  if (core && !pendingFocus && !toHere) { fitIn(new OpenSeadragon.Rect(core[0], core[1] * aspect, core[2], core[3] * aspect), immediately); return; }
   const vw = viewNorm(m, 'width_m');
   if (vw) w = cs.y > cs.x ? vw * cs.x / cs.y : vw;
-  w = Math.min(w, aspect * .8 * cs.x / cs.y); const h = w * cs.y / cs.x;   // 竖屏时按高度收窄，避免视框比地图还高
-  viewer.viewport.fitBounds(new OpenSeadragon.Rect(nx - w / 2, ny * aspect - h / 2, w, h), immediately);
+  fitIn(new OpenSeadragon.Rect(nx - w / 2, ny * aspect - w * cs.y / cs.x / 2, w, w * cs.y / cs.x), immediately);
 }
+// 取景：先把矩形扩成容器的宽高比，再整体缩进图内（宽 ≤ 1、高 ≤ aspect），最后平移到图内——打开时视口里只有底图，没有空白 / 周边白边
+export function frameRect(r, cs, asp) {
+  const ar = cs.x / cs.y; let { x, y, width: w, height: h } = r;
+  if (w / h < ar) { const nw = h * ar; x -= (nw - w) / 2; w = nw; } else { const nh = w / ar; y -= (nh - h) / 2; h = nh; }
+  const k = Math.min(1, 1 / w, asp / h); if (k < 1) { const cx = x + w / 2, cy = y + h / 2; w *= k; h *= k; x = cx - w / 2; y = cy - h / 2; }
+  x = Math.max(0, Math.min(1 - w, x)); y = Math.max(0, Math.min(asp - h, y));
+  return { x, y, width: w, height: h };
+}
+function fitIn(r, immediately) { const f = frameRect(r, viewer.viewport.getContainerSize(), aspect); viewer.viewport.fitBounds(new OpenSeadragon.Rect(f.x, f.y, f.width, f.height), immediately); }
 // 当前地点高亮（由 MVU 变量「世界.当前地点」驱动）；世界图上，庄园与天城内部的地点都归到「天城」
 export const ALIAS = { '天城': ['天城', '伊甸', '庄园', '书房', '主卧', '大厅', '餐厅', '会客厅', '客房', '寝', '浴室', '后庭', '前庭', '上层', '中层', '下层', '钢铁霓虹', '地基', '公寓', '银冠堡'] };
 export function markHere(v) {
@@ -90,7 +92,7 @@ export function jumpHere(v) {   // 只由「当前位置」按钮调用（不再
   // 本次会话庄园三维加载失败过、或省流设备：落到它的平面替身（上层的伊甸地标），地点卡里有「进入庄园」
   if (REG.maps[r.map].kind === 'estate' && (estFail || leanBg())) { const sub = estateStandIn(r.map); if (sub) r = { ...r, map: sub.map, marker: sub.marker }; }
   if (r.map !== cur) { setPendingFocus(r.marker || null); setPendingHome(!r.marker && !r.place); go(r.map); return true; }
-  if ((r.marker || r.place) && viewer?.world.getItemCount()) { userMoved = false; markHere(v); focusStart(false); }   // 同一张图：飞到地标 / 世界地名
+  if ((r.marker || r.place) && viewer?.world.getItemCount()) { userMoved = false; markHere(v); focusHere = true; focusStart(false); }   // 同一张图：飞到地标 / 世界地名
   return true;
 }
 export function setUserMoved(v) { return (userMoved = v); }

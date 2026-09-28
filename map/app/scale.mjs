@@ -88,8 +88,8 @@ const TCScale = (() => {
     const vp = viewer.viewport, c = vp.getCenter(true), [nx, ny] = ptOf(gid), cs = vp.getContainerSize(), T_M = T_Mof(id);
     const dx = Math.max(-4, Math.min(4, (c.x - nx) * W_M / T_M)), dy = Math.max(-2.5, Math.min(2.5, (c.y - ny * aspect) * W_M / T_M));
     const a = REG.maps[id], asp = (a.view?.extent_m?.[1] || 1875) / (a.view?.extent_m?.[0] || 3000), port = cs.y > cs.x && a.view?.phone;
-    const w = port ? a.view.phone[2] : RING_W * .96, h = w * cs.y / cs.x;   // U2：手机竖屏从世界图进城，落在核心区而不是最远一档（四周一大圈云雾）
-    groupView[gid] = new OpenSeadragon.Rect(.5 + dx - w / 2, asp / 2 + dy - h / 2, w, h);
+    const w = a.view?.phone ? a.view.phone[2] : 1, h = w * cs.y / cs.x;   // U2 / fix3：从世界图进城落在核心区（locate.mjs fitIn 再夹进图内），不再停在最远一档的周边云雾（白边）
+    groupView[gid] = Object.assign(new OpenSeadragon.Rect(.5 + dx - w / 2, asp / 2 + dy - h / 2, w, h), { handoff: true });
     const sp = vp.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true);
     window.__snapFx = { ox: sp.x, oy: sp.y, scale: 5 }; setPendingFocus(null); setPendingHome(false); go(id);
   }

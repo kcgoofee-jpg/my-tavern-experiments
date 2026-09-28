@@ -98,7 +98,7 @@ const TCChars = (() => {
   function afterOpen() { render().then(() => { if (flyName) fly(flyName); }); }
 
   // ---------- 横条里的「人物」页 ----------
-  const count = () => items.length + (rosters?.members?.items?.length || 0) + (rosters?.targets?.items?.length || 0);
+  const count = () => new Set([...items.map(c => c.name), ...['present', 'members', 'targets'].flatMap(g => (rosters?.[g]?.items || []).map(i => i.name))]).size;   // fix3：同一人只算一次
   function bar() { if (typeof P.TCEvents !== 'undefined') P.TCEvents.renderBar?.(); }
   // v0.9.5 名册（只读，卡内脚本按表的位置发现）：身份、阶段；分组可折叠（折叠状态存本机）
   const identity = n => { for (const g of ['present', 'members', 'targets']) { const it = rosters?.[g]?.items?.find(i => i.name === n); if (it?.identity) return it.identity; } return ''; };
@@ -123,8 +123,8 @@ const TCChars = (() => {
   const stageChip = s => { if (!s) return ''; const i = stageOrder ? stageOrder.indexOf(s) : -1, n = stageOrder?.length || 0;
     return `<span class="chstage" ${i >= 0 ? `style="--p:${(i + 1) / n}" title="${esc(T('ch.stage_of', '第 {i} / {n} 步', { i: i + 1, n }))}"` : ''}>${i >= 0 ? `<i aria-hidden="true">${Array.from({ length: n }, (_, k) => `<b class="${k <= i ? 'on' : ''}"></b>`).join('')}</i>` : ''}${esc(s)}</span>`; };
   function row(c) {
-    const id = identity(c.name);
-    return `<li><button type="button" class="chgo" data-n="${esc(c.name)}"><i class="av" style="--c:${color(c.name)}">${avImg(c.name) || esc(ini(c.name))}</i><b>${esc(dn(c.name))}</b><em><span class="chsrc src-${esc(c.src || 'infer')}">${esc(srcOf(c))}</span> ${esc(when(c))}</em><small>${esc((id ? id + ' · ' : '') + c.place)}</small></button>`
+    const id = identity(c.name), it = rosterItem(c.name);
+    return `<li><button type="button" class="chgo" data-n="${esc(c.name)}"><i class="av" style="--c:${color(c.name)}">${avImg(c.name) || esc(ini(c.name))}${c.present ? `<s class="avb" title="${esc(T('ch.with_you', '和你在一起'))}"></s>` : ''}</i><b>${esc(dn(c.name))}</b><em><span class="chsrc src-${esc(c.src || 'infer')}">${esc(srcOf(c))}</span> ${esc(when(c))}${it ? stageChip(it.stage) + statChip(it) + tierChip(it) : ''}</em><small>${esc((id ? id + ' · ' : '') + c.place)}</small></button>`
       + `<label class="chsw"><input type="checkbox" role="switch" data-n="${esc(c.name)}" aria-label="${esc(T('ch.toggle_one', '在地图上显示 {n}', { n: c.name }))}" ${prefs.off.includes(c.name) ? '' : 'checked'} ${prefs.show ? '' : 'disabled'}></label></li>`;
   }
   // v0.9.6（E2 / E13）：名册行的等级、核心数值与档位名（字段名由变量映射定，只读）；设置「人物栏显示数值」关掉就不显示（本机 edenMapCharStats，默认开）
@@ -143,12 +143,20 @@ const TCChars = (() => {
     return `<details class="chgrp" data-g="${id}" ${closed.has(id) ? '' : 'open'}><summary>${esc(label)} <small>${n}</small></summary><ul>${inner}</ul></details>`;
   }
   function pane(el) {
-    const presNames = new Set(items.map(c => c.name)), mem = rosters?.members?.items || [], tgt = rosters?.targets?.items || [];
-    const extra = (rosters?.present?.items || []).filter(i => !presNames.has(i.name));
-    el.innerHTML = `<label class="tg chall"><span>${esc(T('ch.show', '在地图上显示人物'))}</span><input type="checkbox" role="switch" ${prefs.show ? 'checked' : ''}></label><div class="chgrps">`
+    const presNames = new Set(items.map(c => c.name)), extra = (rosters?.present?.items || []).filter(i => !presNames.has(i.name));
+    // fix3（用户 2026-09-28）：同一人既在场又在名册里时只列在「在场」一次（在场行带名册的阶段 / 数值），名册组只列不在场的，组名后注明「另 N 人在场」
+    const here = new Set([...presNames, ...extra.map(i => i.name)]), memAll = rosters?.members?.items || [], tgtAll = rosters?.targets?.items || [];
+    const mem = memAll.filter(i => !here.has(i.name)), tgt = tgtAll.filter(i => !here.has(i.name));
+    const also = n => n ? ' · ' + T('ch.also_here', '另 {n} 人在场', { n }) : '';
+    const ck = typeof P.TCCustom !== 'undefined' ? P.TCCustom.clock : null, of = typeof P.TCCustom !== 'undefined' ? P.TCCustom.outfit : null;
+    // fix3：还没选开局（聊天只有开场白那一楼）时，人物 / 时间 / 地点都来自卡的 MVU 初始值，明确标出来
+    const pre = ck?.pre ? `<p class="chpre" role="note">${esc(T('ch.pre', '开局前 · 卡初始值'))}<small>${esc(T('ch.pre_tip', '还没选开局：下面是卡的 MVU 初始变量，选了开局后按剧情更新'))}</small></p>` : '';
+    // fix3（用户 2026-09-28）：着装属于人（主角），放在人物页顶部「你」这一行，不再挂在地点卡上
+    const me = of?.text ? `<div class="chme"><i class="av me" aria-hidden="true">${esc(T('ch.me_i', '你'))}</i><b>${esc(T('ch.me', '你（主角）'))}</b><small title="${esc(of.items ? Object.entries(of.items).map(([k, v]) => `${k}：${v}`).join('\n') : of.text)}">${esc(T('cu.outfit', '着装：{s}', { s: of.text }))}</small></div>` : '';
+    el.innerHTML = pre + me + `<label class="tg chall"><span>${esc(T('ch.show', '在地图上显示人物'))}</span><input type="checkbox" role="switch" ${prefs.show ? 'checked' : ''}></label><div class="chgrps">`
       + group('present', T('ch.g_present', '在场'), items.length + extra.length, items.map(row).join('') + extra.map(rosterRow).join(''))
-      + (mem.length ? group('members', T('ch.g_members', '庄园成员'), mem.length, mem.map(rosterRow).join('')) : '')
-      + (tgt.length ? group('targets', T('ch.g_targets', '目标'), tgt.length, tgt.map(rosterRow).join('')) : '') + '</div>';
+      + (memAll.length ? group('members', T('ch.g_members', '庄园成员'), mem.length + also(memAll.length - mem.length), mem.map(rosterRow).join('')) : '')
+      + (tgtAll.length ? group('targets', T('ch.g_targets', '目标'), tgt.length + also(tgtAll.length - tgt.length), tgt.map(rosterRow).join('')) : '') + '</div>';
     for (const d of el.querySelectorAll('details.chgrp')) d.addEventListener('toggle', () => { d.open ? closed.delete(d.dataset.g) : closed.add(d.dataset.g); try { TCStore.set(GK, JSON.stringify([...closed])); } catch (e) {} });
   }
   function onPane(e) {
@@ -177,11 +185,21 @@ const TCChars = (() => {
 
   const css = `
   .chm{position:relative;width:0;height:0;overflow:visible;pointer-events:auto;cursor:pointer;z-index:2;}
-  .chm .chg{position:absolute;left:12px;top:-13px;display:flex;flex-wrap:nowrap;width:max-content;align-items:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
-  .chm .av,#evbar .chpane .av{--c:#888;flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;box-sizing:border-box;border:2px solid #fff;box-shadow:0 0 0 2px var(--c);background:var(--c);color:#fff;
-    font:700 12px/1 var(--font-ui,sans-serif);font-style:normal;overflow:hidden;text-shadow:0 1px 1px rgba(0,0,0,.45)}
+  .chm .chg{position:absolute;left:12px;top:-16px;display:flex;flex-wrap:nowrap;width:max-content;align-items:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
+  /* fix3（用户 2026-09-28）：头像只留一圈人物色描边（2px），不再白边 + 外圈双层；状态（和你在一起）用右下角小圆点单独表示 */
+  .chm .av,#evbar .chpane .av{--c:#888;position:relative;flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;box-sizing:border-box;border:2px solid var(--c);box-shadow:none;background:var(--c);color:#fff;
+    font:700 14px/1 var(--font-ui,sans-serif);font-style:normal;text-shadow:0 1px 1px rgba(0,0,0,.45)}
+  .chm .av img,#evbar .chpane .av img{border-radius:50%}
+  #evbar .chpane .av{width:40px;height:40px;font-size:16px}
+  #evbar .chpane .av .avb{position:absolute;right:-2px;bottom:-2px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--surface,#111);box-sizing:border-box}
+  #evbar .chpane .av.me{--c:var(--surface-2,#333);color:var(--ink);border-color:var(--line-strong,rgba(255,255,255,.3))}
+  #evbar .chpane .chme{display:grid;grid-template-columns:40px 1fr;gap:0 var(--sp-4,8px);align-items:center;padding:var(--sp-3,6px);border-top:1px solid var(--line)}
+  #evbar .chpane .chme .av{grid-row:1/3}#evbar .chpane .chme b{font-weight:600}
+  #evbar .chpane .chme small{color:var(--ink-2);font-size:var(--fs-micro,11px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #evbar .chpane .chpre{margin:var(--sp-3,6px);padding:var(--sp-3,6px) var(--sp-4,8px);border:1px dashed var(--line-strong,rgba(255,255,255,.3));border-radius:var(--r-m,8px);font-size:var(--fs-small,12px);font-weight:600;color:var(--ink)}
+  #evbar .chpane .chpre small{display:block;font-weight:400;color:var(--muted);font-size:var(--fs-micro,11px)}
   .chm.approx .av:first-child{outline:1px dashed rgba(255,255,255,.7);outline-offset:3px}
-  .chm .av+.av{margin-left:-9px}.chm .av.more{--c:#3a3f46;font-size:var(--fs-micro,11px)}
+  .chm .av+.av{margin-left:-10px;box-shadow:-1px 0 0 1px rgba(0,0,0,.35)}.chm .av.more{--c:#3a3f46;font-size:var(--fs-micro,11px)}
   .chm .av img,#evbar .chpane .av img{width:100%;height:100%;object-fit:cover}
   .chm b{margin-left:5px;font:600 var(--fs-micro,11px)/1.3 var(--font-ui,sans-serif);color:var(--map-label-ink,#fff);background:var(--map-label-bg,rgba(8,10,14,.8));padding:1px 7px;border-radius:var(--r-pill,999px);white-space:nowrap;max-width:12em;overflow:hidden;text-overflow:ellipsis}
   .chm.lhide b{visibility:hidden} body.far .chm b{display:none} body.nomarkers .chm{display:none}
@@ -216,7 +234,7 @@ const TCChars = (() => {
   #evbar .chpane .chstage i b.on{background:var(--accent)}
   @media (pointer:coarse),(max-width:640px){#evbar .chpane summary{min-height:44px}}
   #evbar .chpane li{display:flex;align-items:center;gap:var(--sp-5,12px);border-top:1px solid var(--line);padding-right:12px}
-  #evbar .chpane .chgo{flex:1;min-width:0;display:grid;grid-template-columns:30px 1fr auto;gap:0 var(--sp-4,8px);align-items:center;padding:var(--sp-3,6px);border-radius:var(--r-m,8px);min-height:40px}
+  #evbar .chpane .chgo{flex:1;min-width:0;display:grid;grid-template-columns:40px 1fr auto;gap:0 var(--sp-4,8px);align-items:center;padding:var(--sp-3,6px);border-radius:var(--r-m,8px);min-height:52px}
   #evbar .chpane .chgo:hover{background:var(--surface-2)}
   #evbar .chpane .chgo .av{grid-row:1/3}
   #evbar .chpane .chgo b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

@@ -435,7 +435,10 @@
   window.parent.addEventListener('message', onMsg);
   // 合并顶栏：宿主栏的宽度告诉查看器，查看器顶栏右端让出这一段；线路按钮移进查看器设置「高级」
   const hbarEl = root.querySelector(".em-bar");
-  const sendBar = () => { post({ type: 'eden-map:hostbar', w: Math.ceil(hbarEl.getBoundingClientRect().width), side: panel.classList.contains('em-left') ? 'left' : 'right' }); post({ type: 'eden-map:line', swappable }); };
+  const sendBar = () => { post({ type: 'eden-map:hostbar', w: Math.ceil(hbarEl.getBoundingClientRect().width), side: panel.classList.contains('em-left') ? 'left' : 'right' }); post(lineMsg()); };
+  // fix3：设置「高级 · 加载线路」显示当前线路，以及是自动测速选的还是手动选的
+  function lineMsg() { let manual = false; try { manual = (LS || localStorage).getItem(LINE_KEY + 'Manual') === '1'; } catch (e) {} const l = LINES.find(x => x.key === line);
+    return { type: 'eden-map:line', swappable, name: l ? (UL === 'en' && l.name_en) || l.name : '', manual }; }
   let barRO = null; try { barRO = new ResizeObserver(() => { if (alive && !dead) sendBar(); }); barRO.observe(hbarEl); } catch (e) {}
   // ---------------- UI v2 唯一通知层（ui/notice.mjs，spec §3）：P0 强制更新 / P1 更新、自检、存储 / P2 新事态、查看器转来的提示 ----------------
   let NT = null, chromeAt = { top: 44, bottom: 0 }, formBusy = false;
@@ -563,9 +566,10 @@
     if (!MV) return;
     const st = mvuStat(), w = MV.worldTime(st, varMap), lb = MV.clockLabel(w, UL);
     clock = { ...w, ...lb, night: MV.isNight(w), tod: MV.todPhase?.(w) || '' };   // tod：时段色调（v0.9.6）
+    try { clock.pre = getLastMessageId() <= 0; } catch (e) { clock.pre = false; }   // fix3：聊天只有开场白（还没选开局）→ 数据是卡的 MVU 初始值，标「开局前 · 卡初始值」
     const cs = JSON.stringify(clock);
-    if (cs !== clockSig) { clockSig = cs; const cap = (UI[UL] || UI.zh).clock; clockEl.hidden = !lb.short; clockEl.lastChild.textContent = lb.short;   // 用户 2026-09-28：时钟图标 + 「世界时间」提示，日期写成「1月3日」
-      clockEl.title = lb.full ? cap + '：' + lb.full : cap; clockEl.setAttribute('aria-label', clockEl.title); emit('clock', { ...clock }); sentClock = null; }
+    if (cs !== clockSig) { clockSig = cs; const cap = (UI[UL] || UI.zh).clock; clockEl.hidden = !lb.short; clockEl.lastChild.textContent = lb.short + (clock.pre ? (UL === 'en' ? ' · pre-start' : ' · 开局前') : '');   // 用户 2026-09-28：时钟图标 + 「世界时间」提示，日期写成「1月3日」
+      clockEl.title = (lb.full ? cap + '：' + lb.full : cap) + (clock.pre ? (UL === 'en' ? ' (before an opening is chosen: card initial values)' : '（开局前 · 卡初始值：还没选开局，时间 / 地点 / 人物来自卡的 MVU 初始变量）') : ''); clockEl.setAttribute('aria-label', clockEl.title); emit('clock', { ...clock }); sentClock = null; }
     if (alive && sentClock !== clockSig) { sentClock = clockSig; post({ type: 'eden-map:clock', ...clock }); }
     const o = MV.outfit(st, varMap.outfit), os = JSON.stringify(o);
     if (os !== outfitSig) { outfitSig = os; outfitNow = o; emit('outfit', { items: o ? { ...o } : null, text: MV.outfitText(o) }); sentOutfit = null; }

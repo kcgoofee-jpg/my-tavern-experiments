@@ -9,7 +9,7 @@ import { dropParked, est, estFocus, estParked, estateLook, narrowNow, setEst, se
 import { onEsc } from './layers.mjs';
 import { untrackAll } from './markers.mjs';
 import { hereRes, markHere } from './locate.mjs';
-import { TCSettings, about, renderAbout, renderSelfCheck, selfCheck, setAbout, setSelfCheck, setUpdBusy, setUpdRes, updBusy, updRes, updSub } from './settings.mjs';
+import { TCSettings, setLine, about, renderAbout, renderSelfCheck, selfCheck, setAbout, setSelfCheck, setUpdBusy, setUpdRes, updBusy, updRes, updSub } from './settings.mjs';
 import { emEmit, setChat } from './extapi.mjs';
 import { flashOk, ntActs } from './shell.mjs';
 import { P } from './plugins.mjs';
@@ -54,7 +54,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:selfcheck') { const first = !selfCheck; setSelfCheck(e.data); renderSelfCheck(); updSub(); if (first && !selfCheck.items?.some(i => i.status === 'warn')) flashOk(); }   // 自检全部正常：只在状态点闪一次 ✓（§3）
     if (e.data?.type === 'eden-map:hostbar') { const w = Math.max(0, Math.min(400, +e.data.w || 0)) + 'px', left = e.data.side === 'left' && narrowNow(); document.documentElement.style.setProperty('--hostbar-w', left ? '0px' : w); document.documentElement.style.setProperty('--hostbar-l', left ? w : '0px'); }   // 合并顶栏（§2.1）：宿主栏（地点胶囊 + ✕）浮在查看器顶栏右端
     if (e.data?.type === 'eden-map:key' && e.data.key === 'Escape') onEsc();   // 焦点在宿主页时宿主把 Esc 转过来（§10.14）
-    if (e.data?.type === 'eden-map:line') $('#lineRow').hidden = !e.data.swappable;
+    if (e.data?.type === 'eden-map:line') setLine(e.data);   // fix3：线路行常驻，显示当前线路 / 自动或手动 / 不可切换的原因
     if (e.data?.type === 'eden-map:storage-result') window.renderStorage?.(e.data);
     if (e.data?.type === 'eden-map:fog') window.TCFog?.set(e.data.explored);   // 迷雾探索：这个聊天到过的地点   // 线路选择在设置「高级」
     if (e.data?.type === 'eden-map:settings' && typeof e.data.page === 'string') TCSettings.open(e.data.page);
