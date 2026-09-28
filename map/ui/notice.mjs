@@ -35,6 +35,7 @@ ${root} .nt-p2 .nt-item{width:max-content;max-width:min(440px,100%);border-radiu
 ${root} .nt-p2 .nt-item.nt-has-acts{border-radius:var(--nt-r,12px);padding:10px 14px}
 ${root} .nt-p2 .nt-item>b.nt-t{display:inline;margin-right:6px}
 ${root} .nt-p2 .nt-item .nt-x{display:none}
+@media (pointer:coarse){${root} .nt-p2 .nt-item:not(.nt-has-acts){pointer-events:none}}   /* 触屏：纯提示药丸不挡下面的点击（手机上盖住人物卡「追问」按钮 6 秒——悬停暂停只对鼠标有意义，带撤销的照常可点） */
 ${root} .nt-p2 .nt-acts{display:inline-flex;margin:0 0 0 10px;vertical-align:middle}
 ${root} .nt-p0{position:absolute;inset:0;display:grid;place-items:center;padding:16px;box-sizing:border-box}
 ${root} .nt-p0.nt-modal{background:color-mix(in srgb,var(--nt-bg,#151b20) 72%,transparent)}
