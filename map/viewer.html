@@ -259,6 +259,9 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #setHits button { text-align: left; justify-content: flex-start; height: auto; min-height: 40px; white-space: normal; }
   #setHits button small { display: inline; margin: 0 0 0 var(--sp-3); }
   .spage > .row, .spage .hrow { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); min-height: 40px; color: var(--ink); }
+  /* U 待办 5b（2026-09-28）：标签列在窄屏被挤成两行、和值错位——标签不换行，值靠右可换行 */
+  .spage .hrow > span:first-child, .spage > .row > span:first-child { flex: none; white-space: nowrap; }
+  .spage .hrow > span:last-child:not(:first-child) { flex: 1 1 auto; min-width: 0; text-align: right; overflow-wrap: anywhere; }
   .spage .seg { height: 36px; }
   .spage .found { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-s); }
   #aboutBox { font-size: var(--fs-small); color: var(--ink-2); margin-bottom: var(--sp-5); padding-bottom: var(--sp-5); border-bottom: 1px solid var(--line); line-height: 1.55; }
@@ -278,6 +281,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   /* 小地图：--r-m、1 px --line，视口框 1.5 px 强调色（替换 OSD 默认的灰框红框） */
   #osd .openseadragon-canvas { z-index: 0; }   /* 地图叠加物不画到小地图上 */
   #osd .navigator { border: 1px solid var(--line) !important; border-radius: var(--r-m); overflow: hidden; background: var(--bg) !important; box-shadow: var(--sh-2); margin: 0 var(--sp-5) var(--sp-5) 0 !important; }
+  body.nominimap #osd .navigator { display: none !important; }   /* U14：小地图默认关，设置「显示」可开（2026-09-28） */
   #osd .displayregion { border: 1.5px solid var(--accent) !important; border-radius: 2px; }
   /* ---------- 浮动控制列 C（§2.3 / §10.1）：手机 = 拇指侧 ⋯ + − ⌂，跟着抽屉高度上移；桌面 = 右下（右栏左侧）层切换 + − ⌂ 🏷 ---------- */
   #dock { position: absolute; z-index: 9; right: calc(var(--rail-w-now, 0px) + var(--sp-5)); bottom: calc(var(--sheet-h, 0px) + var(--sp-5)); display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-4); pointer-events: none;
@@ -571,6 +575,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     <div class="hrow"><span id="rmLbl" data-i18n="s.rm">减少动态</span><div class="seg" id="rmSeg" role="group" aria-labelledby="rmLbl"><button type="button" data-rm="auto" data-i18n="s.follow_sys">跟随系统</button><button type="button" data-rm="on" data-i18n="s.on">开</button><button type="button" data-rm="off" data-i18n="s.off">关</button></div></div>
     <label class="row"><span data-i18n="no_fx">关闭花屏特效</span><input type="checkbox" role="switch" id="optNoFx"></label><small data-i18n="no_fx_hint">网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字</small>
     <label class="row"><span data-i18n="s.fog">迷雾探索</span><input type="checkbox" role="switch" id="optFog"></label><small data-i18n="s.fog_hint">没去过的地点变暗、盖一层薄雾；按聊天记住去过哪里（存在这个聊天的变量里）</small><div class="hrow" id="fogRow" hidden><span data-i18n="s.fog_reset_l">清空这个聊天的探索记录</span><button type="button" class="btn" id="fogReset" data-i18n="s.fog_reset">清空</button></div>
+    <label class="row"><span data-i18n="s.minimap">左下角小地图</span><input type="checkbox" role="switch" id="optMinimap"></label><small data-i18n="s.minimap_hint">地图角落显示当前视野在全图中的位置（默认关）</small>
     <div class="hrow"><span id="q3Lbl" data-i18n="s.q3d">三维画质</span><div class="seg" id="q3Seg" role="group" aria-labelledby="q3Lbl"><button type="button" data-q="auto" data-i18n="tier_auto">自动</button><button type="button" data-q="1" data-i18n="s.q_low">省电</button><button type="button" data-q="2" data-i18n="s.q_high">清晰</button></div></div><small data-i18n="s.q3d_hint">三维页的像素比上限：省电 = 1 倍，清晰 = 最多 2 倍（锯齿更少，更费电）</small>
     <div class="hrow"><span id="cvdLbl" data-i18n="s.cvd">色觉模式</span><div class="seg" id="cvdSeg" role="group" aria-labelledby="cvdLbl"><button type="button" data-cvd="0" data-i18n="s.cvd_off">关</button><button type="button" data-cvd="rg" data-i18n="s.cvd_rg">红绿</button><button type="button" data-cvd="by" data-i18n="s.cvd_by">蓝黄</button></div></div><small data-i18n="s.cvd_hint">事态、图例、人物头像等换成色盲安全配色，并加形状 / 描边区分；同步给庄园与三维页</small>
   </section>
@@ -584,7 +589,8 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   <section class="spage" data-page="adv" hidden>
     <div class="hrow" id="lineRow" hidden><span data-i18n="s.line">加载线路</span><button type="button" class="btn" id="linePick" data-i18n="s.line_pick">选择线路</button></div>
     <label class="row"><span data-i18n="s.auto3d">三维抽屉：拖动模型时自动收起</span><input type="checkbox" role="switch" id="optAuto3d"></label>
-    <label class="row"><span data-i18n="s.keys">单字母快捷键（L、M、/、?）</span><input type="checkbox" role="switch" id="optKeys" checked></label>
+    <b data-i18n="s.kbd_group">快捷键</b>
+    <label class="row"><span data-i18n="s.keys">单字母快捷键（L、M、/、? 与事态操作字母角标，默认关）</span><input type="checkbox" role="switch" id="optKeys"></label>
     <div class="hrow"><span data-i18n="s.kbd">快捷键</span><button type="button" class="btn" id="kbdBtn" data-i18n="s.kbd_show">查看</button></div>
     <div class="hrow"><span data-i18n="s.hint_again">上手提示</span><button type="button" class="btn" id="hintAgain" data-i18n="s.hint_show">再看一次</button></div>
     <div id="kbdHelp" hidden></div>

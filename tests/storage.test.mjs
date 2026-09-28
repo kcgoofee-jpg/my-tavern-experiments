@@ -15,6 +15,12 @@ test('读写 / 默认值 / json / session 作用域', () => {
   assert.equal(S.flag('edenMap3dAuto', G), false);
   S.remove('edenMapTheme', G); assert.equal(S.get('edenMapTheme', undefined, G), 'auto');
 });
+test('U13/U14/迷雾/快捷键：新用户默认值（2026-09-28）', () => {
+  const G = { localStorage: mem(), sessionStorage: mem() };
+  assert.equal(S.get('edenMapMinimap', undefined, G), '0');   // U14：左下角小地图默认关
+  assert.equal(S.get('edenMapFog', undefined, G), '1');       // 迷雾探索默认开
+  assert.equal(S.get('edenMapKeys', undefined, G), '0');      // 单字母快捷键 / 事态操作字母角标默认关
+});
 test('存储不可用时不抛', () => {
   const G = { get localStorage() { throw new Error('denied'); } };
   assert.equal(S.get('edenMapTheme', undefined, G), 'auto'); assert.equal(S.set('edenMapTheme', 'x', G), false); S.remove('edenMapTheme', G);

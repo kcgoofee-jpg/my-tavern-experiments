@@ -353,6 +353,8 @@ const TCEvents = (() => {
   #evbar li>button:hover{background:var(--surface-2)} #evbar li>button:active{transform:scale(.99)}
   #evbar li i{width:10px;height:10px;background:var(--c);align-self:center} #evbar li.closed i{background:var(--muted)}
   #evbar li b{font-weight:600} #evbar li small{color:var(--muted);font-size:var(--fs-micro,11px);grid-column:2/-1}
+  /* U 待办 5a（2026-09-28）：阶段 / 数值 / 战力小签太多时另起一行，不挤在名字后面重叠 */
+  #evbar li em{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:2px}
   #evbar li.tier-fade b,#evbar li.closed b{color:var(--ink-2);font-weight:500}
   #evbar li .nb{display:inline-block;margin-left:4px;padding:0 5px;border-radius:var(--r-s,4px);background:var(--accent-weak);color:var(--accent);font-size:var(--fs-micro,11px);font-weight:700;line-height:16px;vertical-align:1px}
   #evbar li em{font-style:normal;color:var(--muted);font-size:var(--fs-micro,11px)}

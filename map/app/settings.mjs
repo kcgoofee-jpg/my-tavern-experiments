@@ -87,9 +87,12 @@ export function initSettings() {
   // 高级：三维抽屉自动收起（默认关，§10.5）、单字母快捷键（默认开）、调试帧率、线路（嵌入时由卡内脚本换线路）
   const sw = (id, key, def, fn) => { const c = $(id); let on = def; try { const v = TCStore.get(key); if (v !== null) on = v === '1'; } catch (e) {} c.checked = on;
     c.onchange = () => { try { TCStore.set(key, c.checked ? '1' : '0'); } catch (e) {} fn?.(c.checked); }; };
-  sw('#optFog', 'edenMapFog', false, v => { $('#fogRow').hidden = !v; window.TCFog?.toggle(v); }); $('#fogRow').hidden = TCStore.get('edenMapFog') !== '1';
+  sw('#optFog', 'edenMapFog', true, v => { $('#fogRow').hidden = !v; window.TCFog?.toggle(v); }); $('#fogRow').hidden = TCStore.get('edenMapFog') === '0';
   $('#fogReset').onclick = () => window.TCFog?.reset();
-  sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', true); sw('#optFps', 'edenMapFps', false, () => estateLook());
+  // U14（2026-09-28）：左下角小地图默认关；实时切换靠 body.nominimap 这个 CSS 类（不用重开地图）
+  sw('#optMinimap', 'edenMapMinimap', false, v => document.body.classList.toggle('nominimap', !v));
+  document.body.classList.toggle('nominimap', TCStore.get('edenMapMinimap') !== '1');
+  sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', false); sw('#optFps', 'edenMapFps', false, () => estateLook());
   $('#linePick').onclick = () => { showSet(false); post({ type: 'eden-map:line-pick' }); };
   $('#kbdBtn').onclick = () => kbdHelp($('#kbdHelp').hidden);
   $('#hintAgain').onclick = () => { try { TCStore.remove('edenMapHint'); TCStore.remove('edenMapHintN'); } catch (e) {} showSet(false); firstRunHint(); };
@@ -146,8 +149,10 @@ export function renderAbout() {
 // 设置里的「自检」一栏：✓ / ⚠ 列表（中 / EN）、新正式版的「本次切换」按钮、「自动更新到新正式版」开关（默认关，存本机 edenMapAutoUpdate）
 export let selfCheck = null;
 // 设置首页「更新与版本」那一行的摘要：版本号 + 自检 ⚠ 数
-export function updSub() { const el = $('#updSub'); if (!el) return; const v = about?.version || buildInfo?.version || '', w = (selfCheck?.items || []).filter(i => i.status === 'warn').length;
-  el.textContent = [v ? 'v' + String(v).replace(/^S\d+:/, '') : '', w ? tx('s.sc_warn', `自检 ${w} 项 ⚠`, { n: w }) : tx('s.update_sub', '检查更新 · 自检')].filter(Boolean).join(' · '); el.classList.toggle('warn', !!w); }
+export function updSub() { const el = $('#updSub'); if (!el) return; const w = (selfCheck?.items || []).filter(i => i.status === 'warn').length;
+  // 跟随分支：摘要行用「跟随 · 构建 #N」，不挂正式版号，和「更新与版本」页同一份 about 状态源（U13，2026-09-28 修）
+  const vPart = (about?.channel === 'follow' && about?.build != null) ? tx('s.follow_build', `跟随 · 构建 #{n}`, { n: about.build }) : (about?.version || buildInfo?.version ? 'v' + String(about?.version || buildInfo?.version).replace(/^S\d+:/, '') : '');
+  el.textContent = [vPart, w ? tx('s.sc_warn', `自检 ${w} 项 ⚠`, { n: w }) : tx('s.update_sub', '检查更新 · 自检')].filter(Boolean).join(' · '); el.classList.toggle('warn', !!w); }
 export function renderSelfCheck() {
   if (!selfCheck?.items) return;
   let box = document.getElementById('selfCheck');
