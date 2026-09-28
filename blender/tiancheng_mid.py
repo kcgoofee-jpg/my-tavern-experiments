@@ -245,11 +245,15 @@ for gx in np.arange(-10.5, 15.2, .085):
             u_, v_ = _frng7.uniform(-.3, .3) * w_, _frng7.uniform(-.3, .3) * d_; s_ = _frng7.uniform(.008, .02)
             FEQ.append((x + u_ * cs - v_ * sn, y + u_ * sn + v_ * cs, s_, s_ * _frng7.uniform(.7, 1.4), ZG + h_, ZG + h_ + _frng7.uniform(.005, .015))); FEQR.append(ang); FEQC.append(np.array(FC[-1]) * 1.3)
         if _frng7.random() < (.35 if in_k else .1):                           # 临街一侧一两块小招牌（暗、短）
+            # v2 修一（右上暖黄矩形）：全局 _frng7 在等距扫一遍的格点上反复落在同一相位带，颜色/亮度呈矩形块状聚集；
+            # 改为每建筑独立子随机（种子由格点索引哈希），原基址与 rejection 路径不变，确定性可复现
+            _br = np.random.default_rng((int(g[0]) * 1000003 + int(g[1]) * 7919 + 71) % (2**32))
+            _bc = np.clip(_src[_br.integers(len(_src))] * _br.uniform(.8, 1.15), .02, 1)
             side = 1 if (x - co_[0]) * -sn + (y - co_[1]) * cs < 0 else -1
-            for _ in range(int(_frng7.integers(1, 3))):
+            for _ in range(int(_br.integers(1, 3))):
                 u_ = _frng7.uniform(-.4, .4) * w_; v_ = side * (d_ / 2 + .008); z_ = ZG + _frng7.uniform(.05, max(.06, h_ - .03))
-                FSG.append((x + u_ * cs - v_ * sn, y + u_ * sn + v_ * cs, float(np.clip(_frng7.lognormal(math.log(.02), .4), .008, .045)), .012, z_, z_ + .003)); FSGR.append(ang)
-                FSGC.append(np.array(NEON[_frng7.choice(4, p=NEON_P)]) * _frng7.uniform(.25, .7))
+                FSG.append((x + u_ * cs - v_ * sn, y + u_ * sn + v_ * cs, float(np.clip(_br.lognormal(math.log(.02), .4), .008, .045)), .012, z_, z_ + .003)); FSGR.append(ang)
+                FSGC.append(np.array(NEON[_br.choice(4, p=NEON_P)]) * _br.uniform(.25, .7))
 if FP:
     tc_city.poly_prisms('kowloon_fill', FP, np.full(len(FP), ZG, np.float32), np.array(FZ, np.float32), np.array(FC, np.float32).reshape(-1, 3), td.city_mat('kfillmat', .7, .018, 1.2, .1))
     if FSG: tc.box_mesh('kowloon_fill_signs', FSG, np.array(FSGC, np.float32).reshape(-1, 3), emit_mat('kfsigns', None, 4.0 * GLOW), rot=np.array(FSGR, np.float32))
@@ -594,6 +598,11 @@ lamps_scatter(x, y, .3, .22, ZG + .01, srgb('#ffcf8a'), 7, .01, .9)
 _n0 = len(LMP)
 for sx in (-1, 1): lamps_along(x + sx * .7, y - .5, x + sx * .7, y + .5, ZG + .5, srgb('#ffcf8a'), 4, .01, .9)
 LMP_DROP.update(range(_n0, len(LMP)))                           # 东西围墙上的两列灯
+# 草稿评审 3：圣铁摇篮在右上角，原来除灯点外没有任何投光，整片院落在画面角上读成死黑——
+# 加两盏暖白补光 + 一盏主投光照亮回廊 / 礼拜堂屋面（确定性，不动 LR）。--day 白天版不启用。
+if not getattr(layer, 'day', False):
+    FLOOD += [(x - .5, y - .5, ZG + 2.0, srgb('#ffcf8a')), (x + .55, y + .5, ZG + 1.9, srgb('#ffe2b0'))]
+    KEY += [(x + .3, y - .35, ZG + 1.35, srgb('#ffcf8a'))]
 layer.marker('iron_cradle', (x, y, 0), .7)
 
 # 环城军营带：沿西缘的一段环带——营房长楼、操场、双层围墙、探照灯塔
@@ -615,6 +624,18 @@ for i in range(N):
     elif seg == 8:                                             # 探照灯塔
         px, py, _ = ring_pt((t0 + t1) / 2, 0); bm_.cyl(px, py, ZG, .03, 1.6, 12); lamp(px, py, ZG + 1.6, ICE, .045, 1.4, 0, .2)
 bm_.done(); yard.done()
+# 草稿评审 2：军营环带原来只有发光的灯头（landmark_lamps），没有任何光源——整圈营房、围墙、操场全黑。
+# 探照灯塔加向下的冷白投光（FLOOD 落地成池、等距排开），每三座再补一盏主投光（KEY）把营房外墙照出明暗；
+# 操场再加一圈 ICE 光池。全部确定性（不调用 R / LR，随机序列与 map/data 不变）。--day 白天版不启用。
+if not getattr(layer, 'day', False):
+    _bn = []
+    for _i in range(N):
+        if _i % 10 != 8: continue
+        _px, _py, _ = ring_pt((_i + .5) / N, 0)
+        FLOOD += [(_px, _py, ZG + 1.5, ICE)]
+        if _i % 30 == 8: KEY += [(_px, _py, ZG + 1.55, ICE)]
+        _bn.append((_px, _py, ZG + .0056, .17, ICE))
+    td.glow_pools('barracks_pools', _bn, .16 * GLOW)
 layer.marker('barracks_ring', (*ring_pt(.5)[:2], 0), 1.0)
 
 # 星渊大学：草坪方庭、坡顶的学院楼（长短、朝向略有出入，不是对称的方框）、图书馆的深色玻璃穹顶、天文台；庭院里的树；路灯暖白
