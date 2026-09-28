@@ -39,9 +39,9 @@
 | P2 机构 | tc_mid | `knights_camp` | 骑士团营区 | ✅ | 用户决定 | — | — |  |
 | P2 机构 | tc_mid | `mage_tower` | 法师塔 | 🆕 | 仓库推断 | 法师塔 `map/props/mage_tower/` | 标准（r1 7 / 7.5） |  |
 | P2 机构 | tc_mid | `merc_guild` | 佣兵公会 | ✅ | 卡 | 佣兵公会 `map/props/merc_guild/` | 标准（r1 7 / 7） |  |
-| P2 机构 | tc_mid | `mid_care_home` | 中层养老院 | ✅ | 卡 | — | — |  |
-| P2 机构 | tc_mid | `mid_hospital` | 中层公立医院 | ✅ | 卡 | — | — |  |
-| P2 机构 | tc_mid | `mid_monastery` | 中层修道院 | ✅ | 卡 | — | — |  |
+| P2 机构 | tc_mid | `mid_care_home` | 中层养老院 | ✅ | 卡 | 中层关怀带 `map/props/care_cluster/` | 标准（r1 7 / 7） |  |
+| P2 机构 | tc_mid | `mid_hospital` | 中层公立医院 | ✅ | 卡 | 中层关怀带 `map/props/care_cluster/` | 标准（r1 7 / 7） |  |
+| P2 机构 | tc_mid | `mid_monastery` | 中层修道院 | ✅ | 卡 | 中层关怀带 `map/props/care_cluster/` | 标准（r1 7 / 7） |  |
 | P2 机构 | tc_mid | `military_academy` | 军事学院 | 🆕 | 仓库推断 | 军营带与军事学院 `map/props/barracks/` | 标准（r2 7.5 / 7.5） |  |
 | P2 机构 | tc_mid | `reserve_office` | 天城中央储备署 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `starabyss_univ` | 星渊大学 | ✅ | 卡 | — | — |  |
