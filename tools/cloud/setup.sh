@@ -25,10 +25,10 @@ DEST=/opt/blender
 mkdir -p "\$DEST" "\$REMOTE_DIR"
 
 echo '--- apt 依赖 ---'
-if ! dpkg -s libxi6 >/dev/null 2>&1; then
+if ! dpkg -s libxi6 libsm6 libice6 libxrender1 libxkbcommon0 libgl1 libxxf86vm1 libegl1 >/dev/null 2>&1; then
   apt-get update -qq
   apt-get install -y -qq libxi6 libxrender1 libxrandr2 libxfixes3 libxkbcommon0 \
-    libgl1 libglu1-mesa libsm6 libice6 libxext6 libxcursor1 libxinerama1 \
+    libgl1 libglu1-mesa libsm6 libice6 libxext6 libxcursor1 libxinerama1 libxxf86vm1 libegl1 \
     wget rsync ca-certificates > /dev/null
 else
   echo 'apt 依赖已装，跳过'
