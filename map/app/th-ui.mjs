@@ -17,7 +17,10 @@ const list = (a, n = 6) => (a || []).slice(0, n).map(esc).join('、') + ((a || [
 
 function renderWb() {
   const box = sec('data', 'thWb', 5), w = S.wb, P = S.prefs || {}, L = S.last;
-  let h = `<h3>${esc(tx('th.wb', '世界书附加条目'))}</h3>`;
+  let h = `<h3>${esc(tx('th.wb', '世界书附加条目'))}</h3>`
+    + `<label class="row"><input type="checkbox" id="wbOn" ${P.wbOn !== false ? 'checked' : ''}> ${esc(tx('th.wb_on', '自动管理地图世界书（总开关）'))}</label>`
+    + `<small>${esc(tx('th.wb_on_hint', '开着时：打开地图自动建好这本书并挂到当前角色的附加世界书，地图更新后静默同步（每个版本只提示一次）。关掉 = 全部不自动做。'))}</small>`;
+  if (P.wbOn !== false && P.wbTomb) h += `<small>${esc(tx('th.wb_tomb', '你删过这本书，所以不会再自动建；想要回来就点下面的「写入世界书」'))}</small>`;
   if (!w) h += `<div class="hrow"><span>${esc(tx('th.wb_state', '状态'))}</span><button type="button" class="btn" id="wbLook">${esc(tx('th.wb_look', '检查'))}</button></div>`;
   else if (!w.api) h += `<small>${esc(tx('th.wb_noapi', '这个酒馆助手版本没有世界书写入接口：请照旧手动导入「世界书附加条目」文件'))}</small>`;
   else {
@@ -33,7 +36,8 @@ function renderWb() {
         + (!p.first && p.add.length ? `<div>${esc(tx('th.wb_add', '新增 {n}', { n: p.add.length }))}：${list(p.add)}</div>` : '')
         + (p.update.length ? `<div>${esc(tx('th.wb_upd', '更新 {n}', { n: p.update.length }))}：${list(p.update)}</div>` : '')
         + (p.keep.length ? `<div>${esc(tx('th.wb_keep', '你改过的 {n} 条保留不动', { n: p.keep.length }))}：${list(p.keep)}</div>` : '')
-        + (p.retire.length ? `<div>${esc(tx('th.wb_retire', '新版不再用的 {n} 条停用（不删）', { n: p.retire.length }))}：${list(p.retire)}</div>` : '')
+        + (p.conflict?.length ? `<div>${esc(tx('th.wb_conflict', '你改过，上游也改了 {n} 条（保留你的，上游新内容记在条目里）', { n: p.conflict.length }))}：${list(p.conflict)}</div>` : '')
+        + (p.retire.length ? `<div>${esc(tx('th.wb_retire', '新版不再用的 {n} 条降为最低优先级（不删）', { n: p.retire.length }))}：${list(p.retire)}</div>` : '')
         + (p.user ? `<div>${esc(tx('th.wb_user', '你自己加的 {n} 条原样保留', { n: p.user }))}</div>` : '')
         + (!p.changed ? `<div>${esc(tx('th.wb_nochange', '没有变化'))}</div>` : '')
         + `<small>${esc(tx('th.wb_only', '只写这一本书，不碰其它世界书和角色卡'))}</small></div>`;
@@ -43,8 +47,6 @@ function renderWb() {
       h += `<div class="hrow"><span></span><button type="button" class="btn primary" id="wbGo">${esc(armed ? tx('th.wb_confirm', '再点一次确认写入') : w.exists ? tx('th.wb_rebind_go', '改绑定') : tx('th.wb_write', '写入世界书'))}</button></div>`;
     } else h += `<div class="hrow"><span>${esc(tx('th.wb_state', '状态'))}</span><button type="button" class="btn" id="wbDiff">${esc(tx('th.wb_preview', '看差异'))}</button></div>`;
     if (S.result) h += `<small role="status">${esc(S.result.ok ? (S.result.reason === 'deleted' ? tx('th.wb_deleted', '已撤销（删除了这本书）') : tx('th.wb_done', '已写入')) : tx('th.wb_fail', '没写成（{r}）：可以照旧手动导入', { r: S.result.reason || '?' }))}</small>`;
-    h += `<label class="row"><input type="checkbox" id="wbAuto" ${P.wbAuto !== false ? 'checked' : ''}> ${esc(tx('th.wb_autosync', '自动管理地图世界书'))}</label>`
-      + `<small>${esc(tx('th.wb_autosync_hint', '开启自动同步世界书后，以后地图更新会自动更新这本书'))}</small>`;
     if (w.exists) h += `<div class="hrow"><span></span><button type="button" class="btn" id="wbUndo">${esc(delArmed === '__book__' ? tx('th.wb_undo_confirm', '再点一次：撤销（删除这本书，不能撤销）') : tx('th.wb_undo', '撤销（删除这本书）'))}</button></div>`;
     for (const n of w.legacy || []) h += `<div class="hrow"><span>${esc(tx('th.wb_legacy', '旧书 {n}', { n }))}</span><button type="button" class="btn" data-del="${esc(n)}">${esc(delArmed === n ? tx('th.wb_del_confirm', '再点一次：删除（不能撤销）') : tx('th.wb_del', '删除旧书'))}</button></div>`;
   }
@@ -56,7 +58,7 @@ function renderWb() {
     armed = 0; go.disabled = true; const r = box.querySelector('input[name="wbWhere"]:checked'), where = r ? r.value || null : null;
     if (S.wb?.exists && !(S.wb.plan && S.wb.plan.changed)) post({ type: 'eden-map:th', op: 'wb-rebind', where });
     else post({ type: 'eden-map:th', op: 'wb-write', where, migrate: $('#wbMig')?.checked ? S.wb.legacy[0] : null }); };
-  const au = $('#wbAuto'); if (au) au.onchange = () => post({ type: 'eden-map:th', op: 'prefs', prefs: { wbAuto: au.checked } });
+  const au = $('#wbOn'); if (au) au.onchange = () => post({ type: 'eden-map:th', op: 'prefs', prefs: { wbOn: au.checked } });
   $('#wbUndo')?.addEventListener('click', () => { if (delArmed !== '__book__') { delArmed = '__book__'; renderWb(); return; } delArmed = ''; S.result = null; post({ type: 'eden-map:th', op: 'wb-remove' }); });
   for (const b of box.querySelectorAll('button[data-del]')) b.onclick = () => { const n = b.dataset.del; if (delArmed !== n) { delArmed = n; renderWb(); return; } delArmed = ''; b.disabled = true; post({ type: 'eden-map:th', op: 'wb-del-legacy', name: n }); };
 }

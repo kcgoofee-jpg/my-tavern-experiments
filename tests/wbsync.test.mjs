@@ -47,7 +47,7 @@ test('第一次写入：没同意不写；同意后新建我们的书并按用�
   const t2 = fakeTH(); assert.equal((await W.sync(t2.fn, S, { consent: true, auto: true })).reason, 'missing'); assert.equal(t2.writes.length, 0);
 });
 
-test('更新：按稳定编号对应；用户改过的条目、用户自己的条目、用户关掉的开关都保留；不再发的停用不删；差异如实', async () => {
+test('更新：按稳定编号对应；用户改过的条目、用户自己的条目、用户关掉的开关都保留；不再发的降优先级不删；差异如实', async () => {
   const t = fakeTH(OTHER, { global: ['别的书', W.BOOK] });
   await W.sync(t.fn, ship('1.0+a', [['地图联动规范', 'A1', '地图联动规范 v2'], ['地图当前地点', 'B1'], ['旧条目', 'X1'], ['地图事件类型', 'E1']]), { consent: true });
   const bk = t.B[W.BOOK];
@@ -57,8 +57,8 @@ test('更新：按稳定编号对应；用户改过的条目、用户自己的�
   const uidA = bk.find(e => e.extra.eden_id === '地图联动规范').uid;
   const S2 = ship('1.1+b', [['地图联动规范', 'A2', '地图联动规范 v3'], ['地图当前地点', 'B2'], ['地图事件类型', 'E2'], ['地图人物位置', 'P1']]);
   const st = await W.inspect(t.fn, S2);
-  assert.deepEqual({ from: st.plan.from, to: st.plan.to, add: st.plan.add, update: st.plan.update, keep: st.plan.keep, retire: st.plan.retire, user: st.plan.user },
-    { from: '1.0+a', to: '1.1+b', add: ['地图人物位置'], update: ['地图联动规范 v3', '地图事件类型'], keep: ['地图当前地点'], retire: ['旧条目'], user: 1 });
+  assert.deepEqual({ from: st.plan.from, to: st.plan.to, add: st.plan.add, update: st.plan.update, keep: st.plan.keep, conflict: st.plan.conflict, retire: st.plan.retire, user: st.plan.user },
+    { from: '1.0+a', to: '1.1+b', add: ['地图人物位置'], update: ['地图联动规范 v3', '地图事件类型'], keep: [], conflict: ['地图当前地点'], retire: ['旧条目'], user: 1 });   // 用户改过 + 上游也改了 = 冲突
   t.writes.length = 0;
   const r = await W.sync(t.fn, S2, { consent: true, auto: true });
   assert.ok(r.ok); assert.deepEqual(written(t), [W.BOOK]);   // 已绑定全局：绑定不动
@@ -66,7 +66,8 @@ test('更新：按稳定编号对应；用户改过的条目、用户自己的�
   assert.equal(by('地图联动规范').content, 'A2'); assert.equal(by('地图联动规范').name, '地图联动规范 v3'); assert.equal(by('地图联动规范').uid, uidA);
   assert.equal(by('地图当前地点').content, 'B1 + 用户补充');
   assert.equal(by('地图事件类型').content, 'E2'); assert.equal(by('地图事件类型').enabled, false);
-  assert.equal(by('旧条目').enabled, false);
+  assert.equal(by('旧条目').enabled, true); assert.equal(by('旧条目').position.order, W.RETIRED_ORDER); assert.equal(by('旧条目').extra.eden_order, 900);   // 退役：降优先级，不停用不删
+  assert.equal(by('地图当前地点').extra.eden_conflict.content, 'B2');
   assert.ok(by('地图人物位置'));
   assert.ok(t.B[W.BOOK].some(e => e.name === '我自己的笔记' && e.content === '私人'));
   assert.deepEqual(t.G.global, ['别的书', W.BOOK]);
@@ -125,5 +126,6 @@ test('发布物 map/data/worldbook_addon.json 与生成器同步（改了地点�
     assert.equal(r.status, 0, r.stderr);
     const fresh = JSON.parse(readFileSync(join(d, 's.json'), 'utf8'));
     assert.deepEqual(fresh.entries, cur.entries, '重新跑 python3 tools/build_worldbook_addon.py --ship');
+    assert.deepEqual(fresh.aliases, cur.aliases, '别名表改了要重新 --ship');
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
