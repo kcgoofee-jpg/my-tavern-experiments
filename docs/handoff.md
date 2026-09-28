@@ -87,3 +87,4 @@
   - del_mula96fc_173a 原域预览（已出图）＋圣都镜头清单 docs/drafts/holy_city_shotlist_draft.md → holy-city-shotlist（/tmp/eden_wt_world）
   - del_mulahqeq_j51b 中下层 --day 白天版＋2 张 2000px 草稿 → day-version-mid-low（/tmp/eden_wt_day），出图待用户看
 - 下一步（重启后）：收 4 代理结果看图判定 → 用户确认白天版草稿＋圣都清单 → 中下层白天 8K 上云 → viewer3d 小修合入走 0.9.5.x。
+- 白天版第一轮草稿已出＋看图判定（/tmp/eden_wt_day/map/art/_mid_day_draft.png、_low_day_draft.png，分支 day-version-mid-low 提交 cad966f6）：结构/材质切换全部正确（霓虹变暗漆、轨道金属、灯圈关）；**共同问题：两张都偏暗、太阳天顶角 40° 太低、投影过长**——中层路面全黑像阴天傍晚，下层浊暖灰接近可用。下一步（重启后第一件事）：tc_common SUN_ROT 天顶角调到 55–65°＋天光/曝光 +0.3~0.5，重出两张 2000px 草稿，用户确认后中下层白天 8K×2 上云（云 ssh 链路正常，队列空、贴图 sync 齐全）。
