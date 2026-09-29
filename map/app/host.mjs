@@ -4,7 +4,7 @@ import { $, PR, SUB_ORIGIN } from './util.mjs';
 import { lean } from './tiers.mjs';
 import { setLang } from './i18n.mjs';
 import { setSlowStop, slowStop, slowWarmAlt } from './topbar.mjs';
-import { go, saveView } from './nav.mjs';
+import { go, saveView, applyPeriod } from './nav.mjs';
 import { dropParked, est, estFocus, estParked, estateLook, narrowNow, setEst, setEstFocus, setEstParked } from './estate.mjs';
 import { onEsc } from './layers.mjs';
 import { untrackAll } from './markers.mjs';
@@ -45,7 +45,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:update-result') { setUpdBusy(false); setUpdRes(e.data); renderAbout(); }
     if (e.data?.type === 'eden-map:chars') { P.TCChars.set(e.data); emEmit('characters', { items: e.data.items, floor: e.data.floor }); }   // 人物栏（v0.9.2）
     if (e.data?.type === 'eden-map:custom') P.TCCustom.fromHost(e.data);   // v0.9.3：自定义名称与用途（聊天变量）
-    if (e.data?.type === 'eden-map:clock') P.TCCustom.setClock(e.data);   // 世界时间 → 夜色
+    if (e.data?.type === 'eden-map:clock') { P.TCCustom.setClock(e.data); applyPeriod(); }   // 世界时间 → 夜色 / 多时段底图
     if (e.data?.type === 'eden-map:outfit') P.TCCustom.setOutfit(e.data);   // 主角着装 → 本人地点卡
     if (e.data?.type === 'eden-map:fly') P.TCCustom.flyTo(e.data.target);   // v0.9.5 EdenMap.flyTo(target)
     if (e.data?.type === 'eden-map:varmap' && typeof P.TCVarMap !== 'undefined') P.TCVarMap.set(e.data);   // v0.9.5 变量映射（换卡兼容）

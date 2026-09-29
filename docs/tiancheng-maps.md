@@ -109,7 +109,7 @@ layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/
 
 ### 注册表 `map/data/maps.json`（每张地图）
 
-`title`、`parent`、`group`、`layer{name, sub, alt}`、`kind`（world / points）、`base`（DZI）、`data`、`focus`、`status: planned`、`alt{label, base}`（另一版底图，查看器里一个开关）、`credit`（数据署名）、`overlay{type: dzi | barriers, label, src?, from?}`、`markers{id: {name, sub, cls, tag: set | inf, src, alias[], link?}}`。
+`title`、`parent`、`group`、`layer{name, sub, alt}`、`kind`（world / points）、`base`（DZI）、`data`、`focus`、`status: planned`、`alt{label, base}`（另一版底图，查看器里一个开关）、`periods{day, night, …}`（多时段底图：键是时段档位 dawn / day / dusk / night，值是该档的 DZI；查看器按世界时钟自动换，没配的档位 / 读不到世界时间 / 关掉时段色调开关时用 `base`；已配的昼 / 夜档不再叠色调，免得双重变暗）、`credit`（数据署名）、`overlay{type: dzi | barriers, label, src?, from?}`、`markers{id: {name, sub, cls, tag: set | inf, src, alias[], link?}}`。
 
 - `overlay.from`：叠加层取另一张地图的数据。中层的「上层投影」就是取上层的 `islands`。
 - `link: {map, marker, label}`：跨层通道。地点卡里给一个直达链接，打开目标地图后聚焦并展开对应地点。`check_maps.py` 会检查两端在平面上是否重合。

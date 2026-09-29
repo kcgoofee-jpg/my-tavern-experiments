@@ -62,7 +62,7 @@
   "cu.store_local": "TavernHelper has no variable API: stored in this browser only",
   "cu.store_local2": "Map opened on its own: stored in this browser only",
   "cu.sync_unbound": "This chat already has another chat lorebook: enable “伊甸地图·自定义” manually in lorebook settings",
-  "cu.night": "Time-of-day tint on Upper and Middle tiers (dawn / dusk / night)",
+  "cu.night": "Time-of-day tint and day/night base map on Upper and Middle tiers (dawn / dusk / night)",
   "_095": "自定义面板",
   "ch.g_present": "Present",
   "ch.g_members": "Estate members",

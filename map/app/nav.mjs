@@ -12,11 +12,22 @@ import { P } from './plugins.mjs';
 // alt：同一张图的另一版底图（上层默认云海，开关后显示下方城市）。只换底图，视角、标记、叠加层都不动；开关状态按地图记住
 export const ALT_KEY = 'edenMapAlt:';
 export const altOn = id => { try { return TCStore.get(ALT_KEY + id) === '1'; } catch (e) { return false; } };
-const baseOf = id => { const m = REG.maps[id]; return m.alt && altOn(id) ? m.alt.base : m.base; };
+// periods：多时段底图（maps.json，如中层的昼 / 夜两张）。按世界时钟的有效档位换（P.TCCustom.todNow，关掉时段色调时为空 = 恒用 base）；
+// 只认 day / night 两档（dawn / dusk 没有单独的渲染，继续用 base 叠色调）
+const periodOf = id => { const tod = P.TCCustom?.todNow?.() || ''; return REG.maps[id]?.periods?.[tod === 'day' || tod === 'night' ? tod : ''] || null; };
+const baseOf = id => { const m = REG.maps[id]; return m.alt && altOn(id) ? m.alt.base : (periodOf(id) || m.base); };
+let lastBase = null;   // 第 0 层当前用的底图地址（go 打开 / swapBase 换上时记；applyPeriod 拿它判断要不要换）
 export function swapBase() {
   const id = cur, old = viewer.world.getItemAt(0); if (!old) return;
+  lastBase = baseOf(id);
   viewer.addTiledImage({ tileSource: baseOf(id), index: 0, success: () => { if (cur !== id) return; viewer.world.removeItem(old); applyTier(); },
-    error: () => { try { TCStore.remove(ALT_KEY + id); } catch (e) {} $('#tgAltBox').checked = false; $('#tierState').textContent = t('alt_missing'); } });
+    error: () => { try { TCStore.remove(ALT_KEY + id); } catch (e) {} lastBase = baseOf(id); $('#tgAltBox').checked = false; $('#tierState').textContent = t('alt_missing'); } });
+}
+// 世界时钟时段变了（host.mjs 的 eden-map:clock）：当前地图的底图档位变了才换，视角、标记、叠加层都不动
+export function applyPeriod() {
+  if (!cur || lastBase === null) return;
+  const want = baseOf(cur);
+  if (want !== lastBase) swapBase();
 }
 // 同组（天城）各层平面坐标对齐：切层时沿用同一个归一化视野（中心 + 缩放），只有第一次进入这一组时才按 view.focus 定位
 export const groupView = {};
@@ -60,6 +71,7 @@ export async function go(id) {   // 云脚本块（文末）会包一层：天�
   if (quiet) $('#loading').classList.add('done');
   const srcs = [{ tileSource: baseOf(id) }];
   if (m.overlay?.type === 'dzi') srcs.push({ tileSource: m.overlay.src, opacity: $('#tgBorders').checked ? 1 : 0 });
+  lastBase = srcs[0].tileSource;
   viewer.open(srcs);
   // v0.9.6 世界 ↔ 天城的缩放衔接：旧画面以天城为中心放大（进城）或缩小（出城）淡出，而不是原地淡出
   const fx = window.__snapFx; window.__snapFx = null;

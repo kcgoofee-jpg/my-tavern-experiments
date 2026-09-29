@@ -111,6 +111,9 @@ for mid, m in maps.items():
     if base.endswith('.dzi') and not isdir(os.path.join(ROOT, base[:-4] + '_files')): err(f'{mid}: 缺瓦片目录 {base[:-4]}_files/')
     alt = m.get('alt') or {}
     if alt and not exists(os.path.join(ROOT, alt.get('base', ''))): warn(f"{mid}: alt 底图 {alt.get('base')} 还没渲染（查看器里的开关会提示并自动关掉）")
+    for tod, pbase in (m.get('periods') or {}).items():   # 多时段底图（app/nav.mjs 按世界时钟档位自动换）：档位图与瓦片目录都要在
+        if not exists(os.path.join(ROOT, pbase)): err(f'{mid}.periods.{tod}: 缺底图 {pbase}')
+        elif pbase.endswith('.dzi') and not isdir(os.path.join(ROOT, pbase[:-4] + '_files')): err(f'{mid}.periods.{tod}: 缺瓦片目录 {pbase[:-4]}_files/')
     ov = m.get('overlay') or {}
     if ov.get('type') == 'dzi' and not exists(os.path.join(ROOT, ov.get('src', ''))): err(f"{mid}: 缺叠加层 {ov.get('src')}")
     if ov.get('from') and ov['from'] not in maps: err(f"{mid}.overlay.from → {ov['from']} 不存在")

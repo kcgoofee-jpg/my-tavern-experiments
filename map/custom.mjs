@@ -70,9 +70,12 @@ const TCCustom = (() => {
   const NIGHT_KEY = 'edenMapNight';
   const nightOn = () => { try { return TCStore.get(NIGHT_KEY) !== '0'; } catch (e) { return true; } };
   // v0.9.6（B11 / C1）：按时段分四档（晨 / 日 / 暮 / 夜）；颜色只参考 docs/drafts/upper_tod_*.jpg 的整体色调，不另出图。夜档保留旧的 nighttint 类
+  // 有效档位（关掉开关 / 读不到世界时间时为 ''）也是多时段底图（maps.json periods，app/nav.mjs）的依据；已配底图的档位（昼 / 夜）不再叠色调，免得双重变暗
+  function todNow() { return nightOn() ? (clock?.tod || (clock?.night ? 'night' : '')) : ''; }
   function night() { const m = document.body.dataset.map, tier = m === 'tc_upper' || m === 'tc_mid', on = nightOn() && tier;
     const tod = on ? (clock?.tod || (clock?.night ? 'night' : '')) : '';
-    document.body.classList.toggle('nighttint', tod === 'night');
+    const swapped = typeof REG !== 'undefined' && !!REG?.maps?.[m]?.periods?.[tod === 'day' || tod === 'night' ? tod : ''];
+    document.body.classList.toggle('nighttint', tod === 'night' && !swapped);
     if (tod && tod !== 'day') document.body.dataset.tod = tod; else delete document.body.dataset.tod; }
   new MutationObserver(night).observe(document.body, { attributes: true, attributeFilter: ['data-map'] });
 
@@ -121,7 +124,7 @@ const TCCustom = (() => {
         + `<small>${esc(host.wb ? T('cu.sync_hint2', '默认开：有了第一项自定义才建世界书「伊甸地图·自定义」（每个聊天一本，一个常驻条目）。关掉只停用条目，不删世界书') : T('cu.sync_noapi', '酒馆助手没有世界书接口，不能同步'))}</small>`
         + (data.同步世界书 && host.wbState === 'unbound' ? `<small class="cu-warn">${esc(T('cu.sync_unbound', '这个聊天已经绑定了别的聊天世界书：请在世界书设置里手动启用「伊甸地图·自定义」'))}</small>` : '') : '')
       + `<small>${esc(host ? (host.vars ? T('cu.store_chat', '存在这个聊天的变量里（换设备、导出聊天都跟着走）；摘要会作为背景发给模型') : T('cu.store_local', '酒馆助手没有变量接口：只存本机浏览器')) : T('cu.store_local2', '单独打开地图：只存本机浏览器'))}</small>`
-      + `<label><span>${esc(T('cu.night', '按时段给上层、中层加色调（清晨 / 傍晚 / 夜间）'))}</span><input type="checkbox" role="switch" id="optNight" ${nightOn() ? 'checked' : ''}></label>`
+      + `<label><span>${esc(T('cu.night', '按时段给上层、中层加色调与昼夜底图（清晨 / 傍晚 / 夜间）'))}</span><input type="checkbox" role="switch" id="optNight" ${nightOn() ? 'checked' : ''}></label>`
       + (typeof P.TCChars !== 'undefined' && P.TCChars.hasPortraits ? `<label><span>${esc(T('ch.port', '使用原作头像'))}</span><input type="checkbox" role="switch" id="optPort" ${P.TCChars.portOn() ? 'checked' : ''}></label><small>${esc(T('ch.port_hint', '人物没有自己设的头像时，用卡里自带的原作立绘（作者 Yehehua，图片在作者 CDN 与作者用的另外两个图床上，按需加载）；省流时默认关。只取作者声明的立绘，且不碰卡里受限分类的图；取不到的人显示名字首字（不是故障，可以自己设头像）'))}</small>` : '');
     if (dlg && !dlg.hidden) renderDlg(false);
   }
@@ -446,7 +449,7 @@ const TCCustom = (() => {
   @media (prefers-reduced-motion:reduce){body.nighttint #osd::after,body[data-tod] #osd::after{transition:none}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   document.addEventListener('DOMContentLoaded', () => renderUI());
-  return { name, entry, index, relabel, decorateCard, flyTo, openDlg, dlgKey, fromHost, setClock, setOutfit, toast, chatChanged, setCustom, removeCustom, setSync, renderUI,
+  return { name, entry, index, relabel, decorateCard, flyTo, openDlg, dlgKey, fromHost, setClock, setOutfit, toast, chatChanged, setCustom, removeCustom, setSync, renderUI, todNow, nightOn,
     get data() { return MV ? MV.normCustom(data) : { items: {} }; }, get outfit() { return outfit ? { ...outfit } : null; }, get clock() { return clock ? { ...clock } : null; }, ready };
 })();
 register('TCCustom', TCCustom);
