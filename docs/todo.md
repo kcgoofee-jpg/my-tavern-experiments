@@ -33,62 +33,68 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 
 ---
 
-## 1. Code line
+## 1. Code line · 代码开发线（每个待办附预估工时；完成后 ~~删除线~~ ✅ + SHA，明细挪 §5）
 
-- [ ] **Real SillyTavern + TavernHelper browser test.** The biggest open item: `tools/browser/`
+- [ ] **Real SillyTavern + TavernHelper browser test.** The biggest open item: `tools/browser/`（预估 ~16h）
   currently only has `host_stub.mjs`, a fake host. Everything else in the suite runs against the stub.
   (`docs/handoff.md`, "新顺序" code item 1.)
-- [ ] `eden-map.js` 继续拆分 — "按 `spec.md` 走完整重构"（`ROADMAP.md:52`），U1–U12 实测问题同批（`ROADMAP.md:51`）。
-- [ ] MVU 迷雾 / 结构小任务 — "「不要漏测」"（`ROADMAP.md:47`）。
-- [ ] `card-omissions` 遗留：A18/A20 泛称做图层、C2 治安梯度、~~C3 层间视线~~ ✅（2026-09-29 图例说明，`59ecc0f`）、~~C4 天气~~ ✅（2026-09-29 降雨事件·默认关，`59ecc0f`）、C8/C9 卡片与编号解析
+- [ ] `eden-map.js` 继续拆分 — "按 `spec.md` 走完整重构"（`ROADMAP.md:52`），U1–U12 实测问题同批（`ROADMAP.md:51`）。（预估 ~24h）
+- [ ] MVU 迷雾 / 结构小任务 — "「不要漏测」"（`ROADMAP.md:47`）。（预估 ~4h）
+- [ ] `card-omissions` 遗留：A18/A20 泛称做图层、C2 治安梯度、~~C3 层间视线~~ ✅（2026-09-29 图例说明，`59ecc0f`）、~~C4 天气~~ ✅（2026-09-29 降雨事件·默认关，`59ecc0f`）、C8/C9 卡片与编号解析（预估 ~8h）
   （`docs/card-omissions.md:74,76,106-108,112-113`）；B19 新事件类型「~~转化仪式~~ ✅（`31df154`）/ 临时管控 / 登记年检 / 评级复核」
   （`:282`）。
-- [ ] 事件系统后续：城市节律（`docs/event-taxonomy.md:29`）、虚线因果连线（`:43`）、
+- [ ] 事件系统后续：城市节律（`docs/event-taxonomy.md:29`）、虚线因果连线（`:43`）、（预估 ~20h）
   「转化仪式直播」（`:89`）；`docs/map-events.md:155-165` 分阶段 2–5（时间轴 / 热区 / 反哺 / 城市自运转）、
   `:179` 下一批（雷达动画 / 连环 / 热力）。
-- [ ] `registerOverlay` / `unregisterOverlay` 暂缓未做（`docs/content-compat.md:53`）。
-- [ ] `here.mjs` 只能解析 54/55、SYS-01 未接（`docs/eden-lore-space.md:7`）。
-- [ ] 创意工坊（`docs/design/workshop.md` 整篇「设计稿，未实施」= `docs/project-design.md` C6）；
+- [ ] `registerOverlay` / `unregisterOverlay` 暂缓未做（`docs/content-compat.md:53`）。（预估 ~3h）
+- [ ] `here.mjs` 只能解析 54/55、SYS-01 未接（`docs/eden-lore-space.md:7`）。（预估 ~4h）
+- [ ] 创意工坊（`docs/design/workshop.md` 整篇「设计稿，未实施」= `docs/project-design.md` C6）；（预估 ~40h）
   `docs/design/custom-v2.md:174-197` C1–C12 全未做。
-- [ ] 纵深 P2（`docs/design/depth-system.md:81`）、meta 接 `make_dzi`（`:84`）。
+- [ ] 纵深 P2（`docs/design/depth-system.md:81`）、meta 接 `make_dzi`（`:84`）。（预估 ~8h）
 - [x] ~~`tiancheng_*.py` / `landmarks` 未接 `--cache-blend`，接入后补 bench（`docs/cloud-render.md:135,138`）。~~ ✅ 2026-09-29 全部接入（tiancheng×3 在 `tc.Layer()` 前命中早退；landmarks 31 个 build.py 走 `common.setup()` 的 `C.CACHED`；命中路径补 `pick_gpu` 治 CPU 回落）；本机 draft miss→hit 已验；8K/16K 的 bench 待下次定稿顺带记。
-- [ ] 上层真 3D（`docs/project-design.md` C5）。
-- [ ] 自动旋转开关进设置页；滚轮＝平移是否改缩放（`docs/handoff.md:9`）。
-- [ ] 三维查看器两个观感项：塔楼顶部纯白方块 / 裙楼粉长条（疑材质缺失）、信息按钮 (i) 高亮却不弹面板
+- [ ] 上层真 3D（`docs/project-design.md` C5）。（预估 ~30h）
+- [ ] 自动旋转开关进设置页；滚轮＝平移是否改缩放（`docs/handoff.md:9`）。（预估 ~2h）
+- [ ] 三维查看器两个观感项：塔楼顶部纯白方块 / 裙楼粉长条（疑材质缺失）、信息按钮 (i) 高亮却不弹面板（预估 ~4h）
   （`docs/handoff.md:69,70`）——**需要看图判定**，本轮未动。
-- [ ] CI：`browser-smoke` 仍是 `if: false` 占位（`.github/workflows/ci.yml`）。**已修**：浅克隆不带标签，
+- [ ] CI：`browser-smoke` 仍是 `if: false` 占位（`.github/workflows/ci.yml`）。**已修**：浅克隆不带标签，（预估 ~6h）
   文档语言门控在 CI 里取不到基线会**静默空转**（本地红、CI 绿就是这么来的）——已加「取基线标签 + 取不到就失败」
   一步。`main` 推送仍不触发 CI（`:5`）是**故意**的：main 只是跟随线的快进副本，加进去等于每次推送跑两遍。
-- [ ] `tools/reviews/takeover_095/toolchain.md:22` 世界图输入不可复现（⏳未修）、`:24` `ship.sh --dry-run` 三个洞。
-- [ ] 通用化 v1 五条已知限制（`docs/generalize/README.md:123-128`）：世界图 / 庄园剖面 / 天城尺度环 /
+- [ ] `tools/reviews/takeover_095/toolchain.md:22` 世界图输入不可复现（⏳未修）、`:24` `ship.sh --dry-run` 三个洞。（预估 ~6h）
+- [ ] 通用化 v1 五条已知限制（`docs/generalize/README.md:123-128`）：世界图 / 庄园剖面 / 天城尺度环 /（预估 ~12h）
   人物名册 / 安保层仍 eden 专用；预算 LRU 只认 `edenMap*`；包的 `strings` 字段未接入；
   `props/viewer3d.html` 语言键退回中文；`viewer.html` 三条 eden 预取。
-- [ ] 气候塔材质细化：塔楼白块、粉长条（看图后定改法）+ 可选「信息按钮」（本会话 2026-09-29 用户反馈；塔在 `blender/tc_estates.py` climate_tower，锚点 `blender/data/tc_islands.json` anchors.climate_tower）。
-- [ ] 设置「版权申明」页与人物页声望在真实酒馆浏览器过一眼（现在只有 stub；挂在上面的 Real ST 测试项下）。
+- [ ] 气候塔材质细化：塔楼白块、粉长条（看图后定改法）+ 可选「信息按钮」（本会话 2026-09-29 用户反馈；塔在 `blender/tc_estates.py` climate_tower，锚点 `blender/data/tc_islands.json` anchors.climate_tower）。（预估 ~4h）
+- [ ] 设置「版权申明」页与人物页声望在真实酒馆浏览器过一眼（现在只有 stub；挂在上面的 Real ST 测试项下）。（预估 ~2h）
+- [ ] **Streaming / decoupling P0** (`docs/reviews/architecture_and_stream_perf.md` §1.4): G1 strip `<think>` CoT blocks before tag parsing + G6 `fnGuard` & arity tests at cross-window exposure points. (~8h)
+- [ ] **Streaming / decoupling P1–P3** (same report §1.4/Part 2): G3 wake broadcast + G2 hidden-poll gating (P1 ~4h); extract MVUBridge → ContextInteractionSystem (P2 ~28h); LayerRegistry → Estate3D manifest → CharacterRosterSystem → DepthSystem summary (P3 ~44h).
+- [ ] **De-speculation leftovers**: hedged wording at `docs/card-digest.md:387,389`, `docs/upper-setting.md:278`; worldbook ship-JSON standard-interface reservation (top-level schema + category map) in `tools/build_worldbook_addon.py`. (~4h)
 
-## 2. Render line
+
+## 2. Render line · 渲染生产线（每个待办附预估工时）
 
 - [x] 上层整图重渲（2026-09-29，`34e5fd0`）：9 岛全入画 8000×5000 双版（plain / city 底）+ 五座庄园抠图贴合 + 气候塔锚点入画（`map/art/tc_upper*_full.png`、`blender/data/tc_islands.json`、`tools/isles_into_upper.py`），DZI/瓦片重建。逐岛精修与 v18 取舍仍开放（见下条与 §4）。
-- [ ] 上层 v18 逐岛建模 → 定稿（`docs/handoff.md:8,14,87`）。**WIP 已存档**：
+- [ ] 上层 v18 逐岛建模 → 定稿（`docs/handoff.md:8,14,87`）。**WIP 已存档**：（预估 ~60h）
   tag `archive/upper-v18`（`08597bed`，7 个岛脚本 ~1400 行改动 + academy/kelly 审图板），
   主线与之分叉 575 个提交 → 需决定「按新主线重做」还是「摘取其中仍有效的部分」。
-- [ ] 原域悬浮圣山精修两点：大教堂背面白色凸出方块、雕像圈个别雕像悬出平台（`docs/handoff.md:100`）——
+- [ ] 原域悬浮圣山精修两点：大教堂背面白色凸出方块、雕像圈个别雕像悬出平台（`docs/handoff.md:100`）——（预估 ~6h）
   模型已收口（`map/props/holy_mountain/`），这两点是外观精修。
 - [x] 大骑士领·圣都（`docs/handoff.md:15`）**已 ship 三处**：`glory_crown`（荣光冠冕，核心区，
   glb 0.68/0.28 MB，挂核心区 5 个标记）、`ether_dome`（以太穹顶，仓库自设并标 `repo-inferred`、
   写进世界书附加条目，0.43/0.16 MB）、`contest_corridor`（竞赛与狂欢回廊，卡里中环，0.44/0.16 MB）。
   **剩 5 个标记**：`rust_outskirts`（外环铁锈与落败领）、`clearing_depot`、`free_knight_camp`、
   `linguang_post`、`arms_rnd`；圣都之外还有五席封地与旷野高地的点位。
-- [ ] 地下室 B1/B2 精修 + 道具包接口（`docs/handoff.md:18`）。
-- [ ] 下层 4 处（`docs/handoff.md:20`、`:89` 待批）；上层 16K / 512spp、昼夜四版（`:20`）。
-- [ ] 中/下层 8K 定稿复核、七岛并入重渲、精英学院草稿、多时段底图挑档（`ROADMAP.md:55-58`）。
-- [ ] P2 机构三维化未打勾（`ROADMAP.md:61`）：最高法院 / 大学 / 执政厅…
-- [ ] P4 各地点全景 + 深度图 → three.js 视差背景层（`ROADMAP.md:45`）。
-- [ ] 伊甸剖切等轴瓦片多边形导出；中层影子模糊等真实感细节（`ROADMAP.md:63,64`）。
-- [ ] `card-buildings` P3 里模型列为「—」的行（圣都与五席的大批点位）。
-- [ ] `league_club` / `rothschild_estate` / `elite_academy`：glb 已导出但**未走两人设评审**
+- [ ] 地下室 B1/B2 精修 + 道具包接口（`docs/handoff.md:18`）。（预估 ~16h）
+- [ ] 下层 4 处（`docs/handoff.md:20`、`:89` 待批）；上层 16K / 512spp、昼夜四版（`:20`）。（预估 ~40h）
+- [ ] 中/下层 8K 定稿复核、七岛并入重渲、精英学院草稿、多时段底图挑档（`ROADMAP.md:55-58`）。（预估 ~16h）
+- [ ] P2 机构三维化未打勾（`ROADMAP.md:61`）：最高法院 / 大学 / 执政厅…（预估 ~20h）
+- [ ] P4 各地点全景 + 深度图 → three.js 视差背景层（`ROADMAP.md:45`）。（预估 ~24h）
+- [ ] 伊甸剖切等轴瓦片多边形导出；中层影子模糊等真实感细节（`ROADMAP.md:63,64`）。（预估 ~8h）
+- [ ] `card-buildings` P3 里模型列为「—」的行（圣都与五席的大批点位）。（预估 ~20h）
+- [ ] `league_club` / `rothschild_estate` / `elite_academy`：glb 已导出但**未走两人设评审**（预估 ~4h）
   （`docs/card-buildings.md:95,98,99`）。
-- [ ] A28–A31 落点或登记（`docs/card-omissions.md:269-271`）。
+- [ ] A28–A31 落点或登记（`docs/card-omissions.md:269-271`）。（预估 ~3h）
+- [ ] **Mid-layer day/night DZI**: `map/art/tc_mid_{day,night}_full.png` rendered (2026-09-29/30, queue idle); `maps.json` still references only `art/tc_mid.dzi` — run `tools/make_dzi.py` and register when the multi-period base-map choice lands (`ROADMAP.md:55-58`). (~3h)
+
 
 ## 3. Repo / document line (found by this sweep)
 
@@ -193,6 +199,12 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [?] 上层景深（`map/data/upper_depth.json`，原 --haze）要动多大：先看塔入画后的两张 8K（tc_upper_full / tc_upper_city_full）再定改法与重渲范围（本会话 2026-09-29 用户提出，量级未定；✅ 2026-09-29 两张 8K 已出库、塔锚点已入画，见 §2 整图重渲条）。
 
 ## 5. Done, kept as evidence (2026-09-29)
+
+- [x] 版本分支切换 + 镜像解绑 ✅ 2026-09-30 `a16a1b8`：设置「更新与版本」新增 main / preview 下拉（会话内切换重载脚本）；`push_preview.sh` 默认只推 `preview`，`cloud/tc-mid-low` 仅 LEGACY=1 宽限期移动，退役计划 `docs/branching.md`。
+- [x] 通用角色卡清洗工具 ✅ 2026-09-30 `0e8f1d8`：`tools/clean_card.py`（chara_card_v3 容错解析 / 载荷不透明 / `verify_preserved` 零丢失对账 / PNG 只换 ccv3+chara 块）+ `tests/test_clean_card.py` 15 项（全中性占位符）接入 smoke。
+- [x] 测试语义化更名 ✅ 2026-09-30 `58d1281`：adapter / budget / card_spec / custom_names / character_details / roster / trips 七件去版本号；`docs/design/custom-v2.md` 活引用同步；CHANGELOG 历史条目按当时名字保留；`tools/` 与 `blender/` 下 `__pycache__` 清场。
+- [x] 流式性能与六大子系统解耦报告 ✅ 2026-09-30 `1eb1694`：`docs/reviews/architecture_and_stream_perf.md`（后台假死根因 = 隐藏标签页定时器钳制 + rAF 挂起；G1–G6 修补清单；LayerRegistry 等解耦 RFC；P0–P3 已登记 §1）。
+- [x] 中层昼夜 8000px 底图 ✅ 2026-09-29–30（渲染产物：`map/art/tc_mid_day_full.png` / `tc_mid_night_full.png` 本机留档，Finder 已交付；瓦片未入库，待多时段底图挑档后 make_dzi，见 §2）。
 
 - [x] 上层 9 岛整图重渲（8000×5000，plain + city 双版）+ 五座庄园抠图贴合 + DZI/瓦片重建，气候塔锚点入画（`map/art/tc_upper*_full.png`、`blender/data/tc_islands.json`、`tools/isles_into_upper.py`）。
 - [x] 版权申明设置页（卡信息 / 开源仓库 / 原作署名 / 免责，`map/app/settings.mjs` license 页，探针 4 项过）。
