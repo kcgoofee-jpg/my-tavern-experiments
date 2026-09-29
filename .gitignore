@@ -51,3 +51,8 @@ map/art/.*
 # 地标草稿/看板的渲染中间图（landmark.py 先渲到这里再收进 docs/，避免云端写绝对路径）
 map/art/_*.jpg
 repomix-output.xml
+# 浏览器探针在 docs/drafts 下的目录式临时暂存（截图成品过审后逐个 add，暂存目录不入库；2026-09-30 props_u12 残留过一次）
+docs/drafts/*/tmp/
+docs/drafts/props_u12_/
+# AI 助手工作目录（dynamic workflows / 会话状态；同 .claude/.codebuddy/.pi 一类）
+.zcode/

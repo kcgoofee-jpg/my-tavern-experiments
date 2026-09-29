@@ -146,10 +146,15 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [ ] **历史里的垃圾 blob ≈63 MB**：`map/art/.tc_low_day_full.png.iCUfRJ`（40 MB）与
   `.tc_mid_night_full.png.1V2n4g`（22.8 MB）——`git add -A` 误提交的 rsync 传输临时文件。
   回收要重写历史（C4 做过一次）。**注意**：`.gitignore` 的 `map/art/.*` 只挡以后的，历史里那两份要重写才掉。
-- [ ] **本机可清 ≈1.6 GB 未入库产物**：`blender/data/real3d/raw`（1.13 GB，可 `fetch` 重下）、
-  `blender/data/osm/raw`（288 MB，可重下）、`blender/world/out`（143 MB，成品已进
-  `map/props/holy_mountain/`）、`map/art/*_full.png`（≈470 MB 渲染源图，瓦片已入库）、
-  `.cache/`（≈290 MB 中间物，含 `hm_*` 12 个档位 ≈191 MB）。**须留**：`blender/data/{estate2,props,landmarks}`。
+- [ ] **本机可清 ≈1.9 GB 未入库产物**（重下 / 重渲有成本，留待决定）：`blender/data/real3d/raw`（1.1 GB，可 `fetch` 重下）、
+  `blender/data/osm/raw`（286 MB，可重下）、`blender/world/out`（143 MB，成品已进
+  `map/props/holy_mountain/`）、`map/art/*_full.png`（348 MB 渲染源图，瓦片已入库）。
+  ~~`.cache/`（≈290 MB 中间物，含 `hm_*` 12 个档位 ≈191 MB）~~ ✅ 2026-09-30 死缓存已清 **753 MB**（.cache 854→101 MB）：
+  `.cache/attic`（529 MB 重写前血线 bundle——§5 分支收拢时预留的「确认后可删」成立，独有内容在远端标签 `archive/upper-v18`）、
+  `.cache/glb`（191 MB 圣山 glb 构建中间物，零引用）、`.cache/lm_cath`（32 MB）、`.cache/audit_v15`、
+  `.cache/blend/cache_probe_*`、`__pycache__`×3、`.ruff_cache`；`.cache/blend`（97 MB 键控条目）是渲染队列活缓存
+  （`--cache-blend`）**保留**，`.cache/card*`（4 MB）用户卡数据**保留**。同批新增 `tools/check_tree_hygiene.py`
+  树卫生看门狗接入 smoke（未跟踪且未忽略的文件 >10 MB 拦截，防 `git add -A` 再把临时物扫进仓库）。**须留**：`blender/data/{estate2,props,landmarks}`。
 - [ ] 重复资产：`kiara_8_sunset_2k.hdr` 在 `blender/data/estate2/hdri/` 与 `landmarks/hdri/` 各一份（≈6 MB）；
   `props/tex/marble_01/` 与 `landmarks/tex/marble_01/` 疑似同源。
 - [ ] `.cache/card/` 与 `.cache/card_orig/` 的 `ccv3.json`+`chara.json` 各两份（用户角色卡，非仓库内容）。
