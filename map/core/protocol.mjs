@@ -37,12 +37,12 @@ export const SCHEMA = {
   'eden-map:explore-reset': [V2H, {}],
   'eden-map:th': [V2H, { op: 'string' }],   // 酒馆助手设置（app/th-ui.mjs）：state / prefs / wb-inspect / wb-write / wb-del-legacy
   // 宿主 → 查看器
-  'eden-map:here': [H2V, { value: 'any' }],
+  'eden-map:here': [H2V, { value: 'any', replay: 'boolean?' }],   // replay = 时间轴回放（Part 5-4）：查看器只画，宿主不再记账
   'eden-map:chat': [H2V, { id: 'any' }],
   'eden-map:lang': [H2V, { lang: 'string' }],
   'eden-map:about': [H2V, {}],
   'eden-map:update-result': [H2V, {}],
-  'eden-map:chars': [H2V, { items: 'array?' }],
+  'eden-map:chars': [H2V, { items: 'array?', replay: 'boolean?' }],
   'eden-map:events': [H2V, { items: 'array?' }],
   'eden-map:custom': [H2V, {}],
   'eden-map:inv': [H2V, { items: 'array?' }],   // 空间化背包（Part 5-1）：聊天变量 eden_map.仓库 的行（地点卡「存放」行）

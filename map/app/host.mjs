@@ -34,8 +34,11 @@ if (window.top !== window) {
     // 这里是「挡住无意/顺手来一发」而不是同源隔离，真正的隔离要靠酒馆本身。
     if (!fromHost(e) || (PR && !PR.accept(e.data, '（宿主 → 查看器）'))) return;
     // bg = 酒馆在后台预加载（面板不可见）：不进庄园，也不消耗「打开后第一次一定跳」的资格
-    if (e.data?.type === 'eden-map:here') { if (($('#here').value || '') !== (e.data.value || '')) setEstFocus(null); $('#here').value = e.data.value || ''; markHere(e.data.value);
-      emEmit('here', { value: e.data.value || '', resolved: hereRes(e.data.value || '') }); }
+    if (e.data?.type === 'eden-map:here') { if (($('#here').value || '') !== (e.data.value || '')) setEstFocus(null); $('#here').value = e.data.value || '';
+      try { if (e.data.replay) P.TCFog?.mute?.(true); } catch (x) {}   // 时间轴回放（Part 5-4）：图钉照走，探索不记账
+      markHere(e.data.value);
+      try { if (e.data.replay) P.TCFog?.mute?.(false); } catch (x) {}
+      emEmit('here', { value: e.data.value || '', resolved: hereRes(e.data.value || ''), replay: !!e.data.replay }); }
     if (e.data?.type === 'eden-map:unmapped-pick' && typeof P.TCUnmapped !== 'undefined') P.TCUnmapped.open();   // v0.9.6 标题栏「未上图」
     if (e.data?.type === 'eden-map:open') go(e.data.map);
     if (e.data?.type === 'eden-map:events') { P.TCEvents.set(e.data); emEmit('events', { items: e.data.items, floor: e.data.floor, hereLayer: e.data.hereLayer }); }   // 卡内脚本从聊天里解析、合并好的事态 {items, floor, fly}

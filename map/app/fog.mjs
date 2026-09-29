@@ -34,8 +34,9 @@ function paint() {
   viewer.addOverlay({ element: cv, location: b });   // 层叠归 #fogCv 的 --zv-fog 槽位常量（fog 槽，在标记之下），不再 prepend 抢 DOM 顺序
 }
 /** markHere 解析出落点后调用：r = hereRes() 的结果 */
+let mute = false;   // 时间轴回放（Part 5-4）：重放过去楼层时不把过去的地点记成「到访」
 function here(r) {
-  if (!on() || !r?.map || !r.marker) return;
+  if (mute || !on() || !r?.map || !r.marker) return;
   const name = REG?.maps?.[r.map]?.markers?.[r.marker]?.name; if (!name) return;
   const v = visit(ex, r.map, name); if (!v.changed) return; ex = v.ex;
   if (embedded()) post({ type: 'eden-map:explore', map: r.map, name }); else TCStore.set(FOG_LOCAL_KEY, JSON.stringify(ex));
@@ -45,6 +46,7 @@ const setFog = v => { TCStore.set(FOG_KEY, v ? '1' : '0'); if (v && typeof markH
 registry.register({ id: 'fog', slot: 'fog', kind: 'canvas', initialVisible: on(), setVisible: setFog });   // P3-C：迷雾作为 fog 槽的 canvas 图层受 Registry 调度
 window.TCFog = {
   paint, here, on, count: () => count(ex),
+  mute(v) { mute = !!v; },   // 回放期间静默探索记录（host.mjs 在 eden-map:here replay 时包住 markHere）
   set(raw) { ex = norm(raw); paint(); },                 // 宿主推来（换聊天 / 加载）
   toggle(v) { registry.setVisible('fog', v); },
   reset() { ex = {}; if (embedded()) post({ type: 'eden-map:explore-reset' }); else TCStore.remove(FOG_LOCAL_KEY); paint(); },

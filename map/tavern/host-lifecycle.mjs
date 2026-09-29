@@ -102,6 +102,20 @@ export function mount(pdoc, ID, OWNER) {
   #${ID} .em-bar .em-close { flex: none; width: 36px; height: 36px; display: grid; place-items: center; background: none; border: 0; border-radius: 8px; color: var(--em-muted); padding: 0; }
   #${ID} .em-bar .em-close:hover { background: var(--em-surface-2); color: var(--em-ink); }
   #${ID} .em-bar .em-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+  /* 时间轴回放（Part 5-4）：标题栏 ⏱ 进入；底部胶囊条拖动楼层，地图整体退回那一刻 */
+  #${ID} .em-bar .em-tl-btn { flex: none; width: 32px; height: 32px; display: grid; place-items: center; background: none; border: 0; border-radius: 8px; color: var(--em-muted); padding: 0; }
+  #${ID} .em-bar .em-tl-btn:hover { background: var(--em-surface-2); color: var(--em-ink); }
+  #${ID} .em-bar .em-tl-btn.on { color: var(--em-accent); }
+  #${ID} .em-bar .em-tl-btn[hidden] { display: none; }
+  #${ID} .em-bar .em-tl-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+  #${ID} .em-tl { position: absolute; left: 50%; transform: translateX(-50%); bottom: 14px; z-index: 4; display: flex; align-items: center; gap: 10px; width: min(86%, 520px); padding: 8px 14px; border-radius: 999px;
+    background: var(--em-bg); border: 1px solid var(--em-accent); box-shadow: 0 6px 20px rgba(0,0,0,.35); font: 12px/1.4 var(--em-font); color: var(--em-ink); box-sizing: border-box; }
+  #${ID} .em-tl[hidden] { display: none; }
+  #${ID} .em-tl .em-tl-l { flex: none; color: var(--em-accent); font-weight: 700; }
+  #${ID} .em-tl input[type="range"] { flex: 1 1 auto; min-width: 80px; accent-color: var(--em-accent); }
+  #${ID} .em-tl .em-tl-v { flex: 0 1 auto; min-width: 0; color: var(--em-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%; }
+  #${ID} .em-tl button { flex: none; width: 28px; height: 28px; border: 0; background: none; color: var(--em-muted); font: 16px/1 var(--em-font); cursor: pointer; padding: 0; }
+  #${ID} .em-tl button:hover { color: var(--em-ink); }
   #${ID} .em-bar, #${ID} .em-body { min-width: 0; }   /* 标题栏的长地点 / 线路按钮不再把面板撑出屏幕（E5 r2 P0：关闭按钮曾被推到 404–585 px） */
   #${ID} .em-bar .em-title { min-width: 0; }
   #${ID} .em-bar .em-clock { flex: none; display: inline-flex; align-items: center; gap: 4px; color: var(--em-muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: -4px; cursor: help; }
@@ -164,9 +178,10 @@ export function mount(pdoc, ID, OWNER) {
   <span class="em-badge" hidden></span>
 </button>
 <div class="em-panel" hidden>
-  <div class="em-bar" role="toolbar"><b class="em-title">新历 2088</b><span class="em-clock" role="img" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.2 1.4"/></svg><span class="em-clock-t"></span></span><span class="em-here"></span><button class="em-line" title="切换加载线路"></button><button class="em-close" aria-label="关闭"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+  <div class="em-bar" role="toolbar"><b class="em-title">新历 2088</b><span class="em-clock" role="img" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.2 1.4"/></svg><span class="em-clock-t"></span></span><span class="em-here"></span><button class="em-line" title="切换加载线路"></button><button class="em-tl-btn" title="时间轴回放" aria-label="时间轴回放" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.2 1.4M10.2 9.4 8 8V4.8"/></svg></button><button class="em-close" aria-label="关闭"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
   <div class="em-body"><iframe class="em-frame" title="地图"></iframe><div class="em-load" hidden><div><span class="txt">加载地图 0%</span><div class="bar"><i></i></div><div class="hint"></div><div class="acts" hidden><button class="retry">重试</button><button class="swap">换线路</button></div></div></div>
     <div class="em-pick" hidden><div><h3>选择加载线路</h3><p>地图图片较多，按你的网络选一条更快的线路；之后可以点标题栏的「线路」切换</p><div class="row"></div></div></div></div>
+  <div class="em-tl" hidden><span class="em-tl-l">回放</span><input class="em-tl-r" type="range" min="0" max="0" step="1" value="0" aria-label="时间轴：拖动回到过去的楼层"><span class="em-tl-v"></span><button class="em-tl-x" aria-label="退出回放">×</button></div>
 </div>`;
   pdoc.body.appendChild(root);
   return root;

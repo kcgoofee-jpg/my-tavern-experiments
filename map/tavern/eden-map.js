@@ -454,6 +454,7 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
     const fresh = r.fresh;
     badge.hidden = !fresh; badge.textContent = fresh > 9 ? '9+' : fresh;
     if (fresh) tipOnce();
+    if (TLm && floorNow >= 1) tlBtn.hidden = false;   // 有历史可回放：标题栏出现时间轴按钮（Part 5-4）
     restDue = true;
     if (!lite) restNow();   // 标签改名、行程；发送路径上推迟到空闲
     else { clearTimeout(restT); restT = setTimeout(() => (window.parent.requestIdleCallback || (f => f()))(() => { if (!life.dead && restDue) restNow(); }, { timeout: 1500 }), 0); }
@@ -514,6 +515,43 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
   }
   let evT = 0;
   const recomputeSoon = (ms = 250) => { clearTimeout(evT); evT = setTimeout(recompute, ms); };
+
+  // ---------------- 时间轴回放（Part 5-4，tavern/timeline.mjs）：标题栏 ⏱ 进出，拖动滑块把地图退回那一楼 ----------------
+  const tlBtn = root.querySelector('.em-tl-btn'), tlEl = root.querySelector('.em-tl'), tlR = root.querySelector('.em-tl-r'), tlV = root.querySelector('.em-tl-v');
+  let TLm = null, tlOn = false; const tlCache = new Map();
+  import(SELF + 'tavern/timeline.mjs').then(m => { TLm = m; if (floorNow >= 0) tlBtn.hidden = false; }).catch(() => {});
+  function tlState(f) {
+    if (!TLm || f < 0) return null;
+    if (tlCache.has(f)) return tlCache.get(f);
+    let st = null;
+    try {
+      st = TLm.floorState(f, {
+        getRaw: x => { try { return getChatMessages(x + '-' + x)?.[0]?.message || ''; } catch (e) { return ''; } },
+        perFloorStat: x => BR.perFloorStat(x), mvuGet: (s, p) => BR.mvuGet(s, p), varMap: BR.varMap,
+        parseChars: CHM?.parseChars, mvuChars: CHM?.mvuChars, patchPlace: TRm?.patchPlace,
+        lp: '/' + String(BR.varMap.location || '世界.当前地点').split('.').join('/'),
+      });
+    } catch (e) {}
+    if (st) { tlCache.set(f, st); if (tlCache.size > 240) tlCache.delete(tlCache.keys().next().value); }
+    return st;
+  }
+  function tlScrub(f) {
+    f = Math.max(0, Math.min(floorNow, Math.round(f)));
+    const st = tlState(f);
+    tlV.textContent = (st?.here ? `${st.here} · ` : '') + (st?.time ? st.time + ' · ' : '') + `第 ${f} 楼`;
+    if (!st || !alive) return;
+    post({ type: 'eden-map:here', value: st.here, replay: true });   // 查看器只重画；探索记录已被 replay 静默
+    post({ type: 'eden-map:chars', v: 1, floor: f, items: st.chars, replay: true });
+  }
+  function tlEnter() { if (!TLm || floorNow < 1) return; tlOn = true; tlEl.hidden = false; tlBtn.classList.add('on'); tlR.max = floorNow; tlR.value = floorNow; tlScrub(floorNow); }
+  function tlExit() {
+    if (!tlOn) return; tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on');
+    if (life.dead) return;
+    push(); if (alive) { post({ type: 'eden-map:chars', v: 1, floor: floorNow, items: chars, rosters: roster, rep, stageOrder: BR.stageOrder, portraits: BR.portraits }); sendEvents(); }   // 回当下：地点 / 人物 / 事态全部重推
+  }
+  tlBtn.addEventListener('click', () => (tlOn ? tlExit() : tlEnter()));
+  tlEl.querySelector('.em-tl-x').addEventListener('click', tlExit);
+  tlR.addEventListener('input', () => tlScrub(+tlR.value));
 
   // ---------------- 本机扩展接口 window.EdenMap（E6，docs/content-compat.md） ----------------
   // 在宿主页挂 window.EdenMap，转发给地图 iframe（srcdoc，与宿主同源，直接调用）；地图没开时直接读写本机 localStorage（同一份存储，同一套函数 here.mjs）。
@@ -1020,7 +1058,7 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
     if (!saved && handPref === 'left') placeFab(.03, Math.max(0, (window.parent.innerHeight - 144) / Math.max(1, window.parent.innerHeight - 48))); }   // 没拖过：左手默认放左下
   applyHand(false);
   fab.addEventListener('pointerup', () => { if (dragged && handPref === 'auto') applyHand(false); });
-  const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; sleepViewer(); prefSync(); if (toastWait && SC) setTimeout(toastOnce, 400); if (updWait) setTimeout(showUpdPrompt, 600); };
+  const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; sleepViewer(); prefSync(); tlExit(); if (toastWait && SC) setTimeout(toastOnce, 400); if (updWait) setTimeout(showUpdPrompt, 600); };
   fab.addEventListener('click', async () => { if (dragged) return;
     if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); sent = null; charsSent = null; push(); sendEvents(); scheduleAutoCheck(); return; }   // 预加载中被点开：直接显示，重新推一次地点（这次可以进庄园）；loadViewer 当时因为还在 ghost 跳过了查更新，这里补一次
     fab.classList.remove('fail'); NT?.remove('newev');   // 提示不留在面板后面（v0.9.2）
@@ -1041,7 +1079,7 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
     listen(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     listen(tavern_events.CHAT_CHANGED, () => { clearTimeout(wbChatT); wbChatT = setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动', e))); }, 1500); });   // 换角色 / 聊天：新角色也挂上、聊天版本提醒
     listen(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    listen(tavern_events.CHAT_CHANGED, () => { try { BG?.touch(store(), chatId()); } catch (e) {} injected = null; stateNow = ''; cardSkip = null; cp = null; CTX.reset(); loadSeen(); custom = null; loadCustom().then(() => recomputeSoon(300)); });
+    listen(tavern_events.CHAT_CHANGED, () => { try { BG?.touch(store(), chatId()); } catch (e) {} injected = null; stateNow = ''; cardSkip = null; cp = null; CTX.reset(); loadSeen(); custom = null; if (tlOn) { tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => recomputeSoon(300)); });
     // 通读 R1：开局菜单用 setChatMessage(swipe_id) 换开场白，不一定触发 SWIPED；渲染 / 编辑事件也听，地点跟着刷新
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) if (tavern_events[k]) listen(tavern_events[k], () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
     // 生成前同步一次，注入的是最新态势（A-3：只做注入需要的部分；输入没变直接跳过；标签改名 / 行程推到空闲）
