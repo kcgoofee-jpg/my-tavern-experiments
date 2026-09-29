@@ -174,7 +174,7 @@
 
 ### 4.2 署名（CC-BY 必做，CC0 建议做）
 
-在仓库根目录维护 `ASSETS.md`（或 `map/estate/CREDITS.md`），**每个资产一行**；网页上加一个「素材来源」链接，指向这份清单。
+在仓库根目录维护 `ASSETS.md`（或按素材目录各一份，如 `map/estate/assets/CREDITS.md`），**每个资产一行**；网页上加一个「素材来源」链接，指向这份清单。
 
 CC-BY 写法（按 TASL：Title、Author、Source、License）：
 

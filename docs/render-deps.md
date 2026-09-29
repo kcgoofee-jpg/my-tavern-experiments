@@ -30,7 +30,7 @@
 | `map/art/tc_mid.dzi` | `blender/tiancheng_mid.py` |
 | `map/art/tc_low.dzi` | `blender/tiancheng_low.py` |
 | `map/art/tc_clouds.dzi`（若存在） | `map/art/tc_upper.dzi` |
-| `map/estate/site.glb`, `map/estate/house.glb` | `blender/estate2/*.py` |
+| `map/estate/model/site.glb`, `map/estate/model/house.glb` | `blender/estate2/*.py` |
 
 `blender/landmarks/**/*.py` 不算 `tc_mid` / `tc_low` 底图的上游：地标走 `tools/landmark.py` 流水线，产物是独立 glb（`map/props/<id>/`），`tiancheng_mid.py` / `tiancheng_low.py` 不 import 它们；只有 `ship --patch-basemap` 才会真的改底图，那一步会直接改到 `.dzi` 本身（`.dzi` 自己的提交时间会跟着变新，不需要靠这张表来发现）。以前把整个 `blender/landmarks/**/*.py` 都列成上游，每加一个不进底图的新地标就会误报「底图落后」（head #54：knights_camp 是独立 glb 地标，误报过一次）。
 

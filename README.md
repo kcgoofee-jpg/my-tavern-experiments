@@ -3,7 +3,7 @@
 [![CI](https://github.com/kcgoofee-jpg/my-tavern-experiments/actions/workflows/ci.yml/badge.svg?branch=cloud/tc-mid-low)](https://github.com/kcgoofee-jpg/my-tavern-experiments/actions/workflows/ci.yml)
 
 > 状态：开发中 · 当前发布版本 `0.9.5`（标签 `map-v0.9.5`） · 下一版进行中（分支 `cloud/tc-mid-low`）
-> 详细门控与任务分轨：[`docs/GOAL_v0.9.1.md`](docs/GOAL_v0.9.1.md)（0.9.1 门控记录） · 产品待办：[`ROADMAP.md`](ROADMAP.md) · 变更记录：[`CHANGELOG.md`](CHANGELOG.md) · 本机 ↔ 云端协作与接手记录：[`NOTES_FROM_LOCAL.md`](NOTES_FROM_LOCAL.md) · 卡设定遗漏清单：[`docs/card-omissions.md`](docs/card-omissions.md)
+> 详细门控与任务分轨：[`docs/history/GOAL_v0.9.1.md`](docs/history/GOAL_v0.9.1.md)（0.9.1 门控记录） · 产品待办：[`ROADMAP.md`](ROADMAP.md) · 变更记录：[`CHANGELOG.md`](CHANGELOG.md) · 本机 ↔ 云端协作与接手记录：[`docs/history/NOTES_FROM_LOCAL.md`](docs/history/NOTES_FROM_LOCAL.md) · 卡设定遗漏清单：[`docs/card-omissions.md`](docs/card-omissions.md)
 
 ## 1. 系统架构
 
@@ -91,7 +91,7 @@
 - **渲染**：`bash tools/render_all.sh <层> --res 8000 --samples 64`；局部 `bash tools/crops.sh`；同一时间只跑一个 Blender；安静期锁 `tools/quiet.sh`。
 - **发布**：`bash tools/ship.sh`（自检 → 推送 → 预热 CDN → 生成预览脚本），发布前 `--dry-run`。
 - **文档**：架构与接口 `docs/`；工具说明 `docs/tooling.md`；审阅记录 `docs/reviews/`。
-- **素材许可**：仓库只收 CC0 / CC-BY / ODbL 等允许再分发的素材，逐项记入 `CREDITS.md`。
+- **素材许可**：仓库只收 CC0 / CC-BY / ODbL 等允许再分发的素材，逐项记入各素材目录的 `CREDITS.md`（`map/estate/assets/`、`map/estate/closet/assets/`、`blender/props/`、`blender/estate2/` 各一份）。
 
 ## 6. 目录
 

@@ -54,7 +54,7 @@
 ### 建模渲染（见 `docs/card-buildings.md`）
 - [ ] 中层 / 下层本机 8000px 正式渲染（`bash tools/render_all.sh --res 8000 --samples 128`）+ 逐块 `--crop` 检查
 - [ ] 上层其他岛屿：七岛草稿等用户点头后并进下一次上层整图重渲；isle6 首相府底图要跟着方案 A 联排形制改
-- [ ] 上层精英学院选址（待用户从草图里定岛，见 `docs/overnight-questions.md` Q11）
+- [ ] 上层精英学院选址（待用户从草图里定岛，见 `docs/archive/2026-09/overnight-questions.md` Q11）
 - [ ] 多时段底图：`tiancheng_upper.py --tod` 草稿已备，待用户挑档后出 8K，查看器切换另议
 - [x] 辉光大教堂 / 首相府：标准版（大教堂 r3 7.5 / 7，首相府 r2 7 / 7；标准档 + 低档 glb、2400 px 定稿）
 - [x] P1 已完成：凯莉的宅邸（r2 7 / 8）、废弃教堂区（r2 7 / 8）、旧公寓楼（r3 7.5 / 7）、铁皮屋区 + 旧货市场（同一场景，r3 7 / 7）、层间检查点 + 7 号井（竖向同一场景，r2 8 / 7；三维入口在 link3d）、旷野高地（r4 7 / 7）——标准档 + 低档 glb、清单热点、标记接三维
@@ -63,7 +63,7 @@
 - [ ] 伊甸庄园剖切等轴瓦片房间多边形导出（若定稿仍走这条路）→ `map/data/eden_estate_tiles.json`；否则以现有 web 3D 为最终形态，不再需要瓦片底图
 - [ ] 真实感细节：中层影子按岛高度调模糊、管廊铁路朝支柱竖井汇聚、上层航线与银冠堡巡逻叠加层
 
-### 待用户决定（见 `docs/overnight-questions.md`）
+### 待用户决定（见 `docs/archive/2026-09/overnight-questions.md`）
 - [ ] 用户在 TT 完整实测（v0.9.1–v0.9.6 累计未做的部分，含关闭 3 分钟内重开耗时/内存、v0.8.0 对比、庄园休眠唤醒）
 - [ ] 上层其他岛屿草稿定稿（七岛，`docs/upper-islands-references.md` + `docs/reviews/upper_islands_r1.md`）
 - [ ] Q7：B2「医疗与改造室」是否也改运行时读卡名

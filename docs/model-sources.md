@@ -47,7 +47,7 @@
 
 **给伊甸庄园 / 衣帽间复用**
 - `fetch_assets.py` 的写法（Poly Haven 贴图 / HDRI / glTF，加 ambientCG 的 zip）可以直接照抄。
-- `build.py` 里的 `pbr()`、`steel()`、`galvanised()`、`rubber()`、`tube()`/`bent()`、`box()`（带倒角和 harden normals）、草地几何节点，都可以抽成公共模块，比如 `blender/props/common.py`。衣帽间要的金属挂杆、布料、木柜正好能用。
+- `build.py` 里的 `pbr()`、`steel()`、`galvanised()`、`rubber()`、`tube()`/`bent()`、`box()`（带倒角和 harden normals）、草地几何节点，都可以抽成公共模块，比如 `blender/landmarks/common.py`。衣帽间要的金属挂杆、布料、木柜正好能用。
 - 流程：先做来源调查，再画平面图（和建模共用常量），然后 1000px 快速迭代，一轮审阅（美术总监加现编的行内人），最后出定稿。这套流程约 1.5 小时，能出一个可以看的写实测试件。
 
 
