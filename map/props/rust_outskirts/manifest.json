@@ -1,0 +1,77 @@
+{
+ "_note": "viewer3d.html?model=rust_outskirts 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/rust_outskirts.md。",
+ "id": "rust_outskirts",
+ "title": {
+  "zh": "铁锈与落败领",
+  "en": "Rust and the Fallen"
+ },
+ "glb": "rust_outskirts.glb",
+ "glb_low": "rust_outskirts_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "props_shanties",
+   "props_clutter",
+   "props_tank"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "site_ground"
+  ],
+  "building": {
+   "min": [
+    -78.0,
+    -0.3,
+    -58.0
+   ],
+   "max": [
+    78.0,
+    18.0,
+    58.0
+   ]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 16,
+  "default": 16
+ },
+ "camera": {
+  "frame": [
+   "props_shanties",
+   "props_tank"
+  ],
+  "dir": [
+   0.45,
+   0.55,
+   -0.7
+  ],
+  "min": 6,
+  "max": 420,
+  "maxPolar": 1.48
+ },
+ "budgets": {
+  "props_shanties": [
+   30000,
+   2048
+  ],
+  "props_clutter": [
+   15000,
+   1024
+  ],
+  "props_tank": [
+   10000,
+   1024
+  ],
+  "site_ground": [
+   12000,
+   2048
+  ]
+ },
+ "hotspots": []
+}
