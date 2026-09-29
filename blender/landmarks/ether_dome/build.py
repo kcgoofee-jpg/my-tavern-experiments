@@ -45,9 +45,10 @@ def main():
     BRONZE = C.pbr('ed_bronze', 'Metal009', 2.0, tint=(0.56, 0.44, 0.22), sat=0.35, metal=0.7)
     GLASS = C.glass('ed_glass', (0.10, 0.13, 0.15))
     GLASS_L = C.glass('ed_glass_l', (0.14, 0.16, 0.14), emit=(0.75, 0.9, 1.0), estr=2.4)   # 以太偏青蓝
-    ETHER = C.flat('ed_ether', (1, 1, 1), 0.3, emit=(0.68, 0.86, 1.0), estr=20.0)
-    ETHER_W = C.flat('ed_ether_w', (1, 1, 1), 0.3, emit=(0.86, 0.92, 1.0), estr=12.0)
+    ETHER = C.flat('ed_ether', (0.72, 0.86, 1.0), 0.3, emit=(0.68, 0.86, 1.0), estr=8.0)
+    ETHER_W = C.flat('ed_ether_w', (0.80, 0.90, 1.0), 0.35, emit=(0.86, 0.92, 1.0), estr=4.0)
     GOLD = C.flat('ed_gold', (0.78, 0.62, 0.22), 0.28, metal=0.85, coat=0.5)
+    SHELL = C.flat('ed_shell', (0.76, 0.83, 0.88), 0.16, coat=0.65)      # 穹面：浅色搪瓷壳（玻璃渲出来是鸟笼）
     LAMP = C.flat('ed_lamp', (1, 1, 1), 0.4, emit=(1.0, 0.9, 0.72), estr=13.0)
 
     points = []
@@ -72,7 +73,7 @@ def main():
         rr = R_DOME * math.cos(t * math.pi / 2 * 0.98)
         dz = DOME_Z + (R_DOME * 0.92) * math.sin(t * math.pi / 2 * 0.98) * 0.86
         prof.append((max(rr, 1.6), dz))
-    dome.lathe(0, 0, PL, [(R_DOME - 0.6, DOME_Z - 0.4)] + prof, GLASS, 64)     # 穹面（玻璃）
+    dome.lathe(0, 0, PL, [(R_DOME - 0.6, DOME_Z - 0.4)] + prof, SHELL, 64)    # 穹面（浅色壳）
     for i in range(N_RIB):                                                    # 肋（贴着穹面加一圈细拱）
         a = i * math.tau / N_RIB
         pts = []
@@ -172,9 +173,9 @@ def main():
     sc.view_settings.exposure = float(A['exposure']) if A['exposure'] else 0.0
 
     CAMS = {
-        'c1': ((-260.0, -330.0, 150.0), (0.0, 0.0, 26.0), 28, 0.0),
-        'c2': ((0.0, -300.0, 60.0), (0.0, 0.0, 34.0), 30, 0.0),
-        'c3': ((300.0, 120.0, 70.0), (0.0, 0.0, 28.0), 28, 0.0),
+        'c1': ((-190.0, -240.0, 108.0), (0.0, 0.0, 30.0), 30, 0.0),
+        'c2': ((0.0, -215.0, 48.0), (0.0, 0.0, 34.0), 30, 0.0),
+        'c3': ((225.0, 95.0, 62.0), (0.0, 0.0, 30.0), 30, 0.0),
     }
     cv = CAMS[A['cam']]
     C.camera(sc, cv[0], cv[1], cv[2], cv[3])

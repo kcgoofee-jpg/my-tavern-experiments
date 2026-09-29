@@ -76,7 +76,7 @@
 | P3 其他 | site_kavalierki | `clearing_depot` | 清算转运站 | ✅ | 卡 | — | — |  |
 | P3 其他 | site_kavalierki | `contest_corridor` | 竞赛与狂欢回廊 | ✅ | 卡 | — | — |  |
 | P3 其他 | site_kavalierki | `elite_club` | 顶级贵族与财阀会所 | ✅ | 卡 | — | — |  |
-| P3 其他 | site_kavalierki | `ether_dome` | 以太穹顶 | ✅ | 卡 | — | — |  |
+| P3 其他 | site_kavalierki | `ether_dome` | 以太穹顶 | ✅ | 卡 | 以太穹顶 `map/props/ether_dome/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
 | P3 其他 | site_kavalierki | `free_knight_camp` | 独立骑士黑市营地 | ✅ | 卡 | — | — |  |
 | P3 其他 | site_kavalierki | `glory_crown` | 荣光冠冕 | ✅ | 卡 | 荣光冠冕 `map/props/glory_crown/` | 标准（r1 7.5 / 7.5（代理自查，未开评审）） |  |
 | P3 其他 | site_kavalierki | `linguang_post` | 临光家族外城驻所 | ✅ | 卡 | — | — |  |
