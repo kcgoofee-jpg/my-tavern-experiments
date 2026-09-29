@@ -44,6 +44,13 @@ scaffold will be flagged — add it to `ALLOW` with this reason rather than rewr
 Existing docs are grandfathered by construction — the baseline is a release tag, so the
 gate can never retroactively fail a document that already shipped.
 
+## Exception: index and quote-heavy documents
+
+`docs/todo.md` is the index of record. Every item quotes the source line it came from, verbatim and in
+Chinese, so a reader can trace it back and so the wording cannot drift. Its own prose is English, but
+the quotes push the file over the CJK threshold — it is listed in `ALLOW` with that reason. The same
+applies to any future index built the same way: quote the source, explain in English, allow the file.
+
 ## What this means in practice
 
 * **Documents** are what the gate checks. New `docs/**/*.md` in English.

@@ -31,6 +31,10 @@ THRESHOLD = 0.05
 
 ALLOW = {
     # path: reason — keep this list short and justified; prefer `*.zh.md`.
+    # The index of record quotes every item's source line verbatim so nothing drifts out of
+    # traceability; its own prose is English but the quotes are necessarily Chinese. Same
+    # logic as the "quoted card text stays Chinese" rule in docs/language-policy.md.
+    "docs/todo.md": "索引文件：逐条引用原文（中文）以保持可追溯，正文英文",
 }
 
 ARCHIVE_PREFIXES = ("docs/archive/", "docs/history/")
