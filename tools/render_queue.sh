@@ -240,6 +240,9 @@ case "${1:-}" in
       return 1
     }
     dispatch_unlock() { rm -rf "$DISP_LOCK"; }
+    # 每轮校验：锁还在不在我手里。不在就自己退——这样历史遗留的常驻循环（早于单例锁启动的那些）
+    # 会在一个轮询周期内自动退出，不需要人工 kill，也不会出现「两个派工长期并存」。
+    dispatch_lock_verify() { [ -f "$DISP_LOCK/pid" ] && [ "$(command cat "$DISP_LOCK/pid" 2>/dev/null)" = "$$" ]; }
     if ! dispatch_lock; then
       echo "已有派工在跑（PID $(command cat "$DISP_LOCK/pid" 2>/dev/null || echo 未知)），本进程退出：单例锁" >&2
       exit 0
@@ -249,7 +252,13 @@ case "${1:-}" in
       cmd_dispatch_once; dispatch_unlock
     else
       echo "常驻派工循环，每 ${POLL}s 一轮，Ctrl-C 退出（已持有单例锁，重复启动会被拒）"
-      while true; do cmd_dispatch_once; sleep "$POLL"; done
+      while true; do
+        if ! dispatch_lock_verify; then
+          echo "派工锁已易主（现在属于 PID $(command cat "$DISP_LOCK/pid" 2>/dev/null || echo 未知)），本进程自动退出（不动别人的锁）"
+          exit 0
+        fi
+        cmd_dispatch_once; sleep "$POLL"
+      done
     fi
     ;;
   ""|-h|--help) usage ;;
