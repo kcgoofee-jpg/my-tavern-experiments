@@ -67,7 +67,9 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [ ] 设置「版权申明」页与人物页声望在真实酒馆浏览器过一眼（现在只有 stub；挂在上面的 Real ST 测试项下）。（预估 ~2h）
 - ~~**Streaming / decoupling P0** (`docs/reviews/architecture_and_stream_perf.md` §1.4): G1 strip `<think>` CoT blocks before tag parsing + G6 `fnGuard` & arity tests at cross-window exposure points. (~8h)~~ ✅ 2026-09-30 `040baf9`（G1）+ `04f170f`（G6）
 - [ ] **Streaming / decoupling P2–P3** (same report Part 2): ~~P1（G3 wake broadcast + G2 hidden-poll gating，~4h）~~ ✅ 2026-09-30 `643e087`；~~extract MVUBridge → ContextInteractionSystem (P2 ~28h)~~ ✅ 2026-09-30 `785c421`（MVUBridge，Mvu / SillyTavern 全局唯一属主）+ `28d646e`（ContextPipeline 纯流水线）；~~P3-A 轻量契约：DepthSystem summary + Estate3D manifest（~12h）~~ ✅ 2026-09-30 `709c1c9`（DepthSystem describe + 迷雾存储键收口）+ `43c053a`（Estate3D Manifest 契约与查看器解耦）；~~CharacterRosterSystem 多源名册统一抽象（~12h）~~ ✅ 2026-09-30 `a4de0f2`（core/roster.mjs 统一 rows() 契约）+ `5ce27d3`（桥与宿主接线）；~~LayerRegistry 渲染槽位与滤镜系统（P3 剩余 ~20h）~~ ✅ 2026-09-30 `aed4f49`（core/layers.mjs 槽位契约纯核心）+ `92a9bda`（viewer z 阶梯收拢 + 槽位挂载骨架）+ `910bd6e`（fog / clouds / routes / trips / events / security 全量迁移 + #layList 数据驱动）。
-- [ ] **De-speculation leftovers**: hedged wording at `docs/card-digest.md:387,389`, `docs/upper-setting.md:278`; worldbook ship-JSON standard-interface reservation (top-level schema + category map) in `tools/build_worldbook_addon.py`. (~4h)
+- [x] ~~**De-speculation leftovers**: hedged wording at `docs/card-digest.md:387,389`, `docs/upper-setting.md:278`; worldbook ship-JSON standard-interface reservation (top-level schema + category map) in `tools/build_worldbook_addon.py`.~~ ✅ 2026-09-29 `f6ef639`（明细见 §5）
+- [ ] 架构看门狗（Lint Rules for Architecture）：map/core/ 单文件 >400 行预警、禁止反向 import 宿主层、裸 z-index 字面量持续机检拦截（接入 tools/smoke.sh）。（预估 ~2h）
+- [ ] 会话录制回放（Session Replay Fixtures）：mvu-bridge.mjs 与 context 纯流水线支持导出聊天快照为 JSON，脱离浏览器实现毫秒级端到端回放测试。（预估 ~4h）
 
 
 ## 2. Render line · 渲染生产线（每个待办附预估工时）
@@ -197,9 +199,12 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [?] `docs/drafts/` 158 MB 是否迁出主仓 + 是否重写历史回收 63 MB 垃圾 blob（见 §3）。
 - [?] `archive/upper-v18` 的 v18 岛脚本：重做还是摘取（见 §2）。
 - [?] 上层景深（`map/data/upper_depth.json`，原 --haze）要动多大：先看塔入画后的两张 8K（tc_upper_full / tc_upper_city_full）再定改法与重渲范围（本会话 2026-09-29 用户提出，量级未定；✅ 2026-09-29 两张 8K 已出库、塔锚点已入画，见 §2 整图重渲条）。
+- [?] 私有 API Key 驱动任务 / LLM 领航员：利用 ContextPipeline 纯计算管道接入用户独立大模型 API，根据上下文动态生成事态、标记与冒险任务。
+- [?] 通用卡包标准（Pack Engine）：将 Eden 特有资产彻底降级为 map/packs/eden/（Pack 0），内核转为通用渲染与协议宿主。
 
 ## 5. Done, kept as evidence (2026-09-29)
 
+- [x] 去推测化收尾与世界书发布接口预留 ✅ 2026-09-29 `f6ef639`：`docs/card-digest.md:387,389`（状态栏删除按钮直写 MVU / 开局菜单 setChatMessage 切 swipe）与 `docs/upper-setting.md:278`（维克多庄园遗产去向）的推测性措辞收敛为已确立口径——卡内脚本只记事实，地图侧落到既定处理（聊天记录唯一真相 + 4 秒指纹轮询，不依赖卡片侧伴随事件）；庄园去向标「地图自设」。`tools/build_worldbook_addon.py` --ship 发布件预留标准扩展接口：顶层 `schema: 1` 格式版本标记 + `category` 条目类别映射字典（rules / events / places / characters / lore，未登记编号回退 other），消费端 wbsync.mjs 只读 ver / aliases / entries 不受影响；`map/data/worldbook_addon.json` 重出对齐（entries 零变化，ver 指纹不变）。
 - [x] 版本分支切换 + 镜像解绑 ✅ 2026-09-30 `a16a1b8`：设置「更新与版本」新增 main / preview 下拉（会话内切换重载脚本）；`push_preview.sh` 默认只推 `preview`，`cloud/tc-mid-low` 仅 LEGACY=1 宽限期移动，退役计划 `docs/branching.md`。
 - [x] 通用角色卡清洗工具 ✅ 2026-09-30 `0e8f1d8`：`tools/clean_card.py`（chara_card_v3 容错解析 / 载荷不透明 / `verify_preserved` 零丢失对账 / PNG 只换 ccv3+chara 块）+ `tests/test_clean_card.py` 15 项（全中性占位符）接入 smoke。
 - [x] 测试语义化更名 ✅ 2026-09-30 `58d1281`：adapter / budget / card_spec / custom_names / character_details / roster / trips 七件去版本号；`docs/design/custom-v2.md` 活引用同步；CHANGELOG 历史条目按当时名字保留；`tools/` 与 `blender/` 下 `__pycache__` 清场。
