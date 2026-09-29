@@ -1,0 +1,89 @@
+{
+ "_note": "viewer3d.html?model=clearing_depot 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/clearing_depot.md。",
+ "id": "clearing_depot",
+ "title": {
+  "zh": "清算转运站",
+  "en": "Clearing Depot"
+ },
+ "glb": "clearing_depot.glb",
+ "glb_low": "clearing_depot_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "props_depot",
+   "props_rail",
+   "props_yard"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "site_ground"
+  ],
+  "building": {
+   "min": [
+    -50.0,
+    -0.3,
+    -50.0
+   ],
+   "max": [
+    50.0,
+    30.0,
+    50.0
+   ]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 12,
+  "default": 12
+ },
+ "camera": {
+  "frame": [
+   "props_depot",
+   "props_rail"
+  ],
+  "dir": [
+   0.4,
+   0.55,
+   -0.73
+  ],
+  "min": 6,
+  "max": 380,
+  "maxPolar": 1.48
+ },
+ "budgets": {
+  "props_depot": [
+   30000,
+   2048
+  ],
+  "props_rail": [
+   20000,
+   1024
+  ],
+  "props_yard": [
+   15000,
+   1024
+  ],
+  "site_ground": [
+   10000,
+   2048
+  ]
+ },
+ "hotspots": [],
+ "building": {
+  "min": [
+   -70.0,
+   -0.3,
+   -48.0
+  ],
+  "max": [
+   70.0,
+   12.0,
+   48.0
+  ]
+ }
+}
