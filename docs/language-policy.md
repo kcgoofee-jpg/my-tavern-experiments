@@ -60,6 +60,8 @@ applies to any future index built the same way: quote the source, explain in Eng
   Chinese and flipping that mid-file would read worse than it gains.
 * **New UI strings** still need both `zh.json` and `en.json` (the i18n parity test enforces
   that). Author them in English first, then translate — the English string is the source.
-* **Commit messages**: keep the existing style, which is Chinese. Not gated.
+* **Commit messages**: English as well (user decision 2026-09-29; the earlier "Chinese, as before"
+  line is superseded). No `Co-Authored-By` trailer. Not gated — the history predates this rule and is
+  not rewritten.
 * Setting docs that quote the original card verbatim keep the quoted Chinese (the card is
   the source of truth); the surrounding explanation is English.

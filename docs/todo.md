@@ -153,7 +153,7 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 
 ## 5. Done, kept as evidence (2026-09-29)
 
-- [x] 云端/本地对齐：`main` == `cloud/tc-mid-low`，`tools/sync_main.sh` 只允许 fast-forward（`docs/branching.md`）。
+- [x] 云端/本地对齐：`main` == `preview`，`tools/sync_main.sh` 只允许 fast-forward（`docs/branching.md`）。
 - [x] 语言政策落地：`docs/language-policy.md` + 门控 `tools/check_doc_language.py`（含自测）。
 - [x] 渲染队列派工单例锁 + 自愈（`tools/render_queue.sh`）。
 - [x] 上层纵深 U15–U18，`accept.mjs` 有断言（`docs/ui-refactor-backlog.md` U15–U18 划线）。
@@ -165,7 +165,7 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   （内容全在主线）；`feat/worldbook-auto` 停在重写前血线但功能已并入（有 `th_adopt.mjs` 实跑证据）；
   只有 `upper-v18` 有真未合并内容（7 个岛脚本 ~1400 行 + academy/kelly 审图板）。
   处置：打 `archive/upper-v18` 标签（推送）、删本地 5 个分支、删远端 `feat/worldbook-auto` /
-  `holy-city-shotlist` / `upper-v18`。**现在只剩 `main` 与 `cloud/tc-mid-low`（同一提交，快进同步）**。
+  `holy-city-shotlist` / `upper-v18`。**现在只剩 `main` 与 `preview`（同一提交，快进同步）**。
 - [x] 仓库体积：删掉冗余的 `archive/feat-worldbook-auto`（内容已在主线）后 `git gc --prune=now`，
   pack **585.75 → 489.91 MiB（回收 176 MB）**。本机归档 bundle 在 `.cache/attic/archive-branches.bundle`
   （528 MB，gitignore，含重写前血线；内容已在主线，确认不再需要后可删）。

@@ -112,7 +112,7 @@ bash tools/quiet_wait.sh     # 等锁过去（--check 只判断不等；--max N 
 3. `bash tools/smoke.sh` 再跑一次（其中 `tools/check_version.py` 会核对 VERSION / build.json / CHANGELOG / 标签是否一致 ✱）。
 4. 打标签并推：
    ```bash
-   git tag map-vX.Y.Z && git push origin cloud/tc-mid-low && git push origin map-vX.Y.Z
+   git tag map-vX.Y.Z && git push origin preview && git push origin map-vX.Y.Z
    ```
 5. CDN 校验与预热（**没做这一步就等于没发**）：
    ```bash

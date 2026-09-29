@@ -123,6 +123,61 @@ insert_cache_blend() {
   fi
 }
 
+# 收尾记账：按退出码决定进 done 还是退回 pending。
+# 历史毛病（2026-09-29 修）：以前不管 rc 是多少都 mv 进 done，于是「被实例本地锁挡住（render.sh
+# exit 3）」的任务被当成成功挪走、日志却留在 running/ —— 这就是「任务标了 done 却没有日志」的来源，
+# 也解释了为什么有的 8K 任务要重排才出图。
+#    rc = 0                → done（顺带把 .log/.rc 一起搬过去，跑完不留垃圾在 running/）
+#    rc = 3（实例忙）       → 退回 pending 排队重试，不计失败；超过 RETRY_BUSY_MAX 次才放弃
+#    其它非 0              → 退回 pending 重试；超过 MAX_RETRY 次标 .failed 进 done（日志一并搬走）
+finish_job() {
+  local jobfile=$1 runfile=$2 rc=$3 args=${4:-}
+  local base; base=$(basename "$runfile")
+  local cap
+  # rc=0 也要验收产物（2026-09-29 事故）：云端「渲染成功」但没写出文件（--out 是绝对路径 / 落在
+  # 不同步的 docs/）时，以前会被当成完成。这里按任务自己声明的 --out 核一遍，缺文件就按失败重试。
+  if [ "$rc" = 0 ] && [ "$DRY_RUN" != 1 ] && [ -n "$args" ]; then
+    local out="" 
+    out=$(python3 -c 'import shlex,sys
+a=shlex.split(sys.argv[1]); o=""
+for i,t in enumerate(a):
+    if t=="--out" and i+1<len(a): o=a[i+1]
+print(o)' "$args" 2>/dev/null || true)
+    case "$out" in
+      /*|"") : ;;                                    # 绝对路径（board 都走本机）或没写 --out：不核
+      *) if [ ! -e "$ROOT/$out" ]; then
+           echo "产物缺失：$out（rc=0 但文件不在）—— 按失败处理" >&2
+           rc=79
+         fi ;;
+    esac
+  fi
+  if [ "$rc" = 0 ]; then
+    mv -f "$jobfile" "$DONE/${base}.job" 2>/dev/null
+    [ -f "${runfile}.log" ] && mv -f "${runfile}.log" "$DONE/${base}.log" 2>/dev/null
+    [ -f "${runfile}.rc" ] && mv -f "${runfile}.rc" "$DONE/${base}.rc" 2>/dev/null
+    rm -f "$PEND/${base}.retry"
+    echo "完成：${base}（rc=0）"
+    return 0
+  fi
+  if [ "$rc" = 3 ]; then cap=${RETRY_BUSY_MAX:-90}; else cap=${MAX_RETRY:-6}; fi
+  local n=0
+  if [ -f "$PEND/${base}.retry" ]; then n=$(command cat "$PEND/${base}.retry" 2>/dev/null || echo 0); fi
+  n=$((n + 1))
+  if [ "$n" -ge "$cap" ]; then
+    mv -f "$jobfile" "$DONE/${base}.job" 2>/dev/null
+    [ -f "${runfile}.log" ] && mv -f "${runfile}.log" "$DONE/${base}.log" 2>/dev/null
+    [ -f "${runfile}.rc" ] && mv -f "${runfile}.rc" "$DONE/${base}.rc" 2>/dev/null
+    : > "$DONE/${base}.failed"
+    rm -f "$PEND/${base}.retry"
+    echo "放弃：重试 ${n} 次仍失败（rc=${rc}）；日志 $DONE/${base}.log，标记 ${base}.failed" >&2
+  else
+    printf '%s\n' "$n" > "$PEND/${base}.retry"
+    mv -f "$jobfile" "$PEND/${base}.job" 2>/dev/null
+    echo "第 ${n}/${cap} 次未成功（rc=${rc}）：退回 pending 稍后重试（实例忙不算失败）" >&2
+  fi
+  return 0
+}
+
 run_job_mac() {
   local jobfile=$1 args=$2 runfile=$3
   (
@@ -131,8 +186,7 @@ run_job_mac() {
     bash "$ROOT/tools/blender_run.sh" "${INSERT_OUT[@]}" > "${runfile}.log" 2>&1
     rc=$?
     echo "$rc" > "${runfile}.rc"
-    mv -f "$jobfile" "$DONE/$(basename "$jobfile")" 2>/dev/null
-    rm -f "$runfile"
+    finish_job "$jobfile" "$runfile" "$rc" "$args"
   ) &
   disown
 }
@@ -151,8 +205,7 @@ run_job_cloud() {
     DRY_RUN="$DRY_RUN" bash "$CLOUD/render.sh" --host "$host" "${INSERT_OUT[@]}" >> "${runfile}.log" 2>&1
     rc=$?
     echo "$rc" > "${runfile}.rc"
-    mv -f "$jobfile" "$DONE/$(basename "$jobfile")" 2>/dev/null
-    rm -f "$runfile"
+    finish_job "$jobfile" "$runfile" "$rc" "$args"
   ) &
   disown
 }

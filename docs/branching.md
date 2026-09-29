@@ -5,7 +5,7 @@ Decided 2026-09-29, asked as "should `main` and the follow/preview line be merge
 ## Answer
 
 **They are already the same thing, and they should stay that way while the project is
-pre-release.** There is nothing to merge: `main` and `cloud/tc-mid-low` point at the same
+pre-release.** There is nothing to merge: `main` and `preview` point at the same
 commit. Syncing them is a **fast-forward**, and from now on a forced update is never
 needed again — after the 2026-09 history rewrite, `main` is an ancestor of the follow
 branch. `tools/sync_main.sh` performs the sync and **refuses** to do anything but fast
@@ -15,10 +15,32 @@ forward.
 
 | Branch | Role | Pointer clients read |
 |---|---|---|
-| `cloud/tc-mid-low` | Integration + follow/preview line. Everything lands here. | `map/data/head.json` (`{build, sha, at}`, written by `tools/bump_head.py`) |
+| `preview` | Integration + follow/preview line. Everything lands here. | `map/data/head.json` (`{build, sha, at}`, written by `tools/bump_head.py`) |
+| `cloud/tc-mid-low` | **Deprecated compatibility mirror** of `preview`. Kept only because already-imported follow scripts carry it in their URL. Never target it for new work. | — |
 | `main` | Release line. Tags (`map-vX.Y.Z`) live on this line. | `map/data/build.json` (`{version, code}`) + the tag list |
 | feature branches | Short-lived, merged into the follow branch | — |
-| `backup/*` | Local safety pointers from the history rewrite | — |
+
+## Renaming the work branch (done 2026-09-29)
+
+`cloud/tc-mid-low` was a coded name nobody could read; the work branch is now **`preview`**.
+
+The awkward part is not the rename, it is that **the follow loader takes its branch name from its own
+script URL** (`SCRIPT.ref` in `map/tavern/eden-map.js` → `follow.mjs resolveFollow(repo, branch, …)`).
+Scripts already imported by users therefore keep requesting `cloud/tc-mid-low` from the CDN, and that
+path only keeps working while the ref keeps moving. So the old name lives on as a **mirror**:
+
+```sh
+bash tools/push_preview.sh          # push preview + mirror to the same commit
+bash tools/push_preview.sh --head   # …and bump the follow head pointer afterwards
+```
+
+Never push only one of them: a lagging mirror silently freezes those users on an older build. The
+mirror can be deleted once no imported script references the old name any more (then drop `LEGACY`
+from `tools/push_preview.sh` and this section).
+
+`docs/archive/**`, `docs/history/**` and `docs/reviews/**` keep the historical name on purpose —
+they are records of what was done under that name.
+
 
 The **freeze point is the tag, not the branch.** A user who pins a version reads that
 tag's `build.json`; a user following the preview line reads `head.json`. Both modes exist

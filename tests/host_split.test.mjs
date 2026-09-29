@@ -14,8 +14,8 @@ test('host-routes：版本推断、换线路地址（与拆分前同一规则）
   assert.equal(R.VER, '0.9.5'); assert.ok(R.swappable); assert.deepEqual(R.LINES.map(l => l.key), ['vpn', 'cn']);
   assert.equal(R.baseFor('cn'), 'https://cdn.jsdmirror.com/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.5/map/');
   assert.equal(R.tagOf('S2:0.1.0'), 'map-s2-v0.1.0'); assert.equal(R.plainVer('S2:0.1.0'), '0.1.0');
-  const B = createRoutes({ SELF: 'https://cdn.jsdelivr.net/gh/o/r@cloud/tc-mid-low/map/', PACK_IN: { manifest: { cdn: { repo: 'x/y' } } } });
-  assert.equal(B.VER, null); assert.equal(B.REPO, 'x/y'); assert.equal(B.baseFor('cn'), 'https://cdn.jsdmirror.com/gh/o/r@cloud/tc-mid-low/map/');
+  const B = createRoutes({ SELF: 'https://cdn.jsdelivr.net/gh/o/r@preview/map/', PACK_IN: { manifest: { cdn: { repo: 'x/y' } } } });
+  assert.equal(B.VER, null); assert.equal(B.REPO, 'x/y'); assert.equal(B.baseFor('cn'), 'https://cdn.jsdmirror.com/gh/o/r@preview/map/');
   const L = createRoutes({ SELF: 'http://localhost:8080/map/', PACK_IN: null }); assert.ok(!L.swappable); assert.equal(L.baseFor('cn'), 'http://localhost:8080/map/');
 });
 

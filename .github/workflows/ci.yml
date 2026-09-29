@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [cloud/tc-mid-low]
+    branches: [preview]
   pull_request:
 
 jobs:

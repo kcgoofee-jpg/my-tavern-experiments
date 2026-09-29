@@ -13,7 +13,7 @@
 # paper over by force-pushing.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-FOLLOW=${FOLLOW:-cloud/tc-mid-low}
+FOLLOW=${FOLLOW:-preview}
 REMOTE=${REMOTE:-origin}
 DRY_RUN=${DRY_RUN:-0}
 

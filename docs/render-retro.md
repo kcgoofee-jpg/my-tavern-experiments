@@ -1,7 +1,7 @@
 # 渲染复盘 v2：根因、决策与改进计划（2026-09-28）
 
 **标注规则**：数字后标 **实测** 或 **估**，并给出处：提交号、文件，或会话记录里 grep 的词（记作“grep:词=次数”）。
-**证据来源**：`git log origin/cloud/tc-mid-low`（421 提交）；`docs/render-performance.md`；`docs/reviews/*`；`tools/review/personas/*`；会话记录和 `tasks/*.output`（228 个）只做了 grep。
+**证据来源**：`git log origin/preview`（421 提交）；`docs/render-performance.md`；`docs/reviews/*`；`tools/review/personas/*`；会话记录和 `tasks/*.output`（228 个）只做了 grep。
 **注意**：提交时间混有两个时区，本机与云端两个会话合并进来，部分提交的时间差 8 小时。因此下文的“用时”只取同一来源的相邻提交。没有任何渲染用时日志落盘；除 `render-performance.md` 外，GPU 小时都是估算。
 
 ---

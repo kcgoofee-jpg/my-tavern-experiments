@@ -193,6 +193,23 @@ def check(args, root=ROOT):
     else:
         check_script_args(sargv, allowed)
         notes.append(f'脚本参数对照：{src}（{len(allowed)} 个）')
+    # 输出路径两条硬规则（2026-09-29 事故）：队列会把 draft/final 派到云端渲染，所以
+    #   1. 不许绝对路径 —— 远端没有 /Users/… 这种路径，远端写不出、回传 rsync link_stat failed，
+    #      任务白跑一次还被看门狗记成 ok；
+    #   2. 不许落在 docs/ —— tools/cloud/sync.sh 有 `--exclude docs/`，云端根本没有这个目录。
+    # 输出要放 map/art/ 这类会同步的目录（仓库相对路径），渲完再拷到最终位置。
+    for idx, a in enumerate(sargv):
+        if a != '--out' or idx + 1 >= len(sargv):
+            continue
+        val = sargv[idx + 1]
+        if os.path.isabs(val):
+            raise Fail('abs_out', f'--out 用了绝对路径：{val}\n'
+                       '  队列可能把它派到云端，远端不存在这个路径 → 白跑一次（日志尾部是 rsync link_stat failed）。\n'
+                       '  改成仓库相对路径，并放在会同步的目录（map/art/…），渲完再拷到最终位置。')
+        if val.startswith('docs/') or '/docs/' in val:
+            raise Fail('unsynced_out', f'--out 落在 docs/：{val}\n'
+                       '  tools/cloud/sync.sh 有 `--exclude docs/`，云端没有这个目录 → 云端一定写不出。\n'
+                       '  输出改到 map/art/ 之类会同步的目录，渲完再拷进 docs/。')
     notes.append(f'入口 {script}：已调用设备 helper')
     return notes
 

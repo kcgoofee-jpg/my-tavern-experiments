@@ -1,9 +1,9 @@
 # 代理速查（每个任务先读这一页，别的文档按需 grep）
 
-- 分支只推 `cloud/tc-mid-low`；不打标签、不发正式版；不生成角色卡；不写用户酒馆数据。
-- 在 scratchpad 里自建 worktree：`git fetch && git worktree add -b <名> <路径> origin/cloud/tc-mid-low`；不动主工作区；永不 reset 到旧的 origin。
+- 分支只推 `preview`；不打标签、不发正式版；不生成角色卡；不写用户酒馆数据。
+- 在 scratchpad 里自建 worktree：`git fetch && git worktree add -b <名> <路径> origin/preview`；不动主工作区；永不 reset 到旧的 origin。
 - shell 的 `cat`/`ls` 是坏别名：用 `command cat` / Write 工具；提交信息写文件用 `-F`；非 ASCII 路径用 fileURLToPath。
-- **Branch lines (2026-09-29)**: `cloud/tc-mid-low` is the integration + follow/preview line and `main` is the release line; **they carry the same content, so sync is a fast-forward, never a force-push**: `bash tools/sync_main.sh` (dry run: `DRY_RUN=1`). The freeze point is the tag, not the branch. Rationale and the "when to split" rule: `docs/branching.md`.
+- **Branch lines (2026-09-29)**: `preview` is the integration + follow/preview line and `main` is the release line; **they carry the same content, so sync is a fast-forward, never a force-push**: `bash tools/sync_main.sh` (dry run: `DRY_RUN=1`). The freeze point is the tag, not the branch. Rationale and the "when to split" rule: `docs/branching.md`.
 - **Language (2026-09-29 user decision)**: new documents in `docs/` are written in **English** (a Chinese edition goes to `*.zh.md`); new prose added to an existing document is English too; documents that predate this policy are **grandfathered, never bulk-translated**. Code comments and tool output follow the file's existing language. Enforced by `tools/check_doc_language.py` in `tools/smoke.sh` (self-test: `tools/test_doc_language.py`); rationale in `docs/language-policy.md`.
 - 名字照抄原卡；自补内容标「仓库推断」；卡里没有的地点不建模（DLC）。
 - **内容边界（2026-09-29 用户决定）**：原来「不建模、不描写任何性相关 / 束缚类道具与场所细节」「私密房间一律中性」的硬约束**全部撤销**（理由：不按原卡补全会被原作者投诉）。设施、道具与用途照原卡写、可以建模；房间名照抄卡原名（仍旧不许自编中性名）。历史任务书里的同类句子已作废，见 `docs/archive/README.md`。
@@ -14,10 +14,14 @@
 - 全自动推进（2026-09-29 用户指示）：所有层级不再等用户确认或点头；代理产出后自检（对照 `docs/rejected.md` 的否决项/canon 规则），需要看图判断的用 glm-5.3-flash 多模态代理完成；需用户过目的图自动拷贝到 `~/eden-map-review/` 留档，只存档不阻塞流程。
 - 不做 iPhone 专项；桌面优先，375 px 只过一遍。
 - 测试：改哪测哪——`node --test` + `tools/smoke.sh` 必跑；浏览器测试只跑相关的，批次末再跑全量。
-- CI runs node --test + smoke on push; agents only need to run tests relevant to their change locally, then check the CI result with `gh run list --branch cloud/tc-mid-low -L 1`.
-- **推送要攒批**：每次推送 = 新提交号 = CDN 全量预热约 2000 个文件。连做多项时每 2–3 项推一次：`git fetch && git rebase origin/cloud/tc-mid-low` → `python3 tools/bump_head.py --push --branch cloud/tc-mid-low` → `bash tools/warm_cdn.sh "$(git rev-parse HEAD^)" 16 --purge-branch cloud/tc-mid-low`。
+- CI runs node --test + smoke on push; agents only need to run tests relevant to their change locally, then check the CI result with `gh run list --branch preview -L 1`.
+- **推送要攒批**：每次推送 = 新提交号 = CDN 全量预热约 2000 个文件。连做多项时每 2–3 项推一次：`git fetch && git rebase origin/preview` → `python3 tools/bump_head.py --push --branch preview` → `bash tools/warm_cdn.sh "$(git rev-parse HEAD^)" 16 --purge-branch preview`。
 - CHANGELOG 与 logs/*.csv 已设 union 合并，rebase 冲突少；只在末尾追加。
-- 提交：`git -c user.email=kcgoofee-jpg@users.noreply.github.com commit -F msg`，中文，结尾 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`。推送被拦就停下报告。
+- **Push (2026-09-29)**: the work branch is `preview`; the old name `cloud/tc-mid-low` is kept as a
+  compatibility mirror for script URLs that are already out in the wild. Push both with
+  `bash tools/push_preview.sh [--head]` — never push only one of them, or old cards freeze.
+- 提交：`git -c user.email=kcgoofee-jpg@users.noreply.github.com commit -F msg`，**英文**（用户 2026-09-29：
+  提交信息也走英文口径），**不写 `Co-Authored-By` 尾巴**（用户同日的意见）。推送被拦就停下报告。
 - 报告：英文、简短（≤10 行），只写结果、测试、需要决定的事；截图路径给出即可。
 - 深入资料：`docs/onboarding.md`（全貌）、`docs/render-retro.md`（渲染规则）、`docs/design/depth-system.md`（上层纵深/斜视）。
 - **报告格式（用户 2026-09-28）**：写建议 / 清单类文档时每条独立成行；做完的在原文上用 ~~删除线~~ ✅ 划掉（不删、不另起文件），文首一行写状态说明；后续实施的代理负责回去划掉。

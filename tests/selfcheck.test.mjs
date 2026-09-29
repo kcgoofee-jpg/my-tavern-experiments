@@ -67,7 +67,7 @@ t('更新检查：最新标签、版本比较、一天一次、换标签地址',
   const now = 1e12; assert.equal(dueCheck(null, now), true); assert.equal(dueCheck(now - DAY + 1000, now), false); assert.equal(dueCheck(now - DAY, now), true); assert.equal(dueCheck(now + 5000, now), true);
   const u = 'https://cdn.jsdmirror.com/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.1/map/tavern/eden-map.js';
   assert.equal(swapVer(u, '0.9.2'), u.replace('map-v0.9.1', 'map-v0.9.2'));
-  assert.equal(swapVer('https://cdn.jsdelivr.net/gh/x/y@cloud/tc-mid-low/map/tavern/eden-map.js', '0.9.2'), null);   // 跟分支：不换
+  assert.equal(swapVer('https://cdn.jsdelivr.net/gh/x/y@preview/map/tavern/eden-map.js', '0.9.2'), null);   // 跟分支：不换
   assert.equal(swapVer(u, '../evil'), null);
   const it = evaluate({ ...good, update: { current: '0.9.1', latest: '0.9.2' } }).find(i => i.id === 'update');
   assert.equal(it.status, 'info'); assert.match(it.zh, /有新版本 v0\.9\.2/);

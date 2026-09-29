@@ -4,7 +4,7 @@
 
 ## 清单（每条：是什么 / 大小 / 能不能删 / 命令 / 是否要全体代理空闲）
 
-- ~~scratchpad worktree（`git worktree list`，33 个，`/private/tmp/claude-501/.../scratchpad/wt*`）：本次会话各代理各自开的隔离工作区，共约 **12.4 GB**（单个 250M–950M 不等，最大的是 `wt-bld` 950M、`wt17` 606M、`wt18` 544M）；大部分已经合并进 `cloud/tc-mid-low` 或已经废弃（分支名能看出来，比如 `mirror-fix`、`gallery-fix` 这些像是已经收尾的）——安全删除前必须逐个确认对应分支已经 merge 或者确认丢弃不可惜，不能批量删；命令：`git worktree list` 核对每个的分支和 `git log --oneline origin/cloud/tc-mid-low..<分支>` 看有没有没推的提交，确认没有再 `git worktree remove <路径>`（还留着的分支再 `git branch -D <分支>`）；**需要对应那个 worktree 的代理已经结束/空闲**，不需要全局停机（`docs/project-design.md` 的 C3 才需要全局停机，这条不是）。~~ ✅
+- ~~scratchpad worktree（`git worktree list`，33 个，`/private/tmp/claude-501/.../scratchpad/wt*`）：本次会话各代理各自开的隔离工作区，共约 **12.4 GB**（单个 250M–950M 不等，最大的是 `wt-bld` 950M、`wt17` 606M、`wt18` 544M）；大部分已经合并进 `preview` 或已经废弃（分支名能看出来，比如 `mirror-fix`、`gallery-fix` 这些像是已经收尾的）——安全删除前必须逐个确认对应分支已经 merge 或者确认丢弃不可惜，不能批量删；命令：`git worktree list` 核对每个的分支和 `git log --oneline origin/preview..<分支>` 看有没有没推的提交，确认没有再 `git worktree remove <路径>`（还留着的分支再 `git branch -D <分支>`）；**需要对应那个 worktree 的代理已经结束/空闲**，不需要全局停机（`docs/project-design.md` 的 C3 才需要全局停机，这条不是）。~~ ✅
 - ~~`/private/tmp/bl_tmp`~~ ✅ 2026-09-29 已删（渲染时自动重建）。
 - ~~Blender 内核缓存（`~/Library/Caches/blender`）~~ ✅ 2026-09-29 已删（无 Blender 在跑）。（Blender 下次启动会重新编译内核，第一次渲染会慢一点）；建议等 **本机没有 Blender 在跑**（`tools/blender_run.sh` 的锁空闲）再删，不需要全局停机。
 - ~~`~/Library/Caches/Homebrew`：**1.6 GB**，纯下载缓存，删了不影响已装的包；命令：`brew cleanup --prune=all`（顺带清过期版本，比手动 rm 更干净）；随时可删，不需要空闲。~~ ✅

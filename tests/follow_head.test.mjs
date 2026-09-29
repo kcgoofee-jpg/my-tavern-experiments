@@ -5,21 +5,21 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { resolveFollow } from '../map/tavern/follow.mjs';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const R = 'o/r', B = 'cloud/tc-mid-low';
+const R = 'o/r', B = 'preview';
 const H = (build, c = 'a') => ({ build, sha: c.repeat(40) });
 const mock = table => async u => { for (const [k, v] of Object.entries(table)) if (u.includes(k)) { if (v instanceof Error) throw v; return v; } return null; };
 const b64 = o => Buffer.from(JSON.stringify(o)).toString('base64');
 
 test('GitHub 不通、jsDelivr 解析接口 null：分支路径 head.json 能用', async () => {
-  const h = await resolveFollow(R, B, mock({ 'api.github.com': new Error('blocked'), 'data.jsdelivr.com': { version: null }, 'cdn.jsdmirror.com/gh/o/r@cloud/tc-mid-low/map/data/head.json': H(80, 'b') }), H(1));
+  const h = await resolveFollow(R, B, mock({ 'api.github.com': new Error('blocked'), 'data.jsdelivr.com': { version: null }, 'cdn.jsdmirror.com/gh/o/r@preview/map/data/head.json': H(80, 'b') }), H(1));
   assert.deepEqual(h, { build: 80, sha: 'b'.repeat(40), source: 'jsdmirror' });
 });
 test('多个来源取构建号最大的（缓存旧的输）', async () => {
-  const h = await resolveFollow(R, B, mock({ jsdmirror: H(5), 'cdn.jsdelivr.net': H(7, 'c'), 'raw.githubusercontent.com/o/r/cloud/tc-mid-low/': H(6) }), null);
+  const h = await resolveFollow(R, B, mock({ jsdmirror: H(5), 'cdn.jsdelivr.net': H(7, 'c'), 'raw.githubusercontent.com/o/r/preview/': H(6) }), null);
   assert.equal(h.build, 7); assert.equal(h.source, 'jsdelivr');
 });
 test('CDN 全不通 → GitHub contents 接口（base64 的 head.json）', async () => {
-  const h = await resolveFollow(R, B, mock({ 'api.github.com/repos/o/r/contents/map/data/head.json?ref=cloud%2Ftc-mid-low': { content: b64(H(9, 'd')) } }), null);
+  const h = await resolveFollow(R, B, mock({ 'api.github.com/repos/o/r/contents/map/data/head.json?ref=preview': { content: b64(H(9, 'd')) } }), null);
   assert.deepEqual(h, { build: 9, sha: 'd'.repeat(40), source: 'github' });
 });
 test('新增镜像（fastly / gcore / testingcf）也参与取最大；jsdmirror 落后不影响结果', async () => {

@@ -4,7 +4,7 @@
 用法：
   python3 tools/build_preview_script.py <git ref>        # 例如提交号 aa16346、标签 map-v0.9.1
   python3 tools/build_preview_script.py <git ref> --out 目录
-  python3 tools/build_preview_script.py --follow cloud/tc-mid-low   # 可复用：每次打开时取该分支最新提交，推送后不用重新导入
+  python3 tools/build_preview_script.py --follow preview   # 可复用：每次打开时取该分支最新提交，推送后不用重新导入
   python3 tools/build_preview_script.py --tag map-v0.9.6            # 正式版加载器（0.9.6 起：每次加载最新正式版，离线退回该标签；小修补丁 map-v0.9.6.1；新系列 map-s2-v0.1.0）；：钉在发版标签（不改角色卡时随世界书附加条目一起发给用户）
 输出：~/Downloads/eden-map/eden-map-preview-<ref>.json；--tag 输出 eden-map-v<版本>.json（单个脚本 JSON，酒馆助手「导入脚本」可直接导入；文件名 C3 英文化，酒馆里显示的脚本名不变）。
 --tag 不创建标签：标签不存在（本地与 origin 都没有）、或与 VERSION 不一致时**退出码 2、不产出文件**（2026-09-27 起；以前只提醒）；发版前先打标签、推送、预热 CDN。

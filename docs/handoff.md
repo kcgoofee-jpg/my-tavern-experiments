@@ -3,14 +3,14 @@
 > 仓库已迁到 ~/dev1/cctest1/eden-map（2026-09-28；旧路径 性能/threejs 不再存在）。
 > 状态（2026-09-28）：~~删除线~~ ✅ = 已完成；没划掉的 = 待办。新对话先读本页 + docs/agent-brief.md + docs/project-design.md + logs/pipeline_tasks.md。
 
-## 当前在跑（旧对话里，完成后结果会推到 cloud/tc-mid-low）
+## 当前在跑（旧对话里，完成后结果会推到 preview）
 
 - 上层 v18：8 座岛逐座建模 + 设定漏项检查 + 标注审图（一次一座，简单岛用 Sonnet）。交付 docs/drafts/upper_v18_<id>_board.jpg + 岛底对比条，然后停下等用户确认。
 - ~~3D 查看器镜头操作（head #53）~~ ✅ 待补：自动旋转开关进设置页；鼠标滚轮=平移是否要改为缩放（看用户反馈）。
 
 ## 顺序（额度紧，2–3 个代理以内）
 
-0. ~~世界书真正全自动（用户 2026-09-28 明确要求：打开地图时没有这本书就自动建好并挂到当前角色的附加世界书，版本变了静默同步，只一次提示，数据与映射里一个总开关可关）+ 旧对话兼容（别名表单一来源、退役条目降优先级、每聊天版本提醒、「你改过，上游也改了」）。head #52 只做了按钮和附加绑定，写入仍需点击——代理出于谨慎没做全自动，需要新任务按用户决定实现并先给架构评审。~~ ✅ 分支 feat/worldbook-auto（已合入 cloud/tc-mid-low；2026-09-29 本机实跑 `tools/browser/th_adopt.mjs` 21 项全绿）。
+0. ~~世界书真正全自动（用户 2026-09-28 明确要求：打开地图时没有这本书就自动建好并挂到当前角色的附加世界书，版本变了静默同步，只一次提示，数据与映射里一个总开关可关）+ 旧对话兼容（别名表单一来源、退役条目降优先级、每聊天版本提醒、「你改过，上游也改了」）。head #52 只做了按钮和附加绑定，写入仍需点击——代理出于谨慎没做全自动，需要新任务按用户决定实现并先给架构评审。~~ ✅ 分支 feat/worldbook-auto（已合入 preview；2026-09-29 本机实跑 `tools/browser/th_adopt.mjs` 21 项全绿）。
 1. 上层 v18 交付 → 用户确认 → 全景合成草图 → 云端 16K 定稿 + 切瓦片。
 2. 恢复世界层：~~原域修雾 / 上半山方盒 / 鼓楼 / 礼拜堂 / 地面道路 → 云端定稿~~ ✅ 看板 docs/drafts/world_v2_yuanyu_board.jpg → ~~等用户确认后 glb~~ ✅ 2026-09-29：原域悬浮圣山三维已收口（`map/props/holy_mountain/`，`lm_holy_mountain` 挂 4 个标记）→ 转圣都：第一个 `glory_crown`（核心区「荣光冠冕」）在建，见 `docs/landmarks/glory_crown.checklist.md`。遗留（评审）：城区外缘硬圆边 + 灰平面、城区楼型单一、岩石材质偏均匀、悬空步道无支撑。
 3. ~~中层剩 2 座：骑士团营区（草图在 scratchpad/wt-mid，分支 mid-buildings）、维多利亚的公寓 —— 走 tools/landmark.py。~~ ✅ head #54：new/draft/board/gapcheck（r1 建筑 7 / 卡 7.5）/final/ship 全过，标准+低档 glb、世界书条目、card-buildings 都接好；顺带把中层 8K/128spp 底图按 head #51 配方重渲 + 切瓦片；修了 tools/render_queue.sh 的一处中文粘连 unbound variable。
@@ -38,7 +38,7 @@
 - ~~`tools/check_render_deps.py` 仍把 `blender/landmarks/lm_anchors.py`（只给 landmark.py board 出锚点）算作 tc_mid / tc_low 上游~~ ✅ 已在 NOT_UPSTREAM（tools/check_render_deps.py:29-30），2026-09-29 验证不再误报。
 - ~~浏览器 `tools/browser/pack_town.mjs`「宿主：注入句用包的分类与标签」在 00087eea（整理前）就失败（inj 为空）~~ ✅ 2026-09-29 复验全绿（feat/worldbook-auto 合入后自愈）。
 - ~~`tools/browser/th_adopt.mjs`「B1 第一次点只是『再点一次确认』」整理前后同样失败（世界书全自动先建好了书，写入按钮不再走二次确认），测试要跟全自动对齐~~ ✅ 2026-09-29：按诊断改好并实跑全绿——撤销检查挪到「看差异」之后（书的状态那时才进设置，`#wbUndo` 才渲染）、自检前 reload 一个新脚本实例（`runCheck` 的 `checkP ??=` memo 只让自检跑一次）。
-- 分支 URL（@cloud/tc-mid-low）加载时新入口可能配到 CDN 旧的 host-*.mjs：warm_cdn 已先清模块再清入口；跟随加载器按提交号加载，不受影响。
+- 分支 URL（@preview）加载时新入口可能配到 CDN 旧的 host-*.mjs：warm_cdn 已先清模块再清入口；跟随加载器按提交号加载，不受影响。
 
 ## 待查：人物栏「推断 · 和你在一起」（用户 2026-09-28 截图，开局前状态）✅ 已修（2026-09-28，tests/characters.test.mjs 三用例：开局前 / 在场表久未变 / 占位项）
 

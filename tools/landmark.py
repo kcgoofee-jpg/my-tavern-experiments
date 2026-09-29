@@ -16,7 +16,7 @@
 内容中立：本工具不做任何内容过滤 / 关键词审查，只搬运文件与跑命令。
 环境变量：LM_ROOT（仓库根，测试用）、LM_WORK（中间文件目录，默认 /private/tmp/lm_work）、LM_QUEUE=0（有渲染队列也直接跑）。
 """
-import argparse, datetime, glob, json, os, re, shlex, subprocess, sys
+import argparse, datetime, glob, json, os, re, shlex, shutil, subprocess, sys
 
 ROOT = os.path.abspath(os.environ.get('LM_ROOT') or os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 WORK = os.environ.get('LM_WORK', '/private/tmp/lm_work')
@@ -355,21 +355,38 @@ def cmd_new(a):
     finish(st, 'new')
 
 
+def collect_stage(stage, final):
+    """把渲染中间产物（同步目录里的仓库相对路径）收到最终位置。
+    为什么要有这一步：队列会把 draft 派到云端，而 `docs/` 不进同步（sync.sh --exclude docs/），
+    绝对路径在远端也不存在 —— 2026-09-29 的事故就是这么白跑了一次还记成 ok。"""
+    if not os.path.exists(stage):
+        return False
+    os.makedirs(os.path.dirname(final), exist_ok=True)
+    shutil.copyfile(stage, final)
+    say(f'  收图：{rel(stage)} → {rel(final)}')
+    return True
+
+
 def cmd_draft(a):
     i = a.id; p = need(i, 'build'); st = load_state(i)
-    out = P('docs', 'drafts', f'landmark_{i}_draft_{a.cam}.jpg')
-    say(f'[draft] {i}：{a.cam} {a.res}px {a.spp}spp → {rel(out)}')
-    if sub_done(st, f'draft_{a.cam}_{a.res}_{a.spp}', [out]):
+    final = P('docs', 'drafts', f'landmark_{i}_draft_{a.cam}.jpg')
+    stage_rel = f'map/art/_lm_{i}_{a.cam}.jpg'          # 仓库相对路径 + 会同步的目录：云端也写得出来
+    stage = P('map', 'art', f'_lm_{i}_{a.cam}.jpg')
+    if not os.path.exists(final) and os.path.exists(stage):
+        collect_stage(stage, final)                      # 上一轮排队渲完的图，先收
+    say(f'[draft] {i}：{a.cam} {a.res}px {a.spp}spp → {rel(final)}')
+    if sub_done(st, f'draft_{a.cam}_{a.res}_{a.spp}', [final]):
         return finish(st, 'draft')
     r = render(i, 'draft', a.res, a.spp, blender_script(rel(p['build']), ['--cam', a.cam, '--res', str(a.res),
-               '--samples', str(a.spp), '--out', out, '--log', os.path.join(p['work'], 'draft_err.log')]),
+               '--samples', str(a.spp), '--out', stage_rel, '--log', os.path.join(p['work'], 'draft_err.log')]),
                os.path.join(p['work'], 'draft.log'))
     if r == 'queued':
-        return say('… 已进渲染队列；渲完再跑一次 draft 记完成（或直接 board）。')
-    if not DRY and not os.path.exists(out):
-        die(f'没产出 {rel(out)}', '看 ' + os.path.join(p['work'], 'draft.log'))
+        return say(f'… 已进渲染队列（渲染端写在 {stage_rel}）；渲完再跑一次 draft，会把图收到 {rel(final)} 并记完成。')
+    if not DRY and not os.path.exists(stage):
+        die(f'没产出 {stage_rel}', '看 ' + os.path.join(p['work'], 'draft.log'))
+    collect_stage(stage, final)
     mark_sub(st, f'draft_{a.cam}_{a.res}_{a.spp}')
-    finish(st, 'draft', rel(out))
+    finish(st, 'draft', rel(final))
 
 
 def cmd_board(a):

@@ -22,7 +22,7 @@ description: 把任意一张 SillyTavern / 酒馆助手（TavernHelper）角色�
 
 ```bash
 git fetch origin
-git worktree add -b <你的分支> <S>/wt origin/cloud/tc-mid-low     # 一个代理一个 worktree，不碰主检出
+git worktree add -b <你的分支> <S>/wt origin/preview     # 一个代理一个 worktree，不碰主检出
 cd <S>/wt && node --test && bash tools/smoke.sh                    # 基线必须全绿，否则先报告
 ```
 
@@ -160,9 +160,9 @@ node tools/browser/pack_town.mjs <S>/b                 # 通用包的浏览器�
 python3 tools/build_worldbook_addon.py --pack <id>            # 提交前再跑一次，确认和包数据一致
 git add map/packs/<id> map/props blender/landmarks docs/<id>-references.md tools/browser/pack_<id>.mjs
 git -c user.email=<用户的 noreply 邮箱> commit -m "<中文说明>"
-python3 tools/bump_head.py --push --branch cloud/tc-mid-low   # 代替 git push：自己 fetch + rebase + 写 head.json + 推送
-bash tools/warm_cdn.sh <head.json 里的 sha> 16 --purge-branch cloud/tc-mid-low
-python3 tools/build_preview_script.py --follow cloud/tc-mid-low --pack <id>   # 跟随版预览脚本 → ~/Downloads/酒馆/脚本
+python3 tools/bump_head.py --push --branch preview   # 代替 git push：自己 fetch + rebase + 写 head.json + 推送
+bash tools/warm_cdn.sh <head.json 里的 sha> 16 --purge-branch preview
+python3 tools/build_preview_script.py --follow preview --pack <id>   # 跟随版预览脚本 → ~/Downloads/酒馆/脚本
 ```
 `tools/ship.sh` 把后三步串起来，但它生成的是 eden 的脚本（不带 `--pack`），新包要单独跑最后一行。
 推送需要对 `cdn.repo` 指的仓库有写权限；没有就停在提交这一步，由用户决定 fork 还是交给维护者。
