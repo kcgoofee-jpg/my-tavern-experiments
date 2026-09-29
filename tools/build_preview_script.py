@@ -6,7 +6,7 @@
   python3 tools/build_preview_script.py <git ref> --out 目录
   python3 tools/build_preview_script.py --follow cloud/tc-mid-low   # 可复用：每次打开时取该分支最新提交，推送后不用重新导入
   python3 tools/build_preview_script.py --tag map-v0.9.6            # 正式版加载器（0.9.6 起：每次加载最新正式版，离线退回该标签；小修补丁 map-v0.9.6.1；新系列 map-s2-v0.1.0）；：钉在发版标签（不改角色卡时随世界书附加条目一起发给用户）
-输出：~/Downloads/酒馆/脚本/【地图】预览-<ref>.json；--tag 输出 【地图】伊甸地图 v<版本>.json（单个脚本 JSON，酒馆助手「导入脚本」可直接导入）。
+输出：~/Downloads/eden-map/eden-map-preview-<ref>.json；--tag 输出 eden-map-v<版本>.json（单个脚本 JSON，酒馆助手「导入脚本」可直接导入；文件名 C3 英文化，酒馆里显示的脚本名不变）。
 --tag 不创建标签：标签不存在（本地与 origin 都没有）、或与 VERSION 不一致时**退出码 2、不产出文件**（2026-09-27 起；以前只提醒）；发版前先打标签、推送、预热 CDN。
 脚本内容与卡内相同（tools/add_script_to_card.py 的多线路写法）：依次尝试国内镜像 jsdmirror → 官方 jsDelivr，加载成功就停。
 注意：jsDelivr 对分支名会缓存（最长约 12 小时），带「/」的分支名也可能解析不了；预览最好用提交号或标签。只用标准库。
@@ -173,13 +173,13 @@ def main():
     ap.add_argument('--tag', metavar='标签', help='生成钉在发版标签的正式脚本（如 map-v0.9.1；不创建标签）')
     ap.add_argument('--pointer', help='--tag：latest.json 所在分支（默认当前分支；要和 tools/ship.sh --release 发版时的分支一致）')
     ap.add_argument('--pack', help='设定包 id（map/packs/<id>；默认 eden = 原来的脚本）')
-    ap.add_argument('--out', default=os.path.expanduser('~/Downloads/酒馆/脚本'), help='输出目录（默认 ~/Downloads/酒馆/脚本）')
+    ap.add_argument('--out', default=os.path.expanduser('~/Downloads/eden-map'), help='输出目录（默认 ~/Downloads/eden-map）')
     a = ap.parse_args()
     if a.follow:
         import subprocess
         fb = subprocess.run(['git', 'rev-parse', 'origin/' + a.follow], capture_output=True, text=True).stdout.strip() or a.follow
         os.makedirs(a.out, exist_ok=True)
-        path = os.path.join(a.out, f"【地图】预览-跟随-{a.follow.replace('/', '-')}.json")
+        path = os.path.join(a.out, f"eden-map-preview-follow-{a.follow.replace('/', '-')}.json")
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(packed(build_follow(a.follow, fb, head_of('origin/' + a.follow)), a.pack), f, ensure_ascii=False, indent=2); f.write('\n')
         print(f'写入 {path}（兜底提交 {fb[:12]}，构建 #{head_of("origin/" + a.follow).get("build", 0)}）'); return
@@ -196,7 +196,7 @@ def main():
         want = verlib.tag_of(ver) if ver and verlib.parse(ver) else f'map-v{ver}'
         if ver and tag != want: print(f'发版脚本中止：标签 {tag} 与 VERSION（{ver}，应是 {want}）不一致', file=sys.stderr); sys.exit(2)
         os.makedirs(a.out, exist_ok=True)
-        path = os.path.join(a.out, f"【地图】伊甸地图 {verlib.display(verlib.ver_of_tag(tag))}.json")
+        path = os.path.join(a.out, f"eden-map-{verlib.display(verlib.ver_of_tag(tag))}.json")
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(packed(build_release(tag, a.pointer or (subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True).stdout.strip() or 'main')), a.pack), f, ensure_ascii=False, indent=2); f.write('\n')
         print(f'写入 {path}'); return
