@@ -96,7 +96,7 @@ t('build_preview_script.py --tag：认 map-v0.9.6.1 / map-s2-v0.1.0，拒绝别�
 import vm from 'node:vm';
 const loaderSrc = (() => { const d = tmpRepo('0.9.6'); execFileSync('git', ['tag', 'map-v0.9.6'], { cwd: d });
   const r = run(d, 'build_preview_script.py', '--tag', 'map-v0.9.6', '--out', d, '--pointer', 'main'); assert.equal(r.status, 0, r.stderr);
-  return JSON.parse(fs.readFileSync(path.join(d, '【地图】伊甸地图 v0.9.6.json'), 'utf-8')).content; })();
+  return JSON.parse(fs.readFileSync(path.join(d, 'eden-map-v0.9.6.json'), 'utf-8')).content; })();   // C3-① 英文化
 async function load({ list = null, pointer = null, ls = {}, failImport = [] } = {}) {
   const store = { ...ls }, imported = [], fetched = [];
   const win = { localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } },
