@@ -44,7 +44,8 @@ def _render(sc, out, res, aspect=1.5, blend=''):
     r = int(A['res']); sc.render.resolution_x = sc.render.resolution_y = r
     sc.render.image_settings.file_format = 'PNG'; sc.render.image_settings.color_mode = 'RGBA'
     sc.cycles.samples = int(A['samples'])
-    # 渲染守卫：本脚本替换了 C.render（那一路自带 pick_gpu），原生设备设置不再执行——这里显式走唯一入口
+    # 渲染守卫：设备本来由 landmarks/common.py 的 C.setup() → pick_gpu 设置；这里再显式走一次唯一入口，
+    # 对不调 C.setup 的 build.py 是兜底，也让静态检查在本文件看得到设备入口（幂等）
     C.tc_common.pick_gpu(sc)
     sc.render.filepath = os.path.abspath(A['out'])
     bpy.ops.render.render(write_still=True)
