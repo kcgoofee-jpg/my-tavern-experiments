@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "meta": {
+    "timestamp": 1735689600000,
+    "characterId": "fixture-b.png",
+    "cardName": "会话回放夹具 B（脱敏合成数据，非真实聊天）",
+    "chatId": "fixture-b",
+    "floorNow": 5
+  },
+  "mvu": {
+    "stat": { "世界": { "当前地点": "上层·银冠堡" }, "主角": { "着装": {} } },
+    "vars": { "标签楼": 3, "标签记录": [], "楼层指纹": {}, "自定义": { "items": {} } }
+  },
+  "messages": [
+    {
+      "floor": 4,
+      "role": "assistant",
+      "text": "旧仓库的招牌被摘了下来。⌖改名 旧仓库 → 藏书阁",
+      "raw": "旧仓库的招牌被摘了下来。⌖改名 旧仓库 → 藏书阁"
+    },
+    {
+      "floor": 5,
+      "role": "assistant",
+      "text": "新的门牌挂好了。⌖用途 藏书阁：夜里看星图",
+      "raw": "新的门牌挂好了。⌖用途 藏书阁：夜里看星图"
+    }
+  ],
+  "state": { "tag": { "floor": 3, "log": [], "seen": {} } }
+}

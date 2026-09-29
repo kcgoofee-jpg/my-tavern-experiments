@@ -11,6 +11,67 @@ import * as MV from './mvu.mjs';
 /** 楼层原文指纹（FNV-1a，36 进制）：标签记录 / 楼层指纹用它识别「这一楼原文变了」 */
 export const hashText = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
 
+// ---------------- 会话快照（Session Replay Fixtures）：纯数据的导出、校验与回放 ----------------
+// SessionSnapshot（version 1）形状：
+//   { version: 1,
+//     meta: { timestamp, characterId?, cardName?, chatId?, floorNow? },
+//     mvu: { stat, vars, floors? },   // floors = { [楼层号]: stat_data }：回放 computeTrips 的每楼变量（mvu-bridge dumpState 附带）
+//     messages: [{ floor, role, text, raw?, original? }],
+//       // text = parseText(raw)（剥思考链 / 变量块后）；raw = 剥 EJS 模板后的完整原文（行程 JSONPatch 用）；
+//       // original = 「正文优化」改写前原文（extra._acu_original_content，回放时经 readMsgs 补回丢掉的 ⌖ 标签）
+//     state?: { tag? } }              // ⌖ 标签状态机快照（可选：完整恢复 customTags 的撤销-重放水位）
+// 导出与回放全是纯函数：不碰全局 / DOM / 异步时序，node 单测直接喂 JSON（tests/session_replay.test.mjs）。
+export const SNAPSHOT_VERSION = 1;
+const EJS = /<%[\s\S]*?%>/g;
+
+/** 把一个窗口的楼层 + MVU 状态组装成标准 SessionSnapshot。
+ *  msgs 的楼层两种都收：宿主原始楼层（getChatMessages：message_id / message / is_user / is_system / extra）
+ *  或已规范化的楼层（readMsgs 产物：floor / raw / text，或别的快照的 messages 条目：floor / role / text / raw / original）。 */
+export function exportSessionSnapshot({ msgs, stat = null, vars = {}, meta = {}, floors = null, tagState = null } = {}) {
+  const messages = (Array.isArray(msgs) ? msgs : []).map(m => {
+    if (!m || typeof m !== 'object') return null;
+    if (m.message_id != null) {   // 宿主原始楼层：与 readMsgs 同一条规范化路径（补丢标签 → 剥 EJS → 剥思考链 / 变量块）
+      let msg = String(m.message || ''); const orig = m.extra?._acu_original_content;
+      if (typeof orig === 'string' && orig.includes('⌖')) msg += lostTags(orig, msg);
+      const raw = msg.replace(EJS, '');
+      return { floor: m.message_id, role: m.is_user ? 'user' : (m.is_system ? 'system' : 'assistant'), text: parseText(raw), raw,
+        ...(typeof orig === 'string' && orig.includes('⌖') ? { original: orig } : {}) };
+    }
+    if (typeof m.text !== 'string' || m.floor == null) return null;   // 已规范化 / 快照条目
+    const raw = typeof m.raw === 'string' && m.raw ? m.raw : m.text;
+    return { floor: m.floor, role: m.role || 'assistant', text: m.text, raw, ...(m.original ? { original: m.original } : {}) };
+  }).filter(Boolean);
+  const mvu = { stat: stat ?? null, vars: vars && typeof vars === 'object' ? vars : {} };
+  if (floors && typeof floors === 'object' && !Array.isArray(floors)) mvu.floors = floors;
+  const out = { version: SNAPSHOT_VERSION, meta: { timestamp: Date.now(), ...(meta && typeof meta === 'object' ? meta : {}) }, mvu, messages };
+  if (tagState && typeof tagState === 'object' && !Array.isArray(tagState)) out.state = { tag: tagState };
+  return out;
+}
+
+/** 快照体检：{ ok, errors }。只报告不抛——回放侧拿它做降级决策（畸形快照能救多少救多少）。 */
+export function validateSessionSnapshot(snap) {
+  const errors = [];
+  if (!snap || typeof snap !== 'object' || Array.isArray(snap)) return { ok: false, errors: ['snapshot is not an object'] };
+  if (typeof snap.version !== 'number') errors.push('version is not a number');
+  else if (snap.version !== SNAPSHOT_VERSION) errors.push(`unsupported version ${snap.version}`);
+  if (!Array.isArray(snap.messages)) errors.push('messages is not an array');
+  else snap.messages.forEach((m, i) => {
+    if (!m || typeof m !== 'object') { errors.push(`messages[${i}] is not an object`); return; }
+    const f = Number(m.floor);
+    if (!Number.isFinite(f) || f < 0) errors.push(`messages[${i}].floor is not a valid floor`);
+    if (typeof m.text !== 'string') errors.push(`messages[${i}].text is not a string`);
+  });
+  if (snap.mvu !== undefined && (!snap.mvu || typeof snap.mvu !== 'object' || Array.isArray(snap.mvu))) errors.push('mvu is not an object');
+  return { ok: errors.length === 0, errors };
+}
+
+/** 快照 → computeTrips 的 perFloorStat 回调：每楼变量表命中优先；建了表但没有那一楼 → null（走原文 JSONPatch 兜底）；
+ *  没建表 → 整局 stat。 */
+export function perFloorStatOf(snap) {
+  const floors = snap?.mvu?.floors;
+  return floor => (floors && typeof floors === 'object' && floor in floors ? floors[floor] ?? null : floors ? null : snap?.mvu?.stat ?? null);
+}
+
 export class ContextPipeline {
   constructor({ scan = 80 } = {}) {
     this.SCAN = scan;             // 窗口楼数：未解除的事件在窗口内一直列出（events.mjs tierOf）
@@ -31,7 +92,7 @@ export class ContextPipeline {
       if (typeof c0 === 'string' && c0.includes('⌖')) msg += lostTags(c0, msg);
       const c = this.msgCache.get(m.message_id);
       if (c && c.msg === msg) return c.m;
-      const raw = msg.replace(/<%[\s\S]*?%>/g, '');   // 原文里可能还留着 EJS 模板源码，里面的示例标签不算事件
+      const raw = msg.replace(EJS, '');   // 原文里可能还留着 EJS 模板源码，里面的示例标签不算事件
       const e = { msg, m: { floor: m.message_id, raw, text: parseText(raw) } };
       e.m.h = hashText(e.m.text) + (raw.length !== e.m.text.length ? '.' + hashText(raw) : '');
       this.msgCache.set(m.message_id, e); return e.m;
@@ -119,4 +180,24 @@ export class ContextPipeline {
 
   /** 换聊天 / 重置：清行程与标签楼层状态（标签状态随后由 loadCustom 整块换入） */
   reset() { this.roundSig = ''; this.lastMsgs = []; this.trips = []; this.tripSig = ''; }
+
+  /** 从静态 SessionSnapshot 一键恢复流水线（Session Replay）：绕过浏览器与异步时序，把 messages 走一遍
+   *  readMsgs（同一条规范化路径：补丢标签 → 剥 EJS → 指纹缓存），可选恢复 ⌖ 标签状态机。
+   *  畸形快照不抛：救得动的楼层照常回放，救不动的跳过并记入 degraded（体检明细见 validateSessionSnapshot）。
+   *  返回 { pipeline, msgs, degraded }。 */
+  static fromSnapshot(snap, opts = {}) {
+    const pipeline = new ContextPipeline(opts);
+    const v = validateSessionSnapshot(snap);
+    if (!snap || typeof snap !== 'object' || !Array.isArray(snap.messages)) return { pipeline, msgs: [], degraded: v.errors };
+    const list = [], skipped = [];
+    snap.messages.forEach((m, i) => {
+      const floor = Number(m?.floor);
+      if (!Number.isFinite(floor) || floor < 0 || typeof m?.text !== 'string') { skipped.push(`messages[${i}] skipped`); return; }
+      const raw = typeof m.raw === 'string' && m.raw ? m.raw : m.text;
+      list.push({ message_id: Math.floor(floor), message: raw, extra: typeof m.original === 'string' ? { _acu_original_content: m.original } : undefined });
+    });
+    const msgs = pipeline.readMsgs(list, list.length ? list[list.length - 1].message_id : -1);
+    if (snap.state?.tag && typeof snap.state.tag === 'object' && !Array.isArray(snap.state.tag)) pipeline.tag = { floor: -1, log: [], seen: {}, ...snap.state.tag };
+    return { pipeline, msgs, degraded: [...skipped, ...v.errors.filter(e => !e.startsWith('messages['))] };
+  }
 }

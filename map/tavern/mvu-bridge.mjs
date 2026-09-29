@@ -200,6 +200,16 @@ export class MVUBridge {
   whenMvu() { this.#whenMvuP ??= new Promise(res => { try { Promise.resolve(thFn('waitGlobalInitialized')?.('Mvu')).then(res, res); } catch (e) { res(); } }); return this.#whenMvuP; }
   varUpdateEvent() { return this.#mvu()?.events?.VARIABLE_UPDATE_ENDED || null; }
 
+  // ---------------- 会话快照导出（Session Replay，只读） ----------------
+  /** 只读导出 MVU 状态与聊天变量（SessionSnapshot 的 mvu 段，契约在 map/tavern/context.mjs）。
+   *  o.floors = 楼层号数组：附带每楼 stat_data（computeTrips 回放的每楼变量表）。
+   *  不写任何状态、不作废快照缓存——录制绝不改变正常游戏模式的运行逻辑。 */
+  dumpState(o = {}) {
+    const out = { stat: this.mvuStat(), vars: this.readVars() };
+    if (Array.isArray(o.floors)) { out.floors = {}; for (const f of o.floors) { const s = this.perFloorStat(f); if (s) out.floors[f] = s; } }
+    return out;
+  }
+
   // ---------------- 标准摘要（P2 契约） ----------------
   /** 一轮读取的完整快照（每窗口摘要口径，arch-v2 §0 第 3 条）：{ here, clock, outfit, rosters, portraits, custom }。
    *  这里的 here 是字符串地点；来源标注看 hereSrc / hereFromDb。rosters 含 reputation 的入口在 reputation()。 */

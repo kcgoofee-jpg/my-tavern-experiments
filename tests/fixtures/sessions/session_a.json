@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "meta": {
+    "timestamp": 1735689600000,
+    "characterId": "fixture-a.png",
+    "cardName": "会话回放夹具 A（脱敏合成数据，非真实聊天）",
+    "chatId": "fixture-a",
+    "floorNow": 5
+  },
+  "mvu": {
+    "stat": {
+      "世界": { "当前地点": "中层·霓虹街", "当前日期": "新历2088年01月01日", "当前时刻": "21:40" },
+      "主角": { "着装": {} }
+    },
+    "vars": { "标签楼": 5, "标签记录": [], "楼层指纹": {}, "自定义": { "items": {} } },
+    "floors": {
+      "0": { "世界": { "当前地点": "伊甸庄园·书房" } },
+      "1": { "世界": { "当前地点": "伊甸庄园·书房" } },
+      "2": { "世界": { "当前地点": "中层·霓虹街" } },
+      "3": { "世界": { "当前地点": "中层·霓虹街" } },
+      "4": { "世界": { "当前地点": "中层·霓虹街" } },
+      "5": { "世界": { "当前地点": "中层·霓虹街" } }
+    }
+  },
+  "messages": [
+    {
+      "floor": 0,
+      "role": "assistant",
+      "text": "夜色里的伊甸庄园。你走进书房，推开虚掩的门。<span style=\"display:none\">⌖人物 沈青 @ 上层·银冠堡</span> ",
+      "raw": "夜色里的伊甸庄园。你走进书房，推开虚掩的门。<span style=\"display:none\">⌖人物 沈青 @ 上层·银冠堡</span><UpdateVariable>[{\"op\":\"replace\",\"path\":\"/世界/当前地点\",\"value\":\"伊甸庄园·书房\"}]</UpdateVariable>"
+    },
+    {
+      "floor": 1,
+      "role": "user",
+      "text": "我走向书架，抽出一本旧地图。",
+      "raw": "我走向书架，抽出一本旧地图。"
+    },
+    {
+      "floor": 2,
+      "role": "assistant",
+      "text": " \n窗外警铃大作，远处腾起烟柱。<span style=\"display:none\">⌖火灾｜中层·霓虹街｜2｜霓街17号仓库起火</span> ",
+      "raw": "<think>草稿：⌖火灾｜中层·霓虹街｜2｜思考链里的草稿标签不应生效</think>\n窗外警铃大作，远处腾起烟柱。<span style=\"display:none\">⌖火灾｜中层·霓虹街｜2｜霓街17号仓库起火</span><UpdateVariable>[{\"op\":\"replace\",\"path\":\"/世界/当前地点\",\"value\":\"中层·霓虹街\"}]</UpdateVariable>"
+    },
+    {
+      "floor": 3,
+      "role": "user",
+      "text": "我拉起旁边的人往街口疏散。",
+      "raw": "我拉起旁边的人往街口疏散。"
+    },
+    {
+      "floor": 4,
+      "role": "assistant",
+      "text": "消防车的蓝光扫过街角。<span style=\"display:none\">⌖人物 白薇 @ 中层·霓虹街</span>",
+      "raw": "消防车的蓝光扫过街角。<span style=\"display:none\">⌖人物 白薇 @ 中层·霓虹街</span>"
+    },
+    {
+      "floor": 5,
+      "role": "assistant",
+      "text": "明火扑灭，电工开始检修。 ⌖火灾｜中层·霓虹街｜0｜明火扑灭，三辆消防车撤离",
+      "raw": "明火扑灭，电工开始检修。<UpdateVariable>[{\"op\":\"replace\",\"path\":\"/世界/当前地点\",\"value\":\"中层·霓虹街\"}]</UpdateVariable>⌖火灾｜中层·霓虹街｜0｜明火扑灭，三辆消防车撤离"
+    }
+  ]
+}
