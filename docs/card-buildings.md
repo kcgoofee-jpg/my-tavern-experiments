@@ -74,7 +74,7 @@
 | P3 其他 | site_highland | `trail_down` | 下山小径 | ✅ | 仓库自设 | — | — |  |
 | P3 其他 | site_kavalierki | `arms_rnd` | 魔导军工研发中心 | 🆕 | 仓库推断 | — | — |  |
 | P3 其他 | site_kavalierki | `clearing_depot` | 清算转运站 | ✅ | 卡 | — | — |  |
-| P3 其他 | site_kavalierki | `contest_corridor` | 竞赛与狂欢回廊 | ✅ | 卡 | — | — |  |
+| P3 其他 | site_kavalierki | `contest_corridor` | 竞赛与狂欢回廊 | ✅ | 卡 | 竞赛与狂欢回廊 `map/props/contest_corridor/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
 | P3 其他 | site_kavalierki | `elite_club` | 顶级贵族与财阀会所 | ✅ | 卡 | — | — |  |
 | P3 其他 | site_kavalierki | `ether_dome` | 以太穹顶 | ✅ | 卡 | 以太穹顶 `map/props/ether_dome/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
 | P3 其他 | site_kavalierki | `free_knight_camp` | 独立骑士黑市营地 | ✅ | 卡 | — | — |  |

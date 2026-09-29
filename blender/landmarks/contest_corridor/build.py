@@ -33,8 +33,8 @@ ARC = math.radians(34.0)   # 回廊半张角
 DEPTH = 16.0         # 回廊进深
 H1, H2 = 10.5, 20.0  # 一层 / 二层高度（相对台基顶）
 PL = 1.6             # 台基高
-WHEEL_R = 24.0       # 巨轮半径
-WHEEL_C = (0.0, -252.0)   # 巨轮位置（环内一侧的广场，朝 c1）
+WHEEL_R = 30.0       # 巨轮半径
+WHEEL_C = (26.0, -152.0)   # 巨轮位置（集市外侧空地上，避开比试场）
 
 DECK_Z = 380.0
 
@@ -56,9 +56,9 @@ def main():
     SAND = C.pbr('cc_sand', 'dirt_floor', 6.0, tint=(0.88, 0.76, 0.52), sat=0.5)
     ROOF = C.pbr('cc_roof', 'roof_slates_02', 2.6, tint=(0.26, 0.27, 0.31), sat=0.3)
     WOOD = C.pbr('cc_wood', 'dark_wood', 2.0, tint=(0.52, 0.42, 0.32), sat=0.3)
-    CANVAS = C.flat('cc_canvas', (0.86, 0.82, 0.72), 0.75, noise=0.25)          # 篷布（无字）
-    CANVAS_R = C.flat('cc_canvas_r', (0.62, 0.24, 0.22), 0.7, noise=0.3)        # 暖红篷（方帐用）
-    CANVAS_B = C.flat('cc_canvas_b', (0.24, 0.32, 0.42), 0.7, noise=0.3)
+    CANVAS = C.flat('cc_canvas', (0.78, 0.70, 0.54), 0.75, noise=0.25)          # 篷布（无字）
+    CANVAS_R = C.flat('cc_canvas_r', (0.66, 0.16, 0.14), 0.7, noise=0.3)        # 暖红篷（方帐用）
+    CANVAS_B = C.flat('cc_canvas_b', (0.15, 0.26, 0.46), 0.7, noise=0.3)
     BRONZE = C.pbr('cc_bronze', 'Metal009', 2.0, tint=(0.56, 0.44, 0.22), sat=0.35, metal=0.7)
     GOLD = C.flat('cc_gold', (0.78, 0.62, 0.22), 0.28, metal=0.85, coat=0.5)
     GLASS = C.glass('cc_glass', (0.10, 0.12, 0.14))
@@ -94,8 +94,8 @@ def main():
                                     (R_RING - DEPTH / 2 - 0.6, 1.4), (R_RING - DEPTH / 2 - 0.6, 0)], MARBLE, 64, a0=-ARC, a1=ARC)
     gal.lathe(0, 0, z0 + H2, [(R_RING + DEPTH / 2 + 0.4, 0), (R_RING + DEPTH / 2 + 0.4, 1.2),
                               (R_RING - DEPTH / 2 - 0.4, 1.2), (R_RING - DEPTH / 2 - 0.4, 0)], GOLD, 64, a0=-ARC, a1=ARC)   # 女儿墙金线
-    gal.lathe(0, 0, z0 + H2 + 1.2, [(R_RING + DEPTH / 2 + 0.2, 0), (R_RING - DEPTH / 2 - 0.2, 0),
-                                    (R_RING + 1.0, 2.4)], ROOF, 48, a0=-ARC, a1=ARC)      # 坡屋面（贴环带）
+    gal.lathe(0, 0, z0 + H2 + 1.2, [(R_RING + DEPTH / 2 + 1.0, 0), (R_RING, 3.0), (R_RING - DEPTH / 2 - 1.0, 0)],
+              ROOF, 48, a0=-ARC, a1=ARC)                                            # 坡屋面（沿弧的脊）
     gal.lathe(0, 0, z0, [(R_RING + DEPTH / 2 + 2.0, 0), (R_RING + DEPTH / 2 + 2.0, PL)], MARBLE, 64, a0=-ARC, a1=ARC)   # 台基外侧
     points.append((tuple(ring_pt(0, R_RING - 40)) + (z0 + 14,), 1.2e4, (1.0, 0.88, 0.68)))
 
@@ -121,10 +121,18 @@ def main():
     for k in range(4):                                                     # 四顶方帐
         a = k * math.tau / 4 + 0.6
         tx, ty = fx + math.cos(a) * 26.0, fy + math.sin(a) * 26.0
-        fair.boxc(tx, ty, 0.0, 15.0, 15.0, 7.0, rnd.choice((CANVAS_R, CANVAS_B, CANVAS)))
-        fair.lathe(tx, ty, 7.0, [(11.0, 0), (9.0, 2.2), (5.0, 4.2), (0.6, 5.6)], CANVAS, 8)
+        cvs = rnd.choice((CANVAS_R, CANVAS_B, CANVAS))
+        fair.boxc(tx, ty, 0.0, 18.0, 18.0, 7.0, cvs)                            # 篷体
+        fair.lathe(tx, ty, 7.0, [(12.8, 0), (12.8, 0.7)], cvs, 4)               # 篷檐
+        fair.pyramid(tx, ty, 7.7, 18.6, 18.6, 6.4, cvs)                         # 攒尖篷顶
         for sx in (-1, 1):
             fair.boxc(tx + sx * 7.0, ty, 0.0, 0.5, 15.4, 7.0, WOOD)
+    for k, ang in enumerate((math.radians(16.0), math.radians(-24.0))):    # 沿弧带补两处连排摊位
+        sx, sy = ring_pt(ang, R_RING - 26.0)
+        for j in range(3):
+            kx = sx + (j - 1) * 9.0
+            fair.boxc(kx, sy, 0.0, 7.0, 7.0, 4.4, (CANVAS_R, CANVAS_B, CANVAS)[(k + j) % 3])
+            fair.pyramid(kx, sy, 4.4, 8.0, 8.0, 2.6, CANVAS)
     fair.cyl(fx, fy, 0.0, 13.0, 2.0, MARBLE, 24, r2=12.4)                  # 中央圆亭台基
     for k in range(12):
         a = k * math.tau / 12
@@ -151,7 +159,9 @@ def main():
 
     # ------------------------------------------------------------ 场地
     ground = Batch('site_ground')
-    ground.lathe(0, 0, 0.0, [(R_RING - 40, 0), (R_RING - 40, PL), (R_RING + 40, PL), (R_RING + 40, 0)], PAVE, 72, a0=-ARC - 0.12, a1=ARC + 0.12)
+    ground.cyl(148.0, -42.0, -0.06, 215.0, 0.06, PAVE, 88, r2=215.0)      # 铺装场（只铺内容所在的那一区，别铺满画面）
+    ground.lathe(0, 0, 0.0, [(R_RING - 22, 0), (R_RING - 22, PL), (R_RING + 22, PL), (R_RING + 22, 0)],
+                 PAVE, 72, a0=-ARC - 0.14, a1=ARC + 0.14)                    # 回廊下的窄台基带
     ground.lathe(0, 0, 0.0, [(R_RING - 96, 0), (R_RING - 96, 0.12), (R_RING - 44, 0.12)], MARBLE, 72)     # 环道
     ground.boxc(lx, ly - 26.0, 0.06, 96.0, 18.0, 0.1, PAVE)                # 中央大道
     for k in (-1, 1):                                                      # 两侧草坪 + 行道树
@@ -219,9 +229,9 @@ def main():
     sc.view_settings.exposure = float(A['exposure']) if A['exposure'] else 0.0
 
     CAMS = {
-        'c1': ((-160.0, -300.0, 150.0), (30.0, -40.0, 20.0), 28, 0.0),
-        'c2': ((30.0, -520.0, 70.0), (20.0, -150.0, 26.0), 30, 0.0),
-        'c3': ((-330.0, -180.0, 60.0), (10.0, -190.0, 18.0), 28, 0.0),
+        'c1': ((-150.0, -350.0, 150.0), (150.0, -42.0, 20.0), 26, 0.0),
+        'c2': ((120.0, -430.0, 78.0), (170.0, -60.0, 24.0), 30, 0.0),
+        'c3': ((-60.0, -150.0, 58.0), (120.0, -110.0, 16.0), 28, 0.0),
     }
     cv = CAMS[A['cam']]
     C.camera(sc, cv[0], cv[1], cv[2], cv[3])
