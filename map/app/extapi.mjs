@@ -27,6 +27,7 @@ window.EdenMap = Object.freeze({
   setRoomAlias(name, room) { const std = hereIdx?.estate?.std || null; room = String(room || '').trim(); name = String(name || '').trim();
     if (std && (!std.includes(room) || std.includes(name))) return false; return P.TCCustom.setCustom(room, { name, kind: 'room' }); },
   removeRoomAlias(name) { const k = Object.entries(P.TCCustom.data.items).find(([, e]) => e.名 === String(name).trim())?.[0]; return k ? P.TCCustom.setCustom(k, { name: '' }) : false; },
+  getInv() { return (typeof P.TCInv !== 'undefined' && P.TCInv) ? P.TCInv.rows : []; },   // 空间化背包（Part 5-1）只读
   getOutfit() { return P.TCCustom.outfit; }, getClock() { return P.TCCustom.clock; },
   setAvatar(name, src) { return P.TCChars.setAvatar(name, src); }, removeAvatar(name) { return P.TCChars.removeAvatar(name); },   // 人物头像：只存本机（v0.9.2）
   selfcheck() { return selfCheck ? { items: selfCheck.items.map(i => ({ ...i })) } : null; },   // 嵌在酒馆里才有（卡内脚本发来）

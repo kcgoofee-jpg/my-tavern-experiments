@@ -50,6 +50,7 @@ export function showCard(el, name, tag, src, extra, sub, cover) {
   if (LANG === 'en' && /[\u4e00-\u9fff]/.test(src || '') && t('src_note')) sv.dataset.note = t('src_note'); else delete sv.dataset.note;   // 英文界面：设定原文保持中文，加一行说明
   c.querySelector('.extra').innerHTML = extra || '';
   if (typeof P.TCCustom !== 'undefined') P.TCCustom.decorateCard(el, name);   // v0.9.3：自定义显示名 / 用途；本人地点卡的着装
+  if (typeof P.TCInv !== 'undefined') P.TCInv.decorate(el, name);   // 空间化背包（Part 5-1）：这里存放的东西
   if (typeof P.TCSecurity !== 'undefined') P.TCSecurity.decorate(el, name);   // v0.9.6 安保叠加层开着时：结界 / 监控 / 门禁
   if (typeof P.TCCompose !== 'undefined') P.TCCompose.attach(el || tag === 'set' ? { go: el?.dataset?.name || name, ask: el?.dataset?.name || name } : null);   // v0.9.6 地图 → 聊天：地点卡；事件 / 人物卡由 events.js / chars.js 另挂
   declutter();

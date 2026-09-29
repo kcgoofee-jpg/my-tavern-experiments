@@ -45,6 +45,7 @@ export const SCHEMA = {
   'eden-map:chars': [H2V, { items: 'array?' }],
   'eden-map:events': [H2V, { items: 'array?' }],
   'eden-map:custom': [H2V, {}],
+  'eden-map:inv': [H2V, { items: 'array?' }],   // 空间化背包（Part 5-1）：聊天变量 eden_map.仓库 的行（地点卡「存放」行）
   'eden-map:clock': [H2V, {}],
   'eden-map:outfit': [H2V, { items: 'object?' }],   // mvu.outfit()：{ 部位: 描述 } 或 null
   'eden-map:varmap': [H2V, {}],

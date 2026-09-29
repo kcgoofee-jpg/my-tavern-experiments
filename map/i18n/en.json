@@ -490,7 +490,6 @@
   "labels_tog": "Show labels",
   "labels_tog_t": "Show labels (L)",
   "s.adv": "Advanced",
-  "s.adv": "Advanced",
   "s.license": "License & Credits",
   "s.license_sub": "Card source · Open source · Disclaimer",
   "s.lic_card": "Card info (read automatically)",
@@ -688,5 +687,7 @@
   "th.wb_on": "Manage the map worldbook automatically (master switch)",
   "th.wb_on_hint": "When on: loading the map creates this book and attaches it to the current character's additional worldbooks; map updates sync silently (one notice per version). Off = nothing automatic.",
   "th.wb_tomb": "You deleted this book, so it will not be recreated automatically; use \"Write to worldbook\" below to bring it back",
-  "th.wb_conflict": "You edited these {n}, and upstream changed them too (yours kept; upstream text stored on the entry)"
+  "th.wb_conflict": "You edited these {n}, and upstream changed them too (yours kept; upstream text stored on the entry)",
+  "inv.stored": "Stored",
+  "inv.hidden": "concealed · "
 }

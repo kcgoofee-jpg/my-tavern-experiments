@@ -7,6 +7,7 @@ import { fnGuard } from './host-th.mjs';
 export const EDEN_API = {
   setCustom: 1, removeCustom: 1, getCustom: 0, setWorldbookSync: 1,   // setCustom 的 patch 有默认值：fn.length = 1
   setRoomAlias: 2, removeRoomAlias: 1, getRooms: 0,
+  setInv: 1, removeInv: 1, getInv: 0,   // 空间化背包（Part 5-1）：setInv(name, patch) / removeInv(idOrName) / getInv()
   getOutfit: 0, getClock: 0, setAvatar: 2, storage: 0, removeAvatar: 1,
   getCharacters: 0, flyTo: 1, sources: 0, selfcheck: 0, on: 2, off: 2,   // selfcheck 的 o 有默认值：fn.length = 0
 };

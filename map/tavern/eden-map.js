@@ -219,7 +219,7 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
   const onMsg = e => {
     if (e.source !== frame.contentWindow || (PRm && !PRm.accept(e.data, '（查看器 → 宿主）'))) return;
     if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
-    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: UL }); sendBar(); sendAbout(); alive = true; sentClock = sentOutfit = charsSent = null; knowRooms(); sendCheck(); sendCustom(); sendTrips(); sendTh(); BR.varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: UL }); sendBar(); sendAbout(); alive = true; sentClock = sentOutfit = charsSent = null; knowRooms(); sendCheck(); sendCustom(); sendInv(); sendTrips(); sendTh(); BR.varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
     if (e.data?.type === 'eden-map:ready' && setQ) { const q = setQ; setQ = null; setTimeout(() => post({ type: 'eden-map:settings', page: q }), 0); }
     if (e.data?.type === 'eden-map:ready' && flyQ) { const q = flyQ; flyQ = null; setTimeout(() => inner()?.flyTo?.(q), 0); }   // EdenMap.flyTo 排队的
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
@@ -455,7 +455,7 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
     restDue = true;
     if (!lite) restNow();   // 标签改名、行程；发送路径上推迟到空闲
     else { clearTimeout(restT); restT = setTimeout(() => (window.parent.requestIdleCallback || (f => f()))(() => { if (!life.dead && restDue) restNow(); }, { timeout: 1500 }), 0); }
-    inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : ''].filter(Boolean).join('\n'));
+    inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : '', INVm && lsGet('edenMapInvInj') !== '0' ? INVm.digestLine(inv, 150) : ''].filter(Boolean).join('\n'));
     if (!lite) { stateInject(); checkpointStep(); }
     if (!panel.hidden && alive) sendEvents();
     if (subs.events.size) { const sig = floorNow + '|' + events.map(e => e.id + ':' + e.last + ':' + e.tier).join(); if (sig !== emEvSig) { emEvSig = sig; emit('events', { items: events.map(e => ({ ...e })), floor: floorNow, hereLayer: layerOf(here) }); } }
@@ -484,6 +484,11 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
   }
   // v0.9.5 行程：最近 30 楼每楼的地点（MVU 那一楼的变量，拿不到就读原文里的 JSONPatch）+ 人物标签 → 最近 5 段（玩家、人物各 5），存进 eden_map.行程
   let TRm = null; import(SELF + 'tavern/trips.mjs').then(m => { TRm = m; }).catch(() => {});
+  // 空间化背包（Part 5-1，tavern/inventory.mjs）：聊天变量 eden_map.仓库；地点卡显示 + 注入摘要，模型据此演「回房间取东西」
+  let INVm = null; import(SELF + 'tavern/inventory.mjs').then(m => { INVm = m; sendInv(); }).catch(() => {});
+  let inv = { items: {}, seq: 0 };
+  function sendInv() { if (alive) post({ type: 'eden-map:inv', items: INVm ? INVm.rows(inv) : [] }); }
+  function changedInv(save = true) { if (save) saveRoot(); sendInv(); }
   function computeTrips(msgs) {
     if (!TRm || !MV || !custom || customChat !== chatId()) return;
     const r = CTX.computeTrips(msgs, { TRm, CHM, perFloorStat: f => BR.perFloorStat(f), mvuGet: (s, p) => BR.mvuGet(s, p), varMap: BR.varMap,
@@ -556,7 +561,7 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
     if (!BG) return; const ls = store(); if (!ls) return;
     BG.touch(ls, chatId()); const r = BG.sweep(ls, chatId()); if (r.dropped.length) console.info('[eden-map] 清理旧聊天的地图数据', r.dropped.length, '个聊天', r.freed, '字节');
   }
-  const saveRoot = () => life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: CTX.tag.floor, 标签记录: CTX.tag.log, 楼层指纹: CTX.tag.seen, 行程: CTX.trips, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}) }, customChat);
+  const saveRoot = () => life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: CTX.tag.floor, 标签记录: CTX.tag.log, 楼层指纹: CTX.tag.seen, 行程: CTX.trips, 仓库: inv, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}) }, customChat);
   // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
   // 只在这个聊天还没有 eden_map.自定义 时迁移一次（全局旧键不改名，靠这个条件避免每个聊天、每次刷新重复并入）
   async function migrateOld() {
@@ -578,6 +583,7 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
       log: Array.isArray(v.标签记录) ? v.标签记录.filter(r => r && Number.isFinite(r.floor) && typeof r.key === 'string').slice(-30) : [],
       seen: v.楼层指纹 && typeof v.楼层指纹 === 'object' ? { ...v.楼层指纹 } : {} };
     explored = FOGm ? FOGm.norm(v.探索) : (v.探索 && typeof v.探索 === 'object' ? v.探索 : {});
+    inv = INVm ? INVm.norm(v.仓库) : { items: {}, seq: 0 };   // 空间化背包（Part 5-1）
     checkpointResume(v.检查点);
     if (v.自定义 === undefined) { const mig = await migrateOld(); if (customChat !== id) return; if (mig) await saveRoot(); }
     else if (v.自定义?.同步世界书 === false && !v.自定义.同步手动) {   // 0.9.3 的数据：建过这一本世界书 = 自己关掉的，保持关；否则按新默认（开）
@@ -655,6 +661,10 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
     async removeRoomAlias(name) { if (!MV || !custom) await loadCustom(); const k = MV?.findKey(custom, name); return !!k && k !== String(name).trim() && api.setCustom(k, { name: '' }); },
     async getRooms() { if (!MV || !custom) await loadCustom(); const rooms = roomsKnown || Object.values((await reg())?.maps || {}).find(m => m.kind === 'estate')?.rooms || [];
       return { rooms: [...rooms], alias: MV ? MV.aliasMap(custom, ['room']) : {}, chat: chatId() || null }; },
+    // 空间化背包（Part 5-1）：setInv('机密账本', { place: '书房', map: 'estate', hidden: true, note: '塞在书架第三层' })；removeInv('机密账本')；getInv() 只读
+    async setInv(name, patch = {}) { if (!INVm) return false; const r = INVm.put(inv, { name, ...patch }); if (!r.changed) return false; inv = r.inv; changedInv(); return true; },
+    async removeInv(key) { if (!INVm) return false; const r = INVm.remove(inv, key); if (!r.changed) return false; inv = r.inv; changedInv(); return true; },
+    getInv: async () => (INVm ? INVm.rows(inv) : []),
     getOutfit: async () => ({ items: outfitNow ? { ...outfitNow } : null, text: MV ? MV.outfitText(outfitNow) : '' }),   // 主角着装（只读 MVU 主角.着装）
     getClock: async () => (clock ? { ...clock } : null),   // 世界时间（只读 MVU 世界.当前日期 / 当前时刻 / 当日时段）
     // 人物头像（v0.9.2）：只存本机 localStorage（按聊天，拿不到聊天 id 时全局），不上传、不进地址；src = data:image/… 或 http(s) 图片地址
