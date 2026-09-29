@@ -1,6 +1,7 @@
 // 标记与地点卡：placeN、trackEl、marker、showCard / closeCard、世界图与点位图叠加。
-import { M, REG, aspect, cur, curData, ovData, viewer } from './state.mjs';
-import { $, esc, toImg } from './util.mjs';
+import { M, REG, aspect, cur, curData, ovData, depthData, viewer } from './state.mjs';
+import { $, esc, narrow, toImg } from './util.mjs';
+import { island as depthIsland, parallaxOn } from '../core/depth.mjs';
 import { declutter } from './tiers.mjs';
 import { LANG, nm, t, tr } from './i18n.mjs';
 import { cardSheet } from './shell.mjs';
@@ -27,7 +28,8 @@ export let cardFrom = null;   // 打开卡片的元素：卡片关闭后焦点�
 function markerEl({ name, sub, cls = '', tag = 'set', src, extra = '', alias, name_en, sub_en, openings, opening_dest, cover }) {
   const el = document.createElement('div'); el.className = 'mk ' + cls + (tag === 'inf' ? ' inf' : '');
   const dn = LANG === 'en' ? name_en || tr(name) : name, ds = sub && (LANG === 'en' ? sub_en || tr(sub) : sub);   // 显示名随语言；dataset.name 保持中文（当前地点匹配用）
-  el.innerHTML = `<div class="lab">${esc(dn)}${ds ? '<small> · ' + esc(ds) + '</small>' : ''}</div><div class="pin"></div>`;
+  // U16 / U17：标签与图钉包一层 .mki，视差位移与漂浮只动这一层（.mk 自身的 transform 是 OSD 定位用的）
+  el.innerHTML = `<div class="mki"><div class="lab">${esc(dn)}${ds ? '<small> · ' + esc(ds) + '</small>' : ''}</div><div class="pin"></div></div>`;
   el.dataset.name = name; if (alias) el.dataset.alias = alias.join('|');
   // v0.9.6（用户 2026-09-27）：地图上不再显示「开局 N」金色标签与地点卡里的开局列表（地图跟随 MVU 当前地点，选了开局就跳过去）；openings 数据只留给自检与文档
   el._open = () => showCard(el, dn, tag, src, extra, ds, cover);
@@ -88,9 +90,46 @@ function smoothPath(P) {
   }
   return d + 'Z';
 }
+// ---------------- 纵深（U16 视差 / 漂浮、U17 标签按远近） ----------------
+// 数据只有一份：map/data/<layer>_depth.json（maps.json 的 depth 字段，切层时由 nav.mjs 取来）；公式只在 core/depth.mjs，这里不再实现第二遍。
+//   标签不透明度 = label 通道（近 1.0 → 远 0.65）；远岛（d ≥ FAR_D）平时只留图钉，悬停 / 聚焦 / 打开卡片才全显。
+//   视差 = parallax 通道（近 1.0 → 远 0.2），按底图屏幕位移累加；漂浮 ±2 px、周期 8–14 s（越远越慢）。
+//   开关：数据里 channels.parallax.enabled 是总开关；手机（narrow）与「减少动态效果」一律不晃（设定稿 §手机 375 px：手机视差默认关）。
+const RMq = matchMedia('(prefers-reduced-motion: reduce)');
+const FAR_D = 0.6;
+let depthEls = [], depthAcc = { x: 0, y: 0, last: null }, depthHooked = false;
+const depthOn = () => parallaxOn(depthData) && !narrow && !RMq.matches;
+function depthFx(el, meta) {
+  el.style.removeProperty('--lab'); el.classList.remove('far', 'flt'); el._par = 1;
+  const cfg = depthData, id = meta?.island;
+  if (!cfg?.islands?.[id]) return;
+  const isl = depthIsland(id, cfg);
+  el._par = isl.parallax;
+  el.style.setProperty('--lab', String(isl.label));
+  el.classList.toggle('far', isl.d >= FAR_D);
+  if (depthOn()) { el.classList.add('flt'); el.style.setProperty('--fdur', (8 + isl.d * 6).toFixed(1) + 's'); }
+}
+function depthPan() {
+  if (!depthEls.length || !depthOn()) return;
+  const vp = viewer.viewport, c = vp.getCenter(true), sc = viewer.container.clientWidth / vp.getBounds(true).width;
+  if (depthAcc.last) {
+    depthAcc.x -= (c.x - depthAcc.last.x) * sc; depthAcc.y -= (c.y - depthAcc.last.y) * sc;
+    for (const el of depthEls) {
+      const p = el._par ?? 1;
+      el.style.setProperty('--px', (depthAcc.x * p).toFixed(1) + 'px');
+      el.style.setProperty('--py', (depthAcc.y * p).toFixed(1) + 'px');
+    }
+  }
+  depthAcc.last = c;
+}
+function hookDepth() {
+  if (depthHooked || !viewer) return; depthHooked = true;
+  viewer.addHandler('viewport-change', depthPan); viewer.addHandler('animation', depthPan);
+}
 // 渲染脚本导出的点位地图（天城各层）：标记 + 结界圈（或别的地图的岛屿轮廓，如中层的「上层投影」）
 export function pointOverlays() {
   const m = REG.maps[cur], d = curData || { markers: [], islands: [] }, od = ovData || {};
+  depthEls = []; depthAcc = { x: 0, y: 0, last: null }; hookDepth();   // 切层：视差累加归零，重新收集有纵深的标记
   window.TCScale?.ring();   // v0.9.6：城外一圈（最先加，排在标记下面）
   if (m.overlay?.type === 'barriers' && od.islands?.length) {
     const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg'), VW = 1000, VH = 1000 * aspect;
@@ -136,6 +175,7 @@ export function pointOverlays() {
   for (const k of d.markers || []) { const meta = m.markers?.[k.id]; if (!meta) continue;
     const el = markerEl({ ...meta, sub: (meta.sub || '').replace(/\{\{user\}\}\s*/g, t('you')), extra: econHtml(meta) + links(meta) });
     if (k.id === (m.view?.focus || m.focus)) el.dataset.focus = '1'; if (meta.link) el.dataset.link = '1';   // 标签避让的优先级
+    depthFx(el, meta); depthEls.push(el);
     placeN(el, k.nx, k.ny); }
 }
 export function setCardFrom(v) { return (cardFrom = v); }

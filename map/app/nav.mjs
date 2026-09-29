@@ -1,5 +1,5 @@
 // 地图切换：go（带可注册的包装）、snapshot、mapChrome、另一版底图。
-import { REG, cur, curData, ovData, setCur, setCurData, setOvData, viewer } from './state.mjs';
+import { REG, cur, curData, ovData, setCur, setCurData, setOvData, setDepthData, viewer } from './state.mjs';
 import { $, getJSON } from './util.mjs';
 import { applyTier } from './tiers.mjs';
 import { nm, postState, t } from './i18n.mjs';
@@ -48,9 +48,10 @@ export async function go(id) {   // 云脚本块（文末）会包一层：天�
   const oldFrame = leaveEstate();
   // 叠加层可以取别的地图的数据（overlay.from），例如中层的「上层投影」用上层的岛屿轮廓
   const ovSrc = m.overlay?.from && REG.maps[m.overlay.from]?.data;
-  const [cd, od] = await Promise.all([m.data ? getJSON(m.data) : null, ovSrc ? getJSON(ovSrc) : null]);
+  // 纵深数据（maps.json 的 depth 字段，U16 / U17）：只有配了它的层才取，取不到不阻塞（视差、标签按 d 全部退回默认）
+  const [cd, od, dd] = await Promise.all([m.data ? getJSON(m.data) : null, ovSrc ? getJSON(ovSrc) : null, m.depth ? getJSON(m.depth) : null]);
   if (id !== cur) return;   // 加载期间又切换了地图
-  setCurData(cd); setOvData(ovSrc ? od : cd);
+  setCurData(cd); setOvData(ovSrc ? od : cd); setDepthData(dd || null);
   renderNav(); mapChrome(m); if (m.alt) $('#tgAltBox').checked = altOn(id);
   $('#tgRoutes').hidden = !(cd?.routes?.length);
   // 从别的地图切过来（有旧画面或庄园盖着）：不上整屏遮罩，只看顶部进度条；首次打开才显示遮罩

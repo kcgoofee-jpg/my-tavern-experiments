@@ -25,6 +25,11 @@ export function cloudsAbove(alt, cfg) {
   return [...(cfg.cloud_sheets || [])].sort((a, b) => b.alt - a.alt).filter(c => c.alt > alt).map(c => c.id);
 }
 
+// 视差（U16）总开关：数据在 channels.parallax.enabled；设备（手机关）与「减少动态效果」由前端另行判断
+export const parallaxOn = cfg => cfg?.channels?.parallax?.enabled === true;
+// 非岛实体（云片 c1 / c2 / c3）的深度：同一公式，按海拔算（云片 alt 越高越靠前，d 越小）
+export const altDepth = (alt, cfg) => depthOf({ alt }, cfg);
+
 export function island(id, cfg) {
   const isl = cfg.islands[id], d = depthOf(isl, cfg), ov = isl.overrides || {};
   const out = { d };

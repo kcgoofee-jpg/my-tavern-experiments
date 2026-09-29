@@ -303,6 +303,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #zoom button[aria-pressed="false"] { color: var(--muted); }
   #zoom button[aria-pressed="true"] { background: var(--accent-weak); color: var(--accent); }
   #zoom[hidden] { display: none; }
+  #zAll { display: none; }   /* U15：「看全区」只在手机（≤ 640 px）出现——桌面的复位视野已经是全区 */
   #thumbBtn { display: none; }
   #osd .navigator { margin: 0 0 var(--sp-5) var(--sp-5) !important; }
 
@@ -398,6 +399,22 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .mk:focus-visible .lab { outline: 2px solid var(--focus); outline-offset: 2px; }
   @keyframes pulse { 0% { transform: scale(.4); opacity: .9; } 100% { transform: scale(1.8); opacity: 0; } }
   .mk.lhide .lab { visibility: hidden; }
+  /* 图例（U18）：抽屉「图例」页，条目照 docs/upper-setting.md §4 */
+  .lg { padding: var(--sp-3) var(--sp-4); } .lg h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-body); }
+  .lg dl { margin: 0; } .lg dt { font-weight: 700; font-size: var(--fs-small); color: var(--ink); }
+  .lg dd { margin: 0 0 var(--sp-3); font-size: var(--fs-small); color: var(--muted); }
+  /* 纵深 U16 / U17：标签与图钉包在 .mki 里，视差位移（--px/--py）与漂浮只动这一层（.mk 的 transform 是 OSD 定位用的） */
+  .mk .mki { display: flex; flex-direction: column; align-items: center; transform: translate(var(--px, 0px), var(--py, 0px)); }
+  .mk .lab { opacity: var(--lab, 1); }
+  .mk:hover, .mk:focus-visible { z-index: 3; }
+  .mk:hover .lab, .mk:focus-visible .lab, .mk.active .lab { opacity: 1; }
+  /* 远岛（d ≥ 0.6）：平时只留图钉，悬停 / 聚焦 / 打开卡片才全显 */
+  .mk.far .lab { visibility: hidden; }
+  .mk.far:hover .lab, .mk.far:focus-visible .lab, .mk.far.active .lab { visibility: visible; }
+  /* 漂浮 ±2 px（周期 8–14 s，越远越慢）：用 translate 属性，不与上面的 transform 打架 */
+  .mk.flt .mki { animation: flt var(--fdur, 11s) ease-in-out infinite alternate; }
+  @keyframes flt { from { translate: 0 -2px; } to { translate: 0 2px; } }
+  @media (prefers-reduced-motion: reduce) { .mk.flt .mki { animation: none; } }
   .mk.undock:not(.here):not(.active) { visibility: hidden; pointer-events: none; }
   body.far .mk:not(.active) .lab small { display: none; }
   body.nomarkers .mk { display: none; }
@@ -499,6 +516,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     #dock { right: var(--sp-4); }
     html[data-hand="left"] #dock { right: auto; left: var(--sp-4); align-items: flex-start; }
     #zoom button { width: 44px; height: 44px; }
+    #zAll { display: grid; width: auto; min-width: 44px; padding: 0 10px; font-size: var(--fs-small); font-weight: 700; }   /* 手机首屏停在伊甸：显眼的「看全区」（触控热区 ≥ 44 px） */
     /* 半开时控制列最高到屏幕中线；再高就横排贴在抽屉上沿（§10.1）；全开时隐藏（inert） */
     /* 横排也按 DOM 顺序（= 桌面竖排从上到下），读屏顺序与画面一致；右手贴右、左手贴左只靠 #dock 的定位 */
     #dock.row { flex-direction: row; align-items: flex-end; }
@@ -565,7 +583,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     <div class="where"><span data-i18n="here">当前地点</span> <input id="here" data-i18n-ph="here_ph" placeholder="模拟 MVU：世界.当前地点" value=""></div>
   </header>
   <div id="stage" role="main" data-i18n-aria="page_title" aria-label="天城地图"><div id="osd"></div><div id="foot"><button type="button" id="creditBtn" aria-expanded="false" aria-controls="credit" data-i18n-aria="credit_aria" aria-label="署名"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/></svg></button><div id="credit" hidden></div></div><nav id="layers" hidden data-i18n-aria="layers_aria" aria-label="楼层"></nav>
-    <div id="zoom" role="group" data-i18n-aria="zoom_group" aria-label="缩放"><button type="button" id="zIn" data-i18n-aria="zoom_in" aria-label="放大" data-i18n-title="zoom_in" title="放大"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg></button><button type="button" id="zOut" data-i18n-aria="zoom_out" aria-label="缩小" data-i18n-title="zoom_out" title="缩小"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/></svg></button><button type="button" id="zHome" data-i18n-aria="zoom_home" aria-label="复位视野" data-i18n-title="zoom_home" title="复位视野"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"/><circle cx="12" cy="12" r="2.5"/></svg></button><button type="button" id="lblTog" aria-pressed="true" data-i18n-aria="labels_tog" aria-label="显示标注" data-i18n-title="labels_tog_t" title="显示标注（L）"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 18l4.5-12L12 18M4.7 14h5.6"/><path d="M20.5 18v-5.2a2.6 2.6 0 0 0-5 0M20.5 15.2c-3.4-.4-5.5.4-5.5 1.6 0 .9.8 1.4 1.9 1.4 1.8 0 3.6-1.2 3.6-3"/></svg></button></div>
+    <div id="zoom" role="group" data-i18n-aria="zoom_group" aria-label="缩放"><button type="button" id="zIn" data-i18n-aria="zoom_in" aria-label="放大" data-i18n-title="zoom_in" title="放大"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg></button><button type="button" id="zOut" data-i18n-aria="zoom_out" aria-label="缩小" data-i18n-title="zoom_out" title="缩小"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/></svg></button><button type="button" id="zHome" data-i18n-aria="zoom_home" aria-label="复位视野" data-i18n-title="zoom_home" title="复位视野"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"/><circle cx="12" cy="12" r="2.5"/></svg></button><button type="button" id="zAll" data-i18n="zoom_all" data-i18n-aria="zoom_all" aria-label="看全区" data-i18n-title="zoom_all" title="看全区">看全区</button><button type="button" id="lblTog" aria-pressed="true" data-i18n-aria="labels_tog" aria-label="显示标注" data-i18n-title="labels_tog_t" title="显示标注（L）"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 18l4.5-12L12 18M4.7 14h5.6"/><path d="M20.5 18v-5.2a2.6 2.6 0 0 0-5 0M20.5 15.2c-3.4-.4-5.5.4-5.5 1.6 0 .9.8 1.4 1.9 1.4 1.8 0 3.6-1.2 3.6-3"/></svg></button></div>
     <div id="prog" hidden><i></i></div><div id="zoomHint" hidden aria-live="polite"></div><div id="loading"><div><span data-i18n="loading">加载中…</span><div class="acts" hidden><button type="button" class="btn" id="estRetry" data-i18n="estate.retry">重试</button><button type="button" class="btn" id="estPlan" data-i18n="estate.plan">看平面图</button><button type="button" class="btn" id="tileRetry" hidden data-i18n="estate.retry">重试</button></div></div></div></div>
   <script>if (window.__worldFirst) document.getElementById('loading').classList.add('thumb');</script>
 </div>

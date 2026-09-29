@@ -5,8 +5,9 @@
 // (a) 漂移：只在上层、云开（没勾「显示下方城市」）时；远近两层，拖动视差 0.85 / 1.2。精灵 art/clouds/puff1–6.png 与瓦片同一基址（jsDelivr 线路也通），用到才加载。
 // (b) 切层：9 条斜带 × 3 团从两头扫入 → 全白里换层 → 往两侧散开；转场中点一下跳过。
 // 减少动态效果：不漂移、直接换层。省流（lean()）：不漂移、零精灵请求，切层用白幕淡入淡出。
-import { REG, cur, viewer } from './state.mjs';
-import { $ } from './util.mjs';
+import { REG, cur, depthData, viewer } from './state.mjs';
+import { $ , narrow } from './util.mjs';
+import { altDepth, channel, parallaxOn } from '../core/depth.mjs';
 import { lean } from './tiers.mjs';
 import { altOn, go, setGo } from './nav.mjs';
 (() => {
@@ -44,11 +45,21 @@ import { altOn, go, setGo } from './nav.mjs';
         { transform: `translate3d(${cx + UX * T}px,${cy + UY * T}px,0)`, opacity: 0 }], { duration: dur, iterations: Infinity, delay: -((k * .618 + (id === 'near') * .31) % 1) * dur,   /* 黄金比例错相：可见团数稳定 */ easing: 'linear' }));
     }
   }
+  // U16：云片的视差系数取自 upper_depth.json 的 parallax 通道（同一份数据、同一套公式，不在本模块另写常数）。
+  // 近层对应最高的云片 c1（离相机最近），远层对应最低的 c3；以最近那张为 1 归一，保留原本远 .85 / 近 1.2 的手感。
+  function parOf(id) {
+    const base = LAYERS[id].par, cfg = depthData;
+    if (!cfg?.cloud_sheets?.length) return base;                   // 没有纵深数据（别的层 / 取不到）：沿用原手感
+    if (!parallaxOn(cfg) || narrow || RM()) return 0;              // 总开关关、手机、减少动态效果：视差关（云不随平移位移）
+    const alts = cfg.cloud_sheets.map(s => s.alt).sort((a, b) => b - a), hi = alts[0], lo = alts[alts.length - 1];
+    const at = a => channel('parallax', altDepth(a, cfg), cfg), ref = at(hi);
+    return ref ? base * at(id === 'near' ? hi : lo) / ref : base;
+  }
   function pan() {                                                // 视差：按底图屏幕位移累加；超出半屏时淡出重排（不跳）
     if (!shown) return;
     const vp = viewer.viewport, c = vp.getCenter(true), sc = size()[0] / vp.getBounds(true).width;
     if (last) { const dx = -(c.x - last.x) * sc, dy = -(c.y - last.y) * sc;
-      for (const id in LAYERS) { const a = acc[id], p = LAYERS[id].par; a[0] += dx * p; a[1] += dy * p; lay[id].style.transform = `translate3d(${a[0]}px,${a[1]}px,0)`; } }
+      for (const id in LAYERS) { const a = acc[id], p = parOf(id); a[0] += dx * p; a[1] += dy * p; lay[id].style.transform = `translate3d(${a[0]}px,${a[1]}px,0)`; } }
     last = c;
     const [vw, vh] = size();
     if (!box.classList.contains('fade') && (Math.abs(acc.near[0]) > vw * .6 || Math.abs(acc.near[1]) > vh * .6)) reset(true);

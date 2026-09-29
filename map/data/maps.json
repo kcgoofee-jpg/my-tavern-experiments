@@ -394,6 +394,7 @@
       "markers": {
         "eden": {
           "name": "伊甸庄园",
+          "island": "eden",
           "sub": "{{user}} 的庄园",
           "name_en": "Eden Manor",
           "sub_en": "Your estate",
@@ -437,6 +438,7 @@
         },
         "silver_crown": {
           "name": "银冠堡",
+          "island": "silver_crown",
           "sub": "议会骑士团总部",
           "name_en": "Silvercrown Keep",
           "sub_en": "Council Knights HQ",
@@ -470,6 +472,7 @@
         },
         "pm_residence": {
           "name": "首相府",
+          "island": "isle6",
           "name_en": "Prime Minister's Residence",
           "sub": "首相官邸 · 唐宁街式砖砌联排",
           "sub_en": "PM's residence · Downing-Street-style terrace",
@@ -492,6 +495,7 @@
         },
         "zaibatsu_estate": {
           "name": "罗斯柴尔德庄园",
+          "island": "isle30",
           "name_en": "Rothschild Estate",
           "sub": "悬浮岛 R-02 · 私人悬浮载具停靠平台",
           "sub_en": "Floating isle R-02 · private vehicle landing",
@@ -515,6 +519,7 @@
         },
         "league_club": {
           "name": "庄园主联盟会所",
+          "island": "isle9",
           "name_en": "Estate Lords' League Club",
           "sub": "联盟聚会处",
           "sub_en": "League meeting house",
@@ -532,6 +537,7 @@
         },
         "kelly_residence": {
           "name": "凯莉的宅邸",
+          "island": "isle10",
           "sub": "凯莉·露易丝的居所",
           "name_en": "Kelly's Residence",
           "sub_en": "Kelly Louise's home",
@@ -555,6 +561,7 @@
         },
         "victor_estate": {
           "name": "维克多庄园",
+          "island": "isle4",
           "sub": "凯莉亡夫的庄园 · 现已不属于她",
           "name_en": "Victor Estate",
           "sub_en": "Kelly's late husband's estate",
@@ -567,6 +574,7 @@
         },
         "y_estate": {
           "name": "「Y」的庄园",
+          "island": "isle5",
           "sub": "全天城最大 · 从不露面",
           "name_en": "Estate of \"Y\"",
           "sub_en": "Largest in the city · owner never seen",
@@ -581,6 +589,7 @@
         },
         "elite_academy": {
           "name": "精英学院",
+          "island": "isle25",
           "sub": "上层贵族子弟的学院",
           "name_en": "Elite Academy",
           "sub_en": "Academy for upper-tier heirs",

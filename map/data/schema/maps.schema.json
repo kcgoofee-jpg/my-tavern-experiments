@@ -65,6 +65,7 @@
         "openings": { "type": "array", "items": { "type": "integer", "minimum": 1 }, "description": "卡的开局编号（这处地点在哪几个开局里出现）" },
         "opening_dest": { "type": "boolean" },
         "econ": { "type": "string" }, "econ_en": { "type": "string" },
+        "island": { "$ref": "#/$defs/id", "description": "该标记对应的岛表 id（blender/data/tc_islands.json 的 id）：纵深数据按岛算 d，前端据此调标签不透明度（label 通道）与视差（parallax 通道）" },
         "link": { "$ref": "#/$defs/link" }, "link3d": { "$ref": "#/$defs/link3d" }, "gallery": { "$ref": "#/$defs/gallery" }, "cover": { "$ref": "#/$defs/cover" } } },
     "map": { "type": "object", "required": ["title", "kind"], "additionalProperties": false, "patternProperties": { "^_": {} },
       "properties": {

@@ -94,6 +94,9 @@ async function mainInner() {
   $('#zIn').onclick = () => { setUserMoved(true); viewer.viewport.zoomBy(1.5); viewer.viewport.applyConstraints(); };
   $('#zOut').onclick = () => { setUserMoved(true); viewer.viewport.zoomBy(1 / 1.5); viewer.viewport.applyConstraints(); };
   $('#zHome').onclick = () => { setUserMoved(false); setPendingHome(false); focusStart(false); };
+  // U15（手机「看全区」）：首屏按 view.phone 停在伊甸，点这里缩到整层全区（与聚焦、复位互不影响）
+  $('#zAll').onclick = () => { setUserMoved(true); const b = viewer.world.getHomeBounds?.();
+    if (b) { viewer.viewport.fitBounds(b, true); viewer.viewport.applyConstraints(); } else { setPendingHome(false); focusStart(false); } };
   const navH = () => document.documentElement.style.setProperty('--nav-h', (viewer.navigator?.element?.offsetHeight || 0) + 'px');
   viewer.addHandler('open', () => setTimeout(navH, 0)); addEventListener('resize', navH);
   viewer.addHandler('open-failed', e => { $('#loading span').textContent = t('load_failed', { msg: e.message || '' }); });

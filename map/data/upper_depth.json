@@ -1,5 +1,5 @@
 {
-  "_note": "纵深系统唯一数据源（docs/design/depth-system.md；接口按 docs/reviews/arch_overall_review.md §3）。只放纵深字段，岛的 x / y / 半径在唯一岛表 blender/data/tc_islands.json，按岛 id 引用。数学见 map/core/depth.mjs 与 blender/depth.py（同一规格，tests/fixtures/depth_golden.json 对拍）。海拔按 docs/upper-setting.md v2 合并表（用户 2026-09-28 批准）。",
+  "_note": "纵深系统唯一数据源（docs/design/depth-system.md；接口按 docs/reviews/arch_overall_review.md §3）。只放纵深字段，岛的 x / y / 半径在唯一岛表 blender/data/tc_islands.json，按岛 id 引用。数学见 map/core/depth.mjs 与 blender/depth.py（同一规格，tests/fixtures/depth_golden.json 对拍）。海拔按 docs/upper-setting.md v2 合并表（用户 2026-09-28 批准）。视差（U16）默认开：Mac 开、手机与「减少动态效果」时关；通道的 enabled 是总开关。",
   "schema": 1,
   "layer": "tc_upper",
   "units": {
@@ -45,7 +45,7 @@
     "parallax": {
       "near": 1.0,
       "far": 0.2,
-      "enabled": false
+      "enabled": true
     },
     "ward": {
       "near": 0.55,

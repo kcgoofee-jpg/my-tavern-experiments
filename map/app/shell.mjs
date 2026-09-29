@@ -1,5 +1,5 @@
 // 外壳：控制列、唯一抽屉 / 右栏胶水、通知层、状态点、单手模式、双击缩放。
-import { REG, cur, viewer } from './state.mjs';
+import { REG, cur, depthData, viewer } from './state.mjs';
 import { $, afterLoadIdle, announce, esc, ico, post, tx } from './util.mjs';
 import { declutter } from './tiers.mjs';
 import { LANG, nm, postState, t } from './i18n.mjs';
@@ -37,6 +37,28 @@ export function sheetVis() {
   const um = typeof P.TCUnmapped !== 'undefined' ? P.TCUnmapped.name : null; placeEmpty(um);
   S.hide(estate || !(ev || ch || card || layChip || um));
   S.showTab('pl', ev || ch || card || !!um);
+  // U18：图例只在配了纵深数据的层出现（现在只有上层；条目照 docs/upper-setting.md §4 图例）
+  S.showTab('lg', !estate && !!depthData);
+}
+// 图例（U18）：一张说明「图上画的这些东西分别是什么」的清单；只有文字，不画矢量图例（设定稿：小样取成图裁片，另议）
+// 键写全（i18n 门控按源码里的字面量核对中英键，不接受拼接）
+const LEGEND = [
+  ['lg.ward', '结界', 'lg.ward_d', '近景是淡青格边，中景是细线，远景不画'],
+  ['lg.conduit', '以太导能管', 'lg.conduit_d', '暗色细管，只在节点有点状微光'],
+  ['lg.platform', '访客停靠平台', 'lg.platform_d', '带信标环、进场光带和密封悬浮车'],
+  ['lg.tower', '以太气候调节塔', 'lg.tower_d', '深色塔身，外加同心场环'],
+  ['lg.clouds', '云层', 'lg.clouds_d', '云纱越厚，海拔越低'],
+  ['lg.omit', '刻意不画', 'lg.omit_d', '航线、轨道、车站'],
+];
+function legendEl() {
+  const box = document.createElement('div'); box.className = 'lg'; box.id = 'legendPane';
+  const h = document.createElement('h3'); h.textContent = tx('s.legend', '图例'); box.appendChild(h);
+  const dl = document.createElement('dl');
+  for (const [kt, name, kd, desc] of LEGEND) {
+    const dt = document.createElement('dt'); dt.textContent = tx(kt, name);
+    const dd = document.createElement('dd'); dd.textContent = tx(kd, desc); dl.append(dt, dd);
+  }
+  box.appendChild(dl); return box;
 }
 export function placeEmpty(um) {
   const e = $('#cardEmpty'); if (!e || e.dataset.um === (um || '')) return; e.dataset.um = um || '';
@@ -55,7 +77,7 @@ export function initShell() {
   const place = document.createElement('div'); place.id = 'placePane'; place.append($('#card'));
   const empty = document.createElement('p'); empty.id = 'cardEmpty'; place.append(empty);
   const S = window.TCSheet = UISheet.create({ host: $('#stage'), id: 'evbar', railKey: 'edenMapRailW',
-    tabs: [{ id: 'ev', btnClass: 'evtab', icon: 'bell' }, { id: 'ch', btnClass: 'chtab', icon: 'users' }, { id: 'pl', btnClass: 'pltab', icon: 'pin', panel: place }],
+    tabs: [{ id: 'ev', btnClass: 'evtab', icon: 'bell' }, { id: 'ch', btnClass: 'chtab', icon: 'users' }, { id: 'pl', btnClass: 'pltab', icon: 'pin', panel: place }, { id: 'lg', btnClass: 'lgtab', icon: 'info', panel: legendEl() }],
     freshText: n => tx('ev.bar_new', '{n} 条新', { n }),
     onState: ({ state, tab, mode, h }) => {
       S.el.dataset.open = state === 'peek' ? '0' : '1'; S.el.dataset.tab = tab || ''; document.body.classList.toggle('evopen', state !== 'peek');
@@ -67,7 +89,8 @@ export function initShell() {
       if (tab === 'ch' || tab === 'ev') P.TCEvents.renderBar();
       post({ type: 'eden-map:chrome', bottom: h, top: $('header').offsetHeight }); noticeRefresh();
     } });
-  S.label('pl', esc(tx('s.place', '地点')), {}); S.showTab('ev', false); S.showTab('ch', false); S.hide(true);
+  S.label('pl', esc(tx('s.place', '地点')), {}); S.label('lg', esc(tx('s.legend', '图例')), {});
+  S.showTab('ev', false); S.showTab('ch', false); S.showTab('lg', false); S.hide(true);
   // 点地图空白 = 抽屉回到收起（只认移动 < 8 px、< 250 ms 的轻点；点到地标 / 事态按地标处理，§10.4）
   let tp = null;
   $('#osd').addEventListener('pointerdown', e => { tp = e.isPrimary ? { x: e.clientX, y: e.clientY, t: e.timeStamp, on: !!e.target.closest?.('.mk, .ev, .realm, .chm, .tripin, .tc-ring a') } : null; }, true);
