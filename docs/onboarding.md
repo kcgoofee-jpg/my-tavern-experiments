@@ -7,7 +7,7 @@
 | 名字 | 用途 |
 |---|---|
 | `preview` | 唯一主干。所有开发都推这里，跟随版预览每次加载取它的最新提交 |
-| 标签 `map-vX.Y.Z` / `map-vX.Y.Z.P` / `map-s<n>-vX.Y.Z` | 正式版（0.9.6，2026-09-29 已打标签发版） |
+| 标签 `map-vX.Y.Z` / `map-vX.Y.Z.P` / `map-s<n>-vX.Y.Z` | 正式版（0.9.7，2026-09-29 已打标签发版） |
 | `main` | 发布线：与跟随分支 `preview` 内容一致，只能快进（`tools/sync_main.sh`，见 `docs/branching.md`）。开发照样在跟随分支上做 |
 
 版本规则见 `docs/versioning.md`；排序逻辑只在 `tools/verlib.py` 和 `map/tavern/selfcheck.mjs` 两处。

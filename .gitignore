@@ -15,7 +15,7 @@ __pycache__/
 
 # OSM 原始数据（python3 blender/tc_osm.py fetch 重新下载；处理后的 city.json 进 git）
 blender/data/osm/raw/
-# CC0 贴图（bash tools/fetch_textures.sh 下载）
+# CC0 贴图（本地素材缓存；早期由 tools/fetch_textures.sh 下载，该脚本未建/已不存在，现行贴图走 blender/data/landmarks/ 那批）
 blender/data/tex/
 worldbook/
 map/_test_*.html

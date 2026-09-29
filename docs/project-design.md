@@ -8,7 +8,7 @@
 - 交付只有两样：外挂脚本（`【地图】伊甸地图` 加载器 / 跟随版脚本）+ 世界书附加条目；不生成、不修改角色卡。
 - 运行时全部走 jsDelivr：加载器读 `map/data/head.json` 取跟随分支 `preview` 的内容提交号，再按提交号加载 `map/**`（不可变 URL）。
 - 地图读卡的 MVU 变量显示地点 / 人物 / 事态，写聊天只填输入框、不自动发送；不过滤用户聊天内容。
-- 正式版 0.9.6（2026-09-29 发版；**公开发布 / npm 仍暂停**，等作者沟通）；跟随版事实上就是线上版，Mac 桌面优先，iPhone 最低优先。
+- 正式版 0.9.7（2026-09-29 发版；**公开发布 / npm 仍暂停**，等作者沟通）；跟随版事实上就是线上版，Mac 桌面优先，iPhone 最低优先。
 
 ## 2. 子系统地图
 
@@ -19,7 +19,7 @@
 - **S3 查看器 UI**：`map/viewer.html`、`map/app/*`（boot/shell/topbar/markers/nav/settings/fog…）、`map/ui/*`（sheet、notice、chrome3d、icons、progress、tokens.css）、`map/i18n/` ｜ `TCSettings.registerSection`、通知层 P0–P3、`app/plugins.mjs` + `extapi.mjs` ｜ maps.json `view.phone` ｜ `app_modules.test.mjs`、`i18n_parity.test.mjs`、`fog.test.mjs`、`tools/browser/fix3.mjs`、`v2a.mjs`、`uiv2_shots.mjs`。
 - **S4 酒馆集成（MVU / TH / 世界书同步）**：`map/tavern/eden-map.js`（入口，约 1100 行）+ `host-routes.mjs` / `host-lifecycle.mjs` / `host-th.mjs`、`mvu.mjs`、`th.mjs`、`wbsync.mjs`、`modes.mjs`、`snapshot.mjs`、`selfcheck.mjs`、`adapter.mjs`、`follow.mjs`、`map/core/protocol.mjs` ｜ postMessage 协议 PROTO=2（`eden-map:*`、`estate:*`）、`initializeGlobal('EdenMap')`、`eden-map:moved`、宏 `{{eden_here}}` ｜ `addon_places.json` → `tools/build_worldbook_addon.py --ship` → `worldbook_addon.json`、`core/storage.mjs SCRIPT_KEYS` ｜ `mvu.test.mjs`、`wbsync.test.mjs`、`th_foundation.test.mjs`、`protocol.test.mjs`、`postmessage.test.mjs`、`selfcheck.test.mjs`、`tools/browser/th_adopt.mjs`。
 - **S5 庄园三维**：`map/estate/{index.html,main.js,plan.js}`、`blender/estate2/*`（export_web、web_scene、zones…）、`app/estate.mjs` ｜ `estate:*` 消息、chrome3d 外壳 ｜ `eden_estate_rooms.json`、`eden_estate_tiles.json`、`map/estate/model/*.glb` ｜ `tools/browser/estate3d.mjs`、`viewer3d_perf.mjs`。
-- **S6 地标（单体建筑三维）**：`blender/landmarks/<id>/`、`common.py`、`export_glb.py`、`map_cutout.py`、`map/props/<id>/` + `viewer3d.html` ｜ 道具查看器 URL 参数 + chrome3d ｜ `docs/card-buildings.md`、`docs/landmarks/*.md` ｜ `tools/browser/props_u12.mjs`；一键管线待建。
+- **S6 地标（单体建筑三维）**：`blender/landmarks/<id>/`、`common.py`、`export_glb.py`、`map_cutout.py`、`map/props/<id>/` + `viewer3d.html` ｜ 道具查看器 URL 参数 + chrome3d ｜ `docs/card-buildings.md`、`docs/landmarks/*.md` ｜ `tools/browser/props_u12.mjs`；一键管线已上线（`tools/landmark.py` new/draft/board/gapcheck/final/ship，见 `docs/landmark-pipeline.md`）。
 - **S7 图集**：`map/ui/gallery.js`、`room-gallery-panel.js`、`map/core/room-gallery-{db,logic}.mjs`、`tools/gallery_review.py` ｜ IndexedDB 本地图、`safeGalleryImagePath`、维护者模式 ｜ `gallery.json`、`room_galleries.json`、`map/art/gallery/<roomId>/` ｜ `room_gallery.test.mjs`、`tools/browser/{gallery,room_gallery_ui}.mjs`、check_maps 门控。
 - **S8 反馈 / CI**：`map/app/feedback.mjs`、`feedback-report.mjs`、`.github/workflows/ci.yml`、`tools/smoke.sh`、`tools/check_maps.py` ｜ 反馈按钮 → 预填 GitHub issue ｜ `logs/*.csv` ｜ `feedback_report.test.mjs`、`check_maps_committed.test.mjs`；CI 跑 `node --test` + smoke。
 - **S9 渲染管线**：`tools/blender_run.sh`、`render_all.sh`、`region_patch.py`、`make_dzi.py`、`dzi_mosaic.py`、`check_render_deps.py`、`blender/tiancheng_{upper,mid,low}.py`、`tc_*.py`、`upper_islands/*`、`world_render.py` ｜ 整图 PNG → 后处理 → DZI ｜ `map/art/**`、`docs/render-deps.md`、`logs/render_times.csv` ｜ `make_dzi.test.mjs`、`tools/check_render_deps.py`、`bench_render.sh`。
@@ -64,7 +64,7 @@ graph LR
 - ~~C2 架构整理：fog 合并进 `core/depth`（U19）→ Eden 包只留 manifest（删 `core/pack.mjs` 的 EDEN 常量）→ 冻结 pack schema v1 → 拆 `eden-map.js`（入口 / 线路 / 生命周期 / TH 适配）。四步内部串行。~~ ✅ 2026-09-28（模块地图见 docs/agent-brief.md；schema 见 docs/pack-schema-v1.md）
 - **C2.5 本地清理**（`docs/local-cleanup-plan.md`，只测量不删，2026-09-28 加）：scratchpad worktree、`/private/tmp/bl_tmp`、Blender 内核缓存、Homebrew 缓存、`tools/browser/node_modules`、`map/art` 旧基准产物、`logs/queue/done` 这些低风险项，不需要全局停机，各条各自标了要不要等对应代理空闲；`docs/drafts` 草图改名/是否删并入 C3 一起做；`.git` 瘦身仍属于 C4，不提前。放在 C2 之后、C3 之前，减少 C3 停机窗口要处理的杂项。
 - C3 改名 + 命名统一（见 §5）：必须所有代理空闲、所有 worktree 已合并或丢弃、GPU 空闲时单独做，是全项目唯一的全局停机点。
-- ~~C4 git 瘦身 + 瓦片出主仓~~ ✅ 2026-09-29 完成（head #58）：删 50+ 已合并分支/12 个 worktree/4 stash + 删 map-v0.9.3 之前全部旧标签 + filter-repo 把 8 个重资产目录（map/art、docs/drafts、docs/reviews、map/props、map/shots、blender/data、map/estate、docs/design）的历史版本剥出历史、HEAD 内容以一笔恢复提交原样放回；.git 656MB→410MB，标签只剩 map-v0.9.3/0.9.4/0.9.5（0.9.5=当前 HEAD）。备份：~/eden-backup/eden-map-preC4.bundle（全引用）、~/eden-backup/assets-head.tar。「瓦片出主仓（CDN）」延期：AutoDL 无公网入站 HTTP，jsDelivr 现方案可用；等有稳定对象存储再做。
+- ~~C4 git 瘦身 + 瓦片出主仓~~ ✅ 2026-09-29 完成（head #58）：删 50+ 已合并分支/12 个 worktree/4 stash + 删 map-v0.9.3 之前全部旧标签 + filter-repo 把 8 个重资产目录（map/art、docs/drafts、docs/reviews、map/props、map/shots、blender/data、map/estate、docs/design）的历史版本剥出历史、HEAD 内容以一笔恢复提交原样放回；.git 656MB→410MB，标签只剩 map-v0.9.3/0.9.4/0.9.5（0.9.5=当时 HEAD；其后已发 0.9.6 / 0.9.7）。备份：~/eden-backup/eden-map-preC4.bundle（全引用）、~/eden-backup/assets-head.tar。「瓦片出主仓（CDN）」延期：AutoDL 无公网入站 HTTP，jsDelivr 现方案可用；等有稳定对象存储再做。
 - C5 上层真 3D 模式：依赖 R2 逐岛资产和 C2 的 depth 合并。
 - C6 创意工坊：依赖 C2 的 schema v1、C5 和斜视 8K（槽位基于纵深），最后做。
 
@@ -101,7 +101,7 @@ graph LR
 - ~~`docs/drafts/estate_v*_desk_*_<房间中文>.jpg`：36 个草图文件名带中文。~~ ✅ 9 张有引用（`estate_v3_close_*`）改英文，其余 27 张全仓库无任何引用，按规则删除（见 handoff）。
 - ~~`skills/card-map/guides/{NSFW指引,建筑指引,面板UI指引,风格指引}.md`：4 个中文文件名。~~ ✅ 已改 `nsfw.md`/`architecture.md`/`panel-ui.md`/`style.md`。
 - 旧世界书书名带版本号（`… v0.9.5`）：显示名里混了版本，迁移后不再在书名里写版本。
-- 已符合：版本号 `0.9.6`、标签 `map-v*`、编码 `S1-0906-R-0592`、`head #N` 提交、分支 `preview`、head.json 字段。
+- 已符合：版本号 `0.9.7`、标签 `map-v*`、编码 `S1-0906-R-0592`、`head #N` 提交、分支 `preview`、head.json 字段。
 - 不改：历史标签与已发布文件（规则 5 不覆盖已发布物）；提交说明正文仍写中文（不是版本信息）。
 
 ### 5.3 执行计划（与文件夹改名同一步，C3）
