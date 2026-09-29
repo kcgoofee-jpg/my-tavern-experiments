@@ -19,6 +19,18 @@
 #   云端任务派发前会检查本地改动时间戳（tools/cloud/.locks/<实例>.last_sync），比同步戳新就先跑一次 sync.sh 再渲。
 # 环境变量：DRY_RUN=1 演练；POLL（秒，默认 20，dispatch 常驻循环用）
 set -u
+# 根治 bash 3.2（macOS 系统自带）的坑：脚本消息里有中文，`$var` 后面紧跟全角字符时
+# 3.2 会把多字节字节并进变量名（`$out（` → 变量「out（…」），set -u 下直接 unbound 崩掉
+# （2026-09-30 事故：finish_job 验收产物时崩，任务卡在 running/）。发现是 bash<4 就找
+# Homebrew 的 bash 重启自己；找不到才降级告警。
+if [ -z "${EDEN_BASH_UPGRADED:-}" ] && [ "${BASH_VERSINFO[0]:-0}" -lt 4 ]; then
+  for EDEN_NEWBASH in /opt/homebrew/bin/bash /usr/local/bin/bash; do
+    if [ -x "$EDEN_NEWBASH" ]; then
+      EDEN_BASH_UPGRADED=1 exec "$EDEN_NEWBASH" "$0" "$@"
+    fi
+  done
+  echo "警告：系统 bash 3.2 解析中文消息里的 \$var 有坑且没找到新版 bash（brew install bash 可根治）" >&2
+fi
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 CLOUD="$ROOT/tools/cloud"
 QDIR="$ROOT/logs/queue"; PEND="$QDIR/pending"; RUN="$QDIR/running"; DONE="$QDIR/done"
@@ -149,7 +161,7 @@ print(o)' "$args" 2>/dev/null || true)
     case "$out" in
       /*|"") : ;;                                    # 绝对路径（board 都走本机）或没写 --out：不核
       *) if [ ! -e "$ROOT/$out" ]; then
-           echo "产物缺失：$out（rc=0 但文件不在）—— 按失败处理" >&2
+           echo "产物缺失：${out}（rc=0 但文件不在）—— 按失败处理" >&2
            rc=79
          fi ;;
     esac

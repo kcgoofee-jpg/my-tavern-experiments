@@ -8,6 +8,10 @@ build.py 不用改：它的参数解析会忽略这里多出来的 --build / --a
 """
 import json, os, runpy, sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import common as _common  # noqa: E402  build.py 里 C.setup() 会调 tc_common.pick_gpu 配 GPU；
+                          # 这里 import 让渲染守卫的静态扫描（render_preflight 只看 import 链）能看到。
+
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 A = dict(zip([k.lstrip('-') for k in argv[::2]], argv[1::2]))
 runpy.run_path(A['build'], run_name='__main__')

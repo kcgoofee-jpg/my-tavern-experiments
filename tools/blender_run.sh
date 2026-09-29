@@ -116,9 +116,14 @@ fi
 BLEND_CACHE_FILE=""
 if [ -n "$CACHE_BLEND" ]; then
   mkdir -p "$CACHE_BLEND" 2>/dev/null || true
-  SCRIPT_PATH=$(printf '%s\n' "${ARGS[@]}" | grep -oE "run_path\('[^']+'\)" | head -1 | sed -E "s/run_path\('([^']+)'\)/\1/")
+  # 提取 run_path('...') 的脚本路径并读进内容做缓存键。不用 [^'] 方括号表达式：
+  # 这台 macOS 的 BSD grep（2.6.0-FreeBSD）对含引号的 [^'] 有 bug，整个模式永远不匹配
+  # （2026-09-30 事故：SCRIPT_SRC 恒为空 → 缓存键不含 build.py 内容 → 改了建模脚本缓存照命中）。
+  # 用 awk 按单引号切分取第 2 段，绕开方括号表达式。
+  SCRIPT_PATH=$(printf '%s\n' "${ARGS[@]}" | awk -v q="'" '/run_path\(/ { n=split($0, parts, q); if (n >= 2 && parts[2] != "") { print parts[2]; exit } }')
   SCRIPT_SRC=""
   [ -n "$SCRIPT_PATH" ] && [ -f "$ROOT/$SCRIPT_PATH" ] && SCRIPT_SRC=$(command cat "$ROOT/$SCRIPT_PATH" 2>/dev/null)
+  [ -n "$SCRIPT_SRC" ] || echo "警告：缓存键里没有 build.py 内容（提取失败），改脚本不会使缓存失效" >&2
   GIT_HEAD=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null)
   GIT_DIRTY=$(git -C "$ROOT" diff --stat -- blender/ 2>/dev/null)
   HASH_INPUT="${ARGS[*]}|${GIT_HEAD}|${GIT_DIRTY}|${SCRIPT_SRC}"
@@ -232,6 +237,11 @@ if [ "$STATUS" = crash ] && [ "$DRY_RUN" != 1 ]; then
   classify "$rc"
 fi
 release_lock; trap - EXIT INT TERM
+# 失败不留缓存：搭建中途崩掉的场景（缺相机 / 缺组）被 SAVE_EXPR 存进缓存后，下次同键会命中
+# 半成品直接渲染翻车（2026-09-30 事故）。退出码非 0 就把这次的缓存删掉。
+if [ -n "$BLEND_CACHE_FILE" ] && [ "$rc" != 0 ] && [ "$DRY_RUN" != 1 ]; then
+  rm -f "$BLEND_CACHE_FILE" "$BLEND_CACHE_FILE.blend1"
+fi
 
 if [ "$DRY_RUN" != 1 ]; then grep -E '^WROTE|Error|Traceback|^EDEN_DEVICE=' "$LOG" | tail -5; fi
 

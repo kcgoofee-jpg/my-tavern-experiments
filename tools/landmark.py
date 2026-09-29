@@ -383,11 +383,16 @@ def cmd_draft(a):
     final = P('docs', 'drafts', f'landmark_{i}_draft_{a.cam}.jpg')
     stage_rel = f'map/art/_lm_{i}_{a.cam}.jpg'          # 仓库相对路径 + 会同步的目录：云端也写得出来
     stage = P('map', 'art', f'_lm_{i}_{a.cam}.jpg')
-    if not os.path.exists(final) and os.path.exists(stage):
-        collect_stage(stage, final)                      # 上一轮排队渲完的图，先收
+    if os.path.exists(stage) and (not os.path.exists(final)
+                                  or os.path.getmtime(stage) > os.path.getmtime(final)):
+        collect_stage(stage, final)                      # 上一轮排队渲完的图，先收（重渲时把旧图挪成 _rN）
     say(f'[draft] {i}：{a.cam} {a.res}px {a.spp}spp → {rel(final)}')
     if sub_done(st, f'draft_{a.cam}_{a.res}_{a.spp}', [final]):
         return finish(st, 'draft')
+    # 队列收口：final 已是当前 build.py 的产物（比 build.py 新）时直接记账，不再排队。
+    if not DRY and not FORCE and os.path.exists(final) and os.path.getmtime(final) > os.path.getmtime(p['build']):
+        mark_sub(st, f'draft_{a.cam}_{a.res}_{a.spp}')
+        return finish(st, 'draft', rel(final))
     r = render(i, 'draft', a.res, a.spp, blender_script(rel(p['build']), ['--cam', a.cam, '--res', str(a.res),
                '--samples', str(a.spp), '--out', stage_rel, '--log', os.path.join(p['work'], 'draft_err.log')]),
                os.path.join(p['work'], 'draft.log'))
@@ -491,14 +496,20 @@ def cmd_final(a):
         # tools/render_preflight.py 的 abs_out / unsynced_out 门控）
         stage_rel = f'map/art/_lm_{i}_final_{c}.jpg'
         stage = P('map', 'art', f'_lm_{i}_final_{c}.jpg')
-        if not os.path.exists(out) and os.path.exists(stage):
+        if os.path.exists(stage) and (not os.path.exists(out)
+                                      or os.path.getmtime(stage) > os.path.getmtime(out)):
             collect_stage(stage, out)
         if sub_done(st, f'final_{c}', [out]):
+            continue
+        # 同 cmd_draft 的队列收口：out 已是当前 build.py 的产物（比 build.py 新）→ 直接记账，不重排队。
+        if not DRY and not FORCE and os.path.exists(out) and os.path.getmtime(out) > os.path.getmtime(p['build']):
+            mark_sub(st, f'final_{c}')
             continue
         r = render(i, 'final', a.res, a.spp, blender_script(rel(p['build']), ['--cam', c, '--res', str(a.res),
                    '--samples', str(a.spp), '--out', stage_rel]), os.path.join(p['work'], f'final_{c}.log'), runner)
         if r == 'queued':
-            queued = True; continue
+            queued = True
+            continue
         if not DRY and not os.path.exists(stage):
             die(f'没产出 {stage_rel}', '看 ' + os.path.join(p['work'], f'final_{c}.log'))
         collect_stage(stage, out)
