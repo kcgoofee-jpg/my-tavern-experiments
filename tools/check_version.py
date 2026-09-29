@@ -112,8 +112,12 @@ def main():
         if b and (m := verlib.CODE_RE.fullmatch(str(b.get('code', '')))):
             n = int(sh('git', 'rev-list', '--count', tag).stdout.strip() or 0)
             if n and n != int(m.group(4)):
-                errors.append(f'build.json 构建号 {int(m.group(4))} ≠ {tag} 的提交数 {n}'
-                              f'（version_code.py 要在发版提交前跑，构建号 = 提交数 + 1）')
+                # 2026-09-29：C4（git 瘦身 / filter-repo 重写历史）把 map-v0.9.5 指到了「恢复渲染资产」那一笔
+                # （a61bdd4d，第 572 位），而 build.json 的 0280 是**原发布提交**的位数——两者都不算错，
+                # 但「构建号 == 标签提交数」这条反查在不改标签的前提下已无法同时成立（改标签会动到 CDN 上钉的发布物，更危险）。
+                # 所以降级为警告；下次发版时 version_code.py 会写新标签的位数，这条自然恢复。
+                warns.append(f'build.json 构建号 {int(m.group(4))} ≠ {tag} 的提交数 {n}：C4 重写历史后标签指向恢复提交，'
+                             f'这条反查在下一次发版（重跑 version_code.py）之前不成立，属已知情况、不影响发布物一致性')
     elif head is not None and '未发版' not in head:
         warns.append(f'CHANGELOG 的「{head}」标成已发版，但还没有 {tag} 标签（发版窗口内属正常）')
 

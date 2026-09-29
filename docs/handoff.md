@@ -90,7 +90,7 @@
 - 本机环境：python3(homebrew) 丢失 Pillow 已装回（`pip install --user --break-system-packages Pillow`，现 12.3.0），smoke 全绿；`.pi/` 已进 .gitignore。
 - render-deps 4 条告警（upper/upper_city/mid/low 的 dzi 落后上游）：主因 b6a92c7d 渲染守卫重构碰了脚本但没改视觉，误报性质；中下层白天版渲完后自然消，上层等 v18。无需动作。
 - 原域圣山 glb 预览三视角已看图判定（docs/drafts/world_v2_yuanyu_glb_preview{,_ground,_summit}.jpg）：整体成立，可作圣都风格基线；新增 2 精修点（大教堂背面白色凸出方块、雕像圈个别雕像悬出平台）＋既有遗留（楼型单一、城市外缘硬边、步道悬空）。
-- 中层夜景草稿 map/art/_mid_night_draft.png（worktree agent-ab82fcbc59b7d3a5b 未提交）已看图：整体成立；3 疑点待查：右上暖黄矩形亮斑（疑似自发光面贴错）、左上环形竞技场全黑无灯、两角死黑。
+- ~~中层夜景草稿 `map/art/_mid_night_draft.png`（worktree `agent-ab82fcbc59b7d3a5b` 未提交）已看图：整体成立；3 疑点待查：右上暖黄矩形亮斑、左上环形竞技场全黑、两角死黑。~~ ✅ **2026-09-29 已修 + 已核实**：`616f68e0`「中层夜景三处视效修复」——亮斑成因不是自发光面贴错，而是九龙西段补楼的招牌取全局 `_frng7`、在等距网格扫描里反复落进同一 RNG 相位带，改每建筑独立子 RNG 打散；「环形竞技场」全仓查无中层命中，实为**环城军营带**（原来只有发光灯头、没有光源，已加向下冷白投光）；两个死角是**圣铁摇篮**（`(10.9, 6.6)`，右上）与军营环带西缘，已补庭光 / 主投光（均带 `--day` 守卫）。旧草稿图已不在仓库（引用失效），**中层夜景 8000px 已排进渲染队列**（`map/art/tc_mid_night_full.png`，渲完需跑 `tools/make_dzi.py` 出 `tc_mid_night.dzi`）。
 - 在途代理 4 个（重启后按分支/worktree 收，结果文件在 /var/folders/_9/5rp6wlhn4kvcfqvcp24g5dlw0000gn/T/acp-delegate/）：
   - del_mula96f9_secj viewer3d UI 小修 → fix-viewer3d-ui-0928（/tmp/eden_wt_viewer3d），before/after 截图待看图判定
   - del_mula96fd_ph0r 浏览器测试对齐 → fix-browser-tests-wbauto（/tmp/eden_wt_btests）
