@@ -9,10 +9,20 @@ t('按位置发现三张表；身份、阶段；[值, 说明] 也认', () => {
   assert.equal(r.members.key, '表一'); assert.deepEqual(r.members.items[0], { name: '甲', identity: '园丁' });
   assert.equal(r.targets.key, '表三'); assert.deepEqual(r.targets.items[1], { name: '丁', identity: '学者', stage: '第一步' });
 });
-t('映射覆盖表名；缺表为 null；非对象安全', () => {
+t('映射覆盖表名；缺表走设定兜底（开局名册 16 人）；非对象安全', () => {
   const r = V.rosters(S, { members: '表三', targets: '表一' }); assert.equal(r.members.key, '表三'); assert.equal(r.targets.key, '表一');
-  assert.deepEqual(V.rosters({ 世界: {}, 主角: {} }), { present: null, members: null, targets: null });
-  assert.deepEqual(V.rosters(null), { present: null, members: null, targets: null });
+  const fb = V.rosters({ 世界: {}, 主角: {} });
+  assert.equal(fb.present, null); assert.equal(fb.targets, null);
+  assert.equal(fb.members.key, '设定名册'); assert.equal(fb.members.items.length, 16);
+  assert.equal(fb.members.items[0].name, '绫濑遥'); assert.equal(fb.members.items[0].src, '设定');
+  assert.equal(V.rosters(null).members.items.length, 16);
+});
+t('设定兜底合并：MVU 表里有的人以 MVU 为准不重复，表里没有的补在后面', () => {
+  const r2 = V.rosters({ 世界: {}, 主角: {}, 表一: { 绫濑遥: { 身份: '女仆长（剧情版）' }, 新人: { 身份: '新加入' } } });
+  assert.equal(r2.members.key, '表一'); assert.equal(r2.members.items.length, 17);
+  assert.deepEqual(r2.members.items[0], { name: '绫濑遥', identity: '女仆长（剧情版）' }); assert.ok(!('src' in r2.members.items[0]));
+  assert.equal(r2.members.items[1].name, '新人');
+  assert.equal(r2.members.items.filter(i => i.name === '绫濑遥').length, 1);
 });
 t('声望：第 2 个顶层键里认「声望」；限 0–100；可指定路径', () => {
   assert.equal(V.reputation(S), 62); assert.equal(V.reputation({ a: {}, b: { 声望: 140 } }), 100);
