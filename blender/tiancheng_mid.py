@@ -604,7 +604,10 @@ LMP_DROP.update(range(_n0, len(LMP)))                           # 东西围墙�
 # 加两盏暖白补光 + 一盏主投光照亮回廊 / 礼拜堂屋面（确定性，不动 LR）。--day 白天版不启用。
 if not getattr(layer, 'day', False):
     FLOOD += [(x - .5, y - .5, ZG + 2.0, srgb('#ffcf8a')), (x + .55, y + .5, ZG + 1.9, srgb('#ffe2b0'))]
-    KEY += [(x + .3, y - .35, ZG + 1.35, srgb('#ffcf8a'))]
+    # 2026-09-29 修（夜间暖黄过曝斑的成因）：KEY 原来放在 ZG+1.35，**低于礼拜堂屋面 ZG+1.8** ——
+    # 光源埋进建筑体量里，配 landmark_key 的 14.0*GLOW，紧贴的表面被烧成一块近白的暖黄斑（裁图实测约 20×13 m）。
+    # 抬到屋面之上即可；不动 14.0*GLOW，免得把别处地标的主投光一起调暗。
+    KEY += [(x + .3, y - .35, ZG + 2.4, srgb('#ffcf8a'))]
 layer.marker('iron_cradle', (x, y, 0), .7)
 
 # 环城军营带：沿西缘的一段环带——营房长楼、操场、双层围墙、探照灯塔
@@ -632,10 +635,12 @@ bm_.done(); yard.done()
 if not getattr(layer, 'day', False):
     _bn = []
     for _i in range(N):
-        if _i % 10 != 8: continue
+        # 2026-09-29 修：原来是「每 10 段一处 FLOOD、每 30 段一处 KEY」——对约 1300 m × 95 m 的环带
+        # 等于只有 9 个点，营房 / 操场 / 围墙夜里仍是一整条暗带。改成每 4 段一处、每 12 段一处主投光。
+        if _i % 4 != 0: continue
         _px, _py, _ = ring_pt((_i + .5) / N, 0)
         FLOOD += [(_px, _py, ZG + 1.5, ICE)]
-        if _i % 30 == 8: KEY += [(_px, _py, ZG + 1.55, ICE)]
+        if _i % 12 == 0: KEY += [(_px, _py, ZG + 1.55, ICE)]
         _bn.append((_px, _py, ZG + .0056, .17, ICE))
     td.glow_pools('barracks_pools', _bn, .16 * GLOW)
 layer.marker('barracks_ring', (*ring_pt(.5)[:2], 0), 1.0)
@@ -766,7 +771,7 @@ L_ = [l for i, l in enumerate(LMP) if (layer.lm_glow and not DAY) or i not in LM
 tc.box_mesh('landmark_lamps', [(x, y, s, s, z, z + .003) for x, y, z, s, c in L_], np.array([c for *_, c in L_], np.float32).reshape(-1, 3), emit_mat('lm_lamp', None, 3.2 * GLOW))
 RG = np.array(RIDGE, np.float32).reshape(-1, 7)
 tc.box_mesh('landmark_ridges', RG[:, :6], np.tile((.22, .22, .21), (len(RG), 1)), td.city_mat('ridgem', .5, 0, 1.2, .4), rot=RG[:, 6])
-tc.point_lights('landmark_flood', FLOOD, 1.2 * GLOW, .15)       # 补光
+tc.point_lights('landmark_flood', FLOOD, 3.0 * GLOW, .18)       # 补光（2026-09-29：1.2→3.0、半径 .15→.18，环带与角落原来太暗）
 tc.point_lights('landmark_key', KEY, 14.0 * GLOW, .08)
 tc.point_lights('landmark_key_soft', KEY_SOFT, 6.0 * GLOW, .08)            # 主投光：把屋面照出明暗（坡面、穹顶的受光面与背光面）
 tick(f'landmarks: lamps {len(L_)}, flood {len(FLOOD)}')
@@ -941,7 +946,9 @@ def _day_tune():
     cmul('univ_wall', 1.5); cmul('univ_wall2', 1.5); cmul('univ_slate2', 1.4)                              # 大学校园：石墙 / 钟楼顶提亮
     cmul('yard', c=(.115, .104, .080), rough=.88); cmul('barracks_roof', c=(.135, .145, .128))             # 军营环带：操场换沙土色、营房屋面提亮
     cmul('ck', c=(.30, .29, .265), rough=.6, metal=0)                  # 检查点：井圈 / 闸楼浅混凝土（井口 shaft 保持纯黑）
-    cmul('ck_canopy', c=(.30, .185, .065), rough=.55)                  # 井口雨棚：琥珀警示色，暗部里的颜色锚点
+    # 2026-09-29 修：原来的 (.30,.185,.065) 在 --sun 4.2 直射下过饱和、旁边又是纯黑井口（:727 shaft）反衬，
+    # 白天读成一团"明黄自发光物"（裁图实测在画面底部中央）。压到近土黄、加粗糙度。
+    cmul('ck_canopy', c=(.17, .13, .08), rough=.7)                     # 井口雨棚：土黄警示色（不再是亮琥珀）
 
 if DAY:
     # --day：白天版——太阳走 tc.sun_rot() 白天几何（215° 方位不变，天顶角 35° / 高度角 55°，比夜景 40° 更高：tc_common SUN_ROT_DAY），
@@ -956,4 +963,5 @@ if DAY:
 else:
     _sky = bpy.data.lights.new('gap_skylight', 'SUN'); _sky.energy = layer.f('--gapsun', .8); _sky.angle = math.radians(6); _sky.color = (.72, .8, 1.0)
     _so = bpy.data.objects.new('gap_skylight', _sky); col_main.objects.link(_so); _so.rotation_euler = tc.SUN_ROT
-    layer.finish(world=((.35, .42, .6), layer.f('--ambient', .58)), glare_opts=dict(threshold=_fog[0], size=_fog[1], mix=_fog[2], tight=_tight))
+    # 2026-09-29：天光 .58→.70，治四角死黑（夜景专用分支；「宁暗勿曝」的基线仍在，以草稿复核）
+    layer.finish(world=((.35, .42, .6), layer.f('--ambient', .70)), glare_opts=dict(threshold=_fog[0], size=_fog[1], mix=_fog[2], tight=_tight))
