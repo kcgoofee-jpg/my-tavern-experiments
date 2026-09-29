@@ -112,7 +112,7 @@ def main():
             subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'make_dzi.py'), png, os.path.join(d, 'art', mid), '--extent-m', str(W), str(H), '--quality', '78'], check=True)
             os.remove(png)
     first = next(iter(maps))
-    jdump(os.path.join(d, 'maps.json'), {'_说明': f'设定包 {a.id} 的地图注册表（路径相对本目录）。字段见 map/data/schema/maps.schema.json',
+    jdump(os.path.join(d, 'maps.json'), {'_note': f'设定包 {a.id} 的地图注册表（路径相对本目录）。字段见 map/data/schema/maps.schema.json',
                                          'start': first, 'groups': {gid: {'title': a.title, 'title_en': a.title_en or a.title, 'layers': list(maps)}}, 'maps': maps})
     ev = dict(SAMPLE_EVENTS, layers=ev_layers, region=a.title, tag=f'{a.title}事态')
     jdump(os.path.join(d, 'events.json'), ev)

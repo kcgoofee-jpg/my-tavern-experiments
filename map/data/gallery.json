@@ -1,4 +1,4 @@
 {
-  "_说明": "公开图集清单：用户在房间图集里把某张图选「公开」，本地导出的是 json + 图片（或 zip），本仓库没有服务器接收上传，作者要手动把图片放进 map/art/gallery/<roomId>/ 再把 manifest 合并到这里的 rooms.<roomId>.images。结构见 map/core/room-gallery-logic.mjs 的 buildExportManifest()。为空表示暂无公开投稿，前端按空清单处理，不报错。",
+  "_note": "公开图集清单：用户在房间图集里把某张图选「公开」，本地导出的是 json + 图片（或 zip），本仓库没有服务器接收上传，作者要手动把图片放进 map/art/gallery/<roomId>/ 再把 manifest 合并到这里的 rooms.<roomId>.images。结构见 map/core/room-gallery-logic.mjs 的 buildExportManifest()。为空表示暂无公开投稿，前端按空清单处理，不报错。",
   "rooms": {}
 }

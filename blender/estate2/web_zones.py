@@ -60,7 +60,7 @@ def main():
         if zid in ('lake', 'islet', 'waterside'):
             g = max(g, L.WATER_Z)
         out.append(dict(id=zid, name=name, en=en, alias=alias, x=x, y=y, r=r, z=round(g, 2), h=h, pri=pri))
-    data = dict(_说明='庄园网页三维的室外热点（blender/estate2/web_zones.py 生成，不要手改）。坐标同 layout.py：x 东、y 北、米；z = 地面标高；h = 标签离地高度；pri 越大越先显示。',
+    data = dict(_note='庄园网页三维的室外热点（blender/estate2/web_zones.py 生成，不要手改）。坐标同 layout.py：x 东、y 北、米；z = 地面标高；h = 标签离地高度；pri 越大越先显示。',
                 zones=out)
     p = os.path.join(ROOT, 'map', 'estate', 'model', 'zones.json')
     os.makedirs(os.path.dirname(p), exist_ok=True)

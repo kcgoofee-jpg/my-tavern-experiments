@@ -72,7 +72,7 @@ def main():
         # 层名本身不当地点别名（否则「山上」会同时命中该层所有地点）
         buckets[lay].append({'name': nm, 'alias': sorted({k for k in keys if k != nm and k not in layers and len(k) <= 20})[:8], 'src': '草稿：来自卡世界书条目标题（请核对）'})
     vars_ = guess_vars(entries(doc))
-    draft = {'_说明': f'由 {os.path.basename(a.src)} 的世界书条目标题 / 触发词生成的草稿（不含正文）。核对后：python3 tools/new_pack.py <id> --title … --from-draft 本文件',
+    draft = {'_note': f'由 {os.path.basename(a.src)} 的世界书条目标题 / 触发词生成的草稿（不含正文）。核对后：python3 tools/new_pack.py <id> --title … --from-draft 本文件',
              'layers': [{'name': l, 'places': ps[:a.max]} for l, ps in buckets.items() if ps]}
     if vars_: draft['vars'] = vars_
     os.makedirs(os.path.dirname(out), exist_ok=True)

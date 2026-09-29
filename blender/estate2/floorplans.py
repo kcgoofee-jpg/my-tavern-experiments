@@ -456,7 +456,7 @@ def main():
     # 数据
     WORDS = {c: w for c, f, n, w in CARD_ROOMS}
     data = dict(
-        _说明='伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；'
+        _note='伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；'
               '楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 卡设定房间 / restricted 卡设定房间、只写名字不描述（name 照抄卡原名）/ support 辅助 / circ 走廊 / open 卡未写 / owner 主人专用 / user 用户设定（src=用户设定）。',
         version=1, src='docs/card-digest.md §6', units='m',
         floors=[dict(id=i, name=n, z=z) for i, n, z in FLOORS],

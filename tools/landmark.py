@@ -281,7 +281,7 @@ def setting_text(i, name, layer):
 
 def manifest_obj(i, name):
     return {
-        '_说明': f'viewer3d.html?model={i} 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/{i}.md。',
+        '_note': f'viewer3d.html?model={i} 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/{i}.md。',
         'id': i, 'title': {'zh': name, 'en': ''}, 'glb': f'{i}.glb', 'glb_low': f'{i}_low.glb',
         'credit': {'zh': '自建模型；贴图 Poly Haven / ambientCG（CC0）', 'en': 'Own model; textures Poly Haven / ambientCG (CC0)'},
         'groups': {'roof': [], 'walls': ['props_main'], 'interior': [], 'floors': [], 'site': ['site_ground'],

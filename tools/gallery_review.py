@@ -95,7 +95,7 @@ def load_gallery():
     if os.path.exists(GALLERY_JSON):
         with open(GALLERY_JSON, encoding='utf-8') as f:
             return json.load(f)
-    return {"_说明": "公开图集清单，结构见 tools/gallery_review.py / map/core/room-gallery-logic.mjs 的 buildExportManifest()", "rooms": {}}
+    return {"_note": "公开图集清单，结构见 tools/gallery_review.py / map/core/room-gallery-logic.mjs 的 buildExportManifest()", "rooms": {}}
 
 
 def save_gallery(gal):

@@ -1,5 +1,5 @@
 {
-  "_说明": "设定包 town 的地图注册表（路径相对本目录）。字段见 map/data/schema/maps.schema.json",
+  "_note": "设定包 town 的地图注册表（路径相对本目录）。字段见 map/data/schema/maps.schema.json",
   "start": "town_hill",
   "groups": {
     "town": {

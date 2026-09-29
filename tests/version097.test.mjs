@@ -89,7 +89,7 @@ t('build_preview_script.py --tag：认 map-v0.9.6.1 / map-s2-v0.1.0，拒绝别�
   let r = run(d, 'build_preview_script.py', '--tag', 'map-v0.9.6.1.2.3', '--out', d); assert.notEqual(r.status, 0); assert.match(r.stderr, /发版标签应形如/);
   execFileSync('git', ['tag', 'map-s2-v0.1.0'], { cwd: d });
   r = run(d, 'build_preview_script.py', '--tag', 'map-s2-v0.1.0', '--out', d); assert.equal(r.status, 0, r.stderr);
-  const j = JSON.parse(fs.readFileSync(path.join(d, '【地图】伊甸地图 S2 v0.1.0.json'), 'utf-8')); assert.equal(j.name, '【地图】伊甸地图'); assert.match(j.content, /BAKED = "map-s2-v0\.1\.0"/);
+  const j = JSON.parse(fs.readFileSync(path.join(d, 'eden-map-S2 v0.1.0.json'), 'utf-8')); assert.equal(j.name, '【地图】伊甸地图'); assert.match(j.content, /BAKED = "map-s2-v0\.1\.0"/);
   r = run(d, 'build_preview_script.py', '--tag', 'map-v0.9.6.1', '--out', d); assert.equal(r.status, 2);   // 与 VERSION 不一致（且标签不存在）
 });
 // ---------- 正式版加载器（build_preview_script.py --tag 的脚本内容）：每次加载解析最新正式版，离线退回烘进来的标签 ----------

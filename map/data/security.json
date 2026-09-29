@@ -1,18 +1,83 @@
 {
-  "_说明": "安保叠加层（v0.9.6，card-omissions D3 / D7 / D14 / D15 / D16）：层级图上的地点 → 结界 / 监控 / 门禁 / 警报事实。只写卡里写明的规则，中性措辞；src = 出处条目。viewer 的 map/security.js 读，图层菜单「安保」开关（默认关）。",
-  "kinds": { "barrier": ["结界", "Barrier"], "monitor": ["监控", "Monitoring"], "access": ["门禁", "Access"], "alarm": ["警报", "Alarm"] },
+  "_note": "安保叠加层（v0.9.6，card-omissions D3 / D7 / D14 / D15 / D16）：层级图上的地点 → 结界 / 监控 / 门禁 / 警报事实。只写卡里写明的规则，中性措辞；src = 出处条目。viewer 的 map/security.js 读，图层菜单「安保」开关（默认关）。",
+  "kinds": {
+    "barrier": [
+      "结界",
+      "Barrier"
+    ],
+    "monitor": [
+      "监控",
+      "Monitoring"
+    ],
+    "access": [
+      "门禁",
+      "Access"
+    ],
+    "alarm": [
+      "警报",
+      "Alarm"
+    ]
+  },
   "items": [
-    { "map": "tc_upper", "marker": "eden", "facts": [
-      { "kind": "barrier", "text": "外层结界覆盖全岛，隔绝外部探查；以太驱动的结界发生器持续供能", "text_en": "Outer barrier covers the whole island and blocks outside scrying; powered continuously by aether-driven generators", "src": "庄园布局 · 安保" },
-      { "kind": "barrier", "text": "各房间另有隔音结界；F1 会客厅可一键启动", "text_en": "Rooms have their own soundproof barriers; the F1 reception room can raise one at a switch", "src": "庄园布局 · F1" },
-      { "kind": "alarm", "text": "入侵警报", "text_en": "Intrusion alarm", "src": "庄园布局 · 安保" },
-      { "kind": "monitor", "text": "除主卧与书房外全覆盖；录像自动存档 30 日，重要内容永久保存", "text_en": "Everywhere except the master bedroom and study; recordings kept 30 days, important ones permanently", "src": "庄园布局 · 监控" },
-      { "kind": "monitor", "text": "实时画面投到大厅、书房、女仆长寝室三处屏幕；女仆长寝室的终端可调取监控", "text_en": "Live feeds on screens in the hall, the study and the head maid's room; the head maid's terminal can pull recordings", "src": "庄园布局 · F2" },
-      { "kind": "access", "text": "门禁由植入的识别芯片控制：主人全域；女仆长除上锁的书房外全域；正式成员——个人寝室、F3 与 F1 公共区、B1 按当日任务；新进——新进寝区、F3 浴室、F1 大厅；B2 仅主人、女仆长与受押送人员", "text_en": "Doors keyed to implanted ID chips: owner everywhere; head maid everywhere except the locked study; full members — own room, F3 and F1 common areas, B1 by the day's duty; newcomers — newcomer dorm, F3 bath, F1 hall; B2 only owner, head maid and escorted persons", "src": "庄园布局 · 权限" },
-      { "kind": "access", "text": "F1 会客厅有暗门通主人专用通道；F2 女仆长寝室有直通主卧的专用门（仅女仆长有权限）", "text_en": "A hidden door in the F1 reception room leads to the owner's private passage; the head maid's room on F2 has a private door to the master bedroom (head maid only)", "src": "庄园布局 · F1 / F2" }
-    ] },
-    { "map": "tc_mid", "marker": "checkpoint_c", "facts": [
-      { "kind": "access", "text": "跨层通行：查验通行许可与身份芯片", "text_en": "Cross-tier passage: permit and ID-chip check", "src": "视觉样例 · 跨层通行许可" }
-    ] }
+    {
+      "map": "tc_upper",
+      "marker": "eden",
+      "facts": [
+        {
+          "kind": "barrier",
+          "text": "外层结界覆盖全岛，隔绝外部探查；以太驱动的结界发生器持续供能",
+          "text_en": "Outer barrier covers the whole island and blocks outside scrying; powered continuously by aether-driven generators",
+          "src": "庄园布局 · 安保"
+        },
+        {
+          "kind": "barrier",
+          "text": "各房间另有隔音结界；F1 会客厅可一键启动",
+          "text_en": "Rooms have their own soundproof barriers; the F1 reception room can raise one at a switch",
+          "src": "庄园布局 · F1"
+        },
+        {
+          "kind": "alarm",
+          "text": "入侵警报",
+          "text_en": "Intrusion alarm",
+          "src": "庄园布局 · 安保"
+        },
+        {
+          "kind": "monitor",
+          "text": "除主卧与书房外全覆盖；录像自动存档 30 日，重要内容永久保存",
+          "text_en": "Everywhere except the master bedroom and study; recordings kept 30 days, important ones permanently",
+          "src": "庄园布局 · 监控"
+        },
+        {
+          "kind": "monitor",
+          "text": "实时画面投到大厅、书房、女仆长寝室三处屏幕；女仆长寝室的终端可调取监控",
+          "text_en": "Live feeds on screens in the hall, the study and the head maid's room; the head maid's terminal can pull recordings",
+          "src": "庄园布局 · F2"
+        },
+        {
+          "kind": "access",
+          "text": "门禁由植入的识别芯片控制：主人全域；女仆长除上锁的书房外全域；正式成员——个人寝室、F3 与 F1 公共区、B1 按当日任务；新进——新进寝区、F3 浴室、F1 大厅；B2 仅主人、女仆长与受押送人员",
+          "text_en": "Doors keyed to implanted ID chips: owner everywhere; head maid everywhere except the locked study; full members — own room, F3 and F1 common areas, B1 by the day's duty; newcomers — newcomer dorm, F3 bath, F1 hall; B2 only owner, head maid and escorted persons",
+          "src": "庄园布局 · 权限"
+        },
+        {
+          "kind": "access",
+          "text": "F1 会客厅有暗门通主人专用通道；F2 女仆长寝室有直通主卧的专用门（仅女仆长有权限）",
+          "text_en": "A hidden door in the F1 reception room leads to the owner's private passage; the head maid's room on F2 has a private door to the master bedroom (head maid only)",
+          "src": "庄园布局 · F1 / F2"
+        }
+      ]
+    },
+    {
+      "map": "tc_mid",
+      "marker": "checkpoint_c",
+      "facts": [
+        {
+          "kind": "access",
+          "text": "跨层通行：查验通行许可与身份芯片",
+          "text_en": "Cross-tier passage: permit and ID-chip check",
+          "src": "视觉样例 · 跨层通行许可"
+        }
+      ]
+    }
   ]
 }

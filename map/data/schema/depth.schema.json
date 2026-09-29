@@ -11,7 +11,7 @@
  ],
  "additionalProperties": false,
  "properties": {
-  "_说明": {
+  "_note": {
    "type": "string"
   },
   "schema": {

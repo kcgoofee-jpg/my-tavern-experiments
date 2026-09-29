@@ -62,7 +62,7 @@ def write(view, data, file_stem, ctx, path=TILES):
     rooms, areas = _index()
     from . import views
     doc.update({
-        '_说明': '伊甸庄园剖切等轴图的房间多边形（blender/eden_manor.py 生成，不要手改）。坐标归一化到图像宽高，左上原点；'
+        '_note': '伊甸庄园剖切等轴图的房间多边形（blender/eden_manor.py 生成，不要手改）。坐标归一化到图像宽高，左上原点；'
                  'views.<视图>.rooms.<id>.poly 是该房间地面的轮廓，c 是标签点。rooms / areas 是叫法索引（alias 与 maps.json eden_estate 一致）。格式见 blender/estate/CONTRACT.md §7。',
         'version': VERSION,
         'camera': {'type': 'ortho', 'azimuth_deg': views.CAM['azimuth'], 'elevation_deg': views.CAM['elevation'], 'ortho_m': views.CAM['ortho'],
