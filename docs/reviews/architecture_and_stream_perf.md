@@ -11,8 +11,9 @@ Update 2026-09-30: P0 (G1, G6) and P1 (G2, G3) are implemented - commits
 (ContextPipeline, the pure chat-context pipeline of §4). P3-A (the light
 contract batch: DepthSystem describe summary + fog key collapsing per §2,
 Estate3D manifest contract per §7) is implemented - commits `709c1c9`
-(DepthSystem) and `43c053a` (Estate3D). Remaining P3: LayerRegistry (§6) and
-CharacterRosterSystem (§5).
+(DepthSystem) and `43c053a` (Estate3D). P3-B (CharacterRosterSystem per §5) is
+implemented - commits `a4de0f2` (contract module `core/roster.mjs` + tests) and
+`5ce27d3` (bridge and host wiring). Remaining P3: LayerRegistry (§6).
 
 Part 1 is a diagnosis of the "background tab: API finished, front end frozen" class of bugs and
 an audit of the streaming-period pipeline. Part 2 is a decoupling RFC for the six subsystems and
@@ -222,6 +223,20 @@ Current: `characters.mjs` (position tags), `mvu.mjs` rosters/portraits/fallback 
   chat tags, table-db, card fallback roster, BaiBai appearance) exposes the same `rows()` shape;
   portraits and gallery attach by name. A new card's roster then requires only a mapping, not UI
   changes (~12 h).
+  **Implemented 2026-09-30 (`a4de0f2`, `5ce27d3`)**: contract module `map/core/roster.mjs` —
+  uniform row `RosterRow { name, displayName?, role?, location?, status?, tags?, source,
+  present?, raw? }`, uniform provider interface `provider.rows(ctx)` with `use(source, provider)`
+  registration over the five built-in sources, merged with fixed arbitration **mvu > chat >
+  table-db > fallback > baibai** (same name or displayName alias merges into one row; field-level
+  non-empty higher-priority wins, tags union, raw shallow-merge; a throwing / malformed source
+  degrades alone). `attachPortraits(map)` mounts portraits/CG by standard name onto rows;
+  `describe()` returns `{ total, activeCount, sourceCounts, unmappedPortraits }` (pure module,
+  machine-checked). Wiring: the bridge registers its three sources (mvu / table-db / fallback)
+  and exposes `rosterRows() / rosterNames() / rosterSummary()`; the host registers chat (⌖
+  character tags from the pipeline message window) and baibai (lazy, optional) and feeds the
+  character bar's `known` alignment list from the assembly system. The `eden-map:chars` viewer
+  payload is unchanged (the rosters three-table object still comes from the bridge's `rosters()`)
+  and the 16-member fallback display is untouched. Tests: `tests/character_roster.test.mjs`.
 
 ### 6. LayerSystem — redesign (replaces the current stacking logic)
 
