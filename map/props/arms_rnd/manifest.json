@@ -1,0 +1,84 @@
+{
+ "_note": "viewer3d.html?model=arms_rnd 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/arms_rnd.md。",
+ "id": "arms_rnd",
+ "title": {
+  "zh": "魔导军工研发中心",
+  "en": "Magitech Arms R&D Centre"
+ },
+ "glb": "arms_rnd.glb",
+ "glb_low": "arms_rnd_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "props_lab",
+   "props_yard"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "site_ground"
+  ],
+  "building": {
+   "min": [
+    -50.0,
+    -0.3,
+    -50.0
+   ],
+   "max": [
+    50.0,
+    30.0,
+    50.0
+   ]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 17,
+  "default": 17
+ },
+ "camera": {
+  "frame": [
+   "props_lab",
+   "props_yard"
+  ],
+  "dir": [
+   0.3,
+   0.55,
+   -0.78
+  ],
+  "min": 5,
+  "max": 280,
+  "maxPolar": 1.48
+ },
+ "budgets": {
+  "props_lab": [
+   26000,
+   2048
+  ],
+  "props_yard": [
+   20000,
+   1024
+  ],
+  "site_ground": [
+   9000,
+   2048
+  ]
+ },
+ "hotspots": [],
+ "building": {
+  "min": [
+   -29.0,
+   -0.3,
+   -27.0
+  ],
+  "max": [
+   29.0,
+   17.5,
+   27.0
+  ]
+ }
+}
