@@ -62,7 +62,7 @@ if (window.top !== window) {
     // 面板关闭时休眠：关掉底图（释放已解码的瓦片），脚本与数据留着；再打开时唤醒，重新打开当前地图
     if (e.data?.type === 'eden-map:sleep' && viewer) { saveView(); setSleeping(cur || REG?.start || null); setCur(null); if (est?.ready && !lean()) { dropParked(); setEstParked(est); est.frame.style.visibility = 'hidden'; est.frame.contentWindow?.postMessage({ type: 'estate:pause' }, SUB_ORIGIN); } else est?.frame.remove(); setEst(null); document.body.classList.remove('estate'); viewer.close(); untrackAll(); viewer.clearOverlays(); setTimeout(() => { if (sleeping) slowWarmAlt(); }, 3000); }
     if (e.data?.type === 'eden-map:wake' && sleeping) { setSlowStop(true); const id = sleeping; setSleeping(null); go(id); if (e.data.fly) P.TCCustom.flyTo(e.data.fly); }   // 先开图再飞：fly 目标认不出时不会留下空舞台（接手 review P2）
-    else if (e.data?.type === 'eden-map:wake' && e.data.fly) P.TCCustom.flyTo(e.data.fly);
+    else if (e.data?.type === 'eden-map:wake') { markHere($('#here').value || ''); if (e.data.fly) P.TCCustom.flyTo(e.data.fly); }   // G3（P1）：不在休眠也响应（宿主在标签页切回前台时广播，docs/reviews/architecture_and_stream_perf.md §1.4）——当前地点标记重画一遍，其余图层由宿主紧随的数据推送刷新
   };
   window.addEventListener('message', onHostMsg);
   // 核心模块在地图库下载完才求值（以前内联脚本在解析期就挂好监听）：这之前宿主发来的消息由 viewer.html 末尾的前置脚本排队，这里按原顺序补处理
