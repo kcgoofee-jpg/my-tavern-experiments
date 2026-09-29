@@ -121,7 +121,7 @@ bash tools/quiet_wait.sh     # 等锁过去（--check 只判断不等；--max N 
    ```
 6. 生成交付物：
    ```bash
-   python3 tools/build_preview_script.py --tag map-vX.Y.Z   # → ~/Downloads/酒馆/脚本/【地图】伊甸地图 vX.Y.Z.json（标签不存在或与 VERSION 不符时退出码 2）
+   python3 tools/build_preview_script.py --tag map-vX.Y.Z   # → ~/Downloads/eden-map/eden-map-vX.Y.Z.json（C3 英文化；标签不存在或与 VERSION 不符时退出码 2）
    python3 tools/build_worldbook_addon.py --version X.Y.Z \
      --check ~/Downloads/酒馆/世界书/华伦天奴世界书.json      # → ~/Downloads/酒馆/世界书/伊甸地图·世界书附加条目 vX.Y.Z.json
    ```

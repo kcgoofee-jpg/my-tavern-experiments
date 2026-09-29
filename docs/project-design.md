@@ -90,14 +90,14 @@ graph LR
 
 ### 5.2 当前违规清单
 
-- 仓库路径 `~/dev1/cctest1/性能/`：中文文件夹，已导致 Blender Metal 缓存崩溃（`tools/blender_run.sh:4` 的绕路）和百分号编码问题（`tests/eden_anchor.test.mjs:3`）。
-- `tools/build_preview_script.py:182` 导出文件名 `【地图】预览-跟随-<分支>.json`。
-- `tools/build_preview_script.py:176` 默认输出目录 `~/Downloads/酒馆/脚本`。
-- `tools/gallery_review.py` 默认收件箱 `~/Downloads/酒馆/gallery-inbox/`。
-- `map/data/worldbook_addon.json` 条目 `id` 为中文（58 处，如 `地图联动规范`、`地图当前地点`），这是自动同步用的稳定编号，属于 id。
-- `map/data/eden_estate_rooms.json` 中文键 / id 约 44 处（房间 id 与 `_说明`）。
-- `map/packs/town/events.json` 中文键 12 处（示例包，如 `市政`）。
-- `map/data/*.json`、`blender/data/tc_islands*.json`、`map/packs/*/manifest.json` 的注释键 `_说明`（非版本信息，但属于数据字段名；统一改 `_note`）。
+- ~~仓库路径 `~/dev1/cctest1/性能/`~~ ✅ 已迁 `~/dev1/cctest1/eden-map`；blender_run.sh / eden_anchor.test.mjs 的绕路注释已更新（ASCII TMPDIR 保留作保险）。
+- ~~`tools/build_preview_script.py:182` 导出文件名~~ ✅ → `eden-map-preview-follow-<分支>.json`。
+- ~~默认输出目录~~ ✅ → `~/Downloads/eden-map`。
+- ~~`tools/gallery_review.py` 默认收件箱~~ ✅ → `~/Downloads/eden-map/gallery-inbox/`。
+- ~~`map/data/worldbook_addon.json` 条目 `id` 为中文（58 处）~~ ✅ 实为已 ASCII slug（`map.link-rules` 等），清单过期；仍加 check_maps.py 门控防回潮。
+- ~~`map/data/eden_estate_rooms.json` 中文键 / id 约 44 处~~ ✅ 房间 id 已 ASCII（`B2-00` 式）；`_说明`→`_note`；`card_id_alias` 中文键映射卡原文名，按显示名豁免。
+- ~~`map/packs/town/events.json` 中文键 12 处~~ 豁免：分组键与 events.mjs CATS 中文分类同源（显示用分类名），不属 id。
+- ~~注释键 `_说明`~~ ✅ 全仓（含 schema/layouts/history 子目录与 8 个生产者）已改 `_note`；check_maps.py 增非 ASCII 门控（路径/地图键/标记/房间/条目/roomId）。
 - ~~`docs/drafts/estate_v*_desk_*_<房间中文>.jpg`：36 个草图文件名带中文。~~ ✅ 9 张有引用（`estate_v3_close_*`）改英文，其余 27 张全仓库无任何引用，按规则删除（见 handoff）。
 - ~~`skills/card-map/guides/{NSFW指引,建筑指引,面板UI指引,风格指引}.md`：4 个中文文件名。~~ ✅ 已改 `nsfw.md`/`architecture.md`/`panel-ui.md`/`style.md`。
 - 旧世界书书名带版本号（`… v0.9.5`）：显示名里混了版本，迁移后不再在书名里写版本。

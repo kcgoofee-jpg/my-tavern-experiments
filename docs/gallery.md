@@ -37,11 +37,11 @@
 1. 用户在图集面板把想投稿的图切到「投稿」，点「导出投稿包」——下载 `<roomId>_manifest.json` +
    `<roomId>_NN.webp` 到浏览器默认下载目录。这一步不会打开任何提交链接（`buildIssueUrl` 生成的链接只在
    维护者模式下才会用到，见下）。
-2. 所有者把这些文件挪进收件箱目录，例如 `~/Downloads/酒馆/gallery-inbox/`（可以直接原样放，不用建子目录）。
+2. 所有者把这些文件挪进收件箱目录，例如 `~/Downloads/eden-map/gallery-inbox/`（C3 英文化；旧 `~/Downloads/酒馆/gallery-inbox/` 可用 --inbox 指回；文件可直接原样放，不用建子目录）。
 3. 跑：
 
    ```bash
-   python3 tools/gallery_review.py                     # 默认收件箱 ~/Downloads/酒馆/gallery-inbox/
+   python3 tools/gallery_review.py                     # 默认收件箱 ~/Downloads/eden-map/gallery-inbox/
    python3 tools/gallery_review.py --inbox <别的目录>
    ```
 
