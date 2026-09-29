@@ -21,6 +21,21 @@ UNTR=$(git status --porcelain --untracked-files=all -- map | grep '^??' || true)
 [ -z "$UNTR" ] || { echo "map/ 下有未跟踪文件（没 git add 就不会推送）：" >&2; echo "$UNTR" | head -20 | sed 's/^/   /' >&2; exit 1; }
 python3 tools/check_maps.py --committed HEAD >/dev/null || { python3 tools/check_maps.py --committed HEAD | grep '^错误' >&2; echo "check_maps（提交内容）失败" >&2; exit 1; }
 
+# --release：先把 README 置顶那条「发版线」刷到刚打的标签，再跑 smoke——否则 smoke 里的 README 门控
+# （要求钉的 ref 等于最新标签）会把这次发布拦下。与 latest.json 一样，属于「发版时一起带走」的文档动作。
+# 演练（--dry-run）不改文件：此时若标签刚打而 README 还没刷，门控会如实报错——那是它该做的。
+if [ "$REL" = 1 ]; then
+  TAG_REL=$(python3 -c "import sys; sys.path.insert(0, 'tools'); import verlib; print(verlib.tag_of(open('VERSION').read().strip()))")
+  git rev-parse -q --verify "refs/tags/$TAG_REL" >/dev/null || { echo "--release：标签 $TAG_REL 不存在，先打标签并推送" >&2; exit 2; }
+  if [ "$DRY" = 1 ]; then echo "   演练：README 置顶导入链接 → $TAG_REL（不提交）"
+  else
+    python3 tools/check_readme.py --fix | sed 's/^/   /' || echo "   提醒：README 门控还有未修项（见上），本次发布继续" >&2
+    if ! git diff --quiet -- README.md; then
+      git add README.md && git commit -q -m "docs: point the README import link at $TAG_REL" -- README.md && echo "   README 置顶导入链接 → $TAG_REL"
+    fi
+  fi
+fi
+
 echo "-- 1/4 smoke"; bash tools/smoke.sh
 if [ "$REL" = 1 ]; then
   TAG=$(python3 -c "import sys; sys.path.insert(0, 'tools'); import verlib; print(verlib.tag_of(open('VERSION').read().strip()))")

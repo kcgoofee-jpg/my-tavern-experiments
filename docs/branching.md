@@ -83,6 +83,20 @@ be an ancestor of the follow branch, and the local `main` must not hold commits 
 branch lacks), updates the ref without checking it out, and pushes without `--force`.
 Anything else is reported and refused.
 
+## The import link in the README
+
+`README.md` opens with the two one-line `import` addresses users copy into Tavern Helper:
+the follow line (`@preview`, always current — a branch ref needs no maintenance) and the
+release line (pinned to a tag). Both are checked offline by `tools/check_readme.py` from
+`tools/smoke.sh`: repo slug against `origin`, preview ref against `preview`, release ref
+against the newest `map-v*` tag, the version claims against `VERSION`, and every repo path
+mentioned in the file against the filesystem. `tools/test_readme.py` proves the gate can
+actually fail, so it cannot pass by matching nothing.
+
+`bash tools/ship.sh --release` refreshes the pinned tag before it runs smoke (same step that
+points `map/data/latest.json` at the tag), commits it, and then continues, so the published
+address cannot lag behind the release.
+
 ## History note
 
 The 2026-09 filter-repo rewrite made `main` and `feat/worldbook-auto` unrelated to the

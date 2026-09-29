@@ -1,6 +1,17 @@
-# 技术路线图
+# 伊甸庄园 · 世界地图（酒馆助手外挂脚本）
 
 [![CI](https://github.com/kcgoofee-jpg/my-tavern-experiments/actions/workflows/ci.yml/badge.svg?branch=preview)](https://github.com/kcgoofee-jpg/my-tavern-experiments/actions/workflows/ci.yml)
+
+## 导入（最新地址）
+
+| 用哪条 | 一行 `import` |
+|---|---|
+| **跟随开发**（预览线，永远最新） | `import 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@preview/map/tavern/eden-map.js'` |
+| 发版线（稳定，钉标签；当前 `map-v0.9.6`） | `import 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.6/map/tavern/eden-map.js'` |
+
+- **国内线路**：把域名换成 `cdn.jsdmirror.com`，路径完全相同（预览脚本按 国内镜像 → jsDelivr 顺序试，见 `tools/build_preview_script.py`）。
+- **不想手写 import**：`python3 tools/build_preview_script.py <git ref>` 生成可直接在酒馆助手「导入脚本」的 JSON。
+- **这两条地址不会过期**：`tools/check_readme.py` 在 `tools/smoke.sh` 里守着（仓库名 / 预览分支 / 最新标签 / 本文件提到的路径），`bash tools/ship.sh --release` 会把发版线那条自动刷到刚打的标签。
 
 > 状态：开发中 · 当前发布版本 `0.9.6`（标签 `map-v0.9.6`） · 下一版进行中（分支 `preview`）
 > **待办唯一索引：[`docs/todo.md`](docs/todo.md)**（四轨：代码线 / 渲染线 / 文档仓库线 / 待用户决定，每条带出处）。
@@ -42,7 +53,7 @@
 | 瓦片 | Deep Zoom（DZI），512 px JPEG | 三档清晰度同一金字塔 |
 | 查看器 | OpenSeadragon 5.0.1、原生 ES 模块、无构建步骤 | 本地 vendor，不依赖外部 CDN 运行 |
 | 酒馆集成 | 酒馆助手（JS-Slash-Runner）、MVU | 兼容 EJS 模板与正则脚本 |
-| 分发 | jsDelivr（钉提交 SHA / 标签）、npm（计划） | 国内线路：npmmirror（计划） |
+| 分发 | jsDelivr（钉提交 SHA / 标签） | 国内线路：`cdn.jsdmirror.com`（**已实现**，预览脚本按 国内镜像 → jsDelivr 顺序试）；npm 打包脚本 `tools/pack_npm.sh` 已就绪，正式发布待定 |
 | 测试 | Node `node:test`、Playwright（Chromium + WebKit）、axe | WebKit 覆盖 iPhone 全部浏览器与 macOS TT |
 | 审阅 | 多人设审阅 + 架构师汇总（`tools/review/`） | 渲染门控按「够用」标准 |
 
@@ -51,7 +62,7 @@
 | 版本 | 范围 | 状态 |
 |---|---|---|
 | 0.6.x | 世界地图、查看器基础、卡内悬浮按钮 | ☑ 已发布 |
-| 0.9.1 | 天城三层分城区写实底图（8K）、上层浮岛与云海、当前地点定位、事件体系 v2（9 类 66 种）、界面统一、中 / 英与深 / 浅主题、本机扩展接口（最小集） | ☑ 已发布（`map-v0.9.1`） |
+| 0.9.1 | 天城三层分城区写实底图（8K）、上层浮岛与云海、当前地点定位、事件体系 v2、界面统一、中 / 英与深 / 浅主题、本机扩展接口（最小集） | ☑ 已发布（`map-v0.9.1`；事件种数以现行值为准：**10 类 85 种**，`docs/event-taxonomy.md` §1——本文与 CHANGELOG 早先写过的 64 / 66 / 82 / 84 都不准） |
 | 0.9.2 | 云海方案 B 接进查看器（漂移云 + 切层转场）、单手模式 E7、人物栏、开局关键地点、界面去重与查错 | ☑ 已发布（`map-v0.9.2`） |
 | 0.9.3 | MVU 联动：人物位置、世界时间与夜色、着装、自定义名称与用途、按地点回注方位 | ☑ 已发布（`map-v0.9.3`） |
 | 0.9.4 | 自检误报修复（热换脚本后旧地址被算成重复脚本；附加条目未生效的提示） | ☑ 已发布（`map-v0.9.4`） |
@@ -68,7 +79,7 @@
 | B | 上层浮岛（每岛不同、伊甸约 670 × 500 m）、云海（无岛影）、8K | ☑ 第 3 轮有条件通过，已发版 |
 | C | 当前地点精确到房间；three.js 庄园冻结，按现状随版发布 | ☑ |
 | D | 事件体系 v2、示范标签、世界书联动规范 v2 | ☑（0.9.5 起补到 82 种；2026-09-29 核实现为 **10 类 85 种**，以 `docs/event-taxonomy.md` §1 为准） |
-| E | 界面统一（设计令牌）、TT WebView 兼容修复、v0.9.1 小调整、单手 / 色盲、隐私 | ☑（色盲无限期推迟，补丁存 `docs/drafts/e7_cvd.patch`） |
+| E | 界面统一（设计令牌）、TT WebView 兼容修复、v0.9.1 小调整、单手 / 色盲、隐私 | ☑（色盲当时无限期推迟，**0.9.6 已补做「色觉模式」**：`map/app/cvd.mjs`，原草稿 `docs/drafts/e7_cvd.patch`；单手 0.9.2 上线） |
 | F | 版本号、变更记录、标签、CDN 预热、隔离酒馆验证、npm 发布 | ☑ 发版；npm 正式发布与用户 TT 实测仍待用户 |
 
 ## 4. 质量门控
@@ -99,7 +110,7 @@
 
 | 路径 | 内容 |
 |---|---|
-| `blender/` | 渲染脚本（`tiancheng_*.py`、`tc_*.py`、`estate/`） |
+| `blender/` | 渲染脚本（`tiancheng_*.py`、`tc_*.py`、`estate2/` 现行庄园；`estate/` 仅因 `tc_estates.build_eden` 的 1:100 调用而保留） |
 | `map/` | 查看器、瓦片、数据、酒馆脚本、界面令牌 |
 | `tools/` | 构建、渲染、切片、自检、浏览器测试、审阅流程 |
 | `tests/` | 单元测试 |
