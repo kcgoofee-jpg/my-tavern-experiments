@@ -1,0 +1,4 @@
+{
+  "exclude": ["blender", "logs", ".cache", ".ruff_cache"],
+  "comment": "blender/ 是 Blender 内置解释器跑的脚本：bpy/mathutils/_cycles/numpy 只存在于 Blender 运行时，本地静态分析必然报 reportMissingImports（HEAD 基线与改动后完全相同的 20 项，2026-09-29 对账验证）。该目录的验收是 python3 -m py_compile + Blender 内实跑（tools/blender_run.sh，miss→hit 探测）+ python3 tools/test_render_guard.py。"
+}

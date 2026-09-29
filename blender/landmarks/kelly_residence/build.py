@@ -51,6 +51,7 @@ def main():
     import bpy
     from mathutils import Vector, Matrix
     sc = C.setup(A['samples'])
+    if C.CACHED: return C.render_cached(sc, A['out'], A['blend'])   # --cache-blend 命中：场景已从缓存载入，跳过搭建直接渲染
     Batch = C.Batch
 
     STUCCO = C.pbr('stucco', 'white_stucco', 2.5, tint=(0.96, 0.94, 0.88), value=1.0, sat=0.3)

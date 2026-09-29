@@ -145,10 +145,10 @@ Mac 上 nvidia-smi 不存在：`ioreg` 的利用率只记录不判死（统一�
 `tools/blender_run.sh --cache-blend <目录>` 提供的是**基础设施**，不是开箱即用的自动加速：
 - 会按（透传参数 + `git HEAD` + `git diff --stat -- blender/` + `runpy.run_path()` 指向的构建脚本内容）算一个哈希，决定这次搭建跟上次是不是同一个场景；
 - 命中时把路径通过环境变量 `EDEN_CACHE_BLEND_HIT=1`、`EDEN_CACHE_BLEND_PATH=<blend 路径>` 告诉 Python 构建脚本；
-- **场景脚本要自己检查这两个环境变量**，命中时用 `bpy.ops.wm.open_mainfile(filepath=os.environ['EDEN_CACHE_BLEND_PATH'])` 跳过搭建直接渲染——本仓库目前的 `tiancheng_*.py` / `landmarks/*/build.py` 都还没接这段判断，所以现在加这个参数本身不会自动提速，只是把哈希/环境变量/保存这套管子先接好；
+- **场景脚本已接（2026-09-29）**：`tiancheng_mid/low/upper.py` 在 `tc.Layer(...)`（含 OSM 城市生成，搭建大头）之前调 `tc.blend_cache_open()`，命中则 `tc.cache_render()` + 退出，完全跳过本文件；`landmarks/*/build.py`（31 个）由 `common.setup()` 判命中（`C.CACHED`），各脚本一行 `if C.CACHED: return C.render_cached(...)` 跳过搭建。命中路径也会 `pick_gpu`——新 Blender 进程的计算设备偏好是空的，blend 里存的 `device='GPU'` 落不到实处，会回落 CPU 被 CPU 闸拦下（实测踩过）。`--data-only` / `--crop(s)` 命中按未命中走（前者不渲染、后者要渲多块局部）；`blender/world/yuanyu_holy_mount.py` 一段搭建多个机位渲染，暂未接；
 - 不管命不命中，跑完都会把当前场景存一份到该哈希对应的 `.blend`（`tools/blender_run.sh` 内部在末尾追加一个 `--python-expr` 调 `bpy.ops.wm.save_mainfile`）。
 - `tools/cloud/render.sh` 会原样透传 `--cache-blend` 给远端；`tools/render_queue.sh` 已经默认给 Mac 任务传 `--cache-blend .cache/blend`（相对仓库根）、给云端任务传 `--cache-blend .cache/blend`（相对 `REMOTE_DIR`）。
-- 接入某个场景脚本后，要在 `tools/cloud/bench.sh` 跑一次「缓存未命中」和一次「缓存命中」，把两次的秒数都记进 `logs/render_times.csv`（`kind` 列区分 `draft`/`draft-cached` 之类），才能验证真的省了时间。
+- 接入后已验（2026-09-29，本机 draft）：`lm_contest_corridor` 401px/8spp 未命中 0.1 min（正常出图 + 落盘 .blend）→ 同参命中 **0.0 min**（`blend cache hit` 后直接渲染，`WROTE … (cache hit)`）。小场景绝对值小，真正的收益在 8K/16K 定稿（搭建 59s 级）；上云前后各记一次 `tools/cloud/bench.sh` 的未命中/命中秒数进 `logs/render_times.csv`。
 
 ## 关机保留数据盘
 

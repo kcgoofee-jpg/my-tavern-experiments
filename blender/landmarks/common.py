@@ -23,7 +23,16 @@ def args(defaults):
     return a
 
 
+CACHED = False   # --cache-blend 命中：setup() 打开了缓存场景，build.py 的搭建段要整体跳过（见各 build.py 的 if C.CACHED）
+
+
 def setup(samples):
+    global CACHED
+    CACHED = tc_common.blend_cache_open()
+    if CACHED:
+        sc = bpy.context.scene
+        tc_common.pick_gpu(sc)   # 命中也要配设备：新 Blender 进程的计算设备偏好为空，blend 里存的
+        return sc                # device='GPU' 落不到实处，渲染会回落 CPU 被 CPU 闸拦下（2026-09-29 实测）
     bpy.ops.wm.read_factory_settings(use_empty=True)
     sc = bpy.context.scene
     sc.render.engine = 'CYCLES'
@@ -447,6 +456,18 @@ def camera(sc, pos, tgt, lens, shift_y=0.0):
     cam.rotation_euler = (Vector(tgt) - Vector(pos)).to_track_quat('-Z', 'Y').to_euler()
     sc.camera = cam
     return cam
+
+
+def render_cached(sc, out, blend=''):
+    """--cache-blend 命中路径（setup 里 CACHED=True 时由各 build.py 调）：只补输出路径与图片格式再渲染。
+    分辨率 / 相机 / 采样都是建那一次的场景状态（blender_run.sh 的哈希含全部参数，命中即同参），不重算。"""
+    ext = os.path.splitext(out)[1].lower()
+    sc.render.image_settings.file_format = 'JPEG' if ext in ('.jpg', '.jpeg') else 'PNG'
+    if ext in ('.jpg', '.jpeg'): sc.render.image_settings.quality = 90
+    sc.render.filepath = out
+    if blend: bpy.ops.wm.save_as_mainfile(filepath=blend)
+    bpy.ops.render.render(write_still=True)
+    print('WROTE', out, '(cache hit)')
 
 
 def render(sc, out, res, aspect=1.5, blend=''):

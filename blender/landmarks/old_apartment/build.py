@@ -151,6 +151,7 @@ def person(B, x, y, z, yaw, rnd, M, h=None):
 def main():
     import bpy
     sc = C.setup(A['samples'])
+    if C.CACHED: return C.render_cached(sc, A['out'], A['blend'])   # --cache-blend 命中：场景已从缓存载入，跳过搭建直接渲染
     Batch = C.Batch
     rnd = random.Random(6)
 

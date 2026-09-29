@@ -51,7 +51,7 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [ ] 创意工坊（`docs/design/workshop.md` 整篇「设计稿，未实施」= `docs/project-design.md` C6）；
   `docs/design/custom-v2.md:174-197` C1–C12 全未做。
 - [ ] 纵深 P2（`docs/design/depth-system.md:81`）、meta 接 `make_dzi`（`:84`）。
-- [ ] `tiancheng_*.py` / `landmarks` 未接 `--cache-blend`，接入后补 bench（`docs/cloud-render.md:135,138`）。
+- [x] ~~`tiancheng_*.py` / `landmarks` 未接 `--cache-blend`，接入后补 bench（`docs/cloud-render.md:135,138`）。~~ ✅ 2026-09-29 全部接入（tiancheng×3 在 `tc.Layer()` 前命中早退；landmarks 31 个 build.py 走 `common.setup()` 的 `C.CACHED`；命中路径补 `pick_gpu` 治 CPU 回落）；本机 draft miss→hit 已验；8K/16K 的 bench 待下次定稿顺带记。
 - [ ] 上层真 3D（`docs/project-design.md` C5）。
 - [ ] 自动旋转开关进设置页；滚轮＝平移是否改缩放（`docs/handoff.md:9`）。
 - [ ] 三维查看器两个观感项：塔楼顶部纯白方块 / 裙楼粉长条（疑材质缺失）、信息按钮 (i) 高亮却不弹面板

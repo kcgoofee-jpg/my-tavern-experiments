@@ -13,6 +13,9 @@ import tc_common as tc
 from tc_common import W, H, mat, noise_mat, tick
 from mathutils import Vector, Matrix
 
+if tc.blend_cache_open():   # --cache-blend 命中：场景在缓存里（同参重渲），跳过城市生成与本文件全部搭建，直接渲染退出
+    tc.cache_render()
+    sys.exit(0)
 layer = tc.Layer('tc_upper', city='upper')                        # 解析参数、清空场景、生成城市（第一个随机调用）；岛屿沿用同一种子的 random 序列
 sc, col_main, city = layer.sc, layer.col, layer.city
 BELOW = str(layer.opt.get('--below', 'clouds'))

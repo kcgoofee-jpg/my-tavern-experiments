@@ -29,6 +29,37 @@ def _num(s):
     try: float(s); return True
     except ValueError: return False
 
+
+# ---------------- 场景缓存（--cache-blend，tools/blender_run.sh 注入 EDEN_CACHE_BLEND_*）----------------
+# 搭建（bpy 几何/贴图/BVH）是纯 CPU，8K/16K 定稿里常比显卡渲染本身还慢（基准：搭 59s / 渲 7s）。
+# blender_run.sh 把整套 CLI 参数 + 脚本内容 + git 状态哈希进缓存文件名：命中即同参，场景状态
+# （相机 / 世界 / 合成器 / 分辨率 / 边框）与建那次逐字节同源，命中后只补 --out 再渲染即可。
+# 层脚本在搭建开始前调 blend_cache_open()：命中 True → cache_render() + sys.exit(0)；
+# landmarks 系（common.setup）见其文件内的 CACHED。未命中照常搭建，跑完由 blender_run.sh 的 SAVE_EXPR 存缓存。
+
+def blend_cache_open():
+    """命中返回 True（缓存 .blend 已打开，调用方必须跳过全部搭建）；未启用 / 未命中返回 False、场景未动。
+    必须在任何搭建之前调用——open_mainfile 会让之前创建的 Python 引用全部失效。
+    --data-only（不渲染）与 --crop/--crops/--crops-json（输出不是单一整图，命中路径只渲整图）不缓存。"""
+    if os.environ.get('EDEN_CACHE_BLEND_HIT') != '1': return False
+    a = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
+    if any(k in a for k in ('--data-only', '--crop', '--crops', '--crops-json')): return False
+    p = os.environ.get('EDEN_CACHE_BLEND_PATH')
+    if not p or not os.path.isfile(p): return False
+    tick(f'blend cache hit: {p}')
+    bpy.ops.wm.open_mainfile(filepath=p)
+    return True
+
+def cache_render(label='cache hit'):
+    """blend_cache_open() 命中后的渲染：补设备守卫（含 CPU 闸），套用 --out 后直接渲已载入的场景。
+    分辨率 / 采样 / 相机 / 世界 / 合成器都是建那一次的场景状态（同参才可能命中），这里不再重算。"""
+    sc = bpy.context.scene
+    setup_render_device(sc)
+    opt = parse_args({})
+    if '--out' in opt: sc.render.filepath = os.path.abspath(opt['--out'])
+    render(sc, sc.render.filepath, label)
+
+
 def setup():
     """清空场景并设定随机种子；返回 (rng, 场景, 主集合)。"""
     bpy.ops.wm.read_factory_settings(use_empty=True)

@@ -15,6 +15,9 @@ import numpy as np
 from mathutils import Matrix
 from mathutils.kdtree import KDTree
 
+if tc.blend_cache_open():   # --cache-blend 命中：场景在缓存里（同参重渲），跳过城市生成与本文件全部搭建，直接渲染退出
+    tc.cache_render()
+    sys.exit(0)
 layer = tc.Layer('tc_mid', seed=7001, bounces=4)   # 城市在这里生成（第一个随机调用）；本层自己的随机另起种子，不影响城市布局
 DAY = layer.day                                    # --day：白天版（日光；夜景元素熄灭 / 改暗，几何与随机序列不变，见文末与各处 DAY 分支）
 sc, col_main, city, R, GLOW = layer.sc, layer.col, layer.city, layer.rng, 0 if DAY else layer.f('--glow', 1)   # --day：发光倍数置 0
