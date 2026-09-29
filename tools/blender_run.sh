@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 共用 GPU 的 Blender 启动器（原 skills/card-map/blender_run.sh，现全仓库统一用这一个）。
 # - 先等别人的 Blender 退出（pgrep -x Blender 为空），再拿一把锁文件（防止两个启动器同时闯过 pgrep 检查的竞态）。
-# - 用 ASCII 的 TMPDIR（/private/tmp/bl_tmp），避开中文仓库路径「性能/」触发的 Metal 内核缓存崩溃。
+# - 用 ASCII 的 TMPDIR（/private/tmp/bl_tmp）：中文 TMPDIR 会触发 Metal 内核缓存崩溃（仓库目录已英文化，此处保留 ASCII 保险）。
 # - 崩溃（非零退出）重试一次；仍失败才返回失败。
 # - 把自己的 PID 写进 <日志>.pid；要中止时只 kill 这个 PID，绝不 pkill / killall Blender（别的代理可能正在渲）。
 # - 追加一行到 logs/render_times.csv：date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny

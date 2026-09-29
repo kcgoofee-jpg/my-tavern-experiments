@@ -343,6 +343,33 @@ if exists(_gal_path):
                     if sz < 0: err(f'gallery.json.rooms.{rid}[{i}]: 读不到文件大小 map/art/gallery/{rid}/{fn}')
                     elif sz > GALLERY_MAX_BYTES: err(f'gallery.json.rooms.{rid}[{i}]: 文件 {sz} 字节超过上限 {GALLERY_MAX_BYTES}（map/art/gallery/{rid}/{fn}）')
 
+# C3 命名门控：map/ 下的文件路径、以及数据里的 id 类字段（地图 id、标记 id、房间 id、世界书条目 id、图集 roomId）
+# 必须是 ASCII（显示字段 name/tag/词表不在检查之列，白名单见 docs/project-design.md §5.1）。
+def _nonascii(x): return re.search(r'[^\x00-\x7f]', str(x))
+if REV is not None: _paths = {p for p in _files if p.startswith('map/')}
+else: _paths = {_rel(os.path.join(dp, fn)) for dp, _, fs in os.walk(ROOT) for fn in fs}
+for _p in sorted(_paths):
+    if _nonascii(_p): err(f'非 ASCII 路径（C3 命名规范）：{_p}')
+for _mid, _m in maps.items():
+    if _nonascii(_mid): err(f'maps.json: 地图 id 非 ASCII：{_mid!r}')
+    for _mk in _m.get('markers', []):
+        _id = _mk.get('id') if isinstance(_mk, dict) else _mk
+        if _nonascii(_id): err(f'maps.json: 标记 id 非 ASCII：{_id!r}')
+_rr = os.path.join(ROOT, 'data', 'eden_estate_rooms.json')
+if exists(_rr):
+    for _r in (load(_rr).get('rooms') or []):
+        if _nonascii(_r.get('id', '')): err(f"eden_estate_rooms.json: 房间 id 非 ASCII：{_r.get('id')!r}")
+_wb = os.path.join(ROOT, 'data', 'worldbook_addon.json')
+if exists(_wb):
+    for _e in (load(_wb).get('entries') or []):
+        if _nonascii(_e.get('id', '')): err(f"worldbook_addon.json: 条目 id 非 ASCII：{_e.get('id')!r}")
+if exists(_gal_path):
+    try: _gal2 = load(_gal_path)
+    except (json.JSONDecodeError, FileNotFoundError): _gal2 = None
+    if isinstance(_gal2, dict):
+        for _rid in _gal2.get('rooms', {}):
+            if _nonascii(_rid): err(f'gallery.json: roomId 非 ASCII：{_rid!r}')
+
 for w in warns: print('警告', w)
 for e in errors: print('错误', e)
 n = sum(len(d.get('markers', [])) for d in data.values())
