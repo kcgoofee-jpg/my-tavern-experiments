@@ -59,7 +59,7 @@ bash tools/smoke.sh --cdn <提交>    # 另外 HEAD 一组 jsDelivr 地址（入
 ## 5. 一条命令发布到预览（**不是发版**）
 ```bash
 bash tools/ship.sh --dry-run   # 演练：smoke、git push --dry-run、列出要预热的文件数、预览脚本写到临时目录
-bash tools/ship.sh             # smoke → bump_head.py --push（rebase + head.json + 推送）→ warm_cdn.sh <内容提交> --purge-branch <分支> → build_preview_script.py --follow <分支> --out ~/Downloads/酒馆/预览
+bash tools/ship.sh             # smoke → bump_head.py --push（rebase + head.json + 推送）→ warm_cdn.sh <内容提交> --purge-branch <分支> → build_preview_script.py --follow <分支> --out ~/Downloads/eden-map/预览
 ```
 - 只推送已提交的内容，工作区有改动时会提醒。
 - 汇总里列出提交号、CDN 预热中非 200 的个数，以及预览脚本的位置；**非 200 > 0 时退出码 1**（2026-09-27 起）。

@@ -167,23 +167,23 @@ def main():
 
     # ------------------------------------------------------------ 会所（南）
     club = Batch('props_club')
-    club.boxc(CLB_CX, CLB_CY, PL, 96, 54, 19.0, ASHLAR)
-    for sx in (-1, 1):                                                      # 两侧翼楼（略低、后退）
-        club.boxc(CLB_CX + sx * 64.0, CLB_CY - 4.0, PL, 30, 40, 12.0, ASHLAR)
-        club.gable(CLB_CX + sx * 64.0 - 15, CLB_CX + sx * 64.0 + 15, CLB_CY - 24, CLB_CY + 16, PL + 12.0, 5.0, ROOF, along='x', over=0.8)
+    club.boxc(CLB_CX, CLB_CY, PL, 96, 54, 22.0, ASHLAR)
+    for sx in (-1, 1):                                                      # 两侧翼楼（压低、后退，读成一栋而不是两间棚子）
+        club.boxc(CLB_CX + sx * 60.0, CLB_CY - 6.0, PL, 28, 38, 9.5, ASHLAR)
+        club.gable(CLB_CX + sx * 60.0 - 14, CLB_CX + sx * 60.0 + 14, CLB_CY - 25, CLB_CY + 13, PL + 9.5, 3.6, ROOF, along='x', over=0.6)
     club.boxc(CLB_CX, CLB_CY, PL, 98, 56, 1.2, MARBLE)                      # 基座线脚
-    club.gable(CLB_CX - 49, CLB_CX + 49, CLB_CY - 28, CLB_CY + 28, PL + 19.0, 8.0, ROOF, along='x', over=1.2)
+    club.gable(CLB_CX - 49, CLB_CX + 49, CLB_CY - 28, CLB_CY + 28, PL + 22.0, 9.0, ROOF, along='y', over=1.2)   # 屋脊南北向：c1 看到山墙面
     for k in range(4):                                                      # 屋顶老虎窗
         x = CLB_CX - 33.0 + k * 22.0
-        club.boxc(x, CLB_CY - 16.0, PL + 19.0, 4.0, 6.0, 3.4, ASHLAR)
-        club.gable(x - 2.0, x + 2.0, CLB_CY - 19.0, CLB_CY - 13.0, PL + 22.4, 1.6, ROOF, along='x', over=0.3)
+        club.boxc(x, CLB_CY - 16.0, PL + 22.0, 4.0, 6.0, 3.4, ASHLAR)
+        club.gable(x - 2.0, x + 2.0, CLB_CY - 19.0, CLB_CY - 13.0, PL + 25.4, 1.6, ROOF, along='x', over=0.3)
     club.boxc(CLB_CX, CLB_CY + 27.6, PL + 0.6, 46, 0.6, 11.0, GLASS_L)      # 玻璃前厅（朝广场）
     for k in range(8):                                                      # 门廊列柱
         x = CLB_CX - 28.0 + k * 8.0
-        club.cyl(x, CLB_CY + 33.0, PL, 1.1, 13.0, MARBLE, 12)
-        club.cyl(x, CLB_CY + 33.0, PL + 13.0, 1.35, 0.5, GOLD, 12)
-    club.boxc(CLB_CX, CLB_CY + 33.0, PL + 13.5, 74, 5.0, 2.2, MARBLE)       # 额枋
-    club.gable(CLB_CX - 37, CLB_CX + 37, CLB_CY + 30, CLB_CY + 36, PL + 15.7, 4.0, MARBLE, along='x', over=0.6)
+        club.cyl(x, CLB_CY + 33.0, PL, 1.1, 15.0, MARBLE, 12)
+        club.cyl(x, CLB_CY + 33.0, PL + 15.0, 1.35, 0.5, GOLD, 12)
+    club.boxc(CLB_CX, CLB_CY + 33.0, PL + 15.5, 74, 5.0, 2.2, MARBLE)       # 额枋
+    club.gable(CLB_CX - 37, CLB_CX + 37, CLB_CY + 30, CLB_CY + 36, PL + 17.7, 4.0, MARBLE, along='x', over=0.6)
     club.cyl(CLB_CX, CLB_CY + 52.0, PL, 9.0, 0.6, MARBLE, 32, r2=9.0)       # 露台水池
     club.cyl(CLB_CX, CLB_CY + 52.0, PL + 0.6, 7.6, 0.3, GLASS, 32, r2=7.6)
     club.cyl(CLB_CX, CLB_CY + 52.0, PL + 0.9, 1.0, 2.6, MARBLE, 12)
@@ -198,17 +198,24 @@ def main():
         a0 = i * math.tau / ringn; a1 = (i + 1) * math.tau / ringn
         ground.strip([(math.cos(a0) * RING_R, math.sin(a0) * RING_R, 0),
                       (math.cos(a1) * RING_R, math.sin(a1) * RING_R, 0)], 9.0, 0.08, ROAD)
-    for k in range(4):                                                      # 四条放射大道
+    for k in range(4):                                                      # 四条放射大道（从台地边缘起，不穿广场）
         a = k * math.tau / 4 + math.tau / 8
-        ground.strip([(math.cos(a) * 42, math.sin(a) * 42, PL + 0.02),
-                      (math.cos(a) * (RING_R + 90), math.sin(a) * (RING_R + 90), 0)], 22.0, 0.06, ROAD)
+        ground.strip([(math.cos(a) * (RING_R + 1), math.sin(a) * (RING_R + 1), 0),
+                      (math.cos(a) * (RING_R + 120), math.sin(a) * (RING_R + 120), 0)], 15.0, 0.06, ROAD)
+        for t in (0.34, 0.52, 0.70):                                        # 大道两侧行道树
+            for sd in (-1, 1):
+                rr = RING_R + t * 130
+                tx, ty = math.cos(a) * rr - sd * math.sin(a) * 13, math.sin(a) * rr + sd * math.cos(a) * 13
+                ground.cyl(tx, ty, 0, 0.28, 3.2, WOOD, 8)
+                ground.sphere(tx, ty, 3.7, 1.7, LEAF, seg=10, rings=6)
     for k in range(8):                                                      # 台地台阶（八向）
         a = k * math.tau / 8
         ground.strip([(math.cos(a) * (RING_R + 6), math.sin(a) * (RING_R + 6), 0),
                       (math.cos(a) * (RING_R - 2), math.sin(a) * (RING_R - 2), PL)], 26.0, 0.35, MARBLE)
-    for (gx, gy, gw, gd) in ((-3.0, 92.0, 60.0, 34.0), (3.0, -92.0, 60.0, 34.0),
-                             (-92.0, 3.0, 34.0, 60.0), (92.0, -3.0, 34.0, 60.0)):
+    for (gx, gy, gw, gd) in ((-3.0, 96.0, 86.0, 46.0), (3.0, -96.0, 86.0, 46.0),
+                             (-96.0, 3.0, 46.0, 86.0), (96.0, -3.0, 46.0, 86.0)):
         ground.boxc(gx, gy, PL - 0.05, gw, gd, 0.1, GRASS)                  # 四角草坪
+    ground.lathe(0, 0, PL + 0.02, [(RING_R - 9, 0), (RING_R - 9, 0.08), (RING_R - 12, 0.08)], BRONZE, 72)   # 铺装内的青铜镶环
     for i in range(16):                                                     # 放射铺装带（深浅相间）
         a = i * math.tau / 16 + math.tau / 32
         ground.strip([(math.cos(a) * 40, math.sin(a) * 40, PL + 0.04),
@@ -237,12 +244,12 @@ def main():
         print('TRIS', o.name, sum(len(p.vertices) - 2 for p in o.data.polygons), flush=True)
 
     # ------------------------------------------------------------ 背景：既有城建 + 上方甲板
-    BG = C.flat('bg_conc', (0.3, 0.3, 0.32), 0.85, noise=0.3)
+    BG = C.flat('bg_conc', (0.36, 0.33, 0.29), 0.85, noise=0.3)          # 暖石材色，别让远景发蓝
     BG2 = C.flat('bg_dark', (0.16, 0.16, 0.18), 0.85, noise=0.35)
     WGB = [C.window_grid('bg_wg%d' % i, lit=c, estr=3.0, cell=(3.2, 3.6), seed=i * 4.1) for i, c in
            enumerate(((1.0, 0.85, 0.6), (0.7, 0.85, 1.0)))]
     far = Batch('bg_deck')
-    far.box(-3000, 3000, -3000, 3000, -6, -4, BG)
+    far.box(-5200, 5200, -5200, 5200, -6, -4, BG)
 
     bt = Batch('bg_towers')
     rb = random.Random(53)
@@ -277,7 +284,7 @@ def main():
         print('TRIS', o.name, sum(len(p.vertices) - 2 for p in o.data.polygons), flush=True)
 
     # ------------------------------------------------------------ 世界 / 光：日间，庄重通透
-    C.sky_sun(sc, 'day', sun_az=205.0, sun_el=44.0, sun_e=3.6, sky_s=0.35)
+    C.sky_sun(sc, 'day', sun_az=205.0, sun_el=38.0, sun_e=4.4, sky_s=0.5)     # 太阳压低一点、加强，石材才出暖调
     a = math.radians(205.0)
     for d in (420.0,):
         ld = bpy.data.lights.new('sun_fill', 'AREA'); ld.energy = 2.4e5; ld.size = 900; ld.color = (0.95, 0.9, 0.8)
