@@ -1,0 +1,84 @@
+{
+ "_note": "viewer3d.html?model=linguang_post 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/linguang_post.md。",
+ "id": "linguang_post",
+ "title": {
+  "zh": "临光家族外城驻所",
+  "en": "Linguang Outer Residence"
+ },
+ "glb": "linguang_post.glb",
+ "glb_low": "linguang_post_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "props_house",
+   "props_court"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "site_ground"
+  ],
+  "building": {
+   "min": [
+    -50.0,
+    -0.3,
+    -50.0
+   ],
+   "max": [
+    50.0,
+    30.0,
+    50.0
+   ]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 12,
+  "default": 12
+ },
+ "camera": {
+  "frame": [
+   "props_house",
+   "props_court"
+  ],
+  "dir": [
+   0.35,
+   0.6,
+   -0.72
+  ],
+  "min": 5,
+  "max": 260,
+  "maxPolar": 1.48
+ },
+ "budgets": {
+  "props_house": [
+   24000,
+   2048
+  ],
+  "props_court": [
+   16000,
+   1024
+  ],
+  "site_ground": [
+   8000,
+   2048
+  ]
+ },
+ "hotspots": [],
+ "building": {
+  "min": [
+   -31.0,
+   -0.3,
+   -26.0
+  ],
+  "max": [
+   31.0,
+   11.5,
+   26.0
+  ]
+ }
+}
