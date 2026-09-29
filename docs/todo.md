@@ -40,9 +40,9 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   (`docs/handoff.md`, "新顺序" code item 1.)
 - [ ] `eden-map.js` 继续拆分 — "按 `spec.md` 走完整重构"（`ROADMAP.md:52`），U1–U12 实测问题同批（`ROADMAP.md:51`）。
 - [ ] MVU 迷雾 / 结构小任务 — "「不要漏测」"（`ROADMAP.md:47`）。
-- [ ] `card-omissions` 遗留：A18/A20 泛称做图层、C2 治安梯度、C3 层间视线、C4 天气、C8/C9 卡片与编号解析
-  （`docs/card-omissions.md:74,76,106-108,112-113`）；B19 新事件类型「转化仪式 / 临时管控 / 登记年检 / 评级复核」
-  （`:282`，前半已做，转化仪式未收）。
+- [ ] `card-omissions` 遗留：A18/A20 泛称做图层、C2 治安梯度、~~C3 层间视线~~ ✅（2026-09-29 图例说明，`59ecc0f`）、~~C4 天气~~ ✅（2026-09-29 降雨事件·默认关，`59ecc0f`）、C8/C9 卡片与编号解析
+  （`docs/card-omissions.md:74,76,106-108,112-113`）；B19 新事件类型「~~转化仪式~~ ✅（`31df154`）/ 临时管控 / 登记年检 / 评级复核」
+  （`:282`）。
 - [ ] 事件系统后续：城市节律（`docs/event-taxonomy.md:29`）、虚线因果连线（`:43`）、
   「转化仪式直播」（`:89`）；`docs/map-events.md:155-165` 分阶段 2–5（时间轴 / 热区 / 反哺 / 城市自运转）、
   `:179` 下一批（雷达动画 / 连环 / 热力）。
@@ -68,6 +68,7 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 
 ## 2. Render line
 
+- [x] 上层整图重渲（2026-09-29，`34e5fd0`）：9 岛全入画 8000×5000 双版（plain / city 底）+ 五座庄园抠图贴合 + 气候塔锚点入画（`map/art/tc_upper*_full.png`、`blender/data/tc_islands.json`、`tools/isles_into_upper.py`），DZI/瓦片重建。逐岛精修与 v18 取舍仍开放（见下条与 §4）。
 - [ ] 上层 v18 逐岛建模 → 定稿（`docs/handoff.md:8,14,87`）。**WIP 已存档**：
   tag `archive/upper-v18`（`08597bed`，7 个岛脚本 ~1400 行改动 + academy/kelly 审图板），
   主线与之分叉 575 个提交 → 需决定「按新主线重做」还是「摘取其中仍有效的部分」。
@@ -101,7 +102,7 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   `docs/design/ui-v2/spec.md:1`（「草案，待用户确认」但 `impl/` 已实现）,
   `docs/landmarks/starabyss_univ.checklist.md:1`（写「下一步 draft」但 glb 已导出、r1 已评审）,
   `docs/drafts/upper_v16_checklist.md:1`（等用户点头，已被顶层 `docs/upper-islands-checklist.md` 取代）,
-  `map/data/worldbook_addon.json:3-4`（`0.9.5-dev`）。
+  ~~`map/data/worldbook_addon.json:3-4`（`0.9.5-dev`）~~ ✅ 2026-09-29 现为 `0.9.6-dev`（builder v16 重出，`34e5fd0`）。
 - [ ] **Fix the conflicting-content constraints**（撤销留下的旧话）：
   `docs/eden-lore-space.md:4,5`、`docs/eden-estate.md:105`（仍写「只写名字、不描述、不画家具」）、
   `docs/card-omissions.md:51,337-338`、`docs/history/CLOUD_TASK{,2,3,5,7}.md`（5 份**未加**作废批注，
@@ -117,7 +118,7 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   `tools/add_script_to_card.py` → `tools/legacy/`（`docs/ui-audit.md:14`）, `map/custom.js` → `map/custom.mjs`
   （`docs/design/custom-v2.md:4,13`）, `map/core/fog.mjs` → 已并入 `map/core/depth.mjs`（历史标注）,
   `tools/fetch_textures.sh`（`.gitignore:19-20` 注释引用，脚本不存在）,
-  `docs/tech-compat-no-moderation`（`skills/card-map/guides/nsfw.md:3` 引用，不存在）,
+  ~~`docs/tech-compat-no-moderation`（`skills/card-map/guides/nsfw.md:3` 引用，不存在）~~ ✅ 2026-09-29 文内已加「在本仓库不存在」批注,
   `card-only-scope-dlc.md`（`docs/rejected.md:12`、`docs/reports/token-usage.md:64`）,
   `model-and-budget-policy.md`（`docs/reports/token-usage.md:59`）。
 - [ ] **Fix `docs/reports/token-usage.md:63,64`**：仍写渲染队列与地标流程「规划中」，两者都已上线。
@@ -189,7 +190,7 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [?] 测试件（私人公务机、汽水罐小屋）用户已暂停（`ROADMAP.md:62`）。
 - [?] `docs/drafts/` 158 MB 是否迁出主仓 + 是否重写历史回收 63 MB 垃圾 blob（见 §3）。
 - [?] `archive/upper-v18` 的 v18 岛脚本：重做还是摘取（见 §2）。
-- [?] 上层景深（`map/data/upper_depth.json`，原 --haze）要动多大：先看塔入画后的两张 8K（tc_upper_full / tc_upper_city_full）再定改法与重渲范围（本会话 2026-09-29 用户提出，量级未定）。
+- [?] 上层景深（`map/data/upper_depth.json`，原 --haze）要动多大：先看塔入画后的两张 8K（tc_upper_full / tc_upper_city_full）再定改法与重渲范围（本会话 2026-09-29 用户提出，量级未定；✅ 2026-09-29 两张 8K 已出库、塔锚点已入画，见 §2 整图重渲条）。
 
 ## 5. Done, kept as evidence (2026-09-29)
 

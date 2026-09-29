@@ -1,5 +1,12 @@
 # 代理速查（每个任务先读这一页，别的文档按需 grep）
 
+## Current status (2026-09-29, milestone sealed — read this first)
+
+- HEAD `f7fbcff` on `preview`; `main` fast-forwarded to the same commit via `tools/sync_main.sh`. Working tree clean; no leftover local processes. Next milestone: the core architecture refactor.
+- Just landed: `34e5fd0` upper-layer 9-island integral re-render (8000×5000 plain+city, five estate cutouts, tiles/DZI rebuilt, climate-tower anchor in frame) + settings License page + empty-state roster closure (`sendChars` no longer gated by panel visibility) + worldbook builder v16 drops the 「推断」 wording. Related: `82a3ffb` (roster MVU fallback), `59ecc0f` (P2 batch C3/C4/A28 + feedback polish), `31df154` (转化仪式 event type), `52c2fcc` (viewer3d pause/lifecycle).
+- Version stays `0.9.6` (last released tag `map-v0.9.6`); the builder emits `0.9.6-dev` until the next bump + tag. CHANGELOG's in-progress section is `0.9.7`.
+- Open work lives in `docs/todo.md` (strike-through = done, with SHA). GLM-agent local-dev pitfalls: `docs/handoff.md` §GLM-Agent guide.
+
 - 分支只推 `preview`；不打标签、不发正式版；不生成角色卡；不写用户酒馆数据。
 - 在 scratchpad 里自建 worktree：`git fetch && git worktree add -b <名> <路径> origin/preview`；不动主工作区；永不 reset 到旧的 origin。
 - shell 的 `cat`/`ls` 是坏别名：用 `command cat` / Write 工具；提交信息写文件用 `-F`；非 ASCII 路径用 fileURLToPath。
