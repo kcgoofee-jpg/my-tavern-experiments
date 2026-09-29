@@ -1,6 +1,7 @@
-// E2 浏览器验收（GOAL 阶段 4 第 3 条 / E2）：node tools/browser/accept.mjs <输出目录> [--only first,layers,cloud,fly,estate,wheel,dead,embed,phone,matrix]
+// E2 浏览器验收（GOAL 阶段 4 第 3 条 / E2）：node tools/browser/accept.mjs <输出目录> [--only first,layers,cloud,fly,estate,wheel,dead,embed,phone,matrix,depth]
 // 省流首屏 ≤ 3 s（本地服务器）、切层、云雾开关（上层「显示下方城市」）、事态飞行、庄园进入与缩放、滚轮以光标为中心、
-// 死区探针、嵌入时父页不滚、桌面 1440 与 375 手机（Chromium + WebKit）截图、中 / EN × 深 / 浅截图。
+// 死区探针、嵌入时父页不滚、纵深 U15–U18（视差 / 标签 / 图例 / 手机「看全区」）、桌面 1440 与 375 手机（Chromium + WebKit）截图、
+// 中 / EN × 深 / 浅截图。
 // 产出：<输出目录>/results.json、summary.md、*.png；任何一项 ✗ 时退出码 1。
 import * as B from './lib.mjs';
 
@@ -125,6 +126,42 @@ try {
       await B.shot(M.page, OUT, `desk_${lang}_${scheme}`); await M.close();
     }
     rep.check('中 / EN × 深 / 浅截图（无裁切溢出）', !bad.length, bad.join('；') || '4 张');
+  });
+
+  // ---------- 纵深浏览体验 U15–U18（上层：视差 / 标签 / 图例；手机「看全区」）----------
+  if (on('depth')) await step('纵深 U15–U18', async () => {
+    const W = await B.newPage('desktop', { tier: 'save' }); const p = W.page;   // 桌面页 D 已在庄园那节关掉，这里自己开一个
+    await B.openViewer(W, { map: 'tc_upper' }); await B.wait(1300);
+    const dsk = await p.evaluate(() => ({
+      dz: getComputedStyle(document.querySelector('#zAll')).display,                       // U15：桌面不出现
+      lab: document.querySelectorAll('.mk[style*="--lab"]').length,                       // U17：按 label 通道写 --lab
+      far: document.querySelectorAll('.mk.far').length,                                   // U17：远岛平时收起标签
+      flt: document.querySelectorAll('.mk.flt').length,                                   // U16：桌面（非手机、非减少动态）漂浮开
+      legend: !!document.querySelector('.lgtab') && !document.querySelector('.lgtab').hidden,   // U18：图例页
+    }));
+    rep.metric('depth_desktop', dsk);
+    rep.check('U16/U17 上层读到纵深（--lab 写入、远岛收起、漂浮开）', dsk.lab >= 9 && dsk.far >= 1 && dsk.flt >= 9, JSON.stringify(dsk));
+    rep.check('U18 纵深层的抽屉出现「图例」页', dsk.legend, String(dsk.legend));
+    rep.check('U15「看全区」在桌面不出现（桌面复位视野已是全区）', dsk.dz === 'none', dsk.dz);
+    // 视差：拖动后标记与底图位移不同（换成「有偏移量」的代理断言：--px/--py 被写上且非 0）
+    await p.evaluate(() => { viewer.viewport.panBy(new OpenSeadragon.Point(.12, .09)); }); await B.wait(700);
+    const par = await p.evaluate(() => [...document.querySelectorAll('.mk')].filter(e => (e.style.getPropertyValue('--px') || '0px') !== '0px').length);
+    rep.check('U16 拖动后标记有视差位移（--px/--py）', par >= 1, String(par));
+    await B.goMap(p, 'tc_mid'); await B.wait(1100);
+    const mid = await p.evaluate(() => ({ legend: !!document.querySelector('.lgtab') && !document.querySelector('.lgtab').hidden, flt: document.querySelectorAll('.mk.flt').length }));
+    rep.check('U18 没有纵深数据的层不出现「图例」页', !mid.legend && mid.flt === 0, JSON.stringify(mid));
+    await W.close();
+    // U15：手机 375 出现「看全区」，点它把视野拉到整层
+    const Q = await B.newPage('phone', { tier: 'save' }); const q = Q.page;
+    await B.openViewer(Q, { map: 'tc_upper' }); await B.wait(1300);
+    const z0 = await q.evaluate(() => { const b = document.querySelector('#zAll'), r = viewer.viewport.getBounds(true); return { h: b.getBoundingClientRect().height, vis: getComputedStyle(b).display !== 'none', w: r.width }; });
+    await q.evaluate(() => document.querySelector('#zAll').click()); await B.wait(1000);
+    const z1 = await q.evaluate(() => ({ w: viewer.viewport.getBounds(true).width, flt: document.querySelectorAll('.mk.flt').length }));
+    await B.shot(q, OUT, 'depth_phone_all');
+    rep.metric('depth_phone', { ...z0, after: z1 });
+    rep.check('U15 手机「看全区」可见、热区 ≥ 44 px，点后视野 = 整层', z0.vis && z0.h >= 44 && z0.w < z1.w && z1.w > .95, JSON.stringify({ ...z0, after: z1 }));
+    rep.check('U16 手机不做视差 / 漂浮', z1.flt === 0, String(z1.flt));
+    await Q.close();
   });
 
   // ---------- 手机 375×812：Chromium + WebKit（iPhone）----------

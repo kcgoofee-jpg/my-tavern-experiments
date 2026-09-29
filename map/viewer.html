@@ -303,7 +303,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #zoom button[aria-pressed="false"] { color: var(--muted); }
   #zoom button[aria-pressed="true"] { background: var(--accent-weak); color: var(--accent); }
   #zoom[hidden] { display: none; }
-  #zAll { display: none; }   /* U15：「看全区」只在手机（≤ 640 px）出现——桌面的复位视野已经是全区 */
+  #zoom #zAll { display: none; }   /* U15：「看全区」只在手机（≤ 640 px）出现——桌面的复位视野已经是全区（选择器要压过 #zoom button 的 display: grid） */
   #thumbBtn { display: none; }
   #osd .navigator { margin: 0 0 var(--sp-5) var(--sp-5) !important; }
 
@@ -516,7 +516,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     #dock { right: var(--sp-4); }
     html[data-hand="left"] #dock { right: auto; left: var(--sp-4); align-items: flex-start; }
     #zoom button { width: 44px; height: 44px; }
-    #zAll { display: grid; width: auto; min-width: 44px; padding: 0 10px; font-size: var(--fs-small); font-weight: 700; }   /* 手机首屏停在伊甸：显眼的「看全区」（触控热区 ≥ 44 px） */
+    #zoom #zAll { display: grid; width: auto; min-width: 44px; padding: 0 10px; font-size: var(--fs-small); font-weight: 700; }   /* 手机首屏停在伊甸：显眼的「看全区」（触控热区 ≥ 44 px） */
     /* 半开时控制列最高到屏幕中线；再高就横排贴在抽屉上沿（§10.1）；全开时隐藏（inert） */
     /* 横排也按 DOM 顺序（= 桌面竖排从上到下），读屏顺序与画面一致；右手贴右、左手贴左只靠 #dock 的定位 */
     #dock.row { flex-direction: row; align-items: flex-end; }

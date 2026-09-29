@@ -1,5 +1,7 @@
 # 云端任务 8：伊甸庄园 Blender 从头建模（长任务，全部用 Opus 5.5，子代理不限）
 
+> **本文已作废的约束（2026-09-29）**：第 4 节「硬约束：不建模、不描写任何性相关或束缚类道具、设施与场所细节」**已撤销**（用户决定；理由：不按原卡补全会被原作者投诉）。本文件是历史任务书，原文不改；现行规则见 `docs/card-digest.md`、`docs/card-omissions.md` §4、`docs/eden-estate.md`。
+
 先 `git pull`，读 `NOTES_FROM_LOCAL.md`（最后四节）、`docs/eden-estate.md`（设定以它为准）、`CLOUD_TASK7.md` 第 3a 条（素材许可规则）、`map/estate/reviews/` 与 `docs/reviews/estate_c3/`（三轮审阅意见，照着避坑）、现有 `blender/eden_manor.py` 与 `docs/drafts/estate_blender_*.jpg`。
 **不要问问题，做完一步提交推送一步**，并在 `NOTES_FROM_LOCAL.md` 写一句进度。不改 `VERSION`、不打标签、不跑 `tools/build_card.sh`。
 **不属于 v0.9.1**：v0.9.1 按冻结的 three.js 版发；本任务是下个版本的庄园。可以和任务 5 的上层返修并行，但任务 5 优先。
