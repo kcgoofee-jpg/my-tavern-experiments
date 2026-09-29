@@ -26,6 +26,7 @@
 - workshop.md 创意工坊设计稿（未实施）
 - pack-schema-v1.md 设定包 schema（已冻结）
 - gallery.md 房间图集流程
+- baibai-bridge.md 柏宝绘（ST-BaiBai-Image）桥：读角色外貌库 / 房间配图 / 三条边界（可选依赖）
 - landmark-pipeline.md 地标一键流水线（已上线）
 - cloud-render.md 云渲染运维（现行）
 - render-deps.md 渲染依赖表；render-performance.md 性能实测；render-retro.md 渲染复盘 v2

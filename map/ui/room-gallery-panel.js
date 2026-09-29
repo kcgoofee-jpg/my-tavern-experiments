@@ -5,6 +5,7 @@ import {
   safeGalleryImagePath, readMaintainerMode, MAINTAINER_MODE_KEY,
 } from '../core/room-gallery-logic.mjs';
 import * as DB from '../core/room-gallery-db.mjs';
+import { available as baibaiInstalled } from '../tavern/baibai.mjs';   // 柏宝绘桥（可选依赖）：装了才显示「配图」入口
 
 const REPO = 'kcgoofee-jpg/my-tavern-experiments';   // 导出投稿的 GitHub issue 仓库；换卡/换仓库时改这里
 const CUSTOM_KEY = 'edenRoomCustomV1';
@@ -19,7 +20,7 @@ export function setMaintainerMode(on) { try { localStorage.setItem(MAINTAINER_MO
 
 const STR = {
   zh: {
-    renamePh: '自定义名称…', restore: '恢复原名', introPh: '自定义简介（只在本机显示）…', openGallery: '图集 ›',
+    renamePh: '自定义名称…', restore: '恢复原名', introPh: '自定义简介（只在本机显示）…', openGallery: '图集 ›', illust: '配图 ›',
     title: '房间图集', close: '关闭', upload: '上传图片',
     scopeChat: '仅本聊天', scopeGlobal: '全部聊天共用',
     scopeChatHint: '仅本聊天 = 只在这个聊天里看得到', scopeGlobalHint: '全部聊天共用 = 你的所有聊天都能看到，但仍然只存在这台设备上',
@@ -35,7 +36,7 @@ const STR = {
     maintainerOnlyNote: '「投稿到公开图集」「导出」只在设置→高级 打开「维护者模式」后才显示，普通用户看不到、也用不上——你的图永远只在本机。',
   },
   en: {
-    renamePh: 'Custom name…', restore: 'Restore original', introPh: 'Custom note (shown on this device only)…', openGallery: 'Gallery ›',
+    renamePh: 'Custom name…', restore: 'Restore original', introPh: 'Custom note (shown on this device only)…', openGallery: 'Gallery ›', illust: 'Illustrate ›',
     title: 'Room gallery', close: 'Close', upload: 'Upload images',
     scopeChat: 'This chat only', scopeGlobal: 'Shared across chats',
     scopeChatHint: 'This chat only = visible only inside this one chat', scopeGlobalHint: 'Shared across chats = visible from all your chats, but still only on this device',
@@ -71,8 +72,10 @@ function ensureCardCSS() {
   s.textContent = `.rgc{margin-top:8px;padding-top:8px;border-top:1px dashed rgba(255,255,255,.15);display:flex;flex-direction:column;gap:6px}
 .rgc-row{display:flex;gap:6px;align-items:center}
 .rgc-name{flex:1;min-width:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:4px;color:inherit;padding:4px 6px;font:inherit}
-.rgc-restore,.rgc-open{all:unset;cursor:pointer;padding:4px 8px;border-radius:4px;background:rgba(255,255,255,.08);font-size:12px;white-space:nowrap}
-.rgc-restore:hover,.rgc-open:hover{background:rgba(255,255,255,.18)}
+.rgc-restore,.rgc-open,.ilp-open{all:unset;cursor:pointer;padding:4px 8px;border-radius:4px;background:rgba(255,255,255,.08);font-size:12px;white-space:nowrap}
+.rgc-restore:hover,.rgc-open:hover,.ilp-open:hover{background:rgba(255,255,255,.18)}
+.ilp-open{align-self:flex-start;margin-top:2px;background:rgba(120,190,255,.14)}
+.ilp-open:hover{background:rgba(120,190,255,.28)}
 .rgc-intro{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:4px;color:inherit;padding:4px 6px;font:inherit;resize:vertical}
 .rgc-open{align-self:flex-start}`;
   document.head.appendChild(s);
@@ -85,6 +88,7 @@ export function roomCustomBlockHTML(roomId, lang = 'zh') {
     <div class="rgc-row"><input type="text" class="rgc-name" placeholder="${t.renamePh}" value="${esc(name)}" aria-label="${t.renamePh}">${name ? `<button type="button" class="rgc-restore">${t.restore}</button>` : ''}</div>
     <textarea class="rgc-intro" placeholder="${t.introPh}" rows="2" aria-label="${t.introPh}">${esc(intro)}</textarea>
     <button type="button" class="rgc-open" data-room="${esc(roomId)}">${t.openGallery}</button>
+    ${baibaiInstalled() ? `<button type="button" class="ilp-open" data-room="${esc(roomId)}">${t.illust}</button>` : ''}
   </div>`;
 }
 // 事件委托：挂在卡片容器上一次即可（main.js 调用）
@@ -98,6 +102,15 @@ export function bindRoomCustomEvents(container, { onOpenGallery, base = '../' } 
     if (restore) { const room = restore.closest('.rgc').dataset.room; clearCustomName(room); onOpenGallery?.refresh?.(); return; }
     const open = e.target.closest('.rgc-open');
     if (open) { openRoomGalleryPanel(open.dataset.room, { lang: container.dataset.lang || 'zh', base }); return; }
+    const ilp = e.target.closest('.ilp-open');
+    if (ilp) {
+      // 动态载入配图面板：它要用本文件的 currentScope / 图集库，静态互相 import 会成环
+      const lang = container.dataset.lang || 'zh';
+      import('./illust-panel.js')
+        .then((m) => m.openIllustPanel(ilp.dataset.room, { lang, base }))
+        .catch((err) => console.warn('[illust] 配图面板加载失败', err));
+      return;
+    }
   });
 }
 
@@ -105,7 +118,8 @@ export function bindRoomCustomEvents(container, { onOpenGallery, base = '../' } 
 let panelEl = null;
 let chatId = '';
 export function setGalleryChatId(id) { chatId = id || ''; }
-function currentScope() {
+export function galleryChatId() { return chatId; }
+export function currentScope() {
   let s = null; try { s = localStorage.getItem(SCOPE_KEY); } catch (e) { }
   if (s !== 'chat' && s !== 'global') s = chatId ? 'chat' : 'global';
   if (s === 'chat' && !chatId) s = 'global';
