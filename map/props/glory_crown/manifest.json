@@ -1,5 +1,5 @@
 {
- "_note": "viewer3d.html?model=glory_crown 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/glory_crown.md。圣都核心区：圆桌骑士议事殿（中央，含冠环）+ 太阳骑士大竞技场（东）+ 商业联合会大厦（北）+ 会所（南），四者共用一个模型。",
+ "_note": "viewer3d.html?model=glory_crown 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/glory_crown.md。圣都核心区：圆桌骑士议事殿（中央，含冠环）+ 太阳骑士大竞技场（东）+ 商业联合会大厦（北）+ 会所（南），四者共用一个模型。 体量上限按「片区」放宽到 std 1.6 / low 0.8 MB（单栋默认 0.6/0.3）：一个模型挂 5 个标记、含四栋建筑与整个台地广场，按单栋卡会被砍成方块；实测 std 0.71 MB。",
  "id": "glory_crown",
  "title": {
   "zh": "荣光冠冕",
@@ -85,5 +85,95 @@
    256
   ]
  },
- "hotspots": []
+ "hotspots": [
+  {
+   "id": "hall",
+   "mesh": "props_main",
+   "name": {
+    "zh": "圆桌骑士议事殿",
+    "en": "Round Table Hall"
+   },
+   "desc": {
+    "zh": "核心区正中的圆殿：18 根环形列柱 + 鼓座 + 穹顶，穹顶之上是「荣光冠冕」——一圈带座、12 支金色尖齿与顶光球（卡原文列出议事殿，形制为仓库推断）。",
+    "en": "The round hall at the centre of the core: 18 columns, drum and dome, crowned by the Glory Crown itself — a ring seat with twelve gilded spikes and a light orb (the card lists the hall; the form is a repo inference)."
+   },
+   "view": [
+    0.3,
+    0.45,
+    -0.85
+   ]
+  },
+  {
+   "id": "arena",
+   "mesh": "props_arena",
+   "name": {
+    "zh": "太阳骑士大竞技场",
+    "en": "Sun Knight Arena"
+   },
+   "desc": {
+    "zh": "椭圆外墙（约 156 × 104 m）、三层看台与中央沙场，四向半环拱门、场角四座灯塔（卡原文列出竞技场，形制为仓库推断）。",
+    "en": "Elliptical outer wall (about 156 × 104 m), three tiers of seating around a sand floor, four half-ring portals and four corner light towers (card lists the arena; form is a repo inference)."
+   },
+   "view": [
+    0.75,
+    0.3,
+    -0.6
+   ]
+  },
+  {
+   "id": "tower",
+   "mesh": "props_tower",
+   "name": {
+    "zh": "商业联合会大厦",
+    "en": "Chamber of Commerce Tower"
+   },
+   "desc": {
+    "zh": "三段退台的塔身（60 → 48 → 34 m 见方）配玻璃幕带，塔冠四角桁架与尖顶（卡原文列出大厦，形制为仓库推断）。",
+    "en": "A three-stage setback tower (60, 48 then 34 m square) with glazing bands, corner trusses and a spire (card lists the tower; form is a repo inference)."
+   },
+   "view": [
+    0.15,
+    0.55,
+    -0.82
+   ]
+  },
+  {
+   "id": "club",
+   "mesh": "props_club",
+   "name": {
+    "zh": "会所",
+    "en": "Club"
+   },
+   "desc": {
+    "zh": "两层石构会馆，面向广场的门廊列柱与山花，玻璃前厅与露台水池（卡原文列出会所，形制为仓库推断）。",
+    "en": "A two-storey stone clubhouse with a colonnaded portico and pediment facing the plaza, a glazed front hall and a terrace pool (card lists the club; form is a repo inference)."
+   },
+   "view": [
+    -0.35,
+    0.42,
+    -0.84
+   ]
+  },
+  {
+   "id": "plaza",
+   "mesh": "site_ground",
+   "name": {
+    "zh": "核心区台地与放射大道",
+    "en": "Core terrace and avenues"
+   },
+   "desc": {
+    "zh": "半径约 148 m 的台地（高 2 m）、环路与四条放射大道、八向台阶与边缘栏杆；12 支广场灯柱。——仓库推断",
+    "en": "A terrace about 148 m across (2 m high) with a ring road, four radial avenues, eight flights of steps, an edge balustrade and twelve plaza lamps. Repo inference."
+   },
+   "view": [
+    0.2,
+    0.7,
+    -0.68
+   ]
+  }
+ ],
+ "max_mb": {
+  "std": 1.6,
+  "low": 0.8
+ }
 }
