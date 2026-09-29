@@ -63,9 +63,10 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   文档语言门控在 CI 里取不到基线会**静默空转**（本地红、CI 绿就是这么来的）——已加「取基线标签 + 取不到就失败」
   一步。`main` 推送仍不触发 CI（`:5`）是**故意**的：main 只是跟随线的快进副本，加进去等于每次推送跑两遍。
 - [ ] `tools/reviews/takeover_095/toolchain.md:22` 世界图输入不可复现（⏳未修）、`:24` `ship.sh --dry-run` 三个洞。（预估 ~6h）
-- [ ] 通用化 v1 五条已知限制（`docs/generalize/README.md:123-128`）：世界图 / 庄园剖面 / 天城尺度环 /（预估 ~12h）
+- [x] ~~通用化 v1 五条已知限制（`docs/generalize/README.md:123-128`）：世界图 / 庄园剖面 / 天城尺度环 /（预估 ~12h）
   人物名册 / 安保层仍 eden 专用；预算 LRU 只认 `edenMap*`；包的 `strings` 字段未接入；
-  `props/viewer3d.html` 语言键退回中文；`viewer.html` 三条 eden 预取。
+  `props/viewer3d.html` 语言键退回中文；`viewer.html` 三条 eden 预取。~~ ✅ 2026-09-30 `4833e37` + `0f55514`（明细见 §5；
+  世界图 / 庄园剖面 / 天城尺度环三类**地图种类**的通用化仍开放，留待通用化 v2）
 - [ ] 气候塔材质细化：塔楼白块、粉长条（看图后定改法）+ 可选「信息按钮」（本会话 2026-09-29 用户反馈；塔在 `blender/tc_estates.py` climate_tower，锚点 `blender/data/tc_islands.json` anchors.climate_tower）。（预估 ~4h）
 - [ ] 设置「版权申明」页与人物页声望在真实酒馆浏览器过一眼（现在只有 stub；挂在上面的 Real ST 测试项下）。（预估 ~2h）
 - ~~**Streaming / decoupling P0** (`docs/reviews/architecture_and_stream_perf.md` §1.4): G1 strip `<think>` CoT blocks before tag parsing + G6 `fnGuard` & arity tests at cross-window exposure points. (~8h)~~ ✅ 2026-09-30 `040baf9`（G1）+ `04f170f`（G6）
@@ -208,6 +209,7 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 
 ## 5. Done, kept as evidence (2026-09-29)
 
+- [x] Pack 0 抽离与通用化 v1 五条已知限制收口 ✅ 2026-09-30 `4833e37`（存储键）+ `0f55514`（数据驱动化 / Pack 0 规范）：**存储键解耦**——包命名空间（非 eden 包 `tcp.<id>.*`、eden 原样 `edenMap*`）空键降级回读 `edenMap*` 历史档（只读不写回，一写即以本包为准），`core/storage.mjs` get、viewer 首帧 TCStore 镜像、宿主 `packNs()` lsGet 三处同一规则（`tests/pack.test.mjs` 别名回退 + 多包隔离 + 预算 LRU 不越界机检）；**启动预取数据驱动**——新清单字段 `preload`，`viewer.html` 不再写死 eden 的清单 + 三份数据预取（宿主注入 `__tcPack` 时首帧同步注入、单独打开经 `__manifestP` 清单一到即注入，`app/pack.mjs` 复用同一次请求；世界底图预取按「包有没有世界图」gating）；**安保层**挂 `data.security`（`security.mjs` 走 `packData('security')`）；**保底名册**从 `tavern/mvu.mjs` 抽到 `map/data/fallback_roster.json` 挂 `data.roster`（宿主载入后 `MVUBridge.setFallbackMembers` 注入、`mvu.rosters()` 改参数收，引擎不再认识任何卡内人名）；**strings** 接入查看器 i18n 与三维子页（{ i18n 键: 文案 }、英文变体「键@en」），`props/viewer3d.html` 本机读写全部走包前缀（`nsKey` + 注入 `window.__packId` / `__packStrings`），非 eden 包不再退回中文；**看门狗第 4 道防线**——`check_architecture.py` 拦截 `map/core/` 出现卡片专有名词，`check_pack.py` 校验 preload 路径。schema v1 只加可选字段（`preload` / `data.security` / `data.roster`）。世界图 / 庄园剖面 / 天城尺度环三类地图种类的通用化留待 v2。测试：node --test 286 项全绿、smoke 全过、浏览器探针 accept（首屏 462ms）与 props_u12 全过。同批 U19–U23 手机实测缺陷按 Log-and-Park 入册 `docs/ui-refactor-backlog.md`（`84b61f1`，只登记未修）。
 - [x] 中层昼夜底图 DZI 上线 + 多时段自动换图 ✅ 2026-09-29 `9ad6dfc`：`tools/make_dzi.py` 把 `map/art/tc_mid_day_full.png` / `tc_mid_night_full.png`（各 8000×5000）切成 `map/art/tc_mid_day` / `tc_mid_night` 两座金字塔（各 14 层 226 张 jpg，`--verify` + `--extent-m 3000 1875` 通过）。`maps.json` 的 tc_mid 注册 `periods: { day, night }`（schema `maps.schema.json` 新增 `periods` 定义，键限 dawn/day/dusk/night，值限 .dzi；`tools/check_maps.py` 对各档底图与瓦片目录做存在性检查）。查看器接线：`app/nav.mjs` `baseOf()` 按有效时段档位（`map/custom.mjs` 新暴露的 `todNow()`，关掉「时段色调」开关即恒用 base）取 `periods` 档位图，新增 `applyPeriod()`——`app/host.mjs` 收到 `eden-map:clock` 后调用，正在看的地图档位变了就 `swapBase()` 原地换第 0 层瓦片源（视角 / 标记 / 叠加层不动，与 alt 开关同一机制）；已配昼 / 夜档的层不再叠 nighttint 色调（免双重变暗，dawn / dusk 仍叠色）。设置项文案改「按时段给上层、中层加色调与昼夜底图」（zh/en）。`docs/tiancheng-maps.md` 与 maps.json `_note` 补 periods 字段说明。独立打开地图 / 读不到世界时间时行为与旧版完全一致（用 base）。测试：node --test 285 项全绿；`check_maps.py` 50 图 0 错 0 警。
 - [x] todo §3 文档仓库线平账 ✅ 2026-09-29 `cf35c28` + 本条：过时陈述（ROADMAP / onboarding / project-design / tt-test-checklist 改齐 0.9.7，一键管线改「已上线」）；其余 §3 条目（冲突措辞撤销 / CLOUD_TASK 作废头 / card-omissions 自相矛盾 / 岛生成器路径 / 死链注解 / token-usage 规划中 / .gitignore 重复规则）经逐处核实均已在此前批次修好，本次只划账并留验证结论；`.gitignore` 的 `tools/fetch_textures.sh` 悬空注释本批补注。§3 剩余未勾项只有需要重写历史或用户决定的重资产 / 垃圾 blob / 本机清理类（维持原状）。
 
