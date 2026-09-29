@@ -96,7 +96,7 @@ import { altOn, go, setGo } from './nav.mjs';
   const within = (p, ms) => Promise.race([p, wait(ms)]);
   async function riseSink(id, run) {
     const down = idx(id) > idx(cur), src = viewer.drawer?.canvas, osd = $('#osd'); let snap = null;
-    if (src?.width) { snap = document.createElement('canvas'); snap.width = src.width; snap.height = src.height; snap.className = 'snap tier-snap'; snap.style.zIndex = 6;
+    if (src?.width) { snap = document.createElement('canvas'); snap.width = src.width; snap.height = src.height; snap.className = 'snap tier-snap'; snap.style.setProperty('z-index', 'var(--zu-snap)');
       try { snap.getContext('2d').drawImage(src, 0, 0); $('#stage').appendChild(snap); } catch (e) { snap = null; } }
     const anims = [];
     try {

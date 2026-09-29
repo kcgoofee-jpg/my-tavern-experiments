@@ -127,3 +127,33 @@ test('纯度机检：核心模块不碰 DOM / 全局 / 存储 / 网络', () => {
   const src = readFileSync(new URL('../map/core/layers.mjs', import.meta.url), 'utf8');
   assert.doesNotMatch(src, /\b(document|window|localStorage|sessionStorage|fetch|TCStore|HTMLElement|navigator)\b/);
 });
+
+// ---------- 阶段 2（查看器）：CSS 镜像与字面量清零 ----------
+const viewerSrc = () => readFileSync(new URL('../map/viewer.html', import.meta.url), 'utf8');
+
+test('viewer.html 的 --zv-* 与 core 槽位阶梯一一对应（CSS 镜像对拍）', () => {
+  const html = viewerSrc(), root = html.slice(html.indexOf('--zv-osd'), html.indexOf('--zv-interaction') + 40);
+  for (const slot of SLOTS) {
+    const m = root.match(new RegExp(`--zv-${slot.replace('-', '-')}:\\s*(\\d+)`));
+    assert.ok(m, `viewer.html 缺 --zv-${slot}`);
+    assert.equal(+m[1], slotZ(slot), `--zv-${slot} 必须等于 slotZ('${slot}')`);
+  }
+  assert.ok(+root.match(/--zv-markers-hover:\s*(\d+)/)[1] > slotZ('markers'), '悬停图钉要高于 markers 槽位');
+});
+
+test('外层固定 UI 阶梯有名义常量；viewer.html 不再出现裸 z-index 字面量', () => {
+  const html = viewerSrc();
+  for (const v of ['--zu-header', '--zu-pop', '--zu-setpop', '--zu-dock', '--zu-loading', '--zu-estate', '--zu-snap', '--zu-cover', '--zu-foot', '--zu-hint', '--zu-prog', '--zu-sheet-sticky', '--zu-layers'])
+    assert.ok(html.includes(v + ':'), `缺外层阶梯常量 ${v}`);
+  const decls = [...html.matchAll(/z-index:\s*([^;}]+)/g)].map(m => m[1].trim());
+  assert.ok(decls.length >= 17, '阶梯声明应全部保留');
+  for (const d of decls) assert.match(d, /^var\(--z[uv]-/, `裸 z-index 字面量：${d}`);
+});
+
+test('模块里不许再内联赋值 z-index（转场快照等一律引用阶梯常量）', () => {
+  for (const f of ['map/app/clouds.mjs', 'map/app/markers.mjs', 'map/app/fog.mjs', 'map/events.mjs', 'map/trips.mjs', 'map/chars.mjs', 'map/app/layerhost.mjs']) {
+    const s = readFileSync(new URL('../' + f, import.meta.url), 'utf8');
+    assert.doesNotMatch(s, /\.style\.zIndex\s*=/, `${f} 有内联 z-index 赋值`);
+  }
+});
+

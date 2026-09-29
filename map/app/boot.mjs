@@ -29,6 +29,7 @@ import { ALIAS, applyZoomLimit, focusStart, hereRes, jumpHere, markHere, setEstP
 import { initSettings } from './settings.mjs';
 import { emEmit, enNames, rebuildHere, setEnNames } from './extapi.mjs';
 import { firstRunHint, initE7, initShell } from './shell.mjs';
+import { initLayerHost } from './layerhost.mjs';
 import { P } from './plugins.mjs';
 import { initPack, packData, packEvents, rebase } from './pack.mjs';
 // 多地图查看器：地图注册表 data/maps.json（世界 → 天城三层 → 以后的庄园剖面……）。
@@ -90,6 +91,7 @@ async function mainInner() {
     smoothTileEdgesMinZoom: Infinity,   // 瓦片有 1px 重叠，不需要放大时整屏再画一遍去接缝
   }));
   viewer.addHandler('open', onOpen);
+  initLayerHost(viewer); viewer.addHandler('open', () => initLayerHost(viewer));   // P3-C：视口槽位容器（画布就绪后幂等挂齐）
   // 缩放组：+ / − 以视野中心缩放，复位 = 本图的初始视野
   $('#zIn').onclick = () => { setUserMoved(true); viewer.viewport.zoomBy(1.5); viewer.viewport.applyConstraints(); };
   $('#zOut').onclick = () => { setUserMoved(true); viewer.viewport.zoomBy(1 / 1.5); viewer.viewport.applyConstraints(); };

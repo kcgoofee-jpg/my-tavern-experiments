@@ -139,6 +139,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <link rel="modulepreload" href="app/extapi.mjs">
 <link rel="modulepreload" href="app/shell.mjs">
 <link rel="modulepreload" href="app/host.mjs">
+<link rel="modulepreload" href="app/layerhost.mjs">
 <link rel="modulepreload" href="app/bridge.mjs">
 <link rel="modulepreload" href="app/fps.mjs"><link rel="modulepreload" href="app/loadprog.mjs"><link rel="modulepreload" href="ui/progress.mjs">
 <link rel="modulepreload" href="app/plugins.mjs">
@@ -175,9 +176,19 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .ico { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
+  /* ---------- 图层阶梯常量（P3-C，core/layers.mjs 的 CSS 镜像，tests/layer_registry.test.mjs 对拍） ----------
+     页面上不允许再写裸 z-index 字面量：一律引用这里的名义常量。
+     --zu-*：外层固定 UI 阶梯（顶栏 / 弹层 / 设置 / 控制列 / 庄园 iframe / 转场盖布）——永远在视口槽位之上，不进 LayerRegistry；
+     --zv-*：视口槽位阶梯（OSD 画布叠加上下文内由底至顶），与 core/layers.mjs 的 SLOTS 一一对应，z = (槽位序号 + 1) × 10。 */
+  :root {
+    --zu-snap: 2; --zu-sheet-sticky: 2; --zu-foot: 4; --zu-estate: 5; --zu-hint: 6; --zu-cover: 6; --zu-prog: 7; --zu-loading: 8; --zu-dock: 9; --zu-layers: 9;
+    --zu-header: 12; --zu-pop: 13; --zu-setpop: 14;
+    --zv-osd: 0; --zv-osd-canvas: 0;
+    --zv-base: 10; --zv-depth-haze: 20; --zv-fog: 30; --zv-routes: 40; --zv-trips: 50; --zv-events: 60; --zv-markers: 70; --zv-markers-hover: 75; --zv-labels: 80; --zv-fx: 90; --zv-interaction: 100;
+  }
   /* ---------- 工具栏（桌面 48 / 手机 44，一行，不横向滚动） ---------- */
   header { display: flex; flex-wrap: nowrap; gap: var(--sp-4); align-items: center; min-height: var(--bar-h); padding-right: calc(var(--sp-5) + var(--hostbar-w, 0px)) !important; padding-left: calc(var(--sp-5) + var(--hostbar-l, 0px)) !important; box-sizing: border-box; padding: 0 var(--sp-5);
-    background: var(--surface-glass); border-bottom: 1px solid var(--line); position: relative; z-index: 12;
+    background: var(--surface-glass); border-bottom: 1px solid var(--line); position: relative; z-index: var(--zu-header);
     transition: background var(--dur-3), color var(--dur-3), border-color var(--dur-3); }
   header .grow { flex: 1 1 0; min-width: 0; }
   #crumbs { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-body); white-space: nowrap; min-width: 0; flex: 0 1 auto; }
@@ -225,13 +236,13 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #stDot.flash > i { box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 35%, transparent); }
   #upBtn[hidden], #stDot[hidden] { display: none; }
   /* ---------- 弹层：图层 ▾（桌面）；设置 = 分组首页 + 子页（§5）：桌面占右栏那一列，手机全屏 ---------- */
-  .pop { position: fixed; z-index: 13; top: calc(var(--hdr, 44px) + var(--sp-3)); width: 260px; max-width: calc(100vw - 24px); box-sizing: border-box;
+  .pop { position: fixed; z-index: var(--zu-pop); top: calc(var(--hdr, 44px) + var(--sp-3)); width: 260px; max-width: calc(100vw - 24px); box-sizing: border-box;
     background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r-l); padding: var(--sp-5) 14px; box-shadow: var(--sh-3);
     font-size: var(--fs-control); line-height: 1.5; }
   .pop[hidden], #setPop [hidden] { display: none !important; }
   #layPop { width: 220px; padding: var(--sp-3) var(--sp-4); }
   #setPop { top: var(--hdr, 44px); right: 0; bottom: 0; width: max(var(--rail-w-now, 0px), 360px); max-width: 100vw; border-radius: 0; border-width: 0 0 0 1px; box-shadow: var(--sh-2);
-    overflow-y: auto; overscroll-behavior: contain; padding: 0 var(--sp-6) calc(var(--sp-6) + env(safe-area-inset-bottom)); z-index: 14; }
+    overflow-y: auto; overscroll-behavior: contain; padding: 0 var(--sp-6) calc(var(--sp-6) + env(safe-area-inset-bottom)); z-index: var(--zu-setpop); }
   body.setopen #evbar { visibility: hidden; }
   .pop h3 { margin: var(--sp-5) 0 var(--sp-3); font: 600 var(--fs-micro)/1.4 var(--font-ui); color: var(--muted); letter-spacing: .06em; }
   html[lang="en"] .pop h3 { letter-spacing: 0; }
@@ -247,7 +258,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #setPop .more { display: flex; flex-direction: column; gap: var(--sp-3); margin-bottom: var(--sp-5); padding-bottom: var(--sp-5); border-bottom: 1px solid var(--line); }
   #setPop .more:empty { display: none; }
   #setPop .more #layList { display: flex; flex-direction: column; }
-  #setPop .sheet-h { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: var(--sp-4); min-height: var(--bar-h);
+  #setPop .sheet-h { position: sticky; top: 0; z-index: var(--zu-sheet-sticky); display: flex; align-items: center; gap: var(--sp-4); min-height: var(--bar-h);
     margin: 0 calc(-1 * var(--sp-6)) var(--sp-4); padding: 0 var(--sp-3) 0 var(--sp-4); background: var(--surface); border-bottom: 1px solid var(--line); font-size: var(--fs-body); }
   #setPop .sheet-h b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #setPop .sheet-h .btn { height: 36px; min-width: 36px; }
@@ -284,14 +295,19 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 
   /* ---------- 地图区 ---------- */
   #stage { position: relative; min-height: 0; }
-  #osd { position: absolute; inset: 0; z-index: 0; }   /* 自成层叠上下文：地图上的标签 / 针脚 / 事态点永远在固定界面（层切换器、缩放组、页脚、横条）之下（E5 R14） */
+  #osd { position: absolute; inset: 0; z-index: var(--zv-osd); }   /* 自成层叠上下文：地图上的标签 / 针脚 / 事态点永远在固定界面（层切换器、缩放组、页脚、横条）之下（E5 R14） */
   /* 小地图：--r-m、1 px --line，视口框 1.5 px 强调色（替换 OSD 默认的灰框红框） */
-  #osd .openseadragon-canvas { z-index: 0; }   /* 地图叠加物不画到小地图上 */
+  #osd .openseadragon-canvas { z-index: var(--zv-osd-canvas); }   /* 地图叠加物不画到小地图上 */
   #osd .navigator { border: 1px solid var(--line) !important; border-radius: var(--r-m); overflow: hidden; background: var(--bg) !important; box-shadow: var(--sh-2); margin: 0 var(--sp-5) var(--sp-5) 0 !important; }
   body.nominimap #osd .navigator { display: none !important; }   /* U14：小地图默认关，设置「显示」可开（2026-09-28） */
   #osd .displayregion { border: 1.5px solid var(--accent) !important; border-radius: 2px; }
+  /* ---------- 视口槽位容器（P3-C）：app/layerhost.mjs 在 OSD 画布叠加上下文里按 SLOTS 各挂一个 .vpslot ----------
+     防线：容器默认 pointer-events: none（底层地图拖拽 / 滚轮 100% 不受阻挡），交互子元素显式 [data-hit] 才收回事件；
+     isolation: isolate 合成隔离——槽内的 mix-blend-mode / backdrop-filter 不影响其他槽位的层叠次序。 */
+  .vpslot { position: absolute; inset: 0; pointer-events: none; isolation: isolate; }
+  .vpslot :is([data-hit], .hit) { pointer-events: auto; }
   /* ---------- 浮动控制列 C（§2.3 / §10.1）：手机 = 拇指侧 ⋯ + − ⌂，跟着抽屉高度上移；桌面 = 右下（右栏左侧）层切换 + − ⌂ 🏷 ---------- */
-  #dock { position: absolute; z-index: 9; right: calc(var(--rail-w-now, 0px) + var(--sp-5)); bottom: calc(var(--sheet-h, 0px) + var(--sp-5)); display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-4); pointer-events: none;
+  #dock { position: absolute; z-index: var(--zu-dock); right: calc(var(--rail-w-now, 0px) + var(--sp-5)); bottom: calc(var(--sheet-h, 0px) + var(--sp-5)); display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-4); pointer-events: none;
     transition: bottom var(--dur-2) var(--ease-out), right var(--dur-2) var(--ease-out); }
   #dock > * { pointer-events: auto; }
   #dock[hidden], body.estate #dock { display: none; }
@@ -308,7 +324,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #osd .navigator { margin: 0 0 var(--sp-5) var(--sp-5) !important; }
 
   /* ---------- 层切换器（纵向分段）：一个 Panel 容器；选中 = 弱底 + 左 3 px 强调线 + 强调色字 + aria-current ---------- */
-  #layers { position: relative; z-index: 9;
+  #layers { position: relative; z-index: var(--zu-layers);
     display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-2);
     -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
   #layers[hidden] { display: none; }
@@ -330,23 +346,23 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #layers .evn:empty { display: none; }
 
   /* ---------- 庄园剖面（kind=estate）：三维页面放在 iframe 里盖住瓦片地图 ---------- */
-  #estate { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: 5; background: transparent; opacity: 0; transition: opacity var(--dur-2); }
+  #estate { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: var(--zu-estate); background: transparent; opacity: 0; transition: opacity var(--dur-2); }
   #estate.on { opacity: 1; }
   body.estate #tierState, body.estate #layWrap, body.estate #layList, body.estate #evbar, body.estate #glitchNote { display: none !important; }   /* fix3：清晰度 / 版本编码在三维页不再隐藏（设置里灰掉 + 写原因 / 照常显示） */
-  .snap { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; transition: opacity var(--dur-2); }
+  .snap { position: absolute; inset: 0; width: 100%; height: 100%; z-index: var(--zu-snap); pointer-events: none; transition: opacity var(--dur-2); }
   .snap.out { opacity: 0; }
 
   /* ---------- 放大到头的小提示（清晰度上限，locate.mjs zoomHint） ---------- */
-  #zoomHint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 6; max-width: 86%;
+  #zoomHint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: var(--zu-hint); max-width: 86%;
     padding: 6px 12px; border-radius: 999px; background: color-mix(in srgb, var(--bg) 82%, transparent); color: var(--ink);
     border: 1px solid var(--line); font-size: 12.5px; text-align: center; pointer-events: none; box-shadow: var(--shadow-1, 0 2px 8px rgba(0,0,0,.25)); }
   #zoomHint[hidden] { display: none; }
 
   /* ---------- 加载进度：顶部 3 px 细条 + 实底提示条 ---------- */
-  #prog { position: absolute; left: 0; right: 0; top: 0; height: 3px; z-index: 7; background: var(--line); }
+  #prog { position: absolute; left: 0; right: 0; top: 0; height: 3px; z-index: var(--zu-prog); background: var(--line); }
   #prog[hidden] { display: none; }
   #prog i { display: block; height: 100%; width: 0; background: var(--accent); box-shadow: var(--glow); transition: width var(--dur-2); }
-  #loading { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: var(--bg); color: var(--ink); transition: opacity var(--dur-3); }
+  #loading { position: absolute; inset: 0; z-index: var(--zu-loading); display: grid; place-items: center; background: var(--bg); color: var(--ink); transition: opacity var(--dur-3); }
   #loading.done { opacity: 0; pointer-events: none; }
   #loading.over { background: transparent; pointer-events: none; }
   #loading > div { text-align: center; }
@@ -379,7 +395,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .routes .patrol_city { opacity: .6; }
   body.noroutes .routes { visibility: hidden; }   /* OSD 给叠加层写内联 display，所以用 visibility */
   /* 标记：针脚默认强调色，当前地点 --alert 加脉冲；标签 = 深色胶囊（--map-label-*，两种主题都深） */
-  .mk { position: relative; z-index: 1; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none; }
+  .mk { position: relative; z-index: var(--zv-markers); transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none; }
   .mk .pin { margin: 0 auto; width: 14px; height: 14px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); border: 2px solid var(--map-label-ink); box-shadow: var(--sh-1), 0 1px 4px #000a; }
   .mk .lab { width: max-content; margin: 0 auto var(--sp-2); padding: 2px var(--sp-4); border-radius: var(--r-pill); background: var(--map-label-bg); border: 1px solid var(--map-label-line);
     font: 500 var(--fs-small)/1.5 var(--font-ui); white-space: nowrap; color: var(--map-label-ink); box-shadow: var(--sh-1); }
@@ -406,7 +422,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   /* 纵深 U16 / U17：标签与图钉包在 .mki 里，视差位移（--px/--py）与漂浮只动这一层（.mk 的 transform 是 OSD 定位用的） */
   .mk .mki { display: flex; flex-direction: column; align-items: center; transform: translate(var(--px, 0px), var(--py, 0px)); }
   .mk .lab { opacity: var(--lab, 1); }
-  .mk:hover, .mk:focus-visible { z-index: 3; }
+  .mk:hover, .mk:focus-visible { z-index: var(--zv-markers-hover); }
   .mk:hover .lab, .mk:focus-visible .lab, .mk.active .lab { opacity: 1; }
   /* 远岛（d ≥ 0.6）：平时只留图钉，悬停 / 聚焦 / 打开卡片才全显 */
   .mk.far .lab { visibility: hidden; }
@@ -480,7 +496,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 
   /* ---------- 页脚：版本号（左下，--fs-micro，磨砂底）；署名在右上 ---------- */
   /* 页脚：版本号 + 署名，一条，左下；署名单行省略，全文在 title（E5 3.2「版权、版本号、状态合成一条页脚」） */
-  #foot { position: absolute; left: var(--sp-4); top: var(--sp-4); z-index: 4; display: flex; gap: var(--sp-4); align-items: flex-start; max-width: calc(100% - var(--rail-w-now, 0px) - 80px); pointer-events: none; }
+  #foot { position: absolute; left: var(--sp-4); top: var(--sp-4); z-index: var(--zu-foot); display: flex; gap: var(--sp-4); align-items: flex-start; max-width: calc(100% - var(--rail-w-now, 0px) - 80px); pointer-events: none; }
   #foot > * { pointer-events: auto; }
   #build { flex: none; white-space: nowrap; font: 500 var(--fs-micro)/1.4 var(--font-mono); color: var(--muted); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-s); padding: 1px var(--sp-3); cursor: pointer; }
   #build:hover { color: var(--ink); }
@@ -565,7 +581,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .cl-drift > div { position: absolute; inset: 0; will-change: transform; }
   .cl-drift.fade { opacity: 0; }
   .cl-drift img, #clCover img { position: absolute; left: 0; top: 0; pointer-events: none; will-change: transform, opacity; opacity: 0; user-select: none; }
-  #clCover { position: absolute; inset: 0; z-index: 6; overflow: hidden; pointer-events: none; visibility: hidden; }
+  #clCover { position: absolute; inset: 0; z-index: var(--zu-cover); overflow: hidden; pointer-events: none; visibility: hidden; }
   #clCover.run { visibility: visible; pointer-events: auto; cursor: pointer; }
   #clCover .w { position: absolute; inset: -5%; background: #f4f6fa; opacity: 0; will-change: opacity; }
 </style>
