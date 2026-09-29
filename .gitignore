@@ -42,3 +42,5 @@ tools/cloud/hosts/*.env
 tools/cloud/.locks/
 .pi/
 .cache/
+# AI 助手的工作目录：agent 团队/会话状态（不是项目内容，2026-09-29 误提交过一次，这里挡住）
+.codebuddy/
