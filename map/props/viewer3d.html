@@ -320,6 +320,7 @@ float bayer4(vec2 p) { ivec2 q = ivec2(mod(p, 4.0)); int i = q.x + q.y * 4;
 
 // ---------------- 载入 ----------------
 let MAN = null, root = null, meshes = {}, HS = [], sel = null, mode = 'ext';
+let selPulseQ = -1;   // 高亮脉冲的量化节拍（见 frame()）：选中热点时不再每帧强制重渲
 const box = new THREE.Box3(), v3 = new THREE.Vector3();
 const stats = { glb: '', tier: TIER, dpr: renderer.getPixelRatio(), t0: performance.now(), tManifest: 0, tGlb: 0, tFirst: 0, bytes: 0, tris: 0, draws: 0, gpuMB: 0 };
 let LP = null; const lp = () => LP || (LP = mountProgress($('#load > div'), { labelEl: $('#load .txt'), lang: LANG }));
@@ -617,6 +618,18 @@ function resize() { const w = innerWidth, h = innerHeight; if (!w || !h) return;
   if (root && !camTouched && !tween && !sel) frameStart(); }
 addEventListener('resize', resize);
 const FT = []; let last = performance.now(), running = true;
+// 自适应像素比（2026-09-29 恶性卡顿）：桌面档不封顶 DPR + MSAA + 全部 DoubleSide，大场景（圣山 9MB）整页拖到 3fps。
+// 连续渲染的帧距持续 >55ms（<18fps）时像素比降一档（×0.7，下限 1），缓过来不回升（回升要用户在「三维画质」里自己改，避免来回震荡）。
+let govT = [], govHold = 0;
+function govFrame(dt, now) {
+  if (now < govHold) return;
+  govT.push(dt); if (govT.length > 14) govT.shift();
+  if (govT.length === 14 && govT.every(x => x > 55)) {
+    const cur = renderer.getPixelRatio(), next = Math.max(1, Math.round(cur * 7) / 10);
+    if (next < cur - .01) { renderer.setPixelRatio(next); renderer.setSize(innerWidth, innerHeight); stats.dpr = next; stats.dprAdj = (stats.dprAdj || 0) + 1; dirty = true; }
+    govT = []; govHold = now + 2500;   // 刚降完先稳定一会再采样，别连跳
+  }
+}
 function frame(now) {
   if (!running) return;
   requestAnimationFrame(frame);
@@ -624,7 +637,7 @@ function frame(now) {
   stepTween(now); controls.update(); updateRoof(dt);
   if (!SITE.isEmpty()) { const c = controls.target, d = c.clone().clamp(SITE.min, SITE.max).sub(c); if (d.lengthSq() > 0) { c.add(d); camera.position.add(d); } }   // 平移不出场地
   if (camera.position.y < 0.3) camera.position.y = 0.3;
-  if (sel) { U.uTime.value = now / 1000; dirty = true; }
+  if (sel) { const q = (now / 90) | 0; if (q !== selPulseQ) { selPulseQ = q; U.uTime.value = now / 1000; dirty = true; } }   // 脉冲 11Hz 足够顺滑，重渲频率从满帧率降到 1/5（大模型上这是 GPU 大头）
   if (flowOn) { stepFlows(now); dirty = true; }
   if (mode === 'xray') { const d = camera.position.clone().sub(U.uCenter.value); d.y = 0; if (d.lengthSq() > 1e-6) U.uCamDir.value.copy(d.normalize()); }
   if (FPS_ON) { FT.push(dt); if (FT.length > 600) FT.shift();
@@ -632,6 +645,7 @@ function frame(now) {
   if (!dirty || !root) return;
   dirty = false;
   renderer.render(scene, camera); placePins();
+  govFrame(dt, now);   // 只在真渲染的帧采样帧距：待机（dirty=false）不计
 }
 requestAnimationFrame(frame);
 document.addEventListener('visibilitychange', () => { dirty = true; });
@@ -646,9 +660,12 @@ addEventListener('message', e => {
   if (d.type === 'estate:theme') setTheme(d.theme);
   if (d.type === 'estate:quality' && typeof d.q === 'string' && renderer) {   // 设置「三维画质」即时生效（毛玻璃 + 像素比）
     document.documentElement.classList.toggle('noblur', TIER === 'low' || d.q === '1');
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, d.q === '1' ? 1 : d.q === '2' ? 2 : DPR_CAP)); renderer.setSize(innerWidth, innerHeight); dirty = true; }
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, d.q === '1' ? 1 : d.q === '2' ? 2 : DPR_CAP)); renderer.setSize(innerWidth, innerHeight); stats.dpr = renderer.getPixelRatio(); govT = []; govHold = 0; dirty = true; }
   if (d.type === 'estate:inset') { document.body.style.setProperty('--inset', Math.max(0, (d.left | 0) - 8) + 'px'); }
   if (d.type === 'estate:cvd' && typeof d.mode === 'string') { CVD = d.mode; document.documentElement.classList.toggle('cvd', CVD !== '0'); document.documentElement.dataset.cvd = CVD; if (FL.length) buildFlows(); }
+  if (d.type === 'estate:pause') running = false;   // 查看器休眠（宿主挂起）：停渲染循环，模型与 GPU 资源留着——与 estate/main.js 同一套；
+  // 不接这条的话，blob iframe 只是 visibility:hidden，RAF 照跑：选中热点时每帧满分辨率渲染，把整个酒馆拖到个位数帧率（2026-09-29 恶性卡顿）
+  if (d.type === 'estate:resume' && !running) { running = true; last = performance.now(); requestAnimationFrame(frame); dirty = true; }
   if (d.type === 'estate:fps' && typeof d.on === 'boolean') { FPS_ON = d.on; if (!d.on) { $('#fps').hidden = true; $('#fps').textContent = ''; } dirty = true; }
   if (d.type === 'v3d:fly') fly(d.hotspot);
   if (d.type === 'v3d:mode') setMode(d.mode);
