@@ -23,6 +23,11 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: 取基线标签（语言门控按最新 `map-v*` 判「新文档」，浅克隆默认没有标签会静默空转）
+        run: |
+          git fetch --tags --depth=1 --quiet
+          git tag -l 'map-v*' | grep -q . || { echo "取不到 map-v* 标签：文档语言门控会空转，按失败处理"; exit 1; }
+
       - name: Python 依赖（check_pack.py 用到 Pillow）
         run: pip install Pillow
 

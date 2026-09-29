@@ -56,8 +56,9 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [ ] 自动旋转开关进设置页；滚轮＝平移是否改缩放（`docs/handoff.md:9`）。
 - [ ] 三维查看器两个观感项：塔楼顶部纯白方块 / 裙楼粉长条（疑材质缺失）、信息按钮 (i) 高亮却不弹面板
   （`docs/handoff.md:69,70`）——**需要看图判定**，本轮未动。
-- [ ] CI：`browser-smoke` 仍是 `if: false` 占位（`.github/workflows/ci.yml:39`）；只在
-  `cloud/tc-mid-low` 与 PR 触发，`main` 推送不触发（`:5`）。
+- [ ] CI：`browser-smoke` 仍是 `if: false` 占位（`.github/workflows/ci.yml`）。**已修**：浅克隆不带标签，
+  文档语言门控在 CI 里取不到基线会**静默空转**（本地红、CI 绿就是这么来的）——已加「取基线标签 + 取不到就失败」
+  一步。`main` 推送仍不触发 CI（`:5`）是**故意**的：main 只是跟随线的快进副本，加进去等于每次推送跑两遍。
 - [ ] `tools/reviews/takeover_095/toolchain.md:22` 世界图输入不可复现（⏳未修）、`:24` `ship.sh --dry-run` 三个洞。
 - [ ] 通用化 v1 五条已知限制（`docs/generalize/README.md:123-128`）：世界图 / 庄园剖面 / 天城尺度环 /
   人物名册 / 安保层仍 eden 专用；预算 LRU 只认 `edenMap*`；包的 `strings` 字段未接入；
