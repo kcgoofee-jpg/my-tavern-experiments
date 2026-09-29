@@ -1,0 +1,155 @@
+{
+ "_note": "viewer3d.html?model=contest_corridor 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/contest_corridor.md。卡（L89）写圣都分三环，中环是「竞赛与狂欢回廊」：本模型是中环的一段——沿半径 200 m 环带的两层拱廊 + 廊内比试场 + 廊外帐篷集市与巨轮。体量上限按「片区」放宽到 std 1.6 / low 0.8 MB（单栋默认 0.6/0.3）：一个模型含三段场地。",
+ "id": "contest_corridor",
+ "title": {
+  "zh": "竞赛与狂欢回廊",
+  "en": "Contest & Revelry Arcade"
+ },
+ "glb": "contest_corridor.glb",
+ "glb_low": "contest_corridor_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "props_gallery",
+   "props_lists",
+   "props_fair"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "site_ground",
+   "props_lights"
+  ],
+  "building": {
+   "min": [
+    -30.0,
+    0.0,
+    -258.0
+   ],
+   "max": [
+    242.0,
+    62.0,
+    142.0
+   ]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 62,
+  "default": 62
+ },
+ "camera": {
+  "frame": [
+   "props_gallery",
+   "props_fair"
+  ],
+  "dir": [
+   0.35,
+   0.45,
+   -0.82
+  ],
+  "min": 20,
+  "max": 1400,
+  "maxPolar": 1.48
+ },
+ "budgets": {
+  "props_gallery": [
+   26000,
+   512
+  ],
+  "props_lists": [
+   8000,
+   512
+  ],
+  "props_fair": [
+   16000,
+   512
+  ],
+  "site_ground": [
+   10000,
+   512
+  ],
+  "props_lights": [
+   5000,
+   256
+  ]
+ },
+ "hotspots": [
+  {
+   "id": "gallery",
+   "mesh": "props_gallery",
+   "name": {
+    "zh": "回廊本体",
+    "en": "The arcade"
+   },
+   "desc": {
+    "zh": "沿中环环带排开的两层拱廊：一层柱列与券墙、二层贴墙柱与发光窗带，檐部与女儿墙压金线（卡原文只写「竞赛与狂欢回廊」，形制为仓库推断）。",
+    "en": "The two-storey arcade running along the mid-ring: a colonnade and spandrel wall below, engaged columns and a glowing window band above (the card names the arcade only; the form is a repo inference)."
+   },
+   "view": [
+    0.3,
+    0.42,
+    -0.86
+   ]
+  },
+  {
+   "id": "lists",
+   "mesh": "props_lists",
+   "name": {
+    "zh": "比试场与看台",
+    "en": "Lists and stand"
+   },
+   "desc": {
+    "zh": "廊内的沙地比试场：木栏围合，一侧四级看台，两端立无字几何旗门。——仓库推断",
+    "en": "The contest field inside the arcade: sand, timber fencing, a four-tier stand on one side and wordless geometric banner gates at both ends. Repo inference."
+   },
+   "view": [
+    0.1,
+    0.48,
+    -0.87
+   ]
+  },
+  {
+   "id": "fair",
+   "mesh": "props_fair",
+   "name": {
+    "zh": "狂欢集市与巨轮",
+    "en": "Revelry fair and wheel"
+   },
+   "desc": {
+    "zh": "廊外的帐篷集市：四顶方帐围着中央圆亭，另有一座二十四米半径的巨轮（纹样化，无字）。——仓库推断",
+    "en": "The fair outside the arcade: four square tents around a central rotunda, plus a wheel of 24 m radius (patterned, wordless). Repo inference."
+   },
+   "view": [
+    -0.25,
+    0.4,
+    -0.88
+   ]
+  },
+  {
+   "id": "ground",
+   "mesh": "site_ground",
+   "name": {
+    "zh": "铺装环道与中央大道",
+    "en": "Paved ring and avenue"
+   },
+   "desc": {
+    "zh": "台基铺装沿环带铺开，外侧环道，中央一条大道通向廊内比试场；两侧草坪与行道树。——仓库推断",
+    "en": "Terraced paving along the ring, an outer ring road and a central avenue leading to the lists, with lawns and street trees on both sides. Repo inference."
+   },
+   "view": [
+    0.2,
+    0.66,
+    -0.72
+   ]
+  }
+ ],
+ "max_mb": {
+  "std": 1.6,
+  "low": 0.8
+ }
+}
