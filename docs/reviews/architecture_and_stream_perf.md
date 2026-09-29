@@ -13,7 +13,11 @@ contract batch: DepthSystem describe summary + fog key collapsing per §2,
 Estate3D manifest contract per §7) is implemented - commits `709c1c9`
 (DepthSystem) and `43c053a` (Estate3D). P3-B (CharacterRosterSystem per §5) is
 implemented - commits `a4de0f2` (contract module `core/roster.mjs` + tests) and
-`5ce27d3` (bridge and host wiring). Remaining P3: LayerRegistry (§6).
+`5ce27d3` (bridge and host wiring). P3-C (LayerRegistry per §6) is implemented -
+commits `aed4f49` (pure core `core/layers.mjs` + tests),
+`92a9bda` (viewer z-index ladder collapsed into named constants + slot mount
+skeleton) and `910bd6e` (all existing layers migrated + data-driven `#layList`).
+No P3 items remain.
 
 Part 1 is a diagnosis of the "background tab: API finished, front end frozen" class of bugs and
 an audit of the streaming-period pipeline. Part 2 is a decoupling RFC for the six subsystems and
@@ -264,6 +268,28 @@ Proposal — a **LayerRegistry**:
   constants; rebind the layer toggle menu (`#layList`) to layer ids instead of bespoke checkbox
   handlers. Golden screenshots via the existing browser probes guard the visual regression.
   Estimate ~20 h — schedule it **last** because it changes rendering.
+  **Implemented 2026-09-30 (`aed4f49`, `92a9bda`, `910bd6e`)**: pure core `map/core/layers.mjs`
+  owns the slot data contract (`base → depth-haze → fog → routes → trips → events → markers →
+  labels → fx → interaction`; fixed UI stays outside on its own `--zu-*` ladder), registration with
+  duplicate/unknown-slot/kind interception, slot-index → order → insertion-seq ordering, visibility
+  dispatch (`setVisible`), stackable filter chains (`{type: css|canvas, value}` + `cssFilter` /
+  `canvasFilter`) and `describe(): { slots, activeLayers, filterSummary }` (DOM-free, machine
+  checked). Viewer side (`app/layerhost.mjs`): the 17 inline z-index literals in `viewer.html` are
+  replaced by named constants — outer UI ladder `--zu-*` (header 12 / pop 13 / setPop 14 / dock 9 …)
+  and viewport slot ladder `--zv-*` (z = (slot index + 1) × 10, cross-checked against the core
+  constants by test; bare z-index literals now fail the suite) — and `.vpslot` containers mount
+  inside the OSD canvas stacking context with `pointer-events: none` (interactive children opt in
+  via `[data-hit]`) and `isolation: isolate` per slot. Migration: fog (fog slot, canvas — the
+  `prepend` insertion hack removed in favor of the slot constant), clouds (depth-haze, dom),
+  barriers + scale ring (base), routes, trips, event dots (events), marker pins (markers),
+  realm/minor labels (labels), security badges (markers, order fine-tune). `#layList` static rows
+  are gone — `renderLayerMenu()` renders `registry.menuRows()` (including the events/security rows
+  that used ad-hoc `insertBefore`/`after`), keeping element ids, storage keys
+  (`edenMapBarriers` / `edenMapRoutes` / `edenMapTrips` / `edenMapSecurity`) and default-checked
+  logic byte-compatible; keyboard L and the settings switch route through `setVisible`.
+  `window.TCLayers.describe()` exposes the summary for probes. Tests: `tests/layer_registry.test.mjs`
+  (18 items incl. CSS-mirror cross-check and storage-key compatibility); browser probes accept /
+  v2a / trips095 / clouds / fix3 / v096 all green (dead-zone 0/828 blocked, wheel zero drift).
 
 ### 7. Estate3DViewer
 
