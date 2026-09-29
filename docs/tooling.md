@@ -65,6 +65,14 @@ bash tools/ship.sh             # smoke → bump_head.py --push（rebase + head.j
 - 汇总里列出提交号、CDN 预热中非 200 的个数，以及预览脚本的位置；**非 200 > 0 时退出码 1**（2026-09-27 起）。
 - 它推的是**分支 + HEAD 提交**、发的是「跟随分支」预览脚本：导入一次，之后刷新酒馆就拿到最新提交。正式发版要打标签、发钉标签的脚本和世界书附加条目，见第 8 节——**ship.sh 不能当发版用**。
 
+### 5.1b 线路与测速（`map/tavern/host-routes.mjs`，2026-09-29 重做）
+
+- **测什么**：自动选线与线路选择器都按「**真读完响应体的字节数 / 毫秒**」算分（`lineScore`），取 `data/maps.json`（105 KB）。必须 `await r.arrayBuffer()` 读完——只等到响应头测的是 TTFB，不是速度。
+- **下限与门槛**：响应 < 32 KB（`PROBE_MIN_BYTES`）算无效测量（不参与比较）；超时 8 s 视为不通；换线要求新线路**至少快 30%**（`PROBE_MARGIN`），否则维持原线。
+- **为什么改**：老实现同时取 `data/build.json`（约 400 B，带 `?probe=` 绕缓存），**谁先答完谁胜出**，然后钉 24 小时。它既测不出带宽（瓦片才是大头），又会被几十毫秒的噪声决定胜负，还可能选中一条实际很慢 / 直连不通的镜像并且 24 小时不再重测。用户 2026-09-29 实测后直说「测速有问题」，指的就是这个。
+- **`cdn.jsdmirror.com` 的真实状态**：第三方薄代理（响应头 `server: ayao`），内容与 jsDelivr 一致（sha256 相同）且返回 200，但**本机 Mac 关代理直连不通**（用户实测），走代理时 105 KB 也要 2.99 s（jsDelivr 0.80 s）；`cache-control` 只有 `max-age=300` + `stale-while-revalidate=86400`，而且**不理会 query string**（见 CHANGELOG 0.9.5）——我们清缓存 / 预热那套对它不成立。因此它只作为「没梯子」的兜底候选，自动选线里必须明显更快才可能被选中；真正的国内线路等 npm 镜像（`enabled: false`）。
+- 自测：`tests/host_split.test.mjs` 里有分数、下限边界（正好等于下限定为有效）与「小响应不能因为快就胜出」的用例，以及 `PROBE_PATH` / `PROBE_MARGIN` 的断言。
+
 ### 5.1 跟随分支的头指针 `map/data/head.json`（2026-09-28，没梯子卡在旧提交的修复）
 **每次推送跟随分支前的最后一步**（ship.sh 已自带；手动推送的 agent 用它代替 `git push`）：
 ```bash

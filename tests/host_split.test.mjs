@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createRoutes } from '../map/tavern/host-routes.mjs';
+import { createRoutes, lineScore, scoreText, probeVerdict, PROBE_MIN_BYTES } from '../map/tavern/host-routes.mjs';
 import { createLife } from '../map/tavern/host-lifecycle.mjs';
 import { createWbAuto, createPrefs, fnOk, thFn } from '../map/tavern/host-th.mjs';
 
@@ -17,6 +17,33 @@ test('host-routes：版本推断、换线路地址（与拆分前同一规则）
   const B = createRoutes({ SELF: 'https://cdn.jsdelivr.net/gh/o/r@preview/map/', PACK_IN: { manifest: { cdn: { repo: 'x/y' } } } });
   assert.equal(B.VER, null); assert.equal(B.REPO, 'x/y'); assert.equal(B.baseFor('cn'), 'https://cdn.jsdmirror.com/gh/o/r@preview/map/');
   const L = createRoutes({ SELF: 'http://localhost:8080/map/', PACK_IN: null }); assert.ok(!L.swappable); assert.equal(L.baseFor('cn'), 'http://localhost:8080/map/');
+});
+
+test('线路测速：按「字节 / 毫秒」算分，小响应不算有效测量（2026-09-29 重做）', () => {
+  assert.equal(lineScore(105 * 1024, 100), 1075.2);          // 105 KB / 100 ms ≈ 1.05 MB/s
+  assert.equal(lineScore(0, 100), 0);                        // 没有字节：0 分
+  assert.equal(lineScore(100, 0), 0);                        // 没有耗时：0 分
+  assert.equal(scoreText(1048576 / 1000), '1.00 MB/s');
+
+  // 老实现是「谁先答完谁赢」：400 B 的小响应 5 ms 就能赢——那是缓存命中的 build.json，不是带宽。
+  const small = probeVerdict(400, 5);
+  const big = probeVerdict(PROBE_MIN_BYTES + 1, 120);
+  assert.equal(small.ok, false); assert.equal(small.reason, 'small'); assert.equal(small.score, 0);
+  assert.equal(big.ok, true);
+  const winner = [small, big].filter(r => r.ok).sort((a, b) => b.score - a.score)[0];
+  assert.equal(winner, big, '小响应不能因为快就胜出');
+  // 边界：正好等于下限定为有效，少 1 字节无效
+  assert.equal(probeVerdict(PROBE_MIN_BYTES, 100).ok, true);
+  assert.equal(probeVerdict(PROBE_MIN_BYTES - 1, 100).ok, false);
+});
+
+test('线路清单与换线门槛：npm 线路仍禁用；测的是 maps.json 而不是小文件', () => {
+  const R = createRoutes({ SELF: 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.6/map/', PACK_IN: null });
+  assert.deepEqual(R.LINES.map(l => l.key), ['vpn', 'cn']);   // npm（enabled:false）仍在禁用状态
+  assert.equal(R.PROBE_PATH, 'data/maps.json');
+  assert.equal(R.PROBE_MARGIN, 1.3);                          // 没快 30% 以上不换线
+  assert.equal(typeof R.measure, 'function');
+  assert.equal(typeof R.race, 'function');
 });
 
 test('host-lifecycle：listen 登记、kill 之后不再登记、unlisten 全部撤掉', () => {

@@ -7,7 +7,7 @@
 // C2 第 4 步（2026-09-28）拆成：入口（本文件：面板 / 查看器状态机、消息、MVU / 事态 / 自定义 / 自检 / 更新）+ host-routes.mjs（线路）
 // + host-lifecycle.mjs（接管旧实例、挂 DOM、监听登记、清理钩子）+ host-th.mjs（酒馆助手适配、偏好、世界书全自动）。见 docs/agent-brief.md「模块地图」。
 import { cdnFetch, thFn, fnOk, hostFn, packNs, createPrefs, createWbAuto } from './host-th.mjs';
-import { createRoutes } from './host-routes.mjs';
+import { createRoutes, scoreText } from './host-routes.mjs';
 import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
 (() => {
   const SELF = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
@@ -20,7 +20,7 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
   let FOGm = null, explored = {}; import(SELF + 'core/depth.mjs').then(m => { FOGm = m; explored = m.norm(explored); }).catch(() => {});   // 迷雾探索（eden_map.探索）
   let SRCm = null; import(SELF + 'tavern/sources.mjs').then(m => { SRCm = m; }).catch(() => {});   // 数据源注册表（arch-v2 §6 第 8 步）
   // 线路 / 版本推断：host-routes.mjs
-  const { PKG, REPO, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, LINE_TTL, LINE_AT, race } = createRoutes({ SELF, PACK_IN });
+  const { PKG, REPO, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, LINE_TTL, LINE_AT, race, measure } = createRoutes({ SELF, PACK_IN });
   let line = null; try { line = (LS || localStorage).getItem(LINE_KEY); } catch (e) {}
   if (!LINES.some(l => l.key === line)) line = null;
   let BASE = baseFor(line);
@@ -45,8 +45,8 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
   const pickEl = root.querySelector('.em-pick'), lineBtn = root.querySelector('.em-line'), clockEl = root.querySelector('.em-clock');
   lineBtn.hidden = !swappable;
   // 标题栏跟着地图的语言与深浅主题（地图在 srcdoc 里，与酒馆页同源，设置存在同一个 localStorage；切换时地图发 eden-map:state {lang, theme}）
-  const UI = { zh: { title: '新历 2088', clock: '世界时间', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%', open: '打开世界地图', fab: '世界地图', unm: '未上图：', unm_tip: '点这里把它放到地图上', pend: '等待本楼变量更新', stale: '本楼没有变量快照，显示的是上一楼的' },
-    en: { title: 'NC 2088', clock: 'World time', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%', open: 'Open world map', fab: 'World map', unm: 'Not on map: ', unm_tip: 'Tap to place it on the map', pend: 'waiting for this reply\'s variable update', stale: 'no variable snapshot on this reply; showing the previous one' } };
+  const UI = { zh: { title: '新历 2088', clock: '世界时间', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%', open: '打开世界地图', fab: '世界地图', unm: '未上图：', unm_tip: '点这里把它放到地图上', pend: '等待本楼变量更新', stale: '本楼没有变量快照，显示的是上一楼的', probe: '测速中…', dead: '连不上', toosmall: '响应过小（未计分）', rec: '推荐' },
+    en: { title: 'NC 2088', clock: 'World time', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%', open: 'Open world map', fab: 'World map', unm: 'Not on map: ', unm_tip: 'Tap to place it on the map', pend: 'waiting for this reply\'s variable update', stale: 'no variable snapshot on this reply; showing the previous one', probe: 'Measuring…', dead: 'unreachable', toosmall: 'response too small to score', rec: 'Recommended' } };
   let UL = 'zh', mapTitle = ''; try { UL = (LS || localStorage).getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) {}
   const U = k => UI[UL][k];
   // 深 / 浅主题挂在根元素上（面板、自检提示一起换）；地图没开着时系统切换深浅也跟上（v0.9.5）
@@ -63,18 +63,25 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
   const showTitle = () => { titleEl.textContent = U('title'); root.querySelector('.em-close').setAttribute('aria-label', U('close'));
     fab.setAttribute('aria-label', U('open')); if (!fab.classList.contains('prep') && !fab.classList.contains('fail')) fab.title = U('fab'); };
   showLine(); showTitle();
-  // 线路选择：每条线路现场测一次延迟（取一个小文件），连不上的标红
+  // 线路选择：每条线路现场按「真读完 105 KB 的字节 / 毫秒」测一次（host-routes.measure），连不上的标红。
+  // 2026-09-29 修：以前是「取一个小文件、谁先答完谁推荐」——既不是带宽，也会被几十毫秒的噪声决定；
+  // 现在等全部测完，取分数最高的标「推荐」，并把实测速度写在按钮上（可核对，不再只写「延迟 x 秒」）。
   function showPicker() {
     const row = pickEl.querySelector('.row'); row.innerHTML = '';
+    const btns = [], results = [];
     for (const l of LINES) {
-      const b = pdoc.createElement('button'); b.innerHTML = `<b>${l.name}</b><small>${l.sub}</small><span class="ms">测速中…</span>`;
-      b.onclick = () => chooseLine(l.key); row.appendChild(b);
-      const ms = b.querySelector('.ms'), t0 = performance.now(), ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
-      cdnFetch(baseFor(l.key) + 'data/maps.json', { cache: 'no-store', signal: ctl.signal })
-        .then(r => { if (!r.ok) throw 0; const t = (performance.now() - t0) / 1000; ms.textContent = `延迟 ${t.toFixed(1)} 秒`; ms.className = 'ms ' + (t < 3 ? 'ok' : '');
-          // 先测完的就是更快的线路：标「推荐」
-          if (!row.querySelector('.rec')) ms.insertAdjacentHTML('beforeend', ' · <b class="rec">推荐</b>'); })
-        .catch(() => { ms.textContent = '连不上'; ms.className = 'ms bad'; });
+      const b = pdoc.createElement('button'); b.innerHTML = `<b>${l.name}</b><small>${l.sub}</small><span class="ms">${U('probe')}</span>`;
+      b.onclick = () => chooseLine(l.key); row.appendChild(b); btns.push([l.key, b]);
+      measure(l.key).then((r) => {
+        results.push(r);
+        const ms = b.querySelector('.ms');
+        if (!r.ok) { ms.textContent = r.reason === 'small' ? U('toosmall') : U('dead'); ms.className = 'ms bad'; }
+        else { ms.textContent = scoreText(r.score); ms.className = 'ms ok'; }
+        if (results.length === LINES.length) {   // 全部测完再给「推荐」，不再是谁先答完谁推荐
+          const good = results.filter((x) => x.ok).sort((a, b2) => b2.score - a.score);
+          if (good.length) { const best = btns.find(([k]) => k === good[0].key); best?.[1].querySelector('.ms')?.insertAdjacentHTML('beforeend', ` · <b class="rec">${U('rec')}</b>`); }
+        }
+      });
     }
     pickEl.hidden = false; loadEl.hidden = true;
   }
@@ -91,7 +98,7 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
     let manual = false, at = 0; try { manual = (LS || localStorage).getItem(LINE_KEY + 'Manual') === '1'; at = +(LS || localStorage).getItem(LINE_AT) || 0; } catch (e) {}
     if (manual && line) return true;
     if (!force && line && Date.now() - at < LINE_TTL) return true;   // 24 小时内测过：直接用
-    const key = await race();
+    const key = await race(line);   // 把当前线路传进去：没快 30% 以上就不换（见 host-routes.PROBE_MARGIN）
     if (!key) return false;
     try { (LS || localStorage).setItem(LINE_AT, String(Date.now())); } catch (e) {}
     if (key !== line) { line = key; BASE = baseFor(key); html = null; try { (LS || localStorage).setItem(LINE_KEY, key); } catch (e) {} prefSync(); showLine(); }
