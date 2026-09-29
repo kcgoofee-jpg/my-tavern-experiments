@@ -145,6 +145,7 @@ AutoDL 关机（`shutdown -h now`）后按小时计费的算力费停止，**但
 
 | 坑 | 现象 | 修复 |
 |---|---|---|
+| `--out` 写成绝对路径 | 远端 blender 把图写到**那个绝对路径**（在 `$REMOTE_DIR` 之外），结论文件仍写 `status=ok`，但 rsync 回传 `link_stat … No such file` —— **白跑一次**（2026-09-29 中层夜景 8000px：3.7 min ≈ ¥0.1，产物留在云端） | `tools/cloud/render.sh` 已加门控：仓库内的绝对路径自动折成相对路径（Mac 任务不受影响），仓库外的绝对路径直接中止；经队列提交云端任务时请用**相对仓库根**的 `--out`（早期 `yuanyu_glb` 那几笔用相对路径、回传正常，可作对照） |
 | macOS bash 3.2：`$var` 后紧跟中文 | 变量名被吞进中文字符，报 `unbound variable` | 一律写成 `${var}`；`tools/smoke.sh` 的 shell lint 步骤会挡住这种写法（`$name` 后直接跟非 ASCII） |
 | macOS 自带 `openrsync` | 传输报不兼容 / 直接失败 | `brew install rsync`；`tools/cloud/lib.sh` 的 `run_rsync` 已经优先找 `/opt/homebrew/bin/rsync`，检测到 openrsync 会直接报错退出 |
 | Clash TUN 假地址 `198.18.x.x` 导致长传输中途断 | `sync.sh` 传到一半卡住/断连 | 订阅规则里前置一条 `DOMAIN-SUFFIX,seetacloud.com,DIRECT`（或临时关 TUN）；`doctor.sh` 检测到假地址段会提示 |

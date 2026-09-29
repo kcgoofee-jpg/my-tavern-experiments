@@ -64,6 +64,18 @@ if [ -z "$OUT" ]; then
   done
 fi
 
+# 2026-09-29 事故：--out 传绝对路径时，远端 blender 会写到「那个绝对路径」（在 $REMOTE_DIR 之外），
+# 结论文件写 status=ok、rsync 回传却 link_stat No such file —— 白跑一次（约 ¥0.1）且产物留在云端。
+# 门控：仓库内的绝对路径自动折成相对（对 Mac 无影响、云端能回传）；仓库外的绝对路径直接中止。
+if [ -n "$OUT" ]; then
+  case "$OUT" in
+    "$ROOT"/*) FIXED_OUT="${OUT#"$ROOT"/}"; echo "提示：--out 已折成相对路径 $FIXED_OUT（云端回传要求相对仓库根）"
+      for ((j=0; j<${#args[@]}-1; j++)); do [ "${args[$j]}" = "--out" ] && args[$((j+1))]="$FIXED_OUT"; done
+      OUT="$FIXED_OUT" ;;
+    /*) echo "错误：--out 是仓库外的绝对路径「$OUT」——云端会写在远端那个路径下、rsync 回不来（白跑一次）。请改成相对仓库根的路径。" >&2; exit 2 ;;
+  esac
+fi
+
 REMOTE_LOG="$REMOTE_DIR/logs/cloud_render_$$.log"
 REMOTE_PIDFILE="$REMOTE_DIR/logs/cloud_render_$$.pid"
 
