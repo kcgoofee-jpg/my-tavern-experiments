@@ -62,7 +62,7 @@ function renderLicense() {
 function setSearch(q) {
   const box = $('#setHits'); box.innerHTML = ''; q = q.trim().toLowerCase(); $('#setPop .sgroups').hidden = !!q; if (!q) return;
   const rows = []; for (const pg of document.querySelectorAll('#setPop .spage:not([data-page="home"])'))
-    for (const r of pg.querySelectorAll(':scope > .row, :scope > .hrow, :scope > label, details > summary, #aboutBox > label, #licBox > label, #selfCheck > b, #cuBox .cu-open, #cmpBox > summary')) {
+    for (const r of pg.querySelectorAll(':scope > .row, :scope > .hrow, :scope > label, details > summary, #aboutBox > label, #branchBox > .hrow, #licBox > label, #selfCheck > b, #cuBox .cu-open, #cmpBox > summary')) {
       const txt = (r.textContent || '').trim(); if (txt && txt.toLowerCase().includes(q)) rows.push([pg.dataset.page, r, txt.slice(0, 40)]); }
   if (!rows.length) { box.innerHTML = `<small>${esc(tx('s.no_hit', '没有找到'))}</small>`; return; }
   for (const [pg, r, txt] of rows.slice(0, 12)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn';
@@ -189,6 +189,18 @@ export function renderAbout() {
     const cb = lb.querySelector('input'); let on = false; try { on = !!TCStore.get('edenMapLockTag'); } catch (e) {}
     cb.checked = on; cb.onchange = () => { try { if (cb.checked) TCStore.set('edenMapLockTag', a.ref); else TCStore.remove('edenMapLockTag'); } catch (e) {} }; box.appendChild(lb);
   }
+  // 版本分支切换（main / preview 双轨，docs/branching.md）：宿主随 about 发 branches / branch（当前）/ branchSw（地址可换）。
+  // 切换 = 本次会话立即从目标分支重载脚本（宿主 switchBranch，新实例接管旧的）；长期使用要重新导入该分支的脚本。
+  { const bb = $('#branchBox'); if (bb) { bb.innerHTML = '';
+    if (window.top !== window && (a.branches || []).length) {
+      const h = document.createElement('div'); h.className = 'hrow';
+      h.innerHTML = `<span>${esc(tx('s.branch', '版本分支'))}</span><select id="branchSel"${a.branchSw ? '' : ' disabled'}>` +
+        a.branches.map(o => `<option value="${esc(o.id)}"${a.branch === o.id ? ' selected' : ''}>${esc(LANG === 'en' && o.label_en ? o.label_en : o.label)}</option>`).join('') + '</select>';
+      if (!a.branchSw) h.title = tx('s.branch_na', '不可切换：当前脚本不是从分支地址加载');
+      else h.querySelector('select').onchange = () => { const v = h.querySelector('select').value; if (v) post({ type: 'eden-map:switch-branch', branch: v }); };
+      bb.append(h);
+      if (a.branchSw) { const sm = document.createElement('small'); sm.textContent = tx('s.branch_hint', '切换后本次会话立即从该分支重新加载地图脚本；要长期使用请重新导入该分支的脚本'); bb.append(sm); }
+    } } }
   const b = $('#updBtn'); if (b) b.onclick = () => { updBusy = true; updRes = null; renderAbout(); post({ type: 'eden-map:check-update' }); setTimeout(() => { if (updBusy && !updRes) { updBusy = false; updRes = { status: 'fail' }; renderAbout(); } }, 15000); };
   if (updRes) updBusy = false;
 }

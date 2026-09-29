@@ -16,7 +16,7 @@ forward.
 | Branch | Role | Pointer clients read |
 |---|---|---|
 | `preview` | Integration + follow/preview line. Everything lands here. | `map/data/head.json` (`{build, sha, at}`, written by `tools/bump_head.py`) |
-| `cloud/tc-mid-low` | **Deprecated compatibility mirror** of `preview`. Kept only because already-imported follow scripts carry it in their URL. Never target it for new work. | — |
+| `cloud/tc-mid-low` | **Deprecated compatibility mirror** of `preview`, retirement in progress (2026-09-30): no longer pushed by default — only on demand (`LEGACY=1 bash tools/push_preview.sh`). A session still on this ref can move to `preview` in-app via Settings → Update & version → Version branch. | — |
 | `main` | Release line. Tags (`map-vX.Y.Z`) live on this line. | `map/data/build.json` (`{version, code}`) + the tag list |
 | feature branches | Short-lived, merged into the follow branch | — |
 
@@ -30,13 +30,16 @@ Scripts already imported by users therefore keep requesting `cloud/tc-mid-low` f
 path only keeps working while the ref keeps moving. So the old name lives on as a **mirror**:
 
 ```sh
-bash tools/push_preview.sh          # push preview + mirror to the same commit
-bash tools/push_preview.sh --head   # …and bump the follow head pointer afterwards
+bash tools/push_preview.sh            # push preview (the mirror is NOT pushed by default)
+bash tools/push_preview.sh --head     # …and bump the follow head pointer afterwards
+LEGACY=1 bash tools/push_preview.sh   # grace window only: also move the deprecated mirror
 ```
 
-Never push only one of them: a lagging mirror silently freezes those users on an older build. The
-mirror can be deleted once no imported script references the old name any more (then drop `LEGACY`
-from `tools/push_preview.sh` and this section).
+Decided 2026-09-30: the mirror is decoupled from the regular push. It now moves only on demand
+while old imported scripts are still out there; new imports point at `@preview` or a release tag,
+and the in-app branch switch (Settings → Update & version → Version branch) moves a running
+session from the mirror ref to `preview` without re-importing. After the 0.9.7 release window the
+ref is deleted on origin and `LEGACY` is dropped from `tools/push_preview.sh` and this section.
 
 `docs/archive/**`, `docs/history/**` and `docs/reviews/**` keep the historical name on purpose —
 they are records of what was done under that name.

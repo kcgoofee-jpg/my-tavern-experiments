@@ -23,6 +23,7 @@ export const SCHEMA = {
   'eden-map:check-update': [V2H, {}],
   'eden-map:splash': [V2H, {}],
   'eden-map:update-now': [V2H, {}],
+  'eden-map:switch-branch': [V2H, { branch: 'string' }],   // 设置「更新与版本」→ 版本分支切换（main / preview 双轨）
   'eden-map:chrome': [V2H, { top: 'number?', bottom: 'number?' }],
   'eden-map:notice': [V2H, { n: 'object' }],
   'eden-map:formbusy': [V2H, { on: 'boolean?' }],

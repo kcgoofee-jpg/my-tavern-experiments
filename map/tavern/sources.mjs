@@ -19,3 +19,26 @@ export function summarize(c = {}) {
     list: SOURCES.map(s => ({ id: s.id, active: !!s.active(c), feeds: s.feeds })),
   };
 }
+
+// ---------------- 脚本源分支注册表（设置「更新与版本」→ 版本分支切换；docs/branching.md 的 main + preview 双轨） ----------------
+// 宿主用 branchOf() 识别当前分支、branchUrl() 算切换目标地址；列表随 about 消息发给查看器渲染下拉。
+// 旧名 cloud/tc-mid-low 是 preview 的历史兼容镜像，识别时折算成 preview、不再单列（镜像退役见 docs/branching.md）。
+export const BRANCHES = [
+  { id: 'main', label: 'main · 正式稳定版', label_en: 'main · stable release' },
+  { id: 'preview', label: 'preview · 开发预览版', label_en: 'preview · dev preview' },
+];
+
+/** ref（分支名 / 发版标签 / 提交号）→ 分支 id。发版标签属于发版线（main）；提交号、本地路径认不出 → null（调用方自己降级） */
+export function branchOf(ref) {
+  if (typeof ref !== 'string' || !ref) return null;
+  if (ref === 'cloud/tc-mid-low') return 'preview';
+  if (BRANCHES.some(b => b.id === ref)) return ref;
+  return /^map-(?:s\d+-)?v[\d.]+$/.test(ref) ? 'main' : null;
+}
+
+/** gh 线路的脚本地址（…/gh/<仓库>@<ref>/…）换成目标分支地址；换不了（本地 / npm / 分支名不在注册表）返回 null */
+export function branchUrl(url, branch) {
+  if (typeof url !== 'string' || !BRANCHES.some(b => b.id === branch)) return null;
+  const m = url.match(/^(https:\/\/[^/]+\/gh\/[^@]+)@[^/]+(\/.+)$/);
+  return m ? `${m[1]}@${branch}${m[2]}` : null;
+}

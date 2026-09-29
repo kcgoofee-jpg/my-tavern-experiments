@@ -239,6 +239,7 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
     if (e.data?.type === 'eden-map:emit' && e.data.ev === 'map') emit('map', e.data.data);   // 本机扩展：切图（E6）
     if (e.data?.type === 'eden-map:build') { viewerVer = e.data.version || null; if (checkFacts) finishCheck(); }   // 地图的版本（data/build.json）→ 自检比对
     if (e.data?.type === 'eden-map:update-now') switchVersion();   // 自检里点了「本次切换到新版本」
+    if (e.data?.type === 'eden-map:switch-branch' && typeof e.data.branch === 'string') switchBranch(e.data.branch);   // 设置「更新与版本」→ 版本分支切换（main / preview）
     // v0.9.3 自定义（地图设置里的「自定义」一栏）：地图只发请求，数据由这里写进聊天变量后再推回去
     if (e.data?.type === 'eden-map:custom-set') api.setCustom(e.data.key, e.data.patch || {});
     if (e.data?.type === 'eden-map:custom-reset') api.removeCustom(e.data.key);
@@ -288,8 +289,11 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
   let aboutBuild = null;
   const buildNow = () => aboutBuild ??= cdnFetch(BASE + 'data/build.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
   async function sendAbout() { const b = await buildNow(), l = LINES.find(x => x.key === line);
+    if (!SRCm) { try { SRCm = await import(SELF + 'tavern/sources.mjs'); } catch (e) {} }   // 版本分支识别（sources.mjs 的分支注册表）
+    const br = SRCm ? (SRCm.branchOf(SCRIPT.ref) || SRCm.branchOf(refOf()) || (VER ? 'main' : null)) : null;
     post({ type: 'eden-map:about', version: b?.version || SCRIPT.version || VER || null, code: b?.code || SCRIPT.code || null, channel: channel(),
-      ref: SCRIPT.ref || (VER ? tagOf(VER) : refOf()), sha: SCRIPT.sha || null, build: Number.isInteger(SCRIPT.build) ? SCRIPT.build : null, source: SCRIPT.source || null, locked: !!SCRIPT.locked, line: l ? (UL === 'en' && l.name_en) || l.name : '' }); }
+      ref: SCRIPT.ref || (VER ? tagOf(VER) : refOf()), sha: SCRIPT.sha || null, build: Number.isInteger(SCRIPT.build) ? SCRIPT.build : null, source: SCRIPT.source || null, locked: !!SCRIPT.locked, line: l ? (UL === 'en' && l.name_en) || l.name : '',
+      branch: br, branches: SRCm ? SRCm.BRANCHES : [], branchSw: !!SRCm?.branchUrl(import.meta.url, 'main') }); }
   // 查最新 map-v 标签（jsDelivr 数据接口，绕缓存），再取该标签的 build.json（走当前线路）；比较版本号。只报告，不安装
   async function followUpdate() {   // 跟随分支：设置里「检查更新」走 head.json 链（和加载器、followCheck 一样；不看正式版标签）
     const h = await followHead(); if (!h) return { status: 'fail', follow: true };
@@ -938,6 +942,13 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
     if (!url || SC.cmpVer(nv, VER) <= 0) return;
     window.parent.__edenMapSwitch = SELF;
     import(url).catch(e => { console.warn('[eden-map] 切换到新版本失败', e); window.parent.__edenMapSwitch = switchedFrom; });
+  }
+  async function switchBranch(br) {   // 设置「更新与版本」→ 版本分支（main / preview 双轨）：本次会话从目标分支重载同一个脚本，新实例 takeOver 接管这一份；长期使用请重新导入该分支的脚本
+    if (!SRCm) { try { SRCm = await import(SELF + 'tavern/sources.mjs'); } catch (e) {} }
+    const url = SRCm ? SRCm.branchUrl(import.meta.url, br) : null;
+    if (!url || life.dead) return;
+    window.parent.__edenMapSwitch = SELF;
+    import(url).catch(e => { console.warn('[eden-map] 切换分支失败', e); window.parent.__edenMapSwitch = switchedFrom; });
   }
 
   // ---------------- 交互方式 (a)(d)(e)（docs/interaction-modes.md；纯逻辑在 tavern/modes.mjs） ----------------
