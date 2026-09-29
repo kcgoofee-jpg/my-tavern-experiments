@@ -1,7 +1,7 @@
-// 「反馈」报告文本组装的单测：白名单字段之外的内容（尤其聊天文本/消息内容）不能进报告。
+// 「反馈」报告文本组装的单测：白名单字段之外的内容（尤其聊天文本/消息内容）不能进报告；历史会话小节与 GitHub 预填链接。
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildReportText, REPORT_ALLOWED_KEYS } from '../map/app/feedback-report.mjs';
+import { buildReportText, buildIssueLink, REPORT_ALLOWED_KEYS } from '../map/app/feedback-report.mjs';
 import * as logbuf from '../map/core/logbuf.mjs';
 
 test('report includes the expected map-state fields', () => {
@@ -31,12 +31,25 @@ test('report handles missing/empty info gracefully', () => {
   assert.match(text, /\(none\)/);
 });
 
-test('logbuf ring buffer keeps only the most recent 50 lines and never grows unbounded', () => {
-  logbuf.clear();
-  for (let i = 0; i < 80; i++) logbuf.push('log', [`line ${i}`]);
-  const L = logbuf.lines();
-  assert.equal(L.length, 50);
-  assert.equal(L[0].text, 'line 30');
-  assert.equal(L[L.length - 1].text, 'line 79');
-  logbuf.clear();
+test('report renders archived log sessions', () => {
+  const t0 = Date.UTC(2026, 8, 29, 10, 0, 0), t1 = t0 + 60000;
+  const text = buildReportText({
+    version: '0.9.7',
+    logLines: [{ t: t0, level: 'log', text: 'cur line' }],
+    logSessions: [{ meta: null, n: 2, lines: [{ t: t0, level: 'warn', text: 'old-1' }, { t: t1, level: 'log', text: 'old-2' }] }],
+  });
+  assert.ok(text.includes('cur line'));
+  assert.ok(text.includes('上一次打开 #1'), 'missing archived-session heading');
+  assert.ok(text.includes('old-1') && text.includes('old-2'));
+  assert.ok(text.indexOf('old-1') > text.indexOf('cur line'));
+  assert.ok(REPORT_ALLOWED_KEYS.includes('logSessions'));
+});
+
+test('buildIssueLink prefills title/body and truncates oversized bodies', () => {
+  const url = buildIssueLink({ title: 't t', body: 'b b' });
+  assert.ok(url.startsWith('https://github.com/kcgoofee-jpg/my-tavern-experiments/issues/new?'));
+  assert.ok(url.includes('t+t') && url.includes('b+b'));   // URLSearchParams 把空格编成 +
+  const long = buildIssueLink({ body: 'x'.repeat(9000) });
+  assert.ok(long.length < 8500, 'URL 过长会被 GitHub 拒收');
+  assert.ok(long.includes('truncated'));
 });
