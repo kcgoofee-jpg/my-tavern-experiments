@@ -102,10 +102,10 @@
 | P3 其他 | yuanyu_city | `dome_quarter` | 穹顶区 | ✅ | 仓库自设 | — | — |  |
 | P3 其他 | yuanyu_city | `pilgrim_plaza` | 朝圣广场 | ✅ | 仓库自设 | — | — |  |
 | P3 其他 | yuanyu_city | `spire_quarter` | 尖塔区 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | yuanyu_sanctum | `holy_mountain` | 悬浮圣山 | ✅ | 卡 | — | — |  |
-| P3 其他 | yuanyu_sanctum | `pantheon` | 诸神殿 | ✅ | 卡 | — | — |  |
-| P3 其他 | yuanyu_sanctum | `pilgrim_stair` | 朝圣步道 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | yuanyu_sanctum | `shrine_ring` | 圣山神龛环 | ✅ | 仓库自设 | — | — |  |
+| P3 其他 | yuanyu_sanctum | `holy_mountain` | 悬浮圣山 | ✅ | 卡 | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（glb 已导出 + webp/meshopt，r1 自查未开评审） | 四处标记共用一个模型：`lm_holy_mountain` |
+| P3 其他 | yuanyu_sanctum | `pantheon` | 诸神殿 | ✅ | 卡 | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（同上） | 热点 `pantheon` → 网格 `summit` |
+| P3 其他 | yuanyu_sanctum | `pilgrim_stair` | 朝圣步道 | ✅ | 仓库自设 | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（同上） | 热点 `pilgrim_stair` → 网格 `stair` |
+| P3 其他 | yuanyu_sanctum | `shrine_ring` | 圣山神龛环 | ✅ | 仓库自设 | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（同上） | 热点 `shrine_ring` → 网格 `mount_rock`（落位为仓库推断） |
 
 ## 补读新增（2026-09-28，卡副本逐段检索）
 

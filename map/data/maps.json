@@ -1442,6 +1442,7 @@
         }
       }
     },
+    "lm_holy_mountain": {"title": "原域·悬浮圣山（三维）", "title_en": "Origin Domain: the Floating Holy Mountain (3D)", "parent": "yuanyu_sanctum", "kind": "estate", "viewer3d": "holy_mountain", "src": "props/viewer3d.html", "alias": ["原域·悬浮圣山（三维）", "悬浮圣山（三维）"], "src_note": "原域·悬浮圣山三维（标准版：标准档 + 低档 glb；山体与城区的分割、尺度为仓库推断）；从 yuanyu_sanctum 四个标记的「查看三维模型」进。源：blender/world/out/yuanyu_holy_mount.blend", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_victoria_apartment": {
       "title": "维多利亚的公寓（三维）",
       "title_en": "Victoria's Apartment (3D)",
@@ -2121,8 +2122,7 @@
           ],
           "sub": "最高议事地",
           "sub_en": "Supreme council",
-          "cls": "capital"
-        },
+          "cls": "capital", "link": {"map": "lm_holy_mountain", "label": "查看三维模型", "label_en": "View 3D model"}},
         "holy_mountain": {
           "name": "悬浮圣山",
           "name_en": "Floating Holy Mountain",
@@ -2131,8 +2131,7 @@
           "alias": [
             "悬浮圣山",
             "圣山"
-          ]
-        },
+          ], "link": {"map": "lm_holy_mountain", "label": "查看三维模型", "label_en": "View 3D model"}},
         "shrine_ring": {
           "name": "圣山神龛环",
           "name_en": "Shrine ring",
@@ -2141,8 +2140,7 @@
           "alias": [
             "神龛环"
           ],
-          "canon": false
-        },
+          "canon": false, "link": {"map": "lm_holy_mountain", "label": "查看三维模型", "label_en": "View 3D model"}},
         "pilgrim_stair": {
           "name": "朝圣步道",
           "name_en": "Pilgrim way",
@@ -2151,8 +2149,7 @@
           "alias": [
             "朝圣步道"
           ],
-          "canon": false
-        }
+          "canon": false, "link": {"map": "lm_holy_mountain", "label": "查看三维模型", "label_en": "View 3D model"}}
       }
     },
     "yuanyu_city": {

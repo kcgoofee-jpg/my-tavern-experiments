@@ -1,0 +1,149 @@
+{
+ "_说明": "viewer3d.html?model=holy_mountain 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。原域圣所：悬浮圣山（山腹 / 上覆岩体 / 朝圣步道 / 山顶诸神殿）与山下原域城。yuanyu_sanctum 的四个标记（诸神殿 / 悬浮圣山 / 圣山神龛环 / 朝圣步道）都接到这里。导出三角面 474748（导出报告 map/props/holy_mountain/holy_mountain.json）；山体与城区的分割、尺度为仓库推断。",
+ "id": "holy_mountain",
+ "title": {
+  "zh": "原域·悬浮圣山",
+  "en": "Origin Domain: the Floating Holy Mountain"
+ },
+ "glb": "holy_mountain.glb",
+ "glb_low": "holy_mountain_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "city_bld",
+   "mount_dark",
+   "mount_rock",
+   "stair",
+   "summit",
+   "summit_win"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "city_ground",
+   "city_roads",
+   "glow_core",
+   "lamps_city",
+   "lamps_stair",
+   "mist_city",
+   "mist_waist0",
+   "mist_waist1",
+   "mist_waist10",
+   "mist_waist11",
+   "mist_waist12",
+   "mist_waist13",
+   "mist_waist14",
+   "mist_waist15",
+   "mist_waist16",
+   "mist_waist17",
+   "mist_waist18",
+   "mist_waist19",
+   "mist_waist2",
+   "mist_waist20",
+   "mist_waist21",
+   "mist_waist3",
+   "mist_waist4",
+   "mist_waist5",
+   "mist_waist6",
+   "mist_waist7",
+   "mist_waist8",
+   "mist_waist9",
+   "trees"
+  ]
+ },
+ "section": {
+  "min": 0,
+  "max": 1042,
+  "default": 1042
+ },
+ "camera": {
+  "frame": [
+   "mount_dark",
+   "mount_rock",
+   "summit",
+   "stair"
+  ],
+  "dir": [
+   0.6,
+   0.35,
+   -0.7
+  ],
+  "min": 20,
+  "max": 4000,
+  "maxPolar": 1.48
+ },
+ "hotspots": [
+  {
+   "id": "pantheon",
+   "mesh": "summit",
+   "name": {
+    "zh": "诸神殿",
+    "en": "Pantheon"
+   },
+   "desc": {
+    "zh": "山巅神殿：原域是第三帝国的国都与最高议事地（卡原文，见 docs/card-digest.md）。",
+    "en": "The temple at the summit: the Origin Domain is the Third Empire's capital and seat of highest council (card)."
+   },
+   "view": [
+    0.3,
+    0.5,
+    -0.8
+   ]
+  },
+  {
+   "id": "holy_mountain",
+   "mesh": "mount_dark",
+   "name": {
+    "zh": "悬浮圣山",
+    "en": "Floating Holy Mountain"
+   },
+   "desc": {
+    "zh": "悬浮于原域上空的圣山本体：暗色山腹与上覆岩体（卡原文；形体与尺度为仓库推断）。",
+    "en": "The holy mountain itself, floating above the Origin Domain: dark flank and overlying rock mass (card; form and scale are repo inferences)."
+   },
+   "view": [
+    0.5,
+    0.4,
+    -0.75
+   ]
+  },
+  {
+   "id": "pilgrim_stair",
+   "mesh": "stair",
+   "name": {
+    "zh": "朝圣步道",
+    "en": "Pilgrim Stair"
+   },
+   "desc": {
+    "zh": "从山下通往山顶诸神殿的长阶（仓库自设）。",
+    "en": "The long stair climbing from the base to the summit pantheon (repo)."
+   },
+   "view": [
+    0.35,
+    0.45,
+    -0.82
+   ]
+  },
+  {
+   "id": "shrine_ring",
+   "mesh": "mount_rock",
+   "name": {
+    "zh": "圣山神龛环",
+    "en": "Shrine Ring"
+   },
+   "desc": {
+    "zh": "山腰环状的神龛带（仓库自设；命名与落位为仓库推断）。",
+    "en": "The ring of shrines around the mountain's flank (repo; name and placement are repo inferences)."
+   },
+   "view": [
+    0.6,
+    0.3,
+    -0.72
+   ]
+  }
+ ]
+}
