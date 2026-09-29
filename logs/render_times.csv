@@ -231,3 +231,4 @@ date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
 2026-09-29,tc_mid_night,final,8000,64,3.7,0,autodl-NVIDIA-GeForce-RTX-4080-SUPER,ok,0,0
 2026-09-29,tc_mid_day,draft,2000,16,0.5,0,darwin,ok,0,0
 2026-09-29,yuanyu_holy_mount,draft,64,1,1.2,0,darwin,ok,0,0
+2026-09-29,tc_low_day,final,8000,64,1.4,0,autodl-NVIDIA-GeForce-RTX-4080-SUPER,ok,0,0

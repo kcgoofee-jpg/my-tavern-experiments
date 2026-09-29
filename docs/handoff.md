@@ -79,6 +79,7 @@
 - 发版前用户实测：给一份 5 分钟检查清单（真酒馆测试做完后写）。
 - 罗斯柴尔德主视角：用户无所谓，定东南 45°（看得见新月湾），全景统一。
 - ~~第 3 步改名~~ ✅（草图、skill 指引、世界书编号、仓库迁到 eden-map 全部完成）（用户 2026-09-28 同意，一起改）：~~docs/drafts 36 张中文名草图（顺带删无引用的）~~ ✅（9 张有引用改英文，27 张无引用删除）、~~skills/card-map/guides 4 个~~ ✅（`nsfw.md`/`architecture.md`/`panel-ui.md`/`style.md`）、世界书条目编号 58 条改英文（界面名不变，别名表兼容旧对话 + 测试）——未做，不动 worldbook；最后把仓库 threejs 挪出来改名为 ~/dev1/cctest1/eden-map（性能/ 本身不动）（本机 worktree、.claude 记忆目录、云端同步路径一起迁）——脚本 `tools/migrate_repo_path.sh` 已写好（未运行，支持 DRY_RUN=1），等原域和小修代理都结束后停机执行。
+  - ✅ **2026-09-29 核实：这条已经做完了**（`map/data/worldbook_addon.json` 58 条 id 全部 ASCII，如 `map.link-rules`）。上面「未做，不动 worldbook」是过期说法；现在中文只剩「条目显示名」，那是运行时按中文名同步到用户世界书用的，属功能必需（见 `tools/check_ascii.py` 的 KEYS_OK 登记）。
 
 ## 用户待决定
 
