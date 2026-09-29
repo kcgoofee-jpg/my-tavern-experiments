@@ -1,0 +1,125 @@
+{
+ "title": "罗斯柴尔德庄园 · 悬浮岛 R-02 —— v17 设定对照",
+ "items": [
+  {
+   "key": "card_home",
+   "text": "伊莎贝拉·罗斯柴尔德的居所（军工与以太能源财阀）",
+   "source": "卡原文",
+   "status": "✓"
+  },
+  {
+   "key": "roots",
+   "text": "岛缘土层下垂根 / 苔（仰视里偏细）",
+   "source": "仓库推断",
+   "status": "弱"
+  },
+  {
+   "key": "card_key",
+   "text": "宴会凭请柬和结界密钥入场 → 宾客平台的结界密钥闸口",
+   "source": "卡原文",
+   "status": "✓"
+  },
+  {
+   "key": "bay",
+   "text": "轮廓：新月形，东侧深湾，湾口朝东",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "terrain",
+   "text": "两臂岩丘（北林丘 / 南岩台）+ 三级水景台地 + 蜂蜜色石挡墙",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "water",
+   "text": "中轴长水池（冷蓝晶板池底）→ 湾内弧宽帘瀑",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "pond",
+   "text": "园林洼地的自然池塘",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "garden",
+   "text": "对称黄杨花坛 + 冬季深红花床；雪松橡树成团",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "paths",
+   "text": "路网三级：金砂车道 > 园路 > 踏径",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "chateau",
+   "text": "沃德斯登式蜂蜜色石府邸（陡石板顶、圆塔尖顶）",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "winter",
+   "text": "2088：冬园玻璃宴会厅 + 全息园灯",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "crystal",
+   "text": "崖缘晶簇全区最多",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "dock",
+   "text": "湾口宾客大平台 + 最长进场光带",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "dock_private",
+   "text": "岛背面家族私用小平台",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "ward",
+   "text": "结界：扁穹六角格反光（中档）",
+   "source": "仓库推断",
+   "status": "弱"
+  },
+  {
+   "key": "u_rock",
+   "text": "岛底：浅蜂蜜色石灰岩层理 + 冷蓝导能脉密布",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "u_tusk",
+   "text": "新月两臂下双獠牙",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "u_bell",
+   "text": "以太储能钟（巨晶 + 合金笼架）",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "u_wcone",
+   "text": "湾下清水倒锥",
+   "source": "仓库推断",
+   "status": "✓"
+  },
+  {
+   "key": "u_core",
+   "text": "岛底 4 颗核、冷蓝最亮",
+   "source": "仓库推断",
+   "status": "✓"
+  }
+ ]
+}

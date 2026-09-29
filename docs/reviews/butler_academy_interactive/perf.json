@@ -1,0 +1,119 @@
+{
+ "desktop": {
+  "loadMs": 226,
+  "stats": {
+   "glb": "",
+   "tier": "high",
+   "dpr": 1,
+   "t0": 47.899999998509884,
+   "tManifest": 77.39999999850988,
+   "tGlb": 110.89999999850988,
+   "tFirst": 173.39999999850988,
+   "bytes": 303204,
+   "tris": 5700,
+   "draws": 6,
+   "gpuMB": 15.093511962890625,
+   "calls": 10,
+   "gl": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+  },
+  "modes": {
+   "exterior": {
+    "fps_p50": 12,
+    "fps_p95": 8.6,
+    "ms_p50": 83.3,
+    "ms_p95": 116.6,
+    "frames": 47
+   },
+   "roof_lift": {
+    "fps_p50": 12,
+    "fps_p95": 8.6,
+    "ms_p50": 83.3,
+    "ms_p95": 116.6,
+    "frames": 48
+   },
+   "xray": {
+    "fps_p50": 12,
+    "fps_p95": 10,
+    "ms_p50": 83.3,
+    "ms_p95": 100.1,
+    "frames": 48
+   },
+   "section": {
+    "fps_p50": 12,
+    "fps_p95": 10,
+    "ms_p50": 83.3,
+    "ms_p95": 100,
+    "frames": 49
+   }
+  },
+  "errors": []
+ },
+ "phone": {
+  "cpuThrottle": 4,
+  "loadMs": 447,
+  "stats": {
+   "glb": "",
+   "tier": "low",
+   "dpr": 1.25,
+   "t0": 130.70000000298023,
+   "tManifest": 71.19999999552965,
+   "tGlb": 187.29999999701977,
+   "tFirst": 306.79999999701977,
+   "bytes": 147296,
+   "tris": 3792,
+   "draws": 6,
+   "gpuMB": 7.084100646972656,
+   "calls": 10,
+   "gl": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+  },
+  "modes": {
+   "exterior": {
+    "fps_p50": 59.9,
+    "fps_p95": 29.9,
+    "ms_p50": 16.7,
+    "ms_p95": 33.4,
+    "frames": 192
+   },
+   "roof_lift": {
+    "fps_p50": 59.9,
+    "fps_p95": 30,
+    "ms_p50": 16.7,
+    "ms_p95": 33.3,
+    "frames": 216
+   },
+   "xray": {
+    "fps_p50": 59.9,
+    "fps_p95": 29.9,
+    "ms_p50": 16.7,
+    "ms_p95": 33.4,
+    "frames": 188
+   },
+   "section": {
+    "fps_p50": 59.9,
+    "fps_p95": 29.9,
+    "ms_p50": 16.7,
+    "ms_p95": 33.4,
+    "frames": 166
+   }
+  },
+  "errors": []
+ },
+ "openClose10": {
+  "heapMB": [
+   3.1,
+   3.8,
+   4,
+   4.2,
+   4.3,
+   4.3,
+   4.3,
+   4.4,
+   4.5,
+   4.5,
+   4.5
+  ],
+  "growthMB": 0.7,
+  "framesLeft": 1,
+  "errors": []
+ }
+}

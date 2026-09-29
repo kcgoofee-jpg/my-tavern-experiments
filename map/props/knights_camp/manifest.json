@@ -1,0 +1,179 @@
+{
+ "_说明": "viewer3d.html?model=knights_camp 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/knights_camp.md。",
+ "id": "knights_camp",
+ "title": {
+  "zh": "骑士团营区",
+  "en": "Knights' Order Camp"
+ },
+ "glb": "knights_camp.glb",
+ "glb_low": "knights_camp_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "walls_ext",
+   "props_barracks",
+   "props_hangar",
+   "props_wall_gate"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "site_ground",
+   "props_yard",
+   "props_lights"
+  ],
+  "building": {
+   "min": [
+    -75.0,
+    -0.3,
+    -75.0
+   ],
+   "max": [
+    75.0,
+    24.0,
+    75.0
+   ]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 24,
+  "default": 24
+ },
+ "camera": {
+  "frame": [
+   "walls_ext",
+   "props_barracks",
+   "props_hangar"
+  ],
+  "dir": [
+   0.4,
+   0.42,
+   -0.8
+  ],
+  "min": 8,
+  "max": 400,
+  "maxPolar": 1.48
+ },
+ "budgets": {
+  "walls_ext": [
+   5000,
+   512
+  ],
+  "props_barracks": [
+   8000,
+   512
+  ],
+  "props_yard": [
+   1200,
+   256
+  ],
+  "props_hangar": [
+   5000,
+   512
+  ],
+  "props_wall_gate": [
+   6000,
+   512
+  ],
+  "site_ground": [
+   1000,
+   256
+  ],
+  "props_lights": [
+   1000,
+   256
+  ]
+ },
+ "hotspots": [
+  {
+   "id": "barracks",
+   "mesh": "props_barracks",
+   "name": {
+    "zh": "营房区（多排两层石构营房，呼应 12 分队约百人规模）",
+    "en": ""
+   },
+   "desc": {
+    "zh": "营房区（多排两层石构营房，呼应 12 分队约百人规模）",
+    "en": ""
+   },
+   "view": [
+    0.4,
+    0.42,
+    -0.8
+   ]
+  },
+  {
+   "id": "yard",
+   "mesh": "props_yard",
+   "name": {
+    "zh": "操练场（压实地面 + 队列地面标线，无武器/靶架）",
+    "en": ""
+   },
+   "desc": {
+    "zh": "操练场（压实地面 + 队列地面标线，无武器/靶架）",
+    "en": ""
+   },
+   "view": [
+    0.4,
+    0.42,
+    -0.8
+   ]
+  },
+  {
+   "id": "hangar",
+   "mesh": "props_hangar",
+   "name": {
+    "zh": "坐骑机库（悬浮坐骑机库，素面无标识）",
+    "en": ""
+   },
+   "desc": {
+    "zh": "坐骑机库（悬浮坐骑机库，素面无标识）",
+    "en": ""
+   },
+   "view": [
+    0.4,
+    0.42,
+    -0.8
+   ]
+  },
+  {
+   "id": "wall_gate",
+   "mesh": "props_wall_gate",
+   "name": {
+    "zh": "围墙 + 四角哨塔 + 正门门楼",
+    "en": ""
+   },
+   "desc": {
+    "zh": "围墙 + 四角哨塔 + 正门门楼",
+    "en": ""
+   },
+   "view": [
+    0.4,
+    0.42,
+    -0.8
+   ]
+  },
+  {
+   "id": "lights",
+   "mesh": "props_lights",
+   "name": {
+    "zh": "灯柱",
+    "en": ""
+   },
+   "desc": {
+    "zh": "灯柱",
+    "en": ""
+   },
+   "view": [
+    0.4,
+    0.42,
+    -0.8
+   ]
+  }
+ ]
+}

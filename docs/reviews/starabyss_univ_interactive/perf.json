@@ -1,0 +1,119 @@
+{
+ "desktop": {
+  "loadMs": 185,
+  "stats": {
+   "glb": "",
+   "tier": "high",
+   "dpr": 1,
+   "t0": 43.5,
+   "tManifest": 61.69999999552965,
+   "tGlb": 86.89999999850988,
+   "tFirst": 136.29999999701977,
+   "bytes": 229904,
+   "tris": 4172,
+   "draws": 7,
+   "gpuMB": 12.399614562988281,
+   "calls": 10,
+   "gl": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+  },
+  "modes": {
+   "exterior": {
+    "fps_p50": 20,
+    "fps_p95": 12,
+    "ms_p50": 50,
+    "ms_p95": 83.3,
+    "frames": 77
+   },
+   "roof_lift": {
+    "fps_p50": 20,
+    "fps_p95": 12,
+    "ms_p50": 50,
+    "ms_p95": 83.4,
+    "frames": 71
+   },
+   "xray": {
+    "fps_p50": 20,
+    "fps_p95": 12,
+    "ms_p50": 50,
+    "ms_p95": 83.3,
+    "frames": 70
+   },
+   "section": {
+    "fps_p50": 20,
+    "fps_p95": 12,
+    "ms_p50": 50,
+    "ms_p95": 83.3,
+    "frames": 71
+   }
+  },
+  "errors": []
+ },
+ "phone": {
+  "cpuThrottle": 4,
+  "loadMs": 358,
+  "stats": {
+   "glb": "",
+   "tier": "low",
+   "dpr": 1.25,
+   "t0": 130.60000000149012,
+   "tManifest": 26.30000000447035,
+   "tGlb": 121.20000000298023,
+   "tFirst": 221.39999999850988,
+   "bytes": 147576,
+   "tris": 2812,
+   "draws": 7,
+   "gpuMB": 8.388923645019531,
+   "calls": 10,
+   "gl": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+  },
+  "modes": {
+   "exterior": {
+    "fps_p50": 59.9,
+    "fps_p95": 30,
+    "ms_p50": 16.7,
+    "ms_p95": 33.3,
+    "frames": 224
+   },
+   "roof_lift": {
+    "fps_p50": 59.9,
+    "fps_p95": 59.5,
+    "ms_p50": 16.7,
+    "ms_p95": 16.8,
+    "frames": 228
+   },
+   "xray": {
+    "fps_p50": 59.9,
+    "fps_p95": 30,
+    "ms_p50": 16.7,
+    "ms_p95": 33.3,
+    "frames": 224
+   },
+   "section": {
+    "fps_p50": 59.9,
+    "fps_p95": 30,
+    "ms_p50": 16.7,
+    "ms_p95": 33.3,
+    "frames": 225
+   }
+  },
+  "errors": []
+ },
+ "openClose10": {
+  "heapMB": [
+   3.2,
+   3.7,
+   4,
+   4.2,
+   4.3,
+   4.3,
+   4.3,
+   4.4,
+   4.5,
+   4.5,
+   4.5
+  ],
+  "growthMB": 0.8,
+  "framesLeft": 1,
+  "errors": []
+ }
+}

@@ -1,0 +1,521 @@
+E7 色盲友好配色（用户 2026-09-27：无限期推迟，不随 e7-onehand 发布）。
+内容：事态大类色盲色板 GROUPS_CVD（Okabe-Ito + 近白 + 酒红，9 类在红 / 绿 / 蓝色弱模拟下两两 ΔE00 >= 10，原色板 4.2）、
+tokens.css 的 .cvd 语义色（红 / 绿 -> 橙 / 蓝）、事态图标黑描边 + 白外晕（任何底图 >= 3:1）、设置开关与中英文案、卡内脚本宿主栏同步、
+tests/cvd.test.mjs、tools/browser/e7.mjs 的色觉模拟截图步骤。
+恢复：在 e7-onehand 合入之后的树上 git apply docs/drafts/e7_cvd.patch，再 python3 tools/sync_tokens.py、bash tools/smoke.sh。
+
+diff --git a/map/events.js b/map/events.js
+index 0d3d6da..151115a 100644
+--- a/map/events.js
++++ b/map/events.js
+@@ -17,7 +17,15 @@ const TCEvents = (() => {
+     政策: ['政', '#6f9be0'], 公共直播: ['播', '#e0182d'], 民生: ['民', '#e8d08a'], 军事调动: ['军', '#a3b18a'], 急救: ['救', '#37c5b0'], 其他: ['!', '#cfd8e0'],
+   };
+   const look = c => LOOK[c] || LOOK.其他;
+-  const lk = e => e.ch && e.color ? [e.ch, e.color] : look(e.cat);   // events.mjs 给的图标字与大类颜色优先（v2：9 个大类 = 9 种颜色）
++  // 色盲友好配色（E7，设置里开关 → html.cvd）：大类色换成 events.mjs 的 GROUPS_CVD（加载前用这份），形状不变
++  let GC = { 空防: '#e69f00', 气候: '#56b4e9', 治安: '#0072b2', 政治: '#994455', 媒体: '#cc79a7', 民生: '#f0e442', 军事: '#009e73', 灾害: '#d55e00', 人物: '#f2f2f2', 其他: '#bbbbbb' };
++  const cvd = () => document.documentElement.classList.contains('cvd');
++  const lk = e => { const r = e.ch && e.color ? [e.ch, e.color] : look(e.cat);   // events.mjs 给的图标字与大类颜色优先（v2：9 个大类 = 9 种颜色）
++    return cvd() ? [r[0], GC[grpOf(e)] || GC.其他] : r; };
++  const gcol = g => cvd() ? GC[g] || GC.其他 : GROUPS[g] || '#cfd8e0';
++  // 填充色上的字：亮底深字、暗底白字（色盲色板里有深蓝、酒红；阈值与 tests/cvd.test.mjs 一致）
++  const inkOn = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
++    return .2126 * c[0] + .7152 * c[1] + .0722 * c[2] > .18 ? '#0b0b0b' : '#fff'; };
+   // 图例与筛选（v2）：9 个大类的颜色；点一个大类 = 在地图、列表、层计数里隐藏它（记在本机）。大类表在 events.mjs 加载后取，加载前用这份
+   let GROUPS = { 空防: '#d9a441', 气候: '#7fd6ff', 治安: '#3d7dff', 政治: '#6f9be0', 媒体: '#d03ca8', 民生: '#e8d08a', 军事: '#a3b18a', 灾害: '#ff5a2a', 人物: '#d7a6e8' };
+   let ORDER = Object.keys(GROUPS);
+@@ -119,7 +127,7 @@ const TCEvents = (() => {
+       const a = n * 2.4, r = n > 1 ? .006 * Math.sqrt(n) : 0, [ch, color] = lk(e);
+       const el = document.createElement('div');
+       el.className = `ev ${shp(grpOf(e))} ${e.closed ? 'ev-cleared' : 'ev-active'} sev${Math.max(1, e.lvl)} tier-${e.tier}${p.approx ? ' approx' : ''}${e.isNew && live(e) ? ' ev-new' : ''}`;
+-      el.style.setProperty('--c', color); el.dataset.ev = e.id;
++      el.style.setProperty('--c', color); el.style.setProperty('--k', /^#[0-9a-f]{6}$/i.test(color) ? inkOn(color) : '#0b0b0b'); el.dataset.ev = e.id;
+       el.innerHTML = `<i aria-hidden="true">${esc(ch)}</i><b>${esc(e.text || e.cat)}</b>`;
+       el.title = `${tn(e.cat)} · ${e.place || tn(e.layer)}`;
+       const label = `${tn(e.cat)}${e.closed ? '（' + T('ev.cleared', '已解除') + '）' : ''} · ${e.text || ''} · ${where(e)}`;
+@@ -148,7 +156,7 @@ const TCEvents = (() => {
+     ].filter(Boolean);
+     const sv = document.querySelector('#card .src'); delete sv.dataset.note;   // 事态卡不是设定原文，不加「原文（中文）」说明
+     sv.innerHTML = `<dl class="fields">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>`;
+-    const t = document.querySelector('#card .tag'); t.textContent = e.grp ? tn(e.grp) : T('ev.tag', '天城事态'); t.className = 'tag data'; t.style.background = lk(e)[1];
++    const t = document.querySelector('#card .tag'); t.textContent = e.grp ? tn(e.grp) : T('ev.tag', '天城事态'); t.className = 'tag data'; t.style.background = lk(e)[1]; if (/^#[0-9a-f]{6}$/i.test(lk(e)[1])) t.style.color = inkOn(lk(e)[1]);
+     if (kbdFly) { kbdFly = false; document.getElementById('cardTitle')?.focus({ preventScroll: true }); }
+   }
+   function flyTo(id) {
+@@ -196,7 +204,7 @@ const TCEvents = (() => {
+   function renderBar() {
+     const bar = $('#evbar'), every = all().filter(e => REG.maps[mapOf(e)]), list = every.filter(e => !off.has(grpOf(e)));
+     bar.hidden = !every.length || !shown; if (bar.hidden) return;
+-    if (!grpLoaded) { grpLoaded = true; mod().then(m => { if (m?.GROUPS) { GROUPS = m.GROUPS; ORDER = m.GROUP_ORDER || Object.keys(m.GROUPS).filter(g => g !== '其他'); if (m.SHAPES) SHAPES = m.SHAPES; renderBar(); } }); }   // 有事件时才取大类表
++    if (!grpLoaded) { grpLoaded = true; mod().then(m => { if (m?.GROUPS) { GROUPS = m.GROUPS; ORDER = m.GROUP_ORDER || Object.keys(m.GROUPS).filter(g => g !== '其他'); if (m.SHAPES) SHAPES = m.SHAPES; if (m.GROUPS_CVD) GC = m.GROUPS_CVD; renderBar(); } }); }   // 有事件时才取大类表
+     const n = list.filter(live).length, fresh = list.filter(e => e.isNew).length, hid = ORDER.filter(g => off.has(g)).length + (off.has('其他') ? 1 : 0);
+     const tb = bar.querySelector(':scope > button'); tb.setAttribute('aria-expanded', open ? 'true' : 'false');
+     // 左侧形状点 = 最新一条（进行中优先）的大类
+@@ -206,7 +214,7 @@ const TCEvents = (() => {
+     // 图例：9 个大类都列出（没有事件的变淡），数字 = 该类条数；点一下隐藏 / 恢复
+     const cnt = {}; for (const e of every) cnt[grpOf(e)] = (cnt[grpOf(e)] || 0) + 1;
+     const gs = ORDER.concat(cnt.其他 ? ['其他'] : []);
+-    bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${GROUPS[g] || '#cfd8e0'}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i class="shp ${shp(g)}" aria-hidden="true"></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join('')
++    bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${gcol(g)}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i class="shp ${shp(g)}" aria-hidden="true"></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join('')
+       + `<small>${esc(T('ev.legend_hint', '点大类可隐藏 / 显示'))}</small>`;
+     // 列表项：li 里包一个真正的 <button>（原来 li 上的 role=button 让 axe 报 list / aria-allowed-role，E4b R08）
+     bar.querySelector('ol').innerHTML = list.map(e => `<li class="tier-${e.tier}${e.isNew ? ' isnew' : ''}${e.closed ? ' closed' : ''}" style="--c:${lk(e)[1]}"><button type="button" data-id="${esc(e.id)}"><i class="shp ${shp(grpOf(e))}" aria-hidden="true"></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(T('ev.cleared', '已解除')) : ''}${e.isNew ? `<span class="nb">${esc(T('ev.new', '新'))}</span>` : ''} <em>${esc(where(e))}</em></b><em>${esc(e.feed ? T('ev.feed', '数据源') : T('ev.floor', '第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${e.src ? ' —— ' + esc(e.src) : ''}</small></button></li>`).join('');
+@@ -242,7 +250,7 @@ const TCEvents = (() => {
+   const css = `
+   .ev{--c:#fff;position:relative;display:flex;align-items:center;gap:4px;transform:translate(-11px,-11px);pointer-events:auto;cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
+   /* 图标 = 大类色的形状底（i::before，按大类裁成圆 / 方 / 菱 / 三角……，色弱也分得清）+ 类型字；描边和光晕在 i 上，不被裁掉 */
+-  .ev i{width:20px;height:20px;display:grid;place-items:center;font:700 11px/1 var(--font-ui,sans-serif);font-style:normal;color:#0b0b0b;position:relative;z-index:0;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 4px var(--c))}
++  .ev i{width:20px;height:20px;display:grid;place-items:center;font:700 11px/1 var(--font-ui,sans-serif);font-style:normal;color:var(--k,#0b0b0b);position:relative;z-index:0;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 4px var(--c))}
+   .ev i::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:4px;background:linear-gradient(145deg,#fff 0,var(--c) 45%,color-mix(in srgb,var(--c) 60%,#000) 100%)}
+   .ev.sev2 i{width:22px;height:22px}.ev.sev3 i{width:25px;height:25px;font-size:13px}
+   .ev.sh-circle i::before,.ev.sh-ring i::before,i.shp.sh-circle,i.shp.sh-ring{border-radius:50%}
+@@ -267,6 +275,10 @@ const TCEvents = (() => {
+   .ev-new.sev3 i::after{animation-duration:.9s;animation-iteration-count:9}
+   /* 已解除 / 余波：图标变灰、变淡；文字标签不整体降透明度（对比度，E5 V20） */
+   .ev.tier-after i{opacity:.65}.ev-cleared i{opacity:.55}.ev-cleared i::before{background:#80868d}.ev-cleared i{filter:drop-shadow(0 0 1px #000)}.ev-cleared b{border-left-color:#80868d;color:#d0d4d8}
++  /* 色盲友好（E7）：图标加「黑描边 + 白外晕」，在亮的云海和暗的城区上都 ≥ 3:1（tests/cvd.test.mjs）；图例 / 列表的小色块加一圈墨色描边（近白在浅色面板上也看得见） */
++  html.cvd body .ev i{filter:drop-shadow(1.2px 0 0 #000) drop-shadow(-1.2px 0 0 #000) drop-shadow(0 1.2px 0 #000) drop-shadow(0 -1.2px 0 #000) drop-shadow(0 0 1.5px #fff)}
++  html.cvd body .ev-cleared i{filter:drop-shadow(1px 0 0 #000) drop-shadow(-1px 0 0 #000) drop-shadow(0 1px 0 #000) drop-shadow(0 -1px 0 #000)}
++  html.cvd .evleg button i,html.cvd #evbar li i,html.cvd #evbar>button .shp{filter:drop-shadow(0 0 .6px var(--ink)) drop-shadow(0 0 .6px var(--ink))}
+   .ev.approx i{outline:1px dashed rgba(255,255,255,.6);outline-offset:3px}
+   .ev.hot i{outline:2px solid var(--map-label-ink,#fff);outline-offset:3px}
+   .ev:focus-visible i{outline:2px solid var(--focus,#63b4be);outline-offset:4px}   /* 键盘焦点（E4b R07） */
+@@ -362,5 +374,6 @@ const TCEvents = (() => {
+   const countOn = id => vis().filter(e => mapOf(e) === id && live(e)).length;
+   const badges = () => { if (typeof updateLayerBadges === 'function') updateLayerBadges(); };
+   const collapse = () => { if (!open) return; open = false; if ($('#evbar')) renderBar(); };
+-  return { init, set, render: afterOpen, pollFeeds, flyTo, countOn, collapse, isOpen: () => open && !$('#evbar')?.hidden, get events() { return all(); } };
++  const refresh = () => { render(); if ($('#evbar')) renderBar(); };   // 换配色（E7）后重画点、横条、图例
++  return { init, set, render: afterOpen, refresh, pollFeeds, flyTo, countOn, collapse, isOpen: () => open && !$('#evbar')?.hidden, get events() { return all(); } };
+ })();
+diff --git a/map/i18n/en.json b/map/i18n/en.json
+index 6f605a2..652bb91 100644
+--- a/map/i18n/en.json
++++ b/map/i18n/en.json
+@@ -174,9 +174,10 @@
+   "no_fx_hint": "During cyberattacks, no flicker or tearing — only the \"Data link disrupted\" note",
+   "close": "Close",
+   "more": "More",
+-  "_E7": "单手",
+-  "a11y_h": "One-handed", "hand": "Handedness", "hand_auto": "Auto", "hand_left": "Left", "hand_right": "Right",
++  "_E7": "单手与色觉",
++  "a11y_h": "One hand & colour", "hand": "Handedness", "hand_auto": "Auto", "hand_left": "Left", "hand_right": "Right",
+   "hand_hint": "On phones, the menu, zoom and level buttons move to this thumb's side; Auto follows the side you dragged the map button to. One-finger zoom: double-tap, hold, drag up or down",
++  "cvd": "Colour-blind friendly colours", "cvd_hint": "Incident types use a colour-blind-safe palette (Okabe–Ito); red/green cues become orange/blue. Shapes stay the same",
+   "act_up": "Back to {title}", "act_close": "Close map",
+   "ev.sr_new": "{n} new incidents: ",
+   "_E5": "设计令牌重构新增的键",
+diff --git a/map/i18n/zh.json b/map/i18n/zh.json
+index 8328219..14a1f10 100644
+--- a/map/i18n/zh.json
++++ b/map/i18n/zh.json
+@@ -33,9 +33,10 @@
+   "no_fx_hint": "网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字",
+   "close": "关闭",
+   "more": "更多",
+-  "_E7": "单手",
+-  "a11y_h": "单手", "hand": "惯用手", "hand_auto": "自动", "hand_left": "左手", "hand_right": "右手",
++  "_E7": "单手与色觉",
++  "a11y_h": "单手与色觉", "hand": "惯用手", "hand_auto": "自动", "hand_left": "左手", "hand_right": "右手",
+   "hand_hint": "手机上菜单、缩放、楼层条移到这只手的拇指一侧；自动 = 看地图悬浮按钮拖在哪边。单指缩放：双击后按住，上下拖",
++  "cvd": "色盲友好配色", "cvd_hint": "事态大类改用色盲安全色板（Okabe–Ito），红 / 绿提示改橙 / 蓝；形状不变",
+   "act_up": "返回{title}", "act_close": "关闭地图",
+   "ev.sr_new": "新增 {n} 起事态：",
+   "_E5": "设计令牌重构新增的键",
+diff --git a/map/tavern/eden-map.js b/map/tavern/eden-map.js
+index 22dc69a..086c7d6 100644
+--- a/map/tavern/eden-map.js
++++ b/map/tavern/eden-map.js
+@@ -43,6 +43,9 @@
+     --em-font: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", system-ui, sans-serif; }
+   #${ID} .em-panel.em-light { --em-bg: #f8f5ee; --em-surface-2: rgba(20,23,26,.05); --em-line: rgba(20,23,26,.16); --em-line-2: rgba(20,23,26,.26); --em-ink: #1b1a17; --em-muted: #635e54;
+     --em-accent: #7a5d22; --em-on-accent: #fff; --em-alert: #c0392b; --em-on-alert: #fff; --em-ok: #23733b; --em-focus: #2d6c75; }
++  /* 色盲友好配色（E7，地图设置里开关）：红 / 绿换成 Okabe–Ito 的橙 / 蓝，与 map/ui/tokens.css 的 .cvd 同值 */
++  #${ID}.em-cvd { --em-alert: #d55e00; --em-ok: #56b4e9; }
++  #${ID}.em-cvd .em-panel.em-light { --em-alert: #b0306a; --em-ok: #0072b2; }
+   #${ID} :focus-visible { outline: 2px solid var(--em-focus); outline-offset: 2px; }
+   /* 只用视口单位定位：酒馆的 <html> 带 transform，会成为 fixed 的包含块且高度为 0 */
+   #${ID} .em-fab { position: fixed; left: calc(100vw - 66px); top: calc(100dvh - 144px); z-index: 30000; width: 48px; height: 48px; border-radius: 50%;
+@@ -56,7 +59,7 @@
+   #${ID} .em-fab.prep::before, #${ID} .em-fab.ready::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid transparent; }
+   #${ID} .em-fab.prep::before { border: 0; background: conic-gradient(var(--em-gold) calc(var(--p, 0) * 1%), rgba(230,195,106,.18) 0);
+     -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px)); }
+-  #${ID} .em-fab.ready::before { border-color: rgba(123,216,143,.8); animation: em-fade 1.8s forwards; }
++  #${ID} .em-fab.ready::before { border-color: var(--em-ok); animation: em-fade 1.8s forwards; }
+   /* 预加载失败：红色虚线环（不画满，不像成功），点开重试 */
+   #${ID} .em-fab.fail::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px dashed var(--em-alert); }
+   @keyframes em-spin { to { transform: rotate(360deg); } }
+@@ -68,7 +71,7 @@
+   #${ID} .em-tip { position: absolute; right: 56px; top: 8px; width: max-content; max-width: 180px; padding: 6px 10px; border-radius: 8px; background: #151b20; border: 1px solid rgba(230,195,106,.6); color: #d5dde4;
+     font: 12px/1.5 var(--em-font); box-shadow: 0 6px 20px rgba(0,0,0,.3); pointer-events: none; }
+   #${ID} .em-tip.em-tip-r { right: auto; left: 56px; }   /* 悬浮按钮在左半边（左手）：提示朝右 */
+-  #${ID} .em-fab.here::after { content: ''; position: absolute; right: 4px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background: #ff5a5a; box-shadow: 0 0 0 2px #151b20; }
++  #${ID} .em-fab.here::after { content: ''; position: absolute; right: 4px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--em-alert); box-shadow: 0 0 0 2px #151b20; }
+   #${ID} .em-panel { position: fixed; z-index: 30001; left: 50vw; top: 50dvh; transform: translate(-50%, -50%);
+     width: min(1200px, 94vw); height: min(820px, 88vh); height: min(820px, 88dvh); grid-template-columns: minmax(0, 1fr); background: var(--em-bg); border: 1px solid var(--em-line-2); color: var(--em-ink); font-family: var(--em-font);
+     border-radius: 12px; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.38), 0 24px 64px rgba(0,0,0,.3); display: grid; grid-template-rows: auto 1fr;
+@@ -298,6 +301,7 @@
+       if (e.data.lang && e.data.lang !== UL && UI[e.data.lang]) { UL = e.data.lang; showLine(); push(); }
+       if (e.data.theme) panel.classList.toggle('em-light', e.data.theme === 'light');
+       if (e.data.hand && e.data.hand !== handPref) { handPref = e.data.hand; applyHand(true); }
++      if (typeof e.data.cvd === 'boolean') root.classList.toggle('em-cvd', e.data.cvd);
+       mapTitle = e.data.title || ''; showTitle(); }
+     if (e.data?.type === 'eden-map:esc') close();   // 地图里没有可关的卡片 / 列表时，Esc 关闭面板
+   };
+@@ -395,7 +399,7 @@
+     if (dragged) { const r = fab.getBoundingClientRect(), vw = window.parent.innerWidth, vh = window.parent.innerHeight;
+       const p = placeFab(r.left / (vw - 48), r.top / (vh - 48)); try { localStorage.setItem(POS_KEY, JSON.stringify(p)); } catch (err) {} } });
+ 
+-  // 单手（E7）：惯用手在地图设置里改（同源 localStorage；改了地图发 eden-map:state {hand}）
++  // 单手与色盲配色（E7）：在地图设置里改（同源 localStorage；改了地图发 eden-map:state {hand, cvd}）
+   // 惯用手选了左 / 右：悬浮按钮挪到那一侧（高度不变）并记住；自动 = 不动它（地图反过来按它在哪一半判断左右手）
+   const HAND_KEY = 'edenMapHand';
+   let handPref = 'auto'; try { handPref = localStorage.getItem(HAND_KEY) || 'auto'; } catch (e) {}
+@@ -410,6 +414,7 @@
+   { let saved = null; try { saved = localStorage.getItem(POS_KEY); } catch (e) {}
+     if (!saved && handPref === 'left') placeFab(.03, Math.max(0, (window.parent.innerHeight - 144) / Math.max(1, window.parent.innerHeight - 48))); }   // 没拖过：左手默认放左下
+   applyHand(false);
++  { let cv = false; try { cv = localStorage.getItem('edenMapCvd') === '1'; } catch (e) {} root.classList.toggle('em-cvd', cv); }
+   fab.addEventListener('pointerup', () => { if (dragged && handPref === 'auto') applyHand(false); });
+   const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; flyNext = true; sleepViewer(); };
+   fab.addEventListener('click', async () => { if (dragged) return;
+diff --git a/map/tavern/events.mjs b/map/tavern/events.mjs
+index 2196679..b0264c8 100644
+--- a/map/tavern/events.mjs
++++ b/map/tavern/events.mjs
+@@ -13,6 +13,11 @@ export const GROUPS = {
+ };
+ export const GROUP_ORDER = ['空防', '气候', '治安', '政治', '媒体', '民生', '军事', '灾害', '人物'];   // 图例顺序（「其他」不进图例）
+ // 大类形状（色弱也分得清：地图点、图例、列表的小色块都用它）。媒体原为 #3de0ff，与气候在绿色弱下同色，改品红（E4 N30）
++// 色盲友好配色（E7，查看器设置里开关，默认关）：Okabe–Ito 7 色 + 近白（人物）+ 酒红（政治）+ 浅灰（其他）。
++// 9 类在正常 / 红 / 绿 / 蓝色弱模拟（Machado 2009）下两两 ΔE00 ≥ 10（原色板绿色弱下 4.2），见 tests/cvd.test.mjs。形状照旧
++export const GROUPS_CVD = {
++  空防: '#e69f00', 气候: '#56b4e9', 治安: '#0072b2', 政治: '#994455', 媒体: '#cc79a7', 民生: '#f0e442', 军事: '#009e73', 灾害: '#d55e00', 人物: '#f2f2f2', 其他: '#bbbbbb',
++};
+ export const SHAPES = { 空防: 'hex', 气候: 'circle', 治安: 'square', 政治: 'penta', 媒体: 'diamond', 民生: 'octa', 军事: 'tri-down', 灾害: 'tri', 人物: 'ring', 其他: 'square' };
+ const T = (g, ch, src, rare) => ({ g, ch, src, rare });
+ export const CATS = {   // 具体类型 → 大类、图标字、默认发布方、稀有度
+diff --git a/map/ui/tokens.css b/map/ui/tokens.css
+index 7c6231a..7eebcd5 100644
+--- a/map/ui/tokens.css
++++ b/map/ui/tokens.css
+@@ -44,6 +44,12 @@
+   --glow: none; --glow-text: none; }
+ .light [data-map="tc_low"], .light[data-map="tc_low"] { --bg: #f4f1e8; --surface: #f8f6ef;
+   --line: rgba(27, 36, 20, .16); --ink: #1b2414; --ink-2: #34402b; --muted: #55664a; --accent: #336619; --on-accent: #fff; --accent-2: #8a7a52; }
++/* 色盲友好（E7，设置里开关，html.cvd）：红 / 绿语义色换成 Okabe–Ito 的橙 / 蓝（浅色的强调色是棕，提醒改玫红）；中层的强调色是粉，提醒改黄（浅色改蓝）。
++   事态大类色在 tavern/events.mjs 的 GROUPS_CVD；色差与对比度见 tests/cvd.test.mjs */
++.cvd { --alert: #d55e00; --on-alert: #1a0606; --ok: #56b4e9; }
++.cvd [data-map="tc_mid"] { --alert: #f0e442; --on-alert: #1a1406; }
++.light.cvd { --alert: #b0306a; --on-alert: #fff; --ok: #0072b2; }
++.light.cvd [data-map="tc_mid"] { --alert: #0072b2; --on-alert: #fff; --ok: #a64400; }
+ /* 派生令牌：在 body 上再算一次，层 / 主题换了 --accent、--surface 之后跟着变（自定义属性在声明它的元素上求值） */
+ :root, body {
+   --surface-glass: color-mix(in srgb, var(--surface) 92%, transparent);
+diff --git a/map/viewer.html b/map/viewer.html
+index 5824b69..8584a6d 100644
+--- a/map/viewer.html
++++ b/map/viewer.html
+@@ -14,13 +14,14 @@
+   window.__theme = th; window.__lang = lg; d.lang = lg === 'en' ? 'en' : 'zh-CN';
+   window.__applyTheme = () => d.classList.toggle('light', window.__theme === 'light' || (window.__theme === 'auto' && mq.matches));
+   window.__applyTheme(); mq.addEventListener && mq.addEventListener('change', window.__applyTheme);
+-  // 单手（E7）：惯用手 auto / left / right → html[data-hand]；auto = 看酒馆悬浮按钮被拖到哪一半（同源 localStorage），没拖过按右手。记在本机，?hand= 可覆盖（测试用）
+-  let hd = 'auto'; try { hd = q.get('hand') || localStorage.getItem('edenMapHand') || 'auto'; } catch (e) {}
++  // 单手（E7）：惯用手 auto / left / right → html[data-hand]；auto = 看酒馆悬浮按钮被拖到哪一半（同源 localStorage），没拖过按右手。
++  // 色盲友好配色（E7）→ html.cvd。都记在本机，?hand= / ?cvd=1 可覆盖（测试用）
++  let hd = 'auto', cv = false; try { hd = q.get('hand') || localStorage.getItem('edenMapHand') || 'auto'; cv = (q.get('cvd') || localStorage.getItem('edenMapCvd')) === '1'; } catch (e) {}
+   window.__hand = ['auto', 'left', 'right'].includes(hd) ? hd : 'auto';
+   window.__applyHand = () => { let h = window.__hand;
+     if (h === 'auto') { h = 'right'; try { const p = JSON.parse(localStorage.getItem('edenMapFabPos')); if (p && p[0] < .5) h = 'left'; } catch (e) {} }
+     d.dataset.hand = h; return h; };
+-  window.__applyHand();
++  window.__applyHand(); d.classList.toggle('cvd', cv);
+   window.__i18n = fetch('i18n/' + lg + '.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));   // 和启动数据并行取
+   // 首图一定是世界图（独立打开、没有 ?map= / ?here=）时才预取世界底图的描述文件与 1200px 缩略图；嵌入酒馆时首图由当前地点决定，不预取（省流，E4 N04）
+   // dzi 带 crossorigin：凭据模式与 OSD 的请求一致，预取的结果才用得上
+@@ -79,6 +80,12 @@
+   --glow: none; --glow-text: none; }
+ .light [data-map="tc_low"], .light[data-map="tc_low"] { --bg: #f4f1e8; --surface: #f8f6ef;
+   --line: rgba(27, 36, 20, .16); --ink: #1b2414; --ink-2: #34402b; --muted: #55664a; --accent: #336619; --on-accent: #fff; --accent-2: #8a7a52; }
++/* 色盲友好（E7，设置里开关，html.cvd）：红 / 绿语义色换成 Okabe–Ito 的橙 / 蓝（浅色的强调色是棕，提醒改玫红）；中层的强调色是粉，提醒改黄（浅色改蓝）。
++   事态大类色在 tavern/events.mjs 的 GROUPS_CVD；色差与对比度见 tests/cvd.test.mjs */
++.cvd { --alert: #d55e00; --on-alert: #1a0606; --ok: #56b4e9; }
++.cvd [data-map="tc_mid"] { --alert: #f0e442; --on-alert: #1a1406; }
++.light.cvd { --alert: #b0306a; --on-alert: #fff; --ok: #0072b2; }
++.light.cvd [data-map="tc_mid"] { --alert: #0072b2; --on-alert: #fff; --ok: #a64400; }
+ /* 派生令牌：在 body 上再算一次，层 / 主题换了 --accent、--surface 之后跟着变（自定义属性在声明它的元素上求值） */
+ :root, body {
+   --surface-glass: color-mix(in srgb, var(--surface) 92%, transparent);
+@@ -449,7 +456,8 @@
+ </div></div>
+ <div id="setPop" class="pop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置"><div class="acts" hidden><button type="button" class="btn" id="actUp" hidden></button><button type="button" class="btn" id="actClose" hidden data-i18n="act_close">关闭地图</button></div><div class="more"></div><label><span data-i18n="auto_here">打开地图时自动跳到当前地点</span><input type="checkbox" role="switch" id="optAutoHere" checked></label><small data-i18n="auto_here_hint">庄园房间直达对应楼层；地标、层、世界地名各自落到对应的图</small>
+   <label class="row"><span data-i18n="no_fx">关闭花屏特效</span><input type="checkbox" role="switch" id="optNoFx"></label><small data-i18n="no_fx_hint">网络攻击时不再闪烁、撕裂，只显示「数据链路受扰」文字</small>
+-  <h3 class="a11y" data-i18n="a11y_h">单手</h3><div class="hrow"><span id="handLbl" data-i18n="hand">惯用手</span><div class="seg" id="handSeg" role="group" aria-labelledby="handLbl"><button type="button" data-hand="auto" data-i18n="hand_auto">自动</button><button type="button" data-hand="left" data-i18n="hand_left">左手</button><button type="button" data-hand="right" data-i18n="hand_right">右手</button></div></div><small data-i18n="hand_hint">手机上菜单、缩放、楼层条移到这只手的拇指一侧；自动 = 看地图悬浮按钮拖在哪边。单指缩放：双击后按住，上下拖</small></div>
++  <h3 class="a11y" data-i18n="a11y_h">单手与色觉</h3><div class="hrow"><span id="handLbl" data-i18n="hand">惯用手</span><div class="seg" id="handSeg" role="group" aria-labelledby="handLbl"><button type="button" data-hand="auto" data-i18n="hand_auto">自动</button><button type="button" data-hand="left" data-i18n="hand_left">左手</button><button type="button" data-hand="right" data-i18n="hand_right">右手</button></div></div><small data-i18n="hand_hint">手机上菜单、缩放、楼层条移到这只手的拇指一侧；自动 = 看地图悬浮按钮拖在哪边。单指缩放：双击后按住，上下拖</small>
++  <label><span data-i18n="cvd">色盲友好配色</span><input type="checkbox" role="switch" id="optCvd"></label><small data-i18n="cvd_hint">事态大类改用色盲安全色板（Okabe–Ito），红 / 绿提示改橙 / 蓝；形状不变</small></div>
+ <div id="card" hidden role="dialog" aria-labelledby="cardTitle"><div class="grab" aria-hidden="true"></div><div class="top"><span class="tag"></span><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><h2 id="cardTitle" tabindex="-1"></h2><div class="sub"></div><div class="src"></div><div class="extra"></div></div>
+ <div id="setMask" hidden></div>
+ <div id="sr" class="sr-only" aria-live="polite"></div>
+@@ -540,7 +548,7 @@ function cycleTheme() {
+ const themeNow = () => document.documentElement.classList.contains('light') ? 'light' : 'dark';
+ // 当前地图、标题、语言、主题 → 酒馆（面板标题栏跟着换语言和深浅）
+ function postState() { if (cur && REG?.maps[cur]) post({ type: 'eden-map:state', map: cur, title: nm(REG.maps[cur], 'title'), lang: LANG, theme: themeNow(),
+-  hand: window.__hand }); }   // hand（E7）：卡内脚本据此把悬浮按钮挪到拇指侧
++  hand: window.__hand, cvd: document.documentElement.classList.contains('cvd') }); }   // hand / cvd（E7）：卡内脚本据此把悬浮按钮挪到拇指侧、角标换色
+ 
+ async function main() {
+   // 三个启动文件并行取（之前 derived.json 要等前两个取完才开始）
+@@ -1344,7 +1352,7 @@ function initSettings() {
+   fx.onchange = () => { document.body.classList.toggle('nofx', fx.checked); try { localStorage.setItem('edenMapNoFx', fx.checked ? '1' : '0'); } catch (e) {} };
+ }
+ let showSet = () => {}, showLay = () => {};
+-// ---------------- 单手（E7） ----------------
++// ---------------- 单手与色觉（E7） ----------------
+ // 停靠栏：菜单按钮（顶栏「⋯」的底部替身）+ 缩放组 + 层切换器；手机上是拇指一侧的一列（庄园里是底部一行），桌面 display: contents 不影响布局
+ function makeDock() {
+   const dock = document.createElement('div'), tb = document.createElement('button'); dock.id = 'dock';
+@@ -1354,7 +1362,7 @@ function makeDock() {
+   dock.append(tb, $('#zoom'), $('#layers')); $('#stage').appendChild(dock); return dock;
+ }
+ function initE7() {
+-  const tb = $('#thumbBtn'), pop = $('#setPop');
++  const root = document.documentElement, tb = $('#thumbBtn'), pop = $('#setPop');
+   // 菜单：底部按钮和顶栏按钮开同一个抽屉；抽屉顶上是够得着的「返回上一级」「关闭地图」（手机上顶栏和酒馆面板的 × 都在最上面）
+   const base = showSet;
+   showSet = on => { base(on); tb.setAttribute('aria-expanded', on ? 'true' : 'false'); if (on) acts(); };
+@@ -1372,6 +1380,10 @@ function initE7() {
+     window.__applyHand(); paint(); postState(); });
+   paint();
+   addEventListener('storage', e => { if (e.key === 'edenMapFabPos' && window.__hand === 'auto') window.__applyHand(); });   // 自动：悬浮按钮拖到另一边，地图跟着换
++  // 色盲友好配色
++  const cv = $('#optCvd'); cv.checked = root.classList.contains('cvd');
++  cv.onchange = () => { root.classList.toggle('cvd', cv.checked); try { localStorage.setItem('edenMapCvd', cv.checked ? '1' : '0'); } catch (err) {}
++    TCEvents.refresh?.(); if (!$('#card').hidden) closeCard(); postState(); };
+   initQuickZoom(); initCardSwipe();
+ }
+ // 单指缩放（像 Google 地图）：双击后第二下按住不放，往下拖放大、往上拖缩小；双击不拖 = 放大一倍。
+diff --git a/tests/cvd.test.mjs b/tests/cvd.test.mjs
+new file mode 100644
+index 0000000..fe88f5f
+--- /dev/null
++++ b/tests/cvd.test.mjs
+@@ -0,0 +1,87 @@
++// node tests/cvd.test.mjs —— 色盲友好配色（E7）：事态大类色板与语义色在红 / 绿 / 蓝色弱模拟下分得开、对比度够
++// 模拟：Machado, Oliveira & Fernandes 2009，严重度 1.0（全色盲级别的红 / 绿 / 蓝色弱），在线性 sRGB 里乘矩阵；色差 CIEDE2000。
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import { GROUPS, GROUPS_CVD, GROUP_ORDER, SHAPES } from '../map/tavern/events.mjs';
++
++const MX = {
++  protan: [[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]],
++  deutan: [[0.367322, 0.860646, -0.227968], [0.280085, 0.672501, 0.047413], [-0.011820, 0.042940, 0.968881]],
++  tritan: [[1.255528, -0.076749, -0.178779], [-0.078411, 0.930809, 0.147602], [0.004733, 0.691367, 0.303900]],
++};
++const KINDS = ['normal', 'protan', 'deutan', 'tritan'];
++const s2l = c => (c /= 255, c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4);
++const lin = h => [0, 2, 4].map(i => s2l(parseInt(h.replace('#', '').slice(i, i + 2), 16)));
++const sim = (l, k) => k === 'normal' ? l : MX[k].map(r => Math.min(1, Math.max(0, r[0] * l[0] + r[1] * l[1] + r[2] * l[2])));
++const lum = l => .2126 * l[0] + .7152 * l[1] + .0722 * l[2];
++const cr = (a, b) => (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
++function lab(l) {
++  const X = (.4124 * l[0] + .3576 * l[1] + .1805 * l[2]) / .95047, Y = lum(l), Z = (.0193 * l[0] + .1192 * l[1] + .9505 * l[2]) / 1.08883;
++  const f = t => t > 216 / 24389 ? Math.cbrt(t) : (24389 / 27 * t + 16) / 116;
++  return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
++}
++function de00(p, q) {
++  const [L1, a1, b1] = lab(p), [L2, a2, b2] = lab(q), rad = Math.PI / 180;
++  const Cb = (Math.hypot(a1, b1) + Math.hypot(a2, b2)) / 2, G = .5 * (1 - Math.sqrt(Cb ** 7 / (Cb ** 7 + 25 ** 7)));
++  const A1 = a1 * (1 + G), A2 = a2 * (1 + G), C1 = Math.hypot(A1, b1), C2 = Math.hypot(A2, b2);
++  const hh = (b, a) => { if (!a && !b) return 0; const x = Math.atan2(b, a) / rad; return x < 0 ? x + 360 : x; };
++  const h1 = hh(b1, A1), h2 = hh(b2, A2);
++  let dh = 0; if (C1 * C2) { dh = h2 - h1; if (dh > 180) dh -= 360; else if (dh < -180) dh += 360; }
++  const dH = 2 * Math.sqrt(C1 * C2) * Math.sin(dh / 2 * rad), Lb = (L1 + L2) / 2, Cp = (C1 + C2) / 2;
++  let hb = h1 + h2; if (C1 * C2) hb = Math.abs(h1 - h2) > 180 ? (h1 + h2 + (h1 + h2 < 360 ? 360 : -360)) / 2 : (h1 + h2) / 2;
++  const T = 1 - .17 * Math.cos((hb - 30) * rad) + .24 * Math.cos(2 * hb * rad) + .32 * Math.cos((3 * hb + 6) * rad) - .2 * Math.cos((4 * hb - 63) * rad);
++  const dth = 30 * Math.exp(-(((hb - 275) / 25) ** 2)), Rc = 2 * Math.sqrt(Cp ** 7 / (Cp ** 7 + 25 ** 7));
++  const Sl = 1 + .015 * (Lb - 50) ** 2 / Math.sqrt(20 + (Lb - 50) ** 2), Sc = 1 + .045 * Cp, Sh = 1 + .015 * Cp * T, Rt = -Math.sin(2 * dth * rad) * Rc;
++  return Math.sqrt(((L2 - L1) / Sl) ** 2 + ((C2 - C1) / Sc) ** 2 + (dH / Sh) ** 2 + Rt * ((C2 - C1) / Sc) * (dH / Sh));
++}
++// 一组颜色在四种视觉（正常 + 三种色弱）下两两最小色差
++const minDE = hexes => { let m = Infinity, w = ''; for (const k of KINDS) { const s = hexes.map(h => sim(lin(h), k));
++  for (let i = 0; i < s.length; i++) for (let j = i + 1; j < s.length; j++) { const d = de00(s[i], s[j]); if (d < m) { m = d; w = `${k} ${hexes[i]}/${hexes[j]}`; } } } return [m, w]; };
++
++let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
++
++t('色盲配色：9 个大类 + 其他都有，形状不变', () => {
++  for (const g of [...GROUP_ORDER, '其他']) { assert.match(GROUPS_CVD[g], /^#[0-9a-f]{6}$/, g); assert.ok(SHAPES[g], g); }
++  assert.deepEqual(Object.keys(GROUPS_CVD).sort(), Object.keys(GROUPS).sort());
++});
++t('色盲配色：9 类在正常 / 红 / 绿 / 蓝色弱下两两 ΔE00 ≥ 10（原色板绿色弱下只有 4.2）', () => {
++  const [m, w] = minDE(GROUP_ORDER.map(g => GROUPS_CVD[g]));
++  console.log(`   最小 ΔE00 ${m.toFixed(1)}（${w}）；原色板 ${minDE(GROUP_ORDER.map(g => GROUPS[g]))[0].toFixed(1)}`);
++  assert.ok(m >= 10, `${m.toFixed(1)} ${w}`);
++});
++t('色盲配色：「其他」和已解除的灰（#80868d）也分得开（ΔE00 ≥ 10）', () => {
++  assert.ok(minDE([...GROUP_ORDER.map(g => GROUPS_CVD[g]), GROUPS_CVD.其他])[0] >= 10);
++  assert.ok(minDE([GROUPS_CVD.其他, '#80868d'])[0] >= 10);
++});
++// 事态点的填充色在亮 / 暗底图上不可能同时 ≥ 3:1（上层云海中位亮度 0.57，中 / 下层 0.01），所以色盲模式给图标加「黑描边 + 白外晕」：
++// 任何底色亮度 Y：Y ≥ 0.1 时黑边对它 ≥ 3:1，Y ≤ 0.3 时白晕对它 ≥ 3:1，两者至少一个成立
++t('事态点描边：黑边 / 白晕对任何底图亮度至少一个 ≥ 3:1', () => {
++  for (let y = 0; y <= 1.0001; y += .01) assert.ok(Math.max(cr(y, 0), cr(y, 1)) >= 3, String(y));
++});
++t('事态点图标字：深 / 浅字按填充色自动选，对比度 ≥ 4.5', () => {
++  for (const g of Object.keys(GROUPS_CVD)) { const L = lum(lin(GROUPS_CVD[g])), ink = L > .18 ? 0.0035 : 1;   // 与 events.js 的 inkOn 同一阈值
++    assert.ok(cr(L, ink) >= 4.5, `${g} ${GROUPS_CVD[g]} ${cr(L, ink).toFixed(2)}`); }
++});
++// 语义色：tokens.css 的 .cvd 段（红 / 绿换成橙 / 蓝）
++const tok = fs.readFileSync(new URL('../map/ui/tokens.css', import.meta.url), 'utf8');
++const block = sel => { const m = tok.match(new RegExp(sel.replace(/[.[\]"=]/g, '\\$&') + '\\s*\\{([^}]*)\\}')); assert.ok(m, sel); return Object.fromEntries([...m[1].matchAll(/--([\w-]+):\s*#([0-9a-f]{6}|[0-9a-f]{3})\b/gi)].map(x => [x[1], '#' + (x[2].length === 3 ? [...x[2]].map(c => c + c).join('') : x[2]).toLowerCase()])); };
++const SURF = { dark: '#151b20', light: '#f8f5ee', mid: '#1a1029', low: '#111411', midL: '#f9f6fc' };
++const ACC = { dark: '#e6c36a', light: '#7a5d22', mid: '#ff3d9a', midL: '#b3155f', low: '#9fe870', lowL: '#336619' };
++t('语义色（深色）：提醒 ≠ 成功 ≠ 强调色，色弱下 ΔE00 ≥ 8；提醒对面板 ≥ 3:1、角标字 ≥ 4.5', () => {
++  const c = block('.cvd'), m = block('.cvd [data-map="tc_mid"]');
++  for (const [a, acc, surf, on] of [[c.alert, ACC.dark, SURF.dark, c['on-alert']], [c.alert, ACC.low, SURF.low, c['on-alert']], [m.alert, ACC.mid, SURF.mid, m['on-alert']]]) {
++    const [d, w] = minDE([a, acc]); assert.ok(d >= 8, `${a} vs ${acc}: ${d.toFixed(1)} ${w}`);
++    assert.ok(cr(lum(lin(a)), lum(lin(surf))) >= 3, `${a} on ${surf}`); assert.ok(cr(lum(lin(a)), lum(lin(on))) >= 4.5, `${on} on ${a}`);
++  }
++  assert.ok(minDE([c.alert, c.ok])[0] >= 20); assert.ok(cr(lum(lin(c.ok)), lum(lin(SURF.dark))) >= 3);
++});
++t('语义色（浅色）：同上', () => {
++  const c = block('.light.cvd'), m = block('.light.cvd [data-map="tc_mid"]');
++  for (const [a, acc, surf, on] of [[c.alert, ACC.light, SURF.light, c['on-alert']], [c.alert, ACC.lowL, SURF.light, c['on-alert']], [m.alert, ACC.midL, SURF.midL, m['on-alert']]]) {
++    const [d, w] = minDE([a, acc]); assert.ok(d >= 8, `${a} vs ${acc}: ${d.toFixed(1)} ${w}`);
++    assert.ok(cr(lum(lin(a)), lum(lin(surf))) >= 3, `${a} on ${surf}`); assert.ok(cr(lum(lin(a)), lum(lin(on))) >= 4.5, `${on} on ${a}`);
++  }
++  assert.ok(minDE([c.alert, c.ok])[0] >= 12); assert.ok(cr(lum(lin(c.ok)), lum(lin(SURF.light))) >= 3);
++  assert.ok(minDE([m.alert, m.ok])[0] >= 12); assert.ok(cr(lum(lin(m.ok)), lum(lin(SURF.midL))) >= 3);
++});
++console.log(`\n${n} 项通过`);
+diff --git a/tools/browser/e7.mjs b/tools/browser/e7.mjs
+index e1976dd..6baa8ec 100644
+--- a/tools/browser/e7.mjs
++++ b/tools/browser/e7.mjs
+@@ -1,6 +1,7 @@
+-// E7 验收：单手（惯用手 左 / 右 / 自动、拇指区停靠栏、底部菜单 / 返回 / 关闭、抽屉下拉关闭）、单指缩放（双击按住上下拖）。
++// E7 验收：单手（惯用手 左 / 右 / 自动、拇指区停靠栏、底部菜单 / 返回 / 关闭、抽屉下拉关闭）、单指缩放（双击按住上下拖）、色盲友好配色。
+ // 用法：EDEN_PORT=5187 node tools/browser/e7.mjs <输出目录> [--shots docs/drafts]
+ //   Chromium 375 × 812（phone）+ WebKit iPhone（375 / 414）各跑一遍；--shots 时另存 docs/drafts/ui_e7_*.jpg（CSS 像素、JPEG，≤ 300 KB）。
++// 色觉模拟截图：给 <html> 套 SVG feColorMatrix（Machado 2009 严重度 1.0，SVG 滤镜默认在线性 RGB 里算，和 tests/cvd.test.mjs 同一套矩阵）。
+ import * as B from './lib.mjs';
+ import fs from 'node:fs';
+ import path from 'node:path';
+@@ -27,6 +28,15 @@ async function jpg(page, name) {
+   for (const q of [72, 60, 48]) { await page.screenshot({ path: f, type: 'jpeg', quality: q, scale: 'css', timeout: 60000 }); if (fs.statSync(f).size <= 300 * 1024) break; }
+   console.log('  截图', path.relative(process.cwd(), f), (fs.statSync(f).size / 1024).toFixed(0) + ' KB');
+ }
++const MX = { protan: '0.152286 1.052583 -0.204868 0 0 0.114503 0.786281 0.099216 0 0 -0.003882 -0.048116 1.051998 0 0 0 0 0 1 0',
++  deutan: '0.367322 0.860646 -0.227968 0 0 0.280085 0.672501 0.047413 0 0 -0.011820 0.042940 0.968881 0 0 0 0 0 1 0',
++  tritan: '1.255528 -0.076749 -0.178779 0 0 -0.078411 0.930809 0.147602 0 0 0.004733 0.691367 0.303900 0 0 0 0 0 1 0' };
++const simulate = (page, k) => page.evaluate(([k, m]) => {
++  let svg = document.getElementById('__cvdsim');
++  if (!svg) { svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.id = '__cvdsim'; svg.setAttribute('style', 'position:absolute;width:0;height:0'); document.body.appendChild(svg); }
++  svg.innerHTML = k ? `<filter id="__f" color-interpolation-filters="linearRGB"><feColorMatrix type="matrix" values="${m}"/></filter>` : '';
++  document.documentElement.style.filter = k ? 'url(#__f)' : '';
++}, [k, MX[k] || '']);
+ // 停靠栏里每个可见控件的位置（相对视口）
+ const dockBoxes = page => page.evaluate(() => [...document.querySelectorAll('#thumbBtn, #zoom button, #layers button')].filter(e => e.offsetParent && getComputedStyle(e).visibility !== 'hidden')
+   .map(e => { const r = e.getBoundingClientRect(); return { id: e.id || e.dataset.go || e.getAttribute('aria-label'), l: r.left, r: r.right, t: r.top, b: r.bottom }; }));
+@@ -41,7 +51,7 @@ const pixOf = (page, p) => page.evaluate(p => { const q = viewer.viewport.pixelF
+ const ptAt = (page, x, y) => page.evaluate(([x, y]) => { const r = viewer.container.getBoundingClientRect(); const p = viewer.viewport.pointFromPixel(new OpenSeadragon.Point(x - r.left, y - r.top), true); return { x: p.x, y: p.y }; }, [x, y]);
+ 
+ async function phone(preset, hand, tag) {
+-  const P = await B.newPage(preset, { tier: 'save', init: [h => { try { localStorage.setItem('edenMapHand', h); } catch (e) {} }, hand] });
++  const P = await B.newPage(preset, { tier: 'save', init: [h => { try { localStorage.setItem('edenMapHand', h); localStorage.removeItem('edenMapCvd'); } catch (e) {} }, hand] });
+   const p = P.page, W = p.viewportSize().width, H = p.viewportSize().height;
+   await B.openViewer(P, { map: 'tc_mid' }); await B.wait(1200);
+   await B.postEvents(p.mainFrame(), EV); await B.wait(800);
+@@ -119,14 +129,15 @@ try {
+ 
+   // 自动：悬浮按钮在左半边 → 左手；设置持久（刷新后仍在）；庄园里停靠栏是底部一行
+   await step('自动与持久', async () => {
+-    const P = await B.newPage('phone', { tier: 'save', init: [() => { try { if (!sessionStorage.getItem('__e7')) { sessionStorage.setItem('__e7', '1'); localStorage.setItem('edenMapFabPos', '[0.05,0.8]'); localStorage.removeItem('edenMapHand'); } } catch (e) {} }] });
++    const P = await B.newPage('phone', { tier: 'save', init: [() => { try { if (!sessionStorage.getItem('__e7')) { sessionStorage.setItem('__e7', '1'); localStorage.setItem('edenMapFabPos', '[0.05,0.8]'); localStorage.removeItem('edenMapHand'); localStorage.removeItem('edenMapCvd'); } } catch (e) {} }] });
+     const p = P.page; await B.openViewer(P, { map: 'tc_upper' }); await B.wait(600);
+     rep.check('自动：悬浮按钮拖在左半边 → 左手布局', await p.evaluate(() => document.documentElement.dataset.hand) === 'left');
+     await p.locator('#thumbBtn').click(); await B.wait(300);
+-    await p.locator('#handSeg button[data-hand="right"]').click(); await B.wait(300);
++    await p.locator('#handSeg button[data-hand="right"]').click(); await p.locator('#optCvd').click(); await B.wait(300);
+     await p.reload(); await p.waitForFunction(() => document.getElementById('loading')?.classList.contains('done'), null, { timeout: 20000 }).catch(() => {});
+-    const st = await p.evaluate(() => ({ hand: document.documentElement.dataset.hand, pref: localStorage.getItem('edenMapHand') }));
+-    rep.check('设置记在本机：刷新后仍是右手', st.hand === 'right' && st.pref === 'right', JSON.stringify(st));
++    const st = await p.evaluate(() => ({ hand: document.documentElement.dataset.hand, pref: localStorage.getItem('edenMapHand'), cvd: document.documentElement.classList.contains('cvd'),
++      alert: getComputedStyle(document.body).getPropertyValue('--alert').trim() }));
++    rep.check('设置记在本机：刷新后仍是右手 + 色盲配色', st.hand === 'right' && st.pref === 'right' && st.cvd && st.alert === '#d55e00', JSON.stringify(st));
+     await B.goMap(p, 'eden_estate', 60000); await B.wait(1500);
+     const row = await p.evaluate(() => { const d = document.querySelector('#dock'), r = [...d.children].filter(x => x.offsetParent).map(x => x.getBoundingClientRect());
+       return { dir: getComputedStyle(d).flexDirection, bottom: Math.max(...r.map(x => x.bottom)), right: Math.max(...r.map(x => x.right)), menuRight: document.querySelector('#thumbBtn').getBoundingClientRect().right }; });
+@@ -160,6 +171,38 @@ try {
+     await P.close();
+   });
+ 
++  // 色盲友好配色：事态点 / 图例换色、形状不变；四种视觉的模拟截图（中层暗底 + 上层亮云海）
++  await step('色盲配色', async () => {
++    const P = await B.newPage('phone', { tier: 'save', init: [() => { try { localStorage.setItem('edenMapHand', 'right'); } catch (e) {} }] });
++    const p = P.page;
++    const UP = { 核心区: '伊甸庄园', 霓虹街: '以太气候调节塔', C区检查点: '银冠堡', 议会: '首相府', 商业区: '财团', 外围居住区: '大主教府', 军营: '将军官邸', 大学: '以太研究院', 星渊: '联盟会所' };
++    const legend = async open => { if (await p.evaluate(() => document.querySelector('#evbar')?.dataset.open === '1') !== open) await p.evaluate(() => document.querySelector('#evbar > button')?.click()); await B.wait(300); };
++    // 把所有事态点框进视野（卡片、横条收起）
++    const fitEvents = () => p.evaluate(() => { const ps = [...document.querySelectorAll('.ev')].map(e => viewer.getOverlayById(e)?.location).filter(Boolean);
++      const x0 = Math.min(...ps.map(q => q.x)), x1 = Math.max(...ps.map(q => q.x)), y0 = Math.min(...ps.map(q => q.y)), y1 = Math.max(...ps.map(q => q.y)), m = .04;
++      viewer.viewport.fitBounds(new OpenSeadragon.Rect(x0 - m, y0 - m * 2, x1 - x0 + 2 * m, y1 - y0 + 4 * m), true); });
++    const pts = () => p.evaluate(() => [...document.querySelectorAll('.ev')].map(e => [e.className.match(/sh-[\w-]+/)[0], e.style.getPropertyValue('--c')]));
++    for (const map of ['tc_mid', 'tc_upper']) {
++      await B.openViewer(P, { map }); await B.wait(900);
++      const evs = map === 'tc_mid' ? EV : EV.map(e => ({ ...e, text: e.text.replace(/中层·([^｜]+)/, (_, w) => '上层·' + (UP[w] || w)) }));
++      { const { collect } = await import(path.join(B.REPO_ROOT, "map/tavern/events.mjs")); const items = collect(evs, 110).map(e => ({ ...e, isNew: false }));   // 不带「新」的脉冲圈，截图干净
++        await p.evaluate(m => TCEvents.set(m), { type: "eden-map:events", items, floor: 110 }); } await B.wait(600); await legend(false); await fitEvents(); await B.wait(1500);
++      const before = await pts();
++      if (map === 'tc_mid') { await jpg(p, 'cvd_off'); await simulate(p, 'deutan'); await jpg(p, 'cvd_off_deutan'); await legend(true); await jpg(p, 'cvd_off_legend_deutan'); await simulate(p, ''); await legend(false); }
++      await p.evaluate(() => { document.documentElement.classList.add('cvd'); TCEvents.refresh(); }); await B.wait(500);
++      const after = await pts();
++      const sameShapes = before.length === after.length && before.every((b, i) => b[0] === after[i][0]);
++      const allCvd = after.every(a => ['#e69f00', '#56b4e9', '#0072b2', '#994455', '#cc79a7', '#f0e442', '#009e73', '#d55e00', '#f2f2f2', '#bbbbbb'].includes(a[1]));
++      for (const k of ['', 'protan', 'deutan', 'tritan']) { await simulate(p, k); await jpg(p, `cvd_on_${map}${k ? '_' + k : ''}`); }
++      await simulate(p, ''); await legend(true);
++      const leg = await p.evaluate(() => [...document.querySelectorAll('.evleg button[data-g]')].map(b => b.style.getPropertyValue('--c')));
++      if (map === 'tc_mid') { await simulate(p, 'deutan'); await jpg(p, 'cvd_on_legend_deutan'); await simulate(p, ''); }
++      rep.check(`色盲配色（${map}）：${after.length} 个事态点换色、形状不变、图例同步`, after.length >= 6 && sameShapes && allCvd && leg.includes('#0072b2') && new Set(after.map(a => a[1])).size >= 8, after.map(a => a[1]).join(' '));
++      await legend(false); await p.evaluate(() => { document.documentElement.classList.remove('cvd'); TCEvents.refresh(); });
++    }
++    await P.close();
++  });
++
+   // 桌面不受影响：停靠栏 display: contents，缩放组仍在右下、层切换器左中
+   await step('桌面布局不变', async () => {
+     const P = await B.newPage('desktop', { tier: 'save', init: [() => { try { localStorage.setItem('edenMapHand', 'left'); } catch (e) {} }] });
+diff --git a/tools/browser/e7_host.mjs b/tools/browser/e7_host.mjs
+index e61ea0a..3855740 100644
+--- a/tools/browser/e7_host.mjs
++++ b/tools/browser/e7_host.mjs
+@@ -1,4 +1,4 @@
+-// E7：卡内脚本（map/tavern/eden-map.js）在模拟酒馆宿主页里的单手联动（悬浮按钮、面板关闭按钮跟着惯用手走）。
++// E7：卡内脚本（map/tavern/eden-map.js）在模拟酒馆宿主页里的单手 / 色盲配色联动。
+ // 用法：EDEN_PORT=5187 node tools/browser/e7_host.mjs <输出目录> [--shots docs/drafts]
+ // 宿主页 = 一个 375 × 812 的页面 + 一个隐藏的「卡片」iframe（里面桩出酒馆助手的全局函数，再 import eden-map.js）；脚本把悬浮按钮和面板注入宿主页。
+ import * as B from './lib.mjs';
+@@ -40,17 +40,18 @@ try {
+     const closeLeft = await p.evaluate(() => { const r = document.querySelector('#eden-map-root .em-close').getBoundingClientRect(); return r.left + r.width / 2 < innerWidth / 2; });
+     rep.check(`${preset} 左手：面板标题栏的关闭按钮在左上`, closeLeft);
+     await jpg(p, `${preset}_host_left_panel`);
+-    // 地图里改成右手：悬浮按钮挪到右边
++    // 地图里改成右手 + 开色盲配色：悬浮按钮挪到右边，角标 / 当前地点小红点换色
+     const vf = await (await p.$('#eden-map-root .em-frame')).contentFrame();
+-    await vf.evaluate(() => { showSet(true); document.querySelector('#handSeg button[data-hand="right"]').click(); showSet(false); });
++    await vf.evaluate(() => { showSet(true); document.querySelector('#handSeg button[data-hand="right"]').click(); document.querySelector('#optCvd').click(); showSet(false); });
+     await B.wait(400);
+     await vf.locator('#thumbBtn').click(); await B.wait(300);
+     const hasClose = await vf.evaluate(() => !document.querySelector('#actClose').hidden);
+     await vf.locator('#actClose').click(); await B.wait(500);
+-    const st = await p.evaluate(() => ({ hidden: document.querySelector('#eden-map-root .em-panel').hidden, pos: localStorage.getItem('edenMapFabPos') }));
++    const st = await p.evaluate(() => ({ hidden: document.querySelector('#eden-map-root .em-panel').hidden, cvd: document.querySelector('#eden-map-root').classList.contains('em-cvd'),
++      alert: getComputedStyle(document.querySelector('#eden-map-root')).getPropertyValue('--em-alert').trim(), pos: localStorage.getItem('edenMapFabPos') }));
+     rep.check(`${preset} 地图抽屉「关闭地图」关掉面板`, hasClose && st.hidden, JSON.stringify(st));
+     const f1 = await fabBox(p);
+-    rep.check(`${preset} 改成右手后悬浮按钮挪到右边（高度不变）`, f1.cx > W / 2 && Math.abs(f1.cy - f0.cy) < 4, `中心 (${Math.round(f1.cx)}, ${Math.round(f1.cy)})`);
++    rep.check(`${preset} 改成右手后悬浮按钮挪到右边（高度不变），色盲配色同步到宿主栏`, f1.cx > W / 2 && Math.abs(f1.cy - f0.cy) < 4 && st.cvd && st.alert === '#d55e00', `中心 (${Math.round(f1.cx)}, ${Math.round(f1.cy)})；${st.alert}`);
+     await jpg(p, `${preset}_host_right_fab`);
+     rep.check(`${preset} 无脚本错误`, !P.errors.filter(e => !/http 404/.test(e)).length, P.errors.slice(0, 3).join(' | '));
+     await P.close(); await B.closeAll();

@@ -1,0 +1,664 @@
+{
+ "_说明": "viewer3d.html?model=dairy 的清单。坐标 = glTF（Y 朝上，米；Blender (x, y, z) → (x, z, -y)）。groups 按网格名分角色：roof / walls_ext / interior / floors[]（floor_N）/ props_*（热点）/ site_*。hotspots[].mesh = 点击拾取与高亮的网格；focus / radius 可选（缺省取网格包围盒）；view = 飞过去时相机相对目标的方向（缺省沿当前方位角、俯角 50°）。",
+ "id": "dairy",
+ "title": {
+  "zh": "测试：挤奶厅（模型交互）",
+  "en": "Test: Dairy parlour (model interaction)"
+ },
+ "glb": "dairy.glb",
+ "glb_low": "dairy_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [
+   "roof"
+  ],
+  "walls": [
+   "walls_ext"
+  ],
+  "interior": [
+   "interior"
+  ],
+  "floors": [
+   {
+    "id": "floor_0",
+    "name": {
+     "zh": "地面层",
+     "en": "Ground floor"
+    },
+    "y0": -1.2,
+    "y1": 4.2
+   }
+  ],
+  "site": [
+   "site_ground"
+  ],
+  "building": {
+   "min": [
+    -9.5,
+    -1.2,
+    -6.7
+   ],
+   "max": [
+    11.5,
+    5.8,
+    6.7
+   ]
+  }
+ },
+ "section": {
+  "min": 0.3,
+  "max": 5.8,
+  "default": 1.6
+ },
+ "camera": {
+  "frame": [
+   "walls_ext",
+   "props_fence"
+  ],
+  "dir": [
+   0.55,
+   0.62,
+   0.56
+  ],
+  "min": 1.2,
+  "max": 90,
+  "maxPolar": 1.48
+ },
+ "hotspots": [
+  {
+   "id": "stalls",
+   "mesh": "props_stalls",
+   "view": [
+    0.3,
+    0.8,
+    0.5
+   ],
+   "name": {
+    "zh": "鱼骨式牛位",
+    "en": "Herringbone stalls"
+   },
+   "desc": {
+    "zh": "坑两侧各 8 个与坑轴成 35° 的斜向牛位（鱼骨式），站台比坑底高约 0.95 m，操作员站在坑里、手正好够到牛的乳房高度。镀锌管隔栏把每个位置分开，前胸栏和后臀栏限定站位；后臀栏兼作挂钩和脉动器的支架。",
+    "en": "Eight stalls on each side of the pit at 35° to its axis (herringbone). The platform is about 0.95 m above the pit floor so the operator, standing in the pit, works at udder height. Galvanised dividers separate the places; breast and rump rails set the standing position, and the rump rail also carries the cluster hooks and pulsators."
+   }
+  },
+  {
+   "id": "cluster",
+   "mesh": "props_cluster",
+   "focus": [
+    -1.1,
+    0.35,
+    1.0
+   ],
+   "radius": 1.6,
+   "view": [
+    0.35,
+    0.55,
+    -0.75
+   ],
+   "name": {
+    "zh": "挤奶杯组",
+    "en": "Milking clusters"
+   },
+   "desc": {
+    "zh": "每组由四个不锈钢奶杯（内有橡胶衬垫）和一个集乳器（爪）组成。衬垫在脉动作用下交替张开、闭合；奶经短奶管汇到爪底，再从侧出口进透明长奶管。不用时整组倒挂在牛位下方的挂钩上，杯口朝下以免进灰；清洗时插到清洗托上。",
+    "en": "Each cluster is four stainless teat cups (with rubber liners) and a claw. Pulsation makes the liners open and close in turn; milk collects in the claw bowl and leaves by the side outlet into the clear long milk tube. When idle the cluster hangs mouth-down on a hook below the stall to keep dust out; for washing it goes onto the jetters."
+   }
+  },
+  {
+   "id": "milkline",
+   "mesh": "props_milkline",
+   "focus": [
+    -0.5,
+    0.0,
+    0.9
+   ],
+   "radius": 2.2,
+   "view": [
+    0.2,
+    0.5,
+    -0.85
+   ],
+   "name": {
+    "zh": "低位奶管",
+    "en": "Low milk line"
+   },
+   "desc": {
+    "zh": "低位奶管：不锈钢管沿坑壁敷设，比站台面低约 8 cm，向坑尾有约 1 % 坡度。低位的好处是奶只需下行、不必上提，杯内真空更稳定。同一高度还有清洗供水管；上方白色管是脉动管。",
+    "en": "Low milk line: stainless pipe along the pit wall about 8 cm below the platform, falling about 1 % toward the pit end. Mounting it low means milk only runs downhill, which keeps the vacuum at the teat steadier. The wash supply runs at the same level; the white pipe above is the pulsation line."
+   }
+  },
+  {
+   "id": "receiver",
+   "mesh": "props_receiver",
+   "focus": [
+    5.5,
+    0.2,
+    0.0
+   ],
+   "radius": 1.4,
+   "view": [
+    -0.5,
+    0.75,
+    0.45
+   ],
+   "name": {
+    "zh": "集乳罐 / 卫生隔离罐",
+    "en": "Receiver & sanitary trap"
+   },
+   "desc": {
+    "zh": "集乳罐（玻璃筒）收集两侧奶管来的奶，液位到了就由下方奶泵打往奶罐。旁边的不锈钢卫生隔离罐接在集乳罐和真空主管之间：一旦有奶或清洗液被吸过来，就留在这里，从底阀放掉，不会进入真空泵。清洗时奶泵出口切到回流管。",
+    "en": "The glass receiver collects milk from both lines; at the set level the pump below sends it to the tank. The stainless sanitary trap next to it sits between the receiver and the vacuum main: any milk or wash solution drawn over stays in the trap and is drained from its bottom valve instead of reaching the pump. During washing the pump outlet is switched to the return line."
+   }
+  },
+  {
+   "id": "tank",
+   "mesh": "props_tank",
+   "view": [
+    -0.55,
+    0.8,
+    0.25
+   ],
+   "name": {
+    "zh": "奶罐与制冷",
+    "en": "Bulk tank & cooling"
+   },
+   "desc": {
+    "zh": "6000 L 卧式冷却罐：双层不锈钢罐体，底部蒸发器由室外的冷凝机组供冷，顶上的搅拌电机让奶温均匀。控制面板显示罐温、设定搅拌周期和清洗程序。奶从罐顶进，从前端的出口阀交给收奶车。",
+    "en": "6,000 L horizontal cooling tank: double-walled stainless vessel with an evaporator floor fed by the outdoor condensing unit, and a top-mounted agitator to keep the temperature even. The control panel shows tank temperature and runs the stirring and wash programmes. Milk enters at the top and leaves through the front outlet valve to the collection tanker."
+   }
+  },
+  {
+   "id": "vacuum",
+   "mesh": "props_vacuum",
+   "focus": [
+    9.45,
+    0.4,
+    -4.65
+   ],
+   "radius": 1.3,
+   "view": [
+    -0.45,
+    0.8,
+    0.4
+   ],
+   "name": {
+    "zh": "真空泵",
+    "en": "Vacuum pump"
+   },
+   "desc": {
+    "zh": "真空泵机组：电机带动的旋片泵，经真空罐（缓冲、稳压、带表）接到白色真空主管。系统保持约 42–45 kPa 负压，既用来把奶从奶杯吸出，也给脉动器取气。泵的排气接到室外。",
+    "en": "Vacuum plant: motor-driven rotary-vane pump connected through the vacuum tank (buffer and gauge) to the white vacuum main. The system holds about 42–45 kPa, both to draw milk from the cups and to supply the pulsators. Pump exhaust goes outside."
+   }
+  },
+  {
+   "id": "jetters",
+   "mesh": "props_jetters",
+   "focus": [
+    -1.1,
+    -0.35,
+    0.9
+   ],
+   "radius": 1.3,
+   "view": [
+    0.3,
+    0.55,
+    -0.78
+   ],
+   "name": {
+    "zh": "清洗喷头",
+    "en": "Jetters"
+   },
+   "desc": {
+    "zh": "清洗托：每个牛位下方坑壁上一组四个白色杯座，接坑内的清洗供水管。挤奶后把奶杯插上，清洗液从这里被吸进奶杯，走完整条牛奶管路再回清洗槽，整个过程不需拆管。",
+    "en": "Jetters: a set of four white cups on the pit wall under each stall, fed from the wash line in the pit. After milking the teat cups are pushed on, and wash solution is drawn in here, travels the whole milk route and returns to the wash trough, with no pipework taken apart."
+   }
+  },
+  {
+   "id": "meters",
+   "mesh": "props_meters",
+   "focus": [
+    -1.45,
+    0.1,
+    0.89
+   ],
+   "radius": 1.0,
+   "view": [
+    0.3,
+    0.5,
+    -0.8
+   ],
+   "name": {
+    "zh": "在线计量瓶",
+    "en": "Inline milk meters"
+   },
+   "desc": {
+    "zh": "每个牛位一个：长奶管从中穿过，计量每次挤奶的产量和电导率（用于发现异常），读数送到坑端的控制器。计量后奶继续流进低位奶管。清洗时清洗液同样流过计量腔。",
+    "en": "One per stall: the long milk tube passes through it, measuring the yield and conductivity of each milking (used to spot problems) and sending readings to the controller at the pit end. After metering, milk continues into the low milk line. Wash solution runs through the chamber the same way."
+   }
+  },
+  {
+   "id": "pit",
+   "mesh": "props_pit",
+   "focus": [
+    -0.5,
+    -0.4,
+    0
+   ],
+   "radius": 3.0,
+   "view": [
+    0.25,
+    0.55,
+    -0.8
+   ],
+   "name": {
+    "zh": "坑道设施",
+    "en": "Pit fittings"
+   },
+   "desc": {
+    "zh": "坑壁下半截是白色 FRP 护板（易冲洗、不吸水），中段一根不锈钢扶手；坑沿不锈钢包边下藏一条 LED 灯带，照亮坑壁和杯组而不晃操作员的眼。西端墙上的软管卷盘用于挤奶后冲洗。",
+    "en": "The lower pit walls are lined with white FRP panels (easy to hose, non-absorbent) with a stainless handrail at mid-height. An LED strip hidden under the stainless kerb lights the wall and clusters without glare. The hose reel on the west wall is for washing down after milking."
+   }
+  },
+  {
+   "id": "drain",
+   "mesh": "props_drain",
+   "focus": [
+    4.75,
+    -0.95,
+    0
+   ],
+   "radius": 1.4,
+   "view": [
+    -0.4,
+    0.7,
+    -0.5
+   ],
+   "name": {
+    "zh": "排水沟与集水井",
+    "en": "Drain channel & sump"
+   },
+   "desc": {
+    "zh": "坑底中线是不锈钢篦子沟，向东汇到坑尾集水井；井里有可提起的沉渣篮，出水管穿墙去污水池。只走冲洗水，牛奶和清洗液在密闭管路里。",
+    "en": "A stainless grated channel runs along the pit centre to the sump at the east end; the sump has a lift-out silt basket and an outlet through the wall to the slurry store. It only carries wash-down water; milk and wash solution stay in closed pipes."
+   }
+  },
+  {
+   "id": "fence",
+   "mesh": "props_fence",
+   "view": [
+    0.1,
+    0.75,
+    0.65
+   ],
+   "name": {
+    "zh": "电围栏",
+    "en": "Electric fence"
+   },
+   "desc": {
+    "zh": "电围栏：木桩约 10 m 一根，绝缘子分两层（约 0.55 m 和 0.95 m，牛用高度），上层是宽带、下层是聚乙烯线。转角和闸门处用粗桩加斜撑承受拉力。",
+    "en": "Electric fence: timber posts about every 10 m with insulators at two heights (about 0.55 m and 0.95 m, cattle height) carrying tape above and polywire below. Corners and gates use heavier posts with braces to take the strain."
+   }
+  },
+  {
+   "id": "energiser",
+   "mesh": "props_energiser",
+   "focus": [
+    -3.4,
+    1.0,
+    -6.4
+   ],
+   "radius": 1.6,
+   "view": [
+    0.2,
+    0.35,
+    -0.95
+   ],
+   "name": {
+    "zh": "围栏控制器",
+    "en": "Fence energiser"
+   },
+   "desc": {
+    "zh": "围栏控制器挂在牛舍外墙上，每秒左右输出一次短脉冲；接地桩一排打进土里，形成回路。控制器与接地线都在牛够不到的高度和位置。",
+    "en": "The energiser on the shed wall sends a short pulse about once a second; a row of earth rods driven into the ground completes the circuit. Unit and earth leads are out of the animals' reach."
+   }
+  },
+  {
+   "id": "gate",
+   "mesh": "props_gate",
+   "view": [
+    0.3,
+    0.45,
+    0.85
+   ],
+   "name": {
+    "zh": "围场闸门",
+    "en": "Paddock gate"
+   },
+   "desc": {
+    "zh": "围场闸门：两条带弹簧把手的绝缘带，挂上即通电、摘下即开门；把手是绝缘的，操作时不会触电。",
+    "en": "Paddock gate: two insulated tapes with spring handles; hook on to close and energise, unhook to open. The handles are insulated so they can be used safely."
+   }
+  }
+ ],
+ "flows": [
+  {
+   "id": "milk",
+   "color": "#ffcf5a",
+   "speed": 0.6,
+   "pts": [
+    [
+     -1.4,
+     0.33,
+     0.78
+    ],
+    [
+     -1.42,
+     0.2,
+     0.85
+    ],
+    [
+     -1.45,
+     0.1,
+     0.89
+    ],
+    [
+     -1.65,
+     -0.05,
+     0.86
+    ],
+    [
+     5.1,
+     -0.13,
+     0.86
+    ],
+    [
+     5.4,
+     -0.16,
+     0.2
+    ],
+    [
+     5.4,
+     -0.3,
+     -0.0
+    ],
+    [
+     5.4,
+     -0.6,
+     -0.0
+    ],
+    [
+     5.33,
+     -0.75,
+     -0.45
+    ],
+    [
+     5.4,
+     -0.15,
+     -0.0
+    ],
+    [
+     5.4,
+     1.1,
+     -0.0
+    ],
+    [
+     6.6,
+     1.1,
+     -0.0
+    ],
+    [
+     8.6,
+     2.25,
+     0.8
+    ],
+    [
+     8.6,
+     1.35,
+     2.2
+    ]
+   ],
+   "name": {
+    "zh": "牛奶流向",
+    "en": "Milk path"
+   },
+   "desc": {
+    "zh": "挤奶时：奶从四个奶杯经短奶管汇到集乳器（爪），再经透明长奶管穿过在线计量瓶（计量每头产量、电导率），从上方进入坑壁边的低位奶管。奶管向坑尾有约 1 % 的坡，奶靠重力流进集乳罐；集乳罐满到设定液位后，奶泵经板式预冷器（此模型未建）把奶打进奶罐间的冷却罐，在罐里搅拌、降到约 4 °C 等待收奶车。",
+    "en": "While milking, milk runs from the four teat cups through short tubes into the claw, then through the clear long milk tube and the inline meter (yield and conductivity) into the low milk line along the pit wall. The line falls about 1 % toward the pit end, so milk drains by gravity into the receiver; when the receiver reaches its set level, the milk pump sends it through a plate pre-cooler (not modelled) into the bulk tank, where it is stirred and held at about 4 °C until collection."
+   }
+  },
+  {
+   "id": "wash",
+   "color": "#7fd4e6",
+   "speed": 0.8,
+   "pts": [
+    [
+     6.45,
+     0.95,
+     4.9
+    ],
+    [
+     6.45,
+     2.6,
+     4.9
+    ],
+    [
+     6.45,
+     2.6,
+     0
+    ],
+    [
+     -6.2,
+     2.6,
+     0
+    ],
+    [
+     -6.2,
+     2.6,
+     0.9
+    ],
+    [
+     -6.2,
+     -0.62,
+     0.9
+    ],
+    [
+     -1.465,
+     -0.62,
+     0.9
+    ],
+    [
+     -1.465,
+     -0.32,
+     0.84
+    ],
+    [
+     -1.465,
+     -0.2,
+     0.84
+    ],
+    [
+     -1.4,
+     0.25,
+     0.78
+    ],
+    [
+     -1.45,
+     0.1,
+     0.89
+    ],
+    [
+     -1.65,
+     -0.05,
+     0.86
+    ],
+    [
+     5.1,
+     -0.13,
+     0.86
+    ],
+    [
+     5.4,
+     -0.16,
+     0.2
+    ],
+    [
+     5.4,
+     -0.45,
+     -0.0
+    ],
+    [
+     5.4,
+     1.1,
+     -0.0
+    ],
+    [
+     6.45,
+     1.1,
+     -0.0
+    ],
+    [
+     6.45,
+     1.1,
+     4.9
+    ],
+    [
+     6.45,
+     0.95,
+     4.9
+    ]
+   ],
+   "name": {
+    "zh": "清洗液流向（就地清洗 CIP）",
+    "en": "Wash path (clean-in-place)"
+   },
+   "desc": {
+    "zh": "挤奶结束后，把每组奶杯插到坑壁的清洗托上。清洗机组从奶罐间的清洗槽抽热水与清洗剂，经供水管送到坑两侧的清洗管，再分到每个清洗托，被真空吸进奶杯，沿与牛奶相同的路线（长奶管 → 计量瓶 → 奶管 → 集乳罐）走一遍；集乳罐的奶泵此时切到回流管，清洗液回到清洗槽循环，冲洗 → 碱洗 → 酸洗 → 清水几段后排入污水。供水与回流管的走向为示意（模型只建了坑内部分）。",
+    "en": "After milking each cluster is pushed onto its jetter on the pit wall. The wash unit draws hot water and detergent from the trough in the milk room, sends it along the wash lines on both sides of the pit and out to every jetter, where vacuum pulls it into the cups. It then follows the same route as milk (long tube → meter → milk line → receiver); the receiver pump is switched to the return line, so the solution goes back to the trough and circulates through rinse, alkaline wash, acid wash and final rinse before going to drain. Supply and return routing outside the pit is schematic."
+   }
+  },
+  {
+   "id": "vacuum",
+   "color": "#b9a4ff",
+   "speed": 1.2,
+   "pts": [
+    [
+     5.4,
+     -0.2,
+     -0.0
+    ],
+    [
+     5.52,
+     -0.05,
+     -0.1
+    ],
+    [
+     5.35,
+     -0.05,
+     -0.52
+    ],
+    [
+     5.35,
+     -0.25,
+     -0.62
+    ],
+    [
+     5.35,
+     2.6,
+     -0.62
+    ],
+    [
+     5.35,
+     2.6,
+     0
+    ],
+    [
+     7.5,
+     2.6,
+     0
+    ],
+    [
+     7.5,
+     2.6,
+     -3.8
+    ],
+    [
+     7.5,
+     1.0,
+     -3.8
+    ],
+    [
+     7.5,
+     1.35,
+     -4.6
+    ],
+    [
+     7.5,
+     0.9,
+     -4.6
+    ],
+    [
+     9.45,
+     0.9,
+     -4.65
+    ],
+    [
+     9.45,
+     0.4,
+     -4.65
+    ]
+   ],
+   "name": {
+    "zh": "真空（抽气方向）",
+    "en": "Vacuum (air flow)"
+   },
+   "desc": {
+    "zh": "真空泵持续从系统里抽气，维持约 42–45 kPa 的负压：空气从集乳罐出发，先过卫生隔离罐（万一有液体被吸过来，在这里挡住、不进泵），沿屋架下的白色真空主管到奶罐间的真空罐（缓冲、稳压、带表），最后到泵排出室外。脉动管从同一套真空取气，让奶杯衬垫有节奏地开合。箭头表示空气流动方向，与牛奶方向相反。",
+    "en": "The vacuum pump draws air out of the system continuously to hold about 42–45 kPa: air leaves the receiver, passes the sanitary trap (which stops any liquid before it reaches the pump), runs along the white main under the roof to the vacuum tank in the milk room (buffer and gauge) and is exhausted by the pump. The pulsation lines take vacuum from the same system to open and close the liners rhythmically. Arrows show air flow, opposite to milk."
+   }
+  },
+  {
+   "id": "drain",
+   "color": "#9aa7b0",
+   "speed": 0.5,
+   "pts": [
+    [
+     -5.65,
+     -0.94,
+     0
+    ],
+    [
+     4.75,
+     -0.96,
+     0
+    ],
+    [
+     4.75,
+     -1.2,
+     0
+    ],
+    [
+     4.75,
+     -1.2,
+     -1.55
+    ],
+    [
+     4.75,
+     -1.6,
+     -1.55
+    ]
+   ],
+   "name": {
+    "zh": "冲洗排水",
+    "en": "Wash-down drainage"
+   },
+   "desc": {
+    "zh": "挤奶后用坑西端的软管卷盘冲洗坑壁和站台，水顺坑底坡度流进中线的不锈钢篦子沟，向东汇到坑尾的集水井；井里的沉渣篮拦住砂石，水经出水管穿墙排到场外的污水池。牛奶与清洗液走密闭管路，不进这条沟。",
+    "en": "After milking the pit walls and platforms are hosed down from the reel at the west end. Water runs down the pit floor fall into the stainless grated channel along the centre line, east to the sump at the pit end; a silt basket stops grit and the water leaves through the outlet pipe to the slurry store outside. Milk and wash solution stay in closed pipework and never enter this channel."
+   }
+  }
+ ]
+}

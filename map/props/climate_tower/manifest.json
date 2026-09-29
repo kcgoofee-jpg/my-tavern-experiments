@@ -1,0 +1,202 @@
+{
+ "_说明": "viewer3d.html?model=climate_tower 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米；高度即海拔）。以太气候调节塔的塔顶约 260 m（690–950 m）与晶冠，与上层底图的塔一致；云海、光晕、远处浮岛与以太雾流（bg_*）只在成图里。卡没写塔的位置，放在上层为仓库推断。",
+ "id": "climate_tower",
+ "title": {
+  "zh": "以太气候调节塔",
+  "en": "Aether Climate Tower"
+ },
+ "glb": "climate_tower.glb",
+ "glb_low": "climate_tower_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [
+   "props_crown",
+   "props_crystals"
+  ],
+  "walls": [
+   "walls_ext"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "props_rings",
+   "props_vanes",
+   "props_services",
+   "props_docks",
+   "props_lights"
+  ],
+  "building": {
+   "min": [
+    -53.6,
+    690.0,
+    -53.6
+   ],
+   "max": [
+    53.6,
+    1013.2,
+    53.6
+   ]
+  }
+ },
+ "section": {
+  "min": 690,
+  "max": 1013,
+  "default": 1013
+ },
+ "camera": {
+  "frame": [
+   "walls_ext",
+   "props_rings",
+   "props_crown"
+  ],
+  "dir": [
+   0.5,
+   0.2,
+   -0.85
+  ],
+  "min": 10,
+  "max": 800,
+  "maxPolar": 1.6
+ },
+ "hotspots": [
+  {
+   "id": "shaft",
+   "mesh": "walls_ext",
+   "name": {
+    "zh": "塔身",
+    "en": "Shaft"
+   },
+   "desc": {
+    "zh": "深色方整石塔身，竖向钢肋、每 20 m 一道腰线、向上略收；塔从中层一直伸到云海之上约 950 m。",
+    "en": "A dark coursed-stone shaft with steel ribs, a stringcourse every 20 m and a slight taper, rising from the mid tier to about 950 m above the cloud sea."
+   },
+   "view": [
+    0.5,
+    0.2,
+    -0.85
+   ]
+  },
+  {
+   "id": "rings",
+   "mesh": "props_rings",
+   "name": {
+    "zh": "三圈检修环台",
+    "en": "Ring platforms"
+   },
+   "desc": {
+    "zh": "三圈检修环台，钢桁架悬挑，以素色环带区分（无数字）；各有检修门与吊臂，第三圈摆着检修围挡。",
+    "en": "Three cantilevered maintenance rings on steel trusses, told apart by plain bands (no digits), each with a service door and davit; the third ring is fenced off for maintenance."
+   },
+   "view": [
+    0.4,
+    0.35,
+    -0.85
+   ]
+  },
+  {
+   "id": "vanes",
+   "mesh": "props_vanes",
+   "name": {
+    "zh": "发射叶片",
+    "en": "Emitter vanes"
+   },
+   "desc": {
+    "zh": "环台外伸的箱形发射叶片，带百叶与作动筒；以太从叶尖流出，调节全城天气——四季分明，没有极端天气。",
+    "en": "Box-section emitter vanes with louvres and actuators; aether streams from their tips to tune the whole city's weather: four seasons, no extremes."
+   },
+   "view": [
+    0.5,
+    0.25,
+    -0.8
+   ]
+  },
+  {
+   "id": "services",
+   "mesh": "props_services",
+   "name": {
+    "zh": "检修设施",
+    "en": "Service fittings"
+   },
+   "desc": {
+    "zh": "换气百叶、检修爬梯与升降轨道。",
+    "en": "Venting louvres, maintenance ladders and lift rails."
+   },
+   "view": [
+    0.4,
+    0.3,
+    -0.85
+   ]
+  },
+  {
+   "id": "docks",
+   "mesh": "props_docks",
+   "name": {
+    "zh": "检修艇泊位",
+    "en": "Service docks"
+   },
+   "desc": {
+    "zh": "环台上的检修悬浮艇泊位。",
+    "en": "Maintenance hover-craft docks on the rings."
+   },
+   "view": [
+    0.4,
+    0.35,
+    -0.85
+   ]
+  },
+  {
+   "id": "crown",
+   "mesh": "props_crown",
+   "name": {
+    "zh": "金冠环与晶冠托座",
+    "en": "Gold crown & cradle"
+   },
+   "desc": {
+    "zh": "金色冠环，六座底座上的场发射尖针指向晶体。",
+    "en": "The gold crown ring, with six field-emitter prongs on pedestals aimed at the crystals."
+   },
+   "view": [
+    0.3,
+    0.6,
+    -0.75
+   ]
+  },
+  {
+   "id": "crystals",
+   "mesh": "props_crystals",
+   "name": {
+    "zh": "以太晶冠",
+    "en": "Aether crystal crown"
+   },
+   "desc": {
+    "zh": "塔顶悬浮的以太晶体：一枚主晶居中，内外两圈小晶。",
+    "en": "The floating aether crystals at the top: one main crystal in the centre, with inner and outer rings of smaller ones."
+   },
+   "view": [
+    0.3,
+    0.6,
+    -0.75
+   ]
+  },
+  {
+   "id": "lights",
+   "mesh": "props_lights",
+   "name": {
+    "zh": "以太冷光",
+    "en": "Aether lights"
+   },
+   "desc": {
+    "zh": "以太冷光导管与灯带。",
+    "en": "Aether light conduits and edge lighting."
+   },
+   "view": [
+    0.4,
+    0.3,
+    -0.85
+   ]
+  }
+ ]
+}

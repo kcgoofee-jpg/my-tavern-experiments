@@ -1,0 +1,201 @@
+{
+ "_说明": "viewer3d.html?model=enforcement_low 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。只画外观：加固、破旧的执法局下层分局（主楼、封板西翼、对外窗口、双道闸口、车场）；周边棚户与中层底面（bg_*）只在成图里。位置与形制为仓库推断。",
+ "id": "enforcement_low",
+ "title": {
+  "zh": "执法局下层分局",
+  "en": "Enforcement Bureau, Lower Branch"
+ },
+ "glb": "enforcement_low.glb",
+ "glb_low": "enforcement_low_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "walls_ext"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "site_ground",
+   "props_motorpool",
+   "props_vehicles",
+   "props_security",
+   "props_lights",
+   "props_gate",
+   "props_counter"
+  ],
+  "building": {
+   "min": [
+    -44,
+    -0.3,
+    -30
+   ],
+   "max": [
+    52,
+    22.6,
+    26.5
+   ]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 23,
+  "default": 23
+ },
+ "camera": {
+  "frame": [
+   "walls_ext",
+   "props_gate",
+   "props_motorpool"
+  ],
+  "dir": [
+   0.4,
+   0.45,
+   -0.8
+  ],
+  "min": 4,
+  "max": 300,
+  "maxPolar": 1.48
+ },
+ "hotspots": [
+  {
+   "id": "block",
+   "mesh": "walls_ext",
+   "name": {
+    "zh": "分局主楼",
+    "en": "Branch main block"
+   },
+   "desc": {
+    "zh": "分局主楼：四层加固混凝土，窄条窗与防爆卷闸，西翼已封板停用；执法局下层分局名义上六个，实际运转的只有三个。",
+    "en": "Branch main block: four-storey reinforced concrete with slit windows and blast shutters; the west wing is boarded up and disused. The Bureau has six lower branches on paper, only three actually operating."
+   },
+   "view": [
+    0.4,
+    0.35,
+    -0.85
+   ]
+  },
+  {
+   "id": "counter",
+   "mesh": "props_counter",
+   "name": {
+    "zh": "对外窗口",
+    "en": "Public counter"
+   },
+   "desc": {
+    "zh": "对外窗口：钢板墙段上的厚玻璃递物窗与托盘，上有钢雨棚。",
+    "en": "Public counter: thick glazed hatch with a pass-through tray in a steel-plated wall, under a steel canopy."
+   },
+   "view": [
+    0.1,
+    0.25,
+    -0.96
+   ]
+  },
+  {
+   "id": "gate",
+   "mesh": "props_gate",
+   "name": {
+    "zh": "车辆闸口",
+    "en": "Vehicle sally port"
+   },
+   "desc": {
+    "zh": "车辆闸口：两道推拉钢门、中间待检区、道闸与岗亭。",
+    "en": "Vehicle sally port: two sliding steel gates with a holding bay between them, a barrier arm and a guard booth."
+   },
+   "view": [
+    0.3,
+    0.3,
+    -0.9
+   ]
+  },
+  {
+   "id": "motorpool",
+   "mesh": "props_motorpool",
+   "name": {
+    "zh": "车场",
+    "en": "Motor pool"
+   },
+   "desc": {
+    "zh": "车场：锈蚀铁丝网围栏、车棚与充电桩。",
+    "en": "Motor pool: rusted chain-link fence, carport and charging posts."
+   },
+   "view": [
+    0.6,
+    0.4,
+    -0.7
+   ]
+  },
+  {
+   "id": "vehicles",
+   "mesh": "props_vehicles",
+   "name": {
+    "zh": "巡逻车辆",
+    "en": "Patrol vehicles"
+   },
+   "desc": {
+    "zh": "深色无标识厢式车与悬浮摩托。",
+    "en": "Dark unmarked vans and hover bikes."
+   },
+   "view": [
+    0.5,
+    0.35,
+    -0.8
+   ]
+  },
+  {
+   "id": "security",
+   "mesh": "props_security",
+   "name": {
+    "zh": "安防设施",
+    "en": "Security fixtures"
+   },
+   "desc": {
+    "zh": "防撞柱、水马迷宫、Hesco 防爆墙与监控摄像头。",
+    "en": "Anti-ram bollards, a jersey-barrier maze, a Hesco blast wall and cameras."
+   },
+   "view": [
+    0.2,
+    0.4,
+    -0.9
+   ]
+  },
+  {
+   "id": "lights",
+   "mesh": "props_lights",
+   "name": {
+    "zh": "照明",
+    "en": "Lighting"
+   },
+   "desc": {
+    "zh": "带钢笼的墙面与灯杆投光灯、街灯（有一盏已坏）。",
+    "en": "Caged wall and mast floodlights and street lamps, one of them broken."
+   },
+   "view": [
+    0.3,
+    0.5,
+    -0.8
+   ]
+  },
+  {
+   "id": "ground",
+   "mesh": "site_ground",
+   "name": {
+    "zh": "前街与车场",
+    "en": "Street & yard"
+   },
+   "desc": {
+    "zh": "补过的沥青、积水与油渍。",
+    "en": "Patched asphalt, puddles and oil stains."
+   },
+   "view": [
+    0.2,
+    0.75,
+    -0.65
+   ]
+  }
+ ]
+}

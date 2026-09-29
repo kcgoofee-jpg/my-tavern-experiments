@@ -1,0 +1,178 @@
+{
+ "_说明": "viewer3d.html?model=elite_academy 的清单（标准档 elite_academy.glb + 低档 elite_academy_low.glb）。坐标 = glTF（Y 朝上，米）。由 blender/landmarks/elite_academy/build.py（共用 blender/landmarks/upper_estates.py）+ blender/landmarks/export_glb.py 生成。卡「贵族子弟接受私人教育或进入精英学院」，课程含家族管理、以太魔法修习、政治学、资产经营、礼仪与社交、军事基础；卡说教会进不了悬浮岛，不画礼拜堂。所在悬浮岛 isle25、学院式布局与全部形制细节为仓库推断，详见 docs/card-buildings.md。",
+ "id": "elite_academy",
+ "title": {
+  "zh": "精英学院",
+  "en": "Elite Academy"
+ },
+ "glb": "elite_academy.glb",
+ "glb_low": "elite_academy_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [
+   "roof",
+   "props_chimneys"
+  ],
+  "walls": [
+   "walls_ext"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "site_ground",
+   "site_garden",
+   "site_trees",
+   "site_dock",
+   "props_hovercar",
+   "props_railings",
+   "props_magitech",
+   "props_ward",
+   "props_underside"
+  ],
+  "building": {
+   "min": [-207.04, -1.5, -165.67],
+   "max": [207.04, 26.4, 165.67]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 26,
+  "default": 26
+ },
+ "camera": {
+  "frame": [
+   "walls_ext",
+   "roof"
+  ],
+  "dir": [
+   0.5,
+   0.4,
+   -0.75
+  ],
+  "min": 5,
+  "max": 260,
+  "maxPolar": 1.48
+ },
+ "hotspots": [
+  {
+   "id": "quad",
+   "mesh": "walls_ext",
+   "name": {
+    "zh": "学院四合院",
+    "en": "Academy quadrangle"
+   },
+   "desc": {
+    "zh": "灰石三层的四合院主楼，南面正中一座门楼塔，四角各一座楼梯塔，院心十字石径分开四块草坪——牛津式方院的样子。",
+    "en": "A three-storey grey-stone quadrangle with a gatehouse tower centred on the south range and a stair turret at each corner; a stone-paved cross divides the courtyard lawn into four plots, in an Oxford-quad manner."
+   },
+   "view": [0.3, 0.35, -0.85]
+  },
+  {
+   "id": "roof",
+   "mesh": "roof",
+   "name": {
+    "zh": "屋顶与烟囱",
+    "en": "Roofs & chimneys"
+   },
+   "desc": {
+    "zh": "四合院与礼仪大厅、图书馆各自的铅皮四坡顶，屋脊立着成排砖石烟囱。",
+    "en": "Lead hipped roofs over the quad, the ceremonial hall and the library, with ranks of brick-and-stone chimneys along the ridges."
+   },
+   "view": [0.2, 0.6, -0.7]
+  },
+  {
+   "id": "hall",
+   "mesh": "walls_ext",
+   "name": {
+    "zh": "礼仪大厅",
+    "en": "Ceremonial hall"
+   },
+   "desc": {
+    "zh": "四合院东侧的独立厅堂，高窗、铅皮顶、屋脊一座小灯亭，玻璃连廊接回主楼——礼仪与社交课在这里上。",
+    "en": "A freestanding hall east of the quad with tall windows, a lead roof and a small ridge lantern, linked back to the main range by a glazed gallery — where etiquette and social courses are held."
+   },
+   "view": [0.7, 0.3, -0.6]
+  },
+  {
+   "id": "library",
+   "mesh": "walls_ext",
+   "name": {
+    "zh": "图书馆",
+    "en": "Library"
+   },
+   "desc": {
+    "zh": "四合院西侧一座缩小版的圆顶阅览室，环绕一圈玻璃窗，铅皮穹顶。",
+    "en": "A smaller domed reading room west of the quad, ringed with glazed windows under a lead dome."
+   },
+   "view": [-0.7, 0.3, -0.6]
+  },
+  {
+   "id": "circle",
+   "mesh": "site_garden",
+   "name": {
+    "zh": "以太修习圆庭",
+    "en": "Aether practice circle"
+   },
+   "desc": {
+    "zh": "四合院北侧一圈同心铺地环，四根矮灯柱围出中性铺地——以太魔法修习课在这里练习，不带任何符号或文字。",
+    "en": "Concentric paved rings north of the quad, ringed by four low lamp posts on plain paving — where aether-craft practice is held, with no symbols or text."
+   },
+   "view": [0.1, 0.65, -0.7]
+  },
+  {
+   "id": "grounds",
+   "mesh": "site_garden",
+   "name": {
+    "zh": "操练场与运动场",
+    "en": "Drill yard & sports ground"
+   },
+   "desc": {
+    "zh": "四合院南侧一片砾石操练场，接一块缩小的跑道式草场——军事基础课与体育课用地。",
+    "en": "A gravel drill yard south of the quad, adjoining a scaled-down running track and turf — used for military-basics and sports classes."
+   },
+   "view": [0.1, 0.5, 0.85]
+  },
+  {
+   "id": "grove",
+   "mesh": "site_trees",
+   "name": {
+    "zh": "岛缘林带",
+    "en": "Perimeter grove"
+   },
+   "desc": {
+    "zh": "岛边一圈橡树与雪松，挡住院墙外的视线。",
+    "en": "A ring of oaks and cedars along the island's edge, screening the grounds from outside."
+   },
+   "view": [-0.4, 0.5, 0.75]
+  },
+  {
+   "id": "dock",
+   "mesh": "site_dock",
+   "name": {
+    "zh": "悬浮停靠平台",
+    "en": "Hover docking platform"
+   },
+   "desc": {
+    "zh": "岛缘一座钢结构停靠平台，只供私人悬浮载具起降；卡说岛间只有私人悬浮载具，不画飞艇。",
+    "en": "A steel docking platform at the island's edge for private hover vehicles only; the card mentions only private hover transport between isles, so no airships are shown."
+   },
+   "view": [0.75, 0.3, 0.55]
+  },
+  {
+   "id": "magitech",
+   "mesh": "props_magitech",
+   "name": {
+    "zh": "魔导科技点缀",
+    "en": "Magitech accents"
+   },
+   "desc": {
+    "zh": "岛缘符文环、悬浮玻璃亭与全息园灯——2088 魔导科技层的统一点缀，无文字、无徽记。",
+    "en": "A rune ring at the island's edge, floating glass pavilions and holographic garden lamps — the shared 2088 magitech dressing, with no text or crests."
+   },
+   "view": [0.5, 0.45, 0.65]
+  }
+ ]
+}

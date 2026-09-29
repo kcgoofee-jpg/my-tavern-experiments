@@ -1,0 +1,106 @@
+{
+ "_说明": "viewer3d.html?model=storm_hall 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。奥伦帝国「镇国之柱」——中层核心区一座八棱深色花岗岩 + 钢构主柱（约 130 m，四面发光封印纹样）+ 基座大厅 + 训练场 + 柱顶起降坪。只画建筑，无人物、文字、徽记、武器。卡写了「风暴殿（镇国之柱）」是帝国天灾级最高战力机构、听命于议会，位置为仓库推断（中层核心区），详见 docs/landmarks/storm_hall.md。",
+ "id": "storm_hall",
+ "title": {
+  "zh": "风暴殿",
+  "en": "Storm Hall"
+ },
+ "glb": "storm_hall.glb",
+ "glb_low": "storm_hall_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "walls_ext",
+   "props_podium"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "props_yard",
+   "props_pad",
+   "site_ground",
+   "props_lights"
+  ],
+  "building": {
+   "min": [-70.0, -2.4, -100.0],
+   "max": [70.0, 146.2, 70.0]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 146,
+  "default": 146
+ },
+ "camera": {
+  "frame": [
+   "walls_ext",
+   "props_podium"
+  ],
+  "dir": [
+   0.4,
+   0.42,
+   -0.8
+  ],
+  "min": 8,
+  "max": 400,
+  "maxPolar": 1.48
+ },
+ "hotspots": [
+  {
+   "id": "tower",
+   "mesh": "walls_ext",
+   "name": {
+    "zh": "镇国之柱",
+    "en": "The Pillar"
+   },
+   "desc": {
+    "zh": "八棱深色花岗岩 + 钢构主柱，四面嵌发光封印纹样，两圈环形结界纹。",
+    "en": "An octagonal, dark-granite-and-steel pillar bearing four glowing sealing patterns and two ringed warding bands."
+   },
+   "view": [0.4, 0.35, -0.85]
+  },
+  {
+   "id": "podium",
+   "mesh": "props_podium",
+   "name": {
+    "zh": "基座大厅",
+    "en": "Base hall"
+   },
+   "desc": {
+    "zh": "方形石构裙房，前庭宽石阶与钢闸门，无标志徽记。",
+    "en": "A square stone-built base hall with a broad forecourt stair and steel gate, unmarked."
+   },
+   "view": [0.1, 0.4, -0.9]
+  },
+  {
+   "id": "yard",
+   "mesh": "props_yard",
+   "name": {
+    "zh": "训练场",
+    "en": "Training ground"
+   },
+   "desc": {
+    "zh": "压实地面，边缘立着发光结界桩（警戒装置，非武器）。",
+    "en": "Packed ground ringed by glowing warding posts — containment markers, not weapons."
+   },
+   "view": [-0.3, 0.5, -0.8]
+  },
+  {
+   "id": "pad",
+   "mesh": "props_pad",
+   "name": {
+    "zh": "柱顶起降坪",
+    "en": "Summit landing pad"
+   },
+   "desc": {
+    "zh": "环形起降坪与桅杆，供高阶悬浮载具起降。",
+    "en": "A ringed landing pad and mast for high-tier hover craft."
+   },
+   "view": [0.2, 0.3, -0.9]
+  }
+ ]
+}

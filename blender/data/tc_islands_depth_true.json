@@ -1,0 +1,319 @@
+{
+  "_note": "天城上层的浮岛（平面坐标，1 单位 = 100 m；z = (海拔 - 700) / 100；rot 为弧度；estate_style：english 英国乡村庄园 / chateau 法国城堡与规整花园 / suzhou 苏州园林 / lingnan 岭南园林 / neoclassical 新古典（伊甸庄园，设定原文）/ fortress 要塞（银冠堡）；style 是 v0.7 的旧字段，已不用）。由 v0.7.0 的随机布局固定下来，可以直接改；改完跑 tools/render_all.sh upper --data-only 更新点位。 role：有名有主的地标府邸（pm_residence 首相府（按唐宁街式乔治时代砖砌联排官邸建模） / general_residence 将军官邸（仓库自设） / zaibatsu_estate 罗斯柴尔德庄园（悬浮岛 R-02） / league_club 庄园主联盟会所 / aether_institute 以太研究院（仓库自设）），主楼按 role 建，园子按 estate_style；可选 shape / rim / terrain 覆盖随机值（见 docs/upper-estates.md）。v0.9.1 起伊甸 rx 3.35、ry 2.5（约 670 × 500 m）。 v0.9.1 B2 第 2 轮：风格重分配（英 11 / 法 8 / 苏 6 / 岭 6，按边缘间距的最近 2 邻无同风格），每座岛显式写 shape / rim / terrain（同风格不重复，rim 是主岛缘，实际按角度分段混用）；可选 layout / plan 覆盖按 id 轮流分配的布局族与主楼平面。；v8（2026-09-28）：卡里没有的岛一律英式庄园填充（est_english，同一套脚本，不单独评审）；cutout = 该岛只建岛体，建筑用 blender/landmarks/<cutout> 的正交俯视抠图贴上（tools/isles_into_upper.py）",
+  "islands": [
+    {
+      "id": "eden",
+      "x": 1.5,
+      "y": 0.8,
+      "z": 7.5,
+      "rx": 3.35,
+      "ry": 2.5,
+      "rot": 0,
+      "style": "none",
+      "estate_style": "neoclassical",
+      "marker": "eden",
+      "depth": {
+        "altitude_m": 1450,
+        "dist_tier": "near",
+        "depth_bias": -0.1
+      },
+      "derived": {
+        "d": 0.0,
+        "scale": 1.0,
+        "haze": 0.05,
+        "ward_alpha": 0,
+        "tint": "#f3e2c0",
+        "desat": 0.0,
+        "contrast": 1.0
+      }
+    },
+    {
+      "id": "silver_crown",
+      "x": -9.5,
+      "y": -5.5,
+      "z": 1.2,
+      "rx": 1.5,
+      "ry": 1.0,
+      "rot": 0.2,
+      "style": "none",
+      "estate_style": "fortress",
+      "marker": "silver_crown",
+      "depth": {
+        "altitude_m": 820,
+        "dist_tier": "far",
+        "depth_bias": 0
+      },
+      "derived": {
+        "d": 0.834,
+        "scale": 0.65,
+        "haze": 0.468,
+        "ward_alpha": 0.037,
+        "tint": "#adbbc7",
+        "desat": 0.334,
+        "contrast": 0.833
+      },
+      "half_buried_in": "c3"
+    },
+    {
+      "id": "isle4",
+      "x": 5.934,
+      "y": 7.936,
+      "z": 2.6,
+      "rx": 1.8792,
+      "ry": 1.4487,
+      "rot": 0.8315,
+      "style": "dome",
+      "estate_style": "english",
+      "terrain": "meadow",
+      "biome": "autumn",
+      "true_r_m": 165,
+      "marker": "victor_estate",
+      "depth": {
+        "altitude_m": 960,
+        "dist_tier": "far",
+        "depth_bias": 0
+      },
+      "derived": {
+        "d": 0.724,
+        "scale": 0.696,
+        "haze": 0.365,
+        "ward_alpha": 0.08,
+        "tint": "#b6c0c6",
+        "desat": 0.29,
+        "contrast": 0.855
+      }
+    },
+    {
+      "id": "isle5",
+      "x": -4.756,
+      "y": -7.608,
+      "z": 1.8,
+      "rx": 2.7703,
+      "ry": 2.0792,
+      "rot": 2.30698,
+      "style": "dome",
+      "estate_style": "english",
+      "terrain": "crag",
+      "biome": "conifer",
+      "true_r_m": 240,
+      "marker": "y_estate",
+      "depth": {
+        "altitude_m": 880,
+        "dist_tier": "horizon",
+        "depth_bias": 0.1
+      },
+      "derived": {
+        "d": 1.0,
+        "scale": 0.58,
+        "haze": 0.65,
+        "ward_alpha": 0.0,
+        "tint": "#9fb3c8",
+        "desat": 0.4,
+        "contrast": 0.8
+      },
+      "ward_edge_keep": true
+    },
+    {
+      "id": "isle6",
+      "x": 11.6,
+      "y": -1.9,
+      "z": 6.0,
+      "rx": 1.5773,
+      "ry": 1.3329,
+      "rot": 1.39023,
+      "style": "neo",
+      "estate_style": "english",
+      "role": "pm_residence",
+      "terrain": "meadow",
+      "cutout": "pm_residence",
+      "biome": "meadow",
+      "true_r_m": 145,
+      "marker": "pm_residence",
+      "depth": {
+        "altitude_m": 1300,
+        "dist_tier": "mid",
+        "depth_bias": 0
+      },
+      "derived": {
+        "d": 0.307,
+        "scale": 0.871,
+        "haze": 0.107,
+        "ward_alpha": 0.317,
+        "tint": "#d9d4c2",
+        "desat": 0.123,
+        "contrast": 0.939
+      }
+    },
+    {
+      "id": "isle9",
+      "x": -8.6,
+      "y": 4.9,
+      "z": 3.8,
+      "rx": 1.8513,
+      "ry": 1.2977,
+      "rot": 2.04772,
+      "style": "glass",
+      "estate_style": "english",
+      "role": "league_club",
+      "terrain": "meadow",
+      "cutout": "league_club",
+      "biome": "autumn",
+      "true_r_m": 155,
+      "marker": "league_club",
+      "depth": {
+        "altitude_m": 1080,
+        "dist_tier": "mid",
+        "depth_bias": 0
+      },
+      "derived": {
+        "d": 0.48,
+        "scale": 0.798,
+        "haze": 0.188,
+        "ward_alpha": 0.206,
+        "tint": "#cbcbc4",
+        "desat": 0.192,
+        "contrast": 0.904
+      }
+    },
+    {
+      "id": "isle10",
+      "x": 7.4,
+      "y": 0.9,
+      "z": 6.6,
+      "rx": 1.6872,
+      "ry": 1.2461,
+      "rot": 1.86817,
+      "style": "dome",
+      "estate_style": "english",
+      "terrain": "meadow",
+      "cutout": "kelly_residence",
+      "biome": "orchard",
+      "true_r_m": 145,
+      "marker": "kelly_residence",
+      "depth": {
+        "altitude_m": 1360,
+        "dist_tier": "near",
+        "depth_bias": 0
+      },
+      "derived": {
+        "d": 0.11,
+        "scale": 0.954,
+        "haze": 0.057,
+        "ward_alpha": 0.462,
+        "tint": "#eaddc1",
+        "desat": 0.044,
+        "contrast": 0.978
+      }
+    },
+    {
+      "id": "isle25",
+      "x": 11.9,
+      "y": -6.3,
+      "z": 4.8,
+      "rx": 1.8026,
+      "ry": 1.699,
+      "rot": 1.59113,
+      "style": "glass",
+      "estate_style": "english",
+      "terrain": "meadow",
+      "role": "elite_academy",
+      "cutout": "elite_academy",
+      "biome": "meadow",
+      "true_r_m": 175,
+      "marker": "elite_academy",
+      "depth": {
+        "altitude_m": 1180,
+        "dist_tier": "mid",
+        "depth_bias": 0
+      },
+      "derived": {
+        "d": 0.401,
+        "scale": 0.831,
+        "haze": 0.147,
+        "ward_alpha": 0.255,
+        "tint": "#d1cfc3",
+        "desat": 0.161,
+        "contrast": 0.92
+      }
+    },
+    {
+      "id": "isle30",
+      "x": 11.2,
+      "y": 3.6,
+      "z": 5.5,
+      "rx": 1.9255,
+      "ry": 1.7775,
+      "rot": 0.26866,
+      "style": "glass",
+      "estate_style": "english",
+      "role": "zaibatsu_estate",
+      "terrain": "lake",
+      "cutout": "rothschild_estate",
+      "biome": "water",
+      "true_r_m": 185,
+      "marker": "zaibatsu_estate",
+      "depth": {
+        "altitude_m": 1250,
+        "dist_tier": "mid",
+        "depth_bias": -0.05
+      },
+      "derived": {
+        "d": 0.296,
+        "scale": 0.876,
+        "haze": 0.103,
+        "ward_alpha": 0.325,
+        "tint": "#dad4c2",
+        "desat": 0.119,
+        "contrast": 0.941
+      }
+    }
+  ],
+  "depth_model": {
+    "alt_range_m": [
+      800,
+      1500
+    ],
+    "dist_n": {
+      "near": 0.0,
+      "mid": 0.3333,
+      "far": 0.6667,
+      "horizon": 1.0
+    },
+    "w_alt": 0.55,
+    "w_dist": 0.45,
+    "scale_k": 0.42,
+    "haze_a": 0.05,
+    "haze_b": 0.6,
+    "ward_a": 0.55,
+    "ward_p": 1.5,
+    "label_px": [
+      15,
+      4
+    ],
+    "label_fade": 0.45,
+    "icon_only_d": 0.8,
+    "default_d": 0.3,
+    "tint_near": "#f3e2c0",
+    "tint_far": "#9fb3c8",
+    "desat_far": 0.4,
+    "contrast_far": 0.2,
+    "cloud_layers": [
+      {
+        "id": "c1",
+        "alt_m": 1150,
+        "cover": 0.15
+      },
+      {
+        "id": "c2",
+        "alt_m": 1020,
+        "cover": 0.22
+      },
+      {
+        "id": "c3",
+        "alt_m": 930,
+        "cover": 0.3
+      }
+    ]
+  },
+  "_depth": "tools/depth_derive.py 从 map/data/depth/tc_upper.json + blender/data/tc_islands_v10.json 生成，不要手改"
+}

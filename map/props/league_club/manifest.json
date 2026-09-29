@@ -1,0 +1,165 @@
+{
+ "_说明": "viewer3d.html?model=league_club 的清单（标准档 league_club.glb + 低档 league_club_low.glb）。坐标 = glTF（Y 朝上，米）。由 blender/landmarks/league_club/build.py（共用 blender/landmarks/upper_estates.py）+ blender/landmarks/export_glb.py 生成。卡有庄园主联盟（举办拍卖会与品鉴会；冬季私人拍卖只限会员竞投），没有固定会所；会所本身、位置（isle9）与宫殿式外观均为仓库推断，详见 docs/card-buildings.md。",
+ "id": "league_club",
+ "title": {
+  "zh": "庄园主联盟会所",
+  "en": "Estate Lords' League Club"
+ },
+ "glb": "league_club.glb",
+ "glb_low": "league_club_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [
+   "roof",
+   "props_chimneys"
+  ],
+  "walls": [
+   "walls_ext"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "site_ground",
+   "site_garden",
+   "site_trees",
+   "site_dock",
+   "props_hovercar",
+   "props_railings",
+   "props_magitech",
+   "props_ward",
+   "props_underside"
+  ],
+  "building": {
+   "min": [-178.7, -1.5, -156.63],
+   "max": [176.72, 20.35, 158.06]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 20,
+  "default": 20
+ },
+ "camera": {
+  "frame": [
+   "walls_ext",
+   "roof"
+  ],
+  "dir": [
+   0.5,
+   0.4,
+   -0.75
+  ],
+  "min": 5,
+  "max": 220,
+  "maxPolar": 1.48
+ },
+ "hotspots": [
+  {
+   "id": "clubhouse",
+   "mesh": "walls_ext",
+   "name": {
+    "zh": "宫殿楼",
+    "en": "Palazzo clubhouse"
+   },
+   "desc": {
+    "zh": "石砌三层方楼，宽大檐口——蓓尔美尔街俱乐部式的意大利宫殿外观；正门一座柱廊门廊。",
+    "en": "A three-storey ashlar block with a broad cornice, in the manner of a Pall Mall club's Italianate palazzo, with a columned porch at the entrance."
+   },
+   "view": [0.35, 0.35, -0.85]
+  },
+  {
+   "id": "atrium",
+   "mesh": "roof",
+   "name": {
+    "zh": "中庭玻璃顶",
+    "en": "Glazed atrium roof"
+   },
+   "desc": {
+    "zh": "宫殿楼中央一方铸铁框玻璃顶，采光进中庭。",
+    "en": "A cast-iron-framed glass roof over the central atrium, lighting the hall beneath."
+   },
+   "view": [0.1, 0.65, -0.6]
+  },
+  {
+   "id": "auction",
+   "mesh": "walls_ext",
+   "name": {
+    "zh": "顶光拍卖厅",
+    "en": "Top-lit auction hall"
+   },
+   "desc": {
+    "zh": "东接主楼的独层长厅，三道玻璃采光天窗，铅皮顶——卡里冬季私人拍卖只限会员竞投的地方。",
+    "en": "A single-storey hall east of the clubhouse with three glazed roof-lights and a lead roof — where the card's members-only winter private auctions are held."
+   },
+   "view": [0.75, 0.3, -0.55]
+  },
+  {
+   "id": "parterre",
+   "mesh": "site_garden",
+   "name": {
+    "zh": "意式台地花园",
+    "en": "Italianate terraced garden"
+   },
+   "desc": {
+    "zh": "宫殿楼西侧的黄杨方格花坛与成列柏树，意大利宫殿式俱乐部的配景。",
+    "en": "Box-hedged parterres and a colonnade of cypresses west of the clubhouse, dressing the Italianate club front."
+   },
+   "view": [-0.6, 0.5, -0.5]
+  },
+  {
+   "id": "forecourt",
+   "mesh": "site_garden",
+   "name": {
+    "zh": "前庭回车圆",
+    "en": "Forecourt sweep"
+   },
+   "desc": {
+    "zh": "宫殿楼南侧一圈砾石回车圆，中央一座圆喷泉。",
+    "en": "A gravel carriage sweep south of the clubhouse, with a round fountain at its centre."
+   },
+   "view": [0.1, 0.55, 0.85]
+  },
+  {
+   "id": "grove",
+   "mesh": "site_trees",
+   "name": {
+    "zh": "岛缘林带",
+    "en": "Perimeter grove"
+   },
+   "desc": {
+    "zh": "岛边一圈橡树与雪松，围出会所用地。",
+    "en": "A ring of oaks and cedars along the island's edge, enclosing the club grounds."
+   },
+   "view": [-0.4, 0.5, 0.7]
+  },
+  {
+   "id": "dock",
+   "mesh": "site_dock",
+   "name": {
+    "zh": "悬浮停靠平台",
+    "en": "Hover docking platform"
+   },
+   "desc": {
+    "zh": "岛缘一座钢结构停靠平台，只供私人悬浮载具起降；卡说岛间只有私人悬浮载具，不画飞艇。",
+    "en": "A steel docking platform at the island's edge for private hover vehicles only; the card mentions only private hover transport between isles, so no airships are shown."
+   },
+   "view": [0.75, 0.3, -0.55]
+  },
+  {
+   "id": "magitech",
+   "mesh": "props_magitech",
+   "name": {
+    "zh": "魔导科技点缀",
+    "en": "Magitech accents"
+   },
+   "desc": {
+    "zh": "岛缘符文环、悬浮玻璃亭与全息园灯——2088 魔导科技层的统一点缀，无文字、无徽记。",
+    "en": "A rune ring at the island's edge, floating glass pavilions and holographic garden lamps — the shared 2088 magitech dressing, with no text or crests."
+   },
+   "view": [0.5, 0.45, 0.65]
+  }
+ ]
+}

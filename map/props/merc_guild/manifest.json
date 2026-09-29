@@ -1,0 +1,148 @@
+{
+ "_说明": "viewer3d.html?model=merc_guild 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。中层一处灰色地带机构院落：两层钢筋混凝土主厅 + 背光委托板墙（纯几何，无文字）+ 起降坪 + 训练场（无武器道具）+ 补给库 + 围墙与大门。只画建筑，无人物、文字、徽记、武器。卡写了层（中层）与「雇佣兵接单的地方」，具体位置与形制为仓库推断，详见 docs/landmarks/merc_guild.md。",
+ "id": "merc_guild",
+ "title": {
+  "zh": "佣兵公会",
+  "en": "Mercenary Guild"
+ },
+ "glb": "merc_guild.glb",
+ "glb_low": "merc_guild_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "walls_ext",
+   "props_board",
+   "props_depot",
+   "props_fence_gate"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "site_ground",
+   "props_pad",
+   "props_yard",
+   "props_lights"
+  ],
+  "building": {
+   "min": [-65.0, -0.1, -48.8],
+   "max": [65.0, 24.6, 48.8]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 30,
+  "default": 30
+ },
+ "camera": {
+  "frame": [
+   "walls_ext",
+   "props_board",
+   "props_pad"
+  ],
+  "dir": [
+   0.4,
+   0.42,
+   -0.8
+  ],
+  "min": 5,
+  "max": 300,
+  "maxPolar": 1.48
+ },
+ "hotspots": [
+  {
+   "id": "hall",
+   "mesh": "walls_ext",
+   "name": {
+    "zh": "接单大厅",
+    "en": "Contract hall"
+   },
+   "desc": {
+    "zh": "两层钢筋混凝土主厅，正立面大面积钢卷帘门，侧附一座矮瞭望塔。",
+    "en": "A two-storey reinforced-concrete hall with wide steel roller shutters on its face and a short watchtower alongside."
+   },
+   "view": [0.4, 0.35, -0.85]
+  },
+  {
+   "id": "board",
+   "mesh": "props_board",
+   "name": {
+    "zh": "委托板墙",
+    "en": "Contract board wall"
+   },
+   "desc": {
+    "zh": "主厅侧墙外挂的背光委托板，灯格阵列，纯几何无文字。",
+    "en": "A backlit contract board on the hall's side wall, a grid of glowing panels with no text."
+   },
+   "view": [0.1, 0.35, -0.9]
+  },
+  {
+   "id": "pad",
+   "mesh": "props_pad",
+   "name": {
+    "zh": "起降坪",
+    "en": "Landing pad"
+   },
+   "desc": {
+    "zh": "停靠几辆无标识装甲悬浮车。",
+    "en": "A paved pad with a few unmarked armoured hover vehicles."
+   },
+   "view": [-0.3, 0.4, -0.8]
+  },
+  {
+   "id": "yard",
+   "mesh": "props_yard",
+   "name": {
+    "zh": "训练场",
+    "en": "Training yard"
+   },
+   "desc": {
+    "zh": "压实土地面，木质训练桩、沙包架与绳网，不放武器道具。",
+    "en": "Packed earth ground with wooden posts, a heavy-bag rack and rope obstacles — no weapon props."
+   },
+   "view": [0.5, 0.45, -0.75]
+  },
+  {
+   "id": "depot",
+   "mesh": "props_depot",
+   "name": {
+    "zh": "补给库",
+    "en": "Supply depot"
+   },
+   "desc": {
+    "zh": "一排锁死的钢卷帘仓库门，露天堆叠着素面运输箱垛。",
+    "en": "A row of shuttered storage doors beside stacks of plain, unmarked shipping crates."
+   },
+   "view": [-0.55, 0.35, -0.75]
+  },
+  {
+   "id": "gate",
+   "mesh": "props_fence_gate",
+   "name": {
+    "zh": "围墙与大门",
+    "en": "Perimeter wall & gate"
+   },
+   "desc": {
+    "zh": "混凝土围墙、滑动大门与门口哨岗。",
+    "en": "A concrete perimeter wall, a sliding gate, and a sentry post at the entrance."
+   },
+   "view": [0.0, 0.3, -0.95]
+  },
+  {
+   "id": "ground",
+   "mesh": "site_ground",
+   "name": {
+    "zh": "院落铺装",
+    "en": "Compound paving"
+   },
+   "desc": {
+    "zh": "沥青停车区与厅前铺装。",
+    "en": "Asphalt parking area and paving in front of the hall."
+   },
+   "view": [0.0, 0.7, -0.7]
+  }
+ ]
+}

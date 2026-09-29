@@ -1,0 +1,519 @@
+{
+ "_说明": "庄园网页三维的室外热点（blender/estate2/web_zones.py 生成，不要手改）。坐标同 layout.py：x 东、y 北、米；z = 地面标高；h = 标签离地高度；pri 越大越先显示。",
+ "zones": [
+  {
+   "id": "main",
+   "name": "伊甸庄园 · 主楼",
+   "en": "Main House",
+   "alias": [
+    "主楼",
+    "府邸"
+   ],
+   "x": 0,
+   "y": -4,
+   "r": 46,
+   "z": 30.0,
+   "h": 24,
+   "pri": 10
+  },
+  {
+   "id": "tower",
+   "name": "观景塔",
+   "en": "Lookout Tower",
+   "alias": [
+    "眺望亭",
+    "屋顶眺望亭",
+    "塔楼"
+   ],
+   "x": -17,
+   "y": -17,
+   "r": 7,
+   "z": 30.0,
+   "h": 26,
+   "pri": 4
+  },
+  {
+   "id": "dock",
+   "name": "停靠平台",
+   "en": "Landing Platform",
+   "alias": [
+    "访客停靠平台"
+   ],
+   "x": 0,
+   "y": -266,
+   "r": 22,
+   "z": 8.5,
+   "h": 4,
+   "pri": 9
+  },
+  {
+   "id": "avenue",
+   "name": "中轴大道",
+   "en": "Grand Avenue",
+   "alias": [
+    "大道",
+    "跌水水渠"
+   ],
+   "x": 0,
+   "y": -200,
+   "r": 30,
+   "z": 13.44,
+   "h": 3,
+   "pri": 6
+  },
+  {
+   "id": "forecourt",
+   "name": "前庭",
+   "en": "Forecourt",
+   "alias": [
+    "前院",
+    "前庭花园",
+    "花园",
+    "庭园",
+    "花坛",
+    "Gardens",
+    "Garden"
+   ],
+   "x": 0,
+   "y": -104,
+   "r": 60,
+   "z": 20.0,
+   "h": 4,
+   "pri": 8
+  },
+  {
+   "id": "fountain",
+   "name": "喷泉",
+   "en": "Fountain",
+   "alias": [
+    "三层喷泉"
+   ],
+   "x": 0,
+   "y": -113,
+   "r": 11,
+   "z": 20.0,
+   "h": 8,
+   "pri": 5
+  },
+  {
+   "id": "rose",
+   "name": "玫瑰园",
+   "en": "Rose Garden",
+   "alias": [
+    "白玫瑰园"
+   ],
+   "x": 58,
+   "y": -104,
+   "r": 18,
+   "z": 20.0,
+   "h": 3,
+   "pri": 5
+  },
+  {
+   "id": "rear",
+   "name": "后庭",
+   "en": "Rear Court",
+   "alias": [
+    "后院",
+    "后庭园",
+    "草坪",
+    "后庭草坪",
+    "半圆回廊"
+   ],
+   "x": 0,
+   "y": 44,
+   "r": 22,
+   "z": 30.0,
+   "h": 4,
+   "pri": 6
+  },
+  {
+   "id": "training",
+   "name": "露天训练场",
+   "en": "Training Ground",
+   "alias": [
+    "训练场"
+   ],
+   "x": -62,
+   "y": 58,
+   "r": 15,
+   "z": 30.0,
+   "h": 3,
+   "pri": 4
+  },
+  {
+   "id": "lake",
+   "name": "人工湖",
+   "en": "Lake",
+   "alias": [
+    "湖"
+   ],
+   "x": -12,
+   "y": 142,
+   "r": 70,
+   "z": 4.5,
+   "h": 4,
+   "pri": 9
+  },
+  {
+   "id": "waterside",
+   "name": "水榭",
+   "en": "Water Pavilion",
+   "alias": [],
+   "x": -34,
+   "y": 100,
+   "r": 9,
+   "z": 4.5,
+   "h": 8,
+   "pri": 5
+  },
+  {
+   "id": "islet",
+   "name": "湖心亭",
+   "en": "Lake Pavilion",
+   "alias": [],
+   "x": -22,
+   "y": 150,
+   "r": 7,
+   "z": 5.8,
+   "h": 9,
+   "pri": 5
+  },
+  {
+   "id": "club",
+   "name": "湖边俱乐部",
+   "en": "Lakeside Club",
+   "alias": [
+    "俱乐部",
+    "缆车"
+   ],
+   "x": 72,
+   "y": 134,
+   "r": 15,
+   "z": 5.7,
+   "h": 12,
+   "pri": 5
+  },
+  {
+   "id": "lookout",
+   "name": "观景台",
+   "en": "Lookout",
+   "alias": [
+    "岛缘观景台",
+    "崖顶观景台"
+   ],
+   "x": 34,
+   "y": 84,
+   "r": 12,
+   "z": 30.0,
+   "h": 4,
+   "pri": 4
+  },
+  {
+   "id": "stones",
+   "name": "结界锚碑",
+   "en": "Barrier Stones",
+   "alias": [
+    "锚碑"
+   ],
+   "x": 228,
+   "y": -160,
+   "r": 8,
+   "z": 5.6,
+   "h": 5,
+   "pri": 3
+  },
+  {
+   "id": "guest",
+   "name": "客房楼",
+   "en": "Guest Houses",
+   "alias": [
+    "客房"
+   ],
+   "x": 100,
+   "y": -44,
+   "r": 14,
+   "z": 20.16,
+   "h": 14,
+   "pri": 5
+  },
+  {
+   "id": "spa",
+   "name": "水疗馆",
+   "en": "Spa",
+   "alias": [],
+   "x": -104,
+   "y": -46,
+   "r": 14,
+   "z": 16.77,
+   "h": 14,
+   "pri": 4
+  },
+  {
+   "id": "breakers",
+   "name": "宾客馆",
+   "en": "Guest Hall",
+   "alias": [
+    "Breakers",
+    "海滨宾客馆"
+   ],
+   "x": 232,
+   "y": -148,
+   "r": 32,
+   "z": 5.6,
+   "h": 22,
+   "pri": 7
+  },
+  {
+   "id": "gym",
+   "name": "玻璃健身亭",
+   "en": "Glass Gym Pavilion",
+   "alias": [
+    "健身亭",
+    "户外健身房"
+   ],
+   "x": 187.4,
+   "y": -110.3,
+   "r": 14,
+   "z": 17.39,
+   "h": 5,
+   "pri": 5
+  },
+  {
+   "id": "villas",
+   "name": "林中别墅",
+   "en": "Forest Villas",
+   "alias": [
+    "别墅"
+   ],
+   "x": 200,
+   "y": 110,
+   "r": 16,
+   "z": 10.32,
+   "h": 12,
+   "pri": 5
+  },
+  {
+   "id": "treehouse",
+   "name": "树屋",
+   "en": "Tree Houses",
+   "alias": [],
+   "x": 160,
+   "y": 150,
+   "r": 6,
+   "z": 15.2,
+   "h": 14,
+   "pri": 3
+  },
+  {
+   "id": "bridge",
+   "name": "索桥",
+   "en": "Rope Bridge",
+   "alias": [
+    "吊桥"
+   ],
+   "x": 198,
+   "y": 21,
+   "r": 12,
+   "z": 10.77,
+   "h": 4,
+   "pri": 3
+  },
+  {
+   "id": "orchard",
+   "name": "果园",
+   "en": "Orchard",
+   "alias": [],
+   "x": 205,
+   "y": 145,
+   "r": 22,
+   "z": 6.58,
+   "h": 3,
+   "pri": 3
+  },
+  {
+   "id": "service",
+   "name": "服务院",
+   "en": "Service Court",
+   "alias": [
+    "仆役楼",
+    "仆人楼",
+    "服务区",
+    "Staff Wing"
+   ],
+   "x": -168,
+   "y": 112,
+   "r": 24,
+   "z": 16.74,
+   "h": 12,
+   "pri": 6
+  },
+  {
+   "id": "kitchen_garden",
+   "name": "菜园",
+   "en": "Kitchen Garden",
+   "alias": [
+    "厨房花园"
+   ],
+   "x": -118,
+   "y": 150,
+   "r": 24,
+   "z": 3.1,
+   "h": 3,
+   "pri": 4
+  },
+  {
+   "id": "greenhouse",
+   "name": "温室",
+   "en": "Greenhouse",
+   "alias": [
+    "橘园",
+    "Orangery"
+   ],
+   "x": -118,
+   "y": 180,
+   "r": 14,
+   "z": 12.78,
+   "h": 8,
+   "pri": 4
+  },
+  {
+   "id": "hangar",
+   "name": "悬浮载具库",
+   "en": "Hover-vehicle Bay",
+   "alias": [],
+   "x": -214,
+   "y": 150,
+   "r": 16,
+   "z": 12.52,
+   "h": 16,
+   "pri": 5
+  },
+  {
+   "id": "helipad",
+   "name": "载具停靠坪",
+   "en": "Vehicle Pad",
+   "alias": [],
+   "x": -186,
+   "y": 170,
+   "r": 12,
+   "z": 15.83,
+   "h": 3,
+   "pri": 4
+  },
+  {
+   "id": "garage",
+   "name": "悬浮车库",
+   "en": "Hover Garage",
+   "alias": [
+    "车库"
+   ],
+   "x": -140,
+   "y": 138,
+   "r": 14,
+   "z": 19.01,
+   "h": 12,
+   "pri": 4
+  },
+  {
+   "id": "greystone",
+   "name": "灰石旧宅",
+   "en": "Greystone",
+   "alias": [
+    "旧宅",
+    "Old House",
+    "Greystone 旧宅"
+   ],
+   "x": -228,
+   "y": -98,
+   "r": 42,
+   "z": 10.3,
+   "h": 18,
+   "pri": 7
+  },
+  {
+   "id": "cottage",
+   "name": "灰石客舍",
+   "en": "Guest Cottage",
+   "alias": [
+    "客舍"
+   ],
+   "x": -160,
+   "y": -82,
+   "r": 12,
+   "z": 21.25,
+   "h": 12,
+   "pri": 5
+  },
+  {
+   "id": "grotto",
+   "name": "岩洞泳池",
+   "en": "Grotto Pool",
+   "alias": [],
+   "x": -145.6,
+   "y": -75.1,
+   "r": 8,
+   "z": 21.25,
+   "h": 4,
+   "pri": 4
+  },
+  {
+   "id": "koi",
+   "name": "锦鲤池",
+   "en": "Koi Pond",
+   "alias": [],
+   "x": -175.8,
+   "y": -82.4,
+   "r": 6,
+   "z": 21.25,
+   "h": 3,
+   "pri": 3
+  },
+  {
+   "id": "dairy",
+   "name": "奶牛农场",
+   "en": "Dairy Farm",
+   "alias": [
+    "奶牛场",
+    "挤奶厅",
+    "奶罐间",
+    "围场",
+    "Milking Parlour"
+   ],
+   "x": -270,
+   "y": 8,
+   "r": 28,
+   "z": 11.28,
+   "h": 8,
+   "pri": 5
+  },
+  {
+   "id": "farm_terraces",
+   "name": "农业台地",
+   "en": "Farm Terraces",
+   "alias": [
+    "葡萄园",
+    "薰衣草田",
+    "橄榄园"
+   ],
+   "x": -230,
+   "y": 50,
+   "r": 30,
+   "z": 14.36,
+   "h": 3,
+   "pri": 3
+  },
+  {
+   "id": "tennis",
+   "name": "网球场",
+   "en": "Tennis Courts",
+   "alias": [],
+   "x": -186,
+   "y": -12,
+   "r": 16,
+   "z": 17.07,
+   "h": 3,
+   "pri": 3
+  }
+ ]
+}

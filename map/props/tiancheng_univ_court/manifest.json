@@ -1,0 +1,92 @@
+{
+ "_说明": "viewer3d.html?model=tiancheng_univ_court 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。中层高区同一场景合画两处地点：天城大学（设法学院）+ 最高法院。只画建筑，无人物、文字、徽记、司法象征物。天城大学的层为用户决定（2026-09-27，中层），最高法院位置为仓库推断（据维多利亚公寓步行 15 分钟到法院）；具体形制均为仓库推断，详见 docs/landmarks/tiancheng_univ_court.md。",
+ "id": "tiancheng_univ_court",
+ "title": {
+  "zh": "天城大学与最高法院",
+  "en": "Tiancheng University & Supreme Court"
+ },
+ "glb": "tiancheng_univ_court.glb",
+ "glb_low": "tiancheng_univ_court_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "props_univ",
+   "props_court"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "props_plaza",
+   "site_ground",
+   "props_lights"
+  ],
+  "building": {
+   "min": [-110.0, -0.06, -70.0],
+   "max": [110.0, 27.0, 50.0]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 30,
+  "default": 30
+ },
+ "camera": {
+  "frame": [
+   "props_univ",
+   "props_court"
+  ],
+  "dir": [
+   0.4,
+   0.42,
+   -0.8
+  ],
+  "min": 6,
+  "max": 350,
+  "maxPolar": 1.48
+ },
+ "hotspots": [
+  {
+   "id": "univ",
+   "mesh": "props_univ",
+   "name": {
+    "zh": "天城大学法学院楼",
+    "en": "Tiancheng University law building"
+   },
+   "desc": {
+    "zh": "石材立面主楼，一侧带模拟法庭弧形凸窗，另有阶梯教室楼与图书馆连廊。",
+    "en": "A stone-faced main building with a curved moot-court bay window, a tiered lecture-hall wing, and a covered walk to the library."
+   },
+   "view": [0.35, 0.4, -0.85]
+  },
+  {
+   "id": "court",
+   "mesh": "props_court",
+   "name": {
+    "zh": "最高法院",
+    "en": "Supreme Court"
+   },
+   "desc": {
+    "zh": "宽台阶、柱廊门面与中央穹顶采光厅，无雕像或司法象征物。",
+    "en": "Broad steps, a colonnaded facade, and a central domed lantern — no statuary or judicial emblems."
+   },
+   "view": [-0.4, 0.35, -0.8]
+  },
+  {
+   "id": "plaza",
+   "mesh": "props_plaza",
+   "name": {
+    "zh": "共用步行广场",
+    "en": "Shared plaza"
+   },
+   "desc": {
+    "zh": "连接两处的步行广场，呼应「步行 15 分钟」的既有设定。",
+    "en": "A plaza linking the two buildings, matching the established 15-minute walk between them."
+   },
+   "view": [0.0, 0.65, -0.72]
+  }
+ ]
+}

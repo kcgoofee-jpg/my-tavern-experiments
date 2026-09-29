@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>三维查看器</title>
+<!--
+  通用三维查看器：viewer3d.html?model=<id> 读 <id>/manifest.json（glb、热点、网格分组、相机）。
+  渲染：随仓库的 three（../estate/vendor/），烘焙光照 → MeshBasicMaterial，无灯光、无阴影、无后处理。
+  嵌入（viewer.html 的 kind=estate + viewer3d 字段）：blob iframe，<base> 指向本目录；模型 id 由注入的 window.__V3D_MODEL 给。
+  消息（与旧庄园页同一套）：
+    宿主 → 本页：estate:lang {lang} / estate:theme {theme} / estate:quality {q} / estate:inset {left} / v3d:fly {hotspot}
+    本页 → 宿主：estate:ready（界面就绪，模型自己显示进度）/ estate:fail {reason} / v3d:state {mode, hotspot, flows}
+    宿主 → 本页（续）：v3d:flows {on}（流向模式：manifest.flows 的示意折线 + 沿线移动的小球）
+  调试：window.__v3d（stats、setMode、fly、orbitBench）。?tier=low|high 强制档位，?lang=en。
+-->
+<link rel="stylesheet" href="../ui/tokens.css">
+<script defer src="../ui/icons.js"></script>
+<script defer src="../ui/sheet.js"></script>
+<script defer src="../ui/chrome3d.js"></script>
+<script type="importmap">{ "imports": { "three": "../estate/vendor/three.module.min.js", "three/addons/": "../estate/vendor/jsm/" } }</script>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font: var(--fs-body)/1.45 var(--font-ui); -webkit-font-smoothing: antialiased; }
+  body { --inset: 0px; }
+  canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+  button { font: inherit; color: inherit; }
+  .btn { min-height: var(--hit); min-width: var(--hit); padding: 0 var(--sp-5); border: 1px solid var(--line); border-radius: var(--r-m); background: var(--surface-glass); color: var(--ink); cursor: pointer; }
+  .btn:hover { border-color: var(--line-strong); }
+  .btn[aria-pressed="true"], .seg button[aria-checked="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .panel { background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-2); }
+  @media (hover: hover) and (pointer: fine) { .panel { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); } }
+  /* UI v2：视图切换在顶上（ui/chrome3d.js），部件 / 流向 / 说明是唯一抽屉的三页（默认收起，U12） */
+  #cut { display: flex; align-items: center; gap: var(--sp-4); padding: 0 var(--sp-5); min-height: 40px; font-size: var(--fs-small); }
+  #cut[hidden] { display: none; }
+  #cut input { width: 140px; height: 40px; accent-color: var(--accent); }
+  #cut output { min-width: 3.5em; font-variant-numeric: tabular-nums; }
+  #flows ol, #list ol { list-style: none; margin: 0; padding: 0; }
+  #flows li button, #list li button { display: flex; width: 100%; min-height: var(--hit); align-items: center; gap: var(--sp-4); padding: 0 var(--sp-4); border: 0; border-radius: var(--r-m); background: transparent; text-align: left; cursor: pointer; }
+  #flows li button:hover, #list li button:hover { background: var(--surface-2); }
+  #flows li button[aria-current], #list li button[aria-current="true"] { background: var(--accent-weak); color: var(--ink); box-shadow: inset 3px 0 var(--accent); }
+  #flows i { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+  #flows h2, #list h2 { margin: var(--sp-3) var(--sp-4); font-size: var(--fs-small); color: var(--muted); font-weight: 600; }
+  #flows .fhead { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); }
+  #list li i { width: 20px; height: 20px; border-radius: 50%; flex: none; display: grid; place-items: center; font: 600 var(--fs-micro)/1 var(--font-ui); font-style: normal; background: var(--surface-2); border: 1px solid var(--line); }
+  #card { position: relative; padding: var(--sp-3) var(--sp-4); }
+  #card h3 { margin: 0 44px var(--sp-2) 0; font-size: var(--fs-title); }
+  #card p { margin: 0; color: var(--ink-2); }
+  #card small { display: block; margin-top: var(--sp-3); color: var(--muted); font-size: var(--fs-small); }
+  #card .x { position: absolute; top: 0; right: 0; border: 0; background: transparent; }
+  #cardEmpty { color: var(--muted); font-size: var(--fs-small); padding: var(--sp-5) var(--sp-4); margin: 0; }
+  #card:not([hidden]) + #cardEmpty { display: none; }
+  body.nopins .pin { display: none !important; }
+  #pins { position: fixed; inset: 0; pointer-events: none; }
+  .pin { position: absolute; left: 0; top: 0; width: var(--hit); height: var(--hit); margin: -22px 0 0 -22px; border: 0; padding: 0; background: transparent; pointer-events: auto; cursor: pointer; display: grid; place-items: center; }
+  .pin span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 600 var(--fs-micro)/1 var(--font-ui); background: var(--map-label-bg); color: var(--map-label-ink); border: 1.5px solid var(--gold); box-shadow: var(--sh-1); }
+  .pin.on span { background: var(--gold); color: #1a1406; transform: scale(1.15); }
+  .pin[hidden] { display: none; }
+  #credit { position: fixed; left: var(--sp-4); bottom: calc(var(--sp-2) + env(safe-area-inset-bottom)); font-size: var(--fs-micro); color: var(--ink-2); pointer-events: none; text-shadow: 0 1px 3px var(--bg), 0 0 6px var(--bg); max-width: 40%; }
+  #load { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); transition: opacity var(--dur-3); z-index: 5; }
+  #load.done { opacity: 0; pointer-events: none; }
+  #load > div { width: min(320px, 80%); text-align: center; }
+  #load .uiprog { margin: var(--sp-5) 0; }
+  #load .acts { display: flex; gap: var(--sp-4); justify-content: center; }
+  #load .acts[hidden] { display: none; }
+  #fps { position: fixed; left: 50%; top: 4px; transform: translateX(-50%); font: var(--fs-micro) var(--font-mono); color: var(--muted); pointer-events: none; }
+  @media (max-width: 640px) {
+    #cut input { width: 110px; }
+    #credit { display: none; }
+    .pin span { width: 17px; height: 17px; font-size: 10px; border-width: 1px; }
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="0" aria-label="三维模型"></canvas>
+<div id="pins" aria-hidden="false"></div>
+<label id="cut" hidden><span data-t="cut_h">剖切高度</span><input type="range" id="cutH" min="0" max="6" step="0.05"><output id="cutV"></output></label>
+<nav id="flows" aria-labelledby="flowsH"><div class="fhead"><h2 id="flowsH" data-t="flows_h">流向（示意，点一条看说明）</h2><button type="button" class="btn" id="flowBtn" aria-pressed="false" data-t="flow_pin">固定显示</button></div><ol></ol></nav>
+<nav id="list" aria-labelledby="listH"><h2 id="listH" data-t="parts_h">部件（点击飞过去）</h2><ol></ol></nav>
+<div id="info"><section id="card" hidden aria-live="polite"><button type="button" class="btn x" aria-label="关闭" data-ta="close"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button><h3></h3><p></p><small></small></section><p id="cardEmpty" data-t="info_empty">点模型上的编号或「部件」列表里的一项，这里显示说明</p></div>
+<div id="credit"></div>
+<div id="fps" hidden></div>
+<div id="load" role="status"><div><span class="txt">加载中…</span><div class="acts" hidden><button type="button" class="btn" id="retry" data-t="retry">重试</button></div></div></div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { mountProgress } from '../ui/progress.mjs';   // fix3：统一加载进度组件
+import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer, prefersReducedMotion } from '../ui/camera-controls.js';   // 相机控制共用小件（预设/指北针/提示卡/空闲计时），与庄园页共用
+
+const Q = new URLSearchParams(location.search);
+const MODEL = window.__V3D_MODEL || Q.get('model') || 'dairy';
+const EMBED = window.top !== window;
+const $ = s => document.querySelector(s);
+let dirty = true;
+const post = m => { if (EMBED) try { parent.postMessage(m, '*'); } catch (e) {} };
+
+// ---------------- UI v2 外壳（ui/chrome3d.js）：视图分段 + 剖切高度二级条 + 控制列 + 唯一抽屉（部件 · 流向 · 说明）----------------
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const LSg = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+// 调试：显示帧率——本页多数时候是 blob: 载入的子 iframe，跟宿主不同源，读不到宿主 localStorage；开关靠宿主 estate:fps 消息（同源直开时 LSg 兜底）
+let FPS_ON = Q.has('fps') || LSg('edenMapFps') === '1';
+const C = UI3D.create({ embed: EMBED, views: [{ id: 'ext', label: '外观' }, { id: 'xray', label: '内透' }, { id: 'cut', label: '剖切' }], view: 'ext', onView: m => setMode(m), sub: document.getElementById('cut'),
+  tabs: [{ id: 'parts', btnClass: 'partsTab', panel: document.getElementById('list') }, { id: 'flows', btnClass: 'flowsTab', panel: document.getElementById('flows') }, { id: 'info', btnClass: 'infoTab', panel: document.getElementById('info') }],
+  controls: [{ id: 'zin', icon: 'in', onClick: () => dolly(1 / 1.4) }, { id: 'zout', icon: 'out', onClick: () => dolly(1.4) }, { id: 'zreset', icon: 'reset', onClick: () => { select(null); camTouched = false; frameStart(); } },
+    { id: 'pinBtn', icon: 'label', pressed: true, onClick: () => setPins(document.body.classList.contains('nopins')) }],
+  onEsc: () => post({ type: 'estate:key', key: 'Escape' }) });
+C.sheet.showTab('flows', false);
+C.setAuto(LSg('edenMap3dAuto') === '1');
+let lastIns = '';
+C.onInsets(i => { const k = i.bottom + ',' + i.right; if (k === lastIns) return; lastIns = k; camera.setViewOffset(innerWidth, innerHeight, i.right / 2, i.bottom / 2, innerWidth, innerHeight); camera.updateProjectionMatrix(); dirty = true; });   // 只换取景偏移，不重分配画布
+let flowTabOn = false;
+new MutationObserver(() => { const on = C.sheet.tab === 'flows' && C.sheet.open; if (on !== flowTabOn) { flowTabOn = on; if (!flowPin) setFlows(on); } }).observe(C.sheet.el, { attributes: true, attributeFilter: ['data-state', 'data-tab'], subtree: true });
+function dolly(f) { const d = camera.position.clone().sub(controls.target).multiplyScalar(f); if (d.length() < controls.minDistance || d.length() > controls.maxDistance) return; camera.position.copy(controls.target).add(d); controls.update(); camTouched = true; dirty = true; }
+function setPins(on) { document.body.classList.toggle('nopins', !on); C.control('pinBtn')?.setAttribute('aria-pressed', String(on)); }
+addEventListener('keydown', e => { if ((e.key === 'l' || e.key === 'L') && !e.ctrlKey && !e.metaKey && !e.target.closest?.('input,textarea') && LSg('edenMapKeys') === '1') setPins(document.body.classList.contains('nopins')); });
+function chromeLang() {
+  C.setViews([{ id: 'ext', label: t('mode_ext') }, { id: 'xray', label: t('mode_xray') }, { id: 'cut', label: t('mode_cut') }]); C.setView(mode);
+  C.setText({ expand: t('expand'), collapse: t('collapse'), region: t('region') }); C.seg.setAttribute('aria-label', t('modes'));
+  C.sheet.label('info', esc(t('info')), esc(t('info').slice(0, 1)));
+  if (!HS.length) C.sheet.label('parts', esc(t('parts')), esc(t('parts').slice(0, 1)));
+  for (const [id, k] of [['zin', 'zin'], ['zout', 'zout'], ['zreset', 'reset'], ['pinBtn', 'pins']]) { const b = C.control(id); if (b) { b.title = t(k); b.setAttribute('aria-label', t(k)); } }
+  if (MAN) C.setTitle(cleanTitle(L(MAN.title)));
+}
+// ---------------- 语言 / 主题 ----------------
+const STR = {
+  zh: { mode_ext: '外观', mode_xray: '内透', mode_cut: '剖切', cut_h: '剖切高度', parts: '部件', parts_h: '部件（点击飞过去）', flows: '流向', legend: '图例', flows_h: '流向（示意，点一条看说明）', flow_pin: '固定显示', info: '说明', info_empty: '点模型上的编号或「部件」列表里的一项，这里显示说明', expand: '展开', collapse: '收起', zin: '放大', zout: '缩小', reset: '复位视野', pins: '显示标注（热点编号，L）', region: '部件、流向与说明', retry: '重试', close: '关闭',
+    loading: '加载模型 {p}', fail: '模型加载失败，请检查网络后重试', slow: '加载较慢…可以继续等，或重试', modes: '显示方式', canvas: '三维模型：拖动旋转，双指缩放',
+    preset_top: '俯视', preset_iso: '斜视 45°', preset_front: '正面', preset_free: '自由' },
+  en: { mode_ext: 'Exterior', mode_xray: 'X-ray', mode_cut: 'Section', cut_h: 'Cut height', parts: 'Parts', parts_h: 'Parts (tap to fly)', flows: 'Flows', legend: 'Legend', flows_h: 'Flows (schematic, tap for details)', flow_pin: 'Keep shown', info: 'Details', info_empty: 'Tap a number on the model or an item under Parts to see details here', expand: 'Expand', collapse: 'Collapse', zin: 'Zoom in', zout: 'Zoom out', reset: 'Reset view', pins: 'Show labels (hotspot numbers, L)', region: 'Parts, flows and details', retry: 'Retry', close: 'Close',
+    loading: 'Loading model {p}', fail: 'Model failed to load. Check the connection and retry.', slow: 'Still loading… keep waiting or retry', modes: 'View mode', canvas: '3D model: drag to orbit, pinch to zoom',
+    preset_top: 'Top', preset_iso: 'Isometric 45°', preset_front: 'Front', preset_free: 'Free' },
+};
+// v0.9.6：语言先看地图的设置（同源本机存储 edenMapLang），再看系统语言；嵌入时查看器还会发 estate:lang
+let LANG = (Q.get('lang') || (() => { try { return localStorage.getItem('edenMapLang'); } catch (e) { return null; } })() || 'zh').startsWith('en') ? 'en' : 'zh';
+// 色觉模式（E7，宿主经 estate:cvd 转发查看器「设置 → 显示 → 色觉模式」）：0 关 / rg 红绿 / by 蓝黄。
+// manifest.flows 的颜色各建筑各写，这里不改每个 manifest，改用「按原色相桶归到色觉安全色板」的通用重映射，流向图例本来就有文字名（第二线索）
+let CVD = '0';
+const CVD_PAL = { rg: ['#e69f00', '#56b4e9', '#0072b2', '#009e73', '#cc79a7', '#f0e442', '#994455', '#d55e00'], by: ['#d7263d', '#9ad0f5', '#029e73', '#7a5195', '#e2903a', '#cc79a7', '#0072b2', '#994455'] };
+function cvdColor(hex) {
+  if (CVD === '0' || !/^#[0-9a-f]{6}$/i.test(hex || '')) return hex;
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  let h = !d ? 0 : mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360;
+  const pal = CVD_PAL[CVD] || CVD_PAL.rg; return pal[Math.floor(h / (360 / pal.length)) % pal.length];
+}
+const t = (k, v = {}) => (STR[LANG][k] || STR.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
+const L = o => (o && (o[LANG] || o.zh)) || '';
+// 玩家可见标题不带「测试」字样（清单 title 由建模侧维护，这里只在显示时去掉前缀与「模型交互」注记）
+const cleanTitle = s => String(s || '').replace(/^(测试[：:]\s*|Test:\s*)/i, '').replace(/\s*[（(](模型交互|model interaction)[）)]\s*$/i, '');
+function applyLang() {
+  document.documentElement.lang = LANG === 'en' ? 'en' : 'zh';
+  document.querySelectorAll('[data-t]').forEach(e => { e.textContent = t(e.dataset.t); });
+  document.querySelectorAll('[data-ta]').forEach(e => e.setAttribute('aria-label', t(e.dataset.ta)));
+  $('#c').setAttribute('aria-label', t('canvas')); chromeLang();
+  if (MAN) { document.title = cleanTitle(L(MAN.title)); $('#credit').textContent = L(MAN.credit); buildList(); if (sel) showCard(sel); }
+}
+function setTheme(th) { document.documentElement.classList.toggle('light', th === 'light'); if (renderer) { scene.background = new THREE.Color(getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#101418'); dirty = true; } }
+document.documentElement.classList.toggle('light', (Q.get('theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')) === 'light');
+
+// ---------------- 性能档位 ----------------
+const coarse = matchMedia('(pointer: coarse)').matches, small = Math.min(screen.width, screen.height) < 600;
+const mem = navigator.deviceMemory || 8;
+const TIER = Q.get('tier') || ((coarse && small) || mem <= 4 ? 'low' : 'high');
+const DPR_CAP = TIER === 'low' ? 1.25 : coarse ? 2 : (devicePixelRatio || 2);   // 桌面（细指针）不封顶 2 倍，用满物理像素比；手机 / 触屏保持原样（2026-09-28）
+// 低档 / 设置「三维画质 · 省电」：不用毛玻璃（Mac 低分辨率模式下 backdrop-filter 每帧重算模糊，v2 门控遗留）
+if (TIER === 'low' || LSg('edenMap3dQ') === '1') document.documentElement.classList.add('noblur');   // 同旧庄园 DPR_CAP 思路：高 DPR 手机上像素数 ×4 不值
+const MSAA = TIER !== 'low';
+
+// ---------------- 场景 ----------------
+const canvas = $('#c');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: MSAA, powerPreference: TIER === 'low' ? 'low-power' : 'high-performance', stencil: false });
+} catch (e) { post({ type: 'estate:fail', reason: 'webgl' }); fail('webgl'); throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, LSg('edenMap3dQ') === '1' ? 1 : LSg('edenMap3dQ') === '2' ? 2 : DPR_CAP));   // 设置「显示 · 三维画质」
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.NoToneMapping;   // 烘焙图已经过 AgX 视图变换
+renderer.localClippingEnabled = false;
+const scene = new THREE.Scene();
+setTheme(document.documentElement.classList.contains('light') ? 'light' : 'dark');
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 400);
+const controls = new OrbitControls(camera, canvas);
+const REDUCED_MOTION = prefersReducedMotion();
+controls.enableDamping = !REDUCED_MOTION; controls.dampingFactor = 0.09; controls.screenSpacePanning = false;
+controls.zoomToCursor = true; controls.rotateSpeed = coarse ? 0.7 : 0.9;
+controls.panSpeed = 0.9; controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+controls.minPolarAngle = 0.06; controls.minDistance = 0.6;   // 不让相机钻到地面/岛体以下
+controls.addEventListener('change', () => { dirty = true; });
+
+// ---------------- 相机控制增强（U，2026-09-28）：点哪绕哪转 / 滚轮缩放到光标 / 双指平移与捏合分开 / 键盘 / 视角预设 + 指北针 / 空闲自动旋转（默认关） / 首次提示卡 ----------------
+// 1) 拖动前先按下的那一点定为新的轨道中心：只挪 target，camera.position 同步挪同一个位移，画面不跳，但从此绕这个点转
+const ccRay = new THREE.Raycaster(), ccNdc = new THREE.Vector2(), ccHit = new THREE.Vector3(), ccDelta = new THREE.Vector3();
+function retargetAt(clientX, clientY) {
+  if (!root) return;
+  const r = canvas.getBoundingClientRect();
+  ccNdc.set((clientX - r.left) / r.width * 2 - 1, -(clientY - r.top) / r.height * 2 + 1);
+  ccRay.setFromCamera(ccNdc, camera);
+  const cand = Object.values(meshes).filter((m) => m.isMesh && m.visible && m.userData.role !== 'site');
+  const hit = ccRay.intersectObjects(cand, false)[0];
+  if (!hit) return;
+  ccDelta.subVectors(hit.point, controls.target);
+  controls.target.copy(hit.point); camera.position.add(ccDelta); controls.update(); dirty = true;
+}
+canvas.addEventListener('pointerdown', (e) => { if (e.button === 0 && !e.shiftKey) retargetAt(e.clientX, e.clientY); }, { passive: true });
+
+// 2) 滚轮：捏合（ctrlKey）交给 OrbitControls 自带 zoomToCursor；普通两指划动 = 平移；⌥ + 划动 = 旋转（Mac 触控板习惯）
+const ccPanX = new THREE.Vector3(), ccPanY = new THREE.Vector3();
+function wheelPan(dx, dy) {
+  const el = canvas, dist = camera.position.distanceTo(controls.target);
+  const k = dist * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * 2 / Math.max(1, el.clientHeight) * 1.1;
+  ccPanX.setFromMatrixColumn(camera.matrix, 0).multiplyScalar(-dx * k);
+  ccPanY.copy(camera.up).applyQuaternion(camera.quaternion).multiplyScalar(dy * k);
+  camera.position.add(ccPanX).add(ccPanY); controls.target.add(ccPanX).add(ccPanY); dirty = true;
+}
+function wheelRotate(dx, dy) {
+  const off = camera.position.clone().sub(controls.target), sph = new THREE.Spherical().setFromVector3(off);
+  sph.theta -= dx * 0.0025; sph.phi = THREE.MathUtils.clamp(sph.phi + dy * 0.0025, controls.minPolarAngle, controls.maxPolarAngle);
+  camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(sph)); dirty = true;
+}
+document.addEventListener('wheel', (e) => {
+  if (!canvas.contains(e.target) && e.target !== canvas) return;
+  if (e.ctrlKey) return;   // 捏合缩放：交给 OrbitControls（zoomToCursor）
+  e.preventDefault(); e.stopPropagation(); tween = null; camTouched = true; idleTimer?.markActive();
+  if (e.altKey) wheelRotate(e.deltaX, e.deltaY); else wheelPan(e.deltaX, e.deltaY);
+}, { capture: true, passive: false });
+
+// 3) 键盘：WASD / 方向键平移，Q/E 旋转，R/F 俯仰，+/- 缩放，0 复位
+addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.target?.closest?.('input,textarea')) return;
+  const step = 26;
+  const map = { w: [0, -step], s: [0, step], a: [-step, 0], d: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step], ArrowLeft: [-step, 0], ArrowRight: [step, 0] };
+  if (map[e.key]) { e.preventDefault(); idleTimer?.markActive(); wheelPan(...map[e.key]); return; }
+  if (e.key === 'q' || e.key === 'Q') { e.preventDefault(); idleTimer?.markActive(); wheelRotate(-60, 0); return; }
+  if (e.key === 'e' || e.key === 'E') { e.preventDefault(); idleTimer?.markActive(); wheelRotate(60, 0); return; }
+  if (e.key === 'r' || e.key === 'R') { e.preventDefault(); idleTimer?.markActive(); wheelRotate(0, -60); return; }
+  if (e.key === 'f' || e.key === 'F') { e.preventDefault(); idleTimer?.markActive(); wheelRotate(0, 60); return; }
+  if (e.key === '+' || e.key === '=') { e.preventDefault(); idleTimer?.markActive(); dolly(1 / 1.25); return; }
+  if (e.key === '-' || e.key === '_') { e.preventDefault(); idleTimer?.markActive(); dolly(1.25); return; }
+  if (e.key === '0') { e.preventDefault(); idleTimer?.markActive(); select(null); camTouched = false; presets?.setActive('free'); frameStart(); }
+});
+
+// 4) 视角预设 俯视 / 斜视45° / 正面 / 自由 + 指北针（点击复位朝向为北）
+let presets = null, compass = null;
+function applyPreset(id) {
+  if (!FRAME.c) return; tween = null; camTouched = true; presets?.setActive(id);
+  const dist = Math.min(FRAME.R / Math.sin(fitHalf()) * 0.85, (controls.maxDistance || 100) * .95);
+  let dir;
+  if (id === 'top') dir = new THREE.Vector3(0.0001, 1, 0.0001);
+  else if (id === 'iso') dir = new THREE.Vector3(...MAN.camera.dir).normalize().lerp(new THREE.Vector3(0, 1, 0), 0.55).normalize();
+  else if (id === 'front') dir = new THREE.Vector3(...MAN.camera.dir).setY(0).normalize();
+  else return;   // 自由：不改视角，只是取消预设锁定
+  controls.target.copy(FRAME.c); camera.position.copy(FRAME.c).addScaledVector(dir, dist); controls.update(); dirty = true;
+}
+function headingNow() { const d = camera.position.clone().sub(controls.target); return Math.atan2(d.x, d.z); }
+function syncCompass() { compass?.setHeading(headingNow()); }
+controls.addEventListener('change', syncCompass);
+// 底部中间的视角条 + 指北针（2026-09-28）：原来在右下角，和缩放列挤在一起（「正面」顶着「对准」）、指北针整个被盖住；挪到底部中间让开右下角
+const ccBar = document.createElement('div');
+ccBar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);display:flex;align-items:center;gap:10px;z-index:6;pointer-events:none';
+document.body.appendChild(ccBar);
+presets = makePresetCluster({ root: ccBar, presets: [
+  { id: 'top', label: t('preset_top') }, { id: 'iso', label: t('preset_iso') }, { id: 'front', label: t('preset_front') }, { id: 'free', label: t('preset_free') },
+], style: { position: 'static', right: 'auto', bottom: 'auto' } });
+presets.el.querySelectorAll('button').forEach((b, i) => { b.onclick = () => applyPreset(['top', 'iso', 'front', 'free'][i]); });
+presets.setActive('free');
+compass = makeCompass({ root: ccBar, style: { position: 'static' }, onReset: () => applyPreset('front') });
+ccBar.insertBefore(compass.el, ccBar.firstChild);   // 指北针在视角条左边
+const hint = makeHintCard({ storageKey: 'edenMapV3dHintSeen', lines: LANG === 'en' ? [
+  '<b>Drag</b> to orbit around the point you press on', '<b>Wheel</b> zooms to the cursor · pinch (⌃/trackpad) also zooms', '<b>Right-drag / Shift-drag / two-finger drag</b> pans · ⌥ + two-finger scroll rotates',
+  '<b>Double-click</b> a part flies to it', '<b>WASD/arrows</b> pan · <b>Q/E</b> rotate · <b>R/F</b> tilt · <b>+/−</b> zoom · <b>0</b> resets',
+] : [
+  '<b>拖动</b>：绕按下的那一点旋转', '<b>滚轮</b> 缩放到光标 · 触控板捏合同样缩放', '<b>右键拖 / Shift+拖 / 双指拖</b> 平移 · ⌥ + 双指划动旋转',
+  '<b>双击</b> 部件飞过去', '<b>WASD/方向键</b> 平移 · <b>Q/E</b> 旋转 · <b>R/F</b> 俯仰 · <b>+/−</b> 缩放 · <b>0</b> 复位',
+] });
+hint.el.style.maxWidth = 'min(660px, 92vw)';   // 放宽：最后一行「… · 0 复位」不再断成两行（PingFang 下会断）
+hint.el.style.bottom = 'calc(env(safe-area-inset-bottom, 0px) + 64px)';   // 抬到视角条上方，不压按钮
+// 抽屉 / 右栏占位一变，视角条与提示卡跟着抬（手机上不压抽屉柄）
+C.onInsets(i => { const b = i.bottom + 'px';
+  ccBar.style.bottom = `calc(${b} + env(safe-area-inset-bottom, 0px) + 12px)`;
+  hint.el.style.bottom = `calc(${b} + env(safe-area-inset-bottom, 0px) + 64px)`; });
+
+// 5) 空闲 30 s 自动旋转（默认关，设置项 edenMap3dAutoRotate 存在即开）
+let idleTimer = null;
+function setAutoRotate(on) { controls.autoRotate = on && !REDUCED_MOTION; controls.autoRotateSpeed = 0.5; try { localStorage.setItem('edenMap3dAutoRotate', on ? '1' : '0'); } catch (e) {} }
+setAutoRotate(LSg('edenMap3dAutoRotate') === '1');
+idleTimer = makeIdleTimer(30000, () => setAutoRotate(true), () => setAutoRotate(LSg('edenMap3dAutoRotate') === '1'));
+['pointerdown', 'wheel', 'keydown'].forEach((ev) => canvas.addEventListener(ev, () => idleTimer.markActive(), { passive: true }));
+idleTimer.markActive();
+
+// 共享着色器改动：高亮 / 压暗、墙体 X 光（抖动透明，无排序问题）、剖切背面封口
+const U = {
+  uXray: { value: 0 }, uXMin: { value: 0.2 }, uCenter: { value: new THREE.Vector3() }, uCamDir: { value: new THREE.Vector3(1, 0, 0) },
+  uCap: { value: new THREE.Color('#6b6358') }, uCapOn: { value: 0 }, uTime: { value: 0 },
+  uR0: { value: 14 }, uR1: { value: 26 }, uGround: { value: new THREE.Color('#8b8f86') },   // v0.9.6：地面只留建筑周围一圈，往外淡出
+};
+function patch(mat, role) {
+  mat.userData.u = { uGain: { value: 1 }, uHi: { value: 0 }, uRoleX: { value: role === 'walls' ? 1 : 0 }, uFade: { value: 1 }, uSite: { value: role === 'site' ? 1 : 0 } };
+  mat.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, U, mat.userData.u);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+varying vec3 vWP; uniform float uGain, uHi, uRoleX, uFade, uXray, uXMin, uCapOn, uTime, uSite, uR0, uR1; uniform vec3 uCenter, uCamDir, uCap, uGround;
+float bayer4(vec2 p) { ivec2 q = ivec2(mod(p, 4.0)); int i = q.x + q.y * 4;
+  float m[16] = float[16](0.,8.,2.,10.,12.,4.,14.,6.,3.,11.,1.,9.,15.,7.,13.,5.); return (m[i] + 0.5) / 16.0; }`)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+{ float a = uFade;
+  if (uSite > 0.5) { float r = length(vWP.xz - uCenter.xz); diffuseColor.a *= 1.0 - smoothstep(uR0, uR1, r);   // 平滑透明（不用抖动，免得边缘一片网点）
+    float l = dot(diffuseColor.rgb, vec3(.3, .59, .11)); diffuseColor.rgb = mix(uGround * (0.85 + 0.3 * l), diffuseColor.rgb, 0.18); }   // 中性色、低噪声
+  if (uXray > 0.5 && uRoleX > 0.5) { float d = dot(vWP - uCenter, uCamDir); a *= mix(1.0, uXMin, smoothstep(-1.5, 1.0, d)); }
+  if (a < 0.999 && a <= bayer4(gl_FragCoord.xy)) discard;
+  diffuseColor.rgb *= uGain;
+  if (uHi > 0.0) { float p = 0.55 + 0.45 * sin(uTime * 4.0); diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 1.35 + vec3(0.30, 0.22, 0.05), uHi * p); }
+  if (uCapOn > 0.5 && !gl_FrontFacing) diffuseColor.rgb = uCap; }`);
+  };
+  mat.customProgramCacheKey = () => 'v3d';
+}
+
+// ---------------- 载入 ----------------
+let MAN = null, root = null, meshes = {}, HS = [], sel = null, mode = 'ext';
+const box = new THREE.Box3(), v3 = new THREE.Vector3();
+const stats = { glb: '', tier: TIER, dpr: renderer.getPixelRatio(), t0: performance.now(), tManifest: 0, tGlb: 0, tFirst: 0, bytes: 0, tris: 0, draws: 0, gpuMB: 0 };
+let LP = null; const lp = () => LP || (LP = mountProgress($('#load > div'), { labelEl: $('#load .txt'), lang: LANG }));
+function setLoad(loaded, total) { lp().label(t('loading', { p: '' }).trim()).set(loaded, total, 'bytes'); }
+function fail(r) { const ld = $('#load'); ld.classList.remove('done'); lp().fail(t('fail')); $('#load .acts').hidden = false; stats.fail = r; }
+let slowT = 0, lastProg = 0;
+function watch() { clearInterval(slowT); lastProg = performance.now(); slowT = setInterval(() => { if (performance.now() - lastProg > 15000) { lp().slow(t('slow')); $('#load .acts').hidden = false; } }, 1000); }
+
+async function load() {
+  $('#load .acts').hidden = true; $('#load').classList.remove('done'); lp().reset(t('loading', { p: '' }).trim()); watch();
+  try {
+    const mr = await fetch(`${MODEL}/manifest.json`, { cache: 'no-cache' }); if (!mr.ok) throw new Error('manifest ' + mr.status);
+    MAN = await mr.json(); stats.tManifest = performance.now() - stats.t0; applyLang();
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    const gltf = await new Promise((res, rej) => loader.load(`${MODEL}/${(TIER === 'low' && MAN.glb_low) || MAN.glb}`, res, e => { lastProg = performance.now(); if (e.total) stats.bytes = e.total; setLoad(e.loaded || 0, e.total || 0); }, rej));
+    stats.tGlb = performance.now() - stats.t0;
+    setup(gltf.scene);
+    clearInterval(slowT); lp().done();
+    renderer.render(scene, camera); stats.tFirst = performance.now() - stats.t0;
+    requestAnimationFrame(() => $('#load').classList.add('done'));
+    const h = flyWait || Q.get('hotspot'); flyWait = null; if (h) fly(h, true);
+  } catch (e) { console.error('[viewer3d]', e); clearInterval(slowT); fail(String(e && e.message || e)); }
+}
+$('#retry').onclick = () => { disposeRoot(); load(); };
+
+function roleOf(name) {
+  const g = MAN.groups || {};
+  if ((g.roof || []).includes(name)) return 'roof';
+  if ((g.walls || []).includes(name)) return 'walls';
+  if ((g.interior || []).includes(name)) return 'interior';
+  if ((g.floors || []).some(f => f.id === name)) return 'floor';
+  if ((g.site || []).includes(name)) return 'site';
+  return name.startsWith('props_') ? 'props' : 'other';
+}
+function setup(sc) {
+  root = sc; scene.add(root); root.updateMatrixWorld(true);
+  root.traverse(o => {
+    if (!o.isMesh) return;
+    const role = roleOf(o.name), map = o.material.map || null;
+    if (map) { map.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy()); map.colorSpace = THREE.SRGBColorSpace; }
+    o.material.dispose();
+    o.material = new THREE.MeshBasicMaterial({ map, side: THREE.DoubleSide, transparent: role === 'site' });
+    patch(o.material, role);
+    o.userData.role = role; meshes[o.name] = o;
+    o.matrixAutoUpdate = false;   // 矩阵已由 root.updateMatrixWorld 算好（meshopt 量化把解码缩放放在节点上）
+    stats.tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+    stats.draws++;
+    const gpos = o.geometry.attributes; for (const k in gpos) stats.gpuMB += gpos[k].array.byteLength / 1048576;
+    if (o.geometry.index) stats.gpuMB += o.geometry.index.array.byteLength / 1048576;
+    if (map?.image) stats.gpuMB += map.image.width * map.image.height * 4 * 1.33 / 1048576;
+  });
+  // 墙体轮廓线（内透时保留）
+  const wallsLines = new THREE.Group(); wallsLines.name = '__edges';
+  for (const n of MAN.groups.walls || []) { const m = meshes[n]; if (!m) continue;
+    const eg = new THREE.EdgesGeometry(m.geometry, 35); const ln = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: 0xe6c36a, transparent: true, opacity: 0.55, depthTest: true }));
+    ln.matrixAutoUpdate = false; ln.matrix.copy(m.matrix); ln.visible = false; wallsLines.add(ln); }
+  scene.add(wallsLines); meshes.__edges = wallsLines;
+  const B = MAN.groups.building; U.uCenter.value.set((B.min[0] + B.max[0]) / 2, 0, (B.min[2] + B.max[2]) / 2);
+  { const fr = new THREE.Box3(); for (const n of MAN.camera.frame || []) if (meshes[n]) fr.expandByObject(meshes[n]);
+    const half = fr.isEmpty() ? Math.hypot(B.max[0] - B.min[0], B.max[2] - B.min[2]) / 2 : Math.hypot(fr.max.x - fr.min.x, fr.max.z - fr.min.z) / 2;
+    U.uR0.value = half * 1.05; U.uR1.value = half * 1.6; }
+  HS = (MAN.hotspots || []).map((h, i) => { const m = meshes[h.mesh]; if (!m) return null;
+    box.setFromObject(m); const c = h.focus ? new THREE.Vector3(...h.focus) : box.getCenter(new THREE.Vector3());
+    const r = h.radius || box.getSize(v3).length() / 2;
+    // 标记锚点（v0.9.6）：没给 focus 时用网格上离包围盒中心最近的顶点——围栏这类「一圈」的网格，包围盒中心落在空地上（热点 8 飘在空地）
+    let a = c;
+    if (!h.focus) { const pos = m.geometry.attributes.position, p = new THREE.Vector3(); let best = Infinity; const step = Math.max(1, Math.floor(pos.count / 4000));
+      for (let k = 0; k < pos.count; k += step) { p.fromBufferAttribute(pos, k).applyMatrix4(m.matrixWorld); const d = p.distanceToSquared(c); if (d < best) { best = d; a = p.clone(); } } }
+    return { ...h, n: i + 1, m, c, r, a }; }).filter(Boolean);
+  buildList(); buildPins(); buildFlows();
+  // 起始视角：按 camera.frame 的网格自动取景
+  box.makeEmpty(); for (const n of MAN.camera.frame || []) if (meshes[n]) box.expandByObject(meshes[n]);
+  if (box.isEmpty()) box.setFromObject(root);
+  resize();
+  const c = box.getCenter(new THREE.Vector3()), R = box.getSize(v3).length() / 2;
+  controls.minDistance = MAN.camera.min || 1; controls.maxDistance = MAN.camera.max || 100; controls.maxPolarAngle = MAN.camera.maxPolar || 1.45;
+  FRAME.c = c; FRAME.R = R; frameStart();
+  SITE.setFromObject(root); SITE.expandByScalar(-2);
+  const s = MAN.section; if (s) { const r = $('#cutH'); r.min = s.min; r.max = s.max; r.value = s.default; showCut(); }
+  controls.update(); setMode(mode);
+}
+// 竖屏按水平视角取景（手机上横向才是短边）
+function fitHalf() { const v = THREE.MathUtils.degToRad(camera.fov / 2), a = innerWidth > 0 && innerHeight > 0 ? innerWidth / innerHeight : 1; return Math.max(.12, Math.min(v, Math.atan(Math.tan(v) * a))); }
+// 起始取景（v0.9.6）：iframe 刚建时宽高可能是 0（角度算成 0 → 距离无穷大 → 相机 NaN，看到一面暗「幕布」）；现在限幅、离建筑足够远，
+// 用户还没动过相机时，尺寸变了（面板展开、横竖屏）就重新取景
+const FRAME = { c: null, R: 0 }; let camTouched = false;
+function frameStart() {
+  if (!FRAME.c) return;
+  const dir = new THREE.Vector3(...MAN.camera.dir).normalize();
+  let dist = Math.min(FRAME.R / Math.sin(fitHalf()) * 0.85, (controls.maxDistance || 100) * .95); dist = Math.max(dist, (controls.minDistance || 1) * 2);
+  START.t.copy(FRAME.c); START.p.copy(FRAME.c).addScaledVector(dir, dist);
+  const B = MAN.groups.building; if (B) { const bb = new THREE.Box3(new THREE.Vector3(...B.min), new THREE.Vector3(...B.max)).expandByScalar(1);
+    while (bb.containsPoint(START.p)) START.p.addScaledVector(dir, 2); }
+  controls.target.copy(START.t); camera.position.copy(START.p); controls.update(); dirty = true;
+}
+const START = { p: new THREE.Vector3(), t: new THREE.Vector3() }, SITE = new THREE.Box3();
+function disposeRoot() {
+  if (!root) return;
+  scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { o.material.map?.dispose(); o.material.dispose(); } });
+  scene.remove(root); if (meshes.__edges) scene.remove(meshes.__edges);
+  root = null; meshes = {}; HS = []; $('#pins').textContent = ''; stats.tris = stats.draws = stats.gpuMB = 0;
+}
+
+// ---------------- 列表 / 标记 / 卡片 ----------------
+function buildList() {
+  const ol = $('#list ol'); ol.textContent = '';
+  for (const h of HS) { const li = document.createElement('li'), b = document.createElement('button'); b.type = 'button';
+    b.innerHTML = `<i>${h.n}</i><span></span>`; b.querySelector('span').textContent = L(h.name); b.dataset.id = h.id;
+    if (sel === h.id) b.setAttribute('aria-current', 'true');
+    b.onclick = () => fly(h.id); li.appendChild(b); ol.appendChild(li); }
+  C.sheet.label('parts', `${esc(t('parts'))} <em>${HS.length}</em>`, `${esc(t('parts').slice(0, 1))}<br>${HS.length}`);
+  document.querySelectorAll('.pin').forEach(p => { const h = HS.find(x => x.id === p.dataset.id); if (h) p.setAttribute('aria-label', L(h.name)); });
+}
+function buildPins() {
+  const box = $('#pins'); box.textContent = '';
+  for (const h of HS) { const b = document.createElement('button'); b.type = 'button'; b.className = 'pin'; b.dataset.id = h.id; b.innerHTML = `<span>${h.n}</span>`;
+    b.setAttribute('aria-label', L(h.name)); b.onclick = e => { e.stopPropagation(); fly(h.id); }; box.appendChild(b); h.pin = b; }
+}
+const pv = new THREE.Vector3();
+// UI 安全区（2026-09-28）：编号圈不压顶部视图条、右侧抽屉 / 控制列、底部视角条与提示卡；出屏的收到屏幕内边缘
+function uiSafe() {
+  const pad = 12;
+  let l = 8 + pad, t = 8 + pad, r = innerWidth - 8 - pad, b = innerHeight - 8 - pad;
+  const block = (el, side) => { if (!el || el.hidden) return; const g = el.getBoundingClientRect(); if (g.width < 2 || g.height < 2) return;
+    if (side === 'top') t = Math.max(t, g.bottom + pad);
+    else if (side === 'right') r = Math.min(r, g.left - pad);
+    else b = Math.min(b, g.top - pad); };
+  block(C.root.querySelector('.c3-top'), 'top');
+  block(C.col, 'right');
+  block(C.sheet.el, C.sheet.mode === 'rail' ? 'right' : 'bottom');   // 桌面右栏挡右侧，手机抽屉挡底部
+  block(ccBar, 'bottom'); block(hint.el, 'bottom');
+  return { l, t, r: Math.max(l + 60, r), b: Math.max(t + 60, b) };
+}
+function placePins() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  // v0.9.6 标记避让：屏幕上离得太近（< 30 px）的标记沿一圈错开，不再叠成一个（7 压在 1 / 3 上）
+  const placed = [];
+  const S = uiSafe(), inSafe = ([x, y]) => [Math.min(Math.max(x, S.l), S.r), Math.min(Math.max(y, S.t), S.b)];   // 收参不闭包：x/y 在循环体内，箭头里引用外层会 ReferenceError
+  for (const s of HS) { pv.copy(s.a || s.c); pv.project(camera);
+    const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05 && !(mode === 'cut' && (s.a || s.c).y > cutY() + 0.2);
+    s.pin.hidden = !vis; s.pin.classList.toggle('on', sel === s.id); if (!vis) continue;
+    let x = (pv.x + 1) / 2 * w, y = (1 - pv.y) / 2 * h;
+    [x, y] = inSafe([x, y]);
+    if (innerWidth <= 640) {   // U12：手机上挤在一起的编号直接隐藏（选中的除外），不再绕圈错开
+      if (sel !== s.id && placed.some(p => Math.hypot(p[0] - x, p[1] - y) < 26)) { s.pin.hidden = true; continue; }
+      placed.push([x, y]); s.pin.style.transform = `translate(${x}px, ${y}px)`; continue; }
+    const x0 = x, y0 = y;   // 桌面也近距离避让：围着原位置 4 圈 × 8 向找空位（隔圈错开半格，半径 36 起），全程收在安全区里
+    for (let k = 0; k < 32 && placed.some(p => Math.hypot(p[0] - x, p[1] - y) < 34); k++) {
+      const ang = -Math.PI / 2 + (k % 8) * Math.PI / 4 + ((k >> 3) % 2) * Math.PI / 8, r = 36 * (1 + (k >> 3));
+      [x, y] = inSafe([x0 + Math.cos(ang) * r, y0 + Math.sin(ang) * r]); }
+    placed.push([x, y]); s.pin.style.transform = `translate(${x}px, ${y}px)`; }
+}
+// ---------------- 流向模式（manifest.flows：折线 + 沿线移动的小球，示意牛奶 / 清洗液 / 真空 / 排水的走向）----------------
+let FL = [], flowOn = false; const flowG = new THREE.Group(); flowG.visible = false; flowG.renderOrder = 10;
+function buildFlows() {
+  scene.add(flowG); while (flowG.children.length) { const c = flowG.children.pop(); c.geometry?.dispose?.(); c.material?.dispose?.(); }   // 换色觉模式（E7）后重建，先清掉旧管线 / 小球，不然叠两份
+  FL = [];
+  for (const f of MAN.flows || []) {
+    const path = new THREE.CurvePath(); const P = f.pts.map(p => new THREE.Vector3(...p));
+    for (let i = 0; i < P.length - 1; i++) if (P[i].distanceTo(P[i + 1]) > 1e-4) path.add(new THREE.LineCurve3(P[i], P[i + 1]));
+    const col = new THREE.Color(cvdColor(f.color || '#ffffff')), len = path.getLength();
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(path, Math.max(8, path.curves.length * 6), 0.025, 6, false),
+      new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.45, depthTest: false }));
+    tube.renderOrder = 10; flowG.add(tube);
+    const n = Math.max(6, Math.round(len / 0.45)), dots = new THREE.InstancedMesh(new THREE.SphereGeometry(0.055, 10, 8), new THREE.MeshBasicMaterial({ color: col, depthTest: false }), n);
+    dots.renderOrder = 11; flowG.add(dots);
+    FL.push({ f, path, len, dots, n, tube });
+  }
+  const ol = $('#flows ol'); ol.textContent = '';
+  for (const x of FL) { const li = document.createElement('li'), b = document.createElement('button'); b.type = 'button'; b.dataset.id = x.f.id;
+    b.innerHTML = `<i style="background:${cvdColor(x.f.color)}"></i><span></span>`; b.querySelector('span').textContent = L(x.f.name);
+    b.onclick = () => showFlow(x.f.id); li.appendChild(b); ol.appendChild(li); }
+  C.sheet.showTab('flows', FL.length > 0); C.sheet.label('flows', `${esc(t('flows'))} <em>${FL.length}</em>`, `${esc(t('flows').slice(0, 1))}<br>${FL.length}`);
+}
+const _m4 = new THREE.Matrix4();
+function stepFlows(now) {
+  for (const x of FL) { const sp = (x.f.speed || 0.6) / Math.max(1, x.len);
+    for (let k = 0; k < x.n; k++) { const u = ((k / x.n) + now / 1000 * sp) % 1; _m4.makeTranslation(x.path.getPointAt(u)); x.dots.setMatrixAt(k, _m4); }
+    x.dots.instanceMatrix.needsUpdate = true; }
+}
+// UI v2（spec §4）：流向开关与流向图例合并——打开抽屉「流向」页即显示流向线，离开即隐藏；页内「固定显示」让它一直开着
+let flowPin = false;
+function setFlows(on) {
+  flowOn = on; flowG.visible = on; $('#flowBtn').setAttribute('aria-pressed', String(flowPin));
+  if (on) { if (mode === 'ext') setMode('xray'); }
+  else { for (const x of FL) { x.tube.material.opacity = 0.45; x.dots.visible = true; } document.querySelectorAll('#flows li button').forEach(b => b.removeAttribute('aria-current')); }
+  dirty = true; post({ type: 'v3d:state', mode, hotspot: sel, flows: on });
+}
+function showFlow(id) {
+  const x = FL.find(y => y.f.id === id), c = $('#card'); if (!x) return;
+  for (const y of FL) { y.tube.material.opacity = y === x ? 0.8 : 0.2; y.dots.visible = y === x; }
+  c.querySelector('h3').textContent = L(x.f.name); c.querySelector('p').textContent = L(x.f.desc);
+  c.querySelector('small').textContent = LANG === 'en' ? x.f.name.zh : (x.f.name.en || ''); c.hidden = false;
+  document.querySelectorAll('#flows li button').forEach(b => b.toggleAttribute('aria-current', b.dataset.id === id)); dirty = true;
+}
+const PHONE = () => innerWidth <= 640;
+$('#flowBtn').onclick = () => { flowPin = !flowPin; setFlows(flowPin || (C.sheet.tab === 'flows' && C.sheet.open)); };
+function showCard(id) {
+  const h = HS.find(x => x.id === id), c = $('#card'); if (!h) { c.hidden = true; return; }
+  c.querySelector('h3').textContent = L(h.name); c.querySelector('p').textContent = L(h.desc);
+  c.querySelector('small').textContent = LANG === 'en' ? h.name.zh : (h.name.en || ''); c.hidden = false;
+  C.sheet.setTab('info', C.sheet.state === 'full' ? 'full' : 'half');   // 点热点 → 抽屉半开到「说明」，取景让开抽屉（C.onInsets）
+}
+$('#card .x').onclick = () => select(null);
+function select(id) {
+  sel = id;
+  for (const s of HS) s.m.material.userData.u.uHi.value = s.id === id ? 1 : 0;
+  for (const m of Object.values(meshes)) if (m.material?.userData?.u) m.material.userData.u.uGain.value = id && m.userData.role === 'props' && !HS.some(s => s.id === id && s.m === m) ? 0.72 : 1;
+  document.querySelectorAll('#list li button').forEach(b => b.toggleAttribute('aria-current', b.dataset.id === id));
+  if (!id && C.sheet.tab === 'info') C.sheet.set('peek');
+  showCard(id); dirty = true; post({ type: 'v3d:state', mode, hotspot: id });
+}
+
+// ---------------- 飞行 ----------------
+let tween = null;
+const ease = x => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+let flyWait = null;
+function fly(id, instant) {
+  if (!root) { flyWait = id; return true; }   // 模型还没到：到了再飞
+  const h = HS.find(x => x.id === id); if (!h) return false;
+  select(id);
+  let dir;
+  if (h.view) dir = new THREE.Vector3(...h.view).normalize();
+  else { dir = camera.position.clone().sub(controls.target); dir.y = 0; dir.normalize(); dir.y = Math.tan(THREE.MathUtils.degToRad(50)); dir.normalize(); }
+  const dist = Math.max(controls.minDistance * 1.5, h.r / Math.sin(fitHalf()));
+  const to = { t: h.c.clone(), p: h.c.clone().addScaledVector(dir, dist) };
+  if (mode === 'cut' && h.c.y > cutY()) setCut(Math.min(+$('#cutH').max, h.c.y + 0.8));
+  if (instant || matchMedia('(prefers-reduced-motion: reduce)').matches) { controls.target.copy(to.t); camera.position.copy(to.p); controls.update(); dirty = true; return true; }
+  tween = { t0: performance.now(), dur: 900, fp: camera.position.clone(), ft: controls.target.clone(), to };
+  return true;
+}
+function stepTween(now) {
+  if (!tween) return;
+  const k = Math.min(1, (now - tween.t0) / tween.dur), e = ease(k);
+  // 走弧线：中途抬高一点，避免穿墙的观感
+  const lift = Math.sin(Math.PI * k) * Math.min(6, tween.fp.distanceTo(tween.to.p) * 0.25);
+  camera.position.lerpVectors(tween.fp, tween.to.p, e); camera.position.y += lift;
+  controls.target.lerpVectors(tween.ft, tween.to.t, e);
+  controls.update(); dirty = true;
+  if (k >= 1) tween = null;
+}
+['pointerdown', 'wheel'].forEach(ev => canvas.addEventListener(ev, () => { tween = null; camTouched = true; }, { passive: true }));
+canvas.addEventListener('pointerdown', () => C.dragStart()); addEventListener('pointerup', () => C.dragEnd());
+
+// ---------------- 显示方式 ----------------
+const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1.6);
+const cutY = () => +$('#cutH').value;
+function showCut() { $('#cutV').textContent = (+$('#cutH').value).toFixed(1) + ' m'; }
+function setCut(y) { $('#cutH').value = y; showCut(); cutPlane.constant = y; dirty = true; }
+$('#cutH').addEventListener('input', () => setCut(cutY()));
+function setMode(m) {
+  mode = m;
+  C.setView(m); C.showSub(m === 'cut');
+  $('#cut').hidden = m !== 'cut';
+  U.uXray.value = m === 'xray' ? 1 : 0;
+  if (meshes.__edges) meshes.__edges.children.forEach(l => { l.visible = m === 'xray'; });
+  renderer.clippingPlanes = m === 'cut' ? [cutPlane] : [];
+  U.uCapOn.value = m === 'cut' ? 1 : 0;
+  if (m === 'cut') setCut(cutY());
+  dirty = true; post({ type: 'v3d:state', mode, hotspot: sel });
+}
+// (a) 屋顶自动掀开：外观模式下相机拉近到建筑里 / 附近时屋顶上移淡出；内透 / 剖切直接藏掉
+let roofK = 0;
+const BLD = new THREE.Box3();
+function updateRoof(dt) {
+  if (!MAN) return;
+  const B = MAN.groups.building; BLD.min.set(...B.min); BLD.max.set(...B.max);
+  const d = BLD.distanceToPoint(camera.position), near = BLD.containsPoint(controls.target) && camera.position.distanceTo(controls.target) < 16;
+  const want = mode !== 'ext' ? 1 : (near || d < 1.5 ? 1 : 0);
+  const k2 = roofK + Math.sign(want - roofK) * Math.min(Math.abs(want - roofK), dt / 350);
+  if (k2 === roofK) return; roofK = k2; dirty = true;
+  for (const n of MAN.groups.roof || []) { const m = meshes[n]; if (!m) continue;
+    m.visible = roofK < 0.999; m.material.userData.u.uFade.value = 1 - roofK;
+    m.userData.m0 ??= m.matrix.clone(); m.matrix.copy(m.userData.m0).premultiply(new THREE.Matrix4().makeTranslation(0, roofK * 3, 0)); }
+}
+
+// ---------------- 拾取 ----------------
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let down = null;
+canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+canvas.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 || performance.now() - down.t > 500) return; down = null;
+  const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const cand = Object.values(meshes).filter(m => m.isMesh && m.visible && m.userData.role !== 'site' && !(m.userData.role === 'roof' && roofK > 0.5) && !(mode === 'xray' && m.userData.role === 'walls'));
+  const hits = ray.intersectObjects(cand, false).filter(h => mode !== 'cut' || h.point.y <= cutY());
+  const hit = hits[0], hs = hit && HS.find(s => s.m === hit.object);
+  if (hs) fly(hs.id); else if (sel) select(null);
+});
+
+// ---------------- 循环 ----------------
+function resize() { const w = innerWidth, h = innerHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h;
+  const ins = C.insets(); camera.setViewOffset(w, h, ins.right / 2, ins.bottom / 2, w, h);   // 取景中心让开抽屉 / 右栏
+  camera.updateProjectionMatrix(); dirty = true;
+  if (root && !camTouched && !tween && !sel) frameStart(); }
+addEventListener('resize', resize);
+const FT = []; let last = performance.now(), running = true;
+function frame(now) {
+  if (!running) return;
+  requestAnimationFrame(frame);
+  const dt = Math.min(100, now - last); last = now;
+  stepTween(now); controls.update(); updateRoof(dt);
+  if (!SITE.isEmpty()) { const c = controls.target, d = c.clone().clamp(SITE.min, SITE.max).sub(c); if (d.lengthSq() > 0) { c.add(d); camera.position.add(d); } }   // 平移不出场地
+  if (camera.position.y < 0.3) camera.position.y = 0.3;
+  if (sel) { U.uTime.value = now / 1000; dirty = true; }
+  if (flowOn) { stepFlows(now); dirty = true; }
+  if (mode === 'xray') { const d = camera.position.clone().sub(U.uCenter.value); d.y = 0; if (d.lengthSq() > 1e-6) U.uCamDir.value.copy(d.normalize()); }
+  if (FPS_ON) { FT.push(dt); if (FT.length > 600) FT.shift();
+    const f = $('#fps'); f.hidden = false; f.textContent = `${(1000 / (FT.slice(-30).reduce((a, b) => a + b, 0) / Math.min(30, FT.length))).toFixed(0)} fps · ${TIER} · dpr ${renderer.getPixelRatio()}`; }
+  if (!dirty || !root) return;
+  dirty = false;
+  renderer.render(scene, camera); placePins();
+}
+requestAnimationFrame(frame);
+document.addEventListener('visibilitychange', () => { dirty = true; });
+addEventListener('pagehide', () => { running = false; disposeRoot(); renderer.dispose(); renderer.forceContextLoss?.(); });
+
+// ---------------- 宿主消息 ----------------
+let bench = null;
+addEventListener('message', e => {
+  if (e.source !== parent) return;   // 只认嵌入它的查看器（A-6）
+  const d = e.data || {};
+  if (d.type === 'estate:lang') { LANG = d.lang === 'en' ? 'en' : 'zh'; applyLang(); }
+  if (d.type === 'estate:theme') setTheme(d.theme);
+  if (d.type === 'estate:quality' && typeof d.q === 'string' && renderer) {   // 设置「三维画质」即时生效（毛玻璃 + 像素比）
+    document.documentElement.classList.toggle('noblur', TIER === 'low' || d.q === '1');
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, d.q === '1' ? 1 : d.q === '2' ? 2 : DPR_CAP)); renderer.setSize(innerWidth, innerHeight); dirty = true; }
+  if (d.type === 'estate:inset') { document.body.style.setProperty('--inset', Math.max(0, (d.left | 0) - 8) + 'px'); }
+  if (d.type === 'estate:cvd' && typeof d.mode === 'string') { CVD = d.mode; document.documentElement.classList.toggle('cvd', CVD !== '0'); document.documentElement.dataset.cvd = CVD; if (FL.length) buildFlows(); }
+  if (d.type === 'estate:fps' && typeof d.on === 'boolean') { FPS_ON = d.on; if (!d.on) { $('#fps').hidden = true; $('#fps').textContent = ''; } dirty = true; }
+  if (d.type === 'v3d:fly') fly(d.hotspot);
+  if (d.type === 'v3d:mode') setMode(d.mode);
+  if (d.type === 'v3d:flows') setFlows(!!d.on);
+});
+
+// 调试 / 测量接口
+window.__v3d = {
+  stats, get ft() { return FT.slice(); }, setMode, fly, select, setFlows, showFlow, get flows() { return flowOn; }, get mode() { return mode; }, get ready() { return !!root; }, info: () => renderer.info,
+  // 匀速绕目标转 ms 毫秒，返回帧时间（每帧强制渲染）
+  orbitBench(ms = 4000) { return new Promise(res => { const out = []; const t0 = performance.now(); let lt = t0;
+    const tick = now => { out.push(now - lt); lt = now; const a = (now - t0) / ms * Math.PI * 2 * 0.5;
+      const off = camera.position.clone().sub(controls.target); off.applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.01); camera.position.copy(controls.target).add(off); controls.update(); dirty = true;
+      if (now - t0 < ms) requestAnimationFrame(tick); else res(out.slice(2)); };
+    requestAnimationFrame(tick); }); },
+  home() { tween = null; camera.position.copy(START.p); controls.target.copy(START.t); controls.update(); dirty = true; },
+  view(p, tg) { camera.position.set(...p); controls.target.set(...tg); controls.update(); dirty = true; },
+  // 测试探针（相机控制回归，U，2026-09-28）：只读，不改变行为
+  get camDist() { return camera.position.distanceTo(controls.target); },
+  get target() { return controls.target.toArray(); },
+};
+applyLang();
+post({ type: 'estate:ready' });   // 界面已就绪；模型进度在本页自己的加载层里显示（失败有「重试」）
+load();
+</script>
+</body>
+</html>
