@@ -8,8 +8,11 @@ renames). Implementation of the fixes below is proposed for follow-up commits af
 Update 2026-09-30: P0 (G1, G6) and P1 (G2, G3) are implemented - commits
 `040baf9`, `04f170f`, `643e087`. P2 is implemented - commits `785c421`
 (MVUBridge, sole owner of the Mvu/SillyTavern globals) and `28d646e`
-(ContextPipeline, the pure chat-context pipeline of §4). P3 remains open
-(docs/todo.md §1).
+(ContextPipeline, the pure chat-context pipeline of §4). P3-A (the light
+contract batch: DepthSystem describe summary + fog key collapsing per §2,
+Estate3D manifest contract per §7) is implemented - commits `709c1c9`
+(DepthSystem) and `43c053a` (Estate3D). Remaining P3: LayerRegistry (§6) and
+CharacterRosterSystem (§5).
 
 Part 1 is a diagnosis of the "background tab: API finished, front end frozen" class of bugs and
 an audit of the streaming-period pipeline. Part 2 is a decoupling RFC for the six subsystems and
@@ -183,6 +186,12 @@ Current: `map/core/depth.mjs` (depth math + fog exploration — already the sing
   `map/app/fog.mjs`. **Boundary**: keep `depth.mjs` pure (no DOM, no host APIs); move fog
   persistence keys behind the existing storage adapter; expose `DepthSystem.describe()` for
   summaries. Risk: low — mostly a documentation + summary-shape task (4 h).
+  **Implemented 2026-09-30 (`709c1c9`)**: `describe()` landed in `depth.mjs`
+  (`{ maxDepth, currentHaze, exploredRatio, fogEnabled }`, purity machine-checked); the fog keys
+  collapsed into `core/storage.mjs` as the single definition point (`FOG_KEY` / `FOG_LOCAL_KEY`
+  exports) and `app/fog.mjs` consumes the storage adapter directly instead of hardcoding key
+  literals — the never-toggled switch now honors its registered default '1'. Tests:
+  `tests/depth_system.test.mjs`.
 
 ### 3. MVUBridge
 
@@ -248,6 +257,16 @@ Current: `map/estate/main.js` (three.js loop with pause/resume) + `map/props/vie
   pipeline emits a **manifest** per model (glb path, floors, hotspots, texture budget, license
   fields — `tools/landmark.py` already produces something close for landmarks), and the viewer
   consumes only `Estate3D.describe()`; no hardcoded model paths in viewer code (~8 h).
+  **Implemented 2026-09-30 (`43c053a`)**: contract module `map/core/estate3d.mjs` (schema
+  `{ id, glb, floors, hotspots, budget, license }`, three glb shapes + legacy `glb_low`,
+  unknown-field tolerance, base-relative path resolution, low-tier fallback to std,
+  `Estate3D.describe()` six-key summary); `estate/model/manifest.json` adopted the schema
+  (glb parts site/house, floors cross-checked against `eden_estate_rooms.json`, data paths,
+  budget constants, license); `estate/main.js` and `props/viewer3d.html` load glb / data /
+  hotspots / tier constants from the manifest only (no hardcoded or assembled asset paths; the
+  built-in 'dairy' default model is gone; `estate:resume` chain untouched). Tests:
+  `tests/estate3d_manifest.test.mjs` (schema + disk reality checks across estate and all 36
+  landmark manifests).
 
 ### 8. Phased plan (estimates)
 
