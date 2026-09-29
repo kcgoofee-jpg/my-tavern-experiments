@@ -11,7 +11,7 @@ scattered across roughly 25 documents, and several of them contradicted each oth
 |---|---|
 | Product direction, versions, user decisions | `ROADMAP.md` |
 | Session handoff (what the last agent did / left) | `docs/handoff.md` |
-| UI refactor backlog (U1–U18) | `docs/ui-refactor-backlog.md` |
+| UI refactor backlog (U1–U23) | `docs/ui-refactor-backlog.md` |
 | Buildings and 3D models, per marker | `docs/card-buildings.md` |
 | Card omissions (what the card has that the map lacks) | `docs/card-omissions.md` |
 | Events | `docs/event-taxonomy.md` (counts) + `docs/map-events.md` (implementation) |
@@ -39,6 +39,9 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   currently only has `host_stub.mjs`, a fake host. Everything else in the suite runs against the stub.
   (`docs/handoff.md`, "新顺序" code item 1.)
 - [ ] `eden-map.js` 继续拆分 — "按 `spec.md` 走完整重构"（`ROADMAP.md:52`），U1–U12 实测问题同批（`ROADMAP.md:51`）。（预估 ~24h）
+- [ ] 移动端窄屏自适应与交互死区抛光（U19–U23，预估 ~6h）：庄园房间 Hover 浮层交互死区（桥接防抖或 Click-to-Pin）、
+  设置弹窗顶栏穿模 + Status 文案缺空格、世界图 Marker/Label 碰撞避让、顶栏标题过早截断、升级 Banner 过高。
+  （`docs/ui-refactor-backlog.md`「用户手机实测 2026-09-30」节，Log-and-Park 入账）
 - [ ] MVU 迷雾 / 结构小任务 — "「不要漏测」"（`ROADMAP.md:47`）。（预估 ~4h）
 - [ ] `card-omissions` 遗留：A18/A20 泛称做图层、C2 治安梯度、~~C3 层间视线~~ ✅（2026-09-29 图例说明，`59ecc0f`）、~~C4 天气~~ ✅（2026-09-29 降雨事件·默认关，`59ecc0f`）、C8/C9 卡片与编号解析（预估 ~8h）
   （`docs/card-omissions.md:74,76,106-108,112-113`）；B19 新事件类型「~~转化仪式~~ ✅（`31df154`）/ 临时管控 / 登记年检 / 评级复核」
