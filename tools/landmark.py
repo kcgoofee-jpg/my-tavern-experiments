@@ -357,11 +357,22 @@ def cmd_new(a):
 
 def collect_stage(stage, final):
     """把渲染中间产物（同步目录里的仓库相对路径）收到最终位置。
+
     为什么要有这一步：队列会把 draft 派到云端，而 `docs/` 不进同步（sync.sh --exclude docs/），
-    绝对路径在远端也不存在 —— 2026-09-29 的事故就是这么白跑了一次还记成 ok。"""
+    绝对路径在远端也不存在 —— 2026-09-29 的事故就是这么白跑了一次还记成 ok。
+
+    每次收图前先把上一轮挪成 `_rN`（N = 第几轮），因为以前每轮都写同一个文件名，用户想看
+    「改了几轮」时只剩最后一轮。现在 `<id>_draft_c1.jpg` 恒为最新一轮，`_r1/_r2/…` 是历史轮次。"""
     if not os.path.exists(stage):
         return False
     os.makedirs(os.path.dirname(final), exist_ok=True)
+    if os.path.exists(final):
+        stem, ext = os.path.splitext(final)
+        n = 1
+        while os.path.exists(f'{stem}_r{n}{ext}'):
+            n += 1
+        shutil.move(final, f'{stem}_r{n}{ext}')
+        say(f'  上一轮留档：{rel(stem)}_r{n}{ext}')
     shutil.copyfile(stage, final)
     say(f'  收图：{rel(stage)} → {rel(final)}')
     return True
