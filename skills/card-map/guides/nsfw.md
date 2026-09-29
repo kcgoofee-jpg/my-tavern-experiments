@@ -1,6 +1,6 @@
 # NSFW 指引（用户填，空表示按 skill 默认流程，无额外限制或放开）
 
-本文件由用户自己决定要不要写、写多细；skill 本身不设内容立场，也不会做关键词过滤（见仓库 `docs/tech-compat-no-moderation` 一类的既有原则）。
+本文件由用户自己决定要不要写、写多细；skill 本身不设内容立场，也不会做关键词过滤（见仓库既有的内容边界原则：`docs/card-digest.md`、`docs/card-omissions.md` §4、`docs/rejected.md`——原文引用的 `docs/tech-compat-no-moderation` 在本仓库不存在）。
 
 ## 要不要做
 <!-- 哪些成人向内容属于范围内，哪些不做 -->

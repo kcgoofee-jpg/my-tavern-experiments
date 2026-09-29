@@ -34,6 +34,10 @@ ALLOW = {
 }
 
 ARCHIVE_PREFIXES = ("docs/archive/", "docs/history/")
+# Tool-generated scaffolds (`tools/landmark.py new`) stay in the template language: translating them
+# by hand would break the tool's own round-trip and gapcheck's side-by-side diff.
+# See docs/language-policy.md, "Exception: tool-generated templates".
+TEMPLATE_PREFIXES = ("docs/landmarks/",)
 
 # CJK Unified Ideographs (+ A), CJK punctuation, fullwidth forms, CJK compat ideographs.
 CJK_RE = re.compile(
@@ -78,7 +82,9 @@ def exempt(path):
         return True
     if path.endswith(".zh.md"):
         return True
-    return path.startswith(ARCHIVE_PREFIXES)
+    if path.startswith(ARCHIVE_PREFIXES):
+        return True
+    return path.startswith(TEMPLATE_PREFIXES)
 
 
 def main():

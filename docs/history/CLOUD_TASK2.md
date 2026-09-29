@@ -1,5 +1,7 @@
 # 云端任务 2：真实路网改造 + 上层云海 + 手机端核实
 
+> **本文已作废的约束（2026-09-29）**：「不建模、不描写任何性相关或束缚类道具、设施与场所细节」与「用途不明的私密房间一律中性」这类硬约束**已撤销**（用户决定；理由：不按原卡补全会被原作者投诉）。本文件是历史任务书，原文不改；现行规则见 `docs/card-digest.md`、`docs/card-omissions.md` §4、`docs/eden-estate.md`。
+
 接着在分支 `cloud/tc-mid-low` 上做。**不要问问题，做完提交并推送。** 开始前先 `git pull`，读 `NOTES_FROM_LOCAL.md`、`ROADMAP.md`、`CHANGELOG.md`。
 分工不变：你改脚本和文档，本机只提交 8K 渲染结果；改 `map/viewer.html` 前先拉取。每做完一项就推送一次，并在 `NOTES_FROM_LOCAL.md` 写一句「可以重跑：哪一层」。
 

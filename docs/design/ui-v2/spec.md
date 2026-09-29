@@ -1,4 +1,6 @@
-# UI v2 · 统一交互规范（草案，待用户确认）
+# UI v2 · 统一交互规范（草案）
+
+> 状态（2026-09-29 复核）：标题里的「待用户确认」已过期——`docs/design/ui-v2/impl/` 有落地截图，`docs/ui-refactor-backlog.md` 的「UI v2 落实」表记录了各条进度。本文留作规范原文。
 
 配套：`inventory.md`（盘点与 U1–U12 根因）、`mockups.html`（低保真草图）、`shots/*.png`、`review.md`。
 平台优先级：macOS 酒馆（WebKit）+ 桌面 > 手机 375 宽可用 > iPhone 专门适配（最低）。

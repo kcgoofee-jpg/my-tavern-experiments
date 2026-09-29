@@ -1,0 +1,89 @@
+{
+ "_note": "viewer3d.html?model=glory_crown 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/glory_crown.md。圣都核心区：圆桌骑士议事殿（中央，含冠环）+ 太阳骑士大竞技场（东）+ 商业联合会大厦（北）+ 会所（南），四者共用一个模型。",
+ "id": "glory_crown",
+ "title": {
+  "zh": "荣光冠冕",
+  "en": "Glory Crown"
+ },
+ "glb": "glory_crown.glb",
+ "glb_low": "glory_crown_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "props_main",
+   "props_arena",
+   "props_tower",
+   "props_club"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "site_ground",
+   "props_lights"
+  ],
+  "building": {
+   "min": [
+    -215.0,
+    0.0,
+    -195.0
+   ],
+   "max": [
+    262.0,
+    138.0,
+    230.0
+   ]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 138,
+  "default": 138
+ },
+ "camera": {
+  "frame": [
+   "props_main",
+   "props_arena",
+   "props_tower",
+   "props_club"
+  ],
+  "dir": [
+   0.42,
+   0.4,
+   -0.82
+  ],
+  "min": 20,
+  "max": 1600,
+  "maxPolar": 1.48
+ },
+ "budgets": {
+  "props_main": [
+   30000,
+   512
+  ],
+  "props_arena": [
+   22000,
+   512
+  ],
+  "props_tower": [
+   8000,
+   512
+  ],
+  "props_club": [
+   10000,
+   512
+  ],
+  "site_ground": [
+   10000,
+   512
+  ],
+  "props_lights": [
+   4000,
+   256
+  ]
+ },
+ "hotspots": []
+}

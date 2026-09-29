@@ -23,6 +23,14 @@ translation of what already exists.
 * Machine identifiers already had to be ASCII (see `tools/check_ascii.py`); that audit is
   about paths, JSON keys and `id` fields, not about prose. This policy is about prose.
 
+## Exception: tool-generated templates
+
+`tools/landmark.py new` writes `docs/landmarks/<id>.md` and `<id>.checklist.md` from Chinese
+templates, and `tools/landmark.py gapcheck` compares the two side by side. Those scaffolds stay in
+the template language: translating them by hand would break the tool's own round-trip and the
+reviewer's diff. The gate only looks at files that are new since the baseline tag, so an untranslated
+scaffold will be flagged — add it to `ALLOW` with this reason rather than rewriting the template.
+
 ## How it is enforced
 
 `tools/check_doc_language.py`, wired into `tools/smoke.sh`:

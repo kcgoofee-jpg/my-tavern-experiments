@@ -1,5 +1,7 @@
 # 云端任务 5：上层庄园与浮岛重做 + 伊甸府邸 Blender 模型（长任务，重型，可以慢慢做）
 
+> **本文已作废的约束（2026-09-29）**：「不建模、不描写任何性相关或束缚类道具、设施与场所细节」与「用途不明的私密房间一律中性」这类硬约束**已撤销**（用户决定；理由：不按原卡补全会被原作者投诉）。本文件是历史任务书，原文不改；现行规则见 `docs/card-digest.md`、`docs/card-omissions.md` §4、`docs/eden-estate.md`。
+
 先 `git pull`，读 `NOTES_FROM_LOCAL.md`（最后两节）、`docs/GOAL_v0.9.1.md`（阶段 2）、`docs/tiancheng-maps.md`、`docs/eden-estate.md`、`docs/clouds.md`。**不要问问题，做完一项提交推送一项**，并在 `NOTES_FROM_LOCAL.md` 写一句进度。
 不改 `VERSION`、不打标签、不跑 `tools/build_card.sh`。本机负责审阅门控（四位审阅 + 园林与建筑史审阅 + 架构师），你负责做到能过门控。
 

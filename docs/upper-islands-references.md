@@ -1,7 +1,7 @@
 # 上层其他岛屿：参考板 + 草稿（upper_islands r1）
 
 2026-09-28。对应 ROADMAP「上层其他岛屿按设定要改的」。格式同 `landmark-references.md`：只放公开百科链接，图片不进仓库。
-每座岛同时有一张**建模草稿**（Blender 体块，3/4 鸟瞰，1200 px 32 spp）：脚本 `blender/upper_islands/<id>.py`，
+每座岛同时有一张**建模草稿**（Blender 体块，3/4 鸟瞰，1200 px 32 spp）。**现行生成器是 `blender/islands/<id>.py`**（一岛一文件，共用 `_kit.py`，v17 起；见 `docs/upper-islands-checklist.md`）；`blender/upper_islands/` 是 v16 的草稿体块集（`render_all.py` 一次重出全部草稿），已被上面那套取代，保留作过程记录。脚本原文如下：
 图 `docs/drafts/upper_isle_<id>_draft.jpg`。一次全部重出：
 `blender -b --python-expr "import runpy;runpy.run_path('blender/upper_islands/render_all.py')" -- docs/drafts`。
 **这些只是草稿**：不动上层瓦片、不出 8K；glm 看图代理自检通过后即并进 `tiancheng_upper.py` 的下一次整图重渲（2026-09-29 起全自动）。

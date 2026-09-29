@@ -169,12 +169,12 @@ three.js 线从首版到被冻结约 10 小时墙钟（**估**，b37c6ec → 834
 |---|---|---|---|---|
 | 1 | 用户风格帧 + 手机截图检查点：新路线开工前、每轮草稿后，直接在聊天里给图 | 用户检查点 | 快 | 可避免 W2 这类整线作废，8–12 agent·h |
 | 2 | 局部补丁优先：同一资产第 2 次整张重渲必须写理由；改动 <25% 走 region_patch | agent 规则 + `region_patch.py` | 快 | 3–5 GPU·h / 周 |
-| 3 | 资产依赖表（几何 → 时段变体；上层建筑 → 上层 8K 合成），派发前先查 | `docs/asset-deps.md` + 派发规则 | 快 | 1–2 GPU·h + 3 agent·h |
+| 3 | 资产依赖表（几何 → 时段变体；上层建筑 → 上层 8K 合成），派发前先查 | `docs/render-deps.md` + 派发规则（原文写 `asset-deps.md`，实际文档是 `render-deps.md`） | 快 | 1–2 GPU·h + 3 agent·h |
 | 4 | 评审人设改版（estate 加 phone，art / estate 加 fidelity，否决清单，默认 1 轮） | `tools/review/personas/*` | 快 | 每资产约 1 轮，2–4 agent·h |
 | 5 | 卡名 / 卡内容校验：名字与可见物体都要带卡内行号 | `check_maps.py` + 草稿清单 | 大 | 避免 W4、W5 类返工 |
-| 6 | GPU 锁 + 只按 PID 杀进程 + ASCII TMPDIR + 崩溃重试 | `tools/render_all.sh`、新增 `tools/gpu_lock.sh` | 快 | 崩溃与误杀 |
+| 6 | GPU 锁 + 只按 PID 杀进程 + ASCII TMPDIR + 崩溃重试 | `tools/render_all.sh`、GPU 锁等已并入 `tools/blender_run.sh`（原文的 `tools/gpu_lock.sh` 是提案名，未单独建文件） | 快 | 崩溃与误杀 |
 | 7 | 渲染用时 / 评分落盘 `logs/render_times.csv`，提交信息统一格式 | `render_all.sh`、`docs/tooling.md` | 快 | 让下次复盘全用实测数据 |
-| 8 | glb 检查（纯黑顶点色、预算、LOD）接进 smoke | 新增 `tools/check_glb.py` | 大 | 黑块类缺陷 |
+| 8 | glb 检查（纯黑顶点色、预算、LOD）接进 smoke | 提案名，未建（`tools/check_glb.py` 不存在）；glb 黑块类检查目前靠 `tools/render_preflight.py lint` + 人工看图 | 大 | 黑块类缺陷 |
 | 9 | 小岛高清叠加层 | viewer + 渲染脚本 | 大 | 质量上限 |
 | 10 | 云 GPU 试跑一层 8K（RunPod / Vast，4090 约 0.4–0.7 美元/小时，**估**） | 用户决定 | 大 | 本机 GPU 解放，数字待实测 |
 

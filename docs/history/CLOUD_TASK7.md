@@ -1,5 +1,7 @@
 # 云端任务 7：伊甸庄园——顶奢设定 + three.js 精装模型（长任务，全部用 Opus 5.5，子代理不限）
 
+> **本文已作废的约束（2026-09-29）**：「不建模、不描写任何性相关或束缚类道具、设施与场所细节」与「用途不明的私密房间一律中性」这类硬约束**已撤销**（用户决定；理由：不按原卡补全会被原作者投诉）。本文件是历史任务书，原文不改；现行规则见 `docs/card-digest.md`、`docs/card-omissions.md` §4、`docs/eden-estate.md`。
+
 先 `git pull`，读 `NOTES_FROM_LOCAL.md`（最后三节）、`docs/eden-estate.md`、`CLOUD_TASK5.md` 第 2 项、`map/estate/`（本机 Opus 做的 three.js 版）、`blender/eden_manor.py` 与 `docs/drafts/eden_manor_*.jpg`（你上一版 Blender 草稿）。
 **不要问问题，做完一步提交推送一步**，并在 `NOTES_FROM_LOCAL.md` 写一句进度。不改 `VERSION`、不打标签、不跑 `tools/build_card.sh`。
 

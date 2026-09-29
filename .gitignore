@@ -11,7 +11,6 @@ map/art/tc_upper_preview.png
 map/art/tc_upper_8k.png
 map/art/tc_*_full.png
 map/art/_*.png
-map/art/tc_upper_8k.png
 __pycache__/
 
 # OSM 原始数据（python3 blender/tc_osm.py fetch 重新下载；处理后的 city.json 进 git）
@@ -40,7 +39,6 @@ tools/cloud/hosts/*.env
 !tools/cloud/hosts/example.env.example
 # 云脚本本地锁文件
 tools/cloud/.locks/
-.pi/
 .cache/
 # AI 助手的工作目录：agent 团队/会话状态（不是项目内容，2026-09-29 误提交过一次，这里挡住）
 .codebuddy/
@@ -48,3 +46,5 @@ tools/cloud/.locks/
 map/props/*/*_tex/
 # rsync 传输中的临时文件（map/art/.xxx.png.XXXXXX；2026-09-29 误提交过一个 24 MB 的）
 map/art/.*
+# Python 工具链缓存（ruff）
+.ruff_cache/

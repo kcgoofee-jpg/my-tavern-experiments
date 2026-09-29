@@ -1,4 +1,4 @@
-状态：进行中（2026-09-28）——已完成 new；下一步 draft。tools/landmark.py 自动维护本行与「流程」勾选
+状态：**已完成**（2026-09-29 校订：`map/props/starabyss_univ/*.glb` 已导出、`docs/reviews/landmark_starabyss_univ/r1.md` 已评审；`tools/landmark.py status starabyss_univ` 各步为 ✓/✓*。原文写「下一步 draft」是脚手架留下的旧值）。tools/landmark.py 自动维护本行与「流程」勾选
 
 # 星渊大学（`starabyss_univ`，tc_mid）检查清单
 

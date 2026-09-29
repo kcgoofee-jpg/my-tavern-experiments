@@ -79,7 +79,7 @@
 
 ## 7. 后续（不在本轮）
 - **P2**：通道分层输出、8K 底图挖空、逐岛 2–4K 叠加层（像素对齐）。
-- **P3**：viewer 端的视差、漂浮、标签按 d 调整、悬停聚焦、手机「看全区」按钮。登记在 `docs/ui-refactor-backlog.md`。
+- ~~**P3**：viewer 端的视差、漂浮、标签按 d 调整、悬停聚焦、手机「看全区」按钮。~~ ✅ 2026-09-29（U15–U18，`docs/ui-refactor-backlog.md` 有 ✅ 行；`accept.mjs` 有断言）。
 - ~~**合并 fog 实现**：`map/app/fog.mjs` 与 `map/core/fog.mjs` 合并后改用 depth 模块（架构评审 §2，暂不做）。~~ ✅ C2：core/fog.mjs 并入 core/depth.mjs；upper_haze.py 已退役；雾色统一 `depth.py haze_color`。
 - **meta 接入**：`make_dzi` 的 `*.dzi.meta.json` 也记录 depth 哈希（配合 check_render_deps）。
 

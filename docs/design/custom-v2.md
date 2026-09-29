@@ -1,6 +1,6 @@
 # 自定义 v2 设计规格（名称与用途）
 
-状态：设计稿（未实现）· 基线 v0.9.5（`map/custom.js`、`map/tavern/picker.mjs`、`map/tavern/mvu.mjs`）· 2026-09-27
+状态：设计稿（多数未实现，见 §C1–C12）· 基线 v0.9.6（`map/custom.mjs`、`map/tavern/picker.mjs`、`map/tavern/mvu.mjs`）· 2026-09-27（路径与版本 2026-09-29 校订：`custom.js` 已模块化为 `custom.mjs`）
 示意：`docs/design/custom-v2/mock.html`（`?s=card|v3d|conflict|hub&theme=dark|light&lang=en`），PNG 在 `docs/design/custom-v2/shots/`（`node docs/design/custom-v2/render.mjs` 重出）。
 
 ## 0 结论
@@ -18,7 +18,7 @@ v0.9.5 功能已经齐了，但**入口放错了地方**：自定义只能从「
 
 | # | 问题 | 证据 | 严重度 |
 |---|---|---|---|
-| A1 | **找不到入口**：入口在设置栏「名称与用途」按钮里，地图上、卡片上都没有提示。 | `custom.js` `renderUI()` 只渲染在设置栏；`decorateCard()` 只把名字和用途显示出来，没有编辑入口 | P0 |
+| A1 | **找不到入口**：入口在设置栏「名称与用途」按钮里，地图上、卡片上都没有提示。 | `map/custom.mjs` 的 `renderUI()`（原文写 `custom.js`，已模块化）只渲染在设置栏；`decorateCard()` 只把名字和用途显示出来，没有编辑入口 | P0 |
 | A2 | **绕路**：看着「书房」想改名，要走设置 → 名称与用途 → 添加 → 选择器搜「书房」→ 编辑，共 5 步。 | `openDlg(from,'list')` → `pick` → `edit` 三页 | P1 |
 | A3 | **三种名字说不清**：标准名、显示名、旧叫法（别名）在界面上只表现为「书房 → 星图室」。不写明标准名不会变、剧情仍认得，用户就会担心改名会弄坏存档。 | `cu_phone_list.jpg`；`setCustom` 把旧名自动存进别名，界面上看不到 | P1 |
 | A4 | **看不到反馈**：保存后不知道地图哪里变了，也不知道模型会收到什么。注入摘要 `summarizeCustom()` 只有 220 字上限，超出后截断，用户完全看不到。 | `mvu.mjs summarizeCustom` 与 `clip` | P1 |

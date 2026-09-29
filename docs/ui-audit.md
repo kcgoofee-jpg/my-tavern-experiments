@@ -11,7 +11,7 @@
   - **B 组「E5 统一重构」**：视觉一致性、组件规格。按第三部分的规范 v1 一次性重做。
 - 归属：
   - **查看器**：`map/viewer.html`、`map/events.js`、`map/i18n/*`，本机负责
-  - **卡内脚本**：`map/tavern/*`、`tools/add_script_to_card.py`，本机负责
+  - **卡内脚本**：`map/tavern/*`、`tools/legacy/add_script_to_card.py`，本机负责
   - **庄园页**：`map/estate/**`，云端负责；需要改的写进 `NOTES_FROM_LOCAL.md`
 - 严重度：**P0** 阻断或困住用户 · **P1** 严重 · **P2** 一般 · **P3** 轻微。
 - 状态：☑ 本轮已修（见第四部分的验证）· ☐ 未修 · → 云端（已写进 NOTES）。

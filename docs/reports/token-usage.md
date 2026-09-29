@@ -56,12 +56,12 @@
 - ~~`docs/agent-brief.md` 一页代理速查（2026-09-28，commit 5ffe4631）：把分散在多篇文档里的规则收成一页，代理不用每次搜索/通读全套文档。估算：单代理启动阶段读文档开销从约 15–25k fresh tokens 降到约 3–5k。~~ ✅
 - ~~推送攒批（同上，2026-09-28）：每 2–3 项攒一次推送，避免每次 CDN 全量预热（~2000 文件）都触发一轮日志/校验读写。估算：流程/工具类每次推送相关开销降约 40–60%。~~ ✅
 - `region_patch.py` 局部重渲优先（2026-09-27，commit cbea6a92）：改动 <25% 时只重切受影响 DZI 瓦片，不必整图重渲+全量重切。实测对比：庄园类单次局部修复 agent 平均 fresh ≈ 437k（细分表"建模/渲染-庄园"，含 region_patch 前后混合样本），早期整图重渲的单次 agent 常见 fresh 在 1.5–2M 量级（见"建模/渲染-其他"同期任务，估算口径不完全可比，标注估算）。
-- Sonnet 处理批量建模/文档同步/小修（`model-and-budget-policy.md`）：与 2026-09-27 之前"Opus only"（commit 94538a36 反向记录了曾经的 Opus-only 阶段）相比，中层建筑/地标批量任务改用 Sonnet 后，估算单 agent fresh tokens 下降约 30–50%（Sonnet 更少的思考轨迹 token），但本报告的分类口径不区分模型，无法从当前数据里精确拆分 Opus vs Sonnet 的 agent，此项为估算。
+- Sonnet 处理批量建模/文档同步/小修（原文引用的 `model-and-budget-policy.md` 在本仓库不存在，是历史提案名）：与 2026-09-27 之前"Opus only"（commit 94538a36 反向记录了曾经的 Opus-only 阶段）相比，中层建筑/地标批量任务改用 Sonnet 后，估算单 agent fresh tokens 下降约 30–50%（Sonnet 更少的思考轨迹 token），但本报告的分类口径不区分模型，无法从当前数据里精确拆分 Opus vs Sonnet 的 agent，此项为估算。
 - 按岛分资产（per-island assets）：把整批上层岛渲染拆成逐岛小任务后，单 agent avg ≈ 947k（"建模/渲染-上层岛"），远低于"建模/渲染-其他"里未拆分批次的 1.96M，估算按岛拆分节省约 50%（同样存在任务粒度不完全对齐的估算误差）。
 - 检查清单 + reviewer 默认一轮：`docs/rejected.md` 自检对照 + 评审默认一轮（agent-brief 第 8 条），减少了往返评审轮次。估算：中层/下层建筑单轮通过率提高后，平均每资产的评审 agent 数从约 2–3 降到 1。
 - ~~云端渲染（2026-09-25 起，commit ebd03512 `tools/cloud/` AutoDL 远程 GPU 渲染脚本；2026-09-28 commit b1881692 加 doctor.sh 体检 + 同步/下载/渲染进度显示 + 未同步不开渲）：把渲染算力挪到远程 GPU，本地 agent 只需发起/轮询任务，不再本地跑 Blender 长流程。实测："流程/工具-云渲染"子类 avg/agent ≈ 2.46M fresh——这类 agent 本身要处理大量渲染日志/进度文本，尚未随云端化明显下降，需要下一轮报告继续跟踪（doctor.sh 体检刚上线，尚无改动后的独立样本，标记为待续估算）。~~ ✅（云端渲染脚本已上线，效果仍在观察）
-- 渲染队列（render queue）：尚未在 git log 中找到独立落地提交，暂列为**规划中**，无前后数据。
-- 地标流程（landmark pipeline，规划中）：`card-only-scope-dlc.md` 里提到的地标只做卡内地点，流程本身尚未独立成脚本/文档，暂列为**规划中**，无前后数据。
+- ~~渲染队列（render queue）：尚未在 git log 中找到独立落地提交，暂列为**规划中**~~ → 修正（2026-09-29）：**已落地**——`tools/render_queue.sh`（提交/派工/状态/单例锁）、`docs/cloud-render.md`。本报告成文时它还没落地，这行是当时的快照。
+- ~~地标流程（landmark pipeline，规划中）~~ → 修正（2026-09-29）：**已上线**——`tools/landmark.py` + `docs/landmark-pipeline.md`（2026-09-28）。原文引用的 `card-only-scope-dlc.md` 在本仓库不存在（历史提案名），地标只做卡内地点的口径见 `docs/rejected.md` 第 6 条。
 
 ### 示例对比：中层建筑（有代理速查 brief 前 vs 后）
 

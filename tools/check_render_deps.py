@@ -9,8 +9,8 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 # 下游产物 -> 上游源（glob 模式，相对仓库根）；见 docs/render-deps.md 的对照表
 DEPS = {
-    'map/art/tc_upper.dzi': ['blender/tiancheng_upper.py', 'blender/upper_islands/*.py', 'map/estate/plan.js', 'blender/estate2/*.py'],
-    'map/art/tc_upper_city.dzi': ['blender/tiancheng_upper.py', 'blender/upper_islands/*.py', 'map/estate/plan.js', 'blender/estate2/*.py'],
+    'map/art/tc_upper.dzi': ['blender/tiancheng_upper.py', 'blender/islands/*.py', 'blender/upper_islands/*.py', 'map/estate/plan.js', 'blender/estate2/*.py'],
+    'map/art/tc_upper_city.dzi': ['blender/tiancheng_upper.py', 'blender/islands/*.py', 'blender/upper_islands/*.py', 'map/estate/plan.js', 'blender/estate2/*.py'],
     # tiancheng_mid.py / tiancheng_low.py 不 import blender/landmarks 下的模块——地标走 tools/landmark.py 流水线，
     # 产物是独立 glb（map/props/<id>/），默认不进底图；只有 ship --patch-basemap 才会改底图，且那一步会直接改到 .dzi 本身
     # （.dzi 自己的提交时间就会比那次 build.py 新）。所以这里不再把 blender/landmarks/**/*.py 全部当成底图上游，
