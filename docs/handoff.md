@@ -35,8 +35,8 @@
 
 ## C2 整理遗留（2026-09-28）
 
-- `tools/check_render_deps.py` 仍把 `blender/landmarks/lm_anchors.py`（只给 landmark.py board 出锚点）算作 tc_mid / tc_low 上游 → 同类误报；按「窄例外」要不要也加进 NOT_UPSTREAM，待定。
-- 浏览器 `tools/browser/pack_town.mjs`「宿主：注入句用包的分类与标签」在 00087eea（整理前）就失败（inj 为空），与 C2 无关，待查。
+- ~~`tools/check_render_deps.py` 仍把 `blender/landmarks/lm_anchors.py`（只给 landmark.py board 出锚点）算作 tc_mid / tc_low 上游~~ ✅ 已在 NOT_UPSTREAM（tools/check_render_deps.py:29-30），2026-09-29 验证不再误报。
+- ~~浏览器 `tools/browser/pack_town.mjs`「宿主：注入句用包的分类与标签」在 00087eea（整理前）就失败（inj 为空）~~ ✅ 2026-09-29 复验全绿（feat/worldbook-auto 合入后自愈）。
 - `tools/browser/th_adopt.mjs`「B1 第一次点只是『再点一次确认』」整理前后同样失败（世界书全自动先建好了书，写入按钮不再走二次确认），测试要跟全自动对齐。
 - 分支 URL（@cloud/tc-mid-low）加载时新入口可能配到 CDN 旧的 host-*.mjs：warm_cdn 已先清模块再清入口；跟随加载器按提交号加载，不受影响。
 
