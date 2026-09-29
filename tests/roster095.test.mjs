@@ -23,10 +23,25 @@ t('阶段顺序：在脚本文本里找含全部取值的数组', () => {
   assert.deepEqual(V.findStageOrder([src], ['第二步', '第一步']), ['第一步', '第二步', '第三步']);
   assert.equal(V.findStageOrder([src], ['第九步']), null); assert.equal(V.findStageOrder([], ['x']), null);
 });
-t('原作头像表：只收作者 CDN 的 /sfw/ 地址', () => {
-  const ok = 'https://cdn.jsdelivr.net/gh/Yehehua1311/repo@main/A/sfw/A_1.png';
-  const src = `var defaultPortraits = { "甲": "${ok}", "乙": "https://cdn.jsdelivr.net/gh/Yehehua1311/repo@main/B/other/B_1.png", "丙": "https://example.com/sfw/c.png" };`;
-  assert.deepEqual(V.findPortraits([src]), { 甲: ok }); assert.deepEqual(V.findPortraits(['无']), {});
+t('原作头像表：作者 CDN 只收 /sfw/；另外两个图床的直链也收；别的域名与受限分类不收', () => {
+  const cdn = 'https://cdn.jsdelivr.net/gh/Yehehua1311/repo@main/A/sfw/A_1.png';
+  const post = 'https://i.postimg.cc/1tJb0jSZ/seraphina.png';
+  const pico = 'https://picgocloud.com/i/2024/09/29/abcd.png';
+  const src = `var defaultPortraits = { "甲": "${cdn}", "乙": "https://cdn.jsdelivr.net/gh/Yehehua1311/repo@main/B/other/B_1.png", "丙": "https://example.com/sfw/c.png", "丁": "${post}", "戊": "${pico}" };`;
+  assert.deepEqual(V.findPortraits([src]), { 甲: cdn, 丁: post, 戊: pico }); assert.deepEqual(V.findPortraits(['无']), {});
+});
+t('原作头像白名单的底线：https / 图片 / 白名单域名 / 不碰受限分类', () => {
+  for (const bad of [
+    'http://i.postimg.cc/1tJb0jSZ/x.png',                                        // 非 https
+    'https://i.postimg.cc/1tJb0jSZ/x.txt',                                       // 不是图片
+    'https://cdn.jsdelivr.net/gh/OtherUser/repo@main/A/sfw/A_1.png',              // 不是作者的仓库
+    'https://cdn.jsdelivr.net/gh/Yehehua1311/repo@main/A/性交/A_1.png',           // 受限分类目录
+    'https://i.postimg.cc/1tJb0jSZ/口交.png',                                     // 受限分类词
+    'https://evil.com/gh/Yehehua1311/repo@main/A/sfw/A_1.png',                   // 冒名域名
+    'https://i.postimg.cc/1tJb0jSZ/x.png?v=2',                                   // 带 query
+  ]) assert.equal(V.portraitOk(bad), false, '不该收：' + bad);
+  assert.equal(V.portraitOk('https://cdn.jsdelivr.net/gh/Yehehua1311/repo@main/A/sfw/A_1.png'), true);
+  assert.equal(V.portraitOk('https://picgocloud.com/i/2024/09/29/abcd.webp'), true);
 });
 import * as C from '../map/tavern/characters.mjs';
 t('名字对齐：去 _idN；短名唯一对应「名·」全名；名字当姓用的不合并', () => {

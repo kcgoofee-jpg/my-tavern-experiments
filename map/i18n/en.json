@@ -71,7 +71,7 @@
   "ch.rep": "Estate reputation",
   "ch.stage_of": "step {i} of {n}",
   "ch.port": "Use the original portraits",
-  "ch.port_hint": "When a person has no avatar of your own, use the card's own portraits (by the author Yehehua, loaded on demand from the author's CDN); off by default in data-saver mode. Only portraits on the author's CDN are used: a few people's portraits live on other image hosts and are not loaded here, so they show an initial (not a bug; you can set your own avatar)",
+  "ch.port_hint": "When a person has no avatar of your own, use the card's own portraits (by the author Yehehua, loaded on demand from the author's CDN and the two image hosts the author also uses); off by default in data-saver mode. Only the portraits the author declares are used, and never the card's restricted categories; anyone whose portrait cannot be fetched shows an initial (not a bug; you can set your own avatar)",
   "tr.en_route": "{a} → {b} (en route)",
   "tr.to": "to {b}",
   "tr.from": "from {a}",

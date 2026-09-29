@@ -308,8 +308,31 @@ export function findStageOrder(texts, values) {
   return null;
 }
 
-/** 卡自带脚本里的默认立绘表（`defaultPortraits = { "名字": "地址", … }`）：只收原作者 CDN 上 /sfw/ 路径的 https 地址；找不到返回 {} */
-export const PORTRAIT_OK = u => /^https:\/\/cdn\.jsdelivr\.net\/gh\/Yehehua1311\/[^?#]*\/sfw\/[^?#]+\.(png|jpe?g|webp)$/i.test(u);
+/** 卡自带脚本里的默认立绘表（`defaultPortraits = { "名字": "地址", … }`）：只收白名单里的 https 图片地址；找不到返回 {} */
+// 白名单（2026-09-29 放宽，原为「只收作者 CDN 的 /sfw/」——那让 7/16 人永远只显示名字首字，见 docs/card-omissions.md E6）：
+//   a) 作者 CDN：`cdn.jsdelivr.net/gh/Yehehua1311/…`，**必须**带 `/sfw/` 段——同仓库下还有受限分类的目录，不许顺着目录去取别的图；
+//   b) 作者放在另外两个图床的立绘：`i.postimg.cc` / `picgocloud.com`。它们的直链没有 `/sfw/` 这一层，
+//      改用「https + 图片扩展名 + 路径里不出现受限分类词 + 无 query/fragment」守同一条底线。
+// 语义没变：只加载作者在卡里声明的立绘，不复制图片、不存地址表；关掉「使用原作头像」开关则一张都不取。
+export const PORTRAIT_HOSTS = ['cdn.jsdelivr.net', 'i.postimg.cc', 'picgocloud.com'];
+const PORTRAIT_EXT = /\.(png|jpe?g|webp)$/i;
+const PORTRAIT_BAN = /(口交|性交|肛交|足交)/;   // 卡里受限分类的名字：出现在任何白名单域名的路径里都不收
+
+export function portraitOk(u) {
+  const s = String(u || '');
+  if (!/^https:\/\//i.test(s)) return false;
+  let url; try { url = new URL(s); } catch (e) { return false; }
+  if (url.search || url.hash) return false;
+  let path = url.pathname;
+  try { path = decodeURIComponent(path); } catch (e) { /* 解不开就按原文判断 */ }
+  if (!PORTRAIT_EXT.test(path)) return false;
+  if (PORTRAIT_BAN.test(path)) return false;
+  const host = url.hostname.toLowerCase();
+  if (host === 'cdn.jsdelivr.net') return /^\/gh\/yehehua1311\//i.test(path) && path.includes('/sfw/');
+  if (host === 'i.postimg.cc' || host === 'picgocloud.com' || host.endsWith('.picgocloud.com')) return true;
+  return false;
+}
+export const PORTRAIT_OK = portraitOk;   // 旧名保留（既有引用与测试用）
 export function findPortraits(texts) {
   const out = {};
   for (const t of texts || []) {
