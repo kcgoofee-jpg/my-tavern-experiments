@@ -64,7 +64,7 @@ graph LR
 - ~~C2 架构整理：fog 合并进 `core/depth`（U19）→ Eden 包只留 manifest（删 `core/pack.mjs` 的 EDEN 常量）→ 冻结 pack schema v1 → 拆 `eden-map.js`（入口 / 线路 / 生命周期 / TH 适配）。四步内部串行。~~ ✅ 2026-09-28（模块地图见 docs/agent-brief.md；schema 见 docs/pack-schema-v1.md）
 - **C2.5 本地清理**（`docs/local-cleanup-plan.md`，只测量不删，2026-09-28 加）：scratchpad worktree、`/private/tmp/bl_tmp`、Blender 内核缓存、Homebrew 缓存、`tools/browser/node_modules`、`map/art` 旧基准产物、`logs/queue/done` 这些低风险项，不需要全局停机，各条各自标了要不要等对应代理空闲；`docs/drafts` 草图改名/是否删并入 C3 一起做；`.git` 瘦身仍属于 C4，不提前。放在 C2 之后、C3 之前，减少 C3 停机窗口要处理的杂项。
 - C3 改名 + 命名统一（见 §5）：必须所有代理空闲、所有 worktree 已合并或丢弃、GPU 空闲时单独做，是全项目唯一的全局停机点。
-- C4 git 瘦身 + 瓦片出主仓：放在 C3 之后（路径已稳定），并在下一次整层重渲之前完成。
+- ~~C4 git 瘦身 + 瓦片出主仓~~ ✅ 2026-09-29 完成（head #58）：删 50+ 已合并分支/12 个 worktree/4 stash + 删 map-v0.9.3 之前全部旧标签 + filter-repo 把 8 个重资产目录（map/art、docs/drafts、docs/reviews、map/props、map/shots、blender/data、map/estate、docs/design）的历史版本剥出历史、HEAD 内容以一笔恢复提交原样放回；.git 656MB→410MB，标签只剩 map-v0.9.3/0.9.4/0.9.5（0.9.5=当前 HEAD）。备份：~/eden-backup/eden-map-preC4.bundle（全引用）、~/eden-backup/assets-head.tar。「瓦片出主仓（CDN）」延期：AutoDL 无公网入站 HTTP，jsDelivr 现方案可用；等有稳定对象存储再做。
 - C5 上层真 3D 模式：依赖 R2 逐岛资产和 C2 的 depth 合并。
 - C6 创意工坊：依赖 C2 的 schema v1、C5 和斜视 8K（槽位基于纵深），最后做。
 
