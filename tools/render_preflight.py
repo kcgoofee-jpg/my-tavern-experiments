@@ -198,11 +198,19 @@ def check(args, root=ROOT):
     #      任务白跑一次还被看门狗记成 ok；
     #   2. 不许落在 docs/ —— tools/cloud/sync.sh 有 `--exclude docs/`，云端根本没有这个目录。
     # 输出要放 map/art/ 这类会同步的目录（仓库相对路径），渲完再拷到最终位置。
+    import tempfile
+    _tmp = os.path.realpath(tempfile.gettempdir())
+    _queue = os.environ.get('EDEN_QUEUE_SUBMIT') == '1'      # 队列/云端提交：一律只收相对路径
     for idx, a in enumerate(sargv):
         if a != '--out' or idx + 1 >= len(sargv):
             continue
         val = sargv[idx + 1]
         if os.path.isabs(val):
+            # 本机专用的中间步骤（存 .blend、导 glb）确实用 $TMPDIR 下的绝对路径，直接调 blender_run.sh
+            # 时放行；但**经队列或云端**提交的一律只收相对路径——远端没有这个路径（2026-09-29 事故）。
+            _r = os.path.realpath(val)
+            if (not _queue) and (_r.startswith(_tmp) or '/lm_work/' in _r):
+                continue
             raise Fail('abs_out', f'--out 用了绝对路径：{val}\n'
                        '  队列可能把它派到云端，远端不存在这个路径 → 白跑一次（日志尾部是 rsync link_stat failed）。\n'
                        '  改成仓库相对路径，并放在会同步的目录（map/art/…），渲完再拷到最终位置。')

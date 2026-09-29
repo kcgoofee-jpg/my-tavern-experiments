@@ -67,7 +67,7 @@ cmd_submit() {
   shift
   [ $# -ge 1 ] || { echo "-- 之后要有 blender_run.sh 的参数" >&2; exit 2; }
   # 渲染守卫：参数语法 / 必须用设备 helper / 脚本参数表，不过就不进队列（docs/cloud-render.md「渲染守卫」）
-  python3 "$ROOT/tools/render_preflight.py" check -- "$@" >/dev/null || { echo "提交被拒：见上面的原因（tools/render_preflight.py）" >&2; exit 2; }
+  EDEN_QUEUE_SUBMIT=1 python3 "$ROOT/tools/render_preflight.py" check -- "$@" >/dev/null || { echo "提交被拒：见上面的原因（tools/render_preflight.py）" >&2; exit 2; }
   local q=""
   for a in "$@"; do q+=" $(printf '%q' "$a")"; done
   local id

@@ -45,7 +45,7 @@ csv_row() {
 
 # 静态检查：不过就不上传、不占锁
 if [ -n "$PY_LOCAL" ]; then
-  if ! PF=$("$PY_LOCAL" "$ROOT/tools/render_preflight.py" check -- "$@" 2>&1); then
+  if ! PF=$(EDEN_QUEUE_SUBMIT=1 "$PY_LOCAL" "$ROOT/tools/render_preflight.py" check -- "$@" 2>&1); then
     echo "$PF" >&2
     code=$(grep -o 'EDEN_PREFLIGHT=[a-z_]*' <<<"$PF" | cut -d= -f2)
     [ "$DRY_RUN" = 1 ] || csv_row "${code:-arg_error}" 0 2 "autodl-preflight"

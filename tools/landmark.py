@@ -476,12 +476,21 @@ def cmd_final(a):
     queued = False
     for c in cams:
         out = P('docs', 'drafts', f'landmark_{i}_final_{c}.jpg')
+        # 同 draft：渲染输出必须是仓库相对路径且落在会同步的目录（否则云端/队列一定写不出，见
+        # tools/render_preflight.py 的 abs_out / unsynced_out 门控）
+        stage_rel = f'map/art/_lm_{i}_final_{c}.jpg'
+        stage = P('map', 'art', f'_lm_{i}_final_{c}.jpg')
+        if not os.path.exists(out) and os.path.exists(stage):
+            collect_stage(stage, out)
         if sub_done(st, f'final_{c}', [out]):
             continue
         r = render(i, 'final', a.res, a.spp, blender_script(rel(p['build']), ['--cam', c, '--res', str(a.res),
-                   '--samples', str(a.spp), '--out', out]), os.path.join(p['work'], f'final_{c}.log'), runner)
+                   '--samples', str(a.spp), '--out', stage_rel]), os.path.join(p['work'], f'final_{c}.log'), runner)
         if r == 'queued':
             queued = True; continue
+        if not DRY and not os.path.exists(stage):
+            die(f'没产出 {stage_rel}', '看 ' + os.path.join(p['work'], f'final_{c}.log'))
+        collect_stage(stage, out)
         mark_sub(st, f'final_{c}')
     if queued:
         return say('… 定稿已进渲染队列；渲完再跑一次 final 会跳过已完成的镜头，接着导 glb。')
@@ -509,8 +518,12 @@ def cmd_final(a):
         run(G + ['meshopt', src, out, '--level', 'medium'], 'gltf-transform meshopt 失败：同上。')
         if not DRY:
             mb = os.path.getsize(out) / 1e6
-            if mb > GLB_MB[tier]:
-                die(f'{rel(out)} {mb:.2f} MB 超上限 {GLB_MB[tier]} MB',
+            # 单栋默认 GLB_MB（0.6 / 0.3 MB）；片区级（一个模型挂多个标记、含多栋）可在 manifest 里写
+            # max_mb 显式放宽，并在 _note 写明理由。2026-09-29：glory_crown（圣都核心区四栋 + 台地广场，
+            # 一个模型挂 5 个标记）按单栋卡会被砍成方块，故放宽到 1.6 / 0.8 MB。
+            cap = (man.get('max_mb') or {}).get(tier) or GLB_MB[tier]
+            if mb > cap:
+                die(f'{rel(out)} {mb:.2f} MB 超上限 {cap} MB',
                     f'在 {rel(p["manifest"])} 的 budgets 里调小大组的三角形 / 贴图边长，再跑 final --force。')
             say(f'  {tier} glb {mb:.2f} MB')
         mark_sub(st, 'glb_' + tier)

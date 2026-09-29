@@ -3,7 +3,8 @@
 [![CI](https://github.com/kcgoofee-jpg/my-tavern-experiments/actions/workflows/ci.yml/badge.svg?branch=preview)](https://github.com/kcgoofee-jpg/my-tavern-experiments/actions/workflows/ci.yml)
 
 > 状态：开发中 · 当前发布版本 `0.9.6`（标签 `map-v0.9.6`） · 下一版进行中（分支 `preview`）
-> 详细门控与任务分轨：[`docs/history/GOAL_v0.9.1.md`](docs/history/GOAL_v0.9.1.md)（0.9.1 门控记录） · 产品待办：[`ROADMAP.md`](ROADMAP.md) · 变更记录：[`CHANGELOG.md`](CHANGELOG.md) · 本机 ↔ 云端协作与接手记录：[`docs/history/NOTES_FROM_LOCAL.md`](docs/history/NOTES_FROM_LOCAL.md) · 卡设定遗漏清单：[`docs/card-omissions.md`](docs/card-omissions.md)
+> **待办唯一索引：[`docs/todo.md`](docs/todo.md)**（四轨：代码线 / 渲染线 / 文档仓库线 / 待用户决定，每条带出处）。
+> 详细门控与任务分轨：[`docs/history/GOAL_v0.9.1.md`](docs/history/GOAL_v0.9.1.md)（0.9.1 门控记录） · 产品待办：[`ROADMAP.md`](ROADMAP.md) · 变更记录：[`CHANGELOG.md`](CHANGELOG.md) · 本机 ↔ 云端协作与接手记录：[`docs/history/NOTES_FROM_LOCAL.md`](docs/history/NOTES_FROM_LOCAL.md) · 卡设定遗漏清单：[`docs/card-omissions.md`](docs/card-omissions.md) · 分支与发版线：[`docs/branching.md`](docs/branching.md) · 语言口径：[`docs/language-policy.md`](docs/language-policy.md)
 
 ## 1. 系统架构
 
@@ -83,14 +84,15 @@
 
 ## 5. 开发规范
 
-- **分支**：`main` 为发布线；功能在 `cloud/*` 或功能分支开发，合并前通过自检与门控。
+- **分支**：`preview` 是集成 + 跟随预览线（功能都在这里开发）；`main` 是发布线，只快进（`tools/sync_main.sh`）；`cloud/tc-mid-low` 是 `preview` 的**兼容镜像**（老卡里的脚本 URL 还指着它）——两条必须一起推：`bash tools/push_preview.sh [--head]`，只推一条会让那些人静默停在旧构建。详见 [`docs/branching.md`](docs/branching.md)。
 - **版本**：语义化版本；从 0.9 起补丁号递增（0.9.1、0.9.2……）；发布打标签 `map-vX.Y.Z`，运行时钉标签或提交 SHA。
-- **提交**：一件事一个提交；信息写清改动与原因；作者邮箱用 GitHub noreply；AI 协作提交附 `Co-Authored-By`。
+- **提交**：一件事一个提交；信息写清改动与原因（**英文**，2026-09-29 起；不写 `Co-Authored-By` 尾巴）；作者邮箱用 GitHub noreply。
+- **待办**：唯一清单是 [`docs/todo.md`](docs/todo.md)；做完在索引与出处文档**同时**划线，完成项留档在索引 §5（带日期与提交），不要另开第二份清单。
 - **自检**：提交前 `bash tools/smoke.sh`（地图数据校验、单元测试、脚本语法、JSON 校验，可选 CDN 检查）。
 - **测试**：`node --test tests/*.test.mjs`；浏览器验收 `node tools/browser/accept.mjs <输出目录>`。
 - **渲染**：`bash tools/render_all.sh <层> --res 8000 --samples 64`；局部 `bash tools/crops.sh`；同一时间只跑一个 Blender；安静期锁 `tools/quiet.sh`。
 - **发布**：`bash tools/ship.sh`（自检 → 推送 → 预热 CDN → 生成预览脚本），发布前 `--dry-run`。
-- **文档**：架构与接口 `docs/`；工具说明 `docs/tooling.md`；审阅记录 `docs/reviews/`。
+- **文档**：架构与接口 `docs/`；工具说明 `docs/tooling.md`；审阅记录 `docs/reviews/`；待办索引 `docs/todo.md`；分支与发版线 `docs/branching.md`；语言口径 `docs/language-policy.md`。
 - **素材许可**：仓库只收 CC0 / CC-BY / ODbL 等允许再分发的素材，逐项记入各素材目录的 `CREDITS.md`（`map/estate/assets/`、`map/estate/closet/assets/`、`blender/props/`、`blender/estate2/` 各一份）。
 
 ## 6. 目录

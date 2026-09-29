@@ -137,6 +137,26 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [ ] 未跟踪但应处理的产物：`docs/drafts/props_u12_/`（浏览器测试截图，判断入库还是删）、
   `docs/drafts/landmark_glory_crown_draft_c1.jpg`（在建模型的草稿，随流水线走）。
 
+- [x] **Render-queue bookkeeping (fixed 2026-09-29)**: `run_job_mac` / `run_job_cloud` moved every job to
+  `done` regardless of exit code, so a job blocked by the per-instance lock (`render.sh` exit 3) was filed
+  as success while its log stayed behind in `running/` — that is where "job is done but has no log" came
+  from, and why some 8K renders only appeared after a re-queue. Now: only `rc=0` goes to `done`; `rc=3`
+  returns to `pending` and retries without counting as failure (cap `RETRY_BUSY_MAX`, default 90);
+  other failures retry `MAX_RETRY` times then land in `done` with a `.failed` marker; `.log`/`.rc` move with
+  the job. Plus an artifact check: **`rc=0` with a missing `--out` file counts as failure** — the safety net
+  for "cloud said ok but wrote nothing". 34 orphan logs were swept out of `running/` into `logs/queue/attic/`.
+- [x] **Absolute / unsynced `--out` (2026-09-29 accident, now gated)**: `tools/landmark.py draft` rendered to
+  an absolute `docs/drafts/…` path, but `tools/cloud/sync.sh` has `--exclude docs/` and a cloud worker has no
+  `/Users/…`. A draft job dispatched to the cloud therefore wrote nothing, the result rsync failed with
+  `link_stat … failed`, and the watchdog still recorded `status=ok`. Fixed: drafts render to a repo-relative
+  path inside a synced dir (`map/art/_lm_<id>_<cam>.jpg`) and are collected into `docs/drafts/` afterwards;
+  `tools/render_preflight.py` now rejects both an absolute `--out` and an `--out` under `docs/`.
+- [x] **Work branch renamed to `preview`** (was `cloud/tc-mid-low`), with the old name kept as a
+  compatibility mirror because already-imported follow scripts carry it in their URL; both refs go out
+  together via `tools/push_preview.sh [--head]`.
+- [x] **Commit style**: messages are English and no longer carry a `Co-Authored-By` trailer (user decision
+  2026-09-29), recorded in `docs/agent-brief.md` and `docs/language-policy.md`.
+
 ## 4. Needs a user decision
 
 - [?] 正式发布 / npm 发布（`ROADMAP.md:23,80`，等与卡作者谈妥）。
@@ -169,3 +189,19 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [x] 仓库体积：删掉冗余的 `archive/feat-worldbook-auto`（内容已在主线）后 `git gc --prune=now`，
   pack **585.75 → 489.91 MiB（回收 176 MB）**。本机归档 bundle 在 `.cache/attic/archive-branches.bundle`
   （528 MB，gitignore，含重写前血线；内容已在主线，确认不再需要后可删）。
+
+## 6. Where finished and historical todos live
+
+- A finished item stays **in its source document**, struck: `~~…~~ ✅ <date> <commit>`. That document is the
+  record of what was decided there — no rewriting it after the fact.
+- The **index** only keeps §1–§4 readable: a finished item moves to §5 with its date and commit, and the
+  superseded wording stays visible in the struck source line.
+- **Historical task briefs and handoffs** live in `docs/history/` and `docs/archive/`; where a constraint in
+  them was later revoked they carry a 作废 banner (see `docs/archive/README.md`), so a reader cannot execute
+  an old rule by accident.
+- **Per-release verdicts** live in `docs/reviews/**`; the pre-rewrite iteration material lives in
+  `docs/drafts/**` (169 MB, tracked — see the cleanup item in §3).
+- **Nothing is deleted.** A cancelled item becomes `[x] cancelled — <reason>` in place; only the branch
+  cleanup removed refs, and those were verified ancestors or tagged first (`archive/upper-v18`).
+- New items are added to §1–§4 with their `file:line` source. If an area grows past a screen, extend its
+  section here instead of opening a new file.
