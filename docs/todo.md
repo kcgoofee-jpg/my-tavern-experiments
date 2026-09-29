@@ -120,8 +120,9 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   新增 `.ruff_cache/`。（`logs/render_times.csv` 被跟踪且在 `logs/` 忽略之下是**故意的**——
   union 合并驱动要用它，不要 `git rm --cached`。）
 - [ ] **重资产账**（已入库，占比大）：
-  `docs/drafts/` **≈158 MB / 471 个文件**（迭代中间草图，`docs/reviews/takeover_095/toolchain.md:11` 已点名）、
-  `docs/reviews/` ≈10.7 MB（一次性门控记录 + 过程截图）、`map/shots/*.png` ≈5.6 MB。
+  `docs/drafts/` **169 MB / 474 个已跟踪文件**（迭代中间草图，`docs/reviews/takeover_095/toolchain.md:11` 已点名）、
+  `docs/reviews/` **61 MB**（一次性门控记录 + 过程截图；代理初估 10.7 MB 是按目录清单算的，`du` 实测 61 MB）、
+  `map/shots/*.png` ≈5.6 MB。
   迁出主仓要重写历史 → **待决定**（见 §4）。
 - [ ] **历史里的垃圾 blob ≈63 MB**：`map/art/.tc_low_day_full.png.iCUfRJ`（40 MB）与
   `.tc_mid_night_full.png.1V2n4g`（22.8 MB）——`git add -A` 误提交的 rsync 传输临时文件。
