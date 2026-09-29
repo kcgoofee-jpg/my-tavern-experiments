@@ -28,6 +28,8 @@ step "无空的已跟踪源文件" bash -c "! git ls-files -- '*.mjs' '*.js' '*.
 step "版本一致（VERSION ↔ build.json ↔ CHANGELOG ↔ README ↔ 标签）" python3 tools/check_version.py
 step "令牌内联一致（tokens.css ↔ viewer.html）" python3 tools/sync_tokens.py --check
 step "机器标识 ASCII 审计（路径 / JSON 键 / id 字段）" python3 tools/check_ascii.py
+step "文档语言（基线之后的新 .md 必须英文，见 docs/language-policy.md）" python3 tools/check_doc_language.py
+step "文档语言门控自测（英文过 / 中文拦 / 豁免真的豁免）" python3 tools/test_doc_language.py
 step "渲染守卫 lint（渲染脚本必须经 setup_render_device/pick_gpu 配 GPU）" python3 tools/render_preflight.py lint
 step "渲染守卫单测（看门狗状态机 / 预检 / 事故回归）" python3 tools/test_render_guard.py
 step "node --test tests/($(ls tests/*.test.mjs | wc -l | tr -d ' ') 个)" node --test tests/*.test.mjs

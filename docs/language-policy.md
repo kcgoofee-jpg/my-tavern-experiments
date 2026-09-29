@@ -1,0 +1,50 @@
+# Language policy
+
+Decided 2026-09-29. This repo goes English from here on, **incrementally** — no big-bang
+translation of what already exists.
+
+## The rule
+
+1. **New documents are written in English.** A Chinese edition of a new doc is welcome as
+   a separate `*.zh.md` file; the English one is canonical.
+2. **New prose added to an existing document is English.** Adding a fresh section to a
+   Chinese doc in English is intentional: the Chinese body stays as the historical
+   record, the new material enters in English.
+3. **Existing documents are grandfathered.** They are not translated wholesale, not
+   renamed, and not restructured for language reasons. A half-translated repo is worse
+   than a mixed one, because nobody can tell which half is authoritative.
+
+## Why incremental and not a sweep
+
+* The Chinese docs are load-bearing: `docs/agent-brief.md`, `docs/handoff.md` and the
+  setting docs are read by agents and by the card author on every session. Rewriting them
+  wholesale would invalidate every quoted line in `docs/reviews/`, the historical task
+  briefs, and the issue history.
+* Machine identifiers already had to be ASCII (see `tools/check_ascii.py`); that audit is
+  about paths, JSON keys and `id` fields, not about prose. This policy is about prose.
+
+## How it is enforced
+
+`tools/check_doc_language.py`, wired into `tools/smoke.sh`:
+
+* A document does not exist at the latest `map-v*` release tag → it is **new**.
+* A new `.md` whose CJK character ratio is **5% or more** fails the gate.
+* Exempt, on purpose: `*.zh.md` (Chinese edition), `docs/archive/**` and `docs/history/**`
+  (verbatim archives), plus an explicit `ALLOW` list in the script, each entry carrying
+  its reason.
+
+Existing docs are grandfathered by construction — the baseline is a release tag, so the
+gate can never retroactively fail a document that already shipped.
+
+## What this means in practice
+
+* **Documents** are what the gate checks. New `docs/**/*.md` in English.
+* **Code comments and tool output follow the file's existing language.** A Chinese file
+  stays Chinese; a brand-new tool may be written in English or Chinese, but pick one and
+  do not mix inside a file. This is deliberately *not* gated: the repo's tooling speaks
+  Chinese and flipping that mid-file would read worse than it gains.
+* **New UI strings** still need both `zh.json` and `en.json` (the i18n parity test enforces
+  that). Author them in English first, then translate — the English string is the source.
+* **Commit messages**: keep the existing style, which is Chinese. Not gated.
+* Setting docs that quote the original card verbatim keep the quoted Chinese (the card is
+  the source of truth); the surrounding explanation is English.

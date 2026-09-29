@@ -70,7 +70,11 @@ require_host() {
 }
 
 ssh_opts() {
-  echo -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -i "$KEY_EXPANDED" -p "$PORT"
+  # ServerAlive* / TCPKeepAlive（2026-09-29）：本机走 Clash TUN（假地址 198.18.x.x）时，
+  # 半死的连接不会自己报错，长传输会一直挂着。加保活后 60s 内发现断链并让上层重试。
+  echo -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 \
+       -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o TCPKeepAlive=yes \
+       -i "$KEY_EXPANDED" -p "$PORT"
 }
 
 run_ssh() {
@@ -94,7 +98,17 @@ run_rsync() {
   require_host
   local RS=rsync; [ -x /opt/homebrew/bin/rsync ] && RS=/opt/homebrew/bin/rsync
   if "$RS" --version 2>&1 | head -1 | grep -q openrsync; then echo "macOS 自带 openrsync 与云端不兼容：先运行 brew install rsync" >&2; exit 3; fi
-  "$RS" -e "ssh $(ssh_opts)" "$@"
+  # --partial --append-verify：中断后接着传，不从头上传（Clash/代理抖一下不必重来一遍）；
+  # --timeout=120：半死连接 2 分钟内放弃；三次尝试后仍失败才真报错。
+  local attempt
+  for attempt in 1 2 3; do
+    if "$RS" --partial --append-verify --timeout=120 -e "ssh $(ssh_opts)" "$@"; then return 0; fi
+    [ "$attempt" = 3 ] && break
+    echo "rsync 第 ${attempt} 次失败，5s 后重试（断点续传）" >&2
+    sleep 5
+  done
+  echo "rsync 连续 3 次失败，放弃（检查网络/代理：docs/cloud-render.md「Clash TUN」）" >&2
+  return 1
 }
 
 scp_up() {

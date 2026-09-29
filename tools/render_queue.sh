@@ -223,11 +223,32 @@ case "${1:-}" in
   status) cmd_status ;;
   dispatch)
     shift
+    # --- 派工单例锁（2026-09-29）---
+    # 症状：多个 dispatch 并存时互相抢同一份 pending——任务被标 done 却没有日志，重则会同一任务派两遍
+    # （重复付费渲染）。根因是常驻循环可以被反复拉起（历史会话、看门狗、手工各拉一个）。
+    # 治法：mkdir 是原子的，锁里记 PID；持有者已死则自动接管。--once 与常驻共用同一把锁。
+    DISP_LOCK="$QDIR/.dispatch.lock"
+    dispatch_lock() {
+      local i pid
+      for i in 1 2 3; do
+        if mkdir "$DISP_LOCK" 2>/dev/null; then echo $$ > "$DISP_LOCK/pid"; return 0; fi
+        pid=$(command cat "$DISP_LOCK/pid" 2>/dev/null || echo "")
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then return 1; fi
+        echo "接管失效的派工锁（原 PID ${pid:-未知} 已不在）" >&2
+        rm -rf "$DISP_LOCK"
+      done
+      return 1
+    }
+    dispatch_unlock() { rm -rf "$DISP_LOCK"; }
+    if ! dispatch_lock; then
+      echo "已有派工在跑（PID $(command cat "$DISP_LOCK/pid" 2>/dev/null || echo 未知)），本进程退出：单例锁" >&2
+      exit 0
+    fi
+    trap 'dispatch_unlock; echo 停止; exit 0' INT TERM
     if [ "${1:-}" = "--once" ]; then
-      cmd_dispatch_once
+      cmd_dispatch_once; dispatch_unlock
     else
-      echo "常驻派工循环，每 ${POLL}s 一轮，Ctrl-C 退出"
-      trap 'echo 停止; exit 0' INT TERM
+      echo "常驻派工循环，每 ${POLL}s 一轮，Ctrl-C 退出（已持有单例锁，重复启动会被拒）"
       while true; do cmd_dispatch_once; sleep "$POLL"; done
     fi
     ;;
