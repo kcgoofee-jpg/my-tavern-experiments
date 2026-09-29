@@ -17,10 +17,15 @@
      var(--zu-*) / var(--zv-*) 名义常量（表定义在 viewer.html 顶部：--zu-* 外层 UI、
      --zv-* 视口槽位）、含 var() 的 calc、或运行期表达式（如 layerhost 的
      String(slotZ(slot))）；裸数字字面量一律拦截。
+  4. Pack 0 铁律（通用化 v1）：map/core/ 内核严禁出现卡片专有人名 / 地名
+     （保底名册 16 人 + 伊甸庄园 / 天城）。注释剥掉后扫描（评述里难免提到卡）；
+     字符串字面量 / 代码里出现 = 违规——人名地名属于设定包数据
+     （map/packs/<id>/、map/data/），内核零硬编码分支。
 
 exit 0 = 全过；exit 1 = 有违规（逐条 文件:行号）。纯文本机检，与
 tests/layer_registry.test.mjs 的常量对拍 / mvu_bridge 的隔离契约互补。
 """
+import json
 import re
 import sys
 from pathlib import Path
@@ -142,6 +147,31 @@ def check_zindex():
     return bad
 
 
+def pack0_names():
+    """卡片专有名词表：保底名册（map/data/fallback_roster.json 的 members.name）+ 卡片专有地名。
+    'eden' 包 id 除外——那是默认包的标识符（core/pack.mjs DEFAULT_ID），不是文案。"""
+    names = {'天城', '伊甸庄园'}
+    f = ROOT / 'map' / 'data' / 'fallback_roster.json'
+    if f.exists():
+        for m in json.loads(f.read_text(encoding='utf-8')).get('members', []):
+            if isinstance(m, dict) and m.get('name'):
+                names.add(str(m['name']))
+    return sorted(names)
+
+
+def check_pack0():
+    bad = []
+    names = pack0_names()
+    for p in sorted(CORE.glob('*.mjs')):
+        code = strip(p.read_text(encoding='utf-8'), literals=False)   # 剥注释（评述里难免提到卡名）、留字符串字面量
+        rel = str(p.relative_to(ROOT))
+        for name in names:
+            if name in code:
+                bad.append(f"{rel}:{line_of(code, code.index(name))}: 内核出现卡片专有名词「{name}」"
+                           f"——人名 / 地名属于设定包数据（map/packs/<id>/、map/data/），内核零硬编码分支")
+    return bad
+
+
 def main():
     fails = []
 
@@ -158,12 +188,16 @@ def main():
     print(f"  [z-index] viewer.html + map/app 共 {len(Z_FILES)} 个文件，裸字面量须为零")
     fails += bad
 
+    bad = check_pack0()
+    print(f"  [Pack 0] core 禁卡专有名词（保底名册 + 地名，共 {len(pack0_names())} 个词），命中须为零")
+    fails += bad
+
     if fails:
         print(f"架构看门狗：{len(fails)} 处违规")
         for f in fails:
             print(f"  {f}")
         return 1
-    print("架构看门狗：3 道防线全过")
+    print("架构看门狗：4 道防线全过")
     return 0
 
 

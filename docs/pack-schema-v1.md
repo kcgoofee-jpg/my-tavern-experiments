@@ -27,12 +27,15 @@
 | `data.rooms` | 否 | path | 分层房间平面 |
 | `data.events` | 否 | path 或 `builtin` | 事件分类（`events.schema.json`）；`builtin` 只给 eden |
 | `data.worldbook` | 否 | path | 世界书附加条目源 |
+| `data.security` | 否 | path | 安保叠加层事实（`security.mjs` 读；2026-09-30 加） |
+| `data.roster` | 否 | path | 保底名册 `{members: [{name, identity}]}`：无 MVU 数据时人物页兜底（2026-09-30 加） |
+| `preload` | 否 | [path] | 启动预取的数据文件：查看器首帧按包注入 `<link rel=preload>`（2026-09-30 加） |
 | `vars` | 否 | {字段: 路径} | MVU stat_data 默认路径（键 = `tavern/adapter.mjs FIELDS`） |
 | `cdn.repo` | 否 | `owner/repo` | jsDelivr gh 线路 |
 | `cdn.npm` | 否 | string | npm 镜像包名 |
 | `theme.accent` | 否 | `#rrggbb` | 强调色 |
 | `features` | 否 | {名: bool} | 开关覆盖，默认按有无对应数据推出 |
-| `strings` | 否 | {键: string} | 包内文案 |
+| `strings` | 否 | {键: string} | 包内文案覆盖：键 = i18n 键、值不分语言，英文变体写「键@en」；查看器 i18n 与三维子页都吃（2026-09-30 接入） |
 | `worldbook.addon` | 否 | string | eden 历史字段：附加条目生成脚本 |
 
 ## 3. 伊甸包

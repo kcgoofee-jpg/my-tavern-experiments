@@ -1,5 +1,6 @@
 // i18n 与主题：LANG/DICT/t/tr/nm、setLang、setTheme、postState；window.I18N 是外挂与子页共用的服务。
 import { REG, cur, viewer } from './state.mjs';
+import { PACK } from './pack.mjs';
 import { $, esc, getJSON, post, tx } from './util.mjs';
 import { applyTier, drawOverlays, tierLabels } from './tiers.mjs';
 import { mapChrome } from './nav.mjs';
@@ -15,7 +16,9 @@ import * as TCCvd from './cvd.mjs';
 // 界面文字在 i18n/zh.json、en.json；地名的英文在 maps.json 的 *_en 字段，世界图地名在 en.json 的 names。设定原文（地点卡正文）不翻译。
 export let LANG = window.__lang || 'zh', DICT = {};
 const fmt = (s, v) => { for (const [a, b] of Object.entries(v || {})) s = String(s).split('{' + a + '}').join(b); return s; };
-export const t = (k, v) => fmt(DICT[k] ?? k, v);
+// 包内文案（manifest.strings，通用化 v1 接入）：键 = i18n 键、值不分语言；英文变体写「键@en」（缺了退回无后缀值）。
+// 包没配的键照旧走核心字典——用来换掉核心文案里带本卡口径的说法（如占位提示里的 MVU 路径）。
+export const t = (k, v) => { const s = PACK?.strings, o = s && (LANG === 'en' ? s[k + '@en'] ?? s[k] : s[k]); return fmt(o != null && o !== '' ? o : DICT[k] ?? k, v); };
 export const tr = z => LANG === 'en' ? (DICT.names?.[z] || z) : z;
 export const nm = (o, k = 'name') => { const z = o?.[k] ?? ''; return LANG === 'en' ? (o?.[k + '_en'] || tr(z)) : z; };
 // 共享 i18n 服务（arch-v2 §6 第 6 步 i18n 块）：外挂脚本与 app/*.mjs 都走这里，不再各自带一份 T()。

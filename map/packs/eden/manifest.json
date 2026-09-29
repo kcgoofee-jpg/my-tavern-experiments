@@ -13,8 +13,15 @@
     "world": "data/world_markers.json",
     "derived": "data/derived.json",
     "rooms": "data/eden_estate_rooms.json",
+    "security": "data/security.json",
+    "roster": "data/fallback_roster.json",
     "events": "builtin"
   },
+  "preload": [
+    "data/maps.json",
+    "data/world_markers.json",
+    "data/derived.json"
+  ],
   "cdn": {
     "repo": "kcgoofee-jpg/my-tavern-experiments",
     "npm": "tiancheng-map-assets"

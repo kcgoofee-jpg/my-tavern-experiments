@@ -1,6 +1,9 @@
 // node tests/roster095.test.mjs —— v0.9.5 人物栏名册（只读）：按表的位置发现在场 / 成员 / 目标，身份、阶段、声望、阶段顺序。数据全是中性占位
+// 保底名册（通用化 v1）是包级数据（map/data/fallback_roster.json），rosters() 按参数收；这里显式传 eden 的保底名册当夹具
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import * as V from '../map/tavern/mvu.mjs';
+const FB = JSON.parse(readFileSync(new URL('../map/data/fallback_roster.json', import.meta.url), 'utf8')).members;
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
 const S = { 世界: { 当前地点: '甲地' }, 主角: { 声望: 62, 着装: {} }, 表一: { 甲: { 身份: '园丁', 等级: 'B' } }, 在场人物: { 乙: { 身份: '访客' } }, 表三: { 丙: { 身份: '商人', 进度: '第二步' }, 丁: { 身份: ['学者', '说明'], 进度: '第一步' } } };
 t('按位置发现三张表；身份、阶段；[值, 说明] 也认', () => {
@@ -9,16 +12,17 @@ t('按位置发现三张表；身份、阶段；[值, 说明] 也认', () => {
   assert.equal(r.members.key, '表一'); assert.deepEqual(r.members.items[0], { name: '甲', identity: '园丁' });
   assert.equal(r.targets.key, '表三'); assert.deepEqual(r.targets.items[1], { name: '丁', identity: '学者', stage: '第一步' });
 });
-t('映射覆盖表名；缺表走设定兜底（开局名册 16 人）；非对象安全', () => {
+t('映射覆盖表名；缺表走设定兜底（包保底名册 16 人）；非对象安全；不给 fallback 就没有兜底行', () => {
   const r = V.rosters(S, { members: '表三', targets: '表一' }); assert.equal(r.members.key, '表三'); assert.equal(r.targets.key, '表一');
-  const fb = V.rosters({ 世界: {}, 主角: {} });
+  const fb = V.rosters({ 世界: {}, 主角: {} }, {}, FB);
   assert.equal(fb.present, null); assert.equal(fb.targets, null);
   assert.equal(fb.members.key, '设定名册'); assert.equal(fb.members.items.length, 16);
   assert.equal(fb.members.items[0].name, '绫濑遥'); assert.equal(fb.members.items[0].src, '设定');
-  assert.equal(V.rosters(null).members.items.length, 16);
+  assert.equal(V.rosters(null, {}, FB).members.items.length, 16);
+  assert.equal(V.rosters({ 世界: {}, 主角: {} }).members, null, '没传保底名册（非 eden 包未声明 data.roster）→ 没有兜底行');
 });
 t('设定兜底合并：MVU 表里有的人以 MVU 为准不重复，表里没有的补在后面', () => {
-  const r2 = V.rosters({ 世界: {}, 主角: {}, 表一: { 绫濑遥: { 身份: '女仆长（剧情版）' }, 新人: { 身份: '新加入' } } });
+  const r2 = V.rosters({ 世界: {}, 主角: {}, 表一: { 绫濑遥: { 身份: '女仆长（剧情版）' }, 新人: { 身份: '新加入' } } }, {}, FB);
   assert.equal(r2.members.key, '表一'); assert.equal(r2.members.items.length, 17);
   assert.deepEqual(r2.members.items[0], { name: '绫濑遥', identity: '女仆长（剧情版）' }); assert.ok(!('src' in r2.members.items[0]));
   assert.equal(r2.members.items[1].name, '新人');

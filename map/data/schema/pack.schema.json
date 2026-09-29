@@ -22,8 +22,11 @@
         "derived": { "$ref": "#/$defs/path" },
         "rooms": { "$ref": "#/$defs/path", "description": "分层房间平面（庄园类室内图）" },
         "events": { "anyOf": [ { "const": "builtin" }, { "$ref": "#/$defs/path" } ], "description": "事件分类（结构 = events.schema.json）；builtin = 核心自带的天城分类（只有 eden 用）" },
-        "worldbook": { "$ref": "#/$defs/path", "description": "世界书附加条目源文件（给模型的地图联动规范）" }
+        "worldbook": { "$ref": "#/$defs/path", "description": "世界书附加条目源文件（给模型的地图联动规范）" },
+        "security": { "$ref": "#/$defs/path", "description": "安保叠加层事实（viewer security.mjs 读；结构见文件 _note）" },
+        "roster": { "$ref": "#/$defs/path", "description": "保底名册 {members: [{name, identity}]}：无 MVU 数据时人物页的初始展示（宿主载入，引擎不写死人名）" }
       } },
+    "preload": { "type": "array", "items": { "$ref": "#/$defs/path" }, "description": "启动预取的数据文件（查看器首帧按包注入 <link rel=preload>；路径相对清单目录，eden 相对 map/）" },
     "vars": { "type": "object", "additionalProperties": { "type": "string" }, "description": "MVU stat_data 默认路径（键 = tavern/adapter.mjs FIELDS：location / time / date / outfit / present…）；没写的按字段名自动发现，用户仍可在设置「变量映射」里改" },
     "cdn": { "type": "object", "additionalProperties": false,
       "properties": { "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", "description": "GitHub owner/repo（jsDelivr gh 线路）" }, "npm": { "type": "string" } } },

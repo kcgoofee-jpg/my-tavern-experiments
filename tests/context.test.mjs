@@ -8,7 +8,10 @@ import { ContextPipeline, hashText } from '../map/tavern/context.mjs';
 import * as EVM from '../map/tavern/events.mjs';
 import * as CHM from '../map/tavern/characters.mjs';
 import * as TRm from '../map/tavern/trips.mjs';
+import { readFileSync } from 'node:fs';
 import { normCustom, rosters as mvuRosters } from '../map/tavern/mvu.mjs';
+// 保底名册（通用化 v1）是包级数据：调用侧按参数传（宿主从 manifest.data.roster 载入）——这里载入 eden 的保底名册
+const FB = JSON.parse(readFileSync(new URL('../map/data/fallback_roster.json', import.meta.url), 'utf8')).members;
 
 const F = (id, message, extra) => ({ message_id: id, message, extra });
 
@@ -48,7 +51,7 @@ test('round：签名没变跳过；变了 → 事件 / 人物 / 名册 / 新事�
     stSig: '{}', dbSig: '', varSig: 'v1', custVer: 0, customChat: 'c', chatId: 'c', seen: -1, wbState: '',
     hasReg: false, hasCHM: true, hasMV: true, hasTRm: true, hasHereMod: false, hereNow: '中层·霓虹街', collect: EVM.collect,
     charsDeps: { mvuChars: [], known: ['雷恩'], dbCharacters: [], collectChars: CHM.collectChars,
-      rosters: mvuRosters({ 世界: { 当前地点: '中层·霓虹街' }, 主角: {} }), reputation: null, presentKey: '' } };
+      rosters: mvuRosters({ 世界: { 当前地点: '中层·霓虹街' }, 主角: {} }, {}, FB), reputation: null, presentKey: '' } };
   const r1 = P.round(base);
   assert.equal(r1.changed, true);
   assert.equal(r1.events.length, 1); assert.equal(r1.fresh, 1, '没读过 → 有未读');

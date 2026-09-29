@@ -18,12 +18,28 @@ test('eden 清单是唯一定义（没有内置 EDEN 常量）；eden 的键与�
   assert.equal(PK.EDEN, undefined); assert.equal(PK.EDEN_RESOLVED, undefined);
   let asked = null; const R = await PK.load('eden', { fetchJSON: async u => { asked = u; return m; } });
   assert.equal(asked, 'packs/eden/manifest.json'); assert.equal(R.base, ''); assert.equal(R.chatVar, 'eden_map'); assert.equal(R.prefix, 'edenMap');
-  assert.deepEqual(R.data, { maps: 'data/maps.json', world: 'data/world_markers.json', derived: 'data/derived.json', rooms: 'data/eden_estate_rooms.json', events: 'builtin' });
-  assert.match(rd('map/viewer.html'), /<link rel="preload" as="fetch" crossorigin="anonymous" href="packs\/eden\/manifest\.json">/);
+  assert.deepEqual(R.data, { maps: 'data/maps.json', world: 'data/world_markers.json', derived: 'data/derived.json', rooms: 'data/eden_estate_rooms.json', security: 'data/security.json', roster: 'data/fallback_roster.json', events: 'builtin' });
+  assert.deepEqual(R.preload, ['data/maps.json', 'data/world_markers.json', 'data/derived.json']);
+  // 启动预取数据驱动（通用化 v1）：viewer.html 不再写死 eden 的数据预取，按包 id 注入清单链接 + 清单 preload 列
+  const v = rd('map/viewer.html');
+  assert.doesNotMatch(v, /<link rel="preload" as="fetch" crossorigin="anonymous" href="data\//, '三份 eden 数据预取清零');
+  assert.match(v, /u = 'packs\/' \+ id \+ '\/manifest\.json'/, '清单预取按包 id 动态注入');
+  assert.match(v, /for \(const p of m\?\.preload \|\| \[\]\) add\(B \+ p\)/, '数据预取由清单 preload 列驱动');
   assert.equal(PK.nsKey('edenMapFog', 'eden'), 'edenMapFog');
   assert.equal(PK.nsKey('edenMap:chat:1:fog', undefined), 'edenMap:chat:1:fog');
   assert.equal(PK.chatVarOf('eden'), 'eden_map');
   assert.deepEqual(PK.validate(m), []);
+});
+
+test('preload / security / roster：路径校验、按包补目录、包不声明就为空', () => {
+  const town = PK.resolve(js('map/packs/town/manifest.json'));
+  assert.deepEqual(town.preload, [], 'town 没声明 preload');
+  assert.ok(PK.validate({ ...js('map/packs/town/manifest.json'), preload: 'data/maps.json' }).length, 'preload 要是数组');
+  assert.ok(PK.validate({ ...js('map/packs/town/manifest.json'), preload: ['https://evil/x.json'] }).length, '拒外链');
+  assert.ok(PK.validate({ ...js('map/packs/town/manifest.json'), preload: ['../x.json'] }).length, '拒上跳');
+  const harbor = PK.resolve({ id: 'harbor', schema: 1, title: '港', data: { maps: 'maps.json', security: 'sec.json' }, preload: ['maps.json', 'sec.json'] });
+  assert.deepEqual(harbor.preload, ['packs/harbor/maps.json', 'packs/harbor/sec.json'], '非 eden 包按包目录补前缀');
+  assert.equal(harbor.data.security, 'packs/harbor/sec.json', '安保数据挂载点同样按包目录');
 });
 
 test('其它包：键换到 tcp.<id>.*，聊天变量默认 tc_<id>，路径补包目录', () => {

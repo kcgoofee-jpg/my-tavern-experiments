@@ -34,9 +34,12 @@ export class MVUBridge {
     // 名册装配系统（P3-B，core/roster.mjs）：桥注册它拥有的三个来源；宿主再补 chat / baibai（聊天原文与扩展接口在宿主）。
     // 发给查看器的 eden-map:chars.rosters 三表载荷照旧出自 rosters()（向后兼容）；装配系统供 known 名单、立绘挂载与 describe 摘要消费。
     this.roster = new RS.RosterSystem();
+    // 保底名册（Pack 0 数据挂载点 manifest.data.roster，通用化 v1）：宿主按清单路径取到后 setFallbackMembers 注入；
+    // 没给就没有兜底行——引擎不写死任何卡的人名。
+    this.fallbackMembers = Array.isArray(o.fallbackMembers) ? o.fallbackMembers : [];
     this.roster.use('mvu', { rows: () => this.MV ? RS.mvuRows(this.rosters()) : [] });
     this.roster.use('table-db', { rows: () => RS.placeRows(this.dbCharacters(), 'table-db') });
-    this.roster.use('fallback', { rows: () => RS.fallbackRows(this.MV?.FALLBACK_MEMBERS || []) });
+    this.roster.use('fallback', { rows: () => RS.fallbackRows(this.fallbackMembers) });
     if (o.pack) AD.useDefaults(o.pack.manifest?.vars);   // 设定包：默认映射路径按清单换（eden 不动）
     // mvu.mjs 按需加载（纯函数集；失败只是没有 MVU 联动功能）。设定包的聊天变量键 / 自定义世界书名在这里配置。
     this.MV = null;
@@ -134,7 +137,9 @@ export class MVUBridge {
   /** 主角着装：{ items, text }（items = null 表示没有） */
   outfit(st = this.mvuStat()) { const MV = this.MV; const o = MV ? MV.outfit(st, this.varMap.outfit) : null; return { items: o, text: MV ? MV.outfitText(o) : '' }; }
   /** 名册三张表（在场 / 成员 / 目标；含设定兜底名册），映射里的行内字段名全量生效 */
-  rosters(st = this.mvuStat()) { const m = this.varMap; return this.MV ? this.MV.rosters(st, { present: m.present, members: m.members, targets: m.targets, stageField: m.stageField, gradeField: m.gradeField, coreField: m.coreField, codeField: m.codeField, socialField: m.socialField, heightField: m.heightField, weightField: m.weightField, knownField: m.knownField, accessoryField: m.accessoryField, tierField: m.tierField }) : { present: null, members: null, targets: null }; }
+  rosters(st = this.mvuStat()) { const m = this.varMap; return this.MV ? this.MV.rosters(st, { present: m.present, members: m.members, targets: m.targets, stageField: m.stageField, gradeField: m.gradeField, coreField: m.coreField, codeField: m.codeField, socialField: m.socialField, heightField: m.heightField, weightField: m.weightField, knownField: m.knownField, accessoryField: m.accessoryField, tierField: m.tierField }, this.fallbackMembers) : { present: null, members: null, targets: null }; }
+  /** 包的保底名册（manifest.data.roster，宿主异步取到后注入）；有货返回 true（宿主据此重发名册） */
+  setFallbackMembers(rows) { this.fallbackMembers = Array.isArray(rows) ? rows.filter(r => r && typeof r === 'object') : []; return this.fallbackMembers.length > 0; }
   reputation(st = this.mvuStat()) { return this.MV ? this.MV.reputation(st, this.varMap.reputation) : null; }
   // 名册装配系统（P3-B 契约，core/roster.mjs）：统一 rows() 行、已知名单（人物栏短名对齐用）、标准化摘要。
   // chat / baibai 两个来源由宿主经 this.roster.use() 登记（聊天原文在流水线、柏宝绘接口在扩展）。

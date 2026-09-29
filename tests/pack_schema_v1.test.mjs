@@ -12,8 +12,8 @@ const S = JSON.parse(rd('map/data/schema/pack.schema.json'));
 // v1 快照：新增可选字段时在这里补；删 / 改名 / 改必填 = 升 schema 2（见文档 §1）
 const V1 = {
   required: ['id', 'schema', 'title', 'data'],
-  top: ['$schema', 'id', 'schema', 'title', 'title_en', 'chat', 'data', 'vars', 'cdn', 'theme', 'features', 'strings', 'worldbook'],
-  nested: { chat: ['var'], data: ['maps', 'world', 'derived', 'rooms', 'events', 'worldbook'], cdn: ['repo', 'npm'], theme: ['accent'], worldbook: ['addon'] },
+  top: ['$schema', 'id', 'schema', 'title', 'title_en', 'chat', 'data', 'preload', 'vars', 'cdn', 'theme', 'features', 'strings', 'worldbook'],
+  nested: { chat: ['var'], data: ['maps', 'world', 'derived', 'rooms', 'events', 'worldbook', 'security', 'roster'], cdn: ['repo', 'npm'], theme: ['accent'], worldbook: ['addon'] },
   dataRequired: ['maps'],
 };
 

@@ -8,6 +8,20 @@
 // 设定包：core/pack.mjs currentId / nsKey 的同步副本（tests/pack.test.mjs 对照）。宿主注入 window.__tcPack 或地址 ?pack=<id>；非 eden 包的 edenMap* 键换成 tcp.<id>.*（eden 原样，老用户的键不动）
 window.__packId = (() => { let id = null; try { id = (window.__tcPack && window.__tcPack.id) || new URLSearchParams(location.search).get('pack'); } catch (e) {} return id && /^[a-z][a-z0-9_-]{1,31}$/.test(id) ? id : 'eden'; })();
 window.__nsKey = k => (window.__packId !== 'eden' && typeof k === 'string' && k.startsWith('edenMap') ? 'tcp.' + window.__packId + '.' + k.slice(7) : k);
+// 启动预取（数据驱动，通用化 v1）：清单按包 id 取、与模块并行；清单 preload 列的数据文件由清单自己声明——
+// 宿主注入 __tcPack（清单同步在手）现在就注入 <link rel=preload>；单独打开先取清单（__manifestP，app/pack.mjs 复用），一到就注入。
+// 世界底图预取（无 ?map= 时）只给有世界图的包：注入的看清单 data.world；单独打开的默认包（eden）照旧，别的包不白拉三个 404。dzi 带 crossorigin 才和 OSD 的请求对得上。
+(function () {
+  const id = window.__packId, B = id === 'eden' ? '' : 'packs/' + id + '/', u = 'packs/' + id + '/manifest.json';
+  const add = (h, as, co) => { const l = document.createElement('link'); l.rel = 'preload'; l.as = as || 'fetch'; l.href = h; if (co) l.crossOrigin = 'anonymous'; document.head.appendChild(l); };
+  const put = m => { for (const p of m?.preload || []) add(B + p); };
+  add(u);
+  if (window.__tcPack?.manifest) put(window.__tcPack.manifest);
+  else window.__manifestP = fetch(u, { credentials: 'omit', referrerPolicy: 'no-referrer' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(m => (put(m), m)).catch(() => {});
+  window.__worldFirst = !new URLSearchParams(location.search).get('map');   // 总是先开世界图（用户 2026-09-28）
+  if (window.__worldFirst && (id === 'eden' || !!window.__tcPack?.manifest?.data?.world)) for (const [h, as, co] of [['art/world.dzi', 'fetch', 1], ['art/borders.dzi', 'fetch', 1], ['art/world_1k.jpg', 'image', 0]]) add(h, as, co);
+})();
+
 </script>
 <script>
 // 本机存储（arch-v2 §4 / §6 第 5 步）：core/storage.mjs 的同步经典镜像——经典脚本要在首帧前同步读，不能 import 模块。
@@ -36,12 +50,8 @@ window.TCStore = (() => { const A = s => { try { return s ? sessionStorage : loc
     d.dataset.hand = h; return h; };
   window.__applyHand();
   window.__i18n = fetch('i18n/' + lg + '.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));   // 和启动数据并行取
-  // 首图总是世界图（没有 ?map= 时）：预取世界底图的描述文件与 1200px 缩略图
-  // dzi 带 crossorigin：凭据模式与 OSD 的请求一致，预取的结果才用得上
   if ((navigator.deviceMemory || 8) <= 4) d.classList.add('lowmem');   // 低内存：不用毛玻璃（backdrop-filter 很贵）
-  window.__worldFirst = !q.get('map');   // 总是先开世界图（用户 2026-09-28）
-  if (window.__worldFirst) for (const [h, as, co] of [['art/world.dzi', 'fetch', 1], ['art/borders.dzi', 'fetch', 1], ['art/world_1k.jpg', 'image', 0]]) {
-    const l = document.createElement('link'); l.rel = 'preload'; l.as = as; l.href = h; if (co) l.crossOrigin = 'anonymous'; document.head.appendChild(l); }
+  // __worldFirst 与启动预取（清单 / 数据 / 世界底图）在顶部首帧脚本里按包 gating
 })();
 </script>
 <!-- 设计令牌（E5）：map/ui/tokens.css 的逐字副本，内联进来——少一个会阻塞首帧的请求，令牌文件挂了也不散架（E5 r2 弱网 W2 / W3）。
@@ -114,11 +124,8 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 }
 </style>
 <!-- OpenSeadragon 5.0.1（BSD-3，见 vendor/openseadragon/LICENSE.txt），随仓库版本固定 -->
-<!-- 启动文件和地图库并行开始下载（CDN 每个请求约 1 秒延迟，串行等待是打开慢的主因） -->
-<link rel="preload" as="fetch" crossorigin="anonymous" href="packs/eden/manifest.json">
-<link rel="preload" as="fetch" crossorigin="anonymous" href="data/maps.json">
-<link rel="preload" as="fetch" crossorigin="anonymous" href="data/world_markers.json">
-<link rel="preload" as="fetch" crossorigin="anonymous" href="data/derived.json">
+<!-- 启动文件和地图库并行开始下载（CDN 每个请求约 1 秒延迟，串行等待是打开慢的主因）；
+     启动数据预取在顶部首帧脚本里按包动态注入（manifest + 清单 preload 列，通用化 v1 后不再写死 eden 的三份数据） -->
 <!-- defer：地图库（277 KB）不再挡住首帧，慢网下先出加载提示与世界缩略图（E4 N07）；main() 等 DOMContentLoaded（此时两个脚本都已执行） -->
 <script defer src="vendor/openseadragon/openseadragon.min.js"></script>
 <script defer src="ui/icons.js"></script>

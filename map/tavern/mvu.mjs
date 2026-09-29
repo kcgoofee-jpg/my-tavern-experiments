@@ -278,29 +278,11 @@ export function combatTier(o, key = '', off = false) {
   return '';
 }
 const MORE_KEYS = { codeField: 'code', socialField: 'social', heightField: 'height', weightField: 'weight', knownField: 'known', accessoryField: 'accessory' };
-/** stat_data → { present, members, targets }：每项 { key: 表名, items: [{ name, identity, stage?, grade?, core?, coreKey?, coreStage? }] } 或 null；map = { present, members, targets } 表名覆盖，gradeField / coreField 行内字段名（'-' = 关闭） */
-// 设定兜底名册（用户 2026-09-29：「庄园成员不能空」）：卡「开局名册」16 人（docs/card-digest.md §5，只取中性身份）。
-// MVU 成员表是剧情写出来的——还没开局 / 剧情还没写到成员表 / 变量快照缺失时，人物页「庄园成员」不该是空的；
-// src:'设定' 供界面标注来源。MVU 表里已有的人不重复补（MVU 为准），剧情新加的人照常追加在后面。
-export const FALLBACK_MEMBERS = [
-  { name: '绫濑遥', identity: '伊甸庄园女仆长' },
-  { name: '苍穹', identity: '骑士团战斗修女，代号「天灾」' },
-  { name: '陈若曦', identity: '星渊大学大三学生，兼职平面模特' },
-  { name: '凯莉·露易丝', identity: '贵族寡妇，首相的妹妹' },
-  { name: '阿斯特丽德·露易丝', identity: '天城首相，露易丝家族当主' },
-  { name: '伊莎贝拉·罗斯柴尔德', identity: '军工与以太能源财阀 CEO' },
-  { name: '神宫寺凛', identity: '法师塔首席，精神系施法者' },
-  { name: '维多利亚', identity: '最高法院首席大法官' },
-  { name: '克洛伊', identity: '全息偶像' },
-  { name: '塞拉菲娜·阿尔贝蒂', identity: '圣光教会第十七任大主教' },
-  { name: '伊薇特·施奈德', identity: '生物外科医生，诊所创始人' },
-  { name: '顾衍容', identity: '星渊大学校长' },
-  { name: '罗莎琳德·海尔加', identity: '议会骑士团第九代团长' },
-  { name: '叶梨莎·艾珐·伍斯特', identity: '海外电竞主播，凯莉的大学学妹' },
-  { name: '瑞秋·卡特', identity: '黑拳场拳手，前雇佣兵' },
-  { name: '玛嘉烈·临光', identity: '光辉联邦圆桌骑士，封号「耀」' },
-].map(m => ({ ...m, src: '设定' }));
-export function rosters(stat, map = {}) {
+/** stat_data → { present, members, targets }：每项 { key: 表名, items: [{ name, identity, stage?, grade?, core?, coreKey?, coreStage? }] } 或 null；map = { present, members, targets } 表名覆盖，gradeField / coreField 行内字段名（'-' = 关闭）
+ * fallback = 包的保底名册（manifest.data.roster 的 members，[{ name, identity }]；Pack 0 数据挂载点，通用化 v1 从这里的硬编码数组抽离）——
+ * 设定兜底（用户 2026-09-29：「庄园成员不能空」）：MVU 成员表是剧情写出来的，还没开局 / 剧情还没写到成员表 / 变量快照缺失时，
+ * 人物页不该是空的。src:'设定' 供界面标注来源；MVU 表里已有的人不重复补（MVU 为准），剧情新加的人照常追加在后面。 */
+export function rosters(stat, map = {}, fallback = []) {
   const out = { present: null, members: null, targets: null };
   if (plain(stat)) {
     const keys = Object.keys(stat), pres = map.present || PRESENT_KEYS.find(k => k in stat) || keys.find(k => /在场|present/i.test(k));
@@ -308,9 +290,9 @@ export function rosters(stat, map = {}) {
     const pick = { present: pres, members: map.members || others[0], targets: map.targets || others.filter(k => k !== map.members)[map.members ? 0 : 1] };
     for (const [g, k] of Object.entries(pick)) if (k && k in stat && isRoster(stat[k])) out[g] = { key: k, items: rows(stat[k], g === 'targets' ? map.stageField : null, map) };
   }
-  // 设定兜底：没有成员表（连 stat 都没有）时整组用开局名册 16 人；有表时只补表里没有的人
+  // 设定兜底：没有成员表（连 stat 都没有）时整组用包的保底名册；有表时只补表里没有的人
   const have = new Set((out.members?.items || []).map(i => i.name));
-  const fb = FALLBACK_MEMBERS.filter(m => !have.has(m.name));
+  const fb = (Array.isArray(fallback) ? fallback : []).filter(m => !have.has(m?.name)).map(m => ({ ...m, src: '设定' }));
   if (fb.length) out.members = { key: out.members ? out.members.key : '设定名册', items: [...(out.members ? out.members.items : []), ...fb] };
   return out;
 }

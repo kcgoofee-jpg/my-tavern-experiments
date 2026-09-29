@@ -10,6 +10,7 @@ import { untrackAll } from './markers.mjs';
 import { estPlan, hereRes } from './locate.mjs';
 import { q3Pref, showSet } from './settings.mjs';
 import * as TCCvd from './cvd.mjs';
+import { PACK } from './pack.mjs';   // 三维子页的包注入（__packId / __packStrings）：子页读不到清单，语言键与包内文案随页带进去
 import { chatId } from './extapi.mjs';
 import { setFpsMeter } from './fps.mjs';
 // ---------------- 庄园剖面（kind=estate） ----------------
@@ -77,7 +78,8 @@ export async function openEstate(id, m, hadPrev) {
   const vend = new URL('vendor/', url).href;
   // 用 blob: 地址而不是 srcdoc：Tauri Tavern 的 WKWebView 里第三层 srcdoc iframe（宿主 → 查看器 srcdoc → 庄园）永远不加载（TT 实测 P0）。
   // blob 由查看器自己的窗口创建（同源），<base> 照旧，相对资源按线路解析；加载完就回收。
-  const doc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">${EST_HOOK}${m.viewer3d ? `<script>window.__V3D_MODEL=${JSON.stringify(String(m.viewer3d))}<\/script>` : ''}`)
+  const packStr = PACK?.strings, hasStr = packStr && Object.keys(packStr).length;
+  const doc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">${EST_HOOK}<script>window.__packId=${JSON.stringify(PACK?.id || 'eden')}<\/script>${hasStr ? `<script>window.__packStrings=${JSON.stringify(packStr).replace(/</g, '\\u003c')}<\/script>` : ''}${m.viewer3d ? `<script>window.__V3D_MODEL=${JSON.stringify(String(m.viewer3d))}<\/script>` : ''}`)
     .replace(/(["'])https:\/\/cdn\.(?:jsdelivr\.net|jsdmirror\.com)\/npm\/three@0\.160\.0\/build\/three\.module(?:\.min)?\.js\1/g, `$1${vend}three.module.min.js$1`)
     .replace(new RegExp(THREE_CDN.source + 'examples\\/jsm\\/', 'g'), vend + 'jsm/');
   const blob = URL.createObjectURL(new Blob([doc], { type: 'text/html' })); f.src = blob;

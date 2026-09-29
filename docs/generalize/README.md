@@ -58,10 +58,13 @@ map/packs/<id>/
 | `data.events` | 否 | 事件分类；不写就没有事件功能。`builtin` 只给 eden 用 |
 | `data.worldbook` | 否 | 世界书附加条目 |
 | `data.world` / `derived` / `rooms` | 否 | 世界图地点、派生数据、分层房间平面；eden 在用，新包一般不需要 |
+| `data.security` / `data.roster` | 否 | 安保叠加层事实 / 保底名册（`{members:[{name,identity}]}`）：不写就没有安保层 / 兜底名册 |
+| `preload` | 否 | 启动预取的数据文件（相对包目录）：查看器首帧按它注入 `<link rel=preload>`；不写就不预取 |
 | `chat.var` | 否 | 聊天变量顶层键，默认 `tc_<id>` |
 | `vars` | 否 | MVU `stat_data` 的默认路径，例如 `{ "location": "世界.当前地点" }`。键见 `tavern/adapter.mjs` 的 `FIELDS`；没写的键按字段名自动找，用户也能在设置「变量映射」里改 |
 | `cdn.repo` / `cdn.npm` | 否 | 你自己的 GitHub 仓库（jsDelivr gh 线路）；不写就用本仓库 |
 | `theme.accent` | 否 | 强调色 `#rrggbb` |
+| `strings` | 否 | 包内文案覆盖 { i18n 键: 文案 }（英文变体「键@en」）：换掉核心字典里带卡口径的说法 |
 
 本机存储前缀**不能配置**，它由 id 推出：eden 是 `edenMap`，其它包是 `tcp.<id>.`。首帧前置脚本要在清单到达之前同步算出前缀。
 
@@ -120,10 +123,13 @@ map/packs/<id>/
 
 ## 已知限制（通用化 v1）
 
-- 世界图（`kind: world`）、庄园剖面、天城尺度环（`app/scale.mjs`）、人物名册、安保层都还是 eden 专用。新包目前只支持同组多层的 points 地图、事件、当前地点、自定义叫法、迷雾、行程和 viewer3d 三维。
+- ~~世界图（`kind: world`）、庄园剖面、天城尺度环（`app/scale.mjs`）、人物名册、安保层都还是 eden 专用。~~
+  ✅ 2026-09-30 部分收口：**安保层事实**（`data.security`）与**保底名册**（`data.roster`）已降为包级数据挂载点——引擎不写死人名 / 规则，
+  `tools/check_architecture.py` 第 4 道防线拦截 core 里再出现卡片专有名词。仍是 eden 专用的只剩**地图种类**：
+  世界图（`kind: world`）、庄园剖面、天城尺度环（`app/scale.mjs`）——新包目前只支持同组多层的 points 地图、事件、当前地点、自定义叫法、迷雾、行程和 viewer3d 三维。
 - ~~本机存储预算清理（`tavern/budget.mjs` 的 LRU）只认 `edenMap*` 前缀，其它包的按聊天数据不会被自动清理。~~ ✅ 2026-09-30：LRU 全程经包命名空间句柄（查看器 `nsStore` / 宿主 `wrapLS`）枚举，只看见、只清本包的数据，eden 的键被藏起来不碰（`tests/pack.test.mjs` 多包隔离 + LRU 不越界机检）；另加包命名空间空键回读 `edenMap*` 历史档的别名回退（`core/storage.mjs` get、viewer 首帧镜像、宿主 lsGet 同一规则）。
-- 界面文案（`map/i18n/*.json`）是核心共用的，个别地方还带天城的说法（例如设置里的说明、占位提示「模拟 MVU：世界.当前地点」），首次打开就能看到。包的 `strings` 字段已经预留，但还没接入。
-- 三维子页（`props/viewer3d.html`）读的是 eden 的语言键，在其它包里会退回中文。
-- `viewer.html` 里写死的三条数据预取（`data/maps.json` 等）是 eden 的；其它包打开时这三份也会下载一次（不影响功能，手机上多几十 KB）。
+- ~~界面文案是核心共用的，包的 `strings` 字段已经预留，但还没接入。~~ ✅ 2026-09-30 接入：`strings` = { i18n 键: 文案 }，覆盖核心字典（英文变体写「键@en」），查看器 `app/i18n.mjs` 的 `t()` 与三维子页都吃；核心字典里带天城口径的键（如占位提示「模拟 MVU：世界.当前地点」）各包可自行换写法。
+- ~~三维子页（`props/viewer3d.html`）读的是 eden 的语言键，在其它包里会退回中文。~~ ✅ 2026-09-30：三维子页的本机读写全部走包前缀（`core/pack.mjs` 的 `nsKey`；包 id 由查看器注入 `window.__packId`），语言 / 画质 / 提示卡键与查看器同一命名空间；`window.__packStrings` 随页注入，包文案可覆盖子页词条。
+- ~~`viewer.html` 里写死的三条数据预取（`data/maps.json` 等）是 eden 的；其它包打开时这三份也会下载一次。~~ ✅ 2026-09-30：预取由清单 `preload` 字段数据驱动——查看器首帧按包 id 注入清单预取，清单声明了 `preload` 就同步注入对应数据文件（宿主注入 `__tcPack` 时零延迟；单独打开经 `__manifestP` 清单一到就注入）；清单没声明的包不再白拉 eden 的三份数据，世界底图预取也按「包有没有世界图」 gating。
 - 历史键 `edenEstateLabels`（庄园标注开关）不在 `edenMap*` 命名空间里，其它包与 eden 共用；新包没有庄园页，目前不会写它。
-- id 规则与键前缀规则在 `core/pack.mjs`、`viewer.html` 首帧前置、`tavern/eden-map.js` 各有一份同步副本（首帧与宿主都不能等模块），`tests/pack.test.mjs` 对照。
+- id 规则与键前缀规则在 `core/pack.mjs`、`viewer.html` 首帧前置、`tavern/eden-map.js` 各有一份同步副本（首帧与宿主都不能等模块），`tests/pack.test.mjs` 对照（含启动预取的注入规则与存储别名回退）。

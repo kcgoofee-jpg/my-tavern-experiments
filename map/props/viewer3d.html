@@ -89,6 +89,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { mountProgress } from '../ui/progress.mjs';   // fix3：统一加载进度组件
 import { Estate3D } from '../core/estate3d.mjs';   // Estate3D Manifest 标准契约（P3-A）：glb 地址与档位兜底都走清单，代码不写死模型路径
+import { nsKey } from '../core/pack.mjs';   // 通用化 v1：本机键按包换前缀（edenMapLang / 画质 / 提示卡……），与查看器同一规则
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer, prefersReducedMotion } from '../ui/camera-controls.js';   // 相机控制共用小件（预设/指北针/提示卡/空闲计时），与庄园页共用
 
 const Q = new URLSearchParams(location.search);
@@ -100,7 +101,9 @@ const post = m => { if (EMBED) try { parent.postMessage(m, '*'); } catch (e) {} 
 
 // ---------------- UI v2 外壳（ui/chrome3d.js）：视图分段 + 剖切高度二级条 + 控制列 + 唯一抽屉（部件 · 流向 · 说明）----------------
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const LSg = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const PID = window.__packId || 'eden';   // 宿主查看器注入（app/estate.mjs）；单独打开默认 eden
+const NKEY = k => nsKey(k, PID);
+const LSg = k => { try { return localStorage.getItem(NKEY(k)); } catch (e) { return null; } };
 // 调试：显示帧率——本页多数时候是 blob: 载入的子 iframe，跟宿主不同源，读不到宿主 localStorage；开关靠宿主 estate:fps 消息（同源直开时 LSg 兜底）
 let FPS_ON = Q.has('fps') || LSg('edenMapFps') === '1';
 const C = UI3D.create({ embed: EMBED, views: [{ id: 'ext', label: '外观' }, { id: 'xray', label: '内透' }, { id: 'cut', label: '剖切' }], view: 'ext', onView: m => setMode(m), sub: document.getElementById('cut'),
@@ -134,8 +137,8 @@ const STR = {
     loading: 'Loading model {p}', fail: 'Model failed to load. Check the connection and retry.', slow: 'Still loading… keep waiting or retry', modes: 'View mode', canvas: '3D model: drag to orbit, pinch to zoom',
     preset_top: 'Top', preset_iso: 'Isometric 45°', preset_front: 'Front', preset_free: 'Free' },
 };
-// v0.9.6：语言先看地图的设置（同源本机存储 edenMapLang），再看系统语言；嵌入时查看器还会发 estate:lang
-let LANG = (Q.get('lang') || (() => { try { return localStorage.getItem('edenMapLang'); } catch (e) { return null; } })() || 'zh').startsWith('en') ? 'en' : 'zh';
+// v0.9.6：语言先看地图的设置（同源本机存储 edenMapLang；通用化 v1 起按包前缀读，别的包不再退回中文），再看系统语言；嵌入时查看器还会发 estate:lang
+let LANG = (Q.get('lang') || LSg('edenMapLang') || 'zh').startsWith('en') ? 'en' : 'zh';
 // 色觉模式（E7，宿主经 estate:cvd 转发查看器「设置 → 显示 → 色觉模式」）：0 关 / rg 红绿 / by 蓝黄。
 // manifest.flows 的颜色各建筑各写，这里不改每个 manifest，改用「按原色相桶归到色觉安全色板」的通用重映射，流向图例本来就有文字名（第二线索）
 let CVD = '0';
@@ -146,7 +149,9 @@ function cvdColor(hex) {
   let h = !d ? 0 : mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360;
   const pal = CVD_PAL[CVD] || CVD_PAL.rg; return pal[Math.floor(h / (360 / pal.length)) % pal.length];
 }
-const t = (k, v = {}) => (STR[LANG][k] || STR.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
+// 包内文案（manifest.strings，宿主注入 window.__packStrings，通用化 v1）：键 = 本页 STR 的键，英文变体「键@en」；没配的键走本页字典
+const PS = window.__packStrings || null;
+const t = (k, v = {}) => ((PS && (LANG === 'en' ? PS[k + '@en'] ?? PS[k] : PS[k])) || STR[LANG][k] || STR.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
 const L = o => (o && (o[LANG] || o.zh)) || '';
 // 玩家可见标题不带「测试」字样（清单 title 由建模侧维护，这里只在显示时去掉前缀与「模型交互」注记）
 const cleanTitle = s => String(s || '').replace(/^(测试[：:]\s*|Test:\s*)/i, '').replace(/\s*[（(](模型交互|model interaction)[）)]\s*$/i, '');
@@ -269,7 +274,7 @@ presets.el.querySelectorAll('button').forEach((b, i) => { b.onclick = () => appl
 presets.setActive('free');
 compass = makeCompass({ root: ccBar, style: { position: 'static' }, onReset: () => applyPreset('front') });
 ccBar.insertBefore(compass.el, ccBar.firstChild);   // 指北针在视角条左边
-const hint = makeHintCard({ storageKey: 'edenMapV3dHintSeen', lines: LANG === 'en' ? [
+const hint = makeHintCard({ storageKey: NKEY('edenMapV3dHintSeen'), lines: LANG === 'en' ? [
   '<b>Drag</b> to orbit around the point you press on', '<b>Wheel</b> zooms to the cursor · pinch (⌃/trackpad) also zooms', '<b>Right-drag / Shift-drag / two-finger drag</b> pans · ⌥ + two-finger scroll rotates',
   '<b>Double-click</b> a part flies to it', '<b>WASD/arrows</b> pan · <b>Q/E</b> rotate · <b>R/F</b> tilt · <b>+/−</b> zoom · <b>0</b> resets',
 ] : [
@@ -285,7 +290,7 @@ C.onInsets(i => { const b = i.bottom + 'px';
 
 // 5) 空闲 30 s 自动旋转（默认关，设置项 edenMap3dAutoRotate 存在即开）
 let idleTimer = null;
-function setAutoRotate(on) { controls.autoRotate = on && !REDUCED_MOTION; controls.autoRotateSpeed = 0.5; try { localStorage.setItem('edenMap3dAutoRotate', on ? '1' : '0'); } catch (e) {} }
+function setAutoRotate(on) { controls.autoRotate = on && !REDUCED_MOTION; controls.autoRotateSpeed = 0.5; try { localStorage.setItem(NKEY('edenMap3dAutoRotate'), on ? '1' : '0'); } catch (e) {} }
 setAutoRotate(LSg('edenMap3dAutoRotate') === '1');
 idleTimer = makeIdleTimer(30000, () => setAutoRotate(true), () => setAutoRotate(LSg('edenMap3dAutoRotate') === '1'));
 ['pointerdown', 'wheel', 'keydown'].forEach((ev) => canvas.addEventListener(ev, () => idleTimer.markActive(), { passive: true }));

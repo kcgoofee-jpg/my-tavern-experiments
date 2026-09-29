@@ -37,7 +37,9 @@ function stubEnv({ chat = [], latest = null, vars = {}, ls = null, db = null, ge
   };
 }
 const LS = () => { const m = globalThis.__stub.ls; return { getItem: k => m.get(k) ?? null, setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k), get backing() { return m; } }; };
-const makeBridge = (o = {}) => new MVUBridge({ life: createLife(), storage: LS, wins: () => [globalThis], ...o });
+// 保底名册（通用化 v1）是包级数据：宿主按 manifest.data.roster 取到后经 fallbackMembers 注入桥——这里载入 eden 的保底名册当默认
+const FB = JSON.parse(readFileSync(new URL('../map/data/fallback_roster.json', import.meta.url), 'utf8')).members;
+const makeBridge = (o = {}) => new MVUBridge({ life: createLife(), storage: LS, wins: () => [globalThis], fallbackMembers: FB, ...o });
 
 test('mvuStat：ok 快照、A-3 微任务缓存、invalidate 立刻重读', async () => {
   const done = stubEnv({ chat: [msg('A'), msg('A', { is_user: true }), msg('B')] });

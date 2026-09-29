@@ -31,6 +31,8 @@ def check(pid):
     base = MAP if pid == 'eden' else d   # eden 的路径相对 map/
     for k, v in (m.get('data') or {}).items():
         if v != 'builtin' and not os.path.exists(os.path.join(base, v)): errs.append(f'{pid}: data.{k} 指向的 {v} 不存在')
+    for p in (m.get('preload') or []):   # 启动预取清单里的文件也要真实存在
+        if not os.path.exists(os.path.join(base, p)): errs.append(f'{pid}: preload 指向的 {p} 不存在')
     if pid == 'eden': return errs   # 其余由 check_maps.py 负责
     if (m.get('data') or {}).get('events') == 'builtin': errs.append(f'{pid}: events: builtin 只给 eden 用；写自己的 events.json')
     def load(rel):

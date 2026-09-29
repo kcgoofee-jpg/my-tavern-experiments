@@ -6,6 +6,8 @@ import { readFileSync } from 'node:fs';
 import { RosterSystem, SOURCES, normName, mvuRows, placeRows, fallbackRows, baibaiRows } from '../map/core/roster.mjs';
 
 const src = () => readFileSync(new URL('../map/core/roster.mjs', import.meta.url), 'utf8');
+// 保底名册（通用化 v1）是包级数据：宿主按 manifest.data.roster 取到后经 fallbackMembers 注入桥——测试同形，载入 eden 的保底名册
+const FB = JSON.parse(readFileSync(new URL('../map/data/fallback_roster.json', import.meta.url), 'utf8')).members;
 
 test('normName / SOURCES：名字空白归一截断；来源序即优先级序（mvu 最高、baibai 最低）', () => {
   assert.equal(normName('  绫濑　遥 \n'), '绫濑 遥', '全角空格也归一成单空格');
@@ -137,7 +139,7 @@ test('桥接线：mvu / fallback / table-db 三来源装配；MVU 实时身份�
   const db = { t: { name: '人物表', content: [['row_id', '姓名', '所在地点'], ['1', ' db来客 ', '大门']] } };
   const done = stubEnv({ chat: [{ is_user: false, swipe_id: 0, variables: [{ stat_data: stat }] }], latest: stat, db });
   try {
-    const B = new MVUBridge({ life: createLife(), storage: LS, wins: () => [globalThis] });
+    const B = new MVUBridge({ life: createLife(), storage: LS, wins: () => [globalThis], fallbackMembers: FB });
     await B.mvuReady;
     const names = B.rosterNames();
     assert.equal(names.filter(n => n === '绫濑遥').length, 1, 'MVU 与保底同名合一');
@@ -165,7 +167,7 @@ test('桥接线：mvu / fallback / table-db 三来源装配；MVU 实时身份�
 test('桥接线：无数据场景降级到保底名册（初始展示不空）', async () => {
   const done = stubEnv({ chat: [] });
   try {
-    const B = new MVUBridge({ life: createLife(), storage: LS, wins: () => [globalThis] });
+    const B = new MVUBridge({ life: createLife(), storage: LS, wins: () => [globalThis], fallbackMembers: FB });
     await B.mvuReady;
     assert.deepEqual(B.rosterRows().filter(r => r.source !== 'fallback'), [], '没有 MVU / 数据库 / 聊天数据 → 三来源都空');
     assert.equal(B.rosterNames().length, 16, '保底名册照常在册');

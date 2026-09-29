@@ -28,6 +28,10 @@ export function validate(m) {
   if (m.chat?.var !== undefined && !/^[A-Za-z_][A-Za-z0-9_]{0,31}$/.test(m.chat.var)) errs.push('chat.var 只能是字母数字下划线');
   if (m.theme?.accent !== undefined && !/^#[0-9a-fA-F]{6}$/.test(m.theme.accent)) errs.push('theme.accent 要写成 #rrggbb');
   if (m.cdn?.repo !== undefined && !/^[\w.-]+\/[\w.-]+$/.test(m.cdn.repo)) errs.push('cdn.repo 要写成 owner/repo');
+  if (m.preload !== undefined) {
+    if (!Array.isArray(m.preload)) errs.push('preload 要是路径数组');
+    else for (const p of m.preload) if (!relOk(p)) errs.push(`preload 里的 ${JSON.stringify(p)} 不是包内相对路径`);
+  }
   return errs;
 }
 /**
@@ -40,7 +44,8 @@ export function resolve(m, base = m?.id === DEFAULT_ID ? '' : `packs/${m?.id}/`)
   return {
     id: m.id, title: m.title, title_en: m.title_en || m.title, base,
     prefix: prefixOf(m.id), chatVar: chatVarOf(m.id, m),
-    data, cdn: { ...(m.cdn || {}) }, theme: { accent: '#e6c36a', ...(m.theme || {}) },
+    data, preload: (m.preload || []).map(p => base + p),
+    cdn: { ...(m.cdn || {}) }, theme: { accent: '#e6c36a', ...(m.theme || {}) },
     features: { world: !!data.world, estate: !!data.rooms, ...(m.features || {}) },
     strings: m.strings || {},
   };

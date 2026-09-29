@@ -122,7 +122,10 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
     if (!panel.hidden || alive) { fab.classList.remove('prep'); preDone(); return; }   // 测速期间用户已经点开了
     if (lean()) {
       htmlProg = f => fab.style.setProperty('--p', Math.round(f * 80));
-      try { await fetchHtml(); await Promise.all(['packs/eden/manifest.json', 'data/maps.json', 'data/world_markers.json', 'data/derived.json'].map(u => cdnFetch(BASE + u).catch(() => null)));
+      // 省流预热清单（通用化 v1：按包取；数据文件 = 清单 preload 列；内置 eden 无注入时用 Pack 0 默认档，与以前逐字相同）
+      const pb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';
+      const pf = (PACK_IN?.manifest?.preload) || (PACK_ID === 'eden' ? ['data/maps.json', 'data/world_markers.json', 'data/derived.json'] : []);
+      try { await fetchHtml(); await Promise.all(['packs/' + PACK_ID + '/manifest.json', ...pf.map(p => pb + p)].map(u => cdnFetch(BASE + u).catch(() => null)));
         fab.classList.remove('prep'); fab.title = '世界地图'; }
       catch (e) { fab.classList.remove('prep'); fab.classList.add('fail'); fab.title = '地图预加载失败，点开重试'; }
       finally { htmlProg = null; preDone(); }
@@ -337,6 +340,11 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
   BR.roster.use('chat', { rows: ctx => !CHM || !Array.isArray(ctx?.msgs) ? [] : ctx.msgs.flatMap(m => CHM.parseChars(m.text).map(c => ({ name: c.name, place: c.place, source: 'chat' }))) });
   let BBm = null; import(SELF + 'tavern/baibai.mjs').then(m => { BBm = m; }).catch(() => {});   // 可选依赖：没装 / 加载失败只是没有柏宝绘来源
   BR.roster.use('baibai', { rows: () => BBm ? BBm.characters().list : [] });
+  // 保底名册（Pack 0 数据挂载点 manifest.data.roster，通用化 v1 前是 mvu.mjs 的硬编码数组）：包声明了才取；
+  // eden（无注入的内置默认）走内置档路径。取不到就没有兜底行，不挡启动。
+  { const rp = (PACK_IN?.manifest?.data?.roster) || (PACK_ID === 'eden' ? 'data/fallback_roster.json' : null);
+    if (rp) { const rb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';
+      cdnFetch(BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { if (BR.setFallbackMembers(j?.members || [])) { recomputeSoon(); sendChars(); } }).catch(() => {}); } }
   // 桥接口的宿主侧薄别名：原有调用点（chatId / userName / mvuStat / getHere / readVars）不用逐个改
   const chatId = () => BR.chatId(), cardKey = () => BR.cardKey(), userName = s => BR.userName(s);
   const mvuStat = () => BR.mvuStat(), getHere = () => BR.here(), readVars = () => BR.readVars();

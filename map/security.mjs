@@ -6,13 +6,14 @@ import { esc } from './app/util.mjs';
 import { LANG } from './app/i18n.mjs';
 import { registry } from './app/layerhost.mjs';
 import { register } from './app/plugins.mjs';
+import { packData } from './app/pack.mjs';   // 安保数据是包级挂载点（manifest.data.security，通用化 v1）——内核与外挂都不写死 eden 的文件名
 const TCSecurity = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const KEY = 'edenMapSecurity';
   let data = null, loading = null;
   const en = () => typeof LANG !== 'undefined' && LANG === 'en';
   const isOn = () => { try { return TCStore.get(KEY) === '1'; } catch (e) { return false; } };
-  const load = () => data ? Promise.resolve(data) : (loading ??= fetch(new URL('data/security.json', document.baseURI)).then(r => r.ok ? r.json() : null).then(d => (data = d)).catch(() => null));
+  const load = () => data ? Promise.resolve(data) : (loading ??= Promise.resolve(packData('security')).then(p => p ? fetch(new URL(p, document.baseURI)).then(r => r.ok ? r.json() : null) : null).then(d => (data = d)).catch(() => null));
   const kindName = k => { const n = data?.kinds?.[k]; return n ? (en() ? n[1] : n[0]) : k; };
   /** 当前图某个标记名（中文 dataset.name）的事实 */
   function factsFor(name) {
