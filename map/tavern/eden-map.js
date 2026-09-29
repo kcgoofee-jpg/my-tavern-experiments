@@ -332,6 +332,11 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
     onTableUpdate: () => { pushSoon(); recomputeSoon(); },
     onRoster: () => sendChars(),
   });
+  // P3-B 名册装配（core/roster.mjs）：mvu / table-db / fallback 三个来源桥里已注册；chat / baibai 只有宿主有——
+  // 聊天 ⌖人物 标签在流水线的消息窗口里、柏宝绘外貌库按需加载。临时名册拼装（known 名单 flatMap）由装配系统统一输出。
+  BR.roster.use('chat', { rows: ctx => !CHM || !Array.isArray(ctx?.msgs) ? [] : ctx.msgs.flatMap(m => CHM.parseChars(m.text).map(c => ({ name: c.name, place: c.place, source: 'chat' }))) });
+  let BBm = null; import(SELF + 'tavern/baibai.mjs').then(m => { BBm = m; }).catch(() => {});   // 可选依赖：没装 / 加载失败只是没有柏宝绘来源
+  BR.roster.use('baibai', { rows: () => BBm ? BBm.characters().list : [] });
   // 桥接口的宿主侧薄别名：原有调用点（chatId / userName / mvuStat / getHere / readVars）不用逐个改
   const chatId = () => BR.chatId(), cardKey = () => BR.cardKey(), userName = s => BR.userName(s);
   const mvuStat = () => BR.mvuStat(), getHere = () => BR.here(), readVars = () => BR.readVars();
@@ -421,7 +426,7 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
       hasReg: !!regNow, hasCHM: !!CHM, hasMV: !!MV, hasTRm: !!TRm, hasHereMod: !!hereMod, hereNow, collect: EVM.collect,
       charsDeps: CHM ? {
         mvuChars: CHM.mvuChars(st, hereNow, BR.varMap.present),
-        known: MV ? Object.values(BR.rosters(st)).flatMap(x => x?.items?.map(i => i.name) || []) : [],
+        known: BR.rosterNames({ msgs }),   // P3-B：五来源统一装配的已知名单（MVU 名册 + 聊天标签 + 数据库 + 保底 + 柏宝绘）
         dbCharacters: BR.dbCharacters(),
         collectChars: CHM.collectChars,
         rosters: MV ? BR.rosters(st) : null, reputation: MV ? BR.reputation(st) : null,

@@ -12,6 +12,7 @@ import * as SNP from './snapshot.mjs';
 import * as AD from './adapter.mjs';
 import * as DB from './shujuku.mjs';
 import * as MDm from './modes.mjs';
+import * as RS from '../core/roster.mjs';
 
 export class MVUBridge {
   /** o = { life?, pack?, packId?, lang?(): 'zh'|'en', isGenerating?(): bool, storage?(): StorageLike,
@@ -30,6 +31,12 @@ export class MVUBridge {
     this.hereSrc = 'mvu'; this.hereFromDb = false;
     // 名册附属（每聊天读一次卡文本，A-3）：原作默认立绘表 + 阶段先后序
     this.portraits = {}; this.stageOrder = null;
+    // 名册装配系统（P3-B，core/roster.mjs）：桥注册它拥有的三个来源；宿主再补 chat / baibai（聊天原文与扩展接口在宿主）。
+    // 发给查看器的 eden-map:chars.rosters 三表载荷照旧出自 rosters()（向后兼容）；装配系统供 known 名单、立绘挂载与 describe 摘要消费。
+    this.roster = new RS.RosterSystem();
+    this.roster.use('mvu', { rows: () => this.MV ? RS.mvuRows(this.rosters()) : [] });
+    this.roster.use('table-db', { rows: () => RS.placeRows(this.dbCharacters(), 'table-db') });
+    this.roster.use('fallback', { rows: () => RS.fallbackRows(this.MV?.FALLBACK_MEMBERS || []) });
     if (o.pack) AD.useDefaults(o.pack.manifest?.vars);   // 设定包：默认映射路径按清单换（eden 不动）
     // mvu.mjs 按需加载（纯函数集；失败只是没有 MVU 联动功能）。设定包的聊天变量键 / 自定义世界书名在这里配置。
     this.MV = null;
@@ -129,12 +136,17 @@ export class MVUBridge {
   /** 名册三张表（在场 / 成员 / 目标；含设定兜底名册），映射里的行内字段名全量生效 */
   rosters(st = this.mvuStat()) { const m = this.varMap; return this.MV ? this.MV.rosters(st, { present: m.present, members: m.members, targets: m.targets, stageField: m.stageField, gradeField: m.gradeField, coreField: m.coreField, codeField: m.codeField, socialField: m.socialField, heightField: m.heightField, weightField: m.weightField, knownField: m.knownField, accessoryField: m.accessoryField, tierField: m.tierField }) : { present: null, members: null, targets: null }; }
   reputation(st = this.mvuStat()) { return this.MV ? this.MV.reputation(st, this.varMap.reputation) : null; }
+  // 名册装配系统（P3-B 契约，core/roster.mjs）：统一 rows() 行、已知名单（人物栏短名对齐用）、标准化摘要。
+  // chat / baibai 两个来源由宿主经 this.roster.use() 登记（聊天原文在流水线、柏宝绘接口在扩展）。
+  rosterRows(ctx) { return this.roster.rows(ctx); }
+  rosterNames(ctx) { return this.roster.names(ctx); }
+  rosterSummary(ctx) { return this.roster.describe(ctx); }
   presentNames(st) { return (this.MV?.presentList(st, this.varMap.present) || []).map(x => x.name); }
   worldTimeOf(st) { return this.MV ? this.MV.worldTime(st, this.varMap) : null; }
   // 原作立绘表与阶段序（每聊天读一次卡文本；卡文本可能异步到 → onRoster 通知宿主重发）
   #portChat = null; #stageChat = null; #stageMiss = '';
   portraitsFor() { if (this.#portChat === this.chatId()) return; this.#portChat = this.chatId();
-    this.#withTexts(t => { this.portraits = this.MV ? this.MV.findPortraits(t) : {}; }); }
+    this.#withTexts(t => { this.portraits = this.MV ? this.MV.findPortraits(t) : {}; this.roster.attachPortraits(this.portraits); }); }
   stageOrderFor(r) {   // A-3：找不到也记住（同一聊天、同一组取值不再每轮扫一遍卡文本）
     const vals = (r?.targets?.items || []).map(i => i.stage).filter(Boolean), chat = this.chatId(); if (!vals.length || (this.#stageChat === chat && this.stageOrder && vals.every(v => this.stageOrder.includes(v)))) return;
     const key = chat + '|' + [...new Set(vals)].sort().join('\u0001'); if (key === this.#stageMiss) return;

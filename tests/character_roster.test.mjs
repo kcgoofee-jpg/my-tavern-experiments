@@ -117,3 +117,58 @@ test('防御性降级：抛错 / 非数组 / 畸形行只废自己；全空系�
 test('纯度：core/roster.mjs 不碰 DOM / 酒馆全局 / 存储 / 网络', () => {
   assert.doesNotMatch(src(), /\b(document|window|localStorage|sessionStorage|fetch|SillyTavern|Mvu|globalThis)\b/);
 });
+
+// ---------------- 桥接线（mvu-bridge.mjs 注册 mvu / table-db / fallback 三来源） ----------------
+import { createLife } from '../map/tavern/host-lifecycle.mjs';
+import { MVUBridge } from '../map/tavern/mvu-bridge.mjs';
+
+function stubEnv({ chat = [], latest = null, db = null } = {}) {
+  const hadWin = 'window' in globalThis;
+  globalThis.window = globalThis;
+  globalThis.Mvu = { getMvuData: o => (o.message_id === 'latest' ? (latest ? { stat_data: latest } : null) : null), events: { VARIABLE_UPDATE_ENDED: 'v' } };
+  globalThis.SillyTavern = { getContext: () => ({ name1: 'Tester', chatId: 'chat1', characterId: 0, characters: [{ avatar: 'card.png' }] }), chat };
+  if (db) globalThis.AutoCardUpdaterAPI = { exportTableAsJson: () => db };
+  return () => { for (const k of ['Mvu', 'SillyTavern', 'AutoCardUpdaterAPI']) { try { delete globalThis[k]; } catch (e) {} } if (!hadWin) delete globalThis.window; };
+}
+const LS = () => { const m = new Map(); return { getItem: k => m.get(k) ?? null, setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k) }; };
+
+test('桥接线：mvu / fallback / table-db 三来源装配；MVU 实时身份胜过保底；宿主补的 chat 来源照常并入', async () => {
+  const stat = { 世界: { 当前地点: '书房' }, 主角: { 着装: {} }, 女仆名册: { 绫濑遥: { 身份: '女仆长（剧情版）' } } };
+  const db = { t: { name: '人物表', content: [['row_id', '姓名', '所在地点'], ['1', ' db来客 ', '大门']] } };
+  const done = stubEnv({ chat: [{ is_user: false, swipe_id: 0, variables: [{ stat_data: stat }] }], latest: stat, db });
+  try {
+    const B = new MVUBridge({ life: createLife(), storage: LS, wins: () => [globalThis] });
+    await B.mvuReady;
+    const names = B.rosterNames();
+    assert.equal(names.filter(n => n === '绫濑遥').length, 1, 'MVU 与保底同名合一');
+    assert.equal(names.length, 17, 'MVU 1 人 + 卡片保底 16 人（无重复）');
+    const ay = B.rosterRows().find(r => r.name === '绫濑遥');
+    assert.equal(ay.role, '女仆长（剧情版）', '字段冲突：MVU 实时状态胜过保底');
+    assert.equal(ay.source, 'mvu');
+    assert.ok(B.rosterRows().some(r => r.name === 'db来客' && r.location === '大门' && r.source === 'table-db'), '表格数据库人物表入册（名字标准化）');
+    // 宿主侧补登记 chat 来源（eden-map.js 的接线形态）
+    B.roster.use('chat', { rows: () => [{ name: '绫濑遥', place: '书房', source: 'chat' }] });
+    const ay2 = B.rosterRows().find(r => r.name === '绫濑遥');
+    assert.equal(ay2.location, '书房', '聊天标签补位置');
+    assert.equal(ay2.role, '女仆长（剧情版）', '身份仍以 MVU 为准');
+    assert.equal(ay2.source, 'mvu');
+    // 立绘挂载走桥的 portraits
+    B.portraits = { '绫濑遥': 'https://cdn.jsdelivr.net/gh/x/sfw/a.png' };
+    B.roster.attachPortraits(B.portraits);
+    assert.equal(B.rosterRows().find(r => r.name === '绫濑遥').portrait, B.portraits['绫濑遥']);
+    const d = B.rosterSummary();
+    assert.deepEqual(Object.keys(d).sort(), ['activeCount', 'sourceCounts', 'total', 'unmappedPortraits']);
+    assert.deepEqual(d.sourceCounts, { mvu: 1, chat: 0, 'table-db': 1, fallback: 15, baibai: 0 }, '与 MVU 同名的保底行并入 mvu 账目，16 保底 - 1 = 15');
+  } finally { done(); }
+});
+
+test('桥接线：无数据场景降级到保底名册（初始展示不空）', async () => {
+  const done = stubEnv({ chat: [] });
+  try {
+    const B = new MVUBridge({ life: createLife(), storage: LS, wins: () => [globalThis] });
+    await B.mvuReady;
+    assert.deepEqual(B.rosterRows().filter(r => r.source !== 'fallback'), [], '没有 MVU / 数据库 / 聊天数据 → 三来源都空');
+    assert.equal(B.rosterNames().length, 16, '保底名册照常在册');
+    assert.deepEqual(B.rosterSummary().sourceCounts, { mvu: 0, chat: 0, 'table-db': 0, fallback: 16, baibai: 0 });
+  } finally { done(); }
+});
