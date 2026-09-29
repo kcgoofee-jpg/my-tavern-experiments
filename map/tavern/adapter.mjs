@@ -8,7 +8,7 @@ export const FIELDS = ['location', 'time', 'period', 'date', 'outfit', 'present'
 export const MORE_FIELDS = ['codeField', 'socialField', 'heightField', 'weightField', 'knownField', 'accessoryField'];
 export const NAME_FIELDS = ['gradeField', 'coreField', ...MORE_FIELDS, 'tierField'], OFF = '-';
 // 默认字段名不在名册行里时，按字段名自动找（换卡兼容）
-export const MORE_RX = { gradeField: /.等级$|^grade$|rank/i, coreField: /..值$|core/i, codeField: /代号|codename|alias/i, socialField: /社会身份|公开身份|occupation/i, heightField: /身高|height/i, weightField: /体重|weight/i, knownField: /外界知情|知情|public/i, accessoryField: /饰物|配饰|项圈|accessor/i,
+export const MORE_RX = { gradeField: /.等级$|^grade$|rank/i, coreField: /..值$|core/i, codeField: /代号|codename|alias/i, socialField: /社会身份|公开身份|身份$|occupation/i, heightField: /身高|height/i, weightField: /体重|weight/i, knownField: /外界知情|知情|public/i, accessoryField: /饰物|配饰|项圈|accessor/i,
   tierField: /战力|战斗力|实力等级|超凡阶|combat|power|tier/i };   // E1 战力小签：这张卡的名册没有战力字段，默认空、按名找
 // 默认 = 这张卡的字段名（照抄卡）；不在名册行里时按字段名形状自动发现（MORE_RX），用户仍可在映射里另选
 export const DEFAULT_MAP = { location: '世界.当前地点', time: '世界.当前时刻', period: '世界.当日时段', date: '世界.当前日期', outfit: '主角.着装',
