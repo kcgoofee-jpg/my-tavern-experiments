@@ -265,9 +265,35 @@ def to_book(items):
 
 SHIP = os.environ.get('EDEN_SHIP_OUT') or os.path.join(ROOT, 'map', 'data', 'worldbook_addon.json')   # 测试可改到临时文件
 
+# ---- 标准扩展接口：发布物格式版本 + 条目类别映射字典（通用扩展契约预留；新增条目后未登记会落 'other'，在此补一行即可）----
+SHIP_SCHEMA = 1
+SHIP_CATEGORIES = {            # 精确编号 → 类别
+    'map.link-rules': 'rules',
+    'map.event-types': 'events',
+    'map.current-location': 'places',
+    'map.character-location': 'characters',
+}
+SHIP_CATEGORY_PREFIXES = {     # 编号前缀 → 类别（同一族条目共用一类）
+    'map.bearing.': 'places',
+    'map.place.': 'places',
+    'tiancheng.lore.': 'lore',
+    'estate.lore.': 'lore',
+}
+
+
+def ship_categories(ents):
+    cats = {}
+    for e in ents:
+        eid = e['id']
+        cats[eid] = SHIP_CATEGORIES.get(eid) or next((c for p, c in SHIP_CATEGORY_PREFIXES.items() if eid.startswith(p)), 'other')
+    return cats
+
 
 def to_ship(book, version):
-    """随地图发到 CDN 的附加条目（map/tavern/wbsync.mjs 读，按酒馆助手 WorldbookEntry 形状）：id = 去掉「 vN」后缀的条目名（稳定编号），ver = 版本 + 内容指纹。"""
+    """随地图发到 CDN 的附加条目（map/tavern/wbsync.mjs 读，按酒馆助手 WorldbookEntry 形状）：id = 去掉「 vN」后缀的条目名（稳定编号），ver = 版本 + 内容指纹。
+    标准扩展接口（通用扩展契约预留）：顶层 `schema` = 发布物格式版本（与 pack.schema.json 的 schema 同一口径，改字段形状先升它）；
+    `category` = 稳定编号 → 标准类别字典（rules / events / places / characters / lore，未登记回退 other），通用扩展宿主按类别挑条目。
+    wbsync.mjs 只读 ver / aliases / entries，多出的顶层键无害。"""
     import hashlib, os
     POS = {0: 'before_character_definition', 1: 'after_character_definition', 2: 'before_author_note', 3: 'after_author_note', 4: 'at_depth', 5: 'before_example_messages', 6: 'after_example_messages'}
     # 旧对话兼容：条目别名表（旧编号 → 新编号）单一来源 map/data/worldbook_aliases.json，原样嵌进发布物（wbsync.mjs 合并前先换编号）。
@@ -283,7 +309,7 @@ def to_ship(book, version):
                      'position': {'type': POS.get(e['position'], 'after_character_definition'), 'role': 'system', 'depth': e['depth'], 'order': e['order']},
                      'probability': e['probability'], 'recursion': {'prevent_incoming': bool(e['excludeRecursion']), 'prevent_outgoing': bool(e['preventRecursion'])}})
     h = hashlib.sha1(json.dumps(ents, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:8]
-    return {'book': '伊甸地图·世界书附加条目', 'version': version, 'ver': f'{re.sub(r"-dev$", "", version)}+{h}', '_credit': CREDIT, 'aliases': {'ids': al.get('ids', {})}, 'entries': ents}
+    return {'schema': SHIP_SCHEMA, 'book': '伊甸地图·世界书附加条目', 'version': version, 'ver': f'{re.sub(r"-dev$", "", version)}+{h}', 'category': ship_categories(ents), '_credit': CREDIT, 'aliases': {'ids': al.get('ids', {})}, 'entries': ents}
 
 
 def tokens(s):

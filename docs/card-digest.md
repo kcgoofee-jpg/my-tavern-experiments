@@ -384,9 +384,9 @@
 
 ### 状态栏、存储键与开场白的怪处
 
-- **状态栏会写 MVU**：它的「删除」按钮调用 `Mvu.replaceMvuData`，从狩猎清单里删一项，很可能不发 `VARIABLE_UPDATE_ENDED`。
+- **状态栏会写 MVU**：它的「删除」按钮调用 `Mvu.replaceMvuData`，从狩猎清单里删一项、直接写回。地图不依赖这条路径补发事件（通读 R2 的既定处理）：面板开着时每 4 秒比一次变量指纹，变了才重算。
 - **卡的 localStorage 键**：`eden_custom_portraits`（名 → URL）、`eden_portrait_<名>`（data URL，状态栏遍历全部键找这个前缀）、`statusbar_collapsed_eden`；CG 脚本启用时另有 `gallery-cg-panel-pos-<id>`。与本项目的 `edenMap:` 前缀不重叠，但共用同源约 5 MB 配额。
-- **开场白的怪处**：开局八有 **2 个**状态栏占位符；开局六的 UpdateVariable 包在一对不配对的 dream 标签里；开局九（自定义）正文里有字面的 `<UpdateVariable>`，没有闭合标签；开局菜单用 `setChatMessage` 切 swipe，可能不触发 swipe 事件。
+- **开场白的怪处**：开局八有 **2 个**状态栏占位符；开局六的 UpdateVariable 包在一对不配对的 dream 标签里；开局九（自定义）正文里有字面的 `<UpdateVariable>`，没有闭合标签；开局菜单用 `setChatMessage` 切 swipe。地图以聊天记录为唯一真相（swipe / 改楼 / 删楼后都从原文重算），不依赖卡片脚本伴随哪种事件。
 - **隐藏正则同时开了 markdownOnly 和 promptOnly**：模型看不到历史 JSONPatch，靠常驻条目 `format_message_variable` 拿到全量变量；消息原文里仍带 JSONPatch。
 - **名字写法**：世界书标签带 `_idN` 后缀（例如 `神宫寺凛_id10`）；伊莎贝拉有长短两种写法；维多利亚与其父母、弟弟同「姓」。
 
