@@ -49,9 +49,12 @@ need_sync() {
   local h=$1
   local stamp="$CLOUD/.locks/${h}.last_sync"
   [ -f "$stamp" ] || return 0
-  # -newer 找一个比戳新的已跟踪文件就够；用 git ls-files 避免扫 node_modules/.git 这些大目录
+  # -newer 找一个比戳新的文件就够。用 git 列文件以避免扫 node_modules/.git 这些大目录。
+  # 注意必须带上 `--others --exclude-standard`：只看已跟踪文件时，**还没提交的新文件**
+  # （典型是刚 new 出来的 blender/landmarks/<id>/build.py）对这里完全隐形 → 云端拿到旧脚本
+  # 渲出旧图（2026-09-29 事故：改好的三处没生效，白跑一次定稿）。
   local hit
-  hit=$(cd "$ROOT" && git ls-files -z | xargs -0 -I{} find {} -newer "$stamp" -print 2>/dev/null | head -1)
+  hit=$(cd "$ROOT" && git ls-files --cached --others --exclude-standard -z | xargs -0 -I{} find {} -newer "$stamp" -print 2>/dev/null | head -1)
   [ -n "$hit" ]
 }
 mark_synced() { local h=$1; mkdir -p "$CLOUD/.locks"; touch "$CLOUD/.locks/${h}.last_sync"; }

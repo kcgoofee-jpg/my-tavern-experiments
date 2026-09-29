@@ -4,6 +4,19 @@
 > AutoDL 实例：RTX 4080 SUPER 32GB、Ubuntu 22.04、Blender 5.2.2 装在 `/opt/blender`、数据盘 `/root/autodl-tmp/eden`；
 > CPU 是 Xeon 8352V（12 vCPU）——见文末「场景搭建 vs 显卡渲染」，纯 CPU 阶段不一定比 Mac 快。
 
+## 派工常驻（launchd，2026-09-29）
+
+派工循环是队列的心跳：它一死就没人派活，云端空转烧钱。`nohup … &` 起的进程会随宿主会话一起被收走，
+所以装了 launchd 守护：`bash tools/install_renderqueue_agent.sh`（卸：`--uninstall`）。
+KeepAlive 不会产生两个派工——单例锁会把多余的那个顶掉（拿不到锁就退出 0），持有者一死下一个立刻接管。
+
+## 每次上云前都会同步（2026-09-29）
+
+`tools/cloud/render.sh` 现在自己判断「本地有改动就 sync」。以前只有渲染队列那条路会同步，
+直接调 `render.sh`（`landmark.py final --cloud` 就是）会把云端上次同步的**旧脚本**拿来渲——
+2026-09-29 以太穹顶整套定稿就是这样白跑的（图跟上一版一模一样才发现）。判定与队列同一套：
+已跟踪 + 未跟踪但没被忽略的文件里，有一个比 `.locks/<实例>.last_sync` 新就同步。
+
 ## 0. AutoDL 控制台步骤（开新实例才用得到）
 
 1. 账户设置 → SSH 公钥，添加：

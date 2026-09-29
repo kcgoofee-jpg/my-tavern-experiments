@@ -136,12 +136,28 @@ cloud_lock_acquire() {
     return 0
   fi
   if [ -f "$_LOCK_FILE" ]; then
-    local pid; pid=$(command cat "$_LOCK_FILE" 2>/dev/null | head -1)
+    local pid age ttl now mt
+    pid=$(command cat "$_LOCK_FILE" 2>/dev/null | head -1)
+    now=$(date +%s)
+    mt=$(stat -f %m "$_LOCK_FILE" 2>/dev/null || stat -c %Y "$_LOCK_FILE" 2>/dev/null || echo "$now")
+    age=$((now - mt))
+    ttl=${CLOUD_LOCK_TTL:-10800}          # 3 小时：真实云渲染是分钟级，超过就是残留
+    # PID 存活**不足以**说明锁有效：PID 会被系统回收给别的进程，`kill -0` 因此永远为真，
+    # 派工就被一把死锁永久挡住（2026-09-29 查到的「云端老是空着」根因）。两道兜底：
+    #   ① 这个 PID 现在到底还是不是云脚本（回收后往往是别的东西）；
+    #   ② 锁龄上限（真实云渲染是分钟级）。
     if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-      echo "实例 ${HOST_NAME} 已有云脚本在跑（本地 PID ${pid}，见 ${_LOCK_FILE}）：等它结束，或确认它已死后删掉该文件" >&2
+      local cmd; cmd=$(ps -p "$pid" -o command= 2>/dev/null || true)
+      case "$cmd" in
+        *cloud/render.sh*|*cloud/render_split.sh*|*cloud/sync.sh*|*cloud/setup.sh*|*cloud/bench.sh*) : ;;
+        *) echo "锁里的 PID ${pid} 活着但不是云脚本（$(printf '%s' "$cmd" | cut -c1-56)…）→ 视为残留，清理后继续" >&2; pid="" ;;
+      esac
+    fi
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && [ "$age" -lt "$ttl" ]; then
+      echo "实例 ${HOST_NAME} 已有云脚本在跑（本地 PID ${pid}，锁已 ${age}s，见 ${_LOCK_FILE}）：等它结束，或确认它已死后删掉该文件" >&2
       exit 3
     fi
-    echo "发现残留锁文件（进程已不存在），清理后继续"
+    echo "发现残留 / 超期锁（PID ${pid:-?}，锁已 ${age}s / 上限 ${ttl}s），清理后继续"
   fi
   printf '%s\n%s\n%s\n' "$$" "$name" "$(date +%Y-%m-%dT%H:%M:%S)" > "$_LOCK_FILE"
   trap 'cloud_lock_release' EXIT INT TERM

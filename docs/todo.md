@@ -71,8 +71,10 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   主线与之分叉 575 个提交 → 需决定「按新主线重做」还是「摘取其中仍有效的部分」。
 - [ ] 原域悬浮圣山精修两点：大教堂背面白色凸出方块、雕像圈个别雕像悬出平台（`docs/handoff.md:100`）——
   模型已收口（`map/props/holy_mountain/`），这两点是外观精修。
-- [ ] 大骑士领·圣都 3–4 景（`docs/handoff.md:15`）。**第一个在建**：`glory_crown`（荣光冠冕，核心区）
-  —— `docs/landmarks/glory_crown.checklist.md` 进行中，草稿已看图改过一轮。
+- [x] 大骑士领·圣都 3–4 景（`docs/handoff.md:15`）：**`glory_crown`（荣光冠冕，核心区）与
+  `ether_dome`（以太穹顶，仓库自设）已 ship** —— glb 0.68/0.28 MB 与 0.43/0.16 MB，分别挂
+  `lm_glory_crown`（核心区 5 个标记）与 `lm_ether_dome`（1 个，标了 `repo-inferred` 并写进世界书附加条目）。
+  剩：`contest_corridor`（竞赛与狂欢回廊，卡里中环）等其余圣都点位。
 - [ ] 地下室 B1/B2 精修 + 道具包接口（`docs/handoff.md:18`）。
 - [ ] 下层 4 处（`docs/handoff.md:20`、`:89` 待批）；上层 16K / 512spp、昼夜四版（`:20`）。
 - [ ] 中/下层 8K 定稿复核、七岛并入重渲、精英学院草稿、多时段底图挑档（`ROADMAP.md:55-58`）。
@@ -156,6 +158,20 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   together via `tools/push_preview.sh [--head]`.
 - [x] **Commit style**: messages are English and no longer carry a `Co-Authored-By` trailer (user decision
   2026-09-29), recorded in `docs/agent-brief.md` and `docs/language-policy.md`.
+- [x] **`need_sync` was blind to new files (2026-09-29)**: it listed files with `git ls-files` only, so an
+  uncommitted new script (`blender/landmarks/<id>/build.py`, a fresh manifest) never triggered a cloud sync
+  and the cloud rendered the *previous* version. Fixed by adding `--others --exclude-standard`.
+- [x] **Direct cloud renders never synced (2026-09-29)**: the queue's `run_job_cloud` did `need_sync`, but
+  `landmark.py final --cloud` calls `tools/cloud/render.sh` directly — so the cloud kept rendering from the
+  copy it had (the whole first Ether Dome final, three cams, was spent on the old script). `render.sh` now
+  runs the same check-and-sync before dispatching.
+- [x] **Instance lock could wedge forever (2026-09-29)**: the lock stored a PID and treated a live PID as a
+  live job, but macOS recycles PIDs — a stale lock whose number was reused blocked every cloud dispatch and,
+  with the old bookkeeping, the jobs quietly became `done`. Now the holder must still be a cloud script
+  (`ps -o command=`) and the lock has a TTL (`CLOUD_LOCK_TTL`, default 3 h).
+- [x] **Dispatcher is now a launchd agent** (`tools/install_renderqueue_agent.sh`, `ai.edenmap.renderqueue`,
+  KeepAlive): a `nohup … &` dispatcher dies with the session that started it, which is why the cloud kept
+  going idle. The singleton lock keeps KeepAlive from ever producing two dispatchers.
 
 ## 4. Needs a user decision
 

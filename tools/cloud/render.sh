@@ -16,6 +16,27 @@ source "$CLOUD_ROOT/lib.sh"
 cloud_parse_host "$@"; set -- "${REMAIN[@]+"${REMAIN[@]}"}"
 POLL=${POLL:-30}; WAIT_MAX=${WAIT_MAX:-0}
 
+# 直接调 render.sh（不经过渲染队列）时也必须先同步。
+# 队列那条路（tools/render_queue.sh run_job_cloud）自己有 need_sync + mark_synced，这里是一个独立入口：
+# 少了它，云端会拿上次同步时的**旧脚本**渲 —— 2026-09-29 事故：改好的 build.py 没上去，三个定稿镜头白跑
+# （图与上一版一模一样才发现）。判定与队列同一套：已跟踪 + 未跟踪但没被忽略的文件里，有一个比同步戳新。
+if [ "$DRY_RUN" != 1 ]; then
+  STAMP="$MAIN_CLOUD/.locks/${HOST_NAME}.last_sync"
+  _stale=1
+  if [ -f "$STAMP" ]; then
+    if (cd "$ROOT" && git ls-files --cached --others --exclude-standard -z | xargs -0 -I{} find {} -newer "$STAMP" -print 2>/dev/null | head -1 | grep -q .); then
+      _stale=1
+    else
+      _stale=0
+    fi
+  fi
+  if [ "$_stale" = 1 ]; then
+    echo "--- 本地有改动，先 sync（${HOST_NAME}）---"
+    bash "$CLOUD_ROOT/sync.sh" --host "$HOST_NAME" || { echo "同步失败：先跑 bash tools/cloud/doctor.sh 体检" >&2; exit 5; }
+    mkdir -p "$MAIN_CLOUD/.locks"; touch "$STAMP"
+  fi
+fi
+
 [ $# -ge 1 ] || { echo "用法：tools/cloud/render.sh [--host <实例名>] <tools/blender_run.sh 参数...>" >&2; exit 2; }
 
 # 从参数里把 --log/--asset/--kind/--res/--spp/--out 摘出来，用于回传和记账；其余原样透传给远端的 blender_run.sh
