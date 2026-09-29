@@ -71,10 +71,11 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   主线与之分叉 575 个提交 → 需决定「按新主线重做」还是「摘取其中仍有效的部分」。
 - [ ] 原域悬浮圣山精修两点：大教堂背面白色凸出方块、雕像圈个别雕像悬出平台（`docs/handoff.md:100`）——
   模型已收口（`map/props/holy_mountain/`），这两点是外观精修。
-- [x] 大骑士领·圣都 3–4 景（`docs/handoff.md:15`）：**`glory_crown`（荣光冠冕，核心区）与
-  `ether_dome`（以太穹顶，仓库自设）已 ship** —— glb 0.68/0.28 MB 与 0.43/0.16 MB，分别挂
-  `lm_glory_crown`（核心区 5 个标记）与 `lm_ether_dome`（1 个，标了 `repo-inferred` 并写进世界书附加条目）。
-  剩：`contest_corridor`（竞赛与狂欢回廊，卡里中环）等其余圣都点位。
+- [x] 大骑士领·圣都（`docs/handoff.md:15`）**已 ship 三处**：`glory_crown`（荣光冠冕，核心区，
+  glb 0.68/0.28 MB，挂核心区 5 个标记）、`ether_dome`（以太穹顶，仓库自设并标 `repo-inferred`、
+  写进世界书附加条目，0.43/0.16 MB）、`contest_corridor`（竞赛与狂欢回廊，卡里中环，0.44/0.16 MB）。
+  **剩 5 个标记**：`rust_outskirts`（外环铁锈与落败领）、`clearing_depot`、`free_knight_camp`、
+  `linguang_post`、`arms_rnd`；圣都之外还有五席封地与旷野高地的点位。
 - [ ] 地下室 B1/B2 精修 + 道具包接口（`docs/handoff.md:18`）。
 - [ ] 下层 4 处（`docs/handoff.md:20`、`:89` 待批）；上层 16K / 512spp、昼夜四版（`:20`）。
 - [ ] 中/下层 8K 定稿复核、七岛并入重渲、精英学院草稿、多时段底图挑档（`ROADMAP.md:55-58`）。

@@ -558,13 +558,13 @@ def maps_add_link(txt, layer, marker, lm):
     return new, '接好'
 
 
-def maps_add_lm(txt, i, st, blurb):
+def maps_add_lm(txt, i, st, blurb, title_en=''):
     data = json.loads(txt)
     lm = 'lm_' + i
     if lm in data['maps']:
         return txt, '已有'
     name = st.get('name', i)
-    entry = {'title': f'{name}（三维）', 'title_en': '', 'parent': st['layer'], 'kind': 'estate', 'viewer3d': i,
+    entry = {'title': f'{name}（三维）', 'title_en': title_en or '', 'parent': st['layer'], 'kind': 'estate', 'viewer3d': i,
              'src': 'props/viewer3d.html', 'alias': [f'{name}（三维）'],
              'src_note': f'{name}三维（标准版：标准档 + 低档 glb；{blurb}）；从 {st["layer"]}.{st.get("marker", i)} 标记的「查看三维模型」进。源：blender/landmarks/{i}/',
              'credit': '自建模型；贴图 Poly Haven / ambientCG（CC0）', 'credit_en': 'Own model; textures Poly Haven / ambientCG (CC0)'}
@@ -609,7 +609,10 @@ def cmd_ship(a):
     if txt is None:
         die(msg, '先在该层 markers 里落点（名字照抄卡），或用 new --marker <已有标记 id> 指到正确的标记。')
     say(f'  标记：{msg}')
-    txt, msg2 = maps_add_lm(txt, i, st, a.blurb or '位置与形制为仓库推断')
+    _ten = ((json.load(open(p['manifest'], encoding='utf-8')).get('title') or {}).get('en') or '')
+    if not _ten:
+        say('  提示：清单 title.en 是空的，英文界面会显示中文标题（map/props/%s/manifest.json 里补上）' % i)
+    txt, msg2 = maps_add_lm(txt, i, st, a.blurb or '位置与形制为仓库推断', _ten)
     say(f'  {lm}：{msg2}')
     if msg != '已接' or msg2 != '已有':
         write(mp, txt)
