@@ -7,13 +7,13 @@
 | 用哪条 | 一行 `import` |
 |---|---|
 | **跟随开发**（预览线，永远最新） | `import 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@preview/map/tavern/eden-map.js'` |
-| 发版线（稳定，钉标签；当前 `map-v0.9.6`） | `import 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.6/map/tavern/eden-map.js'` |
+| 发版线（稳定，钉标签；当前 `map-v0.9.7`） | `import 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.7/map/tavern/eden-map.js'` |
 
 - **国内线路（谨慎）**：可以试 `cdn.jsdmirror.com`（路径完全相同，预览脚本按 国内镜像 → jsDelivr 顺序试）。但**它并没有被证实可用**：2026-09-29 本机 Mac 关代理实测直连不通，走代理时也比 jsDelivr 慢 3.7 倍；它还是个第三方薄代理（响应头 `server: ayao`，`max-age` 只有 5 分钟、且不理会 query string），**不是** jsDelivr 官方国内节点。真正的国内线路要等 npm 镜像（`registry.npmmirror.com`，加载器里预留但默认关闭）。
 - **不想手写 import**：`python3 tools/build_preview_script.py <git ref>` 生成可直接在酒馆助手「导入脚本」的 JSON。
 - **这两条地址不会过期**：`tools/check_readme.py` 在 `tools/smoke.sh` 里守着（仓库名 / 预览分支 / 最新标签 / 本文件提到的路径），`bash tools/ship.sh --release` 会把发版线那条自动刷到刚打的标签。
 
-> 状态：开发中 · 当前发布版本 `0.9.7`（0.9.7 标签待打，发版线仍钉 `map-v0.9.6`） · 下一版进行中（分支 `preview`）
+> 状态：开发中 · 当前发布版本 `0.9.7`（发版线钉 `map-v0.9.7`） · 下一版进行中（分支 `preview`）
 > **待办唯一索引：[`docs/todo.md`](docs/todo.md)**（四轨：代码线 / 渲染线 / 文档仓库线 / 待用户决定，每条带出处）。
 > 详细门控与任务分轨：[`docs/history/GOAL_v0.9.1.md`](docs/history/GOAL_v0.9.1.md)（0.9.1 门控记录） · 产品待办：[`ROADMAP.md`](ROADMAP.md) · 变更记录：[`CHANGELOG.md`](CHANGELOG.md) · 本机 ↔ 云端协作与接手记录：[`docs/history/NOTES_FROM_LOCAL.md`](docs/history/NOTES_FROM_LOCAL.md) · 卡设定遗漏清单：[`docs/card-omissions.md`](docs/card-omissions.md) · 分支与发版线：[`docs/branching.md`](docs/branching.md) · 语言口径：[`docs/language-policy.md`](docs/language-policy.md)
 
