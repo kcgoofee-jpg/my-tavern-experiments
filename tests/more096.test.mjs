@@ -18,7 +18,7 @@ test('默认字段名在行里就用它', () => {
 test('别的卡：按字段名自动找；没有的留空', () => {
   const d = detect(OTHER);
   assert.equal(d.codeField, '代号'); assert.equal(d.heightField, 'height'); assert.equal(d.accessoryField, '饰物'); assert.equal(d.weightField, '');
-  assert.deepEqual(rosters(OTHER, d).members.items[0].more, { code: 'K', height: '170', accessory: '胸针' });
+  assert.deepEqual(rosters(OTHER, d).members.items[0].more, { code: 'K', social: '园丁', height: '170', accessory: '胸针' });   // v0.9.7：兜底正则补「身份」（naming_model_compat P0疑似②），名册「身份」也映射社会身份列
 });
 
 test('关闭（-）不读；全关没有 more', () => {

@@ -9,7 +9,7 @@
 // v0.9.6 起推广到所有「世界图地点有自己地图」的组（maps.json groups.<id>.place：天城、圣都、原域、旷野高地、圆桌封地）：
 // 每组的交接点 = 世界图上该地点；环宽 = RING_W × 该组的 extent_m 宽；环的面包屑「<组名>周边」。
 import { M, REG, aspect, cur, pendingFocus, pendingHome, setPendingFocus, setPendingHome, viewer } from './state.mjs';
-import { $, esc, toImg, tx } from './util.mjs';
+import { $, toImg, tx } from './util.mjs';
 import { nm } from './i18n.mjs';
 import { getText } from './topbar.mjs';
 import { go, groupView } from './nav.mjs';
@@ -68,7 +68,7 @@ const TCScale = (() => {
   function crumb() {
     const cr = $('#crumbs'); let el = cr.querySelector('.ringc');
     if (ringOn && !el && cr.querySelector('b')) { el = document.createElement('span'); el.className = 'ringc'; const gid = grp(cur), lab = gid === 'tiancheng' ? tx('ring', '天城周边') : tx('ring_of', REG.groups[gid].title + '周边', { name: nm(REG.groups[gid], 'title') });
-      el.innerHTML = `${esc(lab)}<span class="sep" aria-hidden="true"> › </span>`;
+      el.textContent = lab; const sep = document.createElement('span'); sep.className = 'sep'; sep.setAttribute('aria-hidden', 'true'); sep.textContent = ' › '; el.append(sep);
       el.style.color = 'var(--muted)'; cr.querySelector('b').before(el); }
     if (!ringOn && el) el.remove();
   }

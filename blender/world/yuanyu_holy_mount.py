@@ -512,41 +512,71 @@ def cam(sc, pos, tgt, lens):
 
 
 def main():
-    sc = C.setup(A['samples']); M = mats()
-    P = mountain(M); summit(M, P); stair(M)
-    if A['city'] == '1': city(M)
+    sc = C.setup(A['samples'])
+    M = mats()
+    P = mountain(M)
+    summit(M, P)
+    stair(M)
+    if A['city'] == '1':
+        city(M)
     objs = C.Batch.build_all()
     for o in objs:
-        if o.name.startswith(('lamps', 'glow', 'summit_win', 'city_win')): o.visible_shadow = False
+        if o.name.startswith(('lamps', 'glow', 'summit_win', 'city_win')):
+            o.visible_shadow = False
     mist(M)
-    C.sky_sun(sc, 'day', sun_az=235.0, sun_el=16.0, sun_e=3.6, sky_s=.2); sc.view_settings.exposure = -.1
-    sc.cycles.volume_step_rate = 4.0; sc.cycles.volume_max_steps = 256
+    C.sky_sun(sc, 'day', sun_az=235.0, sun_el=16.0, sun_e=3.6, sky_s=.2)
+    sc.view_settings.exposure = -.1
+    sc.cycles.volume_step_rate = 4.0
+    sc.cycles.volume_max_steps = 256
     if A['save'] == '1':
-        os.makedirs(OUT, exist_ok=True); bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, ID + '.blend'))
+        os.makedirs(OUT, exist_ok=True)
+        try:
+            bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, ID + '.blend'))
+        except RuntimeError as e:
+            print('save_as_mainfile failed:', e)
     if A['glb'] == '1':
-        os.makedirs(OUT, exist_ok=True); bpy.ops.object.select_all(action='DESELECT')
+        os.makedirs(OUT, exist_ok=True)
+        bpy.ops.object.select_all(action='DESELECT')
         for o in bpy.context.scene.objects:
-            if o.type == 'MESH' and not o.name.startswith('mist'): o.select_set(True)
-        bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, ID + '.glb'), export_format='GLB', use_selection=True)
+            if o.type == 'MESH' and not o.name.startswith('mist'):
+                o.select_set(True)
+        try:
+            bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, ID + '.glb'), export_format='GLB', use_selection=True)
+        except RuntimeError as e:
+            print('glb export failed:', e)
     base, ext = os.path.splitext(A['out'])
-    json.dump(dict(title=BOARD_TITLE, items=[dict(key=k, text=t, source=s, status=st) for k, t, s, st in ITEMS]), open(base + '_items.json', 'w'), ensure_ascii=False, indent=1)
+    with open(base + '_items.json', 'w') as fp:
+        json.dump({'title': BOARD_TITLE, 'items': [{'key': k, 'text': t, 'source': s, 'status': st} for k, t, s, st in ITEMS]}, fp, ensure_ascii=False, indent=1)
     res = int(A['res'])
     # 主图：南偏东斜俯视，俯角约 22°
-    az, pitch = math.radians(-72), math.radians(13); tgt = Vector((0, 0, 560)); d = 2500
+    az, pitch = math.radians(-72), math.radians(13)
+    tgt = Vector((0, 0, 560))
+    d = 2500
     pos = tgt + Vector((math.cos(az) * math.cos(pitch), math.sin(az) * math.cos(pitch), math.sin(pitch))) * d
-    cam(sc, tuple(pos), tuple(tgt), 46); sc.render.resolution_x = res; sc.render.resolution_y = int(res / 1.6)
-    K_.project_anchors(sc, ANCH, base + '_anchors.json'); C.render(sc, A['out'], res, 1.6)
+    cam(sc, tuple(pos), tuple(tgt), 46)
+    sc.render.resolution_x = res
+    sc.render.resolution_y = int(res / 1.6)
+    K_.project_anchors(sc, ANCH, base + '_anchors.json')
+    C.render(sc, A['out'], res, 1.6)
     # 顶台近景：看清主殿、礼拜堂环、神像回廊
-    az, pitch = math.radians(-78), math.radians(34); tgt = Vector((0, -20, Z_TOP + 20)); d = 620
+    az, pitch = math.radians(-78), math.radians(34)
+    tgt = Vector((0, -20, Z_TOP + 20))
+    d = 620
     pos = tgt + Vector((math.cos(az) * math.cos(pitch), math.sin(az) * math.cos(pitch), math.sin(pitch))) * d
     cam(sc, tuple(pos), tuple(tgt), 45)
-    K_.project_anchors(sc, ANCH, base + '_summit_anchors.json'); C.render(sc, base + '_summit' + ext, res, 1.6)
+    K_.project_anchors(sc, ANCH, base + '_summit_anchors.json')
+    C.render(sc, base + '_summit' + ext, res, 1.6)
     if A['ground'] == '1':                                                  # 城区仰视：大道上看山底、步道、神像
-        av = 13 * math.pi / 8; cam(sc, (math.cos(av) * 640 + 3, math.sin(av) * 640, 1.7), (0, 0, 330), 20)
-        K_.project_anchors(sc, ANCH, base + '_ground_anchors.json'); C.render(sc, base + '_ground' + ext, res, 1.6)
+        av = 13 * math.pi / 8
+        cam(sc, (math.cos(av) * 640 + 3, math.sin(av) * 640, 1.7), (0, 0, 330), 20)
+        K_.project_anchors(sc, ANCH, base + '_ground_anchors.json')
+        C.render(sc, base + '_ground' + ext, res, 1.6)
 
 
 if __name__ == '__main__':
     import traceback
-    try: main()
-    except Exception: traceback.print_exc(); raise
+    try:
+        main()
+    except Exception:
+        traceback.print_exc()
+        raise
