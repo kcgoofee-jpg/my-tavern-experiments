@@ -25,7 +25,10 @@ export function placeLayers() {
 // 标注开关：开 =「Aa」+ 强调底色；关 = 带斜杠的「Aa」+ 灰色（不只靠颜色区分）
 export function paintLbl() { const on = $('#tgLabels').checked, b = $('#lblTog'); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.innerHTML = ico(on ? 'labels' : 'labelsOff'); }
 export function toggleLabels(on) {
-  const cb = $('#tgLabels'); cb.checked = on ?? !cb.checked; document.body.classList.toggle('nolabels', !cb.checked);
+  const cb = $('#tgLabels'); cb.checked = on ?? !cb.checked;
+  // P3-C：地名层可见性统一走 LayerRegistry（descriptor 同步勾选框 / body 类 / 按钮涂装）；Registry 未就绪时退回原样
+  if (window.TCLayers) window.TCLayers.registry.setVisible('labels', cb.checked);
+  else document.body.classList.toggle('nolabels', !cb.checked);
   paintLbl(); announce(tx(cb.checked ? 's.labels_on' : 's.labels_off', cb.checked ? '标注已显示' : '标注已隐藏'));
 }
 // 抽屉可见性：有事态、人物、地点卡、或手机上要放层名胶囊时显示；三维页（庄园）用它自己的抽屉

@@ -7,6 +7,7 @@
 // 减少动态效果：不漂移、直接换层。省流（lean()）：不漂移、零精灵请求，切层用白幕淡入淡出。
 import { REG, cur, depthData, viewer } from './state.mjs';
 import { $ , narrow } from './util.mjs';
+import { registry } from './layerhost.mjs';
 import { altDepth, channel, parallaxOn } from '../core/depth.mjs';
 import { lean } from './tiers.mjs';
 import { altOn, go, setGo } from './nav.mjs';
@@ -118,4 +119,6 @@ import { altOn, go, setGo } from './nav.mjs';
   window.__clouds = { sync, state: () => ({ shown, drift: anims.length, busy, cover: !!document.querySelector('.tier-snap'), rm: RM(), lean: lean(), n: box ? box.querySelectorAll('img').length : 0,
     visible: box && shown ? [...box.querySelectorAll('img')].filter(el => { const r = el.getBoundingClientRect(), s = viewer.container.getBoundingClientRect();
       return +getComputedStyle(el).opacity > .15 && r.right > s.left + r.width * .3 && r.left < s.right - r.width * .3 && r.bottom > s.top + r.height * .3 && r.top < s.bottom - r.height * .3; }).length : 0 }) };
+  // P3-C：漂移云登记为 depth-haze 槽的 dom 图层（槽位容器 .vpslot[data-slot="depth-haze"] 挂好后由 boot 的 mountAll 调 mount）
+  registry.register({ id: 'clouds', slot: 'depth-haze', kind: 'dom', mount: () => sync(), unmount: () => hide(), setVisible: v => (v ? sync() : hide()) });
 })();

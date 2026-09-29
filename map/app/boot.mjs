@@ -19,17 +19,17 @@ import { initFpsMeter } from './fps.mjs';
 import { M, REG, cur, pendingHome, setM, setPendingHome, setREG, setViewer, viewer } from './state.mjs';
 import { updateInsets } from './insets.mjs';
 import { $, PR, PROTO, coarse, getJSON, jsonCache, narrow, post, setNarrow, setPR } from './util.mjs';
-import { TIERS, applyOverlayToggle, autoTier, declutter, effTier, homeMode, initProgress, onOpen, refit, routeGaps, setTier } from './tiers.mjs';
+import { TIERS, autoTier, declutter, effTier, homeMode, initProgress, onOpen, refit, setTier } from './tiers.mjs';
 import { DICT, LANG, applyI18n, postState, setDICT, setLANG, setLang, t } from './i18n.mjs';
 import { layoutHeader, warmOthers } from './topbar.mjs';
-import { ALT_KEY, go, swapBase } from './nav.mjs';
+import { go } from './nav.mjs';
 import { estateLook, estatePlan, retryEstate } from './estate.mjs';
 import { closeCard } from './markers.mjs';
 import { ALIAS, applyZoomLimit, focusStart, hereRes, jumpHere, markHere, setEstPlan, setHX, setUserMoved, userMoved } from './locate.mjs';
 import { initSettings } from './settings.mjs';
 import { emEmit, enNames, rebuildHere, setEnNames } from './extapi.mjs';
 import { firstRunHint, initE7, initShell } from './shell.mjs';
-import { initLayerHost } from './layerhost.mjs';
+import { initLayerHost, registry, registerCoreLayers, renderLayerMenu } from './layerhost.mjs';
 import { P } from './plugins.mjs';
 import { initPack, packData, packEvents, rebase } from './pack.mjs';
 // 多地图查看器：地图注册表 data/maps.json（世界 → 天城三层 → 以后的庄园剖面……）。
@@ -64,7 +64,7 @@ async function mainInner() {
   const seg = $('#tiers');
   for (const x of [{ key: 'auto' }, ...TIERS]) { const b = document.createElement('button'); b.dataset.k = x.key;
     b.onclick = () => setTier(x.key); seg.appendChild(b); }
-  initShell(); layoutHeader(); addEventListener('resize', layoutHeader);
+  registerCoreLayers(); renderLayerMenu(); initShell(); layoutHeader(); addEventListener('resize', layoutHeader);   // P3-C：#layList 由 LayerRegistry 数据驱动，先于 shell 绑定 / applyI18n 渲染
   applyI18n(); $('#status').textContent = t('loading');
   $('#estRetry').onclick = retryEstate; $('#estPlan').onclick = estatePlan;
   // Tab 到视野外的地标 / 事件点：浏览器会去滚动 OSD 的容器（overflow:hidden），这里撤掉滚动、改为平移地图把它带进视野
@@ -91,7 +91,7 @@ async function mainInner() {
     smoothTileEdgesMinZoom: Infinity,   // 瓦片有 1px 重叠，不需要放大时整屏再画一遍去接缝
   }));
   viewer.addHandler('open', onOpen);
-  initLayerHost(viewer); viewer.addHandler('open', () => initLayerHost(viewer));   // P3-C：视口槽位容器（画布就绪后幂等挂齐）
+  initLayerHost(viewer); registry.mountAll({ viewer }); viewer.addHandler('open', () => initLayerHost(viewer));   // P3-C：视口槽位容器 + 按注册序挂载图层
   // 缩放组：+ / − 以视野中心缩放，复位 = 本图的初始视野
   $('#zIn').onclick = () => { setUserMoved(true); viewer.viewport.zoomBy(1.5); viewer.viewport.applyConstraints(); };
   $('#zOut').onclick = () => { setUserMoved(true); viewer.viewport.zoomBy(1 / 1.5); viewer.viewport.applyConstraints(); };
@@ -116,15 +116,7 @@ async function mainInner() {
   // 插图命中范围会随平移 / 缩放变化，清晰度上限（是否按插图的分辨率放宽）也要跟着重算
   viewer.addHandler('animation-finish', () => { updateInsets(); applyZoomLimit(); });
   initProgress();
-  // 岛屿结界轮廓（barriers）默认关（用户 2026-09-27，和航线一样；两者永久推迟，不再打磨），开了记在本机；世界图国界（dzi）照旧默认开
-  $('#tgBorders').onchange = e => { if (REG.maps[cur]?.overlay?.type === 'barriers') try { TCStore.set('edenMapBarriers', e.target.checked ? '1' : '0'); } catch (err) {} applyOverlayToggle(); };
-  $('#tgAltBox').onchange = e => { try { TCStore.set(ALT_KEY + cur, e.target.checked ? '1' : '0'); } catch (err) {} swapBase(); };
-  $('#tgLabels').onchange = e => document.body.classList.toggle('nolabels', !e.target.checked);
-  // 航线开关：记在本机（默认关，用户 2026-09-27 定：和云雾一样做成选项）；没有 routes 的图上隐藏开关
-  { let on = false; try { on = TCStore.get('edenMapRoutes') === '1'; } catch (e) {}
-    $('#tgRoutesBox').checked = on; document.body.classList.toggle('noroutes', !on);
-    $('#tgRoutesBox').onchange = e => { document.body.classList.toggle('noroutes', !e.target.checked); routeGaps(); try { TCStore.set('edenMapRoutes', e.target.checked ? '1' : '0'); } catch (err) {} }; }
-  $('#tgMarkers').onchange = e => document.body.classList.toggle('nomarkers', !e.target.checked);
+  // 图层开关的接线、存储与默认勾选收进 app/layerhost.mjs 的 registerCoreLayers（P3-C：#layList 由 LayerRegistry 数据驱动，键名不变）
   $('#here').oninput = () => markHere($('#here').value);
   $('#here').onchange = () => { markHere($('#here').value); emEmit('here', { value: $('#here').value, resolved: hereRes($('#here').value) }); };   // 单独打开查看器时：输入框改完（回车 / 失焦）= 模拟 MVU 地点更新
   initSettings(); initE7(); initFpsMeter();

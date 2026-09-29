@@ -382,12 +382,15 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #loading.over:not(.done) .acts, #loading.over:not(.done) span { pointer-events: auto; }
 
   /* ---------- 地图叠加物 ---------- */
+  /* P3-C：叠加物的槽位归属由 --zv-* 阶梯常量决定（core/layers.mjs SLOTS），不再依赖 DOM 插入顺序 */
+  .barriers, .tc-ring { z-index: var(--zv-base); }
+  #fogCv { z-index: var(--zv-fog); }
   .barriers :is(ellipse, path) { fill: rgba(120,220,255,.06); stroke: rgba(140,230,255,.75); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
   .barriers .eden { stroke: var(--gold); stroke-width: 2; fill: color-mix(in srgb, var(--gold) 8%, transparent); }
   .barriers.proj :is(ellipse, path) { fill: rgba(0,0,0,.12); stroke: rgba(190,205,230,.5); stroke-width: 1; stroke-dasharray: 5 4; }
   .barriers.proj .eden { stroke: color-mix(in srgb, var(--gold) 70%, transparent); fill: rgba(0,0,0,.12); }
   /* 上层航线（默认关）：航线 = 细金色虚线，骑士团巡逻环 = 淡蓝点划线 */
-  .routes { pointer-events: none; overflow: visible; }
+  .routes { pointer-events: none; overflow: visible; z-index: var(--zv-routes); }
   .routes path { fill: none; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
   .routes .halo { stroke: rgba(8,10,14,.28); stroke-width: 2.8; }
   .routes .lane { stroke: var(--gold); stroke-width: 1.4; stroke-dasharray: 7 5; opacity: .9; }
@@ -435,7 +438,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   body.far .mk:not(.active) .lab small { display: none; }
   body.nomarkers .mk { display: none; }
   /* 世界图国名：字号随地图显示比例缩放；深色描边，雪地、亮海面上也读得清（E4 N31） */
-  .realm { transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; text-align: center; white-space: nowrap; color: #fff; text-shadow: 0 0 6px #000, 0 0 3px #000, 0 2px 8px #000c; }
+  .realm { transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; text-align: center; white-space: nowrap; color: #fff; text-shadow: 0 0 6px #000, 0 0 3px #000, 0 2px 8px #000c; z-index: var(--zv-labels); }
   .realm b, .realm span { -webkit-text-stroke: 3px rgba(0,0,0,.72); paint-order: stroke fill; }
   .realm b { display: block; font-size: clamp(13px, calc(30px * var(--rs, 1)), 40px); letter-spacing: calc(12px * min(var(--rs, 1), 1)); font-weight: 900; }
   .realm span { font-size: clamp(var(--fs-micro), calc(13px * var(--rs, 1)), 15px); letter-spacing: 2px; }
@@ -446,7 +449,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .realm.fed b { font-family: var(--font-serif); color: #cfe3ff; }
   .realm.xl b { font-family: "Kaiti SC", "STKaiti", serif; color: #e6d6ff; }
   .realm.lhide, .minor.lhide { visibility: hidden; }
-  .minor { transform: translate(-50%, -50%); font-size: var(--fs-small); color: #fff; text-shadow: 0 0 4px #000, 0 0 2px #000; -webkit-text-stroke: 2.5px rgba(0,0,0,.7); paint-order: stroke fill; white-space: nowrap; }
+  .minor { transform: translate(-50%, -50%); font-size: var(--fs-small); color: #fff; text-shadow: 0 0 4px #000, 0 0 2px #000; -webkit-text-stroke: 2.5px rgba(0,0,0,.7); paint-order: stroke fill; white-space: nowrap; z-index: var(--zv-labels); }
   body.nolabels .realm, body.nolabels .minor { display: none; }
 
   /* ---------- 卡片（地点卡 / 事态卡）：Panel 规格，宽 320；手机 = 底部实底抽屉 ---------- */
@@ -604,12 +607,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   <script>if (window.__worldFirst) document.getElementById('loading').classList.add('thumb');</script>
 </div>
 <div id="layPop" class="pop" hidden role="dialog" data-i18n-aria="layers_menu" aria-label="图层"><div id="layList">
-  <label class="tg" id="tgOverlay"><span>国界</span><input type="checkbox" role="switch" id="tgBorders" checked></label>
-  <label class="tg" id="tgAlt" hidden data-i18n-title="alt_title" title="高级：换成带下方城市的底图（图更大）"><span>显示下方城市</span><input type="checkbox" role="switch" id="tgAltBox"></label>
-  <label class="tg" id="tgRoutes" hidden data-i18n-title="routes_title" title="上层航线（金色虚线）与银冠堡巡逻环（淡蓝点划线）"><span data-i18n="routes">航线</span><input type="checkbox" role="switch" id="tgRoutesBox"></label>
-  <label class="tg" id="tgTrips"><span data-i18n="trips">行程</span><input type="checkbox" role="switch" id="tgTripsBox" checked></label>
-  <label class="tg"><span data-i18n="labels">地名</span><input type="checkbox" role="switch" id="tgLabels" checked></label>
-  <label class="tg"><span data-i18n="markers">标记</span><input type="checkbox" role="switch" id="tgMarkers" checked></label>
+  <!-- P3-C：行由 app/layerhost.mjs renderLayerMenu() 按 LayerRegistry 的菜单描述符渲染（元素 id / 存储键 / 默认勾选与旧静态行一致） -->
 </div></div>
 <div id="setPop" class="pop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置" aria-labelledby="setTitle">
   <div class="sheet-h"><button type="button" class="btn" id="setBack" hidden><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14.5 6l-6 6 6 6"/></svg><span class="lbl" data-i18n="settings_title">设置</span></button><b id="setTitle" data-i18n="settings_title">设置</b><button type="button" class="btn ic" id="setX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>

@@ -7,6 +7,7 @@
 import { REG, aspect, cur, curData, viewer } from './app/state.mjs';
 import { esc } from './app/util.mjs';
 import { estateStandIn } from './app/estate.mjs';
+import { registry } from './app/layerhost.mjs';
 import { showCard, trackEl, untrack } from './app/markers.mjs';
 import { hereRes, userMoved } from './app/locate.mjs';
 import { P, register } from './app/plugins.mjs';
@@ -73,16 +74,19 @@ const TCTrips = (() => {
   const charColor = n => (typeof P.TCChars !== 'undefined' && P.TCChars.color ? P.TCChars.color(n) : '#888');
   function set(items) { trips = Array.isArray(items) ? items.slice(-10) : []; render(); }
   function setOn(v) { try { TCStore.set(TK, v ? '1' : '0'); } catch (e) {} render(); }
-  document.addEventListener('DOMContentLoaded', () => { const b = document.getElementById('tgTripsBox'); if (b) { b.checked = on(); b.addEventListener('change', () => setOn(b.checked)); } });
+  // P3-C：行程层登记为 trips 槽的 osd 图层；「行程」菜单行由 LayerRegistry 渲染（app/layerhost.mjs），存储键 edenMapTrips 与默认开不变
+  registry.register({ id: 'trips', slot: 'trips', kind: 'osd', initialVisible: on(),
+    menu: { order: 50, id: 'tgTrips', boxId: 'tgTripsBox', labelKey: 'trips', label: '行程' },
+    setVisible: v => setOn(v) });
   function render() {
     clear();
     if (typeof viewer === 'undefined' || !viewer || !cur || !viewer.world.getItemCount() || REG.maps[cur]?.kind !== 'points') return;
     renderTrips(); renderTransit();
   }
   const css = `
-  svg.trip{overflow:visible;pointer-events:none;z-index:1}
+  svg.trip{overflow:visible;pointer-events:none;z-index:var(--zv-trips,50)}
   svg.trip path{fill:none;stroke:var(--alert);stroke-width:2.5;stroke-linecap:round;filter:drop-shadow(0 0 2px rgba(0,0,0,.6))}
-  .tripin{position:relative;width:0;height:0;overflow:visible;z-index:3}
+  .tripin{position:relative;width:0;height:0;overflow:visible;z-index:var(--zv-trips,50)}
   .tripin i{position:absolute;left:-8px;top:-8px;width:16px;height:16px;border-radius:50%;background:var(--alert);border:2px solid #fff;box-sizing:border-box;box-shadow:0 0 0 4px color-mix(in srgb,var(--alert) 30%,transparent)}
   .tripin.you{cursor:pointer;pointer-events:auto}
   .tripin.you::before{content:'';position:absolute;left:-22px;top:-22px;width:44px;height:44px}

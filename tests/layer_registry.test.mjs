@@ -157,3 +157,51 @@ test('模块里不许再内联赋值 z-index（转场快照等一律引用阶梯
   }
 });
 
+// ---------- 阶段 3（迁移）：#layList 数据驱动与图层接入 ----------
+test('#layList 静态行清零，行由 Registry 菜单描述符渲染（元素 id 与旧行一致）', () => {
+  const html = viewerSrc();
+  const list = html.slice(html.indexOf('id="layList"'));
+  assert.doesNotMatch(list.slice(0, list.indexOf('</div>')), /<label|tgBorders|tgMarkers/, '#layList 里不许再写静态行');
+  const lh = readFileSync(new URL('../map/app/layerhost.mjs', import.meta.url), 'utf8');
+  for (const id of ['tgOverlay', 'tgBorders', 'tgAlt', 'tgAltBox', 'tgRoutes', 'tgRoutesBox', 'tgLabels', 'tgMarkers'])
+    assert.ok(lh.includes(`'${id}'`), `layerhost 缺菜单行 id ${id}`);
+  assert.match(readFileSync(new URL('../map/trips.mjs', import.meta.url), 'utf8'), /id: 'tgTrips'/, '行程行的元素 id 不变');
+  assert.match(readFileSync(new URL('../map/events.mjs', import.meta.url), 'utf8'), /id: 'tgEvents'/);
+  assert.match(readFileSync(new URL('../map/security.mjs', import.meta.url), 'utf8'), /id: 'tgSec'/);
+});
+
+test('图层存储键完全兼容：键名与所属模块不变', () => {
+  const read = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
+  assert.match(read('map/app/layerhost.mjs'), /edenMapBarriers/, '结界开关仍存 edenMapBarriers');
+  assert.match(read('map/app/layerhost.mjs'), /edenMapRoutes/, '航线开关仍存 edenMapRoutes');
+  assert.match(read('map/trips.mjs'), /edenMapTrips/, '行程开关仍存 edenMapTrips');
+  assert.match(read('map/security.mjs'), /edenMapSecurity/, '安保开关仍存 edenMapSecurity');
+  assert.match(read('map/app/fog.mjs'), /FOG_KEY/, '迷雾仍走 core/storage.mjs 的 FOG_KEY');
+});
+
+test('现有图层挂到契约槽位：核心六层 + fog / clouds / events / trips / security', () => {
+  const lh = readFileSync(new URL('../map/app/layerhost.mjs', import.meta.url), 'utf8');
+  for (const id of ['base-overlay', 'alt-base', 'routes', 'labels', 'markers'])
+    assert.ok(lh.includes(`id: '${id}'`), `layerhost 未登记 ${id}`);
+  const slotsOf = { 'map/app/fog.mjs': ['fog', "slot: 'fog'"], 'map/app/clouds.mjs': ['clouds', "slot: 'depth-haze'"], 'map/events.mjs': ['events', "slot: 'events'"], 'map/trips.mjs': ['trips', "slot: 'trips'"], 'map/security.mjs': ['security', "slot: 'markers'"] };
+  for (const [f, [id, slot]] of Object.entries(slotsOf)) {
+    const s = readFileSync(new URL('../' + f, import.meta.url), 'utf8');
+    assert.ok(s.includes(`id: '${id}'`) && s.includes(slot), `${f} 未按 ${slot} 登记 ${id}`);
+    assert.match(s, /layerhost\.mjs/, `${f} 应经 app/layerhost.mjs 注册`);
+  }
+});
+
+test('叠加物栈序归阶梯常量：雾不再 prepend，路线 / 雾 / 事态 / 行程 / 人物徽标引用 --zv-*', () => {
+  const fog = readFileSync(new URL('../map/app/fog.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(fog, /prepend\(cv\)/, '迷雾画布不许再 prepend 抢 DOM 顺序');
+  const html = viewerSrc();
+  assert.match(html, /#fogCv \{ z-index: var\(--zv-fog\); \}/);
+  assert.match(html, /\.routes \{[^}]*z-index: var\(--zv-routes\)/);
+  assert.match(html, /\.barriers, \.tc-ring \{ z-index: var\(--zv-base\); \}/);
+  assert.match(readFileSync(new URL('../map/events.mjs', import.meta.url), 'utf8'), /\.ev\{z-index:var\(--zv-events,60\)\}/);
+  const trips = readFileSync(new URL('../map/trips.mjs', import.meta.url), 'utf8');
+  assert.equal((trips.match(/var\(--zv-trips,50\)/g) || []).length, 2, 'trip SVG 与落点都归 trips 槽');
+  assert.match(readFileSync(new URL('../map/chars.mjs', import.meta.url), 'utf8'), /z-index:calc\(var\(--zv-markers,70\) \+ 1\)/);
+});
+
+

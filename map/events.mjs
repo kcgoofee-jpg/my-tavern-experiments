@@ -7,6 +7,7 @@
 // 界面文字走查看器的 window.I18N（键在 i18n/*.json 的 ev.*）；类别、大类、层、状态名英文在 en.json 的 names。事件标题、地点、发布方是剧情原文，不翻译。
 import { M, REG, aspect, cur, viewer } from './app/state.mjs';
 import { $, announce, coarse, esc, getJSON, toImg } from './app/util.mjs';
+import { registry } from './app/layerhost.mjs';
 import { declutter, tabOrder } from './app/tiers.mjs';
 import { go } from './app/nav.mjs';
 import { updateLayerBadges } from './app/layers.mjs';
@@ -270,13 +271,8 @@ const TCEvents = (() => {
   let hintSeen = null;
   function hintOnce() { if (!isOpenNow()) return false; if (hintSeen === null) { try { hintSeen = !!TCStore.get('edenMapLegHint'); TCStore.set('edenMapLegHint', '1'); } catch (e) { hintSeen = true; } } return !hintSeen; }
   function updateToggle() {
-    let tg = document.getElementById('tgEvents');
-    if (!tg) {
-      tg = document.createElement('label'); tg.className = 'tg'; tg.id = 'tgEvents';
-      tg.innerHTML = '<span></span><input type="checkbox" role="switch" checked>';
-      tg.querySelector('input').onchange = ev => { shown = ev.target.checked; document.body.classList.toggle('noevents', !shown); renderBar(); applyGlitch(); };
-      document.getElementById('tgMarkers')?.closest('label')?.after(tg);
-    }
+    // P3-C：「事态」行由 LayerRegistry 菜单渲染（app/layerhost.mjs renderLayerMenu）；这里只更新计数文案与显隐
+    const tg = document.getElementById('tgEvents'); if (!tg) return;
     const act = vis().filter(e => mapOf(e) === cur && live(e)).length;
     tg.querySelector('span').textContent = act ? T('ev.toggle_n', '事态 {n}', { n: act }) : T('ev.toggle', '事态');
     tg.hidden = !all().length;
@@ -323,7 +319,7 @@ const TCEvents = (() => {
   @media (pointer:coarse),(max-width:640px){.ev::before{content:'';position:absolute;left:-12px;top:50%;width:44px;height:44px;margin-top:-22px}}
   .ev b{font:600 var(--fs-micro,11px)/1.3 var(--font-ui,sans-serif);color:var(--map-label-ink,#fff);background:var(--map-label-bg,rgba(8,10,14,.8));padding:1px 6px;border-radius:var(--r-s,4px);border-left:2px solid var(--c);white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis}
   .ev.lhide b{visibility:hidden}
-  .ev{z-index:2}
+  .ev{z-index:var(--zv-events,60)}
   .ev-new i::after{content:'';position:absolute;inset:-5px;border-radius:7px;border:2px solid var(--c);animation:evpulse 1.6s ease-out 5;will-change:transform,opacity}
   .ev-new.sev3 i::after{animation-duration:.9s;animation-iteration-count:9}
   /* 已解除 / 余波：图标变灰、变淡；文字标签不整体降透明度（对比度，E5 V20） */
@@ -422,6 +418,10 @@ const TCEvents = (() => {
   const collapse = () => { const S = SH(); if (S?.open) S.set('peek'); };
   // 换色觉模式（设置 → 显示）后重画点、图例、事态横条（E7）
   TCCvd.onChange(() => { afterOpen(); if ($('#evbar')) renderBar(); });
+  // P3-C：事态点层登记为 events 槽的 osd 图层；「事态」菜单行由 LayerRegistry 渲染（行内勾选 → setVisible → 这里的调度）
+  registry.register({ id: 'events', slot: 'events', kind: 'osd', initialVisible: shown,
+    menu: { order: 80, id: 'tgEvents', labelKey: 'ev.toggle', label: '事态' },
+    setVisible: v => { shown = v; document.body.classList.toggle('noevents', !v); renderBar(); applyGlitch(); } });
   return { init, set, zoneXY, renderBar: () => $('#evbar') && renderBar(), render: afterOpen, pollFeeds, flyTo, countOn, collapse, isOpen: () => isOpenNow() && !SH()?.el.hidden, get events() { return all(); } };
 })();
 register('TCEvents', TCEvents);

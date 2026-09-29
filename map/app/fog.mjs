@@ -6,6 +6,7 @@
 //   用户从没动过开关时 on() 按登记的 def '1' 生效，与设置页默认勾选、KEYS 登记一致，原先镜像不套默认值导致默认开悄悄失效）。
 import { REG, cur, viewer } from './state.mjs';
 import { $, post } from './util.mjs';
+import { registry } from './layerhost.mjs';
 import { markHere } from './locate.mjs';
 import { norm, visit, known, count } from '../core/depth.mjs';
 import * as TCStore from '../core/storage.mjs';
@@ -30,7 +31,7 @@ function paint() {
     const x = (p.x - b.x) / b.width * W, y = (p.y - b.y) / b.height * H, gr = g.createRadialGradient(x, y, 0, x, y, R);
     gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(.6, 'rgba(0,0,0,.85)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - R, y - R, 2 * R, 2 * R); }
   cv.style.pointerEvents = 'none';
-  viewer.addOverlay({ element: cv, location: b }); cv.parentElement?.prepend(cv);   // 放在图钉下面
+  viewer.addOverlay({ element: cv, location: b });   // 层叠归 #fogCv 的 --zv-fog 槽位常量（fog 槽，在标记之下），不再 prepend 抢 DOM 顺序
 }
 /** markHere 解析出落点后调用：r = hereRes() 的结果 */
 function here(r) {
@@ -40,9 +41,11 @@ function here(r) {
   if (embedded()) post({ type: 'eden-map:explore', map: r.map, name }); else TCStore.set(FOG_LOCAL_KEY, JSON.stringify(ex));
   if (r.map === cur) paint();
 }
+const setFog = v => { TCStore.set(FOG_KEY, v ? '1' : '0'); if (v && typeof markHere === 'function') markHere($('#here').value); paint(); };
+registry.register({ id: 'fog', slot: 'fog', kind: 'canvas', initialVisible: on(), setVisible: setFog });   // P3-C：迷雾作为 fog 槽的 canvas 图层受 Registry 调度
 window.TCFog = {
   paint, here, on, count: () => count(ex),
   set(raw) { ex = norm(raw); paint(); },                 // 宿主推来（换聊天 / 加载）
-  toggle(v) { TCStore.set(FOG_KEY, v ? '1' : '0'); if (v && typeof markHere === 'function') markHere($('#here').value); paint(); },
+  toggle(v) { registry.setVisible('fog', v); },
   reset() { ex = {}; if (embedded()) post({ type: 'eden-map:explore-reset' }); else TCStore.remove(FOG_LOCAL_KEY); paint(); },
 };
