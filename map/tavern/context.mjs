@@ -6,6 +6,7 @@
 // 宿主只留调度（RFC §4：去抖、事件接线、restNow 空闲补做、注入与推送）。node 单测直接喂数据（tests/context.test.mjs）。
 import { parseText } from './msgtext.mjs';
 import { lostTags } from './shujuku.mjs';
+import { sanitize } from './sanitize.mjs';
 import * as MV from './mvu.mjs';
 
 /** 楼层原文指纹（FNV-1a，36 进制）：标签记录 / 楼层指纹用它识别「这一楼原文变了」 */
@@ -73,9 +74,10 @@ export function perFloorStatOf(snap) {
 }
 
 export class ContextPipeline {
-  constructor({ scan = 80 } = {}) {
+  constructor({ scan = 80, stripTags = null } = {}) {
     this.SCAN = scan;             // 窗口楼数：未解除的事件在窗口内一直列出（events.mjs tierOf）
-    this.msgCache = new Map();    // A-3：(楼层, 原文) 缓存 { msg, m: { floor, raw, text, h }, trip?, tripKey? }
+    this.stripTags = stripTags;   // 社区预设净化（Part 7）：要剥的块标签表；null / 空 = 不剥（msgtext 的 think / UpdateVariable 惯例不受影响）
+    this.msgCache = new Map();    // A-3：(楼层, 原文) 缓存 { msg, tags, m: { floor, raw, text, h }, trip?, tripKey? }
     this.roundSig = ''; this.lastMsgs = [];
     // 剧情标签状态（持久化在聊天变量 eden_map.标签楼 / 标签记录 / 楼层指纹；loadCustom 整块换入）
     this.tag = { floor: -1, log: [], seen: {} };
@@ -84,16 +86,18 @@ export class ContextPipeline {
 
   /** 宿主把楼层列表（getChatMessages 的原文）递进来，这里规范化 + 缓存 → [{ floor, raw, text, h }]。
    *  text 剥思考链与变量更新块（msgtext.mjs，G1）；raw 留给行程的 JSONPatch、变量提取用完整原文。
+   *  先剥社区预设块（sanitize.mjs，标签表在构造时给；换标签表缓存跟着失效），再剥 EJS。
    *  extra._acu_original_content = 数据库插件「正文优化」改写前的原文：丢掉的 ⌖ 标签从原文补回（只补标签，不动正文）。 */
   readMsgs(list, lastId) {
     let out = [];
+    const tagKey = Array.isArray(this.stripTags) && this.stripTags.length ? this.stripTags.join(',') : '';
     if (Array.isArray(list) && lastId >= 0) out = list.map(m => {
       let msg = String(m.message || ''); const c0 = m.extra?._acu_original_content;
       if (typeof c0 === 'string' && c0.includes('⌖')) msg += lostTags(c0, msg);
       const c = this.msgCache.get(m.message_id);
-      if (c && c.msg === msg) return c.m;
-      const raw = msg.replace(EJS, '');   // 原文里可能还留着 EJS 模板源码，里面的示例标签不算事件
-      const e = { msg, m: { floor: m.message_id, raw, text: parseText(raw) } };
+      if (c && c.msg === msg && c.tags === tagKey) return c.m;
+      const raw = (tagKey ? sanitize(msg, this.stripTags) : msg).replace(EJS, '');   // 原文里可能还留着 EJS 模板源码，里面的示例标签不算事件
+      const e = { msg, tags: tagKey, m: { floor: m.message_id, raw, text: parseText(raw) } };
       e.m.h = hashText(e.m.text) + (raw.length !== e.m.text.length ? '.' + hashText(raw) : '');
       this.msgCache.set(m.message_id, e); return e.m;
     });

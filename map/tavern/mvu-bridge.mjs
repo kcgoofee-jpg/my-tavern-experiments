@@ -12,6 +12,7 @@ import * as SNP from './snapshot.mjs';
 import * as AD from './adapter.mjs';
 import * as DB from './shujuku.mjs';
 import * as MDm from './modes.mjs';
+import * as SAN from './sanitize.mjs';
 import * as RS from '../core/roster.mjs';
 
 export class MVUBridge {
@@ -27,7 +28,7 @@ export class MVUBridge {
     this.snapFloor = -1; this.snapTop = -1; this.snapState = 'ok';
     // 变量映射（adapter）：按角色卡存本机的用户映射 + 生效映射 + 变化签名（宿主 round 签名引用 varSig）
     this.varCard = ''; this.varUser = {}; this.varMap = { location: '世界.当前地点' }; this.varSig = '';
-    // here 的来源标注：'mvu' | 'tag'（正文标签兜底，交互方式 d）；hereFromDb = 地点读自表格数据库插件
+    // here 的来源标注：'mvu' | 'tag'（正文标签兜底，交互方式 d）| 'preset'（社区预设状态栏兜底，Part 7）；hereFromDb = 地点读自表格数据库插件
     this.hereSrc = 'mvu'; this.hereFromDb = false;
     // 名册附属（每聊天读一次卡文本，A-3）：原作默认立绘表 + 阶段先后序
     this.portraits = {}; this.stageOrder = null;
@@ -109,8 +110,8 @@ export class MVUBridge {
   /** mvu.mjs 读法取值（行程用，与 getPath 同语义） */
   mvuGet(st, p) { return this.MV ? this.MV.get(st, p) : undefined; }
 
-  // ---------------- 当前地点（三级兜底） ----------------
-  /** MVU 映射 → 正文标签对账（交互方式 d）→ 表格数据库插件。ctx 可覆盖 floorNow / lastRaw（缺省用构造参数）。 */
+  // ---------------- 当前地点（四级兜底） ----------------
+  /** MVU 映射 → 正文标签对账（交互方式 d）→ 表格数据库插件 → 社区预设状态栏（Part 7）。ctx 可覆盖 floorNow / lastRaw（缺省用构造参数）。 */
   here(ctx = {}) {
     const floorNow = ctx.floorNow ?? this.o.floorNow?.() ?? -1;
     const raw = ctx.lastRaw !== undefined ? ctx.lastRaw : this.o.lastRaw?.() ?? null;
@@ -122,6 +123,7 @@ export class MVUBridge {
     if (MDm && (snapState !== 'ok' || !v.trim()) && snapTop >= 0 && floorNow >= snapTop) { const t = raw != null ? MDm.parseHereTag(raw) : null;
       if (t && floorNow > snapFloor) { const r = MDm.reconcile({ place: v, state: snapState }, t); if (r.source === 'tag') { v = r.place; this.hereSrc = 'tag'; } } }
     if (!v.trim()) { const d = this.#dbData(); if (d) { v = DB.protagonist(d).location; this.hereFromDb = !!v; } }
+    if (!v.trim() && raw) { const h = SAN.presetHereHint(raw); if (h.here) { v = h.here; this.hereSrc = 'preset'; } }   // Part 7：社区预设状态栏的「地点：…」也认（兜底链最后一级）
     return v;
   }
 

@@ -9,6 +9,7 @@
 import '../core/logbuf.mjs'; // 反馈日志缓冲：最先 import，模块求值即安装，启动日志不丢（v0.9.6 报告「(none)」根因）
 import { cdnFetch, thFn, fnOk, hostFn, packNs, createPrefs, createWbAuto, fnGuard } from './host-th.mjs';
 import { EDEN_API, guardApi } from './edenapi.mjs';
+import { resolveTags } from './sanitize.mjs';   // Part 7：社区预设净化（标签表设置）
 import { createRoutes, scoreText } from './host-routes.mjs';
 import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
 import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取收口（Mvu / SillyTavern 全局只在这一个模块里）
@@ -325,7 +326,9 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
   // 生成状态（GEN）：GENERATION_STARTED 置位，ENDED / STOPPED 清零，180 s 超时自动清（断网 / 被杀后 ENDED 永远不来）
   const GEN = { since: 0, get generating() { return !!this.since && Date.now() - this.since < 180000; } };
   let MV = null;   // mvu.mjs（纯函数集）由桥加载；这里拿模块引用给自定义 / 注入等纯调用用
-  const CTX = new ContextPipeline();   // 聊天上下文流水线（tavern/context.mjs）：先建（下面 BR 的标签对账要读它的消息缓存）
+  const CTX = new ContextPipeline({   // 聊天上下文流水线（tavern/context.mjs）：先建（下面 BR 的标签对账要读它的消息缓存）
+    stripTags: resolveTags(k => { try { return (LS || localStorage).getItem(k); } catch (e) { return null; } }),
+  });
   const BR = new MVUBridge({
     life, pack: PACK_IN, packId: PACK_ID,
     lang: () => (UL === 'en' ? 'en' : 'zh'), isGenerating: () => GEN.generating,

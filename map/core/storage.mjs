@@ -29,6 +29,8 @@ export const KEYS = {
   // 宿主（tavern/eden-map.js）
   edenMapLine: { owner: 'host', prefix: true }, edenMapFabPos: { owner: 'host' }, edenMapEvTip: { owner: 'host' }, edenMapUpdSkip: { owner: 'host' },
   edenMapCheckToast: { owner: 'host' }, edenMapUpdate: { owner: 'host' }, edenMapSplashSeen: { owner: 'tavern/splash.mjs' },
+  // 社区预设文本净化（Part 7，tavern/sanitize.mjs）：edenMapSanitize=0 全关；edenMapSanitizeTags = JSON 数组自定义块标签表
+  edenMapSanitize: { owner: 'host', def: '1' }, edenMapSanitizeTags: { owner: 'host' },
   // 酒馆助手采纳（docs/tavernhelper-audit.md，docs/interaction-modes.md）：状态注入 (a)、类宏 B9、世界书附加条目同步 B1
   edenMapStateInj: { owner: 'host', def: '1' }, edenMapStateDepth: { owner: 'host', def: '2' }, edenMapStateBudget: { owner: 'host', def: '150' }, edenMapMacros: { owner: 'host', def: '0' },
   edenMapWbAuto: { owner: 'host', def: '0' }, edenMapWbOn: { owner: 'host', def: '1' }, edenMapWbTomb: { owner: 'host', def: '0' }, edenMapWbChars: { owner: 'host' }, edenMapWbNoticeVer: { owner: 'host' }, edenMapWbSync: { owner: 'host' }, edenMapWbWhere: { owner: 'host' },
