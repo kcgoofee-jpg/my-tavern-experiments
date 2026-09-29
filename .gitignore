@@ -44,3 +44,7 @@ tools/cloud/.locks/
 .cache/
 # AI 助手的工作目录：agent 团队/会话状态（不是项目内容，2026-09-29 误提交过一次，这里挡住）
 .codebuddy/
+# 道具导出的烘焙中间贴图（2026-09-29 误提交过一次，这里挡住；成品是 glb，贴图打包在 glb 里）
+map/props/*/*_tex/
+# rsync 传输中的临时文件（map/art/.xxx.png.XXXXXX；2026-09-29 误提交过一个 24 MB 的）
+map/art/.*
