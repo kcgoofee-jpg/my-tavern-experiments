@@ -219,7 +219,7 @@ for (const preset of ['desktop', 'phone']) for (const theme of ['dark', 'light']
 ```
 host_stub 需要新增：`H.injected()`、`H.wbEntry()`、`H.switchChat(id)`、`H.pushMessage(text)`、`opts.undoMs`，由自定义面板实现者负责；`v3dFrame(P)` 与 `data-id / data-step / data-edit` 选择器由三维实现者负责。
 
-单元测试：在 `tests/custom095.test.mjs` 旁边新建 `tests/custom_v2.test.mjs`，覆盖以下函数：
+单元测试：在 `tests/custom_names.test.mjs`（原 custom095，2026-09-30 语义化更名）旁边新建 `tests/custom_v2.test.mjs`，覆盖以下函数：
 - `normCustom` 对 `部件`、`待定`、`史`、`跟剧情` 的处理，以及旧版 normCustom 读新数据后摘要不含 `:`；
 - `applyTags` 遇到手动项时写入待定；
 - `summarizeCustom` 对 part 键的渲染；
