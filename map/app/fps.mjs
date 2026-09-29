@@ -33,6 +33,12 @@ export function setFpsMeter(on) {
   }
 }
 
+// Part 7-4 视口可见性节流：页面切后台时读数循环也歇（rAF 钳制不保证所有 WebView），回前台按开关恢复
+document.addEventListener('visibilitychange', () => {
+  if (raf && document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+  else if (!raf && el && el.style.display !== 'none') { frames = 0; last = 0; acc = 0; raf = requestAnimationFrame(tick); }
+});
+
 export function initFpsMeter() {
   let on = false;
   try { on = window.TCStore?.get('edenMapFps') === '1'; } catch (e) {}

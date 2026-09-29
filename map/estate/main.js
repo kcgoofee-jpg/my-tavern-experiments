@@ -11,6 +11,7 @@ import { openGallery } from '../ui/gallery.js';
 import { roomCustomBlockHTML, bindRoomCustomEvents, getCustomName, setGalleryChatId } from '../ui/room-gallery-panel.js';
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer } from '../ui/camera-controls.js';
 import { Estate3D } from '../core/estate3d.mjs';   // Estate3D Manifest 标准契约（P3-A）：清单校验 / 路径解析 / describe 摘要
+import { createRenderGate, wireVisibility } from '../core/render-gate.mjs';   // Part 7-4：页面隐藏时渲染循环整个停掉
 
 const T0 = performance.now();
 const Q = new URLSearchParams(location.search);
@@ -864,8 +865,13 @@ addEventListener('resize', () => { frustum(); renderer.setSize(innerWidth, inner
 const statsEl = $('#stats'); if (STATS) statsEl.style.display = 'block';
 let frames = 0, fpsT = performance.now(), fps = 0, first = true, lastInfo = { calls: 0, triangles: 0 }, lastPulse = 0;
 let paused = false, resumeT = 0;
+// Part 7-4 视口可见性节流：页面切后台 / 视口不可见 → 停排帧（GPU 与循环全歇）；恢复时若没被休眠就重启循环
+const gate = createRenderGate({
+  onResume: () => { if (!paused) { resumeT = performance.now(); needs = true; requestAnimationFrame(loop); } },
+});
+wireVisibility(gate, document);
 function loop(now) {
-  if (paused) return;
+  if (paused || gate.hidden) return;
   requestAnimationFrame(loop);
   let moving = stepTween(now);
   if (!moving) moving = controls.update(); else controls.update();

@@ -90,6 +90,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { mountProgress } from '../ui/progress.mjs';   // fix3：统一加载进度组件
 import { Estate3D } from '../core/estate3d.mjs';   // Estate3D Manifest 标准契约（P3-A）：glb 地址与档位兜底都走清单，代码不写死模型路径
 import { nsKey } from '../core/pack.mjs';   // 通用化 v1：本机键按包换前缀（edenMapLang / 画质 / 提示卡……），与查看器同一规则
+import { createRenderGate, wireVisibility } from '../core/render-gate.mjs';   // Part 7-4：页面隐藏时渲染循环整个停掉
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer, prefersReducedMotion } from '../ui/camera-controls.js';   // 相机控制共用小件（预设/指北针/提示卡/空闲计时），与庄园页共用
 
 const Q = new URLSearchParams(location.search);
@@ -641,7 +642,7 @@ function govFrame(dt, now) {
   }
 }
 function frame(now) {
-  if (!running) return;
+  if (!running || gate.hidden) return;
   requestAnimationFrame(frame);
   const dt = Math.min(100, now - last); last = now;
   stepTween(now); controls.update(); updateRoof(dt);
@@ -657,6 +658,11 @@ function frame(now) {
   renderer.render(scene, camera); placePins();
   govFrame(dt, now);   // 只在真渲染的帧采样帧距：待机（dirty=false）不计
 }
+// Part 7-4 视口可见性节流：切后台 → 停排帧；回前台 → 若循环还在（没 pagehide）就重启
+const gate = createRenderGate({
+  onResume: () => { if (running) { last = performance.now(); dirty = true; requestAnimationFrame(frame); } },
+});
+wireVisibility(gate, document);
 requestAnimationFrame(frame);
 document.addEventListener('visibilitychange', () => { dirty = true; });
 addEventListener('pagehide', () => { running = false; disposeRoot(); renderer.dispose(); renderer.forceContextLoss?.(); });
