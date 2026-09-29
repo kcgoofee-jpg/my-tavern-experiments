@@ -1,15 +1,18 @@
 // 迷雾探索（P3，2026-09-28 起默认开；设置「显示 · 迷雾探索」可关）：没到过的地点图钉变暗、收起地名，底图盖一层遮罩，到过的地点周围挖开。
 // 默认开着也不会一片全黑：markHere（locate.mjs）每次都会把解析出的当前地点记一次到访（here() 内部再判断 on()），新聊天 / 中途导入的聊天一进来就先挖开当前地点。
 // 到访 = 当前地点解析到这张图的某个标记（markHere）。记录按聊天：嵌在酒馆里发给宿主存进聊天变量 eden_map.探索；单独打开存本机。
-// 从 viewer.html 拆出的模块（arch-v2 §6）：核心状态与工具从 state / util 显式 import，TCStore 是首帧前置的经典全局；查看器经 window.TCFog 调用（都带 ?. 守卫）。
+// 从 viewer.html 拆出的模块（arch-v2 §6）：核心状态与工具从 state / util 显式 import；存储统一走 core/storage.mjs 适配器
+// （P3-A 收口：FOG_KEY / FOG_LOCAL_KEY 只在 core/storage.mjs 定义，这里不再写死键名；直连适配器后 get 套登记默认值——
+//   用户从没动过开关时 on() 按登记的 def '1' 生效，与设置页默认勾选、KEYS 登记一致，原先镜像不套默认值导致默认开悄悄失效）。
 import { REG, cur, viewer } from './state.mjs';
 import { $, post } from './util.mjs';
 import { markHere } from './locate.mjs';
 import { norm, visit, known, count } from '../core/depth.mjs';
-const KEY = 'edenMapFog', LOCAL = 'edenMap:chat:local:fog';
+import * as TCStore from '../core/storage.mjs';
+const { FOG_KEY, FOG_LOCAL_KEY } = TCStore;
 const embedded = () => window.top !== window;
-let ex = embedded() ? {} : norm(TCStore.json(LOCAL, {}));
-const on = () => TCStore.get(KEY) === '1';
+let ex = embedded() ? {} : norm(TCStore.json(FOG_LOCAL_KEY, {}));
+const on = () => TCStore.get(FOG_KEY) === '1';
 const eligible = () => { const m = REG?.maps?.[cur]; return !!m && m.kind === 'points' && m.status !== 'planned'; };
 function paint() {
   document.getElementById('fogCv')?.remove();
@@ -34,12 +37,12 @@ function here(r) {
   if (!on() || !r?.map || !r.marker) return;
   const name = REG?.maps?.[r.map]?.markers?.[r.marker]?.name; if (!name) return;
   const v = visit(ex, r.map, name); if (!v.changed) return; ex = v.ex;
-  if (embedded()) post({ type: 'eden-map:explore', map: r.map, name }); else TCStore.set(LOCAL, JSON.stringify(ex));
+  if (embedded()) post({ type: 'eden-map:explore', map: r.map, name }); else TCStore.set(FOG_LOCAL_KEY, JSON.stringify(ex));
   if (r.map === cur) paint();
 }
 window.TCFog = {
   paint, here, on, count: () => count(ex),
   set(raw) { ex = norm(raw); paint(); },                 // 宿主推来（换聊天 / 加载）
-  toggle(v) { TCStore.set(KEY, v ? '1' : '0'); if (v && typeof markHere === 'function') markHere($('#here').value); paint(); },
-  reset() { ex = {}; if (embedded()) post({ type: 'eden-map:explore-reset' }); else TCStore.remove(LOCAL); paint(); },
+  toggle(v) { TCStore.set(FOG_KEY, v ? '1' : '0'); if (v && typeof markHere === 'function') markHere($('#here').value); paint(); },
+  reset() { ex = {}; if (embedded()) post({ type: 'eden-map:explore-reset' }); else TCStore.remove(FOG_LOCAL_KEY); paint(); },
 };

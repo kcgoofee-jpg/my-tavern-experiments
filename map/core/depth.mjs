@@ -62,3 +62,21 @@ export function visit(ex, map, name) {
 }
 export const known = (ex, map, name) => !!ex?.[map]?.includes?.(name);
 export const count = ex => Object.values(ex || {}).reduce((a, l) => a + (l?.length || 0), 0);
+
+// ---------- P3-A 标准化摘要（docs/reviews/architecture_and_stream_perf.md §2）：纵深配置 + 探索度概览，给上下文预算 / 多卡通用契约消费 ----------
+// 纯函数：只读入参、不改任何对象、不碰 DOM / 存储（迷雾的两个存储键统一登记在 core/storage.mjs，由 app/fog.mjs 消费）。
+//   maxDepth       纵深平面数 = 岛 + 云片（这张图把世界分了多少层深浅）
+//   currentHaze    当前纵深 d（0 近 → 1 远）的霾浓度，channels.haze 插值
+//   exploredRatio  探索度 = 到过的地点数 / 标记总数（给了 map 只算这张图，没给算全部）；markers ≤ 0 记 0
+//   fogEnabled     迷雾探索开关（调用方传入实际开关状态；缺省按登记默认「开」）
+export function describe(cfg, opt = {}) {
+  const d = opt.depth ?? 0, ex = norm(opt.explored);
+  const seen = opt.map != null ? (ex[opt.map]?.length || 0) : count(ex);
+  const markers = Math.max(0, opt.markers || 0);
+  return {
+    maxDepth: Object.keys(cfg?.islands || {}).length + (Array.isArray(cfg?.cloud_sheets) ? cfg.cloud_sheets.length : 0),
+    currentHaze: cfg?.channels?.haze ? channel('haze', d, cfg) : 0,
+    exploredRatio: markers > 0 ? r4(Math.min(1, seen / markers)) : 0,
+    fogEnabled: opt.fogEnabled == null ? true : !!opt.fogEnabled,
+  };
+}

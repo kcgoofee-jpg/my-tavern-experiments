@@ -5,6 +5,9 @@
 import { nsKey } from './pack.mjs';
 // 设定包命名空间（core/pack.mjs）：非 eden 包时 edenMap* 键实际读写 tcp.<id>.*；登记处仍按 edenMap* 写
 const N = k => nsKey(k, globalThis.__packId);
+// 迷雾探索（app/fog.mjs 消费，P3-A 收口）：开关键 + 单独打开查看器时的本机探索记录（挂在 perChat 前缀下的「local」伪聊天 id）。
+// 这里是全仓唯一定义点——其他文件一律 import 这两个常量，不许再写死键名（tests/depth_system.test.mjs 机检）。
+export const FOG_KEY = 'edenMapFog', FOG_LOCAL_KEY = 'edenMap:chat:local:fog';
 export const KEYS = {
   // 查看器（viewer.html）
   edenMapTheme: { owner: 'viewer', def: 'auto' }, edenMapLang: { owner: 'viewer', def: 'zh' }, edenMapHand: { owner: 'viewer', def: 'auto' },
