@@ -1,9 +1,9 @@
 # 代理速查（每个任务先读这一页，别的文档按需 grep）
 
-## Current status (2026-09-29, milestone sealed — read this first)
+## Current status (2026-09-29, streaming/decoupling P0–P3-C sealed — read this first)
 
-- HEAD `f7fbcff` on `preview`; `main` fast-forwarded to the same commit via `tools/sync_main.sh`. Working tree clean; no leftover local processes. Next milestone: the core architecture refactor.
-- Just landed: `34e5fd0` upper-layer 9-island integral re-render (8000×5000 plain+city, five estate cutouts, tiles/DZI rebuilt, climate-tower anchor in frame) + settings License page + empty-state roster closure (`sendChars` no longer gated by panel visibility) + worldbook builder v16 drops the 「推断」 wording. Related: `82a3ffb` (roster MVU fallback), `59ecc0f` (P2 batch C3/C4/A28 + feedback polish), `31df154` (转化仪式 event type), `52c2fcc` (viewer3d pause/lifecycle).
+- HEAD `1bdf113` on `preview`; working tree clean. `main` is a fast-forward behind (`tools/sync_main.sh`, run it when a batch pushes — the two branches carry the same content). **The streaming/decoupling refactor is fully sealed (report: `docs/reviews/architecture_and_stream_perf.md`)**: P0 G1+G6 (`040baf9`+`04f170f`), P1 (`643e087`), P2 MVUBridge + ContextPipeline (`785c421`+`28d646e`), P3-A DepthSystem + Estate3D (`709c1c9`+`43c053a`), P3-B CharacterRosterSystem (`a4de0f2`+`5ce27d3`), P3-C LayerRegistry (`aed4f49`+`92a9bda`+`910bd6e`).
+- Just landed: `f6ef639` de-speculation leftovers closed (`docs/card-digest.md:387,389`, `docs/upper-setting.md:278` hedged wording aligned to the established 口径) + worldbook ship-JSON standard extension interface reserved (top-level `schema: 1` + `category` map; `wbsync.mjs` consumer unchanged). Earlier on this line: `34e5fd0` upper-layer 9-island integral re-render + settings License page + worldbook builder v16 drops the 「推断」 wording.
 - Version stays `0.9.6` (last released tag `map-v0.9.6`); the builder emits `0.9.6-dev` until the next bump + tag. CHANGELOG's in-progress section is `0.9.7`.
 - Open work lives in `docs/todo.md` (strike-through = done, with SHA). GLM-agent local-dev pitfalls: `docs/handoff.md` §GLM-Agent guide.
 
@@ -34,7 +34,7 @@
 - **报告格式（用户 2026-09-28）**：写建议 / 清单类文档时每条独立成行；做完的在原文上用 ~~删除线~~ ✅ 划掉（不删、不另起文件），文首一行写状态说明；后续实施的代理负责回去划掉。
 - **收尾清理**：交回前停掉自己起的预览服务、后台进程和 Blender（只动自己的 PID）；不往 .claude/launch.json 加长期条目，要加就在收尾时删掉；报告里写一句「已清理」。
 
-## 模块地图（C2 整理后，2026-09-28；P2 解耦更新 2026-09-30；先看这里再 grep）
+## 模块地图（C2 整理后，2026-09-28；P2–P3-C 解耦更新 2026-09-30；先看这里再 grep）
 
 - 宿主脚本（酒馆页里跑，`map/tavern/`）：
   - `eden-map.js` 入口：面板 / 查看器状态机（预加载、休眠、进度）、postMessage 收发（onMsg / post）、当前地点 push、事态 recompute 的调度与副作用（取数与纯计算已下放，见下两条）、自定义与聊天变量的写入、自检、检查更新、悬浮按钮拖动 / 惯用手、启动事件与 cleanup 组装。
@@ -44,7 +44,7 @@
   - `host-lifecycle.mjs` 生命周期：createLife（listen / unlisten / dead / kill）、takeOver 接管旧实例、mount 面板 DOM + 内联样式、install 清理钩子。
   - `host-th.mjs` 酒馆助手适配：cdnFetch / thFn / fnOk / hostFn、设定包命名空间 packNs（LS / lsGet / lsSet）、脚本变量偏好 createPrefs、世界书全自动 createWbAuto（eden-map:th 设置消息也在这）。
   - 纯逻辑（node 单测）：`mvu` 变量读取、`events` 事态、`characters` 人物栏、`trips` 行程、`modes` 注入 / 检查点、`snapshot` 楼层快照、`selfcheck` 自检判定、`wbsync` 世界书合并、`th` 助手接口探测、`adapter` 变量映射、`shujuku` 数据库插件只读、`budget` 本机存储、`follow` 跟随分支、`splash` 开场卡、`compose` 填输入框、`sources` 数据来源、`context` 上下文流水线。
-- 核心（查看器与宿主共用，`map/core/`）：`depth.mjs` 纵深数学 + 迷雾探索数据（雾 / 霾唯一实现）；`pack.mjs` 设定包加载（伊甸只在 `map/packs/eden/manifest.json`，schema v1 冻结见 `docs/pack-schema-v1.md`）；`protocol.mjs` 消息表；`storage.mjs` 键登记。
+- 核心（查看器与宿主共用，`map/core/`）：`depth.mjs` 纵深数学 + 迷雾探索数据（雾 / 霾唯一实现）；`pack.mjs` 设定包加载（伊甸只在 `map/packs/eden/manifest.json`，schema v1 冻结见 `docs/pack-schema-v1.md`）；`protocol.mjs` 消息表；`storage.mjs` 键登记；`layers.mjs` LayerRegistry 渲染槽位注册表（P3-C `aed4f49`：槽位契约 / 注册注销 / 可见性调度 / 可叠加滤镜链 / `describe()` 摘要，纯核心不碰 DOM / 全局 / 存储）；`roster.mjs` CharacterRosterSystem 五源名册归一（P3-B `a4de0f2`：`RosterRow` 标准行、Provider `rows()` 契约、五来源优先级仲裁合并、别名互认、立绘挂载、`describe()` 摘要）。
 - 查看器（`map/viewer.html` + `map/app/*`）：`boot` 启动、`pack` 当前包、`fog` 迷雾 DOM 层、`clouds` 云与切层转场、`nav` 切图、`markers` 标记、`settings` 设置页。
 - 渲染依赖：`tools/check_render_deps.py`（`NOT_UPSTREAM` 放窄例外，只写确切路径）。
 ## Shell 写法（worktree 代理）
