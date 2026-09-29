@@ -8,11 +8,11 @@
 // + host-lifecycle.mjs（接管旧实例、挂 DOM、监听登记、清理钩子）+ host-th.mjs（酒馆助手适配、偏好、世界书全自动）。见 docs/agent-brief.md「模块地图」。
 import '../core/logbuf.mjs'; // 反馈日志缓冲：最先 import，模块求值即安装，启动日志不丢（v0.9.6 报告「(none)」根因）
 import { cdnFetch, thFn, fnOk, hostFn, packNs, createPrefs, createWbAuto, fnGuard } from './host-th.mjs';
-import { parseText } from './msgtext.mjs';
 import { EDEN_API, guardApi } from './edenapi.mjs';
 import { createRoutes, scoreText } from './host-routes.mjs';
 import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
 import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取收口（Mvu / SillyTavern 全局只在这一个模块里）
+import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下文交互流水线（窗口 / 事件 / 人物 / 标签 / 行程的纯计算）
 (() => {
   const SELF = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-th.mjs
@@ -322,11 +322,12 @@ import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取�
   // 生成状态（GEN）：GENERATION_STARTED 置位，ENDED / STOPPED 清零，180 s 超时自动清（断网 / 被杀后 ENDED 永远不来）
   const GEN = { since: 0, get generating() { return !!this.since && Date.now() - this.since < 180000; } };
   let MV = null;   // mvu.mjs（纯函数集）由桥加载；这里拿模块引用给自定义 / 注入等纯调用用
+  const CTX = new ContextPipeline();   // 聊天上下文流水线（tavern/context.mjs）：先建（下面 BR 的标签对账要读它的消息缓存）
   const BR = new MVUBridge({
     life, pack: PACK_IN, packId: PACK_ID,
     lang: () => (UL === 'en' ? 'en' : 'zh'), isGenerating: () => GEN.generating,
     storage: () => LS || localStorage,
-    floorNow: () => floorNow, lastRaw: () => (floorNow >= 0 ? msgCache.get(floorNow)?.m?.raw ?? null : null),
+    floorNow: () => floorNow, lastRaw: () => (floorNow >= 0 ? CTX.msgCache.get(floorNow)?.m?.raw ?? null : null),
     onMvuLoad: m => { MV = m; push(); loadCustom(); },
     onTableUpdate: () => { pushSoon(); recomputeSoon(); },
     onRoster: () => sendChars(),
@@ -390,7 +391,7 @@ import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取�
 
   // ---------------- 天城事态 ----------------
   // 聊天记录是唯一真相：每次从最近 SCAN 楼原文重算（swipe / 删楼 / 编辑后自然一致），不另存状态
-  const SCAN = 80, INJECT_ID = 'eden-map-events';   // 80 楼（E6）：未解除的事件在窗口内一直列出（events.mjs tierOf）
+  const INJECT_ID = 'eden-map-events';   // 窗口楼数（80，E6）在流水线里（CTX.SCAN）：未解除的事件在窗口内一直列出（events.mjs tierOf）
   const badge = root.querySelector('.em-badge');
   let events = [], floorNow = -1, seen = -1, injected = '', EVM = null;
   // 事态模块单独加载：加载失败只是没有事态功能，地图照常可用
@@ -400,52 +401,39 @@ import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取�
   import(new URL('characters.mjs', import.meta.url).href).then(m => { CHM = m; recompute(); }).catch(e => console.warn('[eden-map] 人物模块加载失败', e));
   const chatKey = () => 'edenMapSeen:' + chatId();
   function loadSeen() { try { seen = +(LS || localStorage).getItem(chatKey()); if (!Number.isFinite(seen)) seen = -1; } catch (e) { seen = -1; } }
-  // A-3：每楼原文的解析按 (楼层, 原文) 缓存——原文没变就复用上次的 raw / text / 指纹 / 人物标签 / 行程条目；
-  // 整轮输入（楼层、各楼指纹、stat_data、映射、自定义……）的签名没变就直接跳过；发送路径（GENERATION_AFTER_COMMANDS）只做注入需要的部分，
-  // 标签改名 / 行程放到空闲时补做（restNow）。
-  const msgCache = new Map();
-  let roundSig = '', lastMsgs = [], restDue = false, restT = 0, custVer = 0;
+  // A-3：每楼原文的解析按 (楼层, 原文) 缓存、整轮输入的签名没变就跳过——都在流水线里（tavern/context.mjs，node 单测）；
+  // 发送路径（GENERATION_AFTER_COMMANDS）只做注入需要的部分，标签改名 / 行程放到空闲时补做（restNow）。
+  let restDue = false, restT = 0, custVer = 0;   // 调度状态：空闲补做与自定义版本号（轮次签名的输入）
   const perf = (k, ms) => { const P = window.parent.__edenMapPerf; if (P) (P[k] ||= []).push(ms); };
   function readMsgs() {
-    let out = [];
-    try {
-      floorNow = getLastMessageId();
-      if (floorNow >= 0) out = getChatMessages(`${Math.max(0, floorNow - SCAN)}-${floorNow}`, { role: 'assistant' }).map(m => {
-        let msg = String(m.message || ''); const c0 = m.extra?._acu_original_content;   // 数据库插件「正文优化」改写过这一楼：原文存在 extra 里，改写丢掉的 ⌖ 标签从原文补回（只补标签，不动正文）
-        if (typeof c0 === 'string' && c0.includes('⌖')) msg += BR.lostTags(c0, msg);
-        const c = msgCache.get(m.message_id);
-        if (c && c.msg === msg) return c.m;
-        const raw = msg.replace(/<%[\s\S]*?%>/g, '');   // 原文里可能还留着 EJS 模板源码，里面的示例标签不算事件
-        const e = { msg, m: { floor: m.message_id, raw, text: parseText(raw) } };   // 解析文本剥思考链与变量更新块（G1 + 通读 R6，逻辑在 tavern/msgtext.mjs）；raw 留给行程读 JSONPatch、变量提取用完整原文
-        e.m.h = hashText(e.m.text) + (raw.length !== e.m.text.length ? '.' + hashText(raw) : ''); msgCache.set(m.message_id, e); return e.m;
-      });
-    } catch (e) { floorNow = -1; }
-    if (msgCache.size > SCAN * 2) { const keep = new Set(out.map(m => m.floor)); for (const k of msgCache.keys()) if (!keep.has(k)) msgCache.delete(k); }
-    return out;
+    let list = null;
+    try { floorNow = getLastMessageId(); if (floorNow >= 0) list = getChatMessages(`${Math.max(0, floorNow - CTX.SCAN)}-${floorNow}`, { role: 'assistant' }); } catch (e) { floorNow = -1; }
+    return CTX.readMsgs(list, floorNow);
   }
   function recompute(lite = false) {
     if (!EVM || life.dead) return;
     const t0 = performance.now();
-    const { collect, summarize, layerOf } = EVM;
+    const { summarize, layerOf } = EVM;
     const msgs = readMsgs(), st = mvuStat(), hereNow = getHere();
     let stSig = ''; try { stSig = JSON.stringify(st); } catch (e) {}
-    const dbSig = BR.dbSig();
-    const sig = [floorNow, msgs.map(m => m.floor + ':' + m.h).join(), stSig, dbSig, BR.varSig, custVer, customChat, chatId(), seen, wbState, !!regNow, !!CHM, !!MV, !!TRm, !!hereMod, hereNow].join('|');
-    if (sig === roundSig) { if (!lite && restDue) restNow(); return; }
-    roundSig = sig; lastMsgs = msgs;
-    events = collect(msgs, floorNow);
-    if (CHM) { const known = MV ? Object.values(BR.rosters(st)).flatMap(r => r?.items?.map(i => i.name) || []) : [];
-      const mc = CHM.mvuChars(st, hereNow, BR.varMap.present);
-      for (const c of BR.dbCharacters()) if (!mc.some(x => x.name === c.name)) mc.push(c);   // 数据库插件人物表里的位置（只读，MVU 优先）
-      // 在场表最后一次更新在哪一楼：扫窗口内各楼的变量更新块（raw 保留了 UpdateVariable）里有没有提到在场表名；从没提过 = 至少整个窗口没变（2026-09-28 待查 2）
-      let presentFloor = Infinity;
-      const pk = BR.varMap.present ? String(BR.varMap.present).split('.').pop() : '';
-      if (pk) { presentFloor = -1; for (const m of msgs) if (m.raw && m.raw.includes(pk)) presentFloor = m.floor; if (presentFloor < 0) presentFloor = msgs.length ? msgs[0].floor - 1 : floorNow; }
-      chars = CHM.collectChars(msgs, floorNow, mc, known, presentFloor);
-      if (MV) { roster = BR.rosters(st); rep = BR.reputation(st); BR.stageOrderFor(roster); BR.portraitsFor(); }
+    // 一轮的纯计算（签名去重、事件收集、人物栏 / 名册、新事态数）在流水线里（tavern/context.mjs）；这里只做取数与副作用
+    const r = CTX.round({ floorNow, msgs, stSig, dbSig: BR.dbSig(), varSig: BR.varSig, custVer, customChat, chatId: chatId(), seen, wbState,
+      hasReg: !!regNow, hasCHM: !!CHM, hasMV: !!MV, hasTRm: !!TRm, hasHereMod: !!hereMod, hereNow, collect: EVM.collect,
+      charsDeps: CHM ? {
+        mvuChars: CHM.mvuChars(st, hereNow, BR.varMap.present),
+        known: MV ? Object.values(BR.rosters(st)).flatMap(x => x?.items?.map(i => i.name) || []) : [],
+        dbCharacters: BR.dbCharacters(),
+        collectChars: CHM.collectChars,
+        rosters: MV ? BR.rosters(st) : null, reputation: MV ? BR.reputation(st) : null,
+        presentKey: BR.varMap.present ? String(BR.varMap.present).split('.').pop() : '',
+      } : null });
+    if (!r.changed) { if (!lite && restDue) restNow(); return; }
+    events = r.events;
+    if (r.chars) { chars = r.chars;
+      if (MV) { roster = r.roster; rep = r.rep; BR.stageOrderFor(roster); BR.portraitsFor(); }
       const sig = floorNow + '|' + chars.map(c => c.name + '@' + c.place + '#' + c.floor).join() + '|' + JSON.stringify(roster) + Object.keys(BR.portraits).length + rep + (BR.stageOrder || []).join();
       if (sig !== charSig) { charSig = sig; if (alive) sendChars(); emit('characters', { items: chars.map(c => ({ ...c })), floor: floorNow }); } }   // 名册无条件发：面板关着时查看器也要靠它决定人物栏显隐（兜底名册 2026-09-29）
-    const fresh = events.filter(e => e.last > seen && e.tier !== 'fade').length;
+    const fresh = r.fresh;
     badge.hidden = !fresh; badge.textContent = fresh > 9 ? '9+' : fresh;
     if (fresh) tipOnce();
     restDue = true;
@@ -457,7 +445,7 @@ import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取�
     if (subs.events.size) { const sig = floorNow + '|' + events.map(e => e.id + ':' + e.last + ':' + e.tier).join(); if (sig !== emEvSig) { emEvSig = sig; emit('events', { items: events.map(e => ({ ...e })), floor: floorNow, hereLayer: layerOf(here) }); } }
     perf(lite ? 'lite' : 'core', performance.now() - t0);
   }
-  function restNow() { restDue = false; const t0 = performance.now(); customTags(lastMsgs); computeTrips(lastMsgs); perf('rest', performance.now() - t0); }
+  function restNow() { restDue = false; const t0 = performance.now(); customTags(CTX.lastMsgs); computeTrips(CTX.lastMsgs); perf('rest', performance.now() - t0); }
   function inject(text) {
     if (life.dead) return;
     if (text === injected) return; injected = text;
@@ -479,26 +467,14 @@ import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取�
     if (visible) { if (floorNow >= 0) { seen = floorNow; try { (LS || localStorage).setItem(chatKey(), String(seen)); } catch (e) {} } badge.hidden = true; }
   }
   // v0.9.5 行程：最近 30 楼每楼的地点（MVU 那一楼的变量，拿不到就读原文里的 JSONPatch）+ 人物标签 → 最近 5 段（玩家、人物各 5），存进 eden_map.行程
-  let TRm = null, trips = [], tripSig = ''; import(SELF + 'tavern/trips.mjs').then(m => { TRm = m; }).catch(() => {});
+  let TRm = null; import(SELF + 'tavern/trips.mjs').then(m => { TRm = m; }).catch(() => {});
   function computeTrips(msgs) {
     if (!TRm || !MV || !custom || customChat !== chatId()) return;
-    const kw = TRm.keywords(BR.varUser.keywords || TRm.DEFAULT_KEYWORDS, !!BR.varUser.fantasy), lp = '/' + String(BR.varMap.location || '世界.当前地点').split('.').join('/'), recentMsgs = msgs.slice(-30), seq = [], tags = [];
-    for (const m of recentMsgs) {
-      const e = msgCache.get(m.floor), key = lp + '|' + BR.varMap.time + '|' + !!CHM;   // 按 (楼层, 原文) 缓存：那一楼的变量由那一楼的原文决定
-      if (!e?.trip || e.tripKey !== key || e.m !== m) {
-        const st = BR.perFloorStat(m.floor);
-        const place = String(BR.mvuGet(st, BR.varMap.location) ?? '').trim() || TRm.patchPlace(m.raw || m.text, lp), text = m.text.slice(0, 4000);
-        const trip = { seq: { floor: m.floor, place, text, time: String(BR.mvuGet(st, BR.varMap.time) ?? '') }, tags: CHM ? CHM.parseChars(m.text).map(c => ({ floor: m.floor, name: c.name, place: c.place, text })) : [] };
-        if (!e || e.m !== m) { seq.push(trip.seq); tags.push(...trip.tags); continue; }
-        e.trip = trip; e.tripKey = key;
-      }
-      seq.push(e.trip.seq); tags.push(...e.trip.tags);
-    }
-    const tr = s => hereMod?.parseTransit?.(s) || null;
-    const next = TRm.recent([...TRm.playerTrips(seq, tr, kw), ...TRm.charTrips(tags, kw)], 5);
-    const sig = JSON.stringify(next); if (sig === tripSig) return; tripSig = sig; trips = next; saveRoot(); sendTrips();
+    const r = CTX.computeTrips(msgs, { TRm, CHM, perFloorStat: f => BR.perFloorStat(f), mvuGet: (s, p) => BR.mvuGet(s, p), varMap: BR.varMap,
+      keywords: BR.varUser.keywords || TRm.DEFAULT_KEYWORDS, fantasy: !!BR.varUser.fantasy, parseTransit: s => hereMod?.parseTransit?.(s) || null });
+    if (r.changed) { saveRoot(); sendTrips(); }   // 行程变了才写聊天变量、才发地图
   }
-  function sendTrips() { if (alive) post({ type: 'eden-map:trips', items: trips }); }
+  function sendTrips() { if (alive) post({ type: 'eden-map:trips', items: CTX.trips }); }
   function sendChars() { if (alive) post({ type: 'eden-map:chars', v: 1, floor: floorNow, items: chars, rosters: roster, rep, stageOrder: BR.stageOrder, portraits: BR.portraits }); }
   // v0.9.5 名册（只读）：在场 / 成员 / 目标三张表 + 主角声望的表对象在这里（发地图用）；
   // 阶段先后序与原作立绘表在桥里（每聊天读一次卡文本，BR.stageOrder / BR.portraits）
@@ -529,7 +505,7 @@ import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取�
   // 不写进 stat_data：卡的 MVU zod 结构会丢掉未知键。删除一项要整块替换，所以写入优先用 updateVariablesWith / replaceVariables（insertOrAssignVariables 是深合并，删不掉键）。
   // 剧情标签 ⌖改名 / ⌖用途：只处理比 eden_map.标签楼 新的楼层，处理后记下楼层；每条在地图的事态横条上方提示一次。
   // 「同步到世界书」默认开（v0.9.5；自己关过的保持关）；有了第一项自定义才建世界书「伊甸地图·自定义·<聊天>」（一个常驻条目），当前聊天没有绑定聊天世界书时绑定到这个聊天。
-  let custom = null, tagFloor = -1, customChat = null, toastQ = [], regP = null;
+  let custom = null, customChat = null, toastQ = [], regP = null;   // 标签楼层状态（tagFloor / tagLog / tagSeen）在流水线里（CTX.tag）
   const varsOk = () => fnOk('getVariables') && (fnOk('updateVariablesWith') || fnOk('replaceVariables') || fnOk('insertOrAssignVariables'));
   const lsCustomKey = () => 'edenMap:chat:' + (chatId() || '') + ':custom2';   // A-11 本机退回的键（读取在桥里，写入后清掉它）
   async function writeVars(root, chat) {
@@ -564,7 +540,7 @@ import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取�
     if (!BG) return; const ls = store(); if (!ls) return;
     BG.touch(ls, chatId()); const r = BG.sweep(ls, chatId()); if (r.dropped.length) console.info('[eden-map] 清理旧聊天的地图数据', r.dropped.length, '个聊天', r.freed, '字节');
   }
-  const saveRoot = () => life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: tagFloor, 标签记录: tagLog, 楼层指纹: tagSeen, 行程: trips, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}) }, customChat);
+  const saveRoot = () => life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: CTX.tag.floor, 标签记录: CTX.tag.log, 楼层指纹: CTX.tag.seen, 行程: CTX.trips, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}) }, customChat);
   // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
   // 只在这个聊天还没有 eden_map.自定义 时迁移一次（全局旧键不改名，靠这个条件避免每个聊天、每次刷新重复并入）
   async function migrateOld() {
@@ -581,9 +557,10 @@ import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取�
   async function loadCustom() {
     if (!MV) return;
     const id = chatId(); customChat = id;
-    const v = readVars(); custom = MV.normCustom(v.自定义); tagFloor = Number.isFinite(+v.标签楼) && v.标签楼 !== null ? +v.标签楼 : -1;
-    tagLog = Array.isArray(v.标签记录) ? v.标签记录.filter(r => r && Number.isFinite(r.floor) && typeof r.key === 'string').slice(-30) : [];
-    tagSeen = v.楼层指纹 && typeof v.楼层指纹 === 'object' ? { ...v.楼层指纹 } : {};
+    const v = readVars(); custom = MV.normCustom(v.自定义);   // 标签楼层 / 记录 / 指纹整块换进流水线（撤销-重放状态机的状态）
+    CTX.tag = { floor: Number.isFinite(+v.标签楼) && v.标签楼 !== null ? +v.标签楼 : -1,
+      log: Array.isArray(v.标签记录) ? v.标签记录.filter(r => r && Number.isFinite(r.floor) && typeof r.key === 'string').slice(-30) : [],
+      seen: v.楼层指纹 && typeof v.楼层指纹 === 'object' ? { ...v.楼层指纹 } : {} };
     explored = FOGm ? FOGm.norm(v.探索) : (v.探索 && typeof v.探索 === 'object' ? v.探索 : {});
     checkpointResume(v.检查点);
     if (v.自定义 === undefined) { const mig = await migrateOld(); if (customChat !== id) return; if (mig) await saveRoot(); }
@@ -629,33 +606,14 @@ import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取�
     if (e?.rooms?.includes(key)) return 'room'; if (e?.areas?.includes(key)) return 'area';
     return 'landmark';
   }
-  // 已用过的标签记在 eden_map.标签记录 [{ floor, key, op, prev }]（最多 30 条），处理过的楼层原文指纹记在 eden_map.楼层指纹 { 楼: 指纹 }（最近 100 楼）。
-  // 某一楼的原文变了（重 roll / 编辑 / 删楼）：先撤销那一楼用过的标签，再按新原文重扫那一楼；比 标签楼 新的楼照常处理。
-  let tagLog = [], tagSeen = {};
-  const hashText = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
+  // 剧情标签 ⌖改名 / ⌖用途（v0.9.3）：撤销-重放状态机在流水线里（tavern/context.mjs customTags，node 单测）；
+  // 这里只做守卫与副作用——有应用 / 撤销走 customChanged（提示 + 保存 + 世界书），纯指纹收紧只 saveRoot。
   function customTags(msgs) {
     if (!MV || !custom || customChat !== chatId()) return;
-    if (floorNow >= 0 && floorNow < tagFloor) tagFloor = floorNow;   // 删过楼：之后的新楼照常处理
-    const lo = msgs.length ? msgs[0].floor : Infinity, have = new Map(msgs.map(m => [m.floor, m.text]));
-    const changed = new Set(Object.keys(tagSeen).map(Number).filter(f => f >= lo && f <= tagFloor && hashText(have.get(f) ?? '') !== tagSeen[f]));
-    let dirty = false, undone = 0;
-    if (changed.size) {
-      for (const r of tagLog.filter(r => changed.has(r.floor)).reverse()) {   // 倒序撤销：同一项被改过两次时回到最早的值
-        const nx = MV.setCustom(custom, r.key, r.op === 'name' ? { name: r.prev || '' } : { note: r.prev || '' }); if (nx) { custom = nx; undone++; } }
-      tagLog = tagLog.filter(r => !changed.has(r.floor)); dirty = true;
-    }
-    const todo = msgs.filter(m => changed.has(m.floor) || m.floor > tagFloor);
-    const applied = [];
-    for (const m of todo) {
-      const before = MV.normCustom(custom), r = MV.applyTags(custom, [m], m.floor - 1, kindOf);
-      for (const a of r.applied) { const e = before.items[a.key] || {}; tagLog.push({ floor: a.floor, key: a.key, op: a.op, prev: a.op === 'name' ? e.名 || '' : e.用途 || '' }); before.items[a.key] = { ...e, [a.op === 'name' ? '名' : '用途']: a.value }; }
-      custom = r.custom; applied.push(...r.applied); tagSeen[m.floor] = hashText(m.text); dirty = true;
-    }
-    for (const f of changed) if (!have.has(f)) delete tagSeen[f];
-    if (!dirty) return;
-    tagFloor = Math.max(tagFloor, ...todo.map(m => m.floor));
-    tagLog = tagLog.slice(-30); const keep = Object.keys(tagSeen).map(Number).sort((a, b) => b - a).slice(0, 100); tagSeen = Object.fromEntries(keep.map(f => [f, tagSeen[f]]));
-    if (applied.length || undone) { toastQ.push(...applied.map(MV.tagToast)); customChanged(true); } else saveRoot();
+    const r = CTX.customTags(custom, msgs, floorNow, kindOf);
+    if (!r) return;
+    custom = r.custom; CTX.tag = r.tag;
+    if (r.applied.length || r.undone) { toastQ.push(...r.applied.map(MV.tagToast)); customChanged(true); } else saveRoot();
   }
   function flushToasts() { if (!alive || !toastQ.length) return; post({ type: 'eden-map:toast', items: toastQ.splice(0) }); }
   // 头像压缩（与 map/chars.js 里那份一致）：面板没开、只走 EdenMap.setAvatar 时也压，否则同一张图在两条路径上行为不一样（接手 review P2）
@@ -926,7 +884,7 @@ import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取�
     if (BR.hereSrc === 'tag' && type !== 'swipe' && type !== 'regenerate') { place = here; }   // (d) 正文标签兜底的地点
     const pres = st ? BR.presentNames(st) : [];
     const wt = st ? BR.worldTimeOf(st) : null, time = wt ? [wt.date, wt.time, wt.period].filter(Boolean).join(' ') : '';
-    return MDm.stateLine({ here: userName(place), present: pres, time, trips: (trips || []).map(t => ({ ...t })), state, skip: cardSkip || {} }, +(lsGet('edenMapStateBudget') || 150));
+    return MDm.stateLine({ here: userName(place), present: pres, time, trips: (CTX.trips || []).map(t => ({ ...t })), state, skip: cardSkip || {} }, +(lsGet('edenMapStateBudget') || 150));
   }
   function stateInject(type = 'normal') {
     if (life.dead || !MDm) return;
@@ -950,7 +908,7 @@ import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取�
   }
   function conflictsNow() {   // 自检：最近 30 楼里 MVU 地点与正文地点标签不一致的楼（只列出，不改）
     if (!MDm || !BR.mvuPresent()) return [];
-    const fl = []; for (const m of lastMsgs.slice(-30)) { const st = BR.perFloorStat(m.floor);
+    const fl = []; for (const m of CTX.lastMsgs.slice(-30)) { const st = BR.perFloorStat(m.floor);
       const mv = st ? String(BR.getPath(st, BR.varMap.location) ?? '') : ''; if (mv) fl.push({ floor: m.floor, mvu: mv, raw: m.raw }); }
     return MDm.conflicts(fl, 10);
   }
@@ -971,7 +929,7 @@ import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取�
   // B9 类宏（默认关）：{{eden_here}} 当前地点、{{eden_route}} 最近一段行程；卡 / 预设作者自己引用
   function macroSet(on) {
     macroOff?.(); macroOff = null; if (!on || !THm || life.dead) return;
-    macroOff = THm.registerMacros(thFn, k => (k === 'eden_here' ? userName(here) : (() => { const t = (trips || []).filter(x => !x.who).at(-1); return t ? `${t.from} → ${t.to}` : ''; })()));
+    macroOff = THm.registerMacros(thFn, k => (k === 'eden_here' ? userName(here) : (() => { const t = (CTX.trips || []).filter(x => !x.who).at(-1); return t ? `${t.from} → ${t.to}` : ''; })()));
   }
   // B8 广播：地图里的当前地点变了 → eventEmit('eden-map:moved', { from, to, source, at })；只发地点，不写 MVU / 数据库
   let movedFrom = null;
@@ -1050,7 +1008,7 @@ import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取�
     listen(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     listen(tavern_events.CHAT_CHANGED, () => { clearTimeout(wbChatT); wbChatT = setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动', e))); }, 1500); });   // 换角色 / 聊天：新角色也挂上、聊天版本提醒
     listen(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    listen(tavern_events.CHAT_CHANGED, () => { try { BG?.touch(store(), chatId()); } catch (e) {} injected = null; stateNow = ''; cardSkip = null; cp = null; trips = []; tripSig = ''; loadSeen(); custom = null; loadCustom().then(() => recomputeSoon(300)); });
+    listen(tavern_events.CHAT_CHANGED, () => { try { BG?.touch(store(), chatId()); } catch (e) {} injected = null; stateNow = ''; cardSkip = null; cp = null; CTX.reset(); loadSeen(); custom = null; loadCustom().then(() => recomputeSoon(300)); });
     // 通读 R1：开局菜单用 setChatMessage(swipe_id) 换开场白，不一定触发 SWIPED；渲染 / 编辑事件也听，地点跟着刷新
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) if (tavern_events[k]) listen(tavern_events[k], () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
     // 生成前同步一次，注入的是最新态势（A-3：只做注入需要的部分；输入没变直接跳过；标签改名 / 行程推到空闲）
