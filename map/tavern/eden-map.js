@@ -7,7 +7,9 @@
 // C2 第 4 步（2026-09-28）拆成：入口（本文件：面板 / 查看器状态机、消息、MVU / 事态 / 自定义 / 自检 / 更新）+ host-routes.mjs（线路）
 // + host-lifecycle.mjs（接管旧实例、挂 DOM、监听登记、清理钩子）+ host-th.mjs（酒馆助手适配、偏好、世界书全自动）。见 docs/agent-brief.md「模块地图」。
 import '../core/logbuf.mjs'; // 反馈日志缓冲：最先 import，模块求值即安装，启动日志不丢（v0.9.6 报告「(none)」根因）
-import { cdnFetch, thFn, fnOk, hostFn, packNs, createPrefs, createWbAuto } from './host-th.mjs';
+import { cdnFetch, thFn, fnOk, hostFn, packNs, createPrefs, createWbAuto, fnGuard } from './host-th.mjs';
+import { parseText } from './msgtext.mjs';
+import { EDEN_API, guardApi } from './edenapi.mjs';
 import { createRoutes, scoreText } from './host-routes.mjs';
 import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
 (() => {
@@ -441,7 +443,7 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
         const c = msgCache.get(m.message_id);
         if (c && c.msg === msg) return c.m;
         const raw = msg.replace(/<%[\s\S]*?%>/g, '');   // 原文里可能还留着 EJS 模板源码，里面的示例标签不算事件
-        const e = { msg, m: { floor: m.message_id, raw, text: raw.replace(/<UpdateVariable>[\s\S]*?(?:<\/UpdateVariable>|$)/gi, ' ') } };   // 变量更新块（含没闭合的）不参与标签解析（通读 R6）；raw 留给行程读 JSONPatch
+        const e = { msg, m: { floor: m.message_id, raw, text: parseText(raw) } };   // 解析文本剥思考链与变量更新块（G1 + 通读 R6，逻辑在 tavern/msgtext.mjs）；raw 留给行程读 JSONPatch、变量提取用完整原文
         e.m.h = hashText(e.m.text) + (raw.length !== e.m.text.length ? '.' + hashText(raw) : ''); msgCache.set(m.message_id, e); return e.m;
       });
     } catch (e) { floorNow = -1; }
@@ -560,8 +562,8 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
   const hx = () => (HXm ??= import(SELF + 'here.mjs'));
   hx().then(m => { hereMod = m; setTimeout(push, 0); }).catch(() => {});
   let CXm = null; const chx = () => (CXm ??= import(SELF + 'tavern/characters.mjs'));
-  const inner = () => { if (!alive) return null; try { const w = frame.contentWindow; if (!w?.EdenMap) return null; w.__edenMapChat?.(chatId()); return w.EdenMap; } catch (e) { return null; } };
-  function knowRooms() { try { const r = inner()?.getRooms().rooms; if (r?.length) roomsKnown = r; } catch (e) {} }
+  const inner = () => { if (!alive) return null; try { const w = frame.contentWindow; if (!w?.EdenMap) return null; fnGuard('EdenMap.__chat', w.__edenMapChat, 1)?.(chatId()); return w.EdenMap; } catch (e) { return null; } };   // G6：跨窗口拿到的是查看器的 EdenMap——每个调用点先过守卫（handoff 准则 1）
+  function knowRooms() { try { const g = fnGuard('EdenMap.getRooms', inner()?.getRooms, 0); const r = g ? g().rooms : null; if (r?.length) roomsKnown = r; } catch (e) {} }
   const store = () => { try { return PACK_IN ? wrapLS(() => window.parent.localStorage) : window.parent.localStorage; } catch (e) { return null; } };
 
   // ---------------- v0.9.3 自定义名称与用途（聊天变量 eden_map.自定义；酒馆助手没有变量接口时退回本机 localStorage） ----------------
@@ -731,17 +733,17 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
     getClock: async () => (clock ? { ...clock } : null),   // 世界时间（只读 MVU 世界.当前日期 / 当前时刻 / 当日时段）
     // 人物头像（v0.9.2）：只存本机 localStorage（按聊天，拿不到聊天 id 时全局），不上传、不进地址；src = data:image/… 或 http(s) 图片地址
     // 面板看得见时交给地图（它自己提示）；面板关着 / 后台预加载 / 休眠时在这里写，满了用宿主提示条告诉用户（地图里的提示条此时看不见，A-13），再让地图重读
-    async setAvatar(name, src) { const v = inner(); if (v && !panel.hidden && !ghost) return v.setAvatar(name, src); const C = await chx(), st = store(); if (!st) return false;
+    async setAvatar(name, src) { const v = inner(), setS = v ? fnGuard('EdenMap.setAvatar', v.setAvatar, 2) : null; if (setS && !panel.hidden && !ghost) return setS(name, src); const C = await chx(), st = store(); if (!st) return false;
       const img = await shrinkAvatar(src), r = C.setAvatarEx ? C.setAvatarEx(st, chatId(), name, img) : { ok: C.setAvatar(st, chatId(), name, img) };
       if (!r.ok && (r.reason === 'cap' || r.reason === 'quota')) storeWarn(r.reason);
-      if (r.ok && v) try { await v.setAvatar(name, img); } catch (e) {}   // 地图重写同一张（已有这个名字，不占新额度）并重画
+      if (r.ok && v) try { await fnGuard('EdenMap.setAvatar', v.setAvatar, 2)?.(name, img); } catch (e) {}   // 地图重写同一张（已有这个名字，不占新额度）并重画
       return r.ok; },
     storage: async () => { const st = store(); return BG && st ? BG.measure(st) : null; },   // A-13：本机存储占用（字节，UTF-16）
-    async removeAvatar(name) { const v = inner(); if (v) return v.removeAvatar(name); const C = await chx(), st = store(); return !!st && C.removeAvatar(st, chatId(), name); },
+    async removeAvatar(name) { const v = inner(), rm = v ? fnGuard('EdenMap.removeAvatar', v.removeAvatar, 1) : null; if (rm) return rm(name); const C = await chx(), st = store(); return !!st && C.removeAvatar(st, chatId(), name); },
     async getCharacters() { return { items: chars.map(c => ({ ...c })), floor: floorNow, rosters: roster ? JSON.parse(JSON.stringify(roster)) : null, reputation: rep }; },   // v0.9.5：rosters / reputation 只读
     // 三维查看器飞到热点（v1.0 测试件：{ map: 'dairy', hotspot: 'tank' }）：面板没开就先打开；地图就绪后转发
     async flyTo(t) { flyQ = t || null; if (panel.hidden && !ghost) { panel.hidden = false; await loadViewer(); } else if (ghost) fab.click();
-      if (!flyQ) return true; const v = inner(); if (v?.flyTo) { flyQ = null; return v.flyTo(t); } return true; },
+      if (!flyQ) return true; const v = inner(), fly = v ? fnGuard('EdenMap.flyTo', v.flyTo, 1) : null; if (fly) { flyQ = null; return fly(t); } return true; },
     // v0.9.6 只读：当前在用的数据来源（不含任何数据内容本身）。location = 当前地点来自哪里；characters = 人物栏各来源人数；
     // mvu = { present, mode: 'mvu' | 'mvu-partial' | 'tags' }；db = 表格数据库插件 { tables, location, chars } 或 null（没装）；tags = 聊天标签（⌖ / 人物标签）总在读
     async sources() {
@@ -757,7 +759,8 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
     on(ev, fn) { if (subs[ev] && typeof fn === 'function') subs[ev].add(fn); return api; },
     off(ev, fn) { if (subs[ev]) fn ? subs[ev].delete(fn) : subs[ev].clear(); return api; },
   });
-  window.parent.EdenMap = api;
+  const exposed = guardApi(api, EDEN_API);   // G6（P0）：暴露面逐项过守卫（类型 + 形参个数，契约在 tavern/edenapi.mjs）；内部调用仍走原 api
+  window.parent.EdenMap = exposed;
 
   // ---------------- 启动自检（E6；判定逻辑在 selfcheck.mjs，node 单测） ----------------
   // 每次页面加载空闲时跑一次：酒馆助手接口、MVU「世界.当前地点」、重复的地图脚本、线路（复用测速结果）、世界书附加条目（查得到才查）、脚本与地图版本。
@@ -1011,7 +1014,7 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
       if (thBtns['地图']) listen(thBtns['地图'], () => { if (panel.hidden || ghost) fab.click(); });
       if (thBtns['地图自检']) listen(thBtns['地图自检'], () => { checkP = null; runCheck(); openSettings('update'); }); } } catch (e) {}
     // B6 正式入口：其它脚本 waitGlobalInitialized('EdenMap')；window.parent.EdenMap 别名保留一个版本
-    try { thFn('initializeGlobal')?.('EdenMap', api); } catch (e) {}
+    try { thFn('initializeGlobal')?.('EdenMap', guardApi(api, EDEN_API)); } catch (e) {}
     macroSet(lsGet('edenMapMacros') === '1');
   }
   // B9 类宏（默认关）：{{eden_here}} 当前地点、{{eden_route}} 最近一段行程；卡 / 预设作者自己引用
@@ -1113,7 +1116,7 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
 
   // 脚本被关闭或重载时清理注入的元素
   const cleanup = () => { if (life.dead) return; life.kill(); life.unlisten(); clearInterval(watchT); clearTimeout(quietT); clearInterval(pollT); clearInterval(updT); cgObs.disconnect(); acuObs.disconnect(); try { dbApiRef?.unregisterTableUpdateCallback?.(dbCb); } catch (e) {} clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); clearTimeout(restT); clearTimeout(ghostT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
-    if (window.parent.EdenMap === api) delete window.parent.EdenMap; toastEl?.remove(); updEl?.remove(); splash?.el?.remove(); try { NT?.destroy(); barRO?.disconnect(); } catch (e) {}
+    if (window.parent.EdenMap === exposed) delete window.parent.EdenMap; toastEl?.remove(); updEl?.remove(); splash?.el?.remove(); try { NT?.destroy(); barRO?.disconnect(); } catch (e) {}
     if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup;
     try { const R = window.parent.__edenMapIds; if (R && R[OWNER] === SELF) delete R[OWNER]; } catch (e) {}   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」
     try { for (const el of [...pdoc.querySelectorAll('[data-eden-owner]')]) if (el.getAttribute('data-eden-owner') === OWNER) el.remove(); } catch (e) {}

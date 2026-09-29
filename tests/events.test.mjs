@@ -1,6 +1,7 @@
 // node tests/events.test.mjs —— 天城事态解析器单测
 import assert from 'node:assert/strict';
 import { parseMarks, collect, summarize, layerOf, tierOf, CATS, GROUPS, GROUP_ORDER, SHAPES, catOf, EXAMPLES } from '../map/tavern/events.mjs';
+import { parseText } from '../map/tavern/msgtext.mjs';
 
 const span = s => `<htm1fenge><div>…</div><span style="display:none">${s}</span></htm1fenge>`;
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
@@ -240,6 +241,20 @@ t('v0.9.6 卡遗漏补全：新类型、别名与用户决定的层', () => {
   assert.equal(L('凯莉的宅邸'), '上层');                                                   // 用户决定在上层
   for (const p of ['铁皮屋区', '旧货市场', '孤儿收容所', '老K杂货']) assert.equal(L(p), '下层', p);
   assert.equal(L('新生工坊'), '中层'); assert.equal(L('天城文化署'), '中层'); assert.equal(L('维克多庄园'), '上层');   // 仓库推断层（docs/card-buildings.md）
+});
+
+t('G1（P0）：思考链里的事件标签不上图；raw 保持原样（docs/reviews/architecture_and_stream_perf.md §1.4）', () => {
+  const raw = '<think>草稿：<span style="display:none" data-tcmap="类型=火灾;地点=7号井黑市;标题=思考链假事件;等级=3;状态=发生中;编号=G1-01"></span>顺手 ⌖火灾｜下层·7号井黑市｜2｜思考链紧凑假事件</think>正文：今日无事。';
+  assert.ok(parseMarks(raw).length > 0, '不剥的对照：思考链里的标签本来会被解析');
+  const text = parseText(raw);
+  assert.equal(parseMarks(text).length, 0, '剥掉 <think> 后：思考链里的两种写法都零匹配');
+  assert.equal(text.includes('思考链假事件'), false);
+  assert.ok(raw.includes('data-tcmap') && raw.includes('⌖火灾'), 'raw 原样保留（行程 / 变量提取用完整原文）');
+  const unclosed = '<think>流式半截 <span style="display:none" data-tcmap="类型=火灾;地点=7号井黑市;标题=半截思考;等级=3;编号=G1-02"></span>';
+  assert.equal(parseMarks(parseText(unclosed)).length, 0, '没闭合的思考链尾也剥（流式安全）');
+  const mixed = '<UpdateVariable>{"世界":{}}</UpdateVariable><think>⌖火灾｜下层·7号井黑市｜2｜又一个</think>⌖政策｜中层·商业区｜1｜真事件｜天城议会';
+  const marks = parseMarks(parseText(mixed));
+  assert.equal(marks.length, 1); assert.equal(marks[0].cat, '政策'); assert.equal(marks[0].layer, '中层');   // 只剩正文里的真事件
 });
 
 console.log(`\n${n} passed`);
