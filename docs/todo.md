@@ -66,7 +66,7 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [ ] 气候塔材质细化：塔楼白块、粉长条（看图后定改法）+ 可选「信息按钮」（本会话 2026-09-29 用户反馈；塔在 `blender/tc_estates.py` climate_tower，锚点 `blender/data/tc_islands.json` anchors.climate_tower）。（预估 ~4h）
 - [ ] 设置「版权申明」页与人物页声望在真实酒馆浏览器过一眼（现在只有 stub；挂在上面的 Real ST 测试项下）。（预估 ~2h）
 - ~~**Streaming / decoupling P0** (`docs/reviews/architecture_and_stream_perf.md` §1.4): G1 strip `<think>` CoT blocks before tag parsing + G6 `fnGuard` & arity tests at cross-window exposure points. (~8h)~~ ✅ 2026-09-30 `040baf9`（G1）+ `04f170f`（G6）
-- [ ] **Streaming / decoupling P2–P3** (same report Part 2): ~~P1（G3 wake broadcast + G2 hidden-poll gating，~4h）~~ ✅ 2026-09-30 `643e087`；extract MVUBridge → ContextInteractionSystem (P2 ~28h); LayerRegistry → Estate3D manifest → CharacterRosterSystem → DepthSystem summary (P3 ~44h).
+- [ ] **Streaming / decoupling P2–P3** (same report Part 2): ~~P1（G3 wake broadcast + G2 hidden-poll gating，~4h）~~ ✅ 2026-09-30 `643e087`；~~extract MVUBridge → ContextInteractionSystem (P2 ~28h)~~ ✅ 2026-09-30 `785c421`（MVUBridge，Mvu / SillyTavern 全局唯一属主）+ `28d646e`（ContextPipeline 纯流水线）；LayerRegistry → Estate3D manifest → CharacterRosterSystem → DepthSystem summary (P3 ~44h).
 - [ ] **De-speculation leftovers**: hedged wording at `docs/card-digest.md:387,389`, `docs/upper-setting.md:278`; worldbook ship-JSON standard-interface reservation (top-level schema + category map) in `tools/build_worldbook_addon.py`. (~4h)
 
 
@@ -207,6 +207,8 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [x] 中层昼夜 8000px 底图 ✅ 2026-09-29–30（渲染产物：`map/art/tc_mid_day_full.png` / `tc_mid_night_full.png` 本机留档，Finder 已交付；瓦片未入库，待多时段底图挑档后 make_dzi，见 §2）。
 - [x] 流式修补第一批 P0 ✅ 2026-09-30 `040baf9` + `04f170f`：G1 `<think>` 剥离进纯函数 `map/tavern/msgtext.mjs`（raw 不动；events 测试加 CoT fixture）；G6 `fnGuard` + `EDEN_API` 机读契约 + 暴露面守卫（跨窗口调用点全覆盖），新增 `tests/edenapi.test.mjs`。
 - [x] 流式修补第一批 P1 ✅ 2026-09-30 `643e087`：G2 后台标签页轮询静默（`pdoc.hidden` 早退，`wake()` 无损补算）；G3 切回前台广播 `eden-map:wake`，查看器醒着也响应（`markHere` 重画当前地点标记）。
+- [x] 解耦 P2 第一步 MVUBridge ✅ 2026-09-30 `785c421`：数据流读取收进 `map/tavern/mvu-bridge.mjs`（mvuStat 微任务快照、getHere 三级回退、refreshVarMap / setVarUser、readVars A-11 本机回退、每楼变量、名册 / 立绘 / 阶段序）——全仓唯一允许直接碰 Mvu / SillyTavern 全局的模块，宿主经 onMvuLoad / onTableUpdate / onRoster 回调接线；`tests/mvu_bridge.test.mjs`（stub 全局全覆盖 + 源码扫描机检隔离契约）。
+- [x] 解耦 P2 第二步 ContextPipeline ✅ 2026-09-30 `28d646e`：readMsgs 窗口规范化 + (楼层, 原文) 缓存、recompute 的纯计算半（轮次签名去重 / 事件收集 / 人物栏 / 名册 / 新事态数）、customTags 撤销-重放状态机、computeTrips 行程序列收进 `map/tavern/context.mjs`（纯数据进出：不碰全局 / DOM / 消息，宿主只留调度与副作用），新增 `tests/context.test.mjs` 无浏览器全覆盖。
 
 - [x] 上层 9 岛整图重渲（8000×5000，plain + city 双版）+ 五座庄园抠图贴合 + DZI/瓦片重建，气候塔锚点入画（`map/art/tc_upper*_full.png`、`blender/data/tc_islands.json`、`tools/isles_into_upper.py`）。
 - [x] 版权申明设置页（卡信息 / 开源仓库 / 原作署名 / 免责，`map/app/settings.mjs` license 页，探针 4 项过）。

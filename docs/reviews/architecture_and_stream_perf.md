@@ -6,7 +6,10 @@ collected 2026-09-30 by direct audit of `map/tavern/*`, `map/app/*`, `map/viewer
 `a16a1b8` (in-app version branch switch), `0e8f1d8` (`tools/clean_card.py`), `58d1281` (test
 renames). Implementation of the fixes below is proposed for follow-up commits after review.
 Update 2026-09-30: P0 (G1, G6) and P1 (G2, G3) are implemented - commits
-`040baf9`, `04f170f`, `643e087`. P2/P3 remain open (docs/todo.md §1).
+`040baf9`, `04f170f`, `643e087`. P2 is implemented - commits `785c421`
+(MVUBridge, sole owner of the Mvu/SillyTavern globals) and `28d646e`
+(ContextPipeline, the pure chat-context pipeline of §4). P3 remains open
+(docs/todo.md §1).
 
 Part 1 is a diagnosis of the "background tab: API finished, front end frozen" class of bugs and
 an audit of the streaming-period pipeline. Part 2 is a decoupling RFC for the six subsystems and

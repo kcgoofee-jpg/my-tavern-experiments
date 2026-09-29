@@ -34,14 +34,16 @@
 - **报告格式（用户 2026-09-28）**：写建议 / 清单类文档时每条独立成行；做完的在原文上用 ~~删除线~~ ✅ 划掉（不删、不另起文件），文首一行写状态说明；后续实施的代理负责回去划掉。
 - **收尾清理**：交回前停掉自己起的预览服务、后台进程和 Blender（只动自己的 PID）；不往 .claude/launch.json 加长期条目，要加就在收尾时删掉；报告里写一句「已清理」。
 
-## 模块地图（C2 整理后，2026-09-28；先看这里再 grep）
+## 模块地图（C2 整理后，2026-09-28；P2 解耦更新 2026-09-30；先看这里再 grep）
 
 - 宿主脚本（酒馆页里跑，`map/tavern/`）：
-  - `eden-map.js` 入口：面板 / 查看器状态机（预加载、休眠、进度）、postMessage 收发（onMsg / post）、当前地点 push、事态 recompute + 注入、自定义与聊天变量、自检、检查更新、悬浮按钮拖动 / 惯用手、启动事件与 cleanup 组装。
+  - `eden-map.js` 入口：面板 / 查看器状态机（预加载、休眠、进度）、postMessage 收发（onMsg / post）、当前地点 push、事态 recompute 的调度与副作用（取数与纯计算已下放，见下两条）、自定义与聊天变量的写入、自检、检查更新、悬浮按钮拖动 / 惯用手、启动事件与 cleanup 组装。
+  - `mvu-bridge.mjs` 数据流读取（P2 第一步 `785c421`）：mvuStat 快照、getHere 三级回退、refreshVarMap / setVarUser、readVars（A-11）、每楼 stat_data、名册 / 立绘 / 阶段序；**全仓唯一允许直接触碰 Mvu / SillyTavern 全局的模块**（机检：`tests/mvu_bridge.test.mjs` 源码扫描），宿主经 onMvuLoad / onTableUpdate / onRoster 回调接线。
+  - `context.mjs` 聊天上下文流水线（P2 第二步 `28d646e`，纯数据进出）：readMsgs 窗口规范化 + (楼层, 原文) 缓存、round（轮次签名 / 事件 / 人物栏 / 名册 / 新事态数）、customTags（⌖ 标签撤销-重放）、computeTrips（行程序列）；宿主只留调度与副作用。
   - `host-routes.mjs` 线路：CDN 线路表、版本推断（VER / tagOf）、baseFor、测速 race；纯计算。
   - `host-lifecycle.mjs` 生命周期：createLife（listen / unlisten / dead / kill）、takeOver 接管旧实例、mount 面板 DOM + 内联样式、install 清理钩子。
   - `host-th.mjs` 酒馆助手适配：cdnFetch / thFn / fnOk / hostFn、设定包命名空间 packNs（LS / lsGet / lsSet）、脚本变量偏好 createPrefs、世界书全自动 createWbAuto（eden-map:th 设置消息也在这）。
-  - 纯逻辑（node 单测）：`mvu` 变量读取、`events` 事态、`characters` 人物栏、`trips` 行程、`modes` 注入 / 检查点、`snapshot` 楼层快照、`selfcheck` 自检判定、`wbsync` 世界书合并、`th` 助手接口探测、`adapter` 变量映射、`shujuku` 数据库插件只读、`budget` 本机存储、`follow` 跟随分支、`splash` 开场卡、`compose` 填输入框、`sources` 数据来源。
+  - 纯逻辑（node 单测）：`mvu` 变量读取、`events` 事态、`characters` 人物栏、`trips` 行程、`modes` 注入 / 检查点、`snapshot` 楼层快照、`selfcheck` 自检判定、`wbsync` 世界书合并、`th` 助手接口探测、`adapter` 变量映射、`shujuku` 数据库插件只读、`budget` 本机存储、`follow` 跟随分支、`splash` 开场卡、`compose` 填输入框、`sources` 数据来源、`context` 上下文流水线。
 - 核心（查看器与宿主共用，`map/core/`）：`depth.mjs` 纵深数学 + 迷雾探索数据（雾 / 霾唯一实现）；`pack.mjs` 设定包加载（伊甸只在 `map/packs/eden/manifest.json`，schema v1 冻结见 `docs/pack-schema-v1.md`）；`protocol.mjs` 消息表；`storage.mjs` 键登记。
 - 查看器（`map/viewer.html` + `map/app/*`）：`boot` 启动、`pack` 当前包、`fog` 迷雾 DOM 层、`clouds` 云与切层转场、`nav` 切图、`markers` 标记、`settings` 设置页。
 - 渲染依赖：`tools/check_render_deps.py`（`NOT_UPSTREAM` 放窄例外，只写确切路径）。
