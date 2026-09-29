@@ -81,7 +81,7 @@ test('host-th：偏好与接口探测在 node 里可构造（没有酒馆助手�
 
 test('入口只从 host-*.mjs 取，不再自带副本；worldbook 自动化的调用点不变', () => {
   const E = rd('map/tavern/eden-map.js');
-  assert.match(E, /^import \{ cdnFetch, thFn, fnOk, hostFn, packNs, createPrefs, createWbAuto \} from '\.\/host-th\.mjs';$/m);
+  assert.match(E, /^import \{ cdnFetch, thFn, fnOk, hostFn, packNs, createPrefs, createWbAuto, fnGuard \} from '\.\/host-th\.mjs';$/m);   // G6：fnGuard 也从适配层取
   for (const s of ['const cdnFetch =', 'const thFn =', 'const fnOk =', 'const hostFn =', 'const PREF_KEYS', 'const LINES =', 'async function wbAutoRun', 'let dead']) assert.ok(!E.includes(s), s);
   assert.ok(!/\bcreateWorldbook\b/.test(rd('map/tavern/host-th.mjs')), '工厂名不能遮住酒馆助手的全局 createWorldbook');
   assert.match(E, /await createWorldbook\(WBN, \[entry\]\)/);   // 自定义世界书仍调酒馆助手的全局函数

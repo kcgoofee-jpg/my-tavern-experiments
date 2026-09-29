@@ -10,6 +10,17 @@ export const fnOk = n => { try { return typeof window[n] === 'function' || typeo
 // 全局函数优先，其次酒馆助手的 TavernHelper 命名空间（有的版本不挂全局）。出错 → null（跳过）
 export const hostFn = n => { try { const g = window[n] ?? globalThis[n]; if (typeof g === 'function') return g;
   const th = window.TavernHelper ?? window.parent?.TavernHelper; return typeof th?.[n] === 'function' ? th[n].bind(th) : null; } catch (e) { return null; } };
+// G6（P0，handoff 准则 1；docs/reviews/architecture_and_stream_perf.md §1.4）：跨窗口 / 暴露点取函数的统一守卫。
+// 类型与形参个数（fn.length，默认参数不计）都过才给；不过 → 按名字去重告警一次，返回 null，调用方走自己的降级。
+const _guardWarned = new Set();
+export function fnGuard(name, fn, minArity = 0) {
+  if (typeof fn === 'function' && fn.length >= minArity) return fn;
+  if (!_guardWarned.has(name)) {
+    _guardWarned.add(name);
+    try { console.warn(`[eden-map] 接口不可用或形参不足：${name}（${typeof fn}，length ${typeof fn === 'function' ? fn.length : '—'}，需要 ≥ ${minArity}）`); } catch (e) {}
+  }
+  return null;
+}
 
 /** 设定包命名空间（通用化，core/pack.mjs）。在入口里调用一次（读 window.__tcPack，与以前在脚本开头读同一时刻）。 */
 export function packNs() {
