@@ -95,12 +95,13 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [ ] `league_club` / `rothschild_estate` / `elite_academy`：glb 已导出但**未走两人设评审**（预估 ~4h）
   （`docs/card-buildings.md:95,98,99`）。
 - [ ] A28–A31 落点或登记（`docs/card-omissions.md:269-271`）。（预估 ~3h）
-- [ ] **Mid-layer day/night DZI**: `map/art/tc_mid_{day,night}_full.png` rendered (2026-09-29/30, queue idle); `maps.json` still references only `art/tc_mid.dzi` — run `tools/make_dzi.py` and register when the multi-period base-map choice lands (`ROADMAP.md:55-58`). (~3h)
+- [x] ~~**Mid-layer day/night DZI**: `map/art/tc_mid_{day,night}_full.png` rendered (2026-09-29/30, queue idle); `maps.json` still references only `art/tc_mid.dzi` — run `tools/make_dzi.py` and register when the multi-period base-map choice lands (`ROADMAP.md:55-58`). (~3h)~~ ✅ 2026-09-29 `9ad6dfc`（明细见 §5）
 
 
 ## 3. Repo / document line (found by this sweep)
 
-- [ ] **Fix the outdated statements** (they contradict the 2026-09-29 baseline):
+- [x] ~~**Fix the outdated statements** (they contradict the 2026-09-29 baseline):~~ ✅ 2026-09-29 `cf35c28`（ROADMAP / onboarding / project-design / tt-test-checklist 本批改齐；其余各处核实在此前批次已修好——`docs/map-events.md` 与 `docs/event-taxonomy.md` 的 10 类 85 种与 DLC 划线、`docs/tooling.md` 输出目录、`docs/content-compat.md:57`、`docs/ui-refactor-backlog.md` U1–U12 复核注、`docs/design/depth-system.md` P3 划线、`docs/design/ui-v2/spec.md` 与 `docs/landmarks/starabyss_univ.checklist.md` 状态行、`docs/drafts/upper_v16_checklist.md` 作废头，本批逐一核验无误）：
+
   `ROADMAP.md:12,18,23,25,80`（写 0.9.5 / 「未发版」）, `docs/onboarding.md:10,11,43`（`main` 旧、勿用）,
   `docs/project-design.md:3,11,22,67,104`（未开始实施 / 一键管线待建 / 标签只到 0.9.5 / 编码 0280）,
   `docs/content-compat.md:57`, `docs/tt-test-checklist.md:1`, `docs/tooling.md:62`（输出目录仍写 `~/Downloads/酒馆/预览`）,
@@ -111,16 +112,16 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   `docs/landmarks/starabyss_univ.checklist.md:1`（写「下一步 draft」但 glb 已导出、r1 已评审）,
   `docs/drafts/upper_v16_checklist.md:1`（等用户点头，已被顶层 `docs/upper-islands-checklist.md` 取代）,
   ~~`map/data/worldbook_addon.json:3-4`（`0.9.5-dev`）~~ ✅ 2026-09-29 现为 `0.9.6-dev`（builder v16 重出，`34e5fd0`）。
-- [ ] **Fix the conflicting-content constraints**（撤销留下的旧话）：
+- [x] ~~**Fix the conflicting-content constraints**（撤销留下的旧话）：~~ ✅ 2026-09-29 核实（此前批次已修好，本批逐处验证）：`docs/eden-lore-space.md:4,5`、`docs/eden-estate.md:20,105` 均已划线改「按原卡补全 / 照抄卡原名」，:320,500 的自编中性名按 v0.9.7 更正退役（`附属室*` 仅存为 `eden_estate_rooms.json` 的兼容别名）；`docs/card-omissions.md:51,337-338` 已带 2026-09-29 校订注；`docs/history/CLOUD_TASK{,2,3,5,7}.md` 五份头部均已有作废批注（与 CLOUD_TASK8 一致）：
   `docs/eden-lore-space.md:4,5`、`docs/eden-estate.md:105`（仍写「只写名字、不描述、不画家具」）、
   `docs/card-omissions.md:51,337-338`、`docs/history/CLOUD_TASK{,2,3,5,7}.md`（5 份**未加**作废批注，
   只有 `CLOUD_TASK8.md:3` 加了）。`docs/eden-estate.md:320,500` 的自编中性名「私人房间 A」「附属用房」
   与 `docs/card-digest.md:6`「照抄卡原名」冲突。
-- [ ] **Fix the internal self-contradiction**：`docs/card-omissions.md:336` 的 ◐ 清单仍含
+- [x] ~~**Fix the internal self-contradiction**：~~ ✅ 2026-09-29 核实：`docs/card-omissions.md` ◐ 清单已带「2026-09-29 校订」注，与 ：332,334,340 的 ✅ 对齐：`docs/card-omissions.md:336` 的 ◐ 清单仍含
   E1/E16/B11/C1/C6/C10/C15，而同文 `:332,334,340` 已标 ✅。
-- [ ] **Reconcile the island generator path**：`docs/upper-islands-checklist.md:3`（`blender/islands/`）
+- [x] ~~**Reconcile the island generator path**：~~ ✅ 2026-09-29 核实：现行生成器是 `blender/islands/<id>.py`（v17 起，`docs/upper-islands-checklist.md:5`）；`docs/upper-islands-references.md:4` 已注明 `blender/upper_islands/` 是 v16 草稿体块集、保留作过程记录；`tools/check_render_deps.py:12-13` 两者都列（都进 tc_upper 依赖集）：`docs/upper-islands-checklist.md:3`（`blender/islands/`）
   vs `docs/upper-islands-references.md:4`（`blender/upper_islands/`）——两个目录都存在，需确认现行者。
-- [ ] **Fix dead references**（verified missing）：
+- [x] ~~**Fix dead references**（verified missing）：~~ ✅ 2026-09-29 核实（此前批次已在原位加注，本批验证）：`docs/render-retro.md:172`（asset-deps→render-deps）、`:175`（gpu_lock.sh 提案名并入 blender_run.sh）、`:177`（check_glb.py 提案名未建）、`docs/ui-audit.md:14`（tools/legacy/）、`docs/design/custom-v2.md`（custom.js→custom.mjs 校订注）、`docs/rejected.md:12` 与 `docs/reports/token-usage.md:59,64`（历史提案名批注）、`.gitignore` 的 fetch_textures.sh 注释（`cf35c28` 本批补注）：
   ~~`map/estate3d/`（`README.md` 0.10 段、`ROADMAP.md:28`）~~ ✅ 2026-09-29：`README.md:59` 已改为真实路径 `map/estate/`（该目录从来不存在；`ROADMAP.md:28` 原本就写的对）, `docs/asset-deps.md` → `docs/render-deps.md`
   （`docs/render-retro.md:172`）, `tools/gpu_lock.sh`（`:175`）, `tools/check_glb.py`（`:177`, 提案项）,
   `tools/add_script_to_card.py` → `tools/legacy/`（`docs/ui-audit.md:14`）, `map/custom.js` → `map/custom.mjs`
@@ -129,8 +130,8 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   ~~`docs/tech-compat-no-moderation`（`skills/card-map/guides/nsfw.md:3` 引用，不存在）~~ ✅ 2026-09-29 文内已加「在本仓库不存在」批注,
   `card-only-scope-dlc.md`（`docs/rejected.md:12`、`docs/reports/token-usage.md:64`）,
   `model-and-budget-policy.md`（`docs/reports/token-usage.md:59`）。
-- [ ] **Fix `docs/reports/token-usage.md:63,64`**：仍写渲染队列与地标流程「规划中」，两者都已上线。
-- [ ] `.gitignore` 清理：`.pi/`（`:7` 与 `:43`）、`map/art/tc_upper_8k.png`（`:11` 与 `:14`）各重复一次；
+- [x] ~~**Fix `docs/reports/token-usage.md:63,64`**：~~ ✅ 2026-09-29 核实：两行已划线并注「已落地 / 已上线」修正：仍写渲染队列与地标流程「规划中」，两者都已上线。
+- [x] ~~`.gitignore` 清理：~~ ✅ 2026-09-29 `cf35c28` 核实：`.pi/` 与 `map/art/tc_upper_8k.png` 的重复规则已被此前批次清掉（`uniq -d` 零重复），`.ruff_cache/` 已在；本批给 `tools/fetch_textures.sh` 悬空注释补了说明。`logs/render_times.csv` 保持跟踪不动：`.pi/`（`:7` 与 `:43`）、`map/art/tc_upper_8k.png`（`:11` 与 `:14`）各重复一次；
   新增 `.ruff_cache/`。（`logs/render_times.csv` 被跟踪且在 `logs/` 忽略之下是**故意的**——
   union 合并驱动要用它，不要 `git rm --cached`。）
 - [ ] **重资产账**（已入库，占比大）：
@@ -203,6 +204,9 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [?] 通用卡包标准（Pack Engine）：将 Eden 特有资产彻底降级为 map/packs/eden/（Pack 0），内核转为通用渲染与协议宿主。
 
 ## 5. Done, kept as evidence (2026-09-29)
+
+- [x] 中层昼夜底图 DZI 上线 + 多时段自动换图 ✅ 2026-09-29 `9ad6dfc`：`tools/make_dzi.py` 把 `map/art/tc_mid_day_full.png` / `tc_mid_night_full.png`（各 8000×5000）切成 `map/art/tc_mid_day` / `tc_mid_night` 两座金字塔（各 14 层 226 张 jpg，`--verify` + `--extent-m 3000 1875` 通过）。`maps.json` 的 tc_mid 注册 `periods: { day, night }`（schema `maps.schema.json` 新增 `periods` 定义，键限 dawn/day/dusk/night，值限 .dzi；`tools/check_maps.py` 对各档底图与瓦片目录做存在性检查）。查看器接线：`app/nav.mjs` `baseOf()` 按有效时段档位（`map/custom.mjs` 新暴露的 `todNow()`，关掉「时段色调」开关即恒用 base）取 `periods` 档位图，新增 `applyPeriod()`——`app/host.mjs` 收到 `eden-map:clock` 后调用，正在看的地图档位变了就 `swapBase()` 原地换第 0 层瓦片源（视角 / 标记 / 叠加层不动，与 alt 开关同一机制）；已配昼 / 夜档的层不再叠 nighttint 色调（免双重变暗，dawn / dusk 仍叠色）。设置项文案改「按时段给上层、中层加色调与昼夜底图」（zh/en）。`docs/tiancheng-maps.md` 与 maps.json `_note` 补 periods 字段说明。独立打开地图 / 读不到世界时间时行为与旧版完全一致（用 base）。测试：node --test 285 项全绿；`check_maps.py` 50 图 0 错 0 警。
+- [x] todo §3 文档仓库线平账 ✅ 2026-09-29 `cf35c28` + 本条：过时陈述（ROADMAP / onboarding / project-design / tt-test-checklist 改齐 0.9.7，一键管线改「已上线」）；其余 §3 条目（冲突措辞撤销 / CLOUD_TASK 作废头 / card-omissions 自相矛盾 / 岛生成器路径 / 死链注解 / token-usage 规划中 / .gitignore 重复规则）经逐处核实均已在此前批次修好，本次只划账并留验证结论；`.gitignore` 的 `tools/fetch_textures.sh` 悬空注释本批补注。§3 剩余未勾项只有需要重写历史或用户决定的重资产 / 垃圾 blob / 本机清理类（维持原状）。
 
 - [x] 会话录制回放框架（Session Replay Fixtures）✅ 2026-09-29 `5958f75` + `788be44`：`map/tavern/context.mjs` 立纯数据快照契约——`SNAPSHOT_VERSION = 1` + `exportSessionSnapshot()`（收宿主原始楼层或已规范化楼层 + MVU 状态 → 标准 SessionSnapshot JSON：`{ version, meta, mvu: { stat, vars, floors? }, messages: [{ floor, role, text, raw?, original? }], state?: { tag? } }`，text 恰为 parseText(raw)、raw 保留 JSONPatch 用完整原文、original 留「正文优化」改写前原文）、`validateSessionSnapshot()` 体检（只报告不抛）、`perFloorStatOf()`（每楼变量表 → computeTrips 回放回调）、`ContextPipeline.fromSnapshot()` 静态回放（messages 走与实况同一条 readMsgs 规范化路径：补丢标签 → 剥 EJS → 指纹缓存；⌖ 标签状态机可整块恢复；畸形快照降级不抛——坏楼跳过并记账 degraded，未知版本 / mvu 段损坏放行消息回放）；`map/tavern/mvu-bridge.mjs` 新增只读 `dumpState({ floors? })`（最新楼 stat + 聊天变量 + 可选每楼 stat_data，不写状态、不作废快照缓存，录制零改变正常游戏模式逻辑）。夹具 `tests/fixtures/sessions/session_a.json`（多人物对话 + ⌖火灾/⌖人物/⌖地点标签 + CoT 包裹楼 + 每楼变量表）与 `session_b.json`（⌖改名/⌖用途 + 标签状态机快照），全脱敏合成数据。新增 `tests/session_replay.test.mjs` 7 项（夹具契约 text === parseText(raw)、两次独立回放事件/人物/行程逐项一致 = 确定性、标签状态恢复后 customTags 零重复应用、畸形快照容错降级、dumpState + export → fromSnapshot 端到端往返、纯度机检：裸 node 无 window / Mvu / SillyTavern 全程跑通）。
 

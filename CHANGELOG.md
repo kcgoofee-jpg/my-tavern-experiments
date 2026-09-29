@@ -5,6 +5,9 @@
 
 ## 0.9.8（进行中）
 
+- **中层昼夜底图 DZI 上线 + 多时段自动换图**：`tools/make_dzi.py` 把中层昼夜两张 8000×5000 渲染源图切成 `map/art/tc_mid_day` / `tc_mid_night` 金字塔（各 14 层 226 张，`--verify` 通过）；`maps.json` 的 tc_mid 注册 `periods: { day, night }`（`maps.schema.json` 新增 `periods` 定义、`tools/check_maps.py` 档位存在性检查），查看器按世界时钟时段档位自动换底图——`app/nav.mjs` `applyPeriod()` 在 `eden-map:clock` 跨过昼 / 夜档时原地换第 0 层瓦片源（视角 / 标记 / 叠加层不动，与「另一版底图」开关同一机制），已配昼夜档的层不再叠色调免双重变暗；独立打开 / 读不到世界时间时行为不变。设置项文案改为「按时段给上层、中层加色调与昼夜底图」。
+- **README 门控对齐**：发版线钉到已存在的标签 `map-v0.9.7`（`check_readme.py --fix` + 正文手改）。
+
 - **会话录制回放框架（Session Replay Fixtures）**：宿主桥与纯流水线立起聊天快照导出与注入接口，脱离真实酒馆浏览器实现毫秒级端到端上下文回归测试（`5958f75` + `788be44`）。`map/tavern/context.mjs` 纯数据契约：`exportSessionSnapshot()` 把窗口楼层 + MVU 状态组装成标准 SessionSnapshot JSON（v1：`mvu.stat / vars / floors` + `messages[].{floor, role, text, raw, original?}` + 可选 `state.tag` 标签状态机；text 恰为 parseText(raw)，raw 保留 JSONPatch 用的完整原文），`validateSessionSnapshot()` 体检（只报告不抛）、`perFloorStatOf()` 每楼变量回放回调、`ContextPipeline.fromSnapshot()` 一键恢复——messages 走与实况同一条 readMsgs 规范化路径（补丢标签 → 剥 EJS → 指纹缓存），⌖ 标签状态机可整块恢复；畸形快照降级不抛（坏楼跳过并记账 degraded，未知版本 / mvu 段损坏放行消息回放）。`map/tavern/mvu-bridge.mjs` 新增只读 `dumpState({ floors? })`（最新楼 stat + 聊天变量 + 可选每楼 stat_data，不写状态、不作废快照缓存，录制零改变正常游戏模式逻辑）。`tests/fixtures/sessions/` 两份脱敏合成夹具（多人物对话、⌖火灾 / ⌖人物 / ⌖地点标签、CoT 包裹楼、每楼变量表、⌖改名 / ⌖用途与标签状态机）+ `tests/session_replay.test.mjs` 7 项：两次独立回放的事件 / 人物栏 / 行程逐项一致（确定性）、标签状态恢复后 customTags 零重复应用、损坏快照容错降级、dumpState → export → fromSnapshot 端到端往返、纯度机检（裸 node 无 window / Mvu / SillyTavern 全程跑通）。
 
 ## 0.9.7（2026-09-29）
