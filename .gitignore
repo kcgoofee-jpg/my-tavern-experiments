@@ -50,3 +50,4 @@ map/art/.*
 .ruff_cache/
 # 地标草稿/看板的渲染中间图（landmark.py 先渲到这里再收进 docs/，避免云端写绝对路径）
 map/art/_*.jpg
+repomix-output.xml
