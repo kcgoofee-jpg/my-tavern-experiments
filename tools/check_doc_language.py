@@ -35,6 +35,11 @@ ALLOW = {
     # traceability; its own prose is English but the quotes are necessarily Chinese. Same
     # logic as the "quoted card text stays Chinese" rule in docs/language-policy.md.
     "docs/todo.md": "索引文件：逐条引用原文（中文）以保持可追溯，正文英文",
+    # Both are symlinks (added after the map-v0.9.6 baseline) pointing at docs/agent-brief.md,
+    # which predates the baseline and is grandfathered Chinese; a symlink is a pointer, not a
+    # new document — otherwise deleting a release tag would suddenly flag the same content.
+    "AGENTS.md": "symlink → docs/agent-brief.md（基线前已存在，grandfathered 中文速查）",
+    "CLAUDE.md": "symlink → docs/agent-brief.md（同上）",
 }
 
 ARCHIVE_PREFIXES = ("docs/archive/", "docs/history/")

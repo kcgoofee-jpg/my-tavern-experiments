@@ -4,7 +4,7 @@
 
 - HEAD `1bdf113` on `preview`; working tree clean. `main` is a fast-forward behind (`tools/sync_main.sh`, run it when a batch pushes — the two branches carry the same content). **The streaming/decoupling refactor is fully sealed (report: `docs/reviews/architecture_and_stream_perf.md`)**: P0 G1+G6 (`040baf9`+`04f170f`), P1 (`643e087`), P2 MVUBridge + ContextPipeline (`785c421`+`28d646e`), P3-A DepthSystem + Estate3D (`709c1c9`+`43c053a`), P3-B CharacterRosterSystem (`a4de0f2`+`5ce27d3`), P3-C LayerRegistry (`aed4f49`+`92a9bda`+`910bd6e`).
 - Just landed: `f6ef639` de-speculation leftovers closed (`docs/card-digest.md:387,389`, `docs/upper-setting.md:278` hedged wording aligned to the established 口径) + worldbook ship-JSON standard extension interface reserved (top-level `schema: 1` + `category` map; `wbsync.mjs` consumer unchanged). Earlier on this line: `34e5fd0` upper-layer 9-island integral re-render + settings License page + worldbook builder v16 drops the 「推断」 wording.
-- Version stays `0.9.6` (last released tag `map-v0.9.6`); the builder emits `0.9.6-dev` until the next bump + tag. CHANGELOG's in-progress section is `0.9.7`.
+- Version bumped to `0.9.7` (2026-09-29 release window: CHANGELOG section closed, tag `map-v0.9.7` not cut yet — `check_version` warning about the missing tag is expected until the release flow tags it; the release line stays pinned to `map-v0.9.6`). The shipped worldbook JSON still carries `0.9.6-dev` until the next builder run. CHANGELOG's in-progress section is `0.9.8`.
 - Open work lives in `docs/todo.md` (strike-through = done, with SHA). GLM-agent local-dev pitfalls: `docs/handoff.md` §GLM-Agent guide.
 
 - 分支只推 `preview`；不打标签、不发正式版；不生成角色卡；不写用户酒馆数据。

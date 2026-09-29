@@ -13,7 +13,7 @@
 - **不想手写 import**：`python3 tools/build_preview_script.py <git ref>` 生成可直接在酒馆助手「导入脚本」的 JSON。
 - **这两条地址不会过期**：`tools/check_readme.py` 在 `tools/smoke.sh` 里守着（仓库名 / 预览分支 / 最新标签 / 本文件提到的路径），`bash tools/ship.sh --release` 会把发版线那条自动刷到刚打的标签。
 
-> 状态：开发中 · 当前发布版本 `0.9.6`（标签 `map-v0.9.6`） · 下一版进行中（分支 `preview`）
+> 状态：开发中 · 当前发布版本 `0.9.7`（0.9.7 标签待打，发版线仍钉 `map-v0.9.6`） · 下一版进行中（分支 `preview`）
 > **待办唯一索引：[`docs/todo.md`](docs/todo.md)**（四轨：代码线 / 渲染线 / 文档仓库线 / 待用户决定，每条带出处）。
 > 详细门控与任务分轨：[`docs/history/GOAL_v0.9.1.md`](docs/history/GOAL_v0.9.1.md)（0.9.1 门控记录） · 产品待办：[`ROADMAP.md`](ROADMAP.md) · 变更记录：[`CHANGELOG.md`](CHANGELOG.md) · 本机 ↔ 云端协作与接手记录：[`docs/history/NOTES_FROM_LOCAL.md`](docs/history/NOTES_FROM_LOCAL.md) · 卡设定遗漏清单：[`docs/card-omissions.md`](docs/card-omissions.md) · 分支与发版线：[`docs/branching.md`](docs/branching.md) · 语言口径：[`docs/language-policy.md`](docs/language-policy.md)
 
