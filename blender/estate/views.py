@@ -129,7 +129,8 @@ def closeup(room_id, shot, ctx):
 def configure(ctx, res, samples):
     sc = ctx.scene
     sc.render.engine = 'CYCLES'
-    sc.cycles.device = 'CPU'
+    import tc_common as _tc                     # 渲染守卫：以前这里写死 sc.cycles.device = 'CPU'，云端白等
+    _tc.setup_render_device(sc)
     sc.cycles.samples = samples
     sc.cycles.use_adaptive_sampling = True
     try:

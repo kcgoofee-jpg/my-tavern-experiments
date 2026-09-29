@@ -58,6 +58,8 @@ vl = bpy.context.view_layer
 for o in [o for o in bpy.data.objects if o.type == 'LIGHT']:
     bpy.data.objects.remove(o, do_unlink=True)
 SF.gpu(sc, SAMPLES)
+import eden_guard                    # 设备实际由 SF.gpu → eden_guard 设置；这里显式再调一次（幂等），
+eden_guard.setup_render_device(sc)   # 让渲染守卫的静态检查在本文件也能查到唯一的设备入口
 SF.world(sc, 'day')
 sc.view_settings.view_transform = 'AgX'
 sc.view_settings.look = 'AgX - Medium High Contrast'

@@ -175,6 +175,7 @@ def append_model(col, blend, origin, X, Y, Z, s, skip=('bg_', 'cam', 'sun', 'whi
 def finish(layer, islands, sun, world, tower=None, cfg=None):
     cfg = cfg or DP.load(); view = cfg['view']; vc = view['camera']; grey = bool(os.environ.get('TC_OBLIQUE_GREY'))
     import tc_common as tc
+    tc.setup_render_device(layer.sc)     # 渲染守卫：显式走唯一入口（camera_and_render 内部也会调，幂等；静态检查要求本文件出现这个调用）
     tc.camera_and_render(layer.sc, layer.res, layer.samples, layer.out, layer.opt)
     sc = layer.sc; col = bpy.data.collections.new('oblique'); sc.collection.children.link(col)
     fl = bpy.data.objects.get('white_floor')

@@ -497,6 +497,7 @@ def _standalone():
     sc.render.engine = 'CYCLES'; sc.cycles.samples = int(opt['--samples']); sc.cycles.use_denoising = True
     sc.view_settings.view_transform = 'Standard'
     out = os.path.abspath(opt['--out']); os.makedirs(os.path.dirname(out), exist_ok=True); sc.render.filepath = out
+    tc.setup_render_device(sc)                                  # 渲染守卫：唯一设备入口（以前没设，后台模式默认 CPU）
     tc.tick(f'eden manor {fl or "exterior"}: render'); bpy.ops.render.render(write_still=True); tc.tick('done ' + out)
 
 if __name__ == '__main__': _standalone()

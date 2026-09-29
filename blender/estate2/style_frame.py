@@ -51,18 +51,13 @@ def reset():
 
 
 def gpu(scene, samples):
+    """唯一设备入口（渲染守卫）：eden_guard.setup_render_device —— OPTIX → CUDA → METAL，没有 GPU 直接中止。
+    2026-09-29 迁移：以前这里直接把设备类型钉成 Metal、没有 Metal 就 SystemExit，
+    **只认 Mac —— 云端 Linux + RTX 跑不了**（庄园 / 地标的 glb 导出因此在云端被卡住）。"""
     scene.render.engine = 'CYCLES'
-    prefs = bpy.context.preferences.addons['cycles'].preferences
-    prefs.compute_device_type = 'METAL'
-    prefs.refresh_devices()
-    n = 0
-    for d in prefs.devices:
-        d.use = d.type == 'METAL'
-        n += d.use
-    if not n:
-        raise SystemExit('没有 Metal GPU，按规则不回退 CPU')
+    import eden_guard
+    eden_guard.setup_render_device(scene)
     c = scene.cycles
-    c.device = 'GPU'
     c.samples = samples
     c.use_adaptive_sampling = True
     c.adaptive_threshold = 0.02

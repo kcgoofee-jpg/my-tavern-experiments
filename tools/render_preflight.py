@@ -22,10 +22,9 @@ RUN_OPTS_VAL = ('--log', '--asset', '--kind', '--res', '--spp', '--cache-blend')
 RUN_OPTS_FLAG = ('--allow-cpu',)
 # 2026-09-28：这些文件还在走自己的设备代码 / 没接 helper，由「Route all Blender scripts through pick_gpu」任务迁移；lint 只警告。
 # 迁完一个就从这里删一个；新文件不许加进来。提交端（check）对它们照样拒绝。
-PENDING = {
-    'blender/estate/legacy_manor.py', 'blender/estate/views.py', 'blender/estate2/export_web.py',
-    'blender/estate2/style_frame.py', 'blender/landmarks/map_cutout.py', 'blender/oblique.py',
-}
+PENDING = set()   # 2026-09-29：六个旧脚本全部迁完（estate/legacy_manor、estate/views、estate2/export_web、
+                  # estate2/style_frame、landmarks/map_cutout、oblique）——都改走 eden_guard / tc_common 的唯一设备入口。
+                  # 以后新文件不许加进来；lint 与提交端一致拒绝。
 
 
 class Fail(Exception):

@@ -44,6 +44,8 @@ def _render(sc, out, res, aspect=1.5, blend=''):
     r = int(A['res']); sc.render.resolution_x = sc.render.resolution_y = r
     sc.render.image_settings.file_format = 'PNG'; sc.render.image_settings.color_mode = 'RGBA'
     sc.cycles.samples = int(A['samples'])
+    # 渲染守卫：本脚本替换了 C.render（那一路自带 pick_gpu），原生设备设置不再执行——这里显式走唯一入口
+    C.tc_common.pick_gpu(sc)
     sc.render.filepath = os.path.abspath(A['out'])
     bpy.ops.render.render(write_still=True)
     print('WROTE', A['out'])

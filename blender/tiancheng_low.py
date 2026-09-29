@@ -1,6 +1,6 @@
 # 天城 · 下层（地基区，地面）· Blender 正俯视写实渲染（夜景草稿）
 # 用法：Blender -b -P tiancheng_low.py -- [--res 1600] [--samples 64] [--out path.png] [--crop x0,y0,x1,y1 | --crops "x0,y0,x1,y1:名字;..." | --crops-json 文件] [--out-dir 目录] [--preview] [--data-only]
-#       [--glow 1]（发光体倍数）[--lamp .3]（钠灯功率）[--ambient .12]（天光）[--no-landmark-glow]（去掉地标光圈 / 描边灯 / 光晕）[--day]（白天版：浊暖灰天 + 日光，钠灯 / 井口冷光熄灭或改暗）
+#       [--glow 1]（发光体倍数）[--lamp .3]（钠灯功率）[--ambient .12]（天光）[--no-landmark-glow]（去掉地标光圈 / 描边灯 / 光晕）[--day]（白天版：浊暖灰天 + 日光，钠灯 / 井口冷光熄灭或改暗；[--sun 2.8] 日光能量、[--dayexp .4] 白天曝光档）
 #       或 python3 tiancheng_low.py -- ...（pip 装的 bpy）。参数与导出格式三层一致，见 docs/tiancheng-maps.md
 # 与上层、中层同一相机、同一平面坐标、同一套 OSM 路网与建筑轮廓（tc_city，© OpenStreetMap contributors）：
 # 楼的轮廓沿用，只压低高度、按片区换成厂房 / 旧楼；贫民窟里的楼轮廓内塞满铁皮棚屋。
@@ -766,8 +766,10 @@ tick('landmarks')
 # ---------------- 环境：几乎没有天光（中层底面反射下来的一点暗橙）；--day：浊一点的暖灰天 + 斜射日光（头顶是中层结构，不给正午蓝天）----------------
 if DAY:
     tc.day_reset()                                             # 夜景灯光全拆（含 7 号井的竖井冷光）、发光面改暗色漆面
-    _sun = bpy.data.lights.new('sun', 'SUN'); _sun.energy = layer.f('--sun', 1.8); _sun.angle = math.radians(2.5); _sun.color = (1, .9, .78)
+    # 2026-09-29：对齐中层白天版的提亮（中层 sun 3.2→4.2 / 天光 .35→1.0 / +.5 档曝光，已自评 7.5/10）。
+    # 下层保留「浊暖灰天」的性格（头顶是中层结构，不给蓝天），只抬能量与曝光：1.8→2.8、天光 .32→.8、+.4 档。
+    _sun = bpy.data.lights.new('sun', 'SUN'); _sun.energy = layer.f('--sun', 2.8); _sun.angle = math.radians(2.0); _sun.color = (1, .93, .82)
     _so = bpy.data.objects.new('sun', _sun); col_main.objects.link(_so); _so.rotation_euler = tc.sun_rot()   # 三层共用方位；--day 走白天几何（tc.SUN_ROT_DAY）
-    layer.finish(world=((.44, .41, .36), layer.f('--ambient', .32)))
+    layer.finish(world=((.44, .41, .36), layer.f('--ambient', .8)), exposure=layer.f('--dayexp', .4))
 else:
     layer.finish(world=((.5, .38, .25), layer.f('--ambient', .12)), glare_opts=dict(threshold=.75, size=9.5, mix=-.7, tight=(.6, 7, .45)))
