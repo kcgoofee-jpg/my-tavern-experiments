@@ -689,5 +689,6 @@
   "th.wb_tomb": "You deleted this book, so it will not be recreated automatically; use \"Write to worldbook\" below to bring it back",
   "th.wb_conflict": "You edited these {n}, and upstream changed them too (yours kept; upstream text stored on the entry)",
   "inv.stored": "Stored",
-  "inv.hidden": "concealed · "
+  "inv.hidden": "concealed · ",
+  "ch.src_routine": "Routine"
 }

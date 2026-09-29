@@ -37,7 +37,7 @@ const TCChars = (() => {
   const visible = c => prefs.show && !prefs.off.includes(c.name);
   // v0.9.3：显示名（自定义，custom.js）与位置来源：MVU（在场人物的位置字段）/ 标签（聊天里的人物标签）/ 同处（在场但没写位置，默认和你同处）
   const dn = n => (typeof P.TCCustom !== 'undefined' ? P.TCCustom.name(n) : n);
-  const srcOf = c => c.src === 'mvu' ? T('ch.src_mvu', 'MVU') : c.src === 'tag' ? T('ch.src_tag', '标签') : T('ch.src_infer', '同处');
+  const srcOf = c => c.src === 'mvu' ? T('ch.src_mvu', 'MVU') : c.src === 'tag' ? T('ch.src_tag', '标签') : c.src === 'routine' ? T('ch.src_routine', '日程') : T('ch.src_infer', '同处');
   // 2026-09-28 待查 1/2/6：开局前不按「和你在一起」显示；在场表久未变降级为未知；「同处」加悬停说明来源和楼层
   const when = c => c.prelude ? T('ch.pre', '开局前 · 卡初始值') : c.stale ? T('ch.stale', '未知 · 在场表 {n} 楼未变', { n: c.stale }) : c.present ? T('ch.with_you', '和你在一起') : T('ev.floor', '第 {n} 楼', { n: c.floor });
   const lastSeen = c => c.prelude ? T('ch.pre', '开局前 · 卡初始值') : c.stale ? T('ch.stale', '未知 · 在场表 {n} 楼未变', { n: c.stale }) : c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor });

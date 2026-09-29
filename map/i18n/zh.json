@@ -556,5 +556,6 @@
   "th.wb_tomb": "你删过这本书，所以不会再自动建；想要回来就点下面的「写入世界书」",
   "th.wb_conflict": "你改过，上游也改了 {n} 条（保留你的，上游新内容记在条目里）",
   "inv.stored": "存放",
-  "inv.hidden": "暗格·"
+  "inv.hidden": "暗格·",
+  "ch.src_routine": "日程"
 }

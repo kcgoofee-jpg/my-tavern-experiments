@@ -446,6 +446,8 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
     if (!r.changed) { if (!lite && restDue) restNow(); return; }
     events = r.events;
     if (r.chars) { chars = r.chars;
+      // 日程漫游（Part 5-3）：聊天 / MVU 没接管的人物按世界时刻补位（不覆盖已有位置）
+      if (RTm && rtSched) { const minute = RTm.minuteOf(clock?.time || ''); if (minute != null) for (const w of RTm.whoWhere(rtSched, minute, chars.map(c => c.name))) chars.push({ name: w.name, place: w.place, floor: floorNow, src: 'routine' }); }
       if (MV) { roster = r.roster; rep = r.rep; BR.stageOrderFor(roster); BR.portraitsFor(); }
       const sig = floorNow + '|' + chars.map(c => c.name + '@' + c.place + '#' + c.floor).join() + '|' + JSON.stringify(roster) + Object.keys(BR.portraits).length + rep + (BR.stageOrder || []).join();
       if (sig !== charSig) { charSig = sig; if (alive) sendChars(); emit('characters', { items: chars.map(c => ({ ...c })), floor: floorNow }); } }   // 名册无条件发：面板关着时查看器也要靠它决定人物栏显隐（兜底名册 2026-09-29）
@@ -489,6 +491,11 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
   let inv = { items: {}, seq: 0 };
   function sendInv() { if (alive) post({ type: 'eden-map:inv', items: INVm ? INVm.rows(inv) : [] }); }
   function changedInv(save = true) { if (save) saveRoot(); sendInv(); }
+  // NPC 日常漫游（Part 5-3，tavern/routine.mjs）：包数据 manifest.data.routine 的日程表；聊天没提到的人物按世界时刻落在该在的地方
+  let RTm = null, rtSched = null; import(SELF + 'tavern/routine.mjs').then(m => { RTm = m; if (rtCfg) { rtSched = m.normSchedule(rtCfg); recomputeSoon(50); } }).catch(() => {});
+  let rtCfg = null;
+  { const rp = PACK_IN?.manifest?.data?.routine; if (rp) { const rb = 'packs/' + PACK_ID + '/';
+    cdnFetch(BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { rtCfg = j; if (RTm && j) { rtSched = RTm.normSchedule(j); recomputeSoon(50); } }).catch(() => {}); } }
   function computeTrips(msgs) {
     if (!TRm || !MV || !custom || customChat !== chatId()) return;
     const r = CTX.computeTrips(msgs, { TRm, CHM, perFloorStat: f => BR.perFloorStat(f), mvuGet: (s, p) => BR.mvuGet(s, p), varMap: BR.varMap,
