@@ -1,13 +1,19 @@
 {
- "_说明": "庄园网页三维的模型清单（main.js 读）。site = 整岛外观（blender/estate2/export_web.py 烘焙，std / low 两档）；house = 主楼室内体量（blender/estate2/house_web.py），进内透 / 剖切时才加载；f1_z = 主楼 F1 地坪的世界标高（米，layout z）。坐标 = glTF（Y 上）：layout (x, y, z) → (x, z, −y)。 v = 模型版本（页面按它缓存 glb，重出模型时改）。",
- "site": {
-  "std": "site.glb",
-  "low": "site_low.glb"
- },
- "house": {
-  "std": "house.glb",
-  "low": "house.glb"
+ "_说明": "庄园网页三维的模型清单（Estate3D Manifest 标准契约，map/core/estate3d.mjs 校验；main.js 只经它拿地址）。glb 分部件：site = 整岛外观（blender/estate2/export_web.py 烘焙，std / low 两档）；house = 主楼室内体量（blender/estate2/house_web.py），进内透 / 剖切时才加载。glb 与 data 的路径都相对本清单所在目录（model/）解析。坐标 = glTF（Y 上）：layout (x, y, z) → (x, z, −y)。f1_z = 主楼 F1 地坪的世界标高（米，layout z）。floors 与 ../data/eden_estate_rooms.json 的楼层对拍（tests/estate3d_manifest.test.mjs）。budget = main.js 档位常数的登记处（各向异性过滤上限、低档内存阈值）。license = 署名与贴图来源（assets/CREDITS.md、maps.json 的 credit）。v = 模型版本（页面按它缓存 glb，重出模型时改）。",
+ "id": "eden-estate",
+ "schema": 1,
+ "glb": {
+  "site": { "std": "site.glb", "low": "site_low.glb" },
+  "house": { "std": "house.glb", "low": "house.glb" }
  },
  "f1_z": 30.0,
- "v": "2026-09-28b"
+ "v": "2026-09-28b",
+ "floors": ["B2", "B1", "F1", "F2", "F3"],
+ "data": {
+  "rooms": "../../data/eden_estate_rooms.json",
+  "zones": "zones.json",
+  "galleries": "../../data/room_galleries.json"
+ },
+ "budget": { "anisotropy": 8, "anisotropy_low": 4, "low_device_memory_gb": 4 },
+ "license": { "credit": { "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "en": "Own model; textures Poly Haven / ambientCG (CC0)" } }
 }

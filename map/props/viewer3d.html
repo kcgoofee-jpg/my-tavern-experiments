@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>三维查看器</title>
 <!--
-  通用三维查看器：viewer3d.html?model=<id> 读 <id>/manifest.json（glb、热点、网格分组、相机）。
+  通用三维查看器：viewer3d.html?model=<id> 读 <id>/manifest.json（Estate3D Manifest 标准契约，map/core/estate3d.mjs：
+  glb 地址 / 档位兜底 / 热点 / 网格分组 / 相机都来自清单，代码不写死模型路径；model id 只来自数据）。
   渲染：随仓库的 three（../estate/vendor/），烘焙光照 → MeshBasicMaterial，无灯光、无阴影、无后处理。
   嵌入（viewer.html 的 kind=estate + viewer3d 字段）：blob iframe，<base> 指向本目录；模型 id 由注入的 window.__V3D_MODEL 给。
   消息（与旧庄园页同一套）：
@@ -87,10 +88,11 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { mountProgress } from '../ui/progress.mjs';   // fix3：统一加载进度组件
+import { Estate3D } from '../core/estate3d.mjs';   // Estate3D Manifest 标准契约（P3-A）：glb 地址与档位兜底都走清单，代码不写死模型路径
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer, prefersReducedMotion } from '../ui/camera-controls.js';   // 相机控制共用小件（预设/指北针/提示卡/空闲计时），与庄园页共用
 
 const Q = new URLSearchParams(location.search);
-const MODEL = window.__V3D_MODEL || Q.get('model') || 'dairy';
+const MODEL = window.__V3D_MODEL || Q.get('model');   // 资产 id 只来自数据（maps.json 的 viewer3d 字段 / ?model=），不再内置默认模型
 const EMBED = window.top !== window;
 const $ = s => document.querySelector(s);
 let dirty = true;
@@ -331,11 +333,14 @@ function watch() { clearInterval(slowT); lastProg = performance.now(); slowT = s
 
 async function load() {
   $('#load .acts').hidden = true; $('#load').classList.remove('done'); lp().reset(t('loading', { p: '' }).trim()); watch();
+  if (!MODEL) { fail('viewer3d: no model id (pass ?model= or window.__V3D_MODEL)'); return; }
   try {
     const mr = await fetch(`${MODEL}/manifest.json`, { cache: 'no-cache' }); if (!mr.ok) throw new Error('manifest ' + mr.status);
     MAN = await mr.json(); stats.tManifest = performance.now() - stats.t0; applyLang();
+    const glbPath = Estate3D.resolveGlb(MAN, TIER === 'low' ? 'low' : 'std');   // 档位兜底在契约里：low 缺失回落 std；清单位置外不拼地址
+    if (!glbPath) throw new Error('manifest: no resolvable glb');
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-    const gltf = await new Promise((res, rej) => loader.load(`${MODEL}/${(TIER === 'low' && MAN.glb_low) || MAN.glb}`, res, e => { lastProg = performance.now(); if (e.total) stats.bytes = e.total; setLoad(e.loaded || 0, e.total || 0); }, rej));
+    const gltf = await new Promise((res, rej) => loader.load(`${MODEL}/${glbPath}`, res, e => { lastProg = performance.now(); if (e.total) stats.bytes = e.total; setLoad(e.loaded || 0, e.total || 0); }, rej));
     stats.tGlb = performance.now() - stats.t0;
     setup(gltf.scene);
     clearInterval(slowT); lp().done();

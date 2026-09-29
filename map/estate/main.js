@@ -1,6 +1,7 @@
 // 伊甸庄园 · 网页三维（estate2 r4 整岛 + round-3 主楼分层）：模型加载、外观 / 内透 / 剖切、楼层条、房间与室外热点、房间卡、缩放交互、嵌入协议（说明见 index.html 顶部注释）
-// 模型：model/site.glb（整岛外观，烘焙光照，blender/estate2/export_web.py）+ model/house.glb（主楼室内体量 B2–F3，blender/estate2/house_web.py，进内透 / 剖切时才加载）。
-// 房间数据：../data/eden_estate_rooms.json（floorplans.py 生成的精确多边形）；室外热点：model/zones.json（web_zones.py）。
+// 模型：加载由清单 model/manifest.json 驱动（Estate3D Manifest 标准契约，map/core/estate3d.mjs 校验 / 解析，代码里不写死资源路径）。
+//   site.glb（整岛外观，烘焙光照，blender/estate2/export_web.py）+ house.glb（主楼室内体量 B2–F3，blender/estate2/house_web.py，进内透 / 剖切时才加载）。
+// 房间数据：清单 data.rooms → ../data/eden_estate_rooms.json（floorplans.py 生成的精确多边形）；室外热点：清单 data.zones → model/zones.json（web_zones.py）。
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
@@ -9,6 +10,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { openGallery } from '../ui/gallery.js';
 import { roomCustomBlockHTML, bindRoomCustomEvents, getCustomName, setGalleryChatId } from '../ui/room-gallery-panel.js';
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer } from '../ui/camera-controls.js';
+import { Estate3D } from '../core/estate3d.mjs';   // Estate3D Manifest 标准契约（P3-A）：清单校验 / 路径解析 / describe 摘要
 
 const T0 = performance.now();
 const Q = new URLSearchParams(location.search);
@@ -62,12 +64,14 @@ const scene = new THREE.Scene();
 scene.add(new THREE.HemisphereLight('#f4efe6', '#8a8070', 2.2));
 const sunL = new THREE.DirectionalLight('#fff1dc', 1.6); sunL.position.set(-0.55, 1, 0.45); scene.add(sunL);
 
-/* ---------------- 数据 ---------------- */
+/* ---------------- 数据（P3-A：模型 / 数据文件地址全部来自清单，代码不再写死或拼装资源路径） ---------------- */
 kick('data');
-const [MAN, CARD, ZDATA] = await Promise.all([
-  fetch(url('model/manifest.json')).then((r) => r.json()),
-  fetch(url('../data/eden_estate_rooms.json')).then((r) => r.json()),
-  fetch(url('model/zones.json')).then((r) => r.json()).catch(() => ({ zones: [] })),
+const MAN_URL = url('model/manifest.json');
+const M3D = Estate3D.normalize(await fetch(MAN_URL).then((r) => r.json()), { base: new URL('.', MAN_URL).href });
+const MAN = M3D.manifest;   // 清单原样保留（未知字段容错）；地址一律经 M3D.parts / M3D.data（已按清单所在目录解析）
+const [CARD, ZDATA] = await Promise.all([
+  fetch(M3D.data.rooms).then((r) => r.json()),
+  fetch(M3D.data.zones).then((r) => r.json()).catch(() => ({ zones: [] })),
 ]);
 const F1Y = MAN.f1_z ?? 30;                                  // F1 地坪的世界标高（layout z）
 const FLOORS = CARD.floors.map((f) => ({ ...f, y: F1Y + f.z }));   // B2, B1, F1, F2, F3
@@ -232,10 +236,12 @@ function addBackdrop(root) {
 const loadEl = $('#loading');
 const setLoadText = (s) => { const sp = loadEl.querySelector('span'); if (sp) sp.textContent = s; };
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+// 档位常数登记在清单 budget（各向异性过滤上限、低档内存阈值），这里只消费
+const ANISO = MAN.budget?.anisotropy ?? 8, ANISO_LOW = MAN.budget?.anisotropy_low ?? 4;
 // 模型缓存（Cache API，键 = 地址 + ?estv=manifest.v）：关掉面板再冷开也不重下；重出模型时改 manifest.json 的 v。拿不到 caches（file:// / 老浏览器）就直接下载
 const GLB_CACHE = 'eden-estate-glb';
-async function loadGlb(file, onProg) {
-  const u = url('model/' + file), key = u + (u.includes('?') ? '&' : '?') + 'estv=' + (MAN.v || '0');
+async function loadGlb(u, onProg) {
+  const key = u + (u.includes('?') ? '&' : '?') + 'estv=' + (MAN.v || '0');
   let cache = null; try { cache = self.caches && await caches.open(GLB_CACHE); } catch (e) { }
   if (cache) try {
     const hit = await cache.match(key);
@@ -247,8 +253,8 @@ async function loadGlb(file, onProg) {
 }
 const TB = {};
 const STAT = { tris: 0, bytes: 0, site: '', house: '' };
-const siteFile = (LOW && MAN.site.low) || MAN.site.std;
-STAT.site = siteFile;
+const siteFile = (LOW && M3D.parts.site.low) || M3D.parts.site.std;   // 清单已按所在目录解析；low 档缺失回落 std
+STAT.site = siteFile.split('/').pop();
 let t = performance.now();
 const siteG = (await loadGlb(siteFile, (e) => { post({ type: 'estate:progress', loaded: e.loaded || 0, total: e.total || 0, what: 'glb' });   // fix3：字节进度给查看器的统一加载组件（map/ui/progress.mjs）
   if (e.total) { STAT.bytes = e.total; setLoadText(tx('loadingP', { p: Math.round(100 * e.loaded / e.total) + '%' })); } else setLoadText(tx('loadingP', { p: (e.loaded / 1048576).toFixed(1) + ' MB' })); })).scene;
@@ -260,7 +266,7 @@ const shellClip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e5);
 siteG.traverse((o) => {
   if (!o.isMesh) return;
   const map = o.material.map || null;
-  if (map) { map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = Math.min(LOW ? 4 : 8, renderer.capabilities.getMaxAnisotropy()); map.minFilter = THREE.LinearMipmapLinearFilter; map.generateMipmaps = true; map.needsUpdate = true; }
+  if (map) { map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = Math.min(LOW ? ANISO_LOW : ANISO, renderer.capabilities.getMaxAnisotropy()); map.minFilter = THREE.LinearMipmapLinearFilter; map.generateMipmaps = true; map.needsUpdate = true; }
   if (map && /^(ground|rock|site_[cew])/.test(o.name)) GROUNDS.push(o);
   o.material.dispose();
   const shell = o.name.startsWith('house_shell');
@@ -290,8 +296,8 @@ const houseClip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e5);
 const houseFloors = FLOORS.map(() => []);   // 每层 [struct, furn]
 let houseState = 0;   // 0 未加载 / 1 加载中 / 2 好了 / -1 失败
 function loadHouse() {
-  if (houseState || !MAN.house) return; houseState = 1; const t0 = performance.now();
-  const file = (LOW && MAN.house.low) || MAN.house.std; STAT.house = file;
+  if (houseState || !M3D.parts.house) return; houseState = 1; const t0 = performance.now();
+  const file = (LOW && M3D.parts.house.low) || M3D.parts.house.std; STAT.house = file.split('/').pop();
   loadGlb(file).then((g) => {
     const root = g.scene; root.position.y = F1Y;
     const mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, clippingPlanes: [houseClip] });
@@ -578,7 +584,7 @@ let GALS = null;
 card.addEventListener('click', async (e) => {
   if (!e.target.closest('.gal') || !cardFor) return; e.stopPropagation();
   const id = GALLERY[cardFor.d.name]; if (!id) return;
-  GALS ||= await fetch(url('../data/room_galleries.json')).then((r) => r.json()).catch(() => ({}));
+  GALS ||= await fetch(M3D.data.galleries).then((r) => r.json()).catch(() => ({}));
   openGallery(GALS[id], { lang: LANG, base: url('../') });
 });
 card.dataset.lang = LANG;
@@ -910,6 +916,7 @@ window.__estate = {
   focusCard: (c) => focusRoomMsg(c.name, c), mode: () => mode, houseState: () => houseState, pinned: () => pinned && { kind: pinned.kind, name: pinned.d.name, id: pinned.d.id },
   tier: () => tier, dpr: () => DPR, paused: () => paused,
   stats: () => ({ ...lastInfo, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length, tier, low: LOW, files: STAT, times: TB, firstFrameMs: window.__estate.firstFrameMs, tris: STAT.tris }),
+  describe: () => Estate3D.describe(MAN, { base: M3D.base }),   // Estate3D 标准摘要（{ id, glbPath, floors, hotspots, budget, license }）
   camera, controls, renderer, scene, setLang,
 };
 buildNav(); relabel(); frustum();
