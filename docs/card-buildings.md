@@ -72,16 +72,16 @@
 | P3 其他 | site_fief5 | `fief5_order` | 第五席骑士团驻地 | ✅ | 仓库自设 | — | — |  |
 | P3 其他 | site_fief5 | `fief5_village` | 第五席领地城镇 | ✅ | 仓库自设 | — | — |  |
 | P3 其他 | site_highland | `trail_down` | 下山小径 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_kavalierki | `arms_rnd` | 魔导军工研发中心 | 🆕 | 仓库推断 | — | — |  |
-| P3 其他 | site_kavalierki | `clearing_depot` | 清算转运站 | ✅ | 卡 | — | — |  |
+| P3 其他 | site_kavalierki | `arms_rnd` | 魔导军工研发中心 | 🆕 | 仓库推断 | 魔导军工研发中心 `map/props/arms_rnd/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
+| P3 其他 | site_kavalierki | `clearing_depot` | 清算转运站 | ✅ | 卡 | 清算转运站 `map/props/clearing_depot/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
 | P3 其他 | site_kavalierki | `contest_corridor` | 竞赛与狂欢回廊 | ✅ | 卡 | 竞赛与狂欢回廊 `map/props/contest_corridor/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
 | P3 其他 | site_kavalierki | `elite_club` | 顶级贵族与财阀会所 | ✅ | 卡 | — | — |  |
 | P3 其他 | site_kavalierki | `ether_dome` | 以太穹顶 | ✅ | 卡 | 以太穹顶 `map/props/ether_dome/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
-| P3 其他 | site_kavalierki | `free_knight_camp` | 独立骑士黑市营地 | ✅ | 卡 | — | — |  |
+| P3 其他 | site_kavalierki | `free_knight_camp` | 独立骑士黑市营地 | ✅ | 卡 | 独立骑士黑市营地 `map/props/free_knight_camp/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
 | P3 其他 | site_kavalierki | `glory_crown` | 荣光冠冕 | ✅ | 卡 | 荣光冠冕 `map/props/glory_crown/` | 标准（r1 7.5 / 7.5（代理自查，未开评审）） |  |
-| P3 其他 | site_kavalierki | `linguang_post` | 临光家族外城驻所 | ✅ | 卡 | — | — |  |
+| P3 其他 | site_kavalierki | `linguang_post` | 临光家族外城驻所 | ✅ | 卡 | 临光家族外城驻所 `map/props/linguang_post/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
 | P3 其他 | site_kavalierki | `round_table_hall` | 圆桌骑士议事殿 | ✅ | 卡 | — | — |  |
-| P3 其他 | site_kavalierki | `rust_outskirts` | 铁锈与落败领 | ✅ | 卡 | — | — |  |
+| P3 其他 | site_kavalierki | `rust_outskirts` | 铁锈与落败领 | ✅ | 卡 | 铁锈与落败领 `map/props/rust_outskirts/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
 | P3 其他 | site_kavalierki | `sun_arena` | 太阳骑士大竞技场 | ✅ | 卡 | — | — |  |
 | P3 其他 | site_kavalierki | `union_tower` | 商业联合会联合大厦 | ✅ | 卡 | — | — |  |
 | P3 其他 | tc_low | `blood_mill` | 血肉磨坊 | ✅ | 卡 | — | — |  |

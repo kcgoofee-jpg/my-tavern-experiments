@@ -1443,6 +1443,11 @@
         }
       }
     },
+    "lm_arms_rnd": {"title": "魔导军工研发中心（三维）", "title_en": "Magitech Arms R&D Centre", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "arms_rnd", "src": "props/viewer3d.html", "alias": ["魔导军工研发中心（三维）"], "src_note": "魔导军工研发中心三维（标准版：标准档 + 低档 glb；位置与形制为地图补充设定）；从 site_kavalierki.arms_rnd 标记的「查看三维模型」进。源：blender/landmarks/arms_rnd/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_linguang_post": {"title": "临光家族外城驻所（三维）", "title_en": "Linguang Outer Residence", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "linguang_post", "src": "props/viewer3d.html", "alias": ["临光家族外城驻所（三维）"], "src_note": "临光家族外城驻所三维（标准版：标准档 + 低档 glb；位置与形制为地图补充设定）；从 site_kavalierki.linguang_post 标记的「查看三维模型」进。源：blender/landmarks/linguang_post/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_free_knight_camp": {"title": "独立骑士黑市营地（三维）", "title_en": "Free Knights Camp", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "free_knight_camp", "src": "props/viewer3d.html", "alias": ["独立骑士黑市营地（三维）"], "src_note": "独立骑士黑市营地三维（标准版：标准档 + 低档 glb；位置与形制为地图补充设定）；从 site_kavalierki.free_knight_camp 标记的「查看三维模型」进。源：blender/landmarks/free_knight_camp/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_clearing_depot": {"title": "清算转运站（三维）", "title_en": "Clearing Depot", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "clearing_depot", "src": "props/viewer3d.html", "alias": ["清算转运站（三维）"], "src_note": "清算转运站三维（标准版：标准档 + 低档 glb；位置与形制为地图补充设定）；从 site_kavalierki.clearing_depot 标记的「查看三维模型」进。源：blender/landmarks/clearing_depot/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_rust_outskirts": {"title": "铁锈与落败领（三维）", "title_en": "Rust and the Fallen", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "rust_outskirts", "src": "props/viewer3d.html", "alias": ["铁锈与落败领（三维）"], "src_note": "铁锈与落败领三维（标准版：标准档 + 低档 glb；位置与形制为地图补充设定）；从 site_kavalierki.rust_outskirts 标记的「查看三维模型」进。源：blender/landmarks/rust_outskirts/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_contest_corridor": {"title": "竞赛与狂欢回廊（三维）", "title_en": "Contest & Revelry Arcade (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "contest_corridor", "src": "props/viewer3d.html", "alias": ["竞赛与狂欢回廊（三维）"], "src_note": "竞赛与狂欢回廊三维；从 site_kavalierki.contest_corridor 标记的「查看三维模型」进。源：blender/landmarks/contest_corridor/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_ether_dome": {"title": "以太穹顶（三维）", "title_en": "Ether Dome (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "ether_dome", "src": "props/viewer3d.html", "alias": ["以太穹顶（三维）"], "src_note": "以太穹顶三维；从 site_kavalierki.ether_dome 标记的「查看三维模型」进。源：blender/landmarks/ether_dome/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_glory_crown": {"title": "荣光冠冕（三维）", "title_en": "Glory Crown (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "glory_crown", "src": "props/viewer3d.html", "alias": ["荣光冠冕（三维）"], "src_note": "荣光冠冕三维；从 site_kavalierki.glory_crown 标记的「查看三维模型」进。源：blender/landmarks/glory_crown/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
@@ -2026,8 +2031,7 @@
             "落败领"
           ],
           "sub": "外环",
-          "sub_en": "Outer ring"
-        },
+          "sub_en": "Outer ring", "link": {"map": "lm_rust_outskirts", "label": "查看三维模型", "label_en": "View 3D model"}},
         "clearing_depot": {
           "name": "清算转运站",
           "name_en": "Clearing Depot",
@@ -2038,8 +2042,7 @@
             "资产清算转运站",
             "清算转运站",
             "转运站"
-          ]
-        },
+          ], "link": {"map": "lm_clearing_depot", "label": "查看三维模型", "label_en": "View 3D model"}},
         "free_knight_camp": {
           "name": "独立骑士黑市营地",
           "name_en": "Free Knights Camp",
@@ -2049,8 +2052,7 @@
             "独立骑士黑市营地",
             "黑市营地",
             "独立骑士营地"
-          ]
-        },
+          ], "link": {"map": "lm_free_knight_camp", "label": "查看三维模型", "label_en": "View 3D model"}},
         "linguang_post": {
           "name": "临光家族外城驻所",
           "name_en": "Linguang Outer Residence",
@@ -2059,8 +2061,7 @@
           "alias": [
             "临光家族外城驻所",
             "外城驻所"
-          ]
-        },
+          ], "link": {"map": "lm_linguang_post", "label": "查看三维模型", "label_en": "View 3D model"}},
         "arms_rnd": {
           "name": "魔导军工研发中心",
           "sub": "以太回路装甲 · 智能锁",
@@ -2072,8 +2073,7 @@
           "alias": [
             "魔导军工研发中心",
             "军工研发中心"
-          ]
-        }
+          ], "link": {"map": "lm_arms_rnd", "label": "查看三维模型", "label_en": "View 3D model"}}
       }
     },
     "yuanyu_sanctum": {
