@@ -65,8 +65,8 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   `props/viewer3d.html` 语言键退回中文；`viewer.html` 三条 eden 预取。
 - [ ] 气候塔材质细化：塔楼白块、粉长条（看图后定改法）+ 可选「信息按钮」（本会话 2026-09-29 用户反馈；塔在 `blender/tc_estates.py` climate_tower，锚点 `blender/data/tc_islands.json` anchors.climate_tower）。（预估 ~4h）
 - [ ] 设置「版权申明」页与人物页声望在真实酒馆浏览器过一眼（现在只有 stub；挂在上面的 Real ST 测试项下）。（预估 ~2h）
-- [ ] **Streaming / decoupling P0** (`docs/reviews/architecture_and_stream_perf.md` §1.4): G1 strip `<think>` CoT blocks before tag parsing + G6 `fnGuard` & arity tests at cross-window exposure points. (~8h)
-- [ ] **Streaming / decoupling P1–P3** (same report §1.4/Part 2): G3 wake broadcast + G2 hidden-poll gating (P1 ~4h); extract MVUBridge → ContextInteractionSystem (P2 ~28h); LayerRegistry → Estate3D manifest → CharacterRosterSystem → DepthSystem summary (P3 ~44h).
+- ~~**Streaming / decoupling P0** (`docs/reviews/architecture_and_stream_perf.md` §1.4): G1 strip `<think>` CoT blocks before tag parsing + G6 `fnGuard` & arity tests at cross-window exposure points. (~8h)~~ ✅ 2026-09-30 `040baf9`（G1）+ `04f170f`（G6）
+- [ ] **Streaming / decoupling P2–P3** (same report Part 2): ~~P1（G3 wake broadcast + G2 hidden-poll gating，~4h）~~ ✅ 2026-09-30 `643e087`；extract MVUBridge → ContextInteractionSystem (P2 ~28h); LayerRegistry → Estate3D manifest → CharacterRosterSystem → DepthSystem summary (P3 ~44h).
 - [ ] **De-speculation leftovers**: hedged wording at `docs/card-digest.md:387,389`, `docs/upper-setting.md:278`; worldbook ship-JSON standard-interface reservation (top-level schema + category map) in `tools/build_worldbook_addon.py`. (~4h)
 
 
@@ -205,6 +205,8 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [x] 测试语义化更名 ✅ 2026-09-30 `58d1281`：adapter / budget / card_spec / custom_names / character_details / roster / trips 七件去版本号；`docs/design/custom-v2.md` 活引用同步；CHANGELOG 历史条目按当时名字保留；`tools/` 与 `blender/` 下 `__pycache__` 清场。
 - [x] 流式性能与六大子系统解耦报告 ✅ 2026-09-30 `1eb1694`：`docs/reviews/architecture_and_stream_perf.md`（后台假死根因 = 隐藏标签页定时器钳制 + rAF 挂起；G1–G6 修补清单；LayerRegistry 等解耦 RFC；P0–P3 已登记 §1）。
 - [x] 中层昼夜 8000px 底图 ✅ 2026-09-29–30（渲染产物：`map/art/tc_mid_day_full.png` / `tc_mid_night_full.png` 本机留档，Finder 已交付；瓦片未入库，待多时段底图挑档后 make_dzi，见 §2）。
+- [x] 流式修补第一批 P0 ✅ 2026-09-30 `040baf9` + `04f170f`：G1 `<think>` 剥离进纯函数 `map/tavern/msgtext.mjs`（raw 不动；events 测试加 CoT fixture）；G6 `fnGuard` + `EDEN_API` 机读契约 + 暴露面守卫（跨窗口调用点全覆盖），新增 `tests/edenapi.test.mjs`。
+- [x] 流式修补第一批 P1 ✅ 2026-09-30 `643e087`：G2 后台标签页轮询静默（`pdoc.hidden` 早退，`wake()` 无损补算）；G3 切回前台广播 `eden-map:wake`，查看器醒着也响应（`markHere` 重画当前地点标记）。
 
 - [x] 上层 9 岛整图重渲（8000×5000，plain + city 双版）+ 五座庄园抠图贴合 + DZI/瓦片重建，气候塔锚点入画（`map/art/tc_upper*_full.png`、`blender/data/tc_islands.json`、`tools/isles_into_upper.py`）。
 - [x] 版权申明设置页（卡信息 / 开源仓库 / 原作署名 / 免责，`map/app/settings.mjs` license 页，探针 4 项过）。
