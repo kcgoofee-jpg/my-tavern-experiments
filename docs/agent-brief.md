@@ -12,7 +12,7 @@
 - shell 的 `cat`/`ls` 是坏别名：用 `command cat` / Write 工具；提交信息写文件用 `-F`；非 ASCII 路径用 fileURLToPath。
 - **Branch lines (2026-09-29)**: `preview` is the integration + follow/preview line and `main` is the release line; **they carry the same content, so sync is a fast-forward, never a force-push**: `bash tools/sync_main.sh` (dry run: `DRY_RUN=1`). The freeze point is the tag, not the branch. Rationale and the "when to split" rule: `docs/branching.md`.
 - **Language (2026-09-29 user decision)**: new documents in `docs/` are written in **English** (a Chinese edition goes to `*.zh.md`); new prose added to an existing document is English too; documents that predate this policy are **grandfathered, never bulk-translated**. Code comments and tool output follow the file's existing language. Enforced by `tools/check_doc_language.py` in `tools/smoke.sh` (self-test: `tools/test_doc_language.py`); rationale in `docs/language-policy.md`.
-- 名字照抄原卡；自补内容标「仓库推断」；卡里没有的地点不建模（DLC）。
+- 名字照抄原卡；自补内容标「地图自设」；卡里没有的地点不建模（DLC）。
 - **内容边界（2026-09-29 用户决定）**：原来「不建模、不描写任何性相关 / 束缚类道具与场所细节」「私密房间一律中性」的硬约束**全部撤销**（理由：不按原卡补全会被原作者投诉）。设施、道具与用途照原卡写、可以建模；房间名照抄卡原名（仍旧不许自编中性名）。历史任务书里的同类句子已作废，见 `docs/archive/README.md`。
 - Blender 一律 `tools/blender_run.sh`（等显卡锁、ASCII TMPDIR、崩溃重试一次、只杀自己 PID）；草图 16 spp ~2000 px，定稿 64 spp；改动 <25% 用 `tools/region_patch.py`。
 - 渲染任务交给队列 `tools/render_queue.sh submit <draft|final|any> -- <参数>`，不要直接调 `tools/blender_run.sh` 或 `tools/cloud/render.sh`（队列负责派给 Mac 还是云端、避免两台撞车）；云端细节见 `docs/cloud-render.md`。

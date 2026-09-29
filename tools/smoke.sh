@@ -8,10 +8,12 @@
 #   5. 可选 --cdn <ref>：对该 ref 下 map/ 的一组文件（固定几个入口 + 随机瓦片）发 HEAD 到 jsDelivr，要求全部 200
 #   6. tools/**/*.sh lint：`$var` 紧跟非 ASCII 字符（macOS bash 3.2 下会被吞进变量名报 unbound variable）；
 #      裸 cat/ls（用户 shell 把 cat/ls 起了坏别名，脚本要用 `command cat`/`command ls`）
+#   7. 架构看门狗（tools/check_architecture.py）：map/core/ 单文件 ≤400 行；core 零父级 import、
+#      core 与纯流水线不碰宿主全局（单一属主豁免表见脚本头）；viewer.html / map/app/ 禁裸 z-index 字面量
 set -uo pipefail
 cd "$(dirname "$0")/.."
 CDN=""; CDN_N=12
-while [ $# -gt 0 ]; do case "$1" in --cdn) CDN=$2; shift 2 ;; --cdn-n) CDN_N=$2; shift 2 ;; -h|--help) sed -n '2,9p' "$0"; exit 0 ;; *) echo "未知参数 $1" >&2; exit 2 ;; esac; done
+while [ $# -gt 0 ]; do case "$1" in --cdn) CDN=$2; shift 2 ;; --cdn-n) CDN_N=$2; shift 2 ;; -h|--help) sed -n '2,11p' "$0"; exit 0 ;; *) echo "未知参数 $1" >&2; exit 2 ;; esac; done
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 FAIL=0
 step() { local name=$1; shift; local t=$SECONDS
@@ -20,6 +22,7 @@ step() { local name=$1; shift; local t=$SECONDS
 step "check_maps" python3 tools/check_maps.py
 python3 tools/check_render_deps.py | sed 's/^/  [警告] /'   # 只警告，不计入 FAIL（docs/render-deps.md）
 step "check_pack（设定包）" python3 tools/check_pack.py
+step "架构看门狗（core 行数 / 分层纯净 / 裸 z-index，见 tools/check_architecture.py）" python3 tools/check_architecture.py
 step "纵深数学对拍（python ↔ golden；JS 侧在 node --test）" python3 tools/test_depth.py
 step "斜视投影对拍（python ↔ golden）" python3 tools/test_project.py
 # 空文件守卫：已跟踪的 .mjs/.js/.py/.json/.md 不许是 0 字节（shell 里 cat 被别名成 bat 时 `cat > f <<EOF` 会悄悄写出空文件，stats096 就这样空了两天）；确有需要的空文件写进 EMPTY_OK
