@@ -1,106 +1,130 @@
 {
- "_说明": "viewer3d.html?model=butler_academy 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。中层高区一座礼仪 / 服务培训机构：三层红砖 + 白石线脚学院主楼（中央山花门廊 + 屋顶老虎窗）+ 实训翼 + 前庭（环形车道 + 喷泉）+ 后花园（环形绿篱迷宫 + 凉亭）。只画建筑，无人物、文字、校徽。卡只写了「天城贵族管家学院」这个名字与绫濑遥的关联，位置与形制为仓库推断，详见 docs/landmarks/butler_academy.md。",
- "id": "butler_academy",
- "title": {
-  "zh": "天城贵族管家学院",
-  "en": "Tiancheng Butler Academy"
- },
- "glb": "butler_academy.glb",
- "glb_low": "butler_academy_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "walls_ext",
-   "props_wing"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "props_forecourt",
-   "props_garden",
-   "site_ground",
-   "props_lights"
-  ],
-  "building": {
-   "min": [-70.0, -0.8, -90.0],
-   "max": [70.0, 18.0, 55.0]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 24,
-  "default": 24
- },
- "camera": {
-  "frame": [
-   "walls_ext",
-   "props_forecourt"
-  ],
-  "dir": [
-   0.4,
-   0.42,
-   -0.8
-  ],
-  "min": 6,
-  "max": 300,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "main",
-   "mesh": "walls_ext",
-   "name": {
-    "zh": "学院主楼",
-    "en": "Academy main hall"
-   },
-   "desc": {
-    "zh": "三层红砖 + 白石线脚，中央山花门廊，屋顶三座老虎窗。",
-    "en": "A three-storey brick hall with white stone trim, a central pedimented portico, and three roof dormers."
-   },
-   "view": [0.35, 0.38, -0.85]
+  "_说明": "viewer3d.html?model=butler_academy 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。中层高区一座礼仪 / 服务培训机构：三层红砖 + 白石线脚学院主楼（中央山花门廊 + 屋顶老虎窗）+ 实训翼 + 前庭（环形车道 + 喷泉）+ 后花园（环形绿篱迷宫 + 凉亭）。只画建筑，无人物、文字、校徽。卡只写了「天城贵族管家学院」这个名字与绫濑遥的关联，详见 docs/landmarks/butler_academy.md。",
+  "id": "butler_academy",
+  "title": {
+    "zh": "天城贵族管家学院",
+    "en": "Tiancheng Butler Academy"
   },
-  {
-   "id": "wing",
-   "mesh": "props_wing",
-   "name": {
-    "zh": "实训翼",
-    "en": "Training wing"
-   },
-   "desc": {
-    "zh": "落地窗模拟餐厅，银器与布艺陈列橱窗（纯几何，无标签）。",
-    "en": "A mock dining room behind floor-to-ceiling windows, beside display cases for silverware and linen (plain geometry, unlabelled)."
-   },
-   "view": [0.6, 0.35, -0.75]
+  "glb": "butler_academy.glb",
+  "glb_low": "butler_academy_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "forecourt",
-   "mesh": "props_forecourt",
-   "name": {
-    "zh": "前庭",
-    "en": "Forecourt"
-   },
-   "desc": {
-    "zh": "环形车道与中央喷泉，两侧行道树。",
-    "en": "A circular drive around a central fountain, lined with trees."
-   },
-   "view": [0.0, 0.5, -0.85]
+  "groups": {
+    "roof": [],
+    "walls": [
+      "walls_ext",
+      "props_wing"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "props_forecourt",
+      "props_garden",
+      "site_ground",
+      "props_lights"
+    ],
+    "building": {
+      "min": [
+        -70.0,
+        -0.8,
+        -90.0
+      ],
+      "max": [
+        70.0,
+        18.0,
+        55.0
+      ]
+    }
   },
-  {
-   "id": "garden",
-   "mesh": "props_garden",
-   "name": {
-    "zh": "后花园绿篱迷宫",
-    "en": "Hedge maze garden"
-   },
-   "desc": {
-    "zh": "几何环形绿篱迷宫，中央凉亭供礼仪训练使用。",
-    "en": "A geometric circular hedge maze around a central pavilion, used for outdoor etiquette lessons."
-   },
-   "view": [0.0, 0.6, -0.72]
-  }
- ]
+  "section": {
+    "min": 0.5,
+    "max": 24,
+    "default": 24
+  },
+  "camera": {
+    "frame": [
+      "walls_ext",
+      "props_forecourt"
+    ],
+    "dir": [
+      0.4,
+      0.42,
+      -0.8
+    ],
+    "min": 6,
+    "max": 300,
+    "maxPolar": 1.48
+  },
+  "hotspots": [
+    {
+      "id": "main",
+      "mesh": "walls_ext",
+      "name": {
+        "zh": "学院主楼",
+        "en": "Academy main hall"
+      },
+      "desc": {
+        "zh": "三层红砖 + 白石线脚，中央山花门廊，屋顶三座老虎窗。",
+        "en": "A three-storey brick hall with white stone trim, a central pedimented portico, and three roof dormers."
+      },
+      "view": [
+        0.35,
+        0.38,
+        -0.85
+      ]
+    },
+    {
+      "id": "wing",
+      "mesh": "props_wing",
+      "name": {
+        "zh": "实训翼",
+        "en": "Training wing"
+      },
+      "desc": {
+        "zh": "落地窗模拟餐厅，银器与布艺陈列橱窗（纯几何，无标签）。",
+        "en": "A mock dining room behind floor-to-ceiling windows, beside display cases for silverware and linen (plain geometry, unlabelled)."
+      },
+      "view": [
+        0.6,
+        0.35,
+        -0.75
+      ]
+    },
+    {
+      "id": "forecourt",
+      "mesh": "props_forecourt",
+      "name": {
+        "zh": "前庭",
+        "en": "Forecourt"
+      },
+      "desc": {
+        "zh": "环形车道与中央喷泉，两侧行道树。",
+        "en": "A circular drive around a central fountain, lined with trees."
+      },
+      "view": [
+        0.0,
+        0.5,
+        -0.85
+      ]
+    },
+    {
+      "id": "garden",
+      "mesh": "props_garden",
+      "name": {
+        "zh": "后花园绿篱迷宫",
+        "en": "Hedge maze garden"
+      },
+      "desc": {
+        "zh": "几何环形绿篱迷宫，中央凉亭供礼仪训练使用。",
+        "en": "A geometric circular hedge maze around a central pavilion, used for outdoor etiquette lessons."
+      },
+      "view": [
+        0.0,
+        0.6,
+        -0.72
+      ]
+    }
+  ]
 }

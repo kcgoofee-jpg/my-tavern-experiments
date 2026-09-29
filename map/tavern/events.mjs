@@ -73,11 +73,11 @@ const longestIn = (s, keys) => { let b = '', bi = 0; for (const k of keys) { con
 let CAT_KEYS = Object.keys(CATS).filter(k => k !== '其他'), ALIAS_KEYS = Object.keys(ALIAS_CAT);
 export const catOf = s => { s = String(s || '').trim(); if (CATS[s]) return s; if (ALIAS_CAT[s]) return ALIAS_CAT[s];
   const c = longestIn(s, CAT_KEYS); if (c) return c; const a = longestIn(s, ALIAS_KEYS); return a ? ALIAS_CAT[a] : '其他'; };
-// 地点 → 层：先看显式前缀，再按设定地名推断（地名表见 maps.json）
-// 设定对齐（docs/card-digest.md）：「议会」单独不定层（只认「天城议会」，卡没写议会位置、地图推断在中层）；「庄园」单独不定层（只认悬浮庄园 / 伊甸 / 罗斯柴尔德 / 悬浮岛，维克多庄园等卡未写位置）；
+// 地点 → 层：先看显式前缀，再按设定地名匹配（地名表见 maps.json）
+// 设定对齐（docs/card-digest.md）：「议会」单独不定层（只认「天城议会」，卡没写议会位置、地图放在中层）；「庄园」单独不定层（只认悬浮庄园 / 伊甸 / 罗斯柴尔德 / 悬浮岛，维克多庄园等卡未写位置）；
 // 城外威胁（异兽、野兽潮、外围防线）算天城外；「骑士团」不单独定层（总部银冠堡在上中层交界，据点和修女院在中层高区），只认「银冠堡」；
-// 用户决定（2026-09-27）：天城大学、骑士团营区在中层，凯莉的宅邸在上层（位置为仓库推断）。
-// 上层没有教区，「大主教」按辉光大教堂算中层。2026-09-28 用户要求卡里每处建筑都上图：层没写的地点（执政厅、法师塔、诊所……）按地图的仓库推断层认（见 docs/card-buildings.md）。
+// 用户决定（2026-09-27）：天城大学、骑士团营区在中层，凯莉的宅邸在上层（位置为地图自设）。
+// 上层没有教区，「大主教」按辉光大教堂算中层。2026-09-28 用户要求卡里每处建筑都上图：层没写的地点（执政厅、法师塔、诊所……）按地图的自设层认（见 docs/card-buildings.md）。
 // 天城外：光辉联邦、大骑士领、圣都、第三帝国、灵枢秘派、虚灵古派、原域、海外……；「奥伦帝国」不算（国都就是天城）。
 // 将军官邸、以太研究院（仓库自设）2026-09-28 已撤为 DLC，不再认；精英学院是卡里的（上层）
 const RE_UP = /悬浮庄园|伊甸庄园|罗斯柴尔德庄园|悬浮岛|浮岛|伊甸|银冠|气候调节塔|首相府|财团|罗斯柴尔德|R-02|联盟会所|精英学院|凯莉的宅邸|凯莉宅邸|露易丝宅邸|维克多庄园|「Y」的庄园|Y的庄园/;
@@ -127,7 +127,7 @@ const decode = s => s.replace(/&(amp|lt|gt|quot|#39|#x27|nbsp);/g, (m, k) => ({ 
 const norm = s => s.replace(/\s+/g, '').replace(/[·•・.]/g, '·');
 export function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
 
-/** 一楼原文 → 标签列表 [{cat, layer, place, lvl, text, src, code?, time?, scope?, dur?, xy?}]；代码块里的、示范原文、推断不出层的跳过 */
+/** 一楼原文 → 标签列表 [{cat, layer, place, lvl, text, src, code?, time?, scope?, dur?, xy?}]；代码块里的、示范原文、匹配不到层的跳过 */
 export function parseMarks(raw) {
   if (!raw || (raw.indexOf('⌖') < 0 && raw.indexOf('data-tcmap') < 0)) return [];
   const text = decode(String(raw)).replace(/```[\s\S]*?```/g, '').replace(/<code>[\s\S]*?<\/code>/gi, '');

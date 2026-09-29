@@ -355,6 +355,7 @@ def build_board(renders, items_data, title_override, out_path):
         sy = block_bottom + 4
         sx = text_x
         if source:
+            source = {'仓库推断': '地图补充'}.get(source, source)   # 上图标签写「地图补充」，仓库内部词不上板
             draw.text((sx, sy), source, font=small_font, fill=source_color)
             sx += draw.textlength(source, font=small_font) + 18
         draw_status_glyph(draw, (sx, sy), status_eff, small_font, status_color)

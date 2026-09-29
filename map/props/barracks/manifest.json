@@ -1,255 +1,255 @@
 {
- "_说明": "viewer3d.html?model=barracks 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。中层外围一个场景：环城军营带的一段（兵营、阅兵场、车场、甲板边防线）与旁边的军事学院；环城军营带、军事学院两个标记都接到这里（骑士团营区在银冠堡正下方，另做）。更远的兵营排、上层甲板底面、下层与荒野（bg_*）只在成图里。位置与形制为仓库推断。",
- "id": "barracks",
- "title": {
-  "zh": "环城军营带与军事学院",
-  "en": "Ring Barracks & Military Academy"
- },
- "glb": "barracks.glb",
- "glb_low": "barracks_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "props_barracks",
-   "props_academy_main",
-   "props_academy_blocks"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_ground",
-   "props_parade",
-   "props_motorpool",
-   "props_vehicles",
-   "props_edge",
-   "props_academy_sports",
-   "props_lights",
-   "props_trees"
-  ],
-  "building": {
-   "min": [
-    -6.8,
-    -12.3,
-    -409.3
-   ],
-   "max": [
-    242.1,
-    64.3,
-    198.8
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 64,
-  "default": 64
- },
- "camera": {
-  "frame": [
-   "props_barracks",
-   "props_academy_main",
-   "props_academy_blocks"
-  ],
-  "dir": [
-   0.35,
-   0.55,
-   -0.75
-  ],
-  "min": 10,
-  "max": 1200,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "barracks",
-   "mesh": "props_barracks",
-   "name": {
-    "zh": "环城军营带兵营楼",
-    "en": "Ring Barracks Belt"
-   },
-   "desc": {
-    "zh": "天城防卫军（约 3 万人，由执政厅与首相调动）驻扎在中层外围的环城军营带：沿甲板边弧形排开的兵营楼。",
-    "en": "The Defense Force (about 30,000, deployed by the Executive Office and the Prime Minister) is quartered in the ring of barracks on the mid tier's outskirts: blocks curving along the deck edge."
-   },
-   "view": [
-    0.4,
-    0.4,
-    -0.8
-   ]
+  "_说明": "viewer3d.html?model=barracks 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。中层外围一个场景：环城军营带的一段（兵营、阅兵场、车场、甲板边防线）与旁边的军事学院；环城军营带、军事学院两个标记都接到这里（骑士团营区在银冠堡正下方，另做）。更远的兵营排、上层甲板底面、下层与荒野（bg_*）只在成图里。",
+  "id": "barracks",
+  "title": {
+    "zh": "环城军营带与军事学院",
+    "en": "Ring Barracks & Military Academy"
   },
-  {
-   "id": "parade",
-   "mesh": "props_parade",
-   "name": {
-    "zh": "阅兵场与检阅台",
-    "en": "Parade ground"
-   },
-   "desc": {
-    "zh": "阅兵场、检阅台与台阶。",
-    "en": "Parade ground with a reviewing stand and dais."
-   },
-   "view": [
-    0.2,
-    0.6,
-    -0.75
-   ]
+  "glb": "barracks.glb",
+  "glb_low": "barracks_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "motorpool",
-   "mesh": "props_motorpool",
-   "name": {
-    "zh": "车场与维修大厅",
-    "en": "Motor pool"
-   },
-   "desc": {
-    "zh": "车场与车辆维修大厅。",
-    "en": "Motor pool and vehicle maintenance hall."
-   },
-   "view": [
-    0.4,
-    0.4,
-    -0.8
-   ]
+  "groups": {
+    "roof": [],
+    "walls": [
+      "props_barracks",
+      "props_academy_main",
+      "props_academy_blocks"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_ground",
+      "props_parade",
+      "props_motorpool",
+      "props_vehicles",
+      "props_edge",
+      "props_academy_sports",
+      "props_lights",
+      "props_trees"
+    ],
+    "building": {
+      "min": [
+        -6.8,
+        -12.3,
+        -409.3
+      ],
+      "max": [
+        242.1,
+        64.3,
+        198.8
+      ]
+    }
   },
-  {
-   "id": "vehicles",
-   "mesh": "props_vehicles",
-   "name": {
-    "zh": "勤务车辆",
-    "en": "Utility vehicles"
-   },
-   "desc": {
-    "zh": "无武装、无标识的勤务装甲车与悬浮运输艇。",
-    "en": "Unarmed, unmarked armoured utility vehicles and hover transports."
-   },
-   "view": [
-    0.4,
-    0.35,
-    -0.85
-   ]
+  "section": {
+    "min": 0.5,
+    "max": 64,
+    "default": 64
   },
-  {
-   "id": "edge",
-   "mesh": "props_edge",
-   "name": {
-    "zh": "甲板边防线",
-    "en": "Deck-edge line"
-   },
-   "desc": {
-    "zh": "甲板边加固胸墙、棱堡与朝外的探照灯、围栏大门与瞭望塔——防卫军守的是城外异兽的外围防线。",
-    "en": "Fortified deck-edge parapet, bastions with outward searchlights, fence gates and a watch tower: the Defense Force holds the outer line against beasts from beyond the city."
-   },
-   "view": [
-    0.7,
-    0.35,
-    -0.6
-   ]
+  "camera": {
+    "frame": [
+      "props_barracks",
+      "props_academy_main",
+      "props_academy_blocks"
+    ],
+    "dir": [
+      0.35,
+      0.55,
+      -0.75
+    ],
+    "min": 10,
+    "max": 1200,
+    "maxPolar": 1.48
   },
-  {
-   "id": "academy",
-   "mesh": "props_academy_main",
-   "name": {
-    "zh": "军事学院主楼",
-    "en": "Military Academy"
-   },
-   "desc": {
-    "zh": "骑士团与防卫军的人才来源：带塔的学院主楼（卡没写位置，放在军营带旁为仓库推断）。",
-    "en": "The source of talent for the knights and the Defense Force: the main hall with its tower (the card gives no location; placing it by the barracks is a repo inference)."
-   },
-   "view": [
-    0.2,
-    0.4,
-    -0.9
-   ]
-  },
-  {
-   "id": "academy_blocks",
-   "mesh": "props_academy_blocks",
-   "name": {
-    "zh": "学院教学楼与宿舍",
-    "en": "Academy blocks"
-   },
-   "desc": {
-    "zh": "围着中庭的教学楼与宿舍楼。",
-    "en": "Lecture blocks around the quad and dormitory towers."
-   },
-   "view": [
-    0.3,
-    0.6,
-    -0.75
-   ]
-  },
-  {
-   "id": "academy_sports",
-   "mesh": "props_academy_sports",
-   "name": {
-    "zh": "学院体育设施",
-    "en": "Academy sports"
-   },
-   "desc": {
-    "zh": "体育馆、训练馆与运动场。",
-    "en": "Gymnasium, training arena and sports field."
-   },
-   "view": [
-    0.4,
-    0.5,
-    -0.75
-   ]
-  },
-  {
-   "id": "ground",
-   "mesh": "site_ground",
-   "name": {
-    "zh": "中层西郊甲板",
-    "en": "Western outskirts deck"
-   },
-   "desc": {
-    "zh": "中层外围的甲板街面。",
-    "en": "The deck streets of the mid tier's western outskirts."
-   },
-   "view": [
-    0.2,
-    0.75,
-    -0.65
-   ]
-  },
-  {
-   "id": "lights",
-   "mesh": "props_lights",
-   "name": {
-    "zh": "灯",
-    "en": "Lights"
-   },
-   "desc": {
-    "zh": "路灯与泛光灯。",
-    "en": "Street lights and floodlights."
-   },
-   "view": [
-    0.3,
-    0.5,
-    -0.8
-   ]
-  },
-  {
-   "id": "trees",
-   "mesh": "props_trees",
-   "name": {
-    "zh": "行道树",
-    "en": "Trees"
-   },
-   "desc": {
-    "zh": "学院中庭与街边的树。",
-    "en": "Trees in the academy quad and along the streets."
-   },
-   "view": [
-    0.3,
-    0.5,
-    -0.8
-   ]
-  }
- ]
+  "hotspots": [
+    {
+      "id": "barracks",
+      "mesh": "props_barracks",
+      "name": {
+        "zh": "环城军营带兵营楼",
+        "en": "Ring Barracks Belt"
+      },
+      "desc": {
+        "zh": "天城防卫军（约 3 万人，由执政厅与首相调动）驻扎在中层外围的环城军营带：沿甲板边弧形排开的兵营楼。",
+        "en": "The Defense Force (about 30,000, deployed by the Executive Office and the Prime Minister) is quartered in the ring of barracks on the mid tier's outskirts: blocks curving along the deck edge."
+      },
+      "view": [
+        0.4,
+        0.4,
+        -0.8
+      ]
+    },
+    {
+      "id": "parade",
+      "mesh": "props_parade",
+      "name": {
+        "zh": "阅兵场与检阅台",
+        "en": "Parade ground"
+      },
+      "desc": {
+        "zh": "阅兵场、检阅台与台阶。",
+        "en": "Parade ground with a reviewing stand and dais."
+      },
+      "view": [
+        0.2,
+        0.6,
+        -0.75
+      ]
+    },
+    {
+      "id": "motorpool",
+      "mesh": "props_motorpool",
+      "name": {
+        "zh": "车场与维修大厅",
+        "en": "Motor pool"
+      },
+      "desc": {
+        "zh": "车场与车辆维修大厅。",
+        "en": "Motor pool and vehicle maintenance hall."
+      },
+      "view": [
+        0.4,
+        0.4,
+        -0.8
+      ]
+    },
+    {
+      "id": "vehicles",
+      "mesh": "props_vehicles",
+      "name": {
+        "zh": "勤务车辆",
+        "en": "Utility vehicles"
+      },
+      "desc": {
+        "zh": "无武装、无标识的勤务装甲车与悬浮运输艇。",
+        "en": "Unarmed, unmarked armoured utility vehicles and hover transports."
+      },
+      "view": [
+        0.4,
+        0.35,
+        -0.85
+      ]
+    },
+    {
+      "id": "edge",
+      "mesh": "props_edge",
+      "name": {
+        "zh": "甲板边防线",
+        "en": "Deck-edge line"
+      },
+      "desc": {
+        "zh": "甲板边加固胸墙、棱堡与朝外的探照灯、围栏大门与瞭望塔——防卫军守的是城外异兽的外围防线。",
+        "en": "Fortified deck-edge parapet, bastions with outward searchlights, fence gates and a watch tower: the Defense Force holds the outer line against beasts from beyond the city."
+      },
+      "view": [
+        0.7,
+        0.35,
+        -0.6
+      ]
+    },
+    {
+      "id": "academy",
+      "mesh": "props_academy_main",
+      "name": {
+        "zh": "军事学院主楼",
+        "en": "Military Academy"
+      },
+      "desc": {
+        "zh": "骑士团与防卫军的人才来源：带塔的学院主楼。",
+        "en": "The source of talent for the knights and the Defense Force: the main hall with its tower (the card gives no location; placing it by the barracks is a repo inference)."
+      },
+      "view": [
+        0.2,
+        0.4,
+        -0.9
+      ]
+    },
+    {
+      "id": "academy_blocks",
+      "mesh": "props_academy_blocks",
+      "name": {
+        "zh": "学院教学楼与宿舍",
+        "en": "Academy blocks"
+      },
+      "desc": {
+        "zh": "围着中庭的教学楼与宿舍楼。",
+        "en": "Lecture blocks around the quad and dormitory towers."
+      },
+      "view": [
+        0.3,
+        0.6,
+        -0.75
+      ]
+    },
+    {
+      "id": "academy_sports",
+      "mesh": "props_academy_sports",
+      "name": {
+        "zh": "学院体育设施",
+        "en": "Academy sports"
+      },
+      "desc": {
+        "zh": "体育馆、训练馆与运动场。",
+        "en": "Gymnasium, training arena and sports field."
+      },
+      "view": [
+        0.4,
+        0.5,
+        -0.75
+      ]
+    },
+    {
+      "id": "ground",
+      "mesh": "site_ground",
+      "name": {
+        "zh": "中层西郊甲板",
+        "en": "Western outskirts deck"
+      },
+      "desc": {
+        "zh": "中层外围的甲板街面。",
+        "en": "The deck streets of the mid tier's western outskirts."
+      },
+      "view": [
+        0.2,
+        0.75,
+        -0.65
+      ]
+    },
+    {
+      "id": "lights",
+      "mesh": "props_lights",
+      "name": {
+        "zh": "灯",
+        "en": "Lights"
+      },
+      "desc": {
+        "zh": "路灯与泛光灯。",
+        "en": "Street lights and floodlights."
+      },
+      "view": [
+        0.3,
+        0.5,
+        -0.8
+      ]
+    },
+    {
+      "id": "trees",
+      "mesh": "props_trees",
+      "name": {
+        "zh": "行道树",
+        "en": "Trees"
+      },
+      "desc": {
+        "zh": "学院中庭与街边的树。",
+        "en": "Trees in the academy quad and along the streets."
+      },
+      "view": [
+        0.3,
+        0.5,
+        -0.8
+      ]
+    }
+  ]
 }

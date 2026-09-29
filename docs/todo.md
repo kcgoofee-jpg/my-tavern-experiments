@@ -63,6 +63,8 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [ ] 通用化 v1 五条已知限制（`docs/generalize/README.md:123-128`）：世界图 / 庄园剖面 / 天城尺度环 /
   人物名册 / 安保层仍 eden 专用；预算 LRU 只认 `edenMap*`；包的 `strings` 字段未接入；
   `props/viewer3d.html` 语言键退回中文；`viewer.html` 三条 eden 预取。
+- [ ] 气候塔材质细化：塔楼白块、粉长条（看图后定改法）+ 可选「信息按钮」（本会话 2026-09-29 用户反馈；塔在 `blender/tc_estates.py` climate_tower，锚点 `blender/data/tc_islands.json` anchors.climate_tower）。
+- [ ] 设置「版权申明」页与人物页声望在真实酒馆浏览器过一眼（现在只有 stub；挂在上面的 Real ST 测试项下）。
 
 ## 2. Render line
 
@@ -187,8 +189,14 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [?] 测试件（私人公务机、汽水罐小屋）用户已暂停（`ROADMAP.md:62`）。
 - [?] `docs/drafts/` 158 MB 是否迁出主仓 + 是否重写历史回收 63 MB 垃圾 blob（见 §3）。
 - [?] `archive/upper-v18` 的 v18 岛脚本：重做还是摘取（见 §2）。
+- [?] 上层景深（`map/data/upper_depth.json`，原 --haze）要动多大：先看塔入画后的两张 8K（tc_upper_full / tc_upper_city_full）再定改法与重渲范围（本会话 2026-09-29 用户提出，量级未定）。
 
 ## 5. Done, kept as evidence (2026-09-29)
+
+- [x] 上层 9 岛整图重渲（8000×5000，plain + city 双版）+ 五座庄园抠图贴合 + DZI/瓦片重建，气候塔锚点入画（`map/art/tc_upper*_full.png`、`blender/data/tc_islands.json`、`tools/isles_into_upper.py`）。
+- [x] 版权申明设置页（卡信息 / 开源仓库 / 原作署名 / 免责，`map/app/settings.mjs` license 页，探针 4 项过）。
+- [x] 兜底名册空数据收口：名册发送不再被面板隐藏门控（`map/tavern/eden-map.js` sendChars 无条件发），开局前人物页也显示「庄园成员 16」+「开局前 · 卡初始值」横幅（探针 2 项过，有数据场景回归正常）。
+- [x] 世界书面板不再向模型写「推断」口径（`tools/build_worldbook_addon.py` v16，`INFERRED = ''`）。
 
 - [x] 云端/本地对齐：`main` == `preview`，`tools/sync_main.sh` 只允许 fast-forward（`docs/branching.md`）。
 - [x] 语言政策落地：`docs/language-policy.md` + 门控 `tools/check_doc_language.py`（含自测）。
@@ -206,6 +214,11 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [x] 仓库体积：删掉冗余的 `archive/feat-worldbook-auto`（内容已在主线）后 `git gc --prune=now`，
   pack **585.75 → 489.91 MiB（回收 176 MB）**。本机归档 bundle 在 `.cache/attic/archive-branches.bundle`
   （528 MB，gitignore，含重写前血线；内容已在主线，确认不再需要后可删）。
+- [x] 气候塔拉回入画 + 8K 重渲 ✅ 2026-09-29：`blender/data/tc_islands.json` anchors.climate_tower (-8.0, 7.33)（v16 细塔）；`blender/tc_estates.py:1852` routes 导出夹取 [.002,.998]；`tools/eden_anchor_upper.py` 修 eden outline 36→48 点；重渲 `map/art/tc_upper_full.png` 与 `tc_upper_city_full.png`（`--out map/art/tc_upper[_city]`，city 加 `--below city`；render_all.sh --data-only 会覆盖 anchor 修正，渲后必须重跑 anchor）。
+- [x] 全库「推断」口径统一为「自设 / 同处 / 识别」 ✅ 2026-09-29：数据 JSON（maps / eden_estate_rooms / world_markers / schema/events，`仓库推断`→`地图自设`）+ 页面（markers.mjs:73、world*.html、tiancheng.html:37、estate/plan.js+main.js、section.js、chars.mjs、tavern/*、events.mjs、data/world.js）+ i18n ch.src_* + 工具链（build_worldbook_addon.py、landmark.py、annotate_board.py 上板映射）+ worldbook 重建；工具链内部词「仓库推断」仅存于 tools/ 内部对账与 docs/*.checklist.md。
+- [x] 设置新增「版权申明」页 ✅ 2026-09-29：`map/viewer.html`（sgroups 按钮 + `data-page="license"` 区）+ `map/app/settings.mjs`（PAGES、setPage、renderLicense：卡信息自动读 `SillyTavern.getContext().characters[characterId].data`，无线索→转卖风险提示；开源仓库 github.com/kcgoofee-jpg/my-tavern-experiments；原作 Yehehua（类脑社区）授权二创 2026-09-27；免责 + Poly Haven/ambientCG CC0）+ zh/en i18n s.license*/s.lic_*（搜索选择器已含 #licBox）。
+- [x] worldbook 发布物带原作署名 ✅ 2026-09-29：`tools/build_worldbook_addon.py` to_ship 返回加 `'_credit': CREDIT`（repo 的 map/data/worldbook_addon.json 与酒馆导入件一致；消费端只读 entries，多键无害）。
+- [x] 庄园声望修复 ✅ 2026-09-29：`map/custom.mjs:56` key 取 `title || el?.dataset?.name` 并清理旧 .cu-rep 行（此前 title 与 data.name 不一致时声望行不显示）。
 
 ## 6. Where finished and historical todos live
 

@@ -1,165 +1,205 @@
 {
- "_说明": "viewer3d.html?model=rothschild_estate 的清单（标准档 rothschild_estate.glb + 低档 rothschild_estate_low.glb）。坐标 = glTF（Y 朝上，米）。由 blender/landmarks/rothschild_estate/build.py（共用 blender/landmarks/upper_estates.py）+ blender/landmarks/export_glb.py 生成。视觉样例·请柬：悬浮岛 R-02，伊莎贝拉家族的庄园、冬季宴会的举办地。形制（沃德斯登式府邸 + 双立方冬季宴会厅）为仓库推断，详见 docs/card-buildings.md。",
- "id": "zaibatsu_estate",
- "title": {
-  "zh": "罗斯柴尔德庄园",
-  "en": "Rothschild Estate"
- },
- "glb": "rothschild_estate.glb",
- "glb_low": "rothschild_estate_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [
-   "roof",
-   "props_chimneys"
-  ],
-  "walls": [
-   "walls_ext"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_ground",
-   "site_garden",
-   "site_trees",
-   "site_dock",
-   "props_hovercar",
-   "props_railings",
-   "props_magitech",
-   "props_ward",
-   "props_underside"
-  ],
-  "building": {
-   "min": [-202.83, -1.5, -185.33],
-   "max": [135.12, 28.9, 188.03]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 29,
-  "default": 29
- },
- "camera": {
-  "frame": [
-   "walls_ext",
-   "roof"
-  ],
-  "dir": [
-   -0.5,
-   0.4,
-   -0.75
-  ],
-  "min": 5,
-  "max": 260,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "mansion",
-   "mesh": "walls_ext",
-   "name": {
-    "zh": "主府邸",
-    "en": "Main house"
-   },
-   "desc": {
-    "zh": "蜂蜜色石砌三层主楼，两端各一座圆塔，陡石板顶带一排老虎窗；中央一座凸出的楼梯塔楼配柱廊门廊——沃德斯登式的法国文艺复兴外观。",
-    "en": "A honey-stone, three-storey house with a round tower at each end and a row of dormers along the steep slate roof; a projecting stair tower with a columned porch stands at the centre, in a Waddesdon-style French-Renaissance manner."
-   },
-   "view": [-0.35, 0.35, -0.85]
+  "_说明": "viewer3d.html?model=rothschild_estate 的清单（标准档 rothschild_estate.glb + 低档 rothschild_estate_low.glb）。坐标 = glTF（Y 朝上，米）。由 blender/landmarks/rothschild_estate/build.py（共用 blender/landmarks/upper_estates.py）+ blender/landmarks/export_glb.py 生成。视觉样例·请柬：悬浮岛 R-02，伊莎贝拉家族的庄园、冬季宴会的举办地。，详见 docs/card-buildings.md。",
+  "id": "zaibatsu_estate",
+  "title": {
+    "zh": "罗斯柴尔德庄园",
+    "en": "Rothschild Estate"
   },
-  {
-   "id": "roof",
-   "mesh": "roof",
-   "name": {
-    "zh": "屋顶与烟囱",
-    "en": "Roofs & chimneys"
-   },
-   "desc": {
-    "zh": "主楼与宴会厅各自的陡石板顶与铅皮四坡顶，屋脊立着一排石砌烟囱。",
-    "en": "Steep slate roofs over the main house and lead hips over the ballroom, with a row of stone chimney stacks along the ridge."
-   },
-   "view": [-0.2, 0.6, -0.7]
+  "glb": "rothschild_estate.glb",
+  "glb_low": "rothschild_estate_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "ballroom",
-   "mesh": "walls_ext",
-   "name": {
-    "zh": "冬季宴会厅",
-    "en": "Winter ballroom"
-   },
-   "desc": {
-    "zh": "双立方比例的宴会厅，高窗、铅皮四坡顶、屋脊三道采光窗，门廊车道在西侧，玻璃连廊接回主楼——卡里冬季宴会的举办地。",
-    "en": "A double-cube ballroom with tall windows, a lead hipped roof and three ridge skylights, a porte-cochère on the west side and a glazed gallery back to the house — where the card's winter ball is held."
-   },
-   "view": [-0.75, 0.3, -0.55]
+  "groups": {
+    "roof": [
+      "roof",
+      "props_chimneys"
+    ],
+    "walls": [
+      "walls_ext"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_ground",
+      "site_garden",
+      "site_trees",
+      "site_dock",
+      "props_hovercar",
+      "props_railings",
+      "props_magitech",
+      "props_ward",
+      "props_underside"
+    ],
+    "building": {
+      "min": [
+        -202.83,
+        -1.5,
+        -185.33
+      ],
+      "max": [
+        135.12,
+        28.9,
+        188.03
+      ]
+    }
   },
-  {
-   "id": "parterre",
-   "mesh": "site_garden",
-   "name": {
-    "zh": "冬园台地",
-    "en": "Winter garden terrace"
-   },
-   "desc": {
-    "zh": "主楼北侧一座石栏台地，四块黄杨绿篱花坛种着深红叶的冬季花床，中央一方长水池。",
-    "en": "A balustraded terrace north of the house with four box-hedged parterres of deep-red winter bedding and a long rectangular pool at the centre."
-   },
-   "view": [-0.1, 0.6, -0.75]
+  "section": {
+    "min": 0.5,
+    "max": 29,
+    "default": 29
   },
-  {
-   "id": "forecourt",
-   "mesh": "site_garden",
-   "name": {
-    "zh": "前庭回车圆",
-    "en": "Forecourt & carriage sweep"
-   },
-   "desc": {
-    "zh": "主楼南侧一圈砾石回车圆，中央一座石喷泉，车道分别通向宴会厅门廊与停靠平台。",
-    "en": "A gravel carriage sweep south of the house with a stone fountain at its centre, with drives leading to the ballroom porch and the docking platform."
-   },
-   "view": [-0.2, 0.55, 0.8]
+  "camera": {
+    "frame": [
+      "walls_ext",
+      "roof"
+    ],
+    "dir": [
+      -0.5,
+      0.4,
+      -0.75
+    ],
+    "min": 5,
+    "max": 260,
+    "maxPolar": 1.48
   },
-  {
-   "id": "grove",
-   "mesh": "site_trees",
-   "name": {
-    "zh": "东草坪与林带",
-    "en": "East lawn & tree belt"
-   },
-   "desc": {
-    "zh": "府邸东侧一片开阔草坪，外圈一带橡树与雪松林。",
-    "en": "An open lawn east of the house, screened by a belt of oaks and cedars."
-   },
-   "view": [0.6, 0.45, 0.6]
-  },
-  {
-   "id": "dock",
-   "mesh": "site_dock",
-   "name": {
-    "zh": "悬浮停靠平台",
-    "en": "Hover docking platform"
-   },
-   "desc": {
-    "zh": "岛缘一座钢结构停靠平台，只供私人悬浮载具起降；卡说岛间只有私人悬浮载具，不画飞艇。",
-    "en": "A steel docking platform at the island's edge for private hover vehicles only; the card mentions only private hover transport between isles, so no airships are shown."
-   },
-   "view": [-0.75, 0.3, -0.55]
-  },
-  {
-   "id": "magitech",
-   "mesh": "props_magitech",
-   "name": {
-    "zh": "魔导科技点缀",
-    "en": "Magitech accents"
-   },
-   "desc": {
-    "zh": "岛缘符文环、悬浮玻璃亭与全息园灯——2088 魔导科技层的统一点缀，无文字、无徽记。",
-    "en": "A rune ring at the island's edge, floating glass pavilions and holographic garden lamps — the shared 2088 magitech dressing, with no text or crests."
-   },
-   "view": [0.5, 0.45, 0.65]
-  }
- ]
+  "hotspots": [
+    {
+      "id": "mansion",
+      "mesh": "walls_ext",
+      "name": {
+        "zh": "主府邸",
+        "en": "Main house"
+      },
+      "desc": {
+        "zh": "蜂蜜色石砌三层主楼，两端各一座圆塔，陡石板顶带一排老虎窗；中央一座凸出的楼梯塔楼配柱廊门廊——沃德斯登式的法国文艺复兴外观。",
+        "en": "A honey-stone, three-storey house with a round tower at each end and a row of dormers along the steep slate roof; a projecting stair tower with a columned porch stands at the centre, in a Waddesdon-style French-Renaissance manner."
+      },
+      "view": [
+        -0.35,
+        0.35,
+        -0.85
+      ]
+    },
+    {
+      "id": "roof",
+      "mesh": "roof",
+      "name": {
+        "zh": "屋顶与烟囱",
+        "en": "Roofs & chimneys"
+      },
+      "desc": {
+        "zh": "主楼与宴会厅各自的陡石板顶与铅皮四坡顶，屋脊立着一排石砌烟囱。",
+        "en": "Steep slate roofs over the main house and lead hips over the ballroom, with a row of stone chimney stacks along the ridge."
+      },
+      "view": [
+        -0.2,
+        0.6,
+        -0.7
+      ]
+    },
+    {
+      "id": "ballroom",
+      "mesh": "walls_ext",
+      "name": {
+        "zh": "冬季宴会厅",
+        "en": "Winter ballroom"
+      },
+      "desc": {
+        "zh": "双立方比例的宴会厅，高窗、铅皮四坡顶、屋脊三道采光窗，门廊车道在西侧，玻璃连廊接回主楼——卡里冬季宴会的举办地。",
+        "en": "A double-cube ballroom with tall windows, a lead hipped roof and three ridge skylights, a porte-cochère on the west side and a glazed gallery back to the house — where the card's winter ball is held."
+      },
+      "view": [
+        -0.75,
+        0.3,
+        -0.55
+      ]
+    },
+    {
+      "id": "parterre",
+      "mesh": "site_garden",
+      "name": {
+        "zh": "冬园台地",
+        "en": "Winter garden terrace"
+      },
+      "desc": {
+        "zh": "主楼北侧一座石栏台地，四块黄杨绿篱花坛种着深红叶的冬季花床，中央一方长水池。",
+        "en": "A balustraded terrace north of the house with four box-hedged parterres of deep-red winter bedding and a long rectangular pool at the centre."
+      },
+      "view": [
+        -0.1,
+        0.6,
+        -0.75
+      ]
+    },
+    {
+      "id": "forecourt",
+      "mesh": "site_garden",
+      "name": {
+        "zh": "前庭回车圆",
+        "en": "Forecourt & carriage sweep"
+      },
+      "desc": {
+        "zh": "主楼南侧一圈砾石回车圆，中央一座石喷泉，车道分别通向宴会厅门廊与停靠平台。",
+        "en": "A gravel carriage sweep south of the house with a stone fountain at its centre, with drives leading to the ballroom porch and the docking platform."
+      },
+      "view": [
+        -0.2,
+        0.55,
+        0.8
+      ]
+    },
+    {
+      "id": "grove",
+      "mesh": "site_trees",
+      "name": {
+        "zh": "东草坪与林带",
+        "en": "East lawn & tree belt"
+      },
+      "desc": {
+        "zh": "府邸东侧一片开阔草坪，外圈一带橡树与雪松林。",
+        "en": "An open lawn east of the house, screened by a belt of oaks and cedars."
+      },
+      "view": [
+        0.6,
+        0.45,
+        0.6
+      ]
+    },
+    {
+      "id": "dock",
+      "mesh": "site_dock",
+      "name": {
+        "zh": "悬浮停靠平台",
+        "en": "Hover docking platform"
+      },
+      "desc": {
+        "zh": "岛缘一座钢结构停靠平台，只供私人悬浮载具起降；卡说岛间只有私人悬浮载具，不画飞艇。",
+        "en": "A steel docking platform at the island's edge for private hover vehicles only; the card mentions only private hover transport between isles, so no airships are shown."
+      },
+      "view": [
+        -0.75,
+        0.3,
+        -0.55
+      ]
+    },
+    {
+      "id": "magitech",
+      "mesh": "props_magitech",
+      "name": {
+        "zh": "魔导科技点缀",
+        "en": "Magitech accents"
+      },
+      "desc": {
+        "zh": "岛缘符文环、悬浮玻璃亭与全息园灯——2088 魔导科技层的统一点缀，无文字、无徽记。",
+        "en": "A rune ring at the island's edge, floating glass pavilions and holographic garden lamps — the shared 2088 magitech dressing, with no text or crests."
+      },
+      "view": [
+        0.5,
+        0.45,
+        0.65
+      ]
+    }
+  ]
 }

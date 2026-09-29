@@ -1760,8 +1760,8 @@ def build_silver_crown(isle):
 class RouteGrid:
     """所有岛的「离岸距离」栅格（沿径向，单位 = 100 m）；A* 在外扩 buf 的障碍外寻路，拉直后拐点都在岛外。"""
     def __init__(self, isles, cell=.08):
-        self.x0, self.y0, self.cell = -W * .55, -H * .55, cell
-        self.nx, self.ny = int(W * 1.1 / cell) + 1, int(H * 1.1 / cell) + 1
+        self.x0, self.y0, self.cell = -W * .625, -H * .625, cell
+        self.nx, self.ny = int(W * 1.25 / cell) + 1, int(H * 1.25 / cell) + 1
         GX, GY = np.meshgrid(self.x0 + np.arange(self.nx) * cell, self.y0 + np.arange(self.ny) * cell)
         d = np.full(GX.shape, 99.0)
         for e in isles:
@@ -1839,7 +1839,7 @@ def routes(isles, norm):
     if sc:
         ring = [(sc.x + math.cos(t) * 2.5, sc.y + math.sin(t) * 1.8) for t in np.linspace(0, TAU, 33)]
         out.append({'kind': 'patrol', 'from': 'silver_crown', 'to': 'silver_crown', 'pts': ring})
-        loop = [e for e in (sc, by.get('isle29'), by.get('isle6'), by.get('isle30'), eden, by.get('isle9')) if e]
+        loop = [e for e in (sc, by.get('isle4'), by.get('isle6'), by.get('isle30'), eden, by.get('isle9')) if e]
         cx, cy = sum(e.x for e in loop) / len(loop), sum(e.y for e in loop) / len(loop)
         wps = []
         for e in loop:
@@ -1849,5 +1849,5 @@ def routes(isles, norm):
         for a_, b_ in zip(wps, wps[1:]): pts += G.path(a_, b_)[:-1]
         pts.append(wps[-1])
         out.append({'kind': 'patrol_city', 'from': 'silver_crown', 'to': 'silver_crown', 'pts': pts})
-    for r in out: r['world'] = [(float(x), float(y)) for x, y in r['pts']]; r['pts'] = [[round(a, 4), round(b, 4)] for a, b in (norm((x, y, 3)) for x, y in r['pts'])]
+    for r in out: r['world'] = [(float(x), float(y)) for x, y in r['pts']]; r['pts'] = [[min(max(round(a, 4), .002), .998), min(max(round(b, 4), .002), .998)] for a, b in (norm((x, y, 3)) for x, y in r['pts'])]  # 夹进取景框，巡航线贴边不再越界
     return out

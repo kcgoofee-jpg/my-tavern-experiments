@@ -127,7 +127,7 @@ const HC = V((HOUSE_BOX.x0 + HOUSE_BOX.x1) / 2, (HOUSE_BOX.y0 + HOUSE_BOX.y1) / 
 
 /* ---------------- UI 文案 ---------------- */
 const TXT = {
-  zh: { ext: '外观', xray: '内透', sect: '剖切', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '浮岛庄园 · 主楼地上三层 + 地下两层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', estate: '室外', loading: '加载中…', loadingP: '加载模型 {p}', gallery: '衣帽间图集', restricted: '按原卡 · 不描述', card: '卡设定', inferred: '仓库推断（卡未写）', houseLoading: '载入室内…' },
+  zh: { ext: '外观', xray: '内透', sect: '剖切', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '浮岛庄园 · 主楼地上三层 + 地下两层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', estate: '室外', loading: '加载中…', loadingP: '加载模型 {p}', gallery: '衣帽间图集', restricted: '按原卡 · 不描述', card: '卡设定', inferred: '地图自设（卡未写）', houseLoading: '载入室内…' },
   en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Floating-isle estate · house: 3 floors + 2 basements', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', size: 'Area', use: 'Notes', access: 'Access', estate: 'Grounds', loading: 'Loading…', loadingP: 'Loading model {p}', gallery: 'Wardrobe photos', restricted: 'Per the card · not described', card: 'From the card', inferred: 'Repository inference (not in card)', houseLoading: 'Loading interior…' },
 };
 const tx = (k, v = {}) => (TXT[LANG][k] || TXT.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
@@ -388,7 +388,7 @@ function buildNav() {
   C3.setText({ expand: zh ? '展开' : 'Expand', collapse: zh ? '收起' : 'Collapse', region: zh ? '房间、图例与关于' : 'Room, legend and about' });
   C3.sheet.label('room', zh ? '房间' : 'Room', zh ? '房' : 'R'); C3.sheet.label('legend', zh ? '图例' : 'Legend', zh ? '图' : 'L'); C3.sheet.label('about', zh ? '关于' : 'About', zh ? '关' : 'A');
   $('#cardEmpty').textContent = zh ? '点模型上的房间或区域，这里显示说明' : 'Tap a room or area on the model to see it here';
-  const KL = zh ? { card: '卡设定房间', owner: '主人区域', support: '服务 / 后勤', circ: '走廊 / 楼梯', restricted: '卡设定房间（不描述）', inferred: '仓库推断' } : { card: 'Rooms from the card', owner: "Owner's areas", support: 'Service', circ: 'Corridors / stairs', restricted: 'Not described (per card)', inferred: 'Inferred' };
+  const KL = zh ? { card: '卡设定房间', owner: '主人区域', support: '服务 / 后勤', circ: '走廊 / 楼梯', restricted: '卡设定房间（不描述）', inferred: '地图自设' } : { card: 'Rooms from the card', owner: "Owner's areas", support: 'Service', circ: 'Corridors / stairs', restricted: 'Not described (per card)', inferred: 'Self-set (map)' };
   legendEl.innerHTML = '<ul>' + Object.entries(KL).map(([k, v]) => `<li><i style="background:${KIND_COL[k]}"></i>${v}</li>`).join('') + '</ul>';
   aboutEl.innerHTML = `<h2>${tx('title')}</h2><div class="motto">${tx('motto')}</div><p>${tx('sub')}</p><p>${tx('hint')}</p>`;
   C3.setTitle(tx('title'));

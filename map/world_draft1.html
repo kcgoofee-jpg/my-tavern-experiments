@@ -26,7 +26,7 @@
 <div class="wrap">
   <canvas id="land" width="1600" height="1000"></canvas>
   <svg class="overlay" id="ov" viewBox="0 0 2060 1000"></svg>
-  <div class="draft"><b>草稿 1 · 线稿级</b>　示意图，无比例　|　橙色字 = 推断（设定未给）　|　悬停可看出处</div>
+  <div class="draft"><b>草稿 1 · 线稿级</b>　示意图，无比例　|　橙色字 = 自设（设定未给）　|　悬停可看出处</div>
 </div>
 <script type="module">
 import * as D from './data/world.js';
@@ -92,7 +92,7 @@ for (let gy = 1; gy < GH; gy++) for (let gx = 1; gx < GW; gx++) {
 const NS = 'http://www.w3.org/2000/svg', ov = document.getElementById('ov');
 function el(tag, attrs, parent = ov, text) { const e = document.createElementNS(NS, tag);
   for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; parent.appendChild(e); return e; }
-function tip(e, item) { el('title', {}, e, `${item.tag === 'inf' ? '【推断】' : item.tag === 'warn' ? '【设定矛盾】' : '【设定】'}${item.src}`); }
+function tip(e, item) { el('title', {}, e, `${item.tag === 'inf' ? '【自设】' : item.tag === 'warn' ? '【设定矛盾】' : '【设定】'}${item.src}`); }
 const G = n => el('g', { id: n });
 const gTube = G('tubes'), gRoute = G('routes'), gDots = G('dots'), gMark = G('marks'), gLabel = G('labels'), gLegend = G('legend'), gSec = G('section');
 
@@ -118,7 +118,7 @@ D.SEEDS.forEach((s, k) => {
 { const c = centroid(s => s.kind === 'overseas'); const g = el('g', {}, gLabel);
   el('text', { x: c[0], y: c[1] - 10, 'text-anchor': 'middle', class: 'cap' }, g, '海外诸地');
   el('text', { x: c[0], y: c[1] + 6, 'text-anchor': 'middle', class: 'cap-sub' }, g, '稀有矿物 · 异域人员输出地');
-  el('title', {}, g, '【设定】货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）；陆块形状与位置为推断'); }
+  el('title', {}, g, '【设定】货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）'); }
 
 // 旷野高地：取奥伦本土+行省中最高的格子
 { const hl = D.PLACES.find(p => p.autoHighest); let bi = -1, bh = -9;
@@ -205,10 +205,10 @@ for (const p of D.PLACES) { const g = el('g', {}, gMark); tip(g, p);
     else if (it.kind === 'fort') el('rect', { x: x - 16, y: y - 8, width: 32, height: 12, fill: '#c0c6cc', stroke: '#555' }, gi);
     else el('circle', { cx: x, cy: y, r: 3.5, fill: col }, gi);
     el('text', { x: x + (it.x > 0.6 ? -8 : 8), y: y - 7, 'text-anchor': it.x > 0.6 ? 'end' : 'start', 'font-size': 11, 'font-weight': it.kind === 'eden' ? 700 : 400, fill: col }, gi, it.name); }
-  // 气候调节塔（推断）
+  // 气候调节塔（自设）
   const tx = px + pw * 0.08, tw = el('g', {}, g); tip(tw, D.SECTION.towers);
   el('rect', { x: tx - 3, y: Y(900), width: 6, height: Y(0) - Y(900), fill: '#6fb7c9', opacity: .8 }, tw);
-  el('text', { x: tx + 6, y: Y(880), 'font-size': 10, fill: '#e08a00' }, tw, '以太气候调节塔（推断）');
+  el('text', { x: tx + 6, y: Y(880), 'font-size': 10, fill: '#e08a00' }, tw, '以太气候调节塔（自设）');
 }
 </script>
 </body>

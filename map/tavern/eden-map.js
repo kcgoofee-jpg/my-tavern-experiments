@@ -20,7 +20,7 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
   import(SELF + 'core/protocol.mjs').then(m => { PRm = m; }).catch(() => {});
   let FOGm = null, explored = {}; import(SELF + 'core/depth.mjs').then(m => { FOGm = m; explored = m.norm(explored); }).catch(() => {});   // 迷雾探索（eden_map.探索）
   let SRCm = null; import(SELF + 'tavern/sources.mjs').then(m => { SRCm = m; }).catch(() => {});   // 数据源注册表（arch-v2 §6 第 8 步）
-  // 线路 / 版本推断：host-routes.mjs
+  // 线路 / 版本识别：host-routes.mjs
   const { PKG, REPO, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, LINE_TTL, LINE_AT, race, measure } = createRoutes({ SELF, PACK_IN });
   let line = null; try { line = (LS || localStorage).getItem(LINE_KEY); } catch (e) {}
   if (!LINES.some(l => l.key === line)) line = null;
@@ -281,7 +281,7 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
   }
   // ---------------- v0.9.6 版本与检查更新 ----------------
   // 版本信息：预览 / 正式脚本在 import 前写 window.__edenMapScript = { version, code, channel: tag | follow | ref, ref, sha }（tools/build_preview_script.py 烘进去）；
-  // 没有（旧脚本、本地）时按脚本地址推断，版本号与构建号取当前线路的 data/build.json。
+  // 没有（旧脚本、本地）时按脚本地址判定，版本号与构建号取当前线路的 data/build.json。
   const SCRIPT = (() => { try { return window.__edenMapScript || window.parent.__edenMapScript || {}; } catch (e) { return {}; } })();
   const refOf = () => (SELF.match(/@([^/]+)\/map\/$/) || [])[1] || '';
   const channel = () => SCRIPT.channel || (VER ? 'tag' : swappable ? 'ref' : 'local');
@@ -465,7 +465,7 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
       chars = CHM.collectChars(msgs, floorNow, mc, known, presentFloor);
       if (MV) { roster = MV.rosters(st, { present: varMap.present, members: varMap.members, targets: varMap.targets, stageField: varMap.stageField, gradeField: varMap.gradeField, coreField: varMap.coreField, codeField: varMap.codeField, socialField: varMap.socialField, heightField: varMap.heightField, weightField: varMap.weightField, knownField: varMap.knownField, accessoryField: varMap.accessoryField, tierField: varMap.tierField }); rep = MV.reputation(st, varMap.reputation); stageOrderFor(roster); portraitsFor(); }
       const sig = floorNow + '|' + chars.map(c => c.name + '@' + c.place + '#' + c.floor).join() + '|' + JSON.stringify(roster) + Object.keys(portraits).length + rep + (stageOrder || []).join();
-      if (sig !== charSig) { charSig = sig; if (!panel.hidden && alive) sendChars(); emit('characters', { items: chars.map(c => ({ ...c })), floor: floorNow }); } }
+      if (sig !== charSig) { charSig = sig; if (alive) sendChars(); emit('characters', { items: chars.map(c => ({ ...c })), floor: floorNow }); } }   // 名册无条件发：面板关着时查看器也要靠它决定人物栏显隐（兜底名册 2026-09-29）
     const fresh = events.filter(e => e.last > seen && e.tier !== 'fade').length;
     badge.hidden = !fresh; badge.textContent = fresh > 9 ? '9+' : fresh;
     if (fresh) tipOnce();

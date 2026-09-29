@@ -57,7 +57,7 @@
     "marker": { "type": "object", "required": ["name", "tag", "src", "alias"], "additionalProperties": false, "patternProperties": { "^_": {} },
       "properties": {
         "name": { "$ref": "#/$defs/str" }, "name_en": { "type": "string" }, "sub": { "type": "string" }, "sub_en": { "type": "string" },
-        "tag": { "enum": ["set", "inf"], "description": "set = 卡里写明；inf = 仓库推断" },
+        "tag": { "enum": ["set", "inf"], "description": "set = 卡里写明" },
         "cls": { "enum": ["capital"] },
         "src": { "$ref": "#/$defs/str", "description": "出处" }, "sub_src": { "type": "string" }, "layer_src": { "type": "string" },
         "alias": { "$ref": "#/$defs/strListNE" },

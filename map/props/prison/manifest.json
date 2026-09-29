@@ -1,201 +1,201 @@
 {
- "_说明": "viewer3d.html?model=prison 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。卡里只顺带提到「监狱」（没写位置）；地图放在下层（仓库推断）。只画中立的建筑外观（入口楼、行政楼、封闭楼体、围墙、瞭望亭、环路），不画内部与人员；周边棚户、支撑柱、中层底面（bg_*）只在成图里。",
- "id": "prison",
- "title": {
-  "zh": "监狱",
-  "en": "Prison"
- },
- "glb": "prison.glb",
- "glb_low": "prison_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "walls_ext",
-   "props_blocks",
-   "props_wall"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_ground",
-   "props_yard",
-   "props_vehicles",
-   "props_lights",
-   "props_towers"
-  ],
-  "building": {
-   "min": [
-    -100.5,
-    -0.4,
-    -80.5
-   ],
-   "max": [
-    100.5,
-    25.0,
-    86.6
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 25,
-  "default": 25
- },
- "camera": {
-  "frame": [
-   "walls_ext",
-   "props_blocks",
-   "props_wall"
-  ],
-  "dir": [
-   0.35,
-   0.55,
-   -0.75
-  ],
-  "min": 5,
-  "max": 500,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "entrance",
-   "mesh": "walls_ext",
-   "name": {
-    "zh": "入口楼与行政楼",
-    "en": "Entrance & administration"
-   },
-   "desc": {
-    "zh": "机构的访客接待与办公建筑：清水混凝土入口楼与四层行政楼。",
-    "en": "The institution's visitor reception and offices: a board-formed concrete entrance building and a four-storey admin block."
-   },
-   "view": [
-    0.2,
-    0.3,
-    -0.95
-   ]
+  "_说明": "viewer3d.html?model=prison 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。卡里只顺带提到「监狱」（没写位置）；地图放在下层。只画中立的建筑外观（入口楼、行政楼、封闭楼体、围墙、瞭望亭、环路），不画内部与人员；周边棚户、支撑柱、中层底面（bg_*）只在成图里。",
+  "id": "prison",
+  "title": {
+    "zh": "监狱",
+    "en": "Prison"
   },
-  {
-   "id": "blocks",
-   "mesh": "props_blocks",
-   "name": {
-    "zh": "主楼群",
-    "en": "Main blocks"
-   },
-   "desc": {
-    "zh": "封闭的长条混凝土楼体，只有窄竖窗。",
-    "en": "Long, closed concrete buildings with only narrow vertical slots."
-   },
-   "view": [
-    0.4,
-    0.5,
-    -0.75
-   ]
+  "glb": "prison.glb",
+  "glb_low": "prison_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "wall",
-   "mesh": "props_wall",
-   "name": {
-    "zh": "外围墙",
-    "en": "Perimeter wall"
-   },
-   "desc": {
-    "zh": "高大的素面混凝土围墙与封闭的后勤车门。",
-    "en": "A tall plain concrete enclosure and a closed service gate."
-   },
-   "view": [
-    0.3,
-    0.35,
-    -0.9
-   ]
+  "groups": {
+    "roof": [],
+    "walls": [
+      "walls_ext",
+      "props_blocks",
+      "props_wall"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_ground",
+      "props_yard",
+      "props_vehicles",
+      "props_lights",
+      "props_towers"
+    ],
+    "building": {
+      "min": [
+        -100.5,
+        -0.4,
+        -80.5
+      ],
+      "max": [
+        100.5,
+        25.0,
+        86.6
+      ]
+    }
   },
-  {
-   "id": "towers",
-   "mesh": "props_towers",
-   "name": {
-    "zh": "瞭望亭",
-    "en": "Lookout posts"
-   },
-   "desc": {
-    "zh": "墙角带灯的观察岗亭。",
-    "en": "Lit observation cabins at the wall corners."
-   },
-   "view": [
-    0.4,
-    0.3,
-    -0.85
-   ]
+  "section": {
+    "min": 0.5,
+    "max": 25,
+    "default": 25
   },
-  {
-   "id": "yard",
-   "mesh": "props_yard",
-   "name": {
-    "zh": "前庭与院内设施",
-    "en": "Forecourt & grounds"
-   },
-   "desc": {
-    "zh": "访客前庭（长椅与候车亭）、温室工坊、运动场、后勤场院。",
-    "en": "Visitor plaza with benches and a shelter, greenhouse workshop, sports field and service yard."
-   },
-   "view": [
-    0.3,
-    0.6,
-    -0.75
-   ]
+  "camera": {
+    "frame": [
+      "walls_ext",
+      "props_blocks",
+      "props_wall"
+    ],
+    "dir": [
+      0.35,
+      0.55,
+      -0.75
+    ],
+    "min": 5,
+    "max": 500,
+    "maxPolar": 1.48
   },
-  {
-   "id": "vehicles",
-   "mesh": "props_vehicles",
-   "name": {
-    "zh": "后勤车辆",
-    "en": "Service vehicles"
-   },
-   "desc": {
-    "zh": "送货厢式车。",
-    "en": "Delivery vans."
-   },
-   "view": [
-    0.4,
-    0.35,
-    -0.85
-   ]
-  },
-  {
-   "id": "lights",
-   "mesh": "props_lights",
-   "name": {
-    "zh": "照明",
-    "en": "Lighting"
-   },
-   "desc": {
-    "zh": "投光灯杆与环路路灯。",
-    "en": "Floodlight masts and ring-road lamps."
-   },
-   "view": [
-    0.3,
-    0.5,
-    -0.8
-   ]
-  },
-  {
-   "id": "ground",
-   "mesh": "site_ground",
-   "name": {
-    "zh": "环路与场地",
-    "en": "Ring road & grounds"
-   },
-   "desc": {
-    "zh": "围绕院墙的照明环路。",
-    "en": "A lit road circling the site."
-   },
-   "view": [
-    0.2,
-    0.75,
-    -0.65
-   ]
-  }
- ]
+  "hotspots": [
+    {
+      "id": "entrance",
+      "mesh": "walls_ext",
+      "name": {
+        "zh": "入口楼与行政楼",
+        "en": "Entrance & administration"
+      },
+      "desc": {
+        "zh": "机构的访客接待与办公建筑：清水混凝土入口楼与四层行政楼。",
+        "en": "The institution's visitor reception and offices: a board-formed concrete entrance building and a four-storey admin block."
+      },
+      "view": [
+        0.2,
+        0.3,
+        -0.95
+      ]
+    },
+    {
+      "id": "blocks",
+      "mesh": "props_blocks",
+      "name": {
+        "zh": "主楼群",
+        "en": "Main blocks"
+      },
+      "desc": {
+        "zh": "封闭的长条混凝土楼体，只有窄竖窗。",
+        "en": "Long, closed concrete buildings with only narrow vertical slots."
+      },
+      "view": [
+        0.4,
+        0.5,
+        -0.75
+      ]
+    },
+    {
+      "id": "wall",
+      "mesh": "props_wall",
+      "name": {
+        "zh": "外围墙",
+        "en": "Perimeter wall"
+      },
+      "desc": {
+        "zh": "高大的素面混凝土围墙与封闭的后勤车门。",
+        "en": "A tall plain concrete enclosure and a closed service gate."
+      },
+      "view": [
+        0.3,
+        0.35,
+        -0.9
+      ]
+    },
+    {
+      "id": "towers",
+      "mesh": "props_towers",
+      "name": {
+        "zh": "瞭望亭",
+        "en": "Lookout posts"
+      },
+      "desc": {
+        "zh": "墙角带灯的观察岗亭。",
+        "en": "Lit observation cabins at the wall corners."
+      },
+      "view": [
+        0.4,
+        0.3,
+        -0.85
+      ]
+    },
+    {
+      "id": "yard",
+      "mesh": "props_yard",
+      "name": {
+        "zh": "前庭与院内设施",
+        "en": "Forecourt & grounds"
+      },
+      "desc": {
+        "zh": "访客前庭（长椅与候车亭）、温室工坊、运动场、后勤场院。",
+        "en": "Visitor plaza with benches and a shelter, greenhouse workshop, sports field and service yard."
+      },
+      "view": [
+        0.3,
+        0.6,
+        -0.75
+      ]
+    },
+    {
+      "id": "vehicles",
+      "mesh": "props_vehicles",
+      "name": {
+        "zh": "后勤车辆",
+        "en": "Service vehicles"
+      },
+      "desc": {
+        "zh": "送货厢式车。",
+        "en": "Delivery vans."
+      },
+      "view": [
+        0.4,
+        0.35,
+        -0.85
+      ]
+    },
+    {
+      "id": "lights",
+      "mesh": "props_lights",
+      "name": {
+        "zh": "照明",
+        "en": "Lighting"
+      },
+      "desc": {
+        "zh": "投光灯杆与环路路灯。",
+        "en": "Floodlight masts and ring-road lamps."
+      },
+      "view": [
+        0.3,
+        0.5,
+        -0.8
+      ]
+    },
+    {
+      "id": "ground",
+      "mesh": "site_ground",
+      "name": {
+        "zh": "环路与场地",
+        "en": "Ring road & grounds"
+      },
+      "desc": {
+        "zh": "围绕院墙的照明环路。",
+        "en": "A lit road circling the site."
+      },
+      "view": [
+        0.2,
+        0.75,
+        -0.65
+      ]
+    }
+  ]
 }

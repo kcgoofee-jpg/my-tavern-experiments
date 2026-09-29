@@ -1,294 +1,294 @@
 {
- "_说明": "viewer3d.html?model=old_apartment 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。由 blender/landmarks/old_apartment/build.py + blender/landmarks/export_glb.py 生成；周边高楼、悬浮轨道、上层平台底面（bg_*）只在成图里。开局六的地点；具体位置为仓库推断。",
- "id": "old_apartment",
- "title": {
-  "zh": "旧公寓楼",
-  "en": "Old Apartment Block"
- },
- "glb": "old_apartment.glb",
- "glb_low": "old_apartment_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [
-   "roof"
-  ],
-  "walls": [
-   "walls_ext",
-   "windows",
-   "props_balconies"
-  ],
-  "interior": [
-   "props_room"
-  ],
-  "floors": [
-   {
-    "id": "floor_0",
-    "name": {
-     "zh": "街面",
-     "en": "Street level"
+  "_说明": "viewer3d.html?model=old_apartment 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。由 blender/landmarks/old_apartment/build.py + blender/landmarks/export_glb.py 生成；周边高楼、悬浮轨道、上层平台底面（bg_*）只在成图里。开局六的地点。",
+  "id": "old_apartment",
+  "title": {
+    "zh": "旧公寓楼",
+    "en": "Old Apartment Block"
+  },
+  "glb": "old_apartment.glb",
+  "glb_low": "old_apartment_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [
+      "roof"
+    ],
+    "walls": [
+      "walls_ext",
+      "windows",
+      "props_balconies"
+    ],
+    "interior": [
+      "props_room"
+    ],
+    "floors": [
+      {
+        "id": "floor_0",
+        "name": {
+          "zh": "街面",
+          "en": "Street level"
+        },
+        "y0": -4,
+        "y1": 4
+      },
+      {
+        "id": "floor_5",
+        "name": {
+          "zh": "五楼（你的房间）",
+          "en": "5th floor (your room)"
+        },
+        "y0": 16.2,
+        "y1": 19
+      }
+    ],
+    "site": [
+      "site_ground",
+      "site_trees",
+      "props_people",
+      "props_car",
+      "props_metro",
+      "props_breakfast",
+      "props_signs"
+    ],
+    "building": {
+      "min": [
+        -12.3,
+        0,
+        -22
+      ],
+      "max": [
+        12.3,
+        27.2,
+        -8
+      ]
+    }
+  },
+  "section": {
+    "min": 0.5,
+    "max": 27,
+    "default": 18
+  },
+  "camera": {
+    "frame": [
+      "walls_ext",
+      "props_breakfast",
+      "props_metro"
+    ],
+    "dir": [
+      0.3,
+      0.35,
+      -0.9
+    ],
+    "min": 3,
+    "max": 250,
+    "maxPolar": 1.48
+  },
+  "hotspots": [
+    {
+      "id": "facade",
+      "mesh": "walls_ext",
+      "name": {
+        "zh": "老公寓外墙",
+        "en": "Old apartment facade"
+      },
+      "desc": {
+        "zh": "老公寓外墙：奶黄马赛克瓷砖，雨痕斑驳；七层步行梯公寓，早晨的阳光从上层平台的缝隙照在墙上。",
+        "en": "Old tiled facade streaked by years of rain: a seven-storey walk-up, with morning sun falling on the wall through a gap in the deck above."
+      },
+      "view": [
+        0.3,
+        0.3,
+        -0.9
+      ]
     },
-    "y0": -4,
-    "y1": 4
-   },
-   {
-    "id": "floor_5",
-    "name": {
-     "zh": "五楼（你的房间）",
-     "en": "5th floor (your room)"
+    {
+      "id": "windows",
+      "mesh": "windows",
+      "name": {
+        "zh": "铝框推拉窗",
+        "en": "Sliding windows"
+      },
+      "desc": {
+        "zh": "铝框推拉窗；五楼一扇半开着，那就是你租的房间。",
+        "en": "Aluminium sliding windows; the half-open one on the fifth floor is your rented room."
+      },
+      "view": [
+        0.2,
+        0.2,
+        -0.95
+      ]
     },
-    "y0": 16.2,
-    "y1": 19
-   }
-  ],
-  "site": [
-   "site_ground",
-   "site_trees",
-   "props_people",
-   "props_car",
-   "props_metro",
-   "props_breakfast",
-   "props_signs"
-  ],
-  "building": {
-   "min": [
-    -12.3,
-    0,
-    -22
-   ],
-   "max": [
-    12.3,
-    27.2,
-    -8
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 27,
-  "default": 18
- },
- "camera": {
-  "frame": [
-   "walls_ext",
-   "props_breakfast",
-   "props_metro"
-  ],
-  "dir": [
-   0.3,
-   0.35,
-   -0.9
-  ],
-  "min": 3,
-  "max": 250,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "facade",
-   "mesh": "walls_ext",
-   "name": {
-    "zh": "老公寓外墙",
-    "en": "Old apartment facade"
-   },
-   "desc": {
-    "zh": "老公寓外墙：奶黄马赛克瓷砖，雨痕斑驳；七层步行梯公寓，早晨的阳光从上层平台的缝隙照在墙上。",
-    "en": "Old tiled facade streaked by years of rain: a seven-storey walk-up, with morning sun falling on the wall through a gap in the deck above."
-   },
-   "view": [
-    0.3,
-    0.3,
-    -0.9
-   ]
-  },
-  {
-   "id": "windows",
-   "mesh": "windows",
-   "name": {
-    "zh": "铝框推拉窗",
-    "en": "Sliding windows"
-   },
-   "desc": {
-    "zh": "铝框推拉窗；五楼一扇半开着，那就是你租的房间。",
-    "en": "Aluminium sliding windows; the half-open one on the fifth floor is your rented room."
-   },
-   "view": [
-    0.2,
-    0.2,
-    -0.95
-   ]
-  },
-  {
-   "id": "room",
-   "mesh": "props_room",
-   "name": {
-    "zh": "你租下的房间",
-    "en": "Your rented room"
-   },
-   "desc": {
-    "zh": "你租下的第一间房：床、书桌、椅子、嗡嗡作响的小冰箱，卫生间里一面裂了的镜子；窗外是昨夜下过雨的街道。",
-    "en": "Your first rented room: bed, desk, chair, a humming little fridge, a cracked mirror in the bathroom; the window looks down on a street still wet from last night's rain."
-   },
-   "view": [
-    0.1,
-    0.3,
-    -0.95
-   ]
-  },
-  {
-   "id": "balconies",
-   "mesh": "props_balconies",
-   "name": {
-    "zh": "阳台与空调",
-    "en": "Balconies & AC units"
-   },
-   "desc": {
-    "zh": "晾衣阳台、窗机空调、防盗网和外墙水管。",
-    "en": "Laundry balconies, window air-conditioners, security grilles and exterior pipes."
-   },
-   "view": [
-    0.4,
-    0.35,
-    -0.85
-   ]
-  },
-  {
-   "id": "roof",
-   "mesh": "roof",
-   "name": {
-    "zh": "天台",
-    "en": "Rooftop"
-   },
-   "desc": {
-    "zh": "天台：水箱、楼梯间小屋、旧天线。",
-    "en": "Rooftop with water tank, stair hut and an old antenna."
-   },
-   "view": [
-    0.3,
-    0.8,
-    -0.5
-   ]
-  },
-  {
-   "id": "breakfast",
-   "mesh": "props_breakfast",
-   "name": {
-    "zh": "早餐店",
-    "en": "Breakfast shop"
-   },
-   "desc": {
-    "zh": "早餐店：条纹雨篷下的蒸笼冒着热气，人行道上摆着塑料桌凳。",
-    "en": "Breakfast shop: steamers breathing steam under a striped awning, plastic tables and stools on the pavement."
-   },
-   "view": [
-    -0.3,
-    0.25,
-    -0.9
-   ]
-  },
-  {
-   "id": "shops",
-   "mesh": "props_shops",
-   "name": {
-    "zh": "首层铺面",
-    "en": "Ground-floor shops"
-   },
-   "desc": {
-    "zh": "首层铺面、雨篷、灯箱与亮着灯的楼梯间入口。",
-    "en": "Ground-floor shopfronts, awnings, light boxes and the lit stairwell entrance."
-   },
-   "view": [
-    0.2,
-    0.2,
-    -0.95
-   ]
-  },
-  {
-   "id": "metro",
-   "mesh": "props_metro",
-   "name": {
-    "zh": "地铁出入口",
-    "en": "Metro entrance"
-   },
-   "desc": {
-    "zh": "地铁出入口，早高峰的人潮从这里涌出。",
-    "en": "Metro entrance, where the morning crowd comes up."
-   },
-   "view": [
-    0.4,
-    0.3,
-    -0.85
-   ]
-  },
-  {
-   "id": "signs",
-   "mesh": "props_signs",
-   "name": {
-    "zh": "灯箱与全息广告",
-    "en": "Signs & holograms"
-   },
-   "desc": {
-    "zh": "灯箱与全息广告屏（只有色块，没有文字），轮换着各种广告画面。",
-    "en": "Light-box signs and hologram billboards (colour only, no text), cycling through adverts."
-   },
-   "view": [
-    0.3,
-    0.3,
-    -0.9
-   ]
-  },
-  {
-   "id": "people",
-   "mesh": "props_people",
-   "name": {
-    "zh": "早高峰人流",
-    "en": "Morning rush"
-   },
-   "desc": {
-    "zh": "早高峰的人流，从地铁口涌上街头。",
-    "en": "The morning rush, spilling up from the metro onto the street."
-   },
-   "view": [
-    0.3,
-    0.3,
-    -0.9
-   ]
-  },
-  {
-   "id": "car",
-   "mesh": "props_car",
-   "name": {
-    "zh": "街角的悬浮车",
-    "en": "Hover car at the corner"
-   },
-   "desc": {
-    "zh": "一辆黑色悬浮车停在街角。",
-    "en": "A black hover car waiting at the corner."
-   },
-   "view": [
-    0.6,
-    0.3,
-    -0.75
-   ]
-  },
-  {
-   "id": "street",
-   "mesh": "site_ground",
-   "name": {
-    "zh": "街道",
-    "en": "Street"
-   },
-   "desc": {
-    "zh": "浅灰复合材料路面，昨夜的雨还没干；几棵行道树，空气里有树叶的味道。",
-    "en": "Light-grey composite street, still wet from last night's rain; a few street trees, and the air smells of leaves."
-   },
-   "view": [
-    0.2,
-    0.6,
-    -0.75
-   ]
-  }
- ]
+    {
+      "id": "room",
+      "mesh": "props_room",
+      "name": {
+        "zh": "你租下的房间",
+        "en": "Your rented room"
+      },
+      "desc": {
+        "zh": "你租下的第一间房：床、书桌、椅子、嗡嗡作响的小冰箱，卫生间里一面裂了的镜子；窗外是昨夜下过雨的街道。",
+        "en": "Your first rented room: bed, desk, chair, a humming little fridge, a cracked mirror in the bathroom; the window looks down on a street still wet from last night's rain."
+      },
+      "view": [
+        0.1,
+        0.3,
+        -0.95
+      ]
+    },
+    {
+      "id": "balconies",
+      "mesh": "props_balconies",
+      "name": {
+        "zh": "阳台与空调",
+        "en": "Balconies & AC units"
+      },
+      "desc": {
+        "zh": "晾衣阳台、窗机空调、防盗网和外墙水管。",
+        "en": "Laundry balconies, window air-conditioners, security grilles and exterior pipes."
+      },
+      "view": [
+        0.4,
+        0.35,
+        -0.85
+      ]
+    },
+    {
+      "id": "roof",
+      "mesh": "roof",
+      "name": {
+        "zh": "天台",
+        "en": "Rooftop"
+      },
+      "desc": {
+        "zh": "天台：水箱、楼梯间小屋、旧天线。",
+        "en": "Rooftop with water tank, stair hut and an old antenna."
+      },
+      "view": [
+        0.3,
+        0.8,
+        -0.5
+      ]
+    },
+    {
+      "id": "breakfast",
+      "mesh": "props_breakfast",
+      "name": {
+        "zh": "早餐店",
+        "en": "Breakfast shop"
+      },
+      "desc": {
+        "zh": "早餐店：条纹雨篷下的蒸笼冒着热气，人行道上摆着塑料桌凳。",
+        "en": "Breakfast shop: steamers breathing steam under a striped awning, plastic tables and stools on the pavement."
+      },
+      "view": [
+        -0.3,
+        0.25,
+        -0.9
+      ]
+    },
+    {
+      "id": "shops",
+      "mesh": "props_shops",
+      "name": {
+        "zh": "首层铺面",
+        "en": "Ground-floor shops"
+      },
+      "desc": {
+        "zh": "首层铺面、雨篷、灯箱与亮着灯的楼梯间入口。",
+        "en": "Ground-floor shopfronts, awnings, light boxes and the lit stairwell entrance."
+      },
+      "view": [
+        0.2,
+        0.2,
+        -0.95
+      ]
+    },
+    {
+      "id": "metro",
+      "mesh": "props_metro",
+      "name": {
+        "zh": "地铁出入口",
+        "en": "Metro entrance"
+      },
+      "desc": {
+        "zh": "地铁出入口，早高峰的人潮从这里涌出。",
+        "en": "Metro entrance, where the morning crowd comes up."
+      },
+      "view": [
+        0.4,
+        0.3,
+        -0.85
+      ]
+    },
+    {
+      "id": "signs",
+      "mesh": "props_signs",
+      "name": {
+        "zh": "灯箱与全息广告",
+        "en": "Signs & holograms"
+      },
+      "desc": {
+        "zh": "灯箱与全息广告屏（只有色块，没有文字），轮换着各种广告画面。",
+        "en": "Light-box signs and hologram billboards (colour only, no text), cycling through adverts."
+      },
+      "view": [
+        0.3,
+        0.3,
+        -0.9
+      ]
+    },
+    {
+      "id": "people",
+      "mesh": "props_people",
+      "name": {
+        "zh": "早高峰人流",
+        "en": "Morning rush"
+      },
+      "desc": {
+        "zh": "早高峰的人流，从地铁口涌上街头。",
+        "en": "The morning rush, spilling up from the metro onto the street."
+      },
+      "view": [
+        0.3,
+        0.3,
+        -0.9
+      ]
+    },
+    {
+      "id": "car",
+      "mesh": "props_car",
+      "name": {
+        "zh": "街角的悬浮车",
+        "en": "Hover car at the corner"
+      },
+      "desc": {
+        "zh": "一辆黑色悬浮车停在街角。",
+        "en": "A black hover car waiting at the corner."
+      },
+      "view": [
+        0.6,
+        0.3,
+        -0.75
+      ]
+    },
+    {
+      "id": "street",
+      "mesh": "site_ground",
+      "name": {
+        "zh": "街道",
+        "en": "Street"
+      },
+      "desc": {
+        "zh": "浅灰复合材料路面，昨夜的雨还没干；几棵行道树，空气里有树叶的味道。",
+        "en": "Light-grey composite street, still wet from last night's rain; a few street trees, and the air smells of leaves."
+      },
+      "view": [
+        0.2,
+        0.6,
+        -0.75
+      ]
+    }
+  ]
 }

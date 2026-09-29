@@ -1,148 +1,184 @@
 {
- "_说明": "viewer3d.html?model=mage_tower 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。中层机构区一座八边形逐层收分的粗琢石塔（约 92 m）+ 六角结界罩塔冠 + 环形裙房 + 庭院围墙与南门；只画建筑，无人物、文字、徽记。周边楼群、甲板与磁浮轨道（bg_*）只在成图里。卡只写了「法师塔」这个名字与首席神宫寺凛，层与位置为仓库推断，详见 docs/landmarks/mage_tower.md。",
- "id": "mage_tower",
- "title": {
-  "zh": "法师塔",
-  "en": "Mage Tower"
- },
- "glb": "mage_tower.glb",
- "glb_low": "mage_tower_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "walls_ext",
-   "props_crown",
-   "props_podium",
-   "props_wall_gate",
-   "props_security"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_ground",
-   "props_garden",
-   "props_lights"
-  ],
-  "building": {
-   "min": [-78.5, -1.8, -78.5],
-   "max": [78.5, 108.0, 79.0]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 108,
-  "default": 108
- },
- "camera": {
-  "frame": [
-   "walls_ext",
-   "props_crown",
-   "props_podium"
-  ],
-  "dir": [
-   0.4,
-   0.42,
-   -0.8
-  ],
-  "min": 5,
-  "max": 400,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "tower",
-   "mesh": "walls_ext",
-   "name": {
-    "zh": "石塔主体",
-    "en": "Stone tower"
-   },
-   "desc": {
-    "zh": "八边形逐层收分的粗琢石塔，三圈挑出的石栏平台，竖向嵌八条发光符文石脊。",
-    "en": "An octagonal, tapering rough-stone tower with three jutting balcony rings and eight glowing rune ribs set into its face."
-   },
-   "view": [0.4, 0.35, -0.85]
+  "_说明": "viewer3d.html?model=mage_tower 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。中层机构区一座八边形逐层收分的粗琢石塔（约 92 m）+ 六角结界罩塔冠 + 环形裙房 + 庭院围墙与南门；只画建筑，无人物、文字、徽记。周边楼群、甲板与磁浮轨道（bg_*）只在成图里。卡只写了「法师塔」这个名字与首席神宫寺凛，详见 docs/landmarks/mage_tower.md。",
+  "id": "mage_tower",
+  "title": {
+    "zh": "法师塔",
+    "en": "Mage Tower"
   },
-  {
-   "id": "crown",
-   "mesh": "props_crown",
-   "name": {
-    "zh": "塔冠结界罩",
-    "en": "Warded crown"
-   },
-   "desc": {
-    "zh": "六角结界罩，罩内一颗悬浮的脉动核心晶体，外绕两圈符文环。",
-    "en": "A hexagonal ward shell housing a floating, pulsing core crystal, ringed by two runic bands."
-   },
-   "view": [0.15, 0.55, -0.82]
+  "glb": "mage_tower.glb",
+  "glb_low": "mage_tower_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "podium",
-   "mesh": "props_podium",
-   "name": {
-    "zh": "裙房",
-    "en": "Podium ring"
-   },
-   "desc": {
-    "zh": "环绕塔基的两层裙房：石砌基座 + 玻璃幕鼓环 + 石柱，柱间挂纯色全息面板。",
-    "en": "A two-storey ring around the base: a stone plinth, a glazed drum, stone piers, and plain holo panels between them."
-   },
-   "view": [0.5, 0.3, -0.75]
+  "groups": {
+    "roof": [],
+    "walls": [
+      "walls_ext",
+      "props_crown",
+      "props_podium",
+      "props_wall_gate",
+      "props_security"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_ground",
+      "props_garden",
+      "props_lights"
+    ],
+    "building": {
+      "min": [
+        -78.5,
+        -1.8,
+        -78.5
+      ],
+      "max": [
+        78.5,
+        108.0,
+        79.0
+      ]
+    }
   },
-  {
-   "id": "gate",
-   "mesh": "props_wall_gate",
-   "name": {
-    "zh": "庭院围墙与南门",
-    "en": "Courtyard wall & south gate"
-   },
-   "desc": {
-    "zh": "围合庭院的石墙，南侧唯一门楼。",
-    "en": "A stone wall enclosing the courtyard, with the only gatehouse on its south side."
-   },
-   "view": [0.1, 0.3, -0.95]
+  "section": {
+    "min": 0.5,
+    "max": 108,
+    "default": 108
   },
-  {
-   "id": "security",
-   "mesh": "props_security",
-   "name": {
-    "zh": "法力校验门",
-    "en": "Mana-check gate"
-   },
-   "desc": {
-    "zh": "门楼下的校验门，安检门造型，魔法蓝紫配色，无文字。",
-    "en": "A gate-shaped mana scanner under the gatehouse, in a blue-violet magitech finish, unlabelled."
-   },
-   "view": [0.05, 0.25, -0.95]
+  "camera": {
+    "frame": [
+      "walls_ext",
+      "props_crown",
+      "props_podium"
+    ],
+    "dir": [
+      0.4,
+      0.42,
+      -0.8
+    ],
+    "min": 5,
+    "max": 400,
+    "maxPolar": 1.48
   },
-  {
-   "id": "garden",
-   "mesh": "props_garden",
-   "name": {
-    "zh": "庭院",
-    "en": "Courtyard grounds"
-   },
-   "desc": {
-    "zh": "石径、松柏，几处悬浮装饰浮石。",
-    "en": "Stone paths, pines, and a few floating decorative rocks."
-   },
-   "view": [-0.3, 0.55, -0.78]
-  },
-  {
-   "id": "ground",
-   "mesh": "site_ground",
-   "name": {
-    "zh": "庭院铺装与法阵",
-    "en": "Courtyard paving & circle"
-   },
-   "desc": {
-    "zh": "庭院铺装，中央嵌一块六角发光法阵（纯几何，无文字）。",
-    "en": "Paved ground with a glowing hexagonal circle set at the centre (pure geometry, no text)."
-   },
-   "view": [0.0, 0.7, -0.7]
-  }
- ]
+  "hotspots": [
+    {
+      "id": "tower",
+      "mesh": "walls_ext",
+      "name": {
+        "zh": "石塔主体",
+        "en": "Stone tower"
+      },
+      "desc": {
+        "zh": "八边形逐层收分的粗琢石塔，三圈挑出的石栏平台，竖向嵌八条发光符文石脊。",
+        "en": "An octagonal, tapering rough-stone tower with three jutting balcony rings and eight glowing rune ribs set into its face."
+      },
+      "view": [
+        0.4,
+        0.35,
+        -0.85
+      ]
+    },
+    {
+      "id": "crown",
+      "mesh": "props_crown",
+      "name": {
+        "zh": "塔冠结界罩",
+        "en": "Warded crown"
+      },
+      "desc": {
+        "zh": "六角结界罩，罩内一颗悬浮的脉动核心晶体，外绕两圈符文环。",
+        "en": "A hexagonal ward shell housing a floating, pulsing core crystal, ringed by two runic bands."
+      },
+      "view": [
+        0.15,
+        0.55,
+        -0.82
+      ]
+    },
+    {
+      "id": "podium",
+      "mesh": "props_podium",
+      "name": {
+        "zh": "裙房",
+        "en": "Podium ring"
+      },
+      "desc": {
+        "zh": "环绕塔基的两层裙房：石砌基座 + 玻璃幕鼓环 + 石柱，柱间挂纯色全息面板。",
+        "en": "A two-storey ring around the base: a stone plinth, a glazed drum, stone piers, and plain holo panels between them."
+      },
+      "view": [
+        0.5,
+        0.3,
+        -0.75
+      ]
+    },
+    {
+      "id": "gate",
+      "mesh": "props_wall_gate",
+      "name": {
+        "zh": "庭院围墙与南门",
+        "en": "Courtyard wall & south gate"
+      },
+      "desc": {
+        "zh": "围合庭院的石墙，南侧唯一门楼。",
+        "en": "A stone wall enclosing the courtyard, with the only gatehouse on its south side."
+      },
+      "view": [
+        0.1,
+        0.3,
+        -0.95
+      ]
+    },
+    {
+      "id": "security",
+      "mesh": "props_security",
+      "name": {
+        "zh": "法力校验门",
+        "en": "Mana-check gate"
+      },
+      "desc": {
+        "zh": "门楼下的校验门，安检门造型，魔法蓝紫配色，无文字。",
+        "en": "A gate-shaped mana scanner under the gatehouse, in a blue-violet magitech finish, unlabelled."
+      },
+      "view": [
+        0.05,
+        0.25,
+        -0.95
+      ]
+    },
+    {
+      "id": "garden",
+      "mesh": "props_garden",
+      "name": {
+        "zh": "庭院",
+        "en": "Courtyard grounds"
+      },
+      "desc": {
+        "zh": "石径、松柏，几处悬浮装饰浮石。",
+        "en": "Stone paths, pines, and a few floating decorative rocks."
+      },
+      "view": [
+        -0.3,
+        0.55,
+        -0.78
+      ]
+    },
+    {
+      "id": "ground",
+      "mesh": "site_ground",
+      "name": {
+        "zh": "庭院铺装与法阵",
+        "en": "Courtyard paving & circle"
+      },
+      "desc": {
+        "zh": "庭院铺装，中央嵌一块六角发光法阵（纯几何，无文字）。",
+        "en": "Paved ground with a glowing hexagonal circle set at the centre (pure geometry, no text)."
+      },
+      "view": [
+        0.0,
+        0.7,
+        -0.7
+      ]
+    }
+  ]
 }

@@ -276,3 +276,9 @@ date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
 2026-09-29,lm_contest_corridor,patch,64,1,0.0,0,darwin,ok,0,0
 2026-09-29,lm_contest_corridor,patch,0,32,0.2,0,darwin,ok,0,0
 2026-09-29,lm_contest_corridor,patch,0,32,0.1,0,darwin,ok,0,0
+2026-09-29,tc_upper,final,8000,64,1.3,0,darwin,ok,0,0
+2026-09-29,tc_upper_city,final,8000,64,10.3,0,darwin,ok,0,0
+2026-09-29,tc_upper,final,8000,64,1.4,0,darwin,ok,0,0
+2026-09-29,tc_upper_city,final,8000,64,1.8,0,darwin,ok,0,0
+2026-09-29,tc_upper,final,8000,64,1.3,0,darwin,ok,0,0
+2026-09-29,tc_upper_city,final,8000,64,9.4,0,darwin,ok,0,0

@@ -1,257 +1,257 @@
 {
- "_说明": "viewer3d.html?model=soup_kitchen 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。下层圣光教会施粥站，与孤儿收容所、免费诊所合画一处（地图标记的别名）；无人物、无文字与宗教符号。周边棚户、支撑柱、中层底面（bg_*）只在成图里。位置与形制为仓库推断。",
- "id": "soup_kitchen",
- "title": {
-  "zh": "圣光教会施粥站",
-  "en": "Church Soup Kitchen"
- },
- "glb": "soup_kitchen.glb",
- "glb_low": "soup_kitchen_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [
-   "roof",
-   "props_canopy"
-  ],
-  "walls": [
-   "walls_ext",
-   "props_shelter",
-   "props_clinic"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_ground",
-   "props_queue",
-   "props_yard",
-   "props_utility",
-   "props_lights",
-   "props_tables",
-   "props_serving"
-  ],
-  "building": {
-   "min": [
-    -60.0,
-    -0.3,
-    -60.0
-   ],
-   "max": [
-    60.0,
-    13.8,
-    60.0
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 14,
-  "default": 14
- },
- "camera": {
-  "frame": [
-   "walls_ext",
-   "props_canopy",
-   "props_shelter"
-  ],
-  "dir": [
-   0.35,
-   0.5,
-   -0.8
-  ],
-  "min": 3,
-  "max": 250,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "hall",
-   "mesh": "walls_ext",
-   "name": {
-    "zh": "旧教区礼堂",
-    "en": "Old parish hall"
-   },
-   "desc": {
-    "zh": "修复过的石砌小堂，圆拱窗透出暖光，正门朝大棚敞开；圣光教会下层的教堂多半荒废，教会靠施粥站、孤儿收容所和免费诊所维持。",
-    "en": "A restored stone chapel with warm light in its arched windows, its main door open to the canopy. Most of the Church's lower-tier churches are abandoned; it keeps going through soup kitchens, an orphan shelter and a free clinic."
-   },
-   "view": [
-    0.4,
-    0.35,
-    -0.85
-   ]
+  "_说明": "viewer3d.html?model=soup_kitchen 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。下层圣光教会施粥站，与孤儿收容所、免费诊所合画一处（地图标记的别名）；无人物、无文字与宗教符号。周边棚户、支撑柱、中层底面（bg_*）只在成图里。",
+  "id": "soup_kitchen",
+  "title": {
+    "zh": "圣光教会施粥站",
+    "en": "Church Soup Kitchen"
   },
-  {
-   "id": "canopy",
-   "mesh": "props_canopy",
-   "name": {
-    "zh": "就餐大棚",
-    "en": "Serving canopy"
-   },
-   "desc": {
-    "zh": "钢架帆布大棚：开敞的就餐棚。",
-    "en": "Steel-and-canvas canopy: an open-sided dining shelter."
-   },
-   "view": [
-    0.3,
-    0.5,
-    -0.8
-   ]
+  "glb": "soup_kitchen.glb",
+  "glb_low": "soup_kitchen_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "serving",
-   "mesh": "props_serving",
-   "name": {
-    "zh": "打饭台",
-    "en": "Serving counters"
-   },
-   "desc": {
-    "zh": "大汤锅、长柄勺、碗摞、面包筐；每天有数千人来领粥。",
-    "en": "Big soup pots, ladles, stacked bowls and bread crates; thousands come for food every day."
-   },
-   "view": [
-    0.1,
-    0.25,
-    -0.96
-   ]
+  "groups": {
+    "roof": [
+      "roof",
+      "props_canopy"
+    ],
+    "walls": [
+      "walls_ext",
+      "props_shelter",
+      "props_clinic"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_ground",
+      "props_queue",
+      "props_yard",
+      "props_utility",
+      "props_lights",
+      "props_tables",
+      "props_serving"
+    ],
+    "building": {
+      "min": [
+        -60.0,
+        -0.3,
+        -60.0
+      ],
+      "max": [
+        60.0,
+        13.8,
+        60.0
+      ]
+    }
   },
-  {
-   "id": "tables",
-   "mesh": "props_tables",
-   "name": {
-    "zh": "长桌与长凳",
-    "en": "Tables & benches"
-   },
-   "desc": {
-    "zh": "搁板长桌与长凳。",
-    "en": "Trestle tables and benches."
-   },
-   "view": [
-    0.3,
-    0.45,
-    -0.85
-   ]
+  "section": {
+    "min": 0.5,
+    "max": 14,
+    "default": 14
   },
-  {
-   "id": "queue",
-   "mesh": "props_queue",
-   "name": {
-    "zh": "排队道",
-    "en": "Queue lane"
-   },
-   "desc": {
-    "zh": "排队栏杆围出的长长蛇形排队道。",
-    "en": "Queue rails forming a long winding lane."
-   },
-   "view": [
-    0.3,
-    0.6,
-    -0.75
-   ]
+  "camera": {
+    "frame": [
+      "walls_ext",
+      "props_canopy",
+      "props_shelter"
+    ],
+    "dir": [
+      0.35,
+      0.5,
+      -0.8
+    ],
+    "min": 3,
+    "max": 250,
+    "maxPolar": 1.48
   },
-  {
-   "id": "utility",
-   "mesh": "props_utility",
-   "name": {
-    "zh": "水箱与洗手台",
-    "en": "Water & handwashing"
-   },
-   "desc": {
-    "zh": "水箱与洗手台。",
-    "en": "Water tank and handwashing station."
-   },
-   "view": [
-    0.4,
-    0.35,
-    -0.85
-   ]
-  },
-  {
-   "id": "clinic",
-   "mesh": "props_clinic",
-   "name": {
-    "zh": "免费诊所",
-    "en": "Free clinic"
-   },
-   "desc": {
-    "zh": "白色预制板房，门边一盏浅绿信号灯。",
-    "en": "A white prefab annex with a pale-green signal lamp by the door."
-   },
-   "view": [
-    0.5,
-    0.3,
-    -0.8
-   ]
-  },
-  {
-   "id": "shelter",
-   "mesh": "props_shelter",
-   "name": {
-    "zh": "孤儿收容所",
-    "en": "Orphan shelter"
-   },
-   "desc": {
-    "zh": "两层小楼，晾衣绳上挂着衣物。",
-    "en": "A two-storey home with laundry lines."
-   },
-   "view": [
-    -0.4,
-    0.35,
-    -0.85
-   ]
-  },
-  {
-   "id": "yard",
-   "mesh": "props_yard",
-   "name": {
-    "zh": "小游戏场",
-    "en": "Play yard"
-   },
-   "desc": {
-    "zh": "围栏里的秋千和沙坑。",
-    "en": "A fenced yard with swings and a sandbox."
-   },
-   "view": [
-    -0.3,
-    0.5,
-    -0.8
-   ]
-  },
-  {
-   "id": "lights",
-   "mesh": "props_lights",
-   "name": {
-    "zh": "灯",
-    "en": "Lamps"
-   },
-   "desc": {
-    "zh": "棚下素白灯罩，暖金色柔光。",
-    "en": "Plain white lamps with a soft warm-gold glow."
-   },
-   "view": [
-    0.3,
-    0.5,
-    -0.8
-   ]
-  },
-  {
-   "id": "ground",
-   "mesh": "site_ground",
-   "name": {
-    "zh": "前院",
-    "en": "Forecourt"
-   },
-   "desc": {
-    "zh": "前院石板、混凝土垫与积水。",
-    "en": "Forecourt flagstones, concrete pads and puddles."
-   },
-   "view": [
-    0.2,
-    0.75,
-    -0.65
-   ]
-  }
- ]
+  "hotspots": [
+    {
+      "id": "hall",
+      "mesh": "walls_ext",
+      "name": {
+        "zh": "旧教区礼堂",
+        "en": "Old parish hall"
+      },
+      "desc": {
+        "zh": "修复过的石砌小堂，圆拱窗透出暖光，正门朝大棚敞开；圣光教会下层的教堂多半荒废，教会靠施粥站、孤儿收容所和免费诊所维持。",
+        "en": "A restored stone chapel with warm light in its arched windows, its main door open to the canopy. Most of the Church's lower-tier churches are abandoned; it keeps going through soup kitchens, an orphan shelter and a free clinic."
+      },
+      "view": [
+        0.4,
+        0.35,
+        -0.85
+      ]
+    },
+    {
+      "id": "canopy",
+      "mesh": "props_canopy",
+      "name": {
+        "zh": "就餐大棚",
+        "en": "Serving canopy"
+      },
+      "desc": {
+        "zh": "钢架帆布大棚：开敞的就餐棚。",
+        "en": "Steel-and-canvas canopy: an open-sided dining shelter."
+      },
+      "view": [
+        0.3,
+        0.5,
+        -0.8
+      ]
+    },
+    {
+      "id": "serving",
+      "mesh": "props_serving",
+      "name": {
+        "zh": "打饭台",
+        "en": "Serving counters"
+      },
+      "desc": {
+        "zh": "大汤锅、长柄勺、碗摞、面包筐；每天有数千人来领粥。",
+        "en": "Big soup pots, ladles, stacked bowls and bread crates; thousands come for food every day."
+      },
+      "view": [
+        0.1,
+        0.25,
+        -0.96
+      ]
+    },
+    {
+      "id": "tables",
+      "mesh": "props_tables",
+      "name": {
+        "zh": "长桌与长凳",
+        "en": "Tables & benches"
+      },
+      "desc": {
+        "zh": "搁板长桌与长凳。",
+        "en": "Trestle tables and benches."
+      },
+      "view": [
+        0.3,
+        0.45,
+        -0.85
+      ]
+    },
+    {
+      "id": "queue",
+      "mesh": "props_queue",
+      "name": {
+        "zh": "排队道",
+        "en": "Queue lane"
+      },
+      "desc": {
+        "zh": "排队栏杆围出的长长蛇形排队道。",
+        "en": "Queue rails forming a long winding lane."
+      },
+      "view": [
+        0.3,
+        0.6,
+        -0.75
+      ]
+    },
+    {
+      "id": "utility",
+      "mesh": "props_utility",
+      "name": {
+        "zh": "水箱与洗手台",
+        "en": "Water & handwashing"
+      },
+      "desc": {
+        "zh": "水箱与洗手台。",
+        "en": "Water tank and handwashing station."
+      },
+      "view": [
+        0.4,
+        0.35,
+        -0.85
+      ]
+    },
+    {
+      "id": "clinic",
+      "mesh": "props_clinic",
+      "name": {
+        "zh": "免费诊所",
+        "en": "Free clinic"
+      },
+      "desc": {
+        "zh": "白色预制板房，门边一盏浅绿信号灯。",
+        "en": "A white prefab annex with a pale-green signal lamp by the door."
+      },
+      "view": [
+        0.5,
+        0.3,
+        -0.8
+      ]
+    },
+    {
+      "id": "shelter",
+      "mesh": "props_shelter",
+      "name": {
+        "zh": "孤儿收容所",
+        "en": "Orphan shelter"
+      },
+      "desc": {
+        "zh": "两层小楼，晾衣绳上挂着衣物。",
+        "en": "A two-storey home with laundry lines."
+      },
+      "view": [
+        -0.4,
+        0.35,
+        -0.85
+      ]
+    },
+    {
+      "id": "yard",
+      "mesh": "props_yard",
+      "name": {
+        "zh": "小游戏场",
+        "en": "Play yard"
+      },
+      "desc": {
+        "zh": "围栏里的秋千和沙坑。",
+        "en": "A fenced yard with swings and a sandbox."
+      },
+      "view": [
+        -0.3,
+        0.5,
+        -0.8
+      ]
+    },
+    {
+      "id": "lights",
+      "mesh": "props_lights",
+      "name": {
+        "zh": "灯",
+        "en": "Lamps"
+      },
+      "desc": {
+        "zh": "棚下素白灯罩，暖金色柔光。",
+        "en": "Plain white lamps with a soft warm-gold glow."
+      },
+      "view": [
+        0.3,
+        0.5,
+        -0.8
+      ]
+    },
+    {
+      "id": "ground",
+      "mesh": "site_ground",
+      "name": {
+        "zh": "前院",
+        "en": "Forecourt"
+      },
+      "desc": {
+        "zh": "前院石板、混凝土垫与积水。",
+        "en": "Forecourt flagstones, concrete pads and puddles."
+      },
+      "view": [
+        0.2,
+        0.75,
+        -0.65
+      ]
+    }
+  ]
 }

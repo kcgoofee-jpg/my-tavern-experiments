@@ -23,7 +23,7 @@ export const PRESENT_KEYS = ['在场人物', '在场角色', '当前在场'];
 export const POS_KEY = '位置';
 // 表的每一项可能是：{ 名字: { 位置: '层·地点', … } }、{ 名字: '层·地点' }、{ 名字: '一句描述' }、['名字', …]、[{ 名字 / 姓名 / name, 位置 }]、'甲、乙'
 const looksPlace = s => /[·・]/.test(s) && [...s].length <= 60;   // 字符串值只有写成「层·地点」才当位置（否则可能是描述）
-/** stat_data → 在场人物 [{ name, place }]（place = '' 表示没写位置，调用方按玩家所在处推断）。没有在场表返回 null */
+/** stat_data → 在场人物 [{ name, place }]（place = '' 表示没写位置，调用方按玩家所在处处理（默认同处））。没有在场表返回 null */
 export function presentList(stat, path = '') {
   if (!stat || typeof stat !== 'object') return null;
   const key = path || PRESENT_KEYS.find(k => k in stat); if (!key) return null;

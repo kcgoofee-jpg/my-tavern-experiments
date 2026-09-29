@@ -1,0 +1,9 @@
+{
+ "script": "blender/tiancheng_upper.py",
+ "upper_depth": "77f113b71d797b8a",
+ "tc_islands": "d0e2ee4b15011a76",
+ "res": 8000,
+ "samples": 64,
+ "below": "city",
+ "blender": "5.2.2 LTS"
+}

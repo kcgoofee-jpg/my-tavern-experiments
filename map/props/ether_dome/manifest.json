@@ -1,112 +1,112 @@
 {
- "_note": "viewer3d.html?model=ether_dome 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/ether_dome.md。**仓库推断项**：卡（docs/card-digest.md L89）写的圣都核心区只有 商业联合会大厦 / 太阳骑士大竞技场 / 圆桌骑士议事殿 / 会所，「以太穹顶」不在卡里，是仓库自设的以太技术展示场。",
- "id": "ether_dome",
- "title": {
-  "zh": "以太穹顶",
-  "en": "Ether Dome"
- },
- "glb": "ether_dome.glb",
- "glb_low": "ether_dome_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "props_dome",
-   "props_field"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_ground",
-   "props_lights"
-  ],
-  "building": {
-   "min": [
-    -74.0,
-    0.0,
-    -74.0
-   ],
-   "max": [
-    74.0,
-    58.0,
-    74.0
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 58,
-  "default": 58
- },
- "camera": {
-  "frame": [
-   "props_dome",
-   "props_field"
-  ],
-  "dir": [
-   0.42,
-   0.4,
-   -0.82
-  ],
-  "min": 20,
-  "max": 900,
-  "maxPolar": 1.48
- },
- "budgets": {
-  "props_dome": [
-   26000,
-   512
-  ],
-  "props_field": [
-   9000,
-   512
-  ],
-  "site_ground": [
-   9000,
-   512
-  ],
-  "props_lights": [
-   3000,
-   256
-  ]
- },
- "hotspots": [
-  {
-   "id": "field",
-   "mesh": "props_field",
-   "name": {
-    "zh": "两圈悬浮发光场环 + 四支以太晶簇",
-    "en": ""
-   },
-   "desc": {
-    "zh": "两圈悬浮发光场环 + 四支以太晶簇",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
+  "_note": "viewer3d.html?model=ether_dome 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/ether_dome.md。，「以太穹顶」不在卡里，是仓库自设的以太技术展示场。",
+  "id": "ether_dome",
+  "title": {
+    "zh": "以太穹顶",
+    "en": "Ether Dome"
   },
-  {
-   "id": "lights",
-   "mesh": "props_lights",
-   "name": {
-    "zh": "12 支灯柱",
-    "en": ""
-   },
-   "desc": {
-    "zh": "12 支灯柱",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  }
- ]
+  "glb": "ether_dome.glb",
+  "glb_low": "ether_dome_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [],
+    "walls": [
+      "props_dome",
+      "props_field"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_ground",
+      "props_lights"
+    ],
+    "building": {
+      "min": [
+        -74.0,
+        0.0,
+        -74.0
+      ],
+      "max": [
+        74.0,
+        58.0,
+        74.0
+      ]
+    }
+  },
+  "section": {
+    "min": 0.5,
+    "max": 58,
+    "default": 58
+  },
+  "camera": {
+    "frame": [
+      "props_dome",
+      "props_field"
+    ],
+    "dir": [
+      0.42,
+      0.4,
+      -0.82
+    ],
+    "min": 20,
+    "max": 900,
+    "maxPolar": 1.48
+  },
+  "budgets": {
+    "props_dome": [
+      26000,
+      512
+    ],
+    "props_field": [
+      9000,
+      512
+    ],
+    "site_ground": [
+      9000,
+      512
+    ],
+    "props_lights": [
+      3000,
+      256
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "field",
+      "mesh": "props_field",
+      "name": {
+        "zh": "两圈悬浮发光场环 + 四支以太晶簇",
+        "en": ""
+      },
+      "desc": {
+        "zh": "两圈悬浮发光场环 + 四支以太晶簇",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "lights",
+      "mesh": "props_lights",
+      "name": {
+        "zh": "12 支灯柱",
+        "en": ""
+      },
+      "desc": {
+        "zh": "12 支灯柱",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    }
+  ]
 }

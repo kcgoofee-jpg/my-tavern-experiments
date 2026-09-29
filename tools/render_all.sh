@@ -47,7 +47,7 @@ for L in "${LAYERS[@]}"; do
     upper) LARGS=(--below clouds) ;;
     upper_city) SCRIPT="blender/tiancheng_upper.py"; LARGS=(--below city) ;;
   esac
-  [ -f "$SCRIPT" ] || { echo "跳过 $L（没有 $SCRIPT）"; continue; }
+  [ -f "$SCRIPT" ] || { echo "跳过 ${L}（没有 $SCRIPT）"; continue; }
   if [ "$USE_BPY" = 1 ]; then RUN=("$PY" "$SCRIPT"); else RUN=("$BL" -b -P "$SCRIPT"); fi
   T0=$SECONDS
   if [ "$DATA_ONLY" = 1 ]; then
@@ -67,7 +67,7 @@ for L in "${LAYERS[@]}"; do
     exit 1
   fi
   OUT="$PWD/map/art/tc_${L}_full.png"
-  echo "== 渲染 $L：${RES}px，${SAMPLES} 采样"
+  echo "== 渲染 ${L}：${RES}px，${SAMPLES} 采样"
   rm -f "$OUT"
   mkdir -p logs; LOG="logs/render_${L}.log"
   echo "   完整日志：$LOG（看进度：tail -f $LOG | grep -E 'Tiles|Sample|^\\['）"

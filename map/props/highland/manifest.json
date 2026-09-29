@@ -1,163 +1,163 @@
 {
- "_说明": "viewer3d.html?model=highland 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。开局七的旷野高地：台地、崖壁、下山小径、焦黑地面；远处低地与山脉、烟与扬尘（bg_*）只在成图里。卡只写荒野与崖壁，地形为仓库推断。",
- "id": "highland",
- "title": {
-  "zh": "旷野高地",
-  "en": "Wild Highlands"
- },
- "glb": "highland.glb",
- "glb_low": "highland_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_plateau",
-   "site_cliff",
-   "site_trail",
-   "props_rocks",
-   "props_scorch",
-   "site_vegetation"
-  ],
-  "building": {
-   "min": [
-    -300,
-    -120,
-    -195
-   ],
-   "max": [
-    330,
-    20,
-    255
-   ]
-  }
- },
- "section": {
-  "min": -115,
-  "max": 20,
-  "default": 20
- },
- "camera": {
-  "frame": [
-   "site_plateau",
-   "site_cliff"
-  ],
-  "dir": [
-   0.35,
-   0.55,
-   0.75
-  ],
-  "min": 10,
-  "max": 1500,
-  "maxPolar": 1.45
- },
- "hotspots": [
-  {
-   "id": "plateau",
-   "mesh": "site_plateau",
-   "name": {
-    "zh": "旷野高地台地",
-    "en": "Highland plateau"
-   },
-   "desc": {
-    "zh": "旷野高地台地：风吹过的石南与丛草、裸露基岩，帝国境内的最高地（地形为仓库推断）。",
-    "en": "The highland plateau: windswept heath, tussock grass and bare bedrock on the empire's highest ground (terrain is a repo inference)."
-   },
-   "view": [
-    0.4,
-    0.6,
-    0.7
-   ]
+  "_说明": "viewer3d.html?model=highland 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。开局七的旷野高地：台地、崖壁、下山小径、焦黑地面；远处低地与山脉、烟与扬尘（bg_*）只在成图里。卡只写荒野与崖壁。",
+  "id": "highland",
+  "title": {
+    "zh": "旷野高地",
+    "en": "Wild Highlands"
   },
-  {
-   "id": "cliff",
-   "mesh": "site_cliff",
-   "name": {
-    "zh": "崖壁",
-    "en": "Cliff"
-   },
-   "desc": {
-    "zh": "峭壁：层层岩层的陡崖直落谷底，崖脚是倒石堆。",
-    "en": "The cliff: a layered rock wall dropping sheer to the valley, with scree at its foot."
-   },
-   "view": [
-    0.1,
-    0.35,
-    0.93
-   ]
+  "glb": "highland.glb",
+  "glb_low": "highland_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "trail",
-   "mesh": "site_trail",
-   "name": {
-    "zh": "下山小径",
-    "en": "Trail down"
-   },
-   "desc": {
-    "zh": "下山小径：沿东侧山肩折返而下的土路（仓库推断）。",
-    "en": "The trail down: a dirt path zigzagging down the eastern shoulder (repo inference)."
-   },
-   "view": [
-    0.6,
-    0.5,
-    0.6
-   ]
+  "groups": {
+    "roof": [],
+    "walls": [],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_plateau",
+      "site_cliff",
+      "site_trail",
+      "props_rocks",
+      "props_scorch",
+      "site_vegetation"
+    ],
+    "building": {
+      "min": [
+        -300,
+        -120,
+        -195
+      ],
+      "max": [
+        330,
+        20,
+        255
+      ]
+    }
   },
-  {
-   "id": "scorch",
-   "mesh": "props_scorch",
-   "name": {
-    "zh": "焦黑的地面",
-    "en": "Scorched ground"
-   },
-   "desc": {
-    "zh": "大片焦黑地面：灰烬、泥坑、弹坑与碎裂岩块，几缕细烟尚未散尽；冷风吹过旷野。",
-    "en": "A wide blackened zone: ash, churned mud, craters and shattered rock, with a few thin wisps of smoke; a cold wind cuts across the open ground."
-   },
-   "view": [
-    0.3,
-    0.7,
-    0.6
-   ]
+  "section": {
+    "min": -115,
+    "max": 20,
+    "default": 20
   },
-  {
-   "id": "rocks",
-   "mesh": "props_rocks",
-   "name": {
-    "zh": "巨石与露头",
-    "en": "Boulders & outcrops"
-   },
-   "desc": {
-    "zh": "散落的巨石与基岩露头。",
-    "en": "Scattered boulders and bedrock outcrops."
-   },
-   "view": [
-    0.4,
-    0.5,
-    0.75
-   ]
+  "camera": {
+    "frame": [
+      "site_plateau",
+      "site_cliff"
+    ],
+    "dir": [
+      0.35,
+      0.55,
+      0.75
+    ],
+    "min": 10,
+    "max": 1500,
+    "maxPolar": 1.45
   },
-  {
-   "id": "veg",
-   "mesh": "site_vegetation",
-   "name": {
-    "zh": "枯草与矮树",
-    "en": "Grass & stunted trees"
-   },
-   "desc": {
-    "zh": "被风压弯、叶色枯黄的矮树与一丛丛枯草。",
-    "en": "Wind-bent, yellowing stunted trees and clumps of dry grass."
-   },
-   "view": [
-    0.4,
-    0.4,
-    0.8
-   ]
-  }
- ]
+  "hotspots": [
+    {
+      "id": "plateau",
+      "mesh": "site_plateau",
+      "name": {
+        "zh": "旷野高地台地",
+        "en": "Highland plateau"
+      },
+      "desc": {
+        "zh": "旷野高地台地：风吹过的石南与丛草、裸露基岩，帝国境内的最高地。",
+        "en": "The highland plateau: windswept heath, tussock grass and bare bedrock on the empire's highest ground (terrain is a repo inference)."
+      },
+      "view": [
+        0.4,
+        0.6,
+        0.7
+      ]
+    },
+    {
+      "id": "cliff",
+      "mesh": "site_cliff",
+      "name": {
+        "zh": "崖壁",
+        "en": "Cliff"
+      },
+      "desc": {
+        "zh": "峭壁：层层岩层的陡崖直落谷底，崖脚是倒石堆。",
+        "en": "The cliff: a layered rock wall dropping sheer to the valley, with scree at its foot."
+      },
+      "view": [
+        0.1,
+        0.35,
+        0.93
+      ]
+    },
+    {
+      "id": "trail",
+      "mesh": "site_trail",
+      "name": {
+        "zh": "下山小径",
+        "en": "Trail down"
+      },
+      "desc": {
+        "zh": "下山小径：沿东侧山肩折返而下的土路。",
+        "en": "The trail down: a dirt path zigzagging down the eastern shoulder (repo inference)."
+      },
+      "view": [
+        0.6,
+        0.5,
+        0.6
+      ]
+    },
+    {
+      "id": "scorch",
+      "mesh": "props_scorch",
+      "name": {
+        "zh": "焦黑的地面",
+        "en": "Scorched ground"
+      },
+      "desc": {
+        "zh": "大片焦黑地面：灰烬、泥坑、弹坑与碎裂岩块，几缕细烟尚未散尽；冷风吹过旷野。",
+        "en": "A wide blackened zone: ash, churned mud, craters and shattered rock, with a few thin wisps of smoke; a cold wind cuts across the open ground."
+      },
+      "view": [
+        0.3,
+        0.7,
+        0.6
+      ]
+    },
+    {
+      "id": "rocks",
+      "mesh": "props_rocks",
+      "name": {
+        "zh": "巨石与露头",
+        "en": "Boulders & outcrops"
+      },
+      "desc": {
+        "zh": "散落的巨石与基岩露头。",
+        "en": "Scattered boulders and bedrock outcrops."
+      },
+      "view": [
+        0.4,
+        0.5,
+        0.75
+      ]
+    },
+    {
+      "id": "veg",
+      "mesh": "site_vegetation",
+      "name": {
+        "zh": "枯草与矮树",
+        "en": "Grass & stunted trees"
+      },
+      "desc": {
+        "zh": "被风压弯、叶色枯黄的矮树与一丛丛枯草。",
+        "en": "Wind-bent, yellowing stunted trees and clumps of dry grass."
+      },
+      "view": [
+        0.4,
+        0.4,
+        0.8
+      ]
+    }
+  ]
 }

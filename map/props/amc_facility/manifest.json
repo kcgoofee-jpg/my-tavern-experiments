@@ -1,203 +1,203 @@
 {
- "_说明": "viewer3d.html?model=amc_facility 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。只画外观：有围墙的机构院落（门岗、执法分队驻点、行政中心、中央工坊、缓冲街道），不画内部。周边棚户、支撑柱、中层底面（bg_*）只在成图里。位置与形制为仓库推断。",
- "id": "amc_facility",
- "title": {
-  "zh": "资产管理委员会下层设施",
-  "en": "Asset Management Committee, Lower Facility"
- },
- "glb": "amc_facility.glb",
- "glb_low": "amc_facility_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [
-   "props_roof"
-  ],
-  "walls": [
-   "walls_ext",
-   "props_works",
-   "props_wall"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_ground",
-   "props_lights",
-   "props_vehicles",
-   "props_gate",
-   "props_post"
-  ],
-  "building": {
-   "min": [
-    -61,
-    0,
-    -46
-   ],
-   "max": [
-    61,
-    30,
-    50.5
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 30,
-  "default": 30
- },
- "camera": {
-  "frame": [
-   "walls_ext",
-   "props_works",
-   "props_wall"
-  ],
-  "dir": [
-   0.35,
-   0.55,
-   -0.75
-  ],
-  "min": 5,
-  "max": 400,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "admin",
-   "mesh": "walls_ext",
-   "name": {
-    "zh": "行政中心",
-    "en": "Admin centre"
-   },
-   "desc": {
-    "zh": "行政中心：六层办公楼，竖向遮阳鳍板与入口雨棚；委员会在下层的公共设施管理中心。",
-    "en": "Admin centre: a six-storey office block with vertical fins and an entrance canopy, the committee's lower-tier management centre."
-   },
-   "view": [
-    0.4,
-    0.35,
-    -0.85
-   ]
+  "_说明": "viewer3d.html?model=amc_facility 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。只画外观：有围墙的机构院落（门岗、执法分队驻点、行政中心、中央工坊、缓冲街道），不画内部。周边棚户、支撑柱、中层底面（bg_*）只在成图里。",
+  "id": "amc_facility",
+  "title": {
+    "zh": "资产管理委员会下层设施",
+    "en": "Asset Management Committee, Lower Facility"
   },
-  {
-   "id": "works",
-   "mesh": "props_works",
-   "name": {
-    "zh": "中央工坊",
-    "en": "Central works"
-   },
-   "desc": {
-    "zh": "中央工坊：无窗长厂房，屋顶通风，南侧装卸月台；东南为后勤场院。",
-    "en": "Central works: a long windowless hall with roof vents and a south loading dock; service yard to the southeast."
-   },
-   "view": [
-    0.5,
-    0.4,
-    -0.75
-   ]
+  "glb": "amc_facility.glb",
+  "glb_low": "amc_facility_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "wall",
-   "mesh": "props_wall",
-   "name": {
-    "zh": "围墙",
-    "en": "Perimeter wall"
-   },
-   "desc": {
-    "zh": "高围墙：外侧墙灯与摄像杆，整圈照明。",
-    "en": "Perimeter wall: outward wall lights and camera poles, lit all round."
-   },
-   "view": [
-    0.3,
-    0.35,
-    -0.9
-   ]
+  "groups": {
+    "roof": [
+      "props_roof"
+    ],
+    "walls": [
+      "walls_ext",
+      "props_works",
+      "props_wall"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_ground",
+      "props_lights",
+      "props_vehicles",
+      "props_gate",
+      "props_post"
+    ],
+    "building": {
+      "min": [
+        -61,
+        0,
+        -46
+      ],
+      "max": [
+        61,
+        30,
+        50.5
+      ]
+    }
   },
-  {
-   "id": "gate",
-   "mesh": "props_gate",
-   "name": {
-    "zh": "车辆门岗",
-    "en": "Vehicle gate"
-   },
-   "desc": {
-    "zh": "车辆门岗：岗亭、道闸、车底查验板与雨棚，出入经此登记。",
-    "en": "Vehicle gate: gatehouse, barrier arms, an under-vehicle inspection plate and a canopy; the controlled entrance."
-   },
-   "view": [
-    0.2,
-    0.25,
-    -0.95
-   ]
+  "section": {
+    "min": 0.5,
+    "max": 30,
+    "default": 30
   },
-  {
-   "id": "post",
-   "mesh": "props_post",
-   "name": {
-    "zh": "执法分队驻点",
-    "en": "Enforcement squad post"
-   },
-   "desc": {
-    "zh": "执法分队驻点：营房与车棚；委员会直管设施周边有执法分队驻守。",
-    "en": "Enforcement squad post: barracks and carport; an enforcement squad is stationed around the committee's facility."
-   },
-   "view": [
-    -0.4,
-    0.4,
-    -0.8
-   ]
+  "camera": {
+    "frame": [
+      "walls_ext",
+      "props_works",
+      "props_wall"
+    ],
+    "dir": [
+      0.35,
+      0.55,
+      -0.75
+    ],
+    "min": 5,
+    "max": 400,
+    "maxPolar": 1.48
   },
-  {
-   "id": "vehicles",
-   "mesh": "props_vehicles",
-   "name": {
-    "zh": "车辆",
-    "en": "Vehicles"
-   },
-   "desc": {
-    "zh": "深色巡逻悬浮车、巡逻车与货运卡车（无标识）。",
-    "en": "Dark patrol hover vehicles, patrol vans and freight trucks (unmarked)."
-   },
-   "view": [
-    0.3,
-    0.3,
-    -0.9
-   ]
-  },
-  {
-   "id": "lights",
-   "mesh": "props_lights",
-   "name": {
-    "zh": "投光灯与路灯",
-    "en": "Floodlights & street lamps"
-   },
-   "desc": {
-    "zh": "投光灯塔与路灯：下层少见的明亮区域。",
-    "en": "Floodlight masts and street lamps: a rare brightly lit area in the lower tier."
-   },
-   "view": [
-    0.3,
-    0.5,
-    -0.8
-   ]
-  },
-  {
-   "id": "buffer",
-   "mesh": "site_ground",
-   "name": {
-    "zh": "缓冲街道",
-    "en": "Buffer street"
-   },
-   "desc": {
-    "zh": "墙外一圈整洁明亮的道路与人行道——下层唯一相对安全的一带，铁皮屋从这里之外开始。",
-    "en": "A tidy, lit ring road and pavement around the wall: the only relatively safe strip in the lower tier; the shacks begin beyond it."
-   },
-   "view": [
-    0.2,
-    0.7,
-    -0.7
-   ]
-  }
- ]
+  "hotspots": [
+    {
+      "id": "admin",
+      "mesh": "walls_ext",
+      "name": {
+        "zh": "行政中心",
+        "en": "Admin centre"
+      },
+      "desc": {
+        "zh": "行政中心：六层办公楼，竖向遮阳鳍板与入口雨棚；委员会在下层的公共设施管理中心。",
+        "en": "Admin centre: a six-storey office block with vertical fins and an entrance canopy, the committee's lower-tier management centre."
+      },
+      "view": [
+        0.4,
+        0.35,
+        -0.85
+      ]
+    },
+    {
+      "id": "works",
+      "mesh": "props_works",
+      "name": {
+        "zh": "中央工坊",
+        "en": "Central works"
+      },
+      "desc": {
+        "zh": "中央工坊：无窗长厂房，屋顶通风，南侧装卸月台；东南为后勤场院。",
+        "en": "Central works: a long windowless hall with roof vents and a south loading dock; service yard to the southeast."
+      },
+      "view": [
+        0.5,
+        0.4,
+        -0.75
+      ]
+    },
+    {
+      "id": "wall",
+      "mesh": "props_wall",
+      "name": {
+        "zh": "围墙",
+        "en": "Perimeter wall"
+      },
+      "desc": {
+        "zh": "高围墙：外侧墙灯与摄像杆，整圈照明。",
+        "en": "Perimeter wall: outward wall lights and camera poles, lit all round."
+      },
+      "view": [
+        0.3,
+        0.35,
+        -0.9
+      ]
+    },
+    {
+      "id": "gate",
+      "mesh": "props_gate",
+      "name": {
+        "zh": "车辆门岗",
+        "en": "Vehicle gate"
+      },
+      "desc": {
+        "zh": "车辆门岗：岗亭、道闸、车底查验板与雨棚，出入经此登记。",
+        "en": "Vehicle gate: gatehouse, barrier arms, an under-vehicle inspection plate and a canopy; the controlled entrance."
+      },
+      "view": [
+        0.2,
+        0.25,
+        -0.95
+      ]
+    },
+    {
+      "id": "post",
+      "mesh": "props_post",
+      "name": {
+        "zh": "执法分队驻点",
+        "en": "Enforcement squad post"
+      },
+      "desc": {
+        "zh": "执法分队驻点：营房与车棚；委员会直管设施周边有执法分队驻守。",
+        "en": "Enforcement squad post: barracks and carport; an enforcement squad is stationed around the committee's facility."
+      },
+      "view": [
+        -0.4,
+        0.4,
+        -0.8
+      ]
+    },
+    {
+      "id": "vehicles",
+      "mesh": "props_vehicles",
+      "name": {
+        "zh": "车辆",
+        "en": "Vehicles"
+      },
+      "desc": {
+        "zh": "深色巡逻悬浮车、巡逻车与货运卡车（无标识）。",
+        "en": "Dark patrol hover vehicles, patrol vans and freight trucks (unmarked)."
+      },
+      "view": [
+        0.3,
+        0.3,
+        -0.9
+      ]
+    },
+    {
+      "id": "lights",
+      "mesh": "props_lights",
+      "name": {
+        "zh": "投光灯与路灯",
+        "en": "Floodlights & street lamps"
+      },
+      "desc": {
+        "zh": "投光灯塔与路灯：下层少见的明亮区域。",
+        "en": "Floodlight masts and street lamps: a rare brightly lit area in the lower tier."
+      },
+      "view": [
+        0.3,
+        0.5,
+        -0.8
+      ]
+    },
+    {
+      "id": "buffer",
+      "mesh": "site_ground",
+      "name": {
+        "zh": "缓冲街道",
+        "en": "Buffer street"
+      },
+      "desc": {
+        "zh": "墙外一圈整洁明亮的道路与人行道——下层唯一相对安全的一带，铁皮屋从这里之外开始。",
+        "en": "A tidy, lit ring road and pavement around the wall: the only relatively safe strip in the lower tier; the shacks begin beyond it."
+      },
+      "view": [
+        0.2,
+        0.7,
+        -0.7
+      ]
+    }
+  ]
 }

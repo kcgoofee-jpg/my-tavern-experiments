@@ -1,236 +1,236 @@
 {
- "_说明": "viewer3d.html?model=outpost 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。只画外观：下层城边的防卫军前沿哨所与外墙缺口处的反兽障碍带；外墙、荒野、支撑柱与中层底面（bg_*）只在成图里。位置与形制为仓库推断。",
- "id": "outpost",
- "title": {
-  "zh": "防卫军前沿哨所",
-  "en": "Defense Force Forward Outpost"
- },
- "glb": "outpost.glb",
- "glb_low": "outpost_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "walls_ext"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_ground",
-   "props_perimeter",
-   "props_barricade",
-   "props_breach",
-   "props_utility",
-   "props_lights",
-   "props_vehicles",
-   "props_gate"
-  ],
-  "building": {
-   "min": [
-    -60.0,
-    -0.5,
-    -56.8
-   ],
-   "max": [
-    60.0,
-    40.8,
-    48.1
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 41,
-  "default": 41
- },
- "camera": {
-  "frame": [
-   "walls_ext",
-   "props_perimeter",
-   "props_barricade"
-  ],
-  "dir": [
-   0.4,
-   0.5,
-   -0.75
-  ],
-  "min": 4,
-  "max": 400,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "command",
-   "mesh": "walls_ext",
-   "name": {
-    "zh": "指挥所",
-    "en": "Command post"
-   },
-   "desc": {
-    "zh": "指挥所：两层集装箱模块，外挂楼梯与屋顶平台。",
-    "en": "Command post: two-storey containerised modules with an outside stair and roof deck."
-   },
-   "view": [
-    0.4,
-    0.35,
-    -0.85
-   ]
+  "_说明": "viewer3d.html?model=outpost 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。只画外观：下层城边的防卫军前沿哨所与外墙缺口处的反兽障碍带；外墙、荒野、支撑柱与中层底面（bg_*）只在成图里。",
+  "id": "outpost",
+  "title": {
+    "zh": "防卫军前沿哨所",
+    "en": "Defense Force Forward Outpost"
   },
-  {
-   "id": "perimeter",
-   "mesh": "props_perimeter",
-   "name": {
-    "zh": "防御围墙",
-    "en": "Perimeter"
-   },
-   "desc": {
-    "zh": "防御围墙：防爆筐与混凝土 T 形墙，沙袋掩体。",
-    "en": "Perimeter: Hesco barriers, concrete T-walls and sandbag positions."
-   },
-   "view": [
-    0.4,
-    0.5,
-    -0.75
-   ]
+  "glb": "outpost.glb",
+  "glb_low": "outpost_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "tower",
-   "mesh": "props_tower",
-   "name": {
-    "zh": "观察塔",
-    "en": "Observation tower"
-   },
-   "desc": {
-    "zh": "观察塔与探照灯，朝城外照。",
-    "en": "Observation tower with a searchlight aimed outward."
-   },
-   "view": [
-    0.5,
-    0.3,
-    -0.8
-   ]
+  "groups": {
+    "roof": [],
+    "walls": [
+      "walls_ext"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_ground",
+      "props_perimeter",
+      "props_barricade",
+      "props_breach",
+      "props_utility",
+      "props_lights",
+      "props_vehicles",
+      "props_gate"
+    ],
+    "building": {
+      "min": [
+        -60.0,
+        -0.5,
+        -56.8
+      ],
+      "max": [
+        60.0,
+        40.8,
+        48.1
+      ]
+    }
   },
-  {
-   "id": "gate",
-   "mesh": "props_gate",
-   "name": {
-    "zh": "出入口",
-    "en": "Gates"
-   },
-   "desc": {
-    "zh": "南侧道闸与岗亭，北侧钢门上满是抓痕。",
-    "en": "South barrier and guard booth; the north steel gate is covered in gouges."
-   },
-   "view": [
-    0.2,
-    0.3,
-    -0.95
-   ]
+  "section": {
+    "min": 0.5,
+    "max": 41,
+    "default": 41
   },
-  {
-   "id": "vehicles",
-   "mesh": "props_vehicles",
-   "name": {
-    "zh": "装甲通用车",
-    "en": "Armoured utility vehicles"
-   },
-   "desc": {
-    "zh": "无武装、无标识的装甲通用车。",
-    "en": "Unarmed, unmarked armoured utility vehicles."
-   },
-   "view": [
-    0.5,
-    0.35,
-    -0.8
-   ]
+  "camera": {
+    "frame": [
+      "walls_ext",
+      "props_perimeter",
+      "props_barricade"
+    ],
+    "dir": [
+      0.4,
+      0.5,
+      -0.75
+    ],
+    "min": 4,
+    "max": 400,
+    "maxPolar": 1.48
   },
-  {
-   "id": "barricade",
-   "mesh": "props_barricade",
-   "name": {
-    "zh": "反兽障碍带",
-    "en": "Anti-beast barricade"
-   },
-   "desc": {
-    "zh": "反兽障碍带：钢刺猬、带刺混凝土墩与留着抓痕的钢板墙——防卫军守的是城外异兽的外围防线。",
-    "en": "Anti-beast barricade: steel hedgehogs, spiked concrete blocks and clawed steel plate walls; the Defense Force holds the outer line against beasts from beyond the city."
-   },
-   "view": [
-    0.2,
-    0.5,
-    0.85
-   ]
-  },
-  {
-   "id": "breach",
-   "mesh": "props_breach",
-   "name": {
-    "zh": "外墙缺口",
-    "en": "Breach in the outer wall"
-   },
-   "desc": {
-    "zh": "外墙缺口：参差的断口与裸露钢筋，外面就是荒野。",
-    "en": "Breach in the outer city wall: jagged edges and exposed rebar, with the wilderness beyond."
-   },
-   "view": [
-    0.1,
-    0.4,
-    0.9
-   ]
-  },
-  {
-   "id": "utility",
-   "mesh": "props_utility",
-   "name": {
-    "zh": "后勤设施",
-    "en": "Support"
-   },
-   "desc": {
-    "zh": "后勤：发电机、油囊、天线杆、伪装网与水箱。",
-    "en": "Support: generator, fuel bladder, antenna mast, camouflage net and water tanks."
-   },
-   "view": [
-    -0.5,
-    0.4,
-    -0.75
-   ]
-  },
-  {
-   "id": "lights",
-   "mesh": "props_lights",
-   "name": {
-    "zh": "照明",
-    "en": "Floodlights"
-   },
-   "desc": {
-    "zh": "朝外与朝院内的投光灯。",
-    "en": "Floodlights facing outward and into the yard."
-   },
-   "view": [
-    0.3,
-    0.5,
-    -0.8
-   ]
-  },
-  {
-   "id": "ground",
-   "mesh": "site_ground",
-   "name": {
-    "zh": "哨所场地",
-    "en": "Outpost grounds"
-   },
-   "desc": {
-    "zh": "碎石院子、混凝土车位、车辙与积水。",
-    "en": "Gravel yard, concrete pads, ruts and puddles."
-   },
-   "view": [
-    0.2,
-    0.75,
-    -0.65
-   ]
-  }
- ]
+  "hotspots": [
+    {
+      "id": "command",
+      "mesh": "walls_ext",
+      "name": {
+        "zh": "指挥所",
+        "en": "Command post"
+      },
+      "desc": {
+        "zh": "指挥所：两层集装箱模块，外挂楼梯与屋顶平台。",
+        "en": "Command post: two-storey containerised modules with an outside stair and roof deck."
+      },
+      "view": [
+        0.4,
+        0.35,
+        -0.85
+      ]
+    },
+    {
+      "id": "perimeter",
+      "mesh": "props_perimeter",
+      "name": {
+        "zh": "防御围墙",
+        "en": "Perimeter"
+      },
+      "desc": {
+        "zh": "防御围墙：防爆筐与混凝土 T 形墙，沙袋掩体。",
+        "en": "Perimeter: Hesco barriers, concrete T-walls and sandbag positions."
+      },
+      "view": [
+        0.4,
+        0.5,
+        -0.75
+      ]
+    },
+    {
+      "id": "tower",
+      "mesh": "props_tower",
+      "name": {
+        "zh": "观察塔",
+        "en": "Observation tower"
+      },
+      "desc": {
+        "zh": "观察塔与探照灯，朝城外照。",
+        "en": "Observation tower with a searchlight aimed outward."
+      },
+      "view": [
+        0.5,
+        0.3,
+        -0.8
+      ]
+    },
+    {
+      "id": "gate",
+      "mesh": "props_gate",
+      "name": {
+        "zh": "出入口",
+        "en": "Gates"
+      },
+      "desc": {
+        "zh": "南侧道闸与岗亭，北侧钢门上满是抓痕。",
+        "en": "South barrier and guard booth; the north steel gate is covered in gouges."
+      },
+      "view": [
+        0.2,
+        0.3,
+        -0.95
+      ]
+    },
+    {
+      "id": "vehicles",
+      "mesh": "props_vehicles",
+      "name": {
+        "zh": "装甲通用车",
+        "en": "Armoured utility vehicles"
+      },
+      "desc": {
+        "zh": "无武装、无标识的装甲通用车。",
+        "en": "Unarmed, unmarked armoured utility vehicles."
+      },
+      "view": [
+        0.5,
+        0.35,
+        -0.8
+      ]
+    },
+    {
+      "id": "barricade",
+      "mesh": "props_barricade",
+      "name": {
+        "zh": "反兽障碍带",
+        "en": "Anti-beast barricade"
+      },
+      "desc": {
+        "zh": "反兽障碍带：钢刺猬、带刺混凝土墩与留着抓痕的钢板墙——防卫军守的是城外异兽的外围防线。",
+        "en": "Anti-beast barricade: steel hedgehogs, spiked concrete blocks and clawed steel plate walls; the Defense Force holds the outer line against beasts from beyond the city."
+      },
+      "view": [
+        0.2,
+        0.5,
+        0.85
+      ]
+    },
+    {
+      "id": "breach",
+      "mesh": "props_breach",
+      "name": {
+        "zh": "外墙缺口",
+        "en": "Breach in the outer wall"
+      },
+      "desc": {
+        "zh": "外墙缺口：参差的断口与裸露钢筋，外面就是荒野。",
+        "en": "Breach in the outer city wall: jagged edges and exposed rebar, with the wilderness beyond."
+      },
+      "view": [
+        0.1,
+        0.4,
+        0.9
+      ]
+    },
+    {
+      "id": "utility",
+      "mesh": "props_utility",
+      "name": {
+        "zh": "后勤设施",
+        "en": "Support"
+      },
+      "desc": {
+        "zh": "后勤：发电机、油囊、天线杆、伪装网与水箱。",
+        "en": "Support: generator, fuel bladder, antenna mast, camouflage net and water tanks."
+      },
+      "view": [
+        -0.5,
+        0.4,
+        -0.75
+      ]
+    },
+    {
+      "id": "lights",
+      "mesh": "props_lights",
+      "name": {
+        "zh": "照明",
+        "en": "Floodlights"
+      },
+      "desc": {
+        "zh": "朝外与朝院内的投光灯。",
+        "en": "Floodlights facing outward and into the yard."
+      },
+      "view": [
+        0.3,
+        0.5,
+        -0.8
+      ]
+    },
+    {
+      "id": "ground",
+      "mesh": "site_ground",
+      "name": {
+        "zh": "哨所场地",
+        "en": "Outpost grounds"
+      },
+      "desc": {
+        "zh": "碎石院子、混凝土车位、车辙与积水。",
+        "en": "Gravel yard, concrete pads, ruts and puddles."
+      },
+      "view": [
+        0.2,
+        0.75,
+        -0.65
+      ]
+    }
+  ]
 }

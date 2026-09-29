@@ -13,13 +13,14 @@ import { mountFeedbackButton } from './feedback.mjs';
 // ---------------- 设置（UI v2 §5）：首页 = 分组列表（+ 手机上的快捷：上一级、当前位置、关闭地图、切层、图层开关）；子页 显示 / 人物 / 数据与映射 / 更新与版本 / 高级 ----------------
 // 模块向指定页注册自己的一栏：TCSettings.registerSection(page, el, { order })，不再 insertBefore(#selfCheck)。
 export let setPageNow = 'home', setPrev = null;
-const PAGES = { home: ['settings_title', '设置'], display: ['s.display', '显示'], people: ['s.people', '人物'], data: ['s.data', '数据与映射'], update: ['s.update', '更新与版本'], adv: ['s.adv', '高级'] };
+const PAGES = { home: ['settings_title', '设置'], display: ['s.display', '显示'], people: ['s.people', '人物'], data: ['s.data', '数据与映射'], update: ['s.update', '更新与版本'], adv: ['s.adv', '高级'], license: ['s.license', '版权申明'] };
 export function setPage(pg, quiet) {
   if (!PAGES[pg]) pg = 'home'; setPageNow = pg;
   document.querySelectorAll('#setPop .spage').forEach(x => { x.hidden = x.dataset.page !== pg; });
   $('#setBack').hidden = pg === 'home'; $('#setTitle').textContent = tx(...PAGES[pg]);
   if (!quiet) { $('#setPop').scrollTop = 0; const f = pg === 'home' ? ($('#setQ')?.offsetParent ? $('#setQ') : $('#setPop .sgroups button')) : $('#setBack'); f?.focus({ preventScroll: true }); }
   if (pg === 'update') renderSelfCheck();
+  if (pg === 'license') renderLicense();
   if (pg === 'people') { const n = typeof P.TCChars !== 'undefined' ? P.TCChars.count() : 0; $('#chSrc').textContent = tx('s.ch_src_n', `当前聊天 ${n} 人`, { n }); }
   if (pg === 'adv') { v3dEntries(); renderLine(); }
   if (pg === 'display') tierAvail();
@@ -31,11 +32,37 @@ export const TCSettings = window.TCSettings = {
   open(page = 'home') { showSet(true); setPage(page); },
   get page() { return setPageNow; },
 };
+// 版权申明页：角色卡信息（自动读酒馆，读不到才提示风险）+ 地图项目与免责声明。不做真伪鉴定，只提示风险。
+function renderLicense() {
+  const box = $('#licBox'); if (!box) return; box.innerHTML = '';
+  const label = (t) => { const b = document.createElement('b'); b.textContent = t; b.style.cssText = 'display:block;margin:var(--sp-4) 0 var(--sp-2)'; box.appendChild(b); };
+  const row = (k, v, warn) => { const r = document.createElement('div'); r.className = 'row'; r.innerHTML = `<span${warn ? ' style="color:var(--warn,#c66)"' : ''}>${esc(k)}</span><code style="max-width:62%;text-align:right;word-break:break-all;white-space:normal">${esc(v)}</code>`; box.appendChild(r); };
+  label(tx('s.lic_card', '角色卡信息（自动读取）'));
+  let d = null, inTav = false;
+  try { const st = window.SillyTavern?.getContext?.(); inTav = !!st; d = st?.characters?.[st.characterId]?.data || null; } catch (e) {}
+  if (!inTav) row(tx('s.lic_state', '状态'), tx('s.lic_no_tav', '未接入酒馆，读不到角色卡信息（在酒馆里打开地图后显示）'), true);
+  else if (d && (d.creator || d.character_version || (d.tags && d.tags.length) || d.creator_notes)) {
+    if (d.name) row(tx('s.lic_name', '角色名'), d.name);
+    if (d.creator) row(tx('s.lic_creator', '作者'), d.creator);
+    if (d.character_version) row(tx('s.lic_ver', '版本'), d.character_version);
+    if (d.tags && d.tags.length) row(tx('s.lic_tags', '标签'), d.tags.join('、'));
+    if (d.creator_notes) row(tx('s.lic_notes', '作者注'), String(d.creator_notes).replace(/<[^>]+>/g, ' ').trim().slice(0, 140));
+  } else row(tx('s.lic_state', '状态'), tx('s.lic_unknown', '未读到本卡的作者或来源信息：卡片可能经转卖、搬运，存在数据风险，也可能损害原作者权益。建议只从原作者或授权渠道获取卡片。'), true);
+  label(tx('s.lic_map', '地图项目'));
+  row(tx('s.lic_repo', '伊甸地图（开源）'), 'github.com/kcgoofee-jpg/my-tavern-experiments');
+  row(tx('s.lic_map_by', '地图开发'), 'kcgoofee-jpg');
+  row(tx('s.lic_orig', '原作角色卡'), tx('s.lic_orig_v', 'Yehehua（类脑社区）原创；地图是经授权的二次创作（2026-09-27 起）'));
+  label(tx('s.lic_disc', '免责声明'));
+  const p = document.createElement('small'); p.style.cssText = 'display:block;line-height:1.5;opacity:.75';
+  p.textContent = tx('s.lic_disc_v', '地图为粉丝演绎：地点与形制以原作设定为准，地图仅作补充呈现，不对地图内容的准确性负责。三维模型的贴图与纹理来自 Poly Haven 与 ambientCG（CC0 协议）。');
+  box.appendChild(p);
+}
+
 // 设置里的搜索（桌面首屏顶，§5）：按每一行的文字找，结果点一下进那一页并高亮那一行
 function setSearch(q) {
   const box = $('#setHits'); box.innerHTML = ''; q = q.trim().toLowerCase(); $('#setPop .sgroups').hidden = !!q; if (!q) return;
   const rows = []; for (const pg of document.querySelectorAll('#setPop .spage:not([data-page="home"])'))
-    for (const r of pg.querySelectorAll(':scope > .row, :scope > .hrow, :scope > label, details > summary, #aboutBox > label, #selfCheck > b, #cuBox .cu-open, #cmpBox > summary')) {
+    for (const r of pg.querySelectorAll(':scope > .row, :scope > .hrow, :scope > label, details > summary, #aboutBox > label, #licBox > label, #selfCheck > b, #cuBox .cu-open, #cmpBox > summary')) {
       const txt = (r.textContent || '').trim(); if (txt && txt.toLowerCase().includes(q)) rows.push([pg.dataset.page, r, txt.slice(0, 40)]); }
   if (!rows.length) { box.innerHTML = `<small>${esc(tx('s.no_hit', '没有找到'))}</small>`; return; }
   for (const [pg, r, txt] of rows.slice(0, 12)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn';

@@ -1,219 +1,219 @@
 {
- "_说明": "viewer3d.html?model=iron_cradle 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。圣光教会唯一的战斗修女修道院，中层高区的独立院落；只画建筑，无人物、文字、宗教符号与武器。周边楼群、甲板与悬浮轨道（bg_*）只在成图里。位置与形制为仓库推断。",
- "id": "iron_cradle",
- "title": {
-  "zh": "圣铁摇篮",
-  "en": "Iron Cradle"
- },
- "glb": "iron_cradle.glb",
- "glb_low": "iron_cradle_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "walls_ext",
-   "props_cloister",
-   "props_ranges",
-   "props_hall",
-   "props_wall_gate"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_ground",
-   "props_yard",
-   "props_hangar",
-   "props_garden"
-  ],
-  "building": {
-   "min": [
-    -111.0,
-    -9.0,
-    -101.0
-   ],
-   "max": [
-    111.0,
-    39.9,
-    101.0
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 40,
-  "default": 40
- },
- "camera": {
-  "frame": [
-   "walls_ext",
-   "props_cloister",
-   "props_wall_gate"
-  ],
-  "dir": [
-   0.35,
-   0.55,
-   -0.75
-  ],
-  "min": 5,
-  "max": 400,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "church",
-   "mesh": "walls_ext",
-   "name": {
-    "zh": "修院教堂与交叉塔",
-    "en": "Convent church & crossing tower"
-   },
-   "desc": {
-    "zh": "长中殿、耳堂与半圆后殿，方形交叉塔包着钢带，素面钟架。",
-    "en": "A long nave, transept and round apse under a steel-banded square crossing tower with a plain bell-cote."
-   },
-   "view": [
-    0.4,
-    0.4,
-    -0.8
-   ]
+  "_说明": "viewer3d.html?model=iron_cradle 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。圣光教会唯一的战斗修女修道院，中层高区的独立院落；只画建筑，无人物、文字、宗教符号与武器。周边楼群、甲板与悬浮轨道（bg_*）只在成图里。",
+  "id": "iron_cradle",
+  "title": {
+    "zh": "圣铁摇篮",
+    "en": "Iron Cradle"
   },
-  {
-   "id": "cloister",
-   "mesh": "props_cloister",
-   "name": {
-    "zh": "回廊中庭",
-    "en": "Cloister garth"
-   },
-   "desc": {
-    "zh": "四面圆拱廊环绕草地与古井。",
-    "en": "Round-arched walks around a lawn and an old well."
-   },
-   "view": [
-    0.2,
-    0.7,
-    -0.65
-   ]
+  "glb": "iron_cradle.glb",
+  "glb_low": "iron_cradle_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "ranges",
-   "mesh": "props_ranges",
-   "name": {
-    "zh": "宿舍长楼与食堂",
-    "en": "Dormitory & refectory"
-   },
-   "desc": {
-    "zh": "修女们起居与用餐之处。",
-    "en": "Where the sisters live and take their meals."
-   },
-   "view": [
-    -0.6,
-    0.4,
-    -0.7
-   ]
+  "groups": {
+    "roof": [],
+    "walls": [
+      "walls_ext",
+      "props_cloister",
+      "props_ranges",
+      "props_hall",
+      "props_wall_gate"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_ground",
+      "props_yard",
+      "props_hangar",
+      "props_garden"
+    ],
+    "building": {
+      "min": [
+        -111.0,
+        -9.0,
+        -101.0
+      ],
+      "max": [
+        111.0,
+        39.9,
+        101.0
+      ]
+    }
   },
-  {
-   "id": "hall",
-   "mesh": "props_hall",
-   "name": {
-    "zh": "室内训练馆",
-    "en": "Training hall"
-   },
-   "desc": {
-    "zh": "石墩高侧窗的训练馆，露出钢桁架。",
-    "en": "A training hall of stone piers and high clerestory windows with exposed steel trusses."
-   },
-   "view": [
-    0.6,
-    0.35,
-    -0.7
-   ]
+  "section": {
+    "min": 0.5,
+    "max": 40,
+    "default": 40
   },
-  {
-   "id": "yard",
-   "mesh": "props_yard",
-   "name": {
-    "zh": "操练场",
-    "en": "Drill yard"
-   },
-   "desc": {
-    "zh": "压实土场地上的障碍架、攀爬架与平衡木。",
-    "en": "Obstacle frames, climbing frames and balance beams on packed earth."
-   },
-   "view": [
-    0.5,
-    0.5,
-    -0.7
-   ]
+  "camera": {
+    "frame": [
+      "walls_ext",
+      "props_cloister",
+      "props_wall_gate"
+    ],
+    "dir": [
+      0.35,
+      0.55,
+      -0.75
+    ],
+    "min": 5,
+    "max": 400,
+    "maxPolar": 1.48
   },
-  {
-   "id": "hangar",
-   "mesh": "props_hangar",
-   "name": {
-    "zh": "坐骑机库",
-    "en": "Mount hangar"
-   },
-   "desc": {
-    "zh": "停放悬浮坐骑与悬浮摩托，前面是起降坪。",
-    "en": "Stalls for hover-mounts and hover bikes, with a landing pad in front."
-   },
-   "view": [
-    -0.5,
-    0.4,
-    -0.75
-   ]
-  },
-  {
-   "id": "wall",
-   "mesh": "props_wall_gate",
-   "name": {
-    "zh": "高墙与门楼",
-    "en": "High wall & gatehouse"
-   },
-   "desc": {
-    "zh": "高过屋檐的石墙与垛口步道；门楼是封闭修院唯一的出入口，钢闸门半落。",
-    "en": "A stone wall higher than the eaves with a parapet walk; the gatehouse, with its half-lowered steel portcullis, is the only way into the closed convent."
-   },
-   "view": [
-    0.1,
-    0.3,
-    -0.95
-   ]
-  },
-  {
-   "id": "garden",
-   "mesh": "props_garden",
-   "name": {
-    "zh": "药草园与果园",
-    "en": "Herb garden & orchard"
-   },
-   "desc": {
-    "zh": "石边药圃与成行果树。",
-    "en": "Stone-edged herb beds and rows of fruit trees."
-   },
-   "view": [
-    -0.3,
-    0.6,
-    -0.75
-   ]
-  },
-  {
-   "id": "ground",
-   "mesh": "site_ground",
-   "name": {
-    "zh": "甲板台地",
-    "en": "Deck terrace"
-   },
-   "desc": {
-    "zh": "中层高区的一块独立院落，台地边缘有灯带。",
-    "en": "A walled compound in the mid tier's high district, with a lit terrace edge."
-   },
-   "view": [
-    0.2,
-    0.75,
-    -0.65
-   ]
-  }
- ]
+  "hotspots": [
+    {
+      "id": "church",
+      "mesh": "walls_ext",
+      "name": {
+        "zh": "修院教堂与交叉塔",
+        "en": "Convent church & crossing tower"
+      },
+      "desc": {
+        "zh": "长中殿、耳堂与半圆后殿，方形交叉塔包着钢带，素面钟架。",
+        "en": "A long nave, transept and round apse under a steel-banded square crossing tower with a plain bell-cote."
+      },
+      "view": [
+        0.4,
+        0.4,
+        -0.8
+      ]
+    },
+    {
+      "id": "cloister",
+      "mesh": "props_cloister",
+      "name": {
+        "zh": "回廊中庭",
+        "en": "Cloister garth"
+      },
+      "desc": {
+        "zh": "四面圆拱廊环绕草地与古井。",
+        "en": "Round-arched walks around a lawn and an old well."
+      },
+      "view": [
+        0.2,
+        0.7,
+        -0.65
+      ]
+    },
+    {
+      "id": "ranges",
+      "mesh": "props_ranges",
+      "name": {
+        "zh": "宿舍长楼与食堂",
+        "en": "Dormitory & refectory"
+      },
+      "desc": {
+        "zh": "修女们起居与用餐之处。",
+        "en": "Where the sisters live and take their meals."
+      },
+      "view": [
+        -0.6,
+        0.4,
+        -0.7
+      ]
+    },
+    {
+      "id": "hall",
+      "mesh": "props_hall",
+      "name": {
+        "zh": "室内训练馆",
+        "en": "Training hall"
+      },
+      "desc": {
+        "zh": "石墩高侧窗的训练馆，露出钢桁架。",
+        "en": "A training hall of stone piers and high clerestory windows with exposed steel trusses."
+      },
+      "view": [
+        0.6,
+        0.35,
+        -0.7
+      ]
+    },
+    {
+      "id": "yard",
+      "mesh": "props_yard",
+      "name": {
+        "zh": "操练场",
+        "en": "Drill yard"
+      },
+      "desc": {
+        "zh": "压实土场地上的障碍架、攀爬架与平衡木。",
+        "en": "Obstacle frames, climbing frames and balance beams on packed earth."
+      },
+      "view": [
+        0.5,
+        0.5,
+        -0.7
+      ]
+    },
+    {
+      "id": "hangar",
+      "mesh": "props_hangar",
+      "name": {
+        "zh": "坐骑机库",
+        "en": "Mount hangar"
+      },
+      "desc": {
+        "zh": "停放悬浮坐骑与悬浮摩托，前面是起降坪。",
+        "en": "Stalls for hover-mounts and hover bikes, with a landing pad in front."
+      },
+      "view": [
+        -0.5,
+        0.4,
+        -0.75
+      ]
+    },
+    {
+      "id": "wall",
+      "mesh": "props_wall_gate",
+      "name": {
+        "zh": "高墙与门楼",
+        "en": "High wall & gatehouse"
+      },
+      "desc": {
+        "zh": "高过屋檐的石墙与垛口步道；门楼是封闭修院唯一的出入口，钢闸门半落。",
+        "en": "A stone wall higher than the eaves with a parapet walk; the gatehouse, with its half-lowered steel portcullis, is the only way into the closed convent."
+      },
+      "view": [
+        0.1,
+        0.3,
+        -0.95
+      ]
+    },
+    {
+      "id": "garden",
+      "mesh": "props_garden",
+      "name": {
+        "zh": "药草园与果园",
+        "en": "Herb garden & orchard"
+      },
+      "desc": {
+        "zh": "石边药圃与成行果树。",
+        "en": "Stone-edged herb beds and rows of fruit trees."
+      },
+      "view": [
+        -0.3,
+        0.6,
+        -0.75
+      ]
+    },
+    {
+      "id": "ground",
+      "mesh": "site_ground",
+      "name": {
+        "zh": "甲板台地",
+        "en": "Deck terrace"
+      },
+      "desc": {
+        "zh": "中层高区的一块独立院落，台地边缘有灯带。",
+        "en": "A walled compound in the mid tier's high district, with a lit terrace edge."
+      },
+      "view": [
+        0.2,
+        0.75,
+        -0.65
+      ]
+    }
+  ]
 }

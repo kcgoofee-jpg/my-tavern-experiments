@@ -1,4 +1,4 @@
-// 加载线路（CDN 节点）与版本推断：纯计算，不碰 DOM、不持有状态（C2 第 4 步从 eden-map.js 拆出，行为不变）。
+// 加载线路（CDN 节点）与版本识别：纯计算，不碰 DOM、不持有状态（C2 第 4 步从 eden-map.js 拆出，行为不变）。
 // 当前选中的线路（line / BASE / 页面缓存）与线路选择界面仍在入口 eden-map.js：它们和查看器的加载 / 卸载绑在一起。
 import { cdnFetch } from './host-th.mjs';
 

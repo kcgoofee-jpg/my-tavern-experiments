@@ -70,7 +70,7 @@ export function worldOverlays() {
   for (const m of M.minors) { if (m.n < 600) continue; const el = document.createElement('div'); el.className = 'minor'; el.textContent = t('minor');
     place(el, m.c[0], m.c[1], OpenSeadragon.Placement.CENTER); }
   { const el = document.createElement('div'); el.className = 'realm'; el.innerHTML = `<b style="font-size:20px;letter-spacing:${LANG === 'en' ? 2 : 6}px">${esc(tr('海外诸地'))}</b><span>${esc(tr('稀有矿物 · 异域人员输出地'))}</span>`;
-    trackEl(el, () => showCard(null, tr('海外诸地'), 'inf', '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）；陆块形状与位置为推断'), tr('海外诸地'));
+    trackEl(el, () => showCard(null, tr('海外诸地'), 'inf', '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）'), tr('海外诸地'));
     place(el, M.overseas[0], M.overseas[1], OpenSeadragon.Placement.CENTER); }
   const gOf = id => id && Object.keys(REG.groups).find(k => REG.groups[k].place === id);   // 世界图地点 → 有地图的组（天城、开局地点）
   const enter = gid => { const g = gid && REG.groups[gid]; if (!g) return ''; return g.layers.map(k => { const L = REG.maps[k];

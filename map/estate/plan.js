@@ -2,7 +2,7 @@
 // 坐标：x 东西（+x = 东），z 南北（+z = 正面 = 南，朝停靠平台），y 向上；1 单位 = 1 m；中央主楼中心在原点。
 // 府邸坐标 x0…x1 × y0…y1 → r = D2M(x0, x1, y0, y1) = [x0, x1, −y1, −y0]；岛坐标 (X, Y) → I2M(X, Y) = [X, 25 − Y]。
 // 标高：模型 y = 设定标高 + 1.2（1.2 m 基座）；F5 取 18.7（挡檐墙顶面）。
-// src：世界书 = maps.json 的 eden src / alias；ROADMAP = 路线图规划；推断 = 设定自行假定
+// src：世界书 = maps.json 的 eden src / alias；ROADMAP = 路线图规划；自设 = 地图补充设定（卡未写）
 //
 // 「接口变更」（WP-A → WP-C）
 // - building.js 新导出 buildCut(b, fi)；buildHouse(full, site) 不再生成剖切几何。
@@ -44,14 +44,14 @@ export const FLOORS = [
 // 卡设定：地上 F1–F3 + 地下 B1–B2（docs/card-digest.md §6）。F4 / F5 都是屋顶构筑物（仓库自设，不算楼层，不再标成「顶楼」）；卡设定的分层房间见 map/data/eden_estate_rooms.json。id 不变（estate:floor 接口）
 export const FLOOR_EN = ['State', 'Daily', 'Private', 'Roof service rooms', 'Roof lookout'];
 export const ENTAB = [14.7, 17.6];   // 额枋 14.7–15.6 · 檐壁 15.6–16.5 · 檐口 16.5–17.6；挡檐墙 17.6–18.7
-export const SRC_EN = { '世界书': 'Worldbook', 'ROADMAP': 'Roadmap', '推断': 'Inferred' };
+export const SRC_EN = { '世界书': 'Worldbook', 'ROADMAP': 'Roadmap', '自设': 'Self-set' };
 
 /* ================================================================
  * 房间表（REFIT_PLAN §3；坐标为模型轴）
  * R(id, 名称, 层, r, 地面, 墙面, rank, 其余字段)
  * en = [英文名, 英文用途, 英文传承]，汇总进 EN
  * ================================================================ */
-const R = (id, name, floor, r, mat, wall, rank, o = {}) => ({ id, name, floor, r, mat, wall, rank, alias: [], alias_en: [], use: '', heritage: '', era: '', src: '推断', ...o });
+const R = (id, name, floor, r, mat, wall, rank, o = {}) => ({ id, name, floor, r, mat, wall, rank, alias: [], alias_en: [], use: '', heritage: '', era: '', src: '自设', ...o });
 const SUITE = '卧室（四柱床、床头柜与台灯、写字台、安乐椅、梳妆台、小壁炉）+ 更衣室（双门衣柜、抽屉柜、穿衣镜）+ 浴室（铸铁爪足浴缸、洗手台、马桶、黄铜电热毛巾架）';
 const SUITE_EN = 'Bedroom (four-poster, nightstands, writing desk, easy chair, dressing table, small fireplace), dressing room and bathroom (claw-foot tub, basin, WC, brass towel warmer)';
 
@@ -283,16 +283,16 @@ export const ROOM_BY_ID = Object.fromEntries(ROOMS.map((r) => [r.id, r]));
  * 竖井：floors = 画出竖井段的层；stops = 开门的层；b1 = 向下延伸到的 y
  * ================================================================ */
 export const SHAFTS = [
-  { id: 'stair', name: '主楼梯', r: [8, 20, -22, -6], color: '#4C8C99', floors: [0, 1, 2], stops: [0, 1, 2], src: '推断', use: '访客与主人：石材悬挑双跑回转梯，F1–F3，顶部天光' },
-  { id: 'lift', name: '电梯', r: [12.5, 15.5, -16.5, -12.5], color: '#4C8C99', floors: [0, 1, 2, 3, 4], stops: [0, 1, 2, 4], key: [3], src: '推断', use: '黄铜笼式以太电梯（三代加装；仓库自设，非卡设定）：停 F1–F3 与 F5，F4 需钥匙' },
-  { id: 'service', name: '仆役楼梯', r: [-20, -14, -14, -6], color: '#C98A40', floors: [0, 1, 2, 3, 4], stops: [0, 1, 2, 3, 4], b1: -3.3, src: '推断', use: '仆役：石踏步、铁栏杆，B1–F5；内有 1.2 × 1.2 m 食梯（手摇与以太两用）' },
-  { id: 'master', name: '主人通道', r: [-14, -8, -22, -14], color: '#7A5FA0', floors: [0, 1, 2, 3, 4], stops: [0, 2, 4], src: 'ROADMAP', use: '仅主人：螺旋梯加单人电梯，只在 F1 / F3 / F5 开门；F1 后墙暗门通紫藤廊', note: '走线推断' },
+  { id: 'stair', name: '主楼梯', r: [8, 20, -22, -6], color: '#4C8C99', floors: [0, 1, 2], stops: [0, 1, 2], src: '自设', use: '访客与主人：石材悬挑双跑回转梯，F1–F3，顶部天光' },
+  { id: 'lift', name: '电梯', r: [12.5, 15.5, -16.5, -12.5], color: '#4C8C99', floors: [0, 1, 2, 3, 4], stops: [0, 1, 2, 4], key: [3], src: '自设', use: '黄铜笼式以太电梯（三代加装；仓库自设，非卡设定）：停 F1–F3 与 F5，F4 需钥匙' },
+  { id: 'service', name: '仆役楼梯', r: [-20, -14, -14, -6], color: '#C98A40', floors: [0, 1, 2, 3, 4], stops: [0, 1, 2, 3, 4], b1: -3.3, src: '自设', use: '仆役：石踏步、铁栏杆，B1–F5；内有 1.2 × 1.2 m 食梯（手摇与以太两用）' },
+  { id: 'master', name: '主人通道', r: [-14, -8, -22, -14], color: '#7A5FA0', floors: [0, 1, 2, 3, 4], stops: [0, 2, 4], src: 'ROADMAP', use: '仅主人：螺旋梯加单人电梯，只在 F1 / F3 / F5 开门；F1 后墙暗门通紫藤廊', note: '走线为地图自设' },
 ];
 
 /* ================================================================
  * 室外区域（外观模式；模型轴）
  * ================================================================ */
-const A = (name, o) => ({ name, alias: [], alias_en: [], y: 3, pri: 5, src: '推断', ...o });
+const A = (name, o) => ({ name, alias: [], alias_en: [], y: 3, pri: 5, src: '自设', ...o });
 export const AREAS = [
   A('伊甸庄园 · 主楼', { alias: ['伊甸庄园', '伊甸', '庄园', '主楼', '中央主楼', '府邸'], alias_en: ['Eden Manor', 'Main House', 'Manor'], x: 0, z: 0, w: 40, d: 44, y: 34, pri: 10, src: '世界书', note: 'src「新古典主义白色石材建筑」',
     use: '帕拉第奥式五段构图的中央主楼：六柱科林斯门廊与山花家徽、粗面石基座、檐部与挡檐墙、屋顶平台与眺望亭穹顶' }),
@@ -305,7 +305,7 @@ export const AREAS = [
   A('音乐厅亭', { alias: ['音乐厅亭'], alias_en: ['Music Pavilion'], x: 90, z: -3, w: 24, d: 38, y: 16, pri: 9, use: '东端音乐厅：单层 11 m，筒拱屋面，北端半圆后殿安管风琴', heritage: '管风琴最低的那根音管上刻着四代家主和建造匠人的名字。' }),
   A('前庭', { alias: ['前庭', '喷泉', '前院', '荣誉庭院'], alias_en: ['Forecourt', 'Fountain'], x: 0, z: 53, w: 110, d: 34, y: 9, pri: 8, src: '世界书', note: 'src「前庭喷泉」',
     use: '砾石广场，中央大喷泉：外池半径 7 m、三层水盘，顶上铜像「持苹果的少女」；两侧椴树林荫' }),
-  A('西花坛', { alias: ['花坛', '花园', '庭园', '刺绣花坛'], alias_en: ['Gardens', 'Garden', 'Parterre'], x: -36, z: 53, w: 40, d: 30, y: 2, pri: 7, src: '世界书', note: 'src「花园」；布局推断', use: '法式刺绣花坛 3 × 2 格，黄杨卷草纹填彩色碎砖和季节花' }),
+  A('西花坛', { alias: ['花坛', '花园', '庭园', '刺绣花坛'], alias_en: ['Gardens', 'Garden', 'Parterre'], x: -36, z: 53, w: 40, d: 30, y: 2, pri: 7, src: '世界书', note: 'src「花园」；布局为地图自设', use: '法式刺绣花坛 3 × 2 格，黄杨卷草纹填彩色碎砖和季节花' }),
   A('东花坛', { alias: ['东花坛'], alias_en: ['East Parterre'], x: 36, z: 53, w: 40, d: 30, y: 2, pri: 6, use: '法式刺绣花坛 3 × 2 格' }),
   A('中轴大道', { alias: ['大道', '中轴大道', '林荫道', '条纹草坪'], alias_en: ['Avenue', 'Grand Avenue'], x: 0, z: 170, w: 50, d: 200, y: 2, pri: 9, use: '大道 x ±3，两侧各一行椴树，前 56 m 有 16 座雕像台座；割草深浅条纹的长草坪' }),
   A('停靠平台', { alias: ['停靠平台', '访客停靠平台', '平台'], alias_en: ['Landing Platform', 'Landing Stage'], x: 0, z: 277, r: 16, y: 5, pri: 9, src: '世界书', note: 'src「访客停靠平台」',
@@ -329,7 +329,7 @@ export const AREAS = [
   A('后轴观景台', { alias: ['观景台', '后轴观景台'], alias_en: ['Lookout', 'North Lookout'], x: 0, z: -215, r: 10, y: 3, pri: 4, use: '岛缘半圆观景台，俯瞰下方天城' }),
   A('西观景亭', { alias: ['西观景亭'], alias_en: ['West Lookout'], x: -315, z: 25, r: 4, y: 6, pri: 3, use: '小圆亭，看日落' }),
   A('东观景亭', { alias: ['东观景亭'], alias_en: ['East Lookout'], x: 315, z: 25, r: 4, y: 6, pri: 3, use: '小圆亭，看日出' }),
-  A('结界锚碑 · 西北', { alias: ['结界锚碑', '锚碑'], alias_en: ['Ward Anchor', 'Anchor Stone'], x: -235, z: -140, r: 3, y: 11, pri: 3, src: '世界书', note: 'src「全域结界」；形式、位置推断', use: '2 × 2 × 9 m 方尖碑，碑顶嵌以太晶，由 F4 结界值守室控制' }),
+  A('结界锚碑 · 西北', { alias: ['结界锚碑', '锚碑'], alias_en: ['Ward Anchor', 'Anchor Stone'], x: -235, z: -140, r: 3, y: 11, pri: 3, src: '世界书', note: 'src「全域结界」；形式、位置为地图自设', use: '2 × 2 × 9 m 方尖碑，碑顶嵌以太晶，由 F4 结界值守室控制' }),
   A('结界锚碑 · 东北', { alias: ['东北锚碑'], alias_en: ['NE Anchor'], x: 235, z: -140, r: 3, y: 11, pri: 3, src: '世界书', use: '2 × 2 × 9 m 方尖碑，碑顶嵌以太晶' }),
   A('结界锚碑 · 西南', { alias: ['西南锚碑'], alias_en: ['SW Anchor'], x: -235, z: 190, r: 3, y: 11, pri: 3, src: '世界书', use: '2 × 2 × 9 m 方尖碑，碑顶嵌以太晶' }),
   A('结界锚碑 · 东南', { alias: ['东南锚碑'], alias_en: ['SE Anchor'], x: 235, z: 190, r: 3, y: 11, pri: 3, src: '世界书', use: '2 × 2 × 9 m 方尖碑，碑顶嵌以太晶' }),

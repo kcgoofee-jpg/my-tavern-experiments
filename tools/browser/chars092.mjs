@@ -4,6 +4,7 @@ import * as B from './lib.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { openHost } from './host_stub.mjs';
+import { FALLBACK_MEMBERS } from '../../map/tavern/mvu.mjs';
 
 const OUT = process.argv[2];
 if (!OUT || OUT.startsWith('--')) { console.log('用法：node tools/browser/chars092.mjs <输出目录>'); process.exit(2); }
@@ -28,7 +29,7 @@ async function run(name, preset) {
     const p = P.page, vf = await H.viewer();
     await vf.evaluate(() => { closeCard(); go('tc_low'); }); await B.wait(2500);
     const s0 = await vf.evaluate(() => ({ n: TCChars.count(), names: TCChars.items.map(c => c.name + '@' + c.place + '#' + c.floor), chm: document.querySelectorAll('.chm').length, groups: [...document.querySelectorAll('.chm')].map(e => e.dataset.chars) }));
-    rep.check(`${name} 自动发现 4 人（标签最新楼为准 + MVU 在场）`, s0.n === 4 && s0.names.includes('艾琳@中层·霓虹街#41'), JSON.stringify(s0.names));
+    rep.check(`${name} 自动发现 4 人（标签最新楼为准 + MVU 在场；另有兜底名册 ${FALLBACK_MEMBERS.length} 人）`, s0.n === 4 + FALLBACK_MEMBERS.length && s0.names.includes('艾琳@中层·霓虹街#41'), JSON.stringify(s0.names));
     rep.check(`${name} 下层画出头像框，同处多人成一组`, s0.groups.includes('雷恩') && s0.groups.some(g => g.includes('米拉') && g.includes('卡尔')), JSON.stringify(s0.groups));
     const shape = await vf.evaluate(() => { const a = document.querySelector('.chm .av'), e = document.querySelector('.ev i'); return { av: getComputedStyle(a).borderRadius, ev: e ? getComputedStyle(e).width : null }; });
     rep.check(`${name} 人物是圆形头像框（与事态方块不同）`, shape.av === '50%', JSON.stringify(shape));
@@ -38,7 +39,7 @@ async function run(name, preset) {
     // 页签
     await vf.evaluate(() => document.querySelector('#evbar .chtab').click()); await B.wait(300);
     const pane = await vf.evaluate(() => ({ tab: document.querySelector('#evbar').dataset.tab, rows: document.querySelectorAll('#evbar .chpane li').length, evListHidden: !!document.querySelector('#evbar ol').closest('[role=tabpanel]')?.hidden }));   // UI v2：事态列表在另一个标签页
-    rep.check(`${name} 「人物」页签：同一横条、4 行、事态列表收起`, pane.tab === 'ch' && pane.rows === 4 && pane.evListHidden, JSON.stringify(pane));
+    rep.check(`${name} 「人物」页签：同一横条、发现 4 行 + 兜底名册、事态列表收起`, pane.tab === 'ch' && pane.rows === 4 + FALLBACK_MEMBERS.length && pane.evListHidden, JSON.stringify(pane));
     await jpg(p, `chars_${name}_pane`);
     // 逐人开关
     await vf.evaluate(() => { const i = document.querySelector('#evbar .chpane input[data-n="雷恩"]'); i.checked = false; i.dispatchEvent(new Event('change', { bubbles: true })); }); await B.wait(400);
@@ -65,7 +66,7 @@ async function run(name, preset) {
     // 新人物自动加入
     await H.setMsgs([...MSGS, { message_id: 42, message: '⌖人物 奥托 @ 中层·C区检查点' }]); await B.wait(800);
     const n2 = await vf.evaluate(() => TCChars.count());
-    rep.check(`${name} 新楼出现新人物：自动加入`, n2 === 5, 'n=' + n2);
+    rep.check(`${name} 新楼出现新人物：自动加入`, n2 === 5 + FALLBACK_MEMBERS.length, 'n=' + n2);
     const on = await p.evaluate(() => new Promise(r => { window.EdenMap.on('characters', d => r(d.items.length)); window.__stub.msgs.push({ message_id: 43, message: '⌖人物 米娅 @ 上层·银冠堡' }); window.__fire('r'); setTimeout(() => r(-1), 3000); }));
     rep.check(`${name} on('characters') 推送`, on === 6, 'items=' + on);
     rep.check(`${name} 无脚本错误`, !P.errors.filter(e => !/http 404/.test(e)).length, P.errors.slice(0, 3).join(' | '));

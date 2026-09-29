@@ -1,108 +1,132 @@
 {
- "_说明": "viewer3d.html?model=starabyss_univ 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。中层天城第一学府：六层教学主楼（素面钟楼入口）+ 医学院楼（弧形玻璃玄关）+ 图书馆（阶梯退台）+ 连廊 + 中央草坪。只画建筑，无人物、文字、校徽。卡写了校名、校长顾衍容、学生陈若曦、设有医学院，位置与形制为仓库推断，详见 docs/landmarks/starabyss_univ.md。",
- "id": "starabyss_univ",
- "title": {
-  "zh": "星渊大学",
-  "en": "Starabyss University"
- },
- "glb": "starabyss_univ.glb",
- "glb_low": "starabyss_univ_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "props_main",
-   "props_medical",
-   "props_library",
-   "props_link"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "props_plaza",
-   "site_ground",
-   "props_lights"
-  ],
-  "building": {
-   "min": [-100.0, -0.3, -100.0],
-   "max": [100.0, 27.0, 65.0]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 30,
-  "default": 30
- },
- "camera": {
-  "frame": [
-   "props_main",
-   "props_medical",
-   "props_library"
-  ],
-  "dir": [
-   0.4,
-   0.42,
-   -0.8
-  ],
-  "min": 6,
-  "max": 350,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "main",
-   "mesh": "props_main",
-   "name": {
-    "zh": "教学主楼",
-    "en": "Main teaching hall"
-   },
-   "desc": {
-    "zh": "六层石材 + 玻璃学院楼，中央素面钟楼入口，两翼对称。",
-    "en": "A six-storey stone-and-glass college building with a plain clock-tower entrance and symmetrical wings."
-   },
-   "view": [0.35, 0.4, -0.85]
+  "_说明": "viewer3d.html?model=starabyss_univ 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。中层天城第一学府：六层教学主楼（素面钟楼入口）+ 医学院楼（弧形玻璃玄关）+ 图书馆（阶梯退台）+ 连廊 + 中央草坪。只画建筑，无人物、文字、校徽。卡写了校名、校长顾衍容、学生陈若曦、设有医学院，详见 docs/landmarks/starabyss_univ.md。",
+  "id": "starabyss_univ",
+  "title": {
+    "zh": "星渊大学",
+    "en": "Starabyss University"
   },
-  {
-   "id": "medical",
-   "mesh": "props_medical",
-   "name": {
-    "zh": "医学院楼",
-    "en": "Medical school"
-   },
-   "desc": {
-    "zh": "弧形玄关与大面积玻璃幕墙，呼应卡内「设有医学院」。",
-    "en": "A curved glazed entrance and broad glass curtain wall, matching the card's mention of a medical school."
-   },
-   "view": [0.55, 0.35, -0.78]
+  "glb": "starabyss_univ.glb",
+  "glb_low": "starabyss_univ_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "library",
-   "mesh": "props_library",
-   "name": {
-    "zh": "图书馆",
-    "en": "Library"
-   },
-   "desc": {
-    "zh": "阶梯退台造型，大面积高窗。",
-    "en": "A stepped, terraced building with tall clerestory windows."
-   },
-   "view": [-0.4, 0.35, -0.8]
+  "groups": {
+    "roof": [],
+    "walls": [
+      "props_main",
+      "props_medical",
+      "props_library",
+      "props_link"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "props_plaza",
+      "site_ground",
+      "props_lights"
+    ],
+    "building": {
+      "min": [
+        -100.0,
+        -0.3,
+        -100.0
+      ],
+      "max": [
+        100.0,
+        27.0,
+        65.0
+      ]
+    }
   },
-  {
-   "id": "plaza",
-   "mesh": "props_plaza",
-   "name": {
-    "zh": "中央草坪",
-    "en": "Central lawn"
-   },
-   "desc": {
-    "zh": "对称草坪与几何绿篱花坛，连接三栋建筑。",
-    "en": "A symmetrical lawn with geometric hedge beds linking the three buildings."
-   },
-   "view": [0.0, 0.65, -0.72]
-  }
- ]
+  "section": {
+    "min": 0.5,
+    "max": 30,
+    "default": 30
+  },
+  "camera": {
+    "frame": [
+      "props_main",
+      "props_medical",
+      "props_library"
+    ],
+    "dir": [
+      0.4,
+      0.42,
+      -0.8
+    ],
+    "min": 6,
+    "max": 350,
+    "maxPolar": 1.48
+  },
+  "hotspots": [
+    {
+      "id": "main",
+      "mesh": "props_main",
+      "name": {
+        "zh": "教学主楼",
+        "en": "Main teaching hall"
+      },
+      "desc": {
+        "zh": "六层石材 + 玻璃学院楼，中央素面钟楼入口，两翼对称。",
+        "en": "A six-storey stone-and-glass college building with a plain clock-tower entrance and symmetrical wings."
+      },
+      "view": [
+        0.35,
+        0.4,
+        -0.85
+      ]
+    },
+    {
+      "id": "medical",
+      "mesh": "props_medical",
+      "name": {
+        "zh": "医学院楼",
+        "en": "Medical school"
+      },
+      "desc": {
+        "zh": "弧形玄关与大面积玻璃幕墙，呼应卡内「设有医学院」。",
+        "en": "A curved glazed entrance and broad glass curtain wall, matching the card's mention of a medical school."
+      },
+      "view": [
+        0.55,
+        0.35,
+        -0.78
+      ]
+    },
+    {
+      "id": "library",
+      "mesh": "props_library",
+      "name": {
+        "zh": "图书馆",
+        "en": "Library"
+      },
+      "desc": {
+        "zh": "阶梯退台造型，大面积高窗。",
+        "en": "A stepped, terraced building with tall clerestory windows."
+      },
+      "view": [
+        -0.4,
+        0.35,
+        -0.8
+      ]
+    },
+    {
+      "id": "plaza",
+      "mesh": "props_plaza",
+      "name": {
+        "zh": "中央草坪",
+        "en": "Central lawn"
+      },
+      "desc": {
+        "zh": "对称草坪与几何绿篱花坛，连接三栋建筑。",
+        "en": "A symmetrical lawn with geometric hedge beds linking the three buildings."
+      },
+      "view": [
+        0.0,
+        0.65,
+        -0.72
+      ]
+    }
+  ]
 }

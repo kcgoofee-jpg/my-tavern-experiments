@@ -1,269 +1,269 @@
 {
- "_说明": "viewer3d.html?model=well7 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。一个竖向场景：上面是中层 C 区的层间检查点（z≈64），下面是下层地基区 7 号井井底黑市（z=0），竖井相连；中层底面、周边楼群、支撑柱（bg_*）只在成图里。布局为仓库推断。",
- "id": "well7",
- "title": {
-  "zh": "层间检查点与 7 号井",
-  "en": "Checkpoint & Well 7"
- },
- "glb": "well7.glb",
- "glb_low": "well7_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "props_shaft",
-   "props_walls"
-  ],
-  "interior": [],
-  "floors": [
-   {
-    "id": "floor_low",
-    "name": {
-     "zh": "下层 · 7 号井",
-     "en": "Lower · Well 7"
+  "_说明": "viewer3d.html?model=well7 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。一个竖向场景：上面是中层 C 区的层间检查点（z≈64），下面是下层地基区 7 号井井底黑市（z=0），竖井相连；中层底面、周边楼群、支撑柱（bg_*）只在成图里。",
+  "id": "well7",
+  "title": {
+    "zh": "层间检查点与 7 号井",
+    "en": "Checkpoint & Well 7"
+  },
+  "glb": "well7.glb",
+  "glb_low": "well7_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [],
+    "walls": [
+      "props_shaft",
+      "props_walls"
+    ],
+    "interior": [],
+    "floors": [
+      {
+        "id": "floor_low",
+        "name": {
+          "zh": "下层 · 7 号井",
+          "en": "Lower · Well 7"
+        },
+        "y0": -0.5,
+        "y1": 10
+      },
+      {
+        "id": "floor_mid",
+        "name": {
+          "zh": "中层 · C 区检查点",
+          "en": "Middle · Zone C checkpoint"
+        },
+        "y0": 58,
+        "y1": 72
+      }
+    ],
+    "site": [
+      "site_ground",
+      "site_deck",
+      "props_lights",
+      "props_goods"
+    ],
+    "building": {
+      "min": [
+        -34,
+        -0.3,
+        -40
+      ],
+      "max": [
+        30,
+        78,
+        34
+      ]
+    }
+  },
+  "section": {
+    "min": 0.5,
+    "max": 78,
+    "default": 40
+  },
+  "camera": {
+    "frame": [
+      "props_shaft",
+      "site_deck",
+      "props_market"
+    ],
+    "dir": [
+      0.4,
+      0.35,
+      -0.85
+    ],
+    "min": 3,
+    "max": 300,
+    "maxPolar": 1.55
+  },
+  "hotspots": [
+    {
+      "id": "deck",
+      "mesh": "site_deck",
+      "name": {
+        "zh": "中层 C 区甲板",
+        "en": "Zone C deck"
+      },
+      "desc": {
+        "zh": "中层 C 区甲板：井口所在的钢结构平台，南沿可见桁架、检修管和工作灯。",
+        "en": "Mid-tier Zone C deck: the steel platform around the shaft mouth, with trusses, service pipes and work lights along its south edge."
+      },
+      "view": [
+        0.3,
+        0.5,
+        -0.8
+      ]
     },
-    "y0": -0.5,
-    "y1": 10
-   },
-   {
-    "id": "floor_mid",
-    "name": {
-     "zh": "中层 · C 区检查点",
-     "en": "Middle · Zone C checkpoint"
+    {
+      "id": "checkpoint",
+      "mesh": "props_checkpoint",
+      "name": {
+        "zh": "层间检查点",
+        "en": "Inter-tier Checkpoint"
+      },
+      "desc": {
+        "zh": "层间检查点：执法局的临时管控站——集装箱改的岗亭、水马隔离墩、拖车灯塔。跨层要持执政厅签发的通行许可。",
+        "en": "Inter-tier Checkpoint: an Enforcement Bureau temporary control post: a converted shipping-container booth, jersey barriers and trailer light towers. Crossing tiers needs a permit from the Executive Office."
+      },
+      "view": [
+        0.2,
+        0.3,
+        -0.95
+      ]
     },
-    "y0": 58,
-    "y1": 72
-   }
-  ],
-  "site": [
-   "site_ground",
-   "site_deck",
-   "props_lights",
-   "props_goods"
-  ],
-  "building": {
-   "min": [
-    -34,
-    -0.3,
-    -40
-   ],
-   "max": [
-    30,
-    78,
-    34
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 78,
-  "default": 40
- },
- "camera": {
-  "frame": [
-   "props_shaft",
-   "site_deck",
-   "props_market"
-  ],
-  "dir": [
-   0.4,
-   0.35,
-   -0.85
-  ],
-  "min": 3,
-  "max": 300,
-  "maxPolar": 1.55
- },
- "hotspots": [
-  {
-   "id": "deck",
-   "mesh": "site_deck",
-   "name": {
-    "zh": "中层 C 区甲板",
-    "en": "Zone C deck"
-   },
-   "desc": {
-    "zh": "中层 C 区甲板：井口所在的钢结构平台，南沿可见桁架、检修管和工作灯。",
-    "en": "Mid-tier Zone C deck: the steel platform around the shaft mouth, with trusses, service pipes and work lights along its south edge."
-   },
-   "view": [
-    0.3,
-    0.5,
-    -0.8
-   ]
-  },
-  {
-   "id": "checkpoint",
-   "mesh": "props_checkpoint",
-   "name": {
-    "zh": "层间检查点",
-    "en": "Inter-tier Checkpoint"
-   },
-   "desc": {
-    "zh": "层间检查点：执法局的临时管控站——集装箱改的岗亭、水马隔离墩、拖车灯塔。跨层要持执政厅签发的通行许可。",
-    "en": "Inter-tier Checkpoint: an Enforcement Bureau temporary control post: a converted shipping-container booth, jersey barriers and trailer light towers. Crossing tiers needs a permit from the Executive Office."
-   },
-   "view": [
-    0.2,
-    0.3,
-    -0.95
-   ]
-  },
-  {
-   "id": "gates",
-   "mesh": "props_gates",
-   "name": {
-    "zh": "通道闸口",
-    "en": "Lane gates"
-   },
-   "desc": {
-    "zh": "通道闸口：道闸、三辊闸、安检门，每条通道一台查验身份芯片与随身铭牌的读卡柱。",
-    "en": "Lane gates: barrier arms, turnstiles and scanner arches, each lane with a reader for identity chips and carried tags."
-   },
-   "view": [
-    0.2,
-    0.3,
-    -0.95
-   ]
-  },
-  {
-   "id": "taxpoint",
-   "mesh": "props_taxpoint",
-   "name": {
-    "zh": "货物征税查验点",
-    "en": "Goods-tax inspection"
-   },
-   "desc": {
-    "zh": "货物征税查验点：开箱查验、过磅、登记清单；下层货物进入中层缴 5% 入境税。",
-    "en": "Goods-tax inspection point: crates are opened, weighed and logged; lower-tier goods entering the mid tier pay a 5% entry tax."
-   },
-   "view": [
-    -0.5,
-    0.4,
-    -0.75
-   ]
-  },
-  {
-   "id": "shaft",
-   "mesh": "props_shaft",
-   "name": {
-    "zh": "7 号井竖井",
-    "en": "Well 7 shaft"
-   },
-   "desc": {
-    "zh": "7 号井：从中层直通地面的检修竖井，内有折返楼梯，井壁潮湿滴水。",
-    "en": "Well 7: a service shaft running from the mid tier down to the ground, with a switchback stair inside and damp, dripping walls."
-   },
-   "view": [
-    0.5,
-    0.2,
-    -0.85
-   ]
-  },
-  {
-   "id": "lift",
-   "mesh": "props_lift",
-   "name": {
-    "zh": "井内升降梯",
-    "en": "Shaft lift"
-   },
-   "desc": {
-    "zh": "井内升降梯：货客两用，连接检查点与井底。",
-    "en": "Shaft lift: freight and passengers between the checkpoint and the shaft base."
-   },
-   "view": [
-    0.5,
-    0.2,
-    -0.85
-   ]
-  },
-  {
-   "id": "market",
-   "mesh": "props_market",
-   "name": {
-    "zh": "井底黑市",
-    "en": "Well 7 black market"
-   },
-   "desc": {
-    "zh": "井底黑市：在井口周围自发形成的摊位；这里只收灰票（匿名芯片卡），天城只有下层黑市还用实体货币。",
-    "en": "Well 7 black market: stalls that grew up around the shaft base. Only grey scrip (anonymous chip cards) is accepted; in Tiancheng only the lower-tier black market still uses physical money."
-   },
-   "view": [
-    0.3,
-    0.5,
-    -0.8
-   ]
-  },
-  {
-   "id": "shop",
-   "mesh": "props_shop",
-   "name": {
-    "zh": "老 K 杂货",
-    "en": "Old K's grocery"
-   },
-   "desc": {
-    "zh": "老 K 杂货：货架、柜台和一个只认灰票的读卡口。",
-    "en": "Old K's grocery: shelves, a counter and a card slot that takes only grey scrip."
-   },
-   "view": [
-    -0.6,
-    0.3,
-    -0.75
-   ]
-  },
-  {
-   "id": "terminal",
-   "mesh": "props_terminal",
-   "name": {
-    "zh": "黑市终端",
-    "en": "Black-market terminal"
-   },
-   "desc": {
-    "zh": "黑市终端角：一台旧终端，屏幕上只有跳动的绿线，缆线成束。",
-    "en": "Black-market terminal nook: an old terminal whose screen shows only flickering green lines, fed by a bundle of cables."
-   },
-   "view": [
-    0.6,
-    0.3,
-    -0.75
-   ]
-  },
-  {
-   "id": "walls",
-   "mesh": "props_walls",
-   "name": {
-    "zh": "井底棚屋墙",
-    "en": "Shaft-base shacks"
-   },
-   "desc": {
-    "zh": "层层叠起的铁皮棚屋和头顶管线把井底市场围得很逼仄。",
-    "en": "Stacked tin shacks and overhead pipes hem the market into a cramped pocket."
-   },
-   "view": [
-    0.3,
-    0.6,
-    -0.75
-   ]
-  },
-  {
-   "id": "goods",
-   "mesh": "props_goods",
-   "name": {
-    "zh": "货箱与杂货",
-    "en": "Crates & goods"
-   },
-   "desc": {
-    "zh": "来路各异的货箱和日用品。",
-    "en": "Crates and everyday goods of mixed origin."
-   },
-   "view": [
-    0.3,
-    0.6,
-    -0.75
-   ]
-  }
- ]
+    {
+      "id": "gates",
+      "mesh": "props_gates",
+      "name": {
+        "zh": "通道闸口",
+        "en": "Lane gates"
+      },
+      "desc": {
+        "zh": "通道闸口：道闸、三辊闸、安检门，每条通道一台查验身份芯片与随身铭牌的读卡柱。",
+        "en": "Lane gates: barrier arms, turnstiles and scanner arches, each lane with a reader for identity chips and carried tags."
+      },
+      "view": [
+        0.2,
+        0.3,
+        -0.95
+      ]
+    },
+    {
+      "id": "taxpoint",
+      "mesh": "props_taxpoint",
+      "name": {
+        "zh": "货物征税查验点",
+        "en": "Goods-tax inspection"
+      },
+      "desc": {
+        "zh": "货物征税查验点：开箱查验、过磅、登记清单；下层货物进入中层缴 5% 入境税。",
+        "en": "Goods-tax inspection point: crates are opened, weighed and logged; lower-tier goods entering the mid tier pay a 5% entry tax."
+      },
+      "view": [
+        -0.5,
+        0.4,
+        -0.75
+      ]
+    },
+    {
+      "id": "shaft",
+      "mesh": "props_shaft",
+      "name": {
+        "zh": "7 号井竖井",
+        "en": "Well 7 shaft"
+      },
+      "desc": {
+        "zh": "7 号井：从中层直通地面的检修竖井，内有折返楼梯，井壁潮湿滴水。",
+        "en": "Well 7: a service shaft running from the mid tier down to the ground, with a switchback stair inside and damp, dripping walls."
+      },
+      "view": [
+        0.5,
+        0.2,
+        -0.85
+      ]
+    },
+    {
+      "id": "lift",
+      "mesh": "props_lift",
+      "name": {
+        "zh": "井内升降梯",
+        "en": "Shaft lift"
+      },
+      "desc": {
+        "zh": "井内升降梯：货客两用，连接检查点与井底。",
+        "en": "Shaft lift: freight and passengers between the checkpoint and the shaft base."
+      },
+      "view": [
+        0.5,
+        0.2,
+        -0.85
+      ]
+    },
+    {
+      "id": "market",
+      "mesh": "props_market",
+      "name": {
+        "zh": "井底黑市",
+        "en": "Well 7 black market"
+      },
+      "desc": {
+        "zh": "井底黑市：在井口周围自发形成的摊位；这里只收灰票（匿名芯片卡），天城只有下层黑市还用实体货币。",
+        "en": "Well 7 black market: stalls that grew up around the shaft base. Only grey scrip (anonymous chip cards) is accepted; in Tiancheng only the lower-tier black market still uses physical money."
+      },
+      "view": [
+        0.3,
+        0.5,
+        -0.8
+      ]
+    },
+    {
+      "id": "shop",
+      "mesh": "props_shop",
+      "name": {
+        "zh": "老 K 杂货",
+        "en": "Old K's grocery"
+      },
+      "desc": {
+        "zh": "老 K 杂货：货架、柜台和一个只认灰票的读卡口。",
+        "en": "Old K's grocery: shelves, a counter and a card slot that takes only grey scrip."
+      },
+      "view": [
+        -0.6,
+        0.3,
+        -0.75
+      ]
+    },
+    {
+      "id": "terminal",
+      "mesh": "props_terminal",
+      "name": {
+        "zh": "黑市终端",
+        "en": "Black-market terminal"
+      },
+      "desc": {
+        "zh": "黑市终端角：一台旧终端，屏幕上只有跳动的绿线，缆线成束。",
+        "en": "Black-market terminal nook: an old terminal whose screen shows only flickering green lines, fed by a bundle of cables."
+      },
+      "view": [
+        0.6,
+        0.3,
+        -0.75
+      ]
+    },
+    {
+      "id": "walls",
+      "mesh": "props_walls",
+      "name": {
+        "zh": "井底棚屋墙",
+        "en": "Shaft-base shacks"
+      },
+      "desc": {
+        "zh": "层层叠起的铁皮棚屋和头顶管线把井底市场围得很逼仄。",
+        "en": "Stacked tin shacks and overhead pipes hem the market into a cramped pocket."
+      },
+      "view": [
+        0.3,
+        0.6,
+        -0.75
+      ]
+    },
+    {
+      "id": "goods",
+      "mesh": "props_goods",
+      "name": {
+        "zh": "货箱与杂货",
+        "en": "Crates & goods"
+      },
+      "desc": {
+        "zh": "来路各异的货箱和日用品。",
+        "en": "Crates and everyday goods of mixed origin."
+      },
+      "view": [
+        0.3,
+        0.6,
+        -0.75
+      ]
+    }
+  ]
 }

@@ -1,220 +1,220 @@
 {
- "_说明": "viewer3d.html?model=enforcement_hq 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。只画外观：中层核心区的执法局总局（主塔、台座大厅、前庭安检、车库入口、悬浮车库、塔顶）；周边巨构楼群、甲板与悬浮轨道（bg_*）只在成图里。在核心区内的具体位置与形制为仓库推断。",
- "id": "enforcement_hq",
- "title": {
-  "zh": "天城执法局总局",
-  "en": "Enforcement Bureau HQ"
- },
- "glb": "enforcement_hq.glb",
- "glb_low": "enforcement_hq_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [
-   "props_roof"
-  ],
-  "walls": [
-   "walls_ext",
-   "props_podium",
-   "props_dock"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_ground",
-   "props_security",
-   "props_garage",
-   "props_vehicles",
-   "props_lights"
-  ],
-  "building": {
-   "min": [
-    -171.0,
-    -9.0,
-    -151.0
-   ],
-   "max": [
-    171.0,
-    211.5,
-    161.0
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 212,
-  "default": 212
- },
- "camera": {
-  "frame": [
-   "walls_ext",
-   "props_podium",
-   "props_dock"
-  ],
-  "dir": [
-   0.4,
-   0.35,
-   -0.85
-  ],
-  "min": 5,
-  "max": 800,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "tower",
-   "mesh": "walls_ext",
-   "name": {
-    "zh": "执法局总局主塔",
-    "en": "Bureau HQ tower"
-   },
-   "desc": {
-    "zh": "深色花岗岩与钢构成的约一百五十米塔楼，竖向石鳍，顶部环形灯冠；执法局约 8 万人，总局在中层核心区。",
-    "en": "A ~150 m dark-granite and steel tower with vertical stone fins and a lit crown ring; the Bureau (~80,000 staff) is headquartered in the mid-tier core."
-   },
-   "view": [
-    0.4,
-    0.3,
-    -0.85
-   ]
+  "_说明": "viewer3d.html?model=enforcement_hq 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。只画外观：中层核心区的执法局总局（主塔、台座大厅、前庭安检、车库入口、悬浮车库、塔顶）；周边巨构楼群、甲板与悬浮轨道（bg_*）只在成图里。",
+  "id": "enforcement_hq",
+  "title": {
+    "zh": "天城执法局总局",
+    "en": "Enforcement Bureau HQ"
   },
-  {
-   "id": "podium",
-   "mesh": "props_podium",
-   "name": {
-    "zh": "台座与大厅",
-    "en": "Podium & lobby"
-   },
-   "desc": {
-    "zh": "塔下宽大台座与玻璃大厅；厅内后墙挂着 3×6 的十八格区域状态屏，只有色块灯——中层按高度分 18 个辖区，每区一个分局。",
-    "en": "Broad podium and glass lobby; a 3×6 status wall of plain coloured lights hangs inside, one cell per district: the mid tier is split by height into 18 districts, each with a branch."
-   },
-   "view": [
-    0.1,
-    0.25,
-    -0.96
-   ]
+  "glb": "enforcement_hq.glb",
+  "glb_low": "enforcement_hq_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "security",
-   "mesh": "props_security",
-   "name": {
-    "zh": "前庭安检",
-    "en": "Secured forecourt"
-   },
-   "desc": {
-    "zh": "入口安检门、防撞楔形挡板与升降柱、花岗岩花池屏障、摄像头簇。",
-    "en": "Entrance screening portals, wedge barriers and rising posts, granite planter barriers and camera clusters."
-   },
-   "view": [
-    0.2,
-    0.3,
-    -0.93
-   ]
+  "groups": {
+    "roof": [
+      "props_roof"
+    ],
+    "walls": [
+      "walls_ext",
+      "props_podium",
+      "props_dock"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_ground",
+      "props_security",
+      "props_garage",
+      "props_vehicles",
+      "props_lights"
+    ],
+    "building": {
+      "min": [
+        -171.0,
+        -9.0,
+        -151.0
+      ],
+      "max": [
+        171.0,
+        211.5,
+        161.0
+      ]
+    }
   },
-  {
-   "id": "garage",
-   "mesh": "props_garage",
-   "name": {
-    "zh": "地下车库入口",
-    "en": "Garage entrance"
-   },
-   "desc": {
-    "zh": "下沉车道、道闸、岗亭、读卡柱与半开的装甲闸门。",
-    "en": "Sunken ramp, barrier arm, guard booth, card readers and a half-raised armoured gate."
-   },
-   "view": [
-    0.3,
-    0.3,
-    -0.9
-   ]
+  "section": {
+    "min": 0.5,
+    "max": 212,
+    "default": 212
   },
-  {
-   "id": "dock",
-   "mesh": "props_dock",
-   "name": {
-    "zh": "悬浮车库",
-    "en": "Hover dock"
-   },
-   "desc": {
-    "zh": "东翼多层悬浮车库，外挑的起降平台带栏杆与进近灯带。",
-    "en": "East-wing multi-level hover dock with cantilevered launch platforms, railings and approach lights."
-   },
-   "view": [
-    0.6,
-    0.35,
-    -0.7
-   ]
+  "camera": {
+    "frame": [
+      "walls_ext",
+      "props_podium",
+      "props_dock"
+    ],
+    "dir": [
+      0.4,
+      0.35,
+      -0.85
+    ],
+    "min": 5,
+    "max": 800,
+    "maxPolar": 1.48
   },
-  {
-   "id": "vehicles",
-   "mesh": "props_vehicles",
-   "name": {
-    "zh": "巡逻悬浮车",
-    "en": "Patrol hover vehicles"
-   },
-   "desc": {
-    "zh": "无标识的深色悬浮巡逻车与厢式车，停放或悬停。",
-    "en": "Unmarked dark hover patrol cars and vans, parked or hovering."
-   },
-   "view": [
-    0.5,
-    0.35,
-    -0.8
-   ]
-  },
-  {
-   "id": "roof",
-   "mesh": "props_roof",
-   "name": {
-    "zh": "塔顶",
-    "en": "Rooftop"
-   },
-   "desc": {
-    "zh": "塔顶起降坪、格构通信桅杆与屋顶机组。",
-    "en": "Rooftop landing pad, lattice communications mast and roof plant."
-   },
-   "view": [
-    0.3,
-    0.8,
-    -0.5
-   ]
-  },
-  {
-   "id": "lights",
-   "mesh": "props_lights",
-   "name": {
-    "zh": "灯光",
-    "en": "Lighting"
-   },
-   "desc": {
-    "zh": "街灯、前庭地灯与檐下灯带。",
-    "en": "Street lamps, forecourt uplights and eave light strips."
-   },
-   "view": [
-    0.3,
-    0.5,
-    -0.8
-   ]
-  },
-  {
-   "id": "ground",
-   "mesh": "site_ground",
-   "name": {
-    "zh": "街面与前庭",
-    "en": "Street & forecourt"
-   },
-   "desc": {
-    "zh": "甲板街面、人行道与前庭石铺装。",
-    "en": "Deck street, pavements and stone forecourt paving."
-   },
-   "view": [
-    0.2,
-    0.75,
-    -0.65
-   ]
-  }
- ]
+  "hotspots": [
+    {
+      "id": "tower",
+      "mesh": "walls_ext",
+      "name": {
+        "zh": "执法局总局主塔",
+        "en": "Bureau HQ tower"
+      },
+      "desc": {
+        "zh": "深色花岗岩与钢构成的约一百五十米塔楼，竖向石鳍，顶部环形灯冠；执法局约 8 万人，总局在中层核心区。",
+        "en": "A ~150 m dark-granite and steel tower with vertical stone fins and a lit crown ring; the Bureau (~80,000 staff) is headquartered in the mid-tier core."
+      },
+      "view": [
+        0.4,
+        0.3,
+        -0.85
+      ]
+    },
+    {
+      "id": "podium",
+      "mesh": "props_podium",
+      "name": {
+        "zh": "台座与大厅",
+        "en": "Podium & lobby"
+      },
+      "desc": {
+        "zh": "塔下宽大台座与玻璃大厅；厅内后墙挂着 3×6 的十八格区域状态屏，只有色块灯——中层按高度分 18 个辖区，每区一个分局。",
+        "en": "Broad podium and glass lobby; a 3×6 status wall of plain coloured lights hangs inside, one cell per district: the mid tier is split by height into 18 districts, each with a branch."
+      },
+      "view": [
+        0.1,
+        0.25,
+        -0.96
+      ]
+    },
+    {
+      "id": "security",
+      "mesh": "props_security",
+      "name": {
+        "zh": "前庭安检",
+        "en": "Secured forecourt"
+      },
+      "desc": {
+        "zh": "入口安检门、防撞楔形挡板与升降柱、花岗岩花池屏障、摄像头簇。",
+        "en": "Entrance screening portals, wedge barriers and rising posts, granite planter barriers and camera clusters."
+      },
+      "view": [
+        0.2,
+        0.3,
+        -0.93
+      ]
+    },
+    {
+      "id": "garage",
+      "mesh": "props_garage",
+      "name": {
+        "zh": "地下车库入口",
+        "en": "Garage entrance"
+      },
+      "desc": {
+        "zh": "下沉车道、道闸、岗亭、读卡柱与半开的装甲闸门。",
+        "en": "Sunken ramp, barrier arm, guard booth, card readers and a half-raised armoured gate."
+      },
+      "view": [
+        0.3,
+        0.3,
+        -0.9
+      ]
+    },
+    {
+      "id": "dock",
+      "mesh": "props_dock",
+      "name": {
+        "zh": "悬浮车库",
+        "en": "Hover dock"
+      },
+      "desc": {
+        "zh": "东翼多层悬浮车库，外挑的起降平台带栏杆与进近灯带。",
+        "en": "East-wing multi-level hover dock with cantilevered launch platforms, railings and approach lights."
+      },
+      "view": [
+        0.6,
+        0.35,
+        -0.7
+      ]
+    },
+    {
+      "id": "vehicles",
+      "mesh": "props_vehicles",
+      "name": {
+        "zh": "巡逻悬浮车",
+        "en": "Patrol hover vehicles"
+      },
+      "desc": {
+        "zh": "无标识的深色悬浮巡逻车与厢式车，停放或悬停。",
+        "en": "Unmarked dark hover patrol cars and vans, parked or hovering."
+      },
+      "view": [
+        0.5,
+        0.35,
+        -0.8
+      ]
+    },
+    {
+      "id": "roof",
+      "mesh": "props_roof",
+      "name": {
+        "zh": "塔顶",
+        "en": "Rooftop"
+      },
+      "desc": {
+        "zh": "塔顶起降坪、格构通信桅杆与屋顶机组。",
+        "en": "Rooftop landing pad, lattice communications mast and roof plant."
+      },
+      "view": [
+        0.3,
+        0.8,
+        -0.5
+      ]
+    },
+    {
+      "id": "lights",
+      "mesh": "props_lights",
+      "name": {
+        "zh": "灯光",
+        "en": "Lighting"
+      },
+      "desc": {
+        "zh": "街灯、前庭地灯与檐下灯带。",
+        "en": "Street lamps, forecourt uplights and eave light strips."
+      },
+      "view": [
+        0.3,
+        0.5,
+        -0.8
+      ]
+    },
+    {
+      "id": "ground",
+      "mesh": "site_ground",
+      "name": {
+        "zh": "街面与前庭",
+        "en": "Street & forecourt"
+      },
+      "desc": {
+        "zh": "甲板街面、人行道与前庭石铺装。",
+        "en": "Deck street, pavements and stone forecourt paving."
+      },
+      "view": [
+        0.2,
+        0.75,
+        -0.65
+      ]
+    }
+  ]
 }

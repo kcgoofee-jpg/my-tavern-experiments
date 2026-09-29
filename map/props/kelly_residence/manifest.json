@@ -1,232 +1,232 @@
 {
- "_说明": "viewer3d.html?model=kelly_residence 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。由 blender/landmarks/kelly_residence/build.py + blender/landmarks/export_glb.py 生成；云海、岩体底座、远处浮岛、结界微光（bg_*）只在成图里。",
- "id": "kelly_residence",
- "title": {
-  "zh": "凯莉的宅邸",
-  "en": "Kelly's Residence"
- },
- "glb": "kelly_residence.glb",
- "glb_low": "kelly_residence_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [
-   "roof",
-   "props_chimneys"
-  ],
-  "walls": [
-   "walls_ext",
-   "props_bow"
-  ],
-  "interior": [],
-  "floors": [
-   {
-    "id": "floor_0",
-    "name": {
-     "zh": "地坪",
-     "en": "Ground"
+  "_说明": "viewer3d.html?model=kelly_residence 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。由 blender/landmarks/kelly_residence/build.py + blender/landmarks/export_glb.py 生成；云海、岩体底座、远处浮岛、结界微光（bg_*）只在成图里。",
+  "id": "kelly_residence",
+  "title": {
+    "zh": "凯莉的宅邸",
+    "en": "Kelly's Residence"
+  },
+  "glb": "kelly_residence.glb",
+  "glb_low": "kelly_residence_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [
+      "roof",
+      "props_chimneys"
+    ],
+    "walls": [
+      "walls_ext",
+      "props_bow"
+    ],
+    "interior": [],
+    "floors": [
+      {
+        "id": "floor_0",
+        "name": {
+          "zh": "地坪",
+          "en": "Ground"
+        },
+        "y0": -0.1,
+        "y1": 10
+      }
+    ],
+    "site": [
+      "site_ground",
+      "site_garden",
+      "site_trees",
+      "site_dock",
+      "props_hovercar",
+      "props_fountain"
+    ],
+    "building": {
+      "min": [
+        -17.4,
+        -0.1,
+        -5.3
+      ],
+      "max": [
+        13.1,
+        13.6,
+        16.5
+      ]
+    }
+  },
+  "section": {
+    "min": 0.5,
+    "max": 13,
+    "default": 5
+  },
+  "camera": {
+    "frame": [
+      "walls_ext",
+      "props_portico",
+      "props_wing",
+      "props_bow"
+    ],
+    "dir": [
+      0.6,
+      0.45,
+      -0.65
+    ],
+    "min": 3,
+    "max": 400,
+    "maxPolar": 1.48
+  },
+  "hotspots": [
+    {
+      "id": "villa",
+      "mesh": "walls_ext",
+      "name": {
+        "zh": "摄政风别墅",
+        "en": "Regency villa"
+      },
+      "desc": {
+        "zh": "两层白灰泥主楼：首层是水平分缝的仿石灰泥，深色勒脚；上层白框推拉窗配细窗格；檐口后是浅坡板岩四坡顶，烟囱在两端。",
+        "en": "A two-storey white-stucco main block: channelled rusticated stucco on the ground floor over a dark plinth, fine-barred sash windows above, and a shallow slate hipped roof behind the cornice with end chimneys. The form is a repo inference (refs: Sezincote, Regent's Park villas)."
+      },
+      "view": [
+        0.4,
+        0.35,
+        -0.85
+      ]
     },
-    "y0": -0.1,
-    "y1": 10
-   }
-  ],
-  "site": [
-   "site_ground",
-   "site_garden",
-   "site_trees",
-   "site_dock",
-   "props_hovercar",
-   "props_fountain"
-  ],
-  "building": {
-   "min": [
-    -17.4,
-    -0.1,
-    -5.3
-   ],
-   "max": [
-    13.1,
-    13.6,
-    16.5
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 13,
-  "default": 5
- },
- "camera": {
-  "frame": [
-   "walls_ext",
-   "props_portico",
-   "props_wing",
-   "props_bow"
-  ],
-  "dir": [
-   0.6,
-   0.45,
-   -0.65
-  ],
-  "min": 3,
-  "max": 400,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "villa",
-   "mesh": "walls_ext",
-   "name": {
-    "zh": "摄政风别墅",
-    "en": "Regency villa"
-   },
-   "desc": {
-    "zh": "两层白灰泥主楼：首层是水平分缝的仿石灰泥，深色勒脚；上层白框推拉窗配细窗格；檐口后是浅坡板岩四坡顶，烟囱在两端。形制为仓库推断（参考塞津科特庄园与摄政公园周边别墅）。",
-    "en": "A two-storey white-stucco main block: channelled rusticated stucco on the ground floor over a dark plinth, fine-barred sash windows above, and a shallow slate hipped roof behind the cornice with end chimneys. The form is a repo inference (refs: Sezincote, Regent's Park villas)."
-   },
-   "view": [
-    0.4,
-    0.35,
-    -0.85
-   ]
-  },
-  {
-   "id": "portico",
-   "mesh": "props_portico",
-   "name": {
-    "zh": "爱奥尼式门廊",
-    "en": "Ionic portico"
-   },
-   "desc": {
-    "zh": "正门前四根带卷涡柱头的立柱，檐部分为额枋、檐壁与带齿饰的檐口，上面是二楼的阳台。",
-    "en": "Four columns with volute capitals before the front door; the entablature is split into architrave, frieze and dentilled cornice, carrying a first-floor balcony."
-   },
-   "view": [
-    0.1,
-    0.2,
-    -0.97
-   ]
-  },
-  {
-   "id": "bow",
-   "mesh": "props_bow",
-   "name": {
-    "zh": "弓形凸窗",
-    "en": "Full-height bow"
-   },
-   "desc": {
-    "zh": "侧立面两层通高的弓形凸窗，自带弧形檐口，顶上是板岩半锥顶和铅皮脊。",
-    "en": "A two-storey bow on the side elevation with its own curved cornice and a slate half-cone roof with lead rolls."
-   },
-   "view": [
-    0.95,
-    0.3,
-    0.1
-   ]
-  },
-  {
-   "id": "wing",
-   "mesh": "props_wing",
-   "name": {
-    "zh": "服务翼",
-    "en": "Service wing"
-   },
-   "desc": {
-    "zh": "主楼西侧较低的服务翼：厨房、储藏与仆役用房。",
-    "en": "A lower service wing west of the main block: kitchen, stores and staff rooms."
-   },
-   "view": [
-    -0.9,
-    0.35,
-    -0.3
-   ]
-  },
-  {
-   "id": "verandah",
-   "mesh": "props_verandah",
-   "name": {
-    "zh": "铸铁廊台",
-    "en": "Cast-iron verandah"
-   },
-   "desc": {
-    "zh": "花园一侧的铸铁廊台，细柱与铜顶。",
-    "en": "A cast-iron verandah on the garden side with slender posts and a copper roof."
-   },
-   "view": [
-    0.1,
-    0.3,
-    0.95
-   ]
-  },
-  {
-   "id": "fountain",
-   "mesh": "props_fountain",
-   "name": {
-    "zh": "前庭与喷泉",
-    "en": "Forecourt & fountain"
-   },
-   "desc": {
-    "zh": "碎石前庭中央的圆形喷泉池，四周是修剪成圆锥和圆柱形的紫杉。",
-    "en": "A round fountain basin in the gravel forecourt, ringed by clipped yew cones and columns."
-   },
-   "view": [
-    0.3,
-    0.6,
-    -0.75
-   ]
-  },
-  {
-   "id": "garden",
-   "mesh": "site_garden",
-   "name": {
-    "zh": "围墙菜园与草坪",
-    "en": "Walled garden & lawn"
-   },
-   "desc": {
-    "zh": "红砖围墙里的菜畦与玻璃温室；草坪上有环岛碎石步道和修剪紫杉。",
-    "en": "Vegetable beds and a glasshouse inside red-brick walls; a gravel walk circles the lawn among clipped yews."
-   },
-   "view": [
-    0.2,
-    0.75,
-    0.6
-   ]
-  },
-  {
-   "id": "trees",
-   "mesh": "site_trees",
-   "name": {
-    "zh": "橡树与雪松",
-    "en": "Oaks & cedars"
-   },
-   "desc": {
-    "zh": "岛上成片的橡树和几棵平展分层的雪松。",
-    "en": "Oak planting around the island with a few layered cedars."
-   },
-   "view": [
-    0.6,
-    0.6,
-    -0.5
-   ]
-  },
-  {
-   "id": "dock",
-   "mesh": "site_dock",
-   "name": {
-    "zh": "私家停机坪",
-    "en": "Private landing pad"
-   },
-   "desc": {
-    "zh": "岛西缘外挑的私家悬浮车停机坪，桥上有铸铁候机小亭；一条碎石车道直通前庭。悬浮岛之间没有公共交通，这是宅邸唯一的出入口。",
-    "en": "A private hover-vehicle pad cantilevered off the western rim, with a small cast-iron waiting kiosk on the bridge and a gravel drive straight to the forecourt. There is no public transport between islands; this is the house's only way in or out."
-   },
-   "view": [
-    -0.7,
-    0.4,
-    -0.6
-   ]
-  }
- ]
+    {
+      "id": "portico",
+      "mesh": "props_portico",
+      "name": {
+        "zh": "爱奥尼式门廊",
+        "en": "Ionic portico"
+      },
+      "desc": {
+        "zh": "正门前四根带卷涡柱头的立柱，檐部分为额枋、檐壁与带齿饰的檐口，上面是二楼的阳台。",
+        "en": "Four columns with volute capitals before the front door; the entablature is split into architrave, frieze and dentilled cornice, carrying a first-floor balcony."
+      },
+      "view": [
+        0.1,
+        0.2,
+        -0.97
+      ]
+    },
+    {
+      "id": "bow",
+      "mesh": "props_bow",
+      "name": {
+        "zh": "弓形凸窗",
+        "en": "Full-height bow"
+      },
+      "desc": {
+        "zh": "侧立面两层通高的弓形凸窗，自带弧形檐口，顶上是板岩半锥顶和铅皮脊。",
+        "en": "A two-storey bow on the side elevation with its own curved cornice and a slate half-cone roof with lead rolls."
+      },
+      "view": [
+        0.95,
+        0.3,
+        0.1
+      ]
+    },
+    {
+      "id": "wing",
+      "mesh": "props_wing",
+      "name": {
+        "zh": "服务翼",
+        "en": "Service wing"
+      },
+      "desc": {
+        "zh": "主楼西侧较低的服务翼：厨房、储藏与仆役用房。",
+        "en": "A lower service wing west of the main block: kitchen, stores and staff rooms."
+      },
+      "view": [
+        -0.9,
+        0.35,
+        -0.3
+      ]
+    },
+    {
+      "id": "verandah",
+      "mesh": "props_verandah",
+      "name": {
+        "zh": "铸铁廊台",
+        "en": "Cast-iron verandah"
+      },
+      "desc": {
+        "zh": "花园一侧的铸铁廊台，细柱与铜顶。",
+        "en": "A cast-iron verandah on the garden side with slender posts and a copper roof."
+      },
+      "view": [
+        0.1,
+        0.3,
+        0.95
+      ]
+    },
+    {
+      "id": "fountain",
+      "mesh": "props_fountain",
+      "name": {
+        "zh": "前庭与喷泉",
+        "en": "Forecourt & fountain"
+      },
+      "desc": {
+        "zh": "碎石前庭中央的圆形喷泉池，四周是修剪成圆锥和圆柱形的紫杉。",
+        "en": "A round fountain basin in the gravel forecourt, ringed by clipped yew cones and columns."
+      },
+      "view": [
+        0.3,
+        0.6,
+        -0.75
+      ]
+    },
+    {
+      "id": "garden",
+      "mesh": "site_garden",
+      "name": {
+        "zh": "围墙菜园与草坪",
+        "en": "Walled garden & lawn"
+      },
+      "desc": {
+        "zh": "红砖围墙里的菜畦与玻璃温室；草坪上有环岛碎石步道和修剪紫杉。",
+        "en": "Vegetable beds and a glasshouse inside red-brick walls; a gravel walk circles the lawn among clipped yews."
+      },
+      "view": [
+        0.2,
+        0.75,
+        0.6
+      ]
+    },
+    {
+      "id": "trees",
+      "mesh": "site_trees",
+      "name": {
+        "zh": "橡树与雪松",
+        "en": "Oaks & cedars"
+      },
+      "desc": {
+        "zh": "岛上成片的橡树和几棵平展分层的雪松。",
+        "en": "Oak planting around the island with a few layered cedars."
+      },
+      "view": [
+        0.6,
+        0.6,
+        -0.5
+      ]
+    },
+    {
+      "id": "dock",
+      "mesh": "site_dock",
+      "name": {
+        "zh": "私家停机坪",
+        "en": "Private landing pad"
+      },
+      "desc": {
+        "zh": "岛西缘外挑的私家悬浮车停机坪，桥上有铸铁候机小亭；一条碎石车道直通前庭。悬浮岛之间没有公共交通，这是宅邸唯一的出入口。",
+        "en": "A private hover-vehicle pad cantilevered off the western rim, with a small cast-iron waiting kiosk on the bridge and a gravel drive straight to the forecourt. There is no public transport between islands; this is the house's only way in or out."
+      },
+      "view": [
+        -0.7,
+        0.4,
+        -0.6
+      ]
+    }
+  ]
 }

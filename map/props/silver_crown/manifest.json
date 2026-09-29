@@ -1,255 +1,255 @@
 {
- "_说明": "viewer3d.html?model=silver_crown 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。议会骑士团总部银冠堡：上层与中层交界的悬浮要塞，与上层底图（tc_estates.build_silver_crown）一致；云海、穿出云层的中层楼顶、远处浮岛与巡逻艇（bg_*）只在成图里。形制细节为仓库推断。",
- "id": "silver_crown",
- "title": {
-  "zh": "银冠堡",
-  "en": "Silvercrown Keep"
- },
- "glb": "silver_crown.glb",
- "glb_low": "silver_crown_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "walls_ext",
-   "props_curtain",
-   "props_gate",
-   "props_ranges",
-   "props_hangars"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_island",
-   "props_underside",
-   "props_yard",
-   "props_pad",
-   "props_dock",
-   "props_craft"
-  ],
-  "building": {
-   "min": [
-    -128.2,
-    -142.0,
-    -211.4
-   ],
-   "max": [
-    140.2,
-    90.4,
-    148.7
-   ]
-  }
- },
- "section": {
-  "min": -142,
-  "max": 90,
-  "default": 90
- },
- "camera": {
-  "frame": [
-   "walls_ext",
-   "props_curtain",
-   "site_island"
-  ],
-  "dir": [
-   0.4,
-   0.5,
-   -0.75
-  ],
-  "min": 10,
-  "max": 1000,
-  "maxPolar": 1.7
- },
- "hotspots": [
-  {
-   "id": "keep",
-   "mesh": "walls_ext",
-   "name": {
-    "zh": "主堡",
-    "en": "The keep"
-   },
-   "desc": {
-    "zh": "长方形大厅与银冠主塔；议会骑士团（约 1200 名骑士、5000 名辅助人员）的总部。",
-    "en": "The great hall and the silver-crowned donjon: headquarters of the Council Knights (about 1,200 knights and 5,000 support staff)."
-   },
-   "view": [
-    0.4,
-    0.45,
-    -0.8
-   ]
+  "_说明": "viewer3d.html?model=silver_crown 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。议会骑士团总部银冠堡：上层与中层交界的悬浮要塞，与上层底图（tc_estates.build_silver_crown）一致；云海、穿出云层的中层楼顶、远处浮岛与巡逻艇（bg_*）只在成图里。",
+  "id": "silver_crown",
+  "title": {
+    "zh": "银冠堡",
+    "en": "Silvercrown Keep"
   },
-  {
-   "id": "curtain",
-   "mesh": "props_curtain",
-   "name": {
-    "zh": "城墙与圆塔",
-    "en": "Curtain wall & towers"
-   },
-   "desc": {
-    "zh": "沿岛缘的环形城墙与八座圆塔，墙顶步道与信标灯。",
-    "en": "The ring curtain wall along the rim with eight round towers, a wall walk and beacons."
-   },
-   "view": [
-    0.4,
-    0.5,
-    -0.75
-   ]
+  "glb": "silver_crown.glb",
+  "glb_low": "silver_crown_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "gate",
-   "mesh": "props_gate",
-   "name": {
-    "zh": "门楼与桥",
-    "en": "Gatehouse & bridge"
-   },
-   "desc": {
-    "zh": "门楼与通往岸外停靠平台的桥。",
-    "en": "The gatehouse and the bridge to the off-shore docking platform."
-   },
-   "view": [
-    0.2,
-    0.35,
-    0.9
-   ]
+  "groups": {
+    "roof": [],
+    "walls": [
+      "walls_ext",
+      "props_curtain",
+      "props_gate",
+      "props_ranges",
+      "props_hangars"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_island",
+      "props_underside",
+      "props_yard",
+      "props_pad",
+      "props_dock",
+      "props_craft"
+    ],
+    "building": {
+      "min": [
+        -128.2,
+        -142.0,
+        -211.4
+      ],
+      "max": [
+        140.2,
+        90.4,
+        148.7
+      ]
+    }
   },
-  {
-   "id": "ranges",
-   "mesh": "props_ranges",
-   "name": {
-    "zh": "营房与马厩",
-    "en": "Barracks & stables"
-   },
-   "desc": {
-    "zh": "沿内墙的营房与马厩长楼。",
-    "en": "Barracks and stable ranges along the inner wall."
-   },
-   "view": [
-    0.4,
-    0.4,
-    -0.8
-   ]
+  "section": {
+    "min": -142,
+    "max": 90,
+    "default": 90
   },
-  {
-   "id": "hangars",
-   "mesh": "props_hangars",
-   "name": {
-    "zh": "机库",
-    "en": "Hangars"
-   },
-   "desc": {
-    "zh": "悬浮坐骑与巡逻艇机库；骑士团负责上层悬浮区的空域巡防。",
-    "en": "Hangars for hover-mounts and patrol craft; the knights patrol the upper tier's airspace."
-   },
-   "view": [
-    0.5,
-    0.4,
-    -0.75
-   ]
+  "camera": {
+    "frame": [
+      "walls_ext",
+      "props_curtain",
+      "site_island"
+    ],
+    "dir": [
+      0.4,
+      0.5,
+      -0.75
+    ],
+    "min": 10,
+    "max": 1000,
+    "maxPolar": 1.7
   },
-  {
-   "id": "yard",
-   "mesh": "props_yard",
-   "name": {
-    "zh": "砾石校场",
-    "en": "Drill yard"
-   },
-   "desc": {
-    "zh": "砾石校场。",
-    "en": "The gravel drill yard."
-   },
-   "view": [
-    -0.4,
-    0.6,
-    -0.7
-   ]
-  },
-  {
-   "id": "pad",
-   "mesh": "props_pad",
-   "name": {
-    "zh": "巡逻艇停机坪",
-    "en": "Patrol pad"
-   },
-   "desc": {
-    "zh": "巡逻艇停机坪。",
-    "en": "The patrol-craft landing pad."
-   },
-   "view": [
-    0.5,
-    0.5,
-    -0.7
-   ]
-  },
-  {
-   "id": "dock",
-   "mesh": "props_dock",
-   "name": {
-    "zh": "岸外停靠平台",
-    "en": "Off-shore dock"
-   },
-   "desc": {
-    "zh": "岸外停靠平台。",
-    "en": "The off-shore docking platform."
-   },
-   "view": [
-    0.2,
-    0.4,
-    0.9
-   ]
-  },
-  {
-   "id": "craft",
-   "mesh": "props_craft",
-   "name": {
-    "zh": "巡逻艇与坐骑",
-    "en": "Patrol craft & mounts"
-   },
-   "desc": {
-    "zh": "停放的巡逻悬浮艇与悬浮坐骑（无标识）。",
-    "en": "Parked patrol hover-craft and hover-mounts (unmarked)."
-   },
-   "view": [
-    0.5,
-    0.4,
-    -0.75
-   ]
-  },
-  {
-   "id": "island",
-   "mesh": "site_island",
-   "name": {
-    "zh": "岩峰浮岛",
-    "en": "Crag island"
-   },
-   "desc": {
-    "zh": "岩峰浮岛的岛面与峭壁岛缘；位于上层与中层交界，约 800 m。",
-    "en": "The crag island's top and cliff rim, at the boundary of the upper and mid tiers, about 800 m up."
-   },
-   "view": [
-    0.4,
-    0.6,
-    -0.7
-   ]
-  },
-  {
-   "id": "underside",
-   "mesh": "props_underside",
-   "name": {
-    "zh": "岛底与悬浮发射器",
-    "en": "Underside & emitters"
-   },
-   "desc": {
-    "zh": "岛下岩体与以太悬浮发射器。",
-    "en": "The rocky underside and its aether levitation emitters."
-   },
-   "view": [
-    0.4,
-    -0.5,
-    -0.75
-   ]
-  }
- ]
+  "hotspots": [
+    {
+      "id": "keep",
+      "mesh": "walls_ext",
+      "name": {
+        "zh": "主堡",
+        "en": "The keep"
+      },
+      "desc": {
+        "zh": "长方形大厅与银冠主塔；议会骑士团（约 1200 名骑士、5000 名辅助人员）的总部。",
+        "en": "The great hall and the silver-crowned donjon: headquarters of the Council Knights (about 1,200 knights and 5,000 support staff)."
+      },
+      "view": [
+        0.4,
+        0.45,
+        -0.8
+      ]
+    },
+    {
+      "id": "curtain",
+      "mesh": "props_curtain",
+      "name": {
+        "zh": "城墙与圆塔",
+        "en": "Curtain wall & towers"
+      },
+      "desc": {
+        "zh": "沿岛缘的环形城墙与八座圆塔，墙顶步道与信标灯。",
+        "en": "The ring curtain wall along the rim with eight round towers, a wall walk and beacons."
+      },
+      "view": [
+        0.4,
+        0.5,
+        -0.75
+      ]
+    },
+    {
+      "id": "gate",
+      "mesh": "props_gate",
+      "name": {
+        "zh": "门楼与桥",
+        "en": "Gatehouse & bridge"
+      },
+      "desc": {
+        "zh": "门楼与通往岸外停靠平台的桥。",
+        "en": "The gatehouse and the bridge to the off-shore docking platform."
+      },
+      "view": [
+        0.2,
+        0.35,
+        0.9
+      ]
+    },
+    {
+      "id": "ranges",
+      "mesh": "props_ranges",
+      "name": {
+        "zh": "营房与马厩",
+        "en": "Barracks & stables"
+      },
+      "desc": {
+        "zh": "沿内墙的营房与马厩长楼。",
+        "en": "Barracks and stable ranges along the inner wall."
+      },
+      "view": [
+        0.4,
+        0.4,
+        -0.8
+      ]
+    },
+    {
+      "id": "hangars",
+      "mesh": "props_hangars",
+      "name": {
+        "zh": "机库",
+        "en": "Hangars"
+      },
+      "desc": {
+        "zh": "悬浮坐骑与巡逻艇机库；骑士团负责上层悬浮区的空域巡防。",
+        "en": "Hangars for hover-mounts and patrol craft; the knights patrol the upper tier's airspace."
+      },
+      "view": [
+        0.5,
+        0.4,
+        -0.75
+      ]
+    },
+    {
+      "id": "yard",
+      "mesh": "props_yard",
+      "name": {
+        "zh": "砾石校场",
+        "en": "Drill yard"
+      },
+      "desc": {
+        "zh": "砾石校场。",
+        "en": "The gravel drill yard."
+      },
+      "view": [
+        -0.4,
+        0.6,
+        -0.7
+      ]
+    },
+    {
+      "id": "pad",
+      "mesh": "props_pad",
+      "name": {
+        "zh": "巡逻艇停机坪",
+        "en": "Patrol pad"
+      },
+      "desc": {
+        "zh": "巡逻艇停机坪。",
+        "en": "The patrol-craft landing pad."
+      },
+      "view": [
+        0.5,
+        0.5,
+        -0.7
+      ]
+    },
+    {
+      "id": "dock",
+      "mesh": "props_dock",
+      "name": {
+        "zh": "岸外停靠平台",
+        "en": "Off-shore dock"
+      },
+      "desc": {
+        "zh": "岸外停靠平台。",
+        "en": "The off-shore docking platform."
+      },
+      "view": [
+        0.2,
+        0.4,
+        0.9
+      ]
+    },
+    {
+      "id": "craft",
+      "mesh": "props_craft",
+      "name": {
+        "zh": "巡逻艇与坐骑",
+        "en": "Patrol craft & mounts"
+      },
+      "desc": {
+        "zh": "停放的巡逻悬浮艇与悬浮坐骑（无标识）。",
+        "en": "Parked patrol hover-craft and hover-mounts (unmarked)."
+      },
+      "view": [
+        0.5,
+        0.4,
+        -0.75
+      ]
+    },
+    {
+      "id": "island",
+      "mesh": "site_island",
+      "name": {
+        "zh": "岩峰浮岛",
+        "en": "Crag island"
+      },
+      "desc": {
+        "zh": "岩峰浮岛的岛面与峭壁岛缘；位于上层与中层交界，约 800 m。",
+        "en": "The crag island's top and cliff rim, at the boundary of the upper and mid tiers, about 800 m up."
+      },
+      "view": [
+        0.4,
+        0.6,
+        -0.7
+      ]
+    },
+    {
+      "id": "underside",
+      "mesh": "props_underside",
+      "name": {
+        "zh": "岛底与悬浮发射器",
+        "en": "Underside & emitters"
+      },
+      "desc": {
+        "zh": "岛下岩体与以太悬浮发射器。",
+        "en": "The rocky underside and its aether levitation emitters."
+      },
+      "view": [
+        0.4,
+        -0.5,
+        -0.75
+      ]
+    }
+  ]
 }

@@ -34,7 +34,7 @@ drawSection(svg, el, tip, D);
 const card = document.getElementById('card'), wrap = document.querySelector('.wrap');
 svg.addEventListener('mousemove', ev => { let t = ev.target; while (t && t !== svg && !t.dataset?.src) t = t.parentNode;
   if (!t || t === svg) { card.hidden = true; return; }
-  card.hidden = false; card.querySelector('.tag').textContent = t.dataset.tag === 'inf' ? '推断' : '设定原文';
+  card.hidden = false; card.querySelector('.tag').textContent = t.dataset.tag === 'inf' ? '自设' : '设定原文';
   card.querySelector('.tag').className = 'tag' + (t.dataset.tag === 'inf' ? ' inf' : '');
   card.querySelector('.name').textContent = t.dataset.name; card.querySelector('.src').textContent = t.dataset.src;
   const r = wrap.getBoundingClientRect(); let x = ev.clientX - r.left + 16; if (x > 640) x -= 340;

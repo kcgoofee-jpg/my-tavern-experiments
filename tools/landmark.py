@@ -623,11 +623,11 @@ def cmd_ship(a):
     _ten = ((json.load(open(p['manifest'], encoding='utf-8')).get('title') or {}).get('en') or '')
     if not _ten:
         say('  提示：清单 title.en 是空的，英文界面会显示中文标题（map/props/%s/manifest.json 里补上）' % i)
-    txt, msg2 = maps_add_lm(txt, i, st, a.blurb or '位置与形制为仓库推断', _ten)
+    txt, msg2 = maps_add_lm(txt, i, st, a.blurb or '位置与形制为地图补充设定', _ten)
     say(f'  {lm}：{msg2}')
     if msg != '已接' or msg2 != '已有':
         write(mp, txt)
-    # 世界书同步：仓库推断的标记必须在 addon_places.json 有条目（check_maps 也会查）
+    # 世界书同步：地图补充的标记必须在 addon_places.json 有条目（check_maps 也会查）
     mk = json.loads(txt)['maps'][layer]['markers'][marker]
     ap = P('map', 'data', 'addon_places.json')
     apd = json.load(open(ap, encoding='utf-8')) if os.path.exists(ap) else None
@@ -636,8 +636,8 @@ def cmd_ship(a):
         places = apd['places'] if isinstance(apd, dict) else apd
         if not any(ref in (e.get('refs') or []) for e in places):
             if not a.wb_text:
-                die(f'{ref} 是仓库推断的地点，世界书附加条目里还没有它',
-                    '加 --wb-text "<一两句中立说明，写清哪些是仓库推断>" 重跑 ship（worldbook-sync 规则）。')
+                die(f'{ref} 是地图补充的地点，世界书附加条目里还没有它',
+                    '加 --wb-text "<一两句中立说明，写清哪些是地图补充设定>" 重跑 ship（worldbook-sync 规则）。')
             e = {'id': marker, 'name': mk['name'], 'src': f'repo {datetime.date.today()}（位置）', 'refs': [ref],
                  'alias': mk.get('alias') or [mk['name']], 'text': a.wb_text}
             s = read(ap)

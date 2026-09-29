@@ -53,7 +53,7 @@
       <radialGradient id="dome" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="#e8f6ff" stop-opacity=".05"/><stop offset="1" stop-color="#9fd6ff" stop-opacity=".35"/></radialGradient>
     </defs>
   </svg>
-  <div class="title"><b>新历 2088 · 世界全景</b><span>示意图，无比例　·　橙色字 = 推断（设定未给）　·　悬停查看世界书出处　·　<a href="tiancheng.html">天城纵剖面 →</a></span></div>
+  <div class="title"><b>新历 2088 · 世界全景</b><span>示意图，无比例　·　橙色字 = 自设（设定未给）　·　悬停查看世界书出处　·　<a href="tiancheng.html">天城纵剖面 →</a></span></div>
   <div class="layers" id="layers"></div>
   <div class="card" id="card" hidden><div class="tag"></div><div class="name"></div><div class="src"></div></div>
 </div>
@@ -347,8 +347,8 @@ D.SEEDS.forEach((s, k) => { if (s.kind !== 'minor') return;
   el('title', {}, t, '【设定】世界观：星球上众多中小国林立（国名、数量、位置设定未给，此处为 12 个示意）'); });
 { const [x, y] = proj(...centroid(s => s.kind === 'overseas')); const g = el('g', {}, gLabel);
   el('text', { x, y: y - 10, 'text-anchor': 'middle', class: 'r-ov' }, g, '海外诸地');
-  el('text', { x, y: y + 8, 'text-anchor': 'middle', class: 'cap-sub' }, g, '稀有矿物 · 异域人员输出地（推断形状）');
-  el('title', {}, g, '【设定】货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）；陆块形状与位置为推断'); }
+  el('text', { x, y: y + 8, 'text-anchor': 'middle', class: 'cap-sub' }, g, '稀有矿物 · 异域人员输出地（形状为地图自设）');
+  el('title', {}, g, '【设定】货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）'); }
 
 // ---------- 图例 ----------
 { const x0 = 20, y0 = 690, g = gLegend; el('rect', { x: x0, y: y0, width: 290, height: 295, rx: 6, fill: 'rgba(250,247,240,.92)', stroke: '#b9b1a0' }, g);
@@ -386,7 +386,7 @@ for (const [id, name] of LAYERS) { const l = document.createElement('label'); l.
 // ---------- 悬停信息卡：显示世界书出处 ----------
 const card = document.getElementById('card'), wrap = document.querySelector('.wrap');
 function showCard(ev, name, tag, src) { card.hidden = false;
-  card.querySelector('.tag').textContent = tag === 'inf' ? '推断' : '设定原文'; card.querySelector('.tag').className = 'tag' + (tag === 'inf' ? ' inf' : '');
+  card.querySelector('.tag').textContent = tag === 'inf' ? '自设' : '设定原文'; card.querySelector('.tag').className = 'tag' + (tag === 'inf' ? ' inf' : '');
   card.querySelector('.name').textContent = name; card.querySelector('.src').textContent = src;
   const r = wrap.getBoundingClientRect(); let x = ev.clientX - r.left + 16, y = ev.clientY - r.top + 16;
   if (x > 1600 - 320) x -= 340; if (y > 1000 - 140) y -= 150; card.style.left = x + 'px'; card.style.top = y + 'px'; }
@@ -402,7 +402,7 @@ ov.addEventListener('mousemove', ev => {
     const top = gy * C - elev[i] * K; if (y >= top && y < gy * C + C) {
       const kind = D.SEEDS[owner[i]].kind, st = D.KIND_STYLE[kind], src = KIND_SRC[kind];
       if (src) return showCard(ev, st.name, 'set', src.src);
-      if (kind === 'overseas') return showCard(ev, st.name, 'inf', '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）；陆块形状为推断');
+      if (kind === 'overseas') return showCard(ev, st.name, 'inf', '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）');
       return showCard(ev, '中小国', 'set', '世界观：星球上众多中小国林立（国名、位置设定未给）'); } }
   card.hidden = true; });
 ov.addEventListener('mouseleave', () => card.hidden = true);

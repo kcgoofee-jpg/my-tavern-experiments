@@ -35,17 +35,17 @@ const TCChars = (() => {
   const avOf = n => avatars[n] || barAv(n) || (portOn() ? cardPort(n) : '');
   const avImg = n => { const u = avOf(n); return u ? `<img alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" src="${esc(u)}" data-i="${esc(ini(n))}" onerror="this.replaceWith(this.dataset.i)">` : ''; };
   const visible = c => prefs.show && !prefs.off.includes(c.name);
-  // v0.9.3：显示名（自定义，custom.js）与位置来源：MVU（在场人物的位置字段）/ 标签（聊天里的人物标签）/ 推断（在场但没写位置，按和你同处）
+  // v0.9.3：显示名（自定义，custom.js）与位置来源：MVU（在场人物的位置字段）/ 标签（聊天里的人物标签）/ 同处（在场但没写位置，默认和你同处）
   const dn = n => (typeof P.TCCustom !== 'undefined' ? P.TCCustom.name(n) : n);
-  const srcOf = c => c.src === 'mvu' ? T('ch.src_mvu', 'MVU') : c.src === 'tag' ? T('ch.src_tag', '标签') : T('ch.src_infer', '推断');
-  // 2026-09-28 待查 1/2/6：开局前不推断「和你在一起」；在场表久未变降级为未知；「推断」加悬停说明来源和楼层
+  const srcOf = c => c.src === 'mvu' ? T('ch.src_mvu', 'MVU') : c.src === 'tag' ? T('ch.src_tag', '标签') : T('ch.src_infer', '同处');
+  // 2026-09-28 待查 1/2/6：开局前不按「和你在一起」显示；在场表久未变降级为未知；「同处」加悬停说明来源和楼层
   const when = c => c.prelude ? T('ch.pre', '开局前 · 卡初始值') : c.stale ? T('ch.stale', '未知 · 在场表 {n} 楼未变', { n: c.stale }) : c.present ? T('ch.with_you', '和你在一起') : T('ev.floor', '第 {n} 楼', { n: c.floor });
   const lastSeen = c => c.prelude ? T('ch.pre', '开局前 · 卡初始值') : c.stale ? T('ch.stale', '未知 · 在场表 {n} 楼未变', { n: c.stale }) : c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor });
   const srcTip = c => {
     if (c.src !== 'infer' && !c.stale) return '';
     const s = c.prelude ? T('ch.infer_pre', '剧情还没开始：这是卡的初始在场表，开始后按聊天标签 / MVU 更新')
-      : c.stale ? T('ch.infer_stale', '在场表 {n} 楼没变，不再推断和你同处；上次明确位置在第 {f} 楼', { n: c.stale, f: c.floor })
-      : T('ch.infer_hint', '人在在场表里但没写位置，按和你同处推断');
+      : c.stale ? T('ch.infer_stale', '在场表 {n} 楼没变，不再按同处显示；上次明确位置在第 {f} 楼', { n: c.stale, f: c.floor })
+      : T('ch.infer_hint', '人在在场表里但没写位置，默认和你同处');
     return ` title="${esc(s)}"`;
   };
 

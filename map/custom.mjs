@@ -53,7 +53,7 @@ const TCCustom = (() => {
   // 地点卡：显示名 + 标准名、用途
   function decorateCard(el, title) {
     const c = document.getElementById('card'); if (!c || c.hidden) return;
-    const key = el?.dataset?.name || title, e = entry(key), ex = c.querySelector('.extra');
+    const key = title || el?.dataset?.name, e = entry(key), ex = c.querySelector('.extra'); ex.querySelectorAll('.cu-rep').forEach(n => n.remove());   // v16：按标题取条目（el 可能是上一张卡的标记），并清掉旧声望行
     if (e?.名) { c.querySelector('h2').textContent = e.名; const sb = c.querySelector('.sub'); sb.textContent = key + (sb.textContent ? ' · ' + sb.textContent : ''); }
     if (e?.用途) { const p = document.createElement('p'); p.className = 'cu-note'; p.innerHTML = `<b>${esc(T('cu.note', '用途'))}</b> `; p.append(document.createTextNode(e.用途)); ex.prepend(p); }
     const isEden = el?.dataset?.name && typeof REG !== 'undefined' && Object.values(REG.maps).some(m => Object.values(m.markers || {}).some(v => v.name === el.dataset.name && v.link && REG.maps[v.link.map]?.kind === 'estate'));

@@ -86,7 +86,7 @@
     }
   },
   "unplaced": {
-    "_note": "卡里有、但没写层与位置、地图也不落点的机构与地点（附加条目里写明「位置未写」）。2026-09-28 起用户要求卡里每处建筑都上图：原来这里的 12 处已全部落点（层与位置标为仓库推断，见 docs/card-buildings.md），列表为空",
+    "_note": "卡里有、但没写层与位置、地图也不落点的机构与地点（附加条目里写明「位置未写」）。2026-09-28 起用户要求卡里每处建筑都上图：原来这里的 12 处已全部落点，列表为空",
     "items": []
   },
   "ambiguous": {
@@ -459,7 +459,7 @@
           "name": "以太气候调节塔",
           "name_en": "Aether Climate Tower",
           "tag": "inf",
-          "src": "天城：气候由以太气候调节塔人工维持（塔的位置为推断）",
+          "src": "天城：气候由以太气候调节塔人工维持",
           "alias": [
             "气候调节塔",
             "气候塔"
@@ -478,7 +478,7 @@
           "sub_en": "PM's residence · Downing-Street-style terrace",
           "tag": "inf",
           "sub_src": "user-design",
-          "src": "首相在首相府开会；卡未写首相府的位置，放在上层为地图推断；副标题的唐宁街式外观是用户 2026-09-27 自设，卡里没有形制描写",
+          "src": "首相在首相府开会；卡未写首相府的位置；副标题的唐宁街式外观是用户 2026-09-27 自设，卡里没有形制描写",
           "openings": [
             5
           ],
@@ -500,7 +500,7 @@
           "sub": "悬浮岛 R-02 · 私人悬浮载具停靠平台",
           "sub_en": "Floating isle R-02 · private vehicle landing",
           "tag": "inf",
-          "src": "视觉样例·请柬：罗斯柴尔德庄园 · 悬浮岛 R-02，伊莎贝拉家族的庄园、冬季宴会举办地；在上层的具体位置为推断",
+          "src": "视觉样例·请柬：罗斯柴尔德庄园 · 悬浮岛 R-02，伊莎贝拉家族的庄园、冬季宴会举办地",
           "alias": [
             "罗斯柴尔德庄园",
             "罗斯柴尔德",
@@ -525,7 +525,7 @@
           "sub_en": "League meeting house",
           "tag": "inf",
           "sub_src": "repo-design",
-          "src": "卡有庄园主联盟（举办拍卖会与品鉴会），没有固定会所；品鉴宴由庄园主轮流做东（样例在罗斯柴尔德庄园 R-02），所以「品鉴宴」「会所」不作别名。会所本身、上层位置与宫殿式外观均为地图推断",
+          "src": "卡有庄园主联盟（举办拍卖会与品鉴会），没有固定会所；品鉴宴由庄园主轮流做东（样例在罗斯柴尔德庄园 R-02），所以「品鉴宴」「会所」不作别名。",
           "alias": [
             "联盟会所"
           ],
@@ -543,7 +543,7 @@
           "sub_en": "Kelly Louise's home",
           "tag": "inf",
           "layer_src": "user-decision",
-          "src": "凯莉·露易丝的居所；卡未写层与位置。放在上层是用户决定（2026-09-27）；所在的悬浮岛为仓库推断。凯莉亡夫的维克多庄园是另一处（卡未写位置；地图 2026-09-28 起另标 victor_estate，位置为仓库推断）",
+          "src": "凯莉·露易丝的居所；卡未写层与位置。放在上层是用户决定（2026-09-27）。凯莉亡夫的维克多庄园是另一处",
           "openings": [
             3
           ],
@@ -567,7 +567,7 @@
           "sub_en": "Kelly's late husband's estate",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "人物·凯莉：亡夫的庄园，现已不属于她。卡未写具体位置：放在上层为仓库自设（仓库推断，2026-09-28）",
+          "src": "人物·凯莉：亡夫的庄园，现已不属于她。卡未写具体位置：放在上层为仓库自设",
           "alias": [
             "维克多庄园"
           ]
@@ -580,7 +580,7 @@
           "sub_en": "Largest in the city · owner never seen",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "庄园主社交：全天城最大、从不露面、不入联盟的庄园主。卡未写具体位置：放在上层为仓库自设（仓库推断，2026-09-28）",
+          "src": "庄园主社交：全天城最大、从不露面、不入联盟的庄园主。卡未写具体位置：放在上层为仓库自设",
           "alias": [
             "「Y」的庄园",
             "Y的庄园",
@@ -594,7 +594,7 @@
           "name_en": "Elite Academy",
           "sub_en": "Academy for upper-tier heirs",
           "tag": "inf",
-          "src": "教育体系·上层：贵族子弟接受私人教育或进入精英学院（课程：家族管理、以太魔法修习、政治学、资产经营、礼仪与社交、军事基础）。卡写了在上层，没写在哪座岛：落在 isle25 为仓库推断（2026-09-28，Q11 按建议）",
+          "src": "教育体系·上层：贵族子弟接受私人教育或进入精英学院（课程：家族管理、以太魔法修习、政治学、资产经营、礼仪与社交、军事基础）。卡写了在上层，Q11 按建议）",
           "alias": [
             "精英学院"
           ],
@@ -695,7 +695,7 @@
           "sub_en": "Middle Tier core",
           "cls": "capital",
           "tag": "set",
-          "src": "天城·中层：天城执法局总局位于中层核心区（在核心区内的具体位置为推断）。中层按高度分 18 个辖区，每区一个执法分局；议会骑士团 12 个分队的巡逻据点在中层高区（数目是卡的设定，图上不逐个画）",
+          "src": "天城·中层：天城执法局总局位于中层核心区。中层按高度分 18 个辖区，每区一个执法分局；议会骑士团 12 个分队的巡逻据点在中层高区（数目是卡的设定，图上不逐个画）",
           "alias": [
             "执法局总局",
             "执法局",
@@ -713,7 +713,7 @@
           "name_en": "Radiance Cathedral",
           "sub_en": "Church of Holy Light HQ",
           "tag": "set",
-          "src": "天城·中层：圣光教会总部辉光大教堂，位于中层高区（具体位置为推断）。视觉样例里的「天城主教座堂」按用户 2026-09-27 的决定视为同一处；大主教府邸卡里有、位置未写，并入本处。主教塞拉菲娜·阿尔贝蒂在这里",
+          "src": "天城·中层：圣光教会总部辉光大教堂，位于中层高区。视觉样例里的「天城主教座堂」按用户 2026-09-27 的决定视为同一处；大主教府邸卡里有、位置未写，并入本处。主教塞拉菲娜·阿尔贝蒂在这里",
           "link": {
             "map": "lm_cathedral",
             "label": "查看三维模型",
@@ -742,7 +742,7 @@
           "name_en": "Holy Iron Cradle",
           "sub_en": "Battle-sisters' convent",
           "tag": "set",
-          "src": "天城·中层：战斗修女的修道院「圣铁摇篮」，中层高区的独立院落（具体位置为推断）",
+          "src": "天城·中层：战斗修女的修道院「圣铁摇篮」，中层高区的独立院落",
           "alias": [
             "圣铁摇篮",
             "战斗修女院",
@@ -761,7 +761,7 @@
           "name_en": "Ring Barracks",
           "sub_en": "Defense Force garrison",
           "tag": "set",
-          "src": "天城·中层：天城防卫军驻扎在中层外围的环城军营带（图上是沿片区西缘的一段，走向为推断）",
+          "src": "天城·中层：天城防卫军驻扎在中层外围的环城军营带",
           "alias": [
             "环城军营带",
             "军营",
@@ -780,7 +780,7 @@
           "name_en": "Xingyuan (Star Abyss) University",
           "sub_en": "Tiancheng's first university",
           "tag": "set",
-          "src": "人物：星渊大学，天城第一学府，设有医学院（另有教务处、行政处）；卡未写位置，放在中层为地图推断。与「天城大学」（设法学院）不是同一所",
+          "src": "人物：星渊大学，天城第一学府，设有医学院（另有教务处、行政处）；卡未写位置。与「天城大学」（设法学院）不是同一所",
           "alias": [
             "星渊大学",
             "星渊",
@@ -802,7 +802,7 @@
           "openings": [
             6
           ],
-          "src": "中层钢铁霓虹区的旧公寓楼，出租的房间（开场白里的地点；具体位置为推断）",
+          "src": "中层钢铁霓虹区的旧公寓楼，出租的房间",
           "alias": [
             "旧公寓楼",
             "旧公寓",
@@ -818,7 +818,7 @@
           "name": "天城议会",
           "name_en": "Tiancheng Council",
           "tag": "inf",
-          "src": "卡有天城议会（立法机构），未写位置；放在中层为地图推断",
+          "src": "卡有天城议会（立法机构），未写位置",
           "alias": [
             "议会",
             "议事厅"
@@ -841,7 +841,7 @@
             "label": "下到下层 · 7 号井",
             "label_en": "Down to Well 7 · Lower"
           },
-          "src": "天城·中层：中层 C 区的层间检查点，通往下层 7 号井的通道（检查点的具体位置为推断；下层 7 号井画在同一平面位置）。跨层通行要持执政厅签发的通行许可（写明方向、持证人、随行与有效时段，编号为 P 加五位数）；中层与下层之间的检查点查验身份芯片与随身铭牌；下层商品进入中层缴 5% 入境税",
+          "src": "天城·中层：中层 C 区的层间检查点，通往下层 7 号井的通道。跨层通行要持执政厅签发的通行许可（写明方向、持证人、随行与有效时段，编号为 P 加五位数）；中层与下层之间的检查点查验身份芯片与随身铭牌；下层商品进入中层缴 5% 入境税",
           "alias": [
             "层间检查点",
             "检查点",
@@ -863,7 +863,7 @@
           "sub_en": "Has a law school",
           "tag": "inf",
           "layer_src": "user-decision",
-          "src": "人物·维多利亚：天城大学设法学院（她 16 岁跳级入学，母亲是法学院终身教授）；与星渊大学不是同一所。卡未写层与位置：放在中层是用户决定（2026-09-27），具体位置为仓库推断",
+          "src": "人物·维多利亚：天城大学设法学院（她 16 岁跳级入学，母亲是法学院终身教授）；与星渊大学不是同一所。卡未写层与位置：放在中层是用户决定（2026-09-27）",
           "alias": [
             "天城大学",
             "天城大学法学院",
@@ -882,7 +882,7 @@
           "sub_en": "Council Knights",
           "tag": "inf",
           "layer_src": "user-decision",
-          "src": "军事与治安、人物·罗莎琳德：议会骑士团的营区（团长每天巡营）；卡未写位置，也未写与银冠堡是否同一处。放在中层是用户决定（2026-09-27）；画在上层银冠堡的正下方为仓库推断",
+          "src": "军事与治安、人物·罗莎琳德：议会骑士团的营区（团长每天巡营）；卡未写位置，也未写与银冠堡是否同一处。放在中层是用户决定（2026-09-27）",
           "alias": [
             "骑士团营区",
             "骑士团营地"
@@ -897,7 +897,7 @@
           "name": "最高法院",
           "name_en": "Supreme Court",
           "tag": "inf",
-          "src": "人物·维多利亚：她的公寓在中层高区、步行 15 分钟到最高法院，据此把法院放在中层高区（层与位置为仓库推断）",
+          "src": "人物·维多利亚：她的公寓在中层高区、步行 15 分钟到最高法院，据此把法院放在中层高区",
           "alias": [
             "天城最高法院",
             "最高法院"
@@ -914,7 +914,7 @@
           "name_en": "Victoria's Apartment",
           "sub_en": "Middle Tier heights",
           "tag": "set",
-          "src": "人物·维多利亚：公寓在中层高区，步行 15 分钟到最高法院（具体位置为仓库推断）",
+          "src": "人物·维多利亚：公寓在中层高区，步行 15 分钟到最高法院",
           "alias": [
             "维多利亚的公寓",
             "维多利亚公寓"
@@ -929,7 +929,7 @@
           "name": "佣兵公会",
           "name_en": "Mercenary Guild",
           "tag": "set",
-          "src": "军事与治安：雇佣兵经中层的佣兵公会接单（具体位置为仓库推断）",
+          "src": "军事与治安：雇佣兵经中层的佣兵公会接单",
           "alias": [
             "佣兵公会"
           ],
@@ -945,7 +945,7 @@
           "name_en": "Middle Tier Monastery",
           "sub_en": "One of five in the Middle Tier",
           "tag": "set",
-          "src": "圣光教会：中层有 12 个教区（每区一座主教堂和若干礼拜堂）与 5 座普通修道院；卡未写各自位置，图上只画一处作代表（位置为仓库推断）",
+          "src": "圣光教会：中层有 12 个教区（每区一座主教堂和若干礼拜堂）与 5 座普通修道院；卡未写各自位置，图上只画一处作代表",
           "alias": [
             "中层修道院"
           ],
@@ -959,7 +959,7 @@
           "name": "中层公立医院",
           "name_en": "Middle Tier Public Hospital",
           "tag": "set",
-          "src": "人物·伊薇特：中层公立医院（具体位置为仓库推断）",
+          "src": "人物·伊薇特：中层公立医院",
           "alias": [
             "中层公立医院",
             "公立医院"
@@ -974,7 +974,7 @@
           "name": "中层养老院",
           "name_en": "Middle Tier Care Home",
           "tag": "set",
-          "src": "人物·顾衍容：中层的养老院（具体位置为仓库推断）",
+          "src": "人物·顾衍容：中层的养老院",
           "alias": [
             "中层养老院",
             "养老院"
@@ -992,7 +992,7 @@
           "sub_en": "Head: Jinguji Rin",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "人物·神宫寺凛：法师塔首席。卡未写具体位置：放在中层为仓库自设（仓库推断，2026-09-28）",
+          "src": "人物·神宫寺凛：法师塔首席。卡未写具体位置：放在中层为仓库自设",
           "alias": [
             "法师塔",
             "天城法师塔"
@@ -1010,7 +1010,7 @@
           "sub_en": "Appointment only",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "人物·伊薇特：她开的私人诊所，只接受预约（视觉样例里写作「施奈德生物改造诊所」）。卡未写具体位置：放在中层高区为仓库自设（仓库推断，2026-09-28）",
+          "src": "人物·伊薇特：她开的私人诊所，只接受预约（视觉样例里写作「施奈德生物改造诊所」）。卡未写具体位置：放在中层高区为仓库自设",
           "alias": [
             "施奈德精密改造诊所",
             "施奈德诊所",
@@ -1024,7 +1024,7 @@
           "sub_en": "Largest modification centre",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "人物·伊薇特：天城最大的同类改造中心。卡未写具体位置：放在中层低区为仓库自设（仓库推断，2026-09-28）",
+          "src": "人物·伊薇特：天城最大的同类改造中心。卡未写具体位置：放在中层低区为仓库自设",
           "alias": [
             "新生工坊"
           ]
@@ -1036,7 +1036,7 @@
           "sub_en": "Ayase Haruka's alma mater",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "人物·绫濑遥：她从这里毕业并任顾问。卡未写具体位置：放在中层高区为仓库自设（仓库推断，2026-09-28）",
+          "src": "人物·绫濑遥：她从这里毕业并任顾问。卡未写具体位置：放在中层高区为仓库自设",
           "alias": [
             "天城贵族管家学院",
             "贵族管家学院",
@@ -1055,7 +1055,7 @@
           "sub_en": "Administration · cross-tier permits",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "天城：行政机构，签发跨层通行许可。卡未写具体位置：放在中层核心区为仓库自设（仓库推断，2026-09-28）",
+          "src": "天城：行政机构，签发跨层通行许可。卡未写具体位置：放在中层核心区为仓库自设",
           "alias": [
             "天城执政厅",
             "执政厅"
@@ -1073,7 +1073,7 @@
           "sub_en": "Astrid's early internship",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "人物·阿斯特丽德：18 岁在这里实习（与执政厅是否同一机构，卡没说明）。卡未写具体位置：放在中层核心区为仓库自设（仓库推断，2026-09-28）",
+          "src": "人物·阿斯特丽德：18 岁在这里实习（与执政厅是否同一机构，卡没说明）。卡未写具体位置：放在中层核心区为仓库自设",
           "alias": [
             "天城政务院",
             "政务院"
@@ -1091,7 +1091,7 @@
           "sub_en": "Issues the Aether Yuan",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "货币与贸易：发行以太元，隶属议会。卡未写具体位置：放在中层核心区为仓库自设（仓库推断，2026-09-28）",
+          "src": "货币与贸易：发行以太元，隶属议会。卡未写具体位置：放在中层核心区为仓库自设",
           "alias": [
             "天城中央储备署",
             "中央储备署",
@@ -1110,7 +1110,7 @@
           "sub_en": "Publication review",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "文学与文化：出版审核。卡未写具体位置：放在中层为仓库自设（仓库推断，2026-09-28）",
+          "src": "文学与文化：出版审核。卡未写具体位置：放在中层为仓库自设",
           "alias": [
             "天城文化署",
             "文化署"
@@ -1128,7 +1128,7 @@
           "sub_en": "Feeds the knights and defence army",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "军事与治安：骑士团与防卫军的人才来源。卡未写具体位置：放在中层外围为仓库自设（仓库推断，2026-09-28）",
+          "src": "军事与治安：骑士团与防卫军的人才来源。卡未写具体位置：放在中层外围为仓库自设",
           "alias": [
             "军事学院",
             "天城军事学院"
@@ -1146,7 +1146,7 @@
           "sub_en": "Top-tier force under the Council",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "奥伦帝国：由全部天灾级强者组成的最高战力机构，听命于天城议会。卡未写具体位置：放在中层核心区为仓库自设（仓库推断，2026-09-28）",
+          "src": "奥伦帝国：由全部天灾级强者组成的最高战力机构，听命于天城议会。卡未写具体位置：放在中层核心区为仓库自设",
           "alias": [
             "风暴殿"
           ],
@@ -1229,7 +1229,7 @@
             "label": "上到中层 · C 区检查点",
             "label_en": "Up to Zone C Checkpoint · Middle"
           },
-          "src": "天城·下层：「地基区 7 号井 · 只收灰票」；中层 C 区检查点的通道落在这里（井口与市集布局为推断）。井里的「老 K 杂货」只收灰票，黑市终端的主机名是「井下-07」；灰票是匿名芯片卡，天城只有下层黑市还用实体货币",
+          "src": "天城·下层：「地基区 7 号井 · 只收灰票」；中层 C 区检查点的通道落在这里。井里的「老 K 杂货」只收灰票，黑市终端的主机名是「井下-07」；灰票是匿名芯片卡，天城只有下层黑市还用实体货币",
           "alias": [
             "7号井",
             "7 号井",
@@ -1252,7 +1252,7 @@
           "name_en": "The Bloodmill",
           "sub_en": "Underground fight pit",
           "tag": "set",
-          "src": "天城·下层：黑拳场「血肉磨坊」（位置与形制为推断）",
+          "src": "天城·下层：黑拳场「血肉磨坊」",
           "alias": [
             "血肉磨坊",
             "黑拳场",
@@ -1265,7 +1265,7 @@
           "name_en": "Enforcement Bureau, Lower Branch",
           "sub_en": "Six on paper, three running",
           "tag": "set",
-          "src": "天城·下层：执法局下层分局名义上有六个，实际运转的只有三个（图上只画一个，位置为推断）",
+          "src": "天城·下层：执法局下层分局名义上有六个，实际运转的只有三个",
           "alias": [
             "下层分局",
             "执法局下层分局"
@@ -1282,7 +1282,7 @@
           "name_en": "Holy Light Soup Kitchen",
           "sub_en": "Lower parish",
           "tag": "set",
-          "src": "天城·下层：圣光教会在下层有三个教区，教堂多半荒废，靠施粥站维持（图上画一处，位置为推断）；教会在下层办的孤儿收容所与免费诊所也并入本处",
+          "src": "天城·下层：圣光教会在下层有三个教区，教堂多半荒废，靠施粥站维持；教会在下层办的孤儿收容所与免费诊所也并入本处",
           "alias": [
             "施粥站",
             "粥站",
@@ -1300,7 +1300,7 @@
           "name": "防卫军前沿哨所",
           "name_en": "Defense Force Forward Outpost",
           "tag": "set",
-          "src": "天城·下层：天城防卫军的前沿哨所（位置为推断）",
+          "src": "天城·下层：天城防卫军的前沿哨所",
           "alias": [
             "前沿哨所",
             "哨所"
@@ -1317,7 +1317,7 @@
           "name_en": "Asset Management Committee, Lower Facility",
           "sub_en": "Directly run · plus an admin centre and a central works",
           "tag": "set",
-          "src": "天城·下层：资产管理委员会直管的下层公共收容设施，周边有执法分队驻守（委员会总部位置卡未写；图上只画有围墙的建筑外观，位置为推断）。卡里下层另有委员会的公共设施管理中心与一座集中工厂，和直管设施是不同的设施，图上合画为一处。下层帮派控制大部分地盘，唯一相对安全的是委员会直管设施的周边",
+          "src": "天城·下层：资产管理委员会直管的下层公共收容设施，周边有执法分队驻守。卡里下层另有委员会的公共设施管理中心与一座集中工厂，和直管设施是不同的设施，图上合画为一处。下层帮派控制大部分地盘，唯一相对安全的是委员会直管设施的周边",
           "alias": [
             "委员会下层设施",
             "公共收容设施",
@@ -1340,7 +1340,7 @@
             4
           ],
           "opening_dest": true,
-          "src": "卡：「天城边缘的废弃教堂区」，已荒废但仍有以太场残留；下层教区的教堂多半荒废，故画在下层边缘（层与位置为推断）",
+          "src": "卡：「天城边缘的废弃教堂区」，已荒废但仍有以太场残留；下层教区的教堂多半荒废，故画在下层边缘",
           "alias": [
             "废弃教堂区",
             "废弃教堂",
@@ -1358,7 +1358,7 @@
           "name_en": "Freight Yard",
           "sub_en": "Old surface rail hub",
           "tag": "inf",
-          "src": "天城·下层：「老旧地面轨道、货运通道、步行为主」；货运站与轨道枢纽的位置为推断",
+          "src": "天城·下层：「老旧地面轨道、货运通道、步行为主」",
           "alias": [
             "货运站",
             "货运",
@@ -1370,7 +1370,7 @@
           "name": "铁皮屋区",
           "name_en": "Tin-shack Quarter",
           "tag": "inf",
-          "src": "下层的铁皮屋区（层按开场白，具体位置为仓库推断）",
+          "src": "下层的铁皮屋区",
           "alias": [
             "铁皮屋区",
             "铁皮屋"
@@ -1385,7 +1385,7 @@
           "name": "旧货市场",
           "name_en": "Junk Market",
           "tag": "inf",
-          "src": "下层的旧货市场，卖旧物，也有中层地图（层按开场白，具体位置为仓库推断）",
+          "src": "下层的旧货市场，卖旧物，也有中层地图",
           "alias": [
             "旧货市场",
             "旧货摊"
@@ -1403,7 +1403,7 @@
           "sub_en": "Rachel's past",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "人物·瑞秋：她过去的经历发生在下层区的酒吧。卡未写具体位置：放在下层为仓库自设（仓库推断，2026-09-28）",
+          "src": "人物·瑞秋：她过去的经历发生在下层区的酒吧。卡未写具体位置：放在下层为仓库自设",
           "alias": [
             "下层区酒吧",
             "下层酒吧"
@@ -1416,7 +1416,7 @@
           "sub_en": "Rachel's birthplace",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "人物·瑞秋：出生在下层的贫民窟。卡未写具体位置：放在下层为仓库自设（仓库推断，2026-09-28）",
+          "src": "人物·瑞秋：出生在下层的贫民窟。卡未写具体位置：放在下层为仓库自设",
           "alias": [
             "贫民窟",
             "下层贫民窟"
@@ -1429,7 +1429,7 @@
           "sub_en": "Victoria's brother was sent here",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "人物·维多利亚：她把弟弟送进了监狱。卡未写具体位置：放在下层为仓库自设（仓库推断，2026-09-28）",
+          "src": "人物·维多利亚：她把弟弟送进了监狱。卡未写具体位置：放在下层为仓库自设",
           "alias": [
             "监狱",
             "天城监狱"
@@ -1442,10 +1442,10 @@
         }
       }
     },
-    "lm_contest_corridor": {"title": "竞赛与狂欢回廊（三维）", "title_en": "Contest & Revelry Arcade (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "contest_corridor", "src": "props/viewer3d.html", "alias": ["竞赛与狂欢回廊（三维）"], "src_note": "竞赛与狂欢回廊三维（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 site_kavalierki.contest_corridor 标记的「查看三维模型」进。源：blender/landmarks/contest_corridor/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_ether_dome": {"title": "以太穹顶（三维）", "title_en": "Ether Dome (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "ether_dome", "src": "props/viewer3d.html", "alias": ["以太穹顶（三维）"], "src_note": "以太穹顶三维（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 site_kavalierki.ether_dome 标记的「查看三维模型」进。源：blender/landmarks/ether_dome/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_glory_crown": {"title": "荣光冠冕（三维）", "title_en": "Glory Crown (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "glory_crown", "src": "props/viewer3d.html", "alias": ["荣光冠冕（三维）"], "src_note": "荣光冠冕三维（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 site_kavalierki.glory_crown 标记的「查看三维模型」进。源：blender/landmarks/glory_crown/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_holy_mountain": {"title": "原域·悬浮圣山（三维）", "title_en": "Origin Domain: the Floating Holy Mountain (3D)", "parent": "yuanyu_sanctum", "kind": "estate", "viewer3d": "holy_mountain", "src": "props/viewer3d.html", "alias": ["原域·悬浮圣山（三维）", "悬浮圣山（三维）"], "src_note": "原域·悬浮圣山三维（标准版：标准档 + 低档 glb；山体与城区的分割、尺度为仓库推断）；从 yuanyu_sanctum 四个标记的「查看三维模型」进。源：blender/world/out/yuanyu_holy_mount.blend", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_contest_corridor": {"title": "竞赛与狂欢回廊（三维）", "title_en": "Contest & Revelry Arcade (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "contest_corridor", "src": "props/viewer3d.html", "alias": ["竞赛与狂欢回廊（三维）"], "src_note": "竞赛与狂欢回廊三维；从 site_kavalierki.contest_corridor 标记的「查看三维模型」进。源：blender/landmarks/contest_corridor/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_ether_dome": {"title": "以太穹顶（三维）", "title_en": "Ether Dome (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "ether_dome", "src": "props/viewer3d.html", "alias": ["以太穹顶（三维）"], "src_note": "以太穹顶三维；从 site_kavalierki.ether_dome 标记的「查看三维模型」进。源：blender/landmarks/ether_dome/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_glory_crown": {"title": "荣光冠冕（三维）", "title_en": "Glory Crown (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "glory_crown", "src": "props/viewer3d.html", "alias": ["荣光冠冕（三维）"], "src_note": "荣光冠冕三维；从 site_kavalierki.glory_crown 标记的「查看三维模型」进。源：blender/landmarks/glory_crown/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_holy_mountain": {"title": "原域·悬浮圣山（三维）", "title_en": "Origin Domain: the Floating Holy Mountain (3D)", "parent": "yuanyu_sanctum", "kind": "estate", "viewer3d": "holy_mountain", "src": "props/viewer3d.html", "alias": ["原域·悬浮圣山（三维）", "悬浮圣山（三维）"], "src_note": "原域·悬浮圣山三维；从 yuanyu_sanctum 四个标记的「查看三维模型」进。源：blender/world/out/yuanyu_holy_mount.blend", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_victoria_apartment": {
       "title": "维多利亚的公寓（三维）",
       "title_en": "Victoria's Apartment (3D)",
@@ -1456,7 +1456,7 @@
       "alias": [
         "维多利亚的公寓（三维）"
       ],
-      "src_note": "维多利亚的公寓三维（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 tc_mid.victoria_apartment 标记的「查看三维模型」进。源：blender/landmarks/victoria_apartment/",
+      "src_note": "维多利亚的公寓三维；从 tc_mid.victoria_apartment 标记的「查看三维模型」进。源：blender/landmarks/victoria_apartment/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1470,7 +1470,7 @@
       "alias": [
         "骑士团营区（三维）"
       ],
-      "src_note": "骑士团营区三维（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 tc_mid.knights_camp 标记的「查看三维模型」进。源：blender/landmarks/knights_camp/",
+      "src_note": "骑士团营区三维；从 tc_mid.knights_camp 标记的「查看三维模型」进。源：blender/landmarks/knights_camp/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1500,7 +1500,7 @@
         "凯莉宅邸门廊",
         "凯莉宅邸花园"
       ],
-      "src_note": "开局三目的地的三维模型（标准版：标准档 + 低档 glb；摄政风白灰泥别墅，形制为仓库推断）；从 tc_upper.kelly_residence 标记的「查看三维模型」进。源：blender/landmarks/kelly_residence/",
+      "src_note": "开局三目的地的三维模型；从 tc_upper.kelly_residence 标记的「查看三维模型」进。源：blender/landmarks/kelly_residence/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1514,7 +1514,7 @@
       "alias": [
         "罗斯柴尔德庄园（三维）"
       ],
-      "src_note": "罗斯柴尔德庄园三维（标准版：标准档 + 低档 glb；沃德斯登式府邸 + 冬季宴会用的双立方宴会厅，与上层底图同一岛（isle30）同一轮廓，形制为仓库推断）；从 tc_upper.zaibatsu_estate 标记的「查看三维模型」进。源：blender/landmarks/rothschild_estate/（共用 blender/landmarks/upper_estates.py）",
+      "src_note": "罗斯柴尔德庄园三维（标准版：标准档 + 低档 glb；沃德斯登式府邸 + 冬季宴会用的双立方宴会厅，与上层底图同一岛（isle30）同一轮廓；从 tc_upper.zaibatsu_estate 标记的「查看三维模型」进。源：blender/landmarks/rothschild_estate/（共用 blender/landmarks/upper_estates.py）",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1528,7 +1528,7 @@
       "alias": [
         "庄园主联盟会所（三维）"
       ],
-      "src_note": "庄园主联盟会所三维（标准版：标准档 + 低档 glb；蓓尔美尔街俱乐部式意大利宫殿楼 + 顶光拍卖厅，与上层底图同一岛（isle9）同一轮廓，会所本身、位置与形制均为仓库推断）；从 tc_upper.league_club 标记的「查看三维模型」进。源：blender/landmarks/league_club/（共用 blender/landmarks/upper_estates.py）",
+      "src_note": "庄园主联盟会所三维（标准版：标准档 + 低档 glb；蓓尔美尔街俱乐部式意大利宫殿楼 + 顶光拍卖厅，与上层底图同一岛（isle9）同一轮廓；从 tc_upper.league_club 标记的「查看三维模型」进。源：blender/landmarks/league_club/（共用 blender/landmarks/upper_estates.py）",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1542,7 +1542,7 @@
       "alias": [
         "精英学院（三维）"
       ],
-      "src_note": "精英学院三维（标准版：标准档 + 低档 glb；学院式四合院 + 礼仪大厅 + 图书馆 + 以太修习圆庭 + 操练场，与上层底图同一岛（isle25）同一轮廓，卡说教会进不了悬浮岛，不画礼拜堂，形制为仓库推断）；从 tc_upper.elite_academy 标记的「查看三维模型」进。源：blender/landmarks/elite_academy/（共用 blender/landmarks/upper_estates.py）",
+      "src_note": "精英学院三维（标准版：标准档 + 低档 glb；学院式四合院 + 礼仪大厅 + 图书馆 + 以太修习圆庭 + 操练场，与上层底图同一岛（isle25）同一轮廓，卡说教会进不了悬浮岛，不画礼拜堂；从 tc_upper.elite_academy 标记的「查看三维模型」进。源：blender/landmarks/elite_academy/（共用 blender/landmarks/upper_estates.py）",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1556,7 +1556,7 @@
       "alias": [
         "废弃教堂区（三维）"
       ],
-      "src_note": "开局四目的地的三维模型（标准版：标准档 + 低档 glb；旧时代石砌教区教堂废墟 + 残余以太场，层与位置为仓库推断）；从 tc_low.ruined_churches 标记的「查看三维模型」进。源：blender/landmarks/ruined_churches/",
+      "src_note": "开局四目的地的三维模型；从 tc_low.ruined_churches 标记的「查看三维模型」进。源：blender/landmarks/ruined_churches/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1570,7 +1570,7 @@
       "alias": [
         "旧公寓楼（三维）"
       ],
-      "src_note": "开局六的地点的三维模型（标准版：标准档 + 低档 glb；老式步行梯公寓 + 早餐店、地铁口、雨后街道与玩家租的房间，具体位置为仓库推断）；从 tc_mid.old_apartment 标记的「查看三维模型」进。源：blender/landmarks/old_apartment/",
+      "src_note": "开局六的地点的三维模型；从 tc_mid.old_apartment 标记的「查看三维模型」进。源：blender/landmarks/old_apartment/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1584,7 +1584,7 @@
       "alias": [
         "铁皮屋区与旧货市场（三维）"
       ],
-      "src_note": "开局六提到的两处下层地点合成一个三维场景（标准版：标准档 + 低档 glb；铁皮屋区 + 旧货市场，具体位置为仓库推断）；从 tc_low.tin_shacks 标记的「查看三维模型」进。源：blender/landmarks/lower_quarter/",
+      "src_note": "开局六提到的两处下层地点合成一个三维场景；从 tc_low.tin_shacks 标记的「查看三维模型」进。源：blender/landmarks/lower_quarter/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1598,7 +1598,7 @@
       "alias": [
         "层间检查点与 7 号井（三维）"
       ],
-      "src_note": "视觉样例里的层间检查点（中层 C 区）与 7 号井黑市（下层）画成一个竖向三维场景（标准版：标准档 + 低档 glb，布局为仓库推断）；两个标记的 link 已用于跨层直达，三维入口写在 link3d（查看器渲染由 UI v2 接）。源：blender/landmarks/well7/",
+      "src_note": "视觉样例里的层间检查点（中层 C 区）与 7 号井黑市（下层）画成一个竖向三维场景；两个标记的 link 已用于跨层直达，三维入口写在 link3d（查看器渲染由 UI v2 接）。源：blender/landmarks/well7/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1612,7 +1612,7 @@
       "alias": [
         "旷野高地（三维）"
       ],
-      "src_note": "开局七地点的三维模型（标准版：标准档 + 低档 glb；台地、崖壁、下山小径、焦黑地面，地形为仓库推断）；从 site_highland.highland_plateau 标记的「查看三维模型」进。源：blender/landmarks/highland/",
+      "src_note": "开局七地点的三维模型；从 site_highland.highland_plateau 标记的「查看三维模型」进。源：blender/landmarks/highland/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1626,7 +1626,7 @@
       "alias": [
         "资产管理委员会下层设施（三维）"
       ],
-      "src_note": "只画外观的机构院落三维（标准版：标准档 + 低档 glb；行政中心、中央工坊、门岗、执法分队驻点、缓冲街道，位置与形制为仓库推断）；从 tc_low.amc_facility 标记的「查看三维模型」进。源：blender/landmarks/amc_facility/",
+      "src_note": "只画外观的机构院落三维；从 tc_low.amc_facility 标记的「查看三维模型」进。源：blender/landmarks/amc_facility/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1640,7 +1640,7 @@
       "alias": [
         "执法局下层分局（三维）"
       ],
-      "src_note": "只画外观的下层分局三维（标准版：标准档 + 低档 glb；加固破旧的分局主楼、封板西翼、双道闸口、车场，位置与形制为仓库推断）；从 tc_low.enforcement_low 标记的「查看三维模型」进。源：blender/landmarks/enforcement_low/",
+      "src_note": "只画外观的下层分局三维；从 tc_low.enforcement_low 标记的「查看三维模型」进。源：blender/landmarks/enforcement_low/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1654,7 +1654,7 @@
       "alias": [
         "防卫军前沿哨所（三维）"
       ],
-      "src_note": "只画外观的前沿哨所三维（标准版：标准档 + 低档 glb；集装箱指挥所、观察塔、防御围墙、外墙缺口处的反兽障碍带，位置与形制为仓库推断）；从 tc_low.outpost 标记的「查看三维模型」进。源：blender/landmarks/outpost/",
+      "src_note": "只画外观的前沿哨所三维；从 tc_low.outpost 标记的「查看三维模型」进。源：blender/landmarks/outpost/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1668,7 +1668,7 @@
       "alias": [
         "监狱（三维）"
       ],
-      "src_note": "中立的机构建筑外观三维（标准版：标准档 + 低档 glb；卡里只顺带提到，层与位置为仓库推断）；从 tc_low.prison 标记的「查看三维模型」进。源：blender/landmarks/prison/",
+      "src_note": "中立的机构建筑外观三维；从 tc_low.prison 标记的「查看三维模型」进。源：blender/landmarks/prison/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1682,7 +1682,7 @@
       "alias": [
         "圣光教会施粥站（三维）"
       ],
-      "src_note": "施粥站 + 孤儿收容所 + 免费诊所合画的三维（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 tc_low.soup_kitchen 标记的「查看三维模型」进。源：blender/landmarks/soup_kitchen/",
+      "src_note": "施粥站 + 孤儿收容所 + 免费诊所合画的三维；从 tc_low.soup_kitchen 标记的「查看三维模型」进。源：blender/landmarks/soup_kitchen/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1696,7 +1696,7 @@
       "alias": [
         "中层政务区（三维）"
       ],
-      "src_note": "中层核心区政务区三维：天城议会、执政厅、政务院、中央储备署、文化署同在一个场景（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 tc_mid.council 标记的「查看三维模型」进。源：blender/landmarks/civic_core/",
+      "src_note": "中层核心区政务区三维：天城议会、执政厅、政务院、中央储备署、文化署同在一个场景；从 tc_mid.council 标记的「查看三维模型」进。源：blender/landmarks/civic_core/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1710,7 +1710,7 @@
       "alias": [
         "天城执法局总局（三维）"
       ],
-      "src_note": "只画外观的执法局总局三维（标准版：标准档 + 低档 glb；花岗岩钢塔、台座大厅与 18 格辖区状态屏、前庭安检、车库、悬浮车库，具体位置与形制为仓库推断）；从 tc_mid.enforcement_hq 标记的「查看三维模型」进。源：blender/landmarks/enforcement_hq/",
+      "src_note": "只画外观的执法局总局三维；从 tc_mid.enforcement_hq 标记的「查看三维模型」进。源：blender/landmarks/enforcement_hq/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1724,7 +1724,7 @@
       "alias": [
         "风暴殿（三维）"
       ],
-      "src_note": "风暴殿三维（标准版：标准档 + 低档 glb；八棱花岗岩钢构主柱 + 基座大厅 + 训练场 + 起降坪，位置与形制为仓库推断）；从 tc_mid.storm_hall 标记的「查看三维模型」进。源：blender/landmarks/storm_hall/",
+      "src_note": "风暴殿三维；从 tc_mid.storm_hall 标记的「查看三维模型」进。源：blender/landmarks/storm_hall/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1738,7 +1738,7 @@
       "alias": [
         "天城大学与最高法院（三维）"
       ],
-      "src_note": "天城大学（设法学院）与最高法院同在一个场景（标准版：标准档 + 低档 glb；位置与形制为仓库推断/用户决定）；从 tc_mid.tiancheng_univ / supreme_court 标记的「查看三维模型」进。源：blender/landmarks/tiancheng_univ_court/",
+      "src_note": "天城大学（设法学院）与最高法院同在一个场景；从 tc_mid.tiancheng_univ / supreme_court 标记的「查看三维模型」进。源：blender/landmarks/tiancheng_univ_court/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1752,7 +1752,7 @@
       "alias": [
         "星渊大学（三维）"
       ],
-      "src_note": "星渊大学三维（标准版：标准档 + 低档 glb；教学主楼、医学院、图书馆、中央草坪，位置与形制为仓库推断）；从 tc_mid.starabyss_univ 标记的「查看三维模型」进。源：blender/landmarks/starabyss_univ/",
+      "src_note": "星渊大学三维；从 tc_mid.starabyss_univ 标记的「查看三维模型」进。源：blender/landmarks/starabyss_univ/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1766,7 +1766,7 @@
       "alias": [
         "天城贵族管家学院（三维）"
       ],
-      "src_note": "天城贵族管家学院三维（标准版：标准档 + 低档 glb；红砖学院主楼、实训翼、前庭喷泉、后花园绿篱迷宫，位置与形制为仓库推断）；从 tc_mid.butler_academy 标记的「查看三维模型」进。源：blender/landmarks/butler_academy/",
+      "src_note": "天城贵族管家学院三维；从 tc_mid.butler_academy 标记的「查看三维模型」进。源：blender/landmarks/butler_academy/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1780,7 +1780,7 @@
       "alias": [
         "中层关怀带（三维）"
       ],
-      "src_note": "中层公立医院、中层养老院、中层修道院同在一个场景（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 tc_mid.mid_hospital / mid_care_home / mid_monastery 标记的「查看三维模型」进。源：blender/landmarks/care_cluster/",
+      "src_note": "中层公立医院、中层养老院、中层修道院同在一个场景；从 tc_mid.mid_hospital / mid_care_home / mid_monastery 标记的「查看三维模型」进。源：blender/landmarks/care_cluster/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1794,7 +1794,7 @@
       "alias": [
         "佣兵公会（三维）"
       ],
-      "src_note": "佣兵公会三维（标准版：标准档 + 低档 glb；两层钢筋混凝土主厅 + 背光委托板墙 + 起降坪 + 训练场 + 补给库 + 围墙大门，层为卡内原文，具体位置与形制为仓库推断）；从 tc_mid.merc_guild 标记的「查看三维模型」进。源：blender/landmarks/merc_guild/",
+      "src_note": "佣兵公会三维；从 tc_mid.merc_guild 标记的「查看三维模型」进。源：blender/landmarks/merc_guild/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1808,7 +1808,7 @@
       "alias": [
         "法师塔（三维）"
       ],
-      "src_note": "法师塔三维（标准版：标准档 + 低档 glb；八边形逐层收分的粗琢石塔 + 六角结界罩塔冠 + 环形裙房 + 庭院围墙与南门，位置与形制为仓库推断）；从 tc_mid.mage_tower 标记的「查看三维模型」进。源：blender/landmarks/mage_tower/",
+      "src_note": "法师塔三维；从 tc_mid.mage_tower 标记的「查看三维模型」进。源：blender/landmarks/mage_tower/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1822,7 +1822,7 @@
       "alias": [
         "圣铁摇篮（三维）"
       ],
-      "src_note": "战斗修女修道院三维（标准版：标准档 + 低档 glb；封闭的石砌修院、操练场、坐骑机库，位置与形制为仓库推断）；从 tc_mid.iron_cradle 标记的「查看三维模型」进。源：blender/landmarks/iron_cradle/",
+      "src_note": "战斗修女修道院三维；从 tc_mid.iron_cradle 标记的「查看三维模型」进。源：blender/landmarks/iron_cradle/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1836,7 +1836,7 @@
       "alias": [
         "环城军营带与军事学院（三维）"
       ],
-      "src_note": "中层外围的环城军营带一段与军事学院三维（标准版：标准档 + 低档 glb；位置与形制为仓库推断）；从 tc_mid.barracks_ring 标记的「查看三维模型」进。源：blender/landmarks/barracks/",
+      "src_note": "中层外围的环城军营带一段与军事学院三维；从 tc_mid.barracks_ring 标记的「查看三维模型」进。源：blender/landmarks/barracks/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1850,7 +1850,7 @@
       "alias": [
         "以太气候调节塔（三维）"
       ],
-      "src_note": "以太气候调节塔塔顶与晶冠三维（标准版：标准档 + 低档 glb；与上层底图一致，位置为仓库推断）；从 tc_upper.climate_tower 标记的「查看三维模型」进。源：blender/landmarks/climate_tower/",
+      "src_note": "以太气候调节塔塔顶与晶冠三维；从 tc_upper.climate_tower 标记的「查看三维模型」进。源：blender/landmarks/climate_tower/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1864,7 +1864,7 @@
       "alias": [
         "银冠堡（三维）"
       ],
-      "src_note": "议会骑士团总部银冠堡三维（标准版：标准档 + 低档 glb；与上层底图一致，形制细节为仓库推断）；从 tc_upper.silver_crown 标记的「查看三维模型」进。源：blender/landmarks/silver_crown/",
+      "src_note": "议会骑士团总部银冠堡三维；从 tc_upper.silver_crown 标记的「查看三维模型」进。源：blender/landmarks/silver_crown/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -1920,7 +1920,7 @@
       "site": true,
       "base": "art/site_kavalierki.dzi",
       "data": "data/site_kavalierki.json",
-      "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
+      "credit": "程序生成的体块草模（Blender）",
       "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
       "districts": [
         "荣光冠冕",
@@ -1933,7 +1933,7 @@
           "name": "荣光冠冕",
           "name_en": "Crown of Glory",
           "tag": "set",
-          "src": "大骑士领·圣都：核心区「荣光冠冕」（环的半径为仓库推断）",
+          "src": "大骑士领·圣都：核心区「荣光冠冕」",
           "alias": [
             "荣光冠冕",
             "核心区荣光冠冕"
@@ -1945,7 +1945,7 @@
           "name": "商业联合会联合大厦",
           "name_en": "Commercial Union Tower",
           "tag": "set",
-          "src": "大骑士领·圣都：核心区的商业联合会联合大厦（位置与形制为仓库推断）",
+          "src": "大骑士领·圣都：核心区的商业联合会联合大厦",
           "alias": [
             "商业联合会联合大厦",
             "联合大厦",
@@ -1957,7 +1957,7 @@
           "name": "太阳骑士大竞技场",
           "name_en": "Sun Knights Grand Arena",
           "tag": "set",
-          "src": "大骑士领·圣都：核心区的太阳骑士大竞技场，容 30 万人（位置与形制为仓库推断）",
+          "src": "大骑士领·圣都：核心区的太阳骑士大竞技场，容 30 万人",
           "alias": [
             "太阳骑士大竞技场",
             "大竞技场"
@@ -1968,7 +1968,7 @@
           "name": "圆桌骑士议事殿",
           "name_en": "Round Table Hall",
           "tag": "set",
-          "src": "大骑士领·圣都：核心区的圆桌骑士议事殿；圆桌骑士现存五席（位置与形制为仓库推断）",
+          "src": "大骑士领·圣都：核心区的圆桌骑士议事殿；圆桌骑士现存五席",
           "alias": [
             "圆桌骑士议事殿",
             "议事殿"
@@ -1979,7 +1979,7 @@
           "name": "顶级贵族与财阀会所",
           "name_en": "Elite Clubs",
           "tag": "set",
-          "src": "大骑士领·圣都：核心区的「顶级贵族与财阀会所」（卡原名；2026-09-28 校名，原先简写成「顶级会所」；位置与形制为仓库推断）",
+          "src": "大骑士领·圣都：核心区的「顶级贵族与财阀会所」",
           "alias": [
             "顶级贵族与财阀会所",
             "财阀会所",
@@ -1990,7 +1990,7 @@
           "name": "以太穹顶",
           "name_en": "Aether Dome",
           "tag": "set",
-          "src": "大骑士领·圣都：巨型以太穹顶调节赛场及核心商业区天气（穹顶范围为仓库推断）",
+          "src": "大骑士领·圣都：巨型以太穹顶调节赛场及核心商业区天气",
           "alias": [
             "以太穹顶",
             "穹顶"
@@ -1999,7 +1999,7 @@
           "name": "竞赛与狂欢回廊",
           "name_en": "Corridor of Contest and Revelry",
           "tag": "set",
-          "src": "大骑士领·圣都：中环「竞赛与狂欢回廊」（位置与形制为仓库推断）",
+          "src": "大骑士领·圣都：中环「竞赛与狂欢回廊」",
           "alias": [
             "竞赛与狂欢回廊",
             "狂欢回廊",
@@ -2019,7 +2019,7 @@
           "name": "铁锈与落败领",
           "name_en": "Rust and the Fallen",
           "tag": "set",
-          "src": "大骑士领·圣都：外环「铁锈与落败领」（位置与形制为仓库推断）",
+          "src": "大骑士领·圣都：外环「铁锈与落败领」",
           "alias": [
             "铁锈与落败领",
             "落败领"
@@ -2031,7 +2031,7 @@
           "name": "清算转运站",
           "name_en": "Clearing Depot",
           "tag": "set",
-          "src": "大骑士领·圣都：外环的「败者资产清算转运站」（卡原名；商业联合会设立；画成铁路编组场是仓库推断）",
+          "src": "大骑士领·圣都：外环的「败者资产清算转运站」",
           "alias": [
             "败者资产清算转运站",
             "资产清算转运站",
@@ -2043,7 +2043,7 @@
           "name": "独立骑士黑市营地",
           "name_en": "Free Knights Camp",
           "tag": "set",
-          "src": "大骑士领·圣都：外环的「独立骑士黑市营地」（卡原名；2026-09-28 校名，原先少了「黑市」；廉价旅馆与二手零件市场；帐篷营地是仓库推断）",
+          "src": "大骑士领·圣都：外环的「独立骑士黑市营地」",
           "alias": [
             "独立骑士黑市营地",
             "黑市营地",
@@ -2054,7 +2054,7 @@
           "name": "临光家族外城驻所",
           "name_en": "Linguang Outer Residence",
           "tag": "set",
-          "src": "大骑士领·圣都：外环的临光家族外城驻所（位置与形制为仓库推断）",
+          "src": "大骑士领·圣都：外环的临光家族外城驻所",
           "alias": [
             "临光家族外城驻所",
             "外城驻所"
@@ -2067,7 +2067,7 @@
           "sub_en": "Aether-circuit armour",
           "tag": "inf",
           "layer_src": "repo-inferred",
-          "src": "大骑士领·圣都：魔导军工研发中心，研制以太回路装甲与智能锁。卡未写具体位置：放在圣都为仓库自设（仓库推断，2026-09-28）",
+          "src": "大骑士领·圣都：魔导军工研发中心，研制以太回路装甲与智能锁。卡未写具体位置：放在圣都为仓库自设",
           "alias": [
             "魔导军工研发中心",
             "军工研发中心"
@@ -2101,7 +2101,7 @@
       "site": true,
       "base": "art/site_yuanyu_sanctum.dzi",
       "data": "data/site_yuanyu_sanctum.json",
-      "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
+      "credit": "程序生成的体块草模（Blender）",
       "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
       "districts": [
         "悬浮圣山",
@@ -2112,7 +2112,7 @@
           "name": "诸神殿",
           "name_en": "Pantheon",
           "tag": "set",
-          "src": "诸神殿：坐落于国都原域核心的悬浮圣山之上；虚灵古派的最高议事地（殿的形制为仓库推断）",
+          "src": "诸神殿：坐落于国都原域核心的悬浮圣山之上；虚灵古派的最高议事地",
           "alias": [
             "诸神殿"
           ],
@@ -2123,7 +2123,7 @@
           "name": "悬浮圣山",
           "name_en": "Floating Holy Mountain",
           "tag": "set",
-          "src": "诸神殿：国都原域核心的悬浮圣山（山形与高度为仓库推断）",
+          "src": "诸神殿：国都原域核心的悬浮圣山",
           "alias": [
             "悬浮圣山",
             "圣山"
@@ -2132,7 +2132,7 @@
           "name": "圣山神龛环",
           "name_en": "Shrine ring",
           "tag": "inf",
-          "src": "仓库推断：诸神殿周围一圈小神殿（泛神信仰，卡没写具体神殿）",
+          "src": "地图自设：诸神殿周围一圈小神殿（泛神信仰，卡没写具体神殿）",
           "alias": [
             "神龛环"
           ],
@@ -2141,7 +2141,7 @@
           "name": "朝圣步道",
           "name_en": "Pilgrim way",
           "tag": "inf",
-          "src": "仓库推断：上山的步道（卡没写怎么上圣山）",
+          "src": "地图自设：上山的步道（卡没写怎么上圣山）",
           "alias": [
             "朝圣步道"
           ],
@@ -2174,7 +2174,7 @@
       "site": true,
       "base": "art/site_yuanyu_city.dzi",
       "data": "data/site_yuanyu_city.json",
-      "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
+      "credit": "程序生成的体块草模（Blender）",
       "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
       "districts": [
         "原域城区"
@@ -2184,7 +2184,7 @@
           "name": "朝圣广场",
           "name_en": "Pilgrim Plaza",
           "tag": "inf",
-          "src": "仓库推断：悬浮圣山正下方的广场",
+          "src": "地图自设：悬浮圣山正下方的广场",
           "alias": [
             "朝圣广场"
           ],
@@ -2194,7 +2194,7 @@
           "name": "尖塔区",
           "name_en": "Spire Quarter",
           "tag": "inf",
-          "src": "诸神殿条目：全城哥特式尖塔、巴洛克穹顶，常年笼罩以太薄雾（分区为仓库推断）",
+          "src": "诸神殿条目：全城哥特式尖塔、巴洛克穹顶，常年笼罩以太薄雾",
           "alias": [
             "尖塔区"
           ],
@@ -2204,7 +2204,7 @@
           "name": "穹顶区",
           "name_en": "Dome quarter",
           "tag": "inf",
-          "src": "诸神殿条目：全城哥特式尖塔、巴洛克穹顶（分区为仓库推断）",
+          "src": "诸神殿条目：全城哥特式尖塔、巴洛克穹顶",
           "alias": [
             "穹顶区"
           ],
@@ -2214,7 +2214,7 @@
           "name": "原域东门",
           "name_en": "Yuanyu East Gate",
           "tag": "inf",
-          "src": "仓库推断：城墙东门（朝天城方向）",
+          "src": "地图自设：城墙东门（朝天城方向）",
           "alias": [
             "原域东门"
           ],
@@ -2248,14 +2248,14 @@
       "site": true,
       "base": "art/site_highland.dzi",
       "data": "data/site_highland.json",
-      "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
+      "credit": "程序生成的体块草模（Blender）",
       "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
       "markers": {
         "highland_plateau": {
           "name": "旷野高地",
           "name_en": "Wild Highlands",
           "tag": "set",
-          "src": "荒野中的高地；卡里只写了荒野与崖壁，地形为仓库推断",
+          "src": "荒野中的高地；卡里只写了荒野与崖壁",
           "alias": [
             "旷野高地",
             "旷野",
@@ -2277,7 +2277,7 @@
           "name": "崖壁",
           "name_en": "Cliff edge",
           "tag": "set",
-          "src": "荒野里有崖壁（走向、高度为仓库推断）",
+          "src": "荒野里有崖壁",
           "alias": [
             "崖壁",
             "崖边"
@@ -2287,7 +2287,7 @@
           "name": "下山小径",
           "name_en": "Trail down",
           "tag": "inf",
-          "src": "仓库推断：崖下通往低地的小径（苍穹要回的修道院方向卡没写）",
+          "src": "地图自设：崖下通往低地的小径（苍穹要回的修道院方向卡没写）",
           "alias": [
             "下山小径"
           ],
@@ -2321,14 +2321,14 @@
       "site": true,
       "base": "art/site_fief1.dzi",
       "data": "data/site_fief1.json",
-      "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
+      "credit": "程序生成的体块草模（Blender）",
       "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
       "markers": {
         "fief1_castle": {
           "name": "第一席城堡",
           "name_en": "First Seat Castle",
           "tag": "inf",
-          "src": "光辉联邦：圆桌骑士现存五席，享有独立封地（城堡形制与地形为仓库推断）",
+          "src": "光辉联邦：圆桌骑士现存五席，享有独立封地",
           "alias": [
             "第一席城堡",
             "圆桌第一席城堡"
@@ -2342,7 +2342,7 @@
           "name": "第一席骑士团驻地",
           "name_en": "First Seat Order Barracks",
           "tag": "inf",
-          "src": "光辉联邦：圆桌骑士享有专属骑士团调动权（驻地位置为仓库推断）",
+          "src": "光辉联邦：圆桌骑士享有专属骑士团调动权",
           "alias": [
             "第一席骑士团驻地",
             "第一席骑士团"
@@ -2353,7 +2353,7 @@
           "name": "第一席领地城镇",
           "name_en": "First Seat Town",
           "tag": "inf",
-          "src": "仓库推断：封地里的城镇",
+          "src": "地图自设：封地里的城镇",
           "alias": [
             "第一席领地城镇",
             "第一席领地村镇"
@@ -2364,7 +2364,7 @@
           "name": "第一席领地农田",
           "name_en": "First Seat Fields",
           "tag": "inf",
-          "src": "仓库推断：封地的农田",
+          "src": "地图自设：封地的农田",
           "alias": [
             "第一席领地农田"
           ],
@@ -2398,14 +2398,14 @@
       "site": true,
       "base": "art/site_fief5.dzi",
       "data": "data/site_fief5.json",
-      "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
+      "credit": "程序生成的体块草模（Blender）",
       "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
       "markers": {
         "fief5_castle": {
           "name": "第五席城堡",
           "name_en": "Fifth Seat Castle",
           "tag": "inf",
-          "src": "光辉联邦：圆桌骑士现存五席，享有独立封地（城堡形制与地形为仓库推断）",
+          "src": "光辉联邦：圆桌骑士现存五席，享有独立封地",
           "alias": [
             "第五席城堡",
             "圆桌第五席城堡"
@@ -2419,7 +2419,7 @@
           "name": "第五席骑士团驻地",
           "name_en": "Fifth Seat Order Barracks",
           "tag": "inf",
-          "src": "光辉联邦：圆桌骑士享有专属骑士团调动权（驻地位置为仓库推断）",
+          "src": "光辉联邦：圆桌骑士享有专属骑士团调动权",
           "alias": [
             "第五席骑士团驻地",
             "第五席骑士团"
@@ -2430,7 +2430,7 @@
           "name": "第五席领地城镇",
           "name_en": "Fifth Seat Town",
           "tag": "inf",
-          "src": "仓库推断：封地里的城镇",
+          "src": "地图自设：封地里的城镇",
           "alias": [
             "第五席领地城镇",
             "第五席领地村镇"
@@ -2441,7 +2441,7 @@
           "name": "第五席领地农田",
           "name_en": "Fifth Seat Fields",
           "tag": "inf",
-          "src": "仓库推断：封地的农田",
+          "src": "地图自设：封地的农田",
           "alias": [
             "第五席领地农田"
           ],
@@ -2451,7 +2451,7 @@
           "name": "第五席比武场",
           "name_en": "Fifth Seat Lists",
           "tag": "inf",
-          "src": "仓库推断：骑士团驻地旁的比武场（联邦是骑士竞赛之地，卡：大骑士领·圣都为全球骑士竞赛中枢）",
+          "src": "地图自设：骑士团驻地旁的比武场（联邦是骑士竞赛之地，卡：大骑士领·圣都为全球骑士竞赛中枢）",
           "alias": [
             "第五席比武场"
           ],
@@ -2485,14 +2485,14 @@
       "site": true,
       "base": "art/site_fief2.dzi",
       "data": "data/site_fief2.json",
-      "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
+      "credit": "程序生成的体块草模（Blender）",
       "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
       "markers": {
         "fief2_castle": {
           "name": "第二席城堡",
           "name_en": "Second Seat Castle",
           "tag": "inf",
-          "src": "光辉联邦：圆桌骑士现存五席，享有独立封地（城堡形制与地形为仓库推断）",
+          "src": "光辉联邦：圆桌骑士现存五席，享有独立封地",
           "alias": [
             "第二席城堡",
             "圆桌第二席城堡"
@@ -2506,7 +2506,7 @@
           "name": "第二席骑士团驻地",
           "name_en": "Second Seat Order Barracks",
           "tag": "inf",
-          "src": "光辉联邦：圆桌骑士享有专属骑士团调动权（驻地位置为仓库推断）",
+          "src": "光辉联邦：圆桌骑士享有专属骑士团调动权",
           "alias": [
             "第二席骑士团驻地",
             "第二席骑士团"
@@ -2517,7 +2517,7 @@
           "name": "第二席领地城镇",
           "name_en": "Second Seat Town",
           "tag": "inf",
-          "src": "仓库推断：封地里的城镇",
+          "src": "地图自设：封地里的城镇",
           "alias": [
             "第二席领地城镇",
             "第二席领地村镇"
@@ -2528,7 +2528,7 @@
           "name": "第二席领地农田",
           "name_en": "Second Seat Fields",
           "tag": "inf",
-          "src": "仓库推断：封地的农田",
+          "src": "地图自设：封地的农田",
           "alias": [
             "第二席领地农田"
           ],
@@ -2562,14 +2562,14 @@
       "site": true,
       "base": "art/site_fief3.dzi",
       "data": "data/site_fief3.json",
-      "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
+      "credit": "程序生成的体块草模（Blender）",
       "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
       "markers": {
         "fief3_castle": {
           "name": "第三席城堡",
           "name_en": "Third Seat Castle",
           "tag": "inf",
-          "src": "光辉联邦：圆桌骑士现存五席，享有独立封地（城堡形制与地形为仓库推断）",
+          "src": "光辉联邦：圆桌骑士现存五席，享有独立封地",
           "alias": [
             "第三席城堡",
             "圆桌第三席城堡"
@@ -2583,7 +2583,7 @@
           "name": "第三席骑士团驻地",
           "name_en": "Third Seat Order Barracks",
           "tag": "inf",
-          "src": "光辉联邦：圆桌骑士享有专属骑士团调动权（驻地位置为仓库推断）",
+          "src": "光辉联邦：圆桌骑士享有专属骑士团调动权",
           "alias": [
             "第三席骑士团驻地",
             "第三席骑士团"
@@ -2594,7 +2594,7 @@
           "name": "第三席领地城镇",
           "name_en": "Third Seat Town",
           "tag": "inf",
-          "src": "仓库推断：封地里的城镇",
+          "src": "地图自设：封地里的城镇",
           "alias": [
             "第三席领地城镇",
             "第三席领地村镇"
@@ -2605,7 +2605,7 @@
           "name": "第三席领地农田",
           "name_en": "Third Seat Fields",
           "tag": "inf",
-          "src": "仓库推断：封地的农田",
+          "src": "地图自设：封地的农田",
           "alias": [
             "第三席领地农田"
           ],
@@ -2639,14 +2639,14 @@
       "site": true,
       "base": "art/site_fief4.dzi",
       "data": "data/site_fief4.json",
-      "credit": "程序生成的体块草模（Blender），地标位置与形制多为仓库推断",
+      "credit": "程序生成的体块草模（Blender）",
       "credit_en": "Procedural Blender blockout; most landmark positions and forms are repo inferences",
       "markers": {
         "fief4_castle": {
           "name": "第四席城堡",
           "name_en": "Fourth Seat Castle",
           "tag": "inf",
-          "src": "光辉联邦：圆桌骑士现存五席，享有独立封地（城堡形制与地形为仓库推断）",
+          "src": "光辉联邦：圆桌骑士现存五席，享有独立封地",
           "alias": [
             "第四席城堡",
             "圆桌第四席城堡"
@@ -2660,7 +2660,7 @@
           "name": "第四席骑士团驻地",
           "name_en": "Fourth Seat Order Barracks",
           "tag": "inf",
-          "src": "光辉联邦：圆桌骑士享有专属骑士团调动权（驻地位置为仓库推断）",
+          "src": "光辉联邦：圆桌骑士享有专属骑士团调动权",
           "alias": [
             "第四席骑士团驻地",
             "第四席骑士团"
@@ -2671,7 +2671,7 @@
           "name": "第四席领地城镇",
           "name_en": "Fourth Seat Town",
           "tag": "inf",
-          "src": "仓库推断：封地里的城镇",
+          "src": "地图自设：封地里的城镇",
           "alias": [
             "第四席领地城镇",
             "第四席领地村镇"
@@ -2682,7 +2682,7 @@
           "name": "第四席领地农田",
           "name_en": "Fourth Seat Fields",
           "tag": "inf",
-          "src": "仓库推断：封地的农田",
+          "src": "地图自设：封地的农田",
           "alias": [
             "第四席领地农田"
           ],

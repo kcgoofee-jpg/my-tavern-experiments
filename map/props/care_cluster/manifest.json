@@ -1,107 +1,131 @@
 {
- "_说明": "viewer3d.html?model=care_cluster 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。中层「关怀带」同一场景合画三处地点：中层公立医院、中层养老院、中层修道院。只画建筑，无人物、文字、徽记、宗教符号。医院与养老院卡写了层（中层），修道院是圣光教会「5 座普通修道院」既有仓库落点的代表；三处具体位置与形制均为仓库推断，详见 docs/landmarks/care_cluster.md。",
- "id": "care_cluster",
- "title": {
-  "zh": "中层关怀带",
-  "en": "Middle Tier care district"
- },
- "glb": "care_cluster.glb",
- "glb_low": "care_cluster_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "props_hospital",
-   "props_care_home",
-   "props_monastery"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "props_street",
-   "site_ground",
-   "props_lights"
-  ],
-  "building": {
-   "min": [-113.0, -0.05, -80.0],
-   "max": [100.0, 37.7, 26.7]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 40,
-  "default": 40
- },
- "camera": {
-  "frame": [
-   "props_hospital",
-   "props_care_home",
-   "props_monastery"
-  ],
-  "dir": [
-   0.4,
-   0.42,
-   -0.8
-  ],
-  "min": 8,
-  "max": 400,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "hospital",
-   "mesh": "props_hospital",
-   "name": {
-    "zh": "中层公立医院",
-    "en": "Middle Tier Public Hospital"
-   },
-   "desc": {
-    "zh": "8 层板式主楼，白面砖与蓝绿遮阳板，一层门诊裙房带弧形雨篷，屋顶设悬浮救护停机坪。",
-    "en": "An eight-storey slab hospital in white tile and blue-green sunshades, a one-storey outpatient wing under a curved canopy, and a rooftop pad for hover ambulances."
-   },
-   "view": [0.3, 0.4, -0.85]
+  "_说明": "viewer3d.html?model=care_cluster 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。中层「关怀带」同一场景合画三处地点：中层公立医院、中层养老院、中层修道院。只画建筑，无人物、文字、徽记、宗教符号。医院与养老院卡写了层（中层），修道院是圣光教会「5 座普通修道院」既有仓库落点的代表，详见 docs/landmarks/care_cluster.md。",
+  "id": "care_cluster",
+  "title": {
+    "zh": "中层关怀带",
+    "en": "Middle Tier care district"
   },
-  {
-   "id": "care_home",
-   "mesh": "props_care_home",
-   "name": {
-    "zh": "中层养老院",
-    "en": "Middle Tier Care Home"
-   },
-   "desc": {
-    "zh": "4 层暖黄面砖住宅式建筑，外挑阳台与无障碍坡道，附花园（步道、凉亭、菜圃）。",
-    "en": "A four-storey, warm-toned residential building with jutting balconies and an accessible ramp, beside a garden with paths, a pavilion and vegetable beds."
-   },
-   "view": [-0.5, 0.35, -0.78]
+  "glb": "care_cluster.glb",
+  "glb_low": "care_cluster_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "monastery",
-   "mesh": "props_monastery",
-   "name": {
-    "zh": "中层修道院",
-    "en": "Middle Tier Monastery"
-   },
-   "desc": {
-    "zh": "小礼拜堂、方形柱廊回廊与素面钟塔——中层五座普通修道院的代表。",
-    "en": "A small chapel, a square cloister walk, and a plain bell tower — representing the tier's five ordinary monasteries."
-   },
-   "view": [0.55, 0.4, -0.75]
+  "groups": {
+    "roof": [],
+    "walls": [
+      "props_hospital",
+      "props_care_home",
+      "props_monastery"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "props_street",
+      "site_ground",
+      "props_lights"
+    ],
+    "building": {
+      "min": [
+        -113.0,
+        -0.05,
+        -80.0
+      ],
+      "max": [
+        100.0,
+        37.7,
+        26.7
+      ]
+    }
   },
-  {
-   "id": "street",
-   "mesh": "props_street",
-   "name": {
-    "zh": "共用步行街",
-    "en": "Shared walkway"
-   },
-   "desc": {
-    "zh": "贯穿三处的步行街，设接驳站台与行道树。",
-    "en": "A walkway running through the district, with shuttle stops and street trees."
-   },
-   "view": [0.0, 0.7, -0.7]
-  }
- ]
+  "section": {
+    "min": 0.5,
+    "max": 40,
+    "default": 40
+  },
+  "camera": {
+    "frame": [
+      "props_hospital",
+      "props_care_home",
+      "props_monastery"
+    ],
+    "dir": [
+      0.4,
+      0.42,
+      -0.8
+    ],
+    "min": 8,
+    "max": 400,
+    "maxPolar": 1.48
+  },
+  "hotspots": [
+    {
+      "id": "hospital",
+      "mesh": "props_hospital",
+      "name": {
+        "zh": "中层公立医院",
+        "en": "Middle Tier Public Hospital"
+      },
+      "desc": {
+        "zh": "8 层板式主楼，白面砖与蓝绿遮阳板，一层门诊裙房带弧形雨篷，屋顶设悬浮救护停机坪。",
+        "en": "An eight-storey slab hospital in white tile and blue-green sunshades, a one-storey outpatient wing under a curved canopy, and a rooftop pad for hover ambulances."
+      },
+      "view": [
+        0.3,
+        0.4,
+        -0.85
+      ]
+    },
+    {
+      "id": "care_home",
+      "mesh": "props_care_home",
+      "name": {
+        "zh": "中层养老院",
+        "en": "Middle Tier Care Home"
+      },
+      "desc": {
+        "zh": "4 层暖黄面砖住宅式建筑，外挑阳台与无障碍坡道，附花园（步道、凉亭、菜圃）。",
+        "en": "A four-storey, warm-toned residential building with jutting balconies and an accessible ramp, beside a garden with paths, a pavilion and vegetable beds."
+      },
+      "view": [
+        -0.5,
+        0.35,
+        -0.78
+      ]
+    },
+    {
+      "id": "monastery",
+      "mesh": "props_monastery",
+      "name": {
+        "zh": "中层修道院",
+        "en": "Middle Tier Monastery"
+      },
+      "desc": {
+        "zh": "小礼拜堂、方形柱廊回廊与素面钟塔——中层五座普通修道院的代表。",
+        "en": "A small chapel, a square cloister walk, and a plain bell tower — representing the tier's five ordinary monasteries."
+      },
+      "view": [
+        0.55,
+        0.4,
+        -0.75
+      ]
+    },
+    {
+      "id": "street",
+      "mesh": "props_street",
+      "name": {
+        "zh": "共用步行街",
+        "en": "Shared walkway"
+      },
+      "desc": {
+        "zh": "贯穿三处的步行街，设接驳站台与行道树。",
+        "en": "A walkway running through the district, with shuttle stops and street trees."
+      },
+      "view": [
+        0.0,
+        0.7,
+        -0.7
+      ]
+    }
+  ]
 }

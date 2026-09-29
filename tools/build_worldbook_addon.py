@@ -198,7 +198,7 @@ def canon(markers):
     return {k: v for k, v in markers.items() if v.get('canon', True) is not False}
 
 
-INFERRED = '（位置为地图推断）'
+INFERRED = ''   # v16：不再向模型写「推断」口径（用户要求）；定位统一以「地图补充设定」给出
 
 
 LAYER_RE = {'上层': '中层|下层', '中层': '上层|下层', '下层': '上层|中层'}
@@ -224,10 +224,10 @@ def lore_lines(reg, mid):
         sub = re.sub(r'\{\{user\}\}\s*', '玩家', v.get('sub') or '')
         words = [w for w in dict.fromkeys([v['name'], nm, *v.get('alias', [])]) if len([*w]) >= 2]
         nb = neighbours(reg, mid, k)
-        # 位置（或层）是地图推断的：写明，不当事实注入（tag=inf：卡没给层或地点本身是推断；src 含「推断」：层是卡给的，具体位置推断）
-        inf = INFERRED if v.get('tag') == 'inf' else '（具体位置为地图推断）' if '推断' in v.get('src', '') else ''
-        rows.append((words, f'{nm}：天城{L["name"]}（{L["sub"]}）' + (f'，{sub}' if sub else '') + inf + (f'；地图上邻近：{"、".join(nb)}（相对位置为地图推断）' if nb else '') + '。'))
-    layer = (L['name'], [L['name'], *m.get('districts', [])], f'天城{L["name"]}（{L["sub"]}，{L.get("alt", "")}）；地图上的地标：' + '、'.join(v['name'].replace(' ', '') for v in canon(m['markers']).values()) + '（多数地标的具体位置为地图推断）。')
+        # v16：位置不再写「推断」口径；tag/src 里的推断标记仅用于仓库内部对账
+        inf = INFERRED
+        rows.append((words, f'{nm}：天城{L["name"]}（{L["sub"]}）' + (f'，{sub}' if sub else '') + inf + (f'；地图上邻近：{"、".join(nb)}' if nb else '') + '。'))
+    layer = (L['name'], [L['name'], *m.get('districts', [])], f'天城{L["name"]}（{L["sub"]}，{L.get("alt", "")}）；地图上的地标：' + '、'.join(v['name'].replace(' ', '') for v in canon(m['markers']).values()) + '。')
     return rows, layer
 
 
@@ -283,7 +283,7 @@ def to_ship(book, version):
                      'position': {'type': POS.get(e['position'], 'after_character_definition'), 'role': 'system', 'depth': e['depth'], 'order': e['order']},
                      'probability': e['probability'], 'recursion': {'prevent_incoming': bool(e['excludeRecursion']), 'prevent_outgoing': bool(e['preventRecursion'])}})
     h = hashlib.sha1(json.dumps(ents, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:8]
-    return {'book': '伊甸地图·世界书附加条目', 'version': version, 'ver': f'{re.sub(r"-dev$", "", version)}+{h}', 'aliases': {'ids': al.get('ids', {})}, 'entries': ents}
+    return {'book': '伊甸地图·世界书附加条目', 'version': version, 'ver': f'{re.sub(r"-dev$", "", version)}+{h}', '_credit': CREDIT, 'aliases': {'ids': al.get('ids', {})}, 'entries': ents}
 
 
 def tokens(s):
