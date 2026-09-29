@@ -1,4 +1,4 @@
-# 美术总监 · clouds_b r1（对照 clouds_coc_static_lip_only.jpg、clouds.md §6、用户「底图可以做个不动的纯白云铺满」）
+# 美术总监 · clouds_b r1（对照 clouds_coc_static_lip_only.jpg、archive/2026-09/clouds.md §6、用户「底图可以做个不动的纯白云铺满」）
 
 **分数：6/10**
 
