@@ -34,6 +34,7 @@ step "README 置顶导入链接与路径引用（最新标签 / 预览分支 / �
 step "README 门控自测（过期标签 / 错仓库名 / 死路径会被拦，--fix 能修回来）" python3 tools/test_readme.py
 step "渲染守卫 lint（渲染脚本必须经 setup_render_device/pick_gpu 配 GPU）" python3 tools/render_preflight.py lint
 step "渲染守卫单测（看门狗状态机 / 预检 / 事故回归）" python3 tools/test_render_guard.py
+step "角色卡清洗单测（tools/clean_card.py，V3 容错解析 / 载荷零丢失）" python3 tests/test_clean_card.py
 step "node --test tests/($(ls tests/*.test.mjs | wc -l | tr -d ' ') 个)" node --test tests/*.test.mjs
 
 inline_check() {
