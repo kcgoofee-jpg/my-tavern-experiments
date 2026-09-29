@@ -109,8 +109,8 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   E1/E16/B11/C1/C6/C10/C15，而同文 `:332,334,340` 已标 ✅。
 - [ ] **Reconcile the island generator path**：`docs/upper-islands-checklist.md:3`（`blender/islands/`）
   vs `docs/upper-islands-references.md:4`（`blender/upper_islands/`）——两个目录都存在，需确认现行者。
-- [ ] **Fix dead references**（verified missing):
-  `map/estate3d/`（`README.md` 0.10 段、`ROADMAP.md:28`）, `docs/asset-deps.md` → `docs/render-deps.md`
+- [ ] **Fix dead references**（verified missing）：
+  ~~`map/estate3d/`（`README.md` 0.10 段、`ROADMAP.md:28`）~~ ✅ 2026-09-29：`README.md:59` 已改为真实路径 `map/estate/`（该目录从来不存在；`ROADMAP.md:28` 原本就写的对）, `docs/asset-deps.md` → `docs/render-deps.md`
   （`docs/render-retro.md:172`）, `tools/gpu_lock.sh`（`:175`）, `tools/check_glb.py`（`:177`, 提案项）,
   `tools/add_script_to_card.py` → `tools/legacy/`（`docs/ui-audit.md:14`）, `map/custom.js` → `map/custom.mjs`
   （`docs/design/custom-v2.md:4,13`）, `map/core/fog.mjs` → 已并入 `map/core/depth.mjs`（历史标注）,
