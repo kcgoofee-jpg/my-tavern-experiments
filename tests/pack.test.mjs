@@ -61,6 +61,8 @@ test('同步副本一致：viewer.html 首帧前置、宿主 eden-map.js 的 NS 
     assert.match(src, /\/\^\[a-z\]\[a-z0-9_-\]\{1,31\}\$\//, 'id 规则');
     assert.match(src, /'tcp\.' \+ (window\.__packId|PACK_ID) \+ '\.' \+ k\.slice\(7\)/, '前缀规则');
   }
+  assert.match(v, /a\?\.getItem\(N\(k\)\) \?\? \(window\.__packId === 'eden' \? null : a\?\.getItem\(k\)\)/, '首帧镜像的别名回退与 core/storage.mjs get 同一规则');
+  assert.match(h, /PACK_IN \? localStorage\.getItem\(k\) : null/, '宿主 lsGet 的别名回退');
   assert.equal(PK.ID_RE.source, '^[a-z][a-z0-9_-]{1,31}$');
   assert.match(h, /PACK_IN\?\.events\) m\.configure/); assert.match(h, /m\.setVarRoot\(/);
 });
@@ -71,6 +73,38 @@ test('core/storage.mjs 按 globalThis.__packId 换前缀', () => {
   globalThis.__packId = 'town';
   try { ST.set('edenMapFog', '1', S); assert.ok(mem.has('tcp.town.Fog')); assert.equal(ST.get('edenMapFog', null, S), '1'); }
   finally { delete globalThis.__packId; }
+});
+
+test('存储键别名回退：包命名空间空着就读 edenMap* 历史档（只读不写回），写过后本包优先', () => {
+  const mem = new Map(), S = { localStorage: { getItem: k => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, String(v)), removeItem: k => mem.delete(k) } };
+  mem.set('edenMapTheme', 'dark');   // 通用化之前写下的历史档
+  globalThis.__packId = 'town';
+  try {
+    assert.equal(ST.get('edenMapTheme', null, S), 'dark', '命名空间没写过 → 读历史档');
+    ST.set('edenMapTheme', 'light', S);
+    assert.equal(ST.get('edenMapTheme', null, S), 'light', '写过后命名空间优先');
+    assert.equal(mem.get('edenMapTheme'), 'dark', '历史档原样保留（不写回、不迁移）');
+    assert.equal(mem.get('tcp.town.Theme'), 'light');
+    assert.equal(ST.get('edenMapFog', undefined, S), ST.KEYS.edenMapFog.def, '两边都空 → 登记处默认值');
+  } finally { delete globalThis.__packId; }
+  assert.equal(ST.get('edenMapTheme', null, S), 'dark', 'eden 键原样，行为不变');
+});
+
+test('多包隔离：同名键互不串；预算 LRU 经 nsStore 只见、只清本包的数据', async () => {
+  const mem = new Map(), raw = { getItem: k => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, String(v)), removeItem: k => mem.delete(k), key: i => [...mem.keys()][i] ?? null, get length() { return mem.size; } };
+  const town = PK.nsStore(raw, 'town'), harbor = PK.nsStore(raw, 'harbor');
+  town.setItem('edenMap:chat:c1:fog', '{"w":"town"}'); harbor.setItem('edenMap:chat:c1:fog', '{"w":"harbor"}'); town.setItem('edenMapSeen:c1', '1');
+  assert.deepEqual([...mem.keys()].sort(), ['tcp.harbor.:chat:c1:fog', 'tcp.town.:chat:c1:fog', 'tcp.town.Seen:c1'], '两包的键物理上分开');
+  assert.equal(town.getItem('edenMap:chat:c1:fog'), '{"w":"town"}'); assert.equal(harbor.getItem('edenMap:chat:c1:fog'), '{"w":"harbor"}');
+  mem.set('edenMap:chat:c9:fog', '{}'); mem.set('edenMapSeen:c9', '1');   // eden 原生的按聊天数据
+  const BG = await import('../map/tavern/budget.mjs');
+  BG.touch(town, 'c1', 1000);
+  assert.deepEqual(BG.sweep(town, 'c1', 1).dropped, [], '当前聊天不清');
+  const r = BG.sweep(town, '', 0);
+  assert.deepEqual(r.dropped, ['c1'], '超出上限的本包聊天被清');
+  assert.ok(!mem.has('tcp.town.:chat:c1:fog')); assert.ok(!mem.has('tcp.town.Seen:c1'), '本包超限聊天被清掉');
+  assert.equal(mem.get('tcp.harbor.:chat:c1:fog'), '{"w":"harbor"}', '别的包不动');
+  assert.equal(mem.get('edenMap:chat:c9:fog'), '{}'); assert.equal(mem.get('edenMapSeen:c9'), '1', 'eden 的数据不碰');
 });
 
 test('事件分类可换：town 的 3 类解析、落层；恢复后天城分类原样', () => {

@@ -50,7 +50,16 @@ export function known(k) {
 }
 const area = (scope, S = globalThis) => { try { return scope === 'session' ? S.sessionStorage : S.localStorage; } catch (e) { return null; } };
 const spec = k => KEYS[k] || Object.entries(KEYS).find(([p, o]) => o.prefix && k.startsWith(p))?.[1] || {};
-export function get(k, def, S) { const s = spec(k); try { const v = area(s.scope, S)?.getItem(N(k)); return v ?? (def !== undefined ? def : s.def ?? null); } catch (e) { return def ?? s.def ?? null; } }
+// 读：包命名空间键空着时降级读 edenMap* 历史档（通用化之前的旧数据，比如清单到达前写过、或早期版本共享命名空间时期）。
+// 只读不写回：历史档原样保留，一写就落进本包命名空间并从此优先；eden（__packId 空 / 'eden'）键本来就是原名，不多读一次。
+export function get(k, def, S) {
+  const s = spec(k);
+  try {
+    const a = area(s.scope, S), id = globalThis.__packId;
+    const v = a?.getItem(N(k)) ?? (id && id !== 'eden' ? a?.getItem(k) : null);
+    return v ?? (def !== undefined ? def : s.def ?? null);
+  } catch (e) { return def ?? s.def ?? null; }
+}
 export function set(k, v, S) { const a = area(spec(k).scope, S); if (!a) return false; try { a.setItem(N(k), String(v)); return true; } catch (e) { return false; } }
 export function remove(k, S) { try { area(spec(k).scope, S)?.removeItem(N(k)); } catch (e) {} }
 export function json(k, def = null, S) { try { const v = get(k, null, S); return v == null ? def : JSON.parse(v); } catch (e) { return def; } }

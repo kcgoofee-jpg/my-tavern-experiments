@@ -31,7 +31,8 @@ export function packNs() {
   const NS = k => (PACK_IN && typeof k === 'string' && k.startsWith('edenMap') ? 'tcp.' + PACK_ID + '.' + k.slice(7) : k);
   const wrapLS = get => ({ getItem: k => get().getItem(NS(k)), setItem: (k, v) => get().setItem(NS(k), v), removeItem: k => get().removeItem(NS(k)), key: i => { const k = get().key(i), p = 'tcp.' + PACK_ID + '.'; return typeof k !== 'string' ? k : k.startsWith(p) ? 'edenMap' + k.slice(p.length) : k.startsWith('edenMap') || k === 'edenEstateLabels' ? null : k; }, get length() { return get().length; } });
   const LS = PACK_IN ? wrapLS(() => localStorage) : null;   // eden：下面的 LS 调用走原生 localStorage（同一对象，行为不变）
-  const lsGet = k => { try { return (LS || localStorage).getItem(k); } catch (e) { return null; } }, lsSet = (k, v) => { try { (LS || localStorage).setItem(k, v); } catch (e) {} };
+  // lsGet 的别名回退与 core/storage.mjs get 同一规则：包命名空间空着时读 edenMap* 历史档（只读不写回）
+  const lsGet = k => { try { return (LS || localStorage).getItem(k) ?? (PACK_IN ? localStorage.getItem(k) : null); } catch (e) { return null; } }, lsSet = (k, v) => { try { (LS || localStorage).setItem(k, v); } catch (e) {} };
   return { PACK_IN, PACK_ID, NS, wrapLS, LS, lsGet, lsSet };
 }
 
