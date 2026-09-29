@@ -284,6 +284,8 @@
   "lg.clouds": "云层",
   "lg.clouds_d": "云纱越厚，海拔越低",
   "lg.omit": "刻意不画",
+  "lg.sight": "层间视线",
+  "lg.sight_d": "上层各岛彼此可见，俯瞰中层像铺在脚下的电路板；下层抬头可见中层底面；清晨有云海。",
   "lg.omit_d": "航线、轨道、车站",
   "tier_now": "当前 {px}px",
   "tier_cap": "清晰度上限 {px}px",

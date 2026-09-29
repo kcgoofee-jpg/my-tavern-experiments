@@ -50,6 +50,26 @@ test('boot() archives the previous session into sessions()', () => {
   } finally { delete globalThis.localStorage; logbuf.clear(); }
 });
 
+test('printf-style args (%s/%d) are interpolated before storing', () => {
+  logbuf.clear();
+  logbuf.push('warn', ['Ignoring tile %s loaded before reset: %s', { level: 11, x: 1 }]);
+  const L = logbuf.lines();
+  assert.ok(L[0].text.startsWith('Ignoring tile {"level":11,"x":1} loaded before reset'));
+  assert.ok(!L[0].text.includes('%s'));
+  logbuf.clear();
+});
+
+test('repeated identical printf templates collapse into ×N', () => {
+  logbuf.clear();
+  for (let i = 0; i < 30; i++) logbuf.push('warn', ['Ignoring tile %s loaded before reset: %s', { level: 11, x: i }]);
+  const L = logbuf.lines();
+  assert.equal(L.length, 1);
+  assert.ok(L[0].text.endsWith('（×30）'));
+  assert.ok(L[0].text.includes('"x":0'));
+  assert.ok(!L[0].text.includes('"x":29'));
+  logbuf.clear();
+});
+
 test('install() wraps a console-like target and still calls the original', () => {
   const calls = [];
   const fake = { log: (...a) => calls.push(a), warn: () => {} };

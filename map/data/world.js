@@ -69,6 +69,8 @@ export const REALMS = [
 export const PLACES = [
   { id: 'tiancheng', type: 'capital', x: 720, y: 470, name: '天城', sub: '奥伦国都 · 约3200万', tag: 'set',
     src: '天城：奥伦帝国国都，母畜制度发源地，全球政治与经济中枢之一；人口约3200万；以太气候调节塔人工维持气候' },
+  { id: 'tiancheng_outskirts', type: 'wild', x: 812, y: 384, name: '天城外围', sub: '位置未写 · 异兽侵袭地', tag: 'inf',
+    src: '天城外围（位置未写，示意图）：城外旷野带，16 岁首次实战在此迎击异兽侵袭，防卫军负责外围防线（人物·罗莎琳德；card-omissions A28）' },
   { id: 'kavalierki', type: 'capital', x: 330, y: 470, name: '大骑士领·圣都', sub: 'Kavalierki · 联邦首都 · 约2800万', tag: 'set',
     src: '大骑士领·圣都：光辉联邦首都，全球骑士竞赛与商业体育博彩中枢；温带阔叶林气候，巨型以太穹顶调节赛场及核心商业区天气' },
   { id: 'yuanyu', type: 'capital', x: 1100, y: 440, name: '原域', sub: '虚灵古派国都 · 诸神殿（悬浮圣山）', tag: 'set',

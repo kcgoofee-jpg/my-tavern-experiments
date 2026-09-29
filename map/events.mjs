@@ -47,8 +47,12 @@ const TCEvents = (() => {
   let SHAPES = { 空防: 'hex', 气候: 'circle', 治安: 'square', 政治: 'penta', 媒体: 'diamond', 民生: 'octa', 军事: 'tri-down', 灾害: 'tri', 人物: 'ring', 其他: 'square' };
   const shp = g => 'sh-' + (SHAPES[g] || 'square');
   const OFF_KEY = 'edenMapEvOff';
-  const off = new Set((() => { try { return JSON.parse(TCStore.get(OFF_KEY)) || []; } catch (e) { return []; } })());
+  // 类型级默认关（用户 2026-09-29：降雨先默认关，后面再打磨成每类开关）：OFF_KEY 从没存过（用户没动过筛选）时种入
+  // DEFAULT_OFF_TYPES；不主动落盘——用户第一次点图例筛选后才按当前集合存，之后完全跟用户走。
+  const DEFAULT_OFF_TYPES = ['type:降雨'];
+  const off = new Set((() => { try { const v = TCStore.get(OFF_KEY); if (v == null) return DEFAULT_OFF_TYPES.slice(); return JSON.parse(v) || []; } catch (e) { return []; } })());
   const grpOf = e => e.grp || '其他';
+  const offed = e => off.has(grpOf(e)) || off.has('type:' + e.cat);   // 关掉的大类 / 类型
   let grpLoaded = false;
   const MAP_OF = { 上层: 'tc_upper', 中层: 'tc_mid', 下层: 'tc_low', 天城外: 'world' };
   // 城区关键词 → 平面坐标（x ∈ [-15, 15]、y ∈ [-9.375, 9.375]，与 Blender 同一平面；位置为推断）
@@ -62,7 +66,7 @@ const TCEvents = (() => {
   const markersOf = {};                                    // 地图 id → 点位数据（按需加载）
   const hash = s => { let h = 2166136261; for (const c of String(s)) h = Math.imul(h ^ c.codePointAt(0), 16777619); return (h >>> 0) / 4294967296; };
   const all = () => items.concat(feedItems);
-  const vis = () => all().filter(e => !off.has(grpOf(e)));   // 筛选后看得见的
+  const vis = () => all().filter(e => !offed(e));   // 筛选后看得见的
   // v0.9.6：城外 / 异兽类（天城外、又没认出具体的世界地名）落在「天城周边」过渡环里：显示在当前所在的天城层（不在天城时算中层）
   const RE_RING = /外围|城外|郊|异兽|兽潮|野兽|清剿|荒野|边境|防线/;
   const isRing = e => e.layer === '天城外' && RE_RING.test((e.place || '') + (e.cat || '')) && !worldPos(e.place);
@@ -233,7 +237,7 @@ const TCEvents = (() => {
   const isOpenNow = () => !!SH()?.open;
   function renderBar() {
     const S = SH(); if (!S) return;
-    const bar = S.el, every = all().filter(e => REG.maps[mapOf(e)]), list = every.filter(e => !off.has(grpOf(e)));
+    const bar = S.el, every = all().filter(e => REG.maps[mapOf(e)]), list = every.filter(e => !offed(e));
     // 人物页（v0.9.2，chars.js）：和事态同一个抽屉，两个页签；地点页（卡片）由查看器管
     const chN = typeof P.TCChars !== 'undefined' ? P.TCChars.count() : 0, hasEv = !!every.length && shown;
     S.showTab('ev', hasEv); S.showTab('ch', !!chN);
@@ -248,14 +252,14 @@ const TCEvents = (() => {
     if (open && S.tab === 'ch') P.TCChars.pane(bar.querySelector('.chpane'));
     if (!grpLoaded && every.length) { grpLoaded = true; mod().then(m => { if (m?.GROUPS) { GROUPS = m.GROUPS; ORDER = m.GROUP_ORDER || Object.keys(m.GROUPS).filter(g => g !== '其他'); if (m.SHAPES) SHAPES = m.SHAPES; renderBar(); } }); }   // 有事件时才取大类表
     const n = list.filter(live).length, evk = e => e.id + '@' + (e.last || 0), fresh0 = list.filter(e => e.isNew && !SEEN.ev.has(evk(e))),
-      fresh = open && S.tab === 'ev' ? (fresh0.forEach(e => SEEN.ev.add(evk(e))), fresh0.length && seenSave(), 0) : fresh0.length, hid = ORDER.filter(g => off.has(g)).length + (off.has('其他') ? 1 : 0);
+      fresh = open && S.tab === 'ev' ? (fresh0.forEach(e => SEEN.ev.add(evk(e))), fresh0.length && seenSave(), 0) : fresh0.length, hid = ORDER.filter(g => off.has(g)).length + (off.has('其他') ? 1 : 0) + [...off].filter(k => k.startsWith('type:')).length;
     // 标签：大类形状点（最新一条，进行中优先）+「事态 N」+ 新事态红点；完整摘要在面板第一行
     const top = list.filter(live).sort((a, b) => (b.last || 0) - (a.last || 0))[0] || list[0];
     S.label('ev', `<i class="shp ${shp(top ? grpOf(top) : '其他')}" style="--c:${top ? lk(top)[1] : 'var(--muted)'}" aria-hidden="true"></i>${esc(T('ev.tab', '事态'))} <em>${n || list.length}</em>${fresh ? `<b class="nd" aria-label="${esc(T('ev.bar_new', '{n} 条新', { n: fresh }))}"></b>` : ''}`, { n: n || list.length, fresh });
     const sum = bar.querySelector('.evsum');
     if (sum) sum.innerHTML = `<span class="sum">${esc(n ? T('ev.bar_live', '{n} 起进行中', { n }) : T('ev.bar_none', '暂无进行中'))}${list.length !== n ? ' · ' + esc(T('ev.bar_total', '共 {n} 起事态', { n: list.length })) : ''}${hid ? ' · ' + esc(T('ev.filtered', '已隐藏 {n} 类', { n: hid })) : ''}</span>${fresh ? `<span class="new">${esc(T('ev.bar_new', '{n} 条新', { n: fresh }))}</span>` : ''}`;
     // 图例：9 个大类都列出（没有事件的变淡），数字 = 该类条数；点一下隐藏 / 恢复
-    const cnt = {}; for (const e of every) cnt[grpOf(e)] = (cnt[grpOf(e)] || 0) + 1;
+    const cnt = {}; for (const e of list) cnt[grpOf(e)] = (cnt[grpOf(e)] || 0) + 1;   // 用筛选后的：默认关的类型不涨图例数字（整组关掉的组照列，off.has(g)）
     const gs = ORDER.concat(cnt.其他 ? ['其他'] : []).filter(g => cnt[g] || off.has(g));   // 只列有事件的大类和已隐藏的（v0.9.2：9 个空类占两行）
     bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${gcol(g)}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i class="shp ${shp(g)}" aria-hidden="true"></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join('')
       + (hintOnce() ? `<small>${esc(T('ev.legend_hint', '点大类可隐藏 / 显示'))}</small>` : ''); bar.querySelector('.evleg').title = T('ev.legend_hint', '点大类可隐藏 / 显示');

@@ -49,6 +49,7 @@ const LEGEND = [
   ['lg.tower', '以太气候调节塔', 'lg.tower_d', '深色塔身，外加同心场环'],
   ['lg.clouds', '云层', 'lg.clouds_d', '云纱越厚，海拔越低'],
   ['lg.omit', '刻意不画', 'lg.omit_d', '航线、轨道、车站'],
+  ['lg.sight', '层间视线', 'lg.sight_d', '上层各岛彼此可见，俯瞰中层像铺在脚下的电路板；下层抬头可见中层底面；清晨有云海'],
 ];
 function legendEl() {
   const box = document.createElement('div'); box.className = 'lg'; box.id = 'legendPane';

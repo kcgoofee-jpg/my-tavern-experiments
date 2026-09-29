@@ -16,12 +16,21 @@ const store = {
   set(k, v) { try { globalThis.localStorage?.setItem(k, v); } catch (e) {} },   // 配额满 / 隐私模式：静默放弃，日志仍在内存里
 };
 
+const one = a => { try { return typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a); } catch (e) { return String(a); } };
 function norm(args) {
-  const text = args.map(a => { try { return typeof a === 'string' ? a : JSON.stringify(a); } catch (e) { return String(a); } }).join(' ');
+  // OpenSeadragon 等库按 printf 风格打日志（'Ignoring tile %s …: %s', 瓦片对象）：先把 %s/%d/%f 用后面的参数填掉
+  // 再存，否则反馈报告里整行都是裸 %s + 一坨 JSON（用户 2026-09-29 反馈实测）。
+  const a = args.slice();
+  const text = typeof a[0] === 'string' && /%[sdf]/.test(a[0])
+    ? a.shift().replace(/%[sdf]/g, () => (a.length ? one(a.shift()) : '')) + (a.length ? ' ' + a.map(one).join(' ') : '')
+    : a.map(one).join(' ');
   return text.length > LINE_CAP ? text.slice(0, LINE_CAP - 1) + '…' : text;
 }
 export function push(level, args) {
-  buf.push({ t: Date.now(), level, text: norm(args) });
+  const tag = typeof args[0] === 'string' && /%[sdf]/.test(args[0]) ? args[0] : null;   // 同一模板连发 → 合并成 ×N（换图时 OSD 的 reset 瓦片警告一次几十条刷屏）
+  const last = buf[buf.length - 1];
+  if (tag && last && last.tag === tag) { last.n = (last.n || 1) + 1; last.text = last.text0 + `（×${last.n}）`; }
+  else { const text = norm(args); buf.push({ t: Date.now(), level, text, tag, text0: text }); }
   if (buf.length > CAP) buf.shift();
   const now = Date.now();
   if (now - lastSave > 2000) { lastSave = now; flush(); }   // 节流落盘：崩溃 / 直接关页也不至于全丢
