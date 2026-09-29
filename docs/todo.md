@@ -124,7 +124,7 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   迁出主仓要重写历史 → **待决定**（见 §4）。
 - [ ] **历史里的垃圾 blob ≈63 MB**：`map/art/.tc_low_day_full.png.iCUfRJ`（40 MB）与
   `.tc_mid_night_full.png.1V2n4g`（22.8 MB）——`git add -A` 误提交的 rsync 传输临时文件。
-  回收要重写历史（C4 做过一次）。
+  回收要重写历史（C4 做过一次）。**注意**：`.gitignore` 的 `map/art/.*` 只挡以后的，历史里那两份要重写才掉。
 - [ ] **本机可清 ≈1.6 GB 未入库产物**：`blender/data/real3d/raw`（1.13 GB，可 `fetch` 重下）、
   `blender/data/osm/raw`（288 MB，可重下）、`blender/world/out`（143 MB，成品已进
   `map/props/holy_mountain/`）、`map/art/*_full.png`（≈470 MB 渲染源图，瓦片已入库）、
@@ -132,7 +132,7 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [ ] 重复资产：`kiara_8_sunset_2k.hdr` 在 `blender/data/estate2/hdri/` 与 `landmarks/hdri/` 各一份（≈6 MB）；
   `props/tex/marble_01/` 与 `landmarks/tex/marble_01/` 疑似同源。
 - [ ] `.cache/card/` 与 `.cache/card_orig/` 的 `ccv3.json`+`chara.json` 各两份（用户角色卡，非仓库内容）。
-- [ ] 未跟踪但应处理的产物：`docs/drafts/props_u12_/`（浏览器测试截图）、
+- [ ] 未跟踪但应处理的产物：`docs/drafts/props_u12_/`（浏览器测试截图，判断入库还是删）、
   `docs/drafts/landmark_glory_crown_draft_c1.jpg`（在建模型的草稿，随流水线走）。
 
 ## 4. Needs a user decision
@@ -158,5 +158,12 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [x] 原域悬浮圣山三维收口（`map/props/holy_mountain/`，`lm_holy_mountain` 挂 4 标记）。
 - [x] 浏览器测试恢复并全绿：`th_adopt.mjs` 21 项、`accept.mjs`、`props_u12.mjs`。
 - [x] 历史遗留约束（不建模不描写）撤销落到 7 份现行文档；语言政策例外（工具模板）写清。
-- [x] 散落分支归档：`archive/upper-v18`、`archive/feat-worldbook-auto`；`holy-city-shotlist` 与两个
-  `backup/*` 已确认是主线祖先 → 收掉。
+- [x] 散落分支收拢（2026-09-29，提交未含此项，纯 ref 操作）：本机 git 复核后——
+  `holy-city-shotlist`、`backup/local-main-e5047815`、`backup/local-wbauto-d62a512a` **都是主线祖先**
+  （内容全在主线）；`feat/worldbook-auto` 停在重写前血线但功能已并入（有 `th_adopt.mjs` 实跑证据）；
+  只有 `upper-v18` 有真未合并内容（7 个岛脚本 ~1400 行 + academy/kelly 审图板）。
+  处置：打 `archive/upper-v18` 标签（推送）、删本地 5 个分支、删远端 `feat/worldbook-auto` /
+  `holy-city-shotlist` / `upper-v18`。**现在只剩 `main` 与 `cloud/tc-mid-low`（同一提交，快进同步）**。
+- [x] 仓库体积：删掉冗余的 `archive/feat-worldbook-auto`（内容已在主线）后 `git gc --prune=now`，
+  pack **585.75 → 489.91 MiB（回收 176 MB）**。本机归档 bundle 在 `.cache/attic/archive-branches.bundle`
+  （528 MB，gitignore，含重写前血线；内容已在主线，确认不再需要后可删）。
