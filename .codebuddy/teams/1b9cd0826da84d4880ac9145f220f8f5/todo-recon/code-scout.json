@@ -1,0 +1,11 @@
+[
+  {
+    "id": "shutdown-1790647314246",
+    "from": "team-lead",
+    "to": "code-scout",
+    "type": "shutdown_request",
+    "content": "{\"type\":\"shutdown_request\",\"request_id\":\"shutdown-1790647314246\",\"timeout_ms\":60000,\"reason\":\"结果已收到并采用。两处纠偏已由我复核确认：U5 云海/天空其实实装在 map/estate/main.js:200-226（你的判断依据只有 tokens.css 的 --bg-3d 令牌）；blender/estate/ 不是死代码，tc_estates.build_eden 以 1:100 在用它（CONTRACT.md:53,212 有退役条件）。其余项（CI browser job 占位、5 个功能缺浏览器覆盖、创意工坊零实现、岛表真相源文档写错）已进计划。任务结束，请关闭。\",\"from\":\"team-lead\",\"timestamp\":\"2026-09-29T02:01:54.246Z\"}",
+    "timestamp": "2026-09-29T02:01:54.246Z",
+    "read": true
+  }
+]

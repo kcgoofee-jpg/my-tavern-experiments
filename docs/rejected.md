@@ -10,7 +10,7 @@
 | 4 | 图集（画廊）功能是给用户自己上传照片用的（衣帽间图集 / `eden_custom_portraits`），不是让 agent 塞图或内容 | `map/estate/main.js` `gallery` 字符串、`docs/card-digest.md` 的 `eden_custom_portraits` / `eden_portrait_<名>` 键位说明 | estate、ui |
 | 5 | 不编地名 / 不用占位名，也不做运行时名字绑定层；一律照抄卡内原名（含成人向字样） | 「成人向字样 github 上没影响，要做兼容，所以不要乱动…尽量保证按原卡」（`card-canon-names.md`）；`10f6c2c` 删绑定层改回原名 | art、estate、landmark、card |
 | 6 | 不画卡里没有的内容（非卡自建建筑 / 场景），如顶楼别墅群、小教堂、售货亭、将军官邸、以太研究院 | `render-retro.md` §2 W5；`card-only-scope-dlc.md`「卡没有的先不放进去，作为 dlc 预备」 | art、estate、landmark |
-| 7 | 不做性相关或束缚类道具与细节的建模 / 描写（名字照抄除外） | `card-canon-names.md`、`modelling-scope-user-ideas.md` | 所有建模 |
+| ~~7~~ | ~~不做性相关或束缚类道具与细节的建模 / 描写（名字照抄除外）~~（2026-09-29 用户决定撤销：不按原卡补全会被原作者投诉；改为**按原卡补全设施与描写并可建模**，名字仍照抄卡原名。见 `docs/card-omissions.md` §4） | `card-canon-names.md`、`modelling-scope-user-ideas.md` | 所有建模 |
 | 8 | 不过滤 / 不审核用户聊天内容；地图只做技术兼容 | 「屏蔽词命中不要做…我们做的是技术兼容」（`tech-compat-no-moderation.md`） | 所有代码 |
 | ~~9~~ | ~~新技术路线 / 重点资产开工前必须先给用户风格帧 + 375 px 手机截图并等 OK~~（2026-09-29 用户解除等待要求：改为 glm-5.3-flash 看图代理自检 + 图存档 `~/eden-map-review/`，见 `docs/onboarding.md` §6） | `render-retro.md` §7 第 1 条；W2（庄园 three.js 整线作废） | 所有人设、所有新路线 |
 

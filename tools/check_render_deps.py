@@ -18,8 +18,8 @@ DEPS = {
     'map/art/tc_mid.dzi': ['blender/tiancheng_mid.py'],
     'map/art/tc_low.dzi': ['blender/tiancheng_low.py'],
     'map/art/tc_clouds.dzi': ['map/art/tc_upper.dzi'],
-    'map/estate/site.glb': ['blender/estate2/*.py'],
-    'map/estate/house.glb': ['blender/estate2/*.py'],
+    'map/estate/model/site.glb': ['blender/estate2/*.py'],
+    'map/estate/model/house.glb': ['blender/estate2/*.py'],
 }
 
 # 窄例外：匹配上面 glob 但不影响该产物的文件（只列确切路径，不写通配）。
