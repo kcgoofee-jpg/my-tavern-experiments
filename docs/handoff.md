@@ -3,6 +3,17 @@
 > 仓库已迁到 ~/dev1/cctest1/eden-map（2026-09-28；旧路径 性能/threejs 不再存在）。
 > 状态（2026-09-28）：~~删除线~~ ✅ = 已完成；没划掉的 = 待办。新对话先读本页 + docs/agent-brief.md + docs/project-design.md + logs/pipeline_tasks.md。
 
+## GLM-Agent 本地开发避坑与操作调优指南（2026-09-29 封板沉淀）
+
+多轮会话反复踩过的坑，提炼成硬规则。新开的 GLM 上下文在动第一行代码前先通读本节。
+
+1. **参数传递不匹配 / 函数未定义 —— 成因与防御**。高频三类：(a) 把「同名的另一处实现」当成已加载的那个——UI 模块 `setTab(id)` 只切标签、`setTab(id, s)` 才顺带开抽屉（`map/ui/sheet.js:141-143`），探针里少传第二参就会「看似调了、页面没变」；(b) 宿主 / iframe 双窗口环境下同名 API 挂在不同 global——`window.TCSheet` 只在 `map/app/shell.mjs:81` 暴露，直接 import 另一份拿到的是未初始化实例；(c) 公共函数改签名漏改调用点。防御写法：探针调用前先 `typeof fn === 'function'` 并打印 `fn.length` 核对形参个数；跨窗口 API 以 window 暴露点为准；改公共签名前 `grep` 全部调用点（含 `tools/browser/*`）再动手；单测补「导出存在且形参数 ≥ N」断言。
+2. **流式 / 后台标签生命周期**。酒馆后台非激活标签页 rAF 全停，以 rAF 为心跳的前端逻辑会假死；三维查看器的教训（`52c2fcc`）：宿主休眠发的 `estate:pause` 必须有人接、选中热点的 `uTime` 每帧置 dirty 会把 GPU 静默打满（量化到 ~11Hz 解决）。规则：任何每帧 / 常驻逻辑必须响应 `visibilitychange`（pause 真停、resume 恢复）；生成中的 CoT / 正则流式期间禁止叠加重渲染工作。
+3. **M5 内存与散热保护**。禁止静默并发拉高负载：渲染一律走 `tools/render_queue.sh` 单例队列，禁止绕过队列双开 `blender_run.sh` / 云端 `render.sh`；Blender 前后由 `blender_run.sh` 强制走等显卡锁、ASCII TMPDIR、崩溃重试一次、只杀自己 PID 的既有管子；8K/16K 定稿必带 `--cache-blend`（命中早退，省 ~59s CPU 搭建）；长任务用后台任务 + 完成通知，**禁止 sleep 轮询循环**；会话收尾必须停掉自己起的服务（本会话遗留的 `cors_server.py` PID 67439 即反例）。
+4. **Agent 交互与 Token 节流**。开工先读 `docs/agent-brief.md` 一页速查，再 grep 定位、小范围读，禁止全仓遍历；指令按阶段门控拆分：每阶段先写验收断言、跑过再进下一阶段，不一次吞大目标；探针 / 调试脚本放 /tmp，报告只回结论 + 证据路径；独立操作打包进一个来回（并行 / 批量 edit），有依赖才串行。
+5. **多窗口 / 接手人 Handoff 规范**。统一三段式：「已做（含短 SHA + 日期）/ 未做（含出处 file:line）/ 阻塞点（等谁、等什么）」；跨会话交接一律写进本文件或 `docs/todo.md`，不散落在聊天记录里；做完的待办在原文上 ~~划掉~~ ✅ 补 SHA，不删行；探针脚本的复现命令必须写清（`tools/browser/lic_probe.mjs` 依赖 argv[2] 报告输出路径，漏写就无法复现）。
+6. **浏览器测试环境事实**（本会话三次插桩才定位的三连坑）：页面内 `addEventListener('message')` 注册太迟——ready 握手消息在页面脚本跑起来前就发完了，要用 `B.newPage(preset, { init: [hook] })` 的 context 级 initScript 提前挂；宿主 `post()` 发给的是 `frame.contentWindow` 而非 `window.parent`，顶层页监听收不到 iframe 内部消息；stub 探针必须传 `argv[2]` 报告输出路径（`B.reporter(OUT)`），否则报告落不出。
+
 ## 当前在跑（旧对话里，完成后结果会推到 preview）
 
 - 上层 v18：8 座岛逐座建模 + 设定漏项检查 + 标注审图（一次一座，简单岛用 Sonnet）。交付 docs/drafts/upper_v18_<id>_board.jpg + 岛底对比条，然后停下等用户确认。
