@@ -106,6 +106,21 @@ def mount(B, M, x, y, z, yaw):
     B.tube([P(-1.1, 0), P(1.3, .3)], .25, M['hull'], n=6)
 
 
+def quarters(B, M, x0, x1, y0, y1, h):
+    """驻军长楼：方石体块 + 束带 + 双坡石板顶 + 两侧窗列（底层门洞隔开）"""
+    B.box(x0, x1, y0, y1, -.5, h, M['ash']); B.box(x0 - .3, x1 + .3, y0 - .3, y1 + .3, h - .7, h, M['ash2'])
+    along = 'x' if x1 - x0 >= y1 - y0 else 'y'; B.gable(x0, x1, y0, y1, h, min(x1 - x0, y1 - y0) * .42, M['slate'], along, over=.6)
+    L = (x1 - x0) if along == 'x' else (y1 - y0); n = int(L / 4.2)
+    for side in (-1, 1):
+        for k in range(n):
+            u = (x0 if along == 'x' else y0) + (k + .5) * L / n
+            if along == 'x': F = C.wall_frame((u, y1 if side > 0 else y0, 0.0), (0, side, 0))
+            else: F = C.wall_frame((x1 if side > 0 else x0, u, 0.0), (side, 0, 0))
+            if k % 5 == 2: C.slab2d(B, F, [(-1.3, 0), (1.3, 0), (1.3, 3.4), (-1.3, 3.4)], -.05, .05, M['door'])
+            else: C.slab2d(B, F, [(-.5, 1.3), (.5, 1.3), (.5, 3.3), (-.5, 3.3)], -.05, .05, M['glass'])
+            for zz in range(1, int(h / 3.6)): C.slab2d(B, F, [(-.5, zz * 3.6 + .9), (.5, zz * 3.6 + .9), (.5, zz * 3.6 + 2.9), (-.5, zz * 3.6 + 2.9)], -.05, .05, M['glass'])
+
+
 # ============================================================ 材质
 def mats(ctx):
     M = ctx.M
@@ -130,8 +145,9 @@ def mats(ctx):
     M['hull_d'] = C.flat('sc_hull_dark', (.12, .13, .15), .35, metal=.6)
     M['canopy'] = C.glass('sc_canopy', tint=(.03, .04, .05))
     M['door'] = C.flat('sc_door_steel', (.3, .32, .35), .45, metal=.7)
-    M['crystal'] = C.flat('sc_crystal', (.3, .6, 1.0), .05, emit=(.3, .65, 1.0), estr=1.4)
+    M['crystal'] = C.flat('sc_crystal', (.3, .6, 1.0), .05, emit=(.3, .65, 1.0), estr=4.0)
     M['ward_sc'] = K_.hex_ward('sc_ward', cell=9.0, alpha=.14, estr=1.2, rim=.03)                  # 格边很淡
+    M['bailey'] = C.flat('sc_bailey', (.56, .55, .51), .95, noise=.55)                           # 城内硬地（夯土碎石）
     M['turf'] = K_.ground_v17('sc_turf', [(.36, .4, .3), (.42, .45, .34), (.33, .37, .28)], dry=(.55, .53, .45), soil=(.4, .38, .33), rock=(.5, .5, .5))
     return M
 
@@ -153,11 +169,15 @@ def corner_angles(S):
 # ============================================================ 岛面
 def top(ctx):
     S = ctx.S; R = S.R; M = mats(ctx)
-    tr = K_.Terrain(S, noise=(.15, 40), rough=None, brow=(5, 1.2), ground='turf')
+    tr = K_.Terrain(S, noise=(.15, 40), rough=None, brow=(5, 1.2), ground='bailey')
     tr.flats.append((-R, R, -R, R, 0.0, 1))                       # 城墙内外都是人工找平的方台
     ctx.tr = tr; ctx.top_z = lambda x, y: tr.h(x * .999, y * .999)
     YX, YY = -80.0, -8.0; PX, PY = 78.0, -18.0; SPX, SPY, SPR = -76.0, 50.0, 15.0
+    tr.fn(lambda x, y: S.frac(x, y) > 1 - (WALL_IN - 2.5) / S.rad(math.atan2(y, x)), 'turf')   # 墙外窄岩缘：矮草
+    for (cx, cy, a, b) in ((-40, 64, 14, 8), (40, -30, 16, 9), (-30, -22, 10, 7), (100, 50, 9, 6)):
+        tr.ell(cx, cy, a, b, 'turf')                                # 城内零星草块
     tr.rect(YX - 26, YX + 22, YY - 26, YY + 22, 'gravel')          # 校场
+    tr.rect(-52, -12, -44, 2, 'pave')                               # 阅兵场
     tr.rect(-7, 7, -S.rad(GA) + WALL_IN, 12, 'pave')               # 门楼 → 主堡大道
     tr.rect(-34, 40, 4, 52, 'pave')                                # 主堡前院
     tr.path([(YX + 22, YY), (-34, 20)], 7, 'pave'); tr.path([(40, 20), (PX - 26, PY + 10)], 7, 'pave')
@@ -170,7 +190,8 @@ def top(ctx):
     gi = round((GA % math.tau) / math.tau * NW) % NW
     for i in range(NW):
         if i in (gi - 1, gi): continue
-        p, q = WP[i], WP[(i + 1) % NW]
+        p, q = WP[i], WP[(i + 1) % NW]; L_ = math.hypot(q[0] - p[0], q[1] - p[1]); e_ = .9 / L_
+        p, q = lerp(p, q, -e_), lerp(p, q, 1 + e_)                     # 段间搭接，免接缝
         obox(CU, p, q, WALL_T, -1.0, WALL_H, M['ash']); obox(CU, p, q, WALL_T + 1.6, -1.0, 1.5, M['ash'])
         obox(CU, p, q, .6, WALL_H, WALL_H + 1.1, M['ash2'], off=-(WALL_T / 2 - .3)); merlons(CU, p, q, -(WALL_T / 2 - .35), WALL_H + 1.1, M['ash2'])
         obox(CU, p, q, .4, WALL_H, WALL_H + .9, M['ash2'], off=WALL_T / 2 - .2); obox(CU, p, q, WALL_T - 1.0, WALL_H, WALL_H + .08, M['pave'])
@@ -298,13 +319,20 @@ def top(ctx):
             else: C.slab2d(RG, F, [(-.45, 1.2), (.45, 1.2), (.45, 3.4), (-.45, 3.4)], -.05, .05, M['glass'])
         if deg == 204: ctx.anchor('ranges', c[0], c[1], h + 2)
 
+    # ---- 驻军楼群（C2：千余骑士 + 五千辅助人员）：营房 / 职员宿舍、食堂、马厩、军械与库房
+    QB = ctx.B('quarters')
+    for (x0, x1, y0, y1, h, key) in ((44, 112, 38, 50, 13, 'barracks'), (44, 112, 58, 70, 13, 'barracks'), (-40, 26, 56, 72, 11, 'refectory'),
+                                     (-112, -66, -58, -46, 8, 'stables'), (-112, -66, -78, -64, 10, 'stores'), (14, 44, -80, -50, 12, 'armoury')):
+        quarters(QB, M, x0, x1, y0, y1, h)
+        if key in ('refectory', 'armoury'): ctx.anchor('ranges', (x0 + x1) / 2, (y0 + y1) / 2, h + 6)
+
     # ---- 崖缘晶簇（次于罗斯柴尔德）+ 结界（格边很淡）
     MG = ctx.B('rim_crystals'); rnd = random.Random(53)
     for k in range(26):
         a = rnd.uniform(0, math.tau)
         if abs(math.atan2(math.sin(a - GA), math.cos(a - GA))) < .25: continue
         x, y = S.edge(a, 1.0); C.crystal_cluster(MG, x, y, -1.5, rnd.uniform(4, 8), M['crystal'], seed=k * 11 + 5)
-        if k in (4, 17): ctx.anchor('crystal', x, y, 2)
+        if k in (4, 17): ctx.anchor('crystal', x * 1.04, y * 1.04, 3)
     K_.ward_dome(S, lambda x, y: tr.h(x * .99, y * .99), .3 * R, M['ward_sc'], ctx.B('ward'))
     ctx.anchor('ward', *S.edge(math.radians(20), 1.03), .27 * R)
 
@@ -313,7 +341,7 @@ def top(ctx):
 def underside(ctx):
     S, R, ox = ctx.S, ctx.S.R, ctx.ox; B = ctx.B('under'); rnd = random.Random(7)
     ms = ctx.m('scarp', lambda: C.ashlar('sc_scarp', (.5, .515, .54), course=1.1, block=2.2, joint=.014, jc=(.34, .35, .37)))
-    mr = ctx.m('rock', lambda: K_.rock_v17('sc_rock17', (.62, .64, .67), (.44, .46, .5), .05, moss_amt=0.0, soil_z=400.0, lichen=(.7, .72, .74)))
+    mr = ctx.m('rock', lambda: K_.rock_v17('sc_rock17', (.6, .62, .65), (.53, .55, .59), .02, moss_amt=0.0, soil_z=400.0, lichen=(.64, .66, .69)))
     ma = ctx.m('alloy', lambda: C.flat('sc_u_steel', (.5, .52, .56), .3, metal=.9))
     me = ctx.m('emit', lambda: C.flat('sc_u_emit', (.6, .95, 1.0), .2, emit=(.35, .9, 1.0), estr=28.0))
     mv = ctx.m('vein', lambda: C.glow('sc_vein', c=(.45, .8, 1.0), estr=5.0))
@@ -340,7 +368,7 @@ def underside(ctx):
             row.append((math.cos(a) * r + ox, math.sin(a) * r))
         RS.append((row, z))
     K_.loft(B, RS, mr, apex=(ox, 0.0, zs[-1]), smooth=False)
-    ctx.anchor('u_plinth', ox + hx * .35, -hy * .35, -CLIFF - D * .45)
+    zp = -CLIFF - D * .4; kp = (1 - .4) * 1.06; ctx.anchor('u_plinth', ox, -hy * kp, zp)
     B.cyl(ox, 0, zs[-1] - 1.5, 5.0, 6.0, ma, 16, r2=2.0); B.cyl(ox, 0, zs[-1] - 1.8, 3.0, .6, me, 16)       # 锥尖钢帽
     # 四棱：导能脉 + 悬浮发射器（四角四核）
     MC = ctx.B('mist_cones')
