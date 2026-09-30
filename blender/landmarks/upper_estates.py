@@ -351,6 +351,8 @@ class Kit:
 # ====================================================================== 罗斯柴尔德庄园
 def rothschild(K, P, toward):
     M = K.M
+    M['stone'] = C.ashlar('stone_honey_r', c=(0.84, 0.64, 0.38), course=0.6, block=1.2)      # 设定「蜂蜜色石」：只改本函数用的石色，不动 Kit 共用的
+    M['glass_hall'] = C.clear_glass('glass_hall', tint=(0.7, 0.85, 0.95))
     # 主府邸：沃德斯登式——长主楼 + 两端圆塔 + 中央阶梯塔楼，陡石板顶带老虎窗
     X0, X1, Y0, Y1 = -34.0, 24.0, 8.0, 24.0
     top = K.block(X0, X1, Y0, Y1, 3, 4.6, M['stone'], bay=3.4)
@@ -366,8 +368,10 @@ def rothschild(K, P, toward):
     K.portico(-5.0, Y0 - 5.0, 9.0, 4.0, 6.0)
     # 冬季宴会厅：双立方（36 × 18 × 18 m），高窗、铅皮四坡顶、门廊车道；玻璃连廊接主楼西端
     BX0, BX1, BY0, BY1 = -62.0, -44.0, -24.0, 12.0
-    ht = K.block(BX0, BX1, BY0, BY1, 2, 8.4, M['stone_pale'], bay=4.5, win=(2.2, 5.4))
-    K.hip(BX0, BX1, BY0, BY1, ht, 6.5, M['lead'])
+    ht = K.block(BX0, BX1, BY0, BY1, 2, 8.4, M['stone'], bay=4.5, win=(2.2, 5.4))
+    K.hip(BX0, BX1, BY0, BY1, ht, 9.0, M['glass_hall'], over=0.2)                  # 设定：合金骨架的玻璃宴会厅——玻璃四坡顶 + 铁骨架
+    for xf in (BX0 + 4.5, BX0 + 9.0, BX1 - 4.5):
+        K.R.strip([(xf, BY0 + 0.5, ht + 0.4), (xf, BY1 - 0.5, ht + 0.4)], 0.22, 0.18, M['iron'])
     K.balustrade([(BX0 - .3, BY0 - .3), (BX1 + .3, BY0 - .3), (BX1 + .3, BY1 + .3), (BX0 - .3, BY1 + .3), (BX0 - .3, BY0 - .3)], ht)
     for k in range(3): K.R.box(BX0 + 5, BX1 - 5, BY0 + 6 + k * 10, BY0 + 10 + k * 10, ht + 6.0, ht + 7.4, M['glass_roof'])   # 屋脊采光
     K.portico(-53.0, BY0, 12.0, 5.0, 8.0, n=6)
@@ -389,7 +393,9 @@ def rothschild(K, P, toward):
     for k in range(10): C.tree(K.T, 40 + 7 * math.cos(k), -12 + 12 * math.sin(k * 1.7), 11, 4.5, 'oak' if k % 3 else 'cedar', seed=300 + k)
     dk, br = K.dock(P, toward)
     K.path([br, (br[0] * .6, br[1] * .6), (-53, -32)], 6, M['gravel'])
-    return {'c1': ((-150, -170, 110), (-10, 2, 0), 40), 'c2': ((-40, -75, 22), (-18, 6, 10), 30)}
+    tx, ty = toward                                      # c3：从岛心一侧看湾口宾客停靠平台
+    c3 = ((dk[0] - tx * 62 - ty * 26, dk[1] - ty * 62 + tx * 26, 30), (dk[0], dk[1], 0), 34)
+    return {'c1': ((-150, -170, 110), (-10, 2, 0), 40), 'c2': ((-40, -75, 22), (-18, 6, 10), 30), 'c3': c3}
 
 
 # ====================================================================== 庄园主联盟会所
