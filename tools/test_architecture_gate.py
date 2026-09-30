@@ -231,15 +231,18 @@ def main():
             "el.style.cssText = 'a:b';\n"                # 计 1（cssText，不重复算赋值）
             "h.innerHTML = '<i style=\"color:red\">x</i>';\n"     # 计
             "h.innerHTML = `<i style=${v}>x</i>`;\n"     # 计
+            "h.innerHTML = '<i style=\"--a:1\">x</i>';\n"     # 只有自定义属性：不计
+            "h.innerHTML = `<i style='--a: 1; --b: ${v}px;'>x</i>`;\n"   # 多条自定义属性：不计
+            "h.innerHTML = '<i style=\"--a:1;color:red\">x</i>';\n"    # 混有外观声明：计
             "el.style.left = x + 'px'; el.style.top = y; el.style.width = w; el.style.height = h;\n"  # 不计
             "el.style.transform = 't'; el.style.setProperty('--gx', v);\n"                   # 不计
             "if (el.style.color === 'red') {}\n"         # 比较不计
             "const css = `<style>.a{color:red}</style>`;\n"       # <style> 块不计
             "// el.style.color = 'blue' in a comment\n")})
         bad, info = gate.check_inline_style(baseline={}, root=root)
-        assert info['counts'] == {'map/app/a.mjs': 7}, f'内联样式计数不对：{info["counts"]}'
+        assert info['counts'] == {'map/app/a.mjs': 8}, f'内联样式计数不对：{info["counts"]}'
         assert any('map/app/a.mjs:1:' in b for b in bad), f'报错没写行号：{bad[:2]}'
-    case('计数：内联样式赋值 / cssText / style 属性，几何 / 自定义属性 / <style> / 注释不计', inline_style_rules)
+    case('计数：内联样式赋值 / cssText / style 属性，几何 / 自定义属性（含 style="--x:v" 全自定义属性的属性）/ <style> / 注释不计', inline_style_rules)
 
     def namespaces_not_terms():
         root = fake_root({'map/app/ns.mjs': "const k = 'eden'; const e = window.edenMap; post('eden-map:ready');\n"

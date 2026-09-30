@@ -29,7 +29,7 @@
      只查源码（.mjs/.js）：文档、数据、第三方 vendor 不在本防线内。本条与第 2 条行为不变。
   6. 内联外观样式：引擎文件里 `.style.<属性> =` 赋值、`.style =`、`cssText`、HTML / 模板串里的
      `style="…"` / `style='…'` / `style=${…}` 逐次计数，≤ 账本 "inline_style"。不计：`<style>` 块、
-     `style.setProperty('--…')`（CSS 自定义属性是传动态几何的许可通道）、`style.transform` 与
+     `style.setProperty('--…')` 与声明全是 `--x: v` 的 `style="…"`（CSS 自定义属性是传动态几何的许可通道）、`style.transform` 与
      `style.left/top/width/height`（动态几何）。
 
 「只减不增」账本（ratchet）：tools/arch_baseline.json = {"lines","zindex","terms","inline_style"}，
@@ -110,6 +110,20 @@ STYLE_ASSIGN_RE = re.compile(r'\.style\.([A-Za-z_]\w*)\s*[-+]?=(?!=)')
 STYLE_WHOLE_RE = re.compile(r'\.style\s*=(?!=)')
 CSSTEXT_RE = re.compile(r'\bcssText\b')
 STYLE_ATTR_RE = re.compile(r"""(?<![.\w$-])style=(?:\\?["']|\$\{)""")
+STYLE_CUSTOM_DECL_RE = re.compile(r'--[\w-]+\s*:')
+
+
+def custom_props_only(src, m):
+    """style="…" 属性的声明全是 CSS 自定义属性（--x: v，一条或多条）→ True（同 style.setProperty('--…')，不计）。"""
+    tok = m.group(0)
+    if tok.endswith('{'):
+        return False
+    q = tok[-1]
+    end = src.find(q, m.end())
+    if end < 0:
+        return False
+    decls = [d.strip() for d in src[m.end():end].rstrip('\\').split(';') if d.strip()]
+    return bool(decls) and all(STYLE_CUSTOM_DECL_RE.match(d) for d in decls)
 
 
 def strip(src, literals=True):
@@ -425,6 +439,8 @@ def scan_inline_style(files=None, root=ROOT):
         for m in CSSTEXT_RE.finditer(src):
             found.append((m.start(), f"cssText{tip}"))
         for m in STYLE_ATTR_RE.finditer(src):
+            if custom_props_only(src, m):
+                continue
             found.append((m.start(), f"style=\"…\" 内联样式属性{tip}"))
         if found:
             hits[rel] = [(line_of(src, pos), msg) for pos, msg in sorted(found)]
