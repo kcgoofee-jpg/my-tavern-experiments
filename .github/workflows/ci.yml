@@ -37,11 +37,10 @@ jobs:
       - name: smoke（check_maps + check_pack 等）
         run: bash tools/smoke.sh
 
-  # 可选：轻量 playwright 冒烟，不阻塞主测试
+  # 可选：headless playwright 探针（accept / v096 / topo_dairy），不阻塞主测试；已知失败登记在 tools/browser/known-failures.json，列入的不算失败
   browser-smoke:
     runs-on: ubuntu-latest
     continue-on-error: true
-    if: false   # 目前没有轻量到可无脑跑的浏览器用例；先占位，需要时去掉这行
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -51,4 +50,6 @@ jobs:
           cache-dependency-path: tools/browser/package.json
       - run: npm ci --prefix tools/browser
       - run: npx --prefix tools/browser playwright install --with-deps chromium
-      - run: echo "占位：轻量 playwright 冒烟"
+      - run: node tools/browser/accept.mjs /tmp/accept
+      - run: node tools/browser/v096.mjs /tmp/v096
+      - run: node tools/browser/topo_dairy.mjs /tmp/topo_dairy
