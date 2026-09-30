@@ -7,6 +7,20 @@
 // Pure module: no DOM, no host globals, no timers, no network (machine-checked by
 // tools/check_architecture.py and tests/webgl_budget.test.mjs).
 
+/**
+ * 设备档位所需的探测项（调用方在浏览器里取好再递进来）：核心自己不碰 navigator / WebGL。
+ * deviceMemory（GB）、maxTextureSize、coarse（触屏）、cores（硬件并发数）
+ */
+export function hintsFrom(h = {}) {
+  return { deviceMemory: num(h.deviceMemory, 8), maxTextureSize: num(h.maxTextureSize, 8192), coarse: !!h.coarse, hardwareConcurrency: num(h.hardwareConcurrency, 8) };
+}
+
+/** 一步到位：探测项 → { deviceClass, limitBytes }（自检 / 诊断用固定键） */
+export function budgetFor(h = {}) {
+  const hints = hintsFrom(h), cls = deviceClass(hints);
+  return { deviceClass: cls, limitBytes: limitFor(cls, h.limitMB) };
+}
+
 export const MB = 1048576;
 export const DEFAULT_LIMIT_MB = 512;
 /** Device classes: 'low' (phone / ≤4 GB), 'mid' (integrated GPU), 'high' (discrete / unknown desktop). */
@@ -137,4 +151,4 @@ export function describe(s = {}) {
   };
 }
 
-export const Budget = { MB, DEFAULT_LIMIT_MB, DEVICE_LIMITS_MB, HIGH_WATER, LOW_WATER, PRIORITY, deviceClass, limitFor, estimateTexture, estimateGeometry, estimateAll, pressure, evictOrder, plan, tileCacheCount, describe };
+export const Budget = { MB, DEFAULT_LIMIT_MB, DEVICE_LIMITS_MB, HIGH_WATER, LOW_WATER, PRIORITY, deviceClass, limitFor, hintsFrom, budgetFor, estimateTexture, estimateGeometry, estimateAll, pressure, evictOrder, plan, tileCacheCount, describe };

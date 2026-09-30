@@ -98,6 +98,7 @@ import { prepare as prepareCulling } from 'three/map/culling.mjs';
 import { createLodController } from 'three/map/lod.mjs';
 import { batch as batchInstances, writeMatrices } from 'three/map/instancing.mjs';
 import { createTexRes } from 'three/map/texres.mjs';
+import * as GB from '../core/budget.mjs';   // Part 3 §1：显存预算的纯策略（估算 / 水位 / 淘汰顺序）
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer, prefersReducedMotion } from '../ui/camera-controls.js';   // 相机控制共用小件（预设/指北针/提示卡/空闲计时），与庄园页共用
 
 const Q = new URLSearchParams(location.search);
@@ -185,6 +186,30 @@ const MSAA = TIER !== 'low';
 // ---------------- 场景 ----------------
 const canvas = $('#c');
 let renderer, gpu = null;   // gpu = 共享上下文句柄（map/three/ctx.mjs）
+// ---------------- Part 3 §5：显存预算（估字节 → 吃紧就按优先级腾）----------------
+// 浏览器不给真实显存：这里用「贴图尺寸 + 几何属性」的确定性估算，配 renderer 的自报数，
+// 超了高水位就按 未激活 → 远 → 中 的顺序腾；正在看的近档永不淘汰。
+let budgetT = 0, lastTileCount = 0;
+function budgetTick(now) {
+  if (!root || now - budgetT < 1500) return;   // 每 1.5 s 一次就够（遍历场景有成本）
+  budgetT = now;
+  try {
+    const list = texres?.resources(root, { estimateTexture: GB.estimateTexture, estimateGeometry: GB.estimateGeometry,
+      kindOf: o => (o.userData?.role === 'props' ? 'mid' : 'mid') }) || [];
+    const used = GB.estimateAll({ textures: [], geometries: [], extraBytes: list.reduce((a, r) => a + r.bytes, 0) })
+      + (renderer.info?.memory?.textures || 0) * 0 + (stats.gpuMB || 0) * 1048576;
+    const plan = GB.plan(used, budget.limitBytes, list, {});
+    budgetSt.used = Math.round(used); budgetSt.ratio = +plan.ratio.toFixed(3); budgetSt.evicting = plan.evicting; budgetSt.lastPlan = { need: plan.need, freed: plan.freed, exhausted: plan.exhausted };
+    if (!plan.evicting) return;
+    // 1) 转场用的底图：交棒后本来就要丢，吃紧时立刻丢
+    if (bdMesh.visible) { try { const bmp = bdMat.map?.image; bdMat.map?.dispose(); bdMat.map = null; bdMesh.visible = false; bdFade = 0; bmp?.close?.(); } catch (e) {} }
+    // 2) 还腾不出目标 → 远处的高档降回低档（低档 glb 每个地标都有）
+    if (plan.exhausted && lod) { lod.force(MODEL, 'low'); budgetSt.evicted++; }
+    // 3) 请宿主把解码瓦片的缓存收紧（OSD 那份是 CPU 解码内存，不是显存，但手机上同样稀缺）
+    const n = GB.tileCacheCount(coarse ? 30 : 60, { pressure: plan.ratio, minCount: 12, maxCount: coarse ? 30 : 60 });
+    if (n !== lastTileCount) { lastTileCount = n; post({ type: 'v3d:viewport', tileCache: n }); }
+  } catch (e) {}
+}
 const instState = { batch: null, badge: null, groups: 0, badgeCount: 0, parent: null };
 let texres = null, lod = null;
 /** 设置「三维画质」→ 像素比（与共享工厂同一套口径） */
@@ -199,6 +224,8 @@ try {
   gpu = g; renderer = g.renderer;
 } catch (e) { post({ type: 'estate:fail', reason: 'webgl' }); fail('webgl'); throw e; }
 const gov = createGovernor();   // 连续烂帧 → 像素比降一档（缓过来不自动回升）
+const budget = GB.budgetFor({ deviceMemory: navigator.deviceMemory, maxTextureSize: renderer.capabilities?.maxTextureSize, coarse, hardwareConcurrency: navigator.hardwareConcurrency });
+let budgetSt = { used: 0, ratio: 0, evicting: false, evicted: 0, lastPlan: null };
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NoToneMapping;   // 烘焙图已经过 AgX 视图变换
 renderer.localClippingEnabled = false;
@@ -804,6 +831,7 @@ function frame(now) {
   if (bdMesh.visible) renderer.render(bdScene, bdCam);   // 底图（转场时才可见）
   renderer.render(scene, camera); placePins();
   govFrame(dt, now);   // 只在真渲染的帧采样帧距：待机（dirty=false）不计
+  budgetTick(now);   // Part 3 §5：显存预算（每 1.5 s 一次）
   if (lod && now - lodT > 250) { lodT = now; try { lod.update({ camera, target: controls.target, viewportWidth: innerWidth, viewportHeight: innerHeight }); } catch (e) {} }
 }
 let lodT = 0;   // LOD 每 250 ms 重算一次就够（镜头移动不会每帧跨档）
@@ -848,6 +876,7 @@ window.__v3d = {
     draws: renderer.info.render.calls, tris: renderer.info.render.triangles,
     memory: { ...renderer.info.memory }, dpr: renderer.getPixelRatio(),
     gpu: gpu?.stats() || null, texres: texres?.stats?.() || null,
+    budget: { ...budget, ...budgetSt },   // 预算档位 + 估算占用 + 是否吃紧 + 淘汰次数
   }),
   // 匀速绕目标转 ms 毫秒，返回帧时间（每帧强制渲染）
   orbitBench(ms = 4000) { return new Promise(res => { const out = []; const t0 = performance.now(); let lt = t0;

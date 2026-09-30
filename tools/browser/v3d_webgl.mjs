@@ -26,6 +26,8 @@ try {
     instancingRan: perf.culled > 0,
     drawsBelowBudget: perf.draws > 0 && perf.draws <= 40,
     dprSane: perf.dpr >= 1 && perf.dpr <= 4,
+    budgetTracked: !!perf.budget && perf.budget.limitBytes > 0,
+    budgetSane: !!perf.budget && perf.budget.ratio >= 0 && perf.budget.ratio < 1,
   };
   // 拉远 / 拉近：LOD 档位随镜头变化（升到近档后 detail 应当是 high）
   await P.page.evaluate(() => { __v3d.home(); });

@@ -96,11 +96,22 @@ test('tileCacheCount：吃紧时砍半、轻度吃紧 0.75、正常复原，始�
   assert.equal(B.tileCacheCount(60, { pressure: 0.2, maxCount: 30 }), 30);
 });
 
+test('hintsFrom / budgetFor：探测项由调用方给（核心不碰 navigator），一步算出档位与上限', () => {
+  assert.deepEqual(B.hintsFrom({}), { deviceMemory: 8, maxTextureSize: 8192, coarse: false, hardwareConcurrency: 8 });
+  assert.deepEqual(B.hintsFrom({ deviceMemory: 3, maxTextureSize: 4096, coarse: true, hardwareConcurrency: 4 }), { deviceMemory: 3, maxTextureSize: 4096, coarse: true, hardwareConcurrency: 4 });
+  assert.equal(B.deviceClass(B.hintsFrom({ deviceMemory: 3, coarse: true })), 'low', '探测项与 deviceClass 同一套键名');
+  assert.deepEqual(B.budgetFor({ deviceMemory: 3 }), { deviceClass: 'low', limitBytes: 256 * MB });
+  assert.deepEqual(Object.keys(B.budgetFor({})), ['deviceClass', 'limitBytes']);
+  assert.equal(B.budgetFor({ limitMB: 200 }).limitBytes, 200 * MB, '显式上限优先');
+});
+
 test('describe：固定键 + 纯度机检（core 叶子层：无 DOM / 宿主全局 / 反向 import）', () => {
   const d = B.describe({ deviceClass: 'mid', usedBytes: 300 * MB, limitBytes: 512 * MB, textures: 12, geometries: 30, evicted: 3, compressedTextures: 2, tileCacheCount: 30 });
   assert.deepEqual(Object.keys(d).sort(), ['compressedTextures', 'deviceClass', 'evicted', 'evicting', 'geometries', 'highWater', 'limitBytes', 'lowWater', 'ratio', 'textures', 'tileCacheCount', 'usedBytes']);
   assert.equal(d.evicting, false); assert.equal(d.ratio > 0.58 && d.ratio < 0.59, true);
-  const src = readFileSync(new URL('../map/core/budget.mjs', import.meta.url), 'utf8');
+  // 纯度机检前先剥注释（评述里会提到 navigator / deviceMemory 这类探测项的名字）
+  const src = readFileSync(new URL('../map/core/budget.mjs', import.meta.url), 'utf8')
+    .split('\n').map(l => /^\s*(\/\/|\*|\/\*)/.test(l) ? '' : l).join('\n');   // 剥 // 与 /* */ 两种注释行
   for (const g of ['window', 'document', 'localStorage', 'sessionStorage', 'navigator', 'Mvu', 'SillyTavern'])
     assert.equal(src.includes(g), false, `不该出现 ${g}`);
   assert.equal(/from\s+['"]\.\./.test(src), false, '不许反向 import');

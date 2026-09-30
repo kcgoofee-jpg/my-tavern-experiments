@@ -86,6 +86,8 @@ export const SCHEMA = {
   'v3d:mode': [V2S, { mode: 'string' }],
   'v3d:flows': [V2S, { on: 'boolean?' }],
   'v3d:backdrop': [V2S, { bitmap: 'any' }],   // Part 3 §3：转场用的底图快照（ImageBitmap，可转移；三维页用完自己 close）
+  'v3d:viewport': [S2V, { tileCache: 'number?' }],   // Part 3 §5：显存 / 内存吃紧时请宿主收紧解码瓦片缓存
+  'v3d:budget': [S2V, {}],                           // 直嵌接口：三维页自报的预算摘要
   'estate:ready': [S2V, {}],
   'estate:fail': [S2V, { reason: 'string?' }],
   'estate:progress': [S2V, { loaded: 'number', total: 'number?', what: 'string?' }],   // fix3：三维模型下载字节进度（total 0 = 不知道总大小）

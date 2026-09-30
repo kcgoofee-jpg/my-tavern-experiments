@@ -9,7 +9,7 @@ import { WORKER_SRC } from './dzi-worker-src.mjs';
 export const DECODE_TIMEOUT_MS = 20000;
 export const FAIL_LIMIT = 6;   // 连续失败这么多次就整个会话关掉后台解码（不让它变成「瓦片越来越慢」）
 
-export let state = { mode: 'idle', source: '', spawned: 0, decoded: 0, failed: 0, canceled: 0, closed: 0, disabled: false };
+export let state = { mode: 'idle', source: '', spawned: 0, decoded: 0, failed: 0, canceled: 0, closed: 0, disabled: false, trimmed: 0 };
 
 let workerP = null, worker = null, seq = 0, ready = false, fails = 0;
 
@@ -27,7 +27,7 @@ function supported() {
 const jobs = new Map();      // id -> { job, bitmap, done }
 const seen = new WeakSet();  // 已包过的瓦片源（不重复包）
 
-const reset = () => { state = { mode: 'idle', source: '', spawned: 0, decoded: 0, failed: 0, canceled: 0, closed: 0, disabled: false }; fails = 0; };
+const reset = () => { state = { mode: 'idle', source: '', spawned: 0, decoded: 0, failed: 0, canceled: 0, closed: 0, disabled: false, trimmed: 0 }; fails = 0; };
 
 /** 建 worker（幂等）：源码串 → blob → 经典 worker。任何一步失败都退回原路径 */
 export function ensureWorker() {
@@ -160,11 +160,31 @@ export function installWorkerTiles(v = viewer) {
   return patched;
 }
 
+/**
+ * 收紧 / 放宽 OSD 解码瓦片缓存（Part 3 §5：三维页报「吃紧」时调用）。
+ * OSD 的缓存按张数算（maxImageCacheCount 在建 TileCache 时就固定了），所以这里直接从最大的那层开始
+ * unload 到目标张数为止——被摘的瓦片若是我们自己解码的 ImageBitmap，destroyTileCache 会 close 掉。
+ */
+export function trimTileCache(maxTiles, v = viewer) {
+  const n = Math.max(4, maxTiles | 0);
+  const cache = v?.tileCache || v?._tileCache;
+  const list = cache?._tilesLoaded;
+  if (!Array.isArray(list)) return 0;
+  let cut = 0;
+  for (let i = list.length - 1; i >= 0 && list.length > n; i--) {
+    const rec = list[i];
+    if (!rec || rec.tile?.beingDrawn) continue;
+    try { cache._unloadTile(rec); cut++; } catch (e) { break; }
+  }
+  state.trimmed += cut;
+  return cut;
+}
+
 /** 调试 / 自检窗口面（tools/browser/* 与 tests 用） */
 export function describeWorker() {
   return { ...state, pending: jobs.size, ready: ready && !!worker, fails, sourceBytes: WORKER_SRC.length };
 }
 
 window.TCTileWorker = {
-  ensureWorker, decodeTile, cancelTile, closeTile, instanceMatrices, installWorkerTiles, disposeWorker, describe: describeWorker,
+  ensureWorker, decodeTile, cancelTile, closeTile, instanceMatrices, installWorkerTiles, trimTileCache, disposeWorker, describe: describeWorker,
 };

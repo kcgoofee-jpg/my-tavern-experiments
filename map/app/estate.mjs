@@ -13,6 +13,8 @@ import * as TCCvd from './cvd.mjs';
 import { PACK } from './pack.mjs';   // 三维子页的包注入（__packId / __packStrings）：子页读不到清单，语言键与包内文案随页带进去
 import { chatId } from './extapi.mjs';
 import { setFpsMeter } from './fps.mjs';
+import { trimTileCache } from './dzi-worker.mjs';   // Part 3 §5：吃紧时收紧 OSD 解码瓦片缓存
+let lastTileCache = 1e9;   // 只减不增：三维页报的目标张数单调收紧，避免来回抖
 // ---------------- 庄园剖面（kind=estate） ----------------
 // 嵌入接口（换版时保持）：maps.json 的 src 指向页面（相对 map/）。这里 fetch 页面文本、在 <head> 后插入 <base href="页面所在目录">、
 // 用 blob: iframe 显示（见 openEstate 里的说明；查看器本身是 srcdoc + <base> 加载的；jsDelivr 的 gh 线路把 .html 当纯文本返回，不能直接 iframe src）。
@@ -199,6 +201,11 @@ window.addEventListener('message', e => {
   if (e.data?.type === 'estate:ready') onEstateReady();
   if (e.data?.type === 'estate:fail') onEstateFail(e.data.reason);
   if (e.data?.type === 'estate:progress' && !est.ready) lp().set(e.data.loaded, e.data.total, 'bytes');   // fix3：glb 字节进度
+  // Part 3 §5：三维页报「内存 / 显存吃紧」→ 收紧 OSD 的解码瓦片缓存（只减不增，避免来回抖）
+  if (e.data?.type === 'v3d:viewport' && Number.isFinite(e.data.tileCache)) {
+    const n = Math.max(4, e.data.tileCache | 0);
+    if (n < lastTileCache) { lastTileCache = n; try { trimTileCache(n); } catch (err) {} }
+  }
   if (e.data?.type === 'estate:key' && e.data.key === 'Escape') onEsc();
   else if (e.data?.type === 'estate:key') stepLayer({ PageUp: -1, '[': -1, PageDown: 1, ']': 1 }[e.data.key] || 0);
 });
