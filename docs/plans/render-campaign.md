@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T15:05:25Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T15:15:05Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 20 | 0 | 27 | 1 | 0 | 0 | 48 |
+| standard | 21 | 0 | 27 | 0 | 0 | 0 | 48 |
 | hero | 3 | 0 | 11 | 1 | 6 | 0 | 21 |
 
 Below-gate (user spot-check): none
@@ -35,7 +35,7 @@ Below-gate (user spot-check): none
 | 18 | `lm:slums` | landmark | done | - |  |  | New model: slums |
 | 19 | `lm:rebirth_workshop` | landmark | done | - |  |  | New model: rebirth workshop |
 | 20 | `lm:schneider_clinic` | landmark | done | - |  |  | New model: schneider clinic |
-| 21 | `lm:elite_club` | landmark | waiting | ship |  | waiting-on-freeze | New model: elite club |
+| 21 | `lm:elite_club` | landmark | done | - |  |  | New model: elite club |
 | 22 | `lm:hunting_camp` | landmark | open | draft |  |  | New model: hunting camp |
 | 23 | `scene:highland-ext` | scene | open | new |  |  | Extend the highland scene: cliff edge and trail down |
 | 24 | `scene:fief1` | scene | open | new |  |  | Fief 1 scene: castle, fields, order, village |

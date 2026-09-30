@@ -180,3 +180,4 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T14:52:37Z,lm:hunting_camp,new,done,std-1,,scaffolded
 2026-09-30T14:53:39Z,lm:hunting_camp,setting,done,std-1,,setting block (card L378/L142/A30; exterior repo-inferred)
 2026-09-30T15:05:25Z,lm:hunting_camp,draft,release,std-1,,
+2026-09-30T15:15:05Z,lm:elite_club,ship,done,std-1,pass,"shipped after FREEZE_MAPS lifted; marker elite_club -> lm_elite_club (own model), score 7.5/6.5"
