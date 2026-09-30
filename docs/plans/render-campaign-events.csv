@@ -446,3 +446,13 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T20:51:53Z,isle:isle10,final,done,hero-1,,final 2400/64; cutout 390m
 2026-09-30T20:51:53Z,isle:isle10,integrate,done,hero-1,,"crop (0.615,0.665,0.752,0.851) + cutout 390m; DZI rebuilt; mist disc visible off SE rim (minor)"
 2026-09-30T20:51:54Z,isle:isle10,ship,wait,hero-1,,FREEZE_MAPS (S4-3); tiles ready on render-hero-1
+2026-09-30T20:51:56Z,isle:isle25,setting,claim,hero-1,,
+2026-09-30T20:52:54Z,isle:isle25,setting,done,hero-1,,setting block C1-C2/S1-S9
+2026-09-30T20:54:18Z,isle:isle25,draft,done,hero-1,,draft1 OK
+2026-09-30T20:54:18Z,isle:isle25,board,done,hero-1,,board1
+2026-09-30T20:54:18Z,isle:isle25,review-r1,done,hero-1,fail,"r1 6.0/5.5: campus tiny, runes not glowing, ball-ring trees, pale course, solid beam"
+2026-09-30T20:55:00Z,isle:isle25,fix,done,hero-1,,"draft2: campus 1.5x, runes, trees, courses, beam"
+2026-09-30T20:55:00Z,isle:isle25,review-r2,done,hero-1,pass,r2 7.0/6.5
+2026-09-30T20:55:18Z,isle:isle25,final,claim,hero-1,,
+2026-09-30T20:57:09Z,isle:isle25,final,done,hero-1,,final 2400/64; cutout 480m
+2026-09-30T20:57:09Z,isle:isle25,integrate,wait,hero-1,,not pasted: isle25 sits under the r5 Eden image in the shipped base (eden_hi inset); paste with layout C (layout:tc_upper)
