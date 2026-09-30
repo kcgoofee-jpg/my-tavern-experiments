@@ -116,6 +116,20 @@ def main():
         assert bad and '庄园' in bad[0] and 'map/app/newmod.mjs:1:' in bad[0], f'新文件里的卡词没被拦：{bad}'
     case('拦截：新引擎文件带卡词', new_file_with_term)
 
+    def new_file_with_english_term():   # S4-4：英文卡词（区分大小写）同样拦；EdenMap / eden-map / edenMap 是全局名 / 消息类型 / 存储键，不在此列
+        for text, who in (("export const label = 'Welcome to Tiancheng';\n", 'Tiancheng'), ("const t = `Eden Map v${v}`;\n", 'Eden Map'), ("const t = 'Eden map';\n", 'Eden map'),
+                          ("const t = 'Manor rooms';\n", 'Manor rooms'), ("const t = 'Estate members';\n", 'Estate members'), ("const t = 'Eden Manor';\n", 'Eden Manor')):
+            root = fake_root({'map/app/newmod.mjs': text})
+            bad, info = gate.check_terms(baseline={}, root=root)
+            assert bad and who in bad[0] and 'map/app/newmod.mjs:1:' in bad[0], f'新文件里的英文卡词「{who}」没被拦：{bad}'
+        root = fake_root({'map/app/ok.mjs': "window.EdenMap = {}; post({ type: 'eden-map:chars' }); const k = 'edenMapLang';\n"})
+        bad, info = gate.check_terms(baseline={}, root=root)
+        assert not bad, f'EdenMap / eden-map / edenMap 不该被拦：{bad}'
+        root = fake_root({'map/i18n/en.json': json.dumps({'page_title': 'Tiancheng Map', 'a': 'fine', 'hint': "Eden map add-on"}), 'map/i18n/zh.json': json.dumps({'a': '好'})})
+        bad, info = gate.check_terms(baseline={}, root=root)
+        assert bad and 'map/i18n/en.json:' in bad[0] and info['counts'] == {'map/i18n/en.json': 2}, f'词典里的英文卡词没被拦：{bad} {info["counts"]}'
+    case('拦截：英文卡词（引擎文件与词典值；不含 EdenMap / eden-map / edenMap）', new_file_with_english_term)
+
     def baselined_grows():
         root = fake_root({'map/app/old.mjs': "const a = '庄园'; const b = '庄园'; const c = '庄园';\n"})
         bad, info = gate.check_terms(baseline={'terms': {'map/app/old.mjs': 2}}, root=root)

@@ -19,7 +19,7 @@
      或运行期表达式（如 layerhost 的 String(slotZ(slot))）；裸数字字面量拦截，
      含对象字面量写法 `zIndex: 99999`。既有的按文件计数登记在账本 "zindex"，只减不增。
   4. 卡专有名词封锁（Pack 0 铁律的引擎版）：词表 = 保底名册 16 人 + 卡专有地名 / 设定词 / 内部标识
-     （见 TERM_EXTRA）。引擎文件剥掉注释后扫描（评述里难免提到卡），字符串字面量算数；
+     （见 TERM_EXTRA；英文卡词见 EN_TERMS，区分大小写）。引擎文件剥掉注释后扫描（评述里难免提到卡），字符串字面量算数；
      另扫 map/i18n/zh.json 与 en.json 的**值**。逐次计数：map/core/* 硬零，其余文件 ≤ 账本 "terms"。
      人名地名属于设定包数据（map/packs/<id>/、map/data/），引擎零硬编码。
   5. 学术引用封锁（2026-09-30 用户决定，口径来自参考卡「no academic citations embedded in project」）：
@@ -75,6 +75,8 @@ BASELINE_NOTE = ('Ratchet ledger for tools/check_architecture.py: counts may onl
 # 检查 4 在保底名册之外追加的词：卡专有地名 / 设定词 / 内部标识。改这张表就是改口径。
 TERM_EXTRA = ['母畜', '挤奶', '庄园', '伊甸', '天城', '原域', '圣都', '首相', '罗斯柴尔德',
               '外界知情', '网络攻击', 'tiancheng', 'eden_estate', 'tc_upper', 'tc_mid', 'tc_low']
+# 英文卡词（S4-4，区分大小写）：英文文案里的产品名 / 地名 / 词条；不含 EdenMap / eden-map / edenMap（那些是全局名、消息类型与存储键，S5 / S10 再改）
+EN_TERMS = ['Tiancheng', 'Eden Map', 'Eden map', 'Eden Manor', 'Manor rooms', 'Manor grounds', 'Estate members', 'Estate reputation']
 
 # 全局单一属主豁免表（文件 → 允许出现的宿主对象）。窄豁免：只豁对象名，不豁整文件语义；
 # 加条目必须写明这个文件为什么是它的唯一属主。
@@ -340,8 +342,8 @@ def pack0_names():
 
 
 def term_list():
-    """检查 4 的完整词表 = pack0_names() ∪ TERM_EXTRA。"""
-    return sorted(set(pack0_names()) | set(TERM_EXTRA))
+    """检查 4 的完整词表 = pack0_names() ∪ TERM_EXTRA ∪ EN_TERMS。"""
+    return sorted(set(pack0_names()) | set(TERM_EXTRA) | set(EN_TERMS))
 
 
 def _json_strings(o):

@@ -22,6 +22,7 @@ KEYS_OK = {
     'map/data/worldbook_aliases.json': '旧中文条目名 → 当前 id 的别名表（旧对话兼容）',
     'map/data/eden_estate_rooms.json': '卡原房间名与别名（名字照抄原卡是硬规则）',
     'map/packs/town/events.json': '事件分类显示名（与 events.mjs 的 CATS 同源）',
+    'map/packs/eden/names.en.json': '中文地名 / 分类名 → 英文译名对照表（键是卡原名与地名，运行时按中文匹配；S4-4 由 i18n/en.json 的 names 搬来）',
 }
 # 标识字段：值必须是 ASCII
 ID_FIELDS = ('id', 'roomId', 'cid')

@@ -45,3 +45,11 @@ node tools/browser/s43_parity.mjs --out <目录> [--only 名,名] [--skip 名,�
 node tools/browser/s43_parity.mjs --diff <前目录> <后目录> [--out <差异目录>]
 ```
 桌面 1440×900：`REG.maps` 每张图的深 / 浅色截图，加世界图上猎季营地的卡、设置「更新」「版权」页、图例面板、花屏中、色觉 rg 下的事态列表。动画与加载状态文字冻结。`--diff` 在页面画布里逐像素比（亮度差 > 12），每张一行 `名 changed=<n> (<百分比>)`，有差异的写差异 PNG 和 `parity.json`。同一棵树跑两遍量噪声（云、花屏）。
+
+## 文字对拍（S4-4）
+```bash
+node tools/browser/text_dump.mjs --out <目录> [--pack eden|town] [--lang zh|en] [--only dict]
+node tools/browser/text_dump.mjs --diff <前目录> <后目录>
+node tools/browser/text_dump.mjs --grep <目录> [--terms 词,词]
+```
+桌面 1440×900、不要宿主：每张图、抽屉各页签、设置各页（<details> 全展开）、事态（含花屏）、人物页（带名册）、人物卡、自定义名称、未上图、反馈报告，以及整本词典（经 `I18N.t` 读，含包文案），各写一份 JSON（`innerText`、标题、所有 `aria-label` / `title` / `placeholder` / `alt`、`data-i18n*` 元素）。`--diff` 逐状态列出增减的行（词典里新增的键单列，不算改动）；`--grep` 列出含卡词的状态（默认用看门狗词表，town 包应为 0）。

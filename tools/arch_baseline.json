@@ -24,25 +24,7 @@
     "map/ui/sheet.js": 2,
     "map/unmapped.mjs": 1
   },
-  "terms": {
-    "map/app/estate.mjs": 3,
-    "map/app/feedback-report.mjs": 1,
-    "map/app/settings.mjs": 2,
-    "map/app/shell.mjs": 1,
-    "map/chars.mjs": 2,
-    "map/compose.mjs": 1,
-    "map/custom.mjs": 2,
-    "map/events.mjs": 1,
-    "map/i18n/en.json": 3,
-    "map/i18n/zh.json": 19,
-    "map/tavern/eden-map.js": 1,
-    "map/tavern/selfcheck.mjs": 1,
-    "map/tavern/splash.mjs": 1,
-    "map/tavern/th.mjs": 1,
-    "map/unmapped.mjs": 2,
-    "map/varmap.mjs": 1,
-    "map/viewer.html": 6
-  },
+  "terms": {},
   "inline_style": {
     "map/app/clouds.mjs": 1,
     "map/app/depthhaze.mjs": 4,

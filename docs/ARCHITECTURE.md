@@ -86,6 +86,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `logbuf.mjs` | Console ring buffer for feedback reports, split into sessions; installs its hooks on first evaluation. |
 | `nodes.mjs` | The node tree (kernel contract v2): build, read, `vocabulary`, `locate`, views, positions, scope, levels. |
 | `pack.mjs` | Pack interface: manifest validation and resolution, pack id, storage prefix and chat-variable key derivation, registry rebasing. |
+| `people.mjs` | The people page's sections from the pack's entity groups (S4-4): `groupList`, `groupLabel` (dictionary / pack string `ch.g_<id>`, else the group's own label), `paneModel`; pure. |
 | `periods.mjs` | Periods of the day (K-R39): the band a world clock is in, by period words, else by the hour; default bands. |
 | `pickup.mjs` | Objective pickup probe: a written physical acquisition action becomes a single ledger fact. |
 | `profile.mjs` | The run-time profile of a pack's variables and roster (K-R37–K-R44, K-R69): variable paths, period bands, tables, roster slots, portrait rules (`portraitOk`); the kernel profile of a pack that names nothing. |
@@ -184,6 +185,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `host-about.mjs` | Version info and update check orchestration, all effects injected. |
 | `host-lifecycle.mjs` | Host instance lifecycle: takeover of old instances, panel DOM mount, listener registration, cleanup hooks. |
 | `host-routes.mjs` | CDN route table, version inference and route race; pure computation. |
+| `host-strings.mjs` | The host's few product texts (map name, script name, "new events" toast) from the manifest `strings` (`hostStr`), else neutral defaults; pure. |
 | `host-th.mjs` | TavernHelper adapter: request wrapper, function probing, pack namespace, script-variable preferences, worldbook automation. |
 | `inventory.mjs` | Spatial inventory in the chat variable, summarized into one injected line (pure). |
 | `keyframes.mjs` | Long-horizon keyframe compression: per-floor state to change-point frames, a droppable cache. |
@@ -345,7 +347,7 @@ validated at run time by `core/pack.mjs validate()` and fully by `tools/check_pa
 
 - required: `id`, `schema` (= 1), `title`, `data.maps`;
 - optional: `title_en`, `chat.var`, `data.*` (world, derived, rooms, events, worldbook, security, roster, stash,
-  routine — relative paths only, or `builtin` for events), `preload`, `vars`, `cdn.repo` / `cdn.npm`,
+  routine — relative paths only, or `builtin` for events; `names` is a `{ language: path }` table), `preload`, `vars`, `cdn.repo` / `cdn.npm`,
   `theme.accent`, `features`, `strings`, `worldbook.addon`;
 - keys starting with `_` are comments and ignored. Paths are relative to the manifest's directory (eden is the one
   exception: relative to `map/`). No `scheme:`, leading `/`, `..` or backslash.
@@ -368,6 +370,20 @@ markers carry `here_words`, the realm `label_dy` and the `overseas` card. The ma
 add-on book and its entries are named `<prefix>·…`, default the pack title), `credits` (Settings → about) and the
 data paths the host and the viewer used to hard-code (`roster`, `maps`, `galleries`, `worldbook_addon`, `gallery`,
 `routine`); a missing key quietly switches the feature off. The engine names no view, group, place or book.
+
+**Neutral wording (S4-4)**: the engine and the core dictionaries (`i18n/zh.json`, `en.json`) carry no card name; the first
+pack's exact words come back through its manifest `strings` (flat: `"key": zh`, `"key@en": en`; `t()` reads the pack
+first, in English `key@en` first). Keys that hold a book or script name take run-time placeholders (`{book}`,
+`{script}`) that the call site fills from the pack (`worldbookPrefix`, `app.script`), so the pack needs no override.
+The host script cannot use the viewer's `t()`: `tavern/host-strings.mjs hostStr(manifest, key, lang)` reads the same
+`strings` (`app.name`, `app.short`, `app.script`, `ev.toast`) and falls back to a neutral default while the manifest is
+still loading. The English place-name table left the dictionary: the manifest `data.names` (`{ "en": path }`) names it
+(eden: `packs/eden/names.en.json`), a pack without it shows the Chinese text. The people page draws one section per
+entity group in the pack's order (`entities.groups`; the present group first; label = dictionary / pack string
+`ch.g_<id>`, else the group's `i18n` label, `label`, id): `core/profile.mjs` keys `tables` by group id and gives
+`groups` / `presentId` / `stageGroup`, `mvu.mjs rosters()` returns one entry per group, and `eden-map:chars` gains an
+optional `groups: [{ id, label, rows, present? }]` beside the unchanged `rosters`. The watchdog's term list now
+includes the English card words (`EN_TERMS`, case-sensitive).
 
 **Trust boundary**: a manifest is pure data. The engine never executes pack scripts and never filters user chat.
 

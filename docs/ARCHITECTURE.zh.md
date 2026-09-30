@@ -67,6 +67,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `logbuf.mjs` | 反馈报告用的控制台环形缓冲，按会话分开；模块首次求值时自装钩子。 |
 | `nodes.mjs` | 节点树（内核契约 v2）：建树、读树、`vocabulary`、`locate`、视图、位置、范围、层级。 |
 | `pack.mjs` | 设定包接口：清单校验与解析、包 id、存储前缀与聊天变量键的推导、注册表改基址。 |
+| `people.mjs` | 人物页按包的实体组分节（S4-4）：`groupList`、`groupLabel`（词典 / 包文案 `ch.g_<id>`，否则用组自己的标签）、`paneModel`；纯函数。 |
 | `periods.mjs` | 一天的时段（K-R39）：世界时钟落在哪个时段——先按时段词，再按钟点；默认时段。 |
 | `pickup.mjs` | 客观拾取探测：正文里写明的物理获取动作变成一条单项账目事实。 |
 | `profile.mjs` | 设定包变量与名册的运行时档案（K-R37–K-R44、K-R69）：变量路径、时段、表、名册槽位、立绘规则（`portraitOk`）；什么都没写的包用内核档案。 |
@@ -164,6 +165,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `host-about.mjs` | 版本信息与检查更新的编排，所有副作用由外部注入。 |
 | `host-lifecycle.mjs` | 宿主实例生命周期：接管旧实例、挂面板 DOM、登记监听器、清理钩子。 |
 | `host-routes.mjs` | CDN 线路表、版本推断与测速 race；纯计算。 |
+| `host-strings.mjs` | 宿主自己打印的几句产品文案（地图名、脚本名、「有新事态」提示）：读清单 `strings`（`hostStr`），没有就用中性默认；纯函数。 |
 | `host-th.mjs` | 酒馆助手适配层：请求包装、接口探测、包命名空间、脚本变量偏好、世界书全自动。 |
 | `inventory.mjs` | 聊天变量里的空间化背包，压成一行注入（纯函数）。 |
 | `keyframes.mjs` | 长程关键帧压缩：逐楼状态压成变更点关键帧，是可丢弃的缓存。 |
@@ -300,7 +302,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layers.
 **清单 v1（已冻结，schema `1`）**——`map/packs/<id>/manifest.json`，说明见 `docs/pack-schema-v1.md`，运行时由 `core/pack.mjs validate()` 校验，完整校验在 `tools/check_pack.py`：
 
 - 必填：`id`、`schema`（= 1）、`title`、`data.maps`；
-- 可选：`title_en`、`chat.var`、`data.*`（world、derived、rooms、events、worldbook、security、roster、stash、routine——只收相对路径，events 可写 `builtin`）、`preload`、`vars`、`cdn.repo` / `cdn.npm`、`theme.accent`、`features`、`strings`、`worldbook.addon`；
+- 可选：`title_en`、`chat.var`、`data.*`（world、derived、rooms、events、worldbook、security、roster、stash、routine——只收相对路径，events 可写 `builtin`；`names` 是 `{ 语言: 路径 }` 表）、`preload`、`vars`、`cdn.repo` / `cdn.npm`、`theme.accent`、`features`、`strings`、`worldbook.addon`；
 - 以 `_` 开头的键是注释，一概忽略。路径相对清单所在目录（伊甸是唯一例外：相对 `map/`）。不收 `scheme:`、开头的 `/`、`..` 与反斜杠。
 
 **包现在能声明什么**：有哪些数据文件、聊天变量键、CDN 仓库、强调色、功能开关与文案覆盖。其余一切——地理、事态类别、名册字段、图层——仍是代码或固定的数据形状。
@@ -313,6 +315,15 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layers.
 事态大类自带色觉安全色（`x-cvd`）；世界图地点带 `here_words`，国家带 `label_dy`，还有 `overseas` 大牌。清单带 `worldbook.prefix`
 （附加世界书和条目叫 `<前缀>·…`，缺省 = 包标题）、`credits`（设置「关于」）以及宿主和查看器以前写死的数据路径（`roster`、`maps`、
 `galleries`、`worldbook_addon`、`gallery`、`routine`）；缺一个键，对应功能静默关掉。引擎里不出现任何视图、组、地点或书的名字。
+
+**中性文案（S4-4）**：引擎和核心词典（`i18n/zh.json`、`en.json`）不带任何卡名；第一个包的原文案通过它清单的 `strings` 还回来
+（扁平写法：`"键": 中文`、`"键@en": 英文`；`t()` 先读包，英文下先读 `键@en`）。带书名 / 脚本名的文案用运行时占位符（`{book}`、`{script}`），
+由调用处按包填（`worldbookPrefix`、`app.script`），包不用覆盖。宿主脚本用不了查看器的 `t()`：`tavern/host-strings.mjs hostStr(清单, 键, 语言)`
+读同一份 `strings`（`app.name`、`app.short`、`app.script`、`ev.toast`），清单还没到时用中性默认。英文地名表离开了词典：清单 `data.names`
+（`{ "en": 路径 }`）指向它（伊甸：`packs/eden/names.en.json`），没有这一项的包英文界面下地名显示中文原文。人物页按包的实体组
+（`entities.groups`，在场组在最前）逐组画一节：标签 = 词典 / 包文案 `ch.g_<id>`，否则组的 `i18n` 标签、`label`、id；`core/profile.mjs` 的
+`tables` 按组 id 存，并给出 `groups` / `presentId` / `stageGroup`，`mvu.mjs rosters()` 每组返回一项，`eden-map:chars` 在原样的 `rosters` 之外
+多一个可选的 `groups: [{ id, label, rows, present? }]`。看门狗词表现在含英文卡词（`EN_TERMS`，区分大小写）。
 
 **信任边界**：清单是纯数据。引擎从不执行包里的脚本，也从不过滤用户聊天。
 
