@@ -341,3 +341,5 @@ blocker: none
 open: Q-10 (accept "客房楼" → estate as A.9 #6, or change the kernel tie rule; recommendation: accept).
 cleanup: done (my probe server on 5611 stopped, the scratch baseline worktree removed, no launch.json entries; the s3-1 worktree stays until push)
 === END ===
+
+(S3-1 commit shas after the rebase onto head #141: dbfb1c2 feat(app): current location through nodes.locate (here-v2 adapter) with shadow parity; 5aa6945 refactor(app): callers switch to here-v2; pushed as head #142.)
