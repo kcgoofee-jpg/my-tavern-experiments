@@ -87,19 +87,18 @@ CORNICE = dict(z=13.5, h=2.9)   # 主楼檐部与门廊檐部同高（F3 顶）�
 #   kind       陈设配方（rooms.furnish 按它分派；见 CONTRACT.md §5）
 #   zone       叠加层分区：guest / master / family / staff（颜色见 ZONE_COLORS）
 #   rank       1 主要房间（有近景）/ 2 次要 / 3 服务
-#   floor_mat / wall_mat  地面与墙面饰面（材质名，见 CONTRACT.md §6）
+#   floor_mat / wall_mat  地面与墙面饰面（材质名，见 CONTRACT.md 材质表）
 #   h          净高（缺省取楼层净高；0 = 无顶，如大厅上空）
 #   minor      走廊、楼梯平台类：剖切图上不标名字
 #   void       挑空（无楼板）；container  只是底面，上面还有其他房间（F5 屋顶平台）
 #   round      圆形房间 (cx, cy, r)
 #   parts      套间内部分间 {名字: rect 或 [rect, ...]}；由 shell 建 0.15 m 隔墙
 #   alias / alias_en  查看器命中用的叫法（maps.json eden_estate 的 rooms / rooms_en 必须全部命中）
-#   src        世界书 / ROADMAP / 推断（缺省）
 #   use / heritage   设定摘录（家具到件见 docs/eden-estate.md §4）
 def R(id, name, name_en, floor, rect, **kw):
     d = dict(id=id, name=name, name_en=name_en, floor=floor, rect=tuple(float(v) for v in rect), kind='generic', zone='guest', rank=2,
              floor_mat='oak_plank', wall_mat='plaster_cream', h=None, minor=False, void=False, container=False, round=None, parts={},
-             alias=[], alias_en=[], src='推断', use='', heritage='')
+             alias=[], alias_en=[], use='', heritage='')
     d.update(kw)
     if d['h'] is None: d['h'] = FLOORS[floor]['h']
     d['z'] = FLOORS[floor]['z']
@@ -108,7 +107,7 @@ def R(id, name, name_en, floor, rect, **kw):
 ROOMS = [
 
     # ---------------- F1 ----------------
-    R('101', '大厅', 'Grand Hall', 'F1', (-12, 12, -22, -2), kind='hall', zone='guest', rank=1, floor_mat='marble_checker_diag', wall_mat='plaster_stone', h=8.7, alias=['大厅', '门厅', '玄关'], alias_en=['Grand Hall', 'Entrance Hall', 'Hall'], src='世界书', use='入口大厅，通高 8.7 m：斜置棋盘格大理石地面，中心嵌家徽圆盘；x = ±8 两列仿斑岩科林斯柱；镀金边桌与壁镜、红丝绒长凳、落地长箱钟、铜框告示板、青花大瓶', heritage='初代奠基人订制的胡桃木长箱钟，高 2.6 m，表盘上是天城初建时的星图，每到整点报出庄园的建成日。'),
+    R('101', '大厅', 'Grand Hall', 'F1', (-12, 12, -22, -2), kind='hall', zone='guest', rank=1, floor_mat='marble_checker_diag', wall_mat='plaster_stone', h=8.7, alias=['大厅', '门厅', '玄关'], alias_en=['Grand Hall', 'Entrance Hall', 'Hall'], use='入口大厅，通高 8.7 m：斜置棋盘格大理石地面，中心嵌家徽圆盘；x = ±8 两列仿斑岩科林斯柱；镀金边桌与壁镜、红丝绒长凳、落地长箱钟、铜框告示板、青花大瓶', heritage='初代奠基人订制的胡桃木长箱钟，高 2.6 m，表盘上是天城初建时的星图，每到整点报出庄园的建成日。'),
     R('102', '衣帽间', 'Cloakroom', 'F1', (-20, -12, -22, -12), kind='cloakroom', zone='guest', rank=3, floor_mat='oak_herringbone', wall_mat='panel_mahogany', alias=['衣帽间'], alias_en=['Cloakroom'], use='桃花心木衣柜到顶，40 个编号黄铜衣钩，伞架、靴凳、鎏金全身镜、手套与帽盒柜', heritage='每个挂钩下有珐琅编号牌，二代时为舞会订制，至今没有换过。'),
     R('103', '访客盥洗室', 'Guest Cloakroom', 'F1', (-20, -12, -12, -2), kind='powder_room', zone='guest', rank=2, floor_mat='marble_checker_small', wall_mat='silk_green', parts={'wc': [(-20, -16, -8, -2), (-16, -12, -8, -2)]}, alias=['访客盥洗室', '洗手间'], alias_en=['Guest Cloakroom', 'Powder Room'], use='前室（缎木化妆台、软凳、小沙发）+ 两间独立化妆间：高位桃花心木水箱马桶、大理石洗手台、椭圆镜、蜂窝纹擦手巾与叠放小方巾', heritage='水箱侧面有铸铜铭牌，写着制造厂和「第三代翻新」的年份。'),
     R('104', '门房', "Porter's Lodge", 'F1', (12, 20, -22, -12), kind='porter', zone='guest', rank=3, floor_mat='oak_plank', wall_mat='panel_paint_ivory', alias=['门房'], alias_en=["Porter's Lodge"], use='柜台式写字台、访客登记簿台、钥匙柜、温莎椅、访客艇停泊信号面板', heritage='历代访客签名簿全部存在这里，最早一册的皮面已经褪成浅棕。'),
@@ -117,16 +116,16 @@ ROOMS = [
     R('107', '花园厅', 'Garden Hall', 'F1', (-8, 8, 6, 22), kind='garden_hall', zone='guest', rank=1, floor_mat='oak_versailles', wall_mat='silk_duckegg', alias=['花园厅'], alias_en=['Garden Hall', 'Garden Room'], use='面湖的厅：两组香槟丝绒沙发、圆形镶嵌桌、三角钢琴、四面落地镜对三扇落地窗，出窗即后庭台阶', heritage='钢琴盖板内侧写着三代家主婚礼那天的日期，此后每一场婚礼都在这里弹奏同一首曲子。'),
     R('108', '主楼梯厅', 'Stair Hall', 'F1', (8, 20, 6, 22), kind='stair_hall', zone='guest', rank=2, floor_mat='marble_statuario', wall_mat='plaster_stone', h=13.2, alias=['楼梯厅', '主楼梯厅', '楼梯'], alias_en=['Stair Hall', 'Grand Staircase'], use='石材悬挑双跑回转梯（F1 → F3，梯段宽 2.2 m，锻铁鎏金栏杆），梯井中央是黄铜笼式电梯，顶部天光井', heritage='黄铜笼式电梯是第三代装的第一部以太电梯。楼层指针还是原装的机械表盘，指针停在「3」的时候会轻响一声。'),
     R('109', '仆役楼梯', 'Service Stair', 'F1', (-20, -14, 6, 14), kind='service_stair', zone='staff', rank=3, floor_mat='stone_flag', wall_mat='panel_paint_ivory', minor=True, alias=['仆役楼梯'], alias_en=['Service Stair'], use='石踏步、铁栏杆，贯通 B1–F5；内有 1.2 × 1.2 m 食梯'),
-    R('110', '值班室', 'Staff Duty Room', 'F1', (-20, -14, 14, 22), kind='duty_room', zone='staff', rank=3, floor_mat='lino', wall_mat='panel_paint_ivory', alias=['值班室', '仆从值班室'], alias_en=['Staff Duty Room', 'Duty Room'], src='世界书', use='铃板（36 个房间铃，以太指示灯）、值班桌、排班表板、制服衣柜、茶水台', heritage='铃板上最旧的那块铜牌写着「育婴室」，这个房间早已改作他用，但铜牌一直留着。'),
+    R('110', '值班室', 'Staff Duty Room', 'F1', (-20, -14, 14, 22), kind='duty_room', zone='staff', rank=3, floor_mat='lino', wall_mat='panel_paint_ivory', alias=['值班室', '仆从值班室'], alias_en=['Staff Duty Room', 'Duty Room'], use='铃板（36 个房间铃，以太指示灯）、值班桌、排班表板、制服衣柜、茶水台', heritage='铃板上最旧的那块铜牌写着「育婴室」，这个房间早已改作他用，但铜牌一直留着。'),
     R('111', '银器室', 'Silver Room', 'F1', (-14, -8, 6, 14), kind='silver_room', zone='staff', rank=3, floor_mat='stone_flag', wall_mat='panel_paint_ivory', alias=['银器室'], alias_en=['Silver Room'], use='保险柜门、擦银台、垫呢银器抽屉、瓷器登记簿', heritage='二代订制的 120 件银餐具，每件底部刻有家徽和序号，至今一件不缺。'),
-    R('112', '主人通道底站', 'Master Passage (Ground)', 'F1', (-14, -8, 14, 22), kind='master_passage', zone='master', rank=3, floor_mat='stone_flag', wall_mat='panel_walnut', alias=['主人通道底站'], alias_en=['Master Passage (Ground)'], src='ROADMAP', use='石材螺旋梯加单人电梯（胡桃木轿厢）；后墙有一道与石缝对齐的暗门，出门是通往机库的紫藤廊'),
-    R('113', '餐厅', 'Dining Room', 'F1', (-44, -20, -16, -2), kind='dining', zone='guest', rank=1, floor_mat='oak_versailles', wall_mat='silk_blue', alias=['餐厅', '饭厅'], alias_en=['Dining Room'], src='世界书', use='可伸缩桃花心木长餐桌（最长 18 m，24 座）、两台餐具柜、两座卡拉拉白壁炉、历代宴会图、塞夫尔蓝金边餐具、三盏 36 臂水晶吊灯', heritage='主位椅背上雕着家徽，是唯一不配套的一把椅子，初代从旧宅带来。'),
+    R('112', '主人通道底站', 'Master Passage (Ground)', 'F1', (-14, -8, 14, 22), kind='master_passage', zone='master', rank=3, floor_mat='stone_flag', wall_mat='panel_walnut', alias=['主人通道底站'], alias_en=['Master Passage (Ground)'], use='石材螺旋梯加单人电梯（胡桃木轿厢）；后墙有一道与石缝对齐的暗门，出门是通往机库的紫藤廊'),
+    R('113', '餐厅', 'Dining Room', 'F1', (-44, -20, -16, -2), kind='dining', zone='guest', rank=1, floor_mat='oak_versailles', wall_mat='silk_blue', alias=['餐厅', '饭厅'], alias_en=['Dining Room'], use='可伸缩桃花心木长餐桌（最长 18 m，24 座）、两台餐具柜、两座卡拉拉白壁炉、历代宴会图、塞夫尔蓝金边餐具、三盏 36 臂水晶吊灯', heritage='主位椅背上雕着家徽，是唯一不配套的一把椅子，初代从旧宅带来。'),
     R('114', '早餐室', 'Breakfast Room', 'F1', (-54, -44, -16, -2), kind='breakfast', zone='guest', rank=2, floor_mat='marble_checker_small', wall_mat='plaster_yellow_mural', alias=['早餐室'], alias_en=['Breakfast Room'], use='胡桃木圆桌加 8 把椅子、边柜、黄铜罩早餐保温柜、盆栽柑橘；手绘藤蔓墙画', heritage='墙画里的藤蔓间藏着历代孩子的名字缩写，是每一代装修时画师偷偷加的。'),
     R('115', '西翼廊', 'West Corridor', 'F1', (-54, -20, -2, 2), kind='wing_corridor', zone='guest', rank=2, floor_mat='marble_statuario', wall_mat='plaster_stone', minor=True, alias=['西翼廊'], alias_en=['West Corridor'], use='大理石地面，拱顶，一排肖像'),
     R('116', '备餐间', 'Servery', 'F1', (-34, -20, 2, 16), kind='servery', zone='staff', rank=3, floor_mat='stone_flag', wall_mat='tile_white', alias=['备餐间', '厨房'], alias_en=['Servery', 'Kitchen'], use='保温柜、大理石备餐台、铜洗杯槽、食梯出口；连餐厅', heritage='墙上的旧式摇铃拉杆没有拆，改接了以太铃线。'),
     R('117', '瓷器与花艺室', 'China and Flower Room', 'F1', (-46, -34, 2, 16), kind='china_flower', zone='staff', rank=3, floor_mat='stone_flag', wall_mat='panel_paint_ivory', alias=['瓷器室', '花艺室'], alias_en=['China and Flower Room'], use='到顶玻璃门瓷器柜、大理石水槽、插花工作台、花器架', heritage='柜里有一套只在新家主继任宴上用的金边蓝瓷。'),
     R('118', '家族门厅', 'Family Entrance', 'F1', (-54, -46, 2, 16), kind='family_entrance', zone='family', rank=2, floor_mat='stone_flag', wall_mat='panel_walnut', alias=['家族门厅'], alias_en=['Family Entrance'], use='家人日常出入的门厅，西门通柱廊连廊与图书馆塔亭：靴凳、伞架、手杖架、温莎椅、地图柜', heritage='门框上有历代孩子量身高的刻线，漆过几遍都没有盖掉。'),
-    R('119', '会客厅', 'Drawing Room', 'F1', (20, 44, -16, -2), kind='drawing_room', zone='guest', rank=1, floor_mat='oak_versailles', wall_mat='damask_crimson', alias=['会客厅', '客厅', '沙龙'], alias_en=['Drawing Room', 'Salon'], src='世界书', use='两组镀金红丝缎沙发、安乐椅、镶嵌边桌、Statuario 壁炉与 3 m 壁镜、家主全身肖像 ×2、瓷器陈列柜', heritage='壁炉上方原本是第二代家主的全身肖像，每一代新家主继位就把前任的肖像移到过厅，自己的挂上去；现在挂的是上一代。'),
+    R('119', '会客厅', 'Drawing Room', 'F1', (20, 44, -16, -2), kind='drawing_room', zone='guest', rank=1, floor_mat='oak_versailles', wall_mat='damask_crimson', alias=['会客厅', '客厅', '沙龙'], alias_en=['Drawing Room', 'Salon'], use='两组镀金红丝缎沙发、安乐椅、镶嵌边桌、Statuario 壁炉与 3 m 壁镜、家主全身肖像 ×2、瓷器陈列柜', heritage='壁炉上方原本是第二代家主的全身肖像，每一代新家主继位就把前任的肖像移到过厅，自己的挂上去；现在挂的是上一代。'),
     R('120', '绿厅', 'Green Room', 'F1', (44, 54, -16, -2), kind='green_parlour', zone='guest', rank=2, floor_mat='oak_plank', wall_mat='silk_green', alias=['绿厅', '小客厅', '小会客室'], alias_en=['Green Room', 'Small Parlour'], use='双人沙发、两把扶手椅、写字桌、书柜、阿尔卑斯绿大理石壁炉', heritage='写字桌抽屉里有一沓空白的家徽信笺，信头的烫金用的是和山花同一批金箔。'),
     R('121', '东翼廊', 'East Corridor', 'F1', (20, 54, -2, 2), kind='wing_corridor', zone='guest', rank=2, floor_mat='marble_statuario', wall_mat='plaster_stone', minor=True, alias=['东翼廊'], alias_en=['East Corridor'], use='大理石地面，拱顶，一排肖像'),
     R('122', '台球室', 'Billiard Room', 'F1', (20, 34, 2, 16), kind='billiards', zone='guest', rank=2, floor_mat='oak_plank', wall_mat='panel_walnut', alias=['台球室'], alias_en=['Billiard Room'], use='桃花心木台球桌、球杆架、记分板、高背皮椅 ×4、雪茄柜、小吧台', heritage='记分板上还用粉笔写着上一局的比分，按家规不擦。'),
@@ -137,25 +136,25 @@ ROOMS = [
 
     # ---------------- F2 ----------------
     R('201', '大厅上空', 'Hall Gallery', 'F2', (-12, 12, -22, -2), kind='hall_void', zone='guest', rank=3, floor_mat=None, wall_mat='plaster_stone', h=0.0, minor=True, void=True, parts={'gallery': (-12, 12, -4, -2)}, alias=['楼座', '乐师廊'], alias_en=['Hall Gallery'], use='大厅通高空间；后侧挑出 1.8 m 深的楼座作乐师廊，锻铁鎏金栏杆'),
-    R('202', '茶室', 'Tea Room', 'F2', (-20, -12, -22, -2), kind='tea_room', zone='guest', rank=1, floor_mat='oak_herringbone', wall_mat='paper_chinoiserie', alias=['茶室'], alias_en=['Tea Room'], src='世界书', use='手绘中国风壁纸；三扇朝前庭的窗下各一组茶座，长沙发、漆器茶柜、银茶炊', heritage='中国风壁纸是二代的原物，一块褪色处保留原样，旁边玻璃框里存着当年的订货单。'),
+    R('202', '茶室', 'Tea Room', 'F2', (-20, -12, -22, -2), kind='tea_room', zone='guest', rank=1, floor_mat='oak_herringbone', wall_mat='paper_chinoiserie', alias=['茶室'], alias_en=['Tea Room'], use='手绘中国风壁纸；三扇朝前庭的窗下各一组茶座，长沙发、漆器茶柜、银茶炊', heritage='中国风壁纸是二代的原物，一块褪色处保留原样，旁边玻璃框里存着当年的订货单。'),
     R('203', '客用侍从间', "Guest Valets' Room", 'F2', (12, 20, -22, -12), kind='valet', zone='staff', rank=3, floor_mat='oak_plank', wall_mat='panel_paint_ivory', alias=['客用侍从间'], alias_en=["Guest Valets' Room"], use='侍从桌椅、熨衣台、客人行李架、铃板分机'),
     R('204', '客用布草间', 'Guest Linen Room', 'F2', (12, 20, -12, -2), kind='linen', zone='staff', rank=3, floor_mat='oak_plank', wall_mat='panel_paint_ivory', alias=['客用布草间'], alias_en=['Guest Linen Room'], use='布草柜，毛巾按房间分格、每格标铜牌'),
     R('205', '二层过厅', 'First-floor Hall', 'F2', (-20, 20, -2, 6), kind='cross_hall', zone='guest', rank=2, floor_mat='oak_plank', wall_mat='plaster_stone', minor=True, alias=['二层过厅'], alias_en=['First-floor Hall'], use='橡木地面；两幅天城建城史巨幅挂毯'),
-    R('206', '起居室', 'Morning Room', 'F2', (-8, 8, 6, 22), kind='sitting_room', zone='guest', rank=1, floor_mat='oak_versailles', wall_mat='silk_duckegg', alias=['起居室', '起居'], alias_en=['Morning Room', 'Sitting Room', 'Living Room'], src='世界书', use='L 形象牙沙发、安乐椅、棋桌、书柜、胡桃木立式钢琴、缎木写字台、卡拉卡塔金壁炉、三代同框的家庭群像', heritage='棋桌上的残局是四代家主去世前那一盘，至今没有人动过。'),
+    R('206', '起居室', 'Morning Room', 'F2', (-8, 8, 6, 22), kind='sitting_room', zone='guest', rank=1, floor_mat='oak_versailles', wall_mat='silk_duckegg', alias=['起居室', '起居'], alias_en=['Morning Room', 'Sitting Room', 'Living Room'], use='L 形象牙沙发、安乐椅、棋桌、书柜、胡桃木立式钢琴、缎木写字台、卡拉卡塔金壁炉、三代同框的家庭群像', heritage='棋桌上的残局是四代家主去世前那一盘，至今没有人动过。'),
     R('207', '主楼梯平台', 'Stair Landing', 'F2', (8, 20, 6, 22), kind='stair_landing', zone='guest', rank=2, floor_mat='marble_statuario', wall_mat='plaster_stone', h=0.0, minor=True, alias=['主楼梯平台'], alias_en=['Stair Landing'], use='主楼梯二层平台与回廊'),
     R('209', '楼层配餐间', 'Floor Pantry', 'F2', (-20, -14, 14, 22), kind='floor_pantry', zone='staff', rank=3, floor_mat='tile_white', wall_mat='tile_white', alias=['配餐间'], alias_en=['Floor Pantry'], use='食梯出口、保温柜、茶水台、茶具柜'),
     R('211', '小储藏', 'Store Cupboard', 'F2', (-14, -8, 6, 14), kind='store', zone='staff', rank=3, floor_mat='oak_plank', wall_mat='panel_paint_ivory', alias=['小储藏'], alias_en=['Store Cupboard'], use='文具、蜡烛、备用灯芯'),
-    R('212', '书房', 'Study', 'F2', (-40, -20, -16, -2), kind='study', zone='master', rank=1, floor_mat='oak_herringbone', wall_mat='panel_walnut', alias=['书房', '图书室'], alias_en=['Study', 'Library'], src='世界书', use='胡桃木书架到顶（黄铜滑轨书梯）、初代桃花心木大写字台、切斯特菲尔德沙发、落地地球仪、以太悬浮天城仪、地图抽屉柜、黑金花壁炉与初代肖像、以太终端', heritage='书桌是初代从旧宅搬来的，桌面的皮子换过四次，右手边那道墨水渍一直留着。'),
+    R('212', '书房', 'Study', 'F2', (-40, -20, -16, -2), kind='study', zone='master', rank=1, floor_mat='oak_herringbone', wall_mat='panel_walnut', alias=['书房', '图书室'], alias_en=['Study', 'Library'], use='胡桃木书架到顶（黄铜滑轨书梯）、初代桃花心木大写字台、切斯特菲尔德沙发、落地地球仪、以太悬浮天城仪、地图抽屉柜、黑金花壁炉与初代肖像、以太终端', heritage='书桌是初代从旧宅搬来的，桌面的皮子换过四次，右手边那道墨水渍一直留着。'),
     R('213', '秘书室', "Secretary's Office", 'F2', (-54, -40, -16, -2), kind='secretary', zone='master', rank=2, floor_mat='oak_plank', wall_mat='panel_paint_ivory', alias=['秘书室'], alias_en=["Secretary's Office"], use='两张写字台、以太录写台、文件柜墙、访客长凳、挂钟', heritage='墙上的挂钟比长箱钟快两分钟，按家规，秘书室的时间要永远早于主人。'),
     R('214', '西二层廊', 'West Upper Corridor', 'F2', (-54, -20, -2, 2), kind='wing_corridor', zone='guest', rank=2, floor_mat='marble_statuario', wall_mat='plaster_stone', minor=True, alias=['西二层廊'], alias_en=['West Upper Corridor'], use='同西翼廊'),
     R('215', '档案与地图室', 'Archive and Map Room', 'F2', (-34, -20, 2, 16), kind='archive', zone='master', rank=3, floor_mat='oak_plank', wall_mat='panel_walnut', alias=['档案室', '地图室'], alias_en=['Archive and Map Room'], use='恒温防火档案柜、平放式地图柜、阅读长桌；存历代地契、改建图纸、宴会名单'),
     R('216', '保险库', 'Strong Room', 'F2', (-40, -34, 9, 16), kind='strong_room', zone='master', rank=3, floor_mat='oak_plank', wall_mat='panel_walnut', alias=['保险库'], alias_en=['Strong Room'], use='钢门外包胡桃木板，内有家族文书与珠宝抽屉'),
     R('217', '书房盥洗室', 'Study Washroom', 'F2', (-40, -34, 2, 9), kind='washroom', zone='master', rank=2, floor_mat='marble_checker_small', wall_mat='marble_calacatta', alias=['书房盥洗室'], alias_en=['Study Washroom'], use='连体低水箱马桶（乌木座圈、黄铜杠杆）、单盆洗手台、镀镍电热毛巾架挂深绿手巾、黄铜框方镜', heritage='墙上挂一面初代用过的剃须镜，镜面已经雾化。'),
     R('218', '晨读室', 'Reading Room', 'F2', (-54, -40, 2, 16), kind='reading_room', zone='master', rank=2, floor_mat='oak_plank', wall_mat='silk_ivory', alias=['晨读室', '阅览室'], alias_en=['Reading Room'], use='朝北光线柔和：扶手椅 ×2、脚凳、阅读灯、报刊桌、窗前躺椅、书柜', heritage='窗台上的黄铜望远镜对准人工湖的湖心圆亭。'),
-    R('219', '客房 A', 'Guest Room A', 'F2', (20, 37, -16, -2), kind='guest_suite', zone='guest', rank=1, floor_mat='oak_plank', wall_mat='silk_blue', parts={'bath': (20, 26, -16, -8), 'dress': (20, 26, -8, -2), 'bed': (26, 37, -16, -2)}, alias=['客房', '客房A', '客房 A'], alias_en=['Guest Room', 'Guest Room A'], src='世界书', use='天城蓝客房套间：卧室（四柱床、床头柜与台灯、写字台、安乐椅、梳妆台、小壁炉）+ 更衣室（双门衣柜、抽屉柜、穿衣镜）+ 浴室（铸铁爪足浴缸、洗手台、马桶、黄铜电热毛巾架）', heritage='窗外正对大道，住过历代到访的最尊贵客人，床头柜抽屉里有一本历任住客的留言簿。'),
-    R('220', '客房 B', 'Guest Room B', 'F2', (37, 54, -16, -2), kind='guest_suite', zone='guest', rank=2, floor_mat='oak_plank', wall_mat='silk_rose', parts={'bath': (48, 54, -16, -8), 'dress': (48, 54, -8, -2), 'bed': (37, 48, -16, -2)}, alias=['客房B', '客房 B'], alias_en=['Guest Room B'], src='世界书', use='玫瑰粉客房套间：卧室（四柱床、床头柜与台灯、写字台、安乐椅、梳妆台、小壁炉）+ 更衣室（双门衣柜、抽屉柜、穿衣镜）+ 浴室（铸铁爪足浴缸、洗手台、马桶、黄铜电热毛巾架）', heritage='梳妆台是一位曾祖母的嫁妆。'),
+    R('219', '客房 A', 'Guest Room A', 'F2', (20, 37, -16, -2), kind='guest_suite', zone='guest', rank=1, floor_mat='oak_plank', wall_mat='silk_blue', parts={'bath': (20, 26, -16, -8), 'dress': (20, 26, -8, -2), 'bed': (26, 37, -16, -2)}, alias=['客房', '客房A', '客房 A'], alias_en=['Guest Room', 'Guest Room A'], use='天城蓝客房套间：卧室（四柱床、床头柜与台灯、写字台、安乐椅、梳妆台、小壁炉）+ 更衣室（双门衣柜、抽屉柜、穿衣镜）+ 浴室（铸铁爪足浴缸、洗手台、马桶、黄铜电热毛巾架）', heritage='窗外正对大道，住过历代到访的最尊贵客人，床头柜抽屉里有一本历任住客的留言簿。'),
+    R('220', '客房 B', 'Guest Room B', 'F2', (37, 54, -16, -2), kind='guest_suite', zone='guest', rank=2, floor_mat='oak_plank', wall_mat='silk_rose', parts={'bath': (48, 54, -16, -8), 'dress': (48, 54, -8, -2), 'bed': (37, 48, -16, -2)}, alias=['客房B', '客房 B'], alias_en=['Guest Room B'], use='玫瑰粉客房套间：卧室（四柱床、床头柜与台灯、写字台、安乐椅、梳妆台、小壁炉）+ 更衣室（双门衣柜、抽屉柜、穿衣镜）+ 浴室（铸铁爪足浴缸、洗手台、马桶、黄铜电热毛巾架）', heritage='梳妆台是一位曾祖母的嫁妆。'),
     R('221', '东二层廊', 'East Upper Corridor', 'F2', (20, 54, -2, 2), kind='wing_corridor', zone='guest', rank=2, floor_mat='marble_statuario', wall_mat='plaster_stone', minor=True, alias=['东二层廊'], alias_en=['East Upper Corridor'], use='同东翼廊'),
-    R('222', '客房 C', 'Guest Room C', 'F2', (20, 37, 2, 16), kind='guest_suite', zone='guest', rank=2, floor_mat='oak_plank', wall_mat='silk_green', parts={'bath': (20, 26, 8, 16), 'dress': (20, 26, 2, 8), 'bed': (26, 37, 2, 16)}, alias=['客房C', '客房 C'], alias_en=['Guest Room C'], src='世界书', use='帝政绿客房套间：卧室（四柱床、床头柜与台灯、写字台、安乐椅、梳妆台、小壁炉）+ 更衣室（双门衣柜、抽屉柜、穿衣镜）+ 浴室（铸铁爪足浴缸、洗手台、马桶、黄铜电热毛巾架）', heritage='壁炉上方挂着湖景的第一幅写生，画的时候湖还没挖完。'),
+    R('222', '客房 C', 'Guest Room C', 'F2', (20, 37, 2, 16), kind='guest_suite', zone='guest', rank=2, floor_mat='oak_plank', wall_mat='silk_green', parts={'bath': (20, 26, 8, 16), 'dress': (20, 26, 2, 8), 'bed': (26, 37, 2, 16)}, alias=['客房C', '客房 C'], alias_en=['Guest Room C'], use='帝政绿客房套间：卧室（四柱床、床头柜与台灯、写字台、安乐椅、梳妆台、小壁炉）+ 更衣室（双门衣柜、抽屉柜、穿衣镜）+ 浴室（铸铁爪足浴缸、洗手台、马桶、黄铜电热毛巾架）', heritage='壁炉上方挂着湖景的第一幅写生，画的时候湖还没挖完。'),
     R('223', '客用起居室', "Guests' Sitting Room", 'F2', (37, 54, 2, 16), kind='guest_sitting', zone='guest', rank=2, floor_mat='oak_plank', wall_mat='silk_ivory', alias=['客用起居室'], alias_en=["Guests' Sitting Room"], use='两组沙发、写字台、书柜、牌桌、小吧台、湖景大窗、壁炉'),
     R('C2', '塔亭阅览廊', 'Library Gallery', 'F2', (-102, -78, -12, 12), kind='library_gallery', zone='guest', rank=2, floor_mat='oak_plank', wall_mat='panel_walnut', h=5.2, alias=['阅览廊', '塔亭阅览廊'], alias_en=['Library Gallery'], use='图书馆上层回廊与阅览龛，手稿柜，通八角塔身楼梯', heritage='图书馆塔亭藏书约 4 万册，其中有天城早期的以太学手稿。'),
 
@@ -168,45 +167,45 @@ ROOMS = [
     R('306', '家庭餐室', 'Family Dining Room', 'F3', (-8, 8, 6, 22), kind='family_dining', zone='family', rank=2, floor_mat='oak_plank', wall_mat='silk_duckegg', alias=['家庭餐室'], alias_en=['Family Dining Room'], use='胡桃木椭圆桌（8 人）、边柜、茶具柜、窗边早餐桌、西耶纳黄壁炉；窗外正对人工湖', heritage='餐桌下地板上有一块补过的木片，是某一代孩子在桌下藏了一只小猫，挠坏的。'),
     R('307', '主楼梯顶层平台', 'Top Stair Landing', 'F3', (8, 20, 6, 22), kind='stair_landing', zone='guest', rank=2, floor_mat='marble_statuario', wall_mat='plaster_stone', h=4.2, minor=True, alias=['主楼梯顶层平台'], alias_en=['Top Stair Landing'], use='主楼梯到此为止，上方是天光井'),
     R('309', '侍从待命室', "Footmen's Waiting Room", 'F3', (-20, -14, 14, 22), kind='footmen', zone='staff', rank=3, floor_mat='oak_plank', wall_mat='panel_paint_ivory', alias=['侍从待命室'], alias_en=["Footmen's Waiting Room"], use='铃板、两把椅子、茶水台'),
-    R('310', '主人通道三层站', 'Master Passage (2F)', 'F3', (-14, -8, 14, 22), kind='master_passage', zone='master', rank=3, floor_mat='stone_flag', wall_mat='panel_walnut', alias=['主人通道三层站'], alias_en=['Master Passage (2F)'], src='ROADMAP', use='螺旋梯与单人电梯在本层开门'),
+    R('310', '主人通道三层站', 'Master Passage (2F)', 'F3', (-14, -8, 14, 22), kind='master_passage', zone='master', rank=3, floor_mat='stone_flag', wall_mat='panel_walnut', alias=['主人通道三层站'], alias_en=['Master Passage (2F)'], use='螺旋梯与单人电梯在本层开门'),
     R('311', '主人前厅', "Master's Lobby", 'F3', (-14, -8, 6, 14), kind='master_lobby', zone='master', rank=3, floor_mat='oak_plank', wall_mat='panel_walnut', alias=['主人前厅'], alias_en=["Master's Lobby"], use='胡桃木护墙、衣帽架、镜子，门通过厅和西翼'),
     R('312', '主人起居室', "Master's Sitting Room", 'F3', (-40, -20, -16, -2), kind='master_sitting', zone='master', rank=2, floor_mat='oak_versailles', wall_mat='silk_blue', alias=['主人起居室'], alias_en=["Master's Sitting Room"], use='大沙发、一对扶手椅、缎木镶嵌写字台、书柜 ×2、以太留声机、Statuario 壁炉与鎏金铜座钟', heritage='座钟由第三代家主亲手修过，底座里压着他写的一张纸条：「慢一点也无妨」。'),
     R('313', '更衣室', 'Dressing Room', 'F3', (-54, -40, -16, -2), kind='dressing_room', zone='master', rank=2, floor_mat='oak_plank', wall_mat='panel_mahogany', alias=['更衣室'], alias_en=['Dressing Room'], use='桃花心木衣柜墙、大理石面中岛抽屉柜、三折穿衣镜、梳妆台、鞋柜、配饰抽屉、躺椅', heritage='一只衣柜的门内侧贴着历代家主的制服尺码表，墨色从褐色一路变到黑色。'),
     R('314', '西三层廊', 'Private Corridor', 'F3', (-54, -20, -2, 2), kind='wing_corridor', zone='master', rank=2, floor_mat='oak_plank', wall_mat='plaster_stone', minor=True, alias=['西三层廊'], alias_en=['Private Corridor'], use='主人私区，入口有门禁，墙上挂小幅风景画'),
-    R('315', '主卧', 'Master Bedroom', 'F3', (-40, -20, 2, 16), kind='master_bedroom', zone='master', rank=1, floor_mat='oak_versailles', wall_mat='silk_ivory', alias=['主卧', '主卧室', '卧室', '寝室'], alias_en=['Master Bedroom', 'Bedroom'], src='世界书', use='帝政式床（2.4 × 2.2 m，皇冠华盖、丝缎帷幔）、大理石面床头柜与台灯、躺椅、扶手椅、写字桌、三折镜梳妆台、Statuario 壁炉；窗外湖景', heritage='床头板里的家徽，是初代订制的第一件以家徽为饰的家具，历代只换过软包。'),
-    R('316', '主浴室', 'Master Bathroom', 'F3', (-54, -40, 2, 16), kind='master_bath', zone='master', rank=1, floor_mat='marble_statuario', wall_mat='marble_calacatta', parts={'wc': (-54, -51, 13, 16)}, alias=['主浴室', '浴室', '浴池', '盥洗室'], alias_en=['Master Bathroom', 'Bathroom'], src='世界书', use='整块 Statuario 独立浴缸立在圆台上、玻璃黄铜淋浴间、双盆洗手台、独立马桶间、两组电热毛巾架与叠放毛巾、浴袍、三折化妆镜；顶上圆形天光', heritage='浴缸是三代家主用一整块大理石雕的，石料来自已经封矿的旧采石场。'),
-    R('317', '寝', 'Second Bedroom', 'F3', (20, 40, -16, -2), kind='second_suite', zone='family', rank=2, floor_mat='oak_plank', wall_mat='silk_ivory', parts={'bath': (20, 26, -16, -9), 'dress': (20, 26, -9, -2), 'bed': (26, 40, -16, -2)}, alias=['寝', '次卧'], alias_en=['Second Bedroom'], src='世界书', use='珍珠灰与淡金的次卧套间：卧室（四柱床、床头柜与台灯、写字台、安乐椅、梳妆台、小壁炉）+ 更衣室（双门衣柜、抽屉柜、穿衣镜）+ 浴室（铸铁爪足浴缸、洗手台、马桶、黄铜电热毛巾架）；浴室为镀镍五金', heritage='床头挂一幅小小的祖母刺绣，内容是家徽上的苹果树。'),
+    R('315', '主卧', 'Master Bedroom', 'F3', (-40, -20, 2, 16), kind='master_bedroom', zone='master', rank=1, floor_mat='oak_versailles', wall_mat='silk_ivory', alias=['主卧', '主卧室', '卧室', '寝室'], alias_en=['Master Bedroom', 'Bedroom'], use='帝政式床（2.4 × 2.2 m，皇冠华盖、丝缎帷幔）、大理石面床头柜与台灯、躺椅、扶手椅、写字桌、三折镜梳妆台、Statuario 壁炉；窗外湖景', heritage='床头板里的家徽，是初代订制的第一件以家徽为饰的家具，历代只换过软包。'),
+    R('316', '主浴室', 'Master Bathroom', 'F3', (-54, -40, 2, 16), kind='master_bath', zone='master', rank=1, floor_mat='marble_statuario', wall_mat='marble_calacatta', parts={'wc': (-54, -51, 13, 16)}, alias=['主浴室', '浴室', '浴池', '盥洗室'], alias_en=['Master Bathroom', 'Bathroom'], use='整块 Statuario 独立浴缸立在圆台上、玻璃黄铜淋浴间、双盆洗手台、独立马桶间、两组电热毛巾架与叠放毛巾、浴袍、三折化妆镜；顶上圆形天光', heritage='浴缸是三代家主用一整块大理石雕的，石料来自已经封矿的旧采石场。'),
+    R('317', '寝', 'Second Bedroom', 'F3', (20, 40, -16, -2), kind='second_suite', zone='family', rank=2, floor_mat='oak_plank', wall_mat='silk_ivory', parts={'bath': (20, 26, -16, -9), 'dress': (20, 26, -9, -2), 'bed': (26, 40, -16, -2)}, alias=['寝', '次卧'], alias_en=['Second Bedroom'], use='珍珠灰与淡金的次卧套间：卧室（四柱床、床头柜与台灯、写字台、安乐椅、梳妆台、小壁炉）+ 更衣室（双门衣柜、抽屉柜、穿衣镜）+ 浴室（铸铁爪足浴缸、洗手台、马桶、黄铜电热毛巾架）；浴室为镀镍五金', heritage='床头挂一幅小小的祖母刺绣，内容是家徽上的苹果树。'),
     R('318', '家庭客厅', 'Family Sitting Room', 'F3', (40, 54, -16, -2), kind='family_sitting', zone='family', rank=2, floor_mat='oak_plank', wall_mat='silk_ivory', alias=['家庭客厅'], alias_en=['Family Sitting Room'], use='沙发、扶手椅、书柜、牌桌、壁炉、留声机，墙上挂家人照片'),
     R('319', '东三层廊', 'Family Corridor', 'F3', (20, 54, -2, 2), kind='wing_corridor', zone='family', rank=2, floor_mat='oak_plank', wall_mat='plaster_stone', minor=True, alias=['东三层廊'], alias_en=['Family Corridor'], use='家人区走廊，有门禁'),
     R('320', '私人房间 A', 'Private Room A', 'F3', (20, 36, 2, 16), kind='neutral_private', zone='family', rank=3, floor_mat='oak_plank', wall_mat='panel_paint_ivory', alias=['私人房间', '私人房间A', '私人房间 A'], alias_en=['Private Room', 'Private Room A'], use='用途未设定，只放普通家具：沙发、扶手椅、书桌加椅子、书柜、衣柜、单人床、茶几、台灯'),
     R('321', '备用卧室', 'Spare Bedroom', 'F3', (36, 54, 2, 16), kind='spare_bedroom', zone='family', rank=2, floor_mat='oak_plank', wall_mat='panel_paint_ivory', parts={'bath': (49, 54, 11, 16)}, alias=['备用卧室'], alias_en=['Spare Bedroom'], use='床、床头柜、衣柜、写字桌、扶手椅、壁炉，小浴室（马桶、洗手台、毛巾架）'),
 
     # ---------------- F4 ----------------
-    R('401', '女仆长办公室', "Head Maid's Office", 'F4', (-20, -8, -22, -12), kind='head_maid_office', zone='staff', rank=3, floor_mat='oak_plank', wall_mat='panel_paint_ivory', alias=['女仆长办公室', '办公室'], alias_en=["Head Maid's Office"], src='世界书', use='桃花心木写字台加扶手椅、排班板、钥匙柜、账簿柜、访客椅 ×2、小壁炉、员工名册框', heritage='女仆长办公室墙上挂着历任女仆长的名册，每个名字后面有一枚小铜钥匙，象征交接。'),
+    R('401', '女仆长办公室', "Head Maid's Office", 'F4', (-20, -8, -22, -12), kind='head_maid_office', zone='staff', rank=3, floor_mat='oak_plank', wall_mat='panel_paint_ivory', alias=['女仆长办公室', '办公室'], alias_en=["Head Maid's Office"], use='桃花心木写字台加扶手椅、排班板、钥匙柜、账簿柜、访客椅 ×2、小壁炉、员工名册框', heritage='女仆长办公室墙上挂着历任女仆长的名册，每个名字后面有一枚小铜钥匙，象征交接。'),
     R('402', '女仆长卧室', "Head Maid's Bedroom", 'F4', (-20, -8, -12, -2), kind='staff_bedroom', zone='staff', rank=3, floor_mat='oak_plank', wall_mat='silk_duckegg', parts={'bath': (-11.5, -8, -5.5, -2)}, alias=['女仆长卧室'], alias_en=["Head Maid's Bedroom"], use='单人床、床头柜、衣柜、写字桌、扶手椅；带小浴室'),
     R('403', '附属用房', 'Ancillary Room', 'F4', (-8, 8, -22, -10), kind='neutral_ancillary', zone='staff', rank=3, floor_mat='lino', wall_mat='panel_paint_ivory', alias=['附属用房'], alias_en=['Ancillary Room'], use='长桌、椅子、储物柜、书架、吸顶灯（用途未设定，只放普通家具）'),
     R('404', '员工起居室', "Servants' Hall", 'F4', (-8, 8, -10, -2), kind='staff_hall', zone='staff', rank=3, floor_mat='oak_plank', wall_mat='panel_paint_ivory', alias=['员工起居室', '仆役厅', '员工餐厅'], alias_en=["Servants' Hall", 'Staff Sitting Room'], use='长餐桌与 12 把椅子、沙发、书架、茶水台'),
-    R('405', '洗衣房', 'Laundry', 'F4', (8, 20, -22, -12), kind='laundry', zone='staff', rank=3, floor_mat='tile_white', wall_mat='tile_white', alias=['洗衣房', '洗衣'], alias_en=['Laundry'], src='世界书', use='熨烫台 ×3、以太熨烫机、折叠台、晾衣架、布草推车（大件在仆役楼洗）'),
-    R('406', '储藏室', 'Store', 'F4', (8, 20, -12, -2), kind='store', zone='staff', rank=3, floor_mat='lino', wall_mat='panel_paint_ivory', alias=['储藏室', '储藏'], alias_en=['Store'], src='世界书', use='分格货架（灯芯、蜡、瓷器、银器备品）、梯子、登记台'),
+    R('405', '洗衣房', 'Laundry', 'F4', (8, 20, -22, -12), kind='laundry', zone='staff', rank=3, floor_mat='tile_white', wall_mat='tile_white', alias=['洗衣房', '洗衣'], alias_en=['Laundry'], use='熨烫台 ×3、以太熨烫机、折叠台、晾衣架、布草推车（大件在仆役楼洗）'),
+    R('406', '储藏室', 'Store', 'F4', (8, 20, -12, -2), kind='store', zone='staff', rank=3, floor_mat='lino', wall_mat='panel_paint_ivory', alias=['储藏室', '储藏'], alias_en=['Store'], use='分格货架（灯芯、蜡、瓷器、银器备品）、梯子、登记台'),
     R('407', '四层廊', 'Attic Corridor', 'F4', (-20, 20, -2, 6), kind='attic_corridor', zone='staff', rank=3, floor_mat='oak_plank', wall_mat='panel_paint_ivory', minor=True, alias=['四层廊'], alias_en=['Attic Corridor'], use='布草推车停放位、公告板'),
-    R('408', '监控室', 'Security Room', 'F4', (-8, 8, 6, 14), kind='security', zone='staff', rank=3, floor_mat='lino', wall_mat='panel_paint_ivory', alias=['监控室', '监控', '安保室'], alias_en=['Security Room'], src='世界书', use='黄铜框以太监视墙、操作台、两把转椅、档案柜'),
-    R('409', '结界值守室', 'Ward Room', 'F4', (-8, 8, 14, 22), kind='ward_room', zone='staff', rank=3, floor_mat='stone_flag', wall_mat='plaster_stone', alias=['结界值守室'], alias_en=['Ward Room'], src='世界书', use='黄铜加以太晶的结界主控台、四座锚碑的状态表盘、值守桌'),
+    R('408', '监控室', 'Security Room', 'F4', (-8, 8, 6, 14), kind='security', zone='staff', rank=3, floor_mat='lino', wall_mat='panel_paint_ivory', alias=['监控室', '监控', '安保室'], alias_en=['Security Room'], use='黄铜框以太监视墙、操作台、两把转椅、档案柜'),
+    R('409', '结界值守室', 'Ward Room', 'F4', (-8, 8, 14, 22), kind='ward_room', zone='staff', rank=3, floor_mat='stone_flag', wall_mat='plaster_stone', alias=['结界值守室'], alias_en=['Ward Room'], use='黄铜加以太晶的结界主控台、四座锚碑的状态表盘、值守桌'),
     R('410', '员工卧室', 'Staff Bedrooms', 'F4', (8, 20, 6, 22), kind='staff_bedrooms', zone='staff', rank=3, floor_mat='oak_plank', wall_mat='panel_paint_ivory', parts={'void': (8, 12, 8, 20)}, alias=['员工卧室'], alias_en=['Staff Bedrooms'], use='员工卧室 ×3：单人床、床头柜、衣柜、小书桌；电梯在本层凭钥匙开门，楼梯厅的天光井穿过这里'),
     R('412', '员工盥洗室', 'Staff Washroom', 'F4', (-20, -14, 14, 22), kind='staff_washroom', zone='staff', rank=3, floor_mat='marble_checker_small', wall_mat='tile_white', alias=['员工盥洗室'], alias_en=['Staff Washroom'], use='淋浴 ×2、马桶 ×2（镀镍手柄、白色座圈）、洗手台 ×2、每人一格的毛巾架'),
     R('413', '布草储藏', 'Linen Store', 'F4', (-14, -8, 6, 14), kind='linen', zone='staff', rank=3, floor_mat='oak_plank', wall_mat='panel_paint_ivory', alias=['布草储藏'], alias_en=['Linen Store'], use='布草柜到顶，按房间编号分格'),
 
     # ---------------- F5 ----------------
-    R('501', '屋顶露台', 'Roof Terrace', 'F5', (-20, 20, -22, 22), kind='roof_terrace', zone='guest', rank=2, floor_mat='portland_paving', wall_mat='plaster_stone', h=0.0, container=True, alias=['露台', '观景露台', '屋顶', '屋顶露台'], alias_en=['Roof Terrace', 'Terrace'], src='世界书', use='波特兰石板铺地，栏杆从立面退进 1.5 m；柚木躺椅 ×6、柑橘与月桂花钵 ×4；紫藤廊连主人通道出口亭与眺望亭'),
+    R('501', '屋顶露台', 'Roof Terrace', 'F5', (-20, 20, -22, 22), kind='roof_terrace', zone='guest', rank=2, floor_mat='portland_paving', wall_mat='plaster_stone', h=0.0, container=True, alias=['露台', '观景露台', '屋顶', '屋顶露台'], alias_en=['Roof Terrace', 'Terrace'], use='波特兰石板铺地，栏杆从立面退进 1.5 m；柚木躺椅 ×6、柑橘与月桂花钵 ×4；紫藤廊连主人通道出口亭与眺望亭'),
     R('502', '眺望亭', 'Belvedere', 'F5', (-7, 7, -9, 5), kind='belvedere', zone='guest', rank=1, floor_mat='marble_compass', wall_mat='plaster_stone', h=4.0, round=(0, -2, 6.4), alias=['眺望亭', '电梯厅', '私人电梯厅', '穹顶'], alias_en=['Belvedere', 'Private Lift Hall', 'Dome'], use='穹顶下的圆厅：罗盘星形拼花地面、16 根壁柱与 8 扇拱窗、环形蓝丝绒软座、黄铜天文望远镜、刻天城全图的地图桌、以太气象仪；穹顶内画金色星座', heritage='星座图是按第三代建亭那一夜的星空画的，那颗「家族之星」贴的是真金箔。'),
-    R('503', '主人通道出口亭', 'Master Passage Kiosk', 'F5', (-14, -8, 14, 22), kind='kiosk', zone='master', rank=3, floor_mat='stone_flag', wall_mat='plaster_stone', h=3.2, alias=['主人通道出口亭'], alias_en=['Master Passage Kiosk'], src='ROADMAP', use='铅皮屋顶小石亭，经 20 m 紫藤廊通眺望亭'),
+    R('503', '主人通道出口亭', 'Master Passage Kiosk', 'F5', (-14, -8, 14, 22), kind='kiosk', zone='master', rank=3, floor_mat='stone_flag', wall_mat='plaster_stone', h=3.2, alias=['主人通道出口亭'], alias_en=['Master Passage Kiosk'], use='铅皮屋顶小石亭，经 20 m 紫藤廊通眺望亭'),
     R('504', '电梯出口亭', 'Lift Kiosk', 'F5', (12, 16, 12, 17), kind='kiosk', zone='guest', rank=3, floor_mat='marble_statuario', wall_mat='plaster_stone', h=3.2, alias=['电梯出口亭'], alias_en=['Lift Kiosk'], use='小石亭，黄铜门'),
     R('505', '仆役楼梯出口亭', 'Service Stair Kiosk', 'F5', (-20, -14, 6, 14), kind='kiosk', zone='staff', rank=3, floor_mat='stone_flag', wall_mat='plaster_stone', h=3.2, alias=['仆役楼梯出口亭'], alias_en=['Service Stair Kiosk'], use='检修用，门上锁'),
     # ---------------- 竖井在各层占的格子（设定 §4 / §5；plan.js 没有单列）----------------
     R('208', '仆役楼梯', 'Service Stair', 'F2', (-20, -14, 6, 14), kind='service_stair', zone='staff', rank=3, floor_mat='stone_flag', wall_mat='panel_paint_ivory', minor=True, alias=['仆役楼梯'], alias_en=['Service Stair']),
-    R('210', '主人通道', 'Master Passage', 'F2', (-14, -8, 14, 22), kind='master_passage', zone='master', rank=3, floor_mat='stone_flag', wall_mat='panel_walnut', minor=True, alias=['主人通道'], alias_en=['Master Passage'], src='ROADMAP', use='F2 不停站：封闭井'),
+    R('210', '主人通道', 'Master Passage', 'F2', (-14, -8, 14, 22), kind='master_passage', zone='master', rank=3, floor_mat='stone_flag', wall_mat='panel_walnut', minor=True, alias=['主人通道'], alias_en=['Master Passage'], use='F2 不停站：封闭井'),
     R('308', '仆役楼梯', 'Service Stair', 'F3', (-20, -14, 6, 14), kind='service_stair', zone='staff', rank=3, floor_mat='stone_flag', wall_mat='panel_paint_ivory', minor=True, alias=['仆役楼梯'], alias_en=['Service Stair']),
     R('411', '仆役楼梯', 'Service Stair', 'F4', (-20, -14, 6, 14), kind='service_stair', zone='staff', rank=3, floor_mat='stone_flag', wall_mat='panel_paint_ivory', minor=True, alias=['仆役楼梯'], alias_en=['Service Stair']),
-    R('414', '主人通道', 'Master Passage', 'F4', (-14, -8, 14, 22), kind='master_passage', zone='master', rank=3, floor_mat='stone_flag', wall_mat='panel_walnut', minor=True, alias=['主人通道'], alias_en=['Master Passage'], src='ROADMAP', use='F4 不停站：封闭井'),
+    R('414', '主人通道', 'Master Passage', 'F4', (-14, -8, 14, 22), kind='master_passage', zone='master', rank=3, floor_mat='stone_flag', wall_mat='panel_walnut', minor=True, alias=['主人通道'], alias_en=['Master Passage'], use='F4 不停站：封闭井'),
     R('B01', '地道前室', 'Tunnel Lobby', 'B1', (-20, -14, 6, 14), kind='tunnel_lobby', zone='staff', rank=3, floor_mat='stone_flag', wall_mat='tile_white', h=3.6, alias=['地道前室'], alias_en=['Tunnel Lobby'], use='以太轨道小推车站、推车 ×2、工具柜、打卡钟；向西接服务地道'),
 ]
 ROOM_BY_ID = {r['id']: r for r in ROOMS}
@@ -261,7 +260,7 @@ ISLAND = dict(rx=335.0, ry=250.0, rot=0.0, top_z=0.0,
               harm=[(3, 0.039604075555602386, 5.82645612543514), (5, 0.055443933254910184, 2.2840104599234197),
                     (6, 0.05149712881839658, 0.19392042018496997), (4, 0.031185463941111005, 3.196131428830149),
                     (13, 0.024895231399284866, 5.06049158671162)],
-              rim_wall=0.975, belt=(0.84, 0.95), rock_depth=120.0)   # 白石栏杆在 0.975 半径；林带 0.84–0.95；倒锥岩基深约 120 m（推断）
+              rim_wall=0.975, belt=(0.84, 0.95), rock_depth=120.0)   # 白石栏杆在 0.975 半径；林带 0.84–0.95；倒锥岩基深约 120 m
 MANOR_IN_ISLAND = (0.0, 25.0)
 def i2m(X, Y): return (X - MANOR_IN_ISLAND[0], Y - MANOR_IN_ISLAND[1])
 def m2i(x, y): return (x + MANOR_IN_ISLAND[0], y + MANOR_IN_ISLAND[1])
@@ -293,13 +292,13 @@ OUTBUILDINGS = [
     dict(id='J', name='水榭', name_en='Water Pavilion', c=(62, 118), size=(16, 10), h=6.0, alias=['水榭', '凉亭', '船屋'], alias_en=['Water Pavilion', 'Boathouse']),
     dict(id='K', name='湖心圆亭', name_en='Lake Temple', c=(15, 127), r=2.8, islet_r=5.0, h=7.0, columns=8, alias=['湖心圆亭', '湖心亭', '圆亭'], alias_en=['Lake Temple']),
     dict(id='L', name='停靠平台', name_en='Landing Platform', c=(0, -252), r=16.0, kiosk=dict(c=(0, -242), r=3.0, h=5.0),
-         alias=['停靠平台', '停机坪', '码头', '平台', '候机亭'], alias_en=['Landing Platform', 'Landing Stage'], src='世界书'),
+         alias=['停靠平台', '停机坪', '码头', '平台', '候机亭'], alias_en=['Landing Platform', 'Landing Stage']),
     dict(id='M1', name='后轴观景台', name_en='North Lookout', c=(0, 222), r=10.0, alias=['观景台', '后轴观景台'], alias_en=['Lookout'],
          note='设定 (0, 240) 在岛缘 231 m 之外；放到岛缘 0.975 处'),
     dict(id='M2', name='西观景亭', name_en='West Lookout', c=(-315, 0), r=4.0, alias=['西观景亭'], alias_en=['West Lookout']),
     dict(id='M3', name='东观景亭', name_en='East Lookout', c=(315, 0), r=4.0, alias=['东观景亭'], alias_en=['East Lookout']),
 ] + [dict(id=f'N{i + 1}', name='结界锚碑', name_en='Ward Anchor', bearing=(sx * 235, sy * 165), size=(2, 2), h=9.0, alias=['结界锚碑', '锚碑'],
-          alias_en=['Ward Anchor'], src='世界书', note='设定 (±235, ±165) 有三座落在岛缘外；沿同一方位放到 0.90 半径')
+          alias_en=['Ward Anchor'], note='设定 (±235, ±165) 有三座落在岛缘外；沿同一方位放到 0.90 半径')
      for i, (sx, sy) in enumerate(((-1, 1), (1, 1), (-1, -1), (1, -1)))]
 def anchor_pos(o, s=0.90):
     th = math.atan2(o['bearing'][1], o['bearing'][0]); return on_rim(th, s)
@@ -307,7 +306,7 @@ TUNNEL = dict(path=[(-128, 118), (-17, 35)], w=3.0, depth=-6.0)   # 服务地道
 
 # ---------------------------------------------------------------- 园林分区（岛坐标，设定 §2.3）
 AREAS = [
-    dict(id='forecourt', name='前庭', name_en='Forecourt', rect=(-55, 55, -45, -11), alias=['前庭', '喷泉', '前院', '荣誉庭院'], alias_en=['Forecourt', 'Fountain'], src='世界书',
+    dict(id='forecourt', name='前庭', name_en='Forecourt', rect=(-55, 55, -45, -11), alias=['前庭', '喷泉', '前院', '荣誉庭院'], alias_en=['Forecourt', 'Fountain'],
          fountain=dict(c=(0, -28), r=7.0, tiers=3, statue='持苹果的少女（铜像）')),
     dict(id='parterre_w', name='西花坛', name_en='Parterre', rect=(-56, -16, -42.5, -13.5), alias=['花坛', '花园', '庭园', '刺绣花坛'], alias_en=['Gardens', 'Garden', 'Parterre'],
          cells=dict(nx=3, ny=2, w=12, d=13)),
@@ -316,9 +315,9 @@ AREAS = [
          path_w=6.0, limes_x=7.0, statues=dict(n=16, x=4.5, len=56)),
     dict(id='rose', name='玫瑰园', name_en='Rose Garden', rect=(70, 120, -70, -20), alias=['玫瑰园'], alias_en=['Rose Garden']),
     dict(id='maze', name='迷园', name_en='Hedge Maze', rect=(-120, -70, -70, -20), alias=['迷园', '树篱迷宫', '迷宫'], alias_en=['Hedge Maze', 'Maze']),
-    dict(id='rear_court', name='后庭', name_en='Rear Court', rect=(-30, 30, 47, 76), alias=['后庭', '后院', '台地'], alias_en=['Rear Court', 'Terrace Garden'], src='世界书',
+    dict(id='rear_court', name='后庭', name_en='Rear Court', rect=(-30, 30, 47, 76), alias=['后庭', '后院', '台地'], alias_en=['Rear Court', 'Terrace Garden'],
          steps=(47, 53), court=(53, 68), shore_terrace=(-25, 25, 68, 76)),
-    dict(id='lake', name='人工湖', name_en='Lake', rect=(-60, 75, 95, 160), alias=['人工湖', '湖'], alias_en=['Lake'], src='世界书',
+    dict(id='lake', name='人工湖', name_en='Lake', rect=(-60, 75, 95, 160), alias=['人工湖', '湖'], alias_en=['Lake'],
          lobes=[(7.5, 127.5, 55, 26, 0.1), (-32.5, 139.5, 30, 18, -0.4), (49.5, 121.5, 28, 16, 0.5), (17.5, 147.5, 25, 14, 0.0)]),   # (cx, cy, a, b, 转角)
     dict(id='park', name='英式风景园', name_en='Landscape Park', rect=(-110, 110, 60, 230), alias=['英式风景园', '风景园'], alias_en=['Landscape Park']),
     dict(id='kitchen_garden', name='围墙花园', name_en='Kitchen Garden', rect=(110, 180, 110, 160), alias=['围墙花园', '菜园', '厨房花园'], alias_en=['Kitchen Garden', 'Walled Garden'], wall_h=3.5),

@@ -1,5 +1,5 @@
-"""地下医疗中心（B2）——用户设定 2026-09-28：庄园的急救 / 医疗设施（2088 年：再生医学、假肢与仿生肢适配、诊断）。
-房间多边形取 map/data/eden_estate_rooms.json（blender/estate2/floorplans.py 生成，kind=user、src=用户设定）：
+"""地下医疗中心（B2）：庄园的急救 / 医疗设施（2088 年：再生医学、假肢与仿生肢适配、诊断）。
+房间多边形取 map/data/eden_estate_rooms.json（blender/estate2/floorplans.py 生成，kind=medical）：
   医疗中心前厅 / 器械洗消间 / 缓冲更衣间 / 无菌处置室。坐标 = 庄园坐标（x 东、y 北、米），B2 楼面 = 主楼 F1 − 9.0 m。
 内容规则：只放中性、真实的医疗设备（无任何束缚件；床 / 台上没有绑带）。参考板 docs/b2-medical-references.md。
 

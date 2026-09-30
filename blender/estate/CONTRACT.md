@@ -126,7 +126,7 @@ EDEN
 
 ---
 
-## 6. 材质名（`mats.get`；色值 sRGB，见设定 §6）
+## 6. 材质名（`mats.get`；色值 sRGB）
 
 石材 `stone_portland` #E4DED2（外墙；要风化、雨痕、色差）· `stone_rustic` #CFC7B8 · `stone_trim` #F0ECE3 · `marble_statuario` #F2F0EC（灰色细主纹）· `marble_calacatta` #F1ECE2 · `marble_nero` #1E1E20 · `marble_alpi_green` #2F4A3C · `marble_siena` #D9B66E · `marble_levanto` #7A2E2A · `scagliola_porphyry` #6B2E35 · `lead_roof` #8A8D90
 木材 `oak` #A57A4B · `walnut` #5A3A22 · `mahogany` #5E2A1A · `ebony` #1C1512 · `satinwood` #D8B777 · `paint_panel` #EDE6D6
@@ -134,7 +134,7 @@ EDEN
 织物 `damask_crimson` #7B1E2B · `silk_blue` #2C3E63 · `silk_green` #2F5D4E · `silk_rose` #C99A93 · `silk_ivory` #EEE7D8 · `silk_duckegg` #CFE0D6 · `velvet_champagne` #CDB58A · `velvet_red` #8E2130 · `linen_ivory` #EEE7D8 · `cotton_bed` #F7F4EE · `towel` #EFE9DF · `towel_green` #2E4A3A · `gold_thread` #E6C36A · `satin_old_gold` #B89A5A · `rug_aubusson` #E3D4B8 · `rug_heriz` #7A2A22 · `rug_crimson` #6E1F28
 瓷与其他 `porcelain` #F6F4EF（clearcoat 1、IOR 1.5）· `sevres_blue` #1F3F8F · `plaster_cream` #E9E1CF · `plaster_ceiling` #F3EFE6 · `glass_window` #2B3238 · `mirror` · `water` #1E3B47 · `lawn` #5F7F3E · `lawn_dark` #52703A · `hedge` #2F4A26 · `gravel` #CFC6B0 · `tree_crown` · `rock` · `soil` · `brick` · `felt_green` · `leather_red` · `leather_green` · `aether_glow`（emission）· `lamp_glow`（2,700 K emission）· `overlay_master` #7A5FA0 · `overlay_staff` #C98A40 · `overlay_guest` #4C8C99
 饰面（plan 的 `floor_mat` / `wall_mat`，= 底材质 + 图案，`mats.FINISH`）：地面 `marble_checker_diag`（大厅 1.2 m 斜棋盘）、`marble_checker_small`、`marble_compass`、`oak_herringbone`、`oak_versailles`、`oak_plank`、`stone_flag`、`lino`、`tile_white`、`portland_paving`；墙面 `plaster_stone`、`panel_paint_ivory`、`panel_mahogany`、`panel_walnut`、`paper_chinoiserie`、`plaster_yellow_mural`，以及直接用底材质名的 `damask_crimson`、`silk_*`、`marble_calacatta`、`tile_white`。
-完整表（含粗糙度 / 金属度与出处）在 `mats.PALETTE`。「推断」色是色板外按设定文字自定的，改动写进变更记录。
+完整表（含粗糙度 / 金属度与备注）在 `mats.PALETTE`；改动写进变更记录。
 
 ---
 

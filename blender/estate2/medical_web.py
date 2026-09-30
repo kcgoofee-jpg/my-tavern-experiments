@@ -1,4 +1,4 @@
-"""B2 医疗中心（medical_b2.py，用户设定）→ 网页三维室内 glb 的一块（f_B2_med）。
+"""B2 医疗中心（medical_b2.py）→ 网页三维室内 glb 的一块（f_B2_med）。
 
 blender -b --factory-startup --python-expr "import runpy,sys;sys.argv=['x','--','--out','/tmp/med.glb'];runpy.run_path('blender/estate2/medical_web.py',run_name='__main__')"
 坐标：F1 = 0（和 house_web.py 一样，页面把整块室内抬到 F1 标高）。材质只保留底色，逐面写进顶点色（页面用同一个 Lambert 顶点色材质）；

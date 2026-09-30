@@ -28,7 +28,7 @@ WIN_W, WIN_SILL, WIN_HEAD, WIN_STEP = 1.6, 0.9, 3.3, 4.0
 
 KIND_COL = {   # 楼面中性色（线性 0–1）
     'card': (0.60, 0.47, 0.35), 'circ': (0.80, 0.78, 0.73), 'support': (0.66, 0.68, 0.70), 'owner': (0.58, 0.55, 0.62),
-    'restricted': (0.60, 0.60, 0.60), 'user': (0.62, 0.70, 0.72), 'open': (0.74, 0.74, 0.70)}
+    'restricted': (0.60, 0.60, 0.60), 'medical': (0.62, 0.70, 0.72), 'open': (0.74, 0.74, 0.70)}
 WALL_INT, WALL_EXT = (0.90, 0.88, 0.84), (0.94, 0.92, 0.87)
 FURN = (0.76, 0.70, 0.60)
 STAIR = (0.84, 0.82, 0.78)
@@ -374,7 +374,7 @@ def build_floor(fl):
     S, F = Mesh(), Mesh()
     for r in rooms:   # 楼板
         S.prism(r['poly'], z - SLAB, z, KIND_COL.get(r['kind'], KIND_COL['open']))
-    wall_rooms = [r for r in rooms if r['block'] != 'porch' and r['kind'] != 'user']   # 门廊是敞开柱廊，不出墙；医疗中心（kind=user）的墙 / 门 / 设备由 medical_b2.py 出（medical_web.py）
+    wall_rooms = [r for r in rooms if r['block'] != 'porch' and r['kind'] != 'medical']   # 门廊是敞开柱廊，不出墙；医疗中心（kind=medical）的墙 / 门 / 设备由 medical_b2.py 出（medical_web.py）
     segs = walls_for(wall_rooms)
     doors = doors_for(wall_rooms, segs)
     # 外墙开门：门廊 → 大厅（正门）、北廊楼 → 后庭
@@ -390,7 +390,7 @@ def build_floor(fl):
     cores(S, fl, z)
     structure(S, fl, z)
     for r in rooms:
-        if r['kind'] in ('restricted', 'user'):
+        if r['kind'] in ('restricted', 'medical'):
             continue   # restricted 房间：空白；医疗中心设备走 medical_web.py
         for f in r.get('furn', []):
             F.box(f[0], f[2], z, f[1], f[3], z + furn_height(f), FURN)

@@ -253,15 +253,15 @@ for fl in ('F1', 'F2'):
             room(fl, '东翼一层', R(22, 48, -13.5, 1.5), 'open', note='', block=bid); continue
         room(fl, BLK_CN[bid] + ('一层' if fl == 'F1' else '二层'), blk_poly(bid), 'open', note='', block=bid)
 
-# ======================================================================== B2 用户设定（放在最后，房间 id 不挪）
-# 地下医疗中心（B2）——用户设定 2026-09-28：原「设备」未定用途体量的东段 16 × 11 m（不占卡房间）。
+# ======================================================================== B2 医疗中心（放在最后，房间 id 不挪）
+# 地下医疗中心（B2）：原「设备」未定用途体量的东段 16 × 11 m（不占卡房间）。
 # 2088 年的庄园急救 / 医疗设施（再生医学、假肢与仿生肢适配、诊断）；模型 blender/estate2/medical_b2.py，同一坐标。
 # 洁净流线：医护 主廊 → 主人通道前室 → 缓冲更衣间（气闸、更衣、刷手）→ 无菌处置室；患者 主廊 → 前厅 → 气密转运门；器械 前厅 → 洗消间 → 传递窗。
 MED_U = dict(access='主人 / 女仆长 / 医护')
-room('B2', '医疗中心前厅', R(4, 8, -3, 8), 'user', note='地下医疗中心（B2）入口：接诊台、转运床停放；南接主廊，东墙气密患者转运门进无菌处置室、另一门进器械洗消间', **MED_U)
-room('B2', '器械洗消间', R(8, 14, -3, 1.5), 'user', note='器械清洗、灭菌柜；传递窗通无菌处置室', **MED_U)
-room('B2', '缓冲更衣间', R(14, 20, -3, 1.5), 'user', note='气闸 + 更衣：两道互锁密闭门、风淋、洁净服柜、刷手槽；南门接主人通道前室', **MED_U)
-room('B2', '无菌处置室', R(8, 20, 1.5, 8), 'user', note='急救 / 处置 / 小手术：手术台、无影灯、吊塔监护、呼吸机、除颤、抢救车、医用气体、洁净送风天花',
+room('B2', '医疗中心前厅', R(4, 8, -3, 8), 'medical', note='地下医疗中心（B2）入口：接诊台、转运床停放；南接主廊，东墙气密患者转运门进无菌处置室、另一门进器械洗消间', **MED_U)
+room('B2', '器械洗消间', R(8, 14, -3, 1.5), 'medical', note='器械清洗、灭菌柜；传递窗通无菌处置室', **MED_U)
+room('B2', '缓冲更衣间', R(14, 20, -3, 1.5), 'medical', note='气闸 + 更衣：两道互锁密闭门、风淋、洁净服柜、刷手槽；南门接主人通道前室', **MED_U)
+room('B2', '无菌处置室', R(8, 20, 1.5, 8), 'medical', note='急救 / 处置 / 小手术：手术台、无影灯、吊塔监护、呼吸机、除颤、抢救车、医用气体、洁净送风天花',
      furn=[(13.1, 14.9, 3.8, 5.8), (8.3, 9.0, 3.0, 7.0)], **MED_U)
 
 
@@ -276,8 +276,8 @@ _n = 0
 for _r in ROOMS:
     if _r['card_id'] == 'F3-C01':
         _n += 1; _r['no'] = _n
-KIND_C = {'card': '#f4ecd8', 'restricted': '#d9d4cc', 'support': '#e3e6ea', 'circ': '#fbfaf7', 'open': '#e4ecd9', 'owner': '#e6dcef', 'user': '#dcecef'}
-KIND_CN = {'card': '房间', 'restricted': '房间（只写名字，不描述）', 'support': '辅助：楼梯 / 电梯 / 卫浴 / 设备', 'circ': '走廊 / 过厅', 'open': '未定用途体量（留白）', 'owner': '主人专用通道', 'user': '用户设定房间'}
+KIND_C = {'card': '#f4ecd8', 'restricted': '#d9d4cc', 'support': '#e3e6ea', 'circ': '#fbfaf7', 'open': '#e4ecd9', 'owner': '#e6dcef', 'medical': '#dcecef'}
+KIND_CN = {'card': '房间', 'restricted': '房间（只写名字，不描述）', 'support': '辅助：楼梯 / 电梯 / 卫浴 / 设备', 'circ': '走廊 / 过厅', 'open': '未定用途体量（留白）', 'owner': '主人专用通道', 'medical': '医疗中心房间'}
 
 
 def check():
@@ -453,7 +453,7 @@ def main():
     WORDS = {c: w for c, f, n, w in CARD_ROOMS}
     data = dict(
         _note='伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；'
-              '楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 有卡内编号的房间 / restricted 只写名字不描述（name 照抄卡原名）/ support 辅助 / circ 走廊 / open 未定用途的体量 / owner 主人专用 / user 用户设定。',
+              '楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 有卡内编号的房间 / restricted 只写名字不描述（name 照抄卡原名）/ support 辅助 / circ 走廊 / open 未定用途的体量 / owner 主人专用 / medical 医疗中心。',
         version=1, src='docs/card-digest.md §6', units='m',
         floors=[dict(id=i, name=n, z=z) for i, n, z in FLOORS],
         blocks=[dict(id=b, name=BLK_CN[b], storeys=STOREYS[b], poly=blk_poly(b)) for b in BLK],
