@@ -91,3 +91,8 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T13:04:56Z,isle:isle5,draft,done,hero-1,,"draft1 OK, 3738 trees"
 2026-09-30T13:04:56Z,isle:isle5,board,done,hero-1,,board1 8/8 anchored
 2026-09-30T13:04:56Z,isle:isle5,review-r1,done,hero-1,fail,"r1 fidelity 5.5 / credibility 4.5: chicken-wire ward, plantation cones, ridges hidden, house lost, zebra spikes"
+2026-09-30T13:11:59Z,isle:eden,user-review,skip,user,,user 2026-09-30 (chat): not approved; pause; keep the Eden version already shipped in the script (current cover + upper-map Eden). New island not shipped.
+2026-09-30T13:11:59Z,isle:eden,final,skip,hero-1,,user decision: keep the shipped Eden version; blender/islands/eden.py stays as an unshipped draft
+2026-09-30T13:11:59Z,isle:eden,integrate,skip,hero-1,,user decision: keep the shipped Eden version; blender/islands/eden.py stays as an unshipped draft
+2026-09-30T13:11:59Z,isle:eden,ship,skip,hero-1,,user decision: keep the shipped Eden version; blender/islands/eden.py stays as an unshipped draft
+2026-09-30T13:12:12Z,isle:isle5,fix,release,hero-1,,"paused by the user at fix: draft2 fixed ward/forest/ridges; draft3 (thin ward rim + dark house) crashed on an index bug, fixed in the script, not re-rendered"

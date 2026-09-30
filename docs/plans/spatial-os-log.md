@@ -172,3 +172,16 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+
+=== RESULT R-LOOP hero hero-1 ===
+status: PAUSED (user: "不通过，暂停，用现在已经在脚本上的那个版本")
+items finished this session: isle:eden — setting / draft / board / r1 fail (6.5/5.0) / fix / r2 pass (7.5/6.5) / user-review: NOT approved -> user-review, final, integrate, ship skipped; the shipped Eden (current cover + upper-map Eden) stays; blender/islands/eden.py is kept as an unshipped draft
+items below gate: none
+waiting: none. In progress: isle:isle5 at fix (released): draft1 r1 fail 5.5/4.5, draft2 fixed ward / forest / ridges, draft3 crashed on an index bug (fixed in the script, not re-rendered)
+pushed: see the head #N that follows this commit on preview
+tests: check_maps PASS | estate3d_manifest PASS (9/9) | smoke PASS
+blocker: none
+next: isle:isle5 (fix -> draft3 -> review-r2)
+notes: (1) The render guard reported rc=0 / status ok twice for runs that died with a Python traceback (eden draft1, isle5 draft3): always grep the log and check the output mtime. (2) The Eden reference board uses the user-approved local photo set (~/Downloads/酒馆/伊甸参考/); it is kept in ~/eden-map-review/render/isle_eden/refs.jpg only, not committed (stock / news photos). (3) Terrain-zone paths (Terrain.path) stair-step at close range; use K_.drape strips for paths seen up close. (4) Anchors placed inside transparent meshes (water cone, falls) are dropped by the occlusion test.
+cleanup: done (no Blender or server of this session left running)
+=== END ===

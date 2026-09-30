@@ -7,7 +7,7 @@ Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
 | standard | 13 | 0 | 35 | 0 | 0 | 0 | 48 |
-| hero | 2 | 1 | 10 | 1 | 6 | 0 | 20 |
+| hero | 3 | 0 | 11 | 0 | 6 | 0 | 20 |
 
 Below-gate (user spot-check): none
 
@@ -68,10 +68,10 @@ Below-gate (user spot-check): none
 
 | # | id | type | status | stage | claim | flags | title |
 |---|---|---|---|---|---|---|---|
-| 1 | `isle:eden` | island | waiting | user-review | hero-1 | waiting-on-user | Eden Manor island (the user's own estate) - showpiece, user-approved |
+| 1 | `isle:eden` | island | done | - |  |  | Eden Manor island (the user's own estate) - showpiece, user-approved |
 | 2 | `isle:silver_crown` | island | done | - |  |  | Rebuild island silver_crown |
 | 3 | `isle:isle4` | island | done | - |  |  | Rebuild island isle4 (victor_estate) |
-| 4 | `isle:isle5` | island | claimed | fix | hero-1 |  | Rebuild island isle5 (y_estate) |
+| 4 | `isle:isle5` | island | open | fix |  |  | Rebuild island isle5 (y_estate) |
 | 5 | `isle:isle6` | island | open | setting |  |  | Rebuild island isle6 (pm_residence) |
 | 6 | `isle:isle9` | island | open | setting |  |  | Rebuild island isle9 (league_club) |
 | 7 | `isle:isle10` | island | open | setting |  |  | Rebuild island isle10 (kelly_residence) |
