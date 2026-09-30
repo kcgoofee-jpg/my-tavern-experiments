@@ -35,6 +35,8 @@ export const KEYS = {
   edenMapSanitize: { owner: 'host', def: '1' }, edenMapSanitizeTags: { owner: 'host' },
   // 空间化背包注入开关（Part 5-1）：eden_map.仓库 摘要随事态注入给模型（默认开）
   edenMapInvInj: { owner: 'host', def: '1' },
+  // 见闻录（Part 5-5）：钉在地标上的图与手记的索引（字节在图集 IndexedDB 里）；按聊天分，键 = edenMap:chat:<聊天 id>:scrap
+  'edenMapScrap': { owner: 'map/scrapbook.mjs', prefix: true, perChat: true },
   // 酒馆助手采纳（docs/tavernhelper-audit.md，docs/interaction-modes.md）：状态注入 (a)、类宏 B9、世界书附加条目同步 B1
   edenMapStateInj: { owner: 'host', def: '1' }, edenMapStateDepth: { owner: 'host', def: '2' }, edenMapStateBudget: { owner: 'host', def: '150' }, edenMapMacros: { owner: 'host', def: '0' },
   edenMapWbAuto: { owner: 'host', def: '0' }, edenMapWbOn: { owner: 'host', def: '1' }, edenMapWbTomb: { owner: 'host', def: '0' }, edenMapWbChars: { owner: 'host' }, edenMapWbNoticeVer: { owner: 'host' }, edenMapWbSync: { owner: 'host' }, edenMapWbWhere: { owner: 'host' },

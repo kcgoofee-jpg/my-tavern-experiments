@@ -182,6 +182,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <script type="module" src="chars.mjs"></script>
 <script type="module" src="custom.mjs"></script>
 <script type="module" src="inv.mjs"></script>
+<script type="module" src="scrapbook.mjs"></script>
 <script type="module" src="trips.mjs"></script>
 <script type="module" src="unmapped.mjs"></script>
 <!-- 按需（arch-v2 §6.3）：变量映射 / 填入聊天只在嵌进酒馆时有用（?compose=1 测试用）。解析期 document.write 出来的模块标签照样按文档顺序执行；单独打开查看器不下载这两个文件 -->
@@ -516,6 +517,23 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #card .extra [data-go]:hover, #card .extra [data-gallery]:hover { border-color: var(--line-strong); background: var(--accent-weak); }
   #card .extra [data-go]:active { transform: scale(.97); }
   #card .extra .planned { color: var(--muted); cursor: default; font-weight: 400; }
+  /* 见闻录（Part 5-5）：地点卡底部的一小格相册 + 手记；卡片宽的地方图两列，窄的一列 */
+  #card .extra .cu-sb { display: flex; flex-direction: column; gap: var(--sp-3); padding-top: var(--sp-3); border-top: 1px dashed var(--line); }
+  #card .extra .cu-sb .sb-h { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; font-size: var(--fs-small); }
+  #card .extra .cu-sb .sb-h b { color: var(--ink); } #card .extra .cu-sb .sb-h small { color: var(--muted); flex: 1; }
+  #card .extra .cu-sb .sb-acts { display: flex; gap: var(--sp-2); }
+  #card .extra .cu-sb .sb-acts button { padding: 4px 10px; min-height: 32px; border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--surface-2); color: var(--accent); font: 600 var(--fs-micro)/1 var(--font-ui); cursor: pointer; }
+  #card .extra .cu-sb .sb-acts button:hover { border-color: var(--line-strong); background: var(--accent-weak); }
+  #card .extra .cu-sb .sb-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--sp-3); }
+  #card .extra .cu-sb .sb-list figure { position: relative; margin: 0; border-radius: var(--r-m); overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); }
+  #card .extra .cu-sb .sb-list img { display: block; width: 100%; height: auto; }
+  #card .extra .cu-sb .sb-list figcaption { padding: 3px 6px; font-size: var(--fs-micro); color: var(--ink-2); line-height: 1.4; }
+  #card .extra .cu-sb .sb-list figcaption:empty { display: none; }
+  #card .extra .cu-sb .sb-note-row { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: var(--sp-3); padding: 5px 8px; border-radius: var(--r-m); background: var(--surface-2); border: 1px solid var(--line); font-size: var(--fs-small); color: var(--ink); line-height: 1.5; }
+  #card .extra .cu-sb .sb-note-row span { flex: 1; overflow-wrap: anywhere; }
+  #card .extra .cu-sb .sb-del { position: absolute; right: 3px; top: 3px; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-glass); color: var(--ink); font-size: 14px; line-height: 1; cursor: pointer; }
+  #card .extra .cu-sb .sb-note-row .sb-del { position: static; flex: none; }
+  #card .extra .cu-sb .sb-empty { grid-column: 1 / -1; margin: 0; font-size: var(--fs-micro); color: var(--muted); line-height: 1.5; }
   [data-go] { cursor: pointer; user-select: none; }
 
   /* ---------- 页脚：版本号（左下，--fs-micro，磨砂底）；署名在右上 ---------- */
