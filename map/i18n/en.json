@@ -690,5 +690,7 @@
   "th.wb_conflict": "You edited these {n}, and upstream changed them too (yours kept; upstream text stored on the entry)",
   "inv.stored": "Stored",
   "inv.hidden": "concealed · ",
-  "ch.src_routine": "Routine"
+  "ch.src_routine": "Routine",
+  "weather": "Weather",
+  "weather_title": "Render rain / sand / snow and lightning from story and time of day"
 }

@@ -17,6 +17,7 @@ import './host.mjs';
 import './bridge.mjs';
 import { initFpsMeter, suspendFpsMeter } from './fps.mjs';
 import { initVisibilityGuard } from './visibility.mjs';
+import { registerWeatherLayer } from './weather.mjs';
 import { M, REG, cur, pendingHome, setM, setPendingHome, setREG, setViewer, viewer } from './state.mjs';
 import { updateInsets } from './insets.mjs';
 import { $, PR, PROTO, coarse, getJSON, jsonCache, narrow, post, setNarrow, setPR, SUB_ORIGIN } from './util.mjs';
@@ -33,6 +34,7 @@ import { firstRunHint, initE7, initShell } from './shell.mjs';
 import { initLayerHost, registry, registerCoreLayers, renderLayerMenu } from './layerhost.mjs';
 import { P } from './plugins.mjs';
 import { initPack, packData, packEvents, rebase } from './pack.mjs';
+import { busOn } from './bus.mjs';
 // 多地图查看器：地图注册表 data/maps.json（世界 → 天城三层 → 以后的庄园剖面……）。
 // 底图都是 DZI 瓦片金字塔，只加载屏幕里看得见的部分；解码内存由屏幕大小和瓦片缓存上限决定。
 // 档位 = 清晰度上限：最多加载到相当于 cap 像素宽的那一层瓦片（放大后差别明显）。
@@ -65,7 +67,7 @@ async function mainInner() {
   const seg = $('#tiers');
   for (const x of [{ key: 'auto' }, ...TIERS]) { const b = document.createElement('button'); b.dataset.k = x.key;
     b.onclick = () => setTier(x.key); seg.appendChild(b); }
-  registerCoreLayers(); renderLayerMenu(); initShell(); layoutHeader(); addEventListener('resize', layoutHeader);   // P3-C：#layList 由 LayerRegistry 数据驱动，先于 shell 绑定 / applyI18n 渲染
+  registerCoreLayers(); registerWeatherLayer(); renderLayerMenu(); initShell(); layoutHeader(); busOn({ key: 'boot.resize', type: 'resize', fn: layoutHeader });   // P3-C：#layList 由 LayerRegistry 数据驱动，先于 shell 绑定 / applyI18n 渲染
   applyI18n(); $('#status').textContent = t('loading');
   $('#estRetry').onclick = retryEstate; $('#estPlan').onclick = estatePlan;
   // Tab 到视野外的地标 / 事件点：浏览器会去滚动 OSD 的容器（overflow:hidden），这里撤掉滚动、改为平移地图把它带进视野
@@ -102,7 +104,15 @@ async function mainInner() {
     if (b) { viewer.viewport.fitBounds(b, true); viewer.viewport.applyConstraints(); } else { setPendingHome(false); focusStart(false); } };
   const navH = () => document.documentElement.style.setProperty('--nav-h', (viewer.navigator?.element?.offsetHeight || 0) + 'px');
   viewer.addHandler('open', () => setTimeout(navH, 0)); addEventListener('resize', navH);
-  viewer.addHandler('open-failed', e => { $('#loading span').textContent = t('load_failed', { msg: e.message || '' }); });
+  // 打开失败（断网 / DZI 404）：撤掉「已加载」态——上一张图留下的 done 会把这条失败提示整个盖住，
+  // 用户只看见一片空白、不知道发生了什么（浏览器探针 p4_fx 的断网降级项抓到）。重试按钮复用瓦片重试那颗。
+  viewer.addHandler('open-failed', e => {
+    const ld = $('#loading'); if (!ld) return;
+    ld.hidden = false; ld.classList.remove('done'); ld.classList.add('over');
+    const sp = ld.querySelector('span'); if (sp) sp.textContent = t('load_failed', { msg: e.message || '' });
+    const acts = ld.querySelector('.acts'); if (acts) acts.hidden = false;
+    const b = $('#tileRetry'); if (b) { b.hidden = false; b.textContent = t('estate.retry') === 'estate.retry' ? '重试' : t('estate.retry'); }
+  });
   viewer.addHandler('canvas-drag', () => setUserMoved(true)); viewer.addHandler('canvas-scroll', () => setUserMoved(true)); viewer.addHandler('canvas-pinch', () => setUserMoved(true));
   let lastRs = 0, queued = false;
   const rescale = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false;
