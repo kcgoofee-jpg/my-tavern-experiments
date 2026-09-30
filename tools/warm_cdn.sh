@@ -47,6 +47,7 @@ TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 PLAN=(python3 tools/warm_plan.py --ref "$REF")
 [ "$FULL" = 1 ] && PLAN+=(--full)
 if [ "$DIFF" = 1 ]; then if [ -n "$BASE" ]; then PLAN+=(--diff "$BASE"); else PLAN+=(--diff); fi; fi   # BASE = 增量基线（curl 用的是 BASE_URL）
+[ "$NOESC" = 1 ] && PLAN+=(--no-escalate)
 LIST=$("${PLAN[@]}" 2> "$TMP/note") || { command cat "$TMP/note" >&2; echo "预热清单算不出来（见上面的 warm_plan 报错）" >&2; exit 1; }
 NOTE=$(command cat "$TMP/note")
 if [ -z "$LIST" ]; then N=0; else N=$(printf '%s\n' "$LIST" | wc -l | tr -d ' '); fi
