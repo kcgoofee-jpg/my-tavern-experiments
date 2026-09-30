@@ -41,8 +41,12 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   Part 2-1 host-about + Part 2-3 listener bus (`7a8ab80`), Part 4-1 weather FX + Part 1-5 offline probe (`dbc992a`),
   Part 6-5 deterministic clock + Part 6-1 API-key gateway base, Part 6-2 background tick, Part 6-3 clue nodes,
   Part 6-4 action injection,
-  Part 4-1 weather + Part 4-3 traffic; probes: p4_fx (10/10), p4_traffic (7/7), p1_leak (5/5), p6_action (7/7),
-  p6_quests (8/8), p6_tick (8/8).
+  Part 4-1 weather + Part 4-3 traffic, Part 5-1 stash/loot + pack data (`e53d574`, `0f195d0`), Part 5-2 patrolling
+  cones + stealth (`226e771`, `73b0c64`), Part 5-3 routine data + gliding markers (`ccb0d3e`), Part 5-4 timeline
+  engine the host was already calling (`8e32ded`), Part 5-5 scrapbook (`9582210`, `c4aca77`); probes: p4_fx (10/10),
+  p4_traffic (7/7), p1_leak (5/5), p6_action (7/7), p6_quests (8/8), p6_tick (8/8), p5_sandbox (17/17).
+  Still open in Part 5: pickup props inside the Three.js mansion (stash items glow on the flat map only) and
+  `core/clock.mjs` is still unwired, so routine moves ride MVU's world time instead of the local deterministic clock.
   ~~**Part 3 (WebGL perf)**: pure LOD + graphics budget policies (`a003f32`), off-thread DZI tile decode +
   renderer census guard (`4d3fc29`), shared runtime `map/three/{ctx,culling,lod,instancing,texres}.mjs`
   (`482e4d3`), generic 3D viewer adoption + KTX2/Basis pipeline (`134a857`), exclusive 3D lease + one-shot
