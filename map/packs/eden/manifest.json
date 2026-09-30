@@ -16,7 +16,8 @@
     "security": "data/security.json",
     "roster": "data/fallback_roster.json",
     "events": "builtin",
-    "stash": "data/stash.json"
+    "stash": "data/stash.json",
+    "routine": "data/routine.json"
   },
   "preload": [
     "data/maps.json",

@@ -696,6 +696,8 @@
   "loot.hidden": "concealed in",
   "vision.layer": "Vision cones",
   "vision.layer_title": "Guard and machine vision cones patrolling the map's own rings; crossing one calls for a stealth check",
+  "wander.layer": "Wander",
+  "wander.layer_title": "Character markers glide to their new place instead of teleporting (schedules move them by world time; instant on lean or reduced motion)",
   "ch.src_routine": "Routine",
   "weather": "Weather",
   "weather_title": "Render rain / sand / snow and lightning from story and time of day",

@@ -14,12 +14,18 @@ const minuteOf = t => {
 export { minuteOf };   // 宿主把 MVU 世界时刻（HH:MM）换算成分钟用
 const VAL = (o, ...keys) => { for (const k of keys) if (o && o[k] !== undefined) return o[k]; return undefined; };
 
-/** 日程表规范化：坏行丢弃；跨零点的段（从 22:00 到 06:00）拆成两段。返回 { default, byName }。 */
+/**
+ * 日程表规范化：坏行丢弃；跨零点的段（从 22:00 到 06:00）拆成两段。返回 { default, byName }。
+ * 两种写法都收（包数据文件只允许 ASCII 键，所以用数组那一种）：
+ *   对象：{ "人物": { "名字": [ { "从": "08:00", "到": "12:00", "在": "书房" } ] } }
+ *   数组：{ "npcs": [ { "name": "名字", "slots": [ { "from": "08:00", "to": "12:00", "at": "书房" } ] } ] }
+ */
 export function normSchedule(cfg) {
   const src = cfg && typeof cfg === 'object' ? cfg : {};
   const byName = {};
-  const npcs = VAL(src, '人物', 'npc', 'byName') || {};
-  for (const [name, slots] of Object.entries(npcs)) {
+  const raw = VAL(src, '人物', 'npc', 'byName', 'npcs');
+  const npcs = Array.isArray(raw) ? raw.flatMap(e => (e && typeof e === 'object' && e.name != null ? [[String(e.name), e.slots]] : [])) : Object.entries(raw || {});
+  for (const [name, slots] of npcs) {
     if (!name || !Array.isArray(slots)) continue;
     const out = [];
     for (const s of slots) {

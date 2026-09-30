@@ -563,6 +563,8 @@
   "loot.hidden": "暗格",
   "vision.layer": "视野锥",
   "vision.layer_title": "巡逻岗哨 / 机兵的警戒视野：沿地图自己的巡逻环在走，穿过就按潜行难度判定",
+  "wander.layer": "漫游",
+  "wander.layer_title": "人物标记换地方时滑过去，不瞬移（日程表按世界时刻挪人；省流与「减少动态效果」下直接到位）",
   "ch.src_routine": "日程",
   "weather": "天气",
   "weather_title": "按剧情与时段渲染雨 / 沙尘 / 雪与闪电",
