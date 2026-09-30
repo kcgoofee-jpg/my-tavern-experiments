@@ -9,7 +9,7 @@
 import '../core/logbuf.mjs'; // 反馈日志缓冲：最先 import，模块求值即安装，启动日志不丢（v0.9.6 报告「(none)」根因）
 import { cdnFetch, thFn, fnOk, hostFn, packNs, createPrefs, createWbAuto, fnGuard } from './host-th.mjs';
 import { EDEN_API, guardApi } from './edenapi.mjs';
-import { resolveTags } from './sanitize.mjs';   // Part 7：社区预设净化（标签表设置）
+import { resolveTags, stripBlocks } from './sanitize.mjs';   // Part 7：社区预设净化（标签表设置）
 import { createRoutes, scoreText } from './host-routes.mjs';
 import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
 import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取收口（Mvu / SillyTavern 全局只在这一个模块里）
@@ -321,6 +321,52 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     tickT = setInterval(() => { tickOnce().catch(() => {}); }, 15000);   // 心跳 15 s，跑不跑由 plan() 决定
   }
 
+  // ---------------- W5 领航员网关（tavern/navigator.mjs 纯调度；HTTP 与副作用在这里） ----------------
+  // 默认关（edenMapNav）；开着也只是「该跑时才打一次用户自己配的端点」，让路语义复用 tick.plan（面板活着 / 生成中不跑）。
+  // 响应必须过 W4 op 沙盒（sanitize 链 → parse → 水位）才可能落到地图；OP_EVENT 是会话级叠加（src='op'，20 楼衰减），
+  // OP_SUGGEST 只弹提示永不自动进聊天流（裁决 2/3）；OP_CLUE / OP_MARKER 的查看器送达挂 T9（叠加图层）。
+  let NAVm = null, LLMm = null, MSGm = null;
+  import(SELF + 'tavern/navigator.mjs').then(m => { NAVm = m; navSchedule(); }).catch(() => {});
+  import(SELF + 'tavern/llm.mjs').then(m => { LLMm = m; }).catch(() => {});
+  import(SELF + 'tavern/msgtext.mjs').then(m => { MSGm = m; }).catch(() => {});
+  let navLed = { lastAt: 0 }, navSeen = { seen: [] }, navT = 0, opEvents = [];
+  async function navRun() {
+    if (!NAVm || !LLMm || life.dead) return;
+    const p = NAVm.plan(Date.now(), { lastAt: navLed.lastAt, intervalMs: NAVm.intervalOf(lsGet), alive: !panel.hidden, generating: GEN.generating, dead: life.dead });
+    if (!p.run) return;
+    const cfg = NAVm.cfgOf(lsGet);
+    if (!LLMm.checkConfig(cfg).ok) return;
+    if (lsGet(NAVm.CONSENT_KEY) !== '1') {   // 首跑显式同意（wbsync 先例）；拒绝就整个关掉，不反复问
+      const ok = (() => { try { return window.confirm(`地图领航员将按你的设置在后台调用私有 API（${cfg.provider}）推演态势建议，请求只发往你自己填的端点。继续吗？`); } catch (e) { return false; } })();
+      if (!ok) { lsSet(NAVm.KEY, '0'); return; }
+      lsSet(NAVm.CONSENT_KEY, '1');
+    }
+    const t0 = performance.now();
+    const msgs = NAVm.assemble({ here, floor: floorNow, spatial: spatialNow || '', eventsSummary: summarize(events, layerOf(hereNow)), failrep: FRm ? FRm.digest(frState) : '' });
+    const req = LLMm.buildRequest(cfg, msgs, { maxTokens: 512 });
+    let text = '';
+    try {
+      const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 30000);
+      const res = await cdnFetch(req.url, { method: 'POST', headers: req.headers, body: JSON.stringify(req.body), signal: ctl.signal }).finally(() => clearTimeout(to));
+      text = res.ok ? LLMm.readText(await res.json()) : '';
+    } catch (e) { text = ''; }
+    const clean = MSGm ? stripBlocks(MSGm.parseText(text), resolveTags(lsGet)) : text;   // sanitize 链：剥 think / 变量块 + 预设私有块（W4 前置条件）
+    const gated = NAVm.gate(navSeen, clean);
+    navLed = NAVm.ledger(navLed, { now: Date.now(), ms: performance.now() - t0, n: gated.ops.length, dropped: gated.dropped });
+    const d = NAVm.apply(gated.ops, { floor: floorNow });
+    if (d.events.length) {
+      opEvents = opEvents.filter(e => floorNow - e.floor <= 20).concat(d.events.map(e => ({ ...e, last: floorNow }))).slice(-12);
+      sendEvents();
+    }
+    if (d.suggests.length) hostToast(UL === 'en' ? 'Navigator' : '地图领航员', d.suggests, 12000);
+  }
+  function navSchedule() {
+    clearTimeout(navT);
+    const iv = NAVm ? NAVm.intervalOf(lsGet) : 0;
+    if (!iv) return;
+    navT = setTimeout(async () => { try { await navRun(); } catch (e) {} navSchedule(); }, iv);
+  }
+
   // Part 6-4 地图驱动的双向动作注入：查看器只说「点了哪个 POI、想干什么」，文案与注入方式全在这里按设置决定。
   // 模式默认 off——地图不该在玩家没点头的情况下替他说话；compose 只填不发（与「去这里」同一条底线），sys 走 /sys 静默注入。
   let ACm = null;
@@ -555,7 +601,8 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   function sendEvents() {
     if (!alive) return;
     const visible = !panel.hidden && !ghost;   // 后台预加载（ghost）只把面板设成 visibility:hidden，panel.hidden 仍是 false——不能算「用户在看」
-    const items = events.map(e => ({ ...e, isNew: e.last > seen }));
+    opEvents = opEvents.filter(e => floorNow - e.floor <= 20);   // W5 领航员叠加事件：20 楼衰减，会话级不进真相
+    const items = events.map(e => ({ ...e, isNew: e.last > seen })).concat(opEvents.map(e => ({ ...e, isNew: false })));
     if (charSig !== charsSent) { charsSent = charSig; sendChars(); }
     // 人物没变就不重发：面板开着时每 4 秒重建一次覆盖层与横条（2026-09-27 接手 review P2）
     post({ type: 'eden-map:events', v: 1, floor: floorNow, hereLayer: EVM ? EVM.layerOf(here) : '', items });

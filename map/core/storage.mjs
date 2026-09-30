@@ -37,6 +37,8 @@ export const KEYS = {
   edenMapInvInj: { owner: 'host', def: '1' },
   // 检定掷骰（W2，docs/plans/llm-campaign.md）：开着才真掷骰（stash.search / stealth DC），失手不入包、出失败报告；默认关 = 行为与今天完全一致
   edenMapDice: { owner: 'host', def: '0' },
+  // 领航员网关（W5）：开关 / 节奏（'' 缺省=关）+ 端点配置 JSON {provider,key,base,model}（日志只出 llm.redact 脱敏）+ 首跑同意水位
+  edenMapNav: { owner: 'host', def: '0' }, edenMapNavCfg: { owner: 'host' }, edenMapNavConsent: { owner: 'host', def: '0' },
   // 见闻录（Part 5-5）：钉在地标上的图与手记的索引（字节在图集 IndexedDB 里）；按聊天分，键 = edenMap:chat:<聊天 id>:scrap
   'edenMapScrap': { owner: 'map/scrapbook.mjs', prefix: true, perChat: true },
   // 酒馆助手采纳（docs/tavernhelper-audit.md，docs/interaction-modes.md）：状态注入 (a)、类宏 B9、世界书附加条目同步 B1
