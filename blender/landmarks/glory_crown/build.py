@@ -26,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE); sys.path.insert(0, os.path.dirname(HERE))
 import common as C  # noqa
 
-A = C.args(dict(cam='c1', res='900', samples='24', out='/tmp/gc.jpg', blend='', log='', exposure=''))
+A = C.args(dict(cam='c1', res='900', samples='24', out='/tmp/gc.jpg', blend='', log='', exposure='-0.4'))
 
 PL = 2.0                     # 台地（plinth）高度
 HALL_R = 28.0                # 议事殿鼓座半径
@@ -254,8 +254,7 @@ def main():
 
     bt = Batch('bg_towers')
     rb = random.Random(53)
-    cam1 = Vector((-330.0, -420.0))
-    cam_bearing = math.degrees(math.atan2(cam1.y, cam1.x)) % 360
+    cam_bearings = [math.degrees(math.atan2(cy, cx)) % 360 for cx, cy in ((-330.0, -420.0), (0.0, -560.0), (430.0, -330.0))]   # 三台镜头各留一条空视线
     placed = []
     for k in range(96):
         for _ in range(60):
@@ -264,7 +263,7 @@ def main():
             w, dd = rb.uniform(26, 58), rb.uniform(26, 58)
             clear = all(abs(x - px) > (w + pw) / 2 + 10 or abs(y - py) > (dd + pd) / 2 + 10 for px, py, pw, pd in placed)
             bearing = math.degrees(a) % 360
-            in_cam_lane = (d < 620) and (abs((bearing - cam_bearing + 180) % 360 - 180) < 26)
+            in_cam_lane = (d < 620) and any(abs((bearing - cb + 180) % 360 - 180) < 30 for cb in cam_bearings)
             if clear and not in_cam_lane:
                 break
         else:
@@ -273,13 +272,7 @@ def main():
         h = rb.uniform(22, 118)
         bt.box(x - w / 2, x + w / 2, y - dd / 2, y + dd / 2, 0, h, rb.choice(WGB) if k % 3 else BG2)
 
-    ov = Batch('bg_overhead')
-    for (x0, x1, y0, y1) in ((-2600, 2600, 1150, 2600), (-2600, 2600, -2600, -1150), (-2600, -1150, -2600, 2600), (1150, 2600, -2600, 2600)):
-        ov.box(x0, x1, y0, y1, DECK_Z, DECK_Z + 8, BG2)
-    for i in range(120):
-        x, y = rb.uniform(-1500, 1500), rb.uniform(-1500, 1500)
-        if max(abs(x), abs(y)) > 1180:
-            ov.boxc(x, y, DECK_Z - 7.6, 4, 4, 0.6, C.flat('bg_lamp_c', (1, 1, 1), 0.4, emit=(0.78, 0.88, 1.0), estr=12.0))
+    # 上层甲板（bg_overhead）在预览镜头里只会在天际线上切出一道黑边，已取消
 
     for o in Batch.build_all():
         print('TRIS', o.name, sum(len(p.vertices) - 2 for p in o.data.polygons), flush=True)
