@@ -133,6 +133,13 @@ Format per the user's checklist convention: one item per line, strike through wh
   field priorities under squeeze; quantization; purity scan) and `tests/wb_topo.test.mjs` (block
   structure, adjacency-source legality — routes never appear as adjacency; 「地图自设」 tagging; size
   ratio vs prose baseline).
+- [x] ~~Core landed~~ ✅ 2026-09-30 `f184d66` (`spatial.mjs` 8/8, `wb_topo` 2/2, watchdog 4/4, suite
+  502/0; orientation entries ~434 → ~200 tokens/round).
+- [ ] **W1 v1.1 (batch-1 learning)**: estate rooms have no coordinates — pass the estate plan (rooms
+  with floors) into `coordView`/`activationOf` so an estate location emits its **same-floor rooms** as
+  the `n[]` list (≤6); without this W6 never activates inside the estate. Estate TOPO as a *new*
+  worldbook entry requires a new stable id → register it in `map/data/worldbook_aliases.json` in the
+  same batch as W7 (alias bookkeeping is a real cost, discovered in execution).
 
 ### W2 — Dice wiring + failure report ring (Orak)
 
@@ -151,6 +158,15 @@ Format per the user's checklist convention: one item per line, strike through wh
   (`eden-map.js:512` area) — no new channel, no new privacy surface.
 - [ ] Test: `tests/action_reflection.test.mjs` (deterministic rolls — same seed same outcome; failure
   branch does not mutate inventory; report idempotence under recompute; digest format; ring cap).
+
+Batch-1 refinements for W2: both pickup paths (flat-map `eden-map:loot` and the Part 8 estate 3D
+route) converge on `takeLoot` — one wiring point; `stash.search`'s own comment already prescribes the
+deterministic roll (`core/rng.mjs seedOf(chatId, floor, id)`); dice live behind a new opt-in key
+`edenMapDice` (default off → behaviour identical to today: no roll, always found). Patrol data exists
+only on the upper layer (`tc_mid`/`tc_low` points have no routes) — the stealth failure loop v1 is
+upper-layer-only; adding mid/low patrol rings is a content/asset task (register in `docs/todo.md`
+render/content line, does not block W2). The ring buffer is **in-memory, session-scoped** + floor
+watermark — reports are hints, not truth; no new chat variable / storage key (nothing to reconcile).
 
 ### W3 — Long-horizon keyframe compression (SokoBench)
 
@@ -219,6 +235,14 @@ Format per the user's checklist convention: one item per line, strike through wh
   respect, hash-watermark idempotence — no write when the set is unchanged, memory accounting: the
   updater never clones unrelated books, user entries untouched).
 
+Batch-1 refinement for W6: **no per-entry place metadata needs to be invented** — entry scope is
+data-driven: an addon entry is active iff any of its own `strategy.keys` intersects the activation
+set (W1's `activationOf`, already landed and tested in `spatial.mjs`); `constant` entries are never
+JIT-managed. Write watermark = `{floor, activationHash, ok}`. Cross-layer exits barely exist in the
+data (only 2 real ones city-wide; the other 56 `link`s are lm_* 3D landmark pages) — geometric
+neighbours are the primary adjacency source, and the estate is covered by the W1 v1.1 plan-based
+same-floor adjacency, not by links.
+
 ### W7 — Fact crystallization (Part B task 2)
 
 - [ ] `⌖事实` tag: new branch in `mvu.mjs parseCustomTags` (:198-214 area) → op `fact` with a new
@@ -275,7 +299,8 @@ Format per the user's checklist convention: one item per line, strike through wh
 ## 5. Acceptance gates
 
 1. Every new module has its own test file; no testless module ships.
-2. `node --test tests/` fully green; `bash tools/smoke.sh` Exit 0 including the architecture
+2. `node --test` fully green (bare command — with a directory argument Node 24 throws
+   MODULE_NOT_FOUND); `bash tools/smoke.sh` Exit 0 including the architecture
    watchdog (core line count / purity / no-reverse-import / no-card-proper-nouns / no bare z-index),
    doc-language gate and tree hygiene.
 3. Zero drift: keyframe reconciliation and crystallization idempotence are locked by tests, not by
@@ -296,6 +321,25 @@ Format per the user's checklist convention: one item per line, strike through wh
 ## 7. Open user decisions ([?])
 
 - [?] Navigator consent copy + default cadence (once per round vs on-demand button).
-- [ ] Dice default: follow `edenMapInject` family (default off) — confirm.
+- [ ] Dice default: follow `edenMapInject` family (default off) — confirm (key name fixed to
+  `edenMapDice` in the W2 refinement above).
 - [ ] Should the main model acknowledge crystallized facts with a receipt tag (round-trip watermark),
   or is host-side confirmation enough for v1?
+
+## 8. Execution learnings (batch 1, 2026-09-30) — fixed actions from here on
+
+1. **Builder output is coupled to the ship file**: any change to `tools/build_worldbook_addon.py`
+   output requires re-running `--ship` in the same commit, or the worldbook release tests fail.
+   Check the entry-id alias map whenever a *new* entry id is introduced (the builder asserts it).
+2. **Adjacency data is thinner than assumed**: 56 of 58 `marker.link`s are lm_* 3D landmark pages
+   (kind=estate, no layer); only ~2 real cross-layer exits exist city-wide. Geometric neighbours are
+   the primary adjacency source; richer exit narratives are a content task, not a code task.
+3. **Patrol routes exist only on the upper layer** today — stealth/failure-loop coverage is
+   upper-layer-only until mid/low patrol rings are authored (content task, tracked in todo).
+4. **Doc + suite facts**: purity scans in tests must strip comments first (watchdog convention);
+   full suite is bare `node --test`; suite now 502 items / 95+ suites.
+5. **Deferred release checklist** (when the dev-workflow speedup lands): rebase → bump VERSION to
+   0.9.8 → re-run `--ship` (stamps 0.9.8) → date the CHANGELOG section → tag `map-v0.9.8` + push tag →
+   `tools/ship.sh --release` (README line, latest.json, CDN purge/warm) → `tools/sync_main.sh` →
+   `check_readme` verification. Remote moves fast (background optimization) — rebase immediately
+   before every push.
