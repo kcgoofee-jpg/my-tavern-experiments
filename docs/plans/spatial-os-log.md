@@ -397,3 +397,5 @@ blocker: none
 open: none
 cleanup: done (my probe servers stopped, baseline worktree removed, no launch.json entries; the s3-2-events worktree stays until push; docs/plans/FREEZE_MAPS removed)
 === END ===
+
+(S3-2 T3-T5 commit shas after the rebase onto head #154: c04ce14 refactor(events): old event geography constants removed; d6a9498 docs: RESULT S3-2 (DONE), A.9 #7-#12, Q-11 decided, unfreeze maps.json; pushed as head #155.)
