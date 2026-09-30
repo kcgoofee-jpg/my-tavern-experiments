@@ -11,8 +11,6 @@
   svg text { paint-order: stroke; stroke-linejoin: round; }
   .card { position: absolute; width: 300px; padding: 10px 12px; border-radius: 8px; background: rgba(252,250,245,.97); border: 1px solid #b9b1a0;
     box-shadow: 0 6px 20px #0003; font-size: 12px; line-height: 1.6; pointer-events: none; z-index: 5; }
-  .card .tag { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 4px; color: #fff; background: #2f6f4f; }
-  .card .tag.inf { background: #b06000; }
   .card .name { font-weight: 800; font-size: 14px; margin: 4px 0 2px; }
   .card .src { color: #4a463f; }
 </style>
@@ -20,7 +18,7 @@
 <body>
 <div class="wrap">
   <svg id="sec"></svg>
-  <div class="card" id="card" hidden><div class="tag"></div><div class="name"></div><div class="src"></div></div>
+  <div class="card" id="card" hidden><div class="name"></div><div class="src"></div></div>
 </div>
 <script type="module">
 import * as D from './data/world.js';
@@ -29,13 +27,12 @@ const NS = 'http://www.w3.org/2000/svg', svg = document.getElementById('sec');
 svg.setAttribute('viewBox', `0 0 ${SEC_W} ${SEC_H}`);
 function el(tag, attrs, parent = svg, text) { const e = document.createElementNS(NS, tag);
   for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; parent.appendChild(e); return e; }
-function tip(e, it) { e.dataset.src = it.src; e.dataset.tag = it.tag || 'set'; e.dataset.name = it.name || ''; e.style.cursor = 'help'; }
+function tip(e, it) { e.dataset.src = it.src; e.dataset.name = it.name || ''; e.style.cursor = 'help'; }
 drawSection(svg, el, tip, D);
 const card = document.getElementById('card'), wrap = document.querySelector('.wrap');
 svg.addEventListener('mousemove', ev => { let t = ev.target; while (t && t !== svg && !t.dataset?.src) t = t.parentNode;
   if (!t || t === svg) { card.hidden = true; return; }
-  card.hidden = false; card.querySelector('.tag').textContent = t.dataset.tag === 'inf' ? '自设' : '设定原文';
-  card.querySelector('.tag').className = 'tag' + (t.dataset.tag === 'inf' ? ' inf' : '');
+  card.hidden = false;
   card.querySelector('.name').textContent = t.dataset.name; card.querySelector('.src').textContent = t.dataset.src;
   const r = wrap.getBoundingClientRect(); let x = ev.clientX - r.left + 16; if (x > 640) x -= 340;
   card.style.left = x + 'px'; card.style.top = (ev.clientY - r.top + 16) + 'px'; });

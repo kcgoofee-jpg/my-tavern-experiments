@@ -6,7 +6,7 @@ export const SEC_W = 830, SEC_H = 1078;
 // 剖面数据校验：返回问题列表（空 = 完整）。缺条目不再让绘制中途抛错，而是画占位并在悬停卡上标「数据缺失」。
 export const SECTION_ITEM_KEYS = ['议会', '辉光', '圣铁', '执法局', '环城', '旧公寓', '工厂', '委员会', '黑市', '哨所', '伊甸', '银冠堡'];
 export const SECTION_BANDS = [[800, 1500], [50, 800], [-200, 50]];
-const missing = name => ({ name, tag: 'inf', src: `（数据缺失：${name}）`, missing: true });
+const missing = name => ({ name, src: `（数据缺失：${name}）`, missing: true });
 export function validateSection(sec) {
   const out = []; if (!sec || typeof sec !== 'object') return ['SECTION 缺失'];
   for (const k of ['bands', 'lines', 'items']) if (!Array.isArray(sec[k])) out.push(`SECTION.${k} 不是数组`);
@@ -82,7 +82,7 @@ export function drawSection(root, el, tip, D) {
     { cx: 480, h: 950, w: 58, st: 'glass' }, { cx: 265, h: 990, w: 56, st: 'dome' },
   ];
   const others = el('g', {}, plot);
-  for (const s of isles) { const g = el('g', {}, others); tip(g, { name: '悬浮庄园', tag: 'set', src: '天城·上层：每座岛屿为一座私人庄园，占地从数千到数万平方米不等；各庄园自带结界系统，隐私绝对保障；由以太驱动引擎维持悬浮' });
+  for (const s of isles) { const g = el('g', {}, others); tip(g, { name: '悬浮庄园', src: '天城·上层：每座岛屿为一座私人庄园，占地从数千到数万平方米不等；各庄园自带结界系统，隐私绝对保障；由以太驱动引擎维持悬浮' });
     island(g, s.cx, Y(s.h), s.w, s.st); }
 
   // 私人悬浮载具航线
@@ -92,11 +92,11 @@ export function drawSection(root, el, tip, D) {
     el('path', { d: `M${a[0]},${a[1] - 6} Q${mx},${my} ${b[0]},${b[1] - 6}`, fill: 'none', stroke: '#ffffff', 'stroke-width': 1.2, 'stroke-dasharray': '2 4', opacity: .85 }, routes);
     const t = .55, x = (1 - t) ** 2 * a[0] + 2 * t * (1 - t) * mx + t * t * b[0], y = (1 - t) ** 2 * (a[1] - 6) + 2 * t * (1 - t) * my + t * t * (b[1] - 6);
     car(routes, x, y, b[0] > a[0] ? 1 : -1); }
-  { const g = el('g', {}, plot); tip(g, { name: '私人悬浮载具', tag: 'set', src: '天城·上层：岛屿间由私人悬浮载具通行，无公共交通（货币与贸易：私人悬浮载具 500万–3000万Æ）' });
+  { const g = el('g', {}, plot); tip(g, { name: '私人悬浮载具', src: '天城·上层：岛屿间由私人悬浮载具通行，无公共交通（货币与贸易：私人悬浮载具 500万–3000万Æ）' });
     label(g, 470, Y(870), '私人悬浮载具航线 · 无公共交通', 'dark', 11); }
 
   // 骑士团空域巡防：环形巡逻线 + 骑士飞行器
-  { const g = el('g', {}, plot); tip(g, { name: '议会骑士团空域巡防', tag: 'set', src: '军事与治安：议会直属骑士团负责上层悬浮区空域巡防，配备悬浮机动装置（短距离飞行/高速移动）' });
+  { const g = el('g', {}, plot); tip(g, { name: '议会骑士团空域巡防', src: '军事与治安：议会直属骑士团负责上层悬浮区空域巡防，配备悬浮机动装置（短距离飞行/高速移动）' });
     el('ellipse', { cx: 345, cy: 250, rx: 280, ry: 172, fill: 'none', stroke: '#e0a800', 'stroke-width': 1.2, 'stroke-dasharray': '8 6', opacity: .75, 'pointer-events': 'stroke' }, g);
     for (const a of [.3, 2.2, 3.9, 5.3]) knight(g, 345 + Math.cos(a) * 280, 250 + Math.sin(a) * 172, Math.cos(a + 1.57) > 0 ? 1 : -1);
     label(g, 345, 72, '议会骑士团 · 空域巡防（悬浮机动装置）', 'gold', 11, 'middle'); }
@@ -135,7 +135,7 @@ export function drawSection(root, el, tip, D) {
     el('rect', { x: t.x - 6, y: Y(h), width: t.w + 12, height: 16, fill: 'none', stroke: col, 'stroke-width': 1.2, opacity: .9 }, mid);
     for (let l = 0; l < 3; l++) el('rect', { x: t.x - 2, y: Y(h) + 3 + l * 4, width: (t.w + 4) * (.4 + R() * .6), height: 1.5, fill: col, opacity: .9 }, mid); }
   // 悬浮轨道与列车
-  { const g = el('g', {}, plot); tip(g, { name: '悬浮轨道系统', tag: 'set', src: '天城·中层：层层叠叠的立体建筑群，由悬浮轨道系统串联；悬浮轨道是主要公共交通工具，四通八达' });
+  { const g = el('g', {}, plot); tip(g, { name: '悬浮轨道系统', src: '天城·中层：层层叠叠的立体建筑群，由悬浮轨道系统串联；悬浮轨道是主要公共交通工具，四通八达' });
     for (const [h, tx] of [[150, 380], [300, 150], [460, 460]]) {
       el('rect', { x: X0, y: Y(h), width: PW, height: 3, fill: '#1b3b4a' }, g);
       el('line', { x1: X0, y1: Y(h), x2: X1, y2: Y(h), stroke: '#3ee6ff', 'stroke-width': 1, opacity: .8, filter: 'url(#s-glow)' }, g);
@@ -154,7 +154,7 @@ export function drawSection(root, el, tip, D) {
     for (let k = 0; k <= 18; k++) { const h = 50 + k * (750 / 18); el('line', { x1: X1 - 9, y1: Y(h), x2: X1, y2: Y(h), stroke: '#c9bff0', 'stroke-width': 1 }, g);
       if (k < 18 && k % 3 === 0) el('text', { x: X1 - 12, y: Y(h + 750 / 36) + 3, 'text-anchor': 'end', 'font-size': 8, fill: '#c9bff0', stroke: '#141020', 'stroke-width': 2 }, g, `${18 - k}区`); }
     const t = label(g, X1 - 16, Y(420), '执法局 18 辖区（按中层纵向高度）', 'lilac', 10, 'middle'); t.setAttribute('transform', `rotate(-90 ${X1 - 16} ${Y(420)})`); }
-  { const g = el('g', {}, plot); tip(g, { name: '12 个教区', tag: 'set', src: '圣光教会：天城中层按区域划为十二个教区，每区设一座主教堂和若干礼拜堂；上层无教区，教会进不去悬浮岛' });
+  { const g = el('g', {}, plot); tip(g, { name: '12 个教区', src: '圣光教会：天城中层按区域划为十二个教区，每区设一座主教堂和若干礼拜堂；上层无教区，教会进不去悬浮岛' });
     label(g, X0 + 6, Y(470), '中层 12 教区 · 上层无教区', 'lilac', 10); }
 
   // ============ 管控线 ============
@@ -190,7 +190,7 @@ export function drawSection(root, el, tip, D) {
   // =================================================================
   function label(g, x, y, text, tone, size = 11, anchor = 'start') {
     const T = { dark: ['#1f3550', '#eef6fb'], gold: ['#7a5200', '#fff7de'], cyan: ['#8ff0ff', '#0d1a24'], lilac: ['#d8d0f5', '#141020'],
-      white: ['#ffffff', '#141020'], inf: ['#ffb347', '#141020'], infDark: ['#9a5200', '#fff7de'], eden: ['#6b4200', '#fff7de'], red: ['#ff9a8a', '#140a08'] }[tone];
+      white: ['#ffffff', '#141020'], eden: ['#6b4200', '#fff7de'], red: ['#ff9a8a', '#140a08'] }[tone];
     return el('text', { x, y, 'text-anchor': anchor, 'font-size': size, 'font-weight': 600, fill: T[0], stroke: T[1], 'stroke-width': 3.5, 'paint-order': 'stroke' }, g, text); }
   function cloud(g, x, y, s, op) { for (const [dx, dy, r] of [[0, 0, 22], [-20, 5, 15], [20, 4, 17], [-36, 9, 10], [36, 9, 11]])
     el('ellipse', { cx: x + dx * s, cy: y + dy * s, rx: r * s * 1.3, ry: r * s * .55, fill: '#ffffff', opacity: op }, g); }
@@ -259,7 +259,7 @@ export function drawSection(root, el, tip, D) {
   function eden(g, cx, cy, keyG) {
     const src = item('伊甸');
     const w = 214, rx = w / 2, ry = 36, depth = 150;
-    tip(g, { name: '伊甸庄园', tag: 'set', src: '庄园布局：天城上层悬浮区，独占一座悬浮岛屿；占地约12000平方米（含室外庭园）；地上三层+地下两层；新古典主义白色石材建筑，内部融合以太魔法与高科技；全域覆盖结界系统' });
+    tip(g, { name: '伊甸庄园', src: '庄园布局：天城上层悬浮区，独占一座悬浮岛屿；占地约12000平方米（含室外庭园）；地上三层+地下两层；新古典主义白色石材建筑，内部融合以太魔法与高科技；全域覆盖结界系统' });
     const isl = island(g, cx, cy, w, null, { depth: depth / w, gold: true, domeH: 150 });
     // 地下两层剖切
     const cut = el('g', {}, g);
@@ -268,10 +268,10 @@ export function drawSection(root, el, tip, D) {
     el('rect', { x: cx - 54, y: cy + 45, width: 108, height: 23, fill: '#3a3140', stroke: '#6d5a78', 'stroke-width': .6 }, cut);
     for (const x of [-20, 18]) { el('line', { x1: cx + x, y1: cy + 18, x2: cx + x, y2: cy + 42, stroke: '#6d7a8c', 'stroke-width': .6 }, cut); }
     for (const x of [-26, -2, 26]) { el('line', { x1: cx + x, y1: cy + 45, x2: cx + x, y2: cy + 68, stroke: '#6d5a78', 'stroke-width': .6 }, cut); }
-    el('rect', { x: cx + 40, y: cy - 20, width: 5, height: 88, fill: '#e6c36a', opacity: .85 }, cut);              // 主人专用电梯（自设）
+    el('rect', { x: cx + 40, y: cy - 20, width: 5, height: 88, fill: '#e6c36a', opacity: .85 }, cut);              // 主人专用电梯
     el('text', { x: cx - 50, y: cy + 34, 'font-size': 9, fill: '#d8e2ee', stroke: 'none' }, cut, 'B1 调教与训练区');
     el('text', { x: cx - 50, y: cy + 60, 'font-size': 9, fill: '#e2d4ee', stroke: 'none' }, cut, 'B2 惩罚与特殊区域');
-    el('rect', { x: cx + 6, y: cy + 51, width: 12, height: 12, fill: '#3ee6ff', opacity: .7, filter: 'url(#s-glow)' }, cut);   // 结界发生器（自设）
+    el('rect', { x: cx + 6, y: cy + 51, width: 12, height: 12, fill: '#3ee6ff', opacity: .7, filter: 'url(#s-glow)' }, cut);   // 结界发生器
     // 后庭园：人工湖 + 凉亭 + 训练场（在建筑后方）
     el('ellipse', { cx: cx - 62, cy: cy - 18, rx: 24, ry: 7, fill: '#6fbfe0', stroke: '#e8f6fb', 'stroke-width': .8 }, g);
     { const px = cx + 58, py = cy - 20;
@@ -295,7 +295,7 @@ export function drawSection(root, el, tip, D) {
     el('ellipse', { cx, cy: cy + 22, rx: 11, ry: 4, fill: '#6fbfe0', stroke: '#f4efe2', 'stroke-width': 1.4 }, g);
     for (const a of [-1, 0, 1]) el('path', { d: `M${cx},${cy + 20} q${a * 4},-9 ${a * 8},-2`, stroke: '#e8f8ff', 'stroke-width': 1, fill: 'none' }, g);
     for (const s2 of [-1, 1]) for (let k = 0; k < 3; k++) el('rect', { x: cx + s2 * (18 + k * 12) - 4, y: cy + 17 + k * 3, width: 8, height: 4, rx: 2, fill: '#5f8a52' }, g);
-    // 访客悬浮载具降落平台 + 警卫岗（自设）
+    // 访客悬浮载具降落平台 + 警卫岗
     { const px = cx + rx + 12, py = cy + 8;
       el('path', { d: `M${cx + rx - 8},${py - 2} L${px + 26},${py - 2} L${px + 20},${py + 6} L${cx + rx - 8},${py + 6} Z`, fill: '#c9ccd2', stroke: '#6f7580', 'stroke-width': .6 }, g);
       el('ellipse', { cx: px + 8, cy: py + 1, rx: 12, ry: 2.4, fill: 'none', stroke: '#ffcf33', 'stroke-width': .8 }, g);
@@ -305,22 +305,22 @@ export function drawSection(root, el, tip, D) {
     // 编号标记 + 右侧图例栏
     const px = cx + rx + 12, py = cy + 8;
     const notes = [
-      [cx, by - 50, '主体建筑', '新古典主义白色石材；中央三层 + 两翼，正面柱廊与山花', 'set'],
-      [cx + 16, cy + 24, '前庭花园 · 喷泉', '约 200㎡：石板步道、修剪植被、喷泉（庄园地标）', 'set'],
-      [cx - 62, cy - 28, '后庭园 · 人工湖', '约 300㎡：草坪、人工湖；上方另有结界穹顶', 'set'],
-      [cx + 58, cy - 32, '凉亭 · 露天训练场', '后庭园内：主人户外休息的凉亭、晨间训练场', 'set'],
-      [px + 22, py - 12, '访客悬浮载具降落平台', '前庭花园内的访客停靠平台（位置在岛缘为地图自设）', 'set'],
-      [cx + rx - 10, py - 20, '警卫岗', '庄园驻防：中低阶人员 + 结界 + AI 监控；岗亭位置为地图自设', 'inf'],
-      [cx - rx + 22, cy - 92, '外层结界', '覆盖整座悬浮岛，隔绝一切外部探查与入侵', 'set'],
-      [cx - 64, cy + 30, '剖切：地下两层', 'B1 调教与训练区 / B2 惩罚与特殊区域（卡原名）', 'set'],
-      [cx + 56, cy + 30, '主人专用电梯', '主人经专用通道可达任何房间；电梯井为地图自设', 'inf'],
-      [cx + 24, cy + 57, '结界发生器', '以太驱动持续供能；放在 B2 为地图自设', 'inf'],
-      [isl.tip[0] + 12, isl.tip[1] + 4, '以太驱动引擎', '天城·上层：悬浮岛由以太驱动引擎维持悬浮', 'set'],
-      [cx - rx + 6, cy + 6, '岛缘林地', '12000㎡ 中约 1 万㎡ 设定未述，画作林地与步道', 'inf'],
+      [cx, by - 50, '主体建筑', '新古典主义白色石材；中央三层 + 两翼，正面柱廊与山花'],
+      [cx + 16, cy + 24, '前庭花园 · 喷泉', '约 200㎡：石板步道、修剪植被、喷泉（庄园地标）'],
+      [cx - 62, cy - 28, '后庭园 · 人工湖', '约 300㎡：草坪、人工湖；上方另有结界穹顶'],
+      [cx + 58, cy - 32, '凉亭 · 露天训练场', '后庭园内：主人户外休息的凉亭、晨间训练场'],
+      [px + 22, py - 12, '访客悬浮载具降落平台', '前庭花园内的访客停靠平台（位置在岛缘）'],
+      [cx + rx - 10, py - 20, '警卫岗', '庄园驻防：中低阶人员 + 结界 + AI 监控'],
+      [cx - rx + 22, cy - 92, '外层结界', '覆盖整座悬浮岛，隔绝一切外部探查与入侵'],
+      [cx - 64, cy + 30, '剖切：地下两层', 'B1 调教与训练区 / B2 惩罚与特殊区域（卡原名）'],
+      [cx + 56, cy + 30, '主人专用电梯', '主人经专用通道可达任何房间'],
+      [cx + 24, cy + 57, '结界发生器', '以太驱动持续供能；放在 B2'],
+      [isl.tip[0] + 12, isl.tip[1] + 4, '以太驱动引擎', '天城·上层：悬浮岛由以太驱动引擎维持悬浮'],
+      [cx - rx + 6, cy + 6, '岛缘林地', '12000㎡ 中约 1 万㎡ 画作林地与步道'],
     ];
     notes.forEach(([x, y], k) => { const b = el('g', {}, g);
-      el('circle', { cx: x, cy: y, r: 7, fill: notes[k][4] === 'inf' ? '#fff1dc' : '#fffbef', stroke: notes[k][4] === 'inf' ? '#b06000' : '#8a6a10', 'stroke-width': 1.3 }, b);
-      el('text', { x, y: y + 3.5, 'text-anchor': 'middle', 'font-size': 9, 'font-weight': 800, fill: notes[k][4] === 'inf' ? '#b06000' : '#6b4200', stroke: 'none' }, b, k + 1); });
+      el('circle', { cx: x, cy: y, r: 7, fill: '#fffbef', stroke: '#8a6a10', 'stroke-width': 1.3 }, b);
+      el('text', { x, y: y + 3.5, 'text-anchor': 'middle', 'font-size': 9, 'font-weight': 800, fill: '#6b4200', stroke: 'none' }, b, k + 1); });
     // 图例栏
     const kx = 646, kw = 172;
     el('rect', { x: kx, y: 50, width: kw, height: 1010, rx: 6, fill: '#fffbef', stroke: '#d8c9a0' }, keyG);
@@ -329,14 +329,13 @@ export function drawSection(root, el, tip, D) {
     meta.forEach((t, k) => el('text', { x: kx + 12, y: 100 + k * 17, 'font-size': 11, fill: '#5a4a2a', stroke: 'none' }, keyG, t));
     el('line', { x1: kx + 10, y1: 190, x2: kx + kw - 10, y2: 190, stroke: '#d8c9a0' }, keyG);
     let yy = 212;
-    notes.forEach(([, , name, desc, tag], k) => { const row = el('g', {}, keyG);
-      tip(row, { name, tag, src: desc });
-      el('circle', { cx: kx + 18, cy: yy - 4, r: 7, fill: tag === 'inf' ? '#fff1dc' : '#fffbef', stroke: tag === 'inf' ? '#b06000' : '#8a6a10', 'stroke-width': 1.3 }, row);
-      el('text', { x: kx + 18, y: yy - .5, 'text-anchor': 'middle', 'font-size': 9, 'font-weight': 800, fill: tag === 'inf' ? '#b06000' : '#6b4200', stroke: 'none' }, row, k + 1);
-      el('text', { x: kx + 32, y: yy, 'font-size': 12, 'font-weight': 700, fill: tag === 'inf' ? '#9a5200' : '#3a2a10', stroke: 'none' }, row, name + (tag === 'inf' ? '（自设）' : ''));
+    notes.forEach(([, , name, desc], k) => { const row = el('g', {}, keyG);
+      tip(row, { name, src: desc });
+      el('circle', { cx: kx + 18, cy: yy - 4, r: 7, fill: '#fffbef', stroke: '#8a6a10', 'stroke-width': 1.3 }, row);
+      el('text', { x: kx + 18, y: yy - .5, 'text-anchor': 'middle', 'font-size': 9, 'font-weight': 800, fill: '#6b4200', stroke: 'none' }, row, k + 1);
+      el('text', { x: kx + 32, y: yy, 'font-size': 12, 'font-weight': 700, fill: '#3a2a10', stroke: 'none' }, row, name);
       const lines = wrap(desc, 12); lines.forEach((ln, m) => el('text', { x: kx + 32, y: yy + 16 + m * 14, 'font-size': 10, fill: '#6f6450', stroke: 'none' }, row, ln));
       yy += 26 + lines.length * 14; });
-    el('text', { x: kx + 12, y: 1046, 'font-size': 10, fill: '#8a7a5a', stroke: 'none' }, keyG, '棕框 = 设定原文　橙框 = 自设');
   }
   function wrap(t, n) { const out = []; for (let i = 0; i < t.length; i += n) out.push(t.slice(i, i + n));
     if (out.length > 1 && out[out.length - 1].length <= 2) out[out.length - 2] += out.pop(); return out; }
@@ -366,14 +365,14 @@ export function drawSection(root, el, tip, D) {
     for (let h = 100; h < 880; h += 110) el('ellipse', { cx: x, cy: Y(h), rx: 9, ry: 3, fill: '#3e8fa3', stroke: '#bff4ff', 'stroke-width': .6 }, g);
     el('circle', { cx: x, cy: Y(890), r: 26, fill: '#bff4ff', opacity: .25, filter: 'url(#s-soft)' }, g);
     el('circle', { cx: x, cy: Y(890), r: 6, fill: '#e8fdff', stroke: '#3ee6ff', 'stroke-width': 1.2, filter: 'url(#s-glow)' }, g);
-    label(g, x - 12, Y(918), '以太气候调节塔（自设）', 'infDark', 10); }
+    label(g, x - 12, Y(918), '以太气候调节塔', 'dark', 10); }
 
   function government(g, cx, it) { tip(g, it); const base = Y(560);
     for (const [dx, h, w] of [[-26, 640, 20], [26, 630, 20], [0, 700, 26]]) { const x = cx + dx;
       el('rect', { x: x - w / 2, y: Y(h), width: w, height: base - Y(h), fill: '#3a3252', stroke: '#c8a032', 'stroke-width': .8 }, g);
       for (let hh = h - 12; hh > 570 && hh > 0; hh -= 12) el('rect', { x: x - w / 2 + 3, y: Y(hh), width: w - 6, height: 2, fill: '#e6c36a', opacity: .55 }, g); }
     el('path', { d: `M${cx - 13},${Y(700)} L${cx},${Y(700) - 14} L${cx + 13},${Y(700)} Z`, fill: '#c8a032' }, g);
-    label(g, cx, Y(700) - 18, '议会 / 执政厅 / 储备署（自设）', 'inf', 10.5, 'middle'); }
+    label(g, cx, Y(700) - 18, '议会 / 执政厅 / 储备署', 'white', 10.5, 'middle'); }
   function cathedral(g, cx, it) { tip(g, it); const y = Y(it.at);
     el('rect', { x: cx - 34, y: y + 6, width: 68, height: 8, fill: '#4a4462' }, g);
     el('rect', { x: cx - 26, y: y - 22, width: 52, height: 28, fill: '#d9d2e6', stroke: '#4a3a66', 'stroke-width': .8 }, g);
@@ -410,7 +409,7 @@ export function drawSection(root, el, tip, D) {
     for (let r2 = 0; r2 < 6; r2++) for (let c = 0; c < 5; c++) el('rect', { x: cx - 19 + c * 8.4, y: y - 26 + r2 * 9, width: 4.5, height: 5, fill: (r2 * 5 + c) % 3 ? '#e8b060' : '#2a211d', opacity: .85 }, g);
     el('path', { d: `M${cx - 22},${y - 2} q22,6 44,0`, stroke: '#9a8a7a', 'stroke-width': .6, fill: 'none' }, g);
     el('rect', { x: cx + 22, y: y - 20, width: 10, height: 8, fill: '#ff4fb0', opacity: .8, filter: 'url(#s-glow)' }, g);
-    label(g, cx, y - 36, '旧公寓楼（开局地点）', 'inf', 10.5, 'middle'); }
+    label(g, cx, y - 36, '旧公寓楼（开局地点）', 'white', 10.5, 'middle'); }
 
   function factories(g, it) { tip(g, it);
     for (const [x, w, h] of [[80, 46, 16], [132, 38, 22], [322, 44, 18], [520, 40, 20]]) { const y = Y(0) + 3;
@@ -435,7 +434,7 @@ export function drawSection(root, el, tip, D) {
     el('rect', { x: cx - 7, y: y - 7, width: 14, height: 2, fill: '#ffe07a', opacity: .7 }, g);
     label(g, cx, y + 13, '防卫军前沿哨所', 'white', 9.5, 'middle'); }
   function ruinedChurches(g) {
-    tip(g, { name: '下层三个教区', tag: 'set', src: '圣光教会：下层设有三个教区，但神职人员严重不足，教堂多处于半荒废状态' });
+    tip(g, { name: '下层三个教区', src: '圣光教会：下层设有三个教区，但神职人员严重不足，教堂多处于半荒废状态' });
     for (const x of [120, 330, 590]) { const y = Y(-165);
       el('rect', { x: x - 8, y: y - 12, width: 16, height: 12, fill: '#3a332d', stroke: '#15110e', 'stroke-width': .5 }, g);
       el('path', { d: `M${x - 9},${y - 12} L${x - 2},${y - 20} L${x + 1},${y - 16}`, fill: 'none', stroke: '#5a5048', 'stroke-width': 1.2 }, g);

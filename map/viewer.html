@@ -431,7 +431,6 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .mk .lab small { font-size: max(var(--fs-micro), .85em); opacity: .82; }
   .mk.capital .pin { width: 16px; height: 16px; }
   .mk.capital .lab { font-size: var(--fs-body); font-weight: 800; border-color: var(--gold); }
-  .mk.inf .pin { background: var(--map-label-bg); border-color: var(--accent); }   /* 传闻（自设）：空心针 */
   .mk.drill .lab { background: var(--gold); color: #1a1406; border-color: var(--gold); font-weight: 800; }
   .mk.op .pin { box-shadow: 0 0 0 3px var(--gold), 0 1px 4px #000a; } .mk.op .lab { border: 2px solid var(--gold); font-weight: 700; } .mk.op .lab::after { content: attr(data-op); margin-left: var(--sp-2); font-size: var(--fs-micro); color: var(--gold); }   /* 开局关键地点（maps.json 的 openings） */
   .mk.here .pin { background: var(--alert); }
@@ -488,6 +487,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #card .tag { display: inline-block; font: 600 var(--fs-micro)/1.4 var(--font-ui); padding: 2px var(--sp-4); border-radius: var(--r-s); background: var(--accent-weak); color: var(--accent); letter-spacing: .04em; }
   html[lang="en"] #card .tag { letter-spacing: 0; }
   #card .tag.data { color: #111; font-weight: 700; }
+  #card .tag:empty { visibility: hidden; }   /* 地点卡不带类型块：占位保持关闭钮靠右 */
   #card .x { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; border: 0; border-radius: var(--r-m); background: transparent; color: var(--muted); cursor: pointer; position: relative; }
   #card .x:hover { background: var(--surface-2); color: var(--ink); }
   #card .cover { display: block; width: calc(100% + 28px); margin: var(--sp-4) -14px 0; max-width: none; aspect-ratio: 16/10; object-fit: cover; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }

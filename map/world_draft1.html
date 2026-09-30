@@ -18,7 +18,6 @@
   .cap { font-size: 16px; font-weight: 700; }
   .cap-sub { font-size: 11px; fill: var(--muted); }
   .small { font-size: 11px; fill: #4a463f; }
-  .inf { fill: #9a5b00; }
   .legend text, .section text { stroke: none; }
 </style>
 </head>
@@ -26,7 +25,7 @@
 <div class="wrap">
   <canvas id="land" width="1600" height="1000"></canvas>
   <svg class="overlay" id="ov" viewBox="0 0 2060 1000"></svg>
-  <div class="draft"><b>草稿 1 · 线稿级</b>　示意图，无比例　|　橙色字 = 自设（设定未给）　|　悬停可看出处</div>
+  <div class="draft"><b>草稿 1 · 线稿级</b>　示意图，无比例　|　悬停可看出处</div>
 </div>
 <script type="module">
 import * as D from './data/world.js';
@@ -92,7 +91,7 @@ for (let gy = 1; gy < GH; gy++) for (let gx = 1; gx < GW; gx++) {
 const NS = 'http://www.w3.org/2000/svg', ov = document.getElementById('ov');
 function el(tag, attrs, parent = ov, text) { const e = document.createElementNS(NS, tag);
   for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; parent.appendChild(e); return e; }
-function tip(e, item) { el('title', {}, e, `${item.tag === 'inf' ? '【自设】' : item.tag === 'warn' ? '【设定矛盾】' : '【设定】'}${item.src}`); }
+function tip(e, item) { el('title', {}, e, item.src); }
 const G = n => el('g', { id: n });
 const gTube = G('tubes'), gRoute = G('routes'), gDots = G('dots'), gMark = G('marks'), gLabel = G('labels'), gLegend = G('legend'), gSec = G('section');
 
@@ -105,14 +104,14 @@ for (const r of D.REALMS) {
   const off = r.id === 'oren' ? -95 : r.id === 'fed' ? -120 : -80;
   const g = el('g', {}, gLabel); tip(g, r);
   el('text', { x: c[0], y: c[1] + off, 'text-anchor': 'middle', class: 'realm' }, g, r.name);
-  el('text', { x: c[0], y: c[1] + off + 20, 'text-anchor': 'middle', class: 'realm-sub' }, g, r.sub + (r.tag === 'warn' ? '（⚠️ 又称灵枢秘派）' : ''));
+  el('text', { x: c[0], y: c[1] + off + 20, 'text-anchor': 'middle', class: 'realm-sub' }, g, r.sub);
 }
 // 中小国 / 海外
 D.SEEDS.forEach((s, k) => {
   if (s.kind !== 'minor' && s.kind !== 'overseas') return;
   const n = owner.reduce((a, o) => a + (o === k), 0); if (n < 40) return;
   const c = centroid(t => t === s);
-  const t = el('text', { x: c[0], y: c[1], 'text-anchor': 'middle', class: 'small inf' }, gLabel, s.kind === 'minor' ? '中小国' : '');
+  const t = el('text', { x: c[0], y: c[1], 'text-anchor': 'middle', class: 'small' }, gLabel, s.kind === 'minor' ? '中小国' : '');
   el('title', {}, t, '【设定】世界观：星球上众多中小国林立（国名、数量、位置设定未给，此处为 12 个示意）');
 });
 { const c = centroid(s => s.kind === 'overseas'); const g = el('g', {}, gLabel);
@@ -129,11 +128,11 @@ const byId = Object.fromEntries(D.PLACES.map(p => [p.id, p]));
 // 管道
 for (const t of D.TUBES) { const a = byId[t.a], b = byId[t.b], mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 - 40;
   const p = el('path', { d: `M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}`, fill: 'none', stroke: '#1d6f8a', 'stroke-width': 3, 'stroke-dasharray': '10 5' }, gTube); tip(p, t);
-  const lx = 0.49 * a.x + 0.42 * mx + 0.09 * b.x, ly = 0.49 * a.y + 0.42 * my + 0.09 * b.y; el('text', { x: lx, y: ly - 8, 'text-anchor': 'middle', class: 'small inf' }, gTube, '跨城高速运输管道'); }
+  const lx = 0.49 * a.x + 0.42 * mx + 0.09 * b.x, ly = 0.49 * a.y + 0.42 * my + 0.09 * b.y; el('text', { x: lx, y: ly - 8, 'text-anchor': 'middle', class: 'small' }, gTube, '跨城高速运输管道'); }
 // 海外航线
 for (const r of D.SEA_ROUTES) { const d = 'M' + r.pts.map(p => p.join(',')).join(' L');
   const p = el('path', { d, fill: 'none', stroke: '#35607a', 'stroke-width': 1.6, 'stroke-dasharray': '3 5' }, gRoute); tip(p, r);
-  const [x, y] = r.pts[2]; el('text', { x, y: y + 18, 'text-anchor': 'middle', class: 'small inf' }, gRoute, '海外输入航线'); }
+  const [x, y] = r.pts[2]; el('text', { x, y: y + 18, 'text-anchor': 'middle', class: 'small' }, gRoute, '海外输入航线'); }
 
 // 赤潮据点：在陆地上撒点，联邦境内加密
 { const land = []; for (let i = 0; i < owner.length; i++) if (owner[i] >= 0) land.push(i);
@@ -153,7 +152,7 @@ for (const r of D.SEA_ROUTES) { const d = 'M' + r.pts.map(p => p.join(',')).join
 // 圆桌封地
 for (const f of D.FIEFS) { const g = el('g', {}, gMark); tip(g, f);
   el('path', { d: `M${f.x - 7},${f.y - 8} h14 v7 q0,8 -7,11 q-7,-3 -7,-11 Z`, fill: '#f3f0e6', stroke: '#284b73', 'stroke-width': 1.5 }, g);
-  el('text', { x: f.x + 10, y: f.y + 4, class: 'small inf' }, g, f.name); }
+  el('text', { x: f.x + 10, y: f.y + 4, class: 'small' }, g, f.name); }
 // 首都与开局地点
 for (const p of D.PLACES) { const g = el('g', {}, gMark); tip(g, p);
   if (p.type === 'capital') {
@@ -163,7 +162,7 @@ for (const p of D.PLACES) { const g = el('g', {}, gMark); tip(g, p);
     el('text', { x: p.x, y: p.y + 41, 'text-anchor': 'middle', class: 'cap-sub' }, g, p.sub);
   } else {
     el('path', { d: `M${p.x},${p.y - 12} l7,12 h-14 Z`, fill: '#9a5b00' }, g);
-    el('text', { x: p.x + 10, y: p.y + 2, class: 'small inf' }, g, `${p.name}（${p.sub}）`);
+    el('text', { x: p.x + 10, y: p.y + 2, class: 'small' }, g, `${p.name}（${p.sub}）`);
   } }
 
 // ---------- 图例 ----------
@@ -199,16 +198,16 @@ for (const p of D.PLACES) { const g = el('g', {}, gMark); tip(g, p);
     el('ellipse', { cx, cy, rx: 13, ry: 4, fill: '#9fb5c9' }, g); el('path', { d: `M${cx - 13},${cy} L${cx},${cy + 12} L${cx + 13},${cy} Z`, fill: '#8a9aa8' }, g); }
   // 条目
   for (const it of D.SECTION.items) { const x = px + it.x * pw, y = Y(it.at), gi = el('g', {}, g); tip(gi, it);
-    const col = it.kind === 'eden' ? '#b8860b' : it.kind === 'start' || it.tag === 'inf' ? '#e08a00' : it.at >= 800 ? '#234' : '#fff';
+    const col = it.kind === 'eden' ? '#b8860b' : it.kind === 'start' ? '#e08a00' : it.at >= 800 ? '#234' : '#fff';
     if (it.kind === 'eden') { el('ellipse', { cx: x, cy: y, rx: 20, ry: 6, fill: '#f5d77a', stroke: '#8a6500', 'stroke-width': 1.5 }, gi);
       el('path', { d: `M${x - 20},${y} L${x},${y + 18} L${x + 20},${y} Z`, fill: '#a58b5a' }, gi); }
     else if (it.kind === 'fort') el('rect', { x: x - 16, y: y - 8, width: 32, height: 12, fill: '#c0c6cc', stroke: '#555' }, gi);
     else el('circle', { cx: x, cy: y, r: 3.5, fill: col }, gi);
     el('text', { x: x + (it.x > 0.6 ? -8 : 8), y: y - 7, 'text-anchor': it.x > 0.6 ? 'end' : 'start', 'font-size': 11, 'font-weight': it.kind === 'eden' ? 700 : 400, fill: col }, gi, it.name); }
-  // 气候调节塔（自设）
+  // 气候调节塔
   const tx = px + pw * 0.08, tw = el('g', {}, g); tip(tw, D.SECTION.towers);
   el('rect', { x: tx - 3, y: Y(900), width: 6, height: Y(0) - Y(900), fill: '#6fb7c9', opacity: .8 }, tw);
-  el('text', { x: tx + 6, y: Y(880), 'font-size': 10, fill: '#e08a00' }, tw, '以太气候调节塔（自设）');
+  el('text', { x: tx + 6, y: Y(880), 'font-size': 10, fill: '#e08a00' }, tw, '以太气候调节塔');
 }
 </script>
 </body>

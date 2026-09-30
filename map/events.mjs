@@ -157,7 +157,7 @@ const TCEvents = (() => {
     const p = pos(e), st = e.closed ? T('ev.cleared', '已解除') : tn(e.status) || T('ev.ongoing', '发生中');
     const rare = e.rare >= 4 ? T('ev.rare4', '（传说级）') : e.rare >= 3 ? T('ev.rare3', '（罕见）') : '';
     const lv = Math.max(1, e.lvl);
-    showCard(null, e.text || tn(e.cat), 'inf', '', '', `${tn(e.cat)}${rare}`);   // 大类只在顶上的色块里出现一次（v0.9.2）
+    showCard(null, e.text || tn(e.cat), '', '', `${tn(e.cat)}${rare}`);   // 大类只在顶上的色块里出现一次（v0.9.2）
     if (typeof P.TCCompose !== 'undefined') P.TCCompose.attach({ go: e.place || '', ask: e.text || tn(e.cat) });   // v0.9.6 地图 → 聊天
     const rows = [
       [T('ev.k_place', '地点'), esc(whereHere(e)) + (p.approx ? `<br><small>${esc(placeOf(e) ? T('ev.approx', '（位置不详，按所在层大致标出）') : T('ev.unplaced', '（认不出地点：只列出，不上图）'))}</small>` : '')],
@@ -166,7 +166,7 @@ const TCEvents = (() => {
       [T('ev.k_src', '来源'), esc(e.feed ? e.src || T('ev.feed_default', '外部数据源')
         : (srcNew(e) || !e.src ? T('ev.src_floor', '{src} · 聊天第 {n} 楼', { src: srcNew(e) || T('ev.unsigned', '未署名'), n: e.first }) : T('ev.floor', '第 {n} 楼', { n: e.first })) + (e.count > 1 ? T('ev.updates', '起，更新 {n} 次', { n: e.count - 1 }) : ''))],
     ].filter(Boolean);
-    const sv = document.querySelector('#card .src'); delete sv.dataset.note;   // 事态卡不是设定原文，不加「原文（中文）」说明
+    const sv = document.querySelector('#card .src'); delete sv.dataset.note;   // 事态卡的正文不是地点说明，不加「原文（中文）」说明
     sv.innerHTML = `<dl class="fields">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>`;
     const t = document.querySelector('#card .tag'); t.textContent = e.grp ? tn(e.grp) : T('ev.tag', '天城事态'); t.className = 'tag data'; t.style.background = lk(e)[1]; t.style.color = TCCvd.inkOn(lk(e)[1]);
     if (kbdFly) { kbdFly = false; document.getElementById('cardTitle')?.focus({ preventScroll: true }); }

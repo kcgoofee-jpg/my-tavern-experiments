@@ -27,29 +27,30 @@ export function untrack(el) { const tk = el?._tk; if (!tk) return; el._tk = null
 export function untrackAll() { const all = trackers; trackers = []; for (const tk of all) { if (tk.element) tk.element._tk = null; tk.destroy(); } }
 export let cardFrom = null;   // 打开卡片的元素：卡片关闭后焦点回到这里
 // 开局编号：标签上连续的写成区间（开局一至五）；opening_dest = 该开局的目的地（起点在庄园书房），卡片里逐个列出
-function markerEl({ name, sub, cls = '', tag = 'set', src, extra = '', alias, name_en, sub_en, openings, opening_dest, cover }) {
-  const el = document.createElement('div'); el.className = 'mk ' + cls + (tag === 'inf' ? ' inf' : '');
+function markerEl({ name, sub, cls = '', src, extra = '', alias, name_en, sub_en, openings, opening_dest, cover }) {
+  const el = document.createElement('div'); el.className = 'mk ' + cls;
   const dn = LANG === 'en' ? name_en || tr(name) : name, ds = sub && (LANG === 'en' ? sub_en || tr(sub) : sub);   // 显示名随语言；dataset.name 保持中文（当前地点匹配用）
   // U16 / U17：标签与图钉包一层 .mki，视差位移与漂浮只动这一层（.mk 自身的 transform 是 OSD 定位用的）
   el.innerHTML = `<div class="mki"><div class="lab">${esc(dn)}${ds ? '<small> · ' + esc(ds) + '</small>' : ''}</div><div class="pin"></div></div>`;
   el.dataset.name = name; if (alias) el.dataset.alias = alias.join('|');
   // v0.9.6（用户 2026-09-27）：地图上不再显示「开局 N」金色标签与地点卡里的开局列表（地图跟随 MVU 当前地点，选了开局就跳过去）；openings 数据只留给自检与文档
-  el._open = () => showCard(el, dn, tag, src, extra, ds, cover);
+  el._open = () => showCard(el, dn, src, extra, ds, cover);
   trackEl(el, el._open, dn + (ds ? ' · ' + ds : ''));
   return el;
 }
 function marker(o) { const el = markerEl(o); place(el, o.x, o.y); return el; }
-// 卡片：顶行 tag + 关闭；标题；副标题；正文（设定原文）或字段区；链接行（规范 3.2）
-export function showCard(el, name, tag, src, extra, sub, cover) {
+// 卡片：顶行类型块（事态 / 人物卡自己填，地点卡留空）+ 关闭；标题；副标题；正文或字段区；链接行（规范 3.2）
+// compose：地图 → 聊天的入口；有标记元素的卡默认带，没有元素的卡（世界图上的国家）要显式传 true
+export function showCard(el, name, src, extra, sub, cover, compose = !!el) {
   document.querySelectorAll('.mk.active').forEach(e => e.classList.remove('active')); el && el.classList.add('active');
   const c = $('#card'); c.hidden = false; c.classList.remove('person2'); document.body.classList.add('cardopen');
   cardSheet(true);   // UI v2：地点卡 = 抽屉「地点」页，半开（已经全开就保持）
-  const tg = c.querySelector('.tag'); tg.textContent = t(tag === 'inf' ? 'tag_inf' : 'tag_set'); tg.className = 'tag' + (tag === 'inf' ? ' inf' : ''); tg.removeAttribute('style');   // 事态卡的数据色不带到地点卡
+  const tg = c.querySelector('.tag'); tg.textContent = ''; tg.className = 'tag'; tg.removeAttribute('style');   // 事态卡的类型块与数据色不带到地点卡
   const cv = c.querySelector('.cover');
   if (cv) { if (cover?.src_800) { cv.hidden = false; cv.src = cover.src_800; cv.alt = (LANG === 'en' ? (cover.alt_en || cover.alt) : cover.alt) || ''; } else { cv.hidden = true; cv.removeAttribute('src'); cv.alt = ''; } }
   c.querySelector('.sub').textContent = sub || '';
   const sv = c.querySelector('.src'); c.querySelector('h2').textContent = name; sv.textContent = src || '';
-  if (LANG === 'en' && /[\u4e00-\u9fff]/.test(src || '') && t('src_note')) sv.dataset.note = t('src_note'); else delete sv.dataset.note;   // 英文界面：设定原文保持中文，加一行说明
+  if (LANG === 'en' && /[\u4e00-\u9fff]/.test(src || '') && t('src_note')) sv.dataset.note = t('src_note'); else delete sv.dataset.note;   // 英文界面：正文保持中文，加一行说明
   // extra 也接受函数：开卡那一刻才算（Part 6-4 的注入入口要跟着设置实时出现 / 消失，
   // 不必重画整层标记——重画会重复 addOverlay，标记会叠一层）
   c.querySelector('.extra').innerHTML = (typeof extra === 'function' ? extra() : extra) || '';
@@ -58,7 +59,7 @@ export function showCard(el, name, tag, src, extra, sub, cover) {
   if (typeof P.TCScrap !== 'undefined') P.TCScrap.decorate(el, name);   // 见闻录（Part 5-5）：这里钉过的图与手记
   if (typeof P.TCSecurity !== 'undefined') P.TCSecurity.decorate(el, name);   // v0.9.6 安保叠加层开着时：结界 / 监控 / 门禁
   if (typeof P.TCWb !== 'undefined') P.TCWb.decorate(el, name);   // W8 世界书档案胶囊：附加书里这个地点的条目摘要（只读）
-  if (typeof P.TCCompose !== 'undefined') P.TCCompose.attach(el || tag === 'set' ? { go: el?.dataset?.name || name, ask: el?.dataset?.name || name } : null);   // v0.9.6 地图 → 聊天：地点卡；事件 / 人物卡由 events.js / chars.js 另挂
+  if (typeof P.TCCompose !== 'undefined') P.TCCompose.attach(compose ? { go: el?.dataset?.name || name, ask: el?.dataset?.name || name } : null);   // v0.9.6 地图 → 聊天：地点卡；事件 / 人物卡由 events.js / chars.js 另挂
   declutter();
 }
 // user = 用户主动关闭（× / Esc）：焦点回到打开卡片的元素
@@ -72,21 +73,21 @@ export function closeCard(user) {
 export function worldOverlays() {
   for (const r of M.realms) { const el = document.createElement('div'); el.className = 'realm ' + r.id;
     el.innerHTML = `<b>${esc(tr(r.name))}</b><span>${esc(tr(r.sub))}</span>`;
-    trackEl(el, () => showCard(null, tr(r.name), r.tag, r.src), tr(r.name));
+    trackEl(el, () => showCard(null, tr(r.name), r.src, '', '', undefined, true), tr(r.name));
     const off = { oren: -95, fed: -150, xl: -110 }[r.id]; place(el, r.c[0], r.c[1] + off, OpenSeadragon.Placement.CENTER); }
   for (const m of M.minors) { if (m.n < 600) continue; const el = document.createElement('div'); el.className = 'minor'; el.textContent = t('minor');
     place(el, m.c[0], m.c[1], OpenSeadragon.Placement.CENTER); }
   { const el = document.createElement('div'); el.className = 'realm'; el.innerHTML = `<b style="font-size:20px;letter-spacing:${LANG === 'en' ? 2 : 6}px">${esc(tr('海外诸地'))}</b><span>${esc(tr('稀有矿物 · 异域人员输出地'))}</span>`;
-    trackEl(el, () => showCard(null, tr('海外诸地'), 'inf', '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）'), tr('海外诸地'));
+    trackEl(el, () => showCard(null, tr('海外诸地'), '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）'), tr('海外诸地'));
     place(el, M.overseas[0], M.overseas[1], OpenSeadragon.Placement.CENTER); }
   const gOf = id => id && Object.keys(REG.groups).find(k => REG.groups[k].place === id);   // 世界图地点 → 有地图的组（天城、开局地点）
   const enter = gid => { const g = gid && REG.groups[gid]; if (!g) return ''; return g.layers.map(k => { const L = REG.maps[k];
     return L.status === 'planned' ? `<span class="planned">${esc(nm(L.layer))}${esc(t('planned_paren'))}</span>` : `<a data-go="${k}" role="button" tabindex="0">${esc(t('enter', { name: nm(L.layer) }))}</a>`; }).join(''); };
   for (const p of M.places) {
     const gid = gOf(p.id);
-    marker({ name: p.name, sub: p.sub, cls: (p.type === 'capital' ? 'capital' : 'start') + (gid ? ' drill' : ''), tag: p.tag, src: p.src, x: p.x, y: p.y, openings: p.openings, extra: enter(gid) });
+    marker({ name: p.name, sub: p.sub, cls: (p.type === 'capital' ? 'capital' : 'start') + (gid ? ' drill' : ''), src: p.src, x: p.x, y: p.y, openings: p.openings, extra: enter(gid) });
   }
-  for (const f of M.fiefs) { const gid = gOf(f.id); marker({ name: f.name, cls: gid ? 'drill' : '', tag: f.tag, src: f.src, x: f.x, y: f.y, extra: enter(gid) }); }
+  for (const f of M.fiefs) { const gid = gOf(f.id); marker({ name: f.name, cls: gid ? 'drill' : '', src: f.src, x: f.x, y: f.y, extra: enter(gid) }); }
 }
 // 闭合多边形 → 平滑闭合曲线（Catmull-Rom 转三次贝塞尔，曲线经过每个顶点）
 function smoothPath(P) {

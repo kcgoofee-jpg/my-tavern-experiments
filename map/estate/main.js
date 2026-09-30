@@ -102,7 +102,7 @@ const GALLERY = {};   // 房间图集（map/data/room_galleries.json）：衣帽
 // 主卧套间内的子区域（卡：主卧「带衣帽间和独立浴室」，主人通道 F2 开进衣帽间）：单独做一个可点的热点，点开就是衣帽间图集
 const SUBS = [{ parent: 'F2-57', id: 'F2-57w', name: '衣帽间', en: 'Walk-in Wardrobe', alias: ['私人衣帽间', '步入式衣帽间', '更衣室', 'Dressing Room', 'Walk-in Wardrobe'], floor: 'F2', kind: 'card', sub: true,
   note: '主卧套间内的步入式衣帽间；东侧门通主人专用通道', poly: [[12, -10], [16, -10], [16, -6], [12, -6]] }];
-const KIND_COL = { card: '#d9c29a', restricted: '#9d9a94', support: '#aab3bb', circ: '#e9e4d8', owner: '#a79bb6', inferred: '#c8cfbd', open: '#c8cfbd' };
+const KIND_COL = { card: '#d9c29a', restricted: '#9d9a94', support: '#aab3bb', circ: '#e9e4d8', owner: '#a79bb6', open: '#c8cfbd' };
 
 /* ---------------- 相机与控制（正交；缩放以光标为中心） ---------------- */
 const BASE = 60, DIST = 1600;
@@ -143,8 +143,8 @@ const HC = V((HOUSE_BOX.x0 + HOUSE_BOX.x1) / 2, (HOUSE_BOX.y0 + HOUSE_BOX.y1) / 
 
 /* ---------------- UI 文案 ---------------- */
 const TXT = {
-  zh: { ext: '外观', xray: '内透', sect: '剖切', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '浮岛庄园 · 主楼地上三层 + 地下两层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', estate: '室外', loading: '加载中…', loadingP: '加载模型 {p}', gallery: '衣帽间图集', restricted: '按原卡 · 不描述', card: '卡设定', inferred: '地图自设（卡未写）', houseLoading: '载入室内…', enter3d: '进入三维' },
-  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Floating-isle estate · house: 3 floors + 2 basements', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', size: 'Area', use: 'Notes', access: 'Access', estate: 'Grounds', loading: 'Loading…', loadingP: 'Loading model {p}', gallery: 'Wardrobe photos', restricted: 'Per the card · not described', card: 'From the card', inferred: 'Repository inference (not in card)', houseLoading: 'Loading interior…', enter3d: 'Enter 3D' },
+  zh: { ext: '外观', xray: '内透', sect: '剖切', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '浮岛庄园 · 主楼地上三层 + 地下两层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', estate: '室外', loading: '加载中…', loadingP: '加载模型 {p}', gallery: '衣帽间图集', restricted: '不描述', houseLoading: '载入室内…', enter3d: '进入三维' },
+  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Floating-isle estate · house: 3 floors + 2 basements', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', size: 'Area', use: 'Notes', access: 'Access', estate: 'Grounds', loading: 'Loading…', loadingP: 'Loading model {p}', gallery: 'Wardrobe photos', restricted: 'Not described', houseLoading: 'Loading interior…', enter3d: 'Enter 3D' },
 };
 const tx = (k, v = {}) => (TXT[LANG][k] || TXT.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
 const floorName = (i) => LANG === 'en' ? `${FLOORS[i].id} · ${FLOOR_EN[FLOORS[i].id]}` : `${FLOORS[i].id} · ${FLOORS[i].name}`;
@@ -366,7 +366,7 @@ const polyShape = (poly) => new THREE.Shape(poly.map(([x, y]) => new THREE.Vecto
 const flatGeo = (poly, y) => { const g = new THREE.ShapeGeometry(polyShape(poly)); g.rotateX(-Math.PI / 2); g.translate(0, y, 0); return g; };   // (x, y) → (x, y0, −y)
 const bboxOf = (poly) => { const xs = poly.map((p) => p[0]), ys = poly.map((p) => p[1]); return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) }; };
 const plateMats = {};
-const plateMat = (kind) => (plateMats[kind] ||= new THREE.MeshBasicMaterial({ color: KIND_COL[kind] || KIND_COL.inferred, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+const plateMat = (kind) => (plateMats[kind] ||= new THREE.MeshBasicMaterial({ color: KIND_COL[kind] || KIND_COL.open, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
 const edgeMat = new THREE.LineBasicMaterial({ color: '#5a4a32', transparent: true, opacity: 0.55 });
 const plates = FLOORS.map(() => []);
 CARD.rooms.concat(SUBS.filter((w) => CARD.rooms.some((r) => r.id === w.parent)).map((w) => ({ ...w, area: 16 }))).forEach((r) => {
@@ -579,7 +579,7 @@ function buildNav() {
   C3.setText({ expand: zh ? '展开' : 'Expand', collapse: zh ? '收起' : 'Collapse', region: zh ? '房间、图例与关于' : 'Room, legend and about' });
   C3.sheet.label('room', zh ? '房间' : 'Room', zh ? '房' : 'R'); C3.sheet.label('legend', zh ? '图例' : 'Legend', zh ? '图' : 'L'); C3.sheet.label('about', zh ? '关于' : 'About', zh ? '关' : 'A');
   $('#cardEmpty').textContent = zh ? '点模型上的房间或区域，这里显示说明' : 'Tap a room or area on the model to see it here';
-  const KL = zh ? { card: '卡设定房间', owner: '主人区域', support: '服务 / 后勤', circ: '走廊 / 楼梯', restricted: '卡设定房间（不描述）', inferred: '地图自设' } : { card: 'Rooms from the card', owner: "Owner's areas", support: 'Service', circ: 'Corridors / stairs', restricted: 'Not described (per card)', inferred: 'Self-set (map)' };
+  const KL = zh ? { card: '房间', owner: '主人区域', support: '服务 / 后勤', circ: '走廊 / 楼梯', restricted: '房间（不描述）', open: '其他空间' } : { card: 'Rooms', owner: "Owner's areas", support: 'Service', circ: 'Corridors / stairs', restricted: 'Rooms (not described)', open: 'Other spaces' };
   legendEl.innerHTML = '<ul>' + Object.entries(KL).map(([k, v]) => `<li><i style="background:${KIND_COL[k]}"></i>${v}</li>`).join('') + '</ul>';
   aboutEl.innerHTML = `<h2>${tx('title')}</h2><div class="motto">${tx('motto')}</div><p>${tx('sub')}</p><p>${tx('hint')}</p>`;
   C3.setTitle(tx('title'));
@@ -746,13 +746,12 @@ function cardHTML(it) {
   if (d.sub) {
     h += `<div class="row"><em>${zh ? '位置' : 'Where'}</em>${zh ? '主卧套间内' : 'Inside the master suite'}</div>`;
     if (zh && d.note) h += `<div class="row"><em>${tx('use')}</em>${esc(d.note)}</div>`;
-    return h + `<div class="src"><b class="s0">${esc(tx('card'))}</b></div>` + roomCustomBlockHTML(d.name, LANG);
+    return h + roomCustomBlockHTML(d.name, LANG);
   }
   const area = d.card_area ? `${Math.round(d.area)} ㎡（${zh ? '卡' : 'card'} ${d.card_area}）` : d.card_range ? `${Math.round(d.area)} ㎡（${zh ? '卡' : 'card'} ${d.card_range[0]}–${d.card_range[1]}）` : `${Math.round(d.area)} ㎡`;
   h += `<div class="row"><em>${tx('size')}</em>${esc(area)}</div>`;
   if (zh && d.note) h += `<div class="row"><em>${tx('use')}</em>${esc(d.note)}</div>`;
   if (zh && d.access) h += `<div class="row"><em>${tx('access')}</em>${esc(d.access)}</div>`;
-  h += `<div class="src"><b class="${d.kind === 'card' ? 's0' : 's2'}">${esc(d.kind === 'card' ? tx('card') : tx('inferred'))}</b></div>`;
   if (GALLERY[d.name]) h += `<div class="acts"><button class="gal" type="button">${tx('gallery')} ›</button></div>`;
   return h + roomCustomBlockHTML(d.name, LANG);
 }

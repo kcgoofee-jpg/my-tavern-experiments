@@ -26,7 +26,6 @@
   .cap { font-size: 17px; font-weight: 800; stroke: rgba(250,246,238,.95); stroke-width: 4px; }
   .cap-sub { font-size: 11px; fill: #4d4940; stroke: rgba(250,246,238,.9); stroke-width: 3px; }
   .small { font-size: 11px; fill: #3f3b35; stroke: rgba(246,241,230,.85); stroke-width: 3px; }
-  .inf { fill: #9a5200; }
   .legend text { stroke: none; }
 </style>
 </head>
@@ -43,7 +42,7 @@
       <radialGradient id="dome" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="#e8f6ff" stop-opacity=".05"/><stop offset="1" stop-color="#9fd6ff" stop-opacity=".35"/></radialGradient>
     </defs>
   </svg>
-  <div class="draft"><b>草稿 2 · 立体地形</b>　示意图，无比例　|　橙色字 = 自设（设定未给）　|　悬停可看出处</div>
+  <div class="draft"><b>草稿 2 · 立体地形</b>　示意图，无比例　|　悬停可看出处</div>
 </div>
 <script type="module">
 import * as D from './data/world.js';
@@ -173,7 +172,7 @@ ctx.putImageData(img, 0, 0);
 const NS = 'http://www.w3.org/2000/svg', ov = document.getElementById('ov');
 function el(tag, attrs, parent = ov, text) { const e = document.createElementNS(NS, tag);
   for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; parent.appendChild(e); return e; }
-function tip(e, item) { el('title', {}, e, `${item.tag === 'inf' ? '【自设】' : '【设定】'}${item.src}`); }
+function tip(e, item) { el('title', {}, e, item.src); }
 const G = n => el('g', { id: n });
 const gLines = G('lines'), gDots = G('dots'), gMark = G('marks'), gModel = G('models'), gLabel = G('labels'), gLegend = G('legend'), gSec = G('section');
 function centroid(pred) { let sx = 0, sy = 0, n = 0;
@@ -200,10 +199,10 @@ for (const s of D.SEEDS.filter(s => s.kind === 'oren-prov')) {
 for (const t of D.TUBES) { const a = byId[t.a], b = byId[t.b], pts = terrainPath([a.x, a.y], [b.x, b.y], 40);
   el('path', { d: toD(pts), fill: 'none', stroke: '#0b3b4a', 'stroke-width': 5, opacity: .5 }, gLines);
   const p = el('path', { d: toD(pts), fill: 'none', stroke: '#35d0ff', 'stroke-width': 2.2, filter: 'url(#glow)' }, gLines); tip(p, t);
-  const q = pts[12]; el('text', { x: q[0], y: q[1] - 8, 'text-anchor': 'middle', class: 'small inf' }, gLines, '跨城高速运输管道'); }
+  const q = pts[12]; el('text', { x: q[0], y: q[1] - 8, 'text-anchor': 'middle', class: 'small' }, gLines, '跨城高速运输管道'); }
 // 海外航线
 for (const r of D.SEA_ROUTES) { const p = el('path', { d: 'M' + r.pts.map(p => proj(...p).join(',')).join(' L'), fill: 'none', stroke: '#e8f2f7', 'stroke-width': 1.6, 'stroke-dasharray': '4 5' }, gLines); tip(p, r);
-  const [x, y] = r.pts[2]; el('text', { x, y: y + 18, 'text-anchor': 'middle', class: 'small inf' }, gLines, '海外输入航线'); }
+  const [x, y] = r.pts[2]; el('text', { x, y: y + 18, 'text-anchor': 'middle', class: 'small' }, gLines, '海外输入航线'); }
 
 // 赤潮据点：红色菱形，联邦境内加密
 { const land = []; for (let i = 0; i < N; i++) if (owner[i] >= 0) land.push(i);
@@ -227,7 +226,7 @@ for (const f of D.FIEFS) { const [x, y] = proj(f.x, f.y), g = el('g', {}, gMark)
   for (const dx of [-8, 4]) el('rect', { x: x + dx, y: y - 15, width: 4, height: 5, fill: '#d8d4c8', stroke: '#3b3a36', 'stroke-width': .8 }, g);
   el('path', { d: `M${x - 6},${y - 30} h12 v7 q0,7 -6,10 q-6,-3 -6,-10 Z`, fill: '#f5f1e4', stroke: '#16407e', 'stroke-width': 1.6 }, g);
   el('path', { d: `M${x},${y - 28} v12 M${x - 4},${y - 23} h8`, stroke: '#16407e', 'stroke-width': 1.4 }, g);
-  el('text', { x: x + 10, y: y - 2, class: 'small inf' }, g, f.name); }
+  el('text', { x: x + 10, y: y - 2, class: 'small' }, g, f.name); }
 
 // ---------- 首都等轴小模型 ----------
 // 等轴盒子：以 (cx,cy) 为地面中心，a×b 占地，高 h；画可见的顶面、左前面、右前面
@@ -294,7 +293,7 @@ for (const p of D.PLACES) { const [x, y] = proj(p.x, p.y);
     el('text', { x, y: y + 45, 'text-anchor': 'middle', class: 'cap-sub' }, g, p.sub);
   } else {
     el('path', { d: `M${x},${y - 14} l8,14 h-16 Z`, fill: '#b05a00', stroke: '#fff', 'stroke-width': 1 }, g);
-    el('text', { x: x + 11, y: y - 2, class: 'small inf' }, g, `${p.name}（${p.sub}）`);
+    el('text', { x: x + 11, y: y - 2, class: 'small' }, g, `${p.name}（${p.sub}）`);
   } }
 
 // ---------- 帝国大字 + 徽记 ----------
@@ -321,11 +320,11 @@ for (const r of D.REALMS) { const c = centroid(s => r.kinds.includes(s.kind)); c
 D.SEEDS.forEach((s, k) => { if (s.kind !== 'minor') return;
   const n = owner.reduce((a, o) => a + (o === k), 0); if (n < 160) return;
   const [x, y] = proj(...centroid(t => t === s));
-  const t = el('text', { x, y, 'text-anchor': 'middle', class: 'small inf' }, gLabel, '中小国');
+  const t = el('text', { x, y, 'text-anchor': 'middle', class: 'small' }, gLabel, '中小国');
   el('title', {}, t, '【设定】世界观：星球上众多中小国林立（国名、数量、位置设定未给，此处为 12 个示意）'); });
 { const [x, y] = proj(...centroid(s => s.kind === 'overseas')); const g = el('g', {}, gLabel);
   el('text', { x, y: y - 10, 'text-anchor': 'middle', class: 'r-ov' }, g, '海外诸地');
-  el('text', { x, y: y + 8, 'text-anchor': 'middle', class: 'cap-sub' }, g, '稀有矿物 · 异域人员输出地（自设形状）');
+  el('text', { x, y: y + 8, 'text-anchor': 'middle', class: 'cap-sub' }, g, '稀有矿物 · 异域人员输出地');
   el('title', {}, g, '【设定】货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）'); }
 
 // ---------- 图例 ----------
@@ -379,11 +378,11 @@ D.SEEDS.forEach((s, k) => { if (s.kind !== 'minor') return;
   { const tx = px + pw * 0.08, tw = el('g', {}, g); tip(tw, D.SECTION.towers);
     el('rect', { x: tx - 3, y: Y(900), width: 6, height: Y(0) - Y(900), fill: '#6fd3e6', opacity: .85 }, tw);
     el('circle', { cx: tx, cy: Y(905), r: 5, fill: '#bff4ff', filter: 'url(#glow)' }, tw);
-    el('text', { x: tx + 8, y: Y(880), 'font-size': 10, fill: '#9a5200', stroke: '#eef6fb', 'stroke-width': 3 }, tw, '以太气候调节塔（自设）'); }
+    el('text', { x: tx + 8, y: Y(880), 'font-size': 10, fill: '#9a5200', stroke: '#eef6fb', 'stroke-width': 3 }, tw, '以太气候调节塔'); }
   // 条目
   for (const it of D.SECTION.items) { const x = px + it.x * pw, y = Y(it.at), gi = el('g', {}, g); tip(gi, it);
     const up = it.at >= 800 && it.kind !== 'fort';
-    const col = it.kind === 'eden' ? '#8a5a00' : it.tag === 'inf' ? (up ? '#9a5200' : '#ffb347') : up ? '#1f3550' : '#ffffff';
+    const col = it.kind === 'eden' ? '#8a5a00' : up ? '#1f3550' : '#ffffff';
     if (it.kind === 'eden') floatIsle(gi, x, y, 20, true);
     else if (it.kind === 'fort') { el('path', { d: `M${x - 22},${y - 2} h44 l-8,12 h-28 Z`, fill: '#7d858f' }, gi);
       box(gi, x, y - 4, 8, 5, 10, '#d7dde3', '#9aa3ad', '#b8c0c8'); }

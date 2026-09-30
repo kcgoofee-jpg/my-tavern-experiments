@@ -13,7 +13,7 @@ import { placeEmpty, stDotLabel } from './shell.mjs';
 import { P } from './plugins.mjs';
 import * as TCCvd from './cvd.mjs';
 // ---------------- 界面语言（中 / EN）与主题（自动 / 浅色 / 深色）----------------
-// 界面文字在 i18n/zh.json、en.json；地名的英文在 maps.json 的 *_en 字段，世界图地名在 en.json 的 names。设定原文（地点卡正文）不翻译。
+// 界面文字在 i18n/zh.json、en.json；地名的英文在 maps.json 的 *_en 字段，世界图地名在 en.json 的 names。地点卡正文不翻译。
 export let LANG = window.__lang || 'zh', DICT = {};
 const fmt = (s, v) => { for (const [a, b] of Object.entries(v || {})) s = String(s).split('{' + a + '}').join(b); return s; };
 // 包内文案（manifest.strings，通用化 v1 接入）：键 = i18n 键、值不分语言；英文变体写「键@en」（缺了退回无后缀值）。
