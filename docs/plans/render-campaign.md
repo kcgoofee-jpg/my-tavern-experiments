@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T14:21:19Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T14:27:02Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 17 | 0 | 31 | 0 | 0 | 0 | 48 |
+| standard | 18 | 0 | 30 | 0 | 0 | 0 | 48 |
 | hero | 3 | 0 | 11 | 1 | 6 | 0 | 21 |
 
 Below-gate (user spot-check): none
@@ -32,7 +32,7 @@ Below-gate (user spot-check): none
 | 15 | `lm:blood_mill` | landmark | done | - |  |  | New model: blood mill |
 | 16 | `lm:freight_yard` | landmark | done | - |  |  | New model: freight yard |
 | 17 | `lm:lower_bar` | landmark | done | - |  |  | New model: lower bar |
-| 18 | `lm:slums` | landmark | open | new |  |  | New model: slums |
+| 18 | `lm:slums` | landmark | done | - |  |  | New model: slums |
 | 19 | `lm:rebirth_workshop` | landmark | open | new |  |  | New model: rebirth workshop |
 | 20 | `lm:schneider_clinic` | landmark | open | new |  |  | New model: schneider clinic |
 | 21 | `lm:elite_club` | landmark | open | new |  |  | New model: elite club |

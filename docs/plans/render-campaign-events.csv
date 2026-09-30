@@ -138,3 +138,14 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T14:19:11Z,lm:lower_bar,review-r1,done,std-1,pass,"r1 7.5/6.5 pass; polish: soot, fire escape rails, warmer light"
 2026-09-30T14:21:19Z,lm:lower_bar,final,done,std-1,,"2400px/64spp c1+c2, glb std/low ok, logs clean"
 2026-09-30T14:21:19Z,lm:lower_bar,ship,done,std-1,,"maps.json marker link + lm_lower_bar, card-buildings row; manifest count test -> 44; check_maps 0/0, smoke pass"
+2026-09-30T14:21:39Z,lm:slums,new,claim,std-1,,
+2026-09-30T14:21:39Z,lm:slums,new,done,std-1,,scaffolded
+2026-09-30T14:22:47Z,lm:slums,setting,done,std-1,,setting block (card L369 + A29; layout repo-inferred)
+2026-09-30T14:24:35Z,lm:slums,draft,done,std-1,,c1 2000px 16spp
+2026-09-30T14:24:35Z,lm:slums,board,done,std-1,,"board c1/c2/under, logs clean"
+2026-09-30T14:24:35Z,lm:slums,gapcheck,done,std-1,,"shacks, pipes, cables, bridges, water point, tank tower all in frame after fix"
+2026-09-30T14:24:35Z,lm:slums,review-r1,done,std-1,fail,"r1 6.5/6 fail: pipes/cables/bridges invisible, bare roofs"
+2026-09-30T14:24:35Z,lm:slums,fix,done,std-1,,"thicker pipes, cable runs, plank bridges with rails, tarp sails, roof barrels"
+2026-09-30T14:24:35Z,lm:slums,review-r2,done,std-1,pass,r2 7.5/6 pass
+2026-09-30T14:27:02Z,lm:slums,final,done,std-1,,"2400px/64spp c1+c2, std 0.74 MB / low 0.28 MB (max_mb std 0.9/low 0.45, district), logs clean"
+2026-09-30T14:27:02Z,lm:slums,ship,done,std-1,,"maps.json marker link + lm_slums, card-buildings row; manifest count test -> 45; check_maps 0/0, smoke pass"
