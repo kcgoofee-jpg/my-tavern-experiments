@@ -11,9 +11,8 @@
   fictional example pack.
 - Plan of record: `docs/plans/spatial-os.md` (Chinese edition `.zh.md`). Work proceeds one prompt at a time, by
   step id (S0, S1, …).
-- Read order: this file → `docs/ARCHITECTURE.md` (module map, data flow, entity protocol; created in S0.2 — until
-  then see the module map in `docs/archive/agent-brief-2026-09-30.md`) → `docs/naming.md` (glossary, after S0.4)
-  → `docs/todo.md` → only then grep further.
+- Read order: this file → `docs/ARCHITECTURE.md` (module map, data flow, entity protocol) → `docs/naming.md`
+  (glossary, after S0.4) → `docs/todo.md` → only then grep further.
 
 ## 2. Engine rules (Spatial OS)
 
@@ -54,10 +53,10 @@
 - **Commit:** `git -c user.email=kcgoofee-jpg@users.noreply.github.com commit -F <msgfile>`; English messages;
   **no `Co-Authored-By` trailer**.
 - **Push in batches** (every 2–3 items, usually once per prompt): `bash tools/push_preview.sh --head --no-escalate`
-  — fetch + rebase, bump `map/data/head.json` ("head #N"), push `preview` together with its compatibility mirror
-  `cloud/tc-mid-low` (never only one of them), then a detached incremental CDN warm-up (`logs/warm_cdn.log`; do
-  not wait for it). `--full` forces a full warm-up; `WARM=0` skips it. If the push is rejected: stop and report;
-  never force-push.
+  — fetch + rebase, bump `map/data/head.json` ("head #N"), push `preview`, then a detached incremental CDN warm-up
+  (`logs/warm_cdn.log`; do not wait for it). `--full` forces a full warm-up; `WARM=0` skips it. The old mirror
+  `cloud/tc-mid-low` is deprecated and not pushed by default (`LEGACY=1` only on explicit request; see
+  `docs/branching.md`). If the push is rejected: stop and report; never force-push.
 - **CI:** a push runs node --test + smoke; check with `gh run list --branch preview -L 1`.
 - **Branches:** `preview` is the integration / follow line; `main` is the release line with the same content,
   synced by fast-forward (`bash tools/sync_main.sh`, `DRY_RUN=1` to preview). No tags, releases or version bumps
@@ -87,7 +86,7 @@
   status: DONE | PARTIAL | BLOCKED
   items: <each prompt item id> ✓/✗
   commits: <sha> <subject>   (one per line)
-  pushed: head #<N> | not pushed
+  pushed: yes | not pushed   (chat report: add the head #N the push printed; the log copy is committed before the push)
   tests: node <pass>/<total> | smoke PASS/FAIL | arch PASS/FAIL | probes: <name>=PASS/FAIL …
   deviations: none | <what differs from the prompt and why>
   blocker: none | <verbatim error, first 20 lines> / <what you tried> / <options A, B>
