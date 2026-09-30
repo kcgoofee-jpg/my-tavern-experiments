@@ -110,3 +110,7 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T13:49:16Z,lm:blood_mill,review-r1,done,std-1,pass,"r1 8/6.5 pass; polish: bg tint, wet patches, dimmer light"
 2026-09-30T13:54:26Z,lm:blood_mill,final,done,std-1,,"2400px/64spp c1+c2, std 0.55 MB / low 0.18 MB, logs clean"
 2026-09-30T13:54:26Z,lm:blood_mill,ship,done,std-1,,"maps.json marker link + lm_blood_mill entry, card-buildings row; tests/estate3d_manifest count 41->42; check_maps 0/0, smoke pass"
+2026-09-30T13:54:46Z,lm:freight_yard,new,claim,std-1,,
+2026-09-30T13:55:04Z,lm:freight_yard,new,done,std-1,,scaffolded
+2026-09-30T13:56:14Z,lm:freight_yard,setting,done,std-1,,setting block written (card L104/L12; yard repo-inferred)
+2026-09-30T13:58:13Z,lm:freight_yard,draft,release,std-1,,

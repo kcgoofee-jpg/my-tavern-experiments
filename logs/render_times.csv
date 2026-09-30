@@ -507,3 +507,6 @@ date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
 2026-09-30,lm_blood_mill,patch,64,1,0.0,0,darwin,ok,0,0
 2026-09-30,lm_blood_mill,patch,0,32,0.2,0,darwin,ok,0,0
 2026-09-30,lm_blood_mill,patch,0,32,0.2,0,darwin,ok,0,0
+2026-09-30,lm_freight_yard,draft,1600,16,0.1,0,darwin,ok,0,0
+2026-09-30,lm_freight_yard,draft,1600,16,0.1,0,darwin,ok,0,0
+2026-09-30,lm_freight_yard,draft,1600,16,0.1,0,darwin,ok,0,0

@@ -198,3 +198,27 @@ open: (a) Q-09 = review sheet K-01..K-09 in docs/kernel-schema.zh.md §0 (recomm
 node counts (v2 via compat): eden 112 nodes / depth 3 (with the room plan 176 / 4; maps only 108 / 3) · town 8 / 2 · minimal 5 / 3
 cleanup: done (no servers or background processes started; the prototype stays in the session scratchpad)
 === END ===
+
+=== RESULT R-LOOP standard std-1 ===
+
+status: PAUSED (usage limit; ledger clean and resumable)
+
+items finished this session: review:clearing_depot (r1 7/6 pass, skip ship); review:contest_corridor (r1 7/5 fail -> r2 7.5/6, shipped); review:ether_dome (r1 7/6 pass); review:free_knight_camp (r1 7/6 pass); review:glory_crown (r1 7/5 fail -> r2 7/6, shipped); review:linguang_post (r1 8/7 pass); review:rust_outskirts (r1 8/7 pass); review:league_club (r1 5.5/7 fail -> r2 7.5/7, shipped); review:rothschild_estate (r1 6.5/7.5 fail -> r2 7.5/7.5, shipped); review:elite_academy (r1 6.5/7.5 fail -> r2 7.5/7.5, shipped); review:holy_mountain (r1 7.5/5.5 fail -> r2 7.5/6.5, glb re-exported); lm:blood_mill (new, r1 8/6.5, shipped)
+
+items below gate: none
+
+waiting: none
+
+pushed: yes (head #126 for the last item; this log entry pushed after)
+
+tests: check_maps PASS (56 maps, 0 errors, 0 warnings) | estate3d_manifest PASS (9/9; count bumped 41 -> 42 for blood_mill) | smoke PASS (node 633/634, 1 skipped)
+
+blocker: none
+
+next: lm:freight_yard (claim released). new + setting are done in the worktree but NOT committed: docs/landmarks/freight_yard.md, blender/landmarks/freight_yard/build.py, map/props/freight_yard/manifest.json, checklist. Board renders were made (docs/reviews/landmark_freight_yard/board.jpg). Do not commit map/props/freight_yard/manifest.json before its glb exists: tests/estate3d_manifest.test.mjs requires every manifest to have its glb. Resume at gapcheck (ledger is at draft: record draft + board, then gapcheck, review-r1, final, ship, and bump the manifest count in the test to 43 when it ships).
+
+notes: (1) Shared island models (league_club, rothschild_estate, elite_academy) were fixed inside their own function in blender/landmarks/upper_estates.py only, and got per-group glb budgets plus a max_mb cap in their manifests (their glbs were 2.2-2.6 MB before and are 0.6-0.9 MB now). (2) landmark.py final --force re-queues the render; to redo only the glb export, edit the manifest and run final without --force. (3) landmark.py ship refuses when the marker already links another map entry (rothschild: zaibatsu_estate -> lm_zaibatsu_estate already loads the model): update the card-buildings row by hand. (4) The holy_mountain script gained --save <path>; its glb pipeline is export_glb.py (budgets from holy_mountain.json) then gltf-transform webp + meshopt (low: simplify 0.25, resize 512, webp 60, meshopt). (5) A push can hit a rebase conflict in the generated docs/plans/render-campaign.md: regenerate it with status --md, git add, rebase --continue. (6) Remaining: 7 landmarks (freight_yard, lower_bar, slums, rebirth_workshop, schneider_clinic, elite_club, hunting_camp), 7 scenes, 7 base-map audits, 8 period variants.
+
+cleanup: done (no Blender, queue job or server of mine running)
+
+=== END ===

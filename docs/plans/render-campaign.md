@@ -2,7 +2,7 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T13:54:26Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T13:58:13Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
@@ -30,7 +30,7 @@ Below-gate (user spot-check): none
 | 13 | `review:elite_academy` | review | done | - |  |  | Review and fix model elite academy |
 | 14 | `review:holy_mountain` | review | done | - |  |  | Review and fix model holy mountain |
 | 15 | `lm:blood_mill` | landmark | done | - |  |  | New model: blood mill |
-| 16 | `lm:freight_yard` | landmark | open | new |  |  | New model: freight yard |
+| 16 | `lm:freight_yard` | landmark | open | draft |  |  | New model: freight yard |
 | 17 | `lm:lower_bar` | landmark | open | new |  |  | New model: lower bar |
 | 18 | `lm:slums` | landmark | open | new |  |  | New model: slums |
 | 19 | `lm:rebirth_workshop` | landmark | open | new |  |  | New model: rebirth workshop |
