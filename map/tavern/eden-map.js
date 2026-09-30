@@ -1091,7 +1091,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   }
   // 空间坐标契约（W1，docs/plans/llm-campaign.md）：当前地点 + 出口 / 守卫锥 / 邻近地标 → ≤120 token 的 JSON 契约
   // （纯编译在 tavern/spatial.mjs；默认关 edenMapSpatial，上限 edenMapSpatialBudget）。与状态行同一轮注入。
-  let SPm = null, spatialNow = '';
+  let SpatialM = null, spatialNow = '';
   const ptsCache = new Map();
   function pointsFor(mapId) {
     const p = regNow?.maps?.[mapId]?.data;
@@ -1101,14 +1101,14 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   }
   async function spatialInject() {
     if (life.dead || lsGet('edenMapSpatial') !== '1' || !regNow) return;
-    SPm ??= await import(SELF + 'tavern/spatial.mjs').catch(() => null); if (!SPm || life.dead) return;
-    const loc = SPm.locate(regNow, here);
-    if (!loc?.mapId) { if (spatialNow) { spatialNow = ''; SPm.applySpatial(thFn, '', 2); } return; }
+    SpatialM ??= await import(SELF + 'tavern/spatial.mjs').catch(() => null); if (!SpatialM || life.dead) return;
+    const loc = SpatialM.locate(regNow, here);
+    if (!loc?.mapId) { if (spatialNow) { spatialNow = ''; SpatialM.applySpatial(thFn, '', 2); } return; }
     const pts = await pointsFor(loc.mapId);
     const mm = /^(\d{1,2}):(\d{2})/.exec(String(clock?.time || '')), t = mm ? (+mm[1] * 60 + +mm[2]) / 1440 : 0;
-    const text = SPm.coordView({ reg: regNow, here, pointsByMap: { [loc.mapId]: pts }, t, budget: +(lsGet('edenMapSpatialBudget') || 120) });
+    const text = SpatialM.coordView({ reg: regNow, here, pointsByMap: { [loc.mapId]: pts }, t, budget: +(lsGet('edenMapSpatialBudget') || 120) });
     if (text === spatialNow) return; spatialNow = text;
-    SPm.applySpatial(thFn, text, 2);
+    SpatialM.applySpatial(thFn, text, 2);
   }
   function checkpointStep() {   // 确认前进时写检查点（内容没变不写）
     if (!MDm || !custom || customChat !== chatId()) return;
