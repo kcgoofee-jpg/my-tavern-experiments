@@ -11,6 +11,22 @@
 - **中层昼夜底图 DZI 上线 + 多时段自动换图**：`tools/make_dzi.py` 把中层昼夜两张 8000×5000 渲染源图切成 `map/art/tc_mid_day` / `tc_mid_night` 金字塔（各 14 层 226 张，`--verify` 通过）；`maps.json` 的 tc_mid 注册 `periods: { day, night }`（`maps.schema.json` 新增 `periods` 定义、`tools/check_maps.py` 档位存在性检查），查看器按世界时钟时段档位自动换底图——`app/nav.mjs` `applyPeriod()` 在 `eden-map:clock` 跨过昼 / 夜档时原地换第 0 层瓦片源（视角 / 标记 / 叠加层不动，与「另一版底图」开关同一机制），已配昼夜档的层不再叠色调免双重变暗；独立打开 / 读不到世界时间时行为不变。设置项文案改为「按时段给上层、中层加色调与昼夜底图」。
 - **README 门控对齐**：发版线钉到已存在的标签 `map-v0.9.7`（`check_readme.py --fix` + 正文手改）。
 
+- **社区预设文本净化 / 半结构化字段（Part 7-1 / 7-2）**：`map/tavern/sanitize.mjs` 剥掉第三方预设往正文里塞的私有块（`<thinking>` / `<liwe>` / `<state>` / `<anchor>` / `<collapse>` / `<hidden>`，成对、带属性、自闭合、含没闭合的流式尾），标签表按设置走（`edenMapSanitize=0` 全关、`edenMapSanitizeTags` 自定义；缺省 `DEFAULT_STRIP_TAGS`）；`map/tavern/preset.mjs` 反过来吸收状态栏里的半结构化字段（【当前地点】/ ■ 时间：/ 行首「键：值」，行首那条只认登记过的键名，免得把叙事正文吸成字段）→ 标准字段 `location / time / present / outfit / weather / status`，供当前地点 / 世界时间的兜底用。两个模块都登记进架构看门狗的纯流水线白名单（禁宿主全局）。
+
+- **视口可见性节流（Part 7-4）**：`map/app/visibility.mjs` 立按「原因」引用计数的暂停开关（纯状态机，node 单测），DOM 侧接 Page Visibility（`visibilitychange` + iOS WebKit 只发的 `pagehide` / `pageshow`）与 IntersectionObserver；查看器启动时把暂停 / 恢复转给 FPS 读数循环（`fps.mjs` 新增 `suspendFpsMeter`，用户的开关位与守卫的暂停位分开存，恢复时不会把本来没开的读数表点亮）与三维子页（既有 `estate:pause` / `estate:resume` 协议）。
+
+- **全局监听器收拢（Part 2-3）**：新纯核心 `map/core/listeners.mjs`（ListenerBus）是全仓 `window` / `document` 级监听的唯一登记处——按键登记（同键重复登记先摘旧的，模块重复求值不会叠监听）、`offAll()` 一把摘净、`describe()` 出台账给泄漏排查用；查看器侧实例 `map/app/bus.mjs`（目标懒解析，裸环境安静跳过）。已迁移：clouds（change / visibilitychange）、shell（resize / storage）、th-ui（message）、settings（两处外部点击）、host（message）、boot（resize）。
+
+- **版本与检查更新下沉（Part 2-1）**：`eden-map.js` 里的版本 / 检查更新段搬进 `map/tavern/host-about.mjs`（`createAbout`，取数 / 发消息 / 线路 / 跟随分支 / 模块加载全部注入），入口只留装配；载荷形状与降级口径（`{ status: 'fail' }`）逐字不变。`tests/host_about.test.mjs` 9 项全走桩。
+
+- **活体世界氛围：天气层（Part 4-1）**：新纯核心 `map/core/weather.mjs`——预设表（晴 / 雨 / 雷暴雨 / 沙尘 / 雪）、剧情推天气（事态文本按权重扫描，夜里的雨够大升级雷暴雨）、确定性粒子场（mulberry32，坐标收在有界区间，预算按面积 × 画质缩放并封顶 600）、闪电时序（一亮三闪）与 `describe()` 摘要；渲染在 `map/app/weather.mjs`，作为 canvas 登记进 LayerRegistry 的 `fx` 槽位（菜单行「天气」，中英成对），由宿主事态（`eden-map:events`）与时钟（`eden-map:clock`）驱动，走与 `app/host.mjs` 同一道宿主闸，可见性守卫按下暂停位即停帧。
+
+- **零 Token 确定性世界时钟（Part 6-5）**：新纯核心 `map/core/clock.mjs`——世界时间由「推进了多少轮」算出（默认 10 分钟 / 轮），不靠模型、不联网、不读系统时间；五个时段（夜 / 清晨 / 白天 / 黄昏 / 夜）无缝覆盖 1440 分钟，`advance()` 支持跨日与负轮回溯（不退回开局前），中英短串与 HH:MM 一并给。同一 (起点, 轮数) 永远同一结果——回放与截图对拍靠这条。
+
+- **私有 API Key 网关（Part 6-1，底座）**：`map/tavern/llm.mjs` 只算「该怎么发」——OpenAI 兼容端点 / Claude（`x-api-key` + `anthropic-version`）/ Gemini（`?key=` 查询串）/ DeepSeek / 自定义五套，`checkConfig()` 体检缺哪一项报哪一项、`buildRequest()` 出 url / headers / body（三种放钥匙的位置各走各的）、`readText()` 读四家不同形状的回答、`maskKey()` / `redact()` 保证钥匙只以脱敏形态进日志。模块自身不发请求、不碰存储与酒馆全局（单测全喂配置）。
+
+- **断网降级修复 + 浏览器探针 `tools/browser/p4_fx.mjs`（Part 1-5）**：探针查首屏挂载、fx 槽位接线、天气 canvas 是否真画出像素（抽样非透明像素）、监听器台账、以及断网降级。抓到并修掉一个真 bug：首张图加载成功后 `#loading` 带上的 `done` 类会把后一次 `open-failed` 的失败提示整个盖住——断网切图时用户只看见一片空白、没有任何说明；现在 `open-failed` 撤掉 `done`、露出遮罩文案与「重试」。探针 10/10（首屏 457 ms、雷暴雨 canvas 有像素、断网后留在页面并给出「地图加载失败」+ 重试、断网前零控制台错误）。
+
 - **会话录制回放框架（Session Replay Fixtures）**：宿主桥与纯流水线立起聊天快照导出与注入接口，脱离真实酒馆浏览器实现毫秒级端到端上下文回归测试（`5958f75` + `788be44`）。`map/tavern/context.mjs` 纯数据契约：`exportSessionSnapshot()` 把窗口楼层 + MVU 状态组装成标准 SessionSnapshot JSON（v1：`mvu.stat / vars / floors` + `messages[].{floor, role, text, raw, original?}` + 可选 `state.tag` 标签状态机；text 恰为 parseText(raw)，raw 保留 JSONPatch 用的完整原文），`validateSessionSnapshot()` 体检（只报告不抛）、`perFloorStatOf()` 每楼变量回放回调、`ContextPipeline.fromSnapshot()` 一键恢复——messages 走与实况同一条 readMsgs 规范化路径（补丢标签 → 剥 EJS → 指纹缓存），⌖ 标签状态机可整块恢复；畸形快照降级不抛（坏楼跳过并记账 degraded，未知版本 / mvu 段损坏放行消息回放）。`map/tavern/mvu-bridge.mjs` 新增只读 `dumpState({ floors? })`（最新楼 stat + 聊天变量 + 可选每楼 stat_data，不写状态、不作废快照缓存，录制零改变正常游戏模式逻辑）。`tests/fixtures/sessions/` 两份脱敏合成夹具（多人物对话、⌖火灾 / ⌖人物 / ⌖地点标签、CoT 包裹楼、每楼变量表、⌖改名 / ⌖用途与标签状态机）+ `tests/session_replay.test.mjs` 7 项：两次独立回放的事件 / 人物栏 / 行程逐项一致（确定性）、标签状态恢复后 customTags 零重复应用、损坏快照容错降级、dumpState → export → fromSnapshot 端到端往返、纯度机检（裸 node 无 window / Mvu / SillyTavern 全程跑通）。
 
 ## 0.9.7（2026-09-29）
