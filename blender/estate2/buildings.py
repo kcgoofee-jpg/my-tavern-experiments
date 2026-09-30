@@ -14,6 +14,14 @@ ARCHED = {'hall', 'w_wing_a', 'e_wing_a', 'w_wing_b', 'e_wing_b', 'w_pav', 'e_pa
 
 
 # ---------------------------------------------------------------- 材质
+def _bevel(t, n=None, loc=(0, -700)):
+    """r5（倒角高光）：Bevel 节点（半径 4 cm，4 采样）给石作 / 屋面边棱一道细高光；已有的法线（贴图 / 凹凸）接进它的 Normal。"""
+    bv = t.new('ShaderNodeBevel', loc, samples=4, Radius=0.04)
+    if n is not None:
+        t.link(n, bv.inputs['Normal'])
+    return bv.outputs['Normal']
+
+
 def _stone(name, tex, tint, tint_amt, windows=True, grime=0.18, ashlar=False):
     m, t = mat_new(name)
     if t is None:
@@ -88,7 +96,7 @@ def _stone(name, tex, tint, tint_amt, windows=True, grime=0.18, ashlar=False):
     b = t.bsdf((200, 0))
     t.link(col, b.inputs['Base Color'])
     t.link(rough, b.inputs['Roughness'])
-    t.link(n, b.inputs['Normal'])
+    t.link(_bevel(t, n), b.inputs['Normal'])   # r5（倒角高光）
     return m
 
 
@@ -113,7 +121,7 @@ def _roof(name, tex, tint, amt, scale=1 / 2.2):
     b = t.bsdf((200, 0))
     t.link(col, b.inputs['Base Color'])
     t.link(r, b.inputs['Roughness'])
-    t.link(n, b.inputs['Normal'])
+    t.link(_bevel(t, n), b.inputs['Normal'])   # r5（倒角高光）
     return m
 
 
@@ -122,6 +130,7 @@ def _plain(name, col, rough=0.5, metal=0.0, emit=None):
     if t is None:
         return m
     b = t.bsdf((200, 0), Roughness=rough, Metallic=metal, **{'Base Color': (*col, 1)})
+    t.link(_bevel(t), b.inputs['Normal'])   # r5（倒角高光）
     if emit:
         b.inputs['Emission Color'].default_value = (*emit[0], 1)
         b.inputs['Emission Strength'].default_value = emit[1]
@@ -160,13 +169,40 @@ def _pool():
     if t is None:
         return m
     # r4b 泳池：绿松石
+    # r5（泳池水）：水面是单层面片、下面没有池底，开透射会透出白石台面 → 保留不透明绿松石底色，
+    #   改为水的 IOR + 更光滑 + 两级细波纹凹凸（大浪 3、小碎波 14），反射天空才像真水
     v, _ = t.coords('Object', 1.0)
-    n = t.new('ShaderNodeTexNoise', (-800, -200), **{'Scale': 0.6, 'Detail': 6.0})
+    n = t.new('ShaderNodeTexNoise', (-800, -200), **{'Scale': 3.0, 'Detail': 4.0})
     t.link(v, n.inputs['Vector'])
-    bump = t.new('ShaderNodeBump', (-400, -200), Strength=0.1, Distance=0.1)
+    n2 = t.new('ShaderNodeTexNoise', (-800, -500), **{'Scale': 14.0, 'Detail': 3.0})
+    t.link(v, n2.inputs['Vector'])
+    bump = t.new('ShaderNodeBump', (-500, -200), Strength=0.2, Distance=0.05)
     t.link(n.outputs['Fac'], bump.inputs['Height'])
-    b = t.bsdf((200, 0), Roughness=0.03, **{'Base Color': (0.04, 0.4, 0.45, 1)})
-    t.link(bump.outputs['Normal'], b.inputs['Normal'])
+    bump2 = t.new('ShaderNodeBump', (-300, -300), Strength=0.2, Distance=0.02)
+    t.link(n2.outputs['Fac'], bump2.inputs['Height'])
+    t.link(bump.outputs['Normal'], bump2.inputs['Normal'])
+    b = t.bsdf((200, 0), Roughness=0.015, IOR=1.333, **{'Base Color': (0.05, 0.32, 0.36, 1), 'Transmission Weight': 0.0})
+    t.link(bump2.outputs['Normal'], b.inputs['Normal'])
+    return m
+
+
+def _basin():
+    """r5（规整水面）：喷泉池 / 水渠 / 倒影池的水——深色近黑绿、镜面，靠反射天空和石边读出“水”，不是绿松石搪瓷。"""
+    m, t = mat_new('e2_basin')
+    if t is None:
+        return m
+    v, _ = t.coords('Object', 1.0)
+    n1 = t.new('ShaderNodeTexNoise', (-800, -200), **{'Scale': 1.5, 'Detail': 4.0})
+    t.link(v, n1.inputs['Vector'])
+    n2 = t.new('ShaderNodeTexNoise', (-800, -500), **{'Scale': 7.0, 'Detail': 3.0})
+    t.link(v, n2.inputs['Vector'])
+    b1 = t.new('ShaderNodeBump', (-500, -200), Strength=0.05, Distance=0.1)
+    t.link(n1.outputs['Fac'], b1.inputs['Height'])
+    b2 = t.new('ShaderNodeBump', (-300, -300), Strength=0.05, Distance=0.05)
+    t.link(n2.outputs['Fac'], b2.inputs['Height'])
+    t.link(b1.outputs['Normal'], b2.inputs['Normal'])
+    b = t.bsdf((200, 0), Roughness=0.02, IOR=1.333, **{'Base Color': (0.015, 0.035, 0.03, 1)})
+    t.link(b2.outputs['Normal'], b.inputs['Normal'])
     return m
 
 
@@ -182,15 +218,16 @@ def _honed():
     t.link(sep.outputs['X'], cv.inputs[0]); t.link(sep.outputs['Y'], cv.inputs[1])
     br = t.new('ShaderNodeTexBrick', (-600, 0), **{'Scale': 1.0, 'Mortar Size': 0.006, 'Brick Width': 1.2, 'Row Height': 0.8})
     br.offset = 0.0
-    br.inputs['Color1'].default_value = (0.86, 0.83, 0.77, 1)
-    br.inputs['Color2'].default_value = (0.8, 0.77, 0.7, 1)
-    br.inputs['Mortar'].default_value = (0.55, 0.52, 0.47, 1)
+    br.inputs['Color1'].default_value = (0.72, 0.7, 0.65, 1)   # r5（白石过曝）：0.86 / 0.8 → 0.72 / 0.67
+    br.inputs['Color2'].default_value = (0.67, 0.645, 0.59, 1)
+    br.inputs['Mortar'].default_value = (0.5, 0.47, 0.42, 1)
     t.link(cv.outputs[0], br.inputs['Vector'])
     nz = t.new('ShaderNodeTexNoise', (-600, -300), **{'Scale': 3.0, 'Detail': 6.0})
     t.link(v, nz.inputs['Vector'])
-    col = t.mix(t.math('MULTIPLY', nz.outputs['Fac'], 0.25), br.outputs['Color'], (0.7, 0.66, 0.58), loc=(-300, 0))
-    b = t.bsdf((200, 0), Roughness=0.32)
+    col = t.mix(t.math('MULTIPLY', nz.outputs['Fac'], 0.25), br.outputs['Color'], (0.6, 0.56, 0.49), loc=(-300, 0))
+    b = t.bsdf((200, 0), Roughness=0.45)
     t.link(col, b.inputs['Base Color'])
+    t.link(_bevel(t), b.inputs['Normal'])   # r5（倒角高光）
     return m
 
 
@@ -215,13 +252,19 @@ def _hedge():
 
 
 def _spray():
-    """喷泉水柱：半透明白 + 微自发光。"""
+    """喷泉水柱：透射水 + 噪声打散的透明度（r5：去掉自发光，不再是发光塑料管 / 白片）。"""
     m, t = mat_new('e2_spray')
     if t is None:
         return m
-    b = t.bsdf((200, 0), Roughness=0.2, **{'Base Color': (0.9, 0.95, 1.0, 1), 'Transmission Weight': 0.6, 'Alpha': 0.75})
-    b.inputs['Emission Color'].default_value = (0.85, 0.9, 1.0, 1)
-    b.inputs['Emission Strength'].default_value = 0.25
+    b = t.bsdf((200, 0), Roughness=0.08, IOR=1.333, **{'Base Color': (0.92, 0.95, 0.97, 1), 'Transmission Weight': 1.0})
+    b.inputs['Emission Strength'].default_value = 0.0
+    # r5（水帘）：透明度乘一张噪声（Scale 8，0.35–0.7 映射），水帘碎成一缕一缕，不是整片
+    v, _ = t.coords('Object', 1.0)
+    nz = t.new('ShaderNodeTexNoise', (-600, -300), **{'Scale': 8.0, 'Detail': 4.0})
+    t.link(v, nz.inputs['Vector'])
+    mr = t.new('ShaderNodeMapRange', (-400, -300), **{'From Min': 0.35, 'From Max': 0.7, 'To Min': 0.0, 'To Max': 1.0})
+    t.link(nz.outputs['Fac'], mr.inputs['Value'])
+    t.link(t.math('MULTIPLY', mr.outputs[0], 0.75, (-200, -300), clamp=True), b.inputs['Alpha'])
     return m
 
 
@@ -234,11 +277,14 @@ def mats():
         return MATS
     MATS.update(
         # r3：清爽白石（Portland / 石灰华调），降低风化，不再是奶油墙
-        white=_stone('e2_stone_white', 'castle_brick_02_white', (0.92, 0.9, 0.85), 0.82, grime=0.07, ashlar=True),
-        plain=_stone('e2_stone_plain', 'castle_brick_02_white', (0.94, 0.925, 0.88), 0.85, windows=False, grime=0.05),
-        ashlar=_stone('e2_stone_ashlar', 'castle_brick_02_white', (0.93, 0.91, 0.86), 0.85, windows=False, grime=0.06, ashlar=True),
+        # r5（白石过曝）：色调 0.92 → 0.8、混入 0.82 → 0.7，封面日光下不再剪白，仍读作白石灰岩而非灰石
+        white=_stone('e2_stone_white', 'castle_brick_02_white', (0.8, 0.78, 0.73), 0.7, grime=0.07, ashlar=True),
+        plain=_stone('e2_stone_plain', 'castle_brick_02_white', (0.81, 0.79, 0.74), 0.7, windows=False, grime=0.05),
+        ashlar=_stone('e2_stone_ashlar', 'castle_brick_02_white', (0.8, 0.78, 0.73), 0.7, windows=False, grime=0.06, ashlar=True),
         honed=_honed(),
         wallstone=_stone('e2_stone_wall', 'castle_wall_varriation', (0.66, 0.61, 0.52), 0.3, windows=False, grime=0.22),
+        # r5（挡土墙）：台地挡土墙专用琢石——比建筑白石暗一档、风化更重，墙面不再是一条亮白带
+        wall_ashlar=_stone('e2_wall_ashlar', 'castle_brick_02_white', (0.74, 0.71, 0.65), 0.75, windows=False, grime=0.26, ashlar=True),
         beige=_stone('e2_stone_beige', 'castle_brick_02_white', (0.66, 0.56, 0.42), 0.7),
         grey=_stone('e2_stone_grey', 'castle_wall_varriation', (0.4, 0.39, 0.37), 0.35, grime=0.25),
         grey_plain=_stone('e2_stone_grey_plain', 'castle_wall_varriation', (0.4, 0.39, 0.37), 0.35, windows=False),
@@ -252,9 +298,10 @@ def mats():
         glass=_plain('e2_glass', (0.05, 0.07, 0.08), 0.05),
         awning=_awning(),
         pool=_pool(),
-        shutter=_plain('e2_window_glass', (0.05, 0.07, 0.09), 0.03, 0.65),
+        basin=_basin(),   # r5（规整水面）：喷泉 / 水渠 / 倒影池用深色镜面水；pool 只留给真泳池
+        shutter=_plain('e2_window_glass', (0.05, 0.07, 0.09), 0.02, 0.0),   # r5：玻璃不是金属
         hedge=_hedge(),
-        copper=_plain('e2_copper_verdigris', (0.22, 0.46, 0.38), 0.55, 0.2),
+        copper=_plain('e2_copper_verdigris', (0.22, 0.46, 0.38), 0.75, 0.0),   # r5：铜绿是矿物锈层，哑光非金属
         terracotta=_roof('e2_roof_terracotta', 'clay_roof_tiles_02', (0.5, 0.2, 0.1), 0.35, 1 / 1.2),
         metal=_plain('e2_metal_roof', (0.55, 0.57, 0.58), 0.3, 0.8),
         greenglass=_plain('e2_glasshouse', (0.55, 0.7, 0.68), 0.05, 0.3),
@@ -282,6 +329,7 @@ def _box(bm, x0, y0, z0, x1, y1, z1):
                                      (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)]]
     for f in [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]:
         bm.faces.new([vs[i] for i in f])
+    return vs   # r5：返回新顶点（绿篱倒角要用）
 
 
 def _hip(bm, w, d, z, pitch, ov):
@@ -460,8 +508,11 @@ def _facade_detail(bm, w, d, ht, fh, bay, zbase, bg=None, arched=False, steel=No
         B(-L_ / 2 - 0.2, L_ / 2 + 0.2, zbase, 0.6, 0, 0.15)                       # 勒脚
 
 
-def baluster_run(bm, p0, p1, z0, z1=None, h=1.0, pitch=0.42, rail=0.26):
-    """栏杆段（局部坐标）：底座 + 瓶式栏杆柱（方截面收腰）+ 扶手，可斜（楼梯）。"""
+def baluster_run(bm, p0, p1, z0, z1=None, h=1.0, pitch=0.42, rail=0.26, foot=0.0, ends=True):
+    """栏杆段（局部坐标）：底座 + 瓶式栏杆柱（方截面收腰）+ 扶手，可斜（楼梯）。
+
+    r5：foot = 底座向下多埋的深度（坡地不悬空）；ends=False 时两端不放端墩（长栏杆逐段拼接，墩柱另放），
+    段末那根也不放（下一段的第一根就在同一点）。"""
     z1 = z0 if z1 is None else z1
     (x0, y0), (x1, y1) = p0, p1
     ln = math.hypot(x1 - x0, y1 - y0)
@@ -480,12 +531,14 @@ def baluster_run(bm, p0, p1, z0, z1=None, h=1.0, pitch=0.42, rail=0.26):
         for i in range(4):
             j = (i + 1) % 4
             bm.faces.new([vb[i], vb[j], vt[j], vt[i]])
-    quad_bar(z0, z1, rail / 2 + 0.03, 0.22)
+    quad_bar(z0 - foot, z1 - foot, rail / 2 + 0.03, 0.22 + foot)
     quad_bar(z0 + h - 0.16, z1 + h - 0.16, rail / 2 + 0.04, 0.16)
     for k in range(n + 1):
         f = k / n
         x, y, z = x0 + (x1 - x0) * f, y0 + (y1 - y0) * f, z0 + (z1 - z0) * f
-        if k in (0, n):
+        if not ends and k == n:
+            continue
+        if ends and k in (0, n):
             _box(bm, x - 0.2, y - 0.2, z, x + 0.2, y + 0.2, z + h + 0.1)      # 端墩
             continue
         _box(bm, x - 0.06, y - 0.06, z + 0.22, x + 0.06, y + 0.06, z + h - 0.16)
@@ -893,32 +946,124 @@ def walkway(i, pts, col):
     bm_to_obj(bm, f'walk{i}_posts', col, M['plain'])
 
 
+def _along(pts, step):
+    """r5：沿折线按弧长等距取点（含首尾；末点太近就并到终点），给墩柱 / 立柱定位。"""
+    out, need = [tuple(pts[0])], step
+    for a, b in zip(pts[:-1], pts[1:]):
+        seg, pos = math.dist(a, b), 0.0
+        while seg - pos >= need:
+            pos += need
+            t = pos / seg
+            out.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
+            need = step
+        need -= seg - pos
+    if len(out) > 1 and math.dist(out[-1], pts[-1]) < step * 0.35:
+        out[-1] = tuple(pts[-1])
+    elif math.dist(out[-1], pts[-1]) > 1e-3:
+        out.append(tuple(pts[-1]))
+    return out
+
+
 def balustrade_path(name, pts, z, col, h=1.05, closed=False, mat=None):
+    """r5（栏杆）：原来是一条实心扫掠石板（俯视读成一条白线）→ 真瓶式栏杆：
+    路径每 2 m 一段 baluster_run（柱距 0.42 m，底座下埋 0.3 m），约 12 m 一座 0.5 × 0.5 墩柱（高出扶手 0.15 m）。"""
     M = mats()
     s = _resample(pts + ([pts[0]] if closed else []), 2.0)
-    zz = z if not callable(z) else None
-    sweep(name, [(x, y, (zz if zz is not None else z(x, y))) for x, y in s],
-          [(-0.22, -0.3), (-0.22, h), (0.22, h), (0.22, -0.3)], mat or M['plain'], col)
+    zf = z if callable(z) else (lambda x, y, c=z: c)
+    bm = bmesh.new()
+    for a, b in zip(s[:-1], s[1:]):
+        baluster_run(bm, a, b, zf(*a), zf(*b), h=h, pitch=0.42, foot=0.3, ends=False)
+    for x, y in _along(s, 12.0):
+        zz = zf(x, y)
+        _box(bm, x - 0.25, y - 0.25, zz - 0.3, x + 0.25, y + 0.25, zz + h + 0.15)
+    return bm_to_obj(bm, name, col, mat or M['ashlar'])
+
+
+def promenade_wall(name, pts, zf, col):
+    """r5（崖边步道）：长白栏杆从上往下看是一条白线 → 矮石墙（高出地面 0.5 m × 宽 0.45 m，旧石）
+    + 青铜立柱（2.5 m 一根，到地面上 0.95 m）+ 细青铜扶手。zf(x, y) = 地面 − 0.1。"""
+    M = mats()
+    s = _resample(pts, 2.0)
+    sweep(name, [(x, y, zf(x, y)) for x, y in s], [(-0.225, -0.4), (-0.225, 0.6), (0.225, 0.6), (0.225, -0.4)], M['wallstone'], col)
+    bm = bmesh.new()
+    for x, y in _along(s, 2.5):
+        zz = zf(x, y)
+        _box(bm, x - 0.03, y - 0.03, zz + 0.55, x + 0.03, y + 0.03, zz + 1.03)
+    bm_to_obj(bm, name + '_posts', col, M['bronze'])
+    sweep(name + '_rail', [(x, y, zf(x, y)) for x, y in s], [(-0.025, 1.0), (-0.025, 1.05), (0.025, 1.05), (0.025, 1.0)], M['bronze'], col, closed=True)
 
 
 def retaining_wall(name, pts, z, c, col, dark=False):
-    """台地挡土墙：真实砌石墙面（从台面到外侧地面以下 1 m）+ 外挑压顶。"""
+    """台地挡土墙：真实砌石墙面（从台面到外侧地面以下 1 m）+ 外挑压顶。
+
+    r5（挡土墙）：墙面收分（墙脚外移 0.08 × 墙高）；每 9 m 一道扶壁壁柱（宽 1.0、凸 0.35、通高到压顶下）；
+    0.6 m 高墙脚石（凸 0.25）；压顶下 1.2 m 一道腰线（凸 0.12）。非深色墙改用 wall_ashlar（比建筑白石暗一档）。"""
     M = mats()
     s = _resample(pts, 2.0)
     bm = bmesh.new()
-    top, bot, off = [], [], []
+    top, bot, off, geo = [], [], [], []
     for x, y in s:
         dx, dy = x - c[0], y - c[1]
         ln = math.hypot(dx, dy) or 1
-        ox, oy = x + dx / ln * 1.8, y + dy / ln * 1.8     # 台地坡脚在轮廓外 0–1.6 m，墙面放在坡外把它挡住
-        off.append((x + dx / ln * 0.95, y + dy / ln * 0.95))
-        zb = min(L.ground_z(x + dx / ln * 4, y + dy / ln * 4), z - 0.5) - 1.0
+        ux, uy = dx / ln, dy / ln
+        ox, oy = x + ux * 1.8, y + uy * 1.8     # 台地坡脚在轮廓外 0–1.6 m，墙面放在坡外把它挡住
+        off.append((x + ux * 0.95, y + uy * 0.95))
+        zg = min(L.ground_z(x + ux * 4, y + uy * 4), z - 0.5)
+        zb = zg - 1.0
+        bt = 0.08 * (z - zb)   # r5：收分
         top.append(bm.verts.new((ox, oy, z + 0.02)))
-        bot.append(bm.verts.new((ox, oy, zb)))
+        bot.append(bm.verts.new((ox + ux * bt, oy + uy * bt, zb)))
+        geo.append((ox, oy, ux, uy, zb, zg))
     for i in range(len(s) - 1):
         bm.faces.new([bot[i], bot[i + 1], top[i + 1], top[i]])
-    bm_to_obj(bm, name, col, M['wallstone'] if dark else M['ashlar'])   # r3：挡土墙也用石灰岩琢石砌
+    wm = M['wallstone'] if dark else M['wall_ashlar']
+    bm_to_obj(bm, name, col, wm)   # r3：挡土墙也用石灰岩琢石砌
     sweep(name + '_coping', [(x, y, z + 0.05) for x, y in off], [(-1.2, -0.35), (-1.2, 0.0), (1.2, 0.0), (1.2, -0.35)], M['grey_plain'] if dark else M['plain'], col)
+    # r5：墙面细部（墙脚石 / 腰线 / 扶壁壁柱）贴在收分后的墙面上
+    bd = bmesh.new()
+
+    def F(i, zz, proud, tang=0.0):   # 第 i 个采样点处、高度 zz 的墙面点，再外凸 proud、沿墙平移 tang
+        ox, oy, ux, uy, _zb, _zg = geo[i]
+        o = 0.08 * (z - zz) + proud
+        return (ox + ux * o - uy * tang, oy + uy * o + ux * tang, zz)
+
+    def band(z0f, z1f, proud, ok):   # 沿墙一条凸带（逐段放样，连续可见段两端封口）
+        run = []
+        for i in list(range(len(geo))) + [None]:
+            if i is not None and ok(i):
+                z0, z1 = z0f(i), z1f(i)
+                run.append([bd.verts.new(F(i, z0, 0.0)), bd.verts.new(F(i, z0, proud)), bd.verts.new(F(i, z1, proud)), bd.verts.new(F(i, z1, 0.0))])
+                continue
+            if len(run) >= 2:
+                for a, b in zip(run[:-1], run[1:]):
+                    for j in range(3):
+                        bd.faces.new([a[j], b[j], b[j + 1], a[j + 1]])
+                bd.faces.new(run[0]); bd.faces.new(run[-1][::-1])
+            elif run:
+                for v in run[0]:
+                    bd.verts.remove(v)
+            run = []
+    band(lambda i: geo[i][4], lambda i: geo[i][5] + 0.6, 0.25, lambda i: z - geo[i][5] > 1.6)          # 墙脚石
+    band(lambda i: z - 1.7, lambda i: z - 1.5, 0.12, lambda i: z - geo[i][5] > 2.6)                      # 腰线
+    acc, nxt = 0.0, 9.0
+    for i in range(1, len(geo) - 1):
+        acc += math.dist(geo[i - 1][:2], geo[i][:2])
+        if acc < nxt:
+            continue
+        nxt += 9.0
+        if z - geo[i][5] < 1.2:
+            continue
+        vs = []   # 壁柱：墙面上左右各 0.5 m、外凸 0.35 m，从墙脚埋深到压顶底
+        for zz in (geo[i][4], z - 0.3):
+            for tg, pr in ((-0.5, 0.0), (0.5, 0.0), (0.5, 0.35), (-0.5, 0.35)):
+                vs.append(bd.verts.new(F(i, zz, pr, tg)))
+        for f in [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]:
+            bd.faces.new([vs[k] for k in f])
+    if bd.faces:
+        bmesh.ops.recalc_face_normals(bd, faces=bd.faces[:])
+        bm_to_obj(bd, name + '_detail', col, wm)
+    else:
+        bd.free()
 
 
 def pad_outline(p, n=160, filt=None):
@@ -983,12 +1128,12 @@ def balustrades(col):
     for x, y, v in zip(X, Y, sp):
         if v > 0.5 and abs(x) > 34:
             seg.append((float(x), float(y)))
-        elif len(seg) > 2:
-            balustrade_path(f'bal_prom_{k}', seg, lambda a, b: L.ground_z(a, b) - 0.1, col, h=0.95); seg, k = [], k + 1
+        elif len(seg) > 2:   # r5：崖边长步道改矮石墙 + 青铜扶手（不再是俯视一条白线）
+            promenade_wall(f'bal_prom_{k}', seg, lambda a, b: L.ground_z(a, b) - 0.1, col); seg, k = [], k + 1
         else:
             seg = []
     if len(seg) > 2:
-        balustrade_path(f'bal_prom_{k}', seg, lambda a, b: L.ground_z(a, b) - 0.1, col, h=0.95)
+        promenade_wall(f'bal_prom_{k}', seg, lambda a, b: L.ground_z(a, b) - 0.1, col)
 
 
 def grand_stairs(col):
@@ -1020,17 +1165,21 @@ def fountain(col):
     bm_to_obj(bm, 'fountain_stone', col, M['plain'])
     bm = bmesh.new()
     bmesh.ops.create_circle(bm, cap_ends=True, segments=48, radius=9.0, matrix=Matrix.Translation((fx, fy, z + 0.8)))
-    bm_to_obj(bm, 'fountain_water', col, M['pool'])
+    bm_to_obj(bm, 'fountain_water', col, M['basin'])   # r5（规整水面）
     # 喷泉周围的环形花坛（低矮花境，不做刺绣花坛网格）
 
 
 def dock(col):
-    """访客停靠平台：伸出岛缘的圆台，铜栏 + 金色引导环。"""
+    """访客停靠平台：伸出岛缘的圆台，铜栏 + 青铜引导环（r5：金色宽环改成贴平的细青铜嵌条）。"""
     M = mats()
     cx, cy, z = 0.0, -268.0, 8.5
     bm = bmesh.new()
     bmesh.ops.create_cone(bm, cap_ends=True, segments=72, radius1=20, radius2=20, depth=1.4, matrix=Matrix.Translation((cx, cy, z - 0.7)))
-    bm_to_obj(bm, 'dock_deck', col, M['wallstone'])
+    bm_to_obj(bm, 'dock_deck', col, M['honed'])   # r5：台面改磨面石灰岩大板
+    # r5：台缘 0.6 m 高的圆弧线脚（半圆凸出 0.3 m），琢石
+    rim = [(cx + 20.0 * math.cos(a), cy + 20.0 * math.sin(a), z) for a in np.linspace(0, 2 * math.pi, 145)]
+    prof = [(-0.3 * math.cos(a), -0.3 + 0.3 * math.sin(a) + 0.05) for a in np.linspace(-math.pi / 2, math.pi / 2, 9)] + [(0.1, 0.05), (0.1, -0.55)]
+    sweep('dock_moulding', rim, prof, M['ashlar'], col, closed=True)
     bm = bmesh.new()
     bmesh.ops.create_cone(bm, cap_ends=True, segments=72, radius1=19.5, radius2=4, depth=22, matrix=Matrix.Translation((cx, cy, z - 12.4)))
     ob = bm_to_obj(bm, 'dock_rockbase', col, M['rock'])
@@ -1041,8 +1190,8 @@ def dock(col):
     ring = [(cx + 19.6 * math.cos(a), cy + 19.6 * math.sin(a)) for a in np.linspace(math.radians(200), math.radians(340 + 360 * 0), 60)]
     ring = [(cx + 19.6 * math.cos(a), cy + 19.6 * math.sin(a)) for a in np.linspace(math.radians(-200), math.radians(20), 70)]
     sweep('dock_rail', [(x, y, z) for x, y in ring], [(-0.08, 0), (-0.08, 1.1), (0.08, 1.1), (0.08, 0)], M['bronze'], col)
-    g = [(cx + 13 * math.cos(a), cy + 13 * math.sin(a), z + 0.02) for a in np.linspace(0, 2 * math.pi, 97)]
-    sweep('dock_guide', g, [(-0.35, 0), (0.35, 0)], M['gold'], col)
+    g = [(cx + 13 * math.cos(a), cy + 13 * math.sin(a), z + 0.004) for a in np.linspace(0, 2 * math.pi, 97)]
+    sweep('dock_guide', g, [(-0.06, 0), (0.06, 0)], M['bronze'], col)   # r5：0.12 m 宽、贴平的青铜嵌条
 
 
 def funicular(col):

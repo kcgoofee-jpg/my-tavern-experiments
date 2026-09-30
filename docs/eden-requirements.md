@@ -1,7 +1,7 @@
 # Eden requirements (EQ index) — the user's asks for the Eden estate, checked against the shipped version
 
-Status (2026-09-30): 65 requirements · shipped version: 46 met, 13 partly, 5 missing, 1 superseded · the r5 draft
-changes 12 of them in 9 groups (G1–G9, see §14), awaiting the user's review — nothing shipped yet.
+Status (2026-09-30): 65 requirements · shipped version: 46 met, 12 partly, 6 missing, 1 superseded · the r5 draft
+changes 14 of them in 11 groups (G1–G11, see §14), awaiting the user's review — nothing shipped yet.
 
 - **Baseline = the shipped version** (user 2026-09-30: 「不通过，暂停，用现在已经在脚本上的那个版本」): the estate2 r4e
   scene in `blender/estate2/*` (225827d, e233077), `map/estate/model/site.glb` + `site_low.glb` (ebdce14), `house.glb`
@@ -97,8 +97,8 @@ changes 12 of them in 9 groups (G1–G9, see §14), awaiting the user's review �
 - EQ-45 | 09-28 | *(para)* brightest, warmest island at 1450 m | island | met | map/data/tc_upper.json eden alt_m 1450; upper_depth.json haze 0 (the altitude table is still marked awaiting approval, upper-setting.md:73)
 - EQ-46 | 09-28 | no barrier ring (「伊甸光环」已否决) | island + page | superseded (partly) | upper map met (`tiancheng_upper.py` skips Eden); barrier ring and anchor stones deferred by the user indefinitely (2026-09-30), so `layout.BARRIER_STONES` stay unbuilt; the viewer's optional barrier overlay still draws a gold Eden ring (map/viewer.html:414) and zones.json has an empty `stones` hotspot — page items
 - EQ-47 | 09-28 | *(para)* energy conduits never connect to Eden | island | met | upper-setting.md:51; `tiancheng_upper.py` excludes Eden from conduit candidates
-- EQ-48 | 09-28 | *(para)* the largest rock cone with a hanging water cone | island | partly (open) | tc_islands.json eden underside: multi profile, 3 sub-cones, 3 cores; `blender/oblique.py` builds a water cone only for the twin profile. upper-setting.md §4.1 gives Eden the water cone, §11 (v15) gives it to Rothschild — no recorded decision (see §13)
-- EQ-49 | 09-28 | *(para)* lake overflow falls on the east side | island | partly (open) | tc_islands.json eden `falls` (main −40° + two thin) for the oblique underside; upper-setting.md §9.3 keeps the Eden render itself unchanged and §10 Q2 still asks the user; not in the estate2 scene
+- EQ-48 | 09-28, 09-30 | *(para)* the largest rock cone with a hanging water cone; 09-30: 「伊甸和罗斯柴尔德都加」 | island | partly → r5 G10 (Eden only; Rothschild is its own item) | tc_islands.json eden underside: multi profile, 3 sub-cones, 3 cores; `blender/oblique.py` builds a water cone only for the twin profile. upper-setting.md §4.1 gives Eden the water cone, §11 (v15) gives it to Rothschild — no recorded decision (see §13)
+- EQ-49 | 09-28, 09-30 | *(para)* lake overflow falls on the east side; 09-30: 「瀑布加」 | island | missing → r5 G10 | tc_islands.json eden `falls` (main −40° + two thin) for the oblique underside; upper-setting.md §9.3 keeps the Eden render itself unchanged and §10 Q2 still asks the user; not in the estate2 scene
 
 ## 11. House and 3D page (recorded only; not changed in eden:r5)
 
@@ -124,10 +124,8 @@ changes 12 of them in 9 groups (G1–G9, see §14), awaiting the user's review �
 
 ## 13. Contradictions and open questions
 
-- EQ-48: upper-setting.md §4.1 (Eden has a hanging water cone) vs §11 v15 (Eden = white-grey main cone + sub-cones + three
-  cores; the water cone goes to Rothschild). No recorded decision. Upper-map generator scope (`blender/oblique.py`), not
-  touched by eden:r5 — **open for the user**.
-- EQ-49: the east-side overflow falls are an open user question (upper-setting.md §10 Q2); not touched by eden:r5.
+- EQ-48: settled 2026-09-30 — the user wants the water cone on both Eden and Rothschild; eden:r5 does Eden only.
+- EQ-49: settled 2026-09-30 — the user wants the falls.
 - Settled by a later decision (no action): docs/eden-estate.md §2.1–2.3 (Palladian five-part house, French parterres,
   maze, four anchor stones) is superseded by the 09-27 reference board (docs/eden-references.md 「已定」); the Nekajui
   continuous canopy is superseded by the 09-27 P0 "fewer trees" (EQ-30); the entity name 「林中别墅 ×4」 in
@@ -163,4 +161,17 @@ stays as shipped (no re-layout; building positions, style, scale and outline unc
   「林中别墅」 stays as a matching alias (page data, not a label).
 - G9 · EQ-33 rim: island-rim sand and north-crag ground slightly darker and warmer.
 
-Not in r5 (recorded above): EQ-13, 46, 48, 49 (upper-map generator / open questions), EQ-51 … 60 (house / page).
+- G10 · EQ-48 / EQ-49 water: the lake overflow runs through a culvert (the lake at 4.5 m is walled off by a 20–27 m
+  ridge) and resurfaces from a rough-stone arched grotto low in the east ravine, drops down a stepped rock gorge
+  (`layout.STREAM`, `stream_carve`) past villa v2 to the east cliff, and falls as one main fall (glassy lip → white
+  strands → mist within ≈ 130 m, never reaching the cloud sea) plus two thin falls, with wet dark rock behind and mist
+  volumes (`waterworks.py`). A clear water cone hangs from the mid-section of the rock cone on the camera side; the
+  oblique upper-map underside gets it too (`blender/oblique.py`, `tc_islands.json` eden `water_cone`).
+- G11 · realism pass (three persona reviews, 2026-09-30: estate-architecture historian 5/10, royal landscape designer
+  5/10, film lighting / look-dev 4.5/10): formal water dark and reflective instead of pool turquoise, real balusters
+  instead of white ribbons, battered retaining walls with pilasters, lower-albedo limestone, bevel highlights, a
+  weathered fountain with fraying spray, three cypress variants with clumped foliage and translucent leaves, calmer
+  meadow, planted flower beds, planted lake margin, transparent lake with depth, sparser crag scrub, island-base strata
+  and bedding, contact AO, cloud-sea silver edges, and thin aerial haze on the oblique views.
+
+Not in r5 (recorded above): EQ-13, 46 (page / deferred), EQ-51 … 60 (house / page).

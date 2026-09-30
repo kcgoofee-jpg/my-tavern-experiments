@@ -87,7 +87,43 @@ def natural_h(x, y):
     t = np.clip((28 - e) / 28, 0, 1)
     h -= t ** 2 * (5 + 5 * (0.5 + 0.5 * fbm(x, y, 60, 2, 3)))
     h -= np.clip(-e, 0, None) * 6.0
-    return h
+    return stream_carve(x, y, h)
+
+
+# r5 湖溢流（用户 2026-09-30 加瀑布）：湖水经暗渠（湖面 4.5 m，脊高 20–27 m，明渠翻不过去）在东沟谷低处 (226, 62) 的石砌洞口冒出，
+# 沿一条分级跌落的岩沟往东流到东崖，从崖口落下成一道主瀑布 + 两道细瀑（waterworks.py）
+STREAM = [(226, 62), (242, 78), (262, 90), (284, 94), (306, 90), (326, 85), (352, 79)]
+STREAM_Z = (4.0, -7.0)      # 沟底标高：洞口 → 崖口（线性，水面按 STREAM_STEPS 级跌落）
+STREAM_STEPS = 9
+
+
+def stream_ds(x, y):
+    """到溪线的距离（米）与沿溪线的归一化弧长 s（0 = 洞口，1 = 末点）。"""
+    x = np.asarray(x, float); y = np.asarray(y, float)
+    segs = list(zip(STREAM[:-1], STREAM[1:]))
+    lens = [math.dist(a, b) for a, b in segs]
+    tot = sum(lens)
+    d = np.full(np.broadcast(x, y).shape, 1e9); s = np.zeros_like(d); acc = 0.0
+    for (a, b), ln in zip(segs, lens):
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        tt = np.clip(((x - a[0]) * dx + (y - a[1]) * dy) / (ln * ln), 0, 1)
+        dd = np.hypot(x - a[0] - tt * dx, y - a[1] - tt * dy)
+        m = dd < d
+        d = np.where(m, dd, d); s = np.where(m, (acc + tt * ln) / tot, s)
+        acc += ln
+    return d, s
+
+
+def stream_bed(s):
+    return STREAM_Z[0] + (STREAM_Z[1] - STREAM_Z[0]) * np.asarray(s, float)
+
+
+def stream_carve(x, y, h):
+    """把溪线两侧的地形挖成岩沟：沟底 = stream_bed − 0.5 m，3 m 内全挖，往外高斯收（8 m）。"""
+    d, s = stream_ds(x, y)
+    bed = stream_bed(s) - 0.5
+    g = np.exp(-(np.maximum(d - 3.0, 0) / 8.0) ** 2)
+    return h - np.clip(h - bed, 0, None) * g
 
 
 # ---------------------------------------------------------------- 台地（pad）
@@ -560,6 +596,7 @@ def places_sd(x, y):
     d = _sd_rect(x, y, *TRAINING[0], *TRAINING[1], math.radians(TRAINING[2]), 1.0)
     d = np.minimum(d, _sd_rect(x, y, *PADDOCK[0], *PADDOCK[1], math.radians(PADDOCK[2]), 1.0))
     d = np.minimum(d, np.hypot(x - PAVILION[0][0], y - PAVILION[0][1]) - PAVILION[1] - 1.5)
+    d = np.minimum(d, stream_ds(x, y)[0] - 6.0)   # r5 溪沟里不种树
     return np.minimum(d, np.hypot(x - WATER_TOWER[0], y - WATER_TOWER[1]) - WATER_TOWER[2] - 2.5)
 
 

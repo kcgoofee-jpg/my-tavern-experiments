@@ -71,10 +71,10 @@ def underside(B, e, U_, seed=0):
         for a in (.9, -.9):
             px_, py_ = e.world(math.cos(a + math.pi) * e.rx * .5, math.sin(a + math.pi) * e.ry * .5)
             B.cyl(px_, py_, zb - D, R * .32, D * .75, m_rock, 12, r2=R * .45, smooth=False)
-        if U_.get('water_cone'):
-            wm = LC.glass('ob_water_cone', tint=(.2, .45, .55), rough=.05); px_, py_ = e.world(e.rx * .45, 0)
-            B.cyl(px_, py_, zb - D * .8, R * .12, D * .45, wm, 16, r2=R * .22)
-    elif k == 'jagged':                                              # 多根不规则黑色尖刺
+    if U_.get('water_cone'):                                         # 悬清水倒锥（任一岩底形态；岛表 underside.water_cone）
+        wm = LC.glass('ob_water_cone', tint=(.2, .45, .55), rough=.05); px_, py_ = e.world(e.rx * .45, 0)
+        B.cyl(px_, py_, zb - D * .8, R * .12, D * .45, wm, 16, r2=R * .22)
+    if k == 'jagged':                                              # 多根不规则黑色尖刺
         cone_from(r1, zb, (cx, cy, zb - D * .45), m_rock)
         for j in range(U_['n_sub'] + 4):
             i = rnd.randrange(n); x, y = r1[i]; f = rnd.uniform(.25, .8); bx, by = cx + (x - cx) * f, cy + (y - cy) * f

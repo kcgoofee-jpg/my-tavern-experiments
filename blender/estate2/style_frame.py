@@ -5,12 +5,12 @@ blender -b -P blender/estate2/style_frame.py -- --view aerial|crop|top --res 200
 """
 import argparse, math, os, sys, time
 import bpy
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
-from estate2 import terrain, buildings, vegetation, sketchfab, layout as L   # noqa: E402
-from estate2.common import DATA   # noqa: E402
+from estate2 import terrain, buildings, vegetation, sketchfab, waterworks, layout as L   # noqa: E402
+from estate2.common import DATA, coll   # noqa: E402
 
 VIEWS = {
     # 相机位置, 看向, 焦距 mm
@@ -28,6 +28,7 @@ VIEWS = {
     'whole': ((-185, -585, 415), (5, -12, -12), 30),  # r5：整岛斜俯（约 36°，参考图 11 的暖黄昏风格）
     'arrival': ((75, -420, 150), (0, -160, 12), 30),  # eden:r5：停靠平台 → 大道 → 前庭喷泉 → 主楼（南向到达）
     'lake': ((-95, 345, 120), (-5, 110, 12), 30),     # eden:r5：后湖（湖心亭 / 水榭 / 俱乐部）回望主楼
+    'falls': ((560, -40, 60), (330, 80, -45), 32),    # eden:r5：东崖湖溢流瀑布
 }
 MAP_MPP = 0.375   # 上层地图：3000 m / 8000 px
 SUN_ELEV, SUN_AZ = 24.0, 132.0   # 度；方位从 +x 逆时针，太阳在东南偏南，逆光给建筑侧光
@@ -252,6 +253,24 @@ def night(scene):
     print(f'[night] {n} 盏灯')
 
 
+def haze(scene, light):
+    """r5（审图：没有空气透视，像桌面模型）：全场一层极薄的均匀体积（σ ≈ 0.00006 /m；阳光内散射会放大，实测 0.00022 整张发白），
+    黄昏偏暖、白天偏冷；均匀体积在 Cycles 里很便宜。俯视地图与夜景不加。"""
+    import bmesh as _bm
+    from estate2.common import bm_to_obj
+    col = (0.96, 0.84, 0.74) if light == 'sunset' else (0.82, 0.87, 0.95)
+    from estate2.common import mat_new
+    m, nt = mat_new('e2_haze')
+    v = nt.new('ShaderNodeVolumePrincipled', (0, 0), Density=0.00006, Anisotropy=0.3)
+    v.inputs['Color'].default_value = (*col, 1)
+    nt.link(v.outputs['Volume'], nt.out.inputs['Volume'])
+    bm = _bm.new()
+    _bm.ops.create_cube(bm, size=1.0, matrix=Matrix.Translation((0, 0, 150)) @ Matrix.Diagonal((5000, 5000, 1060, 1)))
+    ob = bm_to_obj(bm, 'haze', None, m)
+    ob.visible_shadow = False
+    scene.cycles.volume_bounces = 0
+
+
 def mist(scene):
     """空气透视：体积雾太贵，用合成里的 Mist pass 叠一层淡蓝。"""
     scene.view_layers[0].use_pass_mist = True
@@ -278,6 +297,7 @@ def main():
     else:
         terrain.build_cloudsea()
     buildings.build_all()
+    waterworks.build(coll('waterworks'))   # r5 湖溢流瀑布 + 清水倒锥
     M = buildings.mats()
     tropic = sketchfab.build(M['plain'], M['wallstone'])
     print(f'[style_frame] 建筑完成 {time.time() - t0:.0f}s')
@@ -289,6 +309,8 @@ def main():
         scene.view_settings.look = 'AgX - Medium High Contrast'
         scene.view_settings.exposure = 1.3
     camera(scene, a.view, a.res)
+    if a.view not in ('map', 'top') and a.light != 'night':
+        haze(scene, a.light)
     if a.region:
         region_border(scene, [float(v) for v in a.region.split(',')], a.region_pad, a.out)
     scene.render.image_settings.file_format = 'PNG'

@@ -12,6 +12,7 @@
       "estate_style": "neoclassical",
       "marker": "eden",
       "underside": {
+        "water_cone": true,
         "profile": "multi",
         "rock": [
           0.8,

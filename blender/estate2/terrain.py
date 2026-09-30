@@ -35,24 +35,24 @@ def mat_terrain():
     # 热带林下：更深更绿
     tropic = t.mix(0.6, fc, (0.03, 0.09, 0.03), 'MULTIPLY', (-1500, 1800))
     # 外坡草甸：草石航拍图偏黄绿 + 野花斑点
-    gc, gr, gn = tex('aerial_grass_rock', 18.0, 1400)
+    gc, gr, gn = tex('aerial_grass_rock', 45.0, 1400)   # r5：放大贴图尺度，远看不再是碎斑
     # r4：林带外是园地草甸（不是枯黄荒坡）：长草绿底 + 大尺度干湿斑 + 少量野花团
     pc_, _pr, _pn = tex('leafy_grass', 4.0, 1600, 0.4)
     park = t.mix(0.55, pc_, (0.13, 0.19, 0.07), 'MIX', (-1500, 1600))          # 鼠尾草绿
-    wild = t.mix(0.6, gc, (0.42, 0.32, 0.12), 'MIX', (-1500, 1400))             # 金黄 / 稻草
+    wild = t.mix(0.35, gc, (0.42, 0.32, 0.12), 'MIX', (-1500, 1400))             # 金黄 / 稻草
     patch = t.new('ShaderNodeMapRange', (-1600, 1500), **{'From Min': 0.5, 'From Max': 0.62})
-    nzp = t.new('ShaderNodeTexNoise', (-1900, 1500), **{'Scale': 0.05, 'Detail': 8.0, 'Roughness': 0.72, 'Distortion': 1.5})
+    nzp = t.new('ShaderNodeTexNoise', (-1900, 1500), **{'Scale': 0.05, 'Detail': 8.0, 'Roughness': 0.72, 'Distortion': 0.3})
     t.link(ob, nzp.inputs['Vector'])
     t.link(nzp.outputs['Fac'], patch.inputs['Value'])
     meadow = t.mix(patch.outputs[0], park, wild, loc=(-1350, 1450))
     straw = t.new('ShaderNodeMapRange', (-1600, 1350), **{'From Min': 0.55, 'From Max': 0.62})
-    nzs = t.new('ShaderNodeTexNoise', (-1900, 1350), **{'Scale': 0.11, 'Detail': 8.0, 'Roughness': 0.75, 'Distortion': 2.0})
+    nzs = t.new('ShaderNodeTexNoise', (-1900, 1350), **{'Scale': 0.11, 'Detail': 8.0, 'Roughness': 0.75, 'Distortion': 0.35})
     t.link(ob, nzs.inputs['Vector'])
     t.link(nzs.outputs['Fac'], straw.inputs['Value'])
     meadow = t.mix(t.math('MULTIPLY', straw.outputs[0], 0.7), meadow, (0.55, 0.47, 0.28), loc=(-1320, 1400))
     # 野花带：薰衣草紫 / 虞美人红 / 白，成片（drift）而不是撒点
-    for i, (sc_, col_) in enumerate(((0.06, (0.36, 0.25, 0.6)), (0.07, (0.6, 0.08, 0.05)), (0.05, (0.85, 0.83, 0.78)))):
-        dm = t.new('ShaderNodeMapRange', (-1600, 1200 - 60 * i), **{'From Min': 0.66, 'From Max': 0.7})
+    for i, (sc_, col_) in enumerate(((0.06, (0.34, 0.3, 0.45)), (0.07, (0.42, 0.12, 0.08)), (0.05, (0.75, 0.74, 0.7)))):   # r5：野花降饱和、少一些
+        dm = t.new('ShaderNodeMapRange', (-1600, 1200 - 60 * i), **{'From Min': 0.71, 'From Max': 0.76})
         t.link(noise(sc_ * (1 + i * 0.3), 1200 - 60 * i, 3.0), dm.inputs['Value'])
         speck = t.new('ShaderNodeMapRange', (-1600, 1100 - 60 * i), **{'From Min': 0.45, 'From Max': 0.6})
         t.link(noise(2.0, 1100 - 60 * i, 2.0), speck.inputs['Value'])
@@ -84,17 +84,21 @@ def mat_terrain():
     ramp = t.new('ShaderNodeValToRGB', (-1600, -800))
     ramp.color_ramp.interpolation = 'CONSTANT'
     els = ramp.color_ramp.elements
-    els[0].position, els[0].color = 0.0, (0.75, 0.25, 0.38, 1)     # 玫瑰粉
-    els[1].position, els[1].color = 0.66, (0.88, 0.86, 0.82, 1)    # 白
-    e3 = els.new(0.33); e3.color = (0.42, 0.33, 0.66, 1)            # 薰衣草
+    els[0].position, els[0].color = 0.0, (0.55, 0.3, 0.34, 1)      # 玫瑰粉（r5 降饱和）
+    els[1].position, els[1].color = 0.66, (0.75, 0.74, 0.7, 1)     # 白
+    e3 = els.new(0.33); e3.color = (0.34, 0.3, 0.45, 1)             # 薰衣草
     sepc = t.new('ShaderNodeSeparateColor', (-1750, -900)); t.link(vor.outputs['Color'], sepc.inputs[0])
     t.link(sepc.outputs[0], ramp.inputs[0])
-    beds = t.mix(t.math('MULTIPLY', t.math('GREATER_THAN', noise(5.0, -1000, 2.0), 0.5), 0.35), ramp.outputs[0], (0.05, 0.1, 0.03), loc=(-1300, -800))
+    # r5（审图：花床像马赛克）：底是叶丛（草叶贴图压暗），花色只占约 20 %，按团分布
+    leafy = t.mix(0.7, pc_, (0.05, 0.09, 0.03), 'MULTIPLY', (-1400, -900))
+    fm = t.new('ShaderNodeMapRange', (-1500, -1000), **{'From Min': 0.44, 'From Max': 0.5})   # 花色约一半（全叶丛时花坛像网球场）
+    t.link(noise(3.5, -1000, 2.0), fm.inputs['Value'])
+    beds = t.mix(fm.outputs[0], leafy, ramp.outputs[0], loc=(-1300, -800))
     # r4b 橄榄园：浅色干土 + 稀草
     grove = t.mix(t.math('MULTIPLY', noise(0.6, -1100, 3.0), 0.8), (0.55, 0.47, 0.34), (0.3, 0.3, 0.16), loc=(-1300, -1100))
     grove = t.mix(0.4, grove, grc, 'MULTIPLY', (-1250, -1100))
     # r4b 岛缘沙石带 + 露头岩
-    rim = t.mix(t.math('MULTIPLY', noise(0.3, -1200, 4.0), 0.9), (0.61, 0.55, 0.44), (0.43, 0.4, 0.35), loc=(-1300, -1200))   # r5：压暗偏暖（北崖逆光下不再像雪地）
+    rim = t.mix(t.math('MULTIPLY', noise(0.3, -1200, 4.0), 0.9), (0.52, 0.47, 0.38), (0.4, 0.37, 0.31), loc=(-1300, -1200))   # r5：压暗偏暖（北崖逆光下不再像雪地）
     # r4b 菜园：土垄条纹（深褐土 / 生菜绿 / 甘蓝蓝绿）
     sepk = t.new('ShaderNodeSeparateXYZ', (-2000, -1300)); t.link(ob, sepk.inputs[0])
     rows = t.math('FRACT', t.math('MULTIPLY', t.math('ADD', t.math('MULTIPLY', sepk.outputs['X'], 0.94), t.math('MULTIPLY', sepk.outputs['Y'], 0.34)), 0.4))
@@ -105,6 +109,7 @@ def mat_terrain():
     k3 = ke.new(0.3); k3.color = (0.14, 0.26, 0.2, 1)
     t.link(rows, kr.inputs[0])
     kitchen = kr.outputs[0]
+    wc_ag, _wr_ag, _wn_ag = tex('castle_wall_varriation', 2.0, -1750, 0.8)
     # r4c 农业台地：按等高线分台（每 2.8 m 高差一台），台沿干砌石墙，台面轮换葡萄园（顺等高线的行）/ 薰衣草带 / 麦茬
     # r5（遗留：条带太规律、薰衣草太艳）：沿等高线每约 40 m 一个地块，地块边台阶错开；作物按（台, 块）轮换，
     # 葡萄行一部分改成垂直等高线；多一种休耕绿肥；薰衣草降饱和、占比 35 % → 22 %；干砌墙更宽更深 + 墙脚阴影
@@ -127,12 +132,13 @@ def mat_terrain():
     ag = t.mix(t.math('GREATER_THAN', hsh, 0.4), vine, lav, loc=(-1200, -1500))
     ag = t.mix(t.math('GREATER_THAN', hsh, 0.62), ag, fallow, loc=(-1170, -1500))
     ag = t.mix(t.math('GREATER_THAN', hsh, 0.8), ag, stub, loc=(-1150, -1500))
-    ag = t.mix(t.math('MULTIPLY', t.math('LESS_THAN', tf, 0.11), 0.45), ag, (0.1, 0.09, 0.07), 'MULTIPLY', (-1120, -1500))   # 墙脚阴影
+    ag = t.mix(t.math('MULTIPLY', t.math('LESS_THAN', tf, 0.16), 0.6), ag, (0.1, 0.09, 0.07), 'MULTIPLY', (-1120, -1500))   # 墙脚阴影
     wallm = t.math('LESS_THAN', tf, 0.07)
-    agri = t.mix(wallm, ag, (0.5, 0.46, 0.39), loc=(-1100, -1500))
+    agwall = t.mix(1.0, wc_ag, (0.55, 0.5, 0.42), 'MULTIPLY', (-1120, -1600))   # r5：干砌墙用真实石墙贴图，不是浅色条
+    agri = t.mix(wallm, ag, agwall, loc=(-1100, -1500))
     # 崖石
-    rc, rr, rn = tex('rock_face_03', 20.0, -1400, 1.0)
-    rock = t.mix(0.5, rc, (0.5, 0.48, 0.44), 'MIX', (-1500, -1400))   # r3：浅石灰岩崖，不再是一整块褐土
+    rc, rr, rn = tex('rock_face_03', 9.0, -1400, 1.8)
+    rock = t.mix(0.3, rc, (0.5, 0.45, 0.38), 'MIX', (-1500, -1400))   # r5：岩面真实贴图为主，不再是奶油色平涂   # r3：浅石灰岩崖，不再是一整块褐土
     # 挡土墙
     wc, wr, wn = tex('castle_wall_varriation', 3.0, -1800, 0.8)
     wall = t.mix(0.45, wc, (0.78, 0.72, 0.6), loc=(-1500, -1800))
@@ -142,7 +148,7 @@ def mat_terrain():
     steep = t.new('ShaderNodeMapRange', (-1800, -2200), **{'From Min': 0.8, 'From Max': 0.55})
     t.link(sn.outputs['Z'], steep.inputs['Value'])
     A = {k: t.attr(k, loc=(-1000, 2600 - 120 * i)).outputs['Fac'] for i, k in enumerate(
-        ('lawn', 'gravel', 'built', 'under', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic', 'grove', 'rimb', 'kitchen', 'agri', 'look'))}
+        ('lawn', 'gravel', 'built', 'under', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic', 'grove', 'rimb', 'kitchen', 'agri', 'look', 'lake'))}
     col = t.mix(A['tropic'], forest, tropic, loc=(-700, 600))
     col = t.mix(A['meadow'], col, meadow, loc=(-600, 600))
     col = t.mix(A['lawn'], col, lawn, loc=(-500, 600))
@@ -167,6 +173,27 @@ def mat_terrain():
     wall_f = t.math('MULTIPLY', steep.outputs[0], A['built'], (-600, -1400), clamp=True)
     col = t.mix(wall_f, col, wall, loc=(-100, 600))
     col = t.mix(A['rill'], col, (0.02, 0.06, 0.07), loc=(0, 600))
+    # r5（审图）：湖底按水深压暗 + 湖岸一圈湿暗带；岩基层理 + 竖向雨痕 + 底面压暗；全局接触 AO
+    sz = t.new('ShaderNodeSeparateXYZ', (-300, 1200)); t.link(geo.outputs['Position'], sz.inputs[0])
+    deep = t.new('ShaderNodeMapRange', (-150, 1200), **{'From Min': L.WATER_Z - 0.3, 'From Max': L.WATER_Z - 3.5})
+    t.link(sz.outputs['Z'], deep.inputs['Value'])
+    inlake = t.math('MULTIPLY', t.math('GREATER_THAN', A['lake'], 0.02), t.math('SUBTRACT', 1.0, A['under']))   # 只在湖区（岛缘低于湖面的崖唇不算）
+    col = t.mix(t.math('MULTIPLY', deep.outputs[0], inlake), col, (0.04, 0.085, 0.075), loc=(50, 1100))
+    wetm = t.math('MULTIPLY', t.math('LESS_THAN', t.math('ABSOLUTE', t.math('SUBTRACT', sz.outputs['Z'], L.WATER_Z + 0.35)), 0.55), 0.6)
+    col = t.mix(t.math('MULTIPLY', wetm, inlake), col, (0.07, 0.07, 0.045), loc=(60, 1000))
+    wv = t.new('ShaderNodeTexWave', (-300, 1500), wave_type='BANDS', bands_direction='Z', **{'Scale': 0.08, 'Distortion': 3.0, 'Detail': 3.0})
+    t.link(ob, wv.inputs['Vector'])
+    strata = t.new('ShaderNodeMapRange', (-150, 1500), **{'To Min': 0.74, 'To Max': 1.0}); t.link(wv.outputs['Fac'], strata.inputs['Value'])
+    stm = t.new('ShaderNodeMapping', (-450, 1700)); stm.inputs['Scale'].default_value = (1.0, 1.0, 0.08); t.link(ob, stm.inputs['Vector'])
+    stn = t.new('ShaderNodeTexNoise', (-300, 1700), **{'Scale': 0.6, 'Detail': 4.0}); t.link(stm.outputs['Vector'], stn.inputs['Vector'])
+    streak = t.new('ShaderNodeMapRange', (-150, 1700), **{'From Min': 0.5, 'From Max': 0.7, 'To Max': 0.35}); t.link(stn.outputs['Fac'], streak.inputs['Value'])
+    down = t.new('ShaderNodeMapRange', (-150, 1850), **{'From Min': -0.3, 'From Max': -0.8, 'To Min': 1.0, 'To Max': 0.7}); t.link(sn.outputs['Z'], down.inputs['Value'])
+    under_c = t.mix(1.0, col, strata.outputs[0], 'MULTIPLY', (100, 1500))
+    under_c = t.mix(streak.outputs[0], under_c, (0.25, 0.2, 0.15), loc=(150, 1500))
+    under_c = t.mix(1.0, under_c, down.outputs[0], 'MULTIPLY', (200, 1500))
+    col = t.mix(A['under'], col, under_c, loc=(250, 1300))
+    aon = t.new('ShaderNodeAmbientOcclusion', (100, 800), Distance=2.5)
+    col = t.mix(t.math('MULTIPLY', t.math('SUBTRACT', 1.0, aon.outputs['AO']), 0.5), col, (0.0, 0.0, 0.0), loc=(300, 700))   # 接触处最多压暗一半
     b = t.bsdf((400, 0))
     t.link(col, b.inputs['Base Color'])
     rough = t.mix(A['rill'], (0.85, 0.85, 0.85), (0.05, 0.05, 0.05), loc=(0, 200))
@@ -184,12 +211,16 @@ def mat_water():
     if t is None:
         return m
     v, _ = t.coords('Object', 1.0)
-    n = t.new('ShaderNodeTexNoise', (-900, -300), **{'Scale': 0.25, 'Detail': 8.0, 'Roughness': 0.55})
-    t.link(v, n.inputs['Vector'])
-    bump = t.new('ShaderNodeBump', (-500, -300), Strength=0.08, Distance=0.3)
-    t.link(n.outputs['Fac'], bump.inputs['Height'])
-    b = t.bsdf((300, 0), Roughness=0.03, IOR=1.33, **{'Base Color': (0.03, 0.09, 0.1, 1)})
+    # r5（审图：湖像深蓝平板）：深色不透水面 + 两层风纹（波纹拉长）
+    wm_ = t.new('ShaderNodeMapping', (-1100, -300)); wm_.inputs['Scale'].default_value = (1.0, 0.3, 1.0); t.link(v, wm_.inputs['Vector'])
+    n = t.new('ShaderNodeTexNoise', (-900, -300), **{'Scale': 1.5, 'Detail': 8.0, 'Roughness': 0.55})
+    n2 = t.new('ShaderNodeTexNoise', (-900, -550), **{'Scale': 7.0, 'Detail': 4.0})
+    t.link(wm_.outputs['Vector'], n.inputs['Vector']); t.link(wm_.outputs['Vector'], n2.inputs['Vector'])
+    bump = t.new('ShaderNodeBump', (-500, -300), Strength=0.18, Distance=0.05)
+    t.link(t.math('ADD', n.outputs['Fac'], t.math('MULTIPLY', n2.outputs['Fac'], 0.35)), bump.inputs['Height'])
+    b = t.bsdf((300, 0), Roughness=0.02, IOR=1.333, **{'Base Color': (0.02, 0.05, 0.048, 1)})   # 深水：不透（单面湖盘看到湖底像干河床），靠菲涅尔反射天空
     t.link(bump.outputs['Normal'], b.inputs['Normal'])
+    # 湖面是单面圆盘（不闭合），不能挂体积吸收（光线进去出不来 → 全黑）；水深颜色交给 mat_terrain 的湖底压暗
     return m
 
 
@@ -211,15 +242,21 @@ def mat_cloudsea():
     ramp.color_ramp.elements[0].color = (0.26, 0.32, 0.45, 1) if not WARM else (0.3, 0.3, 0.42, 1)
     ramp.color_ramp.elements[1].color = (1.0, 0.94, 0.86, 1) if not WARM else (1.0, 0.8, 0.6, 1)
     t.link(lam.outputs[0], ramp.inputs[0])
-    col = t.mix(t.math('MULTIPLY', n.outputs['Fac'], 0.25), ramp.outputs[0], (0.72, 0.76, 0.84), loc=(-350, 0))
+    col = t.mix(t.math('MULTIPLY', n.outputs['Fac'], 0.12), ramp.outputs[0], (0.72, 0.76, 0.84), loc=(-350, 0))
     # r3：谷底暗、团顶亮（假自遮蔽），让云有体积
     ch = t.attr('ch', loc=(-900, -700)).outputs['Fac']
-    occ = t.new('ShaderNodeMapRange', (-600, -700), **{'From Min': 0.0, 'From Max': 0.75, 'To Min': 0.72, 'To Max': 1.08})
+    occ = t.new('ShaderNodeMapRange', (-600, -700), **{'From Min': 0.0, 'From Max': 0.75, 'To Min': 0.86, 'To Max': 1.08})   # r5：云谷不再像黏土
     t.link(ch, occ.inputs['Value'])
     col = t.mix(1.0, col, occ.outputs[0], 'MULTIPLY', (-250, 0))
     col = t.mix(t.math('MULTIPLY', t.math('SUBTRACT', 1.0, ch), 0.35), col, (0.42, 0.5, 0.66), 'MIX', (-200, 0))
     lp = t.new('ShaderNodeLightPath', (-900, 400))
-    haze = t.new('ShaderNodeMapRange', (-600, 400), **{'From Min': 4000, 'From Max': 30000})
+    # r5：云团边缘逆光亮边（视线掠过处）
+    dn = t.new('ShaderNodeVectorMath', (-1000, 700), operation='DOT_PRODUCT')
+    t.link(geo.outputs['Normal'], dn.inputs[0]); t.link(geo.outputs['Incoming'], dn.inputs[1])
+    fr = t.math('SUBTRACT', 1.0, t.math('ABSOLUTE', dn.outputs['Value']))
+    rim = t.new('ShaderNodeMapRange', (-600, 700), **{'From Min': 0.6, 'From Max': 1.0, 'To Max': 0.35}); t.link(fr, rim.inputs['Value'])
+    col = t.mix(rim.outputs[0], col, (1.0, 0.82, 0.62) if WARM else (1.0, 0.97, 0.94), 'ADD', (-250, 300))
+    haze = t.new('ShaderNodeMapRange', (-600, 400), **{'From Min': 1500, 'From Max': 12000})
     t.link(lp.outputs['Ray Length'], haze.inputs['Value'])
     col = t.mix(haze.outputs[0], col, (0.78, 0.84, 0.93) if not WARM else (0.92, 0.8, 0.74), loc=(-150, 0))
     em = t.new('ShaderNodeEmission', (300, 0), Strength=1.05)
@@ -265,7 +302,7 @@ def build_island(res_m=1.0, n_theta=1800):
     zb = -215 - 40 * (np.sin(2 * thu + 0.6) * 0.5 + np.sin(5 * thu) * 0.3)
     S = s[:, None]
     rr = rho_max * (1 - S) ** 1.05 * (1 + rn * (0.4 + S)) + 0.004   # r3：岩基从崖口立刻内收（倒锥），俯视看不到一整圈竖崖
-    rr = rr * (1 + 0.02 * np.sin(40 * thu + 9 * S))                # 竖向岩纹
+    rr = rr * (1 + (0.02 + 0.015 * S) * np.sin(40 * thu + 9 * S) + 0.01 * S * np.sin(113 * thu))   # 竖向岩纹（r5：崖口处不加大，俯视不出齿）
     Sz = S ** 0.75   # 崖口先有一段陡唇，再往下收
     zz = rim_z[None, :] * (1 - Sz) + zb * Sz - 6 * np.sin(math.pi * S) * (1 + 0.5 * np.sin(4 * thu))
     Ru = L.outline_R(thu)
@@ -292,7 +329,7 @@ def build_island(res_m=1.0, n_theta=1800):
 
     def pad(v):
         return np.concatenate([v.ravel(), np.zeros(nu * n_theta), [0, 0]])
-    attrs = dict(under=under, **{k: pad(at[k]) for k in ('lawn', 'gravel', 'built', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic', 'grove', 'rimb', 'kitchen', 'agri', 'agz', 'look')})
+    attrs = dict(under=under, **{k: pad(at[k]) for k in ('lawn', 'gravel', 'built', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic', 'grove', 'rimb', 'kitchen', 'agri', 'agz', 'look', 'lake')})
     m = mat_terrain()
     ob = _mesh_from_grid('island', co, quads, attrs, m)
     ob2 = _mesh_from_grid('island_caps', co, tris, attrs, m)

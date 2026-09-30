@@ -136,7 +136,7 @@ def wall_fountain(col):
     vv = [bm.verts.new((r0 * math.cos(a), yw + r0 * math.sin(a), zb + 0.6)) for a in angs]
     for i in range(len(angs) - 1):
         bm.faces.new([cen, vv[i + 1], vv[i]])
-    bm_to_obj(bm, 'wall_fountain_water', col, M['pool'])
+    bm_to_obj(bm, 'wall_fountain_water', col, M['basin'])   # r5（规整水面）
     bm = bmesh.new()
     for rad, z0, z1 in ((1.8, zt - 3.5, zt - 6.0), (2.6, zt - 6.0, zb + 0.6)):
         a2 = np.linspace(math.pi * 1.1, math.pi * 1.9, 12)
@@ -147,6 +147,21 @@ def wall_fountain(col):
     bmesh.ops.create_cone(bm, cap_ends=True, segments=8, radius1=0.12, radius2=0.35, depth=2.2,
                           matrix=Matrix.Translation((0, yw - 0.6, zt - 2.4)) @ Matrix.Rotation(math.radians(-40), 4, 'X'))
     bm_to_obj(bm, 'wall_fountain_spray', col, M['spray'])
+
+
+def _torus(bm, cx, cy, z, R, r, nu=96, nv=8):
+    """r5：水平圆环（池沿圆线脚），大半径 R、截面半径 r。"""
+    rings = []
+    for i in range(nu):
+        a = 2 * math.pi * i / nu
+        ca, sa = math.cos(a), math.sin(a)
+        rings.append([bm.verts.new((cx + (R + r * math.cos(b)) * ca, cy + (R + r * math.cos(b)) * sa, z + r * math.sin(b)))
+                      for b in (2 * math.pi * j / nv for j in range(nv))])
+    for i in range(nu):
+        p, q = rings[i], rings[(i + 1) % nu]
+        for j in range(nv):
+            j2 = (j + 1) % nv
+            bm.faces.new([p[j], q[j], q[j2], p[j2]])
 
 
 def fountain(col):
@@ -168,50 +183,87 @@ def fountain(col):
         bm.faces.new([ro[i], ro[j], rob[j], rob[i]])
         bm.faces.new([rib[i], rib[j], ri[j], ri[i]])
     bmesh.ops.create_cone(bm, cap_ends=True, segments=48, radius1=R0, radius2=R0, depth=0.1, matrix=Matrix.Translation((fx, fy, z + 0.2)))
-    # 石盘 + 柱身（下大上小）
-    for rad, hz, dz in ((1.6, 2.4, 1.5), (4.2, 0.35, 2.9), (0.8, 2.2, 4.1), (2.3, 0.3, 5.3), (0.45, 1.4, 6.1), (1.1, 0.25, 6.9)):
-        bmesh.ops.create_cone(bm, cap_ends=True, segments=40, radius1=rad, radius2=rad * (0.72 if hz < 0.5 else 0.85), depth=hz,
-                              matrix=Matrix.Translation((fx, fy, z + dz)))
+    # r5（喷泉）：池沿内外两道 0.15 m 圆线脚（不再是刀切平顶）+ 池外一圈 0.4 m 高基座台阶
+    _torus(bm, fx, fy, z + 0.8, R1, 0.15)
+    _torus(bm, fx, fy, z + 0.8, R0, 0.15)
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=96, radius1=R1 + 1.1, radius2=R1 + 1.1, depth=0.7, matrix=Matrix.Translation((fx, fy, z + 0.05)))
     # 池外八个小石瓶 / 灯柱
     for k in range(8):
         a = 2 * math.pi * (k + 0.5) / 8
         x, y = fx + (R1 + 0.1) * math.cos(a), fy + (R1 + 0.1) * math.sin(a)
         _box(bm, x - 0.45, y - 0.45, z + 0.85, x + 0.45, y + 0.45, z + 1.6)
         bmesh.ops.create_uvsphere(bm, u_segments=12, v_segments=8, radius=0.42, matrix=Matrix.Translation((x, y, z + 2.0)))
-    bm_to_obj(bm, 'fountain_stone', col, M['plain'])
+    bm_to_obj(bm, 'fountain_stone', col, M['wallstone'])   # r5：喷泉石作改暖灰旧石（白石在日光下像塑料）
+    # r5（喷泉）：叠放圆锥石盘 → 一条旋转成形的线脚轮廓（柱础 → 带 S 形（ogee）底面和卷边的水盘 → 收腰柱身 → 上层盘 → 顶盘）
+    # 轮廓 (r, 离台面高度)，从顶部轴心往下走到底部轴心；水盘内底比原水面略低，水面圆片（3.08 / 5.46）落在盘内
+    prof = [(0.0, 6.95), (0.85, 6.95), (1.02, 7.03), (1.12, 7.06), (1.16, 6.99), (1.0, 6.86), (0.7, 6.78), (0.45, 6.7),
+            (0.36, 6.5), (0.33, 6.2), (0.42, 5.95), (0.38, 5.7),
+            (0.4, 5.38), (1.95, 5.38), (2.12, 5.5), (2.28, 5.56), (2.36, 5.49), (2.25, 5.33), (1.8, 5.18), (1.2, 5.08), (0.72, 4.98), (0.55, 4.85),
+            (0.5, 4.6), (0.64, 4.25), (0.58, 3.85), (0.52, 3.45), (0.62, 3.2),
+            (0.62, 2.96), (3.75, 2.96), (3.98, 3.12), (4.18, 3.2), (4.3, 3.13), (4.15, 2.92), (3.4, 2.74), (2.3, 2.64), (1.55, 2.52), (1.25, 2.3),
+            (1.2, 2.0), (1.4, 1.5), (1.55, 0.95), (1.72, 0.62), (1.95, 0.45), (1.95, 0.22), (0.0, 0.22)]
+    bt = bmesh.new()
+    pv = [bt.verts.new((fx + r_, fy, z + h_)) for r_, h_ in prof]
+    pe = [bt.edges.new((pv[i], pv[i + 1])) for i in range(len(pv) - 1)]
+    bmesh.ops.spin(bt, geom=pv + pe, cent=(fx, fy, z), axis=(0, 0, 1), angle=2 * math.pi, steps=48, use_merge=True)
+    bmesh.ops.remove_doubles(bt, verts=bt.verts[:], dist=1e-4)
+    bmesh.ops.recalc_face_normals(bt, faces=bt.faces[:])
+    bm_to_obj(bt, 'fountain_tazze', col, M['wallstone'], smooth=True)
     bm = bmesh.new()
     bmesh.ops.create_circle(bm, cap_ends=True, segments=72, radius=R0, matrix=Matrix.Translation((fx, fy, z + 0.7)))
     for rad, dz in ((3.95, 3.08), (2.1, 5.46)):
         bmesh.ops.create_circle(bm, cap_ends=True, segments=40, radius=rad, matrix=Matrix.Translation((fx, fy, z + dz)))
-    bm_to_obj(bm, 'fountain_water', col, M['pool'])
+    bm_to_obj(bm, 'fountain_water', col, M['basin'])   # r5（规整水面）
     # 水：中心高喷、石盘溢流水帘、12 道弧形水柱
     bm = bmesh.new()
     bmesh.ops.create_cone(bm, cap_ends=True, segments=12, radius1=0.35, radius2=0.06, depth=5.0, matrix=Matrix.Translation((fx, fy, z + 7.0 + 2.5)))
     bmesh.ops.create_cone(bm, cap_ends=True, segments=24, radius1=0.9, radius2=0.2, depth=0.9, matrix=Matrix.Translation((fx, fy, z + 12.0)))
-    for rad, z0, z1 in ((4.2, 3.0, 0.75), (2.3, 5.4, 3.1)):
+    for rad, z0, z1 in ((4.32, 3.12, 0.75), (2.38, 5.5, 3.1)):   # r5：水帘从新水盘卷边外沿落下
         a2 = np.linspace(0, 2 * math.pi, 49)
         top = [bm.verts.new((fx + rad * math.cos(a), fy + rad * math.sin(a), z + z0)) for a in a2]
         bot = [bm.verts.new((fx + rad * 1.08 * math.cos(a), fy + rad * 1.08 * math.sin(a), z + z1)) for a in a2]
         for i in range(48):
             bm.faces.new([top[i], top[i + 1], bot[i + 1], bot[i]])
     bm_to_obj(bm, 'fountain_spray', col, M['spray'])
+    rs = np.random.RandomState(31)   # r5（水柱）：细一半、每道弧顶高度不同（2.8–3.4 m），不再是 12 根一样的塑料管
     for k in range(12):
         a = 2 * math.pi * k / 12
+        apex = rs.uniform(2.8, 3.4)
         pts = []
         for t in np.linspace(0, 1, 14):
             rr = R0 - 0.3 - t * 4.2
-            pts.append((fx + rr * math.cos(a), fy + rr * math.sin(a), z + 0.9 + 3.2 * 4 * t * (1 - t) - 0.2 * t))
-        sweep(f'fountain_jet{k}', pts, [(-0.07, 0), (0, 0.1), (0.07, 0), (0, -0.1)], M['spray'], col, closed=True)
+            pts.append((fx + rr * math.cos(a), fy + rr * math.sin(a), z + 0.9 + apex * 4 * t * (1 - t) - 0.2 * t))
+        sweep(f'fountain_jet{k}', pts, [(-0.035, 0), (0, 0.05), (0.035, 0), (0, -0.05)], M['spray'], col, closed=True)
+
+
+def _hbox(bm, x0, y0, z0, x1, y1, z1):
+    """r5（绿篱）：修剪绿篱块——盒子 + 0.08 m 两段倒角，剪过的圆棱替代刀切直角；倒角失败就保留直角盒子。"""
+    vs = _box(bm, x0, y0, z0, x1, y1, z1)
+    es = list({e for v in vs for e in v.link_edges})
+    off = min(0.08, 0.45 * min(x1 - x0, y1 - y0, z1 - z0))
+    try:
+        bmesh.ops.bevel(bm, geom=vs + es, offset=off, segments=2, profile=0.5, affect='EDGES', clamp_overlap=True)
+    except (TypeError, ValueError, RuntimeError):
+        pass
 
 
 def _hedge_rect(bm, cx, cy, w, d, hw=0.35, h=0.8):
     for (x0, y0, x1, y1) in ((cx - w / 2, cy - d / 2, cx + w / 2, cy - d / 2 + 2 * hw), (cx - w / 2, cy + d / 2 - 2 * hw, cx + w / 2, cy + d / 2),
                              (cx - w / 2, cy - d / 2, cx - w / 2 + 2 * hw, cy + d / 2), (cx + w / 2 - 2 * hw, cy - d / 2, cx + w / 2, cy + d / 2)):
-        _box(bm, x0, y0, -0.3, x1, y1, h)
+        _hbox(bm, x0, y0, -0.3, x1, y1, h)
 
 
 def _cone(bm, x, y, z, r, h, seg=14):
-    bmesh.ops.create_cone(bm, cap_ends=True, segments=seg, radius1=r, radius2=0.05, depth=h, matrix=Matrix.Translation((x, y, z + h / 2)))
+    """r5（修剪黄杨）：光滑多棱锥 → 尖拱形（ogive）叶团：底部圆收、腰部饱满、顶端收尖，表面按位置确定性起伏（同 Greystone 紫杉）。"""
+    res = bmesh.ops.create_uvsphere(bm, u_segments=max(seg, 16), v_segments=12, radius=1.0)
+    for v in res['verts']:
+        t = (v.co.z + 1.0) / 2.0                       # 0 底 → 1 顶
+        rl = math.hypot(v.co.x, v.co.y)
+        ux, uy = (v.co.x / rl, v.co.y / rl) if rl > 1e-6 else (0.0, 0.0)
+        shape = (1.0 - t) ** 0.75 * min(1.0, t / 0.14) ** 0.5
+        wx, wy, wz = x + ux * r * shape, y + uy * r * shape, z + t * h
+        f = 1.0 + 0.07 * math.sin(wx * 7.1 + wz * 5.3) * math.cos(wy * 6.7 - wz * 3.1)
+        v.co = (x + (wx - x) * f, y + (wy - y) * f, wz)
 
 
 def parterres(col):
@@ -250,7 +302,7 @@ def parterres(col):
         bmesh.ops.create_cone(bm, cap_ends=True, segments=24, radius1=0.7, radius2=0.5, depth=0.25, matrix=Matrix.Translation((cx, cy, z + 1.8)))
         bmesh.ops.create_circle(bw_, cap_ends=True, segments=32, radius=1.2, matrix=Matrix.Translation((cx, cy, z + 0.55)))
     bm_to_obj(bm, 'parterre_basins', col, M['plain'])
-    bm_to_obj(bw_, 'parterre_basin_water', col, M['pool'])
+    bm_to_obj(bw_, 'parterre_basin_water', col, M['basin'])   # r5（规整水面）
 
 
 def esplanade_hedges(col):
@@ -261,9 +313,9 @@ def esplanade_hedges(col):
         for y0 in np.arange(-246, -150, 20.0):
             for y in (y0, y0 + 10):
                 zz = L.ground_z(sx * 25.5, y)
-                _box(bm, sx * 25.5 - 0.35, y - 0.2, zz - 0.4, sx * 25.5 + 0.35, y + 10.2, zz + 0.55)
+                _hbox(bm, sx * 25.5 - 0.35, y - 0.2, zz - 0.4, sx * 25.5 + 0.35, y + 10.2, zz + 0.55)
                 zz2 = L.ground_z(sx * 29.5, y)
-                _box(bm, sx * 29.5 - 0.35, y - 0.2, zz2 - 0.4, sx * 29.5 + 0.35, y + 10.2, zz2 + 0.55)
+                _hbox(bm, sx * 29.5 - 0.35, y - 0.2, zz2 - 0.4, sx * 29.5 + 0.35, y + 10.2, zz2 + 0.55)
             zz = L.ground_z(sx * 24.5, y0)
             _cone(bm, sx * 24.2, y0, zz, 0.8, 2.6)
     bm_to_obj(bm, 'esplanade_hedges', col, M['hedge'])
@@ -287,23 +339,45 @@ def vignette_terrace(col):
 
 def canal(col):
     """r4 大道中轴：6 m 宽跌水水渠，分 9 段（每段平水面 + 石压顶），每段之间 0.4–1.3 m 小跌水；两端圆池。"""
+    # r5（水渠）：水面降到槽底上 5 cm（压顶下留一道阴影水口，不再是齐边的搪瓷水面）；
+    #   压顶逐段抬到 max(z + 0.35, 两端地面 + 0.12)，坡上不被草坪埋掉；每道跌水一块竖直石立面（堰）+ 一片贴着落下的水帘
     M = mats()
-    bmS, bmW = bmesh.new(), bmesh.new()
+    bmS, bmW, bmP = bmesh.new(), bmesh.new(), bmesh.new()
     ys = np.linspace(-246, -152, 10)
-    for y0, y1 in zip(ys[:-1], ys[1:]):
-        z = L.ground_z(0, (y0 + y1) / 2) - 0.1
+    zs = [L.ground_z(0, (y0 + y1) / 2) - 0.1 for y0, y1 in zip(ys[:-1], ys[1:])]
+    zcs = []
+    for i, (y0, y1) in enumerate(zip(ys[:-1], ys[1:])):
+        z = zs[i]
         _box(bmS, -3.6, y0, z - 1.5, 3.6, y1, z - 0.2)    # 槽底
+        zc = max(z + 0.35, max(L.ground_z(sx * 3.25, yy) for sx in (-1, 1) for yy in (y0, y1)) + 0.12)
+        zcs.append(zc)
         for sx in (-1, 1):
-            _box(bmS, sx * 2.9, y0, z - 0.2, sx * 3.6, y1, z + 0.35)   # 石压顶
-        bmW.faces.new([bmW.verts.new(v) for v in [(-2.9, y0 + 0.4, z + 0.22), (2.9, y0 + 0.4, z + 0.22), (2.9, y1 - 0.4, z + 0.22), (-2.9, y1 - 0.4, z + 0.22)]])
-        _box(bmS, -3.6, y1 - 0.3, z - 0.2, 3.6, y1, z + 0.3)   # 跌水堰
+            _box(bmS, sx * 2.9, y0, z - 0.2, sx * 3.6, y1, zc)   # 石压顶
+        bmW.faces.new([bmW.verts.new(v) for v in [(-2.9, y0 + 0.02, z - 0.15), (2.9, y0 + 0.02, z - 0.15), (2.9, y1 - 0.02, z - 0.15), (-2.9, y1 - 0.02, z - 0.15)]])
+    for yy, z, zc, sg in ((ys[0], zs[0], zcs[0], 1.0), (ys[-1], zs[-1], zcs[-1], -1.0)):   # 两端封口石
+        _box(bmS, -3.6, min(yy, yy + sg * 0.3), z - 0.2, 3.6, max(yy, yy + sg * 0.3), zc)
+    for i in range(len(zs) - 1):   # 段间跌水：石堰立在低段一侧，高段的水漫过堰顶落下
+        yb = ys[i + 1]
+        lo, hi = (i, i + 1) if zs[i] <= zs[i + 1] else (i + 1, i)
+        sg = -1.0 if lo == i else 1.0
+        zl, zh = zs[lo], zs[hi]
+        crest = max(zh - 0.2, zl + 0.1)
+        _box(bmS, -2.9, min(yb, yb + sg * 0.3), zl - 0.2, 2.9, max(yb, yb + sg * 0.3), crest)
+        wh, wl = max(zh - 0.15, crest + 0.03), zl - 0.15
+        bmW.faces.new([bmW.verts.new(v) for v in [(-2.9, yb, wh), (2.9, yb, wh), (2.9, yb + sg * 0.3, wh), (-2.9, yb + sg * 0.3, wh)]])   # 堰顶漫水
+        rows = [[bmP.verts.new((x, yb + sg * dy, zz)) for x in np.linspace(-2.88, 2.88, 7)]
+                for dy, zz in ((0.3, wh), (0.4, wh - 0.45 * (wh - wl)), (0.52, wl + 0.01))]
+        for ra, rb in zip(rows[:-1], rows[1:]):
+            for j in range(len(ra) - 1):
+                bmP.faces.new([ra[j], ra[j + 1], rb[j + 1], rb[j]])
     for yc in (-250.0, -148.0):
         z = L.ground_z(0, yc) - 0.1
         bmesh.ops.create_cone(bmS, cap_ends=True, segments=48, radius1=6.5, radius2=6.5, depth=1.6, matrix=Matrix.Translation((0, yc, z - 0.4)))
         bmesh.ops.create_circle(bmW, cap_ends=True, segments=48, radius=5.8, matrix=Matrix.Translation((0, yc, z + 0.43)))
         bmesh.ops.create_cone(bmS, cap_ends=True, segments=16, radius1=0.7, radius2=0.5, depth=1.6, matrix=Matrix.Translation((0, yc, z + 1.0)))
-    bm_to_obj(bmS, 'canal_stone', col, M['plain'])
-    bm_to_obj(bmW, 'canal_water', col, M['pool'])
+    bm_to_obj(bmS, 'canal_stone', col, M['wallstone'])   # r5：暖灰旧石压顶（白压顶俯视像梯子横档）
+    bm_to_obj(bmW, 'canal_water', col, M['basin'])   # r5（规整水面）
+    bm_to_obj(bmP, 'canal_weir_spray', col, M['spray'])
 
 
 def tennis(col):
@@ -509,7 +583,7 @@ def greystone_gardens(col):
     bm_to_obj(a, 'gs_upper_stone', col, M['wallstone'])   # r5（遗留：台阶 / 石作纯白）：Greystone 园林石作改暖灰旧石
     bm_to_obj(b, 'gs_upper_box', col, M['hedge'])
     bm_to_obj(yew, 'gs_upper_yews', col, M['hedge'])
-    bm_to_obj(w_, 'gs_upper_water', col, M['pool'])
+    bm_to_obj(w_, 'gs_upper_water', col, M['basin'])   # r5（规整水面）：倒影池是深色镜面水
     # 车场：圆形石铺 + 中央喷泉
     mx, my = [q for q in L.PADS if q['id'] == 'gs_motor'][0]['c']
     zm = L.ground_z(mx, my)
@@ -517,7 +591,7 @@ def greystone_gardens(col):
     bmesh.ops.create_cone(a, cap_ends=True, segments=40, radius1=3.2, radius2=3.2, depth=0.8, matrix=Matrix.Translation((mx, my, zm)))
     bmesh.ops.create_cone(a, cap_ends=True, segments=16, radius1=0.4, radius2=0.3, depth=2.2, matrix=Matrix.Translation((mx, my, zm + 1.2)))
     bmesh.ops.create_circle(w_, cap_ends=True, segments=40, radius=2.8, matrix=Matrix.Translation((mx, my, zm + 0.42)))
-    bm_to_obj(a, 'gs_motor_fountain', col, M['wallstone']); bm_to_obj(w_, 'gs_motor_water', col, M['pool'])
+    bm_to_obj(a, 'gs_motor_fountain', col, M['wallstone']); bm_to_obj(w_, 'gs_motor_water', col, M['basin'])   # r5（规整水面）
     # 南侧弧形双石阶（主楼台地 → 下花园）
     hz = [q for q in L.PADS if q['id'] == 'grey_house'][0]['zv']
     lz = [q for q in L.PADS if q['id'] == 'grey_t1'][0]['zv']
@@ -570,7 +644,7 @@ def greystone_gardens(col):
             sp.faces.new(v)
         prev = (x, y, z)
     bm_to_obj(a, 'gs_cascade_rocks', col, M['rock'])
-    bm_to_obj(w_, 'gs_cascade_water', col, M['pool'])
+    bm_to_obj(w_, 'gs_cascade_water', col, M['basin'])   # r5（规整水面）：岩间小池也不是绿松石
     bm_to_obj(sp, 'gs_cascade_white', col, M['spray'])
 
 

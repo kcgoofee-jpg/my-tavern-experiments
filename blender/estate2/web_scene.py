@@ -29,6 +29,9 @@ def main():
     terrain.build_lake()
     terrain.build_white_floor()
     buildings.build_all()
+    from estate2 import waterworks
+    from estate2.common import coll
+    waterworks.build(coll('waterworks'))   # r5 湖溢流瀑布 + 清水倒锥（体积水雾烘焙时不导出）
     M = buildings.mats()
     tropic = sketchfab.build(M['plain'], M['wallstone'])
     vegetation.build(a.density, tropic_protos=tropic)
