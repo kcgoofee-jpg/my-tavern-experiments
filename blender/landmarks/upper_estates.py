@@ -395,19 +395,31 @@ def rothschild(K, P, toward):
 # ====================================================================== 庄园主联盟会所
 def league(K, P, toward):
     M = K.M
-    # 意大利宫殿式会所（改革俱乐部）：40 × 34 m 方楼，三层 + 大檐口，中庭玻璃顶
+    # 设定（docs/upper-setting.md §4.6）：米黄石 + 红陶屋顶 + 玻璃中庭透暖光 + 秋林；本函数只改会所自己的材质，不动 Kit 里其它庄园共用的
+    M['stone_cream'] = C.ashlar('stone_cream', c=(0.86, 0.74, 0.52), course=0.55, block=1.3)
+    M['terracotta'] = C.flat('terracotta', (0.5, 0.16, 0.07), 0.7, noise=0.35)
+    M['atrium'] = C.flat('atrium_warm', (1, 1, 1), 0.2, emit=(1.0, 0.62, 0.25), estr=6.0)
+    tm = C.tree_mats()                                   # 秋林：橙红 / 赭黄 / 金黄的叶色（每次运行只建一座岛，覆盖不外溢）
+    for k, col in (('leaf_a', (0.55, 0.16, 0.05)), ('leaf_b', (0.62, 0.33, 0.06)), ('leaf_c', (0.66, 0.5, 0.1))):
+        m = C.flat('tree_autumn_' + k, col, 0.75, noise=0.35)
+        b = [n for n in m.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'][0]
+        b.inputs['Subsurface Weight'].default_value = 0.0; b.inputs['Transmission Weight'].default_value = 0.0
+        tm[k] = m
+    # 意大利宫殿式会所（改革俱乐部）：40 × 34 m 方楼，三层 + 大檐口，红陶四坡顶，中庭玻璃顶
     X0, X1, Y0, Y1 = -20.0, 20.0, -10.0, 20.0
-    top = K.block(X0, X1, Y0, Y1, 3, 5.2, M['stone_pale'], bay=3.3, win=(1.4, 2.6))
+    top = K.block(X0, X1, Y0, Y1, 3, 5.2, M['stone_cream'], bay=3.3, win=(1.4, 2.6))
     K.W.box(X0 - 1.1, X1 + 1.1, Y0 - 1.1, Y1 + 1.1, top - 0.2, top + 0.6, M['trim'])      # 大檐口（宫殿式）
     K.R.box(X0 - 0.2, X1 + 0.2, Y0 - 0.2, Y1 + 0.2, top + 0.6, top + 0.9, M['lead'])
-    K.R.box(-8, 8, -1, 11, top + 0.9, top + 1.4, M['iron'])
-    K.R.poly([(-7.6, -0.6, top + 1.4), (7.6, -0.6, top + 1.4), (7.6, 10.6, top + 1.4), (-7.6, 10.6, top + 1.4), (0, 5, top + 4.2)],
-             [(0, 1, 4), (1, 2, 4), (2, 3, 4), (3, 0, 4)], M['glass_roof'])                  # 中庭玻璃顶
+    K.hip(X0 - 0.4, X1 + 0.4, Y0 - 0.4, Y1 + 0.4, top + 0.9, 4.2, M['terracotta'], over=0.4)      # 红陶屋顶
+    K.R.box(-8, 8, -1, 11, top + 4.6, top + 5.1, M['iron'])
+    K.R.poly([(-7.6, -0.6, top + 5.1), (7.6, -0.6, top + 5.1), (7.6, 10.6, top + 5.1), (-7.6, 10.6, top + 5.1), (0, 5, top + 8.4)],
+             [(0, 1, 4), (1, 2, 4), (2, 3, 4), (3, 0, 4)], M['glass_roof'])                  # 中庭玻璃顶（穿出屋面的采光亭）
+    K.R.box(-7.0, 7.0, -0.2, 10.2, top + 4.6, top + 5.0, M['atrium'])                        # 中庭透出的暖橙光
     for x in (-15, -5, 5, 15): K.chimney(x, Y1 - 2, top + 0.9, 2.2, 1.6, 0.8)
     K.portico(0, Y0, 8.0, 3.5, 5.5, n=4)
     # 顶光拍卖厅（冬季私人拍卖，只限会员）：长厅 + 三道采光天窗，东接主楼
     AX0, AX1, AY0, AY1 = 20.0, 44.0, -4.0, 16.0
-    ht = K.block(AX0, AX1, AY0, AY1, 1, 9.0, M['stone_pale'], bay=5.0, win=(1.6, 3.2), skip='w')
+    ht = K.block(AX0, AX1, AY0, AY1, 1, 9.0, M['stone_cream'], bay=5.0, win=(1.6, 3.2), skip='w')
     K.R.box(AX0, AX1 + .2, AY0 - .2, AY1 + .2, ht, ht + 0.4, M['lead'])
     for k in range(3):
         x = AX0 + 3 + k * 7
@@ -425,7 +437,9 @@ def league(K, P, toward):
     K.trees_ring(P, .7, .93, 30, 9, avoid, kinds=('oak', 'cedar'))
     dk, br = K.dock(P, toward)
     K.path([br, (br[0] * .6, br[1] * .6), (14, -26)], 6, M['gravel'])
-    return {'c1': ((150, -150, 105), (0, 10, 0), 40), 'c2': ((42, -58, 20), (0, 6, 9), 30)}
+    tx, ty = toward                                      # c3：从岛心一侧看停靠平台（环形大平台 + 悬浮车）
+    c3 = ((dk[0] - tx * 62 - ty * 26, dk[1] - ty * 62 + tx * 26, 30), (dk[0], dk[1], 0), 34)
+    return {'c1': ((150, -150, 105), (0, 10, 0), 40), 'c2': ((42, -58, 20), (0, 6, 9), 30), 'c3': c3}
 
 
 # ====================================================================== 精英学院
