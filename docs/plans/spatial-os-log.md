@@ -221,4 +221,18 @@ notes: (1) Shared island models (league_club, rothschild_estate, elite_academy) 
 
 cleanup: done (no Blender, queue job or server of mine running)
 
+=== RESULT S1-impl-1 ===
+status: DONE
+items: T0 ✓  T1 ✓  T2 ✓  T3 ✓
+commits: fc8458c docs(kernel): record the K-01..K-09 decisions
+         792278e feat(core): node tree, locate and lexicon (kernel v2)
+         (this commit) feat(core): v2 pack validation, defaults and minimal-pack pipelines, with tests   (SHAs may change on rebase)
+pushed: head #(see the head commit that follows this one)
+tests: node 685/686 (1 skipped; baseline 633/634, +52 = tests/kernel_minimal.test.mjs) | smoke PASS | arch PASS | mirror PASS (5 pairs) | check_pack eden / minimal / town PASS | probes: none (no viewer or host change)
+deviations: (1) pack-v2 is split into pack-v2.mjs + pack-v2-spec.mjs (field specs mirroring the v2 schemas) + pack-v2-rows.mjs (typeOf, fieldValue, entityRows, stashRows; re-exported from pack-v2.mjs); nodes split into nodes / locate / lexicon as B.1 allows. (2) validate2 mirrors the schemas with hand-written specs instead of loading the JSON files (map/core is pure and cannot fetch); the 30 bad and 6 good variants of tests/pack_schema_v2.test.mjs are re-run against validate2 to guard drift. (3) Foreign packs: nodes are cut to 1000 (K-R66 "any array"), not 5000.
+interpretations: (a) tree.root is the root id string; tree also has synth, distance(a, b), has(id). (b) viewOf always returns focus (also when view is null). (c) locate `word` is the pack's spelling; `text` is the normalised whole input. (d) head = last for zh / ja, first otherwise, overridable by lexicon.head. (e) typeOf returns { type, group, label, color, shape, icon, source, rare, life, inject, fx } (life merged over events.life and the K-R54 defaults, fx resolved from fx_presets or a kernel block); "coloured as hazard" = group hazard, colour of that group. (f) resolveBlocks returns { manifest, problems }. (g) validate2 reports missing parents and cycles (tree-* problems) but leaves the healing to buildTree, so a healed pack may still hang a node under the root at load. (h) A repaired node id and the references repaired with it are one problem; an id with no [a-z0-9] character (e.g. the snowman) is dropped. (i) withDefaults: default period bands are { id, start, dark? } (night dark), levels carry the zh labels under i18n, and group `other` / type `other` are appended when a pack's own events lack them. (j) describe().nodes leaves out a synthesized root; types / views are counts by type / by kind. (k) escape form for K-R65: {{ -> \{\{, }} -> \}\}, <% -> <\%, %> -> %\>; {{user}} / {{char}} kept. (l) pack ids need 2-32 characters (schema pattern), so 'x' is refused by validate2 (withDefaults does not validate).
+API: lexicon.mjs — normalise, normText, cpLen, cut, fnv, fnv36, langKey, lexicon, stripArticle, isYes, journey · locate.mjs — vocabulary, locate, unmapped, occurrences · nodes.mjs — buildTree, ROOT_ID, MAX_NODES, viewIdsOf, viewOf, positionOf, scopeOf, levelsOf, describe (+ re-exports vocabulary, locate, unmapped) · pack-v2.mjs — validate2, resolveBlocks, withDefaults, repairId, escapeHost, DEFAULT_PERIODS, DEFAULT_LEVELS (+ re-exports typeOf, fieldValue, entityRows, stashRows) · pack-v2-rows.mjs — typeOf, fieldValue, entityRows, stashRows, LIFE, KERNEL_BLOCKS · pack-v2-spec.mjs — DROP, bad, obj, arr, dict, str, idRef, ID, LANG, HEX, PATH_RE, BLOCKS, MANIFEST and one <block>Block per v2 block.
+blocker: none
+open: none
+cleanup: done (no servers or background processes started; scratch scripts stay in the session scratchpad)
 === END ===
