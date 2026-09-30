@@ -262,6 +262,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     if (e.data?.type === 'eden-map:compose' && typeof e.data.text === 'string') composeIn(e.data.text);   // v0.9.6 地图 → 聊天：只填不发
     if (e.data?.type === 'eden-map:action') injectAction(e.data);   // Part 6-4：点 POI → 注入动作（默认关，见 tavern/action.mjs）
     if (e.data?.type === 'eden-map:loot') takeLoot(e.data);   // Part 5-1：点了地上的发光拾取物 → 先写背包，再按设置注入一句
+    if (e.data?.type === 'eden-map:stealth') stealthCheck(e.data);   // Part 5-2：这次移动穿过了谁的视野 → 按难度注入一句检定
     if (e.data?.type === 'eden-map:th' && typeof e.data.op === 'string') onTh(e.data).catch(x => console.warn('[eden-map] 酒馆助手设置', x));   // 设置「数据与映射」「高级」：注入 / 类宏 / 世界书同步
     if (e.data?.type === 'eden-map:check-update') (channel() === 'follow' && SCRIPT.ref ? followUpdate() : checkUpdate()).then(r => post({ type: 'eden-map:update-result', ...r }));   // v0.9.6「检查更新」
   };
@@ -346,6 +347,16 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
       if (!res.changed) return;
       inv = res.inv; changedInv();   // 写变量 + 推地图（拿到手的光点会消失）
       injectAction({ kind: 'loot', name: row.place || d.place || '', map: row.map || d.map || '', item: row.name });
+    } catch (err) {}
+  }
+
+  // Part 5-2 潜行：地图已经把几何算完了（穿过谁的锥、最难的一下 DC 多少），这里只决定要不要说这句话——
+  // 与所有地图-driven 注入同一道开关（edenMapInject），默认值仍然是「关」。
+  function stealthCheck(d) {
+    try {
+      const dc = Math.round(+d?.dc);
+      if (!Number.isFinite(dc) || dc <= 0) return;
+      injectAction({ kind: 'stealth', name: d?.to || '', vars: { dc } });
     } catch (err) {}
   }
 

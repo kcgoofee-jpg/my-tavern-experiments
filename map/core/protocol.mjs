@@ -35,6 +35,7 @@ export const SCHEMA = {
   'eden-map:compose': [V2H, { text: 'string' }],
   'eden-map:action': [V2H, { kind: 'string?', name: 'string?', map: 'string?', text: 'string?' }],   // Part 6-4：地图 POI → 聊天（文案与注入方式由宿主按设置决定，模块 tavern/action.mjs）
   'eden-map:loot': [V2H, { id: 'string', name: 'string', map: 'string?', place: 'string?', hidden: 'boolean?' }],   // Part 5-1：点了地上发光的拾取物（core/stash.mjs 藏物表的 id）
+  'eden-map:stealth': [V2H, { dc: 'number', from: 'string?', to: 'string?', seen: 'boolean?', hits: 'array?' }],   // Part 5-2：这次移动穿过了谁的视野（dc = 最难的一下）
   'eden-map:explore': [V2H, { map: 'string', name: 'string' }],   // 迷雾探索：记一次到访（只在开着时发）
   'eden-map:explore-reset': [V2H, {}],
   'eden-map:th': [V2H, { op: 'string' }],   // 酒馆助手设置（app/th-ui.mjs）：state / prefs / wb-inspect / wb-write / wb-del-legacy

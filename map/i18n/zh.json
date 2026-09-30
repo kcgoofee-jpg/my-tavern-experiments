@@ -561,6 +561,8 @@
   "loot.layer_title": "设定包登记在世界上的东西：地图上一枚会呼吸的小光点，点一下就拾走（走到近处才看得到暗格里的）",
   "loot.pick": "拾取",
   "loot.hidden": "暗格",
+  "vision.layer": "视野锥",
+  "vision.layer_title": "巡逻岗哨 / 机兵的警戒视野：沿地图自己的巡逻环在走，穿过就按潜行难度判定",
   "ch.src_routine": "日程",
   "weather": "天气",
   "weather_title": "按剧情与时段渲染雨 / 沙尘 / 雪与闪电",

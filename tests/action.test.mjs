@@ -91,8 +91,17 @@ test('loot（Part 5-1 拾取）：模板里的 {item} 换成拾到的东西，�
   assert.equal(buildAction({ mode: 'off', kind: 'loot', name: '主人主卧', item: '机密账本' }), null, 'off 模式拾取也不发');
 });
 
+test('stealth（Part 5-2 潜行）：{dc} 换成 core/vision.mjs 算出的难度，也能塞进别的占位符', () => {
+  assert.equal(fill(DEFAULTS.zh.stealth, '环城军营带', { dc: 14 }), '穿过环城军营带避开巡逻视线：潜行检定 DC 14。');
+  assert.equal(fill(DEFAULTS.en.stealth, 'Ring Barracks', { dc: 14 }), 'Slip past the patrol watching Ring Barracks: stealth check DC 14.');
+  const a = buildAction({ mode: 'compose', kind: 'stealth', name: '环城军营带', vars: { dc: 14 } });
+  assert.equal(a.kind, 'stealth');
+  assert.equal(a.text, '穿过环城军营带避开巡逻视线：潜行检定 DC 14。');
+  assert.deepEqual(Object.keys(readTpl(() => '')).sort(), [...KINDS].sort(), '模板表与 KINDS 同源（新增 kind 必被 ctor 一把覆盖）');
+});
+
 test('摘要与纯度：不碰酒馆全局 / DOM / 存储', () => {
-  assert.deepEqual(describe(k => (k === KEY ? 'sys' : '')), { mode: 'sys', kinds: ['go', 'look', 'take', 'loot'] });
+  assert.deepEqual(describe(k => (k === KEY ? 'sys' : '')), { mode: 'sys', kinds: ['go', 'look', 'take', 'loot', 'stealth'] });
   const src = readFileSync(join(ROOT, 'map/tavern/action.mjs'), 'utf8').replace(/\/\/[^\n]*/g, '');
   for (const g of ['window', 'document', 'localStorage', 'Mvu', 'SillyTavern', 'postMessage']) {
     assert.ok(!new RegExp(`\\b${g}\\b`).test(src), `不该出现 ${g}`);
