@@ -593,3 +593,16 @@ next: isle:isle25 (integrate; the ledger re-offers it first because it cannot pa
 notes: (1) Worked in a new worktree ~/eden-render/wt-hero-1 (branch render-hero-1), not the render-hero branch: that branch holds the user's unpushed Eden r6 WIP, and rebasing + pushing it would have published it. (2) Island integration recipe: body-only crop of tiancheng_upper.py (8000/64, --no-data 1, --below clouds|city, crop box ±~1.3 rx/ry around the island centre) pasted at the crop origin (seam diff 0.4–0.5), then isles_into_upper.py with the cutout at ~2.44 × rx(m). (3) Check the top-down cutout, not only the oblique draft: isle6's terrace embankment showed as a grey road loop only from above (fixed with slope_rock=False and a wider flat blend). (4) Dark materials with low roughness read pale grey (sky sheen): use roughness ≥ 0.9 for dark slate / basalt. (5) numpy and PIL are only in /usr/bin/python3 on this Mac. (6) render_times.csv rows written by the queue into this worktree were discarded, not committed. (7) The 8K full PNGs came from ~/eden-render/wt-hero/map/art (they include isle4 and the r5 Eden); only the tiles around each pasted island changed.
 cleanup: done (no Blender or server of this session left running; queue jobs all finished)
 === END ===
+
+=== RESULT R-LOOP hero hero-1 (overnight: unfreeze + ship) ===
+status: PAUSED (every remaining hero item waits on layout C or on the Eden r6 line)
+items finished this session: isle5, isle6, isle9, isle10, isle30 — ship (head #186, CI green); lm:round_table_hall, lm:sun_arena, lm:union_tower — skipped by user decision (covered by the shipped glory_crown model groups props_main / props_arena / props_tower); isle10 cutout re-rendered without the grey mist disc (_kit cutout mode now hides *_mist and below-rim meshes; isle10 mist plume in its own batch)
+items below gate: none
+waiting: isle:isle25 — integrate (footprint under the r5 Eden image; paste with layout C) | layout:tc_upper (layout-1) | estate:b1b2 — after the Eden r6 line ships
+pushed: yes (head #186)
+tests: node 829/830 (1 skipped, unchanged) | smoke PASS | check_maps PASS | estate3d_manifest PASS (10/10) | CI success
+deviations: tests/fixtures/spatial_golden.json re-pinned for the two moved markers only (session fixtures + 40 sweep words of upper places); the 14 pinned v1 exceptions untouched. build_worldbook_addon.py --ship also wrote its default copy to ~/Downloads/酒馆/世界书/.
+next: isle:isle25 (after layout C); then base:tc_upper and its variants
+notes: marker ny in tc_upper.json counts from the top (y-down). When layout C lands, all six island pastes must be redone on the new layout (recipe in the previous block).
+cleanup: done (freeze watcher and CI watcher finished; no Blender of this session running)
+=== END ===
