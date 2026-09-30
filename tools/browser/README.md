@@ -38,3 +38,10 @@ node tools/browser/accept.mjs /tmp/accept --only first,fly,estate
 node tools/browser/topo_dairy.mjs /tmp/topo_dairy [--shots 截图目录]
 ```
 庄园农场区域卡有「进入三维」→ 进入挤奶厅（面包屑以它结尾、只有一个 WebGL 上下文）→ 上一级 / 面包屑返回并聚焦农场；双击区域同样进入；设置里没有入口、任何标记都不链到挤奶厅；再在 375 px 走一遍。等待一律用条件，不用固定延时。
+
+## 影子对拍截图（S4-3）
+```bash
+node tools/browser/s43_parity.mjs --out <目录> [--only 名,名] [--skip 名,名] [--schemes dark]
+node tools/browser/s43_parity.mjs --diff <前目录> <后目录> [--out <差异目录>]
+```
+桌面 1440×900：`REG.maps` 每张图的深 / 浅色截图，加世界图上猎季营地的卡、设置「更新」「版权」页、图例面板、花屏中、色觉 rg 下的事态列表。动画与加载状态文字冻结。`--diff` 在页面画布里逐像素比（亮度差 > 12），每张一行 `名 changed=<n> (<百分比>)`，有差异的写差异 PNG 和 `parity.json`。同一棵树跑两遍量噪声（云、花屏）。

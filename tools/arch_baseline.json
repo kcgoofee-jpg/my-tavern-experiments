@@ -5,7 +5,7 @@
     "map/events.mjs": 409,
     "map/props/viewer3d.html": 916,
     "map/tavern/eden-map.js": 1535,
-    "map/viewer.html": 717
+    "map/viewer.html": 707
   },
   "zindex": {
     "map/app/fps.mjs": 1,
@@ -25,33 +25,23 @@
     "map/unmapped.mjs": 1
   },
   "terms": {
-    "map/app/boot.mjs": 2,
-    "map/app/clouds.mjs": 2,
     "map/app/estate.mjs": 3,
     "map/app/feedback-report.mjs": 1,
-    "map/app/locate.mjs": 9,
-    "map/app/markers.mjs": 1,
-    "map/app/scale.mjs": 3,
-    "map/app/settings.mjs": 3,
+    "map/app/settings.mjs": 2,
     "map/app/shell.mjs": 1,
     "map/chars.mjs": 2,
     "map/compose.mjs": 1,
-    "map/custom.mjs": 5,
-    "map/events.mjs": 5,
+    "map/custom.mjs": 2,
+    "map/events.mjs": 1,
     "map/i18n/en.json": 3,
-    "map/i18n/zh.json": 20,
+    "map/i18n/zh.json": 19,
     "map/tavern/eden-map.js": 1,
-    "map/tavern/host-routes.mjs": 1,
-    "map/tavern/modes.mjs": 3,
-    "map/tavern/mvu.mjs": 1,
-    "map/tavern/picker.mjs": 7,
-    "map/tavern/selfcheck.mjs": 2,
+    "map/tavern/selfcheck.mjs": 1,
     "map/tavern/splash.mjs": 1,
     "map/tavern/th.mjs": 1,
-    "map/tavern/wbsync.mjs": 2,
     "map/unmapped.mjs": 2,
     "map/varmap.mjs": 1,
-    "map/viewer.html": 13
+    "map/viewer.html": 6
   },
   "inline_style": {
     "map/app/clouds.mjs": 1,

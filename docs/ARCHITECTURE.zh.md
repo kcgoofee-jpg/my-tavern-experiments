@@ -133,6 +133,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `state.mjs` | 查看器核心状态：当前地图、注册表、OSD 实例、焦点请求。 |
 | `storage-ui.mjs` | 设置「数据与映射」页：本机存储占用与当前数据来源（只读）。 |
 | `th-ui.mjs` | 设置里的酒馆助手功能：世界书附加条目同步、状态注入、类宏、注入深度。 |
+| `theme.mjs` | 包的分视图主题（`ui.theme.views`，K-R70）：一个 `<style id="packTheme">`，带光晕的视图由 `body[data-glow]` 标出。 |
 | `tiers.mjs` | 清晰度档位、省流判断、加载进度、叠加层与标注避让。 |
 | `topbar.mjs` | 顶栏布局、后台预热、版本编码。 |
 | `traffic.mjs` | 流光在 `fx` 槽位画布上的查看器渲染。 |
@@ -305,6 +306,13 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layers.
 **包现在能声明什么**：有哪些数据文件、聊天变量键、CDN 仓库、强调色、功能开关与文案覆盖。其余一切——地理、事态类别、名册字段、图层——仍是代码或固定的数据形状。
 
 **清单 v2（计划，S1）**：`id` / `schema: 2` / `title` 必填；可选 `lang`、`match`；`nodes`、`views`、`vars`、`entities`、`items`、`events`、`layers`、`ui`、`llm` 各段，缺了就自动降级（计划 §2）。`core/compat-v1.mjs` 在内存里把 v1 包转成 v2，所以伊甸与 town 不改文件照跑；一个最小包（`map/packs/minimal/`，5 个节点、无底图）钉死零配置路径。Schema v1 保持冻结。
+
+**设定包驱动的查看器行为（S4-3）**：以前按第一个包的地图 id 和词汇挑选的东西，现在都来自包数据。叠加层的 `ui` 块（K-R70）带分视图
+主题令牌（`app/theme.mjs` 写成一个 `<style id="packTheme">`；定义了光晕的视图由 `body[data-glow]` 标出）、图例和 `x-event-level`；
+`maps.json` 的 `clouds` / `tint` 标记变成视图字段 `x-clouds` / `x-tint`（漂移云、随时段的夜色），`tier_label` 给选择器里的层命名；
+事态大类自带色觉安全色（`x-cvd`）；世界图地点带 `here_words`，国家带 `label_dy`，还有 `overseas` 大牌。清单带 `worldbook.prefix`
+（附加世界书和条目叫 `<前缀>·…`，缺省 = 包标题）、`credits`（设置「关于」）以及宿主和查看器以前写死的数据路径（`roster`、`maps`、
+`galleries`、`worldbook_addon`、`gallery`、`routine`）；缺一个键，对应功能静默关掉。引擎里不出现任何视图、组、地点或书的名字。
 
 **信任边界**：清单是纯数据。引擎从不执行包里的脚本，也从不过滤用户聊天。
 

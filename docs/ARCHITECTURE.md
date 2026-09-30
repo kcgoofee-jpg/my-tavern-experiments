@@ -153,6 +153,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `state.mjs` | Core viewer state: current map, registry, OSD instance, focus request. |
 | `storage-ui.mjs` | Settings "data and mapping" page: local storage usage and current data sources (read only). |
 | `th-ui.mjs` | Settings for TavernHelper features: worldbook add-on sync, state injection, macros, injection depth. |
+| `theme.mjs` | Per-view theme from the pack (`ui.theme.views`, K-R70): one `<style id="packTheme">`, `body[data-glow]` for the view that defines a glow. |
 | `tiers.mjs` | Sharpness tiers, data-saver decisions, load progress, overlay and label avoidance. |
 | `topbar.mjs` | Top bar layout, background warm-up, version code. |
 | `traffic.mjs` | Viewer rendering of light streams on the `fx` slot canvas. |
@@ -357,6 +358,16 @@ still code or fixed data shape.
 `vars`, `entities`, `items`, `events`, `layers`, `ui`, `llm` sections with automatic degradation when absent
 (plan §2). `core/compat-v1.mjs` converts v1 packs in memory, so eden and town run unchanged; a minimal pack
 (`map/packs/minimal/`, 5 nodes, no base map) pins the zero-config path. Schema v1 stays frozen.
+
+**Pack-driven viewer behaviour (S4-3)**: what used to be chosen by the first pack's map ids and words now comes from
+pack data. The overlay's `ui` block (K-R70) carries the per-view theme tokens (`app/theme.mjs` writes one
+`<style id="packTheme">`; `body[data-glow]` marks a view that defines a glow), the legend and `x-event-level`; the
+`maps.json` flags `clouds` / `tint` become the view fields `x-clouds` / `x-tint` (drifting clouds, the period night
+tint) and `tier_label` names a tier in the picker; event groups carry their colour-vision colours (`x-cvd`); the world
+markers carry `here_words`, the realm `label_dy` and the `overseas` card. The manifest carries `worldbook.prefix` (the
+add-on book and its entries are named `<prefix>·…`, default the pack title), `credits` (Settings → about) and the
+data paths the host and the viewer used to hard-code (`roster`, `maps`, `galleries`, `worldbook_addon`, `gallery`,
+`routine`); a missing key quietly switches the feature off. The engine names no view, group, place or book.
 
 **Trust boundary**: a manifest is pure data. The engine never executes pack scripts and never filters user chat.
 

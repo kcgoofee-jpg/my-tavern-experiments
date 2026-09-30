@@ -6,7 +6,7 @@ import * as TCStore from '../core/storage.mjs';
 import { recheck } from '../core/pack-v2-spec.mjs';
 
 export const MODES = ['0', 'rg', 'by'];
-/** 事态 / 图例里没有合法颜色时用的中性色；颜色会进 style（来自设定包或聊天脚本），只收 #rrggbb（K-R64，I-09），别的一律中性色 */
+/** 事态 / 图例里没有合法颜色时用的中性色；颜色会进 style（取自包数据或聊天脚本），只收 #rrggbb（K-R64，I-09），别的一律中性色 */
 export const NEUTRAL = '#cfd8e0';
 export const safeColor = c => recheck.hex(c) ?? NEUTRAL;
 
