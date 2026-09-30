@@ -279,3 +279,9 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T16:54:58Z,scene:yuanyu-city,review-r2,done,std-1,pass,fidelity 7.5 / credibility 6 (r2.md)
 2026-09-30T16:57:30Z,scene:yuanyu-city,final,done,std-1,pass,std 2.19 MB / low 0.79 MB under max_mb 2.8/1.4
 2026-09-30T16:57:32Z,scene:yuanyu-city,ship,wait,std-1,,"FREEZE_MAPS on origin/preview; model, glbs, manifest committed; needs lm_yuanyu_city entry + links for city_gate/dome_quarter/pilgrim_plaza/spire_quarter in maps.json (layer key yuanyu_city) + card-buildings rows"
+2026-09-30T16:59:07Z,scene:fief1,ship,done,std-1,pass,"markers linked to lm_fief1 in maps.json, card-buildings rows updated; check_maps + smoke pass"
+2026-09-30T16:59:07Z,scene:fief2,ship,done,std-1,pass,"markers linked to lm_fief2 in maps.json, card-buildings rows updated; check_maps + smoke pass"
+2026-09-30T16:59:07Z,scene:fief3,ship,done,std-1,pass,"markers linked to lm_fief3 in maps.json, card-buildings rows updated; check_maps + smoke pass"
+2026-09-30T16:59:07Z,scene:fief4,ship,done,std-1,pass,"markers linked to lm_fief4 in maps.json, card-buildings rows updated; check_maps + smoke pass"
+2026-09-30T16:59:07Z,scene:fief5,ship,done,std-1,pass,"markers linked to lm_fief5 in maps.json, card-buildings rows updated; check_maps + smoke pass"
+2026-09-30T16:59:07Z,scene:yuanyu-city,ship,done,std-1,pass,"markers linked to lm_yuanyu_city in maps.json, card-buildings rows updated; check_maps + smoke pass"

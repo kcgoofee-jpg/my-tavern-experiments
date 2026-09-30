@@ -1,4 +1,4 @@
-状态：进行中（2026-10-01）——已完成 new, draft, board, final；下一步 gapcheck。tools/landmark.py 自动维护本行与「流程」勾选
+状态：全部完成（2026-10-01）——已完成 new, draft, board, gapcheck, final, ship。tools/landmark.py 自动维护本行与「流程」勾选
 
 # 原域城区（`yuanyu_city`，yuanyu_city）检查清单
 
@@ -9,7 +9,7 @@
 - ~~board：审查看板（主视角 + 侧 / 底视，带编号标注）~~ ✅
 - gapcheck：设定 ↔ 看板缺口核对（评审代理，见 docs/landmark-pipeline.md）
 - ~~final：定稿（64 spp）+ 标准 / 低档 glb（按预算）+ 清单热点~~ ✅
-- ship：地图标记「查看三维模型」+ 世界书附加条目 + card-buildings + 测试
+- ~~ship：地图标记「查看三维模型」+ 世界书附加条目 + card-buildings + 测试~~ ✅
 
 ## 看板条目
 

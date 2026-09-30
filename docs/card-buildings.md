@@ -50,27 +50,27 @@
 | P2 机构 | tc_mid | `tiancheng_univ` | 天城大学 | ✅ | 用户决定 | 天城大学与最高法院 `map/props/tiancheng_univ_court/` | 标准（r1 7.5 / 7.5） |  |
 | P2 机构 | tc_upper | `climate_tower` | 以太气候调节塔 | ✅ | 卡 + 推断位置 | 气候调节塔 `map/props/climate_tower/` | 标准（r2 7 / 8） |  |
 | P2 机构 | tc_upper | `silver_crown` | 银冠堡 | ✅ | 卡 | 银冠堡 `map/props/silver_crown/`；岛资产 `blender/islands/silver_crown.py`（上层底图抠图） | 标准（r1 7 / 7.5）；岛资产 标准（campaign r2 8/6.5） | 2026-09-30 渲染战役：上层底图改贴岛资产俯视抠图 |
-| P3 其他 | site_fief1 | `fief1_castle` | 第一席城堡 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief1 | `fief1_fields` | 第一席领地农田 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief1 | `fief1_order` | 第一席骑士团驻地 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief1 | `fief1_village` | 第一席领地城镇 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief2 | `fief2_castle` | 第二席城堡 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief2 | `fief2_fields` | 第二席领地农田 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief2 | `fief2_order` | 第二席骑士团驻地 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief2 | `fief2_village` | 第二席领地城镇 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief3 | `fief3_castle` | 第三席城堡 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief3 | `fief3_fields` | 第三席领地农田 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief3 | `fief3_order` | 第三席骑士团驻地 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief3 | `fief3_village` | 第三席领地城镇 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief4 | `fief4_castle` | 第四席城堡 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief4 | `fief4_fields` | 第四席领地农田 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief4 | `fief4_order` | 第四席骑士团驻地 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief4 | `fief4_village` | 第四席领地城镇 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief5 | `fief5_castle` | 第五席城堡 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief5 | `fief5_fields` | 第五席领地农田 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief5 | `fief5_lists` | 第五席比武场 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief5 | `fief5_order` | 第五席骑士团驻地 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_fief5 | `fief5_village` | 第五席领地城镇 | ✅ | 仓库自设 | — | — |  |
+| P3 其他 | site_fief1 | `fief1_castle` | 第一席城堡 | ✅ | 仓库自设 | 第一席封地 `map/props/fief1/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief1 | `fief1_fields` | 第一席领地农田 | ✅ | 仓库自设 | 第一席封地 `map/props/fief1/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief1 | `fief1_order` | 第一席骑士团驻地 | ✅ | 仓库自设 | 第一席封地 `map/props/fief1/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief1 | `fief1_village` | 第一席领地城镇 | ✅ | 仓库自设 | 第一席封地 `map/props/fief1/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief2 | `fief2_castle` | 第二席城堡 | ✅ | 仓库自设 | 第二席封地 `map/props/fief2/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief2 | `fief2_fields` | 第二席领地农田 | ✅ | 仓库自设 | 第二席封地 `map/props/fief2/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief2 | `fief2_order` | 第二席骑士团驻地 | ✅ | 仓库自设 | 第二席封地 `map/props/fief2/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief2 | `fief2_village` | 第二席领地城镇 | ✅ | 仓库自设 | 第二席封地 `map/props/fief2/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief3 | `fief3_castle` | 第三席城堡 | ✅ | 仓库自设 | 第三席封地 `map/props/fief3/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief3 | `fief3_fields` | 第三席领地农田 | ✅ | 仓库自设 | 第三席封地 `map/props/fief3/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief3 | `fief3_order` | 第三席骑士团驻地 | ✅ | 仓库自设 | 第三席封地 `map/props/fief3/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief3 | `fief3_village` | 第三席领地城镇 | ✅ | 仓库自设 | 第三席封地 `map/props/fief3/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief4 | `fief4_castle` | 第四席城堡 | ✅ | 仓库自设 | 第四席封地 `map/props/fief4/` | 标准（r2 7 / 6） |  |
+| P3 其他 | site_fief4 | `fief4_fields` | 第四席领地农田 | ✅ | 仓库自设 | 第四席封地 `map/props/fief4/` | 标准（r2 7 / 6） |  |
+| P3 其他 | site_fief4 | `fief4_order` | 第四席骑士团驻地 | ✅ | 仓库自设 | 第四席封地 `map/props/fief4/` | 标准（r2 7 / 6） |  |
+| P3 其他 | site_fief4 | `fief4_village` | 第四席领地城镇 | ✅ | 仓库自设 | 第四席封地 `map/props/fief4/` | 标准（r2 7 / 6） |  |
+| P3 其他 | site_fief5 | `fief5_castle` | 第五席城堡 | ✅ | 仓库自设 | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief5 | `fief5_fields` | 第五席领地农田 | ✅ | 仓库自设 | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief5 | `fief5_lists` | 第五席比武场 | ✅ | 仓库自设 | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief5 | `fief5_order` | 第五席骑士团驻地 | ✅ | 仓库自设 | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief5 | `fief5_village` | 第五席领地城镇 | ✅ | 仓库自设 | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
 | P3 其他 | site_highland | `trail_down` | 下山小径 | ✅ | 仓库自设 | 旷野高地 `map/props/highland/`（下山小径热点） | 标准（r2 7 / 6） |  |
 | P3 其他 | site_kavalierki | `arms_rnd` | 魔导军工研发中心 | 🆕 | 仓库推断 | 魔导军工研发中心 `map/props/arms_rnd/` | 标准（campaign r2 8/6.5） |  |
 | P3 其他 | site_kavalierki | `clearing_depot` | 清算转运站 | ✅ | 卡 | 清算转运站 `map/props/clearing_depot/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
@@ -98,10 +98,10 @@
 | P3 其他 | tc_upper | `zaibatsu_estate` | 罗斯柴尔德庄园 | ✅ | 卡 + 推断位置 | 罗斯柴尔德庄园 `map/props/rothschild_estate/` | 标准（r2 7.5 / 7.5） | isle30；府邸 + 玻璃冬季宴会厅 |
 | P3 其他 | tc_upper | `elite_academy` | 精英学院 | 🆕 | 卡 + 推断位置 | 精英学院 `map/props/elite_academy/` | 标准（r2 7.5 / 7.5） | isle25（Q11） |
 | P3 其他 | world | `hunting_camp` | 猎季营地 | 🆕 | 仓库推断 | 猎季营地 `map/props/hunting_camp/` | 标准（r2 7.5 / 6；模型已备，世界图标记待引擎支持三维入口） |  |
-| P3 其他 | yuanyu_city | `city_gate` | 原域东门 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | yuanyu_city | `dome_quarter` | 穹顶区 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | yuanyu_city | `pilgrim_plaza` | 朝圣广场 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | yuanyu_city | `spire_quarter` | 尖塔区 | ✅ | 仓库自设 | — | — |  |
+| P3 其他 | yuanyu_city | `city_gate` | 原域东门 | ✅ | 仓库自设 | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | yuanyu_city | `dome_quarter` | 穹顶区 | ✅ | 仓库自设 | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | yuanyu_city | `pilgrim_plaza` | 朝圣广场 | ✅ | 仓库自设 | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | yuanyu_city | `spire_quarter` | 尖塔区 | ✅ | 仓库自设 | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |
 | P3 其他 | yuanyu_sanctum | `holy_mountain` | 悬浮圣山 | ✅ | 卡 | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（r2 7.5 / 6.5；glb 重导出 + webp/meshopt） | 四处标记共用一个模型：`lm_holy_mountain` |
 | P3 其他 | yuanyu_sanctum | `pantheon` | 诸神殿 | ✅ | 卡 | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（同 holy_mountain，r2 7.5 / 6.5） | 热点 `pantheon` → 网格 `summit` |
 | P3 其他 | yuanyu_sanctum | `pilgrim_stair` | 朝圣步道 | ✅ | 仓库自设 | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（同 holy_mountain，r2 7.5 / 6.5） | 热点 `pilgrim_stair` → 网格 `stair` |

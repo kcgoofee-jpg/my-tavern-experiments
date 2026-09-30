@@ -1453,6 +1453,12 @@
     "lm_glory_crown": {"title": "荣光冠冕（三维）", "title_en": "Glory Crown (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "glory_crown", "src": "props/viewer3d.html", "alias": ["荣光冠冕（三维）"], "src_note": "荣光冠冕三维；从 site_kavalierki.glory_crown 标记的「查看三维模型」进。源：blender/landmarks/glory_crown/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_elite_club": {"title": "顶级贵族与财阀会所（三维）", "title_en": "Elite Club (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "elite_club", "src": "props/viewer3d.html", "alias": ["顶级贵族与财阀会所（三维）"], "src_note": "顶级贵族与财阀会所三维（标准版：标准档 + 低档 glb）；从 site_kavalierki.elite_club 标记的「查看三维模型」进。源：blender/landmarks/elite_club/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_holy_mountain": {"title": "原域·悬浮圣山（三维）", "title_en": "Origin Domain: the Floating Holy Mountain (3D)", "parent": "yuanyu_sanctum", "kind": "estate", "viewer3d": "holy_mountain", "src": "props/viewer3d.html", "alias": ["原域·悬浮圣山（三维）", "悬浮圣山（三维）"], "src_note": "原域·悬浮圣山三维；从 yuanyu_sanctum 四个标记的「查看三维模型」进。源：blender/world/out/yuanyu_holy_mount.blend", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_fief1": {"title": "第一席封地（三维）", "title_en": "First Seat Fief (3D)", "parent": "site_fief1", "kind": "estate", "viewer3d": "fief1", "src": "props/viewer3d.html", "alias": ["第一席封地（三维）"], "src_note": "第一席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief1 的 fief1_castle / fief1_order / fief1_village / fief1_fields 标记的「查看三维模型」进。源：blender/landmarks/fief1/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_fief2": {"title": "第二席封地（三维）", "title_en": "Second Seat Fief (3D)", "parent": "site_fief2", "kind": "estate", "viewer3d": "fief2", "src": "props/viewer3d.html", "alias": ["第二席封地（三维）"], "src_note": "第二席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief2 的 fief2_castle / fief2_order / fief2_village / fief2_fields 标记的「查看三维模型」进。源：blender/landmarks/fief2/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_fief3": {"title": "第三席封地（三维）", "title_en": "Third Seat Fief (3D)", "parent": "site_fief3", "kind": "estate", "viewer3d": "fief3", "src": "props/viewer3d.html", "alias": ["第三席封地（三维）"], "src_note": "第三席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief3 的 fief3_castle / fief3_order / fief3_village / fief3_fields 标记的「查看三维模型」进。源：blender/landmarks/fief3/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_fief4": {"title": "第四席封地（三维）", "title_en": "Fourth Seat Fief (3D)", "parent": "site_fief4", "kind": "estate", "viewer3d": "fief4", "src": "props/viewer3d.html", "alias": ["第四席封地（三维）"], "src_note": "第四席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief4 的 fief4_castle / fief4_order / fief4_village / fief4_fields 标记的「查看三维模型」进。源：blender/landmarks/fief4/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_fief5": {"title": "第五席封地（三维）", "title_en": "Fifth Seat Fief (3D)", "parent": "site_fief5", "kind": "estate", "viewer3d": "fief5", "src": "props/viewer3d.html", "alias": ["第五席封地（三维）"], "src_note": "第五席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief5 的 fief5_castle / fief5_order / fief5_village / fief5_fields / fief5_lists 标记的「查看三维模型」进。源：blender/landmarks/fief5/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_yuanyu_city": {"title": "原域城区（三维）", "title_en": "Yuanyu City District (3D)", "parent": "yuanyu_city", "kind": "estate", "viewer3d": "yuanyu_city", "src": "props/viewer3d.html", "alias": ["原域城区（三维）"], "src_note": "原域城区三维场景（标准版：标准档 + 低档 glb）；从 yuanyu_city 的 pilgrim_plaza / spire_quarter / dome_quarter / city_gate 标记的「查看三维模型」进。源：blender/landmarks/yuanyu_city/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_victoria_apartment": {
       "title": "维多利亚的公寓（三维）",
       "title_en": "Victoria's Apartment (3D)",
@@ -2191,7 +2197,8 @@
           "alias": [
             "朝圣广场"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_yuanyu_city", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "spire_quarter": {
           "name": "尖塔区",
@@ -2201,7 +2208,8 @@
           "alias": [
             "尖塔区"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_yuanyu_city", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "dome_quarter": {
           "name": "穹顶区",
@@ -2211,7 +2219,8 @@
           "alias": [
             "穹顶区"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_yuanyu_city", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "city_gate": {
           "name": "原域东门",
@@ -2221,7 +2230,8 @@
           "alias": [
             "原域东门"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_yuanyu_city", "label": "查看三维模型", "label_en": "View 3D model"}
         }
       }
     },
@@ -2349,7 +2359,8 @@
           "canon": false,
           "sub": "圆桌第一席封地",
           "sub_en": "First Seat Fief",
-          "cls": "capital"
+          "cls": "capital",
+          "link": {"map": "lm_fief1", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief1_order": {
           "name": "第一席骑士团驻地",
@@ -2360,7 +2371,8 @@
             "第一席骑士团驻地",
             "第一席骑士团"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief1", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief1_village": {
           "name": "第一席领地城镇",
@@ -2371,7 +2383,8 @@
             "第一席领地城镇",
             "第一席领地村镇"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief1", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief1_fields": {
           "name": "第一席领地农田",
@@ -2381,7 +2394,8 @@
           "alias": [
             "第一席领地农田"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief1", "label": "查看三维模型", "label_en": "View 3D model"}
         }
       }
     },
@@ -2426,7 +2440,8 @@
           "canon": false,
           "sub": "圆桌第五席封地",
           "sub_en": "Fifth Seat Fief",
-          "cls": "capital"
+          "cls": "capital",
+          "link": {"map": "lm_fief5", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief5_order": {
           "name": "第五席骑士团驻地",
@@ -2437,7 +2452,8 @@
             "第五席骑士团驻地",
             "第五席骑士团"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief5", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief5_village": {
           "name": "第五席领地城镇",
@@ -2448,7 +2464,8 @@
             "第五席领地城镇",
             "第五席领地村镇"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief5", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief5_fields": {
           "name": "第五席领地农田",
@@ -2458,7 +2475,8 @@
           "alias": [
             "第五席领地农田"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief5", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief5_lists": {
           "name": "第五席比武场",
@@ -2468,7 +2486,8 @@
           "alias": [
             "第五席比武场"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief5", "label": "查看三维模型", "label_en": "View 3D model"}
         }
       }
     },
@@ -2513,7 +2532,8 @@
           "canon": false,
           "sub": "圆桌第二席封地",
           "sub_en": "Second Seat Fief",
-          "cls": "capital"
+          "cls": "capital",
+          "link": {"map": "lm_fief2", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief2_order": {
           "name": "第二席骑士团驻地",
@@ -2524,7 +2544,8 @@
             "第二席骑士团驻地",
             "第二席骑士团"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief2", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief2_village": {
           "name": "第二席领地城镇",
@@ -2535,7 +2556,8 @@
             "第二席领地城镇",
             "第二席领地村镇"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief2", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief2_fields": {
           "name": "第二席领地农田",
@@ -2545,7 +2567,8 @@
           "alias": [
             "第二席领地农田"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief2", "label": "查看三维模型", "label_en": "View 3D model"}
         }
       }
     },
@@ -2590,7 +2613,8 @@
           "canon": false,
           "sub": "圆桌第三席封地",
           "sub_en": "Third Seat Fief",
-          "cls": "capital"
+          "cls": "capital",
+          "link": {"map": "lm_fief3", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief3_order": {
           "name": "第三席骑士团驻地",
@@ -2601,7 +2625,8 @@
             "第三席骑士团驻地",
             "第三席骑士团"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief3", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief3_village": {
           "name": "第三席领地城镇",
@@ -2612,7 +2637,8 @@
             "第三席领地城镇",
             "第三席领地村镇"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief3", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief3_fields": {
           "name": "第三席领地农田",
@@ -2622,7 +2648,8 @@
           "alias": [
             "第三席领地农田"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief3", "label": "查看三维模型", "label_en": "View 3D model"}
         }
       }
     },
@@ -2667,7 +2694,8 @@
           "canon": false,
           "sub": "圆桌第四席封地",
           "sub_en": "Fourth Seat Fief",
-          "cls": "capital"
+          "cls": "capital",
+          "link": {"map": "lm_fief4", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief4_order": {
           "name": "第四席骑士团驻地",
@@ -2678,7 +2706,8 @@
             "第四席骑士团驻地",
             "第四席骑士团"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief4", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief4_village": {
           "name": "第四席领地城镇",
@@ -2689,7 +2718,8 @@
             "第四席领地城镇",
             "第四席领地村镇"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief4", "label": "查看三维模型", "label_en": "View 3D model"}
         },
         "fief4_fields": {
           "name": "第四席领地农田",
@@ -2699,7 +2729,8 @@
           "alias": [
             "第四席领地农田"
           ],
-          "canon": false
+          "canon": false,
+          "link": {"map": "lm_fief4", "label": "查看三维模型", "label_en": "View 3D model"}
         }
       }
     }

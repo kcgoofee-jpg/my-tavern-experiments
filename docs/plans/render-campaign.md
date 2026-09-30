@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T16:57:32Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T16:59:07Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 23 | 0 | 19 | 6 | 0 | 0 | 48 |
+| standard | 29 | 0 | 19 | 0 | 0 | 0 | 48 |
 | hero | 4 | 0 | 11 | 0 | 6 | 0 | 21 |
 
 Below-gate (user spot-check): none
@@ -38,12 +38,12 @@ Below-gate (user spot-check): none
 | 21 | `lm:elite_club` | landmark | done | - |  |  | New model: elite club |
 | 22 | `lm:hunting_camp` | landmark | done | - |  |  | New model: hunting camp |
 | 23 | `scene:highland-ext` | scene | done | - |  |  | Extend the highland scene: cliff edge and trail down |
-| 24 | `scene:fief1` | scene | waiting | ship |  | waiting-on-freeze | Fief 1 scene: castle, fields, order, village |
-| 25 | `scene:fief2` | scene | waiting | ship |  | waiting-on-freeze | Fief 2 scene: castle, fields, order, village |
-| 26 | `scene:fief3` | scene | waiting | ship |  | waiting-on-freeze | Fief 3 scene: castle, fields, order, village |
-| 27 | `scene:fief4` | scene | waiting | ship |  | waiting-on-freeze | Fief 4 scene: castle, fields, order, village |
-| 28 | `scene:fief5` | scene | waiting | ship |  | waiting-on-freeze | Fief 5 scene: castle, fields, order, village, lists |
-| 29 | `scene:yuanyu-city` | scene | waiting | ship |  | waiting-on-freeze | Yuanyu city scene: gate, dome, plaza, spire quarters |
+| 24 | `scene:fief1` | scene | done | - |  |  | Fief 1 scene: castle, fields, order, village |
+| 25 | `scene:fief2` | scene | done | - |  |  | Fief 2 scene: castle, fields, order, village |
+| 26 | `scene:fief3` | scene | done | - |  |  | Fief 3 scene: castle, fields, order, village |
+| 27 | `scene:fief4` | scene | done | - |  |  | Fief 4 scene: castle, fields, order, village |
+| 28 | `scene:fief5` | scene | done | - |  |  | Fief 5 scene: castle, fields, order, village, lists |
+| 29 | `scene:yuanyu-city` | scene | done | - |  |  | Yuanyu city scene: gate, dome, plaza, spire quarters |
 | 30 | `base:tc_mid` | basemap | open | audit |  |  | Final-spec audit / re-render of base map tc_mid |
 | 31 | `base:tc_low` | basemap | open | audit |  |  | Final-spec audit / re-render of base map tc_low |
 | 32 | `base:site_kavalierki` | basemap | open | audit |  |  | Final-spec audit / re-render of base map site_kavalierki |
