@@ -38,7 +38,7 @@ step "令牌内联一致（tokens.css ↔ viewer.html）" python3 tools/sync_tok
 step "机器标识 ASCII 审计（路径 / JSON 键 / id 字段）" python3 tools/check_ascii.py
 step "文档语言（基线之后的新 .md 必须英文，见 docs/language-policy.md）" python3 tools/check_doc_language.py
 step "文档语言门控自测（英文过 / 中文拦 / 豁免真的豁免）" python3 tools/test_doc_language.py
-step "中英镜像结构一致（agent-brief / spatial-os 计划，见 tools/check_zh_mirror.py）" python3 tools/check_zh_mirror.py
+step "中英镜像结构一致（agent-brief / spatial-os 计划 / ARCHITECTURE，见 tools/check_zh_mirror.py）" python3 tools/check_zh_mirror.py
 step "中英镜像门控自测" python3 tools/check_zh_mirror.py --self-test
 step "README 置顶导入链接与路径引用（最新标签 / 预览分支 / 提到的路径都存在）" python3 tools/check_readme.py
 step "README 门控自测（过期标签 / 错仓库名 / 死路径会被拦，--fix 能修回来）" python3 tools/test_readme.py
