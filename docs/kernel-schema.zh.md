@@ -6,7 +6,7 @@
 > （schema 2 分支）与 `tests/pack_schema_v2.test.mjs`。schema 1（`docs/pack-schema-v1.md`）保持冻结，经
 > `map/core/compat-v1.mjs`（S1-impl-2 步）继续可用。
 
-每条规则都有固定编号 `K-R01` … `K-R69`，后面的提示词和测试按编号引用。编号永不挪动：初稿之后补的规则（K-R63–K-R69，
+每条规则都有固定编号 `K-R01` … `K-R70`，后面的提示词和测试按编号引用。编号永不挪动：初稿之后补的规则（K-R63–K-R70，
 信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
 
 ## 0. 请你拍板
@@ -636,6 +636,14 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 首个包用到两处扩展：字段带 `x-slot`（`stage`、`grade`、`core`、`code`、`social`、`height`、`weight`、`known`、`accessory`、`tier` 之一），绑定到查看器人物卡行与设置「变量映射」用的名册槽位（§6.3）；
 `avatar.require`（路径片段）收窄带路径前缀的域名条目：这种条目放行的 `card-script` 立绘，网址里还必须出现其中一个片段（§6.4）。
 
+**K-R70 —— 叠加层可以带 ui 块。** `overlay.v2.json` 可以带 `ui` = `{ theme: { views: { <视图id>: { tokens: {…}, light: {…} } } }, legend: [...], "x-event-level": <视图id> }`。
+`tokens` 是该视图打开时（深色主题）的令牌覆盖，`light` 是浅色主题下的；查看器把它们写成一个 `<style>`（`[data-map="<视图id>"]` 与
+`.light [data-map="<视图id>"], .light[data-map="<视图id>"]`），所以包可以给自己的每个视图配各自的配色。令牌名和值沿用 K-R58，只放宽一处：`--glow*` 的值可以是逗号分隔的列表，最多 3 组、每组 ≤ 4 项（text-shadow 列表）。
+`legend` 条目是 `{ type, label, desc, i18n: { en: { label, desc } } }`（设置 / 抽屉里的图例）；`x-event-level` 指定事态列表兜底用的视图。`fromV1` 把它合并到转出来的内容之上
+（`core/overlay-v2.mjs` 的 `applyOverlayUi`）：`views` 按 id，`tokens` / `light` 逐键，`legend` 整体替换，其余键（`x-…`）覆盖。和 K-R67 一样宽容：坏的视图 id 或令牌被丢掉并记入 `problems`
+（`overlay-view-invalid`、`overlay-token-invalid`）。查看器运行时用 `recheck`（`core/pack-v2-spec.mjs`：`hex`、`token`、`id`，匹配精确 schema 模式就返回原值，否则 `null`，K-R64）再查每个 id 和令牌。
+`tools/check_overlay.mjs` 把合并后的块过一遍内核 schema（K-R06）。
+
 ## 14. 设计方的决定与遗留点
 
 ### 14.1 设计方已定
@@ -719,6 +727,7 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 | `layer.alt`、`alt_en` | `x-alt` | 携带（显示用） |
 | `base`、`data` | `tiles.src`、`tiles.regions`（点位文件） | 自动 |
 | `depth` | 视图上的 `x-depth` | 携带（S8：景深雾图层） |
+| `clouds`（布尔）、`tint`（`"period"`） | 视图上的 `x-clouds`、`x-tint` | 携带（S4-3，K-R70：漂移云；随时段的夜色） |
 | `view.extent_m` / `focus` / `width_m` / `min_width_m` / `phone`；`focus` | `extent`、`home.focus`（经 id 对照表换成节点 id）、`home.width`、`home.min_width`、`home.phone` | 自动 |
 | `overlay` `{ type, src?, label, label_en, from? }` | `overlays[0]` `{ kind: type, src, label, i18n.en.label, from }`（`from` = 视图 id） | 自动 |
 | `alt` `{ label, label_en, base }` | `alt` `{ src: base, label, i18n.en.label }` | 自动 |
@@ -757,7 +766,10 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 | `sub`、`src`、`openings`、`autoHighest` | `sub`、`cite`、`x-openings`、`x-auto-highest` | 自动 |
 | `tag`、`layer_src` | — | 丢弃（出处标签，K-R11） |
 | `minors[]` | 丢弃（没有名字；世界底图本身画了它们） |
-| `overseas` | 丢弃（只有坐标，从不定位） |
+| `overseas` `{ at: [x, y], name, sub?, src? }` | 丢弃（从不定位）；查看器在世界图上画它的牌子和卡片（S4-3）；v1 的两个数字的数组什么也不画 |
+| 地点 `here_words[]` | — | 仅查看器（S4-3）：让当前位置落到这个世界图地点的词（首个地点以前写死的词表）；不是别名，所以不会抢房间名 |
+| 国家 `label_dy` | — | 仅查看器（S4-3）：国家标签在中心上方多远 |
+| 地点 `link` `{ map, label?, label_en? }` 指向 3D 页 | 地点节点的 `view`（节点展示那个视图，和地标的 link 一样） | 自动（S4-3） |
 
 ### A.4 房间平面与宅邸区域
 
@@ -815,6 +827,9 @@ S3-2：标着「设定包数据（S3）」的行，首个包的那部分放在 `
 | `theme.accent` | `ui.theme.accent` | 自动 |
 | `strings`（`键`、`键@en`） | `ui.strings.<包语言>.键`、`ui.strings.en.键` | 自动 |
 | `worldbook.addon`（生成脚本路径） | 丢弃（工具的事） |
+| `worldbook.prefix`（附加世界书与条目名前缀；缺省 = 包标题） | 宿主据此得出 `legacy.worldbook_book` | 仅宿主（S4-3） |
+| `credits` `{ card: { creator, url? }, pack: [{ name, role, url? }], assets: [{ name, license, url? }] }` | `credits` | 携带（S4-3：设置「关于」与反馈报告读它） |
+| `data.galleries`、`data.worldbook_addon`、`data.gallery`（路径） | — | 仅宿主（S4-3：房间图库索引、随包附加条目、标记图集） |
 | town 的 `vars.location`（`世界.当前地点`） | `vars.location` | 自动 |
 
 ### A.7 变量映射与名册槽位

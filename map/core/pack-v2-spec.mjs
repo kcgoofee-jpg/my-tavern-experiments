@@ -144,12 +144,34 @@ export const layersBlock = block(arr(obj({ id: str({ re: re('^[a-z][a-z0-9_-]{0,
   applies: (v, p, x) => (isObj(v) ? v : bad(x, p, 'type', 'object')), style: (v, p, x) => (isObj(v) ? v : bad(x, p, 'type', 'object')),
   menu: (v, p, x) => (isObj(v) ? v : bad(x, p, 'type', 'object')), legend: (v, p, x) => (Array.isArray(v) ? v : bad(x, p, 'type', 'array')) }, { req: ['id', 'type', 'slot'], ...B })), 'array');
 
-const TERM = '(#[0-9a-fA-F]{3,8}|(rgb|rgba|hsl|hsla)\\([0-9., %/-]{1,40}\\)|-?[0-9]{0,4}\\.?[0-9]{1,4}(px|rem|em|%|vh|vw)?|[a-z][a-z-]{0,23}|var\\(--[a-z0-9-]{1,40}\\))';
+export const TERM = '(#[0-9a-fA-F]{3,8}|(rgb|rgba|hsl|hsla)\\([0-9., %/-]{1,40}\\)|-?[0-9]{0,4}\\.?[0-9]{1,4}(px|rem|em|%|vh|vw)?|[a-z][a-z-]{0,23}|var\\(--[a-z0-9-]{1,40}\\))';
+const TOKEN_NAME = re('^--(accent|ink|bg|surface|line|muted|gold|ok|alert|on|map-label|glow|focus|r|fs)(-[a-z0-9-]{1,30})?$');
+const GROUP = `${TERM}( ${TERM}){0,3}`;
+const TOKEN_VALUE = re(`^${GROUP}$`), GLOW_VALUE = re(`^${GROUP}(, ?${GROUP}){0,2}$`);   // K-R70: a --glow* value may be a comma list of at most 3 groups
+const tokenOk = (name, v, widen) => typeof name === 'string' && typeof v === 'string' && v.length <= 200 && TOKEN_NAME.test(name)
+  && (widen && name.startsWith('--glow') ? GLOW_VALUE : TOKEN_VALUE).test(v);
+/** Run-time re-check of pack values that reach a style, attribute or URL (K-R64): each returns the value when it matches the exact schema pattern, else null. */
+export const recheck = {
+  hex: v => (typeof v === 'string' && HEX.test(v) ? v : null),
+  id: v => (typeof v === 'string' && ID.test(v) ? v : null),
+  token: (name, v) => (tokenOk(name, v, true) ? v : null),   // the K-R58 name list and value grammar, with the K-R70 glow widening
+};
+const tokenDict = widen => (v, p, x) => {   // a token name -> value table; a bad name or value drops that entry
+  if (!isObj(v)) return bad(x, p, 'type', 'object');
+  const out = {};
+  for (const [k, e] of Object.entries(v)) {
+    if (!TOKEN_NAME.test(k)) { bad(x, `${p}.${k}`, 'key', k); continue; }
+    if (!tokenOk(k, e, widen)) { bad(x, `${p}.${k}`, typeof e === 'string' ? 'pattern' : 'type', e); continue; }
+    out[k] = e;
+  }
+  return out;
+};
+const viewTheme = dict(ID, obj({ tokens: tokenDict(true), light: tokenDict(true) }));   // K-R70
 export const uiBlock = block(obj({
   start: idRef, tabs: arr(oneOf(['places', 'events', 'characters', 'items'])),
   strings: dict(LANG, dict(re('^[a-z][a-z0-9_.]{0,63}$'), str())),
-  theme: obj({ accent: str({ re: HEX }), tokens: dict(re('^--(accent|ink|bg|surface|line|muted|gold|ok|alert|on|map-label|glow|focus|r|fs)(-[a-z0-9-]{1,30})?$'), str({ re: re(`^${TERM}( ${TERM}){0,3}$`) })) }),
-  legend: arr(obj({ type: str({ re: re('^[a-z][a-z0-9_-]{0,31}$') }), label: str({ min: 1 }), i18n: (v, p, x) => (isObj(v) ? v : bad(x, p, 'type', 'object')), icon: str({ re: re('^[a-z][a-z0-9-]{0,31}$') }) }, { req: ['type'], ...B })),
+  theme: obj({ accent: str({ re: HEX }), tokens: tokenDict(false), views: viewTheme }),
+  legend: arr(obj({ type: str({ re: re('^[a-z][a-z0-9_-]{0,31}$') }), label: str({ min: 1 }), desc: str(), i18n: (v, p, x) => (isObj(v) ? v : bad(x, p, 'type', 'object')), icon: str({ re: re('^[a-z][a-z0-9-]{0,31}$') }) }, { req: ['type'], ...B })),
   levels: dict(ID, (v, p, x) => (Array.isArray(v) ? v.map((e, i) => idRef(e, `${p}[${i}]`, x)).filter(e => e !== DROP) : bad(x, p, 'type', 'array'))),
 }, B), 'object');
 

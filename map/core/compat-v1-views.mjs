@@ -26,6 +26,7 @@ const tiles = (m, node, has) => {
   if (o && str(o.src) && ['dzi', 'barriers'].includes(o.type)) { const ov = put(put({ kind: o.type, src: o.src }, 'label', str(o.label)), 'i18n', i18nOf({}, { label: o.label_en })); put(ov, 'from', str(o.from)); v.overlays = [ov]; }
   if (Array.isArray(m.insets)) put(v, 'insets', m.insets.filter(i => i && str(i.id) && str(i.base) && Array.isArray(i.bounds) && size(i.res_px)).map(i => put({ id: i.id, src: i.base, bounds: i.bounds, px: i.res_px }, 'node', str(i.marker) && (node[i.marker] || i.marker))));
   put(v, 'x-depth', m.depth);
+  put(v, 'x-clouds', m.clouds === true ? true : undefined); put(v, 'x-tint', m.tint === 'period' ? 'period' : undefined);   // K-R70: pack data says which maps get drifting clouds and the period night tint
   return v;
 };
 

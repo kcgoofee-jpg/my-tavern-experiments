@@ -7,8 +7,8 @@
 > `tools/check_pack.py` (schema-2 branch) and `tests/pack_schema_v2.test.mjs`. Schema 1 (`docs/pack-schema-v1.md`)
 > stays frozen and keeps working through `map/core/compat-v1.mjs` (step S1-impl-2).
 
-Every rule has a stable id `K-R01` … `K-R69`; later prompts and tests cite them. Ids never move: rules added after the
-first draft (K-R63–K-R69, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit. The choices left to the user
+Every rule has a stable id `K-R01` … `K-R70`; later prompts and tests cite them. Ids never move: rules added after the
+first draft (K-R63–K-R70, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit. The choices left to the user
 are `K-01` … `K-09` (§0). Everything else was decided by the designer and is listed with its reason in §14.
 
 ## 0. Decisions for the user (review sheet)
@@ -719,6 +719,14 @@ kept in time order); `entities.groups` merge by id (a new group needs `label`; `
 Two extensions the first pack uses: a field carries `x-slot` (one of `stage`, `grade`, `core`, `code`, `social`, `height`, `weight`, `known`, `accessory`, `tier`) to bind it to the roster slot the viewer's card rows and
 Settings → variable mapping use (§6.3); and `avatar.require` (path fragments) narrows a host entry that has a path prefix: a card-script portrait from such an entry must also contain one of the fragments (§6.4).
 
+**K-R70 — The overlay may carry a ui block.** `overlay.v2.json` may carry `ui` = `{ theme: { views: { <viewId>: { tokens: {…}, light: {…} } } }, legend: [...], "x-event-level": <viewId> }`.
+`tokens` are the token overrides while that view is open (dark theme), `light` the ones for the light theme; the viewer writes them as one `<style>` (`[data-map="<viewId>"]` and
+`.light [data-map="<viewId>"], .light[data-map="<viewId>"]`), so a pack can give each of its views its own colours. Token names and values follow K-R58, with one widening: a `--glow*` value may be a comma list of at most 3 groups of
+≤ 4 terms (a text-shadow list). `legend` entries are `{ type, label, desc, i18n: { en: { label, desc } } }` (the Settings / drawer legend); `x-event-level` names the view the event list falls back to. `fromV1` merges the block over what it derived
+(`core/overlay-v2.mjs` `applyOverlayUi`): `views` by id, `tokens` / `light` key by key, `legend` replaced as a whole, any other key (`x-…`) overridden. Lenient like K-R67: a bad view id or token is dropped and listed in `problems`
+(`overlay-view-invalid`, `overlay-token-invalid`). The viewer re-checks every id and token at run time with `recheck` (`core/pack-v2-spec.mjs`: `hex`, `token`, `id`; each returns the value when it matches the exact schema pattern, else `null`, K-R64).
+`tools/check_overlay.mjs` runs the merged block through the kernel's schema (K-R06).
+
 ## 14. Designer decisions and open points
 
 ### 14.1 Decided by the designer
@@ -812,6 +820,7 @@ manifest. Card names below are quoted verbatim.
 | `layer.alt`, `alt_en` | `x-alt` | carried (display) |
 | `base`, `data` | `tiles.src`, `tiles.regions` (the points file) | auto |
 | `depth` | `x-depth` on the view | carried (S8: depth-haze layer) |
+| `clouds` (bool), `tint` (`"period"`) | `x-clouds`, `x-tint` on the view | carried (S4-3, K-R70: drifting clouds; night tint that follows the period band) |
 | `view.extent_m` / `focus` / `width_m` / `min_width_m` / `phone`; `focus` | `extent`, `home.focus` (node id through the id map), `home.width`, `home.min_width`, `home.phone` | auto |
 | `overlay` `{ type, src?, label, label_en, from? }` | `overlays[0]` `{ kind: type, src, label, i18n.en.label, from }` (`from` = a view id) | auto |
 | `alt` `{ label, label_en, base }` | `alt` `{ src: base, label, i18n.en.label }` | auto |
@@ -850,7 +859,10 @@ manifest. Card names below are quoted verbatim.
 | `sub`, `src`, `openings`, `autoHighest` | `sub`, `cite`, `x-openings`, `x-auto-highest` | auto |
 | `tag`, `layer_src` | — | dropped (provenance labels, K-R11) |
 | `minors[]` | dropped (no names; the world picture draws them) |
-| `overseas` | dropped (coordinates only, never located) |
+| `overseas` `{ at: [x, y], name, sub?, src? }` | dropped (never located); the viewer draws its sign and card on the world map (S4-3); a v1 array of two numbers draws nothing |
+| place `here_words[]` | — | viewer only (S4-3): words that put the current location on this world place (the old hard-coded table of the first place); not aliases, so they never steal room names |
+| realm `label_dy` | — | viewer only (S4-3): how far the realm label sits above its centre |
+| place `link` `{ map, label?, label_en? }` to a 3D page | `view` of the place node (the node shows that view, like a landmark's link) | auto (S4-3) |
 
 ### A.4 Room plan and estate zones
 
@@ -909,6 +921,9 @@ exactly one place, it becomes a hint of that place rather than of the tier (v1 l
 | `theme.accent` | `ui.theme.accent` | auto |
 | `strings` (`key`, `key@en`) | `ui.strings.<pack lang>.key`, `ui.strings.en.key` | auto |
 | `worldbook.addon` (builder script path) | dropped (a tool concern) |
+| `worldbook.prefix` (name prefix of the add-on book and its entries; default the pack title) | `legacy.worldbook_book` is derived from it by the host | host only (S4-3) |
+| `credits` `{ card: { creator, url? }, pack: [{ name, role, url? }], assets: [{ name, license, url? }] }` | `credits` | carried (S4-3: Settings → about and the feedback report read it) |
+| `data.galleries`, `data.worldbook_addon`, `data.gallery` (paths) | — | host only (S4-3: room-gallery index, shipped add-on, marker gallery) |
 | town `vars.location` (`世界.当前地点`) | `vars.location` | auto |
 
 ### A.7 Variable mapping and roster slots

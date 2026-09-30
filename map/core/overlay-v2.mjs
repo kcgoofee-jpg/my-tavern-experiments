@@ -4,6 +4,8 @@
 // and every other field overridden. Pure and lenient (K-R06): a bad entry is skipped and listed in `problems`, the rest applies.
 // K-R68: an overlay may also carry an `events` block (v2 shape) and `llm.templates`; both are merged over what compat-v1 derived, the overlay wins.
 // K-R69: and a `vars` block (paths, periods by id) and an `entities` block (groups by id, fields by `field`, the avatar block); same rule.
+// K-R70: and a `ui` block (per-view theme tokens re-checked by recheck.token, the legend, `x-…`); same rule.
+import { recheck } from './pack-v2-spec.mjs';
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const union = (a, b) => [...new Set([...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])])];
 const LISTS = ['alias', 'hints'];
@@ -12,7 +14,7 @@ const LISTS = ['alias', 'hints'];
 export function applyOverlay(nodes, overlay) {
   const out = nodes.map(n => ({ ...n })), byId = new Map(out.map(n => [n.id, n])), problems = [];
   if (overlay === null || overlay === undefined) return { nodes: out, problems };
-  if (!isObj(overlay) || overlay.schema !== 2 || !(Array.isArray(overlay.nodes) || (overlay.nodes === undefined && (isObj(overlay.events) || isObj(overlay.llm) || isObj(overlay.vars) || isObj(overlay.entities))))) return { nodes: out, problems: [{ code: 'overlay-invalid' }] };
+  if (!isObj(overlay) || overlay.schema !== 2 || !(Array.isArray(overlay.nodes) || (overlay.nodes === undefined && (isObj(overlay.events) || isObj(overlay.llm) || isObj(overlay.vars) || isObj(overlay.entities) || isObj(overlay.ui))))) return { nodes: out, problems: [{ code: 'overlay-invalid' }] };
   (overlay.nodes || []).forEach((o, index) => {
     if (!isObj(o) || typeof o.id !== 'string' || o.id === '') return problems.push({ code: 'overlay-node-invalid', index });
     const cur = byId.get(o.id);
@@ -64,13 +66,15 @@ export function applyOverlayEvents(events, overlay) {
   return { events: out, problems };
 }
 
-/** applyOverlayLlm(llm, overlay) -> llm (K-R68): only `overlay.llm.templates.<lang>.<key>` (strings) is merged, over the converted `llm` block (may be undefined). */
+/** applyOverlayLlm(llm, overlay) -> llm (K-R68): `overlay.llm.templates.<lang>.<key>` (strings) is merged, and every `x-…` key of `overlay.llm` overridden (the first pack's
+ *  `x-tag-examples`: the worked examples its worldbook teaches), over the converted `llm` block (may be undefined). */
 export function applyOverlayLlm(llm, overlay) {
-  const add = isObj(overlay) && isObj(overlay.llm) && isObj(overlay.llm.templates) ? overlay.llm.templates : null;
-  if (!add) return llm;
+  const ol = isObj(overlay) && isObj(overlay.llm) ? overlay.llm : null, add = ol && isObj(ol.templates) ? ol.templates : null, xs = ol ? Object.keys(ol).filter(k => k.startsWith('x-')) : [];
+  if (!add && !xs.length) return llm;
   const out = isObj(llm) ? JSON.parse(JSON.stringify(llm)) : {}, tpl = isObj(out.templates) ? out.templates : {};
-  for (const [lang, t] of Object.entries(add)) if (isObj(t)) for (const [k, v] of Object.entries(t)) if (typeof v === 'string' && v !== '') (tpl[lang] ||= {})[k] = v;
+  for (const [lang, t] of Object.entries(add || {})) if (isObj(t)) for (const [k, v] of Object.entries(t)) if (typeof v === 'string' && v !== '') (tpl[lang] ||= {})[k] = v;
   if (Object.keys(tpl).length) out.templates = tpl;
+  for (const k of xs) out[k] = JSON.parse(JSON.stringify(ol[k]));
   return Object.keys(out).length ? out : llm;
 }
 
@@ -123,4 +127,37 @@ export function applyOverlayEntities(entities, overlay) {
     else out[k] = copy(v);
   }
   return { entities: out, problems };
+}
+
+/** applyOverlayUi(tree, ui, problems) -> the merged ui block (K-R70). `tree` is the ui block the conversion derived (may be undefined), `ui` is `overlay.ui`
+ *  (a missing one changes nothing), `problems` the list a bad row is reported to. `theme.views` merge by view id, `tokens` / `light` key by key through `recheck.token`
+ *  (a bad id or token is dropped: `overlay-view-invalid`, `overlay-token-invalid`), `legend` is replaced as a whole, any other key (`x-…`) overridden. The inputs are not touched. */
+export function applyOverlayUi(tree, ui, problems = []) {
+  const base = isObj(tree) ? copy(tree) : undefined;
+  if (ui === undefined || ui === null) return base;
+  if (!isObj(ui)) { problems.push({ code: 'overlay-ui-invalid' }); return base; }
+  const out = base || {};
+  for (const [k, v] of Object.entries(ui)) {
+    if (k === 'theme') {
+      if (!isObj(v)) { problems.push({ code: 'overlay-theme-invalid' }); continue; }
+      const th = out.theme = isObj(out.theme) ? out.theme : {};
+      for (const [tk, tv] of Object.entries(v)) {
+        if (tk !== 'views') { th[tk] = copy(tv); continue; }
+        if (!isObj(tv)) { problems.push({ code: 'overlay-views-invalid' }); continue; }
+        const views = th.views = isObj(th.views) ? th.views : {};
+        for (const [id, vv] of Object.entries(tv)) {
+          if (recheck.id(id) === null || !isObj(vv)) { problems.push({ code: 'overlay-view-invalid', id }); continue; }
+          const cur = views[id] = isObj(views[id]) ? views[id] : {};
+          for (const part of ['tokens', 'light']) {
+            if (vv[part] === undefined) continue;
+            if (!isObj(vv[part])) { problems.push({ code: 'overlay-token-invalid', id, part }); continue; }
+            const into = cur[part] = isObj(cur[part]) ? cur[part] : {};
+            for (const [name, val] of Object.entries(vv[part])) { if (recheck.token(name, val) === null) problems.push({ code: 'overlay-token-invalid', id, part, name }); else into[name] = val; }
+          }
+        }
+      }
+    } else if (k === 'legend') { if (Array.isArray(v)) out.legend = copy(v); else problems.push({ code: 'overlay-legend-invalid' }); }
+    else out[k] = copy(v);
+  }
+  return out;
 }
