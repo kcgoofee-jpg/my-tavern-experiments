@@ -1,5 +1,27 @@
 # docs 总索引（2026-09-29 全量分类）
 
+## Current documents
+
+Read in this order: agent-brief → ARCHITECTURE → naming → todo → handoff.
+
+- [agent-brief.md](agent-brief.md) — the rules (CLAUDE.md is a symlink to it)
+- [ARCHITECTURE.md](ARCHITECTURE.md) — module map, data flow, entity protocol
+- [naming.md](naming.md) — naming rules, rename map, glossary
+- [todo.md](todo.md) — the single tracker (state of the Spatial OS campaign in §0)
+- [handoff.md](handoff.md) — last session's handoff (history, dated 2026-09-29)
+- [plans/spatial-os.md](plans/spatial-os.md) — the plan of record
+- [plans/spatial-os-log.md](plans/spatial-os-log.md) — execution log (RESULT blocks)
+- [plans/render-campaign.md](plans/render-campaign.md) — render campaign ledger status
+- [cloud-render.md](cloud-render.md) — cloud render operations
+- [landmark-pipeline.md](landmark-pipeline.md) — landmark pipeline
+- [versioning.md](versioning.md) — versions, tags, update prompts
+- [branching.md](branching.md) — branches and sync
+- [language-policy.md](language-policy.md) — document language rules
+
+Everything else in docs/ is history unless one of these links to it.
+
+---
+
 新对话 / 新代理先读：handoff.md → agent-brief.md → onboarding.md → project-design.md。
 
 ## 1. 接手必读（活文档）

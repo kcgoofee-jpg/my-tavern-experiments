@@ -38,7 +38,8 @@
     "spp": 0
    },
    "hints": {
-    "script": "blender/estate2/export_house_opt.py"
+    "script": "blender/estate2/export_house_opt.py",
+    "source": "branch rescue/estate-bake-opt (20fbc74)"
    },
    "notes": "no render: stage final = evaluate (glb size vs manifest budget, draco variants), verify = visual parity vs the current house.glb, ship = adopt in map/estate/model/manifest.json (bump v); inputs in ~/eden-map-review/rescue/2026-09-30/: house_opt_lod0.glb, house_opt_lod1.glb, their .draco.glb, house_opt.assets.json"
   },

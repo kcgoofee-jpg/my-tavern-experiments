@@ -115,4 +115,23 @@ notes for the next session:
   (3) `render_campaign.py wait` leaves the item at the same stage, so `next` re-offers it; do not resubmit a queued job.
 next: review:clearing_depot
 cleanup: done (no Blender or server of mine running)
+=== RESULT S0-E ===
+status: BLOCKED
+items: T1 ✓  T2 ✓  T3 ✓  T4 ✓  T5 ✓  T6 ✓
+commits: 9a1fbd8 docs(todo): archive the 2026-09-29 todo; new single tracker with a one-to-one migration table
+         (this commit) docs: point handoff/README at the current documents; campaign estate:opt source branch   (SHAs may change on rebase)
+pushed: not pushed (rejected, see blocker); the work is committed on branch s0e-todo, rebased onto head #107
+tests: node 630/631 (1 skipped; baseline identical) | smoke PASS | arch PASS | mirror PASS | doc-language PASS | test_render_campaign 40/40 | probes: none run (docs only)
+deviations: (1) Two destination values beyond the prompt's list: "§3 Q-xx" (the decisions need a home) and "Stage B" (a plan step that is not S<n>). (2) Seven rows are already owned by render-campaign items; "§2 E-xx" is defined as "not covered by the ledger", so they are filed as "void (moved to the render ledger)" with the item ids in the note. (3) Twelve open tails hidden inside items the old file had already struck (Part 1/2/3/4/5/7 leftovers, the generalisation v2 kinds, the five remaining Holy City markers) are counted as items, so N = 69 + 12. (4) docs/language-policy.md already exempted todo.md as an index; that section is reworded to "living tracker, English only, no zh edition". (5) render-campaign.md regenerated with no change: hints are not shown in the status view; the new hint key is "source". (6) The prompt cites plan §15, which does not exist (the plan ends at §14); §13.1 and §14 were used. (7) I-07 and E-07 trace to RESULT S0-C (open f) and RESULT S0-D / R0-A instead of an archived line.
+blocker: `bash tools/push_preview.sh --head --no-escalate`, run once, no retry:
+  rebased onto origin/preview
+  To https://github.com/kcgoofee-jpg/my-tavern-experiments.git
+   ! [remote rejected] HEAD -> preview (cannot lock ref 'refs/heads/preview': is at d5fd49bbc1accc6f333eccefa6d62d9f6172fd30 but expected 0125037fc34c15334211e579ad33939451d99e89)
+  error: failed to push some refs to 'https://github.com/kcgoofee-jpg/my-tavern-experiments.git'
+  Cause: the render line pushed to origin/preview between the script's fetch+rebase and its push (branch is now ahead 2, behind 5). Not force-pushed.
+  Options: A) re-run the same push command (the script rebases again; this branch touches only docs, so no conflict is expected); B) leave it to you to push.
+open: Q-01 to Q-08 in docs/todo.md §3 need the user's decision (Q-01 = the ambience rescue branch, recommendation: park until after S8, then redo as pack-declared ambience).
+coverage: archived unfinished items: 81 (69 + 12 tails) · rows: 81 · missing: 0
+counts per destination: S3 1 · S5 2 · S7 2 · S8 1 · S10 4 · Stage B 2 · §1 10 · §2 6 · §3 10 · parked 11 · verify → done 5 · void (render ledger) 7 · void (other) 20
+cleanup: done
 === END ===

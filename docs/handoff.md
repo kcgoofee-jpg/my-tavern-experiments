@@ -1,3 +1,7 @@
+> State lives in `docs/todo.md` §0 and the execution log `docs/plans/spatial-os-log.md`.
+> The rules live in `docs/agent-brief.md`.
+> The rest of this file is history (dated 2026-09-29): take no open items or rules from it.
+
 # 交接（新对话从这里接上）
 
 > 仓库已迁到 ~/dev1/cctest1/eden-map（2026-09-28；旧路径 性能/threejs 不再存在）。

@@ -46,10 +46,11 @@ gate can never retroactively fail a document that already shipped.
 
 ## Exception: index and quote-heavy documents
 
-`docs/todo.md` is the index of record. Every item quotes the source line it came from, verbatim and in
-Chinese, so a reader can trace it back and so the wording cannot drift. Its own prose is English, but
-the quotes push the file over the CJK threshold — it is listed in `ALLOW` with that reason. The same
-applies to any future index built the same way: quote the source, explain in English, allow the file.
+`docs/todo.md` is the living tracker: English only, no `*.zh.md` edition (it changes with every prompt, so a
+mirror would always lag). Its migration table quotes the archived items it replaced, verbatim and in Chinese,
+so a reader can trace each one back and the wording cannot drift. Its own prose is English, but the quotes
+push the file over the CJK threshold — it is listed in `ALLOW` with that reason. The same applies to any
+future index built the same way: quote the source, explain in English, allow the file.
 
 ## What this means in practice
 
