@@ -5,6 +5,7 @@
 每个岛文件提供：ID、NAME、underside(ctx) 和（做完岛面的）top(ctx)。运行（仓库根目录，经 tools/blender_run.sh）：
   blender -b --factory-startup --python blender/islands/<id>.py -- --res 1600 --samples 64 --out docs/drafts/x.png
   → <out>（斜视 35° 近景）、<out 去扩展名>_under.png（岛底仰视）、blender/islands/out/<id>.blend 与 .glb（岛资产，合成场景只链接这些）
+  加 --cutout <画幅宽 米>：改出上层底图用的正交俯视抠图（透明 PNG，正方形，岛心居中），交 tools/isles_into_upper.py 贴进整图
 """
 import math, os, random, sys
 import bpy
@@ -15,7 +16,7 @@ for p in (BL, os.path.join(BL, 'landmarks'), HERE):
     if p not in sys.path: sys.path.insert(0, p)
 import common as C  # noqa
 C.Matrix = Matrix
-A = C.args(dict(res='1600', samples='64', out='/tmp/isle.png', under='1', save='1', ures=''))
+A = C.args(dict(res='1600', samples='64', out='/tmp/isle.png', under='1', save='1', ures='', cutout=''))
 OUT = os.path.join(HERE, 'out')
 
 
@@ -659,6 +660,15 @@ def run(mod):
                 bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, mod.ID + '.glb'), export_format='GLB', use_selection=True)
             except Exception as e: print('GLB export failed', e)
         R = ctx.S.R
+        if A['cutout']:                          # 上层底图抠图：正交俯视、透明底、+y 朝上，太阳同 landmarks/map_cutout.py（高 50°、方位 125°）；
+            for o in bpy.data.objects:           # 结界 / 岛底 / 光锥 / 进场光点不进抠图（结界由 viewer 叠加层画）
+                if o.name.startswith(('ward', 'under', 'mist', 'dock_approach')): o.hide_render = True
+            C.sky_sun(sc, 'day', sun_az=125.0, sun_el=50.0)
+            cd = bpy.data.cameras.new('cam_cut'); cd.type = 'ORTHO'; cd.ortho_scale = float(A['cutout']); cd.clip_start = 1; cd.clip_end = 5000
+            cam = bpy.data.objects.new('cam_cut', cd); sc.collection.objects.link(cam); cam.location = (0, 0, 1500); sc.camera = cam
+            sc.render.film_transparent = True; sc.view_settings.view_transform = 'Standard'; sc.view_settings.look = 'None'; sc.view_settings.exposure = 0
+            sc.render.image_settings.color_mode = 'RGBA'; C.render(sc, A['out'], A['res'], 1.0)
+            return
         import oblique as OB
         C.sky_sun(sc, 'day', sun_az=225.0, sun_el=40.0, sky_s=.16); sc.view_settings.exposure = -.3
         cs = OB.cloud_sheet(bpy.context.scene.collection, -R * 3.2, .6, 'sea_v16', 80, alpha=.95); cs.scale = (R * 45, R * 45, 1)   # 云团约 R·45/23 米
