@@ -4,6 +4,7 @@
 //   geo.place(text, { here? }) -> null | { node, via, word, map, owner, layer, ring }
 //       node   the located node id        map    the view id that draws it (null: no flat map)       owner  the node that owns that map
 //       layer  the label of `owner` (its `x-layer`, else its name)              ring   the node is the city's outskirts (`x-ring`)
+//   geo.taxonomy()         { events, tag }: the pack's event taxonomy and injected-line tag (K-R49, K-R68); `events` undefined = the kernel's neutral one (K-R53)
 //   geo.placeNode(id)      the same result for a node id that is already known (null when the tree lacks it)
 //   geo.layerOf(text)      the label of the map that owns the place, '' when it places nowhere       geo.layers()  every such label
 //   geo.strip(text, owner) the place text without the leading map label and the names of the places above it ("A·B·C" -> "C")
@@ -17,7 +18,7 @@ import { fromV1 } from './compat-v1.mjs';
 const FLAT = new Set(['tiles', 'image']);
 const esc = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-export function makeGeo({ tree, views = {}, lang = 'zh', lexicon, custom } = {}) {
+export function makeGeo({ tree, views = {}, lang = 'zh', lexicon, custom, events, tag } = {}) {
   const vocab = vocabulary(tree, { custom, lang, lexicon });
   const label = id => { const n = tree.get(id); return n ? (typeof n['x-layer'] === 'string' && n['x-layer'] ? n['x-layer'] : String(n.name ?? '')) : ''; };
   function home(id) {
@@ -49,13 +50,17 @@ export function makeGeo({ tree, views = {}, lang = 'zh', lexicon, custom } = {})
   const position = id => (tree.has(id) ? positionOf(tree, views, id) : null);
   const spot = id => { const p = position(id); return p && p.at && FLAT.has(views[p.view]?.kind) ? { x: p.at.x, y: p.at.y, map: p.view } : null; };
   const owners = () => tree.ids().filter(id => id !== tree.synth && FLAT.has(views[viewIdsOf(tree, views, id)[0]]?.kind)).map(label);
-  return { tree, views, vocab, label, home, place, placeNode, strip, spot, position, layerOf: text => place(text)?.layer ?? '', layers: () => [...new Set(owners())] };
+  return { tree, views, vocab, label, home, place, placeNode, strip, spot, position, layerOf: text => place(text)?.layer ?? '', layers: () => [...new Set(owners())],
+    taxonomy: () => ({ events, tag }) };   // the pack's event taxonomy (K-R49) and injected-line tag, as the tree's pack declared them (undefined: the kernel's neutral one, K-R53)
 }
+
+/** { events, tag } of a converted pack: its events block and the tag of its injected line (`llm.templates.<lang>.tag`). */
+export const taxonomyOf = pack => ({ events: pack.events, tag: pack.llm?.templates?.[pack.lang]?.tag });
 
 /** inputs of compat-v1 `fromV1` (manifest, maps, world, names, plan, events, overlay, ...) -> geo. */
 export function geoFromV1(inputs = {}) {
   const r = fromV1(inputs);
-  return makeGeo({ tree: buildTree(r.pack.nodes, { title: r.pack.title }), views: r.pack.views || {}, lang: r.pack.lang, lexicon: r.pack.lexicon, custom: r.custom });
+  return makeGeo({ tree: buildTree(r.pack.nodes, { title: r.pack.title }), views: r.pack.views || {}, lang: r.pack.lang, lexicon: r.pack.lexicon, custom: r.custom, ...taxonomyOf(r.pack) });
 }
 
 /** A fixed number in [0, 1) for a string: the same event always lands on the same spot. */

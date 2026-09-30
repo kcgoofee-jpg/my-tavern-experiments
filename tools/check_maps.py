@@ -218,10 +218,12 @@ for lg in ('zh', 'en'):
     i18n[lg] = load(fp)
 if len(i18n) == 2:
     for k in (set(i18n['zh']) ^ set(i18n['en'])) - {'names'}: err(f'i18n：键 {k} 只在一种语言里有')
-    # 事件体系（map/tavern/events.mjs 的 GROUPS / CATS）：每个大类、每种类型在 en.json 的 names 里要有英文（英文界面的图例、事件卡用）
+    # 事件体系（首个包的事件块 + 内核的中性分类）：每个大类、每种类型在 en.json 的 names 里要有英文（英文界面的图例、事件卡用）
     import shutil, subprocess
     def run_node():
-        js = "import('./map/tavern/events.mjs').then(m=>console.log(JSON.stringify([...Object.keys(m.GROUPS),...Object.keys(m.CATS)])))"
+        js = ("import('./map/tavern/events.mjs').then(async m=>{ const { packGeo } = await import('./tools/eden_geo.mjs'); const { DEFAULT_EVENTS: D } = await import('./map/core/events-default.mjs');"
+              "const lab = tx => [...tx.groups.map(g=>g.label), ...Object.values(tx.types).map(t=>t.label)]; m.setGeo(packGeo('eden'));"
+              "console.log(JSON.stringify([...lab(m.taxonomy()), ...lab(D)])) })")
         return subprocess.run(['node', '-e', js], capture_output=True, text=True, cwd=os.path.join(ROOT, '..'), timeout=30)
     names = None
     if shutil.which('node') is None:

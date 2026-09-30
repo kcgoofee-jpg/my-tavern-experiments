@@ -2,7 +2,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildIndex, resolveHere } from './helpers/here-engine.mjs';
-import { catOf } from '../map/tavern/events.mjs';
+import { catOf, setGeo } from '../map/tavern/events.mjs';
+import { edenGeo } from './helpers/eden-geo.mjs';
+
+setGeo(edenGeo());   // the event taxonomy is the first pack's (its events block)
 
 const J = p => JSON.parse(readFileSync(new URL('../map/' + p, import.meta.url), 'utf8'));
 const idx = buildIndex(J('data/maps.json'), J('data/world_markers.json'), J('i18n/en.json').names);

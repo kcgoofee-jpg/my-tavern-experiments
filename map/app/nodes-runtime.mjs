@@ -4,7 +4,7 @@
 // A "map id" is an id of the registry: a node (world, layer, site, estate, zone) or a view (a 3D page shown by landmark nodes).
 import { fromV1 } from '../core/compat-v1.mjs';
 import { buildTree, positionOf, levelsOf } from '../core/nodes.mjs';
-import { makeGeo } from '../core/event-geo.mjs';
+import { makeGeo, taxonomyOf } from '../core/event-geo.mjs';
 
 const FLAT = new Set(['tiles', 'image']);
 const viewIds = n => (typeof n.view === 'string' ? [n.view] : Array.isArray(n.view) ? n.view.filter(v => typeof v === 'string') : []);
@@ -55,7 +55,7 @@ export function makeRuntime(inputs = {}) {
   };
   let geo = null;
   return {
-    tree, views, ui, host, geo: () => (geo ??= makeGeo({ tree, views, lang: pack.lang, lexicon: pack.lexicon, custom })), kind, standIn, parent, ancestors,
+    tree, views, ui, host, geo: () => (geo ??= makeGeo({ tree, views, lang: pack.lang, lexicon: pack.lexicon, custom, ...taxonomyOf(pack) })), kind, standIn, parent, ancestors,
     has: id => isMap(id) && (tree.has(id) || shown.has(id)),
     crumbs: id => [...ancestors(id).reverse(), id],
     children: id => ids.filter(k => up.get(k) === id),

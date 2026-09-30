@@ -2,7 +2,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as C from '../map/tavern/characters.mjs';
-import { GROUPS, parseMarks } from '../map/tavern/events.mjs';
+import { legend, parseMarks, setGeo } from '../map/tavern/events.mjs';
+import { edenGeo } from './helpers/eden-geo.mjs';
+
+setGeo(edenGeo());   // the event taxonomy is the first pack's (its events block)
 import { buildIndex, resolveHere } from './helpers/here-engine.mjs';
 
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
@@ -36,7 +39,7 @@ t('每人最新一楼为准；MVU 是最新状态', () => {
   assert.deepEqual(r2.map(c => [c.name, c.place, c.src]), [['丙', '中层', 'infer'], ['乙', '上层·银冠堡', 'mvu']]);
 });
 t('颜色：色相离事态 9 大类都 ≥ 18°', () => {
-  const ev = Object.values(GROUPS).map(C.hueOf).filter(h => h != null);
+  const ev = legend().map(g => g.color).map(C.hueOf).filter(h => h != null);
   for (const h of C.CHAR_HUES) for (const e of ev) { const d = Math.min(Math.abs(h - e), 360 - Math.abs(h - e)); assert.ok(d >= 18, `${h} vs ${e}`); }
   assert.equal(C.colorOf('甲'), C.colorOf('甲'));
 });

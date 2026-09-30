@@ -1,5 +1,5 @@
 // W4 受限操作 DSL 沙盒（map/tavern/ops.mjs）：四文法提取与校验（throw-not-coerce：错类型丢 op 不 coerce）、
-// 每响应 ≤3、JSON 平衡扫描（没闭合就断尾）、events.EXAMPLES 回声黑名单、响应哈希水位（同响应永不二次）、
+// 每响应 ≤3、JSON 平衡扫描（没闭合就断尾）、events 示范原文回声黑名单、响应哈希水位（同响应永不二次）、
 // apply 纯描述（src='op'，无副作用）、前置 sanitize 的契约（CoT 包裹的 op 必须先被宿主剥掉——这里只收净文本）。
 // 见 docs/plans/llm-campaign.md W4 / 裁决 2-3；夹具全中性合成数据。
 import test from 'node:test';
@@ -7,7 +7,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as O from '../map/tavern/ops.mjs';
-import { EXAMPLES } from '../map/tavern/events.mjs';
+import { examples, setGeo } from '../map/tavern/events.mjs';
+import { edenGeo } from './helpers/eden-geo.mjs';
+
+setGeo(edenGeo());   // the event taxonomy and its examples are the first pack's (its events block)
 
 const OP = (name, obj) => `${name} ${JSON.stringify(obj)}`;
 
@@ -51,8 +54,8 @@ test('每响应 ≤3 op：多的丢弃计入 dropped；JSON 没闭合断尾（�
 });
 
 test('回声黑名单：text 恰为世界书示范原文的 op 丢弃（模型复读不落点）', () => {
-  const ex = [...EXAMPLES][0];
-  assert.ok(ex, 'EXAMPLES 应非空');
+  const ex = examples()[0];
+  assert.ok(ex, 'examples 应非空');
   const r = O.parse(OP('OP_SUGGEST', { text: ex }));
   assert.equal(r.ops.length, 0);
   assert.equal(r.dropped, 1);

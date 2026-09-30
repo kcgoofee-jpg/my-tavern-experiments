@@ -563,7 +563,8 @@ at most `life.per_msg` events per message.
 `i18n.<lang>.label` values and its id. A category word resolves to: a type one of whose labels or aliases equals it;
 else the type one of whose labels it contains (longest, then earliest position); else the type one of whose aliases it
 contains; else, when it equals a group's id or one of its labels, type `other` coloured as that group; else `other`.
-`other` always exists in group `other` with a kernel label.
+`other` always exists in group `other` with a kernel label; it matches only by equality (never by containment), and a word that resolves to nothing takes its label, icon and rarity
+(a group-only word keeps the group's colour).
 
 ### 8.3 Placement and scope
 
@@ -583,14 +584,19 @@ category becomes `other`; nothing is dropped because of what it says.
 
 **K-R53 — Neutral default taxonomy.** With no events block, the kernel uses neutral groups (safety, weather,
 politics, society, conflict, disaster, people, other) and a few types per group, labelled from the kernel dictionary
-in `zh` and `en`. S4-1 writes the list; until then the default taxonomy is the type `other` alone.
+in `zh` and `en`. The set (S4-1, `core/events-default.mjs`, labels in zh with `i18n.en.label`, English names also in `i18n/en.json` `names`): safety (patrol, checkpoint, crime),
+weather (storm, rain, heat, cold), politics (policy, election, meeting), society (festival, market, notice), conflict (clash, riot, standoff, raid), disaster (fire, blackout, accident, collapse,
+flood), people (visit, appearance, scandal), other. A pack with an events block but no `closed` uses the kernel's closing words (`DEFAULT_CLOSED`); with no tag template, the injected line is labelled `地图事态`.
 
 **K-R54 — Life defaults.** In messages: `live 7`, `after 20`, `fade 40`, `merge 15` (same type and node within 15
 messages = one event; for an event whose node is `null`, same type and normalised place text), `per_msg 3`. An open
-event never ages out while it is inside the scan window.
+event never ages out while it is inside the scan window. A type may override any of them with its own `life`; the pack's `events.life` overrides the kernel values for all types.
 
 **K-R55 — Effect building blocks.** `none`, `glitch`, `flash`, `shake`, `tint`, `pulse`. Screen blocks (`glitch`,
-`flash`, `shake`, `tint`) obey the setting "turn off event screen effects" (D11); reduced motion keeps `pulse` only.
+`flash`, `shake`, `tint`) obey the setting "turn off event screen effects" (D11); reduced motion keeps `pulse` only. A type declares its effect with `fx` (a kernel block
+name, or a key of `fx_presets`); the viewer triggers the block on any open event whose type resolves to it — never on a type name (S4-1). Preset fields: `intensity` (0–1; absent = the event's
+level 1–3 decides the strength), `x-messages` (how many messages the effect lasts; the event's own `duration` wins, default 3). A type's `x-default-off: true` hides it in the list and on the map
+until the user first touches the legend filter.
 
 ## 9. layers (reserved)
 
@@ -661,7 +667,7 @@ only for shipped packs (K-R63), and a name on the kernel's reserved list is refu
 | `entities.fields` | role and stage discovered (K-R42) |
 | `entities.avatar` | image extension only, else initials |
 | `items` | no world stash; kernel pickup vocabulary; carried items still work |
-| `events` | neutral taxonomy (K-R53; until S4-1 writes it, the type `other` only) |
+| `events` | neutral taxonomy (K-R53) |
 | `events.levels` | kernel labels |
 | `layers` | built-in default layers |
 | `ui` | kernel strings and theme; start = root; every tab with data |
@@ -857,9 +863,9 @@ manifest. Card names below are quoted verbatim.
 | `closed`, `examples`, `tag` | `closed`, `examples`, `llm.templates.<lang>.tag` | auto |
 | `region` | removed: the region is the root node's name; prefixes are handled by the chain score | auto |
 | `outside` | removed: "outside" is the parent in the tree | dropped |
-| `builtin` taxonomy of the first pack (`GROUPS`, `GROUP_ORDER`, `SHAPES`, `CATS`, `ALIAS_CAT`, `EXAMPLES`, `CLOSED`, `CFG.tag`) | the first pack's events block | pack data (S4-1) |
-| the hard-wired screen glitch of one media type | that type's `fx: "glitch"` | pack data (S4-1) |
-| `DEFAULT_OFF_TYPES` (one weather type off by default) | `x-default-off` on that type | carried (S4) |
+| `builtin` taxonomy of the first pack (`GROUPS`, `GROUP_ORDER`, `SHAPES`, `CATS`, `ALIAS_CAT`, `EXAMPLES`, `CLOSED`, `CFG.tag`) | the first pack's events block | pack data ✅ S4-1 (`overlay.v2.json`, K-R68) |
+| the hard-wired screen glitch of one media type | that type's `fx: "glitch"` | pack data ✅ S4-1 |
+| `DEFAULT_OFF_TYPES` (one weather type off by default) | `x-default-off` on that type | pack data ✅ S4-1 |
 | `LAYERS`, `LAYER_MAP`, viewer `MAP_OF` (three tiers + "outside" → `tc_upper`, `tc_mid`, `tc_low`, `world`) | the layer nodes; "outside" = the root | pack data (S3) |
 | `RE_UP`, `RE_MID`, `RE_LOW` | words already aliases in that tier are dropped; the rest become hints of `tc_upper` / `tc_mid` / `tc_low` | pack data (S3) |
 | `RE_OUT` | world names are aliases already; the rest become hints of the root or of an outskirts node | pack data (S3) |

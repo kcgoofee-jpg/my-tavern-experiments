@@ -10,6 +10,7 @@ import { parseText } from '../map/tavern/msgtext.mjs';
 import { spotOf } from '../map/core/event-geo.mjs';
 import { legacyPlace, legacyPos, legacyLayerOf, reWords, MAPS } from './helpers/events-legacy.mjs';
 import { edenGeo } from './helpers/eden-geo.mjs';
+import { recordEventsTest } from './helpers/events-corpus.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const J = p => JSON.parse(fs.readFileSync(ROOT + p, 'utf8'));
@@ -20,13 +21,6 @@ const legacyMarkers = Object.fromEntries(Object.entries(points).map(([id, m]) =>
 const TOL = 0.002;   // of the map width: 6 px on the 3000 px render plane
 
 // ---- the corpus: tests/events.test.mjs (run against a recording copy of the events module) and the session fixtures ----
-async function recordEventsTest() {
-  const helper = pathToFileURL(ROOT + 'tests/helpers/events-record.mjs').href;
-  const src = fs.readFileSync(ROOT + 'tests/events.test.mjs', 'utf8').replace(/'\.\.\/map\/tavern\/events\.mjs'/, `'${helper}'`).replace(/'\.\.\/map\//g, `'${pathToFileURL(ROOT + 'map/').href}`).replace(/'\.\/helpers\//g, `'${pathToFileURL(ROOT + 'tests/helpers/').href}`);
-  const log = console.log; console.log = () => {};
-  try { await import('data:text/javascript;charset=utf-8,' + encodeURIComponent(src)); } finally { console.log = log; }
-  return globalThis.__eventTap;
-}
 const fixtureTexts = () => ['session_a.json', 'session_b.json'].flatMap(f => J(`tests/fixtures/sessions/${f}`).messages.map(m => m.raw ?? m.text));
 const marksIn = raws => { const m = new Map(); for (const raw of raws) for (const x of EVM.marksOf(raw)) m.set(JSON.stringify([x.loc, x.cat, x.xy]), { loc: x.loc, cat: x.cat, xy: x.xy || '' }); return [...m.values()]; };
 

@@ -15,9 +15,9 @@ export async function initPack(getJSON) {
   if (id === DEFAULT_ID) return PACK;   // eden：不写 data-pack / --pack-accent（与以前一样）
   document.documentElement.dataset.pack = PACK.id;
   if (PACK.theme?.accent) document.documentElement.style.setProperty('--pack-accent', PACK.theme.accent);
-  // 包自带事件分类：换掉 tavern/events.mjs 的内置天城分类（查看器事态横条、图例同一个模块实例）
+  // 包自带事件分类（v1 的 events.json）：和叠加层一起交给 compat 建节点树；事件模块的分类从树的 geo.taxonomy() 取（K-R68）
   // 不挡数据请求：boot 把 packEvents 和注册表等放进同一个 Promise.all（性能评审 P2：少一个串行往返）
-  packEvents = packData('events') ? Promise.all([import('../tavern/events.mjs'), getJSON(packData('events'))]).then(([m, tax]) => { if (tax) { packTax = tax; m.configure(tax, PACK.id); } }).catch(() => {}) : null;
+  packEvents = packData('events') ? getJSON(packData('events')).then(tax => { if (tax) packTax = tax; }).catch(() => {}) : null;
   return PACK;
 }
 export const rebase = reg => rebaseRegistry(reg, PACK.base);

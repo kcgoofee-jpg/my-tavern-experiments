@@ -26,7 +26,7 @@
 map/core      leaf layer: pure logic, imports nothing outside map/core
 map/three     three.js helpers          → core (THREE is passed in by the caller, never imported)
 map/ui        shared widgets            → core; the two gallery panels import the optional tavern/baibai.mjs bridge
-map/app       viewer modules            → core, ui; app/pack.mjs loads tavern/events.mjs on demand
+map/app       viewer modules            → core, ui
 map/*.mjs     viewer plugins (root)     → app, core, ui; load the shared pure tavern modules on demand
 map/tavern    host + pure pipelines     → core (spatial.mjs also builds its places with app/here-v2.mjs, the one engine that places a text)
 map/packs, map/data    data only        (JSON; no code)
@@ -56,7 +56,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `clock.mjs` | 零 Token 的确定性世界时钟：世界时间由推进的轮数算出，不靠模型也不读系统时间。 |
 | `depth.mjs` | 纵深系统数学（`blender/depth.py` 的 JS 孪生，对拍 golden 文件）：由海拔得纵深、通道插值、某海拔之上的云。 |
 | `estate3d.mjs` | Estate3D 清单契约：校验并解析庄园页与道具页的模型地址、数据路径与档位兜底。 |
-| `event-geo.mjs` | 事态发生在哪里：地点文字经 `nodes.locate` 落点、画它的那张地图、图钉的位置（纯函数；层、城区、城郊的词全是包数据）。 |
+| `event-geo.mjs` | 事态发生在哪里：地点文字经 `nodes.locate` 落点、画它的那张地图、图钉的位置（纯函数；层、城区、城郊的词全是包数据）；`geo.taxonomy()` 带来包的事件块。 |
+| `events-default.mjs` | 内核的中性事件分类（K-R53）：没有事件块的包显示的内容；关闭词与注入句标签的缺省。 |
 | `haze.mjs` | 空气透视滤镜：把当前纵深平面的霾浓度换成一条滤镜链。 |
 | `layers.mjs` | LayerRegistry 核心：10 个视口槽位、图层注册与排序、可见性、滤镜链、`describe()` 摘要。 |
 | `ledger.mjs` | 四域结算账本：按域（资产、NPC、事件、纵深）校验原子指令，未验证的一概丢弃。 |
@@ -153,7 +154,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `context.mjs` | ContextPipeline：消息窗口规范化、轮次计算、自定义标签重放、行程；纯数据进出。 |
 | `eden-map.js` | 宿主入口：悬浮按钮与面板、查看器状态机、消息分派、重算调度、清理组装。 |
 | `edenapi.mjs` | 暴露给宿主页的公共 `EdenMap` API 的机读契约。 |
-| `events.mjs` | 事态解析：从聊天正文读事件标签、合并并老化（纯函数）。 |
+| `events.mjs` | 事态解析：从聊天正文读事件标签，按包的事件块分类（`typeOf`，K-R50），合并（类型 + 节点，K-R54）并老化（纯函数）。 |
 | `failrep.mjs` | 检定失败报告环：结构化报告在下一轮注入，让剧情顺着客观事实走。 |
 | `follow.mjs` | 跟随分支解析：跨 CDN 镜像从 `head.json` 取分支的最新构建。 |
 | `host-about.mjs` | 版本信息与检查更新的编排，所有副作用由外部注入。 |
@@ -277,7 +278,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layers.
 - **名册**：`core/roster.mjs` 把五个来源——MVU 变量、聊天标签、表格数据库、保底名册、图像库——合并成标准 `RosterRow`（`name, role, location, status, tags, source, present`），逐字段高优先级来源胜出，别名互认，挂立绘。`describe()` 给探针返回计数。
 - **当前地点**：`app/here-v2.mjs` 在节点树上用 `nodes.locate` 解析聊天里的地点；结果保留查看器读的六级形状（房间、庄园区域、地标、层、组、世界地名）并带上节点。
 - **所有地点都经节点解析**（S3）：当前地点（`app/here-v2.mjs`）、人物与行程端点（`app/spot.mjs`）、事态（`core/event-geo.mjs`、`tavern/events.mjs` 的 `setGeo`）、注入的空间契约（`tavern/spatial.mjs`）、物品地点（藏物行指向一个地标节点；暗格只在当前地点把玩家落在那里时显示）。没有任何地方再按注册表的 `kind` 或标签文字去匹配地点。
-- **事态 / 人物 / 行程**：由 `tavern/events.mjs`、`characters.mjs`、`trips.mjs` 从聊天标签与 MVU 解析；事态类别仍内置在代码里。
+- **事态 / 人物 / 行程**：由 `tavern/events.mjs`、`characters.mjs`、`trips.mjs` 从聊天标签与 MVU 解析；事态的类型、大类、特效和默认隐藏来自包的事件块（S4-1，K-R68），没有事件块的包用内核的中性分类。
 - **物品**：`core/stash.mjs`（包定义的世界藏物）与 `tavern/inventory.mjs`（聊天变量背包），按物品 id 对账；能写什么由账本纪律（`core/ledger.mjs`）管。
 
 **目标（计划，按步骤）。**

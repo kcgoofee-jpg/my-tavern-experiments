@@ -1,10 +1,12 @@
 // node tests/events.test.mjs —— 天城事态解析器单测
 import assert from 'node:assert/strict';
-import { parseMarks, collect, summarize, layerOf, tierOf, CATS, GROUPS, GROUP_ORDER, SHAPES, catOf, EXAMPLES, setGeo } from '../map/tavern/events.mjs';
+import { parseMarks, collect, summarize, layerOf, tierOf, taxonomy, legend, catOf, examples, setGeo } from '../map/tavern/events.mjs';
 import { parseText } from '../map/tavern/msgtext.mjs';
 import { edenGeo } from './helpers/eden-geo.mjs';
 
-setGeo(edenGeo());   // 层与落点由节点树决定（首个包的 v1 数据 + overlay.v2.json）
+setGeo(edenGeo());   // 层与落点由节点树决定，事件分类由同一个包的 events 块决定（首个包的 v1 数据 + overlay.v2.json）
+const GROUP_ORDER = legend().map(g => g.label), GROUPS = Object.fromEntries(taxonomy().groups.map(g => [g.label, g.color])), SHAPES = Object.fromEntries(taxonomy().groups.map(g => [g.label, g.shape]));
+const CATS = Object.fromEntries(Object.values(taxonomy().types).map(t => [t.label, t]));
 
 const span = s => `<htm1fenge><div>…</div><span style="display:none">${s}</span></htm1fenge>`;
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
@@ -176,7 +178,7 @@ t('只写大类名：类型记「其他」，颜色按大类；认不出的仍�
 t('v2 人物类照常解析；示范原文仍被忽略', () => {
   assert.equal(parseMarks('⌖丑闻曝光｜上层·银冠堡｜3｜某某丑闻').length, 1);
   assert.equal(parseMarks('⌖首相出席｜中层·天城议会｜2｜首相出席浮空港落成礼').length, 1);
-  for (const x of EXAMPLES) {
+  for (const x of examples()) {
     const raw = x.startsWith('⌖') ? span(x) : `<span style="display:none" data-tcmap="${x}"></span>`;
     assert.equal(parseMarks(raw).length, 0, x);
   }

@@ -6,11 +6,11 @@
 //   OP_MARKER  {id, nx, ny, label}               → 会话级叠加标记（不落任何持久层）
 //   OP_SUGGEST {text}                            → 文本建议（永不自动注入聊天，交给宿主 / 用户决定）
 // 校验纪律：**throw-not-coerce**（core/layers.mjs normChain 同一口径）——字段类型不对该 op 直接丢弃并计数，
-// 绝不猜测转换；每条响应最多 MAX_OPS 个 op；文本命中 events.EXAMPLES 示范原文（模型复读世界书）→ 丢弃。
+// 绝不猜测转换；每条响应最多 MAX_OPS 个 op；文本命中 events 的示范原文（isExample）（模型复读世界书）→ 丢弃。
 // 纯模块：不碰全局 / DOM / 存储 / 网络；不执行任何副作用（apply 只产出描述，送达由宿主做）。
 // 前置条件：宿主必须先过 sanitize 链（stripBlocks + msgtext 剥 <think> / <UpdateVariable>）再喂进来——
 // CoT 回声不得起草 op（G1 同款风险）。node 单测 tests/ops.test.mjs。
-import { catOf, getGeo, EXAMPLES } from './events.mjs';
+import { classify, getGeo, isExample } from './events.mjs';
 import { seedOf } from '../core/rng.mjs';
 
 export const OPS = ['OP_EVENT', 'OP_CLUE', 'OP_MARKER', 'OP_SUGGEST'];
@@ -25,8 +25,8 @@ const bad = msg => { throw new TypeError(msg); };
 /** 各操作的字段校验（收严：缺 / 错类型就 throw，由 parse 捕获计 dropped；多余字段剥掉不报错） */
 const VALIDATE = {
   OP_EVENT: o => {
-    const cat = catOf(o.cat);
-    if (!cat || cat === '其他') bad('cat 不在类型白名单（归到「其他」桶的等于在发明类型，裁决 3）');
+    const { cat, type } = classify(o.cat);
+    if (!cat || type === 'other') bad('cat 不在类型白名单（归到「其他」桶的等于在发明类型，裁决 3）');
     if (!isStr(o.place, 1, 60)) bad('place');
     if (!isStr(o.text, 1, 80)) bad('text');
     const lvl = o.lvl === undefined ? 2 : o.lvl;
@@ -77,7 +77,7 @@ export function parse(text) {
     try { obj = JSON.parse(s.slice(start, end + 1)); } catch (e) { dropped++; continue; }
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) { dropped++; continue; }
     const txt = obj.text;
-    if (typeof txt === 'string' && EXAMPLES.has(txt)) { dropped++; continue; }   // 回声黑名单：复读世界书示范原文
+    if (typeof txt === 'string' && isExample(txt)) { dropped++; continue; }   // 回声黑名单：复读世界书示范原文
     try { ops.push(VALIDATE[name](obj)); } catch (e) { dropped++; }
   }
   return { ops: ops.slice(0, MAX_OPS), dropped: dropped + Math.max(0, ops.length - MAX_OPS), hash: s ? seedOf(s).toString(36) : '' };

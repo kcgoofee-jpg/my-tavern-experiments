@@ -35,7 +35,7 @@ exists today.
 map/core      leaf layer: pure logic, imports nothing outside map/core
 map/three     three.js helpers          → core (THREE is passed in by the caller, never imported)
 map/ui        shared widgets            → core; the two gallery panels import the optional tavern/baibai.mjs bridge
-map/app       viewer modules            → core, ui; app/pack.mjs loads tavern/events.mjs on demand
+map/app       viewer modules            → core, ui
 map/*.mjs     viewer plugins (root)     → app, core, ui; load the shared pure tavern modules on demand
 map/tavern    host + pure pipelines     → core (spatial.mjs also builds its places with app/here-v2.mjs, the one engine that places a text)
 map/packs, map/data    data only        (JSON; no code)
@@ -75,7 +75,8 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `clock.mjs` | Zero-token deterministic world clock: world time is computed from turns advanced, never from the model or system time. |
 | `depth.mjs` | Depth-system math (JS twin of `blender/depth.py`, golden-file parity): depth from altitude, channel interpolation, clouds above an altitude. |
 | `estate3d.mjs` | Estate3D manifest contract: validates and resolves model URLs, data paths and tier fallbacks for the estate and prop 3D pages. |
-| `event-geo.mjs` | Where an event happens: its place text placed by `nodes.locate`, the map that draws it, the pin's spot (pure; every tier and district word is pack data). |
+| `event-geo.mjs` | Where an event happens: its place text placed by `nodes.locate`, the map that draws it, the pin's spot (pure; every tier and district word is pack data); `geo.taxonomy()` carries the pack's events block. |
+| `events-default.mjs` | The kernel's neutral event taxonomy (K-R53): what a pack with no events block shows; closing words and injected-line tag defaults. |
 | `haze.mjs` | Aerial-perspective filter: turns the haze density of the current depth plane into a filter chain. |
 | `layers.mjs` | LayerRegistry core: the 10 viewport slots, layer registration and ordering, visibility, filter chains, `describe()` summary. |
 | `ledger.mjs` | Four-domain settlement ledger: validates atomic instructions per domain (assets, NPC, events, depth) and drops anything unverified. |
@@ -173,7 +174,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `context.mjs` | ContextPipeline: message window normalization, round computation, custom tag replay, trips; pure data in and out. |
 | `eden-map.js` | Host entry: floating button and panel, viewer state machine, message dispatch, recompute scheduling, cleanup assembly. |
 | `edenapi.mjs` | Machine-readable contract of the public `EdenMap` API exposed to the host page. |
-| `events.mjs` | Event parsing: reads event tags from chat text, merges and ages them (pure). |
+| `events.mjs` | Event parsing: reads event tags from chat text, classifies them through the pack's events block (`typeOf`, K-R50), merges (type + node, K-R54) and ages them (pure). |
 | `failrep.mjs` | Failed-check report ring: structured reports injected next turn so the story follows objective facts. |
 | `follow.mjs` | Follow-branch resolution: newest build of a branch from `head.json` across CDN mirrors. |
 | `host-about.mjs` | Version info and update check orchestration, all effects injected. |
@@ -316,7 +317,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layers.
   (`tavern/spatial.mjs`) and item places (a stash row names a landmark node; a hidden row shows where the current
   location places the player). Nothing matches a place by a registry `kind` or by a label any more.
 - **Events / characters / trips**: parsed from chat tags and MVU by `tavern/events.mjs`, `characters.mjs`,
-  `trips.mjs`; the event categories are still built into code.
+  `trips.mjs`; an event's type, group, icon, colour, effect and default-off come from the pack's events block (S4-1, K-R68); a pack without one gets the kernel's neutral taxonomy.
 - **Items**: `core/stash.mjs` (pack-defined world stash) and `tavern/inventory.mjs` (chat-variable inventory),
   reconciled by item id; ledger discipline (`core/ledger.mjs`) governs what may be written.
 

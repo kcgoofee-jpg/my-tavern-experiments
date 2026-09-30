@@ -81,7 +81,7 @@ test('同步副本一致：viewer.html 首帧前置、宿主 eden-map.js 的 NS 
   assert.match(v, /a\?\.getItem\(N\(k\)\) \?\? \(window\.__packId === 'eden' \? null : a\?\.getItem\(k\)\)/, '首帧镜像的别名回退与 core/storage.mjs get 同一规则');
   assert.match(h, /PACK_IN \? localStorage\.getItem\(k\) : null/, '宿主 lsGet 的别名回退');
   assert.equal(PK.ID_RE.source, '^[a-z][a-z0-9_-]{1,31}$');
-  assert.match(h, /PACK_IN\?\.events\) m\.configure/); assert.match(h, /m\.setVarRoot\(/);
+  assert.match(h, /loadEventGeo\(\{[^}]*events: PACK_IN\?\.events/); assert.doesNotMatch(h, /m\.configure\(/, '事件分类随节点树（geo.taxonomy）进来，宿主不再单独装'); assert.match(h, /m\.setVarRoot\(/);
 });
 
 test('core/storage.mjs 按 globalThis.__packId 换前缀', () => {
@@ -124,11 +124,12 @@ test('多包隔离：同名键互不串；预算 LRU 经 nsStore 只见、只清
   assert.equal(mem.get('edenMap:chat:c9:fog'), '{}'); assert.equal(mem.get('edenMapSeen:c9'), '1', 'eden 的数据不碰');
 });
 
-test('事件分类可换：town 的 3 类解析、落层（层由 town 自己的节点树定）；恢复后天城分类原样', () => {
-  const before = { g: Object.keys(EV.GROUPS).length, c: Object.keys(EV.CATS).length };
-  EV.configure(js('map/packs/town/events.json'), 'town'); EV.setGeo(townGeo());
+test('事件分类可换：town 的 3 类解析、落层（层由 town 自己的节点树定）；换回首个包后分类原样', () => {
+  EV.setGeo(edenGeo());
+  const before = { g: EV.legend().map(g => g.label), c: Object.keys(EV.taxonomy().types).length };
+  EV.setGeo(townGeo());   // the geo carries the pack's taxonomy (its events.json through compat-v1)
   try {
-    assert.deepEqual(EV.GROUP_ORDER, ['市政', '灾害', '天气']);
+    assert.deepEqual(EV.legend().map(g => g.label), ['市政', '灾害', '天气']);
     assert.equal(EV.catOf('起火了'), '火灾'); assert.equal(EV.catOf('巡空令'), '其他');
     const r = EV.parseMarks('<span style="display:none">⌖风暴｜雾港镇·码头·灯塔｜3｜大风封港｜港务所</span>');
     assert.equal(r.length, 1); assert.equal(r[0].layer, '码头'); assert.equal(r[0].place, '灯塔'); assert.equal(r[0].grp, '天气'); assert.equal(r[0].node, 'light');
@@ -136,14 +137,22 @@ test('事件分类可换：town 的 3 类解析、落层（层由 town 自己的
     const other = EV.parseMarks('⌖火灾｜天城·下层·7号井｜2｜x');
     assert.deepEqual([other.length, other[0].layer, other[0].node], [1, '', null], '别的卡的地名：照样列出、不上图（K-01 B）');
     assert.match(EV.summarize([{ layer: '码头', tier: 'live', closed: false, place: '鱼市', cat: '火灾', lvl: 2, text: 'x', src: '' }], '码头'), /^\[雾港镇事态/);
-  } finally { EV.configure(null); EV.setGeo(edenGeo()); }
-  assert.deepEqual({ g: Object.keys(EV.GROUPS).length, c: Object.keys(EV.CATS).length }, before);
+  } finally { EV.setGeo(edenGeo()); }
+  assert.deepEqual({ g: EV.legend().map(g => g.label), c: Object.keys(EV.taxonomy().types).length }, before);
   assert.equal(EV.parseMarks('⌖火灾｜天城·下层·7号井｜2｜仓库起火')[0].layer, '下层');
 });
 
-test('坏的事件分类退回内置（不拖垮启动）', () => {
-  EV.configure({ groups: {}, types: {}, layers: [] }, 'bad');
-  assert.equal(EV.packId, 'eden'); assert.ok(EV.CATS.火灾);
+test('没有事件块 / 坏的事件块 = 内核的中性分类（K-R53），不拖垮启动', () => {
+  try {
+    EV.setGeo(null);
+    assert.deepEqual(EV.legend().map(g => g.id), ['safety', 'weather', 'politics', 'society', 'conflict', 'disaster', 'people']);
+    assert.equal(EV.catOf('巡空令'), '其他'); assert.equal(EV.catOf('火灾'), '火灾');
+    EV.configure({ groups: [], types: {}, layers: [] }, 'bad');
+    assert.equal(EV.legend().length, 7); assert.ok(EV.taxonomy().types.fire);
+    EV.configure({ groups: 'x', types: null });
+    assert.equal(EV.legend().length, 7);
+  } finally { EV.setGeo(edenGeo()); }
+  assert.ok(EV.taxonomy().groups.length > 8);
 });
 
 test('聊天变量顶层键 / 世界书名可换（默认 eden 原名）', () => {

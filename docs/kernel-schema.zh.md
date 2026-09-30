@@ -515,7 +515,7 @@ v1 的中文字段名与英文名（`type`、`place`、`title`、`level`、`stat
 
 **K-R50 —— 类型判定。** 所有比较都用预处理后的形式（K-R17）；一个类型的「名字」包括它的 `label`、各语言的 `i18n.<语言>.label` 和它的 id。
 类别文字 → 某个名字或别名与它完全相同的类型；否则它包含哪个类型的名字（最长的，再比位置靠前）；否则它包含哪个别名；否则它等于某个大类的 id
-或名字 → 记为该大类颜色的 `other`；否则 `other`。`other` 永远存在，属于 `other` 大类，名字由内核给。
+或名字 → 记为该大类颜色的 `other`；否则 `other`。`other` 永远存在，属于 `other` 大类，名字由内核给；它只按「相等」匹配（不按「包含」），认不出的词取它的名字、图标和稀有度（只写了大类名的词仍用该大类的颜色）。
 
 ### 8.3 落点与范围
 
@@ -529,13 +529,15 @@ v1 的中文字段名与英文名（`type`、`place`、`title`、`level`、`stat
 
 ### 8.4 缺省
 
-**K-R53 —— 中性默认分类。** 没有事件块时，内核用中性大类（治安、天气、政治、民生、冲突、灾害、人物、其他），每类几个类型，名字来自内核字典的 `zh` 和 `en`。具体表由 S4-1 写；在那之前，缺省分类只有 `other` 一个类型。
+**K-R53 —— 中性默认分类。** 没有事件块时，内核用中性大类（治安、天气、政治、民生、冲突、灾害、人物、其他），每类几个类型，名字来自内核字典的 `zh` 和 `en`。具体表（S4-1，`core/events-default.mjs`，名字以中文为底、`i18n.en.label` 给英文，英文名也进 `i18n/en.json` 的 `names`）：治安（巡逻、检查点、案件）、天气（风暴、降雨、高温、寒潮）、政治（政策、选举、会议）、
+民生（节庆、集市、公告）、冲突（交锋、骚乱、对峙、突袭）、灾害（火灾、停电、事故、坍塌、洪水）、人物（到访、露面、丑闻）、其他。有事件块但没写 `closed` 的包用内核的关闭词（`DEFAULT_CLOSED`）；没有标签模板时，注入句的标签是 `地图事态`。
 
 **K-R54 —— 寿命缺省。** 按楼层计：`live 7`、`after 20`、`fade 40`、`merge 15`（同类型、同节点 15 楼内再出现 = 同一事件；节点为 `null` 的事件按同类型、同样的预处理后地点文字算）、`per_msg 3`。
-未结束的事件只要还在扫描窗口里就不会因为旧而消失。
+未结束的事件只要还在扫描窗口里就不会因为旧而消失。类型可以用自己的 `life` 覆盖其中任何一项；包的 `events.life` 覆盖所有类型的内核值。
 
 **K-R55 —— 特效积木。** `none`、`glitch`、`flash`、`shake`、`tint`、`pulse`。屏幕类（`glitch`、`flash`、`shake`、`tint`）服从设置「关闭事件屏幕特效」（D11）；
-「减少动态效果」时只留 `pulse`。
+「减少动态效果」时只留 `pulse`。类型用 `fx` 声明自己的特效（内核积木名，或 `fx_presets` 的键）；查看器对任何「类型解析到它」的未结束事件触发该积木——不再看类型名（S4-1）。预设字段：`intensity`（0–1；没写 = 按事件的等级 1–3 定强度）、
+`x-messages`（特效持续多少楼；事件自己的 `duration` 优先，缺省 3）。类型的 `x-default-off: true` 让它在列表和地图上默认隐藏，直到用户第一次动图例筛选。
 
 ## 9. layers（预留）
 
@@ -592,7 +594,7 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 | `entities.fields` | 自动发现身份与进度（K-R42） |
 | `entities.avatar` | 只用画图扩展，没有就显示首字 |
 | `items` | 没有世界藏物；内核拾取词表；身上的东西照常 |
-| `events` | 中性分类（K-R53；S4-1 写好之前只有 `other` 一个类型） |
+| `events` | 中性分类（K-R53） |
 | `events.levels` | 内核的等级名 |
 | `layers` | 内置默认图层 |
 | `ui` | 内核文案与主题；从根开始；有数据的标签页都显示 |
@@ -769,9 +771,9 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 | `closed`、`examples`、`tag` | `closed`、`examples`、`llm.templates.<语言>.tag` | 自动 |
 | `region` | 去掉：地区名就是根节点的名字；前缀交给链上计分处理 | 自动 |
 | `outside` | 去掉：「界外」在树里就是上级 | 丢弃 |
-| 第一个包的内置分类（`GROUPS`、`GROUP_ORDER`、`SHAPES`、`CATS`、`ALIAS_CAT`、`EXAMPLES`、`CLOSED`、`CFG.tag`） | 第一个包的事件块 | 包数据（S4-1） |
-| 写死在代码里的某个媒体类型的花屏特效 | 该类型的 `fx: "glitch"` | 包数据（S4-1） |
-| `DEFAULT_OFF_TYPES`（某个天气类型默认关） | 该类型上的 `x-default-off` | 携带（S4） |
+| 第一个包的内置分类（`GROUPS`、`GROUP_ORDER`、`SHAPES`、`CATS`、`ALIAS_CAT`、`EXAMPLES`、`CLOSED`、`CFG.tag`） | 第一个包的事件块 | 包数据 ✅ S4-1（`overlay.v2.json`，K-R68） |
+| 写死在代码里的某个媒体类型的花屏特效 | 该类型的 `fx: "glitch"` | 包数据 ✅ S4-1 |
+| `DEFAULT_OFF_TYPES`（某个天气类型默认关） | 该类型上的 `x-default-off` | 包数据 ✅ S4-1 |
 | `LAYERS`、`LAYER_MAP`、查看器的 `MAP_OF`（三层 + 「界外」→ `tc_upper`、`tc_mid`、`tc_low`、`world`） | 各层节点；「界外」= 根 | 包数据（S3） |
 | `RE_UP`、`RE_MID`、`RE_LOW` | 已经是该层某节点强叫法的词去掉；其余变成 `tc_upper` / `tc_mid` / `tc_low` 的弱词 | 包数据（S3） |
 | `RE_OUT` | 世界地名本来就是强叫法；其余变成根的弱词，或一个「城郊」节点的弱词 | 包数据（S3） |

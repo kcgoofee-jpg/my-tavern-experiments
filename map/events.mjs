@@ -1,8 +1,8 @@
-// 天城 · 地图事件层（查看器用）——「城市态势看板」
+// 地图事件层（查看器用）——「态势看板」
 // 事件从哪来：①聊天里前端载体带的隐藏标签，由卡内脚本 eden-map.js 用 tavern/events.mjs 解析、合并、老化后发来（items）；
 //            ②可选的外部数据源（maps.json 的 feeds），也交给 events.mjs 解析，和聊天事件一起显示。
 // 一条事件（events.mjs 的输出）：{ id, key, cat, layer, place, lvl, text, src, code, time, scope, dur, xy, status, first, last, count, closed, tier, isNew }
-// 本文件只负责：落点（地名 → 坐标）、图标、事态列表、飞过去、网络攻击花屏、世界图角标。设计见 docs/map-events.md。
+// 本文件只负责：落点（地名 → 坐标）、图标、事态列表、飞过去、按类型声明的屏幕特效（花屏）、世界图角标。类型、大类、图标、颜色、特效、默认隐藏都是设定包的数据（events 块，tavern/events.mjs 读取）。设计见 docs/map-events.md。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 // 界面文字走查看器的 window.I18N（键在 i18n/*.json 的 ev.*）；类别、大类、层、状态名英文在 en.json 的 names。事件标题、地点、发布方是剧情原文，不翻译。
 import { REG, aspect, cur, viewer } from './app/state.mjs';
@@ -32,31 +32,20 @@ const TCEvents = (() => {
   // 当前这一层的事件不再写层名（面包屑、层按钮已经说了）；别的层照写（v0.9.2）
   const whereHere = e => mapOf(e) === cur && e.place ? e.place : where(e);
   const srcNew = e => e.src && !(e.place || '').includes(e.src) ? e.src : '';   // 发布方就是地点本身（「血肉磨坊」）时不再重复
-  const LOOK = {   // 类别 → 图标字、颜色（真实事件地图的惯例：火警红橙、警务蓝、治安紫、基础设施灰、网络青）
-    火灾: ['火', '#ff5a2a'], 爆炸: ['爆', '#ff2a2a'], 持械: ['警', '#e0182d'], 凶案: ['案', '#c2263a'], 抢劫: ['劫', '#c23bd6'], 盗窃: ['盗', '#9a5cff'],
-    通缉: ['缉', '#3d7dff'], 检查点管控: ['管', '#f08a24'], 黑市查抄: ['查', '#9fe870'], 骚乱: ['乱', '#e08a24'], 交通事故: ['轨', '#f0c020'],
-    停电: ['电', '#9aa4b5'], 网络攻击: ['网', '#3de0ff'], 气候故障: ['气', '#7fd6ff'], 结界事故: ['界', '#e6c36a'], 空域巡查: ['巡', '#d9a441'],
-    政策: ['政', '#6f9be0'], 公共直播: ['播', '#e0182d'], 民生: ['民', '#e8d08a'], 军事调动: ['军', '#a3b18a'], 急救: ['救', '#37c5b0'], 其他: ['!', '#cfd8e0'],
-  };
-  const look = c => LOOK[c] || LOOK.其他;
+  const look = c => { const r = EVM?.classify(c); return r ? [r.icon, r.color ?? '#cfd8e0'] : ['!', '#cfd8e0']; };   // 只给没带图标 / 颜色的事件（旧脚本、领航员）兜底：按类型名查设定包的分类
   // 色觉模式（E7）：开着时大类颜色换成 TCCvd 的安全色板，形状（SHAPES）与图标字不变；lk() 结果的颜色统一走 gcol(grp) 而不是原始色
   const lk = e => { const r = e.ch && e.color ? [e.ch, e.color] : look(e.cat); return TCCvd.on() ? [r[0], gcol(grpOf(e))] : r; };
-  // 图例与筛选（v2）：9 个大类的颜色；点一个大类 = 在地图、列表、层计数里隐藏它（记在本机）。大类表在 events.mjs 加载后取，加载前用这份
-  let GROUPS = { 空防: '#d9a441', 气候: '#7fd6ff', 治安: '#3d7dff', 政治: '#6f9be0', 媒体: '#d03ca8', 民生: '#e8d08a', 军事: '#a3b18a', 灾害: '#ff5a2a', 人物: '#d7a6e8' };
-  let ORDER = Object.keys(GROUPS);
+  // 图例与筛选（v2）：各大类的颜色；点一个大类 = 在地图、列表、层计数里隐藏它（记在本机）。大类表在 events.mjs 加载、装入设定包的分类后取（taxNow）
+  let GROUPS = {}, ORDER = [];
   const gcol = g => TCCvd.groupColor(g, GROUPS[g] || '#cfd8e0');   // 关时原色板，开时 CVD 安全色板
-  // 大类形状（色弱也分得清，E4 N30）：与 events.mjs 的 SHAPES 一致，模块加载后以模块为准
-  let SHAPES = { 空防: 'hex', 气候: 'circle', 治安: 'square', 政治: 'penta', 媒体: 'diamond', 民生: 'octa', 军事: 'tri-down', 灾害: 'tri', 人物: 'ring', 其他: 'square' };
+  let SHAPES = {};   // 大类形状（色弱也分得清，E4 N30）：大类的 shape
   const shp = g => 'sh-' + (SHAPES[g] || 'square');
   const OFF_KEY = 'edenMapEvOff';
-  // 类型级默认关（用户 2026-09-29：降雨先默认关，后面再打磨成每类开关）：OFF_KEY 从没存过（用户没动过筛选）时种入
-  // DEFAULT_OFF_TYPES；不主动落盘——用户第一次点图例筛选后才按当前集合存，之后完全跟用户走。
-  const DEFAULT_OFF_TYPES = ['type:降雨'];
-  const off = new Set((() => { try { const v = TCStore.get(OFF_KEY); if (v == null) return DEFAULT_OFF_TYPES.slice(); return JSON.parse(v) || []; } catch (e) { return []; } })());
+  // 类型级默认关（用户 2026-09-29）：设定包在类型上写 x-default-off；OFF_KEY 从没存过（用户没动过筛选）时由 taxNow 种入，不主动落盘——第一次点图例筛选后完全跟用户走。
+  const off = new Set((() => { try { const v = TCStore.get(OFF_KEY); return v == null ? [] : JSON.parse(v) || []; } catch (e) { return []; } })());
   const grpOf = e => e.grp || '其他';
   const offed = e => off.has(grpOf(e)) || off.has('type:' + e.cat);   // 关掉的大类 / 类型
-  let grpLoaded = false;
-  let tab = 'ev', items = [], floor = 0, feedItems = [], shown = true, flyId = null, EVM = null, lastFly = null, glitchLv = 0;
+  let taxFor = null /* 已取过的分类（events 块对象），换了才重取 */, tab = 'ev', items = [], floor = 0, feedItems = [], shown = true, flyId = null, EVM = null, lastFly = null, glitchLv = 0;
   const said = new Set();   // 已经播报过的新事件（读屏）
   const markersOf = {};                                    // 地图 id → 点位数据（按需加载）
   const all = () => items.concat(feedItems);
@@ -93,8 +82,10 @@ const TCEvents = (() => {
   // ---------- 输入 ----------
   // 卡内脚本发来：{ items, floor, fly }（旧版云端协议 { list, last } 也兼容：交给 events.mjs 重新解析）
   async function set(d) {
+    if (!EVM) await mod();   // 分类在事件模块里（设定包的 events 块）：第一批事件来之前先装好
+    taxNow();
     const before = new Set(all().map(e => e.id));
-    if (Array.isArray(d.items)) { items = d.items; floor = d.floor || 0; }
+    if (Array.isArray(d.items)) { items = d.items.map(enrich); floor = d.floor || 0; }
     else if (Array.isArray(d.list)) { const m = await mod(); if (!m) return;
       floor = d.last || 0; items = m.collect(d.list.map(o => ({ floor: o.mes ?? floor, text: tagText(o) })), floor); }
     // 读屏播报：新出现的进行中事件（每条只播一次）
@@ -104,9 +95,16 @@ const TCEvents = (() => {
     await loadMarkers(); render(); renderBar(); badges();
     if (flyId && cur && viewer.world.getItemCount() && flyTo(flyId)) flyId = null;
   }
+  const enrich = e => (!EVM || (e.grp && e.ch && e.color) ? e : (r => ({ ...e, grp: r.grp, ch: r.icon, color: r.color, rare: r.rare, type: r.type, ...(r.fx ? { fx: r.fx } : {}) }))(EVM.classify(e.cat)));   // 没带大类 / 图标 / 颜色的事件（旧版脚本、领航员的 op）：按类型名查当前分类补齐
   const tagText = o => `<span data-tcmap="${Object.entries(o).filter(([k]) => k !== 'mes' && k !== 'src').map(([k, v]) => `${k}=${String(v).replace(/[;"]/g, ' ')}`).join(';')}"></span>`;
   // 按文档的 <base> 解析（srcdoc 里的内联 / 经典脚本做 import() 时 Chrome 会按宿主页地址解析相对路径，取到 tavern/tavern/…）
   const geoSync = m => (m?.setGeo(eventGeo()), m);   // 事件模块的落点用同一棵节点树（建筑平面到了、树重建后也跟着换）
+  function taxNow() {   // 装入当前树的事件分类，再取大类表 / 形状 / 默认隐藏（分类没变就什么都不做）
+    if (!EVM) return; geoSync(EVM);
+    const tx = EVM.taxonomy(); if (tx === taxFor) return; taxFor = tx;
+    GROUPS = Object.fromEntries(tx.groups.map(g => [g.label, g.color])); SHAPES = Object.fromEntries(tx.groups.map(g => [g.label, g.shape])); ORDER = EVM.legend().map(g => g.label);
+    try { if (TCStore.get(OFF_KEY) == null) for (const n of EVM.defaultOff()) off.add('type:' + n); } catch (e) {}
+  }
   const mod = () => EVM ? Promise.resolve(geoSync(EVM)) : import(new URL('tavern/events.mjs', document.baseURI).href).then(m => geoSync(EVM = m)).catch(() => null);
   // 外部数据源：maps.json 顶层 feeds: [{label, url, every}]（url 返回 {events: [与标签相同的中文字段]}）；状态改成已解除前一直显示
   async function pollFeeds() {
@@ -232,7 +230,7 @@ const TCEvents = (() => {
     const chFresh = chNames.filter(n => !SEEN.ch.has(n)).length;
     S.label('ch', `<i class="shp sh-circle" aria-hidden="true"></i>${esc(T('ch.tab', '人物'))} <em>${chN}</em>${chFresh ? `<b class="nd" aria-hidden="true"></b>` : ''}`, { n: chN, fresh: chFresh });
     if (open && S.tab === 'ch') P.TCChars.pane(bar.querySelector('.chpane'));
-    if (!grpLoaded && every.length) { grpLoaded = true; mod().then(m => { if (m?.GROUPS) { GROUPS = m.GROUPS; ORDER = m.GROUP_ORDER || Object.keys(m.GROUPS).filter(g => g !== '其他'); if (m.SHAPES) SHAPES = m.SHAPES; renderBar(); } }); }   // 有事件时才取大类表
+    taxNow();
     const n = list.filter(live).length, evk = e => e.id + '@' + (e.last || 0), fresh0 = list.filter(e => e.isNew && !SEEN.ev.has(evk(e))),
       fresh = open && S.tab === 'ev' ? (fresh0.forEach(e => SEEN.ev.add(evk(e))), fresh0.length && seenSave(), 0) : fresh0.length, hid = ORDER.filter(g => off.has(g)).length + (off.has('其他') ? 1 : 0) + [...off].filter(k => k.startsWith('type:')).length;
     // 标签：大类形状点（最新一条，进行中优先）+「事态 N」+ 新事态红点；完整摘要在面板第一行
@@ -258,10 +256,12 @@ const TCEvents = (() => {
     tg.querySelector('span').textContent = act ? T('ev.toggle_n', '事态 {n}', { n: act }) : T('ev.toggle', '事态');
     tg.hidden = !all().length;
   }
-  // 网络攻击：受影响的层（或全城）在持续期内「花屏」：间歇的色散、横向撕裂、马赛克块，强度随等级；配 ⚠ 与「数据链路受扰」，一看就知道是剧情
+  // 屏幕特效（花屏）：类型声明 fx 为 glitch 的事件，在它影响的层（或全城）持续期内「花屏」：间歇的色散、横向撕裂、马赛克块，强度随等级（预设给了 intensity 就按它）；配 ⚠ 与提示，一看就知道是剧情。持续楼数：事件的 duration，否则预设的 x-messages，否则 3
+  const fxOf = e => (e.fx !== undefined ? e.fx : EVM?.classify(e.cat).fx) || null;
+  const fxLevel = (e, f) => (typeof f.intensity === 'number' ? Math.round(f.intensity * 3) : Math.max(1, e.lvl));
   function applyGlitch() {
-    const lv = !shown ? 0 : Math.max(0, ...all().filter(e => e.cat === '网络攻击' && !e.closed && (e.feed || floor - e.last <= (e.dur || 3)) &&
-      (/全城|天城/.test(e.scope) || mapOf(e) === cur || (e.scope && eventGeo()?.place(e.scope)?.map === cur))).map(e => Math.max(1, e.lvl)));
+    const lv = !shown ? 0 : Math.max(0, ...all().filter(e => fxOf(e)?.block === 'glitch' && !e.closed && (e.feed || floor - e.last <= (e.dur || fxOf(e)['x-messages'] || 3)) &&
+      (/全城|天城/.test(e.scope) || mapOf(e) === cur || (e.scope && eventGeo()?.place(e.scope)?.map === cur))).map(e => fxLevel(e, fxOf(e))));
     document.body.dataset.glitch = lv || '';
     $('#glitchNote').hidden = !lv; $('#glitchNote').textContent = T('ev.glitch', '⚠ 数据链路受扰');
     if (lv && !glitchLv && typeof announce === 'function') announce(T('ev.glitch', '⚠ 数据链路受扰').replace(/^⚠\s*/, ''));   // 花屏开始时播报一次

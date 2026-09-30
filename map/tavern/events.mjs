@@ -1,124 +1,68 @@
-// 天城事态：从聊天原文解析事件标签（纯函数，eden-map.js 与 node 单测共用；不碰 DOM、不碰酒馆接口）
+// 地图事态：从聊天原文解析事件标签（纯函数，卡内脚本与 node 单测共用；不碰 DOM、不碰酒馆接口）
 // 两种写法都认（世界书「地图联动规范」教的是第一种）：
 //   <span style="display:none" data-tcmap="类型=火灾;地点=7号井黑市;标题=仓库起火;等级=3;状态=发生中;编号=LEB-88-0317"></span>
-//     可选：层、来源、时间、编号（同一事件后续沿用）、范围 / 持续（网络攻击）、坐标（0–1 归一化 x,y）；状态写 已解除 / 已扑灭 / 已恢复 = 关闭该事件
+//     可选：层、来源、时间、编号（同一事件后续沿用）、范围 / 持续（屏幕特效的覆盖范围与楼数）、坐标（0–1 归一化 x,y）；状态写关闭词（设定包的 closed）= 关闭该事件
 //   <span style="display:none">⌖类别｜层·地点｜等级｜一句话｜发布方</span>（紧凑写法；等级 0 = 平息）
-//   一楼最多 3 条；全角 / 半角分隔都认。
+//   一楼最多 life.per_msg 条；全角 / 半角分隔都认。
 // 聊天记录是唯一真相：每次都从最近 N 楼重算，所以 swipe、删楼、编辑后自然一致。
-
-// 事件体系 v2：9 个大类（地图图例 9 种颜色，v2 加「人物」），具体类型靠图标字区分。稀有度：1 常见、2 少见、3 罕见、4 传说。完整设计见 docs/event-taxonomy.md
-// v1（8 类）的类型名全部保留，旧标签照常解析；v1 查看器里用过的旧名（结界事故、空域巡查、执法管控……）在 ALIAS_CAT 里。
+//
+// 事件体系（类型、大类、图标、颜色、稀有度、特效、寿命、示范原文、关闭词、注入句标签）是设定包的数据（docs/kernel-schema.md §8，K-R49–K-R55）：
+// setGeo(geo) 时从 geo.taxonomy() 取（包的 events 块，来源见 K-R67 / K-R68）；没有 events 块的包用内核的中性分类（core/events-default.mjs，K-R53）。
+// 类型判定走 core/pack-v2-rows.mjs 的 typeOf（K-R50）。本文件不带任何设定包的词。
 import { timeKey } from './mvu.mjs';
-export const GROUPS = {
-  空防: '#d9a441', 气候: '#7fd6ff', 治安: '#3d7dff', 政治: '#6f9be0', 媒体: '#d03ca8', 民生: '#e8d08a', 军事: '#a3b18a', 灾害: '#ff5a2a', 人物: '#d7a6e8', 其他: '#cfd8e0',
-};
-export const GROUP_ORDER = ['空防', '气候', '治安', '政治', '媒体', '民生', '军事', '灾害', '人物'];   // 图例顺序（「其他」不进图例）
-// 大类形状（色弱也分得清：地图点、图例、列表的小色块都用它）。媒体原为 #3de0ff，与气候在绿色弱下同色，改品红（E4 N30）
-export const SHAPES = { 空防: 'hex', 气候: 'circle', 治安: 'square', 政治: 'penta', 媒体: 'diamond', 民生: 'octa', 军事: 'tri-down', 灾害: 'tri', 人物: 'ring', 其他: 'square' };
-const T = (g, ch, src, rare) => ({ g, ch, src, rare });
-export const CATS = {   // 具体类型 → 大类、图标字、默认发布方、稀有度
-  巡空令: T('空防', '巡', '议会骑士团', 1), 结界警报: T('空防', '结', '庄园结界系统', 2), 空域临检: T('空防', '检', '议会骑士团', 2), 宴会加警: T('空防', '宴', '议会骑士团', 2),
-  以太信标失准: T('空防', '标', '议会骑士团', 2), 锚泊校正: T('空防', '锚', '天城执政厅', 3),
-  塔体保养: T('气候', '塔', '以太气候塔', 1), 气候故障: T('气候', '候', '以太气候塔', 2), 以太潮汐: T('气候', '潮', '以太气候塔', 2), 结界过载: T('气候', '过', '资产管理委员会', 3), 气压异常: T('气候', '压', '执法局', 3),
-  人工极光: T('气候', '光', '天城一台', 4), 降雨: T('气候', '雨', '以太气候塔', 3),
-  检查点管控: T('治安', '管', '执法局', 1), 盗窃: T('治安', '盗', '执法局', 1), 抢劫: T('治安', '劫', '执法局', 2), 通缉: T('治安', '缉', '执法局', 2), 黑市查抄: T('治安', '抄', '执法局', 2),
-  持械: T('治安', '械', '执法局', 2), 资产纠纷: T('治安', '产', '资产管理委员会', 2), 灰票造假: T('治安', '票', '黑市终端', 2), 以太走私: T('治安', '私', '执法局', 2), 非法义体: T('治安', '义', '执法局', 2),
-  凶案: T('治安', '凶', '执法局', 3),
-  // v0.9.5 设定对齐（五路通读）：卡里写到、原表缺的类型
-  // v0.9.6 卡遗漏补全（docs/card-omissions.md B19）：视觉样例里的「临时管控」告示、委员会的登记与年检
-  临时管控: T('治安', '临', '执法局', 2), 登记年检: T('政治', '年', '资产管理委员会', 1),
-  追捕在逃人员: T('治安', '追', '资产管理委员会', 2), 帮派冲突: T('治安', '帮', '执法局', 2), 下层失踪案: T('治安', '踪', '执法局', 2), 赤潮相关: T('治安', '赤', '执法局', 3),
-  政策: T('政治', '策', '天城议会', 2), 通行税: T('政治', '税', '天城执政厅', 2), 议会质询: T('政治', '议', '天城议会', 2), 评级复核: T('政治', '评', '资产管理委员会', 2), 议席改选: T('政治', '席', '天城议会', 2),
-  联盟内讧: T('政治', '盟', '庄园主联盟', 3),
-  舆情: T('媒体', '传', '霓讯', 1), 公共直播: T('媒体', '播', '天城一台', 1), 名流八卦: T('媒体', '闻', '霓讯', 1), 网络攻击: T('媒体', '网', '天城一台', 2), 数据泄露: T('媒体', '泄', '黑市终端', 2),
-  广告劫持: T('媒体', '屏', '天城一台', 2), 直播事故: T('媒体', '播', '天城一台', 3), 转化仪式: T('媒体', '转', '母畜频道', 4),
-  施粥告急: T('民生', '粥', '圣光教会', 1), 教会仪式: T('民生', '祷', '圣光教会', 1), 以太配给: T('民生', '配', '天城执政厅', 1), 兑价波动: T('民生', '兑', '黑市终端', 2), 急救: T('民生', '救', '施奈德诊所', 2),
-  骚乱: T('民生', '乱', '血肉磨坊', 2), 修女出巡: T('民生', '铁', '圣铁摇篮', 3),
-  建城纪念日: T('民生', '城', '天城执政厅', 2), 制度纪念日: T('民生', '纪', '天城议会', 2), 丰收节: T('民生', '丰', '天城执政厅', 2), 地下格斗: T('民生', '斗', '血肉磨坊', 1),
-  哨所换防: T('军事', '防', '天城防卫军', 1), 军事调动: T('军事', '调', '天城防卫军', 2), 魔导装甲调动: T('军事', '甲', '天城防卫军', 2), 联合演习: T('军事', '演', '天城防卫军', 2), 边境警戒: T('军事', '境', '天城防卫军', 3),
-  城外清剿: T('军事', '剿', '议会骑士团', 2), 私兵冲突: T('军事', '兵', '执法局', 3), 异兽侵袭: T('军事', '兽', '天城防卫军', 3), 戒严: T('军事', '戒', '天城议会', 4),
-  火灾: T('灾害', '火', '天城一台', 1), 停电: T('灾害', '电', '天城一台', 1), 交通事故: T('灾害', '撞', '天城一台', 1), 轨道故障: T('灾害', '轨', '天城一台', 2), 以太泄漏: T('灾害', '漏', '法师塔', 3),
-  爆炸: T('灾害', '爆', '天城一台', 3), 结构坍塌: T('灾害', '塌', '执法局', 3),
-  // 人物（v2）：只记公开行程与裂缝被曝光的那一刻；标题写头衔不写私事
-  公开行程: T('人物', '程', '天城一台', 1), 首相出席: T('人物', '相', '天城执政厅', 2), 防卫军阅兵: T('人物', '阅', '天城防卫军', 2), 名门晚宴: T('人物', '筵', '庄园主联盟', 2), 大主教弥撒: T('人物', '弥', '圣光教会', 2),
-  修女授勋: T('人物', '勋', '圣铁摇篮', 3), 丑闻曝光: T('人物', '丑', '霓讯', 3), 债务违约: T('人物', '债', '黑市终端', 3), 继承之争: T('人物', '继', '霓讯', 3), 失势罢免: T('人物', '罢', '天城议会', 3),
-  以太觉醒: T('人物', '觉', '天城一台', 4),
-  拍卖季: T('人物', '拍', '庄园主联盟', 2), 品鉴宴: T('人物', '品', '庄园主联盟', 2), 猎季: T('人物', '猎', '庄园主联盟', 2), 贵族暗杀: T('人物', '刺', '霓讯', 3),
-  其他: T('其他', '!', '', 1),
-};
-for (const v of Object.values(CATS)) v.color = GROUPS[v.g];
-const ALIAS_CAT = { 巡查: '巡空令', 巡空: '巡空令', 空域巡查: '巡空令', 结界事故: '结界警报', 结界: '结界警报', 锚泊: '锚泊校正', 临检: '空域临检', 气候: '气候故障', 天气: '气候故障', 酸雨: '气候故障', 骤寒: '气候故障',
-  保养: '塔体保养', 停机: '塔体保养', 过载: '结界过载', 气压: '气压异常', 极光: '人工极光', 查抄: '黑市查抄', 黑市: '黑市查抄', 管控: '检查点管控', 封锁: '检查点管控', 执法管控: '检查点管控', 执法: '检查点管控', 搜查: '检查点管控',
-  悬赏: '通缉', 枪击: '持械', 劫持: '持械', 持械冲突: '持械', 命案: '凶案', 劫案: '抢劫', 劫盗: '抢劫', 失窃: '盗窃', 入室: '盗窃', 权属: '资产纠纷', 假票: '灰票造假', 造假: '灰票造假',
-  政策变动: '政策', 法案: '政策', 质询: '议会质询', 内讧: '联盟内讧', 税: '通行税', 复核: '评级复核', 网攻: '网络攻击', 黑客: '网络攻击', 数据链路受扰: '网络攻击', 入侵: '网络攻击', 信号干扰: '网络攻击', 电子攻击: '网络攻击',
-  泄露: '数据泄露', 广告: '广告劫持', 直播: '公共直播', 谣言: '舆情', 传闻: '舆情', 施粥: '施粥告急', 民生: '施粥告急', 晚祷: '教会仪式', 晨祷: '教会仪式', 仪式: '教会仪式', 修女: '修女出巡', 医疗: '急救', 兑价: '兑价波动', 汇率: '兑价波动',
-  拳场骚乱: '骚乱', 抗议: '骚乱', 斗殴: '骚乱', 冲突: '骚乱', 暴动: '骚乱', 军营调动: '军事调动', 调动: '军事调动', 换防: '哨所换防', 演习: '联合演习', 警戒: '边境警戒',
-  起火: '火灾', 失火: '火灾', 火警: '火灾', 爆燃: '爆炸', 交通: '交通事故', 事故: '交通事故', 撞车: '交通事故', 断电: '停电', 以太中断: '停电', 轨道: '轨道故障', 停运: '轨道故障', 坍塌: '结构坍塌', 倒塌: '结构坍塌',
-  // v1 查看器（map/events.js 的旧 LOOK 表）与旧文档用过的类型名
-  结界事故: '结界警报', 空域巡查: '巡空令', 执法封锁: '检查点管控', 天气异常: '气候故障', 军事: '军事调动', 交通管制: '检查点管控',
-  // v2：双轨事件与人物（注意「泄露」= 数据泄露、「泄漏」= 以太泄漏；「宴」已被宴会加警占用，名门晚宴用「筵」）
-  信标: '以太信标失准', 信标失准: '以太信标失准', 潮汐: '以太潮汐', 以太潮: '以太潮汐', 走私: '以太走私', 义体: '非法义体', 黑诊所: '非法义体', 改选: '议席改选', 补选: '议席改选', 议席: '议席改选',
-  // v0.9.5 新类型的别名
-  追捕: '追捕在逃人员', 在逃: '追捕在逃人员', 逃犯: '追捕在逃人员', 赏金: '追捕在逃人员', 帮派: '帮派冲突', 收保护费: '帮派冲突', 保护费: '帮派冲突', 帮派火并: '帮派冲突',
-  失踪: '下层失踪案', 失踪案: '下层失踪案', 赤潮: '赤潮相关', 赤潮据点: '赤潮相关', 建城日: '建城纪念日', 建城: '建城纪念日', 制度日: '制度纪念日', 丰收: '丰收节',
-  格斗: '地下格斗', 格斗赛: '地下格斗', 黑拳: '地下格斗', 清剿: '城外清剿', 剿灭: '城外清剿', 私兵: '私兵冲突', 护卫冲突: '私兵冲突', 异兽: '异兽侵袭', 兽潮: '异兽侵袭', 野兽潮: '异兽侵袭',
-  戒严令: '戒严', 军管: '戒严', 拍卖: '拍卖季', 拍卖会: '拍卖季', 私人拍卖: '拍卖季', 预展: '拍卖季', 展示会: '品鉴宴', 品鉴会: '品鉴宴', 狩猎季: '猎季', 猎季营地: '猎季', 暗杀: '贵族暗杀', 刺杀: '贵族暗杀',
-  八卦: '名流八卦', 绯闻: '名流八卦', 花边: '名流八卦', 配给: '以太配给', 限额: '以太配给', 装甲: '魔导装甲调动', 魔导: '魔导装甲调动', 机甲: '魔导装甲调动', 泄漏: '以太泄漏', 以太外泄: '以太泄漏',
-  行程: '公开行程', 出席: '公开行程', 露面: '公开行程', 首相: '首相出席', 阅兵: '防卫军阅兵', 将军阅兵: '防卫军阅兵', 晚宴: '名门晚宴', 宴请: '名门晚宴', 弥撒: '大主教弥撒', 授勋: '修女授勋', 丑闻: '丑闻曝光', 曝光: '丑闻曝光',
-  违约: '债务违约', 债务: '债务违约', 破产: '债务违约', 继承: '继承之争', 争产: '继承之争', 罢免: '失势罢免', 失势: '失势罢免', 下台: '失势罢免', 觉醒: '以太觉醒',
-  // v0.9.6 卡遗漏补全（B3 / B4 / B19）：品鉴展 = 品鉴宴；季度拍卖 = 拍卖季；资产登记 / 年检 = 登记年检；芯片与铭牌查验 = 检查点管控
-  品鉴展: '品鉴宴', 季度拍卖: '拍卖季', 资产登记: '登记年检', 年检: '登记年检', 登记: '登记年检', 查验: '检查点管控', 检查点: '检查点管控', 治安检查点: '检查点管控', 层间检查点: '检查点管控', 临时封控: '临时管控', 快讯: '舆情', 黑市兑价: '兑价波动', 公开转化: '转化仪式', 转化仪式直播: '转化仪式' };
-// 类型文字 → 具体类型：完全相同 > 别名完全相同 > 包含某个类型名（取最长，一样长取靠前）> 包含某个别名（同上）> 其他
-const longestIn = (s, keys) => { let b = '', bi = 0; for (const k of keys) { const i = s.indexOf(k); if (i >= 0 && (k.length > b.length || (k.length === b.length && i < bi))) { b = k; bi = i; } } return b; };   // 一样长取更靠前的（「装甲部队调动」→ 装甲）
-let CAT_KEYS = Object.keys(CATS).filter(k => k !== '其他'), ALIAS_KEYS = Object.keys(ALIAS_CAT);
-export const catOf = s => { s = String(s || '').trim(); if (CATS[s]) return s; if (ALIAS_CAT[s]) return ALIAS_CAT[s];
-  const c = longestIn(s, CAT_KEYS); if (c) return c; const a = longestIn(s, ALIAS_KEYS); return a ? ALIAS_CAT[a] : '其他'; };
+import { typeOf } from '../core/pack-v2-rows.mjs';
+import { withDefaults } from '../core/pack-v2.mjs';
+import { DEFAULT_EVENTS, DEFAULT_CLOSED, DEFAULT_TAG } from '../core/events-default.mjs';
+
+const KERNEL_EXAMPLES = ['⌖类别｜地点｜等级｜一句话｜发布方'];   // 语法示意行（K-R48）：模型原样复述时不上图
+const reEsc = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+let TAX = null, SRC, SRC_TAG, CLOSED = null, TAG = DEFAULT_TAG, EXAMPLES = new Set(KERNEL_EXAMPLES);
+export const AGE = { live: 7, after: 20, fade: 40 };        // 楼层差：≤live 活跃、≤after 余波、>after 淡出（只在列表）；已解除 / 被新事件接替的 >fade 丢弃（事件块的 life，K-R54）
+let LIFE = { merge: 15, per_msg: 3 };                         // merge：同一类型 + 同一节点在这么多楼内再次出现 = 同一事件的更新；per_msg：一楼最多几条
+export const hash = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
+
+/** 装入事件分类（包的 events 块 + 注入句标签）；不合格或没有 = 内核的中性分类。同一个块重复装入不重做。 */
+export function configure(events, tag) {
+  if (TAX && events === SRC && tag === SRC_TAG) return;
+  SRC = events; SRC_TAG = tag;
+  const ok = !!events && typeof events === 'object' && !Array.isArray(events) && Array.isArray(events.groups) && !!events.types && Object.keys(events.types).length > 0;
+  TAX = withDefaults({ events: ok ? events : DEFAULT_EVENTS }).events;
+  TAX.groups = TAX.groups.map(g => ({ ...g, label: g.label ?? (g.id === 'other' ? '其他' : g.id), color: g.color ?? '#cfd8e0', shape: g.shape ?? 'square' }));
+  TAX.types.other = { label: '其他', icon: '!', ...TAX.types.other };
+  const words = TAX.closed.length ? TAX.closed : DEFAULT_CLOSED;
+  CLOSED = new RegExp(words.map(reEsc).join('|'));
+  TAG = typeof tag === 'string' && tag ? tag : DEFAULT_TAG;
+  EXAMPLES = new Set([...TAX.examples, ...KERNEL_EXAMPLES]);
+  Object.assign(AGE, { live: TAX.life.live, after: TAX.life.after, fade: TAX.life.fade }); LIFE = { merge: TAX.life.merge, per_msg: TAX.life.per_msg };
+}
+export const taxonomy = () => TAX;                                                        // 装好的事件块（withDefaults 之后，只读）
+export const legend = () => TAX.groups.filter(g => g.id !== 'other');                     // 图例里的大类，按块里的顺序（「其他」只在有事件时才出现）
+export const defaultOff = () => Object.values(TAX.types).filter(t => t['x-default-off'] === true).map(t => t.label);   // 默认隐藏的类型（用户没动过筛选时）
+export const isExample = line => EXAMPLES.has(line);
+export const examples = () => [...EXAMPLES];
+/** 类型文字 → { …typeOf, cat: 类型名, grp: 大类名, own: 这个类型有自己的寿命 }。group = false：只认类型，不把大类名当作「只写了大类」（字段 类型 缺省、用标题时）。 */
+export function classify(word, { group = true } = {}) {
+  let r = typeOf(word, TAX);
+  if (!group && r.type === 'other') r = typeOf('', TAX);
+  const g = TAX.groups.find(x => x.id === r.group);
+  return { ...r, cat: r.label, grp: g ? g.label : r.group, own: !!TAX.types[r.type]?.life };
+}
+/** 类型文字 → 类型名（classify 的 cat）；认不出的是「其他」类型的名字。 */
+export const catOf = word => classify(word).cat;
+
 // 地点 → 层与落点：由节点树决定（setGeo，core/event-geo.mjs；层词、城区词、城郊词都是设定包的数据，见 packs/<id>/overlay.v2.json）。
-let CLOSED = /解除|结束|恢复|扑灭|已控制|平息/;
-// 设定包可改的措辞（configure）：注入句的标签
-const CFG = { tag: '天城事态' };
-// 节点树定位（S3-2，docs/kernel-schema.md K-R24 / K-R51）：setGeo(core/event-geo.mjs 的 geo) 之后，事件的层与落点由 nodes.locate 决定。
-// 没设节点树时，所有事件都列出、不上图（node = null，K-01 B）。
+// 节点树定位（S3-2，docs/kernel-schema.md K-R24 / K-R51）：setGeo(core/event-geo.mjs 的 geo) 之后，事件的层与落点由 nodes.locate 决定；geo.taxonomy() 带来包的事件分类。
+// 没设节点树时，所有事件都列出、不上图（node = null，K-01 B），分类是内核的中性分类。
 let GEO = null;
-export const setGeo = g => { GEO = g || null; };
+export const setGeo = g => { GEO = g || null; const t = GEO && typeof GEO.taxonomy === 'function' ? GEO.taxonomy() : null; configure(t?.events, t?.tag); };
 export const getGeo = () => GEO;
-export const AGE = { live: 7, after: 20, fade: 40 };        // 楼层差：≤7 活跃、≤20 余波、>20 淡出（只在列表）；已解除 / 被新事件接替的 >40 丢弃
-// 未解除的事件不因楼层旧而丢（E6）：只要还在扫描窗口里（eden-map.js 的 SCAN = 80 楼），就以「淡出」留在列表里，直到出现「已解除」或滑出窗口
-export const MERGE_WINDOW = 15;                               // 同一类别 + 地点在 15 楼内再次出现 = 同一事件的更新
-const MAX_PER_FLOOR = 3;
+// 未解除的事件不因楼层旧而丢（E6）：只要还在扫描窗口里（卡内脚本的 SCAN = 80 楼），就以「淡出」留在列表里，直到出现关闭词或滑出窗口
 // 不做任何关键词过滤：标签原样解析、原样落点（用户 2026-09-27：「我们做的是技术兼容」）。内容是用户自己聊天里的，地图只管位置与显示。
-// 世界书里的示范标记原文：模型原样复述时不上图
-export const EXAMPLES = new Set([
-  '⌖政策｜中层·商业区｜1｜议会通过跨层通行税修正案｜天城议会',
-  '⌖检查点管控｜中层·C区检查点｜2｜查验身份芯片与资产铭牌｜执法局',
-  '⌖黑市查抄｜下层·7号井｜2｜执法局突击查抄黑市终端，三名中间人被带走',
-  '⌖类别｜层·地点｜等级｜一句话｜发布方',
-  '⌖火灾｜中层·霓虹街｜2｜霓街17号仓库起火，三人被困',
-  '⌖火灾｜中层·霓虹街｜0｜明火扑灭，两栋楼停电',
-  '⌖网络攻击｜中层·商业区｜2｜全息广告被劫持，滚动反议会标语｜天城一台',
-  // 世界书「地图联动规范」和两条样例里的 data-tcmap 原文
-  '类型=火灾;地点=7号井黑市;标题=仓库起火;等级=3;状态=发生中;时间=2088.01.12 21:40',
-  '类型=火灾;地点=7号井黑市;标题=仓库起火;等级=3;状态=发生中;时间=2088.01.12 21:40;编号=LEB-88-0317',
-  '类型=网络攻击;地点=中层;范围=中层;标题=霓虹网络遭入侵;等级=2;持续=3',
-  // 世界书「视觉样例·事件」8 条（空防 / 气候 / 治安 / 政治 / 媒体 / 民生 / 军事 / 灾害）的 data-tcmap 原文
-  '类型=巡空令;地点=银冠堡;标题=骑士团加开巡空;等级=1;状态=进行中;来源=议会骑士团;编号=KN-88-0041',
-  '类型=塔体保养;地点=以太气候调节塔;标题=第三环停机保养;等级=1;状态=预告;时间=2088.01.14 05:30;来源=天城执政厅;编号=CT-88-0003',
-  '类型=灰票造假;地点=7号井黑市;标题=假灰票流入7号井;等级=2;状态=发生中;来源=黑市终端;编号=BM-88-0114',
-  '类型=议会质询;地点=天城议会;标题=质询空防预算;等级=1;状态=进行中;来源=天城议会;编号=CP-88-0017',
-  '类型=广告劫持;地点=中层 霓虹街;标题=全息广告被劫持;等级=2;状态=发生中;来源=天城一台;编号=TV1-88-0209',
-  '类型=修女出巡;地点=施粥站;标题=修女队沿施粥线巡行;等级=1;状态=进行中;来源=天城一台;编号=TV1-88-0211',
-  '类型=联合演习;地点=防卫军前沿哨所;标题=前沿哨所夜间联合演习;等级=1;状态=预告;时间=2088.01.13 22:00;来源=天城防卫军;编号=DF-88-0056',
-  '类型=轨道故障;地点=中层 悬浮轨道C线;标题=C线第七区段停运;等级=2;状态=发生中;来源=天城一台;编号=TV1-88-0213',
-  // 世界书「地图联动规范」v2 新增的两条示范（人物 / 双轨）
-  '类型=首相出席;地点=天城议会;标题=首相出席通行税听证;等级=1;状态=预告;时间=2088.01.15 10:00;来源=天城执政厅;编号=PM-88-0007',
-  '类型=以太潮汐;地点=上层 以太气候调节塔;标题=以太潮汐抬升，结界读数波动;等级=2;状态=发生中;来源=以太气候塔;编号=CT-88-0019',
-]);
 
 const decode = s => s.replace(/&(amp|lt|gt|quot|#39|#x27|nbsp);/g, (m, k) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", '#x27': "'", nbsp: ' ' })[k]);
 const norm = s => s.replace(/\s+/g, '').replace(/[·•・.]/g, '·');
-export function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
 
-/** 一楼原文 → 按出现顺序的原始标签 [{cat, grpHint, loc, lvl, text, src, ...}]（还没定位；代码块里的、示范原文跳过） */
+/** 一楼原文 → 按出现顺序的原始标签 [{cat, cls, loc, lvl, text, src, ...}]（还没定位；代码块里的、示范原文跳过） */
 export function marksOf(raw) {
   if (!raw || (raw.indexOf('⌖') < 0 && raw.indexOf('data-tcmap') < 0)) return [];
   const text = decode(String(raw)).replace(/```[\s\S]*?```/g, '').replace(/<code>[\s\S]*?<\/code>/gi, '');
@@ -127,8 +71,8 @@ export function marksOf(raw) {
     if (EXAMPLES.has(m[2].trim())) continue;
     const o = {}; for (const kv of m[2].split(/[;；]/)) { const k = kv.search(/[=＝]/); if (k > 0) o[kv.slice(0, k).trim()] = kv.slice(k + 1).trim(); }
     if (!o.类型 && !o.标题) continue;
-    const lvl = CLOSED.test(o.状态 || '') ? 0 : Math.max(1, Math.min(3, parseInt(o.等级, 10) || 2));
-    found.push([m.index, { cat: catOf(o.类型 || o.标题), grpHint: (o.类型 || '').trim(), loc: (o.层 && !(o.地点 || '').includes(o.层) ? o.层 + '·' : '') + (o.地点 || ''), lvl, text: o.标题 || '', src: o.来源 || '',
+    const lvl = CLOSED.test(o.状态 || '') ? 0 : Math.max(1, Math.min(3, parseInt(o.等级, 10) || 2)), cls = classify(o.类型 || o.标题, { group: !!(o.类型 || '').trim() });
+    found.push([m.index, { cat: cls.cat, cls, loc: (o.层 && !(o.地点 || '').includes(o.层) ? o.层 + '·' : '') + (o.地点 || ''), lvl, text: o.标题 || '', src: o.来源 || '',
       code: o.编号 || '', time: o.时间 || '', scope: o.范围 || '', dur: parseInt(o.持续, 10) || 0, xy: o.坐标 || '', status: o.状态 || '', line: m[2] }]);
   }
   for (const m of text.matchAll(/⌖([^<\n⌖]{3,200})/g)) {
@@ -138,56 +82,57 @@ export function marksOf(raw) {
     if (f.length < 4) continue;
     const n = parseInt(String(f[2]).replace(/[^\d]/g, ''), 10);
     if (!(n >= 0 && n <= 3)) continue;
-    found.push([m.index, { cat: catOf(f[0]), grpHint: f[0], loc: f[1], lvl: n, text: f[3] || '', src: f[4] || '', line }]);
+    const cls = classify(f[0]);
+    found.push([m.index, { cat: cls.cat, cls, loc: f[1], lvl: n, text: f[3] || '', src: f[4] || '', line }]);
   }
   return found.sort((a, b) => a[0] - b[0]).map(f => f[1]);
 }
 
-/** 一楼原文 → 标签列表 [{cat, layer, place, node?, lvl, text, src, code?, time?, scope?, dur?, xy?}]；代码块里的、示范原文跳过；认不出层（或节点）的：设了节点树就照样列出（node = null，K-01 B），没设就跳过 */
+/** 一楼原文 → 标签列表 [{cat, type, grp, layer, place, node?, lvl, text, src, code?, time?, scope?, dur?, xy?, fx?, inject?, life?}]；代码块里的、示范原文跳过；认不出层（或节点）的：设了节点树就照样列出（node = null，K-01 B），没设就跳过 */
 export function parseMarks(raw) {
   const out = [];
   for (const e of marksOf(raw)) {
     const loc = norm(e.loc);
     const pl = GEO ? GEO.place(String(e.loc).trim()) : null;   // 先别名、再提示词；认不出的事件照样列出、不上图（K-01 B）
     const layer = pl ? pl.layer : '', place = pl ? GEO.strip(loc, pl.owner) : loc, node = pl ? pl.node : null;
-    const { line, loc: _, ...rest } = e;
-    const c = CATS[e.cat], g = e.cat === '其他' && GROUPS[e.grpHint] ? e.grpHint : c.g;   // 只写了大类名（「类型=人物」）：类型记「其他」，颜色按该大类
-    const { grpHint: _g, ...rest2 } = rest;
-    out.push({ ...rest2, layer, place, node, grp: g, ch: c.ch, color: GROUPS[g], rare: c.rare, text: e.text.slice(0, 60), src: (e.src || c.src || '').slice(0, 20) });
-    if (out.length >= MAX_PER_FLOOR) break;
+    const { line, loc: _, cls: c, ...rest } = e;
+    out.push({ ...rest, layer, place, node, type: c.type, grp: c.grp, ch: c.icon, color: c.color, rare: c.rare, text: e.text.slice(0, 60), src: (e.src || c.source || '').slice(0, 20),
+      ...(c.fx ? { fx: c.fx } : {}), ...(c.inject === false ? { inject: false } : {}), ...(c.own ? { life: c.life } : {}) });
+    if (out.length >= LIFE.per_msg) break;
   }
   return out;
 }
 
-/** 最近若干楼 [{floor, text}]（按楼层升序）→ 合并后的事件列表（新的在前）。now = 最新楼层号 */
+/** 最近若干楼 [{floor, text}]（按楼层升序）→ 合并后的事件列表（新的在前）。now = 最新楼层号。合并键 = 类型 + 节点（K-R54；节点为 null 的按类型 + 地点文字）；有编号的按编号 */
 export function collect(msgs, now) {
   const open = new Map(), done = [];
   for (const { floor, text } of msgs) {
     for (const e of parseMarks(text)) {
-      const key = e.code ? '#' + e.code : e.cat + '|' + e.layer + '|' + e.place;
-      const cur = open.get(key);
-      if (cur && floor - cur.last <= MERGE_WINDOW) {
+      const key = e.code ? '#' + e.code : e.cat + '|' + e.layer + '|' + e.place, mk = e.code ? key : e.type + '|' + (e.node ?? '~' + e.place);   // key：事件的稳定标识（id、落点抖动）；mk：合并键
+      const cur = open.get(mk), win = e.life?.merge ?? LIFE.merge;
+      if (cur && floor - cur.last <= win) {
         cur.last = floor; cur.count++; cur.text = e.text || cur.text; cur.src = e.src || cur.src;
         for (const k of ['status', 'time', 'scope', 'dur', 'xy']) if (e[k]) cur[k] = e[k];
-        if (e.lvl === 0) { cur.closed = true; cur.lvl = 0; done.push(cur); open.delete(key); } else { cur.lvl = e.lvl; }
+        if (e.lvl === 0) { cur.closed = true; cur.lvl = 0; done.push(cur); open.delete(mk); } else { cur.lvl = e.lvl; }
       } else if (e.lvl > 0) {
         if (cur) { cur.stale = true; done.push(cur); }   // 隔了合并窗口又出现：旧的那条让位给新的，按已结束处理（不再常驻）
-        open.set(key, { id: hash(key + '#' + floor), key, ...e, first: floor, last: floor, count: 1, closed: false });
+        open.set(mk, { id: hash(key + '#' + floor), key, ...e, first: floor, last: floor, count: 1, closed: false });
       } else {
         // 第一次出现就是已解除（「快讯：XX 已被控制」这种一次写完的通报）：记为已解除，不丢
-        if (cur) { cur.stale = true; done.push(cur); open.delete(key); }
+        if (cur) { cur.stale = true; done.push(cur); open.delete(mk); }
         done.push({ id: hash(key + '#' + floor), key, ...e, first: floor, last: floor, count: 1, closed: true });
       }
     }
   }
-  const all = [...done, ...open.values()].map(e => ({ ...e, tier: tierOf(now - e.last, e.closed || !!e.stale) })).filter(e => e.tier);
+  const all = [...done, ...open.values()].map(e => ({ ...e, tier: tierOf(now - e.last, e.closed || !!e.stale, e.life) })).filter(e => e.tier);
   // v0.9.3：两条都写了剧情内时间（字段「时间」）时按剧情时间新的在前，否则按楼层新的在前
   return all.sort((a, b) => { const ta = timeKey(a.time), tb = timeKey(b.time); return (ta != null && tb != null && ta !== tb ? tb - ta : 0) || b.last - a.last || b.lvl - a.lvl; });
 }
-// ended = 已解除，或被同类同地点的新事件接替。未结束的事件永远不返回 ''（窗口由调用方给的楼层决定）
-export function tierOf(age, ended) {
-  if (ended) return age > AGE.fade ? '' : age <= AGE.after ? 'after' : 'fade';
-  return age <= AGE.live ? 'live' : age <= AGE.after ? 'after' : 'fade';
+// ended = 已解除，或被同类同地点的新事件接替。未结束的事件永远不返回 ''（窗口由调用方给的楼层决定）。life = 这个类型自己的寿命（没有 = 事件块的）
+export function tierOf(age, ended, life) {
+  const A = life ? { ...AGE, ...life } : AGE;
+  if (ended) return age > A.fade ? '' : age <= A.after ? 'after' : 'fade';
+  return age <= A.live ? 'live' : age <= A.after ? 'after' : 'fade';
 }
 
 /** 当前地点（MVU 世界.当前地点）→ 所在层；认不出返回 '' */
@@ -197,45 +142,14 @@ export function layerOf(here) {
   return GEO ? GEO.layerOf(s) : '';
 }
 
-/** 注入给模型的一句话：只说角色所在层的活跃事件；没有就返回 '' */
+/** 注入给模型的一句话：只说角色所在层的活跃事件（类型写了 inject: false 的不说）；没有就返回 '' */
 export function summarize(items, hereLayer, maxLen = 80) {
   if (!hereLayer) return '';
-  const live = items.filter(e => e.layer === hereLayer && e.tier === 'live' && !e.closed).slice(0, 2);
+  const live = items.filter(e => e.layer === hereLayer && e.tier === 'live' && !e.closed && e.inject !== false).slice(0, 2);
   if (!live.length) return '';
   let s = live.map(e => `${e.layer}${e.place ? '·' + e.place : ''}：${e.src ? e.src + '通报' : ''}${e.cat}${e.lvl >= 3 ? '（严重）' : ''}${e.text ? '，' + e.text : ''}`).join('；');
   if (s.length > maxLen) s = s.slice(0, maxLen - 1) + '…';
-  return `[${CFG.tag}·仅背景，不要求提及，已标记的事件勿重复标记] ${s}。`;
+  return `[${TAG}·仅背景，不要求提及，已标记的事件勿重复标记] ${s}。`;
 }
 
-// ---------------- 设定包（通用化，docs/generalize/README.md）：换一套事件分类 ----------------
-// tax = packs/<id>/events.json（map/data/schema/events.schema.json；里面的 layers 只交给 compat 变成节点的提示词，这里不读）；null = 恢复内置的天城分类。
-// 导出的表（GROUPS / CATS…）原地改，已 import 的模块看到的是同一个对象。
-const reEsc = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const refill = (o, n) => { for (const k of Object.keys(o)) delete o[k]; Object.assign(o, n); };
-const BUILTIN = { GROUPS: { ...GROUPS }, GROUP_ORDER: [...GROUP_ORDER], SHAPES: { ...SHAPES }, CATS: { ...CATS }, ALIAS_CAT: { ...ALIAS_CAT },
-  EXAMPLES: [...EXAMPLES], CLOSED, CFG: { ...CFG } };
-export let packId = 'eden';
-export function configure(tax, id = tax ? 'pack' : 'eden') {
-  // 坏的分类不能拖垮启动：缺必需字段就警告并退回内置分类（结构的完整校验在 tools/check_pack.py）
-  const okObj = o => !!o && typeof o === 'object' && !Array.isArray(o) && Object.keys(o).length > 0;
-  if (tax && !(okObj(tax.groups) && okObj(tax.types))) {
-    console.warn('[地图] 设定包的事件分类不合格，改用内置分类', id); tax = null; id = 'eden'; }
-  let n;
-  if (!tax) n = BUILTIN;
-  else {
-    const groups = { ...tax.groups, 其他: tax.groups.其他 || '#cfd8e0' };
-    const cats = {};
-    for (const [k, v] of Object.entries(tax.types || {})) cats[k] = { g: groups[v.g] ? v.g : '其他', ch: v.ch, src: v.src || '', rare: v.rare || 1 };
-    cats.其他 ||= { g: '其他', ch: '!', src: '', rare: 1 };
-    for (const v of Object.values(cats)) v.color = groups[v.g];
-    n = { GROUPS: groups, GROUP_ORDER: tax.order || Object.keys(tax.groups).filter(g => g !== '其他'), SHAPES: { 其他: 'square', ...(tax.shapes || {}) }, CATS: cats,
-      ALIAS_CAT: Object.fromEntries(Object.entries(tax.alias || {}).filter(([, v]) => cats[v])),
-      EXAMPLES: tax.examples || [],
-      CLOSED: tax.closed?.length ? new RegExp(tax.closed.map(reEsc).join('|')) : BUILTIN.CLOSED,
-      CFG: { tag: tax.tag || '地图事态' } };
-  }
-  refill(GROUPS, n.GROUPS); GROUP_ORDER.splice(0, GROUP_ORDER.length, ...n.GROUP_ORDER); refill(SHAPES, n.SHAPES); refill(CATS, n.CATS); refill(ALIAS_CAT, n.ALIAS_CAT);
-  EXAMPLES.clear(); for (const x of n.EXAMPLES) EXAMPLES.add(x);
-  CLOSED = n.CLOSED; Object.assign(CFG, n.CFG);
-  CAT_KEYS = Object.keys(CATS).filter(k => k !== '其他'); ALIAS_KEYS = Object.keys(ALIAS_CAT); packId = id;
-}
+configure();   // 没装包之前：中性分类

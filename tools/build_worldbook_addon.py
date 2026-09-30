@@ -6,7 +6,7 @@
 ：只含地图条目的独立世界书 JSON（酒馆「导入世界书」直接用，不改角色卡）。
 
 内容从仓库数据生成，改了事件类型或地名后重跑即可保持一致：
-  - 事件类型、大类顺序、稀有度、示范原文：map/tavern/events.mjs（CATS / GROUP_ORDER / EXAMPLES，经 node 读取）
+  - 事件类型、大类顺序、稀有度、示范原文：首个包的事件块（map/packs/eden/overlay.v2.json 的 events，经 map/tavern/events.mjs 的 taxonomy() 用 node 读取）
   - 地标名、层名、庄园房间 / 区域：map/data/maps.json（与 map/app/here-v2.mjs 的当前地点解析同一份词表）
 条目（全部常驻，位置「角色定义之后」）：
   1 地图联动规范 v3：标签两种写法、字段、地点写法、频率、连锁、示范
@@ -19,7 +19,7 @@
   8 天城常识-* / 庄园常识-*（v0.9.6，关键词触发）：卡里已有、地图常用的口径（跨层、治安与机构、身份、经济、战力、节日、媒体、日程、安保与权限、位置未写的机构）
   9 地图补充-*（v0.9.6，关键词触发）：map/data/addon_places.json 里另行描述的地点，每处一条；check_maps.py 保证与地图数据同步
 我们的规则只提到我们自己的东西（人物标签、⌖改名 / ⌖用途、地图.*），不引用卡里的字段名或原文。
-示范标签只用 EXAMPLES 里的原文（模型照抄时地图不落点）。不写任何关键词过滤规则（地图不过滤内容，见 docs/content-compat.md）。
+示范标签只用事件块 examples 里的原文（模型照抄时地图不落点）。不写任何关键词过滤规则（地图不过滤内容，见 docs/content-compat.md）。
 
 用法：python3 tools/build_worldbook_addon.py [--version 0.9.1] [--out 路径] [--check 参照世界书.json] [--force]
 默认输出：~/Downloads/酒馆/世界书/伊甸地图·世界书附加条目 v<版本>.json；只用标准库 + node。
@@ -34,8 +34,10 @@ RARE = {3: '罕', 4: '传'}
 
 
 def load_events():
-    js = ("import * as E from './map/tavern/events.mjs';"
-          "console.log(JSON.stringify({cats: E.CATS, order: E.GROUP_ORDER, ex: [...E.EXAMPLES]}))")
+    js = ("import * as E from './map/tavern/events.mjs'; import { packGeo } from './tools/eden_geo.mjs';"
+          "E.setGeo(packGeo('eden')); const tx = E.taxonomy(), gl = Object.fromEntries(tx.groups.map(g => [g.id, g.label]));"
+          "console.log(JSON.stringify({cats: Object.fromEntries(Object.values(tx.types).map(t => [t.label, { g: gl[t.group], ch: t.icon, src: t.source || '', rare: t.rare || 1 }])),"
+          " order: E.legend().map(g => g.label), ex: E.examples()}))")
     out = subprocess.run(['node', '--input-type=module', '-e', js], cwd=ROOT, capture_output=True, text=True, check=True).stdout
     return json.loads(out)
 
@@ -43,7 +45,7 @@ def load_events():
 def pick_example(ex, pred, what):
     for s in ex:
         if pred(s): return s
-    sys.exit(f'EXAMPLES 里找不到示范：{what}（改了 events.mjs 的 EXAMPLES？）')
+    sys.exit(f'示范原文里找不到示范：{what}（改了首个包 overlay.v2.json 的 events.examples？）')
 
 
 def build(version):
