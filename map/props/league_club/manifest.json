@@ -201,5 +201,64 @@
         0.65
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "walls_ext": [
+      6000,
+      512
+    ],
+    "roof": [
+      1200,
+      256
+    ],
+    "windows": [
+      2500,
+      128
+    ],
+    "props_chimneys": [
+      600,
+      256
+    ],
+    "props_railings": [
+      2000,
+      128
+    ],
+    "props_hovercar": [
+      1400,
+      256
+    ],
+    "props_magitech": [
+      3000,
+      128
+    ],
+    "props_underside": [
+      1500,
+      128
+    ],
+    "props_ward": [
+      300,
+      128
+    ],
+    "site_dock": [
+      1500,
+      256
+    ],
+    "site_garden": [
+      2000,
+      256
+    ],
+    "site_ground": [
+      400,
+      512
+    ],
+    "site_trees": [
+      8000,
+      256
+    ]
+  },
+  "max_mb": {
+    "std": 0.9,
+    "low": 0.5
+  },
+  "_note": "viewer3d.html?model=league_club 的清单（标准档 league_club.glb + 低档 league_club_low.glb）。坐标 = glTF（Y 朝上，米）。由 blender/landmarks/league_club/build.py（共用 blender/landmarks/upper_estates.py）+ blender/landmarks/export_glb.py 生成。卡有庄园主联盟（举办拍卖会与品鉴会；冬季私人拍卖只限会员竞投），没有固定会所，详见 docs/card-buildings.md。 体量上限按「整岛」放宽到 std 0.9 / low 0.5 MB（单栋默认 0.6/0.3）：一个模型含宫殿楼、拍卖厅、台地花园、停靠平台与整片秋林；此前入库的 std 为 2.17 MB，本轮按分组预算压到 0.75 MB 左右。"
 }

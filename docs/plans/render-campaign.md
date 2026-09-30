@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T12:56:36Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T13:11:08Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 10 | 0 | 38 | 0 | 0 | 0 | 48 |
+| standard | 11 | 0 | 37 | 0 | 0 | 0 | 48 |
 | hero | 2 | 0 | 12 | 0 | 6 | 0 | 20 |
 
 Below-gate (user spot-check): none
@@ -25,7 +25,7 @@ Below-gate (user spot-check): none
 | 8 | `review:glory_crown` | review | done | - |  |  | Review and fix model glory crown |
 | 9 | `review:linguang_post` | review | done | - |  |  | Review and fix model linguang post |
 | 10 | `review:rust_outskirts` | review | done | - |  |  | Review and fix model rust outskirts |
-| 11 | `review:league_club` | review | open | review-r1 |  |  | Review and fix model league club |
+| 11 | `review:league_club` | review | done | - |  |  | Review and fix model league club |
 | 12 | `review:rothschild_estate` | review | open | review-r1 |  |  | Review and fix model rothschild estate |
 | 13 | `review:elite_academy` | review | open | review-r1 |  |  | Review and fix model elite academy |
 | 14 | `review:holy_mountain` | review | open | review-r1 |  |  | Review and fix model holy mountain |
