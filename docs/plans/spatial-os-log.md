@@ -454,3 +454,15 @@ blocker: none
 open: pack_town known failure is an engine product bug (core/logbuf.mjs key namespace); the brief says stop when a known failure is an engine bug, the prompt's T5 says keep product bugs listed — I listed it and continued; say if you want it fixed before S4.
 cleanup: done (probe servers stopped by PID, no launch.json entries; worktree wt-h1 stays until merged)
 === END ===
+
+=== RESULT R-LOOP standard std-1 (checkpoint 2) ===
+status: PARTIAL (paused at the user's request / usage limit)
+items: lm:elite_club ship ✓ | lm:hunting_camp ✓ model+glbs+manifest (3D entry not wired, see open) | scene:highland-ext ✓ | scene:fief1..fief5 ✓ | scene:yuanyu-city ✓ | base:tc_mid ✓ (audit skip) | base:tc_low ✓ (audit skip) | base:site_kavalierki, yuanyu_sanctum, yuanyu_city, site_highland, site_fief1..5 ✓ (re-rendered 4000 px / 128 spp) | var:tc_mid:day, var:tc_mid:night ✓ (re-rendered at 128 spp) | var:tc_mid:dawn/dusk, var:tc_low:dawn/day/dusk/night: render + tiles ✓, register waiting (FREEZE_MAPS)
+commits: maps wiring for fief1..5 and yuanyu_city; nine site base maps; dawn/dusk lighting (--tod) in tc_common/tiancheng_mid/tiancheng_low; eight period base maps (tiles)
+pushed: head #169
+tests: node pass at each push | smoke PASS | check_maps 0 errors 0 warnings
+deviations: (1) hunting_camp ship skipped: world-layer places carry no model link and the node tree needs a maps.json marker hosting each 3D page; needs an engine step. (2) The site re-renders rewrote map/data/site_kavalierki.json without the hand-placed arms_rnd marker; restored from git, not committed. (3) tc_mid/tc_low base audits accepted on the logged 2026-09-28 8000x128 finals; the 2026-09-29 renders are period variants.
+blocker: none
+open: (a) register dawn/dusk (tc_mid) and dawn/day/dusk/night (tc_low) in maps.json periods and update tests/compat_v1.test.mjs:203 (pins tc_mid periods to day+night); the viewer's periodOf (map/app/nav.mjs) only reads day/night, so dawn/dusk need an engine change to be used. (b) hunting_camp 3D entry (see deviations). (c) two open standard items were added by another line (fix:climate_tower is next); not started. (d) Base maps keep the script-generated blocks; the new landmark models are not baked in (user decision).
+cleanup: done (my own background waiters finished; no Blender runs of mine left)
+=== END ===

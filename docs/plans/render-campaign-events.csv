@@ -372,3 +372,5 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T18:47:42Z,var:tc_mid:night,tiles,done,std-1,pass,"tools/make_dzi.py: 8000x5000, 14 levels, 226 tiles, extent 3000x1875 from maps.json; same file name as before, so the existing registration keeps working"
 2026-09-30T18:47:42Z,var:tc_mid:night,register,skip,std-1,,already registered in maps.json periods (day/night)
 2026-09-30T18:47:42Z,var:tc_mid:night,ship,done,std-1,pass,128 spp tiles committed and pushed; check_maps + smoke pass
+2026-09-30T18:49:43Z,fix:climate_tower,review-r1,claim,std-1,,
+2026-09-30T18:49:58Z,fix:climate_tower,review-r1,release,std-1,,pausing at the user's request; not started
