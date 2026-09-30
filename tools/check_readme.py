@@ -6,11 +6,12 @@
 （`map/estate3d/` 这个目录从来不存在、色觉模式早做了却还写着「无限期推迟」、事件种数写 9 类 66 种、
 国内线路写「npmmirror（计划）」但其实早就用 `cdn.jsdmirror.com` 实现了）。所以放进 smoke 当门控。
 
-检查项：
-  1. 顶部必须有两条 import 地址：预览线（ref = 预览分支）与发版线（ref = 最新 `map-v*` 标签）；
+检查项（H1 重写后：README.md 英文为准，README.zh.md 是同结构中文版，两份都查）：
+  1. 必须有预览线 import 地址（ref = 预览分支）；发版线那条可选，出现就必须钉最新 `map-v*` 标签；
   2. 地址里的仓库名 == git remote origin 的仓库名；
-  3. 正文声明的「当前发布版本 `X`」「标签 `map-vY`」与 `VERSION` / 最新标签一致；
-  4. 正文里出现的仓库相对路径（`map/…`、`tools/…`、`docs/…`、`blender/…`）必须真实存在。
+  3. 正文声明的版本（`0.9.7` 或 `当前发布版本 X`）与标签 `map-vY` 与 `VERSION` / 最新标签一致；
+  4. 正文里出现的仓库相对路径（`map/…`、`tools/…`、`docs/…`、`blender/…`）与 markdown 链接的相对目标必须真实存在；
+  5. 结构：恰好六个 `##` 小节（是什么 / 状态 / 安装 / 文档 / 署名 / 素材许可）。
 
 用法：
   python3 tools/check_readme.py            # 门控（smoke 里跑的就是这个）
@@ -26,6 +27,8 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 README = os.path.join(ROOT, 'README.md')
+README_ZH = os.path.join(ROOT, 'README.zh.md')
+SECTIONS = 6                                  # README 的 ## 小节数（结构门控）
 PREVIEW_REF = 'preview'                      # 预览线分支名（docs/branching.md）
 URL_RE = re.compile(r'https://([a-z0-9.-]+)/gh/([^/\s`]+/[^/\s`]+)@([^/\s`]+)/map/tavern/eden-map\.js')
 PATH_DIRS = ('map/', 'tools/', 'docs/', 'blender/', 'tests/', '.github/')
@@ -59,6 +62,12 @@ def main():
     net = '--net' in sys.argv
     verbose = '-v' in sys.argv or '--verbose' in sys.argv
     target = README
+    if '--file' not in sys.argv:                  # 默认：英文版与中文版各查一遍（各自走 --file 分支）
+        rc = 0
+        for t in (README, README_ZH):
+            rc = max(rc, subprocess.run([sys.executable, os.path.abspath(__file__), '--file', t, *sys.argv[1:]],
+                                        cwd=ROOT).returncode)
+        return rc
     if '--file' in sys.argv:                      # 自测用：检查另一份文件
         i = sys.argv.index('--file')
         if i + 1 >= len(sys.argv):
@@ -84,8 +93,6 @@ def main():
     prev = [m for m in urls if m.group(3) == PREVIEW_REF]
     if not prev:
         problems.append(f'缺「跟随开发（预览线）」那条：ref 必须是 `{PREVIEW_REF}`')
-    if not rel:
-        problems.append('缺「发版线（钉标签）」那条：ref 应该是最新标签 `%s`' % (tag or '<还没有标签>'))
     for m in urls:
         if m.group(2) != slug:
             problems.append(f'第 {text[:m.start()].count(chr(10)) + 1} 行的地址里仓库名是 `{m.group(2)}`，'
@@ -96,10 +103,28 @@ def main():
                 problems.append(f'发版线钉的 ref 是 `{m.group(3)}`，最新标签是 `{tag}`（发布时按 --fix 刷新）')
 
     # --- 3. 正文声明的版本与标签 ---
-    if version and f'当前发布版本 `{version}`' not in text:
-        problems.append(f'正文没写「当前发布版本 `{version}`」（VERSION = {version}）')
+    if version and not re.search(r'(?:当前发布版本|Current release:?)\s*`' + re.escape(version) + '`', text):
+        problems.append(f'正文没写「当前发布版本 `{version}`」/ Current release: `{version}`（VERSION = {version}）')
     if tag and f'`{tag}`' not in text:
         problems.append(f'正文没提到最新标签 `{tag}`')
+
+    # --- 5. 结构：恰好六个 ## 小节（围栏里的不算） ---
+    fence, h2 = False, 0
+    for ln in lines:
+        if ln.lstrip().startswith('```'):
+            fence = not fence
+        elif not fence and ln.startswith('## '):
+            h2 += 1
+    if h2 != SECTIONS:
+        problems.append(f'应有 {SECTIONS} 个 `##` 小节，实际 {h2} 个')
+
+    # --- 4b. markdown 链接的相对目标必须存在（外链与页内锚点不查） ---
+    base = ROOT                                   # README 都在仓库根；自测的临时文件也按仓库根解析
+    for label, href in re.findall(r'\[([^\]]*)\]\(([^)\s]+)\)', text):
+        if re.match(r'^[a-z][a-z0-9+.-]*:', href) or href.startswith('#'):
+            continue
+        if not os.path.exists(os.path.join(base, href.split('#')[0])):
+            problems.append(f'链接目标不存在：[{label}]({href})')
 
     # --- 4. 正文提到的路径是否真实存在 ---
     missing = []

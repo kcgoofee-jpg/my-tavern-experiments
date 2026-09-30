@@ -34,11 +34,16 @@ def main():
 
     good = (
         "# 标题\n\n"
+        "## 一\n\n## 二\n\n"
+        f"当前发布版本 `{version}`（标签 `{tag}`）\n\n"
+        "## 三\n\n"
         f"| 预览 | `import 'https://cdn.jsdelivr.net/gh/{slug}@preview/map/tavern/eden-map.js'` |\n"
         f"| 发版 | `import 'https://cdn.jsdelivr.net/gh/{slug}@{tag}/map/tavern/eden-map.js'` |\n\n"
-        f"> 当前发布版本 `{version}`（标签 `{tag}`）\n\n"
-        "- 相关：[`tools/smoke.sh`](tools/smoke.sh)、`map/viewer.html`、`docs/todo.md`\n"
+        "## 四\n\n"
+        "- 相关：[`tools/smoke.sh`](tools/smoke.sh)、`map/viewer.html`、`docs/todo.md`\n\n"
+        "## 五\n\n## 六\n"
     )
+    no_rel = re.sub(r'\| 发版 \|.*\n', '', good)
     cases = [
         ('正确的样本应通过', good, {}, 0),
         ('钉的标签过期 → 拦', good.replace('@' + tag + '/map', '@map-v0.0.1/map'), {}, 1),
@@ -47,6 +52,10 @@ def main():
         ('正文版本号对不上 → 拦', good.replace(f'`{version}`', '`9.9.9`'), {}, 1),
         ('提到不存在的路径 → 拦', good + '- 还在用 `map/estate3d/index.html`\n', {}, 1),
         ('通配与占位不算路径 → 通过', good + '- 中间产物在 `map/props/*/*_tex/`、`map/art/gallery/<roomId>/`\n', {}, 0),
+        ('发版线那条可省略 → 通过', no_rel, {}, 0),
+        ('小节数不对 → 拦', good + '\n## 七\n', {}, 1),
+        ('链接目标不存在 → 拦', good + '\n[坏链](docs/nope-404.md)\n', {}, 1),
+        ('外链与锚点不查 → 通过', good + '\n[外](https://example.org/x.md) [锚](#三)\n', {}, 0),
         ('--fix 能把标签修回来', good.replace('@' + tag + '/map', '@map-v0.0.1/map'), {'fix': True}, 0),
     ]
 

@@ -129,7 +129,7 @@ bash tools/quiet_wait.sh     # 等锁过去（--check 只判断不等；--max N 
    - `VERSION` → `X.Y.Z`；
    - `CHANGELOG.md` 的 `## X.Y.Z（未发版）` 去掉「未发版」；
    - `README.md` 顶部「当前发布版本」；
-   - `ROADMAP.md` 对应小节；
+   - `docs/archive/ROADMAP-2026-09-30.md` 对应小节；
    - `python3 tools/version_code.py R` 重写 `map/data/build.json`（编码里的构建号 = 分支提交数 + 1，**必须在发版提交前跑、并和发版提交一起提交**，否则反查对不上）；
    - 发版提交本身只包含上面这些 + 必要的文档，别混功能改动（构建号按提交数算）。
 3. `bash tools/smoke.sh` 再跑一次（其中 `tools/check_version.py` 会核对 VERSION / build.json / CHANGELOG / 标签是否一致 ✱）。
@@ -153,6 +153,6 @@ bash tools/quiet_wait.sh     # 等锁过去（--check 只判断不等；--max N 
 
 - 发版脚本的 id 固定，下个版本导入时覆盖旧的一条。
 - 世界书附加条目：3 条常驻（联动规范 v3、事件类型 v2、当前地点写法）+ 人物位置 1 条 + 方位 3 条（EJS 条件触发，v0.9.5 起不常驻），类型、地标、房间、示范都从 `events.mjs` / `maps.json` 生成；生成时自检：示范原文不上图、每个地标能推断出层、当前地点示例落点正确；`--check` 按一份现有世界书核对字段。
-- npm 正式发布与 npmmirror 线路另算（用户两步验证），见 `ROADMAP.md`。
+- npm 正式发布与 npmmirror 线路另算（用户两步验证），见 `docs/archive/ROADMAP-2026-09-30.md`。
 - `tools/legacy/build_card.sh` 是 0.6.x 时代的卡片构建，0.9.1 起不再使用（保留只作历史）。
 

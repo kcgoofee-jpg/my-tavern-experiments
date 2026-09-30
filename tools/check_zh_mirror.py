@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PAIRS = [
+    ("README.md", "README.zh.md"),
     ("docs/agent-brief.md", "docs/agent-brief.zh.md"),
     ("docs/plans/spatial-os.md", "docs/plans/spatial-os.zh.md"),
     ("docs/ARCHITECTURE.md", "docs/ARCHITECTURE.zh.md"),

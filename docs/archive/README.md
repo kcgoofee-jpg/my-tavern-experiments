@@ -6,3 +6,5 @@
 
 - 2026-09/：morning-brief-0928（夜间简报）、overnight-questions（夜间代决问题，已按建议执行）、upper-v9-layout（v9 被 v18 取代）、clouds（toon 云海被方案 B 取代，见文内）、MAP_EVENTS_DESIGN（设计草案 v0，已落地为 docs/map-events.md）
 - todo-2026-09-30.md：2026-09-29 版待办总索引，S0-E 重建前的原文（内容未改）；现行的单一待办见 docs/todo.md，旧条目的去向见其末尾的迁移表
+- ROADMAP-2026-09-30.md：根目录 ROADMAP.md 的原文（2026-10-01 归档，内容未改；现行待办见 docs/todo.md）
+- README-2026-09-30.md：重写前的 README（2026-10-01 归档，内容未改；架构图已移到 docs/ARCHITECTURE.md §11，国内线路说明已移到 docs/branching.md）

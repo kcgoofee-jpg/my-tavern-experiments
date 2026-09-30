@@ -357,3 +357,32 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layers.
 - **加一个包字段**——v1 已冻结：只许加**可选**字段，在 `docs/pack-schema-v1.md` 记一行、在 `map/data/schema/pack.schema.json` 补定义、在 `tests/pack_schema_v1.test.mjs` 覆盖。任何改变既有字段含义的事都等 schema 2（S1）。
 - **加一个查看器模块**——放在 `map/app/` 下的文件（或经 `app/plugins.mjs` 注册的根目录外挂）；状态走 `app/state.mjs`；监听器走总线；保持 ≤ 400 行且不含卡专有词，否则看门狗失败。
 - **下调账本**——先修掉违规，跑 `python3 tools/check_architecture.py --update-baseline`，把新账本和修复一起提交。
+
+## 11. 流水线总览
+
+从源数据到运行中查看器的完整路径，一张图（2026-10-01 从 README 移来）。运行时数据流的细节见第 4 节。
+
+```
+┌──────────────── Offline production (builder machine) ────────────────┐
+│ Sources: OSM road network / NYC 3D buildings / setting documents      │
+│   → Blender Cycles (blender/*.py, GPU)                                │
+│   → 8K base image → tools/make_dzi.py → DZI tiles (map/art/)          │
+│   → map/data/*.json (markers, outlines, routes, room polygons)        │
+└──────────────────────────────┬────────────────────────────────────────┘
+                               │ git tag / commit SHA
+                               ▼
+              jsDelivr (gh / npm lines) · warm-up: tools/warm_cdn.sh
+                               │
+┌──────────────────────────────▼──────── Runtime (inside the tavern) ──┐
+│ Host script map/tavern/eden-map.js (TavernHelper)                     │
+│   · floating button + panel in the host page, viewer via srcdoc/blob  │
+│   · current place: MVU variables → map/app/here-v2.mjs (node tree)    │
+│   · events: floor text → map/tavern/events.mjs → placement / banner   │
+│   · situation injection: injectPrompts (in_chat, depth 4)             │
+│ Viewer map/viewer.html (OpenSeadragon 5, canvas)                      │
+│   · map registry map/data/maps.json · tokens map/ui/tokens.css        │
+│   · overlays: markers / events / island outlines / routes             │
+│   · estate: iframe, postMessage protocol estate:*                     │
+│   · local extension: window.EdenMap (local only, no network)          │
+└───────────────────────────────────────────────────────────────────────┘
+```

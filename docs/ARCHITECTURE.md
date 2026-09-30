@@ -452,3 +452,32 @@ Scan scope is `ENGINE_GLOBS`; `map/vendor`, `map/estate`, `map/props/*/**`, `map
   watchdog fails.
 - **Lower the ledger** — fix the offender, run `python3 tools/check_architecture.py --update-baseline`, commit the
   new baseline with the fix.
+
+## 11. Pipeline overview
+
+The whole path from source data to the running viewer, in one picture (moved here from the README, 2026-10-01). Section 4 has the runtime data flow in detail.
+
+```
+┌──────────────── Offline production (builder machine) ────────────────┐
+│ Sources: OSM road network / NYC 3D buildings / setting documents      │
+│   → Blender Cycles (blender/*.py, GPU)                                │
+│   → 8K base image → tools/make_dzi.py → DZI tiles (map/art/)          │
+│   → map/data/*.json (markers, outlines, routes, room polygons)        │
+└──────────────────────────────┬────────────────────────────────────────┘
+                               │ git tag / commit SHA
+                               ▼
+              jsDelivr (gh / npm lines) · warm-up: tools/warm_cdn.sh
+                               │
+┌──────────────────────────────▼──────── Runtime (inside the tavern) ──┐
+│ Host script map/tavern/eden-map.js (TavernHelper)                     │
+│   · floating button + panel in the host page, viewer via srcdoc/blob  │
+│   · current place: MVU variables → map/app/here-v2.mjs (node tree)    │
+│   · events: floor text → map/tavern/events.mjs → placement / banner   │
+│   · situation injection: injectPrompts (in_chat, depth 4)             │
+│ Viewer map/viewer.html (OpenSeadragon 5, canvas)                      │
+│   · map registry map/data/maps.json · tokens map/ui/tokens.css        │
+│   · overlays: markers / events / island outlines / routes             │
+│   · estate: iframe, postMessage protocol estate:*                     │
+│   · local extension: window.EdenMap (local only, no network)          │
+└───────────────────────────────────────────────────────────────────────┘
+```

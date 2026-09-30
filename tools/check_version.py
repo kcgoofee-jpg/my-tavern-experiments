@@ -78,8 +78,8 @@ def main():
     # 4. README
     rp = os.path.join(ROOT, 'README.md')
     if os.path.exists(rp):
-        mt = re.search(r'当前发布版本\s*`((?:S\d+:)?[\d.]+)`', open(rp, encoding='utf-8').read())
-        if not mt: warns.append('README 顶部没找到「当前发布版本 `X.Y.Z`」')
+        mt = re.search(r'(?:当前发布版本|Current release:?)\s*`((?:S\d+:)?[\d.]+)`', open(rp, encoding='utf-8').read())
+        if not mt: warns.append('README 没找到「当前发布版本 `X.Y.Z`」（英文版：Current release: `X.Y.Z`）')
         elif mt.group(1) != ver: errors.append(f'README「当前发布版本 {mt.group(1)}」≠ VERSION「{ver}」')
 
     # 5/6/7. CHANGELOG 与标签

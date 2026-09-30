@@ -88,17 +88,27 @@ Anything else is reported and refused.
 
 ## The import link in the README
 
-`README.md` opens with the two one-line `import` addresses users copy into Tavern Helper:
-the follow line (`@preview`, always current — a branch ref needs no maintenance) and the
-release line (pinned to a tag). Both are checked offline by `tools/check_readme.py` from
-`tools/smoke.sh`: repo slug against `origin`, preview ref against `preview`, release ref
-against the newest `map-v*` tag, the version claims against `VERSION`, and every repo path
-mentioned in the file against the filesystem. `tools/test_readme.py` proves the gate can
-actually fail, so it cannot pass by matching nothing.
+`README.md` (and its Chinese edition `README.zh.md`) carries the one-line `import` address users copy into
+Tavern Helper: the follow line (`@preview`, always current — a branch ref needs no maintenance). A release line
+pinned to a tag may be added again at release time; if present it must match the newest tag. Both files are checked
+offline by `tools/check_readme.py` from `tools/smoke.sh`: repo slug against `origin`, preview ref against
+`preview`, an optional release ref against the newest `map-v*` tag, the version claim against `VERSION`, every repo
+path and markdown link target against the filesystem, and the six-section structure. `tools/test_readme.py` proves
+the gate can actually fail, so it cannot pass by matching nothing.
 
-`bash tools/ship.sh --release` refreshes the pinned tag before it runs smoke (same step that
+`bash tools/ship.sh --release` refreshes a pinned tag before it runs smoke (same step that
 points `map/data/latest.json` at the tag), commits it, and then continues, so the published
 address cannot lag behind the release.
+
+## CDN lines (moved from the old README, 2026-10-01)
+
+The mainland-China route is cautionary: `cdn.jsdmirror.com` serves the same paths and the preview script tries
+mirror → jsDelivr, but it is **not proven usable**. On 2026-09-29 a direct connection from the maintainer's Mac
+(proxy off) failed, and through a proxy it was 3.7 times slower than jsDelivr. It is a third-party thin proxy
+(response header `server: ayao`, `max-age` of only 5 minutes, query strings ignored), not an official jsDelivr node.
+A real mainland route has to wait for the npm mirror (`registry.npmmirror.com`, reserved in the loader but off by
+default). The old README, with its architecture diagram, tech-stack table and milestones, is kept as
+`docs/archive/README-2026-09-30.md`; the diagram now lives in `docs/ARCHITECTURE.md` §11.
 
 ## History note
 
