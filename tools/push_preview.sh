@@ -46,12 +46,14 @@ for a in "$@"; do case "$a" in
   --no-escalate) WARM_NOESC=1 ;;   # 增量里带了 map/art/ / *.glb 也不升级成全量（见 tools/warm_cdn.sh）
   *) echo "未知参数 $a" >&2; exit 2 ;; esac; done
 
+# Pushes HEAD, not the local branch of that name: in a worktree (the required workflow, docs/agent-brief.md §3)
+# a local `preview` is the main checkout's ref and may be stale, while HEAD is the work to publish.
 push_all () {
   if [ "$LEGACY" = "1" ]; then
-    git push "$REMOTE" "$PRIMARY" "$PRIMARY:$LEGACY_REF"
+    git push "$REMOTE" "HEAD:refs/heads/$PRIMARY" "HEAD:refs/heads/$LEGACY_REF"
     echo "pushed $PRIMARY, mirrored $LEGACY_REF at $(git rev-parse --short HEAD)"
   else
-    git push "$REMOTE" "$PRIMARY"
+    git push "$REMOTE" "HEAD:refs/heads/$PRIMARY"
     echo "pushed $PRIMARY at $(git rev-parse --short HEAD)"
   fi
 }

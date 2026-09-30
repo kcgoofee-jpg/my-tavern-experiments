@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # 渲染任务队列：agent 提交任务，本脚本决定派给 Mac（tools/blender_run.sh）还是云端（tools/cloud/render.sh），
 # 而不是各自直接调用那两个脚本——这样才能保证 Mac 显卡锁 / 云端锁不被绕过，且忙的那台不会被撞车派第二个任务。
-# 文件式队列：logs/queue/{pending,running,done}/，一个任务一个文件，一行：<tag>\t<blender_run.sh 参数（shell 转义）>
+# 文件式队列：<主工作树>/logs/queue/{pending,running,done}/，一个任务一个文件，一行：
+#   <tag>\t<blender_run.sh 参数（shell 转义）>\t<任务根目录（提交它的工作树，绝对路径）>
+# 队列全仓共享（2026-09-30）：从任何 git worktree 里 submit 都落到「主工作树」的 logs/queue/（launchd 派工常驻在那）；
+#   任务在**提交它的工作树**里跑（cd 过去、用那边的 tools/blender_run.sh，产物也落在那边）。旧的两段式任务（没有第三段）按主工作树处理。
 #
 # 用法：
 #   tools/render_queue.sh submit <draft|final|any> -- <blender_run.sh 参数...>   # 建任务
-#     例：tools/render_queue.sh submit draft -- --asset tc_mid --kind draft --res 2048 --spp 16 -- \
+#     例：tools/render_queue.sh submit draft -- --log logs/x.log --asset tc_mid --kind draft --res 2048 --spp 16 -- \
 #           -b --factory-startup --python-expr "..." -- --res 2048 --samples 16 --out map/art/_x.png
 #   tools/render_queue.sh dispatch [--once]     # 派工一轮：查两台设备是否空闲，把能派的 pending 任务派出去（后台跑）
 #                                                #   不给 --once 时是常驻循环，每 POLL 秒查一轮，Ctrl-C 退出
@@ -16,8 +19,11 @@
 #   draft → 优先 Mac；Mac 忙、有云实例空闲时也会派去云端（云端当草图机使的临时借用）。
 #   final → 优先云端（多台云实例时挑第一台空闲的）；云端全忙、Mac 空闲时也会派去 Mac（反过来借用）。
 #   any   → 见谁先空就派谁（先查 Mac，再查各云实例）。
+#   Mac-only 模式：主工作树的 logs/queue/MAC_ONLY 存在时，一律只派 Mac（Mac 空闲才派），永不选云端、永不探测云实例（不发起任何 ssh）。
+#   非主工作树提交的任务永远不派云端（云端同步只认主工作树）：Mac 忙就留在 pending，并一次性告警。
 #   云端任务派发前会检查本地改动时间戳（tools/cloud/.locks/<实例>.last_sync），比同步戳新就先跑一次 sync.sh 再渲。
-# 环境变量：DRY_RUN=1 演练；POLL（秒，默认 20，dispatch 常驻循环用）
+# 环境变量：DRY_RUN=1 演练（只打印会怎么跑，不起 Blender，也不后台化）；POLL（秒，默认 20，dispatch 常驻循环用）
+#   仅供测试的覆盖项：RQ_QROOT（当作主工作树）、RQ_QDIR（队列目录）、RQ_CLOUD（云脚本目录）、RQ_MAC_BUSY（0/1 强制 Mac 忙闲）
 set -u
 # 根治 bash 3.2（macOS 系统自带）的坑：脚本消息里有中文，`$var` 后面紧跟全角字符时
 # 3.2 会把多字节字节并进变量名（`$out（` → 变量「out（…」），set -u 下直接 unbound 崩掉
@@ -31,12 +37,25 @@ if [ -z "${EDEN_BASH_UPGRADED:-}" ] && [ "${BASH_VERSINFO[0]:-0}" -lt 4 ]; then
   done
   echo "警告：系统 bash 3.2 解析中文消息里的 \$var 有坑且没找到新版 bash（brew install bash 可根治）" >&2
 fi
-ROOT=$(cd "$(dirname "$0")/.." && pwd)
-CLOUD="$ROOT/tools/cloud"
-QDIR="$ROOT/logs/queue"; PEND="$QDIR/pending"; RUN="$QDIR/running"; DONE="$QDIR/done"
+ROOT=$(cd "$(dirname "$0")/.." && pwd -P)
+# QROOT = 本仓库的主工作树（git 公共目录 .git 的上一级）。队列、云脚本目录（remote.env 不入库，只在主工作树里）、
+# blend 缓存都以它为准；ROOT 是本脚本所在的树（worktree 里 submit 时就是那个 worktree）。
+if [ -z "${RQ_QROOT:-}" ]; then
+  RQ_COMMON=$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+  case "$RQ_COMMON" in
+    */.git) QROOT=$(cd "$(dirname "$RQ_COMMON")" 2>/dev/null && pwd -P || echo "$ROOT") ;;
+    *) QROOT=$ROOT ;;
+  esac
+else
+  QROOT=$(cd "$RQ_QROOT" && pwd -P)
+fi
+CLOUD="${RQ_CLOUD:-$QROOT/tools/cloud}"
+QDIR="${RQ_QDIR:-$QROOT/logs/queue}"; PEND="$QDIR/pending"; RUN="$QDIR/running"; DONE="$QDIR/done"
 DRY_RUN=${DRY_RUN:-0}
 POLL=${POLL:-20}
 mkdir -p "$PEND" "$RUN" "$DONE"
+
+mac_only() { [ -f "$QDIR/MAC_ONLY" ]; }
 
 cloud_hosts() {
   # 列出配置好的云实例名：default（remote.env）+ hosts/*.env
@@ -49,7 +68,10 @@ cloud_hosts() {
   done
 }
 
-mac_busy() { pgrep -f 'tools/blender_run.sh' >/dev/null 2>&1; }
+mac_busy() {
+  if [ -n "${RQ_MAC_BUSY:-}" ]; then [ "$RQ_MAC_BUSY" = 1 ]; return; fi
+  pgrep -f 'tools/blender_run.sh' >/dev/null 2>&1
+}
 cloud_busy() {
   # cloud_busy <实例名>：BUSY/IDLE，通过 tools/cloud/status.sh --busy-check（只走 tools/cloud/*.sh，不直连）
   local h=$1
@@ -66,14 +88,14 @@ need_sync() {
   # （典型是刚 new 出来的 blender/landmarks/<id>/build.py）对这里完全隐形 → 云端拿到旧脚本
   # 渲出旧图（2026-09-29 事故：改好的三处没生效，白跑一次定稿）。
   local hit
-  hit=$(cd "$ROOT" && git ls-files --cached --others --exclude-standard -z | xargs -0 -I{} find {} -newer "$stamp" -print 2>/dev/null | head -1)
+  hit=$(cd "$QROOT" && git ls-files --cached --others --exclude-standard -z | xargs -0 -I{} find {} -newer "$stamp" -print 2>/dev/null | head -1)
   [ -n "$hit" ]
 }
 mark_synced() { local h=$1; mkdir -p "$CLOUD/.locks"; touch "$CLOUD/.locks/${h}.last_sync"; }
 
 idle_guard_on() { [ -f "$CLOUD/.locks/${1}.idle_guard_on" ]; }
 
-usage() { sed -n '2,20p' "$0"; }
+usage() { sed -n '2,26p' "$0"; }
 
 cmd_submit() {
   local tag=${1:-}; shift || true
@@ -88,7 +110,7 @@ cmd_submit() {
   local id
   id="$(date +%Y%m%d_%H%M%S)_$$_$RANDOM"
   local f="$PEND/${id}.job"
-  printf '%s\t%s\n' "$tag" "${q# }" > "$f"
+  printf '%s\t%s\t%s\n' "$tag" "${q# }" "$ROOT" > "$f"
   echo "提交：${f}（tag=${tag}）"
 }
 
@@ -99,22 +121,47 @@ cmd_list() {
   done
 }
 
+# pending 里没有对应 .job 的孤儿文件（典型是任务已进 done 后残留的 *.retry）：派工只看 *.job，不受影响，这里只数个数。
+orphan_count() {
+  local n=0 f b
+  for f in "$PEND"/*; do
+    [ -e "$f" ] || continue
+    b=$(basename "$f")
+    case "$b" in
+      *.job) continue ;;
+      *.retry) [ -f "$PEND/${b%.retry}.job" ] || [ -f "$RUN/${b%.retry}.job" ] || n=$((n+1)) ;;
+      *) n=$((n+1)) ;;
+    esac
+  done
+  echo "$n"
+}
+
 cmd_status() {
+  if mac_only; then echo "mode: Mac-only (logs/queue/MAC_ONLY)"; else echo "mode: Mac + cloud"; fi
+  echo "queue: ${QDIR}（主工作树 ${QROOT}）"
   echo "== Mac =="
   if mac_busy; then echo "  忙（$(pgrep -fal 'tools/blender_run.sh' | head -1)）"; else echo "  空闲"; fi
   echo "== 云实例 =="
-  local any_host=0
-  while IFS= read -r h; do
-    [ -n "$h" ] || continue
-    any_host=1
-    local b; b=$(cloud_busy "$h")
-    echo "  ${h}：${b:-未知（连不上或没配置）}"
-  done < <(cloud_hosts)
-  [ "$any_host" = 1 ] || echo "  （没配置任何实例，见 tools/cloud/remote.env.example）"
+  if mac_only; then
+    echo "  （Mac-only 模式：不探测云实例）"
+  else
+    local any_host=0
+    while IFS= read -r h; do
+      [ -n "$h" ] || continue
+      any_host=1
+      local b; b=$(cloud_busy "$h")
+      echo "  ${h}：${b:-未知（连不上或没配置）}"
+    done < <(cloud_hosts)
+    [ "$any_host" = 1 ] || echo "  （没配置任何实例，见 tools/cloud/remote.env.example）"
+  fi
+  echo "== 派工 =="
+  local dpid; dpid=$(command cat "$QDIR/.dispatch.lock/pid" 2>/dev/null || echo "")
+  if [ -n "$dpid" ] && kill -0 "$dpid" 2>/dev/null; then echo "  dispatcher: alive (PID $dpid)"; else echo "  dispatcher: not running"; fi
   echo "== 队列 =="
   echo "  pending：$(command ls "$PEND" 2>/dev/null | grep -c '\.job$')"
   echo "  running：$(command ls "$RUN" 2>/dev/null | grep -c '\.job$')"
   echo "  done（本次未清）：$(command ls "$DONE" 2>/dev/null | grep -c '\.job$')"
+  echo "  孤儿文件（pending 里无对应 .job，已忽略）：$(orphan_count)"
 }
 
 # blender_run.sh 只有「第一个参数正好是 --log」才会走新式参数解析（否则整段被当成旧式用法，第一个参数被
@@ -146,7 +193,7 @@ insert_cache_blend() {
 #    rc = 3（实例忙）       → 退回 pending 排队重试，不计失败；超过 RETRY_BUSY_MAX 次才放弃
 #    其它非 0              → 退回 pending 重试；超过 MAX_RETRY 次标 .failed 进 done（日志一并搬走）
 finish_job() {
-  local jobfile=$1 runfile=$2 rc=$3 args=${4:-}
+  local jobfile=$1 runfile=$2 rc=$3 args=${4:-} jobroot=${5:-$QROOT}
   local base; base=$(basename "$runfile")
   local cap
   # rc=0 也要验收产物（2026-09-29 事故）：云端「渲染成功」但没写出文件（--out 是绝对路径 / 落在
@@ -160,7 +207,7 @@ for i,t in enumerate(a):
 print(o)' "$args" 2>/dev/null || true)
     case "$out" in
       /*|"") : ;;                                    # 绝对路径（board 都走本机）或没写 --out：不核
-      *) if [ ! -e "$ROOT/$out" ]; then
+      *) if [ ! -e "$jobroot/$out" ]; then
            echo "产物缺失：${out}（rc=0 但文件不在）—— 按失败处理" >&2
            rc=79
          fi ;;
@@ -193,22 +240,40 @@ print(o)' "$args" 2>/dev/null || true)
   return 0
 }
 
+# 任务在 jobroot（提交它的工作树）里跑：cd 过去、用那边的 tools/blender_run.sh，--out 等相对路径的产物落在那边。
+# blend 缓存共用主工作树的 .cache/blend（哈希含 git HEAD / 脚本内容，跨树不会串味）。
+# DRY_RUN=1 时只打印会怎么跑并同步收尾（测试用），不起 Blender、不后台化。
 run_job_mac() {
-  local jobfile=$1 args=$2 runfile=$3
-  (
-    eval "set -- $args"
-    insert_cache_blend "$ROOT/.cache/blend" "$@"
-    bash "$ROOT/tools/blender_run.sh" "${INSERT_OUT[@]}" > "${runfile}.log" 2>&1
-    rc=$?
+  local jobfile=$1 args=$2 runfile=$3 jobroot=$4
+  _job_mac_body() {
+    if [ "$DRY_RUN" = 1 ]; then
+      eval "set -- $args"
+      insert_cache_blend "$QROOT/.cache/blend" "$@"
+      echo "演练：cd $jobroot && bash $jobroot/tools/blender_run.sh ${INSERT_OUT[*]}"
+      echo 0 > "${runfile}.rc"
+      finish_job "$jobfile" "$runfile" 0 "$args" "$jobroot"
+      return
+    fi
+    local rc
+    if [ ! -d "$jobroot" ] || [ ! -f "$jobroot/tools/blender_run.sh" ]; then
+      echo "任务根目录不可用：${jobroot}（工作树被删了？）" > "${runfile}.log"
+      rc=78
+    else
+      eval "set -- $args"
+      insert_cache_blend "$QROOT/.cache/blend" "$@"
+      cd "$jobroot" && bash "$jobroot/tools/blender_run.sh" "${INSERT_OUT[@]}" > "${runfile}.log" 2>&1
+      rc=$?
+    fi
     echo "$rc" > "${runfile}.rc"
-    finish_job "$jobfile" "$runfile" "$rc" "$args"
-  ) &
-  disown
+    finish_job "$jobfile" "$runfile" "$rc" "$args" "$jobroot"
+  }
+  if [ "$DRY_RUN" = 1 ]; then ( _job_mac_body ); else ( _job_mac_body ) & disown; fi
 }
 
+# 云端只认主工作树（同步的就是它），所以 jobroot 恒为 QROOT。
 run_job_cloud() {
   local jobfile=$1 args=$2 runfile=$3 host=$4
-  (
+  _job_cloud_body() {
     if need_sync "$host"; then
       echo "本地有改动，先 sync（${host}）" >> "${runfile}.log"
       DRY_RUN="$DRY_RUN" bash "$CLOUD/sync.sh" --host "$host" >> "${runfile}.log" 2>&1
@@ -218,11 +283,11 @@ run_job_cloud() {
     # 相对路径：render.sh 在远端会先 cd 到 REMOTE_DIR 再跑 blender_run.sh，所以这里不用（也不能）在本地展开 REMOTE_DIR
     insert_cache_blend ".cache/blend" "$@"
     DRY_RUN="$DRY_RUN" bash "$CLOUD/render.sh" --host "$host" "${INSERT_OUT[@]}" >> "${runfile}.log" 2>&1
-    rc=$?
+    local rc=$?
     echo "$rc" > "${runfile}.rc"
-    finish_job "$jobfile" "$runfile" "$rc" "$args"
-  ) &
-  disown
+    finish_job "$jobfile" "$runfile" "$rc" "$args" "$QROOT"
+  }
+  if [ "$DRY_RUN" = 1 ]; then ( _job_cloud_body ); else ( _job_cloud_body ) & disown; fi
 }
 
 cmd_dispatch_once() {
@@ -231,38 +296,56 @@ cmd_dispatch_once() {
   local mb; mb=$(mac_busy && echo 1 || echo 0)
   local cb_file; cb_file=$(mktemp)
   trap 'rm -f "$cb_file"' RETURN
-  while IFS= read -r h; do [ -n "$h" ] && printf '%s\t%s\n' "$h" "$(cloud_busy "$h")" >> "$cb_file"; done < <(cloud_hosts)
+  # Mac-only：不探测云实例（不发任何 ssh），cb_file 保持空 → first_idle_host / any_idle_host 恒为「没有空闲云端」
+  if ! mac_only; then
+    while IFS= read -r h; do [ -n "$h" ] && printf '%s\t%s\n' "$h" "$(cloud_busy "$h")" >> "$cb_file"; done < <(cloud_hosts)
+  fi
   cb_set() { local h=$1 v=$2 tmp; tmp=$(mktemp); grep -v "^${h}	" "$cb_file" > "$tmp" 2>/dev/null; printf '%s\t%s\n' "$h" "$v" >> "$tmp"; mv "$tmp" "$cb_file"; }
   first_idle_host() { awk -F'\t' '$2=="IDLE"{print $1; exit}' "$cb_file"; }
   any_idle_host() { awk -F'\t' '$2=="IDLE"{f=1} END{exit !f}' "$cb_file"; }
 
   for f in "$PEND"/*.job; do
     [ -f "$f" ] || continue
-    local line tag args target=""
-    line=$(command cat "$f"); tag=${line%%$'\t'*}; args=${line#*$'\t'}
+    local line tag rest args jobroot target="" cloud_ok=1
+    line=$(command cat "$f"); tag=${line%%$'\t'*}; rest=${line#*$'\t'}
+    case "$rest" in
+      *$'\t'*) args=${rest%%$'\t'*}; jobroot=${rest#*$'\t'} ;;
+      *) args=$rest; jobroot=$QROOT ;;               # 旧的两段式任务 = 主工作树
+    esac
+    local id; id=$(basename "$f" .job)
+    # 非主工作树的任务永不派云端：云端同步（sync.sh）只认主工作树，派过去会渲出主树的旧脚本。
+    if [ "$jobroot" != "$QROOT" ]; then
+      cloud_ok=0
+    fi
 
     if [ "$tag" = draft ] || [ "$tag" = any ]; then
       [ "$mb" = 0 ] && target=mac
     fi
-    if [ -z "$target" ] && { [ "$tag" = final ] || [ "$tag" = any ]; }; then
+    if [ -z "$target" ] && [ "$cloud_ok" = 1 ] && { [ "$tag" = final ] || [ "$tag" = any ]; }; then
       local h; h=$(first_idle_host); [ -n "$h" ] && target="cloud/$h"
     fi
-    # 反向借用：draft 但 Mac 忙、有云空闲 → 派云端；final 但云全忙、Mac 空闲 → 派 Mac
-    if [ -z "$target" ] && [ "$tag" = draft ] && [ "$mb" = 1 ]; then
+    # 反向借用：draft 但 Mac 忙、有云空闲 → 派云端；final 但云全忙（或云不可用）、Mac 空闲 → 派 Mac
+    if [ -z "$target" ] && [ "$cloud_ok" = 1 ] && [ "$tag" = draft ] && [ "$mb" = 1 ]; then
       local h; h=$(first_idle_host); [ -n "$h" ] && target="cloud/$h"
     fi
     if [ -z "$target" ] && [ "$tag" = final ] && [ "$mb" = 0 ]; then
-      any_idle_host || target=mac
+      { [ "$cloud_ok" = 0 ] || ! any_idle_host; } && target=mac
     fi
-    [ -z "$target" ] && continue
+    if [ -z "$target" ]; then
+      # 非主工作树的任务没地方去（Mac 忙）：留在 pending，一次性告警说明为什么不去云端
+      if [ "$cloud_ok" = 0 ] && ! mac_only && [ ! -f "$QDIR/.warned/$id" ]; then
+        mkdir -p "$QDIR/.warned"; : > "$QDIR/.warned/$id"
+        echo "提示：任务 ${id} 来自工作树 ${jobroot}，云端只同步主工作树，只能等 Mac 空闲（不会派云端）" >&2
+      fi
+      continue
+    fi
 
-    local id; id=$(basename "$f" .job)
     local runfile="$RUN/${id}.job"
     mv "$f" "$runfile" || continue
     echo "派工：${id}（tag=${tag}）→ $target"
     if [ "$target" = mac ]; then
       mb=1  # 这一轮内不要把第二个任务也派去 Mac
-      run_job_mac "$runfile" "$args" "$RUN/${id}"
+      run_job_mac "$runfile" "$args" "$RUN/${id}" "$jobroot"
     else
       local h=${target#cloud/}
       cb_set "$h" BUSY
@@ -274,7 +357,7 @@ cmd_dispatch_once() {
   local pend_n; pend_n=$(command ls "$PEND" 2>/dev/null | grep -c '\.job$')
   if [ "$pend_n" = 0 ] && [ "$dispatched" = 0 ]; then
     local run_n; run_n=$(command ls "$RUN" 2>/dev/null | grep -c '\.job$')
-    if [ "$run_n" = 0 ]; then
+    if [ "$run_n" = 0 ] && ! mac_only; then
       while IFS= read -r h; do
         [ -n "$h" ] || continue
         if idle_guard_on "$h"; then continue; fi
