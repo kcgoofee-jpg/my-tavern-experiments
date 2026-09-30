@@ -58,8 +58,21 @@ push_all () {
   fi
 }
 
+# 先对齐远端（2026-09-30 S0-C 事故：代码线与渲染线并行推送时，后推的一方 HEAD 落后远端，
+# 第一次 push_all 直接被拒、set -e 退出，bump_head 里的 fetch + rebase 根本走不到）。
+# rebase 有冲突就撤回并停下，交给人处理——绝不强推。
+git fetch -q "$REMOTE" "$PRIMARY"
+if ! git merge-base --is-ancestor "refs/remotes/$REMOTE/$PRIMARY" HEAD; then
+  if ! git rebase -q "refs/remotes/$REMOTE/$PRIMARY"; then
+    git rebase --abort || true
+    echo "rebase 到 $REMOTE/$PRIMARY 有冲突，已撤回；请手动解决后重推（不要强推）" >&2
+    exit 1
+  fi
+  echo "rebased onto $REMOTE/$PRIMARY"
+fi
+
 # 预热基线：推送前远端的位置（已经预热过的东西不用再请求一遍）
-BEFORE=$(git rev-parse -q --verify "refs/remotes/origin/$PRIMARY" || true)
+BEFORE=$(git rev-parse -q --verify "refs/remotes/$REMOTE/$PRIMARY" || true)
 
 push_all
 

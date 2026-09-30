@@ -72,3 +72,16 @@ blocker: `bash tools/push_preview.sh --head --no-escalate`, run once, no retry:
 open: (a) DECISION: how the first pack keeps its legacy names (manifest-declared legacy prefixes vs rename everything and read old forever), especially the worldbook extra.eden_* markers. (b) DECISION: identifier prefix (spatial / Spatial assumed from D5), engine repo name, npm package name. (c) DECISION: util.mjs / shell.mjs need a split design; keep `$` by exception? (d) DECISION: `floor` (chat floor vs storey), imagegen-bridge vs appearance-bridge. (e) FOUND, NOT FIXED: app/host.mjs:52,54 call P.TCFog?.mute?.(), but fog.mjs never registers TCFog in P, so replay-time muting is a no-op. (f) FOUND: four read-only window hooks with no writer (__edenHostVersions, __edenHereText, __edenMvuSnapshotStatus, __composeTest); stale .js owner strings in core/storage.mjs KEYS (5 names, 8 keys).
 cleanup: done
 === END ===
+
+=== RESULT S0-C-followup ===
+status: DONE
+items: rebase ✓  push-fix ✓
+commits: (this commit) fix(push): align with origin before the first push; rebase conflict aborts cleanly
+pushed: yes
+tests: smoke PASS | arch PASS | mirror PASS | doc-language PASS
+deviations: none
+blocker: none (S0-C's rejected push: tools/push_preview.sh pushed HEAD before fetching; it now fetches and rebases first)
+open: S0-C decisions (a)-(d) answered in the planning session; recorded in the next prompt (S0-D).
+cleanup: done
+=== END ===
+
