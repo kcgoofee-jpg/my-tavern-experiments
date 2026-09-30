@@ -375,14 +375,16 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     if (!SpatialM || life.dead || floorNow <= flyFloor) return;
     const raw = CTX.msgCache.get(floorNow)?.m?.raw || '';
     const m = /data-eden-fly="([^"]{1,60})"/.exec(String(raw));
-    if (!m) return;
-    flyFloor = floorNow;
+    if (!m) { flyFloor = floorNow; return; }   // 没标记：水位直接前进
+    // 注册表 / 落点还没就绪：不消费水位，下一轮 recompute 再试（异步飞跃守卫）；认不出落点才安静放弃
     const place = m[1].trim();
     if (!place || !regNow) return;
-    const loc = SpatialM.locate(regNow, place);
-    if (!loc) return;
+    let loc = null;
+    try { loc = SpatialM.locate(regNow, place); } catch (e) { return; }   // 守卫层异常同样不消费水位
+    if (!loc) { flyFloor = floorNow; return; }
+    flyFloor = floorNow;
     const target = loc.markerId ? { map: loc.mapId, marker: loc.markerId } : (loc.room ? { map: loc.mapId, room: loc.room } : { map: loc.mapId });
-    post({ type: 'eden-map:fly', target });
+    try { post({ type: 'eden-map:fly', target }); } catch (e) {}
   }
 
   // ---------------- W6 世界书 JIT 条目水合（tavern/wb_jit.mjs 纯计划；写世界书在这里） ----------------

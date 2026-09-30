@@ -64,7 +64,7 @@ test('host-th createWbAuto：设置消息与总开关（搬家后自由变量都
   const W = createWbAuto({ SELF: new URL('../map/', import.meta.url).href, LS, lsGet, lsSet, life, base: () => 'http://127.0.0.1:9/map/', alive: () => true, UL: () => 'zh', thBtns: () => null,
     chatId: () => 'c1', cardKey: () => 'card', post: m => posts.push(m), hostToast: () => null, stateInject: () => injected++, macroSet: on => { macros = on; }, prefSync: () => synced++ });
   await W.onTh({ op: 'state' });
-  assert.equal(posts.at(-1).type, 'eden-map:th-state'); assert.deepEqual(posts.at(-1).prefs, { inj: true, depth: 2, budget: 150, macros: false, wbOn: true, wbTomb: false, wbWhere: null });
+  assert.equal(posts.at(-1).type, 'eden-map:th-state'); assert.deepEqual(posts.at(-1).prefs, { inj: true, depth: 2, budget: 150, macros: false, wbOn: true, wbTomb: false, wbWhere: null, dice: false, spatial: false, wbJit: false, wbXtal: false, nav: false, navCfg: false });
   await W.onTh({ op: 'prefs', prefs: { inj: false, depth: 99, budget: 5, macros: true, wbOn: false } });
   assert.equal(ls.get('edenMapStateInj'), '0'); assert.equal(ls.get('edenMapStateDepth'), '20'); assert.equal(ls.get('edenMapStateBudget'), '40');
   assert.equal(macros, true); assert.equal(injected, 1); assert.equal(synced, 1); assert.equal(ls.get('edenMapWbOn'), '0');

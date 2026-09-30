@@ -127,7 +127,9 @@ export function createWbAuto(deps) {
     if (W?.chatReminder(prev, cur)) setTimeout(() => { if (!life.dead && id === chatId()) hostToast(deps.UL() === 'en' ? 'Map worldbook changed since this chat' : '这个聊天之后地图世界书换了版本', [deps.UL() === 'en' ? `${prev} → ${cur}. Old places / names still work; retired entries were only lowered in priority.` : `${prev} → ${cur}。旧地名照样认；新版不再用的条目只降了优先级，没删。`], 8000); }, late ? 9500 : 0);
     try { await thFn('insertOrAssignVariables')({ eden_wb_ver: cur }, { type: 'chat' }); } catch (e) {}
   }
-  function thPrefs() { return { inj: lsGet('edenMapStateInj') !== '0', depth: +(lsGet('edenMapStateDepth') || 2), budget: +(lsGet('edenMapStateBudget') || 150), macros: lsGet('edenMapMacros') === '1', wbOn: wbOn(), wbTomb: wbTomb(), wbWhere: lsGet('edenMapWbWhere') || null }; }
+  function thPrefs() { return { inj: lsGet('edenMapStateInj') !== '0', depth: +(lsGet('edenMapStateDepth') || 2), budget: +(lsGet('edenMapStateBudget') || 150), macros: lsGet('edenMapMacros') === '1', wbOn: wbOn(), wbTomb: wbTomb(), wbWhere: lsGet('edenMapWbWhere') || null,
+    dice: lsGet('edenMapDice') === '1', spatial: lsGet('edenMapSpatial') === '1', wbJit: lsGet('edenMapWbJit') === '1', wbXtal: lsGet('edenMapWbXtal') === '1',
+    nav: !!lsGet('edenMapNav') && lsGet('edenMapNav') !== '0', navCfg: !!String(lsGet('edenMapNavCfg') || '').trim() }; }
   async function sendTh(extra = {}) { if (!deps.alive()) return; post({ type: 'eden-map:th-state', prefs: thPrefs(), last: wbSaved(), api: { macros: !!thFn('registerMacroLike'), inject: !!thFn('injectPrompts'), buttons: !!deps.thBtns() }, ...extra }); }
   async function onTh(d) {
     const op = d.op;
@@ -139,6 +141,12 @@ export function createWbAuto(deps) {
       if ('budget' in P) put('edenMapStateBudget', Math.max(40, Math.min(400, Math.round(+P.budget) || 150)));
       if ('macros' in P) { put('edenMapMacros', P.macros ? '1' : '0'); macroSet(!!P.macros); }
       if ('wbOn' in P) { put('edenMapWbOn', P.wbOn ? '1' : '0'); if (P.wbOn) setTimeout(() => { if (!life.dead) wbAuto().catch(() => {}); }, 300); }   // 总开关：关 = 不自动建、不同步、不提醒（手动按钮照常）
+      if ('dice' in P) put('edenMapDice', P.dice ? '1' : '0');   // W2 检定掷骰
+      if ('spatial' in P) put('edenMapSpatial', P.spatial ? '1' : '0');   // W1 空间坐标契约
+      if ('wbJit' in P) put('edenMapWbJit', P.wbJit ? '1' : '0');   // W6 JIT 水合
+      if ('wbXtal' in P) put('edenMapWbXtal', P.wbXtal ? '1' : '0');   // W7 事实结晶
+      if ('nav' in P) put('edenMapNav', P.nav ? '1' : '0');   // W5 领航员（默认关；首跑另有同意水位）
+      if ('navCfg' in P && typeof P.navCfg === 'string') { try { const o = JSON.parse(P.navCfg); if (o && typeof o === 'object' && !Array.isArray(o)) put('edenMapNavCfg', JSON.stringify({ provider: String(o.provider || ''), key: String(o.key || ''), base: String(o.base || ''), model: String(o.model || '') })); } catch (e) {} }
       prefSync(); if (typeof stateInject === 'function') stateInject(); return sendTh();
     }
     if (op === 'wb-inspect') return sendTh({ wb: await wbStatus(true) });

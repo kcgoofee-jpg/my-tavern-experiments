@@ -69,9 +69,24 @@ function renderInj() {
   box.innerHTML = `<h3>${esc(tx('th.inj', '状态注入'))}</h3>`
     + `<label class="row"><input type="checkbox" id="thInjOn" ${P.inj !== false ? 'checked' : ''} ${A.inject === false ? 'disabled' : ''}> ${esc(tx('th.inj_on', '每次生成前注入一行当前状态（地点、在场、时间、行程）'))}</label>`
     + `<small>${esc(tx('th.inj_note', '约 150 token；卡的提示词里已有的字段自动跳过；数据还没确认时标「未确认」。深度和上限在「高级」'))}</small>`
-    + `<label class="row"><input type="checkbox" id="thMacro" ${P.macros ? 'checked' : ''} ${A.macros === false ? 'disabled' : ''}> ${esc(tx('th.macros', '提供宏 {{eden_here}} / {{eden_route}}（给卡或预设作者引用）'))}</label>`;
+    + `<label class="row"><input type="checkbox" id="thMacro" ${P.macros ? 'checked' : ''} ${A.macros === false ? 'disabled' : ''}> ${esc(tx('th.macros', '提供宏 {{eden_here}} / {{eden_route}}（给卡或预设作者引用）'))}</label>`
+    + `<label class="row"><input type="checkbox" id="thDice" ${P.dice ? 'checked' : ''}> ${esc(tx('th.dice', '检定真掷骰：搜刮 / 潜行失手会真的失败并出失败报告（默认关 = 只提示不判定）'))}</label>`
+    + `<label class="row"><input type="checkbox" id="thSpatial" ${P.spatial ? 'checked' : ''}> ${esc(tx('th.spatial', '向模型注入空间坐标契约（≤120 token 的坐标 JSON，取代方位散文）'))}</label>`
+    + `<label class="row"><input type="checkbox" id="thWbJit" ${P.wbJit ? 'checked' : ''}> ${esc(tx('th.wbjit', '世界书 JIT 水合：人在哪只挂载哪儿的条目（离开自动卸载）'))}</label>`
+    + `<label class="row"><input type="checkbox" id="thWbXtal" ${P.wbXtal ? 'checked' : ''}> ${esc(tx('th.wbxtal', '剧情事实结晶：⌖事实 标签自动沉淀为附加书条目（LRU 上限，可在书里删）'))}</label>`
+    + `<label class="row"><input type="checkbox" id="thNav" ${P.nav ? 'checked' : ''}> ${esc(tx('th.nav', '地图领航员（后台调用你配置的私有 API 推演态势建议，默认关）'))}</label>`
+    + `<div class="hrow"><span></span><button type="button" class="btn" id="thNavCfg">${esc(tx('th.nav_cfg', '配置端点（JSON：provider / key / base / model）'))}</button></div>`;
   $('#thInjOn').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { inj: e.target.checked } });
   $('#thMacro').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { macros: e.target.checked } });
+  $('#thDice').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { dice: e.target.checked } });
+  $('#thSpatial').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { spatial: e.target.checked } });
+  $('#thWbJit').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { wbJit: e.target.checked } });
+  $('#thWbXtal').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { wbXtal: e.target.checked } });
+  $('#thNav').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { nav: e.target.checked } });
+  $('#thNavCfg')?.addEventListener('click', () => {
+    const cur = prompt(tx('th.nav_cfg', '配置端点（JSON：provider / key / base / model）'), JSON.stringify({ provider: 'openai', key: '', base: 'https://api.deepseek.com/v1', model: 'deepseek-chat' }));
+    if (cur && cur.trim()) post({ type: 'eden-map:th', op: 'prefs', prefs: { navCfg: cur } });
+  });
   const adv = sec('adv', 'thAdv', 80);
   adv.innerHTML = `<h3>${esc(tx('th.inj', '状态注入'))}</h3>`
     + `<div class="hrow"><label for="thDepth">${esc(tx('th.depth', '注入深度（楼层，0 = 最后）'))}</label><input id="thDepth" type="number" min="0" max="20" step="1" value="${+P.depth || 2}"></div>`
