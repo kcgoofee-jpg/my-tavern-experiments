@@ -110,7 +110,21 @@ def plan(args, tmp_dir=None):
 # ---------------------------------------------------------------- Blender 侧（惰性 import bpy）
 
 def _bpy():
-    import bpy                     # 只在真的跑在 Blender 里时才 import（CI 上模块要能加载）
+    """Headless 守卫：只在真跑在 Blender 里时才 import bpy（CI / 单测上模块要能加载）。
+
+    无头环境（没装完整 GUI Blender）下 import 必然失败——此时给出清晰、可执行的报错，
+    而不是裸 Traceback：要么用 `blender -b <scene.blend> -P blender/export_optimized.py -- ...`
+    起真实烘焙，要么在单测里通过 sys.modules['bpy'] 注入假 bpy（这是被支持的 Mock 路径）。
+    仍抛 ImportError，保证 test_build_requires_bpy 的契约不变。
+    """
+    try:
+        import bpy
+    except ImportError as exc:
+        raise ImportError(
+            "export_optimized.build() 需要真实 Blender（bpy）。请走 "
+            "`blender -b <scene.blend> -P blender/export_optimized.py -- ...` 起烘焙，"
+            "或在单测里用 sys.modules['bpy'] 注入假 bpy 做无头 Mock。"
+        ) from exc
     return bpy
 
 
@@ -178,7 +192,7 @@ def build(args, tmp_dir=None, log=print):
     p = plan(args, tmp_dir=tmp_dir)
     os.makedirs(args.out, exist_ok=True)
     bpy = _bpy()
-    source = bpy.data.objects if not args.src else [o for o in bpy.data.objects]
+    source = bpy.data.objects
     meshes = [o for o in source if o.type == 'MESH']
     if not args.no_merge:
         meshes = merge_materials(meshes)

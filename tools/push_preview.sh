@@ -37,11 +37,13 @@ REMOTE=${REMOTE:-origin}
 LEGACY=${LEGACY:-0}
 WARM=${WARM:-1}
 WARM_FULL=0
+WARM_NOESC=0
 HEADBUMP=0
 for a in "$@"; do case "$a" in
   --head) HEADBUMP=1 ;;
   --no-warm) WARM=0 ;;
   --full) WARM_FULL=1 ;;
+  --no-escalate) WARM_NOESC=1 ;;   # 增量里带了 map/art/ / *.glb 也不升级成全量（见 tools/warm_cdn.sh）
   *) echo "未知参数 $a" >&2; exit 2 ;; esac; done
 
 push_all () {
@@ -72,5 +74,6 @@ if [ "$WARM" = "1" ]; then
   if [ "$WARM_FULL" = "1" ]; then WA=(--full)
   elif [ -n "$BEFORE" ]; then WA=(--diff "$BEFORE")
   else WA=(--diff); fi
+  [ "$WARM_NOESC" = "1" ] && WA+=(--no-escalate)
   bash tools/warm_cdn.sh "$SHA" 16 "${WA[@]}" --purge-branch "$PRIMARY" --detach
 fi
