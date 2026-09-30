@@ -46,9 +46,9 @@
 | P2 机构 | tc_mid | `reserve_office` | 天城中央储备署 | 🆕 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
 | P2 机构 | tc_mid | `starabyss_univ` | 星渊大学 | ✅ | 星渊大学 `map/props/starabyss_univ/` | 标准（r1 7 / 7.5） |  |
 | P2 机构 | tc_mid | `storm_hall` | 风暴殿 | 🆕 | 风暴殿 `map/props/storm_hall/` | 标准（r1 7.5 / 7.5） |  |
-| P2 机构 | tc_mid | `supreme_court` | 最高法院 | ✅ | 天城大学与最高法院 `map/props/tiancheng_univ_court/` | 标准（r1 7.5 / 7.5） |  |
-| P2 机构 | tc_mid | `tiancheng_univ` | 天城大学 | ✅ | 天城大学与最高法院 `map/props/tiancheng_univ_court/` | 标准（r1 7.5 / 7.5） |  |
-| P2 机构 | tc_upper | `climate_tower` | 以太气候调节塔 | ✅ | 气候调节塔 `map/props/climate_tower/` | 标准（r2 7 / 8） |  |
+| P2 机构 | tc_mid | `supreme_court` | 最高法院 | ✅ | 天城大学与最高法院 `map/props/tiancheng_univ_court/` | 标准（campaign r2 8 / 7） |  |
+| P2 机构 | tc_mid | `tiancheng_univ` | 天城大学 | ✅ | 天城大学与最高法院 `map/props/tiancheng_univ_court/` | 标准（campaign r2 7 / 6） |  |
+| P2 机构 | tc_upper | `climate_tower` | 以太气候调节塔 | ✅ | 气候调节塔 `map/props/climate_tower/` | 标准（campaign r2 7.5 / 7） |  |
 | P2 机构 | tc_upper | `silver_crown` | 银冠堡 | ✅ | 银冠堡 `map/props/silver_crown/`；岛资产 `blender/islands/silver_crown.py`（上层底图抠图） | 标准（r1 7 / 7.5）；岛资产 标准（campaign r2 8/6.5） | 2026-09-30 渲染战役：上层底图改贴岛资产俯视抠图 |
 | P3 其他 | site_fief1 | `fief1_castle` | 第一席城堡 | ✅ | 第一席封地 `map/props/fief1/` | 标准（r2 7.5 / 6） |  |
 | P3 其他 | site_fief1 | `fief1_fields` | 第一席领地农田 | ✅ | 第一席封地 `map/props/fief1/` | 标准（r2 7.5 / 6） |  |

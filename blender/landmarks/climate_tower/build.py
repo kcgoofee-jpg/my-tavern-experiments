@@ -65,8 +65,8 @@ def main():
     DECK = C.pbr('ct_deck', 'hangar_concrete_floor', 5.0, tint=(0.62, 0.63, 0.66), sat=0.3)
     BAND = C.flat('ct_ring_band', (0.72, 0.74, 0.76), 0.5)                    # 环台编号：素色环带
     GOLD = C.flat('ct_gold', (0.9, 0.68, 0.3), 0.22, metal=1.0)
-    GLOW = C.flat('ct_aether_line', (0.5, 0.8, 0.9), 0.3, emit=AETHER, estr=4.0)
-    GLOW2 = C.flat('ct_aether_dim', (0.4, 0.6, 0.7), 0.3, emit=AETHER, estr=1.5)
+    GLOW = C.flat('ct_aether_line', (0.3, 0.75, 0.95), 0.3, emit=(0.28, 0.78, 1.0), estr=1.4)      # 强度别高过约 1.5：烘焙时会剪成纯白（glb 里成了白块 / 白条）
+    GLOW2 = C.flat('ct_aether_dim', (0.25, 0.55, 0.8), 0.3, emit=(0.25, 0.65, 0.95), estr=0.7)
     CRYS = crys_mat()
     CORE = C.flat('ct_crystal_core', (0.3, 0.9, 1.0), 0.2, emit=(0.05, 0.75, 1.0), estr=7.0)
     CRYS_OLD = C.flat('ct_crystal', (0.75, 0.95, 1.0), 0.05, emit=(0.5, 0.88, 1.0), estr=9.0, coat=1.0)
@@ -305,7 +305,7 @@ def main():
     for k in range(8):
         a = k * math.tau / 8
         CR.tube([(8.5 * math.cos(a), 8.5 * math.sin(a), ZT + 1.3), (5.5 * math.cos(a), 5.5 * math.sin(a), ZT + 6), (3 * math.cos(a), 3 * math.sin(a), ZT + 9)], 0.3, GOLD, n=6)
-    LT.lathe(0, 0, ZT + 4.1, [(3.8, 0), (0.01, 0)], GLOW, n=32)
+    LT.lathe(0, 0, ZT + 4.1, [(3.8, 0), (0.01, 0)], GLOW2, n=32)
 
     # ------------------------------------------------------------ 悬浮晶冠：细长六棱双锥晶体
     SHELL = shell_mat(); HB = Batch('bg_crystal_halo')

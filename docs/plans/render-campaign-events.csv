@@ -374,3 +374,17 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T18:47:42Z,var:tc_mid:night,ship,done,std-1,pass,128 spp tiles committed and pushed; check_maps + smoke pass
 2026-09-30T18:49:43Z,fix:climate_tower,review-r1,claim,std-1,,
 2026-09-30T18:49:58Z,fix:climate_tower,review-r1,release,std-1,,pausing at the user's request; not started
+2026-09-30T19:02:44Z,fix:climate_tower,review-r1,claim,std-1,,
+2026-09-30T19:05:31Z,fix:climate_tower,review-r1,done,std-1,fail,Cycles finals clean; glb defect: emissive light strips (strength 4.0/1.5) bake to pure white atlas -> white block (disc under crown) and bright strip on platform edge in the viewer. Viewer not screenshot-able here (no WebGL in pane). docs/reviews/campaign/fix_climate_tower/r1.md
+2026-09-30T19:05:32Z,fix:climate_tower,fix,done,std-1,pass,"GLOW strength 4.0->1.4, GLOW2 1.5->0.7, crown disc uses GLOW2"
+2026-09-30T19:10:07Z,inst:supreme_court,review-r1,done,std-1,fail,see docs/reviews/campaign/inst_supreme_court/r1.md
+2026-09-30T19:10:07Z,inst:tiancheng_univ,review-r1,done,std-1,fail,see docs/reviews/campaign/inst_tiancheng_univ/r1.md
+2026-09-30T19:10:07Z,inst:supreme_court,fix,done,std-1,pass,"portico in front of the wall, pediment, steps, copper dome"
+2026-09-30T19:10:07Z,inst:tiancheng_univ,fix,done,std-1,pass,"curved windows, cornice, roof cap, dimmer lit windows"
+2026-09-30T19:10:07Z,inst:supreme_court,review-r2,done,std-1,pass,8 / 7 (r2.md)
+2026-09-30T19:10:07Z,inst:tiancheng_univ,review-r2,done,std-1,pass,7 / 6 (r2.md)
+2026-09-30T19:18:19Z,fix:climate_tower,review-r2,done,std-1,pass,"7.5 / 7 (r2.md); lights atlas now cyan (168,198,211), no clipped white"
+2026-09-30T19:18:20Z,fix:climate_tower,ship,skip,std-1,,x
+2026-09-30T19:18:21Z,inst:supreme_court,ship,claim,std-1,,
+2026-09-30T19:20:35Z,inst:supreme_court,ship,done,std-1,pass,"re-rendered finals and re-exported glbs (std 0.71 MB / low 0.16 MB, max_mb 0.9/0.45); no maps.json change; card-buildings quality updated; smoke pass"
+2026-09-30T19:20:35Z,inst:tiancheng_univ,ship,done,std-1,pass,"re-rendered finals and re-exported glbs (std 0.71 MB / low 0.16 MB, max_mb 0.9/0.45); no maps.json change; card-buildings quality updated; smoke pass"

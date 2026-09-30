@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T18:49:58Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T19:20:35Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 42 | 0 | 3 | 6 | 0 | 0 | 51 |
+| standard | 45 | 0 | 0 | 6 | 0 | 0 | 51 |
 | hero | 4 | 0 | 11 | 0 | 6 | 0 | 21 |
 
 Below-gate (user spot-check): none
@@ -63,9 +63,9 @@ Below-gate (user spot-check): none
 | 46 | `var:tc_low:day` | variant | waiting | register |  | waiting-on-freeze | Period variant tc_low / day |
 | 47 | `var:tc_low:dusk` | variant | waiting | register |  | waiting-on-freeze | Period variant tc_low / dusk |
 | 48 | `var:tc_low:night` | variant | waiting | register |  | waiting-on-freeze | Period variant tc_low / night |
-| 49 | `fix:climate_tower` | review | open | review-r1 |  |  | Climate tower material: white block on the top, pink strip on the podium |
-| 50 | `inst:supreme_court` | review | open | review-r1 |  |  | Institution model check: supreme court |
-| 51 | `inst:tiancheng_univ` | review | open | review-r1 |  |  | Institution model check: tiancheng univ |
+| 49 | `fix:climate_tower` | review | done | - |  |  | Climate tower material: white block on the top, pink strip on the podium |
+| 50 | `inst:supreme_court` | review | done | - |  |  | Institution model check: supreme court |
+| 51 | `inst:tiancheng_univ` | review | done | - |  |  | Institution model check: tiancheng univ |
 
 ## Hero lane
 

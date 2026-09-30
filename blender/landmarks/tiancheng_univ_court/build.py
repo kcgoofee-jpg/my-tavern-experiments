@@ -46,6 +46,8 @@ def main():
     GRASS = C.flat('tc_grass', (0.16, 0.32, 0.13), 0.8, noise=0.4)
     WOOD = C.flat('tc_wood', (0.3, 0.2, 0.12), 0.7, noise=0.3)
     LEAF = C.flat('tc_leaf', (0.15, 0.32, 0.14), 0.8, noise=0.5)
+    COPPER = C.flat('tc_copper', (0.3, 0.54, 0.47), 0.4, metal=0.7)
+    GLASS_W = C.glass('tc_glass_w', (0.1, 0.1, 0.08), emit=(0.95, 0.85, 0.6), estr=0.18)
     LAMP = C.flat('tc_lamp', (1, 1, 1), 0.4, emit=(1.0, 0.85, 0.65), estr=13.0)
 
     points, spots = [], []
@@ -55,11 +57,16 @@ def main():
     ucx = (UX0 + UX1) / 2
     univ.box(UX0, UX1, UY0 + 20, UY1, 0, UH, STONE)
     univ.cyl(ucx, UY0 + 20, 0, 14, UH, STONE_D, 20, r2=14, cap=False)         # 模拟法庭弧形凸窗体量
-    for k in range(10):
-        a = -math.pi * 0.85 + k * (math.pi * 0.7) / 10
-        x = ucx + math.cos(a) * 14
-        y = UY0 + 20 + math.sin(a) * 14
-        univ.boxc(x, y, UH * 0.35, 2.4, 0.3, UH * 0.5, GLASS_L if k % 2 else GLASS)
+    RB = 14.06                                                                # 法庭凸窗：沿圆柱面的窄窗（不再是凸出的平板）
+    for k in range(9):
+        a = -math.pi * 0.85 + (k + 0.5) * (math.pi * 0.7) / 9
+        d = 0.085
+        zs = (3.0, UH - 2.6)
+        vs = [(ucx + math.cos(a + sg * d) * RB, UY0 + 20 + math.sin(a + sg * d) * RB, z) for (sg, z) in ((-1, zs[0]), (1, zs[0]), (1, zs[1]), (-1, zs[1]))]
+        univ.poly(vs, [(0, 1, 2, 3)], GLASS_W if k % 3 == 1 else GLASS)
+    univ.cyl(ucx, UY0 + 20, UH, 14.6, 0.9, STONE_D, 28)                       # 凸窗顶檐 + 屋顶盖
+    univ.cyl(ucx, UY0 + 20, UH + 0.9, 13.4, 0.4, STONE, 28)
+    univ.cyl(ucx, UY0 + 20, 0, 14.5, 0.8, STONE_D, 28)                        # 凸窗基座
     for f in range(4):
         z = 2 + f * (UH - 3) / 4
         for k in range(8):
@@ -78,22 +85,31 @@ def main():
     # ------------------------------------------------------------ 最高法院
     court = Batch('props_court')
     ccx = (CX0 + CX1) / 2
-    court.box(CX0 + 10, CX1 - 10, CY0 + 14, CY1, 0, CH * 0.55, STONE)
-    court.box(CX0 + 4, CX1 - 4, CY0, CY0 + 14, 0, 1.6, STONE_D)               # 宽台阶基座
-    for s in range(4):
-        court.box(CX0 + 10 - s * 1.2, CX1 - 10 + s * 1.2, CY0 + s * 3.2, CY0 + s * 3.2 + 2.6, s * 0.4, s * 0.4 + 0.4, STONE_D)
+    H1 = 15.0                                                                 # 主楼檐高
+    court.box(CX0 + 10, CX1 - 10, CY0 + 14, CY1, 0, H1, STONE)
+    court.box(CX0 + 4, CX1 - 4, CY0, CY0 + 14, 0, 0.3, STONE_D)               # 宽台阶基座
+    for s_ in range(4):                                                       # 四级宽台阶通向门廊
+        court.box(CX0 + 10 - s_ * 1.2, CX1 - 10 + s_ * 1.2, CY0 + s_ * 2.5, CY0 + s_ * 2.5 + 2.5, 0, 0.4 * (s_ + 1), STONE_D)
+    court.box(CX0 + 9, CX1 - 9, CY0 + 10, CY0 + 14, 0, 1.6, STONE_D)          # 门廊台面（在主楼前墙之前）
     n_col = 10
-    for i in range(n_col):
+    for i in range(n_col):                                                    # 柱廊：柱子立在门廊台面上，离前墙 2.5 m
         x = CX0 + 14 + i * (CX1 - CX0 - 28) / (n_col - 1)
-        court.cyl(x, CY0 + 15, 0, 1.1, CH * 0.5, STONE, 14)
-    court.box(CX0 + 10, CX1 - 10, CY0 + 13.5, CY0 + 14.5, CH * 0.5, CH * 0.5 + 2.0, STONE_D)  # 柱顶檐部
-    court.cyl(ccx, CY0 + 26, CH * 0.55, 13, CH * 0.35, STONE_D, 24, r2=9)     # 中央穹顶采光厅（收分圆顶）
-    court.sphere(ccx, CY0 + 26, CH * 0.55 + CH * 0.35, 9.0, GLASS_L, seg=20, rings=10, zmin=0.0)
-    for i in range(8):
-        a = i * math.tau / 8
-        x = ccx + math.cos(a) * 8; y = CY0 + 26 + math.sin(a) * 8
-        court.boxc(x, y, CH * 0.55 + 1, 0.5, 0.5, CH * 0.35, STONE_D)
-    points.append(((ccx, CY0 + 26, CH * 0.55 + CH * 0.35 + 2), 8e3, (0.9, 0.92, 1.0)))
+        court.cyl(x, CY0 + 11.5, 1.6, 1.2, 11.4, STONE, 16)
+        court.cyl(x, CY0 + 11.5, 1.6, 1.5, 0.5, STONE_D, 16); court.cyl(x, CY0 + 11.5, 12.5, 1.5, 0.5, STONE_D, 16)   # 柱础 / 柱头
+    court.box(CX0 + 9, CX1 - 9, CY0 + 10, CY0 + 14.6, 13.0, 14.8, STONE_D)    # 柱顶檐部
+    court.gable(ccx - 22, ccx + 22, CY0 + 10, CY0 + 14.6, 14.8, 4.6, STONE, along='y')   # 中央三角山花（无雕饰）
+    for i in range(n_col - 1):                                                # 前墙窗：柱间的高窗
+        xm = CX0 + 14 + (i + 0.5) * (CX1 - CX0 - 28) / (n_col - 1)
+        court.box(xm - 1.3, xm + 1.3, CY0 + 13.92, CY0 + 14.0, 4.0, 11.5, GLASS_W if i % 3 == 1 else GLASS)
+    court.box(ccx - 2.0, ccx + 2.0, CY0 + 13.9, CY0 + 14.0, 1.6, 7.2, GLASS)   # 正门
+    court.cyl(ccx, CY0 + 26, H1, 13, 7.0, STONE_D, 28, r2=10.5)               # 中央穹顶采光厅：鼓座
+    court.cyl(ccx, CY0 + 26, H1 + 7.0, 11.4, 0.6, STONE, 28)
+    court.sphere(ccx, CY0 + 26, H1 + 7.6, 9.6, COPPER, seg=28, rings=12, zmin=0.0)   # 铜绿穹顶
+    court.cyl(ccx, CY0 + 26, H1 + 7.6 + 9.2, 1.6, 2.4, STONE, 12); court.sphere(ccx, CY0 + 26, H1 + 7.6 + 11.6, 1.0, GLASS_L, seg=10, rings=6)
+    for i in range(12):                                                       # 鼓座上的立柱
+        a = i * math.tau / 12
+        court.cyl(ccx + math.cos(a) * 12.2, CY0 + 26 + math.sin(a) * 12.2, H1, 0.45, 7.0, STONE, 8)
+    points.append(((ccx, CY0 + 26, H1 + 10), 8e3, (0.9, 0.92, 1.0)))
 
     # ------------------------------------------------------------ 共用广场
     plaza = Batch('props_plaza')
@@ -178,7 +194,7 @@ def main():
     CAMS = {
         'c1': ((-175.0, -205.0, 140.0), (0.0, 10.0, 15.0), 24, 0.0),
         'c2': ((-55.0, -28.0, 8.0), (-55.0, 4.0, 10.0), 26, 0.0),
-        'c3': ((55.0, -45.0, 6.0), (55.0, 15.0, 9.0), 26, 0.0),
+        'c3': ((55.0, -58.0, 8.0), (55.0, 10.0, 13.0), 24, 0.0),
     }
     cv = CAMS[A['cam']]
     C.camera(sc, cv[0], cv[1], cv[2], cv[3])
