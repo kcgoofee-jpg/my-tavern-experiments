@@ -19,3 +19,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+----
+jsm/libs/basis/basis_transcoder.js 与 basis_transcoder.wasm：随 three.js r160 一起分发的
+Basis Universal 转码器（examples/jsm/libs/basis/，来源 https://www.npmjs.com/package/three/v/0.160.0），
+用于 KTX2 / Basis 压缩贴图（KTX2Loader）。与 vendored 的 three.module.min.js 同一版本、同一许可。
+KTX2Loader 检测到浏览器不支持任何压缩格式、或这两个文件取不到时，会退回原来的 WebP 贴图路径。

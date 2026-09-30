@@ -79,6 +79,29 @@ test('账实对拍：41 个地标清单全部合格——id = 目录名、glb �
   }
   assert.equal(checked, 41);
 });
+test('Part 3：三维页用共享运行时（map/three/*），自己不再 new WebGLRenderer', () => {
+  const v3d = readFileSync(new URL('props/viewer3d.html', root), 'utf8');
+  assert.doesNotMatch(v3d, /new\s+THREE\.WebGLRenderer\s*\(/, '渲染器只能由 map/three/ctx.mjs 建');
+  for (const m of ['three/map/ctx.mjs', 'three/map/culling.mjs', 'three/map/lod.mjs', 'three/map/instancing.mjs', 'three/map/texres.mjs'])
+    assert.match(v3d, new RegExp(m.replace(/\//g, '\\/')), `缺共享运行时模块 ${m}`);
+  assert.match(v3d, /"three\/map\/":\s*"\.\.\/three\/"/, 'importmap 要能解析 three/map/');
+  assert.match(v3d, /frustumCulled/, '显式打开视锥体裁剪（共享运行时里做）');
+});
+
+test('Part 3：KTX2 / Basis 转码器随仓库（与 vendored three 同版本），LICENSE 里写明来源', () => {
+  const dir = new URL('estate/vendor/jsm/libs/basis/', root);
+  for (const f of ['basis_transcoder.js', 'basis_transcoder.wasm']) {
+    const p = new URL(f, dir);
+    assert.ok(existsSync(p), `缺转码器 ${f}`);
+    assert.ok(readFileSync(p).length > 1024, `${f} 是空壳`);
+  }
+  const lic = readFileSync(new URL('estate/vendor/LICENSE', root), 'utf8');
+  assert.match(lic, /basis_transcoder/, 'LICENSE 要写明转码器来源与许可');
+  const v3d = readFileSync(new URL('props/viewer3d.html', root), 'utf8');
+  assert.match(v3d, /KTX2Loader/, 'KTX2 备选加载管线要接上');
+  assert.match(v3d, /jsm\/libs\/basis\//, '转码器路径指向 vendored 目录');
+});
+
 test('运行时解耦机检：查看器代码不写死 / 不拼装模型地址，加载与摘要走 Estate3D 契约', () => {
   const main = readFileSync(new URL('estate/main.js', root), 'utf8');
   assert.doesNotMatch(main, /url\(\s*['"]model\/['"]\s*\+/, '不许拼装 model/ 前缀');

@@ -19,7 +19,7 @@
 <script defer src="../ui/icons.js"></script>
 <script defer src="../ui/sheet.js"></script>
 <script defer src="../ui/chrome3d.js"></script>
-<script type="importmap">{ "imports": { "three": "../estate/vendor/three.module.min.js", "three/addons/": "../estate/vendor/jsm/" } }</script>
+<script type="importmap">{ "imports": { "three": "../estate/vendor/three.module.min.js", "three/addons/": "../estate/vendor/jsm/", "three/map/": "../three/" } }</script>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font: var(--fs-body)/1.45 var(--font-ui); -webkit-font-smoothing: antialiased; }
   body { --inset: 0px; }
@@ -87,10 +87,17 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';   // Part 3 §5：KTX2 / Basis 备选贴图（用不上就退回 WebP）
 import { mountProgress } from '../ui/progress.mjs';   // fix3：统一加载进度组件
 import { Estate3D } from '../core/estate3d.mjs';   // Estate3D Manifest 标准契约（P3-A）：glb 地址与档位兜底都走清单，代码不写死模型路径
 import { nsKey } from '../core/pack.mjs';   // 通用化 v1：本机键按包换前缀（edenMapLang / 画质 / 提示卡……），与查看器同一规则
 import { createRenderGate, wireVisibility } from '../core/render-gate.mjs';   // Part 7-4：页面隐藏时渲染循环整个停掉
+// Part 3：共享三维运行时（上下文 / 剔除 / LOD / 实例化 / 贴图预算）——全仓只有 ctx.mjs 里 new WebGLRenderer
+import { createRenderer as createGpu, governor as createGovernor, pickDpr } from 'three/map/ctx.mjs';
+import { prepare as prepareCulling } from 'three/map/culling.mjs';
+import { createLodController } from 'three/map/lod.mjs';
+import { batch as batchInstances, writeMatrices } from 'three/map/instancing.mjs';
+import { createTexRes } from 'three/map/texres.mjs';
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer, prefersReducedMotion } from '../ui/camera-controls.js';   // 相机控制共用小件（预设/指北针/提示卡/空闲计时），与庄园页共用
 
 const Q = new URLSearchParams(location.search);
@@ -177,11 +184,21 @@ const MSAA = TIER !== 'low';
 
 // ---------------- 场景 ----------------
 const canvas = $('#c');
-let renderer;
+let renderer, gpu = null;   // gpu = 共享上下文句柄（map/three/ctx.mjs）
+const instState = { batch: null, badge: null, groups: 0, badgeCount: 0, parent: null };
+let texres = null, lod = null;
+/** 设置「三维画质」→ 像素比（与共享工厂同一套口径） */
+const pickDprFor = q => pickDpr(gpuTier, q || '', devicePixelRatio || 1);
+/** 射线命中 InstancedMesh：instanceId → 原网格名 / 热点 id */
+const resolveInstanceId = (mesh, instanceId) => mesh?.userData?.instanceIds?.[instanceId] ?? null;
+const gpuTier = TIER === 'low' ? 'low' : coarse ? 'mid' : 'high';   // Part 3 §3：共享工厂的档位
 try {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: MSAA, powerPreference: TIER === 'low' ? 'low-power' : 'high-performance', stencil: false });
+  const g = createGpu({ THREE, canvas, tier: gpuTier, quality: LSg('edenMap3dQ') || '',
+    onLost: () => { post({ type: 'estate:fail', reason: 'ctx-lost' }); fail('ctx-lost'); },
+    onRestored: () => { dirty = true; } });
+  gpu = g; renderer = g.renderer;
 } catch (e) { post({ type: 'estate:fail', reason: 'webgl' }); fail('webgl'); throw e; }
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, LSg('edenMap3dQ') === '1' ? 1 : LSg('edenMap3dQ') === '2' ? 2 : DPR_CAP));   // 设置「显示 · 三维画质」
+const gov = createGovernor();   // 连续烂帧 → 像素比降一档（缓过来不自动回升）
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NoToneMapping;   // 烘焙图已经过 AgX 视图变换
 renderer.localClippingEnabled = false;
@@ -337,22 +354,76 @@ function fail(r) { const ld = $('#load'); ld.classList.remove('done'); lp().fail
 let slowT = 0, lastProg = 0;
 function watch() { clearInterval(slowT); lastProg = performance.now(); slowT = setInterval(() => { if (performance.now() - lastProg > 15000) { lp().slow(t('slow')); $('#load .acts').hidden = false; } }, 1000); }
 
+// ---------------- Part 3 §4：动态 LOD（占位方块 → 低档 → 高档）----------------
+// 宏观视角只留纯色方块：清单的 building 包围盒直接生成一个占位体，不等任何网络请求；
+// 低档 glb（41 个地标全都有）随后异步补上，靠近了才升到标准档。升档失败的当前档原样留着（画面上不出现空洞）。
+let loadGen = 0;   // 换模型 / 重试时作废在途的加载
+function placeholderBox() {
+  const B = MAN?.groups?.building, g = new THREE.BoxGeometry(1, 1, 1);
+  const m = new THREE.MeshBasicMaterial({ color: 0x2a2f36 });
+  const mesh = new THREE.Mesh(g, m); mesh.name = 'lod_placeholder';
+  if (B) {
+    const sx = Math.max(1e-3, B.max[0] - B.min[0]), sy = Math.max(1e-3, (B.max[1] ?? 1) - (B.min[1] ?? 0)), sz = Math.max(1e-3, B.max[2] - B.min[2]);
+    mesh.scale.set(sx, sy, sz);
+    mesh.position.set((B.max[0] + B.min[0]) / 2, ((B.max[1] ?? 1) + (B.min[1] ?? 0)) / 2, (B.max[2] + B.min[2]) / 2);
+  }
+  const grp = new THREE.Group(); grp.name = 'lod_placeholder_root'; grp.add(mesh);
+  return grp;
+}
+async function loadDetail(detail) {
+  const gen = loadGen, tier = detail === 'high' ? 'std' : 'low';
+  const glbPath = Estate3D.resolveGlb(MAN, tier);   // 档位兜底在契约里：low 缺失回落 std
+  if (!glbPath) return null;
+  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  if (texres) await texres.attach(loader);   // KTX2 / Basis 能用才挂，挂不上就继续用现在的 WebP 贴图
+  const gltf = await new Promise((res, rej) => loader.load(`${MODEL}/${glbPath}`, res,
+    e => { lastProg = performance.now(); if (e.total) stats.bytes = e.total; setLoad(e.loaded || 0, e.total || 0); }, rej));
+  if (gen !== loadGen) { try { gltf.scene?.traverse?.(o => { o.geometry?.dispose?.(); }); } catch (e) {} return null; }   // 换模型了：丢弃
+  stats.tGlb = performance.now() - stats.t0;
+  return { root: gltf.scene, path: glbPath };
+}
+function setupLod() {
+  let first = true, firstDone = false;
+  lod = createLodController({
+    placeholder: placeholderBox,
+    load: loadDetail,
+    apply: ({ detail, root: sc }) => {
+      const keepCam = first ? null : { pos: camera.position.clone(), target: controls.target.clone() };
+      disposeRoot();
+      setup(sc, { reframe: false });
+      if (keepCam) { camera.position.copy(keepCam.pos); controls.target.copy(keepCam.target); controls.update(); }
+      stats.glb = detail; stats.lod = detail;
+      if (first) { first = false; onFirstModel(); }
+      dirty = true;
+    },
+    perFrame: 2,
+    onSwap: () => { if (!firstDone) { firstDone = true; onFirstModel(); } },   // 加载失败也别把用户留在加载层：占位方块先顶上
+  });
+  const B = MAN?.groups?.building;
+  const size = B ? Math.max(1, Math.hypot(B.max[0] - B.min[0], (B.max[1] ?? 1) - (B.min[1] ?? 0), B.max[2] - B.min[2])) : 1;
+  lod.add(MODEL, { root: placeholderBox(), size, pos: B ? new THREE.Vector3((B.max[0] + B.min[0]) / 2, 0, (B.max[2] + B.min[2]) / 2) : null });
+  lod.force(MODEL, TIER === 'low' ? 'low' : 'high');   // 手机档停在低档，其余直接升到标准档
+  return size;
+}
+/** 第一档模型落地（占位方块或低档都算）：收掉加载层、发首帧、补飞行动作 */
+function onFirstModel() {
+  clearInterval(slowT); lp().done();
+  renderer.render(scene, camera); stats.tFirst = performance.now() - stats.t0;
+  requestAnimationFrame(() => $('#load').classList.add('done'));
+  const h = flyWait || Q.get('hotspot'); flyWait = null; if (h) fly(h, true);
+}
+
 async function load() {
   $('#load .acts').hidden = true; $('#load').classList.remove('done'); lp().reset(t('loading', { p: '' }).trim()); watch();
   if (!MODEL) { fail('viewer3d: no model id (pass ?model= or window.__V3D_MODEL)'); return; }
+  loadGen++;
   try {
     const mr = await fetch(`${MODEL}/manifest.json`, { cache: 'no-cache' }); if (!mr.ok) throw new Error('manifest ' + mr.status);
     MAN = await mr.json(); stats.tManifest = performance.now() - stats.t0; applyLang();
-    const glbPath = Estate3D.resolveGlb(MAN, TIER === 'low' ? 'low' : 'std');   // 档位兜底在契约里：low 缺失回落 std；清单位置外不拼地址
-    if (!glbPath) throw new Error('manifest: no resolvable glb');
-    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-    const gltf = await new Promise((res, rej) => loader.load(`${MODEL}/${glbPath}`, res, e => { lastProg = performance.now(); if (e.total) stats.bytes = e.total; setLoad(e.loaded || 0, e.total || 0); }, rej));
-    stats.tGlb = performance.now() - stats.t0;
-    setup(gltf.scene);
-    clearInterval(slowT); lp().done();
-    renderer.render(scene, camera); stats.tFirst = performance.now() - stats.t0;
-    requestAnimationFrame(() => $('#load').classList.add('done'));
-    const h = flyWait || Q.get('hotspot'); flyWait = null; if (h) fly(h, true);
+    if (!Estate3D.resolveGlb(MAN, 'std')) throw new Error('manifest: no resolvable glb');
+    // 转码器随仓库放在 estate/vendor/jsm/libs/basis/（与 vendored three 同一版本）；支持度不够或取不到 → 继续用现在的 WebP 贴图
+    texres = createTexRes({ renderer, THREE, KTX2Loader, transcoderPath: new URL('../estate/vendor/jsm/libs/basis/', document.baseURI).href });
+    stats.size = setupLod();
   } catch (e) { console.error('[viewer3d]', e); clearInterval(slowT); fail(String(e && e.message || e)); }
 }
 $('#retry').onclick = () => { disposeRoot(); load(); };
@@ -366,7 +437,7 @@ function roleOf(name) {
   if ((g.site || []).includes(name)) return 'site';
   return name.startsWith('props_') ? 'props' : 'other';
 }
-function setup(sc) {
+function setup(sc, opt = {}) {
   root = sc; scene.add(root); root.updateMatrixWorld(true);
   root.traverse(o => {
     if (!o.isMesh) return;
@@ -408,10 +479,49 @@ function setup(sc) {
   resize();
   const c = box.getCenter(new THREE.Vector3()), R = box.getSize(v3).length() / 2;
   controls.minDistance = MAN.camera.min || 1; controls.maxDistance = MAN.camera.max || 100; controls.maxPolarAngle = MAN.camera.maxPolar || 1.45;
-  FRAME.c = c; FRAME.R = R; frameStart();
+  FRAME.c = c; FRAME.R = R;
+  if (opt.reframe !== false) frameStart();   // LOD 换档时沿用当前视角，不把镜头拽回去
   SITE.setFromObject(root); SITE.expandByScalar(-2);
   const s = MAN.section; if (s) { const r = $('#cutH'); r.min = s.min; r.max = s.max; r.value = s.default; showCut(); }
   controls.update(); setMode(mode);
+  setupInstancing(); setupCulling();   // Part 3 §4：静态件合批 + 显式打开视锥体裁剪并重算包围体
+}
+// ---- 实例化：同几何 + 同材质的静态件合成一个 InstancedMesh（一次 draw call）----
+// 排除集是强制的：热点（可点）、墙体（X 光 / 剖切）、取景框、轮廓线来源都要保留自己的世界矩阵与名字。
+const geoSig = m => `${m.geometry?.attributes?.position?.count || 0}/${m.geometry?.index?.count || 0}`;
+function setupInstancing() {
+  try {
+    if (instState.batch?.unbatch) instState.batch.unbatch();
+    if (instState.parent) scene.remove(instState.parent);
+    const parent = new THREE.Group(); parent.name = 'instanced';
+    const hot = new Set(HS.map(h => h.m));
+    const out = batchInstances({ THREE, meshes: Object.values(meshes), name: 'inst',
+      groupBy: m => `${geoSig(m)}|${m.material?.type || ''}|${m.material?.map?.image?.width || 0}x${m.material?.map?.image?.height || 0}`,
+      exclude: m => hot.has(m) || (MAN.groups?.walls || []).includes(m.name) || (MAN.camera?.frame || []).includes(m.name) });
+    for (const g of out.groups) parent.add(g.mesh);
+    scene.add(parent);
+    instState.parent = parent; instState.batch = out; instState.groups = out.groups.length;
+    setupBadges();
+  } catch (e) { instState.groups = 0; }
+}
+// ---- 热点徽章：所有编号圈合成一个 InstancedMesh（视觉层），DOM 的 .pin 按钮仍是命中层（无障碍 / 键盘不变）----
+function setupBadges() {
+  try {
+    if (instState.badge) { scene.remove(instState.badge); instState.badge.geometry.dispose(); instState.badge.material.dispose(); instState.badge = null; }
+    if (!HS.length) { instState.badgeCount = 0; return; }
+    const g = new THREE.OctahedronGeometry(1, 0), m = new THREE.MeshBasicMaterial({ color: 0xe6c36a, transparent: true, opacity: 0.9 });
+    const im = new THREE.InstancedMesh(g, m, HS.length);
+    im.name = 'inst:badges'; im.frustumCulled = true; im.renderOrder = 4;
+    const items = [];
+    HS.forEach((h, i) => { const p = h.a || h.c; const s = Math.max(0.05, (h.r || 1) * 0.06); items.push({ tx: p.x, ty: p.y, tz: p.z, s }); });
+    writeMatrices({ THREE, mesh: im, items });
+    im.userData.instanceIds = HS.map(h => h.id);
+    scene.add(im); instState.badge = im; instState.badgeCount = HS.length;
+  } catch (e) { instState.badgeCount = 0; }
+}
+function setupCulling() {
+  try { const r = prepareCulling({ THREE, root: scene, instanced: [...(instState.batch?.groups || []).map(g => g.mesh), instState.badge].filter(Boolean) });
+    stats.culled = r.objects; stats.instanced = r.instanced; } catch (e) {}
 }
 // 竖屏按水平视角取景（手机上横向才是短边）
 function fitHalf() { const v = THREE.MathUtils.degToRad(camera.fov / 2), a = innerWidth > 0 && innerHeight > 0 ? innerWidth / innerHeight : 1; return Math.max(.12, Math.min(v, Math.atan(Math.tan(v) * a))); }
@@ -430,6 +540,9 @@ function frameStart() {
 const START = { p: new THREE.Vector3(), t: new THREE.Vector3() }, SITE = new THREE.Box3();
 function disposeRoot() {
   if (!root) return;
+  try { instState.batch?.unbatch?.(); } catch (e) {}
+  if (instState.badge) { scene.remove(instState.badge); try { instState.badge.geometry.dispose(); instState.badge.material.dispose(); } catch (e) {} instState.badge = null; }
+  if (instState.parent) { scene.remove(instState.parent); instState.parent = null; instState.groups = 0; instState.badgeCount = 0; }
   scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { o.material.map?.dispose(); o.material.dispose(); } });
   scene.remove(root); if (meshes.__edges) scene.remove(meshes.__edges);
   root = null; meshes = {}; HS = []; $('#pins').textContent = ''; stats.tris = stats.draws = stats.gpuMB = 0;
@@ -617,8 +730,16 @@ canvas.addEventListener('pointerup', e => {
   const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
   ray.setFromCamera(ndc, camera);
   const cand = Object.values(meshes).filter(m => m.isMesh && m.visible && m.userData.role !== 'site' && !(m.userData.role === 'roof' && roofK > 0.5) && !(mode === 'xray' && m.userData.role === 'walls'));
+  for (const g of instState.batch?.groups || []) if (g.mesh.visible) cand.push(g.mesh);   // 合批的静态件也要能命中
+  if (instState.badge?.visible) cand.push(instState.badge);
   const hits = ray.intersectObjects(cand, false).filter(h => mode !== 'cut' || h.point.y <= cutY());
-  const hit = hits[0], hs = hit && HS.find(s => s.m === hit.object);
+  const hit = hits[0];
+  // 命中合批件 / 徽章：instanceId → 原网格名 / 热点 id
+  let hs = hit && HS.find(s => s.m === hit.object);
+  if (!hs && hit?.object?.isInstancedMesh && hit.instanceId != null) {
+    const id = resolveInstanceId(hit.object, hit.instanceId);
+    hs = HS.find(s => s.id === id) || HS.find(s => (s.m?.name || s.m?.uuid) === id);
+  }
   if (hs) fly(hs.id); else if (sel) select(null);
 });
 
@@ -632,14 +753,11 @@ const FT = []; let last = performance.now(), running = true;
 // 自适应像素比（2026-09-29 恶性卡顿）：桌面档不封顶 DPR + MSAA + 全部 DoubleSide，大场景（圣山 9MB）整页拖到 3fps。
 // 连续渲染的帧距持续 >55ms（<18fps）时像素比降一档（×0.7，下限 1），缓过来不回升（回升要用户在「三维画质」里自己改，避免来回震荡）。
 let govT = [], govHold = 0;
-function govFrame(dt, now) {
-  if (now < govHold) return;
-  govT.push(dt); if (govT.length > 14) govT.shift();
-  if (govT.length === 14 && govT.every(x => x > 55)) {
-    const cur = renderer.getPixelRatio(), next = Math.max(1, Math.round(cur * 7) / 10);
-    if (next < cur - .01) { renderer.setPixelRatio(next); renderer.setSize(innerWidth, innerHeight); stats.dpr = next; stats.dprAdj = (stats.dprAdj || 0) + 1; dirty = true; }
-    govT = []; govHold = now + 2500;   // 刚降完先稳定一会再采样，别连跳
-  }
+function govFrame(dt, now) {   // Part 3 §3：策略搬到共享运行时（map/three/ctx.mjs），这里只负责落地
+  const next = gov.sample(dt, now, renderer.getPixelRatio());
+  if (next == null) return;
+  gpu?.setDpr(next); renderer.setSize(innerWidth, innerHeight);
+  stats.dpr = next; stats.dprAdj = (stats.dprAdj || 0) + 1; gov.reset(); dirty = true;
 }
 function frame(now) {
   if (!running || gate.hidden) return;
@@ -657,7 +775,9 @@ function frame(now) {
   dirty = false;
   renderer.render(scene, camera); placePins();
   govFrame(dt, now);   // 只在真渲染的帧采样帧距：待机（dirty=false）不计
+  if (lod && now - lodT > 250) { lodT = now; try { lod.update({ camera, target: controls.target, viewportWidth: innerWidth, viewportHeight: innerHeight }); } catch (e) {} }
 }
+let lodT = 0;   // LOD 每 250 ms 重算一次就够（镜头移动不会每帧跨档）
 // Part 7-4 视口可见性节流：切后台 → 停排帧；回前台 → 若循环还在（没 pagehide）就重启
 const gate = createRenderGate({
   onResume: () => { if (running) { last = performance.now(); dirty = true; requestAnimationFrame(frame); } },
@@ -665,7 +785,7 @@ const gate = createRenderGate({
 wireVisibility(gate, document);
 requestAnimationFrame(frame);
 document.addEventListener('visibilitychange', () => { dirty = true; });
-addEventListener('pagehide', () => { running = false; disposeRoot(); renderer.dispose(); renderer.forceContextLoss?.(); });
+addEventListener('pagehide', () => { running = false; disposeRoot(); gpu ? gpu.dispose() : (renderer.dispose(), renderer.forceContextLoss?.()); });
 
 // ---------------- 宿主消息 ----------------
 let bench = null;
@@ -676,7 +796,7 @@ addEventListener('message', e => {
   if (d.type === 'estate:theme') setTheme(d.theme);
   if (d.type === 'estate:quality' && typeof d.q === 'string' && renderer) {   // 设置「三维画质」即时生效（毛玻璃 + 像素比）
     document.documentElement.classList.toggle('noblur', TIER === 'low' || d.q === '1');
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, d.q === '1' ? 1 : d.q === '2' ? 2 : DPR_CAP)); renderer.setSize(innerWidth, innerHeight); stats.dpr = renderer.getPixelRatio(); govT = []; govHold = 0; dirty = true; }
+    gpu?.setDpr(pickDprFor(d.q)); renderer.setSize(innerWidth, innerHeight); stats.dpr = renderer.getPixelRatio(); gov.reset(); dirty = true; }
   if (d.type === 'estate:inset') { document.body.style.setProperty('--inset', Math.max(0, (d.left | 0) - 8) + 'px'); }
   if (d.type === 'estate:cvd' && typeof d.mode === 'string') { CVD = d.mode; document.documentElement.classList.toggle('cvd', CVD !== '0'); document.documentElement.dataset.cvd = CVD; if (FL.length) buildFlows(); }
   if (d.type === 'estate:pause') running = false;   // 查看器休眠（宿主挂起）：停渲染循环，模型与 GPU 资源留着——与 estate/main.js 同一套；
@@ -691,6 +811,14 @@ addEventListener('message', e => {
 // 调试 / 测量接口
 window.__v3d = {
   stats, get ft() { return FT.slice(); }, setMode, fly, select, setFlows, showFlow, get flows() { return flowOn; }, get mode() { return mode; }, get ready() { return !!root; }, info: () => renderer.info,
+  // Part 3：LOD / 实例化 / 预算的自检面（浏览器探针与设置页诊断用）
+  perf: () => ({
+    lod: lod?.describe() || null, detail: stats.glb || null,
+    instanceGroups: instState.groups, instances: instState.badgeCount, culled: stats.culled || 0,
+    draws: renderer.info.render.calls, tris: renderer.info.render.triangles,
+    memory: { ...renderer.info.memory }, dpr: renderer.getPixelRatio(),
+    gpu: gpu?.stats() || null, texres: texres?.stats?.() || null,
+  }),
   // 匀速绕目标转 ms 毫秒，返回帧时间（每帧强制渲染）
   orbitBench(ms = 4000) { return new Promise(res => { const out = []; const t0 = performance.now(); let lt = t0;
     const tick = now => { out.push(now - lt); lt = now; const a = (now - t0) / ms * Math.PI * 2 * 0.5;

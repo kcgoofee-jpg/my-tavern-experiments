@@ -8,9 +8,11 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 
 const rd = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 /** 登记在册的建上下文地址（改这里必须同时改上面的说明与新地址的理由）：
- *  前三个是三维页自己的 new，最后一个是 Part 3 §3 的共享工厂（全仓唯一的上下文来源）。 */
-export const RENDERER_SITES = ['map/props/viewer3d.html', 'map/estate/main.js', 'map/estate/closet/main.js'];
+ *  这两个三维页还自己 new；通用三维页（props/viewer3d.html）已经改用下面的共享工厂了。 */
+export const RENDERER_SITES = ['map/estate/main.js', 'map/estate/closet/main.js'];
 export const FACTORY = 'map/three/ctx.mjs';
+/** 已经改用共享工厂的页：不许再自己 new（迁移完成时把它并入 FACTORY 的消费者即可） */
+export const FACTORY_USERS = ['map/props/viewer3d.html'];
 
 /** 全仓扫一遍 new THREE.WebGLRenderer（跳过 node_modules 与 vendor 的 three 自己） */
 function scan() {
@@ -51,9 +53,13 @@ test('庄园 / 三维子页的退出要真拆：dispose + forceContextLoss（上
   assert.ok(!/renderer\.dispose\(\)/.test(est), '旧庄园页仍未拆上下文——由宿主侧拆帧负责（见 app/estate.mjs 的 dropParked / leaveEstate）');
 });
 
-test('共享工厂是全仓唯一的上下文来源：三维页改用工厂后就不再自己 new', () => {
-  const changed = RENDERER_SITES.filter(f => /three\/ctx\.mjs/.test(rd(f)));
-  for (const f of changed) assert.doesNotMatch(rd(f), /new\s+THREE\.WebGLRenderer\s*\(/, `${f} 已经在用共享工厂，不该再自己建上下文`);
+test('共享工厂是全仓唯一的上下文来源：改用工厂的页不再自己 new', () => {
+  for (const f of FACTORY_USERS) {
+    const s = rd(f);
+    assert.match(s, /three\/ctx\.mjs/, `${f} 要用共享工厂`);
+    assert.doesNotMatch(s, /new\s+THREE\.WebGLRenderer\s*\(/, `${f} 已经在用共享工厂，不该再自己建上下文`);
+  }
+  for (const f of RENDERER_SITES) if (/three\/ctx\.mjs/.test(rd(f))) assert.doesNotMatch(rd(f), /new\s+THREE\.WebGLRenderer\s*\(/, f);
   assert.match(rd(FACTORY), /new\s+THREE\.WebGLRenderer\(/, '工厂自己负责 new');
   assert.match(rd(FACTORY), /forceContextLoss/, '工厂负责真拆');
 });
