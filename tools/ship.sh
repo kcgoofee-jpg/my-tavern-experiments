@@ -33,7 +33,7 @@ python3 tools/check_maps.py --committed HEAD >/dev/null || { python3 tools/check
 if [ "$REL" = 1 ]; then
   TAG_REL=$(python3 -c "import sys; sys.path.insert(0, 'tools'); import verlib; print(verlib.tag_of(open('VERSION').read().strip()))")
   git rev-parse -q --verify "refs/tags/$TAG_REL" >/dev/null || { echo "--release：标签 $TAG_REL 不存在，先打标签并推送" >&2; exit 2; }
-  if [ "$DRY" = 1 ]; then echo "   演练：README 置顶导入链接 → $TAG_REL（不提交）"
+  if [ "$DRY" = 1 ]; then echo "   演练：README 置顶导入链接 → ${TAG_REL}（不提交）"
   else
     python3 tools/check_readme.py --fix | sed 's/^/   /' || echo "   提醒：README 门控还有未修项（见上），本次发布继续" >&2
     if ! git diff --quiet -- README.md; then
@@ -48,7 +48,7 @@ if [ "$REL" = 1 ]; then
   git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || { echo "--release：标签 $TAG 不存在，先打标签并推送" >&2; exit 2; }
   printf '{"tag": "%s", "version": "%s"}\n' "$TAG" "$(< VERSION)" > map/data/latest.json
   if ! git diff --quiet -- map/data/latest.json || ! git ls-files --error-unmatch map/data/latest.json >/dev/null 2>&1; then
-    [ "$DRY" = 1 ] && echo "   演练：latest.json → $TAG（不提交）" || { git add map/data/latest.json; git commit -q -m "release pointer: $TAG" -- map/data/latest.json; echo "   latest.json → $TAG"; }
+    [ "$DRY" = 1 ] && echo "   演练：latest.json → ${TAG}（不提交）" || { git add map/data/latest.json; git commit -q -m "release pointer: $TAG" -- map/data/latest.json; echo "   latest.json → $TAG"; }
   fi
 fi
 
@@ -97,5 +97,5 @@ P=$(python3 tools/build_preview_script.py --follow "$BR" --out "$PO"); echo "   
 echo "== 汇总"
 echo "   分支 $BR  提交 $SHORT  $( [ "$DRY" = 1 ] && echo '（演练，未推送）' || echo '已推送')"
 echo "   CDN：$WARMSUM"
-echo "   预览：酒馆助手导入「$OUT」里的跟随脚本（导入一次即可，之后刷新酒馆就拿到最新提交）"
+echo "   预览：酒馆助手导入「${OUT}」里的跟随脚本（导入一次即可，之后刷新酒馆就拿到最新提交）"
 echo "   直接看：https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@$SHORT/map/viewer.html"

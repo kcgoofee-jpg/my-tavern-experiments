@@ -24,7 +24,7 @@ while [ $# -gt 0 ]; do case "$1" in
   -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
   *) ARGS+=("$1") ;; esac; shift; done
 purge() { for f in map/data/head.json map/tavern/host-th.mjs map/tavern/host-routes.mjs map/tavern/host-lifecycle.mjs map/tavern/eden-map.js map/tavern/follow.mjs; do   # 宿主拆分（C2）：先清 host-*.mjs 再清入口，免得新入口配旧模块
-  curl -fsS --max-time 30 "https://purge.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@$PBR/$f" >/dev/null && echo "已清缓存 @$PBR/$f" || echo "清缓存失败 @$PBR/$f（最长约 12 小时后自然更新；加载器也读 raw.githubusercontent）"; done; }
+  curl -fsS --max-time 30 "https://purge.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@$PBR/$f" >/dev/null && echo "已清缓存 @$PBR/$f" || echo "清缓存失败 @$PBR/${f}（最长约 12 小时后自然更新；加载器也读 raw.githubusercontent）"; done; }
 REF=${ARGS[0]:-$(python3 -c "import sys; sys.path.insert(0, 'tools'); import verlib; print(verlib.tag_of(open('VERSION').read().strip()))")}; JOBS=${ARGS[1]:-16}   # 标签规则见 tools/verlib.py
 # 后台脱离：把去掉 --detach 的同一条命令丢给操作系统，输入输出全部重定向，父进程立刻返回（agent 不用干等 CDN）
 if [ "$DETACH" = 1 ]; then

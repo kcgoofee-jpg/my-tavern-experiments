@@ -6,7 +6,7 @@
 #   3. map/viewer.html 的内联脚本抽出来 node --check；map/*.js、map/*.mjs、map/tavern/*.js|mjs 也 node --check
 #   4. map/data/*.json、map/i18n/*.json 能解析
 #   5. 可选 --cdn <ref>：对该 ref 下 map/ 的一组文件（固定几个入口 + 随机瓦片）发 HEAD 到 jsDelivr，要求全部 200
-#   6. tools/**/*.sh lint：`$var` 紧跟非 ASCII 字符（macOS bash 3.2 下会被吞进变量名报 unbound variable）；
+#   6. tools/*.sh + tools/**/*.sh lint：`$var` 紧跟非 ASCII 字符（macOS bash 3.2 下会被吞进变量名报 unbound variable）；
 #      裸 cat/ls（用户 shell 把 cat/ls 起了坏别名，脚本要用 `command cat`/`command ls`）
 #   7. 架构看门狗（tools/check_architecture.py）：map/core/ 单文件 ≤400 行；core 零父级 import、
 #      core 与纯流水线不碰宿主全局（单一属主豁免表见脚本头）；viewer.html / map/app/ 禁裸 z-index 字面量
@@ -42,7 +42,7 @@ step "渲染守卫 lint（渲染脚本必须经 setup_render_device/pick_gpu 配
 step "渲染守卫单测（看门狗状态机 / 预检 / 事故回归）" python3 tools/test_render_guard.py
 step "角色卡清洗单测（tools/clean_card.py，V3 容错解析 / 载荷零丢失）" python3 tests/test_clean_card.py
 step "CDN 预热单测（增量 / 全量 / 重度升级 / 后台脱离，见 tests/test_warm_cdn.py）" python3 tests/test_warm_cdn.py
-step "node --test tests/($(ls tests/*.test.mjs | wc -l | tr -d ' ') 个)" node --test tests/*.test.mjs
+step "node --test tests/($(command ls tests/*.test.mjs | wc -l | tr -d ' ') 个)" node --test tests/*.test.mjs
 
 inline_check() {
   python3 - "$TMP" <<'PY' || return 1
@@ -82,7 +82,7 @@ step "JSON（map/data、map/i18n）" json_check
 cdn_check() {
   local base="https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@$CDN"
   git rev-parse --verify -q "$CDN^{commit}" >/dev/null || git fetch -q origin "$CDN" 2>/dev/null || true
-  local list; list=$(git ls-tree -r --name-only "$CDN" -- map 2>/dev/null) || { echo "本地没有 $CDN（先 git fetch）"; return 1; }
+  local list; list=$(git ls-tree -r --name-only "$CDN" -- map 2>/dev/null) || { echo "本地没有 ${CDN}（先 git fetch）"; return 1; }
   { printf '%s\n' map/viewer.html map/ui/tokens.css map/tavern/eden-map.js map/tavern/host-th.mjs map/tavern/host-routes.mjs map/tavern/host-lifecycle.mjs map/data/maps.json map/events.mjs map/app/boot.mjs
     grep -E '_files/[0-9]+/' <<<"$list" | python3 -c "import sys,random; l=sys.stdin.read().split(); random.shuffle(l); print('\n'.join(l[:$CDN_N]))"
   } | grep -vE '\.(md|py)$' | sort -u > "$TMP/cdn"
@@ -96,7 +96,9 @@ shell_lint() {
   # BSD grep（macOS 自带）没有 -P（PCRE），非 ASCII 判断也不好写可移植的 POSIX 正则，改用 python3。
   python3 - <<'PY'
 import re, subprocess, sys
-files = subprocess.run(['git', 'ls-files', 'tools/**/*.sh'], capture_output=True, text=True).stdout.split()
+# 2026-09-30：两个 glob 都要——`tools/**/*.sh` 只匹配子目录，顶层 tools/*.sh（ship.sh / smoke.sh / warm_cdn.sh
+# 这些发布链脚本）以前一条都没被 lint，$OUT」 这类「变量紧贴中文」在 bash 3.2 + set -u 下直接 unbound（ship.sh 就崩过）。
+files = subprocess.run(['git', 'ls-files', 'tools/*.sh', 'tools/**/*.sh'], capture_output=True, text=True).stdout.split()
 var_re = re.compile(r'\$[A-Za-z_][A-Za-z0-9_]*(?=[^\x00-\x7F])')
 bare_re = re.compile(r'(^|[;&|(]|\bthen\b|\bdo\b)\s*(cat|ls)(\s|$)')
 skip_bare = re.compile(r'\b(command|which|type)\s+(cat|ls)\b')

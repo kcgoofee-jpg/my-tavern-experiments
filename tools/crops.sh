@@ -21,7 +21,7 @@ while [ $# -gt 0 ]; do
   R=$1; shift
   [[ "$R" =~ ^([A-Za-z0-9_.-]+)=($NUM),($NUM),($NUM),($NUM)$ ]] || { echo "区域格式不对：'$R'（要 名字=x0,y0,x1,y1，0…1）" >&2; exit 2; }
   N=${R%%=*}; B=${R#*=}
-  python3 - "$B" <<'PY' || { echo "区域 $N 无效：$B（要 x0<x1、y0<y1）" >&2; exit 2; }
+  python3 - "$B" <<'PY' || { echo "区域 $N 无效：${B}（要 x0<x1、y0<y1）" >&2; exit 2; }
 import sys; x0, y0, x1, y1 = map(float, sys.argv[1].split(',')); sys.exit(0 if 0 <= x0 < x1 <= 1 and 0 <= y0 < y1 <= 1 else 1)
 PY
   NAMES+=("${L}_$N"); BOXES+=("$B"); SPEC+="${SPEC:+;}$B:${L}_$N"
@@ -35,11 +35,11 @@ bash tools/quiet_wait.sh
 BL=${BLENDER:-/Applications/Blender.app/Contents/MacOS/Blender}
 [ -x "$BL" ] || BL=$(command -v blender) || { echo "找不到 Blender" >&2; exit 1; }
 mkdir -p "$OUT"; OUT=$(cd "$OUT" && pwd); LOG="$OUT/${L}_crops.log"
-echo "== $L ${RES}px ${SAMPLES:-64} 采样，${#NAMES[@]} 块 → $OUT（日志 $LOG）"
+echo "== $L ${RES}px ${SAMPLES:-64} 采样，${#NAMES[@]} 块 → ${OUT}（日志 ${LOG}）"
 T0=$SECONDS
 for i in "${!NAMES[@]}"; do rm -f "$OUT/${NAMES[$i]}.png"; done   # 先删旧图：否则渲染失败时上一轮的图会被当成本次结果（2026-09-27 接手 review）
 "$BL" -b -P "$SCRIPT" -- --res "$RES" --samples "${SAMPLES:-64}" --crops "$SPEC" --out-dir "$OUT" ${EXTRA[@]+"${EXTRA[@]}"} > "$LOG" 2>&1; RC=$?
-[ "$RC" = 0 ] || echo "警告：Blender 退出码 $RC（继续检查已产出的块）" >&2
+[ "$RC" = 0 ] || echo "警告：Blender 退出码 ${RC}（继续检查已产出的块）" >&2
 grep -E "Traceback|Error:" "$LOG" | head -5 || true
 H=$(python3 -c "print(round($RES * 18.75 / 30))")              # 与 tc_common 的 W / H 一致
 FAIL=0

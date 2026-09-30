@@ -39,7 +39,7 @@ cp README.md "$TMP/"
 [ -f LICENSE ] && cp LICENSE "$TMP/"
 LICENSE_FIELD=$([ -f LICENSE ] && echo "SEE LICENSE IN LICENSE" || echo "SEE LICENSE IN README.md")
 
-cat > "$TMP/package.json" <<EOF
+command cat > "$TMP/package.json" <<EOF
 {
   "name": "$NAME",
   "version": "$VER",
@@ -52,10 +52,10 @@ cat > "$TMP/package.json" <<EOF
 }
 EOF
 
-echo "== $NAME@$VER（临时目录 $TMP）"
+echo "== $NAME@${VER}（临时目录 ${TMP}）"
 N=$(find "$TMP/map" -type f | wc -l | tr -d ' '); S=$(du -sh "$TMP/map" | cut -f1)
 echo "   map/ 下 $N 个文件，共 $S"
 ( cd "$TMP" && npm pack --dry-run 2>&1 | grep -E "total files|package size|unpacked size|name:|version:" ) || echo "（没有 npm：只统计了文件数和大小）"
 [ -f LICENSE ] || echo "提醒：仓库没有 LICENSE 文件，package.json 的 license 暂填 \"SEE LICENSE IN README.md\"；发布前请决定许可证。"
-[ "$KEEP" = 1 ] && echo "保留临时目录：$TMP（发布：cd 进去后 npm publish，务必先确认版本号）"
+[ "$KEEP" = 1 ] && echo "保留临时目录：${TMP}（发布：cd 进去后 npm publish，务必先确认版本号）"
 echo "未发布（这个脚本不会执行 npm publish）。"

@@ -72,7 +72,7 @@ done
 
 log "3) Worktrees to re-attach with 'git worktree repair' (run from $NEW_PATH):"
 log "   These live under a scratchpad dir outside the repo and still point at the old repo path internally."
-cat <<EOF
+command cat <<EOF
    git worktree repair /path/to/scratchpad/wt-mid
    git worktree repair /path/to/scratchpad/wt18
    git worktree repair /path/to/scratchpad/wtw

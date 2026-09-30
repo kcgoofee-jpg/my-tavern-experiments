@@ -30,7 +30,7 @@ if [ "${1:-}" = "--uninstall" ]; then
 fi
 
 mkdir -p "$HOME/Library/LaunchAgents" "$ROOT/logs/queue"
-cat > "$PLIST" <<PLIST_EOF
+command cat > "$PLIST" <<PLIST_EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -61,7 +61,7 @@ for _ in 1 2 3 4 5 6; do
   if launchctl list 2>/dev/null | grep -q "$LABEL"; then ok=1; break; fi
 done
 if [ "$ok" = 1 ]; then
-  echo "已装载 $LABEL（KeepAlive：挂了自动重拉；单例锁保证只有一个派工）"
+  echo "已装载 ${LABEL}（KeepAlive：挂了自动重拉；单例锁保证只有一个派工）"
   holder=$(command cat "$ROOT/logs/queue/.dispatch.lock/pid" 2>/dev/null || echo "")
   [ -n "$holder" ] && echo "派工锁持有者：PID $holder"
   echo "日志：logs/queue/dispatch.out / dispatch.err"

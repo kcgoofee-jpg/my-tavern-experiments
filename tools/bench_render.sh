@@ -13,5 +13,5 @@ for DEV in gpu hybrid; do
   T1=$(date +%s)
   R=$(grep -Eo "\[ *[0-9.]+s\] render done" "logs/bench_${L}_${DEV}.log" | tail -1 || true)
   S0=$(grep -Eo "\[ *[0-9.]+s\] render start" "logs/bench_${L}_${DEV}.log" | tail -1 || true)
-  echo "$DEV：总用时 $((T1 - T0)) 秒（$S0 → $R）"
+  echo "${DEV}：总用时 $((T1 - T0)) 秒（$S0 → ${R}）"
 done

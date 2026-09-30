@@ -47,7 +47,7 @@ for L in "${LAYERS[@]}"; do
     upper) LARGS=(--below clouds) ;;
     upper_city) SCRIPT="blender/tiancheng_upper.py"; LARGS=(--below city) ;;
   esac
-  [ -f "$SCRIPT" ] || { echo "跳过 ${L}（没有 $SCRIPT）"; continue; }
+  [ -f "$SCRIPT" ] || { echo "跳过 ${L}（没有 ${SCRIPT}）"; continue; }
   if [ "$USE_BPY" = 1 ]; then RUN=("$PY" "$SCRIPT"); else RUN=("$BL" -b -P "$SCRIPT"); fi
   T0=$SECONDS
   if [ "$DATA_ONLY" = 1 ]; then
@@ -70,7 +70,7 @@ for L in "${LAYERS[@]}"; do
   echo "== 渲染 ${L}：${RES}px，${SAMPLES} 采样"
   rm -f "$OUT"
   mkdir -p logs; LOG="logs/render_${L}.log"
-  echo "   完整日志：$LOG（看进度：tail -f $LOG | grep -E 'Tiles|Sample|^\\['）"
+  echo "   完整日志：${LOG}（看进度：tail -f $LOG | grep -E 'Tiles|Sample|^\\['）"
   if [ "$USE_BPY" = 1 ]; then
     "${RUN[@]}" -- --res "$RES" --samples "$SAMPLES" --out "$OUT" ${LARGS[@]+"${LARGS[@]}"} ${EXTRA[@]+"${EXTRA[@]}"} 2>&1 | tee "$LOG" | grep --line-buffered -E "^\[|WROTE|Error|Traceback" || true
   else
