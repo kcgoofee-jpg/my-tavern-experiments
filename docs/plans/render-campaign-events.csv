@@ -456,3 +456,14 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T20:55:18Z,isle:isle25,final,claim,hero-1,,
 2026-09-30T20:57:09Z,isle:isle25,final,done,hero-1,,final 2400/64; cutout 480m
 2026-09-30T20:57:09Z,isle:isle25,integrate,wait,hero-1,,not pasted: isle25 sits under the r5 Eden image in the shipped base (eden_hi inset); paste with layout C (layout:tc_upper)
+2026-09-30T20:57:11Z,isle:isle25,integrate,claim,hero-1,,
+2026-09-30T20:57:14Z,isle:isle25,integrate,release,hero-1,,integrate waits for layout C (Eden image overlap)
+2026-09-30T20:57:15Z,isle:isle25,integrate,claim,hero-1,,
+2026-09-30T20:57:20Z,isle:isle25,integrate,release,hero-1,,re-offered; parked until layout C
+2026-09-30T20:57:20Z,isle:isle30,setting,done,hero-1,,setting block C1-C2/S1-S10
+2026-09-30T20:57:50Z,isle:isle30,draft,done,hero-1,,draft1 OK
+2026-09-30T20:57:50Z,isle:isle30,board,done,hero-1,,draft1 OK
+2026-09-30T20:57:50Z,isle:isle30,review-r1,done,hero-1,pass,r1 7.5/6.0; curtain fall too opaque (minor)
+2026-09-30T21:01:55Z,isle:isle30,final,done,hero-1,,final 2400/64; cutout 470m
+2026-09-30T21:01:55Z,isle:isle30,integrate,done,hero-1,,"crop (0.703,0.437,0.863,0.678) + cutout 470m; DZI rebuilt"
+2026-09-30T21:01:57Z,isle:isle30,ship,wait,hero-1,,FREEZE_MAPS (S4-3); tiles ready on render-hero-1
