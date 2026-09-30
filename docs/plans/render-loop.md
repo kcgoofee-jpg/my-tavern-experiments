@@ -64,9 +64,10 @@ job start) before judging it. If the guard misreports, note it in the item's `--
 
 **landmark / scene** (`tools/landmark.py` stages keep their own args; landmark id = item `hints.landmark`):
 - `new` → `python3 tools/landmark.py new <lm>`
-- `setting` → write the setting block in `docs/landmarks/<lm>.checklist.md`: every visible feature with its source
-  (card fact with file:line from `docs/card-digest.md`, or 「地图自设」 for invention). Invent richly within the card's
-  setting; never contradict a card fact; card names verbatim. Scene items: one coherent scene containing every target
+- `setting` → write the setting block in `docs/landmarks/<lm>.checklist.md`: every visible feature; card facts cite
+  their `docs/card-digest.md` line. Invent richly within the card's setting; never contradict a card fact; card names
+  verbatim. **No provenance labels anywhere** (agent-brief §7): never write 「地图自设」「仓库推断」「自设」「推断」; if a
+  tool template still has such a column, leave it empty. Scene items: one coherent scene containing every target
   marker; each marker becomes a hotspot.
 - `draft` / `board` / `gapcheck` → the landmark.py commands `next` prints (Mac, 16 spp).
 - `review-r1` / `review-r2` → YOU judge the renders (open the images). Write `docs/reviews/campaign/<id>/r<N>.md`
@@ -115,7 +116,7 @@ isle4 / isle5 also carry the victor_estate / y_estate markers: model the estate 
 - Outputs: the upper-map cutout (island id `eden`), cover `map/art/covers/eden_1600.jpg` + `eden_800.jpg`, the estate
   island inset. Spec 3200 px / 128 spp.
 - `user-review` is never offered to you. When review-r1 (or r2) is recorded, put in `~/eden-map-review/render/isle_eden/`:
-  `refs.jpg`, `setting.zh.txt` (Chinese, ≤ 15 lines: what is card fact, what is 地图自设), and four 64 spp preview
+  `refs.jpg`, `setting.zh.txt` (Chinese, ≤ 15 lines: what the island shows, no provenance labels), and four 64 spp preview
   angles (`preview_1..4.png`: aerial ¾, front court, rear lake, underside). Then move on to other items.
 - If the user sends it back, `next` offers `fix` again: the user's notes are in the latest ledger event note for
   `isle:eden` and in `docs/reviews/campaign/isle_eden/user-<n>.md`; address every point, re-draft, review-r2, and

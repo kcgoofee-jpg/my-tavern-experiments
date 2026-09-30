@@ -131,7 +131,12 @@
 ## 7. Eden pack content rules (these move to the eden repo at the S10 split)
 
 - Card names are copied verbatim into pack data (places, rooms, characters, MVU keys, worldbook triggers), adult
-  wording included; no invented placeholder names. Map-invented content is tagged 「地图自设」 (`tag: "inf"`).
+  wording included; no invented placeholder names.
+- **No provenance labels** (user decision, restated 2026-09-30): the whole project is a derivative work, so nothing
+  the user or the model can see — UI, data text, worldbook, render notes, review hand-offs — says 「地图自设」,
+  「仓库推断」, 「自设」, 「推断」 or any "card vs. invented" wording. Invent within the card's setting and never
+  contradict a card fact; card facts may be cited by `docs/card-digest.md` line numbers, the rest simply carries no
+  tag.
 - Content boundary (user decision 2026-09-29): facilities, props and their uses are written, and may be modelled,
   as the card describes; room names are the card's own. The old "keep private rooms neutral / do not model"
   constraints are void (`docs/archive/README.md`).
