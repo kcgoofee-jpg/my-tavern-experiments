@@ -51,6 +51,10 @@ def main(argv=None):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     from . import core, views, export, plan, rooms
     errs, _ = plan.validate(verbose=False)
+    allow = int(opt.get('--allow-unmatched', 0) or os.environ.get('EDEN_ALLOW_UNMATCHED', 0))
+    if allow:
+        # 允许 maps.json 中未单独建模的功能间（如后勤/清洗/备餐，含中英文别名）不命中 3D 房间
+        errs = [e for e in errs if 'not matched' not in e]
     if errs: sys.exit('plan.validate failed: ' + '; '.join(errs[:5]))
     ctx = core.Ctx(opt)
     for v in ctx.views:
