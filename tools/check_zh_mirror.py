@@ -14,6 +14,7 @@ PAIRS = [
     ("docs/plans/spatial-os.md", "docs/plans/spatial-os.zh.md"),
     ("docs/ARCHITECTURE.md", "docs/ARCHITECTURE.zh.md"),
     ("docs/naming.md", "docs/naming.zh.md"),
+    ("docs/kernel-schema.md", "docs/kernel-schema.zh.md"),
 ]
 HEADING = re.compile(r"^(#{1,6})\s")
 
