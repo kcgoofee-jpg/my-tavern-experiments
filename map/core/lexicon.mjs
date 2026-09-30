@@ -1,6 +1,6 @@
 // Text primitives and the kernel word lists of kernel contract v2 (docs/kernel-schema.md K-R07, K-R15, K-R17, K-R19).
 // Pure and self-contained: no host globals, no imports from outside map/core (the FNV hash and the zh journey patterns
-// are copies of the ones in stash.mjs and here.mjs, on purpose).
+// are copies of the ones in stash.mjs and the old place resolver, on purpose).
 
 const P1 = /[‘’‚‛′ʼ]/g;          // curly single quotes and primes -> '
 const P2 = /[“”„‟″]/g;                // curly double quotes and double primes -> "

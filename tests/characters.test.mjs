@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as C from '../map/tavern/characters.mjs';
 import { GROUPS, parseMarks } from '../map/tavern/events.mjs';
-import { buildIndex, resolveHere } from '../map/here.mjs';
+import { buildIndex, resolveHere } from './helpers/here-engine.mjs';
 
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
 
@@ -55,7 +55,7 @@ t('头像只存本机：按聊天、全局兜底；只收图片 data / http 地�
   assert.equal(C.removeAvatar(st, 'c1', '甲'), true); assert.equal(C.readAvatars(st, 'c1').甲, 'data:image/png;base64,AAA');
   C.writeCharPrefs(st, 'c1', { show: false, off: ['甲', '甲'] }); assert.deepEqual(C.readCharPrefs(st, 'c1'), { show: false, off: ['甲'] });
 });
-t('人物地点与玩家地点同一条解析链（here.mjs）', () => {
+t('人物地点与玩家地点同一条解析链（app/here-v2.mjs）', () => {
   const J = p => JSON.parse(readFileSync(new URL('../map/' + p, import.meta.url), 'utf8'));
   const idx = buildIndex(J('data/maps.json'), J('data/world_markers.json'));
   assert.equal(resolveHere('下层·7号井', idx)?.map, 'tc_low');

@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { buildIndex, resolveHere } from '../map/here.mjs';
+import { buildIndex, resolveHere } from './helpers/here-engine.mjs';
 const J = f => JSON.parse(readFileSync(new URL('../map/' + f, import.meta.url), 'utf8'));
 const REG = J('data/maps.json'), W = J('data/world_markers.json'), PLAN = J('data/eden_estate_rooms.json');
 test('A23：灵枢秘派 解析到世界图的虚灵古派', () => {

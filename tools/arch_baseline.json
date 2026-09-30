@@ -38,7 +38,6 @@
     "map/compose.mjs": 1,
     "map/custom.mjs": 5,
     "map/events.mjs": 7,
-    "map/here.mjs": 5,
     "map/i18n/en.json": 3,
     "map/i18n/zh.json": 20,
     "map/tavern/adapter.mjs": 5,

@@ -1,7 +1,7 @@
 // node tests/trips095.test.mjs —— v0.9.5 行程：交通方式关键词、JSONPatch 里的地点、玩家 / 人物行程、最近 5 段（map/tavern/trips.mjs）。例子都是中性的
 import assert from 'node:assert/strict';
 import * as R from '../map/tavern/trips.mjs';
-import { parseTransit } from '../map/here.mjs';
+import { parseTransit } from '../map/core/transit.mjs';
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
 t('交通方式：最长关键词胜出；通用奇幻词默认不启用', () => {
   assert.equal(R.modeOf('坐悬浮车去'), 'air'); assert.equal(R.modeOf('沿着悬浮轨道'), 'rail'); assert.equal(R.modeOf('穿过步行连廊'), 'road');

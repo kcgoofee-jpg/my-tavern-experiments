@@ -193,7 +193,7 @@ python3 tools/build_preview_script.py --follow preview --pack <id>   # 跟随版
 |---|---|
 | `skills/card-map/export_card.py` | PNG / JSON 卡 → 可逐行读的文本 + 行数（拒绝写进仓库） |
 | `skills/card-map/coverage.py` | 读者报告的行号范围求并集，列出缺口 |
-| `skills/card-map/check_here.mjs` | 包的每个地点写法 → `map/here.mjs` 落点自查 |
+| `skills/card-map/check_here.mjs` | 包的每个地点写法 → `map/app/here-v2.mjs` 落点自查 |
 | `skills/card-map/blender_run.sh` | 等 GPU 空闲再起 Blender，记录自己的 PID |
 | `skills/card-map/templates/smoke_building.py` | 冒烟级单栋模型（纯色），验证建模 → 渲染链 |
 | `skills/card-map/HOW-IT-WORKS.md` | 流程图与读写清单（给人看） |

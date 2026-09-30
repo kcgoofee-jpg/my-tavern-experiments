@@ -826,7 +826,7 @@ const ALIAS_OF = {}; for (const [k, arr] of Object.entries(ALIAS)) for (const a 
 function keysOf(it) {
   const d = it.d;
   if (it.kind === 'area') return [d.name, d.en, ...(d.alias || [])];
-  const base = d.name.replace(/[（(][^）)]*[）)]/g, '').replace(/\s*[×x]\s*\d+\s*$/, '').trim();   // 同 here.mjs planWords：去括注 / 「 ×2」，「 / 」两侧各算一个叫法
+  const base = d.name.replace(/[（(][^）)]*[）)]/g, '').replace(/\s*[×x]\s*\d+\s*$/, '').trim();   // 同 core/compat-v1-geo.mjs planWords：去括注 / 「 ×2」，「 / 」两侧各算一个叫法
   return [d.name, d.id, d.card_id, base, ...(base.split(/\s*[\/／]\s*/).filter((w) => [...w].length >= 2)), ...(d.alias || []), ...(d.words || []), ...(d.synonyms || []), ...(ALIAS[d.name] || [])];
 }
 // 旧编号 / 仓库以前自编的旧名（聊天里存过的）→ 现在的卡编号

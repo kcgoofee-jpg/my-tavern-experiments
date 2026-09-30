@@ -162,7 +162,7 @@ export function aliasMap(c, kinds = KINDS) {
 }
 /** 查自定义项：标准名或显示名都认 */
 export function findKey(c, word) { word = clean(word); if (!word) return null; if (c?.items?.[word]) return word; return aliasMap(c)[word] || null; }
-/** 旧版本机叫法（here.mjs：{ rooms: { 自定义名: 标准房间名 } }）并进来；已有显示名的只记成旧叫法 */
+/** 旧版本机叫法（core/legacy-custom.mjs readCustom：{ rooms: { 自定义名: 标准房间名 } }）并进来；已有显示名的只记成旧叫法 */
 export function migrateRooms(c, rooms) {
   const n = normCustom(c); let changed = 0;
   for (const [a, r] of Object.entries(rooms || {})) {

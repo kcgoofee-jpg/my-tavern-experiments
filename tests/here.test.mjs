@@ -1,7 +1,8 @@
-// node tests/here.test.mjs —— 当前地点 → 落点（map/here.mjs）六级单测，用仓库里真实的 maps.json / world_markers.json / en.json
+// node tests/here.test.mjs —— 当前地点 → 落点（app/here-v2.mjs，节点树上的当前地点）六级单测，用仓库里真实的 maps.json / world_markers.json / en.json
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { buildIndex, resolveHere, customKey, readCustom, setRoomAlias, removeRoomAlias } from '../map/here.mjs';
+import { buildIndex, resolveHere } from './helpers/here-engine.mjs';
+import { customKey, readCustom } from '../map/core/legacy-custom.mjs';
 
 const J = p => JSON.parse(readFileSync(new URL('../map/' + p, import.meta.url), 'utf8'));
 const idx = buildIndex(J('data/maps.json'), J('data/world_markers.json'), J('i18n/en.json').names);
@@ -77,16 +78,11 @@ t('自定义房间叫法（本机）：落到对应的标准房间', () => {
   assert.equal(resolveHere('坏名', ci), null);   // 指向不存在房间的自定义名不生效
   assert.equal(R('我的秘密书斋'), null);          // 不传自定义表时照旧
 });
-t('自定义叫法的本机存储：按聊天分开，没有聊天 id 用全局（E6）', () => {
+t('旧版自定义叫法的本机存储（只读）：按聊天分开，没有聊天 id 用全局；读出来的表能落点（E6）', () => {
   const mem = new Map(), store = { getItem: k => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: k => mem.delete(k) };
   assert.equal(customKey('c1'), 'edenMap:chat:c1:custom'); assert.equal(customKey(''), 'edenMap:custom'); assert.equal(customKey(null), 'edenMap:custom');
-  const std = idx.estate.std;
-  assert.ok(std.includes('书房') && !std.includes('我的秘密书斋'));
-  assert.equal(setRoomAlias(store, 'c1', '  我的秘密书斋 ', '书房', std), true);
-  assert.equal(setRoomAlias(store, 'c1', '坏名', '不存在的房间', std), false);   // 只能指向标准房间
-  assert.equal(setRoomAlias(store, 'c1', '书房', '主卧', std), false);            // 标准房间名不能改指别处
-  assert.equal(setRoomAlias(store, 'c1', '', '书房', std), false);
-  assert.equal(setRoomAlias(store, '', '小窝', '主卧', std), true);               // 没有聊天 id：全局
+  assert.ok(idx.estate.std.includes('书房') && !idx.estate.std.includes('我的秘密书斋'));
+  store.setItem(customKey('c1'), JSON.stringify({ rooms: { 我的秘密书斋: '书房' } })); store.setItem(customKey(''), JSON.stringify({ rooms: { 小窝: '主卧' } }));
   assert.deepEqual(readCustom(store, 'c1'), { rooms: { 我的秘密书斋: '书房' } });
   assert.deepEqual(readCustom(store, ''), { rooms: { 小窝: '主卧' } });
   assert.deepEqual(readCustom(store, 'c2'), { rooms: {} });                          // 别的聊天看不到
@@ -95,14 +91,12 @@ t('自定义叫法的本机存储：按聊天分开，没有聊天 id 用全局�
   const ci = buildIndex(J('data/maps.json'), J('data/world_markers.json'), J('i18n/en.json').names, readCustom(store, 'c1'));
   const r = resolveHere('我的秘密书斋', ci); assert.equal(r.level, 1); assert.equal(r.room, '书房'); assert.equal(r.custom, true);
   assert.equal(resolveHere('小窝', ci), null);
-  // 删除；删到空就把键也删掉
-  assert.equal(removeRoomAlias(store, 'c1', '我的秘密书斋'), true); assert.equal(removeRoomAlias(store, 'c1', '我的秘密书斋'), false);
-  assert.equal(mem.has('edenMap:chat:c1:custom'), false);
   // 坏数据不抛错
   mem.set('edenMap:chat:c3:custom', '{坏'); assert.deepEqual(readCustom(store, 'c3'), { rooms: {} });
   mem.set('edenMap:chat:c4:custom', JSON.stringify({ rooms: { a: 1, b: '主卧' } })); assert.deepEqual(readCustom(store, 'c4'), { rooms: { b: '主卧' } });
-  // 不知道标准房间列表（地图还没开）：先存，落点时无效的照样被忽略
-  assert.equal(setRoomAlias(store, 'c5', '某处', '不存在的房间', null), true);
+  assert.deepEqual(readCustom(null, 'c5'), { rooms: {} });
+  // 存的是无效的标准房间：落点时照样被忽略
+  mem.set('edenMap:chat:c5:custom', JSON.stringify({ rooms: { 某处: '不存在的房间' } }));
   assert.equal(resolveHere('某处', buildIndex(J('data/maps.json'), null, null, readCustom(store, 'c5'))), null);
 });
 t('开局地点（v0.9.2）：卡里开场白写的当前地点都能落点', () => {

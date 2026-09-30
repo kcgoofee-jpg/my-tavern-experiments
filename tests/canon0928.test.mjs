@@ -1,7 +1,7 @@
 // node tests/canon0928.test.mjs —— 卡原名对账（docs/reviews/canon_audit_0928.md）：卡里的原名与模型常写的全称要能落到对的地标 / 事件类型
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { buildIndex, resolveHere } from '../map/here.mjs';
+import { buildIndex, resolveHere } from './helpers/here-engine.mjs';
 import { catOf } from '../map/tavern/events.mjs';
 
 const J = p => JSON.parse(readFileSync(new URL('../map/' + p, import.meta.url), 'utf8'));

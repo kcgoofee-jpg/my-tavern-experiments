@@ -30,7 +30,7 @@ export function patchPlace(text, path = '/世界/当前地点') {
   return last.trim();
 }
 const same = (a, b) => String(a || '').trim() === String(b || '').trim();
-/** 玩家的行程：seq = [{ floor, place, text?, time? }]（按楼层升序）；transit = here.mjs 的 parseTransit。
+/** 玩家的行程：seq = [{ floor, place, text?, time? }]（按楼层升序）；transit = core/transit.mjs 的 parseTransit。
  *  相邻两楼地点变了 → 一段 A → B；地点本身写成「A至B」→ 这一楼一段。mode 按这一楼的原文 + 地点找 */
 export function playerTrips(seq, transit = () => null, kw = DEFAULT_KEYWORDS) {
   const out = []; let prev = null;

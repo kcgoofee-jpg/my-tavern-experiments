@@ -60,7 +60,7 @@
 | `app/tiers.mjs` | `map/app/tiers.mjs:1` | 清晰度档位、省流判断（`lean`）、加载进度、叠加层、标注避让（`declutter`）、航线间隙测量。 | `app/sharpness-tiers.mjs` | 内部 | S5 | 引用：map 20 个文件（改名文件里被引用最多的，务必脚本化改名）。新名字只覆盖第一件事；`declutter` 和叠加层以后可拆成 `label-declutter.mjs`（当前未排期）。存储键 `edenMapTierV2` 见表 F。 |
 | `app/insets.mjs` | `map/app/insets.mjs:1` | 视图放大到插图覆盖的范围时叠一张单独的高分辨率瓦片图（`maps.json` 的 `insets[]`），缩出去就摘掉。 | `app/hires-inset-tiles.mjs` | 内部 | S5 | 引用：map 4 个、工具 1 个。数据字段 `insets` 属于设定包数据（schema v2 在 S1 定），本次不动。 |
 | `section.js` | `map/section.js:1` | 第一个设定包的纵剖面原型绘制（SVG；`validateSection`、`normSection`、`drawSection`）；不在引擎扫描范围内，里面有卡的条目名。 | `vertical-section.js` (moves with the first pack) | 内部 | S10 | 引用：1 个页面（`map/tiancheng.html`）、测试 3 个、工具 1 个。不是引擎代码，S10 随第一个设定包搬进它的仓库（计划风险表），到时再改名。 |
-| `here.mjs` | `map/here.mjs:1` | 纯函数的当前地点解析器：把聊天里的地点字符串经六个固定层级落到地图目标；查看器和 node 测试共用。 | `place-resolver.mjs` | 内部 | S5 | 引用：map 2 个、测试 8 个、工具 1 个（本表里与测试耦合最重的）。S3 会用节点匹配取代六个层级：只有文件在 S3 后仍存在才改名。`here` 还是一个 DOM 输入框、一个解析结果和一类消息的名字；术语表：「当前地点」。 |
+| `here-v2.mjs` | `map/app/here-v2.mjs:1` | 当前地点引擎：聊天里的地点字符串经 `nodes.locate` 在节点树上落点，再还原成使用方读的结果形状；查看器、`tavern/spatial.mjs` 与构建工具共用。 | `place-resolver.mjs` | 内部 | S5 | v1 的解析器 `map/here.mjs` 已在 S3-3 删除。`here` 还是一个 DOM 输入框、一个解析结果和一类消息的名字；术语表：「当前地点」。 |
 | `inv.mjs` | `map/inv.mjs:1` | 空间化背包的查看器侧：这个地点存放 / 藏着的东西，显示在地点卡上。 | `stash-view.mjs` | 内部 | S5 | 同一个概念现在有五个名字（`core/stash`、`core/pickup`、`app/loot`、`tavern/inventory` 和本文件）：见术语表「Stash」。引用：map 1 个。全局 `TCInv`（表 C）。内容在 S6 改。 |
 | `unmapped.mjs` | `map/unmapped.mjs:1` | 小选择器：把一个认不出的地点名指派给节点、标记、房间，或选「忽略」。 | `unmapped-place-picker.mjs` | 内部 | S5 | 引用：map 1 个。全局 `TCUnmapped`（`P.` 引用 9 处）和消息 `eden-map:unmapped`（表 F）。 |
 | `tavern/wb_crystallize.mjs` | `map/tavern/wb_crystallize.mjs:1` | 剧情事实结晶：把坐实的长期事实（来自 `⌖事实` 标签）沉淀成我们附加书里按关键词触发的条目。 | `tavern/worldbook-crystallize.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。与 `wb_jit.mjs` 是仅有的两个用下划线的引擎文件，其余都是短横线。 |
@@ -221,7 +221,7 @@
 | `REG` | `map/app/state.mjs:3` | 从 `maps.json` 读入的地图注册表（按设定包重设基准）：所有地图、分组、标记列表。 | `mapRegistry` | 内部 | S5 | 被 28 个文件导入；也是 34 个兼容 getter 之一。和 `LayerRegistry`（`layerhost.mjs` 里的 `registry`）不是一回事。 |
 | `cur` | `map/app/state.mjs:3` | 当前地图的 id（字符串）。同类：`curData`、`ovData`、`depthData`。 | `currentMapId` (siblings `currentMapData`, …) | 内部 | S5 | 被 29 个文件导入（`curData`：13 个）。另有 5 个文件把局部变量 `cur` 用作「当前值」（`core/scrapbook`、`walk`、`lod`、`ledger`、`th-ui`）。 |
 | `viewer` | `map/app/state.mjs:3` | OpenSeadragon 实例。"Viewer" 同时又是页面 `viewer.html` 的名字。 | `osdViewer` | 内部 | S5 | 被 25 个文件导入；34 个兼容 getter 之一。术语表里「Viewer」指页面，这个是瓦片查看器。 |
-| `HX`, `hereIdx` | `map/app/locate.mjs:111` | `HX` = `here.mjs` 模块（地点解析器）；`hereIdx` = 由地图数据建的查询索引。 | `placeResolver`, `placeIndex` | 内部 | S5 | `HX` 被 4 个文件导入，`hereIdx` 被 2 个；setter `setHX`、`setHereIdx` 跟着改。 |
+| `hereIdx` | `map/app/locate.mjs:111` | 当前地点引擎（`makeHere` 的结果），由注册表和用户的叫法建出；`hereRes` 向它问。`HX`（v1 模块）已不存在。 | `placeIndex` | 内部 | S5 | 被 2 个文件导入；setter `setHereIdx` 跟着改。 |
 | `P` | `map/app/plugins.mjs:5` | 外挂注册表：应用模块与根外挂之间唯一的通道（`register(name, api)`）。 | `plugins` | 内部 | S5 | 被 21 个文件导入。另有 5 个文件把局部 `P` 用作别的东西（`ui/icons.js` 路径表、`host-th.mjs` 偏好、`follow.mjs` 路径、`trips.mjs` 投影、`markers.mjs` 点列）：批量替换必须识别 import。 |
 | `BR` | `map/tavern/eden-map.js:650` | 宿主脚本的 `MVUBridge` 实例。 | `mvuBridge` | 内部 | S5 | `eden-map.js` 里 `BR.` 有 64 处使用；S5 拆文件后变成跨模块标识符。 |
 | `MV`, `CTX`, `BG` | `map/tavern/eden-map.js:646` | `MV` = `tavern/mvu.mjs` 模块；`CTX` = ContextPipeline 实例；`BG` = `tavern/budget.mjs` 模块（存储预算）。 | `mvuReaders`, `contextPipeline`, `storageBudget` | 内部 | S5 | 与 `BR` 同理（S5 拆文件）。`BG` 也是模块句柄，但不符合下一行的 `<名>m` 模式。 |
@@ -313,11 +313,11 @@
 | **viewer** | `map/viewer.html`：嵌在宿主里的 iframe，或单独打开：二维地图页。 | `map/app/*`、根外挂、`viewer.html`。 | `viewer`（OpenSeadragon 实例，表 D）和 `viewer3d.html`（三维页）。 |
 | **sub-page** | 查看器用 blob iframe 打开的三维页面：第一个设定包的庄园页或通用三维查看器。 | `app/estate.mjs`（将改名 `subpage3d-host`）、协议前缀 `estate:` 和 `v3d:`。 | 作为内容的 "estate"：庄园本身。 |
 | **plugin** | 根目录 `map/*.mjs` 里的查看器模块，作为独立 script 标签加载；只通过 `P` 与别的模块交流。 | `app/plugins.mjs`、`register(name, api)`。 | 酒馆助手或酒馆的扩展。 |
-| **SpatialNode** | 节点树里的一个地点；节点树是唯一的地理结构（计划 S1–S3）。 | 代码里还没有；现在由 `here.mjs`、标记列表和事态落点表分担。 | DOM 节点；地图标记（一个节点可以有标记）。 |
+| **SpatialNode** | 节点树里的一个地点；节点树是唯一的地理结构（S1–S3）。 | `core/nodes.mjs`；节点树在加载时由 v1 文件建出（S4 起原生 schema 2）。所有地点都经它解析（S3）。 | DOM 节点；地图标记（一个节点可以有标记）。 |
 | **PresentEntities** | 站在当前节点的实体，先是人物。 | 部分存在：`chars.mjs`、`tavern/characters.mjs`（S6 改成基于节点）。 | WorldRoster（所有已知的人，不限地点）。 |
 | **WorldRoster** | 所有来源里已知的全部实体，按来源优先级合并成标准 `RosterRow`。 | `core/roster.mjs`；「chars」「characters」「roster」是同一个概念的三个名字。 | PresentEntities。 |
 | **Stash** | 有真实空间归属的物品（地图、标记、暗格），并与玩家已携带的对账。一个概念，目前有五个名字：stash、pickup、loot、inventory、`inv`。 | `core/stash.mjs`、`core/pickup.mjs`、`app/loot.mjs`、`tavern/inventory.mjs`、`inv.mjs`；统一存储 `eden_map.stash` 计划在 S6（D4）。 | JS 栈，或账本的「槽位」（会并入 stash）。 |
-| **place / current place** | 地图上一个有名字的位置；「当前地点」是聊天里说玩家所在的地方。代码里叫 `here`。 | `here.mjs`、`hereRes`、`eden-map:here`。 | 标记（画出来的图钉）或节点。 |
+| **place / current place** | 地图上一个有名字的位置；「当前地点」是聊天里说玩家所在的地方。代码里叫 `here`。 | `here-v2.mjs`、`hereRes`、`eden-map:here`。 | 标记（画出来的图钉）或节点。 |
 | **place card** | 点击标记时打开的面板。 | `app/markers.mjs` 的 `showCard`、`app/cardlinks.mjs`。 | 角色卡（酒馆里的对象）和「卡设定」数据。 |
 | **character card / card** | 故事所用的酒馆角色卡。地图从不生成或修改角色卡。 | brief §3 和 §7；设定包数据里的 `stat_data` 路径。 | 地点卡（上一条）。 |
 | **map level** | 多层地图的一层，例如城市的各层；用层切换条和「上一级」到达。 | `app/layers.mjs`（将改名 `map-level-nav`）、`REG.groups`。 | Layer slot。 |

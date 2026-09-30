@@ -7,7 +7,7 @@
 
 内容从仓库数据生成，改了事件类型或地名后重跑即可保持一致：
   - 事件类型、大类顺序、稀有度、示范原文：map/tavern/events.mjs（CATS / GROUP_ORDER / EXAMPLES，经 node 读取）
-  - 地标名、层名、庄园房间 / 区域：map/data/maps.json（与 map/here.mjs 的当前地点解析同一份词表）
+  - 地标名、层名、庄园房间 / 区域：map/data/maps.json（与 map/app/here-v2.mjs 的当前地点解析同一份词表）
 条目（全部常驻，位置「角色定义之后」）：
   1 地图联动规范 v3：标签两种写法、字段、地点写法、频率、连锁、示范
   2 地图事件类型 v2：9 大类 66 种 + 稀有度
@@ -106,9 +106,9 @@ def build(version):
 
     # ---- 当前地点
     est = reg['eden_estate']
-    # 当前地点按包含关系匹配（here.mjs 取最长词），含有更短已列词的叫法（主卧室 ⊃ 主卧）不必再列
+    # 当前地点按包含关系匹配（节点匹配取最长词），含有更短已列词的叫法（主卧室 ⊃ 主卧）不必再列
     lean = lambda ws: [w for w in ws if len(w) >= 2 and not any(o != w and len(o) >= 2 and o in w for o in ws)]
-    # restricted 卡房间（B1/B2，nsfw_compat_audit P1①）：here.mjs 经 plan 认得，词表也教给模型；不进 maps.json 房间表（unmapped096 守卫）
+    # restricted 卡房间（B1/B2，nsfw_compat_audit P1①）：当前地点经 plan 认得，词表也教给模型；不进 maps.json 房间表（unmapped096 守卫）
     plan = json.load(open(os.path.join(ROOT, 'map/data/eden_estate_rooms.json'), encoding='utf-8'))
     restr = [r['name'] for r in plan.get('rooms', []) if r.get('kind') == 'restricted']
     rooms, areas = lean(est['rooms'] + restr), lean(est['areas'])
@@ -378,18 +378,18 @@ def check(book, ref_path):
 
 
 def selftest(items):
-    """用 events.mjs / here.mjs 自己核对：示范原文都不上图；【地点】里每个地标都能推断出层；当前地点示例能落点。"""
+    """用 events.mjs / app/here-v2.mjs 自己核对：示范原文都不上图；【地点】里每个地标都能推断出层；当前地点示例能落点。"""
     import re
     rules, here = items[0][1], items[2][1]
     spans = re.findall(r'<span style="display:none"[^>]*>[^<]*</span>', rules)
     places = [(m.group(1), w) for m in re.finditer(r'^  (上层|中层|下层)（[^）]*）：(.+)$', rules, re.M) for w in m.group(2).split('、')]
     probes = {'伊甸庄园·书房': 'eden_estate', '伊甸庄园·玫瑰园': 'eden_estate', '天城·中层·天城执法局总局': 'tc_mid', '天城·下层·7号井黑市': 'tc_low', '中层 霓虹街': 'tc_mid'}
-    js = """import * as E from './map/tavern/events.mjs'; import { buildIndex, resolveHere } from './map/here.mjs'; import { packGeo } from './tools/eden_geo.mjs'; import fs from 'node:fs';
+    js = """import * as E from './map/tavern/events.mjs'; import { packGeo } from './tools/eden_geo.mjs'; import { packHere } from './tools/pack_here.mjs'; import fs from 'node:fs';
 const a = JSON.parse(fs.readFileSync(0, 'utf8')); const reg = JSON.parse(fs.readFileSync('map/data/maps.json', 'utf8'));
-const idx = buildIndex(reg); E.setGeo(packGeo('eden'));
+const idx = packHere('eden'); E.setGeo(packGeo('eden'));
 const out = { ex: a.spans.map(s => E.parseMarks(s).length),
   places: a.places.map(([L, w]) => (E.parseMarks(`<span style="display:none" data-tcmap="类型=火灾;地点=${w};标题=测试"></span>`)[0] || {}).layer || ''),
-  here: Object.keys(a.probes).map(k => (resolveHere(k, idx) || {}).map || '') };
+  here: Object.keys(a.probes).map(k => (idx.here(k) || {}).map || '') };
 console.log(JSON.stringify(out));"""
     r = json.loads(subprocess.run(['node', '--input-type=module', '-e', js], cwd=ROOT, input=json.dumps({'spans': spans, 'places': places, 'probes': probes}),
                                   capture_output=True, text=True, check=True).stdout)

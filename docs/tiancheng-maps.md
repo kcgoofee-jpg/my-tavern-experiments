@@ -116,7 +116,7 @@ layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/
 - `districts[]`（points 地图，可选）：这一层的大区叫法（中英），当前地点只写到大区（「商业区」「地基区」）时落到这一层。
 - `rooms[]` / `rooms_en[]`、`areas[]` / `areas_en[]`（kind=estate，可选）：庄园房间与室外区域的叫法；`alias` 里其余的词算「整座庄园」。
 
-### 当前地点 → 自动落点（`map/here.mjs`，单测 `node tests/here.test.mjs`）
+### 当前地点 → 自动落点（`map/app/here-v2.mjs`，单测 `node tests/here.test.mjs`）
 
 地图总是先开世界图（maps.json `start = world`；首次打开和每次冷启动都是），收到 `eden-map:here` 只更新高亮与标题栏，不自动跳转；工具栏「当前位置」按钮（认得出当前地点时才显示）点了才跳过去。休眠后唤醒回到离开时的那张图与视野。事件横条不再在打开时自动飞向最新未读，点了事件才飞。单独打开查看器时可用 `?here=主卧` 或改「当前地点」输入框（回车）模拟。
 

@@ -110,7 +110,6 @@ export function markHere(v) {
 // 庄园房间 / 区域 → 庄园（房间由 estate:room 高亮，切楼层由庄园页自己做）；地标 → 该层并打开地点卡；层 / 大区 / 天城 → 该层默认视野；世界地名 → 世界图；匹配不到不动。
 // 打开面板（或唤醒）后的第一条地点一定跳；之后只有地点变了才跳，不打断用户自己在别的图上浏览。
 export let estPlan = null;   // v0.9.6 map/data/eden_estate_rooms.json（卡设定分层房间，房间名照抄卡）
-export { readCustom } from './here-v2.mjs';   // 旧版本机房间叫法的读取（custom.mjs 迁移用）
 export let hereIdx = null;   // app/here-v2.mjs 的 makeHere 结果（extapi.mjs rebuildHere 建；没建好之前认不出任何地点）
 export const hereRes = v => (hereIdx ? hereIdx.here(v) : null);
 // where a located place (a person, a trip end) is drawn: the node tree's answer for the place text, or for a result already placed (app/spot.mjs)

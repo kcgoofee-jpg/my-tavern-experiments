@@ -3,16 +3,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { fromV1, rowsFromV1 } from '../map/core/compat-v1.mjs';
 import { toImg } from '../map/core/compat-v1-geo.mjs';
 import { buildTree, vocabulary, locate, unmapped, viewOf, positionOf, scopeOf, levelsOf, describe } from '../map/core/nodes.mjs';
 import { validate2, entityRows, stashRows } from '../map/core/pack-v2.mjs';
-import { cpLen, normalise, normText } from '../map/core/lexicon.mjs';
-import { buildIndex, resolveHere } from '../map/here.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const J = p => JSON.parse(fs.readFileSync(ROOT + p, 'utf8'));
@@ -102,55 +97,11 @@ test('every converted pack passes validate2 (trusted) without a problem', () => 
   }
 });
 
-// ---- parity against the v1 corpus: every resolveHere call of here.test.mjs and card_spec.test.mjs, recorded at run time ----
-const REGISTER = ROOT + 'tests/helpers/here_register.mjs';
-function record(file) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'compat-v1-')), out = path.join(dir, 'calls.json');
-  try {
-    execFileSync(process.execPath, ['--import', REGISTER, ROOT + 'tests/' + file], { env: { ...process.env, HERE_RECORD: out }, stdio: 'pipe' });
-    return JSON.parse(fs.readFileSync(out, 'utf8'));
-  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
-}
-const engines = new Map();
-const engineOf = cfg => {
-  const k = JSON.stringify(cfg);
-  if (!engines.has(k)) engines.set(k, load({ manifest: MAN, maps: MAPS, world: cfg.world ? WORLD : null, names: cfg.names ? NAMES : null, plan: cfg.plan ? PLAN : null, custom: cfg.custom }));
-  return engines.get(k);
-};
-/** The node a v1 result maps to (A.9): level 1-2 the estate (with the plan: the room named `std`), 3 the marker, 4 the map, 5 the world place or the group. */
-function nodeOf(v1, cfg, e) {
-  if (!v1) return null;
-  if (v1.level <= 2) return v1.std && cfg.plan ? e.pack.nodes.find(n => n.type === 'room' && n.name === v1.std).id : 'eden_estate';
-  if (v1.level === 3) return v1.marker;
-  if (v1.level === 4) return v1.map;
-  if (v1.place) { const p = [...WORLD.places, ...WORLD.fiefs, ...WORLD.realms].find(q => q.name === v1.place); return e.idmap[p.id] || p.id; }
-  const gid = Object.keys(MAPS.groups).find(g => MAPS.groups[g].layers.find(k => MAPS.maps[k]?.kind === 'points') === v1.map);
-  return e.idmap[gid] || gid;
-}
-test('parity: every distinct input of here.test.mjs and card_spec.test.mjs lands on the node v1 gives, with the same word', t => {
-  const calls = [...record('here.test.mjs'), ...record('card_spec.test.mjs')], seen = new Set(), misses = [], stat = { inputs: 0, equal: 0, mergedSiteWord: 0 };
-  for (const c of calls) {
-    const key = JSON.stringify([c.value, c.cfg]); if (seen.has(key)) continue; seen.add(key); stat.inputs++;
-    const e = engineOf(c.cfg), got = L(e, c.value), want = nodeOf(c.v1, c.cfg, e), row = { input: c.value, cfg: JSON.stringify(c.cfg), v1: want, v2: got && got.node };
-    if ((got ? got.node : null) !== want) { misses.push(row); continue; }
-    if (!got) { stat.equal++; continue; }
-    if (c.v1.level === 4 && e.tree.get(got.node).type === 'site') {   // A.9: a merged single-layer site reports its longest alias found in the text, v1 the layer word
-      const t = normText(c.value), longest = Math.max(...e.tree.get(got.node).alias.filter(a => t.includes(normalise(a))).map(cpLen));
-      if (cpLen(got.word) !== longest) misses.push({ ...row, word: got.word }); else stat.mergedSiteWord++;
-      continue;
-    }
-    if (got.word !== c.v1.word) misses.push({ ...row, v1word: c.v1.word, v2word: got.word }); else stat.equal++;
-  }
-  t.diagnostic(`parity: ${stat.inputs} distinct inputs, ${stat.equal} equal, ${stat.mergedSiteWord} merged-site inputs (node equal, word = longest alias), ${misses.length} unexplained`);
-  assert.ok(stat.inputs > 0);
-  assert.deepEqual(misses, []);
-});
-
+// ---- locate over the converted eden pack: the inputs of here.test.mjs and card_spec.test.mjs run through app/here-v2.mjs (same expectations); the intended divergences below ----
 test('A.9 merged single-layer sites: same node as v1, the reported word is the longest alias', () => {
   for (const [text, node, v1word, v2word] of [['大骑士领·圣都', 'site_kavalierki', '圣都', '大骑士领·圣都'], ['圆桌第三席封地', 'site_fief3', '第三席封地', '圆桌第三席封地']]) {
-    const old = resolveHere(text, buildIndex(MAPS, WORLD, NAMES)), r = L(eden, text);
-    assert.equal(old.map, node); assert.equal(old.word, v1word);
-    assert.equal(r.node, node); assert.equal(r.word, v2word); assert.equal(eden.tree.get(node).type, 'site');
+    const r = L(eden, text);   // v1 reported the layer word (v1word); the kernel reports the longest alias
+    assert.notEqual(v1word, v2word); assert.equal(r.node, node); assert.equal(r.word, v2word); assert.equal(eden.tree.get(node).type, 'site');
   }
 });
 test('A.9 user aliases: 我的秘密书斋 → 书房 is the estate with canonical 书房; the invalid alias is ignored; 蓝塔 → enforcement_hq', () => {
@@ -166,18 +117,16 @@ test('A.9 user aliases: 我的秘密书斋 → 书房 is the estate with canonic
   assert.equal(p.tree.get(L(p, '老地方').node).name, '主调教室'); assert.equal(p.tree.get(L(p, '书斋').node).name, '主人书房');   // old names in chats
 });
 test('A.9 intended divergences, each pinned by its example (a later change must be deliberate)', () => {
-  const v1 = buildIndex(MAPS, WORLD, NAMES), v1p = buildIndex(MAPS, WORLD, NAMES, null, PLAN);
   // 1. a broad place containing the estate + a room word: the estate (v1: the tier), K-02
-  assert.equal(resolveHere('上层 书房', v1).map, 'tc_upper'); assert.equal(resolveHere('上层 书房', v1).level, 4); assert.equal(L(eden, '上层 书房').node, 'eden_estate');
+  assert.equal(L(eden, '上层 书房').node, 'eden_estate');
   // 2. a world name + a room word: the world node (v1: the room), K-02
-  assert.equal(resolveHere('奥伦帝国 书房', v1).level, 1); assert.equal(L(eden, '奥伦帝国 书房').node, 'oren');
+  assert.equal(L(eden, '奥伦帝国 书房').node, 'oren');
   // 3. an ambiguous word that does not overlap a landmark name: the landmark (v1: nothing)
-  assert.equal(resolveHere('大学 议会', v1), null); assert.equal(L(eden, '大学 议会').node, 'council');
+  assert.equal(L(eden, '大学 议会').node, 'council');
   // 4. no plan, a room word and an area word one code point longer: same node, the reported word is the area word (v1: the room word)
-  const four = '伊甸庄园 人工湖 浴室', a = resolveHere(four, v1), b = L(eden, four);
-  assert.equal(a.map, 'eden_estate'); assert.equal(a.word, '浴室'); assert.equal(b.node, 'eden_estate'); assert.equal(b.word, '人工湖');
+  const b = L(eden, '伊甸庄园 人工湖 浴室');
+  assert.equal(b.node, 'eden_estate'); assert.equal(b.word, '人工湖');
   // 5. an ambiguous word + an estate room or area word: the estate, with the plan the room (v1: nothing), K-R16
-  assert.equal(resolveHere('大学 书房', v1), null); assert.equal(resolveHere('大学 书房', v1p), null);
   assert.equal(L(eden, '大学 书房').node, 'eden_estate'); assert.equal(edenPlan.tree.get(L(edenPlan, '大学 书房').node).type, 'room');
 });
 

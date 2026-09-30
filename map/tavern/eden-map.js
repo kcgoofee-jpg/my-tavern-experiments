@@ -679,7 +679,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     { const h = getHere(); if (h !== here) unm = null; here = h; }   // 地点变了：等地图重新判断是否上图
     // 一个地点胶囊：MVU 里写了多处（「A / B」）只显示第一处，全文在 title；右侧省略
     const full = userName(here), parts = full.split(/\s*[\/／|｜]\s*/).filter(Boolean);
-    hereEl.innerHTML = ''; if (parts[0]) { const a = pdoc.createElement('span'); a.className = 'em-nm'; a.textContent = unm ? U('unm') + userName(unm) : hereMod?.transitLabel?.(parts[0], UL === 'en') || parts[0]; hereEl.append(a); }
+    hereEl.innerHTML = ''; if (parts[0]) { const a = pdoc.createElement('span'); a.className = 'em-nm'; a.textContent = unm ? U('unm') + userName(unm) : transitMod?.transitLabel?.(parts[0], UL === 'en') || parts[0]; hereEl.append(a); }
     hereEl.classList.toggle('em-unsure', BR.snapState !== 'ok' && BR.snapState !== 'none' && !!parts[0]);   // 未确认：显示上一份快照，灰掉 + 提示（不显示空白、不猜）
     hereEl.classList.toggle('em-unm', !!unm && !!parts[0]); if (unm && parts[0]) { hereEl.setAttribute('role', 'button'); hereEl.tabIndex = 0; } else { hereEl.removeAttribute('role'); hereEl.removeAttribute('tabindex'); }   // 途中（v0.9.5）：「A → B（途中）」
     if (parts.length > 1) { const b = pdoc.createElement('span'); b.className = 'em-more'; b.textContent = ` +${parts.length - 1}`; hereEl.append(b); } hereEl.title = full ? U('here') + full : '';
@@ -752,7 +752,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     let stSig = ''; try { stSig = JSON.stringify(st); } catch (e) {}
     // 一轮的纯计算（签名去重、事件收集、人物栏 / 名册、新事态数）在流水线里（tavern/context.mjs）；这里只做取数与副作用
     const r = CTX.round({ floorNow, msgs, stSig, dbSig: BR.dbSig(), varSig: BR.varSig, custVer, customChat, chatId: chatId(), seen, wbState,
-      hasReg: !!regNow, hasCHM: !!CHM, hasMV: !!MV, hasTRm: !!TRm, hasHereMod: !!hereMod, hereNow, collect: EVM.collect,
+      hasReg: !!regNow, hasCHM: !!CHM, hasMV: !!MV, hasTRm: !!TRm, hasHereMod: !!transitMod, hereNow, collect: EVM.collect,
       charsDeps: CHM ? {
         mvuChars: CHM.mvuChars(st, hereNow, BR.varMap.present),
         known: BR.rosterNames({ msgs }),   // P3-B：五来源统一装配的已知名单（MVU 名册 + 聊天标签 + 数据库 + 保底 + 柏宝绘）
@@ -838,7 +838,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   function computeTrips(msgs) {
     if (!TRm || !MV || !custom || customChat !== chatId()) return;
     const r = CTX.computeTrips(msgs, { TRm, CHM, perFloorStat: f => BR.perFloorStat(f), mvuGet: (s, p) => BR.mvuGet(s, p), varMap: BR.varMap,
-      keywords: BR.varUser.keywords || TRm.DEFAULT_KEYWORDS, fantasy: !!BR.varUser.fantasy, parseTransit: s => hereMod?.parseTransit?.(s) || null });
+      keywords: BR.varUser.keywords || TRm.DEFAULT_KEYWORDS, fantasy: !!BR.varUser.fantasy, parseTransit: s => transitMod?.parseTransit?.(s) || null });
     if (r.changed) { saveRoot(); sendTrips(); }   // 行程变了才写聊天变量、才发地图
   }
   function sendTrips() { if (alive) post({ type: 'eden-map:trips', items: CTX.trips }); }
@@ -924,14 +924,14 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   tlR.addEventListener('input', () => tlScrub(+tlR.value));
 
   // ---------------- 本机扩展接口 window.EdenMap（E6，docs/content-compat.md） ----------------
-  // 在宿主页挂 window.EdenMap，转发给地图 iframe（srcdoc，与宿主同源，直接调用）；地图没开时直接读写本机 localStorage（同一份存储，同一套函数 here.mjs）。
+  // 在宿主页挂 window.EdenMap，转发给地图 iframe（srcdoc，与宿主同源，直接调用）；地图没开时直接读写本机 localStorage（同一份存储）。
   // 自定义叫法按聊天分开存（edenMap:chat:<聊天 id>:custom），拿不到聊天 id 时存全局 edenMap:custom。不联网、不上传、不进地址。
   // 宿主页上的方法都返回 Promise。on('here' | 'events' | 'map', fn)：here / events 由本脚本发（面板关着也发），map 由地图发。
   const subs = { here: new Set(), events: new Set(), map: new Set(), characters: new Set(), outfit: new Set(), clock: new Set(), custom: new Set() };
-  let emHere = null, hereShown = null, emEvSig = '', roomsKnown = null, HXm = null, hereMod = null;
+  let emHere = null, hereShown = null, emEvSig = '', roomsKnown = null, TRNm = null, transitMod = null;
   function emit(ev, data) { for (const f of subs[ev]) { try { f(data); } catch (e) { console.warn('[EdenMap]', e); } } }
-  const hx = () => (HXm ??= import(SELF + 'here.mjs'));
-  hx().then(m => { hereMod = m; setTimeout(push, 0); }).catch(() => {});
+  const hx = () => (TRNm ??= import(SELF + 'core/transit.mjs'));   // 途中地点的切分与胶囊文字（核心的纯函数，不需要节点树）
+  hx().then(m => { transitMod = m; setTimeout(push, 0); }).catch(() => {});
   let CXm = null; const chx = () => (CXm ??= import(SELF + 'tavern/characters.mjs'));
   const inner = () => { if (!alive) return null; try { const w = frame.contentWindow; if (!w?.EdenMap) return null; fnGuard('EdenMap.__chat', w.__edenMapChat, 1)?.(chatId()); return w.EdenMap; } catch (e) { return null; } };   // G6：跨窗口拿到的是查看器的 EdenMap——每个调用点先过守卫（handoff 准则 1）
   function knowRooms() { try { const g = fnGuard('EdenMap.getRooms', inner()?.getRooms, 0); const r = g ? g().rooms : null; if (r?.length) roomsKnown = r; } catch (e) {} }
@@ -980,7 +980,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
   // 只在这个聊天还没有 eden_map.自定义 时迁移一次（全局旧键不改名，靠这个条件避免每个聊天、每次刷新重复并入）
   async function migrateOld() {
-    const H = await hx().catch(() => null), st = store(); if (!H || !st) return false;
+    const H = await import(SELF + 'core/legacy-custom.mjs').catch(() => null), st = store(); if (!H || !st) return false;
     let any = false;
     for (const k of [H.customKey(chatId()), H.customKey('')]) {
       const rooms = (() => { try { return JSON.parse(st.getItem(k) || 'null')?.rooms || null; } catch (e) { return null; } })();

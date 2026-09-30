@@ -26,7 +26,7 @@ export const KEYS = {
   edenMapTick: { owner: 'tavern/tick.mjs', def: '1' },   // Part 6-2 后台静默推演：开 / 关（毫秒数也可，夹在 15 s–5 min）
   // 按聊天分（参与 LRU 清理）
   'edenMap:chat:': { owner: 'shared', prefix: true, perChat: true }, 'edenMapSeen:': { owner: 'host', prefix: true, perChat: true },
-  'edenMap:varmap:': { owner: 'tavern/adapter.mjs', prefix: true }, 'edenMap:lru': { owner: 'tavern/budget.mjs' }, 'edenMap:custom': { owner: 'here.mjs' },
+  'edenMap:varmap:': { owner: 'tavern/adapter.mjs', prefix: true }, 'edenMap:lru': { owner: 'tavern/budget.mjs' }, 'edenMap:custom': { owner: 'core/legacy-custom.mjs' },
   'edenMap:chars': { owner: 'tavern/characters.mjs' }, 'edenMap:avatars': { owner: 'tavern/characters.mjs' },
   // 宿主（tavern/eden-map.js）
   edenMapLine: { owner: 'host', prefix: true }, edenMapFabPos: { owner: 'host' }, edenMapEvTip: { owner: 'host' }, edenMapUpdSkip: { owner: 'host' },

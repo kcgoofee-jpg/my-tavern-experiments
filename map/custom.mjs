@@ -11,7 +11,7 @@ import { mountProgress } from './ui/progress.mjs';
 import { go } from './app/nav.mjs';
 import { estFail, estFocus, estateRoom, estateStandIn, setEstFocus } from './app/estate.mjs';
 import { cardFrom, closeCard, setCardFrom } from './app/markers.mjs';
-import { estPlan, hereIdx, hereRes, markHere, readCustom, setUserMoved, userMoved } from './app/locate.mjs';
+import { estPlan, hereIdx, hereRes, markHere, setUserMoved, userMoved } from './app/locate.mjs'; import { readCustom } from './core/legacy-custom.mjs';
 import { TCSettings, showSet } from './app/settings.mjs';
 import { LS, chatId, rebuildHere } from './app/extapi.mjs';
 import { P, register } from './app/plugins.mjs';
@@ -21,7 +21,7 @@ const TCCustom = (() => {
   let MV = null, data = { items: {}, 同步世界书: true }, host = null, clock = null, outfit = null, toastT = 0;
   const ready = import(new URL('tavern/mvu.mjs', document.baseURI).href).then(m => { MV = m; if (!host) loadLocal(); return m; }).catch(() => null);
   const lsKey = () => 'edenMap:chat:' + (typeof chatId === 'string' ? chatId : '') + ':custom2';
-  // 单独打开（或宿主还没推来）：本机存储；旧版（app/here-v2.mjs readCustom）的房间叫法一并迁移进来显示
+  // 单独打开（或宿主还没推来）：本机存储；旧版（core/legacy-custom.mjs readCustom）的房间叫法一并迁移进来显示
   function loadLocal() {
     if (!MV) return; let o = {}; try { o = JSON.parse(LS?.getItem(lsKey()) || '{}') || {}; } catch (e) {}
     data = MV.normCustom(o.自定义);

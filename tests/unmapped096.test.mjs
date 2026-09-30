@@ -1,7 +1,7 @@
-// node tests/unmapped096.test.mjs —— v0.9.6：未上图（unmappedName）、地标 / 层 / 世界地名的自定义叫法、卡设定分层房间进第 1 级词表
+// node tests/unmapped096.test.mjs —— v0.9.6（经 app/here-v2.mjs）：未上图（unmappedName）、地标 / 层 / 世界地名的自定义叫法、卡设定分层房间进第 1 级词表
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { buildIndex, resolveHere, unmappedName, planWords } from '../map/here.mjs';
+import { buildIndex, resolveHere, unmappedName, planWords } from './helpers/here-engine.mjs';
 import { normCustom, setCustom, removeCustom, aliasMap } from '../map/tavern/mvu.mjs';
 
 const J = p => JSON.parse(readFileSync(new URL('../map/' + p, import.meta.url), 'utf8'));
@@ -33,7 +33,7 @@ t('maps.json 房间 / 区域与卡房间不冲突（原有落点不变）', () =
     const x = resolveHere(w, a), y = resolveHere(w, b);
     assert.equal(y?.level, x?.level, w); assert.equal(y?.map, x?.map, w);
   }
-  const clash = new Set([...REG.maps.eden_estate.areas, ...b.estate.whole]);
+  const clash = new Set([...REG.maps.eden_estate.areas, ...b.tree.get(b.estate.id).alias]);   // the estate's areas and the names of the whole estate
   for (const r of PLAN.rooms) for (const w of planWords(r.name)) assert.ok(!clash.has(w), `${w} 与区域 / 庄园叫法重名`);
 });
 t('planWords：括注、×2、「 / 」拆开', () => {
@@ -50,10 +50,11 @@ t('未上图：认不出 → 名字；认得出 / 空 / 忽略 → null', () => 
   assert.equal(unmappedName('月面基地', idxOf({ ignore: ['月面基地'] })), null);
 });
 t('指派：地标 / 层 / 房间 / 区域 / 世界地名，存进 eden_map.自定义 后立刻认得', () => {
-  const idx0 = idxOf();
-  const mk = idx0.marks[0], mkName = REG.maps[mk.map].markers[mk.marker].name;
-  const lay = idx0.layers[0], layName = lay.words[0];
-  const wp = idx0.world[0].name;
+  const flat = Object.entries(REG.maps).filter(([, m]) => m.kind === 'points' && m.status !== 'planned');   // the first landmark (not the estate's own), the first layer, the first world place
+  const [mkMap, mkM] = flat.find(([, m]) => Object.values(m.markers || {}).some(k => k.link?.map !== 'eden_estate'));
+  const mkKey = Object.keys(mkM.markers).find(k => mkM.markers[k].link?.map !== 'eden_estate'), mk = { map: mkMap, marker: mkKey }, mkName = mkM.markers[mkKey].name;
+  const lay = { map: flat[0][0], words: [flat[0][1].layer.name] }, layName = lay.words[0];
+  const wp = [...(W.places || []), ...(W.fiefs || []), ...(W.realms || [])][0].name;
   let c = normCustom(null);
   c = setCustom(c, mkName, { alias: '老地方', kind: 'landmark' });
   c = setCustom(c, layName, { alias: '铁锈带', kind: 'layer' });

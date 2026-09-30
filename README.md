@@ -33,7 +33,7 @@
 ┌──────────────────────────────▼──────── 运行时（酒馆内） ──────────┐
 │ 外挂脚本 map/tavern/eden-map.js（酒馆助手）                        │
 │   · 悬浮按钮 + 面板（宿主页），srcdoc / blob 加载查看器            │
-│   · 当前地点：MVU 变量 → map/here.mjs 逐级解析                     │
+│   · 当前地点：MVU 变量 → map/app/here-v2.mjs（节点树）解析               │
 │   · 事件：楼层原文 → map/tavern/events.mjs 解析 → 落点 / 横条      │
 │   · 态势回注：injectPrompts（in_chat，depth 4）                    │
 │ 查看器 map/viewer.html（OpenSeadragon 5，canvas）                  │

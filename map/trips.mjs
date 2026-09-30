@@ -1,7 +1,7 @@
 // 天城 · 行程层（查看器用，v0.9.5）：
 //   2 最近的行程（卡内脚本推出，最多玩家 5 段 + 人物 5 段）：按交通方式画——air 虚线弧、underground 点线、teleport 不连线只有两端脉冲点、rail / road 贴地实线；
 //     越旧越淡；人物的行程是细线、用人物的颜色；点一段看楼层和时间。图层菜单「行程」开关（默认开，存本机）。
-//   1 途中：当前地点写成「A至B的…」「从A到B」「前往B」时（here.mjs resolveTransit），在两端之间画一条虚线弧，玩家点放在弧的中点；终点认不出时在起点画「前往 B」箭头。
+//   1 途中：当前地点写成「A至B的…」「从A到B」「前往B」时（app/here-v2.mjs 的 transit），在两端之间画一条虚线弧，玩家点放在弧的中点；终点认不出时在起点画「前往 B」箭头。
 // 线画在一个铺满两端外框的 SVG 叠加层里（OSD Rect 叠加层，随缩放伸缩；线宽、虚线用 non-scaling-stroke 保持屏幕像素）。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 import { REG, aspect, cur, curData, viewer } from './app/state.mjs';

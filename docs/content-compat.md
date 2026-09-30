@@ -10,8 +10,8 @@
 | 环节 | 行为 | 位置 |
 |---|---|---|
 | 事件标签 | 不做关键词过滤；认不出的类型归「其他」（灰色方块） | `map/tavern/events.mjs` |
-| 当前地点 | 逐级回落：房间 → 区域 / 楼层 → 庄园 → 地标 → 层 → 天城 → 世界；都认不出就不动地图 | `map/here.mjs` |
-| 自定义房间叫法 | 本机表 `{ rooms: { 自定义名: 标准房间名 } }`，当前地点写自定义名时落到对应房间 | `here.mjs` 的 `buildIndex(…, custom)` |
+| 当前地点 | 逐级回落：房间 → 区域 / 楼层 → 庄园 → 地标 → 层 → 天城 → 世界；都认不出就不动地图 | `map/app/here-v2.mjs`（节点树） |
+| 自定义房间叫法 | 本机表 `{ rooms: { 自定义名: 标准房间名 } }`，当前地点写自定义名时落到对应房间 | `app/here-v2.mjs` 的 `makeHere({ custom })` |
 | 自定义名称与用途（v0.9.3） | 原样保存、原样显示和注入，不审核；长度上限 名 40 字 / 用途 200 字 | `map/tavern/mvu.mjs`、`map/custom.mjs` |
 | 原作立绘（v0.9.5；2026-09-29 放宽） | 只加载**作者在卡里声明的**立绘地址，且必须过白名单：作者 CDN `cdn.jsdelivr.net/gh/Yehehua1311/…`（必须带 `/sfw/` 段，不许顺着仓库目录取受限分类的图）＋ 作者另用的两个图床 `i.postimg.cc` / `picgocloud.com`（https、图片扩展名、路径不含受限分类词、无 query/fragment）。关掉「使用原作头像」开关则一张都不取；取不到（或卡里根本没这位的条目）就显示名字首字，可用 `EdenMap.setAvatar` 自己补 | `map/tavern/mvu.mjs` 的 `portraitOk` |
 
@@ -30,8 +30,8 @@
 已实现（v0.9.1，E6）：
 - ✅ `EdenMap.setRoomAlias(自定义名, 标准房间名)` → true / false；`EdenMap.removeRoomAlias(自定义名)`；`EdenMap.getRooms()` → `{ rooms: 标准房间名[], alias: { 自定义名: 标准房间名 }, chat }`。
   - 存本机 `localStorage`：有聊天 id 时按聊天分开存 `edenMap:chat:<聊天 id>:custom`，拿不到聊天 id 时存全局 `edenMap:custom`；值是 `{ rooms: { 自定义名: 标准房间名 } }`。
-  - 只能指向标准房间，标准房间名本身不能改指别处；当前地点写自定义名时按对应房间落点（`here.mjs` 的 `buildIndex(…, custom)`），庄园页收到的是标准房间名。
-  - 存储与校验在 `here.mjs`（`customKey` / `readCustom` / `setRoomAlias` / `removeRoomAlias`），单测 `tests/here.test.mjs`。
+  - 只能指向标准房间，标准房间名本身不能改指别处；当前地点写自定义名时按对应房间落点（`app/here-v2.mjs` 的 `makeHere({ custom })`），庄园页收到的是标准房间名。
+  - 旧版本机存储的读取在 `core/legacy-custom.mjs`（`customKey` / `readCustom`，只读，由 `tavern/mvu.mjs` 并进聊天变量），单测 `tests/here.test.mjs`。
 - ✅ `EdenMap.setAvatar(人物名, 图片)` → true / false；`EdenMap.removeAvatar(人物名)`（v0.9.2 人物栏）：给人物栏的头像框换成自己的图。图片 = `data:image/png|jpeg|webp|gif;base64,…` 或 http(s) 图片地址；其他（`javascript:` 等）拒绝。
   - 额度（2026-09-27 核对）：data URL 头像**先压到 160 px 的 webp / jpeg** 再存（`characters.mjs` 的 `AVATAR_MAX = 160000` 字符是压缩后的上限，和状态栏共用同一份 localStorage 额度）；压缩在地图面板路径（`map/chars.mjs`）和 `EdenMap.setAvatar` 路径都会做，超过上限返回 false。http(s) 地址不压缩、限 2000 字符。
   - 只存本机 localStorage：有聊天 id 时 `edenMap:chat:<id>:avatars`，否则全局 `edenMap:avatars`（按聊天的覆盖全局）；不上传、不进地址、地图不为它发请求（http 地址的图由浏览器按用户给的地址加载，`referrerpolicy=no-referrer`）。
@@ -62,7 +62,7 @@
 - 单测 `tests/compose097.test.mjs`，浏览器 `tools/browser/v097.mjs --only compose`。
 
 ## 未上图的地点与扩展叫法（v0.9.6）
-- 当前地点认不出（`here.mjs` `unmappedName(value, idx)` 非 null）：不跳转；酒馆标题栏显示「未上图：<名字>」（地图发 `eden-map:unmapped {name}`，点标题栏回发 `eden-map:unmapped-pick`），单独打开时显示在查看器页头。
+- 当前地点认不出（`app/here-v2.mjs` 的 `unmapped(value)` 非 null）：不跳转；酒馆标题栏显示「未上图：<名字>」（地图发 `eden-map:unmapped {name}`，点标题栏回发 `eden-map:unmapped-pick`），单独打开时显示在查看器页头。
 - 指派 = `setCustom(标准名, { alias: 名字, kind })`，kind = landmark / layer / room / area / world；写进 `eden_map.自定义.items[标准名].别名`，一个叫法只指向一处；`{ unalias }` 去掉；「忽略」= `setCustom(名字, { ignore: true })`，存 `eden_map.自定义.忽略`（最多 50 个）。
 - `buildIndex(reg, world, names, custom, plan)`：custom = { rooms, areas, marks, layers, world, ignore }；plan = `map/data/eden_estate_rooms.json`，房间名（去括注、「 / 」拆开）进第 1 级，落点带 `std`、`floor`（只在一层时）、`restricted`。
 

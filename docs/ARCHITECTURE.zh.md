@@ -15,8 +15,8 @@
 
 | 术语 | 含义 | 现状 |
 |---|---|---|
-| **SpatialNode** | 节点树里的一个地点：`{ id, name, alias[], hints[], parent, type, at?, view?, canon }`。这棵树是唯一的地理；匹配取最长别名、优先更深的节点。 | **计划（S1 定契约，S2–S3 迁移）。** 现在的地理散在 `map/here.mjs`（固定六级）、各图数据文件里的标记表、`map/events.mjs` 的事态落点表里。 |
-| **PresentEntities** | 站在当前节点上的实体（先是人物，之后是任意实体类型），微观层级的人物页用它。 | **部分有。** `map/chars.mjs` 与 `tavern/characters.mjs` 从聊天标签和 MVU 变量算出「在场」人物；基于节点的版本**计划在 S6**。 |
+| **SpatialNode** | 节点树里的一个地点：`{ id, name, alias[], hints[], parent, type, at?, view?, canon }`。这棵树是唯一的地理；匹配取最长别名、优先更深的节点。 | **已有（S1–S3）。** `core/nodes.mjs` 建树、读树；`core/compat-v1.mjs` 在加载时把头两个包的 v1 文件转一次，包里的 `overlay.v2.json` 补上 v1 文件里从没有的东西（城区、城郊）。所有地点都经它解析：当前地点（`app/here-v2.mjs`）、事态（`core/event-geo.mjs`）、人物与行程端点（`app/spot.mjs`）、注入的空间契约（`tavern/spatial.mjs`）。v1 的解析器 `map/here.mjs` 已删除。schema 2 的包从 **S4** 起原生加载。 |
+| **PresentEntities** | 站在当前节点上的实体（先是人物，之后是任意实体类型），微观层级的人物页用它。 | **部分有。** `map/chars.mjs` 与 `tavern/characters.mjs` 从聊天标签和 MVU 变量算出「在场」人物；人物画在哪里由节点树定（`app/spot.mjs`）。基于节点的在场列表**计划在 S6**。 |
 | **WorldRoster** | 所有来源里已知的全部实体，合并成一张标准行列表。 | **已有。** `core/roster.mjs`（`RosterRow`、五个来源、优先级仲裁）。属性字段仍是固定槽位；作者自定义的 `entities` 字段表**计划在 S4**。 |
 | **Stash** | 有真实空间归属（哪张图、哪个标记、哪个暗格）的物品，并与玩家已携带的对账。 | **现在有两个存储：** `core/stash.mjs`（包数据里的世界藏物）和聊天变量里的背包（`tavern/inventory.mjs`）。统一的 `eden_map.stash` **计划在 S6（决定 D4）**。 |
 
@@ -28,7 +28,7 @@ map/three     three.js helpers          → core (THREE is passed in by the call
 map/ui        shared widgets            → core; the two gallery panels import the optional tavern/baibai.mjs bridge
 map/app       viewer modules            → core, ui; app/pack.mjs loads tavern/events.mjs on demand
 map/*.mjs     viewer plugins (root)     → app, core, ui; load the shared pure tavern modules on demand
-map/tavern    host + pure pipelines     → core (spatial.mjs also reuses map/here.mjs)
+map/tavern    host + pure pipelines     → core (spatial.mjs also builds its places with app/here-v2.mjs, the one engine that places a text)
 map/packs, map/data    data only        (JSON; no code)
 map/estate, map/props  3D pages + assets → core, three, ui
 tools, tests, blender  builders, checks, tests (never shipped to the viewer)
@@ -56,12 +56,15 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `clock.mjs` | 零 Token 的确定性世界时钟：世界时间由推进的轮数算出，不靠模型也不读系统时间。 |
 | `depth.mjs` | 纵深系统数学（`blender/depth.py` 的 JS 孪生，对拍 golden 文件）：由海拔得纵深、通道插值、某海拔之上的云。 |
 | `estate3d.mjs` | Estate3D 清单契约：校验并解析庄园页与道具页的模型地址、数据路径与档位兜底。 |
+| `event-geo.mjs` | 事态发生在哪里：地点文字经 `nodes.locate` 落点、画它的那张地图、图钉的位置（纯函数；层、城区、城郊的词全是包数据）。 |
 | `haze.mjs` | 空气透视滤镜：把当前纵深平面的霾浓度换成一条滤镜链。 |
 | `layers.mjs` | LayerRegistry 核心：10 个视口槽位、图层注册与排序、可见性、滤镜链、`describe()` 摘要。 |
 | `ledger.mjs` | 四域结算账本：按域（资产、NPC、事件、纵深）校验原子指令，未验证的一概丢弃。 |
+| `legacy-custom.mjs` | 用户最早几个版本（≤ 0.9.2）里的房间叫法，从本机存储读出；由 `tavern/mvu.mjs` 并进聊天变量。 |
 | `listeners.mjs` | ListenerBus：全局监听器的唯一登记处，按键幂等，提供 `offAll()` 与 `describe()`。 |
 | `lod.mjs` | 图形 LOD 策略：一个模型该处在哪一档、滞回、哪些异步加载仍然有效。 |
 | `logbuf.mjs` | 反馈报告用的控制台环形缓冲，按会话分开；模块首次求值时自装钩子。 |
+| `nodes.mjs` | 节点树（内核契约 v2）：建树、读树、`vocabulary`、`locate`、视图、位置、范围、层级。 |
 | `pack.mjs` | 设定包接口：清单校验与解析、包 id、存储前缀与聊天变量键的推导、注册表改基址。 |
 | `pickup.mjs` | 客观拾取探测：正文里写明的物理获取动作变成一条单项账目事实。 |
 | `project.mjs` | 斜视投影（`blender/project.py` 的 JS 孪生，对拍 golden 文件）：世界点到画幅坐标、标签规则、锚点。 |
@@ -78,6 +81,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `stash3d.mjs` | 藏物条目到三维场景坐标的纯映射，落点表由调用方喂入。 |
 | `storage.mjs` | 本机存储服务：`KEYS` 登记表、带包命名空间且从不抛错的 get / set / json / remove。 |
 | `traffic.mjs` | 车流 / 流光数学：归一化路线点变成一帧的光点位置，确定性。 |
+| `transit.mjs` | 写成地点的行程（「从 A 到 B」「A → B」）：两端与交通工具；卡内脚本用的纯句式。 |
 | `vision.mjs` | 视线锥几何：守卫视野被墙段截断、巡逻环、点是否被看见的判定。 |
 | `walk.mjs` | 确定性时钟 tick 与任意维插值行走器（禁止瞬移，减少动态效果时一步到位）。 |
 | `weather.mjs` | 天气核心：预设表、由剧情与时钟推天气、粒子场与闪电时序。 |
@@ -99,6 +103,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `dzi-worker.mjs` | 瓦片解码线程的查看器侧客户端，失败时退回原生图片路径。 |
 | `estate.mjs` | 庄园 / 三维子页宿主：带 `<base>` 的 blob iframe、失败钩子、子页消息、通用三维查看器入口。 |
 | `extapi.mjs` | 本机扩展接口 `window.EdenMap` 与聊天 id。 |
+| `here-v2.mjs` | 当前地点：在节点树上跑 `nodes.locate`，再还原成使用方读的结果形状（`level`、`map`、`marker`、`room`、`node`、`transit`）；`tavern/spatial.mjs` 与构建工具也用它。 |
 | `feedback-report.mjs` | 反馈报告文本的纯函数组装，字段白名单。 |
 | `feedback.mjs` | 反馈按钮：装日志环形缓冲、预览并复制 / 下载报告。 |
 | `fog.mjs` | 迷雾探索叠加层：没到过的地点变暗，到访按聊天记录。 |
@@ -109,7 +114,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `layerhost.mjs` | 查看器侧的 LayerRegistry 装配：注册表单例、`.vpslot` 槽位容器、`window.TCLayers` 摘要。 |
 | `layers.mjs` | 层导航：层切换条、上一级、Esc 处理、单字符快捷键。 |
 | `loadprog.mjs` | 整屏加载层的进度，共用 `ui/progress.mjs`。 |
-| `locate.mjs` | 初始视角与当前地点：`focusStart`、`markHere`、`here.mjs` 解析、`jumpHere`。 |
+| `locate.mjs` | 初始视角与当前地点：`focusStart`、`markHere`、`hereRes`（基于 `here-v2.mjs`）、`drawnAt`、`jumpHere`。 |
 | `loot.mjs` | 地图上由世界藏物表画出的发光拾取物；点击把拾取意图发给宿主。 |
 | `markers.mjs` | 标记与地点卡：落点、跟踪、打开 / 关闭卡片、世界图与点位图叠加。 |
 | `nav.mjs` | 地图切换：可注册包装的 `go`、快照、地图外壳、另一版底图。 |
@@ -119,6 +124,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `quests.mjs` | 动态线索节点在查看器里的渲染：会呼吸的圈。 |
 | `scale.mjs` | 世界图与城市层之间的尺度交接，以及周边过渡环。 |
 | `settings.mjs` | 设置弹层：分页、分区注册、搜索、关于 / 检查更新、自检。 |
+| `spot.mjs` | 一个已落点的地方对人物或行程端点画在哪里（三维页的平面替身地标、地标、节点自己的点、城区）；纯函数，查看器把它知道的递进去。 |
 | `shell.mjs` | 外壳：控制列、唯一抽屉 / 右栏胶水、通知层、状态点、单手模式、双击缩放。 |
 | `state.mjs` | 查看器核心状态：当前地图、注册表、OSD 实例、焦点请求。 |
 | `storage-ui.mjs` | 设置「数据与映射」页：本机存储占用与当前数据来源（只读）。 |
@@ -224,7 +230,6 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `compose.mjs` | 地点 / 事件 / 人物卡上把模板句发给宿主输入框的按钮（仅嵌入时）。 |
 | `custom.mjs` | MVU 联动的查看器部分：自定义名称与用途、世界时间夜色、着装行、改名提示。 |
 | `events.mjs` | 事态层：落点、图标、事态列表、飞过去、屏幕特效、世界图角标。 |
-| `here.mjs` | 当前地点解析器（纯函数）：聊天里的地点经固定六级落到地图目标。 |
 | `inv.mjs` | 地点卡上的空间化背包（背包的查看器侧）。 |
 | `scrapbook.mjs` | 地标见闻录的查看器侧：地点卡上的钉图与手记。 |
 | `security.mjs` | 可选的安保叠加层：地点上的盾牌签与卡片里的规则行。 |
@@ -270,17 +275,18 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layers.
 **现状（已有）。**
 
 - **名册**：`core/roster.mjs` 把五个来源——MVU 变量、聊天标签、表格数据库、保底名册、图像库——合并成标准 `RosterRow`（`name, role, location, status, tags, source, present`），逐字段高优先级来源胜出，别名互认，挂立绘。`describe()` 给探针返回计数。
-- **当前地点**：`map/here.mjs` 把聊天里的地点经固定六级（庄园房间、庄园区域、城市地标、层、天城、世界）解析。它是伊甸形状的；通用匹配属于计划。
+- **当前地点**：`app/here-v2.mjs` 在节点树上用 `nodes.locate` 解析聊天里的地点；结果保留查看器读的六级形状（房间、庄园区域、地标、层、组、世界地名）并带上节点。
+- **所有地点都经节点解析**（S3）：当前地点（`app/here-v2.mjs`）、人物与行程端点（`app/spot.mjs`）、事态（`core/event-geo.mjs`、`tavern/events.mjs` 的 `setGeo`）、注入的空间契约（`tavern/spatial.mjs`）、物品地点（藏物行指向一个地标节点；暗格只在当前地点把玩家落在那里时显示）。没有任何地方再按注册表的 `kind` 或标签文字去匹配地点。
 - **事态 / 人物 / 行程**：由 `tavern/events.mjs`、`characters.mjs`、`trips.mjs` 从聊天标签与 MVU 解析；事态类别仍内置在代码里。
 - **物品**：`core/stash.mjs`（包定义的世界藏物）与 `tavern/inventory.mjs`（聊天变量背包），按物品 id 对账；能写什么由账本纪律（`core/ledger.mjs`）管。
 
 **目标（计划，按步骤）。**
 
-- **节点树** `SpatialNode` 作为唯一地理：契约在 **S1**（`core/nodes.mjs`、`core/compat-v1.mjs`、`docs/kernel-schema.md`），使用方在 **S2** 迁移，地点 / 事态 / 人物 / 物品的解析在 **S3** 统一，并带新旧路径对拍测试。
+- ~~**节点树** `SpatialNode` 作为唯一地理：契约在 **S1**（`core/nodes.mjs`、`core/compat-v1.mjs`、`docs/kernel-schema.md`），使用方在 **S2** 迁移，地点 / 事态 / 人物 / 物品的解析在 **S3** 统一，并带新旧路径对拍测试。~~ ✅ S1–S3（2026-10-01）。
 - **作者自定义实体**：**S4** 里 `vars` 与 `entities`（分组加属性字段表）取代固定槽位。
 - **实体协议与抽屉**：标签页注册表、按节点判在场、统一的 `eden_map.stash`（旧的 `仓库` / `槽位` 键自动迁移）、物品页、按包扩展的拾取词表——**S6**。
 
-在这些步骤落地之前，代码不许假定节点树存在。
+在包自带 schema 2 之前（**S4**），节点树在加载时由 v1 文件建出；代码经节点树读地点，不许假定包自己带树。
 
 ## 6. 包边界
 

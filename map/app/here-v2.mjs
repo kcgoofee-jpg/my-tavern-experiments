@@ -87,14 +87,3 @@ export function makeHere(inputs = {}) {
   const level = id => M[id]?.layer?.name || '';   // the name the registry gives a map as a layer (the six merged sites keep their short layer names here)
   return { tree, vocab, here, estate: E ? { id: E, std, alias } : null, unmapped: unmappedName, level };
 }
-
-// ---- the user's own names for rooms, kept on this machine (E6; the viewer's window.EdenMap and the card script share this) ----
-// With a chat id the names are stored per chat under "edenMap:chat:<id>:custom", else globally under "edenMap:custom"; the value is
-// JSON { rooms: { name: room } }. store = an object with getItem / setItem / removeItem (localStorage; a fake in tests). Nothing goes online.
-export const customKey = chat => (chat ? `edenMap:chat:${chat}:custom` : 'edenMap:custom');
-export function readCustom(store, chat) {
-  let o = null; try { o = JSON.parse(store?.getItem(customKey(chat)) || 'null'); } catch (e) {}
-  const rooms = {};
-  if (o && o.rooms && typeof o.rooms === 'object') for (const [k, v] of Object.entries(o.rooms)) if (typeof k === 'string' && typeof v === 'string' && k && v) rooms[k] = v;
-  return { rooms };
-}

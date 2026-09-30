@@ -2,7 +2,7 @@
 // 庄园卡房间稳定编号 + 原名；旧编号 / 旧名仍能落点；地标 / 分区别名是卡原名；仓库以前自编的名字不再识别。
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
-import { buildIndex, resolveHere } from '../map/here.mjs';
+import { buildIndex, resolveHere } from './helpers/here-engine.mjs';
 import { buildGroups } from '../map/tavern/picker.mjs';
 
 const J = p => JSON.parse(readFileSync(new URL('../map/' + p, import.meta.url), 'utf8'));
@@ -26,7 +26,7 @@ t('卡房间：稳定编号 + 卡原名；多边形与 card_rooms 同名', () =>
   }
   for (const r of PLAN.rooms.filter(r => r.kind === 'card' || r.kind === 'restricted')) assert.ok(cids.includes(r.card_id), r.id);
 });
-t('识别（here.mjs 第 1 级）：卡原名落到房间，restricted 带标记与楼层', () => {
+t('识别（当前地点的房间级）：卡原名落到房间，restricted 带标记与楼层', () => {
   const x = resolveHere('伊甸庄园·主调教室', IDX); assert.equal(x.level, 1); assert.equal(x.std, '主调教室'); assert.equal(x.floor, 'B1'); assert.equal(x.restricted, true);
   assert.equal(resolveHere('惩罚室', IDX).floor, 'B2');
   assert.equal(resolveHere('个人寝室', IDX).std, '正式母畜个人寝室');   // 卡权限表的写法
