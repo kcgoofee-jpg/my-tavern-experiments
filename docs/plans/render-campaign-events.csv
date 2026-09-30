@@ -158,3 +158,12 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T14:29:54Z,lm:rebirth_workshop,review-r1,done,std-1,pass,"r1 7.5/7 pass; polish: loading dock, pad markings"
 2026-09-30T14:32:17Z,lm:rebirth_workshop,final,done,std-1,,"2400px/64spp c1+c2, std 0.73 MB / low 0.22 MB (max_mb std 0.9/low 0.4, campus), logs clean"
 2026-09-30T14:32:17Z,lm:rebirth_workshop,ship,done,std-1,,"maps.json marker link + lm_rebirth_workshop, card-buildings row; manifest count test -> 46; check_maps 0/0, smoke pass"
+2026-09-30T14:32:29Z,lm:schneider_clinic,new,claim,std-1,,
+2026-09-30T14:32:30Z,lm:schneider_clinic,new,done,std-1,,scaffolded
+2026-09-30T14:33:40Z,lm:schneider_clinic,setting,done,std-1,,setting block (card L73/L184/L383; exterior repo-inferred)
+2026-09-30T14:35:16Z,lm:schneider_clinic,draft,done,std-1,,c1 2000px 16spp
+2026-09-30T14:35:16Z,lm:schneider_clinic,board,done,std-1,,"board c1/c2/under, logs clean"
+2026-09-30T14:35:16Z,lm:schneider_clinic,gapcheck,done,std-1,,"no gap: facade+portico+mansard, garage+hover car, conservatory, gated forecourt"
+2026-09-30T14:35:16Z,lm:schneider_clinic,review-r1,done,std-1,pass,"r1 7.5/7 pass; polish: weathering, neighbour windows"
+2026-09-30T14:37:52Z,lm:schneider_clinic,final,done,std-1,,"2400px/64spp c1+c2, std 0.67 MB / low 0.16 MB (max_mb std 0.8/low 0.35), logs clean"
+2026-09-30T14:37:52Z,lm:schneider_clinic,ship,done,std-1,,"maps.json marker link + lm_schneider_clinic, card-buildings row; manifest count test -> 47; check_maps 0/0, smoke pass"
