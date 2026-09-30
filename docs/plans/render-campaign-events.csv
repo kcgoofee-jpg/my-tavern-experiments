@@ -389,3 +389,4 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T19:20:35Z,inst:supreme_court,ship,done,std-1,pass,"re-rendered finals and re-exported glbs (std 0.71 MB / low 0.16 MB, max_mb 0.9/0.45); no maps.json change; card-buildings quality updated; smoke pass"
 2026-09-30T19:20:35Z,inst:tiancheng_univ,ship,done,std-1,pass,"re-rendered finals and re-exported glbs (std 0.71 MB / low 0.16 MB, max_mb 0.9/0.45); no maps.json change; card-buildings quality updated; smoke pass"
 2026-09-30T19:33:04Z,layout:tc_upper,options,claim,layout-1,,
+2026-09-30T19:51:01Z,layout:tc_upper,options,done,layout-1,,"v16 A/B/C in blender/data/layouts; previews + options.zh.txt in ~/eden-map-review/render/layout_tc_upper/ (recommend B). Found: shipped base has the r5 Eden image at the centre (stale eden_hi bounds, under the elite_academy marker); kelly_residence / y_estate markers sit off their islands"

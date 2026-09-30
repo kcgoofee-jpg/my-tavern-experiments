@@ -496,3 +496,16 @@ blocker: none
 open: (a) when FREEZE_MAPS is lifted: register the six periods in maps.json (tc_mid dawn/dusk, tc_low dawn/day/dusk/night; tiles are already committed) and update tests/compat_v1.test.mjs:203, which pins tc_mid periods to day+night; the viewer's periodOf (map/app/nav.mjs) only reads day/night. (b) hunting_camp 3D entry needs an engine change. (c) A spot check of climate_tower in the real viewer is worthwhile. (d) Re-rendering site base maps rewrites map/data/site_kavalierki.json and drops the hand-placed arms_rnd marker (restore from git).
 cleanup: done (local preview server stopped, browser viewport reset)
 === END ===
+
+=== RESULT R-LAYOUT (T1-T2; T3-T4 wait for the user's choice) ===
+status: PARTIAL (by design: layout:tc_upper sits at user-review)
+items: T1 ✓ T2 ✓ T3 ✗ (waits for user) T4 ✗ (waits for user)
+commits: 5d2c4f5c render(campaign): layout item type + layout:tc_upper gate before base:tc_upper
+         <this commit> render(layout): v16 A/B/C upper island layouts + preview tool
+pushed: head #176 (T1); this commit pushed with the next head bump
+tests: node 777/778 (1 skipped, unchanged) | smoke PASS | arch PASS | render_campaign unit 48 (+1) | probes: none (no viewer change)
+deviations: elite academy drawn as a neutral rounded square in the previews: the shipped tc_upper base has no image of it (see open); previews built by tools/upper_layout_v16.py from DZI level 12 + the eden:r5 cutout (final_cut6000.png from the hero worktree)
+blocker: none
+open: user picks A / B / C (recommend B: Eden's south dock faces the silver_crown lift shaft, south kept open as the arrival airspace); found for T3: (1) the shipped base shows the r5 Eden image at the centre under the elite_academy marker (eden_hi inset bounds 0.43-0.661 x 0.304-0.582 never followed the v15 move) while the eden marker sits on an older island at the bottom; (2) kelly_residence and y_estate markers (manual) sit off their islands - T3 snaps them to island centres; (3) patrol_city must be regenerated for the new layout (preview: smooth loop through the islands by angle)
+cleanup: done
+=== END ===

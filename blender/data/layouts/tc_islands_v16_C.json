@@ -1,0 +1,468 @@
+{
+ "_note": "v13 九岛定框重排：y 全体过 (y-3.2174)*0.6263（尺寸/排布不变，全部入 30x18.75 画幅，缘距 >=0.45 单位）；x 未动",
+ "islands": [
+  {
+   "id": "eden",
+   "x": 0.0,
+   "y": 0.0,
+   "rx": 3.35,
+   "ry": 2.5,
+   "rot": 0,
+   "style": "none",
+   "estate_style": "neoclassical",
+   "marker": "eden",
+   "underside": {
+    "water_cone": true,
+    "profile": "multi",
+    "rock": [
+     0.8,
+     0.76,
+     0.68
+    ],
+    "cliff": 0.35,
+    "depth": 0.55,
+    "n_sub": 3,
+    "roots": true,
+    "crystals": 8,
+    "cores": 3,
+    "core_c": [
+     0.62,
+     0.88,
+     1.0
+    ],
+    "core_e": 10,
+    "rune": 1.3,
+    "falls": [
+     {
+      "kind": "main",
+      "ang": -40,
+      "w": 0.14,
+      "L": 2.4
+     },
+     {
+      "kind": "thin",
+      "ang": -52,
+      "w": 0.04,
+      "L": 1.7
+     },
+     {
+      "kind": "thin",
+      "ang": -30,
+      "w": 0.035,
+      "L": 1.6
+     }
+    ]
+   }
+  },
+  {
+   "id": "silver_crown",
+   "x": 11.309,
+   "y": -7.633,
+   "rx": 1.4434,
+   "ry": 1.0392,
+   "rot": 0.0,
+   "style": "none",
+   "estate_style": "fortress",
+   "marker": "silver_crown",
+   "cutout": "silver_crown",
+   "silhouette": {
+    "kind": "fortress",
+    "dir": 0.4
+   },
+   "underside": {
+    "profile": "plinth",
+    "rock": [
+     0.45,
+     0.47,
+     0.5
+    ],
+    "cliff": 0.3,
+    "depth": 0.8,
+    "n_sub": 0,
+    "roots": false,
+    "crystals": 4,
+    "cores": 4,
+    "core_c": [
+     0.62,
+     0.88,
+     1.0
+    ],
+    "core_e": 8,
+    "rune": 1.0,
+    "falls": []
+   }
+  },
+  {
+   "id": "isle4",
+   "x": 12.975,
+   "y": 4.71,
+   "rx": 2.1301,
+   "ry": 1.2781,
+   "rot": 0.0,
+   "style": "dome",
+   "estate_style": "english",
+   "terrain": "meadow",
+   "biome": "autumn",
+   "marker": "victor_estate",
+   "cutout": "victor_estate",
+   "silhouette": {
+    "kind": "ridge",
+    "dir": 2.4
+   },
+   "underside": {
+    "profile": "broken",
+    "rock": [
+     0.38,
+     0.31,
+     0.24
+    ],
+    "cliff": 0.22,
+    "depth": 0.8,
+    "n_sub": 1,
+    "roots": true,
+    "crystals": 1,
+    "cores": 1,
+    "core_c": [
+     0.6,
+     0.75,
+     0.8
+    ],
+    "core_e": 1.5,
+    "rune": 0.4,
+    "falls": [
+     {
+      "kind": "dry",
+      "ang": -75,
+      "w": 0.06,
+      "L": 0.5
+     }
+    ]
+   }
+  },
+  {
+   "id": "isle5",
+   "x": -12.654,
+   "y": 2.334,
+   "rx": 2.6833,
+   "ry": 2.1466,
+   "rot": 0.0,
+   "style": "dome",
+   "estate_style": "english",
+   "terrain": "crag",
+   "biome": "conifer",
+   "marker": "y_estate",
+   "silhouette": {
+    "kind": "jagged"
+   },
+   "underside": {
+    "profile": "jagged",
+    "rock": [
+     0.08,
+     0.09,
+     0.11
+    ],
+    "cliff": 0.35,
+    "depth": 1.2,
+    "n_sub": 5,
+    "roots": false,
+    "crystals": 6,
+    "cores": 0,
+    "core_c": [
+     0.62,
+     0.72,
+     1.0
+    ],
+    "core_e": 0,
+    "rune": 0,
+    "falls": []
+   }
+  },
+  {
+   "id": "isle6",
+   "x": -10.182,
+   "y": -2.04,
+   "rx": 1.8415,
+   "ry": 1.1417,
+   "rot": 0.0,
+   "style": "neo",
+   "estate_style": "english",
+   "role": "pm_residence",
+   "terrain": "meadow",
+   "cutout": "pm_residence",
+   "biome": "meadow",
+   "marker": "pm_residence",
+   "silhouette": {
+    "kind": "ridge",
+    "dir": 0.0
+   },
+   "underside": {
+    "profile": "piers",
+    "rock": [
+     0.17,
+     0.17,
+     0.19
+    ],
+    "cliff": 0.3,
+    "depth": 0.9,
+    "n_sub": 3,
+    "roots": false,
+    "crystals": 4,
+    "cores": 2,
+    "core_c": [
+     0.62,
+     0.88,
+     1.0
+    ],
+    "core_e": 7,
+    "rune": 1.0,
+    "falls": []
+   }
+  },
+  {
+   "id": "isle9",
+   "x": -4.741,
+   "y": -7.583,
+   "rx": 1.6523,
+   "ry": 1.454,
+   "rot": 0.0,
+   "style": "glass",
+   "estate_style": "english",
+   "role": "league_club",
+   "terrain": "meadow",
+   "cutout": "league_club",
+   "biome": "autumn",
+   "marker": "league_club",
+   "silhouette": {
+    "kind": "terrace",
+    "dir": 0.8,
+    "n": 2.7
+   },
+   "underside": {
+    "profile": "cone",
+    "rock": [
+     0.48,
+     0.46,
+     0.43
+    ],
+    "cliff": 0.25,
+    "depth": 1.0,
+    "n_sub": 1,
+    "roots": false,
+    "crystals": 3,
+    "cores": 1,
+    "core_c": [
+     0.62,
+     0.88,
+     1.0
+    ],
+    "core_e": 5,
+    "rune": 0.8,
+    "falls": []
+   }
+  },
+  {
+   "id": "isle10",
+   "x": 4.814,
+   "y": 5.181,
+   "rx": 1.5727,
+   "ry": 1.3368,
+   "rot": 0.0,
+   "style": "dome",
+   "estate_style": "english",
+   "terrain": "meadow",
+   "cutout": "kelly_residence",
+   "biome": "orchard",
+   "marker": "kelly_residence",
+   "silhouette": {
+    "kind": "terrace",
+    "dir": 0.3
+   },
+   "underside": {
+    "profile": "shallow",
+    "rock": [
+     0.64,
+     0.5,
+     0.32
+    ],
+    "cliff": 0.18,
+    "depth": 0.6,
+    "n_sub": 0,
+    "roots": true,
+    "crystals": 3,
+    "cores": 1,
+    "core_c": [
+     1.0,
+     0.85,
+     0.55
+    ],
+    "core_e": 6,
+    "rune": 0.8,
+    "falls": [
+     {
+      "kind": "thin",
+      "ang": -70,
+      "w": 0.025,
+      "L": 0.9
+     }
+    ]
+   }
+  },
+  {
+   "id": "isle25",
+   "x": -5.748,
+   "y": 7.125,
+   "rx": 1.9566,
+   "ry": 1.5653,
+   "rot": 0.0,
+   "style": "glass",
+   "estate_style": "english",
+   "terrain": "meadow",
+   "role": "elite_academy",
+   "cutout": "elite_academy",
+   "biome": "meadow",
+   "marker": "elite_academy",
+   "silhouette": {
+    "kind": "plateau"
+   },
+   "underside": {
+    "profile": "stepped",
+    "rock": [
+     0.56,
+     0.56,
+     0.53
+    ],
+    "cliff": 0.22,
+    "depth": 0.8,
+    "n_sub": 0,
+    "roots": false,
+    "crystals": 2,
+    "cores": 1,
+    "core_c": [
+     0.8,
+     0.95,
+     1.0
+    ],
+    "core_e": 8,
+    "rune": 1.0,
+    "falls": [],
+    "beam": true
+   }
+  },
+  {
+   "id": "isle30",
+   "x": 11.347,
+   "y": -2.722,
+   "rx": 1.9288,
+   "ry": 1.7745,
+   "rot": 0.0,
+   "style": "glass",
+   "estate_style": "english",
+   "role": "zaibatsu_estate",
+   "terrain": "lake",
+   "cutout": "rothschild_estate",
+   "biome": "water",
+   "marker": "zaibatsu_estate",
+   "silhouette": {
+    "kind": "crescent",
+    "dir": 0.0,
+    "depth": 0.8,
+    "width": 0.55
+   },
+   "underside": {
+    "profile": "twin",
+    "rock": [
+     0.52,
+     0.48,
+     0.44
+    ],
+    "cliff": 0.25,
+    "depth": 1.0,
+    "n_sub": 2,
+    "roots": false,
+    "crystals": 14,
+    "cores": 4,
+    "core_c": [
+     0.45,
+     0.85,
+     1.0
+    ],
+    "core_e": 12,
+    "rune": 1.4,
+    "falls": [
+     {
+      "kind": "curtain",
+      "ang": -60,
+      "w": 0.12,
+      "L": 0.8
+     }
+    ],
+    "water_cone": true
+   }
+  }
+ ],
+ "_layout": "v16 C 黄金角螺旋：伊甸正中，其余岛按海拔从高到低沿 137.5° 螺旋向外，距离即隐秘度；「Y」、维克多沉到对角（2026-10-01，tools/upper_layout_v16.py，松弛 1 轮；最小岛缘间距 1.50 单位）",
+ "anchors": {
+  "climate_tower": {
+   "x": 13.309,
+   "y": -6.433,
+   "r": 0.08,
+   "note": "以太气候调节塔：立在银冠城后缘（v15 推到画面外导致 pin 悬空，v16 拉回入画、细塔不抢镜）"
+  }
+ },
+ "_sprite_extent": {
+  "eden": [
+   4.747,
+   3.596,
+   0.315,
+   -0.199
+  ],
+  "silver_crown": [
+   1.151,
+   1.091,
+   0.005,
+   -0.201
+  ],
+  "isle4": [
+   1.665,
+   1.136,
+   -0.09,
+   0.013
+  ],
+  "isle5": [
+   1.905,
+   1.567,
+   0.009,
+   0.015
+  ],
+  "isle6": [
+   1.77,
+   1.312,
+   0.165,
+   -0.013
+  ],
+  "isle9": [
+   1.485,
+   1.331,
+   -0.009,
+   -0.011
+  ],
+  "isle10": [
+   1.702,
+   1.477,
+   -0.002,
+   0.008
+  ],
+  "isle25": [
+   1.8,
+   1.47,
+   0.0,
+   -0.0
+  ],
+  "isle30": [
+   1.59,
+   1.755,
+   -0.294,
+   -0.015
+  ]
+ }
+}
