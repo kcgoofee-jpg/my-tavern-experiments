@@ -10,8 +10,8 @@
 bg_*：棚屋剪影、远树、大地（不导出）。
 
 布局（米，地面 z=0；北 = +y）：
-  场区 70 × 55（x ∈ [-35, 35], y ∈ [-27, 28]）：主楼 (0, 16) 26 × 16；约束场圆心 (0, -8) r=9；
-  试架在场心；导束管主楼南壁 → 试架顶；设备柜贴东南；灯杆四角。
+  场区 70 × 55（x ∈ [-35, 35], y ∈ [-27, 28]）：主楼 (0, 16) 26 × 16；约束场圆心 (-11, -8) r=8（偏西，让出入口轴线，
+  入口前铺一条 4 m 宽的步道）；试架在场心；导束管主楼南壁 → 试架左立柱顶（沿途立支墩）；两只设备柜贴东侧；灯杆四角。
 用法（仓库根目录；平时用 python3 tools/landmark.py draft / board / final arms_rnd）：
   blender -b --factory-startup --python-expr "import runpy; runpy.run_path('blender/landmarks/arms_rnd/build.py', run_name='__main__')" \
       -- --cam c1 --res 800 --samples 16 --out /tmp/arms_rnd.jpg [--blend /tmp/arms_rnd.blend] [--log /tmp/arms_rnd.log]
@@ -26,7 +26,7 @@ import common as C  # noqa
 A = C.args(dict(cam='c1', res='800', samples='16', out='/tmp/arms_rnd.jpg', blend='', log='', exposure=''))
 
 LAB = dict(x0=-13, x1=13, y0=8, y1=24)      # 主楼
-RING = (0.0, -8.0, 9.0)                      # 约束场圆心与半径
+RING = (-11.0, -8.0, 8.0)                      # 约束场圆心与半径
 
 
 def main():
@@ -46,7 +46,9 @@ def main():
     AETHER = C.AETHER_C if hasattr(C, 'AETHER_C') else (0.4, 0.9, 1.0)
     GLOWC = C.glow('ar_glow_c', AETHER, estr=7.0)
     GLOWW = C.glow('ar_glow_w', (0.55, 0.85, 1.0), estr=5.0)
-    WINBAND = C.flat('ar_winband', (0.09, 0.12, 0.14), 0.25, emit=(0.75, 0.9, 1.0), estr=3.5)
+    WINBAND = C.flat('ar_winband', (0.09, 0.12, 0.14), 0.25, emit=(0.75, 0.9, 1.0), estr=2.2)   # 亮着灯的窗格
+    GLASS = C.flat('ar_glass', (0.05, 0.08, 0.1), 0.15, metal=0.3, emit=(0.5, 0.7, 0.85), estr=0.4)  # 暗窗格
+    PATH = C.flat('ar_path', (0.26, 0.25, 0.23), 0.85, noise=0.3)
     LAMP = C.flat('ar_lamp', (1, 1, 1), 0.4, emit=(0.85, 0.93, 1.0), estr=10.0)
     GROUND = C.flat('ar_bg_ground', (0.19, 0.21, 0.15), 0.95, noise=0.5)
     BG_SHACK = C.flat('ar_bg_shack', (0.28, 0.26, 0.24), 0.9)
@@ -59,19 +61,55 @@ def main():
     lb.box(x0, x1, y0, y1, 0, H1, CONC)
     lb.box(x0 - 0.3, x1 + 0.3, y0 - 0.3, y1 + 0.3, H1, H2, METALP)   # 二层金属带（略出挑）
     lb.box(x0, x1, y0, y1, H2, H3, CONC)
-    for fz, lit in ((1.2, False), (5.2, True), (9.2, False)):        # 三层带窗
-        m = WINBAND if lit else DARKM
-        lb.boxc(0, y0 - 0.42, fz, 22.0, 0.14, 1.5, m)
-        lb.boxc(0, y1 + 0.42, fz, 22.0, 0.14, 1.5, DARKM)
-    for sx in (x0 - 0.42, x1 + 0.42):
-        lb.boxc(sx, (y0 + y1) / 2, 5.2, 0.14, 12.0, 1.5, WINBAND)
+    # 楼层线（挑出的腰线）+ 壁柱：三层的节奏
+    for zb in (H1 - 0.2, H2):
+        lb.box(x0 - 0.5, x1 + 0.5, y0 - 0.5, y1 + 0.5, zb, zb + 0.2, DARKM)
+    pil = [-12.0 + 3.0 * i for i in range(9)]
+    for px in pil:
+        lb.boxc(px, y0 - 0.06, 0, 0.4, 0.12, H3, CONC)
+        lb.boxc(px, y1 + 0.06, 0, 0.4, 0.12, H3, CONC)
+    # 带窗：每层 8 格窗（暗玻璃 + 少数亮灯），二层面在金属带外皮上（出挑 0.3）
+    xs = [-10.5 + 3.0 * i for i in range(8)]
+    for fl, (fz, off) in enumerate(((1.0, 0.0), (5.0, 0.3), (9.0, 0.0))):
+        for i, wx in enumerate(xs):
+            lit = (i * 3 + fl * 2) % 5 == 0
+            m = WINBAND if lit else GLASS
+            if not (fl == 0 and abs(wx) < 2.0):                     # 一层正中让给入口
+                if not (fl == 1 and abs(wx) < 2.0):                 # 二层正中让给六边锁
+                    lb.boxc(wx, y0 - off - 0.08, fz, 1.9, 0.14, 1.8, m)
+            if fl == 0 and i % 2:                                   # 北墙一层：通风百叶代替窗
+                lb.boxc(wx, y1 + 0.06, 1.1, 1.6, 0.1, 1.0, DARKM)
+            else:
+                lb.boxc(wx, y1 + off + 0.08, fz, 1.9, 0.14, 1.8, m)
+        for sx in (x0 - off - 0.08, x1 + off + 0.08):
+            for j in range(4):
+                lit = (j + fl) % 3 == 0
+                lb.boxc(sx, y0 + 2.5 + 3.5 * j, fz, 0.14, 2.2, 1.8, WINBAND if lit else GLASS)
     lb.box(x0 - 1.2, x1 + 1.2, y0 - 1.6, y0, H3, H3 + 0.7, DARKM)    # 檐口压边
-    # 入口雨棚 + 六边锁纹
+    for cx in (x0 + 0.4, x1 - 0.4):                                   # 落水管
+        lb.cyl(cx, y0 - 0.42, 0, 0.09, H3, STEEL, 8)
+    # 入口：双扇门 + 两级台阶 + 雨棚 + 步道
+    for sx in (-0.8, 0.8):
+        lb.boxc(sx, y0 - 0.08, 0, 1.5, 0.12, 2.6, DARKM)
+        lb.boxc(sx, y0 - 0.15, 0.5, 1.0, 0.05, 1.8, GLASS)
+    lb.box(-1.9, 1.9, y0 - 0.2, y0, 2.6, 2.8, STEEL)                  # 门楣
+    lb.box(-3.0, 3.0, y0 - 1.0, y0, 0, 0.2, CONC)
+    lb.box(-3.0, 3.0, y0 - 1.8, y0 - 1.0, 0, 0.1, CONC)
     lb.box(-3.5, 3.5, y0 - 4.2, y0, 3.4, 3.8, DARKM)
     for px in (-3.0, 3.0):
         lb.cyl(px, y0 - 3.6, 0, 0.14, 3.4, STEEL, 8)
-    pts = C.ring_pts(0, y0 - 4.2, lambda a: 1.4, 6, 1.0)
-    C.hex_ward(lb, pts, 2.0, 1.2, GLOWW)                              # 智能锁意象（无字）
+    # 智能锁意象：二层正中的六边锁环 + 锁孔条 + U 形锁梁（无字）
+    lz, ly, lr = 5.9, y0 - 0.4, 0.95
+    hx = [(lr * math.cos(math.radians(60 * k)), lr * math.sin(math.radians(60 * k))) for k in range(7)]
+    lb.strip([(hx_, ly, lz + hz) for hx_, hz in hx], 0.14, 0.16, GLOWW)
+    hx2 = [(0.55 * a_, 0.55 * b_) for a_, b_ in hx]
+    lb.strip([(hx_, ly, lz + hz) for hx_, hz in hx2], 0.1, 0.1, GLOWW)
+    lb.boxc(0, ly, lz - 0.35, 0.14, 0.1, 0.5, GLOWW)                 # 锁孔条
+    # 屋顶设备：两台空调机组 + 楼梯间
+    for hxx, hyy in ((-7.0, 12.0), (8.0, 20.0)):
+        lb.boxc(hxx, hyy, H3, 3.0, 2.0, 1.4, METALP)
+        lb.cyl(hxx, hyy, H3 + 1.4, 0.7, 0.12, DARKM, 12)
+    lb.boxc(8.0, 11.5, H3, 3.0, 3.0, 2.6, CONC)
     # 屋顶以太聚能环
     CXc, CYc = 0.0, (y0 + y1) / 2
     lb.cyl(CXc, CYc, H3 + 0.7, 0.5, 4.2, STEEL, 10)                   # 竖杆
@@ -102,14 +140,29 @@ def main():
     for (px, pz, pw, ph) in plates:
         yd.boxc(fx + px, fy, pz, pw, 0.18, ph, ARMOR)
         yd.boxc(fx + px, fy - 0.14, pz + ph / 2 - 0.1, pw * 0.7, 0.05, 0.06, GLOWC)   # 回路光丝
-    # 架空导束管（主楼南壁 → 试架顶）
-    C.conduit(yd, (x0 + 4, y0 - 0.4), (fx - 0.8, fy), H1 - 0.5, fh + 0.5, 0.14, STEEL, GLOWC, n=14, sag=1.2)
-    # 设备柜两只 + 条箱垛 + 灯杆
-    yd.boxc(24, 14, 0, 6.2, 2.5, 2.6, METALP)
-    yd.boxc(24, 14, 2.6, 6.2, 2.5, 2.6, DARKM)
-    yd.boxc(24, 20, 0, 6.2, 2.5, 2.6, METALP)
-    for i in range(3):
-        yd.boxc(20 + rnd.uniform(-0.5, 0.5), -20 + i * 1.5, 0, 1.2, 1.2, 0.9, WOOD_D)
+    # 架空导束管（主楼南壁 → 试架左立柱顶）：粗管 + 卡箍 + 沿途立支墩
+    n_t = 12
+    p0, p1 = (-11.0, y0 - 0.55, 3.5), (fx - 2.0, fy, fh)
+    pts = [(p0[0] + (p1[0] - p0[0]) * t, p0[1] + (p1[1] - p0[1]) * t, p0[2] + (p1[2] - p0[2]) * t - 1.2 * 4 * t * (1 - t))
+           for t in (i / n_t for i in range(n_t + 1))]
+    yd.tube(pts, 0.28, DARKM, n=10)
+    for i in range(2, n_t - 1, 3):
+        px, py, pz = pts[i]
+        yd.boxc(px, py, pz - 0.36, 0.76, 0.64, 0.72, STEEL)                    # 卡箍
+        yd.boxc(px, py, pz - 0.36, 0.5, 0.68, 0.1, GLOWC)                      # 微光缝
+        yd.cyl(px, py, 0, 0.14, pz - 0.7, STEEL, 8)                            # 支墩
+        yd.boxc(px, py, 0, 0.9, 0.9, 0.12, CONC)
+    yd.boxc(p0[0], p0[1] + 0.25, p0[2] - 0.5, 0.9, 0.3, 1.0, STEEL)            # 墙侧法兰
+    # 设备柜两只（集装箱式，波纹肋 + 端门）+ 条箱垛
+    for cy in (8.0, 16.0):
+        yd.boxc(25.0, cy, 0, 2.5, 6.2, 2.6, METALP)
+        for i in range(10):
+            yd.boxc(25.0 - 1.28, cy - 2.7 + i * 0.6, 0.15, 0.05, 0.14, 2.3, DARKM)
+        for dx in (-0.6, 0.6):
+            yd.boxc(25.0 + dx, cy - 3.13, 0.2, 1.1, 0.05, 2.2, DARKM)
+        yd.boxc(25.0, cy - 3.17, 2.0, 0.3, 0.05, 0.15, GLOWW)                   # 状态灯
+    for dx, dy, dz in ((0, 0, 0), (1.3, 0, 0), (0.65, 1.3, 0), (0.65, 0.5, 0.9)):
+        yd.boxc(20 + dx, -20 + dy, dz, 1.2, 1.2, 0.9, WOOD_D)
     for lx, ly in ((-26, -22), (26, -22), (-26, 2), (26, -2)):
         yd.cyl(lx, ly, 0, 0.12, 6.5, STEEL, 8)
         yd.boxc(lx, ly, 6.3, 0.6, 0.35, 0.2, LAMP)
@@ -119,6 +172,11 @@ def main():
     gr.box(-40, 40, -30, 32, -0.3, 0, DIRT)
     gr.box(-28, 28, -26, 26, 0, 0.06, CONC_F)                        # 场坪
     gr.lathe(rx, ry, 0.06, [(rr + 0.6, 0.0), (rr + 0.6, 0.05), (rr, 0.05), (rr, 0.0)], CONC_F, n=48)  # 约束场圆台
+    gr.box(-2.0, 2.0, -26, y0 - 1.8, 0.06, 0.1, PATH)                # 入口步道
+    for jx in range(-24, 25, 8):                                     # 伸缩缝
+        gr.boxc(jx, 0, 0.06, 0.08, 52, 0.012, DARKM)
+    for jy in range(-24, 25, 8):
+        gr.boxc(0, jy, 0.06, 56, 0.08, 0.012, DARKM)
 
     # ------------------------------------------------------------ bg
     bg = Batch('bg_ground')
@@ -142,8 +200,8 @@ def main():
     sc.view_settings.exposure = float(A['exposure']) if A['exposure'] else 0.1
     CAMS = {
         'c1': ((-58.0, -72.0, 48.0), (0.0, -2.0, 5.0), 32, 0.0),
-        'c2': ((-4.0, -46.0, 4.5), (0.0, 6.0, 6.0), 34, 0.0),
-        'under': ((-52.0, 18.0, 16.0), (6.0, -6.0, 5.0), 35, 0.0),
+        'c2': ((0.0, -48.0, 4.5), (-3.0, 6.0, 6.0), 34, 0.0),
+        'under': ((-52.0, 18.0, 16.0), (-8.0, -8.0, 5.0), 35, 0.0),
     }
     cv = CAMS[A['cam']]
     C.camera(sc, cv[0], cv[1], cv[2], cv[3])
