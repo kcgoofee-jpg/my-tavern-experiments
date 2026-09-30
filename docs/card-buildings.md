@@ -93,7 +93,7 @@
 | P3 其他 | tc_mid | `victoria_apartment` | 维多利亚的公寓 | ✅ | 卡 | 维多利亚的公寓 `map/props/victoria_apartment/` | 标准（r1 7 / 7.5） |  |
 | P3 其他 | tc_upper | `eden` | 伊甸庄园 | ✅ | 卡 | — | — |  |
 | P3 其他 | tc_upper | `league_club` | 庄园主联盟会所 | ✅ | 卡 + 推断位置 | 庄园主联盟会所 `map/props/league_club/` | 标准（glb 已导出，r1 自查未开评审） | isle9；宫殿式会所 + 顶光拍卖厅 |
-| P3 其他 | tc_upper | `victor_estate` | 维克多庄园 | 🆕 | 仓库推断 | — | — | 只标记；所在岛（isle4）是通用英式填充 |
+| P3 其他 | tc_upper | `victor_estate` | 维克多庄园 | 🆕 | 仓库推断 | 岛资产 `blender/islands/isle4.py`（上层底图抠图） | 标准（campaign r2 7.5/6.5） | 2026-09-30 渲染战役：isle4 重建（旧宅 + 秋林 + 断锥），标记移到旧宅上 |
 | P3 其他 | tc_upper | `y_estate` | 「Y」的庄园 | 🆕 | 仓库推断 | — | — | 只标记；所在岛（isle5）是通用英式填充 |
 | P3 其他 | tc_upper | `zaibatsu_estate` | 罗斯柴尔德庄园 | ✅ | 卡 + 推断位置 | 罗斯柴尔德庄园 `map/props/rothschild_estate/` | 标准（glb 已导出，r1 自查未开评审） | isle30；府邸 + 冬季宴会厅 |
 | P3 其他 | tc_upper | `elite_academy` | 精英学院 | 🆕 | 卡 + 推断位置 | 精英学院 `map/props/elite_academy/` | 标准（glb 已导出，r1 自查未开评审） | isle25（Q11） |

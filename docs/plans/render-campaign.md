@@ -2,12 +2,12 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T12:04:03Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T12:14:27Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
 | standard | 3 | 0 | 45 | 0 | 0 | 0 | 48 |
-| hero | 1 | 0 | 12 | 0 | 6 | 0 | 19 |
+| hero | 2 | 0 | 11 | 0 | 6 | 0 | 19 |
 
 Below-gate (user spot-check): none
 
@@ -69,7 +69,7 @@ Below-gate (user spot-check): none
 | # | id | type | status | stage | claim | flags | title |
 |---|---|---|---|---|---|---|---|
 | 1 | `isle:silver_crown` | island | done | - |  |  | Rebuild island silver_crown |
-| 2 | `isle:isle4` | island | open | setting |  |  | Rebuild island isle4 (victor_estate) |
+| 2 | `isle:isle4` | island | done | - |  |  | Rebuild island isle4 (victor_estate) |
 | 3 | `isle:isle5` | island | open | setting |  |  | Rebuild island isle5 (y_estate) |
 | 4 | `isle:isle6` | island | open | setting |  |  | Rebuild island isle6 (pm_residence) |
 | 5 | `isle:isle9` | island | open | setting |  |  | Rebuild island isle9 (league_club) |

@@ -26,3 +26,13 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T11:57:04Z,isle:silver_crown,final,done,hero-1,,final 2400px/64spp main + under (0.7 min); glb/blend in blender/islands/out
 2026-09-30T12:03:32Z,isle:silver_crown,integrate,done,hero-1,,cutout 360m@0.643 pasted into tc_upper + tc_upper_city after 8000px/64spp crop re-render without the old fortress; DZI rebuilt
 2026-09-30T12:04:03Z,isle:silver_crown,ship,done,hero-1,,"tc_upper + tc_upper_city tiles, card-buildings row; check_maps + estate3d_manifest pass"
+2026-09-30T12:04:41Z,isle:isle4,setting,claim,hero-1,,
+2026-09-30T12:05:35Z,isle:isle4,setting,done,hero-1,,setting block C1-C3/R1-R12 in docs/upper-islands-checklist.md
+2026-09-30T12:08:51Z,isle:isle4,draft,done,hero-1,,draft1 OK
+2026-09-30T12:08:51Z,isle:isle4,board,done,hero-1,,board1 11/11 anchored
+2026-09-30T12:08:51Z,isle:isle4,review-r1,done,hero-1,fail,"r1 fidelity 5.5 / credibility 5.0: no wood, sand ground, flat slope, saw-cut tip, zebra rock"
+2026-09-30T12:10:33Z,isle:isle4,fix,done,hero-1,,r1 defects addressed; draft2 (830 trees)
+2026-09-30T12:10:33Z,isle:isle4,review-r2,done,hero-1,pass,r2 fidelity 7.5 / credibility 6.5
+2026-09-30T12:13:40Z,isle:isle4,final,done,hero-1,,final 2400px/64spp main + under
+2026-09-30T12:14:26Z,isle:isle4,integrate,done,hero-1,,crop re-render (body only) + cutout 520m@0.6733 pasted into tc_upper + tc_upper_city; DZI rebuilt
+2026-09-30T12:14:27Z,isle:isle4,ship,done,hero-1,,"tiles; victor_estate marker moved onto the manor (0.8157,0.2949); card-buildings row; check_maps + estate3d_manifest pass"
