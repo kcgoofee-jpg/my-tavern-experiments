@@ -42,9 +42,19 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   Part 6-5 deterministic clock + Part 6-1 API-key gateway base, Part 6-2 background tick, Part 6-3 clue nodes,
   Part 6-4 action injection,
   Part 4-1 weather + Part 4-3 traffic; probes: p4_fx (10/10), p4_traffic (7/7), p1_leak (5/5), p6_action (7/7),
-  p6_quests (8/8), p6_tick (8/8). Still open: Part 1-1/1-2 (live SillyTavern automation contract, CDN fallback assertions),
-  Part 2-2/2-4 (U1–U12 sweep, dynamic `import()` of the 3D viewer / parts panel), Part 3 (single WebGL context,
-  LOD + frustum culling, InstancedMesh, KTX2/Basis budget, OffscreenCanvas workers), Part 4-2/4-4 (X-Ray
+  p6_quests (8/8), p6_tick (8/8).
+  ~~**Part 3 (WebGL perf)**: pure LOD + graphics budget policies (`a003f32`), off-thread DZI tile decode +
+  renderer census guard (`4d3fc29`), shared runtime `map/three/{ctx,culling,lod,instancing,texres}.mjs`
+  (`482e4d3`), generic 3D viewer adoption + KTX2/Basis pipeline (`134a857`), exclusive 3D lease + one-shot
+  OSD→Three backdrop bridge (`01a465e`), budget eviction + tile-cache trim (`e839ffd`), camera framing fix
+  (`3c82eed`).~~ ✅ 2026-09-30 — one WebGL context is now enforced (`tools/browser/webgl_single_ctx.mjs`:
+  peak live 3D frames ≤ 1 across world → 3D A → 3D B → world → 3D A), OSD stays Canvas2D, dairy measured
+  6.7 → 7.5 fps p50 with the same 18 draw calls. Still open in Part 3: persistent context across 3D
+  navigations (today each entry still builds a fresh context), legacy estate page (`map/estate/main.js`,
+  frozen per `docs/history/CLOUD_TASK8.md:15`) adopting the shared runtime, and shipping any KTX2-baked GLB
+  (pipeline is wired and inert until an asset uses it).
+  Still open: Part 1-1/1-2 (live SillyTavern automation contract, CDN fallback assertions),
+  Part 2-2/2-4 (U1–U12 sweep, dynamic `import()` of the 3D viewer / parts panel), Part 4-2/4-4 (X-Ray
   cutaway, Web Audio), Part 7-3 (Shadow DOM isolation).
 - [ ] **Real SillyTavern + TavernHelper browser test.** The biggest open item: `tools/browser/`（预估 ~16h）
   currently only has `host_stub.mjs`, a fake host. Everything else in the suite runs against the stub.
