@@ -144,7 +144,7 @@ t('v0.9.5 五路通读：下层泛称、联盟会所别名、歧义词', () => {
   is('联盟会所', 3, 'tc_upper', { marker: 'league_club' });
   assert.equal(R('品鉴宴'), null);                                                        // 品鉴宴由庄园主轮流做东，不落会所
   is('罗斯柴尔德庄园品鉴宴', 3, 'tc_upper', { marker: 'zaibatsu_estate' });
-  for (const v of ['区议会', '营区']) assert.equal(R(v), null, v);                            // 卡没写位置：歧义词，不跳转
+  for (const v of ['区议会', '营区']) assert.equal(R(v), null, v);                            // 位置未写：歧义词，不跳转
   is('骑士团营区', 3, 'tc_mid', { marker: 'knights_camp' });                                   // 用户决定（2026-09-27）：中层
 });
 
@@ -153,12 +153,11 @@ t('v0.9.6 卡遗漏补全：新地标与未落点机构', () => {
   is('中层修道院', 3, 'tc_mid', { marker: 'mid_monastery' }); assert.equal(R('修道院'), null);   // 泛称仍不落
   is('中层 C 区', 3, 'tc_mid', { marker: 'checkpoint_c' }); is('老K杂货', 3, 'tc_low', { marker: 'well7' });
   is('铁皮屋区', 3, 'tc_low', { marker: 'tin_shacks' }); is('旧货市场', 3, 'tc_low', { marker: 'junk_market' }); is('孤儿收容所', 3, 'tc_low', { marker: 'soup_kitchen' });
-  // 2026-09-28 用户要求卡里每处建筑都上图：原「位置未写」的机构落到仓库推断的位置
+  // 2026-09-28 用户要求卡里每处建筑都上图：原「位置未写」的机构落到地图上的位置
   is('法师塔', 3, 'tc_mid', { marker: 'mage_tower' }); is('新生工坊', 3, 'tc_mid', { marker: 'rebirth_workshop' }); is('天城文化署', 3, 'tc_mid', { marker: 'culture_office' });
   is('维克多庄园', 3, 'tc_upper', { marker: 'victor_estate' }); is('风暴殿', 3, 'tc_mid', { marker: 'storm_hall' }); is('贫民窟', 3, 'tc_low', { marker: 'slums' });
   const reg = J('data/maps.json'); assert.equal(reg.unplaced.items.length, 0);
-  for (const k of ['mage_tower', 'executive_office', 'storm_hall']) assert.equal(reg.maps.tc_mid.markers[k].layer_src, 'repo-inferred', k);
-  for (const k of ['tiancheng_univ', 'knights_camp']) assert.equal(reg.maps.tc_mid.markers[k].layer_src, 'user-decision', k);
+  for (const k of ['mage_tower', 'executive_office', 'storm_hall', 'tiancheng_univ', 'knights_camp']) assert.equal(reg.maps.tc_mid.markers[k].addon, true, k);   // 这几处由世界书附加条目描述
 });
 
 console.log(`\n${n} passed`);

@@ -17,7 +17,7 @@
   5–7 地图方位·上层 / 中层 / 下层（v0.9.3，EJS 条件；v0.9.5 起不常驻，聊天里出现该层层名 / 地标名时触发）：「世界.当前地点」落在该层某个地标时，只展开那一处的中性方位
     （名称、层、副标题、邻近地标）。要装「提示词模板」（ST-Prompt-Template）扩展；没装时自检会提示关掉这三条。
   8 天城常识-* / 庄园常识-*（v0.9.6，关键词触发）：卡里已有、地图常用的口径（跨层、治安与机构、身份、经济、战力、节日、媒体、日程、安保与权限、位置未写的机构）
-  9 地图补充-*（v0.9.6，关键词触发）：map/data/addon_places.json 里用户决定 / 仓库自设的地点，每处一条；check_maps.py 保证与地图数据同步
+  9 地图补充-*（v0.9.6，关键词触发）：map/data/addon_places.json 里另行描述的地点，每处一条；check_maps.py 保证与地图数据同步
 我们的规则只提到我们自己的东西（人物标签、⌖改名 / ⌖用途、地图.*），不引用卡里的字段名或原文。
 示范标签只用 EXAMPLES 里的原文（模型照抄时地图不落点）。不写任何关键词过滤规则（地图不过滤内容，见 docs/content-compat.md）。
 
@@ -29,7 +29,7 @@
 import argparse, json, os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CREDIT = '原作角色卡：Yehehua（类脑社区），原作发布帖 https://discord.com/channels/1380075940285124724/1534464824141025321 。本附加条目是经作者同意的二次创作；「地图补充-*」条目是地图附加的地点设定（用户决定或仓库自设），原卡没有；「天城常识-*」「庄园常识-*」是把卡里已有设定按地图需要归纳的口径。'
+CREDIT = '原作角色卡：Yehehua（类脑社区），原作发布帖 https://discord.com/channels/1380075940285124724/1534464824141025321 。本附加条目是经作者同意的二次创作；「地图补充-*」条目描述地图上的地点设定；「天城常识-*」「庄园常识-*」是把卡里已有设定按地图需要归纳的口径。'
 RARE = {3: '罕', 4: '传'}
 
 
@@ -64,7 +64,7 @@ def build(version):
 
     # ---- 地点：各层地标（标准名）
     def marks(mid):
-        return '、'.join(k['name'].replace(' ', '') for k in canon(reg[mid]['markers']).values())
+        return '、'.join(k['name'].replace(' ', '') for k in listed(reg[mid]['markers']).values())
     layers = [(reg[m]['layer']['name'], reg[m]['layer'].get('sub', ''), m) for m in ('tc_upper', 'tc_mid', 'tc_low')]
     place_rows = '\n'.join(f'  {name}（{sub}）：{marks(mid)}' for name, sub, mid in layers)
 
@@ -150,7 +150,6 @@ def build(version):
 
 
 KW = {'constant': False, 'position': 0, 'depth': 4}   # 关键词触发，照卡里设定条目的写法（角色定义之前、深度 4）
-ADDON_NOTE = '（地图附加设定，原卡没有）'
 
 
 def city_facts(unplaced):
@@ -189,16 +188,13 @@ def city_facts(unplaced):
 def addon_places():
     """地图补充的地点（map/data/addon_places.json）：每处一条关键词触发的条目；check_maps.py 保证与地图数据同步"""
     ap = json.load(open(os.path.join(ROOT, 'map/data/addon_places.json'), encoding='utf-8'))['places']
-    return [(f'地图补充-{p["name"]}', f'<地图补充·{p["name"]}>\n{p["text"]}{ADDON_NOTE}\n</地图补充·{p["name"]}>', 440 + i,
+    return [(f'地图补充-{p["name"]}', f'<地图补充·{p["name"]}>\n{p["text"]}\n</地图补充·{p["name"]}>', 440 + i,
              {**KW, 'key': [w for w in p['alias'] if len([*w]) >= 2]}) for i, p in enumerate(ap)]
 
 
-def canon(markers):
-    """卡里有的地标（canon:false = 仓库自设、卡中没有，不向模型列出；见 docs/card-digest.md §10）"""
-    return {k: v for k, v in markers.items() if v.get('canon', True) is not False}
-
-
-INFERRED = ''   # v16：不再向模型写「推断」口径（用户要求）；定位统一以「地图补充设定」给出
+def listed(markers):
+    """列入世界书地点清单的地标（wb_list:false 的不列，由 addon_places.json 的条目描述）"""
+    return {k: v for k, v in markers.items() if v.get('wb_list', True) is not False}
 
 
 LAYER_RE = {'上层': '中层|下层', '中层': '上层|下层', '下层': '上层|中层'}
@@ -222,9 +218,9 @@ def topo_block(reg, mid):
     连接源只有三类：marker.link 显式跨层通道（出口）、同层地标全集（连通）、层级包含（路径前缀）；routes 不作邻接源。
     与 map/tavern/spatial.mjs 的 topo 语义同一口径（运行时注入与世界书发布件两条路一个说法）。"""
     m, tree = reg[mid], node_tree()
-    body = '连通: ' + '、'.join(v['name'].replace(' ', '') for v in canon(m['markers']).values())
+    body = '连通: ' + '、'.join(v['name'].replace(' ', '') for v in listed(m['markers']).values())
     links = []
-    for v in canon(m['markers']).values():
+    for v in listed(m['markers']).values():
         to = (v.get('link') or {}).get('map')
         # 出口 = link.map 指向节点树里的一个层（有 layer）；只是三维页视图的图（lm_* 没有自己的节点）不算；层名取节点名
         if to and to in tree['node'] and reg.get(to, {}).get('layer'): links.append(f"{v['name'].replace(' ', '')}({tree['node'][to]})")
@@ -238,7 +234,7 @@ def topo_selftest(reg):
     全量对拍在 tests/wb_topo.test.mjs；这里抽第一层自证，失败直接退出构建。"""
     for mid, m in reg.items():
         if m.get('kind') != 'points' or m.get('status') == 'planned' or not m.get('layer'): continue
-        names = [v['name'].replace(' ', '') for v in canon(m['markers']).values()]
+        names = [v['name'].replace(' ', '') for v in listed(m['markers']).values()]
         if len(names) < 2: continue
         block = topo_block(reg, mid)
         prose = '。'.join(f'从{a}可以步行前往{b}' for a in names for b in names if a != b) + '。'
@@ -251,7 +247,7 @@ def topo_selftest(reg):
 def neighbours(reg, mid, k, n=3):
     """同层最近的 n 个地标（按 data/<层>.json 的归一化坐标）"""
     d = json.load(open(os.path.join(ROOT, 'map', reg[mid]['data']), encoding='utf-8'))
-    ok = canon(reg[mid]['markers'])
+    ok = listed(reg[mid]['markers'])
     xy = {m['id']: (m.get('ax', m['nx']), m.get('ay', m['ny'])) for m in d['markers'] if m['id'] in ok}
     if k not in xy: return []
     x0, y0 = xy[k]
@@ -263,14 +259,12 @@ def lore_lines(reg, mid):
     """每个地标一句中性方位：[(匹配词[], 描述)]；再加一句只写到层时的层概况"""
     m, L = reg[mid], reg[mid]['layer']
     rows = []
-    for k, v in canon(m['markers']).items():
+    for k, v in listed(m['markers']).items():
         nm = v['name'].replace(' ', '')
         sub = re.sub(r'\{\{user\}\}\s*', '玩家', v.get('sub') or '')
         words = [w for w in dict.fromkeys([v['name'], nm, *v.get('alias', [])]) if len([*w]) >= 2]
         nb = neighbours(reg, mid, k)
-        # v16：位置不再写「推断」口径；tag/src 里的推断标记仅用于仓库内部对账
-        inf = INFERRED
-        rows.append((words, f'{nm}：天城{L["name"]}（{L["sub"]}）' + (f'，{sub}' if sub else '') + inf + (f'；地图上邻近：{"、".join(nb)}' if nb else '') + '。'))
+        rows.append((words, f'{nm}：天城{L["name"]}（{L["sub"]}）' + (f'，{sub}' if sub else '') + (f'；地图上邻近：{"、".join(nb)}' if nb else '') + '。'))
     layer = (L['name'], [L['name'], *m.get('districts', [])], f'天城{L["name"]}（{L["sub"]}，{L.get("alt", "")}）；' + topo_block(reg, mid) + '。')
     return rows, layer
 

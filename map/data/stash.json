@@ -1,12 +1,12 @@
 {
-  "_note": "世界藏物表（Part 5-1，core/stash.mjs）：世界里本来就藏在某个地标里的东西——查看器在当前图上画成一枚会呼吸的小光点，点一下拾走。本表只放了几行演示数据，名字都带「地图自设·」前缀（自补内容照 AGENTS.md 标记；卡里写了的道具要照抄卡原名再补进来）。键与 id 一律 ASCII（tools/check_ascii.py 要查）；map = 地图 id，marker = 该图 data/<map>.json 里的标记 id，hidden = 暗格（空 = 明面上放着），dc = 搜刮难度（d20 ≥ DC；暗格 +3，见 stash.mjs 的 dcOf）。",
+  "_note": "世界藏物表（Part 5-1，core/stash.mjs）：世界里本来就藏在某个地标里的东西——查看器在当前图上画成一枚会呼吸的小光点，点一下拾走。本表只放了几行演示数据，卡里写了的道具要照抄卡原名再补进来。键与 id 一律 ASCII（tools/check_ascii.py 要查）；map = 地图 id，marker = 该图 data/<map>.json 里的标记 id，hidden = 暗格（空 = 明面上放着），dc = 搜刮难度（d20 ≥ DC；暗格 +3，见 stash.mjs 的 dcOf）。",
   "items": [
     {
       "id": "tc_duty_roster",
       "map": "tc_mid",
       "marker": "enforcement_hq",
       "place": "天城执法局总局",
-      "name": "地图自设·值班表副本",
+      "name": "值班表副本",
       "hidden": "值班柜夹层",
       "note": "夹在当月登记本里的一份抄件，笔迹很新",
       "dc": 11
@@ -16,7 +16,7 @@
       "map": "tc_mid",
       "marker": "old_apartment",
       "place": "旧公寓楼",
-      "name": "地图自设·欠租账册",
+      "name": "欠租账册",
       "hidden": "床垫下",
       "note": "203 室，三个月没交；最后一页撕掉了一半",
       "dc": 8
@@ -26,7 +26,7 @@
       "map": "tc_low",
       "marker": "well7",
       "place": "7 号井黑市",
-      "name": "地图自设·灰票零头",
+      "name": "灰票零头",
       "hidden": "排水沟盖板下",
       "note": "几张面额很小的灰票，攥得发软",
       "dc": 9,

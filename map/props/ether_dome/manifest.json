@@ -1,5 +1,5 @@
 {
-  "_note": "viewer3d.html?model=ether_dome 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/ether_dome.md。，「以太穹顶」不在卡里，是仓库自设的以太技术展示场。",
+  "_note": "viewer3d.html?model=ether_dome 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/ether_dome.md。",
   "id": "ether_dome",
   "title": {
     "zh": "以太穹顶",

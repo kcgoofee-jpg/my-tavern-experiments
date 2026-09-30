@@ -18,12 +18,12 @@ out += validate(D('addon_places.json'), S('addon_places')); print(json.dumps(out
 test('写错的字段、类型、枚举、坐标都报错', () => {
   const errs = py(`import copy; r = D('maps.json'); b = copy.deepcopy(r)
 b['maps']['tc_mid']['kind'] = 'point'; b['maps']['tc_mid']['titel'] = 'x'
-mk = next(iter(b['maps']['tc_low']['markers'].values())); mk['tag'] = 'guess'; mk['alias'] = []; del mk['src']
+mk = next(iter(b['maps']['tc_low']['markers'].values())); mk['cls'] = 'castle'; mk['alias'] = []; del mk['src']
 mk['link'] = {'marker': 'x'}
 p = D('tc_low.json'); p['markers'][0]['nx'] = 1.2
 print(json.dumps([validate(b, S('maps')), validate(p, S('points'))]))`);
   const [m, p] = errs, has = (a, re) => assert.ok(a.some(e => re.test(e)), `${re} 不在 ${JSON.stringify(a)}`);
-  has(m, /tc_mid\.kind: 应为/); has(m, /tc_mid\.titel: 未登记的字段/); has(m, /\.tag: 应为 \['set', 'inf'\]/); has(m, /\.alias: 至少 1 项/); has(m, /缺字段 src/); has(m, /\.link: 缺字段 map/);
+  has(m, /tc_mid\.kind: 应为/); has(m, /tc_mid\.titel: 未登记的字段/); has(m, /\.cls: 应为 \['capital'\]/); has(m, /\.alias: 至少 1 项/); has(m, /缺字段 src/); has(m, /\.link: 缺字段 map/);
   has(p, /markers\[0\]\.nx: 应 ≤ 1/);
 });
 test('check_maps 接了 schema；schema 用到的关键字校验器都支持', () => {

@@ -7,11 +7,10 @@
   "additionalProperties": false,
   "patternProperties": { "^_": {} },
   "properties": {
-    "places": { "type": "array", "items": { "type": "object", "required": ["id", "name", "src", "alias", "text"], "additionalProperties": false,
+    "places": { "type": "array", "items": { "type": "object", "required": ["id", "name", "alias", "text"], "additionalProperties": false,
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
         "name": { "type": "string", "minLength": 1 },
-        "src": { "type": "string", "minLength": 1, "description": "出处" },
         "alias": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
         "text": { "type": "string", "minLength": 1 },
         "refs": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$" }, "description": "对应的地图标记 <地图 id>.<标记 id>" },

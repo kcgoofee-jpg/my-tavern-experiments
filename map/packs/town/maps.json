@@ -36,7 +36,6 @@
         "keep": {
           "name": "旧堡",
           "name_en": "Old Keep",
-          "tag": "inf",
           "src": "示例包：虚构小镇的制高点",
           "alias": [
             "城堡",
@@ -47,7 +46,6 @@
         "market": {
           "name": "集市广场",
           "name_en": "Market Square",
-          "tag": "inf",
           "src": "示例包：每周集市",
           "alias": [
             "广场",
@@ -64,7 +62,6 @@
         "clock": {
           "name": "钟楼",
           "name_en": "Clock Tower",
-          "tag": "inf",
           "src": "示例包：镇中心钟楼",
           "alias": [
             "钟塔",
@@ -97,7 +94,6 @@
         "fish": {
           "name": "鱼市",
           "name_en": "Fish Market",
-          "tag": "inf",
           "src": "示例包：清晨开市",
           "alias": [
             "鱼市",
@@ -113,7 +109,6 @@
         "light": {
           "name": "灯塔",
           "name_en": "Lighthouse",
-          "tag": "inf",
           "src": "示例包：港口入口",
           "alias": [
             "灯塔",

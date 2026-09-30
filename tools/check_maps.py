@@ -8,7 +8,7 @@
   - maps.json 结构：start / parent / group / overlay.from / link 指向的地图都存在
   - 已上线的地图：底图 DZI 与瓦片目录存在；points 地图的数据文件存在
   - 标记：渲染数据里的每个 id 在 maps.json 里有名称；maps.json 里的每个标记在数据里有坐标；nx/ny 在 0…1
-  - 标记字段：name、tag（set / inf）、src 必填；alias 为非空列表
+  - 标记字段：name、src 必填；alias 为非空列表
   - 跨层对齐：link 两端的地点在平面上应当重合（同一套平面坐标），偏差超过 2% 图宽报错
   - 三层数据的 extent_m 一致
   - 岛轮廓 islands[].outline（可选）：至少 8 个点，坐标在 0…1
@@ -144,9 +144,8 @@ for mid, m in maps.items():
         if not (0 <= k['nx'] <= 1 and 0 <= k['ny'] <= 1): err(f"{mid}.{i}: 坐标超出底图 ({k['nx']}, {k['ny']})")
     for i, v in meta.items():
         if i not in ids: err(f'{mid}.{i}: maps.json 有名称，但渲染数据里没有坐标（重跑该层脚本，或加 --data-only 只导出点位）')
-        for f in ('name', 'tag', 'src'):
+        for f in ('name', 'src'):
             if not v.get(f): err(f'{mid}.{i}: 缺 {f}')
-        if v.get('tag') not in ('set', 'inf'): err(f"{mid}.{i}: tag 应为 set 或 inf，现在是 {v.get('tag')}")
         if not isinstance(v.get('alias'), list) or not v['alias']: err(f'{mid}.{i}: alias 应为非空列表')
     if m.get('focus') and m['focus'] not in meta: err(f"{mid}.focus → {m['focus']} 不是本图的标记")
     # 航线叠加层（查看器按 routes 画：lane = 航线、patrol / patrol_city = 骑士团巡逻环）
@@ -239,7 +238,7 @@ if len(i18n) == 2:
     if names is not None:
         for k in sorted(names - set(i18n['en'].get('names', {}))): err(f'i18n：事件大类 / 类型「{k}」在 en.json 的 names 里没有英文')
 # 地图补充地点 ↔ 世界书附加条目（map/data/addon_places.json → tools/build_worldbook_addon.py「地图补充-*」）：
-# 用户决定 / 仓库自设的标记都要有一条；条目引用的标记要存在；庄园条目的叫法要能落到 eden_estate（加、改、删地点时三处同步）
+# wb_list:false / addon:true 的标记都要有一条；条目引用的标记要存在；庄园条目的叫法要能落到 eden_estate（加、改、删地点时三处同步）
 ap_path = os.path.join(ROOT, 'data', 'addon_places.json')
 if not exists(ap_path): err('缺 map/data/addon_places.json（地图补充地点，世界书附加条目从它生成）')
 else:
@@ -249,10 +248,9 @@ else:
     _erp = os.path.join(ROOT, 'data', 'eden_estate_rooms.json')   # 分层房间（含用户设定房间，如地下医疗中心）也算庄园房间
     if exists(_erp): est_words |= {r['name'] for r in load(_erp).get('rooms', []) if r.get('kind') != 'restricted'}
     for p in ap:
-        for f in ('id', 'name', 'src', 'text'):
+        for f in ('id', 'name', 'text'):
             if not p.get(f): err(f"addon_places.{p.get('id', '?')}: 缺 {f}")
         if not isinstance(p.get('alias'), list) or not p['alias']: err(f"addon_places.{p.get('id')}: alias 应为非空列表（世界书关键词）")
-        if not str(p.get('src', '')).startswith(('user', 'repo')): err(f"addon_places.{p.get('id')}: src 应以 user / repo 开头")
         for r in p.get('refs', []):
             mid, _, k = r.partition('.')
             if k not in (maps.get(mid, {}).get('markers') or {}): err(f'addon_places.{p["id"]}: refs {r} 不存在（地点删了或改了 id？同步删改这一条）')
@@ -261,10 +259,10 @@ else:
     for mid, m in maps.items():   # 开局地点的简易地图（site:true）：每张至少一条附加条目引用它的地标
         if m.get('site') and not any(r.startswith(mid + '.') for r in refs): err(f'{mid}：开局地点地图在 addon_places.json 里没有条目（世界书附加条目缺它）')
     def added(v):
-        return v.get('canon') is False or v.get('sub_src') or v.get('layer_src') or any(w in v.get('src', '') for w in ('仓库自设', '用户'))
+        return v.get('wb_list') is False or v.get('addon')
     for mid, m in maps.items():
         for k, v in (m.get('markers') or {}).items():
-            if added(v) and f'{mid}.{k}' not in refs: err(f'{mid}.{k}：用户决定 / 仓库自设的地点，addon_places.json 里没有对应条目（世界书附加条目缺它）')
+            if added(v) and f'{mid}.{k}' not in refs: err(f'{mid}.{k}：wb_list:false / addon:true 的地点，addon_places.json 里没有对应条目（世界书附加条目缺它）')
 # v0.9.6 卡设定分层房间（map/data/eden_estate_rooms.json）↔ 当前地点词表（map/app/here-v2.mjs 的庄园房间）：
 # 每个房间名都要能落到 eden_estate 的房间（带 std）；卡房间名照抄卡原名（2026-09-28 用户决定，不用占位、不做运行时绑定）；每间卡房间都有编号（card_rooms）；
 # 仓库自编的旧名（受限房间 X、附属室 X 等）只能留在 retired_names；
@@ -273,7 +271,7 @@ er_path = os.path.join(ROOT, 'data', 'eden_estate_rooms.json')
 if exists(er_path) and 'eden_estate' in maps:
     import shutil, subprocess
     er = load(er_path).get('rooms', []); est = maps['eden_estate']
-    PH = re.compile(r'按原卡|^（.*）$|（[^）]*(卡未写|未写|待定|占位|TODO)[^）]*）')   # 占位不是名字：房间名一律写卡原名；「X（卡未写）」式标签也算占位
+    PH = re.compile(r'按原卡|^（.*）$|（[^）]*(未写|待定|占位|TODO)[^）]*）')   # 占位不是名字：房间名一律写卡原名；「X（未写）」式标签也算占位
     erd = load(er_path); crs = erd.get('card_rooms') or []; cids = {c.get('cid') for c in crs}
     retired = erd.get('retired_names') or {}
     # 仓库以前自己编的房间名（不是卡的写法）：只允许出现在 retired_names（读旧聊天数据），不能再当房间名 / 识别词

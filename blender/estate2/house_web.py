@@ -28,7 +28,7 @@ WIN_W, WIN_SILL, WIN_HEAD, WIN_STEP = 1.6, 0.9, 3.3, 4.0
 
 KIND_COL = {   # 楼面中性色（线性 0–1）
     'card': (0.60, 0.47, 0.35), 'circ': (0.80, 0.78, 0.73), 'support': (0.66, 0.68, 0.70), 'owner': (0.58, 0.55, 0.62),
-    'restricted': (0.60, 0.60, 0.60), 'user': (0.62, 0.70, 0.72), 'inferred': (0.74, 0.74, 0.70), 'open': (0.74, 0.74, 0.70)}
+    'restricted': (0.60, 0.60, 0.60), 'user': (0.62, 0.70, 0.72), 'open': (0.74, 0.74, 0.70)}
 WALL_INT, WALL_EXT = (0.90, 0.88, 0.84), (0.94, 0.92, 0.87)
 FURN = (0.76, 0.70, 0.60)
 STAIR = (0.84, 0.82, 0.78)
@@ -228,8 +228,8 @@ def doors_for(rooms, segs):
         ci, cj = ri['kind'] == 'circ', rj['kind'] == 'circ'
         if ci or cj:
             add(k, wide=ci and cj)
-        elif ri['block'] != rj['block'] and ri['kind'] == rj['kind'] == 'inferred':
-            add(k, wide=True)   # 相邻体块的卡未写体量直接相通
+        elif ri['block'] != rj['block'] and ri['kind'] == rj['kind'] == 'open':
+            add(k, wide=True)   # 相邻体块的未定用途体量直接相通
     for i, r in enumerate(rooms):
         if i in has or r['kind'] == 'restricted':
             continue
@@ -373,7 +373,7 @@ def build_floor(fl):
     z = ZF[fl]
     S, F = Mesh(), Mesh()
     for r in rooms:   # 楼板
-        S.prism(r['poly'], z - SLAB, z, KIND_COL.get(r['kind'], KIND_COL['inferred']))
+        S.prism(r['poly'], z - SLAB, z, KIND_COL.get(r['kind'], KIND_COL['open']))
     wall_rooms = [r for r in rooms if r['block'] != 'porch' and r['kind'] != 'user']   # 门廊是敞开柱廊，不出墙；医疗中心（kind=user）的墙 / 门 / 设备由 medical_b2.py 出（medical_web.py）
     segs = walls_for(wall_rooms)
     doors = doors_for(wall_rooms, segs)

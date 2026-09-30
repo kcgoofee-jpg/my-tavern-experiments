@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "events.schema.json",
   "title": "设定包事件分类 map/packs/<id>/events.json",
-  "description": "事件标签（⌖类别｜层·地点｜等级｜一句话｜发布方 或 data-tcmap）的类型表：大类（颜色 / 形状 = 图例）、具体类型、别名、层与地名为地图自设。map/tavern/events.mjs configure() 读入；eden 用内置表。",
+  "description": "事件标签（⌖类别｜层·地点｜等级｜一句话｜发布方 或 data-tcmap）的类型表：大类（颜色 / 形状 = 图例）、具体类型、别名、层与地名由本包定义。map/tavern/events.mjs configure() 读入；eden 用内置表。",
   "type": "object",
   "required": ["groups", "types", "layers"],
   "additionalProperties": false,
