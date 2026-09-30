@@ -480,8 +480,8 @@ def academy(K, P, toward):
     for k in range(16):
         a = k * math.tau / 16; K.WN.box(X0 - 16 + 9.46 * math.cos(a) - .5, X0 - 16 + 9.46 * math.cos(a) + .5, 6 + 9.46 * math.sin(a) - .5, 6 + 9.46 * math.sin(a) + .5, 4, 11, M['glass'])
     K.W.cyl(X0 - 16, 6, 14.0, 10.2, 0.8, M['trim'], 32)
-    K.R.lathe(X0 - 16, 6, 14.8, [(9.2, 0), (8.6, 2.5), (7.0, 5.0), (4.2, 7.0), (1.4, 8.0), (0.01, 8.2)], M['lead'], n=40)
-    K.R.cyl(X0 - 16, 6, 23.0, 1.0, 2.2, M['trim'], 12); K.R.cyl(X0 - 16, 6, 25.2, 1.2, 1.2, M['lead'], 12, r2=0.1)
+    K.R.lathe(X0 - 16, 6, 14.8, [(9.2, 0), (8.6, 2.5), (7.0, 5.0), (4.2, 7.0), (1.4, 8.0), (0.01, 8.2)], M['copper'], n=40)     # 设定：铜绿圆顶图书馆
+    K.R.cyl(X0 - 16, 6, 23.0, 1.0, 2.2, M['trim'], 12); K.R.cyl(X0 - 16, 6, 25.2, 1.2, 1.2, M['copper'], 12, r2=0.1)
     K.path([(X0 - 6.5, 6), (X0, 6)], 4.0, M['pave'])
     # 以太修习圆庭（以太魔法修习课）：北侧，同心铺地环 + 四根低矮灯柱（中性，无符号）
     ex, ey = 0.0, Y1 + 16
@@ -505,7 +505,8 @@ def academy(K, P, toward):
     K.trees_ring(P, .72, .93, 34, 25, avoid, kinds=('oak', 'oak', 'cedar'))
     dk, br = K.dock(P, toward)
     K.path([br, (br[0] * .6, br[1] * .6), T_(-26, -38)], 6, M['gravel'])
-    return {'c1': ((170, -120, 105), (0, 0, 0), 40), 'c2': ((80, -30, 24), (5, 0, 10), 30)}
+    return {'c1': ((170, -120, 105), (0, 0, 0), 40), 'c2': ((80, -30, 24), (5, 0, 10), 30),
+            'c3': ((-105, -55, 48), (-42, 0, 0), 32)}      # c3：以太修习圆庭（地面同心环 + 灯柱）
 
 
 SITES = dict(rothschild_estate=rothschild, league_club=league, elite_academy=academy)
