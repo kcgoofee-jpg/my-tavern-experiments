@@ -8,7 +8,7 @@ import bpy, bmesh
 from mathutils import Matrix, Vector
 from . import layout as L
 from .common import mat_new, bm_to_obj
-from .buildings import mats, _box, _gable, _bar
+from .buildings import mats, _box, _gable, _bar, _stone
 
 C = L.COTTAGE   # (x, y, 旋转°)
 
@@ -88,7 +88,7 @@ def _xf(bm, M):
 
 def build(col):
     M = mats()
-    tud, brick = _tudor_mat(), _plain('e2_brick_red', (0.14, 0.06, 0.035), 0.85)
+    tud, brick = _tudor_mat(), _stone('e2_brick_tudor', 'castle_brick_02_white', (0.3, 0.16, 0.11), 0.88, windows=False, grime=0.35)   # r5（遗留：烟囱塑料橙）：带砖缝与烟熏的旧砖
     cx, cy, rd = C
     rot = math.radians(rd)
     z0 = L.ground_z(cx, cy)

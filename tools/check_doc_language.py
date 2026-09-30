@@ -35,6 +35,8 @@ ALLOW = {
     # traceability; its own prose is English but the quotes are necessarily Chinese. Same
     # logic as the "quoted card text stays Chinese" rule in docs/language-policy.md.
     "docs/todo.md": "索引文件：逐条引用原文（中文）以保持可追溯，正文英文",
+    # Same reasoning: the Eden requirement index quotes the user's own words verbatim in Chinese.
+    "docs/eden-requirements.md": "quote-heavy index: the user's words are quoted verbatim in Chinese; prose is English",
     # Both are symlinks (added after the map-v0.9.6 baseline) pointing at docs/agent-brief.md,
     # which predates the baseline and is grandfathered Chinese; a symlink is a pointer, not a
     # new document — otherwise deleting a release tag would suddenly flag the same content.

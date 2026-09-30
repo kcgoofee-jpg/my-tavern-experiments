@@ -160,7 +160,7 @@ KINDS = {
 
 def _ok_ground(X, Y, pad=4.0, allow_lawn=False, allow_agri=False):
     H, at = L.terrain(X, Y)
-    ok = (L.edge_dist(X, Y) > 6) & (L.footprint_sd(X, Y, pad) > 0) & (at['gravel'] < 0.2) & (at['lake'] < 0.1) & (at['paved'] < 0.3) & (at['beds'] < 0.3)
+    ok = (L.edge_dist(X, Y) > 6) & (L.footprint_sd(X, Y, pad) > 0) & (L.places_sd(X, Y) > pad) & (at['gravel'] < 0.2) & (at['lake'] < 0.1) & (at['paved'] < 0.3) & (at['beds'] < 0.3)
     if not allow_lawn:
         ok &= (at['lawn'] < 0.3) & (at['padmask'] < 0.5)
     ok &= (at['agri'] < 0.3) | allow_agri
@@ -189,7 +189,17 @@ def plan_points(seed=7, density=1.0):
     ok &= (wm > 0.5) & (rs.uniform(0, 1, X.shape) < 0.93)
     for b in L.VILLAS:
         ok &= np.hypot(X - b[1], Y - b[2]) > 20
-    out.append(('oak', X[ok], Y[ok], H[ok], rs.randint(0, 2, ok.sum()), rs.uniform(0.8, 1.35, ok.sum())))
+    idx, scl = rs.randint(0, 2, ok.sum()), rs.uniform(0.8, 1.35, ok.sum())
+    # r5：东林开林窗 + 混入伞松 / 秋色树（先按原数量取随机数再筛，后面各步的随机序列不变）
+    X, Y, H = X[ok], Y[ok], H[ok]
+    keep = L.glades(X, Y) < 0.5
+    hs = (X * 0.1373 + Y * 0.7919) % 1.0
+    east = X > 110
+    sp, sb = keep & east & (hs < 0.1), keep & east & (hs >= 0.1) & (hs < 0.14)
+    so = keep & ~sp & ~sb
+    out.append(('oak', X[so], Y[so], H[so], idx[so], scl[so]))
+    out.append(('pine', X[sp], Y[sp], H[sp], np.zeros(sp.sum(), int), 1.1 + 0.3 * hs[sp] * 10))
+    out.append(('bloom', X[sb], Y[sb], H[sb], np.full(sb.sum(), 2), np.full(sb.sum(), 1.15)))
     # 2) 园中树团（5–9 株冬青栎 + 1 株伞松）
     clumps = [(-140, -115), (125, -80), (-120, 60), (115, 95), (-235, 0), (205, 60), (-40, 205), (160, -10)]
     cx, cy, ck = [], [], []
@@ -207,6 +217,15 @@ def plan_points(seed=7, density=1.0):
     X, Y = _pts(spec, rs, 3)
     ok, H = _ok_ground(X, Y, 6.0)
     out.append(('pine', X[ok], Y[ok], H[ok], np.zeros(ok.sum(), int), rs.uniform(1.4, 1.8, ok.sum())))
+    # 3b) r5 观景台：每座一株伞松遮阴，落在铺地里靠入口一侧（不取 rs，别处的树位不动）
+    lp = []
+    for pid in L.LOOKOUTS:
+        p = next(q for q in L.PADS if q['id'] == pid)
+        a = math.atan2(-p['c'][1], -p['c'][0])
+        lp.append((p['c'][0] + 0.3 * p['r'][0] * math.cos(a + 0.6), p['c'][1] + 0.3 * p['r'][1] * math.sin(a + 0.6)))
+    X, Y = _pts(lp, rs)
+    H, _ = L.terrain(X, Y)
+    out.append(('pine', X, Y, H, np.zeros(len(X), int), np.array([0.85, 0.95, 0.9, 1.0, 0.8][:len(X)])))
     # 4) 意大利柏：大道两侧行列、前庭台地四角、Greystone 与 Breakers 的引道
     cyp = []
     for y in np.arange(-248, -150, 8):
@@ -228,7 +247,7 @@ def plan_points(seed=7, density=1.0):
                 ol.append((x, y))
     # r4c 农业台地：台沿一行橄榄
     Xa, Ya = _poisson(7.0, rs)
-    fr = (L.agri_z(Xa, Ya) / 11.0) % 1.0
+    fr = L.agri_step(Xa, Ya)
     sel = (L.agri(Xa, Ya) > 0.8) & (fr > 0.06) & (fr < 0.16) & (rs.uniform(0, 1, Xa.shape) < 0.7)
     ol += list(zip(Xa[sel], Ya[sel]))
     X, Y = _pts(ol, rs, 0.6)
@@ -281,7 +300,7 @@ def plan_points(seed=7, density=1.0):
     # 8) 林缘灌木：只在林带边缘
     X2, Y2 = _poisson(6.0, rs)
     ok2, H2 = _ok_ground(X2, Y2, 1.5)
-    w2 = L.wood_mask(X2, Y2)
+    w2 = L.wood_mask(X2, Y2) * (1 - L.glades(X2, Y2))   # r5：林窗边也有灌木过渡
     ok2 &= (((w2 > 0.2) & (w2 < 0.8)) | (L.crag(X2, Y2) > 0.4)) & (rs.uniform(0, 1, X2.shape) < 0.5)
     out.append(('shrub', X2[ok2], Y2[ok2], H2[ok2], np.zeros(ok2.sum(), int), rs.uniform(0.7, 1.4, ok2.sum())))
     return out

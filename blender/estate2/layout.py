@@ -140,7 +140,11 @@ PADS = [
     dict(id='cottage', kind='ellipse', c=(-160, -82), r=(32, 20), rot=0.35, z='auto+0.5', blend=6, edge='soft'),
     dict(id='look_sw', kind='ellipse', c=(-120, -212), r=(10, 10), z='auto+0.5', blend=1.2, edge='stone'),
     dict(id='look_se', kind='ellipse', c=(125, -210), r=(10, 10), z='auto+0.5', blend=1.2, edge='stone'),
+    dict(id='water_tower', kind='ellipse', c=(-192, 80), r=(10, 10), z='auto+0', blend=5, edge='soft'),   # r5 以太凝水塔的塔基平台
 ]
+
+
+LOOKOUTS = ('view_rear', 'view_east', 'view_ne', 'look_sw', 'look_se')   # 崖边 / 崖顶观景台
 
 
 def _resolve_pads():
@@ -269,7 +273,7 @@ def cover(x, y, padmask, lake):
     for tx, ty, _ in TREEHOUSES:
         under = np.maximum(under, smooth01((20 - np.hypot(x - tx, y - ty)) / 8))
     meadow = np.maximum(meadow, clearing(x, y) * (1 - padmask) * (1 - lake))
-    wm = wood_mask(x, y)
+    wm = wood_mask(x, y) * (1 - glades(x, y))
     meadow = np.maximum(meadow * wm, (1 - wm) * (1 - lake))   # r4：林带外全是草甸 / 园地
     grove = (_sd_rect(x, y, 170, 5, 44, 44, 0.0, 3.0) < 0).astype(float)
     rimb = np.maximum(smooth01((16 - e) / 6) * (1 - padmask), crag(x, y))
@@ -277,16 +281,18 @@ def cover(x, y, padmask, lake):
     rimb = np.maximum(rimb, east_top(x, y) * smooth01(0.3 + 2.5 * fbm(x, y, 14, 2, 73)))
     sp = smooth01((-y - 95) / 25) * smooth01((215 - np.abs(x)) / 35)
     paved = np.maximum(paved, ((e > 4) & (e < 8.5)).astype(float) * (sp > 0.5) * (1 - padmask))   # 南侧崖边步道
-    for pid in ('view_rear', 'view_east', 'view_ne', 'look_sw', 'look_se'):
-        pp = [q for q in PADS if q['id'] == pid][0]
-        paved = np.maximum(paved, (pad_sd(pp, x, y) < -0.5).astype(float))
+    look = np.zeros_like(paved)
+    for pid in LOOKOUTS:   # r5：观景台内圈是暖灰旧石板（不再是白石灰华圆盘），外圈 2.6 m 留给绿篱带（gardens.lookouts）
+        sd = pad_sd([q for q in PADS if q['id'] == pid][0], x, y)
+        paved = np.maximum(paved, (sd < -0.5).astype(float))
+        look = np.maximum(look, (sd < -0.5).astype(float))
     kg = _sd_rect(x, y, -118, 150, 80, 52, math.radians(20), 1.0) < 0
     kitchen = kg.astype(float)
     meadow = meadow * (1 - kitchen)
     rill = np.maximum(rill, 0 * rimb)
     ag = agri(x, y) * (1 - padmask) * (1 - kitchen)
     meadow = meadow * (1 - ag)
-    return dict(agz=agri_z(x, y), agri=ag, grove=grove, rimb=rimb, kitchen=kitchen, paved=np.maximum(paved, parterre_gravel), beds=beds, rill=rill, sand=sand, meadow=meadow * (1 - under), tropic=under)
+    return dict(look=look, agz=agri_z(x, y), agri=ag, grove=grove, rimb=rimb, kitchen=kitchen, paved=np.maximum(paved, parterre_gravel), beds=beds, rill=rill, sand=sand, meadow=meadow * (1 - under), tropic=under)
 
 
 def agri(x, y):
@@ -297,6 +303,12 @@ def agri(x, y):
 def agri_z(x, y):
     """台地分台用的平滑“等高线”：以离岛缘距离为主（台地沿岛缘同心展开），加大尺度起伏，1 单位 ≈ 1 m。"""
     return edge_dist(x, y) + 9 * fbm(x, y, 160, 2, 81)
+
+
+def agri_step(x, y):
+    """r5：台地分台的相位（0–1，墙在 0 附近）。与 terrain.mat_terrain 的着色器同一公式：沿等高线每约 40 m 一个地块，地块边台阶错开。"""
+    plot = np.floor(np.arctan2(y, x) * 6.5)
+    return (agri_z(x, y) / 11.0 + ((plot * 0.6180339) % 1.0) * 0.45) % 1.0
 
 
 def east_top(x, y):
@@ -328,6 +340,14 @@ def wood_mask(x, y):
     belt *= 1 - smooth01((70 - np.abs(x)) / 12) * ((y > 30) & (y < 110))
     belt *= 1 - smooth01((60 - np.abs(x)) / 10) * (y < -60)
     return belt
+
+
+def glades(x, y):
+    """r5（遗留：东林一整片墨绿）：东林（x > 110）开 20–40 m 的林窗，窗内是草甸，林缘由灌木过渡。别墅周边不开。"""
+    g = smooth01((fbm(x, y, 55, 2, 91) - 0.16) / 0.1) * smooth01((x - 110) / 25)
+    for b in VILLAS:
+        g = g * smooth01((np.hypot(x - b[1], y - b[2]) - 40) / 10)
+    return g
 
 
 def clearing(x, y):
@@ -457,18 +477,21 @@ SERVICE = [
 ]
 WATERSIDE = ('waterside', -34, 100, 16, 9, 1.2, -4, 'hip', 'white')   # 水榭：湖南岸石台敞亭，半挑出水面
 ISLET = (-22, 150, 9)                       # 湖心小岛 (x, y, 半径)；岛上 8 柱圆亭 = 湖心亭
-WATER_TOWER = (-196, 88, 5.5, 22)          # 以太凝水塔：圆塔 (x, y, 半径, 高)，给喷泉供水
+WATER_TOWER = (-192, 80, 3.6, 26)          # 以太凝水塔（卡）：圆塔 (x, y, 半径, 高)，给喷泉供水；r5 建出（outdoor.water_tower），避开农场路
 HELIPAD = (-186, 170, 11)                  # 载具停靠坪 (x, y, 半径)（用户要求，src: user）
 GARDENS = [  # (id, 名称, kind, 中心, 尺寸, 旋转°)
     ('training', '露天训练场', 'rect', (-62, 58), (28, 14), 8),
     ('rear_lawn', '后庭草坪', 'ellipse', (0, 44), (20, 12), 0),
-    ('pavilion', '凉亭', 'circle', (-84, 118), (5, 5), 0),
+    ('pavilion', '凉亭', 'circle', (0, 73), (4, 4), 0),                 # r5：主楼 → 湖中轴尽头（回廊外、崖顶）
     ('rose', '玫瑰园（白玫瑰）', 'rect', (58, -104), (14, 19), 0),      # r3：黄杨花坛（半宽, 半深）
     ('rose_w', '玫瑰园（西）', 'rect', (-58, -104), (14, 19), 0),
     ('kitchen_garden', '菜园（厨房花园）', 'rect', (-118, 150), (40, 26), 20),
     ('maze', '树篱迷宫', 'rect', (-200, -150), (30, 30), 20),
     ('orchard', '果园', 'ellipse', (205, 145), (28, 20), 0),
 ]
+TRAINING = ((-62, 58), (28, 14), 8)        # r5 露天训练场（卡）：沙土场 + 白栏 + 器械（outdoor.training），与 GARDENS 'training' 同位
+PADDOCK = ((66, 58), (24, 12), -10)         # r5 围栏区（卡）：白色横栏围起的草场（outdoor.paddock）
+PAVILION = ((0, 73), 4.0)                   # r5 凉亭（卡）：8 柱圆顶亭（outdoor.pavilion）
 GYM = (187.4, -110.3, -28)   # r4e 玻璃健身亭（src: user），东南网球场旁
 DAIRY = (-262, 8, 90)   # r4d 奶牛农场：props/dairy_parlour 整套（挤奶厅 + 奶罐间 + 电围栏围场），+y 朝西
 COTTAGE = (-160, -82, 20)   # r4d Greystone 客舍（Tudor）+ 岩洞泳池 + 锦鲤池
@@ -530,6 +553,14 @@ def all_buildings():
 def ground_z(x, y):
     h, _ = terrain(np.array([x]), np.array([y]))
     return float(h[0])
+
+
+def places_sd(x, y):
+    """r5 室外补件（训练场 / 围栏区 / 凉亭 / 凝水塔）的有符号距离（米），排树用。"""
+    d = _sd_rect(x, y, *TRAINING[0], *TRAINING[1], math.radians(TRAINING[2]), 1.0)
+    d = np.minimum(d, _sd_rect(x, y, *PADDOCK[0], *PADDOCK[1], math.radians(PADDOCK[2]), 1.0))
+    d = np.minimum(d, np.hypot(x - PAVILION[0][0], y - PAVILION[0][1]) - PAVILION[1] - 1.5)
+    return np.minimum(d, np.hypot(x - WATER_TOWER[0], y - WATER_TOWER[1]) - WATER_TOWER[2] - 2.5)
 
 
 def footprint_sd(x, y, pad=0.0):

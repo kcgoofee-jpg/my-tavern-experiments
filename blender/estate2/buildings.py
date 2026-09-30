@@ -1198,10 +1198,11 @@ def build_all():
     for i, pts in enumerate(L.WALKWAYS):
         walkway(i, pts, col)
     balustrades(col)
-    from . import gardens, warner, gym
+    from . import gardens, warner, gym, outdoor
     gardens.build(col)
     warner.build(col)
     gym.build(col)
+    outdoor.build(col)   # r5：后庭训练场 / 围栏区 / 凉亭、以太凝水塔、观景台绿篱
     dock(col)
     funicular(col)
     rope_bridge(col)

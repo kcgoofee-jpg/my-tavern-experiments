@@ -43,6 +43,16 @@ def build(col):
     for (x0, y0, x1, y1) in ((-W / 2, -D / 2, W / 2, -D / 2), (-W / 2, D / 2, W / 2, D / 2), (-W / 2, -D / 2, -W / 2, D / 2), (W / 2, -D / 2, W / 2, D / 2)):
         _box(parts['glass'], min(x0, x1) - 0.02, min(y0, y1) - 0.02, 0.2, max(x0, x1) + 0.02, max(y0, y1) + 0.02, H - 0.05)
     _box(parts['roof'], -W / 2 - 0.9, -D / 2 - 0.9, H, W / 2 + 0.9, D / 2 + 0.9, H + 0.35)     # 平顶 + 薄檐
+    # r5（遗留：健身亭屋面光板）：石压顶女儿墙 + 景天绿化屋面 + 中间一条采光天窗 + 北端两台屋面机组
+    parts['green'] = bmesh.new()
+    for (x0, y0, x1, y1) in ((-W / 2 - 0.9, -D / 2 - 0.9, W / 2 + 0.9, -D / 2 - 0.55), (-W / 2 - 0.9, D / 2 + 0.55, W / 2 + 0.9, D / 2 + 0.9),
+                             (-W / 2 - 0.9, -D / 2 - 0.9, -W / 2 - 0.55, D / 2 + 0.9), (W / 2 + 0.55, -D / 2 - 0.9, W / 2 + 0.9, D / 2 + 0.9)):
+        _box(parts['roof'], x0, y0, H + 0.35, x1, y1, H + 0.85)
+    for (y0, y1) in ((-D / 2 - 0.55, -1.2), (1.2, D / 2 + 0.55)):
+        _box(parts['green'], -W / 2 - 0.55, y0, H + 0.35, W / 2 + 0.55, y1, H + 0.5)
+    _box(parts['glass'], -W / 2 + 1.0, -1.2, H + 0.35, W / 2 - 1.0, 1.2, H + 0.75)
+    for x in (-6.5, -3.5):
+        _box(parts['black'], x - 1.0, 2.4, H + 0.5, x + 1.0, 4.2, H + 1.6)
     # 器械：面朝南（−y，看台球场）一排跑步机、一排单车；北侧力量区（深蹲架、卧推凳、哑铃架）
     b, c = parts['black'], parts['chrome']
     for i in range(5):   # 跑步机
@@ -82,7 +92,7 @@ def build(col):
     ld = bpy.data.lights.new('gym_ceiling', 'AREA'); ld.shape = 'RECTANGLE'; ld.size, ld.size_y = W - 2, D - 2
     ld.energy = 1500; ld.color = (1.0, 0.92, 0.82)
     lo = bpy.data.objects.new('gym_ceiling', ld); col.objects.link(lo); lo.matrix_world = R @ Matrix.Translation((0, 0, H - 0.1))
-    mats_ = dict(deck=M['honed'], floor=rubber, steel=M['steel'], glass=glass, roof=M['plain'], black=black, chrome=chrome)
+    mats_ = dict(deck=M['honed'], floor=rubber, steel=M['steel'], glass=glass, roof=M['plain'], black=black, chrome=chrome, green=M['hedge'])
     for k, bm in parts.items():
         bmesh.ops.transform(bm, matrix=R, verts=bm.verts)
         bm_to_obj(bm, f'gym_{k}', col, mats_[k])

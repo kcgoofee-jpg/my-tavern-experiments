@@ -94,7 +94,7 @@ def mat_terrain():
     grove = t.mix(t.math('MULTIPLY', noise(0.6, -1100, 3.0), 0.8), (0.55, 0.47, 0.34), (0.3, 0.3, 0.16), loc=(-1300, -1100))
     grove = t.mix(0.4, grove, grc, 'MULTIPLY', (-1250, -1100))
     # r4b 岛缘沙石带 + 露头岩
-    rim = t.mix(t.math('MULTIPLY', noise(0.3, -1200, 4.0), 0.9), (0.7, 0.64, 0.52), (0.48, 0.46, 0.42), loc=(-1300, -1200))
+    rim = t.mix(t.math('MULTIPLY', noise(0.3, -1200, 4.0), 0.9), (0.61, 0.55, 0.44), (0.43, 0.4, 0.35), loc=(-1300, -1200))   # r5：压暗偏暖（北崖逆光下不再像雪地）
     # r4b 菜园：土垄条纹（深褐土 / 生菜绿 / 甘蓝蓝绿）
     sepk = t.new('ShaderNodeSeparateXYZ', (-2000, -1300)); t.link(ob, sepk.inputs[0])
     rows = t.math('FRACT', t.math('MULTIPLY', t.math('ADD', t.math('MULTIPLY', sepk.outputs['X'], 0.94), t.math('MULTIPLY', sepk.outputs['Y'], 0.34)), 0.4))
@@ -106,18 +106,30 @@ def mat_terrain():
     t.link(rows, kr.inputs[0])
     kitchen = kr.outputs[0]
     # r4c 农业台地：按等高线分台（每 2.8 m 高差一台），台沿干砌石墙，台面轮换葡萄园（顺等高线的行）/ 薰衣草带 / 麦茬
+    # r5（遗留：条带太规律、薰衣草太艳）：沿等高线每约 40 m 一个地块，地块边台阶错开；作物按（台, 块）轮换，
+    # 葡萄行一部分改成垂直等高线；多一种休耕绿肥；薰衣草降饱和、占比 35 % → 22 %；干砌墙更宽更深 + 墙脚阴影
     agz = t.attr('agz', loc=(-2000, -1500)).outputs['Fac']
-    zz = t.math('DIVIDE', agz, 11.0)
+    sepa = t.new('ShaderNodeSeparateXYZ', (-2200, -1700)); t.link(ob, sepa.inputs[0])
+    th = t.math('ARCTAN2', sepa.outputs['Y'], sepa.outputs['X'])
+    plot = t.math('FLOOR', t.math('MULTIPLY', th, 6.5))
+    phs = t.math('FRACT', t.math('MULTIPLY', plot, 0.6180339))   # 黄金比哈希：GPU float32 与 numpy 结果一致（vegetation 的台沿橄榄行要对齐）
+    zz = t.math('ADD', t.math('DIVIDE', agz, 11.0), t.math('MULTIPLY', phs, 0.45))
     tid = t.math('FLOOR', zz); tf = t.math('FRACT', zz)
-    hsh = t.math('FRACT', t.math('MULTIPLY', t.math('SINE', t.math('MULTIPLY', tid, 12.9898)), 43758.5))
-    vrow = t.math('GREATER_THAN', t.math('SINE', t.math('MULTIPLY', agz, 2.5)), 0.1)   # 顺等高线的行
+    hsh = t.math('FRACT', t.math('MULTIPLY', t.math('SINE', t.math('ADD', t.math('MULTIPLY', tid, 12.9898), t.math('MULTIPLY', plot, 4.1414))), 43758.5))
+    along = t.math('GREATER_THAN', t.math('SINE', t.math('MULTIPLY', agz, 2.5)), 0.1)   # 顺等高线的行
+    across = t.math('GREATER_THAN', t.math('SINE', t.math('MULTIPLY', th, 620.0)), 0.1)   # 垂直等高线（半径约 250 m 处 2.5 m 一行）
+    cross = t.math('GREATER_THAN', phs, 0.55)
+    vrow = t.math('ADD', along, t.math('MULTIPLY', cross, t.math('SUBTRACT', across, along)))
     vine = t.mix(vrow, (0.42, 0.34, 0.22), (0.12, 0.2, 0.05), loc=(-1300, -1500))
-    lav = t.mix(vrow, (0.3, 0.26, 0.2), (0.36, 0.26, 0.6), loc=(-1300, -1560))
+    lav = t.mix(along, (0.3, 0.26, 0.2), (0.33, 0.3, 0.42), loc=(-1300, -1560))
     stub = t.mix(t.math('MULTIPLY', noise(1.5, -1600, 3.0), 0.6), (0.62, 0.52, 0.3), (0.45, 0.4, 0.22), loc=(-1300, -1620))
-    ag = t.mix(t.math('GREATER_THAN', hsh, 0.45), vine, lav, loc=(-1200, -1500))
+    fallow = t.mix(t.math('MULTIPLY', noise(0.9, -1660, 3.0), 0.7), (0.2, 0.25, 0.09), (0.3, 0.3, 0.13), loc=(-1300, -1680))
+    ag = t.mix(t.math('GREATER_THAN', hsh, 0.4), vine, lav, loc=(-1200, -1500))
+    ag = t.mix(t.math('GREATER_THAN', hsh, 0.62), ag, fallow, loc=(-1170, -1500))
     ag = t.mix(t.math('GREATER_THAN', hsh, 0.8), ag, stub, loc=(-1150, -1500))
-    wallm = t.math('LESS_THAN', tf, 0.05)
-    agri = t.mix(wallm, ag, (0.62, 0.58, 0.5), loc=(-1100, -1500))
+    ag = t.mix(t.math('MULTIPLY', t.math('LESS_THAN', tf, 0.11), 0.45), ag, (0.1, 0.09, 0.07), 'MULTIPLY', (-1120, -1500))   # 墙脚阴影
+    wallm = t.math('LESS_THAN', tf, 0.07)
+    agri = t.mix(wallm, ag, (0.5, 0.46, 0.39), loc=(-1100, -1500))
     # 崖石
     rc, rr, rn = tex('rock_face_03', 20.0, -1400, 1.0)
     rock = t.mix(0.5, rc, (0.5, 0.48, 0.44), 'MIX', (-1500, -1400))   # r3：浅石灰岩崖，不再是一整块褐土
@@ -130,7 +142,7 @@ def mat_terrain():
     steep = t.new('ShaderNodeMapRange', (-1800, -2200), **{'From Min': 0.8, 'From Max': 0.55})
     t.link(sn.outputs['Z'], steep.inputs['Value'])
     A = {k: t.attr(k, loc=(-1000, 2600 - 120 * i)).outputs['Fac'] for i, k in enumerate(
-        ('lawn', 'gravel', 'built', 'under', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic', 'grove', 'rimb', 'kitchen', 'agri'))}
+        ('lawn', 'gravel', 'built', 'under', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic', 'grove', 'rimb', 'kitchen', 'agri', 'look'))}
     col = t.mix(A['tropic'], forest, tropic, loc=(-700, 600))
     col = t.mix(A['meadow'], col, meadow, loc=(-600, 600))
     col = t.mix(A['lawn'], col, lawn, loc=(-500, 600))
@@ -144,6 +156,10 @@ def mat_terrain():
     col = t.mix(A['kitchen'], col, kitchen, loc=(-305, 700))
     col = t.mix(A['rimb'], col, rim, loc=(-303, 700))
     col = t.mix(A['paved'], col, paved, loc=(-300, 600))
+    # r5：观景台铺地 = 暖灰旧石板（压暗 + 暖色 + 大尺度斑驳），俯视不再是白圆盘
+    oldst = t.mix(0.7, paved, (0.5, 0.45, 0.37), 'MULTIPLY', (-420, 520))
+    oldst = t.mix(t.math('MULTIPLY', noise(0.45, 520, 3.0), 0.5), oldst, (0.36, 0.33, 0.28), loc=(-380, 520))
+    col = t.mix(A['look'], col, oldst, loc=(-290, 600))
     col = t.mix(A['beds'], col, beds, loc=(-250, 600))
     rockish = t.math('MAXIMUM', steep.outputs[0], A['under'], (-600, -1600))
     rockish = t.math('MULTIPLY', rockish, t.math('SUBTRACT', 1.0, A['paved']), (-500, -1600))
@@ -276,7 +292,7 @@ def build_island(res_m=1.0, n_theta=1800):
 
     def pad(v):
         return np.concatenate([v.ravel(), np.zeros(nu * n_theta), [0, 0]])
-    attrs = dict(under=under, **{k: pad(at[k]) for k in ('lawn', 'gravel', 'built', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic', 'grove', 'rimb', 'kitchen', 'agri', 'agz')})
+    attrs = dict(under=under, **{k: pad(at[k]) for k in ('lawn', 'gravel', 'built', 'paved', 'beds', 'rill', 'sand', 'meadow', 'tropic', 'grove', 'rimb', 'kitchen', 'agri', 'agz', 'look')})
     m = mat_terrain()
     ob = _mesh_from_grid('island', co, quads, attrs, m)
     ob2 = _mesh_from_grid('island_caps', co, tris, attrs, m)

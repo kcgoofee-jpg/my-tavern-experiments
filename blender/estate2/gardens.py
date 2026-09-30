@@ -452,7 +452,7 @@ def dairy(col):
     import os
     path = os.environ.get('E2_DAIRY_BLEND', '')
     if not path or not os.path.exists(path):
-        print('[dairy] 缺 .blend，跳过'); return
+        print('[dairy] Error: 缺奶牛农场 .blend（E2_DAIRY_BLEND），成图 / glb 里不会有奶牛农场'); return   # r5：日志检查（grep Error）能抓到
     with bpy.data.libraries.load(path) as (src, dst):
         dst.objects = [n for n in src.objects if n != 'ground']
     fx, fy, rd = L.DAIRY
@@ -481,6 +481,7 @@ def greystone_gardens(col):
     up = [q for q in L.PADS if q['id'] == 'gs_upper'][0]
     zu = up['zv']
     bmh, bms, bmw = bmesh.new(), bmesh.new(), bmesh.new()
+    yew = bmesh.new()   # r5（遗留：光滑锥体）：柱状紫杉改成两团叠放的不规则叶团
     cx, cy = up['c']
     def put(bm, M_):
         bmesh.ops.transform(bm, matrix=M_, verts=bm.verts)
@@ -497,11 +498,17 @@ def greystone_gardens(col):
             _hedge_rect(b, sx * 8, sy * 7.5, 13, 5.5, 0.3, 0.6)
             _hedge_rect(b, sx * 8, sy * 7.5, 8, 2.5, 0.25, 0.5)
             for k in range(4):
-                _cone(b, sx * (3 + k * 3.5), sy * 11, 0.0, 0.7, 3.0)   # 柱状紫杉
-    for bm_ in (a, b, w_):
+                x_, y_ = sx * (3 + k * 3.5), sy * 11   # 柱状紫杉
+                for zc, rr, hh in ((0.95, 0.72, 1.25), (2.15, 0.56, 1.05)):
+                    bmesh.ops.create_icosphere(yew, subdivisions=2, radius=1.0, matrix=Matrix.Translation((x_, y_, zc)) @ Matrix.Diagonal((rr, rr, hh, 1)))
+    for v in yew.verts:   # 叶团表面起伏（按位置的确定性扰动）
+        f = 1.0 + 0.09 * math.sin(v.co.x * 7.1 + v.co.z * 5.3) * math.cos(v.co.y * 6.7 - v.co.z * 3.1)
+        v.co.x *= f; v.co.y *= f
+    for bm_ in (a, b, w_, yew):
         put(bm_, loc)
-    bm_to_obj(a, 'gs_upper_stone', col, M['plain'])
+    bm_to_obj(a, 'gs_upper_stone', col, M['wallstone'])   # r5（遗留：台阶 / 石作纯白）：Greystone 园林石作改暖灰旧石
     bm_to_obj(b, 'gs_upper_box', col, M['hedge'])
+    bm_to_obj(yew, 'gs_upper_yews', col, M['hedge'])
     bm_to_obj(w_, 'gs_upper_water', col, M['pool'])
     # 车场：圆形石铺 + 中央喷泉
     mx, my = [q for q in L.PADS if q['id'] == 'gs_motor'][0]['c']
@@ -510,7 +517,7 @@ def greystone_gardens(col):
     bmesh.ops.create_cone(a, cap_ends=True, segments=40, radius1=3.2, radius2=3.2, depth=0.8, matrix=Matrix.Translation((mx, my, zm)))
     bmesh.ops.create_cone(a, cap_ends=True, segments=16, radius1=0.4, radius2=0.3, depth=2.2, matrix=Matrix.Translation((mx, my, zm + 1.2)))
     bmesh.ops.create_circle(w_, cap_ends=True, segments=40, radius=2.8, matrix=Matrix.Translation((mx, my, zm + 0.42)))
-    bm_to_obj(a, 'gs_motor_fountain', col, M['plain']); bm_to_obj(w_, 'gs_motor_water', col, M['pool'])
+    bm_to_obj(a, 'gs_motor_fountain', col, M['wallstone']); bm_to_obj(w_, 'gs_motor_water', col, M['pool'])
     # 南侧弧形双石阶（主楼台地 → 下花园）
     hz = [q for q in L.PADS if q['id'] == 'grey_house'][0]['zv']
     lz = [q for q in L.PADS if q['id'] == 'grey_t1'][0]['zv']
@@ -522,7 +529,7 @@ def greystone_gardens(col):
             z = hz - (hz - lz) * t
             x, y = _gsw(u, v)
             _box(a, x - 3, y - 0.5, z - 3, x + 3, y + 0.5, z)
-    bm_to_obj(a, 'gs_stairs', col, M['plain'])
+    bm_to_obj(a, 'gs_stairs', col, M['wallstone'])
     # 下花园：中央锦鲤倒影池 26 × 6（加锦鲤）
     lo = [q for q in L.PADS if q['id'] == 'grey_t1'][0]
     loc = Matrix.Translation((*lo['c'], lz)) @ Matrix.Rotation(rot, 4, 'Z')
@@ -534,7 +541,7 @@ def greystone_gardens(col):
         bmesh.ops.create_icosphere(f, subdivisions=1, radius=0.22, matrix=Matrix.Translation((rs.uniform(-12, 12), rs.uniform(-2.5, 2.5), 0.42)) @ Matrix.Rotation(rs.uniform(0, 3), 4, 'Z') @ Matrix.Diagonal((2.2, 0.8, 0.3, 1)))
     for bm_ in (a, w_, f):
         put(bm_, loc)
-    bm_to_obj(a, 'gs_lower_pool_stone', col, M['plain'])
+    bm_to_obj(a, 'gs_lower_pool_stone', col, M['wallstone'])
     from .common import mat_new
     kd, t = mat_new('e2_koi_water')
     if t is not None:

@@ -26,7 +26,7 @@ VIEWS = {
     'greystone': ((-160, -200, 55), (-222, -108, 6), 32),   # r4d Greystone 客舍，相对地面高度
     'close': ((-120, -120, 125), (0, 0, 30), 38),  # r4：主楼黄昏斜俯近景
     'whole': ((-185, -585, 415), (5, -12, -12), 30),  # r5：整岛斜俯（约 36°，参考图 11 的暖黄昏风格）
-    'arrival': ((70, -380, 78), (0, -175, 16), 30),   # eden:r5：停靠平台 → 大道 → 前庭喷泉 → 主楼（南向到达）
+    'arrival': ((75, -420, 150), (0, -160, 12), 30),  # eden:r5：停靠平台 → 大道 → 前庭喷泉 → 主楼（南向到达）
     'lake': ((-95, 345, 120), (-5, 110, 12), 30),     # eden:r5：后湖（湖心亭 / 水榭 / 俱乐部）回望主楼
 }
 MAP_MPP = 0.375   # 上层地图：3000 m / 8000 px
@@ -209,13 +209,18 @@ def night(scene):
     b = next(n for n in M['pool'].node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
     b.inputs['Emission Color'].default_value = (0.15, 0.75, 0.85, 1); b.inputs['Emission Strength'].default_value = 0.8
     n = 0
+    main_ids = {b[0] for b in L.MAIN}
     for spec in L.all_buildings():   # 窗光溢到露台：每栋四角外 2.5 m、离地 3 m 的暖点光
         bid, cx, cy, w, d, fl_, rd, *_ = spec
         z = L.ground_z(cx, cy)
+        pw = 500 if w * d > 300 else 260
+        if bid in main_ids:   # r5（遗留：夜景主楼光晕偏宽）：主楼群 13 个体量挤在一起，灯减弱、贴墙收近
+            pw *= 0.55
         for sx in (-1, 1):
             for sy in (-1, 1):
-                x, y = buildings.rot2(sx * (w / 2 + 2.5), sy * (d / 2 + 2.5), math.radians(rd))
-                _plight(f'win{n}', (cx + x, cy + y, z + 3.0), 500 if w * d > 300 else 260); n += 1
+                off = 1.2 if bid in main_ids else 2.5
+                x, y = buildings.rot2(sx * (w / 2 + off), sy * (d / 2 + off), math.radians(rd))
+                _plight(f'win{n}', (cx + x, cy + y, z + 3.0), pw); n += 1
     lamps = []
     for pts, w in L.DRIVES[:4]:
         for sgn in (-1, 1):
@@ -227,6 +232,20 @@ def night(scene):
         lamps += [(-36.5, y), (36.5, y), (-4.5, y), (4.5, y)]
     for x, y in lamps:
         _plight(f'lamp{n}', (x, y, L.ground_z(x, y) + 3.2), 60, (1.0, 0.78, 0.52), 0.15); n += 1
+    # r5（遗留：夜景东林全黑）：树屋灯笼、观景台灯柱、东林林窗边的庭院灯
+    for x, y, _ in L.TREEHOUSES:
+        _plight(f'th{n}', (x, y, L.ground_z(x, y) + 7.5), 180, (1.0, 0.7, 0.42), 0.4); n += 1
+    for pid in L.LOOKOUTS:
+        p = next(q for q in L.PADS if q['id'] == pid)
+        for a in (0.8, 2.4, 4.0, 5.6):
+            x, y = p['c'][0] + (p['r'][0] - 1.2) * math.cos(a), p['c'][1] + (p['r'][1] - 1.2) * math.sin(a)
+            _plight(f'look{n}', (x, y, L.ground_z(x, y) + 2.6), 90, (1.0, 0.78, 0.52), 0.15); n += 1
+    gx, gy = np.meshgrid(np.arange(115, 320, 9.0), np.arange(-90, 200, 9.0))
+    gx, gy = gx.ravel(), gy.ravel()
+    g = L.glades(gx, gy)
+    edge = (g > 0.35) & (g < 0.65) & (L.edge_dist(gx, gy) > 15) & (((gx * 0.37 + gy * 0.59) % 1.0) < 0.35)
+    for x, y in zip(gx[edge], gy[edge]):
+        _plight(f'glade{n}', (x, y, L.ground_z(x, y) + 3.0), 70, (1.0, 0.76, 0.5), 0.2); n += 1
     fx, fy = L.FOUNTAIN
     for a in range(6):
         _plight(f'fount{a}', (fx + 6 * math.cos(a), fy + 6 * math.sin(a), L.TERRACE_Z + 1.2), 250, (1.0, 0.9, 0.75)); n += 1
