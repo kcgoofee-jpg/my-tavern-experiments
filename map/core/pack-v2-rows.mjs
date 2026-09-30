@@ -19,7 +19,7 @@ export function typeOf(word, events) {
   const ids = Object.keys(types).filter(id => isObj(types[id]));
   const contained = pick => {   // longest contained word, then earliest position
     let best = null;
-    for (const id of ids) for (const x of pick(id, types[id])) { const at = w.indexOf(x); if (at >= 0 && (!best || x.length > best.n || (x.length === best.n && at < best.at))) best = { id, n: x.length, at }; }
+    for (const id of ids) if (id !== 'other') for (const x of pick(id, types[id])) { const at = w.indexOf(x); if (at >= 0 && (!best || x.length > best.n || (x.length === best.n && at < best.at))) best = { id, n: x.length, at }; }
     return best && best.id;
   };
   let id = null, group = null;
@@ -30,11 +30,11 @@ export function typeOf(word, events) {
       if (g) group = g.id;
     }
   }
-  const t = id ? types[id] : {}, gid = group ?? (id ? t.group : null) ?? 'other', grp = groups.find(x => x.id === gid);
+  const t = id ? types[id] : isObj(types.other) ? types.other : {}, gid = group ?? (id ? t.group : null) ?? 'other', grp = groups.find(x => x.id === gid);
   const label = str(t.label) ? t.label : 'other';
   const preset = str(t.fx) && own(ev.fx_presets, t.fx) ? { ...ev.fx_presets[t.fx] } : str(t.fx) && KERNEL_BLOCKS.includes(t.fx) ? { block: t.fx } : null;
   return {
-    type: id || 'other', group: gid, label, color: t.color ?? grp?.color ?? null, shape: grp?.shape ?? 'square',
+    type: id || 'other', group: gid, label, color: (id ? t.color : undefined) ?? grp?.color ?? null, shape: grp?.shape ?? 'square',
     icon: t.icon ?? [...label][0], source: t.source ?? '', rare: t.rare ?? 1,
     life: { ...LIFE, ...(isObj(ev.life) ? ev.life : {}), ...(isObj(t.life) ? t.life : {}) }, inject: t.inject !== false, fx: preset,
   };
