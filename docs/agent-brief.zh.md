@@ -67,6 +67,8 @@
 ## 6. 渲染线
 
 - 所有渲染都走队列：`tools/render_queue.sh submit <draft|final|any> -- <参数>`。不许直接调 `tools/blender_run.sh` 或 `tools/cloud/render.sh`——队列负责在 Mac 与云端之间派活并管 GPU 锁。细节见 `docs/cloud-render.md`。
+- **队列全仓共享：** 在任何 worktree 里 `tools/render_queue.sh submit`，任务都落进主工作树的 `logs/queue/`，并且每个任务在提交它的 worktree 里跑（产物落在那边）。主工作树只是派工常驻的家：谁也不在里面改代码或提交。`tools/render_queue.sh` 有改动合入后，把主工作树快进（`git -C <main> merge --ff-only origin/preview`，仅在它干净时）并重启派工（`bash tools/install_renderqueue_agent.sh`）。
+- **Mac-only 模式：** 主工作树里 `logs/queue/MAC_ONLY` 存在时，一律不派云端（渲染战役 R 当前的设置）。
 - **Mac 优先：** 设定 → 草图（16 spp、约 2000 px）→ 自检 → Mac 上 64 spp 定稿预览；外观在这里锁定。不在云端反复试错。
 - **云端攒批：** 只接已锁定的高规格任务（8K / 16K、128–512 spp、分条渲染、昼夜变体），作为一批放行；实例由用户开机；`tools/cloud/idle_guard.sh --idle-shutdown 30` 在空闲时关机。
 - **渲染守卫：** 新渲染脚本通过 `tc_common.setup_render_device()`（旧名 `pick_gpu`）配 GPU，自己绝不设 `compute_device_type`；没 GPU 就中止，除非给 `blender_run.sh` 传 `--allow-cpu`。改动小于图像 25 % 用 `tools/region_patch.py`。

@@ -15,3 +15,17 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+
+=== RESULT R0-A ===
+status: DONE
+items: T1 ✓  T2 ✓  T3 ✓  T4 ✓  T5 ✓
+commits: 20f3ce8 chore(render): commit the rescued render leftovers that pass their tests
+         1a97cb8 feat(render-queue): shared queue across worktrees, per-job tree root, Mac-only mode
+         (third commit, this one: docs(render): Mac-only mode and worktree jobs)
+pushed: head #98 for the first two commits; the head number for this commit follows it on preview
+tests: node 629/630 (1 skipped; baseline identical) | smoke PASS (incl. new tools/test_render_queue.py, 14 cases) | arch PASS | probes: none run (no renders started)
+deviations: (1) tools/push_preview.sh now pushes HEAD:refs/heads/<branch> instead of the local branch of that name: from a worktree the local `preview` is the main checkout's stale ref, so the documented push command would have been rejected. Identical behavior when run from `preview`. (2) tools/install_renderqueue_agent.sh now waits for bootout to finish and retries bootstrap: on the first T3d run the immediate bootstrap failed with "Input/output error 5" after the old dispatcher was booted out; recovered by a manual `launchctl bootstrap` and the fix is in this commit. (3) The queue usage example in the script header now includes `--log` (the render guard rejects the old example as a legacy call); docs/cloud-render.md's older example still lacks it (grandfathered text). (4) DRY_RUN=1 in the queue now prints the plan and finishes synchronously instead of running blender_run.sh with DRY_RUN=1.
+blocker: none
+open: none. Rescue folder ~/eden-map-review/rescue/2026-09-30/ keeps house_opt*.glb, house_opt.assets.json, estate_ext.png and eden_estate_tiles.json (nothing references them) as input for a later campaign item.
+cleanup: done
+=== END ===

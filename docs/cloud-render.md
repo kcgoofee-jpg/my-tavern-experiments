@@ -180,3 +180,46 @@ AutoDL 关机（`shutdown -h now`）后按小时计费的算力费停止，**但
 - `已有云脚本在跑`：本地锁被占用（`tools/cloud/.locks/<实例>.lock`），等它结束；如果确认对应 PID 已经不在了，锁文件会在下次运行自动清理。
 - `云端还没有项目文件`：`render.sh` 检测到远端没有 `tools/blender_run.sh`，先跑一次 `sync.sh`。
 - `NEED_UPLOAD`（`setup.sh` 退出码 42）：远端连不上官方/镜像源下载 Blender，按提示把 Linux 版 tarball 放到 `~/Downloads/` 后重跑，会走 `scp` 兜底上传。
+
+## Mac-only mode and worktree jobs (2026-09-30)
+
+Render campaign R renders every place and base map to final on the local Mac only, from long-running sessions that each
+live in their own git worktree. Two queue changes make that work.
+
+**Shared queue, per-job tree root.**
+- The queue lives in the *main working tree's* `logs/queue/` (`QROOT` = the parent of the repository's git common dir).
+  `tools/render_queue.sh submit` from any worktree lands there, where the launchd dispatcher
+  (`ai.edenmap.renderqueue`) is running. `status`, `list` and `dispatch` resolve the same directory from any tree.
+- A job file is `tag<TAB>args<TAB>jobroot`, where `jobroot` is the absolute path of the tree that submitted it. On the
+  Mac the dispatcher `cd`s into `jobroot` and runs *that tree's* `tools/blender_run.sh`, so the job uses the
+  submitter's scripts and the `--out` artifact (checked relative to `jobroot` when the job finishes) lands in the
+  submitter's tree. If the worktree has been deleted the job fails through the normal retry cap. Legacy two-field jobs
+  mean the main tree. The blend cache stays shared at `<main>/.cache/blend`.
+- Submitted arguments start with `--log <path>` (the render guard treats anything else as the legacy call form).
+- The main checkout is only the dispatcher's home: nobody edits or commits there.
+
+**Mac-only mode.** While `<main>/logs/queue/MAC_ONLY` exists, `draft`, `final` and `any` all go to the Mac when it is
+idle and wait otherwise. No cloud target is ever chosen and no cloud host is probed (no ssh at all, not even for
+`status`, which prints `mode: Mac-only (logs/queue/MAC_ONLY)`). Turn it on with `touch logs/queue/MAC_ONLY` in the main
+checkout and off by removing the file; the dispatcher re-reads it every round.
+
+**Why non-main trees never go to the cloud.** `tools/cloud/sync.sh` and `render.sh` only know the main tree, so a job
+from a worktree would render the main tree's stale scripts on the instance. Without `MAC_ONLY`, such a job is routed to
+the Mac only; if the Mac is busy it stays pending, with a one-time warning on the dispatcher's stderr
+(`logs/queue/dispatch.err`).
+
+**Orphans.** Files in `pending/` without a matching `.job` (typically a leftover `*.retry`) are ignored by dispatch;
+`status` prints their count.
+
+**Refreshing the dispatcher.** The dispatcher runs the main checkout's copy of `tools/render_queue.sh`, so after a
+change to it lands on `origin/preview`:
+
+```bash
+git -C <main> status --porcelain          # must be empty
+git -C <main> merge --ff-only origin/preview
+bash <main>/tools/install_renderqueue_agent.sh
+bash <main>/tools/render_queue.sh status  # mode line + "dispatcher: alive"
+```
+
+Dry runs (`DRY_RUN=1`) print the `cd <jobroot> && bash <jobroot>/tools/blender_run.sh …` line and finish synchronously
+instead of starting Blender. Tests: `python3 tools/test_render_queue.py` (part of `tools/smoke.sh`).

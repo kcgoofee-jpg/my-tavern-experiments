@@ -109,6 +109,13 @@
 - Submit every render through the queue: `tools/render_queue.sh submit <draft|final|any> -- <args>`. Never call
   `tools/blender_run.sh` or `tools/cloud/render.sh` directly — the queue arbitrates Mac vs cloud and the GPU locks.
   Details: `docs/cloud-render.md`.
+- **The queue is shared:** `tools/render_queue.sh submit` from any worktree lands in the main checkout's
+  `logs/queue/`, and each job runs inside the worktree that submitted it (outputs land there). The main checkout is
+  only the dispatcher's home: nobody edits or commits in it. After a change to `tools/render_queue.sh` lands,
+  fast-forward the main checkout (`git -C <main> merge --ff-only origin/preview`, only when it is clean) and restart
+  the dispatcher (`bash tools/install_renderqueue_agent.sh`).
+- **Mac-only mode:** while `logs/queue/MAC_ONLY` exists in the main checkout, nothing is sent to the cloud (current
+  setting for render campaign R).
 - **Mac first:** setting → draft (16 spp, ~2000 px) → self-check → 64 spp final preview on the Mac; the look is
   locked there. Never iterate on the cloud.
 - **Cloud in batches:** only locked high-spec jobs (8K / 16K, 128–512 spp, split strips, time-of-day variants),

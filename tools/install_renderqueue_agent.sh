@@ -52,7 +52,19 @@ command cat > "$PLIST" <<PLIST_EOF
 PLIST_EOF
 
 launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
-launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null || launchctl load "$PLIST"
+# bootout is asynchronous too: a bootstrap issued while the old job is still tearing down fails with
+# "Input/output error" (seen 2026-09-30 when refreshing the dispatcher). Wait for the label to disappear,
+# then retry the bootstrap a few times before falling back to the legacy `load`.
+for _ in 1 2 3 4 5 6 7 8; do
+  launchctl print "gui/$(id -u)/$LABEL" >/dev/null 2>&1 || break
+  sleep 1
+done
+loaded=0
+for _ in 1 2 3 4 5; do
+  if launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null; then loaded=1; break; fi
+  sleep 2
+done
+[ "$loaded" = 1 ] || launchctl load "$PLIST"
 # 装载是异步的：launchctl 返回时标签可能还没出现在 list 里（一开始这里误报过「装载失败」），
 # 所以重试几次再下结论——顺便确认它真的拿到了派工锁。
 ok=0
