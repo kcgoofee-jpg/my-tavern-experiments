@@ -6,7 +6,7 @@
 // 索引的全部规则（钉 / 摘 / 翻 / 统计）在纯核心 map/core/scrapbook.mjs，node 单测 tests/scrapbook.test.mjs。
 import * as SB from './core/scrapbook.mjs';
 import * as TCStore from './core/storage.mjs';
-import { chatId } from './app/extapi.mjs';
+import { chatId } from './app/extapi.mjs';   // 当前聊天 id（let 活绑定：宿主换了聊天，键跟着换）
 import { esc } from './app/util.mjs';
 import { register } from './app/plugins.mjs';
 
@@ -14,11 +14,12 @@ const TCScrap = (() => {
   const T = (k, zh) => window.I18N.tx(k, zh);   // 共享 i18n 服务（viewer.html window.I18N）
   let db = null, meta = SB.norm(null), openPlace = '';
 
-  const key = () => 'edenMap:chat:' + (chatId() || '') + ':scrap';   // 按聊天分（没有聊天 id = 全局那一份）
+  const cid = () => (typeof chatId === 'string' ? chatId : '');   // extapi 的 chatId 是字符串（活绑定），不是函数
+  const key = () => 'edenMap:chat:' + cid() + ':scrap';   // 按聊天分（没有聊天 id = 全局那一份）
   const load = () => { try { meta = SB.norm(JSON.parse(TCStore.get(key()) || 'null')); } catch (e) { meta = SB.norm(null); } return meta; };
-  const save = () => { try { TCStore.set(key(), JSON.stringify(SB.norm(meta))); } catch (e) {} };
+  const save = () => { try { TCStore.set(key(), JSON.stringify(SB.norm(meta))); return true; } catch (e) { return false; } };
   const gallery = () => (db ??= import('./core/room-gallery-db.mjs').catch(() => null));
-  const scope = () => (chatId() ? 'chat:' + chatId() : 'global');
+  const scope = () => (cid() ? 'chat:' + cid() : 'global');
 
   /** 钉一张图（File / Blob）：缩图转 webp → 图集 → 索引。返回 { ok, reason? } */
   async function pinImage(place, file) {
@@ -121,10 +122,11 @@ const TCScrap = (() => {
 
   return {
     decorate, pinImage, pinNote, unpin, imagesOf, load,
-    get rows() { return SB.byPlace(meta, ''); },   // 空地点 = 全册子（调试 / 探针用）
+    list: (place, map) => SB.byPlace(meta, place, map),
     count: place => SB.countOf(meta, place),
     digest: () => SB.digest(meta),
     describe: () => SB.describe(meta),
+    key,
   };
 })();
 register('TCScrap', TCScrap);
