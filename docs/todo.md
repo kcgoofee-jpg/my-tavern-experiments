@@ -47,11 +47,11 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   p4_traffic (7/7), p1_leak (5/5), p6_action (7/7), p6_quests (8/8), p6_tick (8/8), p5_sandbox (17/17).
   Still open in Part 5: pickup props inside the Three.js mansion (stash items glow on the flat map only) and
   `core/clock.mjs` is still unwired, so routine moves ride MVU's world time instead of the local deterministic clock.
-  ~~**Part 3 (WebGL perf)**: pure LOD + graphics budget policies (`a003f32`), off-thread DZI tile decode +
-  renderer census guard (`4d3fc29`), shared runtime `map/three/{ctx,culling,lod,instancing,texres}.mjs`
-  (`482e4d3`), generic 3D viewer adoption + KTX2/Basis pipeline (`134a857`), exclusive 3D lease + one-shot
-  OSD→Three backdrop bridge (`01a465e`), budget eviction + tile-cache trim (`e839ffd`), camera framing fix
-  (`3c82eed`).~~ ✅ 2026-09-30 — one WebGL context is now enforced (`tools/browser/webgl_single_ctx.mjs`:
+  ~~**Part 3 (WebGL perf)**: pure LOD + graphics budget policies (`761e415`), off-thread DZI tile decode +
+  renderer census guard (`a8f14b9`), shared runtime `map/three/{ctx,culling,lod,instancing,texres}.mjs`
+  (`c592d0c`), generic 3D viewer adoption + KTX2/Basis pipeline (`0cb4a26`), exclusive 3D lease + one-shot
+  OSD→Three backdrop bridge (`f32f59e`), budget eviction + tile-cache trim (`fc3cc7c`), camera framing fix
+  (`37f312c`).~~ ✅ 2026-09-30 — one WebGL context is now enforced (`tools/browser/webgl_single_ctx.mjs`:
   peak live 3D frames ≤ 1 across world → 3D A → 3D B → world → 3D A), OSD stays Canvas2D, dairy measured
   6.7 → 7.5 fps p50 with the same 18 draw calls. Still open in Part 3: persistent context across 3D
   navigations (today each entry still builds a fresh context), legacy estate page (`map/estate/main.js`,
