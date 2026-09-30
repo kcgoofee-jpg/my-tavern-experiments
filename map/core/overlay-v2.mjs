@@ -3,6 +3,7 @@
 // Merge, by node id, after fromV1: a new id is added (it needs a name); an existing id gets its `alias` and `hints` unioned
 // and every other field overridden. Pure and lenient (K-R06): a bad entry is skipped and listed in `problems`, the rest applies.
 // K-R68: an overlay may also carry an `events` block (v2 shape) and `llm.templates`; both are merged over what compat-v1 derived, the overlay wins.
+// K-R69: and a `vars` block (paths, periods by id) and an `entities` block (groups by id, fields by `field`, the avatar block); same rule.
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const union = (a, b) => [...new Set([...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])])];
 const LISTS = ['alias', 'hints'];
@@ -11,7 +12,7 @@ const LISTS = ['alias', 'hints'];
 export function applyOverlay(nodes, overlay) {
   const out = nodes.map(n => ({ ...n })), byId = new Map(out.map(n => [n.id, n])), problems = [];
   if (overlay === null || overlay === undefined) return { nodes: out, problems };
-  if (!isObj(overlay) || overlay.schema !== 2 || !(Array.isArray(overlay.nodes) || (overlay.nodes === undefined && (isObj(overlay.events) || isObj(overlay.llm))))) return { nodes: out, problems: [{ code: 'overlay-invalid' }] };
+  if (!isObj(overlay) || overlay.schema !== 2 || !(Array.isArray(overlay.nodes) || (overlay.nodes === undefined && (isObj(overlay.events) || isObj(overlay.llm) || isObj(overlay.vars) || isObj(overlay.entities))))) return { nodes: out, problems: [{ code: 'overlay-invalid' }] };
   (overlay.nodes || []).forEach((o, index) => {
     if (!isObj(o) || typeof o.id !== 'string' || o.id === '') return problems.push({ code: 'overlay-node-invalid', index });
     const cur = byId.get(o.id);
@@ -71,4 +72,55 @@ export function applyOverlayLlm(llm, overlay) {
   for (const [lang, t] of Object.entries(add)) if (isObj(t)) for (const [k, v] of Object.entries(t)) if (typeof v === 'string' && v !== '') (tpl[lang] ||= {})[k] = v;
   if (Object.keys(tpl).length) out.templates = tpl;
   return Object.keys(out).length ? out : llm;
+}
+
+const copy = v => JSON.parse(JSON.stringify(v));
+const keyed = (cur, add, key, what, problems, need) => {   // rows of an array merged by the field `key`: a known one is overridden field by field, a new one needs `need`
+  const by = new Map(cur.map(r => [r[key], r]));
+  add.forEach((o, index) => {
+    if (!isObj(o) || typeof o[key] !== 'string' || o[key] === '') return problems.push({ code: `overlay-${what}-invalid`, index });
+    const at = by.get(o[key]);
+    if (at) { Object.assign(at, copy(o)); return; }
+    if (need.some(k => typeof o[k] !== 'string' || o[k] === '')) return problems.push({ code: `overlay-${what}-incomplete`, id: o[key] });
+    const n = copy(o); cur.push(n); by.set(n[key], n);
+  });
+  return cur;
+};
+
+/** applyOverlayVars(vars, overlay) -> { vars, problems } (K-R69): `overlay.vars` merged over the converted `vars` block (may be undefined):
+ *  path keys and every other key overridden, `periods` by id (a new band needs `start`; the list is kept in time order). The input is not touched. */
+export function applyOverlayVars(vars, overlay) {
+  const base = isObj(vars) ? copy(vars) : undefined, problems = [], add = isObj(overlay) ? overlay.vars : undefined;
+  if (add === undefined || add === null) return { vars: base, problems };
+  if (!isObj(add)) return { vars: base, problems: [{ code: 'overlay-vars-invalid' }] };
+  const out = base || {};
+  for (const [k, v] of Object.entries(add)) {
+    if (k !== 'periods') { out[k] = copy(v); continue; }
+    if (!Array.isArray(v)) { problems.push({ code: 'overlay-periods-invalid' }); continue; }
+    out.periods = keyed(Array.isArray(out.periods) ? out.periods : [], v, 'id', 'period', problems, ['start']).sort((a, b) => String(a.start).localeCompare(String(b.start)));
+  }
+  return { vars: out, problems };
+}
+
+/** applyOverlayEntities(entities, overlay) -> { entities, problems } (K-R69): `overlay.entities` merged over the converted block (may be undefined):
+ *  `groups` by id (a new one needs `label`; `source` is merged key by key, `fallback` replaced as a whole), `fields` by `field` (a new one needs `kind`),
+ *  `avatar` key by key (lists replaced), any other key overridden. The input is not touched. */
+export function applyOverlayEntities(entities, overlay) {
+  const base = isObj(entities) ? copy(entities) : undefined, problems = [], add = isObj(overlay) ? overlay.entities : undefined;
+  if (add === undefined || add === null) return { entities: base, problems };
+  if (!isObj(add)) return { entities: base, problems: [{ code: 'overlay-entities-invalid' }] };
+  const out = base || {};
+  for (const [k, v] of Object.entries(add)) {
+    if (k === 'groups' || k === 'fields') {
+      if (!Array.isArray(v)) { problems.push({ code: `overlay-${k}-invalid` }); continue; }
+      const cur = Array.isArray(out[k]) ? out[k] : [];
+      if (k === 'fields') out.fields = keyed(cur, v, 'field', 'field', problems, ['kind']);
+      else {
+        const src = new Map(cur.map(g => [g.id, g.source]));
+        out.groups = keyed(cur, v.map(g => (isObj(g) && isObj(g.source) && isObj(src.get(g.id)) ? { ...g, source: { ...src.get(g.id), ...g.source } } : g)), 'id', 'group', problems, ['label']);
+      }
+    } else if (k === 'avatar') { if (isObj(v)) out.avatar = { ...(out.avatar || {}), ...copy(v) }; else problems.push({ code: 'overlay-avatar-invalid' }); }
+    else out[k] = copy(v);
+  }
+  return { entities: out, problems };
 }

@@ -7,8 +7,8 @@
 > `tools/check_pack.py` (schema-2 branch) and `tests/pack_schema_v2.test.mjs`. Schema 1 (`docs/pack-schema-v1.md`)
 > stays frozen and keeps working through `map/core/compat-v1.mjs` (step S1-impl-2).
 
-Every rule has a stable id `K-R01` … `K-R68`; later prompts and tests cite them. Ids never move: rules added after the
-first draft (K-R63–K-R68, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit. The choices left to the user
+Every rule has a stable id `K-R01` … `K-R69`; later prompts and tests cite them. Ids never move: rules added after the
+first draft (K-R63–K-R69, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit. The choices left to the user
 are `K-01` … `K-09` (§0). Everything else was decided by the designer and is listed with its reason in §14.
 
 ## 0. Decisions for the user (review sheet)
@@ -509,7 +509,9 @@ and returns, per kind (`null` when the value is missing or unreadable):
   row's other text values when the field is missing.
 - `show`: `subtitle`, `chip`, `detail` or `hidden`; default `detail` for text, `chip` otherwise.
 Without fields the kernel discovers a role field (identity-like names) as subtitle and a stage field (progress-like
-names) as a chip, with its per-language vocabulary.
+names) as a chip, with its per-language vocabulary. A field may carry `x-slot` (K-R69) to take one of the roster slots
+of the viewer's card rows (`stage`, `grade`, `core`, `code`, `social`, `height`, `weight`, `known`, `accessory`, `tier`); a slot
+without a declared field is discovered in the rows by the kernel's vocabulary, and Settings → variable mapping overrides both.
 
 ### 6.4 Avatars
 
@@ -518,7 +520,8 @@ scripts), `card-storage` (local-storage keys the card's own UI writes, read only
 with `{name}`), `imagegen` (the optional image extension's library). Default: `imagegen` only. Kernel rules that a
 pack cannot relax: https only, image file types, no query string, and the user's switch turns every remote portrait
 off. `hosts` lists allowed `host[/path-prefix]` for card-script portraits: the host contains a dot and must equal the
-URL's host, and a path prefix ends at a `/`. `deny` lists path fragments never loaded. Storage keys may not start
+URL's host, and a path prefix ends at a `/`. `require` lists path fragments of which one must appear in a portrait URL
+that a prefixed entry allows (a shared CDN scoped to the author's folders, K-R69). `deny` lists path fragments never loaded. Storage keys may not start
 with the kernel's reserved prefixes (`spatial`, the legacy prefixes of shipped packs, the host's own keys).
 
 ### 6.5 Multi-source priority (fixed)
@@ -708,6 +711,13 @@ from the pack's own `events.json` (`core/overlay-v2.mjs` `applyOverlayEvents`, `
 field by field, a new group needs `label`, a new type needs `label` and `group`), `fx_presets` by key, `life` field by field, `levels` / `closed` / `examples`
 replaced as a whole, any other key (`x-…`) overridden. Lenient like K-R67: a bad row is skipped and listed in `problems` (`overlay-group-invalid`, `overlay-type-incomplete`, …). `tools/check_overlay.mjs`
 also runs the merged block through the kernel's own schema (K-R06). A schema-1 pack without an events block in either place shows the neutral taxonomy (K-R53).
+
+**K-R69 — The overlay may carry vars and entities.** `overlay.v2.json` may also carry `vars` (§5) and `entities` (§6); `nodes` may then be left out. `fromV1` merges them over what it derived from the
+manifest's `vars` and the roster file (`core/overlay-v2.mjs` `applyOverlayVars`, `applyOverlayEntities`); the overlay wins: `vars` path keys are overridden and `periods` merge by id (a new band needs `start`; the list is
+kept in time order); `entities.groups` merge by id (a new group needs `label`; `source` is merged key by key, `fallback` replaced as a whole), `entities.fields` by `field` (a new field needs `kind`), `entities.avatar` key by key
+(lists replaced), any other key is overridden. Lenient like K-R67 (`overlay-period-incomplete`, `overlay-group-invalid`, `overlay-field-incomplete`, …). `tools/check_overlay.mjs` runs the merged blocks through the kernel's schema (K-R06).
+Two extensions the first pack uses: a field carries `x-slot` (one of `stage`, `grade`, `core`, `code`, `social`, `height`, `weight`, `known`, `accessory`, `tier`) to bind it to the roster slot the viewer's card rows and
+Settings → variable mapping use (§6.3); and `avatar.require` (path fragments) narrows a host entry that has a path prefix: a card-script portrait from such an entry must also contain one of the fragments (§6.4).
 
 ## 14. Designer decisions and open points
 

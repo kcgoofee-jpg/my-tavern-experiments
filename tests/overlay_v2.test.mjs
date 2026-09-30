@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fromV1 } from '../map/core/compat-v1.mjs';
-import { applyOverlay, applyOverlayEvents, applyOverlayLlm } from '../map/core/overlay-v2.mjs';
+import { applyOverlay, applyOverlayEvents, applyOverlayLlm, applyOverlayVars, applyOverlayEntities } from '../map/core/overlay-v2.mjs';
 import { buildTree, describe } from '../map/core/nodes.mjs';
 import { makeHere } from '../map/app/here-v2.mjs';
 import { edenInputs } from './helpers/eden-inputs.mjs';
@@ -101,4 +101,35 @@ test('K-R68 llm.templates merge, and fromV1 carries both into the pack (an event
   const r = fromV1({ ...IN, overlay: { schema: 2, events: EV, llm: { templates: { zh: { tag: 'T' } } } } });
   assert.deepEqual(r.problems, []); assert.equal(r.pack.events.groups[0].id, 'g1'); assert.equal(r.pack.llm.templates.zh.tag, 'T');
   assert.equal(applyOverlay([], { schema: 2, events: EV }).problems.length, 0);
+});
+
+// ---- K-R69: the overlay may carry vars and entities ----
+const VA = { location: 'a.b', periods: [{ id: 'day', start: '07:00' }, { id: 'night', start: '20:00', dark: true }] };
+test('K-R69 vars merge: path keys overridden, periods by id (new band needs start, kept in time order), input untouched', () => {
+  const frozen = JSON.parse(JSON.stringify(VA));
+  const r = applyOverlayVars(VA, { schema: 2, vars: { time: 'a.t', location: 'c.d', periods: [{ id: 'night', words: ['n'] }, { id: 'dawn', start: '05:00' }, { id: 'x' }, 7], 'x-more': 1 } });
+  assert.deepEqual(VA, frozen);
+  assert.equal(r.vars.location, 'c.d'); assert.equal(r.vars.time, 'a.t'); assert.equal(r.vars['x-more'], 1);
+  assert.deepEqual(r.vars.periods.map(p => p.id), ['dawn', 'day', 'night']); assert.deepEqual(r.vars.periods[2], { id: 'night', start: '20:00', dark: true, words: ['n'] });
+  assert.deepEqual(r.problems.map(p => p.code).sort(), ['overlay-period-incomplete', 'overlay-period-invalid']);
+  assert.deepEqual(applyOverlayVars(undefined, { vars: { outfit: 'o' } }).vars, { outfit: 'o' }); assert.equal(applyOverlayVars(undefined, { schema: 2, nodes: [] }).vars, undefined);
+  assert.deepEqual(applyOverlayVars(VA, { vars: 3 }).problems, [{ code: 'overlay-vars-invalid' }]); assert.deepEqual(applyOverlayVars(VA, null).vars, VA);
+});
+const EN = { groups: [{ id: 'members', label: 'members', source: { mvu: 'T1' }, fallback: [{ name: 'A' }] }], fields: [{ field: 'identity', kind: 'text', show: 'subtitle' }], avatar: { hosts: ['a.b'], deny: ['x'] } };
+test('K-R69 entities merge: groups by id (source key by key, fallback kept unless given), fields by field, avatar key by key, bad rows listed', () => {
+  const frozen = JSON.parse(JSON.stringify(EN));
+  const r = applyOverlayEntities(EN, { schema: 2, entities: { groups: [{ id: 'members', source: { place: 'P' } }, { id: 'present', label: 'present', source: { present: true } }, { id: 'nolabel' }, null],
+    fields: [{ field: 'identity', label: 'Role' }, { field: 'g', kind: 'tag', 'x-slot': 'grade' }, { field: 'h' }], avatar: { hosts: ['c.d'], require: ['/q/'] }, 'x-k': 1 } });
+  assert.deepEqual(EN, frozen);
+  assert.deepEqual(r.entities.groups.map(g => g.id), ['members', 'present']); assert.deepEqual(r.entities.groups[0].source, { mvu: 'T1', place: 'P' }); assert.deepEqual(r.entities.groups[0].fallback, [{ name: 'A' }]);
+  assert.deepEqual(r.entities.fields.map(f => [f.field, f.kind, f.label, f['x-slot']]), [['identity', 'text', 'Role', undefined], ['g', 'tag', undefined, 'grade']]);
+  assert.deepEqual(r.entities.avatar, { hosts: ['c.d'], deny: ['x'], require: ['/q/'] }); assert.equal(r.entities['x-k'], 1);
+  assert.deepEqual(r.problems.map(p => p.code).sort(), ['overlay-field-incomplete', 'overlay-group-incomplete', 'overlay-group-invalid']);
+  assert.deepEqual(applyOverlayEntities(undefined, { entities: { fields: [{ field: 'z', kind: 'text' }] } }).entities, { fields: [{ field: 'z', kind: 'text' }] });
+  assert.deepEqual(applyOverlayEntities(EN, { entities: 'x' }).problems, [{ code: 'overlay-entities-invalid' }]);
+});
+test('K-R69 fromV1 carries both into the pack; a vars-and-entities-only overlay needs no nodes', () => {
+  const r = fromV1({ ...IN, overlay: { schema: 2, vars: { location: 'p.q' }, entities: { fields: [{ field: 'f', kind: 'tag' }] } } });
+  assert.deepEqual(r.problems, []); assert.equal(r.pack.vars.location, 'p.q'); assert.deepEqual(r.pack.entities.fields, [{ field: 'f', kind: 'tag' }]);
+  assert.equal(applyOverlay([], { schema: 2, vars: { location: 'p.q' } }).problems.length, 0);
 });

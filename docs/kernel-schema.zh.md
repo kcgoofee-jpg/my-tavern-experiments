@@ -6,7 +6,7 @@
 > （schema 2 分支）与 `tests/pack_schema_v2.test.mjs`。schema 1（`docs/pack-schema-v1.md`）保持冻结，经
 > `map/core/compat-v1.mjs`（S1-impl-2 步）继续可用。
 
-每条规则都有固定编号 `K-R01` … `K-R68`，后面的提示词和测试按编号引用。编号永不挪动：初稿之后补的规则（K-R63–K-R68，
+每条规则都有固定编号 `K-R01` … `K-R69`，后面的提示词和测试按编号引用。编号永不挪动：初稿之后补的规则（K-R63–K-R69，
 信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
 
 ## 0. 请你拍板
@@ -470,14 +470,16 @@ v1 按固定的六级解析。改写成节点后，每一级都是树上的一�
 - `ladder`：`{ index, label }`——从低到高的阶梯 `[{ label, match[] }]`；值先按名字或 `match` 词完全相同匹配，再按包含（最长的）匹配，
   比较的都是预处理后的形式（K-R17）。`scan: true` 时字段缺失就去这一行的其他文字里找。
 - `show`：`subtitle`、`chip`、`detail` 或 `hidden`；缺省文字放 `detail`，其余放 `chip`。
-没写字段时，内核按本语言词表自动发现一个「身份」类字段当副标题、一个「进度」类字段当小标签。
+没写字段时，内核按本语言词表自动发现一个「身份」类字段当副标题、一个「进度」类字段当小标签。字段可以带 `x-slot`（K-R69），占用查看器人物卡行的一个名册槽位
+（`stage`、`grade`、`core`、`code`、`social`、`height`、`weight`、`known`、`accessory`、`tier`）；没有声明字段的槽位，内核按词表在行里发现，设置里的「变量映射」两者都能覆盖。
 
 ### 6.4 头像
 
 **K-R43 —— 头像来源。** `avatar.from` 列出允许的来源：`card-script`（卡自带脚本里的立绘表）、`card-storage`（卡自己的界面写进本机存储的键，只读：
 `storage.index`、带 `{name}` 的 `storage.per_name`）、`imagegen`（可选的画图扩展的立绘库）。缺省只有 `imagegen`。包不能放宽的内核规则：
 只收 https、只收图片类型、不带查询串，而且用户的开关能一键关掉所有远程头像。`hosts` 列出 `card-script` 立绘允许的「域名[/路径前缀]」：
-域名必须带点、必须和网址的域名完全相同，路径前缀在 `/` 处结束。`deny` 列出永不加载的路径片段。存储键不能以内核保留的前缀开头
+域名必须带点、必须和网址的域名完全相同，路径前缀在 `/` 处结束。`require` 列出路径片段：带路径前缀的条目放行的立绘网址里，必须出现其中一个
+（把共用图床限定在作者自己的目录，K-R69）。`deny` 列出永不加载的路径片段。存储键不能以内核保留的前缀开头
 （`spatial`、随引擎发布的包的旧前缀、宿主自己的键）。
 
 ### 6.5 多来源优先级（固定）
@@ -626,6 +628,13 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 `groups`、`types` 按 id（已有的逐字段覆盖；新大类要有 `label`，新类型要有 `label` 和 `group`），`fx_presets` 按键，`life` 逐字段，`levels` / `closed` / `examples` 整体替换，
 其余键（`x-…`）覆盖。和 K-R67 一样宽容：坏的行被跳过并记在 `problems` 里（`overlay-group-invalid`、`overlay-type-incomplete` ……）。`tools/check_overlay.mjs` 还会把合并后的块
 过一遍内核自己的 schema（K-R06）。两处都没有事件块的 schema-1 包显示中性分类（K-R53）。
+
+**K-R69 —— 叠加层可以带变量与实体。** `overlay.v2.json` 还可以带 `vars`（§5）和 `entities`（§6），这时 `nodes` 可以省略。`fromV1` 把它们合并到从清单的 `vars` 和名册文件转出来的内容之上
+（`core/overlay-v2.mjs` 的 `applyOverlayVars`、`applyOverlayEntities`），叠加层优先：`vars` 的路径键直接覆盖，`periods` 按 id 合并（新时段要有 `start`；列表保持时间顺序）；
+`entities.groups` 按 id 合并（新组要有 `label`；`source` 逐键合并，`fallback` 整体替换），`entities.fields` 按 `field`（新字段要有 `kind`），`entities.avatar` 逐键合并（列表整体替换），
+其余键覆盖。和 K-R67 一样宽容（`overlay-period-incomplete`、`overlay-group-invalid`、`overlay-field-incomplete` ……）。`tools/check_overlay.mjs` 把合并后的块过一遍内核 schema（K-R06）。
+首个包用到两处扩展：字段带 `x-slot`（`stage`、`grade`、`core`、`code`、`social`、`height`、`weight`、`known`、`accessory`、`tier` 之一），绑定到查看器人物卡行与设置「变量映射」用的名册槽位（§6.3）；
+`avatar.require`（路径片段）收窄带路径前缀的域名条目：这种条目放行的 `card-script` 立绘，网址里还必须出现其中一个片段（§6.4）。
 
 ## 14. 设计方的决定与遗留点
 

@@ -5,7 +5,7 @@ import { buildGeo } from './compat-v1-geo.mjs';
 import { buildViews } from './compat-v1-views.mjs';
 import { legacyOf, stringsOf, eventsOf, rosterOf, stashOf, worldbookOf, customOf } from './compat-v1-blocks.mjs';
 import { normalise } from './lexicon.mjs';
-import { applyOverlay, applyOverlayEvents, applyOverlayLlm } from './overlay-v2.mjs';
+import { applyOverlay, applyOverlayEvents, applyOverlayLlm, applyOverlayVars, applyOverlayEntities } from './overlay-v2.mjs';
 
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 /** A.7: v1 roster source names -> v2 (the image extension's library is `imagegen`); every other source keeps its name. */
@@ -47,8 +47,10 @@ export function fromV1({ manifest, maps, world = null, names = null, plan = null
   const vars = {}, extra = {};
   for (const [k, v] of Object.entries(isObj(m.vars) ? m.vars : {})) if (typeof v === 'string' && v) (VAR_KEYS.includes(k) ? vars : extra)[k] = v;
   if (Object.keys(extra).length) vars['x-v1'] = extra;
-  if (Object.keys(vars).length) pack.vars = vars;
-  const ent = rosterOf(roster); if (ent) pack.entities = ent;
+  const ovv = applyOverlayVars(Object.keys(vars).length ? vars : undefined, overlay); ov.problems.push(...ovv.problems);
+  if (ovv.vars && Object.keys(ovv.vars).length) pack.vars = ovv.vars;
+  const oen = applyOverlayEntities(rosterOf(roster) || undefined, overlay); ov.problems.push(...oen.problems);
+  if (oen.entities && Object.keys(oen.entities).length) pack.entities = oen.entities;
   const rows = stashOf(stash, has, idmap); if (rows.length) pack.items = { stash: rows };
   const evb = ev ? { ...ev.events } : {}; if (isObj(maps?.feeds)) evb['x-feeds'] = maps.feeds;
   const oe = applyOverlayEvents(Object.keys(evb).length ? evb : undefined, overlay); ov.problems.push(...oe.problems);

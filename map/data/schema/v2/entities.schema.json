@@ -69,6 +69,7 @@
       "properties": {
         "from": { "type": "array", "items": { "enum": ["card-script", "card-storage", "imagegen"] }, "description": "Default [imagegen]: only the optional image extension's library." },
         "hosts": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)+(/[A-Za-z0-9_.~%/-]*)?$" }, "description": "Allowed host[/path-prefix] for card-script portraits: the host has a dot and must equal the URL host; a path prefix ends at a / (K-R43)." },
+        "require": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "Path fragments of which one must appear in a portrait URL allowed by a host entry that has a path prefix (K-R43, K-R69)." },
         "deny": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "Path fragments never loaded, even from an allowed host." },
         "storage": { "type": "object", "additionalProperties": false, "description": "card-storage: localStorage keys the card's own UI writes (read only). Keys may not start with the kernel's reserved prefixes (K-R43).",
           "properties": { "index": { "type": "string", "pattern": "^(?!spatial|edenMap|tcp\\.)[^\\n]{1,80}$" }, "per_name": { "type": "string", "pattern": "^(?!spatial|edenMap|tcp\\.)[^\\n]*\\{name\\}[^\\n]*$" } } }
