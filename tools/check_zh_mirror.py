@@ -13,6 +13,7 @@ PAIRS = [
     ("docs/agent-brief.md", "docs/agent-brief.zh.md"),
     ("docs/plans/spatial-os.md", "docs/plans/spatial-os.zh.md"),
     ("docs/ARCHITECTURE.md", "docs/ARCHITECTURE.zh.md"),
+    ("docs/naming.md", "docs/naming.zh.md"),
 ]
 HEADING = re.compile(r"^(#{1,6})\s")
 
