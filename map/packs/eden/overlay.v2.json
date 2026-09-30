@@ -332,5 +332,43 @@
         "tag": "天城事态"
       }
     }
+  },
+  "vars": {
+    "location": "世界.当前地点",
+    "time": "世界.当前时刻",
+    "date": "世界.当前日期",
+    "period": "世界.当日时段",
+    "outfit": "主角.着装",
+    "periods": [
+      {"id":"dawn","start":"05:00","words":["晨","黎明","清晨","早","dawn","morning"]},
+      {"id":"day","start":"07:00","words":["日间","白天","午","day","noon","afternoon"]},
+      {"id":"dusk","start":"17:00","words":["侍寝","傍晚","黄昏","暮","dusk","evening"]},
+      {"id":"night","start":"20:00","dark":true,"words":["就寝","深夜","夜","凌晨","night","midnight"]}
+    ]
+  },
+  "entities": {
+    "groups": [
+      {"id":"present","label":"present","i18n":{"zh":{"label":"在场"}},"source":{"mvu":"在场人物","present":true,"place":"位置"}},
+      {"id":"members","label":"members","i18n":{"zh":{"label":"成员"}},"source":{"mvu":"已收服母畜"}},
+      {"id":"targets","label":"targets","i18n":{"zh":{"label":"目标"}},"source":{"mvu":"狩猎清单"}}
+    ],
+    "fields": [
+      {"field":"狩猎阶段","kind":"tag","show":"chip","x-slot":"stage"},
+      {"field":"母畜等级","kind":"tag","show":"chip","x-slot":"grade"},
+      {"field":"母畜值","kind":"gauge","min":0,"max":100,"ladder":[{"up_to":20,"label":"抗拒期"},{"up_to":40,"label":"动摇期"},{"up_to":60,"label":"接受期"},{"up_to":80,"label":"沉溺期"},{"up_to":100,"label":"完全母畜化"}],"show":"chip","x-slot":"core"},
+      {"field":"母畜代号","kind":"text","show":"detail","x-slot":"code"},
+      {"field":"社会身份","kind":"text","show":"detail","x-slot":"social"},
+      {"field":"身高","kind":"text","show":"detail","x-slot":"height"},
+      {"field":"体重","kind":"text","show":"detail","x-slot":"weight"},
+      {"field":"外界知情","kind":"tag","show":"detail","x-slot":"known"},
+      {"field":"项圈","kind":"text","show":"detail","x-slot":"accessory"},
+      {"field":"战力","kind":"ladder","scan":true,"ladder":[{"label":"超凡 1 阶","match":["超凡一阶","超凡1阶","超凡 一 阶"]},{"label":"超凡 2 阶","match":["超凡二阶","超凡2阶","超凡 二 阶"]},{"label":"超凡 3 阶","match":["超凡三阶","超凡3阶","超凡 三 阶"]},{"label":"超凡 4 阶","match":["超凡四阶","超凡4阶","超凡 四 阶"]},{"label":"超凡 5 阶","match":["超凡五阶","超凡5阶","超凡 五 阶"]},{"label":"天灾级","match":[]}],"show":"chip","x-slot":"tier"}
+    ],
+    "avatar": {
+      "from": ["card-script","imagegen"],
+      "hosts": ["cdn.jsdelivr.net/gh/Yehehua1311/","i.postimg.cc","picgocloud.com"],
+      "require": ["/sfw/"],
+      "deny": ["口交","性交","肛交","足交"]
+    }
   }
 }
