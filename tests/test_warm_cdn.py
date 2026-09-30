@@ -160,6 +160,13 @@ class ShellCase(unittest.TestCase):
         self.assertTrue(set(diff) <= full)
         self.assertLess(len(diff), len(full))
 
+    def test_diff_with_explicit_base_matches_plan(self):
+        base = subprocess.run(['git', '-C', ROOT, 'rev-parse', 'HEAD^'],
+                              capture_output=True, text=True).stdout.strip()
+        shell = self.run_sh('HEAD', '--diff', base, '--list')
+        self.assertEqual(shell.returncode, 0, shell.stderr)   # 回归：基线曾以 --base 传下去，warm_plan 不认、静默退出 2
+        self.assertEqual(shell.stdout.split(), warm_plan.plan(ROOT, 'HEAD', base=base, diff=True)[0])
+
     def test_detach_returns_immediately_and_writes_a_log(self):
         log = os.path.join(tempfile.mkdtemp(), 'warm.log')
         t = time.time()

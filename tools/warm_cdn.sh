@@ -44,8 +44,9 @@ BASE_URL="https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@$REF"
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 PLAN=(python3 tools/warm_plan.py --ref "$REF")
 [ "$FULL" = 1 ] && PLAN+=(--full)
-if [ "$DIFF" = 1 ]; then PLAN+=(--diff); [ -n "$BASE" ] && PLAN+=(--base "$BASE"); fi   # 旧名 BASE_URL 给 curl 用，这里 BASE 是增量基线
-LIST=$("${PLAN[@]}" 2> "$TMP/note"); NOTE=$(command cat "$TMP/note")
+if [ "$DIFF" = 1 ]; then if [ -n "$BASE" ]; then PLAN+=(--diff "$BASE"); else PLAN+=(--diff); fi; fi   # BASE = 增量基线（curl 用的是 BASE_URL）
+LIST=$("${PLAN[@]}" 2> "$TMP/note") || { command cat "$TMP/note" >&2; echo "预热清单算不出来（见上面的 warm_plan 报错）" >&2; exit 1; }
+NOTE=$(command cat "$TMP/note")
 if [ -z "$LIST" ]; then N=0; else N=$(printf '%s\n' "$LIST" | wc -l | tr -d ' '); fi
 [ "$MODE" = --count ] && { echo "$N"; exit 0; }
 [ "$MODE" = --list ] && { [ "$N" -gt 0 ] && printf '%s\n' "$LIST"; exit 0; }
