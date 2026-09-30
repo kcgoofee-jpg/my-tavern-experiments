@@ -592,7 +592,7 @@ weather (storm, rain, heat, cold), politics (policy, election, meeting), society
 flood), people (visit, appearance, scandal), other. A pack with an events block but no `closed` uses the kernel's closing words (`DEFAULT_CLOSED`); with no tag template, the injected line is labelled `地图事态`.
 
 **K-R54 — Life defaults.** In messages: `live 7`, `after 20`, `fade 40`, `merge 15` (same type and node within 15
-messages = one event; for an event whose node is `null`, same type and normalised place text), `per_msg 3`. An open
+messages = one event, where "same node" includes the part of the place text the matched word does not cover: "Neon Street" and "Neon Street back alley" stay two events; for an event whose node is `null`, same type and normalised place text), `per_msg 3`. An open
 event never ages out while it is inside the scan window. A type may override any of them with its own `life`; the pack's `events.life` overrides the kernel values for all types.
 
 **K-R55 — Effect building blocks.** `none`, `glitch`, `flash`, `shake`, `tint`, `pulse`. Screen blocks (`glitch`,

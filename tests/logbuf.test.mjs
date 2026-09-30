@@ -50,6 +50,24 @@ test('boot() archives the previous session into sessions()', () => {
   } finally { delete globalThis.localStorage; logbuf.clear(); }
 });
 
+test('the stored keys follow the pack (core/pack.mjs nsKey): the first pack keeps edenMapLogCur / edenMapLogPast, any other pack writes under its own prefix and leaves the first pack\'s keys alone', () => {
+  const mem = {};
+  globalThis.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; } };
+  try {
+    logbuf.clear(); logbuf.boot({}); logbuf.push('log', ['first pack line']); logbuf.clear();   // clear() flushes
+    assert.deepEqual(Object.keys(mem), ['edenMapLogCur']);
+    delete mem.edenMapLogCur;
+    globalThis.__tcPack = { id: 'town' };
+    mem['tcp.town.LogCur'] = JSON.stringify({ meta: null, lines: [{ t: 1, level: 'log', text: 'town session' }] });
+    logbuf.boot({});
+    assert.deepEqual(logbuf.sessions().map(s => s.lines[0].text), ['town session'], 'the archive is read back from the pack\'s own key');
+    logbuf.clear();
+    assert.deepEqual(Object.keys(mem).sort(), ['tcp.town.LogCur', 'tcp.town.LogPast'], 'nothing under the first pack\'s names');
+    globalThis.__tcPack = { id: 'Bad Id!' };
+    logbuf.boot({}); logbuf.clear(); assert.ok('edenMapLogCur' in mem, 'an id that is no id falls back to the first pack');
+  } finally { delete globalThis.localStorage; delete globalThis.__tcPack; logbuf.boot({}); logbuf.clear(); }
+});
+
 test('printf-style args (%s/%d) are interpolated before storing', () => {
   logbuf.clear();
   logbuf.push('warn', ['Ignoring tile %s loaded before reset: %s', { level: 11, x: 1 }]);

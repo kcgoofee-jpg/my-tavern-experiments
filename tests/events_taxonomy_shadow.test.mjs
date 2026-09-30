@@ -88,14 +88,17 @@ test('the other taxonomy values: life defaults, the glitch preset and the defaul
   assert.equal(NEW.examples().length, OLD.EXAMPLES.size + 1);
 });
 
-test('pinned divergence Q-13 (merge key = type + node, K-R54): places that resolve to the same node within the window merge; nothing else differs on the synthetic stream', () => {
-  // the events.test texts as consecutive floors (a stress stream, not a chat): old key = type + layer + place text, new key = type + node
+test('Q-13 (merge key = type + node + the part of the place text the matched word does not cover, K-R54): the stress stream gives the same events as v1', () => {
+  // the events.test texts as consecutive floors (a stress stream, not a chat): v1 key = type + layer + place text, now type + node + the rest of the place text
   const msgs = [...new Set(tapped.raws.filter(x => typeof x === 'string'))].map((text, i) => ({ floor: i + 1, text })).slice(0, 200), now = msgs.at(-1).floor;
-  const o = OLD.collect(msgs, now), n = NEW.collect(msgs, now), ids = new Set(n.map(e => e.id));
-  const lost = o.filter(e => !ids.has(e.id));
-  console.log(`stream: old ${o.length} events, new ${n.length}; merged away ${lost.length}`);
-  assert.equal(o.length - n.length, lost.length);
-  // each merged-away event shares its type and node with another event of the old list: the new key folded them together (the survivor may have aged out since)
-  for (const e of lost) assert.ok(o.some(x => x !== e && x.cat === e.cat && x.node === e.node), `${e.cat} ${e.place} has a same-type, same-node neighbour`);
-  assert.deepEqual(lost.map(e => [e.cat, e.layer, e.place]).sort(), [['检查点管控', '中层', '霓虹街后巷'], ['火灾', '中层', 'B'], ['火灾', '中层', 'C']]);
+  const o = OLD.collect(msgs, now), n = NEW.collect(msgs, now);
+  console.log(`stream: old ${o.length} events, new ${n.length}`);
+  assert.equal(n.length, 165); assert.equal(o.length, 165);
+  assert.deepEqual(n.map(e => e.id).sort(), o.map(e => e.id).sort(), 'the same events (ids are type + layer + place + floor)');
+  // with the type and node alone (first cut of S4-1) three of them folded into neighbours
+  const a = NEW.parseMarks('⌖火灾｜中层·B｜2｜x')[0], b = NEW.parseMarks('⌖火灾｜中层·C｜2｜x')[0], c = NEW.parseMarks('⌖火灾｜中层·霓虹街｜2｜x')[0], d = NEW.parseMarks('⌖火灾｜中层·霓虹街后巷｜2｜x')[0];
+  assert.equal(a.node, b.node); assert.notEqual(a.rem, b.rem); assert.equal(c.rem, undefined); assert.equal(d.rem, '后巷');
+  assert.equal(NEW.collect([{ floor: 1, text: '⌖火灾｜中层·B｜2｜x' }, { floor: 2, text: '⌖火灾｜中层·C｜2｜x' }, { floor: 3, text: '⌖火灾｜中层·B｜2｜y' }], 3).length, 2, 'B and C stay two events; B written twice is one');
+  assert.equal(NEW.collect([{ floor: 1, text: '⌖火灾｜中层·霓虹街｜2｜x' }, { floor: 2, text: '⌖火灾｜天城中层·霓虹街｜2｜y' }], 2).length, 1, 'the same place written with another prefix is one event');
+  assert.equal(NEW.collect([{ floor: 1, text: '⌖火灾｜中层·霓虹街｜2｜x' }, { floor: 2, text: '⌖火灾｜中层·霓虹街后巷｜2｜y' }], 2).length, 2);
 });

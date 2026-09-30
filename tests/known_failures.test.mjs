@@ -20,7 +20,7 @@ test('tracker reports a listed check that passes again as fixed', () => {
 
 test('the committed baseline is well formed', () => {
   const list = loadKnown();
-  assert.ok(list.length >= 1);
+  assert.ok(Array.isArray(list));   // empty once every listed failure is fixed (S4-2 fixed the last one)
   for (const k of list) for (const f of ['probe', 'check', 'since', 'reason', 'owner_step']) assert.ok(k[f], `${k.probe}: ${f}`);
   assert.equal(probeName('/x/tools/browser/pack_town.mjs'), 'pack_town');
 });

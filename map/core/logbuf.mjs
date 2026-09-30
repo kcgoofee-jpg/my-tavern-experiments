@@ -8,7 +8,10 @@ const CAP = 400;            // 本次会话最多保留的行数
 const LINE_CAP = 400;       // 单行文本上限（防超长对象刷爆内存与 localStorage）
 const PAST_MAX = 4;         // 归档会话份数（上次、上上次…）
 const PAST_LINE_CAP = 240;  // 每份归档保留的行数
-const CUR_KEY = 'edenMapLogCur', PAST_KEY = 'edenMapLogPast';
+import { currentId, nsKey } from './pack.mjs';
+// 落盘的键按包换前缀（core/pack.mjs nsKey：第一个包原样 edenMapLogCur / edenMapLogPast，别的包 tcp.<id>.LogCur / .LogPast）；包 id 取宿主注入的 __tcPack 或地址 ?pack=，每次 boot() 重取
+const keys = () => { const id = currentId(); return [nsKey('edenMapLogCur', id), nsKey('edenMapLogPast', id)]; };
+let [CUR_KEY, PAST_KEY] = keys();
 let buf = [], past = [], meta = null, lastSave = 0;
 
 const store = {
@@ -41,6 +44,7 @@ export function clear() { buf = []; flush(); }
 function flush() { store.set(CUR_KEY, JSON.stringify({ meta, lines: buf.slice(-PAST_LINE_CAP) })); }
 function loadPast() { try { const v = JSON.parse(store.get(PAST_KEY) || '[]'); return Array.isArray(v) ? v.slice(-PAST_MAX) : []; } catch (e) { return []; } }
 export function boot(m = {}) {
+  [CUR_KEY, PAST_KEY] = keys();
   try {                                                     // 上一次会话还有内容：归档（新打开一次地图 = 新会话）
     const prev = JSON.parse(store.get(CUR_KEY) || 'null');
     if (prev && Array.isArray(prev.lines) && prev.lines.length) {

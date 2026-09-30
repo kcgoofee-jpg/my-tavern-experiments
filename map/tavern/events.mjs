@@ -10,6 +10,7 @@
 // setGeo(geo) 时从 geo.taxonomy() 取（包的 events 块，来源见 K-R67 / K-R68）；没有 events 块的包用内核的中性分类（core/events-default.mjs，K-R53）。
 // 类型判定走 core/pack-v2-rows.mjs 的 typeOf（K-R50）。本文件不带任何设定包的词。
 import { timeKey } from './mvu.mjs';
+import { normalise } from '../core/lexicon.mjs';
 import { typeOf } from '../core/pack-v2-rows.mjs';
 import { withDefaults } from '../core/pack-v2.mjs';
 import { DEFAULT_EVENTS, DEFAULT_CLOSED, DEFAULT_TAG } from '../core/events-default.mjs';
@@ -61,6 +62,8 @@ export const getGeo = () => GEO;
 
 const decode = s => s.replace(/&(amp|lt|gt|quot|#39|#x27|nbsp);/g, (m, k) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", '#x27': "'", nbsp: ' ' })[k]);
 const norm = s => s.replace(/\s+/g, '').replace(/[·•・.]/g, '·');
+/** the place text without the word the locate algorithm matched (first occurrence) and without separators; '' when the word is all of it */
+const restOf = (place, word) => { const t = normalise(place), w = normalise(word), i = w ? t.indexOf(w) : -1; return (i < 0 ? t : t.slice(0, i) + t.slice(i + w.length)).replace(/[·•・.\-\s]+/g, ''); };
 
 /** 一楼原文 → 按出现顺序的原始标签 [{cat, cls, loc, lvl, text, src, ...}]（还没定位；代码块里的、示范原文跳过） */
 export function marksOf(raw) {
@@ -95,20 +98,21 @@ export function parseMarks(raw) {
     const loc = norm(e.loc);
     const pl = GEO ? GEO.place(String(e.loc).trim()) : null;   // 先别名、再提示词；认不出的事件照样列出、不上图（K-01 B）
     const layer = pl ? pl.layer : '', place = pl ? GEO.strip(loc, pl.owner) : loc, node = pl ? pl.node : null;
+    const rem = pl ? restOf(place, pl.word) : '';   // the part of the place text the matched word does not cover ("霓虹街后巷" -> "后巷"): two places under one node stay two events (Q-13)
     const { line, loc: _, cls: c, ...rest } = e;
-    out.push({ ...rest, layer, place, node, type: c.type, grp: c.grp, ch: c.icon, color: c.color, rare: c.rare, text: e.text.slice(0, 60), src: (e.src || c.source || '').slice(0, 20),
+    out.push({ ...rest, layer, place, node, ...(rem ? { rem } : {}), type: c.type, grp: c.grp, ch: c.icon, color: c.color, rare: c.rare, text: e.text.slice(0, 60), src: (e.src || c.source || '').slice(0, 20),
       ...(c.fx ? { fx: c.fx } : {}), ...(c.inject === false ? { inject: false } : {}), ...(c.own ? { life: c.life } : {}) });
     if (out.length >= LIFE.per_msg) break;
   }
   return out;
 }
 
-/** 最近若干楼 [{floor, text}]（按楼层升序）→ 合并后的事件列表（新的在前）。now = 最新楼层号。合并键 = 类型 + 节点（K-R54；节点为 null 的按类型 + 地点文字）；有编号的按编号 */
+/** 最近若干楼 [{floor, text}]（按楼层升序）→ 合并后的事件列表（新的在前）。now = 最新楼层号。合并键 = 类型 + 节点 + 地点文字里匹配词没盖住的那部分（K-R54；节点为 null 的按类型 + 地点文字）；有编号的按编号 */
 export function collect(msgs, now) {
   const open = new Map(), done = [];
   for (const { floor, text } of msgs) {
     for (const e of parseMarks(text)) {
-      const key = e.code ? '#' + e.code : e.cat + '|' + e.layer + '|' + e.place, mk = e.code ? key : e.type + '|' + (e.node ?? '~' + e.place);   // key：事件的稳定标识（id、落点抖动）；mk：合并键
+      const key = e.code ? '#' + e.code : e.cat + '|' + e.layer + '|' + e.place, mk = e.code ? key : e.type + '|' + (e.node ?? '~' + e.place) + (e.rem ? '|' + e.rem : '');   // key：事件的稳定标识（id、落点抖动）；mk：合并键
       const cur = open.get(mk), win = e.life?.merge ?? LIFE.merge;
       if (cur && floor - cur.last <= win) {
         cur.last = floor; cur.count++; cur.text = e.text || cur.text; cur.src = e.src || cur.src;
