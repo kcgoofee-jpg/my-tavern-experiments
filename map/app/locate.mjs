@@ -9,7 +9,7 @@ import { rebuildHere } from './extapi.mjs';
 import { activeInset } from './insets.mjs';
 import { nm, t } from './i18n.mjs';
 import { P } from './plugins.mjs';
-import { isScene, eventGeo } from './nodes-runtime.mjs';
+import { isScene, eventGeo, groupPlaces } from './nodes-runtime.mjs';
 import { drawPlace } from './spot.mjs';
 // ---------------- 初始视角与当前地点 ----------------
 export let userMoved = false;
@@ -55,13 +55,14 @@ export function focusStart(immediately) {
   if (gv && gv.handoff && immediately && !pendingFocus && !home) { delete groupView[m.group]; fitIn(gv, true); userMoved = true; return; }
   let nx, ny, w;
   if (m.kind === 'world' && window.__worldTC) {   // v0.9.6 从天城缩出来：世界图最大放大、天城居中
-    const pid = typeof window.__worldTC === 'string' ? window.__worldTC : 'tiancheng'; window.__worldTC = false;
-    const p = [...M.places, ...M.fiefs].find(q => q.id === pid) || M.places.find(q => q.id === 'tiancheng'); [nx, ny] = toImg(p.x, p.y);
+    const pid = typeof window.__worldTC === 'string' ? window.__worldTC : m.view?.focus; window.__worldTC = false;   // 缩出来落在哪：那个组的地点，没有就是世界图的 view.focus
+    const p = [...M.places, ...M.fiefs].find(q => q.id === pid) || M.places.find(q => q.id === m.view?.focus) || M.places[0]; [nx, ny] = toImg(p.x, p.y);
     const w0 = (viewNorm(m, 'min_width_m') || .06) * (cs.y > cs.x ? cs.x / cs.y : 1), h0 = w0 * cs.y / cs.x;
     fitIn(new OpenSeadragon.Rect(nx - w0 / 2, ny * aspect - h0 / 2, w0, h0), immediately); return;
   }
   if (m.kind === 'world') {
-    const el = document.querySelector('.mk.here') || [...document.querySelectorAll('.mk')].find(e => e.dataset.name === '天城');
+    const fp = [...M.places, ...M.fiefs].find(q => q.id === m.view?.focus)?.name;   // 世界图 view.focus 指的那个地点
+    const el = document.querySelector('.mk.here') || [...document.querySelectorAll('.mk')].find(e => e.dataset.name === fp);
     const p = el && M.places.find(q => q.name === el.dataset.name) || M.fiefs.find(q => q.name === el?.dataset.name) || M.places.find(q => q.id === m.view?.focus) || M.places[0];
     [nx, ny] = toImg(p.x, p.y); w = .34;
   } else {
@@ -86,15 +87,15 @@ export function frameRect(r, cs, asp) {
 }
 function fitIn(r, immediately) { const f = frameRect(r, viewer.viewport.getContainerSize(), aspect); viewer.viewport.fitBounds(new OpenSeadragon.Rect(f.x, f.y, f.width, f.height), immediately); }
 // 当前地点高亮（由 MVU 的当前地点变量驱动）；世界图上，庄园与天城内部的地点都归到「天城」
-export const ALIAS = { '天城': ['天城', '伊甸', '庄园', '书房', '主卧', '大厅', '餐厅', '会客厅', '客房', '寝', '浴室', '后庭', '前庭', '上层', '中层', '下层', '钢铁霓虹', '地基', '公寓', '银冠堡'] };
+export const ALIAS = {};   // 世界图地点名 → 落在它里面的词；boot.mjs 按每个地点的 here_words 建，再并进它的各层地图 / 地标别名
 export function markHere(v) {
   v = (v || '').replace('{{user}}', '');
   $('#hereGo').hidden = !hereRes(v);
   // 解析出的落点也算：庄园里的任何地方 → 上层的「伊甸庄园」标记与世界图的「天城」；天城任一层 → 「天城」；地标 → 该标记
-  const r = hereRes(v), tcLayers = REG?.groups?.tiancheng?.layers || [], m = cur && REG.maps[cur];
+  const r = hereRes(v), m = cur && REG.maps[cur];
   const extra = new Set();
   if (r) {
-    if (tcLayers.includes(r.map)) extra.add('天城');
+    for (const n of groupPlaces(REG, [...M.places, ...M.fiefs], r.map)) extra.add(n);   // 这张图属于哪个组，世界图上就高亮那个组的地点
     const s = isScene(r.map) ? estateStandIn(r.map) : null; if (s && s.map === cur && s.marker) extra.add(m?.markers?.[s.marker]?.name);   // a 3D page: the marker that stands for it on this map
     if (r.marker && r.map === cur) extra.add(m.markers?.[r.marker]?.name);
     if (r.place) extra.add(r.place);

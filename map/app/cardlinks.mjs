@@ -53,12 +53,13 @@ export function galleryHtml(g, { nm, t, esc }) {
   const label = (nm(g, 'label') || t('gallery')).replace(/\s*[→›>]\s*$/, '');
   return `<a data-gallery="${esc(g.id)}" role="button" tabindex="0">${esc(label)}</a>`;
 }
-// 点开图集：懒加载 ui/gallery.js 与 data/room_galleries.json（按 <base> 解析，srcdoc 里也安全）；关掉后焦点回到入口
+// 点开图集：懒加载 ui/gallery.js 与清单 data.galleries 指的图集索引（按 <base> 解析，srcdoc 里也安全）；关掉后焦点回到入口
 let GALS = null;
 async function openGal(a) {
   const base = new URL('.', document.baseURI).href;   // 目录（图集按 base + dir + 文件名拼地址）
+  const gp = (await import('./pack.mjs')).packData('galleries'); if (!gp) return;   // 图集索引的路径来自清单 data.galleries；包没声明 = 这个功能静默关着
   const [{ openGallery }, sets] = await Promise.all([import(new URL('ui/gallery.js', base).href),
-    GALS ? Promise.resolve(GALS) : fetch(new URL('data/room_galleries.json', base)).then(r => r.ok ? r.json() : null).catch(() => null)]);
+    GALS ? Promise.resolve(GALS) : fetch(new URL(gp, base)).then(r => r.ok ? r.json() : null).catch(() => null)]);
   if (sets) GALS = sets; const set = sets?.[a.dataset.gallery]; if (!set) return;
   openGallery(set, { lang: window.I18N?.lang || 'zh', base, onClose: () => { if (a.isConnected) a.focus({ preventScroll: true }); } });
 }

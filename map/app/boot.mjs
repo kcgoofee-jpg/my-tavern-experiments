@@ -41,6 +41,7 @@ import { initLayerHost, registry, registerCoreLayers, renderLayerMenu } from './
 import { P } from './plugins.mjs';
 import { PACK, initPack, packData, packEvents, packOverlay, packTax, setOverlay, rebase } from './pack.mjs';
 import { buildRuntime } from './nodes-runtime.mjs';   // 节点树：面包屑 / 上一级 / 庄园替身都从它读（S2-A）
+import { applyTheme } from './theme.mjs';   // 包的分视图主题（K-R70）：一个 <style id="packTheme">
 import { busOn } from './bus.mjs';
 // 多地图查看器：地图注册表 data/maps.json（世界 → 天城三层 → 以后的庄园剖面……）。
 // 底图都是 DZI 瓦片金字塔，只加载屏幕里看得见的部分；解码内存由屏幕大小和瓦片缓存上限决定。
@@ -63,14 +64,15 @@ async function mainInner() {
   jsonCache.set('i18n/' + LANG + '.json', Promise.resolve(DICT));
   setEnNames(enDict?.names || null); rebuildHere();
   const nodes = plan => buildRuntime({ manifest: PACK, maps: REG, world: M, names: enDict?.names || null, plan, overlay: packOverlay, events: packTax });
-  nodes(null);
+  applyTheme(nodes(null)?.ui);
   if (packData('rooms')) getJSON(packData('rooms')).then(p => { if (!p?.rooms) return; setEstPlan(p); rebuildHere(); nodes(p); markHere($('#here').value); }).catch(() => {});   // v0.9.6：卡设定分层房间进当前地点词表（不挡启动）   // 当前地点 → 落点的词表（中英都认；加上本机自定义叫法）
   post({ type: 'eden-map:boot', pct: .9 });   // 数据文件已到
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点
   if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland);
   // 世界图上，天城各层地图里的地点（执法局、7 号井……）都归到「天城」
   // 开局地点的简易地图（groups.<id>.place）同理：地图里的地标归到世界图上对应的地点 / 封地
-  for (const [gid, g] of Object.entries(REG.groups)) { const pl = g.place && [...M.places, ...M.fiefs].find(q => q.id === g.place), key = gid === 'tiancheng' ? '天城' : pl?.name; if (!key) continue;
+  for (const p of [...M.places, ...M.fiefs, ...(M.realms || [])]) if (Array.isArray(p.here_words) && p.name) ALIAS[p.name] = p.here_words.filter(w => typeof w === 'string');   // 世界图地点自己的「当前地点」词表（here_words，数据里的顺序）：在庄园 / 各层里的地点归到它
+  for (const [gid, g] of Object.entries(REG.groups)) { const pl = g.place && [...M.places, ...M.fiefs].find(q => q.id === g.place), key = pl?.name; if (!key) continue;   // 组的地点叫什么就用什么名字（gid 不特判）
     const A = ALIAS[key] ??= [key];
     for (const k of g.layers || []) { A.push(...(REG.maps[k].alias || [])); for (const v of Object.values(REG.maps[k].markers || {})) A.push(...(v.alias || [])); } }
   setNarrow(innerWidth <= 640);   // 等 iframe 布局完成后再判断，脚本刚执行时宽度可能还是 0

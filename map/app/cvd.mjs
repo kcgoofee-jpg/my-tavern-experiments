@@ -3,14 +3,23 @@
 // 事态大类、图例、人物头像色相改用本文件的 CVD 安全色板（Okabe-Ito 为底），并广播 cvd-change 事件让各模块重画。
 // 同一个 mode 也经协议 estate:cvd 转给庄园 / 三维子页（map/core/protocol.mjs、map/app/estate.mjs）。
 import * as TCStore from '../core/storage.mjs';
+import { recheck } from '../core/pack-v2-spec.mjs';
 
 export const MODES = ['0', 'rg', 'by'];
+/** 事态 / 图例里没有合法颜色时用的中性色；颜色会进 style（来自设定包或聊天脚本），只收 #rrggbb（K-R64，I-09），别的一律中性色 */
+export const NEUTRAL = '#cfd8e0';
+export const safeColor = c => recheck.hex(c) ?? NEUTRAL;
 
-// Okabe–Ito 色板：红绿色弱（protan / deutan）安全，用于事态 9 个大类
-const OI = { 空防: '#e69f00', 气候: '#56b4e9', 治安: '#0072b2', 政治: '#994455', 媒体: '#cc79a7', 民生: '#f0e442', 军事: '#009e73', 灾害: '#d55e00', 人物: '#f2f2f2', 其他: '#bbbbbb' };
-// 蓝黄色弱（tritan）：Okabe-Ito 里蓝 / 黄仍会混，换成红 / 青的对立，其余沿用
-const TR = { ...OI, 气候: '#9ad0f5', 民生: '#e2903a', 治安: '#d7263d', 军事: '#029e73', 空防: '#7a5195' };
-export const GROUPS_CVD = { rg: OI, by: TR };
+// 事态大类的色觉安全色：每个大类自己带（设定包 events.groups[].x-cvd = { rg, by }，K-R68）；没带的按原色相归桶（hueBucket，下面的通用色板，Okabe-Ito 为底）
+// 红绿色弱（protan / deutan）：Okabe-Ito；蓝黄色弱（tritan）：蓝 / 黄仍会混，换成红 / 青的对立
+export const CVD_PAL = { rg: ['#e69f00', '#56b4e9', '#0072b2', '#009e73', '#cc79a7', '#f0e442', '#994455', '#d55e00'], by: ['#d7263d', '#9ad0f5', '#029e73', '#7a5195', '#e2903a', '#cc79a7', '#0072b2', '#994455'] };
+/** 通用重映射：原色（#rrggbb）按色相取色板里的一格；不是 #rrggbb 就返回 '#ffffff'。props/viewer3d.html 带着同一份拷贝（三维页要能独立打开）。 */
+export function hueBucket(hex, m) {
+  if (!/^#[0-9a-f]{6}$/i.test(hex || '')) return '#ffffff';
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  let h = !d ? 0 : mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360;
+  const pal = CVD_PAL[m] || CVD_PAL.rg; return pal[Math.floor(h / (360 / pal.length)) % pal.length];
+}
 
 // 人物头像色相（沿用哈希取色，只换色相表，避开该模式下容易混的两组）
 export const CHAR_HUES_CVD = { rg: [35, 200, 210, 280, 340, 15, 55], by: [15, 340, 200, 45, 280, 5, 165] };
@@ -31,8 +40,8 @@ export function apply() {
   try { window.dispatchEvent(new CustomEvent('cvd-change', { detail: { mode: m } })); } catch (e) {}
 }
 
-/** 事态大类颜色：关时用原色板，开时用本文件的安全色板 */
-export function groupColor(g, fallback) { const m = mode(); if (m === '0') return fallback; const t = GROUPS_CVD[m]; return t[g] || t.其他 || fallback; }
+/** 事态大类颜色：关时用原色（fallback），开时用该大类自带的安全色（xcvd = { rg, by }），没有就按原色相归桶 */
+export function groupColor(g, fallback, xcvd) { const m = mode(); if (m === '0') return fallback; const c = xcvd?.[m]; return /^#[0-9a-f]{6}$/i.test(c || '') ? c : hueBucket(fallback, m); }
 /** 人物头像色相表：关时返回 null（调用方用原表） */
 export function charHues() { const m = mode(); return m === '0' ? null : CHAR_HUES_CVD[m]; }
 

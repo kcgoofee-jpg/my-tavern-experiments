@@ -89,3 +89,23 @@ export const zoneChildren = id => RT?.zoneChildren(id) ?? {};
 export const strip = id => RT?.strip(id) ?? null;   // null = no runtime: the caller falls back to the registry's groups
 export const isScene = id => !!RT?.isScene(id);
 export const eventGeo = () => RT?.geo() ?? null;   // null without a runtime: events are then listed and not drawn
+
+// ---- what the pack says about the view as a whole (docs/kernel-schema.md K-R70): flags on the view, the group the world map starts on, the level the event list falls back to ----
+export const viewField = (id, k) => RT?.views?.[id]?.[k];   // e.g. 'x-clouds', 'x-tint'
+/** The group whose place is the focus of the world view (the map the viewer starts on), else the registry's first group; null when there are none. */
+export const worldGroup = reg => {
+  const gs = reg?.groups && typeof reg.groups === 'object' ? reg.groups : {}, f = Object.values(reg?.maps || {}).find(m => m?.kind === 'world')?.view?.focus;
+  return Object.keys(gs).find(k => gs[k]?.place === f) ?? Object.keys(gs)[0] ?? null;
+};
+/** The map the event list falls back to while no tier is open: the pack's `ui["x-event-level"]`, else the first flat layer of the world group (the first layer when none is flat). */
+export const eventLevel = reg => {
+  const lv = RT?.ui?.['x-event-level'], ls = reg?.groups?.[worldGroup(reg)]?.layers || [];
+  return (reg?.maps?.[lv] ? lv : null) ?? ls.find(k => reg?.maps?.[k]?.kind === 'points') ?? ls[0] ?? '';
+};
+/** The world-map place names of the groups that have `mapId` among their layers (places = the world's places and fiefs): "this map belongs to that place". */
+export const groupPlaces = (reg, places, mapId) => Object.values(reg?.groups || {}).filter(g => (g?.layers || []).includes(mapId)).map(g => (places || []).find(q => q.id === g.place)?.name).filter(Boolean);
+/** Does the place text name the node of map `id`, or a node above it (a place that covers the whole view, e.g. "the whole city")? */
+export const inScope = (text, id) => {
+  const g = RT?.geo(), n = g?.place(text)?.node, h = RT?.host(id);
+  return !!n && !!h && (n === h || g.tree.ancestors(h).includes(n));
+};

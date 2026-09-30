@@ -30,23 +30,13 @@
   --accent: var(--gold); --on-accent: #1a1406; --accent-2: #efe9dc;
   color-scheme: dark;
 }
-[data-map="tc_mid"] { --bg: #120a1f; --surface: #1a1029; --line: rgba(255, 61, 154, .24);
-  --ink: #f3e6ff; --ink-2: #dccbf0; --muted: #ac9ec3; --accent: #ff3d9a; --on-accent: #1a0610; --accent-2: #3de0ff;
-  --glow: 0 0 10px rgba(255, 61, 154, .7); --glow-text: -1px 0 #3de0ff, 1px 0 #ff3d9a, 0 0 10px rgba(255, 61, 154, .7); }
-[data-map="tc_low"] { --bg: #0b0b0b; --surface: #111411; --line: rgba(159, 232, 112, .2);
-  --ink: #d8e8cc; --ink-2: #bcd0ae; --muted: #7aa35c; --accent: #9fe870; --on-accent: #0b1406; --accent-2: #f4f1e8;
-  --ok: var(--muted); }                             /* 下层不用成功绿（和磷光绿混淆），改 --muted + ✓ */
 /* 浅色主题：只换值（组件 CSS 里不出现 .light 选择器） */
 .light { --focus: #2d6c75; --alert: #c0392b; --on-alert: #fff; --ok: #23733b;
   --sh-1: 0 1px 3px rgba(0, 0, 0, .12); --sh-2: 0 6px 20px rgba(0, 0, 0, .15); --sh-3: 0 12px 32px rgba(0, 0, 0, .19);
   --bg: #efeae0; --surface: #f8f5ee; --surface-2: rgba(20, 23, 26, .05);
   --line: rgba(20, 23, 26, .16); --ink: #1b1a17; --ink-2: #3b3934; --muted: #635e54;
   --accent: #7a5d22; --on-accent: #fff; --accent-2: #8f6f2e; color-scheme: light; }
-.light [data-map="tc_mid"], .light[data-map="tc_mid"] { --bg: #f1ecf7; --surface: #f9f6fc;
-  --line: rgba(29, 18, 48, .16); --ink: #1d1230; --ink-2: #3a2b52; --muted: #66537f; --accent: #b3155f; --on-accent: #fff; --accent-2: #0f8fa8;
-  --glow: none; --glow-text: none; }
-.light [data-map="tc_low"], .light[data-map="tc_low"] { --bg: #f4f1e8; --surface: #f8f6ef;
-  --line: rgba(27, 36, 20, .16); --ink: #1b2414; --ink-2: #34402b; --muted: #55664a; --accent: #336619; --on-accent: #fff; --accent-2: #8a7a52; }
+/* 各视图自己的配色（深 / 浅两套）不在这里：设定包 ui.theme.views（K-R70），由 app/theme.mjs 写成 <style id="packTheme">，选择器顺序与特异性同以前 */
 /* 派生令牌：在 body 上再算一次，层 / 主题换了 --accent、--surface 之后跟着变（自定义属性在声明它的元素上求值） */
 :root, body {
   --surface-glass: color-mix(in srgb, var(--surface) 92%, transparent);

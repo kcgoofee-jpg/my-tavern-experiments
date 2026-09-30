@@ -11,6 +11,7 @@ import { registry } from './layerhost.mjs';
 import { altDepth, channel, parallaxOn } from '../core/depth.mjs';
 import { lean } from './tiers.mjs';
 import { altOn, go, setGo } from './nav.mjs';
+import { viewField } from './nodes-runtime.mjs';   // 包说哪些图有漂移云：视图上的 x-clouds（K-R70）
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记（键重复先摘旧的，卸载可一把摘净）
 (() => {
   const RMq = matchMedia('(prefers-reduced-motion: reduce)'), RM = () => RMq.matches;
@@ -20,7 +21,7 @@ import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记（键重
   const LAYERS = { far: { n: 11, size: [.42, .62], op: [.3, .45], dur: [70, 95], par: .85 }, near: { n: 6, size: [.62, .85], op: [.38, .5], dur: [42, 58], par: 1.2 } };
   const rnd = (a, b) => a + Math.random() * (b - a);
   const isTC = id => { const m = REG?.maps?.[id]; return !!m && m.kind === 'points' && !!m.group; };
-  const want = () => cur === 'tc_upper' && !altOn('tc_upper') && !RM() && !lean();
+  const want = () => !!viewField(cur, 'x-clouds') && !altOn(cur) && !RM() && !lean();
   let box = null, lay = {}, anims = [], shown = false, acc = { far: [0, 0], near: [0, 0] }, last = null, hooked = false;
   const size = () => { const c = viewer.container; return [c.clientWidth, c.clientHeight]; };
   function mount() {

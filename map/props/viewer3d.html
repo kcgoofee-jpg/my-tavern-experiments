@@ -152,8 +152,8 @@ let LANG = (Q.get('lang') || LSg('edenMapLang') || 'zh').startsWith('en') ? 'en'
 // manifest.flows 的颜色各建筑各写，这里不改每个 manifest，改用「按原色相桶归到色觉安全色板」的通用重映射，流向图例本来就有文字名（第二线索）
 let CVD = '0';
 const CVD_PAL = { rg: ['#e69f00', '#56b4e9', '#0072b2', '#009e73', '#cc79a7', '#f0e442', '#994455', '#d55e00'], by: ['#d7263d', '#9ad0f5', '#029e73', '#7a5195', '#e2903a', '#cc79a7', '#0072b2', '#994455'] };
-function cvdColor(hex) {
-  if (CVD === '0' || !/^#[0-9a-f]{6}$/i.test(hex || '')) return hex;
+function cvdColor(hex) {   // K-R64 / I-09：只收 #rrggbb，别的一律白色（关色觉模式时也一样），这个值会进 style 与 THREE.Color；与 app/cvd.mjs hueBucket 同一算法
+  if (!/^#[0-9a-f]{6}$/i.test(hex || '')) return '#ffffff'; if (CVD === '0') return hex;
   const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
   let h = !d ? 0 : mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360;
   const pal = CVD_PAL[CVD] || CVD_PAL.rg; return pal[Math.floor(h / (360 / pal.length)) % pal.length];

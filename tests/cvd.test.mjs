@@ -4,19 +4,43 @@ import assert from 'node:assert/strict';
 import * as TCCvd from '../map/app/cvd.mjs';
 import * as S from '../map/core/storage.mjs';
 
-const GROUPS = ['空防', '气候', '治安', '政治', '媒体', '民生', '军事', '灾害', '人物', '其他'];
+import { readFileSync } from 'node:fs';
+import * as F from './helpers/s43_frozen.mjs';
+// S4-3：色板在设定包数据里——每个大类自己带 x-cvd（overlay.v2.json events.groups[]）；引擎里只有没带时按色相归桶的通用色板
+const GROUPS = JSON.parse(readFileSync(new URL('../map/packs/eden/overlay.v2.json', import.meta.url), 'utf8')).events.groups;
+const withMode = (m, f) => { const store = new Map(); globalThis.localStorage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
+  try { TCCvd.setMode(m); return f(); } finally { delete globalThis.localStorage; } };
 
 test('groupColor：关时原样返回 fallback，不改颜色', () => {
-  for (const g of GROUPS) assert.equal(TCCvd.groupColor(g, '#123456'), '#123456');
+  for (const g of GROUPS) assert.equal(withMode('0', () => TCCvd.groupColor(g.id, '#123456', g['x-cvd'])), '#123456');
 });
 
-test('色板映射：rg / by 两套色板都给每个大类一个合法十六进制色，且模式内互不重复', () => {
+test('色板映射：每个大类自带 rg / by 两套色，都是合法十六进制色，且模式内互不重复', () => {
   for (const m of ['rg', 'by']) {
-    const t = TCCvd.GROUPS_CVD[m];
-    for (const g of GROUPS) assert.match(t[g] || t.其他, /^#[0-9a-f]{6}$/i, `${m}.${g}`);
-    const vals = GROUPS.map(g => (t[g] || t.其他).toLowerCase());
+    const vals = GROUPS.map(g => { assert.match(g['x-cvd']?.[m], /^#[0-9a-f]{6}$/i, `${m}.${g.label}`); return g['x-cvd'][m].toLowerCase(); });
+    assert.equal(GROUPS.length, 10);
     assert.equal(new Set(vals).size, vals.length, `${m} 大类颜色应两两不同`);
   }
+});
+
+test('S4-3：按大类 id 取色，第一个包每个大类在 rg / by 两种模式下的颜色与以前（按标签查的两张表）逐个相同', () => {
+  for (const m of ['rg', 'by']) for (const g of GROUPS) {
+    assert.equal(withMode(m, () => TCCvd.groupColor(g.id, g.color, g['x-cvd'])), F.groupColorV1(m, g.label, g.color), `${m} ${g.label}`);
+    assert.equal(withMode(m, () => TCCvd.groupColor(g.id, g.color, g['x-cvd'])), g['x-cvd'][m]);
+  }
+  assert.deepEqual(GROUPS.map(g => g.label), ['空防', '气候', '治安', '政治', '媒体', '民生', '军事', '灾害', '人物', '其他']);
+});
+
+test('S4-3：没带 x-cvd 的大类按原色相归桶（与三维页 cvdColor 同一算法）；x-cvd 里不是 #rrggbb 的值不采用', () => {
+  const v3 = readFileSync(new URL('../map/props/viewer3d.html', import.meta.url), 'utf8');
+  const src = v3.slice(v3.indexOf('const CVD_PAL'), v3.indexOf('// 包内文案'));
+  const three = new Function('CVD', `${src}; return cvdColor;`);
+  for (const m of ['rg', 'by']) for (const c of ['#d9a441', '#7fd6ff', '#3d7dff', '#6f9be0', '#d03ca8', '#ff5a2a', '#cfd8e0', '#000000', '#ffffff', '#12ab34']) {
+    assert.equal(withMode(m, () => TCCvd.groupColor('x', c, undefined)), three(m)(c), `${m} ${c}`);
+    assert.equal(TCCvd.hueBucket(c, m), three(m)(c));
+    assert.equal(withMode(m, () => TCCvd.groupColor('x', c, { rg: 'red;background:url(x)', by: '#12345g' })), three(m)(c));
+  }
+  assert.equal(TCCvd.hueBucket('nonsense', 'rg'), '#ffffff'); assert.equal(three('0')('nonsense'), '#ffffff'); assert.equal(three('0')('red;background:url(x)'), '#ffffff'); assert.equal(three('0')('#abcdef'), '#abcdef');
 });
 
 test('charHues：关时返回 null（调用方用原表），开时给出的色相表非空且与默认表不同', () => {

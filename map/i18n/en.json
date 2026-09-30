@@ -526,7 +526,7 @@
   "s.lic_repo": "Eden Map (open source)",
   "s.lic_map_by": "Map by",
   "s.lic_orig": "Original card",
-  "s.lic_orig_v": "Created by Yehehua (类脑 community); the map is an authorized derivative work (since 2026-09-27)",
+  "s.lic_orig_v": "Created by {creator} (类脑 community); the map is an authorized derivative work (since 2026-09-27)",
   "s.lic_disc": "Disclaimer",
   "s.lic_disc_v": "The map is a fan interpretation: locations and layouts follow the original card; the map only supplements and presents them, and takes no responsibility for accuracy. 3D model textures come from Poly Haven and ambientCG (CC0).",
   "s.adv_sub": "Route · 3D drawer · shortcuts · debug",

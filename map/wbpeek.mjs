@@ -26,7 +26,7 @@ const TCWb = (() => {
     if (!place) return;
     ex.querySelectorAll('.cu-wb').forEach(n => n.remove());
     box = document.createElement('div'); box.className = 'cu-wb';
-    box.innerHTML = `<button type="button" class="wb-go">📚 ${T('wb.capsule', '世界书档案')}</button><div class="wb-out" hidden></div>`;
+    box.innerHTML = `<button type="button" class="wb-go">📚 ${esc(T('wb.capsule', '世界书档案'))}</button><div class="wb-out" hidden></div>`;
     box.querySelector('.wb-go').addEventListener('click', () => {
       const out = box.querySelector('.wb-out');
       out.hidden = false; out.textContent = T('wb.peeking', '查看中…');

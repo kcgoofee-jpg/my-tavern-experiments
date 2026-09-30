@@ -5,6 +5,7 @@ import {
   safeGalleryImagePath, readMaintainerMode, MAINTAINER_MODE_KEY,
 } from '../core/room-gallery-logic.mjs';
 import * as DB from '../core/room-gallery-db.mjs';
+import { currentId as currentPackId, load as loadPack } from '../core/pack.mjs';
 import { available as baibaiInstalled } from '../tavern/baibai.mjs';   // 柏宝绘桥（可选依赖）：装了才显示「配图」入口
 
 const REPO = 'kcgoofee-jpg/my-tavern-experiments';   // 导出投稿的 GitHub issue 仓库；换卡/换仓库时改这里
@@ -128,10 +129,13 @@ export function currentScope() {
 function setScope(s) { try { localStorage.setItem(SCOPE_KEY, s); } catch (e) { } }
 
 let galleryJsonCache = null;
-async function fetchPublicGallery(base) {
+async function fetchPublicGallery(base) {   // 公开图集清单的路径取自包清单 data.gallery（没声明 = 没有公开图，静默）
   if (galleryJsonCache) return galleryJsonCache;
-  try { galleryJsonCache = await fetch(base + 'data/gallery.json').then((r) => r.ok ? r.json() : { rooms: {} }); }
-  catch (e) { galleryJsonCache = { rooms: {} }; }
+  galleryJsonCache = { rooms: {} };
+  try {
+    const R = await loadPack(currentPackId(window), { fetchJSON: (u) => fetch(base + u).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status)))) });
+    if (R.data.gallery) galleryJsonCache = await fetch(base + R.data.gallery).then((r) => r.ok ? r.json() : { rooms: {} });
+  } catch (e) { galleryJsonCache = { rooms: {} }; }
   return galleryJsonCache;
 }
 

@@ -8,7 +8,7 @@ import { jumpHere, setUserMoved, userMoved } from './locate.mjs';
 import { TCSettings, showSet } from './settings.mjs';
 import { P } from './plugins.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
-import { parentMap } from './nodes-runtime.mjs';
+import { RT, parentMap } from './nodes-runtime.mjs';
 // ---------------- 外壳（UI v2）：控制列、唯一抽屉、通知层、状态点 ----------------
 // 控制列 #dock：手机 = ⋯（设置首页，含上一级 / 关闭地图 / 切层）+ 缩放；桌面 = 层切换 + 缩放 + 标注。位置跟着抽屉（--sheet-h）/ 右栏（--rail-w-now）
 function makeDock() {
@@ -42,27 +42,20 @@ export function sheetVis() {
   const um = typeof P.TCUnmapped !== 'undefined' ? P.TCUnmapped.name : null; placeEmpty(um);
   S.hide(estate || !(ev || ch || card || layChip || um));
   S.showTab('pl', ev || ch || card || !!um);
-  // U18：图例只在配了纵深数据的层出现（现在只有上层；条目照 docs/upper-setting.md §4 图例）
-  S.showTab('lg', !estate && !!depthData);
+  // U18：图例只在配了纵深数据的层出现，且包里写了图例条目（条目照 docs/upper-setting.md §4 图例）
+  S.showTab('lg', !estate && !!depthData && legendItems().length > 0);
 }
 // 图例（U18）：一张说明「图上画的这些东西分别是什么」的清单；只有文字，不画矢量图例（设定稿：小样取成图裁片，另议）
-// 键写全（i18n 门控按源码里的字面量核对中英键，不接受拼接）
-const LEGEND = [
-  ['lg.ward', '结界', 'lg.ward_d', '近景是淡青格边，中景是细线，远景不画'],
-  ['lg.conduit', '以太导能管', 'lg.conduit_d', '暗色细管，只在节点有点状微光'],
-  ['lg.platform', '访客停靠平台', 'lg.platform_d', '带信标环、进场光带和密封悬浮车'],
-  ['lg.tower', '以太气候调节塔', 'lg.tower_d', '深色塔身，外加同心场环'],
-  ['lg.clouds', '云层', 'lg.clouds_d', '云纱越厚，海拔越低'],
-  ['lg.omit', '刻意不画', 'lg.omit_d', '航线、轨道、车站'],
-  ['lg.sight', '层间视线', 'lg.sight_d', '上层各岛彼此可见，俯瞰中层像铺在脚下的电路板；下层抬头可见中层底面；清晨有云海'],
-];
+// 条目是设定包 ui.legend 的数据（K-R70）：{ type, label, desc, i18n: { en: { label, desc } } }；没有条目 = 这一页不出现
+const legendItems = () => (Array.isArray(RT?.ui?.legend) ? RT.ui.legend : []).filter(e => e && typeof e.label === 'string');
+const lgText = (e, k) => (LANG === 'en' && e.i18n?.en?.[k]) || e[k] || '';
 function legendEl() {
   const box = document.createElement('div'); box.className = 'lg'; box.id = 'legendPane';
   const h = document.createElement('h3'); h.textContent = tx('s.legend', '图例'); box.appendChild(h);
   const dl = document.createElement('dl');
-  for (const [kt, name, kd, desc] of LEGEND) {
-    const dt = document.createElement('dt'); dt.textContent = tx(kt, name);
-    const dd = document.createElement('dd'); dd.textContent = tx(kd, desc); dl.append(dt, dd);
+  for (const e of legendItems()) {
+    const dt = document.createElement('dt'); dt.textContent = lgText(e, 'label');
+    const dd = document.createElement('dd'); dd.textContent = lgText(e, 'desc'); dl.append(dt, dd);
   }
   box.appendChild(dl); return box;
 }

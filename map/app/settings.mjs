@@ -9,6 +9,7 @@ import { P } from './plugins.mjs';
 import * as TCCvd from './cvd.mjs';
 import { setFpsMeter } from './fps.mjs';
 import { MAINTAINER_MODE_KEY } from '../core/room-gallery-logic.mjs';
+import { PACK } from './pack.mjs';
 import { mountFeedbackButton } from './feedback.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
 // ---------------- 设置（UI v2 §5）：首页 = 分组列表（+ 手机上的快捷：上一级、当前位置、关闭地图、切层、图层开关）；子页 显示 / 人物 / 数据与映射 / 更新与版本 / 高级 ----------------
@@ -68,9 +69,10 @@ function renderLicense() {
     if (!d.creator && !d.version && !d.tags.length && !d.notes) row(tx('s.lic_state', '状态'), tx('s.lic_unknown', '未读到本卡的作者或来源信息：卡片可能经转卖、搬运，存在数据风险，也可能损害原作者权益。建议只从原作者或授权渠道获取卡片。'), true);
   }
   label(tx('s.lic_map', '地图项目'));
-  row(tx('s.lic_repo', '伊甸地图（开源）'), 'github.com/kcgoofee-jpg/my-tavern-experiments');
-  row(tx('s.lic_map_by', '地图开发'), 'kcgoofee-jpg');
-  row(tx('s.lic_orig', '原作角色卡'), tx('s.lic_orig_v', 'Yehehua（类脑社区）原创；地图是经授权的二次创作（2026-09-27 起）'));
+  { const cr = PACK?.credits, pk = cr?.pack?.[0];   // 署名取自包清单的 credits（K-R70 随附）：仓库、地图作者、原作者；包没写就不出这一行
+    if (pk?.url) row(tx('s.lic_repo', '伊甸地图（开源）'), String(pk.url).replace(/^https:\/\//, ''));
+    if (pk?.name) row(tx('s.lic_map_by', '地图开发'), pk.name);
+    if (cr?.card?.creator) row(tx('s.lic_orig', '原作角色卡'), tx('s.lic_orig_v', '{creator}（类脑社区）原创；地图是经授权的二次创作（2026-09-27 起）', { creator: cr.card.creator })); }
   label(tx('s.lic_disc', '免责声明'));
   const p = document.createElement('small'); p.style.cssText = 'display:block;line-height:1.5;opacity:.75';
   p.textContent = tx('s.lic_disc_v', '地图为粉丝演绎：地点与形制以原作设定为准，地图仅作补充呈现，不对地图内容的准确性负责。三维模型的贴图与纹理来自 Poly Haven 与 ambientCG（CC0 协议）。');
@@ -248,7 +250,7 @@ export function renderSelfCheck() {
   // API 不可用（自检文案已经只剩手动导入提示）时不出这个按钮，只留手动那行小字
   const wbWarn = selfCheck.items.find(i => i.id === 'worldbook' && i.status === 'warn');
   box.innerHTML = `<b>${esc(tx('selfcheck.title', '自检'))}</b><ul>${selfCheck.items.map(i => `<li class="${esc(i.status)}">${mark[i.status] || ''} ${esc(i[L] || i.zh)}`
-    + (i === wbWarn ? `<div class="hrow"><span></span><button type="button" class="btn primary" id="scWbGo">${esc(tx('selfcheck.wb_go', '一键写入世界书'))}</button></div><small>${esc(tx('selfcheck.wb_manual', '也可以照旧手动导入「伊甸地图·世界书附加条目」并在世界书里设为全局'))}</small>` : '') + `</li>`).join('')}</ul>`;
+    + (i === wbWarn ? `<div class="hrow"><span></span><button type="button" class="btn primary" id="scWbGo">${esc(tx('selfcheck.wb_go', '一键写入世界书'))}</button></div><small>${esc(tx('selfcheck.wb_manual', '也可以照旧手动导入「{book}」并在世界书里设为全局', { book: wbWarn.book || '' }))}</small>` : '') + `</li>`).join('')}</ul>`;
   { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'splashAgain'; b.textContent = tx('selfcheck.splash', '重新显示开场自检');   // v0.9.5
     b.onclick = () => { showSet(false); post({ type: 'eden-map:splash' }); }; box.appendChild(b); }
   $('#scWbGo')?.addEventListener('click', () => { setPage('data'); const el = document.getElementById('thWb'); el?.scrollIntoView({ block: 'center' }); ($('#wbDiff') || $('#wbLook'))?.click(); });

@@ -6,6 +6,7 @@ import { $, esc, tx } from './util.mjs';
 import { about, selfCheck } from './settings.mjs';
 import { buildInfo } from './topbar.mjs';
 import { REG, cur } from './state.mjs';
+import { PACK } from './pack.mjs';
 
 logbuf.install();
 
@@ -88,7 +89,7 @@ export function openFeedback() {
   // GitHub 预填 issue：新标签打开（noopener）；弹窗被拦时把链接留在只读输入框里供手动复制
   dlg.querySelector('#fbGh').onclick = () => {
     const warns = (info.selfCheckItems || []).filter(x => x && x.status === 'warn').length;
-    const url = buildIssueLink({ title: `[eden-map] v${info.version || '?'} build ${info.build || '?'}${warns ? ` · ${warns}⚠` : ''}`, body: ta.value });
+    const url = buildIssueLink({ title: `[eden-map] v${info.version || '?'} build ${info.build || '?'}${warns ? ` · ${warns}⚠` : ''}`, body: ta.value, repo: PACK?.cdn?.repo });   // 反馈提到哪个仓库：清单 cdn.repo（没有就用引擎自己的）
     const link = dlg.querySelector('#fbLink'); link.hidden = false; link.value = url;
     let w = null; try { w = window.open(url, '_blank', 'noopener'); } catch (e) {}
     if (!w) { link.focus(); link.select(); }

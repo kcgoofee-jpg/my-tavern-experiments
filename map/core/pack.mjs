@@ -11,6 +11,8 @@ export function nsKey(k, id) {
   if (typeof k !== 'string' || !id || id === DEFAULT_ID || !k.startsWith('edenMap')) return k;
   return prefixOf(id) + k.slice(7);
 }
+/** 附加世界书与条目名的前缀：清单 worldbook.prefix，没写就是包标题，再没有就是包 id（S4-3；书名 = 前缀 + 固定后缀，tavern/wbsync.mjs；自定义书 = 前缀 + 「·自定义」，tavern/mvu.mjs） */
+export const worldbookPrefix = (m, id) => String(m?.worldbook?.prefix || m?.title || id || '').trim().slice(0, 40);
 /** 聊天变量顶层键：eden 历史名 eden_map；其它包默认 tc_<id>（清单 chat.var 可改） */
 export const chatVarOf = (id, m) => m?.chat?.var || (!id || id === DEFAULT_ID ? 'eden_map' : `tc_${id.replace(/-/g, '_')}`);
 
@@ -48,6 +50,7 @@ export function resolve(m, base = m?.id === DEFAULT_ID ? '' : `packs/${m?.id}/`)
     cdn: { ...(m.cdn || {}) }, theme: { accent: '#e6c36a', ...(m.theme || {}) },
     features: { world: !!data.world, estate: !!data.rooms, ...(m.features || {}) },
     strings: m.strings || {},
+    worldbook: { ...(m.worldbook || {}) }, credits: m.credits && typeof m.credits === 'object' ? JSON.parse(JSON.stringify(m.credits)) : null,   // 附加世界书名前缀（tavern/wbsync.mjs）与署名（设置「关于」），S4-3
   };
 }
 /** 当前包 id：宿主注入的 window.__tcPack.id > 地址 ?pack= > eden。不合法的 id 退回 eden。 */

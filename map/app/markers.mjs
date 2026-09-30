@@ -27,12 +27,12 @@ export function untrack(el) { const tk = el?._tk; if (!tk) return; el._tk = null
 export function untrackAll() { const all = trackers; trackers = []; for (const tk of all) { if (tk.element) tk.element._tk = null; tk.destroy(); } }
 export let cardFrom = null;   // 打开卡片的元素：卡片关闭后焦点回到这里
 // 开局编号：标签上连续的写成区间（开局一至五）；opening_dest = 该开局的目的地（起点在庄园书房），卡片里逐个列出
-function markerEl({ name, sub, cls = '', src, extra = '', alias, name_en, sub_en, openings, opening_dest, cover }) {
+function markerEl({ name, sub, cls = '', src, extra = '', alias, name_en, sub_en, openings, opening_dest, cover, group }) {
   const el = document.createElement('div'); el.className = 'mk ' + cls;
   const dn = LANG === 'en' ? name_en || tr(name) : name, ds = sub && (LANG === 'en' ? sub_en || tr(sub) : sub);   // 显示名随语言；dataset.name 保持中文（当前地点匹配用）
   // U16 / U17：标签与图钉包一层 .mki，视差位移与漂浮只动这一层（.mk 自身的 transform 是 OSD 定位用的）
   el.innerHTML = `<div class="mki"><div class="lab">${esc(dn)}${ds ? '<small> · ' + esc(ds) + '</small>' : ''}</div><div class="pin"></div></div>`;
-  el.dataset.name = name; if (alias) el.dataset.alias = alias.join('|');
+  el.dataset.name = name; if (alias) el.dataset.alias = alias.join('|'); if (group) el.dataset.group = group;   // group：这个世界图地点所代表的组（事态角标等按它找标记）
   // v0.9.6（用户 2026-09-27）：地图上不再显示「开局 N」金色标签与地点卡里的开局列表（地图跟随 MVU 当前地点，选了开局就跳过去）；openings 数据只留给自检与文档
   el._open = () => showCard(el, dn, src, extra, ds, cover);
   trackEl(el, el._open, dn + (ds ? ' · ' + ds : ''));
@@ -70,24 +70,34 @@ export function closeCard(user) {
   if (had && (user === true || inCard) && cardFrom?.isConnected) cardFrom.focus({ preventScroll: true });
   if (had) declutter();
 }
+// 卡片链接：通道 link / 三维 link3d / 图集（app/cardlinks.mjs）+ 注入入口；世界图地点卡与点位图地标卡共用
+// 动作注入入口（Part 6-4）：模式不是 off 才在卡片底部多一个链接；模式从本机存储读（默认 off）
+// 注入模式每次开卡重读（设置里改了立刻生效）
+const injMode = () => { try { return TCStore.get('edenMapInject') || 'off'; } catch (e) { return 'off'; } };
+const ctx = () => ({ REG, nm, t, esc, mode: injMode(), cur, scene: isScene });   // Part 6-4：注入模式每次开卡重读；cur = 三维视口入口判据③（人已经在三维场景里）
+export const links = meta => { const linkCtx = ctx();   // 每次开卡重算：注入模式改了立刻生效；世界图地点卡（worldOverlays）与点位图地标卡用同一个
+  return (window.TCCardLinks ? window.TCCardLinks.linksHtml(meta, linkCtx)
+    : meta.link && REG.maps[meta.link.map] && REG.maps[meta.link.map].status !== 'planned' ? `<a data-go="${esc(meta.link.map)}" data-focus="${esc(meta.link.marker || '')}" role="button" tabindex="0">${esc(nm(meta.link, 'label') || t('goto', { title: nm(REG.maps[meta.link.map], 'title') }))}</a>` : '')
+    + (window.TCCardLinks?.injectHtml?.(meta, linkCtx) || ''); };
 export function worldOverlays() {
   for (const r of M.realms) { const el = document.createElement('div'); el.className = 'realm ' + r.id;
     el.innerHTML = `<b>${esc(tr(r.name))}</b><span>${esc(tr(r.sub))}</span>`;
     trackEl(el, () => showCard(null, tr(r.name), r.src, '', '', undefined, true), tr(r.name));
-    const off = { oren: -95, fed: -150, xl: -110 }[r.id]; place(el, r.c[0], r.c[1] + off, OpenSeadragon.Placement.CENTER); }
+    place(el, r.c[0], r.c[1] + (Number.isFinite(r.label_dy) ? r.label_dy : 0), OpenSeadragon.Placement.CENTER); }   // 标签上移多少由数据里的 label_dy 定
   for (const m of M.minors) { if (m.n < 600) continue; const el = document.createElement('div'); el.className = 'minor'; el.textContent = t('minor');
     place(el, m.c[0], m.c[1], OpenSeadragon.Placement.CENTER); }
-  { const el = document.createElement('div'); el.className = 'realm'; el.innerHTML = `<b style="font-size:20px;letter-spacing:${LANG === 'en' ? 2 : 6}px">${esc(tr('海外诸地'))}</b><span>${esc(tr('稀有矿物 · 异域人员输出地'))}</span>`;
-    trackEl(el, () => showCard(null, tr('海外诸地'), '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）'), tr('海外诸地'));
-    place(el, M.overseas[0], M.overseas[1], OpenSeadragon.Placement.CENTER); }
+  const ov = M.overseas;   // 世界图上的「海外」大牌：{ at: [x, y], name, sub?, src? }（数据里有才画，没有就什么都不画）
+  if (ov && Array.isArray(ov.at) && ov.at.every(Number.isFinite) && typeof ov.name === 'string') { const el = document.createElement('div'); el.className = 'realm'; el.innerHTML = `<b style="font-size:20px;letter-spacing:${LANG === 'en' ? 2 : 6}px">${esc(tr(ov.name))}</b>${ov.sub ? `<span>${esc(tr(ov.sub))}</span>` : ''}`;
+    trackEl(el, () => showCard(null, tr(ov.name), ov.src), tr(ov.name));
+    place(el, ov.at[0], ov.at[1], OpenSeadragon.Placement.CENTER); }
   const gOf = id => id && Object.keys(REG.groups).find(k => REG.groups[k].place === id);   // 世界图地点 → 有地图的组（天城、开局地点）
   const enter = gid => { const g = gid && REG.groups[gid]; if (!g) return ''; return g.layers.map(k => { const L = REG.maps[k];
     return L.status === 'planned' ? `<span class="planned">${esc(nm(L.layer))}${esc(t('planned_paren'))}</span>` : `<a data-go="${k}" role="button" tabindex="0">${esc(t('enter', { name: nm(L.layer) }))}</a>`; }).join(''); };
   for (const p of M.places) {
     const gid = gOf(p.id);
-    marker({ name: p.name, sub: p.sub, cls: (p.type === 'capital' ? 'capital' : 'start') + (gid ? ' drill' : ''), src: p.src, x: p.x, y: p.y, openings: p.openings, extra: enter(gid) });
+    marker({ name: p.name, sub: p.sub, cls: (p.type === 'capital' ? 'capital' : 'start') + (gid ? ' drill' : ''), src: p.src, x: p.x, y: p.y, openings: p.openings, group: gid || undefined, extra: () => enter(gid) + links(p) });
   }
-  for (const f of M.fiefs) { const gid = gOf(f.id); marker({ name: f.name, cls: gid ? 'drill' : '', src: f.src, x: f.x, y: f.y, extra: enter(gid) }); }
+  for (const f of M.fiefs) { const gid = gOf(f.id); marker({ name: f.name, cls: gid ? 'drill' : '', src: f.src, x: f.x, y: f.y, group: gid || undefined, extra: () => enter(gid) + links(f) }); }
 }
 // 闭合多边形 → 平滑闭合曲线（Catmull-Rom 转三次贝塞尔，曲线经过每个顶点）
 function smoothPath(P) {
@@ -179,14 +189,6 @@ export function pointOverlays() {
   // 卡片链接：通道 meta.link + 可选的三维 meta.link3d（app/cardlinks.mjs；模块没到时退回只渲染通道）
   // 结算方式 / 消费档位（card-omissions C6 / C10 / C15）：标记自己的 econ 优先，否则用本层的 econ
   const econHtml = meta => { const e = nm(meta, 'econ') || nm(m, 'econ'); return e ? `<small class="econ"><b>${esc(t('econ'))}</b> ${esc(e)}</small>` : ''; };
-  // 动作注入入口（Part 6-4）：模式不是 off 才在卡片底部多一个链接；模式从本机存储读（默认 off）
-  // 注入模式每次开卡重读（设置里改了立刻生效）
-  const injMode = () => { try { return TCStore.get('edenMapInject') || 'off'; } catch (e) { return 'off'; } };
-  const ctx = () => ({ REG, nm, t, esc, mode: injMode(), cur, scene: isScene });   // Part 6-4：注入模式每次开卡重读；cur = 三维视口入口判据③（人已经在三维场景里）
-  const links = meta => { const linkCtx = ctx();   // 每次开卡重算：注入模式改了立刻生效
-    return (window.TCCardLinks ? window.TCCardLinks.linksHtml(meta, linkCtx)
-      : meta.link && REG.maps[meta.link.map] && REG.maps[meta.link.map].status !== 'planned' ? `<a data-go="${esc(meta.link.map)}" data-focus="${esc(meta.link.marker || '')}" role="button" tabindex="0">${esc(nm(meta.link, 'label') || t('goto', { title: nm(REG.maps[meta.link.map], 'title') }))}</a>` : '')
-      + (window.TCCardLinks?.injectHtml?.(meta, linkCtx) || ''); };
   // 上层导出了标记锚点 ax / ay（岸边停靠平台或主楼旁的空地），图钉落在锚点上，不再压住岛心的主楼；聚焦、飞行也用它（B2 第 2 轮本机 P1）
   for (const k of d.markers || []) if (k.ax != null && k.ay != null) { k.nx = k.ax; k.ny = k.ay; }
   for (const k of d.markers || []) { const meta = m.markers?.[k.id]; if (!meta) continue;

@@ -15,7 +15,7 @@ import { cardFrom, closeCard, placeN, setCardFrom, showCard, trackEl, untrack } 
 import { setUserMoved, userMoved } from './app/locate.mjs';
 import { sheetVis } from './app/shell.mjs';
 import { P, register } from './app/plugins.mjs';
-import { eventGeo } from './app/nodes-runtime.mjs';
+import { eventGeo, eventLevel, inScope, worldGroup } from './app/nodes-runtime.mjs';
 import { hash01, spotOf } from './core/event-geo.mjs';
 import { chatId } from './app/extapi.mjs';
 import * as TCCvd from './app/cvd.mjs';
@@ -32,12 +32,12 @@ const TCEvents = (() => {
   // 当前这一层的事件不再写层名（面包屑、层按钮已经说了）；别的层照写（v0.9.2）
   const whereHere = e => mapOf(e) === cur && e.place ? e.place : where(e);
   const srcNew = e => e.src && !(e.place || '').includes(e.src) ? e.src : '';   // 发布方就是地点本身（「血肉磨坊」）时不再重复
-  const look = c => { const r = EVM?.classify(c); return r ? [r.icon, r.color ?? '#cfd8e0'] : ['!', '#cfd8e0']; };   // 只给没带图标 / 颜色的事件（旧脚本、领航员）兜底：按类型名查设定包的分类
+  const look = c => { const r = EVM?.classify(c); return r ? [r.icon, r.color ?? TCCvd.NEUTRAL] : ['!', TCCvd.NEUTRAL]; };   // 只给没带图标 / 颜色的事件（旧脚本、领航员）兜底：按类型名查设定包的分类
   // 色觉模式（E7）：开着时大类颜色换成 TCCvd 的安全色板，形状（SHAPES）与图标字不变；lk() 结果的颜色统一走 gcol(grp) 而不是原始色
-  const lk = e => { const r = e.ch && e.color ? [e.ch, e.color] : look(e.cat); return TCCvd.on() ? [r[0], gcol(grpOf(e))] : r; };
+  const lk = e => { const r = e.ch && e.color ? [e.ch, e.color] : look(e.cat); return [r[0], TCCvd.safeColor(TCCvd.on() ? gcol(grpOf(e)) : r[1])]; };   // 颜色只收 #rrggbb（K-R64 / I-09：e.color 来自聊天脚本），别的一律中性色
   // 图例与筛选（v2）：各大类的颜色；点一个大类 = 在地图、列表、层计数里隐藏它（记在本机）。大类表在 events.mjs 加载、装入设定包的分类后取（taxNow）
-  let GROUPS = {}, ORDER = [];
-  const gcol = g => TCCvd.groupColor(g, GROUPS[g] || '#cfd8e0');   // 关时原色板，开时 CVD 安全色板
+  let GROUPS = {}, ORDER = [], XCVD = {};
+  const gcol = g => TCCvd.safeColor(TCCvd.groupColor(g, GROUPS[g] || TCCvd.NEUTRAL, XCVD[g]));   // 关时原色板，开时 CVD 安全色板
   let SHAPES = {};   // 大类形状（色弱也分得清，E4 N30）：大类的 shape
   const shp = g => 'sh-' + (SHAPES[g] || 'square');
   const OFF_KEY = 'edenMapEvOff';
@@ -51,7 +51,7 @@ const TCEvents = (() => {
   const all = () => items.concat(feedItems);
   const vis = () => all().filter(e => !offed(e));   // 筛选后看得见的
   // 落点由节点树定（core/event-geo.mjs，K-R24）：卡内脚本盖了 node 的用 node；老脚本只发 layer + place，就按文字再定位一次；node 为 null = 认不出地点，只列出、不上图（K-01 B）
-  const tierNow = () => { const S = window.TCScale; return S?.isTier(cur) ? cur : S?.lastTier || 'tc_mid'; };
+  const tierNow = () => { const S = window.TCScale; return S?.isTier(cur) ? cur : S?.lastTier || eventLevel(REG); };
   const memo = new WeakMap();
   function placeOf(e) {
     const g = eventGeo(); if (!g || e.node === null) return null;
@@ -102,7 +102,7 @@ const TCEvents = (() => {
   function taxNow() {   // 装入当前树的事件分类，再取大类表 / 形状 / 默认隐藏（分类没变就什么都不做）
     if (!EVM) return; geoSync(EVM);
     const tx = EVM.taxonomy(); if (tx === taxFor) return; taxFor = tx;
-    GROUPS = Object.fromEntries(tx.groups.map(g => [g.label, g.color])); SHAPES = Object.fromEntries(tx.groups.map(g => [g.label, g.shape])); ORDER = EVM.legend().map(g => g.label);
+    GROUPS = Object.fromEntries(tx.groups.map(g => [g.label, g.color])); XCVD = Object.fromEntries(tx.groups.map(g => [g.label, g['x-cvd']])); SHAPES = Object.fromEntries(tx.groups.map(g => [g.label, g.shape])); ORDER = EVM.legend().map(g => g.label);
     try { if (TCStore.get(OFF_KEY) == null) for (const n of EVM.defaultOff()) off.add('type:' + n); } catch (e) {}
   }
   const mod = () => EVM ? Promise.resolve(geoSync(EVM)) : import(new URL('tavern/events.mjs', document.baseURI).href).then(m => geoSync(EVM = m)).catch(() => null);
@@ -261,7 +261,7 @@ const TCEvents = (() => {
   const fxLevel = (e, f) => (typeof f.intensity === 'number' ? Math.round(f.intensity * 3) : Math.max(1, e.lvl));
   function applyGlitch() {
     const lv = !shown ? 0 : Math.max(0, ...all().filter(e => fxOf(e)?.block === 'glitch' && !e.closed && (e.feed || floor - e.last <= (e.dur || fxOf(e)['x-messages'] || 3)) &&
-      (/全城|天城/.test(e.scope) || mapOf(e) === cur || (e.scope && eventGeo()?.place(e.scope)?.map === cur))).map(e => fxLevel(e, fxOf(e))));
+      ((e.scope && inScope(e.scope, cur)) || mapOf(e) === cur || (e.scope && eventGeo()?.place(e.scope)?.map === cur))).map(e => fxLevel(e, fxOf(e))));
     document.body.dataset.glitch = lv || '';
     $('#glitchNote').hidden = !lv; $('#glitchNote').textContent = T('ev.glitch', '⚠ 数据链路受扰');
     if (lv && !glitchLv && typeof announce === 'function') announce(T('ev.glitch', '⚠ 数据链路受扰').replace(/^⚠\s*/, ''));   // 花屏开始时播报一次
@@ -270,7 +270,7 @@ const TCEvents = (() => {
   // 世界图：天城内部未解除的事件汇成天城标记上的一个数字角标
   function worldBadge() {
     const n = vis().filter(e => live(e) && mapOf(e) && mapOf(e) !== 'world').length;
-    const lab = [...document.querySelectorAll('.mk')].find(x => x.dataset.name === '天城')?.querySelector('.lab');
+    const wg = worldGroup(REG), lab = [...document.querySelectorAll('.mk')].find(x => x.dataset.group === wg)?.querySelector('.lab');
     if (lab) { if (n) lab.dataset.ev = n; else delete lab.dataset.ev; }
   }
 
@@ -295,7 +295,7 @@ const TCEvents = (() => {
   .ev.sh-octa i::before,i.shp.sh-octa{clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}
   .ev.sh-penta i::before,i.shp.sh-penta{clip-path:polygon(0 0,100% 0,100% 62%,50% 100%,0 62%);inset:0 0 -3px}
   .ev.sh-penta i{place-items:start center;padding-top:3px;box-sizing:border-box}
-  body:not([data-map="tc_mid"]) .ev i{filter:drop-shadow(0 0 1px #000) drop-shadow(0 1px 1px rgba(0,0,0,.6))}   /* 光晕只在中层（规范 3.4） */
+  body:not([data-glow="1"]) .ev i{filter:drop-shadow(0 0 1px #000) drop-shadow(0 1px 1px rgba(0,0,0,.6))}   /* 光晕只在声明了 --glow-text 的视图（规范 3.4；body[data-glow]，app/theme.mjs） */
   /* 触屏：图标周围 44×44 的透明热区（E4 N25） */
   @media (pointer:coarse),(max-width:640px){.ev::before{content:'';position:absolute;left:-12px;top:50%;width:44px;height:44px;margin-top:-22px}}
   .ev b{font:600 var(--fs-micro,11px)/1.3 var(--font-ui,sans-serif);color:var(--map-label-ink,#fff);background:var(--map-label-bg,rgba(8,10,14,.8));padding:1px 6px;border-radius:var(--r-s,4px);border-left:2px solid var(--c);white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis}

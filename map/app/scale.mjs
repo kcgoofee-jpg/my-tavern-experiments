@@ -14,6 +14,7 @@ import { nm } from './i18n.mjs';
 import { getText } from './topbar.mjs';
 import { go, groupView } from './nav.mjs';
 import { RING_W } from './locate.mjs';
+import { worldGroup } from './nodes-runtime.mjs';
 const TCScale = (() => {
   const W_M = 12e6;
   const grp = id => { const m = REG?.maps?.[id]; return m && m.kind === 'points' && m.status !== 'planned' && m.group && REG.groups[m.group]?.place ? m.group : null; };
@@ -67,7 +68,7 @@ const TCScale = (() => {
   }
   function crumb() {
     const cr = $('#crumbs'); let el = cr.querySelector('.ringc');
-    if (ringOn && !el && cr.querySelector('b')) { el = document.createElement('span'); el.className = 'ringc'; const gid = grp(cur), lab = gid === 'tiancheng' ? tx('ring', '天城周边') : tx('ring_of', REG.groups[gid].title + '周边', { name: nm(REG.groups[gid], 'title') });
+    if (ringOn && !el && cr.querySelector('b')) { el = document.createElement('span'); el.className = 'ringc'; const gid = grp(cur), lab = tx('ring_of', REG.groups[gid].title + '周边', { name: nm(REG.groups[gid], 'title') });   // 每个组一个写法（首个组也一样：组名 + 周边）
       el.textContent = lab; const sep = document.createElement('span'); sep.className = 'sep'; sep.setAttribute('aria-hidden', 'true'); sep.textContent = ' › '; el.append(sep);
       el.style.color = 'var(--muted)'; cr.querySelector('b').before(el); }
     if (!ringOn && el) el.remove();
@@ -83,8 +84,9 @@ const TCScale = (() => {
   function nearest() { const vp = viewer.viewport, b = vp.getBounds(true), c = b.getCenter(); let best = null;
     for (const g of places()) { const [nx, ny] = ptOf(g), d = Math.hypot(c.x - nx, c.y - ny * aspect); if (d < b.width * .3 && (!best || d < best.d)) best = { g, d }; }
     return best?.g || null; }
-  function handoffIn(ref, gid = nearest() || 'tiancheng') {
-    const g = REG.groups[gid], lt = lastTier[gid], id = lt && isTier(lt) ? lt : g.layers.find(isTier); if (!id) return;
+  function handoffIn(ref, gid = nearest() || worldGroup(REG)) {
+    const g = REG.groups[gid]; if (!g) return;
+    const lt = lastTier[gid], id = lt && isTier(lt) ? lt : g.layers.find(isTier); if (!id) return;
     const vp = viewer.viewport, c = vp.getCenter(true), [nx, ny] = ptOf(gid), cs = vp.getContainerSize(), T_M = T_Mof(id);
     const dx = Math.max(-4, Math.min(4, (c.x - nx) * W_M / T_M)), dy = Math.max(-2.5, Math.min(2.5, (c.y - ny * aspect) * W_M / T_M));
     const a = REG.maps[id], asp = (a.view?.extent_m?.[1] || 1875) / (a.view?.extent_m?.[0] || 3000), port = cs.y > cs.x && a.view?.phone;

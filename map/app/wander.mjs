@@ -13,6 +13,7 @@ import { hereRes } from './locate.mjs';
 import { P } from './plugins.mjs';
 import { busOn } from './bus.mjs';
 import { getJSON } from './util.mjs';
+import { packData } from './pack.mjs';
 import { createWalker, tickClock, DEFAULT_DUR_MS, DEFAULT_ROUND_MS } from '../core/walk.mjs';
 import { normSchedule, placesAt } from '../core/routine.mjs';
 import { normClock } from '../core/clock.mjs';
@@ -155,8 +156,8 @@ export function registerWanderLayer() {
     else if (d.type === 'eden-map:clock') setWanderClock(d);
     else if (d.type === 'eden-map:here' || d.type === 'eden-map:chars') setTimeout(retarget, 0);
   } });
-  // 单独打开（没宿主推日程）时，按包里那份日程表走（maps.json 同级的 data/routine.json）
-  setTimeout(() => { if (!sched) getJSON('data/routine.json').then(v => { if (v && !sched) setWanderSchedule(v); }).catch(() => {}); }, 0);
+  // 单独打开（没宿主推日程）时，按包里那份日程表走（清单 data.routine；包没声明 = 没有）
+  setTimeout(() => { if (!sched && packData('routine')) getJSON(packData('routine')).then(v => { if (v && !sched) setWanderSchedule(v); }).catch(() => {}); }, 0);
   window.TCWander = { scan: scanWander, reset: resetWander, now: () => last.size, schedule: setWanderSchedule, clock: setWanderClock, tick, retarget, walker,
     scheduleOf: () => sched,   // 日程表本体（庄园三维页要同一张表挪人）
     describe: () => ({ ...walker.describe(), on, clock, rounds, scheduled: !!sched, reduced: reduced() }) };

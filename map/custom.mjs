@@ -4,7 +4,7 @@
 // 纯函数在 tavern/mvu.mjs（数据）与 tavern/picker.mjs（v0.9.5 选择器分组、搜索、飞行目标、校验）。这里不过滤任何文字，原样显示（textContent / esc）。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 import { REG, aspect, cur, curData, pendingFocus, setPendingFocus, viewer } from './app/state.mjs';
-import { isEden } from './app/pack.mjs';
+import { packData } from './app/pack.mjs'; import { viewField } from './app/nodes-runtime.mjs';
 import { esc, post } from './app/util.mjs';
 import { LANG } from './app/i18n.mjs';
 import { mountProgress } from './ui/progress.mjs';
@@ -72,7 +72,7 @@ const TCCustom = (() => {
   // v0.9.6（B11 / C1）：按时段分四档（晨 / 日 / 暮 / 夜）；颜色只参考 docs/drafts/upper_tod_*.jpg 的整体色调，不另出图。夜档保留旧的 nighttint 类
   // 有效档位（关掉开关 / 读不到世界时间时为 ''）也是多时段底图（maps.json periods，app/nav.mjs）的依据；已配底图的档位（昼 / 夜）不再叠色调，免得双重变暗
   function todNow() { return nightOn() ? (clock?.tod || (clock?.night ? 'night' : '')) : ''; }
-  function night() { const m = document.body.dataset.map, tier = m === 'tc_upper' || m === 'tc_mid', on = nightOn() && tier;
+  function night() { const m = document.body.dataset.map, tier = viewField(m, 'x-tint') === 'period', on = nightOn() && tier;
     const tod = on ? (clock?.tod || (clock?.night ? 'night' : '')) : '';
     const swapped = typeof REG !== 'undefined' && !!REG?.maps?.[m]?.periods?.[tod === 'day' || tod === 'night' ? tod : ''];
     document.body.classList.toggle('nighttint', tod === 'night' && !swapped);
@@ -94,7 +94,7 @@ const TCCustom = (() => {
   const KIND = { room: ['cu.room', '房间'], area: ['cu.area', '区域'], landmark: ['cu.landmark', '地标'], character: ['cu.character', '人物'], layer: ['cu.layer', '层 / 大区'], world: ['cu.world', '世界地名'] };
   let listQ = '', PK = null, plan = null, view = 'list', editing = null, query = '', opener = null, resetArm = null, resetT = 0, flyMsg = '';
   const pk = () => (PK ? Promise.resolve(PK) : import(new URL('tavern/picker.mjs', document.baseURI).href).then(m => (PK = m)));
-  const planP = () => (plan ? Promise.resolve(plan) : !isEden() ? Promise.resolve(plan = {}) : Promise.all([import(new URL('estate/plan.js', document.baseURI).href).catch(() => ({})), fetch(new URL('data/eden_estate_rooms.json', document.baseURI)).then(r => (r.ok ? r.json() : null)).catch(() => null)])
+  const planP = () => (plan ? Promise.resolve(plan) : !packData('rooms') ? Promise.resolve(plan = {}) : Promise.all([import(new URL('estate/plan.js', document.baseURI).href).catch(() => ({})), fetch(new URL(packData('rooms'), document.baseURI)).then(r => (r.ok ? r.json() : null)).catch(() => null)])
     .then(([m, card]) => (plan = { ...m, CARD: card })));   // 卡设定分层房间（B2–F3）
   const cardPlan = () => (typeof estPlan !== 'undefined' && estPlan) || plan?.CARD || null;
   function groups() {

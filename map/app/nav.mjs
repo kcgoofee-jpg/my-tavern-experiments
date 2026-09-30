@@ -8,6 +8,7 @@ import { renderNav } from './layers.mjs';
 import { closeCard } from './markers.mjs';
 import { focusMarker, setUserMoved, userMoved } from './locate.mjs';
 import { P } from './plugins.mjs';
+import { syncGlow } from './theme.mjs';
 // ---------------- 地图切换 ----------------
 // alt：同一张图的另一版底图（上层默认云海，开关后显示下方城市）。只换底图，视角、标记、叠加层都不动；开关状态按地图记住
 export const ALT_KEY = 'edenMapAlt:';
@@ -55,7 +56,7 @@ export async function go(id) {   // 云脚本块（文末）会包一层：天�
   if (id === cur) { focusSameMap(id); return; }
   const prev = cur && REG.maps[cur], fromEstate = prev?.kind === 'estate';
   saveView();
-  setCur(id); setUserMoved(false); closeCard(); P.TCEvents.collapse?.(); document.body.dataset.map = id;
+  setCur(id); setUserMoved(false); closeCard(); P.TCEvents.collapse?.(); document.body.dataset.map = id; syncGlow(id);
   if (m.kind === 'estate') return openEstate(id, m, !!prev);
   dropParked();
   // 离开庄园：iframe 留到新底图画出来再淡出
