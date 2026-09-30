@@ -141,7 +141,7 @@ Format per the user's checklist convention: one item per line, strike through wh
   worldbook entry requires a new stable id → register it in `map/data/worldbook_aliases.json` in the
   same batch as W7 (alias bookkeeping is a real cost, discovered in execution).
 
-### W2 — Dice wiring + failure report ring (Orak)
+### ~~W2 — Dice wiring + failure report ring (Orak)~~ ✅ 2026-09-30（`spatial.mjs` 批；dice=edenMapDice 默认关、failrep 环形缓冲、stealth worst、fail kind）
 
 - [ ] Wire `core/stash.mjs search()` (:61-72) into `takeLoot` (`eden-map.js:341`): roll via
   `core/rng.mjs` mulberry32 seeded with `(chatId, floor, item id)` — same replay, same roll; on
@@ -168,7 +168,7 @@ upper-layer-only; adding mid/low patrol rings is a content/asset task (register 
 render/content line, does not block W2). The ring buffer is **in-memory, session-scoped** + floor
 watermark — reports are hints, not truth; no new chat variable / storage key (nothing to reconcile).
 
-### W3 — Long-horizon keyframe compression (SokoBench)
+### ~~W3 — Long-horizon keyframe compression (SokoBench)~~ ✅ 2026-09-30（`keyframes.mjs`：compress/stateAt/flatten/advance 幂等；200 楼探针：压缩 0.12ms、200 次拖拽 0.22ms、0 桥调用，截断如实 null）
 
 - [ ] New pure module `map/tavern/keyframes.mjs`:
   - `W_RECENT = 20` (aligned with MVU's own 20-floor retention, `snapshot.mjs:9`); older floors merge
@@ -187,7 +187,7 @@ watermark — reports are hints, not truth; no new chat variable / storage key (
   full replay item-for-item, session_replay fixtures), idempotent advance, watermark invalidation on
   swipe, segment cap, `approx` flagging.
 
-### W4 — Restricted op DSL sandbox (WorldCoder)
+### ~~W4 — Restricted op DSL sandbox (WorldCoder)~~ ✅ 2026-09-30（`ops.mjs`：四文法、throw-not-coerce、每响应 ≤3、回声黑名单、哈希水位）
 
 - [ ] New pure module `map/tavern/ops.mjs`:
   - Grammar: `OP_EVENT` (shape = events entry), `OP_CLUE` (shape = quests row), `OP_MARKER`
@@ -203,7 +203,7 @@ watermark — reports are hints, not truth; no new chat variable / storage key (
 - [ ] Test: `tests/ops.test.mjs` (grammar accept/reject matrix, shape strictness, cap, echo blacklist,
   watermark idempotence, sanitize-order fixture with a `<think>`-wrapped op).
 
-### W5 — Navigator gateway (first consumer of `llm.mjs`)
+### ~~W5 — Navigator gateway (first consumer of `llm.mjs`)~~ ✅ 2026-09-30（`navigator.mjs` 调度让路矩阵 + 宿主 navRun（cdnFetch、同意水位、masked key）；OP_CLUE/MARKER 查看器送达挂 W9 叠加层）
 
 - [ ] New module `map/tavern/navigator.mjs` (pure scheduling; HTTP side effects stay in the host):
   - Schedule: own interval (settings), yields when the panel is open or the tavern is generating
@@ -219,7 +219,7 @@ watermark — reports are hints, not truth; no new chat variable / storage key (
 - [ ] Test: `tests/navigator.test.mjs` (schedule yielding matrix, request assembly determinism,
   masked-key logging, response→ops plumbing with stubbed fetch, off-by-default).
 
-### W6 — Worldbook JIT hydration (Part B task 1)
+### ~~W6 — Worldbook JIT hydration (Part B task 1)~~ ✅ 2026-09-30（`wb_jit.mjs` 三态计划 + jitRound 哈希水位 + withLock）
 
 - [ ] New pure module `map/tavern/wb_jit.mjs`:
   - `activation(here, topo)` — current place + directly connected neighbours (W1 topo data; never
@@ -243,7 +243,7 @@ data (only 2 real ones city-wide; the other 56 `link`s are lm_* 3D landmark page
 neighbours are the primary adjacency source, and the estate is covered by the W1 v1.1 plan-based
 same-floor adjacency, not by links.
 
-### W7 — Fact crystallization (Part B task 2)
+### ~~W7 — Fact crystallization (Part B task 2)~~ ✅ 2026-09-30（⌖事实 标签 + `wb_crystallize.mjs`：LRU/墓碑/written 水位幂等；设置页管理 UI 走 W9 的开关分区）
 
 - [ ] `⌖事实` tag: new branch in `mvu.mjs parseCustomTags` (:198-214 area) → op `fact` with a new
   landing spot in custom items + `normCustom` compatibility; round signature picks it up via the
@@ -261,7 +261,7 @@ same-floor adjacency, not by links.
   a ⌖事实 removes/re-adds correctly; tombstone permanence; LRU eviction order; verbatim content
   fidelity).
 
-### W8 — Map ⇄ worldbook deep links (Part B task 4)
+### ~~W8 — Map ⇄ worldbook deep links (Part B task 4)~~ ✅ 2026-09-30（`wbpeek.mjs` 胶囊 + onTh wb-peek 只读摘要 + {{eden_fly}} 宏 → eden-map:fly 首个仓内发送方；flyScan 异步守卫）
 
 - [ ] Map → worldbook: `TCWb.decorate(el, name)` capsule (「世界书档案」) in the `markers.mjs showCard`
   decorate chain (:42-61, the TCScrap/TCSecurity pattern); click sends an `eden-map:th {op:'wb-peek',
@@ -274,7 +274,7 @@ same-floor adjacency, not by links.
 - [ ] Tests: extend `tests/cardlinks`-style coverage — capsule render gating, macro expansion shape,
   protocol round-trip (`wb-peek` stub, `eden-map:fly` target resolution).
 
-### W9 — Tests, probes, registries (cross-cutting)
+### ~~W9 — Tests, probes, registries (cross-cutting)~~ ✅ 2026-09-30（协议/存储键/i18n/设置页五组开关齐；suite 570/0、看门狗 4/4、smoke 全绿；**浏览器探针 p9_worldbook 与 200 楼真实拖拽挂后续**——node 侧等效探针已出数，见 W3 划线）
 
 - [ ] All new files registered: `core/storage.mjs` KEYS (`edenMapSpatial`, `edenMapSpatialBudget`,
   `edenMapWbJit`, `edenMapWbXtal`, `edenMap关键帧` chat-var family), `core/protocol.mjs` SCHEMA
