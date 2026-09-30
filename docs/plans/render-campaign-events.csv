@@ -220,3 +220,14 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T16:01:53Z,scene:fief1,review-r2,done,std-1,pass,fidelity 7.5 / credibility 6 (r2.md)
 2026-09-30T16:04:13Z,scene:fief1,final,done,std-1,pass,std glb 2.24 MB / low 0.60 MB (max_mb 2.8/1.4); one model for the whole fief
 2026-09-30T16:05:06Z,scene:fief1,ship,wait,std-1,,"FREEZE_MAPS back on origin/preview; model, glbs, manifest committed; needs: link fief1_castle/order/village/fields to a new lm_fief1 entry in maps.json + card-buildings rows (run landmark.py ship fief1 then link the other three markers)"
+2026-09-30T16:05:27Z,scene:fief2,new,claim,std-1,,
+2026-09-30T16:05:33Z,scene:fief2,new,done,std-1,pass,scaffold + shared fief_scene preset fief2
+2026-09-30T16:05:33Z,scene:fief2,setting,done,std-1,pass,setting doc + checklist (coast)
+2026-09-30T16:06:13Z,scene:fief2,draft,done,std-1,pass,fief2 draft
+2026-09-30T16:06:14Z,scene:fief2,board,done,std-1,pass,fief2 board
+2026-09-30T16:06:14Z,scene:fief2,gapcheck,done,std-1,pass,fief2 gapcheck
+2026-09-30T16:06:14Z,scene:fief2,review-r1,done,std-1,fail,"fidelity 6.5 / credibility 6: sea barely visible, c2 against the wall, lighthouse unseen (docs/reviews/campaign/scene_fief2/r1.md)"
+2026-09-30T16:06:14Z,scene:fief2,fix,done,std-1,pass,"sea extended, c1 from the sea side, c2 from the harbour"
+2026-09-30T16:06:40Z,scene:fief2,review-r2,done,std-1,pass,"fidelity 7.5 / credibility 6 (r2.md); polish: headland, lighthouse placement"
+2026-09-30T16:08:25Z,scene:fief2,final,done,std-1,pass,std/low glb exported under max_mb 2.8/1.4
+2026-09-30T16:08:27Z,scene:fief2,ship,wait,std-1,,"FREEZE_MAPS on origin/preview; model, glbs, manifest committed; needs lm_fief2 entry + links for fief2_castle/order/village/fields in maps.json + card-buildings rows"

@@ -159,7 +159,7 @@ def terrain(L, M):
 def water(L, M):
     W = C.Batch.get('props_water')
     if L.P['kind'] in ('lake', 'coast', 'valley'):
-        W.box(X0 + 1.0, X1 - 1.0, Y0 + 1.0, Y1 - 1.0, -3.0, WL, M['water'])
+        W.box(X0 + 1.0, X1 - 1.0, (Y0 - 2400.0) if L.P['kind'] == 'coast' else Y0 + 1.0, Y1 - 1.0, -3.0, WL, M['water'])
 
 
 def draped(B, L, x0, y0, x1, y1, m, lift=0.3, nx=2, ny=7):
