@@ -367,6 +367,44 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     navT = setTimeout(async () => { try { await navRun(); } catch (e) {} navSchedule(); }, iv);
   }
 
+  // ---------------- W6 世界书 JIT 条目水合（tavern/wb_jit.mjs 纯计划；写世界书在这里） ----------------
+  // 只动 wbsync.BOOK 附加书里带 extra.eden_id 的条目（extra.eden_jit 标记 JIT 关的；用户关的记 ignore 永不再碰）。
+  // 激活集 = spatial.activationOf（自身 + 出口 + 同层邻近）；激活集哈希没变不写（裁决 10）；withLock 跨标签互斥。
+  let WBJm = null, WBSm = null, jitWatermark = null, jitBusy = false;
+  import(SELF + 'tavern/wb_jit.mjs').then(m => { WBJm = m; }).catch(() => {});
+  import(SELF + 'tavern/wbsync.mjs').then(m => { WBSm = m; }).catch(() => {});
+  async function jitRound() {
+    if (jitBusy || !WBJm || !WBSm || !SpatialM || life.dead || lsGet('edenMapWbJit') !== '1') return;
+    const getBook = thFn('getWorldbook'), updBook = thFn('updateWorldbookWith');
+    if (!getBook || !updBook) return;
+    jitBusy = true;
+    try {
+      const entries = await getBook(WBSm.BOOK).catch(() => null);
+      if (!Array.isArray(entries) || !entries.length) return;
+      const loc = SpatialM.locate(regNow, here);
+      if (!loc?.mapId) return;
+      const pts = await pointsFor(loc.mapId);
+      const active = SpatialM.activationOf(regNow, here, { [loc.mapId]: pts });
+      const hash = WBJm.hashOf(active);
+      if (!WBJm.shouldWrite(jitWatermark, hash)) return;
+      jitWatermark = { floor: floorNow, hash };
+      const plan = WBJm.planActivation(entries, active);
+      if (!plan.enable.length && !plan.disable.length && !plan.markIgnore.length) return;
+      const muts = WBJm.applyPlan(entries, plan);
+      await WBSm.withLock(async () => {
+        await updBook(WBSm.BOOK, list => {
+          if (Array.isArray(list)) for (const mu of muts) for (const e of list) if (e?.extra?.eden_id === mu.id) {
+            e.enabled = mu.enabled;
+            e.extra = { ...(e.extra || {}), ...mu.extra };
+          }
+          return list;
+        });
+      });
+      console.info('[eden-map] 世界书 JIT：', plan.enable.length, '开 /', plan.disable.length, '关 /', plan.markIgnore.length, '记 ignore');
+    } catch (e) { console.warn('[eden-map] 世界书 JIT 写失败（下轮激活集变化时重试）', e); }
+    finally { jitBusy = false; }
+  }
+
   // Part 6-4 地图驱动的双向动作注入：查看器只说「点了哪个 POI、想干什么」，文案与注入方式全在这里按设置决定。
   // 模式默认 off——地图不该在玩家没点头的情况下替他说话；compose 只填不发（与「去这里」同一条底线），sys 走 /sys 静默注入。
   let ACm = null;
@@ -583,7 +621,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     const frLine = FRm ? FRm.digest(frState) : '';   // W2：未注入过的失败报告追加一行（注入后置水位，不重复）
     inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : '', INVm && lsGet('edenMapInvInj') !== '0' ? INVm.digestLine(inv, 150) : '', frLine].filter(Boolean).join('\n'));
     if (frLine) FRm.markInjected(frState);
-    if (!lite) { stateInject(); spatialInject(); checkpointStep(); }
+    if (!lite) { stateInject(); spatialInject(); jitRound().catch(() => {}); checkpointStep(); }
     if (!panel.hidden && alive) sendEvents();
     if (subs.events.size) { const sig = floorNow + '|' + events.map(e => e.id + ':' + e.last + ':' + e.tier).join(); if (sig !== emEvSig) { emEvSig = sig; emit('events', { items: events.map(e => ({ ...e })), floor: floorNow, hereLayer: layerOf(here) }); } }
     perf(lite ? 'lite' : 'core', performance.now() - t0);

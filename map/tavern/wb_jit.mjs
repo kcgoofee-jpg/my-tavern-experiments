@@ -1,0 +1,64 @@
+// 世界书 JIT 条目水合（W6，docs/plans/llm-campaign.md Part B 任务一）：「人在哪，只挂载哪」——
+// 按当前地点的激活集（W1 spatial.activationOf：自身 + 跨层出口 + 同层几何邻近）动态开关**我们附加书里**
+// 带 extra.eden_id 的条目（enabled 字段），离开区域无损卸载。主邻接源是几何邻近（数据事实：全城真跨层
+// link 只有 2 处，其余 56 个 link 是 lm_* 三维详情页——见任务书 §8.2）；条目范围**数据驱动**：条目自身的
+// strategy.keys（或 ST 的 key）∩ 激活集即活跃判定，不发明任何 place 元数据（裁决 9/10）。
+// 主权纪律：只动我们的条目；用户手动关过的（disabled 且无 JIT 关闭标记）→ 进 markIgnore，宿主记
+// extra.eden_jit_ignore=1，从此永不碰；constant 条目永不 JIT。写入成本（裁决 10）：激活集哈希没变就不写，
+// 幂等由调用方的 {floor, hash} 水位保证。纯模块：不碰酒馆全局 / DOM / 存储 / 网络。tests/wb_jit.test.mjs。
+import { seedOf } from '../core/rng.mjs';
+
+export const KEY = 'edenMapWbJit';
+
+const norm = s => String(s || '').replace(/\s+/g, '').trim();
+
+/** 条目 → 触发词表（TH 形状 strategy.keys 优先，ST 的 key 兼容）；constant / 无词表 = null（永不 JIT） */
+export function keysOf(e) {
+  const keys = e?.strategy?.keys || e?.key;
+  if (!Array.isArray(keys) || !keys.length) return null;
+  if (e?.strategy?.type === 'constant') return null;
+  return keys.map(norm).filter(Boolean);
+}
+
+/**
+ * 激活计划：entries = 附加书条目数组（TH / ST 形状都收），activeNames = Set<string>（已去空格的名字）。
+ * 返回 { enable:[id], disable:[id], markIgnore:[id], ignored:n, untouched:n }：
+ *   enable/disable = 要改 enabled 的条目（disable 同时要求宿主记 extra.eden_jit=1，enable 时清 0）；
+ *   markIgnore     = 「关着且不是 JIT 关的」＝用户手动关的 → 宿主记 extra.eden_jit_ignore=1，从此永不碰（裁决 9）；
+ *   ignored        = 已带 ignore 标记、本轮跳过的条数；untouched = 与激活无关（constant / 无 eden_id）条数。
+ */
+export function planActivation(entries, activeNames) {
+  const active = activeNames instanceof Set ? activeNames : new Set(activeNames || []);
+  const out = { enable: [], disable: [], markIgnore: [], ignored: 0, untouched: 0 };
+  for (const e of Array.isArray(entries) ? entries : []) {
+    const id = e?.extra?.eden_id;
+    if (!id) { out.untouched++; continue; }
+    if (e?.extra?.eden_jit_ignore) { out.ignored++; continue; }
+    const keys = keysOf(e);
+    if (!keys) { out.untouched++; continue; }
+    const want = keys.some(k => active.has(k));
+    const isOn = e?.enabled !== false;
+    const jitOff = e?.extra?.eden_jit === 1;
+    if (!isOn && !jitOff) { out.markIgnore.push(id); continue; }   // 用户手动关的：立刻标记，JIT 从此永不碰（裁决 9）
+    if (want && !isOn) out.enable.push(id);                        // JIT 自己关的、现在该开
+    else if (!want && isOn) out.disable.push(id);                  // 该关的
+    else out.untouched++;
+  }
+  return out;
+}
+
+/** 计划 → updater 用的变更描述：[{ id, enabled, extra }]（宿主在 updateWorldbookWith 的 updater 里对号入座）。 */
+export function applyPlan(entries, plan) {
+  const mutate = [];
+  const find = id => (Array.isArray(entries) ? entries : []).find(e => e?.extra?.eden_id === id);
+  for (const id of plan?.markIgnore || []) { const e = find(id); if (e) mutate.push({ id, enabled: e.enabled !== false, extra: { eden_jit_ignore: 1 } }); }
+  for (const id of plan?.disable || []) mutate.push({ id, enabled: false, extra: { eden_jit: 1 } });
+  for (const id of plan?.enable || []) mutate.push({ id, enabled: true, extra: { eden_jit: 0 } });
+  return mutate;
+}
+
+/** 激活集指纹：排序后哈希（确定性）——哈希没变就不写世界书（裁决 10 的写入门）。 */
+export const hashOf = names => seedOf([...(names || [])].map(norm).sort().join('|')).toString(36);
+
+/** 水位：prev = { floor, hash }；激活集哈希没变 → 不写。 */
+export const shouldWrite = (prev, hash) => !prev || prev.hash !== hash;
