@@ -33,8 +33,8 @@ export function buildGeo({ reg, world, names, plan }) {
   const ctx = { idmap, groupNode: {}, entities: [], layerWords: {}, landmarks: [], viewer3d: new Set(), levels: {}, estate: null, rootId: null, worldId: null };
   const ents = [['place', world?.places], ['fief', world?.fiefs], ['realm', world?.realms]]
     .flatMap(([kind, l]) => (Array.isArray(l) ? l : []).filter(p => p && p.id).map(p => ({ kind, p })));
-  for (const [id, m] of Object.entries(M)) if (live(id) && m.kind === 'estate' && m.viewer3d && !m.test) ctx.viewer3d.add(id);
-  const estateId = Object.keys(M).find(k => live(k) && M[k].kind === 'estate' && !M[k].test && !M[k].viewer3d) || null;
+  for (const [id, m] of Object.entries(M)) if (live(id) && m.kind === 'estate' && m.viewer3d) ctx.viewer3d.add(id);
+  const estateId = Object.keys(M).find(k => live(k) && M[k].kind === 'estate' && !M[k].viewer3d) || null;
   let estateMark = null;
   if (estateId) for (const [mid, m] of Object.entries(M)) { if (!live(mid) || m.kind !== 'points') continue; for (const [k, mk] of Object.entries(m.markers || {})) if (!estateMark && mk.link?.map === estateId) estateMark = { map: mid, key: k, mk }; }
   if (estateMark) idmap[estateMark.key] = estateId;
@@ -148,6 +148,12 @@ export function buildGeo({ reg, world, names, plan }) {
     emitLayer(k, (m.group && ctx.groupNode[m.group]) || idmap[m.parent] || worldId || undefined, false);
   }
   if (estateId && !estateDone) { if (!seen.has(estateParent)) estateParent = worldId || undefined; emitEstate(); }
+  for (const [k, m] of Object.entries(M)) {   // a 3D page that names a zone (`anchor.zone`) is a place of its own: a node under its parent, anchored to that region of the parent's view (K-R31, K-R32)
+    if (!live(k) || !ctx.viewer3d.has(k) || !has(m.anchor?.zone) || seen.has(k)) continue;
+    const up = idmap[m.parent] || m.parent, n = put({ id: k, name: m.title || k, type: 'zone' }, 'parent', seen.has(up) ? up : worldId || undefined);
+    n.alias = uniq([n.name, m.title_en, ...(Array.isArray(m.alias) ? m.alias : [])]);
+    put(n, 'anchor', m.anchor.zone); put(n, 'i18n', tr(m.title_en)); add(n);
+  }
   if (!worldId && reg?.ambiguous?.words?.length) {   // the only parentless node is the root: the ambiguous words become its hints
     const tops = nodes.filter(n => !n.parent);
     if (tops.length === 1) tops[0].hints = uniq([...(tops[0].hints || []), ...reg.ambiguous.words]);

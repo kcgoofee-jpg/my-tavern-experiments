@@ -684,7 +684,7 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 | kind `points` | 节点（类型 `layer`，或合并后的 `site`）+ tiles 视图（id = 地图 id） | 自动 |
 | kind `estate`、没有 `viewer3d`（第一张在用的） | 与 `link` 指向它的那个标记合并：节点 id = 地图 id，父 = 那个标记所在的地图，类型 `estate`；model3d 视图带 `x-page`（`open: locate`） | 自动 |
 | kind `estate`、有 `viewer3d` | model3d 视图（`manifest: props/<viewer3d>/manifest.json`，`open: enter`），挂到每个 `link` / `link3d` 指向它的标记上；不是节点 | 自动 |
-| `test: true`（`dairy`，「挤奶厅」） | 兼容转换丢弃（v1 从不定位到它）；S2 把它挂到 `eden_estate` 下，`anchor: "dairy"`（奶牛农场那片区域），删掉测试入口（D2） | 包数据（S2） |
+| `viewer3d` 图上的 `anchor: { zone }`（`dairy`，「挤奶厅」；v1 字段 `test` 已取消） | `parent`（`eden_estate`）下 type 为 `zone` 的节点，`anchor` = 区域 id（父级视图的区域表，K-R32），`alias` = 标题、英文标题与 `alias`；它自己的 model3d 视图（`open: enter`）就是这张图的 | 自动（S2-A） |
 | `status: planned` | 跳过 | 建好之前丢弃 |
 | `title`、`title_en` | 视图的 i18n；没有 `layer` 的地图才用作节点名 | 自动 |
 | `parent`、`group` | 节点 `parent`（有分组时以分组节点为准） | 自动 |
@@ -740,7 +740,7 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 | `card_id_alias`、`retired_names` | 旧的自定义房间名映射到现在的房间（K-R25） | 自动 |
 | `floors`、`blocks`、`cores`、`basement`、`card_rooms` | 宅邸自带页面的数据 | 携带 |
 | `map/estate/model/zones.json`（36 片区域） | 兼容转换不读；S4 把区域变成区域节点（anchor = 宅邸视图区域表里的区域 id） | 包数据（S4） |
-| 农场区域 `dairy`（「奶牛农场」） | 宅邸视图的区域 `dairy`；挤奶厅锚定在这里 | 包数据（S2） |
+| 农场区域 `dairy`（「奶牛农场」） | 宅邸视图的区域 `dairy`；挤奶厅锚定在这里（`maps.json` 的 `anchor.zone`，`check_maps.py` 对着这个文件校验） | 已完成（S2-A） |
 
 ### A.5 事件：数据文件与代码常量
 
@@ -816,11 +816,14 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 
 | 包与输入 | 节点 | 深度 | 根 | 构成 | 视图 |
 |---|---|---|---|---|---|
-| eden：地图 + 世界数据 + 英文名 | 112 | 3 | `world` | world 1、realm 3、group 2（`tiancheng`、`yuanyu`）、site 8、layer 5、landmark 92、estate 1 | 54（tiles 13、model3d 41：40 个地标视图 `open: enter`，宅邸的 `open: locate`） |
-| eden：同上 + 房间平面 | 176 | 4 | `world` | 另加 `eden_estate` 下 64 个房间节点 | 54 |
-| eden：只有地图（没有世界数据） | 108 | 3 | `world` | world 1、group 2、site 7、layer 5、landmark 92、estate 1 | 54 |
+| eden：地图 + 世界数据 + 英文名 | 113 | 4 | `world` | world 1、realm 3、group 2（`tiancheng`、`yuanyu`）、site 8、layer 5、landmark 92、estate 1、zone 1 | 54（tiles 13、model3d 41：40 个地标视图 `open: enter`，宅邸的 `open: locate`） |
+| eden：同上 + 房间平面 | 177 | 4 | `world` | 另加 `eden_estate` 下 64 个房间节点 | 54 |
+| eden：只有地图（没有世界数据） | 109 | 4 | `world` | world 1、group 2、site 7、layer 5、landmark 92、estate 1、zone 1 | 54 |
 | town | 8 | 2 | `town` | group 1、layer 2、landmark 5 | 2 |
 | minimal（原生 v2） | 5 | 3 | `harrow` | region、town、district 2、building | 1（示意图） |
+
+S2-A：挤奶厅作为一个 `zone` 节点挂在宅邸下（eden 各行各多 1 个节点；没有房间平面时深度也是 4：
+`world > tiancheng > tc_upper > eden_estate > dairy`）；它的 model3d 视图与地标视图一起计（上表的视图数写于已上线模型与挤奶厅之前，测试从 `maps.json` 推出）。
 
 其他固定事实：宅邸节点 `eden_estate` 的父是 `tc_upper`，强叫法 `伊甸庄园`、`Eden Manor`、`伊甸`、`庄园`，弱词 153 个（先房间后区域）；
 根有 17 个弱词（它的标题，再加泛称表的 16 个）；`tiancheng.enter = tc_upper`，`yuanyu.enter = yuanyu_sanctum`；

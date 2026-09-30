@@ -42,7 +42,7 @@ export function buildIndex(reg, world = null, names = null, custom = null, plan 
   const en = z => (names && names[z]) || null;
   // 庄园（kind=estate）：房间 / 区域词表；整座庄园的叫法 = alias 里不是房间也不是区域的词 + 标题 + 链接到它的地标（如上层的「伊甸庄园」）
   for (const [id, m] of Object.entries(maps)) {
-    if (m.kind !== 'estate' || m.status === 'planned' || m.test) continue;   // test：viewer3d 测试件（挤奶厅），不是地点
+    if (m.kind !== 'estate' || m.status === 'planned' || m.viewer3d) continue;   // viewer3d：通用三维页（地标模型、挤奶厅），没有房间词表，不是庄园
     const rooms = [...(m.rooms || []), ...(m.rooms_en || [])], areas = [...(m.areas || []), ...(m.areas_en || [])];
     const whole = new Set([m.title, m.title_en, m.layer?.name, m.layer?.name_en, ...(m.alias || []).filter(w => !rooms.includes(w) && !areas.includes(w))]);
     for (const L of Object.values(maps)) for (const k of Object.values(L.markers || {}))

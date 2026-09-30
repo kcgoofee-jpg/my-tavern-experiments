@@ -766,7 +766,7 @@ manifest. Card names below are quoted verbatim.
 | kind `points` | node (type `layer`, or merged `site`) + tiles view (id = map id) | auto |
 | kind `estate`, no `viewer3d` (first live one) | merged with the marker whose `link` targets it: node id = map id, parent = that marker's map, type `estate`; model3d view with `x-page` (`open: locate`) | auto |
 | kind `estate` with `viewer3d` | model3d view (`manifest: props/<viewer3d>/manifest.json`, `open: enter`), attached to every marker whose `link` / `link3d` targets it; not a node | auto |
-| `test: true` (`dairy`, "挤奶厅") | dropped by compat (v1 never resolves it); S2 adds it under `eden_estate` with `anchor: "dairy"` (the farm zone region) and deletes the test entry (D2) | pack data (S2) |
+| `anchor: { zone }` on a `viewer3d` map (`dairy`, "挤奶厅"; the v1 field `test` is gone) | a node of type `zone` under its `parent` (`eden_estate`), `anchor` = the zone id (a region of the parent's view, K-R32), `alias` = title, English title and `alias`; its model3d view (`open: enter`) is the map's own | auto (S2-A) |
 | `status: planned` | skipped | dropped until built |
 | `title`, `title_en` | view i18n; node name only for maps without `layer` | auto |
 | `parent`, `group` | node `parent` (group node wins) | auto |
@@ -822,7 +822,7 @@ manifest. Card names below are quoted verbatim.
 | `card_id_alias`, `retired_names` | old custom room names mapped to the current room (K-R25) | auto |
 | `floors`, `blocks`, `cores`, `basement`, `card_rooms` | data of the estate's own page | carried |
 | `map/estate/model/zones.json` (36 zones) | not read by compat; S4 turns zones into zone nodes (anchor = zone id in the estate view's region table) | pack data (S4) |
-| the farm zone `dairy` ("奶牛农场") | region `dairy` of the estate view; the parlour anchors to it | pack data (S2) |
+| the farm zone `dairy` ("奶牛农场") | region `dairy` of the estate view; the parlour anchors to it (`anchor.zone` in `maps.json`, checked against this file by `check_maps.py`) | done (S2-A) |
 
 ### A.5 Events: data files and code constants
 
@@ -898,11 +898,15 @@ These are the numbers `tests/compat_v1.test.mjs` asserts (depth = edges from the
 
 | Pack and inputs | Nodes | Depth | Root | Composition | Views |
 |---|---|---|---|---|---|
-| eden: maps + world + English names | 112 | 3 | `world` | world 1, realm 3, group 2 (`tiancheng`, `yuanyu`), site 8, layer 5, landmark 92, estate 1 | 54 (tiles 13, model3d 41: 40 landmark views `open: enter`, the estate's `open: locate`) |
-| eden: the same + room plan | 176 | 4 | `world` | + 64 room nodes under `eden_estate` | 54 |
-| eden: maps only (no world data) | 108 | 3 | `world` | world 1, group 2, site 7, layer 5, landmark 92, estate 1 | 54 |
+| eden: maps + world + English names | 113 | 4 | `world` | world 1, realm 3, group 2 (`tiancheng`, `yuanyu`), site 8, layer 5, landmark 92, estate 1, zone 1 | 54 (tiles 13, model3d 41: 40 landmark views `open: enter`, the estate's `open: locate`) |
+| eden: the same + room plan | 177 | 4 | `world` | + 64 room nodes under `eden_estate` | 54 |
+| eden: maps only (no world data) | 109 | 4 | `world` | world 1, group 2, site 7, layer 5, landmark 92, estate 1, zone 1 | 54 |
 | town | 8 | 2 | `town` | group 1, layer 2, landmark 5 | 2 |
 | minimal (native v2) | 5 | 3 | `harrow` | region, town, district 2, building | 1 (schematic) |
+
+S2-A: the dairy parlour joins as one `zone` node under the estate (+1 node in each eden row; depth 4 without the room plan too:
+`world > tiancheng > tc_upper > eden_estate > dairy`); its model3d view counts with the landmark views (the view counts above
+were written before the shipped models and the parlour; the test derives them from `maps.json`).
 
 Other fixed facts: the estate node `eden_estate` has parent `tc_upper`, aliases `伊甸庄园`, `Eden Manor`, `伊甸`,
 `庄园`, and 153 hints (rooms, then areas); the root has 17 hints (its title, then the 16 ambiguous words);

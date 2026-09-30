@@ -34,11 +34,11 @@ const kinds = (pack, key) => Object.values(pack.views).filter(v => v.kind === ke
 
 // 3D landmark pages in the data today: A.8 was written with 40 (57 nodes, 54 views); a model shipped since (head #126), so the
 // expected numbers are derived from maps.json and only their lower bound is pinned.
-const LM = Object.entries(MAPS.maps).filter(([, m]) => m.kind === 'estate' && m.viewer3d && !m.test).map(([k]) => k);
+const LM = Object.entries(MAPS.maps).filter(([, m]) => m.kind === 'estate' && m.viewer3d).map(([k]) => k);
 const WITH_3D = Object.values(MAPS.maps).flatMap(m => Object.values(m.markers || {})).filter(k => [k.link, k.link3d].some(l => l && LM.includes(l.map))).length;
 
-test('A.8 counts: eden (maps + world + names) 112 nodes, depth 3, root world', () => {
-  assert.deepEqual(describe(eden.tree, eden.views), { nodes: 112, depth: 3, types: { world: 1, realm: 3, group: 2, site: 8, layer: 5, landmark: 92, estate: 1 }, grown: 0, views: { tiles: 13, model3d: LM.length + 1 } });
+test('A.8 counts: eden (maps + world + names) 113 nodes, depth 4, root world', () => {
+  assert.deepEqual(describe(eden.tree, eden.views), { nodes: 113, depth: 4, types: { world: 1, realm: 3, group: 2, site: 8, layer: 5, landmark: 92, estate: 1, zone: 1 }, grown: 0, views: { tiles: 13, model3d: LM.length + 1 } });
   assert.equal(eden.tree.root, 'world');
   assert.deepEqual(eden.tree.problems, []);
   assert.ok(LM.length >= 40);
@@ -46,15 +46,15 @@ test('A.8 counts: eden (maps + world + names) 112 nodes, depth 3, root world', (
   assert.equal(Object.values(eden.views).filter(v => v.kind === 'model3d' && v.open === 'enter').length, LM.length);
   assert.equal(eden.views.eden_estate.open, 'locate');
 });
-test('A.8 counts: eden + room plan 176 nodes, depth 4, 64 rooms under the estate', () => {
+test('A.8 counts: eden + room plan 177 nodes, depth 4, 64 rooms and the dairy parlour under the estate', () => {
   const d = describe(edenPlan.tree, edenPlan.views);
-  assert.equal(d.nodes, 176); assert.equal(d.depth, 4); assert.equal(d.types.room, 64);
-  assert.equal(edenPlan.tree.children('eden_estate').length, 64);
+  assert.equal(d.nodes, 177); assert.equal(d.depth, 4); assert.equal(d.types.room, 64); assert.equal(d.types.zone, 1);
+  assert.equal(edenPlan.tree.children('eden_estate').length, 65);
   assert.equal(kinds(edenPlan.pack, 'tiles'), 13); assert.equal(kinds(edenPlan.pack, 'model3d'), LM.length + 1);
 });
-test('A.8 counts: eden maps only (no world data) 108 nodes, depth 3, root world', () => {
+test('A.8 counts: eden maps only (no world data) 109 nodes, depth 4, root world', () => {
   const d = describe(edenMaps.tree, edenMaps.views);
-  assert.deepEqual(d, { nodes: 108, depth: 3, types: { world: 1, group: 2, site: 7, layer: 5, landmark: 92, estate: 1 }, grown: 0, views: d.views });
+  assert.deepEqual(d, { nodes: 109, depth: 4, types: { world: 1, group: 2, site: 7, layer: 5, landmark: 92, estate: 1, zone: 1 }, grown: 0, views: d.views });
   assert.equal(edenMaps.tree.root, 'world');
 });
 test('A.8 counts: town 8 nodes, depth 2, root town, 2 views', () => {
@@ -84,13 +84,15 @@ test('A.8 fixed facts: estate node, root hints, enter, levels, passages, no stro
   for (const [w, ids] of strong) for (const a of ids) for (const b of ids) if (a !== b) assert.ok(eden.tree.isAncestor(a, b) || eden.tree.isAncestor(b, a), `${w}: ${a} / ${b}`);
   assert.ok(eden.vocab.entries.every(x => !x.weak || (eden.tree.get(x.node).hints || []).some(h => h === x.word)), 'no alias was demoted to a hint');
 });
-test('dropped and skipped: the test map, planned maps, provenance labels, page sources of 3D landmarks', () => {
-  assert.ok(!eden.tree.has('dairy') && !eden.views.dairy);
+test('dropped and skipped: planned maps, provenance labels, page sources of 3D landmarks; the dairy parlour is a zone node of the estate', () => {
+  assert.deepEqual(eden.tree.get('dairy'), { id: 'dairy', name: '挤奶厅', type: 'zone', parent: 'eden_estate', alias: ['挤奶厅', 'Dairy parlour'], anchor: 'dairy', i18n: { en: { name: 'Dairy parlour' } } });
+  assert.equal(eden.views.dairy.kind, 'model3d'); assert.equal(eden.views.dairy.open, 'enter');
+  assert.deepEqual(positionOf(eden.tree, eden.views, 'dairy'), { view: 'eden_estate', owner: 'eden_estate', anchor: 'dairy' });   // K-R31 / K-R32: the estate view, region `dairy`
   for (const n of eden.pack.nodes) for (const k of ['tag', 'canon', 'layer_src', 'sub_src']) assert.ok(!(k in n), `${n.id}.${k}`);
   assert.ok(Object.values(eden.views).filter(v => v.kind === 'model3d' && v.open === 'enter').every(v => !('x-page' in v) && /^props\/[a-z0-9_]+\/manifest\.json$/.test(v.manifest)));
   const planned = JSON.parse(JSON.stringify(MAPS)); planned.maps.tc_mid.status = 'planned';
   const p = load({ manifest: MAN, maps: planned, world: WORLD, names: NAMES });
-  assert.ok(!p.tree.has('tc_mid') && !p.tree.has('enforcement_hq') && p.tree.ids().length === 112 - 1 - Object.keys(MAPS.maps.tc_mid.markers).length);
+  assert.ok(!p.tree.has('tc_mid') && !p.tree.has('enforcement_hq') && p.tree.ids().length === 113 - 1 - Object.keys(MAPS.maps.tc_mid.markers).length);
 });
 
 test('every converted pack passes validate2 (trusted) without a problem', () => {

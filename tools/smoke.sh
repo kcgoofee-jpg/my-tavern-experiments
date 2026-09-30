@@ -24,6 +24,7 @@ step() { local name=$1; shift; local t=$SECONDS
 
 step "check_maps" python3 tools/check_maps.py
 python3 tools/check_render_deps.py | sed 's/^/  [警告] /'   # 只警告，不计入 FAIL（docs/render-deps.md）
+step "地图树不变量自测（无孤儿 / 无 test 字段 / anchor.zone 存在，见 tools/maps_invariants.py）" python3 tools/test_maps_invariants.py
 step "check_pack（设定包）" python3 tools/check_pack.py
 step "架构看门狗（引擎行数 / 分层纯净 / 裸 z-index / 卡专有名词 / 源码学术引用 / 内联样式，账本只减不增，见 tools/check_architecture.py）" python3 tools/check_architecture.py
 step "架构看门狗门控自测（引用与账本拦得住 / 机制术语放行 / 仓库现状干净，防空转）" python3 tools/test_architecture_gate.py

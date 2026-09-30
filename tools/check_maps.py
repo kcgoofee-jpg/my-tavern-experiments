@@ -13,6 +13,7 @@
   - 三层数据的 extent_m 一致
   - 岛轮廓 islands[].outline（可选）：至少 8 个点，坐标在 0…1
   - kind=estate（三维庄园剖面，iframe 嵌入）：不要底图 / 点位数据；src 页面存在、有 parent、alias 为非空列表；rooms / areas（可选）是字符串列表且不重叠
+  - 树不变量（tools/maps_invariants.py）：没有孤儿地图（parent 链都走到根、不成环）；字段 test 已取消；每个 anchor.zone 都在 map/estate/model/zones.json 里
   - points 地图的 districts（可选）：大区叫法，字符串列表
   - 事件大类 / 类型（events.mjs）在 en.json 的 names 里都有英文
   - 上层 routes（航线折线、巡逻环）：kind 已知、至少 2 个点、坐标在 0…1
@@ -88,6 +89,9 @@ for gid, g in reg.get('groups', {}).items():
     for k in g['layers']:
         if k not in maps: err(f'group {gid} 里的 {k} 不存在')
 data = {}
+from maps_invariants import invariants as _invariants   # 树不变量（无孤儿 / 无 test 字段 / anchor.zone 存在），自测见 tools/test_maps_invariants.py
+_zp = os.path.join(ROOT, 'estate', 'model', 'zones.json')
+for _e in _invariants(maps, {z['id'] for z in load(_zp).get('zones', [])} if exists(_zp) else set()): err(_e)
 for mid, m in maps.items():
     if m.get('parent') and m['parent'] not in maps: err(f"{mid}.parent → {m['parent']} 不存在")
     if m.get('group') and m['group'] not in reg.get('groups', {}): err(f"{mid}.group → {m['group']} 不存在")
@@ -98,7 +102,7 @@ for mid, m in maps.items():
         if not src or not exists(os.path.join(ROOT, src)): err(f'{mid}: 缺庄园页面 src {src!r}')
         if not m.get('parent'): err(f'{mid}: estate 地图要有 parent（面包屑回到哪一层）')
         if m.get('viewer3d') and not exists(os.path.join(ROOT, 'props', m['viewer3d'], 'manifest.json')): err(f"{mid}: viewer3d 清单 props/{m['viewer3d']}/manifest.json 不存在")
-        if not m.get('test') and (not isinstance(m.get('alias'), list) or not m['alias']): err(f'{mid}: alias 应为非空列表（当前地点匹配房间用）')
+        if not isinstance(m.get('alias'), list) or not m['alias']: err(f'{mid}: alias 应为非空列表（当前地点匹配房间用）')
         if m.get('group') and not (m.get('layer') or {}).get('name'): err(f'{mid}: 在 group 里要有 layer.name（层切换器显示）')
         for f in ('rooms', 'rooms_en', 'areas', 'areas_en'):   # 当前地点 → 庄园房间 / 室外区域（map/here.mjs）
             if f in m and not (isinstance(m[f], list) and all(isinstance(w, str) and w for w in m[f])): err(f'{mid}.{f} 应为非空字符串列表')

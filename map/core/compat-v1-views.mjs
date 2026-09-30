@@ -35,7 +35,7 @@ export function buildViews({ M, ctx }, hasNode) {
   for (const [k, m] of Object.entries(M)) {
     if (m.status === 'planned') continue;
     if (m.kind === 'world' || m.kind === 'points') { const v = tiles(m, ctx.idmap, hasNode); if (v) views[k] = v; }
-    else if (m.kind === 'estate' && m.viewer3d && !m.test) {
+    else if (m.kind === 'estate' && m.viewer3d) {
       const v = { kind: 'model3d', open: 'enter', manifest: `props/${m.viewer3d}/manifest.json` };
       put(v, 'credit', str(m.credit)); put(v, 'i18n', i18nOf({ title: m.title }, { title: m.title_en, credit: m.credit_en })); views[k] = v;
     } else if (ctx.estate && k === ctx.estate.id) {

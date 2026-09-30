@@ -1891,12 +1891,13 @@
     "dairy": {
       "title": "挤奶厅",
       "title_en": "Dairy parlour",
-      "parent": "world",
+      "parent": "eden_estate",
       "kind": "estate",
-      "test": true,
+      "anchor": { "zone": "dairy" },
       "viewer3d": "dairy",
       "src": "props/viewer3d.html",
-      "src_note": "通用三维查看器（props/viewer3d.html + props/<viewer3d>/manifest.json）的测试件，只从设置里的测试入口进；不是剧情地点。伊甸庄园切到新查看器 = 给 eden_estate 加一行 \"viewer3d\": \"eden\"（props/eden/manifest.json 就位后），见 docs/model-sources.md",
+      "alias": ["挤奶厅", "Dairy parlour"],
+      "src_note": "通用三维查看器（props/viewer3d.html + props/<viewer3d>/manifest.json）的页面；挂在伊甸庄园下，落在庄园农场区域 dairy（map/estate/model/zones.json）。伊甸庄园切到新查看器 = 给 eden_estate 加一行 \"viewer3d\": \"eden\"（props/eden/manifest.json 就位后），见 docs/model-sources.md",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },

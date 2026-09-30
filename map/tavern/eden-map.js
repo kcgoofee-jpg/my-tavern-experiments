@@ -1115,7 +1115,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     storage: async () => { const st = store(); return BG && st ? BG.measure(st) : null; },   // A-13：本机存储占用（字节，UTF-16）
     async removeAvatar(name) { const v = inner(), rm = v ? fnGuard('EdenMap.removeAvatar', v.removeAvatar, 1) : null; if (rm) return rm(name); const C = await chx(), st = store(); return !!st && C.removeAvatar(st, chatId(), name); },
     async getCharacters() { return { items: chars.map(c => ({ ...c })), floor: floorNow, rosters: roster ? JSON.parse(JSON.stringify(roster)) : null, reputation: rep }; },   // v0.9.5：rosters / reputation 只读
-    // 三维查看器飞到热点（v1.0 测试件：{ map: 'dairy', hotspot: 'tank' }）：面板没开就先打开；地图就绪后转发
+    // 三维查看器飞到热点（{ map: 'dairy', hotspot: 'tank' }）：面板没开就先打开；地图就绪后转发
     async flyTo(t) { flyQ = t || null; if (panel.hidden && !ghost) { panel.hidden = false; await loadViewer(); } else if (ghost) fab.click();
       if (!flyQ) return true; const v = inner(), fly = v ? fnGuard('EdenMap.flyTo', v.flyTo, 1) : null; if (fly) { flyQ = null; return fly(t); } return true; },
     // v0.9.6 只读：当前在用的数据来源（不含任何数据内容本身）。location = 当前地点来自哪里；characters = 人物栏各来源人数；
