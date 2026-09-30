@@ -49,3 +49,8 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T12:45:43Z,review:free_knight_camp,review-r1,claim,std-1,,
 2026-09-30T12:45:59Z,review:free_knight_camp,review-r1,done,std-1,pass,"r1 7/6 pass; polish: plate edge, density, tent colours"
 2026-09-30T12:45:59Z,review:free_knight_camp,ship,skip,std-1,,"r1 pass, nothing changed; no re-export"
+2026-09-30T12:46:10Z,review:glory_crown,review-r1,claim,std-1,,
+2026-09-30T12:49:13Z,review:glory_crown,review-r1,done,std-1,fail,"r1 7/5 fail: dark deck slab in every frame, c3 blocked by bg tower"
+2026-09-30T12:49:13Z,review:glory_crown,fix,done,std-1,,"deck removed, tower lanes for all 3 cams, exposure -0.4"
+2026-09-30T12:49:13Z,review:glory_crown,review-r2,done,std-1,pass,r2 7/6 pass
+2026-09-30T12:55:45Z,review:glory_crown,ship,done,std-1,,"glb re-exported (std/low), landmark ship + checks pass"

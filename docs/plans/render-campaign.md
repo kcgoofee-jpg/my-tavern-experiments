@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T12:45:59Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T12:55:45Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 7 | 0 | 41 | 0 | 0 | 0 | 48 |
+| standard | 8 | 0 | 40 | 0 | 0 | 0 | 48 |
 | hero | 2 | 0 | 12 | 0 | 6 | 0 | 20 |
 
 Below-gate (user spot-check): none
@@ -22,7 +22,7 @@ Below-gate (user spot-check): none
 | 5 | `review:contest_corridor` | review | done | - |  |  | Review and fix model contest corridor |
 | 6 | `review:ether_dome` | review | done | - |  |  | Review and fix model ether dome |
 | 7 | `review:free_knight_camp` | review | done | - |  |  | Review and fix model free knight camp |
-| 8 | `review:glory_crown` | review | open | review-r1 |  |  | Review and fix model glory crown |
+| 8 | `review:glory_crown` | review | done | - |  |  | Review and fix model glory crown |
 | 9 | `review:linguang_post` | review | open | review-r1 |  |  | Review and fix model linguang post |
 | 10 | `review:rust_outskirts` | review | open | review-r1 |  |  | Review and fix model rust outskirts |
 | 11 | `review:league_club` | review | open | review-r1 |  |  | Review and fix model league club |
