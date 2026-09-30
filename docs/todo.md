@@ -1,6 +1,6 @@
 # Todo — the single tracker
 
-Status: 2026-09-30 · S0 done (S0-A…S0-E) · S1-design done, awaiting the user's review (Q-09) · next = S1-impl-1 after the review · render campaign R running · open: 9 infrastructure, 7 Eden content, 1 decision · migration table 81 rows, missing 0
+Status: 2026-09-30 · S0 done (S0-A…S0-E) · S1-design done, review accepted 2026-09-30 (Q-09) · S1-impl-1 in progress · render campaign R running · open: 9 infrastructure, 7 Eden content, 1 decision · migration table 81 rows, missing 0
 
 1. This is the only work list; plan detail lives in `docs/plans/spatial-os.md`, results in `docs/plans/spatial-os-log.md`, render items in the ledger `docs/plans/render-campaign.md`. Do not copy their items here.
 2. One item per line. A finished item is struck in place (`~~…~~ ✅ <date> <sha>`), never deleted; it moves to §4 only with a sha as evidence.
@@ -48,7 +48,7 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
 - [ ] **I-05** WebGL Part 3 leftovers: one persistent context across 3D navigations, the legacy estate page (`map/estate/main.js`) on the shared runtime, and shipping a KTX2-baked GLB (pipeline wired, inert). Source: archive L56–L58.
 - [ ] **I-06** 3D viewer camera settings: an auto-rotate switch in Settings, and whether wheel = pan should become zoom (wait for user feedback). Source: archive L96.
 - [ ] **I-07** Read-only window hooks with no writer (`__edenHostVersions`, `__edenHereText`, `__edenMvuSnapshotStatus`, `__composeTest`) and stale `.js` owner strings in `core/storage.mjs` KEYS (5 names, 8 keys). Source: RESULT S0-C open (f).
-- [ ] **I-08** English pickup scan (`core/pickup.mjs scan`) reports a spurious item "the" for "Mara picked up the Brass Key."; fix with a false-positive test in S6 (kernel-schema §14.2 O-1). Source: RESULT S1-design.
+- [ ] **I-08** English pickup scan (`core/pickup.mjs scan`) reports a spurious item "the" for "Mara picked up the Brass Key."; fix with a false-positive test in S6 (kernel-schema §14.2 O-1). Source: RESULT S1-design. → **Decided 2026-09-30: K-01 B, K-02 B, K-03 A, K-04 A, K-05 A, K-06 C, K-07 A, K-08 B, K-09 C (user accepted every recommendation).**
 - [ ] **I-09** Three places put pack data into markup or styles without the run-time pattern re-check of kernel-schema K-R64: the worldbook peek capsule string (`map/wbpeek.mjs` line 29, `T('wb.capsule')` from `ui.strings`), the event group colours (`map/events.mjs` lines 259–268, `style="--c:…"`), the 3D manifest's flow colour (`map/props/viewer3d.html`, `cvdColor(x.f.color)` in the flow list). Harmless while only shipped packs load; fix before S9 (kernel-schema §14.2 O-9). Source: RESULT S1-design (security review).
 
 ## 2. Eden content
@@ -74,7 +74,7 @@ Only work that is not already a render-campaign item.
 - [x] **Q-07** How far to move the upper-layer depth haze (`map/data/upper_depth.json`): look at the two new 8K maps, then choose none, haze tweak only, or re-render. **Recommendation: haze tweak only, and decide it after S8** (depth haze becomes a declared layer). Source: archive L249. → **Decided 2026-09-30: haze tweak only, after S8.**
 - [x] **Q-08** Local clean-up of ≈1.9 GB untracked artifacts (raw downloads, world output, 8K source PNGs) and the duplicated hdr / marble textures. Options: A) delete the re-downloadable raws now; B) leave everything until disk pressure. **Recommendation: B**, keep the renders in any case. Source: archive L187, L196. → **Decided 2026-09-30: B (leave until disk pressure).**
 
-- [ ] **Q-09** Kernel contract v2 review sheet: K-01…K-09 in `docs/kernel-schema.zh.md` §0 (unplaced events, broad place + room word, weak words for the current location, level-switcher shortcut, chat variable of new packs, zero-config roster groups, cities under realms, go-live of a foreign pack's model-facing text, pictures in card-embedded packs). Recommendation per item in the sheet; until answered the recommended options are the working assumption. Source: RESULT S1-design.
+- [x] **Q-09** Kernel contract v2 review sheet: K-01…K-09 in `docs/kernel-schema.zh.md` §0 (unplaced events, broad place + room word, weak words for the current location, level-switcher shortcut, chat variable of new packs, zero-config roster groups, cities under realms, go-live of a foreign pack's model-facing text, pictures in card-embedded packs). Recommendation per item in the sheet; until answered the recommended options are the working assumption. Source: RESULT S1-design.
 
 ## 4. Done (evidence)
 

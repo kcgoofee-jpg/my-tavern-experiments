@@ -13,20 +13,21 @@ are `K-01` … `K-09` (§0). Everything else was decided by the designer and is 
 
 ## 0. Decisions for the user (review sheet)
 
-The Chinese edition words these for review. Until the user answers, the recommended option is the working assumption
-and implementation prompts may rely on it; answers are recorded in `docs/todo.md` §3 and here.
+The Chinese edition words these for review. The user answered on 2026-09-30: every recommendation was accepted (K-01 B,
+K-02 B, K-03 A, K-04 A, K-05 A, K-06 C, K-07 A, K-08 B, K-09 C); the decisions are recorded in `docs/todo.md` §3 (Q-09)
+and in the last cell of each row below.
 
 | id | Question | Options | Recommended |
 |---|---|---|---|
-| K-01 | An event whose place matches no node: what happens? | A drop it (v1) · B keep it in the event list with no pin; it is never injected (it is near nothing) and merges by type + place text (K-R54) | B — the chat is the truth; hiding a real event is worse than an unpinned row |
-| K-02 | Text names a broad place and a generic room word ("upper tier, the study"): where does it land? | A v1: the room counts only with its house named, or alone · B the room counts whenever the broad place contains its house | B — more specific, one rule (K-R22) |
-| K-03 | Weak place words (today used only to guess an event's tier) also move the current location? | A yes, one rule for everything · B events only | A — one algorithm for every consumer (K-R24) |
-| K-04 | The first pack's level switcher shows the estate beside the three tiers (today). Keep that shortcut? | A keep (`ui.levels`) · B drop, reach it from its marker | A — no visible change for the first pack |
-| K-05 | Chat variable of new packs | A one per pack, `spatial_<id>` · B one shared `spatial_map` | A — two packs used in one chat never mix |
-| K-06 | A card without a pack: which tables become groups of people? | A every name-keyed table, titled with its key · B v1 guess (1st table = members, 2nd = targets) · C only tables whose rows are objects with a place- or person-like field; the others can be switched on in Settings | C — an inventory or faction table keyed by name is not a list of people |
-| K-07 | First pack content (S4): hang world cities under their realm (breadcrumb World › Realm › City)? | A yes · B keep them flat as today | A — "realm + city" texts then resolve to the city |
-| K-08 | What a pack tells the model (its `llm` block): when does it go live? | A under the existing consent switch, like the kernel's own text · B packs not shipped with the engine need their own switch (default off), asked again when that text changes | B — a pack from a link can change what it says to the model; the user sees it once |
-| K-09 | Pictures in a pack embedded in a card | A none (schematic views only) · B pictures stored inside the pack (within its 1 MB) · C B plus https picture links, loaded only while the remote-picture switch is on | C — a zero-code author can drop in a picture; remote loads stay under the user's switch |
+| K-01 | An event whose place matches no node: what happens? | A drop it (v1) · B keep it in the event list with no pin; it is never injected (it is near nothing) and merges by type + place text (K-R54) | B — the chat is the truth; hiding a real event is worse than an unpinned row · **Decided 2026-09-30: B (user accepted the recommendation)** |
+| K-02 | Text names a broad place and a generic room word ("upper tier, the study"): where does it land? | A v1: the room counts only with its house named, or alone · B the room counts whenever the broad place contains its house | B — more specific, one rule (K-R22) · **Decided 2026-09-30: B (user accepted the recommendation)** |
+| K-03 | Weak place words (today used only to guess an event's tier) also move the current location? | A yes, one rule for everything · B events only | A — one algorithm for every consumer (K-R24) · **Decided 2026-09-30: A (user accepted the recommendation)** |
+| K-04 | The first pack's level switcher shows the estate beside the three tiers (today). Keep that shortcut? | A keep (`ui.levels`) · B drop, reach it from its marker | A — no visible change for the first pack · **Decided 2026-09-30: A (user accepted the recommendation)** |
+| K-05 | Chat variable of new packs | A one per pack, `spatial_<id>` · B one shared `spatial_map` | A — two packs used in one chat never mix · **Decided 2026-09-30: A (user accepted the recommendation)** |
+| K-06 | A card without a pack: which tables become groups of people? | A every name-keyed table, titled with its key · B v1 guess (1st table = members, 2nd = targets) · C only tables whose rows are objects with a place- or person-like field; the others can be switched on in Settings | C — an inventory or faction table keyed by name is not a list of people · **Decided 2026-09-30: C (user accepted the recommendation)** |
+| K-07 | First pack content (S4): hang world cities under their realm (breadcrumb World › Realm › City)? | A yes · B keep them flat as today | A — "realm + city" texts then resolve to the city · **Decided 2026-09-30: A (user accepted the recommendation)** |
+| K-08 | What a pack tells the model (its `llm` block): when does it go live? | A under the existing consent switch, like the kernel's own text · B packs not shipped with the engine need their own switch (default off), asked again when that text changes | B — a pack from a link can change what it says to the model; the user sees it once · **Decided 2026-09-30: B (user accepted the recommendation)** |
+| K-09 | Pictures in a pack embedded in a card | A none (schematic views only) · B pictures stored inside the pack (within its 1 MB) · C B plus https picture links, loaded only while the remote-picture switch is on | C — a zero-code author can drop in a picture; remote loads stay under the user's switch · **Decided 2026-09-30: C (user accepted the recommendation)** |
 
 Moved out of this sheet on review: "may a pack embedded in a card ship its own page (code)?" is not a user choice —
 it would run arbitrary code on the tavern page; it is designer rule K-R36 / K-R63.
