@@ -1,0 +1,155 @@
+{
+ "_note": "viewer3d.html?model=elite_club 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/elite_club.md。 体量上限放宽到 std 1.0 / low 0.45 MB（单栋默认 0.6/0.3）：一个模型含主楼、两座穹顶侧馆、后露台、前庭水轴与门墙；实测 std 0.78 MB。",
+ "id": "elite_club",
+ "title": {
+  "zh": "顶级贵族与财阀会所",
+  "en": "Elite Clubs"
+ },
+ "glb": "elite_club.glb",
+ "glb_low": "elite_club_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "props_club",
+   "props_domes"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "props_terrace",
+   "props_court",
+   "site_ground"
+  ],
+  "building": {
+   "min": [
+    -64,
+    -0.3,
+    -56
+   ],
+   "max": [
+    64,
+    22,
+    60
+   ]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 22,
+  "default": 22
+ },
+ "camera": {
+  "frame": [
+   "props_club",
+   "props_domes"
+  ],
+  "dir": [
+   0.4,
+   0.42,
+   -0.8
+  ],
+  "min": 6,
+  "max": 350,
+  "maxPolar": 1.48
+ },
+ "budgets": {
+  "props_club": [
+   12000,
+   1024
+  ],
+  "props_domes": [
+   14000,
+   512
+  ],
+  "props_terrace": [
+   16000,
+   512
+  ],
+  "props_court": [
+   16000,
+   512
+  ],
+  "site_ground": [
+   2000,
+   512
+  ]
+ },
+ "hotspots": [
+  {
+   "id": "club",
+   "mesh": "props_club",
+   "name": {
+    "zh": "黑白大理石横条纹三层主楼 + 六柱门廊与山花 + 鎏金檐口",
+    "en": ""
+   },
+   "desc": {
+    "zh": "黑白大理石横条纹三层主楼 + 六柱门廊与山花 + 鎏金檐口",
+    "en": ""
+   },
+   "view": [
+    0.4,
+    0.42,
+    -0.8
+   ]
+  },
+  {
+   "id": "domes",
+   "mesh": "props_domes",
+   "name": {
+    "zh": "两座侧馆 + 铜绿圆穹 + 金色顶灯亭",
+    "en": ""
+   },
+   "desc": {
+    "zh": "两座侧馆 + 铜绿圆穹 + 金色顶灯亭",
+    "en": ""
+   },
+   "view": [
+    0.4,
+    0.42,
+    -0.8
+   ]
+  },
+  {
+   "id": "terrace",
+   "mesh": "props_terrace",
+   "name": {
+    "zh": "后露台：石栏 + 长方水池 + 黑白交替无面容立像",
+    "en": ""
+   },
+   "desc": {
+    "zh": "后露台：石栏 + 长方水池 + 黑白交替无面容立像",
+    "en": ""
+   },
+   "view": [
+    0.4,
+    0.42,
+    -0.8
+   ]
+  },
+  {
+   "id": "court",
+   "mesh": "props_court",
+   "name": {
+    "zh": "前庭水轴与喷泉 + 黄杨方格 + 球饰门柱与铁栅栏 + 金色灯笼 + 悬浮车",
+    "en": ""
+   },
+   "desc": {
+    "zh": "前庭水轴与喷泉 + 黄杨方格 + 球饰门柱与铁栅栏 + 金色灯笼 + 悬浮车",
+    "en": ""
+   },
+   "view": [
+    0.4,
+    0.42,
+    -0.8
+   ]
+  }
+ ],
+ "max_mb": {
+  "std": 1.0,
+  "low": 0.45
+ }
+}
