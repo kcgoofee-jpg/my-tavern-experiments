@@ -1,6 +1,6 @@
 # Todo — the single tracker
 
-Status: 2026-09-30 · S2-A, S2-B done (node tree in the viewer, dairy under the estate and reachable from its farm zone) · S0 done (S0-A…S0-E) · S1-design done, review accepted 2026-09-30 (Q-09) · S1-impl-1, S1-impl-2 done · render campaign R running · open: 9 infrastructure, 7 Eden content, 1 decision · migration table 81 rows, missing 0
+Status: 2026-09-30 · S3-1 done (the current location runs on nodes.locate) · S2-A, S2-B done (node tree in the viewer, dairy under the estate and reachable from its farm zone) · S0 done (S0-A…S0-E) · S1-design done, review accepted 2026-09-30 (Q-09) · S1-impl-1, S1-impl-2 done · render campaign R running · open: 9 infrastructure, 7 Eden content, 2 decisions · migration table 81 rows, missing 0
 
 1. This is the only work list; plan detail lives in `docs/plans/spatial-os.md`, results in `docs/plans/spatial-os-log.md`, render items in the ledger `docs/plans/render-campaign.md`. Do not copy their items here.
 2. One item per line. A finished item is struck in place (`~~…~~ ✅ <date> <sha>`), never deleted; it moves to §4 only with a sha as evidence.
@@ -25,7 +25,10 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
 - [ ] **S2** Node tree lands + milking hall moves home (L, 2 prompts) · in progress (S2-A, S2-B done) · prompt S2 · RESULT S2 (pending)
   - ~~**S2-A** `map/app/nodes-runtime.mjs`: breadcrumb / up button / warm-up / estate stand-in / card links read the node tree; the dairy parlour is a `zone` node under `eden_estate` (`anchor.zone`); test entry and `test` field gone; `tools/maps_invariants.py`; worldbook `[TOPO]` prefix from the node chain~~ ✅ 2026-09-30 `5f5b51f` `a82223d` `fdd65a7` (+ the change that carries this line) · prompt S2-A · RESULT S2-A
   - ~~**S2-B** drill-down UI: a zone with a child node shows "Enter 3D" on its card and on double-click (`estate:children` / `estate:go`); back from the child focuses the anchoring zone; the layer strip reads the runtime tree (`levels()` via `strip()`); probe `tools/browser/topo_dairy.mjs`~~ ✅ 2026-09-30 (SHAs in RESULT S2-B) · prompt S2-B · RESULT S2-B
-- [ ] **S3** Unify geography: everything lands on nodes, parity-tested (L, 3 prompts) · later · prompt S3 · RESULT S3 (pending)
+- [ ] **S3** Unify geography: everything lands on nodes, parity-tested (L, 3 prompts) · in progress (S3-1 done) · prompt S3 · RESULT S3 (pending)
+  - ~~**S3-1** the current location runs on `nodes.locate` (`map/app/here-v2.mjs` adapter, shadow parity `tests/here_v2_shadow.test.mjs`); `map/here.mjs` stays in place, unused by the viewer~~ ✅ 2026-09-30 `4a2b83d` (+ the caller switch, sha in RESULT S3-1) · prompt S3-1 · RESULT S3-1
+  - [ ] **S3-2** events land on nodes · next · prompt S3-2
+  - [ ] **S3-3** characters / items / trips / `tavern/spatial.mjs` on nodes; then delete `map/here.mjs` and its last callers (the tavern script `eden-map.js`, `skills/card-map/check_here.mjs`, `tools/build_worldbook_addon.py`, `tools/check_maps.py`) · later · prompt S3-3
 - [ ] **S4** Special-case sweep + neutral wording (L, 4 prompts) · later · prompt S4 · RESULT S4 (pending)
 - [ ] **S5** File split + first rename batch (L, 3 prompts) · later · prompt S5 · RESULT S5 (pending)
 - [ ] **Stage B** Real tavern test ① with the Eden card (I write the numbered checklist; feedback template in plan §13.4) · later · prompt none · RESULT (your reply)
@@ -77,6 +80,8 @@ Only work that is not already a render-campaign item.
 - [x] **Q-08** Local clean-up of ≈1.9 GB untracked artifacts (raw downloads, world output, 8K source PNGs) and the duplicated hdr / marble textures. Options: A) delete the re-downloadable raws now; B) leave everything until disk pressure. **Recommendation: B**, keep the renders in any case. Source: archive L187, L196. → **Decided 2026-09-30: B (leave until disk pressure).**
 
 - [x] **Q-09** Kernel contract v2 review sheet: K-01…K-09 in `docs/kernel-schema.zh.md` §0 (unplaced events, broad place + room word, weak words for the current location, level-switcher shortcut, chat variable of new packs, zero-config roster groups, cities under realms, go-live of a foreign pack's model-facing text, pictures in card-embedded packs). Recommendation per item in the sheet; until answered the recommended options are the working assumption. Source: RESULT S1-design.
+
+- [ ] **Q-10** The estate's area word `客房楼` holds the room word `客房` one code point shorter. The kernel keeps the longest span (the estate); v1 placed the room (with the room plan: room `客房` on F2). A.9 #4 only covers the no-plan word difference. Options: A) accept the kernel result and record it as A.9 #6; B) make the kernel prefer the room in that tie (a K-R20 change that also moves event placement). **Recommendation: A** — only the exact area word is affected and the estate view is still the right place. Source: RESULT S3-1, `tests/here_v2_shadow.test.mjs` (wider sweep).
 
 ## 4. Done (evidence)
 

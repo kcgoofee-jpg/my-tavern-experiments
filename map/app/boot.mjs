@@ -1,4 +1,4 @@
-// 启动：main / mainInner（并行取注册表、标记、派生数据、字典、here.mjs、core/protocol.mjs，建 OSD，发 ready）、启动失败出路。
+// 启动：main / mainInner（并行取注册表、标记、派生数据、字典、core/protocol.mjs，建 OSD，发 ready）、启动失败出路。
 // 核心各块按原内联脚本的顺序求值（副作用：监听器、window.I18N / EdenMap / TCNotify…）；兼容面 bridge.mjs 最后
 import './state.mjs';
 import './util.mjs';
@@ -33,7 +33,7 @@ import { layoutHeader, warmOthers } from './topbar.mjs';
 import { go } from './nav.mjs';
 import { est, estateLook, estatePlan, retryEstate } from './estate.mjs';
 import { closeCard } from './markers.mjs';
-import { ALIAS, applyZoomLimit, focusStart, hereRes, jumpHere, markHere, setEstPlan, setHX, setUserMoved, startInScene, userMoved } from './locate.mjs';
+import { ALIAS, applyZoomLimit, focusStart, hereRes, jumpHere, markHere, setEstPlan, setUserMoved, startInScene, userMoved } from './locate.mjs';
 import { initSettings } from './settings.mjs';
 import { emEmit, enNames, rebuildHere, setEnNames } from './extapi.mjs';
 import { firstRunHint, initE7, initShell } from './shell.mjs';
@@ -49,14 +49,14 @@ import { busOn } from './bus.mjs';
 export async function main() { try { await mainInner(); } catch (e) { bootFail(e); } }
 async function mainInner() {
   // 三个启动文件并行取（之前 derived.json 要等前两个取完才开始）
-  let d, enDict, reg, mk, dict, hx;
+  let d, enDict, reg, mk, dict;
   await initPack(getJSON);   // 设定包（core/pack.mjs）：一律取清单（eden 的在 viewer.html preload）
   const opt = k => (packData(k) ? getJSON(packData(k)) : Promise.resolve(null));
-  [reg, mk, d, dict, hx, enDict] = await Promise.all([getJSON(packData('maps')).then(rebase), opt('world'), opt('derived'), window.__i18n,
-    import(new URL('here.mjs', document.baseURI).href).catch(() => null), LANG === 'en' ? window.__i18n : getJSON('i18n/en.json'),
+  [reg, mk, d, dict, enDict] = await Promise.all([getJSON(packData('maps')).then(rebase), opt('world'), opt('derived'), window.__i18n,
+    LANG === 'en' ? window.__i18n : getJSON('i18n/en.json'),
     import(new URL('core/protocol.mjs', document.baseURI).href).then(m => { setPR(m); }, () => null), packEvents]);
   setREG(reg); setM(mk || { places: [], fiefs: [], realms: [] });   // 没有世界图的包：空的世界地点表
-  setDICT(dict); setHX(hx);
+  setDICT(dict);
   // v0.9.6：选了 EN 但英文词典没取到时，整页退回中文（以前 LANG 仍是 en：面包屑英文、界面中文、变量映射英文，混在一起）
   if (!DICT || !Object.keys(DICT).length) { const zh = await getJSON('i18n/zh.json'); if (LANG !== 'zh') { setLANG('zh'); document.documentElement.lang = 'zh-CN'; } setDICT(zh || {}); }
   jsonCache.set('i18n/' + LANG + '.json', Promise.resolve(DICT));

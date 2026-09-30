@@ -1,4 +1,4 @@
-// 初始视角与当前地点：focusStart、markHere、here.mjs 六级落点、jumpHere。
+// 初始视角与当前地点：focusStart、markHere、当前地点的落点（app/here-v2.mjs：nodes.locate 落到节点树，再还原成原来的结果形状）、jumpHere。
 import { M, REG, aspect, cur, curData, pendingFocus, pendingHome, setPendingFocus, setPendingHome, viewer } from './state.mjs';
 import { $, toImg } from './util.mjs';
 import { leanBg } from './tiers.mjs';
@@ -104,12 +104,13 @@ export function markHere(v) {
   if (typeof P.TCUnmapped !== 'undefined') P.TCUnmapped.update(v);   // v0.9.6 未上图
   updateLayerBadges(); estateRoom(); if (typeof P.TCTrips !== 'undefined') P.TCTrips.render();   // v0.9.5 途中：两端之间的虚线弧
 }
-// ---------------- 自动跳到当前地点（map/here.mjs 六级落点；设置里可关，默认开） ----------------
+// ---------------- 自动跳到当前地点（app/here-v2.mjs 的落点；设置里可关，默认开） ----------------
 // 庄园房间 / 区域 → 庄园（房间由 estate:room 高亮，切楼层由庄园页自己做）；地标 → 该层并打开地点卡；层 / 大区 / 天城 → 该层默认视野；世界地名 → 世界图；匹配不到不动。
 // 打开面板（或唤醒）后的第一条地点一定跳；之后只有地点变了才跳，不打断用户自己在别的图上浏览。
 export let estPlan = null;   // v0.9.6 map/data/eden_estate_rooms.json（卡设定分层房间，房间名照抄卡）
-export let HX = null, hereIdx = null;
-export const hereRes = v => (HX && hereIdx ? HX.resolveHere(v, hereIdx) : null);
+export { readCustom } from './here-v2.mjs';   // 旧版本机房间叫法的读取（custom.mjs 迁移用）
+export let hereIdx = null;   // app/here-v2.mjs 的 makeHere 结果（extapi.mjs rebuildHere 建；没建好之前认不出任何地点）
+export const hereRes = v => (hereIdx ? hereIdx.here(v) : null);
 export function jumpHere(v) {   // 只由「当前位置」按钮调用（不再在打开 / 地点更新时自动跳）
   let r = hereRes(v);
   if (!r || !REG?.maps[r.map] || REG.maps[r.map].status === 'planned') return false;
@@ -146,4 +147,3 @@ export function startInScene(v0) {
 }
 export function setHereIdx(v) { return (hereIdx = v); }
 export function setEstPlan(v) { return (estPlan = v); }
-export function setHX(v) { return (HX = v); }

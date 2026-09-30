@@ -6,7 +6,7 @@ import { layoutHeader } from './topbar.mjs';
 import { go } from './nav.mjs';
 import { narrowNow } from './estate.mjs';
 import { closeCard } from './markers.mjs';
-import { HX, focusStart, hereRes, setUserMoved, userMoved } from './locate.mjs';
+import { focusStart, hereRes, setUserMoved, userMoved } from './locate.mjs';
 import { TCSettings, kbdHelp, showLay, showSet } from './settings.mjs';
 import { NT, placeLayers, toggleLabels } from './shell.mjs';
 import { P } from './plugins.mjs';
@@ -40,18 +40,9 @@ export function renderNav() {
   updateLayerBadges(); placeLayers();
   if (!narrowNow()) requestAnimationFrame(layoutHeader);   // 面包屑变长（切到更深的图）后重新量工具栏放不放得下（E5 r3 设计 D8 / 无障碍 F-14）
 }
-// 当前地点在同组的哪一层：各层地标名 / 别名、庄园的房间别名里最长的匹配；匹配不到再看有没有写「上层 / 中层 / 下层」
-function hereLayer(v, g) {
-  v = (v || '').replace('{{user}}', ''); if (!v || !g.length) return null;
-  let best = null;
-  for (const k of g) { const L = REG.maps[k];
-    const words = [...(L.alias || []), ...Object.values(L.markers || {}).flatMap(x => [x.name, ...(x.alias || [])])];
-    for (const w of words) if (w && v.includes(w) && (!best || w.length > best.len)) best = { k, len: w.length }; }
-  return best?.k || g.find(k => REG.maps[k].layer?.name && v.includes(REG.maps[k].layer.name)) || null;
-}
 export function updateLayerBadges() {
   const m = cur && REG.maps[cur], g = layerIds(m); if (!g.length) return;
-  let others = 0; const r = hereRes($('#here').value), hk = HX ? (r && r.level <= 4 && g.includes(r.map) ? r.map : null) : hereLayer($('#here').value, g);
+  let others = 0; const r = hereRes($('#here').value), hk = r && r.level <= 4 && g.includes(r.map) ? r.map : null;
   document.querySelectorAll('#layers button').forEach(b => {
     const k = b.dataset.go, n = P.TCEvents.countOn?.(k) || 0;
     b.classList.toggle('here', k === hk && !n);   // 一个按钮只挂一种红色标记：有事态数就只显示数字，当前地点写进 aria / title（v0.9.2）

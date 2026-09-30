@@ -323,3 +323,21 @@ blocker: none
 open: none
 cleanup: done (my probe server on 5365 stopped, no launch.json entries, the scratch worktree stays until push)
 === END ===
+
+=== RESULT S3-1 ===
+status: DONE
+items: T1 ✓ T2 ✓ T3 ✓ T4 ✓
+commits: 4a2b83d feat(app): current location through nodes.locate (here-v2 adapter) with shadow parity   (T1, T2)
+         (this commit) refactor(app): callers switch to here-v2   (T3, T4, docs, this block)   (SHAs may change on rebase)
+pushed: head #<N> (see the push output; the head bump follows this commit)
+tests: node 722/723 (1 skipped; baseline 717/718, +5 = tests/here_v2_shadow.test.mjs) | smoke PASS | arch PASS (custom.mjs stays at its ledger ceiling of 456) | probes: accept=PASS(24) v096=PASS(31) topo_dairy=PASS pack_town=FAIL (only the pre-existing edenMapLogCur logbuf check, desktop + phone; the town "current location" jump to the dock and the fish-market highlight pass) unmapped096=PASS(22) trips095=PASS(32) custom095=PASS(114); not mine: probe095 fails the same 4 CDN-line checks on origin/preview, chars092 does not load (its import FALLBACK_MEMBERS no longer exists in tavern/mvu.mjs)
+parity (tests/here_v2_shadow.test.mjs; v1 = map/here.mjs, v2 = here-v2 over nodes.locate; compared: level, map, marker, place, room, std, floor, restricted, custom, the two ends and texts of a journey, the unmapped name; word separately):
+  - corpus of the prompt, here.test + card_spec: 137 distinct (input, config) pairs, 137 equal, of which 2 have the A.9 word difference (merged single-layer sites: the longest alias is reported, v1 the layer word); 0 unexplained
+  - session fixtures (every floor of session_a / session_b: the location variable of each floor, the places of characters, events and trips the pipeline reads out): 4 distinct places, 4 placed, 4 equal; 0 unexplained
+  - A.9 intended divergences, pinned through the adapter by their example input (none occurs in the corpus): 1 "上层 书房", 2 "奥伦帝国 书房", 3 "大学 议会", 4 "伊甸庄园 人工湖 浴室", 5 "大学 书房" (with and without the plan), plus the two merged sites: 7 examples, each v1 beside v2
+  - wider sweep (not asked for): the other v1 tests that call resolveHere (canon0928, characters, omissions099, transit095, unmapped096, which feeds every word of the registry): 306 pairs, 304 equal, 2 differ = ONE input "客房楼" in two configs, see deviation 1
+deviations: (1) NEW divergence beyond A.9, found by the wider sweep and therefore outside the stop rule of the prompt, pinned in the test (not whitelisted in the strict corpus test) and raised as Q-10: "客房楼" is an estate area word that contains the room word "客房" one code point shorter. The kernel keeps the longest span (node = the estate, level 2); v1 prefers the room when it is at most one code point shorter (without the plan: the room word, level 1; with the plan: room node "客房", std 客房, floor F2). A.9 #4 names only the word difference without the plan. Effect in the viewer: writing exactly "客房楼" focuses the estate instead of the room box. (2) `word` is the kernel's (A.9); `room` of a non-custom hit is the place as written; results carry two extra fields, `node` and `via` (alias / hint / user). (3) The adapter builds its own tree through fromV1 (1.9 ms) instead of reading nodes-runtime's: the user's names are vocabulary words and change without the plan arriving. (4) The unmapped name is decided by the kernel (K-R25) and shown as written; its ignore list is compared in normal form (v1: exact). (5) Removed with the switch: HX / setHX in locate.mjs, the dynamic import of here.mjs in boot.mjs, layers.mjs `hereLayer` (only used when here.mjs failed to load), the modulepreload of here.mjs (viewer.html now preloads app/here-v2.mjs); `readCustom` (old per-machine room names) is copied into here-v2 and re-exported by locate.mjs. (6) Left for S3-3 (out of this step): tavern/spatial.mjs, the card script map/tavern/eden-map.js (its own here.mjs import: transitLabel, parseTransit, room names), skills/card-map/check_here.mjs, tools/build_worldbook_addon.py, tools/check_maps.py; map/here.mjs stays and its own tests stay untouched and green.
+blocker: none
+open: Q-10 (accept "客房楼" → estate as A.9 #6, or change the kernel tie rule; recommendation: accept).
+cleanup: done (my probe server on 5611 stopped, the scratch baseline worktree removed, no launch.json entries; the s3-1 worktree stays until push)
+=== END ===

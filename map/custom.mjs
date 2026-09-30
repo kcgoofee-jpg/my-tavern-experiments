@@ -11,7 +11,7 @@ import { mountProgress } from './ui/progress.mjs';
 import { go } from './app/nav.mjs';
 import { estFail, estFocus, estateRoom, estateStandIn, setEstFocus } from './app/estate.mjs';
 import { cardFrom, closeCard, setCardFrom } from './app/markers.mjs';
-import { HX, estPlan, hereRes, markHere, setUserMoved, userMoved } from './app/locate.mjs';
+import { estPlan, hereRes, markHere, readCustom, setUserMoved, userMoved } from './app/locate.mjs';
 import { TCSettings, showSet } from './app/settings.mjs';
 import { LS, chatId, rebuildHere } from './app/extapi.mjs';
 import { P, register } from './app/plugins.mjs';
@@ -21,11 +21,11 @@ const TCCustom = (() => {
   let MV = null, data = { items: {}, 同步世界书: true }, host = null, clock = null, outfit = null, toastT = 0;
   const ready = import(new URL('tavern/mvu.mjs', document.baseURI).href).then(m => { MV = m; if (!host) loadLocal(); return m; }).catch(() => null);
   const lsKey = () => 'edenMap:chat:' + (typeof chatId === 'string' ? chatId : '') + ':custom2';
-  // 单独打开（或宿主还没推来）：本机存储；旧版 here.mjs 的房间叫法一并迁移进来显示
+  // 单独打开（或宿主还没推来）：本机存储；旧版（app/here-v2.mjs readCustom）的房间叫法一并迁移进来显示
   function loadLocal() {
     if (!MV) return; let o = {}; try { o = JSON.parse(LS?.getItem(lsKey()) || '{}') || {}; } catch (e) {}
     data = MV.normCustom(o.自定义);
-    try { const old = typeof HX !== 'undefined' && HX ? HX.readCustom(LS, typeof chatId === 'string' ? chatId : '').rooms : null; if (old && Object.keys(old).length) data = MV.migrateRooms(data, old).custom; } catch (e) {}
+    try { const old = readCustom(LS, typeof chatId === 'string' ? chatId : '').rooms; if (old && Object.keys(old).length) data = MV.migrateRooms(data, old).custom; } catch (e) {}
     apply();
   }
   function saveLocal() { try { LS?.setItem(lsKey(), JSON.stringify({ 自定义: data })); return true; } catch (e) { return false; } }
@@ -33,7 +33,7 @@ const TCCustom = (() => {
   // ---------- 给其他部分用 ----------
   const name = key => (data.items?.[key]?.名) || key;
   const entry = key => data.items?.[key] || null;
-  /** here.mjs buildIndex 的 custom 参数：房间 / 地标的自定义叫法 */
+  /** app/here-v2.mjs makeHere 的 custom 参数：房间 / 地标的自定义叫法 */
   // v0.9.6：区域、层 / 大区、世界地名的叫法，和「未上图」里选了「忽略」的名字
   function index() { if (!MV) return null; return { rooms: MV.aliasMap(data, ['room']), areas: MV.aliasMap(data, ['area']), marks: MV.aliasMap(data, ['landmark']), layers: MV.aliasMap(data, ['layer']), world: MV.aliasMap(data, ['world']), ignore: data.忽略 || [] }; }
   function apply() {

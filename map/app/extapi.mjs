@@ -4,7 +4,9 @@ import { M, REG, cur } from './state.mjs';
 import { $, post } from './util.mjs';
 import { nm } from './i18n.mjs';
 import { v3dFly } from './estate.mjs';
-import { HX, estPlan, hereIdx, markHere, setHereIdx } from './locate.mjs';
+import { estPlan, hereIdx, markHere, setHereIdx } from './locate.mjs';
+import { makeHere, readCustom } from './here-v2.mjs';
+import { PACK } from './pack.mjs';
 import { selfCheck } from './settings.mjs';
 import { P } from './plugins.mjs';
 // ---------------- 本机扩展接口 window.EdenMap（E6，docs/content-compat.md） ----------------
@@ -17,7 +19,10 @@ const emSubs = { here: new Set(), events: new Set(), map: new Set(), characters:
 export function emEmit(ev, data) { for (const f of emSubs[ev]) { try { f(data); } catch (e) { console.warn('[EdenMap]', e); } } if (ev === 'map') post({ type: 'eden-map:emit', ev, data }); }
 export function emMapChanged() { if (cur === emMap) return; emMap = cur; const m = REG.maps[cur]; emEmit('map', { map: cur, title: nm(m, 'title'), kind: m.kind }); }
 // v0.9.3：自定义叫法来自 custom.js（聊天变量 eden_map.自定义，或单独打开时的本机存储）；custom.js 还没就绪时退回旧版本机叫法
-export function rebuildHere() { if (HX && REG) setHereIdx(HX.buildIndex(REG, M, enNames, (typeof P.TCCustom !== 'undefined' && P.TCCustom.index()) || HX.readCustom(LS, chatId), estPlan)); }
+export function rebuildHere() {
+  if (!REG) return;
+  try { setHereIdx(makeHere({ manifest: PACK, maps: REG, world: M, names: enNames, plan: estPlan, custom: (typeof P.TCCustom !== 'undefined' && P.TCCustom.index()) || readCustom(LS, chatId) })); } catch (e) { setHereIdx(null); }   // 静默自愈：建不出词表就认不出地点，不弹框
+}
 export function setChat(id) { id = String(id || ''); if (id === chatId) return; chatId = id; rebuildHere(); P.TCChars.chatChanged(); P.TCCustom.chatChanged(); if (REG) { markHere($('#here').value); } }
 window.__edenMapChat = setChat;   // 宿主页转发调用前先同步聊天 id（同源 srcdoc，直接调用）
 window.EdenMap = Object.freeze({
