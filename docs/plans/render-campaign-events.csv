@@ -167,3 +167,12 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T14:35:16Z,lm:schneider_clinic,review-r1,done,std-1,pass,"r1 7.5/7 pass; polish: weathering, neighbour windows"
 2026-09-30T14:37:52Z,lm:schneider_clinic,final,done,std-1,,"2400px/64spp c1+c2, std 0.67 MB / low 0.16 MB (max_mb std 0.8/low 0.35), logs clean"
 2026-09-30T14:37:52Z,lm:schneider_clinic,ship,done,std-1,,"maps.json marker link + lm_schneider_clinic, card-buildings row; manifest count test -> 47; check_maps 0/0, smoke pass"
+2026-09-30T14:38:04Z,lm:elite_club,new,claim,std-1,,
+2026-09-30T14:38:24Z,lm:elite_club,new,done,std-1,,scaffolded
+2026-09-30T14:39:35Z,lm:elite_club,setting,done,std-1,,setting block (card L89/A31; exterior repo-inferred; marker to get its own model)
+2026-09-30T14:46:42Z,lm:elite_club,draft,done,std-1,,c1 2000px 16spp
+2026-09-30T14:46:42Z,lm:elite_club,board,done,std-1,,"board c1/c2/under, logs clean"
+2026-09-30T14:46:42Z,lm:elite_club,gapcheck,done,std-1,,"no gap: banded facade+portico, domes, terrace pool+statues, court axis+gate"
+2026-09-30T14:46:42Z,lm:elite_club,review-r1,done,std-1,pass,"r1 7.5/6.5 pass; polish: wing windows, statue scale"
+2026-09-30T14:51:55Z,lm:elite_club,final,done,std-1,,"2400px/64spp c1+c2, std 0.78 MB / low 0.25 MB (max_mb std 1.0/low 0.45), logs clean"
+2026-09-30T14:51:55Z,lm:elite_club,ship,wait,std-1,,"FREEZE_MAPS (S2-A maps.json dairy re-parent) on origin/preview; model, manifest, glbs, docs committed; remaining at ship: marker elite_club link (currently lm_glory_crown) -> new lm_elite_club entry in maps.json, card-buildings row, then landmark.py ship elite_club --score 'r1 7.5 / 6.5'"
