@@ -1,6 +1,6 @@
 // 宿主实例的生命周期：接管旧实例（幂等注入）、挂面板 DOM、事件监听登记与「死亡」标记、清理钩子（C2 第 4 步从 eden-map.js 拆出，行为不变）。
 // cleanup 本身仍在入口组装（它要停入口里的计时器 / 观察器），这里只负责登记到 window.parent.__edenMapCleanup 与 pagehide。
-import { fnOk } from './host-th.mjs';
+import { fnOk, thFn } from './host-th.mjs';
 
 /** 换版本 / 关脚本时旧实例必须彻底停掉（2026-09-27 接手 review P1）。所有 eventOn 走 listen 登记句柄；kill() 之后旧实例的所有出口都变成空操作。 */
 export function createLife() {
@@ -8,7 +8,17 @@ export function createLife() {
   return {
     get dead() { return dead; },
     kill() { dead = true; },
-    listen: (ev, fn) => { if (dead) return; try { offs.push([ev, fn, eventOn(ev, fn)]); } catch (e) {} },
+    /** listen(ev, fn, last?)：last = true 时优先用 eventMakeLast 让本处理器**排在所有同事件处理器之后跑**
+     *  （参考卡《玄胤世界观》Canon Authority Gate 的 bindLast 同一手法：结算 / 守卫必须晚于别人的写）。
+     *  没有 eventMakeLast 就退回 eventOn——语义不变，只是失去「排最后」的保证。 */
+    listen: (ev, fn, last) => {
+      if (dead) return;
+      try {
+        const mkLast = last ? thFn('eventMakeLast') : null;   // thFn：全局与 TavernHelper 命名空间都认
+        if (mkLast) { const h = mkLast(ev, fn); offs.push([null, null, typeof h?.stop === 'function' ? () => h.stop() : (typeof h === 'function' ? h : () => {})]); return; }
+        offs.push([ev, fn, eventOn(ev, fn)]);
+      } catch (e) {}
+    },
     add: off => offs.push([null, null, off]),   // 非酒馆事件的撤销函数（visibilitychange 等）
     unlisten: () => { for (const [ev, fn, h] of offs.splice(0)) { try { if (ev === null) h(); else if (fnOk('eventRemoveListener')) eventRemoveListener(ev, fn, h); else if (fnOk('eventOff')) eventOff(ev, fn); } catch (e) {} } },
   };

@@ -492,11 +492,14 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   // 状态引擎抢写（MVU 在场时那一拍就排在 VARIABLE_UPDATE_ENDED 收尾之后，见 mvu-bridge.markVarUpdate）。
   let LEDm = null, VSG = null;
   const lootFacts = [];                               // 本场会话的物理拾取事实（聊天维度：换聊天清空）
-  const settleState = { claimed: [], floor: null };   // 已补发水位（同一件只补一次，有界）
+  const settleState = { claimed: [], floor: null, branch: null };   // 已补发水位（同一件只补一次，有界；带分支纪律）
+  const settleCarry = { domains: [], floor: null };   // 待结算跨轮携带（未决的域带进下一轮，≤4；参考卡 pending-domain carry）
   import(SELF + 'core/ledger.mjs').then(m => { LEDm = m; }).catch(() => {});
   import(SELF + 'tavern/varsync.mjs').then(m => { VSG = m.createGate({ hasMvu: () => BR.mvuPresent(), epoch: () => BR.varUpdateSeq() }); }).catch(() => {});
   const gate = () => VSG;
   function gateFlush(why = 'round') { try { return gate()?.flush(why) || null; } catch (e) { return null; } }
+  /** 分支身份（同一楼换分支 = swipe / 重生成 ⇒ 该楼水位作废重算）：楼层 + 那一楼的 swipe 号 */
+  const branchNow = () => { try { return String(floorNow) + ':' + String(BR.swipeAt(floorNow) ?? 0); } catch (e) { return String(floorNow) + ':0'; } };
   /** 宿主实际落盘的状态视图（审计器的 landed 参数）：只为**这一轮真有事实的域**取视图，不白读一遍 MVU——
    *  资产域 = 仓库 id 表；NPC 域 = 在场名册的「人 → 当前地点」；事件域还没有落盘写入路径（不给视图 = 走待结算） */
   function landedView(facts) {
@@ -511,8 +514,10 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   function ledgerSync() {
     if (!LEDm || !STm || !INVm || !alive || life.dead || !lootFacts.length) return null;   // 本场没有物理事实 = 不用对账
     const aud = LEDm.audit(lootFacts, landedView(lootFacts));
+    LEDm.carry(settleCarry, aud.pending);                              // 未决的域带进下一轮（≤4，跨轮携带）
     const writable = aud.patches.filter(p => p.domain === 'assets');   // 只有资产域有落盘写入路径
-    const cl = LEDm.claim(settleState, writable, { floor: floorNow });
+    // 水位带分支纪律：回退剪掉未来、同一楼换了分支（swipe / 重生成）作废本楼记录后重新结算
+    const cl = LEDm.claim(settleState, writable, { floor: floorNow, branch: branchNow() });
     let fixed = 0;
     for (const p of cl.fresh) {
       const row = STm.rows(stash, {}).find(r => r.id === p.id);
@@ -545,7 +550,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
       inv = res.inv; changedInv();   // 写变量 + 推地图（拿到手的光点会消失）
       // W11：物理事实入账（两条拾取路径——平面 eden-map:loot 与 Part 8 庄园三维 estate:loot——都汇到这里）。
       // 下一轮的漏项审计拿它和实际落盘对账：如果这一件没写进去（被主 MVU 的整表写回盖掉等），只补这一件。
-      lootFacts.push({ kind: 'loot', id: row.id, name: row.name, place: row.place || d.place || '', map: row.map || d.map || '', hidden: !!row.hidden, qty: row.qty || 1, floor: floorNow });
+      lootFacts.push({ kind: 'loot', id: row.id, name: row.name, place: row.place || d.place || '', map: row.map || d.map || '', hidden: !!row.hidden, qty: row.qty || 1, floor: floorNow, authority: 'verified' });
       if (lootFacts.length > 40) lootFacts.shift();
       injectAction({ kind: 'loot', name: row.place || d.place || '', map: row.map || d.map || '', item: row.name });
     } catch (err) {}
@@ -719,7 +724,9 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     if (!lite) restNow();   // 标签改名、行程；发送路径上推迟到空闲
     else { clearTimeout(restT); restT = setTimeout(() => (window.parent.requestIdleCallback || (f => f()))(() => { if (!life.dead && restDue) restNow(); }, { timeout: 1500 }), 0); }
     const frLine = FRm ? FRm.digest(frState) : '';   // W2：未注入过的失败报告追加一行（注入后置水位，不重复）
-    inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : '', INVm && lsGet('edenMapInvInj') !== '0' ? INVm.digestLine(inv, 150) : '', frLine].filter(Boolean).join('\n'));
+    // W11：待结算跨轮携带（上一轮没结完的域）并进同一行——不开新通道，也不新增注入 id
+    const carryLine = LEDm ? LEDm.carryLine(settleCarry) : '';
+    inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : '', INVm && lsGet('edenMapInvInj') !== '0' ? INVm.digestLine(inv, 150) : '', frLine, carryLine].filter(Boolean).join('\n'));
     if (frLine) FRm.markInjected(frState);
     gate()?.request('sync', ledgerSync);   // W11：本轮的结算（漏项审计 + 单项补发）入队，末尾才放行——读取期间不写变量
     if (!lite) { stateInject(); spatialInject(); jitRound().catch(() => {}); xtalRound().catch(() => {}); checkpointStep(); }
@@ -1419,11 +1426,12 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     // 不 await：没装 MVU 时 waitGlobalInitialized 永远不返回，下面的楼层 / 聊天事件就一个都挂不上（只用聊天标签、或地点读数据库插件表的聊天，地图不跟着新楼更新）
     // W11 变量更新生命周期（顺序即契约）：作废快照 + 落代数 → 推送 → 重算 → 本轮末尾放行结算。
     // 地图侧的写入排在 VARIABLE_UPDATE_ENDED 收尾之后，绝不落在这个更新窗口里（tests/mvu_lifecycle.test.mjs）。
-    try { BR.whenMvu().then(() => { const ev = BR.varUpdateEvent(); if (ev) listen(ev, () => { BR.markVarUpdate(); pushSoon(); recomputeSoon(); gateFlush('ended'); }); }); } catch (e) {}   // MVU 人物表也会变（人物栏）
+    // 第三个参数 true = 排在所有同事件处理器之后（eventMakeLast）：结算必须晚于宿主 / 卡内状态引擎的写
+    try { BR.whenMvu().then(() => { const ev = BR.varUpdateEvent(); if (ev) listen(ev, () => { BR.markVarUpdate(); pushSoon(); recomputeSoon(); gateFlush('ended'); }, true); }); } catch (e) {}   // MVU 人物表也会变（人物栏）
     listen(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     listen(tavern_events.CHAT_CHANGED, () => { clearTimeout(wbChatT); wbChatT = setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动', e))); }, 1500); });   // 换角色 / 聊天：新角色也挂上、聊天版本提醒
     listen(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    listen(tavern_events.CHAT_CHANGED, () => { try { BG?.touch(store(), chatId()); } catch (e) {} injected = null; stateNow = ''; cardSkip = null; cp = null; CTX.reset(); gate()?.drop('chat'); settleState.claimed = []; settleState.floor = null; lootFacts.length = 0; loadSeen(); custom = null; if (tlOn) { tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => recomputeSoon(300)); });
+    listen(tavern_events.CHAT_CHANGED, () => { try { BG?.touch(store(), chatId()); } catch (e) {} injected = null; stateNow = ''; cardSkip = null; cp = null; CTX.reset(); gate()?.drop('chat'); settleState.claimed = []; settleState.floor = null; settleState.branch = null; settleCarry.domains = []; settleCarry.floor = null; lootFacts.length = 0; loadSeen(); custom = null; if (tlOn) { tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => recomputeSoon(300)); });
     // 通读 R1：开局菜单用 setChatMessage(swipe_id) 换开场白，不一定触发 SWIPED；渲染 / 编辑事件也听，地点跟着刷新
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) if (tavern_events[k]) listen(tavern_events[k], () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
     // 生成前同步一次，注入的是最新态势（A-3：只做注入需要的部分；输入没变直接跳过；标签改名 / 行程推到空闲）

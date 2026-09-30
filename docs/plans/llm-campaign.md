@@ -326,6 +326,30 @@ Batch 6, second wave of the same campaign (the "spatial OS / state-ledger settle
 - [ ] Open follow-up (registered, not blocking): the npc / events domains have a validated audit path but no
   host-side write path yet (facts are not produced for them in v1), so they settle as *pending* by design.
 
+**Addendum — aligned to the reference card's own settlement logic (2026-09-30).** The user supplied the
+*玄胤世界观* card (`0.8.9.19-R6.4`) after the fact; its `单模型状态结算引擎` script and `Canon Authority Gate`
+script are the same idea implemented natively, so W11 was tightened to match the documented contract:
+
+- [x] ~~**Authority ladder** (`AUTHORITY` / `promotable`): `canon > committed > verified > claim > hypothesis`.
+  A statement carries a source, but a source is not truth — only the first three may promote a state change;
+  `claim` (player narration / NPC self-description) and `hypothesis` stay *pending* (`not-promoted`), and an
+  unrecognised source is refused fail-closed. Map-side physics defaults to `verified`.~~
+- [x] ~~**Evidence on every patch** (`why`) + `stripWhy`: the reason a promotion was allowed travels with the
+  patch for audit/logging and is stripped before anything is written.~~
+- [x] ~~**Fill only holes, never fight a writer** (5th discipline): for the npc domain an existing landed value
+  is no longer overwritten even when it differs (it becomes `stale-value` pending) — the card's own rule is
+  "the main model already wrote it, so leave it alone".~~
+- [x] ~~**One-turn pending-domain carry** (`carry` / `carryLine`, cap 4): unresolved domains ride into the next
+  round's existing injection line (`[地图结算·待确认领域] …`) — the card's `pendingCarry` / domain-focus
+  prompt, reusing our channel instead of adding one.~~
+- [x] ~~**Branch discipline on the watermark**: rewind prunes future claims, a same-floor branch change
+  (swipe / regenerate) voids that floor's records and re-settles; same floor + same branch stays idempotent
+  (which is also what stops a legitimately consumed item from being resurrected). Host passes
+  `floor + swipe` as the branch identity.~~
+- [x] ~~**Run-last registration**: `life.listen(ev, fn, true)` uses `eventMakeLast` when the host exposes it
+  (falling back to `eventOn`), so the settlement handler always runs after every other handler on the same
+  event — the reference card's `bindLast`.~~
+
 ---
 
 ## 5. Acceptance gates
@@ -375,3 +399,27 @@ Batch 6, second wave of the same campaign (the "spatial OS / state-ledger settle
    `tools/ship.sh --release` (README line, latest.json, CDN purge/warm) → `tools/sync_main.sh` →
    `check_readme` verification. Remote moves fast (background optimization) — rebase immediately
    before every push.
+
+## 9. Execution learnings (batch 2, 2026-09-30) — reference card supplied mid-batch
+
+The user handed over `玄胤世界观` (`0.8.9.19-R6.4`, a V3 card, 1.4 MB) *after* W11 had shipped: it implements
+the same settlement idea natively, so it is the authoritative reference for conventions we had to guess at.
+What it settled (details in the W11 addendum above):
+
+1. **Its own architecture list is our architecture**: `domain-focus prompt → deterministic text sensors → MVU
+   reducer → Zod+Canon transaction → coverage audit → one-turn pending-domain carry`. Our mapping is
+   `spatial/state injection → local geometry+stubs → ledger domains → authority ladder → audit → carry`.
+2. **"Scripts handle deterministic state, the LLM handles semantics"** is stated verbatim, and its
+   `deterministic_slots` (cash / inventory count / place / time / reputation / stamina) vs `semantic_slots`
+   (relationships / body / economy / harem / history / canon) split is the same cut our four domains make.
+3. **A writer-vs-writer rule worth keeping**: its reducers only fire when the main model did *not* already
+   change the field (`cur === prev`), and its inventory reducer is per-item so partial model updates cannot
+   hide other missing items. We had patched a *differing* npc place; that is now a `stale-value` pending.
+4. **Provenance is a first-class field**: its patches carry `__why` and are stripped (`stripWhy`) before the
+   write; its claim guard tags player input `authority="speech_action_only" truth="unverified"`. Ours is `why`.
+5. **Its hook discipline**: `bindLast` = `eventMakeLast` first (never `eventOn` alone) on both
+   `COMMAND_PARSED` and `VARIABLE_UPDATE_ENDED`, plus a one-macrotask defer for persistence and explicit
+   `MESSAGE_SWIPED` / `CHAT_CHANGED` handling — our gate + branch discipline covers the same ground; we added
+   the run-last registration.
+6. **Card is a reference, not a dependency**: nothing of that card's names, schema or content enters the repo —
+   our module stays card-generic (proper-noun scans still pass); only the *rules* were adopted.

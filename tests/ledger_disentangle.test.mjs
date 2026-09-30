@@ -79,7 +79,8 @@ test('漏项审计：确实缺了才补，且只补这一件（不重写整表�
   assert.equal(L.factKey(facts[0]), 'loot|i1|书房||42');
   const miss = L.audit(facts, { assets: {} });
   assert.equal(miss.patches.length, 1);
-  assert.deepEqual(miss.patches[0], { domain: 'assets', op: 'OP_LOOT', id: 'i1', name: '账本', key: 'loot|i1|书房||42', place: '书房', hidden: true, qty: 3 });
+  assert.deepEqual(L.stripWhy(miss.patches[0]), { domain: 'assets', op: 'OP_LOOT', id: 'i1', name: '账本', key: 'loot|i1|书房||42', place: '书房', hidden: true, qty: 3 });
+  assert.ok(miss.patches[0].why);   // 凭据：为什么允许这一次升格（写盘前剥掉）
   assert.equal(miss.pending.length, 0);
   const hit = L.audit(facts, { assets: { i1: '账本' } });
   assert.deepEqual([hit.patches.length, hit.ok], [0, 1]);
@@ -90,19 +91,48 @@ test('漏项审计：确实缺了才补，且只补这一件（不重写整表�
   assert.deepEqual(L.audit(null, {}).patches, []);
 });
 
-test('漏项审计：NPC 坐标域只补「在册但位置旧」的位移；不在册的人待结算，绝不替世界造人', () => {
-  const facts = [{ kind: 'routine', npc: '甲', room: '书房', floor: 7 }, { kind: 'routine', npc: '丙', room: '大厅' }];
+test('漏项审计：NPC 坐标域只补落盘里**缺**的那一项；已有值（哪怕不一样）不覆盖，不抢写；不在册的人待结算', () => {
+  const facts = [{ kind: 'routine', npc: '甲', room: '书房', floor: 7 }, { kind: 'routine', npc: '丙', room: '大厅' }, { kind: 'routine', npc: '丁', room: '偏厅' }];
   const r = L.audit(facts, { npc: { 甲: '花园' } });
-  assert.deepEqual(r.patches, [{ domain: 'npc', op: 'OP_ROUTINE', npc: '甲', room: '书房', key: 'routine|甲|书房||7' }]);
-  assert.deepEqual(r.pending.map(x => x.why), ['unknown-npc']);
+  assert.deepEqual(r.patches, []);                                   // 甲在册但值不同 → 不覆盖（等那头确认）
+  assert.deepEqual(r.pending.map(x => x.why), ['stale-value', 'unknown-npc', 'unknown-npc']);
   assert.equal(L.audit([facts[0]], { npc: { 甲: '书房' } }).ok, 1);
 });
 
 test('漏项审计：事件域按 (类型, 级别, 坐标) 判重后追加；白名单外的类型待结算', () => {
   const f = { kind: 'event', type: 'alert', level: 2, at: [0.1, 0.2], floor: 5 };
-  assert.deepEqual(L.audit([f], { events: {} }).patches[0], { domain: 'events', op: 'OP_EVENT', type: 'alert', level: 2, at: [0.1, 0.2], key: 'event|alert||0.1,0.2|5' });
+  const p = L.audit([f], { events: {} }).patches[0];
+  assert.deepEqual(L.stripWhy(p), { domain: 'events', op: 'OP_EVENT', type: 'alert', level: 2, at: [0.1, 0.2], key: 'event|alert||0.1,0.2|5' });
   assert.equal(L.audit([f], { events: { 'alert|2|0.1,0.2': true } }).ok, 1);
   assert.deepEqual(L.audit([{ ...f, type: 'boom' }], { events: {} }).pending[0].why, 'unresolved');
+});
+
+test('事实权威阶梯：只有 canon / committed / verified 能升格；claim / hypothesis 停在待结算（陈述不自证）', () => {
+  assert.deepEqual(L.AUTHORITY, ['canon', 'committed', 'verified', 'claim', 'hypothesis']);
+  assert.equal(L.promotable('canon'), true);
+  assert.equal(L.promotable(undefined), true);        // 缺省 = 地图侧客观物理判定（verified）
+  assert.equal(L.promotable('committed'), true);
+  assert.equal(L.promotable('claim'), false);         // 玩家口述 / NPC 自称
+  assert.equal(L.promotable('hypothesis'), false);    // 假设句 / 推演草案
+  assert.equal(L.promotable('whatever'), false);      // 认不出的来源：fail-closed
+  const f = over => ({ kind: 'loot', id: 'i1', name: '账本', place: '书房', floor: 42, ...over });
+  assert.equal(L.audit([f({})], { assets: {} }).patches.length, 1);
+  assert.equal(L.audit([f({ authority: 'claim' })], { assets: {} }).patches.length, 0);
+  assert.deepEqual(L.audit([f({ authority: 'claim' })], { assets: {} }).pending[0].why, 'not-promoted');
+  assert.equal(L.audit([f({ src: 'hypothesis' })], { assets: {} }).patches.length, 0);
+  assert.equal(L.audit([f({ src: 'committed' })], { assets: {} }).patches.length, 1);
+});
+
+test('待结算跨轮携带：未决的域带去下一轮（≤cap）、去重、跨聊天清空', () => {
+  const st = { domains: [], floor: null };
+  const aud = L.audit([{ kind: 'loot', id: 'i1', name: '账本', authority: 'claim' }, { kind: 'routine', npc: '甲', room: '书房' }, { kind: 'event', type: 'alert', level: 1, at: [0, 0] }], { assets: {}, npc: {} });
+  assert.deepEqual(aud.pending.map(x => x.why), ['not-promoted', 'unknown-npc', 'no-landed']);
+  assert.deepEqual(L.carry(st, aud.pending), ['assets', 'npc', 'events']);
+  assert.equal(L.carryLine(st), '[地图结算·待确认领域] 资产/背包、NPC坐标、世界事件');
+  assert.deepEqual(L.carry(st, aud.pending, { cap: 2 }), ['assets', 'npc']);
+  assert.deepEqual(L.carry(st, []), []);
+  assert.equal(L.carryLine(st), '');
+  assert.deepEqual(L.carry(null, [{ kind: 'loot' }]), ['assets']);   // 没给 state 也能用
 });
 
 test('水位 claim：同一件只放行一次；同批重复只留第一条；水位有界', () => {
@@ -115,6 +145,33 @@ test('水位 claim：同一件只放行一次；同批重复只留第一条；�
   assert.equal(L.claim(null, [a]).fresh.length, 1);          // 没给 state 也能用（内部重新起一份）
   for (let i = 0; i < 300; i++) L.claim(st, [{ key: 'x' + i }]);
   assert.ok(st.claimed.length <= 200);                       // 长会话内存有界
+});
+
+test('水位分支纪律：同楼同分支幂等；同一楼换分支（swipe / 重生成）作废本楼重算；回退剪掉未来', () => {
+  const st = { claimed: [], floor: null, branch: null };
+  const rows = [{ key: 'k1' }, { key: 'k2' }];
+  const r1 = L.claim(st, rows, { floor: 5, branch: '5:0' });
+  assert.deepEqual([r1.fresh.length, r1.repeated, r1.pruned], [2, 0, 0]);
+  assert.equal(L.claim(st, rows, { floor: 5, branch: '5:0' }).fresh.length, 0);   // 同楼同分支：幂等（同一件不补第二次）
+  const re = L.claim(st, rows, { floor: 5, branch: '5:1' });                     // 换了分支：本楼记录作废，重新结算
+  assert.deepEqual([re.pruned, re.fresh.length], [2, 2]);
+  assert.equal(st.branch, '5:1');
+  const back = L.claim(st, rows, { floor: 4, branch: '4:0' });                   // 回退：未来（楼层 > 4）作废
+  assert.deepEqual([back.pruned, back.fresh.length], [2, 2]);
+  assert.ok(st.claimed.every(c => typeof c === 'object' && c.floor === 4));
+  assert.ok(st.claimed.some(c => c.branch === '4:0'));
+  // 老格式（裸字符串键）：无从判断分支 → 保留、按旧语义去重（不误删历史水位）
+  const legacy = { claimed: ['old'], floor: 9, branch: '9:0' };
+  assert.deepEqual([L.claim(legacy, [{ key: 'old' }], { floor: 9, branch: '9:1' }).repeated, legacy.claimed.length], [1, 1]);
+});
+
+test('凭据只在审计里：stripWhy 剥掉 why 才是写盘形状（原对象不动）', () => {
+  const p = L.audit([{ kind: 'loot', id: 'i1', name: '账本', floor: 1 }], { assets: {} }).patches[0];
+  assert.ok(p.why);
+  assert.deepEqual(L.stripWhy(p), { domain: 'assets', op: 'OP_LOOT', id: 'i1', name: '账本', key: 'loot|i1|||1' });
+  assert.ok(p.why, '原 patch 不被就地改掉');
+  assert.deepEqual(L.stripWhy([p])[0].why, undefined);
+  assert.deepEqual(L.stripWhy(null), null);
 });
 
 test('describe：四域槽位与条数、丢弃数、水位摘要', () => {

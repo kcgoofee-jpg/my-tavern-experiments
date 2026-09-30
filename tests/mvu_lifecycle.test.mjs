@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import * as V from '../map/tavern/varsync.mjs';
 import * as L from '../map/core/ledger.mjs';
 import * as INV from '../map/tavern/inventory.mjs';
+import { createLife } from '../map/tavern/host-lifecycle.mjs';
 
 const src = () => readFileSync(fileURLToPath(new URL('../map/tavern/varsync.mjs', import.meta.url)), 'utf8');
 
@@ -132,6 +133,26 @@ test('端到端：漏项审计 → 入队 → 放行后按单项 patch 补进仓
   gate.flush('ended');
   assert.deepEqual(Object.keys(inv.items), ['i1']);              // 已落盘 + 水位：不重复写
   assert.equal(state.claimed.length, 1);
+});
+
+test('时序注册：结算处理器排在所有同事件处理器之后（eventMakeLast 优先，没有就退回 eventOn）', () => {
+  const on = [], last = [], off = [];
+  const hadWin = 'window' in globalThis; if (!hadWin) globalThis.window = globalThis;   // fnOk/thFn 读 window[n]
+  globalThis.eventOn = (ev) => { on.push(ev); return ev + '#h'; };
+  globalThis.eventMakeLast = ev => { last.push(ev); return { stop: () => off.push('last:' + ev) }; };
+  globalThis.eventRemoveListener = (ev, fn, h) => off.push(h);
+  try {
+    const life = createLife();
+    life.listen('A', () => {});
+    life.listen('VARIABLE_UPDATE_ENDED', () => {}, true);
+    assert.deepEqual(on, ['A']);                              // 普通事件仍走 eventOn
+    assert.deepEqual(last, ['VARIABLE_UPDATE_ENDED']);        // 结算走 eventMakeLast：晚于别人的写
+    life.unlisten();
+    assert.deepEqual(off, ['A#h', 'last:VARIABLE_UPDATE_ENDED']);
+    delete globalThis.eventMakeLast;                          // 宿主没有这个接口：退回 eventOn，语义不变
+    const life2 = createLife(); life2.listen('B', () => {}, true);
+    assert.deepEqual(on, ['A', 'B']);
+  } finally { delete globalThis.eventOn; delete globalThis.eventMakeLast; delete globalThis.eventRemoveListener; if (!hadWin) delete globalThis.window; }
 });
 
 test('模块纯度：纯状态机——不碰酒馆全局 / DOM / 存储 / 定时器；单文件 ≤400 行', () => {
