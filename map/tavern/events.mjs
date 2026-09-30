@@ -89,6 +89,10 @@ const layerGuess = loc => LAYERS.find(l => loc.startsWith(l)) || LAYERS.find(l =
 let CLOSED = /解除|结束|恢复|扑灭|已控制|平息/;
 // 设定包可改的措辞（configure）：地区名（地点前缀里去掉）、界外层名、注入句的标签
 const CFG = { region: '天城', outside: '天城外', tag: '天城事态', upAlias: /上城/ };
+// 节点树定位（S3-2，docs/kernel-schema.md K-R24 / K-R51）：setGeo(core/event-geo.mjs 的 geo) 之后，事件的层与落点由 nodes.locate 决定；不设则沿用下面的内置规则
+let GEO = null;
+export const setGeo = g => { GEO = g || null; };
+export const getGeo = () => GEO;
 export const LAYERS = ['上层', '中层', '下层', '天城外'];
 export const LAYER_MAP = { 上层: 'tc_upper', 中层: 'tc_mid', 下层: 'tc_low', 天城外: 'world' };
 export const AGE = { live: 7, after: 20, fade: 40 };        // 楼层差：≤7 活跃、≤20 余波、>20 淡出（只在列表）；已解除 / 被新事件接替的 >40 丢弃
@@ -127,8 +131,8 @@ const decode = s => s.replace(/&(amp|lt|gt|quot|#39|#x27|nbsp);/g, (m, k) => ({ 
 const norm = s => s.replace(/\s+/g, '').replace(/[·•・.]/g, '·');
 export function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
 
-/** 一楼原文 → 标签列表 [{cat, layer, place, lvl, text, src, code?, time?, scope?, dur?, xy?}]；代码块里的、示范原文、匹配不到层的跳过 */
-export function parseMarks(raw) {
+/** 一楼原文 → 按出现顺序的原始标签 [{cat, grpHint, loc, lvl, text, src, ...}]（还没定位；代码块里的、示范原文跳过） */
+export function marksOf(raw) {
   if (!raw || (raw.indexOf('⌖') < 0 && raw.indexOf('data-tcmap') < 0)) return [];
   const text = decode(String(raw)).replace(/```[\s\S]*?```/g, '').replace(/<code>[\s\S]*?<\/code>/gi, '');
   const found = [];   // [位置, 字段]
@@ -149,16 +153,28 @@ export function parseMarks(raw) {
     if (!(n >= 0 && n <= 3)) continue;
     found.push([m.index, { cat: catOf(f[0]), grpHint: f[0], loc: f[1], lvl: n, text: f[3] || '', src: f[4] || '', line }]);
   }
+  return found.sort((a, b) => a[0] - b[0]).map(f => f[1]);
+}
+
+/** 一楼原文 → 标签列表 [{cat, layer, place, node?, lvl, text, src, code?, time?, scope?, dur?, xy?}]；代码块里的、示范原文跳过；认不出层（或节点）的：设了节点树就照样列出（node = null，K-01 B），没设就跳过 */
+export function parseMarks(raw) {
   const out = [];
-  for (const [, e] of found.sort((a, b) => a[0] - b[0])) {
-    const loc = norm(e.loc), layer = layerGuess(loc);
-    if (!layer) continue;
-    // 地点里再写一遍层（「下层·天城下层血肉磨坊」「天城·下层·7号井」）：去掉重复的层前缀（v0.9.2）
-    const place = loc.slice(loc.startsWith(layer) ? layer.length : 0).replace(/^·+/, '').replace(new RegExp('^(' + reEsc(CFG.region) + ')?·?' + reEsc(layer) + '·?'), '').replace(new RegExp('^' + reEsc(CFG.region) + '·'), '').replace(/^·+/, '');
+  for (const e of marksOf(raw)) {
+    const loc = norm(e.loc);
+    let layer, place, node;
+    if (GEO) {   // 节点树定位（core/event-geo.mjs）：先别名、再提示词；认不出的事件照样列出、不上图（K-01 B）
+      const g = GEO.place(String(e.loc).trim());
+      layer = g ? g.layer : ''; place = g ? GEO.strip(loc, g.owner) : loc; node = g ? g.node : null;
+    } else {
+      layer = layerGuess(loc);
+      if (!layer) continue;
+      // 地点里再写一遍层（「下层·天城下层血肉磨坊」「天城·下层·7号井」）：去掉重复的层前缀（v0.9.2）
+      place = loc.slice(loc.startsWith(layer) ? layer.length : 0).replace(/^·+/, '').replace(new RegExp('^(' + reEsc(CFG.region) + ')?·?' + reEsc(layer) + '·?'), '').replace(new RegExp('^' + reEsc(CFG.region) + '·'), '').replace(/^·+/, '');
+    }
     const { line, loc: _, ...rest } = e;
     const c = CATS[e.cat], g = e.cat === '其他' && GROUPS[e.grpHint] ? e.grpHint : c.g;   // 只写了大类名（「类型=人物」）：类型记「其他」，颜色按该大类
     const { grpHint: _g, ...rest2 } = rest;
-    out.push({ ...rest2, layer, place, grp: g, ch: c.ch, color: GROUPS[g], rare: c.rare, text: e.text.slice(0, 60), src: (e.src || c.src || '').slice(0, 20) });
+    out.push({ ...rest2, layer, place, ...(node !== undefined ? { node } : {}), grp: g, ch: c.ch, color: GROUPS[g], rare: c.rare, text: e.text.slice(0, 60), src: (e.src || c.src || '').slice(0, 20) });
     if (out.length >= MAX_PER_FLOOR) break;
   }
   return out;
@@ -199,6 +215,7 @@ export function tierOf(age, ended) {
 export function layerOf(here) {
   if (!here) return '';
   const s = String(here);
+  if (GEO) return GEO.layerOf(s);
   for (const l of LAYERS) if (s.includes(l)) return l;
   if (CFG.upAlias?.test(s)) return '上层';
   return guessByName(s);
