@@ -367,3 +367,5 @@ blocker: "Stop and report when: ... a parity difference outside K-01 B / A.9" โ€
 open: Q-11 (docs/todo.md ยง3). Q-10 decided A (A.9 #6 in kernel-schema.md + zh).
 cleanup: done (no servers left running, no launch.json entries, my scratch files are in the session scratchpad; the s3-2-events worktree stays until the step is finished)
 === END ===
+
+(S3-2 commit shas after the rebase onto head #149: cfd9d90 feat(data): first-pack tier hints, district and outskirts nodes; f1e9eb2 feat(events): placement through nodes with shadow parity; 37bd9f1 docs: RESULT S3-2; pushed as head #150.)
