@@ -38,8 +38,8 @@ ALLOW = {
     # Both are symlinks (added after the map-v0.9.6 baseline) pointing at docs/agent-brief.md,
     # which predates the baseline and is grandfathered Chinese; a symlink is a pointer, not a
     # new document — otherwise deleting a release tag would suddenly flag the same content.
-    "AGENTS.md": "symlink → docs/agent-brief.md（基线前已存在，grandfathered 中文速查）",
-    "CLAUDE.md": "symlink → docs/agent-brief.md（同上）",
+    "AGENTS.md": "symlink → docs/agent-brief.md（目标文件已改为英文，见 docs/agent-brief.md）",
+    "CLAUDE.md": "symlink → docs/agent-brief.md（同上，目标已是英文）",
 }
 
 ARCHIVE_PREFIXES = ("docs/archive/", "docs/history/")
