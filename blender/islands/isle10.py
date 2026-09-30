@@ -338,9 +338,10 @@ def top(ctx):
     for q in range(26):                                              # 翻白的崖口水舌
         t = rt.uniform(0, 7); w_ = rt.uniform(-4.5, 4.5)
         W.sphere(ex + ux * t - uy * w_, ey + uy * t + ux * w_, ez - .09 * t * t + .2, rt.uniform(.8, 1.6), M['foam'], sz=.5, seg=8, rings=5)
+    MB = ctx.B('mist_plume')                                         # 单独一组：俯视抠图不要（名字以 mist 开头）
     for q in range(14):                                              # 水雾羽：沿水帘向下越来越大
         t = q / 13; zq = lip[-1][2] - 4 - t * R * .8; rq = 4 + t * 14
-        W.sphere(fx + ux * (2 + t * 8) - uy * rt.uniform(-4, 4) * (1 + t), fy + uy * (2 + t * 8) + ux * rt.uniform(-4, 4) * (1 + t), zq, rq, M['mist'], sz=.8, seg=20, rings=12)
+        MB.sphere(fx + ux * (2 + t * 8) - uy * rt.uniform(-4, 4) * (1 + t), fy + uy * (2 + t * 8) + ux * rt.uniform(-4, 4) * (1 + t), zq, rq, M['mist'], sz=.8, seg=20, rings=12)
     ctx.anchor('water', ex, ey, ez - 8)
     # ---- 果园：行列，但按噪声分成几块（中间留空地、花甸）；行间低矮全息防霜灯（稀）
     rnd = random.Random(10); k = 0; first = None

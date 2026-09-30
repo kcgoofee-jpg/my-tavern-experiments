@@ -472,3 +472,36 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T21:13:17Z,base:world,tiles,skip,hero-1,,128-spp render matches the shipped DZI (mean abs diff 1.6/255 at level 11); tiles already at spec
 2026-09-30T21:13:17Z,base:world,verify,skip,hero-1,,128-spp render matches the shipped DZI (mean abs diff 1.6/255 at level 11); tiles already at spec
 2026-09-30T21:13:17Z,base:world,ship,skip,hero-1,,128-spp render matches the shipped DZI (mean abs diff 1.6/255 at level 11); tiles already at spec
+2026-09-30T21:16:02Z,lm:round_table_hall,new,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_main); no separate model
+2026-09-30T21:16:02Z,lm:round_table_hall,setting,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_main); no separate model
+2026-09-30T21:16:02Z,lm:round_table_hall,draft,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_main); no separate model
+2026-09-30T21:16:03Z,lm:round_table_hall,clay,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_main); no separate model
+2026-09-30T21:16:03Z,lm:round_table_hall,board,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_main); no separate model
+2026-09-30T21:16:03Z,lm:round_table_hall,gapcheck,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_main); no separate model
+2026-09-30T21:16:03Z,lm:round_table_hall,review-r1,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_main); no separate model
+2026-09-30T21:16:03Z,lm:round_table_hall,fix,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_main); no separate model
+2026-09-30T21:16:03Z,lm:round_table_hall,review-r2,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_main); no separate model
+2026-09-30T21:16:03Z,lm:round_table_hall,final,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_main); no separate model
+2026-09-30T21:16:03Z,lm:round_table_hall,ship,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_main); no separate model
+2026-09-30T21:16:03Z,lm:sun_arena,new,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_arena); no separate model
+2026-09-30T21:16:03Z,lm:sun_arena,setting,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_arena); no separate model
+2026-09-30T21:16:03Z,lm:sun_arena,draft,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_arena); no separate model
+2026-09-30T21:16:03Z,lm:sun_arena,clay,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_arena); no separate model
+2026-09-30T21:16:03Z,lm:sun_arena,board,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_arena); no separate model
+2026-09-30T21:16:03Z,lm:sun_arena,gapcheck,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_arena); no separate model
+2026-09-30T21:16:03Z,lm:sun_arena,review-r1,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_arena); no separate model
+2026-09-30T21:16:03Z,lm:sun_arena,fix,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_arena); no separate model
+2026-09-30T21:16:04Z,lm:sun_arena,review-r2,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_arena); no separate model
+2026-09-30T21:16:04Z,lm:sun_arena,final,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_arena); no separate model
+2026-09-30T21:16:04Z,lm:sun_arena,ship,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_arena); no separate model
+2026-09-30T21:16:04Z,lm:union_tower,new,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_tower); no separate model
+2026-09-30T21:16:04Z,lm:union_tower,setting,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_tower); no separate model
+2026-09-30T21:16:04Z,lm:union_tower,draft,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_tower); no separate model
+2026-09-30T21:16:04Z,lm:union_tower,clay,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_tower); no separate model
+2026-09-30T21:16:04Z,lm:union_tower,board,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_tower); no separate model
+2026-09-30T21:16:04Z,lm:union_tower,gapcheck,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_tower); no separate model
+2026-09-30T21:16:04Z,lm:union_tower,review-r1,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_tower); no separate model
+2026-09-30T21:16:04Z,lm:union_tower,fix,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_tower); no separate model
+2026-09-30T21:16:04Z,lm:union_tower,review-r2,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_tower); no separate model
+2026-09-30T21:16:04Z,lm:union_tower,final,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_tower); no separate model
+2026-09-30T21:16:04Z,lm:union_tower,ship,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_tower); no separate model
