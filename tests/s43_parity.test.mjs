@@ -132,6 +132,6 @@ test('credits and data paths: the first pack\'s manifest carries the author cred
   for (const k of ['galleries', 'worldbook_addon', 'gallery', 'roster', 'maps', 'routine']) assert.ok(man.data[k], k);
   // the dictionary sentences take the creator / the book name by placeholder; the values that came out are the old words
   assert.equal(ZH['s.lic_orig_v'].replace('{creator}', man.credits.card.creator), 'Yehehua（类脑社区）原创；地图是经授权的二次创作（2026-09-27 起）');
-  assert.equal(EN['s.lic_orig_v'].replace('{creator}', man.credits.card.creator), 'Created by Yehehua (类脑 community); the map is an authorized derivative work (since 2026-09-27)');
+  assert.equal(EN['s.lic_orig_v'].replace('{creator}', man.credits.card.creator), 'Created by Yehehua (the Leinao community); the map is an authorized derivative work (since 2026-09-27)');   // S4-4 T6: the Chinese community name is an English one now
   assert.equal(ZH['selfcheck.wb_manual'].replace('{book}', F.BOOK), '也可以照旧手动导入「伊甸地图·世界书附加条目」并在世界书里设为全局');
 });

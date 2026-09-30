@@ -59,7 +59,7 @@ const POLISH_EN = {
   's.lic_disc_v': 'Fan interpretation: places and layouts follow the original card; the map only supplements them and is not responsible for their accuracy. 3D textures: Poly Haven and ambientCG (CC0).',
   's.lic_unknown': 'No author or origin info in this card: it may be resold or re-uploaded, which risks your data and the author\'s rights. Get cards only from the original author or authorized sources.',
   'hint.2': '2. The map opens on the world map. Tap “Current location” to jump to where you are. If a place isn’t recognised, “Not on map: …” appears; tap it to place it.',
-  'th.wb_on_hint': 'On: opening the map creates this book and adds it to the character\'s additional worldbooks; updates sync silently (one notice per version). Off: nothing is automatic.',
+  'th.wb_on_hint': 'On: loading the map creates this book and adds it to the character\'s additional worldbooks; updates sync silently (one notice per version). Off: nothing is automatic.',
   'cu.sync_hint2': 'On by default: the lorebook “{book}” (one per chat, one constant entry) is created after your first custom item. Turning it off disables the entry, not the lorebook.',
 };
 

@@ -557,7 +557,7 @@
   "s.line_auto": "auto-picked by speed test (valid 24 h)",
   "cu.loading": "Preparing places and rooms…",
   "th.wb_on": "Manage the map worldbook automatically (master switch)",
-  "th.wb_on_hint": "On: opening the map creates this book and adds it to the character's additional worldbooks; updates sync silently (one notice per version). Off: nothing is automatic.",
+  "th.wb_on_hint": "On: loading the map creates this book and adds it to the character's additional worldbooks; updates sync silently (one notice per version). Off: nothing is automatic.",
   "th.wb_tomb": "You deleted this book, so it will not be recreated automatically; use \"Write to worldbook\" below to bring it back",
   "th.wb_conflict": "You edited these {n}, and upstream changed them too (yours kept; upstream text stored on the entry)",
   "inv.stored": "Stored",
