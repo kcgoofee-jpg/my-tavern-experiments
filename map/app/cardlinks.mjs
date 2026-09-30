@@ -10,11 +10,40 @@ export function linkHtml(l, { REG, nm, t, esc }, kind = 'go') {
   const label = (nm(l, 'label') || fallback).replace(/\s*[→›>]\s*$/, '');
   return `<a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}"${kind === '3d' ? ' data-link3d="1"' : ''} role="button" tabindex="0">${esc(label)}</a>`;
 }
-/** 卡片的全部链接：通道 + 三维（同一张图只出一个） */
+/** 这张图是不是「微观三维场景」（kind=estate：庄园剖面 / props 通用三维查看器都算） */
+export const isScene3d = (m) => !!m && m.kind === 'estate' && m.status !== 'planned';
+
+/**
+ * 任务三：这个实体关联的微观三维场景是什么？返回 { map, focus } 或 null。判据全是数据事实，不写死任何名字：
+ *   ① 地标自己声明的 link3d（三维入口）→ 用它；
+ *   ② 地标自己声明的 link 指向三维场景图（庄园 / 通用三维查看器）→ 那条通道本身就是三维入口；
+ *   ③ 当前图**就是**三维场景（人已经在里面）→ 用当前图 + 落点名（进去后聚焦这一处 / 切到它的楼层）。
+ * 都没有 → null（卡片不出现这个入口，绝不硬塞一个点了没反应的链接）。
+ */
+export function scene3dOf(meta, ctx = {}) {
+  const { REG, cur } = ctx, maps = REG?.maps || {};
+  const focus = (ctx.nm ? ctx.nm(meta, 'name') : '') || meta?.name || '';
+  if (isScene3d(maps[meta?.link3d?.map])) return { map: meta.link3d.map, focus: meta.link3d.marker || focus };
+  if (isScene3d(maps[meta?.link?.map])) return { map: meta.link.map, focus: meta.link.marker || focus };
+  if (isScene3d(maps[cur])) return { map: cur, focus };
+  return null;
+}
+/** 三维视口入口：有三维场景就一定有这一条。目标图正好是当前图时标 data-same（点了走「同图聚焦」而不是重新打开） */
+export function scene3dHtml(meta, ctx) {
+  const s = scene3dOf(meta, ctx);
+  if (!s?.map) return '';
+  const title = ctx.nm(ctx.REG?.maps?.[s.map], 'title');
+  const label = ctx.t('view3d', { title: title ? `· ${title}` : '' }).replace(/\s*·\s*$/, '');
+  return `<a data-go="${ctx.esc(s.map)}" data-focus="${ctx.esc(s.focus || '')}" data-link3d="1"${s.map === ctx.cur ? ' data-same="1"' : ''} role="button" tabindex="0">${ctx.esc(label)}</a>`;
+}
+/** 卡片的全部链接：通道 + 三维 + 常驻三维视口入口（同一目标只出一个）+ 图集 */
 export function linksHtml(meta, ctx) {
   const a = linkHtml(meta?.link, ctx, 'go');
   const b = meta?.link3d && meta.link3d.map !== meta?.link?.map ? linkHtml(meta.link3d, ctx, '3d') : '';
-  return a + b + galleryHtml(meta?.gallery, ctx);
+  const covered = new Set([meta?.link?.map, meta?.link3d?.map].filter(Boolean));   // 上面两条已经指到的地方不重复给入口
+  const scene = scene3dOf(meta, ctx);
+  const c = scene && !covered.has(scene.map) ? scene3dHtml(meta, ctx) : '';
+  return a + b + c + galleryHtml(meta?.gallery, ctx);
 }
 /** 房间图集入口（衣帽间等）：标签默认「图集」 */
 export function galleryHtml(g, { nm, t, esc }) {

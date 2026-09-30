@@ -120,6 +120,30 @@ export function jumpHere(v) {   // 只由「当前位置」按钮调用（不再
   return true;
 }
 export function setUserMoved(v) { return (userMoved = v); }
+/**
+ * 同一张图内聚焦某个落点（任务三）：地点卡里的链接指向「当前这张图」时用——原来 go() 会因为 id === cur
+ * 直接静默返回，点上去毫无反应（宏观世界里最常被当成「点击无响应」的那一类）。返回是否真的动了。
+ */
+export function focusMarker(name) {
+  const id = name == null ? '' : String(name).trim();
+  if (!id || !viewer?.world.getItemCount()) return false;
+  setPendingFocus(id); userMoved = false; focusHere = true; focusStart(false); return true;
+}
+/**
+ * 任务三（b）：启动时**只在「人已经在庄园里」时**跳过宏观世界层，直接下钻到庄园（楼层剖切由庄园页按
+ * 当前地点自己做）。这是对 2026-09-28「不再在打开时自动跳」的唯一例外，范围收得很窄：
+ *   ① 只有当六级落点解出的地图是 kind=estate 的三维场景时才成立（世界地名 / 天城各层照旧先开世界图）；
+ *   ② 本次会话庄园三维失败过、或省流设备 → 不进（会落到平面替身，等于白跳一次）。
+ * 返回 true = 已经开好目标图（调用方不要再 go(REG.start)）。
+ */
+export function startInScene(v0) {
+  const v = String(v0 ?? $('#here')?.value ?? '').trim();   // 宿主有时直接把它刚推来的地点递进来（那时输入框还没写）
+  if (!v) return false;
+  const r = hereRes(v);
+  if (!r?.map || !REG?.maps[r.map] || REG.maps[r.map].status === 'planned') return false;
+  if (REG.maps[r.map].kind !== 'estate' || estFail || leanBg()) return false;
+  return jumpHere(v);
+}
 export function setHereIdx(v) { return (hereIdx = v); }
 export function setEstPlan(v) { return (estPlan = v); }
 export function setHX(v) { return (HX = v); }

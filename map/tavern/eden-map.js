@@ -377,15 +377,17 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   // W8 世界书 → 地图（{{eden_fly}} 宏的接收半边）：最新助手楼里出现 data-eden-fly 标记就解析落点、
   // 经协议里一直登记却无发送方的 eden-map:fly 聚焦过去（app/host.mjs → TCCustom.flyTo，2D / 庄园房间 / 三维热点通吃）。
   // 每楼只飞一次（flyFloor 水位）；落点认不出就安静放过——绝不猜。
+  // 任务二：提取走 th.flyTarget——除了已展开的隐藏标记，也认没被消费的字面宏 {{eden_fly: 地点}}，
+  // 且外面裹着未闭合注释 / Prism 标记 / 截断标签时照样锚得住（正则在整段原文里扫，不依赖容器闭合）。
   let flyFloor = -1;
   function flyScan() {
     if (!SpatialM || life.dead || floorNow <= flyFloor) return;
     const raw = CTX.msgCache.get(floorNow)?.m?.raw || '';
-    const m = /data-eden-fly="([^"]{1,60})"/.exec(String(raw));
-    if (!m) { flyFloor = floorNow; return; }   // 没标记：水位直接前进
+    if (!THm?.flyTarget) return;                  // th 模块还没到：不消费水位，下一轮 recompute 再试
+    const place = THm.flyTarget(raw);
+    if (!place) { flyFloor = floorNow; return; }   // 没标记：水位直接前进
     // 注册表 / 落点还没就绪：不消费水位，下一轮 recompute 再试（异步飞跃守卫）；认不出落点才安静放弃
-    const place = m[1].trim();
-    if (!place || !regNow) return;
+    if (!regNow) return;
     let loc = null;
     try { loc = SpatialM.locate(regNow, place); } catch (e) { return; }   // 守卫层异常同样不消费水位
     if (!loc) { flyFloor = floorNow; return; }
@@ -516,6 +518,27 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   function gateFlush(why = 'round') { try { return gate()?.flush(why) || null; } catch (e) { return null; } }
   /** 分支身份（同一楼换分支 = swipe / 重生成 ⇒ 该楼水位作废重算）：楼层 + 那一楼的 swipe 号 */
   const branchNow = () => { try { return String(floorNow) + ':' + String(BR.swipeAt(floorNow) ?? 0); } catch (e) { return String(floorNow) + ':0'; } };
+  // 任务一（第二步）客观动作强制反思探测：正文里**写明的**物理获取动作也是事实来源——主模型因为「卡里没有
+  // 背包字段」在 UpdateVariable 里漏掉道具时，这里把动作本身补成一条 loot 事实，交给同一套漏项审计 + 强制入账。
+  // 纯计算在 core/pickup.mjs（node 单测 tests/auto_stash.test.mjs）；这里只做取数与副作用。
+  let PUm = null; import(SELF + 'core/pickup.mjs').then(m => { PUm = m; }).catch(() => {});
+  /** 已知物品名（世界藏物表 + 已经在账上的东西）：命中即视为「具体物品名词」，不必带引号 / 量词 */
+  function knownItems() {
+    const s = new Set();
+    try { if (STm) for (const r of STm.rows(stash || {}, {})) if (r?.name) s.add(r.name); } catch (e) {}
+    try { if (INVm) for (const r of INVm.rows(inv)) if (r?.名) s.add(r.名); } catch (e) {}
+    return s;
+  }
+  /** 扫最新一楼正文（解析文本：思考链 / 变量块已剥）→ 物理拾取事实入账；已记过（同 id）的不重复。返回新增条数 */
+  function scanPickups(msgs, place) {
+    if (!PUm || !alive || life.dead) return 0;
+    const last = msgs?.[msgs.length - 1]; if (!last?.text) return 0;
+    let facts = []; try { facts = PUm.scan(last.text, { known: knownItems(), floor: last.floor, place }); } catch (e) { return 0; }
+    let n = 0;
+    for (const f of facts) { if (lootFacts.some(x => x?.id === f.id)) continue; lootFacts.push(f); n++; }
+    while (lootFacts.length > 40) lootFacts.shift();
+    return n;
+  }
   /** 宿主实际落盘的状态视图（审计器的 landed 参数）：只为**这一轮真有事实的域**取视图，不白读一遍 MVU——
    *  资产域 = 仓库 id 表；NPC 域 = 在场名册的「人 → 当前地点」；事件域还没有落盘写入路径（不给视图 = 走待结算） */
   function landedView(facts) {
@@ -537,8 +560,11 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     let fixed = 0;
     for (const p of cl.fresh) {
       const row = STm.rows(stash, {}).find(r => r.id === p.id);
-      if (!row) continue;                                            // 世界里没这一件：不替世界变出来
-      const res = INVm.put(inv, STm.lootPut(row)); if (!res.changed) continue;
+      // 藏物表里有这一件 → 用它的整行（不凭空造东西）；没有 → 用**正文事实**补一行：动作确实发生了，
+      // 地点与楼号写进说明，数量恒为 1、暗格恒为否（不编卡里没有的东西）。
+      const put = row ? STm.lootPut(row) : (p?.name ? { id: p.id, name: p.name, place: p.place || '', note: `正文拾取 · 第 ${Number.isInteger(p.floor) ? p.floor : floorNow} 楼`, qty: 1 } : null);
+      if (!put) continue;
+      const res = INVm.put(inv, put); if (!res.changed) continue;
       inv = res.inv; fixed++;
     }
     if (fixed) changedInv();                                          // 写聊天变量 + 推地图（拿到手的光点消失）
@@ -757,6 +783,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     const slotMsg = LEDm ? LEDm.slotLine(slot) : '';
     inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : '', INVm && lsGet('edenMapInvInj') !== '0' ? INVm.digestLine(inv, 150) : '', slotMsg, frLine, carryLine].filter(Boolean).join('\n'));
     if (frLine) FRm.markInjected(frState);
+    scanPickups(msgs, hereNow);   // 任务一：本轮正文里的客观获取动作先入账，下面的结算闸门放行时一并补发（漏写变量也丢不了）
     gate()?.request('sync', ledgerSync);   // W11：本轮的结算（漏项审计 + 单项补发）入队，末尾才放行——读取期间不写变量
     if (!lite) { stateInject(); spatialInject(); jitRound().catch(() => {}); xtalRound().catch(() => {}); checkpointStep(); }
     if (!panel.hidden && alive) sendEvents();

@@ -33,7 +33,7 @@ import { layoutHeader, warmOthers } from './topbar.mjs';
 import { go } from './nav.mjs';
 import { est, estateLook, estatePlan, retryEstate } from './estate.mjs';
 import { closeCard } from './markers.mjs';
-import { ALIAS, applyZoomLimit, focusStart, hereRes, jumpHere, markHere, setEstPlan, setHX, setUserMoved, userMoved } from './locate.mjs';
+import { ALIAS, applyZoomLimit, focusStart, hereRes, jumpHere, markHere, setEstPlan, setHX, setUserMoved, startInScene, userMoved } from './locate.mjs';
 import { initSettings } from './settings.mjs';
 import { emEmit, enNames, rebuildHere, setEnNames } from './extapi.mjs';
 import { firstRunHint, initE7, initShell } from './shell.mjs';
@@ -151,7 +151,8 @@ async function mainInner() {
   const qs = new URLSearchParams(location.search), q = qs.get('map');
   if (qs.get('here')) $('#here').value = qs.get('here');   // 调试：?here=主卧
   if (REG.maps[q] && REG.maps[q].status !== 'planned') go(q);
-  else go(REG.start);   // 用户 2026-09-28：总是先开世界图；跳到当前地点只在点「当前位置」时
+  else if (!startInScene()) go(REG.start);   // 用户 2026-09-28：总是先开世界图；跳到当前地点只在点「当前位置」时。
+  // 唯一例外（任务三）：人**已经**在庄园（三维场景）里时跳过宏观世界层，直接下钻到庄园对应楼层——判定收在 locate.startInScene。
   $('#hereGo').onclick = () => jumpHere($('#here').value);
   P.TCEvents.init(); P.TCEvents.pollFeeds();   // 事态横条与花屏提示；外部事件数据源（maps.json 的 feeds，默认没有）
   post({ type: 'eden-map:ready', proto: PROTO });

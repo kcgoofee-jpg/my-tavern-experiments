@@ -96,13 +96,29 @@ export function movedPayload(from, to, extra = {}) {
 
 // ---------------- B9 类宏（默认关） ----------------
 // eden_fly（W8）：{{eden_fly}} / {{eden_fly 地点名}} → 隐藏 data-eden-fly 标记，宿主扫到后经 eden-map:fly 聚焦地图（裁决 14：协议首个仓内发送方）
-export const MACROS = [['eden_here', /\{\{eden_here\}\}/gi], ['eden_route', /\{\{eden_route\}\}/gi], ['eden_fly', /\{\{eden_fly(?:\s+([^}]+?))?\}\}/gi]];
+// 参数分隔符三种都收（任务二）：空格 / 半角冒号 / 全角冒号——预设与卡作者写法不统一，模型也会写成 {{eden_fly: 地点}}。
+const FLY_RE = /\{\{\s*eden_fly\s*(?:[:：]\s*|\s+)?([^}]*?)\s*\}\}/gi;
+export const MACROS = [['eden_here', /\{\{eden_here\}\}/gi], ['eden_route', /\{\{eden_route\}\}/gi], ['eden_fly', FLY_RE]];
 /** 登记 / 撤销类宏；返回撤销函数。get(key, match)：带参数的宏（eden_fly）从 match 里取地名。 */
 export function registerMacros(fn, get) {
   const reg = fn('registerMacroLike'); if (!reg) return () => {};
   const hs = [];
   for (const [k, re] of MACROS) { try { hs.push(reg(re, (...a) => String(get(k, a[0]) ?? ''))); } catch (e) {} }
   return () => { for (const h of hs.splice(0)) { try { h?.unregister?.(); } catch (e) {} } if (fn('unregisterMacroLike')) for (const [, re] of MACROS) { try { fn('unregisterMacroLike')(re); } catch (e) {} } };
+}
+/**
+ * 最新一楼里要找的地名（宿主 flyScan 用）：先认已经展开的隐藏标记 `data-eden-fly="…"`（宏开着的正常路径），
+ * 再认**没被消费**的字面宏 `{{eden_fly…}}`（宏关着、或预设把宏当正文吐了出来——分隔符空格 / : / ：都收）。
+ * 正则直接全文扫，所以外面裹着什么容器都无所谓：未闭合的 HTML 注释、Prism 标记、被截断的标签都拦不住它。
+ * 认不出 / 超长 / 带引号尖括号 → ''（宿主安静放过，绝不猜地名）。
+ */
+export function flyTarget(raw) {
+  const s = String(raw ?? '');
+  if (!s) return '';
+  const m = /data-eden-fly\s*=\s*"([^"]{1,80})"/i.exec(s) || /data-eden-fly\s*=\s*'([^']{1,80})'/i.exec(s) || FLY_RE.exec(s);
+  FLY_RE.lastIndex = 0;
+  const v = String(m?.[1] ?? '').replace(/<[^>]*>/g, '').replace(/["'`]/g, '').trim();   // 宏里可能裹着标签（{{eden_fly: <b>地点</b>}}）：先剥标签再剥引号
+  return v && v.length <= 60 ? v : '';
 }
 
 // ---------------- B10 泄露防御网（任务三）：渲染管道前置过滤器 ----------------
@@ -124,6 +140,15 @@ export function createLeakFence(o = {}) {
   const has = typeof o.has === 'function' ? o.has : defaultHas;
   const log = typeof o.log === 'function' ? o.log : () => {};
   let swept = 0, nodes = 0, errors = 0, last = null;
+  /**
+   * 代码块里的文本不算泄露：第三方预设自己的「显示时」正则会把地图外的对话块替换成 ```` ```html ````
+   * 围栏里的整段 HTML 源码（那一段**已经是被预设消费过的渲染结果**，是它有意展示的东西）。
+   * 地图只熔断**裸露在正文里**的未消费源码，所以渲染成 <pre> / <code> 的那些一律放过。
+   */
+  function inCode(t, el) {
+    for (let p = t?.parentElement; p && p !== el; p = p.parentElement) { const n = p.tagName; if (n === 'PRE' || n === 'CODE') return true; }
+    return false;
+  }
   /** 一个已渲染楼层 → 清掉泄露节点与泄露文本节点；返回清理处数（0 = 干净，什么都没动） */
   function sweepNode(el0) {
     const el = el0?.jquery ? el0[0] : el0;
@@ -134,7 +159,7 @@ export function createLeakFence(o = {}) {
     if (!doc?.createTreeWalker) return n;
     const w = doc.createTreeWalker(el, SHOW_TEXT, null), texts = [];
     for (let t = w.nextNode(); t; t = w.nextNode()) texts.push(t);
-    for (const t of texts) { if (!has(t.data)) continue; const nx = clean(t.data); if (nx !== t.data) { t.data = nx; n++; } }
+    for (const t of texts) { if (!has(t.data) || inCode(t, el)) continue; const nx = clean(t.data); if (nx !== t.data) { t.data = nx; n++; } }
     return n;
   }
   return {

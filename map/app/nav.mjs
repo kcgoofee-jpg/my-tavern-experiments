@@ -1,12 +1,12 @@
 // 地图切换：go（带可注册的包装）、snapshot、mapChrome、另一版底图。
-import { REG, cur, curData, ovData, setCur, setCurData, setOvData, setDepthData, viewer } from './state.mjs';
+import { REG, cur, curData, ovData, pendingFocus, setCur, setCurData, setOvData, setDepthData, setPendingFocus, viewer } from './state.mjs';
 import { $, getJSON } from './util.mjs';
 import { applyTier } from './tiers.mjs';
 import { nm, postState, t } from './i18n.mjs';
-import { dropParked, leaveEstate, openEstate } from './estate.mjs';
+import { dropParked, estateFocus, leaveEstate, openEstate } from './estate.mjs';
 import { renderNav } from './layers.mjs';
 import { closeCard } from './markers.mjs';
-import { setUserMoved, userMoved } from './locate.mjs';
+import { focusMarker, setUserMoved, userMoved } from './locate.mjs';
 import { P } from './plugins.mjs';
 // ---------------- 地图切换 ----------------
 // alt：同一张图的另一版底图（上层默认云海，开关后显示下方城市）。只换底图，视角、标记、叠加层都不动；开关状态按地图记住
@@ -49,7 +49,10 @@ export function fadeAway(el, cb) {
   setTimeout(done, 1500);   // 瓦片迟迟不到也不一直盖着
 }
 export async function go(id) {   // 云脚本块（文末）会包一层：天城各层之间切换时加《部落冲突》式转场
-  const m = REG.maps[id]; if (!m || m.status === 'planned' || id === cur) return;
+  const m = REG.maps[id]; if (!m || m.status === 'planned') return;
+  // 点到「当前就是这张图」：不再静默返回（任务三：宏观层最常被当成「点击无响应 / 找不到目标实体」的那一类）。
+  // 三维场景（kind=estate）→ 把落点名字发给庄园页聚焦；平面图 → 飞到落点标记。
+  if (id === cur) { focusSameMap(id); return; }
   const prev = cur && REG.maps[cur], fromEstate = prev?.kind === 'estate';
   saveView();
   setCur(id); setUserMoved(false); closeCard(); P.TCEvents.collapse?.(); document.body.dataset.map = id;
@@ -82,10 +85,31 @@ export async function go(id) {   // 云脚本块（文末）会包一层：天�
   postState();
 }
 // 随地图变的工具栏文字（叠加层、另一版底图的开关名）
+/**
+ * 署名（ⓘ）：这张图没有署名词条时把按钮与文字框一起收起来——原来按钮恒显示，点开是个空框，
+ * 在世界图（奥伦帝国那类没有 credit 的层）上表现就是「点了没反应」的假死（任务三）。
+ * fix3：只用展开的文字框，不再叠一个原生 title 提示。地图切换与庄园打开都走这里。
+ */
+export function applyCredit(m) {
+  const credit = nm(m, 'credit');
+  $('#credit').textContent = credit; $('#credit').removeAttribute('title'); window.__creditShow?.(false);
+  $('#creditBtn').hidden = !credit; if (!credit) $('#credit').hidden = true;
+}
 export function mapChrome(m) {
-  $('#credit').textContent = nm(m, 'credit'); $('#credit').removeAttribute('title');   // fix3：署名只用展开的文字框，不再叠一个原生 title 提示 $('#creditBtn').hidden = !nm(m, 'credit'); window.__creditShow?.(false);
+  applyCredit(m);
   if (m.overlay) { let on = m.overlay.type !== 'barriers'; if (!on) try { on = TCStore.get('edenMapBarriers') === '1'; } catch (e) {} $('#tgBorders').checked = on; }
   $('#tgOverlay span').textContent = m.overlay ? nm(m.overlay, 'label') || t('overlay') : t('overlay'); $('#tgOverlay').hidden = !m.overlay;
   $('#tgAlt').hidden = !m.alt; if (m.alt) $('#tgAlt span').textContent = nm(m.alt, 'label') || t('alt_base');
 }
 export function setGo(v) { return (go = v); }
+/**
+ * 点到「当前就是这张图」时的动作（任务三）：消费掉待聚焦的落点，按图的类型分流——
+ *   kind=estate（庄园 / 通用三维查看器）→ 把名字发给三维页聚焦（房间 / 热点由它自己找人）；
+ *   其余 → 地图内飞到该标记。落点为空时什么都不做（点的是同图但没有指定目标）。
+ */
+function focusSameMap(id) {
+  const focus = pendingFocus; setPendingFocus(null);
+  if (!focus) return;
+  if (REG.maps[id]?.kind === 'estate') { estateFocus(focus); return; }
+  focusMarker(focus);
+}

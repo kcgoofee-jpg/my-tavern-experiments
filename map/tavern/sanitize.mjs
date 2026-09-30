@@ -4,9 +4,20 @@
 // 纯数据进出：不碰酒馆全局、不碰 DOM。宿主按设置把标签表递给 ContextPipeline（edenMapSanitize 关 / edenMapSanitizeTags 自定义）；
 // node 单测直接喂数据（tests/sanitize.test.mjs）。
 
-/** 默认剥离的预设块标签（大小写不敏感、带属性也认）：用户点名的四类 + 常见变体。
+/**
+ * 第三方预设往正文里塞的**展示用容器**（大小写不敏感、带属性也认）：这些块只在预设自己的「显示时」正则里
+ * 被渲染成卡片 / 面板，正文解析（事件、人物栏、⌖ 标签）不该看见里面的复述内容——与思考链同一风险，
+ * 所以在解析文本这一侧一律剥掉（渲染层不动，聊天记录一个字节都不改）。
+ *
+ * 收表的判据：块内**只可能是展示内容**，绝不承载地图自己的 ⌖ / data-tcmap 标签。
+ * 明确**不收**的两个（与判据冲突，收进来会把地图标签一起吃掉）：
+ *   htm1fenge —— ⌖ 事件标签就写在里面（tests/events.test.mjs 的 span() 夹具就是这个形状）；
+ *   now_plot  —— 块内是正文对话 / 旁白本体，剥掉等于把整段叙事从解析里删掉。
+ */
+export const PRESET_BLOCK_TAGS = ['meow_fm', 'time_format', 'branches', 'aftertalk', 'parallel_world', 'variablecheck', 'finish', '状态面板', '角色状态面板'];
+/** 默认剥离的预设块标签：原先的六类（用户点名的四类 + 常见变体）+ 上表。
  *  <think> / <UpdateVariable> 由 msgtext.mjs parseText 惯例处理，不在这里重复。 */
-export const DEFAULT_STRIP_TAGS = ['thinking', 'liwe', 'state', 'anchor', 'collapse', 'hidden'];
+export const DEFAULT_STRIP_TAGS = ['thinking', 'liwe', 'state', 'anchor', 'collapse', 'hidden', ...PRESET_BLOCK_TAGS];
 
 /** 设置 → 标签表（宿主构造 ContextPipeline 时用）：edenMapSanitize=0 全关；edenMapSanitizeTags 是 JSON 数组自定义表；其余默认表。 */
 export const resolveTags = (get, fallback = DEFAULT_STRIP_TAGS) => {
@@ -17,21 +28,39 @@ export const resolveTags = (get, fallback = DEFAULT_STRIP_TAGS) => {
 };
 
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** 合法标签名（防正则注入）：ASCII 或中文起始，后接 ASCII / 数字 / 下划线 / 连字符 / 中文；≤32 字 */
+const TAG_NAME = /^[A-Za-z\u4e00-\u9fff][A-Za-z0-9_\u4e00-\u9fff-]{0,31}$/;
 
 /** 剥掉指定标签的成块内容：<tag …>…</tag>，含没闭合的流式尾（余下全文都算块内，G1 同一手法）；
  *  再顺手清掉成对剥离后残留的孤儿闭标签。tags 为空原样返回。 */
 export function stripBlocks(text, tags) {
   let out = String(text ?? '');
   for (const t of Array.isArray(tags) ? tags : []) {
-    if (typeof t !== 'string' || !/^[A-Za-z][A-Za-z0-9_-]*$/.test(t)) continue;   // 只认合法标签名，防正则注入
+    if (typeof t !== 'string' || !TAG_NAME.test(t)) continue;   // 只认合法标签名，防正则注入
     out = out.replace(new RegExp(`<${t}(?:\\s[^>]*)?>[\\s\\S]*?(?:</${t}>|$)`, 'gi'), ' ')
              .replace(new RegExp(`</${t}>`, 'gi'), ' ');
   }
   return out;
 }
 
-/** 一次性净化（ContextPipeline.readMsgs 的 raw 路径用）：剥社区预设块，保留 <UpdateVariable>（行程的 JSONPatch 要用）。 */
-export const sanitize = (raw, tags) => stripBlocks(raw, tags);
+// ---------------- CoT / 标记碎片（Anti-Preset Interceptor 第二层） ----------------
+// 预设的思考块分隔标记形如 `<!-- 1·思考结束 -->` / `<!-- end_of_Subtext_think -->`（Prism 一类的溢出标记同理）。
+// 闭合的注释一律剥掉——它是纯粹的展示标记，里面不可能有叙事；**没闭合**的那一截要小心：可能只是模型吐坏了，
+// 但后面未必是垃圾。判据用「像不像一行标记」而不是「有没有汉字」：标记是短的一行、没有句读；
+// 正文再短也多半带句读（，。！？）或换行，所以只要出现句读 / 换行就整段留着（宁可留着脏，也不切掉正文）。
+const CLOSED_COMMENT = /<!--[\s\S]*?-->/g;
+const MARK_TAIL = /^(?![^\n]*[，。！？；：、,.!?;:])[^\n]{0,60}$/;
+/** 剥 CoT / Prism 标记残留：闭合注释全剥；没闭合的那截在「像一行标记」时从那里切到末尾。 */
+export function stripMarks(text) {
+  const out = String(text ?? '').replace(CLOSED_COMMENT, ' ');
+  const i = out.indexOf('<!--');
+  if (i < 0) return out;
+  return MARK_TAIL.test(out.slice(i + 4)) ? out.slice(0, i) : out;
+}
+
+/** 一次性净化（ContextPipeline.readMsgs 的 raw 路径用）：剥社区预设块与 CoT 标记，保留 <UpdateVariable>
+ *  （行程的 JSONPatch 要用；变量块是卡自己的机器块，地图只读不改）。 */
+export const sanitize = (raw, tags) => stripMarks(stripBlocks(raw, tags));
 
 const HERE_KEY = /(?:地点|位置|所在|当前位置|当前所在|location)\s*[:：＝=]\s*/i;
 const HERE_BRACKET = /[【\[]\s*(?:地点|位置|所在|当前位置|当前所在|location)\s*[】\]]\s*[:：]?/i;   // 【地点】…（无冒号的中括号状态栏）

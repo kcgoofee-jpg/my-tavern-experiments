@@ -4,7 +4,7 @@ import { REG, cur, pendingFocus, setPendingFocus, viewer } from './state.mjs';
 import { $, PR, SUB_ORIGIN, announce, post, tx } from './util.mjs';
 import { LANG, nm, postState } from './i18n.mjs';
 import { getText, textCache } from './topbar.mjs';
-import { go } from './nav.mjs';
+import { applyCredit, go } from './nav.mjs';
 import { focusAfterGo, onEsc, renderNav, stepLayer } from './layers.mjs';
 import { untrackAll } from './markers.mjs';
 import { estPlan, hereRes } from './locate.mjs';
@@ -113,13 +113,13 @@ export async function openEstate(id, m, hadPrev) {
     est = estParked; estParked = null; const f = est.frame; f.style.visibility = ''; live3d = 1;
     $('#loading').classList.add('done'); estateActs('');
     f.contentWindow?.postMessage({ type: 'estate:resume' }, SUB_ORIGIN);
-    $('#credit').textContent = nm(m, 'credit'); $('#credit').removeAttribute('title');   // fix3：署名只用展开的文字框，不再叠一个原生 title 提示 $('#creditBtn').hidden = !nm(m, 'credit');
+    applyCredit(m);   // 署名（ⓘ）：没有署名词条时收起来，不留空框（任务三）
     estateLook(); estateInset(); estateRoom(); focusAfterGo(); postState(); post({ type: 'eden-map:loaded' });
     return;
   }
   // Part 3 §3：发新租约前把上一份彻底摘掉（挂起的、淡出中的都算），保证任何时刻只有一个活着的三维上下文
   if (estParked?.id !== id) { stopTileTo3d(false); release3d(); }
-  $('#credit').textContent = nm(m, 'credit'); $('#credit').removeAttribute('title');   // fix3：署名只用展开的文字框，不再叠一个原生 title 提示 $('#creditBtn').hidden = !nm(m, 'credit'); window.__creditShow?.(false);
+  applyCredit(m);   // 署名（ⓘ）：没有署名词条时收起来，不留空框（任务三）
   const ld = $('#loading'), ti = nm(m, 'title'); ld.classList.remove('done', 'thumb'); ld.classList.remove('over'); estateActs('');   // v0.9.6：三维页加载时用整屏加载页，不再露出上一张图 + 一个「加载中」小条
   if (m.cover) { ld.style.setProperty('--loading-cover', `url(${matchMedia('(max-width: 600px)').matches ? m.cover.src_800 || m.cover.src : m.cover.src})`); ld.classList.add('cover'); }
   else { ld.classList.remove('cover'); ld.style.removeProperty('--loading-cover'); }
@@ -204,6 +204,16 @@ export function estateNpcs() {
   const w = est?.frame?.contentWindow; if (!w) return;
   const d = window.TCWander?.describe?.() || {};
   w.postMessage({ type: 'estate:routine', schedule: window.TCWander?.scheduleOf?.() || null, clock: d.clock || null }, SUB_ORIGIN);
+}
+/**
+ * 任务三：把某个名字交给三维页聚焦（地点卡里的【进入三维视口】指到的就是当前这张三维图时用）。
+ * 三维页自己按房间名 / 别名 / 热点找人，找不到就安静不动。没开 / 没就绪 → false。
+ */
+export function estateFocus(name) {
+  const n = String(name ?? '').trim();
+  if (!est?.ready || !n) return false;
+  est.frame.contentWindow?.postMessage({ type: 'estate:room', name: n }, SUB_ORIGIN);
+  return true;
 }
 export let estFocus = null;   // v0.9.5：「自定义」里点了某个房间 / 室外区域 → 庄园聚焦它（优先于当前地点，地点变了就清掉）
 export function estateRoom() { if (!est?.ready) return; const v = ($('#here').value || '').replace('{{user}}', ''), r = hereRes(v);

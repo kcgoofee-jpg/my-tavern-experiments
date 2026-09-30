@@ -37,6 +37,24 @@ test('查看器接线：标记卡用 linksHtml(meta)，模块标签在，check_m
   assert.match(v, /<script type="module" src="app\/cardlinks\.mjs"/);
   assert.match(readFileSync(new URL('../tools/check_maps.py', import.meta.url), 'utf8'), /link3d/);
 });
+test('任务三：三维视口入口常驻（link 指三维场景不重复出；人已在三维场景里就有；没有场景不硬塞）', async () => {
+  const { scene3dOf, linksHtml: L, isScene3d } = await import('../map/app/cardlinks.mjs');
+  const REG2 = { maps: { tc_low: { title: '天城下层', kind: 'points' }, eden: { title: '伊甸庄园', kind: 'estate' },
+    plan: { title: '规划中', kind: 'estate', status: 'planned' } } };
+  const c = { REG: REG2, nm, t, esc };
+  assert.equal(isScene3d(REG2.maps.eden), true); assert.equal(isScene3d(REG2.maps.tc_low), false); assert.equal(isScene3d(REG2.maps.plan), false);
+  // 地标的通道本身指到庄园：那条链接就是三维入口，不再重复出第二条
+  const h1 = L({ link: { map: 'eden', label: '进入伊甸庄园' } }, c);
+  assert.equal((h1.match(/<a /g) || []).length, 1); assert.match(h1, />进入伊甸庄园</);
+  // 人在庄园里（当前图 = 三维场景）：任意地标卡都有「进入三维视口」，且带 data-same（点了走同图聚焦而不是重开）
+  const h2 = L({ name: '书房' }, { ...c, cur: 'eden' });
+  assert.equal((h2.match(/<a /g) || []).length, 1);
+  assert.match(h2, /data-go="eden" data-focus="书房" data-link3d="1" data-same="1"/);
+  // 既没有 link 也没有三维场景：一个链接都不出（绝不硬塞点了没反应的入口）
+  assert.equal(L({ name: '某处' }, c), '');
+  assert.equal(scene3dOf({ link3d: { map: 'plan' } }, c), null, '规划中的三维场景不算');
+  assert.equal(scene3dOf({ name: '书房' }, { ...c, cur: 'tc_low' }), null);
+});
 test('房间图集入口 meta.gallery：标签、默认文案、坏 id 不出', async () => {
   const { galleryHtml } = await import('../map/app/cardlinks.mjs');
   const t2 = k => ({ gallery: '图集' }[k] || k), c = { ...ctx, t: t2 };

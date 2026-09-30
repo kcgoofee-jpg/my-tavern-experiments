@@ -135,8 +135,8 @@ export function evaluate(f) {
 
   const w = f.worldbook;
   if (!w) out.push(item('worldbook', 'skip', '查不了世界书（酒馆助手没有世界书接口）', 'Cannot inspect lorebooks (no TavernHelper lorebook API)'));
-  else if (w.missing.length && w.imported) out.push(item('worldbook', 'warn', `世界书附加条目已导入但没有启用：${w.missing.join('、')}（在世界书里把「伊甸地图·世界书附加条目」设为全局，或绑定到当前角色 / 聊天）`,
-    `Lorebook add-on imported but not active: ${w.missing.join(', ')} (activate the Eden map add-on globally or bind it to this character / chat)`));
+  else if (w.missing.length && w.imported) out.push(item('worldbook', 'info', `世界书附加条目已导入但没有启用：${w.missing.join('、')}（已在后台静默绑定，稍后自动生效；要立刻写入可到「数据与映射」）`,
+    `Lorebook add-on imported but not active: ${w.missing.join(', ')} (binding silently in the background; use Data & mapping to write it now)`));
   else if (w.missing.length) out.push(item('worldbook', 'warn', `世界书附加条目缺少：${w.missing.join('、')}（导入「伊甸地图·世界书附加条目」，并在世界书里设为全局、或绑定到当前角色 / 聊天；刚导入的话刷新一次页面）`,
     `Lorebook add-on entries missing: ${w.missing.join(', ')} (import the Eden map add-on lorebook and activate it globally or bind it to this character / chat; refresh once after importing)`));
   else out.push(item('worldbook', 'ok', '世界书附加条目已启用', 'Lorebook add-on entries enabled'));

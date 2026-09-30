@@ -8,7 +8,7 @@ import { go, saveView, applyPeriod } from './nav.mjs';
 import { dropParked, est, estFocus, estParked, estateLook, narrowNow, setEst, setEstFocus, setEstParked } from './estate.mjs';
 import { onEsc } from './layers.mjs';
 import { untrackAll } from './markers.mjs';
-import { hereRes, markHere } from './locate.mjs';
+import { hereRes, markHere, startInScene, userMoved } from './locate.mjs';
 import { TCSettings, setLine, about, renderAbout, renderSelfCheck, selfCheck, setAbout, setCardInfo, setSelfCheck, setUpdBusy, setUpdRes, updBusy, updRes, updSub } from './settings.mjs';
 import { emEmit, setChat } from './extapi.mjs';
 import { flashOk, ntActs } from './shell.mjs';
@@ -26,6 +26,19 @@ function fromHost(e) {
   return !!tok && e.data.t === tok;
 }
 window.__fromHost = fromHost;
+/**
+ * 任务三（b）「人已经在庄园里就别再从宏观世界层过一遍」：宿主第一次推地点时若落点在三维场景
+ * （庄园房间 / 室外区域）里，就直接下钻过去（楼层剖切由庄园页按地点自己做）。
+ * 三个闸门把范围收紧到「启动那一次」，不打扰用户：
+ *   ① 只给一次机会（sceneDrilled）；② 只在地图真的开着、且还停在初始世界图上时（后台休眠时 cur 为空 → 自动跳过，
+ *   预加载不进三维，尊重 E4 N02 的省流决定）；③ 玩家自己动过视角 / 切过图就不再跳。
+ */
+let sceneDrilled = false;
+function trySceneDrill(value) {
+  if (sceneDrilled || userMoved || !cur || cur !== REG?.start) return;
+  sceneDrilled = true;
+  startInScene(value);
+}
 if (window.top !== window) {
   document.body.classList.add('embed');   // viewer.html 末尾的前置脚本已经打过；单独加载本模块（测试）时也成立
   const onHostMsg = e => {
@@ -39,7 +52,8 @@ if (window.top !== window) {
       try { if (e.data.replay) P.TCFog?.mute?.(true); } catch (x) {}   // 时间轴回放（Part 5-4）：图钉照走，探索不记账
       markHere(e.data.value);
       try { if (e.data.replay) P.TCFog?.mute?.(false); } catch (x) {}
-      emEmit('here', { value: e.data.value || '', resolved: hereRes(e.data.value || ''), replay: !!e.data.replay }); }
+      emEmit('here', { value: e.data.value || '', resolved: hereRes(e.data.value || ''), replay: !!e.data.replay });
+      trySceneDrill(e.data.value); }   // 任务三（b）：人已经在三维场景里 → 这一次跳过宏观世界层
     if (e.data?.type === 'eden-map:unmapped-pick' && typeof P.TCUnmapped !== 'undefined') P.TCUnmapped.open();   // v0.9.6 标题栏「未上图」
     if (e.data?.type === 'eden-map:open') go(e.data.map);
     if (e.data?.type === 'eden-map:events') { P.TCEvents.set(e.data); emEmit('events', { items: e.data.items, floor: e.data.floor, hereLayer: e.data.hereLayer }); }   // 卡内脚本从聊天里解析、合并好的事态 {items, floor, fly}

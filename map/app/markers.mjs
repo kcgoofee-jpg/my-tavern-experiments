@@ -180,7 +180,7 @@ export function pointOverlays() {
   // 动作注入入口（Part 6-4）：模式不是 off 才在卡片底部多一个链接；模式从本机存储读（默认 off）
   // 注入模式每次开卡重读（设置里改了立刻生效）
   const injMode = () => { try { return TCStore.get('edenMapInject') || 'off'; } catch (e) { return 'off'; } };
-  const ctx = () => ({ REG, nm, t, esc, mode: injMode() });   // Part 6-4：注入模式每次开卡重读
+  const ctx = () => ({ REG, nm, t, esc, mode: injMode(), cur });   // Part 6-4：注入模式每次开卡重读；cur = 三维视口入口判据③（人已经在三维场景里）
   const links = meta => { const linkCtx = ctx();   // 每次开卡重算：注入模式改了立刻生效
     return (window.TCCardLinks ? window.TCCardLinks.linksHtml(meta, linkCtx)
       : meta.link && REG.maps[meta.link.map] && REG.maps[meta.link.map].status !== 'planned' ? `<a data-go="${esc(meta.link.map)}" data-focus="${esc(meta.link.marker || '')}" role="button" tabindex="0">${esc(nm(meta.link, 'label') || t('goto', { title: nm(REG.maps[meta.link.map], 'title') }))}</a>` : '')
