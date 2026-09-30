@@ -38,3 +38,8 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T12:14:27Z,isle:isle4,ship,done,hero-1,,"tiles; victor_estate marker moved onto the manor (0.8157,0.2949); card-buildings row; check_maps + estate3d_manifest pass"
 2026-09-30T12:38:58Z,review:clearing_depot,review-r1,done,std-1,pass,"r1 7/6 pass; polish-only defects (bg sheds, container detail); no fix needed"
 2026-09-30T12:39:06Z,review:clearing_depot,ship,skip,std-1,,"r1 pass, nothing changed; no re-export"
+2026-09-30T12:39:20Z,review:contest_corridor,review-r1,claim,std-1,,
+2026-09-30T12:40:15Z,review:contest_corridor,review-r1,done,std-1,fail,"r1 7/5 fail: washed-out tones, arcade reads as wall, tents indistinct"
+2026-09-30T12:41:47Z,review:contest_corridor,fix,done,std-1,,"exposure/tints, arcade bays, tents, lawn+kerb, trees, wheel colours"
+2026-09-30T12:41:47Z,review:contest_corridor,review-r2,done,std-1,pass,r2 7.5/6 pass
+2026-09-30T12:44:21Z,review:contest_corridor,ship,done,std-1,,"std/low glb re-exported, maps.json/worldbook/card-buildings via landmark ship; check_maps + estate3d_manifest pass"
