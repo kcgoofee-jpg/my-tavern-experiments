@@ -41,11 +41,12 @@ async function run(name, preset) {
     const vf = await H.viewer();
     await vf.evaluate(() => { closeCard(); go('tc_mid'); }); await B.wait(2500);
     // 4 夜色：中层有、下层没有、开关关掉没有
-    const n1 = await vf.evaluate(() => document.body.classList.contains('nighttint'));
+    // 中层已登记夜间底图（maps.json periods.night，9ad6dfc）：夜档由底图 + data-tod 承担，不再叠 nighttint；没登记夜图的层才叠色调
+    const n1 = await vf.evaluate(() => ({ tint: document.body.classList.contains('nighttint'), tod: document.body.dataset.tod || '', swapped: !!REG?.maps?.tc_mid?.periods?.night }));
     await vf.evaluate(() => go('tc_low')); await B.wait(2000);
-    const n2 = await vf.evaluate(() => document.body.classList.contains('nighttint'));
+    const n2 = await vf.evaluate(() => ({ tint: document.body.classList.contains('nighttint'), tod: document.body.dataset.tod || '' }));
     await vf.evaluate(() => go('tc_mid')); await B.wait(2000);
-    rep.check(`${name} 夜色：中层加、下层不加`, n1 && !n2, JSON.stringify({ n1, n2 }));
+    rep.check(`${name} 夜色：中层夜档（有夜图则换底图、无则叠色调）、下层不加`, n1.tod === 'night' && n1.tint === !n1.swapped && !n2.tint && !n2.tod, JSON.stringify({ n1, n2 }));
     await jpg(p, `mvu_${name}_night`);
     // 5 着装：fix3（用户 2026-09-28）起不再挂地点卡——改在人物页顶部「你（主角）」一行（chars.mjs .chme）
     const card = await vf.evaluate(() => { const el = [...document.querySelectorAll('.mk.here')][0]; if (!el) return null; el._open(); const c = document.querySelector('#card'); return { h: c.querySelector('h2').textContent, o: c.querySelector('.cu-outfit')?.textContent || '' }; });
@@ -59,7 +60,7 @@ async function run(name, preset) {
     rep.check(`${name} 人物页「你（主角）」行显示着装`, me?.b === '你（主角）' && /^着装：深灰风衣 \/ 黑色长裤 \/ 短靴/.test(me.o), JSON.stringify(me));
     const src = await vf.evaluate(() => Object.fromEntries(TCChars.items.map(c => [c.name, c.src + '@' + c.place])));
     const lab = await vf.evaluate(() => [...document.querySelectorAll('#evbar .chpane .chsrc')].map(x => x.textContent));
-    rep.check(`${name} 人物位置：MVU > 标签 > 推断，列表标来源`, src.米拉 === 'mvu@下层·7号井' && src.卡尔 === 'tag@中层·霓虹街' && /^infer@/.test(src.奥托 || '') && ['MVU', '标签', '推断'].every(x => lab.includes(x)), JSON.stringify({ src, lab }));
+    rep.check(`${name} 人物位置：MVU > 标签 > 同处（infer），列表标来源`, src.米拉 === 'mvu@下层·7号井' && src.卡尔 === 'tag@中层·霓虹街' && /^infer@/.test(src.奥托 || '') && ['MVU', '标签', '同处'].every(x => lab.includes(x)), JSON.stringify({ src, lab }));
     await jpg(p, `mvu_${name}_people`);
     // 2 EdenMap.setCustom：地标改名 + 用途 → 聊天变量、地图标签、注入摘要
     // 换聊天后的迁移：全局旧键只在聊天还没有 eden_map 时并入一次（不会把重置过的项每次刷新都加回来）
@@ -105,7 +106,7 @@ async function run(name, preset) {
     rep.check(`${name} 自定义文字按纯文本显示（不执行、不插入元素）`, !xss.x && !xss.img && xss.txt, JSON.stringify(xss));
     // 夜色开关
     await vf.evaluate(() => { const c = document.querySelector('#optNight'); c.click(); }); await B.wait(200);
-    const n3 = await vf.evaluate(() => document.body.classList.contains('nighttint'));
+    const n3 = await vf.evaluate(() => document.body.classList.contains('nighttint') || !!document.body.dataset.tod);
     await vf.evaluate(() => document.querySelector('#optNight').click());
     rep.check(`${name} 夜色开关关掉即去掉`, !n3);
     // 自检

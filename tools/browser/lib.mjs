@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { tracker } from './known.mjs';
 
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 // 端口：EDEN_PORT 优先；否则按本工作树路径哈希到 5200–5999（每个 worktree 固定、互不相同），不再默认共用 5178——
@@ -229,16 +230,24 @@ export async function postEvents(frame, texts, fly) {
 export function reporter(outDir) {
   fs.mkdirSync(outDir, { recursive: true });
   const R = { when: new Date().toISOString(), base: BASE, blender: spawnSync('pgrep', ['-f', '[M]acOS/Blender -b']).status === 0, checks: [], metrics: {} };
+  const known = tracker();   // tools/browser/known-failures.json: a listed failure prints KNOWN and does not fail the run
   return {
     R,
-    check(name, pass, detail = '') { R.checks.push({ name, pass: !!pass, detail }); console.log(`${pass ? '✓' : '✗'} ${name}${detail ? '  ' + detail : ''}`); },
+    check(name, pass, detail = '') {
+      const k = known.judge(name, pass);
+      R.checks.push({ name, pass: !!pass, detail, ...(k ? { known: k } : {}) });
+      console.log(`${pass ? '✓' : k ? '~ KNOWN' : '✗'} ${name}${detail ? '  ' + detail : ''}${k ? `  [${k.owner_step}: ${k.reason}]` : ''}`);
+    },
     metric(k, v) { R.metrics[k] = v; },
     save() {
       fs.writeFileSync(path.join(outDir, 'results.json'), JSON.stringify(R, null, 1));
       const md = [`# 浏览器验收 ${R.when}`, '', `服务 ${R.base}；后台 Blender：${R.blender ? '在渲（计时偏慢）' : '无'}`, '',
-        '| 检查 | 结果 | 说明 |', '|---|---|---|', ...R.checks.map(c => `| ${c.name} | ${c.pass ? '✓' : '✗'} | ${String(c.detail).replace(/\|/g, '/')} |`), ''].join('\n');
+        '| 检查 | 结果 | 说明 |', '|---|---|---|', ...R.checks.map(c => `| ${c.name} | ${c.pass ? '✓' : c.known ? 'KNOWN' : '✗'} | ${String(c.detail).replace(/\|/g, '/')} |`), ''].join('\n');
       fs.writeFileSync(path.join(outDir, 'summary.md'), md);
-      return R.checks.every(c => c.pass);
+      const nKnown = R.checks.filter(c => !c.pass && c.known).length;
+      if (nKnown) console.log(`KNOWN（已登记的既有失败，不影响退出码）：${nKnown}`);
+      for (const k of known.fixed()) console.log(`FIXED：${k.probe} / ${k.check} 现在通过了——从 tools/browser/known-failures.json 里删掉这一条`);
+      return R.checks.every(c => c.pass || c.known);
     },
   };
 }

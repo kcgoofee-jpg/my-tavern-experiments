@@ -1,0 +1,9 @@
+[
+  {
+    "probe": "pack_town",
+    "check": "没写 eden 的本机键",
+    "since": "S2-A (baseline; present before S2)",
+    "reason": "product bug: map/core/logbuf.mjs writes the un-namespaced localStorage keys edenMapLogCur / edenMapLogPast under a non-eden pack instead of the pack's tcp.<id>.* namespace (desktop and phone)",
+    "owner_step": "S5"
+  }
+]

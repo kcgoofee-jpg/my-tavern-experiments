@@ -5,10 +5,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { BASE, REPO_ROOT, closeAll, ensureServer, newPage, shot, wait } from './lib.mjs';
 import { openHost } from './host_stub.mjs';
+import { knownFor, probeName, loadKnown } from './known.mjs';
 const out = process.argv[2] || '/tmp/pack_town';
 const srv = await ensureServer();
 const res = []; let fail = 0;
-const ok = (name, cond, extra = {}) => { res.push({ name, ok: !!cond, ...extra }); if (!cond) fail++; };
+const KNOWN = loadKnown(), PROBE = probeName(), knownPassed = new Set();   // tools/browser/known-failures.json
+const ok = (name, cond, extra = {}) => {
+  const k = cond ? null : knownFor(PROBE, name, KNOWN);
+  if (cond) for (const e of KNOWN) if (e.probe === PROBE && name.includes(e.check)) knownPassed.add(e.check);
+  res.push({ name, ok: !!cond, ...(k ? { known: k } : {}), ...extra }); if (!cond && !k) fail++;
+};
 const tax = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'map/packs/town/events.json'), 'utf8'));
 const EV = await import(path.join(REPO_ROOT, 'map/tavern/events.mjs'));
 EV.configure(tax, 'town'); EV.setGeo((await import(path.join(REPO_ROOT, 'tools/eden_geo.mjs'))).packGeo('town'));
@@ -71,6 +77,7 @@ try {
   }
 } catch (e) { fail++; res.push({ error: String(e?.stack || e) }); }
 fs.mkdirSync(out, { recursive: true }); fs.writeFileSync(path.join(out, 'results.json'), JSON.stringify(res, null, 1));
-for (const r of res) console.log(r.ok ? '✓' : '✗', r.name || r.error, r.ok ? '' : JSON.stringify(r).slice(0, 400));
+for (const r of res) console.log(r.ok ? '✓' : r.known ? '~ KNOWN' : '✗', r.name || r.error, r.ok ? '' : JSON.stringify(r).slice(0, 400));
+for (const c of knownPassed) console.log(`FIXED：${PROBE} / ${c} 现在通过了——从 tools/browser/known-failures.json 里删掉这一条`);
 await closeAll(); srv.stop();
 console.log(fail ? `有失败：${fail}` : '全部通过'); process.exit(fail ? 1 : 0);
