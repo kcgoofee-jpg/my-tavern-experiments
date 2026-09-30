@@ -1,0 +1,154 @@
+{
+ "_note": "viewer3d.html?model=slums 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/slums.md。 体量上限按「片区」放宽到 std 0.9 / low 0.45 MB（单栋默认 0.6/0.3）：一个模型含几十座叠放棚屋、管线、水点与水箱塔；实测 std 0.74 MB。",
+ "id": "slums",
+ "title": {
+  "zh": "贫民窟",
+  "en": "Slums"
+ },
+ "glb": "slums.glb",
+ "glb_low": "slums_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "props_shacks",
+   "props_stairs"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "props_pipes",
+   "props_yard",
+   "site_ground"
+  ],
+  "building": {
+   "min": [
+    -46,
+    -0.3,
+    -40
+   ],
+   "max": [
+    46,
+    16,
+    72
+   ]
+  }
+ },
+ "section": {
+  "min": 0.5,
+  "max": 16,
+  "default": 16
+ },
+ "camera": {
+  "frame": [
+   "props_shacks"
+  ],
+  "dir": [
+   0.4,
+   0.42,
+   -0.8
+  ],
+  "min": 6,
+  "max": 350,
+  "maxPolar": 1.48
+ },
+ "budgets": {
+  "props_shacks": [
+   30000,
+   1024
+  ],
+  "props_pipes": [
+   14000,
+   512
+  ],
+  "props_stairs": [
+   9000,
+   512
+  ],
+  "props_yard": [
+   14000,
+   512
+  ],
+  "site_ground": [
+   2000,
+   512
+  ]
+ },
+ "hotspots": [
+  {
+   "id": "shacks",
+   "mesh": "props_shacks",
+   "name": {
+    "zh": "叠放的棚屋（铁皮 / 胶合板 / 防水布拼贴 + 单坡顶 + 小窗）",
+    "en": ""
+   },
+   "desc": {
+    "zh": "叠放的棚屋（铁皮 / 胶合板 / 防水布拼贴 + 单坡顶 + 小窗）",
+    "en": ""
+   },
+   "view": [
+    0.4,
+    0.42,
+    -0.8
+   ]
+  },
+  {
+   "id": "pipes",
+   "mesh": "props_pipes",
+   "name": {
+    "zh": "外墙水管 + 下垂线缆 + 屋顶炉管 + 高脚水箱塔",
+    "en": ""
+   },
+   "desc": {
+    "zh": "外墙水管 + 下垂线缆 + 屋顶炉管 + 高脚水箱塔",
+    "en": ""
+   },
+   "view": [
+    0.4,
+    0.42,
+    -0.8
+   ]
+  },
+  {
+   "id": "stairs",
+   "mesh": "props_stairs",
+   "name": {
+    "zh": "外挂阶梯 + 悬空木板桥",
+    "en": ""
+   },
+   "desc": {
+    "zh": "外挂阶梯 + 悬空木板桥",
+    "en": ""
+   },
+   "view": [
+    0.4,
+    0.42,
+    -0.8
+   ]
+  },
+  {
+   "id": "yard",
+   "mesh": "props_yard",
+   "name": {
+    "zh": "巷心公用水点 + 水桶 / 托盘 / 油桶 / 旧轮胎 / 废料堆 + 晾杆",
+    "en": ""
+   },
+   "desc": {
+    "zh": "巷心公用水点 + 水桶 / 托盘 / 油桶 / 旧轮胎 / 废料堆 + 晾杆",
+    "en": ""
+   },
+   "view": [
+    0.4,
+    0.42,
+    -0.8
+   ]
+  }
+ ],
+ "max_mb": {
+  "std": 0.9,
+  "low": 0.45
+ }
+}
