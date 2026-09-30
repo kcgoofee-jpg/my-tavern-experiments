@@ -13,6 +13,7 @@
 #   tools/render_queue.sh dispatch [--once]     # 派工一轮：查两台设备是否空闲，把能派的 pending 任务派出去（后台跑）
 #                                                #   不给 --once 时是常驻循环，每 POLL 秒查一轮，Ctrl-C 退出
 #   tools/render_queue.sh status                # Mac / 各云实例状态 + 正在跑的任务 + pending 计数
+#   tools/render_queue.sh pause|resume          # 暂停 / 恢复派工（logs/queue/PAUSED 旗标；不动已在跑的任务）：给 GUI Blender / MCP 现场检查腾出显卡，见 docs/render-inspection.md
 #   tools/render_queue.sh list                  # 列 pending/running/done 任务文件
 #
 # 调度规则：
@@ -56,6 +57,7 @@ POLL=${POLL:-20}
 mkdir -p "$PEND" "$RUN" "$DONE"
 
 mac_only() { [ -f "$QDIR/MAC_ONLY" ]; }
+paused() { [ -f "$QDIR/PAUSED" ]; }
 
 cloud_hosts() {
   # 列出配置好的云实例名：default（remote.env）+ hosts/*.env
@@ -70,7 +72,8 @@ cloud_hosts() {
 
 mac_busy() {
   if [ -n "${RQ_MAC_BUSY:-}" ]; then [ "$RQ_MAC_BUSY" = 1 ]; return; fi
-  pgrep -f 'tools/blender_run.sh' >/dev/null 2>&1
+  # 也算上手开的 GUI Blender（进程名 Blender）：blender_run.sh 遇到它会干等，派过去只会占着派工槽位空转
+  pgrep -f 'tools/blender_run.sh' >/dev/null 2>&1 || pgrep -x Blender >/dev/null 2>&1
 }
 cloud_busy() {
   # cloud_busy <实例名>：BUSY/IDLE，通过 tools/cloud/status.sh --busy-check（只走 tools/cloud/*.sh，不直连）
@@ -95,7 +98,7 @@ mark_synced() { local h=$1; mkdir -p "$CLOUD/.locks"; touch "$CLOUD/.locks/${h}.
 
 idle_guard_on() { [ -f "$CLOUD/.locks/${1}.idle_guard_on" ]; }
 
-usage() { sed -n '2,26p' "$0"; }
+usage() { sed -n '2,27p' "$0"; }
 
 cmd_submit() {
   local tag=${1:-}; shift || true
@@ -138,6 +141,7 @@ orphan_count() {
 
 cmd_status() {
   if mac_only; then echo "mode: Mac-only (logs/queue/MAC_ONLY)"; else echo "mode: Mac + cloud"; fi
+  if paused; then echo "dispatch: PAUSED (logs/queue/PAUSED; resume with: bash tools/render_queue.sh resume) — $(command ls "$RUN" 2>/dev/null | grep -c '\.job$') job(s) still running"; fi
   echo "queue: ${QDIR}（主工作树 ${QROOT}）"
   echo "== Mac =="
   if mac_busy; then echo "  忙（$(pgrep -fal 'tools/blender_run.sh' | head -1)）"; else echo "  空闲"; fi
@@ -293,7 +297,17 @@ run_job_cloud() {
   if [ "$DRY_RUN" = 1 ]; then ( _job_cloud_body ); else ( _job_cloud_body ) & disown; fi
 }
 
+cmd_pause() {
+  : > "$QDIR/PAUSED"
+  echo "已暂停派工（$QDIR/PAUSED）：pending 任务不再派出，已在跑的 $(command ls "$RUN" 2>/dev/null | grep -c '\.job$') 个任务照常跑完。等 status 里 running 为 0 再开 GUI Blender；用完 resume。"
+}
+cmd_resume() {
+  rm -f "$QDIR/PAUSED"
+  echo "已恢复派工（pending：$(command ls "$PEND" 2>/dev/null | grep -c '\.job$')）。"
+}
+
 cmd_dispatch_once() {
+  paused && return 0                               # 暂停中：一个都不派（已在跑的不受影响）
   # 不用关联数组（macOS 系统自带 bash 3.2 没有 declare -A）：云实例状态存进一个「host\tstatus」的临时文件，查询用 grep。
   local dispatched=0
   local mb; mb=$(mac_busy && echo 1 || echo 0)
@@ -375,6 +389,8 @@ case "${1:-}" in
   submit) shift; cmd_submit "$@" ;;
   list) cmd_list ;;
   status) cmd_status ;;
+  pause) cmd_pause ;;
+  resume) cmd_resume ;;
   dispatch)
     shift
     # --- 派工单例锁（2026-09-29）---
@@ -416,5 +432,5 @@ case "${1:-}" in
     fi
     ;;
   ""|-h|--help) usage ;;
-  *) echo "未知命令 ${1}（submit|list|status|dispatch）" >&2; exit 2 ;;
+  *) echo "未知命令 ${1}（submit|list|status|pause|resume|dispatch）" >&2; exit 2 ;;
 esac

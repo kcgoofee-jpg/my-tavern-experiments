@@ -71,6 +71,22 @@ class QueueCase(unittest.TestCase):
         self.assertNotIn('cloud/', r.stdout)
         self.assertEqual(self.cloud_calls(), [], '不应有任何云脚本（ssh 入口）被调用')
 
+    def test_pause_holds_pending_jobs_and_resume_releases_them(self):
+        # R2 T4: a GUI Blender session needs the GPU; pause stops new dispatches, running jobs are untouched
+        self.mac_only()
+        self.job('j1', 'draft', self.main)
+        r = self.rq('pause')
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue(os.path.exists(os.path.join(self.qdir, 'PAUSED')))
+        self.assertIn('PAUSED', self.rq('status').stdout)
+        r = self.rq('dispatch', '--once')
+        self.assertNotIn('派工：', r.stdout)
+        self.assertTrue(self.in_dir('pending', 'j1'), 'paused: the job stays pending')
+        self.rq('resume')
+        self.assertFalse(os.path.exists(os.path.join(self.qdir, 'PAUSED')))
+        self.assertNotIn('PAUSED', self.rq('status').stdout)
+        self.assertIn('→ mac', self.rq('dispatch', '--once').stdout)
+
     def test_mac_only_draft_and_any_also_go_to_mac(self):
         self.mac_only()
         self.job('a1', 'draft', self.main)

@@ -519,5 +519,16 @@ tests: not rerun (ledger-only change)
 deviations: none
 blocker: `python3 tools/render_campaign.py ship-check` -> "FREEZE: docs/plans/FREEZE_MAPS is present on origin/preview" (551c9f58 chore: freeze maps.json for S4-2) / recorded wait / A: apply C after the unfreeze (next --lane hero re-offers layout:tc_upper final), B: none (never ship maps.json during a freeze)
 open: T3 plan once unfrozen: tc_islands.json <- tc_islands_v16_C.json; tc_upper.json markers / islands / patrol shifted, patrol_city regenerated, eden via eden_anchor_upper.py; maps.json eden_hi inset bounds moved to Eden's new frame; interim tc_upper + tc_upper_city bases composited from the shipped tiles (upper_layout_v16 preview method at 8000 px); worldbook --ship; check_maps, estate3d, accept probe
+=== RESULT R2 ===
+status: DONE
+items: T1 ✓  T2 ✓  T3 ✓  T4 ✓  T5 ✓
+commits: caf0c8cd fix(render): the guard fails crashed or output-less runs
+         c59729fa feat(render): clay geometry stage and region studies in the landmark pipeline
+         94110af6 docs(render): live scene inspection via the Blender MCP connector; asset and texture-scale guide
+pushed: see the report (head #N)
+tests: node 127/127 | smoke PASS | arch PASS | probes: none (no viewer change)
+deviations: the queue verdict also checks stale output (finish_job) and render_queue.sh gained pause|resume, plus "a running GUI Blender counts as a busy Mac" in mac_busy; the demo outputs (docs/landmarks/slums/*) are not committed, copies are in ~/eden-map-review/r2/; the running dispatcher was not restarted, so pause/resume and the stale-output check take effect after the next dispatcher restart (blender_run.sh changes apply from the next job).
+blocker: none
+open: a deterministic script_error is still retried MAX_RETRY (6) times by the queue's finish_job (exit 70 is not special-cased); consider capping retries for script_error / no_output.
 cleanup: done
 === END ===
