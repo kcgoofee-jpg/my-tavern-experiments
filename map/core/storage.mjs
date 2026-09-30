@@ -39,6 +39,8 @@ export const KEYS = {
   'edenMapScrap': { owner: 'map/scrapbook.mjs', prefix: true, perChat: true },
   // 酒馆助手采纳（docs/tavernhelper-audit.md，docs/interaction-modes.md）：状态注入 (a)、类宏 B9、世界书附加条目同步 B1
   edenMapStateInj: { owner: 'host', def: '1' }, edenMapStateDepth: { owner: 'host', def: '2' }, edenMapStateBudget: { owner: 'host', def: '150' }, edenMapMacros: { owner: 'host', def: '0' },
+  // 空间坐标契约注入（W1，docs/plans/llm-campaign.md）：edenMapSpatial 默认关；上限 token 数（裁决 5，默认 120）
+  edenMapSpatial: { owner: 'host', def: '0' }, edenMapSpatialBudget: { owner: 'host', def: '120' },
   edenMapWbAuto: { owner: 'host', def: '0' }, edenMapWbOn: { owner: 'host', def: '1' }, edenMapWbTomb: { owner: 'host', def: '0' }, edenMapWbChars: { owner: 'host' }, edenMapWbNoticeVer: { owner: 'host' }, edenMapWbSync: { owner: 'host' }, edenMapWbWhere: { owner: 'host' },
   // 三维
   edenEstateLabels: { owner: 'estate', legacy: true }, edenMap3dRailW: { owner: 'ui/chrome3d.js' },

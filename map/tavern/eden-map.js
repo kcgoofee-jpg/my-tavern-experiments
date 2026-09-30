@@ -510,7 +510,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     if (!lite) restNow();   // 标签改名、行程；发送路径上推迟到空闲
     else { clearTimeout(restT); restT = setTimeout(() => (window.parent.requestIdleCallback || (f => f()))(() => { if (!life.dead && restDue) restNow(); }, { timeout: 1500 }), 0); }
     inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : '', INVm && lsGet('edenMapInvInj') !== '0' ? INVm.digestLine(inv, 150) : ''].filter(Boolean).join('\n'));
-    if (!lite) { stateInject(); checkpointStep(); }
+    if (!lite) { stateInject(); spatialInject(); checkpointStep(); }
     if (!panel.hidden && alive) sendEvents();
     if (subs.events.size) { const sig = floorNow + '|' + events.map(e => e.id + ':' + e.last + ':' + e.tier).join(); if (sig !== emEvSig) { emEvSig = sig; emit('events', { items: events.map(e => ({ ...e })), floor: floorNow, hereLayer: layerOf(here) }); } }
     perf(lite ? 'lite' : 'core', performance.now() - t0);
@@ -1035,6 +1035,27 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     const key = text + '|' + depth; if (key === stateNow) return; stateNow = key;
     MDm.applyState(thFn, text, depth);
     if (on && cardSkipChat !== chatId()) cardSkipFor().then(() => { stateNow = ''; stateInject(type); });
+  }
+  // 空间坐标契约（W1，docs/plans/llm-campaign.md）：当前地点 + 出口 / 守卫锥 / 邻近地标 → ≤120 token 的 JSON 契约
+  // （纯编译在 tavern/spatial.mjs；默认关 edenMapSpatial，上限 edenMapSpatialBudget）。与状态行同一轮注入。
+  let SPm = null, spatialNow = '';
+  const ptsCache = new Map();
+  function pointsFor(mapId) {
+    const p = regNow?.maps?.[mapId]?.data;
+    if (!p) return Promise.resolve(null);
+    if (!ptsCache.has(mapId)) ptsCache.set(mapId, cdnFetch(BASE + p).then(r => r.ok ? r.json() : null).catch(() => null));
+    return ptsCache.get(mapId);
+  }
+  async function spatialInject() {
+    if (life.dead || lsGet('edenMapSpatial') !== '1' || !regNow) return;
+    SPm ??= await import(SELF + 'tavern/spatial.mjs').catch(() => null); if (!SPm || life.dead) return;
+    const loc = SPm.locate(regNow, here);
+    if (!loc?.mapId) { if (spatialNow) { spatialNow = ''; SPm.applySpatial(thFn, '', 2); } return; }
+    const pts = await pointsFor(loc.mapId);
+    const mm = /^(\d{1,2}):(\d{2})/.exec(String(clock?.time || '')), t = mm ? (+mm[1] * 60 + +mm[2]) / 1440 : 0;
+    const text = SPm.coordView({ reg: regNow, here, pointsByMap: { [loc.mapId]: pts }, t, budget: +(lsGet('edenMapSpatialBudget') || 120) });
+    if (text === spatialNow) return; spatialNow = text;
+    SPm.applySpatial(thFn, text, 2);
   }
   function checkpointStep() {   // 确认前进时写检查点（内容没变不写）
     if (!MDm || !custom || customChat !== chatId()) return;

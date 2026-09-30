@@ -204,6 +204,37 @@ INFERRED = ''   # v16：不再向模型写「推断」口径（用户要求）�
 LAYER_RE = {'上层': '中层|下层', '中层': '上层|下层', '下层': '上层|中层'}
 
 
+def topo_block(reg, mid):
+    """v17（W1，docs/plans/llm-campaign.md 裁决 12/13）：层连通性编译成 [TOPO] 声明块，取代「地图上的地标：…」散文列举。
+    连接源只有三类：marker.link 显式跨层通道（出口）、同层地标全集（连通）、层级包含（路径前缀）；routes 不作邻接源。
+    与 map/tavern/spatial.mjs 的 topo 语义同一口径（运行时注入与世界书发布件两条路一个说法）。"""
+    m = reg[mid]
+    body = '连通: ' + '、'.join(v['name'].replace(' ', '') for v in canon(m['markers']).values())
+    links = []
+    for v in canon(m['markers']).values():
+        to = (v.get('link') or {}).get('map')
+        # link.map 指向带 layer 的层图才是跨层出口；指向 lm_* 三维地标图（kind=estate、无 layer）不算
+        if to and reg.get(to, {}).get('layer'): links.append(f"{v['name'].replace(' ', '')}({reg[to]['layer']['name']})")
+    if links: body += '；出口: ' + '、'.join(links)
+    return f'[TOPO: 天城/{m["layer"]["name"]} -> {body}]'
+
+
+def topo_selftest(reg):
+    """wb_topo（W1）：[TOPO] 块对同一份连通信息的 token 占用 ≤ 散文版 25%。
+    散文基线 = 无向图的自然语言叙述（每条连接一句完整句子、两个方向都写）——这正是 TOPO 块要替代的东西。
+    全量对拍在 tests/wb_topo.test.mjs；这里抽第一层自证，失败直接退出构建。"""
+    for mid, m in reg.items():
+        if m.get('kind') != 'points' or m.get('status') == 'planned' or not m.get('layer'): continue
+        names = [v['name'].replace(' ', '') for v in canon(m['markers']).values()]
+        if len(names) < 2: continue
+        block = topo_block(reg, mid)
+        prose = '。'.join(f'从{a}可以步行前往{b}' for a in names for b in names if a != b) + '。'
+        r = tokens(block) / max(1, tokens(prose))
+        assert r <= 0.25, f'{mid}: [TOPO] 块 {tokens(block)} tokens，散文版 {tokens(prose)}（{r:.0%} > 25%）'
+        return r
+    return None
+
+
 def neighbours(reg, mid, k, n=3):
     """同层最近的 n 个地标（按 data/<层>.json 的归一化坐标）"""
     d = json.load(open(os.path.join(ROOT, 'map', reg[mid]['data']), encoding='utf-8'))
@@ -227,7 +258,7 @@ def lore_lines(reg, mid):
         # v16：位置不再写「推断」口径；tag/src 里的推断标记仅用于仓库内部对账
         inf = INFERRED
         rows.append((words, f'{nm}：天城{L["name"]}（{L["sub"]}）' + (f'，{sub}' if sub else '') + inf + (f'；地图上邻近：{"、".join(nb)}' if nb else '') + '。'))
-    layer = (L['name'], [L['name'], *m.get('districts', [])], f'天城{L["name"]}（{L["sub"]}，{L.get("alt", "")}）；地图上的地标：' + '、'.join(v['name'].replace(' ', '') for v in canon(m['markers']).values()) + '。')
+    layer = (L['name'], [L['name'], *m.get('districts', [])], f'天城{L["name"]}（{L["sub"]}，{L.get("alt", "")}）；' + topo_block(reg, mid) + '。')
     return rows, layer
 
 
@@ -430,6 +461,7 @@ def main():
         sys.exit(f'v{a.version} 已发布（有 map-v{a.version} 标签），拒绝覆盖已发布的附加世界书；确实要重写请加 --force，或用 --version {a.version}-dev / 新版本号')
     items, n = build(a.version)
     lore_max = selftest(items)
+    topo_selftest(json.load(open(os.path.join(ROOT, 'map/data/maps.json'), encoding='utf-8'))['maps'])
     book = to_book(items)
     out = a.out or os.path.expanduser(f'~/Downloads/酒馆/世界书/伊甸地图·世界书附加条目 v{a.version}.json')
     os.makedirs(os.path.dirname(out), exist_ok=True)
