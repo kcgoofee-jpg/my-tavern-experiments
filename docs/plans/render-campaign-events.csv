@@ -406,3 +406,11 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T20:12:57Z,var:tc_low:day,ship,done,std-1,pass,8000x5000 / 128 spp tiles already on preview; period registered in maps.json; check_maps + node 795/796 + smoke pass
 2026-09-30T20:12:57Z,var:tc_low:dusk,ship,done,std-1,pass,8000x5000 / 128 spp tiles already on preview; period registered in maps.json; check_maps + node 795/796 + smoke pass
 2026-09-30T20:12:57Z,var:tc_low:night,ship,done,std-1,pass,8000x5000 / 128 spp tiles already on preview; period registered in maps.json; check_maps + node 795/796 + smoke pass
+2026-09-30T20:13:05Z,isle:isle5,fix,claim,hero-1,,
+2026-09-30T20:20:11Z,isle:isle5,fix,done,hero-1,,"draft3 index bug fixed; draft4 thin ward rim; draft5 dark rough slate/stone, taller chimneys"
+2026-09-30T20:20:11Z,isle:isle5,review-r2,claim,hero-1,,
+2026-09-30T20:20:14Z,isle:isle5,review-r2,done,hero-1,pass,"r2 fidelity 7.5 / credibility 6.5: ward rim, dark house ridge, bare ridges fixed"
+2026-09-30T20:20:14Z,isle:isle5,final,claim,hero-1,,
+2026-09-30T20:22:10Z,isle:isle5,final,done,hero-1,,final 2400px/64spp main + under; cutout 660m
+2026-09-30T20:24:39Z,isle:isle5,integrate,done,hero-1,,"body-only crop re-render (0.417,0,0.617,0.29) + cutout 660m pasted into tc_upper + tc_upper_city; DZI rebuilt"
+2026-09-30T20:24:48Z,isle:isle5,ship,wait,hero-1,,"FREEZE_MAPS on origin/preview; tiles + cutout ready locally on render-hero-1; y_estate marker to move onto the house (~0.510, 0.865 y-up) at ship"

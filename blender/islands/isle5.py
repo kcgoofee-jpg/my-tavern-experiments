@@ -45,10 +45,10 @@ def top(ctx):
     M['bark5'] = C.flat('y5_bark', (.08, .07, .06), .9)
     M['needle_a'] = C.flat('y5_needle_a', (.018, .04, .026), .85, noise=.5); M['needle_b'] = C.flat('y5_needle_b', (.025, .05, .03), .85, noise=.5)
     M['needle_c'] = C.flat('y5_needle_c', (.03, .045, .028), .85, noise=.5)
-    M['rock5'] = C.flat('y5_rocktop', (.05, .052, .058), .7, noise=.6)
+    M['rock5'] = C.flat('y5_rocktop', (.03, .031, .035), .96, noise=.6)
     M['wardrim5'] = C.glow('y5_wardrim', c=(.5, .72, 1.0), estr=1.4, alpha=.08); M['wardline5'] = C.glow('y5_wardline', c=(.55, .8, 1.0), estr=5.0)
-    M['blackstone'] = C.flat('y5_stone', (.06, .06, .065), .75, noise=.4)
-    M['slate5'] = C.flat('y5_slate', (.07, .075, .085), .55, noise=.3)
+    M['blackstone'] = C.flat('y5_stone', (.035, .034, .036), .95, noise=.4)
+    M['slate5'] = C.flat('y5_slate', (.025, .026, .03), .92, noise=.3)
     M['lane5'] = C.flat('y5_lane', (.22, .22, .23), .9, noise=.5)
     M['ward5'] = K_.hex_ward('y5_ward', cell=5.0, alpha=.04, estr=.6, c=(.55, .75, 1.0), rim=.35)
     tr = K_.Terrain(S, noise=(3.0, 40), rough=(1.6, 14), ridges=[dict(pts=p, w=44, h=30) for p in RIDGES] + [dict(pts=[(-150, 90), (-80, 140)], w=30, h=-8)],
@@ -65,7 +65,7 @@ def top(ctx):
     def house():                                                                    # 长条黑石宅：三层、陡石板坡、高烟囱、窄高窗
         t = K.block(-32, 32, -8, 8, 3, 4.4, M['blackstone'], bay=3.0, win=(.9, 2.6)); K.hip(-32, 32, -8, 8, t, 9.0, m=M['slate5'], over=.6)
         K.block(20, 32, 8, 22, 2, 4.4, M['blackstone'], bay=3.0, win=(.9, 2.6)); K.hip(20, 32, 8, 22, 2 * 4.4 + .55, 7.0, m=M['slate5'], over=.6)
-        for x in (-26, -12, 4, 18, 30): K.chimney(x, 0, t + 6.0, 6.5, 1.4, .9, M['blackstone'])
+        for x in (-26, -12, 4, 18, 30): K.chimney(x, 0, t + 6.0, 11.0, 1.6, 1.0, M['blackstone'])
         return t
     t = K_.placed(house, hx, hy, zh)
     ctx.anchor('house', hx, hy, zh + t + 10); ctx.anchor('card_y', hx - 20, hy, zh + t + 4)

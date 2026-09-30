@@ -151,6 +151,7 @@
       "terrain": "crag",
       "biome": "conifer",
       "marker": "y_estate",
+      "cutout": "y_estate",
       "silhouette": {
         "kind": "jagged"
       },
