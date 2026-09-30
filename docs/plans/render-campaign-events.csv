@@ -70,3 +70,8 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T13:12:23Z,review:rothschild_estate,fix,done,std-1,,"honey stone, glass hall roof, c3 dock camera (rothschild() only)"
 2026-09-30T13:12:23Z,review:rothschild_estate,review-r2,done,std-1,pass,r2 7.5/7.5 pass
 2026-09-30T13:16:43Z,review:rothschild_estate,ship,done,std-1,,"glb re-exported std 0.91 MB (was 2.56) / low 0.58 MB with group budgets; max_mb std 1.0/low 0.65; marker zaibatsu_estate already linked (lm_zaibatsu_estate) so landmark ship's map step refused, row updated by hand; check_maps + estate3d_manifest + smoke pass"
+2026-09-30T13:16:59Z,review:elite_academy,review-r1,claim,std-1,,
+2026-09-30T13:17:51Z,review:elite_academy,review-r1,done,std-1,fail,"r1 6.5/7.5 fail: lead dome, courtyard not in frame"
+2026-09-30T13:17:51Z,review:elite_academy,fix,done,std-1,,"verdigris dome, c3 courtyard camera (academy() only)"
+2026-09-30T13:17:51Z,review:elite_academy,review-r2,done,std-1,pass,r2 7.5/7.5 pass
+2026-09-30T13:19:58Z,review:elite_academy,ship,done,std-1,,glb re-exported std 0.93 MB (was 2.58) / low 0.61 MB with group budgets; max_mb std 1.0/low 0.65; landmark ship + check_maps + estate3d_manifest + smoke pass

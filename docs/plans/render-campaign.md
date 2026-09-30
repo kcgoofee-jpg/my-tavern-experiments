@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T13:16:43Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T13:19:58Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 12 | 0 | 36 | 0 | 0 | 0 | 48 |
+| standard | 13 | 0 | 35 | 0 | 0 | 0 | 48 |
 | hero | 2 | 0 | 12 | 0 | 6 | 0 | 20 |
 
 Below-gate (user spot-check): none
@@ -27,7 +27,7 @@ Below-gate (user spot-check): none
 | 10 | `review:rust_outskirts` | review | done | - |  |  | Review and fix model rust outskirts |
 | 11 | `review:league_club` | review | done | - |  |  | Review and fix model league club |
 | 12 | `review:rothschild_estate` | review | done | - |  |  | Review and fix model rothschild estate |
-| 13 | `review:elite_academy` | review | open | review-r1 |  |  | Review and fix model elite academy |
+| 13 | `review:elite_academy` | review | done | - |  |  | Review and fix model elite academy |
 | 14 | `review:holy_mountain` | review | open | review-r1 |  |  | Review and fix model holy mountain |
 | 15 | `lm:blood_mill` | landmark | open | new |  |  | New model: blood mill |
 | 16 | `lm:freight_yard` | landmark | open | new |  |  | New model: freight yard |
