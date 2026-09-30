@@ -33,6 +33,7 @@ export const SCHEMA = {
   'eden-map:custom-sync': [V2H, { on: 'boolean?' }],
   'eden-map:varmap-set': [V2H, { user: 'object?' }],
   'eden-map:compose': [V2H, { text: 'string' }],
+  'eden-map:action': [V2H, { kind: 'string?', name: 'string?', map: 'string?', text: 'string?' }],   // Part 6-4：地图 POI → 聊天（文案与注入方式由宿主按设置决定，模块 tavern/action.mjs）
   'eden-map:explore': [V2H, { map: 'string', name: 'string' }],   // 迷雾探索：记一次到访（只在开着时发）
   'eden-map:explore-reset': [V2H, {}],
   'eden-map:th': [V2H, { op: 'string' }],   // 酒馆助手设置（app/th-ui.mjs）：state / prefs / wb-inspect / wb-write / wb-del-legacy

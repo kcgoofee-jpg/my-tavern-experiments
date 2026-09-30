@@ -31,8 +31,25 @@ async function openGal(a) {
   if (sets) GALS = sets; const set = sets?.[a.dataset.gallery]; if (!set) return;
   openGallery(set, { lang: window.I18N?.lang || 'zh', base, onClose: () => { if (a.isConnected) a.focus({ preventScroll: true }); } });
 }
+// ---------------- Part 6-4：卡片上的「动作注入」入口 ----------------
+// 查看器只说「点了哪个地点、想做什么」：post 一条 eden-map:action，文案与注入方式由宿主（tavern/action.mjs）
+// 按设置决定。模式默认 off 时这个链接根本不渲染——不让地图在玩家没点头的情况下替他说话。
+export function injectHtml(meta, { t, esc, nm, mode } = {}) {
+  if (!mode || mode === 'off') return '';
+  const name = (nm ? nm(meta, 'name') : '') || meta?.name || '';   // 点位卡的标题字段是 name（英文时取 name_en）
+  if (!name) return '';
+  const label = mode === 'sys' ? t('act.sys', '注入系统指令') : t('act.compose', '填入输入框');
+  return `<a data-inject="go" data-name="${esc(name)}" role="button" tabindex="0">${esc(label)}</a>`;
+}
+
 if (typeof document !== 'undefined') {
+  document.addEventListener('click', e => { const a = e.target.closest?.('[data-inject]'); if (a) { e.preventDefault(); injectFrom(a); } });
+  document.addEventListener('keydown', e => { const a = (e.key === 'Enter' || e.key === ' ') && e.target.closest?.('[data-inject]'); if (a) { e.preventDefault(); injectFrom(a); } });
+  async function injectFrom(a) {
+    const { post } = await import('./util.mjs'); const { cur } = await import('./state.mjs');
+    post({ type: 'eden-map:action', kind: a.dataset.inject || 'go', name: a.dataset.name || '', map: cur || '' });
+  }
   document.addEventListener('click', e => { const a = e.target.closest?.('[data-gallery]'); if (a) { e.preventDefault(); openGal(a); } });
   document.addEventListener('keydown', e => { const a = (e.key === 'Enter' || e.key === ' ') && e.target.closest?.('[data-gallery]'); if (a) { e.preventDefault(); openGal(a); } });
 }
-if (typeof window !== 'undefined') window.TCCardLinks = { linkHtml, linksHtml, galleryHtml };
+if (typeof window !== 'undefined') window.TCCardLinks = { linkHtml, linksHtml, galleryHtml, injectHtml };

@@ -57,6 +57,7 @@ export function setTheme(th) {
 export function paintSegs() {
   const on = (sel, attr, v) => document.querySelectorAll(sel).forEach(b => { const x = b.dataset[attr] === v; b.classList.toggle('on', x); b.setAttribute('aria-pressed', x); });
   on('#themeSeg button', 'th', window.__theme); on('#rmSeg button', 'rm', rmPref()); on('#q3Seg button', 'q', q3Pref()); on('#cvdSeg button', 'cvd', TCCvd.mode());
+  on('#injSeg button', 'inj', window.__edenInject || 'off');   // Part 6-4 动作注入模式
   document.querySelectorAll('#langSeg button').forEach(b => { b.classList.toggle('on', b.dataset.lang === LANG); b.setAttribute('aria-pressed', b.dataset.lang === LANG); });
 }
 const themeNow = () => document.documentElement.classList.contains('light') ? 'light' : 'dark';

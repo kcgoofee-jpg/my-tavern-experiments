@@ -694,5 +694,12 @@
   "weather": "Weather",
   "weather_title": "Render rain / sand / snow and lightning from story and time of day",
   "traffic": "Traffic",
-  "traffic_title": "Glowing maglev traffic along air lanes and patrol rings"
+  "traffic_title": "Glowing maglev traffic along air lanes and patrol rings",
+  "act.compose": "Fill input",
+  "act.sys": "Inject system command",
+  "s.inject": "Action injection",
+  "s.inject_hint": "Send one line into the chat from a card action; off by default. Fill input never sends; system injection uses /sys",
+  "inj.off": "Off",
+  "inj.compose": "Fill input",
+  "inj.sys": "System cmd"
 }

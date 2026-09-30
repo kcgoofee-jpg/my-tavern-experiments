@@ -561,5 +561,12 @@
   "weather": "天气",
   "weather_title": "按剧情与时段渲染雨 / 沙尘 / 雪与闪电",
   "traffic": "车流",
-  "traffic_title": "航线与巡逻环上的悬浮车流光点"
+  "traffic_title": "航线与巡逻环上的悬浮车流光点",
+  "act.compose": "填入输入框",
+  "act.sys": "注入系统指令",
+  "s.inject": "动作注入",
+  "s.inject_hint": "点卡片上的入口时把一句话送进聊天流；默认关。填入输入框只填不发，注入系统指令走 /sys",
+  "inj.off": "关",
+  "inj.compose": "填输入框",
+  "inj.sys": "系统指令"
 }

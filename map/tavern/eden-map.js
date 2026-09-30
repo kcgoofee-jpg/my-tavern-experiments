@@ -181,9 +181,12 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     } else t = await r.text();
     return t.replace('<head>', `<head><base href="${BASE}">` + (PACK_IN ? `<script>window.__tcPack=${JSON.stringify(PACK_IN).replace(/</g, '\\u003c')}</script>` : ''));
   })().catch(e => { html = null; throw e; });
+  // 生成状态（GEN）：GENERATION_STARTED 置位，ENDED / STOPPED 清零，180 s 超时自动清（断网 / 被杀后 ENDED 永远不来）。
+  // 必须在下面 afterGen 之前声明：typeof 也躲不开 TDZ——const 还没初始化时读它照样抛 ReferenceError，而 afterGen 开局就被调。
+  const GEN = { since: 0, get generating() { return !!this.since && Date.now() - this.since < 180000; } };
   // 地基 A5：空闲预取在生成期间暂停（聊天首屏与流式输出优先），GENERATION_ENDED / STOPPED 后再补做
   const idleQ = [];
-  const afterGen = f => { if (typeof GEN !== 'undefined' && GEN.generating) idleQ.push(f); else f(); };
+  const afterGen = f => { if (GEN.generating) idleQ.push(f); else f(); };
   const flushIdle = () => { for (const f of idleQ.splice(0)) { try { if (!life.dead) f(); } catch (e) {} } };
   if (line || !swappable) (window.parent.requestIdleCallback || (f => setTimeout(f, 2000)))(() => afterGen(() => fetchHtml().catch(() => {})));
   // 每次真正打开地图（不是后台幽灵预加载）查一次更新：提示等面板关上再弹。通读 R1 / R2：打开面板时重读一次（开局切换、状态栏改变量可能没发事件）
@@ -257,6 +260,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     if (e.data?.type === 'eden-map:splash') showSplash();   // 设置「重新显示开场自检」
     if (e.data?.type === 'eden-map:varmap-set') setVarUser(e.data.user);   // v0.9.5 设置「变量映射」
     if (e.data?.type === 'eden-map:compose' && typeof e.data.text === 'string') composeIn(e.data.text);   // v0.9.6 地图 → 聊天：只填不发
+    if (e.data?.type === 'eden-map:action') injectAction(e.data);   // Part 6-4：点 POI → 注入动作（默认关，见 tavern/action.mjs）
     if (e.data?.type === 'eden-map:th' && typeof e.data.op === 'string') onTh(e.data).catch(x => console.warn('[eden-map] 酒馆助手设置', x));   // 设置「数据与映射」「高级」：注入 / 类宏 / 世界书同步
     if (e.data?.type === 'eden-map:check-update') (channel() === 'follow' && SCRIPT.ref ? followUpdate() : checkUpdate()).then(r => post({ type: 'eden-map:update-result', ...r }));   // v0.9.6「检查更新」
   };
@@ -288,12 +292,28 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     const how = CPm.insert(window.parent, text, typeof triggerSlash === 'function' ? triggerSlash : null);
     post({ type: 'eden-map:compose-done', ok: !!how, how });
   }
+  // Part 6-4 地图驱动的双向动作注入：查看器只说「点了哪个 POI、想干什么」，文案与注入方式全在这里按设置决定。
+  // 模式默认 off——地图不该在玩家没点头的情况下替他说话；compose 只填不发（与「去这里」同一条底线），sys 走 /sys 静默注入。
+  let ACm = null;
+  async function injectAction(d) {
+    try { ACm ??= await import(SELF + 'tavern/action.mjs'); } catch (err) { return; }
+    const get = k => { try { return (LS || localStorage).getItem(k); } catch (err) { return ''; } };
+    const mode = ACm.modeOf(get);
+    if (mode === 'off') return;
+    const a = ACm.buildAction({ mode, kind: d?.kind, name: d?.name, map: d?.map, tpls: ACm.readTpl(get, UL), lang: UL });
+    if (!a) return;
+    if (mode === 'sys') { const cmd = ACm.slashOf(a, 'sys');
+      if (cmd && typeof triggerSlash === 'function') { try { triggerSlash(cmd); return; } catch (err) {} } }
+    composeIn(a.text);   // sys 却没有 triggerSlash 时退回「只填不发」，绝不自动发送
+  }
+
   // ---------------- v0.9.6 版本与检查更新（P2 解耦：实现在 tavern/host-about.mjs，这里只留装配） ----------------
   // 版本信息：预览 / 正式脚本在 import 前写 window.__edenMapScript = { version, code, channel: tag | follow | ref, ref, sha }（tools/build_preview_script.py 烘进去）；
   // 没有（旧脚本、本地）时按脚本地址判定，版本号与构建号取当前线路的 data/build.json。
   const SCRIPT = (() => { try { return window.__edenMapScript || window.parent.__edenMapScript || {}; } catch (e) { return {}; } })();
   const AB = createAbout({ cdnFetch, post, base: () => BASE, REPO, SELF, VER, tagOf, LINES, swappable, SCRIPT,
-    lineKey: () => line, lang: () => (UL === 'en' ? 'en' : 'zh'), followHead: () => followHead(), followNewer,
+    lineKey: () => line, lang: () => (UL === 'en' ? 'en' : 'zh'), followHead: () => followHead(),
+    followNewer: h => followNewer(h),   // 包一层：followNewer 是下面的 const，直接传绑定会在装配时就撞 TDZ
     loadSelfcheck: async () => (SC ??= await import(SELF + 'tavern/selfcheck.mjs')),
     loadSources: async () => (SRCm ??= await import(SELF + 'tavern/sources.mjs')) });
   const sendAbout = () => AB.sendAbout(), checkUpdate = () => AB.checkUpdate(), followUpdate = () => AB.followUpdate();
@@ -303,8 +323,6 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   // 只读）、自定义数据的变量读写（A-11）全部收进 map/tavern/mvu-bridge.mjs——宿主脚本里唯一允许直接碰
   // Mvu / SillyTavern 全局的模块（隔离契约，tests/mvu_bridge.test.mjs 机械检查）。这里只留调度与 UI：
   // 桥经 onMvuLoad / onTableUpdate / onRoster 回调通知「变了」，宿主决定何时推送 / 重算。
-  // 生成状态（GEN）：GENERATION_STARTED 置位，ENDED / STOPPED 清零，180 s 超时自动清（断网 / 被杀后 ENDED 永远不来）
-  const GEN = { since: 0, get generating() { return !!this.since && Date.now() - this.since < 180000; } };
   let MV = null;   // mvu.mjs（纯函数集）由桥加载；这里拿模块引用给自定义 / 注入等纯调用用
   const CTX = new ContextPipeline({   // 聊天上下文流水线（tavern/context.mjs）：先建（下面 BR 的标签对账要读它的消息缓存）
     stripTags: resolveTags(k => { try { return (LS || localStorage).getItem(k); } catch (e) { return null; } }),

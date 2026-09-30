@@ -123,6 +123,13 @@ export function initSettings() {
   sw('#optFog', 'edenMapFog', true, v => { $('#fogRow').hidden = !v; window.TCFog?.toggle(v); }); $('#fogRow').hidden = TCStore.get('edenMapFog') === '0';
   $('#fogReset').onclick = () => window.TCFog?.reset();
   // U14（2026-09-28）：左下角小地图默认关；实时切换靠 body.nominimap 这个 CSS 类（不用重开地图）
+  // Part 6-4 动作注入模式：默认 off（地图不替玩家说话）；切了要重画卡片才出现 / 消失入口
+  { const inj = $('#injSeg');
+    inj?.addEventListener('click', e => { const b = e.target.closest('button[data-inj]'); if (!b) return;
+      try { TCStore.set('edenMapInject', b.dataset.inj); } catch (x) {}
+      window.__edenInject = b.dataset.inj;   // paintSegs 与卡片重画都读这个活值
+      paintSegs(); document.body.classList.toggle('inject', b.dataset.inj !== 'off'); window.TCMarkers?.closeCard?.(); });   // 入口是开卡时现算的：关掉当前卡，下次开就是新的
+    try { window.__edenInject = TCStore.get('edenMapInject') || 'off'; } catch (e) { window.__edenInject = 'off'; } }
   sw('#optMinimap', 'edenMapMinimap', false, v => document.body.classList.toggle('nominimap', !v));
   document.body.classList.toggle('nominimap', TCStore.get('edenMapMinimap') !== '1');
   sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', false); sw('#optFps', 'edenMapFps', false, v => { setFpsMeter(v); estateLook(); });

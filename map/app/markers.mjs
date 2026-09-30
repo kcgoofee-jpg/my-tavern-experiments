@@ -1,5 +1,6 @@
 // 标记与地点卡：placeN、trackEl、marker、showCard / closeCard、世界图与点位图叠加。
 import { M, REG, aspect, cur, curData, ovData, depthData, viewer } from './state.mjs';
+import * as TCStore from '../core/storage.mjs';   // Part 6-4：动作注入模式（edenMapInject）从本机读
 import { $, esc, narrow, toImg } from './util.mjs';
 import { island as depthIsland, parallaxOn } from '../core/depth.mjs';
 import { declutter } from './tiers.mjs';
@@ -48,7 +49,9 @@ export function showCard(el, name, tag, src, extra, sub, cover) {
   c.querySelector('.sub').textContent = sub || '';
   const sv = c.querySelector('.src'); c.querySelector('h2').textContent = name; sv.textContent = src || '';
   if (LANG === 'en' && /[\u4e00-\u9fff]/.test(src || '') && t('src_note')) sv.dataset.note = t('src_note'); else delete sv.dataset.note;   // 英文界面：设定原文保持中文，加一行说明
-  c.querySelector('.extra').innerHTML = extra || '';
+  // extra 也接受函数：开卡那一刻才算（Part 6-4 的注入入口要跟着设置实时出现 / 消失，
+  // 不必重画整层标记——重画会重复 addOverlay，标记会叠一层）
+  c.querySelector('.extra').innerHTML = (typeof extra === 'function' ? extra() : extra) || '';
   if (typeof P.TCCustom !== 'undefined') P.TCCustom.decorateCard(el, name);   // v0.9.3：自定义显示名 / 用途；本人地点卡的着装
   if (typeof P.TCInv !== 'undefined') P.TCInv.decorate(el, name);   // 空间化背包（Part 5-1）：这里存放的东西
   if (typeof P.TCSecurity !== 'undefined') P.TCSecurity.decorate(el, name);   // v0.9.6 安保叠加层开着时：结界 / 监控 / 门禁
@@ -127,6 +130,9 @@ function hookDepth() {
   if (depthHooked || !viewer) return; depthHooked = true;
   viewer.addHandler('viewport-change', depthPan); viewer.addHandler('animation', depthPan);
 }
+// Part 6-4：改了注入模式后关掉当前卡片即可——入口是开卡时现算的（见 showCard 的 extra），
+// 不走「重画整层标记」那条路：pointOverlays 只加不清，重画会把标记叠一层。
+window.TCMarkers = { closeCard: () => { try { closeCard(); } catch (e) {} } };
 // 渲染脚本导出的点位地图（天城各层）：标记 + 结界圈（或别的地图的岛屿轮廓，如中层的「上层投影」）
 export function pointOverlays() {
   const m = REG.maps[cur], d = curData || { markers: [], islands: [] }, od = ovData || {};
@@ -169,12 +175,18 @@ export function pointOverlays() {
   // 卡片链接：通道 meta.link + 可选的三维 meta.link3d（app/cardlinks.mjs；模块没到时退回只渲染通道）
   // 结算方式 / 消费档位（card-omissions C6 / C10 / C15）：标记自己的 econ 优先，否则用本层的 econ
   const econHtml = meta => { const e = nm(meta, 'econ') || nm(m, 'econ'); return e ? `<small class="econ"><b>${esc(t('econ'))}</b> ${esc(e)}</small>` : ''; };
-  const linkCtx = { REG, nm, t, esc }, links = meta => window.TCCardLinks ? window.TCCardLinks.linksHtml(meta, linkCtx)
-    : meta.link && REG.maps[meta.link.map] && REG.maps[meta.link.map].status !== 'planned' ? `<a data-go="${esc(meta.link.map)}" data-focus="${esc(meta.link.marker || '')}" role="button" tabindex="0">${esc(nm(meta.link, 'label') || t('goto', { title: nm(REG.maps[meta.link.map], 'title') }))}</a>` : '';
+  // 动作注入入口（Part 6-4）：模式不是 off 才在卡片底部多一个链接；模式从本机存储读（默认 off）
+  // 注入模式每次开卡重读（设置里改了立刻生效）
+  const injMode = () => { try { return TCStore.get('edenMapInject') || 'off'; } catch (e) { return 'off'; } };
+  const ctx = () => ({ REG, nm, t, esc, mode: injMode() });   // Part 6-4：注入模式每次开卡重读
+  const links = meta => { const linkCtx = ctx();   // 每次开卡重算：注入模式改了立刻生效
+    return (window.TCCardLinks ? window.TCCardLinks.linksHtml(meta, linkCtx)
+      : meta.link && REG.maps[meta.link.map] && REG.maps[meta.link.map].status !== 'planned' ? `<a data-go="${esc(meta.link.map)}" data-focus="${esc(meta.link.marker || '')}" role="button" tabindex="0">${esc(nm(meta.link, 'label') || t('goto', { title: nm(REG.maps[meta.link.map], 'title') }))}</a>` : '')
+      + (window.TCCardLinks?.injectHtml?.(meta, linkCtx) || ''); };
   // 上层导出了标记锚点 ax / ay（岸边停靠平台或主楼旁的空地），图钉落在锚点上，不再压住岛心的主楼；聚焦、飞行也用它（B2 第 2 轮本机 P1）
   for (const k of d.markers || []) if (k.ax != null && k.ay != null) { k.nx = k.ax; k.ny = k.ay; }
   for (const k of d.markers || []) { const meta = m.markers?.[k.id]; if (!meta) continue;
-    const el = markerEl({ ...meta, sub: (meta.sub || '').replace(/\{\{user\}\}\s*/g, t('you')), extra: econHtml(meta) + links(meta) });
+    const el = markerEl({ ...meta, sub: (meta.sub || '').replace(/\{\{user\}\}\s*/g, t('you')), extra: () => econHtml(meta) + links(meta) });
     if (k.id === (m.view?.focus || m.focus)) el.dataset.focus = '1'; if (meta.link) el.dataset.link = '1';   // 标签避让的优先级
     depthFx(el, meta); depthEls.push(el);
     placeN(el, k.nx, k.ny); }
