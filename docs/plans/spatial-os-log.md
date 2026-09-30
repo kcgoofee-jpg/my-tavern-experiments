@@ -265,3 +265,29 @@ blocker: none
 open: none
 cleanup: done (no servers or background processes started; scratch scripts stay in the session scratchpad)
 === END ===
+
+=== RESULT R-LOOP standard std-1 ===
+
+status: PAUSED (user asked for a pause; ledger clean and resumable)
+
+items finished this session (since the previous checkpoint): lm:freight_yard (r1 8/7); lm:lower_bar (r1 7.5/6.5); lm:slums (r1 6.5/6 fail -> r2 7.5/6); lm:rebirth_workshop (r1 7.5/7); lm:schneider_clinic (r1 7.5/7); lm:elite_club (r1 7.5/6.5, built and committed, ship waiting)
+
+items below gate: none
+
+waiting: lm:elite_club — ship: FREEZE_MAPS (S2-A maps.json dairy re-parent) on origin/preview. Model, glbs, manifest and docs are pushed; remaining at ship: point marker elite_club (currently link lm_glory_crown) to a new lm_elite_club entry in maps.json, update the card-buildings row, then `python3 tools/landmark.py ship elite_club --score "r1 7.5 / 6.5"`; landmark.py ship will refuse because the marker already has a link, so edit maps.json by hand once the freeze is lifted
+
+pushed: yes (head #137 for elite_club; this log entry pushed after)
+
+tests: check_maps PASS (61 maps, 0 errors, 0 warnings, at freight_yard/schneider ship) | estate3d_manifest PASS (count now 48) | smoke PASS
+
+blocker: none
+
+next: lm:hunting_camp (claim released, ledger at draft). Uncommitted in the worktree: blender/landmarks/hunting_camp/build.py, docs/landmarks/hunting_camp.md + checklist, map/props/hunting_camp/manifest.json, board render docs/reviews/landmark_hunting_camp/board.jpg, reviews docs/reviews/campaign/lm_hunting_camp/r1.md + r2.md (r1 7/5.5 fail, r2 7.5/6 pass; the ledger still needs draft, board, gapcheck, review-r1, fix, review-r2 recorded). A draft job (c1) is in the queue; collect it with `python3 tools/landmark.py draft hunting_camp --cam c1 --res 2000 --spp 16`. Do not commit map/props/hunting_camp/manifest.json before its glb exists (manifest test). Marker is in map/data/world_markers.json (layer world), not maps.json: check whether landmark.py ship handles it; the count in tests/estate3d_manifest.test.mjs will need bumping to 49.
+
+remaining standard-lane items after hunting_camp: 7 scenes (highland-ext, fief1..5, yuanyu-city), 11 base-map audits (tc_mid, tc_low, site_kavalierki, yuanyu_sanctum, yuanyu_city, site_highland, fief1..5), 8 period variants (tc_mid and tc_low dawn/day/dusk/night). Standard lane: 20 done, 1 waiting, 27 open.
+
+notes: (1) glory-style per-district glb caps (max_mb in the manifest, with the reason in _note) were used for slums, rebirth_workshop, schneider_clinic, elite_club. (2) The generated docs/plans/render-campaign.md conflicts on almost every rebase: regenerate it with status --md. (3) tests/estate3d_manifest.test.mjs hardcodes the manifest count; set it to the number of map/props/*/manifest.json when a new landmark ships. (4) Cameras must be kept out of the background boxes: use a distance check against the camera positions. (5) The Mac is shared with the hero lane: a draft can sit in the queue behind a long hero job.
+
+cleanup: done (no Blender or server of mine running; one queued draft job remains, harmless)
+
+=== END ===
