@@ -236,3 +236,18 @@ blocker: none
 open: none
 cleanup: done (no servers or background processes started; scratch scripts stay in the session scratchpad)
 === END ===
+
+=== RESULT R-EDEN ===
+status: DONE (T0–T5; T6 waits for the user's approval of eden:r5)
+items: T0 ✓ T1 ✓ T2 ✓ T3 ✓ T4 ✓ T5 ✓ T6 — (after approval)
+commits: 8ffdfb6 render(estate2): arrival and rear-lake camera views; 8bbac5e render(campaign): eden:r5 continues the shipped estate2 Eden; estate:b1b2 re-pointed; 9a0d969 wip(eden:r5) requirement index + gap-fix draft; + this commit (review r1, night tuning, ledger)
+pushed: head #123 (T0); T2 pushed at 8bbac5e; final push below
+tests: node 630/631 (1 skip) | smoke PASS | arch PASS | probes: none (no product code changed)
+EQ counts (shipped version): 65 requirements — 46 met, 13 partly, 5 missing, 1 superseded (docs/eden-requirements.md)
+gaps fixed in the r5 draft: EQ-39 lookouts, EQ-20 terraces, EQ-33 east wood + rim, EQ-40/41 night, EQ-26–29 card places (以太凝水塔 / 露天训练场 / 围栏区 / 凉亭), EQ-03 close-ups, EQ-22 dairy log, EQ-24 label (zones at ship)
+before/after: ~/eden-map-review/render/eden_r5/ (4 pairs + night + close-ups + changes.zh.txt)
+deviations: T3 used style_frame.py views (the scene NOTES.md exports) plus two new camera-only views; olive rows onward re-jitter slightly because the terraces moved; d73e3f3 touched nothing the product uses (nothing restored)
+blocker: none
+open: EQ-48 water cone Eden vs Rothschild (upper-setting §4.1 vs §11); EQ-49 east overflow falls (§10 Q2)
+cleanup: done
+=== END ===

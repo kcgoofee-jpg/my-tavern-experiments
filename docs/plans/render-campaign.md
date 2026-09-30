@@ -2,12 +2,12 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T13:58:13Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T14:13:29Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
 | standard | 15 | 0 | 33 | 0 | 0 | 0 | 48 |
-| hero | 3 | 0 | 12 | 0 | 6 | 0 | 21 |
+| hero | 3 | 0 | 11 | 1 | 6 | 0 | 21 |
 
 Below-gate (user spot-check): none
 
@@ -68,7 +68,7 @@ Below-gate (user spot-check): none
 
 | # | id | type | status | stage | claim | flags | title |
 |---|---|---|---|---|---|---|---|
-| 1 | `eden:r5` | island | open | setting |  |  | Eden estate r5: continue the shipped estate2 r4e scene, close the requirement gaps (user-approved) |
+| 1 | `eden:r5` | island | waiting | user-review | hero-1 | waiting-on-user | Eden estate r5: continue the shipped estate2 r4e scene, close the requirement gaps (user-approved) |
 | 2 | `isle:eden` | island | done | - |  |  | Eden Manor island (the user's own estate) - showpiece, user-approved |
 | 3 | `isle:silver_crown` | island | done | - |  |  | Rebuild island silver_crown |
 | 4 | `isle:isle4` | island | done | - |  |  | Rebuild island isle4 (victor_estate) |

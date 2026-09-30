@@ -114,3 +114,11 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T13:55:04Z,lm:freight_yard,new,done,std-1,,scaffolded
 2026-09-30T13:56:14Z,lm:freight_yard,setting,done,std-1,,setting block written (card L104/L12; yard repo-inferred)
 2026-09-30T13:58:13Z,lm:freight_yard,draft,release,std-1,,
+2026-09-30T14:02:10Z,eden:r5,setting,claim,hero-1,,
+2026-09-30T14:02:10Z,eden:r5,setting,done,hero-1,,EQ gap table G1-G9 in docs/eden-requirements.md s14
+2026-09-30T14:02:10Z,eden:r5,draft,claim,hero-1,,
+2026-09-30T14:02:10Z,eden:r5,draft,done,hero-1,,after1 drafts 16 spp whole/map/arrival/lake/night + close-ups in logs/campaign/eden_r5
+2026-09-30T14:02:10Z,eden:r5,board,claim,hero-1,,
+2026-09-30T14:02:10Z,eden:r5,board,done,hero-1,,before/after comparison boards (baseline T3 vs after1)
+2026-09-30T14:13:29Z,eden:r5,review-r1,claim,hero-1,,
+2026-09-30T14:13:29Z,eden:r5,review-r1,done,hero-1,pass,r1 fidelity 7.5 / credibility 6.5; pairs + changes.zh.txt in ~/eden-map-review/render/eden_r5/

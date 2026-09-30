@@ -215,7 +215,7 @@ def night(scene):
         z = L.ground_z(cx, cy)
         pw = 500 if w * d > 300 else 260
         if bid in main_ids:   # r5（遗留：夜景主楼光晕偏宽）：主楼群 13 个体量挤在一起，灯减弱、贴墙收近
-            pw *= 0.55
+            pw *= 0.35
         for sx in (-1, 1):
             for sy in (-1, 1):
                 off = 1.2 if bid in main_ids else 2.5
@@ -243,9 +243,9 @@ def night(scene):
     gx, gy = np.meshgrid(np.arange(115, 320, 9.0), np.arange(-90, 200, 9.0))
     gx, gy = gx.ravel(), gy.ravel()
     g = L.glades(gx, gy)
-    edge = (g > 0.35) & (g < 0.65) & (L.edge_dist(gx, gy) > 15) & (((gx * 0.37 + gy * 0.59) % 1.0) < 0.35)
+    edge = (g > 0.35) & (g < 0.65) & (L.edge_dist(gx, gy) > 15) & (((gx * 0.37 + gy * 0.59) % 1.0) < 0.7)
     for x, y in zip(gx[edge], gy[edge]):
-        _plight(f'glade{n}', (x, y, L.ground_z(x, y) + 3.0), 70, (1.0, 0.76, 0.5), 0.2); n += 1
+        _plight(f'glade{n}', (x, y, L.ground_z(x, y) + 3.0), 180, (1.0, 0.76, 0.5), 0.2); n += 1
     fx, fy = L.FOUNTAIN
     for a in range(6):
         _plight(f'fount{a}', (fx + 6 * math.cos(a), fy + 6 * math.sin(a), L.TERRACE_Z + 1.2), 250, (1.0, 0.9, 0.75)); n += 1
