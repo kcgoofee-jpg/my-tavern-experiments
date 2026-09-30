@@ -9,7 +9,7 @@ import { dropParked, est, estFocus, estParked, estateLook, narrowNow, setEst, se
 import { onEsc } from './layers.mjs';
 import { untrackAll } from './markers.mjs';
 import { hereRes, markHere } from './locate.mjs';
-import { TCSettings, setLine, about, renderAbout, renderSelfCheck, selfCheck, setAbout, setSelfCheck, setUpdBusy, setUpdRes, updBusy, updRes, updSub } from './settings.mjs';
+import { TCSettings, setLine, about, renderAbout, renderSelfCheck, selfCheck, setAbout, setCardInfo, setSelfCheck, setUpdBusy, setUpdRes, updBusy, updRes, updSub } from './settings.mjs';
 import { emEmit, setChat } from './extapi.mjs';
 import { flashOk, ntActs } from './shell.mjs';
 import { P } from './plugins.mjs';
@@ -46,6 +46,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:chat') { setChat(e.data.id); estateLook(); }   // 聊天切换：庄园页（三维）里房间图集「仅本聊天」作用域用的 chatId 得跟着重发一次，不然还在用切换前那个聊天的 id（bug fix）
     if (e.data?.type === 'eden-map:lang' && ['zh', 'en'].includes(e.data.lang)) setLang(e.data.lang);   // v0.9.6：嵌入时语言以卡内脚本（标题栏）为准，两边只有一个设置
     if (e.data?.type === 'eden-map:about') { setAbout(e.data); renderAbout(); }   // v0.9.6 版本与检查更新
+    if (e.data?.type === 'eden-map:cardinfo') setCardInfo(e.data.card);   // 任务四：角色卡信息（版权申明页）由卡内脚本经桥取来，面板不自己摸宿主全局
     if (e.data?.type === 'eden-map:update-result') { setUpdBusy(false); setUpdRes(e.data); renderAbout(); }
     if (e.data?.type === 'eden-map:chars') { P.TCChars.set(e.data); emEmit('characters', { items: e.data.items, floor: e.data.floor }); }   // 人物栏（v0.9.2）
     if (e.data?.type === 'eden-map:custom') P.TCCustom.fromHost(e.data);   // v0.9.3：自定义名称与用途（聊天变量）

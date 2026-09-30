@@ -494,7 +494,7 @@
   "s.license_sub": "Card source · Open source · Disclaimer",
   "s.lic_card": "Card info (read automatically)",
   "s.lic_state": "Status",
-  "s.lic_no_tav": "Not connected to SillyTavern — card info unavailable (open the map inside Tavern to see it)",
+  "s.lic_no_tav": "The panel has not read the card info yet (nothing is broken) — open the map inside Tavern and it will show up",
   "s.lic_unknown": "No author or origin info found in this card: it may be resold or re-uploaded, which risks your data and the original author's rights. Get cards only from the original author or authorized channels.",
   "s.lic_name": "Card name",
   "s.lic_creator": "Author",

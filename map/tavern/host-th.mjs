@@ -66,6 +66,21 @@ export function createWbAuto(deps) {
   let shipP = null, wbLast = null;
   const wbShip = () => (shipP ??= cdnFetch(deps.base() + 'data/worldbook_addon.json', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).catch(() => null).then(j => { if (!j) shipP = null; return j; }));
   const wbMod = async () => (WBm ??= await import(SELF + 'tavern/wbsync.mjs').catch(() => null));
+  let JITm = null;
+  const wbJit = async () => (JITm ??= await import(SELF + 'tavern/wb_jit.mjs').catch(() => null));
+  /** 静默绑定代理（任务二，纯判定在 wb_jit.bindPlan）：书在那儿却没挂任何一处 = 条目不会生效。
+   *  自己按「聊天 > 角色附加书 > 全局」找一档挂上，只在开发日志留 trace——不再让玩家进世界书设置手动勾。 */
+  async function wbEnsureBound(W) {
+    try {
+      const J = await wbJit(); if (!J) return null;
+      const b = await W.bindingOf(thFn, W.BOOK);
+      const w = J.bindPlan(b, { api: { chat: fnOk('rebindChatWorldbook'), char: fnOk('rebindCharWorldbooks'), global: fnOk('rebindGlobalWorldbooks') } });
+      if (w === 'none') return null;
+      const ok = await W.bind(thFn, W.BOOK, w);
+      console.info('[eden-map] 世界书附加条目未绑定：静默水合 →', w, ok ? 'ok' : 'fail');
+      return ok ? w : null;
+    } catch (e) { return null; }
+  }
   const wbSaved = () => { try { return JSON.parse(lsGet('edenMapWbSync') || 'null'); } catch (e) { return null; } };
   async function wbStatus(withPlan = true) {
     const W = await wbMod(); if (!W) return { api: false };
@@ -94,11 +109,13 @@ export function createWbAuto(deps) {
     const W = await wbMod(), ship = await wbShip(); if (!W || !ship) return null;
     // 书不在、但本机记过同步（head #52 以前手动写过）→ 当作用户删的，立墓碑，不再自动建
     let tomb = wbTomb();
-    const r = await W.withLock('eden-map-wb', async () => {
+    let r = await W.withLock('eden-map-wb', async () => {
       if (!tomb && wbSaved()) { const st = await W.inspect(thFn, null); if (st.api && !st.exists) { setTomb(true); tomb = true; } }
       return W.autoRun(thFn, ship, { on: wbOn(), tombstone: tomb, charKey: cardKey(), boundChars: boundChars() });
     });
     if (!r || life.dead) return r;
+    // 任务二：书在、内容也同步了，但一处都没挂 → 静默挂一档（autoRun 只在「新建 / 迁移」时试绑，sync 这条路不管绑定）
+    if (r.ok && !r.bound) { const w = await wbEnsureBound(W); if (w) { r = { ...r, bound: w }; lsSet('edenMapWbWhere', w); prefSync(); } }
     if (r.boundChar) { const l = [...new Set([...boundChars(), r.boundChar])].slice(-500); gset('eden_wb_chars', l); lsSet('edenMapWbChars', JSON.stringify(l)); }
     let toasted = false;
     if (r.ok && (r.wrote || r.action !== 'sync')) {

@@ -62,3 +62,22 @@ export const hashOf = names => seedOf([...(names || [])].map(norm).sort().join('
 
 /** 水位：prev = { floor, hash }；激活集哈希没变 → 不写。 */
 export const shouldWrite = (prev, hash) => !prev || prev.hash !== hash;
+
+// ---------------- 静默绑定代理（任务二）：条目要生效，书得挂在全局 / 角色 / 聊天任一处 ----------------
+// 旧行为：书在那儿但一处都没挂 → 前端提示玩家自己进世界书设置里勾「全局有效」。这打破沉浸感，也把
+// 一件纯技术的事推给玩家。这里改成**静默水合**：自己找一档挂上，只在开发日志留一条 trace。
+export const BIND_ORDER = ['chat', 'char', 'global'];   // 越靠前越贴身：聊天 > 当前角色的附加书 > 全局
+/**
+ * 静默绑定计划：binding = wbsync.bindingOf 的结果 { global, char, chat }（查不了的项为 null）。
+ *   - 已经挂在哪一处 → 'none'：**绝不改用户的选择**，也不重复挂（重复挂 = 同一本书被注入两次）；
+ *   - 一处都没挂 → 按 BIND_ORDER 找第一档接口可用的（聊天世界书换聊天自动跟着走、不串味儿；全局最后兜底）；
+ *   - api 里为假 = 这个酒馆助手版本没有该接口，跳过；全都不行 → 'none'（这时才值得记一条 trace）。
+ * 纯判定：不调接口、不写任何东西。tests/silent_hydration.test.mjs。
+ */
+export function bindPlan(binding, o = {}) {
+  const b = binding && typeof binding === 'object' ? binding : null;
+  if (b && (b.global || b.char || b.chat)) return 'none';
+  const api = o.api && typeof o.api === 'object' ? o.api : { chat: true, char: true, global: true };
+  for (const w of BIND_ORDER) if (api[w]) return w;
+  return 'none';
+}

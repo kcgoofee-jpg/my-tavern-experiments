@@ -62,3 +62,57 @@ export function createGate(o = {}) {
 
 /** 一轮的结算顺序（宿主照这个跑；tests/mvu_lifecycle.test.mjs 对拍）：MVU 更新收尾 → 推送 → 重算 → 放行 */
 export const ROUND_ORDER = ['invalidate', 'push', 'recompute', 'flush'];
+
+// ---------------- 虚拟账本槽位写入器（W12 / 任务一）：捕获的物理事实必须**真的落盘** ----------------
+export const MAX_SLOT_ROWS = 64;   // 队列上限（超了丢最旧一条并计数：宁可少记一件，也不让内存无界）
+/**
+ * Schema 缺失时的强制入账通道：拾取发生时先 capture（内存入队），等宿主的放行点（结算闸门 flush 之后）再
+ * 一次写进槽位。三条纪律（与 ledger 的漏项审计同一口径）：
+ *   ① 声明只做一次（ensure 水位；宿主卡自己已有背包栏 → 什么都不用建，直接算声明完成）；
+ *   ② 只写增量（同 id 覆盖，绝不重写整表）；写失败 / 没回调 → 不出队，下一轮重试（宁慢不丢）；
+ *   ③ 换聊天 / 实例死亡 → reset，绝不把上一场的补发倒进新聊天。
+ * 纯状态 + 注入回调（declare / put 由宿主给）：不碰酒馆全局 / DOM / 存储。
+ * o = { declare?(key): bool（建槽位）, put?(key, rows): bool（写增量，返回 false = 没写进去） }
+ */
+export function createSlotSink(o = {}) {
+  const declare = typeof o.declare === 'function' ? o.declare : null;
+  const put = typeof o.put === 'function' ? o.put : null;
+  let key = '', live = false, declared = 0, written = 0, dropped = 0, errors = 0;
+  let q = new Map();
+  const sink = {
+    /** 绑定探测结果（ledger.slotProbe 的返回）；key 为空 = 本轮不写 */
+    bind(probe) { key = String(probe?.key || ''); live = !!key; return key; },
+    /** 建槽位（只做一次）：probe.virtual = false 表示宿主卡已有这一栏，没有要建的，也算声明完成 */
+    ensure(probe) {
+      if (declared || !key) return false;
+      if (!probe?.virtual) { declared++; return true; }
+      try { if (!declare || declare(key) !== false) { declared++; return true; } } catch (e) { errors++; }
+      return false;
+    },
+    /** 捕获一条物理事实（同 id 覆盖；队列有界） */
+    capture(row) {
+      const id = String(row?.id ?? row?.key ?? '').trim();
+      if (!id) return false;
+      if (!q.has(id) && q.size >= MAX_SLOT_ROWS) { q.delete(q.keys().next().value); dropped++; }
+      q.set(id, { ...row, id });
+      return true;
+    },
+    /** 放行点落盘：写成功才出队（宁慢不丢）。返回 { wrote, pending, ok } */
+    flush() {
+      if (!live || !q.size) return { wrote: 0, pending: q.size, ok: !q.size };
+      const rows = [...q.values()];
+      let ok = false;
+      try { ok = !!put && put(key, rows) !== false; } catch (e) { errors++; }
+      if (ok) { for (const r of rows) q.delete(r.id); written += rows.length; }
+      return { wrote: ok ? rows.length : 0, pending: q.size, ok };
+    },
+    pending() { return q.size; },
+    keys() { return [...q.keys()]; },
+    state() { return !q.size ? 'idle' : key ? 'staged' : 'unbound'; },
+    /** 标准摘要（自检 / 设置页）：{ key, state, declared, written, pending, dropped, errors } */
+    describe() { return { key: key || null, state: sink.state(), declared, written, pending: q.size, dropped, errors }; },
+    /** 换聊天 / 实例死亡：清队列与水位（绝不让上一场的事实落到新聊天） */
+    reset() { const n = q.size; q = new Map(); key = ''; live = false; declared = 0; return n; },
+  };
+  return sink;
+}

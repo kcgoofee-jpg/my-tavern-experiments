@@ -33,22 +33,40 @@ export const TCSettings = window.TCSettings = {
   open(page = 'home') { showSet(true); setPage(page); },
   get page() { return setPageNow; },
 };
-// 版权申明页：角色卡信息（自动读酒馆，读不到才提示风险）+ 地图项目与免责声明。不做真伪鉴定，只提示风险。
+// 版权申明页：角色卡信息 + 地图项目与免责声明。不做真伪鉴定，只提示风险。
+// 卡信息**不在这里摸宿主全局**（任务四）：优先用卡内脚本经桥（mvu-bridge.cardInfo 的三级降级）推来的
+// eden-map:cardinfo；没有才自己探父级窗口（同源 srcdoc 才碰得到）；全都没有 = 安全占位。
+// 旧版直接读本窗口的 window.SillyTavern——嵌在 iframe 里那个全局必然读不到，于是永远误报「未接入酒馆」。
+export function cardOf() {
+  if (cardInfo) return cardInfo;
+  const pick = (c, src) => {
+    const d = c?.data && typeof c.data === 'object' ? c.data : (c && typeof c === 'object' ? c : {});
+    const name = String(d.name || c?.name || '').trim();
+    if (!name && !d.creator && !d.character_version) return null;
+    return { name, creator: String(d.creator || '').trim(), version: String(d.character_version || '').trim(), avatar: String(c?.avatar || ''),
+      tags: Array.isArray(d.tags) ? d.tags.map(String).slice(0, 12) : [], notes: String(d.creator_notes || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200), src };
+  };
+  for (const w of [window.parent, window]) {
+    try { const c = w?.SillyTavern?.getContext?.(); const r = pick(c?.characters?.[c.characterId], 'probe'); if (r) return r; } catch (e) {}
+    try { const n = w?.TavernHelper?.getCharacterName?.(); if (n) return { name: String(n), creator: '', version: '', avatar: '', tags: [], notes: '', src: 'probe' }; } catch (e) {}
+  }
+  return null;
+}
 function renderLicense() {
   const box = $('#licBox'); if (!box) return; box.innerHTML = '';
   const label = (t) => { const b = document.createElement('b'); b.textContent = t; b.style.cssText = 'display:block;margin:var(--sp-4) 0 var(--sp-2)'; box.appendChild(b); };
   const row = (k, v, warn) => { const r = document.createElement('div'); r.className = 'row'; r.innerHTML = `<span${warn ? ' style="color:var(--warn,#c66)"' : ''}>${esc(k)}</span><code style="max-width:62%;text-align:right;word-break:break-all;white-space:normal">${esc(v)}</code>`; box.appendChild(r); };
   label(tx('s.lic_card', '角色卡信息（自动读取）'));
-  let d = null, inTav = false;
-  try { const st = window.SillyTavern?.getContext?.(); inTav = !!st; d = st?.characters?.[st.characterId]?.data || null; } catch (e) {}
-  if (!inTav) row(tx('s.lic_state', '状态'), tx('s.lic_no_tav', '未接入酒馆，读不到角色卡信息（在酒馆里打开地图后显示）'), true);
-  else if (d && (d.creator || d.character_version || (d.tags && d.tags.length) || d.creator_notes)) {
+  const d = cardOf();
+  if (!d) row(tx('s.lic_state', '状态'), tx('s.lic_no_tav', '面板还没读到卡片信息（不影响使用）：在酒馆里打开地图后自动显示'), false);
+  else {
     if (d.name) row(tx('s.lic_name', '角色名'), d.name);
     if (d.creator) row(tx('s.lic_creator', '作者'), d.creator);
-    if (d.character_version) row(tx('s.lic_ver', '版本'), d.character_version);
-    if (d.tags && d.tags.length) row(tx('s.lic_tags', '标签'), d.tags.join('、'));
-    if (d.creator_notes) row(tx('s.lic_notes', '作者注'), String(d.creator_notes).replace(/<[^>]+>/g, ' ').trim().slice(0, 140));
-  } else row(tx('s.lic_state', '状态'), tx('s.lic_unknown', '未读到本卡的作者或来源信息：卡片可能经转卖、搬运，存在数据风险，也可能损害原作者权益。建议只从原作者或授权渠道获取卡片。'), true);
+    if (d.version) row(tx('s.lic_ver', '版本'), d.version);
+    if (d.tags.length) row(tx('s.lic_tags', '标签'), d.tags.join('、'));
+    if (d.notes) row(tx('s.lic_notes', '作者注'), d.notes);
+    if (!d.creator && !d.version && !d.tags.length && !d.notes) row(tx('s.lic_state', '状态'), tx('s.lic_unknown', '未读到本卡的作者或来源信息：卡片可能经转卖、搬运，存在数据风险，也可能损害原作者权益。建议只从原作者或授权渠道获取卡片。'), true);
+  }
   label(tx('s.lic_map', '地图项目'));
   row(tx('s.lic_repo', '伊甸地图（开源）'), 'github.com/kcgoofee-jpg/my-tavern-experiments');
   row(tx('s.lic_map_by', '地图开发'), 'kcgoofee-jpg');
@@ -164,6 +182,7 @@ export function renderLine() {
 // 「检查更新」发 eden-map:check-update，卡内脚本查最新 map-v 标签的 build.json（走当前线路、绕缓存）后回 eden-map:update-result。不自动安装。
 // 单独打开（不在酒馆里）时只显示地图自己的 build.json。
 export let about = null, updRes = null, updBusy = false;
+export let cardInfo = null;   // 任务四：卡内脚本推来的角色卡信息（见 setCardInfo）
 export function renderAbout() {
   const box = $('#aboutBox'); if (!box) return; const en = LANG === 'en';
   const a = about || {}, ver = a.version || buildInfo?.version || '', code = a.code || buildInfo?.code || '';
@@ -247,6 +266,8 @@ export function renderSelfCheck() {
   }
 }
 export function setAbout(v) { return (about = v); }
+// 任务四：卡内脚本推来的角色卡信息（经 mvu-bridge.cardInfo）。到了就重画一次版权申明页（正开着才画）
+export function setCardInfo(v) { cardInfo = v && typeof v === 'object' ? v : null; if (setPageNow === 'license') renderLicense(); return cardInfo; }
 export function setUpdBusy(v) { return (updBusy = v); }
 export function setUpdRes(v) { return (updRes = v); }
 export function setSelfCheck(v) { return (selfCheck = v); }

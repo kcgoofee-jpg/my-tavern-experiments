@@ -223,7 +223,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   const onMsg = e => {
     if (e.source !== frame.contentWindow || (PRm && !PRm.accept(e.data, '（查看器 → 宿主）'))) return;
     if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
-    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: UL }); sendBar(); sendAbout(); alive = true; sentClock = sentOutfit = charsSent = null; knowRooms(); sendCheck(); sendCustom(); sendInv(); sendTrips(); sendRoutine(); sendTh(); BR.varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: UL }); sendBar(); sendAbout(); sendCardInfo(); alive = true; sentClock = sentOutfit = charsSent = null; knowRooms(); sendCheck(); sendCustom(); sendInv(); sendTrips(); sendRoutine(); sendTh(); BR.varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
     if (e.data?.type === 'eden-map:ready' && setQ) { const q = setQ; setQ = null; setTimeout(() => post({ type: 'eden-map:settings', page: q }), 0); }
     if (e.data?.type === 'eden-map:ready' && flyQ) { const q = flyQ; flyQ = null; setTimeout(() => inner()?.flyTo?.(q), 0); }   // EdenMap.flyTo 排队的
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
@@ -288,6 +288,13 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     NT ? push() : ntReady.then(push);
   }
   // v0.9.6 地图 → 聊天（tavern/compose.mjs）：卡片上「去这里」「追问这件事」的句子填进酒馆输入框；从不调用发送
+  // ---------------- 任务三 泄露防御网（tavern/th.mjs createLeakFence）：只清显示，不动聊天记录 ----------------
+  // 卡片没消费掉的占位符 / 模型整段吐出来的状态栏 HTML 源码会糊在聊天界面上。这里在**渲染之后**把那一楼
+  // 元素里的泄露节点与泄露文本洗掉——纯净化函数在 sanitize.mjs（stripLeaks / hasLeak，纯字符串进出），
+  // 本模块只负责取元素。**聊天记录一个字节都不动**（docs/rejected.md #8：不审核、不过滤用户聊天内容）。
+  let LKF = null;   // 在下面的 thReady 里装配（th.mjs 只加载一次）
+  const leakSweep = id => { try { return LKF ? LKF.sweep(id) : 0; } catch (e) { return 0; } };
+
   let CPm = null;
   async function composeIn(text) {
     try { CPm ??= await import(SELF + 'tavern/compose.mjs'); } catch (e) { return; }
@@ -490,12 +497,21 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   // 的仓库对账——确实缺了才补**单项**缺口 patch（不重写整表），认不出 / 不在表里的留待结算（旧值不动）。
   // 写变量一律经 tavern/varsync.mjs 的闸门排队，放行点是本轮末尾：读取期间绝不写，杜绝与主 MVU / 卡内
   // 状态引擎抢写（MVU 在场时那一拍就排在 VARIABLE_UPDATE_ENDED 收尾之后，见 mvu-bridge.markVarUpdate）。
-  let LEDm = null, VSG = null;
+  let LEDm = null, VSG = null, SSK = null;
   const lootFacts = [];                               // 本场会话的物理拾取事实（聊天维度：换聊天清空）
   const settleState = { claimed: [], floor: null, branch: null };   // 已补发水位（同一件只补一次，有界；带分支纪律）
   const settleCarry = { domains: [], floor: null };   // 待结算跨轮携带（未决的域带进下一轮，≤4；参考卡 pending-domain carry）
+  // W12 虚拟账本槽位（任务一）：宿主 stat_data 里一个背包字段都没有时，由地图自建槽位并**强制入账**——
+  // 事实先 capture 进内存队列，放行点（结算闸门 flush 之后）一次落盘，中途失败也不丢。**不写宿主 stat_data**
+  // （卡的 MVU 带 zod 结构，未知键会被丢掉还可能触发校验报错，见 ledger.mjs 的同一段注释）。
+  let slot = null;                                    // 槽位声明（随聊天变量 eden_map.槽位 落盘）
+  const slotDeclared = () => { slot = LEDm.slotDeclare(slot, LEDm.slotProbe(BR.mvuStat()), floorNow); return true; };
+  const slotWrite = (key, rows) => { if (!slot) slotDeclared(); slot = LEDm.slotPut(slot, rows, floorNow); saveRoot(); return true; };
   import(SELF + 'core/ledger.mjs').then(m => { LEDm = m; }).catch(() => {});
-  import(SELF + 'tavern/varsync.mjs').then(m => { VSG = m.createGate({ hasMvu: () => BR.mvuPresent(), epoch: () => BR.varUpdateSeq() }); }).catch(() => {});
+  import(SELF + 'tavern/varsync.mjs').then(m => {
+    VSG = m.createGate({ hasMvu: () => BR.mvuPresent(), epoch: () => BR.varUpdateSeq() });
+    SSK = m.createSlotSink({ declare: slotDeclared, put: slotWrite });
+  }).catch(() => {});
   const gate = () => VSG;
   function gateFlush(why = 'round') { try { return gate()?.flush(why) || null; } catch (e) { return null; } }
   /** 分支身份（同一楼换分支 = swipe / 重生成 ⇒ 该楼水位作废重算）：楼层 + 那一楼的 swipe 号 */
@@ -526,7 +542,15 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
       inv = res.inv; fixed++;
     }
     if (fixed) changedInv();                                          // 写聊天变量 + 推地图（拿到手的光点消失）
-    return { fixed, pending: aud.pending.length, repeated: cl.repeated };
+    // W12 虚拟槽位（任务一）：探路 → 声明（只做一次）→ 把还在账外的物理事实补进队列 → 落盘。
+    // 「还在账外」= 槽位里没有这个 id：已经落过的天然跳过（幂等，也挡住了玩家用掉道具后被复活）。
+    if (SSK && LEDm) {
+      const probe = LEDm.slotProbe(BR.mvuStat());
+      SSK.bind(probe); SSK.ensure(probe);
+      for (const f of lootFacts) if (f?.id && !slot?.物?.[f.id]) SSK.capture({ id: f.id, 名: f.name, 地点: f.place, floor: f.floor });
+      SSK.flush();
+    }
+    return { fixed, pending: aud.pending.length, repeated: cl.repeated, slot: SSK?.describe() || null };
   }
 
   // Part 5-1 拾取地上的藏物（core/stash.mjs 的行）：地图只说「拿了哪个 id」，真实性由这里核对——
@@ -584,6 +608,9 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     loadSelfcheck: async () => (SC ??= await import(SELF + 'tavern/selfcheck.mjs')),
     loadSources: async () => (SRCm ??= await import(SELF + 'tavern/sources.mjs')) });
   const sendAbout = () => AB.sendAbout(), checkUpdate = () => AB.checkUpdate(), followUpdate = () => AB.followUpdate();
+  // 任务四：版权申明页的角色卡信息由这里（经桥的三级降级）取，推给查看器——面板不再自己摸 window.SillyTavern
+  // （嵌在 iframe 里那个全局 100% 读不到，旧版于是永远报「未接入酒馆」的假错）。
+  const sendCardInfo = () => { BR.cardInfo().then(card => { if (!life.dead) post({ type: 'eden-map:cardinfo', card: card || null }); }).catch(() => {}); };
   const channel = () => AB.channel(), buildNow = () => AB.buildNow();   // 自检页与强制更新判断要用同一个口径
   // ---------------- MVUBridge（P2 解耦第一步，docs/reviews/architecture_and_stream_perf.md §3）----------------
   // 变量映射（v0.9.5，换卡兼容）、stat_data 快照选取（v0.9.9）、当前地点三级兜底（MVU → 标签对账 → 表格数据库插件，
@@ -726,7 +753,9 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     const frLine = FRm ? FRm.digest(frState) : '';   // W2：未注入过的失败报告追加一行（注入后置水位，不重复）
     // W11：待结算跨轮携带（上一轮没结完的域）并进同一行——不开新通道，也不新增注入 id
     const carryLine = LEDm ? LEDm.carryLine(settleCarry) : '';
-    inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : '', INVm && lsGet('edenMapInvInj') !== '0' ? INVm.digestLine(inv, 150) : '', frLine, carryLine].filter(Boolean).join('\n'));
+    // W12：虚拟账本槽位声明（任务一）——本卡变量里有没有背包栏、地图账上现记几件，一并回注成已知事实
+    const slotMsg = LEDm ? LEDm.slotLine(slot) : '';
+    inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : '', INVm && lsGet('edenMapInvInj') !== '0' ? INVm.digestLine(inv, 150) : '', slotMsg, frLine, carryLine].filter(Boolean).join('\n'));
     if (frLine) FRm.markInjected(frState);
     gate()?.request('sync', ledgerSync);   // W11：本轮的结算（漏项审计 + 单项补发）入队，末尾才放行——读取期间不写变量
     if (!lite) { stateInject(); spatialInject(); jitRound().catch(() => {}); xtalRound().catch(() => {}); checkpointStep(); }
@@ -920,7 +949,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     if (!BG) return; const ls = store(); if (!ls) return;
     BG.touch(ls, chatId()); const r = BG.sweep(ls, chatId()); if (r.dropped.length) console.info('[eden-map] 清理旧聊天的地图数据', r.dropped.length, '个聊天', r.freed, '字节');
   }
-  const saveRoot = () => life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: CTX.tag.floor, 标签记录: CTX.tag.log, 楼层指纹: CTX.tag.seen, 行程: CTX.trips, 仓库: inv, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}), ...(kfView ? { 关键帧: kfView } : {}) }, customChat);
+  const saveRoot = () => life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: CTX.tag.floor, 标签记录: CTX.tag.log, 楼层指纹: CTX.tag.seen, 行程: CTX.trips, 仓库: inv, ...(LEDm && LEDm.slotSave(slot) ? { 槽位: LEDm.slotSave(slot) } : {}), ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}), ...(kfView ? { 关键帧: kfView } : {}) }, customChat);
   // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
   // 只在这个聊天还没有 eden_map.自定义 时迁移一次（全局旧键不改名，靠这个条件避免每个聊天、每次刷新重复并入）
   async function migrateOld() {
@@ -943,6 +972,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
       seen: v.楼层指纹 && typeof v.楼层指纹 === 'object' ? { ...v.楼层指纹 } : {} };
     explored = FOGm ? FOGm.norm(v.探索) : (v.探索 && typeof v.探索 === 'object' ? v.探索 : {});
     inv = INVm ? INVm.norm(v.仓库) : { items: {}, seq: 0 };   // 空间化背包（Part 5-1）
+    slot = v.槽位 && typeof v.槽位 === 'object' && !Array.isArray(v.槽位) && typeof v.槽位.名 === 'string' ? v.槽位 : null;   // W12 虚拟账本槽位（任务一）
     kfReset();   // W3 关键帧：换聊天 / 重载一律从零重建（可丢弃缓存；旧视图经 compress 重验证后接上）
     if (KFm && v.关键帧 && typeof v.关键帧 === 'object' && Array.isArray(v.关键帧.frames)) {
       const top = Math.min(Math.round(+v.关键帧.top) || 0, floorNow >= 0 ? floorNow : Math.round(+v.关键帧.top) || 0);
@@ -966,6 +996,21 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   const wbOk = () => fnOk('createOrReplaceWorldbook') || fnOk('createWorldbook');
   async function wbExists(n) { try { return fnOk('getWorldbookNames') ? (await getWorldbookNames() || []).includes(n) : false; } catch (e) { return false; } }
   let wbState = '';
+  /** 任务二 静默绑定代理：一本我们的书在那儿却没挂上任何一处 → 自己找一档挂上（纯判定在 wb_jit.bindPlan）。
+   *  已有绑定一律不动（改了用户的选择 = 串味儿）；只在「一处都没挂」时补，失败 / 没接口 → null。 */
+  async function silentBind(name) {
+    try {
+      const W = WBSm ?? await import(SELF + 'tavern/wbsync.mjs').catch(() => null);
+      const J = WBJm ?? await import(SELF + 'tavern/wb_jit.mjs').catch(() => null);
+      if (!W?.bindingOf || !J?.bindPlan) return null;
+      const b = await W.bindingOf(thFn, name);
+      const w = J.bindPlan(b, { api: { chat: fnOk('rebindChatWorldbook'), char: fnOk('rebindCharWorldbooks'), global: fnOk('rebindGlobalWorldbooks') } });
+      if (w === 'none') return null;
+      const ok = await W.bind(thFn, name, w);
+      console.info('[eden-map] 世界书未绑定 → 静默水合：', name, w, ok ? 'ok' : 'fail');
+      return ok ? w : null;
+    } catch (e) { return null; }
+  }
   // 世界书按聊天分开（MV.wbName(聊天 id)），不然绑定了同一本的聊天会互相注入；关掉同步时把条目停用（不删世界书）
   async function syncWb(on = true) {
     if (!wbOk()) { wbState = 'noapi'; return false; }
@@ -981,6 +1026,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     try { const cur = fnOk('getChatWorldbookName') ? getChatWorldbookName('current') : null;
       if (cur === WBN) bound = true; else if (!cur && fnOk('rebindChatWorldbook')) { await rebindChatWorldbook('current', WBN); bound = true; } } catch (e) {}
     if (!bound) try { bound = (fnOk('getGlobalWorldbookNames') && getGlobalWorldbookNames().includes(WBN)); } catch (e) {}
+    if (!bound) { bound = !!(await silentBind(WBN)); if (!bound) console.info('[eden-map] 世界书未绑定，且没有可用的绑定接口：', WBN); }   // 任务二：不再让玩家进后台手动勾
     wbState = bound ? 'bound' : 'unbound'; sendCustom(); return true;
   }
   // 标签用到的「类」：人物栏里的名字 → 人物；庄园房间 / 区域（maps.json）→ 房间 / 区域；其余当地标
@@ -1328,6 +1374,8 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   // ---------------- 酒馆助手采纳（docs/tavernhelper-audit.md §2，B1–B9）：全部功能探测，缺接口静默跳过 ----------------
   let THm = null, macroOff = null, thBtns = null, cardId = null;
   const thReady = import(SELF + 'tavern/th.mjs').then(m => { THm = m; thInit(); return m; }).catch(() => null);
+  // 任务三：泄露防御网装配（纯净化函数在 sanitize.mjs，th.mjs 只管取元素与洗净渲染结果）
+  thReady.then(m => { if (m) LKF = m.createLeakFence({ retrieve: id => { const f = thFn('retrieveDisplayedMessage'); return f ? f(id) : null; }, log: s => console.info('[eden-map]', s) }); }).catch(() => {});
   function thInit() {
     if (life.dead) return;
     // B2 脚本按钮：浮动按钮之外的第二个入口（TH 脚本栏里的「地图」「地图自检」）；句柄走 listen，cleanup 自动撤
@@ -1431,9 +1479,12 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     listen(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     listen(tavern_events.CHAT_CHANGED, () => { clearTimeout(wbChatT); wbChatT = setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动', e))); }, 1500); });   // 换角色 / 聊天：新角色也挂上、聊天版本提醒
     listen(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    listen(tavern_events.CHAT_CHANGED, () => { try { BG?.touch(store(), chatId()); } catch (e) {} injected = null; stateNow = ''; cardSkip = null; cp = null; CTX.reset(); gate()?.drop('chat'); settleState.claimed = []; settleState.floor = null; settleState.branch = null; settleCarry.domains = []; settleCarry.floor = null; lootFacts.length = 0; loadSeen(); custom = null; if (tlOn) { tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => recomputeSoon(300)); });
+    listen(tavern_events.CHAT_CHANGED, () => { try { BG?.touch(store(), chatId()); } catch (e) {} injected = null; stateNow = ''; cardSkip = null; cp = null; CTX.reset(); gate()?.drop('chat'); settleState.claimed = []; settleState.floor = null; settleState.branch = null; settleCarry.domains = []; settleCarry.floor = null; lootFacts.length = 0; slot = null; SSK?.reset(); loadSeen(); custom = null; if (tlOn) { tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => { recomputeSoon(300); sendCardInfo(); }); });
     // 通读 R1：开局菜单用 setChatMessage(swipe_id) 换开场白，不一定触发 SWIPED；渲染 / 编辑事件也听，地点跟着刷新
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) if (tavern_events[k]) listen(tavern_events[k], () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
+    // 任务三：渲染之后再走一遍泄露防御网（占位符 / 整段状态栏 HTML 源码糊在界面上时抹掉；干净就什么都不做）
+    if (tavern_events.CHARACTER_MESSAGE_RENDERED) listen(tavern_events.CHARACTER_MESSAGE_RENDERED, id => leakSweep(id));
+    if (tavern_events.MESSAGE_RECEIVED) listen(tavern_events.MESSAGE_RECEIVED, id => { setTimeout(() => leakSweep(id), 0); });   // 刚到的楼：等它渲染完再洗一次
     // 生成前同步一次，注入的是最新态势（A-3：只做注入需要的部分；输入没变直接跳过；标签改名 / 行程推到空闲）
     // v0.9.9：生成状态（pending 指示）+ swipe 删除 + 切回前台（被系统挂起 / 断网恢复后事件可能丢了）→ 从聊天记录与楼层变量重新推导
     if (tavern_events.GENERATION_STARTED) listen(tavern_events.GENERATION_STARTED, (t, o, dry) => { if (!dry) { GEN.since = Date.now(); pushSoon(0); } });

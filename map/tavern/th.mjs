@@ -1,6 +1,7 @@
 // 酒馆助手（TH）平台接口的薄封装（docs/tavernhelper-audit.md §6 地基修复 + §2 采纳清单）。纯函数为主，node 单测 tests/th_foundation.test.mjs。
 // 规则：每个 TH 接口都先功能探测（fn(name) 返回函数或 null），缺了静默退回旧行为；永远不按版本号分支。
-// 不用 installExtension / builtin / 角色卡写接口；不调 generate*。不看、不过滤任何聊天内容。
+// 不用 installExtension / builtin / 角色卡写接口；不调 generate*。**不改写任何聊天内容**——
+// 渲染层的泄露清理（createLeakFence）只删显示出来的 DOM 节点与文本，聊天记录一个字节都不动（docs/rejected.md #8）。
 
 /** 统一的外部请求（§3.6）：不带凭据、不带 Referer（酒馆的 origin 不发给 CDN）。eden-map.js 里有同一行的内联副本（启动路径要同步可用），tests/cdnfetch.test.mjs 对照 */
 export const CDN_OPTS = Object.freeze({ credentials: 'omit', referrerPolicy: 'no-referrer' });
@@ -102,6 +103,55 @@ export function registerMacros(fn, get) {
   const hs = [];
   for (const [k, re] of MACROS) { try { hs.push(reg(re, (...a) => String(get(k, a[0]) ?? ''))); } catch (e) {} }
   return () => { for (const h of hs.splice(0)) { try { h?.unregister?.(); } catch (e) {} } if (fn('unregisterMacroLike')) for (const [, re] of MACROS) { try { fn('unregisterMacroLike')(re); } catch (e) {} } };
+}
+
+// ---------------- B10 泄露防御网（任务三）：渲染管道前置过滤器 ----------------
+// 卡片没消费掉的占位标识符（<StatusPlaceHolderImpl/>）与模型整段吐出来的状态栏 HTML 源码会直接糊在
+// 聊天界面上。这里在**渲染层**处理：拿到酒馆已经画出来的那一楼元素，删掉泄露块对应的节点、洗净命中
+// 泄露形状的文本节点。**绝不改写聊天记录**——地图不审核、不过滤用户聊天内容（docs/rejected.md #8），
+// 所以只动显示，原文 / 变量 / 事件解析一概不碰（解析侧另有 sanitize.stripLeaks 的纯文本净化）。
+// 依赖全注入（retrieve / clean / has / log），node 单测喂假元素即可。tests/html_leak_filter.test.mjs。
+import { stripLeaks as defaultClean, hasLeak as defaultHas } from './sanitize.mjs';   // 纯净化管线（同一层，无循环）
+const LEAK_SEL = '[class*="statusbar-container"], statusplaceholderimpl, statusplaceholder';
+const SHOW_TEXT = 4;   // NodeFilter.SHOW_TEXT（用数值，免得依赖全局 NodeFilter）
+/**
+ * o = { retrieve?(id) → 消息元素（jQuery 包装也认）, clean?(text) → 干净文本（缺省 sanitize.stripLeaks）,
+ *        has?(text) → bool（缺省 sanitize.hasLeak）, log?(msg) }
+ */
+export function createLeakFence(o = {}) {
+  const retrieve = typeof o.retrieve === 'function' ? o.retrieve : () => null;
+  const clean = typeof o.clean === 'function' ? o.clean : defaultClean;
+  const has = typeof o.has === 'function' ? o.has : defaultHas;
+  const log = typeof o.log === 'function' ? o.log : () => {};
+  let swept = 0, nodes = 0, errors = 0, last = null;
+  /** 一个已渲染楼层 → 清掉泄露节点与泄露文本节点；返回清理处数（0 = 干净，什么都没动） */
+  function sweepNode(el0) {
+    const el = el0?.jquery ? el0[0] : el0;
+    if (!el || typeof el.querySelectorAll !== 'function') return 0;
+    let n = 0;
+    try { for (const e of [...el.querySelectorAll(LEAK_SEL)]) { e.remove?.(); n++; } } catch (e) {}
+    const doc = el.ownerDocument;
+    if (!doc?.createTreeWalker) return n;
+    const w = doc.createTreeWalker(el, SHOW_TEXT, null), texts = [];
+    for (let t = w.nextNode(); t; t = w.nextNode()) texts.push(t);
+    for (const t of texts) { if (!has(t.data)) continue; const nx = clean(t.data); if (nx !== t.data) { t.data = nx; n++; } }
+    return n;
+  }
+  return {
+    sweepNode,
+    /** 对某一楼：id 非法的直接跳过（不报错、不抛） */
+    sweep(id) {
+      const f = Math.round(+id);
+      if (!Number.isFinite(f) || f < 0) return 0;
+      try {
+        const n = sweepNode(retrieve(f));
+        if (n) { swept++; nodes += n; last = { floor: f, n, at: Date.now() }; log(`泄露防御网：清理第 ${f} 楼 ${n} 处`); }
+        return n;
+      } catch (e) { errors++; return 0; }
+    },
+    /** 标准摘要（自检 / 设置页）：{ swept, nodes, errors, last } */
+    describe: () => ({ swept, nodes, errors, last: last ? { ...last } : null }),
+  };
 }
 
 // ---------------- B2 脚本按钮 ----------------

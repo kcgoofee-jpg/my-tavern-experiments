@@ -57,6 +57,74 @@ export function presetHereHint(raw) {
   return { here };
 }
 
+// ---------------- 泄露防御网（任务三）：模型把整段 HTML / 占位符吐进正文时静默抹掉 ----------------
+// 三类泄露：① 卡片没消费掉的占位标识符（`<StatusPlaceHolderImpl/>`）；② 模型把卡的整段状态栏 HTML
+// 源码（`<!DOCTYPE html>` 或 `<div class="statusbar-container">` 起手，含 <style> / <script>）当正文吐出来；
+// ③ 没闭合的 `<UpdateVariable>` 残片。全部是**渲染层的脏东西**，不是聊天内容——正文一个字都不动。
+// 纯函数：只做字符串进出，不碰 DOM / 全局；幂等（清干净的文本再跑一遍原样返回）。tests/html_leak_filter.test.mjs。
+/** 占位标识符（自闭合 / 带属性 / 成对都认） */
+export const PLACEHOLDER_RX = /<\s*StatusPlaceHolderImpl\b[^>]*\/?>(?:[\s\S]*?<\s*\/\s*StatusPlaceHolderImpl\s*>)?/gi;
+const DOCTYPE_RX = /<!DOCTYPE\s+html\b[\s\S]*?<\s*\/\s*html\s*>/gi;
+const DOCTYPE_OPEN_RX = /<!DOCTYPE\s+html\b/i;
+const STATUS_DIV_RX = /<div\b[^>]*class\s*=\s*["']?[^"'>]*statusbar-container/i;
+const DIV_TAG_RX = /<\/?div\b[^>]*>/gi;
+const UV_OPEN_RX = /<UpdateVariable\b[^>]*>/i;
+const UV_CLOSE_RX = /<\/\s*UpdateVariable\s*>/gi;
+const BLANK_RX = /\n{3,}/g;
+// 判定用副本：不带 g（/g/ 正则的 lastIndex 会残留，让 .test() 时真时假）
+const PLACEHOLDER_HINT = /StatusPlaceHolderImpl/i, UV_CLOSE_HINT = /<\/\s*UpdateVariable\s*>/i;
+
+/** 从 openEnd 起对 div 配平，返回闭合标签之后的位置；配不平（流式半截）返回 -1 = 到正文末尾 */
+function balanceDiv(s, openEnd) {
+  const re = new RegExp(DIV_TAG_RX.source, 'gi'); re.lastIndex = openEnd;
+  let depth = 1;
+  for (let m; (m = re.exec(s));) {
+    if (m[0].startsWith('</')) { if (--depth === 0) return m.index + m[0].length; }
+    else depth++;
+  }
+  return -1;
+}
+/**
+ * 变量块残片：闭合的整块**原样留着**（那是卡自己的正则负责隐藏的机器块，地图一个字节都不动它）；
+ * 没闭合的从开标签起到末尾切掉（流式半截就是这个形状）；整段里连开标签都没有的孤儿闭标签清掉。
+ * 幂等是硬要求：绝不能在头一遍就把闭合块的闭标签当孤儿抹掉——那样第二遍会把它后面的正文一起切了。
+ */
+function stripUvFragments(s) {
+  let out = s;
+  for (let from = 0; ;) {
+    const open = out.indexOf('<UpdateVariable', from);
+    if (open < 0) break;
+    const openEnd = out.indexOf('>', open);
+    const close = openEnd < 0 ? -1 : out.indexOf('</UpdateVariable', openEnd);
+    if (close < 0) { out = out.slice(0, open); break; }
+    from = close + 1;   // 闭合块：跳过，继续往后找（不动它）
+  }
+  return out.indexOf('<UpdateVariable') < 0 ? out.replace(UV_CLOSE_RX, '') : out;
+}
+/** 抹掉正文里的三类泄露块（保留换行结构；连着的空行压到一行）。 */
+export function stripLeaks(text) {
+  let out = String(text ?? '');
+  if (!out) return out;
+  out = out.replace(PLACEHOLDER_RX, '');
+  out = out.replace(DOCTYPE_RX, '\n');
+  if (DOCTYPE_OPEN_RX.test(out)) out = out.slice(0, out.search(DOCTYPE_OPEN_RX));   // 没收尾的 doctype：从它起到末尾都是源码
+  for (let i = 0; i < 12; i++) {   // 一段状态栏 HTML 里可能套着好几个同 class 的块
+    const m = STATUS_DIV_RX.exec(out);
+    if (!m) break;
+    const openEnd = out.indexOf('>', m.index + m[0].length - 1);
+    if (openEnd < 0) { out = out.slice(0, m.index); break; }
+    const end = balanceDiv(out, openEnd + 1);
+    out = end < 0 ? out.slice(0, m.index) : out.slice(0, m.index) + out.slice(end);
+  }
+  return stripUvFragments(out).replace(BLANK_RX, '\n\n');
+}
+/** 这段文本里有没有泄露块（宿主据此决定要不要动渲染出来的 DOM；没泄露 = 一个字节都不动）。 */
+export const hasLeak = text => {
+  const s = String(text ?? '');
+  if (!s) return false;
+  return PLACEHOLDER_HINT.test(s) || DOCTYPE_OPEN_RX.test(s) || STATUS_DIV_RX.test(s) || UV_CLOSE_HINT.test(s);
+};
+
 /** 状态栏「在场」行 → 名字数组（人物栏的补充来源，只报不写）：顿号 / 逗号 / 斜杠 / 空格分隔，最多 12 个、每个 ≤ 20 字。 */
 export function presetPresentHint(raw) {
   const text = String(raw ?? '').replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, ' ')

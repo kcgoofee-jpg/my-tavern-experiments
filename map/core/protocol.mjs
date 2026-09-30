@@ -45,6 +45,7 @@ export const SCHEMA = {
   'eden-map:chat': [H2V, { id: 'any' }],
   'eden-map:lang': [H2V, { lang: 'string' }],
   'eden-map:about': [H2V, {}],
+  'eden-map:cardinfo': [H2V, { card: 'object?' }],   // 任务四：角色卡信息（版权申明页）；经桥三级降级取，null = 没读到（面板显示安全占位）
   'eden-map:update-result': [H2V, {}],
   'eden-map:chars': [H2V, { items: 'array?', replay: 'boolean?' }],
   'eden-map:events': [H2V, { items: 'array?' }],

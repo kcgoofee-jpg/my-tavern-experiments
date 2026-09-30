@@ -116,6 +116,30 @@ export class MVUBridge {
   /** mvu.mjs 读法取值（行程用，与 getPath 同语义） */
   mvuGet(st, p) { return this.MV ? this.MV.get(st, p) : undefined; }
 
+  // ---------------- 角色卡身份（任务四）：UI 面板只经这里取，绝不自己摸宿主全局 ----------------
+  #parent() { try { return window.parent; } catch (e) { return null; } }
+  /**
+   * 角色卡信息（版权申明页用）：降级链——酒馆助手 getCharData('current') → 本窗口 SillyTavern 上下文
+   * → 父级窗口的同名接口（独立窗口 / 上下文被隔离时本窗口读不到全局）。
+   * 三级都拿不到返回 null，由调用方显示安全占位：面板读不到卡信息**不等于**「未接入酒馆」，
+   * 绝不报那种虚假错误（旧版 settings.mjs 直接读 window.SillyTavern，嵌在 iframe 里 100% 误报）。
+   */
+  async cardInfo() {
+    const pick = (c, src) => {
+      const d = c?.data && typeof c.data === 'object' ? c.data : (c && typeof c === 'object' ? c : {});
+      const name = String(d.name || c?.name || '').trim();
+      if (!name && !d.creator && !d.character_version) return null;
+      return { name, creator: String(d.creator || '').trim(), version: String(d.character_version || '').trim(), avatar: String(c?.avatar || ''),
+        tags: Array.isArray(d.tags) ? d.tags.map(String).slice(0, 12) : [], notes: String(d.creator_notes || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200), src };
+    };
+    try { const r = pick(await thFn('getCharData')?.('current'), 'getCharData'); if (r) return r; } catch (e) {}
+    try { const c = this.stContext(); const r = pick(c?.characters?.[c.characterId], 'context'); if (r) return r; } catch (e) {}
+    const p = this.#parent();
+    try { const g = p?.TavernHelper?.getCharData; const r = typeof g === 'function' ? pick(await g('current'), 'parent-th') : null; if (r) return r; } catch (e) {}
+    try { const c = p?.SillyTavern?.getContext?.(); const r = pick(c?.characters?.[c.characterId], 'parent-st'); if (r) return r; } catch (e) {}
+    return null;
+  }
+
   // ---------------- 当前地点（四级兜底） ----------------
   /** MVU 映射 → 正文标签对账（交互方式 d）→ 表格数据库插件 → 社区预设状态栏（Part 7）。ctx 可覆盖 floorNow / lastRaw（缺省用构造参数）。 */
   here(ctx = {}) {
