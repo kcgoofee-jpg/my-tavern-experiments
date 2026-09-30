@@ -26,6 +26,7 @@ export class MVUBridge {
     // 快照选取状态（v0.9.9，docs/mvu-integration.md）：mvuStat() 每次更新。
     // snapFloor = 用的快照在几楼、snapTop = 最新非隐藏楼、snapState = ok|pending|stale|none（UI「未确认」与注入标注用）
     this.snapFloor = -1; this.snapTop = -1; this.snapState = 'ok';
+    this.varEpoch = 0;   // VARIABLE_UPDATE_ENDED 代数（W11 结算时序守卫；markVarUpdate 推进）
     // 变量映射（adapter）：按角色卡存本机的用户映射 + 生效映射 + 变化签名（宿主 round 签名引用 varSig）
     this.varCard = ''; this.varUser = {}; this.varMap = { location: '世界.当前地点' }; this.varSig = '';
     // here 的来源标注：'mvu' | 'tag'（正文标签兜底，交互方式 d）| 'preset'（社区预设状态栏兜底，Part 7）；hereFromDb = 地点读自表格数据库插件
@@ -84,6 +85,11 @@ export class MVUBridge {
   }
   /** 变量已变（VARIABLE_UPDATE_ENDED）：立刻丢掉本轮快照，下次读取重拿。映射签名不清（未确认的推送仍按签名去重） */
   invalidate() { this.#statSnap = undefined; }
+  // 变量更新代数（W11 结算时序守卫，docs/plans/llm-campaign.md）：每次 VARIABLE_UPDATE_ENDED +1。
+  // 宿主必须在事件处理器里先调 markVarUpdate()（作废快照 + 落代数），推送 / 重算 / 结算放行都排在它后面——
+  // 地图侧的写入（账本补发、空间状态）只在事件收尾放行，绝不落在主 MVU 的更新窗口里（tests/mvu_lifecycle.test.mjs）。
+  markVarUpdate() { this.invalidate(); this.varEpoch += 1; return this.varEpoch; }
+  varUpdateSeq() { return this.varEpoch; }
   /** 某一楼的 stat_data（行程 / 冲突对账用；那一楼没有返回 null） */
   perFloorStat(floor) { try { return this.#mvu()?.getMvuData?.({ type: 'message', message_id: floor })?.stat_data || null; } catch (e) { return null; } }
   /** Mvu 全局的 latest 原样读（自检用，不走快照选取） */

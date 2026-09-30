@@ -65,7 +65,11 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   Part B 世界书智能化（W6 JIT 水合 / W7 事实结晶 / W8 双向互跳 / W9 测试探针登记 / W10 收口），14 条架构冲突裁决 +
   验收门禁 + 五批次推送划分；拓扑微语法与空间契约融合（合法邻接源只有 marker link / neighbours 几何 / 层级包含，
   routes 不算）。**W1–W9 主体已落地**（suite 570/0、看门狗 4/4、smoke 全绿；明细与提交号见任务书划线）。
-  挂后续：浏览器探针 p9_worldbook、领航员叠加事件查看器图层化（OP_CLUE/MARKER）、en 长文案打磨。
+  **W11 已落地**（2026-09-30 第二批）：四域结算账本 `map/core/ledger.mjs` + `VARIABLE_UPDATE_ENDED` 时序守卫
+  `map/tavern/varsync.mjs`（域隔离 / 非法指令丢弃 / 漏项单项补发 / 待结算 / 写入放行点固定在整轮末尾），
+  测试 `tests/ledger_disentangle.test.mjs`、`tests/mvu_lifecycle.test.mjs`。
+  挂后续：浏览器探针 p9_worldbook、领航员叠加事件查看器图层化（OP_CLUE/MARKER）、en 长文案打磨、
+  npc / 事件两域的宿主写入路径（v1 按待结算处理，见任务书 W11 末条）。
   v0.9.8 发版仍**挂起**。
 - [ ] **Real SillyTavern + TavernHelper browser test.** The biggest open item: `tools/browser/`（预估 ~16h）
   currently only has `host_stub.mjs`, a fake host. Everything else in the suite runs against the stub.

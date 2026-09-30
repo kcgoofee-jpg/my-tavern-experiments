@@ -294,6 +294,38 @@ same-floor adjacency, not by links.
 - [ ] Deferred release v0.9.8 (tag `map-v0.9.8`, latest.json, README line, sync_main, CDN warm)
   resumes after the dev-workflow optimization lands.
 
+### ~~W11 — Four-domain settlement ledger + `VARIABLE_UPDATE_ENDED` ordering guard~~ ✅ 2026-09-30
+
+Batch 6, second wave of the same campaign (the "spatial OS / state-ledger settlement engine" brief):
+
+- [x] ~~New pure core module `map/core/ledger.mjs` (227 lines): atomic-directive unmarshalling for the three
+  settlement ops — `OP_LOOT(item_id, x, y)`, `OP_ROUTINE(npc_id, target_room)`, `OP_EVENT(type, level, x, y)` —
+  as a compact `OP_NAME(args…)` micro-syntax (bare or quoted args, ≤3 ops per batch, coordinate quantization);
+  **four independently validated domains** (assets / npc / events / depth) under the throw-not-coerce rule — a
+  bad directive drops only itself and is counted per domain, never coerced; domain → `LayerRegistry` slot
+  isolation (`assets→markers`, `npc→labels`, `events→events`, `depth→depth-haze`, asserted against
+  `layers.SLOTS` at module load); the depth/environment domain is fed **only** by local deterministic facts
+  (`envEntry`), so an `OP_DEPTH(…)` in text is dropped — no low-level physics is delegated to a model.~~
+- [x] ~~Omission auditor `ledger.audit(facts, landed)`: physical facts vs the host's actually-persisted state;
+  emits **single-item** gap patches only (never a full-table rewrite); unresolved rows and rows not on record
+  become *pending settlement* (old value kept, nothing guessed); `ledger.claim` watermarks each patch once-only
+  and bounds the ledger at 200 keys.~~
+- [x] ~~New pure module `map/tavern/varsync.mjs`: the write gate. Requests are queued and released only at the
+  tail of a round — no variable write during the host's read pass, none inside the main MVU's update window;
+  same-key dedup, `drop()` on chat change, nested release bounded by `maxPasses`, one throwing callback does not
+  take the others down. `MVUBridge.markVarUpdate()/varUpdateSeq()` carry the `VARIABLE_UPDATE_ENDED` epoch, and
+  the host order is now `invalidate → push → recompute → flush` (`varsync.ROUND_ORDER`).~~
+- [x] ~~Host wiring (`map/tavern/eden-map.js`): both pickup paths (`eden-map:loot` and the Part 8 estate 3D
+  `estate:loot`) record the physical fact in one place; each round audits it against the landed `仓库` and
+  re-sends only the missing single row (row content always comes from the world stash table — the map never
+  materialises an item out of thin air); the write itself goes through the gate. MVU absent = immediate release,
+  so there is no deadlock waiting for an event that will never arrive.~~
+- [x] ~~Tests `tests/ledger_disentangle.test.mjs` (12) and `tests/mvu_lifecycle.test.mjs` (9): determinism,
+  domain isolation, illegal-directive dropping, slot contract, single-item patching, pending settlement,
+  watermark idempotence, ENDED ordering, drop-on-chat-change, purity and ≤400 lines.~~
+- [ ] Open follow-up (registered, not blocking): the npc / events domains have a validated audit path but no
+  host-side write path yet (facts are not produced for them in v1), so they settle as *pending* by design.
+
 ---
 
 ## 5. Acceptance gates

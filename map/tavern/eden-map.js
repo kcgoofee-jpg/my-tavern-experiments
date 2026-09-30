@@ -485,6 +485,43 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   import(SELF + 'tavern/failrep.mjs').then(m => { FRm = m; }).catch(() => {});
   const diceOn = () => lsGet('edenMapDice') === '1' && RNGm && FRm;
 
+  // W11 四域结算账本 + 时序守卫（docs/plans/llm-campaign.md；对齐「领域分账 / 渐进纠错」口径）：
+  // 地图侧的确定性物理事实（拾取）记进 lootFacts，每轮由 core/ledger.mjs 的漏项审计器与宿主**实际落盘**
+  // 的仓库对账——确实缺了才补**单项**缺口 patch（不重写整表），认不出 / 不在表里的留待结算（旧值不动）。
+  // 写变量一律经 tavern/varsync.mjs 的闸门排队，放行点是本轮末尾：读取期间绝不写，杜绝与主 MVU / 卡内
+  // 状态引擎抢写（MVU 在场时那一拍就排在 VARIABLE_UPDATE_ENDED 收尾之后，见 mvu-bridge.markVarUpdate）。
+  let LEDm = null, VSG = null;
+  const lootFacts = [];                               // 本场会话的物理拾取事实（聊天维度：换聊天清空）
+  const settleState = { claimed: [], floor: null };   // 已补发水位（同一件只补一次，有界）
+  import(SELF + 'core/ledger.mjs').then(m => { LEDm = m; }).catch(() => {});
+  import(SELF + 'tavern/varsync.mjs').then(m => { VSG = m.createGate({ hasMvu: () => BR.mvuPresent(), epoch: () => BR.varUpdateSeq() }); }).catch(() => {});
+  const gate = () => VSG;
+  function gateFlush(why = 'round') { try { return gate()?.flush(why) || null; } catch (e) { return null; } }
+  /** 宿主实际落盘的状态视图（审计器的 landed 参数）：资产域 = 仓库 id 表；NPC 域 = 在场名册的「人 → 当前地点」；
+   *  事件域还没有落盘写入路径（返回空 → 该域只走待结算，不猜） */
+  function landedView() {
+    const assets = {}, npc = {};
+    try { for (const [id, e] of Object.entries(inv?.items || {})) assets[id] = e?.名 || ''; } catch (e) {}
+    try { const p = BR.rosters(mvuStat())?.present; for (const it of p?.items || []) if (it?.name && it?.place) npc[it.name] = it.place; } catch (e) {}
+    return { assets, npc, events: null };
+  }
+  /** 漏项审计 + 单项补发（W11）：补的整行来自世界藏物表（不凭空造东西），补过的记水位不再重发 */
+  function ledgerSync() {
+    if (!LEDm || !STm || !INVm || !alive || life.dead) return null;
+    const aud = LEDm.audit(lootFacts, landedView());
+    const writable = aud.patches.filter(p => p.domain === 'assets');   // 只有资产域有落盘写入路径
+    const cl = LEDm.claim(settleState, writable, { floor: floorNow });
+    let fixed = 0;
+    for (const p of cl.fresh) {
+      const row = STm.rows(stash, {}).find(r => r.id === p.id);
+      if (!row) continue;                                            // 世界里没这一件：不替世界变出来
+      const res = INVm.put(inv, STm.lootPut(row)); if (!res.changed) continue;
+      inv = res.inv; fixed++;
+    }
+    if (fixed) changedInv();                                          // 写聊天变量 + 推地图（拿到手的光点消失）
+    return { fixed, pending: aud.pending.length, repeated: cl.repeated };
+  }
+
   // Part 5-1 拾取地上的藏物（core/stash.mjs 的行）：地图只说「拿了哪个 id」，真实性由这里核对——
   // 认不出的 id 一律不动背包（不替世界凭空变出东西）；认出了就写进 eden_map.仓库（同一份聊天变量，模型自己看得见）。
   function takeLoot(d) {
@@ -504,6 +541,10 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
       const res = INVm.put(inv, STm.lootPut(row));
       if (!res.changed) return;
       inv = res.inv; changedInv();   // 写变量 + 推地图（拿到手的光点会消失）
+      // W11：物理事实入账（两条拾取路径——平面 eden-map:loot 与 Part 8 庄园三维 estate:loot——都汇到这里）。
+      // 下一轮的漏项审计拿它和实际落盘对账：如果这一件没写进去（被主 MVU 的整表写回盖掉等），只补这一件。
+      lootFacts.push({ kind: 'loot', id: row.id, name: row.name, place: row.place || d.place || '', map: row.map || d.map || '', hidden: !!row.hidden, qty: row.qty || 1, floor: floorNow });
+      if (lootFacts.length > 40) lootFacts.shift();
       injectAction({ kind: 'loot', name: row.place || d.place || '', map: row.map || d.map || '', item: row.name });
     } catch (err) {}
   }
@@ -660,7 +701,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
         rosters: MV ? BR.rosters(st) : null, reputation: MV ? BR.reputation(st) : null,
         presentKey: BR.varMap.present ? String(BR.varMap.present).split('.').pop() : '',
       } : null });
-    if (!r.changed) { if (!lite && restDue) restNow(); return; }
+    if (!r.changed) { if (!lite && restDue) restNow(); gateFlush('round'); return; }
     events = r.events;
     if (r.chars) { chars = r.chars;
       // 日程漫游（Part 5-3）：聊天 / MVU 没接管的人物按世界时刻补位（不覆盖已有位置）
@@ -678,10 +719,12 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     const frLine = FRm ? FRm.digest(frState) : '';   // W2：未注入过的失败报告追加一行（注入后置水位，不重复）
     inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : '', INVm && lsGet('edenMapInvInj') !== '0' ? INVm.digestLine(inv, 150) : '', frLine].filter(Boolean).join('\n'));
     if (frLine) FRm.markInjected(frState);
+    gate()?.request('sync', ledgerSync);   // W11：本轮的结算（漏项审计 + 单项补发）入队，末尾才放行——读取期间不写变量
     if (!lite) { stateInject(); spatialInject(); jitRound().catch(() => {}); xtalRound().catch(() => {}); checkpointStep(); }
     if (!panel.hidden && alive) sendEvents();
     flyScan();   // W8：最新楼里的 data-eden-fly 标记（{{eden_fly}} 宏展开）→ eden-map:fly 聚焦地图
     if (subs.events.size) { const sig = floorNow + '|' + events.map(e => e.id + ':' + e.last + ':' + e.tier).join(); if (sig !== emEvSig) { emEvSig = sig; emit('events', { items: events.map(e => ({ ...e })), floor: floorNow, hereLayer: layerOf(here) }); } }
+    gateFlush('round');   // W11：本轮收尾才放行结算写入（MVU 在场时这一拍排在 VARIABLE_UPDATE_ENDED 处理器的尾部）
     perf(lite ? 'lite' : 'core', performance.now() - t0);
   }
   function restNow() { restDue = false; const t0 = performance.now(); customTags(CTX.lastMsgs); computeTrips(CTX.lastMsgs); perf('rest', performance.now() - t0); }
@@ -1372,11 +1415,13 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
 
   (async () => {
     // 不 await：没装 MVU 时 waitGlobalInitialized 永远不返回，下面的楼层 / 聊天事件就一个都挂不上（只用聊天标签、或地点读数据库插件表的聊天，地图不跟着新楼更新）
-    try { BR.whenMvu().then(() => { const ev = BR.varUpdateEvent(); if (ev) listen(ev, () => { BR.invalidate(); pushSoon(); recomputeSoon(); }); }); } catch (e) {}   // MVU 人物表也会变（人物栏）
+    // W11 变量更新生命周期（顺序即契约）：作废快照 + 落代数 → 推送 → 重算 → 本轮末尾放行结算。
+    // 地图侧的写入排在 VARIABLE_UPDATE_ENDED 收尾之后，绝不落在这个更新窗口里（tests/mvu_lifecycle.test.mjs）。
+    try { BR.whenMvu().then(() => { const ev = BR.varUpdateEvent(); if (ev) listen(ev, () => { BR.markVarUpdate(); pushSoon(); recomputeSoon(); gateFlush('ended'); }); }); } catch (e) {}   // MVU 人物表也会变（人物栏）
     listen(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     listen(tavern_events.CHAT_CHANGED, () => { clearTimeout(wbChatT); wbChatT = setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动', e))); }, 1500); });   // 换角色 / 聊天：新角色也挂上、聊天版本提醒
     listen(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    listen(tavern_events.CHAT_CHANGED, () => { try { BG?.touch(store(), chatId()); } catch (e) {} injected = null; stateNow = ''; cardSkip = null; cp = null; CTX.reset(); loadSeen(); custom = null; if (tlOn) { tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => recomputeSoon(300)); });
+    listen(tavern_events.CHAT_CHANGED, () => { try { BG?.touch(store(), chatId()); } catch (e) {} injected = null; stateNow = ''; cardSkip = null; cp = null; CTX.reset(); gate()?.drop('chat'); settleState.claimed = []; settleState.floor = null; lootFacts.length = 0; loadSeen(); custom = null; if (tlOn) { tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => recomputeSoon(300)); });
     // 通读 R1：开局菜单用 setChatMessage(swipe_id) 换开场白，不一定触发 SWIPED；渲染 / 编辑事件也听，地点跟着刷新
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) if (tavern_events[k]) listen(tavern_events[k], () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
     // 生成前同步一次，注入的是最新态势（A-3：只做注入需要的部分；输入没变直接跳过；标签改名 / 行程推到空闲）
