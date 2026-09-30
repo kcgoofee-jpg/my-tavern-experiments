@@ -15,7 +15,7 @@ import { P } from './plugins.mjs';   // 空间化背包 TCInv：三维发光道�
 import { busOn } from './bus.mjs';
 import { chatId } from './extapi.mjs';
 import { setFpsMeter } from './fps.mjs';
-import { standIn } from './nodes-runtime.mjs';
+import { standIn, zoneChildren } from './nodes-runtime.mjs';
 import { trimTileCache } from './dzi-worker.mjs';   // Part 3 §5：吃紧时收紧 OSD 解码瓦片缓存
 let lastTileCache = 1e9;   // 只减不增：三维页报的目标张数单调收紧，避免来回抖
 // ---------------- 庄园剖面（kind=estate） ----------------
@@ -112,7 +112,7 @@ export async function openEstate(id, m, hadPrev) {
     $('#loading').classList.add('done'); estateActs('');
     f.contentWindow?.postMessage({ type: 'estate:resume' }, SUB_ORIGIN);
     applyCredit(m);   // 署名（ⓘ）：没有署名词条时收起来，不留空框（任务三）
-    estateLook(); estateInset(); estateRoom(); focusAfterGo(); postState(); post({ type: 'eden-map:loaded' });
+    estateLook(); estateInset(); estateRoom(); estateFocusPending(); focusAfterGo(); postState(); post({ type: 'eden-map:loaded' });
     return;
   }
   // Part 3 §3：发新租约前把上一份彻底摘掉（挂起的、淡出中的都算），保证任何时刻只有一个活着的三维上下文
@@ -156,7 +156,7 @@ function onEstateReady() {
   if (weak3d && weak3d !== f) { try { weak3d.remove(); } catch (e) {} weak3d = null; }   // 上一份租约在这里收尾
   stopTileTo3d(true);   // 三维页已经接管画面：不再上传底图快照
   f.classList.add('on'); estateActs(''); lp().done(); $('#loading').classList.add('done'); focusAfterGo();
-  estateLook(); estateInset(); estateRoom(); estateStash(); estateNpcs();
+  estateLook(); estateInset(); estateRoom(); estateFocusPending(); estateStash(); estateNpcs();
   post({ type: 'eden-map:loaded' });
   // 庄园淡入完成后再关掉瓦片地图（释放解码内存）
   setTimeout(() => { if (est?.frame === f && REG.maps[cur]?.kind === 'estate') { viewer.close(); untrackAll(); viewer.clearOverlays(); } }, 240);
@@ -187,6 +187,7 @@ export function estateLook() {
   let fps = false; try { fps = window.TCStore?.get('edenMapFps') === '1'; } catch (e) {}
   w.postMessage({ type: 'estate:fps', on: fps }, SUB_ORIGIN);   // 调试：显示帧率——三维子页自己画一份（画布角上，带 tier / draws），开着子页时外层顶栏那份就该让位，不然同时看到两个数字（U，2026-09-28）
   setFpsMeter(false);
+  w.postMessage({ type: 'estate:children', zones: estateZones(est.id) }, SUB_ORIGIN);   // 区域下的子地图（运行时节点树）：三维页据此给区域卡加「进入三维」，语言切换时标题跟着重发
   w.postMessage({ type: 'estate:chat', id: chatId || '' }, SUB_ORIGIN);   // 房间图集「按聊天」作用域用：庄园页读不到 SillyTavern 上下文，靠这条消息拿 chatId
 }
 // Part 8-1：世界藏物表下发给三维页（宿主 → 查看器 app/loot.mjs → 庄园）；已在手里的 id 一并下发给它对账。
@@ -203,6 +204,9 @@ export function estateNpcs() {
   const d = window.TCWander?.describe?.() || {};
   w.postMessage({ type: 'estate:routine', schedule: window.TCWander?.scheduleOf?.() || null, clock: d.clock || null }, SUB_ORIGIN);
 }
+// S2-B：三维页里区域下的子地图 { 区域 id: [{ node, title }] }；从子地图返回（面包屑 / 上一级带 data-focus）时把落点区域聚焦
+const estateZones = id => Object.fromEntries(Object.entries(zoneChildren(id)).map(([z, ks]) => [z, ks.map(k => ({ node: k, title: nm(REG.maps[k], 'title') }))]));
+function estateFocusPending() { const f = pendingFocus; if (f) { setPendingFocus(null); estateFocus(f); } }
 /**
  * 任务三：把某个名字交给三维页聚焦（地点卡里的【进入三维视口】指到的就是当前这张三维图时用）。
  * 三维页自己按房间名 / 别名 / 热点找人，找不到就安静不动。没开 / 没就绪 → false。
@@ -223,6 +227,7 @@ window.TC3d = { live: () => live3d, release: release3d, snapping: () => snapping
 window.addEventListener('message', e => {
   if (!est || e.source !== est.frame.contentWindow || (PR && !PR.accept(e.data, '（子页 → 查看器）'))) return;
   if (e.data?.type === 'estate:ready') onEstateReady();
+  if (e.data?.type === 'estate:go' && typeof e.data.node === 'string' && Object.values(zoneChildren(est.id)).flat().includes(e.data.node)) go(e.data.node);   // 只认当前三维页区域下的子地图
   if (e.data?.type === 'estate:fail') onEstateFail(e.data.reason);
   if (e.data?.type === 'estate:progress' && !est.ready) lp().set(e.data.loaded, e.data.total, 'bytes');   // fix3：glb 字节进度
   // Part 3 §5：三维页报「内存 / 显存吃紧」→ 收紧 OSD 的解码瓦片缓存（只减不增，避免来回抖）

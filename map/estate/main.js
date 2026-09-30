@@ -143,8 +143,8 @@ const HC = V((HOUSE_BOX.x0 + HOUSE_BOX.x1) / 2, (HOUSE_BOX.y0 + HOUSE_BOX.y1) / 
 
 /* ---------------- UI 文案 ---------------- */
 const TXT = {
-  zh: { ext: '外观', xray: '内透', sect: '剖切', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '浮岛庄园 · 主楼地上三层 + 地下两层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', estate: '室外', loading: '加载中…', loadingP: '加载模型 {p}', gallery: '衣帽间图集', restricted: '按原卡 · 不描述', card: '卡设定', inferred: '地图自设（卡未写）', houseLoading: '载入室内…' },
-  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Floating-isle estate · house: 3 floors + 2 basements', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', size: 'Area', use: 'Notes', access: 'Access', estate: 'Grounds', loading: 'Loading…', loadingP: 'Loading model {p}', gallery: 'Wardrobe photos', restricted: 'Per the card · not described', card: 'From the card', inferred: 'Repository inference (not in card)', houseLoading: 'Loading interior…' },
+  zh: { ext: '外观', xray: '内透', sect: '剖切', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '浮岛庄园 · 主楼地上三层 + 地下两层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', estate: '室外', loading: '加载中…', loadingP: '加载模型 {p}', gallery: '衣帽间图集', restricted: '按原卡 · 不描述', card: '卡设定', inferred: '地图自设（卡未写）', houseLoading: '载入室内…', enter3d: '进入三维' },
+  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Floating-isle estate · house: 3 floors + 2 basements', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', size: 'Area', use: 'Notes', access: 'Access', estate: 'Grounds', loading: 'Loading…', loadingP: 'Loading model {p}', gallery: 'Wardrobe photos', restricted: 'Per the card · not described', card: 'From the card', inferred: 'Repository inference (not in card)', houseLoading: 'Loading interior…', enter3d: 'Enter 3D' },
 };
 const tx = (k, v = {}) => (TXT[LANG][k] || TXT.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
 const floorName = (i) => LANG === 'en' ? `${FLOORS[i].id} · ${FLOOR_EN[FLOORS[i].id]}` : `${FLOORS[i].id} · ${FLOORS[i].name}`;
@@ -736,7 +736,8 @@ function cardHTML(it) {
       : `<h3>Estate hover car</h3><div class="sub">Grounds · drive in front of the portico</div><div class="row"><em>Notes</em>The estate's own hover cars: no wheels, they float just above the ground on a soft thruster glow.</div><div class="row"><em>Parking</em>Hover Garage (by the service court) / Vehicle Pad</div><div class="acts"><button class="garage" type="button">Go to the garage ›</button></div>`;
   }
   if (it.kind === 'area') {
-    return `<h3>${esc(nameOf(it))}</h3><div class="sub">${esc(tx('estate'))}${zh && d.en ? ' · ' + esc(d.en) : ''}</div>` + (d.alias?.length && zh ? `<div class="row"><em>别名</em>${esc(d.alias.filter((a) => /[一-鿿]/.test(a)).slice(0, 4).join('、'))}</div>` : '');
+    return `<h3>${esc(nameOf(it))}</h3><div class="sub">${esc(tx('estate'))}${zh && d.en ? ' · ' + esc(d.en) : ''}</div>` + (d.alias?.length && zh ? `<div class="row"><em>别名</em>${esc(d.alias.filter((a) => /[一-鿿]/.test(a)).slice(0, 4).join('、'))}</div>` : '')
+      + (childrenOf(it) ? `<div class="acts">${childrenOf(it).map((c) => `<button class="enter3d" type="button" data-node="${esc(c.node)}" title="${esc(c.title)}">${esc(tx('enter3d'))} ›</button>`).join('')}</div>` : '');
   }
   const custom = getCustomName(d.name);
   let h = `<h3>${esc(custom || nameOf(it))}</h3><div class="sub">${esc(floorName(it.floor))} · ${esc(d.id)}</div>`;
@@ -755,6 +756,9 @@ function cardHTML(it) {
   if (GALLERY[d.name]) h += `<div class="acts"><button class="gal" type="button">${tx('gallery')} ›</button></div>`;
   return h + roomCustomBlockHTML(d.name, LANG);
 }
+// 区域下挂着的子地图（宿主按运行时节点树发来的 estate:children）：有子节点的区域，卡片带「进入三维」、双击直接进
+let CHILDREN = {};
+const childrenOf = (it) => { const c = it?.kind === 'area' ? CHILDREN[it.d.id] : null; return c?.length ? c : null; };
 let cardFor = null, cardAt = null;
 const tip = $('#tip');
 let tipFor = null;
@@ -765,6 +769,7 @@ function showCard(it, x, y) {
   cardAt = null; card.classList.add('on', 'pinned');
   if (it === pinned && C3.sheet.tab !== 'room' || !C3.sheet.open) C3.sheet.setTab('room', C3.sheet.state === 'full' ? 'full' : 'half');   // 点选 → 抽屉半开到「房间」
 }
+card.addEventListener('click', (e) => { const b = e.target.closest('.enter3d'); if (!b) return; e.stopPropagation(); post({ type: 'estate:go', node: b.dataset.node }); });
 card.addEventListener('click', (e) => { if (!e.target.closest('.garage')) return; e.stopPropagation(); const g = ITEMS.find((it) => it.kind === 'area' && it.d.id === 'garage'); if (g) focusItem(g); });
 let GALS = null;
 card.addEventListener('click', async (e) => {
@@ -987,7 +992,7 @@ renderer.domElement.addEventListener('dblclick', (e) => {
   const pr = pickProp(e.clientX, e.clientY); if (pr) { takeProp(pr); return; }
   dbl(pickAt(e.clientX, e.clientY));
 });
-function dbl(it) { if (it) { focusItem(it); postSelect(it); } else resetView(); }
+function dbl(it) { const c = childrenOf(it); if (c) { post({ type: 'estate:go', node: c[0].node }); return; } if (it) { focusItem(it); postSelect(it); } else resetView(); }
 let hoverEv = null, hoverRaf = 0;
 function doHover() {
   hoverRaf = 0; const e = hoverEv; if (!e) return;
@@ -1035,7 +1040,7 @@ window.addEventListener('keydown', (e) => {
 // 卡设定房间（查看器的「自定义 → 在地图上看」会带 card: { name, floor, poly }）：直接取精确多边形那一间
 function focusRoomMsg(name, c) {
   let it = c && c.name === name ? findCard(c) : null;
-  if (!it) it = findByName(name);
+  if (!it) it = findByName(name) || ITEMS.find((x) => x.kind === 'area' && x.d.id === name);   // 区域也可以按 id 指（宿主的 data-focus / 子地图的锚点是区域 id）
   if (it) focusItem(it); else unpin();
 }
 function post(msg) { if (IN_FRAME) try { window.parent.postMessage(msg, '*'); } catch (e) { } }
@@ -1043,6 +1048,7 @@ window.addEventListener('message', (e) => {
   if (IN_FRAME && e.source !== window.parent) return;
   const d = e.data; if (!d || typeof d !== 'object' || typeof d.type !== 'string' || !d.type.startsWith('estate:')) return;
   if (d.type === 'estate:room') focusRoomMsg(d.name, d.card);
+  else if (d.type === 'estate:children' && d.zones && typeof d.zones === 'object') { CHILDREN = d.zones; cardFor = null; tipFor = null; if (pinned) showCard(pinned); }
   else if (d.type === 'estate:floor') { const m = parseFloor(d.floor); if (m != null) setMode(m, { fly: true }); }
   else if (d.type === 'estate:inset' && Number.isFinite(d.left)) { document.documentElement.style.setProperty('--inset', Math.max(6, d.left) + 'px'); frustum(); needs = true; }
   else if (d.type === 'estate:pause') { paused = true; }   // 查看器休眠：停渲染循环，模型与 GPU 资源留着

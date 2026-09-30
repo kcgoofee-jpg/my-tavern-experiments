@@ -32,3 +32,9 @@ node tools/browser/accept.mjs /tmp/accept --only first,fly,estate
 | `shot(page, dir, name)` / `reporter(dir)` | 截图；✓ / ✗ 记录与 results.json、summary.md |
 
 新脚本放 scratchpad 或 `tools/browser/` 下，`import * as B from './lib.mjs'`，结构照 `accept.mjs`。只开一个浏览器实例，跑完 `closeAll()`。
+
+## 拓扑下钻探针（S2-B）
+```bash
+node tools/browser/topo_dairy.mjs /tmp/topo_dairy [--shots 截图目录]
+```
+庄园农场区域卡有「进入三维」→ 进入挤奶厅（面包屑以它结尾、只有一个 WebGL 上下文）→ 上一级 / 面包屑返回并聚焦农场；双击区域同样进入；设置里没有入口、任何标记都不链到挤奶厅；再在 375 px 走一遍。等待一律用条件，不用固定延时。

@@ -307,3 +307,19 @@ blocker: none
 open: (a) pack_town red on the baseline too (logbuf writes the un-namespaced edenMapLogCur under a non-eden pack): chip raised, needs a decision only if you want it elsewhere. (b) The dairy has no entry point in the UI until S2-B (only go('dairy'), EdenMap.flyTo({ map: 'dairy' }), or ?map=dairy). (c) docs/todo.md still lists S1-impl-1/2 as open although their RESULT blocks say DONE (not touched here).
 cleanup: done (my probe servers stopped, the scratch baseline worktree removed, no launch.json entries)
 === END ===
+
+=== RESULT S2-B ===
+status: DONE
+items: T1 ✓ T2 ✓ T3 ✓ T4 ✓ T5 ✓ T6 ✓
+commits: b142e73 feat(protocol): estate:children / estate:go   (T1)
+         (this commit) feat(estate): enter a zone's child 3D view from its card or by double-click; back focuses the zone; topo_dairy probe   (T2–T6, docs, this block)   (SHAs may change on rebase)
+pushed: head #<N> (see the push output; the head bump follows this commit)
+tests: node 717/718 (1 skipped; baseline 713/714, +4: 1 protocol, 3 nodes_runtime) | smoke PASS | arch PASS | probes: topo_dairy=PASS(20 checks, desktop + 375 px) accept=PASS webgl_single_ctx=PASS (peak 1 frame)
+screenshots: ~/eden-map-review/s2/ estate_farm_card.png (zone card with 「进入三维 ›」), dairy_view.png, estate_back_on_farm.png, estate_farm_card_375.png, dairy_view_375.png
+mechanism: host -> page `estate:children` { zones: { regionId: [{ node, title }] } } from runtime.zoneChildren(estate id) (children whose node anchor is a region id of a 3D parent), sent from estateLook so it repeats on load, ready, resume and language change; page -> host `estate:go` { node }, accepted only when the node is a zone child of the open page. The page shows the neutral 「进入三维」 / "Enter 3D" button on a zone card that has children and enters on double-click of the zone. Back: the up button and the breadcrumb link to a 3D parent carry `data-focus` = the child's anchor zone id; go() stores it as pendingFocus and the host sends estate:room when the page is ready (openEstate consumed no pendingFocus for a 3D page before); the page resolves a zone by id as well as by name.
+T5: runtime.strip(id) = the group's declared levels when they are all members of the map's group, else the map's own single button (the K-R35 sibling fallback lists every site, so it is rejected), [] without a group. layers.mjs renders the strip, the phone quick list, the here badges and PageUp/PageDown from it; without a runtime it falls back to REG.groups. The node test pins strip(id) == the S2-A registry strip for every map of both packs: no map differs (the estate was already a layer of its group, the dairy has no group and stays without a strip; its chain is in the breadcrumb).
+deviations: (1) The prompt says the dairy chain adds the estate to a strip; it does not: the strip of a group-less map stays empty (identical to today), the estate is in the breadcrumb. (2) Zones are matched by id in the page (focusRoomMsg falls back to the zone id): the page indexed areas by name / en / alias only, so the anchor id could not be resolved. (3) Standalone (non-embedded) estate page has no host: children stay empty there.
+blocker: none
+open: none
+cleanup: done (my probe server on 5365 stopped, no launch.json entries, the scratch worktree stays until push)
+=== END ===

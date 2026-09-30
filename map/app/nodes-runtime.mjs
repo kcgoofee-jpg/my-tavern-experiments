@@ -13,8 +13,11 @@ const viewIds = n => (typeof n.view === 'string' ? [n.view] : Array.isArray(n.vi
  *   crumbs(id)    map ids from the root to `id` (inclusive); nodes of the tree that are not maps (groups, landmarks) are skipped
  *   parent(id)    nearest ancestor map id | null          ancestors(id)  the same, nearest first      children(id)  map ids whose parent is `id`
  *   levels(id)    K-R35 level switcher of the map (map ids; [] below two)
+ *   strip(id)     the layer strip of a map: its group's levels (declared by the pack), a single-layer group = its own one button, no group = []
  *   kind(id)      kind of the map's own view ('tiles', 'model3d', ...) | null              isScene(id)  a 3D page
  *   standIn(id)   { map, marker } | null: the flat map (and the marker on it) that stands for a 3D page (K-R31, K-R32)
+ *   zoneChildren(id)  { region id: [map id] } the children of `id` that are anchored to a region (zone) of its 3D page; {} when none
+ *   anchorIn(id)  the region of the parent's 3D page that `id` is anchored to | null (a marker anchor on a flat parent is not a region)
  *   host(id)      the node that stands for the map: itself, or for a 3D page the landmark that shows it
  * A 3D page shown by landmarks under several places belongs to the place of the last-declared one (v1 kept one `parent` per page);
  * its stand-in is the first landmark of that place that shows it.
@@ -38,6 +41,7 @@ export function makeRuntime(inputs = {}) {
   const parent = id => up.get(id) ?? null;
   const ancestors = id => { const out = []; for (let p = parent(id); p && !out.includes(p) && out.length < 64; p = parent(p)) out.push(p); return out; };
   const kind = id => views[id]?.kind || null;
+  const levels = id => { const h = host(id); return h === null ? [] : levelsOf(tree, views, ui, h).filter(isMap); };
   const standIn = id => {
     if (kind(id) !== 'model3d') return null;
     const h = host(id); if (h === null) return null;
@@ -52,8 +56,18 @@ export function makeRuntime(inputs = {}) {
     has: id => isMap(id) && (tree.has(id) || shown.has(id)),
     crumbs: id => [...ancestors(id).reverse(), id],
     children: id => ids.filter(k => up.get(k) === id),
-    levels: id => { const h = host(id); return h === null ? [] : levelsOf(tree, views, ui, h).filter(isMap); },
+    levels,
     isScene: id => kind(id) === 'model3d',
+    strip: id => {   // the K-R35 sibling fallback (levels of sites that belong to other groups) is not this map's strip
+      const g = maps[id]?.group; if (!g) return [];
+      const lv = levels(id); return lv.includes(id) && lv.every(k => maps[k]?.group === g) ? lv : [id];
+    },
+    anchorIn: id => { const a = tree.get(id)?.anchor; return typeof a === 'string' && a && kind(parent(id)) === 'model3d' ? a : null; },
+    zoneChildren: id => {
+      const out = {}; if (kind(id) !== 'model3d') return out;
+      for (const k of ids) { if (up.get(k) !== id) continue; const a = tree.get(k)?.anchor; if (typeof a === 'string' && a) (out[a] ||= []).push(k); }
+      return out;
+    },
   };
 }
 
@@ -67,4 +81,7 @@ export const crumbs = id => RT?.crumbs(id) ?? [id];
 export const parentMap = id => RT?.parent(id) ?? null;
 export const childMaps = id => RT?.children(id) ?? [];
 export const standIn = id => RT?.standIn(id) ?? null;
+export const anchorIn = id => RT?.anchorIn(id) ?? null;
+export const zoneChildren = id => RT?.zoneChildren(id) ?? {};
+export const strip = id => RT?.strip(id) ?? null;   // null = no runtime: the caller falls back to the registry's groups
 export const isScene = id => !!RT?.isScene(id);

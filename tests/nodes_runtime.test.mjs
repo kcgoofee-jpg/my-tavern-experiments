@@ -65,3 +65,25 @@ test('facade: no runtime answers "nothing above, nothing below"; buildRuntime sw
   assert.deepEqual(crumbs('tc_mid'), ['world', 'tc_mid']); assert.equal(parentMap('tc_mid'), 'world'); assert.ok(childMaps('tc_mid').length > 10); assert.equal(isScene('lm_cathedral'), true);
   assert.deepEqual(standIn('eden_estate'), { map: 'tc_upper', marker: 'eden' });
 });
+
+test('zone children: the dairy parlour hangs under the farm zone of the estate page; the zone id is one the page knows', () => {
+  assert.deepEqual(eden.zoneChildren('eden_estate'), { dairy: ['dairy'] });
+  assert.equal(eden.anchorIn('dairy'), 'dairy'); assert.equal(eden.anchorIn('eden_estate'), null);
+  const zones = J('map/estate/model/zones.json').zones.map(z => z.id);
+  for (const z of Object.keys(eden.zoneChildren('eden_estate'))) assert.ok(zones.includes(z), z);   // the page and the host agree on zone ids
+  for (const id of Object.keys(MAPS.maps)) if (id !== 'eden_estate') assert.deepEqual(eden.zoneChildren(id), {}, id);
+  assert.deepEqual(town.zoneChildren('world'), {});
+});
+
+test('layer strip: strip(id) is what the switcher rendered from the registry groups, for every map of both packs', () => {
+  const today = (reg, groups, id) => { const g = reg[id].group && groups[reg[id].group]; return g ? g.layers : []; };   // the S2-A renderer: one button for a single-layer group, none without a group
+  for (const [rt, reg, groups] of [[eden, MAPS.maps, MAPS.groups || {}], [town, TOWN.maps.maps, TOWN.maps.groups || {}]])
+    for (const id of Object.keys(reg)) assert.deepEqual(rt.strip(id), today(reg, groups, id), id);
+  assert.deepEqual(eden.strip('tc_mid'), ['eden_estate', 'tc_upper', 'tc_mid', 'tc_low']);   // the estate is a layer of its group (unchanged)
+  assert.deepEqual(eden.strip('site_fief3'), ['site_fief3']);   // a single-layer group keeps its one button: the K-R35 sibling fallback (levels) would list every site
+  assert.ok(eden.levels('site_fief3').length > 1);
+  assert.deepEqual(eden.strip('dairy'), []); assert.deepEqual(eden.strip('lm_cathedral'), []); assert.deepEqual(eden.strip('world'), []);
+});
+test('layer strip: no runtime answers null (the viewer falls back to the registry groups)', async () => {
+  const m = await import('../map/app/nodes-runtime.mjs'); m.buildRuntime(null); assert.equal(m.strip('tc_mid'), null); buildRuntime(EDEN);
+});
