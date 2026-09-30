@@ -10,6 +10,7 @@ import { HX, focusStart, hereRes, setUserMoved, userMoved } from './locate.mjs';
 import { TCSettings, kbdHelp, showLay, showSet } from './settings.mjs';
 import { NT, placeLayers, toggleLabels } from './shell.mjs';
 import { P } from './plugins.mjs';
+import { crumbs, parentMap } from './nodes-runtime.mjs';
 // v0.9.6 手机层切换器：收起时点当前层 = 展开；展开后点任一层 = 切过去并收起；点别处收起
 $('#layers').addEventListener('click', e => { if (!narrowNow()) return; const nav = $('#layers'), b = e.target.closest('button');
   if (nav.classList.contains('compact')) { if (b) { e.stopPropagation(); e.preventDefault(); nav.classList.remove('compact'); } return; }
@@ -20,8 +21,7 @@ document.addEventListener('pointerdown', e => { if (!e.target.closest?.('#layers
 $('#layers').addEventListener('wheel', e => { if (document.body.classList.contains('estate')) e.preventDefault(); }, { passive: false });
 
 export function renderNav() {
-  const m = REG.maps[cur], chain = [];
-  for (let k = cur; k; k = REG.maps[k].parent) chain.unshift(k);
+  const m = REG.maps[cur], chain = crumbs(cur);
   $('#crumbs').innerHTML = chain.map((k, i) => { const ti = nm(REG.maps[k], 'title');
     return i < chain.length - 1 ? `<a data-go="${k}" role="button" tabindex="0">${esc(ti)}</a><span class="sep" aria-hidden="true">›</span>` : `<b aria-current="page">${esc(ti)}</b>`; }).join('');
   const g = m.group && REG.groups[m.group], nav = $('#layers');
@@ -31,7 +31,7 @@ export function renderNav() {
     return `<button type="button" data-go="${k}" class="${k === cur ? 'on' : ''}" ${k === cur ? 'aria-current="page"' : ''} ${planned ? `disabled title="${esc(tx('layers.planned', '制作中'))}"` : ''}>${esc(nm(L.layer))}<i class="hd" title="${esc(tx('layers.here', '当前地点在这一层'))}"></i><em class="evn"></em><small>${esc(planned ? tx('layers.planned', '制作中') : nm(L.layer, 'alt'))}</small></button>`; }).join('');
   nav.classList.add('compact');
   // 上一级（桌面顶栏 ‹）与「⋯」首页的切层快捷（手机、三维页）
-  const par = m.parent && REG.maps[m.parent]; $('#upBtn').hidden = !par; if (par) { $('#upBtn').dataset.go = m.parent; $('#upBtn').title = tx('act_up', `返回${nm(par, 'title')}`, { title: nm(par, 'title') }); }
+  const pid = parentMap(cur), par = pid && REG.maps[pid]; $('#upBtn').hidden = !par; if (par) { $('#upBtn').dataset.go = pid; $('#upBtn').title = tx('act_up', `返回${nm(par, 'title')}`, { title: nm(par, 'title') }); }
   $('#setPop .qlayers').innerHTML = g ? g.layers.map(k => { const L = REG.maps[k], pl = L.status === 'planned';
     return `<button type="button" class="btn${k === cur ? ' on' : ''}" data-go="${k}" ${k === cur ? 'aria-current="page"' : ''} ${pl ? 'disabled' : ''}>${esc(nm(L.layer))}</button>`; }).join('') : '';
   updateLayerBadges(); placeLayers();

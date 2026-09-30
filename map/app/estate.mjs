@@ -8,13 +8,14 @@ import { applyCredit, go } from './nav.mjs';
 import { focusAfterGo, onEsc, renderNav, stepLayer } from './layers.mjs';
 import { untrackAll } from './markers.mjs';
 import { estPlan, hereRes } from './locate.mjs';
-import { q3Pref, showSet } from './settings.mjs';
+import { q3Pref } from './settings.mjs';
 import * as TCCvd from './cvd.mjs';
 import { PACK } from './pack.mjs';   // 三维子页的包注入（__packId / __packStrings）：子页读不到清单，语言键与包内文案随页带进去
 import { P } from './plugins.mjs';   // 空间化背包 TCInv：三维发光道具的「拿到手」对账
 import { busOn } from './bus.mjs';
 import { chatId } from './extapi.mjs';
 import { setFpsMeter } from './fps.mjs';
+import { standIn } from './nodes-runtime.mjs';
 import { trimTileCache } from './dzi-worker.mjs';   // Part 3 §5：吃紧时收紧 OSD 解码瓦片缓存
 let lastTileCache = 1e9;   // 只减不增：三维页报的目标张数单调收紧，避免来回抖
 // ---------------- 庄园剖面（kind=estate） ----------------
@@ -86,11 +87,8 @@ function startTileTo3d(f) {
 const EST_FAIL_KEY = 'edenMapEstateFail';
 export let estFail = TCStore.get(EST_FAIL_KEY) === '1';
 export const setEstFail = on => { estFail = on; on ? TCStore.set(EST_FAIL_KEY, '1') : TCStore.remove(EST_FAIL_KEY); };
-// 庄园的「平面替身」：链接到它的那个地标（上层的「伊甸庄园」）
-export function estateStandIn(eid) {
-  for (const [k, L] of Object.entries(REG.maps)) for (const [mk, v] of Object.entries(L.markers || {})) if (v.link?.map === eid && L.status !== 'planned') return { map: k, marker: mk };
-  return null;
-}
+// 三维页的「平面替身」：节点树里它（或包着它的地方）落在平面图上的位置（上层的「伊甸庄园」地标）
+export const estateStandIn = standIn;
 const THREE_CDN = /https:\/\/cdn\.(?:jsdelivr\.net|jsdmirror\.com)\/npm\/three@0\.160\.0\//g;
 // 注入庄园页的小脚本：模块脚本（main.js 或它 import 的三维库）加载失败时回传 estate:fail
 const EST_HOOK = `<script>(function(){var f=0;function fail(r){if(f)return;f=1;try{parent.postMessage({type:'estate:fail',reason:r},'*')}catch(e){}}` +
@@ -248,17 +246,8 @@ busOn({ key: 'estate.lootMsg', type: 'message', fn: e => {
 } });
 addEventListener('resize', () => estateInset());
 // ---------------- 通用三维查看器（props/viewer3d.html，maps.json 里带 viewer3d 的 kind=estate 地图） ----------------
-// 测试入口：maps.json 里 test: true 的 viewer3d 地图，在设置弹层底部各放一个按钮（不进层切换器、不参与当前地点匹配）。
 // EdenMap.flyTo({ map, hotspot })：切到该图（没开就先切），查看器就绪后发 v3d:fly；hotspot = 清单 hotspots[].id。
 let v3dPending = null;
-export function v3dEntries() {
-  if (!REG) return;
-  for (const [id, m] of Object.entries(REG.maps)) { if (!m.test || !m.viewer3d) continue;
-    let b = document.getElementById('v3dTest_' + id);
-    if (!b) { b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'v3dTest_' + id; b.style.marginTop = 'var(--sp-4)';
-      b.onclick = () => { showSet(false); go(id); }; $('#v3dTests').appendChild(b); }
-    b.textContent = nm(m, 'title'); }
-}
 export function v3dFly({ map, hotspot } = {}) {
   if (!REG?.maps[map]?.viewer3d) return false;
   if (cur === map && est?.ready) { est.frame.contentWindow?.postMessage({ type: 'v3d:fly', hotspot }, SUB_ORIGIN); return true; }

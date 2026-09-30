@@ -3,7 +3,7 @@ import { $, esc, post, tx } from './util.mjs';
 import { LANG, paintSegs, setTheme } from './i18n.mjs';
 import { buildInfo } from './topbar.mjs';
 import { tierAvail } from './tiers.mjs';
-import { estateLook, narrowNow, v3dEntries } from './estate.mjs';
+import { estateLook, narrowNow } from './estate.mjs';
 import { firstRunHint, noticeRefresh, setActs } from './shell.mjs';
 import { P } from './plugins.mjs';
 import * as TCCvd from './cvd.mjs';
@@ -23,7 +23,7 @@ export function setPage(pg, quiet) {
   if (pg === 'update') renderSelfCheck();
   if (pg === 'license') renderLicense();
   if (pg === 'people') { const n = typeof P.TCChars !== 'undefined' ? P.TCChars.count() : 0; $('#chSrc').textContent = tx('s.ch_src_n', `当前聊天 ${n} 人`, { n }); }
-  if (pg === 'adv') { v3dEntries(); renderLine(); }
+  if (pg === 'adv') renderLine();
   if (pg === 'display') tierAvail();
   if (pg === 'data') { if (window.top !== window) post({ type: 'eden-map:storage-info' }); else window.renderStorage?.(null); }
 }

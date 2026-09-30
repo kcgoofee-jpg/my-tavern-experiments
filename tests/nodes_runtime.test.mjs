@@ -1,0 +1,62 @@
+// The viewer's node tree (map/app/nodes-runtime.mjs): breadcrumb, up button, warm-up neighbours, estate stand-in and levels read the
+// compat tree; each answer is compared with what the registry walk gave before (S2-A). Only the dairy parlour may differ.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { makeRuntime, buildRuntime, crumbs, parentMap, childMaps, standIn, isScene } from '../map/app/nodes-runtime.mjs';
+
+const ROOT = fileURLToPath(new URL('../', import.meta.url));
+const J = p => JSON.parse(fs.readFileSync(ROOT + p, 'utf8'));
+const MAPS = J('map/data/maps.json'), WORLD = J('map/data/world_markers.json'), NAMES = J('map/i18n/en.json').names, PLAN = J('map/data/eden_estate_rooms.json');
+const EDEN = { manifest: J('map/packs/eden/manifest.json'), maps: MAPS, world: WORLD, names: NAMES, plan: PLAN };
+const TOWN = { manifest: J('map/packs/town/manifest.json'), maps: J('map/packs/town/maps.json'), events: J('map/packs/town/events.json') };
+const eden = makeRuntime(EDEN), town = makeRuntime(TOWN);
+
+// what the viewer did before: `maps.<id>.parent` walked to the top, and the first marker whose `link` targets the page
+const oldChain = (maps, id) => { const c = []; for (let k = id; k; k = maps[k].parent) c.unshift(k); return c; };
+const oldStandIn = (maps, eid) => {
+  for (const [k, L] of Object.entries(maps)) for (const [mk, v] of Object.entries(L.markers || {})) if (v.link?.map === eid && L.status !== 'planned') return { map: k, marker: mk };
+  return null;
+};
+
+test('breadcrumb: the node tree gives the registry parent walk for every map of both packs', () => {
+  for (const [rt, reg] of [[eden, MAPS.maps], [town, TOWN.maps.maps]]) for (const id of Object.keys(reg)) if (id !== 'dairy') assert.deepEqual(rt.crumbs(id), oldChain(reg, id), id);
+  assert.deepEqual(eden.crumbs('dairy'), ['dairy']);   // a test-entry map is not in the tree yet (S2-A commit 2 moves it)
+});
+test('parent / children: children are the maps whose parent is the map; the maps without a parent are those the registry lists without one', () => {
+  for (const [rt, reg] of [[eden, MAPS.maps], [town, TOWN.maps.maps]]) {
+    const ids = Object.keys(reg), roots = ids.filter(id => rt.parent(id) === null);
+    assert.deepEqual(roots.filter(r => r !== 'dairy'), ids.filter(id => !reg[id].parent && id !== 'dairy'));   // the maps with no map above them (town has two: their group is not a map)
+    for (const id of ids) assert.deepEqual(rt.children(id), ids.filter(k => rt.parent(k) === id), id);
+    for (const id of ids) if (id !== 'dairy') assert.equal(rt.parent(id), reg[id].parent ?? null, id);
+  }
+  assert.ok(eden.children('tc_mid').includes('lm_cathedral'));
+});
+test('estate stand-in: the flat map and marker that stand for a 3D page match the old marker scan (the dairy and lm_well7 are new)', () => {
+  const now = {};
+  for (const [id, m] of Object.entries(MAPS.maps)) if (m.kind === 'estate') now[id] = eden.standIn(id);
+  assert.deepEqual(eden.standIn('eden_estate'), { map: 'tc_upper', marker: 'eden' });
+  const diff = Object.keys(now).filter(id => JSON.stringify(now[id]) !== JSON.stringify(oldStandIn(MAPS.maps, id)));
+  assert.deepEqual(diff, ['lm_well7']);   // lm_well7: only `link3d` marks point at it (no stand-in before)
+  assert.equal(oldStandIn(MAPS.maps, 'lm_well7'), null); assert.deepEqual(now.lm_well7, { map: 'tc_low', marker: 'well7' });
+  assert.equal(eden.standIn('tc_low'), null); assert.equal(eden.standIn('nope'), null);
+});
+test('levels: K-R35 switcher of a group member equals the registry group; a site has no switcher of its own group', () => {
+  for (const [gid, g] of Object.entries(MAPS.groups)) {
+    if (g.layers.length < 2) continue;
+    for (const k of g.layers) assert.deepEqual(eden.levels(k), g.layers, `${gid}/${k}`);
+  }
+});
+test('kind / isScene: 3D pages are the model3d views; flat maps are not', () => {
+  assert.ok(eden.isScene('eden_estate') && eden.isScene('lm_cathedral'));
+  assert.ok(!eden.isScene('tc_upper') && !eden.isScene('world') && !eden.isScene('nope'));
+  for (const [id, m] of Object.entries(MAPS.maps)) if (id !== 'dairy') assert.equal(eden.isScene(id), m.kind === 'estate', id);
+});
+test('facade: no runtime answers "nothing above, nothing below"; buildRuntime swallows a bad registry', () => {
+  assert.deepEqual(crumbs('x'), ['x']); assert.equal(parentMap('x'), null); assert.deepEqual(childMaps('x'), []); assert.equal(standIn('x'), null); assert.equal(isScene('x'), false);
+  assert.equal(buildRuntime({ maps: null }) instanceof Object || true, true);
+  buildRuntime(EDEN);
+  assert.deepEqual(crumbs('tc_mid'), ['world', 'tc_mid']); assert.equal(parentMap('tc_mid'), 'world'); assert.ok(childMaps('tc_mid').length > 10); assert.equal(isScene('lm_cathedral'), true);
+  assert.deepEqual(standIn('eden_estate'), { map: 'tc_upper', marker: 'eden' });
+});

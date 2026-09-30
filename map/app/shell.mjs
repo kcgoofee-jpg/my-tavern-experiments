@@ -8,6 +8,7 @@ import { jumpHere, setUserMoved, userMoved } from './locate.mjs';
 import { TCSettings, showSet } from './settings.mjs';
 import { P } from './plugins.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
+import { parentMap } from './nodes-runtime.mjs';
 // ---------------- 外壳（UI v2）：控制列、唯一抽屉、通知层、状态点 ----------------
 // 控制列 #dock：手机 = ⋯（设置首页，含上一级 / 关闭地图 / 切层）+ 缩放；桌面 = 层切换 + 缩放 + 标注。位置跟着抽屉（--sheet-h）/ 右栏（--rail-w-now）
 function makeDock() {
@@ -165,7 +166,7 @@ export function initE7() {
   busOn({ key: 'shell.storage', type: 'storage', fn: e => { if (e.key === 'edenMapFabPos' && window.__hand === 'auto') window.__applyHand(); } });   // 自动：悬浮按钮拖到另一边，地图跟着换
   initQuickZoom();
 }
-export function setActs() { const up = $('#actUp'), cl = $('#actClose'), hg = $('#actHere'), par = cur && REG?.maps[cur]?.parent, nar = narrowNow();
+export function setActs() { const up = $('#actUp'), cl = $('#actClose'), hg = $('#actHere'), par = cur && parentMap(cur), nar = narrowNow();
   up.hidden = !(nar && par && REG.maps[par]); if (!up.hidden) { up.dataset.go = par; up.textContent = t('act_up', { title: nm(REG.maps[par], 'title') }); }
   hg.hidden = !(nar && !$('#hereGo').hidden);
   cl.hidden = !nar || window.top === window; $('#setPop .acts').hidden = up.hidden && cl.hidden && hg.hidden; }

@@ -6,6 +6,7 @@ import { t } from './i18n.mjs';
 import { narrowNow } from './estate.mjs';
 import { renderAbout, showLay } from './settings.mjs';
 import { placeLayers } from './shell.mjs';
+import { parentMap } from './nodes-runtime.mjs';
 // ---------------- 顶栏（UI v2 §2.1）：清晰度、语言、主题、版本号都在设置「显示 / 更新与版本」里，顶栏不再放 ----------------
 // 图层开关：桌面在「图层 ▾」弹层；手机（或桌面放不下：窄窗口、EN、放大 200%）进「⋯」设置首页的快捷区
 const moreEls = () => [$('#layList')].filter(Boolean);
@@ -77,17 +78,17 @@ $('#build').addEventListener('click', () => {
   (navigator.clipboard ? navigator.clipboard.writeText(d) : Promise.reject()).then(done).catch(() => { prompt(t('copy_prompt'), d); });
 });
 export const getText = url => { if (!textCache.has(url)) textCache.set(url, fetch(url).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }).catch(e => { textCache.delete(url); throw e; })); return textCache.get(url); };   // 失败不留在缓存里（接手 review P1）
-// 大版本 2（docs/perf/v2.md）：只预热「走一步就到」的图——同组各层、上级、直接下级；测试件（test）不预热。
+// 大版本 2（docs/perf/v2.md）：只预热「走一步就到」的图——同组各层、上级、直接下级（都从节点树读）。
 // 同组各层取到 L10（切层最常用），其余只取 L8–9（先有个粗底，真打开时 OSD 再补细层），冷开总流量约少三成。
 const warmed = new Map();
 export async function warmOthers() {
   const thin = leanBg();   // 省流（含拿不到网络信息的触屏）：只取 JSON 与庄园页 HTML，不取 dzi、不取瓦片
   const c0 = cur, c = REG.maps[cur], gl = new Set(c?.group ? REG.groups[c.group]?.layers || [] : []);
-  const near = id => { const m = REG.maps[id]; return gl.has(id) || id === c?.parent || m.parent === cur; };
+  const up = parentMap(cur), near = id => gl.has(id) || id === up || parentMap(id) === cur;
   for (const [id, m] of Object.entries(REG.maps)) {
     if (cur !== c0) return;   // 预热途中切了图：交给新图那一轮
     const want = gl.has(id) ? 10 : 9;   // warmed：id → 已取到的最细层（按层记，后来进了同组还会补 L10）
-    if (id === cur || m.test || !near(id) || (warmed.get(id) || 0) >= want) continue;
+    if (id === cur || !near(id) || (warmed.get(id) || 0) >= want) continue;
     if (m.kind === 'estate' && m.src) { warmed.set(id, 99); getText(new URL(m.src, document.baseURI).href).catch(() => {}); continue; }   // 庄园页面文本（三维库本身不预取）
     if (m.status === 'planned' || !m.base) continue;
     if (m.data) getJSON(m.data);

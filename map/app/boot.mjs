@@ -39,7 +39,8 @@ import { emEmit, enNames, rebuildHere, setEnNames } from './extapi.mjs';
 import { firstRunHint, initE7, initShell } from './shell.mjs';
 import { initLayerHost, registry, registerCoreLayers, renderLayerMenu } from './layerhost.mjs';
 import { P } from './plugins.mjs';
-import { initPack, packData, packEvents, rebase } from './pack.mjs';
+import { PACK, initPack, packData, packEvents, rebase } from './pack.mjs';
+import { buildRuntime } from './nodes-runtime.mjs';   // 节点树：面包屑 / 上一级 / 庄园替身都从它读（S2-A）
 import { busOn } from './bus.mjs';
 // 多地图查看器：地图注册表 data/maps.json（世界 → 天城三层 → 以后的庄园剖面……）。
 // 底图都是 DZI 瓦片金字塔，只加载屏幕里看得见的部分；解码内存由屏幕大小和瓦片缓存上限决定。
@@ -60,7 +61,9 @@ async function mainInner() {
   if (!DICT || !Object.keys(DICT).length) { const zh = await getJSON('i18n/zh.json'); if (LANG !== 'zh') { setLANG('zh'); document.documentElement.lang = 'zh-CN'; } setDICT(zh || {}); }
   jsonCache.set('i18n/' + LANG + '.json', Promise.resolve(DICT));
   setEnNames(enDict?.names || null); rebuildHere();
-  if (packData('rooms')) getJSON(packData('rooms')).then(p => { if (!p?.rooms) return; setEstPlan(p); rebuildHere(); markHere($('#here').value); }).catch(() => {});   // v0.9.6：卡设定分层房间进当前地点词表（不挡启动）   // 当前地点 → 落点的词表（中英都认；加上本机自定义叫法）
+  const nodes = plan => buildRuntime({ manifest: PACK, maps: REG, world: M, names: enDict?.names || null, plan });
+  nodes(null);
+  if (packData('rooms')) getJSON(packData('rooms')).then(p => { if (!p?.rooms) return; setEstPlan(p); rebuildHere(); nodes(p); markHere($('#here').value); }).catch(() => {});   // v0.9.6：卡设定分层房间进当前地点词表（不挡启动）   // 当前地点 → 落点的词表（中英都认；加上本机自定义叫法）
   post({ type: 'eden-map:boot', pct: .9 });   // 数据文件已到
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点
   if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland);

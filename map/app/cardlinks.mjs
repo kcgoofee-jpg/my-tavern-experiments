@@ -10,8 +10,10 @@ export function linkHtml(l, { REG, nm, t, esc }, kind = 'go') {
   const label = (nm(l, 'label') || fallback).replace(/\s*[→›>]\s*$/, '');
   return `<a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}"${kind === '3d' ? ' data-link3d="1"' : ''} role="button" tabindex="0">${esc(label)}</a>`;
 }
-/** 这张图是不是「微观三维场景」（kind=estate：庄园剖面 / props 通用三维查看器都算） */
+/** 这张图是不是「微观三维场景」（kind=estate：庄园剖面 / props 通用三维查看器都算）——只看注册表条目的版本，节点树在手时用 sceneOf */
 export const isScene3d = (m) => !!m && m.kind === 'estate' && m.status !== 'planned';
+/** 图 id 是不是三维场景：调用方给了 ctx.scene（节点树：这张图的视图是 model3d）就听它的，否则退回注册表条目 */
+const sceneOf = (ctx, id) => (ctx.scene ? !!ctx.scene(id) : isScene3d(ctx.REG?.maps?.[id]));
 
 /**
  * 任务三：这个实体关联的微观三维场景是什么？返回 { map, focus } 或 null。判据全是数据事实，不写死任何名字：
@@ -21,11 +23,11 @@ export const isScene3d = (m) => !!m && m.kind === 'estate' && m.status !== 'plan
  * 都没有 → null（卡片不出现这个入口，绝不硬塞一个点了没反应的链接）。
  */
 export function scene3dOf(meta, ctx = {}) {
-  const { REG, cur } = ctx, maps = REG?.maps || {};
+  const { cur } = ctx;
   const focus = (ctx.nm ? ctx.nm(meta, 'name') : '') || meta?.name || '';
-  if (isScene3d(maps[meta?.link3d?.map])) return { map: meta.link3d.map, focus: meta.link3d.marker || focus };
-  if (isScene3d(maps[meta?.link?.map])) return { map: meta.link.map, focus: meta.link.marker || focus };
-  if (isScene3d(maps[cur])) return { map: cur, focus };
+  if (sceneOf(ctx, meta?.link3d?.map)) return { map: meta.link3d.map, focus: meta.link3d.marker || focus };
+  if (sceneOf(ctx, meta?.link?.map)) return { map: meta.link.map, focus: meta.link.marker || focus };
+  if (sceneOf(ctx, cur)) return { map: cur, focus };
   return null;
 }
 /** 三维视口入口：有三维场景就一定有这一条。目标图正好是当前图时标 data-same（点了走「同图聚焦」而不是重新打开） */

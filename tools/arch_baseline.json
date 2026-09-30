@@ -59,7 +59,7 @@
   "inline_style": {
     "map/app/clouds.mjs": 1,
     "map/app/depthhaze.mjs": 4,
-    "map/app/estate.mjs": 2,
+    "map/app/estate.mjs": 1,
     "map/app/feedback.mjs": 5,
     "map/app/fog.mjs": 3,
     "map/app/fps.mjs": 2,
