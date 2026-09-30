@@ -70,7 +70,10 @@ done
 ok=0
 for _ in 1 2 3 4 5 6; do
   sleep 1
-  if launchctl list 2>/dev/null | grep -q "$LABEL"; then ok=1; break; fi
+  # Capture first: under `set -o pipefail`, `launchctl list | grep -q` dies of SIGPIPE (rc 141) as soon as grep
+  # matches, so the label was never seen and a successful load was reported as a failure.
+  listed=$(launchctl list 2>/dev/null || true)
+  if grep -q "$LABEL" <<<"$listed"; then ok=1; break; fi
 done
 if [ "$ok" = 1 ]; then
   echo "已装载 ${LABEL}（KeepAlive：挂了自动重拉；单例锁保证只有一个派工）"
