@@ -21,8 +21,8 @@
 | P1 开局 | tc_mid | `checkpoint_c` | 层间检查点 | ✅ | 层间检查点与 7 号井 `map/props/well7/`（link3d） | 标准（r2 8 / 7） | 视觉样例 / 开局 |
 | P1 开局 | tc_mid | `old_apartment` | 旧公寓楼 | ✅ | 旧公寓楼 `map/props/old_apartment/` | 标准（r3 7.5 / 7） | 开局六 |
 | P1 开局 | tc_mid | `radiance_cathedral` | 辉光大教堂 | ✅ | 辉光大教堂 `map/props/cathedral/` | 标准（r3 7.5 / 7） | 开局八 |
-| P1 开局 | tc_upper | `kelly_residence` | 凯莉的宅邸 | ✅ | 凯莉的宅邸 `map/props/kelly_residence/` | 标准（r2 7 / 8） | 开局三 |
-| P1 开局 | tc_upper | `pm_residence` | 首相府 | ✅ | 首相府 `map/props/pm_residence/` | 标准（r2 7 / 7） | 开局五 |
+| P1 开局 | tc_upper | `kelly_residence` | 凯莉的宅邸 | ✅ | 凯莉的宅邸 `map/props/kelly_residence/` | 标准（r2 7 / 8） | 开局三；上层底图岛面：`blender/islands/isle10.py` 抠图（campaign r2 7.0/6.5，2026-10-01），标记移到别墅上 |
+| P1 开局 | tc_upper | `pm_residence` | 首相府 | ✅ | 首相府 `map/props/pm_residence/` | 标准（r2 7 / 7） | 开局五；上层底图岛面：`blender/islands/isle6.py` 抠图（campaign r2 7.0/6.5，2026-10-01） |
 | P2 机构 | tc_low | `amc_facility` | 资产管理委员会下层设施 | ✅ | 委员会下层设施 `map/props/amc_facility/` | 标准（r3 7 / 8） |  |
 | P2 机构 | tc_low | `enforcement_low` | 执法局下层分局 | ✅ | 执法局下层分局 `map/props/enforcement_low/` | 标准（r3 7.5 / 7） |  |
 | P2 机构 | tc_low | `outpost` | 防卫军前沿哨所 | ✅ | 防卫军前沿哨所 `map/props/outpost/` | 标准（r1 7 / 7） |  |
@@ -92,10 +92,10 @@
 | P3 其他 | tc_mid | `schneider_clinic` | 施奈德精密改造诊所 | 🆕 | 施奈德精密改造诊所 `map/props/schneider_clinic/` | 标准（r1 7.5 / 7） |  |
 | P3 其他 | tc_mid | `victoria_apartment` | 维多利亚的公寓 | ✅ | 维多利亚的公寓 `map/props/victoria_apartment/` | 标准（r1 7 / 7.5） |  |
 | P3 其他 | tc_upper | `eden` | 伊甸庄园 | ✅ | — | — |  |
-| P3 其他 | tc_upper | `league_club` | 庄园主联盟会所 | ✅ | 庄园主联盟会所 `map/props/league_club/` | 标准（r2 7.5 / 7） | isle9；宫殿式会所 + 顶光拍卖厅 |
+| P3 其他 | tc_upper | `league_club` | 庄园主联盟会所 | ✅ | 庄园主联盟会所 `map/props/league_club/` | 标准（r2 7.5 / 7） | isle9；宫殿式会所 + 顶光拍卖厅；上层底图岛面：`blender/islands/isle9.py` 抠图（campaign r2 7.0/6.0，2026-10-01） |
 | P3 其他 | tc_upper | `victor_estate` | 维克多庄园 | 🆕 | 岛资产 `blender/islands/isle4.py`（上层底图抠图） | 标准（campaign r2 7.5/6.5） | 2026-09-30 渲染战役：isle4 重建（旧宅 + 秋林 + 断锥），标记移到旧宅上 |
-| P3 其他 | tc_upper | `y_estate` | 「Y」的庄园 | 🆕 | — | — | 只标记；所在岛（isle5）是通用英式填充 |
-| P3 其他 | tc_upper | `zaibatsu_estate` | 罗斯柴尔德庄园 | ✅ | 罗斯柴尔德庄园 `map/props/rothschild_estate/` | 标准（r2 7.5 / 7.5） | isle30；府邸 + 玻璃冬季宴会厅 |
+| P3 其他 | tc_upper | `y_estate` | 「Y」的庄园 | 🆕 | 岛资产 `blender/islands/isle5.py`（上层底图抠图） | 标准（campaign r2 7.5/6.5） | 2026-10-01 渲染战役：isle5 重建（黑岩脊 + 针叶林 + 黑石宅屋脊 + 冷光结界边 + 吊灯尖刺），标记移到宅邸上 |
+| P3 其他 | tc_upper | `zaibatsu_estate` | 罗斯柴尔德庄园 | ✅ | 罗斯柴尔德庄园 `map/props/rothschild_estate/` | 标准（r2 7.5 / 7.5） | isle30；府邸 + 玻璃冬季宴会厅；上层底图岛面：`blender/islands/isle30.py` 抠图（campaign r1 7.5/6.0，2026-10-01） |
 | P3 其他 | tc_upper | `elite_academy` | 精英学院 | 🆕 | 精英学院 `map/props/elite_academy/` | 标准（r2 7.5 / 7.5） | isle25（Q11） |
 | P3 其他 | world | `hunting_camp` | 猎季营地 | 🆕 | 猎季营地 `map/props/hunting_camp/` | 标准（r2 7.5 / 6；模型已备，世界图标记待引擎支持三维入口） |  |
 | P3 其他 | yuanyu_city | `city_gate` | 原域东门 | ✅ | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |

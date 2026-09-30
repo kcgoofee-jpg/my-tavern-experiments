@@ -2,12 +2,12 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T21:13:17Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T22:15:16Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
 | standard | 51 | 0 | 0 | 0 | 0 | 0 | 51 |
-| hero | 5 | 1 | 5 | 5 | 6 | 0 | 22 |
+| hero | 13 | 1 | 2 | 0 | 6 | 0 | 22 |
 
 Below-gate (user spot-check): none
 
@@ -76,12 +76,12 @@ Below-gate (user spot-check): none
 | 3 | `isle:eden` | island | done | - |  |  | Eden Manor island (the user's own estate) - showpiece, user-approved |
 | 4 | `isle:silver_crown` | island | done | - |  |  | Rebuild island silver_crown |
 | 5 | `isle:isle4` | island | done | - |  |  | Rebuild island isle4 (victor_estate) |
-| 6 | `isle:isle5` | island | waiting | ship |  | waiting-on-freeze | Rebuild island isle5 (y_estate) |
-| 7 | `isle:isle6` | island | waiting | ship |  | waiting-on-freeze | Rebuild island isle6 (pm_residence) |
-| 8 | `isle:isle9` | island | waiting | ship |  | waiting-on-freeze | Rebuild island isle9 (league_club) |
-| 9 | `isle:isle10` | island | waiting | ship |  | waiting-on-freeze | Rebuild island isle10 (kelly_residence) |
+| 6 | `isle:isle5` | island | done | - |  |  | Rebuild island isle5 (y_estate) |
+| 7 | `isle:isle6` | island | done | - |  |  | Rebuild island isle6 (pm_residence) |
+| 8 | `isle:isle9` | island | done | - |  |  | Rebuild island isle9 (league_club) |
+| 9 | `isle:isle10` | island | done | - |  |  | Rebuild island isle10 (kelly_residence) |
 | 10 | `isle:isle25` | island | open | integrate |  |  | Rebuild island isle25 (elite_academy) |
-| 11 | `isle:isle30` | island | waiting | ship |  | waiting-on-freeze | Rebuild island isle30 (zaibatsu_estate) |
+| 11 | `isle:isle30` | island | done | - |  |  | Rebuild island isle30 (zaibatsu_estate) |
 | 12 | `base:tc_upper` | basemap | blocked | audit |  |  | Upper base map final |
 | 13 | `var:tc_upper:16k` | variant | blocked | render |  |  | Upper map 16k final |
 | 14 | `var:tc_upper:dawn` | variant | blocked | render |  |  | Upper map dawn period |
@@ -89,8 +89,8 @@ Below-gate (user spot-check): none
 | 16 | `var:tc_upper:dusk` | variant | blocked | render |  |  | Upper map dusk period |
 | 17 | `var:tc_upper:night` | variant | blocked | render |  |  | Upper map night period |
 | 18 | `estate:b1b2` | estate | open | final |  |  | Estate basement B1 / B2 interior refinement |
-| 19 | `lm:round_table_hall` | landmark | open | new |  |  | New model: round table hall |
-| 20 | `lm:sun_arena` | landmark | open | new |  |  | New model: sun arena |
-| 21 | `lm:union_tower` | landmark | open | new |  |  | New model: union tower |
+| 19 | `lm:round_table_hall` | landmark | done | - |  |  | New model: round table hall |
+| 20 | `lm:sun_arena` | landmark | done | - |  |  | New model: sun arena |
+| 21 | `lm:union_tower` | landmark | done | - |  |  | New model: union tower |
 | 22 | `base:world` | basemap | done | - |  |  | Final-spec audit / re-render of base map world |
 

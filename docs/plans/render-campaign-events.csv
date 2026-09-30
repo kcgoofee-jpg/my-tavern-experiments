@@ -505,3 +505,8 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T21:16:04Z,lm:union_tower,review-r2,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_tower); no separate model
 2026-09-30T21:16:04Z,lm:union_tower,final,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_tower); no separate model
 2026-09-30T21:16:04Z,lm:union_tower,ship,skip,hero-1,,user decision 2026-10-01: covered by the shipped glory_crown model (group props_tower); no separate model
+2026-09-30T22:15:16Z,isle:isle5,ship,done,hero-1,,"shipped: tiles, card-buildings row, worldbook --ship; check_maps + estate3d_manifest pass; y_estate marker onto the house (0.510, 0.135)"
+2026-09-30T22:15:16Z,isle:isle6,ship,done,hero-1,,"shipped: tiles, card-buildings row, worldbook --ship; check_maps + estate3d_manifest pass"
+2026-09-30T22:15:16Z,isle:isle9,ship,done,hero-1,,"shipped: tiles, card-buildings row, worldbook --ship; check_maps + estate3d_manifest pass"
+2026-09-30T22:15:16Z,isle:isle10,ship,done,hero-1,,"shipped: tiles, card-buildings row, worldbook --ship; check_maps + estate3d_manifest pass; kelly_residence marker onto the villa (0.6826, 0.7216)"
+2026-09-30T22:15:16Z,isle:isle30,ship,done,hero-1,,"shipped: tiles, card-buildings row, worldbook --ship; check_maps + estate3d_manifest pass"
