@@ -15,15 +15,16 @@ import './extapi.mjs';
 import './shell.mjs';
 import './host.mjs';
 import './bridge.mjs';
-import { initFpsMeter } from './fps.mjs';
+import { initFpsMeter, suspendFpsMeter } from './fps.mjs';
+import { initVisibilityGuard } from './visibility.mjs';
 import { M, REG, cur, pendingHome, setM, setPendingHome, setREG, setViewer, viewer } from './state.mjs';
 import { updateInsets } from './insets.mjs';
-import { $, PR, PROTO, coarse, getJSON, jsonCache, narrow, post, setNarrow, setPR } from './util.mjs';
+import { $, PR, PROTO, coarse, getJSON, jsonCache, narrow, post, setNarrow, setPR, SUB_ORIGIN } from './util.mjs';
 import { TIERS, autoTier, declutter, effTier, homeMode, initProgress, onOpen, refit, setTier } from './tiers.mjs';
 import { DICT, LANG, applyI18n, postState, setDICT, setLANG, setLang, t } from './i18n.mjs';
 import { layoutHeader, warmOthers } from './topbar.mjs';
 import { go } from './nav.mjs';
-import { estateLook, estatePlan, retryEstate } from './estate.mjs';
+import { est, estateLook, estatePlan, retryEstate } from './estate.mjs';
 import { closeCard } from './markers.mjs';
 import { ALIAS, applyZoomLimit, focusStart, hereRes, jumpHere, markHere, setEstPlan, setHX, setUserMoved, userMoved } from './locate.mjs';
 import { initSettings } from './settings.mjs';
@@ -120,6 +121,12 @@ async function mainInner() {
   $('#here').oninput = () => markHere($('#here').value);
   $('#here').onchange = () => { markHere($('#here').value); emEmit('here', { value: $('#here').value, resolved: hereRes($('#here').value) }); };   // 单独打开查看器时：输入框改完（回车 / 失焦）= 模拟 MVU 地点更新
   initSettings(); initE7(); initFpsMeter();
+  // P7-4：标签页切走 / 面板不可见时按下暂停位——FPS 读数循环停、三维子页停 rAF（模型与 GPU 资源留着，
+  // 与 eden-map:sleep 的 estate:pause 同一条协议），切回来原样恢复。
+  initVisibilityGuard({ target: $('#osd'), effects: {
+    onPause: () => { suspendFpsMeter(true); est?.frame?.contentWindow?.postMessage({ type: 'estate:pause' }, SUB_ORIGIN); },
+    onResume: () => { suspendFpsMeter(false); est?.frame?.contentWindow?.postMessage({ type: 'estate:resume' }, SUB_ORIGIN); },
+  } });
   { let ct = 0; const cb = $('#creditBtn'), cr = $('#credit');
     const show = on => { cr.hidden = !on; cb.setAttribute('aria-expanded', on); clearTimeout(ct); if (on) ct = setTimeout(() => show(false), 6000); };
     cb.onclick = e => { e.stopPropagation(); show(cr.hidden); }; cr.onclick = () => show(false); window.__creditShow = show; }

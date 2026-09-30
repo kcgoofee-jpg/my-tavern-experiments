@@ -32,7 +32,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CORE = ROOT / 'map' / 'core'
-PIPELINE = ['map/tavern/context.mjs', 'map/tavern/msgtext.mjs']
+PIPELINE = ['map/tavern/context.mjs', 'map/tavern/msgtext.mjs', 'map/tavern/sanitize.mjs', 'map/tavern/preset.mjs']
 Z_FILES = ['map/viewer.html'] + sorted(str(p.relative_to(ROOT)) for p in (ROOT / 'map' / 'app').glob('*.mjs'))
 MAX_CORE_LINES = 400
 
