@@ -30,9 +30,16 @@ export function floorState(f, deps = {}) {
   const lpTime = pt(d.varMap?.time);
   const stat = safe(() => d.perFloorStat?.(floor), null) || null;
   const raw = str(safe(() => d.getRaw?.(floor), '') || '', 200000);
-  const here = safe(() => str(typeof d.mvuGet === 'function' && stat ? d.mvuGet(stat, lpLoc) : '', 120), '')
+  let here = safe(() => str(typeof d.mvuGet === 'function' && stat ? d.mvuGet(stat, lpLoc) : '', 120), '')
     || safe(() => (typeof d.patchPlace === 'function' ? str(d.patchPlace(raw, lpLoc), 120) : ''), '');
-  const time = lpTime ? safe(() => str(typeof d.mvuGet === 'function' && stat ? d.mvuGet(stat, lpTime) : '', 40), '') : '';
+  let time = lpTime ? safe(() => str(typeof d.mvuGet === 'function' && stat ? d.mvuGet(stat, lpTime) : '', 40), '') : '';
+  // W3 关键帧兜底层（最低优先，标 approx）：MVU 变量与正文 JSONPatch 都拿不到地点时，退回关键帧摘要
+  // （tavern/keyframes.mjs 的会话缓存）——这是缓存不是真相，所以结果带 approx 让 UI 走「未确认」样式。
+  let approx = false;
+  if (!here && typeof d.keyAt === 'function') {
+    const k = safe(() => d.keyAt(floor), null);
+    if (k?.here) { here = str(k.here, 120); time = time || str(k.time, 40); approx = true; }
+  }
   const chars = [], seen = new Set();
   if (typeof d.mvuChars === 'function' && stat) {
     for (const c of safe(() => d.mvuChars(stat, here, str(d.varMap?.present, 80)), []) || []) {
@@ -46,7 +53,9 @@ export function floorState(f, deps = {}) {
       seen.add(name); chars.push({ name, place: str(c?.place, 120), floor, src: 'tag' });
     }
   }
-  return { floor, here, time, chars };
+  const out = { floor, here, time, chars };
+  if (approx) out.approx = true;
+  return out;
 }
 
 /** 一段时间窗里的玩家足迹 [{ floor, here, time }]：重画历史轨迹用——同一个地点连着好几楼只留第一处 */

@@ -606,13 +606,20 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   // ---------------- 时间轴回放（Part 5-4，tavern/timeline.mjs）：标题栏 ⏱ 进出，拖动滑块把地图退回那一楼 ----------------
   const tlBtn = root.querySelector('.em-tl-btn'), tlEl = root.querySelector('.em-tl'), tlR = root.querySelector('.em-tl-r'), tlV = root.querySelector('.em-tl-v');
   let TLm = null, tlOn = false; const tlCache = new Map();
+  let KFm = null; import(SELF + 'tavern/keyframes.mjs').then(m => { KFm = m; }).catch(() => {});
   import(SELF + 'tavern/timeline.mjs').then(m => { TLm = m; if (floorNow >= 0) tlBtn.hidden = false; }).catch(() => {});
+  // W3 关键帧缓存（tavern/keyframes.mjs，可丢弃缓存：删掉 eden_map.关键帧 从原文重算逐项一致）：
+  // 原料 = walk 变更点表（tlWalk，只增量前进），压缩视图挂聊天变量 eden_map.关键帧。拖拽吃缓存不打桥——
+  // 200+ 楼的聊天拖时间轴不再每楼都问一遍 perFloorStat / getRaw。
+  let tlWalk = { top: -1, pts: [] }, kfView = null, kfDirty = false;
+  const kfReset = () => { tlWalk = { top: -1, pts: [] }; kfView = null; kfDirty = false; };
   // 取数依赖（纯模块不碰酒馆全局：读楼 / 该楼变量 / 人物解析都在这里注入）
   const tlDeps = () => ({
     getRaw: x => { try { return getChatMessages(x + '-' + x)?.[0]?.message || ''; } catch (e) { return ''; } },
     perFloorStat: x => BR.perFloorStat(x), mvuGet: (s, p) => BR.mvuGet(s, p), varMap: BR.varMap,
     parseChars: CHM?.parseChars, mvuChars: CHM?.mvuChars, patchPlace: TRm?.patchPlace,
     lp: '/' + String(BR.varMap.location || '世界.当前地点').split('.').join('/'),
+    keyAt: f => (kfView && KFm ? KFm.stateAt(kfView, f) : null),   // W3 兜底层：MVU 与 JSONPatch 都没有时退关键帧（结果带 approx）
   });
   function tlState(f) {
     if (!TLm || f < 0) return null;
@@ -624,10 +631,23 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   }
   // 历史轨迹（Part 5-4）：把这一楼之前的落脚点连成行程 → 复用现成的行程图层（地点之间的虚线弧），不另起一张骨头图。
   let tlTrailAt = -1;
+  function trailPts(f) {   // 增量足迹：桥调用只发生在「前进方向的新楼」上（回拖吃缓存前缀，零桥）
+    if (f > tlWalk.top) {
+      let add = [];
+      try { add = TLm.walk(tlWalk.top + 1, f, tlDeps()) || []; } catch (e) {}
+      const last = tlWalk.pts[tlWalk.pts.length - 1];
+      if (last && add.length && add[0].here === last.here) add = add.slice(1);   // 跨段边界同址去重
+      tlWalk.pts = tlWalk.pts.concat(add); tlWalk.top = f;
+      const v = KFm ? KFm.advance(kfView, tlWalk.pts, floorNow) : null;   // 检查点式幂等：内容没变不写
+      if (v && v !== kfView) { kfView = v; kfDirty = true; }
+    }
+    return tlWalk.pts;
+  }
   function tlTrail(f) {
     if (!TLm || !alive || tlTrailAt === f) return; tlTrailAt = f;
     let pts = [];
-    try { pts = TLm.walk(0, f, tlDeps()) || []; } catch (e) {}
+    try { pts = kfView && kfView.top >= f ? KFm.flatten(kfView).filter(p => p.floor <= f) : trailPts(f); }
+    catch (e) { try { pts = TLm.walk(0, f, tlDeps()) || []; } catch (x) {} }   // 兜底：老路径全量重算（不该走到）
     const items = [];
     for (let i = 1; i < pts.length; i++) items.push({ floor: pts[i].floor, from: pts[i - 1].here, to: pts[i].here, time: pts[i].time || '' });
     post({ type: 'eden-map:trips', items });
@@ -705,7 +725,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     if (!BG) return; const ls = store(); if (!ls) return;
     BG.touch(ls, chatId()); const r = BG.sweep(ls, chatId()); if (r.dropped.length) console.info('[eden-map] 清理旧聊天的地图数据', r.dropped.length, '个聊天', r.freed, '字节');
   }
-  const saveRoot = () => life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: CTX.tag.floor, 标签记录: CTX.tag.log, 楼层指纹: CTX.tag.seen, 行程: CTX.trips, 仓库: inv, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}) }, customChat);
+  const saveRoot = () => life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: CTX.tag.floor, 标签记录: CTX.tag.log, 楼层指纹: CTX.tag.seen, 行程: CTX.trips, 仓库: inv, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}), ...(kfView ? { 关键帧: kfView } : {}) }, customChat);
   // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
   // 只在这个聊天还没有 eden_map.自定义 时迁移一次（全局旧键不改名，靠这个条件避免每个聊天、每次刷新重复并入）
   async function migrateOld() {
@@ -728,6 +748,12 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
       seen: v.楼层指纹 && typeof v.楼层指纹 === 'object' ? { ...v.楼层指纹 } : {} };
     explored = FOGm ? FOGm.norm(v.探索) : (v.探索 && typeof v.探索 === 'object' ? v.探索 : {});
     inv = INVm ? INVm.norm(v.仓库) : { items: {}, seq: 0 };   // 空间化背包（Part 5-1）
+    kfReset();   // W3 关键帧：换聊天 / 重载一律从零重建（可丢弃缓存；旧视图经 compress 重验证后接上）
+    if (KFm && v.关键帧 && typeof v.关键帧 === 'object' && Array.isArray(v.关键帧.frames)) {
+      const top = Math.min(Math.round(+v.关键帧.top) || 0, floorNow >= 0 ? floorNow : Math.round(+v.关键帧.top) || 0);
+      const back = KFm.compress(v.关键帧.frames, top);
+      if (back.frames.length) { kfView = back; tlWalk = { top: Math.min(back.top, floorNow >= 0 ? floorNow : back.top), pts: KFm.flatten(back) }; }
+    }
     checkpointResume(v.检查点);
     if (v.自定义 === undefined) { const mig = await migrateOld(); if (customChat !== id) return; if (mig) await saveRoot(); }
     else if (v.自定义?.同步世界书 === false && !v.自定义.同步手动) {   // 0.9.3 的数据：建过这一本世界书 = 自己关掉的，保持关；否则按新默认（开）
