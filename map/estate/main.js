@@ -16,6 +16,9 @@ import { spots as stashSpots, placeOf, propGlow, describe as describeStash, PROP
 import { createWalker, tickClock, DEFAULT_ROUND_MS } from '../core/walk.mjs';   // Part 8-2：确定性时钟 + 三维插值（NPC 不瞬移）
 import { normSchedule, placesAt } from '../core/routine.mjs';
 import { normClock } from '../core/clock.mjs';
+import { createCycle as createDayNight, apply as applyDayNight, applyGrade } from '../three/daynight.mjs';   // Part 9-1：昼夜环境（光 + 烘焙调色）
+import { registerFX } from '../three/particles.mjs';                                                          // Part 9-2：fx 槽位粒子（雨雪 / 以太极光）
+import { LayerRegistry } from '../core/layers.mjs';                                                           // P3-C：fx 槽位按注册表契约挂载
 
 const T0 = performance.now();
 const Q = new URLSearchParams(location.search);
@@ -66,8 +69,12 @@ app.prepend(renderer.domElement);
 const labelR = new CSS2DRenderer({ element: $('#labels') }); labelR.setSize(innerWidth, innerHeight);
 document.body.classList.add('grade');
 const scene = new THREE.Scene();
-scene.add(new THREE.HemisphereLight('#f4efe6', '#8a8070', 2.2));
+const hemiL = new THREE.HemisphereLight('#f4efe6', '#8a8070', 2.2); scene.add(hemiL);
 const sunL = new THREE.DirectionalLight('#fff1dc', 1.6); sunL.position.set(-0.55, 1, 0.45); scene.add(sunL);
+/* Part 9-1：昼夜循环（世界时钟驱动，见 npcTick；map/three/daynight.mjs 管插值与减弱动效降级） */
+// 起手先按正午（= 原来那张静态外观的观感）开画；查看器推来真实世界时钟后 1.6s 淡到当时的时段，避免开局闪一下夜里。
+const dayNight = createDayNight({ clock: { day: 1, min: 750 }, reducedMotion: REDUCED, fadeSec: 1.6 });
+let dayNightT = 0, dayNightPhase = '';
 
 /* ---------------- 数据（P3-A：模型 / 数据文件地址全部来自清单，代码不再写死或拼装资源路径） ---------------- */
 kick('data');
@@ -290,6 +297,41 @@ scene.add(siteG);
 addBackdrop(siteG);
 const SHELL = Object.values(MESH).filter((m) => m.name.startsWith('house_shell'));
 const SITE_MESHES = Object.values(MESH).filter((m) => !m.name.startsWith('house_shell'));
+
+/* ---------------- Part 9-1 / 9-2：昼夜调色与 fx 槽位粒子 ---------------- */
+// 外观这批是烘焙光照的 MeshBasic（不吃灯），昼夜只能靠调色：把每件材质的基准色记下来，按环境参数改 tint。
+// 室内体量是真灯（Lambert），走 applyDayNight 的太阳 / 半球光那一支。
+const GRADE_TARGETS = [];
+for (const o of [...SITE_MESHES, ...SHELL, ...SITE_EXTRA]) {
+  const m = o?.material; if (m?.color?.setRGB) GRADE_TARGETS.push({ material: m, base: [m.color.r, m.color.g, m.color.b] });
+}
+// 粒子按 LayerRegistry 契约注册在 fx 槽位（第 9 槽）；绘制仍用本页的渲染器 / 场景。
+const FX_REG = new LayerRegistry();
+const { engine: fx3d } = registerFX(FX_REG, {
+  THREE, scene, quality: LOW ? .4 : 1, pixelRatio: DPR, reducedMotion: REDUCED, id: 'particles3d', order: 40,
+  ortho: true,           // 庄园是正交相机：点精灵不按距离衰减（不然粒子会被拉到几百米外缩成尘埃）
+  box: [400, 180, 400],  // 整岛尺度（默认盒 60×40×60 米只够一间房）
+  overrides: {           // 大场景微调：粒子调大调亮，极光当天幕
+    rain: { size: 8, opacity: .6 }, snow: { size: 10 }, sand: { size: 14, opacity: .35 },
+    aurora: { plane: { size: [1100, 360], position: [0, 230, -600] } },
+  },
+});
+if (fx3d) {
+  FX_REG.mountAll({ scene });
+  fx3d.object.position.set(0, 100, 0);   // 粒子盒抬到岛面之上（默认盒心在世界原点，会整盒埋进地形里）
+  scene.add(camera);                     // 相机进场景：极光要挂到它身上当天幕（见 attachAurora）
+}
+window.TCthreeFX = { set: (type, intensity) => fx3d?.setFXType(type, intensity) || null, describe: () => fx3d?.describe() || null,
+  layers: () => FX_REG.describe() };
+/** 极光天幕：把极光平面挂到相机上（加法混合、不写深度），按正交视野摆到天际线以上，绕岛 / 缩放都在 */
+function attachAurora() {
+  const m = fx3d?.object?.children?.find((o) => o.name === 'fx-aurora');
+  if (!m) return;
+  if (m.parent !== camera) camera.add(m);
+  const w = (camera.right - camera.left) / camera.zoom, h = (camera.top - camera.bottom) / camera.zoom;
+  m.position.set(0, h * .34, -600);
+  m.scale.set(w * 1.3 / 1100, h * .62 / 360, 1);
+}
 // 背面（剖开的墙内侧）涂深色：剖切时看起来像墙体截面
 function darkBack(mat, rgb) {
   mat.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <dithering_fragment>', `#include <dithering_fragment>\nif (!gl_FrontFacing) gl_FragColor.rgb = vec3(${rgb.map((v) => v.toFixed(3)).join(',')});`); };
@@ -476,6 +518,7 @@ function npcTick() {
   const r = tickClock(npcBase, { now: performance.now(), t0: npcT0 });
   if (r.rounds === npcRounds) return;
   npcRounds = r.rounds; npcClock = r.clock;
+  dayNight.setClock(r.clock);   // Part 9-1：同一条确定性时钟也驱动昼夜（查看器经 estate:routine 推来起点时钟）
   npcRetarget();
 }
 /** 日程表 → 站位：认不出落点的人（地点不在本页的房间 / 区域表里）不动，第一次出现直接落位 */
@@ -1042,6 +1085,19 @@ function loop(now) {
   if (now - lastPropPulse > 66) { lastPropPulse = now; pulseProps(now); }   // 发光拾取物的呼吸（core/stash3d.mjs 的 propGlow）
   npcStep(now);   // NPC 头像：插值落位 + 跟着当前楼层显隐
   if (now - lastNpcTick > Math.min(15000, DEFAULT_ROUND_MS)) { lastNpcTick = now; npcTick(); }   // 世界时钟的节拍（暂停 / 隐藏时不跑）
+  // Part 9-1 / 9-2：昼夜环境与粒子。过渡期间（世界时钟刚跳过一档）每帧都要重画，稳定后只在换时段时改一次。
+  const dm = dayNightT ? Math.min(.1, (now - dayNightT) / 1000) : 0; dayNightT = now;
+  const env9 = dayNight.update(dm);
+  if (!dayNight.settled || env9.phase !== dayNightPhase) {
+    dayNightPhase = env9.phase;
+    applyDayNight({ THREE, env: env9, targets: { sun: sunL, hemi: hemiL } });   // 室内真灯
+    applyGrade({ env: env9, materials: GRADE_TARGETS });                        // 室外烘焙调色
+    fx3d?.setFXType(env9.night ? 'aurora' : 'none', env9.night ? .45 : 0);      // 夜里高空以太流光
+    attachAurora();                                                            // 极光天幕：挂到相机上，绕岛怎么转都在
+    needs = true;
+  }
+  const fr9 = fx3d?.update(dm);                                                 // 粒子在动（关掉时这里是零开销早退）
+  if (fr9?.drawCalls) { needs = true; if (fr9.type === 'aurora') attachAurora(); }
   if (lowRes && !down && !pinch && now - lastInteract > 150) setLowRes(false);
   if (!(needs || moving || STATS)) return;
   needs = false;
@@ -1096,6 +1152,9 @@ window.__estate = {
     at: (name, now) => npcWalker.at(name, now == null ? performance.now() : now),
     floor: name => npcs.get(name)?.floor ?? null,
     describe: () => ({ ...npcWalker.describe(), clock: npcClock, rounds: npcRounds, scheduled: !!npcSched }) },
+  dayNight: { setClock: (c) => dayNight.setClock(c), describe: () => ({ ...dayNight.describe(), graded: GRADE_TARGETS.length }) },   // Part 9-1（探针 / 浏览器测试用）
+  fx: { set: (type, intensity) => fx3d?.setFXType(type, intensity) || null, describe: () => fx3d?.describe() || null,
+    layers: () => FX_REG.describe(), mounted: () => !!fx3d?.object?.parent },                                                        // Part 9-2
   camera, controls, renderer, scene, setLang,
 };
 buildNav(); relabel(); frustum();

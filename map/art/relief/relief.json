@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "pattern": "manor",
+  "size": [
+    512,
+    512
+  ],
+  "tileable": true,
+  "assets": {
+    "manor_facade": {
+      "height": "manor_facade_height.png",
+      "normal": "manor_facade_normal.png",
+      "rough": "manor_facade_rough.png",
+      "parallax": 0.05,
+      "normalScale": 0.85,
+      "albedo": [
+        0.82,
+        0.79,
+        0.72
+      ]
+    }
+  }
+}
