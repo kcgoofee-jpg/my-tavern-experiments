@@ -84,7 +84,7 @@
 | P3 其他 | site_kavalierki | `rust_outskirts` | 铁锈与落败领 | ✅ | 卡 | 铁锈与落败领 `map/props/rust_outskirts/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
 | P3 其他 | site_kavalierki | `sun_arena` | 太阳骑士大竞技场 | ✅ | 卡 | — | — |  |
 | P3 其他 | site_kavalierki | `union_tower` | 商业联合会联合大厦 | ✅ | 卡 | — | — |  |
-| P3 其他 | tc_low | `blood_mill` | 血肉磨坊 | ✅ | 卡 | — | — |  |
+| P3 其他 | tc_low | `blood_mill` | 血肉磨坊 | ✅ | 卡 | 血肉磨坊 `map/props/blood_mill/` | 标准（r1 8 / 6.5） |  |
 | P3 其他 | tc_low | `freight_yard` | 货运站 | ✅ | 卡 + 推断位置 | — | — |  |
 | P3 其他 | tc_low | `lower_bar` | 下层区酒吧 | 🆕 | 仓库推断 | — | — |  |
 | P3 其他 | tc_low | `slums` | 贫民窟 | 🆕 | 仓库推断 | — | — |  |

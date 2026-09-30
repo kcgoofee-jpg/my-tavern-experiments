@@ -1258,8 +1258,7 @@
             "血肉磨坊",
             "黑拳场",
             "拳场"
-          ]
-        },
+          ], "link": {"map": "lm_blood_mill", "label": "查看三维模型", "label_en": "View 3D model"}},
         "enforcement_low": {
           "name": "执法局下层分局",
           "sub": "名义六处，实际只运转三处",
@@ -1443,6 +1442,7 @@
         }
       }
     },
+    "lm_blood_mill": {"title": "血肉磨坊（三维）", "title_en": "The Bloodmill (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "blood_mill", "src": "props/viewer3d.html", "alias": ["血肉磨坊（三维）"], "src_note": "血肉磨坊三维（标准版：标准档 + 低档 glb；位置与形制为地图补充设定）；从 tc_low.blood_mill 标记的「查看三维模型」进。源：blender/landmarks/blood_mill/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_arms_rnd": {"title": "魔导军工研发中心（三维）", "title_en": "Magitech Arms R&D Centre", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "arms_rnd", "src": "props/viewer3d.html", "alias": ["魔导军工研发中心（三维）"], "src_note": "魔导军工研发中心三维（标准版：标准档 + 低档 glb；位置与形制为地图补充设定）；从 site_kavalierki.arms_rnd 标记的「查看三维模型」进。源：blender/landmarks/arms_rnd/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_linguang_post": {"title": "临光家族外城驻所（三维）", "title_en": "Linguang Outer Residence", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "linguang_post", "src": "props/viewer3d.html", "alias": ["临光家族外城驻所（三维）"], "src_note": "临光家族外城驻所三维（标准版：标准档 + 低档 glb；位置与形制为地图补充设定）；从 site_kavalierki.linguang_post 标记的「查看三维模型」进。源：blender/landmarks/linguang_post/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_free_knight_camp": {"title": "独立骑士黑市营地（三维）", "title_en": "Free Knights Camp", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "free_knight_camp", "src": "props/viewer3d.html", "alias": ["独立骑士黑市营地（三维）"], "src_note": "独立骑士黑市营地三维（标准版：标准档 + 低档 glb；位置与形制为地图补充设定）；从 site_kavalierki.free_knight_camp 标记的「查看三维模型」进。源：blender/landmarks/free_knight_camp/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
