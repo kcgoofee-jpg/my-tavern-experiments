@@ -1016,8 +1016,7 @@
             "施奈德精密改造诊所",
             "施奈德诊所",
             "施奈德生物改造诊所"
-          ]
-        },
+          ], "link": {"map": "lm_schneider_clinic", "label": "查看三维模型", "label_en": "View 3D model"}},
         "rebirth_workshop": {
           "name": "新生工坊",
           "sub": "天城最大的同类改造中心",
@@ -1438,6 +1437,7 @@
         }
       }
     },
+    "lm_schneider_clinic": {"title": "施奈德精密改造诊所（三维）", "title_en": "Schneider Precision Clinic", "parent": "tc_mid", "kind": "estate", "viewer3d": "schneider_clinic", "src": "props/viewer3d.html", "alias": ["施奈德精密改造诊所（三维）"], "src_note": "施奈德精密改造诊所三维（标准版：标准档 + 低档 glb；位置与形制为地图补充设定）；从 tc_mid.schneider_clinic 标记的「查看三维模型」进。源：blender/landmarks/schneider_clinic/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_rebirth_workshop": {"title": "新生工坊（三维）", "title_en": "Rebirth Workshop", "parent": "tc_mid", "kind": "estate", "viewer3d": "rebirth_workshop", "src": "props/viewer3d.html", "alias": ["新生工坊（三维）"], "src_note": "新生工坊三维（标准版：标准档 + 低档 glb；位置与形制为地图补充设定）；从 tc_mid.rebirth_workshop 标记的「查看三维模型」进。源：blender/landmarks/rebirth_workshop/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_slums": {"title": "贫民窟（三维）", "title_en": "Slums", "parent": "tc_low", "kind": "estate", "viewer3d": "slums", "src": "props/viewer3d.html", "alias": ["贫民窟（三维）"], "src_note": "贫民窟三维（标准版：标准档 + 低档 glb；位置与形制为地图补充设定）；从 tc_low.slums 标记的「查看三维模型」进。源：blender/landmarks/slums/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
     "lm_lower_bar": {"title": "下层区酒吧（三维）", "title_en": "Lower-tier Bar", "parent": "tc_low", "kind": "estate", "viewer3d": "lower_bar", "src": "props/viewer3d.html", "alias": ["下层区酒吧（三维）"], "src_note": "下层区酒吧三维（标准版：标准档 + 低档 glb；位置与形制为地图补充设定）；从 tc_low.lower_bar 标记的「查看三维模型」进。源：blender/landmarks/lower_bar/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
