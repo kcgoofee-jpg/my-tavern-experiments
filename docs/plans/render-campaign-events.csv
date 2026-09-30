@@ -1,1 +1,7 @@
 ts,id,stage,event,agent,gate,note
+2026-09-30T11:43:14Z,estate:final,final,claim,std-1,,
+2026-09-30T11:43:59Z,estate:final,final,wait,std-1,,"queued job 20260930_194336, output logs/campaign/estate/"
+2026-09-30T11:43:59Z,estate:final,final,claim,std-1,,
+2026-09-30T11:52:21Z,estate:final,final,done,std-1,pass,3 views 2000px/32spp in logs/campaign/estate/; needed --allow-unmatched 1 --no-export and a Blender 5.2 set_cut fix
+2026-09-30T11:52:21Z,estate:final,verify,done,std-1,pass,"ext/all/island opened: clean, no artifacts"
+2026-09-30T11:52:25Z,estate:final,ship,done,std-1,,not referenced by maps.json/estate pages: kept in logs/campaign/estate (ignored); ~/eden-map-review/render/estate_final/

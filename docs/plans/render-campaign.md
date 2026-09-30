@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: -.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T11:52:25Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 0 | 0 | 47 | 0 | 1 | 0 | 48 |
+| standard | 1 | 0 | 47 | 0 | 0 | 0 | 48 |
 | hero | 0 | 0 | 13 | 0 | 6 | 0 | 19 |
 
 Below-gate (user spot-check): none
@@ -15,8 +15,8 @@ Below-gate (user spot-check): none
 
 | # | id | type | status | stage | claim | flags | title |
 |---|---|---|---|---|---|---|---|
-| 1 | `estate:final` | estate | open | final |  |  | Re-render the estate exterior views (failed job) |
-| 2 | `estate:opt` | estate | blocked | final |  |  | Evaluate the rescued house_opt LOD glbs for the estate model manifest |
+| 1 | `estate:final` | estate | done | - |  |  | Re-render the estate exterior views (failed job) |
+| 2 | `estate:opt` | estate | open | final |  |  | Evaluate the rescued house_opt LOD glbs for the estate model manifest |
 | 3 | `review:arms_rnd` | review | open | review-r1 |  |  | Review and fix model arms rnd |
 | 4 | `review:clearing_depot` | review | open | review-r1 |  |  | Review and fix model clearing depot |
 | 5 | `review:contest_corridor` | review | open | review-r1 |  |  | Review and fix model contest corridor |
