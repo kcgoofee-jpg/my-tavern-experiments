@@ -3,3 +3,4 @@ NOTES_FROM_LOCAL.md merge=union
 logs/render_times.csv merge=union
 logs/review_scores.csv merge=union
 CHANGELOG.md merge=union
+docs/plans/spatial-os-log.md merge=union
