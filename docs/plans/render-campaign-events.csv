@@ -268,3 +268,14 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T16:50:37Z,scene:fief5,review-r2,done,std-1,pass,fidelity 7.5 / credibility 6 (r2.md)
 2026-09-30T16:52:21Z,scene:fief5,final,done,std-1,pass,std/low glb under max_mb 2.8/1.4
 2026-09-30T16:52:22Z,scene:fief5,ship,wait,std-1,,"FREEZE_MAPS on origin/preview; model, glbs, manifest committed; needs lm_fief5 entry + links for fief5_castle/order/village/fields/lists in maps.json + card-buildings rows"
+2026-09-30T16:53:06Z,scene:yuanyu-city,new,claim,std-1,,
+2026-09-30T16:53:06Z,scene:yuanyu-city,new,done,std-1,pass,yuanyu_city new
+2026-09-30T16:53:06Z,scene:yuanyu-city,setting,done,std-1,pass,yuanyu_city setting
+2026-09-30T16:54:58Z,scene:yuanyu-city,draft,done,std-1,pass,yuanyu_city draft
+2026-09-30T16:54:58Z,scene:yuanyu-city,board,done,std-1,pass,yuanyu_city board
+2026-09-30T16:54:58Z,scene:yuanyu-city,gapcheck,done,std-1,pass,yuanyu_city gapcheck
+2026-09-30T16:54:58Z,scene:yuanyu-city,review-r1,done,std-1,fail,"fidelity 7 / credibility 5.5: chessboard blocks, cone statues, plain gate, cold palette (docs/reviews/campaign/scene_yuanyu-city/r1.md)"
+2026-09-30T16:54:58Z,scene:yuanyu-city,fix,done,std-1,pass,"hooded statues, colonnade gallery, pointed-arch gate, varied blocks, warmer lighting"
+2026-09-30T16:54:58Z,scene:yuanyu-city,review-r2,done,std-1,pass,fidelity 7.5 / credibility 6 (r2.md)
+2026-09-30T16:57:30Z,scene:yuanyu-city,final,done,std-1,pass,std 2.19 MB / low 0.79 MB under max_mb 2.8/1.4
+2026-09-30T16:57:32Z,scene:yuanyu-city,ship,wait,std-1,,"FREEZE_MAPS on origin/preview; model, glbs, manifest committed; needs lm_yuanyu_city entry + links for city_gate/dome_quarter/pilgrim_plaza/spire_quarter in maps.json (layer key yuanyu_city) + card-buildings rows"
