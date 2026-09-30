@@ -1,5 +1,5 @@
 // P3-A 任务 2（docs/reviews/architecture_and_stream_perf.md §7）：Estate3D Manifest 标准契约 ——
-// Schema 校验 / 未知字段容错 / 路径解析与档位兜底、庄园与 45 个地标清单的账实对拍、运行时解耦机检。
+// Schema 校验 / 未知字段容错 / 路径解析与档位兜底、庄园与 46 个地标清单的账实对拍、运行时解耦机检。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
@@ -60,7 +60,7 @@ test('账实对拍：庄园清单的 glb / data 文件都真实存在，floors �
   for (const p of ['site', 'house']) for (const t of ['std', 'low']) assert.ok(existsSync(new URL(n.parts[p][t])), `estate ${p}.${t}`);
   for (const k of ['rooms', 'zones', 'galleries']) assert.ok(existsSync(new URL(n.data[k])), `estate data.${k}`);
 });
-test('账实对拍：45 个地标清单全部合格——id = 目录名、glb 文件在盘、热点 id 唯一', () => {
+test('账实对拍：46 个地标清单全部合格——id = 目录名、glb 文件在盘、热点 id 唯一', () => {
   const dirs = readdirSync(new URL('props/', root)).filter(d => !d.endsWith('.html') && !d.startsWith('.'));
   let checked = 0;
   for (const dir of dirs) {
@@ -77,7 +77,7 @@ test('账实对拍：45 个地标清单全部合格——id = 目录名、glb �
     assert.equal(new Set(hs).size, hs.length, `${dir}: 热点 id 不重复`);
     if (m.glb_low) assert.ok(existsSync(new URL(`props/${dir}/${m.glb_low}`, root)), `${dir}: ${m.glb_low}`);
   }
-  assert.equal(checked, 45);
+  assert.equal(checked, 46);
 });
 test('Part 3：三维页用共享运行时（map/three/*），自己不再 new WebGLRenderer', () => {
   const v3d = readFileSync(new URL('props/viewer3d.html', root), 'utf8');

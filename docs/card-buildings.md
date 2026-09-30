@@ -88,7 +88,7 @@
 | P3 其他 | tc_low | `freight_yard` | 货运站 | ✅ | 卡 + 推断位置 | 货运站 `map/props/freight_yard/` | 标准（r1 8 / 7） |  |
 | P3 其他 | tc_low | `lower_bar` | 下层区酒吧 | 🆕 | 仓库推断 | 下层区酒吧 `map/props/lower_bar/` | 标准（r1 7.5 / 6.5） |  |
 | P3 其他 | tc_low | `slums` | 贫民窟 | 🆕 | 仓库推断 | 贫民窟 `map/props/slums/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | tc_mid | `rebirth_workshop` | 新生工坊 | 🆕 | 仓库推断 | — | — |  |
+| P3 其他 | tc_mid | `rebirth_workshop` | 新生工坊 | 🆕 | 仓库推断 | 新生工坊 `map/props/rebirth_workshop/` | 标准（r1 7.5 / 7） |  |
 | P3 其他 | tc_mid | `schneider_clinic` | 施奈德精密改造诊所 | 🆕 | 仓库推断 | — | — |  |
 | P3 其他 | tc_mid | `victoria_apartment` | 维多利亚的公寓 | ✅ | 卡 | 维多利亚的公寓 `map/props/victoria_apartment/` | 标准（r1 7 / 7.5） |  |
 | P3 其他 | tc_upper | `eden` | 伊甸庄园 | ✅ | 卡 | — | — |  |
