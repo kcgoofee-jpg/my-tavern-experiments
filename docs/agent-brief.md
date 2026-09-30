@@ -22,7 +22,7 @@
 - 不做 iPhone 专项；桌面优先，375 px 只过一遍。
 - 测试：改哪测哪——`node --test` + `tools/smoke.sh` 必跑；浏览器测试只跑相关的，批次末再跑全量。
 - CI runs node --test + smoke on push; agents only need to run tests relevant to their change locally, then check the CI result with `gh run list --branch preview -L 1`.
-- **推送要攒批**：每次推送 = 新提交号 = CDN 全量预热约 2000 个文件。连做多项时每 2–3 项推一次：`git fetch && git rebase origin/preview` → `python3 tools/bump_head.py --push --branch preview` → `bash tools/warm_cdn.sh "$(git rev-parse HEAD^)" 16 --purge-branch preview`。
+- **推送要攒批**：每次推送 = 新提交号。连做多项时每 2–3 项推一次：`bash tools/push_preview.sh --head`（= `git fetch`+rebase → `bump_head.py --push` → 推 preview），**推送后自动增量预热并后台脱离**（只请求本次改动的文件 + 头指针，几秒；日志 `logs/warm_cdn.log`，agent 不用等）。改了 `map/art/` / `map/props/` / `*.dzi` / `*.glb` 时它会自动升级成全量（约 2900 个文件），想显式全量就 `bash tools/push_preview.sh --head --full`，不想预热就 `WARM=0`。手动推的旧流程（`bump_head.py --push` + `bash tools/warm_cdn.sh "$(git rev-parse HEAD^)" 16 --purge-branch preview`）仍可用，但那是全量、会阻塞。
 - CHANGELOG 与 logs/*.csv 已设 union 合并，rebase 冲突少；只在末尾追加。
 - **Push (2026-09-29)**: the work branch is `preview`; the old name `cloud/tc-mid-low` is kept as a
   compatibility mirror for script URLs that are already out in the wild. Push both with

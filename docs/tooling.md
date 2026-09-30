@@ -86,6 +86,21 @@ bash tools/warm_cdn.sh <head.json 里的 sha> 16 --purge-branch <分支>   # 预
 - 地图里：`followCheck`（打开 / 每 10 分钟）和设置「检查更新」都走同一条链；设置「关于」显示「跟随分支 … · 构建 #N · 来源 jsdmirror」。
 - **旧的跟随脚本要重新导入一次**：旧加载器的解析写死在脚本里（GitHub 接口 → jsDelivr 解析接口 → 本机旧提交），远端没法改它；它加载到的旧提交里的地图代码也是旧的。重新导入（同一个固定 id，覆盖）后就不用再导。
 
+### 5.1c 增量预热与后台脱离（2026-09-30）
+
+Warming every one of the ~2900 runtime files after each small commit took 3–5 minutes and blocked the session, so `tools/warm_cdn.sh` now has two more modes. The file list itself is computed by `tools/warm_plan.py`:
+
+```bash
+bash tools/warm_cdn.sh <sha> --diff            # only what this commit changed + the head pointers (seconds)
+bash tools/warm_cdn.sh <sha> --diff <base>     # ...changed between <base> and <sha> (a whole batch)
+bash tools/warm_cdn.sh <sha> --full            # the full sweep (release only)
+bash tools/warm_cdn.sh <sha> --diff --detach   # fire and forget: returns immediately, logs to logs/warm_cdn.log
+```
+- **Head pointers are always refreshed**: `map/data/head.json` and `map/tavern/eden-map.js` are warmed even when the diff is empty (docs-only commits warm exactly those two).
+- **Heavy assets escalate**: if a diff touches `map/art/`, `map/props/`, `*.dzi` or `*.glb`, the run silently becomes a full sweep (a changed atlas means the whole render moved; the viewer pulls tiles lazily, so the full set must be warm). `--no-escalate` opts out.
+- **Callers**: `tools/push_preview.sh` warms `--diff --detach` after every push (`WARM=0` to skip, `--full` to force); `tools/ship.sh` warms incrementally and only `ship.sh --release` forces `--full` with the "non-200 aborts" gate. `--purge-branch` works in both modes.
+- Tests: `tests/test_warm_cdn.py` (synthetic repo: one `.mjs` line → that file + the pointers; `--full` expands; heavy → escalation; `--detach` returns and leaves a log).
+
 ## 6. NOTES 合并
 - `.gitattributes`：`NOTES_FROM_LOCAL.md merge=union`（git 内置驱动）。
 - 本机和云端**都只在文件末尾追加新小节**，不改、不删别人的小节。这样两边同时追加时，合并会把两段都保留，不产生冲突标记。

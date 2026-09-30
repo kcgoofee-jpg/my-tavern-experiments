@@ -1,18 +1,24 @@
 #!/usr/bin/env bash
 # 一条命令发布到预览：smoke → 推送当前分支 → 预热 jsDelivr（HEAD 提交）→ 生成「跟随分支」预览脚本 → 汇总。
-# 用法：bash tools/ship.sh [--dry-run] [--no-warm] [--jobs 16] [--out 目录] [--release]
+# 用法：bash tools/ship.sh [--dry-run] [--no-warm] [--jobs 16] [--out 目录] [--release] [--detach]
 #   --release：发版后跑（标签已打并推送）：把 map/data/latest.json 指向 VERSION 的标签、提交、推送并清 jsDelivr 缓存——
 #             正式版加载器（build_preview_script.py --tag）在 jsDelivr 标签列表取不到时读它（docs/versioning.md）
+#             ——只有这一条路径走全量深层预热（--full）并保留「非 200 即中止 + 抽样校验」的门禁
+#   --detach：预热后台脱离跑（日志 logs/warm_cdn.log），推送完立刻返回；不做非 200 门禁与抽样校验
 #   --dry-run：跑 smoke，git push --dry-run，只列出要预热的文件数，预览脚本写到临时目录；不改远端、不碰 ~/Downloads
 #   --out：预览脚本目录（默认 ~/Downloads/酒馆/预览）
+# 预热默认按本次改动增量走（tools/warm_plan.py）：改代码只请求改到的文件 + 头指针，几秒钟；
+#   改动里出现 map/art/、map/props/、*.dzi、*.glb 时自动升级为全量。
 # 注意：只推送已提交的内容（工作区有改动时会提醒）；提交时不要带 map/art 以外无关的大文件。
 set -euo pipefail
 cd "$(dirname "$0")/.."
-DRY=0; REL=0; WARM=1; JOBS=16; OUT="$HOME/Downloads/酒馆/预览"
+DRY=0; REL=0; WARM=1; JOBS=16; OUT="$HOME/Downloads/酒馆/预览"; DETACH=0
 while [ $# -gt 0 ]; do case "$1" in
-  --dry-run) DRY=1; shift ;; --release) REL=1; shift ;; --no-warm) WARM=0; shift ;; --jobs) JOBS=$2; shift 2 ;; --out) OUT=$2; shift 2 ;;
-  -h|--help) sed -n '2,8p' "$0"; exit 0 ;; *) echo "未知参数 $1" >&2; exit 2 ;; esac; done
+  --dry-run) DRY=1; shift ;; --release) REL=1; shift ;; --no-warm) WARM=0; shift ;; --detach) DETACH=1; shift ;;
+  --jobs) JOBS=$2; shift 2 ;; --out) OUT=$2; shift 2 ;;
+  -h|--help) sed -n '2,12p' "$0"; exit 0 ;; *) echo "未知参数 $1" >&2; exit 2 ;; esac; done
 BR=$(git rev-parse --abbrev-ref HEAD); SHA=$(git rev-parse HEAD); SHORT=${SHA:0:12}
+WARMB=$(git rev-parse -q --verify "refs/remotes/origin/$BR" || true)   # 增量预热基线：推送前远端的位置（那边已经预热过）
 [ "$BR" = HEAD ] && { echo "当前不在分支上（detached HEAD）" >&2; exit 2; }
 [ "$DRY" = 1 ] && echo "== 演练（--dry-run）：$BR @ $SHORT" || echo "== 发布 $BR @ $SHORT"
 [ -z "$(git status --porcelain --untracked-files=no)" ] || echo "提醒：工作区有未提交的改动，不会被推送"
@@ -56,16 +62,29 @@ else python3 tools/bump_head.py --push 2>&1 | sed 's/^/   /'; PUSH=${PIPESTATUS[
 echo "-- 3/4 预热 CDN @$SHORT"
 WARMSUM="跳过"
 if [ "$WARM" = 1 ]; then
-  N=$(bash tools/warm_cdn.sh "$SHA" --count)
-  if [ "$DRY" = 1 ]; then WARMSUM="演练：将预热 $N 个文件（bash tools/warm_cdn.sh $SHA $JOBS）"
+  N=$(bash tools/warm_cdn.sh "$SHA" --count)   # 全量清单的大小，只用于汇总 / 演练
+  if [ "$DRY" = 1 ]; then WARMSUM="演练：全量 $N 个文件（实际按本次改动增量预热；--release 才走全量）"
   else
-    W=$(bash tools/warm_cdn.sh "$SHA" "$JOBS" --purge-branch "$BR"); echo "$W" | sed 's/^/   /'
-    BAD=$(echo "$W" | awk '$2 ~ /^[0-9]+$/ && $2 != 200 {s += $1} END {print s + 0}')
-    WARMSUM="$N 个文件，非 200：$BAD"
-    # 2026-09-27 接手 review：以前非 200 只打印不失败，标签没生效 / 文件丢了也照样「发布成功」
-    [ "$BAD" = 0 ] || { echo "预热有 $BAD 个非 200，中止（先看上面的明细；标签可能要等 jsDelivr 缓存，或文件超过 20 MB）" >&2; exit 1; }
-    echo "-- 3.5/4 抽样校验 CDN @$SHORT"
-    bash tools/smoke.sh --cdn "$SHORT" || exit 1
+    if [ "$REL" = 1 ]; then WA=(--full)              # 正式发版：全量深层预热 + 门禁
+    elif [ -n "$WARMB" ]; then WA=(--diff "$WARMB")  # 日常：只预热这次推送改动的文件 + 头指针
+    else WA=(--diff); fi
+    ND=$(bash tools/warm_cdn.sh "$SHA" "${WA[@]}" --count)
+    if [ "$DETACH" = 1 ]; then WA+=(--detach); fi
+    W=$(bash tools/warm_cdn.sh "$SHA" "$JOBS" "${WA[@]}" --purge-branch "$BR"); echo "$W" | sed 's/^/   /'
+    if [ "$DETACH" = 1 ]; then
+      WARMSUM="后台预热已启动（${ND} 个文件，日志 logs/warm_cdn.log）：非 200 门禁与抽样校验跳过"
+    else
+      BAD=$(echo "$W" | awk '$2 ~ /^[0-9]+$/ && $2 != 200 {s += $1} END {print s + 0}')
+      WARMSUM="${ND} 个文件（全量 ${N} 个），非 200：${BAD}"
+      # 2026-09-27 接手 review：以前非 200 只打印不失败，标签没生效 / 文件丢了也照样「发布成功」
+      [ "$BAD" = 0 ] || { echo "预热有 $BAD 个非 200，中止（先看上面的明细；标签可能要等 jsDelivr 缓存，或文件超过 20 MB）" >&2; exit 1; }
+      if [ "$ND" = "$N" ]; then
+        echo "-- 3.5/4 抽样校验 CDN @$SHORT"
+        bash tools/smoke.sh --cdn "$SHORT" || exit 1
+      else
+        echo "   增量预热（${ND}/${N} 个文件）：抽样校验跳过——未预热的文件首次访问按需回源，与这次改动无关"
+      fi
+    fi
   fi
 fi
 echo "   $WARMSUM"
