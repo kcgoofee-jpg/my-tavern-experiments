@@ -101,3 +101,12 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T13:25:50Z,review:holy_mountain,fix,done,std-1,,"north corner blocks -> gothic towers; colonnade deck 8.5->11 m, statues 1.8->1.5 (summit() only)"
 2026-09-30T13:25:51Z,review:holy_mountain,review-r2,done,std-1,pass,r2 7.5/6.5 pass
 2026-09-30T13:45:04Z,review:holy_mountain,ship,done,std-1,,glb re-exported via export_glb.py (same 474748 tris) + webp/meshopt: std 9.65 MB / low 3.06 MB (was 9.64 / 3.23); manifest unchanged; script gained --save <path>; check_maps + estate3d_manifest + smoke pass
+2026-09-30T13:45:46Z,lm:blood_mill,new,claim,std-1,,
+2026-09-30T13:46:04Z,lm:blood_mill,new,done,std-1,,scaffolded via landmark.py new
+2026-09-30T13:46:34Z,lm:blood_mill,setting,done,std-1,,setting block written (card L77/L188/A20; exterior repo-inferred)
+2026-09-30T13:49:03Z,lm:blood_mill,draft,done,std-1,,c1 2000px 16spp
+2026-09-30T13:49:03Z,lm:blood_mill,board,done,std-1,,"board c1/c2/under, logs clean"
+2026-09-30T13:49:03Z,lm:blood_mill,gapcheck,done,std-1,,"no gap: hall+gear, chimney, cage pit, red-lit entrance, queue chains, yard, fence all in frame"
+2026-09-30T13:49:16Z,lm:blood_mill,review-r1,done,std-1,pass,"r1 8/6.5 pass; polish: bg tint, wet patches, dimmer light"
+2026-09-30T13:54:26Z,lm:blood_mill,final,done,std-1,,"2400px/64spp c1+c2, std 0.55 MB / low 0.18 MB, logs clean"
+2026-09-30T13:54:26Z,lm:blood_mill,ship,done,std-1,,"maps.json marker link + lm_blood_mill entry, card-buildings row; tests/estate3d_manifest count 41->42; check_maps 0/0, smoke pass"
