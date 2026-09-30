@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T11:53:32Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T12:00:49Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 2 | 0 | 46 | 0 | 0 | 0 | 48 |
+| standard | 3 | 0 | 45 | 0 | 0 | 0 | 48 |
 | hero | 0 | 0 | 13 | 0 | 6 | 0 | 19 |
 
 Below-gate (user spot-check): none
@@ -17,7 +17,7 @@ Below-gate (user spot-check): none
 |---|---|---|---|---|---|---|---|
 | 1 | `estate:final` | estate | done | - |  |  | Re-render the estate exterior views (failed job) |
 | 2 | `estate:opt` | estate | done | - |  |  | Evaluate the rescued house_opt LOD glbs for the estate model manifest |
-| 3 | `review:arms_rnd` | review | open | review-r1 |  |  | Review and fix model arms rnd |
+| 3 | `review:arms_rnd` | review | done | - |  |  | Review and fix model arms rnd |
 | 4 | `review:clearing_depot` | review | open | review-r1 |  |  | Review and fix model clearing depot |
 | 5 | `review:contest_corridor` | review | open | review-r1 |  |  | Review and fix model contest corridor |
 | 6 | `review:ether_dome` | review | open | review-r1 |  |  | Review and fix model ether dome |

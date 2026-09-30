@@ -9,3 +9,8 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T11:53:32Z,estate:opt,final,skip,std-1,,"house.glb now: 575144 B meshopt+quantization, 41028 tris, 11 meshes, 2 mats. opt lod0: 1869428 B plain (3.25x larger), 26168 tris, 1 mesh/1 mat; lod1: 865276 B, 11775 tris. draco variants 90716/58944 B need KHR_draco decoder: estate viewer vendors only meshopt (map/estate/vendor/jsm/libs), adding DRACOLoader = product code under map/, out of scope. ktx2 step failed (rc=1) in the rescue run."
 2026-09-30T11:53:32Z,estate:opt,verify,skip,std-1,,"not adopted: fewer tris (26k vs 41k) and merged materials, no parity check warranted"
 2026-09-30T11:53:32Z,estate:opt,ship,skip,std-1,,manifest unchanged; revisit if a Draco decoder is added to map/estate/vendor
+2026-09-30T11:53:41Z,review:arms_rnd,review-r1,claim,std-1,,
+2026-09-30T11:54:11Z,review:arms_rnd,review-r1,done,std-1,fail,"fid 7 / cred 5: no storey/entrance rhythm, illegible hex lock, bead-chain guide tube, rack blocks entrance, 1 cabinet not 2, featureless surfaces"
+2026-09-30T11:58:14Z,review:arms_rnd,fix,done,std-1,,"build.py: windowed facade+door+steps, hex lock, thick supported tube, field moved west + path, 2 ribbed containers, joints/HVAC/downpipes"
+2026-09-30T11:58:14Z,review:arms_rnd,review-r2,done,std-1,pass,fid 8 / cred 6.5
+2026-09-30T12:00:49Z,review:arms_rnd,ship,done,std-1,,re-exported std 0.25 MB / low 0.09 MB; card-buildings row updated; smoke PASS

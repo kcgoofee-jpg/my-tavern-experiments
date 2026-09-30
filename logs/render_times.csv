@@ -382,3 +382,12 @@ date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
 2026-09-30,estate_final,final,2000,32,0.2,0,darwin,ok,0,0
 2026-09-30,estate_final,final,2000,32,0.3,0,darwin,ok,0,0
 2026-09-30,estate_final,final,2000,32,0.3,0,darwin,ok,0,0
+2026-09-30,lm_arms_rnd,draft,1600,16,0.0,0,darwin,ok,0,0
+2026-09-30,lm_arms_rnd,draft,1600,16,0.0,0,darwin,ok,0,0
+2026-09-30,lm_arms_rnd,draft,1600,16,0.1,0,darwin,ok,0,0
+2026-09-30,lm_arms_rnd,draft,1600,16,0.1,0,darwin,ok,0,0
+2026-09-30,lm_arms_rnd,final,2400,64,0.4,0,darwin,ok,0,0
+2026-09-30,lm_arms_rnd,final,2400,64,0.3,0,darwin,ok,0,0
+2026-09-30,lm_arms_rnd,patch,64,1,0.0,0,darwin,ok,0,0
+2026-09-30,lm_arms_rnd,patch,0,32,0.1,0,darwin,ok,0,0
+2026-09-30,lm_arms_rnd,patch,0,32,0.1,0,darwin,ok,0,0
