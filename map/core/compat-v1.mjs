@@ -5,7 +5,7 @@ import { buildGeo } from './compat-v1-geo.mjs';
 import { buildViews } from './compat-v1-views.mjs';
 import { legacyOf, stringsOf, eventsOf, rosterOf, stashOf, worldbookOf, customOf } from './compat-v1-blocks.mjs';
 import { normalise } from './lexicon.mjs';
-import { applyOverlay } from './overlay-v2.mjs';
+import { applyOverlay, applyOverlayEvents, applyOverlayLlm } from './overlay-v2.mjs';
 
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 /** A.7: v1 roster source names -> v2 (the image extension's library is `imagegen`); every other source keeps its name. */
@@ -51,7 +51,8 @@ export function fromV1({ manifest, maps, world = null, names = null, plan = null
   const ent = rosterOf(roster); if (ent) pack.entities = ent;
   const rows = stashOf(stash, has, idmap); if (rows.length) pack.items = { stash: rows };
   const evb = ev ? { ...ev.events } : {}; if (isObj(maps?.feeds)) evb['x-feeds'] = maps.feeds;
-  if (Object.keys(evb).length) pack.events = evb;
+  const oe = applyOverlayEvents(Object.keys(evb).length ? evb : undefined, overlay); ov.problems.push(...oe.problems);
+  if (oe.events && Object.keys(oe.events).length) pack.events = oe.events;
   const ui = {}, start = maps?.start && (idmap[maps.start] || maps.start);
   if (start && has(start)) ui.start = start;
   if (Object.keys(ctx.levels).length) ui.levels = ctx.levels;
@@ -61,6 +62,7 @@ export function fromV1({ manifest, maps, world = null, names = null, plan = null
   const llm = {}, wb = worldbookOf(worldbook);
   if (ev?.tag) llm.templates = { [lang]: { tag: ev.tag } };
   if (wb.length) llm.worldbook = { entries: wb };
-  if (Object.keys(llm).length) pack.llm = llm;
+  const ol = applyOverlayLlm(Object.keys(llm).length ? llm : undefined, overlay);
+  if (ol && Object.keys(ol).length) pack.llm = ol;
   return JSON.parse(JSON.stringify({ pack, custom: uc.custom, ignore: uc.ignore, idmap, problems: ov.problems }));   // a copy: the pack shares nothing with the v1 inputs
 }

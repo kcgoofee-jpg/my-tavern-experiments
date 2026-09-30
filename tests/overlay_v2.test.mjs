@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fromV1 } from '../map/core/compat-v1.mjs';
-import { applyOverlay } from '../map/core/overlay-v2.mjs';
+import { applyOverlay, applyOverlayEvents, applyOverlayLlm } from '../map/core/overlay-v2.mjs';
 import { buildTree, describe } from '../map/core/nodes.mjs';
 import { makeHere } from '../map/app/here-v2.mjs';
 import { edenInputs } from './helpers/eden-inputs.mjs';
@@ -70,4 +70,35 @@ test('the first pack declares its overlay in the manifest (data.overlay, relativ
   const man = edenInputs().manifest, town = JSON.parse((await import('node:fs')).readFileSync(new URL('../map/packs/town/manifest.json', import.meta.url), 'utf8'));
   assert.equal(man.data.overlay, 'packs/eden/overlay.v2.json');
   assert.equal(town.data.overlay, undefined);
+});
+
+// ---- K-R68: the overlay may carry an events block and llm.templates ----
+const EV = { groups: [{ id: 'g1', label: 'One', color: '#112233' }], types: { t1: { label: 'Alpha', group: 'g1', alias: ['a1'], icon: 'A' } }, fx_presets: { p: { block: 'pulse' } }, closed: ['over'], life: { live: 5 }, 'x-feeds': [] };
+test('K-R68 events merge: groups and types by id (overlay wins field by field), new ones appended, lists replaced, life merged, input untouched', () => {
+  const frozen = JSON.parse(JSON.stringify(EV));
+  const r = applyOverlayEvents(EV, { schema: 2, events: {
+    groups: [{ id: 'g1', color: '#445566' }, { id: 'g2', label: 'Two', color: '#778899', shape: 'ring' }],
+    types: { t1: { icon: 'B' }, t2: { label: 'Beta', group: 'g2', fx: 'glitch', 'x-default-off': true } },
+    fx_presets: { q: { block: 'glitch' } }, closed: ['done'], examples: ['e'], life: { merge: 9 }, 'x-more': 1 } });
+  assert.deepEqual(EV, frozen); assert.deepEqual(r.problems, []);
+  assert.deepEqual(r.events.groups.map(g => [g.id, g.label, g.color]), [['g1', 'One', '#445566'], ['g2', 'Two', '#778899']]);
+  assert.equal(r.events.types.t1.icon, 'B'); assert.equal(r.events.types.t1.label, 'Alpha'); assert.deepEqual(r.events.types.t1.alias, ['a1']);
+  assert.deepEqual(Object.keys(r.events.types), ['t1', 't2']); assert.equal(r.events.types.t2['x-default-off'], true);
+  assert.deepEqual(Object.keys(r.events.fx_presets), ['p', 'q']); assert.deepEqual(r.events.closed, ['done']); assert.deepEqual(r.events.examples, ['e']);
+  assert.deepEqual(r.events.life, { live: 5, merge: 9 }); assert.equal(r.events['x-more'], 1); assert.deepEqual(r.events['x-feeds'], []);
+});
+test('K-R68 events merge: lenient (bad rows skipped and listed), no base events block, no events key = unchanged', () => {
+  const r = applyOverlayEvents(undefined, { schema: 2, events: { groups: [null, { id: 'g', label: 'G', color: '#000000' }, { id: 'h' }], types: { a: { label: 'A' }, b: 'x', c: { label: 'C', group: 'g' } }, levels: 'no' } });
+  assert.deepEqual(r.events.groups.map(g => g.id), ['g']); assert.deepEqual(Object.keys(r.events.types), ['c']);
+  assert.deepEqual(r.problems.map(p => p.code).sort(), ['overlay-group-incomplete', 'overlay-group-invalid', 'overlay-levels-invalid', 'overlay-type-incomplete', 'overlay-type-invalid']);
+  assert.equal(applyOverlayEvents(undefined, { schema: 2, nodes: [] }).events, undefined); assert.deepEqual(applyOverlayEvents(EV, null).events, EV);
+  assert.deepEqual(applyOverlayEvents(EV, { events: 3 }).problems, [{ code: 'overlay-events-invalid' }]);
+});
+test('K-R68 llm.templates merge, and fromV1 carries both into the pack (an events-only overlay needs no nodes)', () => {
+  assert.deepEqual(applyOverlayLlm({ templates: { zh: { tag: 'a', events: 'e' } }, worldbook: { entries: [] } }, { llm: { templates: { zh: { tag: 'b' }, en: { tag: 'c' } }, worldbook: 1 } }),
+    { templates: { zh: { tag: 'b', events: 'e' }, en: { tag: 'c' } }, worldbook: { entries: [] } });
+  assert.equal(applyOverlayLlm(undefined, { schema: 2, nodes: [] }), undefined);
+  const r = fromV1({ ...IN, overlay: { schema: 2, events: EV, llm: { templates: { zh: { tag: 'T' } } } } });
+  assert.deepEqual(r.problems, []); assert.equal(r.pack.events.groups[0].id, 'g1'); assert.equal(r.pack.llm.templates.zh.tag, 'T');
+  assert.equal(applyOverlay([], { schema: 2, events: EV }).problems.length, 0);
 });

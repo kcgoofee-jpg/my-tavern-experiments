@@ -7,8 +7,8 @@
 > `tools/check_pack.py` (schema-2 branch) and `tests/pack_schema_v2.test.mjs`. Schema 1 (`docs/pack-schema-v1.md`)
 > stays frozen and keeps working through `map/core/compat-v1.mjs` (step S1-impl-2).
 
-Every rule has a stable id `K-R01` … `K-R67`; later prompts and tests cite them. Ids never move: rules added after the
-first draft (K-R63–K-R67, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit. The choices left to the user
+Every rule has a stable id `K-R01` … `K-R68`; later prompts and tests cite them. Ids never move: rules added after the
+first draft (K-R63–K-R68, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit. The choices left to the user
 are `K-01` … `K-09` (§0). Everything else was decided by the designer and is listed with its reason in §14.
 
 ## 0. Decisions for the user (review sheet)
@@ -695,6 +695,13 @@ event placement read the file when the pack declares one; a pack without it beha
 (`tools/check_overlay.mjs`: ids, names, parents, no cycle, an explicit alias list holds the name, `at` numeric). The first pack's
 overlay carries what its v1 code had hard-wired (Appendix A.5): the event tier words as hints, district nodes with `at`, the outskirts and
 far-outside nodes, and the label `x-layer` of the world map; it is generated once by `tools/gen_eden_overlay_v2.mjs`.
+
+**K-R68 — The overlay may carry an events block.** Besides `nodes`, `overlay.v2.json` may carry `events` (the v2 events block, §8.2) and
+`llm.templates.<lang>.<key>` (strings; the first pack's injected-line tag lives here). `nodes` may then be left out. `fromV1` merges them over what it derived
+from the pack's own `events.json` (`core/overlay-v2.mjs` `applyOverlayEvents`, `applyOverlayLlm`); the overlay wins: `groups` and `types` by id (an existing one is overridden
+field by field, a new group needs `label`, a new type needs `label` and `group`), `fx_presets` by key, `life` field by field, `levels` / `closed` / `examples`
+replaced as a whole, any other key (`x-…`) overridden. Lenient like K-R67: a bad row is skipped and listed in `problems` (`overlay-group-invalid`, `overlay-type-incomplete`, …). `tools/check_overlay.mjs`
+also runs the merged block through the kernel's own schema (K-R06). A schema-1 pack without an events block in either place shows the neutral taxonomy (K-R53).
 
 ## 14. Designer decisions and open points
 

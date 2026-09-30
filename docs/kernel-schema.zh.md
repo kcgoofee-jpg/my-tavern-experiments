@@ -6,7 +6,7 @@
 > （schema 2 分支）与 `tests/pack_schema_v2.test.mjs`。schema 1（`docs/pack-schema-v1.md`）保持冻结，经
 > `map/core/compat-v1.mjs`（S1-impl-2 步）继续可用。
 
-每条规则都有固定编号 `K-R01` … `K-R67`，后面的提示词和测试按编号引用。编号永不挪动：初稿之后补的规则（K-R63–K-R67，
+每条规则都有固定编号 `K-R01` … `K-R68`，后面的提示词和测试按编号引用。编号永不挪动：初稿之后补的规则（K-R63–K-R68，
 信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
 
 ## 0. 请你拍板
@@ -618,6 +618,12 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 不是对象、没有 id、或新增节点没有名字的条目被跳过，记在 `fromV1(…).problems` 里，其余照常。运行时的树（`app/nodes-runtime.mjs`）、当前地点（`app/here-v2.mjs`）
 和事件落点在包声明了这个文件时读它；没有的包行为和以前完全一样。`tools/check_pack.py` 校验它（`tools/check_overlay.mjs`：id、名字、父节点、无环、显式 alias 含名字、`at` 是数字）。
 首个包的叠加层装的是它的 v1 代码里写死的东西（附录 A.5）：事件的层词（提示词）、带 `at` 的城区节点、城郊与更远的节点，以及世界图的标签 `x-layer`；由 `tools/gen_eden_overlay_v2.mjs` 一次性生成。
+
+**K-R68 —— 叠加层可以带事件块。** 除了 `nodes`，`overlay.v2.json` 还可以带 `events`（v2 事件块，§8.2）和 `llm.templates.<语言>.<键>`（字符串；首个包的注入句标签放在这里）。
+这时 `nodes` 可以省略。`fromV1` 把它们合并到从包自己的 `events.json` 转出来的内容之上（`core/overlay-v2.mjs` 的 `applyOverlayEvents`、`applyOverlayLlm`），叠加层优先：
+`groups`、`types` 按 id（已有的逐字段覆盖；新大类要有 `label`，新类型要有 `label` 和 `group`），`fx_presets` 按键，`life` 逐字段，`levels` / `closed` / `examples` 整体替换，
+其余键（`x-…`）覆盖。和 K-R67 一样宽容：坏的行被跳过并记在 `problems` 里（`overlay-group-invalid`、`overlay-type-incomplete` ……）。`tools/check_overlay.mjs` 还会把合并后的块
+过一遍内核自己的 schema（K-R06）。两处都没有事件块的 schema-1 包显示中性分类（K-R53）。
 
 ## 14. 设计方的决定与遗留点
 
