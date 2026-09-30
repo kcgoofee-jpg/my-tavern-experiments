@@ -346,7 +346,11 @@ def summit(M, P):
     zc = Z_TOP + T_IN; cx, cy = 0, 52
     B.boxc(cx, cy, zc, 108, 108, 12, M['marble'])                          # 基座
     for sx in (-1, 1):
-        for sy in (-1, 1): B.boxc(cx + sx * 42, cy + sy * 42, zc + 12, 30, 30, 26, M['white']); B.pyramid(cx + sx * 42, cy + sy * 42, zc + 38, 30, 30, 6, M['lead'])
+        for sy in (-1, 1):
+            if sy > 0:      # 北面两角：哥特角塔（原来是无窗白方块 + 近乎平的铅皮顶，从山后看像一块白方盒）
+                spire(B, cx + sx * 42, cy + sy * 42, zc + 12, 14, 34, 30, M)
+            else:           # 南面两角被门廊与前排尖塔遮住，保持原样
+                B.boxc(cx + sx * 42, cy + sy * 42, zc + 12, 30, 30, 26, M['white']); B.pyramid(cx + sx * 42, cy + sy * 42, zc + 38, 30, 30, 6, M['lead'])
     B.boxc(cx, cy, zc + 12, 80, 80, 30, M['white'])
     B.boxc(cx, cy, zc + 12, 82, 82, 2.2, M['ashlar'])                        # 勒脚
     B.boxc(cx, cy, zc + 38.5, 84, 84, 2.2, M['ashlar'])                      # 檐口
@@ -393,10 +397,10 @@ def summit(M, P):
         pts = []
         for (xa, ya) in arc:
             nx, ny = (xa - fx) / ea, (ya - fy) / eb; L = math.hypot(nx, ny) or 1; pts.append((xa + nx / L * 2.5, ya + ny / L * 2.5, Z_TOP + 15))
-        B.strip(pts, 8.5, 2.4, M['marble'])
+        B.strip(pts, 11.0, 2.4, M['marble'])          # 台面加宽：像座基底 3.6 m，原 8.5 m 的窄带托不住
         for q, (xa, ya) in enumerate(arc[1::3]):
             nx, ny = (xa - fx) / ea, (ya - fy) / eb; L = math.hypot(nx, ny) or 1
-            statue(B, xa + nx / L * 2.5, ya + ny / L * 2.5, Z_TOP + 16.2, 1.8, M['basalt'] if q % 2 else M['white'])
+            statue(B, xa + nx / L * 2.5, ya + ny / L * 2.5, Z_TOP + 16.2, 1.5, M['basalt'] if q % 2 else M['white'])
         anchor('colonnade', arc[20][0], arc[20][1], Z_TOP + 22)
     B.cyl(fx, fy, Z_TOP + .2, eb * .98, .25, M['paving'], 64, rx=ea * .98)
     # 柏树：外台崖缘成排、中台挡墙下
@@ -528,10 +532,11 @@ def main():
     sc.view_settings.exposure = -.1
     sc.cycles.volume_step_rate = 4.0
     sc.cycles.volume_max_steps = 256
-    if A['save'] == '1':
-        os.makedirs(OUT, exist_ok=True)
+    if A['save'] != '0':          # 1 = 存到 blender/world/out/<ID>.blend；其它值 = 直接当作输出路径（工作树里 out/ 可能是指向主工作树的软链）
+        dst = os.path.join(OUT, ID + '.blend') if A['save'] == '1' else os.path.abspath(A['save'])
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
         try:
-            bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, ID + '.blend'))
+            bpy.ops.wm.save_as_mainfile(filepath=dst)
         except RuntimeError as e:
             print('save_as_mainfile failed:', e)
     if A['glb'] == '1':
