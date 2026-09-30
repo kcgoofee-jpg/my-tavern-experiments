@@ -484,3 +484,15 @@ blocker: none
 open: Q-13 (docs/todo.md): merge key type + node folds distinct unresolved places into one event (3 of 165 on the stress stream); recommend keying on node + the place text the matched word does not cover.
 cleanup: done (probe servers stopped by their scripts, no launch.json entries; the s4-1-events worktree stays until push; docs/plans/FREEZE_MAPS removed)
 === END ===
+
+=== RESULT R-LOOP standard std-1 (checkpoint 3: only waiting items left) ===
+status: PARTIAL (every open standard item done; 6 waiting on FREEZE_MAPS)
+items: fix:climate_tower ✓ (glb light strips no longer bake to white) | inst:supreme_court ✓ (portico, pediment, copper dome) | inst:tiancheng_univ ✓ (curved windows, cornice, roof cap) | waiting (register stage, maps.json frozen): var:tc_mid:dawn, var:tc_mid:dusk, var:tc_low:dawn, var:tc_low:day, var:tc_low:dusk, var:tc_low:night
+commits: fix(landmarks): climate tower glow bake, and the supreme court / university model rework
+pushed: head #173
+tests: smoke PASS | check_maps 0 errors 0 warnings
+deviations: (1) The ledger shows the ship stage of fix:climate_tower as `skip` with the note "x": a slip (append-only file); the stage was done in substance and is noted in docs/reviews/campaign/fix_climate_tower/r2.md. (2) The viewer could not be screenshotted (built-in browser pane has no WebGL); the climate tower diagnosis rests on the baked textures extracted from the glb. (3) The three glbs were re-exported with per-group budgets and raised max_mb because the earlier exports had none: climate tower 3.02 / 1.13 MB (was 2.17 / 1.19), univ+court 0.71 / 0.16 MB (was 0.19 / 0.10).
+blocker: none
+open: (a) when FREEZE_MAPS is lifted: register the six periods in maps.json (tc_mid dawn/dusk, tc_low dawn/day/dusk/night; tiles are already committed) and update tests/compat_v1.test.mjs:203, which pins tc_mid periods to day+night; the viewer's periodOf (map/app/nav.mjs) only reads day/night. (b) hunting_camp 3D entry needs an engine change. (c) A spot check of climate_tower in the real viewer is worthwhile. (d) Re-rendering site base maps rewrites map/data/site_kavalierki.json and drops the hand-placed arms_rnd marker (restore from git).
+cleanup: done (local preview server stopped, browser viewport reset)
+=== END ===
