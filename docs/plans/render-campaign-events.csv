@@ -253,3 +253,4 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T16:37:40Z,scene:fief4,review-r2,done,std-1,pass,fidelity 7 / credibility 6 (r2.md)
 2026-09-30T16:49:12Z,scene:fief4,final,done,std-1,pass,std 2.17 MB / low 1.26 MB under max_mb 2.8/1.4
 2026-09-30T16:49:13Z,scene:fief4,ship,wait,std-1,,"FREEZE_MAPS on origin/preview; model, glbs, manifest committed; needs lm_fief4 entry + links for fief4_castle/order/village/fields in maps.json + card-buildings rows"
+2026-09-30T16:09:09Z,eden:r5,user-review,done,user,pass,"user 2026-10-01 (chat): approved; make the main fall thicker, then final"

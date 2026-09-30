@@ -201,8 +201,8 @@ def falls(col, M, rim):
     mist = _mist()
     rx, ry = rim
     th0 = math.atan2(ry, rx)
-    specs = [(th0, 10.0, 24.0, 140.0, white, 'fall_main')]
-    for dth, nm, a_, b_ in ((-0.075, 'fall_thin_s', 2.0, 5.0), (0.068, 'fall_thin_n', 3.0, 8.0)):
+    specs = [(th0, 18.0, 40.0, 150.0, white, 'fall_main')]   # 用户 2026-10-01：瀑布再粗一点
+    for dth, nm, a_, b_ in ((-0.075, 'fall_thin_s', 3.5, 8.0), (0.068, 'fall_thin_n', 5.0, 12.0)):
         specs.append((th0 + dth, a_, b_, 90.0, thin, nm))
     for th, w0, w1, H, mat, nm in specs:
         R = float(L.outline_R(np.array(th)))
