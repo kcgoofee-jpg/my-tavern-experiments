@@ -53,5 +53,22 @@ deviations: (1) The item-list rules live in a second file, tools/render_campaign
 blocker: none
 open: (a) 7 items carry a TODO in their notes: review:holy_mountain (no blender/landmarks/holy_mountain/build.py; its source is blender/world/yuanyu_holy_mount.py, so landmark.py stages may not apply); var:tc_mid:dawn, var:tc_mid:dusk, var:tc_low:dawn, var:tc_low:dusk (tiancheng_mid.py / tiancheng_low.py only have --day, night is the default; dawn / dusk lighting must be added first); var:tc_upper:16k (how the 16k DZI is registered in maps.json: replace base or alt); estate:b1b2 (eden_manor.py --view has B1 but no B2). (b) Specs the prompt did not give, assumed: isle:* 2400/64, base:tc_upper 8000/128, var:tc_upper:<period> 8000/128, estate:b1b2 2000/32; each says so in its notes. (c) base:world has no world final in logs/render_times.csv (only world_yuanyu drafts), so it uses the 8000/128 default.
 item counts: standard 48 = estate 2, review 12, landmark 8, scene 7, basemap 11, variant 8; hero 19 = island 8, basemap 2, variant 5, estate 1, landmark 3; total 67.
+=== RESULT S0-C ===
+status: BLOCKED
+items: T1 ✓  T2 ✓  T3 ✓  T4 ✓
+       row counts: A engine files 53, B same-name pairs 28 (14 groups), C window globals 68, D short identifiers 28, E chat-variable keys 16, F storage/protocol/API/distribution 24 (217 rows: 170 internal, 47 external contract; waves S5 150, S6 3, S10 47, no change 17); glossary 34 terms; open items 10
+commits: 4d655d1 docs(naming): naming rules, rename map and glossary with zh edition
+         (this commit) docs(log): S0-C result   (SHAs may change on rebase)
+pushed: not pushed (rejected, see blocker); the work is committed on branch s0c-naming
+tests: node 629/630 (1 skipped; baseline identical) | smoke PASS | arch PASS | probes: none run (docs only)
+deviations: (1) The plan counts 11 kinds of window.TC*; the code has 29 (18 set directly, 11 through P.register()), and 34 read-only compat getters in app/bridge.mjs; the tables use the real numbers. (2) Wave column has a third value, S6, for the chat keys 仓库 / 槽位, because decision D4 migrates them with the stash unification, not at S10. (3) baibai.mjs: the plan draft says appearance-bridge, the table proposes imagegen-bridge (the module's write path is drawing); flagged as open 8. (4) Table B rows for the core side of a pair say (keep) and the forwarder tavern/routine.mjs says (delete), so each pair is complete. (5) The tables were generated from one scratch script so the en and zh editions cannot drift; the script is not committed (no code in scope).
+blocker: `bash tools/push_preview.sh --head --no-escalate`, run once, no retry:
+  To https://github.com/kcgoofee-jpg/my-tavern-experiments.git
+   ! [rejected]        HEAD -> preview (non-fast-forward)
+  error: failed to push some refs to 'https://github.com/kcgoofee-jpg/my-tavern-experiments.git'
+  hint: Updates were rejected because a pushed branch tip is behind its remote counterpart.
+  Cause: origin/preview moved to head #102 (162a63f; render-line commits 6e84ad4, 089e569) after this branch was cut from head #101 (04d0811). tools/push_preview.sh pushes HEAD as it is and does not fetch or rebase, although brief §3 says it does.
+  Options: A) rebase s0c-naming onto origin/preview (this branch touches only docs/naming*.md, tools/check_zh_mirror.py and the append-only log, so no conflict is expected), re-run the gates, push; B) leave it to you to push. Not force-pushed.
+open: (a) DECISION: how the first pack keeps its legacy names (manifest-declared legacy prefixes vs rename everything and read old forever), especially the worldbook extra.eden_* markers. (b) DECISION: identifier prefix (spatial / Spatial assumed from D5), engine repo name, npm package name. (c) DECISION: util.mjs / shell.mjs need a split design; keep `$` by exception? (d) DECISION: `floor` (chat floor vs storey), imagegen-bridge vs appearance-bridge. (e) FOUND, NOT FIXED: app/host.mjs:52,54 call P.TCFog?.mute?.(), but fog.mjs never registers TCFog in P, so replay-time muting is a no-op. (f) FOUND: four read-only window hooks with no writer (__edenHostVersions, __edenHereText, __edenMvuSnapshotStatus, __composeTest); stale .js owner strings in core/storage.mjs KEYS (5 names, 8 keys).
 cleanup: done
 === END ===
