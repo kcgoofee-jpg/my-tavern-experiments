@@ -25,10 +25,11 @@ test('stepState：迟滞——在带边界上抖动不换档，越过边界 12% 
   assert.equal(L.band(nearEdge), 'near');
   assert.equal(L.stepState('near', { distance: 1.8 * 1.05, size: 1 }).state, 'near', '刚过边界 5%：不动');
   assert.equal(L.stepState('near', { distance: 1.8 * 1.5, size: 1 }).state, 'mid');
-  assert.equal(L.stepState('mid', { distance: 1.8 * 1.5, size: 1 }).state, 'mid', '升档要跨得更狠（/ k）');
-  assert.equal(L.stepState('mid', { distance: 1.5, size: 1 }).state, 'near');
+  assert.equal(L.stepState('mid', { distance: 1.8 * 1.5, size: 1 }).state, 'mid', '2.7 < 2.4×1.12：不够上近档');
+  assert.equal(L.stepState('mid', { distance: 1.9, size: 1 }).state, 'near');
   assert.equal(L.stepState('far', { distance: 100, size: 1 }).state, 'far');
-  assert.equal(L.stepState('far', { distance: 4, size: 1 }).state, 'mid');
+  assert.equal(L.stepState('far', { distance: 5.3, size: 1 }).state, 'mid', '6 / 1.12 ≈ 5.36：越过才升档');
+  assert.equal(L.stepState('far', { distance: 5.4, size: 1 }).state, 'far', '刚差一点：不动');
   assert.equal(L.stepState('bogus', { distance: 99, size: 1 }).state, 'far', '脏状态回落 far');
 });
 

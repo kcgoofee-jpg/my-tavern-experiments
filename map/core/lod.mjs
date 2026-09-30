@@ -46,9 +46,8 @@ export function band(o, bands = DEFAULT_BANDS) {
 }
 
 /**
- * Hysteresis gate: only accept a state change once the observation clears the neighbour band
- * by HYSTERESIS. Detail increases (far → near) need the tighter threshold to be crossed more
- * convincingly than the band itself; detail decreases are symmetric but never below 'far'.
+ * Hysteresis gate: leaving a band requires crossing it by HYSTERESIS (symmetric for detail up and
+ * down), so a model sitting on a boundary cannot thrash between two detail levels.
  */
 export function stepState(current, o, bands = DEFAULT_BANDS) {
   const cur = STATES.includes(current) ? current : 'far';
@@ -57,7 +56,7 @@ export function stepState(current, o, bands = DEFAULT_BANDS) {
   const r = observe(o).ratio, k = 1 + HYSTERESIS;
   let want = cur;
   if (cur === 'near' && r > near * k) want = 'mid';
-  else if (cur === 'mid') { if (r <= near / k) want = 'near'; else if (r > mid * k) want = 'far'; }
+  else if (cur === 'mid') { if (r > mid * k) want = 'far'; else if (r <= near / k) want = 'near'; }
   else if (cur === 'far' && r <= mid / k) want = 'mid';
   return { state: want, changed: want !== cur, ratio: r };
 }

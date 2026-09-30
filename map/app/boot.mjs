@@ -99,6 +99,7 @@ async function mainInner() {
   }));
   viewer.addHandler('open', onOpen);
   initLayerHost(viewer); registry.mountAll({ viewer }); viewer.addHandler('open', () => initLayerHost(viewer));   // P3-C：视口槽位容器 + 按注册序挂载图层
+  initTileWorker();   // Part 3 §2：瓦片解码挪到后台线程（懒 import，拿不到就原路径，不挡启动）
   // 缩放组：+ / − 以视野中心缩放，复位 = 本图的初始视野
   $('#zIn').onclick = () => { setUserMoved(true); viewer.viewport.zoomBy(1.5); viewer.viewport.applyConstraints(); };
   $('#zOut').onclick = () => { setUserMoved(true); viewer.viewport.zoomBy(1 / 1.5); viewer.viewport.applyConstraints(); };
@@ -155,6 +156,14 @@ async function mainInner() {
   // 首张地图画出来后，空闲时预热其他地图：描述文件、点位数据、最粗的几层瓦片（切过去立刻有模糊版）
   let warmT = 0; const warmSoon = ms => (clearTimeout(warmT), warmT = setTimeout(() => (window.requestIdleCallback || (f => f()))(() => warmOthers(), { timeout: 3000 }), ms));
   viewer.addOnceHandler('tile-drawn', () => { warmSoon(1500); setTimeout(firstRunHint, 1600); viewer.addHandler('open', () => warmSoon(2500)); });   // 每到一张新图，再预热它的邻居（已预热过的跳过）
+}
+/**
+ * Part 3 §2：把瓦片解码接到后台线程。懒 import（模块不到 / 浏览器不支持都不影响启动），
+ * 装在 OSD 实例的瓦片源上——OSD 的 addJob / finish 与 tile-loaded 全部照旧，所以加载进度与「卡住了？重试」不受影响；
+ * 任一瓦片解码失败都自动回原来的 new Image() 路径（dzi-worker.mjs 内部还有连续失败整会话停用的兜底）。
+ */
+function initTileWorker() {
+  import('./dzi-worker.mjs').then(m => { try { m.installWorkerTiles(viewer); } catch (e) {} }).catch(() => {});
 }
 // 启动数据取不到时的出路（接手 review P0）：以前 main() 抛错就永远停在「加载中…」，连重试按钮都没有
 function bootFail(e) {
