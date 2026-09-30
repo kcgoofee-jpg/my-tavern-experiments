@@ -47,7 +47,7 @@
 
 | 当前名 | 位置 | 含义 | 建议新名 | 类别 | 批次 | 备注 |
 |---|---|---|---|---|---|---|
-| `tavern/baibai.mjs` | `map/tavern/baibai.mjs:1` | 可选依赖：外部绘图扩展的桥。读它的角色外貌库、经它的并发闸门出图、拼提示词；扩展不存在时每个函数都安静降级。 | `tavern/imagegen-bridge.mjs` | 内部 | S5 | 拼音（扩展自己的名字）。引用：map 3 个文件、测试 1 个。计划草案写的是 `appearance-bridge`；这个模块的主要写路径是出图，所以本表用 `imagegen-bridge`。`eden-map.js` 里的别名 `BBm` 跟着改；`docs/baibai-bridge.md` 是文档名，本次不动。 |
+| `tavern/baibai.mjs` | `map/tavern/baibai.mjs:1` | 可选依赖：外部绘图扩展的桥。读它的角色外貌库、经它的并发闸门出图、拼提示词；扩展不存在时每个函数都安静降级。 | `tavern/imagegen-bridge.mjs` | 内部 | S5 | 拼音（扩展自己的名字）。引用：map 3 个文件、测试 1 个。计划草案写的是 `appearance-bridge`；这个模块的主要写路径是出图，所以本表用 `imagegen-bridge`（已确认，决定 e）。`eden-map.js` 里的别名 `BBm` 跟着改；`docs/baibai-bridge.md` 是文档名，本次不动。 |
 | `tavern/shujuku.mjs` | `map/tavern/shujuku.mjs:1` | 只读兼容可选的「表格数据库」扩展：读它导出的表来取当前地点、时间和「姓名 + 位置」人物表；从不写入。 | `tavern/tabledb-bridge.mjs` | 内部 | S5 | 拼音（数据库）。引用：map 2 个文件（`context.mjs`、`mvu-bridge.mjs`）、测试 1 个（`tests/shujuku.test.mjs`，随之改名）。 |
 | `tavern/th.mjs` | `map/tavern/th.mjs:1` | 酒馆助手的薄封装：功能探测（`hostFns`）、`cdnFetch`、类宏、只作用于显示层的泄露栅栏。 | `tavern/tavernhelper-api.mjs` | 内部 | S5 | "th" = TavernHelper（酒馆助手）。引用：map 1 个、测试 4 个。`cdnFetch` 有三份（这里、`host-th.mjs`、`eden-map.js` 内联；有测试对拍）。 |
 | `tavern/host-th.mjs` | `map/tavern/host-th.mjs:1` | 宿主脚本的酒馆助手适配层：请求包装、函数探测（`thFn`、`fnOk`、`hostFn`、`fnGuard`）、设定包命名空间、脚本变量偏好、世界书自动化。 | `tavern/host-tavernhelper.mjs` | 内部 | S5 | 引用：map 5 个、测试 5 个。与 `th.mjs` 重叠：「取酒馆助手函数」这件事有 `hostFns`、`thFn`、`hostFn` 三个版本。S5 抽 `host-api` 时可合并。 |
@@ -177,7 +177,7 @@
 | `window.UIProgress` | `map/ui/progress.mjs:62` | 加载进度组件（`mount`）。 | (keep) | 内部 | — | 引用：map 1。 |
 | `window.I18N` | `map/app/i18n.mjs:26` | 给外挂用的共享 i18n 服务：`lang`、`t`、`nm`、`tr`、`fmt`、`tx`。 | (keep) | 内部 | — | 引用：map 15。名字清楚；里面的函数见表 D（`tx` 有两个版本，行为不同）。 |
 | `window.EdenMap` | `map/app/extapi.mjs:23` | 公开的本机扩展 API：21 个方法（`setCustom`、`getRooms`、`flyTo`、`on`、`off` 等）；宿主也把它暴露成 `window.parent.EdenMap`（`eden-map.js:1136`）。 | `window.SpatialMap` (product name per D5) | 外部契约 | S10 | 引用：map 14、测试 2、工具 11。别人的脚本可能在调用它，所以 `EdenMap` 至少要作为冻结别名多保留一个版本。契约文件：`tavern/edenapi.mjs`。 |
-| `window.estCard` | `map/custom.mjs:311` | 用户刚选中的房间的地点方案（`name`、`floor`、`kind`、`area`、`poly`、`z`）；由自定义名称外挂写，三维子页宿主读。 | `window.__selectedRoomPlan` | 内部 | S5 | 引用：map 2。用全局变量在外挂和应用模块之间传值：应改为 `P` 条目或状态 setter。这里的 "card" 指卡设定的房间方案，是这个词的第三种含义。 |
+| `window.estCard` | `map/custom.mjs:311` | 用户刚选中的房间的地点方案（`name`、`floor`、`kind`、`area`、`poly`、`z`）；由自定义名称外挂写，三维子页宿主读。 | `window.__selectedRoomPlan`；字段 `floor` 改为 `storey` | 内部 | S5 | 引用：map 2。用全局变量在外挂和应用模块之间传值：应改为 `P` 条目或状态 setter。这里的 "card" 指卡设定的房间方案，是这个词的第三种含义。 |
 | `window.renderStorage` | `map/app/storage-ui.mjs:27` | 渲染存储设置页；挂在 `window` 上供设置页和探针用。 | `window.renderStorageSettings` | 内部 | S5 | 引用：map 3。 |
 | `window.<34 compat getters>` | `map/app/bridge.mjs:14` | 旧内联主脚本全局名的只读 getter：`toImg viewer aspect M REG cur tier sleeping esc post jsonCache LANG nm setTheme main fadeAway go est setEstFail openEstate estFocus closeCard hereRes jumpHere TCSettings showSet showLay chatId LS renderAbout curData lean t showCard`。 | retire; probes import modules or read one `window.ViewerDebug` namespace | 内部 | S5 | 探针通过 `page.evaluate` 读它们：`tools/browser/` 的 51 个文件里有 38 个提到 `REG cur viewer curData go jumpHere showCard est M` 中至少一个词（粗略按词 grep，是上界）。先迁移探针再删除。文件头写着「只加不减」。 |
 | `window.__tcPack` | `map/tavern/eden-map.js:182` | 生成的脚本在导入宿主之前写入的设定包注入对象：`{ id, manifest, events }`；宿主再把它拷进查看器的 `srcdoc`。 | `window.__spatialPack` | 外部契约 | S10 | 引用：map 5、测试 1、工具 2（写入方是 `tools/build_preview_script.py`）。已安装的脚本写的是旧名字：宿主必须两个都读。 |
@@ -244,7 +244,7 @@
 | `get` (three copies) | `map/core/storage.mjs:71` | `storage.get(键, 默认值)`；`mvu.get(对象, 路径)`（`tavern/mvu.mjs:10`）与 `adapter.get(对象, 路径)`（`tavern/adapter.mjs:25`）是两个几乎一样的路径读取函数，各自还抄了一份 `val`。 | `storageGet`; `getByPath` (merge the two copies) | 内部 | S5 | `storage.get` 总是以 `TCStore.get` 形式使用，真正撞名的是那两个路径读取函数。可以合并。 |
 | `on` | `map/app/cvd.mjs:19` | 返回色觉模式是否开启（`mode() !== '0'`）。`fog.mjs` 里另有一个局部 `on()`，对应另一个开关。 | `isEnabled` | 内部 | S5 | 像动词，读起来像「事件监听 on」。 |
 | `ico` | `map/app/util.mjs:9` | 从 `window.UIIcon` 取图标的 SVG。 | `iconSvg` | 内部 | S5 | 被 2 个文件导入。`esc`（`util.mjs:7`，21 个导入方）有 3 个字母、也够清楚；只有在批量改名脚本本来就要跑时才顺带改成 `escapeHtml`（可选）。 |
-| `MB`, `DAY`, `AGE` | `map/core/budget.mjs:24` | `MB` = 1048576 字节；`DAY`（`tavern/selfcheck.mjs:169`）= 一天的毫秒数；`AGE`（`tavern/events.mjs:94`）= 楼层距离阈值 `{ live: 7, after: 20, fade: 40 }`。 | `BYTES_PER_MB`, `MS_PER_DAY`, `EVENT_AGE_FLOORS` | 内部 | S5 | 导出的常量，名字里没有单位。 |
+| `MB`, `DAY`, `AGE` | `map/core/budget.mjs:24` | `MB` = 1048576 字节；`DAY`（`tavern/selfcheck.mjs:169`）= 一天的毫秒数；`AGE`（`tavern/events.mjs:94`）= 楼层距离阈值 `{ live: 7, after: 20, fade: 40 }`。 | `BYTES_PER_MB`, `MS_PER_DAY`, `EVENT_AGE_MSGS`（`msgIndex` 距离） | 内部 | S5 | 导出的常量，名字里没有单位。 |
 
 ### E. 聊天变量键
 
@@ -254,9 +254,9 @@
 |---|---|---|---|---|---|---|
 | `eden_map` (root key) | `map/tavern/mvu.mjs:110` | 保存地图自有状态的唯一一个顶层聊天变量。`VAR_ROOT` 默认取它；第一个设定包的清单也写了它（`chat.var`）；其他设定包默认 `tc_<id>`（`core/pack.mjs:12`、`mvu-bridge.mjs:50`）。 | engine default `spatial_map`, fallback `spatial_<id>`; the first pack keeps `eden_map` in its manifest | 外部契约 | S10 | 第一个设定包已经在清单里声明了 `eden_map`，所以只有引擎默认值要改，聊天数据不用动。旧默认值写死在两处（`mvu.mjs:110`、`pack.mjs:12`）；`tc_` 又是卡名前缀。 |
 | `自定义` | `map/tavern/mvu.mjs:116` | 用户设置的自定义名称、用途、别名和忽略名（`normCustom` 的形状：`items` 加下面几个标志）。由 `saveRoot` 写入（`eden-map.js:979`）。 | `custom` | 外部契约 | S10 | 6 个文件提到它；代码里读它的是 `eden-map.js` 和 `custom.mjs`，其余（`mvu.mjs`、`unmapped.mjs`、`here.mjs`、`extapi.mjs`）只在注释里提到。旧聊天里仍是中文键：迁移 = 先读新键、没有再读旧键、写新键、旧键保留一个版本。 |
-| `标签楼` | `map/tavern/eden-map.js:979` | 已处理过改名 / 用途标签的最高聊天楼层（`CTX.tag.floor`）。 | `tagFloor` | 外部契约 | S10 | `context.mjs:82`（注释）和 `eden-map.js:997` 也读。 |
+| `标签楼` | `map/tavern/eden-map.js:979` | 已处理过改名 / 用途标签的最高聊天楼层（`CTX.tag.floor`）。 | `tagMsgIndex` | 外部契约 | S10 | `context.mjs:82`（注释）和 `eden-map.js:997` 也读。 |
 | `标签记录` | `map/tavern/eden-map.js:998` | 最近 30 条标签回放记录 `{ floor, key, … }`：标签「撤销-重放」状态机的状态。 | `tagLog` | 外部契约 | S10 | 加载时只保留最近 30 条。 |
-| `楼层指纹` | `map/tavern/eden-map.js:999` | 每层原文的指纹（FNV-1a、36 进制），用来发现某一层的原文被改过（`context.mjs:12`）。 | `floorFingerprints` | 外部契约 | S10 | 本质上是可丢弃的缓存：从聊天记录重算即可重建。 |
+| `楼层指纹` | `map/tavern/eden-map.js:999` | 每层原文的指纹（FNV-1a、36 进制），用来发现某一层的原文被改过（`context.mjs:12`）。 | `msgFingerprints` | 外部契约 | S10 | 本质上是可丢弃的缓存：从聊天记录重算即可重建。 |
 | `行程` | `map/tavern/eden-map.js:979` | 最近的行程：玩家最近 5 段、每个人物各 5 段（`CTX.trips`）。 | `trips` | 外部契约 | S10 | 派生值：可从聊天楼层重算（brief §2.4）。 |
 | `仓库` | `map/tavern/inventory.mjs:3` | 空间化背包物品（`{ items, seq }`），由地图写入，显示在地点卡上并汇总成一行注入。 | `stash` (merged, decision D4) | 外部契约 | S6 | 由 S6 与 `槽位` 一起自动迁移；读取在 `eden-map.js:1001`。这个词也是 `SLOT_KEYS`（`ledger.mjs:299`）里的候选名之一。 |
 | `槽位` | `map/core/ledger.mjs:298` | 卡里没有背包字段时，地图声明的虚拟账本槽位（`SLOT_ROOT`）：`{ 名, 件, … }`。是 `map/core` 里的一个中文字面量。 | `stash` (merged, decision D4) | 外部契约 | S6 | 字段 `名`（槽位名）和 `件`（件数）见下面的子键行。读取在 `eden-map.js:1002`。 |
@@ -266,7 +266,7 @@
 | `自定义.同步世界书`, `.同步手动`, `.忽略` | `map/tavern/mvu.mjs:118` | `自定义` 的子键：世界书同步开关（默认开）、「用户手动设置过」标志、最多 50 个被忽略的地点名。 | `syncWorldbook`, `syncManual`, `ignored` | 外部契约 | S10 | `同步手动` 守着 0.9.3 的一次迁移（`eden-map.js:1011`）；S10 的读取代码里要保留这条迁移路径。 |
 | `自定义.items[*].类`, `.名`, `.用途`, `.别名`, `.源` | `map/tavern/mvu.mjs:124` | 一个自定义项的字段：类别（`room` / `area` / `landmark` / `character` / `layer` / `world`）、显示名、用途文字、别名、来源。 | `kind`, `name`, `purpose`, `aliases`, `source` | 外部契约 | S10 | `源` 的取值也是中文：`标签`（来自标签）和 `手动`（手动）改成 `tag` / `manual`。同样的字段也出现在 `eden-map:custom` 的载荷里。 |
 | `槽位.名`, `.件` | `map/core/ledger.mjs:364` | 虚拟槽位里的槽位名与件数（`slotSave` 仅在有名字且件数大于 0 时才写）。 | disappear with the merge into `stash` | 外部契约 | S6 | 不用单独改名。 |
-| `检查点.楼` | `map/tavern/modes.mjs:105` | 检查点里的楼层号。 | `floor` | 外部契约 | S10 | 同级的 `swipe` 已经是 ASCII，保留。 |
+| `检查点.楼` | `map/tavern/modes.mjs:105` | 检查点里的聊天消息序号。 | `msgIndex` | 外部契约 | S10 | 同级的 `swipe` 已经是 ASCII，保留。 |
 | `eden_wb_ver` (top-level chat variable) | `map/tavern/host-th.mjs:141` | 这个聊天上次见到的附加条目版本，用来让「附加条目有新版」的提示每个聊天只出现一次。 | `spatial_wb_ver` | 外部契约 | S10 | 放在根键旁边而不是里面。新聊天只记录、不提示。 |
 
 ### F. 存储、协议、API 与分发名
@@ -280,7 +280,7 @@
 | `tcp.<id>.*` (non-first-pack namespace) | `map/core/pack.mjs:8` | 除第一个设定包外，所有设定包的存储前缀：`tcp.<id>.` 加去掉 `edenMap` 的登记键。 | `pack.<id>.*` | 外部契约 | S10 | "tcp" = "tc pack"（卡名前缀）。目前只有虚构的示例包 `town` 在用，迁移风险低。`TCStore` 在带命名空间的键为空时本来就会去读原始的 `edenMap*` 键（`viewer.html:31`），所以读取回退的通路已经有了；再加一条回退读旧 `tcp.` 形式也是同样的做法。 |
 | `eden_prefs` (script variable) | `map/tavern/host-th.mjs:46` | 酒馆助手的脚本变量，镜像 12 个 `SCRIPT_KEYS` 偏好，让它们在浏览器存储被清空后仍在。 | `spatial_prefs` | 外部契约 | S10 | 存在酒馆一侧、跨设备：两个名字都读，只写新的。 |
 | `eden_wb_tomb`, `eden_wb_notice`, `eden_wb_chars` (global variables) | `map/tavern/host-th.mjs:97` | 世界书自动化用的酒馆助手全局变量：墓碑标志、上次提示过的版本、已绑定角色列表（本机存储里还有镜像 `edenMapWbTomb`、`edenMapWbNoticeVer`、`edenMapWbChars`）。 | `spatial_wb_tomb`, `spatial_wb_notice`, `spatial_wb_chars` | 外部契约 | S10 | 墓碑的意思是「用户撤销过 / 删过这本书」：丢了它就会把用户删掉的书又建出来，所以这个必须先迁移、再写入。 |
-| `extra.eden_id`, `eden_ver`, `eden_hash` | `map/tavern/wbsync.mjs:4` | 附加世界书条目的归属标记：稳定编号、写入时的版本、内容指纹。只有带 `eden_id` 的条目才会被写入或删除（brief §2.5）。 | `extra.spatial_id`, `spatial_ver`, `spatial_hash` | 外部契约 | S10 | 分别 27 / 9 / 14 处使用。最危险的改名：用户的书里已经有旧标记，而安全规则就是靠它定义的。要么永远把两种标记都当作「我们的」，要么让设定包声明标记前缀（第一个设定包继续用 `eden_`），这样什么都不用迁移。需要拍板（见 open 第 4 条）。 |
+| `extra.eden_id`, `eden_ver`, `eden_hash` | `map/tavern/wbsync.mjs:4` | 附加世界书条目的归属标记：稳定编号、写入时的版本、内容指纹。只有带 `eden_id` 的条目才会被写入或删除（brief §2.5）。 | `extra.spatial_id`, `spatial_ver`, `spatial_hash` | 外部契约 | S10 | 分别 27 / 9 / 14 处使用。最危险的改名：用户的书里已经有旧标记，而安全规则就是靠它定义的。要么永远把两种标记都当作「我们的」，要么让设定包声明标记前缀（第一个设定包继续用 `eden_`），这样什么都不用迁移。已拍板（决定 a）。 |
 | `extra.eden_retired`, `eden_order`, `eden_conflict`, `eden_dup` | `map/tavern/wbsync.mjs:60` | 附加条目上的状态标记：在新版里已下线（并保存原顺序）、冲突的编辑被留存、重复。 | `spatial_retired`, `spatial_order`, `spatial_conflict`, `spatial_dup` | 外部契约 | S10 | 与归属三件套同一个决定；作为一组一起动。 |
 | `extra.eden_jit`, `eden_jit_ignore` | `map/tavern/wb_jit.mjs:7` | JIT 标记：条目是被 JIT 关掉的 / 用户手动关掉、JIT 永远不许碰的条目。 | `spatial_jit`, `spatial_jit_ignore` | 外部契约 | S10 | `eden_jit_ignore` 是保护用户意愿的标志：丢了它，JIT 就会把用户手动关掉的条目重新打开。 |
 | worldbook name prefix `伊甸地图·` | `map/tavern/wbsync.mjs:10` | 我们附加书的名字前缀（`BOOK = PREFIX + …`）；代码从不碰其他书。 | pack manifest `worldbook` name (data) | 外部契约 | S10 | 计划里已经把书名改成设定包数据（「伊甸保留原书名」）；引擎里只留一个中性默认值。已有的书就是靠这个名字找到的。 |
@@ -289,11 +289,11 @@
 | macros `{{eden_here}}`, `{{eden_route}}`, `{{eden_fly …}}` and marker `data-eden-fly` | `map/tavern/th.mjs:101` | 卡和预设作者可以写的宏；展开成当前地点、最近一段行程，或一个让地图飞往某地的隐藏标记。 | `{{spatial_here}}`, `{{spatial_route}}`, `{{spatial_fly …}}`, `data-spatial-fly`; old names stay | 外部契约 | S10 | 别人的卡里可能已经写了它们（默认关，开关 `edenMapMacros`）。旧写法要永远保留为别名。 |
 | injection and lock ids `eden-map-events`, `eden-map-state`, `eden-map-spatial`, `eden-map-wb` | `map/tavern/eden-map.js:728` | 宿主添加的提示词注入的 id（事态、状态行、空间契约）和世界书锁的名字。 | `spatial-events`, `spatial-state`, `spatial-contract`, `spatial-wb` | 外部契约 | S10 | 常量 `STATE_ID`（`modes.mjs:5`）、`SPATIAL_ID`（`spatial.mjs:14`）。版本切换时会短暂同时跑两份脚本：两边必须替换同一条注入，而不是各注入一条。 |
 | mount element id `eden-map-root` | `map/tavern/eden-map.js:34` | 宿主面板根节点的 DOM id；新版本靠它找到旧实例（`eden-map.js:36` 的 `oldStyle` 判断）。 | `spatial-map-root` | 外部契约 | S10 | 与 `__edenMapCleanup` 一起构成跨版本握手（表 C）。 |
-| protocol prefix `eden-map:*` | `map/core/protocol.mjs:11` | 90 种消息类型里的 63 种：宿主与查看器用它们通信（`boot`、`ready`、`state`、`here`、`notice`、`custom`、`loot` 等）。 | `spatial:*` with `PROTO` 3 | 外部契约 | S10 | 宿主脚本（用户安装）和查看器（来自 CDN）版本可能不同，所以信封里带 `v`。只有当对方的 `eden-map:ready` 报告 `proto` 为 3 之后才发新前缀；期间 `accept` 两种都收。 |
+| protocol prefix `eden-map:*` | `map/core/protocol.mjs:11` | 90 种消息类型里的 63 种：宿主与查看器用它们通信（`boot`、`ready`、`state`、`here`、`notice`、`custom`、`loot` 等）。 | `spatial:*` with `PROTO` 3 | 外部契约 | S10 | 宿主脚本（用户安装）和查看器（来自 CDN）版本可能不同，所以信封里带 `v`。只有当对方的 `eden-map:ready` 报告 `proto` 为 3 之后才发新前缀；期间 `accept` 两种都收。声明了旧协议前缀的设定包继续用它（决定 a）。 |
 | protocol prefix `estate:*` | `map/core/protocol.mjs:77` | 查看器与三维子页之间的 20 种类型（`room`、`floor`、`loot`、`cvd`、`fps` 等）；`estate:floor` 还以 `both` 方式转发。 | `subpage:*` | 内部 | S5 | 查看器和子页同版本发布，所以这组属于内部契约，随 `app/estate.mjs` → `subpage3d-host.mjs` 一起改。`tests/protocol.test.mjs` 里列了这些名字。 |
 | protocol prefix `v3d:*` | `map/core/protocol.mjs:91` | 查看器与通用三维查看器之间往来的 7 种类型（`fly`、`mode`、`flows`、`backdrop`、`viewport`、`budget`、`state`）。 | `viewer3d:*` | 内部 | S5 | 理由同上；"v3d" 也是探针 `__v3d` 的名字。 |
 | entry file `map/tavern/eden-map.js` | `map/tavern/eden-map.js:1` | 用户导入的宿主脚本（经生成的预览 / 标签脚本），也是路径里带卡名的唯一文件。脚本 id 是 `uuid5("eden-map-preview:<ref>")`（`tools/build_preview_script.py:70`），所以重新导入是覆盖而不是重复。 | `map/tavern/host-entry.js`, with the old path kept as a one-line forwarder | 外部契约 | S10 | 现在 1535 行，S5 要拆。CDN 上已发布的 tag 不可变，所以旧脚本会永远加载旧路径；不要改脚本 id 的种子。 |
-| npm package `tiancheng-map-assets` | `tools/pack_npm.sh:11` | npm 镜像包的名字（国内镜像线路）；`host-routes.mjs:23` 里的默认值，也是第一个设定包清单的 `cdn.npm`。 | `spatial-map-assets` as the engine default; the first pack keeps its name | 外部契约 | S10 | 包名不能复用或改名；新包意味着新 URL，旧版本原地不动。通过清单已经是数据驱动的了。 |
+| npm package `tiancheng-map-assets` | `tools/pack_npm.sh:11` | npm 镜像包的名字（国内镜像线路）；`host-routes.mjs:23` 里的默认值，也是第一个设定包清单的 `cdn.npm`。 | `spatial-os-assets`（暂定，S10 定）as the engine default; the first pack keeps its name | 外部契约 | S10 | 包名不能复用或改名；新包意味着新 URL，旧版本原地不动。通过清单已经是数据驱动的了。 |
 | CDN repository `kcgoofee-jpg/my-tavern-experiments` | `map/tavern/host-routes.mjs:23` | jsDelivr 及镜像所服务的仓库（`cdn.repo`）；设定包没写时的默认值。 | the new engine repository (name to be chosen at the S10 split) | 外部契约 | S10 | 已安装的脚本里嵌着旧 URL，所以旧仓库必须继续提供服务。名字由用户决定（见 open 第 5 条）。 |
 | CDN data paths `map/data/head.json`, `map/data/worldbook_addon.json` | `map/tavern/follow.mjs:10` | 已安装的脚本按 URL 取的文件：分支的构建指针（`{ build, sha, at }`）和附加世界书内容。 | move into `map/packs/eden/` with the pack; leave forwarding files at the old paths | 外部契约 | S10 | 计划在 S10 搬走第一个设定包的数据。`head.json` 由 `tools/bump_head.py` 写、由 `follow.mjs` 读，两边要一起改。 |
 | feedback file name `eden-map-feedback-<time>.txt` | `map/app/feedback.mjs:44` | 下载的反馈报告的文件名。 | `spatial-map-feedback-<time>.txt` | 外部契约 | S10 | 只是外观问题；跟随产品名。 |
@@ -326,7 +326,7 @@
 | **ledger** | 这个词有两个互不相干的用法。(1) `core/ledger.mjs` 的结算账本：按域校验的原子指令。(2) 棘轮账本 `tools/arch_baseline.json`：只许减少的计数。 | 如上。 | 彼此；探索台账 `探索` 是第三个小的。 |
 | **head #N** | 集成分支的构建计数：`map/data/head.json` 的 `{ build, sha, at }`，由 `tools/push_preview.sh --head` 里的 `tools/bump_head.py` 递增。 | 提交标题 "head #101"；由 `tavern/follow.mjs` 读取。 | 发布版本号（`VERSION`）；重构期间不打 tag、不升版本。 |
 | **lane** | 设定包数据里：地标之间高空主干线这一类路线（`kind: "lane"`），与 `patrol`、`patrol_city` 巡逻环并列。 | `core/traffic.mjs`、`app/markers.mjs`、`tools/check_maps.py`。 | CI 通道；brief 里的「渲染线」「代码线」工作流（那是 "line"）；CDN 的 "line"（`edenMapLine`），指线路选择。 |
-| **floor** | 聊天消息的序号（`楼`、楼层号）。引擎到处在用：`floorNow`、关键帧的 `floor`、标签楼层。 | `tavern/context.mjs`、`keyframes.mjs`、`timeline.mjs`。 | 建筑楼层：房间数据里也有 `floor`（`estCard.floor`、`B2`–`F3`）。S5 建议：新代码里建筑楼层用 `storey`。 |
+| **floor** | 聊天消息的序号（`楼`、楼层号）。引擎到处在用：`floorNow`、关键帧的 `floor`、标签楼层。 | `tavern/context.mjs`、`keyframes.mjs`、`timeline.mjs`。 | 建筑楼层：房间数据里也有 `floor`（`estCard.floor`、`B2`–`F3`）。已定（d）：消息位置叫 `msgIndex`，建筑楼层叫 `storey`，标识符里不再使用 “floor” 这个词。 |
 | **swipe** | 同一聊天楼层的另一个候选回复。 | `检查点` `{ 楼, swipe }`、`tavern/snapshot.mjs`。 | 触摸手势。 |
 | **MVU / `stat_data`** | 卡的变量框架和保存其状态的对象。地图只读（规则：绝不写 `stat_data`）。 | `tavern/mvu-bridge.mjs`（唯一接触者）、`mvu.mjs`（读取函数）。 | 地图自己的聊天变量 `eden_map`。 |
 | **chat / script / global variable** | 我们用到的酒馆助手三种变量作用域：聊天（`eden_map`、`eden_wb_ver`）、脚本（`eden_prefs`）、全局（`eden_wb_*`）。 | 表 E 和表 F。 | 浏览器 `localStorage` 键（`edenMap*`）。 |
@@ -343,13 +343,33 @@
 
 ## Open items（待办与待定）
 
-1. **审计发现的潜在 bug（本次不修）。** `app/host.mjs:52,54` 调用 `P.TCFog?.mute?.(…)`，但 `fog.mjs` 把 `TCFog` 挂在 `window` 上、从未登记到 `P`，所以 `P.TCFog` 永远是 `undefined`，回放期间的静音（Part 5-4）从不运行。S5 改名时应让两处访问走同一条路；行为修复是另一个小改动。
+~~1. **审计发现的潜在 bug（本次不修）。** `app/host.mjs:52,54` 调用 `P.TCFog?.mute?.(…)`，但 `fog.mjs` 把 `TCFog` 挂在 `window` 上、从未登记到 `P`，所以 `P.TCFog` 永远是 `undefined`，回放期间的静音（Part 5-4）从不运行。S5 改名时应让两处访问走同一条路；行为修复是另一个小改动。~~ ✅ 2026-09-30 已在 S0-D 修复（`fog.mjs` 把 `TCFog` 登记进 `P`）。
+
 2. **死钩子。** `__edenHostVersions`、`__edenHereText`、`__edenMvuSnapshotStatus`、`__composeTest` 在整个仓库里只有读、没有写。删掉或补上写入方；不要给它们改名。
 3. **过期的属主字符串。** `core/storage.mjs` `KEYS` 的 `owner` 字段写着 `events.js`、`chars.js`、`custom.js`、`trips.js`、`security.js`（5 个名字、8 个键），而这些文件是 `.mjs`。只是文档；随 S5 文件改名一起修。
-4. **待定：第一个设定包怎样保留旧名字。** 要么由设定包清单声明旧名字（存储前缀 `edenMap`、聊天根键 `eden_map`、世界书标记前缀 `eden_`），只有引擎默认值变中性，这样什么都不用迁移；要么全部改名、旧名字永远读。第一条路更便宜，而且对世界书标记更安全：漏读一个旧标记，我们就会把自己的条目当成用户的。聊天根键和存储前缀现在已经是这种做法。
-5. **待定：只有用户能定的名字。** 标识符里的中性前缀（本文假定用「Spatial Map / Spatial OS」（D5）里的 `spatial` / `Spatial`）、引擎仓库名、新的 npm 包名。
-6. **`util.mjs`、`shell.mjs`、`$`。** `app/util.mjs` 没有单一职责（坐标换算、DOM 辅助、协议版本戳、读屏播报、`getJSON`），需要拆分设计而不是改名。`app/shell.mjs` 把控制列、抽屉胶水、通知层、状态点和单手模式捆在一起。`$`（21 个导入方）作为通行写法违反三字母规则：按例外保留，还是放进同一轮脚本一起改？
-7. **`floor` 有两个含义。** 聊天楼层（消息序号）和建筑楼层（`B2`–`F3`、`estCard.floor`）。建议：新代码里建筑楼层说 `storey`；已有名字只在所在文件本来就要改名时顺带改。
-8. **计划草案对 `baibai.mjs` 写的是 `appearance-bridge`。** 本文建议 `imagegen-bridge`，因为它的主要职责是出图（写路径），外貌库只是读。请选一个。
+~~4. **待定：第一个设定包怎样保留旧名字。** 要么由设定包清单声明旧名字（存储前缀 `edenMap`、聊天根键 `eden_map`、世界书标记前缀 `eden_`），只有引擎默认值变中性，这样什么都不用迁移；要么全部改名、旧名字永远读。第一条路更便宜，而且对世界书标记更安全：漏读一个旧标记，我们就会把自己的条目当成用户的。聊天根键和存储前缀现在已经是这种做法。~~ ✅ 2026-09-30 已定，见「Decisions」(a)。
+
+~~5. **待定：只有用户能定的名字。** 标识符里的中性前缀（本文假定用「Spatial Map / Spatial OS」（D5）里的 `spatial` / `Spatial`）、引擎仓库名、新的 npm 包名。~~ ✅ 2026-09-30 已定，见「Decisions」(b)。
+
+~~6. **`util.mjs`、`shell.mjs`、`$`。** `app/util.mjs` 没有单一职责（坐标换算、DOM 辅助、协议版本戳、读屏播报、`getJSON`），需要拆分设计而不是改名。`app/shell.mjs` 把控制列、抽屉胶水、通知层、状态点和单手模式捆在一起。`$`（21 个导入方）作为通行写法违反三字母规则：按例外保留，还是放进同一轮脚本一起改？~~ ✅ 2026-09-30 已定，见「Decisions」(c)。
+
+~~7. **`floor` 有两个含义。** 聊天楼层（消息序号）和建筑楼层（`B2`–`F3`、`estCard.floor`）。建议：新代码里建筑楼层说 `storey`；已有名字只在所在文件本来就要改名时顺带改。~~ ✅ 2026-09-30 已定，见「Decisions」(d)。
+
+~~8. **计划草案对 `baibai.mjs` 写的是 `appearance-bridge`。** 本文建议 `imagegen-bridge`，因为它的主要职责是出图（写路径），外貌库只是读。请选一个。~~ ✅ 2026-09-30 已定，见「Decisions」(e)。
+
 9. **表里已消除的多义词：**「layer」（槽位 vs 地图层级）、「ledger」（结算 vs 棘轮 vs 探索）、「bridge」（MVU vs 绘图 vs 兼容 getter）、「tick」「line」「host」「card」。其中两个需要约定而不是改名：`floor`（第 7 条）和「card」（地点卡 / 角色卡 / 卡设定数据），术语表现在固定了措辞。
 10. **没检查的：** 69 个没被标记的引擎文件的名字，以及 `tools/**`、`tests/**`、`docs/**` 里的名字。测试和文档的名字随代码改名在同一批处理。
+
+## Decisions（2026-09-30 的决定）
+
+由用户做出；关闭上面的待办第 1 和 4–8 条。本节不改任何代码：改名按表里写的在 S5（内部）和 S10（外部）进行。
+
+(a) **第一个设定包的旧名字写在该包的清单里。** 存储前缀、聊天变量、世界书标记前缀和协议前缀都在那里声明（`eden` 包：`edenMap`、`eden_map`、`eden_`、`eden-map:`）。引擎读取声明的旧名字、写入新名字；只有声明了旧名字的包才承担这份成本。用户的聊天、存储和世界书都不用手工迁移。关闭待办第 4 条。
+
+(b) **标识符前缀 `spatial` / `Spatial`；引擎仓库 `spatial-os`；npm 包名在 S10 定**（暂定 `spatial-os-assets`）。关闭待办第 5 条。
+
+(c) **`util.mjs` 和 `shell.mjs` 在 S5 拆分**（按职责拆，不是改名）。**`$` 保留**，作为唯一允许的短辅助名（命名规则 3 的例外）。关闭待办第 6 条。
+
+(d) **聊天消息位置叫 `msgIndex`；建筑楼层叫 `storey`；标识符里不再使用 “floor” 这个词。** 相关表格行和词汇表条目已同步；`楼` 之类的中文键随 S10 外部批次处理。关闭待办第 7 条。
+
+(e) **`baibai.mjs` 改为 `imagegen-bridge.mjs`**（不用 `appearance-bridge`）。关闭待办第 8 条。

@@ -112,6 +112,7 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
 - [x] ~~架构看门狗（Lint Rules for Architecture）：map/core/ 单文件 >400 行预警、禁止反向 import 宿主层、裸 z-index 字面量持续机检拦截（接入 tools/smoke.sh）。~~（预估 ~2h）✅ 2026-09-30 `6fc66a7`（明细见 §5）
 - [x] ~~会话录制回放（Session Replay Fixtures）：mvu-bridge.mjs 与 context 纯流水线支持导出聊天快照为 JSON，脱离浏览器实现毫秒级端到端回放测试。（预估 ~4h）~~ ✅ 2026-09-29 `5958f75` + `788be44`（明细见 §5）
 
+- [ ] Stranded Part 4-4 ambience engine rescued to branch `rescue/ambience-part4-4` (2026-09-30, S0-D; not merged into preview; 9 of its 12 files also exist on preview with different content) — decide: merge or drop.
 
 ## 2. Render line · 渲染生产线（每个待办附预估工时）
 

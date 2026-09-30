@@ -85,3 +85,18 @@ open: S0-C decisions (a)-(d) answered in the planning session; recorded in the n
 cleanup: done
 === END ===
 
+
+=== RESULT S0-D ===
+status: PARTIAL
+items: T1 ✓  T2 ✓ (5 of 6 worktrees removed; webgl-part3 kept, see below)  T3 ✓  T4 ✓  T5 ✓  T6 ✓
+commits: (rescue/ambience-part4-4) 5b7f92d wip(ambience): rescue the uncommitted Part 4-4 engine files
+commits: c7e7151 fix(fog): register the fog API so the replay-time mute is no longer a no-op
+commits: e4f794c chore(watchdog): custom-property-only style attributes are not inline styles; lower the baseline
+commits: (this commit) docs(naming): record the 2026-09-30 naming decisions
+pushed: head # see push output (rescue branch pushed to origin, not merged)
+tests: node 630/631 (1 skipped; baseline 629/630 + tests/fog_mute.test.mjs) | smoke PASS | arch PASS (inline_style baseline 66 -> 60; lines 4052, zindex 33, terms 206 unchanged) | mirror PASS | probes: none run (no browser-visible change)
+deviations: (1) T1: 9 of the 12 untracked files in eden-campaign have the same path on origin/preview with different content (shipped Part 4-3 / 5-x versions); by the prompt's rule they were treated as stranded and rescued, on a branch that is never merged. (2) T2: .codebuddy/worktrees/webgl-part3 has uncommitted changes (blender/export_optimized.py, logs/render_times.csv, map/art/relief/*, tests/test_export_optimized.py, ...); not removed. (3) tests/app_modules.test.mjs: the fixed list of P keys gains 'TCFog' (a consequence of T4).
+blocker: none
+open: (a) webgl-part3 has uncommitted work: commit / discard / keep? (b) decide merge or drop for rescue/ambience-part4-4 (todo §1); its 9 overlapping files diverge from preview and would need a manual reconcile.
+cleanup: done
+=== END ===
