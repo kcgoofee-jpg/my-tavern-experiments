@@ -29,11 +29,12 @@ test('schema v1 冻结：必填集不变、v1 字段都还在（只许新增可�
   assert.match(rd('docs/pack-schema-v1.md'), /已冻结/);
 });
 
-test('所有包的清单：运行时 validate 通过、id = 目录名、schema = 1', () => {
+test('所有 v1 包的清单：运行时 validate 通过、id = 目录名、schema = 1（schema 2 的包由 tests/pack_schema_v2.test.mjs 管）', () => {
   const ids = readdirSync(new URL('map/packs/', ROOT), { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name);
   assert.ok(ids.includes('eden') && ids.includes('town'));
   for (const id of ids) {
     const m = JSON.parse(rd(`map/packs/${id}/manifest.json`));
+    if (m.schema === 2) { assert.equal(m.id, id); continue; }
     assert.deepEqual(PK.validate(m), [], id); assert.equal(m.id, id); assert.equal(m.schema, 1);
   }
 });

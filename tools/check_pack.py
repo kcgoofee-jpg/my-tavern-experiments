@@ -26,6 +26,7 @@ def check(pid):
     mp = os.path.join(d, 'manifest.json')
     if not os.path.exists(mp): return [f'{pid}: 没有 manifest.json']
     m = json.load(open(mp, encoding='utf-8'))
+    if m.get('schema') == 2: return check_v2(pid, d, m)
     errs += [f'{pid}/manifest.json {e}' for e in validate(m, SCH['pack'])]
     if m.get('id') != pid: errs.append(f'{pid}: 清单 id {m.get("id")!r} 与目录名不一致')
     base = MAP if pid == 'eden' else d   # eden 的路径相对 map/
@@ -86,6 +87,45 @@ def check(pid):
     if wb is not None:
         es = wb.get('entries') if isinstance(wb, dict) else None
         if not isinstance(es, list) or not all(isinstance(e, dict) and e.get('name') and e.get('content') for e in es): errs.append(f'{pid}: worldbook.json 要是 {{entries: [{{name, content}}]}}')
+    return errs
+
+
+BLOCKS2 = ('nodes', 'views', 'vars', 'entities', 'items', 'events', 'layers', 'ui', 'llm')
+
+
+def check_v2(pid, d, m):
+    """schema 2（docs/kernel-schema.md）：清单与每个块过 map/data/schema/v2（块内联或是包内文件）；再查树与引用（K-R06）：id 不重复、parent 存在、不成环、enter 是子节点、显式 alias 含 name、节点 / 视图 / 特效 / 大类引用都存在、时段从早到晚。"""
+    S = lambda n: json.load(open(os.path.join(MAP, 'data', 'schema', 'v2', n + '.schema.json'), encoding='utf-8'))
+    b, errs = {}, [f'{pid}/manifest.json {e}' for e in validate(m, S('manifest'))] + ([] if m.get('id') == pid else [f'{pid}: 清单 id {m.get("id")!r} 与目录名不一致'])
+    for k in BLOCKS2:
+        v = m.get(k)
+        if isinstance(v, str):
+            if not os.path.exists(os.path.join(d, v)): errs.append(f'{pid}: {k} 指向的 {v} 不存在'); continue
+            v = json.load(open(os.path.join(d, v), encoding='utf-8'))
+        if v is not None: errs += [f'{pid}/{k} {e}' for e in validate(v, S(k))]; b[k] = v
+    nodes, views, ev, ui, ent, items = [n for n in (b.get('nodes') or []) if isinstance(n, dict)], b.get('views') or {}, b.get('events') or {}, b.get('ui') or {}, b.get('entities') or {}, b.get('items') or {}
+    ids = [n.get('id') for n in nodes]; par = {n.get('id'): n.get('parent') for n in nodes}
+    errs += [f'{pid}: 节点 id 重复 {i}' for i in sorted({i for i in ids if ids.count(i) > 1})]
+    vrefs = [o.get('from') for v in views.values() if isinstance(v, dict) for o in (v.get('overlays') or [])]
+    for n in nodes:
+        i, seen = n.get('id'), set()
+        while i in par and i not in seen: seen.add(i); i = par[i]
+        if i in seen: errs.append(f'{pid}: 节点 {n.get("id")} 的祖先成环')
+        refs = [n.get('parent'), n.get('enter')] + [x.get('to') for x in (n.get('links') or []) if isinstance(x, dict)]
+        errs += [f'{pid}: 节点 {n.get("id")} 引用了不存在的节点 {r}' for r in refs if r and r not in par]
+        if n.get('enter') in par and par[n['enter']] != n.get('id'): errs.append(f'{pid}: 节点 {n.get("id")} 的 enter 不是它的子节点')
+        if isinstance(n.get('alias'), list) and n.get('name') not in n['alias'] + list(n.get('hints') or []): errs.append(f'{pid}: 节点 {n.get("id")} 的 alias 没列 name（不想让名字强匹配就把它放进 hints）')
+        vrefs += ([n['view']] if isinstance(n.get('view'), str) else list(n.get('view') or [])) + [(n.get('at') or {}).get('view')]
+    errs += [f'{pid}: 引用了不存在的视图 {v}' for v in vrefs if v and v not in views]
+    refs = [r.get('node') for r in (items.get('stash') or [])] + [r.get('node') for g in (ent.get('groups') or []) for r in (g.get('fallback') or [])]
+    refs += [ui.get('start')] + [x for k, vs in (ui.get('levels') or {}).items() for x in [k, *vs]]
+    refs += [x for v in views.values() if isinstance(v, dict) for x in [(v.get('home') or {}).get('focus')] + [i.get('node') for i in (v.get('insets') or [])]]
+    if nodes: errs += [f'{pid}: 引用了不存在的节点 {r}' for r in refs if r and r not in par]
+    gs, fx = {g.get('id') for g in (ev.get('groups') or [])} | {'other'}, set(ev.get('fx_presets') or {}) | {'none', 'glitch', 'flash', 'shake', 'tint', 'pulse'}
+    errs += [f'{pid}: 事件类型 {k} 的大类 {t.get("group")!r} 没声明' for k, t in (ev.get('types') or {}).items() if t.get('group') not in gs]
+    errs += [f'{pid}: 事件类型 {k} 的特效 {t.get("fx")!r} 既不是预设也不是内核积木' for k, t in (ev.get('types') or {}).items() if t.get('fx') and t['fx'] not in fx]
+    st = [str(p.get('start')) for p in ((b.get('vars') or {}).get('periods') or []) if isinstance(p, dict)]
+    if st != sorted(set(st)): errs.append(f'{pid}: vars.periods 的 start 要从早到晚、不重复')
     return errs
 
 

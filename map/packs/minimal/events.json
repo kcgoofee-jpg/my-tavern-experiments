@@ -1,0 +1,25 @@
+{
+  "_note": "Three event types in three groups. The tag's place is resolved through nodes.json; nothing here says where.",
+  "groups": [
+    { "id": "hazard", "label": "Hazard", "color": "#e0603a", "shape": "tri", "i18n": { "zh": { "label": "险情" } } },
+    { "id": "trouble", "label": "Trouble", "color": "#6f8fe0", "shape": "square", "i18n": { "zh": { "label": "治安" } } },
+    { "id": "civic", "label": "Civic", "color": "#d9b44a", "shape": "penta", "i18n": { "zh": { "label": "民生" } } }
+  ],
+  "types": {
+    "fire": { "label": "Fire", "group": "hazard", "alias": ["blaze", "火灾"], "icon": "F", "source": "Harbour watch", "rare": 2, "fx": "flash" },
+    "brawl": { "label": "Brawl", "group": "trouble", "alias": ["fight", "scuffle"], "icon": "B", "life": { "live": 3 } },
+    "festival": { "label": "Festival", "group": "civic", "alias": ["fair"], "icon": "*", "inject": false }
+  },
+  "fx_presets": {
+    "flash": { "block": "flash", "intensity": 0.4, "seconds": 1.5 }
+  },
+  "levels": [
+    { "value": 0, "label": "over" },
+    { "value": 1, "label": "minor" },
+    { "value": 2, "label": "serious" },
+    { "value": 3, "label": "severe" }
+  ],
+  "closed": ["put out", "ended", "over"],
+  "examples": ["⌖category｜place｜level 0-3｜one sentence｜publisher"],
+  "life": { "live": 7, "after": 20, "fade": 40, "merge": 15, "per_msg": 3 }
+}

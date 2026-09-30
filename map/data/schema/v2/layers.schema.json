@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "v2/layers.schema.json",
+  "title": "layers block, schema 2: declarative layers (RESERVED for S8)",
+  "description": "docs/kernel-schema.md §9 (K-R56). Only the outer shape and the ten fixed slots are settled; S8 designs types, sources, styles and legends and may tighten every property except id and slot. Menu order = array order. Absent block = the engine's built-in default layers.",
+  "type": "array",
+  "items": {
+    "type": "object", "required": ["id", "type", "slot"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+    "properties": {
+      "id": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,31}$" },
+      "type": { "enum": ["point", "area", "line", "label", "tint", "particles", "flow"], "description": "Kernel rendering building block." },
+      "source": { "type": "string", "minLength": 1, "description": "Reserved: events | entities | items | nodes | routine | file:<path> | mvu:<path> (read only)." },
+      "slot": { "enum": ["base", "depth-haze", "fog", "routes", "trips", "events", "markers", "labels", "fx", "interaction"], "description": "One of the ten fixed viewport slots, bottom to top." },
+      "applies": { "type": "object", "description": "Reserved: which nodes / node types / view kinds the layer applies to; elsewhere it is greyed out and paused." },
+      "style": { "type": "object", "description": "Reserved: style parameters of the building block." },
+      "menu": { "type": "object", "description": "Reserved: label, i18n, group and default visibility in the layer menu." },
+      "legend": { "type": "array", "description": "Reserved: legend rows." }
+    }
+  }
+}

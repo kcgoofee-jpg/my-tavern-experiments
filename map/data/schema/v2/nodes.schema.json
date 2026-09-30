@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "v2/nodes.schema.json",
+  "title": "nodes block, schema 2: the node tree, the only geography",
+  "description": "docs/kernel-schema.md §3 (K-R10..K-R29). An ordered array: declaration order is the last tie-break of locate. Every place, region, building, room or level is a node; the tree is built from parent links. Tree rules the schema cannot express (unique ids, parent exists, no cycle, enter is a child, an explicit alias list contains the name) are checked by tools/check_pack.py and map/core/pack-v2.mjs; at run time they heal item by item (K-R06, K-R12).",
+  "type": "array",
+  "maxItems": 5000,
+  "items": { "$ref": "#/$defs/node" },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+    "word": { "type": "string", "pattern": "^[^\\n]{1,60}$" },
+    "words": { "type": "array", "items": { "$ref": "#/$defs/word" } },
+    "aliases": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/word" } },
+    "hintlist": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/word" } },
+    "lang": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$" },
+    "at": {
+      "type": "object", "required": ["x", "y"], "additionalProperties": false,
+      "description": "Position in the frame of view (when given: the primary view of an ancestor), else of the nearest ancestor view that has a frame (K-R31): 0..1 of width / height for tiles and image, model units for model3d. r = radius of the spot in the same units. Editors always write view.",
+      "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" }, "r": { "type": "number", "minimum": 0 }, "view": { "$ref": "#/$defs/id" } }
+    },
+    "link": {
+      "type": "object", "required": ["to"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "description": "A passage to another node shown on the place card (stairs, lift, road). Not a parent relation.",
+      "properties": { "to": { "$ref": "#/$defs/id" }, "label": { "type": "string", "minLength": 1 },
+        "i18n": { "type": "object", "propertyNames": { "$ref": "#/$defs/lang" }, "additionalProperties": { "type": "object", "additionalProperties": false, "properties": { "label": { "type": "string", "minLength": 1 } } } } }
+    },
+    "node": {
+      "type": "object", "required": ["id", "name"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "properties": {
+        "id": { "$ref": "#/$defs/id", "description": "Unique in the pack, stable forever (chat data refers to it). Growth creates ids starting with g_; exported packs keep them (K-R10)." },
+        "name": { "type": "string", "minLength": 1, "pattern": "^[^\\n]{1,80}$", "description": "Display name, verbatim from the card for card-backed nodes." },
+        "type": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,31}$", "description": "Author-named kind (world, city, layer, room, …). Open vocabulary; the kernel never branches on it. Default: none." },
+        "parent": { "$ref": "#/$defs/id", "description": "Absent = hangs under the pack root (K-R12)." },
+        "alias": { "$ref": "#/$defs/aliases", "description": "Strong names: any text containing one of them (whole words in spaced scripts) points at this node. An explicit list must contain name unless name is listed in hints. Default when absent: name plus the i18n names, without a leading article (K-R15)." },
+        "hints": { "$ref": "#/$defs/hintlist", "description": "Weak words: place at this node at most, never deeper; lose to aliases outside this subtree (K-R16). Hints on the root mark ambiguous words: they hide shorter words inside them and never decide a result. A word in both lists of the same node counts as a hint." },
+        "cite": { "type": "string", "minLength": 1, "description": "Free-text source note (entry title, line)." },
+        "sub": { "type": "string", "description": "Short subtitle." },
+        "desc": { "type": "string", "description": "Longer description for the place card." },
+        "i18n": { "type": "object", "propertyNames": { "$ref": "#/$defs/lang" },
+          "additionalProperties": { "type": "object", "additionalProperties": false, "properties": { "name": { "type": "string", "minLength": 1 }, "sub": { "type": "string" }, "desc": { "type": "string" } } },
+          "description": "Translated display text per language." },
+        "at": { "$ref": "#/$defs/at" },
+        "anchor": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$", "description": "Position by reference: a region id in the nearest ancestor view's region table (points file, 3D hotspot, plan polygon). Default: the node id. Ignored when at is given (K-R32)." },
+        "view": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/id" } }], "description": "View id(s) in the views block; first = primary. Default: views[<node id>] when it exists (K-R33)." },
+        "enter": { "$ref": "#/$defs/id", "description": "Child whose view opens when this node is the target and has no view that opens on locate. Default: none, the nearest framed ancestor view is shown focused on this node (K-R34)." },
+        "links": { "type": "array", "items": { "$ref": "#/$defs/link" } }
+      }
+    }
+  }
+}

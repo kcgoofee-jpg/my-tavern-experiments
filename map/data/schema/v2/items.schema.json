@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "v2/items.schema.json",
+  "title": "items block, schema 2: world stash and pickup vocabulary",
+  "description": "docs/kernel-schema.md §7 (K-R45..K-R47). stash = things the world already hides, each at a node (the row contract of map/core/stash.mjs with node in place of map + marker). pickup = per-language additions to the kernel's pickup vocabulary. What the player carries is not pack data: it lives in the chat variable (<chat var>.stash) and is recomputable from the chat.",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": { "^_": {}, "^x-": {} },
+  "properties": {
+    "stash": { "type": "array", "maxItems": 200, "items": { "$ref": "#/$defs/row" } },
+    "pickup": { "type": "object", "propertyNames": { "$ref": "#/$defs/lang" }, "additionalProperties": { "$ref": "#/$defs/vocab" } }
+  },
+  "$defs": {
+    "lang": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$" },
+    "row": {
+      "type": "object", "required": ["name", "node"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,39}$", "description": "Stable id; default = a hash of node|hidden|name (map/core/stash.mjs rowId rule)." },
+        "name": { "type": "string", "minLength": 1, "pattern": "^[^\\n]{1,60}$" },
+        "node": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "Where it lies." },
+        "hidden": { "type": "string", "pattern": "^[^\\n]{1,60}$", "description": "Name of the hiding spot (drawer, loose board); finding it is harder." },
+        "note": { "type": "string", "pattern": "^[^\\n]{1,200}$" },
+        "dc": { "type": "integer", "minimum": 1, "maximum": 30, "description": "Search difficulty (d20 >= dc). Default 10; hidden adds 3." },
+        "qty": { "type": "integer", "minimum": 1, "maximum": 999 }
+      }
+    },
+    "vocab": {
+      "type": "object", "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "properties": {
+        "verbs": { "type": "array", "items": { "type": "string", "pattern": "^[^\\n]{1,20}$" }, "description": "Extra acquisition verbs (strict: verb + concrete noun)." },
+        "verbs_off": { "type": "array", "items": { "type": "string", "pattern": "^[^\\n]{1,20}$" }, "description": "Kernel verbs this pack switches off (idioms of its setting)." },
+        "not_items": { "type": "array", "items": { "type": "string", "pattern": "^[^\\n]{1,20}$" }, "description": "Extra words that are never items (abstract nouns)." }
+      }
+    }
+  }
+}

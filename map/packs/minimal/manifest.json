@@ -1,0 +1,60 @@
+{
+  "$schema": "../../data/schema/v2/manifest.schema.json",
+  "_note": "Touchstone pack of kernel contract v2 (docs/kernel-schema.md): five nodes, no base map, every block in v2. A made-up harbour town, no card behind it. Blocks are split between inline and files on purpose so both forms stay tested. Test cases that use it: docs/kernel-schema.md appendix B.",
+  "id": "minimal",
+  "schema": 2,
+  "title": "Brindle",
+  "lang": "en",
+  "version": "1",
+  "i18n": { "zh": { "title": "布林德尔" } },
+  "match": { "card": { "name": ["Brindle"] } },
+  "credits": { "pack": [{ "name": "Spatial OS example pack", "role": "map", "license": "CC0-1.0" }] },
+  "nodes": "nodes.json",
+  "views": {
+    "harrow": { "kind": "schematic", "layout": "tree", "depth": 3 }
+  },
+  "vars": {
+    "location": "world.location",
+    "time": "world.time",
+    "period": "world.period",
+    "periods": [
+      { "id": "morning", "label": "Morning", "start": "06:00", "words": ["dawn", "morning"], "i18n": { "zh": { "label": "早晨" } } },
+      { "id": "evening", "label": "Evening", "start": "18:00", "words": ["dusk", "evening"], "i18n": { "zh": { "label": "傍晚" } } },
+      { "id": "night", "label": "Night", "start": "22:00", "words": ["night", "midnight"], "dark": true, "i18n": { "zh": { "label": "夜里" } } }
+    ]
+  },
+  "entities": "entities.json",
+  "items": {
+    "stash": [
+      { "id": "brass_key", "name": "Brass Key", "node": "inn", "hidden": "loose floorboard", "note": "Opens the cellar door.", "dc": 12 }
+    ],
+    "pickup": { "en": { "verbs": ["snatches"], "not_items": ["the tide"] } }
+  },
+  "events": "events.json",
+  "ui": {
+    "start": "brindle",
+    "tabs": ["places", "events", "characters", "items"],
+    "strings": { "en": { "ch.tab": "Cast" }, "zh": { "ch.tab": "人物" } },
+    "theme": { "accent": "#6fa8a0" },
+    "legend": [
+      { "type": "town", "label": "Town", "icon": "pin" },
+      { "type": "district", "label": "District", "icon": "layers" },
+      { "type": "building", "label": "Building", "icon": "room" }
+    ]
+  },
+  "llm": {
+    "templates": {
+      "en": {
+        "tag": "Brindle news",
+        "events": "[{tag} · background only, no need to mention; do not tag it again] {items}.",
+        "event_item": "{place}: {source} reports {type}{severe}, {text}"
+      }
+    },
+    "worldbook": {
+      "book": "Brindle map",
+      "entries": [
+        { "id": "rules", "name": "Brindle map · rules", "content": "Write the current place as 'district·place' (Lantern Docks, Old Market). When something worth a map pin happens, end the reply with one hidden line: ⌖category｜place｜level 0-3｜one sentence｜publisher. Categories: Fire, Brawl, Festival. At most 3 per reply." }
+      ]
+    }
+  }
+}

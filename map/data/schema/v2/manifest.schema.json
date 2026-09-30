@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "v2/manifest.schema.json",
+  "title": "Pack manifest, schema 2 (map/packs/<id>/manifest.json)",
+  "description": "Kernel contract v2, docs/kernel-schema.md §2 (rules K-R01..K-R09, K-R63..K-R66). One pack = one JSON document. Only id, schema and title are required. Every block (nodes, views, vars, entities, items, events, layers, ui, llm) is either written inline here or given as a relative path to a JSON file that holds exactly that block; the block's own schema (v2/<block>.schema.json) validates it in both cases. cdn, legacy and x-page are honoured only for packs shipped with the engine; foreign packs (embedded, URL, file) have them ignored and pass extra limits (K-R63, K-R66). Keys starting with _ are comments; keys starting with x- are author extensions the kernel carries but never reads. Schema 1 (map/data/schema/pack.schema.json) stays frozen beside this one.",
+  "type": "object",
+  "required": ["id", "schema", "title"],
+  "additionalProperties": false,
+  "patternProperties": { "^_": {}, "^x-": {} },
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{1,31}$", "description": "Pack id = folder name. Storage names derive from it unless legacy says otherwise (K-R05)." },
+    "schema": { "const": 2 },
+    "title": { "type": "string", "minLength": 1, "pattern": "^[^\\n]{1,80}$", "description": "Pack title shown on the panel; also the default name of the root node when the pack has no nodes." },
+    "lang": { "$ref": "#/$defs/lang", "description": "Language of the pack's own words (aliases, hints, event labels). Picks the kernel vocabulary (transit, pickup, auto-discovery) and the injection template language. Default: the UI language at load time." },
+    "version": { "type": "string", "pattern": "^[^\\n]{1,32}$", "description": "The pack's own version label (free text). Not the engine version." },
+    "i18n": { "type": "object", "propertyNames": { "$ref": "#/$defs/lang" }, "additionalProperties": { "type": "object", "additionalProperties": false, "properties": { "title": { "type": "string", "minLength": 1 } } }, "description": "Translated titles, per language." },
+    "match": { "$ref": "#/$defs/match" },
+    "credits": { "$ref": "#/$defs/credits" },
+    "legacy": { "$ref": "#/$defs/legacy" },
+    "features": { "type": "object", "additionalProperties": { "type": "boolean" }, "description": "Feature switch overrides (fog, trips, stash, …). Default: derived from which blocks exist. A foreign pack may only switch features off (K-R63)." },
+    "lexicon": { "$ref": "#/$defs/lexicon" },
+    "cdn": { "type": "object", "additionalProperties": false, "properties": { "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" }, "npm": { "type": "string", "pattern": "^(?!.*\\.\\.)[a-z0-9@][a-z0-9@/._-]{0,63}$" } }, "description": "Where the pack's asset files are served from (jsDelivr gh route / npm mirror). Default: the engine's own routes. Shipped packs only; the engine's code base always comes from the script's own URL, never from here (K-R63)." },
+    "nodes": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "array" }], "description": "The node tree, the only geography (v2/nodes.schema.json). Absent = grown from chat (K-R26)." },
+    "views": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "How nodes are drawn (v2/views.schema.json). Absent = schematic." },
+    "vars": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "MVU paths and time periods (v2/vars.schema.json). Absent = auto-discovery by field name." },
+    "entities": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "Roster groups, attribute fields, avatars (v2/entities.schema.json). Absent = name and place only." },
+    "items": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "World stash and pickup vocabulary (v2/items.schema.json). Absent = no world stash, kernel vocabulary." },
+    "events": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "Event taxonomy, what only (v2/events.schema.json). Absent = neutral default taxonomy." },
+    "layers": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "array" }], "description": "Declarative layers, reserved for S8 (v2/layers.schema.json). Absent = built-in default layers." },
+    "ui": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "Strings, theme, legend, tabs, start node (v2/ui.schema.json)." },
+    "llm": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "Injection templates and worldbook add-on entries (v2/llm.schema.json)." }
+  },
+  "$defs": {
+    "path": { "type": "string", "minLength": 1, "pattern": "^(?!.*\\.\\.)[A-Za-z0-9_][A-Za-z0-9_./-]*\\.json$", "description": "Block file, relative to the manifest's folder: letters, digits, _ . / - only, no .. segment (so no scheme, no leading /, no %, no backslash)." },
+    "lang": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$" },
+    "words": { "type": "array", "items": { "type": "string", "pattern": "^[^\\n]{1,80}$" } },
+    "match": {
+      "type": "object", "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "description": "Reserved for S9 (pack picked by card). Any listed value that matches the current card makes this pack a candidate; S9 defines ranking. Never required.",
+      "properties": {
+        "card": { "type": "object", "additionalProperties": false, "properties": { "name": { "$ref": "#/$defs/words" }, "creator": { "$ref": "#/$defs/words" }, "tags": { "$ref": "#/$defs/words" } } },
+        "worldbook": { "$ref": "#/$defs/words", "description": "Titles of worldbook entries the card carries." }
+      }
+    },
+    "credit": { "type": "object", "required": ["name"], "additionalProperties": false, "properties": { "name": { "type": "string", "minLength": 1 }, "role": { "type": "string" }, "license": { "type": "string" }, "url": { "type": "string", "pattern": "^https://" } } },
+    "credits": {
+      "type": "object", "additionalProperties": false, "patternProperties": { "^_": {} },
+      "description": "Who made what. The only place credits live; ui renders them (K-R08). card.* may be filled at run time from the card itself (the same bridge the credits page uses: name, creator, version).",
+      "properties": {
+        "card": { "type": "object", "additionalProperties": false, "properties": { "name": { "type": "string" }, "creator": { "type": "string" }, "version": { "type": "string" }, "url": { "type": "string", "pattern": "^https://" } } },
+        "pack": { "type": "array", "items": { "$ref": "#/$defs/credit" } },
+        "assets": { "type": "array", "items": { "$ref": "#/$defs/credit" } }
+      }
+    },
+    "lexicon": {
+      "type": "object", "propertyNames": { "$ref": "#/$defs/lang" },
+      "description": "Per-language additions to the kernel word lists (K-R07). Literal words only; they extend the kernel lists and never remove from them.",
+      "additionalProperties": { "type": "object", "additionalProperties": false, "patternProperties": { "^_": {} },
+        "properties": {
+          "to": { "$ref": "#/$defs/words", "description": "Journey markers: the text after one is the destination (K-R19)." },
+          "from": { "$ref": "#/$defs/words", "description": "Journey markers paired with a to marker: <from> A <to> B." },
+          "articles": { "$ref": "#/$defs/words", "description": "Leading articles stripped from default aliases and grown segments (K-R15, K-R26)." },
+          "suffixes": { "$ref": "#/$defs/words", "description": "Word-end suffixes allowed after a whole-word match (K-R15)." },
+          "present": { "$ref": "#/$defs/words", "description": "Values meaning 'with the player' in a roster row (K-R41)." },
+          "head": { "enum": ["first", "last"], "description": "Where the head of a place phrase sits; tie-break of K-R21, comma order of K-R26." },
+          "fields": { "type": "object", "propertyNames": { "enum": ["location", "time", "period", "date", "outfit", "reputation", "name"] }, "additionalProperties": { "$ref": "#/$defs/words" }, "description": "Extra field names for auto-discovery (K-R38, K-R41)." }
+        } }
+    },
+    "legacy": {
+      "type": "object", "additionalProperties": false, "patternProperties": { "^_": {} },
+      "description": "Names this pack used before schema 2 (naming decision a, docs/naming.md). The engine reads the legacy name when the new one is empty and writes per `write` (K-R09). Honoured only for packs shipped with the engine (K-R63); reserved names (stat_data, display_data, delta_data, schema, another shipped pack's names) are refused.",
+      "properties": {
+        "chat_var": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$" },
+        "storage_prefix": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,31}$" },
+        "worldbook_marker": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,15}$", "description": "Prefix of the extra.* ownership fields on our worldbook entries." },
+        "worldbook_book": { "type": "string", "minLength": 1, "description": "Name prefix of our add-on worldbook." },
+        "protocol_prefix": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,23}:$" },
+        "event_attr": { "type": "string", "pattern": "^data-[a-z][a-z0-9-]{0,31}$", "description": "Legacy attribute of the hidden event span; stays parseable forever." },
+        "write": { "enum": ["legacy", "new"], "description": "legacy = keep writing the legacy names (no migration yet); new = read legacy, write new. Default new." }
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "_note": "One roster group read from the card variable 'cast', with two pack rows shown until the live table has them. Two attribute fields: a text subtitle and a gauge with named bands.",
+  "groups": [
+    {
+      "id": "cast", "label": "Cast", "i18n": { "zh": { "label": "人物" } },
+      "source": { "mvu": "cast", "tags": true },
+      "fallback": [
+        { "name": "Mara", "node": "inn", "values": { "role": "innkeeper", "trust": 60 } },
+        { "name": "Tobin", "alias": ["Tob"], "node": "market", "values": { "role": "fishmonger", "trust": 20 } }
+      ]
+    }
+  ],
+  "fields": [
+    { "field": "role", "label": "Role", "kind": "text", "show": "subtitle", "i18n": { "zh": { "label": "身份" } } },
+    { "field": "trust", "label": "Trust", "kind": "gauge", "max": 100, "i18n": { "zh": { "label": "信任" } },
+      "ladder": [ { "up_to": 30, "label": "wary" }, { "up_to": 70, "label": "friendly" }, { "up_to": 100, "label": "loyal" } ] }
+  ],
+  "avatar": { "from": ["imagegen"] }
+}

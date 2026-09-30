@@ -1,0 +1,33 @@
+[
+  {
+    "id": "harrow", "name": "Harrow", "type": "region",
+    "_note": "Root. Its hints are words that say nothing certain (Lantern names two places; overseas is off the map): they hide shorter words inside them and never decide a result (K-R16).",
+    "alias": ["Harrow", "the Vale of Harrow"],
+    "hints": ["Lantern", "overseas", "abroad"],
+    "i18n": { "zh": { "name": "哈罗" } }
+  },
+  {
+    "id": "brindle", "name": "Brindle", "type": "town", "parent": "harrow",
+    "_note": "No alias list: the name and the zh name are its aliases by default.",
+    "sub": "harbour town",
+    "i18n": { "zh": { "name": "布林德尔", "sub": "港口小镇" } }
+  },
+  {
+    "id": "docks", "name": "Lantern Docks", "type": "district", "parent": "brindle",
+    "alias": ["Lantern Docks", "the docks", "灯笼码头"],
+    "hints": ["pier", "wharf"],
+    "cite": "example"
+  },
+  {
+    "id": "inn", "name": "Gull & Lantern Inn", "type": "building", "parent": "docks",
+    "_note": "No \"Gull and Lantern\" alias: & and \"and\" fold to one form (K-R17). Hints: taproom is only here; cellar is also a hint of the Old Market (the current place decides, K-R22).",
+    "alias": ["Gull & Lantern Inn", "Gull & Lantern", "the inn"],
+    "hints": ["taproom", "cellar"],
+    "links": [{ "to": "market", "label": "Up the stairs to the Old Market" }]
+  },
+  {
+    "id": "market", "name": "Old Market", "type": "district", "parent": "brindle",
+    "alias": ["Old Market", "market square"],
+    "hints": ["stall", "cellar"]
+  }
+]

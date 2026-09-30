@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "v2/ui.schema.json",
+  "title": "ui block, schema 2: strings, theme, legend, tabs, start node",
+  "description": "docs/kernel-schema.md §10.1 (K-R57, K-R58). Wording the pack overrides, theme tokens from the kernel's list only, the node-type legend, the drawer tabs, the first node shown and level-switcher overrides. Credits are not here: they live in the manifest (one place).",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": { "^_": {}, "^x-": {} },
+  "properties": {
+    "start": { "$ref": "#/$defs/id", "description": "Node shown when the panel first opens and nothing is located yet. Default: the root." },
+    "tabs": { "type": "array", "items": { "enum": ["places", "events", "characters", "items"] }, "description": "Drawer tabs in order. Default: every tab whose data exists." },
+    "strings": { "type": "object", "propertyNames": { "$ref": "#/$defs/lang" }, "additionalProperties": { "type": "object", "propertyNames": { "type": "string", "pattern": "^[a-z][a-z0-9_.]{0,63}$" }, "additionalProperties": { "type": "string" } },
+      "description": "UI string overrides per language: i18n key -> text (the v1 'key@en' form becomes strings.en.key). Shown as text only; protected keys (consent, remote pictures, privacy, self-check) are never overridden (K-R57, K-R64)." },
+    "theme": { "type": "object", "additionalProperties": false,
+      "properties": {
+        "accent": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "tokens": { "type": "object", "propertyNames": { "type": "string", "pattern": "^--(accent|ink|bg|surface|line|muted|gold|ok|alert|on|map-label|glow|focus|r|fs)(-[a-z0-9-]{1,30})?$" }, "additionalProperties": { "type": "string", "pattern": "^(#[0-9a-fA-F]{3,8}|(rgb|rgba|hsl|hsla)\\([0-9., %/-]{1,40}\\)|-?[0-9]{0,4}\\.?[0-9]{1,4}(px|rem|em|%|vh|vw)?|[a-z][a-z-]{0,23}|var\\(--[a-z0-9-]{1,40}\\))( (#[0-9a-fA-F]{3,8}|(rgb|rgba|hsl|hsla)\\([0-9., %/-]{1,40}\\)|-?[0-9]{0,4}\\.?[0-9]{1,4}(px|rem|em|%|vh|vw)?|[a-z][a-z-]{0,23}|var\\(--[a-z0-9-]{1,40}\\))){0,3}$" }, "description": "Overrides of the kernel's colour, radius and font-size tokens (S7 publishes the final list). A value is 1-4 space-separated terms: hex colour, numeric rgb()/rgba()/hsl()/hsla(), number with optional unit, keyword, or var(--kernel token); no quotes, backslashes, url( or other functions. Re-checked at run time (K-R58, K-R64)." }
+      } },
+    "legend": { "type": "array", "items": { "type": "object", "required": ["type"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "properties": { "type": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,31}$" }, "label": { "type": "string", "minLength": 1 }, "i18n": { "type": "object" }, "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" } } },
+      "description": "How node types appear in legends and the schematic view (icon from the kernel icon set)." },
+    "levels": { "type": "object", "propertyNames": { "$ref": "#/$defs/id" }, "additionalProperties": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+      "description": "Level switcher override: node id -> ordered node ids. While a view owned by V is open, the entry of the nearest ancestor-or-self of V that has one is offered; default: the children of V's parent whose primary view is tiles or image (K-R35)." }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+    "lang": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$" }
+  }
+}

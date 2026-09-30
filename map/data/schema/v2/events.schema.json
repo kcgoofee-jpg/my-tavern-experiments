@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "v2/events.schema.json",
+  "title": "events block, schema 2: the taxonomy (what an event is, never where)",
+  "description": "docs/kernel-schema.md §8 (K-R48..K-R55). The tag grammar (⌖category｜place｜level｜summary｜publisher and the hidden-span attribute form) is fixed by the kernel. The place of an event is always resolved through the node tree; this block has no layers, match lists, outside names or zones. Unknown categories become the neutral type 'other'. Content is never filtered.",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": { "^_": {}, "^x-": {} },
+  "properties": {
+    "groups": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/group" }, "description": "Legend order = array order." },
+    "types": { "type": "object", "propertyNames": { "$ref": "#/$defs/id" }, "additionalProperties": { "$ref": "#/$defs/type" } },
+    "fx_presets": { "type": "object", "propertyNames": { "$ref": "#/$defs/id" }, "additionalProperties": { "$ref": "#/$defs/fx" } },
+    "levels": { "type": "array", "minItems": 1, "maxItems": 4, "items": { "$ref": "#/$defs/level" }, "description": "Labels for the level numbers 0..3 of the tag (0 = over)." },
+    "closed": { "$ref": "#/$defs/words", "description": "Status words that close an event, added to the kernel list of the pack language." },
+    "examples": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "Verbatim sample lines (e.g. from the worldbook rules); a model that copies one does not create an event." },
+    "life": { "$ref": "#/$defs/life" }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,31}$" },
+    "lang": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$" },
+    "words": { "type": "array", "items": { "type": "string", "pattern": "^[^\\n]{1,30}$" } },
+    "label": { "type": "string", "minLength": 1, "pattern": "^[^\\n]{1,30}$" },
+    "i18n": { "type": "object", "propertyNames": { "$ref": "#/$defs/lang" }, "additionalProperties": { "type": "object", "additionalProperties": false, "properties": { "label": { "type": "string", "minLength": 1 } } } },
+    "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "group": {
+      "type": "object", "required": ["id", "label", "color"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "label": { "$ref": "#/$defs/label" }, "i18n": { "$ref": "#/$defs/i18n" }, "color": { "$ref": "#/$defs/color" },
+        "shape": { "enum": ["hex", "circle", "square", "penta", "diamond", "octa", "tri-down", "tri", "ring"], "description": "Shape that tells groups apart without colour. Default square." }
+      }
+    },
+    "life": {
+      "type": "object", "additionalProperties": false,
+      "description": "Distances in chat messages. Defaults: live 7, after 20, fade 40, merge 15, per_msg 3.",
+      "properties": {
+        "live": { "type": "integer", "minimum": 1, "maximum": 200 }, "after": { "type": "integer", "minimum": 1, "maximum": 400 }, "fade": { "type": "integer", "minimum": 1, "maximum": 800 },
+        "merge": { "type": "integer", "minimum": 0, "maximum": 200 }, "per_msg": { "type": "integer", "minimum": 1, "maximum": 10 }
+      }
+    },
+    "type": {
+      "type": "object", "required": ["label", "group"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "properties": {
+        "label": { "$ref": "#/$defs/label", "description": "The category word a tag writes." },
+        "i18n": { "$ref": "#/$defs/i18n" },
+        "group": { "$ref": "#/$defs/id" },
+        "alias": { "$ref": "#/$defs/words", "description": "Other category words that mean this type." },
+        "icon": { "type": "string", "pattern": "^[^\\s]{1,2}$", "description": "One glyph drawn in the marker. Default: first character of the label." },
+        "color": { "$ref": "#/$defs/color", "description": "Default: the group colour." },
+        "source": { "type": "string", "pattern": "^[^\\n]{1,20}$", "description": "Default publisher when the tag names none." },
+        "rare": { "type": "integer", "minimum": 1, "maximum": 4, "description": "1 common .. 4 legendary. Default 1." },
+        "fx": { "$ref": "#/$defs/id", "description": "Name of a preset in fx_presets (or a kernel block name)." },
+        "life": { "$ref": "#/$defs/life" },
+        "inject": { "type": "boolean", "description": "Mentioned to the model in the background line. Default true." }
+      }
+    },
+    "fx": {
+      "type": "object", "required": ["block"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "properties": {
+        "block": { "enum": ["none", "glitch", "flash", "shake", "tint", "pulse"], "description": "Kernel building block. Screen blocks (glitch, flash, shake, tint) obey the user's 'turn off event screen effects' switch." },
+        "intensity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "color": { "$ref": "#/$defs/color" },
+        "seconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 30 }
+      }
+    },
+    "level": {
+      "type": "object", "required": ["value", "label"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "properties": { "value": { "type": "integer", "minimum": 0, "maximum": 3 }, "label": { "$ref": "#/$defs/label" }, "i18n": { "$ref": "#/$defs/i18n" } }
+    }
+  }
+}

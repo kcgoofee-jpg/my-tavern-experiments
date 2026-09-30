@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "v2/entities.schema.json",
+  "title": "entities block, schema 2: roster groups, attribute fields, avatars",
+  "description": "docs/kernel-schema.md §6 (K-R40..K-R44). Core entity fields (id, name, node, source) and the multi-source priority are fixed by the kernel and not written here. The pack names its groups (where the rows come from) and its attribute fields (how a value is shown). Absent block = every entity shows name and place only; groups are discovered from the card's name-keyed tables.",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": { "^_": {}, "^x-": {} },
+  "properties": {
+    "groups": { "type": "array", "items": { "$ref": "#/$defs/group" }, "description": "Display order = array order." },
+    "fields": { "type": "array", "items": { "$ref": "#/$defs/field" }, "description": "Attribute fields in display order." },
+    "avatar": { "$ref": "#/$defs/avatar" }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+    "lang": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$" },
+    "label": { "type": "string", "minLength": 1, "pattern": "^[^\\n]{1,40}$" },
+    "i18n": { "type": "object", "propertyNames": { "$ref": "#/$defs/lang" }, "additionalProperties": { "type": "object", "additionalProperties": false, "properties": { "label": { "type": "string", "minLength": 1 } } } },
+    "row": {
+      "type": "object", "required": ["name"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "description": "A pack-supplied row: shown until a live source has the same person.",
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "pattern": "^[^\\n]{1,40}$" },
+        "alias": { "type": "array", "items": { "type": "string", "pattern": "^[^\\n]{1,40}$" } },
+        "node": { "$ref": "#/$defs/id", "description": "Usual place (a node id)." },
+        "values": { "type": "object", "description": "field name -> value, same field names as fields[].field." }
+      }
+    },
+    "group": {
+      "type": "object", "required": ["id"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "label": { "$ref": "#/$defs/label" },
+        "i18n": { "$ref": "#/$defs/i18n" },
+        "source": {
+          "type": "object", "additionalProperties": false,
+          "description": "Live source (K-R41): mvu = dot path of a table in stat_data, keyed by name or an array of rows; name = the row field holding the name (array tables); place = the row field holding the place text; with = a row field whose yes-value puts that person with the player; present = everyone in this table is with the player; tags = the chat's character tags. Absent = pack rows only. name and place default to discovery by the kernel's field vocabulary.",
+          "properties": { "mvu": { "type": "string", "pattern": "^[^.\\n][^\\n]{0,79}$" }, "name": { "type": "string", "minLength": 1, "pattern": "^[^\\n]{1,40}$" }, "place": { "type": "string", "minLength": 1, "pattern": "^[^\\n]{1,40}$" }, "with": { "type": "string", "minLength": 1, "pattern": "^[^\\n]{1,40}$" }, "present": { "type": "boolean" }, "tags": { "type": "boolean" } }
+        },
+        "fallback": { "type": "array", "maxItems": 200, "items": { "$ref": "#/$defs/row" } }
+      }
+    },
+    "step": {
+      "type": "object", "required": ["label"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "properties": {
+        "label": { "$ref": "#/$defs/label" },
+        "i18n": { "$ref": "#/$defs/i18n" },
+        "up_to": { "type": "number", "description": "gauge bands: the band covers values up to this number (inclusive)." },
+        "match": { "type": "array", "items": { "type": "string", "pattern": "^[^\\n]{1,40}$" }, "description": "ladder steps: texts that mean this step (default: the label)." }
+      }
+    },
+    "field": {
+      "type": "object", "required": ["field", "kind"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "properties": {
+        "field": { "type": "string", "minLength": 1, "pattern": "^[^\\n]{1,40}$", "description": "Key in the source row, verbatim from the card." },
+        "label": { "$ref": "#/$defs/label" },
+        "i18n": { "$ref": "#/$defs/i18n" },
+        "kind": { "enum": ["text", "gauge", "ladder", "tag"], "description": "text = free text; tag = short chip (text, number or yes/no); gauge = number 0..max drawn as a meter, ladder = its named bands; ladder = ordered steps low to high, the value is matched to a step." },
+        "min": { "type": "number", "description": "gauge only. Default 0." },
+        "max": { "type": "number", "description": "gauge only, greater than min. Default 100." },
+        "ladder": { "type": "array", "minItems": 1, "maxItems": 20, "items": { "$ref": "#/$defs/step" } },
+        "scan": { "type": "boolean", "description": "ladder only: when the field is missing, look for a step in the row's other text values. Default false." },
+        "show": { "enum": ["subtitle", "chip", "detail", "hidden"], "description": "Where it appears. Default: text -> detail, others -> chip." }
+      }
+    },
+    "avatar": {
+      "type": "object", "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "description": "Where portraits may come from. Kernel rules stay: https only, image file types, no query string, and the user's own switch can turn all remote portraits off.",
+      "properties": {
+        "from": { "type": "array", "items": { "enum": ["card-script", "card-storage", "imagegen"] }, "description": "Default [imagegen]: only the optional image extension's library." },
+        "hosts": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)+(/[A-Za-z0-9_.~%/-]*)?$" }, "description": "Allowed host[/path-prefix] for card-script portraits: the host has a dot and must equal the URL host; a path prefix ends at a / (K-R43)." },
+        "deny": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "Path fragments never loaded, even from an allowed host." },
+        "storage": { "type": "object", "additionalProperties": false, "description": "card-storage: localStorage keys the card's own UI writes (read only). Keys may not start with the kernel's reserved prefixes (K-R43).",
+          "properties": { "index": { "type": "string", "pattern": "^(?!spatial|edenMap|tcp\\.)[^\\n]{1,80}$" }, "per_name": { "type": "string", "pattern": "^(?!spatial|edenMap|tcp\\.)[^\\n]*\\{name\\}[^\\n]*$" } } }
+      }
+    }
+  }
+}
