@@ -94,12 +94,13 @@ export function movedPayload(from, to, extra = {}) {
 }
 
 // ---------------- B9 类宏（默认关） ----------------
-export const MACROS = [['eden_here', /\{\{eden_here\}\}/gi], ['eden_route', /\{\{eden_route\}\}/gi]];
-/** 登记 / 撤销类宏；返回撤销函数 */
+// eden_fly（W8）：{{eden_fly}} / {{eden_fly 地点名}} → 隐藏 data-eden-fly 标记，宿主扫到后经 eden-map:fly 聚焦地图（裁决 14：协议首个仓内发送方）
+export const MACROS = [['eden_here', /\{\{eden_here\}\}/gi], ['eden_route', /\{\{eden_route\}\}/gi], ['eden_fly', /\{\{eden_fly(?:\s+([^}]+?))?\}\}/gi]];
+/** 登记 / 撤销类宏；返回撤销函数。get(key, match)：带参数的宏（eden_fly）从 match 里取地名。 */
 export function registerMacros(fn, get) {
   const reg = fn('registerMacroLike'); if (!reg) return () => {};
   const hs = [];
-  for (const [k, re] of MACROS) { try { hs.push(reg(re, () => String(get(k) ?? ''))); } catch (e) {} }
+  for (const [k, re] of MACROS) { try { hs.push(reg(re, (...a) => String(get(k, a[0]) ?? ''))); } catch (e) {} }
   return () => { for (const h of hs.splice(0)) { try { h?.unregister?.(); } catch (e) {} } if (fn('unregisterMacroLike')) for (const [, re] of MACROS) { try { fn('unregisterMacroLike')(re); } catch (e) {} } };
 }
 

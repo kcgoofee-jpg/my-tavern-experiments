@@ -47,6 +47,7 @@ export const KEYS = {
   edenMapSpatial: { owner: 'host', def: '0' }, edenMapSpatialBudget: { owner: 'host', def: '120' },
   edenMapWbAuto: { owner: 'host', def: '0' }, edenMapWbOn: { owner: 'host', def: '1' }, edenMapWbTomb: { owner: 'host', def: '0' }, edenMapWbChars: { owner: 'host' }, edenMapWbNoticeVer: { owner: 'host' }, edenMapWbSync: { owner: 'host' }, edenMapWbWhere: { owner: 'host' },
   edenMapWbJit: { owner: 'host', def: '0' },   // W6 世界书 JIT 水合：人在哪只挂哪（默认关；只动附加书 extra.eden_id 条目）
+  edenMapWbXtal: { owner: 'host', def: '0' }, edenMapWbXtalCfg: { owner: 'host' },   // W7 事实结晶：开关 + 水位/墓表 {tombstones, written}（默认关）
   // 三维
   edenEstateLabels: { owner: 'estate', legacy: true }, edenMap3dRailW: { owner: 'ui/chrome3d.js' },
   // 相机控制（U，2026-09-28）：视角预设/指北针/首次提示卡/空闲自动旋转，庄园页与通用三维查看器共用（ui/camera-controls.js）

@@ -46,8 +46,10 @@ test('B5 脚本说明；B6 initializeGlobal + 旧别名；B8 只广播地点；B
   const fnSrc = /function emitMoved\(to\) \{[\s\S]*?\n  \}/.exec(HOST)[0]; assert.ok(!/Variables|setVar|Mvu\.|exportTable|importTable/.test(fnSrc));
   // 类宏
   const reg = new Map(); const fn = T.hostFns([{ registerMacroLike: (re, f) => { reg.set(re.source, f); return { unregister: () => reg.delete(re.source) }; } }]);
-  const off = T.registerMacros(fn, k => (k === 'eden_here' ? '伊甸庄园·书房' : 'A → B'));
-  assert.equal(reg.size, 2); assert.equal(reg.get('\\{\\{eden_here\\}\\}')({}, '{{eden_here}}'), '伊甸庄园·书房');
+  const off = T.registerMacros(fn, (k, m) => (k === 'eden_here' ? '伊甸庄园·书房' : k === 'eden_fly' ? `<span style="display:none" data-eden-fly="${(m?.[1] || '书房').replace(/"/g, '')}"></span>书房` : 'A → B'));
+  assert.equal(reg.size, 3); assert.equal(reg.get('\\{\\{eden_here\\}\\}')({}, '{{eden_here}}'), '伊甸庄园·书房');
+  const fly = reg.get('\\{\\{eden_fly(?:\\s+([^}]+?))?\\}\\}')(['{{eden_fly 玫瑰园}}', ' 玫瑰园'], '{{eden_fly 玫瑰园}}');
+  assert.ok(fly.includes('data-eden-fly=') && fly.includes('玫瑰园'));   // W8：带参宏展开成 fly 标记（getter 第二参收 TH 传来的 match）
   off(); assert.equal(reg.size, 0);
   assert.doesNotThrow(() => T.registerMacros(T.hostFns([{}]), () => '')());
   assert.match(HOST, /macroSet\(lsGet\('edenMapMacros'\) === '1'\)/);

@@ -195,20 +195,22 @@ export function setWbName(title) { if (typeof title === 'string' && title.trim()
 /** 按聊天分开的世界书名（多个聊天共用一本会互相串）：「伊甸地图·自定义·<聊天 id 的短哈希>」 */
 export function wbName(chat) { let h = 2166136261; for (const c of String(chat || '')) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return `${WB_NAME}·${(h >>> 0).toString(16).padStart(8, '0').slice(0, 6)}`; }
 
-// ---------------- 剧情标签：⌖改名 / ⌖用途 ----------------
+// ---------------- 剧情标签：⌖改名 / ⌖用途 / ⌖事实 ----------------
 //   ⌖改名 书房 → 星图室        （→ / -> / ＞ / > 都认）
 //   ⌖用途 书房：夜里看星图      （： / : 都认）
-export const CUSTOM_EXAMPLES = new Set(['⌖改名 原名 → 新名', '⌖用途 地点：用途', '⌖改名 书房 → 星图室', '⌖用途 书房：整理旧地图']);
+//   ⌖事实 书房：暗格通向地下室   （W7 事实结晶的输入：不落 custom items——wb_crystallize 从消息窗口重放收集，
+//     「聊天记录是唯一真相」不破；applyTags 对 fact 跳过）
+export const CUSTOM_EXAMPLES = new Set(['⌖改名 原名 → 新名', '⌖用途 地点：用途', '⌖改名 书房 → 星图室', '⌖用途 书房：整理旧地图', '⌖事实 地点：坐实的事实']);
 const decode = s => s.replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (m, k) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", nbsp: ' ' })[k]);
-/** 一楼原文 → [{ op: 'name' | 'note', key, value }]（最多 6 条；代码块与示范原文跳过） */
+/** 一楼原文 → [{ op: 'name' | 'note' | 'fact', key, value }]（最多 6 条；代码块与示范原文跳过） */
 export function parseCustomTags(raw) {
-  if (!raw || (raw.indexOf('⌖改名') < 0 && raw.indexOf('⌖用途') < 0)) return [];
+  if (!raw || (raw.indexOf('⌖改名') < 0 && raw.indexOf('⌖用途') < 0 && raw.indexOf('⌖事实') < 0)) return [];
   const text = decode(String(raw)).replace(/```[\s\S]*?```/g, '').replace(/<code>[\s\S]*?<\/code>/gi, ''), out = [];
-  for (const m of text.matchAll(/⌖(改名|用途)[\s:：]*([^<\n⌖]{1,260})/g)) {
+  for (const m of text.matchAll(/⌖(改名|用途|事实)[\s:：]*([^<\n⌖]{1,260})/g)) {
     const body = m[2].trim();
     if (CUSTOM_EXAMPLES.has(`⌖${m[1]} ${body}`)) continue;
     if (m[1] === '改名') { const p = body.split(/\s*(?:→|->|＞|>|=>)\s*/); if (p.length === 2 && clean(p[0]) && clean(p[1])) out.push({ op: 'name', key: clean(p[0]), value: clean(p[1]).slice(0, MAX_NAME) }); }
-    else { const i = body.search(/[：:]/); if (i > 0) { const k = clean(body.slice(0, i)), v = body.slice(i + 1).trim(); if (k && v) out.push({ op: 'note', key: k, value: [...v].slice(0, MAX_NOTE).join('') }); } }
+    else { const i = body.search(/[：:]/); if (i > 0) { const k = clean(body.slice(0, i)), v = body.slice(i + 1).trim(); if (k && v) out.push({ op: m[1] === '事实' ? 'fact' : 'note', key: k, value: [...v].slice(0, MAX_NOTE).join('') }); } }
   }
   return out.slice(0, 6);
 }
@@ -218,6 +220,7 @@ export function applyTags(c, msgs, after, kindOf = () => 'landmark') {
   for (const { floor, text } of msgs) {
     if (!(floor > after)) continue; last = Math.max(last, floor);
     for (const t of parseCustomTags(text)) {
+      if (t.op === 'fact') continue;   // W7 事实：不落 custom items，wb_crystallize 从消息窗口重放收集
       const key = findKey(cur, t.key) || t.key, kind = cur.items[key]?.类 || kindOf(key);
       const nx = setCustom(cur, key, t.op === 'name' ? { name: t.value, kind, source: 'tag' } : { note: t.value, kind, source: 'tag' });
       if (nx) { cur = nx; applied.push({ ...t, key, floor }); }

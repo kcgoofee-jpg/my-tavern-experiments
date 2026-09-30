@@ -146,6 +146,22 @@ export function createWbAuto(deps) {
     if (op === 'wb-rebind' && ['global', 'char', 'chat'].includes(d.where)) { const W = await wbMod(); const ok = !!W && await W.bind(thFn, W.BOOK, d.where); if (ok) lsSet('edenMapWbWhere', d.where); return sendTh({ wb: await wbStatus(true), result: { ok, reason: ok ? null : 'error' } }); }
     if (op === 'wb-remove') { const W = await wbMod(); const ok = !!W && await W.removeBook(thFn); if (ok) { setTomb(true); wbLast = null; try { (LS || localStorage).removeItem('edenMapWbSync'); } catch (e) {} prefSync(); } return sendTh({ wb: await wbStatus(true), result: { ok, reason: ok ? 'deleted' : 'error' } }); }
     if (op === 'wb-del-legacy' && typeof d.name === 'string') { const W = await wbMod(); const ok = !!W && await W.deleteLegacy(thFn, d.name); return sendTh({ wb: await wbStatus(true), result: { ok, reason: ok ? 'deleted' : 'error' } }); }
+    if (op === 'wb-peek' && typeof d.name === 'string') {   // W8 地点卡「世界书档案」胶囊：附加书里按名字 / 触发词匹配条目，回摘要（只读）
+      const W = await wbMod();
+      const getBook = thFn('getWorldbook');
+      let items = null;
+      if (getBook) {
+        try {
+          const entries = await getBook(W.BOOK);
+          const nm = d.name.replace(/\s+/g, '');
+          items = (Array.isArray(entries) ? entries : [])
+            .filter(e => e?.enabled !== false && ((e?.name || '').replace(/\s+/g, '').includes(nm) || (e?.strategy?.keys || e?.key || []).some(k => String(k || '').replace(/\s+/g, '').includes(nm) || nm.includes(String(k || '').replace(/\s+/g, '')))))
+            .slice(0, 3)
+            .map(e => ({ name: e?.name || '（无标题）', summary: String(e?.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() }));
+        } catch (e) { items = null; }
+      }
+      return post({ type: 'eden-map:wb-peek', name: d.name, items });
+    }
   }
   return { wbAuto, sendTh, onTh };
 }

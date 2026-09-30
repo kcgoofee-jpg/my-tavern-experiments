@@ -367,6 +367,24 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     navT = setTimeout(async () => { try { await navRun(); } catch (e) {} navSchedule(); }, iv);
   }
 
+  // W8 世界书 → 地图（{{eden_fly}} 宏的接收半边）：最新助手楼里出现 data-eden-fly 标记就解析落点、
+  // 经协议里一直登记却无发送方的 eden-map:fly 聚焦过去（app/host.mjs → TCCustom.flyTo，2D / 庄园房间 / 三维热点通吃）。
+  // 每楼只飞一次（flyFloor 水位）；落点认不出就安静放过——绝不猜。
+  let flyFloor = -1;
+  function flyScan() {
+    if (!SpatialM || life.dead || floorNow <= flyFloor) return;
+    const raw = CTX.msgCache.get(floorNow)?.m?.raw || '';
+    const m = /data-eden-fly="([^"]{1,60})"/.exec(String(raw));
+    if (!m) return;
+    flyFloor = floorNow;
+    const place = m[1].trim();
+    if (!place || !regNow) return;
+    const loc = SpatialM.locate(regNow, place);
+    if (!loc) return;
+    const target = loc.markerId ? { map: loc.mapId, marker: loc.markerId } : (loc.room ? { map: loc.mapId, room: loc.room } : { map: loc.mapId });
+    post({ type: 'eden-map:fly', target });
+  }
+
   // ---------------- W6 世界书 JIT 条目水合（tavern/wb_jit.mjs 纯计划；写世界书在这里） ----------------
   // 只动 wbsync.BOOK 附加书里带 extra.eden_id 的条目（extra.eden_jit 标记 JIT 关的；用户关的记 ignore 永不再碰）。
   // 激活集 = spatial.activationOf（自身 + 出口 + 同层邻近）；激活集哈希没变不写（裁决 10）；withLock 跨标签互斥。
@@ -403,6 +421,43 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
       console.info('[eden-map] 世界书 JIT：', plan.enable.length, '开 /', plan.disable.length, '关 /', plan.markIgnore.length, '记 ignore');
     } catch (e) { console.warn('[eden-map] 世界书 JIT 写失败（下轮激活集变化时重试）', e); }
     finally { jitBusy = false; }
+  }
+
+  // ---------------- W7 剧情事实自动结晶（tavern/wb_crystallize.mjs 纯收集与草案；写世界书在这里） ----------------
+  // ⌖事实 标签 → 附加书关键词触发条目（map.fact.<hash>，内容照抄原文）；LRU + 墓碑（用户删除永不复活）；
+  // 已写 id 记水位（edenMapWbXtalCfg.written）→ 消息窗口重放幂等。默认关（edenMapWbXtal）。
+  let XTMm = null, xtalBusy = false, xtalCfg = null;
+  import(SELF + 'tavern/wb_crystallize.mjs').then(m => { XTMm = m; }).catch(() => {});
+  const xtalCfgOf = () => {
+    if (xtalCfg) return xtalCfg;
+    try { xtalCfg = JSON.parse(lsGet('edenMapWbXtalCfg') || '{}') || {}; } catch (e) { xtalCfg = {}; }
+    if (!Array.isArray(xtalCfg.tombstones)) xtalCfg.tombstones = [];
+    if (!xtalCfg.written || typeof xtalCfg.written !== 'object') xtalCfg.written = {};
+    return xtalCfg;
+  };
+  const xtalSave = () => { try { lsSet('edenMapWbXtalCfg', JSON.stringify(xtalCfgOf())); } catch (e) {} };
+  async function xtalRound() {
+    if (xtalBusy || !XTMm || !WBSm || !MV || life.dead || lsGet('edenMapWbXtal') !== '1') return;
+    const updBook = thFn('updateWorldbookWith');
+    if (!updBook) return;
+    xtalBusy = true;
+    try {
+      const facts = XTMm.collectFacts(CTX.lastMsgs, MV.parseCustomTags);
+      if (!facts.length) return;
+      const cfg = xtalCfgOf();
+      const drafts = XTMm.newDrafts(XTMm.drafts(facts, { tombstones: cfg.tombstones }), new Set(Object.keys(cfg.written)));
+      if (!drafts.length) return;
+      await WBSm.withLock(async () => {
+        await updBook(WBSm.BOOK, list => {
+          const out = Array.isArray(list) ? list : [];
+          for (const d of drafts) out.push({ name: d.name, enabled: true, content: d.content, strategy: d.strategy, position: d.position, recursion: { prevent_incoming: true, prevent_outgoing: true }, extra: { ...d.extra } });
+          return out;
+        });
+      });
+      for (const d of drafts) cfg.written[d.id] = d.floor;
+      xtalSave();
+    } catch (e) { console.warn('[eden-map] 事实结晶写失败（下轮重试）', e); }
+    finally { xtalBusy = false; }
   }
 
   // Part 6-4 地图驱动的双向动作注入：查看器只说「点了哪个 POI、想干什么」，文案与注入方式全在这里按设置决定。
@@ -621,8 +676,9 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     const frLine = FRm ? FRm.digest(frState) : '';   // W2：未注入过的失败报告追加一行（注入后置水位，不重复）
     inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : '', INVm && lsGet('edenMapInvInj') !== '0' ? INVm.digestLine(inv, 150) : '', frLine].filter(Boolean).join('\n'));
     if (frLine) FRm.markInjected(frState);
-    if (!lite) { stateInject(); spatialInject(); jitRound().catch(() => {}); checkpointStep(); }
+    if (!lite) { stateInject(); spatialInject(); jitRound().catch(() => {}); xtalRound().catch(() => {}); checkpointStep(); }
     if (!panel.hidden && alive) sendEvents();
+    flyScan();   // W8：最新楼里的 data-eden-fly 标记（{{eden_fly}} 宏展开）→ eden-map:fly 聚焦地图
     if (subs.events.size) { const sig = floorNow + '|' + events.map(e => e.id + ':' + e.last + ':' + e.tier).join(); if (sig !== emEvSig) { emEvSig = sig; emit('events', { items: events.map(e => ({ ...e })), floor: floorNow, hereLayer: layerOf(here) }); } }
     perf(lite ? 'lite' : 'core', performance.now() - t0);
   }
@@ -1228,10 +1284,18 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     try { thFn('initializeGlobal')?.('EdenMap', guardApi(api, EDEN_API)); } catch (e) {}
     macroSet(lsGet('edenMapMacros') === '1');
   }
-  // B9 类宏（默认关）：{{eden_here}} 当前地点、{{eden_route}} 最近一段行程；卡 / 预设作者自己引用
+  // B9 类宏（默认关）：{{eden_here}} 当前地点、{{eden_route}} 最近一段行程、{{eden_fly 地点}}（W8）展开成隐藏 fly 标记；卡 / 预设作者自己引用
   function macroSet(on) {
     macroOff?.(); macroOff = null; if (!on || !THm || life.dead) return;
-    macroOff = THm.registerMacros(thFn, k => (k === 'eden_here' ? userName(here) : (() => { const t = (CTX.trips || []).filter(x => !x.who).at(-1); return t ? `${t.from} → ${t.to}` : ''; })()));
+    macroOff = THm.registerMacros(thFn, (k, m) => {
+      if (k === 'eden_here') return userName(here);
+      if (k === 'eden_fly') {
+        const place = String(m?.[1] || '').trim() || here;
+        return `<span style="display:none" data-eden-fly="${place.replace(/"/g, '')}"></span>${userName(place)}`;
+      }
+      const t = (CTX.trips || []).filter(x => !x.who).at(-1);
+      return t ? `${t.from} → ${t.to}` : '';
+    });
   }
   // B8 广播：地图里的当前地点变了 → eventEmit('eden-map:moved', { from, to, source, at })；只发地点，不写 MVU / 数据库
   let movedFrom = null;
