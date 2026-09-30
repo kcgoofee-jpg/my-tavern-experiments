@@ -13,11 +13,11 @@
 
 ## 看板条目
 
-<!-- 每行一条：- 组名｜说明｜卡原文 或 仓库推断。组名 = build.py 里的 Batch 名（props_* / site_*），
+<!-- 每行一条：- 组名｜说明。组名 = build.py 里的 Batch 名（props_* / site_*），
      board 按它找锚点，final 按它写热点。gapcheck 把这里与设定稿并排给评审代理。核对过的条目可 ~~划掉~~ ✅。 -->
-- site_plateau｜旷野高地台地｜仓库推断
-- site_cliff｜崖壁（层理陡崖 + 崖脚倒石堆 + 崖线岩台）｜卡原文
-- site_trail｜下山小径（东侧肩坡 Z 字折返土路）｜仓库推断
-- props_scorch｜焦黑的地面｜仓库推断
-- props_rocks｜巨石与露头｜仓库推断
-- site_vegetation｜枯草与矮树｜仓库推断
+- site_plateau｜旷野高地台地
+- site_cliff｜崖壁（层理陡崖 + 崖脚倒石堆 + 崖线岩台）
+- site_trail｜下山小径（东侧肩坡 Z 字折返土路）
+- props_scorch｜焦黑的地面
+- props_rocks｜巨石与露头
+- site_vegetation｜枯草与矮树

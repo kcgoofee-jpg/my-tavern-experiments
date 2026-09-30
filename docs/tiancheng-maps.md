@@ -144,7 +144,7 @@ layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/
 ### 加一个地标的流程
 
 1. 在层脚本里建模型，调用 `layer.marker(id, 位置, 半径)`。
-2. 在 `maps.json` 该图的 `markers` 里写 `name`、`tag`、`src`（设定原文，推断的部分写明「推断」）、`alias`；有跨层通道就加 `link`。
+2. 在 `maps.json` 该图的 `markers` 里写 `name`、`src`（地点卡正文）、`alias`；有跨层通道就加 `link`。
 3. `bash tools/render_all.sh <层> --data-only`（只更新点位），或正式渲染。
 4. `python3 tools/check_maps.py` 通过后再提交。
 
@@ -203,7 +203,7 @@ layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/
 | 开局二 | 14:00 | 伊甸庄园·书房 | 上层 / 庄园 | 起点，**无目的地**（只在资料里提到「天城第一学府」的学生） | `eden` |
 | 开局三 | 时刻未改（08:00） | 伊甸庄园·书房 → **凯莉的宅邸** | 上层 → 未写 | 起点 → 目的地（计划） | `eden`；目的地卡未写层和位置，不设标记（`maps.json` `ambiguous`） |
 | 开局四 | 时刻未改；正文行动时间**今晚 20:00** | 伊甸庄园·书房 → 废弃教堂区（天城边缘） | 上层 → 下层（**层为推断**，卡只写「天城边缘」） | 起点 → 目的地 | `eden`、`ruined_churches`（推断） |
-| 开局五 | 时刻未改；正文是**早晨**（朝阳） | 伊甸庄园·书房 → **首相府** | 上层 → 上层（首相府的层为推断） | 起点 → 目的地（阿斯特丽德去开会） | `eden`、`pm_residence`（`openings:[5]`；唐宁街式外观是用户自设，`src:"user-design"`） |
+| 开局五 | 时刻未改；正文是**早晨**（朝阳） | 伊甸庄园·书房 → **首相府** | 上层 → 上层 | 起点 → 目的地（阿斯特丽德去开会） | `eden`、`pm_residence`（`openings:[5]`） |
 | 开局六 | **2088-05-01 08:00** 晨起 | 旧公寓楼（钢铁霓虹区） | 中层 | 起点；庄园女仆坐悬浮车返回悬浮庄园区 | `old_apartment`（推断） |
 | 开局七 | 2088-01-01 14:00 | 旷野高地 → **修道院**（苍穹打算回去） | 世界图 → 中层（修道院未指明哪一座） | 起点 → 目的地（内心想法） | `highland`（沿用，`world_markers.json`）；「修道院」是歧义词，不跳转 |
 | 开局八 | 08:00 → **09:30** | 辉光大教堂（中层高区） | 中层 | 起点（等候晨祷） | `radiance_cathedral`（沿用） |
@@ -212,9 +212,9 @@ layer.finish(world=(颜色, 强度), glare_opts={...})  # 相机 → 导出 map/
 
 ## 8. 地图补充地点与世界书同步（v0.9.6）
 
-- **地图补充的地点**（原卡没有，或层 / 形制由用户或仓库决定）统一登记在 `map/data/addon_places.json`：`id`、`name`、`alias`（世界书关键词）、`src`（`user <日期>` = 用户决定 / 设计，`repo` = 仓库自设）、`text`（中性的设施、布局、氛围）、`refs`（对应的 `maps.json` 标记，形如 `tc_upper.pm_residence`）或 `estate: true`（伊甸庄园里的地点，`alias` 要有一个在 `eden_estate.rooms / areas` 里）。
+- **地图上另行描述的地点**统一登记在 `map/data/addon_places.json`：`id`、`name`、`alias`（世界书关键词）、`text`（中性的设施、布局、氛围）、`refs`（对应的 `maps.json` 标记，形如 `tc_upper.pm_residence`）或 `estate: true`（伊甸庄园里的地点，`alias` 要有一个在 `eden_estate.rooms / areas` 里）。
 - `tools/build_worldbook_addon.py` 为每一处生成一条**关键词触发**的「地图补充-名称」条目（位置、深度照卡里设定条目：角色定义之前、深度 4，order 440 起），内容末尾标「地图附加设定，原卡没有」；卡里已有、地图常用的口径拆成「天城常识-*」「庄园常识-*」关键词条目（order 420 起）。
-- **维护规则**：`maps.json` 里 `canon:false`、有 `sub_src` / `layer_src`、或 `src` 含「仓库自设」「用户」的标记，必须出现在某一条的 `refs` 里；条目引用的标记必须存在。`python3 tools/check_maps.py` 检查这两条——**加、改、删地点时 `maps.json`、`addon_places.json`、世界书三处一起改**，改完重跑附加条目脚本。
+- **维护规则**：`maps.json` 里 `wb_list:false` 或 `addon:true` 的标记，必须出现在某一条的 `refs` 里；条目引用的标记必须存在。`python3 tools/check_maps.py` 检查这两条——**加、改、删地点时 `maps.json`、`addon_places.json`、世界书三处一起改**，改完重跑附加条目脚本。
 - 手工落点（不在渲染脚本里、直接写进 `map/data/tc_<层>.json` 的点）带 `manual: true`；`blender/tc_common.write_data` 重导出时保留它们。
 
 ## 开局地点的简易地图（v0.9.6）

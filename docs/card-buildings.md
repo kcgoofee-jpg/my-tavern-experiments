@@ -5,118 +5,118 @@
 来源：`docs/card-digest.md`「全部具名地点」、`docs/card-omissions.md` A 节、`maps.json` 原 `unplaced`，加上 2026-09-28 对本地卡副本的补读（地名后缀检索 + 段落精读；新增项见下文「补读新增」）。地名一律照抄卡原名（2026-09-28 用户决定，不再用运行时绑定）。
 
 列说明：
-- **标记**：✅ 已有；🆕 本轮新加（层与位置为**仓库推断**，`layer_src: repo-inferred`，世界书附加条目 `addon_places.json` 同步）。
+- **标记**：✅ 已有；🆕 本轮新加（`addon: true`，世界书附加条目 `addon_places.json` 同步）。
 - **模型**：— 没有；精简 = 只有低档 glb、未评审；标准 = 标准档 + 低档 glb、两轮评审通过。
 - **优先级**：P1 开局相关 → P2 机构 → P3 其他（ROADMAP「卡里建筑三维化」按这个顺序做）。
 - 上层悬浮岛的参考板与草稿由另一任务做（`blender/upper_islands/`，`docs/upper-islands-references.md`），落地后接过来做定稿，不重复做草稿。伊甸庄园（含室内）另案处理，不在本表。
 
-| 优先级 | 地图 | id | 名称 | 标记 | 层 / 位置来源 | 模型 | 质量 | 备注 |
-|---|---|---|---|---|---|---|---|---|
-| P1 开局 | site_highland | `cliff_edge` | 崖壁 | ✅ | 卡 | 旷野高地 `map/props/highland/`（崖壁热点） | 标准（r2 7 / 6） | 开局七 |
-| P1 开局 | site_highland | `highland_plateau` | 旷野高地 | ✅ | 卡 | 旷野高地 `map/props/highland/` | 标准（7 / 6） | 开局七 |
-| P1 开局 | tc_low | `junk_market` | 旧货市场 | ✅ | 卡 + 推断位置 | 铁皮屋区与旧货市场 `map/props/lower_quarter/` | 标准（r3 7 / 7） | 开局六 |
-| P1 开局 | tc_low | `ruined_churches` | 废弃教堂区 | ✅ | 卡 + 推断位置 | 废弃教堂区 `map/props/ruined_churches/` | 标准（r2 7 / 8） | 开局四 |
-| P1 开局 | tc_low | `tin_shacks` | 铁皮屋区 | ✅ | 卡 + 推断位置 | 铁皮屋区与旧货市场 `map/props/lower_quarter/` | 标准（r3 7 / 7） | 开局六 |
-| P1 开局 | tc_low | `well7` | 7 号井黑市 | ✅ | 卡 | 层间检查点与 7 号井 `map/props/well7/`（link3d） | 标准（r2 8 / 7） | 视觉样例 / 开局 |
-| P1 开局 | tc_mid | `checkpoint_c` | 层间检查点 | ✅ | 卡 | 层间检查点与 7 号井 `map/props/well7/`（link3d） | 标准（r2 8 / 7） | 视觉样例 / 开局 |
-| P1 开局 | tc_mid | `old_apartment` | 旧公寓楼 | ✅ | 卡 + 推断位置 | 旧公寓楼 `map/props/old_apartment/` | 标准（r3 7.5 / 7） | 开局六 |
-| P1 开局 | tc_mid | `radiance_cathedral` | 辉光大教堂 | ✅ | 卡 | 辉光大教堂 `map/props/cathedral/` | 标准（r3 7.5 / 7） | 开局八 |
-| P1 开局 | tc_upper | `kelly_residence` | 凯莉的宅邸 | ✅ | 用户决定 | 凯莉的宅邸 `map/props/kelly_residence/` | 标准（r2 7 / 8） | 开局三 |
-| P1 开局 | tc_upper | `pm_residence` | 首相府 | ✅ | 卡 + 推断位置 | 首相府 `map/props/pm_residence/` | 标准（r2 7 / 7） | 开局五 |
-| P2 机构 | tc_low | `amc_facility` | 资产管理委员会下层设施 | ✅ | 卡 | 委员会下层设施 `map/props/amc_facility/` | 标准（r3 7 / 8） |  |
-| P2 机构 | tc_low | `enforcement_low` | 执法局下层分局 | ✅ | 卡 | 执法局下层分局 `map/props/enforcement_low/` | 标准（r3 7.5 / 7） |  |
-| P2 机构 | tc_low | `outpost` | 防卫军前沿哨所 | ✅ | 卡 | 防卫军前沿哨所 `map/props/outpost/` | 标准（r1 7 / 7） |  |
-| P2 机构 | tc_low | `prison` | 监狱 | 🆕 | 仓库推断 | 监狱（外观）`map/props/prison/` | 标准（r1 7 / 7） |  |
-| P2 机构 | tc_low | `soup_kitchen` | 圣光教会施粥站 | ✅ | 卡 | 施粥站 `map/props/soup_kitchen/` | 标准（r1 7 / 7） |  |
-| P2 机构 | tc_mid | `admin_council` | 天城政务院 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
-| P2 机构 | tc_mid | `barracks_ring` | 环城军营带 | ✅ | 卡 | 军营带与军事学院 `map/props/barracks/` | 标准（r2 7.5 / 7.5） |  |
-| P2 机构 | tc_mid | `butler_academy` | 天城贵族管家学院 | 🆕 | 仓库推断 | 天城贵族管家学院 `map/props/butler_academy/` | 标准（r1 7 / 7.5） |  |
-| P2 机构 | tc_mid | `council` | 天城议会 | ✅ | 卡 + 推断位置 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
-| P2 机构 | tc_mid | `culture_office` | 天城文化署 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
-| P2 机构 | tc_mid | `enforcement_hq` | 天城执法局总局 | ✅ | 卡 | 执法局总局 `map/props/enforcement_hq/` | 标准（r3 7 / 7.5） |  |
-| P2 机构 | tc_mid | `executive_office` | 天城执政厅 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
-| P2 机构 | tc_mid | `iron_cradle` | 圣铁摇篮 | ✅ | 卡 | 圣铁摇篮 `map/props/iron_cradle/` | 标准（r2 7 / 7） |  |
-| P2 机构 | tc_mid | `knights_camp` | 骑士团营区 | ✅ | 用户决定 | 骑士团营区 `map/props/knights_camp/` | 标准（r1 7 / 7.5） |  |
-| P2 机构 | tc_mid | `mage_tower` | 法师塔 | 🆕 | 仓库推断 | 法师塔 `map/props/mage_tower/` | 标准（r1 7 / 7.5） |  |
-| P2 机构 | tc_mid | `merc_guild` | 佣兵公会 | ✅ | 卡 | 佣兵公会 `map/props/merc_guild/` | 标准（r1 7 / 7） |  |
-| P2 机构 | tc_mid | `mid_care_home` | 中层养老院 | ✅ | 卡 | 中层关怀带 `map/props/care_cluster/` | 标准（r1 7 / 7） |  |
-| P2 机构 | tc_mid | `mid_hospital` | 中层公立医院 | ✅ | 卡 | 中层关怀带 `map/props/care_cluster/` | 标准（r1 7 / 7） |  |
-| P2 机构 | tc_mid | `mid_monastery` | 中层修道院 | ✅ | 卡 | 中层关怀带 `map/props/care_cluster/` | 标准（r1 7 / 7） |  |
-| P2 机构 | tc_mid | `military_academy` | 军事学院 | 🆕 | 仓库推断 | 军营带与军事学院 `map/props/barracks/` | 标准（r2 7.5 / 7.5） |  |
-| P2 机构 | tc_mid | `reserve_office` | 天城中央储备署 | 🆕 | 仓库推断 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
-| P2 机构 | tc_mid | `starabyss_univ` | 星渊大学 | ✅ | 卡 | 星渊大学 `map/props/starabyss_univ/` | 标准（r1 7 / 7.5） |  |
-| P2 机构 | tc_mid | `storm_hall` | 风暴殿 | 🆕 | 仓库推断 | 风暴殿 `map/props/storm_hall/` | 标准（r1 7.5 / 7.5） |  |
-| P2 机构 | tc_mid | `supreme_court` | 最高法院 | ✅ | 卡 + 推断位置 | 天城大学与最高法院 `map/props/tiancheng_univ_court/` | 标准（r1 7.5 / 7.5） |  |
-| P2 机构 | tc_mid | `tiancheng_univ` | 天城大学 | ✅ | 用户决定 | 天城大学与最高法院 `map/props/tiancheng_univ_court/` | 标准（r1 7.5 / 7.5） |  |
-| P2 机构 | tc_upper | `climate_tower` | 以太气候调节塔 | ✅ | 卡 + 推断位置 | 气候调节塔 `map/props/climate_tower/` | 标准（r2 7 / 8） |  |
-| P2 机构 | tc_upper | `silver_crown` | 银冠堡 | ✅ | 卡 | 银冠堡 `map/props/silver_crown/`；岛资产 `blender/islands/silver_crown.py`（上层底图抠图） | 标准（r1 7 / 7.5）；岛资产 标准（campaign r2 8/6.5） | 2026-09-30 渲染战役：上层底图改贴岛资产俯视抠图 |
-| P3 其他 | site_fief1 | `fief1_castle` | 第一席城堡 | ✅ | 仓库自设 | 第一席封地 `map/props/fief1/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief1 | `fief1_fields` | 第一席领地农田 | ✅ | 仓库自设 | 第一席封地 `map/props/fief1/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief1 | `fief1_order` | 第一席骑士团驻地 | ✅ | 仓库自设 | 第一席封地 `map/props/fief1/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief1 | `fief1_village` | 第一席领地城镇 | ✅ | 仓库自设 | 第一席封地 `map/props/fief1/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief2 | `fief2_castle` | 第二席城堡 | ✅ | 仓库自设 | 第二席封地 `map/props/fief2/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief2 | `fief2_fields` | 第二席领地农田 | ✅ | 仓库自设 | 第二席封地 `map/props/fief2/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief2 | `fief2_order` | 第二席骑士团驻地 | ✅ | 仓库自设 | 第二席封地 `map/props/fief2/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief2 | `fief2_village` | 第二席领地城镇 | ✅ | 仓库自设 | 第二席封地 `map/props/fief2/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief3 | `fief3_castle` | 第三席城堡 | ✅ | 仓库自设 | 第三席封地 `map/props/fief3/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief3 | `fief3_fields` | 第三席领地农田 | ✅ | 仓库自设 | 第三席封地 `map/props/fief3/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief3 | `fief3_order` | 第三席骑士团驻地 | ✅ | 仓库自设 | 第三席封地 `map/props/fief3/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief3 | `fief3_village` | 第三席领地城镇 | ✅ | 仓库自设 | 第三席封地 `map/props/fief3/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief4 | `fief4_castle` | 第四席城堡 | ✅ | 仓库自设 | 第四席封地 `map/props/fief4/` | 标准（r2 7 / 6） |  |
-| P3 其他 | site_fief4 | `fief4_fields` | 第四席领地农田 | ✅ | 仓库自设 | 第四席封地 `map/props/fief4/` | 标准（r2 7 / 6） |  |
-| P3 其他 | site_fief4 | `fief4_order` | 第四席骑士团驻地 | ✅ | 仓库自设 | 第四席封地 `map/props/fief4/` | 标准（r2 7 / 6） |  |
-| P3 其他 | site_fief4 | `fief4_village` | 第四席领地城镇 | ✅ | 仓库自设 | 第四席封地 `map/props/fief4/` | 标准（r2 7 / 6） |  |
-| P3 其他 | site_fief5 | `fief5_castle` | 第五席城堡 | ✅ | 仓库自设 | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief5 | `fief5_fields` | 第五席领地农田 | ✅ | 仓库自设 | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief5 | `fief5_lists` | 第五席比武场 | ✅ | 仓库自设 | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief5 | `fief5_order` | 第五席骑士团驻地 | ✅ | 仓库自设 | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_fief5 | `fief5_village` | 第五席领地城镇 | ✅ | 仓库自设 | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_highland | `trail_down` | 下山小径 | ✅ | 仓库自设 | 旷野高地 `map/props/highland/`（下山小径热点） | 标准（r2 7 / 6） |  |
-| P3 其他 | site_kavalierki | `arms_rnd` | 魔导军工研发中心 | 🆕 | 仓库推断 | 魔导军工研发中心 `map/props/arms_rnd/` | 标准（campaign r2 8/6.5） |  |
-| P3 其他 | site_kavalierki | `clearing_depot` | 清算转运站 | ✅ | 卡 | 清算转运站 `map/props/clearing_depot/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
-| P3 其他 | site_kavalierki | `contest_corridor` | 竞赛与狂欢回廊 | ✅ | 卡 | 竞赛与狂欢回廊 `map/props/contest_corridor/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | site_kavalierki | `elite_club` | 顶级贵族与财阀会所 | ✅ | 卡 | 顶级贵族与财阀会所 `map/props/elite_club/` | 标准（7.5 / 6.5） |  |
-| P3 其他 | site_kavalierki | `ether_dome` | 以太穹顶 | ✅ | 卡 | 以太穹顶 `map/props/ether_dome/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
-| P3 其他 | site_kavalierki | `free_knight_camp` | 独立骑士黑市营地 | ✅ | 卡 | 独立骑士黑市营地 `map/props/free_knight_camp/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
-| P3 其他 | site_kavalierki | `glory_crown` | 荣光冠冕 | ✅ | 卡 | 荣光冠冕 `map/props/glory_crown/` | 标准（r2 7 / 6） |  |
-| P3 其他 | site_kavalierki | `linguang_post` | 临光家族外城驻所 | ✅ | 卡 | 临光家族外城驻所 `map/props/linguang_post/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
-| P3 其他 | site_kavalierki | `round_table_hall` | 圆桌骑士议事殿 | ✅ | 卡 | — | — |  |
-| P3 其他 | site_kavalierki | `rust_outskirts` | 铁锈与落败领 | ✅ | 卡 | 铁锈与落败领 `map/props/rust_outskirts/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
-| P3 其他 | site_kavalierki | `sun_arena` | 太阳骑士大竞技场 | ✅ | 卡 | — | — |  |
-| P3 其他 | site_kavalierki | `union_tower` | 商业联合会联合大厦 | ✅ | 卡 | — | — |  |
-| P3 其他 | tc_low | `blood_mill` | 血肉磨坊 | ✅ | 卡 | 血肉磨坊 `map/props/blood_mill/` | 标准（r1 8 / 6.5） |  |
-| P3 其他 | tc_low | `freight_yard` | 货运站 | ✅ | 卡 + 推断位置 | 货运站 `map/props/freight_yard/` | 标准（r1 8 / 7） |  |
-| P3 其他 | tc_low | `lower_bar` | 下层区酒吧 | 🆕 | 仓库推断 | 下层区酒吧 `map/props/lower_bar/` | 标准（r1 7.5 / 6.5） |  |
-| P3 其他 | tc_low | `slums` | 贫民窟 | 🆕 | 仓库推断 | 贫民窟 `map/props/slums/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | tc_mid | `rebirth_workshop` | 新生工坊 | 🆕 | 仓库推断 | 新生工坊 `map/props/rebirth_workshop/` | 标准（r1 7.5 / 7） |  |
-| P3 其他 | tc_mid | `schneider_clinic` | 施奈德精密改造诊所 | 🆕 | 仓库推断 | 施奈德精密改造诊所 `map/props/schneider_clinic/` | 标准（r1 7.5 / 7） |  |
-| P3 其他 | tc_mid | `victoria_apartment` | 维多利亚的公寓 | ✅ | 卡 | 维多利亚的公寓 `map/props/victoria_apartment/` | 标准（r1 7 / 7.5） |  |
-| P3 其他 | tc_upper | `eden` | 伊甸庄园 | ✅ | 卡 | — | — |  |
-| P3 其他 | tc_upper | `league_club` | 庄园主联盟会所 | ✅ | 卡 + 推断位置 | 庄园主联盟会所 `map/props/league_club/` | 标准（r2 7.5 / 7） | isle9；宫殿式会所 + 顶光拍卖厅 |
-| P3 其他 | tc_upper | `victor_estate` | 维克多庄园 | 🆕 | 仓库推断 | 岛资产 `blender/islands/isle4.py`（上层底图抠图） | 标准（campaign r2 7.5/6.5） | 2026-09-30 渲染战役：isle4 重建（旧宅 + 秋林 + 断锥），标记移到旧宅上 |
-| P3 其他 | tc_upper | `y_estate` | 「Y」的庄园 | 🆕 | 仓库推断 | — | — | 只标记；所在岛（isle5）是通用英式填充 |
-| P3 其他 | tc_upper | `zaibatsu_estate` | 罗斯柴尔德庄园 | ✅ | 卡 + 推断位置 | 罗斯柴尔德庄园 `map/props/rothschild_estate/` | 标准（r2 7.5 / 7.5） | isle30；府邸 + 玻璃冬季宴会厅 |
-| P3 其他 | tc_upper | `elite_academy` | 精英学院 | 🆕 | 卡 + 推断位置 | 精英学院 `map/props/elite_academy/` | 标准（r2 7.5 / 7.5） | isle25（Q11） |
-| P3 其他 | world | `hunting_camp` | 猎季营地 | 🆕 | 仓库推断 | 猎季营地 `map/props/hunting_camp/` | 标准（r2 7.5 / 6；模型已备，世界图标记待引擎支持三维入口） |  |
-| P3 其他 | yuanyu_city | `city_gate` | 原域东门 | ✅ | 仓库自设 | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | yuanyu_city | `dome_quarter` | 穹顶区 | ✅ | 仓库自设 | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | yuanyu_city | `pilgrim_plaza` | 朝圣广场 | ✅ | 仓库自设 | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | yuanyu_city | `spire_quarter` | 尖塔区 | ✅ | 仓库自设 | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |
-| P3 其他 | yuanyu_sanctum | `holy_mountain` | 悬浮圣山 | ✅ | 卡 | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（r2 7.5 / 6.5；glb 重导出 + webp/meshopt） | 四处标记共用一个模型：`lm_holy_mountain` |
-| P3 其他 | yuanyu_sanctum | `pantheon` | 诸神殿 | ✅ | 卡 | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（同 holy_mountain，r2 7.5 / 6.5） | 热点 `pantheon` → 网格 `summit` |
-| P3 其他 | yuanyu_sanctum | `pilgrim_stair` | 朝圣步道 | ✅ | 仓库自设 | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（同 holy_mountain，r2 7.5 / 6.5） | 热点 `pilgrim_stair` → 网格 `stair` |
-| P3 其他 | yuanyu_sanctum | `shrine_ring` | 圣山神龛环 | ✅ | 仓库自设 | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（同 holy_mountain，r2 7.5 / 6.5） | 热点 `shrine_ring` → 网格 `mount_rock`（落位为仓库推断） |
+| 优先级 | 地图 | id | 名称 | 标记 | 模型 | 质量 | 备注 |
+|---|---|---|---|---|---|---|---|
+| P1 开局 | site_highland | `cliff_edge` | 崖壁 | ✅ | 旷野高地 `map/props/highland/`（崖壁热点） | 标准（r2 7 / 6） | 开局七 |
+| P1 开局 | site_highland | `highland_plateau` | 旷野高地 | ✅ | 旷野高地 `map/props/highland/` | 标准（7 / 6） | 开局七 |
+| P1 开局 | tc_low | `junk_market` | 旧货市场 | ✅ | 铁皮屋区与旧货市场 `map/props/lower_quarter/` | 标准（r3 7 / 7） | 开局六 |
+| P1 开局 | tc_low | `ruined_churches` | 废弃教堂区 | ✅ | 废弃教堂区 `map/props/ruined_churches/` | 标准（r2 7 / 8） | 开局四 |
+| P1 开局 | tc_low | `tin_shacks` | 铁皮屋区 | ✅ | 铁皮屋区与旧货市场 `map/props/lower_quarter/` | 标准（r3 7 / 7） | 开局六 |
+| P1 开局 | tc_low | `well7` | 7 号井黑市 | ✅ | 层间检查点与 7 号井 `map/props/well7/`（link3d） | 标准（r2 8 / 7） | 视觉样例 / 开局 |
+| P1 开局 | tc_mid | `checkpoint_c` | 层间检查点 | ✅ | 层间检查点与 7 号井 `map/props/well7/`（link3d） | 标准（r2 8 / 7） | 视觉样例 / 开局 |
+| P1 开局 | tc_mid | `old_apartment` | 旧公寓楼 | ✅ | 旧公寓楼 `map/props/old_apartment/` | 标准（r3 7.5 / 7） | 开局六 |
+| P1 开局 | tc_mid | `radiance_cathedral` | 辉光大教堂 | ✅ | 辉光大教堂 `map/props/cathedral/` | 标准（r3 7.5 / 7） | 开局八 |
+| P1 开局 | tc_upper | `kelly_residence` | 凯莉的宅邸 | ✅ | 凯莉的宅邸 `map/props/kelly_residence/` | 标准（r2 7 / 8） | 开局三 |
+| P1 开局 | tc_upper | `pm_residence` | 首相府 | ✅ | 首相府 `map/props/pm_residence/` | 标准（r2 7 / 7） | 开局五 |
+| P2 机构 | tc_low | `amc_facility` | 资产管理委员会下层设施 | ✅ | 委员会下层设施 `map/props/amc_facility/` | 标准（r3 7 / 8） |  |
+| P2 机构 | tc_low | `enforcement_low` | 执法局下层分局 | ✅ | 执法局下层分局 `map/props/enforcement_low/` | 标准（r3 7.5 / 7） |  |
+| P2 机构 | tc_low | `outpost` | 防卫军前沿哨所 | ✅ | 防卫军前沿哨所 `map/props/outpost/` | 标准（r1 7 / 7） |  |
+| P2 机构 | tc_low | `prison` | 监狱 | 🆕 | 监狱（外观）`map/props/prison/` | 标准（r1 7 / 7） |  |
+| P2 机构 | tc_low | `soup_kitchen` | 圣光教会施粥站 | ✅ | 施粥站 `map/props/soup_kitchen/` | 标准（r1 7 / 7） |  |
+| P2 机构 | tc_mid | `admin_council` | 天城政务院 | 🆕 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
+| P2 机构 | tc_mid | `barracks_ring` | 环城军营带 | ✅ | 军营带与军事学院 `map/props/barracks/` | 标准（r2 7.5 / 7.5） |  |
+| P2 机构 | tc_mid | `butler_academy` | 天城贵族管家学院 | 🆕 | 天城贵族管家学院 `map/props/butler_academy/` | 标准（r1 7 / 7.5） |  |
+| P2 机构 | tc_mid | `council` | 天城议会 | ✅ | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
+| P2 机构 | tc_mid | `culture_office` | 天城文化署 | 🆕 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
+| P2 机构 | tc_mid | `enforcement_hq` | 天城执法局总局 | ✅ | 执法局总局 `map/props/enforcement_hq/` | 标准（r3 7 / 7.5） |  |
+| P2 机构 | tc_mid | `executive_office` | 天城执政厅 | 🆕 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
+| P2 机构 | tc_mid | `iron_cradle` | 圣铁摇篮 | ✅ | 圣铁摇篮 `map/props/iron_cradle/` | 标准（r2 7 / 7） |  |
+| P2 机构 | tc_mid | `knights_camp` | 骑士团营区 | ✅ | 骑士团营区 `map/props/knights_camp/` | 标准（r1 7 / 7.5） |  |
+| P2 机构 | tc_mid | `mage_tower` | 法师塔 | 🆕 | 法师塔 `map/props/mage_tower/` | 标准（r1 7 / 7.5） |  |
+| P2 机构 | tc_mid | `merc_guild` | 佣兵公会 | ✅ | 佣兵公会 `map/props/merc_guild/` | 标准（r1 7 / 7） |  |
+| P2 机构 | tc_mid | `mid_care_home` | 中层养老院 | ✅ | 中层关怀带 `map/props/care_cluster/` | 标准（r1 7 / 7） |  |
+| P2 机构 | tc_mid | `mid_hospital` | 中层公立医院 | ✅ | 中层关怀带 `map/props/care_cluster/` | 标准（r1 7 / 7） |  |
+| P2 机构 | tc_mid | `mid_monastery` | 中层修道院 | ✅ | 中层关怀带 `map/props/care_cluster/` | 标准（r1 7 / 7） |  |
+| P2 机构 | tc_mid | `military_academy` | 军事学院 | 🆕 | 军营带与军事学院 `map/props/barracks/` | 标准（r2 7.5 / 7.5） |  |
+| P2 机构 | tc_mid | `reserve_office` | 天城中央储备署 | 🆕 | 中层政务区 `map/props/civic_core/` | 标准（r2 7.5 / 7） |  |
+| P2 机构 | tc_mid | `starabyss_univ` | 星渊大学 | ✅ | 星渊大学 `map/props/starabyss_univ/` | 标准（r1 7 / 7.5） |  |
+| P2 机构 | tc_mid | `storm_hall` | 风暴殿 | 🆕 | 风暴殿 `map/props/storm_hall/` | 标准（r1 7.5 / 7.5） |  |
+| P2 机构 | tc_mid | `supreme_court` | 最高法院 | ✅ | 天城大学与最高法院 `map/props/tiancheng_univ_court/` | 标准（r1 7.5 / 7.5） |  |
+| P2 机构 | tc_mid | `tiancheng_univ` | 天城大学 | ✅ | 天城大学与最高法院 `map/props/tiancheng_univ_court/` | 标准（r1 7.5 / 7.5） |  |
+| P2 机构 | tc_upper | `climate_tower` | 以太气候调节塔 | ✅ | 气候调节塔 `map/props/climate_tower/` | 标准（r2 7 / 8） |  |
+| P2 机构 | tc_upper | `silver_crown` | 银冠堡 | ✅ | 银冠堡 `map/props/silver_crown/`；岛资产 `blender/islands/silver_crown.py`（上层底图抠图） | 标准（r1 7 / 7.5）；岛资产 标准（campaign r2 8/6.5） | 2026-09-30 渲染战役：上层底图改贴岛资产俯视抠图 |
+| P3 其他 | site_fief1 | `fief1_castle` | 第一席城堡 | ✅ | 第一席封地 `map/props/fief1/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief1 | `fief1_fields` | 第一席领地农田 | ✅ | 第一席封地 `map/props/fief1/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief1 | `fief1_order` | 第一席骑士团驻地 | ✅ | 第一席封地 `map/props/fief1/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief1 | `fief1_village` | 第一席领地城镇 | ✅ | 第一席封地 `map/props/fief1/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief2 | `fief2_castle` | 第二席城堡 | ✅ | 第二席封地 `map/props/fief2/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief2 | `fief2_fields` | 第二席领地农田 | ✅ | 第二席封地 `map/props/fief2/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief2 | `fief2_order` | 第二席骑士团驻地 | ✅ | 第二席封地 `map/props/fief2/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief2 | `fief2_village` | 第二席领地城镇 | ✅ | 第二席封地 `map/props/fief2/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief3 | `fief3_castle` | 第三席城堡 | ✅ | 第三席封地 `map/props/fief3/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief3 | `fief3_fields` | 第三席领地农田 | ✅ | 第三席封地 `map/props/fief3/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief3 | `fief3_order` | 第三席骑士团驻地 | ✅ | 第三席封地 `map/props/fief3/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief3 | `fief3_village` | 第三席领地城镇 | ✅ | 第三席封地 `map/props/fief3/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief4 | `fief4_castle` | 第四席城堡 | ✅ | 第四席封地 `map/props/fief4/` | 标准（r2 7 / 6） |  |
+| P3 其他 | site_fief4 | `fief4_fields` | 第四席领地农田 | ✅ | 第四席封地 `map/props/fief4/` | 标准（r2 7 / 6） |  |
+| P3 其他 | site_fief4 | `fief4_order` | 第四席骑士团驻地 | ✅ | 第四席封地 `map/props/fief4/` | 标准（r2 7 / 6） |  |
+| P3 其他 | site_fief4 | `fief4_village` | 第四席领地城镇 | ✅ | 第四席封地 `map/props/fief4/` | 标准（r2 7 / 6） |  |
+| P3 其他 | site_fief5 | `fief5_castle` | 第五席城堡 | ✅ | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief5 | `fief5_fields` | 第五席领地农田 | ✅ | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief5 | `fief5_lists` | 第五席比武场 | ✅ | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief5 | `fief5_order` | 第五席骑士团驻地 | ✅ | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_fief5 | `fief5_village` | 第五席领地城镇 | ✅ | 第五席封地 `map/props/fief5/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_highland | `trail_down` | 下山小径 | ✅ | 旷野高地 `map/props/highland/`（下山小径热点） | 标准（r2 7 / 6） |  |
+| P3 其他 | site_kavalierki | `arms_rnd` | 魔导军工研发中心 | 🆕 | 魔导军工研发中心 `map/props/arms_rnd/` | 标准（campaign r2 8/6.5） |  |
+| P3 其他 | site_kavalierki | `clearing_depot` | 清算转运站 | ✅ | 清算转运站 `map/props/clearing_depot/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
+| P3 其他 | site_kavalierki | `contest_corridor` | 竞赛与狂欢回廊 | ✅ | 竞赛与狂欢回廊 `map/props/contest_corridor/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | site_kavalierki | `elite_club` | 顶级贵族与财阀会所 | ✅ | 顶级贵族与财阀会所 `map/props/elite_club/` | 标准（7.5 / 6.5） |  |
+| P3 其他 | site_kavalierki | `ether_dome` | 以太穹顶 | ✅ | 以太穹顶 `map/props/ether_dome/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
+| P3 其他 | site_kavalierki | `free_knight_camp` | 独立骑士黑市营地 | ✅ | 独立骑士黑市营地 `map/props/free_knight_camp/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
+| P3 其他 | site_kavalierki | `glory_crown` | 荣光冠冕 | ✅ | 荣光冠冕 `map/props/glory_crown/` | 标准（r2 7 / 6） |  |
+| P3 其他 | site_kavalierki | `linguang_post` | 临光家族外城驻所 | ✅ | 临光家族外城驻所 `map/props/linguang_post/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
+| P3 其他 | site_kavalierki | `round_table_hall` | 圆桌骑士议事殿 | ✅ | — | — |  |
+| P3 其他 | site_kavalierki | `rust_outskirts` | 铁锈与落败领 | ✅ | 铁锈与落败领 `map/props/rust_outskirts/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
+| P3 其他 | site_kavalierki | `sun_arena` | 太阳骑士大竞技场 | ✅ | — | — |  |
+| P3 其他 | site_kavalierki | `union_tower` | 商业联合会联合大厦 | ✅ | — | — |  |
+| P3 其他 | tc_low | `blood_mill` | 血肉磨坊 | ✅ | 血肉磨坊 `map/props/blood_mill/` | 标准（r1 8 / 6.5） |  |
+| P3 其他 | tc_low | `freight_yard` | 货运站 | ✅ | 货运站 `map/props/freight_yard/` | 标准（r1 8 / 7） |  |
+| P3 其他 | tc_low | `lower_bar` | 下层区酒吧 | 🆕 | 下层区酒吧 `map/props/lower_bar/` | 标准（r1 7.5 / 6.5） |  |
+| P3 其他 | tc_low | `slums` | 贫民窟 | 🆕 | 贫民窟 `map/props/slums/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | tc_mid | `rebirth_workshop` | 新生工坊 | 🆕 | 新生工坊 `map/props/rebirth_workshop/` | 标准（r1 7.5 / 7） |  |
+| P3 其他 | tc_mid | `schneider_clinic` | 施奈德精密改造诊所 | 🆕 | 施奈德精密改造诊所 `map/props/schneider_clinic/` | 标准（r1 7.5 / 7） |  |
+| P3 其他 | tc_mid | `victoria_apartment` | 维多利亚的公寓 | ✅ | 维多利亚的公寓 `map/props/victoria_apartment/` | 标准（r1 7 / 7.5） |  |
+| P3 其他 | tc_upper | `eden` | 伊甸庄园 | ✅ | — | — |  |
+| P3 其他 | tc_upper | `league_club` | 庄园主联盟会所 | ✅ | 庄园主联盟会所 `map/props/league_club/` | 标准（r2 7.5 / 7） | isle9；宫殿式会所 + 顶光拍卖厅 |
+| P3 其他 | tc_upper | `victor_estate` | 维克多庄园 | 🆕 | 岛资产 `blender/islands/isle4.py`（上层底图抠图） | 标准（campaign r2 7.5/6.5） | 2026-09-30 渲染战役：isle4 重建（旧宅 + 秋林 + 断锥），标记移到旧宅上 |
+| P3 其他 | tc_upper | `y_estate` | 「Y」的庄园 | 🆕 | — | — | 只标记；所在岛（isle5）是通用英式填充 |
+| P3 其他 | tc_upper | `zaibatsu_estate` | 罗斯柴尔德庄园 | ✅ | 罗斯柴尔德庄园 `map/props/rothschild_estate/` | 标准（r2 7.5 / 7.5） | isle30；府邸 + 玻璃冬季宴会厅 |
+| P3 其他 | tc_upper | `elite_academy` | 精英学院 | 🆕 | 精英学院 `map/props/elite_academy/` | 标准（r2 7.5 / 7.5） | isle25（Q11） |
+| P3 其他 | world | `hunting_camp` | 猎季营地 | 🆕 | 猎季营地 `map/props/hunting_camp/` | 标准（r2 7.5 / 6；模型已备，世界图标记待引擎支持三维入口） |  |
+| P3 其他 | yuanyu_city | `city_gate` | 原域东门 | ✅ | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | yuanyu_city | `dome_quarter` | 穹顶区 | ✅ | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | yuanyu_city | `pilgrim_plaza` | 朝圣广场 | ✅ | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | yuanyu_city | `spire_quarter` | 尖塔区 | ✅ | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |
+| P3 其他 | yuanyu_sanctum | `holy_mountain` | 悬浮圣山 | ✅ | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（r2 7.5 / 6.5；glb 重导出 + webp/meshopt） | 四处标记共用一个模型：`lm_holy_mountain` |
+| P3 其他 | yuanyu_sanctum | `pantheon` | 诸神殿 | ✅ | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（同 holy_mountain，r2 7.5 / 6.5） | 热点 `pantheon` → 网格 `summit` |
+| P3 其他 | yuanyu_sanctum | `pilgrim_stair` | 朝圣步道 | ✅ | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（同 holy_mountain，r2 7.5 / 6.5） | 热点 `pilgrim_stair` → 网格 `stair` |
+| P3 其他 | yuanyu_sanctum | `shrine_ring` | 圣山神龛环 | ✅ | 原域·悬浮圣山 `map/props/holy_mountain/` | 标准（同 holy_mountain，r2 7.5 / 6.5） | 热点 `shrine_ring` → 网格 `mount_rock` |
 
 ## 补读新增（2026-09-28，卡副本逐段检索）
 
 | 卡里的名字 | 层（卡原文） | 处理 |
 |---|---|---|
-| 风暴殿（由全部天灾级强者组成的帝国最高战力，听命于议会） | 未写 | 🆕 `tc_mid.storm_hall`（仓库推断：中层核心区） |
+| 风暴殿（由全部天灾级强者组成的帝国最高战力，听命于议会） | 未写 | 🆕 `tc_mid.storm_hall`（中层核心区） |
 | 枢机院（七位枢机，选举大主教） | 未写 | 是机构不是独立建筑：并入辉光大教堂别名 |
-| 魔导军工研发中心（圣都） | 未写 | 🆕 `site_kavalierki.arms_rnd`（仓库推断） |
-| 监狱（维多利亚的弟弟被送进去） | 未写 | 🆕 `tc_low.prison`（仓库推断） |
-| 贫民窟（瑞秋出生地）、下层区酒吧 | 下层 | 🆕 `tc_low.slums`、`tc_low.lower_bar`（位置推断） |
-| 猎季营地 | 天城外，未写 | 🆕 世界图 `hunting_camp`（仓库推断：天城东北荒野） |
+| 魔导军工研发中心（圣都） | 未写 | 🆕 `site_kavalierki.arms_rnd` |
+| 监狱（维多利亚的弟弟被送进去） | 未写 | 🆕 `tc_low.prison` |
+| 贫民窟（瑞秋出生地）、下层区酒吧 | 下层 | 🆕 `tc_low.slums`、`tc_low.lower_bar` |
+| 猎季营地 | 天城外，未写 | 🆕 世界图 `hunting_camp`（天城东北荒野） |
 | 骑士团修道院 / 封闭修道院（苍穹长大的地方） | 未写 | 几乎肯定就是圣铁摇篮，只记录，不另标 |
 | 赤潮的据点（总部位置是世界级机密） | 未写 | 卡明说保密：不落点 |
 | 银行、书店、工厂 / 资源处理设施、悬浮轨道 | 泛称 | 店铺类型与交通，不是具名建筑：不单独建模 |
@@ -124,7 +124,7 @@
 
 ## 原 `unplaced` 的去向
 
-12 处全部落点（`maps.json` 的 `unplaced.items` 现为空，世界书「天城常识-位置未写」条目随之不再生成）：法师塔、施奈德精密改造诊所、新生工坊、天城贵族管家学院、天城执政厅、天城政务院、天城中央储备署、天城文化署、军事学院（中层）；维克多庄园、「Y」的庄园（上层悬浮岛）；猎季营地（世界图）。地点卡与附加条目都写明「卡没写层与位置，地图位置为仓库推断」。
+12 处全部落点（`maps.json` 的 `unplaced.items` 现为空，世界书「天城常识-位置未写」条目随之不再生成）：法师塔、施奈德精密改造诊所、新生工坊、天城贵族管家学院、天城执政厅、天城政务院、天城中央储备署、天城文化署、军事学院（中层）；维克多庄园、「Y」的庄园（上层悬浮岛）；猎季营地（世界图）。附加条目写明各自的层与位置。
 
 
 ## 上层 v8（2026-09-28）

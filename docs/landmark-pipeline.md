@@ -7,8 +7,8 @@
 | 文件 | 作用 |
 |---|---|
 | `blender/landmarks/<id>/build.py` | 建模脚本（`new` 从模板生成骨架，镜头 c1 主视角 / c2 侧视 / under 底视） |
-| `docs/landmarks/<id>.md` | 设定稿：「卡原文」（带 `docs/card-digest.md` 行号，`new` 自动搜卡名预填）+「仓库推断」 |
-| `docs/landmarks/<id>.checklist.md` | 检查清单（报告格式：首行状态，做完的 ~~划掉~~ ✅）；「看板条目」= `- 组名｜说明｜卡原文/仓库推断` |
+| `docs/landmarks/<id>.md` | 设定稿：一节「设定」（卡里写到的事实带 `docs/card-digest.md` 行号，`new` 自动搜卡名预填） |
+| `docs/landmarks/<id>.checklist.md` | 检查清单（报告格式：首行状态，做完的 ~~划掉~~ ✅）；「看板条目」= `- 组名｜说明` |
 | `map/props/<id>/manifest.json` | viewer3d 清单；`budgets` 字段 = 组的三角形 / 贴图预算（传给 export_glb.py） |
 | `logs/landmarks/<id>.json` | 流水线状态（本机，不入库）；中间文件在 `$LM_WORK`（默认 `/private/tmp/lm_work/<id>/`） |
 
@@ -42,10 +42,10 @@ python3 tools/landmark.py status [id]          # ✓ 有记录；✓* 老地标�
 
 ## 评审代理怎么用 gapcheck
 
-1. 跑 `python3 tools/landmark.py gapcheck <id>`（机器读用 `--json`），拿到：看板图路径、设定稿「卡原文」C1…Cn、「仓库推断」R1…Rn、看板条目（组名｜说明｜来源｜看板上有无锚点）。
+1. 跑 `python3 tools/landmark.py gapcheck <id>`（机器读用 `--json`），拿到：看板图路径、设定稿「设定」S1…Sn、看板条目（组名｜说明｜看板上有无锚点）。
 2. 打开看板图，逐条回答：
-   - 每条 C* 由哪个看板条目覆盖？没有 = **缺口**（卡里写了、模型没做）。
-   - 标「卡原文」的条目能否在 C* 里找到出处？找不到 = 应改标「仓库推断」。
+   - 每条 S* 由哪个看板条目覆盖？没有 = **缺口**（设定写了、模型没做）。
+   - 每个看板条目能否在 S* 里找到依据？找不到 = 补设定或删条目。
    - 图上每个编号指的是否真是所写之物；「缺」= 镜头没拍到或组名写错。
 3. 结论写 `docs/reviews/landmark_<id>/r<N>.md`（建筑写实分 / 卡忠实度分 + 缺口清单）；核对过的看板条目在清单里 ~~划掉~~ ✅。
 4. 有缺口 → 改 build.py / 设定稿 → 再 draft / board / gapcheck；通过 → final。
@@ -54,4 +54,4 @@ python3 tools/landmark.py status [id]          # ✓ 有记录；✓* 老地标�
 
 - 渲染一律经 `tools/blender_run.sh`（GPU 锁、ASCII TMPDIR、崩溃重试）；`tools/render_queue.*` 存在时 draft / final 以 `tools/render_queue.sh submit <draft|final> -- <blender_run 参数>` 提交，队列决定 Mac 还是云端（`LM_QUEUE=0` 强制本机）；board 与 glb 导出要立刻拿到产物，仍直接经 blender_run.sh 同步跑（都是小任务）。
 - 看板锚点由 `blender/landmarks/lm_anchors.py` 包装 build.py 生成（每个非 bg_* 组的包围盒中心投到相机），build.py 不用改。
-- 世界书同步（worldbook-sync 规则）：标记是仓库推断（`layer_src: repo-inferred`）且 `addon_places.json` 没有它时，`ship` 要求 `--wb-text` 并新增条目，然后跑 `build_worldbook_addon.py --ship`。
+- 世界书同步（worldbook-sync 规则）：标记带 `addon: true` 且 `addon_places.json` 没有它时，`ship` 要求 `--wb-text` 并新增条目，然后跑 `build_worldbook_addon.py --ship`。

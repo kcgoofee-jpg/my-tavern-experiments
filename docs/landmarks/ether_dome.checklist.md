@@ -13,9 +13,9 @@
 
 ## 看板条目
 
-<!-- 每行一条：- 组名｜说明｜卡原文 或 仓库推断。组名 = build.py 里的 Batch 名（props_* / site_*），
+<!-- 每行一条：- 组名｜说明。组名 = build.py 里的 Batch 名（props_* / site_*），
      board 按它找锚点，final 按它写热点。gapcheck 把这里与设定稿并排给评审代理。核对过的条目可 ~~划掉~~ ✅。 -->
-- props_dome｜穹顶本体：20 道石肋 + 肋间玻璃幕扇 + 顶部以太核心球｜仓库推断（卡里无此地点）
-- props_field｜两圈悬浮发光场环 + 四支以太晶簇｜仓库推断
-- site_ground｜台基（r=70）+ 环道 + 四向台阶 + 边缘栏杆｜仓库推断
-- props_lights｜12 支灯柱｜仓库推断
+- props_dome｜穹顶本体：20 道石肋 + 肋间玻璃幕扇 + 顶部以太核心球
+- props_field｜两圈悬浮发光场环 + 四支以太晶簇
+- site_ground｜台基（r=70）+ 环道 + 四向台阶 + 边缘栏杆
+- props_lights｜12 支灯柱

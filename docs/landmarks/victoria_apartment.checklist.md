@@ -13,10 +13,10 @@
 
 ## 看板条目
 
-<!-- 每行一条：- 组名｜说明｜卡原文 或 仓库推断。组名 = build.py 里的 Batch 名（props_* / site_*），
+<!-- 每行一条：- 组名｜说明。组名 = build.py 里的 Batch 名（props_* / site_*），
      board 按它找锚点，final 按它写热点。gapcheck 把这里与设定稿并排给评审代理。核对过的条目可 ~~划掉~~ ✅。 -->
-- ~~walls_tower｜主塔（18 层石材+玻璃幕墙住宅塔）｜仓库推断~~ ✅
-- ~~props_podium｜裙房（石构大堂入口 + 门廊立柱）｜仓库推断~~ ✅
-- ~~props_terrace｜屋顶露台（女儿墙 + 遮阳格栅）｜仓库推断~~ ✅
-- ~~site_ground｜前庭铺装 + 台阶｜仓库推断~~ ✅
-- ~~props_lights｜庭院灯柱｜仓库推断~~ ✅
+- ~~walls_tower｜主塔（18 层石材+玻璃幕墙住宅塔）~~ ✅
+- ~~props_podium｜裙房（石构大堂入口 + 门廊立柱）~~ ✅
+- ~~props_terrace｜屋顶露台（女儿墙 + 遮阳格栅）~~ ✅
+- ~~site_ground｜前庭铺装 + 台阶~~ ✅
+- ~~props_lights｜庭院灯柱~~ ✅

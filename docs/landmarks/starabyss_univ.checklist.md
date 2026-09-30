@@ -13,9 +13,9 @@
 
 ## 看板条目
 
-<!-- 每行一条：- 组名｜说明｜卡原文 或 仓库推断。组名 = build.py 里的 Batch 名（props_* / site_*），
+<!-- 每行一条：- 组名｜说明。组名 = build.py 里的 Batch 名（props_* / site_*），
      board 按它找锚点，final 按它写热点。gapcheck 把这里与设定稿并排给评审代理。核对过的条目可 ~~划掉~~ ✅。 -->
-- props_main｜教学主楼｜仓库推断
-- props_medical｜医学院楼｜仓库推断
-- props_library｜图书馆｜仓库推断
-- props_plaza｜中央草坪｜仓库推断
+- props_main｜教学主楼
+- props_medical｜医学院楼
+- props_library｜图书馆
+- props_plaza｜中央草坪

@@ -71,7 +71,7 @@
 ## 4. Tests
 
 - Always: `node --test tests/*.test.mjs` and `bash tools/smoke.sh` (includes check_maps, check_pack, the
-  architecture watchdog and the doc-language gate).
+  architecture watchdog, the doc-language gate and the no-labels gate).
 - Browser probes (`tools/browser/*.mjs`): run the ones relevant to your change; full sweep only at the end of a stage.
 - The test count must never drop without an explanation in the report.
 - Desktop first; check 375 px once; no iPhone-specific work (fix on reports).

@@ -13,14 +13,14 @@
 
 ## 看板条目
 
-<!-- 每行一条：- 组名｜说明｜卡原文 或 仓库推断。组名 = build.py 里的 Batch 名（props_* / site_*），
+<!-- 每行一条：- 组名｜说明。组名 = build.py 里的 Batch 名（props_* / site_*），
      board 按它找锚点，final 按它写热点。gapcheck 把这里与设定稿并排给评审代理。核对过的条目可 ~~划掉~~ ✅。 -->
-- walls_ext｜学院四合院｜仓库推断
-- roof｜屋顶与烟囱｜仓库推断
-- walls_ext｜礼仪大厅｜仓库推断
-- walls_ext｜图书馆｜仓库推断
-- site_garden｜以太修习圆庭｜仓库推断
-- site_garden｜操练场与运动场｜仓库推断
-- site_trees｜岛缘林带｜仓库推断
-- site_dock｜悬浮停靠平台｜仓库推断
-- props_magitech｜魔导科技点缀｜仓库推断
+- walls_ext｜学院四合院
+- roof｜屋顶与烟囱
+- walls_ext｜礼仪大厅
+- walls_ext｜图书馆
+- site_garden｜以太修习圆庭
+- site_garden｜操练场与运动场
+- site_trees｜岛缘林带
+- site_dock｜悬浮停靠平台
+- props_magitech｜魔导科技点缀

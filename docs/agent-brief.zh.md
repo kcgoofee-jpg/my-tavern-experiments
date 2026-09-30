@@ -36,7 +36,7 @@
 
 ## 4. 测试
 
-- 必跑：`node --test tests/*.test.mjs` 和 `bash tools/smoke.sh`（含 check_maps、check_pack、架构看门狗、文档语言门控）。
+- 必跑：`node --test tests/*.test.mjs` 和 `bash tools/smoke.sh`（含 check_maps、check_pack、架构看门狗、文档语言门控、无来源标签门控）。
 - 浏览器探针（`tools/browser/*.mjs`）：只跑与改动相关的；全量只在阶段末跑。
 - 测试数量不许下降，除非在报告里说明原因。
 - 桌面优先；375 px 只过一遍；不做 iPhone 专项（有反馈再修）。

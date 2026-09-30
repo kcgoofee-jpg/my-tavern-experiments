@@ -13,14 +13,14 @@
 
 ## 看板条目
 
-<!-- 每行一条：- 组名｜说明｜卡原文 或 仓库推断。组名 = build.py 里的 Batch 名（props_* / site_*），
+<!-- 每行一条：- 组名｜说明。组名 = build.py 里的 Batch 名（props_* / site_*），
      board 按它找锚点，final 按它写热点。gapcheck 把这里与设定稿并排给评审代理。核对过的条目可 ~~划掉~~ ✅。 -->
-- site_terrain｜地形（草地 / 滩沙 / 崖石三种材质的高度场）｜仓库推断
-- props_water｜水面（湖 / 海 / 河；无水的封地为空组）｜仓库推断
-- props_castle｜城堡：石墙 + 角塔 + 门楼 + 主塔楼 + 内院大厅｜卡原文
-- props_order｜骑士团驻地：院墙 + 营房 + 马厩 + 校场 + 瞭望塔｜卡原文
-- props_village｜领地城镇：民居 + 钟塔大厅 + 井 + 集市摊棚｜仓库推断
-- props_fields｜领地农田：条垄作物 + 草垛｜仓库推断
-- props_roads｜土路｜仓库推断
-- props_trees｜树木与篱林｜仓库推断
-- props_extra｜专属：比武场｜仓库推断
+- site_terrain｜地形（草地 / 滩沙 / 崖石三种材质的高度场）
+- props_water｜水面（湖 / 海 / 河；无水的封地为空组）
+- props_castle｜城堡：石墙 + 角塔 + 门楼 + 主塔楼 + 内院大厅
+- props_order｜骑士团驻地：院墙 + 营房 + 马厩 + 校场 + 瞭望塔
+- props_village｜领地城镇：民居 + 钟塔大厅 + 井 + 集市摊棚
+- props_fields｜领地农田：条垄作物 + 草垛
+- props_roads｜土路
+- props_trees｜树木与篱林
+- props_extra｜专属：比武场

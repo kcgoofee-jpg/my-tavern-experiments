@@ -225,7 +225,7 @@ The Eden card plus one other card (to verify the safety net).
   - the skill is written in English with a Chinese edition. The flow has three tiers: tier 0 automatic → tier 1 `card_to_pack` + in-viewer editing → tier 2 realistic base map + 3D;
   - not tied to a specific AI or tool: no assumption of sub-agents, and Blender is optional;
   - neutral content, keeping only one checkpoint, "original author's permission";
-  - our own internal rules (the 「仓库推断」 "repo-inferred" tag, the image-review persona…) move to the Eden pack repository.
+  - our own internal rules (the image-review persona, the worldbook sync rule…) move to the Eden pack repository.
 - **S12** (optional): translate code comments into English;
 - **S13**: wrap-up — finalise `ARCHITECTURE.md`, CHANGELOG, `todo.md`, handoff, memory.
 
@@ -297,7 +297,7 @@ Walking through the current skill (`skills/card-map/SKILL.md`) and tools:
 | 3D | Optional, already data-driven (manifest) | Unchanged | — |
 | UI wording, theme | `strings` can change wording; theme and legend are hard-coded | Theme, legend and credits all go into the pack | S4 |
 | Worldbook | The book-name prefix is hard-coded as 「伊甸地图·」 ("Eden Map ·"); the builder is Eden-only | The book name follows the pack; a generic builder | S4, S11 |
-| The skill itself | Carries our internal rules (copy names verbatim, "repo-inferred", the Opus image-review persona, stop and ask at every step) | Neutral content, not tied to a specific AI, three-tier flow, only one authorisation checkpoint | S11 |
+| The skill itself | Carries our internal rules (copy names verbatim, the Opus image-review persona, stop and ask at every step) | Neutral content, not tied to a specific AI, three-tier flow, only one authorisation checkpoint | S11 |
 
 **Conclusion:** once this is done, the author's shortest path is:
 

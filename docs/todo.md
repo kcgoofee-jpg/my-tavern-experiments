@@ -1,6 +1,6 @@
 # Todo — the single tracker
 
-Status: 2026-10-01 · S3 done: S3-3 done (people, trips, stand-ins, item places and the spatial contract on nodes; map/here.mjs deleted; Q-12 decided A) · S3-2 done (events placed through nodes on both sides; Q-11 decided A) · S3-1 done (the current location runs on nodes.locate) · S2-A, S2-B done (node tree in the viewer, dairy under the estate and reachable from its farm zone) · S0 done (S0-A…S0-E) · S1-design done, review accepted 2026-09-30 (Q-09) · S1-impl-1, S1-impl-2 done · render campaign R running · open: 9 infrastructure, 7 Eden content, 0 decisions · migration table 81 rows, missing 0
+Status: 2026-10-01 · S0-F done (provenance labels out of data, UI, tools and current docs; gate `tools/check_no_labels.py`) · S3 done: S3-3 done (people, trips, stand-ins, item places and the spatial contract on nodes; map/here.mjs deleted; Q-12 decided A) · S3-2 done (events placed through nodes on both sides; Q-11 decided A) · S3-1 done (the current location runs on nodes.locate) · S2-A, S2-B done (node tree in the viewer, dairy under the estate and reachable from its farm zone) · S0 done (S0-A…S0-E) · S1-design done, review accepted 2026-09-30 (Q-09) · S1-impl-1, S1-impl-2 done · render campaign R running · open: 9 infrastructure, 7 Eden content, 0 decisions · migration table 81 rows, missing 0
 
 1. This is the only work list; plan detail lives in `docs/plans/spatial-os.md`, results in `docs/plans/spatial-os-log.md`, render items in the ledger `docs/plans/render-campaign.md`. Do not copy their items here.
 2. One item per line. A finished item is struck in place (`~~…~~ ✅ <date> <sha>`), never deleted; it moves to §4 only with a sha as evidence.
@@ -12,12 +12,13 @@ Status: 2026-10-01 · S3 done: S3-3 done (people, trips, stand-ins, item places 
 
 Line format: status · prompt id · where the RESULT block is (`docs/plans/spatial-os-log.md`). Model / effort / size follow plan §14.3.
 
-- ~~**S0** Rules and watchdog first (S0.0–S0.6, run as S0-A…S0-E)~~ ✅ 2026-09-30
+- ~~**S0** Rules and watchdog first (S0.0–S0.6, run as S0-A…S0-F)~~ ✅ 2026-09-30
   - ~~**S0-A** plan of record into the repo + rules-only `docs/agent-brief.md`~~ ✅ 2026-09-30 `b853655` `0c7e602` · prompt S0-A · RESULT S0-A
   - ~~**S0-B** `docs/ARCHITECTURE.md` + widened architecture watchdog with the ratchet ledger~~ ✅ 2026-09-30 `ab627be` `13076de` `b70790f` · prompt S0-B · RESULT S0-B
   - ~~**S0-C** naming audit: `docs/naming.md` + glossary~~ ✅ 2026-09-30 `94b4182` `3038905` `ffd86c7` · prompt S0-C, S0-C-followup · RESULT S0-C, S0-C-followup
   - ~~**S0-D** rescue stranded worktree work, remove merged worktrees~~ ✅ 2026-09-30 `c7e7151` `e4f794c` · prompt S0-D · RESULT S0-D (PARTIAL at the time; `webgl-part3` rescued as `rescue/estate-bake-opt`, the worktrees are gone)
   - ~~**S0-E** this file: single tracker + one-to-one migration table~~ ✅ 2026-09-30 (this change; sha in its RESULT) · prompt S0-E · RESULT S0-E
+  - ~~**S0-F** provenance labels removed: data text and fields, marker / room cards, setting and board templates, current docs; gate `tools/check_no_labels.py` in smoke~~ ✅ 2026-10-01 (shas in its RESULT) · prompt S0-F · RESULT S0-F
 - [ ] **S1** Kernel contract v2 design + minimal pack (XL; Opus · Xhigh design, then Sonnet · High ×2) · in progress
   - ~~**S1-design** `docs/kernel-schema.md` (+ zh with the review sheet K-01…K-09), `map/data/schema/v2/`, `map/packs/minimal/`, check_pack schema-2 branch~~ ✅ 2026-09-30 (sha in its RESULT) · prompt S1-design · RESULT S1-design
   - ~~**S1-impl-1** `core/nodes.mjs` + `core/pack-v2.mjs` + `tests/kernel_minimal.test.mjs` (Sonnet · High, M; spec: kernel-schema appendix B.1)~~ ✅ 2026-09-30 `23ea9de` `314d16d` · prompt S1-impl-1 · RESULT S1-impl-1
