@@ -203,6 +203,19 @@ class QueueCase(unittest.TestCase):
         self.assertTrue(self.wait_for(lambda: os.path.exists(os.path.join(self.qdir, 'pending', 'j1.retry'))))
         self.assertTrue(self.in_dir('pending', 'j1'))
 
+    def test_real_run_stale_artifact_from_an_earlier_run_goes_back_to_pending(self):
+        # R2 T1: rc=0 and the file exists, but it predates this job (the run wrote nothing) -> not a success
+        self.mac_only()
+        self.fake_runner(self.wt, make_artifact=False)
+        os.makedirs(os.path.join(self.wt, 'map', 'art'))
+        old = os.path.join(self.wt, 'map', 'art', '_x.png')
+        self.touch_at(old)
+        os.utime(old, (time.time() - 3600, time.time() - 3600))
+        self.job('j1', 'final', self.wt)
+        self.rq('dispatch', '--once', extra={'DRY_RUN': '0'})
+        self.assertTrue(self.wait_for(lambda: os.path.exists(os.path.join(self.qdir, 'pending', 'j1.retry'))))
+        self.assertTrue(self.in_dir('pending', 'j1'))
+
     def test_real_run_with_deleted_worktree_fails_cleanly(self):
         self.mac_only()
         self.job('j1', 'final', os.path.join(self.tmp, 'gone'))

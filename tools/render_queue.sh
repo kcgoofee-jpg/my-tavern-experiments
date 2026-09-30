@@ -193,7 +193,7 @@ insert_cache_blend() {
 #    rc = 3（实例忙）       → 退回 pending 排队重试，不计失败；超过 RETRY_BUSY_MAX 次才放弃
 #    其它非 0              → 退回 pending 重试；超过 MAX_RETRY 次标 .failed 进 done（日志一并搬走）
 finish_job() {
-  local jobfile=$1 runfile=$2 rc=$3 args=${4:-} jobroot=${5:-$QROOT}
+  local jobfile=$1 runfile=$2 rc=$3 args=${4:-} jobroot=${5:-$QROOT} start=${6:-}
   local base; base=$(basename "$runfile")
   local cap
   # rc=0 也要验收产物（2026-09-29 事故）：云端「渲染成功」但没写出文件（--out 是绝对路径 / 落在
@@ -209,6 +209,9 @@ print(o)' "$args" 2>/dev/null || true)
       /*|"") : ;;                                    # 绝对路径（board 都走本机）或没写 --out：不核
       *) if [ ! -e "$jobroot/$out" ]; then
            echo "产物缺失：${out}（rc=0 但文件不在）—— 按失败处理" >&2
+           rc=79
+         elif [ -n "$start" ] && [ -f "$ROOT/tools/render_truth.py" ] && ! python3 "$ROOT/tools/render_truth.py" check --log /dev/null --start "$start" --out "$out" --root "$jobroot" >/dev/null 2>&1; then
+           echo "产物过期：${out}（比任务开始时间还旧，不是这次渲的）—— 按失败处理" >&2
            rc=79
          fi ;;
     esac
@@ -254,7 +257,7 @@ run_job_mac() {
       finish_job "$jobfile" "$runfile" 0 "$args" "$jobroot"
       return
     fi
-    local rc
+    local rc t_start; t_start=$(date +%s)
     if [ ! -d "$jobroot" ] || [ ! -f "$jobroot/tools/blender_run.sh" ]; then
       echo "任务根目录不可用：${jobroot}（工作树被删了？）" > "${runfile}.log"
       rc=78
@@ -265,7 +268,7 @@ run_job_mac() {
       rc=$?
     fi
     echo "$rc" > "${runfile}.rc"
-    finish_job "$jobfile" "$runfile" "$rc" "$args" "$jobroot"
+    finish_job "$jobfile" "$runfile" "$rc" "$args" "$jobroot" "$t_start"
   }
   if [ "$DRY_RUN" = 1 ]; then ( _job_mac_body ); else ( _job_mac_body ) & disown; fi
 }

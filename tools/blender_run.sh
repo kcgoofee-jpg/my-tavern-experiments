@@ -9,6 +9,8 @@
 #   在任何脚本之前注入 blender/eden_guard.install()（EDEN_PHASE / EDEN_DEVICE / EDEN_PROGRESS 自报 + 渲染开始时是 CPU 就中止）；
 #   同时起 tools/render_watchdog.py 看门狗（按阶段判断：搭建超时 / 渲染时显卡空闲 / 进度停滞），只杀这次的 Blender PID。
 #   结论写 <日志>.verdict（status/reason/minutes/wasted_min/wasted_cny），失败时退出非零并打印中文原因和日志尾巴。
+#   退出码 0 也要过「真实性」检查（tools/render_truth.py，R2 T1）：日志里有 Python Traceback / 行首 "Error: "（script_error），
+#   或脚本声明的 --out 产物不存在（no_output）/ 比本次启动还旧（stale_output）→ 记为失败、退出 70；EDEN_TRUTH=0 可关（仅调试）。
 #   只有真正的崩溃（status=crash）才重试一次；看门狗终止 / CPU 中止 / 参数错误都不重试，也绝不自动改用 CPU 重跑。
 #
 # 用法：bash tools/blender_run.sh --log <日志> --asset <名字> [--kind draft|final|patch] [--res N] [--spp N] [--cache-blend <目录>] [--allow-cpu] -- <blender 参数...>
@@ -29,7 +31,7 @@
 #   - 不管命不命中，跑完都会在末尾追加一个 --python-expr 把当前场景存成该哈希对应的 .blend（供下次判断复用）。
 # 环境变量：WAIT_MAX（秒，默认 7200）、POLL（秒，默认 30）、EDEN_GPU_LOCK（默认 /tmp/eden_gpu.lock）、DRY_RUN=1（不真的起 Blender，只演练锁 / 日志 / CSV，供测试用）
 #   EDEN_PRICE_PER_HOUR（算浪费的钱，云端 render.sh 传 1.58，Mac 默认 0）、EDEN_HOST_TAG（CSV host 列）、EDEN_PREFLIGHT_DONE=1（提交端已查过）、
-#   EDEN_WATCHDOG=0（关看门狗，仅调试）、EDEN_WD_ARGS（透传给看门狗的额外参数，测试用）、EDEN_PY（指定跑检查 / 看门狗的 python）
+#   EDEN_WATCHDOG=0（关看门狗，仅调试）、EDEN_WD_ARGS（透传给看门狗的额外参数，测试用）、EDEN_PY（指定跑检查 / 看门狗的 python）、EDEN_TEST_NOWAIT=1（测试用：不等别的 Blender 进程 / 静默窗）、EDEN_TRUTH=0（关真实性检查）
 set -u
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 BL=${BLENDER:-$(command -v blender || echo /Applications/Blender.app/Contents/MacOS/Blender)}
@@ -159,12 +161,12 @@ export TMPDIR=/private/tmp/bl_tmp
 mkdir -p "$TMPDIR"
 
 t=0
-while pgrep -x Blender >/dev/null || pgrep -x blender >/dev/null; do
+while [ -z "${EDEN_TEST_NOWAIT:-}" ] && { pgrep -x Blender >/dev/null || pgrep -x blender >/dev/null; }; do
   [ "$t" -ge "$WAIT_MAX" ] && { echo "等了 ${WAIT_MAX}s Blender 仍在跑，放弃（没有动别人的进程）"; exit 3; }
   [ $((t % 300)) -eq 0 ] && echo "GPU 忙（$(pgrep -x Blender | tr '\n' ' ')），等待…"
   sleep "$POLL"; t=$((t + POLL))
 done
-[ -f "$ROOT/tools/quiet_wait.sh" ] && bash "$ROOT/tools/quiet_wait.sh" --max "$WAIT_MAX"
+[ -z "${EDEN_TEST_NOWAIT:-}" ] && [ -f "$ROOT/tools/quiet_wait.sh" ] && bash "$ROOT/tools/quiet_wait.sh" --max "$WAIT_MAX"
 
 # 锁文件：短暂持有，防止两个启动器同时通过上面的 pgrep 检查后一起起 Blender。
 LOCK_WAIT=0
@@ -188,6 +190,7 @@ cd "$ROOT"
 RUN_SECS=0
 run_once() {
   local t0=$SECONDS
+  T0_EPOCH=$(date +%s)
   rm -f "$LOG.wdkill" "$LOG.wdstate" "$LOG.verdict"
   if [ "$DRY_RUN" = 1 ]; then
     echo "[DRY_RUN] 会执行：$BL ${ARGS[*]}" | tee "$LOG"
@@ -218,13 +221,23 @@ run_once() {
   return $rc
 }
 
+# 退出码 0 不等于成功：日志里的脚本报错、缺失 / 过期的声明产物都算失败（tools/render_truth.py；DRY_RUN / 没 python / EDEN_TRUTH=0 时跳过）
+truth_check() {
+  [ "$DRY_RUN" = 1 ] || [ "${EDEN_TRUTH:-1}" = 0 ] || [ -z "$PY" ] && return 0
+  local outs=() o line
+  while IFS= read -r o; do [ -n "$o" ] && outs+=(--out "$o"); done < <("$PY" "$ROOT/tools/render_truth.py" outs -- "${ARGS[@]}")
+  if line=$("$PY" "$ROOT/tools/render_truth.py" check --log "$LOG" --start "$T0_EPOCH" --root "$ROOT" ${outs[@]+"${outs[@]}"}); then return 0; fi
+  STATUS=$(sed -n 's/^EDEN_TRUTH=\([a-z_]*\) .*/\1/p' <<<"$line"); STATUS=${STATUS:-script_error}
+  REASON="真实性检查：$(sed 's/^EDEN_TRUTH=[a-z_]* //' <<<"$line")"
+}
+
 # 这次运行的结论：看门狗终止 > 进程内中止（EDEN_ABORT=）> 取消 > 成功 > 崩溃
 classify() {
   local rc=$1 a
   if [ -s "$LOG.wdkill" ]; then STATUS=$(head -1 "$LOG.wdkill"); REASON="看门狗：$(sed -n 2p "$LOG.wdkill")"
   elif a=$(grep -m1 '^EDEN_ABORT=' "$LOG" 2>/dev/null); then STATUS=$(cut -d' ' -f1 <<<"$a" | cut -d= -f2); REASON="进程内守卫：$(cut -d' ' -f2- <<<"$a")"
   elif [ "$CANCELLED" = 1 ]; then STATUS=cancelled; REASON="被 Ctrl-C / TERM 取消"
-  elif [ "$rc" = 0 ]; then STATUS=ok; REASON=""
+  elif [ "$rc" = 0 ]; then STATUS=ok; REASON=""; truth_check
   else STATUS=crash; REASON="Blender 退出码 ${rc}"
   fi
 }
@@ -239,7 +252,7 @@ fi
 release_lock; trap - EXIT INT TERM
 # 失败不留缓存：搭建中途崩掉的场景（缺相机 / 缺组）被 SAVE_EXPR 存进缓存后，下次同键会命中
 # 半成品直接渲染翻车（2026-09-30 事故）。退出码非 0 就把这次的缓存删掉。
-if [ -n "$BLEND_CACHE_FILE" ] && [ "$rc" != 0 ] && [ "$DRY_RUN" != 1 ]; then
+if [ -n "$BLEND_CACHE_FILE" ] && { [ "$rc" != 0 ] || [ "$STATUS" != ok ]; } && [ "$DRY_RUN" != 1 ]; then
   rm -f "$BLEND_CACHE_FILE" "$BLEND_CACHE_FILE.blend1"
 fi
 
