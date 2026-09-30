@@ -103,6 +103,7 @@
       "terrain": "meadow",
       "biome": "autumn",
       "marker": "victor_estate",
+      "cutout": "victor_estate",
       "silhouette": {
         "kind": "ridge",
         "dir": 2.4
