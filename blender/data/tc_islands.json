@@ -63,6 +63,7 @@
       "style": "none",
       "estate_style": "fortress",
       "marker": "silver_crown",
+      "cutout": "silver_crown",
       "silhouette": {
         "kind": "fortress",
         "dir": 0.4

@@ -153,7 +153,7 @@ for d in ISLES:
     else: e.build_body(col_main)
     if d['id'] == 'eden':
         if not os.environ.get('TC_EDEN_CUT'): te.build_eden(e, layer)
-    elif d['id'] == 'silver_crown': te.build_silver_crown(e)
+    elif d['id'] == 'silver_crown' and not d.get('cutout'): te.build_silver_crown(e)   # 渲染战役 R：银冠堡改走岛资产抠图（blender/islands/silver_crown.py --cutout）
     elif d.get('cutout'): e.main = (0.0, 0.0)             # v8：卡里有的岛只建岛体，建筑由三维模型的俯视抠图贴上（tools/isles_into_upper.py）
     else: e.build_estate()
     islands.append({'id': d['id'], 'x': e.x, 'y': e.y, 'z': e.z, 'rx': e.rx, 'ry': e.ry, 'rot': e.rot, 'estate_style': e.style, 'isle': e})

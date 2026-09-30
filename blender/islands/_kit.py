@@ -663,10 +663,10 @@ def run(mod):
         if A['cutout']:                          # 上层底图抠图：正交俯视、透明底、+y 朝上，太阳同 landmarks/map_cutout.py（高 50°、方位 125°）；
             for o in bpy.data.objects:           # 结界 / 岛底 / 光锥 / 进场光点不进抠图（结界由 viewer 叠加层画）
                 if o.name.startswith(('ward', 'under', 'mist', 'dock_approach')): o.hide_render = True
-            C.sky_sun(sc, 'day', sun_az=125.0, sun_el=50.0)
+            C.sky_sun(sc, 'day', sun_az=125.0, sun_el=50.0, sky_s=float(os.environ.get('CUT_SKY', '.08')))       # 天光压低：Standard 下多次散射天空偏蓝
             cd = bpy.data.cameras.new('cam_cut'); cd.type = 'ORTHO'; cd.ortho_scale = float(A['cutout']); cd.clip_start = 1; cd.clip_end = 5000
             cam = bpy.data.objects.new('cam_cut', cd); sc.collection.objects.link(cam); cam.location = (0, 0, 1500); sc.camera = cam
-            sc.render.film_transparent = True; sc.view_settings.view_transform = 'Standard'; sc.view_settings.look = 'None'; sc.view_settings.exposure = 0
+            sc.render.film_transparent = True; sc.view_settings.view_transform = 'Standard'; sc.view_settings.look = 'None'; sc.view_settings.exposure = float(os.environ.get('CUT_EXP', '-.5'))
             sc.render.image_settings.color_mode = 'RGBA'; C.render(sc, A['out'], A['res'], 1.0)
             return
         import oblique as OB
