@@ -380,4 +380,20 @@ deviations: tc_upper recut from the ignored lossless tc_upper_full.png (one stal
 blocker: none
 open: tree houses 2 and 4 stand on bare sand at the north rim (catalogue B15/B17) — candidate for the per-place tweak pass
 cleanup: done
+
+=== RESULT S3-2 (after Q-11 = A) ===
+status: DONE
+items: T0 ✓ T1 ✓ (tavern + viewer) T2 ✓ T3 ✓ T4 ✓ (ring = the `x-ring` node, placed by hint words, drawn by the same spotOf) T5 ✓
+commits: cfd9d90 feat(data): first-pack tier hints, district and outskirts nodes (generated from the old constants)   (earlier block)
+         f1e9eb2 feat(events): placement through nodes with shadow parity   (earlier block)
+         (this push) refactor(events): old event geography constants removed   (T3, T4)
+         (this push) docs: RESULT S3-2, A.9 #7-#12, Q-11 decided, unfreeze   (T5)   (SHAs may change on rebase)
+pushed: head #<N> (see the push output; the head bump follows this commit)
+tests: node 746/747 (1 skipped; baseline at the start of S3-2 722/723, +24) | smoke PASS | arch PASS (card-term hits 206 → 174; map/events.mjs 428 → 409 lines; ledger lowered with --update-baseline: terms map/events.mjs 16 → 7, tavern/events.mjs 87 → 64) | check_maps 0 errors, check_pack PASS | probes: accept=PASS v096=PASS e7=PASS p6_quests=no ✗ pack_town=FAIL only the pre-existing edenMapLogCur key check (desktop + phone; the town events, legend and pins pass) roster095=FAIL, the same 8 checks fail on the pre-S3-2 tree (head #151), not from this step
+before / after (tools/browser lib postEvents on tc_mid and tc_low, 19 events, desktop 1440; ~/eden-map-review/s3/events_tc_mid_old.png, events_tc_mid_new.png, events_tc_low_old.png, events_tc_low_new.png, old.json, new.json): 17 of 19 pins at the same pixel (district spots, landmark markers, the outskirts ring, tier-only approximate spot); 2 moved = the marker-match class (A.9 #10): `中层·大学` (v1: a university marker whose name holds the text; now the district spot), `下层·工厂` (v1: the facility marker whose name ends in 工厂; now the factory district). The unplaced `某处` is listed, not drawn, and opens a card that says so.
+parity (unchanged from the PARTIAL block): 309 distinct places of events.test.mjs + fixtures → 299 identical, 3 K-01 B, 7 pinned as A.9 #7-#10; wider sweep 340 → 165 identical, 154 newly placed, 11 on a site's own map (#11), 1 world alias, 9 marker matches. `tests/events_geo_shadow.test.mjs` runs events.test.mjs against the new engine (events.test.mjs itself now installs the geo and asserts the A.9 outcomes) and keeps the frozen v1 rules as the oracle.
+deviations: (1) The overlay is declared by the manifest (`data.overlay`, schema + check_pack) instead of being probed next to it: a probe makes every pack without one log a 404 (the town probe failed on it). The file is still `map/packs/<id>/overlay.v2.json`. (2) `configure(tax)` no longer reads `tax.layers`; a foreign pack's layer match words reach the tree through `fromV1 events`. (3) Old tavern scripts send no `node`: the viewer places such an item by layer + place text (`node === null` = unplaced, `undefined` = place by text). (4) `ops.mjs` checks a layer against the geo labels (every label of a map owner) instead of the four fixed words. (5) Merge key stays type + layer + place text, `here` is not passed to event placement (as reported before; S4-1 owns the node key). (6) Slip: one `pkill -f cors_server.py` of mine also stopped other sessions' probe servers (they restart on demand); everything else cleaned by PID.
+blocker: none
+open: none
+cleanup: done (my probe servers stopped, baseline worktree removed, no launch.json entries; the s3-2-events worktree stays until push; docs/plans/FREEZE_MAPS removed)
 === END ===

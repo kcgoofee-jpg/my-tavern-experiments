@@ -572,6 +572,9 @@ An explicit `xy` (0..1) overrides the position inside the view of `scope(node)`;
 effect covers that node's subtree. An event is near the player when `scope(event.node) = scope(here)`, where
 `scope(n)` is the nearest ancestor-or-self whose primary view is `tiles` or `image`, else the root; only near, live
 events are injected. Events whose place resolves to nothing follow K-01.
+An event is drawn on the map that frames its node's explicit `at` (a point on a map, e.g. a world place or a district), else on the map of
+`scope(node)`; the label the lists show for it is that map owner's `x-layer`, else its name. A place inside a site that has its own map is
+drawn on that map; the site itself is a point on the map above it (S3-2).
 
 **K-R52 — No content filtering.** Categories, places and summaries are parsed and shown as written. An unknown
 category becomes `other`; nothing is dropped because of what it says.
@@ -682,13 +685,13 @@ then freezes. Adding an optional field, or promoting an `x-` field, stays within
 it.
 
 **K-R67 — The v2 overlay of a schema-1 pack.** A schema-1 pack (manifest, `maps.json`, …) stays frozen; the v2 data it needs
-lives next to its manifest in `map/packs/<id>/overlay.v2.json` = `{ "schema": 2, "nodes": [ { id, parent?, alias?, hints?, at?, name?, … } ] }`.
+lives next to its manifest in `map/packs/<id>/overlay.v2.json`, declared by the manifest as `data.overlay` (the viewer and the tavern script fetch only what is declared) = `{ "schema": 2, "nodes": [ { id, parent?, alias?, hints?, at?, name?, … } ] }`.
 `compat-v1` `fromV1` takes it as the optional argument `overlay` and merges it by node id after the conversion (`core/overlay-v2.mjs`):
 a new id is added at the end of the node list and needs a `name`; an existing id gets its `alias` and `hints` unioned (an existing node
 with no explicit `alias` keeps its name as a strong name) and every other field, `parent`, `at`, `name`, `x-…`, overridden. The merge is
 pure and lenient (K-R06): an entry that is not an object, has no id, or adds a node without a name is skipped and listed in
 `fromV1(…).problems`; nothing else changes. The runtime tree (`app/nodes-runtime.mjs`), the current location (`app/here-v2.mjs`) and
-event placement read the file when the pack has one; a pack without it behaves exactly as before. `tools/check_pack.py` validates it
+event placement read the file when the pack declares one; a pack without it behaves exactly as before. `tools/check_pack.py` validates it
 (`tools/check_overlay.mjs`: ids, names, parents, no cycle, an explicit alias list holds the name, `at` numeric). The first pack's
 overlay carries what its v1 code had hard-wired (Appendix A.5): the event tier words as hints, district nodes with `at`, the outskirts and
 far-outside nodes, and the label `x-layer` of the world map; it is generated once by `tools/gen_eden_overlay_v2.mjs`.
@@ -949,7 +952,16 @@ tc_low]`; 57 landmark nodes carry a 3D view; two nodes carry `links` in eden (`c
   5. an ambiguous word + an estate room or area word ("大学 书房") → the estate, with the plan the room (v1: nothing)
      — K-R16;
   6. an estate area word that holds a room word one code point shorter (「客房楼」, room 「客房」) → the estate, the longest span wins
-     (v1: the room, and with the plan the room node) — K-R20. Decided 2026-09-30 (Q-10, option A).
+     (v1: the room, and with the plan the room node) — K-R20. Decided 2026-09-30 (Q-10, option A);
+  The following came with S3-2 (events placed through nodes) and were decided 2026-10-01 (Q-11, option A):
+  7. a world place that v1's event rules left unplaced on purpose (「奥伦帝国」, "the capital is the city") → its node, on the world map;
+  8. a generic alias of a place (「某家族庄园」: 「庄园」 is an alias of the estate; v1's event rules ignored the word) → that place;
+  9. an alias that v1's world-point match did not read (「灵枢秘派」, alias of a realm) → the realm's point (v1: nothing drawn);
+  10. spot only: v1 took the marker whose name merely contains the text (a one-letter placeholder, 「修道院」 inside another convent's name,
+      a tier word holding a marker word); the tree pins the node the text names, or the tier / district when it names none — K-R20;
+  11. a place inside a site that has its own map (the knights' city, the highland, the holy city) → drawn on that map; the site itself stays
+      a point on the world map (v1: only that point) — K-R51;
+  12. a named place beats an explicit layer word that belongs to another tier (「上层·荣光冠冕」) → the named place — K-R21 (v1: the layer word).
 
 ## Appendix B — implementation split
 
