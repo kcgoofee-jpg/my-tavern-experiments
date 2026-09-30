@@ -436,3 +436,13 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T20:45:04Z,isle:isle9,final,done,hero-1,,final 2400/64; cutout 410m
 2026-09-30T20:45:04Z,isle:isle9,integrate,done,hero-1,,"crop (0.113,0.307,0.253,0.507) + cutout 410m into tc_upper + tc_upper_city; DZI rebuilt"
 2026-09-30T20:45:05Z,isle:isle9,ship,wait,hero-1,,FREEZE_MAPS (S4-3); tiles ready on render-hero-1
+2026-09-30T20:45:06Z,isle:isle10,setting,claim,hero-1,,
+2026-09-30T20:45:22Z,isle:isle10,setting,done,hero-1,,setting block C1-C2/S1-S10
+2026-09-30T20:46:47Z,isle:isle10,draft,done,hero-1,,draft1 OK
+2026-09-30T20:46:47Z,isle:isle10,board,done,hero-1,,board1
+2026-09-30T20:46:47Z,isle:isle10,review-r1,done,hero-1,fail,r1 6.5/6.5: creek fall far too wide
+2026-09-30T20:47:47Z,isle:isle10,fix,done,hero-1,,draft2: thin creek trickle
+2026-09-30T20:47:47Z,isle:isle10,review-r2,done,hero-1,pass,r2 7.0/6.5
+2026-09-30T20:51:53Z,isle:isle10,final,done,hero-1,,final 2400/64; cutout 390m
+2026-09-30T20:51:53Z,isle:isle10,integrate,done,hero-1,,"crop (0.615,0.665,0.752,0.851) + cutout 390m; DZI rebuilt; mist disc visible off SE rim (minor)"
+2026-09-30T20:51:54Z,isle:isle10,ship,wait,hero-1,,FREEZE_MAPS (S4-3); tiles ready on render-hero-1

@@ -331,9 +331,9 @@ def top(ctx):
     ux, uy = math.cos(ang), math.sin(ang); fx, fy = ex + ux * 7, ey + uy * 7          # 水舌先抛出崖口几米，再垂落，避开崖檐
     lip = [(ex + ux * t, ey + uy * t, ez - .1 - .09 * t * t) for t in (0, 2, 4, 5.5, 7)]
     for a, b in zip(lip, lip[1:]): W.strip([a, b], 9.0, .5, M['foam'])
-    K_.waterfall(fx, fy, lip[-1][2], ang, 10.0, R * .85, 2.4, .92, name='k10_creek')
-    K_.waterfall(fx + ux, fy + uy, lip[-1][2] - .3, ang, 4.0, R * .6, 2.8, .95, name='k10_creek_core')
-    K_.waterfall(fx - ux, fy - uy, lip[-1][2] - 1, ang, 16.0, R * .95, 1.2, .45, name='k10_creek_splay')    # 外层散帘：越往下越宽
+    K_.waterfall(fx, fy, lip[-1][2], ang, 3.0, R * .7, 1.6, .7, name='k10_creek')
+    K_.waterfall(fx + ux, fy + uy, lip[-1][2] - .3, ang, 1.2, R * .5, 2.0, .85, name='k10_creek_core')
+    K_.waterfall(fx - ux, fy - uy, lip[-1][2] - 1, ang, 5.0, R * .8, .5, .25, name='k10_creek_splay')    # 外层散帘：越往下越宽
     rt = random.Random(5)
     for q in range(26):                                              # 翻白的崖口水舌
         t = rt.uniform(0, 7); w_ = rt.uniform(-4.5, 4.5)
