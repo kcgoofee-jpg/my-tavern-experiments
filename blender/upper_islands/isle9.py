@@ -1,5 +1,5 @@
 """isle9 庄园主联盟会所 draft.【卡】庄园主联盟 = 顶级贵族非官方组织, 举办拍卖会和品鉴会；制度纪念日大型拍卖会在上层。
-【推断】固定会所本身与位置。Pall Mall clubhouse palazzo (Reform / Travellers Club refs) + top-lit auction saleroom
+固定会所本身与位置。Pall Mall clubhouse palazzo (Reform / Travellers Club refs) + top-lit auction saleroom
 (Christie's King Street ref). Tasting dinners rotate between estates (card) → no dedicated banquet hall here."""
 import sys, os, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

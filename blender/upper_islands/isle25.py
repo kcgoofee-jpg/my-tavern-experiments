@@ -1,4 +1,4 @@
-"""isle25 以太研究院 draft.【推断, canon:false】卡里没有这座研究院 → 地图保持「仓库自设」, 建筑不加戏。
+"""isle25 以太研究院 draft.【wb_list:false】这座研究院在地图上另行描述, 建筑不加戏。
 Low-key research campus (Cavendish West Cambridge / Rothamsted refs): quadrangle + lab wings + one plain services mast.
 Card's 以太气候调节塔 location is unwritten → NOT placed here."""
 import sys, os, math

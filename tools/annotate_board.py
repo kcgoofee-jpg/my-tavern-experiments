@@ -37,7 +37,7 @@ annotate_board.py —— 生成带编号标注的审查看板（review board）
   {
     "title": "看板标题（可选，--title 优先）",
     "items": [
-      {"key": "bay", "text": "新月深湾……", "source": "卡原文" | "仓库推断",
+      {"key": "bay", "text": "新月深湾……", "source": "L109 · §4（可选：出处 / 引用）",
        "status": "✓" | "弱"},
       ...
     ]
@@ -81,8 +81,7 @@ COLOR_TEXT = (30, 30, 30)
 COLOR_SUBTEXT = (110, 110, 110)
 COLOR_BADGE_OK = (40, 110, 200)
 COLOR_BADGE_MISSING = (200, 40, 40)
-COLOR_SOURCE_CARD = (150, 90, 20)     # 卡原文
-COLOR_SOURCE_INFER = (90, 60, 160)    # 仓库推断
+COLOR_SOURCE = (90, 60, 160)          # 出处 / 引用文字
 COLOR_STATUS_OK = (30, 140, 60)       # ✓
 COLOR_STATUS_WEAK = (200, 140, 0)     # 弱
 COLOR_STATUS_MISSING = (200, 40, 40)  # 缺
@@ -347,7 +346,6 @@ def build_board(renders, items_data, title_override, out_path):
 
         # 来源 + 状态 一行
         source = it.get("source", "")
-        source_color = COLOR_SOURCE_CARD if source == "卡原文" else COLOR_SOURCE_INFER
         status_eff = it["_status_eff"]
         status_color = {"✓": COLOR_STATUS_OK, "弱": COLOR_STATUS_WEAK, "缺": COLOR_STATUS_MISSING}.get(
             status_eff, COLOR_SUBTEXT
@@ -355,8 +353,7 @@ def build_board(renders, items_data, title_override, out_path):
         sy = block_bottom + 4
         sx = text_x
         if source:
-            source = {'仓库推断': '地图补充'}.get(source, source)   # 上图标签写「地图补充」，仓库内部词不上板
-            draw.text((sx, sy), source, font=small_font, fill=source_color)
+            draw.text((sx, sy), source, font=small_font, fill=COLOR_SOURCE)
             sx += draw.textlength(source, font=small_font) + 18
         draw_status_glyph(draw, (sx, sy), status_eff, small_font, status_color)
 

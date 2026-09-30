@@ -1,5 +1,5 @@
 """维多利亚的公寓（中层高区；卡：维多利亚是最高法院首席大法官，住在中层高区公寓）——只做外观。
-设定见 docs/landmarks/victoria_apartment.md（仓库推断标注）。
+设定见 docs/landmarks/victoria_apartment.md。
 
 导出组：
   walls_tower   公寓主塔：石材 + 玻璃幕墙高层住宅

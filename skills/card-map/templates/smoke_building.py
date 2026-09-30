@@ -1,4 +1,4 @@
-"""冒烟级单栋建筑模板（card-map 技能第 5 步的起点；示例 = 示例包 town 的「钟楼」，形制为仓库推断）。
+"""冒烟级单栋建筑模板（card-map 技能第 5 步的起点；示例 = 示例包 town 的「钟楼」）。
 
 目的只是证明「建模 → 草稿渲染 → .blend → export_glb」这条链能跑；正式标准档要照参考板重写成
 blender/landmarks/<id>/build.py（见 blender/landmarks/well7/build.py 的写法：Batch 分组名 = glb 组名，bg_* 只渲不导）。

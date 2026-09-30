@@ -58,12 +58,12 @@ test('rows：过滤 + 排序（地点 → 名）', () => {
 });
 
 test('digestLine：按地点归组、空仓空串、超长截断', () => {
-  const inv = norm({ items: { i1: { 名: '机密账本', 地点: '书房', 暗格: true }, i2: { 名: '现金', 地点: '客厅', 数量: 3 }, i3: { 名: '地图自设·残卷' } } });
+  const inv = norm({ items: { i1: { 名: '机密账本', 地点: '书房', 暗格: true }, i2: { 名: '现金', 地点: '客厅', 数量: 3 }, i3: { 名: '旧卷·残页' } } });
   const line = digestLine(inv);
   assert.ok(line.startsWith('随身仓与藏物：'), line);
   assert.ok(line.includes('书房·暗格 机密账本'), line);
   assert.ok(line.includes('客厅 现金×3'), line);
-  assert.ok(line.includes('未归位 地图自设·残卷'), line);
+  assert.ok(line.includes('未归位 旧卷·残页'), line);
   assert.equal(digestLine(norm(null)), '');
   assert.ok(digestLine(inv, 30).length <= 30);
 });

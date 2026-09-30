@@ -1,5 +1,5 @@
 """骑士团营区（中层高区，画在银冠堡正下方；卡：罗莎琳德是议会骑士团第九代团长，住在这里，团长每天巡营）——只做外观。
-设定见 docs/landmarks/knights_camp.md（仓库推断标注）。
+设定见 docs/landmarks/knights_camp.md。
 
 导出组：
   walls_ext      指挥厅：两层石构，中央营区正对

@@ -84,7 +84,7 @@ test('接线：协议表登记、宿主处理、查看器有入口与设置项',
 test('loot（Part 5-1 拾取）：模板里的 {item} 换成拾到的东西，老模板没有占位符也接得上', () => {
   assert.equal(fill(DEFAULTS.zh.loot, '主人主卧', '机密账本'), '在主人主卧发现机密账本，收进随身仓。');
   assert.equal(fill(DEFAULTS.en.loot, 'Master Bedroom', 'Ledger'), 'In Master Bedroom: found Ledger and pocketed it.');
-  assert.equal(fill('查看{name}。', '书房', '地图自设·残卷'), '查看书房地图自设·残卷。', '没有 {item}：接在句末标点之前');
+  assert.equal(fill('查看{name}。', '书房', '旧卷·残页'), '查看书房旧卷·残页。', '没有 {item}：接在句末标点之前');
   const a = buildAction({ mode: 'sys', kind: 'loot', name: '主人主卧', item: '机密账本' });
   assert.equal(a.kind, 'loot');
   assert.equal(a.text, '在主人主卧发现机密账本，收进随身仓。');

@@ -259,7 +259,7 @@ class Isle:
         f = 1 + sum(a * np.sin(k * th + p) for k, a, p in self.harm)
         if self.shape == 'twin': f = f * (.42 + .6 * np.abs(c) ** .7)
         return base * f
-    # v13 设计过的岛形（docs/upper-setting.md「岛形」节，仓库推断）：超椭圆底 + 按类型的修饰；角度是岛的本地角（rot 另算）
+    # v13 设计过的岛形（docs/upper-setting.md「岛形」节）：超椭圆底 + 按类型的修饰；角度是岛的本地角（rot 另算）
     SIL_N = {'terrace': 3.2, 'ridge': 2.6, 'crescent': 2.2, 'plateau': 4.5, 'jagged': 2.0, 'fortress': 5.0}
     def _sil(self, th, c, s, sil):
         k = sil['kind']; n = sil.get('n', self.SIL_N.get(k, 2.4)); rx, ry = self.rx, self.ry

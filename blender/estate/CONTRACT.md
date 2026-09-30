@@ -126,7 +126,7 @@ EDEN
 
 ---
 
-## 6. 材质名（`mats.get`；色值 sRGB，出自设定 §6）
+## 6. 材质名（`mats.get`；色值 sRGB，见设定 §6）
 
 石材 `stone_portland` #E4DED2（外墙；要风化、雨痕、色差）· `stone_rustic` #CFC7B8 · `stone_trim` #F0ECE3 · `marble_statuario` #F2F0EC（灰色细主纹）· `marble_calacatta` #F1ECE2 · `marble_nero` #1E1E20 · `marble_alpi_green` #2F4A3C · `marble_siena` #D9B66E · `marble_levanto` #7A2E2A · `scagliola_porphyry` #6B2E35 · `lead_roof` #8A8D90
 木材 `oak` #A57A4B · `walnut` #5A3A22 · `mahogany` #5E2A1A · `ebony` #1C1512 · `satinwood` #D8B777 · `paint_panel` #EDE6D6

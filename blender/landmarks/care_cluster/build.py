@@ -1,5 +1,5 @@
 """中层「关怀带」：中层公立医院 + 中层养老院 + 中层修道院（同一场景）——只做外观。
-设定见 docs/landmarks/care_cluster.md（仓库推断标注）。
+设定见 docs/landmarks/care_cluster.md。
 
 导出组：
   props_hospital   中层公立医院：8 层板式主楼（白面砖 + 蓝绿遮阳板）+ 一层门诊裙房（弧形雨篷）+ 屋顶悬浮救护停机坪

@@ -1,6 +1,6 @@
-"""isle6 首相府 draft.【卡】首相去首相府开会（开局五）；位置未写 → 上层【推断】。
+"""isle6 首相府 draft.【卡】首相去首相府开会（开局五）→ 上层。
 形制【用户 2026-09-28 选方案 A】= blender/landmarks/pm_residence: dark-brick 3-storey + attic Georgian terrace
-(Downing Street), street-end iron gate + sentry box, garden-side white stucco colonnade. 公务停靠平台 (= card 访客停靠平台; 「公务」 仓库推断) kept, hover vehicles only."""
+(Downing Street), street-end iron gate + sentry box, garden-side white stucco colonnade. 公务停靠平台 (= card 访客停靠平台) kept, hover vehicles only."""
 import sys, os, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import *

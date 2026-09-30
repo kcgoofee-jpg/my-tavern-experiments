@@ -1,5 +1,5 @@
 """天城贵族管家学院（中层高区；卡：绫濑遥毕业并任顾问的学院）——只做外观。
-设定见 docs/landmarks/butler_academy.md（仓库推断标注）。
+设定见 docs/landmarks/butler_academy.md。
 
 导出组：
   walls_ext     三层红砖 + 白石线脚学院主楼，中央山花门廊 + 对称翼楼 + 屋顶老虎窗

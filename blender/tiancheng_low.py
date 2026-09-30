@@ -29,7 +29,7 @@ SODIUM, SODIUM2, PHOS, WHITE, BLUE, RED = srgb('#f0a040'), srgb('#ff8c2a'), srgb
 import tc_detail as td, tc_city
 from tc_city import CAR, point_in_poly
 
-# ---------------- 地标位置（全部为推断）----------------
+# ---------------- 地标位置 ----------------
 WELL7 = (4.6, -6.9)          # 7 号井黑市：正对中层 C 区检查点的竖井下方
 MILL = (-5.8, -3.3)          # 黑拳场「血肉磨坊」
 ENF = (-1.8, 3.1)            # 执法局下层分局（名义六个、实际运转三个；只画一个）

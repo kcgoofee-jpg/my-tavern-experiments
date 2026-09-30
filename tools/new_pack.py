@@ -98,7 +98,7 @@ def main():
         for k, p in enumerate(places):
             pid = slug(p.get('id') or p['name'], k)
             while pid in markers: pid += '_x'
-            markers[pid] = {'name': p['name'], 'name_en': p.get('name_en', p['name']), 'tag': 'inf', 'src': p.get('src') or '占位：写这处地点在设定里的出处',
+            markers[pid] = {'name': p['name'], 'name_en': p.get('name_en', p['name']), 'src': p.get('src') or '占位：写这处地点在设定里的出处',
                             'alias': sorted({p['name'], *p.get('alias', [])})}
             pts.append({'id': pid, 'nx': round(.15 + .7 * rnd.random(), 4), 'ny': round(.15 + .7 * rnd.random(), 4), 'r': .03})
         maps[mid] = {'title': f'{a.title} · {lname}', 'title_en': f'{a.title_en or a.title} · {lname}', 'group': gid,

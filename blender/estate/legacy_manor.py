@@ -2,7 +2,7 @@
 # 只因 blender/tc_estates.py 的 build_eden 在天城上层底图里以 1:100 调 build_eden_manor 而保留；新模型在 blender/estate/，
 # 等 SHELL 建造者提供 estate 版的 build_eden_manor(layer, center, rot, scale) 后删掉本文件。独立出图请用 blender/eden_manor.py。
 # 伊甸府邸（伊甸庄园主楼）· Blender 模型：新古典白石府邸，外观 + 按层剖切。
-# 楼层、房间与尺寸依据 docs/eden-estate.md（多为推断，出处见该文档）；硬约束：只建中性建筑与普通家具。
+# 楼层、房间与尺寸依据 docs/eden-estate.md（出处见该文档）；硬约束：只建中性建筑与普通家具。
 #
 # 两种用法：
 #   1) 上层底图里调用：build_eden_manor(layer, center=(x, y, z), rot=弧度, scale=.01)   # 模型单位是米，上层 1 单位 = 100 m

@@ -1,5 +1,5 @@
 """佣兵公会（中层机构区；卡：雇佣兵接单的地方，军事与治安类）——只做外观。
-设定见 docs/landmarks/merc_guild.md（仓库推断标注）。
+设定见 docs/landmarks/merc_guild.md。
 
 导出组：
   walls_ext      两层钢筋混凝土主厅（大面积钢卷帘门）+ 侧附矮瞭望塔

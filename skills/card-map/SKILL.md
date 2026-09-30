@@ -63,7 +63,7 @@ python3 skills/card-map/coverage.py <S>/card <S>/card/r_*.md    # 列出没人�
 ```
 有缺口就派补读者读那些行，再跑到退出码 0。汇总写：
 - `<S>/card/digest.md`：事实摘要（地点、层、人物、变量、开局、事件），每条带出处行号。
-- `<S>/card/buildings.md`：建筑清单（名字照抄、所在层、卡里写明的外观 / 尺寸 / 功能、出处行号；卡没写的一栏标「仓库推断」），并标出候选主建筑（hero）。
+- `<S>/card/buildings.md`：建筑清单（名字照抄、所在层、卡里写明的外观 / 尺寸 / 功能、出处行号），并标出候选主建筑（hero）。
 
 之后任何人说「卡里有 / 没有 X」，先查 `digest.md`。仓库里只放中性摘要和出处，不整段抄卡正文。
 
@@ -85,7 +85,7 @@ python3 tools/check_pack.py <id>
 python3 tools/cors_server.py <端口> map   # 并行 worktree 各用不同端口；浏览器开 http://localhost:<端口>/viewer.html?pack=<id>
 ```
 坐标先随机；按 `docs/generalize/README.md`「取点」在查看器里点出 nx / ny，写进 `map/packs/<id>/<地图 id>.json`。
-补 `events.json`（分类来自事件读者）、`maps.json` 各标记的 `tag`（`set` 卡写明 / `inf` 推断）与 `src`（中性出处）、跨层 `link`。
+补 `events.json`（分类来自事件读者）、`maps.json` 各标记的 `src`（中性说明）、跨层 `link`。
 
 **【检查点】** 给用户一张表：层 × 地点（名字、别名、tag、出处行号）+ `vars` + 事件分类。用户确认或改完才进第 4 步。
 
@@ -130,7 +130,7 @@ bash tools/blender_run.sh --log <S>/x.log --asset <建筑> --kind draft --res 90
 
 ## 6. 交互
 
-- **地点卡片**：`maps.json` 标记的 `name`、`alias`、`tag`、`src`、`link`（跨层）、`link3d`（三维入口）。
+- **地点卡片**：`maps.json` 标记的 `name`、`alias`、`src`、`link`（跨层）、`link3d`（三维入口）。
 - **三维查看器**：加一张 `kind: "estate"`、`src: "props/viewer3d.html"`、`viewer3d: "<建筑>"` 的地图，标记 `link3d` 指过去；热点写在 `map/props/<建筑>/manifest.json`。
 - **当前地点解析**：
   ```bash
@@ -175,7 +175,7 @@ python3 tools/build_preview_script.py --follow preview --pack <id>   # 跟随版
 ## 硬规则（踩过的坑）
 
 1. **一个代理一个 worktree**；主检出不碰。
-2. **名字照抄卡**：地名、房间、人名、变量键一字不改（包括卡里的成人向字样）；不编名、不做占位名、不做运行时名字转换 / 绑定层。自己补的设定一律标「仓库推断」（`tag: "inf"`）。
+2. **名字照抄卡**：地名、房间、人名、变量键一字不改（包括卡里的成人向字样）；不编名、不做占位名、不做运行时名字转换 / 绑定层。在卡的设定范围内自由补充设定，不加任何来源标签。
 3. **只读卡**：只读用户卡的副本；永不写 SillyTavern / 酒馆助手的数据目录、不改卡、不生成新卡。
 4. **不过滤用户聊天**：地图不按关键词过滤、改写或拦截聊天内容；只解析位置并显示。写聊天只填输入框，不自动发送。
 5. **世界书同步**：地点 / 分类变了，同一次提交里重建世界书附加条目（eden 还要改 `addon_places.json`）。

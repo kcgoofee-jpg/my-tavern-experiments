@@ -24,7 +24,8 @@ test('new：生成四件套 + 状态；重跑不覆盖；清单划线与状态�
     assert.match(ck, /^- ~~new：.*~~ ✅$/m);
     assert.match(ck, /^- draft：/m);
     const set = readFileSync(join(d, 'docs/landmarks/test_hall.md'), 'utf8');
-    assert.match(set, /## 卡原文/); assert.match(set, /## 仓库推断/);
+    assert.match(set, /^## 设定$/m); assert.equal((set.match(/^## /gm) || []).length, 2, '设定稿：一节设定 + 规模与镜头');
+    assert.match(ck, /^- props_main｜测试会堂主体建筑$/m);
     const b = join(d, 'blender/landmarks/test_hall/build.py');
     writeFileSync(b, '# 手改\n');
     r = lm(d, 'new', 'test_hall', '--layer', 'tc_mid', '--name', '测试会堂');
@@ -35,6 +36,22 @@ test('new：生成四件套 + 状态；重跑不覆盖；清单划线与状态�
     assert.equal(g.items[0].on_board, null);
     r = lm(d, 'status', 'test_hall');
     assert.match(r.stdout, /test_hall\s+✓\s+·/);
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+test('board 条目：组名｜说明；划线行照常解析；多余的第三栏被忽略', () => {
+  const d = mkdtempSync(join(tmpdir(), 'lm-'));
+  try {
+    let r = lm(d, 'new', 'test_hall', '--layer', 'tc_mid', '--name', '测试会堂');
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    const f = join(d, 'docs/landmarks/test_hall.checklist.md');
+    const ck = readFileSync(f, 'utf8').split('## 看板条目')[0] + '## 看板条目\n\n- roof｜屋顶\n- ~~wall｜外墙~~ ✅\n- gate｜门楼｜旧的第三栏\n';
+    writeFileSync(f, ck);
+    r = lm(d, 'gapcheck', 'test_hall', '--json', '--no-mark');
+    const g = JSON.parse(r.stdout);
+    assert.deepEqual(g.items.map(x => [x.key, x.text, x.checked]), [['roof', '屋顶', false], ['wall', '外墙', true], ['gate', '门楼', false]]);
+    assert.ok(Array.isArray(g.setting) && g.setting.length > 0, '设定节的条目');
+    assert.ok(!('source' in g.items[0]));
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
 
@@ -61,4 +78,14 @@ print(json.dumps([m,m2,m3,m4,t4==t3,json.loads(t4)['maps']['tc_mid']['markers'][
     assert.equal(r.status, 0, r.stderr);
     assert.deepEqual(JSON.parse(r.stdout), ['接好', '已接', '新增', '已有', true, 'lm_a', true]);
   } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+test('card-buildings 表：ship 只改「模型」「质量」两列（表里没有来源列）', () => {
+  const tbl = `| 优先级 | 地图 | id | 名称 | 标记 | 模型 | 质量 | 备注 |\n|---|---|---|---|---|---|---|---|\n| P2 机构 | tc_mid | \`mage_tower\` | 法师塔 | 🆕 | — | — | 备注甲 |\n| P2 机构 | tc_mid | \`other\` | 乙 | ✅ | — | — | 备注乙 |`;
+  const code = `import sys,json; sys.path.insert(0,'tools'); import landmark as L
+t,hit=L.cards_row(sys.stdin.read(),'tc_mid','mage_tower','法师塔','mage_tower','r2 7 / 6'); rows=t.split('\\n')
+print(json.dumps([hit, rows[2].split('|')[6:9], rows[3].split('|')[6:9]], ensure_ascii=False))`;
+  const r = spawnSync('python3', ['-c', code], { cwd: ROOT, encoding: 'utf8', input: tbl });
+  assert.equal(r.status, 0, r.stderr);
+  assert.deepEqual(JSON.parse(r.stdout), [true, [' 法师塔 `map/props/mage_tower/` ', ' 标准（r2 7 / 6） ', ' 备注甲 '], [' — ', ' — ', ' 备注乙 ']]);
 });

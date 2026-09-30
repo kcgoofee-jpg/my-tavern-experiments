@@ -1,5 +1,5 @@
 """天城大学 + 最高法院（中层高区，同一场景；卡：维多利亚 16 岁跳级入学天城大学法学院，是最高法院首席大法官）——只做外观。
-设定见 docs/landmarks/tiancheng_univ_court.md（仓库推断标注）。
+设定见 docs/landmarks/tiancheng_univ_court.md。
 
 导出组：
   props_univ      天城大学法学院主楼：石材立面 + 模拟法庭弧形凸窗 + 阶梯教室楼 + 图书馆连廊

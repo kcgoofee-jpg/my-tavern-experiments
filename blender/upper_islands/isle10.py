@@ -1,6 +1,6 @@
-"""isle10 凯莉的宅邸 draft.【卡】开局三的计划地点；卡未写层与位置 → 上层【用户】, 落在 isle10【推断】。
+"""isle10 凯莉的宅邸 draft.【卡】开局三的计划地点；上层, 落在 isle10。
 Needs one recognisable main house vs. the generic manors: compact Regency white-stucco villa with a full-height bow
-and Ionic portico (Sezincote / Southill refs; style 仓库推断), walled garden. Not 维克多庄园 (another place, not mapped)."""
+and Ionic portico (Sezincote / Southill refs; style per setting), walled garden. Not 维克多庄园 (another place, not mapped)."""
 import sys, os, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import *

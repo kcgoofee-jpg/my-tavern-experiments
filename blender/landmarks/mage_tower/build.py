@@ -1,5 +1,5 @@
 """法师塔（中层机构区，星渊大学以东的一座细高石塔；卡：首席神宫寺凛，精神系施法者）——只做外观。
-设定见 docs/landmarks/mage_tower.md（仓库推断标注）。
+设定见 docs/landmarks/mage_tower.md。
 
 导出组：
   walls_ext      八边形逐层收分的粗琢石塔（约 92 m）+ 三圈挑出的石栏平台

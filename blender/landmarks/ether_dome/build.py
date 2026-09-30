@@ -1,6 +1,6 @@
 """大骑士领·圣都 核心区「以太穹顶」（site_kavalierki）——只做外观。
-**仓库推断**：卡（`docs/card-digest.md` L89）写的核心区只有 商业联合会大厦 / 太阳骑士大竞技场 /
-圆桌骑士议事殿 / 会所，「以太穹顶」不在卡里，是仓库自设的以太技术展示场（同 `docs/card-buildings.md` 的标注）。
+卡（`docs/card-digest.md` L89）写的核心区有 商业联合会大厦 / 太阳骑士大竞技场 /
+圆桌骑士议事殿 / 会所；「以太穹顶」是核心区的以太技术展示场（见 `docs/card-buildings.md`）。
 中立性：无人物、无文字 / 标志（docs/rejected.md）。
 
 导出组（= 清单「看板条目」的组名；新增组记得同步清单，并在 map/props/ether_dome/manifest.json 的 budgets 里给三角形预算）：

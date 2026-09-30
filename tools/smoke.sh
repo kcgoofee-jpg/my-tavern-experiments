@@ -11,6 +11,7 @@
 #   7. 架构看门狗（tools/check_architecture.py，6 道防线 + tools/arch_baseline.json 只减不增账本）：
 #      引擎单文件 ≤400 行；core 零父级 import、core 与纯流水线不碰宿主全局（单一属主豁免表见脚本头）；
 #      禁裸 z-index 字面量、卡专有名词、内联外观样式（既有违规冻结在账本里，只许减少）
+#   7b. 无来源标签（tools/check_no_labels.py）：map / tools / blender / skills / tests 与现行文档里不得出现「卡里有 / 自己编」式来源标注
 #   8. 树卫生（tools/check_tree_hygiene.py）：未跟踪且未忽略的文件单个 >10 MB 即失败（防 git add -A 把
 #      临时产物 / 中间瓦片误提交；CI 干净检出天然通过）
 set -uo pipefail
@@ -41,6 +42,8 @@ step "文档语言（基线之后的新 .md 必须英文，见 docs/language-pol
 step "文档语言门控自测（英文过 / 中文拦 / 豁免真的豁免）" python3 tools/test_doc_language.py
 step "中英镜像结构一致（agent-brief / spatial-os 计划 / ARCHITECTURE，见 tools/check_zh_mirror.py）" python3 tools/check_zh_mirror.py
 step "中英镜像门控自测" python3 tools/check_zh_mirror.py --self-test
+step "无来源标签（不得出现「卡里有 / 自己编」式标注，见 docs/agent-brief.md §7 与 tools/check_no_labels.py）" python3 tools/check_no_labels.py
+step "无来源标签门控自测" python3 tools/check_no_labels.py --self-test
 step "README 置顶导入链接与路径引用（最新标签 / 预览分支 / 提到的路径都存在）" python3 tools/check_readme.py
 step "README 门控自测（过期标签 / 错仓库名 / 死路径会被拦，--fix 能修回来）" python3 tools/test_readme.py
 step "渲染守卫 lint（渲染脚本必须经 setup_render_device/pick_gpu 配 GPU）" python3 tools/render_preflight.py lint

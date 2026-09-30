@@ -2,7 +2,7 @@
 # 程序生成的体块草模（地形 + 几座地标体块 + 道路 + 树），正俯视正交相机，与天城各层同一种取景方式；低采样，快出图。
 # 用法：blender -b -P blender/opening_sites.py -- --site kavalierki [--res 4000] [--samples 24] [--out map/art/site_kavalierki_full.png] [--data-only]
 # 坐标：每张图用归一化平面坐标 (u, v)，u 向右、v 向下，0…1；场景里 1 单位 = 图宽 / 40。
-# 地标位置、形制绝大多数是仓库推断（卡只给了名字与少量描述），标记数据写到 map/data/site_<id>.json（nx / ny = u / v）。
+# 地标位置、形制绝大多数由地图设计（卡只给了名字与少量描述），标记数据写到 map/data/site_<id>.json（nx / ny = u / v）。
 import bpy, bmesh, math, os, sys, json, random
 import os as _os, sys as _sys
 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
@@ -143,7 +143,7 @@ def mk(i, u, v, r=.03): MK.append((i, round(u, 4), round(v, 4), r))
 
 # ---------------- 各地点 ----------------
 def site_kavalierki():
-    """大骑士领·圣都：三环（荣光冠冕 / 竞赛与狂欢回廊 / 铁锈与落败领）+ 以太穹顶。环的半径、地标位置均为推断。"""
+    """大骑士领·圣都：三环（荣光冠冕 / 竞赛与狂欢回廊 / 铁锈与落败领）+ 以太穹顶。环的半径、地标位置由地图设计。"""
     C = (.5, .5); d = lambda u, v: math.hypot((u - C[0]), (v - C[1]) * ASP)
     TERRAIN['h'] = lambda u, v: .15 * noise(u, v, .6) + (-.6 if abs(v - .18 - .06 * math.sin(u * 7)) < .012 else 0)
     def gcol(u, v, z):
@@ -198,7 +198,7 @@ def yuanyu_common(tier):
         for k in range(12):
             a = k * math.pi / 6; B.road(road, [(.5 + math.cos(a) * .1, .5 + math.sin(a) * .1 / ASP), (.5 + math.cos(a) * .47, .5 + math.sin(a) * .47 / ASP)], .003)
         for r in (.1, .2, .3): B.road(road, [(.5 + math.cos(t / 72 * 2 * math.pi) * r, .5 + math.sin(t / 72 * 2 * math.pi) * r / ASP) for t in range(73)], .003)
-        B.cyl(mat('plaza', '#c9c1b0', .7), .5, .5, .09, .4, z=zg(.5, .5) - .3, seg=64)                  # 圣山正下方的朝圣广场（推断）
+        B.cyl(mat('plaza', '#c9c1b0', .7), .5, .5, .09, .4, z=zg(.5, .5) - .3, seg=64)                  # 圣山正下方的朝圣广场
         # 哥特式尖塔、巴洛克穹顶
         for k in range(260):
             u, v = R.random(), R.random()
@@ -240,7 +240,7 @@ def yuanyu_common(tier):
         mk('pantheon', .5, .5, .03); mk('holy_mountain', .5, .5 + .13 / ASP, .2); mk('shrine_ring', .5 + .075, .5, .02); mk('pilgrim_stair', .5, .5 + .17 / ASP, .02)
 
 def site_highland():
-    """旷野高地：卡里只有「荒野，有崖壁」。整张图为推断。"""
+    """旷野高地：卡里只有「荒野，有崖壁」。整张图由地图设计。"""
     cliff = lambda u: .55 + .08 * math.sin(u * 9) + .03 * math.sin(u * 23)
     def h(u, v):
         base = 1.2 * noise(u, v, .8, 4) + (2.2 if v < cliff(u) else -.4 - (v - cliff(u)) * 2)
@@ -263,7 +263,7 @@ def site_highland():
     mk('highland_plateau', .3, .3, .15); mk('cliff_edge', .5, cliff(.5), .03); mk('trail_down', .75, .85, .02)
 
 def site_fief(n):
-    """圆桌骑士封地：卡里只说圆桌骑士现存五席、享有独立封地与专属骑士团调动权。地形、城堡形制、城镇形状全是仓库推断，五块各不相同：
+    """圆桌骑士封地：卡里只说圆桌骑士现存五席、享有独立封地与专属骑士团调动权。地形、城堡形制、城镇形状由地图设计，五块各不相同：
     1 北部湖山：湖岸山顶的星形棱堡 + 沿湖长条镇 + 梯田；2 西海岸：岬角海堡 + 港湾月牙镇 + 码头；3 河谷：河湾护城河方堡 + 桥头圆形城墙镇；
     4 南部森林：林中狩猎城堡 + 林间空地小村 + 零散林地田；5 东北平原：同心圆城堡 + 棋盘街道镇 + 比武场 + 大片条田。"""
     kind = {1: 'lake', 2: 'coast', 3: 'river', 4: 'forest', 5: 'plain'}[n]

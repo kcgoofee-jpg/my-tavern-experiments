@@ -85,7 +85,7 @@ class Lookup:
 
     def quality(self, prop):
         cells = self.card_row('map/props/%s/' % prop).split('|')
-        q = cells[8].strip() if len(cells) > 8 else ''
+        q = cells[7].strip() if len(cells) > 7 else ''
         m = re.search(r'r(\d+) ([\d.]+) / ([\d.]+)', q)
         base = 'self-check r%s %s / %s' % m.groups() if m else 'glb exported'
         return base + (', unreviewed' if '未开评审' in q else '')
@@ -152,12 +152,9 @@ def build(root):
     # ---- standard 4: card places without a model
     for mid in LM_STANDARD:
         t = L.marker(mid)
-        info = L.marker_info(t) if t else {}
-        inferred = info.get('layer_src') == 'repo-inferred'
         std.append(item('lm:' + mid, 'standard', 'landmark', 'New model: %s' % words(mid), [t] if t else [], 'card',
                         {'res': STD_RES, 'spp': STD_SPP}, {'landmark': mid},
-                        ['name from the card; marker position is repo-inferred (layer_src)' if inferred else '',
-                         'no model yet (docs/card-buildings.md)'],
+                        ['no model yet (docs/card-buildings.md)'],
                         todo=[] if t else ['marker %s not found in maps.json' % mid]))
 
     # ---- standard 5-6: scenes

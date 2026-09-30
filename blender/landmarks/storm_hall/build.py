@@ -1,5 +1,5 @@
 """风暴殿（中层核心区；卡：奥伦帝国「镇国之柱」，由全部天灾级强者组成的帝国最高战力，听命于议会）——只做外观。
-设定见 docs/landmarks/storm_hall.md（仓库推断标注）。
+设定见 docs/landmarks/storm_hall.md。
 
 导出组：
   walls_ext      八棱深色花岗岩 + 钢构主柱（约 130 m），四面嵌发光封印纹样

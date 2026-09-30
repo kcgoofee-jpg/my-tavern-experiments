@@ -1,5 +1,5 @@
 """isle2 draft. 原「大主教府邸」礼拜堂已去掉【卡：上层没有教区；大主教府邸并入辉光大教堂别名】。
-Now a plain English manor, no marker【推断】: Jacobean H-plan (Blickling / Hatfield refs), no chapel, no spire, no bell tower."""
+Now a plain English manor, no marker: Jacobean H-plan (Blickling / Hatfield refs), no chapel, no spire, no bell tower."""
 import sys, os, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import *

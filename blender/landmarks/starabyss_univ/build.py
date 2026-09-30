@@ -1,5 +1,5 @@
 """星渊大学（中层；卡：天城第一学府，校长顾衍容，设有医学院）——只做外观。
-设定见 docs/landmarks/starabyss_univ.md（仓库推断标注）。
+设定见 docs/landmarks/starabyss_univ.md。
 
 导出组：
   props_main     教学主楼：六层石材 + 玻璃学院楼，中央素面钟楼入口，两翼对称

@@ -147,9 +147,9 @@ def checklist_text(i, name, layer, items=None):
              f'# {name}（`{i}`，{layer}）检查清单', '', '## 流程', '']
     lines += [f'- {s}：{STEP_DESC[s]}' for s in STEPS]
     lines += ['', '## 看板条目', '',
-              '<!-- 每行一条：- 组名｜说明｜卡原文 或 仓库推断。组名 = build.py 里的 Batch 名（props_* / site_*），',
+              '<!-- 每行一条：- 组名｜说明。组名 = build.py 里的 Batch 名（props_* / site_*），',
               '     board 按它找锚点，final 按它写热点。gapcheck 把这里与设定稿并排给评审代理。核对过的条目可 ~~划掉~~ ✅。 -->',
-              *(items or [f'- props_main｜{name}主体建筑｜仓库推断', '- site_ground｜场地铺装｜仓库推断']), '']
+              *(items or [f'- props_main｜{name}主体建筑', '- site_ground｜场地铺装']), '']
     return '\n'.join(lines)
 
 
@@ -169,7 +169,7 @@ def strike_checklist(i, step):
 
 
 def board_items(i):
-    """清单「看板条目」→ [{key, text, source, checked}]。"""
+    """清单「看板条目」→ [{key, text, checked}]。"""
     p = paths(i)['checklist']
     if not os.path.exists(p):
         return []
@@ -178,15 +178,15 @@ def board_items(i):
         return []
     out = []
     for ln in sec[1].splitlines():
-        m = re.match(r'^-\s+(~~)?\s*([A-Za-z0-9_]+)\s*｜\s*(.*?)\s*｜\s*(卡原文|仓库推断)\s*(~~)?\s*(✅)?\s*$', ln)
+        m = re.match(r'^-\s+(~~)?\s*([A-Za-z0-9_]+)\s*｜\s*([^｜]*?)\s*(?:｜[^｜~]*?)?\s*(~~)?\s*(✅)?\s*$', ln)
         if m:
-            out.append(dict(key=m.group(2), text=m.group(3), source=m.group(4), checked=bool(m.group(1))))
+            out.append(dict(key=m.group(2), text=m.group(3), checked=bool(m.group(1))))
     return out
 
 
 # ------------------------------------------------------------------ 模板
 BUILD_TMPL = '''"""{name}（{layer}）——只做外观。由 tools/landmark.py new 生成的骨架，把占位体块换成真实建模。
-设定见 docs/landmarks/{id}.md（卡原文 / 仓库推断），检查清单见 docs/landmarks/{id}.checklist.md。
+设定见 docs/landmarks/{id}.md，检查清单见 docs/landmarks/{id}.checklist.md。
 
 导出组（= 清单「看板条目」的组名；新增组记得同步清单，并在 map/props/{id}/manifest.json 的 budgets 里给三角形预算）：
   props_main   主体建筑
@@ -251,11 +251,11 @@ except Exception:
 
 
 def adopt_items(manifest):
-    """老地标补清单：看板条目取已有 manifest 的热点（来源先记仓库推断，评审时对照设定稿改）。"""
+    """老地标补清单：看板条目取已有 manifest 的热点（评审时对照设定稿改）。"""
     if not os.path.exists(manifest):
         return None
     hs = json.load(open(manifest, encoding='utf-8')).get('hotspots') or []
-    return [f'- {h["mesh"]}｜{h.get("name", {}).get("zh", h["mesh"])}｜仓库推断' for h in hs if h.get('mesh')] or None
+    return [f'- {h["mesh"]}｜{h.get("name", {}).get("zh", h["mesh"])}' for h in hs if h.get('mesh')] or None
 
 
 def digest_hits(name):
@@ -270,11 +270,10 @@ def setting_text(i, name, layer):
     card = [f'- L{n}：「{t[:120]}」——（核对原文后改写成一句事实）' for n, t in hits] or \
            ['- （在 `docs/card-digest.md` 里没搜到卡名；按 full-card-read 流程查卡原文，写「行号：原文 → 事实」）']
     return '\n'.join([f'# {name}（设定稿，{datetime.date.today()}）', '',
-                      f'`{i}`，层 {layer}。卡里写到的放「卡原文」（带 `docs/card-digest.md` 行号），其余一律放「仓库推断」并逐条标注。', '',
-                      '## 卡原文', '', *card, '',
-                      '## 仓库推断', '',
-                      '- **定位与气质**：……——仓库推断',
-                      '- **主体建筑**：……——仓库推断',
+                      f'`{i}`，层 {layer}。设定写在同一节里，一条一行；卡里写到的事实带 `docs/card-digest.md` 行号。', '',
+                      '## 设定', '', *card,
+                      '- **定位与气质**：……',
+                      '- **主体建筑**：……',
                       '- **中立性**：无人物、无文字 / 标志（`docs/rejected.md`）。', '',
                       '## 规模与镜头', '', '- 占地约 … m × … m。', '- 镜头：c1 主视角 / c2 侧视 / under 底视。', ''])
 
@@ -409,7 +408,7 @@ def cmd_board(a):
     i = a.id; p = need(i, 'build', 'checklist'); st = load_state(i)
     items = board_items(i)
     if not items:
-        die('清单里没有看板条目', f'在 {rel(p["checklist"])} 的「## 看板条目」下按「- 组名｜说明｜卡原文/仓库推断」写。')
+        die('清单里没有看板条目', f'在 {rel(p["checklist"])} 的「## 看板条目」下按「- 组名｜说明」写。')
     os.makedirs(p['work'], exist_ok=True) if not DRY else None
     cams = [c for c in a.cams.split(',') if c]
     pairs = []
@@ -427,7 +426,7 @@ def cmd_board(a):
         mark_sub(st, f'board_{c}_{a.res}_{a.spp}')
     items_json = os.path.join(p['work'], 'board_items.json')
     write(items_json, json.dumps({'title': f'{st.get("name", i)}（{i}）看板', 'items': [
-        {'key': t['key'], 'text': t['text'], 'source': t['source'], 'status': '✓'} for t in items]}, ensure_ascii=False, indent=1))
+        {'key': t['key'], 'text': t['text'], 'status': '✓'} for t in items]}, ensure_ascii=False, indent=1))
     cmd = ['python3', P('tools', 'annotate_board.py'), '--items', items_json, '--out', p['board']]
     for img, anc in pairs:
         cmd += ['--render', img, '--anchors', anc]
@@ -455,26 +454,22 @@ def cmd_gapcheck(a):
     seen = set()
     for anc in glob.glob(os.path.join(p['work'], 'board_*.anchors.json')):
         seen |= set(json.load(open(anc)).get('points', {}))
-    card = next((v for k, v in secs.items() if '卡' in k and ('原文' in k or '事实' in k)), [])
-    inferred = next((v for k, v in secs.items() if '仓库推断' in k), [])
+    setting = next((v for k, v in secs.items() if k.startswith('设定')), [])
     rows = [dict(t, on_board=(t['key'] in seen) if seen else None) for t in items]
     if a.json:
         print(json.dumps({'id': i, 'board': rel(p['board']) if os.path.exists(p['board']) else None,
-                          'card': card, 'inferred': inferred, 'items': rows}, ensure_ascii=False, indent=1))
+                          'setting': setting, 'items': rows}, ensure_ascii=False, indent=1))
     else:
         say(f'=== gapcheck {i}（{st.get("name", "")}）===')
         say(f'看板图：{rel(p["board"]) if os.path.exists(p["board"]) else "（还没有，先跑 board）"}')
-        say('\n--- 设定稿·卡原文（每条都应被至少一个看板条目覆盖）---')
-        for n, ln in enumerate(card, 1):
-            say(f'  C{n}  {ln}')
-        say('\n--- 设定稿·仓库推断 ---')
-        for n, ln in enumerate(inferred, 1):
-            say(f'  R{n}  {ln}')
-        say('\n--- 看板条目（组名｜说明｜来源｜看板上有锚点）---')
+        say('\n--- 设定稿·设定（每条都应被至少一个看板条目覆盖）---')
+        for n, ln in enumerate(setting, 1):
+            say(f'  S{n}  {ln}')
+        say('\n--- 看板条目（组名｜说明｜看板上有锚点）---')
         for t in rows:
             flag = {True: '有', False: '缺（镜头没拍到或组名不对）', None: '未知（还没跑 board）'}[t['on_board']]
-            say(f'  {"✅" if t["checked"] else "·"} {t["key"]}｜{t["text"]}｜{t["source"]}｜{flag}')
-        say('\n评审代理请逐条回答：C* 各由哪个条目覆盖（没有 = 缺口）；标「卡原文」的条目能否在 C* 里找到出处；'
+            say(f'  {"✅" if t["checked"] else "·"} {t["key"]}｜{t["text"]}｜{flag}')
+        say('\n评审代理请逐条回答：S* 各由哪个条目覆盖（没有 = 缺口）；每个看板条目能否在 S* 里找到依据；'
             '看板图上每个编号是否真是所写之物。结论写进 docs/reviews/landmark_<id>/r<N>.md。')
     if not a.no_mark:
         finish(st, 'gapcheck', '已输出对照（结论见评审文件）')
@@ -580,7 +575,7 @@ def maps_add_link(txt, layer, marker, lm):
     return new, '接好'
 
 
-def maps_add_lm(txt, i, st, blurb, title_en=''):
+def maps_add_lm(txt, i, st, blurb='', title_en=''):
     data = json.loads(txt)
     lm = 'lm_' + i
     if lm in data['maps']:
@@ -588,7 +583,7 @@ def maps_add_lm(txt, i, st, blurb, title_en=''):
     name = st.get('name', i)
     entry = {'title': f'{name}（三维）', 'title_en': title_en or '', 'parent': st['layer'], 'kind': 'estate', 'viewer3d': i,
              'src': 'props/viewer3d.html', 'alias': [f'{name}（三维）'],
-             'src_note': f'{name}三维（标准版：标准档 + 低档 glb；{blurb}）；从 {st["layer"]}.{st.get("marker", i)} 标记的「查看三维模型」进。源：blender/landmarks/{i}/',
+             'src_note': f'{name}三维（标准版：标准档 + 低档 glb{"；" + blurb if blurb else ""}）；从 {st["layer"]}.{st.get("marker", i)} 标记的「查看三维模型」进。源：blender/landmarks/{i}/',
              'credit': '自建模型；贴图 Poly Haven / ambientCG（CC0）', 'credit_en': 'Own model; textures Poly Haven / ambientCG (CC0)'}
     line = f'    "{lm}": ' + json.dumps(entry, ensure_ascii=False) + ','
     lines = txt.split('\n')
@@ -603,10 +598,10 @@ def cards_row(txt, layer, marker, name, i, score):
     out, hit = [], False
     for ln in txt.split('\n'):
         cols = ln.split('|')
-        if len(cols) >= 10 and cols[2].strip() == layer and cols[3].strip() == f'`{marker}`':
-            cols[7] = f' {name} `map/props/{i}/` '
-            if score or cols[8].strip() in ('—', ''):
-                cols[8] = f' 标准（{score or "r1 ? / ?"}） '
+        if len(cols) >= 9 and cols[2].strip() == layer and cols[3].strip() == f'`{marker}`':
+            cols[6] = f' {name} `map/props/{i}/` '
+            if score or cols[7].strip() in ('—', ''):
+                cols[7] = f' 标准（{score or "r1 ? / ?"}） '
             ln = '|'.join(cols); hit = True
         out.append(ln)
     return '\n'.join(out), hit
@@ -634,22 +629,22 @@ def cmd_ship(a):
     _ten = ((json.load(open(p['manifest'], encoding='utf-8')).get('title') or {}).get('en') or '')
     if not _ten:
         say('  提示：清单 title.en 是空的，英文界面会显示中文标题（map/props/%s/manifest.json 里补上）' % i)
-    txt, msg2 = maps_add_lm(txt, i, st, a.blurb or '位置与形制为地图补充设定', _ten)
+    txt, msg2 = maps_add_lm(txt, i, st, a.blurb or '', _ten)
     say(f'  {lm}：{msg2}')
     if msg != '已接' or msg2 != '已有':
         write(mp, txt)
-    # 世界书同步：地图补充的标记必须在 addon_places.json 有条目（check_maps 也会查）
+    # 世界书同步：标了 addon:true 的标记必须在 addon_places.json 有条目（check_maps 也会查）
     mk = json.loads(txt)['maps'][layer]['markers'][marker]
     ap = P('map', 'data', 'addon_places.json')
     apd = json.load(open(ap, encoding='utf-8')) if os.path.exists(ap) else None
     ref = f'{layer}.{marker}'
-    if apd is not None and mk.get('layer_src') == 'repo-inferred':
+    if apd is not None and mk.get('addon'):
         places = apd['places'] if isinstance(apd, dict) else apd
         if not any(ref in (e.get('refs') or []) for e in places):
             if not a.wb_text:
-                die(f'{ref} 是地图补充的地点，世界书附加条目里还没有它',
-                    '加 --wb-text "<一两句中立说明，写清哪些是地图补充设定>" 重跑 ship（worldbook-sync 规则）。')
-            e = {'id': marker, 'name': mk['name'], 'src': f'repo {datetime.date.today()}（位置）', 'refs': [ref],
+                die(f'{ref} 标了 addon:true，世界书附加条目里还没有它',
+                    '加 --wb-text "<一两句中立说明：位置、外观、用途>" 重跑 ship（worldbook-sync 规则）。')
+            e = {'id': marker, 'name': mk['name'], 'refs': [ref],
                  'alias': mk.get('alias') or [mk['name']], 'text': a.wb_text}
             s = read(ap)
             k = s.rfind('}', 0, s.rfind(']'))
