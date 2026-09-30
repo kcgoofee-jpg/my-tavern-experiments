@@ -67,8 +67,7 @@ try {
   });
 
   // 时间轴模块（并行分支在做的 Part 5-4）还没落地，宿主桩里会刷一条 404——与本次改动无关，单独滤掉
-  // tavern/timeline.mjs 是并行分支在做的 Part 5-4，还没落地；浏览器还会补一条不带 URL 的通用 404 行
-  const noise = e => /tavern\/timeline\.mjs/.test(e) || /Failed to load resource: the server responded with a status of 404/.test(e);
+  const noise = e => /Failed to load resource: the server responded with a status of 404/.test(e);
   const errs = D.errors.filter(e => !noise(e));
   rep.metric('filtered', { total: D.errors.length, kept: errs.length });
   rep.check('除在途模块外无控制台错误 / 404', errs.length === 0, errs.slice(0, 4).join(' | '));

@@ -68,7 +68,7 @@ try {
     rep.check('高级页有「后台静默推演」开关', r.box && /推演|tick/i.test(r.label), JSON.stringify(r));
   });
 
-  const noise = e => /tavern\/timeline\.mjs/.test(e) || /Failed to load resource: the server responded with a status of 404/.test(e);
+  const noise = e => /Failed to load resource: the server responded with a status of 404/.test(e);
   const errs = D.errors.filter(e => !noise(e));
   rep.check('除在途模块外无控制台错误 / 404', errs.length === 0, errs.slice(0, 4).join(' | '));
 } finally {

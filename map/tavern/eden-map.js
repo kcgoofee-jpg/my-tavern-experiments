@@ -578,20 +578,30 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   const tlBtn = root.querySelector('.em-tl-btn'), tlEl = root.querySelector('.em-tl'), tlR = root.querySelector('.em-tl-r'), tlV = root.querySelector('.em-tl-v');
   let TLm = null, tlOn = false; const tlCache = new Map();
   import(SELF + 'tavern/timeline.mjs').then(m => { TLm = m; if (floorNow >= 0) tlBtn.hidden = false; }).catch(() => {});
+  // 取数依赖（纯模块不碰酒馆全局：读楼 / 该楼变量 / 人物解析都在这里注入）
+  const tlDeps = () => ({
+    getRaw: x => { try { return getChatMessages(x + '-' + x)?.[0]?.message || ''; } catch (e) { return ''; } },
+    perFloorStat: x => BR.perFloorStat(x), mvuGet: (s, p) => BR.mvuGet(s, p), varMap: BR.varMap,
+    parseChars: CHM?.parseChars, mvuChars: CHM?.mvuChars, patchPlace: TRm?.patchPlace,
+    lp: '/' + String(BR.varMap.location || '世界.当前地点').split('.').join('/'),
+  });
   function tlState(f) {
     if (!TLm || f < 0) return null;
     if (tlCache.has(f)) return tlCache.get(f);
     let st = null;
-    try {
-      st = TLm.floorState(f, {
-        getRaw: x => { try { return getChatMessages(x + '-' + x)?.[0]?.message || ''; } catch (e) { return ''; } },
-        perFloorStat: x => BR.perFloorStat(x), mvuGet: (s, p) => BR.mvuGet(s, p), varMap: BR.varMap,
-        parseChars: CHM?.parseChars, mvuChars: CHM?.mvuChars, patchPlace: TRm?.patchPlace,
-        lp: '/' + String(BR.varMap.location || '世界.当前地点').split('.').join('/'),
-      });
-    } catch (e) {}
+    try { st = TLm.floorState(f, tlDeps()); } catch (e) {}
     if (st) { tlCache.set(f, st); if (tlCache.size > 240) tlCache.delete(tlCache.keys().next().value); }
     return st;
+  }
+  // 历史轨迹（Part 5-4）：把这一楼之前的落脚点连成行程 → 复用现成的行程图层（地点之间的虚线弧），不另起一张骨头图。
+  let tlTrailAt = -1;
+  function tlTrail(f) {
+    if (!TLm || !alive || tlTrailAt === f) return; tlTrailAt = f;
+    let pts = [];
+    try { pts = TLm.walk(0, f, tlDeps()) || []; } catch (e) {}
+    const items = [];
+    for (let i = 1; i < pts.length; i++) items.push({ floor: pts[i].floor, from: pts[i - 1].here, to: pts[i].here, time: pts[i].time || '' });
+    post({ type: 'eden-map:trips', items });
   }
   function tlScrub(f) {
     f = Math.max(0, Math.min(floorNow, Math.round(f)));
@@ -600,11 +610,13 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     if (!st || !alive) return;
     post({ type: 'eden-map:here', value: st.here, replay: true });   // 查看器只重画；探索记录已被 replay 静默
     post({ type: 'eden-map:chars', v: 1, floor: f, items: st.chars, replay: true });
+    tlTrail(f);   // 拖到哪一楼，就重画到那一楼为止的主角轨迹
   }
   function tlEnter() { if (!TLm || floorNow < 1) return; tlOn = true; tlEl.hidden = false; tlBtn.classList.add('on'); tlR.max = floorNow; tlR.value = floorNow; tlScrub(floorNow); }
   function tlExit() {
     if (!tlOn) return; tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on');
     if (life.dead) return;
+    tlTrailAt = -1; sendTrips();   // 轨迹恢复成当下的行程（回放期间临时画过的那条线撤掉）
     push(); if (alive) { post({ type: 'eden-map:chars', v: 1, floor: floorNow, items: chars, rosters: roster, rep, stageOrder: BR.stageOrder, portraits: BR.portraits }); sendEvents(); }   // 回当下：地点 / 人物 / 事态全部重推
   }
   tlBtn.addEventListener('click', () => (tlOn ? tlExit() : tlEnter()));
