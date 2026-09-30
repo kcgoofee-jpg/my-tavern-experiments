@@ -467,3 +467,8 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T21:01:55Z,isle:isle30,final,done,hero-1,,final 2400/64; cutout 470m
 2026-09-30T21:01:55Z,isle:isle30,integrate,done,hero-1,,"crop (0.703,0.437,0.863,0.678) + cutout 470m; DZI rebuilt"
 2026-09-30T21:01:57Z,isle:isle30,ship,wait,hero-1,,FREEZE_MAPS (S4-3); tiles ready on render-hero-1
+2026-09-30T21:02:37Z,base:world,audit,done,hero-1,,DZI 8000x4923 but no logged world final at 128 spp (only world_yuanyu_holy_mount rows): re-render at spec
+2026-09-30T21:13:16Z,base:world,render,done,hero-1,,8000x4923 / 128 spp in 9.4 min (logs/campaign/full/world_full.png)
+2026-09-30T21:13:17Z,base:world,tiles,skip,hero-1,,128-spp render matches the shipped DZI (mean abs diff 1.6/255 at level 11); tiles already at spec
+2026-09-30T21:13:17Z,base:world,verify,skip,hero-1,,128-spp render matches the shipped DZI (mean abs diff 1.6/255 at level 11); tiles already at spec
+2026-09-30T21:13:17Z,base:world,ship,skip,hero-1,,128-spp render matches the shipped DZI (mean abs diff 1.6/255 at level 11); tiles already at spec
