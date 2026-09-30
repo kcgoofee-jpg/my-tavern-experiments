@@ -390,3 +390,6 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T19:20:35Z,inst:tiancheng_univ,ship,done,std-1,pass,"re-rendered finals and re-exported glbs (std 0.71 MB / low 0.16 MB, max_mb 0.9/0.45); no maps.json change; card-buildings quality updated; smoke pass"
 2026-09-30T19:33:04Z,layout:tc_upper,options,claim,layout-1,,
 2026-09-30T19:51:01Z,layout:tc_upper,options,done,layout-1,,"v16 A/B/C in blender/data/layouts; previews + options.zh.txt in ~/eden-map-review/render/layout_tc_upper/ (recommend B). Found: shipped base has the r5 Eden image at the centre (stale eden_hi bounds, under the elite_academy marker); kelly_residence / y_estate markers sit off their islands"
+2026-09-30T19:55:31Z,layout:tc_upper,user-review,done,user,pass,user 2026-10-01 (chat): chose C (golden-angle spiral)
+2026-09-30T19:55:31Z,layout:tc_upper,final,claim,layout-1,,
+2026-09-30T19:55:49Z,layout:tc_upper,final,wait,layout-1,,user chose C; FREEZE_MAPS (S4-2) on origin/preview - apply v16 C after the unfreeze

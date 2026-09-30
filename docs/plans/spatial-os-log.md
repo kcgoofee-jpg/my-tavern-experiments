@@ -509,3 +509,15 @@ blocker: none
 open: user picks A / B / C (recommend B: Eden's south dock faces the silver_crown lift shaft, south kept open as the arrival airspace); found for T3: (1) the shipped base shows the r5 Eden image at the centre under the elite_academy marker (eden_hi inset bounds 0.43-0.661 x 0.304-0.582 never followed the v15 move) while the eden marker sits on an older island at the bottom; (2) kelly_residence and y_estate markers (manual) sit off their islands - T3 snaps them to island centres; (3) patrol_city must be regenerated for the new layout (preview: smooth loop through the islands by angle)
 cleanup: done
 === END ===
+
+=== RESULT R-LAYOUT (user choice) ===
+status: BLOCKED (FREEZE_MAPS for S4-2 on origin/preview)
+items: user-review ✓ (user chose C, 2026-10-01) T3 ✗ (frozen) T4 ✗
+commits: ledger only (user-review done by user, final wait)
+pushed: with this commit's head bump
+tests: not rerun (ledger-only change)
+deviations: none
+blocker: `python3 tools/render_campaign.py ship-check` -> "FREEZE: docs/plans/FREEZE_MAPS is present on origin/preview" (551c9f58 chore: freeze maps.json for S4-2) / recorded wait / A: apply C after the unfreeze (next --lane hero re-offers layout:tc_upper final), B: none (never ship maps.json during a freeze)
+open: T3 plan once unfrozen: tc_islands.json <- tc_islands_v16_C.json; tc_upper.json markers / islands / patrol shifted, patrol_city regenerated, eden via eden_anchor_upper.py; maps.json eden_hi inset bounds moved to Eden's new frame; interim tc_upper + tc_upper_city bases composited from the shipped tiles (upper_layout_v16 preview method at 8000 px); worldbook --ship; check_maps, estate3d, accept probe
+cleanup: done
+=== END ===
