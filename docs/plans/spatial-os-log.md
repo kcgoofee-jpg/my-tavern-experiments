@@ -135,3 +135,15 @@ coverage: archived unfinished items: 81 (69 + 12 tails) · rows: 81 · missing: 
 counts per destination: S3 1 · S5 2 · S7 2 · S8 1 · S10 4 · Stage B 2 · §1 10 · §2 6 · §3 10 · parked 11 · verify → done 5 · void (render ledger) 7 · void (other) 20
 cleanup: done
 === END ===
+
+=== RESULT S0-E-followup ===
+status: DONE
+items: push race fix ✓  S0-E pushed ✓
+commits: fix(push): retry fetch+rebase+push up to 3 times when another line pushes in between
+pushed: yes (this push)
+tests: bash -n PASS | smoke PASS
+deviations: done by the reviewing session (Opus) instead of a new prompt; S0-E status BLOCKED -> DONE
+blocker: none
+open: none
+cleanup: done
+=== END ===

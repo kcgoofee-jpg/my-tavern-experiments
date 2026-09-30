@@ -50,36 +50,44 @@ for a in "$@"; do case "$a" in
 # a local `preview` is the main checkout's ref and may be stale, while HEAD is the work to publish.
 push_all () {
   if [ "$LEGACY" = "1" ]; then
-    git push "$REMOTE" "HEAD:refs/heads/$PRIMARY" "HEAD:refs/heads/$LEGACY_REF"
+    git push "$REMOTE" "HEAD:refs/heads/$PRIMARY" "HEAD:refs/heads/$LEGACY_REF" || return 1
     echo "pushed $PRIMARY, mirrored $LEGACY_REF at $(git rev-parse --short HEAD)"
   else
-    git push "$REMOTE" "HEAD:refs/heads/$PRIMARY"
+    git push "$REMOTE" "HEAD:refs/heads/$PRIMARY" || return 1
     echo "pushed $PRIMARY at $(git rev-parse --short HEAD)"
   fi
 }
 
-# 先对齐远端（2026-09-30 S0-C 事故：代码线与渲染线并行推送时，后推的一方 HEAD 落后远端，
-# 第一次 push_all 直接被拒、set -e 退出，bump_head 里的 fetch + rebase 根本走不到）。
-# rebase 有冲突就撤回并停下，交给人处理——绝不强推。
-git fetch -q "$REMOTE" "$PRIMARY"
-if ! git merge-base --is-ancestor "refs/remotes/$REMOTE/$PRIMARY" HEAD; then
-  if ! git rebase -q "refs/remotes/$REMOTE/$PRIMARY"; then
-    git rebase --abort || true
-    echo "rebase 到 $REMOTE/$PRIMARY 有冲突，已撤回；请手动解决后重推（不要强推）" >&2
-    exit 1
+# 先对齐远端再推（2026-09-30 S0-C 事故：后推的一方 HEAD 落后远端，第一次 push 直接被拒）。
+# 对齐和推送之间别的线仍可能抢先推一次（S0-E 事故：cannot lock ref … expected …），
+# 所以被拒就重新 fetch + rebase 再推，最多 3 次。rebase 有冲突就撤回并停下——绝不强推。
+align () {
+  git fetch -q "$REMOTE" "$PRIMARY"
+  if ! git merge-base --is-ancestor "refs/remotes/$REMOTE/$PRIMARY" HEAD; then
+    if ! git rebase -q "refs/remotes/$REMOTE/$PRIMARY"; then
+      git rebase --abort || true
+      echo "rebase 到 $REMOTE/$PRIMARY 有冲突，已撤回；请手动解决后重推（不要强推）" >&2
+      exit 1
+    fi
+    echo "rebased onto $REMOTE/$PRIMARY"
   fi
-  echo "rebased onto $REMOTE/$PRIMARY"
-fi
+}
 
-# 预热基线：推送前远端的位置（已经预热过的东西不用再请求一遍）
-BEFORE=$(git rev-parse -q --verify "refs/remotes/$REMOTE/$PRIMARY" || true)
-
-push_all
+pushed=0
+for attempt in 1 2 3; do
+  align
+  # 预热基线：推送前远端的位置（已经预热过的东西不用再请求一遍）
+  BEFORE=$(git rev-parse -q --verify "refs/remotes/$REMOTE/$PRIMARY" || true)
+  if push_all; then pushed=1; break; fi
+  echo "push 被拒（远端刚被别的线推过），重新对齐后重试 $attempt/3" >&2
+done
+if [ "$pushed" != 1 ]; then echo "连续 3 次被拒，停下；请稍后重跑（不要强推）" >&2; exit 1; fi
 
 if [ "$HEADBUMP" = 1 ]; then
+  # bump_head.py --push 自己会 fetch + rebase + 推送并重试；只有旧镜像需要再推一次
   python3 tools/bump_head.py --push --branch "$PRIMARY"
-  push_all
-  echo "head pointer bumped and refs re-pushed"
+  if [ "$LEGACY" = "1" ]; then push_all; fi
+  echo "head pointer bumped and pushed"
 fi
 
 # 收尾预热：默认「本次改动 + 头指针」并后台脱离（日志 logs/warm_cdn.log）
