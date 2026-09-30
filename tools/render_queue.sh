@@ -195,6 +195,8 @@ insert_cache_blend() {
 # 也解释了为什么有的 8K 任务要重排才出图。
 #    rc = 0                → done（顺带把 .log/.rc 一起搬过去，跑完不留垃圾在 running/）
 #    rc = 3（实例忙）       → 退回 pending 排队重试，不计失败；超过 RETRY_BUSY_MAX 次才放弃
+#    rc = 70 / 79（真实性判定：script_error / no_output / stale_output）→ 同一份脚本重跑多半还是同样的结果，
+#                            只重试一次（RETRY_VERDICT_MAX，默认 2 = 共跑 2 次）就标 .failed
 #    其它非 0              → 退回 pending 重试；超过 MAX_RETRY 次标 .failed 进 done（日志一并搬走）
 finish_job() {
   local jobfile=$1 runfile=$2 rc=$3 args=${4:-} jobroot=${5:-$QROOT} start=${6:-}
@@ -228,7 +230,11 @@ print(o)' "$args" 2>/dev/null || true)
     echo "完成：${base}（rc=0）"
     return 0
   fi
-  if [ "$rc" = 3 ]; then cap=${RETRY_BUSY_MAX:-90}; else cap=${MAX_RETRY:-6}; fi
+  case "$rc" in
+    3) cap=${RETRY_BUSY_MAX:-90} ;;
+    70|79) cap=${RETRY_VERDICT_MAX:-2} ;;   # blender_run.sh 的真实性判定（exit 70）/ 本函数的产物验收（79）
+    *) cap=${MAX_RETRY:-6} ;;
+  esac
   local n=0
   if [ -f "$PEND/${base}.retry" ]; then n=$(command cat "$PEND/${base}.retry" 2>/dev/null || echo 0); fi
   n=$((n + 1))

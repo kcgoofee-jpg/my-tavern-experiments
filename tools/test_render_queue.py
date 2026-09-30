@@ -183,12 +183,48 @@ class QueueCase(unittest.TestCase):
         self.assertEqual(fields[2], os.path.realpath(repo))
 
     # -- 真跑（非演练）：假的 blender_run.sh 放在 jobroot 里，验证真的 cd 过去、产物按 jobroot 验收 --
-    def fake_runner(self, root, make_artifact):
+    def fake_runner(self, root, make_artifact, rc=0):
         os.makedirs(os.path.join(root, 'tools'), exist_ok=True)
         with open(os.path.join(root, 'tools', 'blender_run.sh'), 'w') as f:
             f.write('#!/usr/bin/env bash\npwd > "$PWD/ran_here.txt"\n')
             if make_artifact:
                 f.write('mkdir -p map/art && : > map/art/_x.png\n')
+            f.write(f'exit {rc}\n')
+
+    def failed(self, name):
+        return os.path.exists(os.path.join(self.qdir, 'done', name + '.failed'))
+
+    def test_script_error_is_retried_once_then_marked_failed(self):
+        # rc 70 = blender_run.sh verdict script_error / no_output: one retry, not MAX_RETRY
+        self.mac_only()
+        self.fake_runner(self.wt, make_artifact=True, rc=70)
+        self.job('j1', 'final', self.wt)
+        self.rq('dispatch', '--once', extra={'DRY_RUN': '0'})
+        self.assertTrue(self.wait_for(lambda: os.path.exists(os.path.join(self.qdir, 'pending', 'j1.retry'))))
+        self.assertTrue(self.in_dir('pending', 'j1'))
+        self.rq('dispatch', '--once', extra={'DRY_RUN': '0'})
+        self.assertTrue(self.wait_for(lambda: self.failed('j1')), 'second verdict failure must give up')
+        self.assertTrue(self.in_dir('done', 'j1'))
+        self.assertFalse(os.path.exists(os.path.join(self.qdir, 'pending', 'j1.retry')))
+
+    def test_missing_artifact_is_retried_once_then_marked_failed(self):
+        # rc 0 without the declared --out = 79 (no_output): same cap as a verdict failure
+        self.mac_only()
+        self.fake_runner(self.wt, make_artifact=False)
+        self.touch('pending', 'j1.retry', '1\n')
+        self.job('j1', 'final', self.wt)
+        self.rq('dispatch', '--once', extra={'DRY_RUN': '0'})
+        self.assertTrue(self.wait_for(lambda: self.failed('j1')))
+
+    def test_crash_still_uses_max_retry(self):
+        self.mac_only()
+        self.fake_runner(self.wt, make_artifact=True, rc=1)
+        self.touch('pending', 'j1.retry', '1\n')
+        self.job('j1', 'final', self.wt)
+        self.rq('dispatch', '--once', extra={'DRY_RUN': '0'})
+        self.assertTrue(self.wait_for(lambda: open(os.path.join(self.qdir, 'pending', 'j1.retry')).read().strip() == '2'
+                                      if os.path.exists(os.path.join(self.qdir, 'pending', 'j1.retry')) else False))
+        self.assertFalse(self.failed('j1'))
 
     def wait_for(self, pred, secs=15):
         end = time.time() + secs
