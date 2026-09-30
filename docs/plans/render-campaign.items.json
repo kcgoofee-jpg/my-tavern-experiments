@@ -964,6 +964,63 @@
    "notes": "register = periods.night in maps.json"
   },
   {
+   "id": "fix:climate_tower",
+   "lane": "standard",
+   "type": "review",
+   "title": "Climate tower material: white block on the top, pink strip on the podium",
+   "targets": [
+    "tc_upper:climate_tower"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "climate_tower"
+   },
+   "notes": "look at the current image first, then decide the fix; optional info button is a viewer change, not a render; current: self-check r2 7 / 8 (docs/card-buildings.md)"
+  },
+  {
+   "id": "inst:supreme_court",
+   "lane": "standard",
+   "type": "review",
+   "title": "Institution model check: supreme court",
+   "targets": [
+    "tc_mid:supreme_court"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "tiancheng_univ_court"
+   },
+   "notes": "model exists: self-check r1 7.5 / 7.5 (docs/card-buildings.md); confirm it meets the P2 institution bar or fix"
+  },
+  {
+   "id": "inst:tiancheng_univ",
+   "lane": "standard",
+   "type": "review",
+   "title": "Institution model check: tiancheng univ",
+   "targets": [
+    "tc_mid:tiancheng_univ"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "tiancheng_univ_court"
+   },
+   "notes": "model exists: self-check r1 7.5 / 7.5 (docs/card-buildings.md); confirm it meets the P2 institution bar or fix"
+  },
+  {
    "id": "eden:r5",
    "lane": "hero",
    "type": "island",

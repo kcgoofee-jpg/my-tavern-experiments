@@ -436,7 +436,7 @@ class Init(Base):
         os.remove(self.items_path)
         self.assertEqual(self.rc('init').returncode, 0)
         items = json.loads(read(self.items_path))['items']
-        self.assertEqual(len(items), 67)
+        self.assertEqual(len(items), 70)
         self.assertIn('TODO: marker blood_mill not found in maps.json', next(i for i in items if i['id'] == 'lm:blood_mill')['notes'])
         self.assertTrue(os.path.exists(self.events), 'init creates the events file with its header')
 
@@ -459,10 +459,17 @@ class RealItemList(unittest.TestCase):
         for g in groups:
             if not order or order[-1] != g:
                 order.append(g)
-        self.assertEqual(order, ['estate', 'review', 'lm', 'scene', 'base', 'var'])
-        self.assertEqual([groups.count(g) for g in order], [2, 12, 8, 7, 11, 8])
+        self.assertEqual(order, ['estate', 'review', 'lm', 'scene', 'base', 'var', 'fix', 'inst'])
+        self.assertEqual([groups.count(g) for g in order], [2, 12, 8, 7, 11, 8, 1, 2])
         self.assertEqual(ids[14:22], ['lm:blood_mill', 'lm:freight_yard', 'lm:lower_bar', 'lm:slums', 'lm:rebirth_workshop',
                                      'lm:schneider_clinic', 'lm:elite_club', 'lm:hunting_camp'])
+
+    def test_leftover_items_end_the_standard_lane(self):
+        by = {i['id']: i for i in self.items}
+        self.assertEqual(self.lane('standard')[-3:], ['fix:climate_tower', 'inst:supreme_court', 'inst:tiancheng_univ'])
+        for k in ('fix:climate_tower', 'inst:supreme_court', 'inst:tiancheng_univ'):
+            self.assertEqual(by[k]['type'], 'review', 'reuses the review stages (no new stage table)')
+        self.assertEqual(by['fix:climate_tower']['targets'], ['tc_upper:climate_tower'])
 
     def test_hero_groups_in_order(self):
         ids = self.lane('hero')

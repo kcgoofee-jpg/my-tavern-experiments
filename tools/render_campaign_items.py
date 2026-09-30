@@ -188,6 +188,19 @@ def build(root):
         for p in (['dawn', 'dusk', 'day', 'night'] if mp == 'tc_mid' else PERIODS):
             std.append(period_item(L, mp, p))
 
+    # ---- standard 9: leftovers scheduled from docs/todo.md (H1; E-02, E-06)
+    std.append(item('fix:climate_tower', 'standard', 'review', 'Climate tower material: white block on the top, pink strip on the podium',
+                    ['tc_upper:climate_tower'], 'card', {'res': STD_RES, 'spp': STD_SPP}, {'landmark': 'climate_tower'},
+                    ['look at the current image first, then decide the fix; optional info button is a viewer change, not a render',
+                     'current: %s (docs/card-buildings.md)' % L.quality('climate_tower')]))
+    for mid in ('supreme_court', 'tiancheng_univ'):
+        t = L.marker(mid)
+        std.append(item('inst:' + mid, 'standard', 'review', 'Institution model check: %s' % words(mid), [t] if t else [], 'card',
+                        {'res': STD_RES, 'spp': STD_SPP}, {'landmark': 'tiancheng_univ_court'},
+                        ['model exists: %s (docs/card-buildings.md); confirm it meets the P2 institution bar or fix'
+                         % L.quality('tiancheng_univ_court')],
+                        todo=[] if t else ['marker %s not found in maps.json' % mid]))
+
     # ---- hero 1: islands
     isle_ids = []
     for iid in ISLES:

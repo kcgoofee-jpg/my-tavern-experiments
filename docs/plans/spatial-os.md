@@ -154,11 +154,13 @@ manifest.json      only id / schema:2 / title are required; optional lang (zh/en
   - event placement (`LAYERS` / `RE_*` / `ZONES` / `MAP_OF` / `RE_RING`) → node aliases + `hints`; Eden's place-name regexes are converted into `alias` / `hints` data on the matching nodes;
   - character locations and item places also resolve to node ids;
   - **parity test**: on Eden's chat corpus the old and new paths must give identical current locations and event layers, item by item; only after it passes is the old code deleted.
+- **B0 Quick real-tavern smoke after S3** (added 2026-10-01, before S4-2; the user runs it): at most 8 numbered checks in a real SillyTavern + TavernHelper session, taken from the real-tavern items of `docs/todo.md` I-01 (the current location follows the chat, events land, the injected situation line reads right, the settings panel opens, the copyright page and roster reputation show). It fixes the harness that stage B later builds on; it is not stage B.
 - **S4 Special-case sweep + neutral wording** (about 14h, in 4 commits):
   1. **Move event categories into the pack**: export Eden's categories as `events` data (v2 shape); effects use `fx` building blocks (`fx_presets`), and the glitch effect = the network-attack type declaring `fx:"glitch"`; delete the built-in categories from the code.
   2. **Roster and variables**: `vars` and `entities` (groups + attribute field list) replace the fixed field slots, stage ladder, combat-power ladder and avatar whitelist; the 8 copies of "世界.当前地点" are merged into 1.
   3. **Viewer special cases become data-driven**: theme, clouds, night tint, legend, credits, data paths, worldbook name (Eden keeps its original book name).
   4. **Neutral wording**: about 30 i18n keys; the `names` dictionary moves into pack data; the product name becomes "Spatial Map / Spatial OS"; tests that pinned Eden constants now read pack data.
+  Step S4-4 also sweeps the leftover provenance-family wording listed in RESULT S0-F open (a) (statements such as "setting does not say", the `user` room kind, the worldbook entry names, `canon` on render-campaign items, the legacy estate v1 files, history docs that still describe removed fields).
 - **S5 File split + first rename batch** (about 12h):
   - split `events.mjs` and `custom.mjs` to ≤400 lines each;
   - split `eden-map.js` from 1535 lines to ≤800, extracting four modules: `loot-flow`, `chars-flow`, `root-store`, `host-api`;
@@ -565,3 +567,41 @@ This size works fine and only makes cloning slow, so **it blocks nothing now**.
   - delete the process images in `docs/drafts` and `docs/reviews`, and those two temporary files, from history. Move the originals to the local `~/eden-map-review/` archive, or attach them to a GitHub Release.
   - the `map/art` tiles and `map/props` glb files **must stay in git**, because jsDelivr serves the CDN by repo file path; unless we later switch to the npm channel (`tiancheng-map-assets` already exists).
 - **Rewriting history needs a force push**: done once, when all agents are idle. You already agreed to force-pushing history on 2026-09-28, but I will confirm once more before doing it. Afterwards the rule reverts to "never force-push".
+
+## 15. Render campaign R and pipeline upgrade R2 (added 2026-10-01)
+
+### 15.1 Render campaign R (running)
+
+A separate line that renders every Eden-pack place and base map to final quality. It is Mac-only (`logs/queue/MAC_ONLY`; nothing goes to the cloud). State lives in the repo: the item ledger `docs/plans/render-campaign.items.json`, append-only events in `docs/plans/render-campaign-events.csv`, both driven by `tools/render_campaign.py`; `docs/plans/render-campaign.md` is the generated status. Two lanes run in parallel: **standard** (estate, model reviews, landmarks, scenes, base maps, period variants) and **hero** (the user's own estate island, upper-layer islands and base map, the three hero landmarks, the world base map). The user reviews only the user's own estate (item `eden:r5`, stage `user-review`); everything else passes the automatic gates. The worker prompt is `docs/plans/render-loop.md`; the render queue arbitrates the Mac (`docs/cloud-render.md`). Items that edit `maps.json` or pack manifests wait while S2 / S3 / S4-3 are in flight (agent brief section 6).
+
+### 15.2 R2 render pipeline upgrade (scheduled after the standard lane empties)
+
+Not started. Each item is a separate prompt:
+
+- **Guard misreport fix**: the render guard has reported `status=ok` for a run that died mid-way; make it verify the output file and the exit state instead of trusting the log tail.
+- **Clay-geometry stage**: a fast untextured render of the scene geometry before the textured draft, so a shape problem is found in seconds.
+- **Region-study stage**: render and compare only a cropped region with a fixed camera, for look development on one building (extends `tools/region_patch.py`).
+- **Optional official Blender MCP connector** for live scene inspection (Blender Lab; Blender 5.1 or newer). It is agent-agnostic because it speaks MCP. Prerequisite: the GPU lock must stop counting a user's open Blender window (lock file instead of `pgrep`). The pipeline stays headless; the connector is for looking, not for producing final renders.
+- **Asset-library and texture-scale guide**: one document listing the approved asset sources and the texel-density rule per asset class.
+
+## 16. Leftover items scheduled (added 2026-10-01)
+
+Every open `I-` / `E-` item of `docs/todo.md` gets a destination; parked items stay parked. `docs/todo.md` carries the same arrows line by line.
+
+| Item | Destination |
+|---|---|
+| I-01 | B0 harness before stage B |
+| I-02 | S4-1 (CI browser-smoke, after the probe baseline `tools/browser/known-failures.json`) |
+| I-03 | world render inputs become ledger item `base:world`; the `ship.sh` dry-run holes go to S10 |
+| I-04 | overlay events S8; English copy S4-4; npc / event write paths S6 |
+| I-05 | shared context and legacy estate page S7; KTX2 closed (`estate:opt` skipped) |
+| I-06 | S7 |
+| I-07 | S5 |
+| I-08 | S6 |
+| I-09 | S4-3 |
+| E-01, E-05 | S4-2 data and ledger |
+| E-02 | new ledger item `fix:climate_tower` |
+| E-03 | S8 |
+| E-04 | closed (the final form is glTF) |
+| E-06 | two new ledger items `inst:supreme_court`, `inst:tiancheng_univ` |
+| E-07 | closed (`estate:opt` skipped) |
