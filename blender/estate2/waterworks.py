@@ -39,14 +39,16 @@ def _white_water(name, fray=True):
     uv = t.new('ShaderNodeUVMap', (-2000, 0))
     sep = t.new('ShaderNodeSeparateXYZ', (-1800, 0)); t.link(uv.outputs['UV'], sep.inputs[0])
     u, vv = sep.outputs['X'], sep.outputs['Y']
-    mp = t.new('ShaderNodeMapping', (-1700, -300)); mp.inputs['Scale'].default_value = (1.0, 0.06, 1.0)
+    mp = t.new('ShaderNodeMapping', (-1700, -300)); mp.inputs['Scale'].default_value = (1.0, 0.22, 1.0)
     t.link(uv.outputs['UV'], mp.inputs['Vector'])
     # 水束：两层拉长噪声（竖向），不用规则波纹（审图：像梳子）
     nz = t.new('ShaderNodeTexNoise', (-1450, -600), **{'Scale': 7.0, 'Detail': 8.0, 'Roughness': 0.65, 'Distortion': 1.2})
     t.link(mp.outputs['Vector'], nz.inputs['Vector'])
     nz2 = t.new('ShaderNodeTexNoise', (-1450, -350), **{'Scale': 23.0, 'Detail': 4.0, 'Distortion': 0.6})
     t.link(mp.outputs['Vector'], nz2.inputs['Vector'])
-    streak = t.math('ADD', t.math('MULTIPLY', nz.outputs['Fac'], 0.7), t.math('MULTIPLY', nz2.outputs['Fac'], 0.3), (-1200, -400))
+    ob_ = t.new('ShaderNodeTexCoord', (-1700, -800))
+    nz3 = t.new('ShaderNodeTexNoise', (-1450, -850), **{'Scale': 0.15, 'Detail': 4.0}); t.link(ob_.outputs['Object'], nz3.inputs['Vector'])
+    streak = t.math('ADD', t.math('MULTIPLY', nz.outputs['Fac'], 0.55), t.math('ADD', t.math('MULTIPLY', nz2.outputs['Fac'], 0.25), t.math('MULTIPLY', nz3.outputs['Fac'], 0.2)), (-1200, -400))
     white = t.new('ShaderNodeMapRange', (-1200, 0), **{'From Min': 0.02, 'From Max': 0.3})
     t.link(vv, white.inputs['Value'])
     glass = t.bsdf((-700, 300), Roughness=0.03, IOR=1.333, **{'Base Color': (0.06, 0.1, 0.09, 1), 'Transmission Weight': 1.0})
@@ -55,11 +57,11 @@ def _white_water(name, fray=True):
     mixw = t.new('ShaderNodeMixShader', (-400, 100))
     t.link(white.outputs[0], mixw.inputs[0]); t.link(glass.outputs[0], mixw.inputs[1]); t.link(foam.outputs[0], mixw.inputs[2])
     # 透明度：条纹 × 末端淡出 × 两侧毛边
-    fade = t.new('ShaderNodeMapRange', (-1000, -800), **{'From Min': 1.0, 'From Max': 0.6})
+    fade = t.new('ShaderNodeMapRange', (-1000, -800), **{'From Min': 1.0, 'From Max': 0.45})
     t.link(vv, fade.inputs['Value'])
     edge = t.math('SUBTRACT', 0.5, t.math('ABSOLUTE', t.math('SUBTRACT', u, 0.5)), (-1100, -1000))
-    edgem = t.new('ShaderNodeMapRange', (-950, -1000), **{'From Min': 0.0, 'From Max': 0.3})
-    t.link(t.math('ADD', edge, t.math('MULTIPLY', t.math('SUBTRACT', nz.outputs['Fac'], 0.5), 0.2)), edgem.inputs['Value'])
+    edgem = t.new('ShaderNodeMapRange', (-950, -1000), **{'From Min': 0.0, 'From Max': 0.5})
+    t.link(t.math('ADD', edge, t.math('MULTIPLY', t.math('SUBTRACT', nz.outputs['Fac'], 0.5), 0.55)), edgem.inputs['Value'])
     st = t.new('ShaderNodeMapRange', (-950, -400), **{'From Min': 0.36, 'From Max': 0.52, 'To Min': 0.25 if fray else 0.6})   # 水束之间留缝，但主体是实的白水
     t.link(streak, st.inputs['Value'])
     top = t.new('ShaderNodeMapRange', (-950, -1200), **{'From Min': 0.0, 'From Max': 0.08, 'To Min': 1.0, 'To Max': 0.0})
@@ -73,7 +75,7 @@ def _white_water(name, fray=True):
     return m
 
 
-def _mist(name='e2_fall_mist', density=0.09):
+def _mist(name='e2_fall_mist', density=0.4):
     """水雾：球体积，中心浓、边缘淡，乘噪声团；前向散射（逆光时发亮）。"""
     m, t = mat_new(name)
     if t is None:
@@ -86,7 +88,7 @@ def _mist(name='e2_fall_mist', density=0.09):
     mr = t.new('ShaderNodeMapRange', (-800, 200), **{'From Min': 0.35, 'From Max': 0.75})
     t.link(n.outputs['Fac'], mr.inputs['Value'])
     d = t.math('MULTIPLY', g.outputs['Fac'], mr.outputs[0], (-600, 0))
-    vol = t.new('ShaderNodeVolumePrincipled', (-200, 0), **{'Color': (0.95, 0.95, 0.97, 1), 'Anisotropy': 0.55})
+    vol = t.new('ShaderNodeVolumePrincipled', (-200, 0), **{'Color': (0.95, 0.95, 0.97, 1), 'Anisotropy': 0.75})
     t.link(t.math('MULTIPLY', d, density, (-400, 0)), vol.inputs['Density'])
     t.link(vol.outputs[0], t.out.inputs['Volume'])
     return m
@@ -111,12 +113,13 @@ def _ribbon(name, cols, mat, col):
     """cols: [(左点, 右点)] 从上到下；带 UV（u 横向 0–1，v 纵向 0–1）。"""
     bm = bmesh.new()
     uvl = bm.loops.layers.uv.new('UVMap')
-    rows = [(bm.verts.new(a), bm.verts.new(b)) for a, b in cols]
-    n = len(rows) - 1
+    rows = [[bm.verts.new(p) for p in row] for row in cols]   # 每行 2 个或更多点（横截面可以是弧）
+    n = len(rows) - 1; m_ = len(rows[0]) - 1
     for i in range(n):
-        f = bm.faces.new([rows[i][0], rows[i][1], rows[i + 1][1], rows[i + 1][0]])
-        for lp, (uu, vv) in zip(f.loops, ((0, i / n), (1, i / n), (1, (i + 1) / n), (0, (i + 1) / n))):
-            lp[uvl].uv = (uu, vv)
+        for j in range(m_):
+            f = bm.faces.new([rows[i][j], rows[i][j + 1], rows[i + 1][j + 1], rows[i + 1][j]])
+            for lp, (uu, vv) in zip(f.loops, ((j / m_, i / n), ((j + 1) / m_, i / n), ((j + 1) / m_, (i + 1) / n), (j / m_, (i + 1) / n))):
+                lp[uvl].uv = (uu, vv)
     return bm_to_obj(bm, name, col, mat)
 
 
@@ -199,24 +202,30 @@ def falls(col, M, rim):
     rx, ry = rim
     th0 = math.atan2(ry, rx)
     specs = [(th0, 10.0, 24.0, 140.0, white, 'fall_main')]
-    for dth, nm in ((-0.075, 'fall_thin_s'), (0.068, 'fall_thin_n')):
-        specs.append((th0 + dth, 2.5, 6.5, 90.0, thin, nm))
+    for dth, nm, a_, b_ in ((-0.075, 'fall_thin_s', 2.0, 5.0), (0.068, 'fall_thin_n', 3.0, 8.0)):
+        specs.append((th0 + dth, a_, b_, 90.0, thin, nm))
     for th, w0, w1, H, mat, nm in specs:
         R = float(L.outline_R(np.array(th)))
         px, py = (R - 0.4) * math.cos(th), (R - 0.4) * math.sin(th)
         z0 = float(L.ground_z(px, py)) + (0.25 if nm == 'fall_main' else 0.05)
+        if nm != 'fall_main':   # 细瀑从崖口起（不是半崖冒出）
+            z0 = max(z0, float(L.ground_z(rx * 0.995, ry * 0.995)) - 0.6)
         ox, oy = math.cos(th), math.sin(th); sx, sy = -oy, ox
         cols_ = []
         for k in range(41):
             f = k / 40; dz = H * f
-            out = 0.6 + 0.85 * math.sqrt(dz)             # 抛物线外飘（水平流速约 2 m/s）
+            out = (0.6 if nm == 'fall_main' else 1.6) + 0.85 * math.sqrt(dz)   # 抛物线外飘（水平流速约 2 m/s）
             w = (w0 + (w1 - w0) * f ** 0.7) / 2
-            wob = 0.8 * math.sin(f * 7 + th * 40) * f
+            wob = (2.5 * math.sin(f * 7 + th * 40) + 1.0 * math.sin(f * 19 + th * 13)) * f
             cx, cy = px + ox * out + sx * wob, py + oy * out + sy * wob
-            cols_.append(((cx + sx * w, cy + sy * w, z0 - dz), (cx - sx * w, cy - sy * w, z0 - dz)))
+            row = []
+            for q in (-1.0, -0.5, 0.0, 0.5, 1.0):   # 弧形横截面：中间外鼓 0.15 w
+                bow = 0.15 * w * (1 - q * q)
+                row.append((cx + sx * w * q + ox * bow, cy + sy * w * q + oy * bow, z0 - dz))
+            cols_.append(row)
         _ribbon(nm, cols_, mat, col)
         if nm == 'fall_main':
-            for k, (f, r) in enumerate(((0.3, 12.0), (0.55, 20.0), (0.8, 28.0), (1.0, 34.0))):
+            for k, (f, r) in enumerate(((0.05, 6.0), (0.3, 12.0), (0.55, 20.0), (0.8, 28.0), (1.0, 34.0))):
                 dz = H * f; out = 0.6 + 0.85 * math.sqrt(dz)
                 bm = bmesh.new()
                 bmesh.ops.create_icosphere(bm, subdivisions=3, radius=1.0, matrix=Matrix.Translation((px + ox * (out + r * 0.3), py + oy * (out + r * 0.3), z0 - dz)) @ Matrix.Diagonal((r, r, r * 1.4, 1)))
@@ -239,11 +248,11 @@ def falls(col, M, rim):
 def water_cone(col):
     """清水倒锥：朝封面相机方向、岩锥中段外侧伸出的倒挂水滴（上缘嵌进岩体）。"""
     a = math.radians(-107.5)
-    cx, cy = 100 * math.cos(a), 100 * math.sin(a)
+    cx, cy = 125 * math.cos(a), 125 * math.sin(a)
     bm = bmesh.new()
     # 水滴：顶部宽、向下收成尖（倒锥），轮廓用解析式直接建环
     rings = []
-    zs = np.linspace(-110.0, -232.0, 36)
+    zs = np.linspace(-60.0, -170.0, 36)   # 审图：原来 −110…−232 藏在云领里看不见
     for i, z in enumerate(zs):
         f = i / (len(zs) - 1)
         r = 23.0 * (1 - f) ** 0.85 * (0.75 + 0.25 * math.cos(f * math.pi * 0.5)) + 0.05

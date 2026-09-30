@@ -353,7 +353,8 @@ def canal(col):
         zcs.append(zc)
         for sx in (-1, 1):
             _box(bmS, sx * 2.9, y0, z - 0.2, sx * 3.6, y1, zc)   # 石压顶
-        bmW.faces.new([bmW.verts.new(v) for v in [(-2.9, y0 + 0.02, z - 0.15), (2.9, y0 + 0.02, z - 0.15), (2.9, y1 - 0.02, z - 0.15), (-2.9, y1 - 0.02, z - 0.15)]])
+        zw = zc - 0.12   # r5（审图：水渠像一格格黑梯子）：水面齐到压顶下 12 cm
+        bmW.faces.new([bmW.verts.new(v) for v in [(-2.9, y0 + 0.02, zw), (2.9, y0 + 0.02, zw), (2.9, y1 - 0.02, zw), (-2.9, y1 - 0.02, zw)]])
     for yy, z, zc, sg in ((ys[0], zs[0], zcs[0], 1.0), (ys[-1], zs[-1], zcs[-1], -1.0)):   # 两端封口石
         _box(bmS, -3.6, min(yy, yy + sg * 0.3), z - 0.2, 3.6, max(yy, yy + sg * 0.3), zc)
     for i in range(len(zs) - 1):   # 段间跌水：石堰立在低段一侧，高段的水漫过堰顶落下
@@ -361,9 +362,10 @@ def canal(col):
         lo, hi = (i, i + 1) if zs[i] <= zs[i + 1] else (i + 1, i)
         sg = -1.0 if lo == i else 1.0
         zl, zh = zs[lo], zs[hi]
-        crest = max(zh - 0.2, zl + 0.1)
+        wh, wl = zcs[hi] - 0.12, zcs[lo] - 0.12
+        crest = max(wh - 0.03, wl + 0.02)   # 堰顶藏在高段水面下，俯视是连续水面 + 一道白水，不是横档
         _box(bmS, -2.9, min(yb, yb + sg * 0.3), zl - 0.2, 2.9, max(yb, yb + sg * 0.3), crest)
-        wh, wl = max(zh - 0.15, crest + 0.03), zl - 0.15
+        wh = max(wh, crest + 0.03)
         bmW.faces.new([bmW.verts.new(v) for v in [(-2.9, yb, wh), (2.9, yb, wh), (2.9, yb + sg * 0.3, wh), (-2.9, yb + sg * 0.3, wh)]])   # 堰顶漫水
         rows = [[bmP.verts.new((x, yb + sg * dy, zz)) for x in np.linspace(-2.88, 2.88, 7)]
                 for dy, zz in ((0.3, wh), (0.4, wh - 0.45 * (wh - wl)), (0.52, wl + 0.01))]
@@ -477,8 +479,13 @@ def kerbs(col):
                 a = ss[max(j - 1, 0)]; b = ss[min(j + 1, len(ss) - 1)]
                 tx, ty = b[0] - a[0], b[1] - a[1]; ln = math.hypot(tx, ty) or 1
                 px, py = x - ty / ln * sgn * (w / 2 + 0.15), y + tx / ln * sgn * (w / 2 + 0.15)
+                if float(L.edge_dist(np.array(px), np.array(py))) < 1.5:   # r5（审图：路缘挂到崖外成白线）：出了台面就断开
+                    if len(q) > 1:
+                        sweep(f'kerb{k}_{sgn}_{j}', q, [(-0.18, -0.3), (-0.18, 0.15), (0.18, 0.15), (0.18, -0.3)], M['ashlar'], col)
+                    q = []; continue
                 q.append((px, py, L.ground_z(px, py) + 0.02))
-            sweep(f'kerb{k}_{sgn}', q, [(-0.18, -0.3), (-0.18, 0.15), (0.18, 0.15), (0.18, -0.3)], M['ashlar'], col)
+            if len(q) > 1:
+                sweep(f'kerb{k}_{sgn}', q, [(-0.18, -0.3), (-0.18, 0.15), (0.18, 0.15), (0.18, -0.3)], M['ashlar'], col)
 
 
 def grey_terraces(col):

@@ -13,7 +13,7 @@ import bmesh
 from mathutils import Matrix
 from . import layout as L
 from .common import bm_to_obj
-from .buildings import mats, _box, _plain, _stone, sweep
+from .buildings import mats, _box, _plain, _stone, sweep   # noqa: F401
 
 
 def _mat_cache():
@@ -152,19 +152,32 @@ def water_tower(col):
 
 
 def lookout_hedges(col):
-    """观景台：栏杆内侧 2 m 处一圈 1.2 m 宽、0.85 m 高的低绿篱，朝岛心方向留 ±20° 入口。"""
+    """观景台：栏杆内侧 2 m 处一圈低绿篱，朝岛心方向留 ±20° 入口。r5 审图第 2 轮：不是一条光滑绿环——
+    拆成约 3 m 一段的修剪篱块（倒角），高 / 宽各 ±12 % 起伏，段间 0.3 m 缝。"""
+    from .gardens import _hbox
     M = _mat_cache()
+    bm = bmesh.new()
     for pid in L.LOOKOUTS:
         p = next(q for q in L.PADS if q['id'] == pid)
         (cx, cy), (rx, ry), rot = p['c'], p['r'], p.get('rot', 0.0)
         z = p['zv'] if not isinstance(p['zv'], tuple) else p['zv'][1]
         a_in = math.atan2(-cy, -cx) - rot
-        pts = []
-        for k in range(73):
-            t = a_in + math.radians(20) + math.radians(320) * k / 72
-            u, v = (rx - 2.0) * math.cos(t), (ry - 2.0) * math.sin(t)
-            pts.append((cx + u * math.cos(rot) - v * math.sin(rot), cy + u * math.sin(rot) + v * math.cos(rot), z))
-        sweep(f'look_hedge_{pid}', pts, [(-0.6, -0.2), (-0.55, 0.85), (0.55, 0.85), (0.6, -0.2)], M['hedge'], col)
+        per = math.pi * (rx + ry - 4.0)
+        n = max(6, int(per * (320 / 360) / 3.0))
+        for k in range(n):
+            t0 = a_in + math.radians(20) + math.radians(320) * (k + 0.5) / n
+            u, v = (rx - 2.0) * math.cos(t0), (ry - 2.0) * math.sin(t0)
+            x, y = cx + u * math.cos(rot) - v * math.sin(rot), cy + u * math.sin(rot) + v * math.cos(rot)
+            j1, j2 = math.sin(k * 2.3 + cx), math.cos(k * 1.7 + cy)
+            ln = per * (320 / 360) / n - 0.3
+            wd, hh = 1.2 * (1 + 0.12 * j1), 0.85 * (1 + 0.12 * j2)
+            n0 = len(bm.verts)
+            _hbox(bm, -ln / 2, -wd / 2, -0.2, ln / 2, wd / 2, hh)
+            bm.verts.ensure_lookup_table()
+            ang = t0 + rot + math.pi / 2
+            Mx = Matrix.Translation((x, y, z)) @ Matrix.Rotation(ang, 4, 'Z')
+            bmesh.ops.transform(bm, matrix=Mx, verts=bm.verts[n0:])
+    bm_to_obj(bm, 'look_hedges', col, M['hedge'])
 
 
 def build(col):

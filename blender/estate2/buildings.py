@@ -201,7 +201,7 @@ def _basin():
     b2 = t.new('ShaderNodeBump', (-300, -300), Strength=0.05, Distance=0.05)
     t.link(n2.outputs['Fac'], b2.inputs['Height'])
     t.link(b1.outputs['Normal'], b2.inputs['Normal'])
-    b = t.bsdf((200, 0), Roughness=0.02, IOR=1.333, **{'Base Color': (0.015, 0.035, 0.03, 1)})
+    b = t.bsdf((200, 0), Roughness=0.04, IOR=1.333, **{'Base Color': (0.04, 0.08, 0.08, 1)})
     t.link(b2.outputs['Normal'], b.inputs['Normal'])
     return m
 

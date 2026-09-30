@@ -216,12 +216,12 @@ def night(scene):
         z = L.ground_z(cx, cy)
         pw = 500 if w * d > 300 else 260
         if bid in main_ids:   # r5（遗留：夜景主楼光晕偏宽）：主楼群 13 个体量挤在一起，灯减弱、贴墙收近
-            pw *= 0.35
+            pw *= 0.2
         for sx in (-1, 1):
             for sy in (-1, 1):
                 off = 1.2 if bid in main_ids else 2.5
                 x, y = buildings.rot2(sx * (w / 2 + off), sy * (d / 2 + off), math.radians(rd))
-                _plight(f'win{n}', (cx + x, cy + y, z + 3.0), pw); n += 1
+                _plight(f"win{n}", (cx + x, cy + y, z + 3.0), pw, radius=0.2 if bid in main_ids else 0.6); n += 1
     lamps = []
     for pts, w in L.DRIVES[:4]:
         for sgn in (-1, 1):
