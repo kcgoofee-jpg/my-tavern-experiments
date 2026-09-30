@@ -1,7 +1,8 @@
 # Eden requirements (EQ index) — the user's asks for the Eden estate, checked against the shipped version
 
-Status (2026-09-30): 65 requirements · shipped version: 46 met, 12 partly, 6 missing, 1 superseded · the r5 draft
-changes 14 of them in 11 groups (G1–G11, see §14), awaiting the user's review — nothing shipped yet.
+Status (2026-10-01): 65 requirements · r5 shipped (user approved 2026-10-01, falls made thicker): G1–G11 (§14) close
+14 of them; figures below are the r4e baseline (46 met, 12 partly, 6 missing, 1 superseded) · barrier ring and air routes
+stay deferred.
 
 - **Baseline = the shipped version** (user 2026-09-30: 「不通过，暂停，用现在已经在脚本上的那个版本」): the estate2 r4e
   scene in `blender/estate2/*` (225827d, e233077), `map/estate/model/site.glb` + `site_low.glb` (ebdce14), `house.glb`

@@ -36,7 +36,14 @@ def main():
     tropic = sketchfab.build(M['plain'], M['wallstone'])
     vegetation.build(a.density, tropic_protos=tropic)
     SF.camera(sc, 'map', 2000)
-    bpy.ops.wm.save_as_mainfile(filepath=a.save)
+    # 贴图路径一律转绝对：奶牛农场 .blend 追加进来的相对路径（//../../..）换个存盘目录就解析到 /blender/…，glb 烘焙会缺图
+    miss = 0
+    for im in bpy.data.images:
+        if im.source == 'FILE' and im.filepath:
+            im.filepath = os.path.abspath(bpy.path.abspath(im.filepath, library=im.library))
+            miss += not os.path.exists(im.filepath)
+    if miss: print(f'[web_scene] Error: {miss} 张贴图找不到')
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(a.save), relative_remap=False)
     if a.dump:
         out = []
         dg = bpy.context.evaluated_depsgraph_get()

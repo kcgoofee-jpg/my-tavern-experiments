@@ -1,5 +1,5 @@
 {
- "_说明": "庄园网页三维的室外热点（blender/estate2/web_zones.py 生成，不要手改）。坐标同 layout.py：x 东、y 北、米；z = 地面标高；h = 标签离地高度；pri 越大越先显示。",
+ "_note": "庄园网页三维的室外热点（blender/estate2/web_zones.py 生成，不要手改）。坐标同 layout.py：x 东、y 北、米；z = 地面标高；h = 标签离地高度；pri 越大越先显示。",
  "zones": [
   {
    "id": "main",
@@ -142,6 +142,30 @@
    "pri": 4
   },
   {
+   "id": "paddock",
+   "name": "围栏区",
+   "en": "Fenced Paddock",
+   "alias": [],
+   "x": 66,
+   "y": 58,
+   "r": 13,
+   "z": 30.0,
+   "h": 3,
+   "pri": 3
+  },
+  {
+   "id": "pavilion",
+   "name": "凉亭",
+   "en": "Pavilion",
+   "alias": [],
+   "x": 0,
+   "y": 73,
+   "r": 6,
+   "z": 30.0,
+   "h": 7,
+   "pri": 4
+  },
+  {
    "id": "lake",
    "name": "人工湖",
    "en": "Lake",
@@ -281,10 +305,10 @@
   },
   {
    "id": "villas",
-   "name": "林中别墅",
-   "en": "Forest Villas",
+   "name": "别墅",
+   "en": "Villas",
    "alias": [
-    "别墅"
+    "林中别墅"
    ],
    "x": 200,
    "y": 110,
@@ -330,6 +354,20 @@
    "z": 6.58,
    "h": 3,
    "pri": 3
+  },
+  {
+   "id": "water_tower",
+   "name": "以太凝水塔",
+   "en": "Aether Water Tower",
+   "alias": [
+    "凝水塔"
+   ],
+   "x": -192,
+   "y": 80,
+   "r": 8,
+   "z": 22.2,
+   "h": 28,
+   "pri": 4
   },
   {
    "id": "service",

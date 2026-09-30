@@ -640,3 +640,10 @@ date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
 2026-09-30,eden_r5_after_lake,draft,2000,16,1.6,0,darwin,ok,0,0
 2026-09-30,eden_r5_after_falls,draft,2000,16,1.6,0,darwin,ok,0,0
 2026-09-30,eden_r5_after_night,draft,2000,16,1.9,0,darwin,ok,0,0
+2026-10-01,eden_r5_falls,draft,1600,16,1.4,0,darwin,ok,0,0
+2026-10-01,eden_cover,final,3200,128,3.9,0,darwin,ok,0,0
+2026-10-01,eden_upper_cutout,final,6000,128,9.6,0,darwin,ok,0,0
+2026-10-01,eden_web_scene,final,0,0,1.0,0,darwin,ok,0,0
+2026-10-01,eden_site_glb,final,4096,64,8.4,0,darwin,ok,0,0
+2026-10-01,eden_web_scene,final,0,0,0.9,0,darwin,ok,0,0
+2026-10-01,eden_site_glb,final,4096,64,7.4,0,darwin,ok,0,0

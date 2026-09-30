@@ -369,3 +369,15 @@ cleanup: done (no servers left running, no launch.json entries, my scratch files
 === END ===
 
 (S3-2 commit shas after the rebase onto head #149: cfd9d90 feat(data): first-pack tier hints, district and outskirts nodes; f1e9eb2 feat(events): placement through nodes with shadow parity; 37bd9f1 docs: RESULT S3-2; pushed as head #150.)
+=== RESULT R-EDEN (T6) ===
+status: DONE
+items: T0 ✓ T1 ✓ T2 ✓ T3 ✓ T4 ✓ T5 ✓ T6 ✓
+commits: d4f9590 render(estate2): eden:r5 falls thicker (user 2026-10-01); user approved eden:r5
+         (this commit) render(campaign): eden:r5 final + integrate + ship
+pushed: head #153 (expected; see push output)
+tests: node 722/723 (1 skipped) | smoke PASS | arch PASS | probes: accept=PASS estate3d_manifest=9/9
+deviations: tc_upper recut from the ignored lossless tc_upper_full.png (one stale isle4 tile 12_2 replaced by the live tile first) instead of tools/eden_into_upper.py, so Eden lands exactly in the shipped eden_hi inset bounds; web_scene.py now saves absolute texture paths (dairy textures resolved to /blender/… in the first glb bake); site.glb 3.94 MB (−12 %), site_low.glb 2.14 MB (−9 %), smaller rock texture; maps.json untouched (FREEZE honoured), worldbook unchanged (reads maps.json areas only)
+blocker: none
+open: tree houses 2 and 4 stand on bare sand at the north rim (catalogue B15/B17) — candidate for the per-place tweak pass
+cleanup: done
+=== END ===

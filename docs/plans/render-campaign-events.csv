@@ -254,3 +254,6 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T16:49:12Z,scene:fief4,final,done,std-1,pass,std 2.17 MB / low 1.26 MB under max_mb 2.8/1.4
 2026-09-30T16:49:13Z,scene:fief4,ship,wait,std-1,,"FREEZE_MAPS on origin/preview; model, glbs, manifest committed; needs lm_fief4 entry + links for fief4_castle/order/village/fields in maps.json + card-buildings rows"
 2026-09-30T16:09:09Z,eden:r5,user-review,done,user,pass,"user 2026-10-01 (chat): approved; make the main fall thicker, then final"
+2026-09-30T16:50:13Z,eden:r5,final,done,hero-1,,"final 3200/128 whole + 6000/128 cutout + web scene/glb 64spp, 0 errors"
+2026-09-30T16:50:13Z,eden:r5,integrate,done,hero-1,,"covers 1600/800; tc_upper recut from tc_upper_full + cutout in eden_hi bounds; tc_upper_eden inset recut; site.glb 3.94MB (-12%), site_low 2.14MB (-9%); zones.json 39; manifest v 2026-10-01"
+2026-09-30T16:50:31Z,eden:r5,ship,done,hero-1,,"shipped: covers, tc_upper + tc_upper_eden, site.glb/site_low.glb, zones.json, manifest v 2026-10-01"
