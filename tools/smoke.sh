@@ -8,8 +8,9 @@
 #   5. 可选 --cdn <ref>：对该 ref 下 map/ 的一组文件（固定几个入口 + 随机瓦片）发 HEAD 到 jsDelivr，要求全部 200
 #   6. tools/*.sh + tools/**/*.sh lint：`$var` 紧跟非 ASCII 字符（macOS bash 3.2 下会被吞进变量名报 unbound variable）；
 #      裸 cat/ls（用户 shell 把 cat/ls 起了坏别名，脚本要用 `command cat`/`command ls`）
-#   7. 架构看门狗（tools/check_architecture.py）：map/core/ 单文件 ≤400 行；core 零父级 import、
-#      core 与纯流水线不碰宿主全局（单一属主豁免表见脚本头）；viewer.html / map/app/ 禁裸 z-index 字面量
+#   7. 架构看门狗（tools/check_architecture.py，6 道防线 + tools/arch_baseline.json 只减不增账本）：
+#      引擎单文件 ≤400 行；core 零父级 import、core 与纯流水线不碰宿主全局（单一属主豁免表见脚本头）；
+#      禁裸 z-index 字面量、卡专有名词、内联外观样式（既有违规冻结在账本里，只许减少）
 #   8. 树卫生（tools/check_tree_hygiene.py）：未跟踪且未忽略的文件单个 >10 MB 即失败（防 git add -A 把
 #      临时产物 / 中间瓦片误提交；CI 干净检出天然通过）
 set -uo pipefail
@@ -24,8 +25,8 @@ step() { local name=$1; shift; local t=$SECONDS
 step "check_maps" python3 tools/check_maps.py
 python3 tools/check_render_deps.py | sed 's/^/  [警告] /'   # 只警告，不计入 FAIL（docs/render-deps.md）
 step "check_pack（设定包）" python3 tools/check_pack.py
-step "架构看门狗（core 行数 / 分层纯净 / 裸 z-index / 卡专有名词 / 源码学术引用，见 tools/check_architecture.py）" python3 tools/check_architecture.py
-step "架构看门狗门控自测（引用拦得住 / 机制术语放行 / 仓库现状干净，防空转）" python3 tools/test_architecture_gate.py
+step "架构看门狗（引擎行数 / 分层纯净 / 裸 z-index / 卡专有名词 / 源码学术引用 / 内联样式，账本只减不增，见 tools/check_architecture.py）" python3 tools/check_architecture.py
+step "架构看门狗门控自测（引用与账本拦得住 / 机制术语放行 / 仓库现状干净，防空转）" python3 tools/test_architecture_gate.py
 step "树卫生（未跟踪大文件防 git add -A 误提交，见 tools/check_tree_hygiene.py）" python3 tools/check_tree_hygiene.py
 step "纵深数学对拍（python ↔ golden；JS 侧在 node --test）" python3 tools/test_depth.py
 step "斜视投影对拍（python ↔ golden）" python3 tools/test_project.py
