@@ -172,8 +172,8 @@ class ShellCase(unittest.TestCase):
         self.assertIn('后台', r.stdout)
         self.assertLess(time.time() - t, 3)          # 父进程不等 CDN
         for _ in range(100):                          # 子进程最多 10 s 内落盘
-            if os.path.exists(log) and os.path.getsize(log) > 0:
-                break
+            if os.path.exists(log) and 'map/viewer.html' in open(log, encoding='utf-8').read():
+                break                                 # 等整份清单写完，而不是第一批字节（否则偶发读到半截）
             time.sleep(0.1)
         with open(log, encoding='utf-8') as f:
             body = f.read()

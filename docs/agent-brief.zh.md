@@ -24,12 +24,14 @@
 ## 3. 工作流
 
 - **一份提示词 = 一段工作。** 只做提示词 IN 清单里的事，OUT 清单里的一概不碰，做完就停。不许自己接着做计划里的下一步。
+- **只「增加」落点或信息、不丢任何东西的对拍差异**（没有事件、人物、物品或注入行消失或改变）可以继续：每条用测试钉住，在 `docs/todo.md` §3 立一条带建议的 Q 项，然后继续。只有丢了东西、或注入文本变了才停。
 - **用 worktree，别动主工作区：** `git fetch`，然后 `git worktree add -b <名> <scratchpad>/<目录> origin/preview`。主工作区可能放着另一条线没提交的东西，不要碰。永不 reset 到旧的 origin 引用。
 - **git 卫生：** 每次 Bash 调用只跑一条 git 命令（不用 `&&` 串联、不嵌套 `$(git …)`、不接管道）；先跑一条拿到值，再用它。提交信息写进文件，用 `-F` 传入。
 - **提交：** `git -c user.email=kcgoofee-jpg@users.noreply.github.com commit -F <消息文件>`；提交信息用英文；**不写 `Co-Authored-By` 尾巴**。
 - **攒批推送**（每 2–3 项，通常每份提示词一次）：`bash tools/push_preview.sh --head --no-escalate`——fetch + rebase、给 `map/data/head.json` 涨 "head #N"、推 `preview`，然后后台脱离做增量 CDN 预热（`logs/warm_cdn.log`，不用等）。`--full` 强制全量预热；`WARM=0` 跳过。旧镜像 `cloud/tc-mid-low` 已弃用、默认不推（只有在明确要求时才用 `LEGACY=1`；见 `docs/branching.md`）。推送被拒：停下报告，永不强推。
 - **CI：** 推送会跑 node --test + smoke；用 `gh run list --branch preview -L 1` 查看。
 - **分支：** `preview` 是集成 / 跟随线；`main` 是发布线，内容相同，靠快进同步（`bash tools/sync_main.sh`，`DRY_RUN=1` 先演练）。Spatial OS 重构期间不打标签、不发版、不改版本号（只涨 head #N）。见 `docs/branching.md` 和 `docs/versioning.md`。
+  每个计划阶段结束时同步 main（`tools/sync_main.sh`），让 GitHub 的默认分支显示最新内容。
 - **只追加的文件：** `CHANGELOG.md`、`logs/*.csv`、`docs/plans/spatial-os-log.md` 走 union 合并——只在末尾追加。
 - **交付物：** 只有外置的 TavernHelper 脚本和世界书附加书。绝不生成或修改角色卡；绝不写用户的酒馆数据目录。
 - **交回前收尾：** 停掉你自己起的预览服务、后台进程和 Blender（只动自己的 PID）；`.claude/launch.json` 里不留长期条目。

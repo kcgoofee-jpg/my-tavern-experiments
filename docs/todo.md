@@ -1,6 +1,6 @@
 # Todo — the single tracker
 
-Status: 2026-10-01 · S0-F done (provenance labels out of data, UI, tools and current docs; gate `tools/check_no_labels.py`) · S3 done: S3-3 done (people, trips, stand-ins, item places and the spatial contract on nodes; map/here.mjs deleted; Q-12 decided A) · S3-2 done (events placed through nodes on both sides; Q-11 decided A) · S3-1 done (the current location runs on nodes.locate) · S2-A, S2-B done (node tree in the viewer, dairy under the estate and reachable from its farm zone) · S0 done (S0-A…S0-E) · S1-design done, review accepted 2026-09-30 (Q-09) · S1-impl-1, S1-impl-2 done · render campaign R running · open: 9 infrastructure, 7 Eden content, 0 decisions · migration table 81 rows, missing 0
+Status: 2026-10-01 · H1 done (new README en + zh, ROADMAP archived, leftover items scheduled into the plan §16, probe baseline, main synced) · S0-F done (provenance labels out of data, UI, tools and current docs; gate `tools/check_no_labels.py`) · S3 done: S3-3 done (people, trips, stand-ins, item places and the spatial contract on nodes; map/here.mjs deleted; Q-12 decided A) · S3-2 done (events placed through nodes on both sides; Q-11 decided A) · S3-1 done (the current location runs on nodes.locate) · S2-A, S2-B done (node tree in the viewer, dairy under the estate and reachable from its farm zone) · S0 done (S0-A…S0-E) · S1-design done, review accepted 2026-09-30 (Q-09) · S1-impl-1, S1-impl-2 done · render campaign R running · open: 9 infrastructure (all scheduled), 5 Eden content (E-04, E-07 closed), 0 decisions · migration table 81 rows, missing 0
 
 1. This is the only work list; plan detail lives in `docs/plans/spatial-os.md`, results in `docs/plans/spatial-os-log.md`, render items in the ledger `docs/plans/render-campaign.md`. Do not copy their items here.
 2. One item per line. A finished item is struck in place (`~~…~~ ✅ <date> <sha>`), never deleted; it moves to §4 only with a sha as evidence.
@@ -43,6 +43,7 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
 - [ ] **S11** Skill rewrite + `tools/card_to_pack.py` (stage E) · later · prompt S11 · RESULT S11 (pending)
 - [ ] **S12** Translate code comments to English (optional) · later · prompt S12 · RESULT S12 (pending)
 - [ ] **S13** Wrap-up: finalise ARCHITECTURE, CHANGELOG, todo, handoff, memory · later · prompt S13 · RESULT S13 (pending)
+- ~~**H1** repo front door: README (en + zh) and its gate, ROADMAP archived, main synced, leftover I-/E- items scheduled (plan §15–§16, new step B0), probe baseline `tools/browser/known-failures.json`, two brief rules~~ ✅ 2026-10-01 (shas in RESULT H1) · prompt H1 · RESULT H1
 - [~] **R** Render campaign (separate line, Eden pack content only) · running · prompts R0-A, R0-B done · ledger and status: `docs/plans/render-campaign.md` (the ledger is the truth; no per-item copy here) · RESULT R0-A, R0-B
 
 ## 1. Infrastructure

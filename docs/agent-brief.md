@@ -45,6 +45,9 @@
 
 - **One prompt = one unit of work.** Do exactly the prompt's IN list and nothing from its OUT list, then stop.
   Never continue to the next plan step on your own.
+- **Parity divergences that only ADD placements or information and lose nothing** (no event, character, item or
+  injected line disappears or changes) may proceed: pin each in a test, file it as a Q-item in `docs/todo.md` §3
+  with a recommendation, continue. Stop only when something is lost or the injected text changes.
 - **Worktree, never the main checkout:** `git fetch`, then
   `git worktree add -b <name> <scratchpad>/<dir> origin/preview`. The main working tree may hold another line's
   uncommitted work — do not touch it. Never reset to a stale origin ref.
@@ -61,6 +64,7 @@
 - **Branches:** `preview` is the integration / follow line; `main` is the release line with the same content,
   synced by fast-forward (`bash tools/sync_main.sh`, `DRY_RUN=1` to preview). No tags, releases or version bumps
   during the Spatial OS refactor (only head #N). See `docs/branching.md` and `docs/versioning.md`.
+  At the end of each plan stage, sync main (`tools/sync_main.sh`) so GitHub's default branch shows current content.
 - **Append-only files:** `CHANGELOG.md`, `logs/*.csv` and `docs/plans/spatial-os-log.md` use union merge — append
   at the end only.
 - **Deliverables:** only the external TavernHelper script and the worldbook add-on. Never generate or modify a
