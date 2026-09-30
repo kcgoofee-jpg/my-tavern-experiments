@@ -66,7 +66,7 @@
       },
       "desc": {
         "zh": "旷野高地台地：风吹过的石南与丛草、裸露基岩，帝国境内的最高地。",
-        "en": "The highland plateau: windswept heath, tussock grass and bare bedrock on the empire's highest ground (terrain is a repo inference)."
+        "en": "The highland plateau: windswept heath, tussock grass and bare bedrock on the empire's highest ground."
       },
       "view": [
         0.4,
@@ -100,7 +100,7 @@
       },
       "desc": {
         "zh": "下山小径：沿东侧山肩折返而下的土路。",
-        "en": "The trail down: a dirt path zigzagging down the eastern shoulder (repo inference)."
+        "en": "The trail down: a dirt path zigzagging down the eastern shoulder."
       },
       "view": [
         0.6,
@@ -159,5 +159,10 @@
         0.8
       ]
     }
-  ]
+  ],
+  "max_mb": {
+    "std": 5.0,
+    "low": 3.5
+  },
+  "_max_mb_note": "地形尺度的场景（约 630 m × 450 m 的台地、崖壁与谷底）：体量上限放宽到 std 5.0 / low 3.5 MB（单栋默认 0.6/0.3）；此前已发布版本为 std 3.4 / low 2.9 MB。"
 }

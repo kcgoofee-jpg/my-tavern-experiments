@@ -1619,7 +1619,7 @@
       "alias": [
         "旷野高地（三维）"
       ],
-      "src_note": "开局七地点的三维模型；从 site_highland.highland_plateau 标记的「查看三维模型」进。源：blender/landmarks/highland/",
+      "src_note": "开局七地点的三维场景（台地、崖壁、下山小径）；从 site_highland 的 highland_plateau / cliff_edge / trail_down 标记的「查看三维模型」进。源：blender/landmarks/highland/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },
@@ -2284,7 +2284,12 @@
           "alias": [
             "崖壁",
             "崖边"
-          ]
+          ],
+          "link": {
+            "map": "lm_highland",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "trail_down": {
           "name": "下山小径",
@@ -2294,7 +2299,12 @@
           "alias": [
             "下山小径"
           ],
-          "canon": false
+          "canon": false,
+          "link": {
+            "map": "lm_highland",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         }
       }
     },

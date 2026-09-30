@@ -196,3 +196,16 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T15:27:37Z,lm:hunting_camp,final,done,std-1,pass,"std glb 0.76 MB / low 0.42 MB (max_mb std 0.9 low 0.45), manifest + hotspots en"
 2026-09-30T15:27:37Z,lm:hunting_camp,ship,claim,std-1,,
 2026-09-30T15:27:41Z,lm:hunting_camp,ship,wait,std-1,,"model, glbs, manifest committed; 3D entry blocked: world places have no model link and the node tree needs a maps.json marker hosting each 3D page (nodes_runtime parity tests fail with a bare lm_hunting_camp under world). Needs an engine step; then add lm_hunting_camp + link."
+2026-09-30T15:28:07Z,lm:hunting_camp,ship,claim,std-1,,
+2026-09-30T15:28:27Z,lm:hunting_camp,ship,skip,std-1,,"OPEN ITEM: no 3D entry yet. Model, glbs, manifest are in the repo (pushed head #141). World places carry no model link and the node tree needs a maps.json marker hosting each 3D page; needs an engine step, then add lm_hunting_camp to maps.json and link it. See docs/landmarks/hunting_camp.checklist.md"
+2026-09-30T15:28:27Z,scene:highland-ext,new,claim,std-1,,
+2026-09-30T15:29:10Z,scene:highland-ext,new,done,std-1,pass,scaffolded state for the existing highland scene (build.py + manifest already present)
+2026-09-30T15:29:33Z,scene:highland-ext,setting,done,std-1,pass,setting doc rewritten for the scene: cliff_edge (card L88) and trail_down as hotspots
+2026-09-30T15:31:06Z,scene:highland-ext,draft,done,std-1,pass,c1 draft queued/collected; board c1 c2 c3 rendered
+2026-09-30T15:31:20Z,scene:highland-ext,board,done,std-1,pass,board c1+c2+c3
+2026-09-30T15:31:20Z,scene:highland-ext,gapcheck,done,std-1,pass,cliff_edge/trail_down covered by site_cliff/site_trail; trail too thin (see r1)
+2026-09-30T15:31:20Z,scene:highland-ext,review-r1,done,std-1,fail,"fidelity 6.5 / credibility 7: trail hair-thin and low contrast, c3 does not show the trail, c1 dark (docs/reviews/campaign/scene_highland-ext/r1.md)"
+2026-09-30T15:31:20Z,scene:highland-ext,fix,done,std-1,pass,"trail 6 m wide, lighter dirt + wider edge stones, c3 looks up the trail, exposure +0.4"
+2026-09-30T15:34:35Z,scene:highland-ext,review-r2,done,std-1,pass,"fidelity 7 / credibility 6 (r2.md); polish: trail wear noise, tone"
+2026-09-30T15:47:04Z,scene:highland-ext,final,done,std-1,pass,std glb 4.71 MB / low 2.98 MB (max_mb 5.0/3.5; previous 3.4/2.9)
+2026-09-30T15:47:43Z,scene:highland-ext,ship,done,std-1,pass,cliff_edge + trail_down linked to lm_highland; trail widened; score 7/6

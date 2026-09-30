@@ -298,7 +298,7 @@ def main():
     GLOW = ground_mat('ground_talus', scree_on=True, haze=12000)
     CLIFF = ground_mat('cliff_rock', force_rock=True, haze=12000)
     BGG = ground_mat('bg_ground', haze=6000)
-    TRAILM = C.pbr('trail_dirt', 'dirt_floor', 3.0, tint=(0.85, 0.74, 0.58), value=1.0, sat=0.5, rough_mul=1.6)
+    TRAILM = C.pbr('trail_dirt', 'dirt_floor', 3.0, tint=(0.95, 0.82, 0.62), value=1.35, sat=0.5, rough_mul=1.6)
     BOULD = ground_mat('boulder', force_rock=True)
     CHAR = C.flat('rock_charred', (0.035, 0.033, 0.03), 0.85, noise=0.5)
     ASHM = C.flat('ash_grey', (0.11, 0.105, 0.1), 0.95, noise=0.4)
@@ -385,7 +385,7 @@ def main():
         a = P[max(0, i - 1)]; b_ = P[min(len(P) - 1, i + 1)]
         tx, ty = b_[0] - a[0], b_[1] - a[1]; l = math.hypot(tx, ty) or 1
         nx, ny = -ty / l, tx / l
-        w = 1.3 + 0.12 * math.sin(i * 0.37)
+        w = 3.0 + 0.25 * math.sin(i * 0.37)
         z = PZ[i] - 0.77
         tl.append((P[i][0] + nx * w, P[i][1] + ny * w, z)); tr.append((P[i][0] - nx * w, P[i][1] - ny * w, z))
     C.grid(Bt, [tr, tl], TRAILM)
@@ -394,7 +394,7 @@ def main():
         tx, ty = b_[0] - a[0], b_[1] - a[1]; l = math.hypot(tx, ty) or 1
         for sgn in (-1, 1):
             if rnd.random() < 0.55:
-                s_ = sgn * rnd.uniform(1.45, 1.9)
+                s_ = sgn * rnd.uniform(3.3, 4.0)
                 x, y = P[i][0] - ty / l * s_, P[i][1] + tx / l * s_
                 rock_(Bt, x, y, PZ[i] - 0.15, rnd.uniform(0.15, 0.4), BOULD, seed=i * 2 + sgn, seg=6, rings=4, facet=0.25)
 
@@ -705,7 +705,7 @@ def main():
     nt.links.new(mx.outputs[2], bg.inputs['Color'])
     bg.inputs['Strength'].default_value = 0.22
 
-    sc.view_settings.exposure = 0.0
+    sc.view_settings.exposure = 0.4
     if A['exposure']:
         sc.view_settings.exposure = float(A['exposure'])
     ex = min(range(-150, 40), key=edge) * 1.0; ey = edge(ex)   # 崖线最突出的岬角
@@ -713,7 +713,7 @@ def main():
     CAMS = {
         'c1': ((215, -245, 150), (-12, 10, -15), 26),
         'c2': ((ex - 6, ey + 3.0, plat(ex, ey) + 4.5), (ex + 150, edge(ex + 150) - 40, -85), 20),
-        'c3': ((P[-25][0] + 2, P[-25][1], PZ[-25] + 1.7), (-40, -60, -10), 24),
+        'c3': ((P[-1][0] + 45, P[-1][1] - 30, PZ[-1] + 14), (P[len(P) // 2][0], P[len(P) // 2][1], PZ[len(P) // 2]), 28),
     }
     pos, tgt, lens = CAMS[A['cam']]
     cam = C.camera(sc, pos, tgt, lens)

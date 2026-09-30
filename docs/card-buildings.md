@@ -12,8 +12,8 @@
 
 | 优先级 | 地图 | id | 名称 | 标记 | 层 / 位置来源 | 模型 | 质量 | 备注 |
 |---|---|---|---|---|---|---|---|---|
-| P1 开局 | site_highland | `cliff_edge` | 崖壁 | ✅ | 卡 | — | — | 开局七 |
-| P1 开局 | site_highland | `highland_plateau` | 旷野高地 | ✅ | 卡 | 旷野高地 `map/props/highland/` | 标准（r4 7 / 7） | 开局七 |
+| P1 开局 | site_highland | `cliff_edge` | 崖壁 | ✅ | 卡 | 旷野高地 `map/props/highland/`（崖壁热点） | 标准（r2 7 / 6） | 开局七 |
+| P1 开局 | site_highland | `highland_plateau` | 旷野高地 | ✅ | 卡 | 旷野高地 `map/props/highland/` | 标准（7 / 6） | 开局七 |
 | P1 开局 | tc_low | `junk_market` | 旧货市场 | ✅ | 卡 + 推断位置 | 铁皮屋区与旧货市场 `map/props/lower_quarter/` | 标准（r3 7 / 7） | 开局六 |
 | P1 开局 | tc_low | `ruined_churches` | 废弃教堂区 | ✅ | 卡 + 推断位置 | 废弃教堂区 `map/props/ruined_churches/` | 标准（r2 7 / 8） | 开局四 |
 | P1 开局 | tc_low | `tin_shacks` | 铁皮屋区 | ✅ | 卡 + 推断位置 | 铁皮屋区与旧货市场 `map/props/lower_quarter/` | 标准（r3 7 / 7） | 开局六 |
@@ -71,7 +71,7 @@
 | P3 其他 | site_fief5 | `fief5_lists` | 第五席比武场 | ✅ | 仓库自设 | — | — |  |
 | P3 其他 | site_fief5 | `fief5_order` | 第五席骑士团驻地 | ✅ | 仓库自设 | — | — |  |
 | P3 其他 | site_fief5 | `fief5_village` | 第五席领地城镇 | ✅ | 仓库自设 | — | — |  |
-| P3 其他 | site_highland | `trail_down` | 下山小径 | ✅ | 仓库自设 | — | — |  |
+| P3 其他 | site_highland | `trail_down` | 下山小径 | ✅ | 仓库自设 | 旷野高地 `map/props/highland/`（下山小径热点） | 标准（r2 7 / 6） |  |
 | P3 其他 | site_kavalierki | `arms_rnd` | 魔导军工研发中心 | 🆕 | 仓库推断 | 魔导军工研发中心 `map/props/arms_rnd/` | 标准（campaign r2 8/6.5） |  |
 | P3 其他 | site_kavalierki | `clearing_depot` | 清算转运站 | ✅ | 卡 | 清算转运站 `map/props/clearing_depot/` | 标准（r1 7 / 7（代理自查，未开评审）） |  |
 | P3 其他 | site_kavalierki | `contest_corridor` | 竞赛与狂欢回廊 | ✅ | 卡 | 竞赛与狂欢回廊 `map/props/contest_corridor/` | 标准（r2 7.5 / 6） |  |
