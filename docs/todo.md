@@ -1,6 +1,6 @@
 # Todo — the single tracker
 
-Status: 2026-09-30 · S0 done (S0-A…S0-E) · next = S1 (kernel contract v2) · render campaign R running · open: 7 infrastructure, 7 Eden content, 8 decisions · migration table 81 rows, missing 0
+Status: 2026-09-30 · S0 done (S0-A…S0-E) · S1-design done, awaiting the user's review (Q-09) · next = S1-impl-1 after the review · render campaign R running · open: 9 infrastructure, 7 Eden content, 1 decision · migration table 81 rows, missing 0
 
 1. This is the only work list; plan detail lives in `docs/plans/spatial-os.md`, results in `docs/plans/spatial-os-log.md`, render items in the ledger `docs/plans/render-campaign.md`. Do not copy their items here.
 2. One item per line. A finished item is struck in place (`~~…~~ ✅ <date> <sha>`), never deleted; it moves to §4 only with a sha as evidence.
@@ -18,7 +18,10 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
   - ~~**S0-C** naming audit: `docs/naming.md` + glossary~~ ✅ 2026-09-30 `94b4182` `3038905` `ffd86c7` · prompt S0-C, S0-C-followup · RESULT S0-C, S0-C-followup
   - ~~**S0-D** rescue stranded worktree work, remove merged worktrees~~ ✅ 2026-09-30 `c7e7151` `e4f794c` · prompt S0-D · RESULT S0-D (PARTIAL at the time; `webgl-part3` rescued as `rescue/estate-bake-opt`, the worktrees are gone)
   - ~~**S0-E** this file: single tracker + one-to-one migration table~~ ✅ 2026-09-30 (this change; sha in its RESULT) · prompt S0-E · RESULT S0-E
-- [ ] **S1** Kernel contract v2 design + minimal pack (XL; Opus · Xhigh design, then Sonnet · High ×2) · next · prompt S1 · RESULT S1 (pending)
+- [ ] **S1** Kernel contract v2 design + minimal pack (XL; Opus · Xhigh design, then Sonnet · High ×2) · in progress
+  - ~~**S1-design** `docs/kernel-schema.md` (+ zh with the review sheet K-01…K-09), `map/data/schema/v2/`, `map/packs/minimal/`, check_pack schema-2 branch~~ ✅ 2026-09-30 (sha in its RESULT) · prompt S1-design · RESULT S1-design
+  - [ ] **S1-impl-1** `core/nodes.mjs` + `core/pack-v2.mjs` + `tests/kernel_minimal.test.mjs` (Sonnet · High, M; spec: kernel-schema appendix B.1) · next (after user review) · prompt S1-impl-1 · RESULT S1-impl-1 (pending)
+  - [ ] **S1-impl-2** `core/compat-v1.mjs` + `tests/compat_v1.test.mjs` (Sonnet · High, M; spec: kernel-schema appendix B.2) · next (after user review) · prompt S1-impl-2 · RESULT S1-impl-2 (pending)
 - [ ] **S2** Node tree lands + milking hall moves home (L, 2 prompts) · later · prompt S2 · RESULT S2 (pending)
 - [ ] **S3** Unify geography: everything lands on nodes, parity-tested (L, 3 prompts) · later · prompt S3 · RESULT S3 (pending)
 - [ ] **S4** Special-case sweep + neutral wording (L, 4 prompts) · later · prompt S4 · RESULT S4 (pending)
@@ -45,6 +48,8 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
 - [ ] **I-05** WebGL Part 3 leftovers: one persistent context across 3D navigations, the legacy estate page (`map/estate/main.js`) on the shared runtime, and shipping a KTX2-baked GLB (pipeline wired, inert). Source: archive L56–L58.
 - [ ] **I-06** 3D viewer camera settings: an auto-rotate switch in Settings, and whether wheel = pan should become zoom (wait for user feedback). Source: archive L96.
 - [ ] **I-07** Read-only window hooks with no writer (`__edenHostVersions`, `__edenHereText`, `__edenMvuSnapshotStatus`, `__composeTest`) and stale `.js` owner strings in `core/storage.mjs` KEYS (5 names, 8 keys). Source: RESULT S0-C open (f).
+- [ ] **I-08** English pickup scan (`core/pickup.mjs scan`) reports a spurious item "the" for "Mara picked up the Brass Key."; fix with a false-positive test in S6 (kernel-schema §14.2 O-1). Source: RESULT S1-design.
+- [ ] **I-09** Three places put pack data into markup or styles without the run-time pattern re-check of kernel-schema K-R64: the worldbook peek capsule string (`map/wbpeek.mjs` line 29, `T('wb.capsule')` from `ui.strings`), the event group colours (`map/events.mjs` lines 259–268, `style="--c:…"`), the 3D manifest's flow colour (`map/props/viewer3d.html`, `cvdColor(x.f.color)` in the flow list). Harmless while only shipped packs load; fix before S9 (kernel-schema §14.2 O-9). Source: RESULT S1-design (security review).
 
 ## 2. Eden content
 
@@ -68,6 +73,8 @@ Only work that is not already a render-campaign item.
 - [x] **Q-06** `archive/upper-v18` island scripts: redo on the new main line, or pick from the tag? Options: A) redo; B) pick the still-valid parts. **Recommendation: A**, consulting the tag only for reference boards — the tag diverges by 575 commits and the ledger already lists all eight islands as rebuilds. Source: archive L248, L120. → **Decided 2026-09-30: A (user decision 2026-09-30: redo on the main line, tag for reference only).**
 - [x] **Q-07** How far to move the upper-layer depth haze (`map/data/upper_depth.json`): look at the two new 8K maps, then choose none, haze tweak only, or re-render. **Recommendation: haze tweak only, and decide it after S8** (depth haze becomes a declared layer). Source: archive L249. → **Decided 2026-09-30: haze tweak only, after S8.**
 - [x] **Q-08** Local clean-up of ≈1.9 GB untracked artifacts (raw downloads, world output, 8K source PNGs) and the duplicated hdr / marble textures. Options: A) delete the re-downloadable raws now; B) leave everything until disk pressure. **Recommendation: B**, keep the renders in any case. Source: archive L187, L196. → **Decided 2026-09-30: B (leave until disk pressure).**
+
+- [ ] **Q-09** Kernel contract v2 review sheet: K-01…K-09 in `docs/kernel-schema.zh.md` §0 (unplaced events, broad place + room word, weak words for the current location, level-switcher shortcut, chat variable of new packs, zero-config roster groups, cities under realms, go-live of a foreign pack's model-facing text, pictures in card-embedded packs). Recommendation per item in the sheet; until answered the recommended options are the working assumption. Source: RESULT S1-design.
 
 ## 4. Done (evidence)
 

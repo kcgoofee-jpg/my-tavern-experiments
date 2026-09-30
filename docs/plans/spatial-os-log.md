@@ -184,4 +184,17 @@ blocker: none
 next: isle:isle5 (fix -> draft3 -> review-r2)
 notes: (1) The render guard reported rc=0 / status ok twice for runs that died with a Python traceback (eden draft1, isle5 draft3): always grep the log and check the output mtime. (2) The Eden reference board uses the user-approved local photo set (~/Downloads/酒馆/伊甸参考/); it is kept in ~/eden-map-review/render/isle_eden/refs.jpg only, not committed (stock / news photos). (3) Terrain-zone paths (Terrain.path) stair-step at close range; use K_.drape strips for paths seen up close. (4) Anchors placed inside transparent meshes (water cone, falls) are dropped by the occlusion test.
 cleanup: done (no Blender or server of this session left running)
+=== RESULT S1-design ===
+status: DONE
+items: D1 ✓  D2 ✓  D3 ✓  D4 ✓  D5 ✓  D6 ✓  D7 ✓
+commits: e7db443 docs(kernel): kernel contract v2 design with zh edition and review sheet
+         14bf3ef feat(schema): v2 JSON schemas and the minimal pack
+         (this commit) docs(log): S1-design result   (SHAs may change on rebase)
+pushed: yes (this push; the head number is in its head commit)
+tests: node 633/634 (1 skipped; baseline 630/631, +3 = tests/pack_schema_v2.test.mjs) | smoke PASS | arch PASS | mirror PASS (5 pairs) | doc-language PASS | check_pack eden / minimal / town PASS (validator: tools/jsonschema_lite.py via the new check_pack.py schema-2 branch) | probes: none (design only, no viewer change)
+deviations: (1) Rules K-R01..K-R66 (not a round number chosen up front); K-R63..K-R66 (trust by source, untrusted text, model-facing text of foreign packs, limits) were added after the two review passes and keep the next free ids. (2) User correction applied mid-step: no card-vs-invented provenance field anywhere (`canon` removed from the node schema and the minimal pack; v1 `tag` / `canon:false` / `layer_src` are dropped in Appendix A; a test rejects `canon`). (3) Review sheet has 9 items, not 8: "may an embedded pack ship its own page" left the sheet (security, now designer rule K-R36/K-R63); two were added on review (K-08 go-live of a foreign pack's model-facing text, K-09 pictures in card-embedded packs). (4) tests/pack_schema_v1.test.mjs now skips schema-2 packs (it asserted schema 1 for every folder under map/packs). (5) The check_pack.py schema-2 branch is 40 lines incl. blanks; the full reference check is specified for pack-v2.mjs validate2 (B.1). (6) Locate rules were verified with a scratch prototype (not committed): every distinct input of tests/here.test.mjs and tests/card_spec.test.mjs lands on the v1 node after the review changes (word boundaries, normaliser, root hints mask only, head tie-break, shared words); the minimal pack's 39 locate cases of B.1 pass.
+blocker: none
+open: (a) Q-09 = review sheet K-01..K-09 in docs/kernel-schema.zh.md §0 (recommendations are the working assumption until answered). (b) docs/agent-brief.md §7 still says map-invented content is tagged 「地图自设」 (`tag: "inf"`); that contradicts the no-provenance decision applied here — not edited (outside this step). (c) I-09 (new): three places put pack data into markup / styles without the K-R64 re-check; fix before S9. (d) I-08 (new): English pickup false positive "the" (S6).
+node counts (v2 via compat): eden 112 nodes / depth 3 (with the room plan 176 / 4; maps only 108 / 3) · town 8 / 2 · minimal 5 / 3
+cleanup: done (no servers or background processes started; the prototype stays in the session scratchpad)
 === END ===
