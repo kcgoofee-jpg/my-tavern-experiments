@@ -149,3 +149,12 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T14:24:35Z,lm:slums,review-r2,done,std-1,pass,r2 7.5/6 pass
 2026-09-30T14:27:02Z,lm:slums,final,done,std-1,,"2400px/64spp c1+c2, std 0.74 MB / low 0.28 MB (max_mb std 0.9/low 0.45, district), logs clean"
 2026-09-30T14:27:02Z,lm:slums,ship,done,std-1,,"maps.json marker link + lm_slums, card-buildings row; manifest count test -> 45; check_maps 0/0, smoke pass"
+2026-09-30T14:27:21Z,lm:rebirth_workshop,new,claim,std-1,,
+2026-09-30T14:27:26Z,lm:rebirth_workshop,new,done,std-1,,scaffolded
+2026-09-30T14:28:37Z,lm:rebirth_workshop,setting,done,std-1,,setting block (card L74/L73; exterior repo-inferred)
+2026-09-30T14:29:54Z,lm:rebirth_workshop,draft,done,std-1,,c1 2000px 16spp
+2026-09-30T14:29:54Z,lm:rebirth_workshop,board,done,std-1,,"board c1/c2/under, logs clean"
+2026-09-30T14:29:54Z,lm:rebirth_workshop,gapcheck,done,std-1,,"no gap: main block+glass wall, dome, two wings+helipad, service tower, court with pond/cars"
+2026-09-30T14:29:54Z,lm:rebirth_workshop,review-r1,done,std-1,pass,"r1 7.5/7 pass; polish: loading dock, pad markings"
+2026-09-30T14:32:17Z,lm:rebirth_workshop,final,done,std-1,,"2400px/64spp c1+c2, std 0.73 MB / low 0.22 MB (max_mb std 0.9/low 0.4, campus), logs clean"
+2026-09-30T14:32:17Z,lm:rebirth_workshop,ship,done,std-1,,"maps.json marker link + lm_rebirth_workshop, card-buildings row; manifest count test -> 46; check_maps 0/0, smoke pass"
