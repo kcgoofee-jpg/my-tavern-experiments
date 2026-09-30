@@ -54,3 +54,6 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T12:49:13Z,review:glory_crown,fix,done,std-1,,"deck removed, tower lanes for all 3 cams, exposure -0.4"
 2026-09-30T12:49:13Z,review:glory_crown,review-r2,done,std-1,pass,r2 7/6 pass
 2026-09-30T12:55:45Z,review:glory_crown,ship,done,std-1,,"glb re-exported (std/low), landmark ship + checks pass"
+2026-09-30T12:56:00Z,review:linguang_post,review-r1,claim,std-1,,
+2026-09-30T12:56:14Z,review:linguang_post,review-r1,done,std-1,pass,"r1 8/7 pass; polish: iron gate bars, ground edge"
+2026-09-30T12:56:14Z,review:linguang_post,ship,skip,std-1,,"r1 pass, nothing changed; no re-export"

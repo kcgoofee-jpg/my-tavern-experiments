@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T12:55:45Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T12:56:14Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 8 | 0 | 40 | 0 | 0 | 0 | 48 |
+| standard | 9 | 0 | 39 | 0 | 0 | 0 | 48 |
 | hero | 2 | 0 | 12 | 0 | 6 | 0 | 20 |
 
 Below-gate (user spot-check): none
@@ -23,7 +23,7 @@ Below-gate (user spot-check): none
 | 6 | `review:ether_dome` | review | done | - |  |  | Review and fix model ether dome |
 | 7 | `review:free_knight_camp` | review | done | - |  |  | Review and fix model free knight camp |
 | 8 | `review:glory_crown` | review | done | - |  |  | Review and fix model glory crown |
-| 9 | `review:linguang_post` | review | open | review-r1 |  |  | Review and fix model linguang post |
+| 9 | `review:linguang_post` | review | done | - |  |  | Review and fix model linguang post |
 | 10 | `review:rust_outskirts` | review | open | review-r1 |  |  | Review and fix model rust outskirts |
 | 11 | `review:league_club` | review | open | review-r1 |  |  | Review and fix model league club |
 | 12 | `review:rothschild_estate` | review | open | review-r1 |  |  | Review and fix model rothschild estate |
