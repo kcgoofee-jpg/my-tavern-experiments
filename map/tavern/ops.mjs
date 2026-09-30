@@ -1,4 +1,4 @@
-// 受限操作 DSL 沙盒（W4，docs/plans/llm-campaign.md；WorldCoder 的「结构化变更优于自由文本」落地）：
+// 受限操作 DSL 沙盒（W4，docs/plans/llm-campaign.md；脚本化世界模型的「结构化变更优于自由文本」落地）：
 // 后台领航员不许用自由正文改状态——只能返回**原子操作块**，这里负责提取、校验、翻成标准行形状。
 // 四个操作（v1 就这四个，裁决 2/3）：
 //   OP_EVENT   {cat, place, text, lvl?, layer?}  → 事态显示行（会话级叠加，走 events 同一套类型白名单）

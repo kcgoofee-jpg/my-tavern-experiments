@@ -1,4 +1,4 @@
-// 长程关键帧压缩（W3，docs/plans/llm-campaign.md；SokoBench 的关键帧记忆落地）：
+// 长程关键帧压缩（W3，docs/plans/llm-campaign.md；长程状态跟踪退化 → 滑动窗口关键帧记忆）：
 // 时间轴在 200+ 楼的长篇里拖拽不该每楼都打桥——把「逐楼状态」压缩成「变更点关键帧」：
 // 一个关键帧 = { floor, here, time, until }（该地点从 floor 一直站到 until），旧楼回放按帧取，
 // 近窗（W_RECENT）逐楼保持精确。原料 = walk() 的变更点表（同形：[{floor, here, time}]，相邻同址已去重）。

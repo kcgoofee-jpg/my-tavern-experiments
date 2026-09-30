@@ -9,7 +9,7 @@ The v0.9.8 release itself is **deferred** until the dev-workflow speedup lands; 
 
 Two fused campaigns in one document:
 
-- **Part A — LLM spatial reasoning** (four papers, 2024–2026): upgrade the spatial context we hand to
+- **Part A — LLM spatial reasoning** (four mechanisms, sources archived in §10): upgrade the spatial context we hand to
   models from prose place-names to compact coordinate contracts; wire the dice that exist but are not
   rolled; compress long-horizon history into keyframes; constrain the future background "navigator" LLM
   to an atomic-op DSL validated in a sandbox.
@@ -22,14 +22,21 @@ where they do not, they are independent modules.
 
 ---
 
-## 1. Why — theory alignment
+## 1. Why — mechanism alignment (sources archived in §10)
 
-| Paper | Claim we adopt | What it becomes here |
+Convention (2026-09-30): the code and this document's body use **mechanism terms only**; the academic sources
+live in §10 as provenance. Nothing here is a dependency — the repo reads end-to-end without opening any of it.
+
+| Mechanism | Claim we adopt | What it becomes here |
 |---|---|---|
-| SokoBench (Monti et al., TMLR 2026) | LLMs degrade on long-horizon state tracking; keyframe memory compression is required | W3 `keyframes.mjs`: >20-floor history collapses to macro-displacement summaries; timeline scrubbing stays O(1) per floor at 200+ floors |
-| WorldCoder (Tang et al., NeurIPS 2024) | Writing code/structured ops beats free-text actions for sample efficiency and determinism | W4 `ops.mjs` + W5 `navigator.mjs`: the navigator may only emit atomic op blocks, validated throw-not-coerce, applied validate-then-apply |
-| Grid-world world models (Li et al., ICLR 2026) | Coordinate-structured input dramatically outperforms grid/prose input for planning | W1 `spatial.mjs` + the `[TOPO]` compiler: ≤120-token coordinate contracts replace fuzzy方位 prose |
-| Orak (KRAFTON, ICLR 2026) | Environment change/failure reports drive in-context self-correction | W2 `failrep.mjs`: stealth/stash check failures become structured reports (type, coords, DC delta, witnesses) fed back into the next inference |
+| Long-horizon state tracking → keyframe memory compression | Long sessions degrade state tracking; dense per-step memory has to collapse into keyframes | W3 `keyframes.mjs`: >20-floor history collapses to macro-displacement summaries; timeline scrubbing stays O(1) per floor at 200+ floors |
+| Scripted world model → structured change over free text | Emitting code / structured ops beats free-text actions for sample efficiency and determinism | W4 `ops.mjs` + W5 `navigator.mjs`: the navigator may only emit atomic op blocks, validated throw-not-coerce, applied validate-then-apply |
+| Grid-world spatial representation → coordinate-structured input | Coordinate-structured input dramatically outperforms prose input for planning | W1 `spatial.mjs` + the `[TOPO]` compiler: ≤120-token coordinate contracts replace fuzzy bearing prose |
+| Environment-feedback introspection → failure reports | Environment change / failure reports drive in-context self-correction | W2 `failrep.mjs`: stealth/stash check failures become structured reports (type, coords, DC delta, witnesses) fed back into the next inference |
+| Domain-slot disentangled tracking | Per-domain slot tracking beats one monolithic state blob | W11 `core/ledger.mjs`: assets / npc / events / depth settle independently, each with its own slot |
+| Progressive error audit → single-item patching | Errors should be corrected incrementally against evidence, not by wholesale rewrites | W11 `audit()`: only the missing single item is re-sent, unresolved rows stay pending |
+| Logical-predicate translation → restricted directive grammar | A narrow, validatable directive grammar beats free-text state edits | W11 `unmarshal()`: `OP_LOOT` / `OP_ROUTINE` / `OP_EVENT` micro-syntax, unmarshalled then validated per domain |
+| Human-in-the-loop validation → authority gate | Unverified assertions must not promote state; only authorised transitions do | W11 `AUTHORITY` ladder + pending settlement (claim / hypothesis never self-promote) |
 
 ## 2. Non-negotiable red lines (from the architecture watchdog and prior user decisions)
 
@@ -141,7 +148,7 @@ Format per the user's checklist convention: one item per line, strike through wh
   worldbook entry requires a new stable id → register it in `map/data/worldbook_aliases.json` in the
   same batch as W7 (alias bookkeeping is a real cost, discovered in execution).
 
-### ~~W2 — Dice wiring + failure report ring (Orak)~~ ✅ 2026-09-30（`spatial.mjs` 批；dice=edenMapDice 默认关、failrep 环形缓冲、stealth worst、fail kind）
+### ~~W2 — Dice wiring + failure report ring (environment-feedback introspection)~~ ✅ 2026-09-30（`spatial.mjs` 批；dice=edenMapDice 默认关、failrep 环形缓冲、stealth worst、fail kind）
 
 - [ ] Wire `core/stash.mjs search()` (:61-72) into `takeLoot` (`eden-map.js:341`): roll via
   `core/rng.mjs` mulberry32 seeded with `(chatId, floor, item id)` — same replay, same roll; on
@@ -168,7 +175,7 @@ upper-layer-only; adding mid/low patrol rings is a content/asset task (register 
 render/content line, does not block W2). The ring buffer is **in-memory, session-scoped** + floor
 watermark — reports are hints, not truth; no new chat variable / storage key (nothing to reconcile).
 
-### ~~W3 — Long-horizon keyframe compression (SokoBench)~~ ✅ 2026-09-30（`keyframes.mjs`：compress/stateAt/flatten/advance 幂等；200 楼探针：压缩 0.12ms、200 次拖拽 0.22ms、0 桥调用，截断如实 null）
+### ~~W3 — Long-horizon keyframe compression (sliding-window keyframes)~~ ✅ 2026-09-30（`keyframes.mjs`：compress/stateAt/flatten/advance 幂等；200 楼探针：压缩 0.12ms、200 次拖拽 0.22ms、0 桥调用，截断如实 null）
 
 - [ ] New pure module `map/tavern/keyframes.mjs`:
   - `W_RECENT = 20` (aligned with MVU's own 20-floor retention, `snapshot.mjs:9`); older floors merge
@@ -187,7 +194,7 @@ watermark — reports are hints, not truth; no new chat variable / storage key (
   full replay item-for-item, session_replay fixtures), idempotent advance, watermark invalidation on
   swipe, segment cap, `approx` flagging.
 
-### ~~W4 — Restricted op DSL sandbox (WorldCoder)~~ ✅ 2026-09-30（`ops.mjs`：四文法、throw-not-coerce、每响应 ≤3、回声黑名单、哈希水位）
+### ~~W4 — Restricted op DSL sandbox (scripted world model)~~ ✅ 2026-09-30（`ops.mjs`：四文法、throw-not-coerce、每响应 ≤3、回声黑名单、哈希水位）
 
 - [ ] New pure module `map/tavern/ops.mjs`:
   - Grammar: `OP_EVENT` (shape = events entry), `OP_CLUE` (shape = quests row), `OP_MARKER`
@@ -357,8 +364,8 @@ script are the same idea implemented natively, so W11 was tightened to match the
 1. Every new module has its own test file; no testless module ships.
 2. `node --test` fully green (bare command — with a directory argument Node 24 throws
    MODULE_NOT_FOUND); `bash tools/smoke.sh` Exit 0 including the architecture
-   watchdog (core line count / purity / no-reverse-import / no-card-proper-nouns / no bare z-index),
-   doc-language gate and tree hygiene.
+   watchdog's five defence lines (core line count / purity + no-reverse-import / no bare z-index /
+   no card proper nouns / no academic citations in source), doc-language gate and tree hygiene.
 3. Zero drift: keyframe reconciliation and crystallization idempotence are locked by tests, not by
    review.
 4. User-data sovereignty: a test asserts JIT/crystallization writes touch only entries carrying our
@@ -423,3 +430,26 @@ What it settled (details in the W11 addendum above):
    the run-last registration.
 6. **Card is a reference, not a dependency**: nothing of that card's names, schema or content enters the repo —
    our module stays card-generic (proper-noun scans still pass); only the *rules* were adopted.
+
+## 10. References — theoretical background (the only place citations live)
+
+Convention adopted 2026-09-30 (from the reference card's own rule, *no academic citations embedded in the
+project*): the code and this document's body carry **mechanism terms only**; sources are recorded here once,
+as provenance. The mapping is 1:1 with §1's table; the repo never depends on any of it.
+
+| # | Source | Venue / year | Link | Mechanism | Lands in |
+|---|---|---|---|---|---|
+| 1 | SokoBench: Evaluating Long-Horizon Planning and Reasoning in Large Language Models (Monti S. et al.) | TMLR 2026 | arXiv:2601.20856 — https://arxiv.org/abs/2601.20856 | long-horizon keyframe compression | W3 |
+| 2 | WorldCoder, a Model-Based LLM Agent: Building World Models by Writing Code and Interacting with the Environment (Tang H., Key D., Ellis K.) | NeurIPS 2024 | arXiv:2402.12275 — https://arxiv.org/abs/2402.12275 | scripted world model / restricted op DSL | W4, W5 |
+| 3 | Do LLMs Build Spatial World Models? Evidence from Grid-World Maze Tasks (Li W., Zhu Y., Das R., Dube P.) | ICLR 2026 | arXiv:2604.10690 — https://arxiv.org/abs/2604.10690 | coordinate-structured spatial contract | W1 |
+| 4 | Orak: A Foundational Benchmark for Training and Evaluating LLM Agents on Diverse Video Games (KRAFTON) | ICLR 2026 | arXiv:2506.03610 — https://arxiv.org/abs/2506.03610 | environment-feedback failure reports | W2 |
+| 5 | Multi-Domain Dialogue State Tracking With Large Language Model Rationale and Disentangled Domain-Slot Attention (Yang L., Li J., Li S., Shinozaki T.) | IEEE/ACM TASLP 2026, 34: 96–108 | DOI 10.1109/TASLPRO.2025.3604650 — https://doi.org/10.1109/TASLPRO.2025.3604650 | domain-slot disentangled tracking | W11 |
+| 6 | A Large-Language-Model-Guided Progressive Error-Correction Framework for Structured Process Modeling (Xu R., Fang H., Fang W., Wang F., Zhao C.) | Expert Systems with Applications 2026, 317: 131998 | DOI 10.1016/j.eswa.2026.131998 — https://doi.org/10.1016/j.eswa.2026.131998 | progressive error audit / single-item patch | W11 |
+| 7 | Large Language Models for Translating Contract-Related Texts to Logical Predicates (Navas-Loro M., Takeda H., Satoh K.) | Expert Systems with Applications 2026, 308: 131031 | DOI 10.1016/j.eswa.2025.131031 — https://doi.org/10.1016/j.eswa.2025.131031 | logical-predicate translation | W11 |
+| 8 | Knowledge Graph Validation by Integrating LLMs and Human-in-the-Loop (Tsaneva S., Dessì D., Osborne F., Sabou M.) | Information Processing & Management 2025, 62(5): 104145 | DOI 10.1016/j.ipm.2025.104145 — https://doi.org/10.1016/j.ipm.2025.104145 | human-in-the-loop validation / authority gate | W11 |
+
+Enforcement: the architecture watchdog's 5th defence line (`tools/check_architecture.py` → `check_citations`)
+refuses paper names, venue abbreviations, `arXiv` and DOI links inside `map/**/*.mjs` and `tests/*.mjs` — a
+new module must describe the mechanism, not cite it. The gate has its own self-test
+(`tools/test_architecture_gate.py`: a citation is caught, mechanism wording passes, the repo scan is non-empty
+so a broken glob cannot silently pass); both run in `tools/smoke.sh`.

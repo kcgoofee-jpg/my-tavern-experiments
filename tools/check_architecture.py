@@ -21,6 +21,11 @@
      （保底名册 16 人 + 伊甸庄园 / 天城）。注释剥掉后扫描（评述里难免提到卡）；
      字符串字面量 / 代码里出现 = 违规——人名地名属于设定包数据
      （map/packs/<id>/、map/data/），内核零硬编码分支。
+  5. 学术引用封锁（2026-09-30 用户决定，口径来自参考卡「no academic citations embedded in project」）：
+     map/ 与 tests/ 的源码里不许出现论文名 / 期刊缩写 / arXiv / DOI / et al. —— 代码只说**机制**
+     （如「滑动窗口关键帧压缩」「领域槽位解耦追踪」），出处统一存在
+     docs/plans/llm-campaign.md §10《References — theoretical background》一处。
+     只查源码（.mjs/.js）：文档、数据、第三方 vendor 不在本防线内。
 
 exit 0 = 全过；exit 1 = 有违规（逐条 文件:行号）。纯文本机检，与
 tests/layer_registry.test.mjs 的常量对拍 / mvu_bridge 的隔离契约互补。
@@ -49,6 +54,14 @@ OWNERS = {
 }
 
 HOST_OBJECTS = re.compile(r'\b(window|document|localStorage|sessionStorage|navigator|Mvu|SillyTavern)\b')
+# 学术引用封锁（第 5 道防线）：论文名 / 期刊缩写 / 预印本与 DOI / 引用习惯写法。
+# 收紧到「一眼能认出来的引用形态」：改动这张表就是改口径，必须在 docs/plans/llm-campaign.md §10 同步说明。
+CITATION_RE = re.compile(
+    r'SokoBench|WorldCoder|Orak\b|arXiv|doi\.org|\bNeurIPS\b|\bICLR\b|\bTMLR\b|\bTASLP\b|\bKRAFTON\b'
+    r'|Expert Systems with Applications|Information Processing & Management|\bet al\.',
+    re.IGNORECASE)
+CITATION_FILES = ['map/core/*.mjs', 'map/tavern/*.mjs', 'map/three/*.mjs', 'map/app/*.mjs', 'map/*.mjs',
+                  'tests/*.mjs']
 IMPORT_RE = re.compile(r"""\b(?:from|import)\s*\(\s*(['"])([^'"\n]+)\1|\bfrom\s+(['"])([^'"\n]+)\3""")
 ZVALUE_RE = re.compile(
     r"""z-index\s*:\s*([^;}]+)"""                     # CSS 声明
@@ -172,6 +185,26 @@ def check_pack0():
     return bad
 
 
+def citation_files():
+    """本防线覆盖的源码集合（默认：map 下的自有源码 + tests/*.mjs）。"""
+    return sorted({p for pat in CITATION_FILES for p in ROOT.glob(pat)})
+
+
+def check_citations(files=None):
+    """源码里不许出现学术引用形态（第 5 道防线）：出处只存 docs/plans/llm-campaign.md §10。
+    files 可显式给（门控自测 tools/test_architecture_gate.py 用），缺省扫 citation_files()。"""
+    bad = []
+    targets = citation_files() if files is None else [Path(f) for f in files]
+    for p in targets:
+        rel = str(p.relative_to(ROOT)) if str(p).startswith(str(ROOT)) else str(p)
+        code = p.read_text(encoding='utf-8')
+        for m in CITATION_RE.finditer(code):
+            bad.append(f"{rel}:{line_of(code, m.start())}: 源码出现学术引用「{m.group(0)}」"
+                       f"——代码只写机制（如「滑动窗口关键帧压缩」），出处统一存 "
+                       f"docs/plans/llm-campaign.md §10（2026-09-30 用户口径）")
+    return bad, len(targets)
+
+
 def main():
     fails = []
 
@@ -192,12 +225,17 @@ def main():
     print(f"  [Pack 0] core 禁卡专有名词（保底名册 + 地名，共 {len(pack0_names())} 个词），命中须为零")
     fails += bad
 
+    bad, n_files = check_citations()
+    print(f"  [引用] map 源码 + tests 共 {n_files} 个文件，学术引用形态须为零（出处只存任务书 §10）")
+    fails += bad
+
+
     if fails:
         print(f"架构看门狗：{len(fails)} 处违规")
         for f in fails:
             print(f"  {f}")
         return 1
-    print("架构看门狗：4 道防线全过")
+    print("架构看门狗：5 道防线全过")
     return 0
 
 

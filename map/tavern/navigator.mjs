@@ -2,7 +2,7 @@
 // 全在这里（纯模块）；HTTP 请求与一切副作用在宿主（llm.mjs 只算「该怎么发」，本模块不碰网络 / 存储 / 定时器）。
 // 调度复用 tick.plan 的让路语义（面板活着 / 正在生成 / 实例已死 / 间隔未到一律不跑；tick.mjs 一行不动，裁决 1），
 // 但自有节奏与下限（60 s：真打 API 的后台服务，不该像本地缓存预热那么勤快）。
-// 输入装配 = 空间坐标契约（W1）+ 事态摘要（events.summarize）+ 失败报告摘要（W2，Orak 反思环的输入），
+// 输入装配 = 空间坐标契约（W1）+ 事态摘要（events.summarize）+ 失败报告摘要（W2，环境反馈自省环的输入），
 // 系统提示词把它锁死在 op 块文法里（W4）；默认关、首跑显式同意（wbsync 先例，裁决 3）；日志只出脱敏形态。
 // node 单测 tests/navigator.test.mjs。
 import { plan as yieldPlan } from './tick.mjs';

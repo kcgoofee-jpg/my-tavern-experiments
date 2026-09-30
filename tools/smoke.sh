@@ -24,7 +24,8 @@ step() { local name=$1; shift; local t=$SECONDS
 step "check_maps" python3 tools/check_maps.py
 python3 tools/check_render_deps.py | sed 's/^/  [警告] /'   # 只警告，不计入 FAIL（docs/render-deps.md）
 step "check_pack（设定包）" python3 tools/check_pack.py
-step "架构看门狗（core 行数 / 分层纯净 / 裸 z-index，见 tools/check_architecture.py）" python3 tools/check_architecture.py
+step "架构看门狗（core 行数 / 分层纯净 / 裸 z-index / 卡专有名词 / 源码学术引用，见 tools/check_architecture.py）" python3 tools/check_architecture.py
+step "架构看门狗门控自测（引用拦得住 / 机制术语放行 / 仓库现状干净，防空转）" python3 tools/test_architecture_gate.py
 step "树卫生（未跟踪大文件防 git add -A 误提交，见 tools/check_tree_hygiene.py）" python3 tools/check_tree_hygiene.py
 step "纵深数学对拍（python ↔ golden；JS 侧在 node --test）" python3 tools/test_depth.py
 step "斜视投影对拍（python ↔ golden）" python3 tools/test_project.py

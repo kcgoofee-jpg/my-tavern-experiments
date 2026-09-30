@@ -1,6 +1,7 @@
 // 空间坐标契约编译器（W1，docs/plans/llm-campaign.md 裁决 5 / 12 / 13）：把「当前地点 + 周边几何」编译成
-// ≤budget token 的紧凑 JSON 坐标契约，取代模糊的方位散文——Grid-World world models（Li et al., ICLR 2026）：
-// 坐标结构化输入的规划正确率显著高于散文 / 字符网格。纯模块：数据进、契约出；不 fetch、不碰 DOM / 全局 / 存储
+// ≤budget token 的紧凑 JSON 坐标契约，取代模糊的方位散文——网格世界空间表征（grid-world spatial
+// representation）：坐标结构化输入的规划正确率显著高于散文 / 字符网格。纯模块：数据进、契约出；不 fetch、
+// 不碰 DOM / 全局 / 存储
 // （node 单测 tests/spatial_encoder.test.mjs 机械检查）。宿主接线：tavern/eden-map.js spatialInject（默认关）。
 // 坐标系：points 数据的归一化 0–1（nx/ny，y 向下；ax/ay 是渲染校正位，优先），量化 3 位小数；
 // 同一输入字节级同输出（键序固定、候选按「距离 → 名字」稳定排序）。token 估算与 modes.tokens 同一口径。

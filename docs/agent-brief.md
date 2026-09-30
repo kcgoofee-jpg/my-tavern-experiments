@@ -18,6 +18,7 @@
 - 渲染任务交给队列 `tools/render_queue.sh submit <draft|final|any> -- <参数>`，不要直接调 `tools/blender_run.sh` 或 `tools/cloud/render.sh`（队列负责派给 Mac 还是云端、避免两台撞车）；云端细节见 `docs/cloud-render.md`。
 - **渲染守卫**：新渲染脚本必须经 `tc_common.setup_render_device()`（旧名 `pick_gpu`）配 GPU，不许自己写 `compute_device_type`；没 GPU 默认中止，确需 CPU 才给 `blender_run.sh --allow-cpu`。smoke 与提交端会查；看门狗 / 失败状态见 `docs/cloud-render.md`「渲染守卫」。
 - 新地标一律走 `python3 tools/landmark.py new/draft/board/gapcheck/final/ship <id>`（`docs/landmark-pipeline.md`）。
+- **学术引用口径（2026-09-30 用户决定，取自参考卡「no academic citations embedded in project」）**：`map/**` 与 `tests/**` 的源码只写**机制**（如「滑动窗口关键帧压缩」「领域槽位解耦追踪」「环境反馈自省环」），论文名、期刊缩写、arXiv / DOI 一律不留；参考文献与链接统一存 `docs/plans/llm-campaign.md` §10《References — theoretical background》。看门狗第 5 道防线（`tools/check_architecture.py` 的 `check_citations`）机检，smoke 会跑。
 - 全自动推进（2026-09-29 用户指示）：所有层级不再等用户确认或点头；代理产出后自检（对照 `docs/rejected.md` 的否决项/canon 规则），需要看图判断的用 glm-5.3-flash 多模态代理完成；需用户过目的图自动拷贝到 `~/eden-map-review/` 留档，只存档不阻塞流程。
 - 不做 iPhone 专项；桌面优先，375 px 只过一遍。
 - 测试：改哪测哪——`node --test` + `tools/smoke.sh` 必跑；浏览器测试只跑相关的，批次末再跑全量。
