@@ -75,3 +75,19 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T13:17:51Z,review:elite_academy,fix,done,std-1,,"verdigris dome, c3 courtyard camera (academy() only)"
 2026-09-30T13:17:51Z,review:elite_academy,review-r2,done,std-1,pass,r2 7.5/7.5 pass
 2026-09-30T13:19:58Z,review:elite_academy,ship,done,std-1,,glb re-exported std 0.93 MB (was 2.58) / low 0.61 MB with group budgets; max_mb std 1.0/low 0.65; landmark ship + check_maps + estate3d_manifest + smoke pass
+2026-09-30T12:38:57Z,isle:eden,setting,claim,hero-1,,
+2026-09-30T12:42:00Z,isle:eden,setting,done,hero-1,,"setting block C1-C6/R1-R14 in docs/upper-islands-checklist.md; refs board from the user-approved local set (~/eden-map-review/render/isle_eden/refs.jpg, not committed: stock photos)"
+2026-09-30T12:42:00Z,isle:eden,draft,claim,hero-1,,
+2026-09-30T12:54:47Z,isle:eden,draft,done,hero-1,,draft1 2000/16 OK (first submit died on a rock_v17 veins arg; guard verdict said ok - guard bug); 1277 trees
+2026-09-30T12:54:48Z,isle:eden,board,claim,hero-1,,
+2026-09-30T12:55:13Z,isle:eden,board,done,hero-1,,"board1 10/13 anchored (wcone, fall, cores hidden in the under view)"
+2026-09-30T12:55:13Z,isle:eden,review-r1,done,hero-1,fail,"r1 fidelity 6.5 / credibility 5.0: tennis-court parterres, golf-course lawn, broccoli trees, blown-out rune bands, water cone hidden, lighthouse tower"
+2026-09-30T12:55:13Z,isle:eden,fix,claim,hero-1,,
+2026-09-30T12:58:23Z,isle:eden,fix,done,hero-1,,"r1 defects addressed (parterres, park relief + walks, mixed species, rune/core dimmed, water cone moved south, classical tower, reed shore); draft2 1129 trees"
+2026-09-30T12:58:23Z,isle:eden,review-r2,done,hero-1,pass,r2 fidelity 7.5 / credibility 6.5
+2026-09-30T12:58:23Z,isle:isle5,setting,claim,hero-1,,
+2026-09-30T12:59:03Z,isle:isle5,setting,done,hero-1,,setting block C1-C2/R1-R10 in docs/upper-islands-checklist.md
+2026-09-30T12:59:03Z,isle:isle5,draft,claim,hero-1,,
+2026-09-30T13:04:56Z,isle:isle5,draft,done,hero-1,,"draft1 OK, 3738 trees"
+2026-09-30T13:04:56Z,isle:isle5,board,done,hero-1,,board1 8/8 anchored
+2026-09-30T13:04:56Z,isle:isle5,review-r1,done,hero-1,fail,"r1 fidelity 5.5 / credibility 4.5: chicken-wire ward, plantation cones, ridges hidden, house lost, zebra spikes"
