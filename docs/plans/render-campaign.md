@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T17:09:43Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T18:47:42Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 40 | 0 | 11 | 0 | 0 | 0 | 51 |
+| standard | 42 | 0 | 3 | 6 | 0 | 0 | 51 |
 | hero | 4 | 0 | 11 | 0 | 6 | 0 | 21 |
 
 Below-gate (user spot-check): none
@@ -55,14 +55,14 @@ Below-gate (user spot-check): none
 | 38 | `base:site_fief3` | basemap | done | - |  |  | Final-spec audit / re-render of base map site_fief3 |
 | 39 | `base:site_fief4` | basemap | done | - |  |  | Final-spec audit / re-render of base map site_fief4 |
 | 40 | `base:site_fief5` | basemap | done | - |  |  | Final-spec audit / re-render of base map site_fief5 |
-| 41 | `var:tc_mid:dawn` | variant | open | render |  |  | Period variant tc_mid / dawn |
-| 42 | `var:tc_mid:dusk` | variant | open | render |  |  | Period variant tc_mid / dusk |
-| 43 | `var:tc_mid:day` | variant | open | render |  |  | Period variant tc_mid / day |
-| 44 | `var:tc_mid:night` | variant | open | render |  |  | Period variant tc_mid / night |
-| 45 | `var:tc_low:dawn` | variant | open | render |  |  | Period variant tc_low / dawn |
-| 46 | `var:tc_low:day` | variant | open | render |  |  | Period variant tc_low / day |
-| 47 | `var:tc_low:dusk` | variant | open | render |  |  | Period variant tc_low / dusk |
-| 48 | `var:tc_low:night` | variant | open | render |  |  | Period variant tc_low / night |
+| 41 | `var:tc_mid:dawn` | variant | waiting | register |  | waiting-on-freeze | Period variant tc_mid / dawn |
+| 42 | `var:tc_mid:dusk` | variant | waiting | register |  | waiting-on-freeze | Period variant tc_mid / dusk |
+| 43 | `var:tc_mid:day` | variant | done | - |  |  | Period variant tc_mid / day |
+| 44 | `var:tc_mid:night` | variant | done | - |  |  | Period variant tc_mid / night |
+| 45 | `var:tc_low:dawn` | variant | waiting | register |  | waiting-on-freeze | Period variant tc_low / dawn |
+| 46 | `var:tc_low:day` | variant | waiting | register |  | waiting-on-freeze | Period variant tc_low / day |
+| 47 | `var:tc_low:dusk` | variant | waiting | register |  | waiting-on-freeze | Period variant tc_low / dusk |
+| 48 | `var:tc_low:night` | variant | waiting | register |  | waiting-on-freeze | Period variant tc_low / night |
 | 49 | `fix:climate_tower` | review | open | review-r1 |  |  | Climate tower material: white block on the top, pink strip on the podium |
 | 50 | `inst:supreme_court` | review | open | review-r1 |  |  | Institution model check: supreme court |
 | 51 | `inst:tiancheng_univ` | review | open | review-r1 |  |  | Institution model check: tiancheng univ |

@@ -344,3 +344,31 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T17:09:42Z,base:site_fief5,tiles,done,std-1,pass,"tools/make_dzi.py: 4000x2500, 13 levels, 66 tiles, jpg 512/overlap 1, extent from maps.json"
 2026-09-30T17:09:43Z,base:site_fief5,verify,done,std-1,pass,whole image checked; check_maps 0 errors 0 warnings
 2026-09-30T17:09:43Z,base:site_fief5,ship,done,std-1,pass,tiles committed and pushed
+2026-09-30T17:31:01Z,var:tc_mid:dawn,render,claim,std-1,,
+2026-09-30T18:46:28Z,var:tc_mid:dawn,render,claim,std-1,,
+2026-09-30T18:47:41Z,var:tc_mid:dawn,render,done,std-1,pass,"8000x5000 / 128 spp via the queue (Mac, ~4 min), logs/campaign/full/ (git-ignored); contact sheet checked: full size, no black frame"
+2026-09-30T18:47:41Z,var:tc_mid:dawn,tiles,done,std-1,pass,"tools/make_dzi.py: 8000x5000, 14 levels, 226 tiles, extent 3000x1875 from maps.json"
+2026-09-30T18:47:41Z,var:tc_mid:dawn,register,wait,std-1,,FREEZE_MAPS on origin/preview (maps.json edits frozen). Tiles are committed. To finish: add the period to the map's periods in maps.json and update tests/compat_v1.test.mjs:203 (it pins tc_mid periods to day+night)
+2026-09-30T18:47:41Z,var:tc_mid:dusk,render,done,std-1,pass,"8000x5000 / 128 spp via the queue (Mac, ~4 min), logs/campaign/full/ (git-ignored); contact sheet checked: full size, no black frame"
+2026-09-30T18:47:41Z,var:tc_mid:dusk,tiles,done,std-1,pass,"tools/make_dzi.py: 8000x5000, 14 levels, 226 tiles, extent 3000x1875 from maps.json"
+2026-09-30T18:47:41Z,var:tc_mid:dusk,register,wait,std-1,,FREEZE_MAPS on origin/preview (maps.json edits frozen). Tiles are committed. To finish: add the period to the map's periods in maps.json and update tests/compat_v1.test.mjs:203 (it pins tc_mid periods to day+night)
+2026-09-30T18:47:41Z,var:tc_low:dawn,render,done,std-1,pass,"8000x5000 / 128 spp via the queue (Mac, ~4 min), logs/campaign/full/ (git-ignored); contact sheet checked: full size, no black frame"
+2026-09-30T18:47:41Z,var:tc_low:dawn,tiles,done,std-1,pass,"tools/make_dzi.py: 8000x5000, 14 levels, 226 tiles, extent 3000x1875 from maps.json"
+2026-09-30T18:47:41Z,var:tc_low:dawn,register,wait,std-1,,FREEZE_MAPS on origin/preview (maps.json edits frozen). Tiles are committed. To finish: add the period to the map's periods in maps.json and update tests/compat_v1.test.mjs:203 (it pins tc_mid periods to day+night)
+2026-09-30T18:47:41Z,var:tc_low:dusk,render,done,std-1,pass,"8000x5000 / 128 spp via the queue (Mac, ~4 min), logs/campaign/full/ (git-ignored); contact sheet checked: full size, no black frame"
+2026-09-30T18:47:42Z,var:tc_low:dusk,tiles,done,std-1,pass,"tools/make_dzi.py: 8000x5000, 14 levels, 226 tiles, extent 3000x1875 from maps.json"
+2026-09-30T18:47:42Z,var:tc_low:dusk,register,wait,std-1,,FREEZE_MAPS on origin/preview (maps.json edits frozen). Tiles are committed. To finish: add the period to the map's periods in maps.json and update tests/compat_v1.test.mjs:203 (it pins tc_mid periods to day+night)
+2026-09-30T18:47:42Z,var:tc_low:day,render,done,std-1,pass,"8000x5000 / 128 spp via the queue (Mac, ~4 min), logs/campaign/full/ (git-ignored); contact sheet checked: full size, no black frame"
+2026-09-30T18:47:42Z,var:tc_low:day,tiles,done,std-1,pass,"tools/make_dzi.py: 8000x5000, 14 levels, 226 tiles, extent 3000x1875 from maps.json"
+2026-09-30T18:47:42Z,var:tc_low:day,register,wait,std-1,,FREEZE_MAPS on origin/preview (maps.json edits frozen). Tiles are committed. To finish: add the period to the map's periods in maps.json and update tests/compat_v1.test.mjs:203 (it pins tc_mid periods to day+night)
+2026-09-30T18:47:42Z,var:tc_low:night,render,done,std-1,pass,"8000x5000 / 128 spp via the queue (Mac, ~4 min), logs/campaign/full/ (git-ignored); contact sheet checked: full size, no black frame"
+2026-09-30T18:47:42Z,var:tc_low:night,tiles,done,std-1,pass,"tools/make_dzi.py: 8000x5000, 14 levels, 226 tiles, extent 3000x1875 from maps.json"
+2026-09-30T18:47:42Z,var:tc_low:night,register,wait,std-1,,FREEZE_MAPS on origin/preview (maps.json edits frozen). Tiles are committed. To finish: add the period to the map's periods in maps.json and update tests/compat_v1.test.mjs:203 (it pins tc_mid periods to day+night)
+2026-09-30T18:47:42Z,var:tc_mid:day,render,done,std-1,pass,"8000x5000 / 128 spp via the queue (Mac, ~4 min), logs/campaign/full/ (git-ignored); contact sheet checked: full size, no black frame (replaces the 64 spp render of 2026-09-29)"
+2026-09-30T18:47:42Z,var:tc_mid:day,tiles,done,std-1,pass,"tools/make_dzi.py: 8000x5000, 14 levels, 226 tiles, extent 3000x1875 from maps.json; same file name as before, so the existing registration keeps working"
+2026-09-30T18:47:42Z,var:tc_mid:day,register,skip,std-1,,already registered in maps.json periods (day/night)
+2026-09-30T18:47:42Z,var:tc_mid:day,ship,done,std-1,pass,128 spp tiles committed and pushed; check_maps + smoke pass
+2026-09-30T18:47:42Z,var:tc_mid:night,render,done,std-1,pass,"8000x5000 / 128 spp via the queue (Mac, ~4 min), logs/campaign/full/ (git-ignored); contact sheet checked: full size, no black frame (replaces the 64 spp render of 2026-09-29)"
+2026-09-30T18:47:42Z,var:tc_mid:night,tiles,done,std-1,pass,"tools/make_dzi.py: 8000x5000, 14 levels, 226 tiles, extent 3000x1875 from maps.json; same file name as before, so the existing registration keeps working"
+2026-09-30T18:47:42Z,var:tc_mid:night,register,skip,std-1,,already registered in maps.json periods (day/night)
+2026-09-30T18:47:42Z,var:tc_mid:night,ship,done,std-1,pass,128 spp tiles committed and pushed; check_maps + smoke pass
