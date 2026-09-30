@@ -302,3 +302,5 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   cleanup removed refs, and those were verified ancestors or tagged first (`archive/upper-v18`).
 - New items are added to §1–§4 with their `file:line` source. If an area grows past a screen, extend its
   section here instead of opening a new file.
+
+- [x] Part 8 三项（三维实体拾取 / 确定性时钟漫游 / 纵深 × 图层融合）✅ 2026-09-30 `ae2a3a7`：① `map/core/stash3d.mjs`（藏物 → 三维落点纯映射）+ `estate/main.js` 的发光道具组与「先打道具再打房间」的射线拾取（`estate:loot` → `eden-map:loot`，`estate:stash` / `estate:taken` 下发与对账）；② 日程数学下沉 `map/core/routine.mjs`（`map/tavern/routine.mjs` 原样转发）+ 新 `map/core/walk.mjs`（`tickClock` 只按经过时间推世界时刻、`createWalker` 任意维插值禁瞬移，减少动态效果一步到位），`app/wander.mjs` 改由本地确定性时钟驱动、每帧 `viewer.updateOverlay` 落位，新消息 `eden-map:routine`；③ `map/core/haze.mjs`（`currentHaze` → LayerRegistry 滤镜链）+ `map/app/depthhaze.mjs` 挂 `depth-haze` 槽位并把同一条链同步给 `#fogCv`（省流档不花全屏合成）。测试：新增 `tests/stash3d.test.mjs` / `tests/walk.test.mjs` / `tests/depth_layers.test.mjs` 共 22 项，node --test 492 全绿、smoke 全过；新探针 `tools/browser/p8_pick_clock_depth.mjs` 24/24；回归 p5_sandbox / estate3d / p1_leak（监听器 20 → 20）全绿。
