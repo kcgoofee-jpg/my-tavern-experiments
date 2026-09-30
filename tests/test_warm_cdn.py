@@ -153,19 +153,16 @@ class ShellCase(unittest.TestCase):
         self.assertEqual(full, direct)
         self.assertEqual(self.run_sh('HEAD', '--count').stdout.strip(), str(len(full)))
 
-    def test_diff_list_is_a_subset(self):
-        full = set(self.run_sh('HEAD', '--full', '--list').stdout.split())
-        diff = self.run_sh('HEAD', '--diff', '--list').stdout.split()
-        self.assertTrue(diff)
-        self.assertTrue(set(diff) <= full)
-        self.assertLess(len(diff), len(full))
-
-    def test_diff_with_explicit_base_matches_plan(self):
-        base = subprocess.run(['git', '-C', ROOT, 'rev-parse', 'HEAD^'],
-                              capture_output=True, text=True).stdout.strip()
-        shell = self.run_sh('HEAD', '--diff', base, '--list')
+    # 基线一律显式传：CI 是 fetch-depth 1 的浅克隆，没有父提交，--diff 不带基线会（正确地）升级成全量
+    def test_diff_with_base_matches_plan(self):
+        shell = self.run_sh('HEAD', '--diff', 'HEAD', '--list')
         self.assertEqual(shell.returncode, 0, shell.stderr)   # 回归：基线曾以 --base 传下去，warm_plan 不认、静默退出 2
-        self.assertEqual(shell.stdout.split(), warm_plan.plan(ROOT, 'HEAD', base=base, diff=True)[0])
+        self.assertEqual(shell.stdout.split(), warm_plan.plan(ROOT, 'HEAD', base='HEAD', diff=True)[0])
+        self.assertEqual(shell.stdout.split(), list(PINS))    # 空改动：只剩头指针
+
+    def test_diff_with_unresolvable_base_escalates_to_full(self):
+        full = self.run_sh('HEAD', '--full', '--list').stdout.split()
+        self.assertEqual(self.run_sh('HEAD', '--diff', 'deadbeef', '--list').stdout.split(), full)
 
     def test_detach_returns_immediately_and_writes_a_log(self):
         log = os.path.join(tempfile.mkdtemp(), 'warm.log')

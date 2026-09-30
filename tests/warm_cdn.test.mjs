@@ -14,14 +14,13 @@ test('warm list excludes non-runtime files, keeps runtime ones', () => {
   assert.equal(run('--count'), String(l.length));
 });
 
-// 2026-09-30 增量预热：--full 与默认等价；--diff 只出本次改动 + 头指针（个小得多的子集）
+// 2026-09-30 增量预热：--full 与默认等价；--diff 只出改动 + 头指针。
+// 基线显式传 HEAD（CI 是 fetch-depth 1 的浅克隆，没有父提交，--diff 会自动升级成全量——那也是对的行为）
 test('--full equals the default full list; --diff is a small subset with the head pointers', () => {
   const full = run('--list').split('\n');
   assert.deepEqual(run('--full', '--list').split('\n'), full);
-  const diff = run('--diff', '--list').split('\n');
-  assert.ok(diff.length > 0 && diff.length < full.length, `${diff.length} vs ${full.length}`);
+  const diff = run('--diff', 'HEAD', '--list').split('\n');   // 空改动：只剩头指针
+  assert.deepEqual(diff, ['map/data/head.json', 'map/tavern/eden-map.js']);
   for (const f of diff) assert.ok(full.includes(f), `not in full list: ${f}`);
-  assert.ok(diff.includes('map/data/head.json'));          // 头指针每次都刷新
-  assert.ok(diff.includes('map/tavern/eden-map.js'));      // 加载器入口同理
-  assert.equal(run('--diff', '--count'), String(diff.length));
+  assert.equal(run('--diff', 'HEAD', '--count'), String(diff.length));
 });
