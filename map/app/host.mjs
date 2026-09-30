@@ -13,6 +13,7 @@ import { TCSettings, setLine, about, renderAbout, renderSelfCheck, selfCheck, se
 import { emEmit, setChat } from './extapi.mjs';
 import { flashOk, ntActs } from './shell.mjs';
 import { P } from './plugins.mjs';
+import { busOn } from './bus.mjs';
 // 嵌入酒馆（悬浮按钮面板）的消息接口：
 //   酒馆 → 地图：eden-map:here {value}（当前地点）、eden-map:open {map}（直接打开某张地图）
 //   地图 → 酒馆：eden-map:ready（可以撤掉加载遮罩）、eden-map:state {map, title}（当前地图，用于面板标题）
@@ -68,7 +69,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:wake' && sleeping) { setSlowStop(true); const id = sleeping; setSleeping(null); go(id); if (e.data.fly) P.TCCustom.flyTo(e.data.fly); }   // 先开图再飞：fly 目标认不出时不会留下空舞台（接手 review P2）
     else if (e.data?.type === 'eden-map:wake') { markHere($('#here').value || ''); if (e.data.fly) P.TCCustom.flyTo(e.data.fly); }   // G3（P1）：不在休眠也响应（宿主在标签页切回前台时广播，docs/reviews/architecture_and_stream_perf.md §1.4）——当前地点标记重画一遍，其余图层由宿主紧随的数据推送刷新
   };
-  window.addEventListener('message', onHostMsg);
+  busOn({ key: 'host.hostMsg', type: 'message', fn: onHostMsg });   // P2-3：登记进总线（键重复先摘旧的，卸载一把摘净）
   // 核心模块在地图库下载完才求值（以前内联脚本在解析期就挂好监听）：这之前宿主发来的消息由 viewer.html 末尾的前置脚本排队，这里按原顺序补处理
   const early = window.__earlyMsgs; window.__earlyMsgs = null;
   if (window.__earlyTap) window.removeEventListener('message', window.__earlyTap);

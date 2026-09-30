@@ -14,6 +14,7 @@ import { createRoutes, scoreText } from './host-routes.mjs';
 import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
 import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取收口（Mvu / SillyTavern 全局只在这一个模块里）
 import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下文交互流水线（窗口 / 事件 / 人物 / 标签 / 行程的纯计算）
+import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）
 (() => {
   const SELF = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-th.mjs
@@ -287,37 +288,16 @@ import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下�
     const how = CPm.insert(window.parent, text, typeof triggerSlash === 'function' ? triggerSlash : null);
     post({ type: 'eden-map:compose-done', ok: !!how, how });
   }
-  // ---------------- v0.9.6 版本与检查更新 ----------------
+  // ---------------- v0.9.6 版本与检查更新（P2 解耦：实现在 tavern/host-about.mjs，这里只留装配） ----------------
   // 版本信息：预览 / 正式脚本在 import 前写 window.__edenMapScript = { version, code, channel: tag | follow | ref, ref, sha }（tools/build_preview_script.py 烘进去）；
   // 没有（旧脚本、本地）时按脚本地址判定，版本号与构建号取当前线路的 data/build.json。
   const SCRIPT = (() => { try { return window.__edenMapScript || window.parent.__edenMapScript || {}; } catch (e) { return {}; } })();
-  const refOf = () => (SELF.match(/@([^/]+)\/map\/$/) || [])[1] || '';
-  const channel = () => SCRIPT.channel || (VER ? 'tag' : swappable ? 'ref' : 'local');
-  let aboutBuild = null;
-  const buildNow = () => aboutBuild ??= cdnFetch(BASE + 'data/build.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
-  async function sendAbout() { const b = await buildNow(), l = LINES.find(x => x.key === line);
-    if (!SRCm) { try { SRCm = await import(SELF + 'tavern/sources.mjs'); } catch (e) {} }   // 版本分支识别（sources.mjs 的分支注册表）
-    const br = SRCm ? (SRCm.branchOf(SCRIPT.ref) || SRCm.branchOf(refOf()) || (VER ? 'main' : null)) : null;
-    post({ type: 'eden-map:about', version: b?.version || SCRIPT.version || VER || null, code: b?.code || SCRIPT.code || null, channel: channel(),
-      ref: SCRIPT.ref || (VER ? tagOf(VER) : refOf()), sha: SCRIPT.sha || null, build: Number.isInteger(SCRIPT.build) ? SCRIPT.build : null, source: SCRIPT.source || null, locked: !!SCRIPT.locked, line: l ? (UL === 'en' && l.name_en) || l.name : '',
-      branch: br, branches: SRCm ? SRCm.BRANCHES : [], branchSw: !!SRCm?.branchUrl(import.meta.url, 'main') }); }
-  // 查最新 map-v 标签（jsDelivr 数据接口，绕缓存），再取该标签的 build.json（走当前线路）；比较版本号。只报告，不安装
-  async function followUpdate() {   // 跟随分支：设置里「检查更新」走 head.json 链（和加载器、followCheck 一样；不看正式版标签）
-    const h = await followHead(); if (!h) return { status: 'fail', follow: true };
-    return { status: followNewer(h) ? 'new' : 'latest', follow: true, build: h.build, sha: String(h.sha).slice(0, 12), source: h.source, cur: SCRIPT.build ?? null };
-  }
-  async function checkUpdate() {
-    try {
-      SC ??= await import(SELF + 'tavern/selfcheck.mjs');
-      const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 10000);
-      const j = await cdnFetch(SC.UPDATE_API(REPO) + '?t=' + Date.now(), { cache: 'no-store', signal: ctl.signal }).then(r => r.ok ? r.json() : null).finally(() => clearTimeout(to));
-      const latest = SC.latestTag(j); if (!latest) return { status: 'fail' };
-      const host = (LINES.find(x => x.key === line) || LINES[0]).host || 'cdn.jsdelivr.net';
-      const lb = await cdnFetch(`https://${host}/gh/${REPO}@${SC.tagOf(latest)}/map/data/build.json?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
-      const cur = SC.buildVer(await buildNow()) || SCRIPT.version || VER;
-      return { ...SC.updateVerdict(cur, latest, channel()), code: lb?.code || null, min: lb?.min_version || null, reason: lb?.force_reason || '', notes: `https://github.com/${REPO}/blob/${SC.tagOf(latest)}/CHANGELOG.md` };
-    } catch (e) { return { status: 'fail' }; }
-  }
+  const AB = createAbout({ cdnFetch, post, base: () => BASE, REPO, SELF, VER, tagOf, LINES, swappable, SCRIPT,
+    lineKey: () => line, lang: () => (UL === 'en' ? 'en' : 'zh'), followHead: () => followHead(), followNewer,
+    loadSelfcheck: async () => (SC ??= await import(SELF + 'tavern/selfcheck.mjs')),
+    loadSources: async () => (SRCm ??= await import(SELF + 'tavern/sources.mjs')) });
+  const sendAbout = () => AB.sendAbout(), checkUpdate = () => AB.checkUpdate(), followUpdate = () => AB.followUpdate();
+  const channel = () => AB.channel(), buildNow = () => AB.buildNow();   // 自检页与强制更新判断要用同一个口径
   // ---------------- MVUBridge（P2 解耦第一步，docs/reviews/architecture_and_stream_perf.md §3）----------------
   // 变量映射（v0.9.5，换卡兼容）、stat_data 快照选取（v0.9.9）、当前地点三级兜底（MVU → 标签对账 → 表格数据库插件，
   // 只读）、自定义数据的变量读写（A-11）全部收进 map/tavern/mvu-bridge.mjs——宿主脚本里唯一允许直接碰

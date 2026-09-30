@@ -11,6 +11,7 @@ import { registry } from './layerhost.mjs';
 import { altDepth, channel, parallaxOn } from '../core/depth.mjs';
 import { lean } from './tiers.mjs';
 import { altOn, go, setGo } from './nav.mjs';
+import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记（键重复先摘旧的，卸载可一把摘净）
 (() => {
   const RMq = matchMedia('(prefers-reduced-motion: reduce)'), RM = () => RMq.matches;
   const ANG = 35 * Math.PI / 180, UX = Math.cos(ANG), UY = -Math.sin(ANG), PX = -UY, PY = UX, AR = 440 / 800;
@@ -81,9 +82,9 @@ import { altOn, go, setGo } from './nav.mjs';
     if (!shown && mount()) { shown = true; box.hidden = false; reset(false); }
   }
   new MutationObserver(() => setTimeout(sync, 0)).observe(document.body, { attributes: true, attributeFilter: ['data-map'] });
-  document.addEventListener('change', e => { if (e.target?.id === 'tgAltBox') setTimeout(sync, 0); });
+  busOn({ key: 'clouds.altToggle', target: document, type: 'change', fn: e => { if (e.target?.id === 'tgAltBox') setTimeout(sync, 0); } });
   RMq.addEventListener?.('change', sync);
-  document.addEventListener('visibilitychange', () => anims.forEach(a => document.hidden ? a.pause() : a.play()));
+  busOn({ key: 'clouds.visibility', target: document, type: 'visibilitychange', fn: () => anims.forEach(a => document.hidden ? a.pause() : a.play()) });
 
   // ---------- 切层转场（v0.9.6：短的升 / 降，替换原来的大云团扫屏）----------
   // 用户实测 v0.9.5：「✓ 已加载」之后大团模糊云还停在中层 / 下层上面——Web Animations 的 finished 在 WKWebView 里可能一直不 resolve，

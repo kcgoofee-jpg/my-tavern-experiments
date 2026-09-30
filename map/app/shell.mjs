@@ -7,6 +7,7 @@ import { narrowNow } from './estate.mjs';
 import { jumpHere, setUserMoved, userMoved } from './locate.mjs';
 import { TCSettings, showSet } from './settings.mjs';
 import { P } from './plugins.mjs';
+import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
 // ---------------- 外壳（UI v2）：控制列、唯一抽屉、通知层、状态点 ----------------
 // 控制列 #dock：手机 = ⋯（设置首页，含上一级 / 关闭地图 / 切层）+ 缩放；桌面 = 层切换 + 缩放 + 标注。位置跟着抽屉（--sheet-h）/ 右栏（--rail-w-now）
 function makeDock() {
@@ -105,7 +106,7 @@ export function initShell() {
   $('#tgLabels').addEventListener('change', paintLbl);
   $('#stDot').onclick = () => { const ts = $('#tierState'); if (ts.classList.contains('stuck')) ts.click(); };
   new MutationObserver(stDotLabel).observe($('#tierState'), { attributes: true, childList: true, characterData: true, subtree: true });
-  addEventListener('resize', () => { placeLayers(); });
+  busOn({ key: 'shell.resize', type: 'resize', fn: () => { placeLayers(); } });
 }
 export function stDotLabel() { const ts = $('#tierState'), d = $('#stDot'); if (!d) return; const txt = ts.textContent || tx('loaded', '✓ 已加载');
   d.setAttribute('aria-label', tx('s.status', '状态') + '：' + txt); d.title = ts.classList.contains('stuck') ? txt : txt; }
@@ -161,7 +162,7 @@ export function initE7() {
     window.__hand = b.dataset.hand; try { TCStore.set('edenMapHand', window.__hand); } catch (err) {}
     window.__applyHand(); paint(); postState(); });
   paint();
-  addEventListener('storage', e => { if (e.key === 'edenMapFabPos' && window.__hand === 'auto') window.__applyHand(); });   // 自动：悬浮按钮拖到另一边，地图跟着换
+  busOn({ key: 'shell.storage', type: 'storage', fn: e => { if (e.key === 'edenMapFabPos' && window.__hand === 'auto') window.__applyHand(); } });   // 自动：悬浮按钮拖到另一边，地图跟着换
   initQuickZoom();
 }
 export function setActs() { const up = $('#actUp'), cl = $('#actClose'), hg = $('#actHere'), par = cur && REG?.maps[cur]?.parent, nar = narrowNow();

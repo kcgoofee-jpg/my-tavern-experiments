@@ -10,6 +10,7 @@ import * as TCCvd from './cvd.mjs';
 import { setFpsMeter } from './fps.mjs';
 import { MAINTAINER_MODE_KEY } from '../core/room-gallery-logic.mjs';
 import { mountFeedbackButton } from './feedback.mjs';
+import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
 // ---------------- 设置（UI v2 §5）：首页 = 分组列表（+ 手机上的快捷：上一级、当前位置、关闭地图、切层、图层开关）；子页 显示 / 人物 / 数据与映射 / 更新与版本 / 高级 ----------------
 // 模块向指定页注册自己的一栏：TCSettings.registerSection(page, el, { order })，不再 insertBefore(#selfCheck)。
 export let setPageNow = 'home', setPrev = null;
@@ -89,7 +90,7 @@ export function initSettings() {
   btn.onclick = e => { e.stopPropagation(); showSet(pop.hidden); };
   // 目标已被重绘移出文档（如「检查更新」按钮点完即重绘）不算点在外面
   const gone = t => t instanceof Node && !t.isConnected;
-  document.addEventListener('click', e => { if (!pop.hidden && !narrowNow() && !gone(e.target) && !pop.contains(e.target) && !btn.contains(e.target) && !e.target.closest?.('#thumbBtn, .rg, #cuDlg, #umDlg')) showSet(false); });
+  busOn({ key: 'settings.outsideClick', target: document, type: 'click', fn: e => { if (!pop.hidden && !narrowNow() && !gone(e.target) && !pop.contains(e.target) && !btn.contains(e.target) && !e.target.closest?.('#thumbBtn, .rg, #cuDlg, #umDlg')) showSet(false); } });
   // 「图层 ▾」弹层：挂在按钮下方、右对齐
   const lb = $('#layBtn'), lp = $('#layPop');
   showLay = on => { lp.hidden = !on; lb.setAttribute('aria-expanded', on ? 'true' : 'false');
@@ -100,7 +101,7 @@ export function initSettings() {
     const f = [...el.querySelectorAll('button, input, summary, select, [tabindex="0"]')].filter(x => x.offsetParent && !x.disabled); if (!f.length) return;
     const i = f.indexOf(document.activeElement);
     if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); } });
-  document.addEventListener('click', e => { if (!lp.hidden && !gone(e.target) && !lp.contains(e.target) && !lb.contains(e.target)) showLay(false); });
+  busOn({ key: 'settings.layerOutsideClick', target: document, type: 'click', fn: e => { if (!lp.hidden && !gone(e.target) && !lp.contains(e.target) && !lb.contains(e.target)) showLay(false); } });
   // 表单正在编辑时通知先不出（§3）
   pop.addEventListener('focusin', noticeRefresh); pop.addEventListener('focusout', () => setTimeout(noticeRefresh, 0));
   { const cs = $('#optCharStats'); try { cs.checked = TCStore.get('edenMapCharStats') !== '0'; } catch (e) {} cs.onchange = () => P.TCChars.setStatsOn(cs.checked); }   // v0.9.6 E2 / E13
