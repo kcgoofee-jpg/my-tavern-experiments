@@ -79,6 +79,12 @@ test('账实对拍：55 个地标清单全部合格——id = 目录名、glb �
   }
   assert.equal(checked, 55);
 });
+test('S4-3：每个地标清单都有 maps.json 里的三维页（viewer3d = 目录名）——55 个，猎季营地是第 55 个', () => {
+  const via = Object.values(rd('data/maps.json').maps).map(m => m.viewer3d).filter(Boolean);
+  const dirs = readdirSync(new URL('props/', root)).filter(d => existsSync(new URL(`props/${d}/manifest.json`, root)));
+  assert.equal(via.length, 55); assert.deepEqual([...via].sort(), [...dirs].sort());
+  assert.ok(via.includes('hunting_camp'));
+});
 test('Part 3：三维页用共享运行时（map/three/*），自己不再 new WebGLRenderer', () => {
   const v3d = readFileSync(new URL('props/viewer3d.html', root), 'utf8');
   assert.doesNotMatch(v3d, /new\s+THREE\.WebGLRenderer\s*\(/, '渲染器只能由 map/three/ctx.mjs 建');

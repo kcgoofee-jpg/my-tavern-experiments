@@ -335,6 +335,10 @@
       }
     },
     "tc_upper": {
+      "clouds": true,
+      "tint": "period",
+      "tier_label": "天城上层",
+      "tier_label_en": "Upper tier",
       "econ": "以太元 Æ（植入芯片 / 个人终端无接触）；上层全面免税",
       "econ_en": "Aether credits Æ (implant chip / personal terminal, contactless); the upper tier is tax-free",
       "view": {
@@ -614,6 +618,9 @@
       ]
     },
     "tc_mid": {
+      "tint": "period",
+      "tier_label": "天城中层",
+      "tier_label_en": "Middle tier",
       "econ": "以太元 Æ（植入芯片 / 个人终端无接触）；资产持有税按阶梯",
       "econ_en": "Aether credits Æ (implant chip / personal terminal, contactless); tiered asset-holding tax",
       "view": {
@@ -1123,6 +1130,8 @@
       }
     },
     "tc_low": {
+      "tier_label": "天城下层",
+      "tier_label_en": "Lower tier",
       "econ": "以太元 Æ；实体货币只在黑市（灰票，匿名芯片卡）；日薪约 80–150Æ；商品进中层缴 5% 入境税",
       "econ_en": "Aether credits Æ; cash only in the black market (grey scrip, anonymous chip cards); day wage about 80–150Æ; goods entering the middle tier pay 5% entry tax",
       "view": {
@@ -1845,6 +1854,20 @@
         "首相府花园"
       ],
       "src_note": "开局地标三维模型（标准版：标准档 + 低档 glb，方案 A：唐宁街式乔治时代砖砌联排 + 花园柱廊）；从上层 pm_residence 标记的「查看三维模型」进。源：blender/landmarks/pm_residence/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_hunting_camp": {
+      "title": "猎季营地",
+      "title_en": "Hunting Season Camp",
+      "parent": "world",
+      "kind": "estate",
+      "viewer3d": "hunting_camp",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "猎季营地"
+      ],
+      "src_note": "世界图上猎季营地的三维场景；从世界图 hunting_camp 地点卡的「查看三维模型」进。源：blender/landmarks/hunting_camp/",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
     },

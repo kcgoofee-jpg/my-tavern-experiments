@@ -37,12 +37,13 @@ test('parent / children: children are the maps whose parent is the map; the maps
   }
   assert.ok(eden.children('eden_estate').includes('dairy')); assert.ok(eden.children('tc_mid').includes('lm_cathedral'));
 });
-test('estate stand-in: the flat map and marker that stand for a 3D page match the old marker scan (the dairy and lm_well7 are new)', () => {
+test('estate stand-in: the flat map and marker that stand for a 3D page match the old marker scan (the dairy, lm_well7 and lm_hunting_camp are new)', () => {
   const now = {};
   for (const [id, m] of Object.entries(MAPS.maps)) if (m.kind === 'estate') now[id] = eden.standIn(id);
   assert.deepEqual(eden.standIn('eden_estate'), { map: 'tc_upper', marker: 'eden' });
   const diff = Object.keys(now).filter(id => JSON.stringify(now[id]) !== JSON.stringify(oldStandIn(MAPS.maps, id)));
-  assert.deepEqual(diff, ['lm_well7', 'dairy']);   // lm_well7: only `link3d` marks point at it (no stand-in before); dairy: in the tree since S2-A
+  assert.deepEqual(diff, ['lm_well7', 'lm_hunting_camp', 'dairy']);   // lm_well7: only `link3d` marks point at it (no stand-in before); lm_hunting_camp: a world place links to it (S4-3, no marker on a points map); dairy: in the tree since S2-A
+  assert.deepEqual(now.lm_hunting_camp, { map: 'world', marker: null });
   assert.equal(oldStandIn(MAPS.maps, 'lm_well7'), null); assert.deepEqual(now.lm_well7, { map: 'tc_low', marker: 'well7' });
   assert.deepEqual(now.dairy, { map: 'tc_upper', marker: 'eden' });   // the parlour has no marker of its own: the estate's marker stands for it
   assert.equal(eden.standIn('tc_low'), null); assert.equal(eden.standIn('nope'), null);

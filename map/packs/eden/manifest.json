@@ -18,7 +18,10 @@
     "events": "builtin",
     "stash": "data/stash.json",
     "routine": "data/routine.json",
-    "overlay": "packs/eden/overlay.v2.json"
+    "overlay": "packs/eden/overlay.v2.json",
+    "galleries": "data/room_galleries.json",
+    "worldbook_addon": "data/worldbook_addon.json",
+    "gallery": "data/gallery.json"
   },
   "preload": [
     "data/maps.json",
@@ -33,6 +36,31 @@
     "accent": "#e6c36a"
   },
   "worldbook": {
-    "addon": "tools/build_worldbook_addon.py"
+    "addon": "tools/build_worldbook_addon.py",
+    "prefix": "伊甸地图"
+  },
+  "credits": {
+    "card": {
+      "creator": "Yehehua"
+    },
+    "pack": [
+      {
+        "name": "kcgoofee-jpg",
+        "role": "map",
+        "url": "https://github.com/kcgoofee-jpg/my-tavern-experiments"
+      }
+    ],
+    "assets": [
+      {
+        "name": "Poly Haven",
+        "license": "CC0",
+        "url": "https://polyhaven.com"
+      },
+      {
+        "name": "ambientCG",
+        "license": "CC0",
+        "url": "https://ambientcg.com"
+      }
+    ]
   }
 }

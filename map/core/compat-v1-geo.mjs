@@ -71,6 +71,7 @@ export function buildGeo({ reg, world, names, plan }) {
     n.alias = uniq([p.name, p.name_en, en(p.name), ...(Array.isArray(p.alias) ? p.alias : [])]);
     put(n, 'sub', p.sub); put(n, 'cite', p.src); put(n, 'i18n', tr(en(p.name) || p.name_en)); put(n, 'at', placeAt(p));
     put(n, 'x-openings', p.openings); put(n, 'x-auto-highest', p.autoHighest);
+    if (ctx.viewer3d.has(p.link?.map)) n.view = p.link.map;   // a world place whose card links to a 3D page (S4-3): the node shows that view, like a landmark's link
     ctx.entities.push({ name: p.name, node: n.id }); return n;
   };
   const done = new Set();

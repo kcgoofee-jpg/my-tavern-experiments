@@ -30,7 +30,7 @@ const kinds = (pack, key) => Object.values(pack.views).filter(v => v.kind === ke
 // 3D landmark pages in the data today: A.8 was written with 40 (57 nodes, 54 views); a model shipped since (head #126), so the
 // expected numbers are derived from maps.json and only their lower bound is pinned.
 const LM = Object.entries(MAPS.maps).filter(([, m]) => m.kind === 'estate' && m.viewer3d).map(([k]) => k);
-const WITH_3D = Object.values(MAPS.maps).flatMap(m => Object.values(m.markers || {})).filter(k => [k.link, k.link3d].some(l => l && LM.includes(l.map))).length;
+const WITH_3D = Object.values(MAPS.maps).flatMap(m => Object.values(m.markers || {})).concat((WORLD.places || []).filter(p => p.link)).filter(k => [k.link, k.link3d].some(l => l && LM.includes(l.map))).length;   // landmarks and world places that show a 3D page
 
 test('A.8 counts: eden (maps + world + names) 113 nodes, depth 4, root world', () => {
   assert.deepEqual(describe(eden.tree, eden.views), { nodes: 113, depth: 4, types: { world: 1, realm: 3, group: 2, site: 8, layer: 5, landmark: 92, estate: 1, zone: 1 }, grown: 0, views: { tiles: 13, model3d: LM.length + 1 } });
@@ -40,6 +40,12 @@ test('A.8 counts: eden (maps + world + names) 113 nodes, depth 4, root world', (
   assert.equal(eden.pack.nodes.filter(n => n.view).length, WITH_3D);
   assert.equal(Object.values(eden.views).filter(v => v.kind === 'model3d' && v.open === 'enter').length, LM.length);
   assert.equal(eden.views.eden_estate.open, 'locate');
+});
+test('S4-3: a world place whose card links to a 3D page shows that view (mkEntity sets the node view)', () => {
+  assert.equal(eden.tree.get('hunting_camp').view, 'lm_hunting_camp'); assert.equal(eden.views.lm_hunting_camp.kind, 'model3d');
+  assert.equal(eden.views.lm_hunting_camp.manifest, 'props/hunting_camp/manifest.json'); assert.equal(eden.views.lm_hunting_camp.open, 'enter');
+  assert.equal(eden.tree.get('oren').view, undefined);   // a realm or place without such a link shows nothing
+  assert.equal(load({ manifest: MAN, maps: MAPS, world: { places: [{ ...WORLD.places.find(p => p.id === 'hunting_camp'), link: { map: 'world' } }] } }).tree.get('hunting_camp').view, undefined);   // a link to a flat map is no view
 });
 test('A.8 counts: eden + room plan 177 nodes, depth 4, 64 rooms and the dairy parlour under the estate', () => {
   const d = describe(edenPlan.tree, edenPlan.views);
