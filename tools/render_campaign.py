@@ -61,6 +61,14 @@ STAGES = {
     'island': ['setting', 'draft', 'board'] + REVIEW + ['final', 'integrate', 'ship'],
 }
 FREEZE_STAGES = ('ship', 'register')
+USER_STAGE = 'user-review'   # items with "user_gate": true stop here until the user approves (recorded by agent "user")
+
+
+def stages_of(item):
+    st = list(STAGES[item['type']])
+    if item.get('user_gate'):
+        st.insert(st.index('final') if 'final' in st else len(st) - 1, USER_STAGE)
+    return st
 STATUS_ORDER = ['done', 'claimed', 'open', 'waiting', 'blocked', 'stuck']
 BANNER = '> Generated file: do not edit — run tools/render_campaign.py status --md'
 
@@ -149,7 +157,7 @@ def append_event(item_id, stage, event, agent, gate='', note=''):
 class State:
     def __init__(self, item):
         self.item = item
-        self.stages = STAGES[item['type']]
+        self.stages = stages_of(item)
         self.done, self.skipped, self.gates, self.fails = set(), set(), {}, {}
         self.claim = None          # (agent, datetime of the owner's latest event)
         self.parked = None         # ship / register stage waiting for the FREEZE to lift
@@ -194,6 +202,13 @@ class State:
                 self.claim = (agent, t)
             if self.parked == stage:
                 self.parked = None
+        elif kind == 'fail' and stage == USER_STAGE and stage == self.current():
+            # the user sends the item back: redo fix + review-r2 with the user's notes, then ask again
+            self.done -= {'fix', 'review-r2'}
+            self.skipped -= {'fix', 'review-r2'}
+            self.gates['review-r1'] = 'fail'
+            self.gates.pop('review-r2', None)
+            self.claim = None
         elif kind == 'fail':
             self.fails[stage] = self.fails.get(stage, 0) + 1
             self.claim = None
@@ -221,6 +236,8 @@ def classify(st, states, at):
         return 'done'
     if st.fails.get(st.current(), 0) >= MAX_FAILS:
         return 'stuck'
+    if st.current() == USER_STAGE:
+        return 'waiting'           # never offered to an agent, even its last claimant
     if st.live_claim(at):
         return 'claimed'
     if st.parked and st.parked == st.current():
@@ -365,7 +382,7 @@ def cmd_next(a):
                 remaining += 1
                 continue
             status = classify(st, states, at)
-            if status == 'waiting':
+            if status == 'waiting' and st.current() != USER_STAGE:
                 frozen = ship_frozen() if frozen is None else frozen
                 status = 'open' if not frozen else 'waiting'
             if status == 'claimed' and st.claim[0] == a.agent:
@@ -404,14 +421,16 @@ def cmd_record(a):
     item = next((i for i in items if i['id'] == a.id), None)
     if not item:
         die('unknown item %s' % a.id)
-    if a.stage not in STAGES[item['type']]:
-        die('%s is a %s item; stage %r is not one of: %s' % (a.id, item['type'], a.stage, ', '.join(STAGES[item['type']])))
+    if a.stage not in stages_of(item):
+        die('%s is a %s item; stage %r is not one of: %s' % (a.id, item['type'], a.stage, ', '.join(stages_of(item))))
+    if a.stage == USER_STAGE and a.cmd in ('done', 'skip', 'fail') and a.agent != 'user':
+        die('%s is the user approval stage: only `--agent user` may record it' % USER_STAGE)
     st = replay(items, read_events())[a.id]
     if st.finished():
         die('%s is already finished' % a.id)
     if a.stage != st.current():
         die('%s is at stage %r, not %r' % (a.id, st.current(), a.stage))
-    live = st.live_claim(at)
+    live = st.live_claim(at) if a.stage != USER_STAGE else None   # the user's verdict ignores agent claims
     if live and live[0] != a.agent:
         die('%s is claimed by %s until %s' % (a.id, live[0], fmt(live[1] + TTL)))
     if a.gate and a.cmd != 'done':
@@ -453,7 +472,7 @@ def rows(items, states, at):
         if st.below_gate():
             flags.append('below-gate')
         if s == 'waiting':
-            flags.append('waiting-on-freeze')
+            flags.append('waiting-on-user' if st.current() == USER_STAGE else 'waiting-on-freeze')
         cl = st.live_claim(at)
         gone = st.done | st.skipped | st.auto_skipped()
         out.append({'id': it['id'], 'lane': it['lane'], 'type': it['type'], 'status': s, 'title': it['title'],

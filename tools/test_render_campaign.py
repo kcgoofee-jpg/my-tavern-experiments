@@ -75,6 +75,48 @@ class Base(unittest.TestCase):
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
 
+class UserGate(Base):
+    def setUp(self):
+        super().setUp()
+        gated = dict(item('G1', 'hero', 'island'), user_gate=True)
+        self.set_items([gated, item('H1', 'hero', 'island')])
+
+    def to_gate(self, agent='a'):
+        self.walk('G1', ['setting', 'draft', 'board', 'review-r1'], agent, gates={'review-r1': 'pass'})
+
+    def test_gated_item_stops_before_final_and_is_never_offered(self):
+        self.assertEqual(self.picked(self.next('hero', 'a'))[0], 'G1')
+        self.to_gate()
+        s = self.status()['G1']
+        self.assertEqual((s['stage'], s['status']), ('user-review', 'waiting'))
+        self.assertIn('waiting-on-user', s['flags'])
+        self.assertEqual(self.picked(self.next('hero', 'a'))[0], 'H1', 'its own claimant moves on to other work')
+        self.assertEqual(self.next('hero', 'b').returncode, 4, 'H1 is claimed by a, G1 waits for the user')
+
+    def test_only_the_user_can_approve(self):
+        self.to_gate()
+        self.assertEqual(self.rec('done', 'G1', 'user-review', 'a').returncode, 2)
+        self.assertEqual(self.rec('done', 'G1', 'user-review', 'user').returncode, 0)
+        self.assertEqual(self.picked(self.next('hero', 'a')), ('G1', 'final'))
+
+    def test_user_send_back_reopens_fix_and_review_r2_then_asks_again(self):
+        self.to_gate()
+        self.assertEqual(self.rec('fail', 'G1', 'user-review', 'user', '--note', 'bigger lake').returncode, 0)
+        self.assertEqual(self.picked(self.next('hero', 'a')), ('G1', 'fix'))
+        self.walk('G1', ['fix', 'review-r2'], gates={'review-r2': 'pass'})
+        self.assertEqual(self.status()['G1']['stage'], 'user-review')
+        self.assertEqual(self.rec('done', 'G1', 'user-review', 'user').returncode, 0)
+        self.assertEqual(self.status()['G1']['stage'], 'final')
+
+    def test_lane_with_only_a_gated_item_reports_waiting_not_done(self):
+        self.set_items([dict(item('G1', 'hero', 'island'), user_gate=True)])
+        self.to_gate()
+        self.assertEqual(self.next('hero', 'a').returncode, 4)
+
+    def test_ungated_items_keep_their_stage_list(self):
+        self.assertNotIn('user-review', self.rec('done', 'H1', 'nonsense').stderr.split('one of:')[1])
+
+
 class Replay(Base):
     def test_stage_replay_walks_the_landmark_stages_in_order(self):
         seen = []
@@ -424,14 +466,14 @@ class RealItemList(unittest.TestCase):
 
     def test_hero_groups_in_order(self):
         ids = self.lane('hero')
-        self.assertEqual(ids[:8], ['isle:' + x for x in ('silver_crown', 'isle4', 'isle5', 'isle6', 'isle9', 'isle10', 'isle25', 'isle30')])
-        self.assertEqual(ids[8:], ['base:tc_upper', 'var:tc_upper:16k', 'var:tc_upper:dawn', 'var:tc_upper:day', 'var:tc_upper:dusk',
+        self.assertEqual(ids[:9], ['isle:' + x for x in ('eden', 'silver_crown', 'isle4', 'isle5', 'isle6', 'isle9', 'isle10', 'isle25', 'isle30')])
+        self.assertEqual(ids[9:], ['base:tc_upper', 'var:tc_upper:16k', 'var:tc_upper:dawn', 'var:tc_upper:day', 'var:tc_upper:dusk',
                                   'var:tc_upper:night', 'estate:b1b2', 'lm:round_table_hall', 'lm:sun_arena', 'lm:union_tower', 'base:world'])
 
     def test_dependencies_and_specs(self):
         by = {i['id']: i for i in self.items}
         self.assertEqual(by['estate:opt']['depends'], ['estate:final'])
-        self.assertEqual(by['base:tc_upper']['depends'], ['isle:' + x for x in ('silver_crown', 'isle4', 'isle5', 'isle6', 'isle9', 'isle10', 'isle25', 'isle30')])
+        self.assertEqual(by['base:tc_upper']['depends'], ['isle:' + x for x in ('eden', 'silver_crown', 'isle4', 'isle5', 'isle6', 'isle9', 'isle10', 'isle25', 'isle30')])
         self.assertEqual(by['var:tc_upper:16k']['spec'], {'res': 16000, 'spp': 512})
         self.assertIn('tc_upper:victor_estate', by['isle:isle4']['targets'])
         self.assertIn('tc_upper:y_estate', by['isle:isle5']['targets'])
@@ -439,10 +481,11 @@ class RealItemList(unittest.TestCase):
         self.assertEqual(by['base:site_fief3']['spec'], {'res': 4000, 'spp': 128})
         self.assertEqual(by['estate:final']['spec'], {'res': 2000, 'spp': 32})
         self.assertFalse([i for i in self.items if 'rain' in i['id']], 'no weather variants')
+        self.assertEqual([i['id'] for i in self.items if i.get('user_gate')], ['isle:eden'], 'the user reviews only their own estate island')
 
     def test_item_shape_and_ascii(self):
         for i in self.items:
-            self.assertEqual(set(i), {'id', 'lane', 'type', 'title', 'targets', 'canon', 'depends', 'spec', 'hints', 'notes'})
+            self.assertEqual(set(i) - {'user_gate'}, {'id', 'lane', 'type', 'title', 'targets', 'canon', 'depends', 'spec', 'hints', 'notes'})
             self.assertIn(i['canon'], ('card', 'inferred'))
             self.assertTrue(json.dumps(i, ensure_ascii=False).isascii(), i['id'])
         self.assertEqual(len(self.ids), len(set(self.ids)))

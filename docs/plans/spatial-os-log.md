@@ -160,3 +160,15 @@ next: isle:isle5 (y_estate)
 cleanup: done (no Blender or server of this session left running)
 notes: agent name hero-1 (the prompt's AGENT=std-1 line says hero lanes use hero-1). The worktree ~/eden-render/wt-hero symlinks the ignored blender/data/props from the main checkout (textures are not in git; the first draft failed without them). The render guard verdict reported status=ok for a run that died with a Python traceback (missing texture) — guard bug, not fixed here. Integration = body-only crop re-render of tiancheng_upper.py (8000/64, --no-data 1) patched into the kept 8K full PNGs + island cutout pasted with tools/isles_into_upper.py at width × depth scale; base:tc_upper must repeat the paste (cutout ids now in tc_islands.json: silver_crown, victor_estate). The victor_estate marker moved from empty cloud onto the isle4 manor; worldbook add-on rebuilt (--ship) for the neighbour list.
 === END ===
+
+=== RESULT R-gate ===
+status: DONE
+items: user-review stage for "user_gate" items ✓  user send-back (fail --agent user) reopens fix + review-r2 ✓  item isle:eden (hero, first, user_gate) ✓  base:tc_upper depends on isle:eden ✓
+commits: feat(render): user approval gate in the campaign ledger; Eden Manor island item
+pushed: yes
+tests: test_render_campaign 45/45 | smoke PASS
+deviations: done by the reviewing session (Opus); user decision 2026-09-30: renders run to the end unattended, the user reviews only their own estate island
+blocker: none
+open: none
+cleanup: done
+=== END ===
