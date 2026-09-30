@@ -121,7 +121,7 @@ export class MVUBridge {
   setVarUser(u) { this.varUser = u && typeof u === 'object' ? u : {}; AD.writeUser(this.#store(), this.varCard, this.varUser); this.varSig = ''; return this.refreshVarMap(); }
   /** eden-map:varmap 的载荷（发设置「变量映射」用） */
   varmapView() { const st = this.mvuStat();
-    return { card: this.varCard, paths: AD.paths(st), map: this.varMap, user: this.varUser, detected: AD.detect(st), fields: AD.rowFields?.(st) || [], mode: this.varmode(), groups: getProfile().groups.map(g => ({ id: g.id, label: g.label || g.id })) }; }
+    return { card: this.varCard, paths: AD.paths(st), map: this.varMap, user: this.varUser, detected: AD.detect(st), fields: AD.rowFields?.(st) || [], mode: this.varmode(), groups: getProfile().groups.map(g => ({ id: g.id, label: g.label || g.id, ...(g.i18n ? { i18n: g.i18n } : {}) })) }; }
   /** 读法：'mvu' | 'mvu-partial' | 'tags'（adapter.mode；hasMvu 缺省 = Mvu 全局在） */
   varmode(hasMvu = this.mvuPresent()) { this.#ensure(); return AD.mode(hasMvu, this.mvuStat(), this.varMap); }
   /** adapter 读法取值（含 [值, 说明] 旧格式拆包） */

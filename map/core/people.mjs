@@ -6,6 +6,7 @@
 //   paneModel(list, mapItems, label)           what the page draws: the present section (its roster rows that are not on the map) and the other non-empty sections
 //                                              (their rows minus the people already listed above, and how many were left out)
 //   everyone(list, mapItems)                   the distinct names over the map's people and every section
+//   tableRows(groups)                          the variable-mapping rows for the roster tables, one per group: [[id, zh label, en label]] (the three default ids keep their old labels)
 // A pack with four groups gets four sections; the first pack's three are the same sections, in the same order, as the fixed three the page drew before.
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const rowsOf = t => (isObj(t) && Array.isArray(t.items) ? t.items : []);
@@ -41,3 +42,9 @@ export function paneModel(list, mapItems, label) {
 }
 
 export const everyone = (list, mapItems) => new Set([...(mapItems || []).map(c => c.name), ...list.flatMap(g => g.items.map(i => i.name))]);
+
+const TABLE_LABEL = { present: ['在场人物表', 'Present table'], members: ['成员表', 'Members table'], targets: ['目标表', 'Targets table'] };
+export function tableRows(groups) {
+  const list = Array.isArray(groups) && groups.length ? groups.filter(g => isObj(g) && typeof g.id === 'string') : Object.keys(TABLE_LABEL).map(id => ({ id }));
+  return list.map(g => { const std = TABLE_LABEL[g.id]; return [g.id, ...(std || [`${g.i18n?.zh?.label || g.label || g.id}表`, `${g.i18n?.en?.label || g.label || g.id} table`])]; });
+}

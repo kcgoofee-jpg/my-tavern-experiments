@@ -36,7 +36,7 @@ export function profileOf(pack) {
   const src = g => (isObj(g.source) ? g.source : {});
   const present = groups.find(g => src(g).present === true), presentId = present ? present.id : 'present';
   const named = groups.length ? groups.filter((g, i) => groups.findIndex(x => x.id === g.id) === i) : DEFAULT_GROUPS;   // pack order, an id once
-  const first = named.find(g => g.id === presentId) || { id: presentId }, list = [first, ...named.filter(g => g !== first)].map(g => ({ id: g.id, ...(str(g.label) && g.label ? { label: g.label } : {}), mvu: str(src(g).mvu) ? src(g).mvu : '' }));
+  const first = named.find(g => g.id === presentId) || { id: presentId }, list = [first, ...named.filter(g => g !== first)].map(g => ({ id: g.id, ...(str(g.label) && g.label ? { label: g.label } : {}), ...(isObj(g.i18n) ? { i18n: g.i18n } : {}), mvu: str(src(g).mvu) ? src(g).mvu : '' }));
   const tables = Object.fromEntries(list.map(g => [g.id, g.mvu])), after = list.filter(g => g.id !== presentId);
   return clone({ paths, periods: Array.isArray(v.periods) && v.periods.length ? v.periods : DEFAULT_PERIODS, groups: list, presentId, stageGroup: after[1]?.id || '', tables, place: (present && str(src(present).place) && src(present).place) || '',
     slots, fields, avatar: isObj(e.avatar) ? e.avatar : {} });

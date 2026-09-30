@@ -4,6 +4,7 @@
 import { esc, post } from './app/util.mjs';
 import { LANG } from './app/i18n.mjs';
 import { TCSettings } from './app/settings.mjs';
+import { tableRows } from './core/people.mjs';
 import { register } from './app/plugins.mjs';
 const TCVarMap = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
@@ -16,6 +17,7 @@ const TCVarMap = (() => {
   const DEF_KW = { air: '私人悬浮载具、悬浮载具、悬浮车、悬浮机动装置、飞行器、飞艇', rail: '跨城高速运输管道、运输管道、悬浮轨道、地面轨道、轨道', road: '步行连廊、货运通道、步行、走路', underground: '地铁、地道、地下通道', teleport: '' };
   const en = () => (typeof LANG !== 'undefined' && LANG === 'en');
   const L = r => (en() ? r[2] : r[1]);
+  const rowsF = () => F.flatMap(f => (f[0] === 'present' ? tableRows(d?.groups) : f[0] === 'members' || f[0] === 'targets' ? [] : [f]));   // 三张表的行按包的名册组逐组列（S4-4）
   const lab = f => (f[0] === 'knownField' ? T('vm.known', L(f)) : L(f));   // 这一项的名字由包文案定（词典 vm.known）
   const MODE_T = { mvu: ['vm.mode_mvu', 'MVU'], 'mvu-partial': ['vm.mode_partial', 'MVU（没找到地点字段）'], tags: ['vm.mode_tags', '聊天标签（没有 MVU）'] };
   function render() {
@@ -29,7 +31,7 @@ const TCVarMap = (() => {
     const kw = d.user?.keywords || null;
     box.innerHTML = `<summary><h3>${esc(T('vm.title', '变量映射'))}</h3><small>${esc(T(...(MODE_T[d.mode] || MODE_T.tags)))}</small></summary>`
       + `<small>${esc(T('vm.hint', '换了别的角色卡、字段名不一样时，在这里指定地图读哪个变量。按角色卡存在本机；「自动」= 默认或自动找到的'))}</small>`
-      + F.map(f => { const u = d.user?.[f[0]] || '', auto = d.detected?.[f[0]] || '';
+      + rowsF().map(f => { const u = d.user?.[f[0]] || '', auto = d.detected?.[f[0]] || '';
         if (/Field$/.test(f[0]) && f[0] !== 'stageField') return `<label class="vm-row"><span>${esc(lab(f))}</span><select data-f="${f[0]}"><option value="">${esc(T('vm.auto', '自动：{p}', { p: auto || T('vm.none', '无') }))}</option><option value="-" ${u === '-' ? 'selected' : ''}>${esc(T('vm.off', '关闭'))}</option>${(d.fields || []).map(k => `<option value="${esc(k)}" ${k === u ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></label>`;
         return `<label class="vm-row"><span>${esc(lab(f))}</span><select data-f="${f[0]}"><option value="">${esc(T('vm.auto', '自动：{p}', { p: auto || T('vm.none', '无') }))}</option>${(d.paths || []).map(p => opt(p, u)).join('')}</select></label>`; }).join('')
       + `<h4>${esc(T('vm.kw', '交通方式关键词（顿号或逗号分隔）'))}</h4>`
