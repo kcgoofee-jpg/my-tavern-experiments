@@ -231,3 +231,14 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T16:06:40Z,scene:fief2,review-r2,done,std-1,pass,"fidelity 7.5 / credibility 6 (r2.md); polish: headland, lighthouse placement"
 2026-09-30T16:08:25Z,scene:fief2,final,done,std-1,pass,std/low glb exported under max_mb 2.8/1.4
 2026-09-30T16:08:27Z,scene:fief2,ship,wait,std-1,,"FREEZE_MAPS on origin/preview; model, glbs, manifest committed; needs lm_fief2 entry + links for fief2_castle/order/village/fields in maps.json + card-buildings rows"
+2026-09-30T16:08:51Z,scene:fief3,new,claim,std-1,,
+2026-09-30T16:08:51Z,scene:fief3,new,done,std-1,pass,"fief3 new (shared fief_scene, valley preset)"
+2026-09-30T16:08:51Z,scene:fief3,setting,done,std-1,pass,"fief3 setting (shared fief_scene, valley preset)"
+2026-09-30T16:09:34Z,scene:fief3,draft,done,std-1,pass,fief3 draft
+2026-09-30T16:09:34Z,scene:fief3,board,done,std-1,pass,fief3 board
+2026-09-30T16:09:34Z,scene:fief3,gapcheck,done,std-1,pass,fief3 gapcheck
+2026-09-30T16:09:34Z,scene:fief3,review-r1,done,std-1,fail,"fidelity 6.5 / credibility 6: bridge buried, c2 shows bare slope, smooth bluff (docs/reviews/campaign/scene_fief3/r1.md)"
+2026-09-30T16:09:34Z,scene:fief3,fix,done,std-1,pass,"bridge deck at bank level, c2 from the west bank at the castle, rockier bluff"
+2026-09-30T16:09:57Z,scene:fief3,review-r2,done,std-1,pass,fidelity 7.5 / credibility 6 (r2.md)
+2026-09-30T16:17:37Z,scene:fief3,final,done,std-1,pass,std 1.69 MB / low 0.79 MB under max_mb 2.8/1.4
+2026-09-30T16:17:38Z,scene:fief3,ship,wait,std-1,,"FREEZE_MAPS on origin/preview; model, glbs, manifest committed; needs lm_fief3 entry + links for fief3_castle/order/village/fields in maps.json + card-buildings rows"

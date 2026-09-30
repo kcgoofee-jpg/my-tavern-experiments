@@ -47,10 +47,10 @@ PRESETS = {
     'fief2': dict(kind='coast', amp=6, base=7, seed=22, castle=(120, -55, 14), order=(-190, 40), village=(-20, -98), trees=70, conifer=0.1,
                   fields=10, stone=(0.72, 0.68, 0.6), roof=(0.5, 0.22, 0.14), houses=((0.75, 0.7, 0.6), (0.6, 0.52, 0.4), (0.5, 0.28, 0.2)),
                   leaf=((0.12, 0.2, 0.08), (0.2, 0.26, 0.1), (0.26, 0.3, 0.12)), grass=(0.6, 0.62, 0.3), extra='harbour'),
-    'fief3': dict(kind='valley', amp=8, base=6, seed=33, castle=(-120, 60, 20), order=(-175, -80), village=(150, -35), trees=210, conifer=0.15,
+    'fief3': dict(kind='valley', amp=8, base=6, seed=33, castle=(-120, 60, 26), castle_r=(40, 74), rock=0.5, order=(-175, -80), village=(150, -35), trees=210, conifer=0.15,
                   fields=13, stone=(0.55, 0.52, 0.48), roof=(0.36, 0.2, 0.16), houses=((0.6, 0.56, 0.48), (0.5, 0.3, 0.2), (0.42, 0.4, 0.38)),
                   leaf=((0.06, 0.18, 0.06), (0.1, 0.24, 0.07), (0.16, 0.28, 0.09)), grass=(0.48, 0.6, 0.24), extra='bridge'),
-    'fief4': dict(kind='forest', amp=10, base=6, seed=44, castle=(0, 65, 18), order=(-150, -45), village=(115, -30), trees=430, conifer=0.55,
+    'fief4': dict(kind='forest', amp=10, base=6, seed=44, castle=(0, 65, 18), order=(-150, -45), village=(115, -30), trees=900, conifer=0.55,
                   fields=4, stone=(0.4, 0.38, 0.36), roof=(0.22, 0.2, 0.18), houses=((0.36, 0.28, 0.2), (0.3, 0.24, 0.18), (0.4, 0.32, 0.22)),
                   leaf=((0.04, 0.13, 0.05), (0.07, 0.17, 0.06), (0.1, 0.2, 0.06)), grass=(0.36, 0.5, 0.2), extra='lodge'),
     'fief5': dict(kind='plain', amp=3, base=4, seed=55, castle=(0, 95, 6), order=(-185, -30), village=(115, -45), trees=60, conifer=0.05,
@@ -149,7 +149,7 @@ def terrain(L, M):
     def kind(i, j, q):
         z = sum(v.co.z for v in q) / 4; cx = (q[0].co.x + q[2].co.x) / 2; cy = (q[0].co.y + q[2].co.y) / 2
         if z < WL + 2.3 or min(v.co.z for v in q) < WL + 0.4: return 'sand'
-        if L.slope(cx, cy) > 0.85: return 'rock'
+        if L.slope(cx, cy) > L.P.get('rock', 0.85): return 'rock'
         return 'grass'
     for name in ('grass', 'sand', 'rock'):
         C.grid(B_g, rows, M[name], keep=lambda i, j, q, n=name: kind(i, j, q) == n)
@@ -353,14 +353,14 @@ def extras(L, M, rnd, cast_z):
         B.cyl(lx, ly, L.h(lx, ly) - 1.0, 2.8, 16, M['stone'], 12, r2=2.1)                    # 灯塔
         B.cyl(lx, ly, L.h(lx, ly) + 15, 3.0, 0.5, M['stoned'], 12)
         B.lathe(lx, ly, L.h(lx, ly) + 15.5, [(2.6, 0), (2.6, 2.2), (0.2, 4.0)], M['roof'], n=12)
-    elif e == 'bridge':                                                                    # 河上石桥
-        by = vy + 12; bx0, bx1 = river_x(by) - 40, river_x(by) + 40
-        zt = 2.0
-        B.box(bx0, bx1, by - 2.6, by + 2.6, zt - 0.6, zt, M['stone'])
-        for sy in (-2.6, 2.6): B.box(bx0, bx1, by + sy - 0.3, by + sy + 0.3, zt, zt + 1.0, M['stone'])
+    elif e == 'bridge':                                                                    # 河上石桥：桥面与两岸同高，桥墩从河床立起
+        by = vy + 12; rx = river_x(by); bx0, bx1 = rx - 40, rx + 40
+        zt = (L.h(rx - 32, by) + L.h(rx + 32, by)) / 2 + 0.35
+        B.box(bx0, bx1, by - 3.0, by + 3.0, zt - 0.9, zt, M['stone'])
+        for sy in (-3.0, 3.0): B.box(bx0, bx1, by + sy - 0.35, by + sy + 0.35, zt, zt + 1.1, M['stone'])
         for k in range(3):
-            px = river_x(by) - 14 + k * 14
-            B.box(px - 1.4, px + 1.4, by - 2.4, by + 2.4, -6.0, zt - 0.6, M['stoned'])
+            px = rx - 15 + k * 15
+            B.box(px - 1.6, px + 1.6, by - 2.8, by + 2.8, -6.0, zt - 0.9, M['stoned'])
         L.roads.append([(bx0 - 20, by), (bx1 + 20, by)])
     elif e == 'lodge':                                                                     # 林中猎屋
         lx, ly = -60.0, -100.0
@@ -414,7 +414,7 @@ def _run(fid, A, cams=None):
     if C.CACHED: return C.render_cached(sc, A['out'], A['blend'])
     P = PRESETS[fid]; rnd = random.Random(P['seed']); L = Land(P)
     cx, cy, lift = P['castle']
-    zc = L.add_site(cx, cy, 46, 92, lift)
+    zc = L.add_site(cx, cy, *P.get('castle_r', (46, 92)), lift)
     ox, oy = P['order']; zo = L.add_site(ox, oy, 46, 66)
     vx, vy = P['village']; zv = L.add_site(vx, vy, 62, 82)
     if P['extra'] == 'lists': L.add_site(-55, -95, 50, 70)
