@@ -9,12 +9,13 @@ export const TPL_KEY = 'edenMapActionTpl';
 export const MODES = ['off', 'compose', 'sys'];
 export const MAX = 300;
 
-/** 默认模板：{name} = 地点 / 事件 / 人物名；{item} = 拾到的东西（loot）、{dc} = 检定难度（stealth） */
+/** 默认模板：{name} = 地点 / 事件 / 人物名；{item} = 拾到的东西（loot）、{dc} = 检定难度（stealth）、
+ *  {what} = 失手缘由（fail，W2 检定失败环：掷骰开着时由宿主填「搜刮失手 / 潜行被目击」） */
 export const DEFAULTS = {
-  zh: { go: '前往{name}。', look: '查看{name}。', take: '在{name}搜刮。', loot: '在{name}发现{item}，收进随身仓。', stealth: '穿过{name}避开巡逻视线：潜行检定 DC {dc}。' },
-  en: { go: 'Go to {name}. ', look: 'Look at {name}. ', take: 'Search {name}. ', loot: 'In {name}: found {item} and pocketed it. ', stealth: 'Slip past the patrol watching {name}: stealth check DC {dc}. ' },
+  zh: { go: '前往{name}。', look: '查看{name}。', take: '在{name}搜刮。', loot: '在{name}发现{item}，收进随身仓。', stealth: '穿过{name}避开巡逻视线：潜行检定 DC {dc}。', fail: '在{name}失手了：{what}（DC {dc}，掷 {roll}）。' },
+  en: { go: 'Go to {name}. ', look: 'Look at {name}. ', take: 'Search {name}. ', loot: 'In {name}: found {item} and pocketed it. ', stealth: 'Slip past the patrol watching {name}: stealth check DC {dc}. ', fail: 'It went wrong at {name}: {what} (DC {dc}, rolled {roll}). ' },
 };
-export const KINDS = ['go', 'look', 'take', 'loot', 'stealth'];
+export const KINDS = ['go', 'look', 'take', 'loot', 'stealth', 'fail'];
 
 const clip = (s, n) => [...String(s ?? '')].slice(0, n).join('');
 export const cleanName = n => clip(String(n ?? '').replace(/[\r\n\t]+/g, ' ').replace(/\{\{user\}\}\s*/g, '').trim(), 60);

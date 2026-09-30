@@ -62,7 +62,7 @@ export function tryMove(here, { replay = false } = {}) {
   const a = markerXY(prevId), b = markerXY(to.id);
   if (!a || !b) return null;
   const res = crossing(a, b, conesNow(now), walls, { lit: night ? .2 : 1 });
-  if (res.seen) post({ type: 'eden-map:stealth', from: nameOf(prevId), to: nameOf(to.id), dc: res.dc, seen: true, hits: res.hits });
+  if (res.seen) post({ type: 'eden-map:stealth', from: nameOf(prevId), to: nameOf(to.id), dc: res.dc, seen: true, hits: res.hits, worst: res.worst || undefined });   // worst（最难的一下：目击者 + 坐标）W2 补发，检定失败环用
   return res;
 }
 

@@ -336,6 +336,14 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     composeIn(a.text);   // sys 却没有 triggerSlash 时退回「只填不发」，绝不自动发送
   }
 
+  // W2 检定失败环（docs/plans/llm-campaign.md）：掷骰口径 core/stash.search + core/rng 确定性种子；
+  // 失败报告环是会话级内存态（tavern/failrep.mjs，纯模块），经 eden-map-events 注入数组追加一行。
+  // 开关 edenMapDice 默认关 = 行为与今天完全一致（不掷骰、必得手）。
+  let RNGm = null, FRm = null; const frState = { list: [] };
+  import(SELF + 'core/rng.mjs').then(m => { RNGm = m; }).catch(() => {});
+  import(SELF + 'tavern/failrep.mjs').then(m => { FRm = m; }).catch(() => {});
+  const diceOn = () => lsGet('edenMapDice') === '1' && RNGm && FRm;
+
   // Part 5-1 拾取地上的藏物（core/stash.mjs 的行）：地图只说「拿了哪个 id」，真实性由这里核对——
   // 认不出的 id 一律不动背包（不替世界凭空变出东西）；认出了就写进 eden_map.仓库（同一份聊天变量，模型自己看得见）。
   function takeLoot(d) {
@@ -343,6 +351,15 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
       if (!STm || !stash || !INVm || !d?.id) return;
       const row = STm.rows(stash, {}).find(r => r.id === d.id);
       if (!row) return;
+      if (diceOn()) {   // 真掷骰：seed = 聊天 + 楼层 + 藏物 id（同一楼同一件永远同一骰，回放一致）；失手不入包、出失败报告
+        const roll = 1 + Math.floor(RNGm.rng(RNGm.seedOf(chatId(), floorNow, d.id))() * 20);
+        const sr = STm.search(row, roll);
+        if (!sr.found) {
+          FRm.push(frState, FRm.failureReport({ kind: 'search', place: row.place || d.place || '', dc: sr.dc, roll, margin: sr.dc - roll, floor: floorNow }));
+          injectAction({ kind: 'fail', name: row.place || d.place || '', vars: { dc: sr.dc, roll, what: '搜刮失手' } });
+          return;
+        }
+      }
       const res = INVm.put(inv, STm.lootPut(row));
       if (!res.changed) return;
       inv = res.inv; changedInv();   // 写变量 + 推地图（拿到手的光点会消失）
@@ -356,6 +373,14 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     try {
       const dc = Math.round(+d?.dc);
       if (!Number.isFinite(dc) || dc <= 0) return;
+      if (diceOn()) {   // 真掷骰：seed 含起讫地标；没躲过（roll < DC）出失败报告（带 worst 的目击者与坐标），驱动围捕 / 质询剧情
+        const roll = 1 + Math.floor(RNGm.rng(RNGm.seedOf(chatId(), floorNow, 'stealth', d?.from || '', d?.to || ''))() * 20);
+        if (roll < dc) {
+          FRm.push(frState, FRm.failureReport({ kind: 'stealth', place: d?.to || '', at: d?.worst?.at, dc, roll, margin: dc - roll, witnesses: d?.worst?.name ? [d.worst.name] : [], floor: floorNow }));
+          injectAction({ kind: 'fail', name: d?.to || '', vars: { dc, roll, what: '潜行被目击' } });
+          return;
+        }
+      }
       injectAction({ kind: 'stealth', name: d?.to || '', vars: { dc } });
     } catch (err) {}
   }
@@ -509,7 +534,9 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     restDue = true;
     if (!lite) restNow();   // 标签改名、行程；发送路径上推迟到空闲
     else { clearTimeout(restT); restT = setTimeout(() => (window.parent.requestIdleCallback || (f => f()))(() => { if (!life.dead && restDue) restNow(); }, { timeout: 1500 }), 0); }
-    inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : '', INVm && lsGet('edenMapInvInj') !== '0' ? INVm.digestLine(inv, 150) : ''].filter(Boolean).join('\n'));
+    const frLine = FRm ? FRm.digest(frState) : '';   // W2：未注入过的失败报告追加一行（注入后置水位，不重复）
+    inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', MV && custom && !(custom.同步世界书 && wbState === 'bound') ? MV.summarizeCustom(custom) : '', INVm && lsGet('edenMapInvInj') !== '0' ? INVm.digestLine(inv, 150) : '', frLine].filter(Boolean).join('\n'));
+    if (frLine) FRm.markInjected(frState);
     if (!lite) { stateInject(); spatialInject(); checkpointStep(); }
     if (!panel.hidden && alive) sendEvents();
     if (subs.events.size) { const sig = floorNow + '|' + events.map(e => e.id + ':' + e.last + ':' + e.tier).join(); if (sig !== emEvSig) { emEvSig = sig; emit('events', { items: events.map(e => ({ ...e })), floor: floorNow, hereLayer: layerOf(here) }); } }

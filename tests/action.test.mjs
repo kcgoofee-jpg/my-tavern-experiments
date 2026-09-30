@@ -101,7 +101,7 @@ test('stealth（Part 5-2 潜行）：{dc} 换成 core/vision.mjs 算出的难度
 });
 
 test('摘要与纯度：不碰酒馆全局 / DOM / 存储', () => {
-  assert.deepEqual(describe(k => (k === KEY ? 'sys' : '')), { mode: 'sys', kinds: ['go', 'look', 'take', 'loot', 'stealth'] });
+  assert.deepEqual(describe(k => (k === KEY ? 'sys' : '')), { mode: 'sys', kinds: ['go', 'look', 'take', 'loot', 'stealth', 'fail'] });   // W2：检定失败环新增 fail kind
   const src = readFileSync(join(ROOT, 'map/tavern/action.mjs'), 'utf8').replace(/\/\/[^\n]*/g, '');
   for (const g of ['window', 'document', 'localStorage', 'Mvu', 'SillyTavern', 'postMessage']) {
     assert.ok(!new RegExp(`\\b${g}\\b`).test(src), `不该出现 ${g}`);
