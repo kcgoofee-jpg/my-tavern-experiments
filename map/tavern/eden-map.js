@@ -729,7 +729,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   const badge = root.querySelector('.em-badge');
   let events = [], floorNow = -1, seen = -1, injected = '', EVM = null;
   // 事态模块单独加载：加载失败只是没有事态功能，地图照常可用
-  import(new URL('events.mjs', import.meta.url).href).then(m => { if (PACK_IN?.events) m.configure(PACK_IN.events, PACK_ID); EVM = m; recompute(); }).catch(e => console.warn('[eden-map] 事态模块加载失败', e));
+  import(new URL('events.mjs', import.meta.url).href).then(async m => { if (PACK_IN?.events) m.configure(PACK_IN.events, PACK_ID); try { m.setGeo(await (await import(new URL('event-geo-load.mjs', import.meta.url).href)).loadEventGeo({ fetchJSON: rel => cdnFetch(BASE + rel).then(r => r.ok ? r.json() : null).catch(() => null), packId: PACK_ID, manifest: PACK_IN?.manifest, events: PACK_IN?.events })); } catch (e) { console.warn('[eden-map] 事态落点的节点树没建出来：事件只列出、不上图', e); } EVM = m; recompute(); }).catch(e => console.warn('[eden-map] 事态模块加载失败', e));
   // 人物栏（v0.9.2）：人物位置标签 + MVU 人物表 → 每人最新位置；模块加载失败只是没有人物栏
   let CHM = null, chars = [], charSig = '', charsSent = null;   // charsSent：上一次发给地图的人物签名（没变就不重发）
   import(new URL('characters.mjs', import.meta.url).href).then(m => { CHM = m; recompute(); }).catch(e => console.warn('[eden-map] 人物模块加载失败', e));

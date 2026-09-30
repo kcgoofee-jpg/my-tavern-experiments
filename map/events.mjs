@@ -5,8 +5,8 @@
 // 本文件只负责：落点（地名 → 坐标）、图标、事态列表、飞过去、网络攻击花屏、世界图角标。设计见 docs/map-events.md。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 // 界面文字走查看器的 window.I18N（键在 i18n/*.json 的 ev.*）；类别、大类、层、状态名英文在 en.json 的 names。事件标题、地点、发布方是剧情原文，不翻译。
-import { M, REG, aspect, cur, viewer } from './app/state.mjs';
-import { $, announce, coarse, esc, getJSON, toImg } from './app/util.mjs';
+import { REG, aspect, cur, viewer } from './app/state.mjs';
+import { $, announce, coarse, esc, getJSON } from './app/util.mjs';
 import { registry } from './app/layerhost.mjs';
 import { declutter, tabOrder } from './app/tiers.mjs';
 import { go } from './app/nav.mjs';
@@ -15,7 +15,8 @@ import { cardFrom, closeCard, placeN, setCardFrom, showCard, trackEl, untrack } 
 import { setUserMoved, userMoved } from './app/locate.mjs';
 import { sheetVis } from './app/shell.mjs';
 import { P, register } from './app/plugins.mjs';
-import { isEden } from './app/pack.mjs';
+import { eventGeo } from './app/nodes-runtime.mjs';
+import { hash01, spotOf } from './core/event-geo.mjs';
 import { chatId } from './app/extapi.mjs';
 import * as TCCvd from './app/cvd.mjs';
 // 抽屉标签角标的「看过」（用户 2026-09-28）：按聊天记在 edenMap:chat:<id>:tabseen（core/storage.mjs 按聊天前缀登记，参与 LRU）。
@@ -27,7 +28,7 @@ function seenSave() { const v = JSON.stringify({ ev: [...seenMem.ev].slice(-400)
 const TCEvents = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const tn = z => (z && window.I18N?.tr?.(z)) || z || '';
-  const where = e => tn(e.layer) + (e.place ? '·' + e.place : '');
+  const where = e => [tn(e.layer), e.place].filter(Boolean).join('·');
   // 当前这一层的事件不再写层名（面包屑、层按钮已经说了）；别的层照写（v0.9.2）
   const whereHere = e => mapOf(e) === cur && e.place ? e.place : where(e);
   const srcNew = e => e.src && !(e.place || '').includes(e.src) ? e.src : '';   // 发布方就是地点本身（「血肉磨坊」）时不再重复
@@ -55,67 +56,45 @@ const TCEvents = (() => {
   const grpOf = e => e.grp || '其他';
   const offed = e => off.has(grpOf(e)) || off.has('type:' + e.cat);   // 关掉的大类 / 类型
   let grpLoaded = false;
-  const MAP_OF = { 上层: 'tc_upper', 中层: 'tc_mid', 下层: 'tc_low', 天城外: 'world' };
-  // 城区关键词 → 平面坐标（x ∈ [-15, 15]、y ∈ [-9.375, 9.375]，与 Blender 同一平面；位置为地图自设）
-  const ZONES = {
-    tc_mid: [[/核心|高区/, 3.5, 3.8], [/霓虹街|商业/, -5, -2.5], [/C区|检查点/, 4.6, -6.9], [/外围|居住/, -12, 6.5], [/军营|环城/, -13, 0], [/大学|星渊/, -8.2, 6.4], [/议会/, .6, -2.3]],
-    tc_low: [[/7号井|七号井|井口/, 4.6, -6.9], [/工业|工厂|货运|铁路|厂/, 7, -7.5], [/贫民|棚户|城寨|城中村/, -6, 1], [/哨所|前沿/, -12.3, -6.6], [/施粥|旧教堂/, 8.4, .5], [/拳场|磨坊/, -5.8, -3.3], [/地基/, 0, 0]],
-    tc_upper: [],
-  };
   let tab = 'ev', items = [], floor = 0, feedItems = [], shown = true, flyId = null, EVM = null, lastFly = null, glitchLv = 0;
   const said = new Set();   // 已经播报过的新事件（读屏）
   const markersOf = {};                                    // 地图 id → 点位数据（按需加载）
-  const hash = s => { let h = 2166136261; for (const c of String(s)) h = Math.imul(h ^ c.codePointAt(0), 16777619); return (h >>> 0) / 4294967296; };
   const all = () => items.concat(feedItems);
   const vis = () => all().filter(e => !offed(e));   // 筛选后看得见的
-  // v0.9.6：城外 / 异兽类（天城外、又没认出具体的世界地名）落在「天城周边」过渡环里：显示在当前所在的天城层（不在天城时算中层）
-  const RE_RING = /外围|城外|郊|异兽|兽潮|野兽|清剿|荒野|边境|防线/;
-  const isRing = e => e.layer === '天城外' && RE_RING.test((e.place || '') + (e.cat || '')) && !worldPos(e.place);
+  // 落点由节点树定（core/event-geo.mjs，K-R24）：卡内脚本盖了 node 的用 node；老脚本只发 layer + place，就按文字再定位一次；node 为 null = 认不出地点，只列出、不上图（K-01 B）
   const tierNow = () => { const S = window.TCScale; return S?.isTier(cur) ? cur : S?.lastTier || 'tc_mid'; };
-  // 设定包（通用化）：层 → 地图取包的事件分类（tavern/events.mjs LAYER_MAP，configure 过）；认不出层时落在包的首图
-  const mapOf = e => (EVM && EVM.packId !== 'eden' ? EVM.LAYER_MAP[e.layer] || REG.start : isRing(e) ? tierNow() : MAP_OF[e.layer] || 'tc_mid');
+  const memo = new WeakMap();
+  function placeOf(e) {
+    const g = eventGeo(); if (!g || e.node === null) return null;
+    const hit = memo.get(e); if (hit?.g === g) return hit.p;
+    const p = (e.node && g.placeNode(e.node)) || g.place([e.layer, e.place].filter(Boolean).join('·'));
+    memo.set(e, { g, p }); return p;
+  }
+  // 事态所在的地图：城郊（外围一圈）画在当前所在的那层；没有地点的不属于任何地图
+  const mapOf = e => { const p = placeOf(e); return !p ? '' : p.ring ? tierNow() : p.map || ''; };
+  const listed = e => { const m = mapOf(e); return !m || !!REG.maps[m]; };
   const live = e => !e.closed && e.tier !== 'fade';
 
-  // 地点 → 坐标：①显式坐标 ②该层地图的地标名 / 别名（最长匹配）③城区关键词 ④只知道层：按地点哈希放在中部一圈，标成「位置不详」
-  // 天城外（世界图）的地名 → 世界图坐标：地点、封地、国名里最长的匹配（E4 N15）
-  function worldPos(place) {
-    if (!place || typeof M === 'undefined' || !M) return null;
-    let best = null;
-    const see = (name, x, y) => { if (name && (place.includes(name) || (name.length >= 2 && name.includes(place))) && (!best || name.length > best.len)) best = { len: name.length, x, y }; };
-    for (const p of [...(M.places || []), ...(M.fiefs || [])]) see(p.name, p.x, p.y);
-    for (const r of M.realms || []) see(r.name, r.c?.[0], r.c?.[1]);
-    if (!best || best.x == null) return null;
-    const [nx, ny] = toImg(best.x, best.y); return { nx, ny, marker: true };
-  }
+  // 地点 → 坐标（core/event-geo.mjs spotOf）：城郊一圈 → 世界图只画节点自己的位置 → 显式坐标 → 地标（或它上面最近有地标的地方）→ 城区节点的 at（加一点固定抖动）→ 只知道层：按地点哈希放在中部，标成「位置不详」
   function pos(e) {
-    const mid = mapOf(e), m = REG.maps[mid];
-    if (m?.kind === 'world') return worldPos(e.place) || { nx: .5, ny: .5, approx: true, none: true };
-    if (isRing(e)) { const a = hash(e.key || e.id) * Math.PI * 2, r = .62 + .5 * hash((e.key || e.id) + '#');   // 城边外 0.6–1.1 个城宽（约 2–3 km）一圈
-      return { nx: .5 + Math.cos(a) * r, ny: .5 + Math.sin(a) * r * .8, approx: true, ring: true }; }
-    const xy = (e.xy || '').split(/[,，]/).map(Number);
-    if (xy.length === 2 && xy.every(v => v >= 0 && v <= 1)) return { nx: xy[0], ny: xy[1] };
-    let best = null;
-    for (const k of markersOf[mid] || []) { const meta = m?.markers?.[k.id]; if (!meta) continue;
-      for (const w of [meta.name, ...(meta.alias || [])]) if (w && e.place && (e.place.includes(w) || w.includes(e.place)) && (!best || w.length > best.len)) best = { k, len: w.length }; }
-    if (best) return { nx: best.k.nx, ny: best.k.ny, marker: true, name: m.markers[best.k.id].name };
-    const j = hash(e.key || e.id), j2 = hash((e.key || e.id) + '~');
-    for (const [re, x, y] of ZONES[mid] || []) if (re.test(e.place)) return { nx: (x + 15) / 30 + (j - .5) * .04, ny: (9.375 - y) / 18.75 + (j2 - .5) * .06 };
-    return { nx: .2 + .6 * j, ny: .2 + .6 * j2, approx: true };
+    const p = placeOf(e), mid = mapOf(e), m = REG.maps[mid], g = eventGeo();
+    if (!p || !m) return { nx: .5, ny: .5, approx: true, none: true };
+    return spotOf(g, p, { key: e.key || e.id, xy: e.xy, markers: markersOf[mid], world: m.kind === 'world' });
   }
-  // 人物栏用（chars.js）：只知道城区时按城区关键词给一个大致坐标；认不出返回 null
-  function zoneXY(mid, place) { const j = hash(place), j2 = hash(place + '~');
-    for (const [re, x, y] of ZONES[mid] || []) if (re.test(place)) return { nx: (x + 15) / 30 + (j - .5) * .03, ny: (9.375 - y) / 18.75 + (j2 - .5) * .04, approx: true };
-    return null; }
+  // 人物栏用（chars.js）：只知道城区时给一个大致坐标；认不出返回 null
+  function zoneXY(mid, place) {
+    const g = eventGeo(), p = g?.place(place), sp = p && g.spot(p.node);
+    return sp && sp.map === mid ? { nx: sp.x + (hash01(place) - .5) * .03, ny: sp.y + (hash01(place + '~') - .5) * .04, approx: true } : null; }
   async function loadMarkers() {
-    await Promise.all(Object.values(EVM && EVM.packId !== 'eden' ? EVM.LAYER_MAP : MAP_OF).filter(id => REG.maps[id]?.data && !markersOf[id] && REG.maps[id].status !== 'planned')
-      .map(id => getJSON(REG.maps[id].data).then(d => { markersOf[id] = d?.markers || []; }).catch(() => {})));
+    await Promise.all([...new Set(all().map(mapOf))].filter(id => REG.maps[id]?.data && !markersOf[id] && REG.maps[id].status !== 'planned')
+      .map(id => getJSON(REG.maps[id].data).then(d => { markersOf[id] = new Map((d?.markers || []).map(k => [k.id, { nx: k.nx, ny: k.ny, name: REG.maps[id].markers?.[k.id]?.name }])); }).catch(() => {})));
   }
 
   // ---------- 输入 ----------
   // 卡内脚本发来：{ items, floor, fly }（旧版云端协议 { list, last } 也兼容：交给 events.mjs 重新解析）
   async function set(d) {
     const before = new Set(all().map(e => e.id));
-    if (Array.isArray(d.items)) { if (!isEden()) await mod(); items = d.items; floor = d.floor || 0; }   // 设定包：层 → 地图要用包的分类（mapOf）
+    if (Array.isArray(d.items)) { items = d.items; floor = d.floor || 0; }
     else if (Array.isArray(d.list)) { const m = await mod(); if (!m) return;
       floor = d.last || 0; items = m.collect(d.list.map(o => ({ floor: o.mes ?? floor, text: tagText(o) })), floor); }
     // 读屏播报：新出现的进行中事件（每条只播一次）
@@ -127,7 +106,8 @@ const TCEvents = (() => {
   }
   const tagText = o => `<span data-tcmap="${Object.entries(o).filter(([k]) => k !== 'mes' && k !== 'src').map(([k, v]) => `${k}=${String(v).replace(/[;"]/g, ' ')}`).join(';')}"></span>`;
   // 按文档的 <base> 解析（srcdoc 里的内联 / 经典脚本做 import() 时 Chrome 会按宿主页地址解析相对路径，取到 tavern/tavern/…）
-  const mod = () => EVM ? Promise.resolve(EVM) : import(new URL('tavern/events.mjs', document.baseURI).href).then(m => (EVM = m)).catch(() => null);
+  const geoSync = m => (m?.setGeo(eventGeo()), m);   // 事件模块的落点用同一棵节点树（建筑平面到了、树重建后也跟着换）
+  const mod = () => EVM ? Promise.resolve(geoSync(EVM)) : import(new URL('tavern/events.mjs', document.baseURI).href).then(m => geoSync(EVM = m)).catch(() => null);
   // 外部数据源：maps.json 顶层 feeds: [{label, url, every}]（url 返回 {events: [与标签相同的中文字段]}）；状态改成已解除前一直显示
   async function pollFeeds() {
     const feeds = REG?.feeds || []; if (!feeds.length) return;
@@ -180,7 +160,7 @@ const TCEvents = (() => {
     showCard(null, e.text || tn(e.cat), 'inf', '', '', `${tn(e.cat)}${rare}`);   // 大类只在顶上的色块里出现一次（v0.9.2）
     if (typeof P.TCCompose !== 'undefined') P.TCCompose.attach({ go: e.place || '', ask: e.text || tn(e.cat) });   // v0.9.6 地图 → 聊天
     const rows = [
-      [T('ev.k_place', '地点'), esc(whereHere(e)) + (p.approx ? `<br><small>${esc(T('ev.approx', '（位置不详，按所在层大致标出）'))}</small>` : '')],
+      [T('ev.k_place', '地点'), esc(whereHere(e)) + (p.approx ? `<br><small>${esc(placeOf(e) ? T('ev.approx', '（位置不详，按所在层大致标出）') : T('ev.unplaced', '（认不出地点：只列出，不上图）'))}</small>` : '')],
       [T('ev.k_state', '等级 / 状态'), `<span class="bars" aria-label="${esc(T('ev.k_lvl', '等级') + ' ' + lv + '/3')}">${'▮'.repeat(lv)}${'▯'.repeat(3 - lv)}</span>　${esc(st)}`],
       e.time && [T('ev.k_time', '时间'), esc(e.time)], e.code && [T('ev.k_code', '编号'), esc(e.code)],
       [T('ev.k_src', '来源'), esc(e.feed ? e.src || T('ev.feed_default', '外部数据源')
@@ -193,6 +173,7 @@ const TCEvents = (() => {
   }
   function flyTo(id) {
     const e = all().find(x => x.id === id), mid = e && mapOf(e);
+    if (e && !mid) { SH()?.set('peek'); if (typeof closeCard === 'function') closeCard(); card(e, null); return true; }   // 认不出地点：只开卡片
     if (!e || !REG.maps[mid] || REG.maps[mid].status === 'planned') return !!e;
     // 飞之前收起列表、关掉卡片：落点不被挡住（E4 N14）
     SH()?.set('peek');
@@ -238,7 +219,7 @@ const TCEvents = (() => {
   const isOpenNow = () => !!SH()?.open;
   function renderBar() {
     const S = SH(); if (!S) return;
-    const bar = S.el, every = all().filter(e => REG.maps[mapOf(e)]), list = every.filter(e => !offed(e));
+    const bar = S.el, every = all().filter(listed), list = every.filter(e => !offed(e));
     // 人物页（v0.9.2，chars.js）：和事态同一个抽屉，两个页签；地点页（卡片）由查看器管
     const chN = typeof P.TCChars !== 'undefined' ? P.TCChars.count() : 0, hasEv = !!every.length && shown;
     S.showTab('ev', hasEv); S.showTab('ch', !!chN);
@@ -280,7 +261,7 @@ const TCEvents = (() => {
   // 网络攻击：受影响的层（或全城）在持续期内「花屏」：间歇的色散、横向撕裂、马赛克块，强度随等级；配 ⚠ 与「数据链路受扰」，一看就知道是剧情
   function applyGlitch() {
     const lv = !shown ? 0 : Math.max(0, ...all().filter(e => e.cat === '网络攻击' && !e.closed && (e.feed || floor - e.last <= (e.dur || 3)) &&
-      (/全城|天城/.test(e.scope) || mapOf(e) === cur || (e.scope && MAP_OF[e.scope.replace(/\s/g, '').slice(0, 2)] === cur))).map(e => Math.max(1, e.lvl)));
+      (/全城|天城/.test(e.scope) || mapOf(e) === cur || (e.scope && eventGeo()?.place(e.scope)?.map === cur))).map(e => Math.max(1, e.lvl)));
     document.body.dataset.glitch = lv || '';
     $('#glitchNote').hidden = !lv; $('#glitchNote').textContent = T('ev.glitch', '⚠ 数据链路受扰');
     if (lv && !glitchLv && typeof announce === 'function') announce(T('ev.glitch', '⚠ 数据链路受扰').replace(/^⚠\s*/, ''));   // 花屏开始时播报一次
@@ -288,7 +269,7 @@ const TCEvents = (() => {
   }
   // 世界图：天城内部未解除的事件汇成天城标记上的一个数字角标
   function worldBadge() {
-    const n = vis().filter(e => live(e) && mapOf(e) !== 'world').length;
+    const n = vis().filter(e => live(e) && mapOf(e) && mapOf(e) !== 'world').length;
     const lab = [...document.querySelectorAll('.mk')].find(x => x.dataset.name === '天城')?.querySelector('.lab');
     if (lab) { if (n) lab.dataset.ev = n; else delete lab.dataset.ev; }
   }

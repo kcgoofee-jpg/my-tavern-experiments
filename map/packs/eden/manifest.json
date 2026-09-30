@@ -17,7 +17,8 @@
     "roster": "data/fallback_roster.json",
     "events": "builtin",
     "stash": "data/stash.json",
-    "routine": "data/routine.json"
+    "routine": "data/routine.json",
+    "overlay": "packs/eden/overlay.v2.json"
   },
   "preload": [
     "data/maps.json",

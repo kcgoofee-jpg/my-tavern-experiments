@@ -1,7 +1,10 @@
 // node tests/events.test.mjs —— 天城事态解析器单测
 import assert from 'node:assert/strict';
-import { parseMarks, collect, summarize, layerOf, tierOf, CATS, GROUPS, GROUP_ORDER, SHAPES, catOf, EXAMPLES } from '../map/tavern/events.mjs';
+import { parseMarks, collect, summarize, layerOf, tierOf, CATS, GROUPS, GROUP_ORDER, SHAPES, catOf, EXAMPLES, setGeo } from '../map/tavern/events.mjs';
 import { parseText } from '../map/tavern/msgtext.mjs';
+import { edenGeo } from './helpers/eden-geo.mjs';
+
+setGeo(edenGeo());   // 层与落点由节点树决定（首个包的 v1 数据 + overlay.v2.json）
 
 const span = s => `<htm1fenge><div>…</div><span style="display:none">${s}</span></htm1fenge>`;
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
@@ -15,9 +18,10 @@ t('半角分隔、空格、别名类别', () => {
   assert.equal(e.cat, '黑市查抄'); assert.equal(e.place, '7号井'); assert.equal(e.lvl, 3); assert.equal(e.src, '执法局下层分局');
 });
 t('未知类别归「其他」', () => { assert.equal(parseMarks('⌖流星雨｜上层·伊甸庄园｜1｜夜空里一串蓝光')[0].cat, '其他'); });
-t('无层前缀：按关键词推断，推不出就丢', () => {
+t('无层前缀：按地名 / 提示词落层；推不出的照样列出、不上图（K-01 B）', () => {
   assert.equal(parseMarks('⌖火灾｜7号井｜1｜锅炉房冒烟')[0].layer, '下层');
-  assert.equal(parseMarks('⌖火灾｜某处｜1｜冒烟').length, 0);
+  const [u] = parseMarks('⌖火灾｜某处｜1｜冒烟');
+  assert.equal(u.layer, ''); assert.equal(u.place, '某处'); assert.equal(u.node, null); assert.equal(u.text, '冒烟');
 });
 t('等级越界 / 缺字段丢弃', () => {
   assert.equal(parseMarks('⌖火灾｜中层·C区｜5｜太大').length, 0);
@@ -213,7 +217,7 @@ t('设定对齐：层推断（card-digest §10 第 5、12、13、14 条）', () 
   assert.equal(L('骑士团巡逻据点'), ''); assert.equal(layerOf('议会骑士团'), '');          // 「骑士团」不单独定层
   assert.equal(L('银冠堡'), '上层');
   for (const p of ['光辉联邦', '大骑士领·圣都', '第三帝国', '灵枢秘派', '虚灵古派', '原域', '海外']) { assert.equal(L(p), '天城外', p); assert.equal(layerOf(p), '天城外', p); }
-  assert.equal(L('奥伦帝国'), '');                                                       // 国都就是天城，不算天城外
+  assert.equal(L('奥伦帝国'), '天城外');                                          // A.9 #7：奥伦帝国是世界图上的节点，落在世界图（v1：国都就是天城，不列）
   assert.equal(L('最高法院'), '中层'); assert.equal(L('佣兵公会'), '中层'); assert.equal(L('公共收容设施'), '下层');
   assert.equal(L('法师塔'), '中层'); assert.equal(L('天城执政厅'), '中层');                   // 卡没写层：2026-09-28 起按地图的仓库推断层
   assert.equal(L('旧公寓楼'), '中层'); assert.equal(L('废弃教堂区'), '下层');             // 之前的修正保留
@@ -224,7 +228,7 @@ t('防卫军阅兵：旧名「将军阅兵」仍认', () => { assert.equal(catOf
 
 t('v0.9.5 五路通读：层规则与新类型别名', () => {
   const L = p => (parseMarks(`⌖公开行程｜${p}｜1｜到访`)[0] || {}).layer || '';
-  assert.equal(L('某家族庄园'), ''); assert.equal(L('区议会'), '');                        // 「庄园」「议会」单独不定层
+  assert.equal(L('某家族庄园'), '上层'); assert.equal(L('区议会'), '');                // A.9 #8：「庄园」是伊甸庄园的别名（v1 的事件规则不认）；「议会」单独仍不定层（根提示词）
   assert.equal(L('悬浮庄园区'), '上层'); assert.equal(L('天城议会'), '中层'); assert.equal(L('伊甸庄园'), '上层');
   for (const p of ['天城外围防线', '野兽潮前线', '城外营地']) assert.equal(L(p), '天城外', p);
   for (const p of ['贫民窟', '廉价酒馆', '非法赌场']) assert.equal(L(p), '下层', p);

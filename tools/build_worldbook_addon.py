@@ -384,9 +384,9 @@ def selftest(items):
     spans = re.findall(r'<span style="display:none"[^>]*>[^<]*</span>', rules)
     places = [(m.group(1), w) for m in re.finditer(r'^  (上层|中层|下层)（[^）]*）：(.+)$', rules, re.M) for w in m.group(2).split('、')]
     probes = {'伊甸庄园·书房': 'eden_estate', '伊甸庄园·玫瑰园': 'eden_estate', '天城·中层·天城执法局总局': 'tc_mid', '天城·下层·7号井黑市': 'tc_low', '中层 霓虹街': 'tc_mid'}
-    js = """import * as E from './map/tavern/events.mjs'; import { buildIndex, resolveHere } from './map/here.mjs'; import fs from 'node:fs';
+    js = """import * as E from './map/tavern/events.mjs'; import { buildIndex, resolveHere } from './map/here.mjs'; import { packGeo } from './tools/eden_geo.mjs'; import fs from 'node:fs';
 const a = JSON.parse(fs.readFileSync(0, 'utf8')); const reg = JSON.parse(fs.readFileSync('map/data/maps.json', 'utf8'));
-const idx = buildIndex(reg);
+const idx = buildIndex(reg); E.setGeo(packGeo('eden'));
 const out = { ex: a.spans.map(s => E.parseMarks(s).length),
   places: a.places.map(([L, w]) => (E.parseMarks(`<span style="display:none" data-tcmap="类型=火灾;地点=${w};标题=测试"></span>`)[0] || {}).layer || ''),
   here: Object.keys(a.probes).map(k => (resolveHere(k, idx) || {}).map || '') };

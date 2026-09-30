@@ -19,10 +19,10 @@ const points = { tc_upper: pointsOf('tc_upper'), tc_mid: pointsOf('tc_mid'), tc_
 const legacyMarkers = Object.fromEntries(Object.entries(points).map(([id, m]) => [id, [...m].map(([k, v]) => ({ id: k, nx: v.nx, ny: v.ny }))]));
 const TOL = 0.002;   // of the map width: 6 px on the 3000 px render plane
 
-// ---- the corpus: tests/events.test.mjs (run against a recording copy of the events module, old rules) and the session fixtures ----
+// ---- the corpus: tests/events.test.mjs (run against a recording copy of the events module) and the session fixtures ----
 async function recordEventsTest() {
   const helper = pathToFileURL(ROOT + 'tests/helpers/events-record.mjs').href;
-  const src = fs.readFileSync(ROOT + 'tests/events.test.mjs', 'utf8').replace(/'\.\.\/map\/tavern\/events\.mjs'/, `'${helper}'`).replace(/'\.\.\/map\//g, `'${pathToFileURL(ROOT + 'map/').href}`);
+  const src = fs.readFileSync(ROOT + 'tests/events.test.mjs', 'utf8').replace(/'\.\.\/map\/tavern\/events\.mjs'/, `'${helper}'`).replace(/'\.\.\/map\//g, `'${pathToFileURL(ROOT + 'map/').href}`).replace(/'\.\/helpers\//g, `'${pathToFileURL(ROOT + 'tests/helpers/').href}`);
   const log = console.log; console.log = () => {};
   try { await import('data:text/javascript;charset=utf-8,' + encodeURIComponent(src)); } finally { console.log = log; }
   return globalThis.__eventTap;
@@ -72,18 +72,18 @@ test('K-01 B: a place no node holds is listed without a pin (v1 dropped the even
   assert.deepEqual(locs('K-01 B'), ['区议会', '某处', '骑士团巡逻据点']);   // "区议会": a root hint hides the shorter 议会; the others name nothing
   for (const loc of ['区议会', '某处', '骑士团巡逻据点']) assert.equal(g.place(loc), null);
 });
-// The differences below are not in K-01 B or A.9: reported in RESULT S3-2 and raised as Q-11 (docs/todo.md). Each is pinned by its example.
-test('difference "found": a place v1 deliberately left unplaced is a node of the tree', () => {
+// The differences below were decided with Q-11 (option A, 2026-10-01) and are A.9 #7-#10 in docs/kernel-schema.md. Each is pinned by its example.
+test('A.9 #7-#8 "found": a place v1 deliberately left unplaced is a node of the tree', () => {
   assert.deepEqual(locs('found'), ['奥伦帝国', '某家族庄园']);
   const oren = rows.find(r => r.loc === '奥伦帝国'), estate = rows.find(r => r.loc === '某家族庄园');
   assert.equal(legacyPlace('奥伦帝国'), null); assert.equal(oren.n.node, 'oren'); assert.equal(oren.n.map, 'world');   // v1: "the capital is the city, not outside it"
   assert.equal(legacyPlace('某家族庄园'), null); assert.equal(estate.n.node, 'eden_estate'); assert.equal(estate.n.via, 'alias');   // "庄园" is an alias of the estate (here.mjs agrees); v1's event rule ignored it
 });
-test('difference "world alias": a realm named by one of its aliases is pinned (v1 matched names only)', () => {
+test('A.9 #9 "world alias": a realm named by one of its aliases is pinned (v1 matched names only)', () => {
   assert.deepEqual(locs('world alias'), ['灵枢秘派']);
   const r = rows.find(r => r.loc === '灵枢秘派'); assert.equal(r.op.none, true); assert.equal(r.n.node, 'xl'); assert.equal(r.np.marker, true);
 });
-test('difference "marker match": v1 took the marker whose name merely contains the place; the tree takes the named node', () => {
+test('A.9 #10 "marker match": v1 took the marker whose name merely contains the place; the tree takes the named node', () => {
   assert.deepEqual(locs('marker match'), ['中层·A', '中层·C', '中层修道院', '悬浮庄园区']);
   const by = loc => rows.find(r => r.loc === loc);
   assert.equal(by('中层·A').op.id, 'old_apartment'); assert.equal(by('中层·A').n.node, 'tc_mid');   // a one-letter placeholder matched any marker with that letter

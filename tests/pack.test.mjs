@@ -9,6 +9,7 @@ import * as MV from '../map/tavern/mvu.mjs';
 import * as ST from '../map/core/storage.mjs';
 import * as AD from '../map/tavern/adapter.mjs';
 import { HOST_SRC } from './_host_src.mjs';
+import { edenGeo, townGeo } from './helpers/eden-geo.mjs';
 
 const rd = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 const js = p => JSON.parse(rd(p));
@@ -18,7 +19,7 @@ test('eden 清单是唯一定义（没有内置 EDEN 常量）；eden 的键与�
   assert.equal(PK.EDEN, undefined); assert.equal(PK.EDEN_RESOLVED, undefined);
   let asked = null; const R = await PK.load('eden', { fetchJSON: async u => { asked = u; return m; } });
   assert.equal(asked, 'packs/eden/manifest.json'); assert.equal(R.base, ''); assert.equal(R.chatVar, 'eden_map'); assert.equal(R.prefix, 'edenMap');
-  assert.deepEqual(R.data, { maps: 'data/maps.json', world: 'data/world_markers.json', derived: 'data/derived.json', rooms: 'data/eden_estate_rooms.json', security: 'data/security.json', roster: 'data/fallback_roster.json', events: 'builtin', stash: 'data/stash.json', routine: 'data/routine.json' });
+  assert.deepEqual(R.data, { maps: 'data/maps.json', world: 'data/world_markers.json', derived: 'data/derived.json', rooms: 'data/eden_estate_rooms.json', security: 'data/security.json', roster: 'data/fallback_roster.json', events: 'builtin', stash: 'data/stash.json', routine: 'data/routine.json', overlay: 'packs/eden/overlay.v2.json' });
   assert.deepEqual(R.preload, ['data/maps.json', 'data/world_markers.json', 'data/derived.json']);
   // 启动预取数据驱动（通用化 v1）：viewer.html 不再写死 eden 的数据预取，按包 id 注入清单链接 + 清单 preload 列
   const v = rd('map/viewer.html');
@@ -123,26 +124,26 @@ test('多包隔离：同名键互不串；预算 LRU 经 nsStore 只见、只清
   assert.equal(mem.get('edenMap:chat:c9:fog'), '{}'); assert.equal(mem.get('edenMapSeen:c9'), '1', 'eden 的数据不碰');
 });
 
-test('事件分类可换：town 的 3 类解析、落层；恢复后天城分类原样', () => {
-  const before = { g: Object.keys(EV.GROUPS).length, c: Object.keys(EV.CATS).length, l: [...EV.LAYERS] };
-  EV.configure(js('map/packs/town/events.json'), 'town');
+test('事件分类可换：town 的 3 类解析、落层（层由 town 自己的节点树定）；恢复后天城分类原样', () => {
+  const before = { g: Object.keys(EV.GROUPS).length, c: Object.keys(EV.CATS).length };
+  EV.configure(js('map/packs/town/events.json'), 'town'); EV.setGeo(townGeo());
   try {
     assert.deepEqual(EV.GROUP_ORDER, ['市政', '灾害', '天气']);
     assert.equal(EV.catOf('起火了'), '火灾'); assert.equal(EV.catOf('巡空令'), '其他');
     const r = EV.parseMarks('<span style="display:none">⌖风暴｜雾港镇·码头·灯塔｜3｜大风封港｜港务所</span>');
-    assert.equal(r.length, 1); assert.equal(r[0].layer, '码头'); assert.equal(r[0].place, '灯塔'); assert.equal(r[0].grp, '天气');
-    assert.equal(EV.parseMarks('⌖火灾｜鱼市｜2｜仓库起火')[0]?.layer, '码头', '地名推断层');
-    assert.equal(EV.parseMarks('⌖火灾｜天城·下层·7号井｜2｜x').length, 0, '别的卡的地名不上图');
-    assert.equal(EV.LAYER_MAP.码头, 'town_harbour');
+    assert.equal(r.length, 1); assert.equal(r[0].layer, '码头'); assert.equal(r[0].place, '灯塔'); assert.equal(r[0].grp, '天气'); assert.equal(r[0].node, 'light');
+    assert.equal(EV.parseMarks('⌖火灾｜鱼市｜2｜仓库起火')[0]?.layer, '码头', '地名落层');
+    const other = EV.parseMarks('⌖火灾｜天城·下层·7号井｜2｜x');
+    assert.deepEqual([other.length, other[0].layer, other[0].node], [1, '', null], '别的卡的地名：照样列出、不上图（K-01 B）');
     assert.match(EV.summarize([{ layer: '码头', tier: 'live', closed: false, place: '鱼市', cat: '火灾', lvl: 2, text: 'x', src: '' }], '码头'), /^\[雾港镇事态/);
-  } finally { EV.configure(null); }
-  assert.deepEqual({ g: Object.keys(EV.GROUPS).length, c: Object.keys(EV.CATS).length, l: [...EV.LAYERS] }, before);
+  } finally { EV.configure(null); EV.setGeo(edenGeo()); }
+  assert.deepEqual({ g: Object.keys(EV.GROUPS).length, c: Object.keys(EV.CATS).length }, before);
   assert.equal(EV.parseMarks('⌖火灾｜天城·下层·7号井｜2｜仓库起火')[0].layer, '下层');
 });
 
 test('坏的事件分类退回内置（不拖垮启动）', () => {
   EV.configure({ groups: {}, types: {}, layers: [] }, 'bad');
-  assert.equal(EV.packId, 'eden'); assert.equal(EV.LAYER_MAP.下层, 'tc_low');
+  assert.equal(EV.packId, 'eden'); assert.ok(EV.CATS.火灾);
 });
 
 test('聊天变量顶层键 / 世界书名可换（默认 eden 原名）', () => {

@@ -10,7 +10,7 @@
 // 纯模块：不碰全局 / DOM / 存储 / 网络；不执行任何副作用（apply 只产出描述，送达由宿主做）。
 // 前置条件：宿主必须先过 sanitize 链（stripBlocks + msgtext 剥 <think> / <UpdateVariable>）再喂进来——
 // CoT 回声不得起草 op（G1 同款风险）。node 单测 tests/ops.test.mjs。
-import { catOf, LAYERS, EXAMPLES } from './events.mjs';
+import { catOf, getGeo, EXAMPLES } from './events.mjs';
 import { seedOf } from '../core/rng.mjs';
 
 export const OPS = ['OP_EVENT', 'OP_CLUE', 'OP_MARKER', 'OP_SUGGEST'];
@@ -31,7 +31,7 @@ const VALIDATE = {
     if (!isStr(o.text, 1, 80)) bad('text');
     const lvl = o.lvl === undefined ? 2 : o.lvl;
     if (!Number.isInteger(lvl) || lvl < 0 || lvl > 3) bad('lvl');
-    if (o.layer !== undefined && o.layer !== null && !LAYERS.includes(o.layer)) bad('layer');
+    if (o.layer !== undefined && o.layer !== null && !(getGeo()?.layers() ?? [o.layer]).includes(o.layer)) bad('layer');
     return { op: 'OP_EVENT', cat, place: clip(o.place, 60), text: clip(o.text, 80), lvl, ...(o.layer ? { layer: o.layer } : {}) };
   },
   OP_CLUE: o => {

@@ -5,6 +5,8 @@ export let PACK = null;   // initPack 之前为 null；isEden 退回地址 / 宿
 export const packData = k => { const p = PACK?.data?.[k]; return p && p !== 'builtin' ? p : null; };
 export const isEden = () => (PACK?.id ?? currentId(window)) === DEFAULT_ID;
 export let packEvents = null;
+export let packOverlay = null, packTax = null;   // 包旁边的 v2 叠加层（overlay.v2.json，K-R67）与包自带的事件分类：一起交给 compat 建节点树
+export const setOverlay = v => (packOverlay = v && typeof v === 'object' ? v : null);
 export async function initPack(getJSON) {
   const id = currentId(window);
   let injected = window.__tcPack;   // 宿主注入（清单同步在手）
@@ -15,7 +17,7 @@ export async function initPack(getJSON) {
   if (PACK.theme?.accent) document.documentElement.style.setProperty('--pack-accent', PACK.theme.accent);
   // 包自带事件分类：换掉 tavern/events.mjs 的内置天城分类（查看器事态横条、图例同一个模块实例）
   // 不挡数据请求：boot 把 packEvents 和注册表等放进同一个 Promise.all（性能评审 P2：少一个串行往返）
-  packEvents = packData('events') ? Promise.all([import('../tavern/events.mjs'), getJSON(packData('events'))]).then(([m, tax]) => { if (tax) m.configure(tax, PACK.id); }).catch(() => {}) : null;
+  packEvents = packData('events') ? Promise.all([import('../tavern/events.mjs'), getJSON(packData('events'))]).then(([m, tax]) => { if (tax) { packTax = tax; m.configure(tax, PACK.id); } }).catch(() => {}) : null;
   return PACK;
 }
 export const rebase = reg => rebaseRegistry(reg, PACK.base);

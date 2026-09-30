@@ -56,9 +56,9 @@ test('makeGeo without views or overlay: every place is unmapped, none throws', (
   assert.equal(g.place('nowhere'), null); assert.deepEqual(g.layers(), []);
 });
 
-test('events.mjs with a geo: K-01 B keeps the event, unplaced; the same text with no geo keeps the v1 rule', () => {
+test('events.mjs: a place no node holds keeps the event, unplaced (K-01 B); without a geo every event is unplaced', () => {
   const tag = '⌖火灾｜某处｜1｜冒烟 ⌖火灾｜中层·霓虹街｜2｜起火';
-  const old = EVM.parseMarks(tag);
+  assert.deepEqual(EVM.parseMarks(tag).map(e => [e.layer, e.node]), [['', null], ['', null]]);
   EVM.setGeo(eden);
   try {
     const [a, b] = EVM.parseMarks(tag);
@@ -68,5 +68,4 @@ test('events.mjs with a geo: K-01 B keeps the event, unplaced; the same text wit
     const items = EVM.collect([{ floor: 1, text: tag }, { floor: 2, text: '⌖火灾｜某处｜0｜灭了' }], 2);
     assert.equal(items.find(e => e.node === null).closed, true);   // unplaced events merge by type + place text (K-R54)
   } finally { EVM.setGeo(null); }
-  assert.deepEqual(old.map(e => [e.layer, e.place, 'node' in e]), [['中层', '霓虹街', false]]);
 });

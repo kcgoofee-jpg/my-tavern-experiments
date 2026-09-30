@@ -4,6 +4,7 @@
 //   geo.place(text, { here? }) -> null | { node, via, word, map, owner, layer, ring }
 //       node   the located node id        map    the view id that draws it (null: no flat map)       owner  the node that owns that map
 //       layer  the label of `owner` (its `x-layer`, else its name)              ring   the node is the city's outskirts (`x-ring`)
+//   geo.placeNode(id)      the same result for a node id that is already known (null when the tree lacks it)
 //   geo.layerOf(text)      the label of the map that owns the place, '' when it places nowhere       geo.layers()  every such label
 //   geo.strip(text, owner) the place text without the leading map label and the names of the places above it ("A·B·C" -> "C")
 //   geo.position(node)     positionOf: { view, owner, at } | { view, owner, anchor } | null
@@ -25,12 +26,15 @@ export function makeGeo({ tree, views = {}, lang = 'zh', lexicon, custom } = {})
     const s = scopeOf(tree, views, id), v = viewIdsOf(tree, views, s)[0];
     return { owner: s, map: v && FLAT.has(views[v]?.kind) ? v : null };
   }
+  function placeNode(node, via = 'node', word = '') {   // a node id the tavern script already resolved
+    if (!tree.has(node)) return null;
+    const { owner, map } = home(node);
+    return { node, via, word, map, owner, layer: label(owner), ring: tree.get(node)['x-ring'] === true };
+  }
   function place(text, { here } = {}) {
     const t = String(text ?? '').trim(); if (!t) return null;
     const h = locate(t, tree, vocab, { lang, here });
-    if (!h || !tree.has(h.node)) return null;
-    const { owner, map } = home(h.node);
-    return { node: h.node, via: h.via, word: h.word, map, owner, layer: label(owner), ring: tree.get(h.node)['x-ring'] === true };
+    return h ? placeNode(h.node, h.via, h.word) : null;
   }
   function strip(text, owner) {
     const names = id => [label(id), String(tree.get(id)?.name ?? '')].filter(Boolean);
@@ -45,7 +49,7 @@ export function makeGeo({ tree, views = {}, lang = 'zh', lexicon, custom } = {})
   const position = id => (tree.has(id) ? positionOf(tree, views, id) : null);
   const spot = id => { const p = position(id); return p && p.at && FLAT.has(views[p.view]?.kind) ? { x: p.at.x, y: p.at.y, map: p.view } : null; };
   const owners = () => tree.ids().filter(id => id !== tree.synth && FLAT.has(views[viewIdsOf(tree, views, id)[0]]?.kind)).map(label);
-  return { tree, views, vocab, label, home, place, strip, spot, position, layerOf: text => place(text)?.layer ?? '', layers: () => [...new Set(owners())] };
+  return { tree, views, vocab, label, home, place, placeNode, strip, spot, position, layerOf: text => place(text)?.layer ?? '', layers: () => [...new Set(owners())] };
 }
 
 /** inputs of compat-v1 `fromV1` (manifest, maps, world, names, plan, events, overlay, ...) -> geo. */

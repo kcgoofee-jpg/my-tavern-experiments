@@ -219,6 +219,7 @@
   "ev.rare3": "（罕见）",
   "ev.rare4": "（传说级）",
   "ev.f_place": "地点：{place}",
+  "ev.unplaced": "（认不出地点：只列出，不上图）",
   "ev.approx": "（位置不详，按所在层大致标出）",
   "ev.f_lvl": "等级：{bars}　状态：{st}",
   "ev.f_time": "时间：{v}",

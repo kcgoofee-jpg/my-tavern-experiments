@@ -352,6 +352,7 @@
   "ev.rare3": " (rare)",
   "ev.rare4": " (legendary)",
   "ev.f_place": "Location: {place}",
+  "ev.unplaced": " (place not recognised: listed only, not on the map)",
   "ev.approx": " (exact spot unknown; placed roughly on its level)",
   "ev.f_lvl": "Severity: {bars}   Status: {st}",
   "ev.f_time": "Time: {v}",

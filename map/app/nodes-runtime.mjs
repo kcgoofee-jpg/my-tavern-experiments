@@ -4,6 +4,7 @@
 // A "map id" is an id of the registry: a node (world, layer, site, estate, zone) or a view (a 3D page shown by landmark nodes).
 import { fromV1 } from '../core/compat-v1.mjs';
 import { buildTree, positionOf, levelsOf } from '../core/nodes.mjs';
+import { makeGeo } from '../core/event-geo.mjs';
 
 const FLAT = new Set(['tiles', 'image']);
 const viewIds = n => (typeof n.view === 'string' ? [n.view] : Array.isArray(n.view) ? n.view.filter(v => typeof v === 'string') : []);
@@ -19,11 +20,12 @@ const viewIds = n => (typeof n.view === 'string' ? [n.view] : Array.isArray(n.vi
  *   zoneChildren(id)  { region id: [map id] } the children of `id` that are anchored to a region (zone) of its 3D page; {} when none
  *   anchorIn(id)  the region of the parent's 3D page that `id` is anchored to | null (a marker anchor on a flat parent is not a region)
  *   host(id)      the node that stands for the map: itself, or for a 3D page the landmark that shows it
+ *   geo()         the event geography of the tree (core/event-geo.mjs, built on first use): where a place text or a node belongs, and where its pin goes
  * A 3D page shown by landmarks under several places belongs to the place of the last-declared one (v1 kept one `parent` per page);
  * its stand-in is the first landmark of that place that shows it.
  */
 export function makeRuntime(inputs = {}) {
-  const { pack } = fromV1(inputs), views = pack.views || {}, ui = pack.ui || {}, tree = buildTree(pack.nodes, { title: pack.title });
+  const { pack, custom } = fromV1(inputs), views = pack.views || {}, ui = pack.ui || {}, tree = buildTree(pack.nodes, { title: pack.title });
   const maps = inputs.maps && typeof inputs.maps.maps === 'object' && inputs.maps.maps ? inputs.maps.maps : {};
   const ids = Object.keys(maps), isMap = id => Object.hasOwn(maps, id);
   const shown = new Map();   // view id -> the nodes (declaration order) that list it
@@ -51,8 +53,9 @@ export function makeRuntime(inputs = {}) {
     }
     return null;
   };
+  let geo = null;
   return {
-    tree, views, ui, host, kind, standIn, parent, ancestors,
+    tree, views, ui, host, geo: () => (geo ??= makeGeo({ tree, views, lang: pack.lang, lexicon: pack.lexicon, custom })), kind, standIn, parent, ancestors,
     has: id => isMap(id) && (tree.has(id) || shown.has(id)),
     crumbs: id => [...ancestors(id).reverse(), id],
     children: id => ids.filter(k => up.get(k) === id),
@@ -85,3 +88,4 @@ export const anchorIn = id => RT?.anchorIn(id) ?? null;
 export const zoneChildren = id => RT?.zoneChildren(id) ?? {};
 export const strip = id => RT?.strip(id) ?? null;   // null = no runtime: the caller falls back to the registry's groups
 export const isScene = id => !!RT?.isScene(id);
+export const eventGeo = () => RT?.geo() ?? null;   // null without a runtime: events are then listed and not drawn

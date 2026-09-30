@@ -65,3 +65,9 @@ test('the current location: the overlay changes no text that placed before, exce
   assert.ok(words.size > 600);
   for (const t of ['银冠', '施奈德', '哨所', '井']) assert.ok(b.here(t), `${t} now places (v1: nothing)`);
 });
+
+test('the first pack declares its overlay in the manifest (data.overlay, relative to map/); a pack that declares none is fetched for none', async () => {
+  const man = edenInputs().manifest, town = JSON.parse((await import('node:fs')).readFileSync(new URL('../map/packs/town/manifest.json', import.meta.url), 'utf8'));
+  assert.equal(man.data.overlay, 'packs/eden/overlay.v2.json');
+  assert.equal(town.data.overlay, undefined);
+});

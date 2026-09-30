@@ -73,28 +73,15 @@ const longestIn = (s, keys) => { let b = '', bi = 0; for (const k of keys) { con
 let CAT_KEYS = Object.keys(CATS).filter(k => k !== '其他'), ALIAS_KEYS = Object.keys(ALIAS_CAT);
 export const catOf = s => { s = String(s || '').trim(); if (CATS[s]) return s; if (ALIAS_CAT[s]) return ALIAS_CAT[s];
   const c = longestIn(s, CAT_KEYS); if (c) return c; const a = longestIn(s, ALIAS_KEYS); return a ? ALIAS_CAT[a] : '其他'; };
-// 地点 → 层：先看显式前缀，再按设定地名匹配（地名表见 maps.json）
-// 设定对齐（docs/card-digest.md）：「议会」单独不定层（只认「天城议会」，卡没写议会位置、地图放在中层）；「庄园」单独不定层（只认悬浮庄园 / 伊甸 / 罗斯柴尔德 / 悬浮岛，维克多庄园等卡未写位置）；
-// 城外威胁（异兽、野兽潮、外围防线）算天城外；「骑士团」不单独定层（总部银冠堡在上中层交界，据点和修女院在中层高区），只认「银冠堡」；
-// 用户决定（2026-09-27）：天城大学、骑士团营区在中层，凯莉的宅邸在上层（位置为地图自设）。
-// 上层没有教区，「大主教」按辉光大教堂算中层。2026-09-28 用户要求卡里每处建筑都上图：层没写的地点（执政厅、法师塔、诊所……）按地图的自设层认（见 docs/card-buildings.md）。
-// 天城外：光辉联邦、大骑士领、圣都、第三帝国、灵枢秘派、虚灵古派、原域、海外……；「奥伦帝国」不算（国都就是天城）。
-// 将军官邸、以太研究院（仓库自设）2026-09-28 已撤为 DLC，不再认；精英学院是卡里的（上层）
-const RE_UP = /悬浮庄园|伊甸庄园|罗斯柴尔德庄园|悬浮岛|浮岛|伊甸|银冠|气候调节塔|首相府|财团|罗斯柴尔德|R-02|联盟会所|精英学院|凯莉的宅邸|凯莉宅邸|露易丝宅邸|维克多庄园|「Y」的庄园|Y的庄园/;
-const RE_LOW = /井|地基|血肉磨坊|施粥|废弃教堂|哨所|货运|下层分局|委员会下层|公共收容设施|量产|灰票|下城|贫民窟|贫民区|廉价酒馆|地下格斗|非法赌场|二手市场|二手衣物|工厂|铁皮屋|旧货市场|孤儿收容所|老K杂货|井下-07|下层区酒吧|监狱/;
-const RE_MID = /霓虹|C区|检查点|执法局总局|大教堂|主教座堂|大主教|圣铁摇篮|战斗修女院|军营|星渊|天城议会|商业区|旧公寓|最高法院|佣兵公会|中城|天城大学|法学院|骑士团营区|维多利亚的公寓|公立医院|养老院|中层修道院|法师塔|施奈德|新生工坊|管家学院|执政厅|政务院|储备署|文化署|军事学院|风暴殿|枢机院/;
-const RE_OUT = /光辉联邦|大骑士领|圣都|第三帝国|灵枢秘派|虚灵古派|原域|诸神殿|临光家族|圆桌骑士封地|伦敦|英国|海外|旷野|猎季营地|魔导军工|大陆|异兽|野兽潮|兽潮|外围|城外/;
-let guessByName = s => (RE_UP.test(s) ? '上层' : RE_LOW.test(s) ? '下层' : RE_MID.test(s) ? '中层' : RE_OUT.test(s) ? '天城外' : '');
-const layerGuess = loc => LAYERS.find(l => loc.startsWith(l)) || LAYERS.find(l => l !== CFG.outside && loc.includes(l)) || guessByName(loc);
+// 地点 → 层与落点：由节点树决定（setGeo，core/event-geo.mjs；层词、城区词、城郊词都是设定包的数据，见 packs/<id>/overlay.v2.json）。
 let CLOSED = /解除|结束|恢复|扑灭|已控制|平息/;
-// 设定包可改的措辞（configure）：地区名（地点前缀里去掉）、界外层名、注入句的标签
-const CFG = { region: '天城', outside: '天城外', tag: '天城事态', upAlias: /上城/ };
-// 节点树定位（S3-2，docs/kernel-schema.md K-R24 / K-R51）：setGeo(core/event-geo.mjs 的 geo) 之后，事件的层与落点由 nodes.locate 决定；不设则沿用下面的内置规则
+// 设定包可改的措辞（configure）：注入句的标签
+const CFG = { tag: '天城事态' };
+// 节点树定位（S3-2，docs/kernel-schema.md K-R24 / K-R51）：setGeo(core/event-geo.mjs 的 geo) 之后，事件的层与落点由 nodes.locate 决定。
+// 没设节点树时，所有事件都列出、不上图（node = null，K-01 B）。
 let GEO = null;
 export const setGeo = g => { GEO = g || null; };
 export const getGeo = () => GEO;
-export const LAYERS = ['上层', '中层', '下层', '天城外'];
-export const LAYER_MAP = { 上层: 'tc_upper', 中层: 'tc_mid', 下层: 'tc_low', 天城外: 'world' };
 export const AGE = { live: 7, after: 20, fade: 40 };        // 楼层差：≤7 活跃、≤20 余波、>20 淡出（只在列表）；已解除 / 被新事件接替的 >40 丢弃
 // 未解除的事件不因楼层旧而丢（E6）：只要还在扫描窗口里（eden-map.js 的 SCAN = 80 楼），就以「淡出」留在列表里，直到出现「已解除」或滑出窗口
 export const MERGE_WINDOW = 15;                               // 同一类别 + 地点在 15 楼内再次出现 = 同一事件的更新
@@ -161,20 +148,12 @@ export function parseMarks(raw) {
   const out = [];
   for (const e of marksOf(raw)) {
     const loc = norm(e.loc);
-    let layer, place, node;
-    if (GEO) {   // 节点树定位（core/event-geo.mjs）：先别名、再提示词；认不出的事件照样列出、不上图（K-01 B）
-      const g = GEO.place(String(e.loc).trim());
-      layer = g ? g.layer : ''; place = g ? GEO.strip(loc, g.owner) : loc; node = g ? g.node : null;
-    } else {
-      layer = layerGuess(loc);
-      if (!layer) continue;
-      // 地点里再写一遍层（「下层·天城下层血肉磨坊」「天城·下层·7号井」）：去掉重复的层前缀（v0.9.2）
-      place = loc.slice(loc.startsWith(layer) ? layer.length : 0).replace(/^·+/, '').replace(new RegExp('^(' + reEsc(CFG.region) + ')?·?' + reEsc(layer) + '·?'), '').replace(new RegExp('^' + reEsc(CFG.region) + '·'), '').replace(/^·+/, '');
-    }
+    const pl = GEO ? GEO.place(String(e.loc).trim()) : null;   // 先别名、再提示词；认不出的事件照样列出、不上图（K-01 B）
+    const layer = pl ? pl.layer : '', place = pl ? GEO.strip(loc, pl.owner) : loc, node = pl ? pl.node : null;
     const { line, loc: _, ...rest } = e;
     const c = CATS[e.cat], g = e.cat === '其他' && GROUPS[e.grpHint] ? e.grpHint : c.g;   // 只写了大类名（「类型=人物」）：类型记「其他」，颜色按该大类
     const { grpHint: _g, ...rest2 } = rest;
-    out.push({ ...rest2, layer, place, ...(node !== undefined ? { node } : {}), grp: g, ch: c.ch, color: GROUPS[g], rare: c.rare, text: e.text.slice(0, 60), src: (e.src || c.src || '').slice(0, 20) });
+    out.push({ ...rest2, layer, place, node, grp: g, ch: c.ch, color: GROUPS[g], rare: c.rare, text: e.text.slice(0, 60), src: (e.src || c.src || '').slice(0, 20) });
     if (out.length >= MAX_PER_FLOOR) break;
   }
   return out;
@@ -215,10 +194,7 @@ export function tierOf(age, ended) {
 export function layerOf(here) {
   if (!here) return '';
   const s = String(here);
-  if (GEO) return GEO.layerOf(s);
-  for (const l of LAYERS) if (s.includes(l)) return l;
-  if (CFG.upAlias?.test(s)) return '上层';
-  return guessByName(s);
+  return GEO ? GEO.layerOf(s) : '';
 }
 
 /** 注入给模型的一句话：只说角色所在层的活跃事件；没有就返回 '' */
@@ -232,17 +208,17 @@ export function summarize(items, hereLayer, maxLen = 80) {
 }
 
 // ---------------- 设定包（通用化，docs/generalize/README.md）：换一套事件分类 ----------------
-// tax = packs/<id>/events.json（map/data/schema/events.schema.json）；null = 恢复内置的天城分类。
-// 导出的表（GROUPS / CATS / LAYERS…）原地改，已 import 的模块看到的是同一个对象。
+// tax = packs/<id>/events.json（map/data/schema/events.schema.json；里面的 layers 只交给 compat 变成节点的提示词，这里不读）；null = 恢复内置的天城分类。
+// 导出的表（GROUPS / CATS…）原地改，已 import 的模块看到的是同一个对象。
 const reEsc = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const refill = (o, n) => { for (const k of Object.keys(o)) delete o[k]; Object.assign(o, n); };
-const BUILTIN = { GROUPS: { ...GROUPS }, GROUP_ORDER: [...GROUP_ORDER], SHAPES: { ...SHAPES }, CATS: { ...CATS }, ALIAS_CAT: { ...ALIAS_CAT }, LAYERS: [...LAYERS], LAYER_MAP: { ...LAYER_MAP },
-  EXAMPLES: [...EXAMPLES], guess: guessByName, CLOSED, CFG: { ...CFG } };
+const BUILTIN = { GROUPS: { ...GROUPS }, GROUP_ORDER: [...GROUP_ORDER], SHAPES: { ...SHAPES }, CATS: { ...CATS }, ALIAS_CAT: { ...ALIAS_CAT },
+  EXAMPLES: [...EXAMPLES], CLOSED, CFG: { ...CFG } };
 export let packId = 'eden';
 export function configure(tax, id = tax ? 'pack' : 'eden') {
   // 坏的分类不能拖垮启动：缺必需字段就警告并退回内置分类（结构的完整校验在 tools/check_pack.py）
   const okObj = o => !!o && typeof o === 'object' && !Array.isArray(o) && Object.keys(o).length > 0;
-  if (tax && !(okObj(tax.groups) && okObj(tax.types) && Array.isArray(tax.layers) && tax.layers.length && tax.layers.every(l => l && typeof l.name === 'string' && typeof l.map === 'string'))) {
+  if (tax && !(okObj(tax.groups) && okObj(tax.types))) {
     console.warn('[地图] 设定包的事件分类不合格，改用内置分类', id); tax = null; id = 'eden'; }
   let n;
   if (!tax) n = BUILTIN;
@@ -252,15 +228,14 @@ export function configure(tax, id = tax ? 'pack' : 'eden') {
     for (const [k, v] of Object.entries(tax.types || {})) cats[k] = { g: groups[v.g] ? v.g : '其他', ch: v.ch, src: v.src || '', rare: v.rare || 1 };
     cats.其他 ||= { g: '其他', ch: '!', src: '', rare: 1 };
     for (const v of Object.values(cats)) v.color = groups[v.g];
-    const layers = tax.layers.map(l => l.name), res = tax.layers.map(l => [l.name, (l.match || []).filter(Boolean)]);
     n = { GROUPS: groups, GROUP_ORDER: tax.order || Object.keys(tax.groups).filter(g => g !== '其他'), SHAPES: { 其他: 'square', ...(tax.shapes || {}) }, CATS: cats,
-      ALIAS_CAT: Object.fromEntries(Object.entries(tax.alias || {}).filter(([, v]) => cats[v])), LAYERS: layers, LAYER_MAP: Object.fromEntries(tax.layers.map(l => [l.name, l.map])),
-      EXAMPLES: tax.examples || [], guess: s => (res.find(([, ws]) => ws.some(w => s.includes(w))) || [''])[0],
+      ALIAS_CAT: Object.fromEntries(Object.entries(tax.alias || {}).filter(([, v]) => cats[v])),
+      EXAMPLES: tax.examples || [],
       CLOSED: tax.closed?.length ? new RegExp(tax.closed.map(reEsc).join('|')) : BUILTIN.CLOSED,
-      CFG: { region: tax.region || '', outside: tax.outside || '', tag: tax.tag || '地图事态', upAlias: null } };
+      CFG: { tag: tax.tag || '地图事态' } };
   }
   refill(GROUPS, n.GROUPS); GROUP_ORDER.splice(0, GROUP_ORDER.length, ...n.GROUP_ORDER); refill(SHAPES, n.SHAPES); refill(CATS, n.CATS); refill(ALIAS_CAT, n.ALIAS_CAT);
-  LAYERS.splice(0, LAYERS.length, ...n.LAYERS); refill(LAYER_MAP, n.LAYER_MAP); EXAMPLES.clear(); for (const x of n.EXAMPLES) EXAMPLES.add(x);
-  guessByName = n.guess; CLOSED = n.CLOSED; Object.assign(CFG, n.CFG);
+  EXAMPLES.clear(); for (const x of n.EXAMPLES) EXAMPLES.add(x);
+  CLOSED = n.CLOSED; Object.assign(CFG, n.CFG);
   CAT_KEYS = Object.keys(CATS).filter(k => k !== '其他'); ALIAS_KEYS = Object.keys(ALIAS_CAT); packId = id;
 }
