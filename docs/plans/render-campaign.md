@@ -2,12 +2,12 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T19:20:35Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T19:33:04Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
 | standard | 45 | 0 | 0 | 6 | 0 | 0 | 51 |
-| hero | 4 | 0 | 11 | 0 | 6 | 0 | 21 |
+| hero | 4 | 1 | 11 | 0 | 6 | 0 | 22 |
 
 Below-gate (user spot-check): none
 
@@ -71,25 +71,26 @@ Below-gate (user spot-check): none
 
 | # | id | type | status | stage | claim | flags | title |
 |---|---|---|---|---|---|---|---|
-| 1 | `eden:r5` | island | done | - |  |  | Eden estate r5: continue the shipped estate2 r4e scene, close the requirement gaps (user-approved) |
-| 2 | `isle:eden` | island | done | - |  |  | Eden Manor island (the user's own estate) - showpiece, user-approved |
-| 3 | `isle:silver_crown` | island | done | - |  |  | Rebuild island silver_crown |
-| 4 | `isle:isle4` | island | done | - |  |  | Rebuild island isle4 (victor_estate) |
-| 5 | `isle:isle5` | island | open | fix |  |  | Rebuild island isle5 (y_estate) |
-| 6 | `isle:isle6` | island | open | setting |  |  | Rebuild island isle6 (pm_residence) |
-| 7 | `isle:isle9` | island | open | setting |  |  | Rebuild island isle9 (league_club) |
-| 8 | `isle:isle10` | island | open | setting |  |  | Rebuild island isle10 (kelly_residence) |
-| 9 | `isle:isle25` | island | open | setting |  |  | Rebuild island isle25 (elite_academy) |
-| 10 | `isle:isle30` | island | open | setting |  |  | Rebuild island isle30 (zaibatsu_estate) |
-| 11 | `base:tc_upper` | basemap | blocked | audit |  |  | Upper base map final |
-| 12 | `var:tc_upper:16k` | variant | blocked | render |  |  | Upper map 16k final |
-| 13 | `var:tc_upper:dawn` | variant | blocked | render |  |  | Upper map dawn period |
-| 14 | `var:tc_upper:day` | variant | blocked | render |  |  | Upper map day period |
-| 15 | `var:tc_upper:dusk` | variant | blocked | render |  |  | Upper map dusk period |
-| 16 | `var:tc_upper:night` | variant | blocked | render |  |  | Upper map night period |
-| 17 | `estate:b1b2` | estate | open | final |  |  | Estate basement B1 / B2 interior refinement |
-| 18 | `lm:round_table_hall` | landmark | open | new |  |  | New model: round table hall |
-| 19 | `lm:sun_arena` | landmark | open | new |  |  | New model: sun arena |
-| 20 | `lm:union_tower` | landmark | open | new |  |  | New model: union tower |
-| 21 | `base:world` | basemap | open | audit |  |  | Final-spec audit / re-render of base map world |
+| 1 | `layout:tc_upper` | layout | claimed | options | layout-1 |  | Upper map island layout: Eden at the centre (user picks one of three options) |
+| 2 | `eden:r5` | island | done | - |  |  | Eden estate r5: continue the shipped estate2 r4e scene, close the requirement gaps (user-approved) |
+| 3 | `isle:eden` | island | done | - |  |  | Eden Manor island (the user's own estate) - showpiece, user-approved |
+| 4 | `isle:silver_crown` | island | done | - |  |  | Rebuild island silver_crown |
+| 5 | `isle:isle4` | island | done | - |  |  | Rebuild island isle4 (victor_estate) |
+| 6 | `isle:isle5` | island | open | fix |  |  | Rebuild island isle5 (y_estate) |
+| 7 | `isle:isle6` | island | open | setting |  |  | Rebuild island isle6 (pm_residence) |
+| 8 | `isle:isle9` | island | open | setting |  |  | Rebuild island isle9 (league_club) |
+| 9 | `isle:isle10` | island | open | setting |  |  | Rebuild island isle10 (kelly_residence) |
+| 10 | `isle:isle25` | island | open | setting |  |  | Rebuild island isle25 (elite_academy) |
+| 11 | `isle:isle30` | island | open | setting |  |  | Rebuild island isle30 (zaibatsu_estate) |
+| 12 | `base:tc_upper` | basemap | blocked | audit |  |  | Upper base map final |
+| 13 | `var:tc_upper:16k` | variant | blocked | render |  |  | Upper map 16k final |
+| 14 | `var:tc_upper:dawn` | variant | blocked | render |  |  | Upper map dawn period |
+| 15 | `var:tc_upper:day` | variant | blocked | render |  |  | Upper map day period |
+| 16 | `var:tc_upper:dusk` | variant | blocked | render |  |  | Upper map dusk period |
+| 17 | `var:tc_upper:night` | variant | blocked | render |  |  | Upper map night period |
+| 18 | `estate:b1b2` | estate | open | final |  |  | Estate basement B1 / B2 interior refinement |
+| 19 | `lm:round_table_hall` | landmark | open | new |  |  | New model: round table hall |
+| 20 | `lm:sun_arena` | landmark | open | new |  |  | New model: sun arena |
+| 21 | `lm:union_tower` | landmark | open | new |  |  | New model: union tower |
+| 22 | `base:world` | basemap | open | audit |  |  | Final-spec audit / re-render of base map world |
 

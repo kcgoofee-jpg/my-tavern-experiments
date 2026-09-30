@@ -388,3 +388,4 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T19:18:21Z,inst:supreme_court,ship,claim,std-1,,
 2026-09-30T19:20:35Z,inst:supreme_court,ship,done,std-1,pass,"re-rendered finals and re-exported glbs (std 0.71 MB / low 0.16 MB, max_mb 0.9/0.45); no maps.json change; card-buildings quality updated; smoke pass"
 2026-09-30T19:20:35Z,inst:tiancheng_univ,ship,done,std-1,pass,"re-rendered finals and re-exported glbs (std 0.71 MB / low 0.16 MB, max_mb 0.9/0.45); no maps.json change; card-buildings quality updated; smoke pass"
+2026-09-30T19:33:04Z,layout:tc_upper,options,claim,layout-1,,

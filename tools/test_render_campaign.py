@@ -113,6 +113,17 @@ class UserGate(Base):
         self.to_gate()
         self.assertEqual(self.next('hero', 'a').returncode, 4)
 
+    def test_layout_type_asks_the_user_between_options_and_final(self):
+        self.set_items([dict(item('L1', 'hero', 'layout'), user_gate=True)])
+        self.assertEqual(self.picked(self.next('hero', 'a')), ('L1', 'options'))
+        self.walk('L1', ['options'], 'a')
+        s = self.status()['L1']
+        self.assertEqual((s['stage'], s['status']), ('user-review', 'waiting'))
+        self.assertEqual(self.rec('done', 'L1', 'user-review', 'user', '--note', 'B').returncode, 0)
+        self.assertEqual(self.picked(self.next('hero', 'a')), ('L1', 'final'))
+        self.walk('L1', ['final', 'ship'], 'a')
+        self.assertEqual(self.status()['L1']['status'], 'done')
+
     def test_ungated_items_keep_their_stage_list(self):
         self.assertNotIn('user-review', self.rec('done', 'H1', 'nonsense').stderr.split('one of:')[1])
 
@@ -473,15 +484,16 @@ class RealItemList(unittest.TestCase):
 
     def test_hero_groups_in_order(self):
         ids = self.lane('hero')
-        self.assertEqual(ids[0], 'eden:r5', 'the shipped estate2 Eden continues first (user 2026-09-30)')
-        self.assertEqual(ids[1:10], ['isle:' + x for x in ('eden', 'silver_crown', 'isle4', 'isle5', 'isle6', 'isle9', 'isle10', 'isle25', 'isle30')])
-        self.assertEqual(ids[10:], ['base:tc_upper', 'var:tc_upper:16k', 'var:tc_upper:dawn', 'var:tc_upper:day', 'var:tc_upper:dusk',
+        self.assertEqual(ids[0], 'layout:tc_upper', 'the upper layout is settled before any upper render (user 2026-10-01)')
+        self.assertEqual(ids[1], 'eden:r5', 'the shipped estate2 Eden continues first (user 2026-09-30)')
+        self.assertEqual(ids[2:11], ['isle:' + x for x in ('eden', 'silver_crown', 'isle4', 'isle5', 'isle6', 'isle9', 'isle10', 'isle25', 'isle30')])
+        self.assertEqual(ids[11:], ['base:tc_upper', 'var:tc_upper:16k', 'var:tc_upper:dawn', 'var:tc_upper:day', 'var:tc_upper:dusk',
                                   'var:tc_upper:night', 'estate:b1b2', 'lm:round_table_hall', 'lm:sun_arena', 'lm:union_tower', 'base:world'])
 
     def test_dependencies_and_specs(self):
         by = {i['id']: i for i in self.items}
         self.assertEqual(by['estate:opt']['depends'], ['estate:final'])
-        self.assertEqual(by['base:tc_upper']['depends'], ['isle:' + x for x in ('eden', 'silver_crown', 'isle4', 'isle5', 'isle6', 'isle9', 'isle10', 'isle25', 'isle30')])
+        self.assertEqual(by['base:tc_upper']['depends'], ['layout:tc_upper'] + ['isle:' + x for x in ('eden', 'silver_crown', 'isle4', 'isle5', 'isle6', 'isle9', 'isle10', 'isle25', 'isle30')])
         self.assertEqual(by['var:tc_upper:16k']['spec'], {'res': 16000, 'spp': 512})
         self.assertIn('tc_upper:victor_estate', by['isle:isle4']['targets'])
         self.assertIn('tc_upper:y_estate', by['isle:isle5']['targets'])
@@ -489,7 +501,9 @@ class RealItemList(unittest.TestCase):
         self.assertEqual(by['base:site_fief3']['spec'], {'res': 4000, 'spp': 128})
         self.assertEqual(by['estate:final']['spec'], {'res': 2000, 'spp': 32})
         self.assertFalse([i for i in self.items if 'rain' in i['id']], 'no weather variants')
-        self.assertEqual([i['id'] for i in self.items if i.get('user_gate')], ['eden:r5', 'isle:eden'], 'the user reviews only their own estate island')
+        self.assertEqual([i['id'] for i in self.items if i.get('user_gate')], ['layout:tc_upper', 'eden:r5', 'isle:eden'],
+                         'the user reviews only their own estate island and the upper layout')
+        self.assertEqual(by['layout:tc_upper']['targets'], ['tc_upper:*'])
         self.assertEqual(by['eden:r5']['spec'], {'res': 3200, 'spp': 128})
         self.assertEqual(by['eden:r5']['targets'], ['tc_upper:eden', 'eden_estate:cover', 'eden_estate:site'])
         self.assertNotIn('eden_manor.py', json.dumps(by['estate:b1b2']['hints']))

@@ -59,6 +59,7 @@ STAGES = {
     'basemap': ['audit', 'render', 'tiles', 'verify', 'ship'],
     'variant': ['render', 'tiles', 'register', 'ship'],
     'island': ['setting', 'draft', 'board'] + REVIEW + ['final', 'integrate', 'ship'],
+    'layout': ['options', 'final', 'ship'],
 }
 FREEZE_STAGES = ('ship', 'register')
 USER_STAGE = 'user-review'   # items with "user_gate": true stop here until the user approves (recorded by agent "user")
@@ -309,6 +310,8 @@ def hint(item, stage):
         return 'python3 tools/check_maps.py', STAGE_TEXT['verify']
     if stage == 'register':
         return 'python3 tools/check_maps.py', STAGE_TEXT['register']
+    if t == 'layout':
+        return ('python3 tools/render_campaign.py ship-check' if stage in ('final', 'ship') else None), LAYOUT_TEXT[stage]
     text = STAGE_TEXT.get(stage, '').replace('<id>', lid)
     if t == 'island' and stage in ('draft', 'board', 'final') and h.get('script'):
         text += ' Island script: %s (silhouette strip: blender/islands/strip.py).' % h['script']
@@ -332,6 +335,14 @@ STAGE_TEXT = {
     'register': 'Register the DZI in maps.json `periods` (run ship-check first; on FREEZE: wait).',
     'integrate': 'Integrate the island into the upper base map (tools/isles_into_upper.py).',
     'ship': 'Ship (run ship-check first; exit 3 means FREEZE: record wait). Update worldbook / card-buildings where the stage tool asks.',
+}
+
+LAYOUT_TEXT = {
+    'options': 'Write the layout options (blender/data/layouts/) and preview them without Blender; previews + options.zh.txt '
+               'go to ~/eden-map-review/render/<id>/. Never record user-review yourself.',
+    'final': 'Apply the option the user chose (ledger note of user-review): run ship-check first, write it into the islands '
+             'file, move markers / anchors / routes by script, rebuild the worldbook add-on, re-paste cutouts; check_maps.',
+    'ship': 'Ship (run ship-check first; exit 3 means FREEZE: record wait): commit + push; dependent base renders use the new layout.',
 }
 
 

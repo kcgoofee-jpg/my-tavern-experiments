@@ -1021,6 +1021,29 @@
    "notes": "model exists: self-check r1 7.5 / 7.5 (docs/card-buildings.md); confirm it meets the P2 institution bar or fix"
   },
   {
+   "id": "layout:tc_upper",
+   "lane": "hero",
+   "type": "layout",
+   "title": "Upper map island layout: Eden at the centre (user picks one of three options)",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "user_gate": true,
+   "spec": {
+    "res": 2000,
+    "spp": 0
+   },
+   "hints": {
+    "islands": "blender/data/tc_islands.json",
+    "options": "blender/data/layouts/tc_islands_v16_{A,B,C}.json",
+    "anchors": "tools/eden_anchor_upper.py",
+    "worldbook": "python3 tools/build_worldbook_addon.py --ship"
+   },
+   "notes": "User 2026-10-01: Eden must sit in the middle of the upper map, clearly the largest island; the others smaller, spaced, not alike. Preview by compositing existing cutouts (no Blender). No island shadows."
+  },
+  {
    "id": "eden:r5",
    "lane": "hero",
    "type": "island",
@@ -1232,6 +1255,7 @@
    ],
    "canon": "card",
    "depends": [
+    "layout:tc_upper",
     "isle:eden",
     "isle:silver_crown",
     "isle:isle4",
