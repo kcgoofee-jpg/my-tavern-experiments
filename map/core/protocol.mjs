@@ -50,6 +50,7 @@ export const SCHEMA = {
   'eden-map:custom': [H2V, {}],
   'eden-map:inv': [H2V, { items: 'array?' }],   // 空间化背包（Part 5-1）：聊天变量 eden_map.仓库 的行（地点卡「存放」行）
   'eden-map:stash': [H2V, { items: 'array?' }],   // 世界藏物表（Part 5-1）：设定包自带的藏物（带地图 / 标记 / 暗格），查看器据此画发光拾取物
+  'eden-map:routine': [H2V, { schedule: 'object?' }],   // Part 8-2：NPC 日程表（包数据 routine.json 原样推来，查看器按确定性时钟自己挪人）
   'eden-map:clock': [H2V, {}],
   'eden-map:outfit': [H2V, { items: 'object?' }],   // mvu.outfit()：{ 部位: 描述 } 或 null
   'eden-map:varmap': [H2V, {}],
@@ -79,6 +80,8 @@ export const SCHEMA = {
   'estate:quality': [V2S, { q: 'string' }],       // 设置「三维画质」auto / 1 省电 / 2 高：不重载即生效（毛玻璃 + 像素比）
   'estate:fps': [V2S, { on: 'boolean' }],         // 调试：显示帧率——设置「显示帧率」实时同步给庄园 / props 三维子页（U，2026-09-28）
   'estate:chat': [V2S, { id: 'string' }],         // 当前 chatId：房间图集「仅本聊天」作用域用，庄园页读不到 SillyTavern 上下文（2026-09-28）
+  'estate:stash': [V2S, { items: 'array?' }],     // Part 8-1：世界藏物表（宿主 → 查看器 → 庄园三维页），三维页据此在房间 / 区域里放发光道具
+  'estate:taken': [V2S, { ids: 'array?' }],       // Part 8-1：已经在手里的藏物 id（背包的 id 对账）：地上不再发光
   'estate:pause': [V2S, {}],
   'estate:resume': [V2S, {}],
   'estate:floor': ['both', { floor: 'any' }],     // 下行 = 直嵌 / 调试接口；上行 = 用户切了楼层（直嵌时给外层页）
@@ -93,6 +96,7 @@ export const SCHEMA = {
   'estate:progress': [S2V, { loaded: 'number', total: 'number?', what: 'string?' }],   // fix3：三维模型下载字节进度（total 0 = 不知道总大小）
   'estate:key': [S2V, { key: 'string' }],
   'estate:select': [S2V, { name: 'string?' }],   // 直嵌接口
+  'estate:loot': [S2V, { id: 'string', name: 'string', place: 'string?', hidden: 'boolean?', floor: 'string?' }],   // Part 8-1：三维里点起了一枚发光道具（查看器转成 eden-map:loot 给宿主）
   'v3d:state': [S2V, {}],                        // 直嵌接口
 };
 

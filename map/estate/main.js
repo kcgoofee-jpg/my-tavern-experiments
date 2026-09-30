@@ -12,6 +12,7 @@ import { roomCustomBlockHTML, bindRoomCustomEvents, getCustomName, setGalleryCha
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer } from '../ui/camera-controls.js';
 import { Estate3D } from '../core/estate3d.mjs';   // Estate3D Manifest 标准契约（P3-A）：清单校验 / 路径解析 / describe 摘要
 import { createRenderGate, wireVisibility } from '../core/render-gate.mjs';   // Part 7-4：页面隐藏时渲染循环整个停掉
+import { spots as stashSpots, propGlow, describe as describeStash, PROP_R } from '../core/stash3d.mjs';   // Part 8-1：世界藏物表 → 三维落点（纯映射）
 
 const T0 = performance.now();
 const Q = new URLSearchParams(location.search);
@@ -371,6 +372,72 @@ function mkLabel(parent, x, y, z, cls) {
   const el = document.createElement('div'); el.className = 'lbl ' + cls; el.appendChild(document.createElement('span'));
   const o = new CSS2DObject(el); o.position.set(x, y, z); o.center.set(0.5, 0.5); o.visible = false; parent.add(o); return o;
 }
+/* ---------------- 三维藏物：地上的发光拾取物（Part 5-1 的三维一半，Part 8-1） ---------------- */
+// 数据 = 设定包的世界藏物表（core/stash.mjs），查看器经 estate:stash 推来；落在哪个房间 / 区域由 core/stash3d.mjs 按名字对账。
+// 拿到手的（estate:taken 的 id 集合）不再发光；点一下 = 拾起（发 estate:loot 给查看器，宿主写背包 + 按设置注入一句）。
+// 三维这一半不自己实现藏物规则：与二维发光点（app/loot.mjs）共用 core/stash.mjs 的口径，连呼吸周期都一样。
+const propG = new THREE.Group(); propG.name = 'stash'; scene.add(propG);
+const PROP_PLACES = ITEMS.map((it) => ({
+  id: it.d.id, name: it.d.name,
+  alias: [...(it.d.alias || []), ...(it.d.words || []), ...(it.d.synonyms || [])],
+  floor: it.floor != null ? FLOORS[it.floor].id : null,
+  x: it.cx, y: it.y, z: it.cz, r: it.kind === 'room' ? PROP_R : PROP_R * 2,
+}));
+const propMat = new THREE.MeshBasicMaterial({ color: '#e6c36a', transparent: true, opacity: 0.9, depthWrite: false });
+const haloMat = new THREE.MeshBasicMaterial({ color: '#f6dfa6', transparent: true, opacity: 0.3, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+let stashRaw = null, propTaken = new Set(), props = [];
+/** 这一层 / 这个模式下该不该亮：剖切看本层，内透看楼上，外观只亮室外的（与 itemVisible 同一条口径） */
+function propVisible(p) {
+  const fi = p.floor != null ? FI[p.floor] : null;
+  return isFloor(mode) ? fi === mode : mode === 'xray' ? fi != null && fi >= 2 : fi == null;
+}
+function clearProps() {
+  for (const g of props) { propG.remove(g); g.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
+  props = [];
+}
+/** 重画：藏物表来了 / 拿走一件 / 楼层变了都跑一遍（点数很少，整清整画最省心） */
+function rebuildProps() {
+  clearProps();
+  if (!stashRaw) return 0;
+  for (const p of stashSpots(stashRaw, { taken: propTaken, places: PROP_PLACES })) {
+    const g = new THREE.Group(); g.position.set(p.x, p.y + 1.2, p.z);
+    const core = new THREE.Mesh(new THREE.IcosahedronGeometry(p.r * 0.42, 0), propMat);
+    const halo = new THREE.Mesh(new THREE.IcosahedronGeometry(p.r, 1), haloMat);
+    const pk = new THREE.Mesh(new THREE.SphereGeometry(p.r * 1.5, 10, 8), pickMat); pk.userData.prop = p;
+    g.add(core, halo, pk); propG.add(g);
+    g.visible = propVisible(p); g.userData = { prop: p, pick: pk };
+    props.push(g);
+  }
+  needs = true;
+  return props.length;
+}
+/** 呼吸：一帧一次缩放 + 光晕明暗（与 core/stash.mjs 的 glow 同频；省流档 / 减少动态效果不呼吸，静态发光） */
+function pulseProps(now) {
+  if (LOW || REDUCED || !props.some((g) => g.visible)) return;   // 没有一枚在亮：不呼吸、不排帧
+  const k = propGlow(now / 1000);
+  haloMat.opacity = 0.18 + 0.26 * k;
+  for (const g of props) g.scale.setScalar(0.86 + 0.28 * k);
+  needs = true;
+}
+/** 射线先打发光道具：命中就拾起（道具比房间小，先判它才不会点一下变成选中房间） */
+function pickProp(cx, cy) {
+  const list = props.filter((g) => g.visible).map((g) => g.userData.pick);
+  if (!list.length) return null;
+  setRay(cx, cy);
+  const hit = ray.intersectObjects(list, false)[0];
+  return hit ? hit.object.userData.prop : null;
+}
+function takeProp(p) {
+  propTaken.add(p.id);
+  rebuildProps();
+  post({ type: 'estate:loot', id: p.id, name: p.name, place: p.place || '', hidden: !!p.hidden, floor: p.floor ?? null });
+}
+function showPropTip(p, x, y) {
+  const zh = LANG === 'zh';
+  if (tipFor !== p) { tip.innerHTML = `<div class="row"><em>${zh ? '拾取' : 'Pick up'}</em>${esc(p.name)}${p.hidden ? `（${zh ? '暗格' : 'hidden'}：${esc(p.hidden)}）` : ''}</div>`; tipFor = p; }
+  cardAt = [x, y]; placeCard(); tip.classList.add('on');
+}
+
 const enName = (d) => d.en || '';
 const nameOf = (it) => {
   const d = it.d;
@@ -441,6 +508,7 @@ function applyMode() {
   for (const mt of Object.values(plateMats)) mt.opacity = m === 'xray' ? 0.35 : 0.55;
   houseFloors.forEach((ms, i) => ms.forEach((o) => { o.visible = fl ? i === m : m === 'xray' && i >= 2; }));
   zoneG.visible = m === 'ext'; carG.visible = m === 'ext';
+  for (const g of props) g.visible = propVisible(g.userData.prop);   // 藏物跟着模式走（剖切看本层、内透看楼上、外观只亮室外）
   floorTags.forEach((o, i) => { o.visible = m === 'xray' && i >= 2; });
   needs = true;
 }
@@ -601,9 +669,13 @@ function hideCard(force) { tip.classList.remove('on'); tipFor = null; if (pinned
 
 /* ---------------- 拾取 / 悬停 / 点选 ---------------- */
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-function pickAt(cx, cy) {
+/** 屏幕坐标 → 射线（pickAt / pickProp 共用一条） */
+function setRay(cx, cy) {
   const rc = renderer.domElement.getBoundingClientRect();
   ndc.set(((cx - rc.left) / rc.width) * 2 - 1, -((cy - rc.top) / rc.height) * 2 + 1); ray.setFromCamera(ndc, camera);
+}
+function pickAt(cx, cy) {
+  setRay(cx, cy);
   const list = []; for (const it of ITEMS) if (itemVisible(it)) list.push(it.pick);
   const hits = ray.intersectObjects(list, false);
   if (!hits.length) return null;
@@ -742,7 +814,10 @@ app.addEventListener('touchmove', (e) => {
 }, { passive: false });
 app.addEventListener('touchend', (e) => {
   if (pinch && e.touches.length < 2) {
-    if (performance.now() - pinch.t < 260 && pinch.moved < 12) { const it = pickAt(pinch.cx, pinch.cy); if (it) { focusItem(it); postSelect(it); } }
+    if (performance.now() - pinch.t < 260 && pinch.moved < 12) {
+      const pr = pickProp(pinch.cx, pinch.cy); if (pr) takeProp(pr);   // 触屏同上：先判发光道具
+      else { const it = pickAt(pinch.cx, pinch.cy); if (it) { focusItem(it); postSelect(it); } }
+    }
     pinch = null;
   }
 });
@@ -780,6 +855,7 @@ renderer.domElement.addEventListener('pointerdown', (e) => { down = { x: e.clien
 renderer.domElement.addEventListener('pointerup', (e) => {
   if (!down) return; const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), dt = performance.now() - down.t; const type = down.type; down = null;
   if (moved > 7 || dt > 450 || pinch) return;
+  const pr = pickProp(e.clientX, e.clientY); if (pr) { takeProp(pr); return; }   // 先判发光道具：点它就是拾起，不是选中房间
   const it = pickAt(e.clientX, e.clientY);
   if (type !== 'mouse') {
     const now = performance.now();
@@ -790,11 +866,16 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   }
   tapPin(it);
 });
-renderer.domElement.addEventListener('dblclick', (e) => { dbl(pickAt(e.clientX, e.clientY)); });
+renderer.domElement.addEventListener('dblclick', (e) => {
+  const pr = pickProp(e.clientX, e.clientY); if (pr) { takeProp(pr); return; }
+  dbl(pickAt(e.clientX, e.clientY));
+});
 function dbl(it) { if (it) { focusItem(it); postSelect(it); } else resetView(); }
 let hoverEv = null, hoverRaf = 0;
 function doHover() {
   hoverRaf = 0; const e = hoverEv; if (!e) return;
+  const pr = pickProp(e.clientX, e.clientY);
+  if (pr) { if (hover) { hover = null; showHi(hiHover, null); needs = true; } renderer.domElement.style.cursor = 'pointer'; showPropTip(pr, e.clientX + 16, e.clientY + 14); return; }
   const it = pickAt(e.clientX, e.clientY);
   if (it !== hover) { hover = it; showHi(hiHover, it && it !== pinned ? it : null); needs = true; }
   if (it) showCard(it, e.clientX + 16, e.clientY + 14); else hideCard();
@@ -857,13 +938,15 @@ window.addEventListener('message', (e) => {
   else if (d.type === 'estate:cvd' && typeof d.mode === 'string') { document.documentElement.dataset.cvd = d.mode; document.documentElement.classList.toggle('cvd', d.mode !== '0'); }   // 色觉模式（E7）：本页当前没有按类别上色的材质，只留 CSS 钩子给以后加
   else if (d.type === 'estate:fps' && typeof d.on === 'boolean') { STATS = d.on; statsEl.style.display = d.on ? 'block' : 'none'; if (!d.on) statsEl.textContent = ''; frames = 0; fpsT = performance.now(); needs = true; }
   else if (d.type === 'estate:chat' && typeof d.id === 'string') setGalleryChatId(d.id);   // 房间图集「仅本聊天」作用域
+  else if (d.type === 'estate:stash') { stashRaw = Array.isArray(d.items) ? { items: d.items } : null; rebuildProps(); }   // Part 8-1：世界藏物表
+  else if (d.type === 'estate:taken') { propTaken = new Set(Array.isArray(d.ids) ? d.ids.filter((x) => typeof x === 'string') : []); rebuildProps(); }   // 已经在手里的：地上不再发光
 });
 function setLang(l) { LANG = l; card.dataset.lang = LANG; buildNav(); relabel(); frustum(); const it = cardFor; cardFor = null; if (it) showCard(it, cardAt?.[0], cardAt?.[1]); needs = true; }
 addEventListener('resize', () => { frustum(); renderer.setSize(innerWidth, innerHeight); labelR.setSize(innerWidth, innerHeight); camera.zoom = clamp(camera.zoom, minZoom, maxZoom); camera.updateProjectionMatrix(); needs = true; });
 
 /* ---------------- 循环（按需渲染） ---------------- */
 const statsEl = $('#stats'); if (STATS) statsEl.style.display = 'block';
-let frames = 0, fpsT = performance.now(), fps = 0, first = true, lastInfo = { calls: 0, triangles: 0 }, lastPulse = 0;
+let frames = 0, fpsT = performance.now(), fps = 0, first = true, lastInfo = { calls: 0, triangles: 0 }, lastPulse = 0, lastPropPulse = 0;
 let paused = false, resumeT = 0;
 // Part 7-4 视口可见性节流：页面切后台 / 视口不可见 → 停排帧（GPU 与循环全歇）；恢复时若没被休眠就重启循环
 const gate = createRenderGate({
@@ -881,6 +964,7 @@ function loop(now) {
   const mpp = (camera.right - camera.left) / camera.zoom / Math.max(1, innerWidth);
   document.body.classList.toggle('zoomed', mode !== 'ext' || mpp < 0.1);
   if (pinned && now - pinT < 2000 && now - lastPulse > 66) { lastPulse = now; const k = 0.6 + 0.4 * Math.abs(Math.sin((now - pinT) / 420 * Math.PI)); hiPin.userData.fm.opacity = hiPin.userData.fillOp * (0.5 + k * 0.7); needs = true; }
+  if (now - lastPropPulse > 66) { lastPropPulse = now; pulseProps(now); }   // 发光拾取物的呼吸（core/stash3d.mjs 的 propGlow）
   if (lowRes && !down && !pinch && now - lastInteract > 150) setLowRes(false);
   if (!(needs || moving || STATS)) return;
   needs = false;
@@ -923,6 +1007,13 @@ window.__estate = {
   tier: () => tier, dpr: () => DPR, paused: () => paused,
   stats: () => ({ ...lastInfo, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length, tier, low: LOW, files: STAT, times: TB, firstFrameMs: window.__estate.firstFrameMs, tris: STAT.tris }),
   describe: () => Estate3D.describe(MAN, { base: M3D.base }),   // Estate3D 标准摘要（{ id, glbPath, floors, hotspots, budget, license }）
+  props: { set: (raw) => { stashRaw = raw && Array.isArray(raw.items) ? raw : null; rebuildProps(); },   // 世界藏物表（探针 / 浏览器测试用）
+    taken: (ids) => { propTaken = new Set(ids || []); rebuildProps(); },
+    now: () => props.length, list: () => props.filter((g) => g.visible).map((g) => g.userData.prop),
+    screen: () => props.filter((g) => g.visible).map((g) => { const v = g.getWorldPosition(new THREE.Vector3()).project(camera);
+      return { id: g.userData.prop.id, x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; }),   // 屏幕坐标（探针 / 浏览器测试点它用）
+    pick: (x, y) => pickProp(x, y)?.id || null,   // 射线在这一屏坐标上打到了哪一枚（没有 = null）
+    summary: () => describeStash(props.filter((g) => g.visible).map((g) => g.userData.prop)) },
   camera, controls, renderer, scene, setLang,
 };
 buildNav(); relabel(); frustum();

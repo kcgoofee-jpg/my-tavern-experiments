@@ -11,6 +11,8 @@ import { estPlan, hereRes } from './locate.mjs';
 import { q3Pref, showSet } from './settings.mjs';
 import * as TCCvd from './cvd.mjs';
 import { PACK } from './pack.mjs';   // 三维子页的包注入（__packId / __packStrings）：子页读不到清单，语言键与包内文案随页带进去
+import { P } from './plugins.mjs';   // 空间化背包 TCInv：三维发光道具的「拿到手」对账
+import { busOn } from './bus.mjs';
 import { chatId } from './extapi.mjs';
 import { setFpsMeter } from './fps.mjs';
 import { trimTileCache } from './dzi-worker.mjs';   // Part 3 §5：吃紧时收紧 OSD 解码瓦片缓存
@@ -156,7 +158,7 @@ function onEstateReady() {
   if (weak3d && weak3d !== f) { try { weak3d.remove(); } catch (e) {} weak3d = null; }   // 上一份租约在这里收尾
   stopTileTo3d(true);   // 三维页已经接管画面：不再上传底图快照
   f.classList.add('on'); estateActs(''); lp().done(); $('#loading').classList.add('done'); focusAfterGo();
-  estateLook(); estateInset(); estateRoom();
+  estateLook(); estateInset(); estateRoom(); estateStash();
   post({ type: 'eden-map:loaded' });
   // 庄园淡入完成后再关掉瓦片地图（释放解码内存）
   setTimeout(() => { if (est?.frame === f && REG.maps[cur]?.kind === 'estate') { viewer.close(); untrackAll(); viewer.clearOverlays(); } }, 240);
@@ -189,6 +191,13 @@ export function estateLook() {
   setFpsMeter(false);
   w.postMessage({ type: 'estate:chat', id: chatId || '' }, SUB_ORIGIN);   // 房间图集「按聊天」作用域用：庄园页读不到 SillyTavern 上下文，靠这条消息拿 chatId
 }
+// Part 8-1：世界藏物表下发给三维页（宿主 → 查看器 app/loot.mjs → 庄园）；已在手里的 id 一并下发给它对账。
+// 三维页据此在房间 / 区域里放发光道具，点起来回 estate:loot，这里转成 eden-map:loot 交给宿主写背包。
+export function estateStash() {
+  const w = est?.frame?.contentWindow; if (!w) return;
+  w.postMessage({ type: 'estate:stash', items: window.TCLoot?.all?.() || [] }, SUB_ORIGIN);
+  w.postMessage({ type: 'estate:taken', ids: (P.TCInv?.rows || []).map(r => r.id).filter(Boolean) }, SUB_ORIGIN);
+}
 export let estFocus = null;   // v0.9.5：「自定义」里点了某个房间 / 室外区域 → 庄园聚焦它（优先于当前地点，地点变了就清掉）
 export function estateRoom() { if (!est?.ready) return; const v = ($('#here').value || '').replace('{{user}}', ''), r = hereRes(v);
   // v0.9.6：卡设定分层房间（r.std + r.floor）→ 按 { room, floor } 落点：庄园页切到该层并画框（受限房间只画素框）
@@ -208,7 +217,17 @@ window.addEventListener('message', e => {
   }
   if (e.data?.type === 'estate:key' && e.data.key === 'Escape') onEsc();
   else if (e.data?.type === 'estate:key') stepLayer({ PageUp: -1, '[': -1, PageDown: 1, ']': 1 }[e.data.key] || 0);
+  // Part 8-1：三维里点起了一枚发光道具 → 交给宿主写背包 + 按设置注入一句（与二维发光点同一条 eden-map:loot）
+  if (e.data?.type === 'estate:loot' && typeof e.data.id === 'string') {
+    post({ type: 'eden-map:loot', id: e.data.id, name: String(e.data.name || ''), map: cur, place: String(e.data.place || ''), hidden: !!e.data.hidden });
+  }
 });
+// 藏物表 / 背包有更新：庄园开着就再推一次（拿到手的东西从三维里消失）
+busOn({ key: 'estate.lootMsg', type: 'message', fn: e => {
+  if (!window.__fromHost?.(e)) return;
+  const t = e.data?.type;
+  if (t === 'eden-map:stash' || t === 'eden-map:inv') setTimeout(estateStash, 0);
+} });
 addEventListener('resize', () => estateInset());
 // ---------------- 通用三维查看器（props/viewer3d.html，maps.json 里带 viewer3d 的 kind=estate 地图） ----------------
 // 测试入口：maps.json 里 test: true 的 viewer3d 地图，在设置弹层底部各放一个按钮（不进层切换器、不参与当前地点匹配）。

@@ -223,7 +223,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   const onMsg = e => {
     if (e.source !== frame.contentWindow || (PRm && !PRm.accept(e.data, '（查看器 → 宿主）'))) return;
     if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
-    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: UL }); sendBar(); sendAbout(); alive = true; sentClock = sentOutfit = charsSent = null; knowRooms(); sendCheck(); sendCustom(); sendInv(); sendTrips(); sendTh(); BR.varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: UL }); sendBar(); sendAbout(); alive = true; sentClock = sentOutfit = charsSent = null; knowRooms(); sendCheck(); sendCustom(); sendInv(); sendTrips(); sendRoutine(); sendTh(); BR.varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
     if (e.data?.type === 'eden-map:ready' && setQ) { const q = setQ; setQ = null; setTimeout(() => post({ type: 'eden-map:settings', page: q }), 0); }
     if (e.data?.type === 'eden-map:ready' && flyQ) { const q = flyQ; flyQ = null; setTimeout(() => inner()?.flyTo?.(q), 0); }   // EdenMap.flyTo 排队的
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
@@ -551,10 +551,12 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     cdnFetch(BASE + sb + sp).then(r => r.ok ? r.json() : null).then(j => { stashRaw = j; if (STm && j) { stash = STm.normStash(j); sendStash(); } }).catch(() => {}); } }
   function sendStash() { if (alive && STm) post({ type: 'eden-map:stash', items: STm.rows(stash || {}, {}) }); }
   // NPC 日常漫游（Part 5-3，tavern/routine.mjs）：包数据 manifest.data.routine 的日程表；聊天没提到的人物按世界时刻落在该在的地方
-  let RTm = null, rtSched = null; import(SELF + 'tavern/routine.mjs').then(m => { RTm = m; if (rtCfg) { rtSched = m.normSchedule(rtCfg); recomputeSoon(50); } }).catch(() => {});
+  let RTm = null, rtSched = null; import(SELF + 'tavern/routine.mjs').then(m => { RTm = m; if (rtCfg) { rtSched = m.normSchedule(rtCfg); sendRoutine(); recomputeSoon(50); } }).catch(() => {});
   let rtCfg = null;
   { const rp = PACK_IN?.manifest?.data?.routine; if (rp) { const rb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';   // 与保底名册同一算法：eden 的路径相对 map/，其它包相对 packs/<id>/
-    cdnFetch(BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { rtCfg = j; if (RTm && j) { rtSched = RTm.normSchedule(j); recomputeSoon(50); } }).catch(() => {}); } }
+    cdnFetch(BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { rtCfg = j; if (RTm && j) { rtSched = RTm.normSchedule(j); sendRoutine(); recomputeSoon(50); } }).catch(() => {}); } }
+  // Part 8-2：日程表整张推给查看器——那边用确定性时钟（core/walk.mjs）自己挪人，不再等宿主推 MVU 变动
+  function sendRoutine() { if (alive && rtSched) post({ type: 'eden-map:routine', schedule: rtCfg || rtSched }); }
   function computeTrips(msgs) {
     if (!TRm || !MV || !custom || customChat !== chatId()) return;
     const r = CTX.computeTrips(msgs, { TRm, CHM, perFloorStat: f => BR.perFloorStat(f), mvuGet: (s, p) => BR.mvuGet(s, p), varMap: BR.varMap,
