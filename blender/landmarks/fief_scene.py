@@ -54,7 +54,7 @@ PRESETS = {
                   fields=4, stone=(0.4, 0.38, 0.36), roof=(0.22, 0.2, 0.18), houses=((0.36, 0.28, 0.2), (0.3, 0.24, 0.18), (0.4, 0.32, 0.22)),
                   leaf=((0.04, 0.13, 0.05), (0.07, 0.17, 0.06), (0.1, 0.2, 0.06)), grass=(0.36, 0.5, 0.2), extra='lodge'),
     'fief5': dict(kind='plain', amp=3, base=4, seed=55, castle=(0, 95, 6), order=(-185, -30), village=(115, -45), trees=60, conifer=0.05,
-                  fields=24, stone=(0.78, 0.74, 0.66), roof=(0.5, 0.36, 0.2), houses=((0.8, 0.76, 0.66), (0.58, 0.3, 0.2), (0.7, 0.62, 0.42)),
+                  fields=26, fs=1.9, hedge=True, stone=(0.78, 0.74, 0.66), roof=(0.5, 0.36, 0.2), houses=((0.8, 0.76, 0.66), (0.58, 0.3, 0.2), (0.7, 0.62, 0.42)),
                   leaf=((0.1, 0.22, 0.07), (0.16, 0.28, 0.08), (0.24, 0.32, 0.1)), grass=(0.6, 0.66, 0.28), extra='lists'),
 }
 
@@ -278,7 +278,7 @@ def fields(L, M, rnd, n):
     B = C.Batch.get('props_fields'); placed = 0; tries = 0
     while placed < n and tries < 900:
         tries += 1
-        w, d = rnd.uniform(34, 56), rnd.uniform(24, 40)
+        fs = L.P.get('fs', 1.0); w, d = rnd.uniform(34, 56) * fs, rnd.uniform(24, 40) * fs
         x, y = rnd.uniform(X0 + 40, X1 - 40), rnd.uniform(Y0 + 40, Y1 - 40)
         pts = [(x + a * w / 2, y + b * d / 2) for a in (-1, 0, 1) for b in (-1, 0, 1)]
         if any((not L.land(px, py, 2.2)) or L.near_site(px, py, 6) or L.near_road(px, py, 8) for px, py in pts): continue
@@ -286,6 +286,11 @@ def fields(L, M, rnd, n):
         if max(hs) - min(hs) > 3.4: continue
         if any(abs(x - q[0]) < (w + q[2]) / 2 + 4 and abs(y - q[1]) < (d + q[3]) / 2 + 4 for q in L.plots): continue
         L.plots.append((x, y, w, d)); placed += 1
+        if L.P.get('hedge'):                                                                # 田埂上的篱笆墙
+            for (hx0, hx1, hy0, hy1) in ((x - w / 2 - 1.0, x + w / 2 + 1.0, y - d / 2 - 1.6, y - d / 2 - 0.6), (x - w / 2 - 1.0, x + w / 2 + 1.0, y + d / 2 + 0.6, y + d / 2 + 1.6),
+                                         (x - w / 2 - 1.6, x - w / 2 - 0.6, y - d / 2, y + d / 2), (x + w / 2 + 0.6, x + w / 2 + 1.6, y - d / 2, y + d / 2)):
+                zh = min(L.h(hx0, hy0), L.h(hx1, hy1))
+                B.box(hx0, hx1, hy0, hy1, zh - 0.3, zh + 1.5, M['conif'])
         kind = rnd.random()
         ns = int(w / 3.0)
         for i in range(ns):
@@ -362,13 +367,16 @@ def extras(L, M, rnd, cast_z):
             px = rx - 15 + k * 15
             B.box(px - 1.6, px + 1.6, by - 2.8, by + 2.8, -6.0, zt - 0.9, M['stoned'])
         L.roads.append([(bx0 - 20, by), (bx1 + 20, by)])
-    elif e == 'lodge':                                                                     # 林中猎屋
+    elif e == 'lodge':                                                                     # 林中猎屋：长屋 + 小屋 + 木柴堆
         lx, ly = -60.0, -100.0
         z = L.h(lx, ly)
-        B.box(lx - 7, lx + 7, ly - 5, ly + 5, z - 1.5, z + 4.2, M['timber'])
-        B.gable(lx - 7, lx + 7, ly - 5, ly + 5, z + 4.2, 3.2, M['roof'], along='x', over=0.7)
-        B.boxc(lx, ly - 5.03, z + 0.2, 1.3, 0.1, 2.4, M['win'])
-        B.cyl(lx + 3.5, ly + 1.0, z + 6.0, 0.35, 3.2, M['stoned'], 8)
+        B.box(lx - 10, lx + 10, ly - 7, ly + 7, z - 1.5, z + 5.2, M['timber'])
+        B.gable(lx - 10, lx + 10, ly - 7, ly + 7, z + 5.2, 4.2, M['roof'], along='x', over=0.9)
+        B.boxc(lx - 3, ly - 7.03, z + 0.2, 1.6, 0.1, 2.6, M['win']); B.boxc(lx + 4, ly - 7.03, z + 1.4, 1.8, 0.1, 1.4, M['win'])
+        B.cyl(lx + 5, ly + 1.0, z + 8.0, 0.45, 3.4, M['stoned'], 8)
+        B.box(lx + 13, lx + 19, ly - 3, ly + 3, z - 1.0, z + 3.2, M['wood'])
+        B.gable(lx + 13, lx + 19, ly - 3, ly + 3, z + 3.2, 2.0, M['roof'], along='y', over=0.5)
+        B.boxc(lx - 14, ly, z, 2.2, 6.0, 1.6, M['bark'])
     elif e == 'lists':                                                                     # 比武场
         lx, ly = -55.0, -95.0; z = L.h(lx, ly)
         B.box(lx - 40, lx + 40, ly - 14, ly + 14, z - 0.4, z + 0.06, M['yard'])

@@ -1,0 +1,193 @@
+{
+ "_note": "viewer3d.html?model=fief4 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/fief4.md。整片封地（约 660 m × 520 m）一个模型，体量上限放宽（见 max_mb）。",
+ "id": "fief4",
+ "title": {
+  "zh": "第四席封地",
+  "en": "Fourth Seat Fief"
+ },
+ "glb": "fief4.glb",
+ "glb_low": "fief4_low.glb",
+ "credit": {
+  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+ },
+ "groups": {
+  "roof": [],
+  "walls": [
+   "props_castle",
+   "props_order",
+   "props_village"
+  ],
+  "interior": [],
+  "floors": [],
+  "site": [
+   "site_terrain",
+   "props_water",
+   "props_fields",
+   "props_roads",
+   "props_trees",
+   "props_extra"
+  ],
+  "building": {
+   "min": [
+    -330,
+    -12,
+    -260
+   ],
+   "max": [
+    330,
+    70,
+    260
+   ]
+  }
+ },
+ "section": {
+  "min": 0,
+  "max": 70,
+  "default": 70
+ },
+ "camera": {
+  "frame": [
+   "props_castle",
+   "props_order",
+   "props_village"
+  ],
+  "dir": [
+   0.5,
+   0.55,
+   0.7
+  ],
+  "min": 20,
+  "max": 1600,
+  "maxPolar": 1.45
+ },
+ "budgets": {
+  "props_castle": [
+   6000,
+   1024
+  ],
+  "props_order": [
+   3000,
+   1024
+  ],
+  "props_village": [
+   4000,
+   1024
+  ],
+  "site_terrain": [
+   14000,
+   1024
+  ],
+  "props_fields": [
+   4000,
+   256
+  ],
+  "props_roads": [
+   1000,
+   512
+  ],
+  "props_trees": [
+   36000,
+   256
+  ],
+  "props_extra": [
+   2500,
+   512
+  ],
+  "props_water": [
+   200,
+   256
+  ]
+ },
+ "hotspots": [
+  {
+   "id": "castle",
+   "mesh": "props_castle",
+   "name": {
+    "zh": "城堡",
+    "en": "Castle"
+   },
+   "desc": {
+    "zh": "石砌方形外墙、四座锥顶角塔、门楼、方形主塔楼与内院大厅。",
+    "en": "A stone curtain wall with four conical corner towers, a gatehouse, a square keep and an inner hall."
+   },
+   "view": [
+    0.5,
+    0.55,
+    0.7
+   ]
+  },
+  {
+   "id": "order",
+   "mesh": "props_order",
+   "name": {
+    "zh": "骑士团驻地",
+    "en": "Knights' order quarters"
+   },
+   "desc": {
+    "zh": "院墙围起的营地：两排营房、马厩、沙土校场与瞭望塔。",
+    "en": "A walled compound with two barracks, a stable block, a sand drill yard and a watch tower."
+   },
+   "view": [
+    0.5,
+    0.55,
+    0.7
+   ]
+  },
+  {
+   "id": "village",
+   "mesh": "props_village",
+   "name": {
+    "zh": "领地城镇",
+    "en": "Town"
+   },
+   "desc": {
+    "zh": "沿街排开的民居、带钟塔的大厅、水井与集市摊棚。",
+    "en": "Houses along the street, a hall with a bell tower, a well and market stalls."
+   },
+   "view": [
+    0.5,
+    0.55,
+    0.7
+   ]
+  },
+  {
+   "id": "fields",
+   "mesh": "props_fields",
+   "name": {
+    "zh": "领地农田",
+    "en": "Fields"
+   },
+   "desc": {
+    "zh": "随地形铺开的条垄作物田与草垛。",
+    "en": "Furrowed crop fields following the ground, with haystacks."
+   },
+   "view": [
+    0.5,
+    0.55,
+    0.7
+   ]
+  },
+  {
+   "id": "extra",
+   "mesh": "props_extra",
+   "name": {
+    "zh": "林中猎屋",
+    "en": "Hunting lodge in the woods"
+   },
+   "desc": {
+    "zh": "林中猎屋。",
+    "en": "Hunting lodge in the woods."
+   },
+   "view": [
+    0.5,
+    0.55,
+    0.7
+   ]
+  }
+ ],
+ "max_mb": {
+  "std": 2.8,
+  "low": 1.4
+ }
+}
