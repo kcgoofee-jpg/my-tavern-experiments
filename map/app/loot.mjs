@@ -9,6 +9,7 @@ import { esc, post, tx } from './util.mjs';
 import { aspect, cur, curData, viewer } from './state.mjs';
 import { P } from './plugins.mjs';
 import { busOn } from './bus.mjs';
+import { hereRes } from './locate.mjs';
 
 const CSS_ID = 'lootCss';
 let stash = null, els = [], watch = null;
@@ -33,7 +34,8 @@ function css() { if (document.getElementById(CSS_ID)) return;
 
 const markerXY = id => (curData?.markers || []).find(k => k.id === id) || null;
 const takenIds = () => { try { return new Set((P.TCInv?.rows || []).map(r => r.id).filter(Boolean)); } catch (e) { return new Set(); } };
-const hereNow = () => { try { return document.querySelector('.mk.here')?.dataset?.name || ''; } catch (e) { return ''; } };
+// the landmark the current location places the player at (the node tree's answer, not the highlighted label): a hidden compartment shows only there
+const hereNow = () => { try { return hereRes(String(document.getElementById('here')?.value || '').replace('{{user}}', ''))?.marker || ''; } catch (e) { return ''; } };
 
 /** 宿主推来的世界藏物表（原始 JSON：{ items: [...] }）→ 规范化存下，按当前图重画 */
 export function setLootStash(raw) { stash = normStash(raw); rebuildLoot(); }
@@ -42,7 +44,7 @@ export function setLootStash(raw) { stash = normStash(raw); rebuildLoot(); }
 export function lootRows() {
   if (!stash || !cur) return [];
   const here = hereNow(), taken = takenIds();
-  return rows(stash, { map: cur, taken }).filter(r => !!markerXY(r.marker) && (!r.hidden || here === r.place));
+  return rows(stash, { map: cur, taken }).filter(r => !!markerXY(r.marker) && (!r.hidden || here === r.marker));
 }
 
 function clearLoot() {

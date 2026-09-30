@@ -9,6 +9,8 @@ import { rebuildHere } from './extapi.mjs';
 import { activeInset } from './insets.mjs';
 import { nm, t } from './i18n.mjs';
 import { P } from './plugins.mjs';
+import { isScene, eventGeo } from './nodes-runtime.mjs';
+import { drawPlace } from './spot.mjs';
 // ---------------- 初始视角与当前地点 ----------------
 export let userMoved = false;
 let focusHere = false;   // 「当前位置」在同一张图上：飞到当前地点而不是核心区
@@ -93,7 +95,7 @@ export function markHere(v) {
   const extra = new Set();
   if (r) {
     if (tcLayers.includes(r.map)) extra.add('天城');
-    for (const k of Object.values(m?.markers || {})) if (k.link?.map === r.map && REG.maps[r.map]?.kind === 'estate') extra.add(k.name);
+    const s = isScene(r.map) ? estateStandIn(r.map) : null; if (s && s.map === cur && s.marker) extra.add(m?.markers?.[s.marker]?.name);   // a 3D page: the marker that stands for it on this map
     if (r.marker && r.map === cur) extra.add(m.markers?.[r.marker]?.name);
     if (r.place) extra.add(r.place);
   }
@@ -111,11 +113,13 @@ export let estPlan = null;   // v0.9.6 map/data/eden_estate_rooms.json（卡设�
 export { readCustom } from './here-v2.mjs';   // 旧版本机房间叫法的读取（custom.mjs 迁移用）
 export let hereIdx = null;   // app/here-v2.mjs 的 makeHere 结果（extapi.mjs rebuildHere 建；没建好之前认不出任何地点）
 export const hereRes = v => (hereIdx ? hereIdx.here(v) : null);
+// where a located place (a person, a trip end) is drawn: the node tree's answer for the place text, or for a result already placed (app/spot.mjs)
+export const drawnAt = (r, text) => drawPlace(r, text, { hasMap: id => !!REG?.maps[id], isScene, standIn: estateStandIn, spot: n => eventGeo()?.spot(n) ?? null, zone: (m, t) => P.TCEvents?.zoneXY?.(m, t) ?? null });
 export function jumpHere(v) {   // 只由「当前位置」按钮调用（不再在打开 / 地点更新时自动跳）
   let r = hereRes(v);
   if (!r || !REG?.maps[r.map] || REG.maps[r.map].status === 'planned') return false;
   // 本次会话庄园三维加载失败过、或省流设备：落到它的平面替身（上层的伊甸地标），地点卡里有「进入庄园」
-  if (REG.maps[r.map].kind === 'estate' && (estFail || leanBg())) { const sub = estateStandIn(r.map); if (sub) r = { ...r, map: sub.map, marker: sub.marker }; }
+  if (isScene(r.map) && (estFail || leanBg())) { const sub = estateStandIn(r.map); if (sub) r = { ...r, map: sub.map, marker: sub.marker }; }
   if (r.map !== cur) { setPendingFocus(r.marker || null); setPendingHome(!r.marker && !r.place); go(r.map); return true; }
   if ((r.marker || r.place) && viewer?.world.getItemCount()) { userMoved = false; markHere(v); focusHere = true; focusStart(false); }   // 同一张图：飞到地标 / 世界地名
   return true;

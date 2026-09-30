@@ -11,11 +11,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { buildIndex, resolveHere, unmappedName } from '../map/here.mjs';
 import { makeHere, readCustom } from '../map/app/here-v2.mjs';
-import { ContextPipeline, perFloorStatOf } from '../map/tavern/context.mjs';
-import * as EVM from '../map/tavern/events.mjs';
-import * as CHM from '../map/tavern/characters.mjs';
-import * as TRm from '../map/tavern/trips.mjs';
-import { rosters as mvuRosters } from '../map/tavern/mvu.mjs';
+import { sessionPlaces } from './helpers/session-places.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const J = p => JSON.parse(fs.readFileSync(ROOT + p, 'utf8'));
@@ -72,24 +68,11 @@ test('shadow, wider sweep: the other v1 tests that call resolveHere; one input d
 });
 
 // ---- the session fixtures: every floor of the recorded chats, the places the pipeline reads out of them ----
-function sessionPlaces(file) {
-  const snap = J('tests/fixtures/sessions/' + file), out = new Set();
-  const stat = perFloorStatOf(snap), floors = snap.messages.map(m => m.floor);
-  for (const f of floors) { const v = stat(f)?.世界?.当前地点; if (v) out.add(v); }
-  if (snap.mvu.stat?.世界?.当前地点) out.add(snap.mvu.stat.世界.当前地点);
-  const { pipeline, msgs } = ContextPipeline.fromSnapshot(snap);
-  const d = { TRm, CHM, perFloorStat: stat, mvuGet: (s) => s?.世界?.当前地点, varMap: { location: '世界.当前地点', time: '世界.当前时刻' }, keywords: TRm.DEFAULT_KEYWORDS, fantasy: false, parseTransit: () => null };
-  const r = pipeline.round({ floorNow: snap.meta.floorNow, msgs, stSig: '{}', dbSig: '', varSig: 'v', custVer: 0, customChat: 'c', chatId: snap.meta.chatId, seen: -1, wbState: '', hasReg: false, hasCHM: true, hasMV: true, hasTRm: true, hasHereMod: false, hereNow: '',
-    collect: EVM.collect, charsDeps: { mvuChars: [], known: [], dbCharacters: [], collectChars: CHM.collectChars, rosters: mvuRosters(snap.mvu.stat), reputation: null, presentKey: '' } });
-  for (const c of r.chars || []) if (c.place) out.add(c.place);
-  for (const ev of r.events || []) { if (ev.place) out.add(ev.layer ? `${ev.layer}·${ev.place}` : ev.place); }
-  for (const tr of pipeline.computeTrips(msgs, d).trips || []) for (const p of [tr.from, tr.to]) if (p) out.add(p);
-  return [...out];
-}
+const sessionAll = file => [...new Set(Object.values(sessionPlaces(file)).flat())];
 test('shadow: every floor of the session fixtures gives the same result through both resolvers', t => {
   const cfg = { world: true, names: true, plan: false, custom: null }, e = engineOf(cfg), rows = [];
   let n = 0, placed = 0;
-  for (const file of ['session_a.json', 'session_b.json']) for (const place of sessionPlaces(file)) {
+  for (const file of ['session_a.json', 'session_b.json']) for (const place of sessionAll(file)) {
     n++; const v1 = resolveHere(place, indexOf(cfg)), v2 = e.here(place);
     if (v2) placed++;
     if (JSON.stringify(core(v1)) !== JSON.stringify(core(v2)) || v1?.word !== v2?.word) rows.push({ file, place, v1: core(v1), v2: core(v2) });

@@ -3,14 +3,13 @@
 // 与事态区分：事态 = 大类形状的小方块 / 图形 + 类型字；人物 = 圆形头像框 + 名字首字（或本机头像），颜色按名字哈希、避开事态大类色。
 // 开关和头像只存本机 localStorage（按聊天分开）；不发请求（头像是用户自己给的 data: / http 地址时由浏览器加载那张图）。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
-import { M, REG, aspect, cur, curData, pendingFocus, setPendingFocus, viewer } from './app/state.mjs';
-import { afterLoadIdle, esc, getJSON, toImg } from './app/util.mjs';
+import { REG, aspect, cur, curData, pendingFocus, setPendingFocus, viewer } from './app/state.mjs';
+import { afterLoadIdle, esc, getJSON } from './app/util.mjs';
 import { declutter, leanBg } from './app/tiers.mjs';
 import { LANG } from './app/i18n.mjs';
 import { go } from './app/nav.mjs';
-import { estateStandIn } from './app/estate.mjs';
 import { closeCard, placeN, showCard, trackEl, untrack } from './app/markers.mjs';
-import { hereRes, setUserMoved, userMoved } from './app/locate.mjs';
+import { drawnAt, hereRes, setUserMoved, userMoved } from './app/locate.mjs';
 import { LS, chatId } from './app/extapi.mjs';
 import { P, register } from './app/plugins.mjs';
 import * as TCCvd from './app/cvd.mjs';
@@ -53,12 +52,8 @@ const TCChars = (() => {
   const markerXY = async (map, id) => { const m = REG.maps[map]; if (!m?.data) return null; const d = map === cur ? curData : await getJSON(m.data);
     const k = d?.markers?.find(x => x.id === id); return k ? { nx: k.ax ?? k.nx, ny: k.ay ?? k.ny } : null; };
   async function where(c) {
-    let r = typeof hereRes === 'function' ? hereRes(c.place) : null; if (!r || !REG.maps[r.map]) return null;
-    if (REG.maps[r.map].kind === 'estate') { const s = estateStandIn(r.map); if (!s) return { map: r.map, estate: true }; r = { ...r, map: s.map, marker: s.marker }; }
-    if (r.marker) { const p = await markerXY(r.map, r.marker); return p ? { map: r.map, ...p } : { map: r.map }; }
-    if (r.place && typeof M !== 'undefined' && M) { const p = [...(M.places || []), ...(M.fiefs || [])].find(q => q.name === r.place); if (p) { const [nx, ny] = toImg(p.x, p.y); return { map: r.map, nx, ny }; } }
-    const z = typeof P.TCEvents !== 'undefined' && P.TCEvents.zoneXY?.(r.map, c.place);   // 只知道城区（霓虹街、7 号井一带）：按城区大致标出，虚线框
-    return z ? { map: r.map, ...z } : { map: r.map };
+    const d = drawnAt(hereRes(c.place), c.place); if (!d?.marker) return d;   // the node tree places it (app/spot.mjs); only a landmark needs its point from the map's data
+    const p = await markerXY(d.map, d.marker); return p ? { map: d.map, ...p } : { map: d.map };
   }
 
   async function set(d) { await mod(); if (!Array.isArray(d.items)) return; const hadP = Object.values(portraits).some(okUrl); items = d.items.slice(0, 60); rosters = d.rosters || null; rep = Number.isFinite(d.rep) ? d.rep : null; stageOrder = Array.isArray(d.stageOrder) ? d.stageOrder : null; portraits = d.portraits && typeof d.portraits === 'object' ? d.portraits : {}; if (hadP !== Object.values(portraits).some(okUrl) && typeof P.TCCustom !== 'undefined') P.TCCustom.renderUI(); floor = d.floor || 0; loadPrefs(); await render(); bar(); if (flyName && cur) fly(flyName); }

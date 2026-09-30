@@ -6,10 +6,9 @@
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 import { REG, aspect, cur, curData, viewer } from './app/state.mjs';
 import { esc } from './app/util.mjs';
-import { estateStandIn } from './app/estate.mjs';
 import { registry } from './app/layerhost.mjs';
 import { showCard, trackEl, untrack } from './app/markers.mjs';
-import { hereRes, userMoved } from './app/locate.mjs';
+import { drawnAt, hereRes, userMoved } from './app/locate.mjs';
 import { P, register } from './app/plugins.mjs';
 const TCTrips = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
@@ -18,8 +17,7 @@ const TCTrips = (() => {
   // 落点 → 当前图上的归一化坐标（地标；庄园 → 它在上层的替身地标）；不在当前图返回 null
   function xy(r) {
     if (!r || typeof REG === 'undefined' || !REG || !cur) return null;
-    let map = r.map, mk = r.marker;
-    if (REG.maps[map]?.kind === 'estate') { const s = estateStandIn(map); if (!s) return null; map = s.map; mk = s.marker; }
+    const d = drawnAt(r), map = d?.map, mk = d?.marker;
     if (map !== cur || !mk) return null;
     const k = curData?.markers?.find(x => x.id === mk); return k ? { x: k.ax ?? k.nx, y: (k.ay ?? k.ny) * aspect } : null;
   }

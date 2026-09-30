@@ -4,7 +4,9 @@ import * as B from './lib.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { openHost } from './host_stub.mjs';
-import { FALLBACK_MEMBERS } from '../../map/tavern/mvu.mjs';
+import { fileURLToPath } from 'node:url';
+// the pack's fallback roster (manifest.data.roster; the card script injects it into the roster assembly)
+const FALLBACK_MEMBERS = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../../map/data/fallback_roster.json', import.meta.url)), 'utf8')).members;
 
 const OUT = process.argv[2];
 if (!OUT || OUT.startsWith('--')) { console.log('用法：node tools/browser/chars092.mjs <输出目录>'); process.exit(2); }

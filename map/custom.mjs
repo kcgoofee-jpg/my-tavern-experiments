@@ -11,7 +11,7 @@ import { mountProgress } from './ui/progress.mjs';
 import { go } from './app/nav.mjs';
 import { estFail, estFocus, estateRoom, estateStandIn, setEstFocus } from './app/estate.mjs';
 import { cardFrom, closeCard, setCardFrom } from './app/markers.mjs';
-import { estPlan, hereRes, markHere, readCustom, setUserMoved, userMoved } from './app/locate.mjs';
+import { estPlan, hereIdx, hereRes, markHere, readCustom, setUserMoved, userMoved } from './app/locate.mjs';
 import { TCSettings, showSet } from './app/settings.mjs';
 import { LS, chatId, rebuildHere } from './app/extapi.mjs';
 import { P, register } from './app/plugins.mjs';
@@ -51,16 +51,16 @@ const TCCustom = (() => {
     }
   }
   // 地点卡：显示名 + 标准名、用途
+  const homeMark = name => { const e = hereIdx?.estate?.id, st = e && estateStandIn(e); return !!name && !!st && REG.maps[st.map]?.markers?.[st.marker]?.name === name; };   // 庄园的三维页在平面图上的替身地标（节点树给出）
   function decorateCard(el, title) {
     const c = document.getElementById('card'); if (!c || c.hidden) return;
     const key = title || el?.dataset?.name, e = entry(key), ex = c.querySelector('.extra'); ex.querySelectorAll('.cu-rep').forEach(n => n.remove());   // v16：按标题取条目（el 可能是上一张卡的标记），并清掉旧声望行
     if (e?.名) { c.querySelector('h2').textContent = e.名; const sb = c.querySelector('.sub'); sb.textContent = key + (sb.textContent ? ' · ' + sb.textContent : ''); }
     if (e?.用途) { const p = document.createElement('p'); p.className = 'cu-note'; p.innerHTML = `<b>${esc(T('cu.note', '用途'))}</b> `; p.append(document.createTextNode(e.用途)); ex.prepend(p); }
-    const isEden = el?.dataset?.name && typeof REG !== 'undefined' && Object.values(REG.maps).some(m => Object.values(m.markers || {}).some(v => v.name === el.dataset.name && v.link && REG.maps[v.link.map]?.kind === 'estate'));
     const rp = typeof P.TCChars !== 'undefined' ? P.TCChars.rep : null;
-    if (isEden && rp != null) { const p = document.createElement('p'); p.className = 'cu-rep';   // v0.9.5 主角声望（只读，0–100）
+    if (homeMark(el?.dataset?.name) && rp != null) { const p = document.createElement('p'); p.className = 'cu-rep';   // v0.9.5 主角声望（只读，0–100）
       p.innerHTML = `<b>${esc(T('ch.rep', '庄园声望'))}</b><meter min="0" max="100" low="30" high="70" optimum="100" value="${rp}"></meter><span>${Math.round(rp)}</span>`; ex.prepend(p); }
-    if (roomNote && el?.dataset?.name && typeof REG !== 'undefined' && Object.values(REG.maps).some(m => Object.values(m.markers || {}).some(v => v.name === el.dataset.name && v.link && REG.maps[v.link.map]?.kind === 'estate'))) {
+    if (roomNote && homeMark(el?.dataset?.name)) {
       const r = roomNote, re = entry(r), p = document.createElement('p'); p.className = 'cu-note cu-room'; roomNote = null;
       p.innerHTML = `<b>${esc(T('cu.room_here', '要看的房间'))}</b> `; p.append(document.createTextNode((re?.名 ? `${re.名}（${r}）` : r) + (re?.用途 ? ' · ' + re.用途 : ''))); ex.prepend(p); }
     // fix3（用户 2026-09-28）：着装属于人，不挂在地点卡上——改在人物页顶部「你（主角）」一行显示（chars.mjs）
@@ -303,7 +303,7 @@ const TCCustom = (() => {
       P.TCChars.fly(c.name); return true;
     }
     if (t.room || t.area) {
-      const name = t.room || t.area, eid = t.map && REG.maps[t.map]?.kind === 'estate' ? t.map : Object.keys(REG.maps).find(k => REG.maps[k].kind === 'estate');
+      const name = t.room || t.area, eid = hereIdx?.estate?.id;
       if (!eid) return false;
       if (!(typeof estFail !== 'undefined' && estFail) && REG.maps[eid].status !== 'planned') {
         roomNote = null; setEstFocus(name);

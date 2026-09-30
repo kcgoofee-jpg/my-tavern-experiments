@@ -4,6 +4,10 @@ import * as B from './lib.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { openHost } from './host_stub.mjs';
+import { fileURLToPath } from 'node:url';
+// the members table of the chat holds 2 rows; the pack's fallback roster (manifest.data.roster) adds the people the table lacks (mvu.mjs `rosters`: "MVU wins, the setting fills the gaps")
+const FALLBACK = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../../map/data/fallback_roster.json', import.meta.url)), 'utf8')).members;
+const MEMBERS = 2 + FALLBACK.filter(m => !['甲一', '甲二'].includes(m.name)).length;
 const OUT = process.argv[2]; if (!OUT || OUT.startsWith('--')) { console.log('用法：node tools/browser/roster095.mjs <输出目录>'); process.exit(2); }
 const si = process.argv.indexOf('--shots'), SHOTS = si > 0 ? path.resolve(process.argv[si + 1]) : null;
 B.quietWait(); const srv = await B.ensureServer(); const rep = B.reporter(OUT);
@@ -20,14 +24,14 @@ async function run(name, preset, charAsync = false) {
     const H = await openHost(P, { here: '天城·上层·伊甸庄园', msgs: [], stat: STAT, chat: 'r95-' + name, charData: CHAR, charAsync });
     const p = P.page; await B.wait(1200);
     const api = await p.evaluate(() => window.EdenMap.getCharacters());
-    rep.check(`${name} EdenMap.getCharacters：rosters / reputation（只读）`, api.rosters?.members?.items?.length === 2 && api.rosters.targets.items[0].stage === '第二步' && api.reputation === 62, JSON.stringify({ r: api.rosters?.targets, rep: api.reputation }));
+    rep.check(`${name} EdenMap.getCharacters：rosters / reputation（只读）`, api.rosters?.members?.items?.length === MEMBERS && api.rosters.targets.items[0].stage === '第二步' && api.reputation === 62, JSON.stringify({ r: api.rosters?.targets, rep: api.reputation }));
     await H.open(); const vf = await H.viewer();
     await vf.evaluate(() => { closeCard(); document.querySelector('#evbar .chtab').click(); }); await B.wait(500);
     const vis = await vf.evaluate(() => { const e = document.querySelector('#evbar .chgrp'); return !!e && e.getBoundingClientRect().height > 0; });
     rep.check(`${name} 人物页签展开可见`, vis);
     const g = await vf.evaluate(() => [...document.querySelectorAll('#evbar .chgrp')].map(d => ({ g: d.dataset.g, s: d.querySelector('summary').textContent, n: d.querySelectorAll('li').length, open: d.open })));
     const chip = await vf.evaluate(() => { const c = document.querySelector('#evbar .chgrp[data-g=targets] .chstage'); return c ? { t: c.textContent, dots: c.querySelectorAll('b').length, on: c.querySelectorAll('b.on').length } : null; });
-    rep.check(`${name} 人物页签：在场 / 庄园成员 / 目标三组，身份显示`, g.length === 3 && g[0].g === 'present' && g[1].n === 2 && g[2].n === 1 && /园丁|厨师/.test(await vf.evaluate(() => document.querySelector('#evbar .chgrp[data-g=members]').textContent)), JSON.stringify(g));
+    rep.check(`${name} 人物页签：在场 / 庄园成员 / 目标三组，身份显示`, g.length === 3 && g[0].g === 'present' && g[1].n === MEMBERS && g[2].n === 1 && /园丁|厨师/.test(await vf.evaluate(() => document.querySelector('#evbar .chgrp[data-g=members]').textContent)), JSON.stringify(g));
     rep.check(`${name} 目标的阶段小签：原样文字 + 按卡里顺序的进度点（2 / 4）`, chip?.t === '第二步' && chip.dots === 4 && chip.on === 2, JSON.stringify(chip));
     await jpg(p, `ro_${name}_pane`);
     // v0.9.6 E2 / E13：成员的等级 / 核心数值（字段名走变量映射；这里的中性字段默认不认，映射后显示「档 n」），设置开关可关
