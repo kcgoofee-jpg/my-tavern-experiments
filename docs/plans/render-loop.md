@@ -11,7 +11,7 @@ The render campaign renders every place and base map to final quality on the loc
 repo: items in `docs/plans/render-campaign.items.json`, progress as append-only events in
 `docs/plans/render-campaign-events.csv`, driven by `tools/render_campaign.py`. You loop: next → do the stage →
 record → next, **until the lane is finished**. The user does not review renders (decision 2026-09-30), with one
-exception: the user-review stage of `isle:eden` (§4). This file must work for any coding agent: it assumes only a
+exception: the user-review stage of the user's own estate, `eden:r5` (§4; `isle:eden` was declined 2026-09-30). This file must work for any coding agent: it assumes only a
 shell, file editing and the ability to look at images.
 
 ## 1. Read first (once per session)
@@ -107,7 +107,19 @@ low-memory devices on lower levels); otherwise keep the 8K base and record `wait
 draft/board through the queue; review as above; final; `integrate` = `python3 tools/isles_into_upper.py`; ship.
 isle4 / isle5 also carry the victor_estate / y_estate markers: model the estate on the island, give the marker a hotspot.
 
-**`isle:eden` — the user's own estate island (the only item the user reviews):**
+**`eden:r5` — the user's own estate, continued from the shipped estate2 version (the only item the user reviews):**
+- Baseline = the shipped estate2 r4e scene (`blender/estate2/*`; site.glb ebdce14, cover 172cfbd, upper-map Eden via
+  `map_cutout.py` → `tools/eden_into_upper.py`). Never `blender/islands/eden.py`, `blender/eden_manor.py` or
+  `blender/estate/*`; no re-layout. Requirements and their status: `docs/eden-requirements.md` (EQ ids).
+- Renders: `blender/estate2/style_frame.py --view whole|map|arrival|lake` through the queue, with
+  `E2_DAIRY_BLEND` set inside the `--python-expr` (the dairy .blend comes from `blender/props/dairy_parlour/build.py --blend`).
+- `user-review` is never offered to you: before/after pairs + `changes.zh.txt` go to `~/eden-map-review/render/eden_r5/`.
+- `final` (after approval): 3200 px / 128 spp whole view → cover `eden_1600.jpg` / `eden_800.jpg`; map view →
+  `map_cutout.py` → `tools/eden_into_upper.py` (+ `tools/eden_anchor_upper.py`); site.glb / site_low.glb per
+  `map/estate/NOTES.md` (size ≤ shipped + 15 %, else stop and report), `web_zones.py` → zones.json, manifest v bump;
+  `node --test tests/estate3d_manifest.test.mjs`, `node tools/browser/accept.mjs`. A send-back → `fix` with the user's notes.
+
+**`isle:eden` — declined by the user 2026-09-30 (kept for history; its later stages are skipped):**
 - Before modelling: a real-world reference board (neoclassical white-stone manor, front fountain court, rear lake,
   visitor landing platform, estate-wide barrier — card facts in maps.json `tc_upper` marker `eden` `src`), saved to
   `docs/reviews/campaign/isle_eden/refs.jpg`.
@@ -122,8 +134,8 @@ isle4 / isle5 also carry the victor_estate / y_estate markers: model the estate 
   `isle:eden` and in `docs/reviews/campaign/isle_eden/user-<n>.md`; address every point, re-draft, review-r2, and
   refresh the four previews.
 
-**estate**: `estate:final` / `verify` / `ship` per the item hints. `estate:b1b2` → `blender/eden_manor.py` has no B2
-view: add one (same pattern as B1), then refine and render both.
+**estate**: `estate:final` / `verify` / `ship` per the item hints. `estate:b1b2` → the shipped house sources
+(`blender/estate2/house_web.py`, `floorplans.py`, `medical_b2.py`, `medical_web.py`); not the legacy `blender/eden_manor.py`.
 
 ## 5. Git
 

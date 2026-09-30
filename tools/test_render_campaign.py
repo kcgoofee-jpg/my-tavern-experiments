@@ -466,8 +466,9 @@ class RealItemList(unittest.TestCase):
 
     def test_hero_groups_in_order(self):
         ids = self.lane('hero')
-        self.assertEqual(ids[:9], ['isle:' + x for x in ('eden', 'silver_crown', 'isle4', 'isle5', 'isle6', 'isle9', 'isle10', 'isle25', 'isle30')])
-        self.assertEqual(ids[9:], ['base:tc_upper', 'var:tc_upper:16k', 'var:tc_upper:dawn', 'var:tc_upper:day', 'var:tc_upper:dusk',
+        self.assertEqual(ids[0], 'eden:r5', 'the shipped estate2 Eden continues first (user 2026-09-30)')
+        self.assertEqual(ids[1:10], ['isle:' + x for x in ('eden', 'silver_crown', 'isle4', 'isle5', 'isle6', 'isle9', 'isle10', 'isle25', 'isle30')])
+        self.assertEqual(ids[10:], ['base:tc_upper', 'var:tc_upper:16k', 'var:tc_upper:dawn', 'var:tc_upper:day', 'var:tc_upper:dusk',
                                   'var:tc_upper:night', 'estate:b1b2', 'lm:round_table_hall', 'lm:sun_arena', 'lm:union_tower', 'base:world'])
 
     def test_dependencies_and_specs(self):
@@ -481,7 +482,10 @@ class RealItemList(unittest.TestCase):
         self.assertEqual(by['base:site_fief3']['spec'], {'res': 4000, 'spp': 128})
         self.assertEqual(by['estate:final']['spec'], {'res': 2000, 'spp': 32})
         self.assertFalse([i for i in self.items if 'rain' in i['id']], 'no weather variants')
-        self.assertEqual([i['id'] for i in self.items if i.get('user_gate')], ['isle:eden'], 'the user reviews only their own estate island')
+        self.assertEqual([i['id'] for i in self.items if i.get('user_gate')], ['eden:r5', 'isle:eden'], 'the user reviews only their own estate island')
+        self.assertEqual(by['eden:r5']['spec'], {'res': 3200, 'spp': 128})
+        self.assertEqual(by['eden:r5']['targets'], ['tc_upper:eden', 'eden_estate:cover', 'eden_estate:site'])
+        self.assertNotIn('eden_manor.py', json.dumps(by['estate:b1b2']['hints']))
 
     def test_item_shape_and_ascii(self):
         for i in self.items:

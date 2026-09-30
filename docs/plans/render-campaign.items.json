@@ -964,6 +964,31 @@
    "notes": "register = periods.night in maps.json"
   },
   {
+   "id": "eden:r5",
+   "lane": "hero",
+   "type": "island",
+   "title": "Eden estate r5: continue the shipped estate2 r4e scene, close the requirement gaps (user-approved)",
+   "targets": [
+    "tc_upper:eden",
+    "eden_estate:cover",
+    "eden_estate:site"
+   ],
+   "canon": "card",
+   "depends": [],
+   "user_gate": true,
+   "spec": {
+    "res": 3200,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/estate2/style_frame.py",
+    "web": "blender/estate2/web_scene.py + export_web.py (site.glb / site_low.glb per map/estate/NOTES.md)",
+    "cutout": "blender/estate2/map_cutout.py -> tools/eden_into_upper.py (+ tools/eden_anchor_upper.py)",
+    "baseline": "baseline = shipped estate2 r4e; see docs/eden-requirements.md"
+   },
+   "notes": "Continue from the shipped estate2 version only (site.glb ebdce14, cover 172cfbd, upper-map Eden via map_cutout.py); never blender/islands/eden.py, blender/eden_manor.py or blender/estate/*. Setting = the EQ gap table in docs/eden-requirements.md. At user-review: before/after pairs in ~/eden-map-review/render/eden_r5/ plus changes.zh.txt. Final: whole view -> cover 1600/800 jpg; map view -> map_cutout.py -> eden_into_upper.py; site.glb / site_low.glb (size <= shipped + 15 %), web_zones.py, manifest v bump."
+  },
+  {
    "id": "isle:eden",
    "lane": "hero",
    "type": "island",
@@ -1295,9 +1320,11 @@
     "spp": 32
    },
    "hints": {
-    "script": "blender/eden_manor.py"
+    "script": "blender/estate2/house_web.py",
+    "floorplans": "blender/estate2/floorplans.py",
+    "medical": "blender/estate2/medical_b2.py + blender/estate2/medical_web.py"
    },
-   "notes": "house model sources: blender/estate2/house_web.py, blender/estate2/medical_b2.py; spec inherited from estate:final; TODO: eden_manor.py --view lists B1 but not B2; decide the B2 view / script before final"
+   "notes": "house model sources are the shipped estate2 ones (house.glb, manifest v 2026-09-28b): house_web.py + medical_web.py (medical_b2.py), rooms from floorplans.py; spec inherited from estate:final; the legacy blender/eden_manor.py is not used"
   },
   {
    "id": "lm:round_table_hall",
