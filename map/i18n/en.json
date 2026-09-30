@@ -692,5 +692,7 @@
   "inv.hidden": "concealed · ",
   "ch.src_routine": "Routine",
   "weather": "Weather",
-  "weather_title": "Render rain / sand / snow and lightning from story and time of day"
+  "weather_title": "Render rain / sand / snow and lightning from story and time of day",
+  "traffic": "Traffic",
+  "traffic_title": "Glowing maglev traffic along air lanes and patrol rings"
 }

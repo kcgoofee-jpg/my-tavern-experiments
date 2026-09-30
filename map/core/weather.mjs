@@ -58,11 +58,9 @@ export function particleBudget(preset, { w = 1280, h = 720, quality = 1 } = {}) 
   return Math.max(0, Math.min(600, Math.round(p.particle.count * area * q)));
 }
 
-/** 32 位确定性伪随机（mulberry32）：同一 seed 同一序列 */
-export function rng(seed) {
-  let a = (Number(seed) || 0) >>> 0;
-  return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
+// 32 位确定性伪随机（mulberry32）：同一 seed 同一序列。实现挪到 core/rng.mjs（车流 / 势力暗流共用）
+import { rng } from './rng.mjs';
+export { rng };
 
 /**
  * 一帧的粒子场（确定性）：从 seed 起铺 count 个粒子，按 t（秒）推进，出界从顶部 / 上风侧回绕。

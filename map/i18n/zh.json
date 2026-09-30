@@ -559,5 +559,7 @@
   "inv.hidden": "暗格·",
   "ch.src_routine": "日程",
   "weather": "天气",
-  "weather_title": "按剧情与时段渲染雨 / 沙尘 / 雪与闪电"
+  "weather_title": "按剧情与时段渲染雨 / 沙尘 / 雪与闪电",
+  "traffic": "车流",
+  "traffic_title": "航线与巡逻环上的悬浮车流光点"
 }
