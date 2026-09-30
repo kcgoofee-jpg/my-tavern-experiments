@@ -261,6 +261,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     if (e.data?.type === 'eden-map:varmap-set') setVarUser(e.data.user);   // v0.9.5 设置「变量映射」
     if (e.data?.type === 'eden-map:compose' && typeof e.data.text === 'string') composeIn(e.data.text);   // v0.9.6 地图 → 聊天：只填不发
     if (e.data?.type === 'eden-map:action') injectAction(e.data);   // Part 6-4：点 POI → 注入动作（默认关，见 tavern/action.mjs）
+    if (e.data?.type === 'eden-map:loot') takeLoot(e.data);   // Part 5-1：点了地上的发光拾取物 → 先写背包，再按设置注入一句
     if (e.data?.type === 'eden-map:th' && typeof e.data.op === 'string') onTh(e.data).catch(x => console.warn('[eden-map] 酒馆助手设置', x));   // 设置「数据与映射」「高级」：注入 / 类宏 / 世界书同步
     if (e.data?.type === 'eden-map:check-update') (channel() === 'follow' && SCRIPT.ref ? followUpdate() : checkUpdate()).then(r => post({ type: 'eden-map:update-result', ...r }));   // v0.9.6「检查更新」
   };
@@ -327,11 +328,25 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     const get = k => { try { return (LS || localStorage).getItem(k); } catch (err) { return ''; } };
     const mode = ACm.modeOf(get);
     if (mode === 'off') return;
-    const a = ACm.buildAction({ mode, kind: d?.kind, name: d?.name, map: d?.map, tpls: ACm.readTpl(get, UL), lang: UL });
+    const a = ACm.buildAction({ mode, kind: d?.kind, name: d?.name, map: d?.map, tpls: ACm.readTpl(get, UL), lang: UL, item: d?.item });
     if (!a) return;
     if (mode === 'sys') { const cmd = ACm.slashOf(a, 'sys');
       if (cmd && typeof triggerSlash === 'function') { try { triggerSlash(cmd); return; } catch (err) {} } }
     composeIn(a.text);   // sys 却没有 triggerSlash 时退回「只填不发」，绝不自动发送
+  }
+
+  // Part 5-1 拾取地上的藏物（core/stash.mjs 的行）：地图只说「拿了哪个 id」，真实性由这里核对——
+  // 认不出的 id 一律不动背包（不替世界凭空变出东西）；认出了就写进 eden_map.仓库（同一份聊天变量，模型自己看得见）。
+  function takeLoot(d) {
+    try {
+      if (!STm || !stash || !INVm || !d?.id) return;
+      const row = STm.rows(stash, {}).find(r => r.id === d.id);
+      if (!row) return;
+      const res = INVm.put(inv, STm.lootPut(row));
+      if (!res.changed) return;
+      inv = res.inv; changedInv();   // 写变量 + 推地图（拿到手的光点会消失）
+      injectAction({ kind: 'loot', name: row.place || d.place || '', map: row.map || d.map || '', item: row.name });
+    } catch (err) {}
   }
 
   // ---------------- v0.9.6 版本与检查更新（P2 解耦：实现在 tavern/host-about.mjs，这里只留装配） ----------------
@@ -517,10 +532,17 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   let inv = { items: {}, seq: 0 };
   function sendInv() { if (alive) post({ type: 'eden-map:inv', items: INVm ? INVm.rows(inv) : [] }); }
   function changedInv(save = true) { if (save) saveRoot(); sendInv(); }
+  // 世界藏物表（Part 5-1，core/stash.mjs）：包数据 manifest.data.stash 的行整张推给查看器（它以当前图自己筛），
+  // 拿到手的东西由背包的 id 对账——不再在地上发光。
+  let STm = null, stash = null, stashRaw = null;
+  import(SELF + 'core/stash.mjs').then(m => { STm = m; if (stashRaw) { stash = m.normStash(stashRaw); sendStash(); } }).catch(() => {});
+  { const sp = PACK_IN?.manifest?.data?.stash; if (sp) { const sb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';
+    cdnFetch(BASE + sb + sp).then(r => r.ok ? r.json() : null).then(j => { stashRaw = j; if (STm && j) { stash = STm.normStash(j); sendStash(); } }).catch(() => {}); } }
+  function sendStash() { if (alive && STm) post({ type: 'eden-map:stash', items: STm.rows(stash || {}, {}) }); }
   // NPC 日常漫游（Part 5-3，tavern/routine.mjs）：包数据 manifest.data.routine 的日程表；聊天没提到的人物按世界时刻落在该在的地方
   let RTm = null, rtSched = null; import(SELF + 'tavern/routine.mjs').then(m => { RTm = m; if (rtCfg) { rtSched = m.normSchedule(rtCfg); recomputeSoon(50); } }).catch(() => {});
   let rtCfg = null;
-  { const rp = PACK_IN?.manifest?.data?.routine; if (rp) { const rb = 'packs/' + PACK_ID + '/';
+  { const rp = PACK_IN?.manifest?.data?.routine; if (rp) { const rb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';   // 与保底名册同一算法：eden 的路径相对 map/，其它包相对 packs/<id>/
     cdnFetch(BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { rtCfg = j; if (RTm && j) { rtSched = RTm.normSchedule(j); recomputeSoon(50); } }).catch(() => {}); } }
   function computeTrips(msgs) {
     if (!TRm || !MV || !custom || customChat !== chatId()) return;

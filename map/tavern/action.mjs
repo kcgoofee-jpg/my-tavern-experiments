@@ -9,12 +9,12 @@ export const TPL_KEY = 'edenMapActionTpl';
 export const MODES = ['off', 'compose', 'sys'];
 export const MAX = 300;
 
-/** 默认模板：{name} = 地点 / 事件 / 人物名 */
+/** 默认模板：{name} = 地点 / 事件 / 人物名；{item} = 拾取到的东西（loot 才有） */
 export const DEFAULTS = {
-  zh: { go: '前往{name}。', look: '查看{name}。', take: '在{name}搜刮。' },
-  en: { go: 'Go to {name}. ', look: 'Look at {name}. ', take: 'Search {name}. ' },
+  zh: { go: '前往{name}。', look: '查看{name}。', take: '在{name}搜刮。', loot: '在{name}发现{item}，收进随身仓。' },
+  en: { go: 'Go to {name}. ', look: 'Look at {name}. ', take: 'Search {name}. ', loot: 'In {name}: found {item} and pocketed it. ' },
 };
-export const KINDS = ['go', 'look', 'take'];
+export const KINDS = ['go', 'look', 'take', 'loot'];
 
 const clip = (s, n) => [...String(s ?? '')].slice(0, n).join('');
 export const cleanName = n => clip(String(n ?? '').replace(/[\r\n\t]+/g, ' ').replace(/\{\{user\}\}\s*/g, '').trim(), 60);
@@ -33,11 +33,13 @@ export function readTpl(get, lang = 'zh') {
   return out;
 }
 
-/** 模板 + 名字 → 一句话；模板里没有 {name} 就把名字接在后面。名字空 / 模式 off 返回 '' */
-export function fill(tpl, name) {
+/** 模板 + 名字 → 一句话；模板里没有 {name} 就把名字接在后面。名字空返回 ''。
+ *  item（拾到的东西）只有 loot 模板用：模板里有 {item} 就替换；没有 {item} 的老模板也不会丢东西——插在句读之前。 */
+export function fill(tpl, name, item) {
   const n = cleanName(name); if (!n) return '';
-  const t = String(tpl || '');
-  const out = /\{name\}/.test(t) ? t.split('{name}').join(n) : (t + n);
+  const it = cleanName(item);
+  let out = /\{name\}/.test(String(tpl || '')) ? String(tpl).split('{name}').join(n) : (String(tpl || '') + n);
+  if (it) out = /\{item\}/.test(out) ? out.split('{item}').join(it) : out.replace(/([。.!？?]?)$/, (m, p) => it + p);
   return clip(out.replace(/[\r\n]+/g, ' '), MAX).trim();
 }
 
@@ -45,12 +47,12 @@ export function fill(tpl, name) {
  * 造一条动作消息：{ type: 'eden-map:action', kind, text, name?, map? }。
  * off / 名字为空 / 文案为空 → null（不发空消息）。kind 不在 KINDS 里按 go 处理。
  */
-export function buildAction({ mode, kind = 'go', name, map, tpls, lang = 'zh' } = {}) {
+export function buildAction({ mode, kind = 'go', name, map, tpls, lang = 'zh', item } = {}) {
   if (modeOf(() => mode) === 'off') return null;
   const k = KINDS.includes(kind) ? kind : 'go';
   const d = DEFAULTS[lang] || DEFAULTS.zh;
   const tpl = (tpls && typeof tpls[k] === 'string' && tpls[k].trim() ? tpls[k] : null) || d[k];
-  const text = fill(tpl, name);
+  const text = fill(tpl, name, item);
   if (!text) return null;
   const out = { type: 'eden-map:action', kind: k, text, v: 2 };
   if (cleanName(name)) out.name = cleanName(name);

@@ -20,6 +20,7 @@ import { initVisibilityGuard } from './visibility.mjs';
 import { registerWeatherLayer } from './weather.mjs';
 import { registerTrafficLayer } from './traffic.mjs';
 import { registerQuestLayer } from './quests.mjs';
+import { registerLootLayer } from './loot.mjs';   // Part 5-1：地上的发光拾取物（世界藏物表）
 import { M, REG, cur, pendingHome, setM, setPendingHome, setREG, setViewer, viewer } from './state.mjs';
 import { updateInsets } from './insets.mjs';
 import { $, PR, PROTO, coarse, getJSON, jsonCache, narrow, post, setNarrow, setPR, SUB_ORIGIN } from './util.mjs';
@@ -69,7 +70,7 @@ async function mainInner() {
   const seg = $('#tiers');
   for (const x of [{ key: 'auto' }, ...TIERS]) { const b = document.createElement('button'); b.dataset.k = x.key;
     b.onclick = () => setTier(x.key); seg.appendChild(b); }
-  registerCoreLayers(); registerWeatherLayer(); registerTrafficLayer(); registerQuestLayer(); renderLayerMenu(); initShell(); layoutHeader(); busOn({ key: 'boot.resize', type: 'resize', fn: layoutHeader });   // P3-C：#layList 由 LayerRegistry 数据驱动，先于 shell 绑定 / applyI18n 渲染
+  registerCoreLayers(); registerWeatherLayer(); registerTrafficLayer(); registerQuestLayer(); registerLootLayer(); renderLayerMenu(); initShell(); layoutHeader(); busOn({ key: 'boot.resize', type: 'resize', fn: layoutHeader });   // P3-C：#layList 由 LayerRegistry 数据驱动，先于 shell 绑定 / applyI18n 渲染
   applyI18n(); $('#status').textContent = t('loading');
   $('#estRetry').onclick = retryEstate; $('#estPlan').onclick = estatePlan;
   // Tab 到视野外的地标 / 事件点：浏览器会去滚动 OSD 的容器（overflow:hidden），这里撤掉滚动、改为平移地图把它带进视野

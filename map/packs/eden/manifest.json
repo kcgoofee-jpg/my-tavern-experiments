@@ -15,7 +15,8 @@
     "rooms": "data/eden_estate_rooms.json",
     "security": "data/security.json",
     "roster": "data/fallback_roster.json",
-    "events": "builtin"
+    "events": "builtin",
+    "stash": "data/stash.json"
   },
   "preload": [
     "data/maps.json",

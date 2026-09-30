@@ -34,6 +34,7 @@ export const SCHEMA = {
   'eden-map:varmap-set': [V2H, { user: 'object?' }],
   'eden-map:compose': [V2H, { text: 'string' }],
   'eden-map:action': [V2H, { kind: 'string?', name: 'string?', map: 'string?', text: 'string?' }],   // Part 6-4：地图 POI → 聊天（文案与注入方式由宿主按设置决定，模块 tavern/action.mjs）
+  'eden-map:loot': [V2H, { id: 'string', name: 'string', map: 'string?', place: 'string?', hidden: 'boolean?' }],   // Part 5-1：点了地上发光的拾取物（core/stash.mjs 藏物表的 id）
   'eden-map:explore': [V2H, { map: 'string', name: 'string' }],   // 迷雾探索：记一次到访（只在开着时发）
   'eden-map:explore-reset': [V2H, {}],
   'eden-map:th': [V2H, { op: 'string' }],   // 酒馆助手设置（app/th-ui.mjs）：state / prefs / wb-inspect / wb-write / wb-del-legacy
@@ -47,6 +48,7 @@ export const SCHEMA = {
   'eden-map:events': [H2V, { items: 'array?' }],
   'eden-map:custom': [H2V, {}],
   'eden-map:inv': [H2V, { items: 'array?' }],   // 空间化背包（Part 5-1）：聊天变量 eden_map.仓库 的行（地点卡「存放」行）
+  'eden-map:stash': [H2V, { items: 'array?' }],   // 世界藏物表（Part 5-1）：设定包自带的藏物（带地图 / 标记 / 暗格），查看器据此画发光拾取物
   'eden-map:clock': [H2V, {}],
   'eden-map:outfit': [H2V, { items: 'object?' }],   // mvu.outfit()：{ 部位: 描述 } 或 null
   'eden-map:varmap': [H2V, {}],

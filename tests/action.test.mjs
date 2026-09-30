@@ -81,8 +81,18 @@ test('接线：协议表登记、宿主处理、查看器有入口与设置项',
   }
 });
 
+test('loot（Part 5-1 拾取）：模板里的 {item} 换成拾到的东西，老模板没有占位符也接得上', () => {
+  assert.equal(fill(DEFAULTS.zh.loot, '主人主卧', '机密账本'), '在主人主卧发现机密账本，收进随身仓。');
+  assert.equal(fill(DEFAULTS.en.loot, 'Master Bedroom', 'Ledger'), 'In Master Bedroom: found Ledger and pocketed it.');
+  assert.equal(fill('查看{name}。', '书房', '地图自设·残卷'), '查看书房地图自设·残卷。', '没有 {item}：接在句末标点之前');
+  const a = buildAction({ mode: 'sys', kind: 'loot', name: '主人主卧', item: '机密账本' });
+  assert.equal(a.kind, 'loot');
+  assert.equal(a.text, '在主人主卧发现机密账本，收进随身仓。');
+  assert.equal(buildAction({ mode: 'off', kind: 'loot', name: '主人主卧', item: '机密账本' }), null, 'off 模式拾取也不发');
+});
+
 test('摘要与纯度：不碰酒馆全局 / DOM / 存储', () => {
-  assert.deepEqual(describe(k => (k === KEY ? 'sys' : '')), { mode: 'sys', kinds: ['go', 'look', 'take'] });
+  assert.deepEqual(describe(k => (k === KEY ? 'sys' : '')), { mode: 'sys', kinds: ['go', 'look', 'take', 'loot'] });
   const src = readFileSync(join(ROOT, 'map/tavern/action.mjs'), 'utf8').replace(/\/\/[^\n]*/g, '');
   for (const g of ['window', 'document', 'localStorage', 'Mvu', 'SillyTavern', 'postMessage']) {
     assert.ok(!new RegExp(`\\b${g}\\b`).test(src), `不该出现 ${g}`);
