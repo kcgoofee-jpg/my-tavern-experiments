@@ -153,7 +153,7 @@ test('views: tiles carry base, points file, extent, home, periods, overlay, cred
   const w = eden.views.world, mid = eden.views.tc_mid, up = eden.views.tc_upper;
   assert.equal(w.src, 'art/world.dzi'); assert.deepEqual(w.extent, [12000000, 7500000]); assert.equal(w.home.focus, 'tiancheng');
   assert.deepEqual(w.overlays, [{ kind: 'dzi', src: 'art/borders.dzi', label: '国界', i18n: { en: { label: 'Borders' } } }]);
-  assert.equal(mid.regions, 'data/tc_mid.json'); assert.deepEqual(mid.variants, { day: 'art/tc_mid_day.dzi', night: 'art/tc_mid_night.dzi' });
+  assert.equal(mid.regions, 'data/tc_mid.json'); assert.deepEqual(mid.variants, { dawn: 'art/tc_mid_dawn.dzi', day: 'art/tc_mid_day.dzi', dusk: 'art/tc_mid_dusk.dzi', night: 'art/tc_mid_night.dzi' });
   assert.equal(up.home.focus, 'eden_estate'); assert.deepEqual(up.home.phone, [0.16, 0.08, 0.8, 0.78]); assert.equal(up.alt.src, 'art/tc_upper_city.dzi');
   assert.equal(eden.views.eden_estate['x-page'], 'estate/index.html');
 });

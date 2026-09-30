@@ -393,3 +393,16 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T19:55:31Z,layout:tc_upper,user-review,done,user,pass,user 2026-10-01 (chat): chose C (golden-angle spiral)
 2026-09-30T19:55:31Z,layout:tc_upper,final,claim,layout-1,,
 2026-09-30T19:55:49Z,layout:tc_upper,final,wait,layout-1,,user chose C; FREEZE_MAPS (S4-2) on origin/preview - apply v16 C after the unfreeze
+2026-09-30T20:11:36Z,var:tc_mid:dawn,register,claim,std-1,,
+2026-09-30T20:12:50Z,var:tc_mid:dawn,register,done,std-1,pass,periods registered in maps.json (freeze lifted; ship-check OK); tests/compat_v1 pin updated; check_maps 0 errors
+2026-09-30T20:12:50Z,var:tc_mid:dusk,register,done,std-1,pass,periods registered in maps.json (freeze lifted; ship-check OK); tests/compat_v1 pin updated; check_maps 0 errors
+2026-09-30T20:12:50Z,var:tc_low:dawn,register,done,std-1,pass,periods registered in maps.json (freeze lifted; ship-check OK); tests/compat_v1 pin updated; check_maps 0 errors
+2026-09-30T20:12:50Z,var:tc_low:day,register,done,std-1,pass,periods registered in maps.json (freeze lifted; ship-check OK); tests/compat_v1 pin updated; check_maps 0 errors
+2026-09-30T20:12:51Z,var:tc_low:dusk,register,done,std-1,pass,periods registered in maps.json (freeze lifted; ship-check OK); tests/compat_v1 pin updated; check_maps 0 errors
+2026-09-30T20:12:51Z,var:tc_low:night,register,done,std-1,pass,periods registered in maps.json (freeze lifted; ship-check OK); tests/compat_v1 pin updated; check_maps 0 errors
+2026-09-30T20:12:57Z,var:tc_mid:dawn,ship,done,std-1,pass,8000x5000 / 128 spp tiles already on preview; period registered in maps.json; check_maps + node 795/796 + smoke pass
+2026-09-30T20:12:57Z,var:tc_mid:dusk,ship,done,std-1,pass,8000x5000 / 128 spp tiles already on preview; period registered in maps.json; check_maps + node 795/796 + smoke pass
+2026-09-30T20:12:57Z,var:tc_low:dawn,ship,done,std-1,pass,8000x5000 / 128 spp tiles already on preview; period registered in maps.json; check_maps + node 795/796 + smoke pass
+2026-09-30T20:12:57Z,var:tc_low:day,ship,done,std-1,pass,8000x5000 / 128 spp tiles already on preview; period registered in maps.json; check_maps + node 795/796 + smoke pass
+2026-09-30T20:12:57Z,var:tc_low:dusk,ship,done,std-1,pass,8000x5000 / 128 spp tiles already on preview; period registered in maps.json; check_maps + node 795/796 + smoke pass
+2026-09-30T20:12:57Z,var:tc_low:night,ship,done,std-1,pass,8000x5000 / 128 spp tiles already on preview; period registered in maps.json; check_maps + node 795/796 + smoke pass
