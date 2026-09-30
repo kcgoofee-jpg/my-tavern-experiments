@@ -147,3 +147,16 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+
+=== RESULT R-LOOP hero hero-1 ===
+status: PAUSED (context)
+items finished this session: isle:silver_crown — setting/draft/board/r1 fail (8.0/5.5)/fix/r2 pass (8.0/6.5)/final/integrate/ship; isle:isle4 (victor_estate) — setting/draft/board/r1 fail (5.5/5.0)/fix/r2 pass (7.5/6.5)/final/integrate/ship
+items below gate: none
+waiting: none
+pushed: yes (head #111)
+tests: check_maps PASS | estate3d_manifest PASS (9/9) | smoke PASS (node 630/631, 1 skipped)
+blocker: none
+next: isle:isle5 (y_estate)
+cleanup: done (no Blender or server of this session left running)
+notes: agent name hero-1 (the prompt's AGENT=std-1 line says hero lanes use hero-1). The worktree ~/eden-render/wt-hero symlinks the ignored blender/data/props from the main checkout (textures are not in git; the first draft failed without them). The render guard verdict reported status=ok for a run that died with a Python traceback (missing texture) — guard bug, not fixed here. Integration = body-only crop re-render of tiancheng_upper.py (8000/64, --no-data 1) patched into the kept 8K full PNGs + island cutout pasted with tools/isles_into_upper.py at width × depth scale; base:tc_upper must repeat the paste (cutout ids now in tc_islands.json: silver_crown, victor_estate). The victor_estate marker moved from empty cloud onto the isle4 manor; worldbook add-on rebuilt (--ship) for the neighbour list.
+=== END ===
