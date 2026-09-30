@@ -57,3 +57,6 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T12:56:00Z,review:linguang_post,review-r1,claim,std-1,,
 2026-09-30T12:56:14Z,review:linguang_post,review-r1,done,std-1,pass,"r1 8/7 pass; polish: iron gate bars, ground edge"
 2026-09-30T12:56:14Z,review:linguang_post,ship,skip,std-1,,"r1 pass, nothing changed; no re-export"
+2026-09-30T12:56:25Z,review:rust_outskirts,review-r1,claim,std-1,,
+2026-09-30T12:56:36Z,review:rust_outskirts,review-r1,done,std-1,pass,"r1 8/7 pass; polish: plate edge, river banks, lane clutter"
+2026-09-30T12:56:36Z,review:rust_outskirts,ship,skip,std-1,,"r1 pass, nothing changed; no re-export"
