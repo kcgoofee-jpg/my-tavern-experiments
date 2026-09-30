@@ -77,8 +77,10 @@ async function run(name, preset) {
       const res = {};
       for (const [per, want] of [['晨起', 'dawn'], ['日间', ''], ['侍寝时段', 'dusk'], ['就寝', 'night']]) {
         await H.setMsgs([], { ...STAT, 世界: { ...STAT.世界, 当日时段: per } }); await B.wait(900);
-        res[per] = await vf.evaluate(() => ({ tod: document.body.dataset.tod || '', night: document.body.classList.contains('nighttint'), bg: getComputedStyle(document.getElementById('osd'), '::after').backgroundImage.slice(0, 40) }));
-        rep.check(`${name} 时段「${per}」→ 色调 ${want || '无'}`, res[per].tod === want && res[per].night === (want === 'night') && (want ? res[per].bg !== 'none' : true), JSON.stringify(res[per]));
+        res[per] = await vf.evaluate(() => ({ tod: document.body.dataset.tod || '', night: document.body.classList.contains('nighttint'), swapped: !!REG?.maps?.tc_mid?.periods?.night, bg: getComputedStyle(document.getElementById('osd'), '::after').backgroundImage.slice(0, 40) }));
+        // 中层已登记夜间底图（maps.json periods.night，9ad6dfc）：夜档由底图 + data-tod 承担，不再叠 nighttint / 色调层；没登记夜图才叠（同 mvu093）
+        const tint = want === 'night' ? !res[per].swapped : !!want;
+        rep.check(`${name} 时段「${per}」→ 色调 ${want || '无'}`, res[per].tod === want && res[per].night === (want === 'night' && tint) && (tint ? res[per].bg !== 'none' : true), JSON.stringify(res[per]));
         if (want) await B.shot(p, OUT, `tod_${name}_${want}`);
       }
       await vf.evaluate(() => go('tc_low')); await B.wait(2000);
@@ -88,7 +90,7 @@ async function run(name, preset) {
       await vf.evaluate(() => { closeCard(); go('tc_upper'); }); await B.wait(2500);
       const s0 = await vf.evaluate(() => ({ lab: !document.getElementById('tgSec').hidden, off: !document.getElementById('tgSecBox').checked, badges: document.querySelectorAll('.mk .secb').length }));
       rep.check(`${name} 图层菜单有「安保」开关，默认关、无标签`, s0.lab && s0.off && s0.badges === 0, JSON.stringify(s0));
-      await vf.evaluate(() => { const b = document.getElementById('tgSecBox'); b.checked = true; b.onchange(); }); await B.wait(600);
+      await vf.evaluate(() => { const b = document.getElementById('tgSecBox'); b.checked = true; b.dispatchEvent(new Event('change', { bubbles: true })); }); await B.wait(600);
       const s1 = await vf.evaluate(() => { const b = document.querySelector('.mk[data-name="伊甸庄园"] .secb'); document.querySelector('.mk[data-name="伊甸庄园"]')._open();
         return { badge: b?.textContent, rows: [...document.querySelectorAll('#card .secbox dt')].map(x => x.textContent) }; });
       rep.check(`${name} 打开后伊甸庄园有「结警监门」标签，地点卡列出结界 / 监控 / 门禁 / 警报`, s1.badge === '结警监门' && ['结界', '监控', '门禁', '警报'].every(k => s1.rows.includes(k)), JSON.stringify(s1));

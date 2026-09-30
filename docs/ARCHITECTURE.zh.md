@@ -67,7 +67,9 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `logbuf.mjs` | 反馈报告用的控制台环形缓冲，按会话分开；模块首次求值时自装钩子。 |
 | `nodes.mjs` | 节点树（内核契约 v2）：建树、读树、`vocabulary`、`locate`、视图、位置、范围、层级。 |
 | `pack.mjs` | 设定包接口：清单校验与解析、包 id、存储前缀与聊天变量键的推导、注册表改基址。 |
+| `periods.mjs` | 一天的时段（K-R39）：世界时钟落在哪个时段——先按时段词，再按钟点；默认时段。 |
 | `pickup.mjs` | 客观拾取探测：正文里写明的物理获取动作变成一条单项账目事实。 |
+| `profile.mjs` | 设定包变量与名册的运行时档案（K-R37–K-R44、K-R69）：变量路径、时段、表、名册槽位、立绘规则（`portraitOk`）；什么都没写的包用内核档案。 |
 | `project.mjs` | 斜视投影（`blender/project.py` 的 JS 孪生，对拍 golden 文件）：世界点到画幅坐标、标签规则、锚点。 |
 | `protocol.mjs` | 消息协议：所有宿主 / 查看器 / 子页消息的 `SCHEMA`、信封、`check` / `accept`、`createBus`。 |
 | `quests.mjs` | 动态线索节点：把事态按地点聚合、按楼层差衰减，得到确定性的「哪里在出事」节点。 |
@@ -84,6 +86,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `traffic.mjs` | 车流 / 流光数学：归一化路线点变成一帧的光点位置，确定性。 |
 | `transit.mjs` | 写成地点的行程（「从 A 到 B」「A → B」）：两端与交通工具；卡内脚本用的纯句式。 |
 | `vision.mjs` | 视线锥几何：守卫视野被墙段截断、巡逻环、点是否被看见的判定。 |
+| `vocab.mjs` | 内核的发现词表（K-R38、K-R42）：变量、人物行、名册槽位的分语言字段名词表，不含任何卡的名字。 |
 | `walk.mjs` | 确定性时钟 tick 与任意维插值行走器（禁止瞬移，减少动态效果时一步到位）。 |
 | `weather.mjs` | 天气核心：预设表、由剧情与时钟推天气、粒子场与闪电时序。 |
 
@@ -146,7 +149,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | 模块 | 职责 |
 |---|---|
 | `action.mjs` | 地图驱动的动作：点一个兴趣点变成一句话（关 / 填输入框 / 静默系统注入）。 |
-| `adapter.mjs` | 变量映射：地点、时间、日期、在场各在 `stat_data` 的哪条路径；按字段名自动发现。 |
+| `adapter.mjs` | 变量映射：地点、时间、日期、在场各在 `stat_data` 的哪条路径；先用包自己声明的（`defaults`），再按字段名自动发现。 |
 | `baibai.mjs` | 到可选外部生图扩展的桥；扩展不在时每个函数都安静降级。 |
 | `budget.mjs` | 本机存储预算：按聊天 LRU、头像上限、撞额度后的恢复；只碰地图自己的键。 |
 | `characters.mjs` | 人物栏：从聊天标签和 MVU 变量找出人物及其最新位置。 |
@@ -166,12 +169,14 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `llm.mjs` | 私有 API Key 网关：只算「该怎么发」，自己不碰网络也不碰存储。 |
 | `modes.mjs` | 脚本 ↔ 卡的交互方式：紧凑状态注入、标签对账、最小检查点。 |
 | `msgtext.mjs` | 消息正文解析预处理：解析前剥掉思考块与变量更新块。 |
+| `mvu.mjs` | MVU 数据与地图自有自定义数据的纯读取器（名称、着装、按包的槽位字段读名册行、立绘、时间与时段）。 |
 | `mvu-bridge.mjs` | MVUBridge：唯一允许碰 `Mvu` / `SillyTavern` 的模块；快照、`getHere` 回退、聊天变量、名册读取。 |
-| `mvu.mjs` | MVU 数据与地图自有自定义数据的纯读取器（名称、着装、名册、立绘、时间）。 |
 | `navigator.mjs` | 后台领航员网关：调度、输入装配、响应门控（私有 key 驱动）。 |
 | `ops.mjs` | 受限操作 DSL 沙盒：提取、校验并规范化原子操作块。 |
+| `pack-profile.mjs` | 脚本当前跑的包的档案（`getProfile` / `setProfile`）；包的声明到之前是内核档案。 |
 | `picker.mjs` | 自定义面板的纯函数：可定制对象的分组清单、搜索、飞行目标。 |
 | `preset.mjs` | 把社区预设写的半结构化状态字段读成地点 / 时间 / 在场的兜底。 |
+| `profile-load.mjs` | 取包的清单与叠加层并建出它的档案（`loadPackProfile`）；取数函数由调用方给。 |
 | `routine.mjs` | 宿主侧入口，原样转发到 `core/routine.mjs`。 |
 | `sanitize.mjs` | 社区预设文本净化：按标签表剥思考块 / 状态块（纯函数）。 |
 | `selfcheck.mjs` | 由宿主收集的事实得出启动自检结论（纯函数）。 |

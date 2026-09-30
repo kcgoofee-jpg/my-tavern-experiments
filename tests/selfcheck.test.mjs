@@ -1,7 +1,8 @@
 // node tests/selfcheck.test.mjs —— 卡内脚本启动自检（map/tavern/selfcheck.mjs）的判定逻辑
 import assert from 'node:assert/strict';
-import { evaluate, findPaths, getPath, wbMissing, warnSig, HERE_PATH, cmpVer, latestTag, dueCheck, swapVer, DAY } from '../map/tavern/selfcheck.mjs';
+import { evaluate, findPaths, getPath, wbMissing, warnSig, cmpVer, latestTag, dueCheck, swapVer, DAY } from '../map/tavern/selfcheck.mjs';
 
+const HERE_PATH = '世界.当前地点';
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
 const good = {
   api: { getChatMessages: true, eventOn: true, injectPrompts: true, tavern_events: true },
@@ -78,7 +79,7 @@ t('v0.9.3：MVU 字段缺了只提示（skip）、聊天变量接口、EJS 条�
   const m = { stat: true, here: true, candidates: [] };
   assert.equal(st(evaluate({ ...good, mvu: { ...m, fields: { present: true, clock: true, outfit: true } } })).mvu_fields, 'ok');
   const r = evaluate({ ...good, mvu: { ...m, fields: { present: false, clock: true, outfit: false } } }).find(i => i.id === 'mvu_fields');
-  assert.equal(r.status, 'skip'); assert.match(r.zh, /在场人物、主角\.着装/);
+  assert.equal(r.status, 'skip'); assert.match(r.zh, /在场人物、着装/);
   assert.equal(st(evaluate({ ...good, vars: false })).vars, 'warn'); assert.equal(st(evaluate({ ...good, vars: true })).vars, 'ok');
   assert.equal(st(evaluate({ ...good, worldbook: { missing: [], lore: true }, ejs: false })).ejs, 'warn');
   assert.equal(st(evaluate({ ...good, worldbook: { missing: [], lore: true }, ejs: true })).ejs, undefined);

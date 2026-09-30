@@ -8,6 +8,8 @@ import * as EV from '../map/tavern/events.mjs';
 import * as MV from '../map/tavern/mvu.mjs';
 import * as ST from '../map/core/storage.mjs';
 import * as AD from '../map/tavern/adapter.mjs';
+import { profileFromV1 } from '../map/core/profile.mjs';
+import { setProfile } from '../map/tavern/pack-profile.mjs';
 import { HOST_SRC } from './_host_src.mjs';
 import { edenGeo, townGeo } from './helpers/eden-geo.mjs';
 
@@ -167,8 +169,10 @@ test('tools/check_pack.py：全部包通过', () => {
   assert.match(out, /town：通过/); assert.match(out, /eden：通过/);
 });
 
-test('清单 vars：换 MVU 默认路径（其余清空、按字段名自动发现）', () => {
-  const keep = { ...AD.DEFAULT_MAP };
-  try { AD.useDefaults({ location: '状态.地点', nope: 'x' }); assert.equal(AD.DEFAULT_MAP.location, '状态.地点'); assert.equal(AD.DEFAULT_MAP.outfit, ''); assert.ok(!('nope' in AD.DEFAULT_MAP)); }
-  finally { Object.assign(AD.DEFAULT_MAP, keep); }
+test('清单 vars：换 MVU 默认路径（其余为空、按字段名自动发现）', () => {
+  try {
+    setProfile(profileFromV1({ manifest: { vars: { location: '状态.地点', nope: 'x' } } }));
+    const d = AD.defaults(); assert.equal(d.location, '状态.地点'); assert.equal(d.outfit, ''); assert.ok(!('nope' in d));
+    assert.equal(AD.detect({ 状态: { 地点: 'A' }, 别处: { 位置: 'B' } }).location, '状态.地点', '默认路径在卡里就用它');
+  } finally { setProfile(null); }
 });

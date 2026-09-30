@@ -3,6 +3,12 @@
 // 不放进 stat_data：卡注册了 MVU zod 结构（z.object 默认丢掉未知键），stat_data 里多出来的键每次变量更新都会被删掉（docs/content-compat.md）。
 // 任何字段缺了都返回空值，调用方照常工作（功能不显示而已）。只做技术兼容：不按内容过滤任何文字。
 
+import { getProfile } from './pack-profile.mjs';
+import { bandOf } from '../core/periods.mjs';
+import { slotDef, SLOTS, portraitOk as avatarOk } from '../core/profile.mjs';
+import { fieldValue } from '../core/pack-v2-rows.mjs';
+import * as VOC from '../core/vocab.mjs';
+
 // ---------------- 通用 ----------------
 /** MVU 旧格式的值可能是 [值, 说明]；新格式直接是值 */
 export const val = v => (Array.isArray(v) && v.length === 2 && typeof v[1] === 'string' && (v[0] === null || typeof v[0] !== 'object') ? v[0] : v);
@@ -17,60 +23,45 @@ const clean = s => String(s ?? '').replace(/\s+/g, ' ').trim();
 const clip = (s, n) => ([...s].length > n ? [...s].slice(0, n - 1).join('') + '…' : s);
 
 // ---------------- 1 在场人物的位置 ----------------
-// 注意：这张卡的 zod 结构里在场人物的对象没有「位置」，模型写进去也会被 MVU 删掉；所以人物位置的主来源是聊天标签（characters.mjs），
-// 这里只是「作者以后加了位置字段」时直接可用（docs/author-compat.md）。
-export const PRESENT_KEYS = ['在场人物', '在场角色', '当前在场'];
-export const POS_KEY = '位置';
+// 注意：有的卡的 zod 结构里在场人物的对象没有「位置」，模型写进去也会被 MVU 删掉；所以人物位置的主来源是聊天标签（characters.mjs），
+// 这里只是「作者以后加了位置字段」时直接可用（docs/author-compat.md）。表名和位置字段名来自包（core/profile.mjs tables.present / place），没写就按内核词表找。
 // 表的每一项可能是：{ 名字: { 位置: '层·地点', … } }、{ 名字: '层·地点' }、{ 名字: '一句描述' }、['名字', …]、[{ 名字 / 姓名 / name, 位置 }]、'甲、乙'
 const looksPlace = s => /[·・]/.test(s) && [...s].length <= 60;   // 字符串值只有写成「层·地点」才当位置（否则可能是描述）
+const placeOf = o => { const k = getProfile().place || VOC.exactKey('position', o); return k ? str(val(o?.[k])) : ''; };
+const nameOf = x => { for (const k of VOC.exactWords('name')) { const n = str(val(x[k])); if (n) return n; } return ''; };
 /** stat_data → 在场人物 [{ name, place }]（place = '' 表示没写位置，调用方按玩家所在处处理（默认同处））。没有在场表返回 null */
 export function presentList(stat, path = '') {
   if (!stat || typeof stat !== 'object') return null;
-  const key = path || PRESENT_KEYS.find(k => k in stat); if (!key) return null;
+  const declared = getProfile().tables.present, key = path || (declared && declared in stat ? declared : VOC.exactKey('presentKey', stat)); if (!key) return null;
   const t0 = path ? get(stat, path) : stat[key]; if (t0 === undefined) return null;
   const t = val(t0), out = [], add = (n, p) => { n = clean(n); if (n && [...n].length <= 40 && !out.some(o => o.name === n)) out.push({ name: n, place: clean(p) }); };
-  const posOf = o => { const p = str(val(o?.[POS_KEY])); return p; };
   if (typeof t === 'string') { for (const n of t.split(/[、,，;；\/]/)) add(n, ''); return out; }
   if (Array.isArray(t)) {
     for (const it of t) { const x = val(it);
       if (typeof x === 'string') add(x, '');
-      else if (x && typeof x === 'object') add(str(val(x.名字)) || str(val(x.姓名)) || str(val(x.name)), posOf(x)); }
+      else if (x && typeof x === 'object') add(nameOf(x), placeOf(x)); }
     return out;
   }
   if (!t || typeof t !== 'object') return out;
   for (const [n, raw] of Object.entries(t)) {
     const o = val(raw);
     if (typeof o === 'string') { if (clean(o)) add(n, looksPlace(o) ? o : ''); }   // 空字符串 = 卡模板占位 / 未填槽，不算在场人物（2026-09-28 待查 3，只按结构不按内容）
-    else if (o && typeof o === 'object' && !Array.isArray(o)) add(n, posOf(o));   // null / 数字等原始值 = 空槽，跳过
+    else if (o && typeof o === 'object' && !Array.isArray(o)) add(n, placeOf(o));   // null / 数字等原始值 = 空槽，跳过
   }
   return out;
 }
 
 // ---------------- 4 世界时间 ----------------
-/** stat_data → { date, time, period }（缺的是 ''） */
+/** stat_data → { date, time, period }（缺的是 ''）；路径来自变量映射（adapter.effective），没有路径的项读不到 */
 export function worldTime(stat, m = {}) {
-  return { date: str(get(stat, m.date || '世界.当前日期')), time: str(get(stat, m.time || '世界.当前时刻')), period: str(get(stat, m.period || '世界.当日时段')) };
+  const at = p => (p ? str(get(stat, p)) : '');
+  return { date: at(m.date), time: at(m.time), period: at(m.period) };
 }
 const hourOf = t => { const m = String(t || '').match(/(\d{1,2})\s*[:：时]\s*(\d{0,2})/); return m ? +m[1] + (+m[2] || 0) / 60 : null; };
-/** 夜间：时段写着「寝 / 夜 / 凌晨」，或时刻在 22:00–05:00 */
-export function isNight(w) {
-  if (!w) return false;
-  if (/寝|夜|凌晨|night/i.test(w.period || '')) return true;
-  if (/晨|日间|白天|午|day|morning/i.test(w.period || '')) return false;
-  const h = hourOf(w.time); return h != null && (h >= 22 || h < 5);
-}
-/** v0.9.6（B11 / C1）时段色调：'dawn' | 'day' | 'dusk' | 'night' | ''（读不到）。时段文字优先（卡的五时段：晨起 / 晨间报到 → dawn、日间 → day、
- *  侍寝时段 → dusk、就寝 → night；通用：清晨 / 早 / 午 / 傍晚 / 黄昏 / 夜 / 凌晨），否则按时刻：05–07 dawn、07–17 day、17–20 dusk、其余 night */
-export function todPhase(w) {
-  if (!w) return '';
-  const p = String(w.period || '');
-  if (/就寝|深夜|夜|凌晨|night|midnight/i.test(p) && !/侍寝/.test(p)) return 'night';
-  if (/侍寝|傍晚|黄昏|暮|dusk|evening/i.test(p)) return 'dusk';
-  if (/晨|黎明|清晨|早|dawn|morning/i.test(p)) return 'dawn';
-  if (/日间|白天|午|day|noon|afternoon/i.test(p)) return 'day';
-  const h = hourOf(w.time); if (h == null) return '';
-  return h >= 5 && h < 7 ? 'dawn' : h >= 7 && h < 17 ? 'day' : h >= 17 && h < 20 ? 'dusk' : 'night';
-}
+/** 夜间：世界时钟落在包的「暗」时段里（core/periods.mjs bandOf，K-R39；默认时段里是 20:00 起的 night） */
+export const isNight = w => !!(w && bandOf(getProfile().periods, w)?.dark);
+/** 时段色调：时段的 id（默认 dawn / day / dusk / night；包可以自起名、自带时段词），读不到返回 ''。时段文字里的词优先，否则按时刻落在哪个时段 */
+export const todPhase = w => (w ? bandOf(getProfile().periods, w)?.id || '' : '');
 /** 标题栏里的紧凑写法：zh「1月1日 08:00」、en「Jan 1 08:00」（读起来是日期，用户 2026-09-28）；全文（带年份与时段）放在 title */
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 export function clockLabel(w, lang = 'zh') {
@@ -89,18 +80,16 @@ export function timeKey(s) {
 }
 
 // ---------------- 5 着装 ----------------
-export const OUTFIT_KEYS = ['衣服', '裤子', '鞋子'];
-const EMPTY = /^(待初始化|无|空|未知|none|-|—)?$/i;
-/** stat_data → { 衣服, 裤子, 鞋子, … }（只收字符串，空和「待初始化」不算）；没有着装返回 null */
+/** stat_data → { 衣服, 裤子, 鞋子, … }（只收字符串，空和「待初始化」不算）；没有着装（或没有路径）返回 null */
 export function outfit(stat, path = '') {
-  const o = get(stat, path || '主角.着装'); if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
-  const r = {}; for (const [k, v] of Object.entries(o)) { const s = str(val(v)); if (s && !EMPTY.test(s)) r[k] = s; }
+  const o = path ? get(stat, path) : undefined; if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+  const r = {}; for (const [k, v] of Object.entries(o)) { const s = str(val(v)); if (s && !VOC.isEmptyValue(s)) r[k] = s; }
   return Object.keys(r).length ? r : null;
 }
 /** 卡片里的一行：「着装：a / b / c」，截断 */
 export function outfitText(o, max = 48) {
   if (!o) return '';
-  const keys = [...OUTFIT_KEYS.filter(k => k in o), ...Object.keys(o).filter(k => !OUTFIT_KEYS.includes(k))];
+  const first = VOC.exactWords('outfitOrder'), keys = [...first.filter(k => k in o), ...Object.keys(o).filter(k => !first.includes(k))];
   return clip(keys.map(k => o[k]).join(' / '), max);
 }
 
@@ -231,66 +220,66 @@ export function applyTags(c, msgs, after, kindOf = () => 'landmark') {
 /** 一次性提示的文字 */
 export const tagToast = a => (a.op === 'name' ? `${a.key} 改名为「${a.value}」` : `${a.key} 的用途已更新`);
 
-// ---------------- v0.9.5 人物栏的名册（只读）：按表的位置 / 通用字段名发现，不认具体卡的字段内容 ----------------
-// stat_data 顶层：第 1 个键 = 世界、第 2 个键 = 主角（按位置）；在场表按 PRESENT_KEYS / 「在场 / present」认；
-// 其余「以名字为键、值是对象」的表按出现顺序：第 1 张 = 成员（members），第 2 张 = 目标（targets）。map 参数可以指定（变量映射，见 docs/content-compat.md「换卡兼容」）。
+// ---------------- v0.9.5 人物栏的名册（只读）：表名和行内字段来自包（core/profile.mjs），没写的按表的形状 / 内核词表发现，不认具体卡的字段内容 ----------------
+// 组（K-R41）：在场表 = 包的 present 组，或名字在内核「在场」词表里的表；其余「以名字为键、行是对象、行里有人物 / 地点字段」的表按出现顺序：第 1 张 = 成员（members），第 2 张 = 目标（targets）
+// （放变量路径的顶层表——世界、主角——不算）。map 参数可以指定（变量映射，见 docs/content-compat.md「换卡兼容」）。
 const plain = o => !!o && typeof o === 'object' && !Array.isArray(o);
-const IDENT = /身份|identity|role|职业|头衔|title/i, STAGE = /进度|阶段|stage|progress/i, REP = /声望|reputation|名望/i;
 const isRoster = t => { t = val(t); return plain(t) && Object.values(t).every(v => plain(val(v))); };
-// v0.9.6（E2 / E13）：核心数值（0–100）按 5 档阈值（≤20 / ≤40 / ≤60 / ≤80 / ≤100，docs/card-digest.md）换算档位。
-// 档名只对这张卡的默认字段用卡原文（变量更新规则 category，照抄）；别的卡的字段一律「档 n」。
-export const CORE_CUTS = [20, 40, 60, 80, 100], CORE_DEFAULT = '母畜值';
-const CORE_NAMES = ['抗拒期', '动摇期', '接受期', '沉溺期', '完全母畜化'];
-export function coreStage(field, n) {
-  if (typeof n !== 'number' || !Number.isFinite(n)) return '';
-  const i = CORE_CUTS.findIndex(c => n <= c), k = i < 0 ? 4 : i;
-  return field === CORE_DEFAULT ? CORE_NAMES[k] : `档 ${k + 1}`;
-}
+const personRow = o => Object.keys(o || {}).some(k => VOC.hasWord('role', k) || VOC.exactRank('place', k) >= 0 || VOC.exactRank('person', k) >= 0 || SLOTS.some(sl => VOC.slotHit(sl, k)));   // K-06: a place- or person-like field (the roster slots' words count)
+const isPeople = t => isRoster(t) && Object.values(val(t)).some(r => personRow(val(r)));
 const num = v => (typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? +v : NaN);
+// 槽位取值（core/profile.mjs SLOTS）：字段名 = 变量映射里生效的（用户选的 / detect 找到的，'-' = 关），种类和档位来自包里的槽位字段，包没写就用内核默认。
+// 文字 / 标签保留原值的类型（布尔、数字不转字符串：人物卡按类型显示单位和「知情」）。
+const slotKey = (slot, fk) => { const k = fk[slot + 'Field']; return k && k !== '-' ? k : ''; };
+function slotRead(slot, key, o) {
+  const d = slotDef(getProfile(), slot), raw = val(o[key]);
+  if (typeof raw === 'boolean' || (typeof raw === 'number' && Number.isFinite(raw) && d.kind !== 'gauge')) return raw;
+  const v = fieldValue({ ...d, field: key, show: undefined }, { [key]: raw });
+  return v === null ? undefined : v;
+}
+function coreRead(key, o) {   // 核心数值（gauge）：值夹在 min..max；档位名只在字段就是包声明的那一个时用包里的，别的字段一律「档 n」（档界相同）
+  const d = slotDef(getProfile(), 'core'), own = getProfile().slots?.core?.field === key;
+  const bands = d.ladder.map((b, i) => ({ ...b, label: own ? b.label : `档 ${i + 1}` }));
+  const g = fieldValue({ ...d, field: key, ladder: bands }, { [key]: val(o[key]) });
+  return g ? { core: g.value, coreKey: key, coreStage: g.band || '' } : null;
+}
+// 战力小签（E1）：只从卡里写明的内容推，不编造；读不到返回 ''。没有字段名（默认）：逐个文字值在包的阶梯里找（scan）；有字段名（用户指定 / 按名找到）：阶梯里的词，否则 12 字内的原文。off = 映射里关掉了
+function tierRead(o, key, off) {
+  if (off || !plain(o)) return '';
+  const d = slotDef(getProfile(), 'tier'), row = Object.fromEntries(Object.entries(o).filter(([k]) => !k.startsWith('$')).map(([k, v]) => [k, val(v)]));
+  if (key && key in row) { const r = fieldValue({ ...d, field: key, scan: false }, row); if (r) return r.label; const v = row[key]; return typeof v === 'string' && v.trim() && v.trim().length <= 12 ? v.trim() : ''; }
+  const r = fieldValue({ ...d, field: '', scan: true }, row); return r ? r.label : '';
+}
+const MORE_KEYS = { code: 'code', social: 'social', height: 'height', weight: 'weight', known: 'known', accessory: 'accessory' };
 function rows(tbl, stageKey, fk = {}) {
   const t = val(tbl); if (!plain(t)) return [];
+  const sd = getProfile().slots?.stage?.field;
   return Object.entries(t).filter(([n]) => clean(n) && [...n].length <= 40).map(([n, raw]) => {
-    const o = val(raw) || {}, ik = Object.keys(o).find(k => IDENT.test(k)), sk = stageKey || Object.keys(o).find(k => STAGE.test(k));
+    const o = val(raw) || {}, ik = Object.keys(o).find(k => VOC.hasWord('role', k)), sk = stageKey || (sd && sd in o ? sd : Object.keys(o).find(k => VOC.hasWord('stage', k)));
     const it = { name: clean(n), identity: str(val(o[ik])) };
     if (sk) { const s = str(val(o[sk])); if (s) it.stage = s; }
-    const gk = fk.gradeField, ck = fk.coreField;
-    if (gk && gk !== '-' && gk in o) { const g = str(val(o[gk])); if (g) it.grade = g; }
-    if (ck && ck !== '-' && ck in o) { const n = num(val(o[ck])); if (Number.isFinite(n)) { it.core = n; it.coreKey = ck; it.coreStage = coreStage(ck, n); } }
+    const gk = slotKey('grade', fk), ck = slotKey('core', fk);
+    if (gk && gk in o) { const g = str(val(o[gk])); if (g) it.grade = g; }
+    if (ck && ck in o && Number.isFinite(num(val(o[ck])))) Object.assign(it, coreRead(ck, o));
     const more = {};   // v0.9.6 E13 其余字段（人物卡「更多资料」）：只读，原样取值；布尔的外界知情保留 true / false
-    for (const [f, k] of Object.entries(MORE_KEYS)) { const fk_ = fk[f]; if (!fk_ || fk_ === '-' || !(fk_ in o)) continue; const v = val(o[fk_]);
-      if (typeof v === 'boolean') more[k] = v; else if (typeof v === 'number' && Number.isFinite(v)) more[k] = v; else { const s = str(v); if (s) more[k] = s.slice(0, 80); } }
+    for (const [slot, k] of Object.entries(MORE_KEYS)) { const f = slotKey(slot, fk); if (!f || !(f in o)) continue; const v = slotRead(slot, f, o); if (v !== undefined && v !== '') more[k] = v; }
     if (Object.keys(more).length) it.more = more;
-    { const tk = fk.tierField; const t = combatTier(o, tk && tk !== '-' ? tk : '', tk === '-'); if (t) it.tier = t; }
+    { const tk = fk.tierField; const tv = tierRead(o, tk && tk !== '-' ? tk : '', tk === '-'); if (tv) it.tier = tv; }
     return it;
   });
 }
-// v0.9.6 E1 战力小签：只从卡里写明的内容推（战力字段，或任一文字字段里明写的「天灾级 / 超凡 N 阶 / 普通人」），不编造；读不到返回 ''。
-// 阶梯：普通人 < 超凡一阶至五阶 < 天灾级（docs/card-digest.md）。off = 映射里关掉了（连文字也不扫）
-const CN = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5 };
-export function tierText(s) {
-  s = String(s ?? ''); let m;
-  if (/天灾级/.test(s)) return '天灾';   // 只认「天灾级」；「代号『天灾』」之类不算
-  if ((m = s.match(/超凡\s*([一二三四五1-5])\s*阶/))) return `超凡 ${CN[m[1]] || m[1]} 阶`;
-  if (/^\s*普通人\s*$|战力[:：]?\s*普通人/.test(s)) return '普通人';
-  return '';
-}
-export function combatTier(o, key = '', off = false) {
-  if (off || !plain(o)) return '';
-  if (key && key in o) { const v = val(o[key]); const t = tierText(v); return t || (typeof v === 'string' && v.trim() && v.trim().length <= 12 ? v.trim() : ''); }
-  for (const [k, v] of Object.entries(o)) { if (k.startsWith('$')) continue; const x = val(v); if (typeof x === 'string') { const t = tierText(x); if (t && t !== '普通人') return t; } }
-  return '';
-}
-const MORE_KEYS = { codeField: 'code', socialField: 'social', heightField: 'height', weightField: 'weight', knownField: 'known', accessoryField: 'accessory' };
-/** stat_data → { present, members, targets }：每项 { key: 表名, items: [{ name, identity, stage?, grade?, core?, coreKey?, coreStage? }] } 或 null；map = { present, members, targets } 表名覆盖，gradeField / coreField 行内字段名（'-' = 关闭）
+/** stat_data → { present, members, targets }：每项 { key: 表名, items: [{ name, identity, stage?, grade?, core?, coreKey?, coreStage?, more?, tier? }] } 或 null；map = { present, members, targets } 表名覆盖，各 *Field 行内字段名（'-' = 关闭）
  * fallback = 包的保底名册（manifest.data.roster 的 members，[{ name, identity }]；Pack 0 数据挂载点，通用化 v1 从这里的硬编码数组抽离）——
  * 设定兜底（用户 2026-09-29：「庄园成员不能空」）：MVU 成员表是剧情写出来的，还没开局 / 剧情还没写到成员表 / 变量快照缺失时，
  * 人物页不该是空的。src:'设定' 供界面标注来源；MVU 表里已有的人不重复补（MVU 为准），剧情新加的人照常追加在后面。 */
 export function rosters(stat, map = {}, fallback = []) {
-  const out = { present: null, members: null, targets: null };
+  const out = { present: null, members: null, targets: null }, T = getProfile().tables;
   if (plain(stat)) {
-    const keys = Object.keys(stat), pres = map.present || PRESENT_KEYS.find(k => k in stat) || keys.find(k => /在场|present/i.test(k));
-    const others = keys.slice(2).filter(k => k !== pres && isRoster(stat[k]));
-    const pick = { present: pres, members: map.members || others[0], targets: map.targets || others.filter(k => k !== map.members)[map.members ? 0 : 1] };
+    const keys = Object.keys(stat), vp = getProfile().paths, worldKeys = new Set(Object.values(vp).filter(Boolean).map(p => p.split('.')[0]));
+    const pres = map.present || (T.present && T.present in stat ? T.present : VOC.exactKey('presentKey', stat)) || keys.find(k => VOC.hasWord('present', k));
+    const others = keys.filter(k => k !== pres && !worldKeys.has(k) && isPeople(stat[k])), named = g => (T[g] && T[g] !== pres && T[g] in stat && isRoster(stat[T[g]]) ? T[g] : '');
+    const members = map.members || named('members') || others[0];
+    const pick = { present: pres, members, targets: map.targets || named('targets') || others.filter(k => k !== members)[0] };
     for (const [g, k] of Object.entries(pick)) if (k && k in stat && isRoster(stat[k])) out[g] = { key: k, items: rows(stat[k], g === 'targets' ? map.stageField : null, map) };
   }
   // 设定兜底：没有成员表（连 stat 都没有）时整组用包的保底名册；有表时只补表里没有的人
@@ -299,12 +288,17 @@ export function rosters(stat, map = {}, fallback = []) {
   if (fb.length) out.members = { key: out.members ? out.members.key : '设定名册', items: [...(out.members ? out.members.items : []), ...fb] };
   return out;
 }
-/** 主角（第 2 个顶层键）的声望（0–100 的数字）；没有返回 null。path 可指定（变量映射） */
+/** 主角的声望（0–100 的数字）；没有返回 null。path 是变量映射里的路径；没有路径就在前 3 层里找名字带「声望」词的数字（浅的优先） */
 export function reputation(stat, path = '') {
   if (!plain(stat)) return null;
   let v;
   if (path) v = val(get(stat, path));
-  else { const p = val(stat[Object.keys(stat)[1]]); if (!plain(p)) return null; const k = Object.keys(p).find(k => REP.test(k)); v = k ? val(p[k]) : undefined; }
+  else {
+    const walk = (o, d) => { const hits = [], sub = [];
+      for (const [k, raw] of Object.entries(o)) { const x = val(raw); if (k.startsWith('$')) continue; if (plain(x)) { if (d < 3) sub.push(x); } else if (typeof x === 'number' && VOC.hasWord('reputation', k)) hits.push(x); }
+      return hits.length ? hits : sub.flatMap(x => walk(x, d + 1)); };
+    v = walk(stat, 1)[0];
+  }
   const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? +v : NaN;
   return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : null;
 }
@@ -320,37 +314,16 @@ export function findStageOrder(texts, values) {
   return null;
 }
 
-/** 卡自带脚本里的默认立绘表（`defaultPortraits = { "名字": "地址", … }`）：只收白名单里的 https 图片地址；找不到返回 {} */
-// 白名单（2026-09-29 放宽，原为「只收作者 CDN 的 /sfw/」——那让 7/16 人永远只显示名字首字，见 docs/card-omissions.md E6）：
-//   a) 作者 CDN：`cdn.jsdelivr.net/gh/Yehehua1311/…`，**必须**带 `/sfw/` 段——同仓库下还有受限分类的目录，不许顺着目录去取别的图；
-//   b) 作者放在另外两个图床的立绘：`i.postimg.cc` / `picgocloud.com`。它们的直链没有 `/sfw/` 这一层，
-//      改用「https + 图片扩展名 + 路径里不出现受限分类词 + 无 query/fragment」守同一条底线。
-// 语义没变：只加载作者在卡里声明的立绘，不复制图片、不存地址表；关掉「使用原作头像」开关则一张都不取。
-export const PORTRAIT_HOSTS = ['cdn.jsdelivr.net', 'i.postimg.cc', 'picgocloud.com'];
-const PORTRAIT_EXT = /\.(png|jpe?g|webp)$/i;
-const PORTRAIT_BAN = /(口交|性交|肛交|足交)/;   // 卡里受限分类的名字：出现在任何白名单域名的路径里都不收
-
-export function portraitOk(u) {
-  const s = String(u || '');
-  if (!/^https:\/\//i.test(s)) return false;
-  let url; try { url = new URL(s); } catch (e) { return false; }
-  if (url.search || url.hash) return false;
-  let path = url.pathname;
-  try { path = decodeURIComponent(path); } catch (e) { /* 解不开就按原文判断 */ }
-  if (!PORTRAIT_EXT.test(path)) return false;
-  if (PORTRAIT_BAN.test(path)) return false;
-  const host = url.hostname.toLowerCase();
-  if (host === 'cdn.jsdelivr.net') return /^\/gh\/yehehua1311\//i.test(path) && path.includes('/sfw/');
-  if (host === 'i.postimg.cc' || host === 'picgocloud.com' || host.endsWith('.picgocloud.com')) return true;
-  return false;
-}
-export const PORTRAIT_OK = portraitOk;   // 旧名保留（既有引用与测试用）
+/** 卡自带脚本里的默认立绘表（`defaultPortraits = { "名字": "地址", … }`）：只收包的 avatar 规则放行的 https 图片地址（core/profile.mjs portraitOk，K-R43）；
+ *  包没有 avatar.from 'card-script' 就一张不取；找不到返回 {} */
+// 只加载作者在卡里声明的立绘，不复制图片、不存地址表；关掉「使用原作头像」开关则一张都不取。
+export const portraitOk = u => avatarOk(getProfile().avatar, u);
 export function findPortraits(texts) {
-  const out = {};
+  const out = {}; if (!(getProfile().avatar.from || []).includes('card-script')) return out;
   for (const t of texts || []) {
     const i = String(t).search(/defaultPortraits\s*=\s*\{/); if (i < 0) continue;
     const blk = String(t).slice(i, String(t).indexOf('}', i) + 1);
-    for (const m of blk.matchAll(/["']([^"'\n]{1,40})["']\s*:\s*["']([^"'\s]+)["']/g)) if (PORTRAIT_OK(m[2])) out[clean(m[1])] = m[2];
+    for (const m of blk.matchAll(/["']([^"'\n]{1,40})["']\s*:\s*["']([^"'\s]+)["']/g)) if (portraitOk(m[2])) out[clean(m[1])] = m[2];
   }
   return out;
 }

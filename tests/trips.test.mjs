@@ -10,7 +10,7 @@ t('交通方式：最长关键词胜出；通用奇幻词默认不启用', () =>
 });
 t('原文里的 JSONPatch：取最后一次写入的地点（path / value 顺序都认）', () => {
   const s = '<UpdateVariable><JSONPatch>[{"op":"replace","path":"/世界/当前地点","value":"甲地"},{"value":"乙地","op":"replace","path":"/世界/当前地点"}]</JSONPatch></UpdateVariable>';
-  assert.equal(R.patchPlace(s), '乙地'); assert.equal(R.patchPlace('无'), ''); assert.equal(R.patchPlace('{"path":"/x/y","value":"丙"}', '/x/y'), '丙');
+  assert.equal(R.patchPlace(s, '/世界/当前地点'), '乙地'); assert.equal(R.patchPlace('无', '/世界/当前地点'), ''); assert.equal(R.patchPlace(s), '', '没有路径就没有地点'); assert.equal(R.patchPlace('{"path":"/x/y","value":"丙"}', '/x/y'), '丙');
 });
 t('玩家行程：相邻楼地点变化、「A至B」途中；只有最新一段算进行中', () => {
   const seq = [{ floor: 1, place: '甲地' }, { floor: 2, place: '甲地' }, { floor: 3, place: '乙地', text: '坐悬浮车' }, { floor: 4, place: '乙地至丙地的路上' }];

@@ -94,7 +94,7 @@ test('timeline approx 兜底：stat 与 JSONPatch 都拿不到时才退关键帧
   assert.equal(st.here, '关键帧书房'); assert.equal(st.approx, true);
   const better = TL.floorState(7, { ...deps, getRaw: () => '', patchPlace: () => '正文补的地点' });
   assert.equal(better.here, '正文补的地点'); assert.equal(better.approx, undefined);   // Patch 够用就不落关键帧
-  const exact = TL.floorState(7, { ...deps, perFloorStat: () => ({}), mvuGet: (s, p) => (p === '/世界/当前地点' ? 'MVU地点' : '') });
+  const exact = TL.floorState(7, { ...deps, varMap: { location: '世界.当前地点' }, perFloorStat: () => ({}), mvuGet: (s, p) => (p === '/世界/当前地点' ? 'MVU地点' : '') });
   assert.equal(exact.here, 'MVU地点'); assert.equal(exact.approx, undefined);
   assert.equal(TL.floorState(7, { perFloorStat: () => null, getRaw: () => '', varMap: {} }).here, '');   // 没有关键帧依赖 = 老行为
 });

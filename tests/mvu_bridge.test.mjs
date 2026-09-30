@@ -9,6 +9,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createLife } from '../map/tavern/host-lifecycle.mjs';
 import { MVUBridge } from '../map/tavern/mvu-bridge.mjs';
+import { useEden } from './helpers/eden-profile.mjs';
+useEden();   // the first pack's variable and roster declarations (its overlay blocks); the engine itself names no card
 
 // ---- 桩环境 ----
 const st = loc => ({ stat_data: { 世界: { 当前地点: loc } } });
@@ -230,4 +232,20 @@ test('宿主隔离契约：字符串与注释之外，map/tavern 运行时代码
     if (f === 'mvu-bridge.mjs') assert.ok(hits.length >= 2, '桥自己必须真的在碰这些全局（否则契约空转）');
     else assert.deepEqual(hits, [], `${f} 直连了 Mvu / SillyTavern 全局（应经 mvu-bridge.mjs）`);
   }
+});
+
+test('包的变量声明：桥取清单 + 叠加层，到了换默认并通知宿主；取不到就一直按字段名自动找', async () => {
+  const { setProfile, getProfile } = await import('../map/tavern/pack-profile.mjs'), { edenInputs } = await import('./helpers/eden-inputs.mjs'), I = edenInputs();
+  const files = { 'packs/eden/manifest.json': I.manifest, 'packs/eden/overlay.v2.json': I.overlay }, asked = [];
+  const done = stubEnv({ chat: [msg('书房', { variables: [{ stat_data: { 世界: { 当前地点: '书房' } } }] })] });
+  try {
+    setProfile(null);
+    let hit = 0; const B = new MVUBridge({ life: createLife(), storage: LS, fetchJSON: async rel => { asked.push(rel); return files[rel] || null; }, onProfile: () => { hit++; } });
+    assert.equal(getProfile().paths.location, '', 'until the declarations arrive nothing is named');
+    await new Promise(r => setTimeout(r, 30));
+    assert.deepEqual(asked.sort(), ['packs/eden/manifest.json', 'packs/eden/overlay.v2.json']); assert.equal(hit, 1);
+    assert.equal(getProfile().paths.location, '世界.当前地点'); assert.equal(B.here(), '书房'); assert.equal(B.varMap.location, '世界.当前地点');
+    setProfile(null); const L = new MVUBridge({ life: createLife(), storage: LS, fetchJSON: async () => null, onProfile: () => { hit++; } });
+    await new Promise(r => setTimeout(r, 30)); assert.equal(hit, 1, 'nothing fetched, nothing announced'); assert.equal(L.here(), '书房', 'the location is found by its field name');
+  } finally { done(); useEden(); }
 });

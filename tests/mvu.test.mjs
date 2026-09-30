@@ -2,7 +2,10 @@
 import assert from 'node:assert/strict';
 import * as V from '../map/tavern/mvu.mjs';
 import * as C from '../map/tavern/characters.mjs';
+import * as AD from '../map/tavern/adapter.mjs';
 import { collect } from '../map/tavern/events.mjs';
+import { useEden } from './helpers/eden-profile.mjs';
+useEden();   // the first pack's variable and roster declarations (its overlay blocks); the engine itself names no card
 
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
 
@@ -24,7 +27,7 @@ t('人物栏：MVU 位置 > 标签 > 推断；来源标注', () => {
   assert.deepEqual(m, { 甲: ['中层·霓虹街', 'mvu'], 乙: ['下层·7号井', 'tag'], 丙: ['书房', 'infer'] });
 });
 t('世界时间、标题栏写法、夜间判断', () => {
-  const w = V.worldTime({ 世界: { 当前日期: '新历2088年01月01日', 当前时刻: '08:00', 当日时段: '日间' } });
+  const S = { 世界: { 当前日期: '新历2088年01月01日', 当前时刻: '08:00', 当日时段: '日间' } }, w = V.worldTime(S, AD.detect(S));
   assert.deepEqual(V.clockLabel(w), { short: '1月1日 08:00', full: '新历2088年01月01日 08:00 日间' }); assert.equal(V.clockLabel(w, 'en').short, 'Jan 1 08:00');
   assert.equal(V.isNight(w), false);
   assert.equal(V.isNight({ period: '就寝', time: '' }), true);
@@ -41,11 +44,11 @@ t('事件按剧情内时间排序（有时间时）', () => {
   assert.deepEqual(ev.map(e => e.cat), ['火灾', '停电']);
 });
 t('着装：跳过待初始化；一行截断', () => {
-  assert.equal(V.outfit({ 主角: { 着装: { 衣服: '待初始化', 裤子: '', 鞋子: '待初始化' } } }), null);
-  const o = V.outfit({ 主角: { 着装: { 衣服: '白衬衫', 裤子: '深色长裤', 鞋子: '皮鞋' } } });
+  assert.equal(V.outfit({ 主角: { 着装: { 衣服: '待初始化', 裤子: '', 鞋子: '待初始化' } } }, '主角.着装'), null);
+  const o = V.outfit({ 主角: { 着装: { 衣服: '白衬衫', 裤子: '深色长裤', 鞋子: '皮鞋' } } }, '主角.着装');
   assert.equal(V.outfitText(o), '白衬衫 / 深色长裤 / 皮鞋');
   assert.equal([...V.outfitText({ 衣服: 'x'.repeat(80) }, 20)].length, 20);
-  assert.equal(V.outfit({}), null); assert.equal(V.outfitText(null), '');
+  assert.equal(V.outfit({}, '主角.着装'), null); assert.equal(V.outfit({ 主角: { 着装: { 衣服: 'a' } } }), null, 'no path, no outfit'); assert.equal(V.outfitText(null), '');
 });
 t('自定义：设置、清除、显示名、叫法表、长度上限', () => {
   let c = V.setCustom({}, '书房', { name: '星图室', note: '看星图', kind: 'room' });

@@ -4,6 +4,7 @@ import { normalise, cpLen, cut } from './lexicon.mjs';
 import { buildTree } from './nodes.mjs';
 import { LIFE, KERNEL_BLOCKS } from './pack-v2-rows.mjs';
 import * as S from './pack-v2-spec.mjs';
+import { DEFAULT_PERIODS as PERIODS0 } from './periods.mjs';
 export { typeOf, fieldValue, entityRows, stashRows } from './pack-v2-rows.mjs';
 
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -171,8 +172,7 @@ export async function resolveBlocks(manifest, fetchJSON) {
   return { manifest: out, problems };
 }
 
-export const DEFAULT_PERIODS = Object.freeze([
-  { id: 'dawn', start: '05:00' }, { id: 'day', start: '07:00' }, { id: 'dusk', start: '17:00' }, { id: 'night', start: '20:00', dark: true }]);
+export { DEFAULT_PERIODS } from './periods.mjs';
 export const DEFAULT_LEVELS = Object.freeze([
   { value: 0, label: 'over', i18n: { zh: { label: '结束' } } }, { value: 1, label: 'minor', i18n: { zh: { label: '轻微' } } },
   { value: 2, label: 'serious', i18n: { zh: { label: '严重' } } }, { value: 3, label: 'severe', i18n: { zh: { label: '危急' } } }]);
@@ -181,7 +181,7 @@ export const DEFAULT_LEVELS = Object.freeze([
 export function withDefaults(pack) {
   const p = clone(pack), ev = isObj(p.events) ? p.events : {};
   p.vars = { ...(isObj(p.vars) ? p.vars : {}) };
-  if (!Array.isArray(p.vars.periods) || !p.vars.periods.length) p.vars.periods = clone(DEFAULT_PERIODS);
+  if (!Array.isArray(p.vars.periods) || !p.vars.periods.length) p.vars.periods = clone(PERIODS0);
   const groups = Array.isArray(ev.groups) && ev.groups.length ? ev.groups : [];
   const types = isObj(ev.types) ? ev.types : {};
   p.events = { groups: [{ id: 'other' }], types: { other: { group: 'other' } }, fx_presets: {}, levels: clone(DEFAULT_LEVELS), closed: [], examples: [], life: { ...LIFE }, ...ev };

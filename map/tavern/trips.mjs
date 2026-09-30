@@ -23,7 +23,8 @@ export function modeOf(text, kw = DEFAULT_KEYWORDS) {
   return best;
 }
 /** 消息原文里 MVU 的 JSONPatch：取「当前地点」的最后一次写入（path 可换，默认 /世界/当前地点）；没有返回 '' */
-export function patchPlace(text, path = '/世界/当前地点') {
+export function patchPlace(text, path = '') {
+  if (!path) return '';
   const s = String(text || ''), esc = path.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&'); let last = '';
   const re = new RegExp(`\\{[^{}]*"path"\\s*:\\s*"${esc}"[^{}]*\\}`, 'g');
   for (const m of s.matchAll(re)) { const v = m[0].match(/"value"\s*:\s*"((?:[^"\\]|\\.)*)"/); if (v) try { last = JSON.parse(`"${v[1]}"`); } catch (e) { last = v[1]; } }

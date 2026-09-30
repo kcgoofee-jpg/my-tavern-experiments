@@ -163,7 +163,7 @@ export class ContextPipeline {
    *  每楼的解析结果按 (楼层, 原文) 缓存在 msgCache 条目上（key 变了才重算）。返回 { changed, trips }。 */
   computeTrips(msgs, d) {
     const { TRm, CHM, perFloorStat, mvuGet, varMap, keywords, fantasy, parseTransit } = d;
-    const lp = '/' + String(varMap.location || '世界.当前地点').split('.').join('/'), recentMsgs = msgs.slice(-30), seq = [], tags = [];
+    const loc = String(varMap.location || ''), lp = loc ? '/' + loc.split('.').join('/') : '', recentMsgs = msgs.slice(-30), seq = [], tags = [];
     for (const m of recentMsgs) {
       const e = this.msgCache.get(m.floor), key = lp + '|' + varMap.time + '|' + !!CHM;   // 按映射与人物栏开关缓存
       if (!e?.trip || e.tripKey !== key || e.m !== m) {

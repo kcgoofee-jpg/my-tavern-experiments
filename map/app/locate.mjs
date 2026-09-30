@@ -85,7 +85,7 @@ export function frameRect(r, cs, asp) {
   return { x, y, width: w, height: h };
 }
 function fitIn(r, immediately) { const f = frameRect(r, viewer.viewport.getContainerSize(), aspect); viewer.viewport.fitBounds(new OpenSeadragon.Rect(f.x, f.y, f.width, f.height), immediately); }
-// 当前地点高亮（由 MVU 变量「世界.当前地点」驱动）；世界图上，庄园与天城内部的地点都归到「天城」
+// 当前地点高亮（由 MVU 的当前地点变量驱动）；世界图上，庄园与天城内部的地点都归到「天城」
 export const ALIAS = { '天城': ['天城', '伊甸', '庄园', '书房', '主卧', '大厅', '餐厅', '会客厅', '客房', '寝', '浴室', '后庭', '前庭', '上层', '中层', '下层', '钢铁霓虹', '地基', '公寓', '银冠堡'] };
 export function markHere(v) {
   v = (v || '').replace('{{user}}', '');

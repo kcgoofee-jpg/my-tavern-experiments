@@ -3,18 +3,18 @@
 //   <span style="display:none">⌖人物 名字 @ 层·地点</span>          （紧凑写法；「@」全角「＠」也认）
 //   <span style="display:none" data-tcmap="人物=名字;地点=层·地点"></span>
 // MVU：stat_data 里任何「人物名 → 对象」的表，对象里有 位置 / 当前位置 / 当前地点 / 所在地 / 地点 / location 字段 → 该人物在那里；
-//      名字叫「在场人物 / 在场角色 / 当前在场」这类表（没有位置字段）→ 这些人和玩家在同一处（世界.当前地点的第一处）。
+//      名字叫「在场人物 / 在场角色 / 当前在场」这类表（没有位置字段）→ 这些人和玩家在同一处（当前地点变量的第一处）。
 // v0.9.3：在场表每一项的「位置」字段（附加世界书教模型维护，格式「层·地点」）优先；表项是字符串也认（mvu.mjs presentList）。
 //   来源 src：'mvu'（MVU 位置）→ 'tag'（聊天标签）→ 'infer'（在场但没写位置：按同处显示）。
 // 只做技术兼容：不按内容过滤任何名字或地点，原样显示。
 import { presentList } from './mvu.mjs';
+import { getProfile } from './pack-profile.mjs';
+import * as VOC from '../core/vocab.mjs';
 import { AVATARS_PER_CHAT, AVATAR_TOTAL, measure, bytesOf, freeUp, safeSet, touch } from './budget.mjs';
 export { warnText } from './budget.mjs';
 export const MAX_TAGS_PER_FLOOR = 8;
 export const PRESENT_TAG_FRESH = 20, INJECT_FRESH = 30, PRESENT_STALE = 30;   // 在场的人：标签超过 20 楼就改按「和你同处」；注入只放 30 楼内的位置（v0.9.3 审阅）；在场表超过 30 楼没变就不再按同处（2026-09-28 待查 2）
-const LOC_KEYS = ['当前位置', '当前地点', '所在地', '所在位置', '位置', '地点', 'location', 'place'];
-const PEOPLE = /人物|角色|人员|同伴|成员|NPC|character|people|npc/i, PERSONISH = ['身份', '姓名', '年龄', '性别', '职业', '外貌', '内心想法', '好感'];
-const PRESENT = /^(在场人物|在场角色|当前在场|在场|同行人物|present)$/i;
+const personTable = (tk, o) => VOC.hasWord('people', tk) || Object.keys(o).some(k => VOC.exactRank('person', k) >= 0);   // 只认人物表（表名说是人，或行里有只有人才有的字段）；物品 / 势力表带「位置」也不当人物
 const decode = s => s.replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (m, k) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", nbsp: ' ' })[k]);
 const clean = s => String(s ?? '').replace(/\s+/g, ' ').trim();
 // 世界书里的示范原文：模型原样复述时不算
@@ -50,21 +50,20 @@ export function canonName(name, known = []) {
 }
 /** 消息原文 → 解析标签前先去掉 MVU 的变量更新块（包括没有闭合的，开局九有一处） */
 export const stripUpdate = s => String(s || '').replace(/<UpdateVariable>[\s\S]*?(?:<\/UpdateVariable>|$)/gi, ' ');
-/** MVU stat_data → [{name, place}]；here = 玩家当前地点（在场表的人放在这里） */
+/** MVU stat_data → [{name, place}]；here = 玩家当前地点（在场表的人放在这里）。放变量路径的顶层表（世界、主角……：包的 vars）不当人物表 */
 export function mvuChars(stat, here, presentPath = '') {
   const out = [], first = String(here || '').split(/\s*[\/／|｜]\s*/)[0].trim();
   if (!stat || typeof stat !== 'object') return out;
-  const pres = presentList(stat, presentPath), done = new Set();
+  const pres = presentList(stat, presentPath), done = new Set(), skip = new Set(Object.values(getProfile().paths).filter(Boolean).map(p => p.split('.')[0]));
   for (const p of pres || []) { done.add(p.name); if (p.place) out.push({ name: p.name, place: p.place }); else if (first) out.push({ name: p.name, place: first, present: true }); }
   for (const [tk, tbl] of Object.entries(stat)) {
-    if (!tbl || typeof tbl !== 'object' || Array.isArray(tbl) || tk === '世界') continue;
+    if (!tbl || typeof tbl !== 'object' || Array.isArray(tbl) || skip.has(tk)) continue;
     for (const [name, o] of Object.entries(tbl)) {
       if (done.has(clean(name))) continue;
       if (!o || typeof o !== 'object' || Array.isArray(o) || !clean(name) || [...name].length > 40) continue;
-      const k = LOC_KEYS.find(k => typeof o[k] === 'string' && o[k].trim());
-      const person = PEOPLE.test(tk) || PERSONISH.some(f => f in o);   // 只认人物表（或行里有人物字段）；物品 / 势力表带「位置」也不当人物
-      if (k && person) out.push({ name: clean(name), place: clean(o[k]) });
-      else if (PRESENT.test(tk) && first) out.push({ name: clean(name), place: first, present: true });
+      const k = VOC.exactKey('place', o, undefined, v => typeof v === 'string' && v.trim());
+      if (k && personTable(tk, o)) out.push({ name: clean(name), place: clean(o[k]) });
+      else if (VOC.exactRank('presentTable', tk) >= 0 && first) out.push({ name: clean(name), place: first, present: true });
     }
   }
   return out;

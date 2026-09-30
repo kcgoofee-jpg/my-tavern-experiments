@@ -2,6 +2,8 @@
 import assert from 'node:assert/strict';
 import * as A from '../map/tavern/adapter.mjs';
 import * as V from '../map/tavern/mvu.mjs';
+import { useEden } from './helpers/eden-profile.mjs';
+useEden();   // the first pack's variable and roster declarations (its overlay blocks); the engine itself names no card
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
 const CARD = { 世界: { 当前地点: '甲地', 当前时刻: '08:00', 当日时段: '日间', 当前日期: 'x' }, 主角: { 着装: { 衣服: 'a' } } };
 const OTHER = { world: { location: 'Town', time: '09:30', date: 'd1' }, hero: { outfit: 'coat', reputation: 40 }, present: { Ann: { role: 'guide' } } };

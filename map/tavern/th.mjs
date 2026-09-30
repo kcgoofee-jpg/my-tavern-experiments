@@ -71,7 +71,7 @@ export function hostVersions(fn) {
 }
 
 // ---------------- B7 酒馆正则只读自检 ----------------
-const SAMPLE_VARS = '<UpdateVariable>\n_.set("世界.当前地点", "A");\n</UpdateVariable>', SAMPLE_TAG = '<span style="display:none">⌖人物 某人 @ 中层·某处</span>';
+const SAMPLE_VARS = '<UpdateVariable>\n_.set("a.b", "A");\n</UpdateVariable>', SAMPLE_TAG = '<span style="display:none">⌖人物 某人 @ 中层·某处</span>';
 /** 角色卡正则列表 → { n, hidesVars, hidesTags }：有没有启用的「显示时」正则把变量更新块 / 地图标签藏起来（只读，不写） */
 export function regexFacts(list) {
   if (!Array.isArray(list)) return null;

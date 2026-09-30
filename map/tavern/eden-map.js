@@ -1,7 +1,7 @@
 // 伊甸庄园 · 世界地图悬浮按钮（酒馆助手脚本）
 // 卡内脚本只需一行：import 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@<版本>/map/tavern/eden-map.js'
 // 注入酒馆页面：右下角悬浮按钮 + 地图面板；面板内用 srcdoc 加载 viewer.html（<base> 指回仓库，相对资源照常加载）。
-// 当前地点取 MVU 变量「世界.当前地点」，变量更新 / 切换聊天时推送给地图高亮。
+// 当前地点取 MVU 变量（路径由设定包的 vars 给出，缺了按字段名自动找），变量更新 / 切换聊天时推送给地图高亮。
 // 天城事态：从最近 80 楼原文解析事件标签（events.mjs，两种写法都认），推给地图落点；角色所在层的活跃事件压成一句注入给模型。
 // v0.9.3 MVU 联动（mvu.mjs）：只读 stat_data（世界时间、主角着装、在场人物）；自定义名称与用途存在聊天变量顶层键 eden_map（不进 stat_data，见 docs/content-compat.md）。
 // C2 第 4 步（2026-09-28）拆成：入口（本文件：面板 / 查看器状态机、消息、MVU / 事态 / 自定义 / 自检 / 更新）+ host-routes.mjs（线路）
@@ -654,7 +654,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     floorNow: () => floorNow, lastRaw: () => (floorNow >= 0 ? CTX.msgCache.get(floorNow)?.m?.raw ?? null : null),
     onMvuLoad: m => { MV = m; push(); loadCustom(); },
     onTableUpdate: () => { pushSoon(); recomputeSoon(); },
-    onRoster: () => sendChars(),
+    onRoster: () => sendChars(), fetchJSON: rel => cdnFetch(BASE + rel).then(r => r.ok ? r.json() : null).catch(() => null), onProfile: () => { sendVarMap(); push(); recomputeSoon(); sendChars(); },   // 包的变量与名册声明（清单 vars + 叠加层，K-R69）由桥取；到之前按字段名自动找
   });
   // P3-B 名册装配（core/roster.mjs）：mvu / table-db / fallback 三个来源桥里已注册；chat / baibai 只有宿主有——
   // 聊天 ⌖人物 标签在流水线的消息窗口里、柏宝绘外貌库按需加载。临时名册拼装（known 名单 flatMap）由装配系统统一输出。
@@ -869,7 +869,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     getRaw: x => { try { return getChatMessages(x + '-' + x)?.[0]?.message || ''; } catch (e) { return ''; } },
     perFloorStat: x => BR.perFloorStat(x), mvuGet: (s, p) => BR.mvuGet(s, p), varMap: BR.varMap,
     parseChars: CHM?.parseChars, mvuChars: CHM?.mvuChars, patchPlace: TRm?.patchPlace,
-    lp: '/' + String(BR.varMap.location || '世界.当前地点').split('.').join('/'),
+    lp: BR.varMap.location ? '/' + String(BR.varMap.location).split('.').join('/') : '',
     keyAt: f => (kfView && KFm ? KFm.stateAt(kfView, f) : null),   // W3 兜底层：MVU 与 JSONPatch 都没有时退关键帧（结果带 approx）
   });
   function tlState(f) {
@@ -1103,8 +1103,8 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     async setInv(name, patch = {}) { if (!INVm) return false; const r = INVm.put(inv, { name, ...patch }); if (!r.changed) return false; inv = r.inv; changedInv(); return true; },
     async removeInv(key) { if (!INVm) return false; const r = INVm.remove(inv, key); if (!r.changed) return false; inv = r.inv; changedInv(); return true; },
     getInv: async () => (INVm ? INVm.rows(inv) : []),
-    getOutfit: async () => ({ items: outfitNow ? { ...outfitNow } : null, text: MV ? MV.outfitText(outfitNow) : '' }),   // 主角着装（只读 MVU 主角.着装）
-    getClock: async () => (clock ? { ...clock } : null),   // 世界时间（只读 MVU 世界.当前日期 / 当前时刻 / 当日时段）
+    getOutfit: async () => ({ items: outfitNow ? { ...outfitNow } : null, text: MV ? MV.outfitText(outfitNow) : '' }),   // 主角着装（只读 MVU 的着装变量）
+    getClock: async () => (clock ? { ...clock } : null),   // 世界时间（只读 MVU 的日期 / 时刻 / 时段变量）
     // 人物头像（v0.9.2）：只存本机 localStorage（按聊天，拿不到聊天 id 时全局），不上传、不进地址；src = data:image/… 或 http(s) 图片地址
     // 面板看得见时交给地图（它自己提示）；面板关着 / 后台预加载 / 休眠时在这里写，满了用宿主提示条告诉用户（地图里的提示条此时看不见，A-13），再让地图重读
     async setAvatar(name, src) { const v = inner(), setS = v ? fnGuard('EdenMap.setAvatar', v.setAvatar, 2) : null; if (setS && !panel.hidden && !ghost) return setS(name, src); const C = await chx(), st = store(); if (!st) return false;
@@ -1136,7 +1136,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   window.parent.EdenMap = exposed;
 
   // ---------------- 启动自检（E6；判定逻辑在 selfcheck.mjs，node 单测） ----------------
-  // 每次页面加载空闲时跑一次：酒馆助手接口、MVU「世界.当前地点」、重复的地图脚本、线路（复用测速结果）、世界书附加条目（查得到才查）、脚本与地图版本。
+  // 每次页面加载空闲时跑一次：酒馆助手接口、MVU 的当前地点变量、重复的地图脚本、线路（复用测速结果）、世界书附加条目（查得到才查）、脚本与地图版本。
   // 结果：地图设置里的「自检」一栏（✓ / ⚠，中 / EN）；有 ⚠ 时弹一次小提示（同一组警告只提示一次，不按聊天重复）；EdenMap.selfcheck() 取结果。
   // 正式版（钉了 map-v 标签）另外每天最多查一次 jsDelivr 数据接口的最新标签；有新版本时自检里给「本次切换」按钮，设置「自动更新到新正式版」默认关。
   // 除了这一个查询，不发任何请求；不上传、不统计。
@@ -1161,9 +1161,9 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
       try { await Promise.race([BR.whenMvu(), new Promise(r => setTimeout(r, 3000))]); } catch (e) {}
       let mvu = null;
       try { if (BR.mvuUsable()) { const st = BR.rawLatestStat();
-        refreshVarMap(); const hp = BR.varMap.location || SC.HERE_PATH;
+        refreshVarMap(); const hp = BR.varMap.location || '';
         mvu = { stat: !!st && typeof st === 'object', path: hp, here: !!st && SC.getPath(st, hp) !== undefined, candidates: st ? SC.findPaths(st).filter(p => p !== hp) : [],
-          fields: st && MV ? { present: !!MV.presentList(st, BR.varMap.present), clock: !!MV.worldTime(st, BR.varMap).time, outfit: MV.get(st, BR.varMap.outfit || '主角.着装') !== undefined } : null }; } } catch (e) { mvu = { stat: false }; }
+          fields: st && MV ? { present: !!MV.presentList(st, BR.varMap.present), clock: !!MV.worldTime(st, BR.varMap).time, outfit: !!BR.varMap.outfit && MV.get(st, BR.varMap.outfit) !== undefined } : null }; } } catch (e) { mvu = { stat: false }; }
       const varmode = BR.varmode(BR.mvuUsable());
       const loads = [...new Set(Object.entries(window.parent.__edenMapIds || {}).filter(([k, u]) => k !== OWNER && u !== switchedFrom).map(([, u]) => u))];   // A3：按脚本身份，不按地址
       const ln = { swappable, name: (LINES.find(l => l.key === line) || {}).name || '',

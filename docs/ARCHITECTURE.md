@@ -86,7 +86,9 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `logbuf.mjs` | Console ring buffer for feedback reports, split into sessions; installs its hooks on first evaluation. |
 | `nodes.mjs` | The node tree (kernel contract v2): build, read, `vocabulary`, `locate`, views, positions, scope, levels. |
 | `pack.mjs` | Pack interface: manifest validation and resolution, pack id, storage prefix and chat-variable key derivation, registry rebasing. |
+| `periods.mjs` | Periods of the day (K-R39): the band a world clock is in, by period words, else by the hour; default bands. |
 | `pickup.mjs` | Objective pickup probe: a written physical acquisition action becomes a single ledger fact. |
+| `profile.mjs` | The run-time profile of a pack's variables and roster (K-R37–K-R44, K-R69): variable paths, period bands, tables, roster slots, portrait rules (`portraitOk`); the kernel profile of a pack that names nothing. |
 | `project.mjs` | Oblique projection (JS twin of `blender/project.py`, golden-file parity): world point to frame coordinates, label rule, anchors. |
 | `protocol.mjs` | Message protocol: `SCHEMA` of every host / viewer / sub-page message, envelope, `check` / `accept`, `createBus`. |
 | `quests.mjs` | Dynamic clue nodes: aggregates events by place with per-floor decay into deterministic "something is happening here" nodes. |
@@ -103,6 +105,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `traffic.mjs` | Traffic and light-stream math: normalized route points to a frame of light positions, deterministic. |
 | `transit.mjs` | A journey written as a place ("from A to B", "A → B"): its ends and the vehicle; the pure patterns the card script uses. |
 | `vision.mjs` | Vision-cone geometry: guard fields of view clipped by wall segments, patrol rings, point-visibility tests. |
+| `vocab.mjs` | The kernel's discovery vocabulary (K-R38, K-R42): per-language field-name words for variables, person rows and roster slots; no card names. |
 | `walk.mjs` | Deterministic clock tick and an N-dimensional interpolating walker (no teleporting; reduced motion snaps). |
 | `weather.mjs` | Weather core: preset table, weather from story and clock, particle field and lightning timing. |
 
@@ -166,7 +169,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | Module | Role |
 |---|---|
 | `action.mjs` | Map-driven actions: a clicked point of interest becomes one sentence (off / compose / silent system injection). |
-| `adapter.mjs` | Variable mapping: which `stat_data` path holds location, time, date, presence; auto-discovery by field name. |
+| `adapter.mjs` | Variable mapping: which `stat_data` path holds location, time, date, presence; the pack's own paths first (`defaults`), then auto-discovery by field name. |
 | `baibai.mjs` | Optional bridge to the external image-generation extension; every function degrades quietly when absent. |
 | `budget.mjs` | Local storage budget: LRU per chat, avatar caps, quota-hit recovery; touches only the map's own keys. |
 | `characters.mjs` | Character bar: finds characters and their latest place from chat tags and MVU variables. |
@@ -186,12 +189,14 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `llm.mjs` | Private API key gateway: computes how to call a provider; does no network or storage itself. |
 | `modes.mjs` | Script ↔ card interaction modes: compact state injection, tag reconciliation, minimal checkpoint. |
 | `msgtext.mjs` | Message text pre-processing: strips reasoning blocks and variable-update blocks before parsing. |
+| `mvu.mjs` | Pure readers for MVU data and the map's own custom data (names, outfit, roster rows through the pack's slot fields, portraits, time and period bands). |
 | `mvu-bridge.mjs` | MVUBridge: the only module allowed to touch `Mvu` / `SillyTavern`; snapshots, `getHere` fallbacks, chat variables, roster reads. |
-| `mvu.mjs` | Pure readers for MVU data and the map's own custom data (names, outfit, roster, portraits, time). |
 | `navigator.mjs` | Background navigator gateway: scheduling, input assembly and response gating for a private-key planner. |
 | `ops.mjs` | Restricted operation DSL sandbox: extracts, validates and normalizes atomic operation blocks. |
+| `pack-profile.mjs` | The profile of the pack the script runs (`getProfile` / `setProfile`); the kernel profile until the pack's declarations arrive. |
 | `picker.mjs` | Pure helpers for the customization panel: grouped object list, search, fly-to targets. |
 | `preset.mjs` | Reads semi-structured status fields written by community presets as location / time / presence fallbacks. |
+| `profile-load.mjs` | Fetches a pack's manifest and overlay and builds its profile (`loadPackProfile`); the caller passes the fetcher. |
 | `routine.mjs` | Host-side entry that forwards to `core/routine.mjs`. |
 | `sanitize.mjs` | Community-preset text sanitizer: strips reasoning / status blocks by tag table (pure). |
 | `selfcheck.mjs` | Startup self-check verdicts from facts the host collected (pure). |

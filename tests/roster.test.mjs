@@ -3,6 +3,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as V from '../map/tavern/mvu.mjs';
+import { useEden } from './helpers/eden-profile.mjs';
+useEden();   // the first pack's variable and roster declarations (its overlay blocks); the engine itself names no card
 const FB = JSON.parse(readFileSync(new URL('../map/data/fallback_roster.json', import.meta.url), 'utf8')).members;
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
 const S = { 世界: { 当前地点: '甲地' }, 主角: { 声望: 62, 着装: {} }, 表一: { 甲: { 身份: '园丁', 等级: 'B' } }, 在场人物: { 乙: { 身份: '访客' } }, 表三: { 丙: { 身份: '商人', 进度: '第二步' }, 丁: { 身份: ['学者', '说明'], 进度: '第一步' } } };

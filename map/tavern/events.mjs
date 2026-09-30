@@ -135,7 +135,7 @@ export function tierOf(age, ended, life) {
   return age <= A.live ? 'live' : age <= A.after ? 'after' : 'fade';
 }
 
-/** 当前地点（MVU 世界.当前地点）→ 所在层；认不出返回 '' */
+/** 当前地点（MVU 的当前地点变量）→ 所在层；认不出返回 '' */
 export function layerOf(here) {
   if (!here) return '';
   const s = String(here);

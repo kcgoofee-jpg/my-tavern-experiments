@@ -54,7 +54,7 @@ test('sanitize：预设展示块剥掉、变量块 JSON 一字不动（行程 JS
   assert.doesNotMatch(raw, /meow_FM/, '摘要块是展示容器，剥掉');
   assert.match(raw, /<now_plot>/, '对话块**不能**剥：块内是叙事本体（剥掉等于删正文）');
   assert.match(raw, /<UpdateVariable>/);
-  assert.equal(patchPlace(raw), '中层·霓虹街', '被 Prism 标记与思考块裹着，JSONPatch 仍然精准锚定');
+  assert.equal(patchPlace(raw, '/世界/当前地点'), '中层·霓虹街', '被 Prism 标记与思考块裹着，JSONPatch 仍然精准锚定');
 });
 
 test('sanitize：htm1fenge 明确不剥（⌖ 事件标签就写在里面）', () => {
@@ -99,7 +99,7 @@ test('三层管线端到端（ContextPipeline）：text 无 CoT 回声（且指�
   const m = msgs[0];
   assert.equal(parseMarks(m.text).length, 0);
   assert.match(m.raw, /<UpdateVariable>/);
-  assert.equal(patchPlace(m.raw), '中层·霓虹街');
+  assert.equal(patchPlace(m.raw, '/世界/当前地点'), '中层·霓虹街');
   assert.equal(m.text, parseText(m.raw), 'text 恒等于 parseText(raw)（快照夹具口径）');
   const again = p.readMsgs([{ message_id: 7, message: MOCK }], 7);
   assert.equal(again[0].h, m.h, '同一楼同原文：指纹稳定（缓存命中）');

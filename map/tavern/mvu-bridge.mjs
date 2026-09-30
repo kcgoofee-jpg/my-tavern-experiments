@@ -14,12 +14,15 @@ import * as DB from './shujuku.mjs';
 import * as MDm from './modes.mjs';
 import * as SAN from './sanitize.mjs';
 import * as RS from '../core/roster.mjs';
+import { setProfile } from './pack-profile.mjs';
+import { profileFromV1 } from '../core/profile.mjs';
 
 export class MVUBridge {
   /** o = { life?, pack?, packId?, lang?(): 'zh'|'en', isGenerating?(): bool, storage?(): StorageLike,
    *      wins?(): object[]（表格数据库接口从哪些窗口找；默认宿主页 window.parent / top）,
    *      floorNow?(): number, lastRaw?(): string|null（最新助手楼原文，标签对账用）,
-   *      onMvuLoad?(mvuModule), onTableUpdate?(), onRoster?()（卡文本异步到、立绘 / 阶段序变了 → 宿主重发） } */
+   *      onMvuLoad?(mvuModule), onTableUpdate?(), onRoster?()（卡文本异步到、立绘 / 阶段序变了 → 宿主重发）,
+   *      fetchJSON?(rel)（取包的清单与叠加层，rel 相对 map/）, onProfile?()（包的变量声明到了 → 宿主重推） } */
   constructor(o = {}) {
     this.o = o;
     o.wins ||= () => { try { return [window.parent, window.top]; } catch (e) { return []; } };
@@ -28,7 +31,7 @@ export class MVUBridge {
     this.snapFloor = -1; this.snapTop = -1; this.snapState = 'ok';
     this.varEpoch = 0;   // VARIABLE_UPDATE_ENDED 代数（W11 结算时序守卫；markVarUpdate 推进）
     // 变量映射（adapter）：按角色卡存本机的用户映射 + 生效映射 + 变化签名（宿主 round 签名引用 varSig）
-    this.varCard = ''; this.varUser = {}; this.varMap = { location: '世界.当前地点' }; this.varSig = '';
+    this.varCard = ''; this.varUser = {}; this.varMap = {}; this.varSig = '';
     // here 的来源标注：'mvu' | 'tag'（正文标签兜底，交互方式 d）| 'preset'（社区预设状态栏兜底，Part 7）；hereFromDb = 地点读自表格数据库插件
     this.hereSrc = 'mvu'; this.hereFromDb = false;
     // 名册附属（每聊天读一次卡文本，A-3）：原作默认立绘表 + 阶段先后序
@@ -42,7 +45,10 @@ export class MVUBridge {
     this.roster.use('mvu', { rows: () => this.MV ? RS.mvuRows(this.rosters()) : [] });
     this.roster.use('table-db', { rows: () => RS.placeRows(this.dbCharacters(), 'table-db') });
     this.roster.use('fallback', { rows: () => RS.fallbackRows(this.fallbackMembers) });
-    if (o.pack) AD.useDefaults(o.pack.manifest?.vars);   // 设定包：默认映射路径按清单换（eden 不动）
+    if (o.pack) setProfile(profileFromV1({ manifest: o.pack.manifest }));   // 设定包：默认映射路径按清单的 vars；叠加层里的 vars / entities 随后由 useProfile 换入（内置的第一个包全靠叠加层）
+    // 包的变量与名册声明（core/profile.mjs：清单 vars + 叠加层 vars / entities，K-R69）：宿主给了取数函数就取；到了换默认并通知宿主重推（到之前一切按字段名自动找）
+    if (typeof o.fetchJSON === 'function') import(new URL('profile-load.mjs', import.meta.url).href).then(m => m.loadPackProfile({ fetchJSON: o.fetchJSON, packId: o.packId || 'eden', manifest: o.pack?.manifest }))
+      .then(p => { if (p && !o.life?.dead) { this.useProfile(p); o.onProfile?.(); } }).catch(e => { try { console.warn('[eden-map] 包的变量声明没读到：按字段名自动找', e); } catch (x) {} });
     // mvu.mjs 按需加载（纯函数集；失败只是没有 MVU 联动功能）。设定包的聊天变量键 / 自定义世界书名在这里配置。
     this.MV = null;
     this.mvuReady = import(new URL('mvu.mjs', import.meta.url).href).then(m => {
@@ -104,13 +110,16 @@ export class MVUBridge {
     const sig = JSON.stringify([this.varMap, this.varUser, !!st]); if (sig === this.varSig) return false;
     this.varSig = sig; return true;
   }
+  #ensure() { if (!this.varSig) this.refreshVarMap(); }   // 映射还没算过（别的调用先到）：先算，不读空映射
+  /** 包的变量与名册声明（core/profile.mjs）到了 / 换了：换默认，作废签名并重算（返回值同 refreshVarMap） */
+  useProfile(p) { setProfile(p); this.varSig = ''; return this.refreshVarMap(); }
   /** 设置「变量映射」里改过的：按角色卡写本机，作废签名并重算（返回值同 refreshVarMap） */
   setVarUser(u) { this.varUser = u && typeof u === 'object' ? u : {}; AD.writeUser(this.#store(), this.varCard, this.varUser); this.varSig = ''; return this.refreshVarMap(); }
   /** eden-map:varmap 的载荷（发设置「变量映射」用） */
   varmapView() { const st = this.mvuStat();
     return { card: this.varCard, paths: AD.paths(st), map: this.varMap, user: this.varUser, detected: AD.detect(st), fields: AD.rowFields?.(st) || [], mode: this.varmode() }; }
   /** 读法：'mvu' | 'mvu-partial' | 'tags'（adapter.mode；hasMvu 缺省 = Mvu 全局在） */
-  varmode(hasMvu = this.mvuPresent()) { return AD.mode(hasMvu, this.mvuStat(), this.varMap); }
+  varmode(hasMvu = this.mvuPresent()) { this.#ensure(); return AD.mode(hasMvu, this.mvuStat(), this.varMap); }
   /** adapter 读法取值（含 [值, 说明] 旧格式拆包） */
   getPath(st, p) { return AD.get(st, p); }
   /** mvu.mjs 读法取值（行程用，与 getPath 同语义） */
@@ -143,11 +152,12 @@ export class MVUBridge {
   // ---------------- 当前地点（四级兜底） ----------------
   /** MVU 映射 → 正文标签对账（交互方式 d）→ 表格数据库插件 → 社区预设状态栏（Part 7）。ctx 可覆盖 floorNow / lastRaw（缺省用构造参数）。 */
   here(ctx = {}) {
+    this.#ensure();
     const floorNow = ctx.floorNow ?? this.o.floorNow?.() ?? -1;
     const raw = ctx.lastRaw !== undefined ? ctx.lastRaw : this.o.lastRaw?.() ?? null;
     const { snapState, snapFloor, snapTop } = this;   // mvuStat() 更新的快照状态
     let v = '';
-    try { const st = this.mvuStat(); v = String(AD.get(st, this.varMap.location) ?? ''); } catch (e) {}
+    try { const st = this.mvuStat(), p = this.varMap.location; v = p ? String(AD.get(st, p) ?? '') : ''; } catch (e) {}
     this.hereFromDb = false; this.hereSrc = 'mvu';
     // 标签对账：MVU 为准；本楼 MVU 还没有快照（生成中 / 缺快照）或读不到地点时，改用最新一楼正文里明确写的地点标签（⌖地点 …），标「来自正文」
     if (MDm && (snapState !== 'ok' || !v.trim()) && snapTop >= 0 && floorNow >= snapTop) { const t = raw != null ? MDm.parseHereTag(raw) : null;
@@ -161,25 +171,26 @@ export class MVUBridge {
   /** 标题栏时钟：{ date, time, period, short, full, night, tod, pre }（缺字段是 ''；pre = 聊天只有开场白） */
   clock(st = this.mvuStat()) {
     const MV = this.MV; if (!MV) return null;
+    this.#ensure();
     const w = MV.worldTime(st, this.varMap), lb = MV.clockLabel(w, this.o.lang?.() === 'en' ? 'en' : 'zh');
     const c = { ...w, ...lb, night: MV.isNight(w), tod: MV.todPhase?.(w) || '' };   // tod：时段色调（v0.9.6）
     try { c.pre = (thFn('getLastMessageId')?.() ?? 1) <= 0; } catch (e) { c.pre = false; }   // fix3：还没选开局 → 卡的 MVU 初始值
     return c;
   }
   /** 主角着装：{ items, text }（items = null 表示没有） */
-  outfit(st = this.mvuStat()) { const MV = this.MV; const o = MV ? MV.outfit(st, this.varMap.outfit) : null; return { items: o, text: MV ? MV.outfitText(o) : '' }; }
+  outfit(st = this.mvuStat()) { this.#ensure(); const MV = this.MV; const o = MV ? MV.outfit(st, this.varMap.outfit) : null; return { items: o, text: MV ? MV.outfitText(o) : '' }; }
   /** 名册三张表（在场 / 成员 / 目标；含设定兜底名册），映射里的行内字段名全量生效 */
-  rosters(st = this.mvuStat()) { const m = this.varMap; return this.MV ? this.MV.rosters(st, { present: m.present, members: m.members, targets: m.targets, stageField: m.stageField, gradeField: m.gradeField, coreField: m.coreField, codeField: m.codeField, socialField: m.socialField, heightField: m.heightField, weightField: m.weightField, knownField: m.knownField, accessoryField: m.accessoryField, tierField: m.tierField }, this.fallbackMembers) : { present: null, members: null, targets: null }; }
+  rosters(st = this.mvuStat()) { this.#ensure(); const m = this.varMap; return this.MV ? this.MV.rosters(st, { present: m.present, members: m.members, targets: m.targets, stageField: m.stageField, gradeField: m.gradeField, coreField: m.coreField, codeField: m.codeField, socialField: m.socialField, heightField: m.heightField, weightField: m.weightField, knownField: m.knownField, accessoryField: m.accessoryField, tierField: m.tierField }, this.fallbackMembers) : { present: null, members: null, targets: null }; }
   /** 包的保底名册（manifest.data.roster，宿主异步取到后注入）；有货返回 true（宿主据此重发名册） */
   setFallbackMembers(rows) { this.fallbackMembers = Array.isArray(rows) ? rows.filter(r => r && typeof r === 'object') : []; return this.fallbackMembers.length > 0; }
-  reputation(st = this.mvuStat()) { return this.MV ? this.MV.reputation(st, this.varMap.reputation) : null; }
+  reputation(st = this.mvuStat()) { this.#ensure(); return this.MV ? this.MV.reputation(st, this.varMap.reputation) : null; }
   // 名册装配系统（P3-B 契约，core/roster.mjs）：统一 rows() 行、已知名单（人物栏短名对齐用）、标准化摘要。
   // chat / baibai 两个来源由宿主经 this.roster.use() 登记（聊天原文在流水线、柏宝绘接口在扩展）。
   rosterRows(ctx) { return this.roster.rows(ctx); }
   rosterNames(ctx) { return this.roster.names(ctx); }
   rosterSummary(ctx) { return this.roster.describe(ctx); }
-  presentNames(st) { return (this.MV?.presentList(st, this.varMap.present) || []).map(x => x.name); }
-  worldTimeOf(st) { return this.MV ? this.MV.worldTime(st, this.varMap) : null; }
+  presentNames(st) { this.#ensure(); return (this.MV?.presentList(st, this.varMap.present) || []).map(x => x.name); }
+  worldTimeOf(st) { this.#ensure(); return this.MV ? this.MV.worldTime(st, this.varMap) : null; }
   // 原作立绘表与阶段序（每聊天读一次卡文本；卡文本可能异步到 → onRoster 通知宿主重发）
   #portChat = null; #stageChat = null; #stageMiss = '';
   portraitsFor() { if (this.#portChat === this.chatId()) return; this.#portChat = this.chatId();

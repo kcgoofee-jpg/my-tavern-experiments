@@ -6,7 +6,7 @@
 // 这里只回答「某一楼的地图上该画什么」——楼层 → here / time / chars。
 const str = (v, n = 120) => { try { return v == null ? '' : String(v).trim().slice(0, n); } catch (e) { return ''; } };
 const safe = (fn, d = null) => { try { const v = fn?.(); return v === undefined ? d : v; } catch (e) { return d; } };
-/** 变量路径 → JSON 指针：点位（世界.当前地点）与 eject指针（/世界/当前地点）两种写法都收 */
+/** 变量路径 → JSON 指针：点位（a.b.c）与 JSON 指针（/a/b/c）两种写法都收 */
 const pt = p => { const s = str(p, 200); return !s ? '' : (s.startsWith('/') ? s : '/' + s.split('.').join('/')); };
 
 /** 楼层号：只认 ≥ 0 的整数，其它一律 -1（拖到开局之前就是没有得看） */
@@ -26,7 +26,7 @@ export function floorOf(v) {
 export function floorState(f, deps = {}) {
   const floor = floorOf(f); if (floor < 0) return null;
   const d = deps && typeof deps === 'object' ? deps : {};
-  const lpLoc = pt(d.lp) || pt(d.varMap?.location) || '/世界/当前地点';
+  const lpLoc = pt(d.lp) || pt(d.varMap?.location);
   const lpTime = pt(d.varMap?.time);
   const stat = safe(() => d.perFloorStat?.(floor), null) || null;
   const raw = str(safe(() => d.getRaw?.(floor), '') || '', 200000);

@@ -12,7 +12,7 @@ export function cardHas(texts, paths = {}) {
   const refs = p => { if (!p) return false; const segs = String(p).split('.'), last = segs[segs.length - 1];
     return all.includes('stat_data.' + p) || all.includes('stat_data/' + segs.join('/')) || new RegExp(`(get_(?:message|chat)_variable|getvar)[^\\n]{0,40}${last.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(all); };
   const whole = /\{\{\s*get_(?:message|chat)_variable::stat_data\s*\}\}|getvar\(\s*['"]stat_data['"]\s*\)/.test(all);   // 整个 stat_data 都进了提示词
-  return { here: whole || refs(paths.location || '世界.当前地点'), time: whole || refs(paths.time || '世界.当前时刻'), present: whole || refs(paths.present), trips: false };
+  return { here: whole || refs(paths.location), time: whole || refs(paths.time), present: whole || refs(paths.present), trips: false };
 }
 /**
  * 一行状态：[地图状态] 地点：…；在场：…；时间：…；行程：…
