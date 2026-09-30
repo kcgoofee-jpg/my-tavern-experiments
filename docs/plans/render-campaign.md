@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T15:47:43Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T16:05:06Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 23 | 0 | 25 | 0 | 0 | 0 | 48 |
+| standard | 23 | 0 | 24 | 1 | 0 | 0 | 48 |
 | hero | 3 | 0 | 11 | 1 | 6 | 0 | 21 |
 
 Below-gate (user spot-check): none
@@ -38,7 +38,7 @@ Below-gate (user spot-check): none
 | 21 | `lm:elite_club` | landmark | done | - |  |  | New model: elite club |
 | 22 | `lm:hunting_camp` | landmark | done | - |  |  | New model: hunting camp |
 | 23 | `scene:highland-ext` | scene | done | - |  |  | Extend the highland scene: cliff edge and trail down |
-| 24 | `scene:fief1` | scene | open | new |  |  | Fief 1 scene: castle, fields, order, village |
+| 24 | `scene:fief1` | scene | waiting | ship |  | waiting-on-freeze | Fief 1 scene: castle, fields, order, village |
 | 25 | `scene:fief2` | scene | open | new |  |  | Fief 2 scene: castle, fields, order, village |
 | 26 | `scene:fief3` | scene | open | new |  |  | Fief 3 scene: castle, fields, order, village |
 | 27 | `scene:fief4` | scene | open | new |  |  | Fief 4 scene: castle, fields, order, village |

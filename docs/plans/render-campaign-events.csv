@@ -209,3 +209,14 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T15:34:35Z,scene:highland-ext,review-r2,done,std-1,pass,"fidelity 7 / credibility 6 (r2.md); polish: trail wear noise, tone"
 2026-09-30T15:47:04Z,scene:highland-ext,final,done,std-1,pass,std glb 4.71 MB / low 2.98 MB (max_mb 5.0/3.5; previous 3.4/2.9)
 2026-09-30T15:47:43Z,scene:highland-ext,ship,done,std-1,pass,cliff_edge + trail_down linked to lm_highland; trail widened; score 7/6
+2026-09-30T15:47:52Z,scene:fief1,new,claim,std-1,,
+2026-09-30T15:52:45Z,scene:fief1,new,done,std-1,pass,scaffolded; shared builder blender/landmarks/fief_scene.py (presets fief1..fief5)
+2026-09-30T15:53:09Z,scene:fief1,setting,done,std-1,pass,setting + checklist for all five fief scenes written from one template
+2026-09-30T16:01:12Z,scene:fief1,draft,done,std-1,pass,c1 draft 1400px 16spp rendered via the queue
+2026-09-30T16:01:13Z,scene:fief1,board,done,std-1,pass,board c1+c2+under
+2026-09-30T16:01:13Z,scene:fief1,gapcheck,done,std-1,pass,all four markers covered by castle/order/village/fields groups
+2026-09-30T16:01:13Z,scene:fief1,review-r1,done,std-1,fail,fidelity 7 / credibility 5.5 (docs/reviews/campaign/scene_fief1/r1.md)
+2026-09-30T16:01:18Z,scene:fief1,fix,done,std-1,pass,"c2 clear of houses, darker varied trees, wider sand band, water inset, deeper far hills"
+2026-09-30T16:01:53Z,scene:fief1,review-r2,done,std-1,pass,fidelity 7.5 / credibility 6 (r2.md)
+2026-09-30T16:04:13Z,scene:fief1,final,done,std-1,pass,std glb 2.24 MB / low 0.60 MB (max_mb 2.8/1.4); one model for the whole fief
+2026-09-30T16:05:06Z,scene:fief1,ship,wait,std-1,,"FREEZE_MAPS back on origin/preview; model, glbs, manifest committed; needs: link fief1_castle/order/village/fields to a new lm_fief1 entry in maps.json + card-buildings rows (run landmark.py ship fief1 then link the other three markers)"
