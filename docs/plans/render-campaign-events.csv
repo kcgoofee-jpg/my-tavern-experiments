@@ -65,3 +65,8 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T12:58:33Z,review:league_club,fix,done,std-1,,"cream stone, terracotta hip roof, warm atrium, autumn trees, c3 dock camera (league() only)"
 2026-09-30T12:58:48Z,review:league_club,review-r2,done,std-1,pass,r2 7.5/7 pass
 2026-09-30T13:11:08Z,review:league_club,ship,done,std-1,,std 0.75 MB (was 2.17) / low 0.49 MB with per-group budgets; max_mb std 0.9/low 0.5 (whole-island model); check_maps + estate3d_manifest pass
+2026-09-30T13:11:24Z,review:rothschild_estate,review-r1,claim,std-1,,
+2026-09-30T13:12:23Z,review:rothschild_estate,review-r1,done,std-1,fail,"r1 6.5/7.5 fail: grey stone, stone hall, dock not in frame"
+2026-09-30T13:12:23Z,review:rothschild_estate,fix,done,std-1,,"honey stone, glass hall roof, c3 dock camera (rothschild() only)"
+2026-09-30T13:12:23Z,review:rothschild_estate,review-r2,done,std-1,pass,r2 7.5/7.5 pass
+2026-09-30T13:16:43Z,review:rothschild_estate,ship,done,std-1,,"glb re-exported std 0.91 MB (was 2.56) / low 0.58 MB with group budgets; max_mb std 1.0/low 0.65; marker zaibatsu_estate already linked (lm_zaibatsu_estate) so landmark ship's map step refused, row updated by hand; check_maps + estate3d_manifest + smoke pass"
