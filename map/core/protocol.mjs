@@ -85,6 +85,7 @@ export const SCHEMA = {
   'v3d:fly': [V2S, { hotspot: 'any' }],
   'v3d:mode': [V2S, { mode: 'string' }],
   'v3d:flows': [V2S, { on: 'boolean?' }],
+  'v3d:backdrop': [V2S, { bitmap: 'any' }],   // Part 3 §3：转场用的底图快照（ImageBitmap，可转移；三维页用完自己 close）
   'estate:ready': [S2V, {}],
   'estate:fail': [S2V, { reason: 'string?' }],
   'estate:progress': [S2V, { loaded: 'number', total: 'number?', what: 'string?' }],   // fix3：三维模型下载字节进度（total 0 = 不知道总大小）

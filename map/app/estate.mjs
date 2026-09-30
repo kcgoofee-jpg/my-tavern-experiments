@@ -26,6 +26,58 @@ export let est = null;   // { id, frame, ready }
 // 宿主 SLEEP_MS（3 分钟）后整页卸载时才真正释放；省流 / 低内存（lean()）照旧休眠即拆。
 export let estParked = null;
 export function dropParked() { if (estParked) { estParked.frame.remove(); estParked = null; } }
+// ---------------- Part 3 §3：三维上下文的排他租约 ----------------
+// 稳态下本来就只有一个三维 iframe（est 是单例），但没有任何东西把这件事钉住：
+//   庄园挂起（estParked）+ 再开一次三维 = 两个 live WebGL 上下文；离开庄园的淡出帧没及时摘掉也会撞。
+// 所以每次发新租约前先把上一份彻底摘掉（weak frame 只摘不阻塞新页面加载），并在开新页面前同步清掉。
+export let live3d = 0;   // 当前活着的三维帧数（自检 / 浏览器探针用）
+let weak3d = null;       // 上一份租约的帧：新页面开始加载就摘掉（不等淡出）
+export function release3d() {
+  dropParked();
+  if (weak3d) { try { weak3d.remove(); } catch (e) {} weak3d = null; }
+  if (est?.frame) { const f = est.frame; est = null; try { f.remove(); } catch (e) {} }
+  live3d = 0;
+}
+// ---------------- Part 3 §3：底图 → 三维的一次性转场（OSD 画布 → ImageBitmap → CanvasTexture）----------------
+// OSD 是 Canvas2D（不是 WebGL），三维页是那个唯一的 GL 上下文：转场时把 OSD 画布拷成 ImageBitmap 交给三维页当背景，
+// 三维页淡完就 close 位图；之后不再上传（不是每帧同步）。拍不到 / 不支持 → 走原来的 DOM 快照，行为不变。
+const SNAP_MS = 400;
+let snapT = 0, snapLast = 0, snapping = false, lastBitmap = null;
+function stopTileTo3d(done = true) {   // done：三维页已经接管画面（之后 viewer.close() 会释放解码内存）
+  if (!snapping) return;
+  snapping = false; clearInterval(snapT); snapT = 0;
+  if (!done) { try { lastBitmap?.close?.(); } catch (e) {} lastBitmap = null; }
+}
+async function snapshot2d() {
+  const cv = viewer?.drawer?.canvas;
+  if (!cv?.width || !cv?.height || typeof createImageBitmap !== 'function') return null;
+  const now = performance.now();
+  if (now - snapLast < SNAP_MS) return null;   // 节流：转场期间最多每 400 ms 一张
+  snapLast = now;
+  try { const bmp = await createImageBitmap(cv); try { lastBitmap?.close?.(); } catch (e) {} lastBitmap = bmp; return bmp; }
+  catch (e) { return null; }
+}
+function postBackdrop(f) {
+  const bmp = lastBitmap; if (!bmp) return false;
+  lastBitmap = null;
+  try { f.contentWindow?.postMessage({ type: 'v3d:backdrop', bitmap: bmp }, SUB_ORIGIN, [bmp]); return true; }
+  catch (e) { try { bmp.close?.(); } catch (x) {} return false; }   // 传不过去就自己关掉，不留位图
+}
+/** 打开三维页期间把底图快照持续递过去；拿到 ready（或页面被换掉）就停 */
+function startTileTo3d(f) {
+  stopTileTo3d(false);
+  snapping = true;
+  const tick = () => { if (!snapping) return; snapshot2d().then(b => { if (b) postBackdrop(f); }).catch(() => {}); };
+  tick();
+  viewer?.addHandler?.('tile-drawn', tick);
+  snapT = setInterval(tick, SNAP_MS);
+  stopTileTo3d = done => {
+    if (!snapping) return;
+    snapping = false; clearInterval(snapT); snapT = 0;
+    try { viewer?.removeHandler?.('tile-drawn', tick); } catch (e) {}
+    if (!done) { try { lastBitmap?.close?.(); } catch (e) {} lastBitmap = null; }
+  };
+}
 // 本次会话里庄园三维加载失败过：之后「自动跳到当前地点」不再进庄园，改落上层的伊甸地标（记在会话存储，重试成功后清掉）
 const EST_FAIL_KEY = 'edenMapEstateFail';
 export let estFail = TCStore.get(EST_FAIL_KEY) === '1';
@@ -47,21 +99,22 @@ function estateActs(state) {   // state: '' 隐藏；'slow' 仍在加载；'fail
   if (state === 'fail') { lp().fail(tx('estate.failed', '庄园三维模型加载失败：当前网络连不上三维库')); ld.classList.remove('done'); }
   if (state) { ld.classList.add('over'); announce(ld.querySelector('span').textContent); }
 }
-export function retryEstate() { const id = cur, m = REG.maps[id]; if (m?.kind !== 'estate') return; setEstFail(false); est?.frame.remove(); est = null; openEstate(id, m, true); }
+export function retryEstate() { const id = cur, m = REG.maps[id]; if (m?.kind !== 'estate') return; setEstFail(false); stopTileTo3d(false); release3d(); openEstate(id, m, true); }
 export function estatePlan() {   // 看平面图：回上层并聚焦伊甸（打开它的地点卡）；本次会话不再自动进庄园（庄园挂起时每次都会再等 12 秒）
   const s = estateStandIn(cur); if (!s) return; setEstFail(true); setPendingFocus(s.marker); go(s.map);
 }
 export async function openEstate(id, m, hadPrev) {
   document.body.classList.add('estate'); renderNav();
   if (estParked?.id === id) {   // 从休眠里接回来：取消隐藏、恢复渲染，走一遍 ready 之后的同步
-    est = estParked; estParked = null; const f = est.frame; f.style.visibility = '';
+    est = estParked; estParked = null; const f = est.frame; f.style.visibility = ''; live3d = 1;
     $('#loading').classList.add('done'); estateActs('');
     f.contentWindow?.postMessage({ type: 'estate:resume' }, SUB_ORIGIN);
     $('#credit').textContent = nm(m, 'credit'); $('#credit').removeAttribute('title');   // fix3：署名只用展开的文字框，不再叠一个原生 title 提示 $('#creditBtn').hidden = !nm(m, 'credit');
     estateLook(); estateInset(); estateRoom(); focusAfterGo(); postState(); post({ type: 'eden-map:loaded' });
     return;
   }
-  dropParked();
+  // Part 3 §3：发新租约前把上一份彻底摘掉（挂起的、淡出中的都算），保证任何时刻只有一个活着的三维上下文
+  if (estParked?.id !== id) { stopTileTo3d(false); release3d(); }
   $('#credit').textContent = nm(m, 'credit'); $('#credit').removeAttribute('title');   // fix3：署名只用展开的文字框，不再叠一个原生 title 提示 $('#creditBtn').hidden = !nm(m, 'credit'); window.__creditShow?.(false);
   const ld = $('#loading'), ti = nm(m, 'title'); ld.classList.remove('done', 'thumb'); ld.classList.remove('over'); estateActs('');   // v0.9.6：三维页加载时用整屏加载页，不再露出上一张图 + 一个「加载中」小条
   if (m.cover) { ld.style.setProperty('--loading-cover', `url(${matchMedia('(max-width: 600px)').matches ? m.cover.src_800 || m.cover.src : m.cover.src})`); ld.classList.add('cover'); }
@@ -73,7 +126,7 @@ export async function openEstate(id, m, hadPrev) {
   for (let i = 0; i < 2 && !html; i++) { try { html = await getText(url); } catch (e) { textCache.delete(url); if (!i) await new Promise(r => setTimeout(r, 400)); } }   // 预热失败过一次也再试一次（接手 review P1）
   if (cur !== id) return;
   if (!html) { estateActs('fail'); lp().fail(tx('estate.fail', '庄园页面加载失败')); return; }
-  const old = est?.frame; if (old && old.parentNode) old.remove();
+  const old = est?.frame; if (old && old.parentNode) old.remove(); weak3d = old || null;   // 旧帧留个引用：新页面一就绪就摘（不等淡出）
   const f = document.createElement('iframe'); f.id = 'estate'; f.title = nm(m, 'title');
   const vend = new URL('vendor/', url).href;
   // 用 blob: 地址而不是 srcdoc：Tauri Tavern 的 WKWebView 里第三层 srcdoc iframe（宿主 → 查看器 srcdoc → 庄园）永远不加载（TT 实测 P0）。
@@ -83,19 +136,23 @@ export async function openEstate(id, m, hadPrev) {
     .replace(/(["'])https:\/\/cdn\.(?:jsdelivr\.net|jsdmirror\.com)\/npm\/three@0\.160\.0\/build\/three\.module(?:\.min)?\.js\1/g, `$1${vend}three.module.min.js$1`)
     .replace(new RegExp(THREE_CDN.source + 'examples\\/jsm\\/', 'g'), vend + 'jsm/');
   const blob = URL.createObjectURL(new Blob([doc], { type: 'text/html' })); f.src = blob;
-  f.addEventListener('load', () => { setTimeout(() => URL.revokeObjectURL(blob), 0); if (est?.frame === f) estateLook(); });   // 首帧前就带上语言与主题，少闪一下
+  f.addEventListener('load', () => { setTimeout(() => URL.revokeObjectURL(blob), 0); if (est?.frame === f) { estateLook(); startTileTo3d(f); } });   // 首帧前就带上语言与主题，并开始递底图
   $('#stage').appendChild(f);
   est = { id, frame: f, ready: false };
+  live3d = 1;
   // 12 秒还没画出第一帧：给出路（重试 / 看平面图），庄园继续在后台加载，画好了照常切过去
   setTimeout(() => { if (est?.frame === f && f.isConnected && !est.ready && !est.failed) estateActs('slow'); }, 12000);
 }
 function onEstateFail(reason) {
   if (!est || est.ready) return;
+  stopTileTo3d(false);
   if (reason === 'timeout') return estateActs('slow');   // 只是慢（庄园页自己的超时），不说成「连不上三维库」（E5 r2 弱网 W4）
   est.failed = true; setEstFail(true); estateActs('fail');
 }
 function onEstateReady() {
   const f = est.frame; est.ready = true; if (estFail) setEstFail(false);
+  if (weak3d && weak3d !== f) { try { weak3d.remove(); } catch (e) {} weak3d = null; }   // 上一份租约在这里收尾
+  stopTileTo3d(true);   // 三维页已经接管画面：不再上传底图快照
   f.classList.add('on'); estateActs(''); lp().done(); $('#loading').classList.add('done'); focusAfterGo();
   estateLook(); estateInset(); estateRoom();
   post({ type: 'eden-map:loaded' });
@@ -107,9 +164,11 @@ export function leaveEstate() {
   document.body.classList.remove('estate'); estateActs('');
   try { setFpsMeter(window.TCStore?.get('edenMapFps') === '1'); } catch (e) {}   // 三维子页关掉了，外层顶栏那份 FPS 读数回来（配 estateLook 的 setFpsMeter(false)）
   if (!est) return null;
-  const f = est.frame, ready = est.ready; est = null;
+  stopTileTo3d(false);
+  const f = est.frame, ready = est.ready; est = null; live3d = 0;
+  if (weak3d === f) weak3d = null;
   if (!ready) { f.remove(); return null; }
-  return f;
+  return f;   // 调用方（nav.go）在新底图画出来后淡出移除；新的三维租约会在 release3d 里把它提前摘掉
 }
 function estateInset() {
   if (!est?.ready) return;
@@ -134,6 +193,7 @@ export function estateRoom() { if (!est?.ready) return; const v = ($('#here').va
   const cr = !estFocus && r?.std && r.floor ? estPlan?.rooms?.find(x => x.floor === r.floor && x.name === r.std) : null;
   const cc = cr ? { name: cr.name, floor: cr.floor, kind: cr.kind, area: cr.area, poly: cr.poly, z: (estPlan.floors.find(f => f.id === cr.floor) || {}).z } : null;
   est.frame.contentWindow?.postMessage({ type: 'estate:room', name: estFocus || (cc ? cc.name : r?.custom ? r.room : v), card: estFocus && window.estCard?.name === estFocus ? window.estCard : cc }, SUB_ORIGIN); }   // 自定义叫法：庄园页收到的是对应的标准房间名
+window.TC3d = { live: () => live3d, release: release3d, snapping: () => snapping, stopSnap: stopTileTo3d, SNAP_MS };   // Part 3 §3：三维租约自检（tests / 浏览器探针）
 window.addEventListener('message', e => {
   if (!est || e.source !== est.frame.contentWindow || (PR && !PR.accept(e.data, '（子页 → 查看器）'))) return;
   if (e.data?.type === 'estate:ready') onEstateReady();

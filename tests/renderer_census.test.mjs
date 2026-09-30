@@ -37,6 +37,15 @@ test('建 WebGL 上下文的地址就是登记这几处（三维页 + 共享工�
   for (const f of [...RENDERER_SITES, FACTORY]) assert.ok(existsSync(new URL('../' + f, import.meta.url)), f);
 });
 
+test('宿主侧租约（app/estate.mjs）：发新三维租约前先摘旧的，位图转场用完就关', () => {
+  const s = rd('map/app/estate.mjs');
+  assert.match(s, /function release3d\(\)/, '要有显式的租约释放入口');
+  assert.match(s, /release3d\(\)/, '开新三维页前先摘掉上一份租约');
+  assert.match(s, /v3d:backdrop/, '底图转场消息');
+  assert.match(s, /close\?\.\(\)/, 'ImageBitmap 用完要 close（不 close 要等 GC）');
+  assert.match(s, /stopTileTo3d\(/, '三维页接管后停止上传底图');
+});
+
 test('OSD 是 Canvas2D：查看器里底图不走 WebGL 抽屉（三维才用那唯一的 GL 上下文）', () => {
   const b = rd('map/app/boot.mjs');
   assert.match(b, /drawer:\s*'canvas'/, '底图抽屉必须是 canvas（webgl 抽屉不发 tile-drawn，加载 / 转场 / 预热会全断）');

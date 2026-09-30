@@ -202,6 +202,13 @@ const gov = createGovernor();   // 连续烂帧 → 像素比降一档（缓过�
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NoToneMapping;   // 烘焙图已经过 AgX 视图变换
 renderer.localClippingEnabled = false;
+// Part 3 §3：底图转场用的背景板（OSD 画布 → ImageBitmap → 本页唯一的 GL 上下文里的一张贴图）
+const bdScene = new THREE.Scene(), bdCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const bdMat = new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false });
+const bdMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bdMat);
+bdMesh.frustumCulled = false; bdMesh.visible = false; bdScene.add(bdMesh);
+renderer.autoClear = false;   // 每帧自己清一次：先画背景板，再画场景
+let bdFade = 0;   // > 0 = 正在淡出（背景板还没交棒给三维场景）
 const scene = new THREE.Scene();
 setTheme(document.documentElement.classList.contains('light') ? 'light' : 'dark');
 const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 400);
@@ -523,7 +530,27 @@ function setupCulling() {
   try { const r = prepareCulling({ THREE, root: scene, instanced: [...(instState.batch?.groups || []).map(g => g.mesh), instState.badge].filter(Boolean) });
     stats.culled = r.objects; stats.instanced = r.instanced; } catch (e) {}
 }
-// 竖屏按水平视角取景（手机上横向才是短边）
+/** Part 3 §3：收到查看器递来的底图快照（OSD 画布 → ImageBitmap）→ 贴到背景板上 → 交棒后淡出并 close */
+function showBackdrop(bitmap) {
+  if (!bitmap) return false;
+  try {
+    bdMat.map?.dispose();
+    const tex = new THREE.Texture(bitmap);
+    tex.colorSpace = THREE.SRGBColorSpace; tex.needsUpdate = true;
+    bdMat.map = tex; bdMat.opacity = 1; bdMesh.visible = true;
+    bdFade = performance.now() + 300;   // 300 ms 淡出：三维场景从底下接上来
+    dirty = true;
+    return true;
+  } catch (e) { try { bitmap.close?.(); } catch (x) {} return false; }
+}
+function fadeBackdrop(now) {
+  if (!bdFade || !bdMesh.visible) return;
+  const k = (bdFade - now) / 300;
+  if (k > 0) { bdMat.opacity = Math.max(0, Math.min(1, k)); dirty = true; return; }
+  bdMesh.visible = false; bdFade = 0;
+  try { const bmp = bdMat.map?.image; bdMat.map?.dispose(); bdMat.map = null; bmp?.close?.(); } catch (e) {}   // 交棒完成：位图立刻还回去
+  dirty = true;
+}
 function fitHalf() { const v = THREE.MathUtils.degToRad(camera.fov / 2), a = innerWidth > 0 && innerHeight > 0 ? innerWidth / innerHeight : 1; return Math.max(.12, Math.min(v, Math.atan(Math.tan(v) * a))); }
 // 起始取景（v0.9.6）：iframe 刚建时宽高可能是 0（角度算成 0 → 距离无穷大 → 相机 NaN，看到一面暗「幕布」）；现在限幅、离建筑足够远，
 // 用户还没动过相机时，尺寸变了（面板展开、横竖屏）就重新取景
@@ -763,7 +790,7 @@ function frame(now) {
   if (!running || gate.hidden) return;
   requestAnimationFrame(frame);
   const dt = Math.min(100, now - last); last = now;
-  stepTween(now); controls.update(); updateRoof(dt);
+  stepTween(now); controls.update(); updateRoof(dt); fadeBackdrop(now);   // 底图背景板的淡出（转场才用得上）
   if (!SITE.isEmpty()) { const c = controls.target, d = c.clone().clamp(SITE.min, SITE.max).sub(c); if (d.lengthSq() > 0) { c.add(d); camera.position.add(d); } }   // 平移不出场地
   if (camera.position.y < 0.3) camera.position.y = 0.3;
   if (sel) { const q = (now / 90) | 0; if (q !== selPulseQ) { selPulseQ = q; U.uTime.value = now / 1000; dirty = true; } }   // 脉冲 11Hz 足够顺滑，重渲频率从满帧率降到 1/5（大模型上这是 GPU 大头）
@@ -773,6 +800,8 @@ function frame(now) {
     const f = $('#fps'); f.hidden = false; f.textContent = `${(1000 / (FT.slice(-30).reduce((a, b) => a + b, 0) / Math.min(30, FT.length))).toFixed(0)} fps · ${TIER} · dpr ${renderer.getPixelRatio()}`; }
   if (!dirty || !root) return;
   dirty = false;
+  renderer.clear();
+  if (bdMesh.visible) renderer.render(bdScene, bdCam);   // 底图（转场时才可见）
   renderer.render(scene, camera); placePins();
   govFrame(dt, now);   // 只在真渲染的帧采样帧距：待机（dirty=false）不计
   if (lod && now - lodT > 250) { lodT = now; try { lod.update({ camera, target: controls.target, viewportWidth: innerWidth, viewportHeight: innerHeight }); } catch (e) {} }
@@ -806,6 +835,7 @@ addEventListener('message', e => {
   if (d.type === 'v3d:fly') fly(d.hotspot);
   if (d.type === 'v3d:mode') setMode(d.mode);
   if (d.type === 'v3d:flows') setFlows(!!d.on);
+  if (d.type === 'v3d:backdrop') showBackdrop(d.bitmap);   // Part 3 §3：底图快照（转移进来的位图，用完在本页 close）
 });
 
 // 调试 / 测量接口
