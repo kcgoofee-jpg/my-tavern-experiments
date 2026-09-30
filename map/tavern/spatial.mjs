@@ -7,7 +7,7 @@
 // 同一输入字节级同输出（键序固定、候选按「距离 → 名字」稳定排序）。token 估算与 modes.tokens 同一口径。
 // 邻接纪律（裁决 12）：连通只认 marker.link 显式跨层通道与同层几何邻近（builder neighbours 先例）；
 // routes（巡逻折线）不作邻接源，只出守卫锥。拓扑块与 tools/build_worldbook_addon.py 的 [TOPO] 输出同语义。
-import { buildIndex, resolveHere } from '../here.mjs';
+import { makeHere } from '../app/here-v2.mjs';
 import { patrolCones } from '../core/vision.mjs';
 import { tokens } from './modes.mjs';
 
@@ -22,14 +22,24 @@ const cname = s => String(s || '').replace(/\s+/g, '');
 const byNear = (a, b) => (a.d - b.d) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
 const norm360 = a => { a = ((a % 360) + 360) % 360; return Number.isFinite(a) ? a : 0; };
 
-/** 当前地点 → 落点 { level, mapId, markerId, name, room } | null（庄园房间 level 1–2 没有坐标，name 照抄） */
+// 注册表 → 节点树上的当前地点引擎（app/here-v2.mjs，与查看器同一套）：同一份注册表只建一次
+const engines = new WeakMap();
+const mapsOf = reg => reg?.maps || reg || {};
+function engineOf(reg) {
+  if (!reg || typeof reg !== 'object') return null;
+  if (!engines.has(reg)) { let e = null; try { e = makeHere({ maps: reg.maps ? reg : { maps: reg } }); } catch (err) { e = null; } engines.set(reg, e); }
+  return engines.get(reg);
+}
+/** 地图的层名（注册表给的层名；没有就回落地图 id）——「L」与出口目标都用它 */
+const levelOf = (reg, mapId) => engineOf(reg)?.level(mapId) || mapsOf(reg)[mapId]?.layer?.name || mapId || '';
+
+/** 当前地点 → 落点 { level, mapId, markerId, name, room } | null（庄园房间 level 1–2 没有坐标，name 照抄）。地点由节点树定（nodes.locate） */
 export function locate(reg, here) {
   const v = String(here || '').trim();
   if (!v || !reg) return null;
-  const r = resolveHere(v, buildIndex(reg));
+  const e = engineOf(reg), r = e?.here(v);
   if (!r) return null;
-  const maps = reg.maps || reg, m = maps[r.map] || {};
-  const nm = r.marker && m.markers?.[r.marker]?.name ? m.markers[r.marker].name : (r.room || r.place || r.word || v);
+  const nm = (r.marker && e.tree.get(r.marker)?.name) || r.room || r.place || r.layer || r.word || v;
   return { level: r.level, mapId: r.map, markerId: r.marker || null, name: cname(nm), room: r.room || null };
 }
 
@@ -46,7 +56,7 @@ export function coordIndex(points) {
 export function exitsOf(reg, mapId, ci = null) {
   const maps = reg?.maps || reg || {}, m = maps[mapId] || {}, out = [];
   for (const [id, k] of Object.entries(m.markers || {})) {
-    const to = k?.link?.map, layer = to && maps[to]?.layer?.name; if (!layer) continue;
+    const to = k?.link?.map, layer = to && maps[to]?.layer?.name && levelOf(reg, to); if (!layer) continue;
     out.push({ id, name: cname(k.name), to: layer, nx: ci?.[id]?.nx, ny: ci?.[id]?.ny });
   }
   return out;
@@ -78,7 +88,7 @@ export function coordView(o = {}) {
     .filter(x => x.name).sort(byNear) : [];
   const f = Number.isFinite(+o.fog) ? q(o.fog) : null;
   const build = (nn, ng, ne, wf) => {
-    const v = { L: m.layer?.name || loc.mapId || '', p };
+    const v = { L: levelOf(o.reg, loc.mapId), p };
     if (ne) v.e = e.slice(0, ne).map(x => [x.name, x.nx, x.ny, x.to]);
     if (ng) v.g = g.slice(0, ng).map(x => [x.name, x.nx, x.ny, x.f, x.r]);
     if (nn) v.n = n.slice(0, nn).map(x => [x.name, x.nx, x.ny]);

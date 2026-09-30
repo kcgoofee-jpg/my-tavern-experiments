@@ -5,6 +5,7 @@
 //   engine.here(text)      -> { level, map, word, node, via, marker?, place?, room?, std?, floor?, restricted?, custom?, transit? } | null
 //   engine.unmapped(text)  -> the name to offer as "unmapped" | null
 //   engine.estate          -> { id, std, alias } | null   the standard room names and the user's names for them
+//   engine.level(mapId)    -> the registry's layer name of a map ('' when it has none)       result.layer (level 4): the layer word the text holds, as written
 // level: 1 a room, 2 the estate or an area of it, 3 a marker, 4 a map (layer / district), 5 the group or a world place.
 // `word` is the kernel's (docs/kernel-schema.md A.9: a merged site reports its longest alias). Pure: no DOM, no host globals.
 import { fromV1 } from '../core/compat-v1.mjs';
@@ -27,9 +28,12 @@ export function makeHere(inputs = {}) {
   const rooms = new Set(roomWords.map(normalise)), planned = E ? tree.children(E).filter(i => tree.get(i).type === 'room').flatMap(i => tree.get(i).hints || []) : [];
   const marker = new Map();   // marker id -> its map
   for (const [mid, m] of Object.entries(M)) if (flat(mid)) for (const k of Object.keys(m.markers || {})) if (tree.parent(k) === mid) marker.set(k, mid);
-  const layerWords = new Map();   // map id -> the words that name the map as a layer / district (the user's names for it included)
-  for (const [mid, m] of Object.entries(M)) if (flat(mid)) layerWords.set(mid, [m.layer?.name, m.layer?.sub, m.layer?.sub_en, m.layer?.name_en && `${m.layer.name_en} Tier`, ...(m.districts || [])].filter(has).map(normalise));
-  for (const c of r.custom) { const l = layerWords.get(c.node); if (l && (!c.canonical || l.includes(normalise(c.canonical)))) l.push(normalise(c.word)); }
+  const layerRaw = new Map();   // map id -> the words that name the map as a layer / district, as written (the user's names for it included)
+  for (const [mid, m] of Object.entries(M)) if (flat(mid)) layerRaw.set(mid, [m.layer?.name, m.layer?.sub, m.layer?.sub_en, m.layer?.name_en && `${m.layer.name_en} Tier`, ...(m.districts || [])].filter(has));
+  for (const c of r.custom) { const l = layerRaw.get(c.node); if (l && (!c.canonical || l.map(normalise).includes(normalise(c.canonical)))) l.push(c.word); }
+  const layerWords = new Map([...layerRaw].map(([mid, l]) => [mid, l.map(normalise)]));
+  // the layer word the text holds, as written (the longest, as v1 read it): what a consumer that names the place by its layer prints
+  const layerWord = (id, t) => layerRaw.get(id).filter(w => t.includes(normalise(w))).reduce((a, w) => ([...w].length > [...a].length ? w : a), '');
   const worldId = Object.keys(M).find(k => live(k) && M[k].kind === 'world') || null;
   const places = new Map();   // node id -> the world place it stands for
   for (const p of [...(inputs.world?.places || []), ...(inputs.world?.fiefs || []), ...(inputs.world?.realms || [])]) { const id = p?.id && (r.idmap[p.id] || p.id); if (id && tree.has(id) && !places.has(id)) places.set(id, p); }
@@ -49,7 +53,7 @@ export function makeHere(inputs = {}) {
       return out;
     }
     if (marker.has(id)) return Object.assign(out, { level: 3, map: marker.get(id), marker: id });
-    if (layerWords.has(id) && (!places.has(id) || layerWords.get(id).some(w => t.includes(w)))) return Object.assign(out, { level: 4, map: id });   // a map that is also a world place: the map only when a layer word is written
+    if (layerWords.has(id) && (!places.has(id) || layerWords.get(id).some(w => t.includes(w)))) return Object.assign(out, { level: 4, map: id, layer: layerWord(id, t) });   // a map that is also a world place: the map only when a layer word is written
     if (G[id] && groupMap(id) && (!places.has(id) || (head && head.map === groupMap(id) && head.words.some(w => t.includes(w))))) return Object.assign(out, { level: 5, map: groupMap(id) });
     if (places.has(id) && worldId) return Object.assign(out, { level: 5, map: worldId, place: places.get(id).name });
     return null;
@@ -80,7 +84,8 @@ export function makeHere(inputs = {}) {
     if (unmapped(value, tree, vocab, { lang, ignore: r.ignore }) === null) return null;
     const v = String(value ?? '').replace(MACRO, '').trim(); return v.split(PARTS).filter(Boolean)[0] || v;
   };
-  return { tree, vocab, here, estate: E ? { id: E, std, alias } : null, unmapped: unmappedName };
+  const level = id => M[id]?.layer?.name || '';   // the name the registry gives a map as a layer (the six merged sites keep their short layer names here)
+  return { tree, vocab, here, estate: E ? { id: E, std, alias } : null, unmapped: unmappedName, level };
 }
 
 // ---- the user's own names for rooms, kept on this machine (E6; the viewer's window.EdenMap and the card script share this) ----
