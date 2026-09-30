@@ -703,5 +703,7 @@
   "inj.compose": "Fill input",
   "inj.sys": "System cmd",
   "quests": "Clues",
-  "quests_title": "A breathing clue node on places where events are piling up (no invented plot, follows events only)"
+  "quests_title": "A breathing clue node on places where events are piling up (no invented plot, follows events only)",
+  "s.tick": "Background tick",
+  "s.tick_hint": "While the panel is closed, re-read new floors read-only every 60 s so the next launch is instant; writes nothing, injects nothing, yields during generation"
 }

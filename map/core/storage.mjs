@@ -23,6 +23,7 @@ export const KEYS = {
   edenMapCharMoreOpen: { owner: 'chars.js' }, edenMapNight: { owner: 'custom.js' }, edenMapTrips: { owner: 'trips.js' }, edenMapSecurity: { owner: 'security.js', def: '0' },
   edenMapCompose: { owner: 'tavern/compose.mjs' },
   edenMapInject: { owner: 'tavern/action.mjs', def: 'off' }, edenMapActionTpl: { owner: 'tavern/action.mjs' },   // Part 6-4 动作注入：模式（默认关）与模板
+  edenMapTick: { owner: 'tavern/tick.mjs', def: '1' },   // Part 6-2 后台静默推演：开 / 关（毫秒数也可，夹在 15 s–5 min）
   // 按聊天分（参与 LRU 清理）
   'edenMap:chat:': { owner: 'shared', prefix: true, perChat: true }, 'edenMapSeen:': { owner: 'host', prefix: true, perChat: true },
   'edenMap:varmap:': { owner: 'tavern/adapter.mjs', prefix: true }, 'edenMap:lru': { owner: 'tavern/budget.mjs' }, 'edenMap:custom': { owner: 'here.mjs' },

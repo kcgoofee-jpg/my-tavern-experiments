@@ -292,6 +292,33 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     const how = CPm.insert(window.parent, text, typeof triggerSlash === 'function' ? triggerSlash : null);
     post({ type: 'eden-map:compose-done', ok: !!how, how });
   }
+  // ---------------- Part 6-2 后台静默推演 ----------------
+  // 面板关着时，隔一阵把新楼层以只读方式扫一遍（补齐事态 / 人物 / 行程的缓存），玩家再开地图就是热的。
+  // 三条底线：只读（不写变量、不注入、不发消息给查看器）；面板活着或正在生成一律让路；每次只扫增量且封顶 60 楼。
+  // 调度判定纯函数在 tavern/tick.mjs（node 单测覆盖），这里只做取数与记账。
+  let TICK = null, tickLed = null, tickT = 0;
+  async function tickOnce() {
+    const iv = TICK ? TICK.intervalOf(k => { try { return (LS || localStorage).getItem(k); } catch (e) { return null; } }) : 0;
+    const p = TICK ? TICK.plan(Date.now(), { lastAt: tickLed?.lastAt || 0, intervalMs: iv, alive, generating: GEN.generating, dead: life.dead }) : { run: false };
+    if (!p.run) return p.reason;
+    const win = TICK.pick(floorNow, tickLed?.lastFloor ?? -1);
+    const t0 = performance.now();
+    try {
+      if (win.n > 0 && typeof getChatMessages === 'function') {
+        const list = getChatMessages(`${win.from}-${win.to}`, { role: 'assistant' });
+        CTX.readMsgs(list, floorNow);   // 只读：只喂缓存，不 recompute、不发消息、不写变量
+      }
+    } catch (e) {}
+    tickLed = TICK.ledger(tickLed, { now: Date.now(), floorNow, ms: performance.now() - t0, n: win.n });
+    perf('tick', performance.now() - t0);
+    return 'ran';
+  }
+  async function startTick() {
+    try { TICK ??= await import(SELF + 'tavern/tick.mjs'); } catch (e) { TICK = null; return; }
+    clearInterval(tickT);
+    tickT = setInterval(() => { tickOnce().catch(() => {}); }, 15000);   // 心跳 15 s，跑不跑由 plan() 决定
+  }
+
   // Part 6-4 地图驱动的双向动作注入：查看器只说「点了哪个 POI、想干什么」，文案与注入方式全在这里按设置决定。
   // 模式默认 off——地图不该在玩家没点头的情况下替他说话；compose 只填不发（与「去这里」同一条底线），sys 走 /sys 静默注入。
   let ACm = null;
@@ -1088,12 +1115,12 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     { const wake = () => { if (pdoc.visibilityState !== 'hidden' && !life.dead) { statSig = ''; recomputeSoon(0); pushSoon(0); post({ type: 'eden-map:wake' }); } }; pdoc.addEventListener('visibilitychange', wake); window.parent.addEventListener('pageshow', wake); window.parent.addEventListener('online', wake);   // G3（P1）：切回前台顺手叫醒查看器（唤醒消息此前只用于休眠恢复）——宿主数据推送之外，查看器也能即时自刷新
       life.add(() => { pdoc.removeEventListener('visibilitychange', wake); window.parent.removeEventListener('pageshow', wake); window.parent.removeEventListener('online', wake); }); }
     if (tavern_events.GENERATION_AFTER_COMMANDS) listen(tavern_events.GENERATION_AFTER_COMMANDS, (type) => { clearTimeout(evT); recompute(true); stateNow = ''; stateInject(typeof type === 'string' ? type : 'normal'); });   // (a) 重生 / swipe：用被替换那一楼之前的状态
-    push(); loadSeen(); recompute(); stateInject();   // modes.mjs 经桥静态可用（原动态加载后补一次注入，改为启动序列里统一做）
+    push(); loadSeen(); recompute(); stateInject(); startTick();   // modes.mjs 经桥静态可用（原动态加载后补一次注入，改为启动序列里统一做）
     (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => { if (life.dead) return; afterGen(() => preload().catch(() => {})); try { budgetSweep(); } catch (e) {} setTimeout(() => { if (!life.dead) autoCheck().catch(() => {}); }, window.parent.__edenAutoCheckDelay ?? 6000); if (splashDue()) { lsSet('edenMapSplashSeen', String(VER || 'dev')); runCheck(); } else setTimeout(runCheck, 4000); setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动同步失败', e))); }, 8000); });   // 打开聊天后空闲时：测速选线 + 预加载；稍后自检一次
   })();
 
   // 脚本被关闭或重载时清理注入的元素
-  const cleanup = () => { if (life.dead) return; life.kill(); life.unlisten(); clearInterval(watchT); clearTimeout(quietT); clearInterval(pollT); clearInterval(updT); cgObs.disconnect(); acuObs.disconnect(); try { BR.disposeDb(); } catch (e) {} clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); clearTimeout(restT); clearTimeout(ghostT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
+  const cleanup = () => { if (life.dead) return; life.kill(); life.unlisten(); clearInterval(watchT); clearTimeout(quietT); clearInterval(pollT); clearInterval(updT); clearInterval(tickT); cgObs.disconnect(); acuObs.disconnect(); try { BR.disposeDb(); } catch (e) {} clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); clearTimeout(restT); clearTimeout(ghostT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
     if (window.parent.EdenMap === exposed) delete window.parent.EdenMap; toastEl?.remove(); updEl?.remove(); splash?.el?.remove(); try { NT?.destroy(); barRO?.disconnect(); } catch (e) {}
     if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup;
     try { const R = window.parent.__edenMapIds; if (R && R[OWNER] === SELF) delete R[OWNER]; } catch (e) {}   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」

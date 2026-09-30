@@ -132,7 +132,8 @@ export function initSettings() {
     try { window.__edenInject = TCStore.get('edenMapInject') || 'off'; } catch (e) { window.__edenInject = 'off'; } }
   sw('#optMinimap', 'edenMapMinimap', false, v => document.body.classList.toggle('nominimap', !v));
   document.body.classList.toggle('nominimap', TCStore.get('edenMapMinimap') !== '1');
-  sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', false); sw('#optFps', 'edenMapFps', false, v => { setFpsMeter(v); estateLook(); });
+  sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', false);
+  sw('#optTick', 'edenMapTick', true);   // Part 6-2 后台静默推演（宿主每 15 s 判一次，跑不跑由 tick.mjs 的 plan 决定） sw('#optFps', 'edenMapFps', false, v => { setFpsMeter(v); estateLook(); });
   // 房间图集「维护者模式」：经 TCStore（core/storage.mjs 的同步镜像，本文件不直接碰 localStorage）；纯设备级开关，只是给仓库所有者自己用的工作流开关，不是权限校验（见 viewer.html 里的说明文字）
   sw('#optGalleryMaintainer', MAINTAINER_MODE_KEY, false);
   $('#linePick').onclick = () => { showSet(false); post({ type: 'eden-map:line-pick' }); };
