@@ -85,6 +85,7 @@ export const SCHEMA = {
   'estate:stash': [V2S, { items: 'array?' }],     // Part 8-1：世界藏物表（宿主 → 查看器 → 庄园三维页），三维页据此在房间 / 区域里放发光道具
   'estate:taken': [V2S, { ids: 'array?' }],       // Part 8-1：已经在手里的藏物 id（背包的 id 对账）：地上不再发光
   'estate:routine': [V2S, { schedule: 'object?', clock: 'object?' }],   // Part 8-2：NPC 日程表 + 起点时钟（三维页按确定性时钟自己挪人）
+  'estate:children': [V2S, { zones: 'object' }],   // S2-B：宿主 → 三维页：{ 区域 id: [{ node, title }] }，该区域下挂着的子地图（来自运行时节点树）；三维页据此给区域卡加「进入三维」
   'estate:pause': [V2S, {}],
   'estate:resume': [V2S, {}],
   'estate:floor': ['both', { floor: 'any' }],     // 下行 = 直嵌 / 调试接口；上行 = 用户切了楼层（直嵌时给外层页）
@@ -94,6 +95,7 @@ export const SCHEMA = {
   'v3d:backdrop': [V2S, { bitmap: 'any' }],   // Part 3 §3：转场用的底图快照（ImageBitmap，可转移；三维页用完自己 close）
   'v3d:viewport': [S2V, { tileCache: 'number?' }],   // Part 3 §5：显存 / 内存吃紧时请宿主收紧解码瓦片缓存
   'v3d:budget': [S2V, {}],                           // 直嵌接口：三维页自报的预算摘要
+  'estate:go': [S2V, { node: 'string' }],   // S2-B：三维页 → 宿主：进入区域下的子地图（node = 子地图 id，宿主只认当前图的子节点）
   'estate:ready': [S2V, {}],
   'estate:fail': [S2V, { reason: 'string?' }],
   'estate:progress': [S2V, { loaded: 'number', total: 'number?', what: 'string?' }],   // fix3：三维模型下载字节进度（total 0 = 不知道总大小）

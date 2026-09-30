@@ -60,3 +60,13 @@ test('真实负载：outfit 是对象（mvu.outfit）、events / chars 带 v:1 �
   assert.equal(check({ type: 'eden-map:events', v: 1, floor: 3, items: [] }).ok, true);
   assert.equal(check({ type: 'eden-map:chars', v: 1, items: [], rosters: {} }).ok, true);
 });
+test('S2-B: estate:children (viewer → page) and estate:go (page → viewer) are registered with their shapes', () => {
+  assert.equal(SCHEMA['estate:children'][0], 'viewer→sub'); assert.equal(SCHEMA['estate:go'][0], 'sub→viewer');
+  assert.ok(check(envelope('estate:children', { zones: { dairy: [{ node: 'dairy', title: 'x' }] } })).ok);
+  assert.ok(check(envelope('estate:children', { zones: {} })).ok);
+  assert.equal(check(envelope('estate:children', {})).why, 'field:zones');
+  assert.equal(check(envelope('estate:children', { zones: [] })).why, 'field:zones');
+  assert.ok(check(envelope('estate:go', { node: 'dairy' })).ok);
+  assert.equal(check(envelope('estate:go', {})).why, 'field:node');
+  assert.equal(check(envelope('estate:go', { node: 3 })).why, 'field:node');
+});
