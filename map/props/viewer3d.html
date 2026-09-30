@@ -422,10 +422,22 @@ function setupLod() {
     placeholder: placeholderBox,
     load: loadDetail,
     apply: ({ detail, root: sc }) => {
-      const keepCam = first ? null : { pos: camera.position.clone(), target: controls.target.clone() };
+      const keepCam = first ? null : { pos: camera.position.clone(), target: controls.target.clone(), R: FRAME.R || 0 };
+      const keepStart = { p: START.p.clone(), t: START.t.clone() };
       disposeRoot();
-      setup(sc, { reframe: false });
-      if (keepCam) { camera.position.copy(keepCam.pos); controls.target.copy(keepCam.target); controls.update(); }
+      setup(sc, { reframe: first });   // 第一次落地要取景（跟原来一样）；之后换档沿用当前视角
+      if (keepCam) {
+        const off = keepCam.pos.clone().sub(keepCam.target);
+        const k = (keepCam.R > 0 && FRAME.R > 0) ? FRAME.R / keepCam.R : 1;   // 换档后取景框变了：按同一「视野 / 模型」比例还原距离
+        off.setLength(Math.max(off.length() * k, (controls.minDistance || 1) * 2));
+        camera.position.copy(controls.target).add(off);
+        controls.update();
+      }
+      // 起始取景点同步挪到新取景框（「复位视野」还是回到这一档的构图，但不再把镜头拽回 1.2 倍最小距离）
+      if (keepCam && FRAME.R > 0 && keepCam.R > 0) {
+        const dir = keepStart.p.clone().sub(keepStart.t);
+        if (dir.lengthSq() > 1e-9) { dir.setLength(dir.length() * (FRAME.R / keepCam.R)); START.p.copy(FRAME.c).add(dir); START.t.copy(FRAME.c); }
+      }
       stats.glb = detail; stats.lod = detail;
       if (first) { first = false; onFirstModel(); }
       dirty = true;
@@ -514,6 +526,7 @@ function setup(sc, opt = {}) {
   const c = box.getCenter(new THREE.Vector3()), R = box.getSize(v3).length() / 2;
   controls.minDistance = MAN.camera.min || 1; controls.maxDistance = MAN.camera.max || 100; controls.maxPolarAngle = MAN.camera.maxPolar || 1.45;
   FRAME.c = c; FRAME.R = R;
+  computeStart();   // 「复位视野」的机位永远对应当前这一档的取景框（LOD 换档后仍然对）
   if (opt.reframe !== false) frameStart();   // LOD 换档时沿用当前视角，不把镜头拽回去
   SITE.setFromObject(root); SITE.expandByScalar(-2);
   const s = MAN.section; if (s) { const r = $('#cutH'); r.min = s.min; r.max = s.max; r.value = s.default; showCut(); }
@@ -582,13 +595,18 @@ function fitHalf() { const v = THREE.MathUtils.degToRad(camera.fov / 2), a = inn
 // 起始取景（v0.9.6）：iframe 刚建时宽高可能是 0（角度算成 0 → 距离无穷大 → 相机 NaN，看到一面暗「幕布」）；现在限幅、离建筑足够远，
 // 用户还没动过相机时，尺寸变了（面板展开、横竖屏）就重新取景
 const FRAME = { c: null, R: 0 }; let camTouched = false;
-function frameStart() {
-  if (!FRAME.c) return;
+/** 只算「复位视野」要用到的起始机位（不动当前相机）：换档后取景框变了也要跟着更新，否则「复位」会回到上一档的距离 */
+function computeStart() {
+  if (!FRAME.c) return false;
   const dir = new THREE.Vector3(...MAN.camera.dir).normalize();
   let dist = Math.min(FRAME.R / Math.sin(fitHalf()) * 0.85, (controls.maxDistance || 100) * .95); dist = Math.max(dist, (controls.minDistance || 1) * 2);
   START.t.copy(FRAME.c); START.p.copy(FRAME.c).addScaledVector(dir, dist);
   const B = MAN.groups.building; if (B) { const bb = new THREE.Box3(new THREE.Vector3(...B.min), new THREE.Vector3(...B.max)).expandByScalar(1);
     while (bb.containsPoint(START.p)) START.p.addScaledVector(dir, 2); }
+  return true;
+}
+function frameStart() {
+  if (!computeStart()) return;
   controls.target.copy(START.t); camera.position.copy(START.p); controls.update(); dirty = true;
 }
 const START = { p: new THREE.Vector3(), t: new THREE.Vector3() }, SITE = new THREE.Box3();
