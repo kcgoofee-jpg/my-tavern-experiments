@@ -426,3 +426,13 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T20:37:24Z,isle:isle6,final,done,hero-1,,final2 2400/64 (terrace rim fix after the first cutout); cutout2 450m
 2026-09-30T20:37:24Z,isle:isle6,integrate,done,hero-1,,"body-only crop (0.125,0.606,0.275,0.776) + cutout2 450m pasted into tc_upper + tc_upper_city; DZI rebuilt"
 2026-09-30T20:37:25Z,isle:isle6,ship,wait,hero-1,,FREEZE_MAPS (S4-3); tiles ready on render-hero-1
+2026-09-30T20:37:29Z,isle:isle9,setting,claim,hero-1,,
+2026-09-30T20:37:45Z,isle:isle9,setting,done,hero-1,,setting block C1-C2/S1-S9
+2026-09-30T20:40:00Z,isle:isle9,draft,done,hero-1,,draft1 OK
+2026-09-30T20:40:00Z,isle:isle9,board,done,hero-1,,board1
+2026-09-30T20:40:00Z,isle:isle9,review-r1,done,hero-1,fail,"r1 6.0/5.0: terraces flat, pale untextured cone, rune hoop"
+2026-09-30T20:41:00Z,isle:isle9,fix,done,hero-1,,"draft2: higher terraces + walls, limestone v17, flush rune ring"
+2026-09-30T20:41:00Z,isle:isle9,review-r2,done,hero-1,pass,r2 7.0/6.0
+2026-09-30T20:45:04Z,isle:isle9,final,done,hero-1,,final 2400/64; cutout 410m
+2026-09-30T20:45:04Z,isle:isle9,integrate,done,hero-1,,"crop (0.113,0.307,0.253,0.507) + cutout 410m into tc_upper + tc_upper_city; DZI rebuilt"
+2026-09-30T20:45:05Z,isle:isle9,ship,wait,hero-1,,FREEZE_MAPS (S4-3); tiles ready on render-hero-1
