@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T14:13:29Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T14:16:04Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 15 | 0 | 33 | 0 | 0 | 0 | 48 |
+| standard | 16 | 0 | 32 | 0 | 0 | 0 | 48 |
 | hero | 3 | 0 | 11 | 1 | 6 | 0 | 21 |
 
 Below-gate (user spot-check): none
@@ -30,7 +30,7 @@ Below-gate (user spot-check): none
 | 13 | `review:elite_academy` | review | done | - |  |  | Review and fix model elite academy |
 | 14 | `review:holy_mountain` | review | done | - |  |  | Review and fix model holy mountain |
 | 15 | `lm:blood_mill` | landmark | done | - |  |  | New model: blood mill |
-| 16 | `lm:freight_yard` | landmark | open | draft |  |  | New model: freight yard |
+| 16 | `lm:freight_yard` | landmark | done | - |  |  | New model: freight yard |
 | 17 | `lm:lower_bar` | landmark | open | new |  |  | New model: lower bar |
 | 18 | `lm:slums` | landmark | open | new |  |  | New model: slums |
 | 19 | `lm:rebirth_workshop` | landmark | open | new |  |  | New model: rebirth workshop |

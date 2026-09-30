@@ -527,3 +527,12 @@ date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
 2026-09-30,eden_r5_after_arrival,draft,2000,16,1.3,0,darwin,ok,0,0
 2026-09-30,eden_r5_after_lake,draft,2000,16,1.3,0,darwin,ok,0,0
 2026-09-30,eden_r5_after_night,draft,2000,16,1.4,0,darwin,ok,0,0
+2026-09-30,lm_freight_yard,draft,1600,16,0.1,0,darwin,ok,0,0
+2026-09-30,lm_freight_yard,draft,1600,16,0.1,0,darwin,ok,0,0
+2026-09-30,lm_freight_yard,draft,1600,16,0.2,0,darwin,ok,0,0
+2026-09-30,lm_freight_yard,draft,2000,16,0.1,0,darwin,ok,0,0
+2026-09-30,lm_freight_yard,final,2400,64,0.3,0,darwin,ok,0,0
+2026-09-30,lm_freight_yard,final,2400,64,0.3,0,darwin,ok,0,0
+2026-09-30,lm_freight_yard,patch,64,1,0.0,0,darwin,ok,0,0
+2026-09-30,lm_freight_yard,patch,0,32,0.2,0,darwin,ok,0,0
+2026-09-30,lm_freight_yard,patch,0,32,0.1,0,darwin,ok,0,0

@@ -122,3 +122,10 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T14:02:10Z,eden:r5,board,done,hero-1,,before/after comparison boards (baseline T3 vs after1)
 2026-09-30T14:13:29Z,eden:r5,review-r1,claim,hero-1,,
 2026-09-30T14:13:29Z,eden:r5,review-r1,done,hero-1,pass,r1 fidelity 7.5 / credibility 6.5; pairs + changes.zh.txt in ~/eden-map-review/render/eden_r5/
+2026-09-30T14:01:32Z,lm:freight_yard,draft,claim,std-1,,
+2026-09-30T14:13:32Z,lm:freight_yard,draft,done,std-1,,c1 2000px 16spp
+2026-09-30T14:13:32Z,lm:freight_yard,board,done,std-1,,"board c1/c2/under, logs clean"
+2026-09-30T14:13:32Z,lm:freight_yard,gapcheck,done,std-1,,"no gap: shed+platform, 3 tracks+branch, signal gantry+cabin, rolling stock, container yard all in frame"
+2026-09-30T14:13:32Z,lm:freight_yard,review-r1,done,std-1,pass,"r1 8/7 pass; polish: bogies, turnout, ground edge"
+2026-09-30T14:16:04Z,lm:freight_yard,final,done,std-1,,"2400px/64spp c1+c2, glb std/low ok, logs clean"
+2026-09-30T14:16:04Z,lm:freight_yard,ship,done,std-1,,"maps.json marker link + lm_freight_yard, card-buildings row; manifest count test 42->43; check_maps 0/0, smoke pass"
