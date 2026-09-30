@@ -414,3 +414,15 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T20:22:10Z,isle:isle5,final,done,hero-1,,final 2400px/64spp main + under; cutout 660m
 2026-09-30T20:24:39Z,isle:isle5,integrate,done,hero-1,,"body-only crop re-render (0.417,0,0.617,0.29) + cutout 660m pasted into tc_upper + tc_upper_city; DZI rebuilt"
 2026-09-30T20:24:48Z,isle:isle5,ship,wait,hero-1,,"FREEZE_MAPS on origin/preview; tiles + cutout ready locally on render-hero-1; y_estate marker to move onto the house (~0.510, 0.865 y-up) at ship"
+2026-09-30T20:24:59Z,isle:isle6,setting,claim,hero-1,,
+2026-09-30T20:25:02Z,isle:isle6,setting,done,hero-1,,setting block C1-C2/S1-S10 in docs/upper-islands-checklist.md
+2026-09-30T20:25:03Z,isle:isle6,draft,claim,hero-1,,
+2026-09-30T20:27:30Z,isle:isle6,draft,done,hero-1,,draft1 OK
+2026-09-30T20:27:31Z,isle:isle6,board,claim,hero-1,,
+2026-09-30T20:27:34Z,isle:isle6,board,done,hero-1,,board1 draft1 top+under
+2026-09-30T20:27:34Z,isle:isle6,review-r1,done,hero-1,fail,"r1 fidelity 6.0 / credibility 5.0: flat lime meadow, pale concrete piers, ward invisible, weak tip"
+2026-09-30T20:30:08Z,isle:isle6,fix,done,hero-1,,draft2 slope terrain + dark basalt; draft3 ward/meadow toned
+2026-09-30T20:30:08Z,isle:isle6,review-r2,done,hero-1,pass,r2 fidelity 7.0 / credibility 6.5
+2026-09-30T20:37:24Z,isle:isle6,final,done,hero-1,,final2 2400/64 (terrace rim fix after the first cutout); cutout2 450m
+2026-09-30T20:37:24Z,isle:isle6,integrate,done,hero-1,,"body-only crop (0.125,0.606,0.275,0.776) + cutout2 450m pasted into tc_upper + tc_upper_city; DZI rebuilt"
+2026-09-30T20:37:25Z,isle:isle6,ship,wait,hero-1,,FREEZE_MAPS (S4-3); tiles ready on render-hero-1
