@@ -26,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE); sys.path.insert(0, os.path.dirname(HERE))
 import common as C  # noqa
 
-A = C.args(dict(cam='c1', res='900', samples='24', out='/tmp/cc.jpg', blend='', log='', exposure=''))
+A = C.args(dict(cam='c1', res='900', samples='24', out='/tmp/cc.jpg', blend='', log='', exposure='-0.6'))
 
 R_RING = 200.0       # 环带半径（回廊中心线）
 ARC = math.radians(34.0)   # 回廊半张角
@@ -53,7 +53,12 @@ def main():
 
     ASHLAR = C.pbr('cc_ashlar', 'white_sandstone_blocks_02', 3.2, tint=(0.93, 0.90, 0.84), sat=0.2, weather=0.28)
     MARBLE = C.pbr('cc_marble', 'Marble021', 2.4, tint=(0.95, 0.94, 0.90), sat=0.12)
-    PAVE = C.pbr('cc_pave', 'patterned_paving', 4.5, tint=(0.79, 0.77, 0.71), sat=0.22)
+    PAVE = C.pbr('cc_pave', 'patterned_paving', 4.5, tint=(0.78, 0.68, 0.52), value=0.95, sat=0.55)
+    RING = C.pbr('cc_ring', 'patterned_paving', 4.5, tint=(0.90, 0.80, 0.62), value=1.0, sat=0.5)   # 环道：暖色，与铺装场分开
+    GRASS = C.pbr('cc_grass', 'grass_ground', 4.0, tint=(0.36, 0.52, 0.22), sat=0.7)
+    KERB = C.pbr('cc_kerb', 'white_sandstone_blocks_02', 3.2, tint=(0.55, 0.50, 0.44), value=0.8, sat=0.3)
+    FRAME = C.flat('cc_frame', (0.36, 0.13, 0.10), 0.5, metal=0.4)                 # 巨轮骨架：深红褐，压住浅色天空
+    OCHRE = C.flat('cc_ochre', (0.86, 0.62, 0.24), 0.7, noise=0.25)
     SAND = C.pbr('cc_sand', 'dirt_floor', 6.0, tint=(0.88, 0.76, 0.52), sat=0.5)
     ROOF = C.pbr('cc_roof', 'roof_slates_02', 2.6, tint=(0.26, 0.27, 0.31), sat=0.3)
     WOOD = C.pbr('cc_wood', 'dark_wood', 2.0, tint=(0.52, 0.42, 0.32), sat=0.3)
@@ -78,6 +83,11 @@ def main():
         px, py = ring_pt(a)
         gal.cyl(px, py, z0, 1.25, H1 - 0.9, ASHLAR, 12)
         gal.cyl(px, py, z0 + H1 - 0.9, 1.5, 0.5, MARBLE, 12)
+    for i in range(N_COL):                       # 一层拱券暗间：墙面上逐间的深色洞口，柱廊读成拱廊而不是墙前立杆
+        b0 = -ARC + 2 * ARC * i / N_COL; b1 = -ARC + 2 * ARC * (i + 1) / N_COL
+        gal.lathe(0, 0, z0, [(R_RING + DEPTH / 2 - 0.55, 0), (R_RING + DEPTH / 2 - 0.55, H1 - 3.2)], GLASS, 6, a0=b0 + 0.006, a1=b1 - 0.006)
+        gal.lathe(0, 0, z0 + H1 - 3.2, [(R_RING + DEPTH / 2 - 0.55, 0), (R_RING + DEPTH / 2 - 0.55, 1.0)], GLASS, 6, a0=b0 + 0.011, a1=b1 - 0.011)
+        gal.lathe(0, 0, z0 + H1 - 2.2, [(R_RING + DEPTH / 2 - 0.55, 0), (R_RING + DEPTH / 2 - 0.55, 0.7)], GLASS, 6, a0=b0 + 0.016, a1=b1 - 0.016)
     # 一层券墙：柱后一道连续外墙，柱列读成拱廊（逐间做拱券在环形排布上容易算错，
     # 而且远看与连续券墙几乎无差；要做真拱券留给后续精修）
     gal.lathe(0, 0, z0, [(R_RING + DEPTH / 2 - 0.4, 0), (R_RING + DEPTH / 2 - 0.4, H1 + 2.4)], ASHLAR, 64, a0=-ARC, a1=ARC)
@@ -122,18 +132,20 @@ def main():
     for k in range(4):                                                     # 四顶方帐
         a = k * math.tau / 4 + 0.6
         tx, ty = fx + math.cos(a) * 26.0, fy + math.sin(a) * 26.0
-        cvs = rnd.choice((CANVAS_R, CANVAS_B, CANVAS))
+        cvs = (CANVAS_R, CANVAS_B, OCHRE, CANVAS_R)[k]                           # 四顶方帐：红 / 蓝 / 赭 / 红，轮换
         fair.boxc(tx, ty, 0.0, 18.0, 18.0, 7.0, cvs)                            # 篷体
         fair.lathe(tx, ty, 7.0, [(12.8, 0), (12.8, 0.7)], cvs, 4)               # 篷檐
         fair.pyramid(tx, ty, 7.7, 18.6, 18.6, 6.4, cvs)                         # 攒尖篷顶
         for sx in (-1, 1):
             fair.boxc(tx + sx * 7.0, ty, 0.0, 0.5, 15.4, 7.0, WOOD)
+        fair.boxc(tx, ty - 9.05, 0.0, 4.4, 0.2, 5.2, GLASS)                     # 帐门
+        fair.boxc(tx, ty, 14.0, 0.9, 19.0, 0.5, GOLD)                            # 脊饰
     for k, ang in enumerate((math.radians(16.0), math.radians(-24.0))):    # 沿弧带补两处连排摊位
         sx, sy = ring_pt(ang, R_RING - 26.0)
         for j in range(3):
             kx = sx + (j - 1) * 9.0
-            fair.boxc(kx, sy, 0.0, 7.0, 7.0, 4.4, (CANVAS_R, CANVAS_B, CANVAS)[(k + j) % 3])
-            fair.pyramid(kx, sy, 4.4, 8.0, 8.0, 2.6, CANVAS)
+            fair.boxc(kx, sy, 0.0, 7.0, 7.0, 4.4, (CANVAS_R, CANVAS_B, OCHRE)[(k + j) % 3])
+            fair.pyramid(kx, sy, 4.4, 8.0, 8.0, 2.6, OCHRE)
     fair.cyl(fx, fy, 0.0, 13.0, 2.0, MARBLE, 24, r2=12.4)                  # 中央圆亭台基
     for k in range(12):
         a = k * math.tau / 12
@@ -143,36 +155,43 @@ def main():
     # 巨轮（纹样化，无字）
     wx, wy = WHEEL_C
     for sx in (-1, 1):                                                     # A 形支架
-        fair.boxc(wx + sx * 7.0, wy - 5.0, 0.0, 1.6, 1.6, 46.0, BRONZE)
-        fair.boxc(wx + sx * 7.0, wy + 5.0, 0.0, 1.6, 1.6, 46.0, BRONZE)
-        fair.boxc(wx + sx * 7.0, wy, 46.0, 2.2, 12.0, 2.4, BRONZE)
+        fair.boxc(wx + sx * 7.0, wy - 5.0, 0.0, 1.6, 1.6, 46.0, FRAME)
+        fair.boxc(wx + sx * 7.0, wy + 5.0, 0.0, 1.6, 1.6, 46.0, FRAME)
+        fair.boxc(wx + sx * 7.0, wy, 46.0, 2.2, 12.0, 2.4, FRAME)
     circ = [(wx + math.cos(i * math.tau / 48) * WHEEL_R, wy, 26.0 + math.sin(i * math.tau / 48) * WHEEL_R) for i in range(48)]
-    fair.tube(circ, 0.75, BRONZE, 6, closed=True)                          # 轮圈
+    fair.tube(circ, 0.75, FRAME, 6, closed=True)                          # 轮圈
     circ2 = [(wx + math.cos(i * math.tau / 48) * (WHEEL_R * 0.86), wy, 26.0 + math.sin(i * math.tau / 48) * (WHEEL_R * 0.86)) for i in range(48)]
-    fair.tube(circ2, 0.35, BRONZE, 5, closed=True)
+    fair.tube(circ2, 0.35, FRAME, 5, closed=True)
     for k in range(12):                                                    # 辐条 + 吊舱
         a = k * math.tau / 12
         ex, ez = wx + math.cos(a) * WHEEL_R, 26.0 + math.sin(a) * WHEEL_R
-        fair.tube([(wx, wy, 26.0), (ex, wy, ez)], 0.35, BRONZE, 5)
-        fair.boxc(ex, wy, ez - 3.2, 4.0, 4.0, 3.2, rnd.choice((CANVAS_R, CANVAS_B, CANVAS)))
-    fair.cyl(wx, wy, 24.8, 1.4, 2.4, BRONZE, 12, r2=1.4)                   # 轮心
+        fair.tube([(wx, wy, 26.0), (ex, wy, ez)], 0.35, FRAME, 5)
+        fair.boxc(ex, wy, ez - 4.4, 5.2, 5.2, 4.4, (CANVAS_R, CANVAS_B, OCHRE)[k % 3])
+    fair.cyl(wx, wy, 24.8, 1.4, 2.4, FRAME, 12, r2=1.4)                   # 轮心
     points.append(((wx, wy, 52.0), 6e3, (1.0, 0.9, 0.7)))
 
     # ------------------------------------------------------------ 场地
     ground = Batch('site_ground')
+    ground.cyl(148.0, -42.0, -0.14, 245.0, 0.08, GRASS, 88, r2=245.0)          # 外圈草坪，给铺装场一个边
     ground.cyl(148.0, -42.0, -0.06, 215.0, 0.06, PAVE, 88, r2=215.0)      # 铺装场（只铺内容所在的那一区，别铺满画面）
     ground.lathe(0, 0, 0.0, [(R_RING - 22, 0), (R_RING - 22, PL), (R_RING + 22, PL), (R_RING + 22, 0)],
-                 PAVE, 72, a0=-ARC - 0.14, a1=ARC + 0.14)                    # 回廊下的窄台基带
-    ground.lathe(0, 0, 0.0, [(R_RING - 96, 0), (R_RING - 96, 0.12), (R_RING - 44, 0.12)], MARBLE, 72)     # 环道
+                 KERB, 72, a0=-ARC - 0.14, a1=ARC + 0.14)                    # 回廊下的窄台基带
+    ground.lathe(0, 0, 0.0, [(R_RING - 96, 0), (R_RING - 96, 0.12), (R_RING - 44, 0.12)], RING, 72)     # 环道
+    ground.lathe(148.0, -42.0, -0.06, [(213.0, 0), (213.0, 0.5), (217.0, 0.5), (217.0, 0)], KERB, 88)   # 铺装场路缘
     ground.boxc(lx, ly - 26.0, 0.06, 96.0, 18.0, 0.1, PAVE)                # 中央大道
     for k in (-1, 1):                                                      # 两侧草坪 + 行道树
         a = k * math.radians(62.0)
         gx, gy = ring_pt(a, R_RING - 44.0)
-        ground.boxc(gx, gy, 0.02, 60.0, 40.0, 0.1, C.pbr('cc_grass', 'grass_ground', 4.0, tint=(0.5, 0.6, 0.35), sat=0.4))
+        ground.boxc(gx, gy, 0.02, 60.0, 40.0, 0.1, GRASS)
         for i in range(6):
             tx = gx - 26.0 + i * 10.4
-            ground.cyl(tx, gy - 16.0, 0.02, 0.32, 3.4, WOOD, 8)
-            ground.sphere(tx, gy - 16.0, 3.9, 1.9, LEAF, seg=10, rings=6)
+            ground.cyl(tx, gy - 16.0, 0.02, 0.4, 5.0, WOOD, 8)
+            ground.sphere(tx, gy - 16.0, 6.0, 3.2, LEAF, seg=10, rings=6)
+    for i in range(9):                                                     # 中央大道两侧行道树
+        for side in (-1, 1):
+            tx = lx - 44.0 + i * 11.0; ty2 = ly - 26.0 + side * 12.0
+            ground.cyl(tx, ty2, 0.02, 0.4, 5.0, WOOD, 8)
+            ground.sphere(tx, ty2, 6.0, 3.2, LEAF, seg=10, rings=6)
 
     # ------------------------------------------------------------ 灯
     lights = Batch('props_lights')
