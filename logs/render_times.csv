@@ -494,3 +494,7 @@ date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
 2026-09-30,isle_isle5,draft,2000,16,0.0,0,darwin,ok,0,0
 2026-09-30,eden_dairy_blend,draft,64,1,0.1,0,darwin,ok,0,0
 2026-09-30,eden_r5_before_whole,draft,2000,16,1.2,0,darwin,ok,0,0
+2026-09-30,yuanyu_holy_mount,draft,1800,16,1.3,0,darwin,ok,0,0
+2026-09-30,yuanyu_holy_mount,draft,1800,16,1.1,0,darwin,ok,0,0
+2026-09-30,yuanyu_holy_mount,patch,64,1,0.3,0,darwin,ok,0,0
+2026-09-30,yuanyu_holy_mount,patch,0,32,9.4,0,darwin,ok,0,0

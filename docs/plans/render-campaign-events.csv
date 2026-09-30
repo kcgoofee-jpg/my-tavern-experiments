@@ -96,3 +96,8 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T13:11:59Z,isle:eden,integrate,skip,hero-1,,user decision: keep the shipped Eden version; blender/islands/eden.py stays as an unshipped draft
 2026-09-30T13:11:59Z,isle:eden,ship,skip,hero-1,,user decision: keep the shipped Eden version; blender/islands/eden.py stays as an unshipped draft
 2026-09-30T13:12:12Z,isle:isle5,fix,release,hero-1,,"paused by the user at fix: draft2 fixed ward/forest/ridges; draft3 (thin ward rim + dark house) crashed on an index bug, fixed in the script, not re-rendered"
+2026-09-30T13:20:14Z,review:holy_mountain,review-r1,claim,std-1,,
+2026-09-30T13:25:50Z,review:holy_mountain,review-r1,done,std-1,fail,"r1 7.5/5.5 fail: white block behind cathedral, statues overhang ring platform"
+2026-09-30T13:25:50Z,review:holy_mountain,fix,done,std-1,,"north corner blocks -> gothic towers; colonnade deck 8.5->11 m, statues 1.8->1.5 (summit() only)"
+2026-09-30T13:25:51Z,review:holy_mountain,review-r2,done,std-1,pass,r2 7.5/6.5 pass
+2026-09-30T13:45:04Z,review:holy_mountain,ship,done,std-1,,glb re-exported via export_glb.py (same 474748 tris) + webp/meshopt: std 9.65 MB / low 3.06 MB (was 9.64 / 3.23); manifest unchanged; script gained --save <path>; check_maps + estate3d_manifest + smoke pass
