@@ -497,18 +497,20 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   import(SELF + 'tavern/varsync.mjs').then(m => { VSG = m.createGate({ hasMvu: () => BR.mvuPresent(), epoch: () => BR.varUpdateSeq() }); }).catch(() => {});
   const gate = () => VSG;
   function gateFlush(why = 'round') { try { return gate()?.flush(why) || null; } catch (e) { return null; } }
-  /** 宿主实际落盘的状态视图（审计器的 landed 参数）：资产域 = 仓库 id 表；NPC 域 = 在场名册的「人 → 当前地点」；
-   *  事件域还没有落盘写入路径（返回空 → 该域只走待结算，不猜） */
-  function landedView() {
-    const assets = {}, npc = {};
-    try { for (const [id, e] of Object.entries(inv?.items || {})) assets[id] = e?.名 || ''; } catch (e) {}
-    try { const p = BR.rosters(mvuStat())?.present; for (const it of p?.items || []) if (it?.name && it?.place) npc[it.name] = it.place; } catch (e) {}
-    return { assets, npc, events: null };
+  /** 宿主实际落盘的状态视图（审计器的 landed 参数）：只为**这一轮真有事实的域**取视图，不白读一遍 MVU——
+   *  资产域 = 仓库 id 表；NPC 域 = 在场名册的「人 → 当前地点」；事件域还没有落盘写入路径（不给视图 = 走待结算） */
+  function landedView(facts) {
+    const need = new Set((facts || []).map(f => f?.kind));
+    const out = {};
+    if (need.has('loot')) { const assets = {}; try { for (const [id, e] of Object.entries(inv?.items || {})) assets[id] = e?.名 || ''; } catch (e) {} out.assets = assets; }
+    if (need.has('routine')) { const npc = {}; try { const p = BR.rosters(mvuStat())?.present; for (const it of p?.items || []) if (it?.name && it?.place) npc[it.name] = it.place; } catch (e) {} out.npc = npc; }
+    return out;
   }
-  /** 漏项审计 + 单项补发（W11）：补的整行来自世界藏物表（不凭空造东西），补过的记水位不再重发 */
+  /** 漏项审计 + 单项补发（W11）：补的整行来自世界藏物表（不凭空造东西），补过的记水位不再重发——
+   *  水位同时挡住了「玩家用掉 / 丢掉道具后又被审计器复活」这种反向错误。 */
   function ledgerSync() {
-    if (!LEDm || !STm || !INVm || !alive || life.dead) return null;
-    const aud = LEDm.audit(lootFacts, landedView());
+    if (!LEDm || !STm || !INVm || !alive || life.dead || !lootFacts.length) return null;   // 本场没有物理事实 = 不用对账
+    const aud = LEDm.audit(lootFacts, landedView(lootFacts));
     const writable = aud.patches.filter(p => p.domain === 'assets');   // 只有资产域有落盘写入路径
     const cl = LEDm.claim(settleState, writable, { floor: floorNow });
     let fixed = 0;
