@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T12:14:27Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T12:39:06Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 3 | 0 | 45 | 0 | 0 | 0 | 48 |
+| standard | 4 | 0 | 44 | 0 | 0 | 0 | 48 |
 | hero | 2 | 0 | 12 | 0 | 6 | 0 | 20 |
 
 Below-gate (user spot-check): none
@@ -18,7 +18,7 @@ Below-gate (user spot-check): none
 | 1 | `estate:final` | estate | done | - |  |  | Re-render the estate exterior views (failed job) |
 | 2 | `estate:opt` | estate | done | - |  |  | Evaluate the rescued house_opt LOD glbs for the estate model manifest |
 | 3 | `review:arms_rnd` | review | done | - |  |  | Review and fix model arms rnd |
-| 4 | `review:clearing_depot` | review | open | review-r1 |  |  | Review and fix model clearing depot |
+| 4 | `review:clearing_depot` | review | done | - |  |  | Review and fix model clearing depot |
 | 5 | `review:contest_corridor` | review | open | review-r1 |  |  | Review and fix model contest corridor |
 | 6 | `review:ether_dome` | review | open | review-r1 |  |  | Review and fix model ether dome |
 | 7 | `review:free_knight_camp` | review | open | review-r1 |  |  | Review and fix model free knight camp |
