@@ -58,7 +58,9 @@ is shared by both lanes through the queue; never call `blender_run.sh` or cloud 
 
 **Verify every render yourself**: the render guard has reported `status=ok` for a run that died with a Python
 traceback. After each job, check its log for `Traceback` / `Error` and that the output file is new (mtime after the
-job start) before judging it. If the guard misreports, note it in the item's `--note`; do not fix the guard here.
+job start) before judging it. Since R2 the guard itself fails such runs (`script_error` / `no_output` / `stale_output`, exit 70,
+see `tools/render_truth.py`), so a clean `status=ok` can be trusted for crashes and missing files; still look at the image.
+If the guard misreports, note it in the item's `--note`; do not fix the guard here.
 
 ## 4. Stage rules
 
@@ -69,7 +71,19 @@ job start) before judging it. If the guard misreports, note it in the item's `--
   verbatim. **No provenance labels anywhere** (agent-brief §7): never write 「地图自设」「仓库推断」「自设」「推断」; if a
   tool template still has such a column, leave it empty. Scene items: one coherent scene containing every target
   marker; each marker becomes a hotspot.
-- `draft` / `board` / `gapcheck` → the landmark.py commands `next` prints (Mac, 16 spp).
+- `draft` / `clay` / `board` / `gapcheck` → the landmark.py commands `next` prints (Mac, 16 spp). `clay` renders the
+  geometry only (one matte material, neutral light, fixed cameras c1 + c2) into `docs/landmarks/<lm>/clay.jpg`: judge
+  proportions, silhouette and missing parts there and fix the build script before spending review rounds on
+  materials. It goes through the queue; re-run the command after the job finishes to collect the image.
+  Items that had already passed `draft` before this stage existed skip it automatically.
+- **Local defects → `study`, not a full re-render.** When a review finds a defect in one area (a roof edge, an
+  entrance, a texture seam), re-check it with
+  `python3 tools/landmark.py study <lm> --region x0,y0,x1,y1 [--cam c1 --res 2000 --spp 32]` (pixels of the draft
+  frame at that `--res`). It renders only that crop and writes `docs/landmarks/<lm>/study_<n>.jpg` plus
+  `study_<n>_ctx.jpg` (the crop pasted back into the latest draft with `tools/region_patch.py`). Use it in fix rounds
+  and in review-r2 to confirm a fix; re-run the same command after the queued job finishes to collect the files.
+- Optional: agents with the Blender MCP connector can inspect a scene live during fix rounds (`docs/render-inspection.md`);
+  agents without MCP skip it. Mind the queue pause/resume rule there.
 - `review-r1` / `review-r2` → YOU judge the renders (open the images). Write `docs/reviews/campaign/<id>/r<N>.md`
   (English): two scores 0–10 — fidelity (to card facts, or to the setting block for inferred items) and
   architectural credibility — plus the concrete defects. Gate: fidelity ≥ 7 AND credibility ≥ 6 → `--gate pass`,

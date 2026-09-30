@@ -55,3 +55,18 @@ python3 tools/landmark.py status [id]          # ✓ 有记录；✓* 老地标�
 - 渲染一律经 `tools/blender_run.sh`（GPU 锁、ASCII TMPDIR、崩溃重试）；`tools/render_queue.*` 存在时 draft / final 以 `tools/render_queue.sh submit <draft|final> -- <blender_run 参数>` 提交，队列决定 Mac 还是云端（`LM_QUEUE=0` 强制本机）；board 与 glb 导出要立刻拿到产物，仍直接经 blender_run.sh 同步跑（都是小任务）。
 - 看板锚点由 `blender/landmarks/lm_anchors.py` 包装 build.py 生成（每个非 bg_* 组的包围盒中心投到相机），build.py 不用改。
 - 世界书同步（worldbook-sync 规则）：标记带 `addon: true` 且 `addon_places.json` 没有它时，`ship` 要求 `--wb-text` 并新增条目，然后跑 `build_worldbook_addon.py --ship`。
+
+
+## Clay and region studies (R2, 2026-10-01)
+
+Two optional aids sit beside the stages; neither changes the stage records in `logs/landmarks/` or the checklist flow
+(the campaign ledger has a `clay` stage after `draft`).
+
+- `python3 tools/landmark.py clay <id> [--cams c1,c2 --res 1600 --spp 16]` — geometry only: every mesh gets one neutral
+  matte material, lights and sky are replaced by a fixed grey dome plus one sun, cameras are the build script's own
+  (default c1 and c2). The views are stitched side by side into `docs/landmarks/<id>/clay.jpg`. Runs through the
+  render queue; run the command again once the jobs finish to collect the sheet. Implemented by
+  `blender/landmarks/lm_variant.py` (wraps `build.py`, which is not edited).
+- `python3 tools/landmark.py study <id> --region x0,y0,x1,y1 [--cam c1 --res 2000 --spp 32]` — renders only that
+  crop of the frame (Blender render border + crop), writes `docs/landmarks/<id>/study_<n>.jpg`, and, when a draft of the
+  same camera exists, `study_<n>_ctx.jpg` with the crop pasted into it via `tools/region_patch.py`.

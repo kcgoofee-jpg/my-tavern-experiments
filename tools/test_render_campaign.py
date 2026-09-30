@@ -131,14 +131,25 @@ class UserGate(Base):
 class Replay(Base):
     def test_stage_replay_walks_the_landmark_stages_in_order(self):
         seen = []
-        for _ in range(10):
+        for _ in range(11):
             id, stage = self.picked(self.next('standard', 'a'))
             self.assertEqual(id, 'L1')
             seen.append(stage)
             self.walk('L1', [stage], gates={'review-r1': 'fail', 'review-r2': 'pass'})
-        self.assertEqual(seen, ['new', 'setting', 'draft', 'board', 'gapcheck', 'review-r1', 'fix', 'review-r2', 'final', 'ship'])
+        self.assertEqual(seen, ['new', 'setting', 'draft', 'clay', 'board', 'gapcheck', 'review-r1', 'fix', 'review-r2', 'final', 'ship'])
         self.assertEqual(self.status()['L1']['status'], 'done')
         self.assertEqual(self.picked(self.next('standard', 'a'))[0], 'R1', 'the next item is offered once L1 is done')
+
+    def test_clay_follows_draft_and_old_items_past_it_are_not_sent_back(self):
+        self.walk('L1', ['new', 'setting', 'draft'])
+        self.assertEqual(self.picked(self.next('standard', 'a')), ('L1', 'clay'))
+        self.assertIn('python3 tools/landmark.py clay L1', self.next('standard', 'a').stdout)
+        # an item recorded before clay existed: board done straight after draft -> clay is skipped, not current
+        write(self.events, 'ts,id,stage,event,agent,gate,note\n' + ''.join(
+            '%s,L2,%s,done,a,,\n' % (T0, s) for s in ('new', 'setting', 'draft', 'board')))
+        self.set_items([item('L2', 'standard', 'landmark')])
+        self.assertEqual(self.picked(self.next('standard', 'a'))[1], 'gapcheck')
+        self.assertEqual(self.status()['L2']['stage'], 'gapcheck')
 
     def test_done_must_name_the_current_stage_and_a_valid_stage(self):
         self.next('standard', 'a')
@@ -269,7 +280,7 @@ class Selection(Base):
         self.assertEqual(self.picked(self.next('standard', 'a', '--peek'))[0], 'L1')
         self.assertEqual(self.status()['B1']['status'], 'blocked')
         self.next('standard', 'a')
-        self.walk('L1', ['new', 'setting', 'draft', 'board', 'gapcheck', 'review-r1'], gates={'review-r1': 'pass'})
+        self.walk('L1', ['new', 'setting', 'draft', 'clay', 'board', 'gapcheck', 'review-r1'], gates={'review-r1': 'pass'})
         self.assertEqual(self.status()['B1']['status'], 'blocked')
         self.walk('L1', ['final', 'ship'])
         self.assertEqual(self.status()['B1']['status'], 'open')

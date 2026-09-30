@@ -4,6 +4,8 @@
 用法（仓库根目录）：
   python3 tools/landmark.py new <id> --layer tc_mid --name <卡原名> [--marker <标记 id>]
   python3 tools/landmark.py draft <id> [--res 2000 --spp 16 --cam c1]
+  python3 tools/landmark.py clay <id> [--cams c1,c2 --res 1600 --spp 16]          # 仅几何（clay）渲染 → docs/landmarks/<id>/clay.jpg（可选辅助步骤）
+  python3 tools/landmark.py study <id> --region x0,y0,x1,y1 [--cam c1 --res 2000 --spp 32]   # 只渲一块局部，供评审局部缺陷
   python3 tools/landmark.py board <id> [--res 1600 --spp 16 --cams c1,c2]
   python3 tools/landmark.py gapcheck <id> [--json]
   python3 tools/landmark.py final <id> [--cloud] [--res 2400 --spp 64]
@@ -404,6 +406,127 @@ def cmd_draft(a):
     finish(st, 'draft', rel(final))
 
 
+def stage_fresh(path, build):
+    """暂存图已渲完且比 build.py 新（改过 build.py 的旧图不算）。"""
+    return os.path.exists(path) and (not os.path.exists(build) or os.path.getmtime(path) >= os.path.getmtime(build))
+
+
+def hstack(paths_, out, quality=88):
+    """把同一地标的几张图按同高并排拼成一张（clay 总览图）。"""
+    from PIL import Image
+    ims = [Image.open(x).convert('RGB') for x in paths_]
+    h = min(i.height for i in ims)
+    ims = [i if i.height == h else i.resize((round(i.width * h / i.height), h), Image.LANCZOS) for i in ims]
+    sheet = Image.new('RGB', (sum(i.width for i in ims), h))
+    x = 0
+    for i in ims:
+        sheet.paste(i, (x, 0)); x += i.width
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    sheet.save(out, quality=quality)
+
+
+def cmd_clay(a):
+    """几何 clay：统一哑光材质 + 中性灯光 + 固定机位，16 spp；在 look-dev 前先看体量和轮廓（blender/landmarks/lm_variant.py）。"""
+    i = a.id; p = need(i, 'build'); st = load_state(i)
+    cams = [c for c in a.cams.split(',') if c]
+    final = P('docs', 'landmarks', i, 'clay.jpg')
+    stage = {c: P('map', 'art', f'_lm_{i}_clay_{c}.jpg') for c in cams}
+    key = f'clay_{a.cams}_{a.res}_{a.spp}'
+    say(f'[clay] {i}：{",".join(cams)} {a.res}px {a.spp}spp → {rel(final)}')
+    if not DRY and FORCE:
+        for x in stage.values():
+            if os.path.exists(x):
+                os.remove(x)
+    todo = [c for c in cams if DRY or not stage_fresh(stage[c], p['build'])]
+    queued = False
+    for c in todo:
+        r = render(i, 'draft', a.res, a.spp, [*blender_script('blender/landmarks/lm_variant.py', []), '--build', rel(p['build']),
+                   '--mode', 'clay', '--cam', c, '--res', str(a.res), '--samples', str(a.spp),
+                   '--out', rel(stage[c]), '--log', os.path.join(p['work'], f'clay_{c}_err.log')],
+                   os.path.join(p['work'], f'clay_{c}.log'))
+        queued = queued or r == 'queued'
+    if queued:
+        return say('… 已进渲染队列；渲完再跑一次 clay，会把图拼成 ' + rel(final) + '。')
+    if DRY:
+        return
+    missing = [c for c in cams if not os.path.exists(stage[c])]
+    if missing:
+        die('没产出 ' + ', '.join(rel(stage[c]) for c in missing), '看 ' + os.path.join(p['work'], f'clay_{missing[0]}.log'))
+    hstack([stage[c] for c in cams], final)
+    say(f'  写 {rel(final)}')
+    mark_sub(st, key)
+
+
+def parse_region(txt):
+    try:
+        v = [int(float(x)) for x in txt.split(',')]
+    except ValueError:
+        v = []
+    if len(v) != 4 or v[2] <= v[0] or v[3] <= v[1] or min(v) < 0:
+        die(f'--region「{txt}」不合法', '写成 x0,y0,x1,y1（像素，以 --res 的整帧为准，与同分辨率的 draft 图坐标一致，x1>x0、y1>y0）。')
+    return v
+
+
+def cmd_study(a):
+    """局部研究：只渲整帧里的一块（render border + crop），再经 tools/region_patch.py 贴回最近的 draft 给出上下文图。"""
+    i = a.id; p = need(i, 'build'); st = load_state(i)
+    reg = parse_region(a.region)
+    tag = '_'.join(map(str, reg))
+    stage = P('map', 'art', f'_lm_{i}_study_{a.cam}_{tag}.jpg')
+    side = stage + '.region.json'
+    outdir = P('docs', 'landmarks', i)
+    qkey = f'study_{a.cam}_{tag}_queued'
+    say(f'[study] {i}：{a.cam} 区域 {",".join(map(str, reg))} @ {a.res}px {a.spp}spp')
+    if not DRY and FORCE:
+        for x in (stage, side):
+            if os.path.exists(x):
+                os.remove(x)
+        st.get('sub', {}).pop(qkey, None)
+    fresh = stage_fresh(stage, p['build']) and os.path.exists(side)
+    if not fresh and not DRY:
+        if not FORCE and qkey in st.get('sub', {}) and datetime.datetime.now().timestamp() - st['sub'][qkey]['t'] < 6 * 3600:
+            return say(f'… 上一次提交还在队列里（{st["sub"][qkey]["at"]}）；渲完再跑同一条命令收图（--force 重新提交）。')
+    if not fresh:
+        r = render(i, 'patch', a.res, a.spp, [*blender_script('blender/landmarks/lm_variant.py', []), '--build', rel(p['build']),
+                   '--mode', 'study', '--region', ','.join(map(str, reg)), '--cam', a.cam, '--res', str(a.res),
+                   '--samples', str(a.spp), '--out', rel(stage), '--log', os.path.join(p['work'], 'study_err.log')],
+                   os.path.join(p['work'], f'study_{a.cam}.log'))
+        if r == 'queued':
+            mark_sub(st, qkey)
+            return say('… 已进渲染队列；渲完再跑一次 study，会把局部图收进 ' + rel(outdir) + '。')
+        if DRY:
+            return
+        if not os.path.exists(stage) or not os.path.exists(side):
+            die(f'没产出 {rel(stage)}（或 {rel(side)}）', '看 ' + os.path.join(p['work'], f'study_{a.cam}.log'))
+    if DRY:
+        return
+    os.makedirs(outdir, exist_ok=True)
+    n = 1
+    while os.path.exists(os.path.join(outdir, f'study_{n}.jpg')):
+        n += 1
+    crop = os.path.join(outdir, f'study_{n}.jpg')
+    shutil.copyfile(stage, crop)
+    say(f'  写 {rel(crop)}')
+    draft = P('docs', 'drafts', f'landmark_{i}_draft_{a.cam}.jpg')
+    if os.path.exists(draft):
+        from PIL import Image
+        sys.path.insert(0, os.path.join(ROOT, 'tools'))
+        import region_patch
+        box = json.load(open(side))
+        full = Image.open(draft).convert('RGB')
+        if abs(full.width / full.height - box['W'] / box['H']) < 0.01:
+            region_patch.patch(full, Image.open(crop).convert('RGB'), box, 0)
+            ctx = os.path.join(outdir, f'study_{n}_ctx.jpg')
+            full.save(ctx, quality=88)
+            say(f'  写 {rel(ctx)}（局部贴回最近的 draft，经 tools/region_patch.py）')
+        else:
+            say('  · draft 与本次整帧比例不同，不出上下文图（用同一 --cam / --res 的 draft）')
+    for x in (stage, side):
+        os.remove(x)
+    st.get('sub', {}).pop(qkey, None)
+    mark_sub(st, f'study_{a.cam}_{tag}_{n}')
+
+
 def cmd_board(a):
     i = a.id; p = need(i, 'build', 'checklist'); st = load_state(i)
     items = board_items(i)
@@ -701,6 +824,8 @@ def main(argv=None):
     sp = ap.add_subparsers(dest='cmd', required=True)
     s = sp.add_parser('new'); s.add_argument('id'); s.add_argument('--layer', required=True); s.add_argument('--name'); s.add_argument('--marker')
     s = sp.add_parser('draft'); s.add_argument('id'); s.add_argument('--cam', default='c1'); s.add_argument('--res', type=int, default=2000); s.add_argument('--spp', type=int, default=16)
+    s = sp.add_parser('clay'); s.add_argument('id'); s.add_argument('--cams', default='c1,c2'); s.add_argument('--res', type=int, default=1600); s.add_argument('--spp', type=int, default=16)
+    s = sp.add_parser('study'); s.add_argument('id'); s.add_argument('--region', required=True); s.add_argument('--cam', default='c1'); s.add_argument('--res', type=int, default=2000); s.add_argument('--spp', type=int, default=32)
     s = sp.add_parser('board'); s.add_argument('id'); s.add_argument('--cams', default='c1,c2'); s.add_argument('--res', type=int, default=1600); s.add_argument('--spp', type=int, default=16)
     s = sp.add_parser('gapcheck'); s.add_argument('id'); s.add_argument('--json', action='store_true'); s.add_argument('--no-mark', action='store_true')
     s = sp.add_parser('final'); s.add_argument('id'); s.add_argument('--cloud', action='store_true'); s.add_argument('--res', type=int, default=2400); s.add_argument('--spp', type=int, default=64)
@@ -715,7 +840,7 @@ def main(argv=None):
         say('（演练模式：只打印，不起 Blender、不写文件、不改状态）')
     if getattr(a, 'id', None):
         valid_id(a.id)
-    {'new': cmd_new, 'draft': cmd_draft, 'board': cmd_board, 'gapcheck': cmd_gapcheck, 'final': cmd_final,
+    {'new': cmd_new, 'draft': cmd_draft, 'clay': cmd_clay, 'study': cmd_study, 'board': cmd_board, 'gapcheck': cmd_gapcheck, 'final': cmd_final,
      'ship': cmd_ship, 'status': cmd_status}[a.cmd](a)
 
 

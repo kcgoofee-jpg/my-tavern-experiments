@@ -50,7 +50,7 @@ MAX_FAILS = 3
 LANES = ('standard', 'hero')
 EVENT_KINDS = ('claim', 'done', 'fail', 'wait', 'skip', 'release')
 REVIEW = ['review-r1', 'fix', 'review-r2']
-LANDMARK = ['new', 'setting', 'draft', 'board', 'gapcheck'] + REVIEW + ['final', 'ship']
+LANDMARK = ['new', 'setting', 'draft', 'clay', 'board', 'gapcheck'] + REVIEW + ['final', 'ship']
 STAGES = {
     'estate': ['final', 'verify', 'ship'],
     'review': REVIEW + ['ship'],
@@ -165,6 +165,13 @@ class State:
         self.last = None
 
     def auto_skipped(self):
+        if 'clay' in self.stages:      # added after draft (R2): items already past it are not sent back
+            i = self.stages.index('clay')
+            if any(s in self.done or s in self.skipped for s in self.stages[i + 1:]):
+                return {'clay'} | self._review_skips()
+        return self._review_skips()
+
+    def _review_skips(self):
         if 'review-r1' in self.done and self.gates.get('review-r1') == 'pass':
             return {'fix', 'review-r2'} & set(self.stages)
         return set()
@@ -291,6 +298,7 @@ def hint(item, stage):
         tmap = item['targets'][0].split(':')[0] if item.get('targets') else '<map>'
         cmd = {'new': 'python3 tools/landmark.py new %s --layer %s --name <card name> --marker %s' % (lid, tmap, lid),
                'draft': 'python3 tools/landmark.py draft %s' % lid,
+               'clay': 'python3 tools/landmark.py clay %s' % lid,
                'board': 'python3 tools/landmark.py board %s' % lid,
                'gapcheck': 'python3 tools/landmark.py gapcheck %s' % lid,
                'final': 'python3 tools/landmark.py final %s --res %s --spp %s' % (lid, sp.get('res', 2400), sp.get('spp', 64)),
@@ -322,6 +330,7 @@ STAGE_TEXT = {
     'new': 'Scaffold build.py / setting doc / checklist / manifest.',
     'setting': 'Write or refresh the setting doc: card quotes (C*) kept apart from repo inference (R*).',
     'draft': 'Draft render (16 spp).',
+    'clay': 'Clay render (geometry only, neutral light, 16 spp): check proportions and silhouette before look-dev; fix geometry first. Submitted through the queue, re-run the command once it finishes to collect docs/landmarks/<id>/clay.jpg.',
     'board': 'Review board (main view plus side / under views with numbered anchors).',
     'gapcheck': 'Setting vs board gap check; the reviewer writes docs/reviews/landmark_<id>/r<N>.md.',
     'review-r1': 'Two-persona review (architecture realism >= 7, card fidelity >= 7). Record: done ... --gate pass|fail.',

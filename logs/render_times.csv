@@ -647,3 +647,9 @@ date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
 2026-10-01,eden_site_glb,final,4096,64,8.4,0,darwin,ok,0,0
 2026-10-01,eden_web_scene,final,0,0,0.9,0,darwin,ok,0,0
 2026-10-01,eden_site_glb,final,4096,64,7.4,0,darwin,ok,0,0
+2026-10-01,lm_slums,draft,1600,16,0.2,0,darwin,ok,0,0
+2026-10-01,lm_slums,draft,1600,16,0.1,0,darwin,ok,0,0
+2026-10-01,lm_slums,draft,1600,16,0.2,0,darwin,ok,0,0
+2026-10-01,lm_slums,draft,1600,16,0.2,0,darwin,ok,0,0
+2026-10-01,lm_slums,patch,2000,32,0.2,0,darwin,ok,0,0
+2026-10-01,lm_slums,patch,2000,32,0.1,0,darwin,ok,0,0
