@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T16:59:07Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T17:09:43Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 29 | 0 | 19 | 0 | 0 | 0 | 48 |
+| standard | 40 | 0 | 8 | 0 | 0 | 0 | 48 |
 | hero | 4 | 0 | 11 | 0 | 6 | 0 | 21 |
 
 Below-gate (user spot-check): none
@@ -44,17 +44,17 @@ Below-gate (user spot-check): none
 | 27 | `scene:fief4` | scene | done | - |  |  | Fief 4 scene: castle, fields, order, village |
 | 28 | `scene:fief5` | scene | done | - |  |  | Fief 5 scene: castle, fields, order, village, lists |
 | 29 | `scene:yuanyu-city` | scene | done | - |  |  | Yuanyu city scene: gate, dome, plaza, spire quarters |
-| 30 | `base:tc_mid` | basemap | open | audit |  |  | Final-spec audit / re-render of base map tc_mid |
-| 31 | `base:tc_low` | basemap | open | audit |  |  | Final-spec audit / re-render of base map tc_low |
-| 32 | `base:site_kavalierki` | basemap | open | audit |  |  | Final-spec audit / re-render of base map site_kavalierki |
-| 33 | `base:yuanyu_sanctum` | basemap | open | audit |  |  | Final-spec audit / re-render of base map yuanyu_sanctum |
-| 34 | `base:yuanyu_city` | basemap | open | audit |  |  | Final-spec audit / re-render of base map yuanyu_city |
-| 35 | `base:site_highland` | basemap | open | audit |  |  | Final-spec audit / re-render of base map site_highland |
-| 36 | `base:site_fief1` | basemap | open | audit |  |  | Final-spec audit / re-render of base map site_fief1 |
-| 37 | `base:site_fief2` | basemap | open | audit |  |  | Final-spec audit / re-render of base map site_fief2 |
-| 38 | `base:site_fief3` | basemap | open | audit |  |  | Final-spec audit / re-render of base map site_fief3 |
-| 39 | `base:site_fief4` | basemap | open | audit |  |  | Final-spec audit / re-render of base map site_fief4 |
-| 40 | `base:site_fief5` | basemap | open | audit |  |  | Final-spec audit / re-render of base map site_fief5 |
+| 30 | `base:tc_mid` | basemap | done | - |  |  | Final-spec audit / re-render of base map tc_mid |
+| 31 | `base:tc_low` | basemap | done | - |  |  | Final-spec audit / re-render of base map tc_low |
+| 32 | `base:site_kavalierki` | basemap | done | - |  |  | Final-spec audit / re-render of base map site_kavalierki |
+| 33 | `base:yuanyu_sanctum` | basemap | done | - |  |  | Final-spec audit / re-render of base map yuanyu_sanctum |
+| 34 | `base:yuanyu_city` | basemap | done | - |  |  | Final-spec audit / re-render of base map yuanyu_city |
+| 35 | `base:site_highland` | basemap | done | - |  |  | Final-spec audit / re-render of base map site_highland |
+| 36 | `base:site_fief1` | basemap | done | - |  |  | Final-spec audit / re-render of base map site_fief1 |
+| 37 | `base:site_fief2` | basemap | done | - |  |  | Final-spec audit / re-render of base map site_fief2 |
+| 38 | `base:site_fief3` | basemap | done | - |  |  | Final-spec audit / re-render of base map site_fief3 |
+| 39 | `base:site_fief4` | basemap | done | - |  |  | Final-spec audit / re-render of base map site_fief4 |
+| 40 | `base:site_fief5` | basemap | done | - |  |  | Final-spec audit / re-render of base map site_fief5 |
 | 41 | `var:tc_mid:dawn` | variant | open | render |  |  | Period variant tc_mid / dawn |
 | 42 | `var:tc_mid:dusk` | variant | open | render |  |  | Period variant tc_mid / dusk |
 | 43 | `var:tc_mid:day` | variant | open | render |  |  | Period variant tc_mid / day |

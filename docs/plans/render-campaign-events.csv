@@ -285,3 +285,62 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T16:59:07Z,scene:fief4,ship,done,std-1,pass,"markers linked to lm_fief4 in maps.json, card-buildings rows updated; check_maps + smoke pass"
 2026-09-30T16:59:07Z,scene:fief5,ship,done,std-1,pass,"markers linked to lm_fief5 in maps.json, card-buildings rows updated; check_maps + smoke pass"
 2026-09-30T16:59:07Z,scene:yuanyu-city,ship,done,std-1,pass,"markers linked to lm_yuanyu_city in maps.json, card-buildings rows updated; check_maps + smoke pass"
+2026-09-30T16:59:25Z,base:tc_mid,audit,claim,std-1,,
+2026-09-30T16:59:57Z,base:tc_mid,audit,done,std-1,pass,"audit: map/art/tc_mid.dzi is 8000x5000 (spec 8000 px); render_times.csv rows 157/193 log asset tc_mid final 8000x128 spp on 2026-09-28 (autodl RTX 4080S) = spec. The 2026-09-29 rows are the tc_mid_night / tc_mid_day period variants (8000x64), tracked by the var:tc_mid:* items, not the base asset"
+2026-09-30T16:59:57Z,base:tc_mid,render,skip,std-1,,"tiles already meet spec (see audit note); nothing to render, cut or ship"
+2026-09-30T16:59:57Z,base:tc_mid,tiles,skip,std-1,,"tiles already meet spec (see audit note); nothing to render, cut or ship"
+2026-09-30T16:59:57Z,base:tc_mid,verify,skip,std-1,,"tiles already meet spec (see audit note); nothing to render, cut or ship"
+2026-09-30T16:59:57Z,base:tc_mid,ship,skip,std-1,,"tiles already meet spec (see audit note); nothing to render, cut or ship"
+2026-09-30T16:59:57Z,base:tc_low,audit,claim,std-1,,
+2026-09-30T17:00:02Z,base:tc_low,audit,done,std-1,pass,"audit: map/art/tc_low.dzi is 8000 px wide (spec 8000 px); render_times.csv row 194 logs asset tc_low final 8000x128 spp on 2026-09-28 (autodl RTX 4080S) = spec. The 2026-09-29 tc_low_day row (8000x64) is the day period variant, tracked by var:tc_low:day, not the base asset"
+2026-09-30T17:00:02Z,base:tc_low,render,skip,std-1,,"tiles already meet spec (see audit note); nothing to render, cut or ship"
+2026-09-30T17:00:02Z,base:tc_low,tiles,skip,std-1,,"tiles already meet spec (see audit note); nothing to render, cut or ship"
+2026-09-30T17:00:02Z,base:tc_low,verify,skip,std-1,,"tiles already meet spec (see audit note); nothing to render, cut or ship"
+2026-09-30T17:00:02Z,base:tc_low,ship,skip,std-1,,"tiles already meet spec (see audit note); nothing to render, cut or ship"
+2026-09-30T17:00:02Z,base:site_kavalierki,audit,claim,std-1,,
+2026-09-30T17:00:14Z,base:site_kavalierki,audit,done,std-1,fail,"audit: map/art/site_kavalierki.dzi is 4000 px wide (meets res) but blender/opening_sites.py defaults to --samples 24 and no final is logged, so the tiles are ~24 spp (< spec 128): re-render"
+2026-09-30T17:00:14Z,base:site_kavalierki,render,claim,std-1,,
+2026-09-30T17:09:41Z,base:site_kavalierki,render,done,std-1,pass,"4000 px / 128 spp via the queue (Mac), logs/campaign/full/ (git-ignored); opened in a contact sheet: no black frame, matches the map"
+2026-09-30T17:09:41Z,base:site_kavalierki,tiles,done,std-1,pass,"tools/make_dzi.py: 4000x2500, 13 levels, 66 tiles, jpg 512/overlap 1, extent from maps.json"
+2026-09-30T17:09:41Z,base:site_kavalierki,verify,done,std-1,pass,whole image checked; check_maps 0 errors 0 warnings
+2026-09-30T17:09:41Z,base:site_kavalierki,ship,done,std-1,pass,tiles committed and pushed
+2026-09-30T17:09:41Z,base:yuanyu_sanctum,audit,done,std-1,fail,audit: DZI is 4000 px wide (meets res) but blender/opening_sites.py defaults to 24 spp and no final is logged: tiles ~24 spp < spec 128; re-render
+2026-09-30T17:09:41Z,base:yuanyu_sanctum,render,done,std-1,pass,"4000 px / 128 spp via the queue (Mac), logs/campaign/full/ (git-ignored); opened in a contact sheet: no black frame, matches the map"
+2026-09-30T17:09:41Z,base:yuanyu_sanctum,tiles,done,std-1,pass,"tools/make_dzi.py: 4000x2500, 13 levels, 66 tiles, jpg 512/overlap 1, extent from maps.json"
+2026-09-30T17:09:41Z,base:yuanyu_sanctum,verify,done,std-1,pass,whole image checked; check_maps 0 errors 0 warnings
+2026-09-30T17:09:41Z,base:yuanyu_sanctum,ship,done,std-1,pass,tiles committed and pushed
+2026-09-30T17:09:41Z,base:yuanyu_city,audit,done,std-1,fail,audit: DZI is 4000 px wide (meets res) but blender/opening_sites.py defaults to 24 spp and no final is logged: tiles ~24 spp < spec 128; re-render
+2026-09-30T17:09:41Z,base:yuanyu_city,render,done,std-1,pass,"4000 px / 128 spp via the queue (Mac), logs/campaign/full/ (git-ignored); opened in a contact sheet: no black frame, matches the map"
+2026-09-30T17:09:41Z,base:yuanyu_city,tiles,done,std-1,pass,"tools/make_dzi.py: 4000x2500, 13 levels, 66 tiles, jpg 512/overlap 1, extent from maps.json"
+2026-09-30T17:09:41Z,base:yuanyu_city,verify,done,std-1,pass,whole image checked; check_maps 0 errors 0 warnings
+2026-09-30T17:09:41Z,base:yuanyu_city,ship,done,std-1,pass,tiles committed and pushed
+2026-09-30T17:09:41Z,base:site_highland,audit,done,std-1,fail,audit: DZI is 4000 px wide (meets res) but blender/opening_sites.py defaults to 24 spp and no final is logged: tiles ~24 spp < spec 128; re-render
+2026-09-30T17:09:41Z,base:site_highland,render,done,std-1,pass,"4000 px / 128 spp via the queue (Mac), logs/campaign/full/ (git-ignored); opened in a contact sheet: no black frame, matches the map"
+2026-09-30T17:09:41Z,base:site_highland,tiles,done,std-1,pass,"tools/make_dzi.py: 4000x2500, 13 levels, 66 tiles, jpg 512/overlap 1, extent from maps.json"
+2026-09-30T17:09:41Z,base:site_highland,verify,done,std-1,pass,whole image checked; check_maps 0 errors 0 warnings
+2026-09-30T17:09:41Z,base:site_highland,ship,done,std-1,pass,tiles committed and pushed
+2026-09-30T17:09:41Z,base:site_fief1,audit,done,std-1,fail,audit: DZI is 4000 px wide (meets res) but blender/opening_sites.py defaults to 24 spp and no final is logged: tiles ~24 spp < spec 128; re-render
+2026-09-30T17:09:42Z,base:site_fief1,render,done,std-1,pass,"4000 px / 128 spp via the queue (Mac), logs/campaign/full/ (git-ignored); opened in a contact sheet: no black frame, matches the map"
+2026-09-30T17:09:42Z,base:site_fief1,tiles,done,std-1,pass,"tools/make_dzi.py: 4000x2500, 13 levels, 66 tiles, jpg 512/overlap 1, extent from maps.json"
+2026-09-30T17:09:42Z,base:site_fief1,verify,done,std-1,pass,whole image checked; check_maps 0 errors 0 warnings
+2026-09-30T17:09:42Z,base:site_fief1,ship,done,std-1,pass,tiles committed and pushed
+2026-09-30T17:09:42Z,base:site_fief2,audit,done,std-1,fail,audit: DZI is 4000 px wide (meets res) but blender/opening_sites.py defaults to 24 spp and no final is logged: tiles ~24 spp < spec 128; re-render
+2026-09-30T17:09:42Z,base:site_fief2,render,done,std-1,pass,"4000 px / 128 spp via the queue (Mac), logs/campaign/full/ (git-ignored); opened in a contact sheet: no black frame, matches the map"
+2026-09-30T17:09:42Z,base:site_fief2,tiles,done,std-1,pass,"tools/make_dzi.py: 4000x2500, 13 levels, 66 tiles, jpg 512/overlap 1, extent from maps.json"
+2026-09-30T17:09:42Z,base:site_fief2,verify,done,std-1,pass,whole image checked; check_maps 0 errors 0 warnings
+2026-09-30T17:09:42Z,base:site_fief2,ship,done,std-1,pass,tiles committed and pushed
+2026-09-30T17:09:42Z,base:site_fief3,audit,done,std-1,fail,audit: DZI is 4000 px wide (meets res) but blender/opening_sites.py defaults to 24 spp and no final is logged: tiles ~24 spp < spec 128; re-render
+2026-09-30T17:09:42Z,base:site_fief3,render,done,std-1,pass,"4000 px / 128 spp via the queue (Mac), logs/campaign/full/ (git-ignored); opened in a contact sheet: no black frame, matches the map"
+2026-09-30T17:09:42Z,base:site_fief3,tiles,done,std-1,pass,"tools/make_dzi.py: 4000x2500, 13 levels, 66 tiles, jpg 512/overlap 1, extent from maps.json"
+2026-09-30T17:09:42Z,base:site_fief3,verify,done,std-1,pass,whole image checked; check_maps 0 errors 0 warnings
+2026-09-30T17:09:42Z,base:site_fief3,ship,done,std-1,pass,tiles committed and pushed
+2026-09-30T17:09:42Z,base:site_fief4,audit,done,std-1,fail,audit: DZI is 4000 px wide (meets res) but blender/opening_sites.py defaults to 24 spp and no final is logged: tiles ~24 spp < spec 128; re-render
+2026-09-30T17:09:42Z,base:site_fief4,render,done,std-1,pass,"4000 px / 128 spp via the queue (Mac), logs/campaign/full/ (git-ignored); opened in a contact sheet: no black frame, matches the map"
+2026-09-30T17:09:42Z,base:site_fief4,tiles,done,std-1,pass,"tools/make_dzi.py: 4000x2500, 13 levels, 66 tiles, jpg 512/overlap 1, extent from maps.json"
+2026-09-30T17:09:42Z,base:site_fief4,verify,done,std-1,pass,whole image checked; check_maps 0 errors 0 warnings
+2026-09-30T17:09:42Z,base:site_fief4,ship,done,std-1,pass,tiles committed and pushed
+2026-09-30T17:09:42Z,base:site_fief5,audit,done,std-1,fail,audit: DZI is 4000 px wide (meets res) but blender/opening_sites.py defaults to 24 spp and no final is logged: tiles ~24 spp < spec 128; re-render
+2026-09-30T17:09:42Z,base:site_fief5,render,done,std-1,pass,"4000 px / 128 spp via the queue (Mac), logs/campaign/full/ (git-ignored); opened in a contact sheet: no black frame, matches the map"
+2026-09-30T17:09:42Z,base:site_fief5,tiles,done,std-1,pass,"tools/make_dzi.py: 4000x2500, 13 levels, 66 tiles, jpg 512/overlap 1, extent from maps.json"
+2026-09-30T17:09:43Z,base:site_fief5,verify,done,std-1,pass,whole image checked; check_maps 0 errors 0 warnings
+2026-09-30T17:09:43Z,base:site_fief5,ship,done,std-1,pass,tiles committed and pushed
