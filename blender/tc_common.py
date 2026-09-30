@@ -382,7 +382,8 @@ class Layer:
         # --no-landmark-glow：去掉地标的装饰性光圈 / 描边灯 / 光晕（建筑本体与普通照明不动）；默认关（= 现状）。
         # 各层脚本照常建完、照常消耗随机数，只在最后把这些元素过滤掉，所以随机序列与 map/data/*.json 都不变。
         self.lm_glow = not self.opt.get('--no-landmark-glow')
-        self.day = bool(self.opt.get('--day'))              # --day：白天版（日光 + 材质切换，各层脚本自己处理；默认夜景，行为不变）
+        self.tod = str(self.opt.get('--tod', 'day'))         # --tod dawn|dusk：黎明 / 黄昏版 = 白天版材质 + 低角度暖色太阳（TOD_SUN）；不带 --tod 行为不变
+        self.day = bool(self.opt.get('--day')) or self.tod in TOD_SUN   # --day：白天版（日光 + 材质切换，各层脚本自己处理；默认夜景，行为不变）
         global DAY; DAY = self.day                          # tc_common 层面切太阳几何（sun_rot / sun_dir）：--day 白天几何，默认夜景不变
     def f(self, key, default):                              # 读数值参数：layer.f('--glow', 1)
         return float(self.opt.get(key, default))
@@ -417,6 +418,10 @@ SUN_ROT = (math.radians(40), 0, math.radians(215))
 # 投影长度从 0.84h 缩到 0.70h，楼间峡谷被楼影盖住的比例下降，白天图整体更亮。
 # 夜景（中层 gap_skylight 等）与 map/data 的 shadow_offset 仍走 SUN_ROT：不带 --day 时逐字节不变。
 SUN_ROT_DAY = (math.radians(35), 0, math.radians(215))
+TOD_SUN = {   # --tod 黎明 / 黄昏：(太阳天顶角 °, 太阳颜色, 天色)；方位角沿用 SUN_ROT[2]（与上层 tiancheng_upper --tod 同一套）
+    'dawn': (64, (1, .74, .52), (.78, .62, .62)),
+    'dusk': (68, (1, .56, .34), (.66, .46, .5)),
+}
 DAY = False        # 由 Layer.__init__ 按 --day 置位：sun_rot / sun_dir 切到白天几何；不碰随机序列，也不进 map/data
 def sun_rot():
     """太阳物体的旋转欧拉角，按脚本模式切换：--day 走白天几何 SUN_ROT_DAY，其余（夜景、数据投影）走 SUN_ROT。"""

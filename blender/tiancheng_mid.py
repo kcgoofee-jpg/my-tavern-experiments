@@ -959,10 +959,11 @@ if DAY:
     tc.day_reset()
     # 评审（白天草稿 4/10）A 项·欠曝约 2 档：太阳 3.2→4.2、天光 .35→1.0 同步抬，再走 finish 的 exposure ≈ +.5 档
     # （阴影靠天光抬起来，直射面不至于全剪；--sun / --dayexp 可调）。夜景与 map/data 不走这段。
-    _sun = bpy.data.lights.new('sun', 'SUN'); _sun.energy = layer.f('--sun', 4.2); _sun.angle = math.radians(1.2); _sun.color = (1, .96, .9)
-    _so = bpy.data.objects.new('sun', _sun); col_main.objects.link(_so); _so.rotation_euler = tc.sun_rot()
+    _t = tc.TOD_SUN.get(layer.tod)                              # --tod dawn|dusk：低角度暖色太阳 + 暖灰紫天；不带 --tod 与原白天版一致
+    _sun = bpy.data.lights.new('sun', 'SUN'); _sun.energy = layer.f('--sun', 7.5 if _t else 4.2); _sun.angle = math.radians(1.2); _sun.color = _t[1] if _t else (1, .96, .9)
+    _so = bpy.data.objects.new('sun', _sun); col_main.objects.link(_so); _so.rotation_euler = (math.radians(_t[0]), 0, tc.SUN_ROT[2]) if _t else tc.sun_rot()
     _day_tune()
-    layer.finish(world=((.55, .65, .8), 1.0), exposure=layer.f('--dayexp', .5))
+    layer.finish(world=(_t[2] if _t else (.55, .65, .8), 1.4 if _t else 1.0), exposure=layer.f('--dayexp', .8 if _t else .5))
 else:
     _sky = bpy.data.lights.new('gap_skylight', 'SUN'); _sky.energy = layer.f('--gapsun', .8); _sky.angle = math.radians(6); _sky.color = (.72, .8, 1.0)
     _so = bpy.data.objects.new('gap_skylight', _sky); col_main.objects.link(_so); _so.rotation_euler = tc.SUN_ROT

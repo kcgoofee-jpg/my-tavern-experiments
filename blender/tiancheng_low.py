@@ -771,8 +771,9 @@ if DAY:
     tc.day_reset()                                             # 夜景灯光全拆（含 7 号井的竖井冷光）、发光面改暗色漆面
     # 2026-09-29：对齐中层白天版的提亮（中层 sun 3.2→4.2 / 天光 .35→1.0 / +.5 档曝光，已自评 7.5/10）。
     # 下层保留「浊暖灰天」的性格（头顶是中层结构，不给蓝天），只抬能量与曝光：1.8→2.8、天光 .32→.8、+.4 档。
-    _sun = bpy.data.lights.new('sun', 'SUN'); _sun.energy = layer.f('--sun', 2.8); _sun.angle = math.radians(2.0); _sun.color = (1, .93, .82)
-    _so = bpy.data.objects.new('sun', _sun); col_main.objects.link(_so); _so.rotation_euler = tc.sun_rot()   # 三层共用方位；--day 走白天几何（tc.SUN_ROT_DAY）
-    layer.finish(world=((.44, .41, .36), layer.f('--ambient', .8)), exposure=layer.f('--dayexp', .4))
+    _t = tc.TOD_SUN.get(layer.tod)                              # --tod dawn|dusk：低角度暖色太阳 + 偏暖的灰紫天；不带 --tod 与原白天版一致
+    _sun = bpy.data.lights.new('sun', 'SUN'); _sun.energy = layer.f('--sun', 5.6 if _t else 2.8); _sun.angle = math.radians(2.0); _sun.color = _t[1] if _t else (1, .93, .82)
+    _so = bpy.data.objects.new('sun', _sun); col_main.objects.link(_so); _so.rotation_euler = (math.radians(_t[0]), 0, tc.SUN_ROT[2]) if _t else tc.sun_rot()   # 三层共用方位；--day 走白天几何（tc.SUN_ROT_DAY）
+    layer.finish(world=((tuple(.7 * c + .3 * .4 for c in _t[2]) if _t else (.44, .41, .36)), layer.f('--ambient', 1.2 if _t else .8)), exposure=layer.f('--dayexp', .7 if _t else .4))
 else:
     layer.finish(world=((.5, .38, .25), layer.f('--ambient', .12)), glare_opts=dict(threshold=.75, size=9.5, mix=-.7, tight=(.6, 7, .45)))
