@@ -32,7 +32,8 @@ def check(pid):
     if m.get('id') != pid: errs.append(f'{pid}: 清单 id {m.get("id")!r} 与目录名不一致')
     base = MAP if pid == 'eden' else d   # eden 的路径相对 map/
     for k, v in (m.get('data') or {}).items():
-        if v != 'builtin' and not os.path.exists(os.path.join(base, v)): errs.append(f'{pid}: data.{k} 指向的 {v} 不存在')
+        for f in (v.values() if isinstance(v, dict) else [v]):   # data.names = { 语言码: 路径 }（S4-4）
+            if f != 'builtin' and not os.path.exists(os.path.join(base, f)): errs.append(f'{pid}: data.{k} 指向的 {f} 不存在')
     for p in (m.get('preload') or []):   # 启动预取清单里的文件也要真实存在
         if not os.path.exists(os.path.join(base, p)): errs.append(f'{pid}: preload 指向的 {p} 不存在')
     errs += check_overlay(pid, d, m)

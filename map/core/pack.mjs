@@ -1,6 +1,6 @@
 // 设定包（pack）配置接口（通用化，docs/generalize/README.md）：核心只通过这里拿「这张卡」的东西——
 // 数据文件路径（地图注册表、世界地点、派生数据、房间平面、卡原名绑定、事件分类）、本机存储键前缀、聊天变量顶层键、CDN 仓库、主题强调色、标题。
-// 包 = map/packs/<id>/manifest.json（结构见 map/data/schema/pack.schema.json）。eden 也走清单（packs/eden/manifest.json 是伊甸唯一定义，C2；查看器 <link rel=preload> 让它与模块并行取，不多串行往返）。
+// 包 = map/packs/<id>/manifest.json（结构见 map/data/schema/pack.schema.json）。eden 也走清单（packs/eden/manifest.json 是 eden 包的唯一定义，C2；查看器 <link rel=preload> 让它与模块并行取，不多串行往返）。
 // 纯函数 + 一个可选的 fetch：查看器（app/boot.mjs）、宿主（tavern/eden-map.js）、node 单测、tools/*.py 的校验共用同一套规则。
 export const DEFAULT_ID = 'eden';
 export const ID_RE = /^[a-z][a-z0-9_-]{1,31}$/;
@@ -26,7 +26,12 @@ export function validate(m) {
   if (m.schema !== 1) errs.push('schema 必须是 1');
   if (!str(m.title, 80)) errs.push('title 必填（≤ 80 字）');
   if (!m.data || !relOk(m.data.maps)) errs.push('data.maps 必填，且是相对路径');
-  for (const [k, v] of Object.entries(m.data || {})) if (v !== 'builtin' && !relOk(v)) errs.push(`data.${k} 不是相对路径`);
+  for (const [k, v] of Object.entries(m.data || {})) {
+    if (k === 'names') {   // 各语言的地名对照表：{ 语言码: 相对路径 }（S4-4）
+      if (!v || typeof v !== 'object' || Array.isArray(v)) errs.push('data.names 要是 { 语言码: 路径 }');
+      else for (const [l, p] of Object.entries(v)) if (!/^[a-z]{2,3}(-[A-Za-z0-9]+)?$/.test(l) || !relOk(p)) errs.push(`data.names.${l} 不是相对路径`);
+    } else if (v !== 'builtin' && !relOk(v)) errs.push(`data.${k} 不是相对路径`);
+  }
   if (m.chat?.var !== undefined && !/^[A-Za-z_][A-Za-z0-9_]{0,31}$/.test(m.chat.var)) errs.push('chat.var 只能是字母数字下划线');
   if (m.theme?.accent !== undefined && !/^#[0-9a-fA-F]{6}$/.test(m.theme.accent)) errs.push('theme.accent 要写成 #rrggbb');
   if (m.cdn?.repo !== undefined && !/^[\w.-]+\/[\w.-]+$/.test(m.cdn.repo)) errs.push('cdn.repo 要写成 owner/repo');
@@ -42,7 +47,7 @@ export function validate(m) {
  */
 export function resolve(m, base = m?.id === DEFAULT_ID ? '' : `packs/${m?.id}/`) {
   const data = {};
-  for (const [k, v] of Object.entries(m.data || {})) data[k] = v === 'builtin' ? v : base + v;
+  for (const [k, v] of Object.entries(m.data || {})) data[k] = v === 'builtin' ? v : k === 'names' && v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([l, p]) => [l, base + p])) : base + v;
   return {
     id: m.id, title: m.title, title_en: m.title_en || m.title, base,
     prefix: prefixOf(m.id), chatVar: chatVarOf(m.id, m),

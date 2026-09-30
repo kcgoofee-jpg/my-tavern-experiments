@@ -24,6 +24,7 @@
         "events": { "anyOf": [ { "const": "builtin" }, { "$ref": "#/$defs/path" } ], "description": "事件分类（结构 = events.schema.json）；builtin = 核心自带的天城分类（只有 eden 用）" },
         "worldbook": { "$ref": "#/$defs/path", "description": "世界书附加条目源文件（给模型的地图联动规范）" },
         "security": { "$ref": "#/$defs/path", "description": "安保叠加层事实（viewer security.mjs 读；结构见文件 _note）" },
+        "names": { "type": "object", "additionalProperties": false, "patternProperties": { "^[a-z]{2,3}(-[A-Za-z0-9]+)?$": { "$ref": "#/$defs/path" } }, "description": "各语言的地名对照表 { 语言码: 路径 }，文件内容 { 中文名: 译名 }（S4-4；没有 = 该语言下地名退回中文）" },
         "roster": { "$ref": "#/$defs/path", "description": "保底名册 {members: [{name, identity}]}：无 MVU 数据时人物页的初始展示（宿主载入，引擎不写死人名）" },
         "stash": { "$ref": "#/$defs/path", "description": "世界藏物表 {items: [{id?, map, marker, place, name, hidden?, note?, dc?, qty?}]}（Part 5-1，结构见 core/stash.mjs）" },
         "overlay": {
