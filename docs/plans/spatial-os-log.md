@@ -549,3 +549,16 @@ blocker: none
 open: Q-14 (docs/todo.md): tier chip text, night test (O-2 consequences), core clamp, portrait require / subdomain, positional groups, three fixed groups in the viewer. Recommend A (accept all).
 cleanup: done (probe servers stopped by their scripts, no background processes of mine, no launch.json entries; the s4-2-roster worktree stays until push)
 === END ===
+
+=== RESULT R-LOOP standard std-1 ===
+status: LANE-DONE
+items finished this session: var:tc_mid:dawn, var:tc_mid:dusk, var:tc_low:dawn, var:tc_low:day, var:tc_low:dusk, var:tc_low:night — register + ship (renders and tiles were done and pushed earlier; FREEZE_MAPS is lifted, so the periods are now in maps.json) — gate pass
+items below gate: none
+waiting: none
+pushed: yes (head #181)
+tests: check_maps PASS (0 errors) | estate3d_manifest PASS (9/9) | smoke PASS | node 795/796 pass, 1 skipped (numpy), same as baseline
+blocker: none
+next: none (`next --peek --lane standard` reports nothing left)
+notes: (1) The render-standard worktree was left by an earlier session with 142 uncommitted rows in logs/render_times.csv (0.0-minute test rows); I did not commit them and kept them in a git stash ("foreign render_times rows"). (2) tools/push_preview.sh pushes preview first and only then refuses the head bump on a dirty tree; with a dirty tree run it once, stash, and run it again (the second run is a no-op push plus the bump). (3) The cloud/tc-mid-low mirror is deprecated and no longer pushed (LEGACY=1 only), so CLAUDE.md §3 is stale on that point. (4) Period registration needed tests/compat_v1.test.mjs to pin the four tc_mid variants; no viewer code changed.
+cleanup: done (no Blender or server of mine left running; the Blender processes now running belong to wt-r5base)
+=== END ===
