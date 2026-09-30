@@ -37,3 +37,19 @@ python3 blender/estate2/web_zones.py
 ```
 
 测试：`node tools/browser/estate3d.mjs <out> [--drafts docs/drafts]`（截图 + 飞行 / 热点 / 图集 / 标注开关）。
+
+## Day-night / particle hand-tuning (Part 9)
+
+Open `estate/index.html?stats=1` standalone (`stats=1` keeps the loop redrawing every frame, so draw
+calls and luminance are readable), then in the console:
+
+- `__estate.dayNight.setClock({ day: 1, min: 750 })` jumps the world clock (minutes: 30 night /
+  390 dawn / 750 noon / 1095 dusk); `__estate.dayNight.describe()` reports the current phase, sun
+  intensity and how many baked materials are graded; `__estate.npcs.set(schedule, clock)` moves the
+  NPCs with it.
+- `__estate.fx.set('rain' | 'snow' | 'sand' | 'aurora', intensity)` switches weather, `set('none', 0)`
+  clears it; `__estate.fx.describe()` reports type / intensity / draw calls, `__estate.fx.layers()` the
+  `fx` slot registration. Embedded in the viewer, prefix with `document.querySelector('#estate').contentWindow.`;
+  host scripts use `window.TCthreeFX`.
+- End-to-end probe: `node tools/browser/p9_daynight_fx.mjs <out>` (clock 00:00 → 24:00 plus ten particle
+  cycles; checks luminance, emissive, searchlight, draw call ≤ 1 and no leaks).
