@@ -158,6 +158,7 @@ export function registerWanderLayer() {
   // 单独打开（没宿主推日程）时，按包里那份日程表走（maps.json 同级的 data/routine.json）
   setTimeout(() => { if (!sched) getJSON('data/routine.json').then(v => { if (v && !sched) setWanderSchedule(v); }).catch(() => {}); }, 0);
   window.TCWander = { scan: scanWander, reset: resetWander, now: () => last.size, schedule: setWanderSchedule, clock: setWanderClock, tick, retarget, walker,
+    scheduleOf: () => sched,   // 日程表本体（庄园三维页要同一张表挪人）
     describe: () => ({ ...walker.describe(), on, clock, rounds, scheduled: !!sched, reduced: reduced() }) };
   return true;
 }

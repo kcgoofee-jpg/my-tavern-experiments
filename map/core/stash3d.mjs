@@ -26,6 +26,14 @@ function keysOf(p) {
   return out;
 }
 
+/** 落点表 × 一个地点名 → 那一处落点（名字 / id / 别名归一后比对）；认不出 = null。
+ *  藏物落点与「谁现在该站在哪儿」走同一套对账：名字归一只此一处。 */
+export function placeOf(places, name) {
+  const want = normName(name); if (!want) return null;
+  const list = Array.isArray(places) ? places : [];
+  return list.find(p => p && typeof p === 'object' && Number.isFinite(NUM(p.x, NaN)) && keysOf(p).has(want)) || null;
+}
+
 /**
  * 藏物 → 三维落点：{ id, name, hidden, place, floor, x, y, z, r }[]。
  * places = [{ id, name, alias?, floor?, x, y, z, r? }]（x/y/z 用调用方自己的坐标系，本模块不改）。
@@ -38,9 +46,7 @@ export function spots(stash, opt = {}) {
   const wantFloor = 'floor' in opt ? (opt.floor ?? null) : undefined;   // undefined = 不限层
   const out = [];
   for (const r of list) {
-    const want = [normName(r.place), normName(r.marker)].filter(Boolean);
-    if (!want.length) continue;
-    const hit = places.find(p => { const ks = keysOf(p); return want.some(w => ks.has(w)); });
+    const hit = placeOf(places, r.place) || placeOf(places, r.marker);
     if (!hit || (wantFloor !== undefined && (hit.floor ?? null) !== wantFloor)) continue;
     out.push({
       id: r.id, name: r.name, hidden: !!r.hidden, place: r.place || r.marker || '',
@@ -60,4 +66,4 @@ export function describe(list) {
   return { total: arr.length, hidden: arr.filter(s => s.hidden).length, floors: [...new Set(arr.map(s => s.floor ?? null))].sort() };
 }
 
-export const Stash3D = { PROP_R, GLOW_PERIOD, spots, propGlow, describe };
+export const Stash3D = { PROP_R, GLOW_PERIOD, placeOf, spots, propGlow, describe };

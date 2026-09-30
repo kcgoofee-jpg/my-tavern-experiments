@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { spots, propGlow, describe, PROP_R, GLOW_PERIOD } from '../map/core/stash3d.mjs';
+import { spots, placeOf, propGlow, describe, PROP_R, GLOW_PERIOD } from '../map/core/stash3d.mjs';
 import { normStash, rowId } from '../map/core/stash.mjs';
 
 const PLACES = [
@@ -55,6 +55,17 @@ test('spots：坏输入不抛（没落点表 / 落点缺坐标 / 藏物表是乱
   assert.deepEqual(spots(stash, { map: 'eden', places: null }), []);
   assert.deepEqual(spots(stash, { map: 'eden', places: [{ name: '空坐标' }, null, { name: 'x', x: 0, y: 0, z: 0 }] }), []);
   assert.deepEqual(spots({ items: '不是数组' }, { places: PLACES }), []);
+});
+
+test('placeOf：落点表 × 地点名（三维页给 NPC 找站位用同一套对账）', () => {
+  assert.deepEqual(placeOf(PLACES, '书房'), PLACES[0]);
+  assert.deepEqual(placeOf(PLACES, 'study'), PLACES[0], 'id 也算');
+  assert.deepEqual(placeOf(PLACES, '主人书房'), PLACES[0], '别名也算');
+  assert.deepEqual(placeOf(PLACES, ' 书 房 '), PLACES[0], '空白 / 括注归一');
+  assert.equal(placeOf(PLACES, '不在表上'), null);
+  assert.equal(placeOf(PLACES, null), null);
+  assert.equal(placeOf(null, '书房'), null);
+  assert.equal(placeOf([{ name: 'x' }], 'x'), null, '缺坐标的落点不算（可选：调用方自己保证）');
 });
 
 test('propGlow：0–1 的呼吸，周期与二维发光点同频，乱值不炸', () => {

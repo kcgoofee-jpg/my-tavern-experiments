@@ -82,6 +82,7 @@ export const SCHEMA = {
   'estate:chat': [V2S, { id: 'string' }],         // 当前 chatId：房间图集「仅本聊天」作用域用，庄园页读不到 SillyTavern 上下文（2026-09-28）
   'estate:stash': [V2S, { items: 'array?' }],     // Part 8-1：世界藏物表（宿主 → 查看器 → 庄园三维页），三维页据此在房间 / 区域里放发光道具
   'estate:taken': [V2S, { ids: 'array?' }],       // Part 8-1：已经在手里的藏物 id（背包的 id 对账）：地上不再发光
+  'estate:routine': [V2S, { schedule: 'object?', clock: 'object?' }],   // Part 8-2：NPC 日程表 + 起点时钟（三维页按确定性时钟自己挪人）
   'estate:pause': [V2S, {}],
   'estate:resume': [V2S, {}],
   'estate:floor': ['both', { floor: 'any' }],     // 下行 = 直嵌 / 调试接口；上行 = 用户切了楼层（直嵌时给外层页）

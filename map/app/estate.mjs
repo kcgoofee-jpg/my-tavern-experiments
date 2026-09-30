@@ -158,7 +158,7 @@ function onEstateReady() {
   if (weak3d && weak3d !== f) { try { weak3d.remove(); } catch (e) {} weak3d = null; }   // 上一份租约在这里收尾
   stopTileTo3d(true);   // 三维页已经接管画面：不再上传底图快照
   f.classList.add('on'); estateActs(''); lp().done(); $('#loading').classList.add('done'); focusAfterGo();
-  estateLook(); estateInset(); estateRoom(); estateStash();
+  estateLook(); estateInset(); estateRoom(); estateStash(); estateNpcs();
   post({ type: 'eden-map:loaded' });
   // 庄园淡入完成后再关掉瓦片地图（释放解码内存）
   setTimeout(() => { if (est?.frame === f && REG.maps[cur]?.kind === 'estate') { viewer.close(); untrackAll(); viewer.clearOverlays(); } }, 240);
@@ -198,6 +198,13 @@ export function estateStash() {
   w.postMessage({ type: 'estate:stash', items: window.TCLoot?.all?.() || [] }, SUB_ORIGIN);
   w.postMessage({ type: 'estate:taken', ids: (P.TCInv?.rows || []).map(r => r.id).filter(Boolean) }, SUB_ORIGIN);
 }
+// Part 8-2：日程表 + 起点时钟下发给三维页（宿主 → 查看器 app/wander.mjs → 庄园）。
+// 三维页用同一套 core/walk.mjs 自己推进世界时刻，把人挪到下一段该在的地方（三维坐标插值，不瞬移）。
+export function estateNpcs() {
+  const w = est?.frame?.contentWindow; if (!w) return;
+  const d = window.TCWander?.describe?.() || {};
+  w.postMessage({ type: 'estate:routine', schedule: window.TCWander?.scheduleOf?.() || null, clock: d.clock || null }, SUB_ORIGIN);
+}
 export let estFocus = null;   // v0.9.5：「自定义」里点了某个房间 / 室外区域 → 庄园聚焦它（优先于当前地点，地点变了就清掉）
 export function estateRoom() { if (!est?.ready) return; const v = ($('#here').value || '').replace('{{user}}', ''), r = hereRes(v);
   // v0.9.6：卡设定分层房间（r.std + r.floor）→ 按 { room, floor } 落点：庄园页切到该层并画框（受限房间只画素框）
@@ -227,6 +234,7 @@ busOn({ key: 'estate.lootMsg', type: 'message', fn: e => {
   if (!window.__fromHost?.(e)) return;
   const t = e.data?.type;
   if (t === 'eden-map:stash' || t === 'eden-map:inv') setTimeout(estateStash, 0);
+  if (t === 'eden-map:routine' || t === 'eden-map:clock') setTimeout(estateNpcs, 0);   // 日程 / 时刻变了：三维里的人重新站位
 } });
 addEventListener('resize', () => estateInset());
 // ---------------- 通用三维查看器（props/viewer3d.html，maps.json 里带 viewer3d 的 kind=estate 地图） ----------------

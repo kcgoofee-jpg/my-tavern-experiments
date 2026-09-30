@@ -137,6 +137,39 @@ try {
   });
 
   // 已知噪声：数据 404；合成 PointerEvent 上没有真指针，OrbitControls 的 setPointerCapture 会报一次（真鼠标不会）
+  await step('②-3D 三维页里的 NPC：时钟 tick 推日程，换地方是插值走过去的（不瞬移）', async () => {
+    const fr = await (async () => { const h = await vf.$('#estate'); return h ? await h.contentFrame() : null; })();
+    if (!fr) { rep.check('庄园页还在', false, '拿不到 iframe'); return; }
+    // 日程：08:00–12:00 在主层大厅，13:00–18:00 在二层书房（两个真房间名）
+    const sched = { default: '大厅', npcs: [{ name: '探针乙', slots: [{ from: '08:00', to: '12:00', at: '大厅' }, { from: '13:00', to: '18:00', at: '主人书房' }] }] };
+    await fr.evaluate(s => window.__estate.npcs.set(s, { day: 1, min: 9 * 60 }), sched);
+    await B.wait(300);
+    const a = await fr.evaluate(() => ({ n: window.__estate.npcs.now(), floor: window.__estate.npcs.floor('探针乙'), d: window.__estate.npcs.describe() }));
+    rep.check('按日程表在房间里落了一个人', a.n === 1 && a.floor === 'F1', JSON.stringify({ n: a.n, floor: a.floor }));
+    rep.check('时钟接住了（rounds 有账）', a.d.rounds === 0 && a.d.clock?.min === 540, JSON.stringify(a.d.clock));
+    // 时刻推到下一段 → 换楼层：走一段过去，中途在两点之间
+    const walk = await fr.evaluate(() => {
+      const N = '探针乙', t = performance.now();
+      const from = window.__estate.npcs.at(N, t);
+      window.__estate.npcs.set({ default: '大厅', npcs: [{ name: N, slots: [{ from: '08:00', to: '12:00', at: '大厅' }, { from: '13:00', to: '18:00', at: '主人书房' }] }] }, { day: 1, min: 15 * 60 });
+      const walking = window.__estate.npcs.describe().walking;
+      const half = window.__estate.npcs.at(N, t + 600), to = window.__estate.npcs.at(N, t + 1200);
+      return { from, walking, half, to, floor: window.__estate.npcs.floor(N) };
+    });
+    rep.check('换到另一层：进了一段行走（不瞬移）', walk.walking === 1, JSON.stringify(walk));
+    // 中途那一点必须落在两个端点之间、且离中点很近（缓入缓出在半程刚好过中点；t0 比取样时刻晚几毫秒，留一点容差）
+    const between = (walk.half || []).every((v, i) => { const a = walk.from[i], b = walk.to[i];
+      return (v - a) * (b - v) >= 0 && Math.abs(v - (a + b) / 2) <= Math.abs(b - a) * 0.1 + 0.05; });
+    rep.check('中途在两点之间（三维三个分量都是）', (walk.half || []).length === 3 && between,
+      JSON.stringify({ half: walk.half, from: walk.from, to: walk.to }));
+    const moved3 = (walk.to || []).some((v, i) => Math.abs(v - walk.from[i]) > 1e-6);
+    rep.check('到点落在新楼层（F2），三维坐标真的换了', walk.floor === 'F2' && moved3, `floor ${walk.floor} / ${JSON.stringify(walk.from)} → ${JSON.stringify(walk.to)}`);
+    // 头像真的画出来了（CSS2D 元素挂在 DOM 上）
+    await B.wait(600);
+    const dom = await fr.evaluate(() => [...document.querySelectorAll('.npc b')].map(b => b.textContent));
+    rep.check('头像（CSS2D）在三维页里画出来了', dom.includes('探针乙'), dom.join('/'));
+  });
+
   const noise = e => /Failed to load resource: the server responded with a status of 404/.test(e) || /setPointerCapture/.test(e);
   const errs = D.errors.filter(e => !noise(e));
   rep.check('除已知 404 外无控制台错误', errs.length === 0, errs.slice(0, 4).join(' | '));

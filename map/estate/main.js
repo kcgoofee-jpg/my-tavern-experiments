@@ -12,7 +12,10 @@ import { roomCustomBlockHTML, bindRoomCustomEvents, getCustomName, setGalleryCha
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer } from '../ui/camera-controls.js';
 import { Estate3D } from '../core/estate3d.mjs';   // Estate3D Manifest 标准契约（P3-A）：清单校验 / 路径解析 / describe 摘要
 import { createRenderGate, wireVisibility } from '../core/render-gate.mjs';   // Part 7-4：页面隐藏时渲染循环整个停掉
-import { spots as stashSpots, propGlow, describe as describeStash, PROP_R } from '../core/stash3d.mjs';   // Part 8-1：世界藏物表 → 三维落点（纯映射）
+import { spots as stashSpots, placeOf, propGlow, describe as describeStash, PROP_R } from '../core/stash3d.mjs';   // Part 8-1：世界藏物表 → 三维落点（纯映射）
+import { createWalker, tickClock, DEFAULT_ROUND_MS } from '../core/walk.mjs';   // Part 8-2：确定性时钟 + 三维插值（NPC 不瞬移）
+import { normSchedule, placesAt } from '../core/routine.mjs';
+import { normClock } from '../core/clock.mjs';
 
 const T0 = performance.now();
 const Q = new URLSearchParams(location.search);
@@ -437,6 +440,77 @@ function showPropTip(p, x, y) {
   if (tipFor !== p) { tip.innerHTML = `<div class="row"><em>${zh ? '拾取' : 'Pick up'}</em>${esc(p.name)}${p.hidden ? `（${zh ? '暗格' : 'hidden'}：${esc(p.hidden)}）` : ''}</div>`; tipFor = p; }
   cardAt = [x, y]; placeCard(); tip.classList.add('on');
 }
+
+/* ---------------- NPC 头像：确定性时钟驱动的三维漫游（Part 8-2 的三维一半） ---------------- */
+// 与二维查看器（app/wander.mjs）同一套零件：core/routine.mjs 的日程表 + core/walk.mjs 的 tickClock / createWalker，
+// 只是坐标是三维的 [x, y, z]——插值引擎按分量算，二维三维走同一条公式。
+// 时刻由「页面开着多久」推出来（不读系统时间、不问模型、不等宿主推 MVU 变动），换地方走一段过去，减少动态效果一步到位。
+const npcG = new THREE.Group(); npcG.name = 'npcs'; scene.add(npcG);
+const npcWalker = createWalker({ reduced: REDUCED });
+let npcSched = null, npcBase = normClock(null), npcT0 = 0, npcRounds = -1, npcClock = npcBase;
+const npcs = new Map();   // 名字 → { el（CSS2D 头像）, floor }
+const NPC_CSS = `.npc { display: flex; align-items: center; gap: 4px; pointer-events: none; }
+.npc i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  font: 600 11px/1 var(--font-ui, system-ui); color: #fff; background: var(--c, #7a6a4a); border: 1.5px solid #fff8; }
+.npc b { padding: 1px 6px; border-radius: var(--r-pill, 999px); background: var(--map-label-bg, #14121ae6); border: 1px solid var(--map-label-line, #ffffff26);
+  font: 500 var(--fs-micro, 11px)/1.5 var(--font-ui, system-ui); color: var(--map-label-ink, #fff); white-space: nowrap; }`;
+function npcCss() { if (document.getElementById('npcCss')) return;
+  const s = document.createElement('style'); s.id = 'npcCss'; s.textContent = NPC_CSS; document.head.appendChild(s); }
+/** 头像底色：名字哈希（同一个人在两张图上同色；不看卡、不查表） */
+const npcColor = s => { let h = 2166136261; for (const c of String(s || '?')) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return `hsl(${h % 360} 30% 42%)`; };
+/** 头像（CSS2D：跟着三维坐标走，缩放时自动跟着投影） */
+function npcChip(name) {
+  npcCss();
+  const el = document.createElement('div'); el.className = 'npc';
+  const av = document.createElement('i'); av.textContent = [...name][0] || '?'; av.style.setProperty('--c', npcColor(name));
+  const b = document.createElement('b'); b.textContent = LANG === 'en' ? name : name;
+  el.append(av, b);
+  const o = new CSS2DObject(el); o.position.set(0, 1.9, 0); o.center.set(0.5, 0.5);
+  const g = new THREE.Group(); g.add(o); npcG.add(g);
+  return { g, el, o };
+}
+/** 一次时钟 tick：到了下一轮就按日程表重派站位 */
+function npcTick() {
+  if (!npcSched) return;
+  if (!npcT0) npcT0 = performance.now();
+  const r = tickClock(npcBase, { now: performance.now(), t0: npcT0 });
+  if (r.rounds === npcRounds) return;
+  npcRounds = r.rounds; npcClock = r.clock;
+  npcRetarget();
+}
+/** 日程表 → 站位：认不出落点的人（地点不在本页的房间 / 区域表里）不动，第一次出现直接落位 */
+function npcRetarget() {
+  const now = performance.now(); let started = false;
+  for (const { name, place } of placesAt(npcSched, npcClock, [])) {
+    const p = placeOf(PROP_PLACES, place); if (!p) continue;
+    let e = npcs.get(name); if (!e) { e = npcChip(name); npcs.set(name, e); }
+    e.floor = p.floor;
+    if (npcWalker.to(name, [p.x, p.y + 1.9, p.z], now)) started = true;
+    else if (!npcWalker.has(name)) npcWalker.snap(name, [p.x, p.y + 1.9, p.z]);
+  }
+  if (started || npcWalker.moving()) needs = true;
+}
+/** 渲染循环里的一步：插值落位 + 跟着当前楼层显隐（剖切看本层、内透看楼上、外观看室外） */
+function npcStep(now) {
+  if (!npcs.size) return;
+  npcWalker.step(now);
+  for (const [name, e] of npcs) {
+    const p = npcWalker.at(name, now); if (!p || p.length < 3) continue;
+    e.g.position.set(p[0], p[1], p[2]);
+    const fi = e.floor != null ? FI[e.floor] : null;
+    e.g.visible = isFloor(mode) ? fi === mode : mode === 'xray' ? fi != null && fi >= 2 : fi == null;
+  }
+  if (npcWalker.moving()) needs = true;
+}
+/** 日程表 / 起点时钟（查看器推来；没推就不画人） */
+function setNpcRoutine(schedule, clock) {
+  npcSched = schedule ? normSchedule(schedule) : null;
+  if (!npcSched?.byName || !Object.keys(npcSched.byName).length) npcSched = null;
+  if (!npcSched) { clearNpcs(); needs = true; return; }
+  npcBase = normClock(clock); npcT0 = 0; npcRounds = -1; npcClock = npcBase;
+  npcTick();
+}
+function clearNpcs() { for (const e of npcs.values()) { try { e.o.element.remove(); } catch (err) {} npcG.remove(e.g); } npcs.clear(); npcWalker.clear(); }
 
 const enName = (d) => d.en || '';
 const nameOf = (it) => {
@@ -940,13 +1014,14 @@ window.addEventListener('message', (e) => {
   else if (d.type === 'estate:chat' && typeof d.id === 'string') setGalleryChatId(d.id);   // 房间图集「仅本聊天」作用域
   else if (d.type === 'estate:stash') { stashRaw = Array.isArray(d.items) ? { items: d.items } : null; rebuildProps(); }   // Part 8-1：世界藏物表
   else if (d.type === 'estate:taken') { propTaken = new Set(Array.isArray(d.ids) ? d.ids.filter((x) => typeof x === 'string') : []); rebuildProps(); }   // 已经在手里的：地上不再发光
+  else if (d.type === 'estate:routine') setNpcRoutine(d.schedule, d.clock);   // Part 8-2：日程表 + 起点时钟 → 三维里的人自己去该去的地方
 });
 function setLang(l) { LANG = l; card.dataset.lang = LANG; buildNav(); relabel(); frustum(); const it = cardFor; cardFor = null; if (it) showCard(it, cardAt?.[0], cardAt?.[1]); needs = true; }
 addEventListener('resize', () => { frustum(); renderer.setSize(innerWidth, innerHeight); labelR.setSize(innerWidth, innerHeight); camera.zoom = clamp(camera.zoom, minZoom, maxZoom); camera.updateProjectionMatrix(); needs = true; });
 
 /* ---------------- 循环（按需渲染） ---------------- */
 const statsEl = $('#stats'); if (STATS) statsEl.style.display = 'block';
-let frames = 0, fpsT = performance.now(), fps = 0, first = true, lastInfo = { calls: 0, triangles: 0 }, lastPulse = 0, lastPropPulse = 0;
+let frames = 0, fpsT = performance.now(), fps = 0, first = true, lastInfo = { calls: 0, triangles: 0 }, lastPulse = 0, lastPropPulse = 0, lastNpcTick = 0;
 let paused = false, resumeT = 0;
 // Part 7-4 视口可见性节流：页面切后台 / 视口不可见 → 停排帧（GPU 与循环全歇）；恢复时若没被休眠就重启循环
 const gate = createRenderGate({
@@ -965,6 +1040,8 @@ function loop(now) {
   document.body.classList.toggle('zoomed', mode !== 'ext' || mpp < 0.1);
   if (pinned && now - pinT < 2000 && now - lastPulse > 66) { lastPulse = now; const k = 0.6 + 0.4 * Math.abs(Math.sin((now - pinT) / 420 * Math.PI)); hiPin.userData.fm.opacity = hiPin.userData.fillOp * (0.5 + k * 0.7); needs = true; }
   if (now - lastPropPulse > 66) { lastPropPulse = now; pulseProps(now); }   // 发光拾取物的呼吸（core/stash3d.mjs 的 propGlow）
+  npcStep(now);   // NPC 头像：插值落位 + 跟着当前楼层显隐
+  if (now - lastNpcTick > Math.min(15000, DEFAULT_ROUND_MS)) { lastNpcTick = now; npcTick(); }   // 世界时钟的节拍（暂停 / 隐藏时不跑）
   if (lowRes && !down && !pinch && now - lastInteract > 150) setLowRes(false);
   if (!(needs || moving || STATS)) return;
   needs = false;
@@ -1014,6 +1091,11 @@ window.__estate = {
       return { id: g.userData.prop.id, x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; }),   // 屏幕坐标（探针 / 浏览器测试点它用）
     pick: (x, y) => pickProp(x, y)?.id || null,   // 射线在这一屏坐标上打到了哪一枚（没有 = null）
     summary: () => describeStash(props.filter((g) => g.visible).map((g) => g.userData.prop)) },
+  npcs: { set: setNpcRoutine,   // 日程表 + 起点时钟（探针 / 浏览器测试用）
+    now: () => npcs.size, list: () => [...npcs.keys()],
+    at: (name, now) => npcWalker.at(name, now == null ? performance.now() : now),
+    floor: name => npcs.get(name)?.floor ?? null,
+    describe: () => ({ ...npcWalker.describe(), clock: npcClock, rounds: npcRounds, scheduled: !!npcSched }) },
   camera, controls, renderer, scene, setLang,
 };
 buildNav(); relabel(); frustum();
