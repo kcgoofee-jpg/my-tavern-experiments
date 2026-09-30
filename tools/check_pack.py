@@ -8,9 +8,10 @@
   每个标记都有坐标、坐标里没有多余 id；底图 .dzi 与瓦片目录在（make_dzi --verify 同一套）
   events.json ↔ events.schema.json；types.g 是已声明的大类；alias 指向已有类型；layers.map 是包里的地图
   worldbook.json：entries[{name, content}]
+  overlay.v2.json（可选，包目录里）：schema-2 节点叠加层，交给 tools/check_overlay.mjs（K-R67）
 eden 包的数据仍由 tools/check_maps.py 校验（这里只查清单）。退出码：有错误 1。
 """
-import json, os, re, sys
+import json, os, re, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from jsonschema_lite import validate
 from make_dzi import verify as dzi_verify
@@ -34,6 +35,7 @@ def check(pid):
         if v != 'builtin' and not os.path.exists(os.path.join(base, v)): errs.append(f'{pid}: data.{k} 指向的 {v} 不存在')
     for p in (m.get('preload') or []):   # 启动预取清单里的文件也要真实存在
         if not os.path.exists(os.path.join(base, p)): errs.append(f'{pid}: preload 指向的 {p} 不存在')
+    errs += check_overlay(pid, d)
     if pid == 'eden': return errs   # 其余由 check_maps.py 负责
     if (m.get('data') or {}).get('events') == 'builtin': errs.append(f'{pid}: events: builtin 只给 eden 用；写自己的 events.json')
     def load(rel):
@@ -91,6 +93,16 @@ def check(pid):
 
 
 BLOCKS2 = ('nodes', 'views', 'vars', 'entities', 'items', 'events', 'layers', 'ui', 'llm')
+
+
+def check_overlay(pid, d):
+    """schema 1 包旁边的 v2 叠加层 overlay.v2.json（docs/kernel-schema.md K-R67）：交给 tools/check_overlay.mjs（节点 id / 名字 / 父节点 / alias 含名字 / at / 树无环）。没有这个文件 = 无事。"""
+    if not os.path.exists(os.path.join(d, 'overlay.v2.json')): return []
+    try:
+        r = subprocess.run(['node', os.path.join(ROOT, 'tools', 'check_overlay.mjs'), pid], capture_output=True, text=True, timeout=60)
+    except Exception as e:
+        return [f'{pid}: overlay.v2.json 没能检查：{e}']
+    return [x for x in r.stdout.splitlines() if x.strip()] + ([f'{pid}: check_overlay 异常退出：{r.stderr.strip()[:200]}'] if r.returncode not in (0, 1) else [])
 
 
 def check_v2(pid, d, m):

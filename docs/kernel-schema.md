@@ -7,8 +7,8 @@
 > `tools/check_pack.py` (schema-2 branch) and `tests/pack_schema_v2.test.mjs`. Schema 1 (`docs/pack-schema-v1.md`)
 > stays frozen and keeps working through `map/core/compat-v1.mjs` (step S1-impl-2).
 
-Every rule has a stable id `K-R01` … `K-R66`; later prompts and tests cite them. Ids never move: rules added after the
-first draft (K-R63–K-R66, trust and limits) take the next free number wherever they sit. The choices left to the user
+Every rule has a stable id `K-R01` … `K-R67`; later prompts and tests cite them. Ids never move: rules added after the
+first draft (K-R63–K-R67, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit. The choices left to the user
 are `K-01` … `K-09` (§0). Everything else was decided by the designer and is listed with its reason in §14.
 
 ## 0. Decisions for the user (review sheet)
@@ -681,6 +681,18 @@ separately), adds `map/data/schema/v3/`, and adds a pure `migrate2to3(pack)` so 
 then freezes. Adding an optional field, or promoting an `x-` field, stays within schema 2 when old readers can ignore
 it.
 
+**K-R67 — The v2 overlay of a schema-1 pack.** A schema-1 pack (manifest, `maps.json`, …) stays frozen; the v2 data it needs
+lives next to its manifest in `map/packs/<id>/overlay.v2.json` = `{ "schema": 2, "nodes": [ { id, parent?, alias?, hints?, at?, name?, … } ] }`.
+`compat-v1` `fromV1` takes it as the optional argument `overlay` and merges it by node id after the conversion (`core/overlay-v2.mjs`):
+a new id is added at the end of the node list and needs a `name`; an existing id gets its `alias` and `hints` unioned (an existing node
+with no explicit `alias` keeps its name as a strong name) and every other field, `parent`, `at`, `name`, `x-…`, overridden. The merge is
+pure and lenient (K-R06): an entry that is not an object, has no id, or adds a node without a name is skipped and listed in
+`fromV1(…).problems`; nothing else changes. The runtime tree (`app/nodes-runtime.mjs`), the current location (`app/here-v2.mjs`) and
+event placement read the file when the pack has one; a pack without it behaves exactly as before. `tools/check_pack.py` validates it
+(`tools/check_overlay.mjs`: ids, names, parents, no cycle, an explicit alias list holds the name, `at` numeric). The first pack's
+overlay carries what its v1 code had hard-wired (Appendix A.5): the event tier words as hints, district nodes with `at`, the outskirts and
+far-outside nodes, and the label `x-layer` of the world map; it is generated once by `tools/gen_eden_overlay_v2.mjs`.
+
 ## 14. Designer decisions and open points
 
 ### 14.1 Decided by the designer
@@ -847,6 +859,9 @@ manifest. Card names below are quoted verbatim.
 | `AGE`, `MERGE_WINDOW`, `MAX_PER_FLOOR` | `events.life` kernel defaults (same values) | auto |
 | viewer `LOOK` table | superseded by types | dropped |
 
+S3-2: the rows marked "pack data (S3)" live in `map/packs/eden/overlay.v2.json` (K-R67) for the first pack. Where a v1 word is not an alias yet and is part of the name of
+exactly one place, it becomes a hint of that place rather than of the tier (v1 looked at the markers first).
+
 ### A.6 Manifests
 
 | v1 | v2 | Status |
@@ -932,7 +947,9 @@ tc_low]`; 57 landmark nodes carry a 3D view; two nodes carry `links` in eden (`c
   4. without the room plan, a room word and an area word one code point longer ("伊甸庄园 人工湖 浴室") → the
      reported word is the area word (v1: the room word; the node is the same);
   5. an ambiguous word + an estate room or area word ("大学 书房") → the estate, with the plan the room (v1: nothing)
-     — K-R16.
+     — K-R16;
+  6. an estate area word that holds a room word one code point shorter (「客房楼」, room 「客房」) → the estate, the longest span wins
+     (v1: the room, and with the plan the room node) — K-R20. Decided 2026-09-30 (Q-10, option A).
 
 ## Appendix B — implementation split
 

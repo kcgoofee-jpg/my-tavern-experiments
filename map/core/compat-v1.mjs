@@ -5,6 +5,7 @@ import { buildGeo } from './compat-v1-geo.mjs';
 import { buildViews } from './compat-v1-views.mjs';
 import { legacyOf, stringsOf, eventsOf, rosterOf, stashOf, worldbookOf, customOf } from './compat-v1-blocks.mjs';
 import { normalise } from './lexicon.mjs';
+import { applyOverlay } from './overlay-v2.mjs';
 
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 /** A.7: v1 roster source names -> v2 (the image extension's library is `imagegen`); every other source keeps its name. */
@@ -15,16 +16,17 @@ export const rowsFromV1 = rows => (Array.isArray(rows) ? rows : []).map(r => (is
 const VAR_KEYS = ['location', 'time', 'date', 'period', 'outfit', 'reputation'];
 
 /**
- * fromV1({ manifest, maps, world, names, plan, custom, events, roster, stash, worldbook, legacy, lang })
+ * fromV1({ manifest, maps, world, names, plan, custom, events, roster, stash, worldbook, legacy, overlay, lang })
  *   manifest   the v1 manifest (schema 1)          maps      maps.json          world  world places or null
  *   names      the English name dictionary or null plan      the room plan or null
  *   custom     the user's custom names (v1 shape) events    the pack's events.json (v1) or null
  *   roster     { members } or null   stash { items } or null   worldbook { entries } or null
  *   legacy     names that are card terms (e.g. { worldbook_book }); lang the pack's own language (default zh)
- * -> { pack, custom, ignore, idmap }: pack is a schema 2 manifest with inline blocks; custom / ignore are the user's names
+ *   overlay    the pack's overlay.v2.json or null (K-R67, core/overlay-v2.mjs): schema-2 node data merged by id after the conversion
+ * -> { pack, custom, ignore, idmap, problems }: pack is a schema 2 manifest with inline blocks; custom / ignore are the user's names
  *    as v2 aliases; idmap maps a v1 id to its node id where they differ (merged places, the merged estate marker).
  */
-export function fromV1({ manifest, maps, world = null, names = null, plan = null, custom = null, events = null, roster = null, stash = null, worldbook = null, legacy = null, lang = 'zh' } = {}) {
+export function fromV1({ manifest, maps, world = null, names = null, plan = null, custom = null, events = null, roster = null, stash = null, worldbook = null, legacy = null, overlay = null, lang = 'zh' } = {}) {
   const m = isObj(manifest) ? manifest : {}, geo = buildGeo({ reg: maps, world, names, plan }), { nodes, ctx } = geo;
   const ids = new Set(nodes.map(n => n.id)), has = id => ids.has(id), idmap = ctx.idmap;
   const views = buildViews(geo, has);
@@ -39,7 +41,8 @@ export function fromV1({ manifest, maps, world = null, names = null, plan = null
   if (isObj(m.features)) pack.features = { ...m.features };
   if (isObj(m.cdn)) pack.cdn = { ...m.cdn };
   for (const [k, x] of [['derived', 'x-derived'], ['security', 'x-security'], ['patrol', 'x-patrol'], ['routine', 'x-routine']]) if (typeof m.data?.[k] === 'string') pack[x] = m.data[k];
-  if (nodes.length) pack.nodes = nodes;
+  const ov = applyOverlay(nodes, overlay);
+  if (ov.nodes.length) pack.nodes = ov.nodes;
   if (Object.keys(views).length) pack.views = views;
   const vars = {}, extra = {};
   for (const [k, v] of Object.entries(isObj(m.vars) ? m.vars : {})) if (typeof v === 'string' && v) (VAR_KEYS.includes(k) ? vars : extra)[k] = v;
@@ -59,5 +62,5 @@ export function fromV1({ manifest, maps, world = null, names = null, plan = null
   if (ev?.tag) llm.templates = { [lang]: { tag: ev.tag } };
   if (wb.length) llm.worldbook = { entries: wb };
   if (Object.keys(llm).length) pack.llm = llm;
-  return JSON.parse(JSON.stringify({ pack, custom: uc.custom, ignore: uc.ignore, idmap }));   // a copy: the pack shares nothing with the v1 inputs
+  return JSON.parse(JSON.stringify({ pack, custom: uc.custom, ignore: uc.ignore, idmap, problems: ov.problems }));   // a copy: the pack shares nothing with the v1 inputs
 }

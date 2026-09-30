@@ -62,7 +62,10 @@ export function makeHere(inputs = {}) {
     let h = null, part = v;
     for (const p of parts.length > 1 ? parts : [v]) if ((h = locate(p, tree, vocab, { lang }))) { part = p; break; }
     if (!h) return null;
-    let out = shape(h.node, h.word, part, h.via === 'user' ? h.canonical : null);
+    const canon = h.via === 'user' ? h.canonical : null;
+    let out = shape(h.node, h.word, part, canon);
+    // a node that is no map, marker or world place (a district of the pack's overlay, K-R67) stands for the nearest one above it that is
+    for (let up = tree.parent(h.node), n = 0; !out && up && n < 16; up = tree.parent(up), n++) out = shape(up, h.word, part, canon);
     if (!out) return null;
     if (h.transit) {
       const t = h.transit, d = ends(part, { from: t.from_text, to: t.to_text }), end = (id, text) => (id ? shape(id, '', text, null) : null);

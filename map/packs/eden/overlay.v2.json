@@ -1,0 +1,194 @@
+{
+  "_note": "Schema-2 overlay of the schema-1 eden pack (docs/kernel-schema.md K-R67): tier hints, the outskirts and beyond nodes, district nodes with `at`. Generated once by tools/gen_eden_overlay_v2.mjs from the pre-S3-2 event constants.",
+  "schema": 2,
+  "nodes": [
+    {
+      "id": "silver_crown",
+      "hints": ["银冠"]
+    },
+    {
+      "id": "zaibatsu_estate",
+      "hints": ["财团"]
+    },
+    {
+      "id": "tc_mid",
+      "hints": ["霓虹"]
+    },
+    {
+      "id": "schneider_clinic",
+      "hints": ["施奈德"]
+    },
+    {
+      "id": "tc_low",
+      "hints": ["井", "量产", "二手衣物"]
+    },
+    {
+      "id": "soup_kitchen",
+      "hints": ["施粥"]
+    },
+    {
+      "id": "world",
+      "alias": ["天城外"],
+      "x-layer": "天城外"
+    },
+    {
+      "id": "site_kavalierki",
+      "hints": ["大骑士领"]
+    },
+    {
+      "id": "linguang_post",
+      "hints": ["临光家族"]
+    },
+    {
+      "id": "arms_rnd",
+      "hints": ["魔导军工"]
+    },
+    {
+      "id": "beyond",
+      "parent": "world",
+      "name": "海外",
+      "alias": [],
+      "hints": ["海外", "第三帝国", "圆桌骑士封地", "伦敦", "英国", "大陆"]
+    },
+    {
+      "id": "outskirts",
+      "parent": "beyond",
+      "name": "天城周边",
+      "alias": [],
+      "hints": ["天城周边", "天城外围", "外围", "城外", "郊", "异兽", "兽潮", "野兽", "清剿", "荒野", "边境", "防线", "野兽潮"],
+      "x-ring": true
+    },
+    {
+      "id": "zone_mid_1",
+      "parent": "tc_mid",
+      "name": "核心",
+      "alias": [],
+      "hints": ["核心", "高区", "中层高区", "核心区"],
+      "at": {
+        "x": 0.616667,
+        "y": 0.297333
+      }
+    },
+    {
+      "id": "zone_mid_2",
+      "parent": "tc_mid",
+      "name": "霓虹街",
+      "alias": [],
+      "hints": ["霓虹街", "商业", "商业区"],
+      "at": {
+        "x": 0.333333,
+        "y": 0.633333
+      }
+    },
+    {
+      "id": "zone_mid_3",
+      "parent": "tc_mid",
+      "name": "外围",
+      "alias": [],
+      "hints": ["外围", "居住", "居住区"],
+      "at": {
+        "x": 0.1,
+        "y": 0.153333
+      }
+    },
+    {
+      "id": "zone_mid_4",
+      "parent": "tc_mid",
+      "name": "军营",
+      "alias": [],
+      "hints": ["军营", "环城"],
+      "at": {
+        "x": 0.066667,
+        "y": 0.5
+      }
+    },
+    {
+      "id": "zone_mid_5",
+      "parent": "tc_mid",
+      "name": "大学",
+      "alias": [],
+      "hints": ["大学"],
+      "at": {
+        "x": 0.226667,
+        "y": 0.158667
+      }
+    },
+    {
+      "id": "zone_low_1",
+      "parent": "tc_low",
+      "name": "7号井",
+      "alias": [],
+      "hints": ["7号井", "井口"],
+      "at": {
+        "x": 0.653333,
+        "y": 0.868
+      }
+    },
+    {
+      "id": "zone_low_2",
+      "parent": "tc_low",
+      "name": "工业",
+      "alias": [],
+      "hints": ["工业", "工厂", "厂", "工业区"],
+      "at": {
+        "x": 0.733333,
+        "y": 0.9
+      }
+    },
+    {
+      "id": "zone_low_3",
+      "parent": "tc_low",
+      "name": "贫民",
+      "alias": [],
+      "hints": ["贫民", "棚户", "城寨", "城中村", "贫民区"],
+      "at": {
+        "x": 0.3,
+        "y": 0.446667
+      }
+    },
+    {
+      "id": "zone_low_4",
+      "parent": "tc_low",
+      "name": "哨所",
+      "alias": [],
+      "hints": ["哨所", "前沿"],
+      "at": {
+        "x": 0.09,
+        "y": 0.852
+      }
+    },
+    {
+      "id": "zone_low_5",
+      "parent": "tc_low",
+      "name": "施粥",
+      "alias": [],
+      "hints": ["施粥", "旧教堂"],
+      "at": {
+        "x": 0.78,
+        "y": 0.473333
+      }
+    },
+    {
+      "id": "zone_low_6",
+      "parent": "tc_low",
+      "name": "拳场",
+      "alias": [],
+      "hints": ["拳场", "磨坊"],
+      "at": {
+        "x": 0.306667,
+        "y": 0.676
+      }
+    },
+    {
+      "id": "zone_low_7",
+      "parent": "tc_low",
+      "name": "地基",
+      "alias": [],
+      "hints": ["地基", "地基区", "下层地基区", "下层_地基区"],
+      "at": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    }
+  ]
+}
