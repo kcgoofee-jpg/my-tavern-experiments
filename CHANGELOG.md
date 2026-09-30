@@ -25,6 +25,10 @@
 
 - **私有 API Key 网关（Part 6-1，底座）**：`map/tavern/llm.mjs` 只算「该怎么发」——OpenAI 兼容端点 / Claude（`x-api-key` + `anthropic-version`）/ Gemini（`?key=` 查询串）/ DeepSeek / 自定义五套，`checkConfig()` 体检缺哪一项报哪一项、`buildRequest()` 出 url / headers / body（三种放钥匙的位置各走各的）、`readText()` 读四家不同形状的回答、`maskKey()` / `redact()` 保证钥匙只以脱敏形态进日志。模块自身不发请求、不碰存储与酒馆全局（单测全喂配置）。
 
+- **地图驱动的双向动作注入（Part 6-4）**：点 POI 可以把一句话送进酒馆聊天流。查看器只说「哪个地点、想干什么」（`eden-map:action { kind, name, map }`），文案与注入方式由宿主按设置决定（`map/tavern/action.mjs`，纯模块）：**off 是默认**（地图不该在玩家没点头时替他说话）、compose 只填不发（与「去这里」同一条底线）、sys 走 `triggerSlash('/sys …')` 静默注入；中英模板可改，两个存储键已登记。卡片入口在**开卡那一刻**才算（改完设置立刻生效），设置「显示」页给了「关 / 填输入框 / 系统指令」三档。顺带修掉宿主脚本两个 TDZ：`followNewer`（装配处直接传了下面才声明的 const）与 `GEN`（`typeof` 也躲不开 TDZ，而 `afterGen` 开局就被调）——这两条让卡内脚本在真实浏览器里**加载即抛异常**，node 单测查不出来，是宿主桩探针抓到的。探针 `tools/browser/p6_action.mjs` 7/7（宿主真收到 `eden-map:action`，输入框被接上「前往维克多庄园。」且没发送，切回关入口消失）。
+
+- **动态线索节点（Part 6-3，后台静默推演的一半）**：`map/core/quests.mjs` 把已经发生的事态按地点聚起来——大类权重（与 `events.mjs` 九大类同一张表）× 楼层差衰减（与 `AGE` 同口径），冒头的地点派一枚「线索」节点（紧急度 / 过期日 / 坐标），`tick()` 做增量与过期清理。**不编势力、不编剧情**：热度全看事态自己说了什么，没有够热的事态就是零节点。渲染在 `map/app/quests.mjs`（fx 槽位，会呼吸的圈，跟随时钟的日期推进天数，2 s 重算一次）。探针 `tools/browser/p6_quests.mjs` 8/8（没事态零节点、够热才派、弱权重与旧事不派）。
+
 - **长会话泄漏探针 `tools/browser/p1_leak.mjs`（Part 1-4）**：反复切图（OSD 每次 open 销毁上一张图的瓦片）20 轮后对账三样——全局监听器台账（总线 `describe().count`）只增不减即判泄漏、DOM 节点数增长有界、堆增长有上限。当前实测：监听器 9 → 9、节点 563 → 579、堆 10 → 10 MB、零控制台错误；首屏挂载实测 457 ms（Part 1-3 的 500 ms 目标已达标，首瓦片 89 ms）。
 
 - **断网降级修复 + 浏览器探针 `tools/browser/p4_fx.mjs`（Part 1-5）**：探针查首屏挂载、fx 槽位接线、天气 canvas 是否真画出像素（抽样非透明像素）、监听器台账、以及断网降级。抓到并修掉一个真 bug：首张图加载成功后 `#loading` 带上的 `done` 类会把后一次 `open-failed` 的失败提示整个盖住——断网切图时用户只看见一片空白、没有任何说明；现在 `open-failed` 撤掉 `done`、露出遮罩文案与「重试」。探针 10/10（首屏 457 ms、雷暴雨 canvas 有像素、断网后留在页面并给出「地图加载失败」+ 重试、断网前零控制台错误）。

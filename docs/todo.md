@@ -39,12 +39,12 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   decoupling, WebGL perf, living-world FX, TTRPG sandbox, LLM navigator, preset sandbox) is tracked here item by
   item. Landed so far: Part 7-1/7-2 sanitize + preset fields (`2520ac5`), Part 7-4 visibility guard (`2520ac5`),
   Part 2-1 host-about + Part 2-3 listener bus (`7a8ab80`), Part 4-1 weather FX + Part 1-5 offline probe (`dbc992a`),
-  Part 6-5 deterministic clock + Part 6-1 API-key gateway base (this commit). Still open: Part 1-1/1-2/1-3/1-4
-  (live SillyTavern automation contract, CDN fallback assertions, first-paint budget,千层长会话泄漏), Part 2-2/2-4
-  (U1–U12 sweep, dynamic `import()` of the 3D viewer / parts panel), Part 3 (single WebGL context, LOD + frustum
-  culling, InstancedMesh, KTX2/Basis budget, OffscreenCanvas workers), Part 4-2/4-3/4-4/4-5 (X-Ray cutaway,
-  maglev traffic, Web Audio, minimap HUD), Part 6-2/6-3/6-4 (background tick, faction quests,
-  `injectPlayerAction`), Part 7-3 (Shadow DOM isolation).
+  Part 6-5 deterministic clock + Part 6-1 API-key gateway base, Part 6-3 clue nodes, Part 6-4 action injection,
+  Part 4-1 weather + Part 4-3 traffic; probes: p4_fx (10/10), p4_traffic (7/7), p1_leak (5/5), p6_action (7/7),
+  p6_quests (8/8). Still open: Part 1-1/1-2 (live SillyTavern automation contract, CDN fallback assertions),
+  Part 2-2/2-4 (U1–U12 sweep, dynamic `import()` of the 3D viewer / parts panel), Part 3 (single WebGL context,
+  LOD + frustum culling, InstancedMesh, KTX2/Basis budget, OffscreenCanvas workers), Part 4-2/4-4 (X-Ray
+  cutaway, Web Audio), Part 6-2 (background tick daemon), Part 7-3 (Shadow DOM isolation).
 - [ ] **Real SillyTavern + TavernHelper browser test.** The biggest open item: `tools/browser/`（预估 ~16h）
   currently only has `host_stub.mjs`, a fake host. Everything else in the suite runs against the stub.
   (`docs/handoff.md`, "新顺序" code item 1.)

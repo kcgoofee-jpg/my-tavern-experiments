@@ -701,5 +701,7 @@
   "s.inject_hint": "Send one line into the chat from a card action; off by default. Fill input never sends; system injection uses /sys",
   "inj.off": "Off",
   "inj.compose": "Fill input",
-  "inj.sys": "System cmd"
+  "inj.sys": "System cmd",
+  "quests": "Clues",
+  "quests_title": "A breathing clue node on places where events are piling up (no invented plot, follows events only)"
 }
