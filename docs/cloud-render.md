@@ -223,3 +223,52 @@ bash <main>/tools/render_queue.sh status  # mode line + "dispatcher: alive"
 
 Dry runs (`DRY_RUN=1`) print the `cd <jobroot> && bash <jobroot>/tools/blender_run.sh …` line and finish synchronously
 instead of starting Blender. Tests: `python3 tools/test_render_queue.py` (part of `tools/smoke.sh`).
+
+## Render campaign ledger (2026-09-30)
+
+Render campaign R is worked by long-running sessions (not necessarily Claude) that pick work from one list, record
+progress and resume after a restart. All state is in the repo; `tools/render_campaign.py` never renders or submits
+anything, it only prints command hints (renders still go through `tools/render_queue.sh`, Mac-only).
+
+- `docs/plans/render-campaign.items.json`: the item list, written once by `init`, afterwards hand-edited. Order in the
+  file is priority. Each item has a lane, a type (which fixes its stage list), targets, `canon` (`card` / `inferred`),
+  `depends`, a render `spec` and `hints`. A failed repo lookup at `init` time left `TODO:` in the item's notes.
+- `docs/plans/render-campaign-events.csv`: append-only (`ts,id,stage,event,agent,gate,note`; `.gitattributes` gives it
+  `merge=union`). The tool only appends whole lines. Replay orders events by timestamp, so merged branches agree.
+- `docs/plans/render-campaign.md`: generated status view (`status --md`); never edit it. After a merge conflict in it,
+  regenerate it.
+
+**Loop** (one agent name per session, e.g. `--agent std-1`; the same name after a restart resumes your own claim):
+
+```bash
+python3 tools/render_campaign.py next --lane standard --agent std-1   # claims the item, prints stage + command hint
+python3 tools/render_campaign.py done  ID STAGE --agent std-1 [--gate pass|fail] [--note TEXT]
+python3 tools/render_campaign.py fail  ID STAGE --agent std-1 --note "what broke"
+python3 tools/render_campaign.py wait  ID STAGE --agent std-1         # job in flight, or a ship/register stage held by FREEZE
+python3 tools/render_campaign.py status [--md]
+```
+
+`next` exit codes: 0 item printed, 3 nothing left for the lane, 4 only blocked / waiting / claimed / stuck items remain.
+`--peek` shows the next item without claiming it; `--json` prints machine-readable output.
+
+**Lanes.** `standard` and `hero` run in parallel from the same list; an item belongs to one lane and `depends` may cross
+lanes (the item then waits, exit 4).
+
+**Claims.** `next` records a claim for the agent. It lasts 6 h from that agent's latest event on the item and ends on
+`release`, on `fail`, or when the item finishes. Another agent is never handed a live claim and cannot record events on
+it. Three `fail` events on one stage make the item stuck: it is no longer offered and shows as `stuck` in `status`; a
+human unsticks it with `skip` or `done` for that stage.
+
+**Stages.** Stage lists per type are constants in the tool. `fix` and `review-r2` are skipped automatically when
+`review-r1` is recorded with `--gate pass`. `review-r2` with `--gate fail` does not block: the item continues and is
+flagged `below-gate` for a user spot-check.
+
+**FREEZE.** While `docs/plans/FREEZE_MAPS` exists on `origin/preview`, `maps.json` edits must not ship. Run
+`python3 tools/render_campaign.py ship-check` before a `ship` or `register` stage (exit 3 = frozen), and record `wait`
+on that stage. A `wait` on `ship` / `register` parks the item and `next` re-offers it only when `ship-check` passes.
+Rendering itself may continue while frozen.
+
+**Weather variants.** `rain` and other weather variants are not campaign items: the viewer supports only the four
+periods `dawn`, `day`, `dusk` and `night` (`periods` keys in `maps.json`).
+
+Tests: `python3 tools/test_render_campaign.py` (part of `tools/smoke.sh`).

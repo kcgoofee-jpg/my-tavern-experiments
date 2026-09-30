@@ -1,0 +1,1353 @@
+{
+ "version": 1,
+ "items": [
+  {
+   "id": "estate:final",
+   "lane": "standard",
+   "type": "estate",
+   "title": "Re-render the estate exterior views (failed job)",
+   "targets": [
+    "eden_estate:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2000,
+    "spp": 32
+   },
+   "hints": {
+    "script": "blender/eden_manor.py",
+    "args": "--view ext,all,island --no-assets --out map/art/estate_{view}.png"
+   },
+   "notes": "logs/render_times.csv: estate_final has 6 crash row(s) and a later ok row (2026-09-30); check map/art/estate_*.png before re-running"
+  },
+  {
+   "id": "estate:opt",
+   "lane": "standard",
+   "type": "estate",
+   "title": "Evaluate the rescued house_opt LOD glbs for the estate model manifest",
+   "targets": [
+    "eden_estate:*"
+   ],
+   "canon": "card",
+   "depends": [
+    "estate:final"
+   ],
+   "spec": {
+    "res": 0,
+    "spp": 0
+   },
+   "hints": {
+    "script": "blender/estate2/export_house_opt.py"
+   },
+   "notes": "no render: stage final = evaluate (glb size vs manifest budget, draco variants), verify = visual parity vs the current house.glb, ship = adopt in map/estate/model/manifest.json (bump v); inputs in ~/eden-map-review/rescue/2026-09-30/: house_opt_lod0.glb, house_opt_lod1.glb, their .draco.glb, house_opt.assets.json"
+  },
+  {
+   "id": "review:arms_rnd",
+   "lane": "standard",
+   "type": "review",
+   "title": "Review and fix model arms rnd",
+   "targets": [
+    "site_kavalierki:arms_rnd"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "arms_rnd"
+   },
+   "notes": "current: self-check r1 7 / 7, unreviewed (docs/card-buildings.md)"
+  },
+  {
+   "id": "review:clearing_depot",
+   "lane": "standard",
+   "type": "review",
+   "title": "Review and fix model clearing depot",
+   "targets": [
+    "site_kavalierki:clearing_depot"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "clearing_depot"
+   },
+   "notes": "current: self-check r1 7 / 7, unreviewed (docs/card-buildings.md)"
+  },
+  {
+   "id": "review:contest_corridor",
+   "lane": "standard",
+   "type": "review",
+   "title": "Review and fix model contest corridor",
+   "targets": [
+    "site_kavalierki:contest_corridor"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "contest_corridor"
+   },
+   "notes": "current: self-check r1 7 / 7, unreviewed (docs/card-buildings.md)"
+  },
+  {
+   "id": "review:ether_dome",
+   "lane": "standard",
+   "type": "review",
+   "title": "Review and fix model ether dome",
+   "targets": [
+    "site_kavalierki:ether_dome"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "ether_dome"
+   },
+   "notes": "current: self-check r1 7 / 7, unreviewed (docs/card-buildings.md)"
+  },
+  {
+   "id": "review:free_knight_camp",
+   "lane": "standard",
+   "type": "review",
+   "title": "Review and fix model free knight camp",
+   "targets": [
+    "site_kavalierki:free_knight_camp"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "free_knight_camp"
+   },
+   "notes": "current: self-check r1 7 / 7, unreviewed (docs/card-buildings.md)"
+  },
+  {
+   "id": "review:glory_crown",
+   "lane": "standard",
+   "type": "review",
+   "title": "Review and fix model glory crown",
+   "targets": [
+    "site_kavalierki:glory_crown",
+    "site_kavalierki:union_tower",
+    "site_kavalierki:sun_arena",
+    "site_kavalierki:round_table_hall",
+    "site_kavalierki:elite_club"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "glory_crown"
+   },
+   "notes": "current: self-check r1 7.5 / 7.5, unreviewed (docs/card-buildings.md)"
+  },
+  {
+   "id": "review:linguang_post",
+   "lane": "standard",
+   "type": "review",
+   "title": "Review and fix model linguang post",
+   "targets": [
+    "site_kavalierki:linguang_post"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "linguang_post"
+   },
+   "notes": "current: self-check r1 7 / 7, unreviewed (docs/card-buildings.md)"
+  },
+  {
+   "id": "review:rust_outskirts",
+   "lane": "standard",
+   "type": "review",
+   "title": "Review and fix model rust outskirts",
+   "targets": [
+    "site_kavalierki:rust_outskirts"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "rust_outskirts"
+   },
+   "notes": "current: self-check r1 7 / 7, unreviewed (docs/card-buildings.md)"
+  },
+  {
+   "id": "review:league_club",
+   "lane": "standard",
+   "type": "review",
+   "title": "Review and fix model league club",
+   "targets": [
+    "tc_upper:league_club"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "league_club"
+   },
+   "notes": "current: glb exported, unreviewed (docs/card-buildings.md)"
+  },
+  {
+   "id": "review:rothschild_estate",
+   "lane": "standard",
+   "type": "review",
+   "title": "Review and fix model rothschild estate",
+   "targets": [
+    "tc_upper:zaibatsu_estate"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "rothschild_estate"
+   },
+   "notes": "current: glb exported, unreviewed (docs/card-buildings.md)"
+  },
+  {
+   "id": "review:elite_academy",
+   "lane": "standard",
+   "type": "review",
+   "title": "Review and fix model elite academy",
+   "targets": [
+    "tc_upper:elite_academy"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "elite_academy"
+   },
+   "notes": "current: glb exported, unreviewed (docs/card-buildings.md)"
+  },
+  {
+   "id": "review:holy_mountain",
+   "lane": "standard",
+   "type": "review",
+   "title": "Review and fix model holy mountain",
+   "targets": [
+    "yuanyu_sanctum:pantheon",
+    "yuanyu_sanctum:holy_mountain",
+    "yuanyu_sanctum:shrine_ring",
+    "yuanyu_sanctum:pilgrim_stair"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/world/yuanyu_holy_mount.py"
+   },
+   "notes": "current: glb exported, unreviewed (docs/card-buildings.md); fix the white block behind the cathedral and the statues overhanging the ring platform; TODO: holy_mountain has no blender/landmarks/holy_mountain/build.py; landmark.py stages may not apply"
+  },
+  {
+   "id": "lm:blood_mill",
+   "lane": "standard",
+   "type": "landmark",
+   "title": "New model: blood mill",
+   "targets": [
+    "tc_low:blood_mill"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "blood_mill"
+   },
+   "notes": "no model yet (docs/card-buildings.md)"
+  },
+  {
+   "id": "lm:freight_yard",
+   "lane": "standard",
+   "type": "landmark",
+   "title": "New model: freight yard",
+   "targets": [
+    "tc_low:freight_yard"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "freight_yard"
+   },
+   "notes": "no model yet (docs/card-buildings.md)"
+  },
+  {
+   "id": "lm:lower_bar",
+   "lane": "standard",
+   "type": "landmark",
+   "title": "New model: lower bar",
+   "targets": [
+    "tc_low:lower_bar"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "lower_bar"
+   },
+   "notes": "name from the card; marker position is repo-inferred (layer_src); no model yet (docs/card-buildings.md)"
+  },
+  {
+   "id": "lm:slums",
+   "lane": "standard",
+   "type": "landmark",
+   "title": "New model: slums",
+   "targets": [
+    "tc_low:slums"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "slums"
+   },
+   "notes": "name from the card; marker position is repo-inferred (layer_src); no model yet (docs/card-buildings.md)"
+  },
+  {
+   "id": "lm:rebirth_workshop",
+   "lane": "standard",
+   "type": "landmark",
+   "title": "New model: rebirth workshop",
+   "targets": [
+    "tc_mid:rebirth_workshop"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "rebirth_workshop"
+   },
+   "notes": "name from the card; marker position is repo-inferred (layer_src); no model yet (docs/card-buildings.md)"
+  },
+  {
+   "id": "lm:schneider_clinic",
+   "lane": "standard",
+   "type": "landmark",
+   "title": "New model: schneider clinic",
+   "targets": [
+    "tc_mid:schneider_clinic"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "schneider_clinic"
+   },
+   "notes": "name from the card; marker position is repo-inferred (layer_src); no model yet (docs/card-buildings.md)"
+  },
+  {
+   "id": "lm:elite_club",
+   "lane": "standard",
+   "type": "landmark",
+   "title": "New model: elite club",
+   "targets": [
+    "site_kavalierki:elite_club"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "elite_club"
+   },
+   "notes": "no model yet (docs/card-buildings.md)"
+  },
+  {
+   "id": "lm:hunting_camp",
+   "lane": "standard",
+   "type": "landmark",
+   "title": "New model: hunting camp",
+   "targets": [
+    "world:hunting_camp"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "hunting_camp"
+   },
+   "notes": "name from the card; marker position is repo-inferred (layer_src); no model yet (docs/card-buildings.md)"
+  },
+  {
+   "id": "scene:highland-ext",
+   "lane": "standard",
+   "type": "scene",
+   "title": "Extend the highland scene: cliff edge and trail down",
+   "targets": [
+    "site_highland:cliff_edge",
+    "site_highland:trail_down"
+   ],
+   "canon": "inferred",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "highland"
+   },
+   "notes": "extends the existing scene map/props/highland (only highland_plateau links to it today); add one hotspot per marker"
+  },
+  {
+   "id": "scene:fief1",
+   "lane": "standard",
+   "type": "scene",
+   "title": "Fief 1 scene: castle, fields, order, village",
+   "targets": [
+    "site_fief1:fief1_castle",
+    "site_fief1:fief1_fields",
+    "site_fief1:fief1_order",
+    "site_fief1:fief1_village"
+   ],
+   "canon": "inferred",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "fief1"
+   },
+   "notes": "one model covering all markers; one hotspot per marker"
+  },
+  {
+   "id": "scene:fief2",
+   "lane": "standard",
+   "type": "scene",
+   "title": "Fief 2 scene: castle, fields, order, village",
+   "targets": [
+    "site_fief2:fief2_castle",
+    "site_fief2:fief2_fields",
+    "site_fief2:fief2_order",
+    "site_fief2:fief2_village"
+   ],
+   "canon": "inferred",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "fief2"
+   },
+   "notes": "one model covering all markers; one hotspot per marker"
+  },
+  {
+   "id": "scene:fief3",
+   "lane": "standard",
+   "type": "scene",
+   "title": "Fief 3 scene: castle, fields, order, village",
+   "targets": [
+    "site_fief3:fief3_castle",
+    "site_fief3:fief3_fields",
+    "site_fief3:fief3_order",
+    "site_fief3:fief3_village"
+   ],
+   "canon": "inferred",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "fief3"
+   },
+   "notes": "one model covering all markers; one hotspot per marker"
+  },
+  {
+   "id": "scene:fief4",
+   "lane": "standard",
+   "type": "scene",
+   "title": "Fief 4 scene: castle, fields, order, village",
+   "targets": [
+    "site_fief4:fief4_castle",
+    "site_fief4:fief4_fields",
+    "site_fief4:fief4_order",
+    "site_fief4:fief4_village"
+   ],
+   "canon": "inferred",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "fief4"
+   },
+   "notes": "one model covering all markers; one hotspot per marker"
+  },
+  {
+   "id": "scene:fief5",
+   "lane": "standard",
+   "type": "scene",
+   "title": "Fief 5 scene: castle, fields, order, village, lists",
+   "targets": [
+    "site_fief5:fief5_castle",
+    "site_fief5:fief5_fields",
+    "site_fief5:fief5_order",
+    "site_fief5:fief5_village",
+    "site_fief5:fief5_lists"
+   ],
+   "canon": "inferred",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "fief5"
+   },
+   "notes": "one model covering all markers; one hotspot per marker"
+  },
+  {
+   "id": "scene:yuanyu-city",
+   "lane": "standard",
+   "type": "scene",
+   "title": "Yuanyu city scene: gate, dome, plaza, spire quarters",
+   "targets": [
+    "yuanyu_city:city_gate",
+    "yuanyu_city:dome_quarter",
+    "yuanyu_city:pilgrim_plaza",
+    "yuanyu_city:spire_quarter"
+   ],
+   "canon": "inferred",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "yuanyu_city"
+   },
+   "notes": "one model covering all markers; one hotspot per marker"
+  },
+  {
+   "id": "base:tc_mid",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Final-spec audit / re-render of base map tc_mid",
+   "targets": [
+    "tc_mid:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_mid.py",
+    "args": "--out logs/campaign/full/tc_mid_full.png"
+   },
+   "notes": "audit first: current DZI 8000 px wide; last logged final 8000x128 spp (2026-09-28); render / tiles may be skipped when the audit shows the tiles already meet the spec"
+  },
+  {
+   "id": "base:tc_low",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Final-spec audit / re-render of base map tc_low",
+   "targets": [
+    "tc_low:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_low.py",
+    "args": "--out logs/campaign/full/tc_low_full.png"
+   },
+   "notes": "audit first: current DZI 8000 px wide; last logged final 8000x128 spp (2026-09-28); render / tiles may be skipped when the audit shows the tiles already meet the spec"
+  },
+  {
+   "id": "base:site_kavalierki",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Final-spec audit / re-render of base map site_kavalierki",
+   "targets": [
+    "site_kavalierki:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 4000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site kavalierki --out logs/campaign/full/site_kavalierki_full.png"
+   },
+   "notes": "audit first: current DZI 4000 px wide; no final render logged in logs/render_times.csv; render / tiles may be skipped when the audit shows the tiles already meet the spec"
+  },
+  {
+   "id": "base:yuanyu_sanctum",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Final-spec audit / re-render of base map yuanyu_sanctum",
+   "targets": [
+    "yuanyu_sanctum:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 4000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site yuanyu_sanctum --out logs/campaign/full/site_yuanyu_sanctum_full.png"
+   },
+   "notes": "audit first: current DZI 4000 px wide; no final render logged in logs/render_times.csv; render / tiles may be skipped when the audit shows the tiles already meet the spec"
+  },
+  {
+   "id": "base:yuanyu_city",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Final-spec audit / re-render of base map yuanyu_city",
+   "targets": [
+    "yuanyu_city:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 4000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site yuanyu_city --out logs/campaign/full/site_yuanyu_city_full.png"
+   },
+   "notes": "audit first: current DZI 4000 px wide; no final render logged in logs/render_times.csv; render / tiles may be skipped when the audit shows the tiles already meet the spec"
+  },
+  {
+   "id": "base:site_highland",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Final-spec audit / re-render of base map site_highland",
+   "targets": [
+    "site_highland:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 4000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site highland --out logs/campaign/full/site_highland_full.png"
+   },
+   "notes": "audit first: current DZI 4000 px wide; no final render logged in logs/render_times.csv; render / tiles may be skipped when the audit shows the tiles already meet the spec"
+  },
+  {
+   "id": "base:site_fief1",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Final-spec audit / re-render of base map site_fief1",
+   "targets": [
+    "site_fief1:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 4000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site fief1 --out logs/campaign/full/site_fief1_full.png"
+   },
+   "notes": "audit first: current DZI 4000 px wide; no final render logged in logs/render_times.csv; render / tiles may be skipped when the audit shows the tiles already meet the spec"
+  },
+  {
+   "id": "base:site_fief2",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Final-spec audit / re-render of base map site_fief2",
+   "targets": [
+    "site_fief2:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 4000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site fief2 --out logs/campaign/full/site_fief2_full.png"
+   },
+   "notes": "audit first: current DZI 4000 px wide; no final render logged in logs/render_times.csv; render / tiles may be skipped when the audit shows the tiles already meet the spec"
+  },
+  {
+   "id": "base:site_fief3",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Final-spec audit / re-render of base map site_fief3",
+   "targets": [
+    "site_fief3:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 4000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site fief3 --out logs/campaign/full/site_fief3_full.png"
+   },
+   "notes": "audit first: current DZI 4000 px wide; no final render logged in logs/render_times.csv; render / tiles may be skipped when the audit shows the tiles already meet the spec"
+  },
+  {
+   "id": "base:site_fief4",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Final-spec audit / re-render of base map site_fief4",
+   "targets": [
+    "site_fief4:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 4000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site fief4 --out logs/campaign/full/site_fief4_full.png"
+   },
+   "notes": "audit first: current DZI 4000 px wide; no final render logged in logs/render_times.csv; render / tiles may be skipped when the audit shows the tiles already meet the spec"
+  },
+  {
+   "id": "base:site_fief5",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Final-spec audit / re-render of base map site_fief5",
+   "targets": [
+    "site_fief5:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 4000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site fief5 --out logs/campaign/full/site_fief5_full.png"
+   },
+   "notes": "audit first: current DZI 4000 px wide; no final render logged in logs/render_times.csv; render / tiles may be skipped when the audit shows the tiles already meet the spec"
+  },
+  {
+   "id": "var:tc_mid:dawn",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Period variant tc_mid / dawn",
+   "targets": [
+    "tc_mid:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_mid.py",
+    "args": "--out logs/campaign/full/tc_mid_dawn_full.png"
+   },
+   "notes": "register = periods.dawn in maps.json; TODO: blender/tiancheng_mid.py has no dawn lighting (only --day; night is the default); add it before rendering"
+  },
+  {
+   "id": "var:tc_mid:dusk",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Period variant tc_mid / dusk",
+   "targets": [
+    "tc_mid:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_mid.py",
+    "args": "--out logs/campaign/full/tc_mid_dusk_full.png"
+   },
+   "notes": "register = periods.dusk in maps.json; TODO: blender/tiancheng_mid.py has no dusk lighting (only --day; night is the default); add it before rendering"
+  },
+  {
+   "id": "var:tc_mid:day",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Period variant tc_mid / day",
+   "targets": [
+    "tc_mid:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_mid.py",
+    "args": "--day --out logs/campaign/full/tc_mid_day_full.png"
+   },
+   "notes": "exists: 8000x64 spp rendered 2026-09-29, registered in maps.json periods; after the audit the worker may skip render / tiles; register = periods.day in maps.json"
+  },
+  {
+   "id": "var:tc_mid:night",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Period variant tc_mid / night",
+   "targets": [
+    "tc_mid:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_mid.py",
+    "args": "--out logs/campaign/full/tc_mid_night_full.png"
+   },
+   "notes": "exists: 8000x64 spp rendered 2026-09-29, registered in maps.json periods; after the audit the worker may skip render / tiles; register = periods.night in maps.json"
+  },
+  {
+   "id": "var:tc_low:dawn",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Period variant tc_low / dawn",
+   "targets": [
+    "tc_low:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_low.py",
+    "args": "--out logs/campaign/full/tc_low_dawn_full.png"
+   },
+   "notes": "register = periods.dawn in maps.json; TODO: blender/tiancheng_low.py has no dawn lighting (only --day; night is the default); add it before rendering"
+  },
+  {
+   "id": "var:tc_low:day",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Period variant tc_low / day",
+   "targets": [
+    "tc_low:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_low.py",
+    "args": "--day --out logs/campaign/full/tc_low_day_full.png"
+   },
+   "notes": "exists: 8000x64 spp rendered 2026-09-29, not registered in maps.json periods; after the audit the worker may skip render / tiles; register = periods.day in maps.json"
+  },
+  {
+   "id": "var:tc_low:dusk",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Period variant tc_low / dusk",
+   "targets": [
+    "tc_low:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_low.py",
+    "args": "--out logs/campaign/full/tc_low_dusk_full.png"
+   },
+   "notes": "register = periods.dusk in maps.json; TODO: blender/tiancheng_low.py has no dusk lighting (only --day; night is the default); add it before rendering"
+  },
+  {
+   "id": "var:tc_low:night",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Period variant tc_low / night",
+   "targets": [
+    "tc_low:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_low.py",
+    "args": "--out logs/campaign/full/tc_low_night_full.png"
+   },
+   "notes": "register = periods.night in maps.json"
+  },
+  {
+   "id": "isle:silver_crown",
+   "lane": "hero",
+   "type": "island",
+   "title": "Rebuild island silver_crown",
+   "targets": [
+    "tc_upper:silver_crown"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/islands/silver_crown.py"
+   },
+   "notes": "rebuild on the current main line; archive/upper-v18 is reference only; spec assumed equal to landmark finals"
+  },
+  {
+   "id": "isle:isle4",
+   "lane": "hero",
+   "type": "island",
+   "title": "Rebuild island isle4 (victor_estate)",
+   "targets": [
+    "tc_upper:victor_estate"
+   ],
+   "canon": "inferred",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/islands/isle4.py"
+   },
+   "notes": "rebuild on the current main line; archive/upper-v18 is reference only; spec assumed equal to landmark finals"
+  },
+  {
+   "id": "isle:isle5",
+   "lane": "hero",
+   "type": "island",
+   "title": "Rebuild island isle5 (y_estate)",
+   "targets": [
+    "tc_upper:y_estate"
+   ],
+   "canon": "inferred",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/islands/isle5.py"
+   },
+   "notes": "rebuild on the current main line; archive/upper-v18 is reference only; spec assumed equal to landmark finals"
+  },
+  {
+   "id": "isle:isle6",
+   "lane": "hero",
+   "type": "island",
+   "title": "Rebuild island isle6 (pm_residence)",
+   "targets": [
+    "tc_upper:pm_residence"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/islands/isle6.py"
+   },
+   "notes": "rebuild on the current main line; archive/upper-v18 is reference only; spec assumed equal to landmark finals"
+  },
+  {
+   "id": "isle:isle9",
+   "lane": "hero",
+   "type": "island",
+   "title": "Rebuild island isle9 (league_club)",
+   "targets": [
+    "tc_upper:league_club"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/islands/isle9.py"
+   },
+   "notes": "rebuild on the current main line; archive/upper-v18 is reference only; spec assumed equal to landmark finals"
+  },
+  {
+   "id": "isle:isle10",
+   "lane": "hero",
+   "type": "island",
+   "title": "Rebuild island isle10 (kelly_residence)",
+   "targets": [
+    "tc_upper:kelly_residence"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/islands/isle10.py"
+   },
+   "notes": "rebuild on the current main line; archive/upper-v18 is reference only; spec assumed equal to landmark finals"
+  },
+  {
+   "id": "isle:isle25",
+   "lane": "hero",
+   "type": "island",
+   "title": "Rebuild island isle25 (elite_academy)",
+   "targets": [
+    "tc_upper:elite_academy"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/islands/isle25.py"
+   },
+   "notes": "rebuild on the current main line; archive/upper-v18 is reference only; spec assumed equal to landmark finals"
+  },
+  {
+   "id": "isle:isle30",
+   "lane": "hero",
+   "type": "island",
+   "title": "Rebuild island isle30 (zaibatsu_estate)",
+   "targets": [
+    "tc_upper:zaibatsu_estate"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/islands/isle30.py"
+   },
+   "notes": "rebuild on the current main line; archive/upper-v18 is reference only; spec assumed equal to landmark finals"
+  },
+  {
+   "id": "base:tc_upper",
+   "lane": "hero",
+   "type": "basemap",
+   "title": "Upper base map final",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "canon": "card",
+   "depends": [
+    "isle:silver_crown",
+    "isle:isle4",
+    "isle:isle5",
+    "isle:isle6",
+    "isle:isle9",
+    "isle:isle10",
+    "isle:isle25",
+    "isle:isle30"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "args": "--below clouds --out logs/campaign/full/tc_upper_full.png"
+   },
+   "notes": "spp assumed 128 like the other tc_ bases; the spec only says 8000 px"
+  },
+  {
+   "id": "var:tc_upper:16k",
+   "lane": "hero",
+   "type": "variant",
+   "title": "Upper map 16k final",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "canon": "card",
+   "depends": [
+    "base:tc_upper"
+   ],
+   "spec": {
+    "res": 16000,
+    "spp": 512
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "args": "--below clouds --out logs/campaign/full/tc_upper_16k_full.png"
+   },
+   "notes": "TODO: decide how the 16k DZI is registered in maps.json (replace base or alt)"
+  },
+  {
+   "id": "var:tc_upper:dawn",
+   "lane": "hero",
+   "type": "variant",
+   "title": "Upper map dawn period",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "canon": "card",
+   "depends": [
+    "base:tc_upper"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "args": "--below clouds --tod dawn --out logs/campaign/full/tc_upper_dawn_full.png"
+   },
+   "notes": "spec assumed 8000/128 like the other period variants; register = periods.dawn in maps.json"
+  },
+  {
+   "id": "var:tc_upper:day",
+   "lane": "hero",
+   "type": "variant",
+   "title": "Upper map day period",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "canon": "card",
+   "depends": [
+    "base:tc_upper"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "args": "--below clouds --tod day --out logs/campaign/full/tc_upper_day_full.png"
+   },
+   "notes": "spec assumed 8000/128 like the other period variants; register = periods.day in maps.json"
+  },
+  {
+   "id": "var:tc_upper:dusk",
+   "lane": "hero",
+   "type": "variant",
+   "title": "Upper map dusk period",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "canon": "card",
+   "depends": [
+    "base:tc_upper"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "args": "--below clouds --tod dusk --out logs/campaign/full/tc_upper_dusk_full.png"
+   },
+   "notes": "spec assumed 8000/128 like the other period variants; register = periods.dusk in maps.json"
+  },
+  {
+   "id": "var:tc_upper:night",
+   "lane": "hero",
+   "type": "variant",
+   "title": "Upper map night period",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "canon": "card",
+   "depends": [
+    "base:tc_upper"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "args": "--below clouds --tod night --out logs/campaign/full/tc_upper_night_full.png"
+   },
+   "notes": "spec assumed 8000/128 like the other period variants; register = periods.night in maps.json"
+  },
+  {
+   "id": "estate:b1b2",
+   "lane": "hero",
+   "type": "estate",
+   "title": "Estate basement B1 / B2 interior refinement",
+   "targets": [
+    "eden_estate:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2000,
+    "spp": 32
+   },
+   "hints": {
+    "script": "blender/eden_manor.py"
+   },
+   "notes": "house model sources: blender/estate2/house_web.py, blender/estate2/medical_b2.py; spec inherited from estate:final; TODO: eden_manor.py --view lists B1 but not B2; decide the B2 view / script before final"
+  },
+  {
+   "id": "lm:round_table_hall",
+   "lane": "hero",
+   "type": "landmark",
+   "title": "New model: round table hall",
+   "targets": [
+    "site_kavalierki:round_table_hall"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "round_table_hall"
+   },
+   "notes": "no model yet (docs/card-buildings.md)"
+  },
+  {
+   "id": "lm:sun_arena",
+   "lane": "hero",
+   "type": "landmark",
+   "title": "New model: sun arena",
+   "targets": [
+    "site_kavalierki:sun_arena"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "sun_arena"
+   },
+   "notes": "no model yet (docs/card-buildings.md)"
+  },
+  {
+   "id": "lm:union_tower",
+   "lane": "hero",
+   "type": "landmark",
+   "title": "New model: union tower",
+   "targets": [
+    "site_kavalierki:union_tower"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 2400,
+    "spp": 64
+   },
+   "hints": {
+    "landmark": "union_tower"
+   },
+   "notes": "no model yet (docs/card-buildings.md)"
+  },
+  {
+   "id": "base:world",
+   "lane": "hero",
+   "type": "basemap",
+   "title": "Final-spec audit / re-render of base map world",
+   "targets": [
+    "world:*"
+   ],
+   "canon": "card",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/world_render.py",
+    "args": "--out logs/campaign/full/world_full.png"
+   },
+   "notes": "audit first: current DZI 8000 px wide; render / tiles may be skipped when the audit shows the tiles already meet the spec; no world final in logs/render_times.csv (only world_yuanyu drafts): default 8000/128"
+  }
+ ]
+}

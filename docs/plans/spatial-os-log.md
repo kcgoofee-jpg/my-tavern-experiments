@@ -41,3 +41,17 @@ open: check 6 counts `style="--x:..."` attributes (custom-property-only) as inli
   Initial baseline totals: lines 5 files / 4052 lines over cap (eden-map.js 1535, viewer3d.html 916, viewer.html 717, custom.mjs 456, events.mjs 428); zindex 15 files / 33; terms 30 files / 206 (tavern/events.mjs 87, i18n/zh.json 20, events.mjs 16, viewer.html 13, app/locate.mjs 9); inline_style 27 files / 66. map/core: zero violations of any kind (nothing baselined). Engine scan: 146 files + 2 i18n dictionaries.
 cleanup: done
 === END ===
+
+=== RESULT R0-B ===
+status: DONE
+items: T1 ✓  T2 ✓  T3 ✓  T4 ✓
+commits: 6e84ad4 feat(render): campaign ledger tool (items + append-only events, lanes, claims, freeze check)
+         (this commit) docs(render): render campaign item list and status view   (SHAs may change on rebase)
+pushed: yes (head number = the "head #N" commit that follows this one on preview)
+tests: node 629/630 (1 skipped; baseline identical) | smoke PASS (incl. new tools/test_render_campaign.py, 40 cases) | arch PASS | probes: none run (no renders started)
+deviations: (1) The item-list rules live in a second file, tools/render_campaign_items.py (imported by `init`), to keep render_campaign.py readable. (2) landmark.py's real stages (new, draft, board, gapcheck, final, ship) match the prompt; setting / review-r1 / fix / review-r2 are ledger-only stages with no landmark.py command, so `next` prints instructions for them instead of a command. (3) Rules the prompt left open, decided as: `fail` releases the claim; a claim's TTL counts from the owner's latest event; `wait` on a non-ship stage only refreshes the claim; events replay sorted by (ts, file order); overlapping claims: the first one wins; done / skip / fail / wait must name the item's current stage; review-r1 / review-r2 `done` requires --gate. (4) base / variant `--out` paths point at logs/campaign/full/<name>_full.png (gitignored) and `tiles` cuts them into map/art/<name>; only tc_* full PNGs are ignored under map/art. (5) Targets for whole-map items are written `<map>:*`; the hunting_camp marker lives in map/data/world_markers.json, not maps.json, and is targeted as world:hunting_camp.
+blocker: none
+open: (a) 7 items carry a TODO in their notes: review:holy_mountain (no blender/landmarks/holy_mountain/build.py; its source is blender/world/yuanyu_holy_mount.py, so landmark.py stages may not apply); var:tc_mid:dawn, var:tc_mid:dusk, var:tc_low:dawn, var:tc_low:dusk (tiancheng_mid.py / tiancheng_low.py only have --day, night is the default; dawn / dusk lighting must be added first); var:tc_upper:16k (how the 16k DZI is registered in maps.json: replace base or alt); estate:b1b2 (eden_manor.py --view has B1 but no B2). (b) Specs the prompt did not give, assumed: isle:* 2400/64, base:tc_upper 8000/128, var:tc_upper:<period> 8000/128, estate:b1b2 2000/32; each says so in its notes. (c) base:world has no world final in logs/render_times.csv (only world_yuanyu drafts), so it uses the 8000/128 default.
+item counts: standard 48 = estate 2, review 12, landmark 8, scene 7, basemap 11, variant 8; hero 19 = island 8, basemap 2, variant 5, estate 1, landmark 3; total 67.
+cleanup: done
+=== END ===
