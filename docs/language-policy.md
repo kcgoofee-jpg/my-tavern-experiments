@@ -52,6 +52,9 @@ so a reader can trace each one back and the wording cannot drift. Its own prose 
 push the file over the CJK threshold — it is listed in `ALLOW` with that reason. The same applies to any
 future index built the same way: quote the source, explain in English, allow the file.
 
+Agent prompts kept in the repo (`docs/plans/render-loop.md`) are English only as well: they are read by agents,
+and the operator's Chinese notes live in the chat.
+
 ## What this means in practice
 
 * **Documents** are what the gate checks. New `docs/**/*.md` in English.
