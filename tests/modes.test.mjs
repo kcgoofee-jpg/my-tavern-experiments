@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as M from '../map/tavern/modes.mjs';
 import { pickStat } from '../map/tavern/snapshot.mjs';
+import { loadEventGeo } from '../map/tavern/event-geo-load.mjs';
+import * as F from './helpers/s43_frozen.mjs';
 const HOST = readFileSync(new URL('../map/tavern/eden-map.js', import.meta.url), 'utf8') + '\n' + readFileSync(new URL('../map/tavern/mvu-bridge.mjs', import.meta.url), 'utf8');   // P2：标签对账在桥里，接线在入口
 
 // 酒馆助手注入：按 id 存（TH inject.ts：同 id 覆盖）；pagehide 时 TH 自己全撤
@@ -73,6 +75,22 @@ test('(a) 注入生命周期：普通 / swipe / 重生 / 重载都只有一条�
   assert.match(HOST, /lsGet\('edenMapStateInj'\) !== '0'/);
 });
 
+// S4-3：写法模板与地点前缀是设定包的数据；宿主经 loadEventGeo 装入（第一个包：overlay llm["x-tag-examples"] 与各组的世界图地点名）
+const MAP_DIR = new URL('../map/', import.meta.url);
+await loadEventGeo({ fetchJSON: async rel => { try { return JSON.parse(readFileSync(new URL(rel, MAP_DIR), 'utf8')); } catch (e) { return null; } }, packId: 'eden' });
+
+test('S4-3：没装设定包数据时对账是中性的（没有模板、没有前缀），装入后与以前的常量同一结果', async () => {
+  M.configure({});
+  assert.equal(M.parseHereTag('<span style="display:none">⌖地点 层·地点</span>'), '层·地点'); assert.equal(M.samePlace('天城', '天城·中层'), true);   // 没有前缀可去：两边各自带着「天城」
+  await loadEventGeo({ fetchJSON: async rel => { try { return JSON.parse(readFileSync(new URL(rel, MAP_DIR), 'utf8')); } catch (e) { return null; } }, packId: 'eden' });
+  assert.equal(M.samePlace('天城', '天城·中层'), false);   // 装入后开头的大区名不参与比较（旧规则同）
+  for (const ex of F.EX) assert.equal(M.parseHereTag(`⌖地点 ${ex}`), null, ex);   // 旧常量里的三个模板都认
+  assert.equal(M.parseHereTag('⌖地点 天城·别的写法'), '天城·别的写法');
+  // 前缀：旧的只去掉开头的「天城」；现在是每个组的世界图地点名——只会多认（旧规则说同一处的，新规则一定也说同一处）
+  const texts = ['天城·中层·霓虹街', '中层·霓虹街', '天城中层', '伊甸庄园·书房', '书房', '天城', '', '圣都·大教堂', '大教堂', '天城 · 下层 · 7号井', '7号井', '霓虹街'];
+  for (const a of texts) for (const b of texts) { const old = (x => x && (F.norm(b) ? (x.includes(F.norm(b)) || F.norm(b).includes(x)) : false))(F.norm(a)); if (old) assert.ok(M.samePlace(a, b), `${a} ~ ${b}`); }
+  for (const t of ['天城·中层·霓虹街', '天城中层']) assert.equal(M.samePlace(t, F.norm(t)), true);
+});
 test('(d) 标签对账：MVU 为准；本楼没快照时用正文标签；冲突列出', () => {
   assert.equal(M.parseHereTag('走进书房。<span style="display:none">⌖地点 伊甸庄园·书房</span>'), '伊甸庄园·书房');
   assert.equal(M.parseHereTag('<span data-tcmap="地点=霓虹街;层=中层"></span>'), '中层·霓虹街');

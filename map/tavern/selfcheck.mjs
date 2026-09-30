@@ -8,7 +8,7 @@ export const WB_ENTRIES = ['地图联动规范', '地图事件类型', '地图�
 // 按当前地点注入方位的 EJS 条目（可选；要「提示词模板」扩展才会展开）
 export const LORE_PREFIX = '地图方位';
 
-const item = (id, status, zh, en) => ({ id, status, zh, en });
+const item = (id, status, zh, en, extra) => ({ id, status, zh, en, ...extra });
 
 /** 在 MVU 的 stat_data 里找「像当前地点」的路径（作者改名时给提示）：键名含 地点 / 位置 / location，最多 3 条 */
 export function findPaths(obj, re = /地点|位置|location/i, max = 3) {
@@ -136,8 +136,8 @@ export function evaluate(f) {
   if (!w) out.push(item('worldbook', 'skip', '查不了世界书（酒馆助手没有世界书接口）', 'Cannot inspect lorebooks (no TavernHelper lorebook API)'));
   else if (w.missing.length && w.imported) out.push(item('worldbook', 'info', `世界书附加条目已导入但没有启用：${w.missing.join('、')}（已在后台静默绑定，稍后自动生效；要立刻写入可到「数据与映射」）`,
     `Lorebook add-on imported but not active: ${w.missing.join(', ')} (binding silently in the background; use Data & mapping to write it now)`));
-  else if (w.missing.length) out.push(item('worldbook', 'warn', `世界书附加条目缺少：${w.missing.join('、')}（导入「伊甸地图·世界书附加条目」，并在世界书里设为全局、或绑定到当前角色 / 聊天；刚导入的话刷新一次页面）`,
-    `Lorebook add-on entries missing: ${w.missing.join(', ')} (import the Eden map add-on lorebook and activate it globally or bind it to this character / chat; refresh once after importing)`));
+  else if (w.missing.length) out.push(item('worldbook', 'warn', `世界书附加条目缺少：${w.missing.join('、')}（导入${f.wbBook ? `「${f.wbBook}」` : '附加条目的世界书'}，并在世界书里设为全局、或绑定到当前角色 / 聊天；刚导入的话刷新一次页面）`,
+    `Lorebook add-on entries missing: ${w.missing.join(', ')} (import the Eden map add-on lorebook and activate it globally or bind it to this character / chat; refresh once after importing)`, { book: f.wbBook || '' }));
   else out.push(item('worldbook', 'ok', '世界书附加条目已启用', 'Lorebook add-on entries enabled'));
   if (w && w.lore && f.ejs === false) out.push(item('ejs', 'warn', '启用了「地图方位」条目，但没检测到「提示词模板」扩展：条目会原样发给模型（装上扩展，或关掉这几条）',
     'Map location lore entries enabled but the Prompt Template extension is missing: raw EJS would reach the model (install it or disable those entries)'));

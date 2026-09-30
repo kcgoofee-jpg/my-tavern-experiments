@@ -7,7 +7,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as W from '../map/tavern/wbsync.mjs';
+import { worldbookPrefix } from '../map/core/pack.mjs';
+// 书名前缀取自包清单（S4-3）：这些测试跑的是第一个包，宿主读到它的清单后就是这样配的
+W.setPrefix(worldbookPrefix(JSON.parse(readFileSync(new URL('../map/packs/eden/manifest.json', import.meta.url), 'utf8')), 'eden'));
 
+import * as F from './helpers/s43_frozen.mjs';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const clone = o => JSON.parse(JSON.stringify(o));
 const ship = (ver, ents) => ({ book: W.BOOK, version: ver, ver, entries: ents.map(([id, content, name]) => ({ id, name: name || id, enabled: true, content, strategy: { type: 'constant', keys: [] }, position: { type: 'after_character_definition', order: 900 } })) });
@@ -128,4 +132,21 @@ test('发布物 map/data/worldbook_addon.json 与生成器同步（改了地点�
     assert.deepEqual(fresh.entries, cur.entries, '重新跑 python3 tools/build_worldbook_addon.py --ship');
     assert.deepEqual(fresh.aliases, cur.aliases, '别名表改了要重新 --ship');
   } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+test('S4-3：书名前缀来自清单——第一个包的 PREFIX / BOOK / LEGACY_RE 与以前的常量逐字相同；别的包用自己的名字；没配前缀是中性默认', async () => {
+  const man = JSON.parse(readFileSync(new URL('../map/packs/eden/manifest.json', import.meta.url), 'utf8'));
+  assert.equal(man.worldbook.prefix, '伊甸地图');
+  W.setPrefix(worldbookPrefix(man, 'eden'));
+  assert.equal(W.PREFIX, F.PREFIX); assert.equal(W.BOOK, F.BOOK); assert.equal(W.LEGACY_RE.source, F.LEGACY_RE.source); assert.equal(W.LEGACY_RE.flags, F.LEGACY_RE.flags);
+  assert.ok(W.LEGACY_RE.test('伊甸地图·世界书附加条目 v0.9.5') && !W.LEGACY_RE.test(W.BOOK) && !W.LEGACY_RE.test('雾港镇·世界书附加条目 v1.0'));
+  const town = JSON.parse(readFileSync(new URL('../map/packs/town/manifest.json', import.meta.url), 'utf8'));
+  try {
+    W.setPrefix(worldbookPrefix(town, 'town'));   // 没有 worldbook.prefix：包标题
+    assert.equal(W.BOOK, town.title + '·世界书附加条目'); assert.ok(W.LEGACY_RE.test(town.title + '·世界书附加条目 v2')); assert.ok(!W.LEGACY_RE.test('伊甸地图·世界书附加条目 v0.9.5'));
+    W.setPrefix('a.b(c)');   // 前缀里的正则字符只当字面
+    assert.ok(W.LEGACY_RE.test('a.b(c)·世界书附加条目 v1')); assert.ok(!W.LEGACY_RE.test('aXb(c)·世界书附加条目 v1'));
+    assert.equal(W.setPrefix('  '), W.BOOK);   // 空前缀不改
+  } finally { W.setPrefix('伊甸地图'); }
+  assert.equal(worldbookPrefix(null, 'p'), 'p'); assert.equal(worldbookPrefix({ title: 'T' }, 'p'), 'T'); assert.equal(worldbookPrefix({ title: 'T', worldbook: { prefix: 'X' } }, 'p'), 'X');
 });

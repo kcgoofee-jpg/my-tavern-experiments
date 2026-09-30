@@ -63,7 +63,14 @@ export function snapFor(pick, readFloor, lastId, { type = 'normal', generating =
 }
 
 // ---------------- (d) 标签对账 ----------------
-const EX = new Set(['层·地点', '天城·层·地标', '伊甸庄园·房间名']);   // 世界书里的写法模板
+// 两份数据由宿主装入（configure，tavern/event-geo-load.mjs）：世界书里的写法模板（设定包 llm["x-tag-examples"]，不当作真地点）；地点开头的大区名（各组在世界图上的地点名，比较时去掉）
+let EX = new Set(), PFX = [];
+const lines = v => (Array.isArray(v) ? v.filter(s => typeof s === 'string' && s.trim()).map(s => s.trim()) : []);
+export function configure({ examples, prefixes } = {}) {
+  EX = new Set(lines(examples));
+  PFX = [...new Set(lines(prefixes).map(s => s.replace(SEP, '')).filter(Boolean))].sort((a, b) => b.length - a.length);
+}
+const SEP = /[\s·・.\-—_/／|｜]/g;
 const clean = s => String(s || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 /** 一楼原文里明确写的玩家当前地点：⌖地点 X（隐藏 span 或裸写）、或 data-tcmap="地点=…"（不带 人物 / 类型 / 标题）；取最后一个 */
 export function parseHereTag(raw) {
@@ -77,7 +84,7 @@ export function parseHereTag(raw) {
   }
   return best ? best[1] : null;
 }
-const norm = s => clean(s).replace(/[\s·・.\-—_/／|｜]/g, '').replace(/^天城/, '');
+const norm = s => { const x = clean(s).replace(SEP, ''), p = PFX.find(q => x.startsWith(q)); return p ? x.slice(p.length) : x; };
 /** 两个地点说的是不是一处：规范化后一个包含另一个 */
 export const samePlace = (a, b) => { const x = norm(a), y = norm(b); return !!x && !!y && (x.includes(y) || y.includes(x)); };
 /**

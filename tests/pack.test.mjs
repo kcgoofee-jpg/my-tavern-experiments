@@ -157,11 +157,13 @@ test('没有事件块 / 坏的事件块 = 内核的中性分类（K-R53），不
   assert.ok(EV.taxonomy().groups.length > 8);
 });
 
-test('聊天变量顶层键 / 世界书名可换（默认 eden 原名）', () => {
-  assert.equal(MV.VAR_ROOT, 'eden_map'); assert.equal(MV.WB_NAME, '伊甸地图·自定义');
+test('聊天变量顶层键 / 世界书名可换（默认聊天变量 eden 原名；书名前缀来自清单，引擎里没有默认名）', () => {
+  assert.equal(MV.VAR_ROOT, 'eden_map'); assert.equal(MV.wbName('chat1'), '');   // 宿主没读到清单之前：没有这本书
+  const eden = js('map/packs/eden/manifest.json');
   try { assert.equal(MV.setVarRoot('tc_town'), 'tc_town'); assert.equal(MV.setVarRoot('bad key'), 'tc_town'); assert.equal(MV.setWbName('雾港镇'), '雾港镇·自定义'); }
-  finally { MV.setVarRoot('eden_map'); MV.setWbName('伊甸地图'); }
-  assert.equal(MV.WB_NAME, '伊甸地图·自定义');
+  finally { MV.setVarRoot('eden_map'); MV.setWbName(PK.worldbookPrefix(eden, 'eden')); }
+  assert.equal(MV.WB_NAME, '伊甸地图·自定义');   // 第一个包：清单 worldbook.prefix，与以前的常量同名
+  assert.match(MV.wbName('chat1'), /^伊甸地图·自定义·[0-9a-f]{6}$/);
 });
 
 test('tools/check_pack.py：全部包通过', () => {

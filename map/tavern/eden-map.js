@@ -14,11 +14,12 @@ import { createRoutes, scoreText } from './host-routes.mjs';
 import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
 import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取收口（Mvu / SillyTavern 全局只在这一个模块里）
 import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下文交互流水线（窗口 / 事件 / 人物 / 标签 / 行程的纯计算）
-import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）
+import { createAbout } from './host-about.mjs';
+import { worldbookPrefix } from '../core/pack.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）
 (() => {
   const SELF = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-th.mjs
-  const { PACK_IN, PACK_ID, wrapLS, LS, lsGet, lsSet } = packNs();
+  const { PACK_IN, PACK_ID, MAN, wrapLS, LS, lsGet, lsSet } = packNs(SELF);   // MAN：包清单（Promise）
   const life = createLife(), { listen } = life;   // 监听登记与「死亡」标记（host-lifecycle.mjs）
   // 协议 v2（core/protocol.mjs，docs/design/arch-v2.md §3）：发出的消息盖 v；收到的消息按 schema 校验（模块没到时照旧处理）
   const PROTO = 2; let PRm = null;   // 与 core/protocol.mjs PROTO 一致（tests/protocol.test.mjs 检查）
@@ -26,7 +27,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   let FOGm = null, explored = {}; import(SELF + 'core/depth.mjs').then(m => { FOGm = m; explored = m.norm(explored); }).catch(() => {});   // 迷雾探索（eden_map.探索）
   let SRCm = null; import(SELF + 'tavern/sources.mjs').then(m => { SRCm = m; }).catch(() => {});   // 数据源注册表（arch-v2 §6 第 8 步）
   // 线路 / 版本识别：host-routes.mjs
-  const { PKG, REPO, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, LINE_TTL, LINE_AT, race, measure } = createRoutes({ SELF, PACK_IN });
+  const { PKG, REPO, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, LINE_TTL, LINE_AT, race, measure } = createRoutes({ SELF, PACK_IN, manifest: MAN });
   let line = null; try { line = (LS || localStorage).getItem(LINE_KEY); } catch (e) {}
   if (!LINES.some(l => l.key === line)) line = null;
   let BASE = baseFor(line);
@@ -124,9 +125,8 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     if (!panel.hidden || alive) { fab.classList.remove('prep'); preDone(); return; }   // 测速期间用户已经点开了
     if (lean()) {
       htmlProg = f => fab.style.setProperty('--p', Math.round(f * 80));
-      // 省流预热清单（通用化 v1：按包取；数据文件 = 清单 preload 列；内置 eden 无注入时用 Pack 0 默认档，与以前逐字相同）
-      const pb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';
-      const pf = (PACK_IN?.manifest?.preload) || (PACK_ID === 'eden' ? ['data/maps.json', 'data/world_markers.json', 'data/derived.json'] : []);
+      // 省流预热清单（通用化 v1：按包取；数据文件 = 清单 preload 列，第一个包也一样）
+      const pb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/', pf = (await MAN)?.preload || [];
       try { await fetchHtml(); await Promise.all(['packs/' + PACK_ID + '/manifest.json', ...pf.map(p => pb + p)].map(u => cdnFetch(BASE + u).catch(() => null)));
         fab.classList.remove('prep'); fab.title = '世界地图'; }
       catch (e) { fab.classList.remove('prep'); fab.classList.add('fail'); fab.title = '地图预加载失败，点开重试'; }
@@ -648,7 +648,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     stripTags: resolveTags(k => { try { return (LS || localStorage).getItem(k); } catch (e) { return null; } }),
   });
   const BR = new MVUBridge({
-    life, pack: PACK_IN, packId: PACK_ID,
+    life, pack: PACK_IN, packId: PACK_ID, manifest: MAN,
     lang: () => (UL === 'en' ? 'en' : 'zh'), isGenerating: () => GEN.generating,
     storage: () => LS || localStorage,
     floorNow: () => floorNow, lastRaw: () => (floorNow >= 0 ? CTX.msgCache.get(floorNow)?.m?.raw ?? null : null),
@@ -663,9 +663,8 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   BR.roster.use('baibai', { rows: () => BBm ? BBm.characters().list : [] });
   // 保底名册（Pack 0 数据挂载点 manifest.data.roster，通用化 v1 前是 mvu.mjs 的硬编码数组）：包声明了才取；
   // eden（无注入的内置默认）走内置档路径。取不到就没有兜底行，不挡启动。
-  { const rp = (PACK_IN?.manifest?.data?.roster) || (PACK_ID === 'eden' ? 'data/fallback_roster.json' : null);
-    if (rp) { const rb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';
-      cdnFetch(BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { if (BR.setFallbackMembers(j?.members || [])) { recomputeSoon(); sendChars(); } }).catch(() => {}); } }
+  MAN.then(man => { const rp = man?.data?.roster, rb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';   // 路径读自包清单 data.roster；没声明 = 没有兜底行
+    if (rp) return cdnFetch(BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { if (BR.setFallbackMembers(j?.members || [])) { recomputeSoon(); sendChars(); } }); }).catch(() => {});
   // 桥接口的宿主侧薄别名：原有调用点（chatId / userName / mvuStat / getHere / readVars）不用逐个改
   const chatId = () => BR.chatId(), cardKey = () => BR.cardKey(), userName = s => BR.userName(s);
   const mvuStat = () => BR.mvuStat(), getHere = () => BR.here(), readVars = () => BR.readVars();
@@ -729,7 +728,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   const badge = root.querySelector('.em-badge');
   let events = [], floorNow = -1, seen = -1, injected = '', EVM = null;
   // 事态模块单独加载：加载失败只是没有事态功能，地图照常可用
-  import(new URL('events.mjs', import.meta.url).href).then(async m => { try { m.setGeo(await (await import(new URL('event-geo-load.mjs', import.meta.url).href)).loadEventGeo({ fetchJSON: rel => cdnFetch(BASE + rel).then(r => r.ok ? r.json() : null).catch(() => null), packId: PACK_ID, manifest: PACK_IN?.manifest, events: PACK_IN?.events })); } catch (e) { console.warn('[eden-map] 事态落点的节点树没建出来：事件只列出、不上图', e); } EVM = m; recompute(); }).catch(e => console.warn('[eden-map] 事态模块加载失败', e));
+  import(new URL('events.mjs', import.meta.url).href).then(async m => { try { m.setGeo(await (await import(new URL('event-geo-load.mjs', import.meta.url).href)).loadEventGeo({ fetchJSON: rel => cdnFetch(BASE + rel).then(r => r.ok ? r.json() : null).catch(() => null), packId: PACK_ID, manifest: await MAN, events: PACK_IN?.events })); } catch (e) { console.warn('[eden-map] 事态落点的节点树没建出来：事件只列出、不上图', e); } EVM = m; recompute(); }).catch(e => console.warn('[eden-map] 事态模块加载失败', e));
   // 人物栏（v0.9.2）：人物位置标签 + MVU 人物表 → 每人最新位置；模块加载失败只是没有人物栏
   let CHM = null, chars = [], charSig = '', charsSent = null;   // charsSent：上一次发给地图的人物签名（没变就不重发）
   import(new URL('characters.mjs', import.meta.url).href).then(m => { CHM = m; recompute(); }).catch(e => console.warn('[eden-map] 人物模块加载失败', e));
@@ -1040,7 +1039,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   }
   // 世界书按聊天分开（MV.wbName(聊天 id)），不然绑定了同一本的聊天会互相注入；关掉同步时把条目停用（不删世界书）
   async function syncWb(on = true) {
-    if (!wbOk()) { wbState = 'noapi'; return false; }
+    if (!wbOk() || !MV.wbName(customChat)) { wbState = 'noapi'; return false; }   // 世界书名还没配（没取到包清单）：不建
     const content = MV.wbContent(custom), WBN = MV.wbName(customChat);
     // 用到才建（v0.9.5）：还没有任何自定义时不建世界书；已经建过的照常写（条目停用）
     if (!content && !(await wbExists(WBN))) { wbState = on ? 'empty' : ''; sendCustom(); return true; }
@@ -1057,7 +1056,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
     wbState = bound ? 'bound' : 'unbound'; sendCustom(); return true;
   }
   // 标签用到的「类」：人物栏里的名字 → 人物；庄园房间 / 区域（maps.json）→ 房间 / 区域；其余当地标
-  const reg = () => (regP ??= cdnFetch(BASE + 'data/maps.json').then(r => r.ok ? r.json() : null).catch(() => null));
+  const reg = () => (regP ??= MAN.then(man => (man?.data?.maps ? cdnFetch(BASE + (PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/') + man.data.maps).then(r => (r.ok ? r.json() : null)) : null)).catch(() => null));   // 路径读自包清单 data.maps
   let regNow = null; reg().then(r => { regNow = r; });
   // 注：reg() 用的是当前线路的 maps.json（与地图同一份）；取不到时一律当地标
   function kindOf(key) {
@@ -1143,6 +1142,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   let SC = null, checkP = null, checkFacts = null, checkItems = [], checkAt = 0, viewerVer = null, updInfo = null, toastEl = null;
   const UPD_KEY = 'edenMapUpdate', AUTO_UPD_KEY = 'edenMapAutoUpdate', TOAST_KEY = 'edenMapCheckToast';
   async function wbFacts() { try { return await SC.collectWorldbook(hostFn); } catch (e) { return null; } }
+  const wbBook = async () => { try { const man = await MAN, m = await import(SELF + 'tavern/wbsync.mjs'); if (man) m.setPrefix(worldbookPrefix(man, PACK_ID)); return man ? m.BOOK : ''; } catch (e) { return ''; } };   // 自检文案里的书名（= 世界书附加条目那本）
   async function updateFacts() {   // 正式版才查；一天最多一次（不论成败），结果记在本机
     if (!VER || !swappable || !SC.swapVer(import.meta.url, VER)) return null;
     let c = null; try { c = JSON.parse(lsGet(UPD_KEY)); } catch (e) {}
@@ -1172,7 +1172,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
         api: { getChatMessages: fnOk('getChatMessages'), eventOn: fnOk('eventOn'), injectPrompts: fnOk('injectPrompts'), tavern_events: typeof tavern_events === 'object' },
         vars: varsOk(), ejs: (() => { try { return typeof (window.parent.EjsTemplate || globalThis.EjsTemplate) === 'object'; } catch (e) { return false; } })(),
         db: BR.dbFacts(true),
-        mvu, varmode, dup: { others: loads, oldStyle, replaced: !root.isConnected }, line: ln, worldbook: await wbFacts(), version: { script: plainVer(VER), viewer: viewerVer }, update: await updateFacts(),
+        mvu, varmode, dup: { others: loads, oldStyle, replaced: !root.isConnected }, line: ln, worldbook: await wbFacts(), wbBook: await wbBook(), version: { script: plainVer(VER), viewer: viewerVer }, update: await updateFacts(),
         // B3 卡身份（getCharData，旧办法回退）、B4 宿主版本（只报告）、B7 角色卡正则（只读）
         card: THm ? await THm.cardIdentity(thFn, () => BR.stContext()).catch(() => null) : null, host: THm ? THm.hostVersions(thFn) : null,
         regex: THm && thFn('getTavernRegexes') ? await Promise.resolve(thFn('getTavernRegexes')({ type: 'character', name: 'current' })).then(l => THm.regexFacts(l), () => null) : null,
@@ -1440,7 +1440,7 @@ import { createAbout } from './host-about.mjs';   // P2 解耦：版本信息与
   }
   // B1 世界书附加条目 + 全自动 + eden-map:th 设置消息：host-th.mjs createWbAuto（整块原样搬过去，行为不变）
   let wbChatT = 0;
-  const { wbAuto, sendTh, onTh } = createWbAuto({ SELF, LS, lsGet, lsSet, life, base: () => BASE, alive: () => alive, UL: () => UL, thBtns: () => thBtns,
+  const { wbAuto, sendTh, onTh } = createWbAuto({ SELF, LS, lsGet, lsSet, life, manifest: MAN, packId: PACK_ID, base: () => BASE, alive: () => alive, UL: () => UL, thBtns: () => thBtns,
     chatId, cardKey, post, hostToast, stateInject, macroSet, prefSync });
 
   // 悬浮按钮可拖动（避开酒馆输入栏等位置），位置按屏幕比例记住；轻点才打开面板

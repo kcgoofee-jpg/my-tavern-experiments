@@ -37,10 +37,14 @@ test('线路测速：按「字节 / 毫秒」算分，小响应不算有效测�
   assert.equal(probeVerdict(PROBE_MIN_BYTES - 1, 100).ok, false);
 });
 
-test('线路清单与换线门槛：npm 线路仍禁用；测的是 maps.json 而不是小文件', () => {
-  const R = createRoutes({ SELF: 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.6/map/', PACK_IN: null });
+test('线路清单与换线门槛：npm 线路仍禁用；测的是清单 data.maps（105 KB 级）而不是小文件', async () => {
+  const man = JSON.parse(readFileSync(new URL('../map/packs/eden/manifest.json', import.meta.url), 'utf8'));
+  const R = createRoutes({ SELF: 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.6/map/', PACK_IN: null, manifest: Promise.resolve(man) });
   assert.deepEqual(R.LINES.map(l => l.key), ['vpn', 'cn']);   // npm（enabled:false）仍在禁用状态
-  assert.equal(R.PROBE_PATH, 'data/maps.json');
+  assert.equal(await R.probePath(), 'data/maps.json');         // 第一个包的路径读自它的清单
+  assert.equal(await createRoutes({ SELF: 'http://x/map/', PACK_IN: { id: 'p', manifest: { data: { maps: 'maps.json' } } } }).probePath(), 'packs/p/maps.json');
+  assert.equal(await createRoutes({ SELF: 'http://x/map/', PACK_IN: null }).probePath(), 'i18n/en.json');   // 没有清单：引擎自己的词典（够大）
+  assert.equal(createRoutes({ SELF: 'https://cdn.jsdelivr.net/gh/o/r@map-v1.0.0/map/', PACK_IN: null, manifest: man }).PKG, man.cdn.npm); assert.equal(createRoutes({ SELF: 'https://cdn.jsdelivr.net/gh/o/r@map-v1.0.0/map/', PACK_IN: null, manifest: { cdn: { repo: 'x/y' } } }).PKG, '');   // 清单不写 npm = 没有 npm 线路，也不从 npm 路径认版本
   assert.equal(R.PROBE_MARGIN, 1.3);                          // 没快 30% 以上不换线
   assert.equal(typeof R.measure, 'function');
   assert.equal(typeof R.race, 'function');

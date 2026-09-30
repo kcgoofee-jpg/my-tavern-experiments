@@ -1,7 +1,11 @@
 // 世界书全自动（用户 2026-09-28）：map/tavern/wbsync.mjs autoRun / autoDecision / merge 的旧对话兼容。假的酒馆助手接口，每个 await 都让出一次，模拟多标签页交错。
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import * as W from '../map/tavern/wbsync.mjs';
+import { worldbookPrefix } from '../map/core/pack.mjs';
+// 书名前缀取自包清单（S4-3）：这些测试跑的是第一个包，宿主读到它的清单后就是这样配的
+W.setPrefix(worldbookPrefix(JSON.parse(readFileSync(new URL('../map/packs/eden/manifest.json', import.meta.url), 'utf8')), 'eden'));
 
 const clone = o => JSON.parse(JSON.stringify(o));
 const tick = () => new Promise(r => setImmediate(r));

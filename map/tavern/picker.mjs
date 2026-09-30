@@ -6,7 +6,9 @@
 // 不过滤任何文字；这里只做字符串比较。
 
 const low = s => String(s ?? '').toLowerCase();
-const TIER = { tc_upper: ['天城上层', 'Upper tier'], tc_mid: ['天城中层', 'Middle tier'], tc_low: ['天城下层', 'Lower tier'] };
+// 层名与顺序来自数据：maps.json 的 tier_label / tier_label_en（没写 = 用地图标题）；有 tier_label 的图排在前面，按它们在所属组 layers 里的顺序
+const tierOf = m => (typeof m?.tier_label === 'string' && m.tier_label ? [m.tier_label, typeof m.tier_label_en === 'string' && m.tier_label_en ? m.tier_label_en : m.tier_label] : null);
+const rankOf = (reg, id) => (tierOf(reg?.maps?.[id]) ? (reg.groups?.[reg.maps[id].group]?.layers || []).indexOf(id) : -1);
 
 /** 分组清单：[{ id, label, items: [{ key, kind, target, sub, en, alias: [] }] }]
  *  reg = maps.json；plan = estate/plan.js 的导出（可缺，缺了房间按一组列出）；chars = 人物名数组 */
@@ -15,18 +17,18 @@ export function buildGroups({ reg, plan = null, chars = [], lang = 'zh' } = {}) 
   const macro = s => String(s || '').replace(/\{\{user\}\}\s*(的)?\s*/g, en ? 'your ' : '你的');   // 酒馆宏不直接露出来
   const add = (g, it) => { if (!it.key || seen.has(it.key)) return; seen.add(it.key); g.items.push(it); };
   const maps = Object.entries(reg?.maps || {});
-  // 1 天城各层地标（上 → 中 → 下，其余 points 图排在后面）
+  // 1 各层地标（有 tier_label 的图按所属组的层序排在前面，其余 points 图在后）
   const pts = maps.filter(([, m]) => m.kind === 'points' && m.status !== 'planned')
-    .sort(([a], [b]) => (TIER[a] ? Object.keys(TIER).indexOf(a) : 9) - (TIER[b] ? Object.keys(TIER).indexOf(b) : 9));
+    .sort(([a], [b]) => (rankOf(reg, a) >= 0 ? rankOf(reg, a) : 9) - (rankOf(reg, b) >= 0 ? rankOf(reg, b) : 9));
   for (const [id, m] of pts) {
-    const t = TIER[id] || [typeof m.title === 'string' ? m.title : m.title?.name || id, typeof m.title_en === 'string' ? m.title_en : m.title_en?.name || m.title?.name_en || id];   // v0.9.6 开局地点地图的 title 是字符串
+    const t = tierOf(m) || [typeof m.title === 'string' ? m.title : m.title?.name || id, typeof m.title_en === 'string' ? m.title_en : m.title_en?.name || m.title?.name_en || id];   // v0.9.6 开局地点地图的 title 是字符串
     const g = { id: 'lm:' + id, label: en ? `${t[1]} · landmarks` : `${t[0]} · 地标`, short: en ? t[1] : t[0], items: [] };
     for (const [mk, v] of Object.entries(m.markers || {})) add(g, { key: v.name, kind: 'landmark', target: { map: id, marker: mk }, sub: macro(en ? (v.sub_en || v.sub || '') : (v.sub || '')), en: v.name_en || '', alias: v.alias || [] });
     if (g.items.length) out.push(g);
   }
   // 2 伊甸庄园：房间按楼层（plan.js 的 FLOORS / ROOMS；同一间房的多个叫法只列第一个，其余当搜索别名）、室外
   for (const [eid, m] of maps.filter(([, m]) => m.kind === 'estate')) {
-    const title = en ? (m.title?.name_en || 'Eden Manor') : (m.title?.name || '伊甸庄园');
+    const title = (en ? (typeof m.title_en === 'string' ? m.title_en : m.title?.name_en) : (typeof m.title === 'string' ? m.title : m.title?.name)) || eid;   // 地图自己的标题；没有就用地图 id
     const floors = plan?.FLOORS || [], rooms = plan?.ROOMS || [], byFloor = new Map(), other = [], taken = new Set();
     if (plan?.CARD?.rooms?.length) {   // 卡设定分层（map/data/eden_estate_rooms.json）：B2 / B1 / F1 / F2 / F3，只列卡房间（按卡房间编号）；restricted 房间只写名字、不描述
       const seen = new Set();

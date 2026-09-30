@@ -177,12 +177,12 @@ export function syncMigrate(raw, wbExists) {
   if (!raw || typeof raw !== 'object' || raw.同步手动 || raw.同步世界书 !== false || !wbExists) return raw;
   return { ...raw, 同步手动: true };
 }
-export let WB_NAME = '伊甸地图·自定义';
+export let WB_NAME = '';   // 包的世界书名前缀 +「·自定义」：宿主读到清单后调 setWbName（没调用前为空 = 没有这本书）
 export const WB_ENTRY = '地图自定义';
-/** 设定包：世界书名换成「<包标题>·自定义」（eden 不调用，保持原名） */
+/** 设定包：世界书名 =「<前缀>·自定义」；前缀见 core/pack.mjs worldbookPrefix（宿主与桥都会调，包括第一个包） */
 export function setWbName(title) { if (typeof title === 'string' && title.trim()) WB_NAME = title.trim().slice(0, 40) + '·自定义'; return WB_NAME; }
 /** 按聊天分开的世界书名（多个聊天共用一本会互相串）：「伊甸地图·自定义·<聊天 id 的短哈希>」 */
-export function wbName(chat) { let h = 2166136261; for (const c of String(chat || '')) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return `${WB_NAME}·${(h >>> 0).toString(16).padStart(8, '0').slice(0, 6)}`; }
+export function wbName(chat) { if (!WB_NAME) return ''; let h = 2166136261; for (const c of String(chat || '')) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return `${WB_NAME}·${(h >>> 0).toString(16).padStart(8, '0').slice(0, 6)}`; }
 
 // ---------------- 剧情标签：⌖改名 / ⌖用途 / ⌖事实 ----------------
 //   ⌖改名 书房 → 星图室        （→ / -> / ＞ / > 都认）

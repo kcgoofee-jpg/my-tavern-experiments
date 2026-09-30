@@ -249,3 +249,18 @@ test('包的变量声明：桥取清单 + 叠加层，到了换默认并通知�
     await new Promise(r => setTimeout(r, 30)); assert.equal(hit, 1, 'nothing fetched, nothing announced'); assert.equal(L.here(), '书房', 'the location is found by its field name');
   } finally { done(); useEden(); }
 });
+
+test('S4-3：桥把世界书名前缀交给 mvu.setWbName——第一个包得到「伊甸地图·自定义」（清单 worldbook.prefix），别的包用包标题；拿不到清单就不配', async () => {
+  const MVm = await import('../map/tavern/mvu.mjs'), man = JSON.parse(readFileSync(new URL('../map/packs/eden/manifest.json', import.meta.url), 'utf8'));
+  const keep = MVm.WB_NAME;
+  try {
+    let asked = null;   // 内置的第一个包：桥自己按路径取清单
+    const A = new MVUBridge({ life: createLife(), storage: LS, packId: 'eden', fetchJSON: async rel => { asked ??= rel; return rel.endsWith('manifest.json') ? man : null; } });
+    await A.mvuReady; assert.equal(asked, 'packs/eden/manifest.json'); assert.equal(MVm.WB_NAME, '伊甸地图·自定义');
+    const B = new MVUBridge({ life: createLife(), storage: LS, packId: 'eden', manifest: Promise.resolve({ ...man, worldbook: { addon: 'x' }, title: '雾港镇' }) });
+    await B.mvuReady; assert.equal(MVm.WB_NAME, '雾港镇·自定义');   // 没写前缀：包标题
+    MVm.setWbName('先前的名字');
+    const C = new MVUBridge({ life: createLife(), storage: LS, packId: 'eden', fetchJSON: async () => null });
+    await C.mvuReady; assert.equal(MVm.WB_NAME, '先前的名字·自定义');   // 没取到清单：不改、不猜
+  } finally { MVm.setWbName(keep.replace(/·自定义$/, '') || '伊甸地图'); }
+});

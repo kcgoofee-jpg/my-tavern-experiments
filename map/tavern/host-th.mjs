@@ -2,6 +2,7 @@
 // 不碰 DOM、不持有面板状态；世界书全自动（createWbAuto）是整块原样搬来的，自由变量改成 deps 显式传入（面板状态用 getter，读的是调用时的值）。
 // 模块地图见 docs/agent-brief.md「模块地图」。
 // 地基 A1（docs/tavernhelper-audit.md §6）：所有外部请求走这一个包装——不带凭据、不带 Referer；与 tavern/th.mjs cdnFetch 同一规则（tests/cdnfetch.test.mjs 对照、并禁止裸 fetch）
+import { worldbookPrefix } from '../core/pack.mjs';
 export const cdnFetch = (u, o = {}) => fetch(u, { ...o, credentials: 'omit', referrerPolicy: 'no-referrer' });
 // 窗口函数取法（地基 A3）：全局优先，其次 TavernHelper 命名空间
 export const thFn = n => { try { const g = window[n] ?? globalThis[n]; if (typeof g === 'function') return g; const t = window.TavernHelper; return typeof t?.[n] === 'function' ? t[n].bind(t) : null; } catch (e) { return null; } };
@@ -23,7 +24,7 @@ export function fnGuard(name, fn, minArity = 0) {
 }
 
 /** 设定包命名空间（通用化，core/pack.mjs）。在入口里调用一次（读 window.__tcPack，与以前在脚本开头读同一时刻）。 */
-export function packNs() {
+export function packNs(SELF = '') {
   // 设定包（通用化，core/pack.mjs）：tools/build_preview_script.py --pack <id> 生成的脚本在导入前写 window.__tcPack = { id, manifest, events }（解析好的清单与事件分类，同步可用）。
   // 没有 = 内置 eden：存储键、聊天变量、世界书名、事件分类都和以前一样（老用户的数据原样可读）。NS / LS 与 core/pack.mjs nsKey / nsStore 同一规则（tests/pack.test.mjs 对照）。
   const PACK_IN = (() => { const p = window.__tcPack; return p && typeof p === 'object' && /^[a-z][a-z0-9_-]{1,31}$/.test(p.id || '') && p.id !== 'eden' ? p : null; })();
@@ -33,7 +34,9 @@ export function packNs() {
   const LS = PACK_IN ? wrapLS(() => localStorage) : null;   // eden：下面的 LS 调用走原生 localStorage（同一对象，行为不变）
   // lsGet 的别名回退与 core/storage.mjs get 同一规则：包命名空间空着时读 edenMap* 历史档（只读不写回）
   const lsGet = k => { try { return (LS || localStorage).getItem(k) ?? (PACK_IN ? localStorage.getItem(k) : null); } catch (e) { return null; } }, lsSet = (k, v) => { try { (LS || localStorage).setItem(k, v); } catch (e) {} };
-  return { PACK_IN, PACK_ID, NS, wrapLS, LS, lsGet, lsSet };
+  // 包清单（Promise）：注入包自带；内置的第一个包按路径取（SELF = .../map/）。取不到 = null，各处按「包没声明」静默处理
+  const MAN = PACK_IN?.manifest ? Promise.resolve(PACK_IN.manifest) : SELF ? cdnFetch(SELF + 'packs/' + PACK_ID + '/manifest.json').then(r => (r.ok ? r.json() : null)).catch(() => null) : Promise.resolve(null);
+  return { PACK_IN, PACK_ID, MAN, NS, wrapLS, LS, lsGet, lsSet };
 }
 
 /** 偏好存脚本变量（地基 A4）：构造时做一次「脚本变量 ↔ 本机」对齐；sync = 本机变了才写脚本变量（300 ms 合并）。 */
@@ -64,8 +67,9 @@ export function createWbAuto(deps) {
   let WBm = null;
   // B1 世界书附加条目：写入 / 自动同步（tavern/wbsync.mjs）。只动我们自己的一本书；写前给差异；用户点了（或同意过自动同步）才写
   let shipP = null, wbLast = null;
-  const wbShip = () => (shipP ??= cdnFetch(deps.base() + 'data/worldbook_addon.json', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).catch(() => null).then(j => { if (!j) shipP = null; return j; }));
-  const wbMod = async () => (WBm ??= await import(SELF + 'tavern/wbsync.mjs').catch(() => null));
+  // 随地图发布的条目文件：路径读自包清单 data.worldbook_addon（包没声明 = 没有附加条目，静默）
+  const wbShip = () => (shipP ??= Promise.resolve(deps.manifest).then(man => (man?.data?.worldbook_addon ? cdnFetch(deps.base() + (deps.packId === 'eden' ? '' : 'packs/' + deps.packId + '/') + man.data.worldbook_addon, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)) : null)).catch(() => null).then(j => { if (!j) shipP = null; return j; }));
+  const wbMod = async () => (WBm ??= await import(SELF + 'tavern/wbsync.mjs').then(async m => { const man = await deps.manifest; if (!man) return null; m.setPrefix(worldbookPrefix(man, deps.packId)); return m; }).catch(() => null));   // 书名前缀来自包清单；取不到清单 = 不碰世界书（宁可不写，不猜一个名字）
   let JITm = null;
   const wbJit = async () => (JITm ??= await import(SELF + 'tavern/wb_jit.mjs').catch(() => null));
   /** 静默绑定代理（任务二，纯判定在 wb_jit.bindPlan）：书在那儿却没挂任何一处 = 条目不会生效。

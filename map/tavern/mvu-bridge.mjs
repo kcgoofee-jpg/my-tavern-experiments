@@ -16,6 +16,7 @@ import * as SAN from './sanitize.mjs';
 import * as RS from '../core/roster.mjs';
 import { setProfile } from './pack-profile.mjs';
 import { profileFromV1 } from '../core/profile.mjs';
+import { worldbookPrefix } from '../core/pack.mjs';
 
 export class MVUBridge {
   /** o = { life?, pack?, packId?, lang?(): 'zh'|'en', isGenerating?(): bool, storage?(): StorageLike,
@@ -47,13 +48,16 @@ export class MVUBridge {
     this.roster.use('fallback', { rows: () => RS.fallbackRows(this.fallbackMembers) });
     if (o.pack) setProfile(profileFromV1({ manifest: o.pack.manifest }));   // 设定包：默认映射路径按清单的 vars；叠加层里的 vars / entities 随后由 useProfile 换入（内置的第一个包全靠叠加层）
     // 包的变量与名册声明（core/profile.mjs：清单 vars + 叠加层 vars / entities，K-R69）：宿主给了取数函数就取；到了换默认并通知宿主重推（到之前一切按字段名自动找）
-    if (typeof o.fetchJSON === 'function') import(new URL('profile-load.mjs', import.meta.url).href).then(m => m.loadPackProfile({ fetchJSON: o.fetchJSON, packId: o.packId || 'eden', manifest: o.pack?.manifest }))
+    // 清单只取一次（宿主给的 o.manifest：Promise | 对象；注入包自带；内置的第一个包按路径取）：变量声明、世界书名前缀都用它
+    const manP = Promise.resolve(o.manifest ?? o.pack?.manifest ?? (typeof o.fetchJSON === 'function' ? o.fetchJSON('packs/' + (o.packId || 'eden') + '/manifest.json') : null)).catch(() => null);
+    if (typeof o.fetchJSON === 'function') import(new URL('profile-load.mjs', import.meta.url).href).then(async m => m.loadPackProfile({ fetchJSON: o.fetchJSON, packId: o.packId || 'eden', manifest: await manP }))
       .then(p => { if (p && !o.life?.dead) { this.useProfile(p); o.onProfile?.(); } }).catch(e => { try { console.warn('[eden-map] 包的变量声明没读到：按字段名自动找', e); } catch (x) {} });
     // mvu.mjs 按需加载（纯函数集；失败只是没有 MVU 联动功能）。设定包的聊天变量键 / 自定义世界书名在这里配置。
     this.MV = null;
-    this.mvuReady = import(new URL('mvu.mjs', import.meta.url).href).then(m => {
+    this.mvuReady = Promise.all([import(new URL('mvu.mjs', import.meta.url).href), manP]).then(([m, man]) => {
       if (o.life?.dead) return null;
-      if (o.pack) { m.setVarRoot(o.pack.chatVar || 'tc_' + String(o.packId || 'pack').replace(/-/g, '_')); m.setWbName(o.pack.manifest?.title || o.packId); }
+      if (o.pack) m.setVarRoot(o.pack.chatVar || 'tc_' + String(o.packId || 'pack').replace(/-/g, '_'));
+      if (man) m.setWbName(worldbookPrefix(man, o.packId));   // 自定义世界书「<前缀>·自定义」：前缀 = 清单 worldbook.prefix / 包标题（第一个包也一样）；没取到清单就不建这本书
       this.MV = m; o.onMvuLoad?.(m); return m;
     }).catch(e => { try { console.warn('[eden-map] MVU 模块加载失败', e); } catch (x) {} return null; });
   }

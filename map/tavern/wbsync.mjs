@@ -1,5 +1,5 @@
 // 世界书附加条目：写入 / 自动同步（docs/tavernhelper-audit.md A1；node 单测 tests/wbsync.test.mjs）。
-// 只动我们自己的一本书 BOOK（名字前缀「伊甸地图·」）；永不改别的书、永不改卡自带世界书。写之前先给差异，用户点了才写。
+// 只动我们自己的一本书 BOOK（名字前缀取自包清单，见下面的 setPrefix）；永不改别的书、永不改卡自带世界书。写之前先给差异，用户点了才写。
 // 条目内容随地图从 CDN 发（map/data/worldbook_addon.json，tools/build_worldbook_addon.py --ship 生成，按版本 ver 标记）。
 // 每个我们的条目在 extra 里带 { eden_id: 稳定编号, eden_ver: 写入时的版本, eden_hash: 写入时内容的指纹 }：
 //   - 按 eden_id 对应（名字可以被用户改）；
@@ -7,9 +7,15 @@
 //   - 没有 eden_id 的条目 = 用户自己加的，原样保留；
 //   - 新版不再发的我们的条目 → 停用，不删。
 // 绑定（全局 / 角色 / 聊天）：已经绑在哪里就保持；第一次由用户选；旧的带版本号的书（手动导入的「… v0.9.5」）可迁移到稳定名并按原绑定重绑，旧书默认留着，用户再确认才删。
-export const PREFIX = '伊甸地图·';
-export const BOOK = PREFIX + '世界书附加条目';
-export const LEGACY_RE = /^伊甸地图·世界书附加条目\s*v\d[\w.+-]*$/;
+// 书名 = 包的前缀（清单 worldbook.prefix，没写 = 包标题）+「·世界书附加条目」；宿主读到清单后调 setPrefix（没调用前是中性默认）。后缀是文案，留给 S4-4。
+const SUFFIX = '世界书附加条目', reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export let PREFIX = 'Map·';
+export let BOOK = PREFIX + SUFFIX;
+export let LEGACY_RE = new RegExp('^' + reEsc(BOOK) + '\\s*v\\d[\\w.+-]*$');   // 手动导入的旧书：「<书名> v0.9.5」
+export function setPrefix(p) {
+  const v = String(p ?? '').trim(); if (!v) return BOOK;
+  PREFIX = v + '·'; BOOK = PREFIX + SUFFIX; LEGACY_RE = new RegExp('^' + reEsc(BOOK) + '\\s*v\\d[\\w.+-]*$'); return BOOK;
+}
 
 export function hashText(s) { let h = 2166136261; for (const c of String(s ?? '')) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36); }
 const arr = v => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.values(v) : []);

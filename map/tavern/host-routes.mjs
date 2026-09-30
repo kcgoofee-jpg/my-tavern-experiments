@@ -17,10 +17,14 @@ export function probeVerdict(bytes, ms, minBytes = PROBE_MIN_BYTES) {
   return { ok: true, score: lineScore(bytes, ms), reason: '' };
 }
 
-/** SELF = 宿主脚本所在的 .../map/；PACK_IN = 设定包注入（可空） */
-export function createRoutes({ SELF, PACK_IN }) {
+/** 引擎自己的仓库（gh 线路的默认）；包的清单 cdn.repo 写了别的就用它。不是任何卡的名字。 */
+export const ENGINE_REPO = 'kcgoofee-jpg/my-tavern-experiments';
+
+/** SELF = 宿主脚本所在的 .../map/；PACK_IN = 设定包注入（可空）；manifest = 包清单（对象或 Promise，内置的第一个包由宿主取来；没有 = 只剩 gh 线路）
+ *  线路名来自清单 cdn：repo（gh 线路，缺省 = 引擎自己的仓库）、npm（npm 线路；没写 = 这条线路关着、版本也不从 npm 路径识别） */
+export function createRoutes({ SELF, PACK_IN, manifest }) {
   // 线路：地图的图片和数据可以走不同的 CDN 节点。gh 线路路径格式相同，只换域名；npm 线路路径不同（包名 / 版本 / files/map/），单独拼。本地测试地址不换
-  const PKG = PACK_IN?.manifest?.cdn?.npm || 'tiancheng-map-assets', REPO = PACK_IN?.manifest?.cdn?.repo || 'kcgoofee-jpg/my-tavern-experiments';
+  const cdn = PACK_IN?.manifest?.cdn || (manifest && typeof manifest.then !== 'function' ? manifest.cdn : null), PKG = cdn?.npm || '', REPO = cdn?.repo || ENGINE_REPO;
   const LINES = [
     { key: 'vpn', name: '有梯子', name_en: 'Global CDN', short_en: 'Global', sub: '官方 CDN · jsDelivr', host: 'cdn.jsdelivr.net' },
     // 2026-09-29：用户在本机 Mac 关代理实测「直连用不了」。它确实是第三方薄代理（响应头 server: ayao），
@@ -36,7 +40,7 @@ export function createRoutes({ SELF, PACK_IN }) {
   const swappable = /(^|\.)(jsdelivr\.net|jsdmirror\.com|npmmirror\.com)$/.test(new URL(SELF).host);
   // 当前版本：gh 标签 map-v<版本>（系列 1）或 map-s<n>-v<版本>（系列 ≥ 2，版本写成 'S2:0.1.0'），或 npm 路径里的版本号；标签规则见 docs/versioning.md（selfcheck.mjs tagOf 同一套）
   const VER = (() => { const m = SELF.match(/@map-(?:s(\d+)-)?v([\d.]+)\//); if (m) return m[1] && +m[1] > 1 ? `S${+m[1]}:${m[2]}` : m[2];
-    return (SELF.match(new RegExp(`/${PKG}/([\\d.]+)/files/`)) || [])[1] || null; })();
+    return PKG ? (SELF.match(new RegExp(`/${PKG}/([\\d.]+)/files/`)) || [])[1] || null : null; })();
   const tagOf = v => { const m = /^S(\d+):(.+)$/.exec(v); return m && +m[1] > 1 ? `map-s${+m[1]}-v${m[2]}` : 'map-v' + (m ? m[2] : v); };
   const plainVer = v => (v ? String(v).replace(/^S\d+:/, '') : v);
   const baseFor = key => {
@@ -53,7 +57,9 @@ export function createRoutes({ SELF, PACK_IN }) {
   // 用户 2026-09-29 实测（本机 Mac 关代理）国内镜像不可用、并直说「测速有问题」，就是这两条。
   // 现在：按**真读完响应体的字节数 / 毫秒**算分；响应小于下限算无效测量（缓存命中 / 错误页 / 空响应）；
   // 换线要有意义（新线路至少快 30% 才换——换线要重载瓦片，还可能撞上镜像的旧缓存）。
-  const PROBE_PATH = 'data/maps.json';    // 105 KB，每条线路都有，够大能量出带宽
+  // 测速读哪个文件：包清单 data.maps（105 KB 级，每条线路都有，够大能量出带宽）；拿不到清单就取引擎的英文词典
+  const PROBE_FALLBACK = 'i18n/en.json', manP = Promise.resolve(PACK_IN?.manifest ?? manifest ?? null).catch(() => null);
+  const probePath = async () => { const m = await manP, p = m?.data?.maps; return typeof p === 'string' && p ? (PACK_IN ? 'packs/' + PACK_IN.id + '/' : '') + p : PROBE_FALLBACK; };
   const PROBE_TIMEOUT = 8000;             // 8 s 没读完 = 这条线路不通
   const PROBE_MARGIN = 1.3;               // 至少快 30% 才值得换线
   const nowMs = () => ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now());
@@ -63,7 +69,7 @@ export function createRoutes({ SELF, PACK_IN }) {
     const to = setTimeout(() => ctl.abort(), PROBE_TIMEOUT);
     const t0 = nowMs();
     try {
-      const r = await cdnFetch(baseFor(key) + PROBE_PATH + '?probe=' + Date.now(), { cache: 'no-store', signal: ctl.signal });
+      const r = await cdnFetch(baseFor(key) + await probePath() + '?probe=' + Date.now(), { cache: 'no-store', signal: ctl.signal });
       if (!r.ok) throw 0;
       const buf = await r.arrayBuffer();        // 必须真把响应体读完：只等到响应头测的是 TTFB，不是速度
       const ms = nowMs() - t0, bytes = buf.byteLength;
@@ -87,5 +93,5 @@ export function createRoutes({ SELF, PACK_IN }) {
     return best.key;
   }
   return { PKG, REPO, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, LINE_TTL, LINE_AT,
-    PROBE_PATH, PROBE_MIN_BYTES, PROBE_TIMEOUT, PROBE_MARGIN, measure, probe, race };
+    probePath, PROBE_MIN_BYTES, PROBE_TIMEOUT, PROBE_MARGIN, measure, probe, race };
 }
