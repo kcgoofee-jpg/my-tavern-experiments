@@ -60,6 +60,11 @@ Status: `[ ]` not started · `[~]` in progress · `[?]` needs a user decision ·
   Still open: Part 1-1/1-2 (live SillyTavern automation contract, CDN fallback assertions),
   Part 2-2/2-4 (U1–U12 sweep, dynamic `import()` of the 3D viewer / parts panel), Part 4-2/4-4 (X-Ray
   cutaway, Web Audio), Part 7-3 (Shadow DOM isolation).
+- [ ] **LLM 空间推理 + 世界书智能化双战役（2026-09-30 立项）**：任务书 `docs/plans/llm-campaign.md`（英文）——
+  Part A 四论文工程化（W1 空间坐标契约 ≤120 token / W2 检定失败环 / W3 关键帧压缩 / W4 OP DSL 沙盒 / W5 领航员网关）、
+  Part B 世界书智能化（W6 JIT 水合 / W7 事实结晶 / W8 双向互跳 / W9 测试探针登记 / W10 收口），14 条架构冲突裁决 +
+  验收门禁 + 五批次推送划分；拓扑微语法与空间契约融合（合法邻接源只有 marker link / neighbours 几何 / 层级包含，
+  routes 不算）。完成后由实施代理回任务书划线。v0.9.8 发版**挂起**（等开发流程提速后恢复；基线已对齐 head #89 `3573fac`）。
 - [ ] **Real SillyTavern + TavernHelper browser test.** The biggest open item: `tools/browser/`（预估 ~16h）
   currently only has `host_stub.mjs`, a fake host. Everything else in the suite runs against the stub.
   (`docs/handoff.md`, "新顺序" code item 1.)
