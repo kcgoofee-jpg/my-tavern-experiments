@@ -43,3 +43,6 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T12:41:47Z,review:contest_corridor,fix,done,std-1,,"exposure/tints, arcade bays, tents, lawn+kerb, trees, wheel colours"
 2026-09-30T12:41:47Z,review:contest_corridor,review-r2,done,std-1,pass,r2 7.5/6 pass
 2026-09-30T12:44:21Z,review:contest_corridor,ship,done,std-1,,"std/low glb re-exported, maps.json/worldbook/card-buildings via landmark ship; check_maps + estate3d_manifest pass"
+2026-09-30T12:44:53Z,review:ether_dome,review-r1,claim,std-1,,
+2026-09-30T12:45:32Z,review:ether_dome,review-r1,done,std-1,pass,"r1 7/6 pass; polish: cyan tint, drum openings, crystal clusters"
+2026-09-30T12:45:32Z,review:ether_dome,ship,skip,std-1,,"r1 pass, nothing changed; no re-export"
