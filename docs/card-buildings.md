@@ -97,7 +97,7 @@
 | P3 其他 | tc_upper | `y_estate` | 「Y」的庄园 | 🆕 | 仓库推断 | — | — | 只标记；所在岛（isle5）是通用英式填充 |
 | P3 其他 | tc_upper | `zaibatsu_estate` | 罗斯柴尔德庄园 | ✅ | 卡 + 推断位置 | 罗斯柴尔德庄园 `map/props/rothschild_estate/` | 标准（r2 7.5 / 7.5） | isle30；府邸 + 玻璃冬季宴会厅 |
 | P3 其他 | tc_upper | `elite_academy` | 精英学院 | 🆕 | 卡 + 推断位置 | 精英学院 `map/props/elite_academy/` | 标准（r2 7.5 / 7.5） | isle25（Q11） |
-| P3 其他 | world | `hunting_camp` | 猎季营地 | 🆕 | 仓库推断 | — | — |  |
+| P3 其他 | world | `hunting_camp` | 猎季营地 | 🆕 | 仓库推断 | 猎季营地 `map/props/hunting_camp/` | 标准（r2 7.5 / 6；模型已备，世界图标记待引擎支持三维入口） |  |
 | P3 其他 | yuanyu_city | `city_gate` | 原域东门 | ✅ | 仓库自设 | — | — |  |
 | P3 其他 | yuanyu_city | `dome_quarter` | 穹顶区 | ✅ | 仓库自设 | — | — |  |
 | P3 其他 | yuanyu_city | `pilgrim_plaza` | 朝圣广场 | ✅ | 仓库自设 | — | — |  |

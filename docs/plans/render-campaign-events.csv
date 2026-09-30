@@ -181,3 +181,18 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T14:53:39Z,lm:hunting_camp,setting,done,std-1,,setting block (card L378/L142/A30; exterior repo-inferred)
 2026-09-30T15:05:25Z,lm:hunting_camp,draft,release,std-1,,
 2026-09-30T15:15:05Z,lm:elite_club,ship,done,std-1,pass,"shipped after FREEZE_MAPS lifted; marker elite_club -> lm_elite_club (own model), score 7.5/6.5"
+2026-09-30T15:15:25Z,lm:hunting_camp,draft,claim,std-1,,
+2026-09-30T15:15:45Z,lm:hunting_camp,draft,done,std-1,pass,c1 draft 2000px 16spp collected
+2026-09-30T15:15:46Z,lm:hunting_camp,board,claim,std-1,,
+2026-09-30T15:15:52Z,lm:hunting_camp,board,done,std-1,pass,board c1+c2 with anchors
+2026-09-30T15:15:52Z,lm:hunting_camp,gapcheck,claim,std-1,,
+2026-09-30T15:15:59Z,lm:hunting_camp,gapcheck,done,std-1,pass,setting vs board covered; notes in r1
+2026-09-30T15:15:59Z,lm:hunting_camp,review-r1,claim,std-1,,
+2026-09-30T15:16:02Z,lm:hunting_camp,review-r1,done,std-1,fail,"fidelity 7 / credibility 5.5; defects: balloon trees, flat ground, washed exposure, hard plate edge (docs/reviews/campaign/lm_hunting_camp/r1.md)"
+2026-09-30T15:16:03Z,lm:hunting_camp,fix,claim,std-1,,
+2026-09-30T15:16:06Z,lm:hunting_camp,fix,done,std-1,pass,"clumped autumn crowns on forked trunks, leaf-litter ground, exposure -0.5; redrew draft + board"
+2026-09-30T15:16:06Z,lm:hunting_camp,review-r2,done,std-1,pass,"fidelity 7.5 / credibility 6 (r2.md); polish: ragged clearing edge, tent trim, smoke column"
+2026-09-30T15:16:06Z,lm:hunting_camp,final,claim,std-1,,
+2026-09-30T15:27:37Z,lm:hunting_camp,final,done,std-1,pass,"std glb 0.76 MB / low 0.42 MB (max_mb std 0.9 low 0.45), manifest + hotspots en"
+2026-09-30T15:27:37Z,lm:hunting_camp,ship,claim,std-1,,
+2026-09-30T15:27:41Z,lm:hunting_camp,ship,wait,std-1,,"model, glbs, manifest committed; 3D entry blocked: world places have no model link and the node tree needs a maps.json marker hosting each 3D page (nodes_runtime parity tests fail with a bare lm_hunting_camp under world). Needs an engine step; then add lm_hunting_camp + link."
