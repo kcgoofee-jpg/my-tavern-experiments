@@ -4,7 +4,7 @@
 export function buildReportText(info = {}) {
   const L = [];
   const push = (label, v) => { if (v != null && v !== '') L.push(`${label}: ${v}`); };
-  L.push('=== 伊甸地图反馈报告 / Eden Map feedback report ===');
+  L.push(typeof info.title === 'string' && info.title ? info.title : '=== 空间地图反馈报告 / Spatial Map feedback report ===');   // 标题行由调用方从词典 app.report 给（包可换成自己的名字）
   push('时间 / time', info.time || new Date().toISOString());
   push('版本 / version', info.version);
   push('构建 / build', info.build);
@@ -57,4 +57,4 @@ export function buildIssueLink(opts) {
   return 'https://github.com/' + repo + '/issues/new?' + new URLSearchParams({ title: title, body: b }).toString();
 }
 // 白名单以外的字段（尤其聊天文本/消息内容）不会出现在报告里；供单测断言用。
-export const REPORT_ALLOWED_KEYS = ['time', 'version', 'build', 'channel', 'selfCheckItems', 'mapId', 'layer', 'location', 'mvuSnapshotStatus', 'thVersion', 'stVersion', 'viewport', 'logLines', 'logSessions'];
+export const REPORT_ALLOWED_KEYS = ['title', 'time', 'version', 'build', 'channel', 'selfCheckItems', 'mapId', 'layer', 'location', 'mvuSnapshotStatus', 'thVersion', 'stVersion', 'viewport', 'logLines', 'logSessions'];

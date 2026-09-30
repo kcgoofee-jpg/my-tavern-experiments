@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildIndex, resolveHere } from './helpers/here-engine.mjs';
 import { customKey, readCustom } from '../map/core/legacy-custom.mjs';
+import { edenNames } from './helpers/eden-names.mjs';
 
 const J = p => JSON.parse(readFileSync(new URL('../map/' + p, import.meta.url), 'utf8'));
-const idx = buildIndex(J('data/maps.json'), J('data/world_markers.json'), J('i18n/en.json').names);
+const idx = buildIndex(J('data/maps.json'), J('data/world_markers.json'), edenNames());
 const R = v => resolveHere(v, idx);
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
 const is = (v, level, map, extra = {}) => { const r = R(v); assert.ok(r, `${v} 应能解析`); assert.equal(r.level, level, `${v} 级别`); assert.equal(r.map, map, `${v} 地图`);
@@ -72,7 +73,7 @@ t('优先级：更长的别处地标压过「庄园」二字', () => {
   is('首相府', 3, 'tc_upper', { marker: 'pm_residence' });
 });
 t('自定义房间叫法（本机）：落到对应的标准房间', () => {
-  const ci = buildIndex(J('data/maps.json'), J('data/world_markers.json'), J('i18n/en.json').names, { rooms: { '我的秘密书斋': '书房', '坏名': '不存在的房间' } });
+  const ci = buildIndex(J('data/maps.json'), J('data/world_markers.json'), edenNames(), { rooms: { '我的秘密书斋': '书房', '坏名': '不存在的房间' } });
   const r = resolveHere('我的秘密书斋', ci);
   assert.equal(r.level, 1); assert.equal(r.room, '书房'); assert.equal(r.custom, true);
   assert.equal(resolveHere('坏名', ci), null);   // 指向不存在房间的自定义名不生效
@@ -88,7 +89,7 @@ t('旧版自定义叫法的本机存储（只读）：按聊天分开，没有�
   assert.deepEqual(readCustom(store, 'c2'), { rooms: {} });                          // 别的聊天看不到
   assert.ok(![...mem.keys()].some(k => k.includes('?') || k.includes('http')));
   // 存储 → 词表 → 落点
-  const ci = buildIndex(J('data/maps.json'), J('data/world_markers.json'), J('i18n/en.json').names, readCustom(store, 'c1'));
+  const ci = buildIndex(J('data/maps.json'), J('data/world_markers.json'), edenNames(), readCustom(store, 'c1'));
   const r = resolveHere('我的秘密书斋', ci); assert.equal(r.level, 1); assert.equal(r.room, '书房'); assert.equal(r.custom, true);
   assert.equal(resolveHere('小窝', ci), null);
   // 坏数据不抛错

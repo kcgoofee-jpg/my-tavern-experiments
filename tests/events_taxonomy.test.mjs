@@ -9,8 +9,9 @@ import { makeGeo } from '../map/core/event-geo.mjs';
 import { buildTree } from '../map/core/nodes.mjs';
 import { validate2, withDefaults } from '../map/core/pack-v2.mjs';
 import { edenGeo, townGeo } from './helpers/eden-geo.mjs';
+import { edenNames } from './helpers/eden-names.mjs';
 
-const EN = JSON.parse(fs.readFileSync(new URL('../map/i18n/en.json', import.meta.url), 'utf8')).names;
+const EN = edenNames();
 const tree = buildTree([{ id: 'r', name: 'Realm' }, { id: 'a', name: 'Alpha', parent: 'r' }, { id: 'b', name: 'Beta', parent: 'r' }], { title: 'T' });
 const bare = () => makeGeo({ tree, views: {} });   // a pack with no events block
 const restore = () => EV.setGeo(edenGeo());

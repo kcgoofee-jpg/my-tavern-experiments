@@ -9,5 +9,5 @@ const J = p => (fs.existsSync(ROOT + p) ? JSON.parse(fs.readFileSync(ROOT + p, '
 export function packGeo(id = 'eden') {
   const dir = `map/packs/${id}/`, manifest = J(dir + 'manifest.json'), base = id === 'eden' ? 'map/' : dir, d = manifest.data || {};
   return geoFromV1({ manifest, maps: J(base + d.maps), world: d.world ? J(base + d.world) : null, plan: d.rooms ? J(base + d.rooms) : null,
-    names: id === 'eden' ? J('map/i18n/en.json')?.names : null, events: d.events && d.events !== 'builtin' ? J(base + d.events) : null, overlay: d.overlay ? J(base + d.overlay) : null });
+    names: id === 'eden' ? J('map/packs/eden/names.en.json') : null, events: d.events && d.events !== 'builtin' ? J(base + d.events) : null, overlay: d.overlay ? J(base + d.overlay) : null });
 }

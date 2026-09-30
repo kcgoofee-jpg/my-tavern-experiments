@@ -12,7 +12,7 @@ const J = p => (p && fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) :
 const dir = ROOT + 'map/packs/' + id + '/', file = dir + 'overlay.v2.json';
 if (!id || !fs.existsSync(file)) process.exit(0);
 const manifest = J(dir + 'manifest.json'), base = id === 'eden' ? ROOT + 'map/' : dir, data = manifest?.data || {};
-const inputs = { manifest, maps: J(base + data.maps), world: J(base + data.world), plan: J(base + data.rooms), names: J(ROOT + 'map/i18n/en.json')?.names, events: J(base + data.events) };
+const inputs = { manifest, maps: J(base + data.maps), world: J(base + data.world), plan: J(base + data.rooms), names: J(ROOT + 'map/packs/eden/names.en.json'), events: J(base + data.events) };
 const ov = J(file), errs = [], ID = /^[a-z][a-z0-9_]{0,63}$/, WORD = /^[^\n]{1,60}$/;
 const evOnly = ov && ov.nodes === undefined && ['events', 'llm', 'vars', 'entities', 'ui'].some(k => ov[k] && typeof ov[k] === 'object');
 if (!ov || ov.schema !== 2 || !(Array.isArray(ov.nodes) || evOnly)) { console.log(`${id}: overlay.v2.json needs "schema": 2 and a "nodes" array`); process.exit(1); }

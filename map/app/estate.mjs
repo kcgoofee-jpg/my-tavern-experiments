@@ -97,8 +97,8 @@ const EST_HOOK = `<script>(function(){var f=0;function fail(r){if(f)return;f=1;t
 function estateActs(state) {   // state: '' 隐藏；'slow' 仍在加载；'fail' 失败
   const ld = $('#loading'), acts = ld.querySelector('.acts'), ti = nm(REG.maps[cur] || {}, 'title');
   acts.hidden = !state; $('#estRetry').hidden = $('#estPlan').hidden = false; $('#tileRetry').hidden = true;
-  if (state === 'slow') lp().slow(tx('estate.slow', '庄园三维模型加载较慢…可以继续等，或先看平面图'));
-  if (state === 'fail') { lp().fail(tx('estate.failed', '庄园三维模型加载失败：当前网络连不上三维库')); ld.classList.remove('done'); }
+  if (state === 'slow') lp().slow(tx('estate.slow', '三维模型加载较慢…可以继续等，或先看平面图'));
+  if (state === 'fail') { lp().fail(tx('estate.failed', '三维模型加载失败：当前网络连不上三维库')); ld.classList.remove('done'); }
   if (state) { ld.classList.add('over'); announce(ld.querySelector('span').textContent); }
 }
 export function retryEstate() { const id = cur, m = REG.maps[id]; if (m?.kind !== 'estate') return; setEstFail(false); stopTileTo3d(false); release3d(); openEstate(id, m, true); }
@@ -127,7 +127,7 @@ export async function openEstate(id, m, hadPrev) {
   let html;
   for (let i = 0; i < 2 && !html; i++) { try { html = await getText(url); } catch (e) { textCache.delete(url); if (!i) await new Promise(r => setTimeout(r, 400)); } }   // 预热失败过一次也再试一次（接手 review P1）
   if (cur !== id) return;
-  if (!html) { estateActs('fail'); lp().fail(tx('estate.fail', '庄园页面加载失败')); return; }
+  if (!html) { estateActs('fail'); lp().fail(tx('estate.fail', '三维页面加载失败')); return; }
   const old = est?.frame; if (old && old.parentNode) old.remove(); weak3d = old || null;   // 旧帧留个引用：新页面一就绪就摘（不等淡出）
   const f = document.createElement('iframe'); f.id = 'estate'; f.title = nm(m, 'title');
   const vend = new URL('vendor/', url).href;

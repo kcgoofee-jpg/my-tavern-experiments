@@ -18,7 +18,7 @@ const ev = old('map/tavern/events.mjs'), vw = old('map/events.mjs');
 const RE = { up: words(ev, 'RE_UP'), mid: words(ev, 'RE_MID'), low: words(ev, 'RE_LOW'), out: words(ev, 'RE_OUT'), ring: words(vw, 'RE_RING') };
 const zonesOf = tier => [...vw.match(new RegExp(`${tier}: \\[(.*)\\],?\\n`))[1].matchAll(/\[\/(.+?)\/, (-?[\d.]+), (-?[\d.]+)\]/g)].map(m => ({ pieces: m[1].split('|'), x: +m[2], y: +m[3] }));
 
-const inputs = { manifest: J('map/packs/eden/manifest.json'), maps: J('map/data/maps.json'), world: J('map/data/world_markers.json'), names: J('map/i18n/en.json').names, plan: J('map/data/eden_estate_rooms.json') };
+const inputs = { manifest: J('map/packs/eden/manifest.json'), maps: J('map/data/maps.json'), world: J('map/data/world_markers.json'), names: J('map/packs/eden/names.en.json'), plan: J('map/data/eden_estate_rooms.json') };
 const base = fromV1(inputs), geo0 = geoFromV1(inputs);   // geo0: the tree before any overlay, to see which words already land where v1 put them
 const nodes = base.pack.nodes, byId = new Map(nodes.map(n => [n.id, n]));
 const kids = id => nodes.filter(n => n.parent === id).map(n => n.id);

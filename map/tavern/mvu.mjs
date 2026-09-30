@@ -32,7 +32,7 @@ const nameOf = x => { for (const k of VOC.exactWords('name')) { const n = str(va
 /** stat_data → 在场人物 [{ name, place }]（place = '' 表示没写位置，调用方按玩家所在处处理（默认同处））。没有在场表返回 null */
 export function presentList(stat, path = '') {
   if (!stat || typeof stat !== 'object') return null;
-  const declared = getProfile().tables.present, key = path || (declared && declared in stat ? declared : VOC.exactKey('presentKey', stat)); if (!key) return null;
+  const declared = getProfile().tables[getProfile().presentId], key = path || (declared && declared in stat ? declared : VOC.exactKey('presentKey', stat)); if (!key) return null;
   const t0 = path ? get(stat, path) : stat[key]; if (t0 === undefined) return null;
   const t = val(t0), out = [], add = (n, p) => { n = clean(n); if (n && [...n].length <= 40 && !out.some(o => o.name === n)) out.push({ name: n, place: clean(p) }); };
   if (typeof t === 'string') { for (const n of t.split(/[、,，;；\/]/)) add(n, ''); return out; }
@@ -167,7 +167,7 @@ export function summarizeCustom(c, maxLen = 220) {
   if (!parts.length) return '';
   return `[地图自定义·玩家起的名字与用途] ${clip(parts.join('；'), maxLen)}。`;
 }
-/** 同步到世界书「伊甸地图·自定义」的条目正文 */
+/** 同步到世界书「<包名>·自定义」的条目正文 */
 export function wbContent(c) {
   const rows = Object.entries(c?.items || {}).map(([k, e]) => `- ${k}${e.名 ? `：玩家称为「${e.名}」` : ''}${e.用途 ? `；用途：${e.用途}` : ''}`);
   return rows.length ? `<地图自定义>\n以下地点 / 人物有玩家起的名字或用途，正文里可以用这些叫法：\n${rows.join('\n')}\n</地图自定义>` : '';
@@ -181,7 +181,7 @@ export let WB_NAME = '';   // 包的世界书名前缀 +「·自定义」：宿�
 export const WB_ENTRY = '地图自定义';
 /** 设定包：世界书名 =「<前缀>·自定义」；前缀见 core/pack.mjs worldbookPrefix（宿主与桥都会调，包括第一个包） */
 export function setWbName(title) { if (typeof title === 'string' && title.trim()) WB_NAME = title.trim().slice(0, 40) + '·自定义'; return WB_NAME; }
-/** 按聊天分开的世界书名（多个聊天共用一本会互相串）：「伊甸地图·自定义·<聊天 id 的短哈希>」 */
+/** 按聊天分开的世界书名（多个聊天共用一本会互相串）：「<包名>·自定义·<聊天 id 的短哈希>」 */
 export function wbName(chat) { if (!WB_NAME) return ''; let h = 2166136261; for (const c of String(chat || '')) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return `${WB_NAME}·${(h >>> 0).toString(16).padStart(8, '0').slice(0, 6)}`; }
 
 // ---------------- 剧情标签：⌖改名 / ⌖用途 / ⌖事实 ----------------
@@ -221,7 +221,7 @@ export function applyTags(c, msgs, after, kindOf = () => 'landmark') {
 export const tagToast = a => (a.op === 'name' ? `${a.key} 改名为「${a.value}」` : `${a.key} 的用途已更新`);
 
 // ---------------- v0.9.5 人物栏的名册（只读）：表名和行内字段来自包（core/profile.mjs），没写的按表的形状 / 内核词表发现，不认具体卡的字段内容 ----------------
-// 组（K-R41）：在场表 = 包的 present 组，或名字在内核「在场」词表里的表；其余「以名字为键、行是对象、行里有人物 / 地点字段」的表按出现顺序：第 1 张 = 成员（members），第 2 张 = 目标（targets）
+// 组（K-R41）：在场表 = 包的 present 组，或名字在内核「在场」词表里的表；其余「以名字为键、行是对象、行里有人物 / 地点字段」的表按出现顺序分给包声明的其余各组（第 1 张给在场组之后的第一组，依此类推）
 // （放变量路径的顶层表——世界、主角——不算）。map 参数可以指定（变量映射，见 docs/content-compat.md「换卡兼容」）。
 const plain = o => !!o && typeof o === 'object' && !Array.isArray(o);
 const isRoster = t => { t = val(t); return plain(t) && Object.values(t).every(v => plain(val(v))); };
@@ -261,31 +261,37 @@ function rows(tbl, stageKey, fk = {}) {
     const gk = slotKey('grade', fk), ck = slotKey('core', fk);
     if (gk && gk in o) { const g = str(val(o[gk])); if (g) it.grade = g; }
     if (ck && ck in o && Number.isFinite(num(val(o[ck])))) Object.assign(it, coreRead(ck, o));
-    const more = {};   // v0.9.6 E13 其余字段（人物卡「更多资料」）：只读，原样取值；布尔的外界知情保留 true / false
+    const more = {};   // v0.9.6 E13 其余字段（人物卡「更多资料」）：只读，原样取值；布尔的知情度保留 true / false
     for (const [slot, k] of Object.entries(MORE_KEYS)) { const f = slotKey(slot, fk); if (!f || !(f in o)) continue; const v = slotRead(slot, f, o); if (v !== undefined && v !== '') more[k] = v; }
     if (Object.keys(more).length) it.more = more;
     { const tk = fk.tierField; const tv = tierRead(o, tk && tk !== '-' ? tk : '', tk === '-'); if (tv) it.tier = tv; }
     return it;
   });
 }
-/** stat_data → { present, members, targets }：每项 { key: 表名, items: [{ name, identity, stage?, grade?, core?, coreKey?, coreStage?, more?, tier? }] } 或 null；map = { present, members, targets } 表名覆盖，各 *Field 行内字段名（'-' = 关闭）
+/** stat_data → { <组 id>: { key: 表名, items: [{ name, identity, stage?, grade?, core?, coreKey?, coreStage?, more?, tier? }] } | null }，每个包声明的组一项（包没声明就是 present / members / targets 三组）；
+ * map = { <组 id>: 表名 } 表名覆盖（变量映射），各 *Field 行内字段名（'-' = 关闭）
  * fallback = 包的保底名册（manifest.data.roster 的 members，[{ name, identity }]；Pack 0 数据挂载点，通用化 v1 从这里的硬编码数组抽离）——
- * 设定兜底（用户 2026-09-29：「庄园成员不能空」）：MVU 成员表是剧情写出来的，还没开局 / 剧情还没写到成员表 / 变量快照缺失时，
- * 人物页不该是空的。src:'设定' 供界面标注来源；MVU 表里已有的人不重复补（MVU 为准），剧情新加的人照常追加在后面。 */
+ * 设定兜底（用户 2026-09-29：「成员不能空」）：MVU 成员表是剧情写出来的，还没开局 / 剧情还没写到成员表 / 变量快照缺失时，
+ * 人物页不该是空的。保底名册补在在场组之后的第一组；src:'设定' 供界面标注来源；MVU 表里已有的人不重复补（MVU 为准），剧情新加的人照常追加在后面。 */
 export function rosters(stat, map = {}, fallback = []) {
-  const out = { present: null, members: null, targets: null }, T = getProfile().tables;
+  const P = getProfile(), PID = P.presentId, rest = P.groups.filter(g => g.id !== PID), T = P.tables;
+  const out = Object.fromEntries(P.groups.map(g => [g.id, null]));
   if (plain(stat)) {
-    const keys = Object.keys(stat), vp = getProfile().paths, worldKeys = new Set(Object.values(vp).filter(Boolean).map(p => p.split('.')[0]));
-    const pres = map.present || (T.present && T.present in stat ? T.present : VOC.exactKey('presentKey', stat)) || keys.find(k => VOC.hasWord('present', k));
-    const others = keys.filter(k => k !== pres && !worldKeys.has(k) && isPeople(stat[k])), named = g => (T[g] && T[g] !== pres && T[g] in stat && isRoster(stat[T[g]]) ? T[g] : '');
-    const members = map.members || named('members') || others[0];
-    const pick = { present: pres, members, targets: map.targets || named('targets') || others.filter(k => k !== members)[0] };
-    for (const [g, k] of Object.entries(pick)) if (k && k in stat && isRoster(stat[k])) out[g] = { key: k, items: rows(stat[k], g === 'targets' ? map.stageField : null, map) };
+    const keys = Object.keys(stat), vp = P.paths, worldKeys = new Set(Object.values(vp).filter(Boolean).map(p => p.split('.')[0]));
+    const pres = map[PID] || (T[PID] && T[PID] in stat ? T[PID] : VOC.exactKey('presentKey', stat)) || keys.find(k => VOC.hasWord('present', k));
+    const others = keys.filter(k => k !== pres && !worldKeys.has(k) && isPeople(stat[k])), named = id => (T[id] && T[id] !== pres && T[id] in stat && isRoster(stat[T[id]]) ? T[id] : '');
+    const pick = { [PID]: pres }, used = new Set();   // 其余组：用户映射 > 包声明的表 > 按出现顺序发现（已被前面的组用掉的不再用）
+    for (const g of rest) { const k = map[g.id] || named(g.id) || others.filter(x => !used.has(x))[0]; pick[g.id] = k; if (k) used.add(k); }
+    const stageAt = new Set(rest.slice(1).map(g => g.id));   // 阶段字段的映射覆盖只作用在第二组起（第一组按包里的槽位字段找）
+    for (const [g, k] of Object.entries(pick)) if (k && k in stat && isRoster(stat[k])) out[g] = { key: k, items: rows(stat[k], stageAt.has(g) ? map.stageField : null, map) };
   }
-  // 设定兜底：没有成员表（连 stat 都没有）时整组用包的保底名册；有表时只补表里没有的人
-  const have = new Set((out.members?.items || []).map(i => i.name));
-  const fb = (Array.isArray(fallback) ? fallback : []).filter(m => !have.has(m?.name)).map(m => ({ ...m, src: '设定' }));
-  if (fb.length) out.members = { key: out.members ? out.members.key : '设定名册', items: [...(out.members ? out.members.items : []), ...fb] };
+  // 设定兜底：没有这一组的表（连 stat 都没有）时整组用包的保底名册；有表时只补表里没有的人
+  const fid = rest[0]?.id;
+  if (fid) {
+    const have = new Set((out[fid]?.items || []).map(i => i.name));
+    const fb = (Array.isArray(fallback) ? fallback : []).filter(m => !have.has(m?.name)).map(m => ({ ...m, src: '设定' }));
+    if (fb.length) out[fid] = { key: out[fid] ? out[fid].key : '设定名册', items: [...(out[fid] ? out[fid].items : []), ...fb] };
+  }
   return out;
 }
 /** 主角的声望（0–100 的数字）；没有返回 null。path 是变量映射里的路径；没有路径就在前 3 层里找名字带「声望」词的数字（浅的优先） */

@@ -8,7 +8,7 @@ import { makeRuntime, buildRuntime, crumbs, parentMap, childMaps, standIn, isSce
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const J = p => JSON.parse(fs.readFileSync(ROOT + p, 'utf8'));
-const MAPS = J('map/data/maps.json'), WORLD = J('map/data/world_markers.json'), NAMES = J('map/i18n/en.json').names, PLAN = J('map/data/eden_estate_rooms.json');
+const MAPS = J('map/data/maps.json'), WORLD = J('map/data/world_markers.json'), NAMES = J('map/packs/eden/names.en.json'), PLAN = J('map/data/eden_estate_rooms.json');
 const EDEN = { manifest: J('map/packs/eden/manifest.json'), maps: MAPS, world: WORLD, names: NAMES, plan: PLAN };
 const TOWN = { manifest: J('map/packs/town/manifest.json'), maps: J('map/packs/town/maps.json'), events: J('map/packs/town/events.json') };
 const eden = makeRuntime(EDEN), town = makeRuntime(TOWN);

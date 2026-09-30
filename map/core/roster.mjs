@@ -22,7 +22,7 @@
 //
 // 纯函数 / 纯类：不碰 DOM、不碰酒馆全局、不碰存储（tests/character_roster.test.mjs 机检）。
 // 宿主接线在 mvu-bridge.mjs（桥注册 mvu / table-db / fallback 三个来源）+ tavern/eden-map.js（宿主注册 chat / baibai）；
-// 发给查看器的 eden-map:chars 载荷形状不变（rosters 三表仍出自桥的 rosters()，向后兼容）。
+// 发给查看器的 eden-map:chars 载荷：rosters 仍出自桥的 rosters()（向后兼容），各组另以 groups 逐组发出（桥 groupsView）。
 
 /** 内置来源与优先级序（下标越大优先级越高；baibai 只补别人没有的） */
 export const SOURCES = ['mvu', 'chat', 'table-db', 'fallback', 'baibai'];
@@ -33,13 +33,13 @@ const clean = v => { const s = String(v ?? '').trim(); return !s || s === 'undef
 
 // ---------------- 五个来源的行适配（来源各自的原始形状 → RosterRow） ----------------
 
-/** MVU 名册（mvu-bridge rosters() 的 { present, members, targets }）→ 行。
- *  在场表的人 status '在场' + present；成员 / 目标表 identity → role，阶段 / 等级进 tags。
+/** MVU 名册（mvu-bridge rosters() 的 { <组 id>: 表 | null }）→ 行；presentId = 在场组的 id（缺省 'present'）。
+ *  在场组的人 status '在场' + present；其余各组 identity → role，阶段 / 等级进 tags。
  *  src '设定' 的兜底行跳过——它们由 fallback 来源供给（来源账目不混，合并结果不变）。 */
-export function mvuRows(rosters) {
+export function mvuRows(rosters, presentId = 'present') {
   const out = [];
   if (!rosters || typeof rosters !== 'object') return out;
-  for (const g of ['present', 'members', 'targets']) {
+  for (const g of Object.keys(rosters)) {
     const t = rosters[g];
     if (!t || typeof t !== 'object' || !Array.isArray(t.items)) continue;
     for (const it of t.items) {
@@ -49,7 +49,7 @@ export function mvuRows(rosters) {
       const tags = [stage, grade].filter(Boolean);
       out.push({
         name, source: 'mvu', ...(role ? { role } : {}),
-        ...(g === 'present' ? { status: '在场', present: true } : {}),
+        ...(g === presentId ? { status: '在场', present: true } : {}),
         ...(tags.length ? { tags } : {}), raw: it,
       });
     }

@@ -3,7 +3,7 @@
 export const toImg = (x, y) => [(x / 1600 - .0075) / .985, (y / 1000 - .015) / .97];
 export const $ = s => document.querySelector(s);
 // 界面文字：有 window.I18N（英文 / 浅色界面分支）时走 I18N.t(键)，否则用这里的中文
-export const tx = (key, zh, vars) => { const r = window.I18N?.t?.(key, vars); return r && r !== key ? r : zh; };
+export const tx = (key, zh, vars) => { const r = window.I18N?.t?.(key, vars); if (r && r !== key) return r; let s = String(zh ?? key); for (const [a, b] of Object.entries(vars || {})) s = s.split('{' + a + '}').join(b); return s; };   // 字典没到 / 键缺：用兜底，并代入变量（不让 {v} 原样露出来）
 export const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // 图标：唯一图标集 ui/icons.js（window.UIIcon，24 格、1.75 描线；docs/design/ui-v2/icons.md）
 export const ico = k => window.UIIcon ? window.UIIcon.svg(k) : '';

@@ -15,7 +15,7 @@
   - kind=estate（三维庄园剖面，iframe 嵌入）：不要底图 / 点位数据；src 页面存在、有 parent、alias 为非空列表；rooms / areas（可选）是字符串列表且不重叠
   - 树不变量（tools/maps_invariants.py）：没有孤儿地图（parent 链都走到根、不成环）；字段 test 已取消；每个 anchor.zone 都在 map/estate/model/zones.json 里
   - points 地图的 districts（可选）：大区叫法，字符串列表
-  - 事件大类 / 类型（events.mjs）在 en.json 的 names 里都有英文
+  - 事件大类 / 类型（events.mjs）在首个包的英文地名表里都有英文
   - 上层 routes（航线折线、巡逻环）：kind 已知、至少 2 个点、坐标在 0…1
 """
 import json, os, re, sys
@@ -217,8 +217,8 @@ for lg in ('zh', 'en'):
     if not exists(fp): err(f'缺界面语言文件 map/i18n/{lg}.json'); continue
     i18n[lg] = load(fp)
 if len(i18n) == 2:
-    for k in (set(i18n['zh']) ^ set(i18n['en'])) - {'names'}: err(f'i18n：键 {k} 只在一种语言里有')
-    # 事件体系（首个包的事件块 + 内核的中性分类）：每个大类、每种类型在 en.json 的 names 里要有英文（英文界面的图例、事件卡用）
+    for k in set(i18n['zh']) ^ set(i18n['en']): err(f'i18n：键 {k} 只在一种语言里有')
+    # 事件体系（首个包的事件块 + 内核的中性分类）：每个大类、每种类型在首个包的英文地名表（packs/eden/names.en.json）里要有英文（英文界面的图例、事件卡用）
     import shutil, subprocess
     def run_node():
         js = ("import('./map/tavern/events.mjs').then(async m=>{ const { packGeo } = await import('./tools/eden_geo.mjs'); const { DEFAULT_EVENTS: D } = await import('./map/core/events-default.mjs');"
@@ -238,7 +238,8 @@ if len(i18n) == 2:
         except (ValueError, subprocess.TimeoutExpired) as e:
             err(f'events.mjs 加载失败：{type(e).__name__}: {e}')
     if names is not None:
-        for k in sorted(names - set(i18n['en'].get('names', {}))): err(f'i18n：事件大类 / 类型「{k}」在 en.json 的 names 里没有英文')
+        en_names = load(os.path.join(ROOT, 'packs', 'eden', 'names.en.json')) if exists(os.path.join(ROOT, 'packs', 'eden', 'names.en.json')) else {}   # 英文地名表：首个包的 data.names.en（S4-4）
+        for k in sorted(names - set(en_names)): err(f'i18n：事件大类 / 类型「{k}」在 packs/eden/names.en.json 里没有英文')
 # 地图补充地点 ↔ 世界书附加条目（map/data/addon_places.json → tools/build_worldbook_addon.py「地图补充-*」）：
 # wb_list:false / addon:true 的标记都要有一条；条目引用的标记要存在；庄园条目的叫法要能落到 eden_estate（加、改、删地点时三处同步）
 ap_path = os.path.join(ROOT, 'data', 'addon_places.json')

@@ -1,10 +1,10 @@
-// 天城 · MVU 联动的查看器部分（v0.9.3）：自定义名称与用途、世界时间的夜色、本人地点卡的着装、剧情改名的一次性提示。
+// MVU 联动的查看器部分（v0.9.3）：自定义名称与用途、世界时间的夜色、本人地点卡的着装、剧情改名的一次性提示。
 // 数据：嵌在酒馆里时由卡内脚本 eden-map.js 推来（eden-map:custom / clock / outfit / toast），修改请求发回去（eden-map:custom-set / custom-reset / custom-sync），
 //       由它写进聊天变量 eden_map.自定义；单独打开地图（没有宿主）时存本机 localStorage（与卡内脚本没有变量接口时同一个键）。
 // 纯函数在 tavern/mvu.mjs（数据）与 tavern/picker.mjs（v0.9.5 选择器分组、搜索、飞行目标、校验）。这里不过滤任何文字，原样显示（textContent / esc）。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 import { REG, aspect, cur, curData, pendingFocus, setPendingFocus, viewer } from './app/state.mjs';
-import { packData } from './app/pack.mjs'; import { viewField } from './app/nodes-runtime.mjs';
+import { PACK, packData } from './app/pack.mjs'; import { worldbookPrefix } from './core/pack.mjs'; import { viewField } from './app/nodes-runtime.mjs';
 import { esc, post } from './app/util.mjs';
 import { LANG } from './app/i18n.mjs';
 import { mountProgress } from './ui/progress.mjs';
@@ -59,7 +59,7 @@ const TCCustom = (() => {
     if (e?.用途) { const p = document.createElement('p'); p.className = 'cu-note'; p.innerHTML = `<b>${esc(T('cu.note', '用途'))}</b> `; p.append(document.createTextNode(e.用途)); ex.prepend(p); }
     const rp = typeof P.TCChars !== 'undefined' ? P.TCChars.rep : null;
     if (homeMark(el?.dataset?.name) && rp != null) { const p = document.createElement('p'); p.className = 'cu-rep';   // v0.9.5 主角声望（只读，0–100）
-      p.innerHTML = `<b>${esc(T('ch.rep', '庄园声望'))}</b><meter min="0" max="100" low="30" high="70" optimum="100" value="${rp}"></meter><span>${Math.round(rp)}</span>`; ex.prepend(p); }
+      p.innerHTML = `<b>${esc(T('ch.rep', '声望'))}</b><meter min="0" max="100" low="30" high="70" optimum="100" value="${rp}"></meter><span>${Math.round(rp)}</span>`; ex.prepend(p); }
     if (roomNote && homeMark(el?.dataset?.name)) {
       const r = roomNote, re = entry(r), p = document.createElement('p'); p.className = 'cu-note cu-room'; roomNote = null;
       p.innerHTML = `<b>${esc(T('cu.room_here', '要看的房间'))}</b> `; p.append(document.createTextNode((re?.名 ? `${re.名}（${r}）` : r) + (re?.用途 ? ' · ' + re.用途 : ''))); ex.prepend(p); }
@@ -121,7 +121,7 @@ const TCCustom = (() => {
     box.innerHTML = `<h3>${esc(T('cu.title', '自定义'))}</h3>`
       + `<button type="button" class="btn cu-open" data-open="1"><span>${esc(T('cu.manage', '名称与用途'))}</span><em>${esc(n ? T('cu.count', '{n} 项', { n }) : T('cu.none', '还没有'))}</em></button>`
       + (embed && host ? `<label><span>${esc(T('cu.sync', '同步到世界书'))}</span><input type="checkbox" role="switch" id="cuSync" ${data.同步世界书 ? 'checked' : ''} ${host.wb ? '' : 'disabled'}></label>`
-        + `<small>${esc(host.wb ? T('cu.sync_hint2', '默认开：有了第一项自定义才建世界书「伊甸地图·自定义」（每个聊天一本，一个常驻条目）。关掉只停用条目，不删世界书') : T('cu.sync_noapi', '酒馆助手没有世界书接口，不能同步'))}</small>`
+        + `<small>${esc(host.wb ? T('cu.sync_hint2', '默认开：有了第一项自定义才建世界书「{book}」（每个聊天一本，一个常驻条目）。关掉只停用条目，不删世界书', { book: worldbookPrefix(PACK, PACK?.id) + '·自定义' }) : T('cu.sync_noapi', '酒馆助手没有世界书接口，不能同步'))}</small>`
         : '')   // 任务二：书没绑上由卡内脚本静默水合（tavern/wb_jit.bindPlan + eden-map.js silentBind），前端不再提示玩家去后台手动勾
       + `<small>${esc(host ? (host.vars ? T('cu.store_chat', '存在这个聊天的变量里（换设备、导出聊天都跟着走）；摘要会作为背景发给模型') : T('cu.store_local', '酒馆助手没有变量接口：只存本机浏览器')) : T('cu.store_local2', '单独打开地图：只存本机浏览器'))}</small>`
       + `<label><span>${esc(T('cu.night', '按时段给上层、中层加色调与昼夜底图（清晨 / 傍晚 / 夜间）'))}</span><input type="checkbox" role="switch" id="optNight" ${nightOn() ? 'checked' : ''}></label>`
@@ -292,7 +292,7 @@ const TCCustom = (() => {
   }
 
   // ---------- 飞行（EdenMap.flyTo 也走这里） ----------
-  // 地标：切到那一层并打开地点卡；庄园房间 / 室外：进庄园并聚焦（estate:room），庄园不可用（本次会话加载失败过）时落到上层的伊甸并在地点卡里写上要看的房间；人物：人物栏的飞行。
+  // 地标：切到那一层并打开地点卡；庄园房间 / 室外：进庄园并聚焦（estate:room），庄园不可用（本次会话加载失败过）时落到平面图上的替身地标并在地点卡里写上要看的房间；人物：人物栏的飞行。
   let roomNote = null;
   async function flyTo(target) {
     const M = await pk().catch(() => null), t = M?.normTarget(target); if (!t || typeof REG === 'undefined' || !REG) return false;

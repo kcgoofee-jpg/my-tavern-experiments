@@ -11,7 +11,7 @@ import { validate2, entityRows, stashRows } from '../map/core/pack-v2.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const J = p => JSON.parse(fs.readFileSync(ROOT + p, 'utf8'));
-const MAPS = J('map/data/maps.json'), WORLD = J('map/data/world_markers.json'), NAMES = J('map/i18n/en.json').names, PLAN = J('map/data/eden_estate_rooms.json');
+const MAPS = J('map/data/maps.json'), WORLD = J('map/data/world_markers.json'), NAMES = J('map/packs/eden/names.en.json'), PLAN = J('map/data/eden_estate_rooms.json');
 const MAN = J('map/packs/eden/manifest.json'), ROSTER = J('map/data/fallback_roster.json'), STASH = J('map/data/stash.json');
 const TOWN = { manifest: J('map/packs/town/manifest.json'), maps: J('map/packs/town/maps.json'), events: J('map/packs/town/events.json'), worldbook: J('map/packs/town/worldbook.json') };
 const BOOK = 'test add-on book';

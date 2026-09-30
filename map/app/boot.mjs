@@ -39,22 +39,22 @@ import { emEmit, enNames, rebuildHere, setEnNames } from './extapi.mjs';
 import { firstRunHint, initE7, initShell } from './shell.mjs';
 import { initLayerHost, registry, registerCoreLayers, renderLayerMenu } from './layerhost.mjs';
 import { P } from './plugins.mjs';
-import { PACK, initPack, packData, packEvents, packOverlay, packTax, setOverlay, rebase } from './pack.mjs';
+import { PACK, initPack, packData, packEvents, packNames, packOverlay, packTax, setOverlay, rebase } from './pack.mjs';
 import { buildRuntime } from './nodes-runtime.mjs';   // 节点树：面包屑 / 上一级 / 庄园替身都从它读（S2-A）
 import { applyTheme } from './theme.mjs';   // 包的分视图主题（K-R70）：一个 <style id="packTheme">
 import { busOn } from './bus.mjs';
-// 多地图查看器：地图注册表 data/maps.json（世界 → 天城三层 → 以后的庄园剖面……）。
+// 多地图查看器：地图注册表 data/maps.json（世界 → 城市各层 → 以后的室内剖面……）。
 // 底图都是 DZI 瓦片金字塔，只加载屏幕里看得见的部分；解码内存由屏幕大小和瓦片缓存上限决定。
 // 档位 = 清晰度上限：最多加载到相当于 cap 像素宽的那一层瓦片（放大后差别明显）。
 // 默认「自动」：按当前缩放下屏幕实际需要的像素选刚好够用的一档，放大时升、缩小时不降（已加载的瓦片不浪费）；手动选的档位照旧生效。
 export async function main() { try { await mainInner(); } catch (e) { bootFail(e); } }
 async function mainInner() {
   // 三个启动文件并行取（之前 derived.json 要等前两个取完才开始）
-  let d, enDict, reg, mk, dict, overlay;
+  let d, enNamesP, reg, mk, dict, overlay;
   await initPack(getJSON);   // 设定包（core/pack.mjs）：一律取清单（eden 的在 viewer.html preload）
   const opt = k => (packData(k) ? getJSON(packData(k)) : Promise.resolve(null));
-  [reg, mk, d, dict, enDict, , , overlay] = await Promise.all([getJSON(packData('maps')).then(rebase), opt('world'), opt('derived'), window.__i18n,
-    LANG === 'en' ? window.__i18n : getJSON('i18n/en.json'),
+  [reg, mk, d, dict, enNamesP, , , overlay] = await Promise.all([getJSON(packData('maps')).then(rebase), opt('world'), opt('derived'), window.__i18n,
+    packNames('en') ? getJSON(packNames('en')) : null,   // 包的英文地名表（清单 data.names.en）；没声明的包：英文下地名退回中文
     import(new URL('core/protocol.mjs', document.baseURI).href).then(m => { setPR(m); }, () => null), packEvents,
     opt('overlay')]);   // 包旁边的 v2 叠加层（K-R67），清单 data.overlay 声明了才取；没声明的包行为和以前一样
   setOverlay(overlay); setREG(reg); setM(mk || { places: [], fiefs: [], realms: [] });   // 没有世界图的包：空的世界地点表
@@ -62,14 +62,14 @@ async function mainInner() {
   // v0.9.6：选了 EN 但英文词典没取到时，整页退回中文（以前 LANG 仍是 en：面包屑英文、界面中文、变量映射英文，混在一起）
   if (!DICT || !Object.keys(DICT).length) { const zh = await getJSON('i18n/zh.json'); if (LANG !== 'zh') { setLANG('zh'); document.documentElement.lang = 'zh-CN'; } setDICT(zh || {}); }
   jsonCache.set('i18n/' + LANG + '.json', Promise.resolve(DICT));
-  setEnNames(enDict?.names || null); rebuildHere();
-  const nodes = plan => buildRuntime({ manifest: PACK, maps: REG, world: M, names: enDict?.names || null, plan, overlay: packOverlay, events: packTax });
+  setEnNames(enNamesP || null); rebuildHere();
+  const nodes = plan => buildRuntime({ manifest: PACK, maps: REG, world: M, names: enNamesP || null, plan, overlay: packOverlay, events: packTax });
   applyTheme(nodes(null)?.ui);
   if (packData('rooms')) getJSON(packData('rooms')).then(p => { if (!p?.rooms) return; setEstPlan(p); rebuildHere(); nodes(p); markHere($('#here').value); }).catch(() => {});   // v0.9.6：卡设定分层房间进当前地点词表（不挡启动）   // 当前地点 → 落点的词表（中英都认；加上本机自定义叫法）
   post({ type: 'eden-map:boot', pct: .9 });   // 数据文件已到
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点
   if (d?.highland) Object.assign(M.places.find(p => p.id === 'highland'), d.highland);
-  // 世界图上，天城各层地图里的地点（执法局、7 号井……）都归到「天城」
+  // 世界图上，某个城市各层地图里的地点都归到它在世界图上的地点
   // 开局地点的简易地图（groups.<id>.place）同理：地图里的地标归到世界图上对应的地点 / 封地
   for (const p of [...M.places, ...M.fiefs, ...(M.realms || [])]) if (Array.isArray(p.here_words) && p.name) ALIAS[p.name] = p.here_words.filter(w => typeof w === 'string');   // 世界图地点自己的「当前地点」词表（here_words，数据里的顺序）：在庄园 / 各层里的地点归到它
   for (const [gid, g] of Object.entries(REG.groups)) { const pl = g.place && [...M.places, ...M.fiefs].find(q => q.id === g.place), key = pl?.name; if (!key) continue;   // 组的地点叫什么就用什么名字（gid 不特判）
@@ -112,7 +112,7 @@ async function mainInner() {
   $('#zIn').onclick = () => { setUserMoved(true); viewer.viewport.zoomBy(1.5); viewer.viewport.applyConstraints(); };
   $('#zOut').onclick = () => { setUserMoved(true); viewer.viewport.zoomBy(1 / 1.5); viewer.viewport.applyConstraints(); };
   $('#zHome').onclick = () => { setUserMoved(false); setPendingHome(false); focusStart(false); };
-  // U15（手机「看全区」）：首屏按 view.phone 停在伊甸，点这里缩到整层全区（与聚焦、复位互不影响）
+  // U15（手机「看全区」）：首屏按 view.phone 停在起始地点，点这里缩到整层全区（与聚焦、复位互不影响）
   $('#zAll').onclick = () => { setUserMoved(true); const b = viewer.world.getHomeBounds?.();
     if (b) { viewer.viewport.fitBounds(b, true); viewer.viewport.applyConstraints(); } else { setPendingHome(false); focusStart(false); } };
   const navH = () => document.documentElement.style.setProperty('--nav-h', (viewer.navigator?.element?.offsetHeight || 0) + 'px');

@@ -22,6 +22,7 @@ function gatherInfo() {
   }
   let mvu = null; try { mvu = window.__edenMvuSnapshotStatus || null; } catch (e) {}
   return {
+    title: tx('app.report', '=== 空间地图反馈报告 / Spatial Map feedback report ==='),
     time: new Date().toISOString(),
     version: a.version || b.version || '',
     build: a.build != null ? a.build : (b.build || ''),

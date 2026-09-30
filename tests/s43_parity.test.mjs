@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as F from './helpers/s43_frozen.mjs';
 import { edenInputs, townInputs } from './helpers/eden-inputs.mjs';
+import { edenDict } from './helpers/eden-strings.mjs';
 import { edenGeo } from './helpers/eden-geo.mjs';
 import { recordEventsTest, fixtureFloors } from './helpers/events-corpus.mjs';
 import { fromV1 } from '../map/core/compat-v1.mjs';
@@ -14,7 +15,7 @@ import { buildGroups } from '../map/tavern/picker.mjs';
 import * as EV from '../map/tavern/events.mjs';
 
 const J = p => JSON.parse(readFileSync(new URL('../' + p, import.meta.url), 'utf8'));
-const I = edenInputs(), MAPS = I.maps, WORLD = I.world, ZH = J('map/i18n/zh.json'), EN = J('map/i18n/en.json');
+const I = edenInputs(), MAPS = I.maps, WORLD = I.world, ZH = edenDict('zh'), EN = edenDict('en');   // the dictionary as the first pack sees it (its manifest strings over the core words)
 const pack = fromV1(I).pack, rt = buildRuntime(I);
 
 test('legend: the overlay ui.legend carries the old LEGEND entries, zh and en words verbatim, in order', () => {

@@ -35,22 +35,24 @@ test('vocabulary: substring words, exact names in priority order, slot words wit
   assert.deepEqual(VOC.exactWords('outfitOrder', 'zh'), ['衣服', '裤子', '鞋子']);
 });
 
-test('profileOf: paths, bands, the tables of the present group and the first two others, the place field, slots by x-slot, the avatar block; nothing named = the kernel profile', () => {
+test('profileOf: paths, bands, the tables of every group by group id, the present group and the stage group, the place field, slots by x-slot, the avatar block; nothing named = the kernel profile', () => {
   const p = profileOf({ vars: { location: 'a.b', outfit: 'a.c', periods: [{ id: 'x', start: '01:00' }] },
     entities: { groups: [{ id: 'g1', source: { mvu: 'T1' } }, { id: 'here', source: { mvu: 'T2', present: true, place: 'spot' } }, { id: 'g2', source: { mvu: 'T3' } }, { id: 'g3', source: { mvu: 'T4' } }],
       fields: [{ field: 'F1', kind: 'tag', 'x-slot': 'grade' }, { field: 'F2', kind: 'text', 'x-slot': 'nonsense' }, { field: 'F3', kind: 'text' }, { field: 'F4', kind: 'gauge', 'x-slot': 'core', ladder: [{ up_to: 50, label: 'half' }] }], avatar: { hosts: ['a.b'] } } });
   assert.equal(p.paths.location, 'a.b'); assert.equal(p.paths.time, ''); assert.deepEqual(p.periods, [{ id: 'x', start: '01:00' }]);
-  assert.deepEqual(p.tables, { present: 'T2', members: 'T1', targets: 'T3' }); assert.equal(p.place, 'spot');
+  assert.deepEqual(p.tables, { here: 'T2', g1: 'T1', g2: 'T3', g3: 'T4' }); assert.equal(p.place, 'spot');
+  assert.deepEqual(p.groups.map(g => g.id), ['here', 'g1', 'g2', 'g3'], 'the present group first, the others in the pack\'s order'); assert.equal(p.presentId, 'here'); assert.equal(p.stageGroup, 'g2', 'the second group after the present one');
+  assert.deepEqual(profileOf({ entities: { groups: [{ id: 'a', label: 'A', source: { mvu: 'TA' } }] } }).groups, [{ id: 'present', mvu: '' }, { id: 'a', label: 'A', mvu: 'TA' }], 'a pack without a present group still has one (found by the kernel words)');
   assert.deepEqual(Object.keys(p.slots).sort(), ['core', 'grade']); assert.equal(p.slots.grade.field, 'F1'); assert.deepEqual(p.avatar, { hosts: ['a.b'] });
   assert.deepEqual(slotDef(p, 'core').ladder, [{ up_to: 50, label: 'half' }]); assert.equal(slotDef(p, 'height').kind, 'text'); assert.equal(slotDef(null, 'tier').scan, true);
-  assert.deepEqual(KERNEL.tables, { present: '', members: '', targets: '' }); assert.deepEqual(KERNEL.periods.map(b => b.id), ['dawn', 'day', 'dusk', 'night']); assert.deepEqual(KERNEL.slots, {});
+  assert.deepEqual(KERNEL.tables, { present: '', members: '', targets: '' }); assert.deepEqual(KERNEL.groups.map(g => g.id), ['present', 'members', 'targets']); assert.equal(KERNEL.presentId, 'present'); assert.deepEqual(KERNEL.periods.map(b => b.id), ['dawn', 'day', 'dusk', 'night']); assert.deepEqual(KERNEL.slots, {});
   assert.deepEqual(profileOf(null).paths, KERNEL.paths); assert.equal(SLOTS.length, 10);
   assert.notEqual(p.paths, profileOf({ vars: { location: 'a.b' } }).paths, 'each profile is a copy');
 });
 
 test('profileFromV1: the manifest vars first, the overlay over them (K-R69); unknown keys and non-strings ignored', () => {
   const p = profileFromV1({ manifest: { vars: { location: 'm.loc', time: 'm.t', nope: 'x', date: 3 } }, overlay: { schema: 2, vars: { time: 'o.t', periods: [{ id: 'n', start: '20:00', dark: true }] }, entities: { groups: [{ id: 'p', label: 'P', source: { mvu: 'T', present: true } }] } } });
-  assert.equal(p.paths.location, 'm.loc'); assert.equal(p.paths.time, 'o.t'); assert.equal(p.paths.date, ''); assert.deepEqual(p.periods.map(b => b.id), ['n']); assert.equal(p.tables.present, 'T');
+  assert.equal(p.paths.location, 'm.loc'); assert.equal(p.paths.time, 'o.t'); assert.equal(p.paths.date, ''); assert.deepEqual(p.periods.map(b => b.id), ['n']); assert.equal(p.tables.p, 'T'); assert.equal(p.presentId, 'p');
   assert.deepEqual(profileFromV1({}).paths, KERNEL.paths); assert.equal(profileFromV1({ manifest: { vars: { location: 'x.y' } } }).paths.location, 'x.y');
 });
 
@@ -75,20 +77,20 @@ test('a pack with its own paths and fields: the variable map, the clock, the out
   setProfile(PACK);
   try {
     const m = AD.detect(STAT);
-    assert.equal(m.location, 'state.where'); assert.equal(m.time, 'state.clock'); assert.equal(m.date, 'state.day'); assert.equal(m.outfit, 'hero.wear'); assert.equal(m.present, 'who_is_here'); assert.equal(m.members, 'crew');
+    assert.equal(m.location, 'state.where'); assert.equal(m.time, 'state.clock'); assert.equal(m.date, 'state.day'); assert.equal(m.outfit, 'hero.wear'); assert.equal(m.here, 'who_is_here'); assert.equal(m.crew, 'crew');
     assert.equal(m.gradeField, 'rank'); assert.equal(m.coreField, 'xp'); assert.equal(m.codeField, 'nick'); assert.equal(m.tierField, '', 'a scanning ladder has no field name');
     assert.equal(AD.get(STAT, m.location), 'Dock');
     const w = MV.worldTime(STAT, m);
     assert.deepEqual(w, { date: 'Day 2', time: '21:30', period: '' }); assert.equal(MV.todPhase(w), 'n'); assert.equal(MV.isNight(w), true); assert.equal(MV.todPhase({ period: 'Morning', time: '23:00' }), 'm');
     assert.deepEqual(MV.outfit(STAT, m.outfit), { top: 'coat', bottom: 'denim', shoes: 'boots' }); assert.equal(MV.outfitText(MV.outfit(STAT, m.outfit)), 'coat / denim / boots');
     const r = MV.rosters(STAT, m);
-    assert.deepEqual(r.members.items.map(i => [i.name, i.identity, i.grade, i.core, i.coreStage, i.more, i.tier]),
+    assert.deepEqual(r.crew.items.map(i => [i.name, i.identity, i.grade, i.core, i.coreStage, i.more, i.tier]),
       [['Kim', 'pilot', 'B', 70, 'veteran', { code: 'K' }, 'rookie'], ['Lee', 'cook', undefined, 10, 'green', undefined, 'ace']], 'the pack\'s bands name its own gauge; the ladder finds novice by its match word');
-    assert.deepEqual(r.present.items.map(i => i.name), ['Kim', 'Ann']); assert.equal(r.targets, null);
-    assert.deepEqual(MV.presentList(STAT, m.present), [{ name: 'Kim', place: 'Dock · pier 3' }, { name: 'Ann', place: '' }], 'the place field is the pack\'s');
-    assert.deepEqual(CH.mvuChars(STAT, 'Dock', m.present).map(c => [c.name, c.place, !!c.present]), [['Kim', 'Dock · pier 3', false], ['Ann', 'Dock', true]], 'the tables that hold the pack\'s variables are no people tables');
-    assert.equal(MV.rosters(STAT, { ...m, coreField: 'xp' }).members.items[1].coreStage, 'green');
-    assert.equal(MV.rosters({ ...STAT, crew: { Kim: { role: 'x', power: 70 } } }, { coreField: 'power' }).members.items[0].coreStage, '档 2', 'another field: the pack\'s cuts, the kernel\'s labels');
+    assert.deepEqual(r.here.items.map(i => i.name), ['Kim', 'Ann']); assert.deepEqual(Object.keys(r), ['here', 'crew'], 'one entry per group the pack declares');
+    assert.deepEqual(MV.presentList(STAT, m.here), [{ name: 'Kim', place: 'Dock · pier 3' }, { name: 'Ann', place: '' }], 'the place field is the pack\'s');
+    assert.deepEqual(CH.mvuChars(STAT, 'Dock', m.here).map(c => [c.name, c.place, !!c.present]), [['Kim', 'Dock · pier 3', false], ['Ann', 'Dock', true]], 'the tables that hold the pack\'s variables are no people tables');
+    assert.equal(MV.rosters(STAT, { ...m, coreField: 'xp' }).crew.items[1].coreStage, 'green');
+    assert.equal(MV.rosters({ ...STAT, crew: { Kim: { role: 'x', power: 70 } } }, { coreField: 'power' }).crew.items[0].coreStage, '档 2', 'another field: the pack\'s cuts, the kernel\'s labels');
   } finally { setProfile(null); }
 });
 

@@ -47,7 +47,7 @@ export const SCHEMA = {
   'eden-map:about': [H2V, {}],
   'eden-map:cardinfo': [H2V, { card: 'object?' }],   // 任务四：角色卡信息（版权申明页）；经桥三级降级取，null = 没读到（面板显示安全占位）
   'eden-map:update-result': [H2V, {}],
-  'eden-map:chars': [H2V, { items: 'array?', replay: 'boolean?' }],
+  'eden-map:chars': [H2V, { items: 'array?', replay: 'boolean?', groups: 'array?' }],   // groups = [{ id, label, rows, present? }]：包声明的每个名册组一项（S4-4）；rosters 三表照旧，新查看器优先读 groups
   'eden-map:events': [H2V, { items: 'array?' }],
   'eden-map:custom': [H2V, {}],
   'eden-map:inv': [H2V, { items: 'array?' }],   // 空间化背包（Part 5-1）：聊天变量 eden_map.仓库 的行（地点卡「存放」行）

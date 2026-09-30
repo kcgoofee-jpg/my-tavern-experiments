@@ -14,7 +14,7 @@ import * as DB from './shujuku.mjs';
 import * as MDm from './modes.mjs';
 import * as SAN from './sanitize.mjs';
 import * as RS from '../core/roster.mjs';
-import { setProfile } from './pack-profile.mjs';
+import { getProfile, setProfile } from './pack-profile.mjs';
 import { profileFromV1 } from '../core/profile.mjs';
 import { worldbookPrefix } from '../core/pack.mjs';
 
@@ -43,7 +43,7 @@ export class MVUBridge {
     // 保底名册（Pack 0 数据挂载点 manifest.data.roster，通用化 v1）：宿主按清单路径取到后 setFallbackMembers 注入；
     // 没给就没有兜底行——引擎不写死任何卡的人名。
     this.fallbackMembers = Array.isArray(o.fallbackMembers) ? o.fallbackMembers : [];
-    this.roster.use('mvu', { rows: () => this.MV ? RS.mvuRows(this.rosters()) : [] });
+    this.roster.use('mvu', { rows: () => this.MV ? RS.mvuRows(this.rosters(), getProfile().presentId) : [] });
     this.roster.use('table-db', { rows: () => RS.placeRows(this.dbCharacters(), 'table-db') });
     this.roster.use('fallback', { rows: () => RS.fallbackRows(this.fallbackMembers) });
     if (o.pack) setProfile(profileFromV1({ manifest: o.pack.manifest }));   // 设定包：默认映射路径按清单的 vars；叠加层里的 vars / entities 随后由 useProfile 换入（内置的第一个包全靠叠加层）
@@ -121,7 +121,7 @@ export class MVUBridge {
   setVarUser(u) { this.varUser = u && typeof u === 'object' ? u : {}; AD.writeUser(this.#store(), this.varCard, this.varUser); this.varSig = ''; return this.refreshVarMap(); }
   /** eden-map:varmap 的载荷（发设置「变量映射」用） */
   varmapView() { const st = this.mvuStat();
-    return { card: this.varCard, paths: AD.paths(st), map: this.varMap, user: this.varUser, detected: AD.detect(st), fields: AD.rowFields?.(st) || [], mode: this.varmode() }; }
+    return { card: this.varCard, paths: AD.paths(st), map: this.varMap, user: this.varUser, detected: AD.detect(st), fields: AD.rowFields?.(st) || [], mode: this.varmode(), groups: getProfile().groups.map(g => ({ id: g.id, label: g.label || g.id })) }; }
   /** 读法：'mvu' | 'mvu-partial' | 'tags'（adapter.mode；hasMvu 缺省 = Mvu 全局在） */
   varmode(hasMvu = this.mvuPresent()) { this.#ensure(); return AD.mode(hasMvu, this.mvuStat(), this.varMap); }
   /** adapter 读法取值（含 [值, 说明] 旧格式拆包） */
@@ -184,7 +184,11 @@ export class MVUBridge {
   /** 主角着装：{ items, text }（items = null 表示没有） */
   outfit(st = this.mvuStat()) { this.#ensure(); const MV = this.MV; const o = MV ? MV.outfit(st, this.varMap.outfit) : null; return { items: o, text: MV ? MV.outfitText(o) : '' }; }
   /** 名册三张表（在场 / 成员 / 目标；含设定兜底名册），映射里的行内字段名全量生效 */
-  rosters(st = this.mvuStat()) { this.#ensure(); const m = this.varMap; return this.MV ? this.MV.rosters(st, { present: m.present, members: m.members, targets: m.targets, stageField: m.stageField, gradeField: m.gradeField, coreField: m.coreField, codeField: m.codeField, socialField: m.socialField, heightField: m.heightField, weightField: m.weightField, knownField: m.knownField, accessoryField: m.accessoryField, tierField: m.tierField }, this.fallbackMembers) : { present: null, members: null, targets: null }; }
+  rosters(st = this.mvuStat()) { this.#ensure(); const m = this.varMap, ids = getProfile().groups.map(g => g.id); return this.MV ? this.MV.rosters(st, { ...Object.fromEntries(ids.map(id => [id, m[id]])), stageField: m.stageField, gradeField: m.gradeField, coreField: m.coreField, codeField: m.codeField, socialField: m.socialField, heightField: m.heightField, weightField: m.weightField, knownField: m.knownField, accessoryField: m.accessoryField, tierField: m.tierField }, this.fallbackMembers) : Object.fromEntries(ids.map(id => [id, null])); }
+  /** 在场组的 id（包声明的，缺省 present） */
+  get presentId() { return getProfile().presentId; }
+  /** 发给查看器的分组载荷 eden-map:chars.groups：[{ id, label, rows, present? }]，包声明的每个组一项（在场组在最前） */
+  groupsView(r) { const P = getProfile(); return P.groups.map(g => ({ id: g.id, label: g.label || g.id, rows: r?.[g.id]?.items || [], ...(g.id === P.presentId ? { present: true } : {}) })); }
   /** 包的保底名册（manifest.data.roster，宿主异步取到后注入）；有货返回 true（宿主据此重发名册） */
   setFallbackMembers(rows) { this.fallbackMembers = Array.isArray(rows) ? rows.filter(r => r && typeof r === 'object') : []; return this.fallbackMembers.length > 0; }
   reputation(st = this.mvuStat()) { this.#ensure(); return this.MV ? this.MV.reputation(st, this.varMap.reputation) : null; }
@@ -200,7 +204,7 @@ export class MVUBridge {
   portraitsFor() { if (this.#portChat === this.chatId()) return; this.#portChat = this.chatId();
     this.#withTexts(t => { this.portraits = this.MV ? this.MV.findPortraits(t) : {}; this.roster.attachPortraits(this.portraits); }); }
   stageOrderFor(r) {   // A-3：找不到也记住（同一聊天、同一组取值不再每轮扫一遍卡文本）
-    const vals = (r?.targets?.items || []).map(i => i.stage).filter(Boolean), chat = this.chatId(); if (!vals.length || (this.#stageChat === chat && this.stageOrder && vals.every(v => this.stageOrder.includes(v)))) return;
+    const vals = (r?.[getProfile().stageGroup]?.items || []).map(i => i.stage).filter(Boolean), chat = this.chatId(); if (!vals.length || (this.#stageChat === chat && this.stageOrder && vals.every(v => this.stageOrder.includes(v)))) return;
     const key = chat + '|' + [...new Set(vals)].sort().join('\u0001'); if (key === this.#stageMiss) return;
     this.#stageChat = chat; this.#stageMiss = key;
     this.#withTexts(t => { this.stageOrder = this.MV ? this.MV.findStageOrder(t, vals) : null; this.#stageMiss = this.stageOrder ? '' : key; });

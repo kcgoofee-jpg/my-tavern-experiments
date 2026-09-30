@@ -8,16 +8,18 @@ import { hasWord, slotFind } from '../core/vocab.mjs';
 
 export const FIELDS = ['location', 'time', 'period', 'date', 'outfit', 'present', 'members', 'targets', 'reputation', 'stageField', 'gradeField', 'coreField', 'codeField', 'socialField', 'heightField', 'weightField', 'knownField', 'accessoryField', 'tierField'];
 // v0.9.6（E2 / E13）：名册行里的「等级」「核心数值」字段名（不是路径）。默认是包声明的字段名；别的卡可另选，选「关闭」存 '-'
-// v0.9.6（E13 其余字段）：人物卡「更多资料」里的代号 / 社会身份 / 身高 / 体重 / 外界知情 / 饰物，同样是行内字段名，可关闭
+// v0.9.6（E13 其余字段）：人物卡「更多资料」里的代号 / 社会身份 / 身高 / 体重 / 知情度 / 饰物，同样是行内字段名，可关闭
 export const MORE_FIELDS = ['codeField', 'socialField', 'heightField', 'weightField', 'knownField', 'accessoryField'];
 export const NAME_FIELDS = ['gradeField', 'coreField', ...MORE_FIELDS, 'tierField'], OFF = '-';
 /** 映射项 → 名册槽位（core/profile.mjs SLOTS；包里字段的 `x-slot`） */
 export const SLOT_OF = { stageField: 'stage', gradeField: 'grade', coreField: 'core', codeField: 'code', socialField: 'social', heightField: 'height', weightField: 'weight', knownField: 'known', accessoryField: 'accessory', tierField: 'tier' };
-/** 每一项的默认：路径来自包的 vars，三张表的表名来自包的分组，行内字段名来自包声明的槽位字段。空 = 按字段名自动发现。
+/** 映射项的清单：FIELDS 里「在场 / 成员 / 目标」三个表名项换成包声明的各组的 id（没声明组的包就是这三项） */
+export const fieldsOf = (profile = getProfile()) => { const ids = (profile.groups || []).map(g => g.id); return ids.length ? FIELDS.flatMap(f => (f === 'present' ? ids : f === 'members' || f === 'targets' ? [] : [f])) : FIELDS; };
+/** 每一项的默认：路径来自包的 vars，各组的表名来自包的分组，行内字段名来自包声明的槽位字段。空 = 按字段名自动发现。
  *  阶段（扫描 = 卡里没有这个字段名，逐行扫文字）和战力默认空；阶段字段由名册行直接按包里的槽位读，不走映射 */
 export function defaults(profile = getProfile()) {
-  const d = Object.fromEntries(FIELDS.map(f => [f, '']));
-  Object.assign(d, profile.paths, { present: profile.tables.present, members: profile.tables.members, targets: profile.tables.targets });
+  const d = Object.fromEntries(fieldsOf(profile).map(f => [f, '']));
+  Object.assign(d, profile.paths, profile.tables);
   for (const [f, slot] of Object.entries(SLOT_OF)) { const def = profile.slots?.[slot]; d[f] = def && f !== 'stageField' && !(def.kind === 'ladder' && def.scan) ? def.field : ''; }
   return d;
 }
@@ -51,7 +53,7 @@ export function rowFields(stat) {
 }
 export function detect(stat, profile = getProfile()) {
   const ps = paths(stat), out = {}, rf = rowFields(stat), D = defaults(profile);
-  for (const f of FIELDS) {
+  for (const f of fieldsOf(profile)) {
     const d = D[f];
     if (NAME_FIELDS.includes(f)) { out[f] = rf.includes(d) ? d : slotFind(SLOT_OF[f], rf); continue; }
     const r = KIND[f], dv = d ? get(stat, d) : undefined;
@@ -66,7 +68,7 @@ export function detect(stat, profile = getProfile()) {
 /** 生效的映射：自动映射 + 用户改过的（只收已知字段、字符串） */
 export function effective(user, stat) {
   const out = detect(stat);
-  for (const f of FIELDS) if (typeof user?.[f] === 'string' && user[f].trim()) out[f] = user[f].trim();
+  for (const f of fieldsOf()) if (typeof user?.[f] === 'string' && user[f].trim()) out[f] = user[f].trim();
   return out;
 }
 /** 读法：'mvu'（有 MVU 且读得到地点）、'mvu-partial'（有 MVU 但地点没映射上）、'tags'（没有 MVU：一切退回聊天标签） */

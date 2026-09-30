@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildIndex, resolveHere, unmappedName, planWords } from './helpers/here-engine.mjs';
 import { normCustom, setCustom, removeCustom, aliasMap } from '../map/tavern/mvu.mjs';
+import { edenNames } from './helpers/eden-names.mjs';
 
 const J = p => JSON.parse(readFileSync(new URL('../map/' + p, import.meta.url), 'utf8'));
-const REG = J('data/maps.json'), W = J('data/world_markers.json'), EN = J('i18n/en.json').names, PLAN = J('data/eden_estate_rooms.json');
+const REG = J('data/maps.json'), W = J('data/world_markers.json'), EN = edenNames(), PLAN = J('data/eden_estate_rooms.json');
 const idxOf = (custom = null) => buildIndex(REG, W, EN, custom, PLAN);
 // custom.js index() 的形状
 const fromCustom = c => ({ rooms: aliasMap(c, ['room']), areas: aliasMap(c, ['area']), marks: aliasMap(c, ['landmark']), layers: aliasMap(c, ['layer']), world: aliasMap(c, ['world']), ignore: c.忽略 || [] });

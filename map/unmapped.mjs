@@ -1,4 +1,4 @@
-// 天城 · 未上图的地点（v0.9.6）。当前地点（MVU 的当前地点变量或 ⌖ 标签）认不出时（app/here-v2.mjs 的落点是 null）：
+// 未上图的地点（v0.9.6）。当前地点（MVU 的当前地点变量或 ⌖ 标签）认不出时（app/here-v2.mjs 的落点是 null）：
 //   不跳转；标题栏显示「未上图：<名字>」（嵌在酒馆里时由卡内脚本的标题栏显示，点它发 eden-map:unmapped-pick；单独打开时显示在查看器页头）。
 //   点开 = 小选择器：把这个名字指派给一个地标、层 / 大区、庄园房间（含卡设定分层房间）/ 室外区域，或世界地名；也可以「忽略」。
 //   存在聊天变量 eden_map.自定义（mvu.mjs setCustom 的 alias / ignore；单独打开时存本机），存完立刻重建词表并跳过去。
@@ -14,7 +14,7 @@ const TCUnmapped = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const embed = window.top !== window;
   let sent = null, name = null, value = '', chip = null, dlg = null, q = '', waitFor = null, opener = null;
-  const KIND = { landmark: ['um.k_landmark', '地标'], layer: ['um.k_layer', '层 / 大区'], room: ['um.k_room', '庄园房间'], area: ['um.k_area', '庄园室外'], world: ['um.k_world', '世界地名'] };
+  const KIND = { landmark: ['um.k_landmark', '地标'], layer: ['um.k_layer', '层 / 大区'], room: ['um.k_room', '房间'], area: ['um.k_area', '室外'], world: ['um.k_world', '世界地名'] };
 
   function update(v) {
     value = String(v ?? document.getElementById('here')?.value ?? '');

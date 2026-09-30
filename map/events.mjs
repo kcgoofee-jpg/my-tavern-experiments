@@ -4,7 +4,7 @@
 // 一条事件（events.mjs 的输出）：{ id, key, cat, layer, place, lvl, text, src, code, time, scope, dur, xy, status, first, last, count, closed, tier, isNew }
 // 本文件只负责：落点（地名 → 坐标）、图标、事态列表、飞过去、按类型声明的屏幕特效（花屏）、世界图角标。类型、大类、图标、颜色、特效、默认隐藏都是设定包的数据（events 块，tavern/events.mjs 读取）。设计见 docs/map-events.md。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
-// 界面文字走查看器的 window.I18N（键在 i18n/*.json 的 ev.*）；类别、大类、层、状态名英文在 en.json 的 names。事件标题、地点、发布方是剧情原文，不翻译。
+// 界面文字走查看器的 window.I18N（键在 i18n/*.json 的 ev.*）；类别、大类、层、状态名英文在设定包的英文地名表（清单 data.names.en）。事件标题、地点、发布方是剧情原文，不翻译。
 import { REG, aspect, cur, viewer } from './app/state.mjs';
 import { $, announce, coarse, esc, getJSON } from './app/util.mjs';
 import { registry } from './app/layerhost.mjs';
@@ -125,7 +125,7 @@ const TCEvents = (() => {
     if (REG.maps[cur]?.kind === 'estate') return;   // 庄园剖面（iframe）不画事态点
     const world = REG.maps[cur]?.kind === 'world';
     if (world) worldBadge();
-    // 正在飞往的那一条即使已淡出也画出来，落点上不会空（E4 N17）；世界图只画天城外的事件（E4 N15）
+    // 正在飞往的那一条即使已淡出也画出来，落点上不会空（E4 N17）；世界图只画城外的事件（E4 N15）
     const here = vis().filter(e => mapOf(e) === cur && (e.tier !== 'fade' || e.id === lastFly)).slice(0, 50);    // 手机上叠加层不超过 50 个
     const seen = {}, onMk = new Set();
     for (const e of here) {
@@ -166,7 +166,7 @@ const TCEvents = (() => {
     ].filter(Boolean);
     const sv = document.querySelector('#card .src'); delete sv.dataset.note;   // 事态卡的正文不是地点说明，不加「原文（中文）」说明
     sv.innerHTML = `<dl class="fields">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>`;
-    const t = document.querySelector('#card .tag'); t.textContent = e.grp ? tn(e.grp) : T('ev.tag', '天城事态'); t.className = 'tag data'; t.style.background = lk(e)[1]; t.style.color = TCCvd.inkOn(lk(e)[1]);
+    const t = document.querySelector('#card .tag'); t.textContent = e.grp ? tn(e.grp) : T('ev.tag', '事态'); t.className = 'tag data'; t.style.background = lk(e)[1]; t.style.color = TCCvd.inkOn(lk(e)[1]);
     if (kbdFly) { kbdFly = false; document.getElementById('cardTitle')?.focus({ preventScroll: true }); }
   }
   function flyTo(id) {
@@ -267,7 +267,7 @@ const TCEvents = (() => {
     if (lv && !glitchLv && typeof announce === 'function') announce(T('ev.glitch', '⚠ 数据链路受扰').replace(/^⚠\s*/, ''));   // 花屏开始时播报一次
     glitchLv = lv;
   }
-  // 世界图：天城内部未解除的事件汇成天城标记上的一个数字角标
+  // 世界图：城内未解除的事件汇成城市标记上的一个数字角标
   function worldBadge() {
     const n = vis().filter(e => live(e) && mapOf(e) && mapOf(e) !== 'world').length;
     const wg = worldGroup(REG), lab = [...document.querySelectorAll('.mk')].find(x => x.dataset.group === wg)?.querySelector('.lab');
@@ -309,7 +309,7 @@ const TCEvents = (() => {
   .ev.hot i{outline:2px solid var(--map-label-ink,#fff);outline-offset:3px}
   .ev:focus-visible i{outline:2px solid var(--focus,#63b4be);outline-offset:4px}   /* 键盘焦点（E4b R07） */
   body.far .ev b{display:none} body.noevents .ev{display:none} .mk.evon{visibility:hidden}
-  /* 世界图「天城」上的事态数：全站唯一的红 */
+  /* 世界图城市标记上的事态数：全站唯一的红 */
   .mk .lab[data-ev]::after{content:attr(data-ev);display:inline-block;margin-left:6px;min-width:16px;height:16px;padding:0 5px;box-sizing:border-box;border-radius:var(--r-pill,999px);background:var(--alert,#ff5a5a);color:var(--on-alert,#1a0606);font:700 var(--fs-micro,11px)/16px var(--font-mono,monospace);text-align:center;vertical-align:1px}
   .ev-radar{--c:#fff;width:0;height:0;pointer-events:none;position:relative}
   .ev-radar span{position:absolute;left:-60px;top:-60px;width:120px;height:120px;border-radius:50%;border:2px solid var(--c);opacity:0;animation:evradar 1.5s ease-out forwards}

@@ -1,4 +1,4 @@
-// 天城 · 设置里的「变量映射」（v0.9.5，换卡兼容）：卡内脚本发来 { card, paths, map, user, detected, mode }（tavern/adapter.mjs），
+// 设置里的「变量映射」（v0.9.5，换卡兼容）：卡内脚本发来 { card, paths, map, user, detected, mode }（tavern/adapter.mjs），
 // 这里列出每一项读哪个 stat_data 路径（下拉从实际的变量树里选，「自动」= 默认 / 自动找到的），旅行方式关键词，重置。改动发回卡内脚本，按角色卡存本机。
 // 只在嵌在酒馆里时显示。查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 import { esc, post } from './app/util.mjs';
@@ -11,11 +11,12 @@ const TCVarMap = (() => {
   const F = [['location', '当前地点', 'Location'], ['time', '时刻', 'Time'], ['period', '时段', 'Period'], ['date', '日期', 'Date'], ['outfit', '主角着装', 'Outfit'],
     ['present', '在场人物表', 'Present table'], ['members', '成员表', 'Members table'], ['targets', '目标表', 'Targets table'], ['reputation', '声望', 'Reputation'], ['stageField', '阶段字段名', 'Stage field'],
     ['gradeField', '成员等级字段', 'Member grade field'], ['coreField', '成员核心数值字段', 'Member core stat field'],
-    ['codeField', '代号字段', 'Codename field'], ['socialField', '社会身份字段', 'Public identity field'], ['heightField', '身高字段', 'Height field'], ['weightField', '体重字段', 'Weight field'], ['knownField', '外界知情字段', 'Publicly known field'], ['accessoryField', '饰物字段', 'Accessory field'], ['tierField', '战力字段', 'Combat tier field']];   // v0.9.6 E2 / E13：行内字段名，可关闭
+    ['codeField', '代号字段', 'Codename field'], ['socialField', '社会身份字段', 'Public identity field'], ['heightField', '身高字段', 'Height field'], ['weightField', '体重字段', 'Weight field'], ['knownField', '知情度字段', 'Awareness field'], ['accessoryField', '饰物字段', 'Accessory field'], ['tierField', '战力字段', 'Combat tier field']];   // v0.9.6 E2 / E13：行内字段名，可关闭
   const MODES = [['air', '空中（虚线弧）', 'Air (dashed arc)'], ['rail', '轨道（实线）', 'Rail (solid)'], ['road', '地面（实线）', 'Ground (solid)'], ['underground', '地下（点线）', 'Underground (dotted)'], ['teleport', '传送（只画两端）', 'Teleport (endpoints only)']];
   const DEF_KW = { air: '私人悬浮载具、悬浮载具、悬浮车、悬浮机动装置、飞行器、飞艇', rail: '跨城高速运输管道、运输管道、悬浮轨道、地面轨道、轨道', road: '步行连廊、货运通道、步行、走路', underground: '地铁、地道、地下通道', teleport: '' };
   const en = () => (typeof LANG !== 'undefined' && LANG === 'en');
   const L = r => (en() ? r[2] : r[1]);
+  const lab = f => (f[0] === 'knownField' ? T('vm.known', L(f)) : L(f));   // 这一项的名字由包文案定（词典 vm.known）
   const MODE_T = { mvu: ['vm.mode_mvu', 'MVU'], 'mvu-partial': ['vm.mode_partial', 'MVU（没找到地点字段）'], tags: ['vm.mode_tags', '聊天标签（没有 MVU）'] };
   function render() {
     const pop = document.getElementById('setPop'); if (!pop) return;
@@ -29,8 +30,8 @@ const TCVarMap = (() => {
     box.innerHTML = `<summary><h3>${esc(T('vm.title', '变量映射'))}</h3><small>${esc(T(...(MODE_T[d.mode] || MODE_T.tags)))}</small></summary>`
       + `<small>${esc(T('vm.hint', '换了别的角色卡、字段名不一样时，在这里指定地图读哪个变量。按角色卡存在本机；「自动」= 默认或自动找到的'))}</small>`
       + F.map(f => { const u = d.user?.[f[0]] || '', auto = d.detected?.[f[0]] || '';
-        if (/Field$/.test(f[0]) && f[0] !== 'stageField') return `<label class="vm-row"><span>${esc(L(f))}</span><select data-f="${f[0]}"><option value="">${esc(T('vm.auto', '自动：{p}', { p: auto || T('vm.none', '无') }))}</option><option value="-" ${u === '-' ? 'selected' : ''}>${esc(T('vm.off', '关闭'))}</option>${(d.fields || []).map(k => `<option value="${esc(k)}" ${k === u ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></label>`;
-        return `<label class="vm-row"><span>${esc(L(f))}</span><select data-f="${f[0]}"><option value="">${esc(T('vm.auto', '自动：{p}', { p: auto || T('vm.none', '无') }))}</option>${(d.paths || []).map(p => opt(p, u)).join('')}</select></label>`; }).join('')
+        if (/Field$/.test(f[0]) && f[0] !== 'stageField') return `<label class="vm-row"><span>${esc(lab(f))}</span><select data-f="${f[0]}"><option value="">${esc(T('vm.auto', '自动：{p}', { p: auto || T('vm.none', '无') }))}</option><option value="-" ${u === '-' ? 'selected' : ''}>${esc(T('vm.off', '关闭'))}</option>${(d.fields || []).map(k => `<option value="${esc(k)}" ${k === u ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></label>`;
+        return `<label class="vm-row"><span>${esc(lab(f))}</span><select data-f="${f[0]}"><option value="">${esc(T('vm.auto', '自动：{p}', { p: auto || T('vm.none', '无') }))}</option>${(d.paths || []).map(p => opt(p, u)).join('')}</select></label>`; }).join('')
       + `<h4>${esc(T('vm.kw', '交通方式关键词（顿号或逗号分隔）'))}</h4>`
       + MODES.map(m => `<label class="vm-row vm-kw"><span>${esc(L(m))}</span><input type="text" data-kw="${m[0]}" value="${esc((kw?.[m[0]] || (kw ? [] : null))?.join?.('、') ?? DEF_KW[m[0]])}"></label>`).join('')
       + `<label><span>${esc(T('vm.fantasy', '加上通用奇幻词（飞行法宝、御剑、遁地、传送阵、瞬移、传送）'))}</span><input type="checkbox" role="switch" id="vmFantasy" ${d.user?.fantasy ? 'checked' : ''}></label>`

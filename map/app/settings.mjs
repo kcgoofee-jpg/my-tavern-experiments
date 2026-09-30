@@ -70,7 +70,7 @@ function renderLicense() {
   }
   label(tx('s.lic_map', '地图项目'));
   { const cr = PACK?.credits, pk = cr?.pack?.[0];   // 署名取自包清单的 credits（K-R70 随附）：仓库、地图作者、原作者；包没写就不出这一行
-    if (pk?.url) row(tx('s.lic_repo', '伊甸地图（开源）'), String(pk.url).replace(/^https:\/\//, ''));
+    if (pk?.url) row(tx('s.lic_repo', '空间地图（开源）'), String(pk.url).replace(/^https:\/\//, ''));
     if (pk?.name) row(tx('s.lic_map_by', '地图开发'), pk.name);
     if (cr?.card?.creator) row(tx('s.lic_orig', '原作角色卡'), tx('s.lic_orig_v', '{creator}（类脑社区）原创；地图是经授权的二次创作（2026-09-27 起）', { creator: cr.card.creator })); }
   label(tx('s.lic_disc', '免责声明'));
@@ -201,7 +201,7 @@ export function renderAbout() {
   if (window.top !== window) h += `<br><button type="button" class="btn" id="updBtn" ${updBusy ? 'disabled' : ''}>${esc(updBusy ? tx('about.checking', '检查中…') : tx('about.check', '检查更新'))}</button>`;
   const r = updRes;
   if (r) {
-    const how = a.channel === 'follow' ? tx('about.how_follow', '跟随版会自动用上新版本：刷新酒馆页面即可') : tx('about.how_tag', '固定版不会自己变：导入新版脚本「【地图】伊甸地图 v{v}」（同名覆盖）', { v: r.latest || '' });
+    const how = a.channel === 'follow' ? tx('about.how_follow', '跟随版会自动用上新版本：刷新酒馆页面即可') : tx('about.how_tag', '固定版不会自己变：导入新版脚本「{script} v{v}」（同名覆盖）', { v: r.latest || '', script: tx('app.script', '【地图】空间地图') });
     if (r.follow) h += `<div class="res" role="status">${esc(r.status === 'fail' ? tx('about.fail', '检查失败：连不上更新接口，稍后再试')
       : tx(r.status === 'new' ? 'about.follow_new' : 'about.follow_latest', r.status === 'new' ? '分支有新构建 #{n}（来源 {s}）：刷新酒馆页面即可' : '已是最新（最新构建 #{n} · 来源 {s}）', { n: r.build, s: SRC[r.source] || r.source || '?' }))}</div>`;
     else h += `<div class="res" role="status">${r.status === 'latest' ? esc(tx('about.latest', '已是最新（v{v}）', { v: r.latest || ver }))

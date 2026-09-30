@@ -2,7 +2,9 @@
 // 读 = import 活绑定 PACK；数据路径用 packData(键)（没有 = null，调用方跳过那份数据）。
 import { DEFAULT_ID, load, currentId, rebaseRegistry } from '../core/pack.mjs';
 export let PACK = null;   // initPack 之前为 null；isEden 退回地址 / 宿主给的包 id
-export const packData = k => { const p = PACK?.data?.[k]; return p && p !== 'builtin' ? p : null; };
+export const packData = k => { const p = PACK?.data?.[k]; return typeof p === 'string' && p && p !== 'builtin' ? p : null; };
+/** 包的地名对照表（清单 data.names = { 语言码: 路径 }，S4-4）：没声明 = null（该语言下地名退回中文原文） */
+export const packNames = lang => { const p = PACK?.data?.names?.[lang]; return typeof p === 'string' && p ? p : null; };
 export const isEden = () => (PACK?.id ?? currentId(window)) === DEFAULT_ID;
 export let packEvents = null;
 export let packOverlay = null, packTax = null;   // 包旁边的 v2 叠加层（overlay.v2.json，K-R67）与包自带的事件分类：一起交给 compat 建节点树
