@@ -31,7 +31,7 @@ test('核心与外挂模块在桩 DOM 下都能求值（没有 TDZ / 未声明�
     for (const f of ['events', 'chars', 'custom', 'trips', 'unmapped', 'varmap', 'compose', 'security']) await import(`../map/${f}.mjs`);
     for (const f of ['cardlinks', 'clouds', 'fog', 'storage-ui', 'scale']) await import(`../map/app/${f}.mjs`);
     const { P } = await import('../map/app/plugins.mjs');
-    assert.deepEqual(Object.keys(P).sort(), ['TCChars', 'TCCompose', 'TCCustom', 'TCEvents', 'TCSecurity', 'TCTrips', 'TCUnmapped', 'TCVarMap']);
+    assert.deepEqual(Object.keys(P).sort(), ['TCChars', 'TCCompose', 'TCCustom', 'TCEvents', 'TCFog', 'TCSecurity', 'TCTrips', 'TCUnmapped', 'TCVarMap']);
   } finally { for (const [k, d] of Object.entries(keep)) d ? Object.defineProperty(globalThis, k, d) : delete globalThis[k]; }
 });
 
