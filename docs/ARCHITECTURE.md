@@ -133,6 +133,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `loot.mjs` | Glowing pickup items on the map from the world stash; a click sends the pickup intent to the host. |
 | `markers.mjs` | Markers and place cards: placement, tracking, show / close card, world-map and point-map overlays. |
 | `nav.mjs` | Map switching: `go` with registrable wrappers, snapshot, map chrome, alternate base map. |
+| `nodes-runtime.mjs` | The viewer's node tree: the loaded registry converted once by `core/compat-v1.mjs`; breadcrumb, up button, warm-up neighbours, estate stand-in and 3D-page test read it (no `parent` walking). |
 | `pack.mjs` | The current pack, resolved once at startup (live binding `PACK`, `packData(key)`). |
 | `plugins.mjs` | Plugin registry `P`: the only channel between app modules and root plugins. |
 | `quests.mjs` | Viewer rendering of dynamic clue nodes as breathing circles. |

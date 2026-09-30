@@ -113,6 +113,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `loot.mjs` | 地图上由世界藏物表画出的发光拾取物；点击把拾取意图发给宿主。 |
 | `markers.mjs` | 标记与地点卡：落点、跟踪、打开 / 关闭卡片、世界图与点位图叠加。 |
 | `nav.mjs` | 地图切换：可注册包装的 `go`、快照、地图外壳、另一版底图。 |
+| `nodes-runtime.mjs` | 查看器的节点树：已加载的注册表经 `core/compat-v1.mjs` 转一次；面包屑、上一级、预热邻居、庄园替身和三维页判断都从它读（不再走 `parent`）。 |
 | `pack.mjs` | 当前设定包，启动时解析一次（活绑定 `PACK`、`packData(键)`）。 |
 | `plugins.mjs` | 外挂注册表 `P`：app 模块与根目录外挂之间唯一的通道。 |
 | `quests.mjs` | 动态线索节点在查看器里的渲染：会呼吸的圈。 |

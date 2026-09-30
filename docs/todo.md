@@ -1,6 +1,6 @@
 # Todo — the single tracker
 
-Status: 2026-09-30 · S0 done (S0-A…S0-E) · S1-design done, review accepted 2026-09-30 (Q-09) · S1-impl-1 in progress · render campaign R running · open: 9 infrastructure, 7 Eden content, 1 decision · migration table 81 rows, missing 0
+Status: 2026-09-30 · S2-A done (node tree in the viewer, dairy under the estate) · S0 done (S0-A…S0-E) · S1-design done, review accepted 2026-09-30 (Q-09) · S1-impl-1 in progress · render campaign R running · open: 9 infrastructure, 7 Eden content, 1 decision · migration table 81 rows, missing 0
 
 1. This is the only work list; plan detail lives in `docs/plans/spatial-os.md`, results in `docs/plans/spatial-os-log.md`, render items in the ledger `docs/plans/render-campaign.md`. Do not copy their items here.
 2. One item per line. A finished item is struck in place (`~~…~~ ✅ <date> <sha>`), never deleted; it moves to §4 only with a sha as evidence.
@@ -22,7 +22,9 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
   - ~~**S1-design** `docs/kernel-schema.md` (+ zh with the review sheet K-01…K-09), `map/data/schema/v2/`, `map/packs/minimal/`, check_pack schema-2 branch~~ ✅ 2026-09-30 (sha in its RESULT) · prompt S1-design · RESULT S1-design
   - [ ] **S1-impl-1** `core/nodes.mjs` + `core/pack-v2.mjs` + `tests/kernel_minimal.test.mjs` (Sonnet · High, M; spec: kernel-schema appendix B.1) · next (after user review) · prompt S1-impl-1 · RESULT S1-impl-1 (pending)
   - [ ] **S1-impl-2** `core/compat-v1.mjs` + `tests/compat_v1.test.mjs` (Sonnet · High, M; spec: kernel-schema appendix B.2) · next (after user review) · prompt S1-impl-2 · RESULT S1-impl-2 (pending)
-- [ ] **S2** Node tree lands + milking hall moves home (L, 2 prompts) · later · prompt S2 · RESULT S2 (pending)
+- [ ] **S2** Node tree lands + milking hall moves home (L, 2 prompts) · in progress (S2-A done) · prompt S2 · RESULT S2 (pending)
+  - ~~**S2-A** `map/app/nodes-runtime.mjs`: breadcrumb / up button / warm-up / estate stand-in / card links read the node tree; the dairy parlour is a `zone` node under `eden_estate` (`anchor.zone`); test entry and `test` field gone; `tools/maps_invariants.py`; worldbook `[TOPO]` prefix from the node chain~~ ✅ 2026-09-30 `5f5b51f` `a82223d` `fdd65a7` (+ the change that carries this line) · prompt S2-A · RESULT S2-A
+  - [ ] **S2-B** drill-down UI: the zone / level switcher (K-R35) reads `levels`, zone nodes are reachable in the viewer (the dairy has no entry point until then) · next · prompt S2-B · RESULT S2-B (pending)
 - [ ] **S3** Unify geography: everything lands on nodes, parity-tested (L, 3 prompts) · later · prompt S3 · RESULT S3 (pending)
 - [ ] **S4** Special-case sweep + neutral wording (L, 4 prompts) · later · prompt S4 · RESULT S4 (pending)
 - [ ] **S5** File split + first rename batch (L, 3 prompts) · later · prompt S5 · RESULT S5 (pending)

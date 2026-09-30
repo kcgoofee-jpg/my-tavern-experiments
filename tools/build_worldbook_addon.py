@@ -204,19 +204,32 @@ INFERRED = ''   # v16：不再向模型写「推断」口径（用户要求）�
 LAYER_RE = {'上层': '中层|下层', '中层': '上层|下层', '下层': '上层|中层'}
 
 
+_TREE = None
+
+
+def node_tree():
+    """出货数据的节点树（查看器同一份：map/app/nodes-runtime.mjs，经 tools/node_chain.mjs 取出）：{chain: {地图 id: [祖先名…]}, node: {地图 id: 节点名}}。"""
+    global _TREE
+    if _TREE is None:
+        r = subprocess.run(['node', os.path.join(ROOT, 'tools', 'node_chain.mjs')], capture_output=True, text=True, encoding='utf-8')
+        if r.returncode: sys.exit(f'node tools/node_chain.mjs 失败（[TOPO] 前缀与出口层名要从节点树取，不再手写）：\n{r.stderr}')
+        _TREE = json.loads(r.stdout)
+    return _TREE
+
+
 def topo_block(reg, mid):
     """v17（W1，docs/plans/llm-campaign.md 裁决 12/13）：层连通性编译成 [TOPO] 声明块，取代「地图上的地标：…」散文列举。
     连接源只有三类：marker.link 显式跨层通道（出口）、同层地标全集（连通）、层级包含（路径前缀）；routes 不作邻接源。
     与 map/tavern/spatial.mjs 的 topo 语义同一口径（运行时注入与世界书发布件两条路一个说法）。"""
-    m = reg[mid]
+    m, tree = reg[mid], node_tree()
     body = '连通: ' + '、'.join(v['name'].replace(' ', '') for v in canon(m['markers']).values())
     links = []
     for v in canon(m['markers']).values():
         to = (v.get('link') or {}).get('map')
-        # link.map 指向带 layer 的层图才是跨层出口；指向 lm_* 三维地标图（kind=estate、无 layer）不算
-        if to and reg.get(to, {}).get('layer'): links.append(f"{v['name'].replace(' ', '')}({reg[to]['layer']['name']})")
+        # 出口 = link.map 指向节点树里的一个层（有 layer）；只是三维页视图的图（lm_* 没有自己的节点）不算；层名取节点名
+        if to and to in tree['node'] and reg.get(to, {}).get('layer'): links.append(f"{v['name'].replace(' ', '')}({tree['node'][to]})")
     if links: body += '；出口: ' + '、'.join(links)
-    return f'[TOPO: 天城/{m["layer"]["name"]} -> {body}]'
+    return f'[TOPO: {"/".join([*tree["chain"][mid], tree["node"][mid]])} -> {body}]'
 
 
 def topo_selftest(reg):
