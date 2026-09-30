@@ -100,3 +100,19 @@ blocker: none
 open: (a) webgl-part3 has uncommitted work: commit / discard / keep? (b) decide merge or drop for rescue/ambience-part4-4 (todo §1); its 9 overlapping files diverge from preview and would need a manual reconcile.
 cleanup: done
 === END ===
+
+=== RESULT R-LOOP standard std-1 ===
+status: PAUSED (checkpoint after 3 items; ledger is clean and resumable)
+items finished this session: estate:final — final/verify/ship — pass; estate:opt — skipped with numbers (house_opt LODs larger than the shipped meshopt house.glb, Draco decoder not vendored); review:arms_rnd — r1 7/5 fail, fix, r2 8/6.5 pass, ship
+items below gate: none
+waiting: none
+pushed: yes (head #106)
+tests: check_maps PASS | estate3d_manifest PASS (9/9) | smoke PASS (node 114) — run inside `landmark.py ship`
+blocker: none
+notes for the next session:
+  (1) A fresh render worktree lacks the git-ignored local caches (blender/data/props, landmarks, estate2, osm/raw, real3d/raw, world/out, *.f32, *.i16), so landmark builds crash on missing textures and board.py then re-annotates STALE renders. Symlink them from the main checkout (ln -s <main>/blender/data/<dir> ...) and add them to the shared .git/info/exclude; done for wt-standard.
+  (2) blender/estate: Blender 5.2 rejects modifier ID-property writes; core.set_cut now uses modifier.properties.inputs. Estate renders need --allow-unmatched 1 (5 maps.json function rooms have no 3D room) and --no-export (keeps eden_estate_tiles.json untouched).
+  (3) `render_campaign.py wait` leaves the item at the same stage, so `next` re-offers it; do not resubmit a queued job.
+next: review:clearing_depot
+cleanup: done (no Blender or server of mine running)
+=== END ===
