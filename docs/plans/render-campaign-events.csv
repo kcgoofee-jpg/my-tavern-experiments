@@ -129,3 +129,12 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T14:13:32Z,lm:freight_yard,review-r1,done,std-1,pass,"r1 8/7 pass; polish: bogies, turnout, ground edge"
 2026-09-30T14:16:04Z,lm:freight_yard,final,done,std-1,,"2400px/64spp c1+c2, glb std/low ok, logs clean"
 2026-09-30T14:16:04Z,lm:freight_yard,ship,done,std-1,,"maps.json marker link + lm_freight_yard, card-buildings row; manifest count test 42->43; check_maps 0/0, smoke pass"
+2026-09-30T14:16:30Z,lm:lower_bar,new,claim,std-1,,
+2026-09-30T14:16:47Z,lm:lower_bar,new,done,std-1,,scaffolded
+2026-09-30T14:17:53Z,lm:lower_bar,setting,done,std-1,,setting block (card L78 + A20; exterior repo-inferred)
+2026-09-30T14:19:11Z,lm:lower_bar,draft,done,std-1,,c1 2000px 16spp
+2026-09-30T14:19:11Z,lm:lower_bar,board,done,std-1,,"board c1/c2/under, logs clean"
+2026-09-30T14:19:11Z,lm:lower_bar,gapcheck,done,std-1,,"no gap: bar block+awning+sign, alley (fire escape, kegs, crates, bins), street furniture, ground"
+2026-09-30T14:19:11Z,lm:lower_bar,review-r1,done,std-1,pass,"r1 7.5/6.5 pass; polish: soot, fire escape rails, warmer light"
+2026-09-30T14:21:19Z,lm:lower_bar,final,done,std-1,,"2400px/64spp c1+c2, glb std/low ok, logs clean"
+2026-09-30T14:21:19Z,lm:lower_bar,ship,done,std-1,,"maps.json marker link + lm_lower_bar, card-buildings row; manifest count test -> 44; check_maps 0/0, smoke pass"
