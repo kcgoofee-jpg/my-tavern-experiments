@@ -341,7 +341,7 @@ D.SEEDS.forEach((s, k) => { if (s.kind !== 'minor') return;
   const n = owner.reduce((a, o) => a + (o === k), 0); if (n < 160) return;
   const [x, y] = proj(...centroid(t => t === s));
   const t = el('text', { x, y, 'text-anchor': 'middle', class: 'small' }, gLabel, '中小国');
-  el('title', {}, t, '【设定】世界观：星球上众多中小国林立（国名、数量、位置设定未给，此处为 12 个示意）'); });
+  el('title', {}, t, '【设定】世界观：星球上众多中小国林立（此处为 12 个示意）'); });
 { const [x, y] = proj(...centroid(s => s.kind === 'overseas')); const g = el('g', {}, gLabel);
   el('text', { x, y: y - 10, 'text-anchor': 'middle', class: 'r-ov' }, g, '海外诸地');
   el('text', { x, y: y + 8, 'text-anchor': 'middle', class: 'cap-sub' }, g, '稀有矿物 · 异域人员输出地');
@@ -399,7 +399,7 @@ ov.addEventListener('mousemove', ev => {
       const kind = D.SEEDS[owner[i]].kind, st = D.KIND_STYLE[kind], src = KIND_SRC[kind];
       if (src) return showCard(ev, st.name, src.src);
       if (kind === 'overseas') return showCard(ev, st.name, '货币与贸易：天城输入稀有矿物、异域特殊体质人员（部分来自海外）');
-      return showCard(ev, '中小国', '世界观：星球上众多中小国林立（国名、位置设定未给）'); } }
+      return showCard(ev, '中小国', '世界观：星球上众多中小国林立'); } }
   card.hidden = true; });
 ov.addEventListener('mouseleave', () => card.hidden = true);
 </script>

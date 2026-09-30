@@ -112,7 +112,7 @@ D.SEEDS.forEach((s, k) => {
   const n = owner.reduce((a, o) => a + (o === k), 0); if (n < 40) return;
   const c = centroid(t => t === s);
   const t = el('text', { x: c[0], y: c[1], 'text-anchor': 'middle', class: 'small' }, gLabel, s.kind === 'minor' ? '中小国' : '');
-  el('title', {}, t, '【设定】世界观：星球上众多中小国林立（国名、数量、位置设定未给，此处为 12 个示意）');
+  el('title', {}, t, '【设定】世界观：星球上众多中小国林立（此处为 12 个示意）');
 });
 { const c = centroid(s => s.kind === 'overseas'); const g = el('g', {}, gLabel);
   el('text', { x: c[0], y: c[1] - 10, 'text-anchor': 'middle', class: 'cap' }, g, '海外诸地');

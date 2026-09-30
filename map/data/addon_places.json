@@ -1,5 +1,5 @@
 {
-  "_note": "地图上另行描述的地点 → 世界书附加条目里各生成一条关键词触发的「地图补充-名称」条目（tools/build_worldbook_addon.py）。维护规则见 docs/tiancheng-maps.md「地图补充地点与世界书同步」：maps.json 里 wb_list:false 或 addon:true 的标记必须出现在某一条的 refs 里；estate:true 的条目，alias 至少有一个在 eden_estate 的 rooms / areas 里。tools/check_maps.py 会检查。text 只写中性的设施、布局、氛围，不写成人内容。",
+  "_note": "地图上另行描述的地点 → 世界书附加条目里各生成一条关键词触发的「地点-名称」条目（tools/build_worldbook_addon.py）。维护规则见 docs/tiancheng-maps.md「地图补充地点与世界书同步」：maps.json 里 wb_list:false 或 addon:true 的标记必须出现在某一条的 refs 里；estate:true 的条目，alias 至少有一个在 eden_estate 的 rooms / areas 里。tools/check_maps.py 会检查。text 只写中性的设施、布局、氛围，不写成人内容。",
   "places": [
     {
       "id": "greystone",

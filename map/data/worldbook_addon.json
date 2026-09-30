@@ -2,7 +2,7 @@
  "schema": 1,
  "book": "伊甸地图·世界书附加条目",
  "version": "0.9.7-dev",
- "ver": "0.9.7+ae6df7f0",
+ "ver": "0.9.7+c6c239a6",
  "category": {
   "map.link-rules": "rules",
   "map.event-types": "events",
@@ -80,51 +80,51 @@
    "天城常识-战力": "tiancheng.lore.power",
    "天城常识-节日与社交季": "tiancheng.lore.festivals",
    "天城常识-媒体": "tiancheng.lore.media",
-   "天城常识-位置未写": "tiancheng.lore.unplaced",
+   "天城常识-其他机构": "tiancheng.lore.unplaced",
    "庄园常识-日程": "estate.lore.schedule",
    "庄园常识-安保与权限": "estate.lore.security",
-   "地图补充-灰石旧宅": "map.place.greystone",
-   "地图补充-灰石客舍": "map.place.greystone-cottage",
-   "地图补充-奶牛农场": "map.place.dairy",
-   "地图补充-玻璃健身亭": "map.place.gym-pavilion",
-   "地图补充-衣帽间": "map.place.wardrobe",
-   "地图补充-林中别墅": "map.place.villas",
-   "地图补充-载具停靠坪": "map.place.vehicle-pad",
-   "地图补充-地下医疗中心（B2）": "map.place.b2-medical",
-   "地图补充-庄园园林与附属": "map.place.estate-grounds",
-   "地图补充-首相府": "map.place.pm-residence",
-   "地图补充-庄园主联盟会所": "map.place.league-club",
-   "地图补充-精英学院": "map.place.elite-academy",
-   "地图补充-凯莉的宅邸": "map.place.kelly-residence",
-   "地图补充-天城大学": "map.place.tiancheng-univ",
-   "地图补充-骑士团营区": "map.place.knights-camp",
-   "地图补充-辉光大教堂": "map.place.radiance-cathedral",
-   "地图补充-大骑士领·圣都（地图）": "map.place.site-kavalierki",
-   "地图补充-原域·诸神殿（地图）": "map.place.yuanyu-sanctum",
-   "地图补充-原域·城区（地图）": "map.place.yuanyu-city",
-   "地图补充-旷野高地（地图）": "map.place.site-highland",
-   "地图补充-圆桌第一席封地（地图）": "map.place.site-fief1",
-   "地图补充-圆桌第二席封地（地图）": "map.place.site-fief2",
-   "地图补充-圆桌第三席封地（地图）": "map.place.site-fief3",
-   "地图补充-圆桌第四席封地（地图）": "map.place.site-fief4",
-   "地图补充-圆桌第五席封地（地图）": "map.place.site-fief5",
-   "地图补充-法师塔": "map.place.mage-tower",
-   "地图补充-施奈德精密改造诊所": "map.place.schneider-clinic",
-   "地图补充-新生工坊": "map.place.rebirth-workshop",
-   "地图补充-天城贵族管家学院": "map.place.butler-academy",
-   "地图补充-天城执政厅": "map.place.executive-office",
-   "地图补充-天城政务院": "map.place.admin-council",
-   "地图补充-天城中央储备署": "map.place.reserve-office",
-   "地图补充-天城文化署": "map.place.culture-office",
-   "地图补充-军事学院": "map.place.military-academy",
-   "地图补充-风暴殿": "map.place.storm-hall",
-   "地图补充-下层区酒吧": "map.place.lower-bar",
-   "地图补充-贫民窟": "map.place.slums",
-   "地图补充-监狱": "map.place.prison",
-   "地图补充-维克多庄园": "map.place.victor-estate",
-   "地图补充-「Y」的庄园": "map.place.y-estate",
-   "地图补充-魔导军工研发中心": "map.place.arms-rnd",
-   "地图补充-猎季营地": "map.place.hunting-camp"
+   "地点-灰石旧宅": "map.place.greystone",
+   "地点-灰石客舍": "map.place.greystone-cottage",
+   "地点-奶牛农场": "map.place.dairy",
+   "地点-玻璃健身亭": "map.place.gym-pavilion",
+   "地点-衣帽间": "map.place.wardrobe",
+   "地点-林中别墅": "map.place.villas",
+   "地点-载具停靠坪": "map.place.vehicle-pad",
+   "地点-地下医疗中心（B2）": "map.place.b2-medical",
+   "地点-庄园园林与附属": "map.place.estate-grounds",
+   "地点-首相府": "map.place.pm-residence",
+   "地点-庄园主联盟会所": "map.place.league-club",
+   "地点-精英学院": "map.place.elite-academy",
+   "地点-凯莉的宅邸": "map.place.kelly-residence",
+   "地点-天城大学": "map.place.tiancheng-univ",
+   "地点-骑士团营区": "map.place.knights-camp",
+   "地点-辉光大教堂": "map.place.radiance-cathedral",
+   "地点-大骑士领·圣都（地图）": "map.place.site-kavalierki",
+   "地点-原域·诸神殿（地图）": "map.place.yuanyu-sanctum",
+   "地点-原域·城区（地图）": "map.place.yuanyu-city",
+   "地点-旷野高地（地图）": "map.place.site-highland",
+   "地点-圆桌第一席封地（地图）": "map.place.site-fief1",
+   "地点-圆桌第二席封地（地图）": "map.place.site-fief2",
+   "地点-圆桌第三席封地（地图）": "map.place.site-fief3",
+   "地点-圆桌第四席封地（地图）": "map.place.site-fief4",
+   "地点-圆桌第五席封地（地图）": "map.place.site-fief5",
+   "地点-法师塔": "map.place.mage-tower",
+   "地点-施奈德精密改造诊所": "map.place.schneider-clinic",
+   "地点-新生工坊": "map.place.rebirth-workshop",
+   "地点-天城贵族管家学院": "map.place.butler-academy",
+   "地点-天城执政厅": "map.place.executive-office",
+   "地点-天城政务院": "map.place.admin-council",
+   "地点-天城中央储备署": "map.place.reserve-office",
+   "地点-天城文化署": "map.place.culture-office",
+   "地点-军事学院": "map.place.military-academy",
+   "地点-风暴殿": "map.place.storm-hall",
+   "地点-下层区酒吧": "map.place.lower-bar",
+   "地点-贫民窟": "map.place.slums",
+   "地点-监狱": "map.place.prison",
+   "地点-维克多庄园": "map.place.victor-estate",
+   "地点-「Y」的庄园": "map.place.y-estate",
+   "地点-魔导军工研发中心": "map.place.arms-rnd",
+   "地点-猎季营地": "map.place.hunting-camp"
   }
  },
  "entries": [
@@ -704,7 +704,7 @@
   },
   {
    "id": "map.place.greystone",
-   "name": "地图补充-灰石旧宅",
+   "name": "地点-灰石旧宅",
    "enabled": true,
    "content": "<地图补充·灰石旧宅>\n伊甸庄园西南坡地上的都铎式灰石老宅：陡峭的灰板岩山墙屋顶、高烟囱、石灰岩墙；北面是上台地的黄杨花坛、长倒影池和喷泉，门前一座带喷泉的圆形车场，南侧弧形双石阶下到三级台地花园与锦鲤池，一条跌水溪从上台地流下。这里是{{user}}与最亲近的那位女仆两人的私宅，与主楼的公务和排场分开：壁炉起居室、小厨房、两人的书房、卧室和朝南的阳光房，陈设旧而温暖，生活用品都是两个人的。其他人不经邀请不进入；女仆团只在约定的时间打理花园。\n</地图补充·灰石旧宅>",
    "strategy": {
@@ -729,7 +729,7 @@
   },
   {
    "id": "map.place.greystone-cottage",
-   "name": "地图补充-灰石客舍",
+   "name": "地点-灰石客舍",
    "enabled": true,
    "content": "<地图补充·灰石客舍>\n灰石旧宅东侧的都铎式小客舍：石墙、板岩顶、砖烟囱、铅条窗，墙上爬着常春藤和玫瑰，门前一方卵石小院；旁边是岩洞泳池与锦鲤池，旧宅上台地的跌水溪落进岩洞泳池。平时空着，来客留宿时开放。\n</地图补充·灰石客舍>",
    "strategy": {
@@ -755,7 +755,7 @@
   },
   {
    "id": "map.place.dairy",
-   "name": "地图补充-奶牛农场",
+   "name": "地点-奶牛农场",
    "enabled": true,
    "content": "<地图补充·奶牛农场>\n伊甸庄园西侧农业台地上的小型奶牛农场，饲养奶牛，供应庄园的鲜奶与乳制品：一座鱼骨式挤奶厅（中间是低于站台约 0.95 m 的操作坑，两侧各 8 个斜向牛位，低位不锈钢奶管）、奶罐间（集乳罐、冷却奶罐、就地清洗系统）、真空泵房，外面是电围栏围起的放牧围场；一条农场路通往服务区。由女仆团轮班照料，早晚各挤奶一次。\n</地图补充·奶牛农场>",
    "strategy": {
@@ -782,7 +782,7 @@
   },
   {
    "id": "map.place.gym-pavilion",
-   "name": "地图补充-玻璃健身亭",
+   "name": "地点-玻璃健身亭",
    "enabled": true,
    "content": "<地图补充·玻璃健身亭>\n伊甸庄园东南网球场旁的一座玻璃健身亭，约 240 m²，四面落地玻璃看得见草坪与网球场：跑步机、动感单车、深蹲架、卧推凳、哑铃架。它是户外附属设施；体能训练室仍在主楼地下一层。\n</地图补充·玻璃健身亭>",
    "strategy": {
@@ -807,7 +807,7 @@
   },
   {
    "id": "map.place.wardrobe",
-   "name": "地图补充-衣帽间",
+   "name": "地点-衣帽间",
    "enabled": true,
    "content": "<地图补充·衣帽间>\n主卧里的步入式衣帽间（意式古典的形制）：白漆柜体配银箔雕花、茛苕叶托架和檐口，镀金藻井下两盏水晶吊灯；中间一张白色卡拉拉大理石台面的中岛，带抽屉和坐凳；深色木地板上铺浅色地毯；一整面墙是宴会礼服、手包与高跟鞋。\n</地图补充·衣帽间>",
    "strategy": {
@@ -831,7 +831,7 @@
   },
   {
    "id": "map.place.villas",
-   "name": "地图补充-林中别墅",
+   "name": "地点-林中别墅",
    "enabled": true,
    "content": "<地图补充·林中别墅>\n伊甸庄园东侧林带与北岸的四栋林中别墅，平时空着，留给来访或长住的外部人物；各有独立的小院和林间步道通主楼。\n</地图补充·林中别墅>",
    "strategy": {
@@ -855,7 +855,7 @@
   },
   {
    "id": "map.place.vehicle-pad",
-   "name": "地图补充-载具停靠坪",
+   "name": "地点-载具停靠坪",
    "enabled": true,
    "content": "<地图补充·载具停靠坪>\n伊甸庄园服务区里的悬浮载具库、悬浮车库和载具停靠坪：私人悬浮载具在这里停放、起降和保养，与前庭的访客停靠平台分开。天城上层没有公共交通，进出都靠私人悬浮载具。\n</地图补充·载具停靠坪>",
    "strategy": {
@@ -880,7 +880,7 @@
   },
   {
    "id": "map.place.b2-medical",
-   "name": "地图补充-地下医疗中心（B2）",
+   "name": "地点-地下医疗中心（B2）",
    "enabled": true,
    "content": "<地图补充·地下医疗中心（B2）>\n伊甸庄园主楼地下二层东段的地下医疗中心，是庄园自己的急救与医疗设施，按 2088 年的医疗水平配置：再生治疗、假肢与仿生肢适配、影像诊断。主楼地下二层西边另有一间医疗室，与它各自独立。四个房间：医疗中心前厅（接诊台、转运床，南接主廊）；缓冲更衣间（气闸，两道互锁气密门、风淋、洁净服柜、不锈钢刷手槽，南门接主人通道前室）；无菌处置室（约 78 ㎡：冷白 LED 满布吊顶、中央层流送风天花、电动手术台、双头无影灯、两座吊塔带监护屏与呼吸机、医用气体终端、红色抢救车与除颤仪、嵌墙洁净柜和影像大屏，地面是带圆弧踢脚的无缝卷材）；器械洗消间（灭菌柜、清洗槽，传递窗通处置室）。由女仆长和懂医护的女仆负责，平时保持待命。\n</地图补充·地下医疗中心（B2）>",
    "strategy": {
@@ -907,7 +907,7 @@
   },
   {
    "id": "map.place.estate-grounds",
-   "name": "地图补充-庄园园林与附属",
+   "name": "地点-庄园园林与附属",
    "enabled": true,
    "content": "<地图补充·庄园园林与附属>\n伊甸庄园的园林与附属建筑：主楼屋顶的眺望亭；服务区的仆役楼（女仆团后勤）；围墙花园北墙下朝南的石柱玻璃橘园，旁边是菜园、果园；树篱迷宫与玫瑰园；人工湖南岸半挑出水面的水榭、湖中小岛上的八柱湖心亭、湖边俱乐部；林间的索桥与树屋；岛缘观景台可俯瞰天城；岛四角的结界锚碑是外层结界的锚点；客房楼供来客住宿。\n</地图补充·庄园园林与附属>",
    "strategy": {
@@ -946,7 +946,7 @@
   },
   {
    "id": "map.place.pm-residence",
-   "name": "地图补充-首相府",
+   "name": "地点-首相府",
    "enabled": true,
    "content": "<地图补充·首相府>\n首相府在天城上层的一座悬浮岛上；外观是英式乔治时代深色砖联排官邸（三层加阁楼）：黑色镶板正门、白色门套与半圆扇形气窗、门上铸铁灯笼、白框推拉窗、采光井铸铁栏杆、成排的烟囱；街口有铁门和岗亭，花园一侧是白色灰泥柱廊。\n</地图补充·首相府>",
    "strategy": {
@@ -970,7 +970,7 @@
   },
   {
    "id": "map.place.league-club",
-   "name": "地图补充-庄园主联盟会所",
+   "name": "地点-庄园主联盟会所",
    "enabled": true,
    "content": "<地图补充·庄园主联盟会所>\n庄园主联盟会所是庄园主们的聚会处（品鉴宴由庄园主轮流做东）：上层西北的一座悬浮岛：意大利宫殿式三层会所楼（中庭玻璃顶），东侧接一座顶光拍卖厅（冬季私人拍卖只限会员竞投）。\n</地图补充·庄园主联盟会所>",
    "strategy": {
@@ -993,7 +993,7 @@
   },
   {
    "id": "map.place.elite-academy",
-   "name": "地图补充-精英学院",
+   "name": "地点-精英学院",
    "enabled": true,
    "content": "<地图补充·精英学院>\n精英学院在天城上层（贵族子弟接受私人教育或进入精英学院；课程有家族管理、以太魔法修习、政治学、资产经营、礼仪与社交、军事基础），岛缘有私人悬浮载具停靠平台。\n</地图补充·精英学院>",
    "strategy": {
@@ -1016,7 +1016,7 @@
   },
   {
    "id": "map.place.kelly-residence",
-   "name": "地图补充-凯莉的宅邸",
+   "name": "地点-凯莉的宅邸",
    "enabled": true,
    "content": "<地图补充·凯莉的宅邸>\n凯莉·露易丝的宅邸在天城上层的一座悬浮岛上。凯莉亡夫的维克多庄园是另一处。\n</地图补充·凯莉的宅邸>",
    "strategy": {
@@ -1041,7 +1041,7 @@
   },
   {
    "id": "map.place.tiancheng-univ",
-   "name": "地图补充-天城大学",
+   "name": "地点-天城大学",
    "enabled": true,
    "content": "<地图补充·天城大学>\n天城大学在中层高区，设法学院；与天城第一学府星渊大学不是同一所。\n</地图补充·天城大学>",
    "strategy": {
@@ -1065,7 +1065,7 @@
   },
   {
    "id": "map.place.knights-camp",
-   "name": "地图补充-骑士团营区",
+   "name": "地点-骑士团营区",
    "enabled": true,
    "content": "<地图补充·骑士团营区>\n议会骑士团的营区在中层，地图画在上层银冠堡的正下方；团长每天巡营。骑士团总部仍是上中层交界的银冠堡。\n</地图补充·骑士团营区>",
    "strategy": {
@@ -1089,7 +1089,7 @@
   },
   {
    "id": "map.place.radiance-cathedral",
-   "name": "地图补充-辉光大教堂",
+   "name": "地点-辉光大教堂",
    "enabled": true,
    "content": "<地图补充·辉光大教堂>\n视觉样例里的「天城主教座堂」就是中层高区的辉光大教堂（圣光教会总部）；大主教府邸也并入这里。外观：浅色石材的哥特式双塔西立面、飞扶壁，交叉处是带镀金肋和采光亭的穹顶；教堂南侧是扇形拱顶的回廊庭院（大主教深夜在这里散步），回廊南面是大主教府邸。\n</地图补充·辉光大教堂>",
    "strategy": {
@@ -1113,7 +1113,7 @@
   },
   {
    "id": "map.place.site-kavalierki",
-   "name": "地图补充-大骑士领·圣都（地图）",
+   "name": "地点-大骑士领·圣都（地图）",
    "enabled": true,
    "content": "<地图补充·大骑士领·圣都（地图）>\n光辉联邦首都大骑士领·圣都的地图草图：城分三环，核心区「荣光冠冕」在以太穹顶下，有商业联合会联合大厦、容 30 万人的太阳骑士大竞技场、圆桌骑士议事殿与顶级会所；中环「竞赛与狂欢回廊」是一圈大小竞技场与赛道；外环「铁锈与落败领」是低矮棚屋、清算转运站（铁路编组场）、独立骑士营地（帐篷）与临光家族外城驻所。城外是温带阔叶林，北侧有一条河。\n</地图补充·大骑士领·圣都（地图）>",
    "strategy": {
@@ -1138,7 +1138,7 @@
   },
   {
    "id": "map.place.yuanyu-sanctum",
-   "name": "地图补充-原域·诸神殿（地图）",
+   "name": "地点-原域·诸神殿（地图）",
    "enabled": true,
    "content": "<地图补充·原域·诸神殿（地图）>\n虚灵古派国都原域的地图分两层：上层是城市核心上空的悬浮圣山，山顶是诸神殿（圆形主殿与金色穹顶），周围一圈小神殿，一条朝圣步道从山南侧下行；山下终年笼着以太薄雾。\n</地图补充·原域·诸神殿（地图）>",
    "strategy": {
@@ -1163,7 +1163,7 @@
   },
   {
    "id": "map.place.yuanyu-city",
-   "name": "地图补充-原域·城区（地图）",
+   "name": "地点-原域·城区（地图）",
    "enabled": true,
    "content": "<地图补充·原域·城区（地图）>\n原域地面城区：圆形城墙内是密集的哥特式尖塔与巴洛克穹顶，放射状大道与三道环路；圣山正下方是一片朝圣广场；城墙东门朝向天城方向。\n</地图补充·原域·城区（地图）>",
    "strategy": {
@@ -1189,7 +1189,7 @@
   },
   {
    "id": "map.place.site-highland",
-   "name": "地图补充-旷野高地（地图）",
+   "name": "地点-旷野高地（地图）",
    "enabled": true,
    "content": "<地图补充·旷野高地（地图）>\n开局七的旷野高地：北半是起伏的高原草甸与散石，一道曲折的崖壁横贯中部，崖下是林地与低地，一条小径从高原经崖口下行。\n</地图补充·旷野高地（地图）>",
    "strategy": {
@@ -1213,7 +1213,7 @@
   },
   {
    "id": "map.place.site-fief1",
-   "name": "地图补充-圆桌第一席封地（地图）",
+   "name": "地点-圆桌第一席封地（地图）",
    "enabled": true,
    "content": "<地图补充·圆桌第一席封地（地图）>\n光辉联邦圆桌骑士第一席的封地。北部湖山：湖岸山顶的五角星形棱堡，沿湖一条长街小镇，山坡上是横条梯田；专属骑士团的营房与校场在城堡附近，道路连通城堡、驻地与城镇。\n</地图补充·圆桌第一席封地（地图）>",
    "strategy": {
@@ -1238,7 +1238,7 @@
   },
   {
    "id": "map.place.site-fief2",
-   "name": "地图补充-圆桌第二席封地（地图）",
+   "name": "地点-圆桌第二席封地（地图）",
    "enabled": true,
    "content": "<地图补充·圆桌第二席封地（地图）>\n光辉联邦圆桌骑士第二席的封地。西海岸：临海的方形海堡带四座圆塔，港湾边月牙形小镇和几道木码头，内陆是拼块农田；专属骑士团的营房与校场在城堡附近，道路连通城堡、驻地与城镇。\n</地图补充·圆桌第二席封地（地图）>",
    "strategy": {
@@ -1263,7 +1263,7 @@
   },
   {
    "id": "map.place.site-fief3",
-   "name": "地图补充-圆桌第三席封地（地图）",
+   "name": "地点-圆桌第三席封地（地图）",
    "enabled": true,
    "content": "<地图补充·圆桌第三席封地（地图）>\n光辉联邦圆桌骑士第三席的封地。河谷：河湾旁带护城河的方形城堡，桥头一座圆形城墙小镇，河北岸是农田；专属骑士团的营房与校场在城堡附近，道路连通城堡、驻地与城镇。\n</地图补充·圆桌第三席封地（地图）>",
    "strategy": {
@@ -1288,7 +1288,7 @@
   },
   {
    "id": "map.place.site-fief4",
-   "name": "地图补充-圆桌第四席封地（地图）",
+   "name": "地点-圆桌第四席封地（地图）",
    "enabled": true,
    "content": "<地图补充·圆桌第四席封地（地图）>\n光辉联邦圆桌骑士第四席的封地。南部森林：密林里的狩猎城堡（几座不规则楼与一座尖顶圆塔），林间空地上的小村，林边一小块田；专属骑士团的营房与校场在城堡附近，道路连通城堡、驻地与城镇。\n</地图补充·圆桌第四席封地（地图）>",
    "strategy": {
@@ -1313,7 +1313,7 @@
   },
   {
    "id": "map.place.site-fief5",
-   "name": "地图补充-圆桌第五席封地（地图）",
+   "name": "地点-圆桌第五席封地（地图）",
    "enabled": true,
    "content": "<地图补充·圆桌第五席封地（地图）>\n光辉联邦圆桌骑士第五席的封地。东北平原：同心双环城墙的城堡，棋盘街道的方形城镇，骑士团驻地旁有比武场，南面大片条田；专属骑士团的营房与校场在城堡附近，道路连通城堡、驻地与城镇。\n</地图补充·圆桌第五席封地（地图）>",
    "strategy": {
@@ -1338,7 +1338,7 @@
   },
   {
    "id": "map.place.mage-tower",
-   "name": "地图补充-法师塔",
+   "name": "地点-法师塔",
    "enabled": true,
    "content": "<地图补充·法师塔>\n法师塔：神宫寺凛任首席的魔法研究与教学机构。位于中层、星渊大学以东的一座细高石塔。\n</地图补充·法师塔>",
    "strategy": {
@@ -1362,7 +1362,7 @@
   },
   {
    "id": "map.place.schneider-clinic",
-   "name": "地图补充-施奈德精密改造诊所",
+   "name": "地点-施奈德精密改造诊所",
    "enabled": true,
    "content": "<地图补充·施奈德精密改造诊所>\n施奈德精密改造诊所：伊薇特开的私人诊所，只接受预约。位于中层高区一栋安静的小型诊所楼。\n</地图补充·施奈德精密改造诊所>",
    "strategy": {
@@ -1387,7 +1387,7 @@
   },
   {
    "id": "map.place.rebirth-workshop",
-   "name": "地图补充-新生工坊",
+   "name": "地点-新生工坊",
    "enabled": true,
    "content": "<地图补充·新生工坊>\n新生工坊：天城规模最大的同类改造中心。位于中层低区（那一带多改造诊所）的一座厂房式大楼。\n</地图补充·新生工坊>",
    "strategy": {
@@ -1410,7 +1410,7 @@
   },
   {
    "id": "map.place.butler-academy",
-   "name": "地图补充-天城贵族管家学院",
+   "name": "地点-天城贵族管家学院",
    "enabled": true,
    "content": "<地图补充·天城贵族管家学院>\n天城贵族管家学院：培养上层家政管家的学院，绫濑遥在这里毕业并担任顾问。位于中层高区的一座带内院的学院楼。\n</地图补充·天城贵族管家学院>",
    "strategy": {
@@ -1435,7 +1435,7 @@
   },
   {
    "id": "map.place.executive-office",
-   "name": "地图补充-天城执政厅",
+   "name": "地点-天城执政厅",
    "enabled": true,
    "content": "<地图补充·天城执政厅>\n天城执政厅：天城的行政机构，签发跨层通行许可。位于中层核心区、议会附近。\n</地图补充·天城执政厅>",
    "strategy": {
@@ -1459,7 +1459,7 @@
   },
   {
    "id": "map.place.admin-council",
-   "name": "地图补充-天城政务院",
+   "name": "地点-天城政务院",
    "enabled": true,
    "content": "<地图补充·天城政务院>\n天城政务院：阿斯特丽德 18 岁时实习的机构；与执政厅是否同一机构未说明，地图分开标。位于中层核心区。\n</地图补充·天城政务院>",
    "strategy": {
@@ -1483,7 +1483,7 @@
   },
   {
    "id": "map.place.reserve-office",
-   "name": "地图补充-天城中央储备署",
+   "name": "地点-天城中央储备署",
    "enabled": true,
    "content": "<地图补充·天城中央储备署>\n天城中央储备署：隶属议会，发行以太元。位于中层核心区。\n</地图补充·天城中央储备署>",
    "strategy": {
@@ -1508,7 +1508,7 @@
   },
   {
    "id": "map.place.culture-office",
-   "name": "地图补充-天城文化署",
+   "name": "地点-天城文化署",
    "enabled": true,
    "content": "<地图补充·天城文化署>\n天城文化署：负责出版审核的机构。位于中层核心区外缘。\n</地图补充·天城文化署>",
    "strategy": {
@@ -1532,7 +1532,7 @@
   },
   {
    "id": "map.place.military-academy",
-   "name": "地图补充-军事学院",
+   "name": "地点-军事学院",
    "enabled": true,
    "content": "<地图补充·军事学院>\n军事学院：议会骑士团与防卫军的人才来源。位于中层外围、环城军营带旁。\n</地图补充·军事学院>",
    "strategy": {
@@ -1556,7 +1556,7 @@
   },
   {
    "id": "map.place.storm-hall",
-   "name": "地图补充-风暴殿",
+   "name": "地点-风暴殿",
    "enabled": true,
    "content": "<地图补充·风暴殿>\n风暴殿：奥伦帝国由全部天灾级强者组成的最高战力机构，听命于天城议会。位于中层核心区西侧一座厚重的石殿。\n</地图补充·风暴殿>",
    "strategy": {
@@ -1579,7 +1579,7 @@
   },
   {
    "id": "map.place.lower-bar",
-   "name": "地图补充-下层区酒吧",
+   "name": "地点-下层区酒吧",
    "enabled": true,
    "content": "<地图补充·下层区酒吧>\n下层区酒吧：瑞秋过去经历发生的地方。位于下层血肉磨坊附近的街角。\n</地图补充·下层区酒吧>",
    "strategy": {
@@ -1603,7 +1603,7 @@
   },
   {
    "id": "map.place.slums",
-   "name": "地图补充-贫民窟",
+   "name": "地点-贫民窟",
    "enabled": true,
    "content": "<地图补充·贫民窟>\n贫民窟：下层的棚户街区，瑞秋在这里出生。位于下层。\n</地图补充·贫民窟>",
    "strategy": {
@@ -1627,7 +1627,7 @@
   },
   {
    "id": "map.place.prison",
-   "name": "地图补充-监狱",
+   "name": "地点-监狱",
    "enabled": true,
    "content": "<地图补充·监狱>\n监狱：维多利亚把弟弟送进的监狱。位于下层的一座高墙设施。\n</地图补充·监狱>",
    "strategy": {
@@ -1651,7 +1651,7 @@
   },
   {
    "id": "map.place.victor-estate",
-   "name": "地图补充-维克多庄园",
+   "name": "地点-维克多庄园",
    "enabled": true,
    "content": "<地图补充·维克多庄园>\n维克多庄园：凯莉亡夫的庄园，现在已不属于她。位于上层一座悬浮岛。\n</地图补充·维克多庄园>",
    "strategy": {
@@ -1674,7 +1674,7 @@
   },
   {
    "id": "map.place.y-estate",
-   "name": "地图补充-「Y」的庄园",
+   "name": "地点-「Y」的庄园",
    "enabled": true,
    "content": "<地图补充·「Y」的庄园>\n「Y」的庄园：一位从不露面、不加入联盟的庄园主的庄园，据说是全天城最大最神秘的一座。位于上层一座悬浮岛。\n</地图补充·「Y」的庄园>",
    "strategy": {
@@ -1699,7 +1699,7 @@
   },
   {
    "id": "map.place.arms-rnd",
-   "name": "地图补充-魔导军工研发中心",
+   "name": "地点-魔导军工研发中心",
    "enabled": true,
    "content": "<地图补充·魔导军工研发中心>\n魔导军工研发中心：圣都的魔导军工研发机构，研制以太回路装甲与智能锁。位于荣光冠冕西北侧。\n</地图补充·魔导军工研发中心>",
    "strategy": {
@@ -1723,7 +1723,7 @@
   },
   {
    "id": "map.place.hunting-camp",
-   "name": "地图补充-猎季营地",
+   "name": "地点-猎季营地",
    "enabled": true,
    "content": "<地图补充·猎季营地>\n猎季营地：秋季猎季时庄园主们带随行同去的野外营地（帐篷、马厩、篝火场和看台）。位于天城东北的荒野。\n</地图补充·猎季营地>",
    "strategy": {

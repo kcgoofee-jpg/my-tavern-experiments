@@ -240,7 +240,7 @@ if len(i18n) == 2:
     if names is not None:
         en_names = load(os.path.join(ROOT, 'packs', 'eden', 'names.en.json')) if exists(os.path.join(ROOT, 'packs', 'eden', 'names.en.json')) else {}   # 英文地名表：首个包的 data.names.en（S4-4）
         for k in sorted(names - set(en_names)): err(f'i18n：事件大类 / 类型「{k}」在 packs/eden/names.en.json 里没有英文')
-# 地图补充地点 ↔ 世界书附加条目（map/data/addon_places.json → tools/build_worldbook_addon.py「地图补充-*」）：
+# 地图补充地点 ↔ 世界书附加条目（map/data/addon_places.json → tools/build_worldbook_addon.py「地点-*」）：
 # wb_list:false / addon:true 的标记都要有一条；条目引用的标记要存在；庄园条目的叫法要能落到 eden_estate（加、改、删地点时三处同步）
 ap_path = os.path.join(ROOT, 'data', 'addon_places.json')
 if not exists(ap_path): err('缺 map/data/addon_places.json（地图补充地点，世界书附加条目从它生成）')
