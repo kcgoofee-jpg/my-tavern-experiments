@@ -257,3 +257,14 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T16:50:13Z,eden:r5,final,done,hero-1,,"final 3200/128 whole + 6000/128 cutout + web scene/glb 64spp, 0 errors"
 2026-09-30T16:50:13Z,eden:r5,integrate,done,hero-1,,"covers 1600/800; tc_upper recut from tc_upper_full + cutout in eden_hi bounds; tc_upper_eden inset recut; site.glb 3.94MB (-12%), site_low 2.14MB (-9%); zones.json 39; manifest v 2026-10-01"
 2026-09-30T16:50:31Z,eden:r5,ship,done,hero-1,,"shipped: covers, tc_upper + tc_upper_eden, site.glb/site_low.glb, zones.json, manifest v 2026-10-01"
+2026-09-30T16:49:38Z,scene:fief5,new,claim,std-1,,
+2026-09-30T16:49:39Z,scene:fief5,new,done,std-1,pass,"fief5 new (shared fief_scene, plain preset)"
+2026-09-30T16:49:39Z,scene:fief5,setting,done,std-1,pass,"fief5 setting (shared fief_scene, plain preset)"
+2026-09-30T16:50:13Z,scene:fief5,draft,done,std-1,pass,fief5 draft
+2026-09-30T16:50:13Z,scene:fief5,board,done,std-1,pass,fief5 board
+2026-09-30T16:50:13Z,scene:fief5,gapcheck,done,std-1,pass,fief5 gapcheck
+2026-09-30T16:50:13Z,scene:fief5,review-r1,done,std-1,fail,"fidelity 6.5 / credibility 6: no farmland feel, c2 at the gate, small lists (docs/reviews/campaign/scene_fief5/r1.md)"
+2026-09-30T16:50:13Z,scene:fief5,fix,done,std-1,pass,"fields 1.9x with hedgerows, c2 pulled back"
+2026-09-30T16:50:37Z,scene:fief5,review-r2,done,std-1,pass,fidelity 7.5 / credibility 6 (r2.md)
+2026-09-30T16:52:21Z,scene:fief5,final,done,std-1,pass,std/low glb under max_mb 2.8/1.4
+2026-09-30T16:52:22Z,scene:fief5,ship,wait,std-1,,"FREEZE_MAPS on origin/preview; model, glbs, manifest committed; needs lm_fief5 entry + links for fief5_castle/order/village/fields/lists in maps.json + card-buildings rows"

@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T16:50:31Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-09-30T16:52:22Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 23 | 0 | 21 | 4 | 0 | 0 | 48 |
+| standard | 23 | 0 | 20 | 5 | 0 | 0 | 48 |
 | hero | 4 | 0 | 11 | 0 | 6 | 0 | 21 |
 
 Below-gate (user spot-check): none
@@ -42,7 +42,7 @@ Below-gate (user spot-check): none
 | 25 | `scene:fief2` | scene | waiting | ship |  | waiting-on-freeze | Fief 2 scene: castle, fields, order, village |
 | 26 | `scene:fief3` | scene | waiting | ship |  | waiting-on-freeze | Fief 3 scene: castle, fields, order, village |
 | 27 | `scene:fief4` | scene | waiting | ship |  | waiting-on-freeze | Fief 4 scene: castle, fields, order, village |
-| 28 | `scene:fief5` | scene | open | new |  |  | Fief 5 scene: castle, fields, order, village, lists |
+| 28 | `scene:fief5` | scene | waiting | ship |  | waiting-on-freeze | Fief 5 scene: castle, fields, order, village, lists |
 | 29 | `scene:yuanyu-city` | scene | open | new |  |  | Yuanyu city scene: gate, dome, plaza, spire quarters |
 | 30 | `base:tc_mid` | basemap | open | audit |  |  | Final-spec audit / re-render of base map tc_mid |
 | 31 | `base:tc_low` | basemap | open | audit |  |  | Final-spec audit / re-render of base map tc_low |
