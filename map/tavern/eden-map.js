@@ -1,8 +1,8 @@
-// 伊甸庄园 · 世界地图悬浮按钮（酒馆助手脚本）
+// 地图悬浮按钮（酒馆助手脚本）
 // 卡内脚本只需一行：import 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@<版本>/map/tavern/eden-map.js'
 // 注入酒馆页面：右下角悬浮按钮 + 地图面板；面板内用 srcdoc 加载 viewer.html（<base> 指回仓库，相对资源照常加载）。
 // 当前地点取 MVU 变量（路径由设定包的 vars 给出，缺了按字段名自动找），变量更新 / 切换聊天时推送给地图高亮。
-// 天城事态：从最近 80 楼原文解析事件标签（events.mjs，两种写法都认），推给地图落点；角色所在层的活跃事件压成一句注入给模型。
+// 事态：从最近 80 楼原文解析事件标签（events.mjs，两种写法都认），推给地图落点；角色所在层的活跃事件压成一句注入给模型。
 // v0.9.3 MVU 联动（mvu.mjs）：只读 stat_data（世界时间、主角着装、在场人物）；自定义名称与用途存在聊天变量顶层键 eden_map（不进 stat_data，见 docs/content-compat.md）。
 // C2 第 4 步（2026-09-28）拆成：入口（本文件：面板 / 查看器状态机、消息、MVU / 事态 / 自定义 / 自检 / 更新）+ host-routes.mjs（线路）
 // + host-lifecycle.mjs（接管旧实例、挂 DOM、监听登记、清理钩子）+ host-th.mjs（酒馆助手适配、偏好、世界书全自动）。见 docs/agent-brief.md「模块地图」。
@@ -15,11 +15,11 @@ import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
 import { MVUBridge } from './mvu-bridge.mjs';   // P2 解耦：数据流读取收口（Mvu / SillyTavern 全局只在这一个模块里）
 import { ContextPipeline } from './context.mjs';   // P2 解耦：聊天上下文交互流水线（窗口 / 事件 / 人物 / 标签 / 行程的纯计算）
 import { createAbout } from './host-about.mjs';
-import { worldbookPrefix } from '../core/pack.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）
+import { worldbookPrefix } from '../core/pack.mjs'; import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）
 (() => {
   const SELF = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-th.mjs
-  const { PACK_IN, PACK_ID, MAN, wrapLS, LS, lsGet, lsSet } = packNs(SELF);   // MAN：包清单（Promise）
+  const { PACK_IN, PACK_ID, MAN, wrapLS, LS, lsGet, lsSet } = packNs(SELF); let MANv = PACK_IN?.manifest || null; MAN.then(m => { MANv = m || MANv; }); const HS = (k, en) => hostStr(MANv, k, en ? 'en' : 'zh');   // MAN：包清单（Promise）；MANv = 到了之后的同步副本，HS = 宿主文案（清单 strings，没到 / 没写就是中性默认）
   const life = createLife(), { listen } = life;   // 监听登记与「死亡」标记（host-lifecycle.mjs）
   // 协议 v2（core/protocol.mjs，docs/design/arch-v2.md §3）：发出的消息盖 v；收到的消息按 schema 校验（模块没到时照旧处理）
   const PROTO = 2; let PRm = null;   // 与 core/protocol.mjs PROTO 一致（tests/protocol.test.mjs 检查）
@@ -545,7 +545,7 @@ import { worldbookPrefix } from '../core/pack.mjs';   // P2 解耦：版本信�
     const need = new Set((facts || []).map(f => f?.kind));
     const out = {};
     if (need.has('loot')) { const assets = {}; try { for (const [id, e] of Object.entries(inv?.items || {})) assets[id] = e?.名 || ''; } catch (e) {} out.assets = assets; }
-    if (need.has('routine')) { const npc = {}; try { const p = BR.rosters(mvuStat())?.present; for (const it of p?.items || []) if (it?.name && it?.place) npc[it.name] = it.place; } catch (e) {} out.npc = npc; }
+    if (need.has('routine')) { const npc = {}; try { const p = BR.rosters(mvuStat())?.[BR.presentId]; for (const it of p?.items || []) if (it?.name && it?.place) npc[it.name] = it.place; } catch (e) {} out.npc = npc; }
     return out;
   }
   /** 漏项审计 + 单项补发（W11）：补的整行来自世界藏物表（不凭空造东西），补过的记水位不再重发——
@@ -722,7 +722,7 @@ import { worldbookPrefix } from '../core/pack.mjs';   // P2 解耦：版本信�
     root.classList.toggle('em-dbui', !!a && a.style.display !== 'none' && !a.hidden && a.childElementCount > 0); };
   const cgObs = new MutationObserver(cgYield); try { cgObs.observe(pdoc.body, { childList: true }); } catch (e) {} cgYield();
 
-  // ---------------- 天城事态 ----------------
+  // ---------------- 事态 ----------------
   // 聊天记录是唯一真相：每次从最近 SCAN 楼原文重算（swipe / 删楼 / 编辑后自然一致），不另存状态
   const INJECT_ID = 'eden-map-events';   // 窗口楼数（80，E6）在流水线里（CTX.SCAN）：未解除的事件在窗口内一直列出（events.mjs tierOf）
   const badge = root.querySelector('.em-badge');
@@ -841,14 +841,14 @@ import { worldbookPrefix } from '../core/pack.mjs';   // P2 解耦：版本信�
     if (r.changed) { saveRoot(); sendTrips(); }   // 行程变了才写聊天变量、才发地图
   }
   function sendTrips() { if (alive) post({ type: 'eden-map:trips', items: CTX.trips }); }
-  function sendChars() { if (alive) post({ type: 'eden-map:chars', v: 1, floor: floorNow, items: chars, rosters: roster, rep, stageOrder: BR.stageOrder, portraits: BR.portraits }); }
+  function sendChars() { if (alive) post({ type: 'eden-map:chars', v: 1, floor: floorNow, items: chars, rosters: roster, groups: BR.groupsView(roster), rep, stageOrder: BR.stageOrder, portraits: BR.portraits }); }
   // v0.9.5 名册（只读）：在场 / 成员 / 目标三张表 + 主角声望的表对象在这里（发地图用）；
   // 阶段先后序与原作立绘表在桥里（每聊天读一次卡文本，BR.stageOrder / BR.portraits）
   let roster = null, rep = null;
   let tipShown = false; try { tipShown = !!(LS || localStorage).getItem('edenMapEvTip'); } catch (e) {}
   function tipOnce() {
     if (tipShown || !panel.hidden) return; tipShown = true; try { (LS || localStorage).setItem('edenMapEvTip', '1'); } catch (e) {}
-    hostToast(UL === 'en' ? 'New events in Tiancheng' : '天城有新事态', [], 10000, null, false, { key: 'newev', level: 2, actions: [{ label: UL === 'en' ? 'View' : '查看', primary: true, run: () => fab.click() }] });   // UI v2：P2，不再挂在悬浮按钮上
+    MAN.then(() => hostToast(HS('ev.toast', UL === 'en'), [], 10000, null, false, { key: 'newev', level: 2, actions: [{ label: UL === 'en' ? 'View' : '查看', primary: true, run: () => fab.click() }] }));   // UI v2：P2，不再挂在悬浮按钮上
   }
   let evT = 0;
   const recomputeSoon = (ms = 250) => { clearTimeout(evT); evT = setTimeout(recompute, ms); };
@@ -916,7 +916,7 @@ import { worldbookPrefix } from '../core/pack.mjs';   // P2 解耦：版本信�
     if (!tlOn) return; tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on');
     if (life.dead) return;
     tlTrailAt = -1; sendTrips();   // 轨迹恢复成当下的行程（回放期间临时画过的那条线撤掉）
-    push(); if (alive) { post({ type: 'eden-map:chars', v: 1, floor: floorNow, items: chars, rosters: roster, rep, stageOrder: BR.stageOrder, portraits: BR.portraits }); sendEvents(); }   // 回当下：地点 / 人物 / 事态全部重推
+    push(); if (alive) { post({ type: 'eden-map:chars', v: 1, floor: floorNow, items: chars, rosters: roster, groups: BR.groupsView(roster), rep, stageOrder: BR.stageOrder, portraits: BR.portraits }); sendEvents(); }   // 回当下：地点 / 人物 / 事态全部重推
   }
   tlBtn.addEventListener('click', () => (tlOn ? tlExit() : tlEnter()));
   tlEl.querySelector('.em-tl-x').addEventListener('click', tlExit);
@@ -939,7 +939,7 @@ import { worldbookPrefix } from '../core/pack.mjs';   // P2 解耦：版本信�
   // ---------------- v0.9.3 自定义名称与用途（聊天变量 eden_map.自定义；酒馆助手没有变量接口时退回本机 localStorage） ----------------
   // 不写进 stat_data：卡的 MVU zod 结构会丢掉未知键。删除一项要整块替换，所以写入优先用 updateVariablesWith / replaceVariables（insertOrAssignVariables 是深合并，删不掉键）。
   // 剧情标签 ⌖改名 / ⌖用途：只处理比 eden_map.标签楼 新的楼层，处理后记下楼层；每条在地图的事态横条上方提示一次。
-  // 「同步到世界书」默认开（v0.9.5；自己关过的保持关）；有了第一项自定义才建世界书「伊甸地图·自定义·<聊天>」（一个常驻条目），当前聊天没有绑定聊天世界书时绑定到这个聊天。
+  // 「同步到世界书」默认开（v0.9.5；自己关过的保持关）；有了第一项自定义才建世界书「<包名>·自定义·<聊天>」（一个常驻条目），当前聊天没有绑定聊天世界书时绑定到这个聊天。
   let custom = null, customChat = null, toastQ = [], regP = null;   // 标签楼层状态（tagFloor / tagLog / tagSeen）在流水线里（CTX.tag）
   const varsOk = () => fnOk('getVariables') && (fnOk('updateVariablesWith') || fnOk('replaceVariables') || fnOk('insertOrAssignVariables'));
   const lsCustomKey = () => 'edenMap:chat:' + (chatId() || '') + ':custom2';   // A-11 本机退回的键（读取在桥里，写入后清掉它）
@@ -1198,8 +1198,8 @@ import { worldbookPrefix } from '../core/pack.mjs';   // P2 解耦：版本信�
   async function showSplash() {
     SPm ??= await import(SELF + 'tavern/splash.mjs').catch(() => null); if (!SPm) return false;
     const lite = lean(), get = f => cdnFetch(BASE + f, { cache: 'force-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
-    const bi = await buildNow();
-    splash = SPm.openSplash({ root, id: ID, pdoc, ver: VER, en: UL === 'en', about: { version: bi?.version || SCRIPT.version || VER, code: bi?.code || SCRIPT.code, channel: channel(), ref: SCRIPT.ref || refOf() }, store: localStorage, cap: window.parent.__edenSplashCap || 25,
+    const bi = await buildNow(); await MAN;
+    splash = SPm.openSplash({ root, id: ID, pdoc, ver: VER, en: UL === 'en', name: HS('app.name', UL === 'en'), about: { version: bi?.version || SCRIPT.version || VER, code: bi?.code || SCRIPT.code, channel: channel(), ref: SCRIPT.ref || refOf() }, store: localStorage, cap: window.parent.__edenSplashCap || 25,
       checks: () => runCheck().then(() => checkItems),
       tasks: [
         { key: 'map', zh: '地图程序与当前一层的图块', en: 'Map program and current-layer tiles', run: () => { if (panel.hidden && !alive && !ghost) preload().catch(() => {}); return preP; } },
@@ -1291,7 +1291,7 @@ import { worldbookPrefix } from '../core/pack.mjs';   // P2 解耦：版本信�
     if (splash || (!panel.hidden && !ghost)) { updWait = true; return; }   // 不盖住开着的面板 / 表单
     updWait = false; const u = updPrompt; updPrompt = null;
     if (u.force) {
-      const F = SC.forceText(u.current, u.min, u.latest, updChannel(), u.reason, UL === 'en');
+      const F = SC.forceText(u.current, u.min, u.latest, updChannel(), u.reason, UL === 'en', { script: HS('app.script', UL === 'en') });
       return hostToast(F.title, F.lines, 0, t => {
         t.classList.add('em-upd', 'em-force'); t.__upd = u;
         const a = pdoc.createElement('a'); a.href = u.notes; a.target = '_blank'; a.rel = 'noopener'; a.textContent = F.notes; const d = pdoc.createElement('div'); d.append(a); t.append(d);
@@ -1301,7 +1301,7 @@ import { worldbookPrefix } from '../core/pack.mjs';   // P2 解耦：版本信�
         acts.append(cl); t.append(acts);
       }, true, { level: 0, key: 'upd' });   // P0：没有 ×，只有「本次关闭」（次按钮）
     }
-    const T = SC.updatePromptText(u.latest, updChannel(), UL === 'en');
+    const T = SC.updatePromptText(u.latest, updChannel(), UL === 'en', { script: HS('app.script', UL === 'en') });
     hostToast(T.title + (u.code ? ` · ${u.code}` : ''), [T.how], 0, t => {
       t.classList.add('em-upd'); t.__upd = u;
       const a = pdoc.createElement('a'); a.href = u.notes; a.target = '_blank'; a.rel = 'noopener'; a.textContent = T.notes; const d = pdoc.createElement('div'); d.append(a); t.append(d);
@@ -1436,7 +1436,7 @@ import { worldbookPrefix } from '../core/pack.mjs';   // P2 解耦：版本信�
   // B5 脚本库说明：版本、通道、最后一次自检结论
   function scriptInfo() {
     if (!THm || !thFn('replaceScriptInfo')) return;
-    try { thFn('replaceScriptInfo')(THm.scriptInfo({ version: plainVer(VER) || SCRIPT.version, channel: channel(), build: SCRIPT.build, checkAt, warns: checkItems.length ? checkItems.filter(i => i.status === 'warn').length : null, en: UL === 'en' })); } catch (e) {}
+    MAN.then(() => { try { thFn('replaceScriptInfo')(THm.scriptInfo({ version: plainVer(VER) || SCRIPT.version, channel: channel(), build: SCRIPT.build, checkAt, warns: checkItems.length ? checkItems.filter(i => i.status === 'warn').length : null, en: UL === 'en', name: HS('app.short', UL === 'en') })); } catch (e) {} });
   }
   // B1 世界书附加条目 + 全自动 + eden-map:th 设置消息：host-th.mjs createWbAuto（整块原样搬过去，行为不变）
   let wbChatT = 0;

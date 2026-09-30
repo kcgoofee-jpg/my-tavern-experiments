@@ -137,7 +137,7 @@ export function evaluate(f) {
   else if (w.missing.length && w.imported) out.push(item('worldbook', 'info', `世界书附加条目已导入但没有启用：${w.missing.join('、')}（已在后台静默绑定，稍后自动生效；要立刻写入可到「数据与映射」）`,
     `Lorebook add-on imported but not active: ${w.missing.join(', ')} (binding silently in the background; use Data & mapping to write it now)`));
   else if (w.missing.length) out.push(item('worldbook', 'warn', `世界书附加条目缺少：${w.missing.join('、')}（导入${f.wbBook ? `「${f.wbBook}」` : '附加条目的世界书'}，并在世界书里设为全局、或绑定到当前角色 / 聊天；刚导入的话刷新一次页面）`,
-    `Lorebook add-on entries missing: ${w.missing.join(', ')} (import the Eden map add-on lorebook and activate it globally or bind it to this character / chat; refresh once after importing)`, { book: f.wbBook || '' }));
+    `Lorebook add-on entries missing: ${w.missing.join(', ')} (import ${f.wbBook ? `"${f.wbBook}"` : 'the add-on lorebook'} and activate it globally or bind it to this character / chat; refresh once after importing)`, { book: f.wbBook || '' }));
   else out.push(item('worldbook', 'ok', '世界书附加条目已启用', 'Lorebook add-on entries enabled'));
   if (w && w.lore && f.ejs === false) out.push(item('ejs', 'warn', '启用了「地图方位」条目，但没检测到「提示词模板」扩展：条目会原样发给模型（装上扩展，或关掉这几条）',
     'Map location lore entries enabled but the Prompt Template extension is missing: raw EJS would reach the model (install it or disable those entries)'));
@@ -229,14 +229,14 @@ export function autoCheckPlan({ enabled = true, channel = 'local', lastAt = 0, n
 /** 要不要弹「地图有新版」：有新版、不是用户说过「此版本不再提示」的那个版本 */
 export const shouldPrompt = (verdict, skipVer) => verdict?.status === 'new' && !!verdict.latest && verdict.latest !== skipVer;
 /** 提示文案：怎么更新取决于脚本是跟随分支（刷新即可）还是钉了版本（重新导入） */
-export function updatePromptText(latest, channel, en = false) {
-  const follow = channel === 'follow';
+export function updatePromptText(latest, channel, en = false, names = {}) {   // names.script：导入的脚本名（host-strings app.script），没给就是中性默认
+  const follow = channel === 'follow', script = names.script || (en ? '[Map] Spatial Map' : '【地图】空间地图');
   return {
     title: en ? `New map version ${fmtVer(latest)}` : `地图有新版 ${fmtVer(latest)}`,
     how: channel === 'latest' ? (en ? 'Reload the Tavern page to use it (the script always loads the latest release).' : '刷新酒馆页面就会用上（脚本每次加载最新正式版）')
       : channel === 'locked' ? (en ? 'You locked the current version: turn off "Lock current version" in map settings › About, then reload.' : '你锁定了当前版本：到地图设置「关于」关掉「锁定当前版本」再刷新')
       : follow ? (en ? 'Your script follows the branch: reload the Tavern page to use it.' : '你的脚本跟随分支：刷新酒馆页面就会用上')
-      : (en ? `Your script is pinned: re-import the new script "[Map] Eden map ${fmtVer(latest)}" (same name, overwrite).` : `你的脚本钉了版本：重新导入新版脚本「【地图】伊甸地图 ${fmtVer(latest)}」（同名覆盖）`),
+      : (en ? `Your script is pinned: re-import the new script "${script} ${fmtVer(latest)}" (same name, overwrite).` : `你的脚本钉了版本：重新导入新版脚本「${script} ${fmtVer(latest)}」（同名覆盖）`),
     // 主按钮：能刷新就用上的通道 =「刷新载入」；钉了版本 =「本次切换到新版本」；锁定 = 无主按钮（要先去设置解锁）
     act: channel === 'locked' ? null : channel === 'latest' || follow ? (en ? 'Reload' : '刷新载入') : (en ? 'Switch for this session' : '本次切换到新版本'),
     actKind: channel === 'locked' ? null : channel === 'latest' || follow ? 'reload' : 'switch',
@@ -246,8 +246,8 @@ export function updatePromptText(latest, channel, en = false) {
 // ---------------- 强制更新（最新正式版的 build.json 里写 min_version / force_reason）----------------
 /** 正在用的版本低于 min_version → 需要强制提示（本次会话可以关，下次加载再弹；地图照常可用） */
 export const mustUpdate = (current, min) => !!current && !!min && VER_RE.test(String(min)) && cmpVer(current, min) < 0;
-export function forceText(current, min, latest, channel, reason = '', en = false) {
-  const p = updatePromptText(latest || min, channel, en);
+export function forceText(current, min, latest, channel, reason = '', en = false, names = {}) {
+  const p = updatePromptText(latest || min, channel, en, names);
   return { title: en ? `Map ${fmtVer(current)} is no longer supported: please update` : `此版本（${fmtVer(current)}）已停止支持，请更新`,
     lines: [reason ? String(reason).slice(0, 200) : (en ? `Minimum supported version: ${fmtVer(min)}.` : `最低支持版本 ${fmtVer(min)}`), p.how], notes: p.notes,
     close: en ? 'Close for this session' : '本次关闭' };

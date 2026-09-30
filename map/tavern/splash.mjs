@@ -1,6 +1,6 @@
 // v0.9.5 开场自检（导入后第一次、换版本后第一次；设置「重新显示开场自检」/ EdenMap.selfcheck({ show: true }) 也能再开）。
-// 一张不挡聊天的小卡（右下角，手机上贴底）：标题「伊甸地图 vX」+ 慢慢转的罗盘、进度条、自检清单（逐项打勾）。
-// 进度故意不会一下满：自检很快做完，之后跟着后台真实的预加载慢慢走（地图程序与首屏图块、庄园三维页面、云图；省流时只做第一项），
+// 一张不挡聊天的小卡（右下角，手机上贴底）：标题「<包名> vX」+ 慢慢转的罗盘、进度条、自检清单（逐项打勾）。
+// 进度故意不会一下满：自检很快做完，之后跟着后台真实的预加载慢慢走（地图程序与首屏图块、三维页面、云图；省流时只做第一项），
 // 全部加载完才到 100%；超过 cap 秒还没完就写「后台继续加载」并收尾。随时可以点「开始」或 × 关掉，后台加载照常继续。
 // 纯 DOM，没有依赖；样式用宿主栏的 --em-* 令牌（跟深 / 浅主题）。
 export const SEEN_KEY = 'edenMapSplashSeen';
@@ -35,7 +35,10 @@ const CSS = id => `
 @media (max-width:640px){#${id} .em-splash{right:8px;left:8px;width:auto;bottom:auto;top:calc(env(safe-area-inset-top) + 56px)}}   /* 手机：放上面，不压住右下的地图按钮和输入框 */
 @media (prefers-reduced-motion:reduce){#${id} .em-splash .cmp g{animation:none}#${id} .em-splash li{transition:none;opacity:1;transform:none}#${id} .em-splash .pb i{transition:none}}`;
 
-/** 打开开场卡。o = { root, id, pdoc, ver, en, lean, checks: () => Promise<items[]>, tasks: [{ key, zh, en, run: () => Promise, skip? }], cap: 秒, onStart, onClose } */
+/** 标题：包的名字（没给就是中性的「空间地图」）+ 版本 */
+export const splashTitle = (name, ver, en) => (name || (en ? 'Spatial Map' : '空间地图')) + (ver ? ' v' + ver : '');
+
+/** 打开开场卡。o = { root, id, pdoc, ver, en, name, lean, checks: () => Promise<items[]>, tasks: [{ key, zh, en, run: () => Promise, skip? }], cap: 秒, onStart, onClose } */
 export function openSplash(o) {
   const { root, pdoc } = o, L = (zh, en) => (o.en ? en : zh);
   root.querySelector('.em-splash')?.remove();
@@ -44,7 +47,7 @@ export function openSplash(o) {
   el.innerHTML = `<header><svg class="cmp" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="1.5"/><g><path d="M16 5l3 11-3 11-3-11z" fill="currentColor" opacity=".9"/><path d="M16 16l3 0-3 11-3-11z" fill="var(--em-bg)" opacity=".7"/></g></svg>`
     + `<h2 id="emSplashT"></h2><button type="button" class="x"></button></header><div class="pb" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>`
     + `<div class="pt"><span class="st"></span><span class="pc">0%</span></div><ul class="ck"></ul><ul class="tk"></ul><button type="button" class="go"></button><footer class="vf"></footer>`;
-  el.querySelector('h2').textContent = L('伊甸地图', 'Eden Map') + (o.ver ? ' v' + o.ver : '');
+  el.querySelector('h2').textContent = splashTitle(o.name, o.ver, o.en);   // o.name：包的名字（host-strings app.name）
   el.querySelector('.x').textContent = '×'; el.querySelector('.x').setAttribute('aria-label', L('关闭（后台继续加载）', 'Close (loading continues)'));
   el.querySelector('.go').textContent = L('开始', 'Start');
   // v0.9.6：页脚写版本、构建号、跟随方式（o.about = { version, code, channel, ref }）

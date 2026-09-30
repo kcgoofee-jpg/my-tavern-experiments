@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as T from '../map/tavern/th.mjs';
 import * as SC from '../map/tavern/selfcheck.mjs';
+import { hostStr } from '../map/tavern/host-strings.mjs';
+const EDEN = JSON.parse(readFileSync(new URL('../map/packs/eden/manifest.json', import.meta.url), 'utf8'));   // the first pack's manifest: its strings name the map
 const HOST = readFileSync(new URL('../map/tavern/eden-map.js', import.meta.url), 'utf8');
 
 test('B2 脚本按钮：不存在才追加，返回事件名；接口缺 → null', () => {
@@ -36,7 +38,8 @@ test('B4 版本只报告；B7 正则只读判定；自检出条目', () => {
 });
 
 test('B5 脚本说明；B6 initializeGlobal + 旧别名；B8 只广播地点；B9 类宏默认关、可撤销', () => {
-  assert.equal(T.scriptInfo({ version: '0.9.6', channel: 'tag', warns: 0, checkAt: 0 }), '伊甸地图 v0.9.6 · tag · 自检：全部正常');
+  assert.equal(T.scriptInfo({ version: '0.9.6', channel: 'tag', warns: 0, checkAt: 0, name: hostStr(EDEN, 'app.short', 'zh') }), '伊甸地图 v0.9.6 · tag · 自检：全部正常');
+  assert.equal(T.scriptInfo({ version: '0.9.6', channel: 'tag', warns: 0, checkAt: 0, en: true, name: hostStr(EDEN, 'app.short', 'en') }), 'Eden map v0.9.6 · tag · self-check OK');
   assert.match(T.scriptInfo({ channel: 'follow', build: 31, warns: 2, en: true }), /follow build #31 · follow · self-check: 2 warning/);
   assert.match(HOST, /thFn\('initializeGlobal'\)\?\.\('EdenMap', guardApi\(api, EDEN_API\)\)/); assert.match(HOST, /window\.parent\.EdenMap = exposed;/);   // G6：暴露面过守卫（契约 tavern/edenapi.mjs）
   const p = T.movedPayload('中层·霓虹街', '伊甸庄园·书房', { source: 'mvu' });

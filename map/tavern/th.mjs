@@ -81,11 +81,11 @@ export function regexFacts(list) {
 }
 
 // ---------------- B5 脚本库说明 ----------------
-export function scriptInfo({ version, channel, build, checkAt, warns, en }) {
+export function scriptInfo({ version, channel, build, checkAt, warns, en, name }) {   // name：包的名字（host-strings app.short），没给就是中性默认
   const v = channel === 'follow' && build != null ? (en ? `follow build #${build}` : `跟随分支 构建 #${build}`) : version ? 'v' + version : (en ? 'dev' : '开发版');
   const t = checkAt ? new Date(checkAt).toLocaleString() : '';
   const c = warns == null ? (en ? 'self-check not run yet' : '自检未运行') : warns ? (en ? `self-check: ${warns} warning(s)` : `自检：${warns} 项需要注意`) : (en ? 'self-check OK' : '自检：全部正常');
-  return `${en ? 'Eden map' : '伊甸地图'} ${v} · ${channel || 'local'} · ${c}${t ? ` (${t})` : ''}`;
+  return `${name || (en ? 'Spatial map' : '空间地图')} ${v} · ${channel || 'local'} · ${c}${t ? ` (${t})` : ''}`;
 }
 
 // ---------------- B8 广播 ----------------
