@@ -179,7 +179,10 @@ def set_cut(obj, z_world):
     if m is None:
         m = obj.modifiers.new('est_cut', 'NODES'); m.node_group = clamp_group()
     ident = next(s.identifier for s in m.node_group.interface.items_tree if getattr(s, 'in_out', '') == 'INPUT' and s.name == 'Cut')
-    m[ident] = float(z_world - obj.matrix_world.translation.z)
+    v = float(z_world - obj.matrix_world.translation.z)
+    props = getattr(m, 'properties', None)                              # Blender 5.2：修改器输入挪到 properties.inputs
+    if props is not None and hasattr(props, 'inputs'): props.inputs[ident] = v
+    else: m[ident] = v
     obj.update_tag()
 
 
