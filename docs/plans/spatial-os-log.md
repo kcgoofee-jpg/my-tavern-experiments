@@ -733,3 +733,7 @@ blocker: none
 open: Q-18 (state-line injection restored: keep on by default?); I-12 (viewer loads schema-2 packs, S9); I-13 (drop continue-on-error after the second green run)
 cleanup: done (my own probe server and probe runs stopped; no launch.json entries; worktree /private/tmp/claude-501/-Users-davidzhao-dev1-cctest1-eden-map/594c4795-e4d0-4aa7-8e0e-9c3e8d248163/scratchpad/stage-a left for the orchestrator; sync_main not run)
 === END ===
+
+=== NOTE STAGE-A (after the RESULT) ===
+ci browser-smoke: second consecutive green run 36811279821 (the first was 36808266262), so `continue-on-error` is removed from the job and I-13 is struck (commit "ci: browser-smoke is a hard gate").
+=== END ===

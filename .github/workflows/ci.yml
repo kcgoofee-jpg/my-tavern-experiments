@@ -37,10 +37,9 @@ jobs:
       - name: smoke（check_maps + check_pack 等）
         run: bash tools/smoke.sh
 
-  # 可选：headless playwright 探针（accept / v096 / topo_dairy），不阻塞主测试；已知失败登记在 tools/browser/known-failures.json，列入的不算失败
+  # headless playwright 探针（accept / v096 / topo_dairy）；连续两次全绿后去掉了 continue-on-error（2026-10-01）；已知失败登记在 tools/browser/known-failures.json，列入的不算失败
   browser-smoke:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
