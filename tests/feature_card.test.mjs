@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 globalThis.window = {};
-const { cardModel, ICONS } = await import('../map/app/feature-card.mjs');
+const { cardModel, ICONS, testVerdict } = await import('../map/app/feature-card.mjs');
 const D = { id: 'state', sw: 'thInjOn', cost: true, tpl: true };
 test('icons are shapes: working check, not effective bang, idle clock, off dash; each has a label', () => {
   assert.deepEqual(ICONS, { working: '✓', 'not-effective': '!', idle: '◷', off: '–' });
@@ -32,4 +32,18 @@ test('the consent block shows while consent is missing; saved shows the receipt;
 test('a host without the interface shows the interface name as the reason, never as sent text', () => {
   const m = cardModel(D, { on: true, state: 'not-effective', reason: 'no-host-api', text: 'injectPrompts' });
   assert.equal(m.text, ''); assert.match(m.line, /injectPrompts/);
+});
+
+test('consent gate: only the answer with the nonce of the request just sent counts; a stale ok never unlocks (passSig unchanged)', () => {
+  let passSig = '', asked = null;
+  const apply = t => { const v = testVerdict(t, asked); if (v.pass) passSig = asked.sig; if (v.take) asked = null; return v; };
+  asked = { sig: 'A', nonce: 'n1' }; apply({ ok: true, nonce: 'n1' }); assert.equal(passSig, 'A');
+  passSig = ''; asked = { sig: 'B', nonce: 'n2' };
+  assert.deepEqual(apply({ ok: true, nonce: 'n1' }), { take: false, pass: false }); assert.equal(passSig, '', 'the stale ok from the earlier test is ignored');
+  assert.equal(testVerdict({ ok: true }, asked).take, false); assert.equal(testVerdict({ ok: true, nonce: 'n2' }, null).take, false);
+  assert.deepEqual(apply({ ok: false, nonce: 'n2' }), { take: true, pass: false }); assert.equal(asked, null);
+});
+test('the consent form shows the no-consent reason, not "off", while consent is missing', () => {
+  const m = cardModel({ id: 'nav', sw: 'thNav', consent: true }, { on: false, state: 'off' }, { consent: false });
+  assert.equal(m.line, '还没有同意');
 });

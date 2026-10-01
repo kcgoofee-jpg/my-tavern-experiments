@@ -158,13 +158,13 @@ export function createWbAuto(deps) {
     dice: lsGet('edenMapDice') === '1', ledgerWrite: lsGet('edenMapLedgerWrite') === '1', spatial: lsGet('edenMapSpatial') === '1', wbJit: lsGet('edenMapWbJit') === '1', wbXtal: lsGet('edenMapWbXtal') === '1',
     invInj: lsGet('edenMapInvInj') !== '0', nav: navOn(), navCfg: { provider: String(nc.provider || ''), base: String(nc.base || ''), model: String(nc.model || ''), hasKey: !!String(nc.key || '').trim() },   // the key never leaves the host
     stateOmit: (Array.isArray(jget('edenMapStateOmit', [])) ? jget('edenMapStateOmit', []) : []).filter(k => FIELDS.includes(k)), spatialDepth: +(lsGet('edenMapSpatialDepth') ?? 2), spatialBudget: +(lsGet('edenMapSpatialBudget') || 120),
-    navConsent: lsGet('edenMapNavConsent') === '1', navCadence: CADENCE.includes(nv) ? nv : 120000 }; }
+    navConsent: lsGet('edenMapNavConsent') === '1', navCadence: CADENCE.includes(+lsGet('edenMapNavCadence')) ? +lsGet('edenMapNavCadence') : CADENCE.includes(nv) ? nv : 120000 }; }
   // S7-1 health (feature-health.mjs): the full payload only while the viewer watches the AI page (op 'watch'), at most one th-state per second; otherwise just the small { n, m } summary
   let watching = false, lastSend = -1e9, sendT = 0, pend = {}, watchT = 0, providers = null, testBusy = false;
   const healthNow = () => { const f = deps.facts, P = thPrefs(); return healthOf({ ...f, prefs: P, api: { inject: !!thFn('injectPrompts'), macros: !!thFn('registerMacroLike'), worldbook: !!(thFn('getWorldbook') && thFn('updateWorldbookWith')) },
     macros: { here: deps.macroVal('eden_here'), route: deps.macroVal('eden_route') }, nav: deps.navFacts(), inject: { ...f.inject, mode: lsGet('edenMapInject') || 'off' }, jit: { ...f.jit }, xtal: { ...f.xtal, book: f.xtal.book ?? f.jit.book } }); };
   async function sendTh(extra = {}) {
-    if (!deps.alive()) return;
+    if (!deps.alive() || (watching && deps.panelHidden?.())) return;   // a closed map gets no health pushes (the watch stays registered until the viewer withdraws it)
     pend = { ...pend, ...extra };
     if (watching && Date.now() - lastSend < 1000) { if (!sendT) sendT = setTimeout(() => { sendT = 0; sendTh(); }, 1000 - (Date.now() - lastSend)); return; }
     clearTimeout(sendT); sendT = 0; lastSend = Date.now(); const ex = pend; pend = {};
@@ -173,10 +173,10 @@ export function createWbAuto(deps) {
   }
   const FACT_OF = { dice: 'dice', ledgerWrite: 'ledger', spatial: 'spatial', wbJit: 'jit', wbXtal: 'xtal' };   // a switch change makes the feature "idle" again until its next round
   /** the AI advisor's test connection: one tiny request with the form's current values (used once in memory, never stored, the key never echoed) */
-  async function navTest(c) {
-    if (testBusy) return; testBusy = true; const t0 = performance.now(), saved = navSaved(); let key = '', out;
+  async function navTest(c, nonce) {
+    if (testBusy) return; testBusy = true; const t0 = performance.now(), saved = navSaved(); let key = '', out, L = null;
     try {
-      const L = await import(deps.scriptBase + 'tavern/llm-gateway.mjs'), o = c && typeof c === 'object' ? c : {};
+      L = await import(deps.scriptBase + 'tavern/llm-gateway.mjs'); const o = c && typeof c === 'object' ? c : {};
       key = String(o.key || saved.key || '');
       const cfg = { provider: String(o.provider || saved.provider || ''), base: String(o.base ?? saved.base ?? ''), model: String(o.model ?? saved.model ?? ''), key }, chk = L.checkConfig(cfg);
       if (!chk.ok) out = { ok: false, status: 0, ms: 0, error: 'config: ' + chk.errors.join(', ') };
@@ -187,7 +187,8 @@ export function createWbAuto(deps) {
       }
     } catch (e) { out = { ok: false, status: 0, ms: Math.round(performance.now() - t0), error: String(e?.name === 'AbortError' ? 'timeout' : e?.message || 'error') }; }
     finally { testBusy = false; }
-    if (key) out.error = String(out.error).split(key).join('••••');
+    if (key) out.error = String(out.error).split(key).join(L ? L.maskKey(key) : '••••');   // the gateway's own masking, then redact over the whole answer
+    out = L ? L.redact(out) : out; out.nonce = typeof nonce === 'string' ? nonce.slice(0, 64) : '';   // the viewer accepts only the answer to its own request
     return sendTh({ result: { navTest: out } });
   }
   async function onTh(d) {
@@ -197,7 +198,7 @@ export function createWbAuto(deps) {
     }
     const op = d.op;
     if (op === 'state') return sendTh();
-    if (op === 'nav-test') return navTest(d.cfg);
+    if (op === 'nav-test') return navTest(d.cfg, d.nonce);
     if (op === 'xtal-clear') { deps.xtalClear?.(); return sendTh(); }
     if (op === 'watch') { watching = !!d.ai; lastSend = -1e9; clearInterval(watchT); if (watching) { watchT = setInterval(() => { if (life.dead || !deps.alive()) { clearInterval(watchT); watching = false; } else sendTh(); }, 2000); } return sendTh(); }
     if (op === 'prefs' && d.prefs && typeof d.prefs === 'object') {
@@ -215,8 +216,9 @@ export function createWbAuto(deps) {
       if ('wbJit' in P) put('edenMapWbJit', P.wbJit ? '1' : '0');   // W6 JIT 水合
       if ('wbXtal' in P) put('edenMapWbXtal', P.wbXtal ? '1' : '0');   // W7 事实结晶
       if ('packLlm' in P) { const G = await import(deps.scriptBase + 'tavern/pack-gate.mjs').catch(() => null); if (G && await G.setLlm(!!P.packLlm)) return; }   // K-R103：外来包的模型文字开关（edenMapPackLlm 存哈希，门卫写；成功会重启实例）
-      if ('nav' in P) put('edenMapNav', P.nav ? '1' : '0');   // W5 领航员（默认关；同意在卡片里给）
-      if ('navCadence' in P && CADENCE.includes(+P.navCadence) && navOn()) put('edenMapNav', +P.navCadence);   // 节奏：存成毫秒（intervalOf 的数字形态）
+      if ('navCadence' in P && CADENCE.includes(+P.navCadence)) put('edenMapNavCadence', +P.navCadence);   // the chosen interval has its own pref: it survives switching the advisor off and on
+      if ('nav' in P) put('edenMapNav', P.nav ? (CADENCE.includes(+lsGet('edenMapNavCadence')) ? +lsGet('edenMapNavCadence') : '1') : '0');   // W5 领航员（默认关；同意在卡片里给）
+      else if ('navCadence' in P && navOn() && CADENCE.includes(+P.navCadence)) put('edenMapNav', +P.navCadence);   // 节奏：存成毫秒（intervalOf 的数字形态）
       if ('navConsent' in P) { put('edenMapNavConsent', P.navConsent ? '1' : '0'); if (!P.navConsent) put('edenMapNav', '0'); }
       if ('navCfg' in P && typeof P.navCfg === 'string') { try { const o = JSON.parse(P.navCfg), sv = navSaved(); if (o && typeof o === 'object' && !Array.isArray(o)) put('edenMapNavCfg', JSON.stringify({ provider: String(o.provider || ''), key: String(o.key || sv.key || ''), base: String(o.base || ''), model: String(o.model || '') })); } catch (e) {} }   // 表单里没填钥匙 = 沿用存着的
       if ('stateOmit' in P && Array.isArray(P.stateOmit)) put('edenMapStateOmit', JSON.stringify(P.stateOmit.filter(k => FIELDS.includes(k))));   // 状态行：不要的字段

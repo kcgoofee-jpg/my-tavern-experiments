@@ -41,7 +41,7 @@ export const SCHEMA = {
   'eden-map:route-plan': [VIEWER_TO_HOST, { plan: 'object?' }],   // S8-4b K-R111: the user chose (or cleared, null) a route plan; the host re-checks it (checkPlan) and echoes eden-map:route
   'eden-map:explore': [VIEWER_TO_HOST, { map: 'string', name: 'string' }],   // 迷雾探索：记一次到访（只在开着时发）
   'eden-map:explore-reset': [VIEWER_TO_HOST, {}],
-  'eden-map:th': [VIEWER_TO_HOST, { op: 'string', prefs: 'object?', ai: 'boolean?', cfg: 'object?' }],   // S7-1: + watch { ai } (the AI link page is open: send the full health) and nav-test { cfg } (the form's values, used once, never stored)
+  'eden-map:th': [VIEWER_TO_HOST, { op: 'string', prefs: 'object?', ai: 'boolean?', cfg: 'object?', nonce: 'string?' }],   // S7-1: + watch { ai } (the AI link page is open: send the full health) and nav-test { cfg } (the form's values, used once, never stored)
   //   // 酒馆助手设置（app/tavernhelper-settings.mjs）：state / prefs（含 packLlm：外来包的模型文字开关，K-R103）/ wb-inspect / wb-write / wb-del-legacy / wb-peek（W8 地点卡 → 附加书条目摘要，只读）
   'eden-map:pack-pick': [VIEWER_TO_HOST, { kind: 'string', url: 'string?', text: 'string?', id: 'string?' }],   // S9-2 K-R99：设置「地图包」里为这张卡选的包（kind = automatic | index（id）| url | file（text））；宿主（pack-gate.mjs pick）校验、存下、重启；被拒绝时在 eden-map:th-state 的 result.pack 里回原因
   'eden-map:pack': [HOST_TO_VIEWER, { manifest: 'object', rev: 'number', source: 'string?', trust: 'string?' }],   // S9-3 K-R95：自动包长出了新节点（宿主按聊天里的地点文字生长）；查看器按 rev 递增重投影并原地重画

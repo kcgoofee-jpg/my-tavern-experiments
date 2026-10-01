@@ -11,7 +11,8 @@ const REASON_ZH = { off: '已关闭', 'no-host-api': '这个酒馆助手版本�
 export function cardModel(def, st, ctx = {}) {
   const s = st || { on: false, state: 'off' }, state = s.state || 'off', st2 = def.noSwitch ? (s.on ? state : 'working') : state;
   const reason = s.reason ? tr('fc.reason.' + s.reason, REASON_ZH[s.reason] || s.reason, { name: s.text || '', status: s.stats?.status ?? '' }) : '';
-  const line = st2 === 'working' ? (Number.isFinite(s.floor) ? tr('fc.ok', '正常 · 上次生效：第 {f} 楼', { f: s.floor }) : tr('fc.ok0', '正常'))
+  const needsConsent = !!def.consent && ctx.consent === false;
+  const line = needsConsent ? tr('fc.reason.no-consent', REASON_ZH['no-consent']) : st2 === 'working' ? (Number.isFinite(s.floor) ? tr('fc.ok', '正常 · 上次生效：第 {f} 楼', { f: s.floor }) : tr('fc.ok0', '正常'))
     : st2 === 'not-effective' ? tr('fc.bad', '未生效：{r}', { r: reason }) : st2 === 'idle' ? (reason || tr('fc.idle', '等待下一次回复')) : tr('fc.off', '已关闭');
   const text = typeof s.text === 'string' && s.reason !== 'no-host-api' ? s.text : '';
   return {
@@ -19,9 +20,11 @@ export function cardModel(def, st, ctx = {}) {
     on: !!s.on, canSwitch: !def.noSwitch, state: st2, icon: ICONS[st2] || '–', iconLabel: tr('fc.st.' + st2, st2), line, text, tokens: Number.isFinite(s.tokens) ? s.tokens : null,
     now: text ? '' : (st2 === 'off' ? '' : tr('fc.none', '目前没有发送内容')), tokensText: Number.isFinite(s.tokens) ? tr('fc.tokens', '≈ {n} token', { n: s.tokens }) : '',
     tpl: def.tpl ? tr('fc.tpl', '模板：{s}', { s: tr(ctx.tplPack ? 'fc.tpl_pack' : 'fc.tpl_core', ctx.tplPack ? '本设定包' : '内核') }) : '', saved: !!ctx.saved ? tr('fc.saved', '已保存') : '',
-    needsConsent: def.consent && ctx.consent === false, stats: s.stats || null,
+    needsConsent, stats: s.stats || null,
   };
 }
+/** testVerdict(answer, asked) -> { take, pass }: the connection test answer counts only when its nonce is the one the form just sent; a stale stored answer never unlocks consent */
+export const testVerdict = (t, asked) => { const take = !!(t && asked && asked.nonce && t.nonce === asked.nonce); return { take, pass: take && !!t.ok }; };
 const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
 const CSS = `.fcard{border:1px solid var(--line);border-radius:var(--r-l);margin:0 0 var(--sp-4);background:var(--surface)}.fcard>summary{display:flex;align-items:center;gap:var(--sp-4);min-height:var(--hit,44px);padding:var(--sp-3) var(--sp-5);cursor:pointer;list-style:none}.fcard>summary::-webkit-details-marker{display:none}
 .fcard .fci{flex:none;width:24px;height:24px;display:grid;place-items:center;border-radius:50%;border:1px solid currentColor;font-weight:700;color:var(--muted)}.fcard.st-working .fci{color:var(--ok)}.fcard.st-not-effective .fci{color:var(--alert)}
@@ -30,7 +33,7 @@ const CSS = `.fcard{border:1px solid var(--line);border-radius:var(--r-l);margin
 .fcard .fcnow{margin:0;padding:var(--sp-3) var(--sp-4);border:1px dashed var(--line-strong);border-radius:var(--r-m);font:var(--fs-micro)/1.5 var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere;max-height:9em;overflow:auto}
 .fcard .fch{margin:0;font-size:var(--fs-small);color:var(--ink-2)}.fcard .fcsaved{color:var(--ok)}.fcard .fcmore summary{cursor:pointer;color:var(--accent);font-size:var(--fs-small);min-height:var(--hit,44px);display:flex;align-items:center}.fcard .fcmore p{margin:0 0 var(--sp-3);font-size:var(--fs-small);color:var(--ink-2)}
 .fcard .fcsub{display:flex;flex-direction:column;gap:var(--sp-3)}.fcard .fcsub .hrow input[type=number]{width:5em}.fcard .fcsub input[type=text],.fcard .fcsub input[type=url],.fcard .fcsub input[type=password],.fcard .fcsub select{min-width:0;width:100%;box-sizing:border-box;min-height:36px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line-strong);border-radius:var(--r-m);padding:4px 8px}
-.fcard .fcsub label.row.fcfld{flex-direction:column;align-items:stretch;justify-content:flex-start;gap:var(--sp-1);min-height:0;text-align:left}.fcard .fcsub label.row.fcfld>span{align-self:flex-start;color:var(--ink-2);font-size:var(--fs-small)}.fcard .fcsub[hidden]{display:none}.fcard .fctag{font-size:var(--fs-micro);color:var(--muted);border:1px solid var(--line);border-radius:var(--r-pill);padding:0 var(--sp-3)}.fcard .fcact{display:flex;gap:var(--sp-4);flex-wrap:wrap}`;
+.fcard .fcsub label.row.fcfld{flex-direction:column;align-items:stretch;justify-content:flex-start;gap:var(--sp-1);min-height:0;text-align:left}.fcard .fcsub label.row.fcfld>span{align-self:flex-start;color:var(--ink-2);font-size:var(--fs-small)}.fcard .fcsub[hidden]{display:none}.fcard .fctag{font-size:var(--fs-micro);color:var(--muted);border:1px solid var(--line);border-radius:var(--r-pill);padding:0 var(--sp-3)}.fcard .fcact{display:flex;gap:var(--sp-4);flex-wrap:wrap}.fcard .btn:disabled{color:var(--muted);background:var(--surface-2);border-color:var(--line);cursor:not-allowed}`;
 /** featureCard(def, hooks) -> { el, update(st, ctx) }. hooks = { onSwitch(on), subs(body, api) } ; def.sw = the switch's element id. */
 export function featureCard(def, hooks = {}) {
   if (!document.getElementById('fcardCss')) { const s = el('style'); s.id = 'fcardCss'; s.textContent = CSS; document.head.appendChild(s); }

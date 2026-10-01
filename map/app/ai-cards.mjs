@@ -98,6 +98,8 @@ export function aiState(d) {
 onThState(aiState);
 let watched = false;
 const watch = on => { if (watched === on || window.top === window) return; watched = on; th('watch', { ai: on }); };
-onBuilt('ai', build); onShow('ai', () => { watch(true); render(); patchSubs(); }); onLeave('ai', () => watch(false));
+let shown = false;
+onBuilt('ai', build); onShow('ai', () => { shown = true; watch(true); render(); patchSubs(); }); onLeave('ai', () => { shown = false; watch(false); });
+addEventListener('message', e => { if (e.data?.type === 'eden-map:sleep') watch(false); else if (e.data?.type === 'eden-map:wake' && shown) watch(true); });   // a closed map does not keep the health polling
 // search: names, purposes and sub-option words of the cards are found even before the page was opened
 registerIndex(() => window.top === window ? [] : DEFS.map(d => ({ page: 'ai', card: d.id, key: d.id, label: tr('fc.' + d.id + '.name', d.id), text: [tr('fc.' + d.id + '.name', ''), tr('fc.' + d.id + '.purpose', ''), tr('fc.' + d.id + '.sub', '')].join(' ') })));

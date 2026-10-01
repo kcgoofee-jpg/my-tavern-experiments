@@ -24,6 +24,8 @@ test('prefs: stateOmit filtered to the four fields; spatial depth and budget cla
   await h.W.onTh({ op: 'prefs', prefs: { navCadence: 300000 } }); assert.equal(h.ls.get('edenMapNav') ?? '0', '0', 'off: the cadence does not switch it on');
   await h.W.onTh({ op: 'prefs', prefs: { nav: true, navCadence: 600000 } }); assert.equal(h.ls.get('edenMapNav'), '600000'); assert.equal(last(h).prefs.navCadence, 600000);
   await h.W.onTh({ op: 'prefs', prefs: { navCadence: 12345 } }); assert.equal(h.ls.get('edenMapNav'), '600000', 'only the three offered values');
+  await h.W.onTh({ op: 'prefs', prefs: { nav: false } }); await h.W.onTh({ op: 'prefs', prefs: { nav: true } }); assert.equal(h.ls.get('edenMapNav'), '600000', 'off and on keeps the chosen interval');
+  await h.W.onTh({ op: 'prefs', prefs: { nav: false } }); await h.W.onTh({ op: 'prefs', prefs: { navCadence: 300000 } }); assert.equal(last(h).prefs.navCadence, 300000, 'the select works while off'); assert.equal(h.ls.get('edenMapNav'), '0'); await h.W.onTh({ op: 'prefs', prefs: { nav: true } }); assert.equal(h.ls.get('edenMapNav'), '300000');
 });
 test('consent: navConsent true -> 1; false -> 0 and the feature off; the schedule is told', async () => {
   const h = host();
@@ -44,7 +46,7 @@ test('nav-test: ok, 401, config incomplete; the form values are used once and ne
   try {
     globalThis.fetch = async (u, o) => { seen.push([String(u), o.headers, JSON.parse(o.body)]); return { ok: seen.length === 1, status: seen.length === 1 ? 200 : 401 }; };
     const cfg = { provider: 'openai', base: 'https://api.example/v1', model: 'gpt-x', key: KEY };
-    await h.W.onTh({ op: 'nav-test', cfg }); let r = last(h).result.navTest;
+    await h.W.onTh({ op: 'nav-test', cfg, nonce: 'n-1' }); let r = last(h).result.navTest; assert.equal(r.nonce, 'n-1', 'the answer echoes the nonce');
     assert.deepEqual([r.ok, r.status], [true, 200]); assert.equal(seen[0][0], 'https://api.example/v1/chat/completions'); assert.equal(seen[0][1].authorization, 'Bearer ' + KEY);
     assert.deepEqual([seen[0][2].max_tokens, seen[0][2].messages], [8, [{ role: 'user', content: 'ping' }]]);
     await h.W.onTh({ op: 'nav-test', cfg }); r = last(h).result.navTest; assert.deepEqual([r.ok, r.status, r.error], [false, 401, 'HTTP 401']);

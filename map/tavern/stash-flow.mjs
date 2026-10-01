@@ -139,7 +139,7 @@ export function createStashFlow(host) {
       if (!row) return;
       if (diceOn()) {   // 真掷骰：seed = 聊天 + 楼层 + 藏物 id（同一楼同一件永远同一骰，回放一致）；失手不入包、出失败报告
         const roll = 1 + Math.floor(rngModule.rng(rngModule.seedOf(chatId(), host.floorNow, d.id))() * 20);
-        const sr = worldModule.search(row, roll); host.facts.dice = { ...host.facts.dice, floor: host.floorNow };
+        const sr = worldModule.search(row, roll); host.facts.dice = { last: '', floor: host.floorNow };   // a success clears the earlier failure's line
         if (!sr.found) {
           { const rp = FRm.failureReport({ kind: 'search', place: row.place || d.place || '', dc: sr.dc, roll, margin: sr.dc - roll, floor: host.floorNow }); FRm.push(frState, rp); host.facts.dice = { last: FRm.render(rp), floor: host.floorNow }; }   // health: the last check
           injectAction({ kind: 'fail', name: row.place || d.place || '', vars: { dc: sr.dc, roll, what: '搜刮失手' } });
@@ -164,7 +164,7 @@ export function createStashFlow(host) {
       const dc = Math.round(+d?.dc);
       if (!Number.isFinite(dc) || dc <= 0) return;
       if (diceOn()) {   // 真掷骰：seed 含起讫地标；没躲过（roll < DC）出失败报告（带 worst 的目击者与坐标），驱动围捕 / 质询剧情
-        const roll = 1 + Math.floor(rngModule.rng(rngModule.seedOf(chatId(), host.floorNow, 'stealth', d?.from || '', d?.to || ''))() * 20); host.facts.dice = { ...host.facts.dice, floor: host.floorNow };
+        const roll = 1 + Math.floor(rngModule.rng(rngModule.seedOf(chatId(), host.floorNow, 'stealth', d?.from || '', d?.to || ''))() * 20); host.facts.dice = { last: '', floor: host.floorNow };
         if (roll < dc) {
           { const rp = FRm.failureReport({ kind: 'stealth', place: d?.to || '', at: d?.worst?.at, dc, roll, margin: dc - roll, witnesses: d?.worst?.name ? [d.worst.name] : [], floor: host.floorNow }); FRm.push(frState, rp); host.facts.dice = { last: FRm.render(rp), floor: host.floorNow }; }
           injectAction({ kind: 'fail', name: d?.to || '', vars: { dc, roll, what: '潜行被目击' } });

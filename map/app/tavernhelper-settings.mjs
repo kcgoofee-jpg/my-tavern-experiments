@@ -77,7 +77,8 @@ export function applyState(d) {
   if (wbRes) { diffShown = false; armed = 0; }
   if (d.healthSum) setAiSum(d.healthSum);
   lastTh = { ...lastTh, ...Object.fromEntries(['prefs', 'health', 'providers'].filter(k => d[k]).map(k => [k, d[k]])), ...(d.result?.navTest ? { navTest: d.result.navTest } : {}) };
-  for (const f of thListeners) try { f(lastTh); } catch (e) {}   // the AI link page (ai-cards.mjs, loaded on demand) subscribes here
+  for (const f of thListeners) try { f(lastTh); } catch (e) {}
+  delete lastTh.navTest;   // a test answer is delivered once   // the AI link page (ai-cards.mjs, loaded on demand) subscribes here
   renderWb();
 }
 

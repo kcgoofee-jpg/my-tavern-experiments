@@ -4,6 +4,7 @@
 import { post } from './protocol-stamp.mjs';
 import { uiTextOr } from './text-lookup.mjs';
 import { setPrefs } from './ai-cards.mjs';
+import { testVerdict } from './feature-card.mjs';
 
 const tr = (k, zh, v) => uiTextOr(k, zh, v);
 const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
@@ -17,13 +18,13 @@ export function navForm(s, api) {
     why = el('small'), cad = el('select'), stats = el('small'), wd = el('button', 'btn', tr('fc.nav.withdraw', '撤回同意')), form = el('div', 'fcsub'), after = el('div', 'fcsub');
   for (const n of [test, save, agree, wd]) n.type = 'button';
   model.type = 'text'; sel.id = 'thNavProv'; base.type = 'url'; base.id = 'thNavBase'; model.id = 'thNavModel'; key.type = 'password'; key.id = 'thNavKey'; key.autocomplete = 'off'; test.id = 'thNavTest'; agree.id = 'thNavAgree'; save.id = 'thNavSave'; res.id = 'thNavRes';
-  let passSig = '', asked = '', dirty = false, provDone = false;
+  let passSig = '', asked = null, dirty = false, provDone = false;
   const cur = () => ({ provider: sel.value, base: base.value.trim(), model: model.value.trim(), key: key.value });
   const sig = () => JSON.stringify(cur());
   const refresh = () => { const ok = passSig === sig(); agree.disabled = !ok; why.textContent = ok ? '' : tr('fc.nav.agree_why', '先测试连接：通过后才能同意并开启'); save.classList.toggle('primary', ok); };
   for (const i of [sel, base, model, key]) i.addEventListener('input', () => { dirty = true; refresh(); });
   sel.addEventListener('change', () => { const p = (api.ST?.providers || []).find(x => x.id === sel.value); if (p && !base.value) base.value = p.base || ''; if (p && !model.value) model.value = p.model || ''; refresh(); });
-  test.addEventListener('click', () => { asked = sig(); test.disabled = true; res.textContent = tr('fc.nav.testing', '测试中…'); post({ type: 'eden-map:th', op: 'nav-test', cfg: cur() }); setTimeout(() => { test.disabled = false; }, 16000); });
+  test.addEventListener('click', () => { asked = { sig: sig(), nonce: Date.now() + '-' + Math.random().toString(36).slice(2) }; test.disabled = true; res.textContent = tr('fc.nav.testing', '测试中…'); post({ type: 'eden-map:th', op: 'nav-test', cfg: cur(), nonce: asked.nonce }); setTimeout(() => { test.disabled = false; }, 16000); });
   const cfgJson = () => JSON.stringify(cur());
   save.addEventListener('click', () => { setPrefs({ navCfg: cfgJson() }); dirty = false; key.value = ''; passSig = ''; refresh(); });
   agree.addEventListener('click', () => { if (passSig !== sig()) return; setPrefs({ navCfg: cfgJson(), navConsent: true, nav: true }); dirty = false; key.value = ''; });
@@ -40,7 +41,7 @@ export function navForm(s, api) {
     if (!provDone && (ST.providers || []).length) { provDone = true; sel.replaceChildren(...ST.providers.map(p => { const o = el('option', '', tr('fc.nav.p_' + p.id, p.id)); o.value = p.id; return o; })); }
     if (!dirty && !form.contains(document.activeElement)) { sel.value = c.provider || sel.value || 'openai'; base.value = c.base || (ST.providers || []).find(p => p.id === sel.value)?.base || ''; model.value = c.model || (ST.providers || []).find(p => p.id === sel.value)?.model || ''; key.value = ''; }
     key.placeholder = c.hasKey ? tr('fc.nav.key_saved', '已保存（留空沿用）') : '';
-    const t = ST.navTest; if (t && asked) { res.textContent = t.ok ? tr('fc.nav.test_ok', '连接正常（HTTP {s}，{ms} ms）', { s: t.status, ms: t.ms }) : tr('fc.nav.test_fail', '没通：{e}', { e: t.error || '?' }); if (t.ok) passSig = asked; asked = ''; test.disabled = false; }
+    const t = ST.navTest, v = testVerdict(t, asked); if (v.take) { res.textContent = t.ok ? tr('fc.nav.test_ok', '连接正常（HTTP {s}，{ms} ms）', { s: t.status, ms: t.ms }) : tr('fc.nav.test_fail', '没通：{e}', { e: t.error || '?' }); if (v.pass) passSig = asked.sig; asked = null; test.disabled = false; ST.navTest = null; }   // consumed: it can never be applied twice
     const has = !!P.navConsent; consent.hidden = has; after.hidden = !has; if (document.activeElement !== cad) cad.value = CAD.includes(P.navCadence) ? P.navCadence : 120000;
     const st = row?.stats; stats.textContent = st?.runs ? tr('fc.nav.stats', '上次运行 {t}：采用 {k} 条、丢弃 {d} 条 · ≈ {tok} token · 下次约 {nx}', { t: when(st.lastAt), k: st.kept, d: st.dropped, tok: st.tokens, nx: st.nextAt ? when(st.nextAt) : '—' }) : tr('fc.nav.stats0', '还没有运行过');
     refresh();
