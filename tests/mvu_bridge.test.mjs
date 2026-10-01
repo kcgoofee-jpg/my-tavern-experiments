@@ -264,3 +264,22 @@ test('S4-3：桥把世界书名前缀交给 mvu.setWbName——第一个包得�
     await C.mvuReady; assert.equal(MVm.WB_NAME, '先前的名字·自定义');   // 没取到清单：不改、不猜
   } finally { MVm.setWbName(keep.replace(/·自定义$/, '') || '伊甸地图'); }
 });
+
+test('stage A T3：桥暴露 interaction-modes 模块（modes），状态行注入真的走到 injectPrompts', async () => {
+  const done = stubEnv({ chat: [msg('书房')], vars: {} });
+  const calls = [];
+  globalThis.injectPrompts = a => calls.push(['in', ...a]);
+  globalThis.uninjectPrompts = ids => calls.push(['un', ids]);
+  try {
+    const B = makeBridge({ floorNow: () => 0, lastRaw: () => null }); await B.mvuReady; B.refreshVarMap();
+    assert.ok(B.modes && typeof B.modes.stateLine === 'function' && typeof B.modes.applyState === 'function', 'bridge.modes 缺失 = 状态行注入 / 检查点静默失效');
+    const { createModesFlow } = await import('../map/tavern/modes-flow.mjs');
+    const MO = createModesFlow({ mvuBridge: B, contextPipeline: { trips: [] }, scriptBase: '', chatId: () => 'c1', life: createLife(), lsGet: () => null,
+      pushSoon() {}, recomputeSoon() {}, saveRoot() {}, userName: s => s, BASE: '', clock: {}, custom: null, customChat: null, here: '书房', regNow: null, statSig: '' });
+    MO.stateInject();
+    const inj = calls.filter(c => c[0] === 'in');
+    assert.equal(inj.length, 1, `应注入一条：${JSON.stringify(calls)}`);
+    assert.equal(inj[0][1].id, B.modes.STATE_ID); assert.equal(inj[0][1].depth, 2);
+    assert.match(inj[0][1].content, /^\[地图状态\] 地点：书房/);
+  } finally { delete globalThis.injectPrompts; delete globalThis.uninjectPrompts; done(); }
+});

@@ -8,6 +8,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { openHost } from './host_stub.mjs';
 import * as MV from '../../map/tavern/mvu-readers.mjs';
+import { worldbookPrefix } from '../../map/core/pack.mjs';
+import { fileURLToPath } from 'node:url';
+// 契约变更（86e19b06，S4-3）：自定义世界书名的前缀由设定包清单提供（桥读到清单后调 setWbName），不再是模块里的常量；
+// 探针在自己的 node 进程里同样按第一个包的清单设一次，MV.wbName(chat) 才与页面里的书名一致。
+MV.setWbName(worldbookPrefix(JSON.parse(fs.readFileSync(fileURLToPath(new URL('../../map/packs/eden/manifest.json', import.meta.url)), 'utf8')), 'eden'));
 
 const OUT = process.argv[2];
 if (!OUT || OUT.startsWith('--')) { console.log('用法：node tools/browser/custom095.mjs <输出目录>'); process.exit(2); }

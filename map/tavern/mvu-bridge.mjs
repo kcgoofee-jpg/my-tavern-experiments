@@ -83,6 +83,7 @@ export class MVUBridge {
   /** 楼层读取（mvu-snapshot.mjs / interaction-modes.mjs 的 readFloor 契约）：该楼当前 swipe 的变量 + 隐藏 / 角色标注 */
   readFloor(i) { const c = SillyTavern?.chat?.[i]; return c ? { vars: c.variables?.[c.swipe_id ?? 0], system: !!c.is_system, role: c.is_user ? 'user' : 'assistant' } : null; }
   get pickStat() { return SNP.pickStat; }
+  get modes() { return MDm; }   // 交互方式纯逻辑模块（interaction-modes.mjs）：modes-flow.mjs 靠它做状态行注入 / 检查点 / 标签对账；没有这个访问器它们静默失效
   #statSnap;   // A-3：一轮（同一个同步任务）只取一次 stat_data 快照；微任务里作废。undefined = 本轮还没取
   /** 最新楼的 stat_data（v0.9.9）：Mvu 全局读一仛建底，再按 mvu-snapshot.mjs 的规则往前找最近快照、标未确认 */
   mvuStat() {
