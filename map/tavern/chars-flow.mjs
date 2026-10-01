@@ -62,7 +62,7 @@ export function createCharsFlow(host) {
     clock = mvuBridge.clock();   // { date, time, period, short, full, night, tod, pre }
     const cs = JSON.stringify(clock);
     if (cs !== clockSig) { clockSig = cs; const cap = (UI[host.uiLang] || UI.zh).clock; clockEl.hidden = !clock.short; clockEl.lastChild.textContent = clock.short + (clock.pre ? (host.uiLang === 'en' ? ' · pre-start' : ' · 开局前') : '');   // 用户 2026-09-28：时钟图标 + 「世界时间」提示，日期写成「1月3日」
-      clockEl.title = (clock.full ? cap + '：' + clock.full : cap) + (clock.pre ? (host.uiLang === 'en' ? ' (before an opening is chosen: card initial values)' : '（开局前 · 卡初始值：还没选开局，时间 / 地点 / 人物来自卡的 MVU 初始变量）') : ''); clockEl.setAttribute('aria-label', clockEl.title); emit('clock', { ...clock }); sentClock = null; }
+      clockEl.title = (clock.full ? cap + '：' + clock.full : cap) + (clock.pre ? (host.uiLang === 'en' ? ' (before an opening is chosen: card initial values)' : '（开局前 · 卡初始值：还没选开局，时间 / 地点 / 人物来自卡的 MVU 初始变量）') : ''); clockEl.setAttribute('aria-label', clockEl.title); clockEl.dataset.band = clock.tod || (clock.night ? 'night' : 'day'); emit('clock', { ...clock }); sentClock = null; }
     if (host.alive && sentClock !== clockSig) { sentClock = clockSig; post({ type: 'eden-map:clock', ...clock }); }
     const o = mvuBridge.outfit(), os = JSON.stringify(o.items);
     if (os !== outfitSig) { outfitSig = os; outfitNow = o.items; emit('outfit', { items: o.items ? { ...o.items } : null, text: o.text }); sentOutfit = null; }

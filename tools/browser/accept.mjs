@@ -144,7 +144,7 @@ try {
     rep.metric('depth_desktop', dsk);
     rep.check('U16/U17 上层读到纵深（--lab 写入、远岛收起、漂浮开）', dsk.lab >= 9 && dsk.far >= 1 && dsk.flt >= 9, JSON.stringify(dsk));
     rep.check('U18 纵深层的抽屉出现「图例」页', dsk.legend, String(dsk.legend));
-    rep.check('U15「看全区」在桌面不出现（桌面复位视野已是全区）', dsk.dz === 'none', dsk.dz);
+    rep.check('U-18「看全区」在桌面列里（主页钮改为「定位到我」，看全区补上复位）', dsk.dz !== 'none', dsk.dz);
     // 视差：拖动后标记与底图位移不同（换成「有偏移量」的代理断言：--px/--py 被写上且非 0）
     await p.evaluate(() => { ViewerDebug.osdViewer.viewport.panBy(new OpenSeadragon.Point(.12, .09)); }); await B.wait(700);
     const par = await p.evaluate(() => [...document.querySelectorAll('.mk')].filter(e => (e.style.getPropertyValue('--px') || '0px') !== '0px').length);

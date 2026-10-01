@@ -90,9 +90,12 @@ export function mount(pdoc, ID, scriptOwner) {
   /* 标题栏（44）：标题 · 当前地点 · 线路 · 关闭 */
   /* UI v2 合并顶栏（spec §2.1）：宿主栏只留 当前地点胶囊 + ✕，浮在查看器顶栏右端（查看器按 eden-map:hostbar 的宽度让位）；标题、线路交给查看器 */
   #${ID} .em-bar { position: absolute; z-index: var(--zh-bar); top: 0; right: 0; max-width: 62%; display: flex; align-items: center; gap: 10px; min-height: 44px; box-sizing: border-box; padding: 0 6px 0 14px; color: var(--em-ink); font-size: 13px;
-    border-bottom: 0; }
+    background: var(--glass-1); border-left: 1px solid var(--glass-line); border-bottom: 1px solid var(--glass-line); -webkit-backdrop-filter: blur(var(--glass-blur-1)); backdrop-filter: blur(var(--glass-blur-1)); }
+  @media (pointer: coarse), (prefers-reduced-transparency: reduce) { #${ID} .em-bar { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--surface); } }
   #${ID} .em-bar .em-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   #${ID} .em-bar .em-line { display: none !important; }
+  #${ID} .em-bar .em-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--em-accent); margin: 0 2px; }   /* the one status dot: loading / ready / failed (the viewer's own dot hides when embedded) */
+  #${ID} .em-bar .em-dot[data-st="ok"] { background: var(--em-ok); } #${ID} .em-bar .em-dot[data-st="fail"] { background: var(--em-alert); }
   #${ID} .em-body { grid-row: 1; }
   #${ID} .em-bar .em-title { font-weight: 700; letter-spacing: .04em; }
   #${ID} .em-bar .em-here { color: var(--em-muted); margin-left: auto; font-size: 12px; min-width: 0; flex: 0 1 auto; max-width: 46%; overflow: hidden; white-space: nowrap; display: flex; align-items: center; }
@@ -125,7 +128,13 @@ export function mount(pdoc, ID, scriptOwner) {
   #${ID} .em-tl button:hover { color: var(--em-ink); }
   #${ID} .em-bar, #${ID} .em-body { min-width: 0; }   /* 标题栏的长地点 / 线路按钮不再把面板撑出屏幕（E5 r2 P0：关闭按钮曾被推到 404–585 px） */
   #${ID} .em-bar .em-title { min-width: 0; }
-  #${ID} .em-bar .em-clock { flex: none; display: inline-flex; align-items: center; gap: 4px; color: var(--em-muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: -4px; cursor: help; }
+  #${ID} .em-bar .em-clock { flex: none; position: relative; display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 10px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); font: 600 13px/1 var(--em-font); font-variant-numeric: tabular-nums; white-space: nowrap; cursor: help; }
+  #${ID} .em-bar .em-clock::before { content: ''; position: absolute; inset: -6px 0; }   /* 44 px hit area */
+  #${ID} .em-bar .em-clock[data-band] svg { display: none; }   /* the period band shows as the icon (sun / horizon / moon), not as colour alone */
+  #${ID} .em-bar .em-clock[data-band]::after { content: ''; order: -1; width: 14px; height: 14px; background: currentColor; -webkit-mask: var(--em-band-ic) center / contain no-repeat; mask: var(--em-band-ic) center / contain no-repeat; }
+  #${ID} .em-bar .em-clock[data-band="day"] { --em-band-ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round'%3E%3Ccircle cx='8' cy='8' r='3'/%3E%3Cpath d='M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1'/%3E%3C/svg%3E"); }
+  #${ID} .em-bar .em-clock[data-band="dawn"], #${ID} .em-bar .em-clock[data-band="dusk"] { --em-band-ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M3.5 11.5a4.5 4.5 0 0 1 9 0M1.5 11.5h13M8 3v1.6M3 6l1.1 1.1M13 6l-1.1 1.1M4 14h8'/%3E%3C/svg%3E"); }
+  #${ID} .em-bar .em-clock[data-band="night"] { --em-band-ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z'/%3E%3C/svg%3E"); }
   #${ID} .em-bar .em-clock svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
   #${ID} .em-bar .em-clock[hidden] { display: none; }
   #${ID} .em-body { position: relative; min-height: 0; contain: strict; }
@@ -174,6 +183,7 @@ export function mount(pdoc, ID, scriptOwner) {
     #${ID} .em-bar .em-line { white-space: nowrap; flex: none; max-width: 6.5em; overflow: hidden; text-overflow: ellipsis; }   /* 手机上标题、线路都不折行（用户实测：「没梯 / 子」断行） */
     #${ID} .em-bar .em-title { max-width: 42%; }
     #${ID} .em-bar .em-here { min-width: 4.5em; }   /* 线路按钮不再把「当前地点」挤成 0 宽（E5 r3 手机 N-01） */
+    #${ID} .em-bar .em-clock:not(.em-open) .em-clock-t { display: none; }   /* folding order: the clock goes to its icon first; a tap shows the time again */
     #${ID} .em-bar .em-close { width: 44px; height: 44px; }
     #${ID} .em-bar .em-close svg { width: 22px; height: 22px; }
     #${ID} .em-panel.em-left .em-close { order: -1; }   /* 左手（E7）：关闭按钮到左上，离左手拇指近一些；底部还有地图菜单里的「关闭地图」 */
@@ -185,12 +195,16 @@ export function mount(pdoc, ID, scriptOwner) {
   <span class="em-badge" hidden></span>
 </button>
 <div class="em-panel" hidden>
-  <div class="em-bar" role="toolbar"><b class="em-title">新历 2088</b><span class="em-clock" role="img" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.2 1.4"/></svg><span class="em-clock-t"></span></span><span class="em-here"></span><button class="em-line" title="切换加载线路"></button><button class="em-tl-btn" title="时间轴回放" aria-label="时间轴回放" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.2 1.4M10.2 9.4 8 8V4.8"/></svg></button><button class="em-close" aria-label="关闭"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+  <div class="em-bar" role="toolbar"><b class="em-title">新历 2088</b><span class="em-clock" role="img" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.2 1.4"/></svg><span class="em-clock-t"></span></span><span class="em-here"></span><i class="em-dot" role="img" data-st="loading"></i><button class="em-line" title="切换加载线路"></button><button class="em-tl-btn" title="时间轴回放" aria-label="时间轴回放" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.2 1.4M10.2 9.4 8 8V4.8"/></svg></button><button class="em-close" aria-label="关闭"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
   <div class="em-body"><iframe class="em-frame" title="地图"></iframe><div class="em-load" hidden><div><span class="txt">加载地图 0%</span><div class="bar"><i></i></div><div class="hint"></div><div class="acts" hidden><button class="retry">重试</button><button class="swap">换线路</button></div></div></div>
     <div class="em-pick" hidden><div><h3>选择加载线路</h3><p>地图图片较多，按你的网络选一条更快的线路；之后可以点标题栏的「线路」切换</p><div class="row"></div></div></div></div>
   <div class="em-tl" hidden><span class="em-tl-l">回放</span><input class="em-tl-r" type="range" min="0" max="0" step="1" value="0" aria-label="时间轴：拖动回到过去的楼层"><span class="em-tl-v"></span><button class="em-tl-x" aria-label="退出回放">×</button></div>
 </div>`;
   pdoc.body.appendChild(root);
+  const clk = root.querySelector('.em-clock'); clk.addEventListener('click', () => clk.classList.toggle('em-open'));
+  const dot = root.querySelector('.em-dot'), ld = root.querySelector('.em-load'), words = { zh: { loading: '加载中', ok: '已加载', fail: '加载失败' }, en: { loading: 'Loading', ok: 'Loaded', fail: 'Failed to load' } };
+  const paintDot = () => { let l = 'zh'; try { l = localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) {} const st = ld.hidden ? 'ok' : ld.querySelector('.acts')?.hidden === false ? 'fail' : 'loading'; dot.dataset.st = st; dot.setAttribute('aria-label', words[l][st]); dot.title = words[l][st]; };
+  new MutationObserver(paintDot).observe(ld, { attributes: true, subtree: true, attributeFilter: ['hidden'] }); paintDot();
   return root;
 }
 

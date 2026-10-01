@@ -109,7 +109,7 @@ export function estatePlan() {   // 看平面图：回上层并聚焦主场景�
   const s = estateStandIn(currentMapId); if (!s) return; setEstFail(true); setPendingFocus(s.marker); go(s.map);
 }
 export async function openEstate(id, m, hadPrev) {
-  document.body.classList.add('estate'); renderNav();
+  document.body.classList.add('estate'); document.documentElement.classList.add('view3d'); renderNav();
   if (estParked?.id === id) {   // 从休眠里接回来：取消隐藏、恢复渲染，走一遍 ready 之后的同步
     subpageSession = estParked; estParked = null; const f = subpageSession.frame; f.style.visibility = ''; live3d = 1;
     $('#loading').classList.add('done'); estateActs('');
@@ -166,7 +166,7 @@ function onEstateReady() {
 }
 // 离开主场景：返回 iframe，由调用方在新底图画出来后淡出移除
 export function leaveEstate() {
-  document.body.classList.remove('estate'); estateActs('');
+  document.body.classList.remove('estate'); document.documentElement.classList.remove('view3d'); estateActs('');
   try { setFpsMeter(window.LocalStore?.get('edenMapFps') === '1'); } catch (e) {}   // 三维子页关掉了，外层顶栏那份 FPS 读数回来（配 estateLook 的 setFpsMeter(false)）
   if (!subpageSession) return null;
   stopTileTo3d(false);

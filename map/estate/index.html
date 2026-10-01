@@ -31,8 +31,9 @@
 <script defer src="../ui/sheet.js"></script>
 <script defer src="../ui/chrome3d.js"></script>
 <style>
-  :root { --inset: 12px; --paper: #101418; --ink: #e9e4d8; --muted: #8e98a2; --gold: #e6c36a; --panel: rgba(16,20,24,.84); --line: rgba(230,195,106,.22); --btn: rgba(255,255,255,.04); --lbl: rgba(12,15,18,.62); --lblink: #f3eee2; }
-  :root[data-theme="light"] { --paper: #f6f7f5; --ink: #14171a; --muted: #6b7178; --gold: #8f6f2e; --panel: rgba(255,255,255,.9); --line: rgba(143,111,46,.28); --btn: rgba(20,23,26,.04); --lbl: rgba(255,255,255,.84); --lblink: #14171a; }
+  /* S7-2: the page's own palette maps onto tokens.css (one chrome): --panel is the opaque glass-2, the accent is the chrome accent, light / dark comes from html.light (set with data-theme by main.js) */
+  :root { --inset: var(--edge); --paper: var(--bg); --panel: var(--glass-2); --btn: var(--surface-2); --lbl: rgba(12,15,18,.62); --lblink: #f3eee2; --gold: var(--accent); }
+  :root.light { --lbl: rgba(255,255,255,.84); --lblink: #14171a; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; color: var(--ink); font: 13px/1.45 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
   #app { position: fixed; inset: 0; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   #app canvas { display: block; outline: none; }
@@ -44,7 +45,7 @@
   .lbl.hide span { opacity: 0; }
   .lbl.hot span { border-color: var(--gold); color: var(--gold); background: var(--panel); opacity: 1; }
   #title { position: absolute; left: 18px; top: 14px; pointer-events: none; }
-  #title h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: .32em; color: var(--ink); font-family: "Songti SC", "STSong", "Noto Serif SC", serif; }
+  #title h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: .32em; color: var(--ink); font-family: var(--font-ui); }
   #title p { margin: 2px 0 0; font-size: 11px; letter-spacing: .18em; color: var(--muted); }
   #title i { display: block; width: 36px; height: 1px; background: var(--gold); margin: 8px 0 0; }
   #floors { position: absolute; left: var(--inset); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 2px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 5px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
@@ -56,7 +57,7 @@
   #floors button.on small { color: inherit; opacity: .75; }
   #floors hr { border: 0; border-top: 1px solid var(--line); margin: 3px 2px; }
   body.nolabels .lbl:not(.hot) span { display: none; }
-  #zoom #lblBtn { font-size: 12px; font-family: "Songti SC", "STSong", serif; }
+  #zoom #lblBtn { font-size: 12px; font-family: var(--font-ui); }
   #zoom #lblBtn[aria-pressed="false"] { opacity: .45; text-decoration: line-through; }
   #floors .cap { font-size: 10px; letter-spacing: .2em; color: var(--muted); padding: 2px 9px 0; }
   #floors button.tog { font-size: 11.5px; }
@@ -69,7 +70,7 @@
   #zoom svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.6; }
   #card { position: absolute; z-index: 5; pointer-events: none; max-width: 270px; background: var(--panel); border: 1px solid var(--line); border-left: 2px solid var(--gold); border-radius: 6px; padding: 10px 13px 10px; box-shadow: 0 10px 30px rgba(0,0,0,.28); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); opacity: 0; transform: translateY(4px); transition: opacity .15s, transform .15s; }
   #card.on { opacity: 1; transform: none; }
-  #card h3 { margin: 0 0 1px; font-size: 14.5px; font-weight: 600; letter-spacing: .1em; font-family: "Songti SC", "STSong", "Noto Serif SC", serif; }
+  #card h3 { margin: 0 0 1px; font-size: 14.5px; font-weight: 600; letter-spacing: .1em; font-family: var(--font-ui); }
   #card .sub { font-size: 11px; color: var(--muted); letter-spacing: .06em; margin-bottom: 6px; }
   #card .row { font-size: 12px; margin: 2px 0; }
   #card .row em { font-style: normal; color: var(--muted); margin-right: 6px; }
@@ -92,11 +93,11 @@
   :root[data-theme="light"] #title h1, :root[data-theme="light"] #title p { text-shadow: 0 1px 2px rgba(255,255,255,.7); }
   #title .crest { display: flex; align-items: center; gap: 9px; }
   #title svg { width: 22px; height: 26px; flex: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
-  #title p.motto { margin-top: 3px; font-family: "Cormorant Garamond", "Times New Roman", "Songti SC", serif; font-size: 11.5px; letter-spacing: .16em; color: var(--gold); }
+  #title p.motto { margin-top: 3px; font-family: var(--font-ui); font-size: 11.5px; letter-spacing: .16em; color: var(--gold); }
   #floors button.tourb { color: var(--gold); letter-spacing: .12em; }
   #floors button.tourb.on { background: var(--gold); color: #17130a; }
   #card .gold { height: 1px; margin: 7px 0 6px; background: linear-gradient(90deg, var(--gold), transparent); }
-  #card .her { font-size: 12px; line-height: 1.55; color: var(--ink); font-family: "Songti SC", "STSong", "Noto Serif SC", serif; }
+  #card .her { font-size: 12px; line-height: 1.55; color: var(--ink); font-family: var(--font-ui); }
   #card .her em { font-style: normal; color: var(--gold); margin-right: 6px; font-family: inherit; letter-spacing: .08em; }
   #card .era { font-size: 11px; color: var(--muted); margin-top: 3px; letter-spacing: .06em; }
   #card .era b { color: var(--gold); font-weight: 500; }
@@ -117,7 +118,7 @@
   #tour button { all: unset; cursor: pointer; flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); color: var(--gold); font-size: 15px; }
   #tour button:hover { background: var(--btn); }
   #tour .tx { flex: 1; min-width: 0; }
-  #tour .tx b { display: block; font: 600 13.5px/1.3 "Songti SC", "STSong", "Noto Serif SC", serif; letter-spacing: .1em; color: var(--ink); }
+  #tour .tx b { display: block; font: 600 13.5px/1.3 var(--font-ui); letter-spacing: .1em; color: var(--ink); }
   #tour .tx b small { font: 400 10.5px system-ui, sans-serif; color: var(--gold); letter-spacing: .08em; margin-left: 6px; }
   #tour .tx span { display: block; font-size: 12px; color: var(--muted); line-height: 1.45; margin-top: 2px; }
   #tour .x { width: 22px; height: 22px; font-size: 12px; border: 0; color: var(--muted); align-self: flex-start; }
@@ -151,14 +152,14 @@
   #floors button:focus-visible { outline: 2px solid var(--focus, #63b4be); outline-offset: 2px; }
   #tip { position: absolute; z-index: 5; pointer-events: none; max-width: 270px; background: var(--panel); border: 1px solid var(--line); border-left: 2px solid var(--gold); border-radius: 6px; padding: 8px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.28); opacity: 0; transition: opacity .15s; font-size: 12px; }
   #tip.on { opacity: 1; }
-  #tip h3 { margin: 0; font-size: 14px; font-family: "Songti SC", "STSong", serif; letter-spacing: .08em; }
+  #tip h3 { margin: 0; font-size: 14px; font-family: var(--font-ui); letter-spacing: .08em; }
   #tip .sub { font-size: 11px; color: var(--muted); }
   #tip .row, #tip .acts, #tip .gold, #tip .her, #tip .era { display: none; }
   #card { position: static !important; opacity: 1 !important; transform: none !important; max-width: none; pointer-events: auto; background: none; border: 0; border-radius: 0; box-shadow: none; padding: 4px 8px; backdrop-filter: none; -webkit-backdrop-filter: none; }
   #card:empty + #cardEmpty { display: block; } #cardEmpty { display: none; color: var(--muted); font-size: 12px; padding: 12px 8px; margin: 0; }
   #legend ul { list-style: none; margin: 0; padding: 4px 8px; display: grid; gap: 6px; font-size: 12.5px; }
   #legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
-  #about { padding: 6px 8px; } #about h2 { margin: 0; font: 600 18px/1.3 "Songti SC", "STSong", serif; letter-spacing: .24em; }
+  #about { padding: 6px 8px; } #about h2 { margin: 0; font: 600 18px/1.3 var(--font-ui); letter-spacing: .24em; }
   #about .motto { color: var(--gold); letter-spacing: .14em; font-size: 12px; margin: 4px 0; } #about p { margin: 4px 0; color: var(--muted); font-size: 12px; }
   @media (max-width: 640px) { #tip { display: none; } }
 </style>

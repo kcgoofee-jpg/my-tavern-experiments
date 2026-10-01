@@ -35,7 +35,7 @@ function paint() {
   const b = osdViewer.world.getItemAt(0).getBounds(), W = 512, H = Math.max(1, Math.round(W * b.height / b.width));
   const cv = document.createElement('canvas'); cv.id = 'fogCv'; cv.width = W; cv.height = H; cv.setAttribute('aria-hidden', 'true');
   const g = cv.getContext('2d'); if (!g) return;
-  g.fillStyle = document.documentElement.classList.contains('light') ? 'rgba(239,234,224,.55)' : 'rgba(8,10,14,.55)'; g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(8,10,14,.55)'; g.fillRect(0, 0, W, H);   // S7-2: the theme never touches the base map (docs/ui-refactor.md 2.1): one fog colour for both themes
   g.globalCompositeOperation = 'destination-out'; const R = W * .07;
   for (const e of mks) { if (e.classList.contains('fogged')) continue; const p = osdViewer.getOverlayById(e)?.location; if (!p) continue;
     const x = (p.x - b.x) / b.width * W, y = (p.y - b.y) / b.height * H, gr = g.createRadialGradient(x, y, 0, x, y, R);

@@ -152,8 +152,8 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 
   /* ---------- 工具栏（桌面 48 / 手机 44，一行，不横向滚动） ---------- */
   header { display: flex; flex-wrap: nowrap; gap: var(--sp-4); align-items: center; min-height: var(--bar-h); padding-right: calc(var(--sp-5) + var(--hostbar-w, 0px)) !important; padding-left: calc(var(--sp-5) + var(--hostbar-l, 0px)) !important; box-sizing: border-box; padding: 0 var(--sp-5);
-    background: var(--surface-glass); border-bottom: 1px solid var(--line); position: relative; z-index: var(--zu-header);
-    transition: background var(--dur-3), color var(--dur-3), border-color var(--dur-3); }
+    position: relative; z-index: var(--zu-header); transition: background var(--dur-3), color var(--dur-3), border-color var(--dur-3); }
+  header.g1 { border-width: 0 0 1px; box-shadow: none; border-radius: 0; }
   header .grow { flex: 1 1 0; min-width: 0; }
   #crumbs { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-body); white-space: nowrap; min-width: 0; flex: 0 1 auto; }
   #crumbs a { flex: none; color: var(--accent); cursor: pointer; text-decoration: none; border-radius: var(--r-s); }
@@ -180,7 +180,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     cursor: pointer; transition: background var(--dur-1), transform var(--dur-1); }
   .seg button:not(.on):hover { background: var(--surface-2); }
   .seg button:active { transform: scale(.97); }
-  .seg button.on { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+  .seg button.on { background: var(--accent-weak); color: var(--ink); font-weight: 700; box-shadow: inset 3px 0 0 var(--accent); }
   #langSeg button { min-width: 36px; }
   /* 档位旁的加载状态：数字用等宽；✓ 已加载在遮罩消失后才出现，1.5 秒后淡成 --muted */
   #tierState { font: var(--fs-small)/1.5 var(--font-ui); font-variant-numeric: tabular-nums; color: var(--muted); min-width: 5.5em; white-space: nowrap; transition: color var(--dur-3); }
@@ -190,6 +190,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .where { flex: none; display: flex; gap: var(--sp-3); align-items: center; font-size: var(--fs-control); color: var(--muted); }
   .where input { background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); border-radius: var(--r-m); height: 32px; box-sizing: border-box; padding: 0 var(--sp-4); width: 150px; font: inherit; }
   body.embed .where { display: none; }
+  body.embed #stDot:not(:has(#tierState.stuck)) { display: none; }   /* S7-2 U-33: one status dot; embedded, the host bar owns it (a stuck load keeps the viewer's retry) */
   body.hdrc #layWrap { display: none; }   /* 放不下（窄窗口、放大 200%、EN）：档位 / 图层 / 语言 / 主题收进 ⚙ 菜单，不再挤出屏幕 */
   @media (max-width: 1180px) { .where { display: none; } }
 
@@ -201,11 +202,11 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #upBtn[hidden], #stDot[hidden] { display: none; }
   /* ---------- 弹层：图层 ▾（桌面）；设置 = 分组首页 + 子页（§5）：桌面占右栏那一列，手机全屏 ---------- */
   .pop { position: fixed; z-index: var(--zu-pop); top: calc(var(--hdr, 44px) + var(--sp-3)); width: 260px; max-width: calc(100vw - 24px); box-sizing: border-box;
-    background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r-l); padding: var(--sp-5) 14px; box-shadow: var(--sh-3);
+    background: var(--glass-2); color: var(--ink); border: 1px solid var(--glass-line); border-radius: var(--r-glass); padding: var(--sp-5) 14px; box-shadow: var(--elev-panel);
     font-size: var(--fs-control); line-height: 1.5; }
   .pop[hidden], #setPop [hidden] { display: none !important; }
-  #layPop { width: 220px; padding: var(--sp-3) var(--sp-4); }
-  #setPop { top: var(--hdr, 44px); right: 0; bottom: 0; width: max(var(--rail-w-now, 0px), 360px); max-width: 100vw; border-radius: 0; border-width: 0 0 0 1px; box-shadow: var(--sh-2);
+  #layPop { width: 320px; padding: var(--sp-3) var(--sp-4); }
+  #setPop { top: var(--hdr, 44px); right: 0; bottom: 0; width: max(var(--rail-w-now, 0px), 360px); max-width: 100vw; border-radius: 0; border-width: 0 0 0 1px; box-shadow: var(--elev-panel);
     overflow-y: auto; overscroll-behavior: contain; padding: 0 var(--sp-6) calc(var(--sp-6) + env(safe-area-inset-bottom)); z-index: var(--zu-setpop); }
   body.setopen #evbar { visibility: hidden; }
   .pop h3 { margin: var(--sp-5) 0 var(--sp-3); font: 600 var(--fs-micro)/1.4 var(--font-ui); color: var(--muted); letter-spacing: .06em; }
@@ -275,30 +276,29 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     transition: bottom var(--dur-2) var(--ease-out), right var(--dur-2) var(--ease-out); }
   #dock > * { pointer-events: auto; }
   #dock[hidden], body.estate #dock { display: none; }
-  #zoom { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-2); }
-  #zoom button { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: var(--r-m); background: transparent; color: var(--ink); cursor: pointer; position: relative;
+  #zoom { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2); border-radius: var(--r-glass); }
+  #zoom button { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: calc(var(--r-glass) - var(--sp-2)); background: transparent; color: var(--ink); cursor: pointer; position: relative;
     transition: background var(--dur-1), transform var(--dur-1); }
   #zoom button:hover { background: var(--surface-2); color: var(--accent); }
   #zoom button:active { transform: scale(.97); }
   #zoom button[aria-pressed="false"] { color: var(--muted); }
   #zoom button[aria-pressed="true"] { background: var(--accent-weak); color: var(--accent); }
   #zoom[hidden] { display: none; }
-  #zoom #zAll { display: none; }   /* U15：「看全区」只在手机（≤ 640 px）出现——桌面的复位视野已经是全区（选择器要压过 #zoom button 的 display: grid） */
+  #zoom #zAll { font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0; white-space: nowrap; padding: 0; }   /* U-18: 「看全区」 sits in the desktop column (the home button now locates the player); on phones it moves into ⋯ */
   #thumbBtn { display: none; }
   #osd .navigator { margin: 0 0 var(--sp-5) var(--sp-5) !important; }
 
   /* ---------- 层切换器（纵向分段）：一个 Panel 容器；选中 = 弱底 + 左 3 px 强调线 + 强调色字 + aria-current ---------- */
   #layers { position: relative; z-index: var(--zu-layers);
-    display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-2);
-    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+    display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2); border-radius: var(--r-glass); }
   #layers[hidden] { display: none; }
   #layers button { position: relative; min-width: 96px; min-height: 36px; box-sizing: border-box; white-space: nowrap; text-align: left; padding: var(--sp-3) var(--sp-5) var(--sp-3) 10px;
     border: 0; border-radius: var(--r-m); background: transparent; color: var(--ink); font: 500 var(--fs-control)/1.3 var(--font-ui); cursor: pointer;
     transition: background var(--dur-1), color var(--dur-1), transform var(--dur-1); }
-  #layers button small { display: block; font: 400 var(--fs-micro)/1.4 var(--font-ui); color: var(--muted); }
+  #layers button small { display: block; font: 400 var(--fs-micro)/1.4 var(--font-ui); color: var(--ink-2); }
   #layers button:not(:disabled):hover { background: var(--surface-2); }
   #layers button:not(:disabled):active { transform: scale(.97); }
-  #layers button.on { background: var(--accent-weak); box-shadow: inset 3px 0 0 var(--accent); color: var(--accent); font-weight: 700; }
+  #layers button.on { background: var(--accent-weak); box-shadow: inset 3px 0 0 var(--accent); color: var(--ink); font-weight: 700; }
   #layers button:disabled { opacity: .45; cursor: default; }
   /* 层按钮上的标记：6 px 红点 = 当前地点在这一层；胶囊角标 = 这一层未解除的事态数（全站唯一的红） */
   #layers .hd { display: none; width: 6px; height: 6px; margin-left: var(--sp-3); border-radius: 50%; background: var(--alert); vertical-align: 2px; }
@@ -478,9 +478,9 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 
   /* ---------- 页脚：版本号（左下，--fs-micro，磨砂底）；署名在右上 ---------- */
   /* 页脚：版本号 + 署名，一条，左下；署名单行省略，全文在 title（E5 3.2「版权、版本号、状态合成一条页脚」） */
-  #foot { position: absolute; left: var(--sp-4); top: var(--sp-4); z-index: var(--zu-foot); display: flex; gap: var(--sp-4); align-items: flex-start; max-width: calc(100% - var(--rail-w-now, 0px) - 80px); pointer-events: none; }
+  #foot { position: absolute; left: var(--edge); top: var(--edge); z-index: var(--zu-foot); display: flex; gap: var(--sp-4); align-items: flex-start; max-width: calc(100% - var(--rail-w-now, 0px) - 80px); pointer-events: none; }
   #foot > * { pointer-events: auto; }
-  #build { flex: none; white-space: nowrap; font: 500 var(--fs-micro)/1.4 var(--font-mono); color: var(--muted); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-s); padding: 1px var(--sp-3); cursor: pointer; }
+  #build { flex: none; white-space: nowrap; font: 500 var(--fs-micro)/1.4 var(--font-mono); color: var(--muted); background: var(--glass-2); border: 1px solid var(--glass-line); border-radius: var(--r-s); padding: 1px var(--sp-3); cursor: pointer; }
   #build:hover { color: var(--ink); }
   #build:active { transform: scale(.97); }
   #build:empty::before { content: '…'; }
@@ -489,10 +489,11 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #setPop #lineNow b { color: var(--ink); font-weight: 600; }
   #tiers button:disabled, #linePick:disabled { opacity: .45; cursor: not-allowed; }
   #status { display: none; }
-  #credit { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: var(--fs-micro)/1.4 var(--font-ui); color: var(--muted); background: var(--surface-glass); border: 1px solid var(--line); border-radius: var(--r-s); padding: 1px var(--sp-3); }
+  #credit { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: var(--fs-small)/1.5 var(--font-ui); color: var(--ink-2); background: var(--glass-2); border: 1px solid var(--glass-line); border-radius: var(--r-m); padding: var(--sp-2) var(--sp-4); box-shadow: var(--elev-panel); }
   #credit:empty, #credit[hidden] { display: none; }
   /* v0.9.6：署名默认收成一个 ⓘ，点开看全文，6 秒后自动收起（手机上以前一直横在顶上） */
-  #creditBtn { flex: none; width: 24px; height: 24px; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-glass); color: var(--muted); font: 13px/1 var(--font-ui); cursor: pointer; }
+  #creditBtn { flex: none; position: relative; width: 32px; height: 32px; padding: 0; border-radius: 50%; color: var(--ink-2); font: 13px/1 var(--font-ui); cursor: pointer; display: grid; place-items: center; }
+  #creditBtn::before { content: ''; position: absolute; inset: -6px; }
   #creditBtn[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); }
   #creditBtn[hidden] { display: none; }
   #credit { white-space: normal !important; max-width: min(360px, calc(100vw - 80px)); }
@@ -510,11 +511,11 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     body:not(.estate) #setBtn { display: none; }
     .btn { height: 36px; } .btn.ic { width: 36px; }
     .seg { height: 40px; }
-    #thumbBtn { display: inline-flex; width: 44px; height: 44px; border-radius: var(--r-l); background: var(--surface); box-shadow: var(--sh-2); }
+    #thumbBtn { display: inline-flex; width: 44px; height: 44px; border-radius: var(--r-glass); background: var(--glass-2); box-shadow: var(--elev-float); }
     #dock { right: var(--sp-4); }
     html[data-hand="left"] #dock { right: auto; left: var(--sp-4); align-items: flex-start; }
     #zoom button { width: 44px; height: 44px; }
-    #zoom #zAll { display: grid; width: auto; min-width: 44px; padding: 0 10px; font-size: var(--fs-small); font-weight: 700; }   /* 手机首屏停在主场景：显眼的「看全区」（触控热区 ≥ 44 px） */
+    #zoom #zAll, #zoom #lblTog { display: none; }   /* U-18: the phone row is + / − / 定位到我 / ⋯; 看全区 and Aa live in ⋯ (settings home) */
     /* 半开时控制列最高到屏幕中线；再高就横排贴在抽屉上沿（§10.1）；全开时隐藏（inert） */
     /* 横排也按 DOM 顺序（= 桌面竖排从上到下），读屏顺序与画面一致；右手贴右、左手贴左只靠 #dock 的定位 */
     #dock.row { flex-direction: row; align-items: flex-end; }
@@ -546,8 +547,6 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #setPop h3.morelab:has(+ .more:empty) { display: none; }
   body.estate #setPop .qlayers, body.estate #setPop .qlab { display: flex; } body.estate #setPop h3.qlab { display: block; }
   /* 触屏 / 低内存：不用毛玻璃，面板实底（TT 实测：WebKit 上 backdrop-filter 是最贵的 CSS 之一） */
-  @media (pointer: coarse) { #layers, #zoom { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--surface) !important; } }
-  html.lowmem :is(#layers, #zoom) { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--surface) !important; }
   /* ---------- 触屏：触控目标 ≥ 44 px ---------- */
   @media (pointer: coarse), (max-width: 640px) {
     #layers button::before { content: ''; position: absolute; inset: -2px 0; }
@@ -570,7 +569,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 </head>
 <body>
 <div id="app">
-  <header>
+  <header class="g1">
     <button type="button" class="btn ic" id="upBtn" hidden><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14.5 6l-6 6 6 6"/></svg></button>
     <nav id="crumbs" data-i18n-aria="crumbs_aria" aria-label="位置"></nav>
     <span class="grow"></span>
@@ -580,8 +579,8 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     <button type="button" class="btn ic" id="setBtn" data-i18n-title="settings_title" title="设置" aria-expanded="false" aria-controls="setPop"></button>
     <div class="where"><span data-i18n="here">当前地点</span> <input id="here" data-i18n-ph="here_ph" placeholder="模拟 MVU：世界.当前地点" value=""></div>
   </header>
-  <div id="stage" role="main" data-i18n-aria="page_title" aria-label="空间地图"><div id="osd"></div><div id="foot"><button type="button" id="creditBtn" aria-expanded="false" aria-controls="credit" data-i18n-aria="credit_aria" aria-label="署名"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/></svg></button><div id="credit" hidden></div></div><nav id="layers" hidden data-i18n-aria="layers_aria" aria-label="楼层"></nav>
-    <div id="zoom" role="group" data-i18n-aria="zoom_group" aria-label="缩放"><button type="button" id="zIn" data-i18n-aria="zoom_in" aria-label="放大" data-i18n-title="zoom_in" title="放大"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg></button><button type="button" id="zOut" data-i18n-aria="zoom_out" aria-label="缩小" data-i18n-title="zoom_out" title="缩小"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/></svg></button><button type="button" id="zHome" data-i18n-aria="zoom_home" aria-label="复位视野" data-i18n-title="zoom_home" title="复位视野"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"/><circle cx="12" cy="12" r="2.5"/></svg></button><button type="button" id="zAll" data-i18n="zoom_all" data-i18n-aria="zoom_all" aria-label="看全区" data-i18n-title="zoom_all" title="看全区">看全区</button><button type="button" id="lblTog" aria-pressed="true" data-i18n-aria="labels_tog" aria-label="显示标注" data-i18n-title="labels_tog_t" title="显示标注（L）"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 18l4.5-12L12 18M4.7 14h5.6"/><path d="M20.5 18v-5.2a2.6 2.6 0 0 0-5 0M20.5 15.2c-3.4-.4-5.5.4-5.5 1.6 0 .9.8 1.4 1.9 1.4 1.8 0 3.6-1.2 3.6-3"/></svg></button></div>
+  <div id="stage" role="main" data-i18n-aria="page_title" aria-label="空间地图"><div id="osd"></div><div id="foot"><button type="button" id="creditBtn" class="g1" aria-expanded="false" aria-controls="credit" data-i18n-aria="credit_aria" aria-label="署名"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/></svg></button><div id="credit" hidden></div></div><nav id="layers" class="g2" hidden data-i18n-aria="layers_aria" aria-label="楼层"></nav>
+    <div id="zoom" class="g1" role="group" data-i18n-aria="zoom_group" aria-label="缩放"><button type="button" id="zIn" data-i18n-aria="zoom_in" aria-label="放大" data-i18n-title="zoom_in" title="放大"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg></button><button type="button" id="zOut" data-i18n-aria="zoom_out" aria-label="缩小" data-i18n-title="zoom_out" title="缩小"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/></svg></button><button type="button" id="zHome" data-i18n-aria="zoom_home" aria-label="定位到我" data-i18n-title="zoom_home" title="定位到我"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"/><circle cx="12" cy="12" r="2.5"/></svg></button><button type="button" id="zAll" data-i18n="zoom_all" data-i18n-aria="zoom_all" aria-label="看全区" data-i18n-title="zoom_all" title="看全区">看全区</button><button type="button" id="lblTog" aria-pressed="true" data-i18n-aria="labels_tog" aria-label="显示标注" data-i18n-title="labels_tog_t" title="显示标注（L）"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 18l4.5-12L12 18M4.7 14h5.6"/><path d="M20.5 18v-5.2a2.6 2.6 0 0 0-5 0M20.5 15.2c-3.4-.4-5.5.4-5.5 1.6 0 .9.8 1.4 1.9 1.4 1.8 0 3.6-1.2 3.6-3"/></svg></button></div>
     <div id="prog" hidden><i></i></div><div id="zoomHint" hidden aria-live="polite"></div><div id="loading"><div><span data-i18n="loading">加载中…</span><div class="acts" hidden><button type="button" class="btn" id="estRetry" data-i18n="estate.retry">重试</button><button type="button" class="btn" id="estPlan" data-i18n="estate.plan">看平面图</button><button type="button" class="btn" id="tileRetry" hidden data-i18n="estate.retry">重试</button></div></div></div></div>
   <script>if (window.__openWorldMapFirst) document.getElementById('loading').classList.add('thumb');</script>
 </div>

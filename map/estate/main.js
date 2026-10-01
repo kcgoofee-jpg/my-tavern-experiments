@@ -33,7 +33,7 @@ const LS = (k) => { try { return localStorage.getItem(k); } catch (e) { return n
 let LANG = (Q.get('lang') || LS('edenMapLang') || 'zh').startsWith('en') ? 'en' : 'zh';
 let THEME = Q.get('theme') === 'light' ? 'light' : 'dark';
 document.body.classList.toggle('embed', EMBED);
-document.documentElement.dataset.theme = THEME;
+document.documentElement.dataset.theme = THEME; document.documentElement.classList.toggle('light', THEME === 'light');
 const $ = (s) => document.querySelector(s);
 const app = $('#app');
 // ---------------- UI v2 外壳（ui/chrome3d.js，spec §4）：视图分段 外观 / 内透 / 剖切，剖切楼层是二级条；控制列 标注 + − ⟲；抽屉 房间 · 图例 · 关于（默认收起）----------------
@@ -1051,7 +1051,7 @@ window.addEventListener('message', (e) => {
   else if (d.type === 'estate:quality' && typeof d.q === 'string') {   // 设置「三维画质」即时生效
     DPR = Math.min(window.devicePixelRatio || 1, d.q === '1' ? 1 : COARSE ? 2 : (window.devicePixelRatio || 2)); document.documentElement.classList.toggle('noblur', d.q === '1');
     renderer.setPixelRatio(lowRes ? Math.max(1, DPR * 0.75) : DPR); renderer.setSize(innerWidth, innerHeight); needs = true; }
-  else if (d.type === 'estate:theme' && (d.theme === 'light' || d.theme === 'dark')) { THEME = d.theme; document.documentElement.dataset.theme = THEME; paintSky(); }
+  else if (d.type === 'estate:theme' && (d.theme === 'light' || d.theme === 'dark')) { THEME = d.theme; document.documentElement.dataset.theme = THEME; document.documentElement.classList.toggle('light', THEME === 'light'); paintSky(); }
   else if (d.type === 'estate:cvd' && typeof d.mode === 'string') { document.documentElement.dataset.cvd = d.mode; document.documentElement.classList.toggle('cvd', d.mode !== '0'); }   // 色觉模式（E7）：本页当前没有按类别上色的材质，只留 CSS 钩子给以后加
   else if (d.type === 'estate:fps' && typeof d.on === 'boolean') { STATS = d.on; statsEl.style.display = d.on ? 'block' : 'none'; if (!d.on) statsEl.textContent = ''; frames = 0; fpsT = performance.now(); needs = true; }
   else if (d.type === 'estate:chat' && typeof d.id === 'string') setGalleryChatId(d.id);   // 房间图集「仅本聊天」作用域

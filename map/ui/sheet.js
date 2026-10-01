@@ -9,8 +9,8 @@
 (function () {
   if (window.UISheet) return;
   const CSS = `
-.uis{position:absolute;z-index:var(--zu-sheet);left:0;right:0;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;background:var(--surface,#151b20);color:var(--ink,#d5dde4);
-  border-top:1px solid var(--line,rgba(255,255,255,.12));border-radius:var(--r-l,12px) var(--r-l,12px) 0 0;box-shadow:var(--sh-3,0 12px 32px rgba(0,0,0,.38));
+.uis{position:absolute;z-index:var(--zu-sheet);left:0;right:0;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;background:var(--glass-2,#151b20);color:var(--ink,#d5dde4);
+  border-top:1px solid var(--glass-line,rgba(255,255,255,.12));border-radius:var(--r-glass,14px) var(--r-glass,14px) 0 0;box-shadow:var(--elev-panel,0 6px 20px rgba(0,0,0,.30));
   font:var(--fs-body,14px)/1.5 var(--font-ui,system-ui,sans-serif);height:calc(var(--sheet-peek,56px) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
   transition:height var(--dur-2,200ms) var(--ease-out,ease),width var(--dur-2,200ms) var(--ease-out,ease);touch-action:pan-y;overscroll-behavior:contain}
 .uis[hidden]{display:none}
@@ -31,7 +31,7 @@ html.rm .uis{transition:none}
   border-radius:var(--r-m,8px);background:transparent;color:var(--ink,#d5dde4);font:500 var(--fs-control,13px)/1.2 var(--font-ui,system-ui);cursor:pointer;white-space:nowrap;position:relative}
 .uis-tabs [role=tab][hidden]{display:none}
 .uis-tabs [role=tab]:hover{background:var(--surface-2,rgba(255,255,255,.06))}
-.uis-tabs [role=tab][aria-selected=true]{background:var(--accent,#e6c36a);border-color:var(--accent,#e6c36a);color:var(--on-accent,#1a1406);font-weight:700}
+.uis-tabs [role=tab][aria-selected=true]{background:var(--accent-weak,rgba(230,195,106,.14));box-shadow:inset 3px 0 0 var(--accent,#e6c36a);color:var(--ink,#d5dde4);font-weight:700}
 .uis-tabs [role=tab] em{font-style:normal;font-family:var(--font-mono,monospace);opacity:.85}
 .uis-tabs [role=tab]:focus-visible,.uis-tog:focus-visible{outline:2px solid var(--focus,#63b4be);outline-offset:2px}
 .uis-tog{flex:none;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 var(--sp-4,8px);border:1px solid var(--line,rgba(255,255,255,.12));border-radius:var(--r-m,8px);
@@ -42,7 +42,7 @@ html.rm .uis{transition:none}
 .uis-body>[role=tabpanel][hidden]{display:none}
 @media (pointer:coarse),(max-width:640px){.uis-tabs [role=tab],.uis-tog{min-height:44px}}
 /* 桌面 / 横屏矮屏：右栏 */
-.uis.rail{top:0;left:auto;right:0;bottom:0;height:auto!important;width:var(--rail-now,360px);border-top:0;border-left:1px solid var(--line,rgba(255,255,255,.12));border-radius:0;padding-bottom:0}
+.uis.rail{top:0;left:auto;right:0;bottom:0;height:auto!important;width:var(--rail-now,360px);border-top:0;border-left:1px solid var(--glass-line,rgba(255,255,255,.12));border-radius:0;padding-bottom:0}
 .uis.rail .uis-grip{position:absolute;left:-5px;top:0;bottom:0;width:10px;height:auto;margin:0;cursor:ew-resize;z-index:var(--zl-2)}
 .uis.rail .uis-grip::before{left:0;right:0;top:0;bottom:0;height:auto}
 .uis.rail .uis-grip i{display:none}

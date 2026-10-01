@@ -40,6 +40,8 @@ export function initActs() {
   onBuilt('home', () => {
     $('#actUp').addEventListener('click', () => showSet(false));
     $('#actHere').onclick = () => { showSet(false); jumpHere($('#here').value); };
+    $('#actAll').onclick = () => { showSet(false); $('#zAll').click(); };
+    $('#actLbl').onclick = () => { toggleLabels(); };
     $('#actClose').onclick = () => { showSet(false); post({ type: 'eden-map:esc' }); };   // 卡内脚本收到 esc 就关面板（旧版卡内脚本也认）
     setActs(); });
 }
@@ -47,4 +49,4 @@ export function initActs() {
 export function setActs() { const up = $('#actUp'), cl = $('#actClose'), hg = $('#actHere'), par = currentMapId && parentMap(currentMapId), nar = narrowNow(); if (!up) return;   // 首页还没建（设置没开过）：没有可摆的
   up.hidden = !(nar && par && mapRegistry.maps[par]); if (!up.hidden) { up.dataset.go = par; up.textContent = uiText('act_up', { title: localName(mapRegistry.maps[par], 'title') }); }
   hg.hidden = !(nar && !$('#hereGo').hidden);
-  cl.hidden = !nar || window.top === window; $('#setPop .acts').hidden = up.hidden && cl.hidden && hg.hidden; }
+  cl.hidden = !nar || window.top === window; $('#setPop .acts').hidden = !nar && up.hidden && cl.hidden && hg.hidden; }

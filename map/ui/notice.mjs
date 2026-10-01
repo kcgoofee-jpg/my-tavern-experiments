@@ -9,38 +9,38 @@
 //   N.remove(key) · N.has(key) · N.get(key) · N.refresh() · N.list()
 // anchor() → { left, top, width, height, top0, bottom0, modal } | null（null = 整个视口）；top0 = 顶栏高度，bottom0 = 抽屉占的高度。
 const CSS = (root) => `
-${root} .nt-layer{position:fixed;z-index:var(--zh-top);pointer-events:none;font:var(--nt-fs,13px)/1.5 var(--nt-font,system-ui,sans-serif);color:var(--nt-ink,#d5dde4)}
+${root} .nt-layer{position:fixed;z-index:var(--zh-top);pointer-events:none;font:var(--nt-fs,13px)/1.5 var(--nt-font,system-ui,sans-serif);color:var(--ink,#d5dde4)}
 ${root} .nt-layer [hidden]{display:none!important}
 ${root} .nt-p1>*,${root} .nt-p2>*,${root} .nt-p0>*{pointer-events:auto}
 ${root} .nt-p0.nt-modal{pointer-events:auto}
-${root} .nt-item{box-sizing:border-box;position:relative;background:var(--nt-bg,#151b20);color:var(--nt-ink,#d5dde4);border:1px solid var(--nt-line,rgba(255,255,255,.22));
-  border-radius:var(--nt-r,12px);box-shadow:0 6px 20px rgba(0,0,0,.3);padding:10px 48px 10px 14px;overflow-wrap:anywhere}
-${root} .nt-item>b.nt-t{display:block;color:var(--nt-accent,#e6c36a);font-weight:700}
-${root} .nt-item a{color:var(--nt-accent,#e6c36a)}
-${root} .nt-item .nt-x{position:absolute;right:2px;top:2px;width:44px;height:44px;border:0;background:none;color:var(--nt-muted,#8591a0);font:18px/1 system-ui;cursor:pointer;border-radius:8px}
-${root} .nt-item .nt-x:hover{color:var(--nt-ink,#d5dde4)}
+${root} .nt-item{box-sizing:border-box;position:relative;background:var(--glass-2,#151b20);color:var(--ink,#d5dde4);border:1px solid var(--glass-line,rgba(255,255,255,.22));
+  border-radius:var(--r-glass,12px);box-shadow:var(--elev-panel,0 6px 20px rgba(0,0,0,.3));padding:10px 48px 10px 14px;overflow-wrap:anywhere}
+${root} .nt-item>b.nt-t{display:block;color:var(--accent,#e6c36a);font-weight:700}
+${root} .nt-item a{color:var(--accent,#e6c36a)}
+${root} .nt-item .nt-x{position:absolute;right:2px;top:2px;width:44px;height:44px;border:0;background:none;color:var(--muted,#8591a0);font:18px/1 system-ui;cursor:pointer;border-radius:8px}
+${root} .nt-item .nt-x:hover{color:var(--ink,#d5dde4)}
 ${root} .nt-acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;justify-content:flex-end}
-${root} .nt-acts button{height:36px;min-width:44px;padding:0 14px;border:1px solid var(--nt-line,rgba(255,255,255,.22));border-radius:8px;background:transparent;color:var(--nt-ink,#d5dde4);font:inherit;font-weight:500;cursor:pointer}
-${root} .nt-acts button.nt-pri{background:var(--nt-accent,#e6c36a)!important;border-color:var(--nt-accent,#e6c36a)!important;color:var(--nt-on-accent,#1a1406)!important;font-weight:700}
-${root} .nt-item :focus-visible{outline:2px solid var(--nt-focus,#63b4be);outline-offset:2px}
+${root} .nt-acts button{height:36px;min-width:44px;padding:0 14px;border:1px solid var(--glass-line,rgba(255,255,255,.22));border-radius:8px;background:transparent;color:var(--ink,#d5dde4);font:inherit;font-weight:500;cursor:pointer}
+${root} .nt-acts button.nt-pri{background:var(--accent,#e6c36a)!important;border-color:var(--accent,#e6c36a)!important;color:var(--on-accent,#1a1406)!important;font-weight:700}
+${root} .nt-item :focus-visible{outline:2px solid var(--focus,#63b4be);outline-offset:2px}
 ${root} .nt-p1{position:absolute;left:8px;right:8px;display:flex;flex-direction:column;gap:6px;align-items:center}
-${root} .nt-p1 .nt-item{width:min(560px,100%);border-left:3px solid var(--nt-accent,#e6c36a)}
-${root} .nt-p1 .nt-item.nt-force,${root} .nt-p1 .nt-item.em-force{border-color:var(--nt-alert,#ff5a5a)}
-${root} .nt-more{width:min(560px,100%);box-sizing:border-box;display:flex;align-items:center;gap:8px;justify-content:space-between;padding:4px 6px 4px 14px;border-radius:var(--nt-r,12px);
-  background:var(--nt-bg,#151b20);border:1px solid var(--nt-line,rgba(255,255,255,.22));color:var(--nt-ink,#d5dde4);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+${root} .nt-p1 .nt-item{width:min(560px,100%);border-left:3px solid var(--accent,#e6c36a)}
+${root} .nt-p1 .nt-item.nt-force,${root} .nt-p1 .nt-item.em-force{border-color:var(--alert,#ff5a5a)}
+${root} .nt-more{width:min(560px,100%);box-sizing:border-box;display:flex;align-items:center;gap:8px;justify-content:space-between;padding:4px 6px 4px 14px;border-radius:var(--r-glass,12px);
+  background:var(--glass-2,#151b20);border:1px solid var(--glass-line,rgba(255,255,255,.22));color:var(--ink,#d5dde4);box-shadow:0 6px 20px rgba(0,0,0,.3)}
 ${root} .nt-more span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-${root} .nt-more button{flex:none;height:36px;min-width:44px;padding:0 12px;border:1px solid var(--nt-line,rgba(255,255,255,.22));border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+${root} .nt-more button{flex:none;height:36px;min-width:44px;padding:0 12px;border:1px solid var(--glass-line,rgba(255,255,255,.22));border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer}
 ${root} .nt-p2{position:absolute;left:8px;right:8px;display:flex;justify-content:center}
-${root} .nt-p2 .nt-item{width:max-content;max-width:min(440px,100%);border-radius:999px;padding:8px 16px}
-${root} .nt-p2 .nt-item.nt-has-acts{border-radius:var(--nt-r,12px);padding:10px 14px}
+${root} .nt-p2 .nt-item{background:var(--glass-1,#151b20);width:max-content;max-width:min(440px,100%);border-radius:999px;padding:8px 16px}
+${root} .nt-p2 .nt-item.nt-has-acts{border-radius:var(--r-glass,12px);padding:10px 14px}
 ${root} .nt-p2 .nt-item>b.nt-t{display:inline;margin-right:6px}
 ${root} .nt-p2 .nt-item .nt-x{display:none}
 @media (pointer:coarse){${root} .nt-p2 .nt-item:not(.nt-has-acts){pointer-events:none}}   /* 触屏：纯提示药丸不挡下面的点击（手机上盖住人物卡「追问」按钮 6 秒——悬停暂停只对鼠标有意义，带撤销的照常可点） */
 ${root} .nt-p2 .nt-acts{display:inline-flex;margin:0 0 0 10px;vertical-align:middle}
 ${root} .nt-p0{position:absolute;inset:0;display:grid;place-items:center;padding:16px;box-sizing:border-box}
-${root} .nt-p0.nt-modal{background:color-mix(in srgb,var(--nt-bg,#151b20) 72%,transparent)}
-${root} .nt-p0 .nt-item{width:min(420px,100%);padding:14px 16px;border:1px solid var(--nt-alert,#ff5a5a);box-shadow:0 12px 32px rgba(0,0,0,.38)}
-${root} .nt-p0 .nt-item>b.nt-t{color:var(--nt-alert,#ff5a5a)}
+${root} .nt-p0.nt-modal{background:color-mix(in srgb,var(--glass-2,#151b20) 72%,transparent)}
+${root} .nt-p0 .nt-item{width:min(420px,100%);padding:14px 16px;border:1px solid var(--alert,#ff5a5a);box-shadow:var(--elev-modal,0 12px 32px rgba(0,0,0,.38))}
+${root} .nt-p0 .nt-item>b.nt-t{color:var(--alert,#ff5a5a)}
 ${root} .nt-p0 .nt-item .nt-x{display:none}
 ${root} .nt-p0.nt-top{align-items:start}
 @media (prefers-reduced-motion:no-preference){${root} .nt-item{animation:nt-in .2s cubic-bezier(.2,.8,.2,1)}}

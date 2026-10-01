@@ -131,7 +131,7 @@ async function mainInner() {
   // 缩放组：+ / − 以视野中心缩放，复位 = 本图的初始视野
   $('#zIn').onclick = () => { setUserMoved(true); osdViewer.viewport.zoomBy(1.5); osdViewer.viewport.applyConstraints(); };
   $('#zOut').onclick = () => { setUserMoved(true); osdViewer.viewport.zoomBy(1 / 1.5); osdViewer.viewport.applyConstraints(); };
-  $('#zHome').onclick = () => { setUserMoved(false); setPendingHome(false); focusStart(false); };
+  $('#zHome').onclick = () => { if (jumpHere($('#here').value)) return; setUserMoved(false); setPendingHome(false); focusStart(false); };   // U-18: 定位到我 (centres on the player's place); no place yet -> the old reset
   // U15（手机「看全区」）：首屏按 view.phone 停在起始地点，点这里缩到整层全区（与聚焦、复位互不影响）
   $('#zAll').onclick = () => { setUserMoved(true); const b = osdViewer.world.getHomeBounds?.();
     if (b) { osdViewer.viewport.fitBounds(b, true); osdViewer.viewport.applyConstraints(); } else { setPendingHome(false); focusStart(false); } };
