@@ -32,7 +32,7 @@ export function createCharsFlow(host) {
     onTableUpdate: () => { pushSoon(); recomputeSoon(); },
     onRoster: () => sendChars(), fetchJSON: rel => cdnFetch(host.BASE + rel).then(r => r.ok ? r.json() : null).catch(() => null), onProfile: () => { sendVarMap(); push(); recomputeSoon(); sendChars(); },   // 包的变量与名册声明（清单 vars + 叠加层，K-R69）由桥取；到之前按字段名自动找
   });
-  Promise.all([import(scriptBase + 'tavern/spatial-contract.mjs'), host.reg?.()]).then(([m]) => { locateM = m; if (!life.dead) push(); }).catch(() => {});
+  import(scriptBase + 'tavern/spatial-contract.mjs').then(async m => { locateM = m; await host.reg?.(); if (!life.dead) push(); }).catch(() => {});   // reg 在入口里晚于本工厂初始化：模块异步到了以后再取，不在装配时碰
   // P3-B 名册装配（core/roster.mjs）：mvu / table-db / fallback 三个来源桥里已注册；chat / baibai 只有宿主有——
   // 聊天 ⌖人物 标签在流水线的消息窗口里、柏宝绘外貌库按需加载。临时名册拼装（known 名单 flatMap）由装配系统统一输出。
   mvuBridge.roster.use('chat', { rows: ctx => !host.CHM || !Array.isArray(ctx?.msgs) ? [] : ctx.msgs.flatMap(m => host.CHM.parseChars(m.text).map(c => ({ name: c.name, place: c.place, source: 'chat' }))) });
