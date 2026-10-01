@@ -7,7 +7,8 @@ import { localName, postState, uiText } from './i18n.mjs';
 import { dropParked, estateFocus, leaveEstate, openEstate } from './subpage3d-host.mjs';
 import { renderNav } from './map-level-nav.mjs';
 import { closeCard } from './markers.mjs';
-import { focusMarker, setUserMoved, userMoved } from './locate.mjs';
+import { applyZoomLimit, focusMarker, setUserMoved, userMoved } from './locate.mjs';
+import { baseFrame } from '../core/base-frame.mjs';
 import { plugins } from './plugins.mjs';
 import { syncGlow } from './theme.mjs';
 import { pickPeriod } from '../core/period-pick.mjs';
@@ -21,10 +22,15 @@ const periodOf = id => { const c = plugins.CustomNamesView?.clock; return pickPe
 export const srcKey = b => (b && typeof b === 'object' ? b.url : b);   // 底图可以是 DZI 路径，也可以是 { type: 'image', url }（schema-2 包的示意图 / 单张图，K-R96）
 const baseOf = id => { const m = mapRegistry.maps[id]; return m.alt && altOn(id) ? m.alt.base : (periodOf(id) || m.base); };
 let lastBase = null;   // 第 0 层当前用的底图地址（go 打开 / swapBase 换上时记；applyPeriod 拿它判断要不要换）
+// 底图一律按视图范围（view.extent_m）摆：一个世界单位宽、从原点起，与 DZI 有多少像素无关（N10-P0）；标记 / 路线 / 缩放上限都是视图的比例
+const placeOf = id => { const f = baseFrame(mapRegistry.maps[id]?.view?.extent_m); return { x: f.x, y: f.y, width: f.width }; };
 export function swapBase() {
   const id = currentMapId, old = osdViewer.world.getItemAt(0); if (!old) return;
   lastBase = baseOf(id);
-  osdViewer.addTiledImage({ tileSource: baseOf(id), index: 0, success: () => { if (currentMapId !== id) return; osdViewer.world.removeItem(old); applyTier(); },
+  osdViewer.addTiledImage({ tileSource: baseOf(id), index: 0, ...placeOf(id), success: e => {
+      // 加载期间世界被 open() 换掉了（切图）或又换了一档：这张不用了，别让它混进新世界
+      if (currentMapId !== id || osdViewer.world.getIndexOfItem(old) < 0) { try { osdViewer.world.removeItem(e.item); } catch (x) {} return; }
+      osdViewer.world.removeItem(old); applyTier(); applyZoomLimit(); },   // 缩放上限按新底图的像素重算（原来沿用上一档底图的像素数）
     error: () => { try { LocalStore.remove(ALT_KEY + id); } catch (e) {} lastBase = baseOf(id); $('#tgAltBox').checked = false; $('#tierState').textContent = uiText('alt_missing'); } });
 }
 // 世界时钟时段变了（host-messages.mjs 的 eden-map:clock）：当前地图的底图档位变了才换，视角、标记、叠加层都不动
@@ -76,9 +82,10 @@ export async function go(id) {   // 云脚本块（文末）会包一层：主�
   const snap = !fromEstate && prev ? snapshot() : null, quiet = !!(snap || oldFrame);
   $('#loading').classList.remove('done', 'over', 'cover'); $('#loading').classList.toggle('thumb', id === 'world'); $('#loading span').textContent = uiText('loading_map', { title: localName(m, 'title') });
   if (quiet) $('#loading').classList.add('done');
-  const srcs = [{ tileSource: baseOf(id) }];
-  if (m.overlay?.type === 'dzi') srcs.push({ tileSource: m.overlay.src, opacity: $('#tgBorders').checked ? 1 : 0 });
+  const srcs = [{ tileSource: baseOf(id), ...placeOf(id) }];
+  if (m.overlay?.type === 'dzi') srcs.push({ tileSource: m.overlay.src, ...placeOf(id), opacity: $('#tgBorders').checked ? 1 : 0 });
   lastBase = srcs[0].tileSource;
+  osdViewer.addOnceHandler('open', () => applyPeriod());   // 载入期间时钟又变了（applyPeriod 当时看的是旧图）：打开后再对一次档位
   osdViewer.open(srcs);
   // v0.9.6 世界 ↔ 主城的缩放衔接：旧画面以主城为中心放大（进城）或缩小（出城）淡出，而不是原地淡出
   const fx = window.__zoomSnapEffect; window.__zoomSnapEffect = null;

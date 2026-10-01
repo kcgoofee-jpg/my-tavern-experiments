@@ -72,6 +72,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | Module | Role |
 |---|---|
 | `ambience.mjs` | Procedural ambience (K-R89, Q-01): recipes of filtered noise and harmonic oscillators, scene rules over `{ map, layer, place, weather, night }`, the mixing plan. Pure; its data comes from a `sound` layer. |
+| `base-frame.mjs` | Where a map's base image sits (N10-P0): `baseFrame(extent)` is always one world unit wide from the origin, and `aspectDrift` compares the view's shape with a DZI's pixel shape, so a period variant with more pixels never changes the placement. Pure. |
 | `card-read.mjs` | Runtime card reading (K-R93, K-R94, K-R95): place candidates from worldbook titles, language, start view, the variable shape, and the automatic pack derived from a plain card source; the fingerprint. Pure. |
 | `clock.mjs` | Zero-token deterministic world clock: world time is computed from turns advanced, never from the model or system time. |
 | `compat-v1-blocks.mjs` | v1 side inputs → v2 blocks: events, roster, stash, worldbook, legacy names, ui strings, the user's custom names. |

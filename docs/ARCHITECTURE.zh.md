@@ -53,6 +53,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | 模块 | 职责 |
 |---|---|
 | `ambience.mjs` | 程序化环境音（K-R89，Q-01）：滤波噪声与谐波振荡器的配方、按 `{ map, layer, place, weather, night }` 选场景的规则、混音计划。纯函数；数据来自 `sound` 图层。 |
+| `base-frame.mjs` | 底图在世界里摆在哪（N10-P0）：`baseFrame(extent)` 恒为一个世界单位宽、从原点起；`aspectDrift` 比较视图的形状与 DZI 的像素形状——时段底图的像素再多也不改变摆放。纯函数。 |
 | `card-read.mjs` | 运行时读卡（K-R93、K-R94、K-R95）：从世界书标题取地点候选、语言、开场视图、变量形状，以及由一个朴素的卡来源造出的自动包；指纹。纯函数。 |
 | `clock.mjs` | 零 Token 的确定性世界时钟：世界时间由推进的轮数算出，不靠模型也不读系统时间。 |
 | `compat-v1-blocks.mjs` | v1 的旁路输入 → v2 块：事态、名册、藏物、世界书、旧名字、界面文案、用户的自定义名称。 |
