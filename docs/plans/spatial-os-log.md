@@ -1515,3 +1515,30 @@ blocker: none
 open: (1) key 3 in 3D; (2) 375 phone dock still a column; (3) v2a / autoupd097 base failures
 cleanup: done
 === END ===
+=== RESULT B1-C05-LOCKER ===
+status: DONE
+items: 6 (B1-C05 Grand Cru Wine Cellar) ✓ · 7 (B1 Locker & Hydrotherapy suite) ✓
+commits:
+4526ce98 feat(estate): complete facilities for B1-C05 wine cellar and B1 locker/shower suite
+pushed: yes
+tests: node 1384/1385 (1 skipped) | smoke PASS | arch PASS | house.glb 712732 bytes (6198 bytes under 718930 cap)
+deviations: none
+blocker: none
+open: none
+cleanup: done
+=== END ===
+
+=== RESULT B1-C02-REMAKE-31 ===
+status: DONE
+items: 3.1 (St. Andrew's Cross hyper-realistic remake) ✓
+commits:
+673a9af8 feat(estate): hyper-realistic remake of Section 3.1 St. Andrew's Cross in B1-C02
+pushed: yes
+tests: node 1384/1385 (1 skipped) | smoke PASS | arch PASS | house.glb 711064 bytes (7866 bytes under 718930 cap)
+deviations: none
+blocker: none
+open: none
+cleanup: done
+=== END ===
+
+
