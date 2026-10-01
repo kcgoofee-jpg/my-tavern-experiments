@@ -120,6 +120,7 @@ function setSearch(q) {
 }
 export { rmPref, q3Pref } from './settings-wire.mjs';
 export function initSettings() {
+  performance.mark('s7:init0');
   const btn = $('#setBtn'), pop = $('#setPop');
   const firstIn = el => el.querySelector('button:not([hidden]), input, [tabindex="0"]');
   let opener = null;
@@ -149,6 +150,7 @@ export function initSettings() {
   // 表单正在编辑时通知先不出（§3）
   pop.addEventListener('focusin', noticeRefresh); pop.addEventListener('focusout', () => setTimeout(noticeRefresh, 0));
   bootEffects();
+  try { performance.measure('s7:settings-init', 's7:init0'); } catch (e) {}   // S7-1 boot budget: the synchronous settings work between reload and first frame is reported (<= 5 ms)
 }
 // 设置「数据与映射」→ app/data-mapping-settings.mjs（arch-v2 §6 第 6 步 settings-ui 的第一块）
 export function kbdHelp(on) {
