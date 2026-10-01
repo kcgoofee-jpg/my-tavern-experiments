@@ -54,6 +54,8 @@ export const SCHEMA = {
   'eden-map:events': [HOST_TO_VIEWER, { items: 'array?' }],
   'eden-map:custom': [HOST_TO_VIEWER, {}],
   'eden-map:inv': [HOST_TO_VIEWER, { items: 'array?', stash: 'object?', card: 'object?' }],   // items = 旧形状的行（地点卡「存放」行，Part 5-1）；stash = 统一背包的行与槽位摘要（K-R74）；card = 卡自己的物品表，只读（K-R76）；三者互不依赖，旧查看器只认 items
+  'eden-map:media': [HOST_TO_VIEWER, { on: 'boolean', id: 'string?', cats: 'array?', chars: 'array?', scenes: 'array?' }],   // K-R106: the pack's media source: chars = the card's picture table as read (sent when it changes), scenes = the chat's tags resolved to a floor, a place text, a character and an address; on = false clears
+  'eden-map:media-ask': [VIEWER_TO_HOST, {}],   // K-R106: the viewer loaded or its switch was turned on: send the media again
   'eden-map:stash': [HOST_TO_VIEWER, { items: 'array?' }],   // 世界藏物表（Part 5-1）：设定包自带的藏物（带地图 / 标记 / 暗格），查看器据此画发光拾取物
   'eden-map:routine': [HOST_TO_VIEWER, { schedule: 'object?' }],   // Part 8-2：NPC 日程表（包数据 routine.json 原样推来，查看器按确定性时钟自己挪人）
   'eden-map:clock': [HOST_TO_VIEWER, {}],

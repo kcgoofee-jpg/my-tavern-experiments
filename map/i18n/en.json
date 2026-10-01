@@ -693,5 +693,11 @@
   "pack.export_fail": "Not exported: {why}",
   "pack.copy_done": "Copied. Paste it into a new worldbook entry titled spatial_os:pack and keep that entry disabled.",
   "pack.copy_fail": "Could not copy; use Export as pack instead.",
-  "pack.export_note": "The file holds the places the map found and grew, your own names for them and the card credits; no chat state."
+  "pack.export_note": "The file holds the places the map found and grew, your own names for them and the card credits; no chat state.",
+  "ch.gal": "Gallery",
+  "ch.gal_tl": "Scenes it appears in",
+  "pl.scenes": "Scenes here",
+  "pl.scenes_n": "By message",
+  "ch.gal_opt": "Show the gallery and scenes",
+  "ch.gal_hint": "Reads the pictures of the card's own gallery script (read only: nothing is copied and no address is saved) and lists them by category on the person card; gallery tags written in the chat are listed by message on place and person cards. Nothing is ever inserted into a chat message"
 }

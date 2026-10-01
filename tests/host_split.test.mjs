@@ -102,7 +102,7 @@ const lines = f => rd(f).split('\n').length - (rd(f).endsWith('\n') ? 1 : 0);
 const FLOWS = {   // 文件 → [工厂名, 返回的接口]
   'llm-flow': ['createLlmFlow', 'jitRound opEvents resetOps sendOps worldbookJitModule WBSm xtalRound'],
   'stash-flow': ['createStashFlow', 'changedInv FRm frState gate gateFlush injectAction stash stashStoreModule stashRecomputeModule ledgerSync ledgerModule ledgerRecord lootFacts resetChat scanPickups sendInv settleCarry stealthCheck takeLoot'],
-  'chars-flow': ['createCharsFlow', 'mvuBridge cardKey chatId clock computeTrips contextPipeline getHere mvuReaders mvuStat outfitNow pushMvu readVars refreshVarMap resetLayerSent routineModule rtSched sendChars sendRoutine sendTrips sentClock sentOutfit setVarUser tripsParseModule userName'],
+  'chars-flow': ['createCharsFlow', 'mvuBridge gallery cardKey chatId clock computeTrips contextPipeline getHere mvuReaders mvuStat outfitNow pushMvu readVars refreshVarMap resetLayerSent routineModule rtSched sendChars sendRoutine sendTrips sentClock sentOutfit setVarUser tripsParseModule userName'],
   'timeline-flow': ['createTimelineFlow', 'keyframesModule kfReset kfView tlBtn tlCache tlEl tlExit timelineModule tlOn tlWalk'],
   'host-api': ['createHostApi', 'api cardId emit emitMoved exposed inner knowRooms onTh replayLayers scriptInfo sendTh subs tavernhelperApiModule transitMod wbAuto'],
   'root-store': ['createRootStore', 'storageBudget budgetSweep custom customChanged customChat customTags kindOf loadCustom reg regNow saveRoot sendCustom store storeWarn varsOk wbState'],

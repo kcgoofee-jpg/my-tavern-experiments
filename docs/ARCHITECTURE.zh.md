@@ -65,6 +65,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `event-geo.mjs` | 事态发生在哪里：地点文字经 `nodes.locate` 落点、画它的那张地图、图钉的位置（纯函数；层、城区、城郊的词全是包数据）；`geo.taxonomy()` 带来包的事件块。 |
 | `events-default.mjs` | 内核的中性事件分类（K-R53）：没有事件块的包显示的内容；关闭词与注入句标签的缺省。 |
 | `exploration-ledger.mjs` | 探索账本（迷雾探索：到过的地点）：对 `{ 地图 id: [地点名] }` 的 `norm` / `visit` / `known` / `count`，宿主与查看器共用。 |
+| `gallery-scenes.mjs` | 包声明的媒体来源在聊天里的标记场景（K-R106）：标记解析成楼、地点、角色、地址，按节点列「此处的场景」，一个人的时间线，人物卡的类别行；每次重算，什么都不存。 |
+| `gallery-spec.mjs` | 包声明的媒体来源（K-R106）：校验声明，把标记语法的槽位（名字 / 取自声明列表的类别 / 有位数上限的编号）编成不用正则的扫描器，在运行时读卡脚本里的图片表，把标记编号解析成地址，并用包的头像域名检查每个地址。 |
 | `graphics-budget.mjs` | 图形内存预算策略：按设备档位定字节预算，并判断上报的用量算不算吃紧。 |
 | `grow.mjs` | 从聊天里长节点（K-R26）：地点文字变成树下的 `g_` 节点；从零重算。纯函数。 |
 | `haze.mjs` | 空气透视滤镜：把当前纵深平面的霾浓度换成一条滤镜链。 |
@@ -226,6 +228,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `extension-api-contract.mjs` | 暴露给宿主页的公共 `EdenMap` API 的机读契约。 |
 | `follow-gate.mjs` | 入口门卫：从分支路径加载的脚本，换成头提交号的入口重新加载。 |
 | `follow-pin.mjs` | 跟随 / 分支加载地址钉到头提交号；检查更新走哪条链的判定。 |
+| `gallery-flow.mjs` | 媒体来源的宿主侧（K-R106），由 `chars-flow` 创建：每个聊天读一次卡的图片表，每轮扫聊天楼层正文里的标记（一楼的地点经 `MVUBridge.floorPlace`，K-R105），发 `eden-map:media`；回应 `eden-map:media-ask`；开关 `edenMapGallery`（默认开）能关掉；什么都不存。 |
 | `host-about.mjs` | 版本信息与检查更新的编排，所有副作用由外部注入。 |
 | `host-api.mjs` | 本机扩展接口 `window.EdenMap`（订阅、头像压缩）与酒馆助手侧的暴露：脚本按钮、类宏、脚本说明、世界书全自动。`createHostApi(host)`。 |
 | `host-checks.mjs` | 启动自检、首次运行自检卡、宿主提示、自动检查更新与版本切换。`createHostChecks(host)`。 |
@@ -321,6 +324,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `custom-tint.mjs` | 按世界时间的夜色与时段底图开关。 |
 | `events-fx.mjs` | 按类型声明的屏幕花屏特效，与世界图城市标记上的事态数角标。 |
 | `events-view.mjs` | 事态层：落点、图标、事态列表、飞过去；屏幕特效与世界图角标在 `events-fx.mjs`。 |
+| `gallery-view.mjs` | 媒体来源的查看器侧（K-R106）：人物卡的图鉴一节（打开某个类别才请求缩略图）、地点卡的「此处的场景」、一个人的场景时间线；每个地址再查一遍，文字走 `textContent`，一个开关。 |
 | `scrapbook-view.mjs` | 地标见闻录的查看器侧：地点卡上的钉图与手记。 |
 | `security.mjs` | 可选的安保叠加层：地点上的盾牌签与卡片里的规则行。 |
 | `stash-view.mjs` | 地点卡上的空间化背包（背包的查看器侧）。 |

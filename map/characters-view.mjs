@@ -91,6 +91,7 @@ const CharactersView = (() => {
       sv.innerHTML = `<dl class="fields">${id ? `<dt>${esc(uiTextOr('ch.identity', '身份'))}</dt><dd>${esc(id)}</dd>` : ''}${it?.tier ? `<dt>${esc(uiTextOr('ch.tier', '战力'))}</dt><dd><span class="chtier">${esc(it.tier)}</span></dd>` : ''}${c.roster ? (c.place ? `<dt>${esc(uiTextOr('ev.k_place', '地点'))}</dt><dd>${esc(c.place)}</dd>` : '') : `<dt>${esc(uiTextOr('ch.last', '最后出现'))}</dt><dd>${esc(lastSeen(c))}</dd><dt>${esc(uiTextOr('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd>`}</dl>${moreHtml(it, id)}`;
       document.getElementById('card').classList.toggle('person2', !!sv.querySelector('details.chmore'));   // 桌面：有「更多资料」时人物卡两栏
       sv.querySelector('details.chmore')?.addEventListener('toggle', e => { try { LocalStore.set(MO_OPEN, e.target.open ? '1' : '0'); } catch (x) {} });
+      if (typeof plugins.GalleryView !== 'undefined') plugins.GalleryView.person(c.name);   // K-R106: the card script's own pictures and this person's scenes
       return; }
     sv.innerHTML = `<dl class="fields">${list.map(c => `<dt>${esc(dn(c.name))}</dt><dd>${esc(when(c) + ' · ' + srcOf(c))}</dd>`).join('')}</dl>`;
   }

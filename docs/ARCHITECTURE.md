@@ -84,6 +84,8 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `event-geo.mjs` | Where an event happens: its place text placed by `nodes.locate`, the map that draws it, the pin's spot (pure; every tier and district word is pack data); `geo.taxonomy()` carries the pack's events block. |
 | `events-default.mjs` | The kernel's neutral event taxonomy (K-R53): what a pack with no events block shows; closing words and injected-line tag defaults. |
 | `exploration-ledger.mjs` | Exploration ledger (fog of visited places): `norm` / `visit` / `known` / `count` over `{ mapId: [placeNames] }`, shared by the host and the viewer. |
+| `gallery-scenes.mjs` | The chat's tagged scenes of a pack-declared media source (K-R106): tags resolved to floor, place, character and address, "scenes here" by node, one person's timeline, the person card's category rows; recomputed each time, stores nothing. |
+| `gallery-spec.mjs` | A pack-declared media source (K-R106): checks the declaration, compiles the tag grammar slots (name / category from a declared list / number with a digit limit) into a scanner without a regex, reads the card script's picture table at run time, resolves a tag number to an address, and checks every address against the pack's avatar hosts. |
 | `graphics-budget.mjs` | Graphics memory budget policy: decides the byte budget per device class and whether reported usage means pressure. |
 | `grow.mjs` | Growing nodes from chat (K-R26): place texts become `g_` nodes under the tree; recompute from nothing. Pure. |
 | `haze.mjs` | Aerial-perspective filter: turns the haze density of the current depth plane into a filter chain. |
@@ -246,6 +248,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `extension-api-contract.mjs` | Machine-readable contract of the public `EdenMap` API exposed to the host page. |
 | `follow-gate.mjs` | Entry gate: a script loaded from a branch path reloads itself from the head sha. |
 | `follow-pin.mjs` | Follow / branch load addresses pinned to the head sha; update-channel decision. |
+| `gallery-flow.mjs` | Host side of the media source (K-R106), made by `chars-flow`: reads the card's picture table once per chat, scans the chat floors' text for tags each round (the place of a floor via `MVUBridge.floorPlace`, K-R105), sends `eden-map:media`; answers `eden-map:media-ask`; the switch `edenMapGallery` (default on) turns it off; nothing is stored. |
 | `host-about.mjs` | Version info and update check orchestration, all effects injected. |
 | `host-api.mjs` | The local `window.EdenMap` extension API (subscriptions, avatar shrinking) and the TavernHelper-side exposure: script buttons, macros, script info, worldbook automation. `createHostApi(host)`. |
 | `host-checks.mjs` | Startup self-check, first-run card, host toasts, auto update check and version switching. `createHostChecks(host)`. |
@@ -343,6 +346,7 @@ They import core state from `app/*` and reach each other only through `app/plugi
 | `custom-tint.mjs` | Night tint and period base-map switch from world time. |
 | `events-fx.mjs` | Screen glitch effect declared by event types and the event count badge on the world-map city marker. |
 | `events-view.mjs` | Event layer: placement, icons, event list, fly-to; the screen effects and world-map badges are in `events-fx.mjs`. |
+| `gallery-view.mjs` | The media source in the viewer (K-R106): the person card's gallery section (thumbnails requested only when a category is opened), "scenes here" on the place card, a person's scene timeline; rechecks every address, text via `textContent`, one switch. |
 | `scrapbook-view.mjs` | Viewer side of the landmark scrapbook: pinned images and notes on place cards. |
 | `security.mjs` | Optional security overlay: shield chips on places and a rules row on cards. |
 | `stash-view.mjs` | Spatial inventory on place cards (viewer side of the inventory). |

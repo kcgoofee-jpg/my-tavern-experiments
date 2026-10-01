@@ -9,7 +9,8 @@
   "properties": {
     "groups": { "type": "array", "items": { "$ref": "#/$defs/group" }, "description": "Display order = array order." },
     "fields": { "type": "array", "items": { "$ref": "#/$defs/field" }, "description": "Attribute fields in display order." },
-    "avatar": { "$ref": "#/$defs/avatar" }
+    "avatar": { "$ref": "#/$defs/avatar" },
+    "gallery": { "$ref": "#/$defs/gallery" }
   },
   "$defs": {
     "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
@@ -61,6 +62,30 @@
         "ladder": { "type": "array", "minItems": 1, "maxItems": 20, "items": { "$ref": "#/$defs/step" } },
         "scan": { "type": "boolean", "description": "ladder only: when the field is missing, look for a step in the row's other text values. Default false." },
         "show": { "enum": ["subtitle", "chip", "detail", "hidden"], "description": "Where it appears. Default: text -> detail, others -> chip." }
+      }
+    },
+    "gallery": {
+      "type": "object", "required": ["from", "path", "name", "sets", "tag"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "description": "K-R106: a media source. A table in the card's own script data, read at run time (never copied or stored), and the grammar of the tags the model writes in the chat to point into it. The kernel compiles the grammar; a pack writes no regular expression. Image hosts are the avatar hosts (K-R43); require and deny here are this source's own folder rules.",
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "from": { "enum": ["card-script"] },
+        "path": { "type": "string", "pattern": "^[^.\\n]{1,40}(\\.[^.\\n]{1,40}){0,7}$", "description": "Dot path into the card's script data (its extensions object); * visits every item of a list." },
+        "name": {"type": "string", "pattern": "^[^.\\n]{1,40}$", "description": "Field of a table row holding the character name."},
+        "cover": {"type": "string", "pattern": "^[^.\\n]{1,40}$", "description": "Field holding the cover picture address."},
+        "sets": {"type": "string", "pattern": "^[^.\\n]{1,40}$", "description": "Field holding an object { category: [addresses] }; a tag number counts from 1 and wraps round the list."},
+        "tag": {
+          "type": "object", "required": ["categories"], "additionalProperties": false,
+          "properties": {
+            "fields": { "type": "array", "items": { "enum": ["name", "category", "number"] }, "minItems": 3, "maxItems": 3, "description": "The order the three fields are written in. Default name, category, number." },
+            "open": { "type": "string", "pattern": "^[^\\s\\p{L}\\p{N}]$", "description": "Default [" },
+            "close": { "type": "string", "pattern": "^[^\\s\\p{L}\\p{N}]$", "description": "Default ]" },
+            "categories": { "type": "array", "items": { "type": "string", "pattern": "^[^\\n]{1,20}$" }, "minItems": 1, "maxItems": 12, "description": "The words the category field may be; also the display order." },
+            "digits": { "type": "integer", "minimum": 1, "maximum": 6, "description": "Most digits of the number field. Default 4." }
+          }
+        },
+        "require": {"oneOf": [{"type": "array", "items": {"type": "string", "minLength": 1}}, {"type": "object", "additionalProperties": false, "patternProperties": {"^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+(/[A-Za-z0-9_.~%/-]*)?$": {"type": "array", "items": {"type": "string", "minLength": 1}}}}], "description": "Path fragments a portrait URL must contain (K-R43, K-R69). List form: one fragment must appear in a URL allowed by a host entry that has a path prefix. Map form { \"<host prefix>\": [fragments] }: URLs under that host prefix need one of its fragments; other hosts are not constrained."},
+        "deny": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "Path fragments never loaded, even from an allowed host."}
       }
     },
     "avatar": {

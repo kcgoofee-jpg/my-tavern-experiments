@@ -10,7 +10,7 @@ import { withStrings, packStrings, dictOf } from './helpers/eden-strings.mjs';
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const J = p => JSON.parse(fs.readFileSync(ROOT + p, 'utf8'));
 const FZ = { zh: J('tests/helpers/i18n_s44_frozen/zh.json'), en: J('tests/helpers/i18n_s44_frozen/en.json') };
-const NEW_KEYS = ['app.name', 'app.short', 'app.script', 'app.report', 'ev.toast', 'vm.known'];
+const NEW_KEYS = ['app.name', 'app.short', 'app.script', 'app.report', 'ev.toast', 'vm.known', 'ch.gal'];   // ch.gal: S9b-2 (K-R106), the first pack's strings rename it
 // T6: the English values that change on purpose (key -> why); everything else in English is byte-identical for the first pack
 const T6 = {
   'cu.ex1a': 'Chinese left in an English value', 'cu.ex3a': 'Chinese left in an English value', 'vm.fantasy': 'Chinese example words translated', 's.lic_orig_v': 'Chinese community name',

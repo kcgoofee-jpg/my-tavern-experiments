@@ -79,6 +79,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:chars') { plugins.CharactersView.set(e.data); emEmit('characters', { items: e.data.items, floor: e.data.floor }); }   // 人物栏（v0.9.2）
     if (e.data?.type === 'eden-map:custom') plugins.CustomNamesView.fromHost(e.data);   // v0.9.3：自定义名称与用途（聊天变量）
     if (e.data?.type === 'eden-map:inv' && typeof plugins.StashView !== 'undefined') plugins.StashView.fromHost(e.data);   // 空间化背包（Part 5-1）：地点卡「存放」行
+    if (e.data?.type === 'eden-map:media' && typeof plugins.GalleryView !== 'undefined') plugins.GalleryView.fromHost(e.data);   // K-R106: the pack's media source (a card's picture table + the chat's tags)
     if (e.data?.type === 'eden-map:clock') { plugins.CustomNamesView.setClock(e.data); applyPeriod(); }   // 世界时间 → 夜色 / 多时段底图
     if (e.data?.type === 'eden-map:outfit') plugins.CustomNamesView.setOutfit(e.data);   // 主角着装 → 本人地点卡
     if (e.data?.type === 'eden-map:fly') plugins.CustomNamesView.flyTo(e.data.target);   // v0.9.5 EdenMap.flyTo(target)

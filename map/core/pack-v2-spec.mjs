@@ -133,10 +133,15 @@ const group = obj({ id: str({ re: ID }), label: rl, i18n: i18n(['label']),
 /** reserved = storage-key prefixes the pack may not use (K-R43); `spatial` is always reserved. */
 export const entitiesBlock = reserved => {
   const pre = ['spatial', ...reserved.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))].join('|');
+  const require = (v, p, x) => (Array.isArray(v) ? arr(str({ min: 1 }))(v, p, x) : dict(re('^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+(/[A-Za-z0-9_.~%/-]*)?$', 'i'), arr(str({ min: 1 })))(v, p, x)), deny = arr(str({ min: 1 }));
+  const gseg = str({ re: re('^[^.\\n]{1,40}$') });   // K-R106: the media source (a card-script table + the tag grammar slots)
+  const gallery = obj({ id: str({ re: ID }), from: oneOf(['card-script']), path: str({ re: re('^[^.\\n]{1,40}(\\.[^.\\n]{1,40}){0,7}$') }), name: gseg, cover: gseg, sets: gseg,
+    tag: obj({ fields: arr(oneOf(['name', 'category', 'number']), { min: 3, max: 3 }), open: str({ re: re('^[^\\s\\p{L}\\p{N}]$', 'u') }), close: str({ re: re('^[^\\s\\p{L}\\p{N}]$', 'u') }),
+      categories: arr(str({ re: NL(20) }), { min: 1, max: 12 }), digits: num({ int: true, min: 1, max: 6 }) }, { req: ['categories'] }), require, deny }, { req: ['from', 'path', 'name', 'sets', 'tag'], ...B });
   const avatar = obj({ from: arr(oneOf(['card-script', 'card-storage', 'imagegen'])),
-    hosts: arr(str({ re: re('^[a-z0-9-]+(\\.[a-z0-9-]+)+(/[A-Za-z0-9_.~%/-]*)?$') })), require: (v, p, x) => (Array.isArray(v) ? arr(str({ min: 1 }))(v, p, x) : dict(re('^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+(/[A-Za-z0-9_.~%/-]*)?$', 'i'), arr(str({ min: 1 })))(v, p, x)), deny: arr(str({ min: 1 })),
+    hosts: arr(str({ re: re('^[a-z0-9-]+(\\.[a-z0-9-]+)+(/[A-Za-z0-9_.~%/-]*)?$') })), require, deny,
     storage: obj({ index: str({ re: re(`^(?!${pre})[^\\n]{1,80}$`) }), per_name: str({ re: re(`^(?!${pre})[^\\n]*\\{name\\}[^\\n]*$`) }) }) }, B);
-  return block(obj({ groups: arr(group), fields: arr(field), avatar }, B), 'object');
+  return block(obj({ groups: arr(group), fields: arr(field), avatar, gallery }, B), 'object');
 };
 
 const row = obj({ id: str({ re: re('^[a-z][a-z0-9_]{0,39}$') }), name: str({ re: NL(60) }), node: idRef, hidden: str({ re: NL(60) }), note: str({ re: NL(200) }),

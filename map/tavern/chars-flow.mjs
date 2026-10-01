@@ -5,9 +5,11 @@ import { resolveTags } from './sanitize.mjs';
 import { MVUBridge } from './mvu-bridge.mjs';
 import { getProfile } from './pack-profile.mjs';
 import { cdnFetch } from './host-tavernhelper.mjs';
+import { createGalleryFlow } from './gallery-flow.mjs';
 export const DEPS = [
   'GEN', 'LS', 'MAN', 'PACK_ID', 'PACK_IN', 'scriptBase', 'UI', 'clockEl', 'emit', 'life', 'loadCustom', 'post', 'push', 'pushSoon', 'recomputeSoon',
   'runCheck', 'saveRoot', 'BASE', 'CHM', 'uiLang', 'alive', 'chars', 'checkP', 'custom', 'customChat', 'floorNow', 'rep', 'roster', 'transitMod', 'reg', 'regNow',
+  'frame', 'lsGet',   // K-R106 media source (gallery-flow.mjs)
 ];
 export function createCharsFlow(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('chars-flow: missing dep ' + k);
@@ -43,6 +45,8 @@ export function createCharsFlow(host) {
   // eden（无注入的内置默认）走内置档路径。取不到就没有兜底行，不挡启动。
   MAN.then(man => { const rp = man?.data?.roster, rb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';   // 路径读自包清单 data.roster；没声明 = 没有兜底行
     if (rp) return cdnFetch(host.BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { if (mvuBridge.setFallbackMembers(j?.members || [])) { recomputeSoon(); sendChars(); } }); }).catch(() => {});
+  // K-R106: the pack's media source (a card-script picture table + chat tags): read at run time, recomputed each round, nothing stored; it asks again whenever the characters are sent
+  const gallery = createGalleryFlow({ get alive() { return host.alive; }, get floorNow() { return host.floorNow; }, get frame() { return host.frame; }, life, lsGet: (...a) => host.lsGet(...a), mvuBridge, post });
   // 桥接口的宿主侧薄别名：原有调用点（chatId / userName / mvuStat / getHere / readVars）不用逐个改
   const chatId = () => mvuBridge.chatId(), cardKey = () => mvuBridge.cardKey(), userName = s => mvuBridge.userName(s);
   const mvuStat = () => mvuBridge.mvuStat(), getHere = () => mvuBridge.here(), readVars = () => mvuBridge.readVars();
@@ -85,11 +89,11 @@ export function createCharsFlow(host) {
     if (r.changed) { saveRoot(); sendTrips(); }   // 行程变了才写聊天变量、才发地图
   }
   function sendTrips() { if (host.alive) post({ type: 'eden-map:trips', items: contextPipeline.trips }); }
-  function sendChars() { if (host.alive) post({ type: 'eden-map:chars', v: 1, floor: host.floorNow, items: host.chars, rosters: host.roster, groups: mvuBridge.groupsView(host.roster), rep: host.rep, stageOrder: mvuBridge.stageOrder, portraits: mvuBridge.portraits }); }
+  function sendChars() { if (host.alive) gallery.schedule(); if (host.alive) post({ type: 'eden-map:chars', v: 1, floor: host.floorNow, items: host.chars, rosters: host.roster, groups: mvuBridge.groupsView(host.roster), rep: host.rep, stageOrder: mvuBridge.stageOrder, portraits: mvuBridge.portraits }); }
   // v0.9.5 名册（只读）：在场 / 成员 / 目标三张表 + 主角声望的表对象在这里（发地图用）；
   // 阶段先后序与原作立绘表在桥里（每聊天读一次卡文本，mvuBridge.stageOrder / mvuBridge.portraits）
   return {
-    mvuBridge, cardKey, chatId, get clock() { return clock; }, computeTrips, contextPipeline, getHere, get mvuReaders() { return mvuReaders; }, mvuStat, get outfitNow() { return outfitNow; }, pushMvu,
+    mvuBridge, gallery, cardKey, chatId, get clock() { return clock; }, computeTrips, contextPipeline, getHere, get mvuReaders() { return mvuReaders; }, mvuStat, get outfitNow() { return outfitNow; }, pushMvu,
     readVars, refreshVarMap, get routineModule() { return routineModule; }, get rtSched() { return rtSched; }, sendChars, sendRoutine, sendTrips,
     get sentClock() { return sentClock; }, set sentClock(v) { sentClock = v; }, get sentOutfit() { return sentOutfit; }, set sentOutfit(v) { sentOutfit = v; }, resetLayerSent() { sentLayer = null; },
     setVarUser, get tripsParseModule() { return tripsParseModule; }, userName,

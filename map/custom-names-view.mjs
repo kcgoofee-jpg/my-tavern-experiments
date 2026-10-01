@@ -108,9 +108,11 @@ const CustomNamesView = (() => {
       + `<small>${esc(host ? (host.vars ? uiTextOr('cu.store_chat', '存在这个聊天的变量里（换设备、导出聊天都跟着走）；摘要会作为背景发给模型') : uiTextOr('cu.store_local', '酒馆助手没有变量接口：只存本机浏览器')) : uiTextOr('cu.store_local2', '单独打开地图：只存本机浏览器'))}</small>`
       + `<label><span>${esc(uiTextOr('cu.night', '按时段给上层、中层加色调与昼夜底图（清晨 / 傍晚 / 夜间）'))}</span><input type="checkbox" role="switch" id="optNight" ${nightOn() ? 'checked' : ''}></label>`
       + (typeof plugins.CharactersView !== 'undefined' && plugins.CharactersView.hasPortraits ? `<label><span>${esc(uiTextOr('ch.port', '使用原作头像'))}</span><input type="checkbox" role="switch" id="optPort" ${plugins.CharactersView.portOn() ? 'checked' : ''}></label><small>${esc(uiTextOr('ch.port_hint', '人物没有自己设的头像时，用卡里自带的原作立绘（作者 Yehehua，图片在作者 CDN 与作者用的另外两个图床上，按需加载）；省流时默认关。只取作者声明的立绘，且不碰卡里受限分类的图；取不到的人显示名字首字（不是故障，可以自己设头像）'))}</small>` : '');
+    if (typeof plugins.GalleryView !== 'undefined' && plugins.GalleryView.available) box.insertAdjacentHTML('beforeend', `<label><span>${esc(uiTextOr('ch.gal_opt', '显示图鉴与场景'))}</span><input type="checkbox" role="switch" id="optGal" ${plugins.GalleryView.on ? 'checked' : ''}></label><small>${esc(uiTextOr('ch.gal_hint', '读取卡自带的图鉴脚本里的图（只读、不复制、不保存地址），人物卡里按类别列出，并把聊天里写出的图鉴标记在地点卡、人物卡里按楼层列出；不会往聊天消息里插图'))}</small>`);
     if (dlg && !dlg.hidden) renderDlg(false);
   }
   function onChange(ev) {
+    if (ev.target.id === 'optGal') plugins.GalleryView.setOn(ev.target.checked);
     if (ev.target.id === 'optNight') { try { LocalStore.set(NIGHT_KEY, ev.target.checked ? '1' : '0'); } catch (e) {} night(); }
     if (ev.target.id === 'cuSync') setSync(ev.target.checked);
     if (ev.target.id === 'optPort') plugins.CharactersView.setPortOn(ev.target.checked);
