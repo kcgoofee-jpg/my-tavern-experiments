@@ -6,6 +6,10 @@ Scope: map/**, tools/**, blender/**, skills/**, tests/** and the current documen
 "Current documents", their *.zh.md editions, docs/card-buildings.md, docs/landmarks/**). History stays as it is
 (docs/archive, docs/history, docs/reviews, docs/drafts, CHANGELOG.md, logs/).
 
+A second, narrower set of phrases ("setting not given", "position not written", "user decided", the old worldbook entry
+prefix) is banned only in data, pack and builder-output paths (PHRASE_SCOPE): comments in code and tests, history
+documents and the engine's own prose may still say "the user decides".
+
 Allowed exceptions (kept explicit, each with its reason below):
   * exact lines listed in ALLOW (the rule lines that forbid the words, and one append-only log line);
   * this file (it has to name the words) and the S0-F inventory (it quotes the words it counted).
@@ -26,6 +30,12 @@ ROOT = Path(__file__).resolve().parent.parent
 _MAP, _REPO, _SELF = "地图", "仓库", "自设"
 WORDS = [_MAP + _SELF, _REPO + "推断", _REPO + _SELF, _SELF, "卡未写", "卡没写", "repo-" + "inferred"]
 PATTERN = re.compile("|".join(re.escape(w) for w in WORDS))
+# Statement phrases (S4-4b): "not given / not written / user decided" style wording, and the old worldbook entry prefix.
+PHRASES = ["设定未给", "位置未写", "用户决定", "地图补充" + "-"]
+PHRASE_PATTERN = re.compile("|".join(re.escape(w) for w in WORDS + PHRASES))
+# where the phrases are banned: data, packs, props, the world maps, the estate viewer and the worldbook builder
+PHRASE_SCOPE = ("map/data/", "map/packs/", "map/props/", "map/estate/", "map/section.js", "tools/build_worldbook_addon.py")
+PHRASE_GLOBS = (("map/", "world", ".html"),)   # map/world*.html
 
 SCOPE_DIRS = ("map/", "tools/", "blender/", "skills/", "tests/", "docs/landmarks/")
 EXTRA_DOCS = ("docs/card-buildings.md",)
@@ -89,11 +99,19 @@ def in_scope(path, docs):
     return path.startswith(SCOPE_DIRS) or path in docs
 
 
+def phrase_scoped(path):
+    if path.startswith(PHRASE_SCOPE):
+        return True
+    return any(path.startswith(d) and path[len(d):].startswith(p) and path.endswith(e) and "/" not in path[len(d):] for d, p, e in PHRASE_GLOBS)
+
+
 def scan_text(path, text, allow):
-    """[(line_number, excerpt)] for every line naming one of the words, minus the allowlisted exact lines."""
+    """[(line_number, excerpt)] for every line naming one of the words (in phrase-scoped paths: or one of the phrases),
+    minus the allowlisted exact lines."""
     hits = []
+    pat = PHRASE_PATTERN if phrase_scoped(path) else PATTERN
     for n, line in enumerate(text.split("\n"), 1):
-        if PATTERN.search(line) and digest(line) not in allow.get(path, {}):
+        if pat.search(line) and digest(line) not in allow.get(path, {}):
             hits.append((n, line.strip()[:160]))
     return hits
 
@@ -169,6 +187,14 @@ def self_test():
         # 7 binary / undecodable content is skipped
         rel = put("map/bin.dat", "", data=b"\xff\xfe\x00" + w.encode("utf-16"))
         check("undecodable file is skipped", scan(root, [rel]) == [])
+        # 7b statement phrases: banned in data / pack / builder-output paths, not in code comments, tests or docs
+        for i, ph in enumerate(PHRASES):
+            for rel in ("map/data/x.json", "map/packs/p/manifest.json", "map/props/m/manifest.json", "map/world.html", "map/world_draft1.html", "map/estate/x.js", "tools/build_worldbook_addon.py"):
+                put(rel, f"text {ph} text\n")
+                check(f"phrase {i} is caught in {rel}", len(scan(root, [rel])) == 1)
+            for rel in ("map/tavern/ops.mjs", "tools/check_maps.py", "tests/x.test.mjs", "docs/a.md", "map/viewer.html"):
+                put(rel, f"// {ph}\n")
+                check(f"phrase {i} is allowed in {rel}", scan(root, [rel]) == [])
         # 8 README parsing
         docs = current_docs(root)
         check("README links become docs (and zh editions)", {"docs/a.md", "docs/a.zh.md", "docs/plans/b.md", "docs/card-buildings.md"} <= docs and "docs/x.md" not in docs)

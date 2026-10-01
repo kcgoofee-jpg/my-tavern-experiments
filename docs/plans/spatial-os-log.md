@@ -628,3 +628,33 @@ blocker: none
 open: Q-16 (docs/todo.md): the English self-check line names the book; the toast / info line wait for the manifest; mapping keys follow group ids; slot of a group without a table; stage order from the second group; about.how_tag English override. Recommend A (accept all).
 cleanup: done (every probe server and browser I started stopped, the stuck fix3 run and its server killed; no .claude/launch.json entries; worktrees s4-4 and s4-4-base stay for the orchestrator)
 === END ===
+=== RESULT S4-4b ===
+status: DONE
+items: T0 ✓ T1 ✓ T2 ✓ T3 ✓ T4 ✓ (renamed) T5 ✓ T6 ✓ T7 ✓
+commits: a0d005b6 chore: freeze maps.json for S4-4b   (pushed first, head #190)
+         2423c4dc data: plain place statements; worldbook entry names without provenance wording   (T1, T2, tests)
+         441e6815 data(estate): room kind medical; legacy estate remarks   (T3, T5)
+         (this commit) chore(gate): no-labels phrases widened; unfreeze   (T6, T7, this block, FREEZE_MAPS deleted)   (SHAs may change on rebase)
+         (next commit) chore(render-ledger): drop canon from campaign items   (T4, pushed right after; the field became `fill`)
+pushed: yes, the freeze commit first (head #190); the rest in the chat report
+tests: node 853 total / 852 pass / 1 skipped = numpy (baseline 849 / 848 / 1: +4 = worldbook_rename_s44b; none removed, here / wbsync_auto edited only in comments) | smoke PASS | arch PASS | check_maps 0 errors | check_pack PASS | check_no_labels PASS (self-test covers the 4 new phrases in 7 data / builder paths and 5 allowed paths) | probes: topo_dairy=PASS accept=PASS custom095=KNOWN (only "mig", fails on the base too)
+renamed entries: 42 place entries (地图补充-<名> → 地点-<名>) + the reserved alias 天城常识-位置未写 → 天城常识-其他机构 (not emitted today: maps.json unplaced list is empty); entry ids, keys, order, content identical (test); add-on _credit now names 「地点-*」
+sentences: map/world.html, world_draft1.html, world_draft2.html: 世界观：…（国名、数量、位置设定未给，此处为 12 个示意） → （此处为 12 个示意）
+         map/world.html: 世界观：…（国名、位置设定未给） → (parenthesis dropped)
+         map/data/world.js + world_markers.json: 荒野中的高地（位置设定未给，取奥伦境内最高处） → 荒野中的高地，位于奥伦境内最高处
+         map/data/world.js + world_markers.json: …专属骑士团调动权（封地位置设定未给） → (parenthesis dropped, five markers)
+         map/data/world.js + world_markers.json: （世界观条目中的「灵枢秘派」按用户决定统一为虚灵古派） → （世界观条目中的「灵枢秘派」即虚灵古派）
+         map/data/world.js: sub '位置未写 · 异兽侵袭地' → '城外旷野 · 异兽侵袭地'; src 天城外围（位置未写，示意图）： → 天城外围（示意）：
+         map/data/world.js: 跨城高速运输管道（走向设定未给） → (parenthesis dropped)
+         map/data/world.js: 设定未给位置，地图放在中层核心最高处 → 位于中层核心最高处
+         map/data/maps.json _note: 卡里有、但没写层与位置、地图也不落点的机构与地点（附加条目里写明「位置未写」）。2026-09-28 起用户要求… → 没有固定层与位置、地图不落点的机构与地点（附加条目写作「其他机构」）。每处建筑都已上图：…
+         map/props/tiancheng_univ_court/manifest.json: 天城大学的层为用户决定（2026-09-27，中层） → 天城大学位于中层
+         tools/build_worldbook_addon.py (reserved entry text): 卡里没写层与位置，写到时只写机构名… → 没有固定的层与位置，写到时只写机构名…
+         tests (comments only): here.test.mjs, wbsync_auto.test.mjs
+canon: renamed (`canon` → `fill`; inferred → generic, card → specific; read only by `render_campaign.py show`)
+left: history docs (tiancheng-maps, card-digest, card-omissions, card-buildings, history, reviews, archive, landmarks) keep the old words; the <地图补充·名> wrapper tag inside each place entry's text (injected text, outside the listed sentences); code / test comments that say "user decided" (gate does not cover them); `docs/landmarks/tiancheng_univ_court.md` still says the old words
+deviations: (1) tools/migrate_room_kind_medical.py committed for the T3 JSON edit (the generator needs matplotlib, absent here); the generator and house builder were edited by hand to match. (2) build_worldbook_addon.py --ship also wrote its default copy outside the repo (~/Downloads/酒馆/世界书/…), as it always does; nothing else outside the worktree was touched. (3) tests/fixtures/worldbook_addon_before_s44b.json added as the test baseline (the before copy). (4) the add-on _credit sentence and blender/estate/CONTRACT.md lines were reworded too (same family). (5) the S4 checkbox in todo.md is left unticked for the orchestrator.
+blocker: none
+open: Q-17 (docs/todo.md): entry renames, sentences, `fill`, history left as is. Recommend A (accept).
+cleanup: done (browser probes started and ended their own servers; no launch.json entries; worktree s4-4b stays for the orchestrator)
+=== END ===

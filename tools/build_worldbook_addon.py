@@ -29,7 +29,7 @@
 import argparse, json, os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CREDIT = '原作角色卡：Yehehua（类脑社区），原作发布帖 https://discord.com/channels/1380075940285124724/1534464824141025321 。本附加条目是经作者同意的二次创作；「地图补充-*」条目描述地图上的地点设定；「天城常识-*」「庄园常识-*」是把卡里已有设定按地图需要归纳的口径。'
+CREDIT = '原作角色卡：Yehehua（类脑社区），原作发布帖 https://discord.com/channels/1380075940285124724/1534464824141025321 。本附加条目是经作者同意的二次创作；「地点-*」条目描述地图上的地点设定；「天城常识-*」「庄园常识-*」是把卡里已有设定按地图需要归纳的口径。'
 RARE = {3: '罕', 4: '传'}
 
 
