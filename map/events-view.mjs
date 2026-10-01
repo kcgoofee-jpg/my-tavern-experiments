@@ -16,20 +16,13 @@ import { go } from './app/map-switch.mjs';
 import { updateLayerBadges } from './app/map-level-nav.mjs';
 import { cardFrom, closeCard, placeN, setCardFrom, showCard, trackEl, untrack } from './app/markers.mjs';
 import { setUserMoved, userMoved } from './app/locate.mjs';
-import { sheetVis } from './app/drawer-glue.mjs';
 import { plugins, register } from './app/plugins.mjs';
 import { eventGeo, eventLevel } from './app/nodes-runtime.mjs';
 import { hash01, spotOf } from './core/event-geo.mjs';
-import { chatId } from './app/extension-api.mjs';
 import * as TCCvd from './app/color-vision-mode.mjs';
 import { createEventsFx } from './events-fx.mjs';
 import { uiTextOr } from './app/text-lookup.mjs';
-// 抽屉标签角标的「看过」（用户 2026-09-28）：按聊天记在 edenMap:chat:<id>:tabseen（core/storage.mjs 按聊天前缀登记，参与 LRU）。
-// ev = 看过的「事件 id@最后更新」；ch = 看过的人物名。某个聊天第一次记录时把当前人物当作已看过，只有后来出现的才标红
-const seenKey = () => 'edenMap:chat:' + (chatId || '-') + ':tabseen';
-let seenMem = null, seenFor = null;
-function seenGet() { if (seenFor !== seenKey()) { seenFor = seenKey(); let o = null; try { o = JSON.parse(window.LocalStore?.get(seenFor)); } catch (e) {} seenMem = o && typeof o === 'object' ? { ev: new Set(o.ev || []), ch: o.ch ? new Set(o.ch) : null } : { ev: new Set(), ch: null }; } return seenMem; }
-function seenSave() { const v = JSON.stringify({ ev: [...seenMem.ev].slice(-400), ch: [...(seenMem.ch || [])].slice(-200) }); try { window.LocalStore?.set(seenFor, v); } catch (e) {} }
+import { provideTab, refreshTabs, saveTabSeen, tabSeen } from './app/tabs.mjs';   // the drawer's tab registry (S6-1): visibility, labels, fallback tab and the people pane live there
 const EventsView = (() => {
   const tn = z => (z && window.I18N?.tr?.(z)) || z || '';
   const where = e => [tn(e.layer), e.place].filter(Boolean).join('·');
@@ -219,24 +212,18 @@ const EventsView = (() => {
   // UI v2：事态 / 人物是唯一抽屉（ui/sheet.js，viewer.html 建）的两个标签页；抽屉三档由它管，这里只填内容和标签文字
   const SH = () => window.ViewerDrawer || null;
   const isOpenNow = () => !!SH()?.open;
+  provideTab('ev', { hasData: () => !!all().filter(listed).length && shown });
   function renderBar() {
     const S = SH(); if (!S) return;
     const bar = S.el, every = all().filter(listed), list = every.filter(e => !offed(e));
-    // 人物页（v0.9.2，chars.js）：和事态同一个抽屉，两个页签；地点页（卡片）由查看器管
-    const chN = typeof plugins.CharactersView !== 'undefined' ? plugins.CharactersView.count() : 0, hasEv = !!every.length && shown;
-    S.showTab('ev', hasEv); S.showTab('ch', !!chN);
-    if (typeof sheetVis === 'function') sheetVis();
-    if (!S.tab || S.button(S.tab)?.hidden) { const nx = hasEv ? 'ev' : chN ? 'ch' : null; if (nx) S.setTab(nx); }
+    // 页签显隐、抽屉收起、选中页、人物页签（标签 + 内容）由页签注册表管（app/tabs.mjs，S6-1）；这里只填事态页
+    refreshTabs('events');
+    if (!S.panel('ev')) return;   // the pack's ui.tabs left the events tab out
     tab = S.tab || tab; const open = S.open;
-    const SEEN = seenGet(), chNames = chN ? (plugins.CharactersView.items || []).map(c => c.name || c.名字 || '').filter(Boolean) : [];
-    if (!SEEN.ch) { SEEN.ch = new Set(chNames); seenSave(); }
-    if (open && S.tab === 'ch' && chNames.some(n => !SEEN.ch.has(n))) { chNames.forEach(n => SEEN.ch.add(n)); seenSave(); }
-    const chFresh = chNames.filter(n => !SEEN.ch.has(n)).length;
-    S.label('ch', `<i class="shp sh-circle" aria-hidden="true"></i>${esc(uiTextOr('ch.tab', '人物'))} <em>${chN}</em>${chFresh ? `<b class="nd" aria-hidden="true"></b>` : ''}`, { n: chN, fresh: chFresh });
-    if (open && S.tab === 'ch') plugins.CharactersView.pane(bar.querySelector('.chpane'));
+    const SEEN = tabSeen();
     taxNow();
     const n = list.filter(live).length, evk = e => e.id + '@' + (e.last || 0), fresh0 = list.filter(e => e.isNew && !SEEN.ev.has(evk(e))),
-      fresh = open && S.tab === 'ev' ? (fresh0.forEach(e => SEEN.ev.add(evk(e))), fresh0.length && seenSave(), 0) : fresh0.length, hid = ORDER.filter(g => off.has(g)).length + (off.has('其他') ? 1 : 0) + [...off].filter(k => k.startsWith('type:')).length;
+      fresh = open && S.tab === 'ev' ? (fresh0.forEach(e => SEEN.ev.add(evk(e))), fresh0.length && saveTabSeen(), 0) : fresh0.length, hid = ORDER.filter(g => off.has(g)).length + (off.has('其他') ? 1 : 0) + [...off].filter(k => k.startsWith('type:')).length;
     // 标签：大类形状点（最新一条，进行中优先）+「事态 N」+ 新事态红点；完整摘要在面板第一行
     const top = list.filter(live).sort((a, b) => (b.last || 0) - (a.last || 0))[0] || list[0];
     S.label('ev', `<i class="shp ${shp(top ? grpOf(top) : '其他')}" style="--c:${top ? lk(top)[1] : 'var(--muted)'}" aria-hidden="true"></i>${esc(uiTextOr('ev.tab', '事态'))} <em>${n || list.length}</em>${fresh ? `<b class="nd" aria-label="${esc(uiTextOr('ev.bar_new', '{n} 条新', { n: fresh }))}"></b>` : ''}`, { n: n || list.length, fresh });
@@ -370,16 +357,20 @@ const EventsView = (() => {
     const S = SH(), stage = $('#stage'); if (!$('#glitchNote')) stage.insertAdjacentHTML('beforeend', '<div id="glitchNote" hidden></div>');
     if (!S) return;
     const pe = S.panel('ev'), pc = S.panel('ch');
-    pe.innerHTML = '<div class="evsum"></div><div class="evleg" role="group"></div><ol id="evlist"></ol>';
-    pc.classList.add('chpane'); pc.id = 'chpane';
-    pe.querySelector('.evleg').setAttribute('aria-label', uiTextOr('ev.legend_aria', '按大类筛选'));
-    pe.querySelector('.evleg').addEventListener('click', e => { const b = e.target.closest('button[data-g]'); if (!b) return;
-      const g = b.dataset.g; off.has(g) ? off.delete(g) : off.add(g); try { LocalStore.set(OFF_KEY, JSON.stringify([...off])); } catch (err) {}
-      render(); renderBar(); badges(); });
-    pc.addEventListener('change', e => plugins.CharactersView.onPane(e)); pc.addEventListener('click', e => plugins.CharactersView.onPane(e));
-    // 点列表项飞过去；卡片关闭（× / Esc）后焦点回到事态标签
-    pe.querySelector('ol').addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (!b) return;
-      kbdFly = e.detail === 0; if (typeof cardFrom !== 'undefined') setCardFrom(S.button('ev')); flyTo(b.dataset.id); });
+    if (pe) {
+      pe.innerHTML = '<div class="evsum"></div><div class="evleg" role="group"></div><ol id="evlist"></ol>';
+      pe.querySelector('.evleg').setAttribute('aria-label', uiTextOr('ev.legend_aria', '按大类筛选'));
+      pe.querySelector('.evleg').addEventListener('click', e => { const b = e.target.closest('button[data-g]'); if (!b) return;
+        const g = b.dataset.g; off.has(g) ? off.delete(g) : off.add(g); try { LocalStore.set(OFF_KEY, JSON.stringify([...off])); } catch (err) {}
+        render(); renderBar(); badges(); });
+      // 点列表项飞过去；卡片关闭（× / Esc）后焦点回到事态标签
+      pe.querySelector('ol').addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (!b) return;
+        kbdFly = e.detail === 0; if (typeof cardFrom !== 'undefined') setCardFrom(S.button('ev')); flyTo(b.dataset.id); });
+    }
+    if (pc) {
+      pc.classList.add('chpane'); pc.id = 'chpane';
+      pc.addEventListener('change', e => plugins.CharactersView.onPane(e)); pc.addEventListener('click', e => plugins.CharactersView.onPane(e));
+    }
     if (coarse) document.body.classList.add('coarse');
   }
   // 层切换器上的事态数：某张地图上未解除的事件条数（查看器的 updateLayerBadges 读取）

@@ -27,6 +27,7 @@ const tiles = (m, node, has) => {
   if (Array.isArray(m.insets)) put(v, 'insets', m.insets.filter(i => i && str(i.id) && str(i.base) && Array.isArray(i.bounds) && size(i.res_px)).map(i => put({ id: i.id, src: i.base, bounds: i.bounds, px: i.res_px }, 'node', str(i.marker) && (node[i.marker] || i.marker))));
   put(v, 'x-depth', m.depth);
   put(v, 'x-clouds', m.clouds === true ? true : undefined); put(v, 'x-tint', m.tint === 'period' ? 'period' : undefined);   // K-R70: pack data says which maps get drifting clouds and the period night tint
+  put(v, 'x-people', ['macro', 'micro'].includes(m.people) ? m.people : undefined);   // K-R73: a map may force how the people tab groups the present people
   return v;
 };
 

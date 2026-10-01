@@ -6,10 +6,10 @@
 import { mapRegistry, aspect, currentMapId, currentMapData, pendingFocus, setPendingFocus, osdViewer } from './app/state.mjs';
 import { packOverlay } from './app/current-pack.mjs';
 import { everyone, groupLabel, groupList, paneModel } from './core/people.mjs';   // 人物页的分组：包声明几组就画几节（S4-4）
-import { afterLoadIdle, esc } from './app/dom-helpers.mjs';
+import { $, afterLoadIdle, esc } from './app/dom-helpers.mjs';
 import { getJSON } from './app/json-cache.mjs';
 import { declutter, leanBg } from './app/sharpness-tiers.mjs';
-import { LANG } from './app/i18n.mjs';
+import { LANG, translateName } from './app/i18n.mjs';
 import { go } from './app/map-switch.mjs';
 import { closeCard, placeN, showCard, trackEl, untrack } from './app/markers.mjs';
 import { drawnAt, hereRes, setUserMoved, userMoved } from './app/locate.mjs';
@@ -17,6 +17,9 @@ import { packStorage, chatId } from './app/extension-api.mjs';
 import { plugins, register } from './app/plugins.mjs';
 import * as TCCvd from './app/color-vision-mode.mjs';
 import { uiTextOr } from './app/text-lookup.mjs';
+import { RT } from './app/nodes-runtime.mjs';
+import { provideTab, saveTabSeen, tabContext, tabSeen } from './app/tabs.mjs';   // the drawer's tab registry (S6-1)
+import { peopleSections } from './core/entities.mjs';   // the present group's sections by level (K-R73)
 const CharactersView = (() => {
   let portraits = {}, rosters = null, groups = null, rep = null, stageOrder = null, items = [], floor = 0, CM = null, prefs = { show: true, off: [] }, avatars = {}, els = [], flyName = null;
   const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/characters-parse.mjs', document.baseURI).href).then(m => { CM = m; loadPrefs(); return m; }).catch(() => null);   // 首屏不取：页面 load 后空闲时预取，或第一次用到（有人物 / 改头像）时取；取到就读本机偏好
@@ -109,6 +112,14 @@ const CharactersView = (() => {
   const glabel = g => groupLabel(g, LANG, k => window.I18N.t(k));
   const count = () => everyone(glist(), items).size;   // fix3：同一人只算一次
   function bar() { if (typeof plugins.EventsView !== 'undefined') plugins.EventsView.renderBar?.(); }
+  // 人物页签的标签与「新」角标（原 events-view renderBar 里的同一段：同样的 html、{ n, fresh }、「看过」规则，经 tabSeen / saveTabSeen）
+  function chLabel() {
+    const S = window.ViewerDrawer, chN = count(), SEEN = tabSeen(), chNames = chN ? items.map(c => c.name || c.名字 || '').filter(Boolean) : [];
+    if (!SEEN.ch) { SEEN.ch = new Set(chNames); saveTabSeen(); }
+    if (S.open && S.tab === 'ch' && chNames.some(n => !SEEN.ch.has(n))) { chNames.forEach(n => SEEN.ch.add(n)); saveTabSeen(); }
+    const chFresh = chNames.filter(n => !SEEN.ch.has(n)).length;
+    return { html: `<i class="shp sh-circle" aria-hidden="true"></i>${esc(uiTextOr('ch.tab', '人物'))} <em>${chN}</em>${chFresh ? `<b class="nd" aria-hidden="true"></b>` : ''}`, short: { n: chN, fresh: chFresh } };
+  }
   // v0.9.5 名册（只读，卡内脚本按表的位置发现）：身份、阶段；分组可折叠（折叠状态存本机）
   const identity = n => { for (const g of glist()) { const it = g.items.find(i => i.name === n); if (it?.identity) return it.identity; } return ''; };
   const rosterItem = n => { for (const g of glist()) { const it = g.items.find(i => i.name === n); if (it) return it; } return null; };
@@ -150,13 +161,23 @@ const CharactersView = (() => {
     const body = `<i class="av" style="--c:${color(it.name)}">${avImg(it.name) || esc(ini(it.name))}</i><b>${esc(dn(it.name))}</b><em>${stageChip(it.stage)}${statChip(it)}${tierChip(it)}</em><small>${esc(it.identity || '')}${it.src ? ' · ' + esc(uiTextOr('ch.from_card', '设定')) : ''}${c ? ' · ' + esc(c.place) : ''}</small>`;
     return c ? `<li><button type="button" class="chgo" data-n="${esc(it.name)}">${body}</button></li>` : `<li><button type="button" class="chgo chro" data-card="${esc(it.name)}">${body}</button></li>`;   // v0.9.6：不在图上的名册成员也能开人物卡
   }
-  function group(id, label, n, inner) {
-    return `<details class="chgrp" data-g="${id}" ${closed.has(id) ? '' : 'open'}><summary>${esc(label)} <small>${n}</small></summary><ul>${inner}</ul></details>`;
+  function group(id, label, n, inner, raw) {   // raw: the body is already markup (the present group's sections), not a list of rows
+    return `<details class="chgrp" data-g="${id}" ${closed.has(id) ? '' : 'open'}><summary>${esc(label)} <small>${n}</small></summary>${raw ? inner : `<ul>${inner}</ul>`}</details>`;
+  }
+  // 在场组按层级分节（K-R73）：宏观 = 全部展开，微观 = 只有「和你在一起」展开；用户开合记在 closed 里（sec:<键> = 用户合上，sec+:<键> = 用户展开）
+  const secOpen = (key, mode) => closed.has('sec+:' + key) ? true : closed.has('sec:' + key) ? false : mode === 'macro' ? true : key === 'here';
+  const nodeName = id => { const n = RT?.tree.get(id); return n?.i18n?.[LANG]?.name || translateName(n?.name ?? id); };
+  const secLabel = s => s.key === 'here' ? uiTextOr('ch.with_you', '和你在一起') : s.key.startsWith('n:') ? nodeName(s.node) : s.key === 'map' ? uiTextOr('ch.sec_map', '本图其他位置') : s.key === 'else' ? uiTextOr('ch.sec_else', '其他地图') : uiTextOr('ch.sec_unknown', '位置未知');
+  function sections(extra, ctx) {
+    const here = hereRes(String($('#here')?.value || '').replace('{{user}}', ''))?.node ?? null;
+    const people = items.map(c => ({ node: hereRes(c.place)?.node ?? null, present: !!c.present, row: c, html: row(c) })).concat(extra.map(it => ({ node: null, present: true, row: it, html: rosterRow(it) })));
+    const secs = peopleSections({ people, tree: RT?.tree, owner: ctx.owner, here, mode: ctx.mode });
+    return secs.length ? `<div class="chsecs">${secs.map(s => `<details class="chsec" data-sec="${esc(s.key)}" ${secOpen(s.key, ctx.mode) ? 'open' : ''}><summary>${esc(secLabel(s))} <small>${s.rows.length}</small></summary><ul>${s.rows.map(r => r.html).join('')}</ul></details>`).join('')}</div>` : '';
   }
   function pane(el) {
     // fix3（用户 2026-09-28）：同一人既在场又在名册里时只列在「在场」一次（在场行带名册的阶段 / 数值），名册组只列不在场的，组名后注明「另 N 人在场」
     // S4-4：分节来自包声明的名册组（core/people.mjs），不再是写死的在场 / 成员 / 目标三节
-    const M = paneModel(glist(), items, glabel), extra = M.present.extra;
+    const M = paneModel(glist(), items, glabel), extra = M.present.extra, secs = sections(extra, tabContext());
     const also = n => n ? ' · ' + uiTextOr('ch.also_here', '另 {n} 人在场', { n }) : '';
     const ck = typeof plugins.CustomNamesView !== 'undefined' ? plugins.CustomNamesView.clock : null, of = typeof plugins.CustomNamesView !== 'undefined' ? plugins.CustomNamesView.outfit : null;
     // fix3：还没选开局（聊天只有开场白那一楼）时，人物 / 时间 / 地点都来自卡的 MVU 初始值，明确标出来
@@ -164,9 +185,12 @@ const CharactersView = (() => {
     // fix3（用户 2026-09-28）：着装属于人（主角），放在人物页顶部「你」这一行，不再挂在地点卡上
     const me = of?.text ? `<div class="chme"><i class="av me" aria-hidden="true">${esc(uiTextOr('ch.me_i', '你'))}</i><b>${esc(uiTextOr('ch.me', '你（主角）'))}</b><small title="${esc(of.items ? Object.entries(of.items).map(([k, v]) => `${k}：${v}`).join('\n') : of.text)}">${esc(uiTextOr('cu.outfit', '着装：{s}', { s: of.text }))}</small></div>` : '';
     el.innerHTML = pre + me + `<label class="tg chall"><span>${esc(uiTextOr('ch.show', '在地图上显示人物'))}</span><input type="checkbox" role="switch" ${prefs.show ? 'checked' : ''}></label><div class="chgrps">`
-      + group(M.present.id, M.present.label, items.length + extra.length, items.map(row).join('') + extra.map(rosterRow).join(''))
+      + (secs ? group(M.present.id, M.present.label, items.length + extra.length, secs, true) : group(M.present.id, M.present.label, items.length + extra.length, items.map(row).join('') + extra.map(rosterRow).join('')))
       + M.others.map(g => group(g.id, g.label, g.rest.length + also(g.also), g.rest.map(rosterRow).join(''))).join('') + '</div>';
     for (const d of el.querySelectorAll('details.chgrp')) d.addEventListener('toggle', () => { d.open ? closed.delete(d.dataset.g) : closed.add(d.dataset.g); try { LocalStore.set(GK, JSON.stringify([...closed])); } catch (e) {} });
+    for (const d of el.querySelectorAll('details.chsec')) { let was = d.open; d.addEventListener('toggle', () => {   // a toggle event that only repeats the state the markup was drawn with is not the user's choice
+      if (d.open === was) return; was = d.open; const k = d.dataset.sec; closed.delete(d.open ? 'sec:' + k : 'sec+:' + k); closed.add(d.open ? 'sec+:' + k : 'sec:' + k);
+      try { LocalStore.set(GK, JSON.stringify([...closed])); } catch (e) {} }); }
   }
   function onPane(e) {
     const inp = e.target.closest('input[type=checkbox]');
@@ -222,6 +246,8 @@ const CharactersView = (() => {
   #evbar .chpane summary small{color:var(--muted);font-weight:400;font-size:var(--fs-micro,11px)}
   #evbar .chpane summary{list-style:none}#evbar .chpane summary::-webkit-details-marker{display:none}#evbar .chpane summary::before{content:'';width:6px;height:6px;border:solid var(--muted);border-width:0 1.5px 1.5px 0;transform:rotate(-45deg);margin:0 4px 0 2px;transition:transform var(--dur-1,120ms)}#evbar .chpane details[open]>summary::before{transform:rotate(45deg)}
   #evbar .chpane .chro{cursor:pointer}
+  #evbar .chpane .chsec>summary{padding-left:var(--sp-5,12px)}
+  #evbar .chpane .chsec ul{list-style:none;margin:0;padding:0}
   #card details.chmore{margin-top:var(--sp-4);border-top:1px solid var(--line)}
   #card details.chmore summary{display:flex;align-items:center;gap:6px;min-height:36px;cursor:pointer;list-style:none;font-size:var(--fs-small);color:var(--ink-2);font-weight:600}
   #card details.chmore summary::-webkit-details-marker{display:none}
@@ -255,6 +281,7 @@ const CharactersView = (() => {
   @media (pointer:coarse),(max-width:640px){#evbar .chpane .chgo{min-height:44px}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   afterLoadIdle(mod);
+  provideTab('ch', { hasData: () => count() > 0, label: chLabel, render: el => pane(el) });
   TCCvd.onChange(() => afterOpen());   // 换色觉模式（E7）后头像框重新取色
   return { color, portOn, setMoreOn(on) { try { LocalStore.set(MO_KEY, on ? '1' : '0'); } catch (e) {} }, cardOf, setStatsOn(on) { try { LocalStore.set('edenMapCharStats', on ? '1' : '0'); } catch (e) {} bar(); }, get statsOn() { return statsOn(); }, setPortOn(on) { try { LocalStore.set(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
 })();

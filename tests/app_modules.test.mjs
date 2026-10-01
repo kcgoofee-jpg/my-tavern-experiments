@@ -39,7 +39,7 @@ test('调试面 viewer-debug.mjs 的名单固定（window.ViewerDebug.<名>，�
   const body = rd('app/viewer-debug.mjs'), names = [...body.slice(body.indexOf('const G = {'), body.indexOf('const debug')).matchAll(/(\w+): \(\) => /g)].map(m => m[1]).sort();
   assert.deepEqual(names, ['LANG', 'aspect', 'chatId', 'closeCard', 'currentMapData', 'currentMapId', 'esc', 'estFocus', 'fadeAway', 'go', 'hereRes',
     'jsonCache', 'jumpHere', 'lean', 'localName', 'main', 'mapRegistry', 'openEstate', 'osdViewer', 'packStorage', 'post', 'renderAbout', 'setEstFail', 'setTheme',
-    'showCard', 'showLay', 'showSet', 'sleeping', 'subpageSession', 'tier', 'toImg', 'uiText', 'worldData'].sort());
+    'showCard', 'showLay', 'showSet', 'sleeping', 'subpageSession', 'tabs', 'tier', 'toImg', 'uiText', 'worldData'].sort());
 });
 
 test('viewer.html 只剩标记与首帧前置；核心模块都 modulepreload；外挂是模块标签', () => {

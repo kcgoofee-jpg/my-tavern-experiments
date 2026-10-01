@@ -13,6 +13,8 @@ import { RT } from './nodes-runtime.mjs';
 import { initLabelToggle, makeDock } from './control-column.mjs';
 import { noticeRefresh } from './notice-layer.mjs';
 import { initStatusDot } from './status-dot.mjs';
+import { initTabs, refreshTabs, setTabEnv } from './tabs.mjs';   // the tab registry (S6-1): visibility rules live in core/drawer-tabs.mjs
+import { firstFallback, tabOrder } from '../core/drawer-tabs.mjs';
 // 层切换器：手机放在抽屉摘要行左侧（「中层 ▾」一次点开），桌面在控制列顶上常展开
 export function placeLayers() {
   const lay = $('#layers'), S = window.ViewerDrawer; if (!lay || !S) return;
@@ -20,18 +22,8 @@ export function placeLayers() {
   lay.classList.add('compact'); sheetVis();
 }
 
-// 抽屉可见性：有事态、人物、地点卡、或手机上要放层名胶囊时显示；三维页（主场景）用它自己的抽屉
-export function sheetVis() {
-  const S = window.ViewerDrawer; if (!S) return;
-  const estate = document.body.classList.contains('estate'), ev = !S.button('ev').hidden, ch = !S.button('ch').hidden, card = !$('#card').hidden;
-  const layChip = narrowNow() && !$('#layers').hidden;
-  // 未上图（v2 门控遗留）：当前地点认不出时，抽屉 / 桌面收起的右栏条也留着，「地点」页给出「放到地图上」入口
-  const um = typeof plugins.UnmappedPlacePicker !== 'undefined' ? plugins.UnmappedPlacePicker.name : null; placeEmpty(um);
-  S.hide(estate || !(ev || ch || card || layChip || um));
-  S.showTab('pl', ev || ch || card || !!um);
-  // U18：图例只在配了纵深数据的层出现，且包里写了图例条目（条目照 docs/upper-setting.md §4 图例）
-  S.showTab('lg', !estate && !!depthData && legendItems().length > 0);
-}
+// 抽屉可见性：有事态、人物、地点卡、或手机上要放层名胶囊时显示；三维页（主场景）用它自己的抽屉。规则在 core/drawer-tabs.mjs，经 app/tabs.mjs 的注册表执行（S6-1，行为不变）
+export function sheetVis() { refreshTabs('sheet'); }
 
 // 图例（U18）：一张说明「图上画的这些东西分别是什么」的清单；只有文字，不画矢量图例（设定稿：小样取成图裁片，另议）
 // 条目是设定包 ui.legend 的数据（K-R70）：{ type, label, desc, i18n: { en: { label, desc } } }；没有条目 = 这一页不出现
@@ -59,15 +51,16 @@ export function placeEmpty(um) {
 export function cardSheet(open) {
   const S = window.ViewerDrawer; if (!S) return; sheetVis();
   if (open) { S.setTab('pl', S.state === 'full' ? 'full' : 'half'); return; }
-  if (S.tab === 'pl') { const nx = !S.button('ev').hidden ? 'ev' : !S.button('ch').hidden ? 'ch' : null; if (nx) S.setTab(nx); S.set('peek'); }
+  if (S.tab === 'pl') { const nx = firstFallback(S, tabOrder(RT?.ui?.tabs)); if (nx) S.setTab(nx); S.set('peek'); }
 }
 
 export function initShell() {
   const dock = makeDock();
   const place = document.createElement('div'); place.id = 'placePane'; place.append($('#card'));
   const empty = document.createElement('p'); empty.id = 'cardEmpty'; place.append(empty);
+  const order = tabOrder(RT?.ui?.tabs), panels = { pl: place, lg: legendEl() };   // the pack's tab order (ui.tabs, K-R57); the first pack names none: ev, ch, pl, lg
   const S = window.ViewerDrawer = UISheet.create({ host: $('#stage'), id: 'evbar', railKey: 'edenMapRailW',
-    tabs: [{ id: 'ev', btnClass: 'evtab', icon: 'bell' }, { id: 'ch', btnClass: 'chtab', icon: 'users' }, { id: 'pl', btnClass: 'pltab', icon: 'pin', panel: place }, { id: 'lg', btnClass: 'lgtab', icon: 'info', panel: legendEl() }],
+    tabs: order.map(t => ({ id: t.id, btnClass: t.btnClass, icon: t.icon, ...(panels[t.id] ? { panel: panels[t.id] } : {}) })),
     freshText: n => uiTextOr('ev.bar_new', '{n} 条新', { n }),
     onState: ({ state, tab, mode, h }) => {
       S.el.dataset.open = state === 'peek' ? '0' : '1'; S.el.dataset.tab = tab || ''; document.body.classList.toggle('evopen', state !== 'peek');
@@ -76,11 +69,17 @@ export function initShell() {
       const st = $('#stage').getBoundingClientRect(); dock.classList.remove('row');
       if (mode === 'sheet' && state === 'half' && h + dock.offsetHeight + 12 > st.height * .5 + 1) dock.classList.add('row');
       declutter();   // 控制列换了位置 / 排法：重新避让地名
-      if (tab === 'ch' || tab === 'ev') plugins.EventsView.renderBar();
+      if (tab === 'ch') refreshTabs('state');
+      if (tab === 'ev') plugins.EventsView?.renderBar();   // repaints the events label and the fresh state, then refreshes the tabs
       post({ type: 'eden-map:chrome', bottom: h, top: $('header').offsetHeight }); noticeRefresh();
     } });
   S.label('pl', esc(uiTextOr('s.place', '地点')), {}); S.label('lg', esc(uiTextOr('s.legend', '图例')), {});
   S.showTab('ev', false); S.showTab('ch', false); S.showTab('lg', false); S.hide(true);
+  initTabs(S, order);
+  setTabEnv({ card: () => !$('#card').hidden, layChip: () => narrowNow() && !$('#layers').hidden, scene: () => document.body.classList.contains('estate'),
+    legendOk: () => !document.body.classList.contains('estate') && !!depthData && legendItems().length > 0,   // 图例只在配了纵深数据的层出现，且包里写了图例条目（U18）
+    // 未上图（v2 门控遗留）：当前地点认不出时，抽屉 / 桌面收起的右栏条也留着，「地点」页给出「放到地图上」入口
+    um: () => (typeof plugins.UnmappedPlacePicker !== 'undefined' ? plugins.UnmappedPlacePicker.name : null), beforeRefresh: () => placeEmpty(typeof plugins.UnmappedPlacePicker !== 'undefined' ? plugins.UnmappedPlacePicker.name : null) });
   // 点地图空白 = 抽屉回到收起（只认移动 < 8 px、< 250 ms 的轻点；点到地标 / 事态按地标处理，§10.4）
   let tp = null;
   $('#osd').addEventListener('pointerdown', e => { tp = e.isPrimary ? { x: e.clientX, y: e.clientY, t: e.timeStamp, on: !!e.target.closest?.('.mk, .ev, .realm, .chm, .tripin, .tc-ring a') } : null; }, true);

@@ -4,6 +4,7 @@
 // SCHEMA：每种消息要求的字段与类型（'string' | 'number' | 'boolean' | 'object' | 'array' | 'any'；后缀 ? = 可缺 / null）。
 // 没登记的类型：本端版本及更旧的消息一律丢（接收方本来也不处理）；更新版本发来的未知类型也丢，但不告警。
 // 纯函数、无依赖；node 单测 tests/protocol.test.mjs。只做形状检查，不过滤任何文字内容。
+// 数组字段（items / rows 等）的内容不逐项检查：其中的行可以带 node（节点 id，K-R71）——收方树里有这个 id 就用它，否则按 place 文字定位。
 export const PROTO = 2;
 
 const HOST_TO_VIEWER = 'host→viewer', VIEWER_TO_HOST = 'viewer→host', VIEWER_TO_SUBPAGE = 'viewer→sub', SUBPAGE_TO_VIEWER = 'sub→viewer';
