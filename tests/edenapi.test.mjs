@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fnGuard } from '../map/tavern/host-th.mjs';
 import { EDEN_API, guardApi } from '../map/tavern/edenapi.mjs';
+import { HOST_SRC } from './_host_src.mjs';
 
 const rd = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 
@@ -37,12 +38,12 @@ test('guardApi：契约全过原样透传；缺方法 / 形参不足不进暴露
 });
 
 test('EdenMap 表面积接线（静态断言）：暴露点走 guardApi + EDEN_API；契约与 api 对象一致；跨窗口调用点都过 fnGuard', () => {
-  const src = rd('map/tavern/eden-map.js');
+  const src = HOST_SRC;   // S5-1：api 对象搬进了 host-api.mjs
   assert.match(src, /const exposed = guardApi\(api, EDEN_API\)/);
   assert.match(src, /window\.parent\.EdenMap = exposed/);
   assert.match(src, /'EdenMap', guardApi\(api, EDEN_API\)/);                                   // initializeGlobal 注册的也是守卫过的面
   assert.match(src, /window\.parent\.EdenMap === exposed\) delete window\.parent\.EdenMap/);  // cleanup 对照暴露对象（不再对着原 api 永远删不掉）
-  const body = src.slice(src.indexOf('const api = Object.freeze'), src.indexOf('window.parent.EdenMap'));
+  const apiSrc = rd('map/tavern/host-api.mjs'), body = apiSrc.slice(apiSrc.indexOf('const api = Object.freeze'), apiSrc.indexOf('window.parent.EdenMap'));   // api 对象与暴露点同在 host-api.mjs
   assert.ok(body.length > 500, '抽到了 api 对象定义');
   for (const k of Object.keys(EDEN_API)) assert.match(body, new RegExp(`(?:^|[,\\n]\\s*(?:async\\s+)?)${k}\\s*[:=(]`), k);   // 契约方法都在 api 里（async 修饰也要越过）
   for (const m of ['EdenMap.setAvatar', 'EdenMap.removeAvatar', 'EdenMap.flyTo', 'EdenMap.getRooms', 'EdenMap.__chat']) assert.ok(src.includes(`'${m}'`), m);   // 跨窗口调用点

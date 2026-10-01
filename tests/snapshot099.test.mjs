@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { pickStat, WALK_MAX } from '../map/tavern/snapshot.mjs';
+import { HOST_SRC } from './_host_src.mjs';
 
 // 一楼 = { is_user, is_system, swipe_id, variables: [ {stat_data} | undefined per swipe ] }
 const st = loc => ({ stat_data: { 世界: { 当前地点: loc } } });
@@ -67,7 +68,7 @@ test('600 楼长聊天 + MVU 自动清理（留最近 20 楼 + 每 50 楼快照�
 });
 
 test('eden-map.js 订阅了生成 / swipe 删除 / 前台恢复事件，并有未确认指示与幂等写', () => {
-  const s = fs.readFileSync(new URL('../map/tavern/eden-map.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../map/tavern/mvu-bridge.mjs', import.meta.url), 'utf8');   // P2：快照选取与 VARIABLE_UPDATE_ENDED 在桥里
+  const s = HOST_SRC;   // P2：快照选取与 VARIABLE_UPDATE_ENDED 在桥里
   for (const k of ['GENERATION_STARTED', 'GENERATION_ENDED', 'GENERATION_STOPPED', 'MESSAGE_SWIPE_DELETED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHAT_CHANGED', 'VARIABLE_UPDATE_ENDED', 'visibilitychange', "'online'"]) assert.ok(s.includes(k), k);
   assert.match(s, /em-unsure/); assert.match(s, /snapshot\.mjs/); assert.match(s, /幂等/);
 });

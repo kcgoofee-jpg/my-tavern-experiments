@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { floorOf, floorState, walk, hasState } from '../map/tavern/timeline.mjs';
+import { HOST_SRC } from './_host_src.mjs';
 
 const LP = '/世界/当前地点';
 const RAW = {
@@ -83,7 +84,7 @@ test('hasState / 接线：有地点或有人或有时钟就算有；宿主按本
   assert.equal(hasState(floorState(2, deps())), true);
   assert.equal(hasState(floorState(0, deps())), false, '空楼没得看');
   assert.equal(hasState(null), false);
-  const host = readFileSync(new URL('../map/tavern/eden-map.js', import.meta.url), 'utf8');
+  const host = HOST_SRC;
   assert.match(host, /tavern\/timeline\.mjs/, '宿主从 core 之外的 tavern/ 取本模块');
   assert.match(host, /TLm\.floorState\(/, '宿主按 floorState(f, deps) 调用');
   const src = readFileSync(new URL('../map/tavern/timeline.mjs', import.meta.url), 'utf8').replace(/\/\/[^\n]*/g, '');

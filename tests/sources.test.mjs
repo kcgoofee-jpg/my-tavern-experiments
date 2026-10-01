@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { SOURCES, summarize, byId, BRANCHES, branchOf, branchUrl } from '../map/tavern/sources.mjs';
 import { SCHEMA } from '../map/core/protocol.mjs';
+import { HOST_SRC } from './_host_src.mjs';
 
 test('登记项齐全、id 唯一、有中英文名', () => {
   assert.deepEqual(SOURCES.map(s => s.id), ['mvu', 'db', 'tags', 'vars']);
@@ -18,7 +19,7 @@ test('summarize 与 v0.9.6 形状兼容，另加 list', () => {
   assert.equal(summarize().location, 'none');
 });
 test('接线：宿主 sources() 走注册表；设置页显示在读的来源；i18n 有每个来源的名字', () => {
-  assert.match(readFileSync(new URL('../map/tavern/eden-map.js', import.meta.url), 'utf8'), /SRCm\.summarize\(ctx\)/);
+  assert.match(HOST_SRC, /SRCm\.summarize\(ctx\)/);
   assert.match(readFileSync(new URL('../map/app/storage-ui.mjs', import.meta.url), 'utf8'), /s\.src_list/);
   for (const l of ['zh', 'en']) { const d = JSON.parse(readFileSync(new URL(`../map/i18n/${l}.json`, import.meta.url), 'utf8')); for (const s of SOURCES) assert.ok(d['s.src_' + s.id], l + ' ' + s.id); }
 });
@@ -44,7 +45,7 @@ test('分支注册表（版本分支切换）：只有 main / preview；镜像�
 });
 
 test('接线：分支切换的消息与界面都在（宿主 switchBranch / 设置下拉 / 协议登记 / i18n）', () => {
-  const host = readFileSync(new URL('../map/tavern/eden-map.js', import.meta.url), 'utf8');
+  const host = HOST_SRC;
   assert.match(host, /eden-map:switch-branch/);
   assert.match(host, /function switchBranch\(/);
   assert.match(readFileSync(new URL('../map/app/settings.mjs', import.meta.url), 'utf8'), /branchSel/);

@@ -85,10 +85,67 @@ test('host-th：偏好与接口探测在 node 里可构造（没有酒馆助手�
 
 test('入口只从 host-*.mjs 取，不再自带副本；worldbook 自动化的调用点不变', () => {
   const E = rd('map/tavern/eden-map.js');
-  assert.match(E, /^import \{ cdnFetch, thFn, fnOk, hostFn, packNs, createPrefs, createWbAuto, fnGuard \} from '\.\/host-th\.mjs';$/m);   // G6：fnGuard 也从适配层取
+  assert.match(E, /^import \{ cdnFetch, thFn, packNs, createPrefs \} from '\.\/host-th\.mjs';$/m);   // S5-1：fnOk / hostFn / createWbAuto / fnGuard 随各自的代码搬进了 flow 模块，入口只留自己还用的
   for (const s of ['const cdnFetch =', 'const thFn =', 'const fnOk =', 'const hostFn =', 'const PREF_KEYS', 'const LINES =', 'async function wbAutoRun', 'let dead']) assert.ok(!E.includes(s), s);
   assert.ok(!/\bcreateWorldbook\b/.test(rd('map/tavern/host-th.mjs')), '工厂名不能遮住酒馆助手的全局 createWorldbook');
-  assert.match(E, /await createWorldbook\(WBN, \[entry\]\)/);   // 自定义世界书仍调酒馆助手的全局函数
+  assert.match(rd('map/tavern/root-store.mjs'), /await createWorldbook\(WBN, \[entry\]\)/);   // 自定义世界书仍调酒馆助手的全局函数（S5-1：随 syncWb 搬进了 root-store.mjs）
   assert.match(E, /listen\(tavern_events\.CHAT_CHANGED, \(\) => \{ clearTimeout\(wbChatT\); wbChatT = setTimeout\(\(\) => \{ if \(!life\.dead\) afterGen\(\(\) => wbAuto\(\)/);
   assert.match(E, /setTimeout\(\(\) => \{ if \(!life\.dead\) afterGen\(\(\) => wbAuto\(\)\.catch/);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// S5-1：eden-map.js 拆成入口 + 八个 flow 模块；custom.mjs / events.mjs 各自拆出几个小模块。行为不变，所以这里只钉「接口形状」：
+// 行数上限、每个 flow 模块导出 DEPS + 工厂、入口的依赖袋提供每一个 DEPS 键、模块里用到的每个 host.X 都登记在 DEPS、缺键就抛、
+// 在桩依赖下能创建并返回约定的接口。
+// ---------------------------------------------------------------------------------------------------------------------
+const lines = f => rd(f).split('\n').length - (rd(f).endsWith('\n') ? 1 : 0);
+const FLOWS = {   // 文件 → [工厂名, 返回的接口]
+  'llm-flow': ['createLlmFlow', 'jitRound opEvents WBJm WBSm xtalRound'],
+  'loot-flow': ['createLootFlow', 'changedInv FRm frState gate gateFlush injectAction inv INVm ledgerSync LEDm lootFacts scanPickups sendInv settleCarry settleState slot SSK stealthCheck takeLoot'],
+  'chars-flow': ['createCharsFlow', 'BR cardKey chatId clock computeTrips CTX getHere MV mvuStat outfitNow pushMvu readVars refreshVarMap RTm rtSched sendChars sendRoutine sendTrips sentClock sentOutfit setVarUser TRm userName'],
+  'timeline-flow': ['createTimelineFlow', 'KFm kfReset kfView tlBtn tlCache tlEl tlExit TLm tlOn tlWalk'],
+  'host-api': ['createHostApi', 'api cardId emit emitMoved exposed inner knowRooms onTh scriptInfo sendTh subs THm transitMod wbAuto'],
+  'root-store': ['createRootStore', 'BG budgetSweep custom customChanged customChat customTags kindOf loadCustom reg regNow saveRoot sendCustom store storeWarn varsOk wbState'],
+  'host-checks': ['createHostChecks', 'autoCheck checkAt checkFacts checkItems checkP finishCheck followCheck followHead followNewer hostToast openSettings runCheck SC sendCheck setQ showSplash showUpdPrompt splash splashDue switchBranch switchVersion toastEl toastOnce toastWait updEl updPrompt updWait viewerVer'],
+  'modes-flow': ['createModesFlow', 'cardSkip checkpointResume checkpointStep conflictsNow cp cpResume MDm pointsFor spatialInject SpatialM spatialNow stateInject stateNow'],
+};
+const mod = f => import('../map/tavern/' + f + '.mjs');
+// 什么都接得住的桩：函数、对象、promise 之外的依赖都用它（创建期只会被存起来或在回调里用）
+const anyStub = (() => { const f = function () {}; const p = new Proxy(f, { get: (t, k) => (k === Symbol.toPrimitive ? () => '' : k === Symbol.iterator ? function* () {} : k === 'then' ? undefined : p), apply: () => p, construct: () => p, set: () => true, has: () => true }); return p; })();
+
+test('S5-1 行数：入口 ≤ 800，flow 模块各 ≤ 400', () => {
+  assert.ok(lines('map/tavern/eden-map.js') <= 800, 'eden-map.js ' + lines('map/tavern/eden-map.js'));
+  for (const f of Object.keys(FLOWS)) assert.ok(lines('map/tavern/' + f + '.mjs') <= 400, f);
+});
+
+test('S5-1 flow 模块契约：导出 DEPS + 工厂；入口的依赖袋给齐每个 DEPS 键；模块里的每个 host.X 都登记在 DEPS', async () => {
+  const E = rd('map/tavern/eden-map.js');
+  const bag = E.slice(E.indexOf('const host = {'), E.indexOf('\n  };', E.indexOf('const host = {')));
+  const provided = new Set([...bag.matchAll(/(?:^|[\s,{])(?:get |set )?([A-Za-z_]\w*)(?:\s*\(|:)/gm)].map(m => m[1]));
+  for (const [f, [factory]] of Object.entries(FLOWS)) {
+    const M = await mod(f), src = rd('map/tavern/' + f + '.mjs');
+    assert.equal(typeof M[factory], 'function', f + ' 导出 ' + factory);
+    assert.ok(Array.isArray(M.DEPS) && M.DEPS.length && M.DEPS.every(k => typeof k === 'string'), f + ' DEPS');
+    assert.equal(new Set(M.DEPS).size, M.DEPS.length, f + ' DEPS 无重复');
+    for (const k of M.DEPS) assert.ok(provided.has(k), `${f} 要 ${k}，入口依赖袋没给`);
+    const used = new Set([...src.matchAll(/\bhost\.([A-Za-z_]\w*)/g)].map(m => m[1])); used.delete('entryUrl');
+    for (const k of used) assert.ok(M.DEPS.includes(k), `${f} 用了 host.${k} 却没登记在 DEPS`);
+    assert.match(E, new RegExp(`import \\{ ${factory} \\} from '\\./${f}\\.mjs';`), '入口 import ' + f);
+    assert.match(E, new RegExp(`= ${factory}\\(host\\)`), '入口只调一次 ' + factory);
+  }
+  assert.ok(provided.has('entryUrl') && /entryUrl: import\.meta\.url/.test(bag), 'swapVer / branchUrl 要的是入口脚本地址，不是模块自己的');
+});
+
+test('S5-1 flow 模块在桩依赖下能创建、返回约定接口；缺键就抛（带模块名）', async () => {
+  const hadWin = Object.getOwnPropertyDescriptor(globalThis, 'window'), hadDoc = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  globalThis.window = anyStub; globalThis.document = anyStub;
+  try {
+    for (const [f, [factory, api]] of Object.entries(FLOWS)) {
+      const M = await mod(f);
+      const host = Object.fromEntries(M.DEPS.map(k => [k, anyStub])); host.MAN = Promise.resolve(null); host.SELF = 'file:///nonexistent/map/'; host.entryUrl = 'file:///nonexistent/map/tavern/eden-map.js';
+      const r = M[factory](host);
+      assert.deepEqual(Object.keys(r).sort(), api.split(' ').sort(), f + ' 接口');
+      assert.throws(() => M[factory]({}), new RegExp(f + ': missing dep'), f + ' 缺键报错');
+    }
+  } finally { hadWin ? Object.defineProperty(globalThis, 'window', hadWin) : delete globalThis.window; hadDoc ? Object.defineProperty(globalThis, 'document', hadDoc) : delete globalThis.document; }
 });

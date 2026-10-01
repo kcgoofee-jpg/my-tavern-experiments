@@ -6,7 +6,8 @@ import * as M from '../map/tavern/modes.mjs';
 import { pickStat } from '../map/tavern/snapshot.mjs';
 import { loadEventGeo } from '../map/tavern/event-geo-load.mjs';
 import * as F from './helpers/s43_frozen.mjs';
-const HOST = readFileSync(new URL('../map/tavern/eden-map.js', import.meta.url), 'utf8') + '\n' + readFileSync(new URL('../map/tavern/mvu-bridge.mjs', import.meta.url), 'utf8');   // P2：标签对账在桥里，接线在入口
+import { HOST_SRC } from './_host_src.mjs';
+const HOST = HOST_SRC;   // P2：标签对账在桥里，接线在入口
 
 // 酒馆助手注入：按 id 存（TH inject.ts：同 id 覆盖）；pagehide 时 TH 自己全撤
 function fakeTH() {

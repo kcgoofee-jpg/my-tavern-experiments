@@ -12,6 +12,7 @@ import { scan, names, itemId, isItemName, VERBS, NOT_ITEMS, MAX_FACTS } from '..
 import { slotProbe, slotDeclare, slotPut, slotSave, audit, claim } from '../map/core/ledger.mjs';
 import { createSlotSink } from '../map/tavern/varsync.mjs';
 import { norm as invNorm, put as invPut, rows as invRows, findRow, digestLine } from '../map/tavern/inventory.mjs';
+import { HOST_SRC } from './_host_src.mjs';
 
 // ---------------- ① 探测本身 ----------------
 test('正文拾取：动词 + 具体物品名 → 事实；引号 / 量词 / 把字句 / 已知物品表四条路都通', () => {
@@ -112,7 +113,7 @@ test('幂等与水位：同一件只补一次；再用一轮同一件不会重�
 
 // ---------------- ③ 宿主接线（源码级守卫：接线断了这条测试先红） ----------------
 test('宿主接线：正文扫描接在本轮结算之前，且有界、按 id 去重、失败静默', () => {
-  const src = readFileSync(new URL('../map/tavern/eden-map.js', import.meta.url), 'utf8');
+  const src = HOST_SRC;   // S5-1：拾取流搬进了 loot-flow.mjs
   assert.match(src, /import\(SELF \+ 'core\/pickup\.mjs'\)/, '探测模块随宿主一起加载');
   assert.match(src, /scanPickups\(msgs, hereNow\);\s*\/\/[^\n]*\n\s*gate\(\)\?\.request\('sync', ledgerSync\)/, '先入账再放行结算闸门（读取期间不写变量）');
   assert.match(src, /lootFacts\.some\(x => x\?\.id === f\.id\)/, '同一件不重复入账');

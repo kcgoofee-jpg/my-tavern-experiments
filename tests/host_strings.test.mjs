@@ -9,6 +9,7 @@ import { splashTitle } from '../map/tavern/splash.mjs';
 import * as T from '../map/tavern/th.mjs';
 import * as SC from '../map/tavern/selfcheck.mjs';
 import { buildReportText } from '../map/app/feedback-report.mjs';
+import { HOST_SRC } from './_host_src.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const J = p => JSON.parse(fs.readFileSync(ROOT + p, 'utf8'));
@@ -60,7 +61,7 @@ test('the "new events" toast and the feedback report header: the first pack\'s o
 });
 
 test('the call sites: the host script asks for the texts through the manifest, the engine files carry no product name', () => {
-  const host = fs.readFileSync(ROOT + 'map/tavern/eden-map.js', 'utf8');
+  const host = HOST_SRC;   // S5-1：HS 调用点分在入口与 flow 模块里
   for (const k of ['ev.toast', 'app.name', 'app.short', 'app.script']) assert.ok(host.includes(`HS('${k}'`), k);
   for (const f of ['map/tavern/splash.mjs', 'map/tavern/th.mjs', 'map/tavern/selfcheck.mjs', 'map/tavern/host-strings.mjs']) assert.ok(noTerm(fs.readFileSync(ROOT + f, 'utf8').replace(/^\s*\/\/.*$/gm, '')), f);
 });

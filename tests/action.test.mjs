@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { KEY, TPL_KEY, MODES, DEFAULTS, KINDS, modeOf, readTpl, fill, buildAction, slashOf, describe, cleanName } from '../map/tavern/action.mjs';
+import { HOST_SRC } from './_host_src.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -66,7 +67,7 @@ test('斜杠命令：只有 sys 模式才给 /sys，管道符要转义', () => {
 test('接线：协议表登记、宿主处理、查看器有入口与设置项', () => {
   const proto = readFileSync(join(ROOT, 'map/core/protocol.mjs'), 'utf8');
   assert.match(proto, /'eden-map:action': \[V2H,/, '协议表要登记这条消息');
-  const host = readFileSync(join(ROOT, 'map/tavern/eden-map.js'), 'utf8');
+  const host = HOST_SRC;   // S5-1：injectAction 搬进了 loot-flow.mjs
   assert.match(host, /eden-map:action'\)\s*injectAction|type === 'eden-map:action'/, '宿主必须处理这条消息');
   assert.match(host, /tavern\/action\.mjs/, '实现走 tavern/action.mjs');
   assert.match(host, /composeIn\(a\.text\)/, 'sys 没有 triggerSlash 时退回只填不发');

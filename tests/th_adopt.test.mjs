@@ -5,8 +5,9 @@ import { readFileSync } from 'node:fs';
 import * as T from '../map/tavern/th.mjs';
 import * as SC from '../map/tavern/selfcheck.mjs';
 import { hostStr } from '../map/tavern/host-strings.mjs';
+import { HOST_SRC } from './_host_src.mjs';
 const EDEN = JSON.parse(readFileSync(new URL('../map/packs/eden/manifest.json', import.meta.url), 'utf8'));   // the first pack's manifest: its strings name the map
-const HOST = readFileSync(new URL('../map/tavern/eden-map.js', import.meta.url), 'utf8');
+const HOST = HOST_SRC;
 
 test('B2 脚本按钮：不存在才追加，返回事件名；接口缺 → null', () => {
   const got = []; const fn = T.hostFns([{ appendInexistentScriptButtons: b => got.push(...b), getButtonEvent: n => 'btn:' + n }]);
@@ -59,6 +60,6 @@ test('B5 脚本说明；B6 initializeGlobal + 旧别名；B8 只广播地点；B
 });
 
 test('不用的接口：installExtension / builtin / 角色卡写接口 / generate*', () => {
-  for (const f of ['map/tavern/eden-map.js', 'map/tavern/host-th.mjs', 'map/tavern/host-routes.mjs', 'map/tavern/host-lifecycle.mjs', 'map/tavern/th.mjs', 'map/tavern/wbsync.mjs', 'map/tavern/modes.mjs'].map(p => { try { return readFileSync(new URL('../' + p, import.meta.url), 'utf8'); } catch (e) { return ''; } }))
+  for (const f of ['map/tavern/eden-map.js', 'map/tavern/host-th.mjs', 'map/tavern/host-routes.mjs', 'map/tavern/host-lifecycle.mjs', 'map/tavern/llm-flow.mjs', 'map/tavern/loot-flow.mjs', 'map/tavern/chars-flow.mjs', 'map/tavern/timeline-flow.mjs', 'map/tavern/host-api.mjs', 'map/tavern/root-store.mjs', 'map/tavern/host-checks.mjs', 'map/tavern/modes-flow.mjs', 'map/tavern/th.mjs', 'map/tavern/wbsync.mjs', 'map/tavern/modes.mjs'].map(p => { try { return readFileSync(new URL('../' + p, import.meta.url), 'utf8'); } catch (e) { return ''; } }))
     assert.ok(!/installExtension\(|builtin\.|replaceCharacter\(|importRawCharacter\(|updateCharacterWith\(|\bgenerate(Raw)?\(/.test(f));
 });
