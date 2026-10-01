@@ -1561,4 +1561,15 @@ deviations: none; all standalone equipment tops strictly <= z+1.44m (no section 
 blocker: none
 open: none
 cleanup: done
+=== RESULT B2-MECH ===
+status: DONE
+items: 3 (B2 机电设备间与结界发生器: 浮岛以太结界共鸣核心、四角磁束能导流柱与汇流排、远程主控SCADA台、四组高压配电变压控制柜群) ✓
+commits:
+pending feat(estate): industrial realism modeling for B2 mechanical equipment and barrier resonance core
+pushed: yes
+tests: node 1412/1413 (1 skipped) | smoke PASS | arch PASS | house.glb 718780 bytes (150 bytes under 718930 cap)
+deviations: none; all equipment tops strictly <= z+1.44m (no section cut clipping)
+blocker: none
+open: none
+cleanup: done
 === END ===
