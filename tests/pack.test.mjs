@@ -178,3 +178,18 @@ test('清单 vars：换 MVU 默认路径（其余为空、按字段名自动发�
     assert.equal(AD.detect({ 状态: { 地点: 'A' }, 别处: { 位置: 'B' } }).location, '状态.地点', '默认路径在卡里就用它');
   } finally { setProfile(null); }
 });
+
+// S9-1 (K-R96): the viewer's loader accepts a schema-2 manifest; the checks of its blocks belong to core/pack-v2.mjs validate2
+test('schema 2：validate 只查 id 与 title；load 带上 schema 与原清单；schema 1 的报错不变', async () => {
+  const m2 = { id: 'minimal', schema: 2, title: 'Brindle', i18n: { en: { title: 'Brindle EN' } }, nodes: 'nodes.json' };
+  assert.deepEqual(PK.validate(m2), []);
+  assert.deepEqual(PK.validate({ ...m2, title: '' }), ['title 必填（≤ 80 字）']);
+  assert.ok(PK.validate({ ...m2, id: 'X' }).length);
+  assert.deepEqual(PK.validate({ id: 'town', schema: 3, title: 't', data: { maps: 'maps.json' } }), ['schema 必须是 1']);
+  assert.deepEqual(PK.validate({ id: 'town', schema: 1, title: 't' }), ['data.maps 必填，且是相对路径']);
+  const R = await PK.load('minimal', { injected: { manifest: m2 } });
+  assert.equal(R.schema, 2); assert.equal(R.v2, m2); assert.equal(R.base, 'packs/minimal/'); assert.equal(R.title, 'Brindle'); assert.equal(R.title_en, 'Brindle EN');
+  assert.equal(R.chatVar, 'tc_minimal'); assert.deepEqual(R.data, {});
+  const v1 = await PK.load('town', { injected: { manifest: js('map/packs/town/manifest.json') } });
+  assert.equal(v1.schema, undefined); assert.equal(v1.v2, undefined);
+});

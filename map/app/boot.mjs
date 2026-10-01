@@ -40,7 +40,7 @@ import { updateInsets } from './hires-inset-tiles.mjs';
 import { $ } from './dom-helpers.mjs';
 import { protocol, PROTO, post, setProtocol, SUB_ORIGIN } from './protocol-stamp.mjs';
 import { coarse, narrow, setNarrow } from './viewport-mode.mjs';
-import { getJSON, jsonCache } from './json-cache.mjs';
+import { getJSON, jsonCache, seedJSON } from './json-cache.mjs';
 import { TIERS, autoTier, declutter, effTier, homeMode, initProgress, onOpen, refit, setTier } from './sharpness-tiers.mjs';
 import { DICT, LANG, applyI18n, postState, setDICT, setLANG, setLang, uiText } from './i18n.mjs';
 import { layoutHeader, warmOthers } from './topbar.mjs';
@@ -55,8 +55,9 @@ import { initE7 } from './one-hand-mode.mjs';
 import { initShell } from './drawer-glue.mjs';
 import { initLayerHost, registry, registerCoreLayers, renderLayerMenu } from './layer-host.mjs';
 import { plugins } from './plugins.mjs';
-import { PACK, initPack, packData, packEvents, packNames, packOverlay, packTax, setOverlay, rebase } from './current-pack.mjs';
-import { buildRuntime } from './nodes-runtime.mjs';   // 节点树：面包屑 / 上一级 / 主场景替身都从它读（S2-A）
+import { PACK, initPack, packData, packEvents, packNames, packOverlay, packTax, setOverlay, rebase, packV2, packProblems } from './current-pack.mjs';
+import { projectV2 } from '../core/pack-v2-view.mjs';   // schema-2 包到注册表形状的投影（K-R96）
+import { buildRuntime, buildRuntimeV2 } from './nodes-runtime.mjs';   // 节点树：面包屑 / 上一级 / 主场景替身都从它读（S2-A）
 import { applyTheme } from './theme.mjs';   // 包的分视图主题（K-R70）：一个 <style id="packTheme">
 import { busOn } from './bus.mjs';
 // 多地图查看器：地图注册表 data/maps.json（世界 → 城市各层 → 以后的室内剖面……）。
@@ -69,7 +70,9 @@ async function mainInner() {
   let d, enNamesP, reg, mk, dict, overlay;
   await initPack(getJSON);   // 设定包（core/pack.mjs）：一律取清单（eden 的在 viewer.html preload）
   const opt = k => (packData(k) ? getJSON(packData(k)) : Promise.resolve(null));
-  [reg, mk, d, dict, enNamesP, , , overlay] = await Promise.all([getJSON(packData('maps')).then(rebase), opt('world'), opt('derived'), window.__dictionaryPromise,
+  const v2 = packV2 ? projectV2(packV2, { base: PACK.base }) : null;   // schema-2 包：投影出注册表与虚拟点位文件，不取 v1 数据文件（清单没有 data）
+  if (v2) { seedJSON(v2.files); if (packProblems.length || v2.problems.length) console.warn('[地图] 设定包有问题', [...packProblems, ...v2.problems]); }
+  [reg, mk, d, dict, enNamesP, , , overlay] = await Promise.all([v2 ? v2.registry : getJSON(packData('maps')).then(rebase), opt('world'), opt('derived'), window.__dictionaryPromise,
     packNames('en') ? getJSON(packNames('en')) : null,   // 包的英文地名表（清单 data.names.en）；没声明的包：英文下地名退回中文
     import(new URL('core/protocol.mjs', document.baseURI).href).then(m => { setProtocol(m); }, () => null), packEvents,
     opt('overlay')]);   // 包旁边的 v2 叠加层（K-R67），清单 data.overlay 声明了才取；没声明的包行为和以前一样
@@ -79,7 +82,7 @@ async function mainInner() {
   if (!DICT || !Object.keys(DICT).length) { const zh = await getJSON('i18n/zh.json'); if (LANG !== 'zh') { setLANG('zh'); document.documentElement.lang = 'zh-CN'; } setDICT(zh || {}); }
   jsonCache.set('i18n/' + LANG + '.json', Promise.resolve(DICT));
   setEnNames(enNamesP || null); rebuildHere();
-  const nodes = plan => buildRuntime({ manifest: PACK, maps: mapRegistry, world: worldData, names: enNamesP || null, plan, overlay: packOverlay, events: packTax });
+  const nodes = v2 ? () => buildRuntimeV2(packV2, v2.registry) : plan => buildRuntime({ manifest: PACK, maps: mapRegistry, world: worldData, names: enNamesP || null, plan, overlay: packOverlay, events: packTax });
   applyTheme(nodes(null)?.ui);
   if (packData('rooms')) getJSON(packData('rooms')).then(p => { if (!p?.rooms) return; setEstPlan(p); rebuildHere(); nodes(p); markHere($('#here').value); }).catch(() => {});   // v0.9.6：卡设定分层房间进当前地点词表（不挡启动）   // 当前地点 → 落点的词表（中英都认；加上本机自定义叫法）
   post({ type: 'eden-map:boot', pct: .9 });   // 数据文件已到

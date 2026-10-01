@@ -77,7 +77,7 @@ export function projectV2(pack, { base = '' } = {}) {
     if (!source) continue;
     const path = `v2/${pid}/${owner}.json`, ids = Object.keys(spots);
     files[path] = { extent_m: extent, markers: ids.map(id => ({ id, nx: spots[id].x, ny: spots[id].y, r: DOT_R })) };
-    registry.maps[owner] = { title: nameOf(owner), ...(en(owner) ? { title_en: en(owner) } : {}), kind: 'points', base: source, data: path, view: { extent_m: extent }, markers: Object.fromEntries(ids.map(id => [id, meta(id, owner)])) };
+    registry.maps[owner] = { title: nameOf(owner), ...(en(owner) ? { title_en: en(owner) } : {}), kind: 'points', base: source, data: path, view: { extent_m: extent, width_m: extent[0] }, markers: Object.fromEntries(ids.map(id => [id, meta(id, owner)])) };
   }
   const ok = id => Object.hasOwn(registry.maps, id);
   let s = viewOf(tree, views, str(ui.start) && tree.has(ui.start) ? ui.start : tree.root).owner;

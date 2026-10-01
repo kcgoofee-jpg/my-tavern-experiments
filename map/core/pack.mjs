@@ -23,6 +23,7 @@ export function validate(m) {
   const errs = [];
   if (!m || typeof m !== 'object' || Array.isArray(m)) return ['清单不是对象'];
   if (!ID_RE.test(m.id || '')) errs.push('id 只能是小写字母开头的 2–32 位 a-z0-9_-');
+  if (m.schema === 2) { if (!str(m.title, 80)) errs.push('title 必填（≤ 80 字）'); return errs; }   // schema 2：其余交给 core/pack-v2.mjs validate2（K-R96）
   if (m.schema !== 1) errs.push('schema 必须是 1');
   if (!str(m.title, 80)) errs.push('title 必填（≤ 80 字）');
   if (!m.data || !relOk(m.data.maps)) errs.push('data.maps 必填，且是相对路径');
@@ -49,7 +50,7 @@ export function resolve(m, base = m?.id === DEFAULT_ID ? '' : `packs/${m?.id}/`)
   const data = {};
   for (const [k, v] of Object.entries(m.data || {})) data[k] = v === 'builtin' ? v : k === 'names' && v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([l, p]) => [l, base + p])) : base + v;
   return {
-    id: m.id, title: m.title, title_en: m.title_en || m.title, base,
+    id: m.id, title: m.title, title_en: m.title_en || m.i18n?.en?.title || m.title, base,
     prefix: prefixOf(m.id), chatVar: chatVarOf(m.id, m),
     data, preload: (m.preload || []).map(p => base + p),
     cdn: { ...(m.cdn || {}) }, theme: { accent: '#e6c36a', ...(m.theme || {}) },
@@ -73,7 +74,7 @@ export async function load(id = currentId(), { base = '', fetchJSON, injected } 
   }
   const errs = validate(m); if (m.id !== id) errs.push(`清单 id（${m.id}）与请求的包（${id}）不一致`);
   if (errs.length) throw new Error('设定包清单不合格：' + errs.join('；'));
-  return resolve(m);
+  return m.schema === 2 ? { ...resolve(m), schema: 2, v2: m } : resolve(m);   // schema 2：清单原样带上，块解析与校验在 app/current-pack.mjs（K-R96）
 }
 /**
  * 包里的 maps.json 写包内相对路径（art/town.dzi、town_up.json）；核心按 map/ 取文件，这里补上包目录。

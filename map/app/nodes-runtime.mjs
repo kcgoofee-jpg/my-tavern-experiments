@@ -5,6 +5,7 @@
 import { fromV1 } from '../core/compat-v1.mjs';
 import { buildTree, positionOf, levelsOf } from '../core/nodes.mjs';
 import { makeGeo, taxonomyOf } from '../core/event-geo.mjs';
+import { makeRuntimeV2 } from './nodes-runtime-v2.mjs';
 
 const FLAT = new Set(['tiles', 'image']);
 const viewIds = n => (typeof n.view === 'string' ? [n.view] : Array.isArray(n.view) ? n.view.filter(v => typeof v === 'string') : []);
@@ -78,6 +79,11 @@ export function makeRuntime(inputs = {}) {
 export let RT = null;
 export function buildRuntime(inputs) {
   try { RT = makeRuntime(inputs); } catch (e) { RT = null; }   // silent self-heal: without a tree the consumers below answer "no ancestors"
+  return RT;
+}
+/** The runtime of a schema-2 pack (K-R96): the same slot, built from the pack's own tree and the projected registry. */
+export function buildRuntimeV2(pack, registry) {
+  try { RT = makeRuntimeV2(pack, registry); } catch (e) { RT = null; }
   return RT;
 }
 export const crumbs = id => RT?.crumbs(id) ?? [id];

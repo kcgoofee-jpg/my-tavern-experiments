@@ -41,7 +41,7 @@ test('所有 v1 包的清单：运行时 validate 通过、id = 目录名、sche
 
 test('校验器拒绝：schema ≠ 1、缺必填、外链 / 上跳路径、未知顶层键（JSON Schema 侧）', () => {
   const ok = JSON.parse(rd('map/packs/town/manifest.json'));
-  assert.ok(PK.validate({ ...ok, schema: 2 }).length);
+  assert.ok(PK.validate({ ...ok, schema: 3 }).length);   // schema 2 is the viewer's own v2 path since S9-1 (tests/pack.test.mjs)
   assert.ok(PK.validate({ ...ok, title: '' }).length);
   assert.ok(PK.validate({ ...ok, data: { maps: '../x.json' } }).length);
   assert.ok(PK.validate({ ...ok, data: { maps: 'https://e.com/x.json' } }).length);

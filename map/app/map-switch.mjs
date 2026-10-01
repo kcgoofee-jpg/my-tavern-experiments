@@ -17,6 +17,7 @@ export const altOn = id => { try { return LocalStore.get(ALT_KEY + id) === '1'; 
 // periods：多时段底图（maps.json，如中层的昼 / 夜两张）。按世界时钟的有效档位换（P.CustomNamesView.todNow，关掉时段色调时为空 = 恒用 base）；
 // 只认 day / night 两档（dawn / dusk 没有单独的渲染，继续用 base 叠色调）
 const periodOf = id => { const tod = plugins.CustomNamesView?.todNow?.() || ''; return mapRegistry.maps[id]?.periods?.[tod === 'day' || tod === 'night' ? tod : ''] || null; };
+export const srcKey = b => (b && typeof b === 'object' ? b.url : b);   // 底图可以是 DZI 路径，也可以是 { type: 'image', url }（schema-2 包的示意图 / 单张图，K-R96）
 const baseOf = id => { const m = mapRegistry.maps[id]; return m.alt && altOn(id) ? m.alt.base : (periodOf(id) || m.base); };
 let lastBase = null;   // 第 0 层当前用的底图地址（go 打开 / swapBase 换上时记；applyPeriod 拿它判断要不要换）
 export function swapBase() {
@@ -29,7 +30,7 @@ export function swapBase() {
 export function applyPeriod() {
   if (!currentMapId || lastBase === null) return;
   const want = baseOf(currentMapId);
-  if (want !== lastBase) swapBase();
+  if (srcKey(want) !== srcKey(lastBase)) swapBase();
 }
 // 同组（主城）各层平面坐标对齐：切层时沿用同一个归一化视野（中心 + 缩放），只有第一次进入这一组时才按 view.focus 定位
 export const groupView = {};

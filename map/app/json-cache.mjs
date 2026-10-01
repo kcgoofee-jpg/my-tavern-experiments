@@ -7,3 +7,5 @@ export const getJSON = url => {
     .then(v => { if (v == null) jsonCache.delete(url); return v; }));
   return jsonCache.get(url);
 };
+/** 预先放进缓存的虚拟文件（schema-2 包投影出的点位文件，core/pack-v2-view.mjs）：{ 路径: 值 }；取这些路径的模块原样拿到。 */
+export const seedJSON = files => { for (const [p, v] of Object.entries(files || {})) jsonCache.set(p, Promise.resolve(v)); };

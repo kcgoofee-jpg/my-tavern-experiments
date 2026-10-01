@@ -95,7 +95,7 @@ export async function warmOthers() {
     if (m.kind === 'estate' && m.src) { warmed.set(id, 99); getText(new URL(m.src, document.baseURI).href).catch(() => {}); continue; }   // 主场景页面文本（三维库本身不预取）
     if (m.status === 'planned' || !m.base) continue;
     if (m.data) getJSON(m.data);
-    if (thin) continue;   // 省流时不记：网络好了以后还会补
+    if (thin || typeof m.base !== 'string') continue;   // 单张图（对象形式的底图）没有瓦片层可预热   // 省流时不记：网络好了以后还会补
     try {
       const x = await fetch(m.base).then(r => r.text());
       if (currentMapId !== c0) return;
