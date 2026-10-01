@@ -9,7 +9,7 @@
   glb 地址 / 档位兜底 / 热点 / 网格分组 / 相机都来自清单，代码不写死模型路径；model id 只来自数据）。
   渲染：随仓库的 three（../estate/vendor/），烘焙光照 → MeshBasicMaterial，无灯光、无阴影、无后处理。
   嵌入（viewer.html 的 kind=estate + viewer3d 字段）：blob iframe，<base> 指向本目录；模型 id 由注入的 window.__modelId 给。
-  消息（与旧庄园页同一套）：
+  消息（与旧主场景页同一套）：
     宿主 → 本页：estate:lang {lang} / estate:theme {theme} / estate:quality {q} / estate:inset {left} / v3d:fly {hotspot}
     本页 → 宿主：estate:ready（界面就绪，模型自己显示进度）/ estate:fail {reason} / v3d:state {mode, hotspot, flows}
     宿主 → 本页（续）：v3d:flows {on}（流向模式：manifest.flows 的示意折线 + 沿线移动的小球）
@@ -99,7 +99,7 @@ import { createLodController } from 'engine3d/lod-controller.mjs';
 import { batch as batchInstances, writeMatrices } from 'engine3d/instancing.mjs';
 import { createTexRes } from 'engine3d/texres.mjs';
 import * as GB from '../core/graphics-budget.mjs';   // Part 3 §1：显存预算的纯策略（估算 / 水位 / 淘汰顺序）
-import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer, prefersReducedMotion } from '../ui/camera-controls.js';   // 相机控制共用小件（预设/指北针/提示卡/空闲计时），与庄园页共用
+import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer, prefersReducedMotion } from '../ui/camera-controls.js';   // 相机控制共用小件（预设/指北针/提示卡/空闲计时），与主场景页共用
 
 const Q = new URLSearchParams(location.search);
 const MODEL = window.__modelId || Q.get('model');   // 资产 id 只来自数据（maps.json 的 viewer3d 字段 / ?model=），不再内置默认模型
@@ -180,7 +180,7 @@ const mem = navigator.deviceMemory || 8;
 const TIER = Q.get('tier') || ((coarse && small) || mem <= 4 ? 'low' : 'high');
 const DPR_CAP = TIER === 'low' ? 1.25 : coarse ? 2 : (devicePixelRatio || 2);   // 桌面（细指针）不封顶 2 倍，用满物理像素比；手机 / 触屏保持原样（2026-09-28）
 // 低档 / 设置「三维画质 · 省电」：不用毛玻璃（Mac 低分辨率模式下 backdrop-filter 每帧重算模糊，v2 门控遗留）
-if (TIER === 'low' || LSg('edenMap3dQ') === '1') document.documentElement.classList.add('noblur');   // 同旧庄园 DPR_CAP 思路：高 DPR 手机上像素数 ×4 不值
+if (TIER === 'low' || LSg('edenMap3dQ') === '1') document.documentElement.classList.add('noblur');   // 同旧主场景 DPR_CAP 思路：高 DPR 手机上像素数 ×4 不值
 const MSAA = TIER !== 'low';
 
 // ---------------- 场景 ----------------

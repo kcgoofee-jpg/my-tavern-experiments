@@ -1,7 +1,7 @@
 // 色觉模式（E7 补做，原草稿 docs/drafts/e7_cvd.patch，UI v2 上重做）：关 / rg 红绿（protan / deutan）/ by 蓝黄（tritan）。
 // 存储键登记在 core/storage.mjs（edenMapCvd）。开着时：html 加 .cvd .cvd-rg/.cvd-by 类 + data-cvd 属性，
 // 事态大类、图例、人物头像色相改用本文件的 CVD 安全色板（Okabe-Ito 为底），并广播 cvd-change 事件让各模块重画。
-// 同一个 mode 也经协议 estate:cvd 转给庄园 / 三维子页（map/core/protocol.mjs、map/app/subpage3d-host.mjs）。
+// 同一个 mode 也经协议 estate:cvd 转给主场景 / 三维子页（map/core/protocol.mjs、map/app/subpage3d-host.mjs）。
 import * as storage from '../core/storage.mjs';
 import { recheck } from '../core/pack-v2-spec.mjs';
 

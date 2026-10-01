@@ -134,7 +134,7 @@ export function createLootFlow(host) {
       const res = stashStoreModule.put(inv, stashModule.lootPut(row));
       if (!res.changed) return;
       inv = res.inv; changedInv();   // 写变量 + 推地图（拿到手的光点会消失）
-      // W11：物理事实入账（两条拾取路径——平面 eden-map:loot 与 Part 8 庄园三维 estate:loot——都汇到这里）。
+      // W11：物理事实入账（两条拾取路径——平面 eden-map:loot 与 Part 8 主场景三维 estate:loot——都汇到这里）。
       // 下一轮的漏项审计拿它和实际落盘对账：如果这一件没写进去（被主 MVU 的整表写回盖掉等），只补这一件。
       lootFacts.push({ kind: 'loot', id: row.id, name: row.name, place: row.place || d.place || '', map: row.map || d.map || '', hidden: !!row.hidden, qty: row.qty || 1, floor: host.floorNow, authority: 'verified' });
       if (lootFacts.length > 40) lootFacts.shift();

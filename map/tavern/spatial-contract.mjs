@@ -33,7 +33,7 @@ function engineOf(reg) {
 /** 地图的层名（注册表给的层名；没有就回落地图 id）——「L」与出口目标都用它 */
 const levelOf = (reg, mapId) => engineOf(reg)?.level(mapId) || mapsOf(reg)[mapId]?.layer?.name || mapId || '';
 
-/** 当前地点 → 落点 { level, mapId, markerId, name, room } | null（庄园房间 level 1–2 没有坐标，name 照抄）。地点由节点树定（nodes.locate） */
+/** 当前地点 → 落点 { level, mapId, markerId, name, room } | null（主场景房间 level 1–2 没有坐标，name 照抄）。地点由节点树定（nodes.locate） */
 export function locate(reg, here) {
   const v = String(here || '').trim();
   if (!v || !reg) return null;

@@ -57,10 +57,10 @@ window.LocalStore = (() => { const A = s => { try { return s ? sessionStorage : 
 <!-- 设计令牌（E5）：map/ui/tokens.css 的逐字副本，内联进来——少一个会阻塞首帧的请求，令牌文件挂了也不散架（E5 r2 弱网 W2 / W3）。
      改令牌只改 map/ui/tokens.css，再跑 python3 tools/sync_tokens.py；tools/smoke.sh 会检查两者一致。 -->
 <style id="tokens">
-/* 天城地图 · 设计令牌 v1（docs/ui-audit.md 第三部分；E5 落成文件）。
+/* 地图 · 设计令牌 v1（docs/ui-audit.md 第三部分；E5 落成文件）。
    查看器 viewer.html 用 <link> 引用；卡内脚本 eden-map.js 的宿主栏用同名变量的内联副本（宿主页里不能再多一个请求）。
    原则：一套骨架，三层换皮。组件只引用语义令牌，不写色值。
-   E5 定稿的两处与草案不同：全站只有一种金 #e6c36a（深色上层 / 庄园 / 世界的 --accent；浅色取深一档 #7a5d22），只有一种红 --alert。 */
+   E5 定稿的两处与草案不同：全站只有一种金 #e6c36a（深色上层 / 主场景 / 世界的 --accent；浅色取深一档 #7a5d22），只有一种红 --alert。 */
 :root {
   /* 结构：全站一套 */
   --font-ui: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", system-ui, sans-serif;
@@ -83,7 +83,7 @@ window.LocalStore = (() => { const A = s => { try { return s ? sessionStorage : 
   --map-label-bg: rgba(12, 14, 18, .82); --map-label-ink: #fff; --map-label-line: rgba(255, 255, 255, .22);
   --sh-1: 0 1px 3px rgba(0, 0, 0, .25); --sh-2: 0 6px 20px rgba(0, 0, 0, .30); --sh-3: 0 12px 32px rgba(0, 0, 0, .38);
   --glow: none; --glow-text: none;
-  /* 深色 · 上层 / 庄园 / 世界（默认） */
+  /* 深色 · 上层 / 主场景 / 世界（默认） */
   --bg: #101418; --surface: #151b20; --surface-2: rgba(255, 255, 255, .06);
   --line: rgba(255, 255, 255, .12); --ink: #d5dde4; --ink-2: #b7c1ca; --muted: #8591a0;
   --accent: var(--gold); --on-accent: #1a1406; --accent-2: #efe9dc;
@@ -194,7 +194,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 
   /* ---------- 图层阶梯常量（P3-C，core/layer-registry.mjs 的 CSS 镜像，tests/layer_registry.test.mjs 对拍） ----------
      页面上不允许再写裸 z-index 字面量：一律引用这里的名义常量。
-     --zu-*：外层固定 UI 阶梯（顶栏 / 弹层 / 设置 / 控制列 / 庄园 iframe / 转场盖布）——永远在视口槽位之上，不进 LayerRegistry；
+     --zu-*：外层固定 UI 阶梯（顶栏 / 弹层 / 设置 / 控制列 / 主场景 iframe / 转场盖布）——永远在视口槽位之上，不进 LayerRegistry；
      --zv-*：视口槽位阶梯（OSD 画布叠加上下文内由底至顶），与 core/layer-registry.mjs 的 SLOTS 一一对应，z = (槽位序号 + 1) × 10。 */
   :root {
     --zu-snap: 2; --zu-sheet-sticky: 2; --zu-foot: 4; --zu-estate: 5; --zu-hint: 6; --zu-cover: 6; --zu-prog: 7; --zu-loading: 8; --zu-dock: 9; --zu-layers: 9;
@@ -361,7 +361,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     font: 700 var(--fs-micro)/16px var(--font-mono); font-style: normal; text-align: center; vertical-align: 1px; text-shadow: none; }
   #layers .evn:empty { display: none; }
 
-  /* ---------- 庄园剖面（kind=estate）：三维页面放在 iframe 里盖住瓦片地图 ---------- */
+  /* ---------- 主场景剖面（kind=estate）：三维页面放在 iframe 里盖住瓦片地图 ---------- */
   #estate { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: var(--zu-estate); background: transparent; opacity: 0; transition: opacity var(--dur-2); }
   #estate.on { opacity: 1; }
   body.estate #tierState, body.estate #layWrap, body.estate #layList, body.estate #evbar, body.estate #glitchNote { display: none !important; }   /* fix3：清晰度 / 版本编码在三维页不再隐藏（设置里灰掉 + 写原因 / 照常显示） */
@@ -568,7 +568,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     #dock { right: var(--sp-4); }
     html[data-hand="left"] #dock { right: auto; left: var(--sp-4); align-items: flex-start; }
     #zoom button { width: 44px; height: 44px; }
-    #zoom #zAll { display: grid; width: auto; min-width: 44px; padding: 0 10px; font-size: var(--fs-small); font-weight: 700; }   /* 手机首屏停在伊甸：显眼的「看全区」（触控热区 ≥ 44 px） */
+    #zoom #zAll { display: grid; width: auto; min-width: 44px; padding: 0 10px; font-size: var(--fs-small); font-weight: 700; }   /* 手机首屏停在主场景：显眼的「看全区」（触控热区 ≥ 44 px） */
     /* 半开时控制列最高到屏幕中线；再高就横排贴在抽屉上沿（§10.1）；全开时隐藏（inert） */
     /* 横排也按 DOM 顺序（= 桌面竖排从上到下），读屏顺序与画面一致；右手贴右、左手贴左只靠 #dock 的定位 */
     #dock.row { flex-direction: row; align-items: flex-end; }

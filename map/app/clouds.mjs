@@ -1,7 +1,7 @@
 // 从 viewer.html 内联脚本拆出（大版本 2，docs/design/arch-v2.md §6 第 6 步）。外部模块标签按 <base> 解析，srcdoc 里也安全。
 // 核心状态与工具显式 import（app/state、util、nav…）；切层包装经 map-switch.mjs 的 setGo 注册。在所有外挂模块之后、DOMContentLoaded（main）之前执行。
 // ---------------- 云（方案 B，v0.9.2；原型 map/_proto/clouds.html，说明 docs/clouds.md §6）----------------
-// 自成一块，挂点只有两处：① 经 setGo 包一层 go()（天城层与层之间的切层转场）；② 监听 body[data-map] 与「显示下方城市」开关（漂移云显隐）。
+// 自成一块，挂点只有两处：① 经 setGo 包一层 go()（主城层与层之间的切层转场）；② 监听 body[data-map] 与「显示下方城市」开关（漂移云显隐）。
 // (a) 漂移：只在上层、云开（没勾「显示下方城市」）时；远近两层，拖动视差 0.85 / 1.2。精灵 art/clouds/puff1–6.png 与瓦片同一基址（jsDelivr 线路也通），用到才加载。
 // (b) 切层：9 条斜带 × 3 团从两头扫入 → 全白里换层 → 往两侧散开；转场中点一下跳过。
 // 减少动态效果：不漂移、直接换层。省流（lean()）：不漂移、零精灵请求，切层用白幕淡入淡出。
@@ -112,7 +112,7 @@ import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记（键重
     } finally { anims.forEach(a => { try { a.cancel(); } catch (e) {} }); snap?.remove(); osd.style.transform = ''; osd.style.opacity = ''; }
   }
   const go0 = go;
-  setGo(async function (id, ...rest) {                             // 挂点 ①：只包天城层与层之间的切换，其余原样
+  setGo(async function (id, ...rest) {                             // 挂点 ①：只包主城层与层之间的切换，其余原样
     if (busy || RM() || !osdViewer || id === currentMapId || !isTC(currentMapId) || !isTC(id) || mapRegistry.maps[currentMapId].group !== mapRegistry.maps[id].group || !osdViewer.world.getItemCount()) return go0(id, ...rest);
     busy = true; let p;
     try { await riseSink(id, () => (p = go0(id, ...rest))); } catch (e) { if (!p) p = go0(id, ...rest); }

@@ -29,8 +29,8 @@ function fromHost(e) {
 }
 window.__isFromHost = fromHost;
 /**
- * 任务三（b）「人已经在庄园里就别再从宏观世界层过一遍」：宿主第一次推地点时若落点在三维场景
- * （庄园房间 / 室外区域）里，就直接下钻过去（楼层剖切由庄园页按地点自己做）。
+ * 任务三（b）「人已经在主场景里就别再从宏观世界层过一遍」：宿主第一次推地点时若落点在三维场景
+ * （主场景房间 / 室外区域）里，就直接下钻过去（楼层剖切由主场景页按地点自己做）。
  * 三个闸门把范围收紧到「启动那一次」，不打扰用户：
  *   ① 只给一次机会（sceneDrilled）；② 只在地图真的开着、且还停在初始世界图上时（后台休眠时 cur 为空 → 自动跳过，
  *   预加载不进三维，尊重 E4 N02 的省流决定）；③ 玩家自己动过视角 / 切过图就不再跳。
@@ -49,7 +49,7 @@ if (window.top !== window) {
     // 所以除了 parent，还认宿主写在查看器窗口上的令牌（eden-map.js 的 HOST_TOKEN）。同源脚本理论上能去读那个属性，
     // 这里是「挡住无意/顺手来一发」而不是同源隔离，真正的隔离要靠酒馆本身。
     if (!fromHost(e) || (protocol && !protocol.accept(e.data, '（宿主 → 查看器）'))) return;
-    // bg = 酒馆在后台预加载（面板不可见）：不进庄园，也不消耗「打开后第一次一定跳」的资格
+    // bg = 酒馆在后台预加载（面板不可见）：不进主场景，也不消耗「打开后第一次一定跳」的资格
     if (e.data?.type === 'eden-map:here') { if (($('#here').value || '') !== (e.data.value || '')) setEstFocus(null); $('#here').value = e.data.value || '';
       try { if (e.data.replay) plugins.FogApi?.mute?.(true); } catch (x) {}   // 时间轴回放（Part 5-4）：图钉照走，探索不记账
       markHere(e.data.value);
@@ -59,7 +59,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:unmapped-pick' && typeof plugins.UnmappedPlacePicker !== 'undefined') plugins.UnmappedPlacePicker.open();   // v0.9.6 标题栏「未上图」
     if (e.data?.type === 'eden-map:open') go(e.data.map);
     if (e.data?.type === 'eden-map:events') { plugins.EventsView.set(e.data); emEmit('events', { items: e.data.items, floor: e.data.floor, hereLayer: e.data.hereLayer }); }   // 卡内脚本从聊天里解析、合并好的事态 {items, floor, fly}
-    if (e.data?.type === 'eden-map:chat') { setChat(e.data.id); estateLook(); }   // 聊天切换：庄园页（三维）里房间图集「仅本聊天」作用域用的 chatId 得跟着重发一次，不然还在用切换前那个聊天的 id（bug fix）
+    if (e.data?.type === 'eden-map:chat') { setChat(e.data.id); estateLook(); }   // 聊天切换：主场景页（三维）里房间图集「仅本聊天」作用域用的 chatId 得跟着重发一次，不然还在用切换前那个聊天的 id（bug fix）
     if (e.data?.type === 'eden-map:lang' && ['zh', 'en'].includes(e.data.lang)) setLang(e.data.lang);   // v0.9.6：嵌入时语言以卡内脚本（标题栏）为准，两边只有一个设置
     if (e.data?.type === 'eden-map:about') { setAbout(e.data); renderAbout(); }   // v0.9.6 版本与检查更新
     if (e.data?.type === 'eden-map:cardinfo') setCardInfo(e.data.card);   // 任务四：角色卡信息（版权申明页）由卡内脚本经桥取来，面板不自己摸宿主全局

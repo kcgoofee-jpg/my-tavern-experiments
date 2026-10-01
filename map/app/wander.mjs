@@ -159,7 +159,7 @@ export function registerWanderLayer() {
   // 单独打开（没宿主推日程）时，按包里那份日程表走（清单 data.routine；包没声明 = 没有）
   setTimeout(() => { if (!sched && packData('routine')) getJSON(packData('routine')).then(v => { if (v && !sched) setWanderSchedule(v); }).catch(() => {}); }, 0);
   window.WanderApi = { scan: scanWander, reset: resetWander, now: () => last.size, schedule: setWanderSchedule, clock: setWanderClock, tick, retarget, walker,
-    scheduleOf: () => sched,   // 日程表本体（庄园三维页要同一张表挪人）
+    scheduleOf: () => sched,   // 日程表本体（主场景三维页要同一张表挪人）
     describe: () => ({ ...walker.describe(), on, clock, rounds, scheduled: !!sched, reduced: reduced() }) };
   return true;
 }

@@ -1,4 +1,4 @@
-// 圣都车流 / 悬浮流光（Part 4-3）的查看器侧渲染：在 LayerRegistry 的 fx 槽位挂 canvas，
+// 城市车流 / 悬浮流光（Part 4-3）的查看器侧渲染：在 LayerRegistry 的 fx 槽位挂 canvas，
 // 把 core/traffic.mjs 算出的归一化光点用 OSD 的 pixelFromPoint 换算到屏幕，画成带尾迹的流光。
 // 路线数据来自当前图（curData.routes，与画航线的 SVG 同源、同一套归一化坐标）；没有路线的图一帧都不画。
 // 节拍同天气层：可见性守卫按下暂停位即停（P7-4），省流档减车。

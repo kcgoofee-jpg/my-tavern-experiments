@@ -100,6 +100,6 @@ export function registerLootLayer() {
     else if (d.type === 'eden-map:inv' || d.type === 'eden-map:here' || d.type === 'eden-map:wake') setTimeout(rebuildLoot, 0);
   } });
   window.StashMarkersApi = { set: setLootStash, rebuild: rebuildLoot, rows: lootRows, now: () => els.length,
-    all: () => stash?.items || [] };   // Part 8-1：整张藏物表（庄园三维页自己按房间 / 区域落点）
+    all: () => stash?.items || [] };   // Part 8-1：整张藏物表（主场景三维页自己按房间 / 区域落点）
   return true;
 }

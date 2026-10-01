@@ -1,4 +1,4 @@
-// 本机存储服务（大版本 2，docs/design/arch-v2.md §4）：查看器、宿主、庄园 / 三维子页同源，共用一份 localStorage。
+// 本机存储服务（大版本 2，docs/design/arch-v2.md §4）：查看器、宿主、主场景 / 三维子页同源，共用一份 localStorage。
 // KEYS = 全部键的唯一登记处（所有者、作用域、默认值）；tests/storage.test.mjs 静态清点仓库里出现的每个 edenMap* 键都必须在这里登记。
 // get / set / json / remove：带 try/catch（隐私模式、额度满、被禁用都不抛）。新代码用这里；旧的经典脚本逐步迁（arch-v2 §6 第 5 步）。
 // 以 edenMap 开头的键参与存储预算（tavern/storage-budget.mjs）；edenEstateLabels 是历史遗留名，预算里也按我们的算。
@@ -50,7 +50,7 @@ export const KEYS = {
   edenMapWbXtal: { owner: 'host', def: '0' }, edenMapWbXtalCfg: { owner: 'host' },   // W7 事实结晶：开关 + 水位/墓表 {tombstones, written}（默认关）
   // 三维
   edenEstateLabels: { owner: 'estate', legacy: true }, edenMap3dRailW: { owner: 'ui/chrome3d.js' },
-  // 相机控制（U，2026-09-28）：视角预设/指北针/首次提示卡/空闲自动旋转，庄园页与通用三维查看器共用（ui/camera-controls.js）
+  // 相机控制（U，2026-09-28）：视角预设/指北针/首次提示卡/空闲自动旋转，主场景页与通用三维查看器共用（ui/camera-controls.js）
   edenEstateHintSeen: { owner: 'estate', legacy: true }, edenMapV3dHintSeen: { owner: 'props/viewer3d.html' }, edenMap3dAutoRotate: { owner: 'ui/camera-controls.js', def: '0' },
   // 反馈日志环形缓冲（core/logbuf.mjs）：当前会话滚动日志 + 上次会话归档（最多 4 份），0.9.7
   edenMapLogCur: { owner: 'core/logbuf.mjs' }, edenMapLogPast: { owner: 'core/logbuf.mjs' },

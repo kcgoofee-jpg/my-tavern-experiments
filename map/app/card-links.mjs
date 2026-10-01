@@ -1,7 +1,7 @@
 // 地点卡底部的链接（大版本 2，从 viewer.html 内联脚本拆出；docs/design/arch-v2.md §6）：
 //   meta.link   = 跨层 / 下钻通道 { map, marker?, label?, label_en? }（有些标记拿它做跨层跳转）
 //   meta.link3d = 可选的第二个链接：看这个地点的三维模型 { map, label?, label_en? }，map 通常是 kind=estate（带 viewer3d）的地图
-//   meta.gallery = 可选的房间图集入口 { id, label?, label_en? }，id 是 data/room_galleries.json 的键；点开直接在地图面板里看图集（不用先进三维庄园）
+//   meta.gallery = 可选的房间图集入口 { id, label?, label_en? }，id 是 data/room_galleries.json 的键；点开直接在地图面板里看图集（不用先进三维主场景）
 // 两个都有就都显示（通道在前）；目标图不存在或 status=planned 的不显示。纯函数：依赖通过 ctx 传入，node 单测 tests/card-links.test.mjs。
 // 点击走查看器全局的 [data-go] 委托（document click → go(map)，data-focus = 落点标记）。
 export function linkHtml(l, { REG, nm, t, esc }, kind = 'go') {
@@ -10,7 +10,7 @@ export function linkHtml(l, { REG, nm, t, esc }, kind = 'go') {
   const label = (nm(l, 'label') || fallback).replace(/\s*[→›>]\s*$/, '');
   return `<a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}"${kind === '3d' ? ' data-link3d="1"' : ''} role="button" tabindex="0">${esc(label)}</a>`;
 }
-/** 这张图是不是「微观三维场景」（kind=estate：庄园剖面 / props 通用三维查看器都算）——只看注册表条目的版本，节点树在手时用 sceneOf */
+/** 这张图是不是「微观三维场景」（kind=estate：主场景剖面 / props 通用三维查看器都算）——只看注册表条目的版本，节点树在手时用 sceneOf */
 export const isScene3d = (m) => !!m && m.kind === 'estate' && m.status !== 'planned';
 /** 图 id 是不是三维场景：调用方给了 ctx.scene（节点树：这张图的视图是 model3d）就听它的，否则退回注册表条目 */
 const sceneOf = (ctx, id) => (ctx.scene ? !!ctx.scene(id) : isScene3d(ctx.REG?.maps?.[id]));
@@ -18,7 +18,7 @@ const sceneOf = (ctx, id) => (ctx.scene ? !!ctx.scene(id) : isScene3d(ctx.REG?.m
 /**
  * 任务三：这个实体关联的微观三维场景是什么？返回 { map, focus } 或 null。判据全是数据事实，不写死任何名字：
  *   ① 地标自己声明的 link3d（三维入口）→ 用它；
- *   ② 地标自己声明的 link 指向三维场景图（庄园 / 通用三维查看器）→ 那条通道本身就是三维入口；
+ *   ② 地标自己声明的 link 指向三维场景图（主场景 / 通用三维查看器）→ 那条通道本身就是三维入口；
  *   ③ 当前图**就是**三维场景（人已经在里面）→ 用当前图 + 落点名（进去后聚焦这一处 / 切到它的楼层）。
  * 都没有 → null（卡片不出现这个入口，绝不硬塞一个点了没反应的链接）。
  */

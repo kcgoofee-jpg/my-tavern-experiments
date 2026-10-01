@@ -28,7 +28,7 @@ export function trackEl(el, onOpen, label) {
 export function untrack(el) { const tk = el?._tk; if (!tk) return; el._tk = null; trackers = trackers.filter(x => x !== tk); tk.destroy(); }
 export function untrackAll() { const all = trackers; trackers = []; for (const tk of all) { if (tk.element) tk.element._tk = null; tk.destroy(); } }
 export let cardFrom = null;   // 打开卡片的元素：卡片关闭后焦点回到这里
-// 开局编号：标签上连续的写成区间（开局一至五）；opening_dest = 该开局的目的地（起点在庄园书房），卡片里逐个列出
+// 开局编号：标签上连续的写成区间（开局一至五）；opening_dest = 该开局的目的地（起点在主场景书房），卡片里逐个列出
 function markerEl({ name, sub, cls = '', src, extra = '', alias, name_en, sub_en, openings, opening_dest, cover, group }) {
   const el = document.createElement('div'); el.className = 'mk ' + cls;
   const dn = LANG === 'en' ? name_en || translateName(name) : name, ds = sub && (LANG === 'en' ? sub_en || translateName(sub) : sub);   // 显示名随语言；dataset.name 保持中文（当前地点匹配用）
@@ -92,7 +92,7 @@ export function worldOverlays() {
   if (ov && Array.isArray(ov.at) && ov.at.every(Number.isFinite) && typeof ov.name === 'string') { const el = document.createElement('div'); el.className = 'realm'; el.innerHTML = `<b style="font-size:20px;letter-spacing:${LANG === 'en' ? 2 : 6}px">${esc(translateName(ov.name))}</b>${ov.sub ? `<span>${esc(translateName(ov.sub))}</span>` : ''}`;
     trackEl(el, () => showCard(null, translateName(ov.name), ov.src), translateName(ov.name));
     place(el, ov.at[0], ov.at[1], OpenSeadragon.Placement.CENTER); }
-  const gOf = id => id && Object.keys(mapRegistry.groups).find(k => mapRegistry.groups[k].place === id);   // 世界图地点 → 有地图的组（天城、开局地点）
+  const gOf = id => id && Object.keys(mapRegistry.groups).find(k => mapRegistry.groups[k].place === id);   // 世界图地点 → 有地图的组（主城、开局地点）
   const enter = gid => { const g = gid && mapRegistry.groups[gid]; if (!g) return ''; return g.layers.map(k => { const L = mapRegistry.maps[k];
     return L.status === 'planned' ? `<span class="planned">${esc(localName(L.layer))}${esc(uiText('planned_paren'))}</span>` : `<a data-go="${k}" role="button" tabindex="0">${esc(uiText('enter', { name: localName(L.layer) }))}</a>`; }).join(''); };
   for (const p of worldData.places) {
@@ -149,7 +149,7 @@ function hookDepth() {
 // Part 6-4：改了注入模式后关掉当前卡片即可——入口是开卡时现算的（见 showCard 的 extra），
 // 不走「重画整层标记」那条路：pointOverlays 只加不清，重画会把标记叠一层。
 window.MarkersApi = { closeCard: () => { try { closeCard(); } catch (e) {} } };
-// 渲染脚本导出的点位地图（天城各层）：标记 + 结界圈（或别的地图的岛屿轮廓，如中层的「上层投影」）
+// 渲染脚本导出的点位地图（主城各层）：标记 + 结界圈（或别的地图的岛屿轮廓，如中层的「上层投影」）
 export function pointOverlays() {
   const m = mapRegistry.maps[currentMapId], d = currentMapData || { markers: [], islands: [] }, od = overviewMapData || {};
   depthEls = []; depthAcc = { x: 0, y: 0, last: null }; hookDepth();   // 切层：视差累加归零，重新收集有纵深的标记

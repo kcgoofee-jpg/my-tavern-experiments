@@ -85,14 +85,14 @@ export const getText = url => { if (!textCache.has(url)) textCache.set(url, fetc
 // 同组各层取到 L10（切层最常用），其余只取 L8–9（先有个粗底，真打开时 OSD 再补细层），冷开总流量约少三成。
 const warmed = new Map();
 export async function warmOthers() {
-  const thin = leanBg();   // 省流（含拿不到网络信息的触屏）：只取 JSON 与庄园页 HTML，不取 dzi、不取瓦片
+  const thin = leanBg();   // 省流（含拿不到网络信息的触屏）：只取 JSON 与主场景页 HTML，不取 dzi、不取瓦片
   const c0 = currentMapId, c = mapRegistry.maps[currentMapId], gl = new Set(c?.group ? mapRegistry.groups[c.group]?.layers || [] : []);
   const up = parentMap(currentMapId), near = id => gl.has(id) || id === up || parentMap(id) === currentMapId;
   for (const [id, m] of Object.entries(mapRegistry.maps)) {
     if (currentMapId !== c0) return;   // 预热途中切了图：交给新图那一轮
     const want = gl.has(id) ? 10 : 9;   // warmed：id → 已取到的最细层（按层记，后来进了同组还会补 L10）
     if (id === currentMapId || !near(id) || (warmed.get(id) || 0) >= want) continue;
-    if (m.kind === 'estate' && m.src) { warmed.set(id, 99); getText(new URL(m.src, document.baseURI).href).catch(() => {}); continue; }   // 庄园页面文本（三维库本身不预取）
+    if (m.kind === 'estate' && m.src) { warmed.set(id, 99); getText(new URL(m.src, document.baseURI).href).catch(() => {}); continue; }   // 主场景页面文本（三维库本身不预取）
     if (m.status === 'planned' || !m.base) continue;
     if (m.data) getJSON(m.data);
     if (thin) continue;   // 省流时不记：网络好了以后还会补

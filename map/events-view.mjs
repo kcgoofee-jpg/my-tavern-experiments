@@ -126,7 +126,7 @@ const EventsView = (() => {
   function render() {
     if (!osdViewer || !currentMapId || !osdViewer.world.getItemCount()) return;
     for (const el of layerEls) { if (typeof untrack === 'function') untrack(el); osdViewer.removeOverlay(el); } layerEls = [];   // 追踪器先 destroy，不留监听（E4 N11）
-    if (mapRegistry.maps[currentMapId]?.kind === 'estate') return;   // 庄园剖面（iframe）不画事态点
+    if (mapRegistry.maps[currentMapId]?.kind === 'estate') return;   // 主场景剖面（iframe）不画事态点
     const world = mapRegistry.maps[currentMapId]?.kind === 'world';
     if (world) worldBadge();
     // 正在飞往的那一条即使已淡出也画出来，落点上不会空（E4 N17）；世界图只画城外的事件（E4 N15）

@@ -130,7 +130,7 @@ export function createRootStore(host) {
     if (!bound) { bound = !!(await silentBind(WBN)); if (!bound) console.info('[eden-map] 世界书未绑定，且没有可用的绑定接口：', WBN); }   // 任务二：不再让玩家进后台手动勾
     wbState = bound ? 'bound' : 'unbound'; sendCustom(); return true;
   }
-  // 标签用到的「类」：人物栏里的名字 → 人物；庄园房间 / 区域（maps.json）→ 房间 / 区域；其余当地标
+  // 标签用到的「类」：人物栏里的名字 → 人物；主场景房间 / 区域（maps.json）→ 房间 / 区域；其余当地标
   const reg = () => (regP ??= MAN.then(man => (man?.data?.maps ? cdnFetch(host.BASE + (PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/') + man.data.maps).then(r => (r.ok ? r.json() : null)) : null)).catch(() => null));   // 路径读自包清单 data.maps
   let regNow = null; reg().then(r => { regNow = r; });
   // 注：reg() 用的是当前线路的 maps.json（与地图同一份）；取不到时一律当地标

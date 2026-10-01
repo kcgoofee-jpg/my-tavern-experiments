@@ -1,12 +1,12 @@
 // 从 viewer.html 内联脚本拆出（大版本 2，docs/design/arch-v2.md §6 第 6 步）。外部模块标签按 <base> 解析，srcdoc 里也安全。
 // 核心状态与工具显式 import（app/state、util、nav…）；切层包装经 map-switch.mjs 的 setGo 注册。在所有外挂模块之后、DOMContentLoaded（main）之前执行。
-// ---------------- 尺度衔接（v0.9.6，批准的设计）：世界 ↔ 天城缩放交接 + 「天城周边」过渡环 ----------------
-// (a) 世界图放大到上限、天城在视野中部时继续放大 → 交叉淡入当前层（上次看的那层），落在对应的地理点、最远那一档（约 30 km）；
-//     天城某层缩到最远（约 30 km）后继续缩小 → 交叉淡回世界图（最大放大、天城居中）。面包屑随之更新。
-// (b) 过渡环：以城区（3000×1875 m）为中心、RING_W 倍宽的一圈，用世界底图里天城附近那几像素放大、柔化，再叠一圈程序生成的云海边，
+// ---------------- 尺度衔接（v0.9.6，批准的设计）：世界 ↔ 主城缩放交接 + 「主城周边」过渡环 ----------------
+// (a) 世界图放大到上限、主城在视野中部时继续放大 → 交叉淡入当前层（上次看的那层），落在对应的地理点、最远那一档（约 30 km）；
+//     主城某层缩到最远（约 30 km）后继续缩小 → 交叉淡回世界图（最大放大、主城居中）。面包屑随之更新。
+// (b) 过渡环：以城区（3000×1875 m）为中心、RING_W 倍宽的一圈，用世界底图里主城附近那几像素放大、柔化，再叠一圈程序生成的云海边，
 //     盖住城区底图的硬边；城区完全占满屏幕时隐藏（不画巨大的叠加层）。不需要新渲染。城外 / 异兽类事态落在这一圈（events.mjs）。
 // 减少动态效果：交接照常，但没有缩放动画。
-// v0.9.6 起推广到所有「世界图地点有自己地图」的组（maps.json groups.<id>.place：天城、圣都、原域、旷野高地、圆桌封地）：
+// v0.9.6 起推广到所有「世界图地点有自己地图」的组（maps.json groups.<id>.place：主城与各大区）：
 // 每组的交接点 = 世界图上该地点；环宽 = RING_W × 该组的 extent_m 宽；环的面包屑「<组名>周边」。
 import { worldData, mapRegistry, aspect, currentMapId, pendingFocus, pendingHome, setPendingFocus, setPendingHome, osdViewer } from './state.mjs';
 import { $ } from './dom-helpers.mjs';
@@ -34,7 +34,7 @@ const ScaleHandoffApi = (() => {
   async function paint(upper, asp, gid, T_M) {
     const CW = 320, CH = Math.round(CW * asp), c = document.createElement('canvas'); c.width = CW; c.height = CH; const g = c.getContext('2d');
     g.fillStyle = upper ? '#c9d3dc' : '#7d8a6a'; g.fillRect(0, 0, CW, CH);
-    try {   // 世界底图：天城附近 RING_W × 3 km 那一小块（约 20 px）放大
+    try {   // 世界底图：主城附近 RING_W × 3 km 那一小块（约 20 px）放大
       const x = await getText('art/world.dzi'), T = +x.match(/TileSize="(\d+)"/)[1], ov = +(x.match(/Overlap="(\d+)"/)?.[1] || 0), f = x.match(/Format="(\w+)"/)[1];
       const W = +x.match(/Width="(\d+)"/)[1], H = +x.match(/Height="(\d+)"/)[1], top = Math.ceil(Math.log2(Math.max(W, H)));
       const [nx, ny] = ptOf(gid), px = nx * W, py = ny * H, col = Math.floor(px / T), row = Math.floor(py / T), x0 = col * T - (col ? ov : 0), y0 = row * T - (row ? ov : 0);

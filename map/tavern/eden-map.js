@@ -373,7 +373,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   const LL = createLlmFlow(host), { jitRound, xtalRound } = LL;
 
   // W8 世界书 → 地图（{{eden_fly}} 宏的接收半边）：最新助手楼里出现 data-eden-fly 标记就解析落点、
-  // 经协议里一直登记却无发送方的 eden-map:fly 聚焦过去（app/host-messages.mjs → CustomNamesView.flyTo，2D / 庄园房间 / 三维热点通吃）。
+  // 经协议里一直登记却无发送方的 eden-map:fly 聚焦过去（app/host-messages.mjs → CustomNamesView.flyTo，2D / 主场景房间 / 三维热点通吃）。
   // 每楼只飞一次（flyFloor 水位）；落点认不出就安静放过——绝不猜。
   // 任务二：提取走 th.flyTarget——除了已展开的隐藏标记，也认没被消费的字面宏 {{eden_fly: 地点}}，
   // 且外面裹着未闭合注释 / Prism 标记 / 截断标签时照样锚得住（正则在整段原文里扫，不依赖容器闭合）。
@@ -427,7 +427,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     if (full && hereEl.classList.contains('em-unsure')) { const t = U(mvuBridge.snapState === 'pending' ? 'pend' : 'stale'); hereEl.title += ' · ' + t; hereEl.setAttribute('aria-label', hereEl.getAttribute('aria-label') + ' · ' + t); }
     if (here !== hereShown) { hereShown = here; hereEl.classList.remove('em-full'); }   // 地点没变就别把用户刚点开的长胶囊收回去（接手 review P2）
     fab.classList.toggle('here', !!here);
-    // bg：后台预加载中（面板不可见），地图据此不自动进庄园（E4 N03）
+    // bg：后台预加载中（面板不可见），地图据此不自动进主场景（E4 N03）
     if (!panel.hidden && alive) post({ type: 'eden-map:chat', id: chatId() });   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
     if (!panel.hidden && alive && here !== sent) { sent = here; post({ type: 'eden-map:here', value: here, bg: ghost }); }
     if (here !== emHere) { emHere = here; emit('here', { value: here }); emitMoved(here); }
@@ -624,7 +624,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   fab.addEventListener('pointerup', () => { if (dragged && handPref === 'auto') applyHand(false); });
   const close = () => { if (panel.hidden || ghost) return; panel.hidden = true; sleepViewer(); prefSync(); tlExit(); if (CK.toastWait && CK.SC) setTimeout(toastOnce, 400); if (CK.updWait) setTimeout(showUpdPrompt, 600); };
   fab.addEventListener('click', async () => { if (dragged) return;
-    if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); sent = null; charsSent = null; push(); sendEvents(); scheduleAutoCheck(); return; }   // 预加载中被点开：直接显示，重新推一次地点（这次可以进庄园）；loadViewer 当时因为还在 ghost 跳过了查更新，这里补一次
+    if (ghost) { ghost = false; clearTimeout(ghostT); panel.classList.remove('em-ghost'); fab.classList.remove('prep'); sent = null; charsSent = null; push(); sendEvents(); scheduleAutoCheck(); return; }   // 预加载中被点开：直接显示，重新推一次地点（这次可以进主场景）；loadViewer 当时因为还在 ghost 跳过了查更新，这里补一次
     fab.classList.remove('fail'); NT?.remove('newev');   // 提示不留在面板后面（v0.9.2）
     if (!panel.hidden) return close(); CK.toastEl?.remove();
     if (CK.updEl?.isConnected && CK.updEl.__upd) { CK.updPrompt = CK.updEl.__upd; CK.updWait = true; } CK.updEl?.remove();   // 更新提示也不盖在面板上：关上面板后再弹

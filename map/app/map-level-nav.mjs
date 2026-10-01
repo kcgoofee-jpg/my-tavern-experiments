@@ -21,7 +21,7 @@ $('#layers').addEventListener('click', e => { if (!narrowNow()) return; const na
   if (b && b.dataset.go === currentMapId) { e.stopPropagation(); e.preventDefault(); }
   nav.classList.add('compact'); }, true);
 document.addEventListener('pointerdown', e => { if (!e.target.closest?.('#layers')) $('#layers').classList.add('compact'); });
-// 庄园时层按钮条上的滚轮不带着宿主页滚（庄园里没有 OSD 接滚轮）
+// 主场景时层按钮条上的滚轮不带着宿主页滚（主场景里没有 OSD 接滚轮）
 $('#layers').addEventListener('wheel', e => { if (document.body.classList.contains('estate')) e.preventDefault(); }, { passive: false });
 
 // 层切换条的成员：运行时节点树的 levels()（strip）；没有运行时（自愈）就退回登记表的分组

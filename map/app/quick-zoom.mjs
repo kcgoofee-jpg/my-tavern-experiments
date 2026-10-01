@@ -3,7 +3,7 @@ import { osdViewer } from './state.mjs';
 import { $ } from './dom-helpers.mjs';
 import { setUserMoved } from './locate.mjs';
 // 单指缩放（像 Google 地图）：双击后第二下按住不放，往下拖放大、往上拖缩小；双击不拖 = 放大一倍。
-// 只接手机触摸（pointerType = touch）、只在瓦片地图 #osd 上（庄园 iframe 不在里面）；第二下按下时截住事件，不让地图库当成平移；多指捏合照旧
+// 只接手机触摸（pointerType = touch）、只在瓦片地图 #osd 上（主场景 iframe 不在里面）；第二下按下时截住事件，不让地图库当成平移；多指捏合照旧
 export function initQuickZoom() {
   const box = $('#osd'), SLOP = 10, TAP_MS = 300, GAP_MS = 320, GAP_PX = 40, rmq = matchMedia('(prefers-reduced-motion: reduce)');
   let tap = null, down = null, qz = null, lastQz = 0;

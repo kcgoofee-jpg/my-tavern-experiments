@@ -1,13 +1,13 @@
 // 三维资产清单（Estate3D Manifest）标准契约（P3-A 任务 2，docs/reviews/architecture_and_stream_perf.md §7）：
-// 庄园（map/estate/model/manifest.json）与地标（map/props/<id>/manifest.json）共用同一套 Schema，
+// 主场景（map/estate/model/manifest.json）与地标（map/props/<id>/manifest.json）共用同一套 Schema，
 // 运行时（map/estate/main.js、map/props/viewer3d.html）只经这里拿模型地址 / 数据文件路径 / 档位兜底——
 // 查看器代码不写死、不拼装资源相对路径（tests/estate3d_manifest.test.mjs 机检 + 账实对拍）。
 // 纯函数：不碰 DOM / 存储 / 网络。Schema（v1）：
-//   id       必填。资产 id（庄园 = 'eden-estate'，地标 = 目录名）
-//   glb      必填。三形：'x.glb'（单部件，= std 档）｜ { std, low? }（单部件两档）｜ { <part>: { std, low? } }（多部件；庄园 site / house）
+//   id       必填。资产 id（主场景 = 清单自带的 id，地标 = 目录名）
+//   glb      必填。三形：'x.glb'（单部件，= std 档）｜ { std, low? }（单部件两档）｜ { <part>: { std, low? } }（多部件；主场景 site / house）
 //            地标旧写法 glb + glb_low 也认（glb_low 并进部件 low 档）
-//   floors   可选。楼层 id：string 或 { id }（庄园与 eden_estate_rooms.json 的楼层对拍）
-//   hotspots 可选。[{ id, … }]（地标热点；庄园的室外热点在 data.zones 文件里，不进清单）
+//   floors   可选。楼层 id：string 或 { id }（主场景与分层房间表的楼层对拍）
+//   hotspots 可选。[{ id, … }]（地标热点；主场景的室外热点在 data.zones 文件里，不进清单）
 //   budget   可选。体积 / 档位预算（旧地标的 per-group budgets 也认，describe 原样带出）
 //   license  可选。署名与许可（旧地标的 credit 也认 → { credit }）
 //   data     可选。{ rooms?, zones?, galleries? } 数据文件路径，相对清单所在目录解析

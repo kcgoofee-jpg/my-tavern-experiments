@@ -42,7 +42,7 @@ export function parseChars(raw) {
 }
 
 /** 名字对齐（v0.9.5 通读）：去掉世界书标签的 _idN 后缀；只写了名（伊莎贝拉）而已知名单里正好有一个以「名·」开头的全名 → 用全名。
- *  名字当姓用的（「维多利亚」与「某某·维多利亚」）不合并：只认「名·」前缀，且只有唯一一个时才认 */
+ *  名字当姓用的（「甲」与「某某·甲」）不合并：只认「名·」前缀，且只有唯一一个时才认 */
 export function canonName(name, known = []) {
   const n = clean(String(name || '').replace(/_id\d+$/i, '')); if (!n || known.includes(n) || /[·・]/.test(n)) return n;
   const full = known.filter(k => new RegExp('^' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[·・]').test(k));

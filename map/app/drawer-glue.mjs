@@ -20,7 +20,7 @@ export function placeLayers() {
   lay.classList.add('compact'); sheetVis();
 }
 
-// 抽屉可见性：有事态、人物、地点卡、或手机上要放层名胶囊时显示；三维页（庄园）用它自己的抽屉
+// 抽屉可见性：有事态、人物、地点卡、或手机上要放层名胶囊时显示；三维页（主场景）用它自己的抽屉
 export function sheetVis() {
   const S = window.ViewerDrawer; if (!S) return;
   const estate = document.body.classList.contains('estate'), ev = !S.button('ev').hidden, ch = !S.button('ch').hidden, card = !$('#card').hidden;

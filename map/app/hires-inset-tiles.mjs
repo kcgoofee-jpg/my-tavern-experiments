@@ -1,6 +1,6 @@
-// 局部高清插图（伊甸庄园等，maps.json 里各图的 insets[]）：底图为了兼顾全局大小只能到某个分辨率，
+// 局部高清插图（主场景等，maps.json 里各图的 insets[]）：底图为了兼顾全局大小只能到某个分辨率，
 // 放大到插图覆盖的小范围时叠一张单独渲染的高分辨率瓦片图；缩出去或还没放大到那儿就把它摘掉，省流量。
-// 通用实现：任何图只要在 maps.json 里加一条 insets，就自动生效（新月湾、罗斯柴尔德以后同样加法）。
+// 通用实现：任何图只要在 maps.json 里加一条 insets，就自动生效（新月湾、别的地方以后同样加法）。
 import { mapRegistry, aspect, currentMapId, osdViewer } from './state.mjs';
 // 插图启用阈值：底图「屏幕像素 / 源像素」到 ≈1 就换成插图（早于 locate.mjs 里 1.5 的硬顶，衔接自然，不会先糊一下再变清楚）
 export const ACTIVATE_PX = 1;

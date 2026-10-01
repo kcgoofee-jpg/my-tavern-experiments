@@ -1,8 +1,8 @@
 // v0.9.5「自定义」面板的纯函数：可自定义对象的分组清单（选择器）、搜索、飞行目标。查看器 custom.js 与 node 单测共用。
-// 数据来源：maps.json（各层地标 markers、庄园 rooms / areas）、estate/plan.js（房间所在楼层，只用来分组）、人物栏的名字。
+// 数据来源：maps.json（各层地标 markers、主场景 rooms / areas）、estate/plan.js（房间所在楼层，只用来分组）、人物栏的名字。
 // 飞行目标 target = { map, marker | room | area | character }：
-//   地标 { map: 'tc_mid', marker: 'enforcement_hq' }；庄园房间 { map: 'eden_estate', room: '书房' }；室外 { map: 'eden_estate', area: '前庭' }；人物 { character: '米拉' }。
-//   新庄园接入时只要换掉查看器里 room / area 的处理，目标的形状不变。
+//   地标 { map: '<地图 id>', marker: '<标记 id>' }；主场景房间 { map: '<场景 id>', room: '<房间名>' }；室外 { map: '<场景 id>', area: '<区域名>' }；人物 { character: '<人物名>' }。
+//   新主场景接入时只要换掉查看器里 room / area 的处理，目标的形状不变。
 // 不过滤任何文字；这里只做字符串比较。
 
 const low = s => String(s ?? '').toLowerCase();
@@ -26,11 +26,11 @@ export function buildGroups({ reg, plan = null, chars = [], lang = 'zh' } = {}) 
     for (const [mk, v] of Object.entries(m.markers || {})) add(g, { key: v.name, kind: 'landmark', target: { map: id, marker: mk }, sub: macro(en ? (v.sub_en || v.sub || '') : (v.sub || '')), en: v.name_en || '', alias: v.alias || [] });
     if (g.items.length) out.push(g);
   }
-  // 2 伊甸庄园：房间按楼层（plan.js 的 FLOORS / ROOMS；同一间房的多个叫法只列第一个，其余当搜索别名）、室外
+  // 2 主场景：房间按楼层（plan.js 的 FLOORS / ROOMS；同一间房的多个叫法只列第一个，其余当搜索别名）、室外
   for (const [eid, m] of maps.filter(([, m]) => m.kind === 'estate')) {
     const title = (en ? (typeof m.title_en === 'string' ? m.title_en : m.title?.name_en) : (typeof m.title === 'string' ? m.title : m.title?.name)) || eid;   // 地图自己的标题；没有就用地图 id
     const floors = plan?.FLOORS || [], rooms = plan?.ROOMS || [], byFloor = new Map(), other = [], taken = new Set();
-    if (plan?.CARD?.rooms?.length) {   // 卡设定分层（map/data/eden_estate_rooms.json）：B2 / B1 / F1 / F2 / F3，只列卡房间（按卡房间编号）；restricted 房间只写名字、不描述
+    if (plan?.CARD?.rooms?.length) {   // 卡设定分层（包数据的分层房间表）：B2 / B1 / F1 / F2 / F3，只列卡房间（按卡房间编号）；restricted 房间只写名字、不描述
       const seen = new Set();
       for (const f of plan.CARD.floors || []) {
         const g = { id: `room:${f.id}`, label: `${title} · ${f.id}${en ? '' : ' ' + f.name}`, short: f.id, items: [] };

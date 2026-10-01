@@ -1,4 +1,4 @@
-// 庄园 / 三维子页宿主：openEstate（blob iframe + <base> + 失败钩子）、子页消息、通用三维查看器入口。
+// 主场景 / 三维子页宿主：openEstate（blob iframe + <base> + 失败钩子）、子页消息、通用三维查看器入口。
 import { loadingProgress } from './load-progress.mjs';
 import { mapRegistry, currentMapId, pendingFocus, setPendingFocus, osdViewer } from './state.mjs';
 import { $ } from './dom-helpers.mjs';
@@ -21,22 +21,22 @@ import { setFpsMeter } from './fps.mjs';
 import { standIn, zoneChildren } from './nodes-runtime.mjs';
 import { trimTileCache } from './dzi-worker.mjs';   // Part 3 §5：吃紧时收紧 OSD 解码瓦片缓存
 let lastTileCache = 1e9;   // 只减不增：三维页报的目标张数单调收紧，避免来回抖
-// ---------------- 庄园剖面（kind=estate） ----------------
+// ---------------- 主场景剖面（kind=estate） ----------------
 // 嵌入接口（换版时保持）：maps.json 的 src 指向页面（相对 map/）。这里 fetch 页面文本、在 <head> 后插入 <base href="页面所在目录">、
 // 用 blob: iframe 显示（见 openEstate 里的说明；查看器本身是 srcdoc + <base> 加载的；jsDelivr 的 gh 线路把 .html 当纯文本返回，不能直接 iframe src）。
-//   查看器 → 庄园：{ type: 'estate:room', name }（当前地点；庄园按房间名 / 别名高亮，匹配不到就取消高亮）、{ type: 'estate:inset', left }（左侧留白 px）
-//   庄园 → 查看器：{ type: 'estate:ready' }（第一帧画完）、{ type: 'estate:key', key }（PageUp / PageDown / [ / ] 交给查看器切层）、
+//   查看器 → 主场景：{ type: 'estate:room', name }（当前地点；主场景按房间名 / 别名高亮，匹配不到就取消高亮）、{ type: 'estate:inset', left }（左侧留白 px）
+//   主场景 → 查看器：{ type: 'estate:ready' }（第一帧画完）、{ type: 'estate:key', key }（PageUp / PageDown / [ / ] 交给查看器切层）、
 //                 { type: 'estate:fail', reason }（三维库或页面脚本加载失败）
-// 三维库（three 0.160.0）随仓库放在 map/estate/vendor/，庄园页的 importmap 用相对路径，跟着 <base>（当前线路）走，没梯子也能加载。
-// 兜底：旧版庄园页 importmap 里若还写着 jsDelivr / jsdmirror 的 npm 地址，注入 srcdoc 前改写成同一线路下的 estate/vendor/（E4 N01）。
+// 三维库（three 0.160.0）随仓库放在 map/estate/vendor/，主场景页的 importmap 用相对路径，跟着 <base>（当前线路）走，没梯子也能加载。
+// 兜底：旧版主场景页 importmap 里若还写着 jsDelivr / jsdmirror 的 npm 地址，注入 srcdoc 前改写成同一线路下的 estate/vendor/（E4 N01）。
 export let subpageSession = null;   // { id, frame, ready }
-// 休眠时把画好的庄园留着（隐藏 + 暂停渲染，GPU 资源不放）：再打开面板直接接着用，不再「加载 伊甸庄园…」。
+// 休眠时把画好的主场景留着（隐藏 + 暂停渲染，GPU 资源不放）：再打开面板直接接着用，不再「加载 主场景…」。
 // 宿主 SLEEP_MS（3 分钟）后整页卸载时才真正释放；省流 / 低内存（lean()）照旧休眠即拆。
 export let estParked = null;
 export function dropParked() { if (estParked) { estParked.frame.remove(); estParked = null; } }
 // ---------------- Part 3 §3：三维上下文的排他租约 ----------------
 // 稳态下本来就只有一个三维 iframe（est 是单例），但没有任何东西把这件事钉住：
-//   庄园挂起（estParked）+ 再开一次三维 = 两个 live WebGL 上下文；离开庄园的淡出帧没及时摘掉也会撞。
+//   主场景挂起（estParked）+ 再开一次三维 = 两个 live WebGL 上下文；离开主场景的淡出帧没及时摘掉也会撞。
 // 所以每次发新租约前先把上一份彻底摘掉（weak frame 只摘不阻塞新页面加载），并在开新页面前同步清掉。
 export let live3d = 0;   // 当前活着的三维帧数（自检 / 浏览器探针用）
 let weak3d = null;       // 上一份租约的帧：新页面开始加载就摘掉（不等淡出）
@@ -86,14 +86,14 @@ function startTileTo3d(f) {
     if (!done) { try { lastBitmap?.close?.(); } catch (e) {} lastBitmap = null; }
   };
 }
-// 本次会话里庄园三维加载失败过：之后「自动跳到当前地点」不再进庄园，改落上层的伊甸地标（记在会话存储，重试成功后清掉）
+// 本次会话里主场景三维加载失败过：之后「自动跳到当前地点」不再进主场景，改落上层的主场景地标（记在会话存储，重试成功后清掉）
 const EST_FAIL_KEY = 'edenMapEstateFail';
 export let estFail = LocalStore.get(EST_FAIL_KEY) === '1';
 export const setEstFail = on => { estFail = on; on ? LocalStore.set(EST_FAIL_KEY, '1') : LocalStore.remove(EST_FAIL_KEY); };
-// 三维页的「平面替身」：节点树里它（或包着它的地方）落在平面图上的位置（上层的「伊甸庄园」地标）
+// 三维页的「平面替身」：节点树里它（或包着它的地方）落在平面图上的位置（上层的「主场景」地标）
 export const estateStandIn = standIn;
 const THREE_CDN = /https:\/\/cdn\.(?:jsdelivr\.net|jsdmirror\.com)\/npm\/three@0\.160\.0\//g;
-// 注入庄园页的小脚本：模块脚本（main.js 或它 import 的三维库）加载失败时回传 estate:fail
+// 注入主场景页的小脚本：模块脚本（main.js 或它 import 的三维库）加载失败时回传 estate:fail
 const EST_HOOK = `<script>(function(){var f=0;function fail(r){if(f)return;f=1;try{parent.postMessage({type:'estate:fail',reason:r},'*')}catch(e){}}` +
   `addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='SCRIPT')fail('script')},true);` +
   `addEventListener('unhandledrejection',function(e){var m=String(e.reason&&e.reason.message||e.reason||'');if(/import|module|fetch/i.test(m))fail('import')})})()<\/script>`;
@@ -105,7 +105,7 @@ function estateActs(state) {   // state: '' 隐藏；'slow' 仍在加载；'fail
   if (state) { ld.classList.add('over'); announce(ld.querySelector('span').textContent); }
 }
 export function retryEstate() { const id = currentMapId, m = mapRegistry.maps[id]; if (m?.kind !== 'estate') return; setEstFail(false); stopTileTo3d(false); release3d(); openEstate(id, m, true); }
-export function estatePlan() {   // 看平面图：回上层并聚焦伊甸（打开它的地点卡）；本次会话不再自动进庄园（庄园挂起时每次都会再等 12 秒）
+export function estatePlan() {   // 看平面图：回上层并聚焦主场景（打开它的地点卡）；本次会话不再自动进主场景（主场景挂起时每次都会再等 12 秒）
   const s = estateStandIn(currentMapId); if (!s) return; setEstFail(true); setPendingFocus(s.marker); go(s.map);
 }
 export async function openEstate(id, m, hadPrev) {
@@ -134,7 +134,7 @@ export async function openEstate(id, m, hadPrev) {
   const old = subpageSession?.frame; if (old && old.parentNode) old.remove(); weak3d = old || null;   // 旧帧留个引用：新页面一就绪就摘（不等淡出）
   const f = document.createElement('iframe'); f.id = 'estate'; f.title = localName(m, 'title');
   const vend = new URL('vendor/', url).href;
-  // 用 blob: 地址而不是 srcdoc：Tauri Tavern 的 WKWebView 里第三层 srcdoc iframe（宿主 → 查看器 srcdoc → 庄园）永远不加载（TT 实测 P0）。
+  // 用 blob: 地址而不是 srcdoc：Tauri Tavern 的 WKWebView 里第三层 srcdoc iframe（宿主 → 查看器 srcdoc → 主场景）永远不加载（TT 实测 P0）。
   // blob 由查看器自己的窗口创建（同源），<base> 照旧，相对资源按线路解析；加载完就回收。
   const packStr = PACK?.strings, hasStr = packStr && Object.keys(packStr).length;
   const doc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">${EST_HOOK}<script>window.__packId=${JSON.stringify(PACK?.id || 'eden')}<\/script>${hasStr ? `<script>window.__packStrings=${JSON.stringify(packStr).replace(/</g, '\\u003c')}<\/script>` : ''}${m.viewer3d ? `<script>window.__modelId=${JSON.stringify(String(m.viewer3d))}<\/script>` : ''}`)
@@ -145,13 +145,13 @@ export async function openEstate(id, m, hadPrev) {
   $('#stage').appendChild(f);
   subpageSession = { id, frame: f, ready: false };
   live3d = 1;
-  // 12 秒还没画出第一帧：给出路（重试 / 看平面图），庄园继续在后台加载，画好了照常切过去
+  // 12 秒还没画出第一帧：给出路（重试 / 看平面图），主场景继续在后台加载，画好了照常切过去
   setTimeout(() => { if (subpageSession?.frame === f && f.isConnected && !subpageSession.ready && !subpageSession.failed) estateActs('slow'); }, 12000);
 }
 function onEstateFail(reason) {
   if (!subpageSession || subpageSession.ready) return;
   stopTileTo3d(false);
-  if (reason === 'timeout') return estateActs('slow');   // 只是慢（庄园页自己的超时），不说成「连不上三维库」（E5 r2 弱网 W4）
+  if (reason === 'timeout') return estateActs('slow');   // 只是慢（主场景页自己的超时），不说成「连不上三维库」（E5 r2 弱网 W4）
   subpageSession.failed = true; setEstFail(true); estateActs('fail');
 }
 function onEstateReady() {
@@ -161,10 +161,10 @@ function onEstateReady() {
   f.classList.add('on'); estateActs(''); loadingProgress().done(); $('#loading').classList.add('done'); focusAfterGo();
   estateLook(); estateInset(); estateRoom(); estateFocusPending(); estateStash(); estateNpcs();
   post({ type: 'eden-map:loaded' });
-  // 庄园淡入完成后再关掉瓦片地图（释放解码内存）
+  // 主场景淡入完成后再关掉瓦片地图（释放解码内存）
   setTimeout(() => { if (subpageSession?.frame === f && mapRegistry.maps[currentMapId]?.kind === 'estate') { osdViewer.close(); untrackAll(); osdViewer.clearOverlays(); } }, 240);
 }
-// 离开庄园：返回 iframe，由调用方在新底图画出来后淡出移除
+// 离开主场景：返回 iframe，由调用方在新底图画出来后淡出移除
 export function leaveEstate() {
   document.body.classList.remove('estate'); estateActs('');
   try { setFpsMeter(window.LocalStore?.get('edenMapFps') === '1'); } catch (e) {}   // 三维子页关掉了，外层顶栏那份 FPS 读数回来（配 estateLook 的 setFpsMeter(false)）
@@ -177,30 +177,30 @@ export function leaveEstate() {
 }
 function estateInset() {
   if (!subpageSession?.ready) return;
-  subpageSession.frame.contentWindow?.postMessage({ type: 'estate:inset', left: 6 }, SUB_ORIGIN);   // UI v2：三维页自带控制列与抽屉，查看器在庄园时不放层切换器
+  subpageSession.frame.contentWindow?.postMessage({ type: 'estate:inset', left: 6 }, SUB_ORIGIN);   // UI v2：三维页自带控制列与抽屉，查看器在主场景时不放层切换器
 }
 export const narrowNow = () => innerWidth <= 640;
-// 庄园页的语言与主题跟着查看器（庄园页在 srcdoc 里读不到 URL 参数，所以载入后与切换时发消息）
+// 主场景页的语言与主题跟着查看器（主场景页在 srcdoc 里读不到 URL 参数，所以载入后与切换时发消息）
 export function estateLook() {
   const w = subpageSession?.frame.contentWindow; if (!w) return;
   w.postMessage({ type: 'estate:lang', lang: LANG }, SUB_ORIGIN);
   w.postMessage({ type: 'estate:theme', theme: document.documentElement.classList.contains('light') ? 'light' : 'dark' }, SUB_ORIGIN);
   w.postMessage({ type: 'estate:quality', q: q3Pref() }, SUB_ORIGIN);   // 改画质不用重载
-  w.postMessage({ type: 'estate:cvd', mode: TCCvd.mode() }, SUB_ORIGIN);   // 色觉模式（E7）：庄园 / 三维页换配色，不重载
+  w.postMessage({ type: 'estate:cvd', mode: TCCvd.mode() }, SUB_ORIGIN);   // 色觉模式（E7）：主场景 / 三维页换配色，不重载
   let fps = false; try { fps = window.LocalStore?.get('edenMapFps') === '1'; } catch (e) {}
   w.postMessage({ type: 'estate:fps', on: fps }, SUB_ORIGIN);   // 调试：显示帧率——三维子页自己画一份（画布角上，带 tier / draws），开着子页时外层顶栏那份就该让位，不然同时看到两个数字（U，2026-09-28）
   setFpsMeter(false);
   w.postMessage({ type: 'estate:children', zones: estateZones(subpageSession.id) }, SUB_ORIGIN);   // 区域下的子地图（运行时节点树）：三维页据此给区域卡加「进入三维」，语言切换时标题跟着重发
-  w.postMessage({ type: 'estate:chat', id: chatId || '' }, SUB_ORIGIN);   // 房间图集「按聊天」作用域用：庄园页读不到 SillyTavern 上下文，靠这条消息拿 chatId
+  w.postMessage({ type: 'estate:chat', id: chatId || '' }, SUB_ORIGIN);   // 房间图集「按聊天」作用域用：主场景页读不到 SillyTavern 上下文，靠这条消息拿 chatId
 }
-// Part 8-1：世界藏物表下发给三维页（宿主 → 查看器 app/stash-markers.mjs → 庄园）；已在手里的 id 一并下发给它对账。
+// Part 8-1：世界藏物表下发给三维页（宿主 → 查看器 app/stash-markers.mjs → 主场景）；已在手里的 id 一并下发给它对账。
 // 三维页据此在房间 / 区域里放发光道具，点起来回 estate:loot，这里转成 eden-map:loot 交给宿主写背包。
 export function estateStash() {
   const w = subpageSession?.frame?.contentWindow; if (!w) return;
   w.postMessage({ type: 'estate:stash', items: window.StashMarkersApi?.all?.() || [] }, SUB_ORIGIN);
   w.postMessage({ type: 'estate:taken', ids: (plugins.StashView?.rows || []).map(r => r.id).filter(Boolean) }, SUB_ORIGIN);
 }
-// Part 8-2：日程表 + 起点时钟下发给三维页（宿主 → 查看器 app/wander.mjs → 庄园）。
+// Part 8-2：日程表 + 起点时钟下发给三维页（宿主 → 查看器 app/wander.mjs → 主场景）。
 // 三维页用同一套 core/walk.mjs 自己推进世界时刻，把人挪到下一段该在的地方（三维坐标插值，不瞬移）。
 export function estateNpcs() {
   const w = subpageSession?.frame?.contentWindow; if (!w) return;
@@ -220,13 +220,13 @@ export function estateFocus(name) {
   subpageSession.frame.contentWindow?.postMessage({ type: 'estate:room', name: n }, SUB_ORIGIN);
   return true;
 }
-export let estFocus = null;   // v0.9.5：「自定义」里点了某个房间 / 室外区域 → 庄园聚焦它（优先于当前地点，地点变了就清掉）
+export let estFocus = null;   // v0.9.5：「自定义」里点了某个房间 / 室外区域 → 主场景聚焦它（优先于当前地点，地点变了就清掉）
 export function estateRoom() { if (!subpageSession?.ready) return; const v = ($('#here').value || '').replace('{{user}}', ''), r = hereRes(v);
-  // v0.9.6：卡设定分层房间（r.std + r.floor）→ 按 { room, floor } 落点：庄园页切到该层并画框（受限房间只画素框）
+  // v0.9.6：卡设定分层房间（r.std + r.floor）→ 按 { room, floor } 落点：主场景页切到该层并画框（受限房间只画素框）
   const cr = !estFocus && r?.std && r.floor ? estPlan?.rooms?.find(x => x.floor === r.floor && x.name === r.std) : null;
   const cc = cr ? { name: cr.name, floor: cr.floor, kind: cr.kind, area: cr.area, poly: cr.poly, z: (estPlan.floors.find(f => f.id === cr.floor) || {}).z } : null;
   const sel = estFocus && window.__selectedRoomPlan?.name === estFocus ? window.__selectedRoomPlan : null;   // 页面的消息体仍叫 floor（三维页的契约），这里的 storey 是查看器内部的叫法
-  subpageSession.frame.contentWindow?.postMessage({ type: 'estate:room', name: estFocus || (cc ? cc.name : r?.custom ? r.room : v), card: sel ? { name: sel.name, floor: sel.storey, kind: sel.kind, area: sel.area, poly: sel.poly, z: sel.z } : cc }, SUB_ORIGIN); }   // 自定义叫法：庄园页收到的是对应的标准房间名
+  subpageSession.frame.contentWindow?.postMessage({ type: 'estate:room', name: estFocus || (cc ? cc.name : r?.custom ? r.room : v), card: sel ? { name: sel.name, floor: sel.storey, kind: sel.kind, area: sel.area, poly: sel.poly, z: sel.z } : cc }, SUB_ORIGIN); }   // 自定义叫法：主场景页收到的是对应的标准房间名
 window.Lease3dApi = { live: () => live3d, release: release3d, snapping: () => snapping, stopSnap: stopTileTo3d, SNAP_MS };   // Part 3 §3：三维租约自检（tests / 浏览器探针）
 window.addEventListener('message', e => {
   if (!subpageSession || e.source !== subpageSession.frame.contentWindow || (protocol && !protocol.accept(e.data, '（子页 → 查看器）'))) return;
@@ -246,7 +246,7 @@ window.addEventListener('message', e => {
     post({ type: 'eden-map:loot', id: e.data.id, name: String(e.data.name || ''), map: currentMapId, place: String(e.data.place || ''), hidden: !!e.data.hidden });
   }
 });
-// 藏物表 / 背包有更新：庄园开着就再推一次（拿到手的东西从三维里消失）
+// 藏物表 / 背包有更新：主场景开着就再推一次（拿到手的东西从三维里消失）
 busOn({ key: 'estate.lootMsg', type: 'message', fn: e => {
   if (!window.__isFromHost?.(e)) return;
   const t = e.data?.type;

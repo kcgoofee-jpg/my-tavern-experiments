@@ -53,7 +53,7 @@ const CustomNamesView = (() => {
     }
   }
   // 地点卡：显示名 + 标准名、用途
-  const homeMark = name => { const e = placeIndex?.estate?.id, st = e && estateStandIn(e); return !!name && !!st && mapRegistry.maps[st.map]?.markers?.[st.marker]?.name === name; };   // 庄园的三维页在平面图上的替身地标（节点树给出）
+  const homeMark = name => { const e = placeIndex?.estate?.id, st = e && estateStandIn(e); return !!name && !!st && mapRegistry.maps[st.map]?.markers?.[st.marker]?.name === name; };   // 主场景的三维页在平面图上的替身地标（节点树给出）
   function decorateCard(el, title) {
     const c = document.getElementById('card'); if (!c || c.hidden) return;
     const key = title || el?.dataset?.name, e = entry(key), ex = c.querySelector('.extra'); ex.querySelectorAll('.cu-rep').forEach(n => n.remove());   // v16：按标题取条目（el 可能是上一张卡的标记），并清掉旧声望行
@@ -125,7 +125,7 @@ const CustomNamesView = (() => {
     dlg.addEventListener('click', onDlgClick); dlg.addEventListener('input', onInput); dlg.addEventListener('submit', e => { e.preventDefault(); save(); });
     dlg.addEventListener('keydown', onKey);
   }
-  // fix3（用户 2026-09-28「打开自定义卡顿」）：以前先等 选择器模块 + 庄园房间表（eden_estate_rooms.json）+ MVU 模块全部到齐才开对话框；
+  // fix3（用户 2026-09-28「打开自定义卡顿」）：以前先等 选择器模块 + 主场景房间表（分层房间表）+ MVU 模块全部到齐才开对话框；
   // 现在列表页立刻打开（只用已有数据），这些在后台取，进「选一个对象 / 编辑」时才等（等的时候显示统一加载组件）；设置「数据与映射」一打开就空闲预取
   const deps = () => Promise.all([pk(), planP(), ready]).catch(() => {});
   let depsOk = false; const warm = () => deps().then(() => { depsOk = true; });
@@ -229,7 +229,7 @@ const CustomNamesView = (() => {
   }
 
   // ---------- 飞行（EdenMap.flyTo 也走这里） ----------
-  // 地标：切到那一层并打开地点卡；庄园房间 / 室外：进庄园并聚焦（estate:room），庄园不可用（本次会话加载失败过）时落到平面图上的替身地标并在地点卡里写上要看的房间；人物：人物栏的飞行。
+  // 地标：切到那一层并打开地点卡；主场景房间 / 室外：进主场景并聚焦（estate:room），主场景不可用（本次会话加载失败过）时落到平面图上的替身地标并在地点卡里写上要看的房间；人物：人物栏的飞行。
   let roomNote = null;
   async function flyTo(target) {
     const M = await pk().catch(() => null), t = M?.normTarget(target); if (!t || typeof mapRegistry === 'undefined' || !mapRegistry) return false;
@@ -244,7 +244,7 @@ const CustomNamesView = (() => {
       if (!eid) return false;
       if (!(typeof estFail !== 'undefined' && estFail) && mapRegistry.maps[eid].status !== 'planned') {
         roomNote = null; setEstFocus(name);
-        const CP = cardPlan(), cr = t.floor && CP?.rooms?.find(r => r.floor === t.floor && (r.name === name || r.card_id === name));   // 卡设定分层房间：多边形随 estate:room 发给庄园页画框
+        const CP = cardPlan(), cr = t.floor && CP?.rooms?.find(r => r.floor === t.floor && (r.name === name || r.card_id === name));   // 卡设定分层房间：多边形随 estate:room 发给主场景页画框
         window.__selectedRoomPlan = cr ? { name, storey: cr.floor, kind: cr.kind, area: cr.area, poly: cr.poly, z: (CP.floors.find(f => f.id === cr.floor) || {}).z } : null; if (currentMapId === eid) estateRoom(); else { setPendingFocus(null); go(eid); } return true;
       }
       const s = estateStandIn(eid); if (!s) return false; roomNote = name; return flyMarker(s.map, s.marker);

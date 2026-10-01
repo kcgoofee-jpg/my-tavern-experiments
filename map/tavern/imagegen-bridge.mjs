@@ -22,7 +22,7 @@ const CHANGED_EVT = 'st-baibai-image:changed';
 const API_VERSION = 1;
 
 // 找接口：本窗口 → 上层窗口 → 顶层窗口。
-// 为什么必须往上看：地图与庄园页是嵌在酒馆页面里的 iframe（srcdoc / 仓库页），而柏宝绘装的是
+// 为什么必须往上看：地图与主场景页是嵌在酒馆页面里的 iframe（srcdoc / 仓库页），而柏宝绘装的是
 // **酒馆页面**的扩展，它的 globalThis 在父窗上，不在我们 iframe 里。同源能直接取；跨域会抛，忽略即可。
 export function api() {
   const lookups = [() => globalThis[KEY]];

@@ -19,7 +19,7 @@ let focusHere = false;   // 「当前位置」在同一张图上：飞到当前�
 const viewNorm = (m, key) => { const v = m.view; return v?.[key] && v.extent_m?.[0] ? v[key] / v.extent_m[0] : null; };
 // 最大放大：按 view.min_width_m（最大放大时还能看见多宽）；没有 view 的图沿用全局的 maxZoomPixelRatio
 // 另加像素上限：最多放大到底图 1 像素 ≈ 1.5 个屏幕像素（CSS），再放大只是糊（2026-09-28 从 1.25 调到 1.5，配合局部高清插图收紧），取两者中更「远」的那个。
-// 放大到某个地方（伊甸庄园等）另外渲了一张局部高清插图（maps.json insets[]）时，这条像素上限改按插图自己的分辨率算，
+// 放大到某个地方（主场景等）另外渲了一张局部高清插图（maps.json insets[]）时，这条像素上限改按插图自己的分辨率算，
 // 而不是按底图——插图分辨率够高，允许再多放大一些（目标：插图最深处约 1 源像素 ≈ 1 屏幕像素）；插图本身见 app/hires-inset-tiles.mjs。
 export const MAX_PX = 1.5, INSET_MAX_PX = 1, RING_W = 10;
 export function applyZoomLimit() { if (mapRegistry.maps[currentMapId]?.kind === 'estate') return; const it = osdViewer.world.getItemAt(0); if (!it) return;
@@ -27,13 +27,13 @@ export function applyZoomLimit() { if (mapRegistry.maps[currentMapId]?.kind === 
   const ins = activeInset();
   // 插图覆盖的范围只占底图的一小块（bounds 宽度），像素上限要按「那一小块在屏幕上能占多宽」折算，不能直接拿插图像素宽比整张底图宽
   const pw = ins ? cw / (ins.res_px[0] / (ins.bounds[2] - ins.bounds[0]) * INSET_MAX_PX) : cw / (it.getContentSize().x * MAX_PX);
-  // v0.9.6「天城周边」：天城各层最远能缩到 RING_W 倍图宽（约 30 km），城边拖得出去（visibilityRatio 放宽），不再撞到硬边
+  // v0.9.6「主城周边」：主城各层最远能缩到 RING_W 倍图宽（约 30 km），城边拖得出去（visibilityRatio 放宽），不再撞到硬边
   const ring = window.ScaleHandoffApi?.isTier(currentMapId); osdViewer.viewport.minZoomLevel = ring ? 1 / RING_W : null; osdViewer.viewport.visibilityRatio = ring ? .15 : 1;
   osdViewer.viewport.maxZoomLevel = 1 / Math.max(mw, pw); osdViewer.viewport.applyConstraints();
   zoomHint(ins);
 }
-// 到清晰度上限、且这个地方有自己的细节页（link，比如庄园的三维页）时给个小提示：放大已经到头，点进去才有更细的画面
-// 有插图的地方（比如伊甸庄园）用插图登记的 marker；没有插图但视野中心就落在某个带 link 的地标上（半径 r 内）也算，
+// 到清晰度上限、且这个地方有自己的细节页（link，比如主场景的三维页）时给个小提示：放大已经到头，点进去才有更细的画面
+// 有插图的地方（比如主场景）用插图登记的 marker；没有插图但视野中心就落在某个带 link 的地标上（半径 r 内）也算，
 // 这样不用为每个地标都建插图才有提示
 function zoomHint(ins) {
   const el = document.getElementById('zoomHint'); if (!el) return;
@@ -55,7 +55,7 @@ export function focusStart(immediately) {
   const home = pendingHome; setPendingHome(false);
   if (gv && gv.handoff && immediately && !pendingFocus && !home) { delete groupView[m.group]; fitIn(gv, true); userMoved = true; return; }
   let nx, ny, w;
-  if (m.kind === 'world' && window.__worldFocusPlace) {   // v0.9.6 从天城缩出来：世界图最大放大、天城居中
+  if (m.kind === 'world' && window.__worldFocusPlace) {   // v0.9.6 从主城缩出来：世界图最大放大、主城居中
     const pid = typeof window.__worldFocusPlace === 'string' ? window.__worldFocusPlace : m.view?.focus; window.__worldFocusPlace = false;   // 缩出来落在哪：那个组的地点，没有就是世界图的 view.focus
     const p = [...worldData.places, ...worldData.fiefs].find(q => q.id === pid) || worldData.places.find(q => q.id === m.view?.focus) || worldData.places[0]; [nx, ny] = toImg(p.x, p.y);
     const w0 = (viewNorm(m, 'min_width_m') || .06) * (cs.y > cs.x ? cs.x / cs.y : 1), h0 = w0 * cs.y / cs.x;
@@ -87,12 +87,12 @@ export function frameRect(r, cs, asp) {
   return { x, y, width: w, height: h };
 }
 function fitIn(r, immediately) { const f = frameRect(r, osdViewer.viewport.getContainerSize(), aspect); osdViewer.viewport.fitBounds(new OpenSeadragon.Rect(f.x, f.y, f.width, f.height), immediately); }
-// 当前地点高亮（由 MVU 的当前地点变量驱动）；世界图上，庄园与天城内部的地点都归到「天城」
+// 当前地点高亮（由 MVU 的当前地点变量驱动）；世界图上，主场景与主城内部的地点都归到「主城」
 export const ALIAS = {};   // 世界图地点名 → 落在它里面的词；boot.mjs 按每个地点的 here_words 建，再并进它的各层地图 / 地标别名
 export function markHere(v) {
   v = (v || '').replace('{{user}}', '');
   $('#hereGo').hidden = !hereRes(v);
-  // 解析出的落点也算：庄园里的任何地方 → 上层的「伊甸庄园」标记与世界图的「天城」；天城任一层 → 「天城」；地标 → 该标记
+  // 解析出的落点也算：主场景里的任何地方 → 上层的「主场景」标记与世界图的「主城」；主城任一层 → 「主城」；地标 → 该标记
   const r = hereRes(v), m = currentMapId && mapRegistry.maps[currentMapId];
   const extra = new Set();
   if (r) {
@@ -109,9 +109,9 @@ export function markHere(v) {
   updateLayerBadges(); estateRoom(); if (typeof plugins.TripsView !== 'undefined') plugins.TripsView.render();   // v0.9.5 途中：两端之间的虚线弧
 }
 // ---------------- 自动跳到当前地点（app/place-resolver.mjs 的落点；设置里可关，默认开） ----------------
-// 庄园房间 / 区域 → 庄园（房间由 estate:room 高亮，切楼层由庄园页自己做）；地标 → 该层并打开地点卡；层 / 大区 / 天城 → 该层默认视野；世界地名 → 世界图；匹配不到不动。
+// 主场景房间 / 区域 → 主场景（房间由 estate:room 高亮，切楼层由主场景页自己做）；地标 → 该层并打开地点卡；层 / 大区 / 主城 → 该层默认视野；世界地名 → 世界图；匹配不到不动。
 // 打开面板（或唤醒）后的第一条地点一定跳；之后只有地点变了才跳，不打断用户自己在别的图上浏览。
-export let estPlan = null;   // v0.9.6 map/data/eden_estate_rooms.json（卡设定分层房间，房间名照抄卡）
+export let estPlan = null;   // v0.9.6 包数据的分层房间表（卡设定分层房间，房间名照抄卡）
 export let placeIndex = null;   // app/place-resolver.mjs 的 makeHere 结果（extension-api.mjs rebuildHere 建；没建好之前认不出任何地点）
 export const hereRes = v => (placeIndex ? placeIndex.here(v) : null);
 // where a located place (a person, a trip end) is drawn: the node tree's answer for the place text, or for a result already placed (app/spot.mjs)
@@ -119,7 +119,7 @@ export const drawnAt = (r, text) => drawPlace(r, text, { hasMap: id => !!mapRegi
 export function jumpHere(v) {   // 只由「当前位置」按钮调用（不再在打开 / 地点更新时自动跳）
   let r = hereRes(v);
   if (!r || !mapRegistry?.maps[r.map] || mapRegistry.maps[r.map].status === 'planned') return false;
-  // 本次会话庄园三维加载失败过、或省流设备：落到它的平面替身（上层的伊甸地标），地点卡里有「进入庄园」
+  // 本次会话主场景三维加载失败过、或省流设备：落到它的平面替身（上层的主场景地标），地点卡里有「进入主场景」
   if (isScene(r.map) && (estFail || leanBg())) { const sub = estateStandIn(r.map); if (sub) r = { ...r, map: sub.map, marker: sub.marker }; }
   if (r.map !== currentMapId) { setPendingFocus(r.marker || null); setPendingHome(!r.marker && !r.place); go(r.map); return true; }
   if ((r.marker || r.place) && osdViewer?.world.getItemCount()) { userMoved = false; markHere(v); focusHere = true; focusStart(false); }   // 同一张图：飞到地标 / 世界地名
@@ -136,10 +136,10 @@ export function focusMarker(name) {
   setPendingFocus(id); userMoved = false; focusHere = true; focusStart(false); return true;
 }
 /**
- * 任务三（b）：启动时**只在「人已经在庄园里」时**跳过宏观世界层，直接下钻到庄园（楼层剖切由庄园页按
+ * 任务三（b）：启动时**只在「人已经在主场景里」时**跳过宏观世界层，直接下钻到主场景（楼层剖切由主场景页按
  * 当前地点自己做）。这是对 2026-09-28「不再在打开时自动跳」的唯一例外，范围收得很窄：
- *   ① 只有当六级落点解出的地图是 kind=estate 的三维场景时才成立（世界地名 / 天城各层照旧先开世界图）；
- *   ② 本次会话庄园三维失败过、或省流设备 → 不进（会落到平面替身，等于白跳一次）。
+ *   ① 只有当六级落点解出的地图是 kind=estate 的三维场景时才成立（世界地名 / 主城各层照旧先开世界图）；
+ *   ② 本次会话主场景三维失败过、或省流设备 → 不进（会落到平面替身，等于白跳一次）。
  * 返回 true = 已经开好目标图（调用方不要再 go(REG.start)）。
  */
 export function startInScene(v0) {

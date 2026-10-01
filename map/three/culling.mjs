@@ -59,7 +59,7 @@ export function prepare({ THREE, root, instanced = [] } = {}) {
 }
 
 /**
- * 相机距离口径（给 LOD 用）：透视相机用真实距离，正交相机（庄园）没有真实距离，
+ * 相机距离口径（给 LOD 用）：透视相机用真实距离，正交相机（主场景）没有真实距离，
  * 用「视野半宽 / 模型尺寸」折算出一个等效倍数，让两套相机共用同一套档位。
  */
 export function distanceMetric({ camera, target, size, viewportWidth = 1, viewportHeight = 1 } = {}) {

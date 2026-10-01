@@ -220,7 +220,7 @@ export function apply({ THREE, env, targets = {}, sunDistance = 200 } = {}) {
 }
 
 /**
- * 烘焙场景（庄园外观那批 MeshBasic 不吃灯）用的调色系数：正午 ≈ 1（不改色），夜里冷蓝压暗，清晨 / 黄昏偏暖。
+ * 烘焙场景（主场景外观那批 MeshBasic 不吃灯）用的调色系数：正午 ≈ 1（不改色），夜里冷蓝压暗，清晨 / 黄昏偏暖。
  * 一份曲线同时服务「有灯的室内」和「烘焙好的室外」——两者才不会一个黄昏一个正午。
  */
 export function gradeOf(env) {

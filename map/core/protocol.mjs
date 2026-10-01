@@ -1,4 +1,4 @@
-// 地图消息协议（大版本 2，docs/design/arch-v2.md §3）：宿主（tavern/eden-map.js）↔ 查看器（viewer.html）↔ 庄园 / 三维子页。
+// 地图消息协议（大版本 2，docs/design/arch-v2.md §3）：宿主（tavern/eden-map.js）↔ 查看器（viewer.html）↔ 主场景 / 三维子页。
 // 信封 { type, v: PROTO, t?, ...字段 }。缺 v = v1（旧宿主 / 旧查看器，换线路时两边可能不同版本）照收；v 比本端新也照收（多出来的字段不管）。
 // 只做形状检查而且是部分的：字段表为空的类型只确认「这个类型存在」，接收方仍要自己处理缺字段。
 // SCHEMA：每种消息要求的字段与类型（'string' | 'number' | 'boolean' | 'object' | 'array' | 'any'；后缀 ? = 可缺 / null）。
@@ -73,16 +73,16 @@ export const SCHEMA = {
   'eden-map:th-state': [HOST_TO_VIEWER, { prefs: 'object?', wb: 'object?', last: 'object?', result: 'object?' }],
   'eden-map:open': [HOST_TO_VIEWER, { map: 'string' }],   // 本机扩展入口（docs/content-compat.md），仓库内无发送方
   'eden-map:fly': [HOST_TO_VIEWER, {}],                     // 同上
-  // 查看器 ↔ 庄园 / 三维子页
+  // 查看器 ↔ 主场景 / 三维子页
   'estate:room': [VIEWER_TO_SUBPAGE, { name: 'any' }],
   'estate:inset': [VIEWER_TO_SUBPAGE, { left: 'number?' }],
   'estate:lang': [VIEWER_TO_SUBPAGE, { lang: 'string' }],
   'estate:theme': [VIEWER_TO_SUBPAGE, { theme: 'string' }],
-  'estate:cvd': [VIEWER_TO_SUBPAGE, { mode: 'string' }],        // 色觉模式：0 关 / rg 红绿 / by 蓝黄，同步给庄园 / 三维子页（E7）
+  'estate:cvd': [VIEWER_TO_SUBPAGE, { mode: 'string' }],        // 色觉模式：0 关 / rg 红绿 / by 蓝黄，同步给主场景 / 三维子页（E7）
   'estate:quality': [VIEWER_TO_SUBPAGE, { q: 'string' }],       // 设置「三维画质」auto / 1 省电 / 2 高：不重载即生效（毛玻璃 + 像素比）
-  'estate:fps': [VIEWER_TO_SUBPAGE, { on: 'boolean' }],         // 调试：显示帧率——设置「显示帧率」实时同步给庄园 / props 三维子页（U，2026-09-28）
-  'estate:chat': [VIEWER_TO_SUBPAGE, { id: 'string' }],         // 当前 chatId：房间图集「仅本聊天」作用域用，庄园页读不到 SillyTavern 上下文（2026-09-28）
-  'estate:stash': [VIEWER_TO_SUBPAGE, { items: 'array?' }],     // Part 8-1：世界藏物表（宿主 → 查看器 → 庄园三维页），三维页据此在房间 / 区域里放发光道具
+  'estate:fps': [VIEWER_TO_SUBPAGE, { on: 'boolean' }],         // 调试：显示帧率——设置「显示帧率」实时同步给主场景 / props 三维子页（U，2026-09-28）
+  'estate:chat': [VIEWER_TO_SUBPAGE, { id: 'string' }],         // 当前 chatId：房间图集「仅本聊天」作用域用，主场景页读不到 SillyTavern 上下文（2026-09-28）
+  'estate:stash': [VIEWER_TO_SUBPAGE, { items: 'array?' }],     // Part 8-1：世界藏物表（宿主 → 查看器 → 主场景三维页），三维页据此在房间 / 区域里放发光道具
   'estate:taken': [VIEWER_TO_SUBPAGE, { ids: 'array?' }],       // Part 8-1：已经在手里的藏物 id（背包的 id 对账）：地上不再发光
   'estate:routine': [VIEWER_TO_SUBPAGE, { schedule: 'object?', clock: 'object?' }],   // Part 8-2：NPC 日程表 + 起点时钟（三维页按确定性时钟自己挪人）
   'estate:children': [VIEWER_TO_SUBPAGE, { zones: 'object' }],   // S2-B：宿主 → 三维页：{ 区域 id: [{ node, title }] }，该区域下挂着的子地图（来自运行时节点树）；三维页据此给区域卡加「进入三维」

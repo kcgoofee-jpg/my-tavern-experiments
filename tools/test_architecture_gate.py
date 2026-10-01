@@ -93,7 +93,8 @@ def main():
         assert base is not None, 'tools/arch_baseline.json 不存在'
         assert not gate.check_baseline_shape(base), f'账本不合法：{gate.check_baseline_shape(base)}'
         for name, fn in (('z-index', gate.check_zindex), ('卡词', gate.check_terms),
-                         ('内联样式', gate.check_inline_style), ('体量', gate.check_line_count)):
+                         ('内联样式', gate.check_inline_style), ('体量', gate.check_line_count),
+                         ('注释卡词', gate.check_comment_terms)):
             bad, info = fn(baseline=base)
             assert not bad, f'{name} 防线对仓库现状有违规：{bad[:3]}'
             assert info['scanned'] > 100, f'{name} 扫描面太小（{info["scanned"]}）= glob 写坏了在静默空转'
@@ -296,6 +297,31 @@ def main():
     def core_still_zero_terms():
         assert not gate.check_pack0(), 'map/core 出现卡词'
     case('仓库现状：map/core 卡词硬零', core_still_zero_terms)
+
+    def comment_terms_rules():   # 阶段 A：注释里的卡词也拦（同一词表、只数注释），map/core 硬零，令牌样式表的注释同样扫
+        root = fake_root({'map/app/c.mjs': "// 这里进庄园\nconst a = 1;   // 伊甸与天城\n/* 多行\n  天城 */\nconst ok = 'x';\n",
+                          'map/ui/t.css': "/* 庄园配色 */\n:root { --a: 1; }\n",
+                          'map/viewer.html': "<!-- 庄园 -->\n<div>ok</div>\n"})
+        bad, info = gate.check_comment_terms(baseline={}, root=root)
+        assert info['counts'] == {'map/app/c.mjs': 4, 'map/ui/t.css': 1, 'map/viewer.html': 1}, f'注释卡词计数不对：{info["counts"]}'
+        assert any('map/app/c.mjs:1:' in b and '注释' in b for b in bad), f'新注释卡词没被拦（或没写行号）：{bad}'
+        bad, _ = gate.check_terms(baseline={}, root=root)
+        assert not bad, f'检查 4 应仍只数代码（注释不计）：{bad}'
+        bad, _ = gate.check_comment_terms(baseline={'comment_terms': {'map/app/c.mjs': 4, 'map/ui/t.css': 1, 'map/viewer.html': 1}}, root=root)
+        assert not bad, f'账本内持平应放行：{bad}'
+        bad, _ = gate.check_comment_terms(baseline={'comment_terms': {'map/app/c.mjs': 3, 'map/ui/t.css': 1, 'map/viewer.html': 1}}, root=root)
+        assert bad and '4 > 账本 3' in bad[0], f'账本内计数变大没被拦：{bad}'
+        root = fake_root({'map/core/x.mjs': "// 庄园\nexport const a = 1;\n"})
+        bad, _ = gate.check_comment_terms(baseline={'comment_terms': {'map/core/x.mjs': 5}}, root=root)
+        assert bad and 'map/core/x.mjs:1:' in bad[0], f'map/core 注释卡词应硬零：{bad}'
+        root = fake_root({'map/packs/eden/a.mjs': "// 庄园\n", 'map/estate/m.js': "// 庄园\n", 'tools/t.mjs': "// 庄园\n", 'map/app/ok.mjs': "// 中性\n"})
+        bad, _ = gate.check_comment_terms(baseline={}, root=root)
+        assert not bad, f'范围外路径（设定包 / 庄园页 / 工具）不该被扫：{bad}'
+        base = gate.load_baseline()
+        bad, info = gate.check_comment_terms(baseline=base)
+        assert not bad and info['scanned'] > 100, f'仓库现状注释里有卡词或扫描面太小：{bad[:3]} {info["scanned"]}'
+        assert not base.get('comment_terms'), f'账本 comment_terms 现为空，只许缩不许长：{base.get("comment_terms")}'
+    case('拦截：注释里的新卡词（// /* */ <!-- --> / 令牌样式表）；map/core 硬零；仓库现状零', comment_terms_rules)
 
     tmp.cleanup()
     if failures:

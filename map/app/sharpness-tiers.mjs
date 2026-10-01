@@ -28,7 +28,7 @@ const autoMax = () => { const c = navigator.connection || {};
 // 省流模式：系统省流（saveData）、2g / 3g、内存 ≤ 4 GB、或手动选了「省流」档：不在后台预热别的地图的瓦片，只取 HTML 与 JSON（E4 N02）
 export const lean = () => { const c = navigator.connection || {};
   return !!c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || '') || (navigator.deviceMemory || 8) <= 4 || tier === 'save'; };
-// 触屏且拿不到网络 / 内存信息（iOS WebKit 两个都没有）：按省流处理，但只用于后台预热和「自动进 3D 庄园」；清晰度自动档上限 autoMax() 不受影响（用户 2026-09-27 定，E6）
+// 触屏且拿不到网络 / 内存信息（iOS WebKit 两个都没有）：按省流处理，但只用于后台预热和「自动进 3D 主场景」；清晰度自动档上限 autoMax() 不受影响（用户 2026-09-27 定，E6）
 const touchUnknown = !navigator.connection && !('deviceMemory' in navigator) && matchMedia('(pointer: coarse)').matches;
 export const leanBg = () => lean() || touchUnknown;
 // ---------------- 加载进度：已完成 / (已完成 + 正在加载) ----------------
@@ -49,7 +49,7 @@ export function initProgress() {
     else if (ts.className === 'busy') tsOk();
     // 当前地图首屏瓦片都到了：告诉酒馆（后台预加载据此收尾）
     if (!busy && done && !firstLoaded) { firstLoaded = true; post({ type: 'eden-map:loaded' }); }
-    // 在 100% 停一下再淡出；期间换了地图（例如跳去庄园）就不撤，免得撤掉庄园的遮罩（E4 N08）
+    // 在 100% 停一下再淡出；期间换了地图（例如跳去主场景）就不撤，免得撤掉主场景的遮罩（E4 N08）
     clearTimeout(hideT); if (!busy) { if (done) { const at = currentMapId; setTimeout(() => { if (currentMapId === at && mapRegistry.maps[currentMapId]?.kind !== 'estate') $('#loading').classList.add('done'); }, 350); } hideT = setTimeout(() => { done = ok = bad = 0; $('#prog').hidden = true; }, 200); }
   };
   osdViewer.addHandler('open', () => { done = ok = bad = 0; tileActs(false); if (mapRegistry.maps[currentMapId]?.kind !== 'estate') loadingProgress().reset(); upd(); });
@@ -163,7 +163,7 @@ export function applyTier() {
 }
 export function onOpen() {
   resetInsets();   // 旧世界已经被 viewer.open() 整个换掉，插图记录清空，新地图按需重新补上
-  if (mapRegistry.maps[currentMapId]?.kind === 'estate') return;   // 打开旧底图期间已经切去庄园
+  if (mapRegistry.maps[currentMapId]?.kind === 'estate') return;   // 打开旧底图期间已经切去主场景
   const it = osdViewer.world.getItemAt(0), sz = it.getContentSize(); setAspect(sz.y / sz.x);
   applyTier(); applyZoomLimit(); homeMode(); drawOverlays(); focusStart(true); autoTier(); updateInsets();
   if (pendingFocus) { const el = [...document.querySelectorAll('.mk')].find(e => e.dataset.name === mapRegistry.maps[currentMapId].markers?.[pendingFocus]?.name);

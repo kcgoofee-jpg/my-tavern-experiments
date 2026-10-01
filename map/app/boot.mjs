@@ -56,7 +56,7 @@ import { initShell } from './drawer-glue.mjs';
 import { initLayerHost, registry, registerCoreLayers, renderLayerMenu } from './layer-host.mjs';
 import { plugins } from './plugins.mjs';
 import { PACK, initPack, packData, packEvents, packNames, packOverlay, packTax, setOverlay, rebase } from './current-pack.mjs';
-import { buildRuntime } from './nodes-runtime.mjs';   // 节点树：面包屑 / 上一级 / 庄园替身都从它读（S2-A）
+import { buildRuntime } from './nodes-runtime.mjs';   // 节点树：面包屑 / 上一级 / 主场景替身都从它读（S2-A）
 import { applyTheme } from './theme.mjs';   // 包的分视图主题（K-R70）：一个 <style id="packTheme">
 import { busOn } from './bus.mjs';
 // 多地图查看器：地图注册表 data/maps.json（世界 → 城市各层 → 以后的室内剖面……）。
@@ -87,7 +87,7 @@ async function mainInner() {
   if (d?.highland) Object.assign(worldData.places.find(p => p.id === 'highland'), d.highland);
   // 世界图上，某个城市各层地图里的地点都归到它在世界图上的地点
   // 开局地点的简易地图（groups.<id>.place）同理：地图里的地标归到世界图上对应的地点 / 封地
-  for (const p of [...worldData.places, ...worldData.fiefs, ...(worldData.realms || [])]) if (Array.isArray(p.here_words) && p.name) ALIAS[p.name] = p.here_words.filter(w => typeof w === 'string');   // 世界图地点自己的「当前地点」词表（here_words，数据里的顺序）：在庄园 / 各层里的地点归到它
+  for (const p of [...worldData.places, ...worldData.fiefs, ...(worldData.realms || [])]) if (Array.isArray(p.here_words) && p.name) ALIAS[p.name] = p.here_words.filter(w => typeof w === 'string');   // 世界图地点自己的「当前地点」词表（here_words，数据里的顺序）：在主场景 / 各层里的地点归到它
   for (const [gid, g] of Object.entries(mapRegistry.groups)) { const pl = g.place && [...worldData.places, ...worldData.fiefs].find(q => q.id === g.place), key = pl?.name; if (!key) continue;   // 组的地点叫什么就用什么名字（gid 不特判）
     const A = ALIAS[key] ??= [key];
     for (const k of g.layers || []) { A.push(...(mapRegistry.maps[k].alias || [])); for (const v of Object.values(mapRegistry.maps[k].markers || {})) A.push(...(v.alias || [])); } }
@@ -174,7 +174,7 @@ async function mainInner() {
   if (qs.get('here')) $('#here').value = qs.get('here');   // 调试：?here=主卧
   if (mapRegistry.maps[q] && mapRegistry.maps[q].status !== 'planned') go(q);
   else if (!startInScene()) go(mapRegistry.start);   // 用户 2026-09-28：总是先开世界图；跳到当前地点只在点「当前位置」时。
-  // 唯一例外（任务三）：人**已经**在庄园（三维场景）里时跳过宏观世界层，直接下钻到庄园对应楼层——判定收在 locate.startInScene。
+  // 唯一例外（任务三）：人**已经**在主场景（三维场景）里时跳过宏观世界层，直接下钻到主场景对应楼层——判定收在 locate.startInScene。
   $('#hereGo').onclick = () => jumpHere($('#here').value);
   plugins.EventsView.init(); plugins.EventsView.pollFeeds();   // 事态横条与花屏提示；外部事件数据源（maps.json 的 feeds，默认没有）
   post({ type: 'eden-map:ready', proto: PROTO });

@@ -74,7 +74,7 @@ export function createFX({ THREE, scene, box = [60, 40, 60], quality = 1, pixelR
   let obj = null, mat = null, geo = null, baked = '';
 
   function release() {
-    // 宿主可能把某个效果挂到了别处（庄园把极光挂到相机上当天幕），所以按对象自己的 parent 摘，
+    // 宿主可能把某个效果挂到了别处（主场景把极光挂到相机上当天幕），所以按对象自己的 parent 摘，
     // 不能只调 group.remove —— 那会留下一个已经 dispose 的网格赖在场景里。
     if (obj) { try { (obj.parent || group).remove(obj); } catch (e) {} obj = null; }
     try { geo?.dispose?.(); } catch (e) {}
@@ -94,7 +94,7 @@ export function createFX({ THREE, scene, box = [60, 40, 60], quality = 1, pixelR
       mat = new THREE.ShaderMaterial({
         uniforms: {
           uTime: { value: 0 }, uSpeed: { value: p.speed }, uSize: { value: p.size }, uPixelRatio: { value: pixelRatio },
-          uAtten: { value: ortho ? 0 : 1 },   // 正交相机（庄园）下关掉距离衰减，否则粒子会被距离缩成尘埃
+          uAtten: { value: ortho ? 0 : 1 },   // 正交相机（主场景）下关掉距离衰减，否则粒子会被距离缩成尘埃
           uBox: { value: new THREE.Vector3(box[0], box[1], box[2]) },
           uWind: { value: new THREE.Vector2(p.wind[0], p.wind[1]) },
           uColor: { value: new THREE.Color(p.color[0], p.color[1], p.color[2]) },
@@ -203,7 +203,7 @@ export function createFX({ THREE, scene, box = [60, 40, 60], quality = 1, pixelR
 
 /**
  * fxDescriptor：交给 LayerRegistry 的纯数据描述符（slot = 'fx'，kind = 'canvas'）。
- * mount(ctx) 时把粒子对象挂进 ctx.scene（查看器 / 庄园子页谁挂载谁给场景），ctx.renderer 可选（自绘用）。
+ * mount(ctx) 时把粒子对象挂进 ctx.scene（查看器 / 主场景子页谁挂载谁给场景），ctx.renderer 可选（自绘用）。
  */
 export function fxDescriptor({ id = 'particles3d', order = 40, slot = FX_SLOT, kind = 'canvas', engine = null, initialVisible = true } = {}) {
   if (!SLOTS.includes(slot)) throw new Error(`fx: 槽位 ${slot} 不在 SLOTS（${SLOTS.join(' | ')}）`);

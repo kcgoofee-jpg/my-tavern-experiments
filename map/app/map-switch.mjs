@@ -31,7 +31,7 @@ export function applyPeriod() {
   const want = baseOf(currentMapId);
   if (want !== lastBase) swapBase();
 }
-// 同组（天城）各层平面坐标对齐：切层时沿用同一个归一化视野（中心 + 缩放），只有第一次进入这一组时才按 view.focus 定位
+// 同组（主城）各层平面坐标对齐：切层时沿用同一个归一化视野（中心 + 缩放），只有第一次进入这一组时才按 view.focus 定位
 export const groupView = {};
 export function saveView() {
   const m = mapRegistry.maps[currentMapId];
@@ -50,17 +50,17 @@ export function fadeAway(el, cb) {
   osdViewer.addOnceHandler('tile-drawn', () => setTimeout(done, 60));
   setTimeout(done, 1500);   // 瓦片迟迟不到也不一直盖着
 }
-export async function go(id) {   // 云脚本块（文末）会包一层：天城各层之间切换时加《部落冲突》式转场
+export async function go(id) {   // 云脚本块（文末）会包一层：主城各层之间切换时加《部落冲突》式转场
   const m = mapRegistry.maps[id]; if (!m || m.status === 'planned') return;
   // 点到「当前就是这张图」：不再静默返回（任务三：宏观层最常被当成「点击无响应 / 找不到目标实体」的那一类）。
-  // 三维场景（kind=estate）→ 把落点名字发给庄园页聚焦；平面图 → 飞到落点标记。
+  // 三维场景（kind=estate）→ 把落点名字发给主场景页聚焦；平面图 → 飞到落点标记。
   if (id === currentMapId) { focusSameMap(id); return; }
   const prev = currentMapId && mapRegistry.maps[currentMapId], fromEstate = prev?.kind === 'estate';
   saveView();
   setCurrentMapId(id); setUserMoved(false); closeCard(); plugins.EventsView.collapse?.(); document.body.dataset.map = id; syncGlow(id);
   if (m.kind === 'estate') return openEstate(id, m, !!prev);
   dropParked();
-  // 离开庄园：iframe 留到新底图画出来再淡出
+  // 离开主场景：iframe 留到新底图画出来再淡出
   const oldFrame = leaveEstate();
   // 叠加层可以取别的地图的数据（overlay.from），例如中层的「上层投影」用上层的岛屿轮廓
   const ovSrc = m.overlay?.from && mapRegistry.maps[m.overlay.from]?.data;
@@ -70,7 +70,7 @@ export async function go(id) {   // 云脚本块（文末）会包一层：天�
   setCurrentMapData(cd); setOverviewMapData(ovSrc ? od : cd); setDepthData(dd || null);
   renderNav(); mapChrome(m); if (m.alt) $('#tgAltBox').checked = altOn(id);
   $('#tgRoutes').hidden = !(cd?.routes?.length);
-  // 从别的地图切过来（有旧画面或庄园盖着）：不上整屏遮罩，只看顶部进度条；首次打开才显示遮罩
+  // 从别的地图切过来（有旧画面或主场景盖着）：不上整屏遮罩，只看顶部进度条；首次打开才显示遮罩
   const snap = !fromEstate && prev ? snapshot() : null, quiet = !!(snap || oldFrame);
   $('#loading').classList.remove('done', 'over', 'cover'); $('#loading').classList.toggle('thumb', id === 'world'); $('#loading span').textContent = uiText('loading_map', { title: localName(m, 'title') });
   if (quiet) $('#loading').classList.add('done');
@@ -78,7 +78,7 @@ export async function go(id) {   // 云脚本块（文末）会包一层：天�
   if (m.overlay?.type === 'dzi') srcs.push({ tileSource: m.overlay.src, opacity: $('#tgBorders').checked ? 1 : 0 });
   lastBase = srcs[0].tileSource;
   osdViewer.open(srcs);
-  // v0.9.6 世界 ↔ 天城的缩放衔接：旧画面以天城为中心放大（进城）或缩小（出城）淡出，而不是原地淡出
+  // v0.9.6 世界 ↔ 主城的缩放衔接：旧画面以主城为中心放大（进城）或缩小（出城）淡出，而不是原地淡出
   const fx = window.__zoomSnapEffect; window.__zoomSnapEffect = null;
   if (snap && fx) { snap.style.transformOrigin = `${fx.ox}px ${fx.oy}px`; const kill = () => snap.remove();
     const a = snap.animate([{ transform: 'scale(1)', opacity: 1 }, { transform: `scale(${fx.scale})`, opacity: 0 }], { duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 560, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
@@ -90,7 +90,7 @@ export async function go(id) {   // 云脚本块（文末）会包一层：天�
 /**
  * 署名（ⓘ）：这张图没有署名词条时把按钮与文字框一起收起来——原来按钮恒显示，点开是个空框，
  * 在世界图（奥伦帝国那类没有 credit 的层）上表现就是「点了没反应」的假死（任务三）。
- * fix3：只用展开的文字框，不再叠一个原生 title 提示。地图切换与庄园打开都走这里。
+ * fix3：只用展开的文字框，不再叠一个原生 title 提示。地图切换与主场景打开都走这里。
  */
 export function applyCredit(m) {
   const credit = localName(m, 'credit');
@@ -106,7 +106,7 @@ export function mapChrome(m) {
 export function setGo(v) { return (go = v); }
 /**
  * 点到「当前就是这张图」时的动作（任务三）：消费掉待聚焦的落点，按图的类型分流——
- *   kind=estate（庄园 / 通用三维查看器）→ 把名字发给三维页聚焦（房间 / 热点由它自己找人）；
+ *   kind=estate（主场景 / 通用三维查看器）→ 把名字发给三维页聚焦（房间 / 热点由它自己找人）；
  *   其余 → 地图内飞到该标记。落点为空时什么都不做（点的是同图但没有指定目标）。
  */
 function focusSameMap(id) {

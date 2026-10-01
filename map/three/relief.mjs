@@ -1,6 +1,6 @@
 // Part 9-3：2.5D 浮雕材质（法线 + 视差 + 粗糙度），把 2D 立面贴图在斜视 / 走动时做出微立体。
 // 素材来自 map/art/relief/（tools/make_relief_maps.py 生成，清单 relief.json 描述每组的路径与参数），
-// 光照来自 daynight.mjs 的环境参数——同一份昼夜状态同时驱动庄园的光与立面的高光，画面才自洽。
+// 光照来自 daynight.mjs 的环境参数——同一份昼夜状态同时驱动主场景的光与立面的高光，画面才自洽。
 // 纯渲染层：THREE 由调用方传进来，本模块不 import three、不碰 DOM / 存储 / 宿主全局。
 import { RELIEF_VS, RELIEF_FS, UNIFORM_SETS } from './shaders.mjs';
 

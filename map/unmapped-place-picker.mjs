@@ -1,6 +1,6 @@
 // 未上图的地点（v0.9.6）。当前地点（MVU 的当前地点变量或 ⌖ 标签）认不出时（app/place-resolver.mjs 的落点是 null）：
 //   不跳转；标题栏显示「未上图：<名字>」（嵌在酒馆里时由卡内脚本的标题栏显示，点它发 eden-map:unmapped-pick；单独打开时显示在查看器页头）。
-//   点开 = 小选择器：把这个名字指派给一个地标、层 / 大区、庄园房间（含卡设定分层房间）/ 室外区域，或世界地名；也可以「忽略」。
+//   点开 = 小选择器：把这个名字指派给一个地标、层 / 大区、主场景房间（含卡设定分层房间）/ 室外区域，或世界地名；也可以「忽略」。
 //   存在聊天变量 eden_map.自定义（mvu-readers.mjs setCustom 的 alias / ignore；单独打开时存本机），存完立刻重建词表并跳过去。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。这里不过滤任何文字（textContent / esc）。
 import { worldData, mapRegistry } from './app/state.mjs';
@@ -36,7 +36,7 @@ const UnmappedPlacePicker = (() => {
     if (name) { chip.textContent = ''; const s = document.createElement('span'); s.textContent = uiTextOr('um.chip', '未上图：{n}', { n: name }); chip.append(s); chip.title = uiTextOr('um.tip', '地图认不出这个地点，点这里把它放到地图上'); }
   }
 
-  // ---------- 候选：地标、层 / 大区、庄园房间 / 室外、世界地名 ----------
+  // ---------- 候选：地标、层 / 大区、主场景房间 / 室外、世界地名 ----------
   function candidates() {
     const out = [], seen = new Set(), en = typeof LANG !== 'undefined' && LANG === 'en';
     const add = (key, kind, sub, extra = '') => { if (!key || seen.has(kind + '|' + key)) return; seen.add(kind + '|' + key); out.push({ key, kind, sub: sub || '', find: (key + ' ' + (sub || '') + ' ' + extra).toLowerCase() }); };

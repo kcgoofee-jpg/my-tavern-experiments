@@ -10,7 +10,7 @@ uniform float uTime;
 uniform float uSpeed;
 uniform float uSize;
 uniform float uPixelRatio;
-uniform float uAtten;      // 1 = 透视（点大小随距离衰减）；0 = 正交（庄园这种相机，点大小固定，否则会被距离缩成尘埃）
+uniform float uAtten;      // 1 = 透视（点大小随距离衰减）；0 = 正交（主场景这种相机，点大小固定，否则会被距离缩成尘埃）
 uniform vec3 uBox;
 uniform vec2 uWind;
 varying float vSeed;
@@ -46,7 +46,7 @@ void main() {
 }
 `;
 
-/** 极光平面：顶点只传 uv（平面正对 -Z，挂在天城高空那一层） */
+/** 极光平面：顶点只传 uv（平面正对 -Z，挂在主城高空那一层） */
 export const AURORA_VS = `
 precision mediump float;
 varying vec2 vUv;

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """架构看门狗（2026-09-30 接入 tools/smoke.sh；S0-B 起覆盖整个引擎并加「只减不增」账本）。
 
-背景见 docs/reviews/architecture_and_stream_perf.md 与 docs/plans/spatial-os.md §五 S0。六道防线：
+背景见 docs/reviews/architecture_and_stream_perf.md 与 docs/plans/spatial-os.md §五 S0。八道防线：
 
   1. 体量防膨胀：引擎源文件（见 ENGINE_GLOBS）单文件物理行数 ≤ 400。既有超长文件登记在
      tools/arch_baseline.json 的 "lines"，只许缩短不许再长；map/core/* 永远不准进账本（硬 400）。
@@ -22,6 +22,9 @@
      （见 TERM_EXTRA；英文卡词见 EN_TERMS，区分大小写）。引擎文件剥掉注释后扫描（评述里难免提到卡），字符串字面量算数；
      另扫 map/i18n/zh.json 与 en.json 的**值**。逐次计数：map/core/* 硬零，其余文件 ≤ 账本 "terms"。
      人名地名属于设定包数据（map/packs/<id>/、map/data/），引擎零硬编码。
+  8. 注释里的卡词（阶段 A 验收，同一张词表、只数注释，另含 map/ui/*.css）：评述同样写中性措辞
+     （「主场景」「主城」…），逐文件计数，map/core/* 硬零，其余 ≤ 账本 "comment_terms"（现为空）。
+     与第 4 条互补：第 4 条剥注释后扫，第 8 条只数注释，两者合起来 = 计划 §8 的 grep。
   5. 学术引用封锁（2026-09-30 用户决定，口径来自参考卡「no academic citations embedded in project」）：
      map/ 与 tests/ 的源码里不许出现论文名 / 期刊缩写 / arXiv / DOI / et al. —— 代码只说**机制**
      （如「滑动窗口关键帧压缩」「领域槽位解耦追踪」），出处统一存在
@@ -34,7 +37,7 @@
      `style.setProperty('--…')` 与声明全是 `--x: v` 的 `style="…"`（CSS 自定义属性是传动态几何的许可通道）、`style.transform` 与
      `style.left/top/width/height`（动态几何）。
 
-「只减不增」账本（ratchet）：tools/arch_baseline.json = {"lines","zindex","terms","inline_style"}，
+「只减不增」账本（ratchet）：tools/arch_baseline.json = {"lines","zindex","terms","inline_style","comment_terms"}，
 只列有违规的文件，数字只许变小。工具生成，不手写：
   python3 tools/check_architecture.py                     检查（有违规 exit 1，逐条 文件:行号 或 文件:计数>账本）
   python3 tools/check_architecture.py --init-baseline     账本不存在时首次生成
@@ -67,10 +70,11 @@ ENGINE_GLOBS = [
     'map/ui/*.js', 'map/ui/*.mjs', 'map/three/*.mjs', 'map/*.mjs',
     'map/viewer.html', 'map/props/viewer3d.html',
 ]
+COMMENT_EXTRA_GLOBS = ['map/ui/*.css']   # 检查 8 在引擎文件之外多扫的样式表（令牌表的注释）
 I18N_FILES = ['map/i18n/zh.json', 'map/i18n/en.json']   # 检查 4 额外扫这两本词典的「值」
 
-# 账本四栏：键名即检查名。
-KINDS = ('lines', 'zindex', 'terms', 'inline_style')
+# 账本五栏：键名即检查名。
+KINDS = ('lines', 'zindex', 'terms', 'inline_style', 'comment_terms')
 BASELINE_NOTE = ('Ratchet ledger for tools/check_architecture.py: counts may only go down; '
                  'regenerate with --update-baseline (never hand-edit, never add a file).')
 
@@ -396,6 +400,37 @@ def check_terms(files=None, baseline=None, names=None, i18n=None, root=ROOT):
     return bad, _info(scanned, counts, low)
 
 
+def comment_files(root=ROOT):
+    """检查 8 的扫描面 = 引擎源文件 + 令牌样式表。"""
+    extra = {p for pat in COMMENT_EXTRA_GLOBS for p in Path(root).glob(pat) if p.is_file()}
+    return sorted(set(engine_files(root)) | extra)
+
+
+def scan_comment_terms(files=None, names=None, root=ROOT):
+    """只数注释里的卡词（词表同检查 4）：原文命中、而剥注释后对应位置已是空白 = 注释命中。"""
+    names = term_list() if names is None else names
+    rx = re.compile('|'.join(re.escape(t) for t in sorted(names, key=len, reverse=True)))
+    hits = {}
+    tip = "——注释也写中性措辞（「主场景」「主城」…）；人名 / 地名只在设定包数据里出现"
+    targets = comment_files(root) if files is None else [Path(f) for f in files]
+    for p in targets:
+        rel = rel_of(p, root)
+        raw = p.read_text(encoding='utf-8')
+        code = code_of(p, raw)
+        for m in rx.finditer(raw):
+            if code[m.start()].isspace():
+                hits.setdefault(rel, []).append((line_of(raw, m.start()), f"注释出现卡专有名词「{m.group(0)}」{tip}"))
+    return hits, len(targets)
+
+
+def check_comment_terms(files=None, baseline=None, names=None, root=ROOT):
+    baseline = load_baseline() if baseline is None else baseline
+    hits, n = scan_comment_terms(files, names, root)
+    scanned = {rel_of(p, root) for p in (comment_files(root) if files is None else files)}
+    bad, low, counts = _ratchet('comment_terms', hits, baseline, scanned, files is not None)
+    return bad, _info(scanned, counts, low)
+
+
 def check_pack0():
     """旧入口（map/core 硬零）：现在是检查 4 的子集；保留给旧调用方。"""
     bad, _ = check_terms(files=sorted(CORE.glob('*.mjs')), baseline={}, i18n=[])
@@ -482,7 +517,8 @@ def current_counts(root=ROOT):
     """当前各栏的按文件违规计数（只含非零文件）；--init / --update-baseline 用。"""
     _, li = check_line_count(baseline={}, root=root)
     out = {'lines': dict(li['counts'])}
-    for kind, scan in (('zindex', scan_zindex), ('terms', scan_terms), ('inline_style', scan_inline_style)):
+    for kind, scan in (('zindex', scan_zindex), ('terms', scan_terms), ('inline_style', scan_inline_style),
+                       ('comment_terms', scan_comment_terms)):
         hits, _ = scan(root=root)
         out[kind] = {rel: len(h) for rel, h in hits.items() if h}
     return out
@@ -491,7 +527,7 @@ def current_counts(root=ROOT):
 def build_baseline(cur):
     data = {'_note': BASELINE_NOTE}
     for kind in KINDS:
-        data[kind] = {rel: cur[kind][rel] for rel in sorted(cur[kind])}
+        data[kind] = {rel: cur.get(kind, {})[rel] for rel in sorted(cur.get(kind, {}))}
     return data
 
 
@@ -506,7 +542,7 @@ def lowered_baseline(baseline, cur):
     for kind in KINDS:
         old = _section(baseline, kind)
         new[kind] = {}
-        for rel, n in cur[kind].items():
+        for rel, n in cur.get(kind, {}).items():
             if rel not in old:
                 grew.append(f"{kind} {rel}: 新增违规 {n}（不在账本里）")
             elif n > old[rel]:
@@ -516,7 +552,7 @@ def lowered_baseline(baseline, cur):
                 if n < old[rel]:
                     down.append(f"{kind} {rel}: {old[rel]} → {n}")
         for rel, o in old.items():
-            if rel not in cur[kind]:
+            if rel not in cur.get(kind, {}):
                 down.append(f"{kind} {rel}: {o} → 0（移出账本）")
         new[kind] = {rel: new[kind][rel] for rel in sorted(new[kind])}
     return new, down, grew
@@ -562,7 +598,7 @@ def _cli(args):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description='架构看门狗（7 道防线 + 只减不增账本）')
+    ap = argparse.ArgumentParser(description='架构看门狗（8 道防线 + 只减不增账本）')
     ap.add_argument('--init-baseline', action='store_true', help='账本不存在时首次生成')
     ap.add_argument('--update-baseline', action='store_true', help='下调账本到当前计数（只减不增）')
     args = ap.parse_args(argv)
@@ -620,12 +656,18 @@ def main(argv=None):
     print(f"  [TC 全局] 引擎 {n_files} 个文件，window.TC* / P.TC* 须为零")
     fails += bad
 
+    bad, info = check_comment_terms(baseline=baseline)
+    print(f"  [注释卡词] 引擎 + 令牌样式表共 {info['scanned']} 个文件，注释里的卡词 {sum(info['counts'].values())} 处"
+          f"（账本 {sum(_section(baseline, 'comment_terms').values())}；map/core 硬零）{tail(info, bad)}")
+    note_lowerable(info, 'comment_terms')
+    fails += bad
+
     if fails:
         print(f"架构看门狗：{len(fails)} 处违规")
         for f in fails:
             print(f"  {f}")
         return 1
-    print("架构看门狗：7 道防线全过")
+    print("架构看门狗：8 道防线全过")
     return 0
 
 

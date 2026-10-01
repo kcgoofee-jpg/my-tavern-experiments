@@ -1,4 +1,4 @@
-// UI v2 · 三维查看器外壳（docs/design/ui-v2/spec.md §4，U7 / U11 / U12）：庄园（estate/index.html + main.js）与道具查看器（props/viewer3d.html）共用。
+// UI v2 · 三维查看器外壳（docs/design/ui-v2/spec.md §4，U7 / U11 / U12）：主场景（estate/index.html + main.js）与道具查看器（props/viewer3d.html）共用。
 // 普通脚本，依赖 ui/sheet.js（UISheet）与 ui/tokens.css；挂 window.UI3D。
 //   const C = UI3D.create({ title, views: [{ id, label }], view, onView(id), sub: el, controls: [{ id, label, html, title, onClick, pressed }], tabs: [{ id, label, short, panel }], text, onEsc, embed });
 //   C.setView(id) · C.showSub(on) · C.sheet（UISheet）· C.insets() → { bottom, right }（抽屉 / 右栏占的像素，模型取景时让开）· C.onInsets(fn)

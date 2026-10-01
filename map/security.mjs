@@ -1,4 +1,4 @@
-// 天城 · 安保叠加层（v0.9.6，card-omissions D3 / D7 / D14 / D15 / D16）：图层菜单「安保」开关（默认关，本机 edenMapSecurity）。
+// 主城 · 安保叠加层（v0.9.6，card-omissions D3 / D7 / D14 / D15 / D16）：图层菜单「安保」开关（默认关，本机 edenMapSecurity）。
 // 开着时：层级图上有安保事实的地点（data/security.json）图钉旁多一个小盾牌签（结 / 监 / 门 / 警），地点卡里多一栏「安保」列出结界 / 监控 / 门禁 / 警报规则。
 // 只读、中性措辞；数据只来自卡里写明的规则。查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 import { mapRegistry, currentMapId } from './app/state.mjs';

@@ -1,4 +1,4 @@
-// Part 3 §3：三维渲染上下文的共享工厂（庄园与通用三维页共用；全仓只有这里 new THREE.WebGLRenderer）。
+// Part 3 §3：三维渲染上下文的共享工厂（主场景与通用三维页共用；全仓只有这里 new THREE.WebGLRenderer）。
 // 收口三件事：像素比（手机 / 省流封顶）、上下文丢失与恢复（今天丢了就整个页面黑掉）、真正的拆（dispose + forceContextLoss）。
 // 这里刻意不 import three：THREE 由调用方传进来（子页的 importmap 各自解析；本模块因此可以在 node 里直接测）。
 
