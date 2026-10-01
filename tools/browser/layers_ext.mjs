@@ -149,7 +149,7 @@ try {
     const st = await g.evaluate(() => localStorage.getItem('tcp.town.Layers'));
     await go(g, 'town_hill');
     const s2 = await sound(g), r2 = await row(g, 'harbour-sound');
-    rep.check('(e) on town_hill the layer does not apply: its row is hidden and SoundApi lists no scene (still one AudioContext)', r2?.hidden && !s2.desc?.[0]?.active && s2.desc[0].scenes.length === 0 && s2.ac === 1, JSON.stringify({ r2, s2 }));
+    rep.check('(e) on town_hill the layer does not apply: its row is greyed (S7-2, L-06: shown with a reason) and SoundApi lists no scene (still one AudioContext)', r2 && !r2.hidden && !s2.desc?.[0]?.active && s2.desc[0].scenes.length === 0 && s2.ac === 1, JSON.stringify({ r2, s2 }));
     await go(g, 'town_harbour');
     const s3 = await sound(g);
     rep.check('(e) back on town_harbour the scenes return; the choice is stored ("harbour-sound":"1")', s3.desc?.[0]?.scenes.includes('wind') && /"harbour-sound":"1"/.test(st || ''), JSON.stringify({ s3, st }));

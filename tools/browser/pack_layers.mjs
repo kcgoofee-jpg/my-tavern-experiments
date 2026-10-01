@@ -18,7 +18,7 @@ const initEn = [o => { try { localStorage.setItem('tcp.town.Lang', o.lang); loca
 const ready = async p => { await p.waitForFunction(() => document.getElementById('loading')?.classList.contains('done'), null, { timeout: 30000, polling: 50 }).catch(() => {}); await B.wait(1500); };
 const goto = async (p, q = '') => { await p.goto(B.BASE + 'viewer.html?pack=town' + q, { waitUntil: 'commit' }); await ready(p); };
 const view = async (p, id) => { await p.evaluate(m => ViewerDebug.go(m), id); await B.wait(2500); };
-const rows = p => p.evaluate(() => Object.fromEntries(['patrol', 'danger'].map(id => { const l = document.getElementById('lyr-' + id), b = document.getElementById('lyrBox-' + id); return [id, l ? { text: l.querySelector('span')?.textContent, hidden: l.hidden, checked: !!b?.checked } : null]; })));
+const rows = p => p.evaluate(() => Object.fromEntries(['patrol', 'danger'].map(id => { const l = document.getElementById('lyr-' + id), b = document.getElementById('lyrBox-' + id); return [id, l ? { text: l.querySelector('span')?.textContent, hidden: l.hidden, na: l.classList.contains('na'), reason: l.querySelector('.lyw')?.textContent || '', checked: !!b?.checked } : null]; })));
 const desc = p => p.evaluate(() => Object.fromEntries((window.DeclaredLayersApi?.describe() || []).map(d => [d.id, d])));
 const flowPixels = p => p.evaluate(async () => {   // non-transparent samples of the patrol canvas over two frames (it animates)
   const cv = document.querySelector('.vpslot[data-slot="routes"] canvas.lyr-cv'); if (!cv || cv.hidden) return { ok: false, hidden: !!cv?.hidden };
@@ -35,7 +35,7 @@ try {
     await goto(p);
     const r1 = await rows(p), d1 = await desc(p);
     rep.check(`${preset}: menu rows lyr-patrol and lyr-danger carry the pack's labels (zh)`, r1.patrol?.text === '巡逻路线' && r1.danger?.text === '危险区域', JSON.stringify(r1));
-    rep.check(`${preset}: town_hill: patrol applies and has a feature, danger does not apply; the danger row is hidden`, d1.patrol?.applicable && d1.patrol.count === 1 && d1.danger && !d1.danger.applicable && r1.danger.hidden && !r1.patrol.hidden, JSON.stringify({ d1, r1 }));
+    rep.check(`${preset}: town_hill: patrol applies and has a feature, danger does not apply; the danger row is greyed with a reason (S7-2, L-06)`, d1.patrol?.applicable && d1.patrol.count === 1 && d1.danger && !d1.danger.applicable && !r1.danger.hidden && r1.danger.na && r1.danger.reason && !r1.patrol.hidden, JSON.stringify({ d1, r1 }));
     const f1 = await flowPixels(p);
     rep.check(`${preset}: town_hill: the patrol canvas draws the path and the moving dots`, f1.ok && f1.a > 5 && f1.b > 5, JSON.stringify(f1));
     rep.check(`${preset}: town_hill: no danger polygon is drawn`, (await svgOf(p, 'danger')).n === 0);
@@ -44,7 +44,7 @@ try {
     await shot(p, `hill_${preset}`);
     await view(p, 'town_harbour');
     const r2 = await rows(p), d2 = await desc(p), s2 = await svgOf(p, 'danger');
-    rep.check(`${preset}: town_harbour: danger applies and its polygon is drawn, patrol does not apply (row hidden)`, d2.danger?.applicable && d2.danger.count === 1 && s2.n === 1 && /Z$/.test(s2.d) && !d2.patrol.applicable && r2.patrol.hidden && !r2.danger.hidden, JSON.stringify({ d2, r2, s2 }));
+    rep.check(`${preset}: town_harbour: danger applies and its polygon is drawn, patrol does not apply (row greyed with a reason)`, d2.danger?.applicable && d2.danger.count === 1 && s2.n === 1 && /Z$/.test(s2.d) && !d2.patrol.applicable && !r2.patrol.hidden && r2.patrol.na && r2.patrol.reason && !r2.danger.hidden, JSON.stringify({ d2, r2, s2 }));
     const f2 = await flowPixels(p);
     rep.check(`${preset}: town_harbour: the patrol canvas is empty and not animating`, !f2.ok || (f2.a === 0 && f2.b === 0), JSON.stringify(f2));
     const l2 = await legend(p);
@@ -79,10 +79,10 @@ try {
   {
     const P = await B.newPage('desktop', { lang: 'zh', tier: 'save', scheme: 'dark' }); const p = P.page;
     await p.goto(B.BASE + 'viewer.html', { waitUntil: 'commit' }); await ready(p);
-    const e = await p.evaluate(() => ({ declared: window.DeclaredLayersApi?.describe().map(d => d.id), lyr: [...document.querySelectorAll('#layList > label[id^="lyr-"]')].map(l => l.id), rows: document.querySelectorAll('#layList > label').length,
+    const e = await p.evaluate(() => ({ declared: window.DeclaredLayersApi?.describe().map(d => d.id), lyr: [...document.querySelectorAll('#layList label[id^="lyr-"]')].map(l => l.id), ward: (() => { const w = document.getElementById('lyr-estate_ward'); return w ? { hidden: w.hidden, na: w.classList.contains('na') } : null; })(), rows: document.querySelectorAll('#layList label').length,
       legendKids: [...(document.getElementById('legendPane')?.children || [])].map(c => c.tagName), canvases: document.querySelectorAll('canvas.lyr-cv').length, svgs: document.querySelectorAll('svg.lyr-svg').length }));
     // S8-3 (pinned additions, K-R86 / K-R88): the kernel rows lyr-nav-ops and lyr-local-props are two more rows (hidden until they hold something): 17 rows
-    rep.check('first pack (world): the one declared layer is estate_ward; its row is there and hidden, after the two S8-3 kernel rows (hidden); 17 menu rows; nothing drawn', e.declared?.join() === 'estate_ward' && e.lyr.join() === 'lyr-nav-ops,lyr-local-props,lyr-estate_ward' && e.rows === 17 && !e.canvases && !e.svgs, JSON.stringify(e));
+    rep.check('first pack (world): the one declared layer is estate_ward; its row is there, greyed with a reason (S7-2), after the transit row and the two S8-3 kernel rows (hidden); 17 menu rows; nothing drawn', e.declared?.join() === 'estate_ward' && e.lyr.join() === 'lyr-transit,lyr-nav-ops,lyr-local-props,lyr-estate_ward' && e.ward && !e.ward.hidden && e.ward.na && e.rows === 17 && !e.canvases && !e.svgs, JSON.stringify(e));
     rep.check('first pack: the legend pane markup is the old one (heading and one list)', e.legendKids.join() === 'H3,DL', JSON.stringify(e.legendKids));
     await p.evaluate(() => ViewerDebug.go('tc_upper')); await B.wait(3500);
     const u = await p.evaluate(() => { const r = document.getElementById('tgRoutes'), w = document.getElementById('lyr-estate_ward'), svg = document.querySelector('svg.routes');

@@ -77,10 +77,10 @@ export function applyRows() {
     const id = row.dataset.layer, rec = registry.get(id); if (!rec) continue;
     row.classList.remove('na'); row.querySelector('.lyw')?.remove(); row.querySelector('input')?.removeAttribute('aria-describedby');
     const st = states.get(id), app = registry.applicable(id, layerContext(st ? st.count : undefined));
-    if (app) { row.hidden = !!rec.menu?.hidden || (rec.countNow ? !rec.countNow() : false); continue; }
+    if (app) { if (row.dataset.apHide) { delete row.dataset.apHide; row.hidden = !!rec.menu?.hidden || (rec.countNow ? !rec.countNow() : false); } continue; }   // other code owns the rows this pass did not hide (the routes row follows the open map)
     const when = rec.menu?.i18n?.[LANG]?.when ?? rec.menu?.when, hint = when || appliesHint(rec.applies, layerContext(st ? st.count : undefined), names);
-    if (hint === null || rec.menu?.hidden) { row.hidden = true; continue; }
-    row.hidden = false; row.classList.add('na');
+    if (hint === null || rec.menu?.hidden) { row.dataset.apHide = '1'; row.hidden = true; continue; }
+    if (row.dataset.apHide) delete row.dataset.apHide; row.hidden = false; row.classList.add('na');
     const w = document.createElement('small'); w.className = 'lyw'; w.id = 'lyw-' + id; w.textContent = hint; w.title = hint; row.querySelector('.lyt')?.append(w);
     row.querySelector('input')?.setAttribute('aria-describedby', w.id);
     na.push(row);
