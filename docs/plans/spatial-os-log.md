@@ -1388,3 +1388,15 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+
+=== RESULT I-29b ===
+status: DONE
+items: toast Reload button = full page reload (switchToHead in map/tavern/host-checks.mjs now calls window.parent.location.reload()) ✓ · bootstrap verified: tools/build_preview_script.py follow loader fetches head.json with cache no-store, so a reload imports the new head ✓ · todo I-29 note ✓
+commits: see git log (fix(tavern): update toast Reload does a full page reload)
+pushed: yes
+tests: node see report | smoke see report | arch see report | probes: none relevant (no probe references switchToHead)
+deviations: no unit test added: switchToHead is a closure inside createHostChecks and is now a one-line reload; version switch (switchVersion/switchBranch) in-place path is unchanged
+blocker: none
+open: none
+cleanup: done
+=== END ===

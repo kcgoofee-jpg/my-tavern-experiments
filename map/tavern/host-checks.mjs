@@ -141,14 +141,8 @@ export function createHostChecks(host) {
       t.classList.add('em-upd', 'em-follow'); const acts = pdoc.createElement('div'), b = pdoc.createElement('button'); acts.className = 'em-acts nt-acts'; b.className = 'nt-pri';
       b.type = 'button'; b.textContent = en ? 'Reload' : '刷新载入'; b.onclick = () => switchToHead(h); acts.append(b); t.append(acts); }, true);
   }
-  // 发现更新的分支头：本次会话换成新提交号的入口（与 switchVersion / switchBranch 同一条接管路径，一个提交号里的文件不混用）；换不成就刷新页面（加载器会重新取头）
-  function switchToHead(h) {
-    const p = parseScriptBase(scriptBase), base = p && contentBase({ channel: 'follow', ref: p.ref, sha: h.sha, host: p.origin, repo: p.repo });
-    if (!base) { window.parent.location.reload(); return; }
-    const prev = { ...SCRIPT }; Object.assign(SCRIPT, { sha: String(h.sha).slice(0, 12), build: h.build, at: h.at || null, source: h.source || null });
-    window.parent.__edenMapSwitch = scriptBase;
-    import(entryUrl(base)).catch(e => { console.warn('[eden-map] 切换到新构建失败，刷新页面', e); Object.assign(SCRIPT, prev); window.parent.__edenMapSwitch = switchedFrom; try { window.parent.location.reload(); } catch (x) {} });
-  }
+  // 发现更新的分支头：整页刷新（I-29b）——就地接管会漏掉旧 viewer 文档（每次约 8 MB）；加载器每次都以 no-store 重取 head.json，刷新后载入的就是新头
+  function switchToHead(h) { try { window.parent.location.reload(); } catch (e) { console.warn('[eden-map] 刷新页面失败', e); } }
   async function autoCheck() {
     SC ??= await import(scriptBase + 'tavern/selfcheck.mjs').catch(() => null); if (!SC?.autoCheckPlan || life.dead) return;
     let lastAt = 0; try { lastAt = window.parent.__edenMapCheckAt || 0; } catch (e) {}   // 挂在宿主页上：换版本 / 重注入脚本不重复查
