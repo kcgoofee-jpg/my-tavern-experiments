@@ -33,12 +33,15 @@ const TAG_NAME = /^[A-Za-z\u4e00-\u9fff][A-Za-z0-9_\u4e00-\u9fff-]{0,31}$/;
 
 /** 剥掉指定标签的成块内容：<tag …>…</tag>，含没闭合的流式尾（余下全文都算块内，G1 同一手法）；
  *  再顺手清掉成对剥离后残留的孤儿闭标签。tags 为空原样返回。 */
+const BLOCK_RE = new Map();   // tag -> [block regex, orphan-close regex]; compiled once (was rebuilt per message per tag)
+const blockRe = t => { let r = BLOCK_RE.get(t); if (!r) BLOCK_RE.set(t, r = [new RegExp(`<${t}(?:\\s[^>]*)?>[\\s\\S]*?(?:</${t}>|$)`, 'gi'), new RegExp(`</${t}>`, 'gi')]); return r; };
 export function stripBlocks(text, tags) {
   let out = String(text ?? '');
+  if (out.indexOf('<') < 0) return out;   // no tag opener or closer anywhere: nothing to strip
   for (const t of Array.isArray(tags) ? tags : []) {
     if (typeof t !== 'string' || !TAG_NAME.test(t)) continue;   // 只认合法标签名，防正则注入
-    out = out.replace(new RegExp(`<${t}(?:\\s[^>]*)?>[\\s\\S]*?(?:</${t}>|$)`, 'gi'), ' ')
-             .replace(new RegExp(`</${t}>`, 'gi'), ' ');
+    const [blk, orphan] = blockRe(t);
+    out = out.replace(blk, ' ').replace(orphan, ' ');
   }
   return out;
 }

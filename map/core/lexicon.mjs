@@ -8,9 +8,14 @@ const DASH = /[‐-―−﹘﹣]/g;             // dashes and minus -> -
 const MACRO_USER = /\{\{\s*user\s*\}\}/gi;
 
 /** K-R17 normal form of a vocabulary word: NFKC, lower case, quotes, dashes, spaces, `&` -> ` and `. */
+const NORM_CACHE = new Map();   // pure function, called thousands of times per boot on the same pack words: memo (bounded)
 export function normalise(s) {
-  return String(s ?? '').normalize('NFKC').toLowerCase().replace(P1, "'").replace(P2, '"').replace(DASH, '-')
+  const k = String(s ?? ''), hit = NORM_CACHE.get(k);
+  if (hit !== undefined) return hit;
+  const v = k.normalize('NFKC').toLowerCase().replace(P1, "'").replace(P2, '"').replace(DASH, '-')
     .replace(/&/g, ' and ').replace(/\s+/g, ' ').trim();
+  if (k.length <= 200) { if (NORM_CACHE.size >= 8000) NORM_CACHE.clear(); NORM_CACHE.set(k, v); }
+  return v;
 }
 /** Normal form of a place text: the same, and the host macro `{{user}}` is dropped first. */
 export const normText = s => normalise(String(s ?? '').normalize('NFKC').replace(MACRO_USER, ' '));
