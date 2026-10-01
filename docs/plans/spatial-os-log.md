@@ -1267,3 +1267,16 @@ blocker: none
 open: none (every decision Decided by default 2026-10-01 (autopilot); user may override)
 cleanup: done
 === END ===
+
+=== RESULT R-B1B2-FIX ===
+status: DONE
+items: eliminate B1/B2 horizontal face z-fighting with ≥0.03m pad stacking and no bottom faces ✓ · eliminate stair tread vertical overlap and bottom coplanarity in flight() and cores() ✓ · elevate furniture bases by 0.01m above resting floor levels ✓ · rebuild house.glb (654,160 bytes, under 718,930 cap) ✓ · visual verification in estate 3D viewer at default and closest zoom (no flicker) ✓ · preview captures archived in ~/eden-map-review/render/b1b2/ ✓
+commits: (this commit) fix(estate): eliminate 3D z-fighting flicker on B1/B2 floor layers, stair treads, and furniture plinths
+pushed: yes
+tests: node 1237/1239 pass (2 skipped, environment) | smoke PASS | arch PASS | check_maps PASS | probes: estate3d=PASS
+house.glb size: 654,160 bytes (+13.74% vs 575,144 baseline, under +25% cap of 718,930 bytes)
+deviations: none
+blocker: none
+open: none
+cleanup: done
+=== END ===
