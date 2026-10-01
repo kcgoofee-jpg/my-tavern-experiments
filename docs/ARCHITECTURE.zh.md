@@ -150,6 +150,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `scale-handoff.mjs` | 世界图与城市层之间的尺度交接，以及周边过渡环。 |
 | `screen-reader-announce.mjs` | 读屏播报（aria-live）：同一时刻的几条合并成一句。 |
 | `settings.mjs` | 设置弹层：分页、分区注册、搜索、关于 / 检查更新、自检。 |
+| `about-build.mjs` | 「关于」页的当前构建行（构建号、提交号前七位、时间）。 |
+| `card-state.mjs` | 版权页角色卡信息的三种状态：没有宿主、宿主在但读不到、已读到。 |
 | `sharpness-tiers.mjs` | 清晰度档位、省流判断、加载进度、叠加层与标注避让。 |
 | `spot.mjs` | 一个已落点的地方对人物或行程端点画在哪里（三维页的平面替身地标、地标、节点自己的点、城区）；纯函数，查看器把它知道的递进去。 |
 | `stash-markers.mjs` | 地图上由世界藏物表画出的发光拾取物；点击把拾取意图发给宿主。 |
@@ -188,6 +190,9 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `events-parse.mjs` | 事态解析：从聊天正文读事件标签，按包的事件块分类（`typeOf`，K-R50），合并（类型 + 节点，K-R54）并老化（纯函数）。 |
 | `extension-api-contract.mjs` | 暴露给宿主页的公共 `EdenMap` API 的机读契约。 |
 | `host-about.mjs` | 版本信息与检查更新的编排，所有副作用由外部注入。 |
+| `follow-pin.mjs` | 跟随 / 分支加载地址钉到头提交号；检查更新走哪条链的判定。 |
+| `follow-gate.mjs` | 入口门卫：从分支路径加载的脚本，换成头提交号的入口重新加载。 |
+| `model-texts.mjs` | 会送到模型的文本清单（状态行「已有字段跳过」用）与不注入的原因。 |
 | `host-api.mjs` | 本机扩展接口 `window.EdenMap`（订阅、头像压缩）与酒馆助手侧的暴露：脚本按钮、类宏、脚本说明、世界书全自动。`createHostApi(host)`。 |
 | `host-checks.mjs` | 启动自检、首次运行自检卡、宿主提示、自动检查更新与版本切换。`createHostChecks(host)`。 |
 | `host-lifecycle.mjs` | 宿主实例生命周期：接管旧实例、挂面板 DOM、登记监听器、清理钩子。 |

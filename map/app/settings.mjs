@@ -2,6 +2,9 @@
 import { $, esc } from './dom-helpers.mjs';
 import { post } from './protocol-stamp.mjs';
 import { uiTextOr } from './text-lookup.mjs';
+import { buildLine } from './about-build.mjs';
+import { cardState, cardStateText } from './card-state.mjs';
+const loadedAt = Date.now();
 import { LANG, paintSegs, setTheme } from './i18n.mjs';
 import { buildInfo } from './topbar.mjs';
 import { tierAvail } from './sharpness-tiers.mjs';
@@ -29,7 +32,7 @@ export function setPage(pg, quiet) {
   if (pg === 'people') { const n = typeof plugins.CharactersView !== 'undefined' ? plugins.CharactersView.count() : 0; $('#chSrc').textContent = uiTextOr('s.ch_src_n', `当前聊天 ${n} 人`, { n }); }
   if (pg === 'adv') renderLine();
   if (pg === 'display') tierAvail();
-  if (pg === 'data') { if (window.top !== window) post({ type: 'eden-map:storage-info' }); else window.renderStorageSettings?.(null); }
+  if (pg === 'data') { if (window.top !== window) { post({ type: 'eden-map:storage-info' }); post({ type: 'eden-map:th', op: 'state' }); } else window.renderStorageSettings?.(null); }
 }
 export const SettingsApi = window.SettingsApi = {
   registerSection(page, el, o = {}) { const pg = document.querySelector(`#setPop .spage[data-page="${page}"]`) || document.querySelector('#setPop .spage[data-page="adv"]'); if (!pg || !el) return;
@@ -62,7 +65,7 @@ function renderLicense() {
   const row = (k, v, warn) => { const r = document.createElement('div'); r.className = 'row'; r.innerHTML = `<span${warn ? ' style="color:var(--warn,#c66)"' : ''}>${esc(k)}</span><code style="max-width:62%;text-align:right;word-break:break-all;white-space:normal">${esc(v)}</code>`; box.appendChild(r); };
   label(uiTextOr('s.lic_card', '角色卡信息（自动读取）'));
   const d = cardOf();
-  if (!d) row(uiTextOr('s.lic_state', '状态'), uiTextOr('s.lic_no_tav', '面板还没读到卡片信息（不影响使用）：在酒馆里打开地图后自动显示'), false);
+  if (!d) { const t = cardStateText(cardState({ embedded: window.top !== window, card: d, tried: cardTried })); row(uiTextOr('s.lic_state', '状态'), uiTextOr(t[0], t[1], t[2]), false); }
   else {
     if (d.name) row(uiTextOr('s.lic_name', '角色名'), d.name);
     if (d.creator) row(uiTextOr('s.lic_creator', '作者'), d.creator);
@@ -187,7 +190,7 @@ export function renderLine() {
 // 「检查更新」发 eden-map:check-update，卡内脚本查最新 map-v 标签的 build.json（走当前线路、绕缓存）后回 eden-map:update-result。不自动安装。
 // 单独打开（不在酒馆里）时只显示地图自己的 build.json。
 export let about = null, updRes = null, updBusy = false;
-export let cardInfo = null;   // 任务四：卡内脚本推来的角色卡信息（见 setCardInfo）
+export let cardInfo = null, cardTried = null;   // 任务四：卡内脚本推来的角色卡信息（见 setCardInfo）
 export function renderAbout() {
   const box = $('#aboutBox'); if (!box) return; const en = LANG === 'en';
   const a = about || {}, ver = a.version || buildInfo?.version || '', code = a.code || buildInfo?.code || '';
@@ -200,6 +203,7 @@ export function renderAbout() {
     ? `<b>${esc(uiTextOr('about.title_follow', '跟随分支预览'))}</b> · ${esc(uiTextOr('about.follow_build', '构建 #{n} · 来源 {s}', { n: a.build, s: SRC[a.source] || a.source || '?' }))}`
     : `<b>${esc(uiTextOr('about.title', '地图版本'))}</b> v${esc(ver || '?')}${code ? ` · <span style="font-family:var(--font-mono)">${esc(code)}</span>` : ''}`;
   if (ch) h += `<br>${esc(ch)}${a.sha ? ` · ${esc(String(a.sha).slice(0, 7))}` : ''}`;
+  { const bl = buildLine(a, uiTextOr, loadedAt); if (bl) h += `<br><span id="buildLine">${esc(bl)}</span>`; }   // I-15：始终说明正在跑哪个构建
   if (a.line) h += `<br>${esc(uiTextOr('about.line', '线路：{l}', { l: a.line }))}`;
   if (window.top !== window) h += `<br><button type="button" class="btn" id="updBtn" ${updBusy ? 'disabled' : ''}>${esc(updBusy ? uiTextOr('about.checking', '检查中…') : uiTextOr('about.check', '检查更新'))}</button>`;
   const r = updRes;
@@ -272,7 +276,7 @@ export function renderSelfCheck() {
 }
 export function setAbout(v) { return (about = v); }
 // 任务四：卡内脚本推来的角色卡信息（经 mvu-bridge.cardInfo）。到了就重画一次版权申明页（正开着才画）
-export function setCardInfo(v) { cardInfo = v && typeof v === 'object' ? v : null; if (setPageNow === 'license') renderLicense(); return cardInfo; }
+export function setCardInfo(v, tried) { cardInfo = v && typeof v === 'object' ? v : null; cardTried = Array.isArray(tried) ? tried : null; if (setPageNow === 'license') renderLicense(); return cardInfo; }
 export function setUpdBusy(v) { return (updBusy = v); }
 export function setUpdRes(v) { return (updRes = v); }
 export function setSelfCheck(v) { return (selfCheck = v); }

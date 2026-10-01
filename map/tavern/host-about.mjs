@@ -10,6 +10,7 @@
 
 /** deps：{ cdnFetch, post, base(), REPO, scriptBase, VER, tagOf, LINES, swappable, SCRIPT,
  *    lineKey(), lang(), followHead(), followNewer(h), loadSelfcheck(), loadSources() } */
+import { refKind } from './follow-pin.mjs';
 export function createAbout(d = {}) {
   const {
     cdnFetch = async () => null, post = () => {}, base = () => '', REPO = '', scriptBase = '', VER = null,
@@ -35,7 +36,7 @@ export function createAbout(d = {}) {
     const en = lang() === 'en';
     post({
       type: 'eden-map:about', version: b?.version || SCRIPT.version || VER || null, code: b?.code || SCRIPT.code || null,
-      channel: channel(), ref: SCRIPT.ref || (VER ? tagOf(VER) : refOf()), sha: SCRIPT.sha || null,
+      channel: channel(), ref: SCRIPT.ref || (VER ? tagOf(VER) : refOf()), sha: SCRIPT.sha || (refKind(refOf()) === 'sha' ? refOf() : null), at: SCRIPT.at || null,
       build: Number.isInteger(SCRIPT.build) ? SCRIPT.build : null, source: SCRIPT.source || null, locked: !!SCRIPT.locked,
       line: l ? (en && l.name_en) || l.name : '', branch: br, branches: dataSourceRegistryModule ? dataSourceRegistryModule.BRANCHES : [],
       branchSw: !!dataSourceRegistryModule?.branchUrl(scriptBase || '', 'main'),

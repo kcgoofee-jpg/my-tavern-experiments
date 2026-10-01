@@ -46,7 +46,7 @@ export const SCHEMA = {
   'eden-map:chat': [HOST_TO_VIEWER, { id: 'any' }],
   'eden-map:lang': [HOST_TO_VIEWER, { lang: 'string' }],
   'eden-map:about': [HOST_TO_VIEWER, {}],
-  'eden-map:cardinfo': [HOST_TO_VIEWER, { card: 'object?' }],   // 任务四：角色卡信息（版权申明页）；经桥三级降级取，null = 没读到（面板显示安全占位）
+  'eden-map:cardinfo': [HOST_TO_VIEWER, { card: 'object?', tried: 'array?' }],   // 任务四：角色卡信息（版权申明页）；经桥三级降级取，null = 没读到（面板显示安全占位）
   'eden-map:update-result': [HOST_TO_VIEWER, {}],
   'eden-map:chars': [HOST_TO_VIEWER, { items: 'array?', replay: 'boolean?', groups: 'array?' }],   // groups = [{ id, label, rows, present? }]：包声明的每个名册组一项（S4-4）；rosters 三表照旧，新查看器优先读 groups
   'eden-map:events': [HOST_TO_VIEWER, { items: 'array?' }],
@@ -71,7 +71,7 @@ export const SCHEMA = {
   'eden-map:sleep': [HOST_TO_VIEWER, {}],
   'eden-map:wake': [HOST_TO_VIEWER, {}],
   'eden-map:compose-done': [HOST_TO_VIEWER, { ok: 'boolean?' }],
-  'eden-map:th-state': [HOST_TO_VIEWER, { prefs: 'object?', wb: 'object?', last: 'object?', result: 'object?' }],
+  'eden-map:th-state': [HOST_TO_VIEWER, { prefs: 'object?', inject: 'object?', wb: 'object?', last: 'object?', result: 'object?' }],
   'eden-map:open': [HOST_TO_VIEWER, { map: 'string' }],   // 本机扩展入口（docs/content-compat.md），仓库内无发送方
   'eden-map:fly': [HOST_TO_VIEWER, {}],                     // 同上
   // 查看器 ↔ 主场景 / 三维子页
