@@ -26,6 +26,11 @@ ${root} .nt-item :focus-visible{outline:2px solid var(--focus,#63b4be);outline-o
 ${root} .nt-p1{position:absolute;left:8px;right:8px;display:flex;flex-direction:column;gap:6px;align-items:center}
 ${root} .nt-p1 .nt-item{width:min(560px,100%);border-left:3px solid var(--accent,#e6c36a)}
 ${root} .nt-p1 .nt-item.nt-force,${root} .nt-p1 .nt-item.em-force{border-color:var(--alert,#ff5a5a)}
+${root} .nt-dt{display:none}
+@media (max-width:640px){${root} .nt-p1 .nt-item{max-height:30%;overflow:auto;padding-right:48px}
+  ${root} .nt-p1 .nt-item>b.nt-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  ${root} .nt-p1 .nt-item .nt-dt{display:inline-block;height:44px;margin:-6px 0 -6px 4px;padding:0 8px;border:0;background:none;color:var(--accent,#e6c36a);font:inherit;text-decoration:underline;cursor:pointer;vertical-align:middle}
+  ${root} .nt-p1 .nt-item:not(.nt-open) .nt-det{display:none}}
 ${root} .nt-more{width:min(560px,100%);box-sizing:border-box;display:flex;align-items:center;gap:8px;justify-content:space-between;padding:4px 6px 4px 14px;border-radius:var(--r-glass,12px);
   background:var(--glass-2,#151b20);border:1px solid var(--glass-line,rgba(255,255,255,.22));color:var(--ink,#d5dde4);box-shadow:0 6px 20px rgba(0,0,0,.3)}
 ${root} .nt-more span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -77,7 +82,10 @@ export function createNotices({ doc = document, mount, root = 'body', baseCls = 
     const t = doc.createElement('b'); t.className = 'nt-t'; t.textContent = it.title || ''; d.appendChild(t);
     if (it.level === 1 && it.title) { t.id = 'nt-' + Math.random().toString(36).slice(2, 8); d.setAttribute('aria-labelledby', t.id); }
     if (it.level !== 0 && it.closable !== false) { const x = doc.createElement('button'); x.type = 'button'; x.className = 'nt-x'; x.setAttribute('aria-label', txt('关闭', 'Close')); x.textContent = '×'; x.onclick = () => remove(it.key, 'x'); d.appendChild(x); }
-    for (const l of it.lines || []) { const x = doc.createElement('div'); x.textContent = l; d.appendChild(x); }
+    const det = it.level === 1 && it.lines?.length ? doc.createElement('div') : d;   // P1: the lines are the details of a compact banner on phones (U-22)
+    if (det !== d) { det.className = 'nt-det'; const dt = doc.createElement('button'); dt.type = 'button'; dt.className = 'nt-dt'; dt.textContent = txt('详情', 'Details'); dt.setAttribute('aria-expanded', 'false');
+      dt.onclick = () => { const o = d.classList.toggle('nt-open'); dt.setAttribute('aria-expanded', o ? 'true' : 'false'); }; d.append(dt, det); }
+    for (const l of it.lines || []) { const x = doc.createElement('div'); x.textContent = l; det.appendChild(x); }
     if (it.actions?.length) {
       const acts = doc.createElement('div'); acts.className = 'nt-acts em-acts'; d.classList.add('nt-has-acts');
       // 右主左次：主按钮排最后

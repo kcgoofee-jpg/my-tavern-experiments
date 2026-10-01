@@ -138,7 +138,10 @@ export function initSettings() {
   busOn({ key: 'settings.outsideClick', target: document, type: 'click', fn: e => { if (!pop.hidden && !narrowNow() && !gone(e.target) && !pop.contains(e.target) && !btn.contains(e.target) && !e.target.closest?.('#thumbBtn, .rg, #cuDlg, #umDlg')) showSet(false); } });
   // 「图层 ▾」弹层：挂在按钮下方、右对齐
   const lb = $('#layBtn'), lp = $('#layPop');
-  showLay = on => { lp.hidden = !on; lb.setAttribute('aria-expanded', on ? 'true' : 'false');
+  showLay = on => {
+    // S7-2 B1 (docs/ui-refactor.md 5.9): on a phone (or whenever the list is not in the popover) the layer action opens the 地图与图层 page: the popover never opens empty
+    if (on && (narrowNow() || !lp.querySelector('#layList'))) { lp.hidden = true; lb.setAttribute('aria-expanded', 'false'); showSet(true, 'map'); return; }
+    lp.hidden = !on; lb.setAttribute('aria-expanded', on ? 'true' : 'false');
     if (on) { showSet(false); const r = lb.getBoundingClientRect(); lp.style.left = Math.max(8, Math.min(innerWidth - lp.offsetWidth - 8, r.right - lp.offsetWidth)) + 'px'; firstIn(lp)?.focus({ preventScroll: true }); } };
   lb.onclick = e => { e.stopPropagation(); showLay(lp.hidden); };
   // 弹层里 Tab 循环，不跑回地图（焦点陷阱，关闭后回到入口）

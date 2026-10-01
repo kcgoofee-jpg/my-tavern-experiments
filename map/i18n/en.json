@@ -837,5 +837,6 @@
   "lyr.only_state": "Only in a certain state",
   "lyr.generic_view": "a certain",
   "lyr.generic_place": "a certain place",
-  "lyr.generic_period": "a certain time"
+  "lyr.generic_period": "a certain time",
+  "edit.more": "Edit ⋯"
 }

@@ -211,14 +211,14 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   body.setopen #evbar { visibility: hidden; }
   .pop h3 { margin: var(--sp-5) 0 var(--sp-3); font: 600 var(--fs-micro)/1.4 var(--font-ui); color: var(--muted); letter-spacing: .06em; }
   html[lang="en"] .pop h3 { letter-spacing: 0; }
-  /* 开关（Toggle）：整行 label 是热区；34 × 20 胶囊 */
+  /* 开关（Toggle）：整行 label 是热区；36 × 20 胶囊 */
   label.tg, #setPop label { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); min-height: 40px; cursor: pointer; color: var(--ink); font-size: var(--fs-control); }
   label.tg[hidden] { display: none; }
-  input[type="checkbox"] { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 34px; height: 20px; margin: 0; border-radius: var(--r-pill);
+  input[type="checkbox"] { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 36px; height: 20px; margin: 0; border-radius: var(--r-pill);
     background: var(--surface-2); border: 1px solid var(--muted); cursor: pointer; transition: background var(--dur-1), border-color var(--dur-1); }   /* 关着的开关边框 ≥ 3:1（§10.11 实测） */
   input[type="checkbox"]::before { content: ''; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); transition: transform var(--dur-2) var(--ease-out), background var(--dur-1); }
   input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
-  input[type="checkbox"]:checked::before { transform: translateX(14px); background: var(--on-accent); }
+  input[type="checkbox"]:checked::before { transform: translateX(16px); background: var(--on-accent); }
   #setPop small { display: block; color: var(--muted); font-size: var(--fs-micro); line-height: 1.45; margin: -2px 48px var(--sp-4) 0; }
   #setPop .more { display: flex; flex-direction: column; gap: var(--sp-3); margin-bottom: var(--sp-5); padding-bottom: var(--sp-5); border-bottom: 1px solid var(--line); }
   #setPop .more:empty { display: none; }
@@ -241,10 +241,10 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #setHits:empty { display: none; }
   #setHits button { text-align: left; justify-content: flex-start; height: auto; min-height: 40px; white-space: normal; }
   #setHits button small { display: inline; margin: 0 0 0 var(--sp-3); }
-  .spage > .row, .spage .hrow { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); min-height: 40px; color: var(--ink); }
+  .spage > .row, .spage .hrow, #licBox .row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); min-height: 40px; color: var(--ink); }
   /* U 待办 5b（2026-09-28）：标签列在窄屏被挤成两行、和值错位——标签不换行，值靠右可换行 */
-  .spage .hrow > span:first-child, .spage > .row > span:first-child { flex: none; white-space: nowrap; }
-  .spage .hrow > span:last-child:not(:first-child) { flex: 1 1 auto; min-width: 0; text-align: right; overflow-wrap: anywhere; }
+  .spage .hrow > span:first-child, .spage > .row > span:first-child, #licBox .row > span:first-child { flex: none; white-space: nowrap; }
+  .spage .hrow > span:last-child:not(:first-child), #licBox .row > span:last-child:not(:first-child) { flex: 1 1 auto; min-width: 0; text-align: right; overflow-wrap: anywhere; }
   .spage .seg { height: 36px; }
   .spage .found { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-s); }
   #aboutBox { font-size: var(--fs-small); color: var(--ink-2); margin-bottom: var(--sp-5); padding-bottom: var(--sp-5); border-bottom: 1px solid var(--line); line-height: 1.55; }
@@ -501,7 +501,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   /* ---------- 手机（≤ 640，§10.1）：顶栏只留 标题 + 状态点（嵌入时宿主栏带 ✕）；上一级、图层、设置、层切换、标注收进控制列的「⋯」 ---------- */
   @media (max-width: 640px) {
     header { gap: var(--sp-3); padding-left: var(--sp-4); }
-    #crumbs { font-size: var(--fs-body); }
+    #crumbs { font-size: var(--fs-body); flex: 1 1 auto; min-width: 38vw; }   /* U19 / U22: the title keeps >= 38 % and ellipsises inside that */
     #crumbs > a, #crumbs > .sep, #crumbs .ringc { display: none; }
     #crumbs b { font-weight: 700; }
     #tierState { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -531,6 +531,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     #layers.compact.evs button.on::before { content: ''; position: absolute; right: 4px; top: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--alert); inset: auto; }
     /* 设置 = 全屏页（盖住顶栏；左上 ‹ 返回，右上 ×） */
     #setPop { top: 0; left: 0; width: 100vw; border-left: 0; }
+    #setPop .sheet-h { padding-right: calc(var(--sp-3) + var(--hostbar-w, 0px)); }   /* U20: the sticky header stays clear of the host bar like the viewer header */
     #setPop .acts { display: flex; flex-wrap: wrap; gap: var(--sp-4); margin-bottom: var(--sp-5); padding-bottom: var(--sp-5); border-bottom: 1px solid var(--line); }
     html[data-hand="right"] #setPop .acts { justify-content: flex-end; }
     #setPop .acts .btn { height: 44px; }

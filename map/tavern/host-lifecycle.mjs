@@ -182,7 +182,9 @@ export function mount(pdoc, ID, scriptOwner) {
     #${ID} .em-bar .em-here { flex: 1 1 0; }
     #${ID} .em-bar .em-line { white-space: nowrap; flex: none; max-width: 6.5em; overflow: hidden; text-overflow: ellipsis; }   /* 手机上标题、线路都不折行（用户实测：「没梯 / 子」断行） */
     #${ID} .em-bar .em-title { max-width: 42%; }
-    #${ID} .em-bar .em-here { min-width: 4.5em; }   /* 线路按钮不再把「当前地点」挤成 0 宽（E5 r3 手机 N-01） */
+    #${ID} .em-bar .em-here { min-width: 4.5em; }
+    #${ID} .em-bar { max-width: 45%; }   /* U19: the host bar <= 45 %, the place field keeps >= 50 % of it */
+    #${ID} .em-bar .em-here { flex: 1 1 50%; min-width: 50%; max-width: none; }   /* 线路按钮不再把「当前地点」挤成 0 宽（E5 r3 手机 N-01） */
     #${ID} .em-bar .em-clock:not(.em-open) .em-clock-t { display: none; }   /* folding order: the clock goes to its icon first; a tap shows the time again */
     #${ID} .em-bar .em-close { width: 44px; height: 44px; }
     #${ID} .em-bar .em-close svg { width: 22px; height: 22px; }

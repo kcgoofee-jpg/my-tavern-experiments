@@ -1,4 +1,4 @@
-// Read-only activity counter behind ViewerDebug.raf() (S7-2 T4, docs/ui-refactor.md 4 item 5): animation frames requested per owning module, live setInterval timers and their callbacks, and the
+// Read-only activity counter behind the debug surface getter `raf` (S7-2 T4, docs/ui-refactor.md 4 item 5): animation frames requested per owning module, live setInterval timers and their callbacks, and the
 // running Web Animations, over the window since the last reset. The probes (tools/browser/raf_pause.mjs) read it; nothing in the product does. The wrappers only count; they change no timing.
 let t0 = 0, frames = new Map(), calls = 0, byOwner = new Map();
 const live = new Map();   // interval id -> the module that created it

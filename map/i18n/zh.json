@@ -837,5 +837,6 @@
   "lyr.only_state": "仅在特定状态下",
   "lyr.generic_view": "特定",
   "lyr.generic_place": "特定地点",
-  "lyr.generic_period": "特定时段"
+  "lyr.generic_period": "特定时段",
+  "edit.more": "编辑 ⋯"
 }

@@ -115,7 +115,7 @@ export async function openPictures(nodeId, name, { onClose } = {}) {
 
 // ---- the bar and the switch ----
 const css = () => { if ($('#editCss')) return; const s = el('style'); s.id = 'editCss';
-  s.textContent = '#editBar{position:fixed;left:var(--sp-4);bottom:calc(var(--sheet-peek) + var(--sp-4));z-index:var(--zu-pop);display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:center;max-width:calc(100vw - 2 * var(--sp-4));padding:var(--sp-3) var(--sp-4);background:var(--surface-glass);border:1px solid var(--line-strong);border-radius:var(--r-m);color:var(--ink);font-size:var(--fs-small)}#editBar .btn,#card .editbox .btn{min-height:var(--hit)}#editBar input{min-height:var(--hit);box-sizing:border-box;max-width:40vw}.editbox{display:flex;flex-direction:column;gap:var(--sp-3);margin-top:var(--sp-4);border-top:1px dashed var(--line);padding-top:var(--sp-4)}.editbox input,.editbox select{min-height:var(--hit);box-sizing:border-box;max-width:100%}#editNote{flex-basis:100%;color:var(--muted)}'; document.head.append(s); };
+  s.textContent = '#editBar{position:fixed;left:var(--sp-4);bottom:calc(var(--sheet-peek) + var(--sp-4));z-index:var(--zu-pop);display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:center;max-width:calc(100vw - 2 * var(--sp-4));padding:var(--sp-3) var(--sp-4);background:var(--surface-glass);border:1px solid var(--line-strong);border-radius:var(--r-m);color:var(--ink);font-size:var(--fs-small)}#editBar .btn,#card .editbox .btn{min-height:var(--hit)}#editBar input{min-height:var(--hit);box-sizing:border-box;max-width:40vw}.editbox{display:flex;flex-direction:column;gap:var(--sp-3);margin-top:var(--sp-4);border-top:1px dashed var(--line);padding-top:var(--sp-4)}.editbox input,.editbox select{min-height:var(--hit);box-sizing:border-box;max-width:100%}#editNote{flex-basis:100%;color:var(--muted)}#editMore{display:none}@media (max-width:640px){body.evopen #editMore{display:inline-flex}body.evopen #editBar:not(.open){display:none}#editBar.open{bottom:auto;top:calc(var(--hdr,44px) + var(--sp-3));left:var(--sp-4);right:var(--sp-4);max-width:none}}'; document.head.append(s); };
 async function exportNow() {
   const d = await currentDraft(), id = pid();
   if (!shipped()) { const { saveExport } = await import('./pack-settings.mjs'); return note(await saveExport()); }
@@ -124,7 +124,7 @@ async function exportNow() {
   note(T('edit.exported', '已保存 {name}（只含你的改动，交给维护者合并）。', { name }));
 }
 function bar() {
-  $('#editBar')?.remove(); if (!S.on) return;
+  $('#editBar')?.remove(); $('#editMore')?.remove(); if (!S.on) return;
   const b = el('div'); b.id = 'editBar'; b.setAttribute('role', 'group'); b.setAttribute('aria-label', T('edit.title', '编辑模式'));
   const nm = el('input'); nm.type = 'text'; nm.maxLength = 80; nm.placeholder = T('edit.new_ph', '新地点的名字'); nm.setAttribute('aria-label', nm.placeholder);
   const nw = btn(T('edit.new', '新地点'), () => { const v = nm.value.trim(); if (!v) return; S.armed = v; nm.value = ''; nw.setAttribute('aria-pressed', 'true'); nw.id = 'editNew'; note(T('edit.armed', '点一下地图，把它放在那里。')); });
@@ -132,6 +132,9 @@ function bar() {
   b.append(el('b', null, T('edit.title', '编辑模式')), ...(isV2() ? [nm, nw, btn(T('edit.start', '从这里开始'), () => run(editor().setStart(currentMapId), T('edit.started', '地图以后从这里打开。')))] : []), btn(T('edit.export', '导出'), () => exportNow().catch(e => note(String(e.message || e)))), dis);
   const n = el('div'); n.id = 'editNote'; n.setAttribute('role', 'status'); n.textContent = isV2() ? T('edit.hint', '拖动图钉调整位置；点开地点卡可以改上级、加叫法、加图片。') : T('edit.hint_fixed', '这张地图的版面是固定的；点开地点卡可以加图片。'); b.append(n);
   document.body.append(b);
+  // E-12 (U-20): on a phone with the drawer at half / full the bar folds into a header button (the same actions, a menu): no overlap with the drawer
+  const more = btn(T('edit.more', '编辑 ⋯'), () => { const o = b.classList.toggle('open'); more.setAttribute('aria-expanded', o ? 'true' : 'false'); }); more.id = 'editMore'; more.setAttribute('aria-haspopup', 'true'); more.setAttribute('aria-expanded', 'false');
+  $('#setBtn')?.before(more);
 }
 export async function setEdit(on) {
   if (!!on === S.on) return; S.on = !!on; css();
