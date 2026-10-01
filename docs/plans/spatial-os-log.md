@@ -811,3 +811,19 @@ blocker: none
 open: Q-22 (recommendation accept): the stale entry's static graph is still fetched via @preview; a thin entry would avoid it but eden-map.js is ratcheted at 675 lines.
 cleanup: done (probe servers of mine stopped; no launch.json entries; worktree i14 left for the orchestrator)
 === END ===
+
+=== RESULT I-17 ===
+status: DONE
+items: T1 fixture test ✓ · T2 no assertion failed, no engine change ✓ · T3 probe (one run, passed) ✓ · T4 close ✓
+commits: (this commit) test: replay acceptance for the follow fix (I-17)   (SHA may change on rebase)
+pushed: yes (head #N in the chat report; this log copy is committed before the push)
+tests: node 948/949 pass (1 skipped as in baseline; +2 new cases in tests/replay_i17.test.mjs) | smoke PASS | arch PASS | probes: replay_i17=PASS
+location: 光辉联邦废弃据点 (the viewer's location field keeps the text as written; locate = realm node fed on the world map, place 光辉联邦, via alias, level 5, no 「未上图」 offer; current-position button shown)
+time: floor 1 1月2日 02:41 · floor 2 1月2日 03:05 · floor 3 1月2日 03:18 (title 新历2088年01月02日 03:18 凌晨); each equals that floor's 世界.当前时刻
+status line: [地图状态] 地点：光辉联邦废弃据点；时间：新历2088年01月02日 03:18 凌晨 (injected text and the Settings preview "下一轮将注入：…" are identical)
+user chat replayed: no (not present)
+deviations: (1) the fixture has no 在场人物 rows, so the line has no 在场 part. (2) In the unit fixture the variable map must be refreshed once the first floor with variables exists (the real host does it on every variable update); with an empty chat at construction the clock read empty. A fixture artefact, not an engine bug. (3) The stub host has no SillyTavern.chat, so the probe installs a live one (the real tavern has it); without it nothing is injected in the stub. (4) The Settings preview is refreshed when the data page opens (I-14 design, deviation 4); the probe opens it through SettingsApi.open('data'); before that it shows the previous floor's text. (5) `.mk.here` was empty on the map open at the time (the probe did not jump to the world map); the label check is the location field plus the unmapped chip being absent.
+blocker: none
+open: none
+cleanup: done (probe server stopped; no launch.json entries; worktree i17 left for the orchestrator)
+=== END ===
