@@ -175,7 +175,7 @@ export const transitBlock = (v, p, x) => {
 };
 
 export const TERM = '(#[0-9a-fA-F]{3,8}|(rgb|rgba|hsl|hsla)\\([0-9., %/-]{1,40}\\)|-?[0-9]{0,4}\\.?[0-9]{1,4}(px|rem|em|%|vh|vw)?|[a-z][a-z-]{0,23}|var\\(--[a-z0-9-]{1,40}\\))';
-const TOKEN_NAME = re('^--(accent|ink|bg|surface|line|muted|gold|ok|alert|on|map-label|glow|focus|r|fs)(-[a-z0-9-]{1,30})?$');
+const TOKEN_NAME = re('^--(accent|ink|bg|surface|line|muted|gold|ok|alert|on|map|glow|focus|r|fs)(-[a-z0-9-]{1,30})?$');
 const GROUP = `${TERM}( ${TERM}){0,3}`;
 const TOKEN_VALUE = re(`^${GROUP}$`), GLOW_VALUE = re(`^${GROUP}(, ?${GROUP}){0,2}$`);   // K-R70: a --glow* value may be a comma list of at most 3 groups
 const tokenOk = (name, v, widen) => typeof name === 'string' && typeof v === 'string' && v.length <= 200 && TOKEN_NAME.test(name)
@@ -201,7 +201,7 @@ const viewTheme = dict(ID, obj({ tokens: tokenDict(true), light: tokenDict(true)
 export const uiBlock = block(obj({
   start: idRef, tabs: arr(oneOf(['places', 'events', 'characters', 'items'])),
   strings: dict(LANG, dict(re('^[a-z][a-z0-9_.]{0,63}$'), str())),
-  theme: obj({ accent: str({ re: HEX }), tokens: tokenDict(false), views: viewTheme }),
+  theme: obj({ accent: str({ re: HEX }), tokens: tokenDict(false), views: viewTheme, chrome: obj({ accent: str({ re: HEX }), onAccent: str({ re: HEX }) }) }),   // K-R70: chrome = the pack-wide chrome accent; views = map-space only
   legend: arr(obj({ type: str({ re: re('^[a-z][a-z0-9_-]{0,31}$') }), label: str({ min: 1 }), desc: str(), i18n: (v, p, x) => (isObj(v) ? v : bad(x, p, 'type', 'object')), icon: str({ re: re('^[a-z][a-z0-9-]{0,31}$') }) }, { req: ['type'], ...B })),
   levels: dict(ID, (v, p, x) => (Array.isArray(v) ? v.map((e, i) => idRef(e, `${p}[${i}]`, x)).filter(e => e !== DROP) : bad(x, p, 'type', 'array'))),
 }, B), 'object');

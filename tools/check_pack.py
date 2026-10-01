@@ -108,15 +108,64 @@ def check(pid):
 BLOCKS2 = ('nodes', 'views', 'vars', 'entities', 'items', 'events', 'layers', 'ui', 'llm', 'media', 'transit')
 
 
+def _lum(h):
+    c = [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    c = [v / 12.92 if v <= .03928 else ((v + .055) / 1.055) ** 2.4 for v in c]
+    return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]
+
+
+def _ratio(a, b):
+    x, y = _lum(a), _lum(b)
+    return (max(x, y) + .05) / (min(x, y) + .05)
+
+
+def _over(hexc, alpha, back):   # composite hexc at alpha over a solid back colour
+    f = lambda i: round(int(hexc[i:i + 2], 16) * alpha + int(back[i:i + 2], 16) * (1 - alpha))
+    return '#%02x%02x%02x' % (f(1), f(3), f(5))
+
+
+HEX6 = re.compile(r'^#[0-9a-fA-F]{6}$')
+SURFACE = {'dark': ('#151b20', '#101418'), 'light': ('#f8f5ee', '#efeae0')}   # tokens.css --surface, --bg per theme
+
+
+def check_theme(pid, ov):
+    """K-R70 (S7-2): contrast of the pack-wide chrome accent and of every per-view accent, in both themes (docs/ui-refactor.md 2.7): --on-accent on accent >= 4.5; accent on glass-1 (80 % surface)
+    composited over black and over white >= 3; --map-label-ink on --map-label-bg >= 4.5. A value that is not a six-digit hex (a var() or rgba) is skipped."""
+    th = ((ov.get('ui') or {}).get('theme')) or {}
+    errs = []
+    def pair(where, accent, on, theme, glass=True):   # glass: the chrome accent sits on glass; a per-view (map-space) accent never does, so only the chrome accent is measured against it
+        if accent and HEX6.match(accent):
+            surf = SURFACE[theme][0]
+            for back in (('#000000', '#ffffff') if glass else ()):
+                r = _ratio(accent, _over(surf, .8, back))
+                if r < 3: errs.append(f'{pid}: {where} 强调色 {accent} 在 {theme} 毛玻璃（叠在 {back} 上）对比 {r:.2f} < 3')
+            if on and HEX6.match(on):
+                r = _ratio(accent, on)
+                if r < 4.5: errs.append(f'{pid}: {where} 强调色 {accent} 上的 on-accent {on} 对比 {r:.2f} < 4.5')
+    ch = th.get('chrome') or {}
+    if ch.get('accent'):
+        from_on = ch.get('onAccent') or ('#101418' if _ratio(ch['accent'], '#101418') >= _ratio(ch['accent'], '#ffffff') else '#ffffff')
+        for theme in ('dark', 'light'): pair('ui.theme.chrome', ch['accent'], from_on, theme)
+    for vid, v in (th.get('views') or {}).items():
+        for part, theme in (('tokens', 'dark'), ('light', 'light')):
+            t = (v or {}).get(part) or {}
+            pair(f'ui.theme.views.{vid}.{part}', t.get('--map-accent') or t.get('--accent'), t.get('--on-accent'), theme, glass=False)
+            ink, bg = t.get('--map-label-ink'), t.get('--map-label-bg')
+            if ink and bg and HEX6.match(ink) and HEX6.match(bg) and _ratio(ink, bg) < 4.5: errs.append(f'{pid}: ui.theme.views.{vid}.{part} 标签字 {ink} 在 {bg} 上对比 < 4.5')
+    return errs
+
+
 def check_overlay(pid, d, m):
     """schema 1 包旁边的 v2 叠加层 overlay.v2.json（docs/kernel-schema.md K-R67）：交给 tools/check_overlay.mjs（节点 id / 名字 / 父节点 / alias 含名字 / at / 树无环）。没有这个文件 = 无事。"""
     if not os.path.exists(os.path.join(d, 'overlay.v2.json')): return []
     if not (m.get('data') or {}).get('overlay'): return [f'{pid}: 有 overlay.v2.json，清单 data.overlay 没声明（查看器只取声明了的）']
+    try: theme_errs = check_theme(pid, json.load(open(os.path.join(d, 'overlay.v2.json'), encoding='utf-8')))
+    except Exception: theme_errs = []
     try:
         r = subprocess.run(['node', os.path.join(ROOT, 'tools', 'check_overlay.mjs'), pid], capture_output=True, text=True, timeout=60)
     except Exception as e:
         return [f'{pid}: overlay.v2.json 没能检查：{e}']
-    return [x for x in r.stdout.splitlines() if x.strip()] + ([f'{pid}: check_overlay 异常退出：{r.stderr.strip()[:200]}'] if r.returncode not in (0, 1) else [])
+    return theme_errs + [x for x in r.stdout.splitlines() if x.strip()] + ([f'{pid}: check_overlay 异常退出：{r.stderr.strip()[:200]}'] if r.returncode not in (0, 1) else [])
 
 
 def check_v2(pid, d, m):

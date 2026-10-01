@@ -10,7 +10,7 @@ const N = k => nsKey(k, globalThis.__packId);
 export const FOG_KEY = 'edenMapFog', FOG_LOCAL_KEY = 'edenMap:chat:local:fog';
 export const KEYS = {
   // 查看器（viewer.html）
-  edenMapTheme: { owner: 'viewer', def: 'auto' }, edenMapLang: { owner: 'viewer', def: 'zh' }, edenMapHand: { owner: 'viewer', def: 'auto' },
+  edenMapTheme: { owner: 'viewer', def: 'auto' }, edenMapGlassClock: { owner: 'app/theme.mjs', def: '0' }, edenMapLang: { owner: 'viewer', def: 'zh' }, edenMapHand: { owner: 'viewer', def: 'auto' },
   edenMapTierV2: { owner: 'viewer' }, 'edenMapAlt:': { owner: 'viewer', prefix: true }, edenMapBarriers: { owner: 'viewer' }, edenMapRoutes: { owner: 'viewer' },
   edenMapKeys: { owner: 'viewer', def: '0' } /* 单字母快捷键 + 事态操作字母角标，默认关（用户 2026-09-28 反馈） */, edenMapRM: { owner: 'viewer', def: 'auto' }, edenMap3dQ: { owner: 'viewer', def: 'auto' }, edenMap3dAuto: { owner: 'viewer', def: '0' },
   edenMapFps: { owner: 'viewer', def: '0' }, edenMapNoFx: { owner: 'viewer' }, edenMapCharStats: { owner: 'viewer' }, edenMapCharMore: { owner: 'viewer' },

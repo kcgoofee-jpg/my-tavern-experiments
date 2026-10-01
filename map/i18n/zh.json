@@ -823,5 +823,7 @@
   "fc.nav.p_claude": "Claude",
   "fc.nav.p_gemini": "Gemini",
   "fc.nav.p_deepseek": "DeepSeek",
-  "fc.nav.p_custom": "自定义兼容端点"
+  "fc.nav.p_custom": "自定义兼容端点",
+  "s.glass_clock": "昼夜界面",
+  "s.glass_clock_d": "界面按游戏内时间变亮 / 变暗（清晨、白天亮，黄昏、夜间暗），会盖过系统的亮 / 暗设置；主题选「跟随系统」时才起作用"
 }

@@ -6,6 +6,7 @@ import { $, esc } from './dom-helpers.mjs';
 import { getJSON } from './json-cache.mjs';
 import { post } from './protocol-stamp.mjs';
 import { uiTextOr } from './text-lookup.mjs';
+import { syncGlassClock } from './theme.mjs';
 import { applyTier, drawOverlays, tierLabels } from './sharpness-tiers.mjs';
 import { mapChrome } from './map-switch.mjs';
 import { estateLook } from './subpage3d-host.mjs';
@@ -64,7 +65,7 @@ export async function setLang(l) {
 export function setTheme(th) {
   if (!['auto', 'light', 'dark'].includes(th)) return; window.__theme = th;
   try { LocalStore.set('edenMapTheme', window.__theme); } catch (e) {}
-  window.__applyTheme(); paintSegs(); estateLook(); postState();
+  syncGlassClock(); window.__applyTheme(); paintSegs(); estateLook(); postState();
 }
 // 设置「显示」页的分段控件：主题、减少动态、三维画质（语言、清晰度、惯用手各自有 paint）
 export function paintSegs() {

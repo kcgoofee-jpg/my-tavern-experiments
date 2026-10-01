@@ -1023,6 +1023,10 @@ Settings → variable mapping use (§6.3); and `avatar.require` (path fragments)
 (`core/overlay-v2.mjs` `applyOverlayUi`): `views` by id, `tokens` / `light` key by key, `legend` replaced as a whole, any other key (`x-…`) overridden. Lenient like K-R67: a bad view id or token is dropped and listed in `problems`
 (`overlay-view-invalid`, `overlay-token-invalid`). The viewer re-checks every id and token at run time with `recheck` (`core/pack-v2-spec.mjs`: `hex`, `token`, `tokenName`, `id`; each returns the value when it matches the exact schema pattern, else `null`, K-R64).
 `tools/check_overlay.mjs` runs the merged block through the kernel's schema (K-R06).
+*Amended in S7-2 (U-04 B'): one chrome.* The per-view `tokens` / `light` no longer restyle the chrome (header, popover, drawer, settings, cards): the chrome token set is the same in every view and in 3D and changes only with light / dark and the optional pack-wide
+`ui.theme.chrome = { accent, onAccent? }` (six-digit hex; `onAccent` is computed by the engine when absent: the better of the chrome background and white by contrast; `check_pack` measures it in both themes). `ui.theme.views.<view>` feeds only the map-space tokens
+`--map-accent`, `--map-pin`, `--map-select` (from `--accent`), `--map-route` (from `--accent-2`), `--map-tint` (from `--bg`), `--map-glow` / `--map-glow-text` (from `--glow` / `--glow-text`); a `--map-*` name passes through unchanged and every other chrome name in a view is dropped.
+The selectors and cascade of the written `<style id="packTheme">` are unchanged. A pack that wants the old look of a view sets `--map-*` there; nothing else is needed.
 
 **K-R71 — Entity protocol.** People, items and events are **entities on nodes**: `{ kind: 'person' | 'item' | 'event', id, name, node, place, source, msgIndex, present?, data }`.
 `id` is the normalised name for a person (K-R40), the store or world row id for an item, the event id for an event; `name` is the display text, verbatim; `node` is a node id (K-R28) or `null` (place unknown);

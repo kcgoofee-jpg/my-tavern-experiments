@@ -94,20 +94,20 @@ const TripsView = (() => {
     renderTrips(); renderTransit();
   }
   const css = `
-  svg.trip{overflow:visible;pointer-events:none;z-index:var(--zv-trips,50)}
+  svg.trip{overflow:visible;pointer-events:none;z-index:var(--zv-trips)}
   svg.trip path{fill:none;stroke:var(--alert);stroke-width:2.5;stroke-linecap:round;filter:drop-shadow(0 0 2px rgba(0,0,0,.6))}
-  .tripin{position:relative;width:0;height:0;overflow:visible;z-index:var(--zv-trips,50)}
+  .tripin{position:relative;width:0;height:0;overflow:visible;z-index:var(--zv-trips)}
   .tripin i{position:absolute;left:-8px;top:-8px;width:16px;height:16px;border-radius:50%;background:var(--alert);border:2px solid #fff;box-sizing:border-box;box-shadow:0 0 0 4px color-mix(in srgb,var(--alert) 30%,transparent)}
   .tripin.you{cursor:pointer;pointer-events:auto}
   .tripin.you::before{content:'';position:absolute;left:-22px;top:-22px;width:44px;height:44px}
   .tripin b{position:absolute;left:12px;top:-10px;white-space:nowrap;font:600 var(--fs-micro,11px)/1.3 var(--font-ui,sans-serif);color:var(--map-label-ink,#fff);background:var(--map-label-bg,rgba(8,10,14,.8));padding:2px 7px;border-radius:var(--r-pill,999px)}
-  svg.trip.hist path{stroke:var(--accent);stroke-width:2}
-  svg.trip.hist.ch path{stroke:var(--tc,var(--accent-2));stroke-width:1.2}
+  svg.trip.hist path{stroke:var(--map-accent);stroke-width:2}
+  svg.trip.hist.ch path{stroke:var(--tc,var(--map-route));stroke-width:1.2}
   svg.trip.m-rail path,svg.trip.m-road path{stroke-width:1.6;filter:none;opacity:.9}
   .tripin.hit{cursor:pointer;pointer-events:auto}.tripin.hit::before{content:'';position:absolute;left:-16px;top:-16px;width:32px;height:32px}
   @media (pointer:coarse){.tripin.hit::before{left:-22px;top:-22px;width:44px;height:44px}}
-  .tripin.tp{cursor:pointer;pointer-events:auto}.tripin.tp i{left:-6px;top:-6px;width:12px;height:12px;background:var(--accent);border-color:var(--surface)}
-  .tripin.tp.ch i{background:var(--tc,var(--accent-2))}
+  .tripin.tp{cursor:pointer;pointer-events:auto}.tripin.tp i{left:-6px;top:-6px;width:12px;height:12px;background:var(--map-accent);border-color:var(--surface)}
+  .tripin.tp.ch i{background:var(--tc,var(--map-route))}
   @media (prefers-reduced-motion:no-preference){.tripin.tp i{animation:trpulse 1.6s ease-in-out infinite}}
   @media (prefers-reduced-motion:no-preference){.tripin.you i{animation:trpulse 2s ease-in-out infinite}}
   @keyframes trpulse{50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--alert) 12%,transparent)}}`;

@@ -148,6 +148,12 @@ export function applyOverlayUi(tree, ui, problems = []) {
       if (!isObj(v)) { problems.push({ code: 'overlay-theme-invalid' }); continue; }
       const th = out.theme = isObj(out.theme) ? out.theme : {};
       for (const [tk, tv] of Object.entries(v)) {
+        if (tk === 'chrome') {   // K-R70 (S7-2): the pack-wide chrome accent, hex values only
+          if (!isObj(tv)) { problems.push({ code: 'overlay-chrome-invalid' }); continue; }
+          const ch = th.chrome = isObj(th.chrome) ? th.chrome : {};
+          for (const [name, val] of Object.entries(tv)) { if (['accent', 'onAccent'].includes(name) && recheck.hex(val) !== null) ch[name] = val; else problems.push({ code: 'overlay-chrome-invalid', name }); }
+          continue;
+        }
         if (tk !== 'views') { th[tk] = copy(tv); continue; }
         if (!isObj(tv)) { problems.push({ code: 'overlay-views-invalid' }); continue; }
         const views = th.views = isObj(th.views) ? th.views : {};

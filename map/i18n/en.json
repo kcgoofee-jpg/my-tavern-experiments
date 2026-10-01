@@ -823,5 +823,7 @@
   "fc.nav.p_claude": "Claude",
   "fc.nav.p_gemini": "Gemini",
   "fc.nav.p_deepseek": "DeepSeek",
-  "fc.nav.p_custom": "Custom compatible endpoint"
+  "fc.nav.p_custom": "Custom compatible endpoint",
+  "s.glass_clock": "Day / night interface",
+  "s.glass_clock_d": "The interface follows the in-game time (light at dawn and day, dark at dusk and night). It overrides the system light / dark choice and only applies while the theme is set to follow the system."
 }

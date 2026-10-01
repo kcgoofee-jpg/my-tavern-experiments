@@ -873,6 +873,10 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 （`core/overlay-v2.mjs` 的 `applyOverlayUi`）：`views` 按 id，`tokens` / `light` 逐键，`legend` 整体替换，其余键（`x-…`）覆盖。和 K-R67 一样宽容：坏的视图 id 或令牌被丢掉并记入 `problems`
 （`overlay-view-invalid`、`overlay-token-invalid`）。查看器运行时用 `recheck`（`core/pack-v2-spec.mjs`：`hex`、`token`、`tokenName`、`id`，匹配精确 schema 模式就返回原值，否则 `null`，K-R64）再查每个 id 和令牌。
 `tools/check_overlay.mjs` 把合并后的块过一遍内核 schema（K-R06）。
+*S7-2 修订（U-04 B′）：一套外壳。* 分视图的 `tokens` / `light` 不再改外壳（顶栏、弹层、抽屉、设置、卡片）：外壳令牌在每个视图和三维里都一样，只随亮 / 暗和可选的整包外壳强调色
+`ui.theme.chrome = { accent, onAccent? }`（六位十六进制；缺 `onAccent` 时引擎按对比度在外壳底色与白色里选更好的；`check_pack` 在两种主题下检查）变化。`ui.theme.views.<视图>` 只写地图空间令牌：
+`--map-accent`、`--map-pin`、`--map-select`（来自 `--accent`）、`--map-route`（来自 `--accent-2`）、`--map-tint`（来自 `--bg`）、`--map-glow` / `--map-glow-text`（来自 `--glow` / `--glow-text`）；写成 `--map-*` 的名字原样通过，视图里其余外壳名字被丢弃。
+写出的 `<style id="packTheme">` 的选择器和层叠不变。想要某视图以前的样子，在那里写 `--map-*` 即可。
 
 **K-R71 —— 实体协议。** 人、物、事件都是**节点上的实体**：`{ kind: 'person' | 'item' | 'event', id, name, node, place, source, msgIndex, present?, data }`。
 `id`：人 = 规范化后的名字（K-R40），物 = 库行或世界藏物行的 id，事件 = 事件 id；`name` 是显示文字，原样；`node` 是节点 id（K-R28）或 `null`（地点不明）；

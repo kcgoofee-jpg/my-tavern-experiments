@@ -63,7 +63,7 @@ import { plugins } from './plugins.mjs';
 import { PACK, initPack, packData, packEvents, packNames, packOverlay, packTax, setOverlay, rebase, packV2, packProblems } from './current-pack.mjs';
 import { projectV2 } from '../core/pack-v2-view.mjs';   // schema-2 包到注册表形状的投影（K-R96）
 import { buildRuntime, buildRuntimeV2 } from './nodes-runtime.mjs';   // 节点树：面包屑 / 上一级 / 主场景替身都从它读（S2-A）
-import { applyTheme } from './theme.mjs';   // 包的分视图主题（K-R70）：一个 <style id="packTheme">
+import { applyTheme, initGlassClockRow } from './theme.mjs';   // 包的分视图主题（K-R70）：一个 <style id="packTheme">
 import { busOn } from './bus.mjs';
 // 多地图查看器：地图注册表 data/maps.json（世界 → 城市各层 → 以后的室内剖面……）。
 // 底图都是 DZI 瓦片金字塔，只加载屏幕里看得见的部分；解码内存由屏幕大小和瓦片缓存上限决定。
@@ -88,7 +88,7 @@ async function mainInner() {
   jsonCache.set('i18n/' + LANG + '.json', Promise.resolve(DICT));
   setEnNames(enNamesP || null); rebuildHere();
   const nodes = v2 ? () => buildRuntimeV2(packV2, v2.registry) : plan => buildRuntime({ manifest: PACK, maps: mapRegistry, world: worldData, names: enNamesP || null, plan, overlay: packOverlay, events: packTax });
-  const rt0 = nodes(null); applyTheme(rt0?.ui); applyPackLayers(rt0?.layers || []);   // K-R79: the pack's layers rows adjust the kernel layers (registry.patch) and wait for S8-2 to draw
+  const rt0 = nodes(null); applyTheme(rt0?.ui); initGlassClockRow(); applyPackLayers(rt0?.layers || []);   // K-R79: the pack's layers rows adjust the kernel layers (registry.patch) and wait for S8-2 to draw
   if (packData('rooms')) getJSON(packData('rooms')).then(p => { if (!p?.rooms) return; setEstPlan(p); rebuildHere(); nodes(p); markHere($('#here').value); }).catch(() => {});   // v0.9.6：卡设定分层房间进当前地点词表（不挡启动）   // 当前地点 → 落点的词表（中英都认；加上本机自定义叫法）
   post({ type: 'eden-map:boot', pct: .9 });   // 数据文件已到
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点

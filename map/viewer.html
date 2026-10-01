@@ -40,7 +40,7 @@ window.LocalStore = (() => { const A = s => { try { return s ? sessionStorage : 
   if (!['auto', 'light', 'dark'].includes(th)) th = 'auto'; if (!['zh', 'en'].includes(lg)) lg = 'zh';
   const mq = matchMedia('(prefers-color-scheme: light)');
   window.__theme = th; window.__lang = lg; d.lang = lg === 'en' ? 'en' : 'zh-CN';
-  window.__applyTheme = () => d.classList.toggle('light', window.__theme === 'light' || (window.__theme === 'auto' && mq.matches));
+  window.__applyTheme = () => d.classList.toggle('light', window.__theme === 'light' || (window.__theme === 'auto' && (window.__glassClock ? window.__glassClock === 'light' : mq.matches)));   // __glassClock: app/theme.mjs 按时钟时段设（edenMapGlassClock）
   window.__applyTheme(); mq.addEventListener && mq.addEventListener('change', window.__applyTheme);
   // 单手（E7）：惯用手 auto / left / right → html[data-hand]；auto = 看酒馆悬浮按钮被拖到哪一半（同源 localStorage），没拖过按右手。记在本机，?hand= 可覆盖（测试用）
   let hd = 'auto'; try { hd = q.get('hand') || LocalStore.get('edenMapHand') || 'auto'; } catch (e) {}
@@ -50,68 +50,26 @@ window.LocalStore = (() => { const A = s => { try { return s ? sessionStorage : 
     d.dataset.hand = h; return h; };
   window.__applyHand();
   window.__dictionaryPromise = fetch('i18n/' + lg + '.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));   // 和启动数据并行取
-  if ((navigator.deviceMemory || 8) <= 4) d.classList.add('lowmem');   // 低内存：不用毛玻璃（backdrop-filter 很贵）
+  if ((navigator.deviceMemory || 8) <= 4 || (navigator.hardwareConcurrency || 8) <= 4) d.classList.add('lowmem');   // 低内存 / 少核：不用毛玻璃（backdrop-filter 很贵）
   // __openWorldMapFirst 与启动预取（清单 / 数据 / 世界底图）在顶部首帧脚本里按包 gating
 })();
 </script>
-<!-- 设计令牌（E5）：map/ui/tokens.css 的逐字副本，内联进来——少一个会阻塞首帧的请求，令牌文件挂了也不散架（E5 r2 弱网 W2 / W3）。
+<!-- 设计令牌（E5）：map/ui/tokens.css 的压缩副本（去注释、一条顶层规则一行），内联进来——少一个会阻塞首帧的请求，令牌文件挂了也不散架（E5 r2 弱网 W2 / W3）。
      改令牌只改 map/ui/tokens.css，再跑 python3 tools/sync_tokens.py；tools/smoke.sh 会检查两者一致。 -->
 <style id="tokens">
-/* 地图 · 设计令牌 v1（docs/ui-audit.md 第三部分；E5 落成文件）。
-   查看器 viewer.html 用 <link> 引用；卡内脚本 eden-map.js 的宿主栏用同名变量的内联副本（宿主页里不能再多一个请求）。
-   原则：一套骨架，三层换皮。组件只引用语义令牌，不写色值。
-   E5 定稿的两处与草案不同：全站只有一种金 #e6c36a（深色上层 / 主场景 / 世界的 --accent；浅色取深一档 #7a5d22），只有一种红 --alert。 */
-:root {
-  /* 结构：全站一套 */
-  --font-ui: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", system-ui, sans-serif;
-  --font-serif: "Songti SC", "STSong", "Noto Serif SC", serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
-  --fs-display: 20px; --fs-title: 17px; --fs-body: 14px; --fs-control: 13px; --fs-small: 12px; --fs-micro: 11px;   /* 下限 11 */
-  --sp-1: 2px; --sp-2: 4px; --sp-3: 6px; --sp-4: 8px; --sp-5: 12px; --sp-6: 16px; --sp-7: 24px;
-  --r-s: 4px; --r-m: 8px; --r-l: 12px; --r-pill: 999px;
-  --dur-1: 120ms; --dur-2: 200ms; --dur-3: 320ms;
-  --ease-out: cubic-bezier(.2, .8, .2, 1); --ease-in: cubic-bezier(.4, 0, 1, 1);
-  --hit: 44px;
-  /* v2 布局令牌（docs/design/ui-v2/spec.md §7）：顶栏、抽屉三档、桌面右栏、控制列。抽屉高度在 iframe 里按容器 % 算（dvh 不可靠），这里的 dvh 只是单独打开时的上限 */
-  --bar-h: 44px; --sheet-peek: 56px; --sheet-half: 40%; --sheet-full: 80%; --rail-w: 360px; --rail-full: 480px; --col-w: 48px;
-  --bg-3d: var(--bg);
-  /* 全局色（不跟层变） */
-  --focus: #63b4be;
-  --alert: #ff5a5a; --on-alert: #1a0606;          /* 全站唯一的红：当前地点、事态计数、危险 / 失败 */
-  --ok: #7bd88f;
-  --gold: #e6c36a;                                  /* 全站唯一的金（琥珀）；深色上层的 --accent 就是它 */
-  --map-label-bg: rgba(12, 14, 18, .82); --map-label-ink: #fff; --map-label-line: rgba(255, 255, 255, .22);
-  --sh-1: 0 1px 3px rgba(0, 0, 0, .25); --sh-2: 0 6px 20px rgba(0, 0, 0, .30); --sh-3: 0 12px 32px rgba(0, 0, 0, .38);
-  --glow: none; --glow-text: none;
-  /* 深色 · 上层 / 主场景 / 世界（默认） */
-  --bg: #101418; --surface: #151b20; --surface-2: rgba(255, 255, 255, .06);
-  --line: rgba(255, 255, 255, .12); --ink: #d5dde4; --ink-2: #b7c1ca; --muted: #8591a0;
-  --accent: var(--gold); --on-accent: #1a1406; --accent-2: #efe9dc;
-  color-scheme: dark;
-}
-/* 浅色主题：只换值（组件 CSS 里不出现 .light 选择器） */
-.light { --focus: #2d6c75; --alert: #c0392b; --on-alert: #fff; --ok: #23733b;
-  --sh-1: 0 1px 3px rgba(0, 0, 0, .12); --sh-2: 0 6px 20px rgba(0, 0, 0, .15); --sh-3: 0 12px 32px rgba(0, 0, 0, .19);
-  --bg: #efeae0; --surface: #f8f5ee; --surface-2: rgba(20, 23, 26, .05);
-  --line: rgba(20, 23, 26, .16); --ink: #1b1a17; --ink-2: #3b3934; --muted: #635e54;
-  --accent: #7a5d22; --on-accent: #fff; --accent-2: #8f6f2e; color-scheme: light; }
-/* 各视图自己的配色（深 / 浅两套）不在这里：设定包 ui.theme.views（K-R70），由 app/theme.mjs 写成 <style id="packTheme">，选择器顺序与特异性同以前 */
-/* 派生令牌：在 body 上再算一次，层 / 主题换了 --accent、--surface 之后跟着变（自定义属性在声明它的元素上求值） */
-:root, body {
-  --surface-glass: color-mix(in srgb, var(--surface) 92%, transparent);
-  --accent-weak: color-mix(in srgb, var(--accent) 14%, transparent);
-  --line-strong: color-mix(in srgb, var(--accent) 55%, var(--line));
-}
-/* 通用 */
-:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-/* 减少动态：系统设置或设置「显示 · 减少动态」→ html.rm（瞬切，不飞行只跳转）；高对比 / 减少动态时去掉霓虹重影 */
+:root { --font-ui: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", system-ui, sans-serif; --font-serif: "Songti SC", "STSong", "Noto Serif SC", serif; --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; --fs-display: 20px; --fs-title: 17px; --fs-body: 14px; --fs-control: 13px; --fs-small: 12px; --fs-micro: 11px; --sp-1: 2px; --sp-2: 4px; --sp-3: 6px; --sp-4: 8px; --sp-5: 12px; --sp-6: 16px; --sp-7: 24px; --r-s: 4px; --r-m: 8px; --r-l: 12px; --r-pill: 999px; --dur-1: 120ms; --dur-2: 200ms; --dur-3: 320ms; --ease-out: cubic-bezier(.2, .8, .2, 1); --ease-in: cubic-bezier(.4, 0, 1, 1); --hit: 44px; --bar-h: 44px; --sheet-peek: 56px; --sheet-half: 40%; --sheet-full: 80%; --rail-w: 360px; --rail-full: 480px; --col-w: 48px; --bg-3d: var(--bg); --r-glass: 14px; --sp-8: 32px; --pad-glass: 8px; --edge: 12px; --glass-blur-1: 12px; --glass-line-a: 12%; --elev-float: var(--sh-1); --elev-panel: var(--sh-2); --elev-modal: var(--sh-3); --shadow-1: var(--sh-1); --zl-under: -1; --zl-0: 0; --zl-1: 1; --zl-2: 2; --zl-3: 3; --zu-snap: 2; --zu-sheet-sticky: 2; --zu-foot: 4; --zu-estate: 5; --zu-hint: 6; --zu-cover: 6; --zu-prog: 7; --zu-loading: 8; --zu-dock: 9; --zu-layers: 9; --zu-header: 12; --zu-pop: 13; --zu-setpop: 14; --zu-sheet: 9; --zu-c3: 6; --zu-glitch: 7; --zu-cc-hint: 20; --zu-dialog: 40; --zu-dialog-2: 41; --zu-panel: 61; --zu-load3d: 5; --zu-debug: 99999; --zh-bar: 3; --zh-pick: 2; --zh-tl: 4; --zh-yield: 10040; --zh-fab: 30000; --zh-panel: 30001; --zh-toast: 30002; --zh-top: 30003; --zv-osd: 0; --zv-osd-canvas: 0; --zv-base: 10; --zv-depth-haze: 20; --zv-fog: 30; --zv-routes: 40; --zv-trips: 50; --zv-events: 60; --zv-markers: 70; --zv-markers-hover: 75; --zv-labels: 80; --zv-fx: 90; --zv-interaction: 100; --focus: #63b4be; --alert: #ff5a5a; --on-alert: #1a0606; --ok: #7bd88f; --gold: #e6c36a; --map-label-bg: rgba(12, 14, 18, .82); --map-label-ink: #fff; --map-label-line: rgba(255, 255, 255, .22); --map-label-halo: rgba(0, 0, 0, .72); --sh-1: 0 1px 3px rgba(0, 0, 0, .25); --sh-2: 0 6px 20px rgba(0, 0, 0, .30); --sh-3: 0 12px 32px rgba(0, 0, 0, .38); --glow: none; --glow-text: none; --map-glow: none; --map-glow-text: none; --bg: #101418; --surface: #151b20; --surface-2: rgba(255, 255, 255, .06); --line: rgba(255, 255, 255, .12); --line-2: rgba(255, 255, 255, .22); --ink: #d5dde4; --ink-2: #b7c1ca; --muted: #8591a0; --accent: var(--gold); --on-accent: #1a1406; --accent-2: #efe9dc; color-scheme: dark; }
+.light { --focus: #2d6c75; --alert: #c0392b; --on-alert: #fff; --ok: #23733b; --sh-1: 0 1px 3px rgba(0, 0, 0, .12); --sh-2: 0 6px 20px rgba(0, 0, 0, .15); --sh-3: 0 12px 32px rgba(0, 0, 0, .19); --bg: #efeae0; --surface: #f8f5ee; --surface-2: rgba(20, 23, 26, .05); --line: rgba(20, 23, 26, .16); --line-2: rgba(20, 23, 26, .26); --ink: #1b1a17; --ink-2: #3b3934; --muted: #635e54; --accent: #7a5d22; --on-accent: #fff; --accent-2: #8f6f2e; --glass-line-a: 14%; color-scheme: light; }
+:root, body { --glass-1: color-mix(in srgb, var(--surface) 80%, transparent); --glass-2: var(--surface); --glass-line: color-mix(in srgb, var(--ink) var(--glass-line-a), transparent); --surface-glass: var(--glass-2); --focus-ring: 0 0 0 2px var(--focus), 0 0 0 4px var(--bg); --warn: color-mix(in srgb, var(--alert) 70%, var(--gold)); --map-accent: var(--accent); --map-pin: var(--accent); --map-select: var(--accent); --map-route: var(--accent-2); --map-tint: var(--bg); --accent-weak: color-mix(in srgb, var(--accent) 14%, transparent); --line-strong: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; box-shadow: 0 0 0 4px var(--bg); }
+.g1 { background: var(--glass-1); border: 1px solid var(--glass-line); box-shadow: var(--elev-float); -webkit-backdrop-filter: blur(var(--glass-blur-1)); backdrop-filter: blur(var(--glass-blur-1)); }
+.g2 { background: var(--glass-2); border: 1px solid var(--glass-line); box-shadow: var(--elev-panel); }
+html.lowmem .g1, html.noblur .g1, html.view3d .g1 { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--surface); }
+@media (pointer: coarse) { .g1 { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--surface); } }
+@media (prefers-reduced-transparency: reduce) { .g1 { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--surface); } }
 html.rm *, html.rm *::before, html.rm *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; }
 html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none; }
 @media (prefers-contrast: more) { :root, body, body[data-map] { --glow-text: none; --glow: none; } }
-@media (prefers-reduced-motion: reduce) {
-  :root, body, body[data-map] { --glow-text: none; }
-  *, *::before, *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; }
-}
+@media (prefers-reduced-motion: reduce) { :root, body, body[data-map] { --glow-text: none; } *, *::before, *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; } }
 </style>
 <!-- OpenSeadragon 5.0.1（BSD-3，见 vendor/openseadragon/LICENSE.txt），随仓库版本固定 -->
 <!-- 启动文件和地图库并行开始下载（CDN 每个请求约 1 秒延迟，串行等待是打开慢的主因）；
@@ -192,16 +150,6 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .ico { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-  /* ---------- 图层阶梯常量（P3-C，core/layer-registry.mjs 的 CSS 镜像，tests/layer_registry.test.mjs 对拍） ----------
-     页面上不允许再写裸 z-index 字面量：一律引用这里的名义常量。
-     --zu-*：外层固定 UI 阶梯（顶栏 / 弹层 / 设置 / 控制列 / 主场景 iframe / 转场盖布）——永远在视口槽位之上，不进 LayerRegistry；
-     --zv-*：视口槽位阶梯（OSD 画布叠加上下文内由底至顶），与 core/layer-registry.mjs 的 SLOTS 一一对应，z = (槽位序号 + 1) × 10。 */
-  :root {
-    --zu-snap: 2; --zu-sheet-sticky: 2; --zu-foot: 4; --zu-estate: 5; --zu-hint: 6; --zu-cover: 6; --zu-prog: 7; --zu-loading: 8; --zu-dock: 9; --zu-layers: 9;
-    --zu-header: 12; --zu-pop: 13; --zu-setpop: 14;
-    --zv-osd: 0; --zv-osd-canvas: 0;
-    --zv-base: 10; --zv-depth-haze: 20; --zv-fog: 30; --zv-routes: 40; --zv-trips: 50; --zv-events: 60; --zv-markers: 70; --zv-markers-hover: 75; --zv-labels: 80; --zv-fx: 90; --zv-interaction: 100;
-  }
   /* ---------- 工具栏（桌面 48 / 手机 44，一行，不横向滚动） ---------- */
   header { display: flex; flex-wrap: nowrap; gap: var(--sp-4); align-items: center; min-height: var(--bar-h); padding-right: calc(var(--sp-5) + var(--hostbar-w, 0px)) !important; padding-left: calc(var(--sp-5) + var(--hostbar-l, 0px)) !important; box-sizing: border-box; padding: 0 var(--sp-5);
     background: var(--surface-glass); border-bottom: 1px solid var(--line); position: relative; z-index: var(--zu-header);
@@ -212,7 +160,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #crumbs a:hover { text-decoration: underline; }
   #crumbs a:active { opacity: .6; }
   #crumbs .sep { color: var(--muted); }
-  #crumbs b { font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-shadow: var(--glow-text); }
+  #crumbs b { font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   #crumbs b:focus { outline: none; }
   /* 按钮：高 32（手机 36），1 px 描边，透明底；悬停 --surface-2 + --line-strong；按下 scale(.97)；选中 / 展开 = 强调色 */
   .btn { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-3); height: 32px; box-sizing: border-box; padding: 0 var(--sp-5);
@@ -232,7 +180,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     cursor: pointer; transition: background var(--dur-1), transform var(--dur-1); }
   .seg button:not(.on):hover { background: var(--surface-2); }
   .seg button:active { transform: scale(.97); }
-  .seg button.on { background: var(--accent); color: var(--on-accent); font-weight: 700; box-shadow: var(--glow); }
+  .seg button.on { background: var(--accent); color: var(--on-accent); font-weight: 700; }
   #langSeg button { min-width: 36px; }
   /* 档位旁的加载状态：数字用等宽；✓ 已加载在遮罩消失后才出现，1.5 秒后淡成 --muted */
   #tierState { font: var(--fs-small)/1.5 var(--font-ui); font-variant-numeric: tabular-nums; color: var(--muted); min-width: 5.5em; white-space: nowrap; transition: color var(--dur-3); }
@@ -350,10 +298,8 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #layers button small { display: block; font: 400 var(--fs-micro)/1.4 var(--font-ui); color: var(--muted); }
   #layers button:not(:disabled):hover { background: var(--surface-2); }
   #layers button:not(:disabled):active { transform: scale(.97); }
-  #layers button.on { background: var(--accent-weak); box-shadow: inset 3px 0 0 var(--accent); color: var(--accent); font-weight: 700; text-shadow: var(--glow-text); }
+  #layers button.on { background: var(--accent-weak); box-shadow: inset 3px 0 0 var(--accent); color: var(--accent); font-weight: 700; }
   #layers button:disabled { opacity: .45; cursor: default; }
-  /* 中层选中项：字用 --ink，不叠色差重影；霓虹粉留给左线和底（E5 r3 无障碍 F-12 / F-10：触屏实底上粉字只有 4.09:1） */
-  body[data-glow="1"] #layers button.on { color: var(--ink); text-shadow: none; }
   /* 层按钮上的标记：6 px 红点 = 当前地点在这一层；胶囊角标 = 这一层未解除的事态数（全站唯一的红） */
   #layers .hd { display: none; width: 6px; height: 6px; margin-left: var(--sp-3); border-radius: 50%; background: var(--alert); vertical-align: 2px; }
   #layers button.here .hd { display: inline-block; }
@@ -377,7 +323,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   /* ---------- 加载进度：顶部 3 px 细条 + 实底提示条 ---------- */
   #prog { position: absolute; left: 0; right: 0; top: 0; height: 3px; z-index: var(--zu-prog); background: var(--line); }
   #prog[hidden] { display: none; }
-  #prog i { display: block; height: 100%; width: 0; background: var(--accent); box-shadow: var(--glow); transition: width var(--dur-2); }
+  #prog i { display: block; height: 100%; width: 0; background: var(--accent); transition: width var(--dur-2); }
   #loading { position: absolute; inset: 0; z-index: var(--zu-loading); display: grid; place-items: center; background: var(--bg); color: var(--ink); transition: opacity var(--dur-3); }
   #loading.done { opacity: 0; pointer-events: none; }
   #loading.over, #loading.dock { background: transparent; pointer-events: none; }
@@ -415,7 +361,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   body.noroutes .routes { visibility: hidden; }   /* OSD 给叠加层写内联 display，所以用 visibility */
   /* 标记：针脚默认强调色，当前地点 --alert 加脉冲；标签 = 深色胶囊（--map-label-*，两种主题都深） */
   .mk { position: relative; z-index: var(--zv-markers); transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none; }
-  .mk .pin { margin: 0 auto; width: 14px; height: 14px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); border: 2px solid var(--map-label-ink); box-shadow: var(--sh-1), 0 1px 4px #000a; }
+  .mk .pin { margin: 0 auto; width: 14px; height: 14px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--map-pin); border: 2px solid var(--map-label-ink); box-shadow: var(--sh-1), 0 1px 4px #000a; }
   .mk .lab { width: max-content; margin: 0 auto var(--sp-2); padding: 2px var(--sp-4); border-radius: var(--r-pill); background: var(--map-label-bg); border: 1px solid var(--map-label-line);
     font: 500 var(--fs-small)/1.5 var(--font-ui); white-space: nowrap; color: var(--map-label-ink); box-shadow: var(--sh-1); }
   .mk .lab small { font-size: max(var(--fs-micro), .85em); opacity: .82; }
@@ -428,7 +374,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .mk.fogged { opacity: .45; } .mk.fogged .lab { visibility: hidden; } .mk.fogged:hover .lab, .mk.fogged:focus-visible .lab { visibility: visible; }
   .mk.here::after { content: ''; position: absolute; bottom: -6px; left: 50%; width: 22px; height: 22px; margin-left: -13px; border-radius: 50%; border: 2px solid var(--alert); animation: pulse 1.4s infinite; will-change: transform, opacity; }
   @media (prefers-reduced-motion: reduce) { .mk.here::after { animation: none !important; transform: scale(1.2); opacity: .6; } }
-  .mk.active .lab { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .mk.active .lab { outline: 2px solid var(--map-select); outline-offset: 1px; }
   .mk:focus-visible, .ev:focus-visible { outline: none; }
   .mk:focus-visible .lab { outline: 2px solid var(--focus); outline-offset: 2px; }
   @keyframes pulse { 0% { transform: scale(.4); opacity: .9; } 100% { transform: scale(1.8); opacity: 0; } }

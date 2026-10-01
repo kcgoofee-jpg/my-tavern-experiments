@@ -165,21 +165,22 @@ test('纯度机检：核心模块不碰 DOM / 全局 / 存储 / 网络', () => {
 
 // ---------- 阶段 2（查看器）：CSS 镜像与字面量清零 ----------
 const viewerSrc = () => readFileSync(new URL('../map/viewer.html', import.meta.url), 'utf8');
+const tokensSrc = () => readFileSync(new URL('../map/ui/tokens.css', import.meta.url), 'utf8');   // S7-2: the ladder lives in tokens.css
 
-test('viewer.html 的 --zv-* 与 core 槽位阶梯一一对应（CSS 镜像对拍）', () => {
-  const html = viewerSrc(), root = html.slice(html.indexOf('--zv-osd'), html.indexOf('--zv-interaction') + 40);
+test('tokens.css 的 --zv-* 与 core 槽位阶梯一一对应（CSS 镜像对拍）', () => {
+  const html = tokensSrc(), root = html.slice(html.indexOf('--zv-osd'), html.indexOf('--zv-interaction') + 40);
   for (const slot of SLOTS) {
     const m = root.match(new RegExp(`--zv-${slot.replace('-', '-')}:\\s*(\\d+)`));
-    assert.ok(m, `viewer.html 缺 --zv-${slot}`);
+    assert.ok(m, `tokens.css 缺 --zv-${slot}`);
     assert.equal(+m[1], slotZ(slot), `--zv-${slot} 必须等于 slotZ('${slot}')`);
   }
   assert.ok(+root.match(/--zv-markers-hover:\s*(\d+)/)[1] > slotZ('markers'), '悬停图钉要高于 markers 槽位');
 });
 
 test('外层固定 UI 阶梯有名义常量；viewer.html 不再出现裸 z-index 字面量', () => {
-  const html = viewerSrc();
+  const html = viewerSrc(), tok = tokensSrc();
   for (const v of ['--zu-header', '--zu-pop', '--zu-setpop', '--zu-dock', '--zu-loading', '--zu-estate', '--zu-snap', '--zu-cover', '--zu-foot', '--zu-hint', '--zu-prog', '--zu-sheet-sticky', '--zu-layers'])
-    assert.ok(html.includes(v + ':'), `缺外层阶梯常量 ${v}`);
+    assert.ok(tok.includes(v + ':'), `缺外层阶梯常量 ${v}`);
   const decls = [...html.matchAll(/z-index:\s*([^;}]+)/g)].map(m => m[1].trim());
   assert.ok(decls.length >= 17, '阶梯声明应全部保留');
   for (const d of decls) assert.match(d, /^var\(--z[uv]-/, `裸 z-index 字面量：${d}`);
@@ -232,10 +233,10 @@ test('叠加物栈序归阶梯常量：雾不再 prepend，路线 / 雾 / 事态
   assert.match(html, /#fogCv \{ z-index: var\(--zv-fog\); \}/);
   assert.match(html, /\.routes \{[^}]*z-index: var\(--zv-routes\)/);
   assert.match(html, /\.barriers, \.tc-ring \{ z-index: var\(--zv-base\); \}/);
-  assert.match(readFileSync(new URL('../map/events-view.mjs', import.meta.url), 'utf8'), /\.ev\{z-index:var\(--zv-events,60\)\}/);
+  assert.match(readFileSync(new URL('../map/events-view.mjs', import.meta.url), 'utf8'), /\.ev\{z-index:var\(--zv-events\)\}/);
   const trips = readFileSync(new URL('../map/trips-view.mjs', import.meta.url), 'utf8');
-  assert.equal((trips.match(/var\(--zv-trips,50\)/g) || []).length, 2, 'trip SVG 与落点都归 trips 槽');
-  assert.match(readFileSync(new URL('../map/characters-view.mjs', import.meta.url), 'utf8'), /z-index:calc\(var\(--zv-markers,70\) \+ 1\)/);
+  assert.equal((trips.match(/var\(--zv-trips\)/g) || []).length, 2, 'trip SVG 与落点都归 trips 槽');
+  assert.match(readFileSync(new URL('../map/characters-view.mjs', import.meta.url), 'utf8'), /z-index:calc\(var\(--zv-markers\) \+ 1\)/);
 });
 
 

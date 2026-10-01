@@ -1,6 +1,7 @@
 // 宿主实例的生命周期：接管旧实例（幂等注入）、挂面板 DOM、事件监听登记与「死亡」标记、清理钩子（C2 第 4 步从 eden-map.js 拆出，行为不变）。
 // cleanup 本身仍在入口组装（它要停入口里的计时器 / 观察器），这里只负责登记到 window.parent.__edenMapCleanup 与 pagehide。
 import { fnOk, thFn } from './host-tavernhelper.mjs';
+import { hostTokensCss } from './host-tokens.mjs';
 
 /** 换版本 / 关脚本时旧实例必须彻底停掉（2026-09-27 接手 review P1）。所有 eventOn 走 listen 登记句柄；kill() 之后旧实例的所有出口都变成空操作。 */
 export function createLife() {
@@ -38,14 +39,10 @@ export function mount(pdoc, ID, scriptOwner) {
   root.id = ID; root.setAttribute('data-eden-owner', scriptOwner);
   root.innerHTML = `
 <style>
-  /* 设计令牌（map/ui/tokens.css 的同名值；宿主页里不另发请求，所以内联一份）：唯一的金 #e6c36a、唯一的红 #ff5a5a；面板跟随地图的深 / 浅主题（E5） */
-  #${ID} { --em-gold: #e6c36a; --em-alert: #ff5a5a; --em-on-alert: #1a0606; --em-ok: #7bd88f; --em-focus: #63b4be;
-    --em-bg: #151b20; --em-surface-2: rgba(255,255,255,.06); --em-line: rgba(255,255,255,.12); --em-line-2: rgba(255,255,255,.22); --em-ink: #d5dde4; --em-muted: #8591a0; --em-accent: #e6c36a; --em-on-accent: #1a1406;
-    --em-font: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", system-ui, sans-serif; }
-  #${ID}.em-light { --em-bg: #f8f5ee; --em-surface-2: rgba(20,23,26,.05); --em-line: rgba(20,23,26,.16); --em-line-2: rgba(20,23,26,.26); --em-ink: #1b1a17; --em-muted: #635e54;
-    --em-accent: #7a5d22; --em-on-accent: #fff; --em-alert: #c0392b; --em-on-alert: #fff; --em-ok: #23733b; --em-focus: #2d6c75; }
+  /* 设计令牌（map/ui/tokens.css 的同名值；宿主页里不另发请求，所以内联一份，见 host-tokens.mjs）：唯一的金、唯一的红；面板跟随地图的深 / 浅主题（E5） */
+  ${hostTokensCss(ID)}
   /* 自检小提示：跟着面板的深 / 浅主题（v0.9.5，之前写死深色） */
-  #${ID} .em-ctoast { position: fixed; left: 50vw; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 76px); z-index: 30002; max-width: min(420px, 92vw); box-sizing: border-box;
+  #${ID} .em-ctoast { position: fixed; left: 50vw; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 76px); z-index: var(--zh-toast); max-width: min(420px, 92vw); box-sizing: border-box;
     padding: 10px 40px 10px 14px; border-radius: 10px; background: var(--em-bg); color: var(--em-ink); border: 1px solid var(--em-accent); box-shadow: 0 6px 20px rgba(0,0,0,.35); font: 12px/1.55 var(--em-font); }
   #${ID} .em-ctoast b { color: var(--em-accent); }
   #${ID} .em-ctoast button { position: absolute; right: 4px; top: 4px; width: 44px; height: 44px; border: 0; background: none; color: var(--em-muted); font: 18px/1 system-ui; cursor: pointer; }
@@ -59,11 +56,11 @@ export function mount(pdoc, ID, scriptOwner) {
   #${ID} .em-ctoast .em-acts button:first-child { background: var(--em-accent); border-color: var(--em-accent); color: var(--em-on-accent); font-weight: 700; }
   #${ID} :focus-visible { outline: 2px solid var(--em-focus); outline-offset: 2px; }
   /* 只用视口单位定位：酒馆的 <html> 带 transform，会成为 fixed 的包含块且高度为 0 */
-  #${ID} .em-fab { position: fixed; left: calc(100vw - 66px); top: calc(100vh - 144px); top: calc(100dvh - 144px); z-index: 30000; width: 48px; height: 48px; border-radius: 50%;
-    border: 1px solid rgba(230,195,106,.7); background: rgba(21,27,32,.92); color: var(--em-gold); cursor: pointer;
-    box-shadow: 0 6px 20px rgba(0,0,0,.35); display: grid; place-items: center; touch-action: none; transition: transform 120ms; }
+  #${ID} .em-fab { position: fixed; left: calc(100vw - 66px); top: calc(100vh - 144px); top: calc(100dvh - 144px); z-index: var(--zh-fab); width: 48px; height: 48px; border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--gold) 70%, transparent); background: var(--glass-1); color: var(--em-gold); cursor: pointer;
+    box-shadow: var(--elev-panel); display: grid; place-items: center; touch-action: none; transition: transform 120ms; }
   #${ID} .em-fab:active { transform: scale(.97); }
-  #${ID}.em-yield .em-fab { z-index: 10040; }
+  #${ID}.em-yield .em-fab { z-index: var(--zh-yield); }
   #${ID}.em-dbui .em-fab { display: none; }
   #${ID} .em-fab svg { width: 24px; height: 24px; }
   /* 后台预加载：面板照常排版但不可见、不接收点击，地图在里面把首屏加载进缓存 */
@@ -85,14 +82,14 @@ export function mount(pdoc, ID, scriptOwner) {
     font: 12px/1.5 var(--em-font); box-shadow: 0 6px 20px rgba(0,0,0,.3); pointer-events: none; }
   #${ID} .em-tip.em-tip-r { right: auto; left: 56px; }   /* 悬浮按钮在左半边（左手）：提示朝右 */
   #${ID} .em-fab.here::after { content: ''; position: absolute; right: 4px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background: #ff5a5a; box-shadow: 0 0 0 2px #151b20; }
-  #${ID} .em-panel { position: fixed; z-index: 30001; left: 50vw; top: 50vh; top: 50dvh; transform: translate(-50%, -50%);
+  #${ID} .em-panel { position: fixed; z-index: var(--zh-panel); left: 50vw; top: 50vh; top: 50dvh; transform: translate(-50%, -50%);
     width: min(1200px, 94vw); height: min(820px, 88vh); height: min(820px, 88dvh); grid-template-columns: minmax(0, 1fr); background: var(--em-bg); border: 1px solid var(--em-line-2); color: var(--em-ink); font-family: var(--em-font);
     border-radius: 12px; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.38), 0 24px 64px rgba(0,0,0,.3); display: grid; grid-template-rows: 1fr;
     contain: layout paint style; }   /* 面板内的重排、重绘不波及酒馆页面 */
   #${ID} .em-panel[hidden] { display: none; }
   /* 标题栏（44）：标题 · 当前地点 · 线路 · 关闭 */
   /* UI v2 合并顶栏（spec §2.1）：宿主栏只留 当前地点胶囊 + ✕，浮在查看器顶栏右端（查看器按 eden-map:hostbar 的宽度让位）；标题、线路交给查看器 */
-  #${ID} .em-bar { position: absolute; z-index: 3; top: 0; right: 0; max-width: 62%; display: flex; align-items: center; gap: 10px; min-height: 44px; box-sizing: border-box; padding: 0 6px 0 14px; color: var(--em-ink); font-size: 13px;
+  #${ID} .em-bar { position: absolute; z-index: var(--zh-bar); top: 0; right: 0; max-width: 62%; display: flex; align-items: center; gap: 10px; min-height: 44px; box-sizing: border-box; padding: 0 6px 0 14px; color: var(--em-ink); font-size: 13px;
     border-bottom: 0; }
   #${ID} .em-bar .em-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   #${ID} .em-bar .em-line { display: none !important; }
@@ -118,7 +115,7 @@ export function mount(pdoc, ID, scriptOwner) {
   #${ID} .em-bar .em-tl-btn.on { color: var(--em-accent); }
   #${ID} .em-bar .em-tl-btn[hidden] { display: none; }
   #${ID} .em-bar .em-tl-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
-  #${ID} .em-tl { position: absolute; left: 50%; transform: translateX(-50%); bottom: 14px; z-index: 4; display: flex; align-items: center; gap: 10px; width: min(86%, 520px); padding: 8px 14px; border-radius: 999px;
+  #${ID} .em-tl { position: absolute; left: 50%; transform: translateX(-50%); bottom: 14px; z-index: var(--zh-tl); display: flex; align-items: center; gap: 10px; width: min(86%, 520px); padding: 8px 14px; border-radius: 999px;
     background: var(--em-bg); border: 1px solid var(--em-accent); box-shadow: 0 6px 20px rgba(0,0,0,.35); font: 12px/1.4 var(--em-font); color: var(--em-ink); box-sizing: border-box; }
   #${ID} .em-tl[hidden] { display: none; }
   #${ID} .em-tl .em-tl-l { flex: none; color: var(--em-accent); font-weight: 700; }
@@ -137,7 +134,7 @@ export function mount(pdoc, ID, scriptOwner) {
   #${ID} .em-load { position: absolute; inset: 0; display: grid; place-items: center; background: var(--em-bg); color: var(--em-ink); font-size: 13px; }
   #${ID} .em-load[hidden] { display: none; }
   /* 线路选择（首次使用时弹出；标题栏「线路」可重新选） */
-  #${ID} .em-pick { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; background: var(--em-bg); color: var(--em-ink); padding: 16px; }
+  #${ID} .em-pick { position: absolute; inset: 0; z-index: var(--zh-pick); display: grid; place-items: center; background: var(--em-bg); color: var(--em-ink); padding: 16px; }
   #${ID} .em-pick[hidden] { display: none; }
   #${ID} .em-pick h3 { margin: 0 0 6px; font-size: 17px; text-align: center; }
   #${ID} .em-pick p { margin: 0 0 16px; color: var(--em-muted); font-size: 13px; text-align: center; }
