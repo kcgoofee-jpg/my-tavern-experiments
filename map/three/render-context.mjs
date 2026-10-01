@@ -2,6 +2,8 @@
 // 收口三件事：像素比（手机 / 省流封顶）、上下文丢失与恢复（今天丢了就整个页面黑掉）、真正的拆（dispose + forceContextLoss）。
 // 这里刻意不 import three：THREE 由调用方传进来（子页的 importmap 各自解析；本模块因此可以在 node 里直接测）。
 
+import { depthBits } from './depth-fit.mjs';
+
 export const TIERS = { low: { dpr: 1.25, antialias: false }, mid: { dpr: 2, antialias: true }, high: { dpr: 0, antialias: true } };   // dpr 0 = 不封顶，用满物理像素比
 
 /** 像素比上限：档位封顶 × 画质设置（1 省电 = 1 倍，2 清晰 = 2 倍，其余按档位） */
@@ -24,7 +26,7 @@ export function createRenderer({ THREE, canvas, tier = 'mid', quality = '', alph
   const dpr0 = pickDpr(tier, quality, globalThis.devicePixelRatio || 1);
   const renderer = new THREE.WebGLRenderer({
     canvas, antialias: (TIERS[tier] || TIERS.mid).antialias,
-    alpha, stencil: false,
+    alpha, stencil: true,   // stencil:true 逼 WebKit 分配 24 位深度 + 8 位模板（false 时是 16 位深度，共面的面会逐帧闪，N12）
     powerPreference: powerPreference || (tier === 'low' ? 'low-power' : 'high-performance'),
   });
   renderer.setPixelRatio(dpr0);
@@ -54,7 +56,7 @@ export function createRenderer({ THREE, canvas, tier = 'mid', quality = '', alph
       try { renderer.forceContextLoss?.(); } catch (e) {}
       return true;
     },
-    stats() { return { ...st, dpr0, tier }; },
+    stats() { return { ...st, dpr0, tier, depth: depthBits(renderer.getContext?.()) }; },
   };
   return ctx;
 }

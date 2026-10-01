@@ -93,7 +93,7 @@ import { Estate3D } from '../core/scene3d-manifest.mjs';   // Estate3D Manifest 
 import { nsKey } from '../core/pack.mjs';   // 通用化 v1：本机键按包换前缀（edenMapLang / 画质 / 提示卡……），与查看器同一规则
 import { createRenderGate, wireVisibility } from '../core/render-gate.mjs';   // Part 7-4：页面隐藏时渲染循环整个停掉
 // Part 3：共享三维运行时（上下文 / 剔除 / LOD / 实例化 / 贴图预算）——全仓只有 render-context.mjs 里 new WebGLRenderer
-import { createRenderer as createGpu, governor as createGovernor, pickDpr } from 'engine3d/render-context.mjs';
+import { createRenderer as createGpu, governor as createGovernor, pickDpr } from 'engine3d/render-context.mjs'; import { fitNearFar, applyNearFar, depthLabel, sphereOfBox } from 'engine3d/depth-fit.mjs';   // N12：near / far 贴合场景 + 深度位数读数
 import { prepare as prepareCulling } from 'engine3d/culling.mjs';
 import { createLodController } from 'engine3d/lod-controller.mjs';
 import { batch as batchInstances, writeMatrices } from 'engine3d/instancing.mjs';
@@ -528,7 +528,7 @@ function setup(sc, opt = {}) {
   FRAME.c = c; FRAME.R = R;
   computeStart();   // 「复位视野」的机位永远对应当前这一档的取景框（LOD 换档后仍然对）
   if (opt.reframe !== false) frameStart();   // LOD 换档时沿用当前视角，不把镜头拽回去
-  SITE.setFromObject(root); SITE.expandByScalar(-2);
+  SITE.setFromObject(root); SCENE_SPH = sphereOfBox(SITE); SITE.expandByScalar(-2);
   const s = MAN.section; if (s) { const r = $('#cutH'); r.min = s.min; r.max = s.max; r.value = s.default; showCut(); }
   controls.update(); setMode(mode);
   setupInstancing(); setupCulling();   // Part 3 §4：静态件合批 + 显式打开视锥体裁剪并重算包围体
@@ -609,7 +609,7 @@ function frameStart() {
   if (!computeStart()) return;
   controls.target.copy(START.t); camera.position.copy(START.p); controls.update(); dirty = true;
 }
-const START = { p: new THREE.Vector3(), t: new THREE.Vector3() }, SITE = new THREE.Box3();
+const START = { p: new THREE.Vector3(), t: new THREE.Vector3() }, SITE = new THREE.Box3(); let SCENE_SPH = null;   // 整个场景的包围球（near / far 取景）
 function disposeRoot() {
   if (!root) return;
   try { instState.batch?.unbatch?.(); } catch (e) {}
@@ -842,9 +842,9 @@ function frame(now) {
   if (flowOn) { stepFlows(now); dirty = true; }
   if (mode === 'xray') { const d = camera.position.clone().sub(U.uCenter.value); d.y = 0; if (d.lengthSq() > 1e-6) U.uCamDir.value.copy(d.normalize()); }
   if (FPS_ON) { FT.push(dt); if (FT.length > 600) FT.shift();
-    const f = $('#fps'); f.hidden = false; f.textContent = `${(1000 / (FT.slice(-30).reduce((a, b) => a + b, 0) / Math.min(30, FT.length))).toFixed(0)} fps · ${TIER} · dpr ${renderer.getPixelRatio()}`; }
+    const f = $('#fps'); f.hidden = false; f.textContent = `${(1000 / (FT.slice(-30).reduce((a, b) => a + b, 0) / Math.min(30, FT.length))).toFixed(0)} fps · ${TIER} · ${depthLabel(renderer.getContext())} · dpr ${renderer.getPixelRatio()}`; }
   if (!dirty || !root) return;
-  dirty = false;
+  dirty = false; if (SCENE_SPH) applyNearFar(camera, fitNearFar({ ...SCENE_SPH, eye: camera.position, kind: 'persp', minNear: 0.25 }));
   renderer.clear();
   if (bdMesh.visible) renderer.render(bdScene, bdCam);   // 底图（转场时才可见）
   renderer.render(scene, camera); placePins();
@@ -903,7 +903,7 @@ window.__viewer3dProbe = {
       if (now - t0 < ms) requestAnimationFrame(tick); else res(out.slice(2)); };
     requestAnimationFrame(tick); }); },
   home() { tween = null; camera.position.copy(START.p); controls.target.copy(START.t); controls.update(); dirty = true; },
-  view(p, tg) { camera.position.set(...p); controls.target.set(...tg); controls.update(); dirty = true; },
+  view(p, tg) { camera.position.set(...p); controls.target.set(...tg); controls.update(); dirty = true; }, get camera() { return camera; }, get canvas() { return renderer.domElement; }, renderNow() { renderer.clear(); renderer.render(scene, camera); },   // N12 探针：固定相机强制渲染
   // 测试探针（相机控制回归，U，2026-09-28）：只读，不改变行为
   get camDist() { return camera.position.distanceTo(controls.target); },
   get target() { return controls.target.toArray(); },

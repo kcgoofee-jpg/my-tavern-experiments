@@ -17,7 +17,7 @@ const $ = (s) => document.querySelector(s);
 const t0 = performance.now();
 
 /* ---------------- 渲染器 ---------------- */
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, stencil: true, powerPreference: 'high-performance' });
 const BASE_DPR = Math.min(devicePixelRatio, COARSE ? 1.75 : 2);
 renderer.setPixelRatio(BASE_DPR);
 renderer.setSize(innerWidth, innerHeight);

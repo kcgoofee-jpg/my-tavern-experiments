@@ -309,6 +309,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 |---|---|
 | `culling.mjs` | 静态矩阵与实例化网格的视锥裁剪和包围体。 |
 | `daynight.mjs` | 动态昼夜：世界时钟换成四时段光照、雾、自发光参数并平滑过渡。 |
+| `depth-fit.mjs` | 深度缓冲取景：按场景包围球和相机距离算 near / far（每帧重算），并提供深度 / 模板位数读数给调试叠层。 |
 | `instancing.mjs` | 静态网格的 GPU 实例化，带实例到原网格的索引表。 |
 | `lod-controller.mjs` | 把 `core/lod.mjs` 的决策接到 three 场景上的动态 LOD 控制器。 |
 | `particles.mjs` | `fx` 槽位的粒子渲染器（天气、极光）：一种效果一次 draw call，描述符由调用方注册。 |
@@ -463,6 +464,7 @@ S8-3 加上宿主送值的来源：宿主读包的图层点名的卡变量（`pr
 |---|---|
 | `check_maps.py`、`check_pack.py` | 地图注册表 / 标记 / 瓦片一致性；设定包清单对 schema。 |
 | `check_architecture.py` | 下面八道看门狗防线加只减不增账本。 |
+| `tools/audit_coplanar.mjs` | 按需运行的 glb 审计（不在冒烟里）：找距离小于 0.03 m 的近共面重叠面，也就是 z-fighting 的几何来源。探针：`tools/browser/estate_flicker.mjs`。 |
 | `check_stage_a_grep.py` | 计划 §8 的卡词 grep，扫 `map/` 里设定包数据与资产之外的全部内容；只有 `tools/stage_a_grep_allow.txt` 里登记的行（S10）允许命中。 |
 | `test_architecture_gate.py` | 证明看门狗咬得住（违规被拦、允许的写法放行、扫描面不为空）。 |
 | `check_tree_hygiene.py`、空文件守卫 | 不留大的未跟踪文件，不留 0 字节的已跟踪源文件。 |

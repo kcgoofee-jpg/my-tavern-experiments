@@ -330,6 +330,7 @@ fake THREE.
 |---|---|
 | `culling.mjs` | Frustum culling and bounding volumes for static matrices and instanced meshes. |
 | `daynight.mjs` | Dynamic day / night: world clock to four-period lighting, fog and emissive parameters with smoothing. |
+| `depth-fit.mjs` | Depth-buffer fitting: near / far from the scene bounding sphere and camera distance (recomputed every frame), plus depth / stencil bit read-out for the debug overlay. |
 | `instancing.mjs` | GPU instancing of static meshes with an instance-to-mesh index map. |
 | `lod-controller.mjs` | Dynamic LOD controller applying `core/lod.mjs` decisions to a three scene. |
 | `particles.mjs` | `fx` slot particle renderer (weather, aurora): one draw call per effect, descriptors registered by the caller. |
@@ -550,6 +551,7 @@ includes the English card words (`EN_TERMS`, case-sensitive).
 |---|---|
 | `check_maps.py`, `check_pack.py` | Map registry / marker / tile consistency; pack manifests against the schema. |
 | `check_architecture.py` | The eight watchdog checks below plus the ratchet ledger. |
+| `tools/audit_coplanar.mjs` | On-demand glb audit (not in smoke): near-coplanar overlapping faces closer than 0.03 m, the geometric source of z-fighting. Probe: `tools/browser/estate_flicker.mjs`. |
 | `check_stage_a_grep.py` | The plan §8 card-term grep over the whole of `map/` outside pack data and assets; only the lines listed in `tools/stage_a_grep_allow.txt` (S10) may match. |
 | `test_architecture_gate.py` | Proves the watchdog bites (violations caught, allowed forms pass, scan surface not empty). |
 | `check_tree_hygiene.py`, empty-file guard | No large untracked files, no zero-byte tracked sources. |

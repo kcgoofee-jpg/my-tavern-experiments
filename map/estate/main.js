@@ -11,6 +11,8 @@ import { nodePictures } from '../core/pack-media.mjs';   // 设定包图片（K-
 import { roomCustomBlockHTML, bindRoomCustomEvents, getCustomName, setGalleryChatId } from '../ui/room-gallery-panel.js';
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer } from '../ui/camera-controls.js';
 import { Estate3D } from '../core/scene3d-manifest.mjs';   // Estate3D Manifest 标准契约（P3-A）：清单校验 / 路径解析 / describe 摘要
+import { createRenderer as createGpu } from '../three/render-context.mjs';   // 全仓唯一的渲染器工厂（stencil:true → WebKit 上 24 位深度，N12）
+import { fitNearFar, applyNearFar, depthLabel, sphereOfBox } from '../three/depth-fit.mjs';   // N12：near / far 贴合场景；调试叠层显示深度位数
 import { createRenderGate, wireVisibility } from '../core/render-gate.mjs';   // Part 7-4：页面隐藏时渲染循环整个停掉
 import { spots as stashSpots, placeOf, propGlow, describe as describeStash, PROP_R } from '../core/stash3d.mjs';   // Part 8-1：世界藏物表 → 三维落点（纯映射）
 import { createWalker, tickClock, DEFAULT_ROUND_MS } from '../core/walk.mjs';   // Part 8-2：确定性时钟 + 三维插值（NPC 不瞬移）
@@ -62,7 +64,7 @@ if (LS('edenMap3dQ') === '1') document.documentElement.classList.add('noblur'); 
 let lowRes = false;
 
 /* ---------------- 渲染器（烘焙光照：MeshBasic，无色调映射；室内体量用 Lambert + 两盏灯） ---------------- */
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance', stencil: false });
+const renderer = createGpu({ THREE, canvas: document.createElement('canvas'), tier: 'mid', alpha: true, powerPreference: 'high-performance' }).renderer;   // 抗锯齿开、不透明度通道开、stencil 在工厂里（强制 24 位深度）
 renderer.setPixelRatio(DPR); renderer.setSize(innerWidth, innerHeight); renderer.setClearColor(0x000000, 0);
 renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.NoToneMapping; renderer.localClippingEnabled = true;
 app.prepend(renderer.domElement);
@@ -224,8 +226,9 @@ function paintSky() {
   if (cloudMat) { const L = THEME === 'light'; cloudMat.uniforms.cHi.value.set(L ? '#fdfbf6' : '#cfc8bd'); cloudMat.uniforms.cLo.value.set(L ? '#d3dbe4' : '#7a7d8a'); cloudMat.uniforms.cFar.value.set(hor); }
   needs = true;
 }
+let SPH = null;   // 整岛包围球（near / far 取景用，addBackdrop 里量一次）
 function addBackdrop(root) {
-  const bb = new THREE.Box3().setFromObject(root);
+  const bb = new THREE.Box3().setFromObject(root); SPH = sphereOfBox(bb);
   cloudMat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false,
     uniforms: { cHi: { value: new THREE.Color() }, cLo: { value: new THREE.Color() }, cFar: { value: new THREE.Color() }, R: { value: 1900 } },
@@ -329,7 +332,7 @@ function attachAurora() {
   if (!m) return;
   if (m.parent !== camera) camera.add(m);
   const w = (camera.right - camera.left) / camera.zoom, h = (camera.top - camera.bottom) / camera.zoom;
-  m.position.set(0, h * .34, -600);
+  m.position.set(0, h * .34, -(camera.near + 5));   // 紧贴近平面（加法混合、不写深度，原先 600 m 处；near 贴合场景后 600 m 在近平面之内会被裁掉）
   m.scale.set(w * 1.3 / 1100, h * .62 / 360, 1);
 }
 // 背面（剖开的墙内侧）涂深色：剖切时看起来像墙体截面
@@ -1101,14 +1104,20 @@ function loop(now) {
   if (lowRes && !down && !pinch && now - lastInteract > 150) setLowRes(false);
   if (!(needs || moving || STATS)) return;
   needs = false;
-  adapt(now, moving);
+  adapt(now, moving); fitDepth();
   renderer.render(scene, camera); lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
   labelR.render(scene, camera); cullLabels();
   if (cardFor && !cardAt) placeCard();
   frames++;
   if (first) { first = false; onFirstFrame(); }
   if (resumeT) { window.__estate.resumeFrameMs = performance.now() - resumeT; resumeT = 0; }
-  if (STATS && now - fpsT > 500) { fps = frames * 1000 / (now - fpsT); frames = 0; fpsT = now; statsEl.textContent = `T${tier} · ${fps.toFixed(0)} fps\n${lastInfo.calls} calls\n${(lastInfo.triangles / 1000).toFixed(0)}k tris\n${STAT.site}${STAT.house ? ' + ' + STAT.house : ''}`; }
+  if (STATS && now - fpsT > 500) { fps = frames * 1000 / (now - fpsT); frames = 0; fpsT = now; statsEl.textContent = `T${tier} · ${fps.toFixed(0)} fps · ${depthLabel(renderer.getContext())}\n${lastInfo.calls} calls\n${(lastInfo.triangles / 1000).toFixed(0)}k tris\n${STAT.site}${STAT.house ? ' + ' + STAT.house : ''}`; }
+}
+/** near / far 贴合整岛包围球（正交深度线性：range 越小分辨率越高）；缩得很远时云海要看到更深，远侧按视野放宽。随缩放 / 视角 / 平移每帧重算，变化小于 0.5 m 不动投影 */
+function fitDepth() {
+  if (!SPH) return;
+  const view = (camera.top - camera.bottom) / camera.zoom;
+  if (applyNearFar(camera, fitNearFar({ ...SPH, eye: camera.position, kind: 'ortho', farExtra: Math.min(2000, view * 1.2) }))) attachAurora();
 }
 // 自适应清晰度：连续动画 / 拖动时统计 2 秒，帧率 < 30 就把像素比降到 1.5（只降一次）
 let adT = 0, adN = 0;
@@ -1138,7 +1147,7 @@ window.__estate = {
   find: (n) => { const it = findByName(n); return it ? { kind: it.kind, name: it.d.name, id: it.d.id, floor: it.floor != null ? FLOORS[it.floor].id : null } : null; },
   focusCard: (c) => focusRoomMsg(c.name, c), mode: () => mode, houseState: () => houseState, pinned: () => pinned && { kind: pinned.kind, name: pinned.d.name, id: pinned.d.id },
   tier: () => tier, dpr: () => DPR, paused: () => paused,
-  stats: () => ({ ...lastInfo, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length, tier, low: LOW, files: STAT, times: TB, firstFrameMs: window.__estate.firstFrameMs, tris: STAT.tris }),
+  stats: () => ({ ...lastInfo, depth: depthLabel(renderer.getContext()), near: camera.near, far: camera.far, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length, tier, low: LOW, files: STAT, times: TB, firstFrameMs: window.__estate.firstFrameMs, tris: STAT.tris }),
   describe: () => Estate3D.describe(MAN, { base: M3D.base }),   // Estate3D 标准摘要（{ id, glbPath, floors, hotspots, budget, license }）
   props: { set: (raw) => { stashRaw = raw && Array.isArray(raw.items) ? raw : null; rebuildProps(); },   // 世界藏物表（探针 / 浏览器测试用）
     taken: (ids) => { propTaken = new Set(ids || []); rebuildProps(); },
@@ -1155,7 +1164,7 @@ window.__estate = {
   dayNight: { setClock: (c) => dayNight.setClock(c), describe: () => ({ ...dayNight.describe(), graded: GRADE_TARGETS.length }) },   // Part 9-1（探针 / 浏览器测试用）
   fx: { set: (type, intensity) => fx3d?.setFXType(type, intensity) || null, describe: () => fx3d?.describe() || null,
     layers: () => FX_REG.describe(), mounted: () => !!fx3d?.object?.parent },                                                        // Part 9-2
-  camera, controls, renderer, scene, setLang,
+  camera, controls, renderer, scene, setLang, fit: fitDepth,   // fit：探针换机位后手动重算 near / far（正式交互走 loop）
 };
 buildNav(); relabel(); frustum();
 const m0 = parseFloor(Q.get('floor')) ?? 'ext';

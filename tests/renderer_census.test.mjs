@@ -8,11 +8,12 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 
 const rd = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 /** 登记在册的建上下文地址（改这里必须同时改上面的说明与新地址的理由）：
- *  这两个三维页还自己 new；通用三维页（props/viewer3d.html）已经改用下面的共享工厂了。 */
-export const RENDERER_SITES = ['map/estate/main.js', 'map/estate/closet/main.js'];
+ *  衣帽间样板间还自己 new（独立页，带 Reflector / 阴影，参数与工厂不同；已显式 stencil:true 拿 24 位深度）；
+ *  通用三维页（props/viewer3d.html）与庄园页（estate/main.js，N12 起）都用下面的共享工厂。 */
+export const RENDERER_SITES = ['map/estate/closet/main.js'];
 export const FACTORY = 'map/three/render-context.mjs';
 /** 已经改用共享工厂的页：不许再自己 new（迁移完成时把它并入 FACTORY 的消费者即可） */
-export const FACTORY_USERS = ['map/props/viewer3d.html'];
+export const FACTORY_USERS = ['map/props/viewer3d.html', 'map/estate/main.js'];
 
 /** 全仓扫一遍 new THREE.WebGLRenderer（跳过 node_modules 与 vendor 的 three 自己） */
 function scan() {
@@ -57,18 +58,25 @@ test('庄园 / 三维子页的退出要真拆：dispose + forceContextLoss（上
   assert.match(v3d, /renderer\.dispose\(\)/);
   assert.match(v3d, /forceContextLoss/);
   const est = rd('map/estate/main.js');
-  assert.match(est, /new\s+THREE\.WebGLRenderer\s*\(/);
-  // 旧庄园页只靠 iframe 被移除回收：这条一旦补上（或换成共享运行时）就改成断言 dispose 存在
-  assert.ok(!/renderer\.dispose\(\)/.test(est), '旧庄园页仍未拆上下文——由宿主侧拆帧负责（见 app/subpage3d-host.mjs 的 dropParked / leaveEstate）');
+  assert.match(est, /render-context\.mjs/, '庄园页走共享工厂（N12）');
+  // 庄园页只靠 iframe 被移除回收：由宿主侧拆帧负责（见 app/subpage3d-host.mjs 的 dropParked / leaveEstate）
+  assert.ok(!/renderer\.dispose\(\)/.test(est));
 });
 
 test('共享工厂是全仓唯一的上下文来源：改用工厂的页不再自己 new', () => {
   for (const f of FACTORY_USERS) {
     const s = rd(f);
-    assert.match(s, /engine3d\/render-context\.mjs/, `${f} 要用共享工厂`);
+    assert.match(s, /render-context\.mjs/, `${f} 要用共享工厂`);
     assert.doesNotMatch(s, /new\s+THREE\.WebGLRenderer\s*\(/, `${f} 已经在用共享工厂，不该再自己建上下文`);
   }
   for (const f of RENDERER_SITES) if (/engine3d\/render-context\.mjs/.test(rd(f))) assert.doesNotMatch(rd(f), /new\s+THREE\.WebGLRenderer\s*\(/, f);
   assert.match(rd(FACTORY), /new\s+THREE\.WebGLRenderer\(/, '工厂自己负责 new');
   assert.match(rd(FACTORY), /forceContextLoss/, '工厂负责真拆');
+});
+
+test('N12：每个 WebGLRenderer 都 stencil:true（WebKit 上 stencil:false = 16 位深度，共面的面逐帧闪）', () => {
+  assert.match(rd(FACTORY), /stencil:\s*true/, '工厂建的都带 stencil');
+  assert.doesNotMatch(rd(FACTORY), /stencil:\s*false/);
+  for (const f of RENDERER_SITES) { const s = rd(f); assert.match(s, /new\s+THREE\.WebGLRenderer\s*\([^)]*stencil:\s*true/, `${f} 自己 new 的也要 stencil:true`); }
+  for (const f of [...RENDERER_SITES, ...FACTORY_USERS]) assert.doesNotMatch(rd(f), /stencil:\s*false/, f);
 });
