@@ -16,7 +16,7 @@
 | 术语 | 含义 | 现状 |
 |---|---|---|
 | **SpatialNode** | 节点树里的一个地点：`{ id, name, alias[], hints[], parent, type, at?, view?, canon }`。这棵树是唯一的地理；匹配取最长别名、优先更深的节点。 | **已有（S1–S3）。** `core/nodes.mjs` 建树、读树；`core/compat-v1.mjs` 在加载时把头两个包的 v1 文件转一次，包里的 `overlay.v2.json` 补上 v1 文件里从没有的东西（城区、城郊）。所有地点都经它解析：当前地点（`app/place-resolver.mjs`）、事态（`core/event-geo.mjs`）、人物与行程端点（`app/spot.mjs`）、注入的空间契约（`tavern/spatial-contract.mjs`）。v1 的解析器 `map/here.mjs` 已删除。schema 2 的包经内核流水线（`core/pack-v2.mjs`）运行；查看器的包加载器目前只收 schema 1，所以 schema 2 的包要到 **S9** 才能在查看器里打开。 |
-| **PresentEntities** | 站在当前节点上的实体（先是人物，之后是任意实体类型），微观层级的人物页用它。 | **部分有。** `map/characters-view.mjs` 与 `tavern/characters-parse.mjs` 从聊天标签和 MVU 变量算出「在场」人物；人物画在哪里由节点树定（`app/spot.mjs`）。基于节点的在场列表**计划在 S6**。 |
+| **PresentEntities** | 站在当前节点上的实体（先是人物，之后是任意实体类型），人物页用它按层级给在场的人分组。 | **已有（S6-1）。** `core/entities.mjs`（`presentAt`、`peopleSections`、`levelMode`），实体由 `map/characters-view.mjs` 已拿到的行建出（`tavern/characters-parse.mjs` 从聊天标签和 MVU 变量算出）；人物画在哪里由节点树定（`app/spot.mjs`）。 |
 | **WorldRoster** | 所有来源里已知的全部实体，合并成一张标准行列表。 | **已有。** `core/roster.mjs`（`RosterRow`、五个来源、优先级仲裁）。属性字段仍是固定槽位；作者自定义的 `entities` 字段表**计划在 S4**。 |
 | **Stash** | 有真实空间归属（哪张图、哪个标记、哪个暗格）的物品，并与玩家已携带的对账。 | **现在有两个存储：** `core/stash.mjs`（包数据里的世界藏物）和聊天变量里的背包（`tavern/stash-store.mjs`）。统一的 `eden_map.stash` **计划在 S6（决定 D4）**。 |
 
@@ -44,7 +44,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 
 ## 3. 模块地图
 
-每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 196 个：`map/core` 49、`map/app` 57、`map/tavern` 54、`map/ui` 9、`map/three` 9、`map/*.mjs` 16，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
+每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 199 个：`map/core` 51、`map/app` 58、`map/tavern` 54、`map/ui` 9、`map/three` 9、`map/*.mjs` 16，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
 
 ### 3.1 map/core
 
@@ -58,6 +58,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `compat-v1-views.mjs` | v1 地图 → v2 视图：世界图 / 点位图各一张 tiles 视图、每个三维地标页一张 model3d 视图、庄园页一张。 |
 | `compat-v1.mjs` | schema 1 → schema 2 的内存转换：已加载的 v1 包（清单与数据文件）变成带内联块的 schema 2 包。纯函数，不取不写任何文件。由下面三个 `compat-v1-*` 文件组成。 |
 | `depth.mjs` | 纵深系统数学（`blender/depth.py` 的 JS 孪生，对拍 golden 文件）：由海拔得纵深、通道插值、某海拔之上的云；`describe` 读探索账本。 |
+| `drawer-tabs.mjs` | 抽屉页签规则（K-R72）：内核页签集合、`tabOrder(ui.tabs)`，以及对抽屉类对象的唯一一套显示 / 隐藏 / 回退顺序（纯函数）。 |
+| `entities.mjs` | 实体协议（K-R71、K-R73）：`personOf` / `eventOf` 适配器、`presentAt`、打开视图的层级（`levelMode`）与在场组的分节（`peopleSections`）（纯函数）。 |
 | `event-geo.mjs` | 事态发生在哪里：地点文字经 `nodes.locate` 落点、画它的那张地图、图钉的位置（纯函数；层、城区、城郊的词全是包数据）；`geo.taxonomy()` 带来包的事件块。 |
 | `events-default.mjs` | 内核的中性事件分类（K-R53）：没有事件块的包显示的内容；关闭词与注入句标签的缺省。 |
 | `exploration-ledger.mjs` | 探索账本（迷雾探索：到过的地点）：对 `{ 地图 id: [地点名] }` 的 `norm` / `visit` / `known` / `count`，宿主与查看器共用。 |
@@ -154,6 +156,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `state.mjs` | 查看器核心状态：当前地图、注册表、OSD 实例、焦点请求。 |
 | `status-dot.mjs` | 状态点：加载 / 档位状态的圆点与读屏标签。 |
 | `subpage3d-host.mjs` | 庄园 / 三维子页宿主：带 `<base>` 的 blob iframe、失败钩子、子页消息、通用三维查看器入口。 |
+| `tabs.mjs` | 抽屉的页签注册表：归属模块提供页签内容，一次刷新决定按钮、抽屉、标签和当前打开的页签；页签角标背后的按聊天「看过」集合（K-R72）。 |
 | `tavernhelper-settings.mjs` | 设置里的酒馆助手功能：世界书附加条目同步、状态注入、类宏、注入深度。 |
 | `text-lookup.mjs` | `uiTextOr`：字典有键时取字典文字，否则用兜底并代入变量。 |
 | `theme.mjs` | 包的分视图主题（`ui.theme.views`，K-R70）：一个 `<style id="packTheme">`，带光晕的视图由 `body[data-glow]` 标出。 |
@@ -328,7 +331,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 
 - ~~**节点树** `SpatialNode` 作为唯一地理：契约在 **S1**（`core/nodes.mjs`、`core/compat-v1.mjs`、`docs/kernel-schema.md`），使用方在 **S2** 迁移，地点 / 事态 / 人物 / 物品的解析在 **S3** 统一，并带新旧路径对拍测试。~~ ✅ S1–S3（2026-10-01）。
 - **作者自定义实体**：**S4** 里 `vars` 与 `entities`（分组加属性字段表）取代固定槽位。
-- **实体协议与抽屉**：标签页注册表、按节点判在场、统一的 `eden_map.stash`（旧的 `仓库` / `槽位` 键自动迁移）、物品页、按包扩展的拾取词表——**S6**。
+- **实体协议与抽屉**：~~标签页注册表、按节点判在场~~ ✅ S6-1（2026-10-01）；统一的 `eden_map.stash`（旧的 `仓库` / `槽位` 键自动迁移）、物品页、按包扩展的拾取词表——**S6-2 / S6-3**。
 
 在包自带 schema 2 之前（**S4**），节点树在加载时由 v1 文件建出；代码经节点树读地点，不许假定包自己带树。
 
@@ -350,6 +353,10 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 事态大类自带色觉安全色（`x-cvd`）；世界图地点带 `here_words`，国家带 `label_dy`，还有 `overseas` 大牌。清单带 `worldbook.prefix`
 （附加世界书和条目叫 `<前缀>·…`，缺省 = 包标题）、`credits`（设置「关于」）以及宿主和查看器以前写死的数据路径（`roster`、`maps`、
 `galleries`、`worldbook_addon`、`gallery`、`routine`）；缺一个键，对应功能静默关掉。引擎里不出现任何视图、组、地点或书的名字。
+
+**抽屉页签与按层级显示人物（S6-1）**：抽屉的页签集合由内核固定（K-R72）；叠加层的 `ui.tabs`（或清单里的）给出子集和顺序，`places` 永远在、图例永远最后，
+`app/tabs.mjs` 跑每个归属模块的页签都要经过的那一次刷新。`maps.json` 的标记 `people` 变成视图字段 `x-people`（`macro` 或 `micro`，K-R73）；
+没写时，地图有子地图就是宏观，否则微观，人物页按节点树把在场组分成几节（`core/entities.mjs`）。
 
 **中性文案（S4-4）**：引擎和核心词典（`i18n/zh.json`、`en.json`）不带任何卡名；第一个包的原文案通过它清单的 `strings` 还回来
 （扁平写法：`"键": 中文`、`"键@en": 英文`；`t()` 先读包，英文下先读 `键@en`）。带书名 / 脚本名的文案用运行时占位符（`{book}`、`{script}`），

@@ -16,6 +16,7 @@ PAIRS = [
     ("docs/ARCHITECTURE.md", "docs/ARCHITECTURE.zh.md"),
     ("docs/naming.md", "docs/naming.zh.md"),
     ("docs/kernel-schema.md", "docs/kernel-schema.zh.md"),
+    ("docs/entity-protocol.md", "docs/entity-protocol.zh.md"),
 ]
 HEADING = re.compile(r"^(#{1,6})\s")
 

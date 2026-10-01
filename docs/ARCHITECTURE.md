@@ -25,7 +25,7 @@ exists today.
 | Term | Meaning | State today |
 |---|---|---|
 | **SpatialNode** | One place in the node tree: `{ id, name, alias[], hints[], parent, type, at?, view?, canon }`. The tree is the only geography; matching picks the longest alias and prefers the deeper node. | **Exists (S1–S3).** `core/nodes.mjs` builds and reads the tree; `core/compat-v1.mjs` converts the first packs' v1 files once at load and the pack's `overlay.v2.json` adds what the v1 files never held (districts, outskirts). Every place resolves through it: the current location (`app/place-resolver.mjs`), events (`core/event-geo.mjs`), people and trip ends (`app/spot.mjs`), the injected spatial contract (`tavern/spatial-contract.mjs`). The v1 resolver `map/here.mjs` is gone. Schema-2 packs run through the kernel pipelines (`core/pack-v2.mjs`); the viewer's pack loader still accepts schema 1 only, so a schema-2 pack opens in the viewer from **S9**. |
-| **PresentEntities** | The entities standing at the current node (characters first, later any entity kind), used by the characters tab at micro levels. | **Partly.** `map/characters-view.mjs` and `tavern/characters-parse.mjs` compute "present" characters from chat tags and MVU variables; where a person is drawn is decided by the node tree (`app/spot.mjs`). The node-based presence list is **planned (S6)**. |
+| **PresentEntities** | The entities standing at the current node (characters first, later any entity kind), used by the characters tab to group the present people by level. | **Exists (S6-1).** `core/entities.mjs` (`presentAt`, `peopleSections`, `levelMode`) over entities built from the rows `map/characters-view.mjs` already gets (computed by `tavern/characters-parse.mjs` from chat tags and MVU variables); where a person is drawn is decided by the node tree (`app/spot.mjs`). |
 | **WorldRoster** | Every known entity across all sources, merged into one standard row list. | **Exists.** `core/roster.mjs` (`RosterRow`, five sources, priority arbitration). Attribute fields are still fixed slots; the author-defined `entities` field list is **planned (S4)**. |
 | **Stash** | Items with a real spatial home (map, marker, hidden compartment), reconciled against what the player already carries. | **Two stores today:** `core/stash.mjs` (world stash from pack data) and the chat-variable inventory (`tavern/stash-store.mjs`). The unified `eden_map.stash` store is **planned (S6, decision D4)**. |
 
@@ -61,8 +61,8 @@ Rules that follow:
 
 ## 3. Module map
 
-Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 196 files: `map/core` 49,
-`map/app` 57, `map/tavern` 54, `map/ui` 9, `map/three` 9, `map/*.mjs` 16, plus `map/viewer.html` and
+Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 199 files: `map/core` 51,
+`map/app` 58, `map/tavern` 54, `map/ui` 9, `map/three` 9, `map/*.mjs` 16, plus `map/viewer.html` and
 `map/props/viewer3d.html`. Roles were derived from each file's header comment and code.
 
 ### 3.1 map/core
@@ -77,6 +77,8 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `compat-v1-views.mjs` | v1 maps → v2 views: a tiles view per world / points map, a model3d view per 3D landmark page, one for the estate page. |
 | `compat-v1.mjs` | Schema 1 → schema 2 in memory: a loaded v1 pack (manifest and data files) becomes a schema-2 pack with inline blocks. Pure; nothing is fetched or written. Assembled from the three `compat-v1-*` files. |
 | `depth.mjs` | Depth-system math (JS twin of `blender/depth.py`, golden-file parity): depth from altitude, channel interpolation, clouds above an altitude; `describe` reads the exploration ledger. |
+| `drawer-tabs.mjs` | Drawer tab rules (K-R72): the kernel tab set, `tabOrder(ui.tabs)`, and the one show / hide / fallback sequence on a drawer-like object (pure). |
+| `entities.mjs` | Entity protocol (K-R71, K-R73): `personOf` / `eventOf` adapters, `presentAt`, the level of the open view (`levelMode`) and the present group's sections (`peopleSections`) (pure). |
 | `event-geo.mjs` | Where an event happens: its place text placed by `nodes.locate`, the map that draws it, the pin's spot (pure; every tier and district word is pack data); `geo.taxonomy()` carries the pack's events block. |
 | `events-default.mjs` | The kernel's neutral event taxonomy (K-R53): what a pack with no events block shows; closing words and injected-line tag defaults. |
 | `exploration-ledger.mjs` | Exploration ledger (fog of visited places): `norm` / `visit` / `known` / `count` over `{ mapId: [placeNames] }`, shared by the host and the viewer. |
@@ -174,6 +176,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `state.mjs` | Core viewer state: current map, registry, OSD instance, focus request. |
 | `status-dot.mjs` | Status dot: load / tier state as a dot with a screen-reader label. |
 | `subpage3d-host.mjs` | Estate / 3D sub-page host: blob iframe with `<base>`, failure hook, sub-page messages, generic 3D viewer entry. |
+| `tabs.mjs` | The drawer's tab registry: owner modules provide a tab's content, one refresh decides the buttons, the drawer, the labels and the open tab; the per-chat "seen" sets behind the tab badges (K-R72). |
 | `tavernhelper-settings.mjs` | Settings for TavernHelper features: worldbook add-on sync, state injection, macros, injection depth. |
 | `text-lookup.mjs` | `uiTextOr`: UI text from the dictionary when it has the key, else the fallback with variables filled in. |
 | `theme.mjs` | Per-view theme from the pack (`ui.theme.views`, K-R70): one `<style id="packTheme">`, `body[data-glow]` for the view that defines a glow. |
@@ -370,8 +373,8 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
   `docs/kernel-schema.md`), consumers migrate in **S2**, location / event / character / item resolution unify in
   **S3** with an old-vs-new parity test.~~ ✅ S1–S3 (2026-10-01).
 - **Author-defined entities**: `vars` and `entities` (groups plus attribute field list) replace fixed slots in **S4**.
-- **Entity protocol and drawer**: tab registry, presence by node, unified `eden_map.stash` with automatic migration
-  of the old `仓库` / `槽位` keys, an Items tab, per-pack pickup vocabulary — **S6**.
+- **Entity protocol and drawer**: ~~tab registry, presence by node~~ ✅ S6-1 (2026-10-01); unified `eden_map.stash` with automatic migration
+  of the old `仓库` / `槽位` keys, an Items tab, per-pack pickup vocabulary — **S6-2 / S6-3**.
 
 The node tree is built from the v1 files at load until packs carry schema 2 (**S4**); code reads places through the tree and never assumes a pack ships one itself.
 
@@ -405,6 +408,12 @@ markers carry `here_words`, the realm `label_dy` and the `overseas` card. The ma
 add-on book and its entries are named `<prefix>·…`, default the pack title), `credits` (Settings → about) and the
 data paths the host and the viewer used to hard-code (`roster`, `maps`, `galleries`, `worldbook_addon`, `gallery`,
 `routine`); a missing key quietly switches the feature off. The engine names no view, group, place or book.
+
+**Drawer tabs and people by level (S6-1)**: the drawer's tab set is the kernel's (K-R72); the overlay's `ui.tabs` (or the
+manifest's) names a subset and the order, `places` always stays and the legend is last, and `app/tabs.mjs` runs the one
+refresh that every owner module's tab goes through. The `maps.json` flag `people` becomes the view field `x-people` (`macro`
+or `micro`, K-R73); without it a map is macro when it has child maps, else micro, and the characters tab splits the present
+group into sections by the node tree (`core/entities.mjs`).
 
 **Neutral wording (S4-4)**: the engine and the core dictionaries (`i18n/zh.json`, `en.json`) carry no card name; the first
 pack's exact words come back through its manifest `strings` (flat: `"key": zh`, `"key@en": en`; `t()` reads the pack

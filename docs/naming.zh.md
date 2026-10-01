@@ -329,9 +329,10 @@
 | **sub-page** | 查看器用 blob iframe 打开的三维页面：第一个设定包的庄园页或通用三维查看器。 | `app/estate.mjs`（将改名 `subpage3d-host`）、协议前缀 `estate:` 和 `v3d:`。 | 作为内容的 "estate"：庄园本身。 |
 | **plugin** | 根目录 `map/*.mjs` 里的查看器模块，作为独立 script 标签加载；只通过 `P` 与别的模块交流。 | `app/plugins.mjs`、`register(name, api)`。 | 酒馆助手或酒馆的扩展。 |
 | **SpatialNode** | 节点树里的一个地点；节点树是唯一的地理结构（S1–S3）。 | `core/nodes.mjs`；节点树在加载时由 v1 文件建出（S4 起原生 schema 2）。所有地点都经它解析（S3）。 | DOM 节点；地图标记（一个节点可以有标记）。 |
-| **PresentEntities** | 站在当前节点的实体，先是人物。 | 部分存在：`chars.mjs`、`tavern/characters.mjs`（S6 改成基于节点）。 | WorldRoster（所有已知的人，不限地点）。 |
+| **PresentEntities** | 站在当前节点的实体，先是人物。 | `core/entities.mjs` 的 `presentAt`（S6-1）；人物页用 `peopleSections` 按层级给在场的人分组。 | WorldRoster（所有已知的人，不限地点）。 |
 | **WorldRoster** | 所有来源里已知的全部实体，按来源优先级合并成标准 `RosterRow`。 | `core/roster.mjs`；「chars」「characters」「roster」是同一个概念的三个名字。 | PresentEntities。 |
 | **Stash** | 有真实空间归属的物品（地图、标记、暗格），并与玩家已携带的对账。一个概念，目前有五个名字：stash、pickup、loot、inventory、`inv`。 | `core/stash.mjs`、`core/pickup.mjs`、`app/loot.mjs`、`tavern/inventory.mjs`、`inv.mjs`；统一存储 `eden_map.stash` 计划在 S6（D4）。 | JS 栈，或账本的「槽位」（会并入 stash）。 |
+| **drawer tab** | 抽屉 / 右栏的内核页签之一（`events`、`characters`、`places`、`legend`；抽屉 id `ev`、`ch`、`pl`、`lg`）；包用 `ui.tabs` 给出子集和顺序（K-R72）。 | `core/drawer-tabs.mjs`（规则）、`app/tabs.mjs`（注册表）。 | 浏览器的标签页。 |
 | **place / current place** | 地图上一个有名字的位置；「当前地点」是聊天里说玩家所在的地方。代码里叫 `here`。 | `here-v2.mjs`、`hereRes`、`eden-map:here`。 | 标记（画出来的图钉）或节点。 |
 | **place card** | 点击标记时打开的面板。 | `app/markers.mjs` 的 `showCard`、`app/cardlinks.mjs`。 | 角色卡（酒馆里的对象）和「卡设定」数据。 |
 | **character card / card** | 故事所用的酒馆角色卡。地图从不生成或修改角色卡。 | brief §3 和 §7；设定包数据里的 `stat_data` 路径。 | 地点卡（上一条）。 |
