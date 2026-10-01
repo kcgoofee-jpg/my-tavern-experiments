@@ -167,7 +167,7 @@ const CharactersView = (() => {
   const tierChip = it => it?.tier ? `<span class="chtier" title="${esc(uiTextOr('ch.tier', '战力'))}">${esc(it.tier)}</span>` : '';
   function rosterRow(it) {
     const c = items.find(x => x.name === it.name);
-    const body = `<i class="av" style="--c:${color(it.name)}">${avImg(it.name) || esc(ini(it.name))}</i><b>${esc(dn(it.name))}</b><em>${stageChip(it.stage)}${statChip(it)}${tierChip(it)}</em><small>${esc(it.identity || '')}${it.src ? ' · ' + esc(uiTextOr('ch.from_card', '设定')) : ''}${c ? ' · ' + esc(c.place) : ''}</small>`;
+    const body = `<i class="av" style="--c:${color(it.name)}">${avImg(it.name) || esc(ini(it.name))}</i><b>${esc(dn(it.name))}</b><em>${stageChip(it.stage)}${statChip(it)}${tierChip(it)}</em><small>${esc(it.identity || '')}${c ? ' · ' + esc(c.place) : ''}</small>`;
     return c ? `<li><button type="button" class="chgo" data-n="${esc(it.name)}">${body}</button></li>` : `<li><button type="button" class="chgo chro" data-card="${esc(it.name)}">${body}</button></li>`;   // v0.9.6：不在图上的名册成员也能开人物卡
   }
   function group(id, label, n, inner, raw) {   // raw: the body is already markup (the present group's sections), not a list of rows
