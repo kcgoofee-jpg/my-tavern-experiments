@@ -10,7 +10,7 @@
 #   影子落在岛的同一侧、离岛不远；太阳圆盘角 2.5°，高岛的影子也保得住岬角。底云另有一盏同向的灯，只有云团挡它：岛影不落进云缝。
 #   主太阳照岛、不照云；云用太阳只照云。
 # 伊甸庄园（主角岛）周围一圈云更密、更高、更亮。
-import bpy, bmesh, math, numpy as np
+import bpy, bmesh, math, os, numpy as np
 from mathutils import Vector, Euler
 import tc_common as tc
 from tc_common import W, H, tick
@@ -337,6 +337,7 @@ def _lip_rgba(islands, h, w, rng, gain=.6, col=None):
     import tc_estates as te, cloud_veil as cv
     u = w / W; mask = np.zeros((h, w), np.float32); ys, xs = np.mgrid[0:h, 0:w]
     for i in islands:
+        if i['id'] == 'eden' and os.environ.get('TC_EDEN_CUT'): continue                   # 伊甸由 estate2 抠图提供自己的岛缘：不再在名义椭圆外画一圈白晕
         O = np.array(i['isle'].outline_world(1.0, 128)); P = np.stack([(O[:, 0] / W + .5) * w, (.5 - O[:, 1] / H) * h], 1)
         x0, x1 = int(max(0, P[:, 0].min() - 2)), int(min(w, P[:, 0].max() + 2)); y0, y1 = int(max(0, P[:, 1].min() - 2)), int(min(h, P[:, 1].max() + 2))
         if x0 >= x1 or y0 >= y1: continue
