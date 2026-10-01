@@ -1,6 +1,6 @@
 // S7 review screenshot set (docs/ui-refactor.md §8.2, states 1, 4-10, 12), taken inside the tavern host stub so the host bar and the AI link page exist.
 //   node tools/browser/s7_shots.mjs <out-dir> [--only 01,04,...]
-// Names: <1440|375>-<dark|light>-<nn>-<state>.png.  1 = map default (three events), 4 = settings home, 5 = map page, 6 = AI link collapsed,
+// Names: <1440|375>-<dark|light>-<nn>-<state>.png.  1 = map default (three events), 2 = layer popover / page, 3 = drawer half (events, people), 11 / 11b = estate exterior, B1 section and the props viewer, 4 = settings home, 5 = map page, 6 = AI link collapsed,
 // 7 = AI link with the status-line and AI advisor cards open, 8 = data page, 9 = update page, 10 = P1 notice with three actions, 12 = phone only: edit mode on, drawer at half.
 // Pages that a tree does not have yet (an older base) fall back to the page that held the same rows, so the set can be taken on both sides of a change.
 // Uses only lib.mjs helpers and the host stub (host_stub.mjs): states 4-10 and 12 are in-tavern shots, never the standalone viewer.
@@ -32,6 +32,13 @@ try {
       await H.open(); const vf = await H.viewer();
       await vf.evaluate(() => { try { ViewerDebug.go('tc_mid'); } catch (e) {} }); await B.wait(2500);
       if (want('01')) { await snap('01', 'map-default'); }
+      if (want('02')) {   // layer popover (a layer outside its `applies` is greyed with a reason); on the phone the 地图与图层 page opens instead
+        await vf.evaluate(() => document.getElementById('layBtn').click()); await B.wait(700); await snap('02', preset === 'phone' ? 'layers-page' : 'layers-popover'); await closeSet(vf); await vf.evaluate(() => ViewerDebug.showLay(false)); await B.wait(300);
+      }
+      if (want('03')) {   // drawer half on events, then on people
+        await vf.evaluate(() => { ViewerDrawer.setTab('ev'); ViewerDrawer.set('half'); }); await B.wait(700); await snap('03', 'drawer-events');
+        await vf.evaluate(() => { ViewerDrawer.setTab('ch'); ViewerDrawer.set('half'); }); await B.wait(700); await snap('03', 'drawer-people'); await vf.evaluate(() => ViewerDrawer.set('peek')); await B.wait(300);
+      }
       if (want('04')) { await openPage(vf, 'home', 'home'); await snap('04', 'settings-home'); }
       if (want('05')) { await openPage(vf, 'map', 'display'); await snap('05', 'settings-map'); }
       if (want('06') || want('07')) {
@@ -48,6 +55,11 @@ try {
         await closeSet(vf);
         await vf.evaluate(() => showNotice({ key: 's7n', level: 1, title: '有新构建', lines: ['刷新酒馆页面即可使用'], actions: [{ label: '更新说明' }, { label: '稍后' }, { label: '立即刷新', primary: true }] })); await B.wait(900);
         await snap('10', 'notice-p1'); await vf.evaluate(() => { try { showNotice.dismiss?.('s7n'); } catch (e) {} });
+      }
+      if (want('11')) {   // the estate page (exterior, then the B1 section) and the generic props viewer, in the shell
+        await closeSet(vf); await vf.evaluate(() => ViewerDebug.go('eden_estate')); await B.wait(7000); await snap('11', 'estate-exterior');
+        const ef = await (await vf.$('#estate'))?.contentFrame(); if (ef) { await ef.evaluate(() => window.__estate?.setMode('B1')).catch(() => {}); await B.wait(2500); await snap('11b', 'estate-section-b1'); }
+        await vf.evaluate(() => ViewerDebug.go('dairy')); await B.wait(7000); await snap('11', 'props-viewer'); await vf.evaluate(() => ViewerDebug.go('tc_mid')); await B.wait(3000);
       }
       if (want('12') && preset === 'phone') {
         await closeSet(vf); await openPage(vf, 'adv', 'adv');
