@@ -1193,4 +1193,20 @@ deviations: none. Old decisions overturned (brief §3): none needed (the 2026-09
 blocker: none
 open: none (the T-items are working decisions the user may override)
 cleanup: done (no servers or background jobs started; worktree s84d left for the orchestrator)
+
+=== RESULT TIDY-1 ===
+status: DONE
+items: I-27 ✓ · I-28 ✓ · E-11 ✓ · pageerror 'min' ✓
+commits: 0db5b6f8 chore(tidy): pack_switch expects the automatic pack's discovered path, accept CI budget, remove dead ui/gallery.js, guard roof update without a building group (I-27, I-28, E-11)
+commits: (this commit) docs(log): RESULT TIDY-1
+pushed: yes (head #N in the chat report; this log copy is committed before the push)
+tests: node 1237/1239 pass (2 skipped, same as before; no test removed) | smoke PASS | arch PASS | probes: pack_switch=PASS (was 2 fails), accept=PASS (all), s43_parity sweep=0 pageerrors (144 shots, 0 pixels differ against the run with the error)
+i27 cause: a8127c7e (S9-3 "the automatic pack", head #223..#226 window; bisect: #222 8cd2fb38 passes, #226 10a3c744 fails, a8127c7e~1 passes, a8127c7e fails). The automatic pack writes the paths it discovers from the card's variables into its `vars` (docs/zero-config.md §4, K-R95), so card B reports its own location path (the stub card's 世界.当前地点) instead of an empty one. Probe expectation was outdated, not the code; the probe now expects the discovered path (never card A's world.location). No code change.
+i28: accept first-screen limit stays 3 s locally; with CI set it is 4.5 s (1.5x, reason in a comment: shared 2-core runner measured 3009 ms); FIRST_MS still overrides.
+e11: git grep over map/, tests/, tools/, html, warm_cdn (list is built from the tree; the only entry was in tests/warm_cdn.test.mjs, now map/ui/sheet.js), ARCHITECTURE en + zh found no runtime reference; deleted map/ui/gallery.js and tools/browser/gallery.mjs, removed its arch_baseline entry and the two ARCHITECTURE rows. S9b reported no other dead module. Historical design / plan docs keep their mentions.
+pageerror cause: map/props/viewer3d.html updateRoof (line 786) read MAN.groups.building.min for a model manifest that has no `building` group (unguarded, every frame); now returns early when there is no building group. Reproduced in the s43 sweep (3 per theme), 0 after. No node test: the code is inline in an HTML page; covered by the s43 sweep. tools/browser/lib.mjs page-error lines now carry the first stack frame.
+deviations: none (no node test for the pageerror, see above)
+blocker: none
+open: none
+cleanup: done (bisect worktree removed, probe servers stopped by the probes, no background jobs)
 === END ===
