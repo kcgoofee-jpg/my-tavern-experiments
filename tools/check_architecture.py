@@ -27,6 +27,8 @@
      （如「滑动窗口关键帧压缩」「领域槽位解耦追踪」），出处统一存在
      docs/plans/llm-campaign.md §10《References — theoretical background》一处。
      只查源码（.mjs/.js）：文档、数据、第三方 vendor 不在本防线内。本条与第 2 条行为不变。
+  7. 旧 `TC*` 全局封锁（S5-3，硬零、无账本）：引擎文件里不许出现 `window.TC<大写>` / `P.TC<大写>`（含 `parent.` /
+     `globalThis.` 前缀）。全局名按 docs/naming.md 表 C 改成了 `<名>Api` / `<名>View`；新代码不许再造 `TC*`。
   6. 内联外观样式：引擎文件里 `.style.<属性> =` 赋值、`.style =`、`cssText`、HTML / 模板串里的
      `style="…"` / `style='…'` / `style=${…}` 逐次计数，≤ 账本 "inline_style"。不计：`<style>` 块、
      `style.setProperty('--…')` 与声明全是 `--x: v` 的 `style="…"`（CSS 自定义属性是传动态几何的许可通道）、`style.transform` 与
@@ -459,6 +461,23 @@ def check_inline_style(files=None, baseline=None, root=ROOT):
 
 # ---------------------------------------------------------------- 账本维护
 
+# ---------------------------------------------------------------- 检查 7：旧 TC* 全局（S5-3，硬零）
+
+TC_GLOBAL_RE = re.compile(r'\b(?:window|parent|globalThis|P)\.TC[A-Z0-9]\w*')
+
+
+def check_tc_globals(files=None, root=ROOT):
+    """引擎文件里 `window.TC<大写>` / `P.TC<大写>` 一律违规（注释不计）。files 可显式给（门控自测用）。"""
+    bad = []
+    targets = engine_files(root) if files is None else [Path(f) for f in files]
+    for p in targets:
+        src = code_of(p, p.read_text(encoding='utf-8'))
+        for m in TC_GLOBAL_RE.finditer(src):
+            bad.append(f"{rel_of(p, root)}:{line_of(src, m.start())}: 旧全局「{m.group(0)}」——全局名按 docs/naming.md 表 C 取 "
+                       f"<名>Api / <名>View，不再造 TC*")
+    return bad, len(targets)
+
+
 def current_counts(root=ROOT):
     """当前各栏的按文件违规计数（只含非零文件）；--init / --update-baseline 用。"""
     _, li = check_line_count(baseline={}, root=root)
@@ -543,7 +562,7 @@ def _cli(args):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description='架构看门狗（6 道防线 + 只减不增账本）')
+    ap = argparse.ArgumentParser(description='架构看门狗（7 道防线 + 只减不增账本）')
     ap.add_argument('--init-baseline', action='store_true', help='账本不存在时首次生成')
     ap.add_argument('--update-baseline', action='store_true', help='下调账本到当前计数（只减不增）')
     args = ap.parse_args(argv)
@@ -597,12 +616,16 @@ def main(argv=None):
     note_lowerable(info, 'inline_style')
     fails += bad
 
+    bad, n_files = check_tc_globals()
+    print(f"  [TC 全局] 引擎 {n_files} 个文件，window.TC* / P.TC* 须为零")
+    fails += bad
+
     if fails:
         print(f"架构看门狗：{len(fails)} 处违规")
         for f in fails:
             print(f"  {f}")
         return 1
-    print("架构看门狗：6 道防线全过")
+    print("架构看门狗：7 道防线全过")
     return 0
 
 

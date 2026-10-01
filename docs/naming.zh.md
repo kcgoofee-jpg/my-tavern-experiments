@@ -31,6 +31,7 @@
 - **批次** — `S5` 内部批次；`S6` 随 stash 统一迁移（D4）；`S10` 外部批次；`—` 不改；`S5-1` S5-1 按最终名字新建的文件（计入「不改」）。
 - **备注** — "refs"（引用）是在 `map/`、`tests/`、`tools/` 里提到该项的文件数（导入、script 标签、登记字符串、`window` 读取），在 head #101 用脚本统计。它说明脚本化改名会波及多远；不是调用点个数，可能差几个。注释和属主字符串也算在内。
 - **S5-2 进度** — 备注以「S5-2」结尾的行（改名、删除或拆分）已完成；「当前 / 位置」两列特意保留 head #101 时的名字。`util.mjs` 与 `shell.mjs` 在同一步按职责拆分（决定 (c)）：`coordinates`、`dom-helpers`、`viewport-mode`、`protocol-stamp`、`screen-reader-announce`、`json-cache`、`text-lookup`；`control-column`、`drawer-glue`、`notice-layer`、`status-dot`、`one-hand-mode`、`quick-zoom`。
+- **S5-3 进度** — 备注以「S5-3」结尾的行（改名、退役或删除）已完成，由 `tools/rename_s5.mjs --globals tools/rename_s5_globals.json` 执行（`tools/rename_s5_globals_extract.py` 从表 C 和表 D 生成）。「当前 / 位置」两列特意保留 head #101 时的名字。表里一行写一个名字、代码里实际要改好几个的（`cur` 及其同族与 setter、11 个 `T` 包装、21 个模块句柄），备注里列出了改了什么；`storage.get` 保持原名。
 
 | 表 | 行数 | 内部 | 外部契约 | 批次 S5 | 批次 S6 | 批次 S10 | 不改 |
 |---|---|---|---|---|---|---|---|
@@ -156,44 +157,44 @@
 
 | 当前名 | 位置 | 含义 | 建议新名 | 类别 | 批次 | 备注 |
 |---|---|---|---|---|---|---|
-| `window.TCStore` | `map/viewer.html:29` | 查看器页面内联的本机存储服务：`key`、`get`、`set`、`remove`、`json`，带设定包命名空间。另有一个 API 形状相同但不是同一个对象的东西：`core/storage.mjs` 的导入别名 `TCStore`（5 个文件）。 | `window.LocalStore` (alias becomes `storage`) | 内部 | S5 | 引用：map 20、测试 4、工具 5。两个东西共用一个名字，这是读代码时最大的坑。`ui/sheet.js` 通过 `window.TCStore` 读它。 |
-| `window.TCSheet` | `map/app/shell.mjs:84` | 查看器唯一的抽屉 / 右栏实例，由 `UISheet.create` 创建。 | `window.ViewerDrawer` | 内部 | S5 | 引用：map 5、工具 5。把实例（`TCSheet`）与工厂（`UISheet`）区分开。 |
-| `window.TCFog` | `map/app/fog.mjs:56` | 迷雾探索叠加层的 API：`paint`、`here`、`on`、`count`、`raw`、`setHaze`、`mute`、`set`、`toggle`、`reset`。 | `window.FogApi` | 内部 | S5 | 引用：map 6。直接挂在 `window` 上，从未登记到 `P`，但 `app/host.mjs:52,54` 调用 `P.TCFog?.mute?.(…)`：它永远是 `undefined`，回放期间的静音从不生效（见 open 第 1 条）。 |
-| `window.TCSettings` | `map/app/settings.mjs:30` | 设置浮层的 API（`registerSection`、`showSet` 等）；同名常量也被导出。 | `window.SettingsApi` | 内部 | S5 | 引用：map 9、测试 1、工具 6。也是 34 个兼容 getter 之一。 |
-| `window.TCScale` | `map/app/scale.mjs:120` | 世界图与城市各层之间的尺度衔接。 | `window.ScaleHandoffApi` | 内部 | S5 | 引用：map 4、工具 2。 |
-| `window.TCNotify` | `map/app/shell.mjs:136` | 通知层的 `notify` 函数（P0 阻断、P1 横幅、P2 提示）。 | `window.showNotice` | 内部 | S5 | 引用：map 4、工具 1。它是函数不是对象；新名字如实表达。 |
-| `window.TCLayers` | `map/app/layerhost.mjs:27` | 查看器 LayerRegistry 的标准摘要：`registry`、`describe`、`slotZ`。 | `window.LayerHostApi` | 内部 | S5 | 引用：map 2、工具 5。 |
-| `window.TCCardLinks` | `map/app/cardlinks.mjs:84` | 地点卡底部链接的生成函数。 | `window.CardLinksApi` | 内部 | S5 | 引用：map 2、测试 1。 |
-| `window.TCWander` | `map/app/wander.mjs:160` | NPC 漫游 API：`scan`、`reset`、`schedule`、`clock`、`tick`、`retarget`、`walker` 等。 | `window.WanderApi` | 内部 | S5 | 引用：map 2、工具 2。 |
-| `window.TCMarkers` | `map/app/markers.mjs:137` | 只有 `closeCard` 一个方法。 | `window.MarkersApi` | 内部 | S5 | 引用：map 2、工具 1。 |
-| `window.TCLoot` | `map/app/loot.mjs:98` | 拾取标记的 API：`set`、`rebuild`、`rows`、`now`。 | `window.StashMarkersApi` | 内部 | S5 | 引用：map 2、工具 1。随 `app/loot.mjs` 改名。 |
-| `window.TCWeather` | `map/app/weather.mjs:84` | 天气 API：`set`、`fromStory`、`now`、`describe`。 | `window.WeatherApi` | 内部 | S5 | 引用：map 1、工具 1。 |
-| `window.TCVision` | `map/app/vision.mjs:121` | 视野锥 API：`cones`、`markerOf`、`tryMove`、`setWalls`、`getWalls`、`night`。 | `window.VisionApi` | 内部 | S5 | 引用：map 1、工具 1。 |
-| `window.TCTraffic` | `map/app/traffic.mjs:87` | 流光 API：`running`、`night`、`describe`。 | `window.TrafficApi` | 内部 | S5 | 引用：map 1、工具 1。 |
-| `window.TCTileWorker` | `map/app/dzi-worker.mjs:188` | 瓦片解码 worker 的客户端。 | `window.TileWorkerApi` | 内部 | S5 | 引用：map 1、测试 0、工具 0。 |
-| `window.TCQuests` | `map/app/quests.mjs:89` | 线索节点 API：`now`、`setDay`、`recalc`。 | `window.QuestsApi` | 内部 | S5 | 引用：map 1、工具 1。 |
-| `window.TCHaze` | `map/app/depthhaze.mjs:86` | 空气透视 API：`apply`、`summary`、`depth`、`chain`、`describe`。 | `window.DepthHazeApi` | 内部 | S5 | 引用：map 1、工具 1。 |
-| `window.TC3d` | `map/app/estate.mjs:224` | 三维租约自检：`live`、`release`、`snapping`、`stopSnap`、`SNAP_MS`。 | `window.Lease3dApi` | 内部 | S5 | 引用：map 1、工具 1。 |
-| `window.TCEvents` / `P.TCEvents` | `map/events.mjs:394` | 事态层外挂的 API，经 `register()` 登记。 | `window.EventsView` / `P.EventsView` | 内部 | S5 | 引用：map 10、测试 1、工具 5；`P.TCEvents` 16 处。下面每个外挂名都来自一次 `register()` 调用：`P[name]` 与 `window[name]` 是同一个键，所以 `register(...)` 里的字符串和所有 `P.<name>` 引用要一起改。 |
-| `window.TCChars` / `P.TCChars` | `map/chars.mjs:261` | 人物页外挂的 API。 | `window.CharactersView` / `P.CharactersView` | 内部 | S5 | 引用：map 9、测试 1、工具 4；`P.` 引用 33 处。 |
-| `window.TCCustom` / `P.TCCustom` | `map/custom.mjs:390` | 自定义名称外挂的 API（另含夜色、着装行）。 | `window.CustomNamesView` / `P.CustomNamesView` | 内部 | S5 | 引用：map 13、测试 1、工具 2；`P.` 引用 46 处（外挂里最多）。 |
-| `window.TCTrips` / `P.TCTrips` | `map/trips.mjs:107` | 行程层外挂的 API。 | `window.TripsView` / `P.TripsView` | 内部 | S5 | 引用：map 4、测试 1、工具 1；`P.` 引用 4 处。 |
-| `window.TCUnmapped` / `P.TCUnmapped` | `map/unmapped.mjs:140` | 未上图地点选择器外挂的 API。 | `window.UnmappedPlacePicker` / `P.UnmappedPlacePicker` | 内部 | S5 | 引用：map 5、测试 1、工具 1；`P.` 引用 9 处。 |
-| `window.TCVarMap` / `P.TCVarMap` | `map/varmap.mjs:66` | 变量映射设置页外挂的 API。 | `window.StatPathMappingView` / `P.StatPathMappingView` | 内部 | S5 | 引用：map 3、测试 1；`P.` 引用 4 处。 |
-| `window.TCCompose` / `P.TCCompose` | `map/compose.mjs:91` | 填入聊天按钮外挂的 API。 | `window.ComposeView` / `P.ComposeView` | 内部 | S5 | 引用：map 5、测试 1；`P.` 引用 8 处。 |
-| `window.TCSecurity` / `P.TCSecurity` | `map/security.mjs:61` | 安保叠加层外挂的 API。 | `window.SecurityView` / `P.SecurityView` | 内部 | S5 | 引用：map 3、测试 1、工具 1；`P.` 引用 4 处。 |
-| `window.TCScrap` / `P.TCScrap` | `map/scrapbook.mjs:132` | 见闻录外挂的 API。 | `window.ScrapbookView` / `P.ScrapbookView` | 内部 | S5 | 引用：map 2、工具 1；`P.` 引用 3 处。 |
-| `window.TCInv` / `P.TCInv` | `map/inv.mjs:27` | 空间化背包外挂的 API（地点卡列表）。 | `window.StashView` / `P.StashView` | 内部 | S5 | 引用：map 8；`P.` 引用 10 处。 |
-| `window.TCWb` / `P.TCWb` | `map/wbpeek.mjs:46` | 世界书档案外挂的 API。 | `window.WorldbookPeekView` / `P.WorldbookPeekView` | 内部 | S5 | 引用：map 2；`P.` 引用 3 处。 |
+| `window.TCStore` | `map/viewer.html:29` | 查看器页面内联的本机存储服务：`key`、`get`、`set`、`remove`、`json`，带设定包命名空间。另有一个 API 形状相同但不是同一个对象的东西：`core/storage.mjs` 的导入别名 `TCStore`（5 个文件）。 | `window.LocalStore` (alias becomes `storage`) | 内部 | S5 | 引用：map 20、测试 4、工具 5。两个东西共用一个名字，这是读代码时最大的坑。`ui/sheet.js` 通过 `window.TCStore` 读它。 两个含义分开了：查看器内联存储是 `window.LocalStore`；`core/storage.mjs` 的 import 别名是 `storage`（5 个文件）。 **已在 S5-3 改名。** |
+| `window.TCSheet` | `map/app/shell.mjs:84` | 查看器唯一的抽屉 / 右栏实例，由 `UISheet.create` 创建。 | `window.ViewerDrawer` | 内部 | S5 | 引用：map 5、工具 5。把实例（`TCSheet`）与工厂（`UISheet`）区分开。 **已在 S5-3 改名。** |
+| `window.TCFog` | `map/app/fog.mjs:56` | 迷雾探索叠加层的 API：`paint`、`here`、`on`、`count`、`raw`、`setHaze`、`mute`、`set`、`toggle`、`reset`。 | `window.FogApi` | 内部 | S5 | 引用：map 6。直接挂在 `window` 上，从未登记到 `P`，但 `app/host.mjs:52,54` 调用 `P.TCFog?.mute?.(…)`：它永远是 `undefined`，回放期间的静音从不生效（见 open 第 1 条）。 **已在 S5-3 改名。** |
+| `window.TCSettings` | `map/app/settings.mjs:30` | 设置浮层的 API（`registerSection`、`showSet` 等）；同名常量也被导出。 | `window.SettingsApi` | 内部 | S5 | 引用：map 9、测试 1、工具 6。也是 34 个兼容 getter 之一。 **已在 S5-3 改名。** |
+| `window.TCScale` | `map/app/scale.mjs:120` | 世界图与城市各层之间的尺度衔接。 | `window.ScaleHandoffApi` | 内部 | S5 | 引用：map 4、工具 2。 **已在 S5-3 改名。** |
+| `window.TCNotify` | `map/app/shell.mjs:136` | 通知层的 `notify` 函数（P0 阻断、P1 横幅、P2 提示）。 | `window.showNotice` | 内部 | S5 | 引用：map 4、工具 1。它是函数不是对象；新名字如实表达。 **已在 S5-3 改名。** |
+| `window.TCLayers` | `map/app/layerhost.mjs:27` | 查看器 LayerRegistry 的标准摘要：`registry`、`describe`、`slotZ`。 | `window.LayerHostApi` | 内部 | S5 | 引用：map 2、工具 5。 **已在 S5-3 改名。** |
+| `window.TCCardLinks` | `map/app/cardlinks.mjs:84` | 地点卡底部链接的生成函数。 | `window.CardLinksApi` | 内部 | S5 | 引用：map 2、测试 1。 **已在 S5-3 改名。** |
+| `window.TCWander` | `map/app/wander.mjs:160` | NPC 漫游 API：`scan`、`reset`、`schedule`、`clock`、`tick`、`retarget`、`walker` 等。 | `window.WanderApi` | 内部 | S5 | 引用：map 2、工具 2。 **已在 S5-3 改名。** |
+| `window.TCMarkers` | `map/app/markers.mjs:137` | 只有 `closeCard` 一个方法。 | `window.MarkersApi` | 内部 | S5 | 引用：map 2、工具 1。 **已在 S5-3 改名。** |
+| `window.TCLoot` | `map/app/loot.mjs:98` | 拾取标记的 API：`set`、`rebuild`、`rows`、`now`。 | `window.StashMarkersApi` | 内部 | S5 | 引用：map 2、工具 1。随 `app/loot.mjs` 改名。 **已在 S5-3 改名。** |
+| `window.TCWeather` | `map/app/weather.mjs:84` | 天气 API：`set`、`fromStory`、`now`、`describe`。 | `window.WeatherApi` | 内部 | S5 | 引用：map 1、工具 1。 **已在 S5-3 改名。** |
+| `window.TCVision` | `map/app/vision.mjs:121` | 视野锥 API：`cones`、`markerOf`、`tryMove`、`setWalls`、`getWalls`、`night`。 | `window.VisionApi` | 内部 | S5 | 引用：map 1、工具 1。 **已在 S5-3 改名。** |
+| `window.TCTraffic` | `map/app/traffic.mjs:87` | 流光 API：`running`、`night`、`describe`。 | `window.TrafficApi` | 内部 | S5 | 引用：map 1、工具 1。 **已在 S5-3 改名。** |
+| `window.TCTileWorker` | `map/app/dzi-worker.mjs:188` | 瓦片解码 worker 的客户端。 | `window.TileWorkerApi` | 内部 | S5 | 引用：map 1、测试 0、工具 0。 **已在 S5-3 改名。** |
+| `window.TCQuests` | `map/app/quests.mjs:89` | 线索节点 API：`now`、`setDay`、`recalc`。 | `window.QuestsApi` | 内部 | S5 | 引用：map 1、工具 1。 **已在 S5-3 改名。** |
+| `window.TCHaze` | `map/app/depthhaze.mjs:86` | 空气透视 API：`apply`、`summary`、`depth`、`chain`、`describe`。 | `window.DepthHazeApi` | 内部 | S5 | 引用：map 1、工具 1。 **已在 S5-3 改名。** |
+| `window.TC3d` | `map/app/estate.mjs:224` | 三维租约自检：`live`、`release`、`snapping`、`stopSnap`、`SNAP_MS`。 | `window.Lease3dApi` | 内部 | S5 | 引用：map 1、工具 1。 **已在 S5-3 改名。** |
+| `window.TCEvents` / `P.TCEvents` | `map/events.mjs:394` | 事态层外挂的 API，经 `register()` 登记。 | `window.EventsView` / `P.EventsView` | 内部 | S5 | 引用：map 10、测试 1、工具 5；`P.TCEvents` 16 处。下面每个外挂名都来自一次 `register()` 调用：`P[name]` 与 `window[name]` 是同一个键，所以 `register(...)` 里的字符串和所有 `P.<name>` 引用要一起改。 **已在 S5-3 改名。** |
+| `window.TCChars` / `P.TCChars` | `map/chars.mjs:261` | 人物页外挂的 API。 | `window.CharactersView` / `P.CharactersView` | 内部 | S5 | 引用：map 9、测试 1、工具 4；`P.` 引用 33 处。 **已在 S5-3 改名。** |
+| `window.TCCustom` / `P.TCCustom` | `map/custom.mjs:390` | 自定义名称外挂的 API（另含夜色、着装行）。 | `window.CustomNamesView` / `P.CustomNamesView` | 内部 | S5 | 引用：map 13、测试 1、工具 2；`P.` 引用 46 处（外挂里最多）。 **已在 S5-3 改名。** |
+| `window.TCTrips` / `P.TCTrips` | `map/trips.mjs:107` | 行程层外挂的 API。 | `window.TripsView` / `P.TripsView` | 内部 | S5 | 引用：map 4、测试 1、工具 1；`P.` 引用 4 处。 **已在 S5-3 改名。** |
+| `window.TCUnmapped` / `P.TCUnmapped` | `map/unmapped.mjs:140` | 未上图地点选择器外挂的 API。 | `window.UnmappedPlacePicker` / `P.UnmappedPlacePicker` | 内部 | S5 | 引用：map 5、测试 1、工具 1；`P.` 引用 9 处。 **已在 S5-3 改名。** |
+| `window.TCVarMap` / `P.TCVarMap` | `map/varmap.mjs:66` | 变量映射设置页外挂的 API。 | `window.StatPathMappingView` / `P.StatPathMappingView` | 内部 | S5 | 引用：map 3、测试 1；`P.` 引用 4 处。 **已在 S5-3 改名。** |
+| `window.TCCompose` / `P.TCCompose` | `map/compose.mjs:91` | 填入聊天按钮外挂的 API。 | `window.ComposeView` / `P.ComposeView` | 内部 | S5 | 引用：map 5、测试 1；`P.` 引用 8 处。 **已在 S5-3 改名。** |
+| `window.TCSecurity` / `P.TCSecurity` | `map/security.mjs:61` | 安保叠加层外挂的 API。 | `window.SecurityView` / `P.SecurityView` | 内部 | S5 | 引用：map 3、测试 1、工具 1；`P.` 引用 4 处。 **已在 S5-3 改名。** |
+| `window.TCScrap` / `P.TCScrap` | `map/scrapbook.mjs:132` | 见闻录外挂的 API。 | `window.ScrapbookView` / `P.ScrapbookView` | 内部 | S5 | 引用：map 2、工具 1；`P.` 引用 3 处。 **已在 S5-3 改名。** |
+| `window.TCInv` / `P.TCInv` | `map/inv.mjs:27` | 空间化背包外挂的 API（地点卡列表）。 | `window.StashView` / `P.StashView` | 内部 | S5 | 引用：map 8；`P.` 引用 10 处。 **已在 S5-3 改名。** |
+| `window.TCWb` / `P.TCWb` | `map/wbpeek.mjs:46` | 世界书档案外挂的 API。 | `window.WorldbookPeekView` / `P.WorldbookPeekView` | 内部 | S5 | 引用：map 2；`P.` 引用 3 处。 **已在 S5-3 改名。** |
 | `window.UIIcon` | `map/ui/icons.js:37` | 唯一的图标集（`svg`、`names`、`P`）。 | (keep) | 内部 | — | 引用：map 5。`UI` 前缀是中性的、名字也清楚，不改。 |
 | `window.UISheet` | `map/ui/sheet.js:198` | 底部抽屉 / 右栏的工厂（`create`、`RAIL_MQ`）。 | (keep) | 内部 | — | 引用：map 3。实例 `TCSheet` 改名 `ViewerDrawer` 后，二者不再混淆。 |
 | `window.UI3D` | `map/ui/chrome3d.js:89` | 庄园页和道具查看器共用的三维查看器外壳。 | (keep) | 内部 | — | 引用：map 3。 |
 | `window.UIProgress` | `map/ui/progress.mjs:62` | 加载进度组件（`mount`）。 | (keep) | 内部 | — | 引用：map 1。 |
 | `window.I18N` | `map/app/i18n.mjs:26` | 给外挂用的共享 i18n 服务：`lang`、`t`、`nm`、`tr`、`fmt`、`tx`。 | (keep) | 内部 | — | 引用：map 15。名字清楚；里面的函数见表 D（`tx` 有两个版本，行为不同）。 |
 | `window.EdenMap` | `map/app/extapi.mjs:23` | 公开的本机扩展 API：21 个方法（`setCustom`、`getRooms`、`flyTo`、`on`、`off` 等）；宿主也把它暴露成 `window.parent.EdenMap`（`host-api.mjs:85`）。 | `window.SpatialMap` (product name per D5) | 外部契约 | S10 | 引用：map 14、测试 2、工具 11。别人的脚本可能在调用它，所以 `EdenMap` 至少要作为冻结别名多保留一个版本。契约文件：`tavern/edenapi.mjs`。 |
-| `window.estCard` | `map/custom.mjs:247` | 用户刚选中的房间的地点方案（`name`、`floor`、`kind`、`area`、`poly`、`z`）；由自定义名称外挂写，三维子页宿主读。 | `window.__selectedRoomPlan`；字段 `floor` 改为 `storey` | 内部 | S5 | 引用：map 2。用全局变量在外挂和应用模块之间传值：应改为 `P` 条目或状态 setter。这里的 "card" 指卡设定的房间方案，是这个词的第三种含义。 |
-| `window.renderStorage` | `map/app/storage-ui.mjs:27` | 渲染存储设置页；挂在 `window` 上供设置页和探针用。 | `window.renderStorageSettings` | 内部 | S5 | 引用：map 3。 |
-| `window.<34 compat getters>` | `map/app/bridge.mjs:14` | 旧内联主脚本全局名的只读 getter：`toImg viewer aspect M REG cur tier sleeping esc post jsonCache LANG nm setTheme main fadeAway go est setEstFail openEstate estFocus closeCard hereRes jumpHere TCSettings showSet showLay chatId LS renderAbout curData lean t showCard`。 | retire; probes import modules or read one `window.ViewerDebug` namespace | 内部 | S5 | 探针通过 `page.evaluate` 读它们：`tools/browser/` 的 51 个文件里有 38 个提到 `REG cur viewer curData go jumpHere showCard est M` 中至少一个词（粗略按词 grep，是上界）。先迁移探针再删除。文件头写着「只加不减」。 |
+| `window.estCard` | `map/custom.mjs:247` | 用户刚选中的房间的地点方案（`name`、`floor`、`kind`、`area`、`poly`、`z`）；由自定义名称外挂写，三维子页宿主读。 | `window.__selectedRoomPlan`；字段 `floor` 改为 `storey` | 内部 | S5 | 引用：map 2。用全局变量在外挂和应用模块之间传值：应改为 `P` 条目或状态 setter。这里的 "card" 指卡设定的房间方案，是这个词的第三种含义。 `window.__selectedRoomPlan` 上的 `floor` 字段改为 `storey`；`estate:room` 消息体仍叫 `floor`（三维页的契约）。 **已在 S5-3 改名。** |
+| `window.renderStorage` | `map/app/storage-ui.mjs:27` | 渲染存储设置页；挂在 `window` 上供设置页和探针用。 | `window.renderStorageSettings` | 内部 | S5 | 引用：map 3。 **已在 S5-3 改名。** |
+| `window.<34 compat getters>` | `map/app/bridge.mjs:14` | 旧内联主脚本全局名的只读 getter：`toImg viewer aspect M REG cur tier sleeping esc post jsonCache LANG nm setTheme main fadeAway go est setEstFail openEstate estFocus closeCard hereRes jumpHere TCSettings showSet showLay chatId LS renderAbout curData lean t showCard`。 | retire; probes import modules or read one `window.ViewerDebug` namespace | 内部 | S5 | 探针通过 `page.evaluate` 读它们：`tools/browser/` 的 51 个文件里有 38 个提到 `REG cur viewer curData go jumpHere showCard est M` 中至少一个词（粗略按词 grep，是上界）。先迁移探针再删除。文件头写着「只加不减」。 已退役：33 个 getter（35 个旧名减去现为 `SettingsApi` 的 `TCSettings`，以及表 D 改名的 `LS` / `M` 等）收进一个只读的 `window.ViewerDebug`（`app/viewer-debug.mjs`，键用新名字）；探针读 `ViewerDebug.<名>`。产品代码没有读它们（grep 可证）。 **已在 S5-3 退役。** |
 | `window.__tcPack` | `map/tavern/eden-map.js:188` | 生成的脚本在导入宿主之前写入的设定包注入对象：`{ id, manifest, events }`；宿主再把它拷进查看器的 `srcdoc`。 | `window.__spatialPack` | 外部契约 | S10 | 引用：map 5、测试 1、工具 2（写入方是 `tools/build_preview_script.py`）。已安装的脚本写的是旧名字：宿主必须两个都读。 |
 | `window.__edenMapScript` | `map/tavern/eden-map.js:403` | 生成的脚本导入前写入的版本信息：`{ version, code, channel, ref, sha }`。 | `window.__spatialScript` | 外部契约 | S10 | 引用：map 1、测试 2、工具 2。与 `__tcPack` 同样要双读。 |
 | `window.parent.__edenMapIds` | `map/tavern/eden-map.js:47` | 已加载脚本的身份 → 地址登记表，用来发现脚本被加载了第二份。 | `window.parent.__spatialScriptIds` | 外部契约 | S10 | 引用：map 1、工具 1。同一页面里不同版本的脚本共用它，改名后要同时读两个名字。 |
@@ -203,26 +204,26 @@
 | `window.__edenHostToken` | `map/tavern/eden-map.js:220` | 宿主写进查看器窗口的令牌；查看器只接受带这个令牌的宿主消息。 | `window.__hostToken` | 外部契约 | S10 | 引用：map 2。宿主与查看器可能版本不同（CDN 对已安装脚本）：查看器必须两个名字都读。 |
 | `window.__edenMapChat` | `map/app/extapi.mjs:22` | 宿主在转发 API 调用前，对查看器窗口调用的、用来同步聊天 id 的 setter（`host-api.mjs:25`）。 | `window.__setChatId` | 外部契约 | S10 | 引用：map 2。宿主到查看器的契约，由 `fnGuard` 守卫。 |
 | `window.__packId` | `map/viewer.html:9` | 当前设定包 id，在任何模块运行前算出；也注入三维子页。 | (keep) | 内部 | — | 引用：map 6、测试 1。名字清楚。 |
-| `window.__nsKey` | `map/viewer.html:10` | 把登记的 `edenMap*` 键映射成当前设定包命名空间下的键。 | `window.__packStorageKey` | 内部 | S5 | 引用：map 1。"ns" 不易读；注意它按 7 个字符（`edenMap`）截取，S10 改前缀时必须同步。 |
-| `window.__manifestP` | `map/viewer.html:20` | 首帧脚本发起的清单请求的 Promise。 | `window.__manifestPromise` | 内部 | S5 | 引用：map 2。 |
-| `window.__worldFirst` | `map/viewer.html:21` | 没有 `?map=` 参数时为真：先打开世界图。 | `window.__openWorldMapFirst` | 内部 | S5 | 引用：map 1。 |
+| `window.__nsKey` | `map/viewer.html:10` | 把登记的 `edenMap*` 键映射成当前设定包命名空间下的键。 | `window.__packStorageKey` | 内部 | S5 | 引用：map 1。"ns" 不易读；注意它按 7 个字符（`edenMap`）截取，S10 改前缀时必须同步。 **已在 S5-3 改名。** |
+| `window.__manifestP` | `map/viewer.html:20` | 首帧脚本发起的清单请求的 Promise。 | `window.__manifestPromise` | 内部 | S5 | 引用：map 2。 **已在 S5-3 改名。** |
+| `window.__worldFirst` | `map/viewer.html:21` | 没有 `?map=` 参数时为真：先打开世界图。 | `window.__openWorldMapFirst` | 内部 | S5 | 引用：map 1。 **已在 S5-3 改名。** |
 | `window.__theme`, `__lang`, `__hand` | `map/viewer.html:42` | 首帧前定好的主题、语言、单手侧。 | (keep) | 内部 | — | 引用：map 各 2 / 2 / 3。名字清楚。 |
 | `window.__applyTheme`, `__applyHand` | `map/viewer.html:43` | 主题 / 手侧改变后重新套用对应的类。 | (keep) | 内部 | — | 引用：各 2 个 map 文件。 |
-| `window.__i18n` | `map/viewer.html:52` | 字典请求的 Promise，与启动数据并行发起。 | `window.__dictionaryPromise` | 内部 | S5 | 引用：map 2。看起来像 `I18N` 服务，其实只是个 Promise。 |
-| `window.__earlyMsgs`, `__earlyTap` | `map/viewer.html:707` | 在模块图就绪前接住宿主消息的缓冲区与监听器；`host.mjs` 会回放并清空。 | `__bufferedHostMessages`, `__hostMessageTap` | 内部 | S5 | 引用：各 2 个 map 文件。 |
-| `window.__fromHost` | `map/app/host.mjs:28` | 函数 `event -> boolean`：这条消息是否来自宿主（来源或令牌检查）。 | `window.__isFromHost` | 内部 | S5 | 引用：map 12、测试 1。名字像数据字段，实际是谓词。 |
-| `window.__snapFx` | `map/app/scale.mjs:94` | 一次性的缩放快照效果参数（`ox`、`oy`、`scale`），由 `scale.mjs` 交给 `nav.mjs`。 | `window.__zoomSnapEffect` | 内部 | S5 | 引用：map 2。应改成状态 setter 而不是全局变量。 |
-| `window.__worldTC` | `map/app/scale.mjs:98` | 从城市层返回世界图时要居中的地点 id（`false` = 没有）。 | `window.__worldFocusPlace` | 内部 | S5 | 引用：map 2。"TC" 是卡名；`locate.mjs:56` 还在这里写死了默认地点 id（棘轮已计）。 |
-| `window.__rm` | `map/app/settings.mjs:95` | 当前的减少动效状态，给探针和子页用。 | `window.__reducedMotion` | 内部 | S5 | 引用：map 1。 |
-| `window.__edenInject` | `map/app/settings.mjs:148` | 注入模式（`off` / `compose` 等）的实时值，卡片重画时读取。 | `window.__injectMode` | 内部 | S5 | 引用：map 2、工具 1。 |
-| `window.__devDpr`, `__creditShow` | `map/app/boot.mjs:93` | 调试用像素比，以及显示署名框的函数。 | `__deviceDpr`, `__showCredits` | 内部 | S5 | 引用：各 2 个 map 文件。`__creditShow` 还关系到原作者署名规则（brief §7）。 |
-| `window.__clouds` | `map/app/clouds.mjs:120` | 云层的探针接口：`sync`、`state`。 | `window.__cloudsProbe` | 内部 | S5 | 引用：map 1、工具 2。 |
-| `window.__edenBus` | `map/app/bus.mjs:18` | 查看器监听器总线的只读视图，给探针和自检用。 | `window.__listenerBus` | 内部 | S5 | 引用：map 1、工具 2。 |
-| `window.__edenLogErrHook` | `map/core/logbuf.mjs:65` | 控制台钩子已安装的标志（保证幂等）。 | `window.__logHooksInstalled` | 内部 | S5 | 引用：map 1。core 模块写 `window` 标志：三个登记属主之一。 |
-| `window.__v3d` | `map/props/viewer3d.html:888` | 通用三维查看器的探针接口。 | `window.__viewer3dProbe` | 内部 | S5 | 引用：map 1、工具 6。 |
-| `window.__packStrings`, `__V3D_MODEL` | `map/app/estate.mjs:139` | 查看器注入三维子页的值：设定包的文案覆盖，以及要加载的模型 id。 | `__packStrings` (keep), `__modelId` | 内部 | S5 | 引用：各 2 个 map 文件。查看器与子页一起发布，属内部契约。 |
-| `window.__edenMapPerf`, `__edenSplashCap`, `__edenAutoCheckDelay` | `map/tavern/eden-map.js:466` | 宿主从父窗口读取的测试钩子；`map/` 里没有任何代码写它们，只有浏览器探针写。 | `__perfSamples`, `__splashCap`, `__autoCheckDelay` | 内部 | S5 | 各 1 个 map 文件、1 个工具。 |
-| `window.__edenHostVersions`, `__edenHereText`, `__edenMvuSnapshotStatus`, `__composeTest` | `map/app/feedback.mjs:15` | 在整个仓库里都没有写入方的只读钩子（代码注释里也承认 `__edenHostVersions` 「目前没有写入方（历史洞）」）。 | remove, or wire a writer (open item 2) | 内部 | S5 | 各 1 个 map 文件（`feedback.mjs`、`compose.mjs`），测试 0、工具 0。给死名字改名是白费功夫。 |
+| `window.__i18n` | `map/viewer.html:52` | 字典请求的 Promise，与启动数据并行发起。 | `window.__dictionaryPromise` | 内部 | S5 | 引用：map 2。看起来像 `I18N` 服务，其实只是个 Promise。 **已在 S5-3 改名。** |
+| `window.__earlyMsgs`, `__earlyTap` | `map/viewer.html:707` | 在模块图就绪前接住宿主消息的缓冲区与监听器；`host.mjs` 会回放并清空。 | `__bufferedHostMessages`, `__hostMessageTap` | 内部 | S5 | 引用：各 2 个 map 文件。 **已在 S5-3 改名。** |
+| `window.__fromHost` | `map/app/host.mjs:28` | 函数 `event -> boolean`：这条消息是否来自宿主（来源或令牌检查）。 | `window.__isFromHost` | 内部 | S5 | 引用：map 12、测试 1。名字像数据字段，实际是谓词。 **已在 S5-3 改名。** |
+| `window.__snapFx` | `map/app/scale.mjs:94` | 一次性的缩放快照效果参数（`ox`、`oy`、`scale`），由 `scale.mjs` 交给 `nav.mjs`。 | `window.__zoomSnapEffect` | 内部 | S5 | 引用：map 2。应改成状态 setter 而不是全局变量。 **已在 S5-3 改名。** |
+| `window.__worldTC` | `map/app/scale.mjs:98` | 从城市层返回世界图时要居中的地点 id（`false` = 没有）。 | `window.__worldFocusPlace` | 内部 | S5 | 引用：map 2。"TC" 是卡名；`locate.mjs:56` 还在这里写死了默认地点 id（棘轮已计）。 **已在 S5-3 改名。** |
+| `window.__rm` | `map/app/settings.mjs:95` | 当前的减少动效状态，给探针和子页用。 | `window.__reducedMotion` | 内部 | S5 | 引用：map 1。 **已在 S5-3 改名。** |
+| `window.__edenInject` | `map/app/settings.mjs:148` | 注入模式（`off` / `compose` 等）的实时值，卡片重画时读取。 | `window.__injectMode` | 内部 | S5 | 引用：map 2、工具 1。 **已在 S5-3 改名。** |
+| `window.__devDpr`, `__creditShow` | `map/app/boot.mjs:93` | 调试用像素比，以及显示署名框的函数。 | `__deviceDpr`, `__showCredits` | 内部 | S5 | 引用：各 2 个 map 文件。`__creditShow` 还关系到原作者署名规则（brief §7）。 **已在 S5-3 改名。** |
+| `window.__clouds` | `map/app/clouds.mjs:120` | 云层的探针接口：`sync`、`state`。 | `window.__cloudsProbe` | 内部 | S5 | 引用：map 1、工具 2。 **已在 S5-3 改名。** |
+| `window.__edenBus` | `map/app/bus.mjs:18` | 查看器监听器总线的只读视图，给探针和自检用。 | `window.__listenerBus` | 内部 | S5 | 引用：map 1、工具 2。 **已在 S5-3 改名。** |
+| `window.__edenLogErrHook` | `map/core/logbuf.mjs:65` | 控制台钩子已安装的标志（保证幂等）。 | `window.__logHooksInstalled` | 内部 | S5 | 引用：map 1。core 模块写 `window` 标志：三个登记属主之一。 **已在 S5-3 改名。** |
+| `window.__v3d` | `map/props/viewer3d.html:888` | 通用三维查看器的探针接口。 | `window.__viewer3dProbe` | 内部 | S5 | 引用：map 1、工具 6。 **已在 S5-3 改名。** |
+| `window.__packStrings`, `__V3D_MODEL` | `map/app/estate.mjs:139` | 查看器注入三维子页的值：设定包的文案覆盖，以及要加载的模型 id。 | `__packStrings` (keep), `__modelId` | 内部 | S5 | 引用：各 2 个 map 文件。查看器与子页一起发布，属内部契约。 **已在 S5-3 改名。** |
+| `window.__edenMapPerf`, `__edenSplashCap`, `__edenAutoCheckDelay` | `map/tavern/eden-map.js:466` | 宿主从父窗口读取的测试钩子；`map/` 里没有任何代码写它们，只有浏览器探针写。 | `__perfSamples`, `__splashCap`, `__autoCheckDelay` | 内部 | S5 | 各 1 个 map 文件、1 个工具。 **已在 S5-3 改名。** |
+| `window.__edenHostVersions`, `__edenHereText`, `__edenMvuSnapshotStatus`, `__composeTest` | `map/app/feedback.mjs:15` | 在整个仓库里都没有写入方的只读钩子（代码注释里也承认 `__edenHostVersions` 「目前没有写入方（历史洞）」）。 | remove, or wire a writer (open item 2) | 内部 | S5 | 各 1 个 map 文件（`feedback.mjs`、`compose.mjs`），测试 0、工具 0。给死名字改名是白费功夫。 已删除，没有改名（连同只为它们存在的报告字段）；没有探针写过它们。 **已在 S5-3 删除。** |
 | `window.__estate`, `__estateKick`, `__estateWatchdog`, `__estateFirstFrame`, `__estateFail`, `__closet` | `map/estate/main.js:1136` | 第一个设定包三维页的调试和启动握手全局变量（`index.html` 看门狗与 `main.js`）。 | keep; they move with the pack | 内部 | S10 | 属于设定包页面，不在引擎范围。`map/_proto/clouds.html` 里只在原型页用的名字（`__measure`、`__coc`、`__fade`、`__state`）不上线，忽略。名为 `__edges`、`__upd`、`__nt`、`__refresh`、`__h` 的对象属性和哨兵值 `'__book__'` 不是 `window` 全局变量。 |
 
 ### D. 短名与不透明标识符
@@ -231,34 +232,34 @@
 
 | 当前名 | 位置 | 含义 | 建议新名 | 类别 | 批次 | 备注 |
 |---|---|---|---|---|---|---|
-| `M` | `map/app/state.mjs:3` | 世界地点表 `{ places, fiefs, realms }`，从设定包的 `data.world` 读入（没有世界图的包给空表）。 | `worldData` | 内部 | S5 | 被 10 个文件导入；`compose.mjs`、`custom.mjs`、`tiers.mjs` 里还有同名的局部 `M`（懒加载的模块）。字段名 `fiefs` / `realms` 属于设定包词汇（S3 处理）。 |
-| `REG` | `map/app/state.mjs:3` | 从 `maps.json` 读入的地图注册表（按设定包重设基准）：所有地图、分组、标记列表。 | `mapRegistry` | 内部 | S5 | 被 28 个文件导入；也是 34 个兼容 getter 之一。和 `LayerRegistry`（`layerhost.mjs` 里的 `registry`）不是一回事。 |
-| `cur` | `map/app/state.mjs:3` | 当前地图的 id（字符串）。同类：`curData`、`ovData`、`depthData`。 | `currentMapId` (siblings `currentMapData`, …) | 内部 | S5 | 被 29 个文件导入（`curData`：13 个）。另有 5 个文件把局部变量 `cur` 用作「当前值」（`core/scrapbook`、`walk`、`lod`、`ledger`、`th-ui`）。 |
-| `viewer` | `map/app/state.mjs:3` | OpenSeadragon 实例。"Viewer" 同时又是页面 `viewer.html` 的名字。 | `osdViewer` | 内部 | S5 | 被 25 个文件导入；34 个兼容 getter 之一。术语表里「Viewer」指页面，这个是瓦片查看器。 |
-| `hereIdx` | `map/app/locate.mjs:111` | 当前地点引擎（`makeHere` 的结果），由注册表和用户的叫法建出；`hereRes` 向它问。`HX`（v1 模块）已不存在。 | `placeIndex` | 内部 | S5 | 被 2 个文件导入；setter `setHereIdx` 跟着改。 |
-| `P` | `map/app/plugins.mjs:5` | 外挂注册表：应用模块与根外挂之间唯一的通道（`register(name, api)`）。 | `plugins` | 内部 | S5 | 被 21 个文件导入。另有 5 个文件把局部 `P` 用作别的东西（`ui/icons.js` 路径表、`host-th.mjs` 偏好、`follow.mjs` 路径、`trips.mjs` 投影、`markers.mjs` 点列）：批量替换必须识别 import。 |
-| `BR` | `map/tavern/chars-flow.mjs:23` | 宿主脚本的 `MVUBridge` 实例。 | `mvuBridge` | 内部 | S5 | `eden-map.js` 里 `BR.` 有 64 处使用；S5 拆文件后变成跨模块标识符。 |
-| `MV`, `CTX`, `BG` | `map/tavern/chars-flow.mjs:19` | `MV` = `tavern/mvu.mjs` 模块；`CTX` = ContextPipeline 实例；`BG` = `tavern/budget.mjs` 模块（存储预算）。 | `mvuReaders`, `contextPipeline`, `storageBudget` | 内部 | S5 | 与 `BR` 同理（S5 拆文件）。`BG` 也是模块句柄，但不符合下一行的 `<名>m` 模式。 |
-| `INVm` and 20 siblings | `map/tavern/loot-flow.mjs:164` | 懒加载的模块句柄，模式为 `<缩写>m`（共 21 个）：`PRm` protocol、`FOGm` core/depth、`SRCm` sources、`CPm` compose、`NAVm` navigator、`WBJm` wb_jit、`XTMm` wb_crystallize、`ACm` action、`RNGm` rng、`LEDm` ledger、`PUm` pickup、`BBm` baibai、`TRm` trips、`INVm` inventory、`STm` stash、`RTm` routine、`TLm` timeline、`KFm` keyframes、`CXm` characters、`SPm` splash、`THm` th。 | `<module>Module`, e.g. `stashStoreModule` | 内部 | S5 | 名字随文件改名（表 A）。`MDm`（= `BR.modes`）是另一种句柄。无冲突：新名字在 `map/` 里现在都不存在。 |
-| `SELF`, `OWNER`, `UL` | `map/tavern/eden-map.js:26` | `SELF` = 脚本所在的 `.../map/` 基础地址；`OWNER` = 脚本身份（`s:<id>` 或 `u:<SELF>`）；`UL` = 界面语言 `zh` / `en`。 | `scriptBase`, `scriptOwner`, `uiLang` | 内部 | S5 | `SELF` 还出现在 `edenapi.mjs` 和 `host-routes.mjs`（`createRoutes` 的参数）的注释里。 |
-| `nm` | `map/app/i18n.mjs:23` | 对象的本地化名称：`name`、`name_en`，或查字典。 | `localName` | 内部 | S5 | 被 10 个文件导入；也在 `window.I18N` 里。`core/pickup`、`app/vision`、`host-th`、`spatial`、`inventory` 里的局部 `nm`（处理过的字符串）是另一回事。 |
-| `t` | `map/app/i18n.mjs:21` | 界面文案查询：先看设定包的 `strings` 覆盖，再查字典；支持 `{var}` 代入。 | `uiText` | 内部 | S5 | 被 8 个文件导入。单字母，又是常见的局部变量名。 |
-| `tr` | `map/app/i18n.mjs:22` | 通过 `names` 字典翻译专有名词。 | `translateName` | 内部 | S5 | 被 1 个文件导入；也在 `window.I18N` 里。 |
-| `tx` | `map/app/util.mjs:6` | 经 `window.I18N.t` 查文案，查不到就用内联的中文兜底；不做变量代入。 | `uiTextOr` | 内部 | S5 | 被 12 个文件导入。`window.I18N.tx` 同名，但还会代入变量：一个名字两种行为。`chars.mjs`、`compose.mjs`、`inv.mjs` 里的局部 `T` 包的是第二种。 |
-| `T` | `map/chars.mjs:18` | 外挂里对 `window.I18N.tx` 的局部别名。其他文件里的 `T` 是另一回事（`ui/sheet.js` 文案表、`topbar.mjs` 瓦片尺寸、`keyframes.mjs` 顶层楼号）。 | `uiTextOr` (import it) | 内部 | S5 | 3 个外挂各自定义了一份（`chars`、`compose`、`inv`）。 |
-| `PR` | `map/app/util.mjs:14` | `core/protocol.mjs` 模块，启动时加载（`setPR`）；旁边的 `PROTO` 是版本常量。 | `protocol` | 内部 | S5 | 被 3 个文件导入。"PR" 容易读成 pull request。 |
-| `est` | `map/app/estate.mjs:28` | 当前打开的三维子页会话 `{ id, frame, ready }`（或 `null`）。 | `subpageSession` | 内部 | S5 | 被 3 个文件导入；兼容 getter。`tiers.mjs:121` 里局部 `est` 是布尔值（「是不是庄园地图」）：类型不同，名字相同。 |
-| `lp` | `map/app/loadprog.mjs:4` | 整屏加载进度组件的懒加载访问函数。 | `loadingProgress` | 内部 | S5 | 被 2 个文件导入（`tiers.mjs`、`estate.mjs`）。`context.mjs:166` 把局部 `lp` 当「地点路径」用。 |
-| `LS` | `map/app/extapi.mjs:15` | 带设定包命名空间的 `localStorage` 包装（存储被禁用时为 `null`）。 | `packStorage` | 内部 | S5 | 被 3 个文件导入；兼容 getter。`host-th.mjs:33` 为宿主脚本另建了一个同职责的 `LS`。 |
-| `NT`, `ntQ` | `map/app/shell.mjs:115` | 查看器里的通知组件实例及其队列。`eden-map.js:284` 里另有一个 `NT`，是宿主的通知实例。 | `noticeLayer`, `noticeQueue` | 内部 | S5 | 被 1 个文件导入。 |
-| `H2V`, `V2H`, `V2S`, `S2V` | `map/core/protocol.mjs:9` | 协议 `SCHEMA` 的方向标签：宿主 → 查看器、查看器 → 宿主、查看器 → 子页、子页 → 查看器。模块内常量；值是 `host→viewer` 等字符串。 | `HOST_TO_VIEWER`, `VIEWER_TO_HOST`, `VIEWER_TO_SUBPAGE`, `SUBPAGE_TO_VIEWER` | 内部 | S5 | 没有导出，但 `docs/ARCHITECTURE.md` §4 和计划里都引用了。值字符串出现在测试里；要么保持要么同步改测试。 |
-| `KEY` (five copies) | `map/tavern/tick.mjs:6` | 五个模块各导出一个存储键常量：`tick`（`edenMapTick`）、`action`（`edenMapInject`）、`compose`（`edenMapCompose`）、`navigator`（`edenMapNav`）、`wb_jit`（`edenMapWbJit`）。 | `<MODULE>_STORAGE_KEY`, e.g. `TICK_STORAGE_KEY` | 内部 | S5 | 位置：`tick.mjs:6`、`action.mjs:7`、`compose.mjs:5`、`navigator.mjs:10`、`wb_jit.mjs:11`。`core/storage.mjs` 的登记处仍是唯一来源；值保持不变（外部契约，表 F）。 |
-| `MAX` (two copies) | `map/tavern/action.mjs:10` | 模板句的最大字符数（300），`action.mjs` 与 `compose.mjs:7` 各一份。 | `MAX_TEMPLATE_CHARS` | 内部 | S5 | 同一个上限定义了两次。 |
-| `OPS` (two different sets) | `map/core/ledger.mjs:27` | `ledger.OPS` = `['OP_LOOT', 'OP_ROUTINE', 'OP_EVENT']`（结算指令）；`ops.OPS`（`tavern/ops.mjs:16`）= `['OP_EVENT', 'OP_CLUE', 'OP_MARKER', 'OP_SUGGEST']`（规划器操作）。`OP_EVENT` 两边都有。 | `LEDGER_OPS`, `PLANNER_OPS` | 内部 | S5 | 同名导出、含义不同、还有一个共同成员。读代码时的陷阱。 |
-| `get` (three copies) | `map/core/storage.mjs:71` | `storage.get(键, 默认值)`；`mvu.get(对象, 路径)`（`tavern/mvu.mjs:10`）与 `adapter.get(对象, 路径)`（`tavern/adapter.mjs:25`）是两个几乎一样的路径读取函数，各自还抄了一份 `val`。 | `storageGet`; `getByPath` (merge the two copies) | 内部 | S5 | `storage.get` 总是以 `TCStore.get` 形式使用，真正撞名的是那两个路径读取函数。可以合并。 |
-| `on` | `map/app/cvd.mjs:19` | 返回色觉模式是否开启（`mode() !== '0'`）。`fog.mjs` 里另有一个局部 `on()`，对应另一个开关。 | `isEnabled` | 内部 | S5 | 像动词，读起来像「事件监听 on」。 |
-| `ico` | `map/app/util.mjs:9` | 从 `window.UIIcon` 取图标的 SVG。 | `iconSvg` | 内部 | S5 | 被 2 个文件导入。`esc`（`util.mjs:7`，21 个导入方）有 3 个字母、也够清楚；只有在批量改名脚本本来就要跑时才顺带改成 `escapeHtml`（可选）。 |
-| `MB`, `DAY`, `AGE` | `map/core/budget.mjs:24` | `MB` = 1048576 字节；`DAY`（`tavern/selfcheck.mjs:169`）= 一天的毫秒数；`AGE`（`tavern/events.mjs:94`）= 楼层距离阈值 `{ live: 7, after: 20, fade: 40 }`。 | `BYTES_PER_MB`, `MS_PER_DAY`, `EVENT_AGE_MSGS`（`msgIndex` 距离） | 内部 | S5 | 导出的常量，名字里没有单位。 |
+| `M` | `map/app/state.mjs:3` | 世界地点表 `{ places, fiefs, realms }`，从设定包的 `data.world` 读入（没有世界图的包给空表）。 | `worldData` | 内部 | S5 | 被 10 个文件导入；`compose.mjs`、`custom.mjs`、`tiers.mjs` 里还有同名的局部 `M`（懒加载的模块）。字段名 `fiefs` / `realms` 属于设定包词汇（S3 处理）。 **已在 S5-3 改名。** |
+| `REG` | `map/app/state.mjs:3` | 从 `maps.json` 读入的地图注册表（按设定包重设基准）：所有地图、分组、标记列表。 | `mapRegistry` | 内部 | S5 | 被 28 个文件导入；也是 34 个兼容 getter 之一。和 `LayerRegistry`（`layerhost.mjs` 里的 `registry`）不是一回事。 **已在 S5-3 改名。** |
+| `cur` | `map/app/state.mjs:3` | 当前地图的 id（字符串）。同类：`curData`、`ovData`、`depthData`。 | `currentMapId` (siblings `currentMapData`, …) | 内部 | S5 | 被 29 个文件导入（`curData`：13 个）。另有 5 个文件把局部变量 `cur` 用作「当前值」（`core/scrapbook`、`walk`、`lod`、`ledger`、`th-ui`）。 同族连同 setter 一起改：`curData` -> `currentMapData`、`ovData` -> `overviewMapData`（`setCur` -> `setCurrentMapId`、`setCurData`、`setOvData`；`M`、`REG`、`viewer` 同理）。 **已在 S5-3 改名。** |
+| `viewer` | `map/app/state.mjs:3` | OpenSeadragon 实例。"Viewer" 同时又是页面 `viewer.html` 的名字。 | `osdViewer` | 内部 | S5 | 被 25 个文件导入；34 个兼容 getter 之一。术语表里「Viewer」指页面，这个是瓦片查看器。 **已在 S5-3 改名。** |
+| `hereIdx` | `map/app/locate.mjs:111` | 当前地点引擎（`makeHere` 的结果），由注册表和用户的叫法建出；`hereRes` 向它问。`HX`（v1 模块）已不存在。 | `placeIndex` | 内部 | S5 | 被 2 个文件导入；setter `setHereIdx` 跟着改。 **已在 S5-3 改名。** |
+| `P` | `map/app/plugins.mjs:5` | 外挂注册表：应用模块与根外挂之间唯一的通道（`register(name, api)`）。 | `plugins` | 内部 | S5 | 被 21 个文件导入。另有 5 个文件把局部 `P` 用作别的东西（`ui/icons.js` 路径表、`host-th.mjs` 偏好、`follow.mjs` 路径、`trips.mjs` 投影、`markers.mjs` 点列）：批量替换必须识别 import。 **已在 S5-3 改名。** |
+| `BR` | `map/tavern/chars-flow.mjs:23` | 宿主脚本的 `MVUBridge` 实例。 | `mvuBridge` | 内部 | S5 | `eden-map.js` 里 `BR.` 有 64 处使用；S5 拆文件后变成跨模块标识符。 **已在 S5-3 改名。** |
+| `MV`, `CTX`, `BG` | `map/tavern/chars-flow.mjs:19` | `MV` = `tavern/mvu.mjs` 模块；`CTX` = ContextPipeline 实例；`BG` = `tavern/budget.mjs` 模块（存储预算）。 | `mvuReaders`, `contextPipeline`, `storageBudget` | 内部 | S5 | 与 `BR` 同理（S5 拆文件）。`BG` 也是模块句柄，但不符合下一行的 `<名>m` 模式。 **已在 S5-3 改名。** |
+| `INVm` and 20 siblings | `map/tavern/loot-flow.mjs:164` | 懒加载的模块句柄，模式为 `<缩写>m`（共 21 个）：`PRm` protocol、`FOGm` core/depth、`SRCm` sources、`CPm` compose、`NAVm` navigator、`WBJm` wb_jit、`XTMm` wb_crystallize、`ACm` action、`RNGm` rng、`LEDm` ledger、`PUm` pickup、`BBm` baibai、`TRm` trips、`INVm` inventory、`STm` stash、`RTm` routine、`TLm` timeline、`KFm` keyframes、`CXm` characters、`SPm` splash、`THm` th。 | `<module>Module`, e.g. `stashStoreModule` | 内部 | S5 | 名字随文件改名（表 A）。`MDm`（= `BR.modes`）是另一种句柄。无冲突：新名字在 `map/` 里现在都不存在。 按各自加载的模块命名（21 个名字，见 `tools/rename_s5_globals_extract.py` 的 `HANDLES`）；`MDm` 不动。 **已在 S5-3 改名。** |
+| `SELF`, `OWNER`, `UL` | `map/tavern/eden-map.js:26` | `SELF` = 脚本所在的 `.../map/` 基础地址；`OWNER` = 脚本身份（`s:<id>` 或 `u:<SELF>`）；`UL` = 界面语言 `zh` / `en`。 | `scriptBase`, `scriptOwner`, `uiLang` | 内部 | S5 | `SELF` 还出现在 `edenapi.mjs` 和 `host-routes.mjs`（`createRoutes` 的参数）的注释里。 **已在 S5-3 改名。** |
+| `nm` | `map/app/i18n.mjs:23` | 对象的本地化名称：`name`、`name_en`，或查字典。 | `localName` | 内部 | S5 | 被 10 个文件导入；也在 `window.I18N` 里。`core/pickup`、`app/vision`、`host-th`、`spatial`、`inventory` 里的局部 `nm`（处理过的字符串）是另一回事。 **已在 S5-3 改名。** |
+| `t` | `map/app/i18n.mjs:21` | 界面文案查询：先看设定包的 `strings` 覆盖，再查字典；支持 `{var}` 代入。 | `uiText` | 内部 | S5 | 被 8 个文件导入。单字母，又是常见的局部变量名。 **已在 S5-3 改名。** |
+| `tr` | `map/app/i18n.mjs:22` | 通过 `names` 字典翻译专有名词。 | `translateName` | 内部 | S5 | 被 1 个文件导入；也在 `window.I18N` 里。 **已在 S5-3 改名。** |
+| `tx` | `map/app/util.mjs:6` | 经 `window.I18N.t` 查文案，查不到就用内联的中文兜底；不做变量代入。 | `uiTextOr` | 内部 | S5 | 被 12 个文件导入。`window.I18N.tx` 同名，但还会代入变量：一个名字两种行为。`chars.mjs`、`compose.mjs`、`inv.mjs` 里的局部 `T` 包的是第二种。 **已在 S5-3 改名。** |
+| `T` | `map/chars.mjs:18` | 外挂里对 `window.I18N.tx` 的局部别名。其他文件里的 `T` 是另一回事（`ui/sheet.js` 文案表、`topbar.mjs` 瓦片尺寸、`keyframes.mjs` 顶层楼号）。 | `uiTextOr` (import it) | 内部 | S5 | 3 个外挂各自定义了一份（`chars`、`compose`、`inv`）。 有 11 个外挂 / 视图文件（不是 3 个）定义过它；现在都 import `uiTextOr`；`createDialogView` 与 `createEventsFx` 的 `{ T }` 依赖是 `{ uiTextOr }`。 **已在 S5-3 改名。** |
+| `PR` | `map/app/util.mjs:14` | `core/protocol.mjs` 模块，启动时加载（`setPR`）；旁边的 `PROTO` 是版本常量。 | `protocol` | 内部 | S5 | 被 3 个文件导入。"PR" 容易读成 pull request。 `setPR` -> `setProtocol`。 **已在 S5-3 改名。** |
+| `est` | `map/app/estate.mjs:28` | 当前打开的三维子页会话 `{ id, frame, ready }`（或 `null`）。 | `subpageSession` | 内部 | S5 | 被 3 个文件导入；兼容 getter。`tiers.mjs:121` 里局部 `est` 是布尔值（「是不是庄园地图」）：类型不同，名字相同。 **已在 S5-3 改名。** |
+| `lp` | `map/app/loadprog.mjs:4` | 整屏加载进度组件的懒加载访问函数。 | `loadingProgress` | 内部 | S5 | 被 2 个文件导入（`tiers.mjs`、`estate.mjs`）。`context.mjs:166` 把局部 `lp` 当「地点路径」用。 **已在 S5-3 改名。** |
+| `LS` | `map/app/extapi.mjs:15` | 带设定包命名空间的 `localStorage` 包装（存储被禁用时为 `null`）。 | `packStorage` | 内部 | S5 | 被 3 个文件导入；兼容 getter。`host-th.mjs:33` 为宿主脚本另建了一个同职责的 `LS`。 宿主脚本自己的 `LS`（依赖袋的键）不动。 **已在 S5-3 改名。** |
+| `NT`, `ntQ` | `map/app/shell.mjs:115` | 查看器里的通知组件实例及其队列。`eden-map.js:284` 里另有一个 `NT`，是宿主的通知实例。 | `noticeLayer`, `noticeQueue` | 内部 | S5 | 被 1 个文件导入。 宿主脚本自己的 `NT`（宿主通知实例）不动。 **已在 S5-3 改名。** |
+| `H2V`, `V2H`, `V2S`, `S2V` | `map/core/protocol.mjs:9` | 协议 `SCHEMA` 的方向标签：宿主 → 查看器、查看器 → 宿主、查看器 → 子页、子页 → 查看器。模块内常量；值是 `host→viewer` 等字符串。 | `HOST_TO_VIEWER`, `VIEWER_TO_HOST`, `VIEWER_TO_SUBPAGE`, `SUBPAGE_TO_VIEWER` | 内部 | S5 | 没有导出，但 `docs/ARCHITECTURE.md` §4 和计划里都引用了。值字符串出现在测试里；要么保持要么同步改测试。 **已在 S5-3 改名。** |
+| `KEY` (five copies) | `map/tavern/tick.mjs:6` | 五个模块各导出一个存储键常量：`tick`（`edenMapTick`）、`action`（`edenMapInject`）、`compose`（`edenMapCompose`）、`navigator`（`edenMapNav`）、`wb_jit`（`edenMapWbJit`）。 | `<MODULE>_STORAGE_KEY`, e.g. `TICK_STORAGE_KEY` | 内部 | S5 | 位置：`tick.mjs:6`、`action.mjs:7`、`compose.mjs:5`、`navigator.mjs:10`、`wb_jit.mjs:11`。`core/storage.mjs` 的登记处仍是唯一来源；值保持不变（外部契约，表 F）。 **已在 S5-3 改名。** |
+| `MAX` (two copies) | `map/tavern/action.mjs:10` | 模板句的最大字符数（300），`action.mjs` 与 `compose.mjs:7` 各一份。 | `MAX_TEMPLATE_CHARS` | 内部 | S5 | 同一个上限定义了两次。 **已在 S5-3 改名。** |
+| `OPS` (two different sets) | `map/core/ledger.mjs:27` | `ledger.OPS` = `['OP_LOOT', 'OP_ROUTINE', 'OP_EVENT']`（结算指令）；`ops.OPS`（`tavern/ops.mjs:16`）= `['OP_EVENT', 'OP_CLUE', 'OP_MARKER', 'OP_SUGGEST']`（规划器操作）。`OP_EVENT` 两边都有。 | `LEDGER_OPS`, `PLANNER_OPS` | 内部 | S5 | 同名导出、含义不同、还有一个共同成员。读代码时的陷阱。 **已在 S5-3 改名。** |
+| `get` (three copies) | `map/core/storage.mjs:71` | `storage.get(键, 默认值)`；`mvu.get(对象, 路径)`（`tavern/mvu.mjs:10`）与 `adapter.get(对象, 路径)`（`tavern/adapter.mjs:25`）是两个几乎一样的路径读取函数，各自还抄了一份 `val`。 | `storageGet`; `getByPath` (merge the two copies) | 内部 | S5 | `storage.get` 总是以 `TCStore.get` 形式使用，真正撞名的是那两个路径读取函数。可以合并。 两个路径读取器（`tavern/mvu-readers.mjs`、`tavern/stat-path-mapping.mjs`）改名 `getByPath`（没有合并：行为不变）；`storage.get` 保留原名，它与 `LocalStore.get` 同形（一种接口、两个对象）。 **已在 S5-3 改名。** |
+| `on` | `map/app/cvd.mjs:19` | 返回色觉模式是否开启（`mode() !== '0'`）。`fog.mjs` 里另有一个局部 `on()`，对应另一个开关。 | `isEnabled` | 内部 | S5 | 像动词，读起来像「事件监听 on」。 **已在 S5-3 改名。** |
+| `ico` | `map/app/util.mjs:9` | 从 `window.UIIcon` 取图标的 SVG。 | `iconSvg` | 内部 | S5 | 被 2 个文件导入。`esc`（`util.mjs:7`，21 个导入方）有 3 个字母、也够清楚；只有在批量改名脚本本来就要跑时才顺带改成 `escapeHtml`（可选）。 **已在 S5-3 改名。** |
+| `MB`, `DAY`, `AGE` | `map/core/budget.mjs:24` | `MB` = 1048576 字节；`DAY`（`tavern/selfcheck.mjs:169`）= 一天的毫秒数；`AGE`（`tavern/events.mjs:94`）= 楼层距离阈值 `{ live: 7, after: 20, fade: 40 }`。 | `BYTES_PER_MB`, `MS_PER_DAY`, `EVENT_AGE_MSGS`（`msgIndex` 距离） | 内部 | S5 | 导出的常量，名字里没有单位。 **已在 S5-3 改名。** |
 
 ### E. 聊天变量键
 
@@ -359,8 +360,8 @@
 
 ~~1. **审计发现的潜在 bug（本次不修）。** `app/host.mjs:52,54` 调用 `P.TCFog?.mute?.(…)`，但 `fog.mjs` 把 `TCFog` 挂在 `window` 上、从未登记到 `P`，所以 `P.TCFog` 永远是 `undefined`，回放期间的静音（Part 5-4）从不运行。S5 改名时应让两处访问走同一条路；行为修复是另一个小改动。~~ ✅ 2026-09-30 已在 S0-D 修复（`fog.mjs` 把 `TCFog` 登记进 `P`）。
 
-2. **死钩子。** `__edenHostVersions`、`__edenHereText`、`__edenMvuSnapshotStatus`、`__composeTest` 在整个仓库里只有读、没有写。删掉或补上写入方；不要给它们改名。
-3. **过期的属主字符串。** `core/storage.mjs` `KEYS` 的 `owner` 字段写着 `events.js`、`chars.js`、`custom.js`、`trips.js`、`security.js`（5 个名字、8 个键），而这些文件是 `.mjs`。只是文档；随 S5 文件改名一起修。
+~~2. **死钩子。** `__edenHostVersions`、`__edenHereText`、`__edenMvuSnapshotStatus`、`__composeTest` 在整个仓库里只有读、没有写。删掉或补上写入方；不要给它们改名。~~ ✅ 2026-10-01 e8de25b3 已在 S5-3 删除（读取与只为它们存在的代码路径；没有探针写过它们）。
+~~3. **过期的属主字符串。** `core/storage.mjs` `KEYS` 的 `owner` 字段写着 `events.js`、`chars.js`、`custom.js`、`trips.js`、`security.js`（5 个名字、8 个键），而这些文件是 `.mjs`。只是文档；随 S5 文件改名一起修。~~ ✅ 2026-10-01 e8de25b3 已在 S5-3 修正（属主现为 `events-view.mjs`、`characters-view.mjs`、`custom-names-view.mjs`、`trips-view.mjs`、`security.mjs`）。
 ~~4. **待定：第一个设定包怎样保留旧名字。** 要么由设定包清单声明旧名字（存储前缀 `edenMap`、聊天根键 `eden_map`、世界书标记前缀 `eden_`），只有引擎默认值变中性，这样什么都不用迁移；要么全部改名、旧名字永远读。第一条路更便宜，而且对世界书标记更安全：漏读一个旧标记，我们就会把自己的条目当成用户的。聊天根键和存储前缀现在已经是这种做法。~~ ✅ 2026-09-30 已定，见「Decisions」(a)。
 
 ~~5. **待定：只有用户能定的名字。** 标识符里的中性前缀（本文假定用「Spatial Map / Spatial OS」（D5）里的 `spatial` / `Spatial`）、引擎仓库名、新的 npm 包名。~~ ✅ 2026-09-30 已定，见「Decisions」(b)。

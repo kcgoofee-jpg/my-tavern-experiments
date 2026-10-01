@@ -48,9 +48,9 @@ Rules that follow:
   no host globals except the registered single owners (`storage.mjs`, `logbuf.mjs`, `room-gallery-db.mjs`).
 - **`map/tavern` is the host side.** Only `mvu-bridge.mjs` may touch the `Mvu` / `SillyTavern` globals; the pure
   pipelines (`context`, `msgtext`, `sanitize`, `preset`) touch no host global at all.
-- **Viewer plugins meet each other only through `P`.** App modules import shared state explicitly from
+- **Viewer plugins meet each other only through `plugins`.** App modules import shared state explicitly from
   `app/state.mjs` and the small helper modules beside it (`dom-helpers.mjs`, `protocol-stamp.mjs`, `text-lookup.mjs`, …); root plugins import that same core state and reach one another (and app
-  modules that are not guaranteed to be loaded) through the `P` registry in `app/plugins.mjs`; a missing plugin is
+  modules that are not guaranteed to be loaded) through the `plugins` registry in `app/plugins.mjs`; a missing plugin is
   `undefined` and callers guard. The pure `tavern/` modules the viewer needs (`events-parse`, `characters-parse`,
   `mvu-readers`, `picker`, `compose-templates`) are the same files the host uses, loaded with a dynamic `import()` resolved against
   `document.baseURI` so they also work inside `srcdoc`.
@@ -129,7 +129,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `current-pack.mjs` | The current pack, resolved once at startup (live binding `PACK`, `packData(key)`). |
 | `data-mapping-settings.mjs` | Settings "data and mapping" page: local storage usage and current data sources (read only). |
 | `depth-haze.mjs` | Closes the depth → haze → `depth-haze` slot / fog canvas loop for the current depth plane. |
-| `dom-helpers.mjs` | DOM helpers: `$`, `esc`, `ico`, `afterLoadIdle`. |
+| `dom-helpers.mjs` | DOM helpers: `$`, `esc`, `iconSvg`, `afterLoadIdle`. |
 | `drawer-glue.mjs` | The single drawer / right rail: where the layer switcher sits, drawer visibility, legend page, empty place page, opening on a place card. |
 | `dzi-worker-src.mjs` | Source string of the tile decode worker (exported as text so a blob worker works inside `srcdoc`). |
 | `dzi-worker.mjs` | Viewer-side client of the tile decode worker, with fallback to the stock image path. |
@@ -140,10 +140,9 @@ mutable state is written only by its declaring module through `set*()`.
 | `fps.mjs` | Debug frame-rate readout and sub-page toggle. |
 | `hires-inset-tiles.mjs` | High-resolution inset tiles overlaid when zooming into an inset's area. |
 | `host-messages.mjs` | Host message interface: origin / token checks, protocol validation, dispatch by type. |
-| `i18n.mjs` | Language and theme: dictionary, `t` / `tr` / `nm`, `setLang`, `setTheme`. |
+| `i18n.mjs` | Language and theme: dictionary, `uiText` / `translateName` / `localName`, `setLang`, `setTheme`. |
 | `json-cache.mjs` | `getJSON`: data files fetched once, failures not cached. |
 | `layer-host.mjs` | Viewer-side LayerRegistry assembly: registry singleton, `.vpslot` slot containers, `window.LayerHostApi` summary. |
-| `legacy-globals.mjs` | Compatibility face: read-only `window` getters for the old global names used by browser probes. |
 | `load-progress.mjs` | Progress of the full-screen loading layer, sharing `ui/progress.mjs`. |
 | `locate.mjs` | Initial view and current place: `focusStart`, `markHere`, `hereRes` (over `place-resolver.mjs`), `drawnAt`, `jumpHere`. |
 | `map-level-nav.mjs` | Layer navigation: layer switcher strip, up one level, Esc handling, single-key shortcuts. |
@@ -153,8 +152,8 @@ mutable state is written only by its declaring module through `set*()`.
 | `notice-layer.mjs` | Notice layer (handed to the host when embedded, `ui/notice.mjs` when standalone) and the first-run hint. |
 | `one-hand-mode.mjs` | One-hand mode: handedness switch with the floating button following it; starts the settings-home actions and quick zoom. |
 | `place-resolver.mjs` | The current location: `nodes.locate` over the node tree, mapped to the result shape the consumers read (`level`, `map`, `marker`, `room`, `node`, `transit`); also used by `tavern/spatial-contract.mjs` and the builder tools. |
-| `plugins.mjs` | Plugin registry `P`: the only channel between app modules and root plugins. |
-| `protocol-stamp.mjs` | Protocol version stamp and message exit: `PROTO`, `post`, `PR`, the sub-page origin `SUB_ORIGIN`. |
+| `plugins.mjs` | Plugin registry `plugins`: the only channel between app modules and root plugins. |
+| `protocol-stamp.mjs` | Protocol version stamp and message exit: `PROTO`, `post`, `protocol`, the sub-page origin `SUB_ORIGIN`. |
 | `quests-view.mjs` | Viewer rendering of dynamic clue nodes as breathing circles. |
 | `quick-zoom.mjs` | Single-finger zoom (double-tap, hold, drag) on touch screens. |
 | `scale-handoff.mjs` | Scale hand-off between the world map and the city layers, plus the surrounding transition ring. |
@@ -167,10 +166,11 @@ mutable state is written only by its declaring module through `set*()`.
 | `status-dot.mjs` | Status dot: load / tier state as a dot with a screen-reader label. |
 | `subpage3d-host.mjs` | Estate / 3D sub-page host: blob iframe with `<base>`, failure hook, sub-page messages, generic 3D viewer entry. |
 | `tavernhelper-settings.mjs` | Settings for TavernHelper features: worldbook add-on sync, state injection, macros, injection depth. |
-| `text-lookup.mjs` | `tx`: UI text from the dictionary when it has the key, else the fallback with variables filled in. |
+| `text-lookup.mjs` | `uiTextOr`: UI text from the dictionary when it has the key, else the fallback with variables filled in. |
 | `theme.mjs` | Per-view theme from the pack (`ui.theme.views`, K-R70): one `<style id="packTheme">`, `body[data-glow]` for the view that defines a glow. |
 | `topbar.mjs` | Top bar layout, background warm-up, version code. |
 | `traffic-view.mjs` | Viewer rendering of light streams on the `fx` slot canvas. |
+| `viewer-debug.mjs` | Debug face: one read-only `window.ViewerDebug` namespace (`mapRegistry`, `currentMapId`, `osdViewer`, `go`, …) that browser probes read instead of ad-hoc `window` globals. |
 | `viewport-mode.mjs` | Viewport and device flags: `narrow` (narrow panel), `coarse` (touch or low-memory device). |
 | `visibility.mjs` | Viewport visibility render throttling: pause switch with reference-counted reasons. |
 | `vision-view.mjs` | Viewer side of vision cones and stealth: draws fields of view, reports the hardest sighting on a move. |
@@ -326,8 +326,8 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
   be recomputed from the chat floors; caches are droppable. The map's own state lives in the pack's chat variable
   (`eden_map` for eden), never in the card's `stat_data`.
 - **Protocol** (`core/protocol.mjs`): every message is an envelope `{ type, v, … }` checked against `SCHEMA` by
-  `check` / `accept`. Each entry carries a direction tag: `H2V` host → viewer, `V2H` viewer → host, `V2S` viewer →
-  sub-page (estate / 3D), `S2V` sub-page → viewer, plus `both` for a few relay messages. Unknown types from a
+  `check` / `accept`. Each entry carries a direction tag: `HOST_TO_VIEWER` host → viewer, `VIEWER_TO_HOST` viewer → host, `VIEWER_TO_SUBPAGE` viewer →
+  sub-page (estate / 3D), `SUBPAGE_TO_VIEWER` sub-page → viewer, plus `both` for a few relay messages. Unknown types from a
   newer protocol version are dropped silently; older or same-version unknowns are dropped with one warning. The
   filter checks shape only and never inspects text content.
 - **Transport**: the host mounts the viewer as a `srcdoc` iframe whose `<base>` points at the CDN, and sub-pages

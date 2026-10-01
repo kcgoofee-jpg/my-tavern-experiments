@@ -38,7 +38,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 
 - **`map/core` 不指向任何别处。** 不许有离开 `map/core/` 的相对 import（看门狗检查 2），除登记的单一属主（`storage.mjs`、`logbuf.mjs`、`room-gallery-db.mjs`）外不许碰宿主全局。
 - **`map/tavern` 是宿主侧。** 只有 `mvu-bridge.mjs` 可以碰 `Mvu` / `SillyTavern` 全局；纯流水线（`context`、`msgtext`、`sanitize`、`preset`）完全不碰宿主全局。
-- **查看器外挂之间只经 `P` 互相找到。** app 模块显式 import `app/state.mjs` 与它旁边的小工具模块（`dom-helpers.mjs`、`protocol-stamp.mjs`、`text-lookup.mjs` 等）里的共享状态；根目录外挂 import 同一份核心状态，彼此（以及不保证已加载的 app 模块）经 `app/plugins.mjs` 的 `P` 注册表相见；没加载的外挂是 `undefined`，调用方自己带守卫。查看器要用的纯 `tavern/` 模块（`events-parse`、`characters-parse`、`mvu-readers`、`picker`、`compose-templates`）和宿主用的是同一批文件，用按 `document.baseURI` 解析的动态 `import()` 加载，所以在 `srcdoc` 里也能用。
+- **查看器外挂之间只经 `plugins` 互相找到。** app 模块显式 import `app/state.mjs` 与它旁边的小工具模块（`dom-helpers.mjs`、`protocol-stamp.mjs`、`text-lookup.mjs` 等）里的共享状态；根目录外挂 import 同一份核心状态，彼此（以及不保证已加载的 app 模块）经 `app/plugins.mjs` 的 `P` 注册表相见；没加载的外挂是 `undefined`，调用方自己带守卫。查看器要用的纯 `tavern/` 模块（`events-parse`、`characters-parse`、`mvu-readers`、`picker`、`compose-templates`）和宿主用的是同一批文件，用按 `document.baseURI` 解析的动态 `import()` 加载，所以在 `srcdoc` 里也能用。
 - **包只是数据。** 卡的原名只原样出现在 `map/packs/**`、`map/data/**` 和 `tools/**` 下的构建工具里。
 - **`map/estate/**`、`map/props/*/**`、`map/vendor/**`、`map/packs/**`、`map/data/**` 不算引擎源码**，只减不增账本（§9）从不扫描它们；`map/estate/` 是第一个包的三维页。
 
@@ -109,7 +109,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `current-pack.mjs` | 当前设定包，启动时解析一次（活绑定 `PACK`、`packData(键)`）。 |
 | `data-mapping-settings.mjs` | 设置「数据与映射」页：本机存储占用与当前数据来源（只读）。 |
 | `depth-haze.mjs` | 为当前纵深平面闭合「纵深 → 霾 → `depth-haze` 槽位 / 迷雾画布」这一环。 |
-| `dom-helpers.mjs` | DOM 小工具：`$`、`esc`、`ico`、`afterLoadIdle`。 |
+| `dom-helpers.mjs` | DOM 小工具：`$`、`esc`、`iconSvg`、`afterLoadIdle`。 |
 | `drawer-glue.mjs` | 唯一抽屉 / 右栏：层切换器落点、抽屉可见性、图例页、「地点」页空态、点地点卡时的开合。 |
 | `dzi-worker-src.mjs` | 瓦片解码线程的源码串（以文本导出，这样 `srcdoc` 里也能起 blob worker）。 |
 | `dzi-worker.mjs` | 瓦片解码线程的查看器侧客户端，失败时退回原生图片路径。 |
@@ -120,10 +120,9 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `fps.mjs` | 调试用帧率读数与子页开关。 |
 | `hires-inset-tiles.mjs` | 放大到插图覆盖范围时叠加的高分辨率插图瓦片。 |
 | `host-messages.mjs` | 宿主消息接口：来源 / 令牌检查、协议校验、按类型分派。 |
-| `i18n.mjs` | 语言与主题：词典、`t` / `tr` / `nm`、`setLang`、`setTheme`。 |
+| `i18n.mjs` | 语言与主题：词典、`uiText` / `translateName` / `localName`、`setLang`、`setTheme`。 |
 | `json-cache.mjs` | `getJSON`：数据文件只取一次，失败不缓存。 |
 | `layer-host.mjs` | 查看器侧的 LayerRegistry 装配：注册表单例、`.vpslot` 槽位容器、`window.LayerHostApi` 摘要。 |
-| `legacy-globals.mjs` | 兼容面：给浏览器探针用的旧全局名，挂在 `window` 上的只读 getter。 |
 | `load-progress.mjs` | 整屏加载层的进度，共用 `ui/progress.mjs`。 |
 | `locate.mjs` | 初始视角与当前地点：`focusStart`、`markHere`、`hereRes`（基于 `place-resolver.mjs`）、`drawnAt`、`jumpHere`。 |
 | `map-level-nav.mjs` | 层导航：层切换条、上一级、Esc 处理、单字符快捷键。 |
@@ -133,8 +132,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `notice-layer.mjs` | 通知层（嵌入时交给宿主，单独打开时用 `ui/notice.mjs`）与首次打开提示。 |
 | `one-hand-mode.mjs` | 单手模式：惯用手切换与悬浮按钮跟随；拉起设置首页动作与单指缩放。 |
 | `place-resolver.mjs` | 当前地点：在节点树上跑 `nodes.locate`，再还原成使用方读的结果形状（`level`、`map`、`marker`、`room`、`node`、`transit`）；`tavern/spatial-contract.mjs` 与构建工具也用它。 |
-| `plugins.mjs` | 外挂注册表 `P`：app 模块与根目录外挂之间唯一的通道。 |
-| `protocol-stamp.mjs` | 协议版本戳与消息出口：`PROTO`、`post`、`PR`、子页 origin `SUB_ORIGIN`。 |
+| `plugins.mjs` | 外挂注册表 `plugins`：app 模块与根目录外挂之间唯一的通道。 |
+| `protocol-stamp.mjs` | 协议版本戳与消息出口：`PROTO`、`post`、`protocol`、子页 origin `SUB_ORIGIN`。 |
 | `quests-view.mjs` | 动态线索节点在查看器里的渲染：会呼吸的圈。 |
 | `quick-zoom.mjs` | 触屏单指缩放（双击后按住拖动）。 |
 | `scale-handoff.mjs` | 世界图与城市层之间的尺度交接，以及周边过渡环。 |
@@ -147,10 +146,11 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `status-dot.mjs` | 状态点：加载 / 档位状态的圆点与读屏标签。 |
 | `subpage3d-host.mjs` | 庄园 / 三维子页宿主：带 `<base>` 的 blob iframe、失败钩子、子页消息、通用三维查看器入口。 |
 | `tavernhelper-settings.mjs` | 设置里的酒馆助手功能：世界书附加条目同步、状态注入、类宏、注入深度。 |
-| `text-lookup.mjs` | `tx`：字典有键时取字典文字，否则用兜底并代入变量。 |
+| `text-lookup.mjs` | `uiTextOr`：字典有键时取字典文字，否则用兜底并代入变量。 |
 | `theme.mjs` | 包的分视图主题（`ui.theme.views`，K-R70）：一个 `<style id="packTheme">`，带光晕的视图由 `body[data-glow]` 标出。 |
 | `topbar.mjs` | 顶栏布局、后台预热、版本编码。 |
 | `traffic-view.mjs` | 流光在 `fx` 槽位画布上的查看器渲染。 |
+| `viewer-debug.mjs` | 调试面：一个只读的 `window.ViewerDebug` 命名空间（`mapRegistry`、`currentMapId`、`osdViewer`、`go` 等），浏览器探针读它，不再读散挂的 `window` 全局。 |
 | `viewport-mode.mjs` | 视口与设备标志：`narrow`（窄面板）、`coarse`（触屏或低内存设备）。 |
 | `visibility.mjs` | 视口可见性渲染节流：按原因引用计数的暂停开关。 |
 | `vision-view.mjs` | 视野锥与潜行的查看器侧：画视野，移动时报告最难的一次被目击。 |
@@ -299,7 +299,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 
 - **宿主读，查看器画。** 变量或楼层变化时 `eden-map.js` 调度一次重算，调用各流水线，用带类型的消息把结果推出去。查看器只向上发意图（拾取、填入、探索、设置），从不写宿主状态。
 - **聊天记录是唯一真相**（铁律 §2.4）：每个派生值（事态、人物、行程、关键帧）都能从聊天楼层重算；缓存随时可丢。地图自己的状态存在包的聊天变量里（伊甸是 `eden_map`），绝不写卡的 `stat_data`。
-- **协议**（`core/protocol.mjs`）：每条消息是信封 `{ type, v, … }`，由 `check` / `accept` 按 `SCHEMA` 检查。每个条目带方向标签：`H2V` 宿主 → 查看器、`V2H` 查看器 → 宿主、`V2S` 查看器 → 子页（庄园 / 三维）、`S2V` 子页 → 查看器，另有 `both` 给少数中继消息。更新版本协议发来的未知类型静默丢弃；同版本或更旧的未知类型丢弃并告警一次。过滤只查形状，从不看文字内容。
+- **协议**（`core/protocol.mjs`）：每条消息是信封 `{ type, v, … }`，由 `check` / `accept` 按 `SCHEMA` 检查。每个条目带方向标签：`HOST_TO_VIEWER` 宿主 → 查看器、`VIEWER_TO_HOST` 查看器 → 宿主、`VIEWER_TO_SUBPAGE` 查看器 → 子页（庄园 / 三维）、`SUBPAGE_TO_VIEWER` 子页 → 查看器，另有 `both` 给少数中继消息。更新版本协议发来的未知类型静默丢弃；同版本或更旧的未知类型丢弃并告警一次。过滤只查形状，从不看文字内容。
 - **传输**：宿主把查看器挂成 `<base>` 指向 CDN 的 `srcdoc` iframe，子页挂成 blob iframe。`createBus` 包装一对一的窗口通道，带来源 / 令牌检查。
 - **宿主模块**（`host-routes`、`host-lifecycle`、`host-th`、`host-about`）与 S5-1 的 flow 模块（`loot-flow`、`chars-flow`、`root-store`、`host-api`、`host-checks`、`llm-flow`、`modes-flow`、`timeline-flow`；各是 `createX(host)`，依赖袋 `host` 由入口建一次）放着原来在 `eden-map.js` 里的胶水；入口只保留调度、副作用与清理组装。
 

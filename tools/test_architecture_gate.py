@@ -280,6 +280,19 @@ def main():
         assert info['counts'] == {'map/app/a.mjs': 1}, f'重叠词应按最长词只数一次：{info["counts"]}'
     case('计数：重叠词（伊甸庄园 / 庄园 / 伊甸）按最长词只数一次', overlap_counts_once)
 
+    def tc_globals_rules():   # S5-3：旧 TC* 全局硬零（window. / P. / parent. / globalThis. 前缀）；注释、非引擎路径、别的前缀不拦
+        root = fake_root({'map/app/a.mjs': "window.TCEvents.set(m);\nconst x = P.TCChars;\nparent.TCStore.get('k');\nglobalThis.TC3d = 1;\n"
+                                           "// window.TCSheet in a comment\nwindow.ViewerDrawer.set('peek'); const TCCvd = 1; window.TCthreeFX2 = 0;\n"})
+        bad, n = gate.check_tc_globals(root=root)
+        assert n == 1 and len(bad) == 4, f'应拦 4 处（TCthreeFX2 小写第三字母不是 TC<大写>），实际 {len(bad)}：{bad}'
+        assert 'map/app/a.mjs:1:' in bad[0] and 'map/app/a.mjs:4:' in bad[3], f'行号不对：{bad}'
+        root = fake_root({'map/estate/main.js': "window.TCthreeFX = {};\n", 'tools/browser/x.mjs': "window.TCEvents;\n"})
+        bad, n = gate.check_tc_globals(root=root)
+        assert not bad and n == 0, f'引擎范围外（庄园页 / 工具）不该被扫：{bad}'
+        bad, n = gate.check_tc_globals()
+        assert not bad and n > 100, f'仓库现状有旧 TC* 全局或扫描面太小：{bad[:3]} {n}'
+    case('拦截：新引擎代码里的 window.TC* / P.TC*（硬零；注释、庄园页、工具不计）；仓库现状零', tc_globals_rules)
+
     def core_still_zero_terms():
         assert not gate.check_pack0(), 'map/core 出现卡词'
     case('仓库现状：map/core 卡词硬零', core_still_zero_terms)
