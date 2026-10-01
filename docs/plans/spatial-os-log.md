@@ -1168,3 +1168,15 @@ blocker: none
 open: none
 cleanup: done (probe server stopped by the probe; no background jobs of mine; no launch.json entries; worktree s9b2 left)
 === END ===
+=== RESULT R-B1B2 ===
+status: DONE
+items: interior models refinement for B1 and B2 ✓ · physical layering and floor textures (rugs, mats, parquet, duckboard, epoxy, tread plate) ✓ · 4-layer equipment and furniture details (plinth, frame, cushions, hardware, displays) ✓ · retail vitrines and adult toy armamentarium ✓ · water cage, cryo-chiller, stasis pods, surgical table, boundary generator detailing ✓ · house.glb rebuilt within budget (635,216 bytes, +10.44% vs 575,144 baseline, under +25% cap) ✓ · preview captures archived in ~/eden-map-review/render/b1b2/ ✓ · estate:b1b2 final, verify and ship recorded ✓
+commits: (this commit) feat(estate): architectural realism, zoned flooring, and equipment detailing for B1/B2 (R-B1B2)
+pushed: yes
+tests: node 1238/1239 pass (1 skipped, environment) | smoke PASS | arch PASS | check_maps PASS | probes: estate=PASS accept=PASS
+house.glb size: before 575,144 bytes -> after 635,216 bytes (+10.44%, well under +25% cap of 718,930 bytes)
+deviations: user authorized direct ship bypassing checkpoint (instruction #2); preview screenshots archived to ~/eden-map-review/render/b1b2/
+blocker: none
+open: none
+cleanup: done
+=== END ===
