@@ -26,6 +26,7 @@ export const EXACT = {
   presentKey: L(['在场人物', '在场角色', '当前在场'], []),                                               // the usual name of the table of the people with the player
   presentTable: L(['在场人物', '在场角色', '当前在场', '在场', '同行人物'], ['present']),              // every name that means the same
   outfitOrder: L(['衣服', '裤子', '鞋子'], ['top', 'bottom', 'shoes']),                                // display order of the parts of an outfit
+  inventory: L(['物品栏', '背包', '道具栏', '道具', '物品', '储物', '行囊', '仓库'], ['inventory', 'backpack', 'items', 'bag', 'storage']),   // the field of a card's own item table (K-R76); the first word names the map's own slot
   empty: L(['待初始化', '无', '空', '未知', '-', '—'], ['none']),                                     // values that mean "not set"
 };
 /** the roster slots' field-name words (K-R42; `x-slot`): has = anywhere in the name, end = at the end with `min` characters before it, exact = the whole name. */

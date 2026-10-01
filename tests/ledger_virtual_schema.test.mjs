@@ -69,21 +69,22 @@ test('落盘失败不出队（下一轮重试，宁慢不丢）；换聊天 rese
 test('槽位声明幂等：名 / 路径 / 虚拟性都没变 → 对象原样（不抖出新的落盘）', () => {
   const probe = slotProbe({});
   const a = slotDeclare(null, probe, 7);
-  assert.equal(a.名, '物品栏'); assert.equal(a.虚拟, true); assert.equal(a.楼, 7); assert.deepEqual(a.物, undefined);
+  assert.equal(a.name, '物品栏'); assert.equal(a.virtual, true); assert.equal(a.msgIndex, 7); assert.deepEqual(a.facts, undefined);   // S6-2：ASCII 键
   assert.equal(slotDeclare(a, probe, 9), a);                          // 同一条声明：引用都不换
   const b = slotDeclare(a, slotProbe({ 背包: {} }), 9);                // 卡那边冒出真字段了 → 换声明
-  assert.equal(b.虚拟, false); assert.equal(b.名, '背包');
+  assert.equal(b.virtual, false); assert.equal(b.name, '背包');
 });
 
 test('增量写入：已在账上不算新增（防「用掉道具后被审计器复活」的反向错误）', () => {
   let slot = slotDeclare(null, slotProbe({}), 7);
   slot = slotPut(slot, [{ id: 'i1', name: '扳手', place: '车库' }], 8);
-  assert.equal(slot.件, 1); assert.equal(slot.added, 1);
-  assert.equal(slot.物.i1.名, '扳手'); assert.equal(slot.物.i1.楼, 8); assert.equal(slot.物.i1.地点, '车库');
+  const count = x => Object.keys(x.facts).length;   // S6-2：件数 = 事实条数
+  assert.equal(count(slot), 1); assert.equal(slot.added, 1);
+  assert.equal(slot.facts.i1.name, '扳手'); assert.equal(slot.facts.i1.msgIndex, 8); assert.equal(slot.facts.i1.place, '车库');
   const again = slotPut(slot, [{ id: 'i1', name: '扳手', place: '车库' }], 9);
-  assert.equal(again.added, 0); assert.equal(again.件, 1);
-  assert.equal(slotPut(slot, [{ id: '', name: '没编号' }, { id: 'i2' }]).件, 1);   // 没有 id / 没有名字：不入账
-  assert.equal(slotSave(slot).件, 1);
+  assert.equal(again.added, 0); assert.equal(count(again), 1);
+  assert.equal(count(slotPut(slot, [{ id: '', name: '没编号' }, { id: 'i2' }])), 1);   // 没有 id / 没有名字：不入账
+  assert.equal(count(slotSave(slot)), 1);
   assert.equal(slotSave(slotPut(slotDeclare(null, slotProbe({})), [])), null);   // 空槽位不落空壳
 });
 

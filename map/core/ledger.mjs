@@ -18,6 +18,7 @@
 // 纯模块：数据进、计划出；不碰 DOM / 宿主全局 / 存储 / 网络（看门狗机检）；node 单测 tests/ledger_disentangle.test.mjs。
 import { SLOTS, slotZ } from './layer-registry.mjs';
 import { seedOf } from './rng.mjs';
+import { exactWords } from './vocab.mjs';
 
 /** 四个结算子域（顺序即分账顺序，稳定输出用） */
 export const DOMAINS = ['assets', 'npc', 'events', 'depth'];
@@ -290,18 +291,20 @@ export function claim(state, rows, { floor = null, branch = null } = {}) {
 // ---------------- 虚拟账本槽位（W12 / 任务一）：Schema 缺失自愈拦截 ----------------
 // 老旧 / 非标卡片的 stat_data 里常常一个背包字段都没有，模型在 CoT 里判断「无处可写」就放弃更新，
 // 于是客观物理事实（拾取）凭空消失。这里的拦截分两步，两步都**不写宿主 stat_data**：
-//   ① 探路：宿主 stat_data 里认得出背包字段（物品栏 / 背包 / 道具…）就记住它的路径，拾取只补缺口、不重复写；
-//   ② 认不出来 = 由地图自己声明一个**虚拟槽位**（聊天变量顶层键，见 SLOT_ROOT），捕获的增量强制落到那里，
+//   ① 探路：宿主 stat_data 里认得出背包字段（词表见 core/vocab.mjs EXACT.inventory）就记住它的路径，拾取只补缺口、不重复写；
+//   ② 认不出来 = 由地图自己声明一个**虚拟槽位**（随地图自己的 stash 存储，见 tavern/stash-store.mjs），捕获的增量强制落到那里，
 //      下一轮把槽位与已知事实一起回注——事实永远有地方落，模型不必也不该去变量结构里新开字段。
 // 为什么不在 stat_data 里 `stat_data.物品栏 ||= {}`：卡的 MVU 带 zod 结构，未知键会被丢掉还可能触发校验报错
 // （docs/reviews/mvu_093/r1_author.md P1-2 原作者的明确要求；eden-map.js「不写进 stat_data」同一口径）。
-export const SLOT_ROOT = '槽位';
-/** 背包字段名候选（认得就用它当槽位名；认不出用第一个），大小写不敏感 */
-export const SLOT_KEYS = Object.freeze(['物品栏', '背包', '道具栏', '道具', '物品', '储物', '行囊', '仓库', 'inventory', 'backpack', 'items', 'bag', 'storage']);
+// S6-2：槽位的形状改为 ASCII 键 { name, path, virtual, msgIndex, facts: { <id>: { name, msgIndex, place? } } }（docs/kernel-schema.md K-R74）。
+/** 背包字段名候选（认得就用它当槽位名；认不出用第一个），大小写不敏感；词表在内核词表里 */
+export const SLOT_KEYS = Object.freeze(exactWords('inventory'));
 const SLOT_LOWER = SLOT_KEYS.map(k => k.toLowerCase());
 const SLOT_DEPTH = 2;         // 探路深度：顶层 + 一层子表（「资产.物品栏」这种也认）
+const MAX_FACTS = 200;        // 槽位账上最多记多少件（与 stash 行数上限同量级）
 const plainObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const slotIndexOf = k => SLOT_LOWER.indexOf(String(k ?? '').toLowerCase());
+const msgOf = v => (Number.isInteger(v) ? v : null);
 /** 深度优先找一个能当背包用的字段：返回 { key, path } 或 null（只认对象值，字符串 / 数字不当容器） */
 function findSlot(stat) {
   const walk = (o, pre, d) => {
@@ -326,42 +329,55 @@ export function slotProbe(stat) {
   return hit ? { key: hit.key, path: hit.path, virtual: false } : { key: SLOT_KEYS[0], path: '', virtual: true };
 }
 /** 槽位声明（幂等、只补不覆盖）：prev = 上一轮的声明，probe = slotProbe 的结果。名 / 路径 / 虚拟性任一变了才换新声明 */
-export function slotDeclare(prev, probe, floor = null) {
+export function slotDeclare(prev, probe, msgIndex = null) {
   const p = typeof probe?.key === 'string' && probe.key ? probe : slotProbe(null);
   const cur = plainObj(prev) ? prev : null;
-  if (cur && cur.名 === p.key && cur.路径 === (p.path || '') && !!cur.虚拟 === !!p.virtual) return cur;
-  return { 名: p.key, 路径: p.path || '', 虚拟: !!p.virtual, 楼: Number.isInteger(floor) ? floor : null };
+  if (cur && cur.name === p.key && cur.path === (p.path || '') && !!cur.virtual === !!p.virtual) return cur;
+  return { name: p.key, path: p.path || '', virtual: !!p.virtual, msgIndex: msgOf(msgIndex) };
 }
-/** 增量写入（同 id 覆盖，绝不重写整表）：rows = [{ id, 名 | name, 地点?, 楼? }]；
+/** 增量写入（同 id 覆盖，绝不重写整表）：rows = [{ id, name | 名, place | 地点?, msgIndex | floor? }]；
  *  返回新的槽位对象（多一个 added = 这一批新增了几件）；没有合法行时原样返回。 */
-export function slotPut(cur, rows, floor = null) {
-  const base = plainObj(cur) ? cur : slotDeclare(null, slotProbe(null), floor);
-  const 物 = { ...(plainObj(base.物) ? base.物 : {}) };
+export function slotPut(cur, rows, msgIndex = null) {
+  const base = plainObj(cur) ? cur : slotDeclare(null, slotProbe(null), msgIndex);
+  const facts = { ...(plainObj(base.facts) ? base.facts : {}) };
   let added = 0;
   for (const r of Array.isArray(rows) ? rows : []) {
     const id = clip(r?.id ?? r?.key, 40), name = clip(r?.name ?? r?.名, 60);
     if (!id || !name) continue;
-    const row = { 名: name, 楼: Number.isInteger(r?.floor) ? r.floor : (Number.isInteger(floor) ? floor : null) };
-    const place = clip(r?.地点 ?? r?.place, 60); if (place) row.地点 = place;
-    if (!物[id] || 物[id].名 !== name || 物[id].地点 !== row.地点) added++;   // 同名同址 = 已在账上，不算新增
-    物[id] = row;
+    const row = { name, msgIndex: msgOf(r?.msgIndex) ?? msgOf(r?.floor) ?? msgOf(msgIndex) };
+    const place = clip(r?.place ?? r?.地点, 60); if (place) row.place = place;
+    if (!facts[id] || facts[id].name !== name || facts[id].place !== row.place) added++;   // 同名同址 = 已在账上，不算新增
+    facts[id] = row;
   }
-  return { ...base, 物, 件: Object.keys(物).length, added };
+  return { ...base, facts, added };
 }
 /**
  * 槽位回注文案（一轮一行；没有槽位 → ''）。**只陈述地图自己的账本**，不点名卡里的字段：
  * 附加规则不许引用卡片的字段名（docs/reviews/mvu_093/r1_author.md P1-1），所以这里只说「有 / 没有槽位」与件数。
  */
 export function slotLine(slot, cap = 120) {
-  if (!plainObj(slot) || !slot.名) return '';
-  const n = Number(slot.件) || 0;
-  const out = slot.虚拟
-    ? `[地图账本·槽位] 本卡变量没有背包字段：地图已自建槽位「${slot.名}」，拾取事实一律记进地图账本（现 ${n} 件），不写变量也不会丢。`
+  if (!plainObj(slot) || !slot.name) return '';
+  const n = plainObj(slot.facts) ? Object.keys(slot.facts).length : 0;
+  const out = slot.virtual
+    ? `[地图账本·槽位] 本卡变量没有背包字段：地图已自建槽位「${slot.name}」，拾取事实一律记进地图账本（现 ${n} 件），不写变量也不会丢。`
     : `[地图账本·槽位] 本卡的背包栏由地图按缺口对齐（现 ${n} 件）；已有的不重复写。`;
   return out.length > cap ? out.slice(0, cap - 1) + '…' : out;
 }
-/** 槽位 → 落盘形状（写进聊天变量：eden_map.槽位）；空槽位返回 null（不写空壳） */
-export const slotSave = slot => (plainObj(slot) && slot.名 && Number(slot.件) > 0 ? slot : null);
+/** 槽位 → 落盘形状；没有名字或没有事实的槽位返回 null（不写空壳） */
+export const slotSave = slot => (plainObj(slot) && slot.name && plainObj(slot.facts) && Object.keys(slot.facts).length ? slot : null);
+/** 校验落盘的槽位（读回时用）：形状不对 → null；字段裁剪，最多 MAX_FACTS 件。 */
+export function slotNorm(raw) {
+  if (!plainObj(raw) || typeof raw.name !== 'string' || !raw.name.trim()) return null;
+  const facts = {};
+  for (const [id, f] of Object.entries(plainObj(raw.facts) ? raw.facts : {})) {
+    if (Object.keys(facts).length >= MAX_FACTS) break;
+    const k = clip(id, 40), name = clip(f?.name, 60);
+    if (!k || !plainObj(f) || !name) continue;
+    const row = { name, msgIndex: msgOf(f.msgIndex) }, place = clip(f.place, 60); if (place) row.place = place;
+    facts[k] = row;
+  }
+  return { name: clip(raw.name, 60), path: clip(raw.path, 80), virtual: !!raw.virtual, msgIndex: msgOf(raw.msgIndex), facts };
+}
 
 /** 标准摘要（自检 / 设置页）：四域各自的槽位与条数、丢弃数、水位与待结算携带 */
 export function describe(plan, state = null, carryState = null) {
@@ -376,4 +392,4 @@ export function describe(plan, state = null, carryState = null) {
 
 export const Ledger = { DOMAINS, SLOT_OF, DOMAIN_LABEL, OPS: LEDGER_OPS, MAX_OPS, EVENT_TYPES, AUTHORITY, AUTHORITY_DEFAULT, promotable,
   domainOf, slotOf, unmarshal, envEntry, dispatch, factKey, audit, stripWhy, carry, carryLine, claim, describe,
-  SLOT_ROOT, SLOT_KEYS, slotProbe, slotDeclare, slotPut, slotLine, slotSave };
+  SLOT_KEYS, slotProbe, slotDeclare, slotPut, slotLine, slotSave, slotNorm };

@@ -7,9 +7,9 @@
 > `tools/check_pack.py` (schema-2 branch) and `tests/pack_schema_v2.test.mjs`. Schema 1 (`docs/pack-schema-v1.md`)
 > stays frozen and keeps working through `map/core/compat-v1.mjs` (step S1-impl-2).
 
-Every rule has a stable id `K-R01` … `K-R73`; later prompts and tests cite them. Ids never move: rules added after the
+Every rule has a stable id `K-R01` … `K-R76`; later prompts and tests cite them. Ids never move: rules added after the
 first draft (K-R63–K-R70, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit; K-R71–K-R73
-were added by S6-1, K-R74–K-R78 are reserved for the rest of S6 (list at the end of §13). The choices left to the user
+were added by S6-1, K-R74–K-R76 by S6-2, K-R77–K-R78 are reserved for the rest of S6 (list at the end of §13). The choices left to the user
 are `K-01` … `K-09` (§0). Everything else was decided by the designer and is listed with its reason in §14.
 
 ## 0. Decisions for the user (review sheet)
@@ -462,7 +462,7 @@ kernel never writes `stat_data` (brief rule 5).
 message's explicit place tag → the table-database extension → a community preset's status line → none. When a path is
 missing from the pack or not found in `stat_data`, the kernel searches `stat_data` (depth ≤ 3, shallow first) for a key
 matching its per-language field-name vocabulary (plus `lexicon.<lang>.fields`) with the right value kind (text for location, time, period and date;
-object for outfit; number for reputation). The user's override in Settings (variable mapping, stored per card) always
+object for outfit; number for reputation; object or list for inventory). The user's override in Settings (variable mapping, stored per card) always
 wins. Roster tables are not vars: they are the sources of `entities.groups` (merged to avoid two places for one path).
 
 **K-R39 — Periods.** `periods` are author-named bands in time order, each `{ id, label, start: "HH:MM", words[],
@@ -470,6 +470,10 @@ dark }`. Resolution: the period text is matched against the bands' words (longes
 HH:MM read from the time text selects the band with `start ≤ time <` the next start, wrapping past midnight; else no
 band. Default: `dawn 05:00`, `day 07:00`, `dusk 17:00`, `night 20:00 (dark)`. `dark` drives night looks; tiles and
 image views may carry `variants` keyed by band id.
+
+**K-R76 — The card's own item table.** `vars.inventory` (optional, a dot path, read only) names the table of the card's `stat_data` that holds the player's items; without it the kernel uses the field its inventory words find (`EXACT.inventory`: 物品栏, 背包, …, inventory, backpack, …) when that field really exists in the card;
+with neither there is no such table. `cardInventory(stat, path)` reads it as rows `{ name, qty?, text? }` (at most 100, names ≤ 60 code points, text ≤ 80): an object keyed by item name (a number is the quantity, a string the text, an object its first number and first string) or a list (strings are names; objects: the name field by the kernel's name words,
+else the first string field, and the first number as the quantity). MVU `[value, note]` pairs are unwrapped, keys starting with `_` or `$` are skipped, and nothing is ever written back. It reaches the viewer as `eden-map:inv.card = { path, rows }` (`null` when there is no table). The Items tab that shows it, with the other groups, lands in S6-3.
 
 ## 6. entities
 
@@ -544,8 +548,21 @@ word, a known item name — stash names and carried items — or a bare noun of 
 accepts today). A pack adds `verbs` and `not_items` and switches kernel verbs off with `verbs_off`, per language.
 
 **K-R47 — One store.** What the player carries lives in `<chat var>.stash` (first pack: `eden_map.stash`, decision D4).
-The v1 keys for the old inventory and the virtual slot migrate into it on first read (S6). Its row shape is S6's. It is
+The v1 keys for the old inventory and the virtual slot migrate into it on first read (S6). Its shape is K-R74. It is
 recomputable from the chat and never written into `stat_data`.
+
+**K-R74 — One stash store.** Every item the map knows about lives in `<chat var>.stash` (first pack: `eden_map.stash`; the key is `stash` for every pack, ASCII). Shape: `{ v: 1, items: { <id>: Row }, seq, slot, removed, since, upTo, from? }` with
+`Row = { name (1–60), place (≤ 60, '' = none), map (≤ 40), node ('' = not resolved), hidden, note? (≤ 200), qty? (2–999), src, carried, msgIndex, mark? }`. `src` says where the row came from: `text` (a pickup found in a message), `map` (a world-stash row the player took), `api` (the extension API),
+`legacy` (a v1 row whose origin is not recognisable); `carried` says whether the player has it with them (default: true for `text` and `map`, false otherwise). Only the Items tab reads `carried`: the place card's "stored" line and the injected digest line keep listing every row by its place.
+`mark` (text rows) is a hash of the message text the row came from. `slot` is the W12 virtual slot, the map's own account of the pickups it captured: `{ name, path, virtual, msgIndex, facts: { <id>: { name, msgIndex, place? } } }`; `removed` holds the tombstones of text rows removed through the API
+(at most 200, the oldest dropped; a tombstone stays when the item is picked up again, it is the only record of the removal). Ids are kept from v1 (`i<n>`, the ids of world-stash rows, name-derived ids): the 3D page's "already taken" list and the world-stash glow rely on them.
+**Migration** runs once, when the chat variable has no `stash` and has one of the v1 keys (a constant in `tavern/stash-store.mjs`, read only, removed at S10): each v1 row becomes a row (`src` `text` when its id is the name-derived id, `map` when it is a world-stash id, else `legacy`), the slot is mapped key for key,
+`since` is the first message the new store scans, and `from` records the keys. The v1 keys are never written or deleted: the root is replaced as a whole, so every save carries their values back verbatim, and a chat that never had them gets none. The injected digest line and slot line are byte-identical to v1 for the same rows.
+
+**K-R75 — Reconciliation.** The store is a cache of the chat. The live fold (`step`) scans each message once, from `since` on and never before it (the newest message is scanned again every round, so a swipe of it is seen), replays a message whose text changed since its rows were made
+(its text rows and slot facts are rebuilt from the new text; rows another channel owns stay), and turns a pickup into a text row unless the item is already in the store or was removed at or after that message. `recompute(messages, { since, actions })` rebuilds a store from nothing: first the actions that belong to no message,
+then each message in order followed by the actions recorded at it (map pickups, API puts and removals: `actionsOf(stored)`). `reconcile(stored, recomputed)` is `ok` when both hold the same ids and, per id, the same `name, src, carried, msgIndex, qty, hidden, note, mark` (and `place` when the caller used the same places)
+and the same slot facts; `missing`, `extra` and `changed` list the differences. A drift is reported as a count (Settings self-check), never repaired silently; history before `since` is not backfilled.
 
 ## 8. events
 
@@ -752,14 +769,10 @@ No runtime tree, or an owner node that is not in it, means no level and the tab 
 `else` (a node outside the owner's subtree, or one the tree does not have); `unknown` (no node). Empty sections are not drawn, and when fewer than two are left the rows are drawn flat. **Nothing is hidden:** a macro level opens every section;
 a micro level opens only `here` and keeps the rest as collapsed sections the user can open (the open state is remembered). Section headings are never list items; the tab's count, badges, switches, avatars and fly-to are unchanged.
 
+**Added by S6-2:** K-R74 (§7, the stash store), K-R75 (§7, reconciliation) and K-R76 (§5, the card's own item table; its Items tab follows in S6-3).
+
 **Planned in S6 (ids reserved; the full text lands with the step that implements each one, design in
 `docs/entity-protocol.md`).**
-- K-R74 — One stash store `<chat var>.stash`: shape, row fields, `carried`, `slot`, tombstones; one-way migration from the
-  v1 keys, which stay read only until S10 (refines K-R47). S6-2.
-- K-R75 — Reconciliation: the store equals the fold of the message scan from `since` plus the recorded actions, item for
-  item; a changed message is replayed. S6-2.
-- K-R76 — In-card inventory: optional `vars.inventory`, discovery by the kernel's inventory words, read only; the Items
-  tab's four groups. S6-2, S6-3.
 - K-R77 — Pickup sentences: normal and strict verb classes, forms that never count, the English determiner rule (O-1),
   pack `verbs_strict`, overlay `items.pickup`. S6-3.
 - K-R78 — Settlement write paths: the npc and events domains write holes into `<chat var>.ledger` through the settlement
@@ -955,7 +968,7 @@ exactly one place, it becomes a hint of that place rather than of the tier (v1 l
 | `data.events` path / `builtin` | events block (A.5) | auto / pack data (S4-1) |
 | `data.worldbook` (`{ entries: [{ name, content }] }`) | `llm.worldbook.entries` (id `wb_<hash of name>`) | auto |
 | `preload` | dropped (the v2 loader preloads the block files it needs) |
-| `vars` | `vars` (location, time, period, date, outfit, reputation); field names → `entities.fields` | auto |
+| `vars` | `vars` (location, time, period, date, outfit, reputation, inventory); field names → `entities.fields` | auto (`inventory`: S6-2, K-R76, a schema-1 pack may set `vars.inventory`) |
 | `cdn`, `features` | same | auto |
 | `theme.accent` | `ui.theme.accent` | auto |
 | `strings` (`key`, `key@en`) | `ui.strings.<pack lang>.key`, `ui.strings.en.key` | auto |
