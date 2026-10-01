@@ -1538,7 +1538,18 @@ tests: node 1384/1385 (1 skipped) | smoke PASS | arch PASS | house.glb 711064 by
 deviations: none
 blocker: none
 open: none
+=== RESULT B2-C01 ===
+status: DONE
+items: 1 (B2-C01 惩罚室: 水牢钢笼、制冷压缩机、重型约束立柱、机械受诫台、北联电击控制台、刑具展柜、地锚跪台) ✓
+commits:
+cdd8012b feat(estate): industrial realism modeling for B2-C01 punishment room with section clearance
+pushed: yes
+tests: node 1412/1413 (1 skipped) | smoke PASS | arch PASS | house.glb 717424 bytes (1506 bytes under 718930 cap)
+deviations: none; all standalone equipment tops strictly <= z+1.44m (full tops and caps retained under z+1.50m section cut)
+blocker: none
+open: none
 cleanup: done
 === END ===
+
 
 
