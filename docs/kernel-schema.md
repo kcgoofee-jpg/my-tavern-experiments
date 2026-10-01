@@ -453,6 +453,17 @@ only as a legacy form for the page that ships with the engine; it is ignored in 
 compat output of a foreign schema-1 pack (K-R63). Designer rule, not a user choice: a page from a card would run
 arbitrary code on the tavern page.
 
+### 4.6 Schema-2 packs in the viewer
+
+**K-R96 — Opening a schema-2 pack.** `core/pack.mjs` accepts `schema: 2` next to `schema: 1`: for a schema-2 manifest `validate` checks only `id` and `title`, `load` returns the resolved pack with `schema` and the manifest as `v2`, and the viewer (`app/current-pack.mjs`) runs `resolveBlocks` (block files relative to the pack folder), `validate2` (trusted only for a pack that ships with the engine, that is one loaded from `packs/<id>/`) and `withDefaults`. The viewer then works on an in-memory projection, `projectV2(pack, { base })` in `core/pack-v2-view.mjs` (pure), in the registry shape it already draws; no viewer module reads schema 2 itself, and a schema-1 pack never goes through it.
+- **Implicit views.** A pack with no `views` block (or an empty one) gets a schematic view on the root and on every node that has children: layout `tree`, depth 2, `open: locate`. Locating a node then opens its parent's schematic focused on it (K-R34 rule 3); entering a node with children opens its own. Implicit views are never exported.
+- **Maps.** A map is a node whose primary view (explicit or implicit) has kind `tiles`, `image` or `schematic`; the map id is the node id; `start` is `ui.start` mapped to its view's owner (K-R34), else the nearest map above it, else the first map. A map is `{ title: <node name>, title_en?: <i18n.en.name>, kind: 'points', base, data, view: { extent_m }, markers }` with `extent_m` from the view's `extent` or `[1600, 1000]`; `markers` has one entry per node drawn on the map `{ name, name_en?, sub?, alias, link? }` (`alias` = the node's `alias`, its name and its translated names; `link` opens the node's own map, set when it has one).
+- **Tile source.** `tiles` is the DZI path under the pack base (refused when there is no base: a card or file pack; problem `view-tiles-no-base`); `image` is `{ type: 'image', url }` from `src` under the base (no base: `view-image-no-base`; the `media` form belongs to a later step); `schematic` is `{ type: 'image', url: <generated picture> }` (K-R97). Every path is re-checked after URL resolution: no scheme, no absolute path, no way up (`view-path`, K-R64). `model3d` views are not projected yet (problem `view-3d-not-shown`, listed in the self-check).
+- **Virtual point files.** `v2/<pack id>/<map id>.json` = `{ extent_m, markers: [{ id, nx, ny, r }] }`, positions from `positionOf` (K-R31, K-R32; a node with no position sits near the centre) for framed views and from the schematic layout for schematic ones. The viewer's JSON cache is seeded with these files, so every module that fetches a map's data gets it unchanged.
+- **Runtime.** `makeRuntimeV2(pack, registry)` (`app/nodes-runtime-v2.mjs`) gives the reads of the schema-1 runtime from the pack's own tree: map ids are the projected maps, a map is its own host, `parent` is the nearest ancestor that is a map, `levels` follow K-R35 over the maps, `kind` is the primary view's kind, and `geo()` is the event geography of the tree. `standIn`, `zoneChildren` and `anchorIn` are empty.
+
+**K-R97 — Schematic layout.** `layoutSchematic(tree, owner, { layout, depth })` (`core/schematic.mjs`) returns `{ <node id>: { x, y } }` in 0..1 with margins of 0.06, deterministic (the same tree gives the same picture). `tree` (default): the owner at `{ x: 0.5, y: 0.08 }`; its descendants down to `depth` in rows, one row per level, rows evenly spaced down to y 0.92; each node's width share is the number of leaves of its subtree within the depth, and a parent is centred over its children; a row of more than 12 nodes wraps into several rows of equal length. `list`: one column in declaration order. `grid`: rows of ⌈√n⌉. `radial`: the owner in the middle and one ring per level. The picture, `schematicSvg(layout, tree)`, is an SVG of 1600 × 1000 units, transparent, with one line per parent-child edge (both ends in the layout) and one dot of radius 6 per node, in fixed neutral greys; it contains no text and no pack value (Z-11, K-R64), and `schematicUrl` encodes it as a `data:image/svg+xml` URL. Node names are the normal markers, so search, cards, events and the drawer work as on any map. An `image` view opens as a single picture (no slicing) and positions are fractions of it (K-R31).
+
 ## 5. vars
 
 **K-R37 — Read only.** Paths are dot paths into the card's `stat_data`; MVU `[value, note]` pairs are unwrapped. The
@@ -687,7 +698,7 @@ only for shipped packs (K-R63), and a name on the kernel's reserved list is refu
 | Missing | Engine behaviour |
 |---|---|
 | `nodes` | grow from chat (K-R26); until then a single run-time root `__root` named after the title |
-| `views` | no view is invented; view resolution ends at the root's schematic view (K-R34) |
+| `views` | implicit schematic views on the root and on every node with children (K-R96); view resolution ends at the root's schematic view (K-R34) |
 | a node's view | nearest ancestor view focused on the node (K-R34) |
 | a node's position | listed, drawn near the frame centre as "position unknown" (K-R32) |
 | `vars` | auto-discovery (K-R38) |
@@ -781,6 +792,8 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 
 **Added by S6-3:** K-R77 (§7, pickup sentences, strict verbs, never-forms, pack vocabulary) and K-R78 (§7, settlement write paths for the npc and events domains); the Items tab is in K-R76 (§5).
 
+**Added by S9-1:** K-R96 and K-R97 (§4.6, schema-2 packs in the viewer, implicit schematic views, schematic layout and picture).
+
 **Planned in S9** (reserved by S9-design, `docs/zero-config.md`; full text lands with the step specs in its appendix):
 - K-R90 pack resolution order and the legacy-default start (S9-2);
 - K-R91 a pack embedded in the card (S9-2);
@@ -788,8 +801,6 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 - K-R93 place candidates from the card's worldbook (S9-3);
 - K-R94 variables, people, start view and language from the card (S9-3);
 - K-R95 the automatic pack, its storage, stability and growth (S9-3);
-- K-R96 opening a schema-2 pack: projection to the viewer registry and the v2 runtime (S9-1);
-- K-R97 schematic layout and picture (S9-1);
 - K-R98 export as pack, and overlay export of a shipped pack (S9-3, S9b);
 - K-R99 importing a pack by URL or file (S9-2);
 - K-R100 edit mode and the draft (S9b);

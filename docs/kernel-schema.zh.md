@@ -425,6 +425,17 @@ v1 按固定的六级解析。改写成节点后，每一级都是树上的一�
 所有外来包里的 `x-page` 一律忽略，外来的 schema 1 包经 compat 转出来的也一样（K-R63）。这是设计规则，不请你拍板：卡里带的页面
 等于在酒馆页面上跑任意代码。
 
+### 4.6 查看器里的 schema-2 包
+
+**K-R96 —— 打开 schema-2 包。** `core/pack.mjs` 在 `schema: 1` 之外也收 `schema: 2`：schema-2 清单的 `validate` 只查 `id` 与 `title`，`load` 返回带 `schema` 的解析结果，并把清单放在 `v2` 里；查看器（`app/current-pack.mjs`）接着跑 `resolveBlocks`（块文件相对包目录）、`validate2`（只有随引擎发布的包才算可信，即从 `packs/<id>/` 加载的包）与 `withDefaults`。查看器用一份内存里的投影工作，`projectV2(pack, { base })`（`core/pack-v2-view.mjs`，纯函数），形状就是它现在画的注册表；没有任何查看器模块自己读 schema 2，schema-1 的包也从不经过它。
+- **隐式视图。** 没有 `views` 块（或为空）的包，在根和每个有子节点的节点上各得一个示意图视图：布局 `tree`，深度 2，`open: locate`。定位到某个节点就打开它父级的示意图并聚焦到它（K-R34 第 3 条）；进入有子节点的节点就打开它自己的。隐式视图从不导出。
+- **地图。** 主视图（显式或隐式）种类为 `tiles`、`image` 或 `schematic` 的节点就是一张地图；地图 id 就是节点 id；`start` 是 `ui.start` 对应到它视图的所有者（K-R34），否则取它之上最近的一张地图，再否则取第一张。一张地图是 `{ title: <节点名>, title_en?: <i18n.en.name>, kind: 'points', base, data, view: { extent_m }, markers }`，`extent_m` 取视图的 `extent`，没有就是 `[1600, 1000]`；`markers` 给地图上画出的每个节点一项 `{ name, name_en?, sub?, alias, link? }`（`alias` = 节点的 `alias`、名字与各语言译名；`link` 通到节点自己的地图，有才写）。
+- **底图来源。** `tiles` 是包目录下的 DZI 路径（没有 base 时拒绝：卡里的包与文件包；问题码 `view-tiles-no-base`）；`image` 是 `{ type: 'image', url }`，取包目录下的 `src`（没有 base：`view-image-no-base`；`media` 写法留给后面的步骤）；`schematic` 是 `{ type: 'image', url: <生成的图> }`（K-R97）。每条路径在 URL 解析后再查一遍：不许有协议头、绝对路径、上跳（`view-path`，K-R64）。`model3d` 视图暂不投影（问题码 `view-3d-not-shown`，列在自检里）。
+- **虚拟点位文件。** `v2/<包 id>/<地图 id>.json` = `{ extent_m, markers: [{ id, nx, ny, r }] }`，有画框的视图按 `positionOf`（K-R31、K-R32；没有位置的节点放在中心附近），示意图按示意图布局。查看器的 JSON 缓存被预先填入这些文件，所以任何取地图数据的模块都原样拿到。
+- **运行时。** `makeRuntimeV2(pack, registry)`（`app/nodes-runtime-v2.mjs`）按包自己的树给出 schema-1 运行时的全部读法：地图 id 是投影出的地图，地图自己就是宿主，`parent` 是最近的、本身是地图的祖先，`levels` 按 K-R35 在这些地图上算，`kind` 是主视图的种类，`geo()` 是这棵树的事件地理。`standIn`、`zoneChildren`、`anchorIn` 为空。
+
+**K-R97 —— 示意图布局。** `layoutSchematic(tree, owner, { layout, depth })`（`core/schematic.mjs`）返回 0..1 内的 `{ <节点 id>: { x, y } }`，边距 0.06，确定性（同一棵树画出同一张图）。`tree`（默认）：所有者在 `{ x: 0.5, y: 0.08 }`；后代按层成行，直到 `depth`，一层一行，行距均匀、到 y 0.92 为止；每个节点占的宽度是它子树在深度内的叶子数，父节点居中在子节点上方；一行超过 12 个节点就折成几行等长的行。`list`：按声明顺序排成一列。`grid`：每行 ⌈√n⌉ 个。`radial`：所有者在中央，每层一圈。图 `schematicSvg(layout, tree)` 是 1600 × 1000 单位的 SVG，透明底，每条父子边一条线（两端都在布局里），每个节点一个半径 6 的点，用固定的中性灰；不含文字、不含任何包里的值（Z-11、K-R64），`schematicUrl` 把它编码成 `data:image/svg+xml` 地址。节点名走普通标记，所以搜索、卡片、事件与抽屉和别的地图一样工作。`image` 视图作为单张图打开（不切片），位置是图的比例（K-R31）。
+
 ## 5. vars
 
 **K-R37 —— 只读。** 路径是卡的 `stat_data` 里的点号路径；MVU 的 `[值, 说明]` 自动拆开。内核从不写 `stat_data`（简报规则 5）。
@@ -611,7 +622,7 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 | 缺的 | 引擎行为 |
 |---|---|
 | `nodes` | 从聊天里长（K-R26）；长出来之前只有一个以标题命名、只存在于运行时的根 `__root` |
-| `views` | 不凭空造视图；选视图的规则最后落到根的示意图（K-R34） |
+| `views` | 根和每个有子节点的节点上各有一个隐式示意图视图（K-R96）；选视图的规则最后落到根的示意图（K-R34） |
 | 某个节点的视图 | 最近祖先的视图，聚焦到它（K-R34） |
 | 某个节点的位置 | 照样列出，画在中心附近，标「位置不详」（K-R32） |
 | `vars` | 自动发现（K-R38） |
@@ -696,6 +707,8 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 
 **S6-3 补上：** K-R77（§7，拾取句式、严格动词、永不算的句式、包的词表）与 K-R78（§7，npc 与事件两个域的结算写入路径）；物品页签在 K-R76（§5）。
 
+**S9-1 新增：** K-R96 与 K-R97（§4.6，查看器里的 schema-2 包、隐式示意图视图、示意图布局与图）。
+
 **S9 计划新增**（S9-design 预留，见 `docs/zero-config.md`；全文随其附录里的步骤规格落地）：
 - K-R90 包的解析顺序与旧默认包的启动（S9-2）；
 - K-R91 卡内嵌的包（S9-2）；
@@ -703,8 +716,6 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 - K-R93 从卡的世界书取地点候选（S9-3）；
 - K-R94 从卡里取变量、人物、开场视图与语言（S9-3）；
 - K-R95 自动包、它的存放、稳定性与生长（S9-3）；
-- K-R96 打开 schema-2 包：投影到查看器注册表与 v2 运行时（S9-1）；
-- K-R97 示意图布局与图片（S9-1）；
 - K-R98 导出为包，以及内置包的叠加层导出（S9-3、S9b）；
 - K-R99 按网址或文件导入包（S9-2）；
 - K-R100 编辑模式与草稿（S9b）；
