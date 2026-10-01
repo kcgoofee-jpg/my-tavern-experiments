@@ -9,7 +9,7 @@
 //   N.remove(key) · N.has(key) · N.get(key) · N.refresh() · N.list()
 // anchor() → { left, top, width, height, top0, bottom0, modal } | null（null = 整个视口）；top0 = 顶栏高度，bottom0 = 抽屉占的高度。
 const CSS = (root) => `
-${root} .nt-layer{position:fixed;z-index:30003;pointer-events:none;font:var(--nt-fs,13px)/1.5 var(--nt-font,system-ui,sans-serif);color:var(--nt-ink,#d5dde4)}
+${root} .nt-layer{position:fixed;z-index:var(--zh-top);pointer-events:none;font:var(--nt-fs,13px)/1.5 var(--nt-font,system-ui,sans-serif);color:var(--nt-ink,#d5dde4)}
 ${root} .nt-layer [hidden]{display:none!important}
 ${root} .nt-p1>*,${root} .nt-p2>*,${root} .nt-p0>*{pointer-events:auto}
 ${root} .nt-p0.nt-modal{pointer-events:auto}

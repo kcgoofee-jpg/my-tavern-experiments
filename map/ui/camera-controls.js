@@ -8,7 +8,7 @@ function ensureCSS() {
   if (document.getElementById(CSS_ID)) return;
   const s = document.createElement('style'); s.id = CSS_ID;
   s.textContent = `
-.cc-presets{position:fixed;display:flex;flex-direction:column;gap:4px;align-items:flex-end;pointer-events:none;z-index:6}
+.cc-presets{position:fixed;display:flex;flex-direction:column;gap:4px;align-items:flex-end;pointer-events:none;z-index:var(--zu-c3)}
 .cc-presets .cc-row{display:flex;gap:4px;pointer-events:auto}
 .cc-presets button{min-width:40px;min-height:32px;padding:0 8px;border:1px solid var(--line,rgba(255,255,255,.14));border-radius:8px;background:var(--surface-glass,rgba(21,27,32,.85));color:var(--ink,#d5dde4);font:500 12px/1 var(--font-ui,system-ui);cursor:pointer;white-space:nowrap}
 .cc-presets button:hover{border-color:var(--line-strong,rgba(255,255,255,.3))}
@@ -17,7 +17,7 @@ function ensureCSS() {
 .cc-compass svg{width:22px;height:22px;display:block}
 .cc-hint{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);transform:translateX(-50%);max-width:min(420px,92vw);
   background:var(--surface-glass,rgba(21,27,32,.92));border:1px solid var(--line,rgba(255,255,255,.14));border-radius:12px;box-shadow:var(--sh-2,0 6px 20px rgba(0,0,0,.35));
-  padding:10px 14px;font:13px/1.5 var(--font-ui,system-ui);color:var(--ink,#d5dde4);z-index:20;display:flex;gap:10px;align-items:flex-start}
+  padding:10px 14px;font:13px/1.5 var(--font-ui,system-ui);color:var(--ink,#d5dde4);z-index:var(--zu-cc-hint);display:flex;gap:10px;align-items:flex-start}
 .cc-hint ul{margin:0;padding:0 0 0 1.1em}
 .cc-hint li{margin:1px 0}
 .cc-hint button.cc-x{flex:none;margin-left:auto;border:0;background:transparent;color:var(--muted,#8591a0);cursor:pointer;font-size:16px;line-height:1;padding:2px}

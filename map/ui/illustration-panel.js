@@ -63,7 +63,7 @@ function ensureCSS() {
   if (document.getElementById('ilp-css')) return;
   const s = document.createElement('style'); s.id = 'ilp-css';
   s.textContent = `
-.ilp{position:fixed;inset:0;z-index:61;background:rgba(8,7,5,.92);display:flex;align-items:center;justify-content:center;color:#eee4cc;font:13px/1.5 system-ui,sans-serif}
+.ilp{position:fixed;inset:0;z-index:var(--zu-panel);background:rgba(8,7,5,.92);display:flex;align-items:center;justify-content:center;color:#eee4cc;font:13px/1.5 system-ui,sans-serif}
 .ilp-box{width:min(92vw,720px);max-height:88vh;overflow:auto;background:#151310;border:1px solid #3a352c;border-radius:8px;padding:14px 16px 18px}
 .ilp-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .ilp-hd h3{margin:0;font-size:15px}

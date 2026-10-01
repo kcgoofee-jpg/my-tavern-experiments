@@ -226,7 +226,7 @@ const CharactersView = (() => {
   function chatChanged() { loadPrefs(); render(); bar(); }
 
   const css = `
-  .chm{position:relative;width:0;height:0;overflow:visible;pointer-events:auto;cursor:pointer;z-index:calc(var(--zv-markers,70) + 1)}
+  .chm{position:relative;width:0;height:0;overflow:visible;pointer-events:auto;cursor:pointer;z-index:calc(var(--zv-markers) + 1)}
   .chm .chg{position:absolute;left:12px;top:-16px;display:flex;flex-wrap:nowrap;width:max-content;align-items:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
   /* fix3（用户 2026-09-28）：头像只留一圈人物色描边（2px），不再白边 + 外圈双层；状态（和你在一起）用右下角小圆点单独表示 */
   .chm .av,#evbar .chpane .av{--c:#888;position:relative;flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;box-sizing:border-box;border:2px solid var(--c);box-shadow:none;background:var(--c);color:#fff;

@@ -9,7 +9,7 @@
 (function () {
   if (window.UISheet) return;
   const CSS = `
-.uis{position:absolute;z-index:9;left:0;right:0;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;background:var(--surface,#151b20);color:var(--ink,#d5dde4);
+.uis{position:absolute;z-index:var(--zu-sheet);left:0;right:0;bottom:0;box-sizing:border-box;display:flex;flex-direction:column;background:var(--surface,#151b20);color:var(--ink,#d5dde4);
   border-top:1px solid var(--line,rgba(255,255,255,.12));border-radius:var(--r-l,12px) var(--r-l,12px) 0 0;box-shadow:var(--sh-3,0 12px 32px rgba(0,0,0,.38));
   font:var(--fs-body,14px)/1.5 var(--font-ui,system-ui,sans-serif);height:calc(var(--sheet-peek,56px) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
   transition:height var(--dur-2,200ms) var(--ease-out,ease),width var(--dur-2,200ms) var(--ease-out,ease);touch-action:pan-y;overscroll-behavior:contain}
@@ -43,7 +43,7 @@ html.rm .uis{transition:none}
 @media (pointer:coarse),(max-width:640px){.uis-tabs [role=tab],.uis-tog{min-height:44px}}
 /* 桌面 / 横屏矮屏：右栏 */
 .uis.rail{top:0;left:auto;right:0;bottom:0;height:auto!important;width:var(--rail-now,360px);border-top:0;border-left:1px solid var(--line,rgba(255,255,255,.12));border-radius:0;padding-bottom:0}
-.uis.rail .uis-grip{position:absolute;left:-5px;top:0;bottom:0;width:10px;height:auto;margin:0;cursor:ew-resize;z-index:2}
+.uis.rail .uis-grip{position:absolute;left:-5px;top:0;bottom:0;width:10px;height:auto;margin:0;cursor:ew-resize;z-index:var(--zl-2)}
 .uis.rail .uis-grip::before{left:0;right:0;top:0;bottom:0;height:auto}
 .uis.rail .uis-grip i{display:none}
 .uis.rail .uis-head{padding:var(--sp-4,8px) var(--sp-4,8px) var(--sp-3,6px)}

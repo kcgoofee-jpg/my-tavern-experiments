@@ -562,7 +562,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   // 通知层模块加载失败时的兜底（强制更新等不能悄悄丢）：最简单的一张卡，文字 + 自带按钮 + ×（P0 无 ×）
   function fallbackToast(title, lines, extra, o = {}) {
     const t = pdoc.createElement('div'); t.className = 'em-ctoast'; t.setAttribute('role', o.level === 0 ? 'alertdialog' : 'status');
-    t.style.cssText = 'position:fixed;left:50vw;top:12px;transform:translateX(-50%);z-index:30003;max-width:min(420px,92vw);box-sizing:border-box;padding:10px 14px;border-radius:12px;background:var(--em-bg);color:var(--em-ink);border:1px solid var(--em-line-2);font:13px/1.5 var(--em-font)';
+    t.style.cssText = 'position:fixed;left:50vw;top:12px;transform:translateX(-50%);z-index:var(--zh-top);max-width:min(420px,92vw);box-sizing:border-box;padding:10px 14px;border-radius:12px;background:var(--em-bg);color:var(--em-ink);border:1px solid var(--em-line-2);font:13px/1.5 var(--em-font)';
     const b = pdoc.createElement('b'); b.textContent = title; t.append(b); for (const l of lines || []) { const d = pdoc.createElement('div'); d.textContent = l; t.append(d); }
     if (o.level !== 0) { const x = pdoc.createElement('button'); x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', UI[uiLang].close); x.onclick = () => t.remove(); t.append(x); }
     extra?.(t); root.appendChild(t); return t;

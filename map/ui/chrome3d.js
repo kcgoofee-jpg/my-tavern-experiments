@@ -8,7 +8,7 @@
 (function () {
   if (window.UI3D) return;
   const CSS = `
-#c3{position:fixed;inset:0;pointer-events:none;z-index:6}
+#c3{position:fixed;inset:0;pointer-events:none;z-index:var(--zu-c3)}
 #c3 .c3-top{position:absolute;top:calc(var(--sp-4,8px) + env(safe-area-inset-top));left:var(--sp-4,8px);right:calc(var(--rail-w-now,0px) + var(--sp-4,8px));display:flex;flex-direction:column;align-items:center;gap:var(--sp-3,6px)}
 #c3 .c3-row{display:flex;align-items:center;gap:var(--sp-4,8px);max-width:100%}
 #c3 .c3-top>*,#c3 .c3-row>*{pointer-events:auto}

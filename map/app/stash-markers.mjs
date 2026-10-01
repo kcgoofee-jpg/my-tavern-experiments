@@ -19,7 +19,7 @@ let stash = null, els = [], watch = null;
 
 const CSS = `
 .loot { position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none;
-  z-index: var(--zv-interaction, 100); pointer-events: auto; }
+  z-index: var(--zv-interaction); pointer-events: auto; }
 .loot i.ld { width: 12px; height: 12px; border-radius: 50%; background: var(--gold, #e6c36a); box-shadow: var(--glow, 0 0 8px #e6c36a);
   border: 1.5px solid #fff8; animation: lootPulse 2.4s ease-in-out infinite; }
 .loot b { width: max-content; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px;

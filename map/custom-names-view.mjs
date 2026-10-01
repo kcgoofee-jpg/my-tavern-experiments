@@ -288,7 +288,7 @@ const CustomNamesView = (() => {
   #cuBox .cu-open em{font-style:normal;color:var(--muted);font-size:var(--fs-small)}
   #cuBox small.cu-warn{color:var(--alert)}
   /* 对话框：桌面居中 560 宽；≤ 640 全屏底板 */
-  #cuDlg{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 55%,transparent);color:var(--ink);font-family:var(--font-ui)}
+  #cuDlg{position:fixed;inset:0;z-index:var(--zu-dialog);display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 55%,transparent);color:var(--ink);font-family:var(--font-ui)}
   #cuDlg[hidden]{display:none}
   #cuDlg .cu-res section,#cuDlg .cu-cards>li{content-visibility:auto;contain-intrinsic-size:auto 220px}   /* fix3：长列表只排版看得见的部分 */
   #cuDlg .cu-cards>li{contain-intrinsic-size:auto 120px}
@@ -333,7 +333,7 @@ const CustomNamesView = (() => {
   #cuDlg .cu-card .cu-acts .btn+.btn{border-left:1px solid var(--line)}
   #cuDlg .cu-card .cu-acts .btn:hover{background:var(--surface-2)}
   #cuDlg .cu-card .cu-acts .btn.warn{color:var(--alert)}
-  #cuDlg .cu-search{position:sticky;top:calc(-1 * var(--sp-5));z-index:1;margin:calc(-1 * var(--sp-5)) calc(-1 * var(--sp-5)) 0;padding:var(--sp-5);background:var(--surface)}
+  #cuDlg .cu-search{position:sticky;top:calc(-1 * var(--sp-5));z-index:var(--zl-1);margin:calc(-1 * var(--sp-5)) calc(-1 * var(--sp-5)) 0;padding:var(--sp-5);background:var(--surface)}
   #cuDlg input[type=search],#cuDlg input[type=text],#cuDlg textarea{width:100%;box-sizing:border-box;min-height:var(--hit,44px);padding:var(--sp-4) var(--sp-5);font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line-strong);border-radius:var(--r-m)}
   #cuDlg textarea{resize:vertical;line-height:1.5}
   #cuDlg input::placeholder,#cuDlg textarea::placeholder{color:var(--muted);opacity:1}
@@ -380,12 +380,12 @@ const CustomNamesView = (() => {
   #card .cu-note,#card .cu-outfit{margin:0 0 var(--sp-3,6px);font-size:var(--fs-micro);line-height:1.5;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #card .cu-note{white-space:normal}
   #card .cu-rep{display:flex;align-items:center;gap:var(--sp-4);margin:0 0 var(--sp-3);font-size:var(--fs-micro)}#card .cu-rep b{color:var(--muted);font-weight:600}#card .cu-rep meter{flex:1;max-width:140px;height:8px}#card .cu-rep span{font-variant-numeric:tabular-nums;color:var(--ink)}#card .cu-note b{color:var(--muted);font-weight:600}
-  #cuToast{position:absolute;left:50%;transform:translateX(-50%);top:var(--sp-5,12px);z-index:7;max-width:min(420px,calc(100% - 24px));box-sizing:border-box;padding:8px 14px;border-radius:var(--r-m,8px);
+  #cuToast{position:absolute;left:50%;transform:translateX(-50%);top:var(--sp-5,12px);z-index:var(--zu-glitch);max-width:min(420px,calc(100% - 24px));box-sizing:border-box;padding:8px 14px;border-radius:var(--r-m,8px);
     background:var(--surface);color:var(--ink);border:1px solid var(--accent);box-shadow:0 6px 20px rgba(0,0,0,.3);font-size:var(--fs-micro);line-height:1.5}
   #cuToast[hidden]{display:none}
-  body.nighttint #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 50% 40%,rgba(20,32,70,.18),rgba(6,10,28,.38));mix-blend-mode:multiply;transition:opacity .6s}
-  body[data-tod=dawn]:not([data-base-tod]) #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;background:linear-gradient(180deg,rgba(255,196,200,.16),rgba(214,200,230,.10));mix-blend-mode:multiply;transition:opacity .6s}
-  body[data-tod=dusk]:not([data-base-tod]) #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;background:linear-gradient(180deg,rgba(255,170,120,.22),rgba(200,140,150,.16));mix-blend-mode:multiply;transition:opacity .6s}
+  body.nighttint #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:var(--zl-1);background:radial-gradient(ellipse at 50% 40%,rgba(20,32,70,.18),rgba(6,10,28,.38));mix-blend-mode:multiply;transition:opacity .6s}
+  body[data-tod=dawn]:not([data-base-tod]) #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:var(--zl-1);background:linear-gradient(180deg,rgba(255,196,200,.16),rgba(214,200,230,.10));mix-blend-mode:multiply;transition:opacity .6s}
+  body[data-tod=dusk]:not([data-base-tod]) #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:var(--zl-1);background:linear-gradient(180deg,rgba(255,170,120,.22),rgba(200,140,150,.16));mix-blend-mode:multiply;transition:opacity .6s}
   @media (prefers-reduced-motion:reduce){body.nighttint #osd::after,body[data-tod] #osd::after{transition:none}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   document.addEventListener('DOMContentLoaded', () => renderUI());

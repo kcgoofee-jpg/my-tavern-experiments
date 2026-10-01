@@ -116,7 +116,7 @@ const UnmappedPlacePicker = (() => {
   const css = `
   #unmapped{flex:0 1 auto;min-width:0;max-width:40vw;overflow:hidden;white-space:nowrap;border-style:dashed;color:var(--ink);justify-content:flex-start}#unmapped>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
   #unmapped[hidden]{display:none}
-  #umDlg{position:fixed;inset:0;z-index:41;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 55%,transparent);color:var(--ink);font-family:var(--font-ui)}
+  #umDlg{position:fixed;inset:0;z-index:var(--zu-dialog-2);display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 55%,transparent);color:var(--ink);font-family:var(--font-ui)}
   #umDlg[hidden]{display:none}
   #umDlg .um-sheet{box-sizing:border-box;width:min(480px,calc(100vw - 32px));max-height:min(80vh,640px);display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--r-l);box-shadow:var(--sh-3);overflow:hidden}
   #umDlg header{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-5);border-bottom:1px solid var(--line)}

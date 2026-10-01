@@ -253,11 +253,11 @@ const EventsView = (() => {
   const css = `
   .ev{--c:#fff;position:relative;display:flex;align-items:center;gap:4px;transform:translate(-11px,-11px);pointer-events:auto;cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
   /* 图标 = 大类色的形状底（i::before，按大类裁成圆 / 方 / 菱 / 三角……，色弱也分得清）+ 类型字；描边和光晕在 i 上，不被裁掉 */
-  .ev i{width:20px;height:20px;display:grid;place-items:center;font:700 11px/1 var(--font-ui,sans-serif);font-style:normal;color:var(--k,#0b0b0b);position:relative;z-index:0;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 4px var(--c))}
+  .ev i{width:20px;height:20px;display:grid;place-items:center;font:700 11px/1 var(--font-ui,sans-serif);font-style:normal;color:var(--k,#0b0b0b);position:relative;z-index:var(--zl-0);filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 4px var(--c))}
   /* 色觉模式（E7）：图标加黑描边 + 白外晕，任何底图上都留出对比度（tests/color-vision-mode.test.mjs），形状（i::before 的裁形）本来就是第二线索 */
   html.cvd .ev i{filter:drop-shadow(1.2px 0 0 #000) drop-shadow(-1.2px 0 0 #000) drop-shadow(0 1.2px 0 #000) drop-shadow(0 -1.2px 0 #000) drop-shadow(0 0 1.5px #fff)}
   html.cvd .evleg button i,html.cvd #evbar li i{box-shadow:0 0 0 1px rgba(0,0,0,.55)}
-  .ev i::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:4px;background:linear-gradient(145deg,#fff 0,var(--c) 45%,color-mix(in srgb,var(--c) 60%,#000) 100%)}
+  .ev i::before{content:'';position:absolute;inset:0;z-index:var(--zl-under);border-radius:4px;background:linear-gradient(145deg,#fff 0,var(--c) 45%,color-mix(in srgb,var(--c) 60%,#000) 100%)}
   .ev.sev2 i{width:22px;height:22px}.ev.sev3 i{width:25px;height:25px;font-size:13px}
   .ev.sh-circle i::before,.ev.sh-ring i::before,i.shp.sh-circle,i.shp.sh-ring{border-radius:50%}
   .ev.sh-ring i::before{box-shadow:inset 0 0 0 2.5px rgba(0,0,0,.55)} i.shp.sh-ring{box-shadow:inset 0 0 0 2px rgba(0,0,0,.6)}
@@ -276,7 +276,7 @@ const EventsView = (() => {
   @media (pointer:coarse),(max-width:640px){.ev::before{content:'';position:absolute;left:-12px;top:50%;width:44px;height:44px;margin-top:-22px}}
   .ev b{font:600 var(--fs-micro,11px)/1.3 var(--font-ui,sans-serif);color:var(--map-label-ink,#fff);background:var(--map-label-bg,rgba(8,10,14,.8));padding:1px 6px;border-radius:var(--r-s,4px);border-left:2px solid var(--c);white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis}
   .ev.lhide b{visibility:hidden}
-  .ev{z-index:var(--zv-events,60)}
+  .ev{z-index:var(--zv-events)}
   .ev-new i::after{content:'';position:absolute;inset:-5px;border-radius:7px;border:2px solid var(--c);animation:evpulse 1.6s ease-out 5;will-change:transform,opacity}
   .ev-new.sev3 i::after{animation-duration:.9s;animation-iteration-count:9}
   /* 已解除 / 余波：图标变灰、变淡；文字标签不整体降透明度（对比度，E5 V20） */
@@ -330,14 +330,14 @@ const EventsView = (() => {
   /* 触屏：横条 44、列表行 44、图例 36（放在按钮样式之后，不被覆盖；E4b R05） */
   @media (pointer:coarse),(max-width:640px){#evbar li>button{min-height:44px} .evleg button{min-height:44px;padding:0 12px}}
   @media (max-width:640px){#glitchNote{top:8px;left:auto;right:8px;transform:none}}
-  #glitchNote{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;padding:3px 10px;border-radius:var(--r-s,4px);background:rgba(6,20,26,.88);border:1px solid #3de0ff;color:#3de0ff;font:600 var(--fs-small,12px)/1.5 var(--font-mono,monospace);text-shadow:-1px 0 #ff3d9a,1px 0 #3de0ff;pointer-events:none}
+  #glitchNote{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:var(--zu-glitch);padding:3px 10px;border-radius:var(--r-s,4px);background:rgba(6,20,26,.88);border:1px solid #3de0ff;color:#3de0ff;font:600 var(--fs-small,12px)/1.5 var(--font-mono,monospace);text-shadow:-1px 0 #ff3d9a,1px 0 #3de0ff;pointer-events:none}
   #glitchNote[hidden]{display:none}
   /* 花屏：间歇发作（约 3 秒一次、每次半秒多），只动叠加层的 transform / 背景；底图滤镜只在桌面开，手机上省掉 */
-  body[data-glitch]:not([data-glitch=""]) #stage::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;mix-blend-mode:screen;opacity:0;
+  body[data-glitch]:not([data-glitch=""]) #stage::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:var(--zl-3);mix-blend-mode:screen;opacity:0;
     background:repeating-linear-gradient(0deg,rgba(61,224,255,.1) 0 2px,transparent 2px 5px),
       linear-gradient(90deg,transparent 0 30%,rgba(255,61,154,.22) 30% 34%,transparent 34% 71%,rgba(61,224,255,.24) 71% 73%,transparent 73%);
     background-size:100% 100%,100% 37%;animation:gltear 3.1s steps(1) infinite}
-  body[data-glitch="3"] #stage::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;opacity:0;
+  body[data-glitch="3"] #stage::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:var(--zl-3);opacity:0;
     background:conic-gradient(from 90deg at 50% 50%,#3de0ff 0 25%,transparent 0 50%,#ff3d9a 0 75%,transparent 0) 0 0/26px 26px;
     -webkit-mask:linear-gradient(transparent 0 22%,#000 22% 31%,transparent 31% 58%,#000 58% 63%,transparent 63%);mask:linear-gradient(transparent 0 22%,#000 22% 31%,transparent 31% 58%,#000 58% 63%,transparent 63%);
     animation:glmask 3.1s steps(1) infinite}

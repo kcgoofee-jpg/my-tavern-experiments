@@ -96,7 +96,7 @@ export function currentScope() {
   return s;
 }
 function setScope(s) { try { localStorage.setItem(SCOPE_KEY, s); } catch (e) { } }
-const panelCSS = () => css('rgp-css', `.rgp{position:fixed;inset:0;z-index:var(--zu-pop,60);background:rgba(8,7,5,.92);display:flex;align-items:center;justify-content:center;color:var(--ink,#eee4cc);font:13px/1.5 system-ui,sans-serif}
+const panelCSS = () => css('rgp-css', `.rgp{position:fixed;inset:0;z-index:var(--zu-panel);background:rgba(8,7,5,.92);display:flex;align-items:center;justify-content:center;color:var(--ink,#eee4cc);font:13px/1.5 system-ui,sans-serif}
 .rgp-box{width:min(92vw,760px);max-height:88vh;overflow:auto;background:var(--surface,#151310);border:1px solid var(--line,#3a352c);border-radius:var(--r-m,8px);padding:14px 16px 18px}
 .rgp-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.rgp-hd h3{margin:0;font-size:16px;color:var(--gold,#e6c36a)}
 .rgp-x,.rgp-item button,.rgp-upload-btn{all:unset;cursor:pointer;min-height:var(--hit,44px);box-sizing:border-box;display:inline-flex;align-items:center;${BTN}}

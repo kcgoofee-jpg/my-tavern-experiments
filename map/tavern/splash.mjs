@@ -15,7 +15,7 @@ export function progressCap(checksDone, checksTotal, tasksDone, tasksTotal) {
 }
 
 const CSS = id => `
-#${id} .em-splash{position:fixed;z-index:30003;right:88px;bottom:calc(env(safe-area-inset-bottom) + 16px);width:min(360px,calc(100vw - 32px));box-sizing:border-box;padding:16px 16px 12px;
+#${id} .em-splash{position:fixed;z-index:var(--zh-top);right:88px;bottom:calc(env(safe-area-inset-bottom) + 16px);width:min(360px,calc(100vw - 32px));box-sizing:border-box;padding:16px 16px 12px;
   border-radius:12px;background:var(--em-bg);color:var(--em-ink);border:1px solid var(--em-line-2);box-shadow:0 12px 32px rgba(0,0,0,.38);font:13px/1.5 var(--em-font)}
 #${id} .em-splash[hidden]{display:none}
 #${id} .em-splash header{display:flex;align-items:center;gap:10px;margin-bottom:10px}

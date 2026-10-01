@@ -57,7 +57,7 @@
   .pin.on span { background: var(--gold); color: #1a1406; transform: scale(1.15); }
   .pin[hidden] { display: none; }
   #credit { position: fixed; left: var(--sp-4); bottom: calc(var(--sp-2) + env(safe-area-inset-bottom)); font-size: var(--fs-micro); color: var(--ink-2); pointer-events: none; text-shadow: 0 1px 3px var(--bg), 0 0 6px var(--bg); max-width: 40%; }
-  #load { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); transition: opacity var(--dur-3); z-index: 5; }
+  #load { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); transition: opacity var(--dur-3); z-index: var(--zu-load3d); }
   #load.done { opacity: 0; pointer-events: none; }
   #load > div { width: min(320px, 80%); text-align: center; }
   #load .uiprog { margin: var(--sp-5) 0; }
@@ -317,7 +317,7 @@ function syncCompass() { compass?.setHeading(headingNow()); }
 controls.addEventListener('change', syncCompass);
 // 底部中间的视角条 + 指北针（2026-09-28）：原来在右下角，和缩放列挤在一起（「正面」顶着「对准」）、指北针整个被盖住；挪到底部中间让开右下角
 const ccBar = document.createElement('div');
-ccBar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);display:flex;align-items:center;gap:10px;z-index:6;pointer-events:none';
+ccBar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);display:flex;align-items:center;gap:10px;z-index:var(--zu-c3);pointer-events:none';
 document.body.appendChild(ccBar);
 presets = makePresetCluster({ root: ccBar, presets: [
   { id: 'top', label: t('preset_top') }, { id: 'iso', label: t('preset_iso') }, { id: 'front', label: t('preset_front') }, { id: 'free', label: t('preset_free') },

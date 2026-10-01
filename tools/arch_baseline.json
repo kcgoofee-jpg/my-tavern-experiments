@@ -3,23 +3,9 @@
   "lines": {
     "map/props/viewer3d.html": 916,
     "map/tavern/eden-map.js": 664,
-    "map/viewer.html": 672
+    "map/viewer.html": 620
   },
-  "zindex": {
-    "map/app/fps.mjs": 1,
-    "map/custom-names-view.mjs": 6,
-    "map/events-view.mjs": 5,
-    "map/props/viewer3d.html": 2,
-    "map/tavern/eden-map.js": 1,
-    "map/tavern/host-lifecycle.mjs": 7,
-    "map/tavern/splash.mjs": 1,
-    "map/ui/camera-controls.js": 2,
-    "map/ui/chrome3d.js": 1,
-    "map/ui/illustration-panel.js": 1,
-    "map/ui/notice.mjs": 1,
-    "map/ui/sheet.js": 2,
-    "map/unmapped-place-picker.mjs": 1
-  },
+  "zindex": {},
   "terms": {},
   "inline_style": {
     "map/app/clouds.mjs": 1,
