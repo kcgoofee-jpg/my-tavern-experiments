@@ -524,3 +524,8 @@ ts,id,stage,event,agent,gate,note
 2026-10-01T08:07:39Z,base:tc_upper,tiles,done,hero-1,,"8000/128 body render (TC_EDEN_CUT=1, --no-data 1) + tools/upper_base_paste.py (7 cutouts + Eden r5 cut); city twin rendered 12.9 min; both DZI re-cut"
 2026-10-01T08:07:39Z,base:tc_upper,verify,done,hero-1,pass,"whole + mid-zoom looked at; check_maps, estate3d 10/10, accept 24/24 pass; faint white cloud halo at Eden rim"
 2026-10-01T08:07:39Z,base:tc_upper,ship,done,hero-1,pass,shipped with the bases pushed
+2026-10-01T08:08:39Z,var:tc_upper:16k,render,claim,hero-1,,
+2026-10-01T08:08:46Z,var:tc_upper:16k,render,done,hero-1,,submitted 16000/512 clouds with TC_EDEN_CUT=1 --no-data 1
+2026-10-01T08:16:00Z,var:tc_upper:16k,tiles,done,hero-1,,"16000x10000 / 512 spp body render (5.1 min) + island paste; pyramid 15 levels 866 tiles, 10 MB (was 3.2 MB)"
+2026-10-01T08:16:05Z,var:tc_upper:16k,register,done,hero-1,pass,"no maps.json change: the 16k pyramid replaces the base at the same path; accept 24/24 pass (first screen 2046 KB, phones 2.0 MB / <1 s); city twin stays 8k; 8k backup in logs/campaign/full/dzi8_backup"
+2026-10-01T08:16:05Z,var:tc_upper:16k,ship,done,hero-1,pass,replaced the tc_upper base

@@ -2,12 +2,12 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-01T08:07:39Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-01T08:16:05Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
 | standard | 51 | 0 | 0 | 0 | 0 | 0 | 51 |
-| hero | 16 | 0 | 6 | 0 | 0 | 0 | 22 |
+| hero | 17 | 0 | 5 | 0 | 0 | 0 | 22 |
 
 Below-gate (user spot-check): none
 
@@ -83,7 +83,7 @@ Below-gate (user spot-check): none
 | 10 | `isle:isle25` | island | done | - |  |  | Rebuild island isle25 (elite_academy) |
 | 11 | `isle:isle30` | island | done | - |  |  | Rebuild island isle30 (zaibatsu_estate) |
 | 12 | `base:tc_upper` | basemap | done | - |  |  | Upper base map final |
-| 13 | `var:tc_upper:16k` | variant | open | render |  |  | Upper map 16k final |
+| 13 | `var:tc_upper:16k` | variant | done | - |  |  | Upper map 16k final |
 | 14 | `var:tc_upper:dawn` | variant | open | render |  |  | Upper map dawn period |
 | 15 | `var:tc_upper:day` | variant | open | render |  |  | Upper map day period |
 | 16 | `var:tc_upper:dusk` | variant | open | render |  |  | Upper map dusk period |
