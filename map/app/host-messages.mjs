@@ -2,7 +2,7 @@
 import { mapRegistry, currentMapId, setCurrentMapId, setSleeping, sleeping, osdViewer } from './state.mjs';
 import { $ } from './dom-helpers.mjs';
 import { protocol, SUB_ORIGIN } from './protocol-stamp.mjs';
-import { lean } from './sharpness-tiers.mjs';
+import { lean, tilesRoute } from './sharpness-tiers.mjs';
 import { setLang } from './i18n.mjs';
 import { setSlowStop, slowStop, slowWarmAlt } from './topbar.mjs';
 import { go, saveView, applyPeriod } from './map-switch.mjs';
@@ -89,6 +89,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:selfcheck') { const first = !selfCheck; setSelfCheck(e.data); renderSelfCheck(); updSub(); if (first && !selfCheck.items?.some(i => i.status === 'warn')) flashOk(); }   // 自检全部正常：只在状态点闪一次 ✓（§3）
     if (e.data?.type === 'eden-map:hostbar') { const w = Math.max(0, Math.min(400, +e.data.w || 0)) + 'px', left = e.data.side === 'left' && narrowNow(); document.documentElement.style.setProperty('--hostbar-w', left ? '0px' : w); document.documentElement.style.setProperty('--hostbar-l', left ? w : '0px'); }   // 合并顶栏（§2.1）：宿主栏（地点胶囊 + ✕）浮在查看器顶栏右端
     if (e.data?.type === 'eden-map:key' && e.data.key === 'Escape') onEsc();   // 焦点在宿主页时宿主把 Esc 转过来（§10.14）
+    if (e.data?.type === 'eden-map:tiles-route') tilesRoute(e.data);   // N13：瓦片全挂后宿主答复「已自动换线」或「没得换」
     if (e.data?.type === 'eden-map:line') setLine(e.data);   // fix3：线路行常驻，显示当前线路 / 自动或手动 / 不可切换的原因
     if (e.data?.type === 'eden-map:storage-result') window.renderStorageSettings?.(e.data);
     if (e.data?.type === 'eden-map:fog') window.FogApi?.set(e.data.explored);   // 迷雾探索：这个聊天到过的地点   // 线路选择在设置「高级」

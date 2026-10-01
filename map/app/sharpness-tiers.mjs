@@ -6,6 +6,7 @@ import { announce, setSrQ, srQ, srT } from './screen-reader-announce.mjs';
 import { post } from './protocol-stamp.mjs';
 import { localName, uiText } from './i18n.mjs';
 import { go } from './map-switch.mjs';
+import { baseFrame } from '../core/base-frame.mjs';
 import { focusAfterGo } from './map-level-nav.mjs';
 import { cardFrom, pointOverlays, setCardFrom, untrackAll, worldOverlays } from './markers.mjs';
 import { applyZoomLimit, focusStart, markHere, setUserMoved, userMoved } from './locate.mjs';
@@ -73,13 +74,23 @@ export function initProgress() {
 }
 
 // 瓦片线路失败：遮罩上给「重试」，顶栏显示「卡住了？点此重试」；重试 = 重新请求当前地图的瓦片
-function tileActs(on) { const b = $('#tileRetry'); if (!b || b.hidden === !on) return; b.hidden = !on;
+function tileActs(on) { const b = $('#tileRetry'); if (!on) $('#loading')?.classList.remove('dock'); if (!b || b.hidden === !on) return; b.hidden = !on;
   const acts = $('#loading .acts'); if (on) { acts.hidden = false; $('#estRetry').hidden = $('#estPlan').hidden = true; } else if ($('#estRetry').hidden) acts.hidden = true; }
+// N13：整批瓦片都失败时先问宿主能不能换到另一条线路（宿主自动换线并重载查看器，不弹提示）；宿主没答 / 没得换才显示提示。每次打开只问一次
+let routeAsk = 0, routeT = 0, routeMoving = false;
 function tilesFailed() {
   const ts = $('#tierState'); clearTimeout(tsT2); ts.textContent = uiText('stuck'); ts.className = 'busy stuck'; $('#prog').hidden = true;
-  if (mapRegistry.maps[currentMapId]?.kind === 'estate') return;
-  const first = $('#tileRetry').hidden, ld = $('#loading'); ld.classList.remove('done'); loadingProgress().fail(uiText('tiles_failed')); tileActs(true);
+  if (mapRegistry.maps[currentMapId]?.kind === 'estate' || routeMoving) return;
+  if (!routeAsk) { routeAsk = Date.now(); post({ type: 'eden-map:tiles-failed' }); routeT = setTimeout(showTilesFailed, 900); return; }   // 单独打开（没有宿主）：900 ms 没有答复就提示
+  if (!routeT) showTilesFailed();
+}
+function showTilesFailed() {
+  routeT = 0; const first = $('#tileRetry').hidden, ld = $('#loading'); ld.classList.remove('done'); loadingProgress().fail(uiText('tiles_failed')); tileActs(true); ld.classList.add('dock');   // dock：提示停在顶部，不盖住地图中央
   if (first) announce(uiText('tiles_failed'));   // 每批失败都会进来：只在第一次播报（E5 r3 无障碍 F-13）
+}
+export function tilesRoute(d) {   // 宿主的答复（eden-map:tiles-route）
+  clearTimeout(routeT); routeT = 0;
+  if (d.switched) { routeMoving = true; const ld = $('#loading'); ld.classList.remove('done'); ld.classList.add('dock'); loadingProgress().label(uiText('route_switching')); announce(uiText('route_switching')); } else if (routeAsk) showTilesFailed();
 }
 function retryTiles() {   // 失败的瓦片 OSD 不会再请求（resetItems 不清失败记录），所以按原视野重新打开当前地图
   setSrQ([]); clearTimeout(srT); const sp = $('#loading span'); sp.tabIndex = -1; sp.focus({ preventScroll: true });   // 按钮隐藏前先把焦点给提示文字，不掉到 body
@@ -164,7 +175,7 @@ export function applyTier() {
 export function onOpen() {
   resetInsets();   // 旧世界已经被 viewer.open() 整个换掉，插图记录清空，新地图按需重新补上
   if (mapRegistry.maps[currentMapId]?.kind === 'estate') return;   // 打开旧底图期间已经切去主场景
-  const it = osdViewer.world.getItemAt(0), sz = it.getContentSize(); setAspect(sz.y / sz.x);
+  const it = osdViewer.world.getItemAt(0), sz = it.getContentSize(); setAspect(baseFrame(mapRegistry.maps[currentMapId]?.view?.extent_m).aspect || sz.y / sz.x);   // 视图框的比例优先（N13），没有范围的图才看图自己的形状
   applyTier(); applyZoomLimit(); homeMode(); drawOverlays(); focusStart(true); autoTier(); updateInsets();
   if (pendingFocus) { const el = [...document.querySelectorAll('.mk')].find(e => e.dataset.name === mapRegistry.maps[currentMapId].markers?.[pendingFocus]?.name);
     setPendingFocus(null); if (el) { setCardFrom(el); el._open(); } }

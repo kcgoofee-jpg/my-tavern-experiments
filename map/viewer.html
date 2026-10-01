@@ -380,8 +380,8 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #prog i { display: block; height: 100%; width: 0; background: var(--accent); box-shadow: var(--glow); transition: width var(--dur-2); }
   #loading { position: absolute; inset: 0; z-index: var(--zu-loading); display: grid; place-items: center; background: var(--bg); color: var(--ink); transition: opacity var(--dur-3); }
   #loading.done { opacity: 0; pointer-events: none; }
-  #loading.over { background: transparent; pointer-events: none; }
-  #loading > div { text-align: center; }
+  #loading.over, #loading.dock { background: transparent; pointer-events: none; }
+  #loading > div { text-align: center; } #loading.dock { place-items: start center; padding-top: var(--sp-6); }   /* N13：失败 / 换线提示停在顶部，不盖住地图中央 */
   #loading .uiprog { margin-top: var(--sp-4); }   /* fix3：统一进度组件（map/ui/progress.mjs）挂在标签下面 */
   #loading .uiprog span.uiprog-m { display: block; background: none; border: 0; padding: 0; box-shadow: none; border-radius: 0; color: var(--ink-2); font-size: var(--fs-micro); }
   #loading.over .uiprog, #loading.done .uiprog { display: none; }
@@ -395,7 +395,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #loading .acts button { height: 40px; background: var(--surface); box-shadow: var(--sh-2); }   /* 次按钮实底：浅色云海上也看得见（E5 r3 现编） */
   #loading .acts button:first-child, #loading #tileRetry { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
   /* 只在加载中接收点击；.done 后整块穿透，否则正中会留一块吃掉滚轮 / 拖动的死区（E4b R01） */
-  #loading.over:not(.done) .acts, #loading.over:not(.done) span { pointer-events: auto; }
+  #loading.over:not(.done) .acts, #loading.over:not(.done) span, #loading.dock:not(.done) .acts, #loading.dock:not(.done) span { pointer-events: auto; }
 
   /* ---------- 地图叠加物 ---------- */
   /* P3-C：叠加物的槽位归属由 --zv-* 阶梯常量决定（core/layer-registry.mjs SLOTS），不再依赖 DOM 插入顺序 */

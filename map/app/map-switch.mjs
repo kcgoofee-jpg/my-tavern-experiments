@@ -24,14 +24,32 @@ const baseOf = id => { const m = mapRegistry.maps[id]; return m.alt && altOn(id)
 let lastBase = null;   // 第 0 层当前用的底图地址（go 打开 / swapBase 换上时记；applyPeriod 拿它判断要不要换）
 // 底图一律按视图范围（view.extent_m）摆：一个世界单位宽、从原点起，与 DZI 有多少像素无关（N10-P0）；标记 / 路线 / 缩放上限都是视图的比例
 const placeOf = id => { const f = baseFrame(mapRegistry.maps[id]?.view?.extent_m); return { x: f.x, y: f.y, width: f.width }; };
+// N13：底图（或失败时的占位底图）无论像素多少都落在视图框里；不在框里就拨回去。占位底图 = 中性的一张图，同样按视图框摆，标记 / 路线 / 缩放上限照常对得上
+export function snapToFrame(id = currentMapId) {
+  const it = osdViewer?.world.getItemAt(0), f = baseFrame(mapRegistry.maps[id]?.view?.extent_m); if (!it || !f.aspect) return;
+  const b = it.getBounds(true), bad = Math.abs(b.x - f.x) > 1e-4 || Math.abs(b.y - f.y) > 1e-4 || Math.abs(b.width - f.width) > 1e-4;
+  if (bad) { it.setPosition(new OpenSeadragon.Point(f.x, f.y), true); it.setWidth(f.width, true); }
+}
+export function placeholderSource(id = currentMapId) {
+  const a = baseFrame(mapRegistry.maps[id]?.view?.extent_m).aspect || .625, W = 1000, H = Math.round(W * a);
+  return { type: 'image', url: 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#1a1d24"/><path d="M0 0H${W}V${H}H0Z" fill="none" stroke="#2c313c" stroke-width="2"/></svg>`) };
+}
+let phId = null;   // 这张图已经换过占位底图（每次打开最多一次，go 重置）
+export function openPlaceholder(id = currentMapId, then) {   // 底图的 DZI 打不开：换一张占位底图，视图框、标记、缩放上限照常，失败提示由调用方在 open 之后再亮出来
+  const m = mapRegistry.maps[id]; if (!m || m.kind === 'estate' || !osdViewer || phId === id) return false; phId = id;
+  osdViewer.addOnceHandler('open', () => { snapToFrame(id); then?.(); });
+  osdViewer.open([{ tileSource: placeholderSource(id), ...placeOf(id) }]); return true;
+}
 export function swapBase() {
   const id = currentMapId, old = osdViewer.world.getItemAt(0); if (!old) return;
+  const was = lastBase, altWanted = !!(mapRegistry.maps[id]?.alt && altOn(id));
   lastBase = baseOf(id);
   osdViewer.addTiledImage({ tileSource: baseOf(id), index: 0, ...placeOf(id), success: e => {
       // 加载期间世界被 open() 换掉了（切图）或又换了一档：这张不用了，别让它混进新世界
       if (currentMapId !== id || osdViewer.world.getIndexOfItem(old) < 0) { try { osdViewer.world.removeItem(e.item); } catch (x) {} return; }
-      osdViewer.world.removeItem(old); applyTier(); applyZoomLimit(); },   // 缩放上限按新底图的像素重算（原来沿用上一档底图的像素数）
-    error: () => { try { LocalStore.remove(ALT_KEY + id); } catch (e) {} lastBase = baseOf(id); $('#tgAltBox').checked = false; $('#tierState').textContent = uiText('alt_missing'); } });
+      osdViewer.world.removeItem(old); snapToFrame(id); applyTier(); applyZoomLimit(); },   // 缩放上限按新底图的像素重算（原来沿用上一档底图的像素数）
+    error: () => { if (!altWanted) { lastBase = was; return; }   // 时段底图打不开：留着现在的底图，下次时钟变化再试（N13）
+      try { LocalStore.remove(ALT_KEY + id); } catch (e) {} lastBase = baseOf(id); $('#tgAltBox').checked = false; $('#tierState').textContent = uiText('alt_missing'); } });
 }
 // 世界时钟时段变了（host-messages.mjs 的 eden-map:clock）：当前地图的底图档位变了才换，视角、标记、叠加层都不动
 export function applyPeriod() {
@@ -67,7 +85,7 @@ export async function go(id) {   // 云脚本块（文末）会包一层：主�
   saveView();
   setCurrentMapId(id); setUserMoved(false); closeCard(); plugins.EventsView.collapse?.(); document.body.dataset.map = id; syncGlow(id);
   if (m.kind === 'estate') return openEstate(id, m, !!prev);
-  dropParked();
+  dropParked(); phId = null;
   // 离开主场景：iframe 留到新底图画出来再淡出
   const oldFrame = leaveEstate();
   // 叠加层可以取别的地图的数据（overlay.from），例如中层的「上层投影」用上层的岛屿轮廓
@@ -85,7 +103,7 @@ export async function go(id) {   // 云脚本块（文末）会包一层：主�
   const srcs = [{ tileSource: baseOf(id), ...placeOf(id) }];
   if (m.overlay?.type === 'dzi') srcs.push({ tileSource: m.overlay.src, ...placeOf(id), opacity: $('#tgBorders').checked ? 1 : 0 });
   lastBase = srcs[0].tileSource;
-  osdViewer.addOnceHandler('open', () => applyPeriod());   // 载入期间时钟又变了（applyPeriod 当时看的是旧图）：打开后再对一次档位
+  osdViewer.addOnceHandler('open', () => { snapToFrame(id); applyPeriod(); });   // 载入期间时钟又变了（applyPeriod 当时看的是旧图）：打开后再对一次档位
   osdViewer.open(srcs);
   // v0.9.6 世界 ↔ 主城的缩放衔接：旧画面以主城为中心放大（进城）或缩小（出城）淡出，而不是原地淡出
   const fx = window.__zoomSnapEffect; window.__zoomSnapEffect = null;

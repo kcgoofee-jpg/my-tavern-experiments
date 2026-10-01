@@ -44,7 +44,7 @@ import { getJSON, jsonCache, seedJSON } from './json-cache.mjs';
 import { TIERS, autoTier, declutter, effTier, homeMode, initProgress, onOpen, refit, setTier } from './sharpness-tiers.mjs';
 import { DICT, LANG, applyI18n, postState, setDICT, setLANG, setLang, uiText } from './i18n.mjs';
 import { layoutHeader, warmOthers } from './topbar.mjs';
-import { go } from './map-switch.mjs';
+import { go, openPlaceholder } from './map-switch.mjs';
 import { subpageSession, estateLook, estatePlan, retryEstate } from './subpage3d-host.mjs';
 import { closeCard } from './markers.mjs';
 import { ALIAS, applyZoomLimit, focusStart, hereRes, jumpHere, markHere, setEstPlan, setUserMoved, startInScene, userMoved } from './locate.mjs';
@@ -126,7 +126,7 @@ async function mainInner() {
     element: $('#osd'), drawer: 'canvas', prefixUrl: 'vendor/openseadragon/images/',
     showNavigator: !narrow, showFullPageControl: false, showNavigationControl: false, navigatorPosition: 'BOTTOM_LEFT', navigatorWidth: '180px', navigatorHeight: '120px',   // 自绘缩放组 #zoom 替代 OSD 的拟物按钮（E5 V01）
     visibilityRatio: 1, constrainDuringPan: true, homeFillsViewer: true, minZoomImageRatio: 1,   // v0.9.6：这几项以前被上一行的注释吞掉了，手机世界图因此能被推到一边、留出大片空白
-    maxZoomPixelRatio: 1.25, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: coarse ? 6 : 16,   /* 手机 / 低内存并发少一些（TT WebKit 实测） */ maxImageCacheCount: coarse ? 30 : 60,   /* 512px 瓦片：并发拉取，缓存约 60 MB */ minPixelRatio: effTier().ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true }, gestureSettingsTouch: { pinchRotate: false, flickEnabled: true },
+    maxZoomPixelRatio: 1.25, crossOriginPolicy: 'Anonymous', animationTime: .6, blendTime: 0, immediateRender: false, imageLoaderLimit: coarse ? 6 : 16, tileRetryMax: 2, tileRetryDelay: 1500,   /* N13：单个瓦片偶发失败（CDN 冷缓存回源）自动补取两次 */   /* 手机 / 低内存并发少一些（TT WebKit 实测） */ maxImageCacheCount: coarse ? 30 : 60,   /* 512px 瓦片：并发拉取，缓存约 60 MB */ minPixelRatio: effTier().ratio, gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true }, gestureSettingsTouch: { pinchRotate: false, flickEnabled: true },
     smoothTileEdgesMinZoom: Infinity,   // 瓦片有 1px 重叠，不需要放大时整屏再画一遍去接缝
   }));
   osdViewer.addHandler('open', onOpen);
@@ -149,6 +149,8 @@ async function mainInner() {
     const sp = ld.querySelector('span'); if (sp) sp.textContent = uiText('load_failed', { msg: e.message || '' });
     const acts = ld.querySelector('.acts'); if (acts) acts.hidden = false;
     const b = $('#tileRetry'); if (b) { b.hidden = false; b.textContent = uiText('estate.retry') === 'estate.retry' ? '重试' : uiText('estate.retry'); }
+    const show = () => { ld.hidden = false; ld.classList.remove('done'); ld.classList.add('over', 'dock'); if (sp) sp.textContent = uiText('load_failed', { msg: e.message || '' }); if (acts) acts.hidden = false; if (b) b.hidden = false; };
+    if (openPlaceholder(currentMapId, () => { show(); setTimeout(show, 400); })) show();   // N13：占位底图按视图框摆好，标记和视野照常；失败提示在它打开之后再亮出来（open 会清掉按钮）
   });
   osdViewer.addHandler('canvas-drag', () => setUserMoved(true)); osdViewer.addHandler('canvas-scroll', () => setUserMoved(true)); osdViewer.addHandler('canvas-pinch', () => setUserMoved(true));
   let lastRs = 0, queued = false;

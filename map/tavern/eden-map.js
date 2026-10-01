@@ -22,7 +22,7 @@ import { createHostApi } from './host-api.mjs';
 import { createRootStore } from './root-store.mjs';
 import { createHostChecks } from './host-checks.mjs';
 import { createModesFlow } from './modes-flow.mjs';
-import { hostStr } from './host-strings.mjs'; import { updateChannel } from './follow-pin.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）
+import { hostStr } from './host-strings.mjs'; import { updateChannel } from './follow-pin.mjs'; import { nextRoute } from './tile-route.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）
 (() => { if (redirected) return;   // 分支路径加载的旧入口：门卫已换成 @<sha> 的入口（follow-gate.mjs），这里什么也不挂
   const scriptBase = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-tavernhelper.mjs
@@ -99,8 +99,8 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
     }
     pickEl.hidden = false; loadEl.hidden = true;
   }
-  function chooseLine(key) {
-    const changed = key !== line; line = key; try { (LS || localStorage).setItem(LINE_KEY, key); (LS || localStorage).setItem(LINE_KEY + 'Manual', '1'); } catch (e) {} prefSync();
+  function chooseLine(key, auto) {   // auto：查看器报告瓦片全部失败后自动换线（N13）——不记「手动」，下次照常测速
+    const changed = key !== line; line = key; try { (LS || localStorage).setItem(LINE_KEY, key); if (!auto) (LS || localStorage).setItem(LINE_KEY + 'Manual', '1'); } catch (e) {} prefSync();
     showLine(); pickEl.hidden = true;
     if (changed) { BASE = baseFor(key); html = null; unloadViewer(); }
     loadViewer();
@@ -225,7 +225,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
     post({ type: 'eden-map:sleep' }); clearTimeout(killT); killT = setTimeout(unloadViewer, SLEEP_MS);
   }
   const post = msg => { if (!life.dead) { setHostToken(); frame.contentWindow?.postMessage({ ...msg, v: PROTO, t: HOST_TOKEN }, '*'); } };   // srcdoc 换页后属性会丢，每次发消息前补一次
-  let flyQ = null;   // EdenMap.flyTo 在地图就绪前调用时排队
+  let flyQ = null, tileSwitchAt = 0;   // EdenMap.flyTo 在地图就绪前调用时排队；tileSwitchAt：上次自动换线的时间（N13）
   // 地图 → 酒馆：ready 撤掉遮罩；state 更新面板标题。只接受来自本面板 iframe 的消息
   const onMsg = e => {
     if (e.source !== frame.contentWindow || (protocolModule && !protocolModule.accept(e.data, '（查看器 → 宿主）'))) return;
@@ -241,7 +241,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
       if (e.data.hand && e.data.hand !== handPref) { handPref = e.data.hand; applyHand(true); }
       mapTitle = e.data.title || ''; showTitle(); }
     if (e.data?.type === 'eden-map:esc') close();   // 地图里没有可关的卡片 / 列表时，Esc 关闭面板
-    if (e.data?.type === 'eden-map:line-pick') showPicker();
+    if (e.data?.type === 'eden-map:line-pick') showPicker(); if (e.data?.type === 'eden-map:tiles-failed') { const k = nextRoute({ lines: LINES, current: line, swappable, lastAt: tileSwitchAt }); post({ type: 'eden-map:tiles-route', switched: !!k, line: k || undefined }); if (k) { tileSwitchAt = Date.now(); setTimeout(() => chooseLine(k, true), 400); } }   // N13：瓦片全挂 → 自动换到另一条线路一次（之后再失败才由查看器提示）
     if (e.data?.type === 'eden-map:storage-info' || e.data?.type === 'eden-map:storage-clean') {   // 设置「数据与映射」：存储占用、数据来源；清理 = 只留最近 5 个聊天的地图数据
       (async () => { let cleaned = null; const st = store();
         if (e.data.type === 'eden-map:storage-clean' && RS.storageBudget && st && Date.now() - (window.__edenCleanAt || 0) > 10000) { window.__edenCleanAt = Date.now();   // 只认本面板 iframe（onMsg 的 e.source 检查）；10 秒内只清一次

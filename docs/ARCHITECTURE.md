@@ -299,6 +299,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `storage-budget.mjs` | Local storage budget: LRU per chat, avatar caps, quota-hit recovery; touches only the map's own keys. |
 | `tabledb-bridge.mjs` | Read-only compatibility with the optional table-database extension. |
 | `tavernhelper-api.mjs` | Thin TavernHelper wrappers: feature probing, unified external requests, display-only leak fence. |
+| `tile-route.mjs` | Which route to switch to when every tile of the current one fails (N13): `nextRoute` picks the other route once per window, or null. The viewer asks (message tiles-failed), the host answers (message tiles-route) and reloads the viewer on the new route. Pure. |
 | `timeline-flow.mjs` | Timeline replay (Part 5-4) and the keyframe cache wiring on the host side. `createTimelineFlow(host)`. |
 | `timeline.mjs` | Timeline replay core: what the map should show at floor N (location, time, who is where). |
 | `trips-parse.mjs` | Trip derivation: "A to B" trips from per-floor places and character tags, styled by transport mode. |

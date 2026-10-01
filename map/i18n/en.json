@@ -301,6 +301,7 @@
   "ev.src_floor": "{src} · chat message #{n}",
   "ev.new": "NEW",
   "ev.legend_aria": "Filter by category",
+  "route_switching": "This route is unreachable, switching to another one…",
   "tiles_failed": "Map tiles failed to load: this route is unreachable. Retry, or switch route in the title bar",
   "credit_aria": "Credits",
   "ring": "Surroundings",

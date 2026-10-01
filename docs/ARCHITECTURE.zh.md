@@ -279,6 +279,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `storage-budget.mjs` | 本机存储预算：按聊天 LRU、头像上限、撞额度后的恢复；只碰地图自己的键。 |
 | `tabledb-bridge.mjs` | 与可选的表格数据库扩展的只读兼容。 |
 | `tavernhelper-api.mjs` | 酒馆助手的薄封装：功能探测、统一外部请求、只删显示的泄露清理。 |
+| `tile-route.mjs` | 整批瓦片都失败时换哪条线路（N13）：`nextRoute` 在时间窗内只换一次，选另一条线路，没得换返回 null。查看器发 tiles-failed 消息，宿主回 tiles-route 消息 并在新线路上重载查看器。纯函数。 |
 | `timeline-flow.mjs` | 时间轴回放（Part 5-4）与关键帧缓存的宿主侧接线。`createTimelineFlow(host)`。 |
 | `timeline.mjs` | 时间轴回放核心：第 N 楼当时地图该显示什么（地点、时间、谁在哪）。 |
 | `trips-parse.mjs` | 行程推导：从每楼地点与人物标签得出「A → B」，按交通方式分样式。 |
