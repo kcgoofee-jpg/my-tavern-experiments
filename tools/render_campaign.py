@@ -358,7 +358,7 @@ LAYOUT_TEXT = {
 def show(item, st, at, stage):
     cmd, text = hint(item, stage)
     cur = st.stages.index(stage) + 1
-    lines = [('id', item['id']), ('lane', '%s   type: %s   canon: %s' % (item['lane'], item['type'], item.get('canon', ''))),
+    lines = [('id', item['id']), ('lane', '%s   type: %s   fill: %s' % (item['lane'], item['type'], item.get('fill', ''))),
              ('title', item['title']), ('stage', '%s (%d/%d)' % (stage, cur, len(st.stages))),
              ('targets', ', '.join(item.get('targets', []))), ('spec', 'res=%s spp=%s' % (item['spec'].get('res'), item['spec'].get('spp'))),
              ('hints', json.dumps(item.get('hints', {}), ensure_ascii=False)), ('notes', item.get('notes', '')),

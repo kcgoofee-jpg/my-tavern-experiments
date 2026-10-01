@@ -94,10 +94,10 @@ class Lookup:
         return text in self.read(script)
 
 
-def item(id, lane, type, title, targets, canon, spec, hints=None, notes=None, depends=None, todo=None):
+def item(id, lane, type, title, targets, fill, spec, hints=None, notes=None, depends=None, todo=None):
     notes = [n for n in (notes or []) if n]
     notes += ['TODO: ' + t for t in (todo or [])]
-    return {'id': id, 'lane': lane, 'type': type, 'title': title, 'targets': targets, 'canon': canon,
+    return {'id': id, 'lane': lane, 'type': type, 'title': title, 'targets': targets, 'fill': fill,
             'depends': depends or [], 'spec': spec, 'hints': hints or {}, 'notes': '; '.join(notes)}
 
 
@@ -117,13 +117,13 @@ def build(root):
     crashes = len([r for r in L.renders('estate_final') if not r['ok']])
     lastok = [r for r in L.renders('estate_final') if r['ok']]
     std.append(item('estate:final', 'standard', 'estate', 'Re-render the estate exterior views (failed job)', ['eden_estate:*'],
-                    'card', {'res': 2000, 'spp': 32},
+                    'specific', {'res': 2000, 'spp': 32},
                     {'script': 'blender/eden_manor.py', 'args': '--view ext,all,island --no-assets --out map/art/estate_{view}.png'},
                     ['logs/render_times.csv: estate_final has %d crash row(s)%s; check map/art/estate_*.png before re-running'
                      % (crashes, ' and a later ok row (%s)' % lastok[-1]['date'] if lastok else '')]))
     rescue = '~/eden-map-review/rescue/2026-09-30/'
     std.append(item('estate:opt', 'standard', 'estate', 'Evaluate the rescued house_opt LOD glbs for the estate model manifest',
-                    ['eden_estate:*'], 'card', {'res': 0, 'spp': 0}, {'script': 'blender/estate2/export_house_opt.py'},
+                    ['eden_estate:*'], 'specific', {'res': 0, 'spp': 0}, {'script': 'blender/estate2/export_house_opt.py'},
                     ['no render: stage final = evaluate (glb size vs manifest budget, draco variants), verify = visual parity vs '
                      'the current house.glb, ship = adopt in map/estate/model/manifest.json (bump v)',
                      'inputs in %s: house_opt_lod0.glb, house_opt_lod1.glb, their .draco.glb, house_opt.assets.json' % rescue],
@@ -145,14 +145,14 @@ def build(root):
             todo.append('no marker links to the 3D model %s in maps.json' % prop)
         extra = ('fix the white block behind the cathedral and the statues overhanging the ring platform'
                  if prop == 'holy_mountain' else '')
-        std.append(item('review:' + prop, 'standard', 'review', 'Review and fix model %s' % words(prop), targets, 'card',
+        std.append(item('review:' + prop, 'standard', 'review', 'Review and fix model %s' % words(prop), targets, 'specific',
                         {'res': STD_RES, 'spp': STD_SPP}, hints,
                         ['current: %s (docs/card-buildings.md)' % L.quality(prop), extra], todo=todo))
 
     # ---- standard 4: card places without a model
     for mid in LM_STANDARD:
         t = L.marker(mid)
-        std.append(item('lm:' + mid, 'standard', 'landmark', 'New model: %s' % words(mid), [t] if t else [], 'card',
+        std.append(item('lm:' + mid, 'standard', 'landmark', 'New model: %s' % words(mid), [t] if t else [], 'specific',
                         {'res': STD_RES, 'spp': STD_SPP}, {'landmark': mid},
                         ['no model yet (docs/card-buildings.md)'],
                         todo=[] if t else ['marker %s not found in maps.json' % mid]))
@@ -160,20 +160,20 @@ def build(root):
     # ---- standard 5-6: scenes
     hl = [L.marker('cliff_edge'), L.marker('trail_down')]
     std.append(item('scene:highland-ext', 'standard', 'scene', 'Extend the highland scene: cliff edge and trail down',
-                    [t for t in hl if t], 'inferred', {'res': STD_RES, 'spp': STD_SPP}, {'landmark': 'highland'},
+                    [t for t in hl if t], 'generic', {'res': STD_RES, 'spp': STD_SPP}, {'landmark': 'highland'},
                     ['extends the existing scene map/props/highland (only highland_plateau links to it today); add one hotspot per marker'],
                     todo=[] if all(hl) else ['cliff_edge / trail_down marker not found']))
     for n in range(1, 6):
         ms = ['fief%d_%s' % (n, k) for k in FIEF_MARKERS] + (['fief5_lists'] if n == 5 else [])
         ts = [L.marker(m) for m in ms]
         std.append(item('scene:fief%d' % n, 'standard', 'scene', 'Fief %d scene: castle, fields, order, village%s' % (n, ', lists' if n == 5 else ''),
-                        [t for t in ts if t], 'inferred', {'res': STD_RES, 'spp': STD_SPP}, {'landmark': 'fief%d' % n},
+                        [t for t in ts if t], 'generic', {'res': STD_RES, 'spp': STD_SPP}, {'landmark': 'fief%d' % n},
                         ['one model covering all markers; one hotspot per marker'],
                         todo=[] if all(ts) else ['some fief%d markers not found in maps.json' % n]))
     cm = ['city_gate', 'dome_quarter', 'pilgrim_plaza', 'spire_quarter']
     ts = [L.marker(m) for m in cm]
     std.append(item('scene:yuanyu-city', 'standard', 'scene', 'Yuanyu city scene: gate, dome, plaza, spire quarters',
-                    [t for t in ts if t], 'inferred', {'res': STD_RES, 'spp': STD_SPP}, {'landmark': 'yuanyu_city'},
+                    [t for t in ts if t], 'generic', {'res': STD_RES, 'spp': STD_SPP}, {'landmark': 'yuanyu_city'},
                     ['one model covering all markers; one hotspot per marker'],
                     todo=[] if all(ts) else ['some yuanyu_city markers not found in maps.json']))
 
@@ -190,12 +190,12 @@ def build(root):
 
     # ---- standard 9: leftovers scheduled from docs/todo.md (H1; E-02, E-06)
     std.append(item('fix:climate_tower', 'standard', 'review', 'Climate tower material: white block on the top, pink strip on the podium',
-                    ['tc_upper:climate_tower'], 'card', {'res': STD_RES, 'spp': STD_SPP}, {'landmark': 'climate_tower'},
+                    ['tc_upper:climate_tower'], 'specific', {'res': STD_RES, 'spp': STD_SPP}, {'landmark': 'climate_tower'},
                     ['look at the current image first, then decide the fix; optional info button is a viewer change, not a render',
                      'current: %s (docs/card-buildings.md)' % L.quality('climate_tower')]))
     for mid in ('supreme_court', 'tiancheng_univ'):
         t = L.marker(mid)
-        std.append(item('inst:' + mid, 'standard', 'review', 'Institution model check: %s' % words(mid), [t] if t else [], 'card',
+        std.append(item('inst:' + mid, 'standard', 'review', 'Institution model check: %s' % words(mid), [t] if t else [], 'specific',
                         {'res': STD_RES, 'spp': STD_SPP}, {'landmark': 'tiancheng_univ_court'},
                         ['model exists: %s (docs/card-buildings.md); confirm it meets the P2 institution bar or fix'
                          % L.quality('tiancheng_univ_court')],
@@ -207,10 +207,10 @@ def build(root):
         mk = L.islands.get(iid, {}).get('marker')
         t = L.marker(mk) if mk else None
         row = L.card_row('`%s`' % mk) if mk else ''
-        canon = 'inferred' if '通用英式填充' in row else 'card'
+        fill = 'generic' if '通用英式填充' in row else 'specific'
         script = 'blender/islands/%s.py' % iid
         hero.append(item('isle:' + iid, 'hero', 'island', 'Rebuild island %s%s' % (iid, ' (%s)' % mk if mk and mk != iid else ''),
-                         [t] if t else [], canon, {'res': STD_RES, 'spp': STD_SPP}, {'script': script},
+                         [t] if t else [], fill, {'res': STD_RES, 'spp': STD_SPP}, {'script': script},
                          ['rebuild on the current main line; archive/upper-v18 is reference only',
                           'spec assumed equal to landmark finals'],
                          todo=([] if L.exists(script) else [script + ' is missing']) + ([] if t else ['island marker not found'])))
@@ -228,7 +228,7 @@ def build(root):
                                ['spec assumed 8000/128 like the other period variants; register = periods.%s in maps.json' % p]))
 
     # ---- hero 4: estate basement
-    hero.append(item('estate:b1b2', 'hero', 'estate', 'Estate basement B1 / B2 interior refinement', ['eden_estate:*'], 'card',
+    hero.append(item('estate:b1b2', 'hero', 'estate', 'Estate basement B1 / B2 interior refinement', ['eden_estate:*'], 'specific',
                      {'res': 2000, 'spp': 32}, {'script': 'blender/eden_manor.py'},
                      ['house model sources: blender/estate2/house_web.py, blender/estate2/medical_b2.py; spec inherited from estate:final'],
                      todo=[] if L.script_has('blender/eden_manor.py', 'B2') else
@@ -237,7 +237,7 @@ def build(root):
     # ---- hero 5: kavalierki landmarks
     for mid in LM_HERO:
         t = L.marker(mid)
-        hero.append(item('lm:' + mid, 'hero', 'landmark', 'New model: %s' % words(mid), [t] if t else [], 'card',
+        hero.append(item('lm:' + mid, 'hero', 'landmark', 'New model: %s' % words(mid), [t] if t else [], 'specific',
                          {'res': STD_RES, 'spp': STD_SPP}, {'landmark': mid}, ['no model yet (docs/card-buildings.md)'],
                          todo=[] if t else ['marker %s not found in maps.json' % mid]))
 
@@ -274,7 +274,7 @@ def base_item(L, mp, lane, res, spp):
              'last logged final %sx%s spp (%s)' % (last['res'], last['spp'], last['date']) if last else
              'no final render logged in logs/render_times.csv',
              'render / tiles may be skipped when the audit shows the tiles already meet the spec']
-    return item('base:' + mp, lane, 'basemap', 'Final-spec audit / re-render of base map %s' % mp, [mp + ':*'], 'card',
+    return item('base:' + mp, lane, 'basemap', 'Final-spec audit / re-render of base map %s' % mp, [mp + ':*'], 'specific',
                 {'res': res, 'spp': spp}, {'script': script, 'args': render_args(full_out(stem), extra)}, notes, todo=todo)
 
 
@@ -296,7 +296,7 @@ def period_item(L, mp, p):
         notes.append('exists: %sx%s spp rendered %s, %s in maps.json periods; after the audit the worker may skip render / tiles'
                      % (last['res'], last['spp'], last['date'], 'registered' if reg else 'not registered'))
     notes.append('register = periods.%s in maps.json' % p)
-    return item('var:%s:%s' % (mp, p), 'standard', 'variant', 'Period variant %s / %s' % (mp, p), [mp + ':*'], 'card',
+    return item('var:%s:%s' % (mp, p), 'standard', 'variant', 'Period variant %s / %s' % (mp, p), [mp + ':*'], 'specific',
                 {'res': 8000, 'spp': 128}, {'script': script, 'args': render_args(full_out(stem), extra)}, notes, todo=todo)
 
 
@@ -305,6 +305,6 @@ def upper_item(L, id, type, title, res, spp, stem, extra, depends, notes, todo=N
     todo = list(todo or [])
     if extra.startswith('--tod') and not L.script_has(script, '--tod'):
         todo.append('%s has no --tod flag' % script)
-    return item(id, 'hero', type, title, ['tc_upper:*'], 'card', {'res': res, 'spp': spp},
+    return item(id, 'hero', type, title, ['tc_upper:*'], 'specific', {'res': res, 'spp': spp},
                 {'script': script, 'args': render_args(full_out(stem), ' '.join(x for x in ('--below clouds', extra) if x))},
                 notes, depends=depends, todo=todo)

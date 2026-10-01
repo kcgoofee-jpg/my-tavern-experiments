@@ -9,7 +9,7 @@
    "targets": [
     "eden_estate:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2000,
@@ -29,7 +29,7 @@
    "targets": [
     "eden_estate:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [
     "estate:final"
    ],
@@ -51,7 +51,7 @@
    "targets": [
     "site_kavalierki:arms_rnd"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -70,7 +70,7 @@
    "targets": [
     "site_kavalierki:clearing_depot"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -89,7 +89,7 @@
    "targets": [
     "site_kavalierki:contest_corridor"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -108,7 +108,7 @@
    "targets": [
     "site_kavalierki:ether_dome"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -127,7 +127,7 @@
    "targets": [
     "site_kavalierki:free_knight_camp"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -150,7 +150,7 @@
     "site_kavalierki:round_table_hall",
     "site_kavalierki:elite_club"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -169,7 +169,7 @@
    "targets": [
     "site_kavalierki:linguang_post"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -188,7 +188,7 @@
    "targets": [
     "site_kavalierki:rust_outskirts"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -207,7 +207,7 @@
    "targets": [
     "tc_upper:league_club"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -226,7 +226,7 @@
    "targets": [
     "tc_upper:zaibatsu_estate"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -245,7 +245,7 @@
    "targets": [
     "tc_upper:elite_academy"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -267,7 +267,7 @@
     "yuanyu_sanctum:shrine_ring",
     "yuanyu_sanctum:pilgrim_stair"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -286,7 +286,7 @@
    "targets": [
     "tc_low:blood_mill"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -305,7 +305,7 @@
    "targets": [
     "tc_low:freight_yard"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -324,7 +324,7 @@
    "targets": [
     "tc_low:lower_bar"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -343,7 +343,7 @@
    "targets": [
     "tc_low:slums"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -362,7 +362,7 @@
    "targets": [
     "tc_mid:rebirth_workshop"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -381,7 +381,7 @@
    "targets": [
     "tc_mid:schneider_clinic"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -400,7 +400,7 @@
    "targets": [
     "site_kavalierki:elite_club"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -419,7 +419,7 @@
    "targets": [
     "world:hunting_camp"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -439,7 +439,7 @@
     "site_highland:cliff_edge",
     "site_highland:trail_down"
    ],
-   "canon": "inferred",
+   "fill": "generic",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -461,7 +461,7 @@
     "site_fief1:fief1_order",
     "site_fief1:fief1_village"
    ],
-   "canon": "inferred",
+   "fill": "generic",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -483,7 +483,7 @@
     "site_fief2:fief2_order",
     "site_fief2:fief2_village"
    ],
-   "canon": "inferred",
+   "fill": "generic",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -505,7 +505,7 @@
     "site_fief3:fief3_order",
     "site_fief3:fief3_village"
    ],
-   "canon": "inferred",
+   "fill": "generic",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -527,7 +527,7 @@
     "site_fief4:fief4_order",
     "site_fief4:fief4_village"
    ],
-   "canon": "inferred",
+   "fill": "generic",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -550,7 +550,7 @@
     "site_fief5:fief5_village",
     "site_fief5:fief5_lists"
    ],
-   "canon": "inferred",
+   "fill": "generic",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -572,7 +572,7 @@
     "yuanyu_city:pilgrim_plaza",
     "yuanyu_city:spire_quarter"
    ],
-   "canon": "inferred",
+   "fill": "generic",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -591,7 +591,7 @@
    "targets": [
     "tc_mid:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 8000,
@@ -611,7 +611,7 @@
    "targets": [
     "tc_low:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 8000,
@@ -631,7 +631,7 @@
    "targets": [
     "site_kavalierki:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 4000,
@@ -651,7 +651,7 @@
    "targets": [
     "yuanyu_sanctum:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 4000,
@@ -671,7 +671,7 @@
    "targets": [
     "yuanyu_city:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 4000,
@@ -691,7 +691,7 @@
    "targets": [
     "site_highland:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 4000,
@@ -711,7 +711,7 @@
    "targets": [
     "site_fief1:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 4000,
@@ -731,7 +731,7 @@
    "targets": [
     "site_fief2:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 4000,
@@ -751,7 +751,7 @@
    "targets": [
     "site_fief3:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 4000,
@@ -771,7 +771,7 @@
    "targets": [
     "site_fief4:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 4000,
@@ -791,7 +791,7 @@
    "targets": [
     "site_fief5:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 4000,
@@ -811,7 +811,7 @@
    "targets": [
     "tc_mid:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 8000,
@@ -831,7 +831,7 @@
    "targets": [
     "tc_mid:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 8000,
@@ -851,7 +851,7 @@
    "targets": [
     "tc_mid:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 8000,
@@ -871,7 +871,7 @@
    "targets": [
     "tc_mid:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 8000,
@@ -891,7 +891,7 @@
    "targets": [
     "tc_low:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 8000,
@@ -911,7 +911,7 @@
    "targets": [
     "tc_low:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 8000,
@@ -931,7 +931,7 @@
    "targets": [
     "tc_low:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 8000,
@@ -951,7 +951,7 @@
    "targets": [
     "tc_low:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 8000,
@@ -971,7 +971,7 @@
    "targets": [
     "tc_upper:climate_tower"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -990,7 +990,7 @@
    "targets": [
     "tc_mid:supreme_court"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -1009,7 +1009,7 @@
    "targets": [
     "tc_mid:tiancheng_univ"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -1028,7 +1028,7 @@
    "targets": [
     "tc_upper:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "user_gate": true,
    "spec": {
@@ -1053,7 +1053,7 @@
     "eden_estate:cover",
     "eden_estate:site"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "user_gate": true,
    "spec": {
@@ -1078,7 +1078,7 @@
     "eden_estate:cover",
     "eden_estate:island"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "user_gate": true,
    "spec": {
@@ -1101,7 +1101,7 @@
    "targets": [
     "tc_upper:silver_crown"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -1120,7 +1120,7 @@
    "targets": [
     "tc_upper:victor_estate"
    ],
-   "canon": "inferred",
+   "fill": "generic",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -1139,7 +1139,7 @@
    "targets": [
     "tc_upper:y_estate"
    ],
-   "canon": "inferred",
+   "fill": "generic",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -1158,7 +1158,7 @@
    "targets": [
     "tc_upper:pm_residence"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -1177,7 +1177,7 @@
    "targets": [
     "tc_upper:league_club"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -1196,7 +1196,7 @@
    "targets": [
     "tc_upper:kelly_residence"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -1215,7 +1215,7 @@
    "targets": [
     "tc_upper:elite_academy"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -1234,7 +1234,7 @@
    "targets": [
     "tc_upper:zaibatsu_estate"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -1253,7 +1253,7 @@
    "targets": [
     "tc_upper:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [
     "layout:tc_upper",
     "isle:eden",
@@ -1284,7 +1284,7 @@
    "targets": [
     "tc_upper:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [
     "base:tc_upper"
    ],
@@ -1306,7 +1306,7 @@
    "targets": [
     "tc_upper:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [
     "base:tc_upper"
    ],
@@ -1328,7 +1328,7 @@
    "targets": [
     "tc_upper:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [
     "base:tc_upper"
    ],
@@ -1350,7 +1350,7 @@
    "targets": [
     "tc_upper:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [
     "base:tc_upper"
    ],
@@ -1372,7 +1372,7 @@
    "targets": [
     "tc_upper:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [
     "base:tc_upper"
    ],
@@ -1394,7 +1394,7 @@
    "targets": [
     "eden_estate:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2000,
@@ -1415,7 +1415,7 @@
    "targets": [
     "site_kavalierki:round_table_hall"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -1434,7 +1434,7 @@
    "targets": [
     "site_kavalierki:sun_arena"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -1453,7 +1453,7 @@
    "targets": [
     "site_kavalierki:union_tower"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 2400,
@@ -1472,7 +1472,7 @@
    "targets": [
     "world:*"
    ],
-   "canon": "card",
+   "fill": "specific",
    "depends": [],
    "spec": {
     "res": 8000,

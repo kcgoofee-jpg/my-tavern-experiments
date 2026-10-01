@@ -26,7 +26,7 @@ def write(path, text):
 
 
 def item(id, lane, type, depends=None):
-    return {'id': id, 'lane': lane, 'type': type, 'title': id, 'targets': ['m:' + id], 'canon': 'card',
+    return {'id': id, 'lane': lane, 'type': type, 'title': id, 'targets': ['m:' + id], 'fill': 'specific',
             'depends': depends or [], 'spec': {'res': 100, 'spp': 8}, 'hints': {'script': 'blender/x.py', 'args': '--out o_full.png'},
             'notes': ''}
 
@@ -521,8 +521,8 @@ class RealItemList(unittest.TestCase):
 
     def test_item_shape_and_ascii(self):
         for i in self.items:
-            self.assertEqual(set(i) - {'user_gate'}, {'id', 'lane', 'type', 'title', 'targets', 'canon', 'depends', 'spec', 'hints', 'notes'})
-            self.assertIn(i['canon'], ('card', 'inferred'))
+            self.assertEqual(set(i) - {'user_gate'}, {'id', 'lane', 'type', 'title', 'targets', 'fill', 'depends', 'spec', 'hints', 'notes'})
+            self.assertIn(i['fill'], ('specific', 'generic'))
             self.assertTrue(json.dumps(i, ensure_ascii=False).isascii(), i['id'])
         self.assertEqual(len(self.ids), len(set(self.ids)))
 
