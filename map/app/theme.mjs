@@ -1,7 +1,7 @@
 // Pack-driven theme (docs/kernel-schema.md K-R70): the pack's `ui.theme.views` -> one <style id="packTheme"> with a dark block and a light block per view.
 // Nothing here names a view: ids and tokens come from the pack and are re-checked at run time (K-R64, core/pack-v2-spec.mjs recheck); text goes in through textContent.
 // Selector order and specificity equal the CSS this replaced ([data-map="<id>"] and .light [data-map="<id>"], .light[data-map="<id>"]), so the cascade is unchanged.
-// `body[data-glow="1"]` marks a view whose tokens define --glow-text ("glow only on the view that defines it"); nav.mjs calls syncGlow when the map changes.
+// `body[data-glow="1"]` marks a view whose tokens define --glow-text ("glow only on the view that defines it"); map-switch.mjs calls syncGlow when the map changes.
 import { recheck } from '../core/pack-v2-spec.mjs';
 
 let views = {};

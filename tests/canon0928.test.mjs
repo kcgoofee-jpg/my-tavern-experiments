@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildIndex, resolveHere } from './helpers/here-engine.mjs';
-import { catOf, setGeo } from '../map/tavern/events.mjs';
+import { catOf, setGeo } from '../map/tavern/events-parse.mjs';
 import { edenGeo } from './helpers/eden-geo.mjs';
 import { edenNames } from './helpers/eden-names.mjs';
 

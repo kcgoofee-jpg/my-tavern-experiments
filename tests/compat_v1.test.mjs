@@ -103,7 +103,7 @@ test('every converted pack passes validate2 (trusted) without a problem', () => 
   }
 });
 
-// ---- locate over the converted eden pack: the inputs of here.test.mjs and card_spec.test.mjs run through app/here-v2.mjs (same expectations); the intended divergences below ----
+// ---- locate over the converted eden pack: the inputs of here.test.mjs and card_spec.test.mjs run through app/place-resolver.mjs (same expectations); the intended divergences below ----
 test('A.9 merged single-layer sites: same node as v1, the reported word is the longest alias', () => {
   for (const [text, node, v1word, v2word] of [['大骑士领·圣都', 'site_kavalierki', '圣都', '大骑士领·圣都'], ['圆桌第三席封地', 'site_fief3', '第三席封地', '圆桌第三席封地']]) {
     const r = L(eden, text);   // v1 reported the layer word (v1word); the kernel reports the longest alias

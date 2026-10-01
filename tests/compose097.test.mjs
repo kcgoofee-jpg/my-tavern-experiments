@@ -1,7 +1,7 @@
 // v0.9.6 地图 → 聊天：模板、填入酒馆输入框（只填不发）
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import * as C from '../map/tavern/compose.mjs';
+import * as C from '../map/tavern/compose-templates.mjs';
 
 const mem = (init = {}) => { const m = new Map(Object.entries(init)); return { getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k), m }; };
 

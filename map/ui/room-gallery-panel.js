@@ -6,7 +6,7 @@ import {
 } from '../core/room-gallery-logic.mjs';
 import * as DB from '../core/room-gallery-db.mjs';
 import { currentId as currentPackId, load as loadPack } from '../core/pack.mjs';
-import { available as baibaiInstalled } from '../tavern/baibai.mjs';   // 柏宝绘桥（可选依赖）：装了才显示「配图」入口
+import { available as baibaiInstalled } from '../tavern/imagegen-bridge.mjs';   // 柏宝绘桥（可选依赖）：装了才显示「配图」入口
 
 const REPO = 'kcgoofee-jpg/my-tavern-experiments';   // 导出投稿的 GitHub issue 仓库；换卡/换仓库时改这里
 const CUSTOM_KEY = 'edenRoomCustomV1';
@@ -107,7 +107,7 @@ export function bindRoomCustomEvents(container, { onOpenGallery, base = '../' } 
     if (ilp) {
       // 动态载入配图面板：它要用本文件的 currentScope / 图集库，静态互相 import 会成环
       const lang = container.dataset.lang || 'zh';
-      import('./illust-panel.js')
+      import('./illustration-panel.js')
         .then((m) => m.openIllustPanel(ilp.dataset.room, { lang, base }))
         .catch((err) => console.warn('[illust] 配图面板加载失败', err));
       return;

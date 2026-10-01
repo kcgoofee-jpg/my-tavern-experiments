@@ -33,12 +33,12 @@ export const SCHEMA = {
   'eden-map:custom-sync': [V2H, { on: 'boolean?' }],
   'eden-map:varmap-set': [V2H, { user: 'object?' }],
   'eden-map:compose': [V2H, { text: 'string' }],
-  'eden-map:action': [V2H, { kind: 'string?', name: 'string?', map: 'string?', text: 'string?' }],   // Part 6-4：地图 POI → 聊天（文案与注入方式由宿主按设置决定，模块 tavern/action.mjs）
+  'eden-map:action': [V2H, { kind: 'string?', name: 'string?', map: 'string?', text: 'string?' }],   // Part 6-4：地图 POI → 聊天（文案与注入方式由宿主按设置决定，模块 tavern/place-action-injection.mjs）
   'eden-map:loot': [V2H, { id: 'string', name: 'string', map: 'string?', place: 'string?', hidden: 'boolean?' }],   // Part 5-1：点了地上发光的拾取物（core/stash.mjs 藏物表的 id）
   'eden-map:stealth': [V2H, { dc: 'number', from: 'string?', to: 'string?', seen: 'boolean?', hits: 'array?', worst: 'object?' }],   // Part 5-2：这次移动穿过了谁的视野（dc = 最难的一下；worst = {id,name,dc,dist,at} W2 补发，检定失败环用）
   'eden-map:explore': [V2H, { map: 'string', name: 'string' }],   // 迷雾探索：记一次到访（只在开着时发）
   'eden-map:explore-reset': [V2H, {}],
-  'eden-map:th': [V2H, { op: 'string' }],   // 酒馆助手设置（app/th-ui.mjs）：state / prefs / wb-inspect / wb-write / wb-del-legacy / wb-peek（W8 地点卡 → 附加书条目摘要，只读）
+  'eden-map:th': [V2H, { op: 'string' }],   // 酒馆助手设置（app/tavernhelper-settings.mjs）：state / prefs / wb-inspect / wb-write / wb-del-legacy / wb-peek（W8 地点卡 → 附加书条目摘要，只读）
   'eden-map:wb-peek': [H2V, { name: 'string', items: 'array?' }],   // W8：附加书条目摘要回执（地图 → 世界书胶囊的结果）
   // 宿主 → 查看器
   'eden-map:here': [H2V, { value: 'any', replay: 'boolean?' }],   // replay = 时间轴回放（Part 5-4）：查看器只画，宿主不再记账

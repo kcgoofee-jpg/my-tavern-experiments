@@ -2,14 +2,14 @@
 import { $, esc, post, tx } from './util.mjs';
 import { LANG, paintSegs, setTheme } from './i18n.mjs';
 import { buildInfo } from './topbar.mjs';
-import { tierAvail } from './tiers.mjs';
-import { estateLook, narrowNow } from './estate.mjs';
+import { tierAvail } from './sharpness-tiers.mjs';
+import { estateLook, narrowNow } from './subpage3d-host.mjs';
 import { firstRunHint, noticeRefresh, setActs } from './shell.mjs';
 import { P } from './plugins.mjs';
-import * as TCCvd from './cvd.mjs';
+import * as TCCvd from './color-vision-mode.mjs';
 import { setFpsMeter } from './fps.mjs';
 import { MAINTAINER_MODE_KEY } from '../core/room-gallery-logic.mjs';
-import { PACK } from './pack.mjs';
+import { PACK } from './current-pack.mjs';
 import { mountFeedbackButton } from './feedback.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
 // ---------------- 设置（UI v2 §5）：首页 = 分组列表（+ 手机上的快捷：上一级、当前位置、关闭地图、切层、图层开关）；子页 显示 / 人物 / 数据与映射 / 更新与版本 / 高级 ----------------
@@ -153,14 +153,14 @@ export function initSettings() {
   sw('#optMinimap', 'edenMapMinimap', false, v => document.body.classList.toggle('nominimap', !v));
   document.body.classList.toggle('nominimap', TCStore.get('edenMapMinimap') !== '1');
   sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', false);
-  sw('#optTick', 'edenMapTick', true);   // Part 6-2 后台静默推演（宿主每 15 s 判一次，跑不跑由 tick.mjs 的 plan 决定） sw('#optFps', 'edenMapFps', false, v => { setFpsMeter(v); estateLook(); });
+  sw('#optTick', 'edenMapTick', true);   // Part 6-2 后台静默推演（宿主每 15 s 判一次，跑不跑由 background-scan-scheduler.mjs 的 plan 决定） sw('#optFps', 'edenMapFps', false, v => { setFpsMeter(v); estateLook(); });
   // 房间图集「维护者模式」：经 TCStore（core/storage.mjs 的同步镜像，本文件不直接碰 localStorage）；纯设备级开关，只是给仓库所有者自己用的工作流开关，不是权限校验（见 viewer.html 里的说明文字）
   sw('#optGalleryMaintainer', MAINTAINER_MODE_KEY, false);
   $('#linePick').onclick = () => { showSet(false); post({ type: 'eden-map:line-pick' }); };
   $('#kbdBtn').onclick = () => kbdHelp($('#kbdHelp').hidden);
   $('#hintAgain').onclick = () => { try { TCStore.remove('edenMapHint'); TCStore.remove('edenMapHintN'); } catch (e) {} showSet(false); firstRunHint(); };
 }
-// 设置「数据与映射」→ app/storage-ui.mjs（arch-v2 §6 第 6 步 settings-ui 的第一块）
+// 设置「数据与映射」→ app/data-mapping-settings.mjs（arch-v2 §6 第 6 步 settings-ui 的第一块）
 export function kbdHelp(on) {
   const b = $('#kbdHelp'); b.hidden = !on; $('#kbdBtn').setAttribute('aria-expanded', on ? 'true' : 'false'); if (!on) return;
   const K = [['Esc', tx('k.esc', '关闭最上面一层 / 抽屉降一档')], ['[ ]  PgUp PgDn', tx('k.layer', '切换上下层')], ['L', tx('k.l', '标注开关')], ['+ −', tx('k.zoom', '缩放')], ['0', tx('k.home', '复位视野')],

@@ -60,7 +60,7 @@ function onMsg(m) {
     rec.job.finish(m.bitmap, null, undefined);
   } else if (m.op === 'matrices') {
     state.decoded++; noteOk(); jobs.delete(m.id); rec.resolve?.({ count: m.count, stride: m.stride, buffer: m.buffer });
-  } else {   // error：交给 OSD 原路径的错误处理（tile-load-failed 照常走 app/tiers.mjs）
+  } else {   // error：交给 OSD 原路径的错误处理（tile-load-failed 照常走 app/sharpness-tiers.mjs）
     jobs.delete(m.id); state.failed++; noteFail();
     rec.job.finish(null, null, m.message || 'worker decode failed');
   }
@@ -132,7 +132,7 @@ export function disposeWorker() { kill(); reset(); jobs.clear(); }
 /**
  * 把 worker 解码接到 OpenSeadragon：覆写瓦片源的 downloadTileStart / downloadTileAbort / destroyTileCache。
  * 只包一层——OSD 的 addJob / finish 回调与 tile-loaded / tile-load-failed / _tilesLoading 全部照旧，
- * 所以 app/tiers.mjs 的进度与「卡住了？重试」不受影响。任何一个钩子缺失 / worker 不可用 → 原路径（new Image）。
+ * 所以 app/sharpness-tiers.mjs 的进度与「卡住了？重试」不受影响。任何一个钩子缺失 / worker 不可用 → 原路径（new Image）。
  */
 export function installWorkerTiles(v = viewer) {
   const patch = src => {

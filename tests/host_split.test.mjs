@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRoutes, lineScore, scoreText, probeVerdict, PROBE_MIN_BYTES } from '../map/tavern/host-routes.mjs';
 import { createLife } from '../map/tavern/host-lifecycle.mjs';
-import { createWbAuto, createPrefs, fnOk, thFn } from '../map/tavern/host-th.mjs';
+import { createWbAuto, createPrefs, fnOk, thFn } from '../map/tavern/host-tavernhelper.mjs';
 
 const rd = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 
@@ -85,16 +85,16 @@ test('host-th：偏好与接口探测在 node 里可构造（没有酒馆助手�
 
 test('入口只从 host-*.mjs 取，不再自带副本；worldbook 自动化的调用点不变', () => {
   const E = rd('map/tavern/eden-map.js');
-  assert.match(E, /^import \{ cdnFetch, thFn, packNs, createPrefs \} from '\.\/host-th\.mjs';$/m);   // S5-1：fnOk / hostFn / createWbAuto / fnGuard 随各自的代码搬进了 flow 模块，入口只留自己还用的
+  assert.match(E, /^import \{ cdnFetch, thFn, packNs, createPrefs \} from '\.\/host-tavernhelper\.mjs';$/m);   // S5-1：fnOk / hostFn / createWbAuto / fnGuard 随各自的代码搬进了 flow 模块，入口只留自己还用的
   for (const s of ['const cdnFetch =', 'const thFn =', 'const fnOk =', 'const hostFn =', 'const PREF_KEYS', 'const LINES =', 'async function wbAutoRun', 'let dead']) assert.ok(!E.includes(s), s);
-  assert.ok(!/\bcreateWorldbook\b/.test(rd('map/tavern/host-th.mjs')), '工厂名不能遮住酒馆助手的全局 createWorldbook');
+  assert.ok(!/\bcreateWorldbook\b/.test(rd('map/tavern/host-tavernhelper.mjs')), '工厂名不能遮住酒馆助手的全局 createWorldbook');
   assert.match(rd('map/tavern/root-store.mjs'), /await createWorldbook\(WBN, \[entry\]\)/);   // 自定义世界书仍调酒馆助手的全局函数（S5-1：随 syncWb 搬进了 root-store.mjs）
   assert.match(E, /listen\(tavern_events\.CHAT_CHANGED, \(\) => \{ clearTimeout\(wbChatT\); wbChatT = setTimeout\(\(\) => \{ if \(!life\.dead\) afterGen\(\(\) => wbAuto\(\)/);
   assert.match(E, /setTimeout\(\(\) => \{ if \(!life\.dead\) afterGen\(\(\) => wbAuto\(\)\.catch/);
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-// S5-1：eden-map.js 拆成入口 + 八个 flow 模块；custom.mjs / events.mjs 各自拆出几个小模块。行为不变，所以这里只钉「接口形状」：
+// S5-1：eden-map.js 拆成入口 + 八个 flow 模块；custom-names-view.mjs / events.mjs 各自拆出几个小模块。行为不变，所以这里只钉「接口形状」：
 // 行数上限、每个 flow 模块导出 DEPS + 工厂、入口的依赖袋提供每一个 DEPS 键、模块里用到的每个 host.X 都登记在 DEPS、缺键就抛、
 // 在桩依赖下能创建并返回约定的接口。
 // ---------------------------------------------------------------------------------------------------------------------
@@ -113,10 +113,10 @@ const mod = f => import('../map/tavern/' + f + '.mjs');
 // 什么都接得住的桩：函数、对象、promise 之外的依赖都用它（创建期只会被存起来或在回调里用）
 const anyStub = (() => { const f = function () {}; const p = new Proxy(f, { get: (t, k) => (k === Symbol.toPrimitive ? () => '' : k === Symbol.iterator ? function* () {} : k === 'then' ? undefined : p), apply: () => p, construct: () => p, set: () => true, has: () => true }); return p; })();
 
-test('S5-1 行数：入口 ≤ 800、custom.mjs ≤ 400、events.mjs ≤ 400，新模块各 ≤ 400', () => {
+test('S5-1 行数：入口 ≤ 800、custom-names-view.mjs ≤ 400、events.mjs ≤ 400，新模块各 ≤ 400', () => {
   assert.ok(lines('map/tavern/eden-map.js') <= 800, 'eden-map.js ' + lines('map/tavern/eden-map.js'));
-  assert.ok(lines('map/custom.mjs') <= 400, 'custom.mjs ' + lines('map/custom.mjs'));
-  assert.ok(lines('map/events.mjs') <= 400, 'events.mjs ' + lines('map/events.mjs'));
+  assert.ok(lines('map/custom-names-view.mjs') <= 400, 'custom-names-view.mjs ' + lines('map/custom-names-view.mjs'));
+  assert.ok(lines('map/events-view.mjs') <= 400, 'events.mjs ' + lines('map/events-view.mjs'));
   for (const f of Object.keys(FLOWS)) assert.ok(lines('map/tavern/' + f + '.mjs') <= 400, f);
   for (const f of ['custom-tint', 'custom-outfit', 'custom-hints', 'custom-dialog-view', 'events-fx']) assert.ok(lines('map/' + f + '.mjs') <= 400, f);
 });
@@ -159,10 +159,10 @@ test('S5-1 viewer 拆分：custom / events 拆出的小模块只导出自己的�
     const exported = [...rd('map/' + f + '.mjs').matchAll(/^export (?:function|const) (\w+)/gm)].map(m => m[1]);
     assert.deepEqual(exported.sort(), names.sort(), f);
   }
-  const C = rd('map/custom.mjs'), V = rd('map/events.mjs');
+  const C = rd('map/custom-names-view.mjs'), V = rd('map/events-view.mjs');
   for (const f of ['custom-tint', 'custom-outfit', 'custom-hints', 'custom-dialog-view']) assert.ok(C.includes(`'./${f}.mjs'`), f);
   assert.ok(V.includes("'./events-fx.mjs'"));
   assert.match(C, /^register\('TCCustom', TCCustom\);$/m); assert.match(V, /^register\('TCEvents', TCEvents\);$/m);   // 插件名与登记方式不变
-  for (const s of ['function night()', 'function toast(', 'const KIND =', 'function listHtml', 'function editHtml', 'function setOutfit']) assert.ok(!C.includes(s), 'custom.mjs 不再带 ' + s);
+  for (const s of ['function night()', 'function toast(', 'const KIND =', 'function listHtml', 'function editHtml', 'function setOutfit']) assert.ok(!C.includes(s), 'custom-names-view.mjs 不再带 ' + s);
   for (const s of ['function applyGlitch', 'function worldBadge']) assert.ok(!V.includes(s), 'events.mjs 不再带 ' + s);
 });

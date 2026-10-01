@@ -1,6 +1,6 @@
 // 领航员网关（W5）、世界书 JIT 水合（W6）、剧情事实结晶（W7）：三条「按设置在后台调端点 / 写附加书」的流水，从 eden-map.js 原样搬出（S5-1）。
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
-import { cdnFetch, thFn } from './host-th.mjs';
+import { cdnFetch, thFn } from './host-tavernhelper.mjs';
 import { resolveTags, stripBlocks } from './sanitize.mjs';
 export const DEPS = [
   'GEN', 'SELF', 'hostToast', 'life', 'lsGet', 'lsSet', 'panel', 'pointsFor', 'sendEvents', 'CTX', 'FRm', 'MV', 'SpatialM', 'UL', 'floorNow',
@@ -9,13 +9,13 @@ export const DEPS = [
 export function createLlmFlow(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('llm-flow: missing dep ' + k);
   const { GEN, SELF, hostToast, life, lsGet, lsSet, panel, pointsFor, sendEvents } = host;
-  // ---------------- W5 领航员网关（tavern/navigator.mjs 纯调度；HTTP 与副作用在这里） ----------------
+  // ---------------- W5 领航员网关（tavern/planner-gateway.mjs 纯调度；HTTP 与副作用在这里） ----------------
   // 默认关（edenMapNav）；开着也只是「该跑时才打一次用户自己配的端点」，让路语义复用 tick.plan（面板活着 / 生成中不跑）。
   // 响应必须过 W4 op 沙盒（sanitize 链 → parse → 水位）才可能落到地图；OP_EVENT 是会话级叠加（src='op'，20 楼衰减），
   // OP_SUGGEST 只弹提示永不自动进聊天流（裁决 2/3）；OP_CLUE / OP_MARKER 的查看器送达挂 T9（叠加图层）。
   let NAVm = null, LLMm = null, MSGm = null;
-  import(SELF + 'tavern/navigator.mjs').then(m => { NAVm = m; navSchedule(); }).catch(() => {});
-  import(SELF + 'tavern/llm.mjs').then(m => { LLMm = m; }).catch(() => {});
+  import(SELF + 'tavern/planner-gateway.mjs').then(m => { NAVm = m; navSchedule(); }).catch(() => {});
+  import(SELF + 'tavern/llm-gateway.mjs').then(m => { LLMm = m; }).catch(() => {});
   import(SELF + 'tavern/msgtext.mjs').then(m => { MSGm = m; }).catch(() => {});
   let navLed = { lastAt: 0 }, navSeen = { seen: [] }, navT = 0, opEvents = [];
   async function navRun() {
@@ -55,12 +55,12 @@ export function createLlmFlow(host) {
     navT = setTimeout(async () => { try { await navRun(); } catch (e) {} navSchedule(); }, iv);
   }
 
-  // ---------------- W6 世界书 JIT 条目水合（tavern/wb_jit.mjs 纯计划；写世界书在这里） ----------------
+  // ---------------- W6 世界书 JIT 条目水合（tavern/worldbook-jit.mjs 纯计划；写世界书在这里） ----------------
   // 只动 wbsync.BOOK 附加书里带 extra.eden_id 的条目（extra.eden_jit 标记 JIT 关的；用户关的记 ignore 永不再碰）。
   // 激活集 = spatial.activationOf（自身 + 出口 + 同层邻近）；激活集哈希没变不写（裁决 10）；withLock 跨标签互斥。
   let WBJm = null, WBSm = null, jitWatermark = null, jitBusy = false;
-  import(SELF + 'tavern/wb_jit.mjs').then(m => { WBJm = m; }).catch(() => {});
-  import(SELF + 'tavern/wbsync.mjs').then(m => { WBSm = m; }).catch(() => {});
+  import(SELF + 'tavern/worldbook-jit.mjs').then(m => { WBJm = m; }).catch(() => {});
+  import(SELF + 'tavern/worldbook-sync.mjs').then(m => { WBSm = m; }).catch(() => {});
   async function jitRound() {
     if (jitBusy || !WBJm || !WBSm || !host.SpatialM || life.dead || lsGet('edenMapWbJit') !== '1') return;
     const getBook = thFn('getWorldbook'), updBook = thFn('updateWorldbookWith');
@@ -93,11 +93,11 @@ export function createLlmFlow(host) {
     finally { jitBusy = false; }
   }
 
-  // ---------------- W7 剧情事实自动结晶（tavern/wb_crystallize.mjs 纯收集与草案；写世界书在这里） ----------------
+  // ---------------- W7 剧情事实自动结晶（tavern/worldbook-crystallize.mjs 纯收集与草案；写世界书在这里） ----------------
   // ⌖事实 标签 → 附加书关键词触发条目（map.fact.<hash>，内容照抄原文）；LRU + 墓碑（用户删除永不复活）；
   // 已写 id 记水位（edenMapWbXtalCfg.written）→ 消息窗口重放幂等。默认关（edenMapWbXtal）。
   let XTMm = null, xtalBusy = false, xtalCfg = null;
-  import(SELF + 'tavern/wb_crystallize.mjs').then(m => { XTMm = m; }).catch(() => {});
+  import(SELF + 'tavern/worldbook-crystallize.mjs').then(m => { XTMm = m; }).catch(() => {});
   const xtalCfgOf = () => {
     if (xtalCfg) return xtalCfg;
     try { xtalCfg = JSON.parse(lsGet('edenMapWbXtalCfg') || '{}') || {}; } catch (e) { xtalCfg = {}; }

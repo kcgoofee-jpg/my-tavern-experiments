@@ -1,5 +1,5 @@
 {
-  "_note": "伊甸包的保底名册（Pack 0 数据挂载点：manifest.data.roster，2026-09-30 自 tavern/mvu.mjs 抽离）。卡「开局名册」16 人（docs/card-digest.md §5，只取中性身份）：还没开局 / 剧情还没写到成员表 / 变量快照缺失时，人物页「庄园成员」用它兜底；MVU 成员表里已有的人不重复补（MVU 为准），剧情新加的人照常追加在后面。宿主按清单路径载入后经 MVUBridge.setFallbackMembers 注入装配系统。",
+  "_note": "伊甸包的保底名册（Pack 0 数据挂载点：manifest.data.roster，2026-09-30 自 tavern/mvu-readers.mjs 抽离）。卡「开局名册」16 人（docs/card-digest.md §5，只取中性身份）：还没开局 / 剧情还没写到成员表 / 变量快照缺失时，人物页「庄园成员」用它兜底；MVU 成员表里已有的人不重复补（MVU 为准），剧情新加的人照常追加在后面。宿主按清单路径载入后经 MVUBridge.setFallbackMembers 注入装配系统。",
   "members": [
     { "name": "绫濑遥", "identity": "伊甸庄园女仆长" },
     { "name": "苍穹", "identity": "骑士团战斗修女，代号「天灾」" },

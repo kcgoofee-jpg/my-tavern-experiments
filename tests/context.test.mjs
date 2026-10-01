@@ -5,11 +5,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ContextPipeline, hashText } from '../map/tavern/context.mjs';
-import * as EVM from '../map/tavern/events.mjs';
-import * as CHM from '../map/tavern/characters.mjs';
-import * as TRm from '../map/tavern/trips.mjs';
+import * as EVM from '../map/tavern/events-parse.mjs';
+import * as CHM from '../map/tavern/characters-parse.mjs';
+import * as TRm from '../map/tavern/trips-parse.mjs';
 import { readFileSync } from 'node:fs';
-import { normCustom, rosters as mvuRosters } from '../map/tavern/mvu.mjs';
+import { normCustom, rosters as mvuRosters } from '../map/tavern/mvu-readers.mjs';
 // 保底名册（通用化 v1）是包级数据：调用侧按参数传（宿主从 manifest.data.roster 载入）——这里载入 eden 的保底名册
 const FB = JSON.parse(readFileSync(new URL('../map/data/fallback_roster.json', import.meta.url), 'utf8')).members;
 

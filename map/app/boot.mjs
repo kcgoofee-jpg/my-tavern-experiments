@@ -1,45 +1,45 @@
 // 启动：main / mainInner（并行取注册表、标记、派生数据、字典、core/protocol.mjs，建 OSD，发 ready）、启动失败出路。
-// 核心各块按原内联脚本的顺序求值（副作用：监听器、window.I18N / EdenMap / TCNotify…）；兼容面 bridge.mjs 最后
+// 核心各块按原内联脚本的顺序求值（副作用：监听器、window.I18N / EdenMap / TCNotify…）；兼容面 legacy-globals.mjs 最后
 import './state.mjs';
 import './util.mjs';
-import './tiers.mjs';
+import './sharpness-tiers.mjs';
 import './i18n.mjs';
 import './topbar.mjs';
-import './nav.mjs';
-import './estate.mjs';
-import './layers.mjs';
+import './map-switch.mjs';
+import './subpage3d-host.mjs';
+import './map-level-nav.mjs';
 import './markers.mjs';
 import './locate.mjs';
 import './settings.mjs';
-import './extapi.mjs';
+import './extension-api.mjs';
 import './shell.mjs';
-import './host.mjs';
-import './bridge.mjs';
+import './host-messages.mjs';
+import './legacy-globals.mjs';
 import { initFpsMeter, suspendFpsMeter } from './fps.mjs';
 import { initVisibilityGuard } from './visibility.mjs';
-import { registerWeatherLayer } from './weather.mjs';
-import { registerTrafficLayer } from './traffic.mjs';
-import { registerQuestLayer } from './quests.mjs';
-import { registerLootLayer } from './loot.mjs';   // Part 5-1：地上的发光拾取物（世界藏物表）
-import { registerVisionLayer } from './vision.mjs';   // Part 5-2：巡逻岗哨的警戒视野锥 + 走过去的潜行判定
+import { registerWeatherLayer } from './weather-view.mjs';
+import { registerTrafficLayer } from './traffic-view.mjs';
+import { registerQuestLayer } from './quests-view.mjs';
+import { registerLootLayer } from './stash-markers.mjs';   // Part 5-1：地上的发光拾取物（世界藏物表）
+import { registerVisionLayer } from './vision-view.mjs';   // Part 5-2：巡逻岗哨的警戒视野锥 + 走过去的潜行判定
 import { registerWanderLayer } from './wander.mjs';   // Part 5-3：人物标记换地方时滑过去（日程漫游的补间）
-import { registerDepthHazeLayer } from './depthhaze.mjs';   // Part 8-3：纵深霾浓度 → 图层系统滤镜链（空气透视）
+import { registerDepthHazeLayer } from './depth-haze.mjs';   // Part 8-3：纵深霾浓度 → 图层系统滤镜链（空气透视）
 import { M, REG, cur, pendingHome, setM, setPendingHome, setREG, setViewer, viewer } from './state.mjs';
-import { updateInsets } from './insets.mjs';
+import { updateInsets } from './hires-inset-tiles.mjs';
 import { $, PR, PROTO, coarse, getJSON, jsonCache, narrow, post, setNarrow, setPR, SUB_ORIGIN } from './util.mjs';
-import { TIERS, autoTier, declutter, effTier, homeMode, initProgress, onOpen, refit, setTier } from './tiers.mjs';
+import { TIERS, autoTier, declutter, effTier, homeMode, initProgress, onOpen, refit, setTier } from './sharpness-tiers.mjs';
 import { DICT, LANG, applyI18n, postState, setDICT, setLANG, setLang, t } from './i18n.mjs';
 import { layoutHeader, warmOthers } from './topbar.mjs';
-import { go } from './nav.mjs';
-import { est, estateLook, estatePlan, retryEstate } from './estate.mjs';
+import { go } from './map-switch.mjs';
+import { est, estateLook, estatePlan, retryEstate } from './subpage3d-host.mjs';
 import { closeCard } from './markers.mjs';
 import { ALIAS, applyZoomLimit, focusStart, hereRes, jumpHere, markHere, setEstPlan, setUserMoved, startInScene, userMoved } from './locate.mjs';
 import { initSettings } from './settings.mjs';
-import { emEmit, enNames, rebuildHere, setEnNames } from './extapi.mjs';
+import { emEmit, enNames, rebuildHere, setEnNames } from './extension-api.mjs';
 import { firstRunHint, initE7, initShell } from './shell.mjs';
-import { initLayerHost, registry, registerCoreLayers, renderLayerMenu } from './layerhost.mjs';
+import { initLayerHost, registry, registerCoreLayers, renderLayerMenu } from './layer-host.mjs';
 import { P } from './plugins.mjs';
-import { PACK, initPack, packData, packEvents, packNames, packOverlay, packTax, setOverlay, rebase } from './pack.mjs';
+import { PACK, initPack, packData, packEvents, packNames, packOverlay, packTax, setOverlay, rebase } from './current-pack.mjs';
 import { buildRuntime } from './nodes-runtime.mjs';   // 节点树：面包屑 / 上一级 / 庄园替身都从它读（S2-A）
 import { applyTheme } from './theme.mjs';   // 包的分视图主题（K-R70）：一个 <style id="packTheme">
 import { busOn } from './bus.mjs';
@@ -140,7 +140,7 @@ async function mainInner() {
   // 插图命中范围会随平移 / 缩放变化，清晰度上限（是否按插图的分辨率放宽）也要跟着重算
   viewer.addHandler('animation-finish', () => { updateInsets(); applyZoomLimit(); });
   initProgress();
-  // 图层开关的接线、存储与默认勾选收进 app/layerhost.mjs 的 registerCoreLayers（P3-C：#layList 由 LayerRegistry 数据驱动，键名不变）
+  // 图层开关的接线、存储与默认勾选收进 app/layer-host.mjs 的 registerCoreLayers（P3-C：#layList 由 LayerRegistry 数据驱动，键名不变）
   $('#here').oninput = () => markHere($('#here').value);
   $('#here').onchange = () => { markHere($('#here').value); emEmit('here', { value: $('#here').value, resolved: hereRes($('#here').value) }); };   // 单独打开查看器时：输入框改完（回车 / 失焦）= 模拟 MVU 地点更新
   initSettings(); initE7(); initFpsMeter();

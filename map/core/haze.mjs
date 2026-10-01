@@ -1,6 +1,6 @@
 // 空气透视滤镜（Part 8-3，2026-09-30）：把纵深系统（core/depth.mjs）算出的霾浓度变成一条看得见的滤镜链。
 // 数据流闭环：depth.describe() 的 currentHaze（当前纵深平面 d 上 channels.haze 的插值）→ 本模块的滤镜链 →
-//   LayerRegistry 的 depth-haze 槽位（core/layers.mjs 的 { type: 'css' | 'canvas', value } 契约）与 #fogCv 迷雾画布。
+//   LayerRegistry 的 depth-haze 槽位（core/layer-registry.mjs 的 { type: 'css' | 'canvas', value } 契约）与 #fogCv 迷雾画布。
 // 数学在这里只换算一次、纯函数；谁都不许在渲染层再抄一遍 haze 公式（与 core/depth.mjs 同一条纪律）。
 // 纯核心：不碰 DOM / 存储 / 酒馆全局；node 单测 tests/depth_layers.test.mjs。
 /** 最远处的模糊半径（px）：再大就近处也糊了，看不清图钉 */

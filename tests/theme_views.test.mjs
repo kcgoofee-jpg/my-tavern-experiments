@@ -50,7 +50,7 @@ test('applyTheme writes one <style id="packTheme"> (textContent) and body[data-g
   applyTheme(undefined, doc); assert.equal(doc.kids.size, 0); assert.equal(doc.body.dataset.glow, undefined);   // no theme data = no style, no glow (town, minimal)
 });
 test('the selectors that depended on the glow view read body[data-glow]', () => {
-  assert.match(rd('map/viewer.html'), /body\[data-glow="1"\] #layers button\.on/); assert.match(rd('map/events.mjs'), /body:not\(\[data-glow="1"\]\) \.ev i/);
-  assert.doesNotMatch(rd('map/events.mjs') + rd('map/viewer.html'), /\[data-map="tc_mid"\]/);
-  assert.match(rd('map/app/nav.mjs'), /document\.body\.dataset\.map = id; syncGlow\(id\)/);
+  assert.match(rd('map/viewer.html'), /body\[data-glow="1"\] #layers button\.on/); assert.match(rd('map/events-view.mjs'), /body:not\(\[data-glow="1"\]\) \.ev i/);
+  assert.doesNotMatch(rd('map/events-view.mjs') + rd('map/viewer.html'), /\[data-map="tc_mid"\]/);
+  assert.match(rd('map/app/map-switch.mjs'), /document\.body\.dataset\.map = id; syncGlow\(id\)/);
 });

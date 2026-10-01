@@ -7,7 +7,7 @@ import * as B from './lib.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { openHost } from './host_stub.mjs';
-import * as MV from '../../map/tavern/mvu.mjs';
+import * as MV from '../../map/tavern/mvu-readers.mjs';
 
 const OUT = process.argv[2];
 if (!OUT || OUT.startsWith('--')) { console.log('用法：node tools/browser/custom095.mjs <输出目录>'); process.exit(2); }

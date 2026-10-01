@@ -84,7 +84,7 @@ export async function collectWorldbook(f) {
  *   worldbook: null（查不了）| { missing: [条目名], lore: 启用了「地图方位」EJS 条目 },
  *   vars: 酒馆助手聊天变量接口可用（自定义名称存聊天变量；否则存本机）, ejs: 「提示词模板」扩展（EjsTemplate）在,
  *   mvu.fields: { present: 有在场人物表, clock: 有世界时钟变量, outfit: 有着装变量 }（v0.9.3，缺了只是对应功能不显示）,
- *   db: null（没有表格数据库插件）| { tables, location: MVU 没地点时读了它的地点, chars: 它的表里有位置的人物数 }（tavern/shujuku.mjs）,
+ *   db: null（没有表格数据库插件）| { tables, location: MVU 没地点时读了它的地点, chars: 它的表里有位置的人物数 }（tavern/tabledb-bridge.mjs）,
  *   version: { script: 脚本版本或 null（跟分支 / 本地）, viewer: 地图 build.json 的 version 或 null（还没打开过） },
  *   update: null | { current, latest }（有新正式版时多一项 status 'info'，不弹提示）
  * }
@@ -96,7 +96,7 @@ export function evaluate(f) {
     : item('api', 'ok', '酒馆助手接口齐全', 'TavernHelper API present'));
 
   const m = f.mvu, HP = (m && m.path) || '', HPz = HP ? `「${HP}」` : '当前地点变量', HPe = HP ? `"${HP}"` : 'the location variable';   // 路径由设定包 / 变量映射给出；都缺时只说「当前地点变量」
-  const db = f.db || null;   // 表格数据库插件（tavern/shujuku.mjs）：null = 没检测到
+  const db = f.db || null;   // 表格数据库插件（tavern/tabledb-bridge.mjs）：null = 没检测到
   if (!m && db?.location) out.push(item('mvu', 'skip', 'MVU 变量框架未加载：当前地点改读数据库插件的表', 'MVU not loaded: current location comes from the table database plugin'));
   else if (!m) out.push(item('mvu', 'warn', 'MVU 变量框架未加载：地图无法跟随当前地点', 'MVU not loaded: the map cannot follow the current location'));
   else if (!m.stat) out.push(item('mvu', 'skip', '这个聊天还没有 MVU 变量（新聊天？）', 'No MVU variables in this chat yet (new chat?)'));

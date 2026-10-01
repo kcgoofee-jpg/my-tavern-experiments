@@ -81,7 +81,7 @@ test('台账 describe：按事件类型计数（泄漏排查看这个）', () =>
 });
 
 test('查看器侧已接总线：散落的全局监听登记到 app/bus.mjs', () => {
-  const files = ['clouds', 'shell', 'th-ui', 'settings', 'host'];
+  const files = ['clouds', 'shell', 'tavernhelper-settings', 'settings', 'host-messages'];
   for (const f of files) {
     const src = readFileSync(join(ROOT, `map/app/${f}.mjs`), 'utf8');
     assert.ok(src.includes("from './bus.mjs'"), `${f}.mjs 必须接总线`);

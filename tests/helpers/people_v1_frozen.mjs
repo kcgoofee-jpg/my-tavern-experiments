@@ -1,4 +1,4 @@
-// The people page's section logic as map/chars.mjs `pane` had it before S4-4 (frozen; head #188): three fixed sections — present, members, targets — with the labels through the dictionary.
+// The people page's section logic as map/characters-view.mjs `pane` had it before S4-4 (frozen; head #188): three fixed sections — present, members, targets — with the labels through the dictionary.
 // `T(key, fallback, vars)` is the viewer's shared i18n service. Returns the sections as data: [{ id, label, n, rows: [name...] }] (the html around them is not part of the comparison).
 export function paneV1(items, rosters, T) {
   const presNames = new Set(items.map(c => c.name)), extra = (rosters?.present?.items || []).filter(i => !presNames.has(i.name));
@@ -11,5 +11,5 @@ export function paneV1(items, rosters, T) {
     ...(tgtAll.length ? [{ id: 'targets', label: T('ch.g_targets', '目标'), n: tgt.length + also(tgtAll.length - tgt.length), rows: tgt.map(i => i.name) }] : []),
   ];
 }
-/** the people count of the page before S4-4 (chars.mjs `count`) */
+/** the people count of the page before S4-4 (characters-view.mjs `count`) */
 export const countV1 = (items, rosters) => new Set([...items.map(c => c.name), ...['present', 'members', 'targets'].flatMap(g => (rosters?.[g]?.items || []).map(i => i.name))]).size;

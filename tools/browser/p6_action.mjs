@@ -46,7 +46,7 @@ try {
   });
 
   await step('宿主按模板产出文案并填进聊天输入框（只填不发）', async () => {
-    // 宿主侧的注入结果：#send_textarea 被接上一句（map/tavern/compose.mjs 只写 value、不点发送）
+    // 宿主侧的注入结果：#send_textarea 被接上一句（map/tavern/compose-templates.mjs 只写 value、不点发送）
     const r = await D.page.evaluate(() => {
       const ta = document.getElementById('send_textarea');
       return { value: ta ? String(ta.value || '') : null, sent: window.__sent || 0 };

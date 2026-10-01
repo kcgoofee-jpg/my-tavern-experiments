@@ -1,9 +1,9 @@
 // 外壳：控制列、唯一抽屉 / 右栏胶水、通知层、状态点、单手模式、双击缩放。
 import { REG, cur, depthData, viewer } from './state.mjs';
 import { $, afterLoadIdle, announce, esc, ico, post, tx } from './util.mjs';
-import { declutter } from './tiers.mjs';
+import { declutter } from './sharpness-tiers.mjs';
 import { LANG, nm, postState, t } from './i18n.mjs';
-import { narrowNow } from './estate.mjs';
+import { narrowNow } from './subpage3d-host.mjs';
 import { jumpHere, setUserMoved, userMoved } from './locate.mjs';
 import { TCSettings, showSet } from './settings.mjs';
 import { P } from './plugins.mjs';

@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { openHost } from './host_stub.mjs';
 import { fileURLToPath } from 'node:url';
-// the members table of the chat holds 2 rows; the pack's fallback roster (manifest.data.roster) adds the people the table lacks (mvu.mjs `rosters`: "MVU wins, the setting fills the gaps")
+// the members table of the chat holds 2 rows; the pack's fallback roster (manifest.data.roster) adds the people the table lacks (mvu-readers.mjs `rosters`: "MVU wins, the setting fills the gaps")
 const FALLBACK = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../../map/data/fallback_roster.json', import.meta.url)), 'utf8')).members;
 const MEMBERS = 2 + FALLBACK.filter(m => !['甲一', '甲二'].includes(m.name)).length;
 const OUT = process.argv[2]; if (!OUT || OUT.startsWith('--')) { console.log('用法：node tools/browser/roster095.mjs <输出目录>'); process.exit(2); }

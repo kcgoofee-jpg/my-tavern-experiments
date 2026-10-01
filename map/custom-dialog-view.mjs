@@ -1,4 +1,4 @@
-// 「名称与用途」对话框的 HTML 构件（列表页 / 选择页 / 结果列表 / 编辑表单）：纯函数，状态由 custom.mjs 逐次传入，不读不写任何闭包状态（S5-1 自 custom.mjs 原样搬出；行为不变）。
+// 「名称与用途」对话框的 HTML 构件（列表页 / 选择页 / 结果列表 / 编辑表单）：纯函数，状态由 custom-names-view.mjs 逐次传入，不读不写任何闭包状态（S5-1 自 custom-names-view.mjs 原样搬出；行为不变）。
 import { esc } from './app/util.mjs';
 export function createDialogView({ T }) {
   const KIND = { room: ['cu.room', '房间'], area: ['cu.area', '区域'], landmark: ['cu.landmark', '地标'], character: ['cu.character', '人物'], layer: ['cu.layer', '层 / 大区'], world: ['cu.world', '世界地名'] };

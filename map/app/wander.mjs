@@ -1,4 +1,4 @@
-// NPC 漫游（Part 5-3 第二步，2026-09-30；Part 8-2 改成确定性时钟驱动）：人物标记（.chm，map/chars.mjs 画）换地方时不要瞬移。
+// NPC 漫游（Part 5-3 第二步，2026-09-30；Part 8-2 改成确定性时钟驱动）：人物标记（.chm，map/characters-view.mjs 画）换地方时不要瞬移。
 // 驱动换成了纯前端的确定性时钟（core/walk.mjs 的 tickClock + core/routine.mjs 的日程表）：
 //   世界时刻 = 起点时钟 + 页面开了多久折合的轮数——不读系统时间、不问模型、不等宿主推 MVU 变动。
 //   同一个 (起点, 经过) 永远同一个时刻：截图对比、多端一致、回放都站得住（core/clock.mjs 的口径）。
@@ -6,14 +6,14 @@
 //   「减少动态效果」/ 省流档：一步到位，不排队补间。
 // 位置变化还有一路来自宿主：聊天 / MVU 写过位置的人由聊天接管（日程不覆盖 known 名单），那一路仍用 CSS 补间滑过去。
 // 本模块不认识任何人，只看「这枚标记该在哪儿」。
-import { registry } from './layerhost.mjs';
-import { lean } from './tiers.mjs';
+import { registry } from './layer-host.mjs';
+import { lean } from './sharpness-tiers.mjs';
 import { aspect, cur, curData, viewer } from './state.mjs';
 import { hereRes } from './locate.mjs';
 import { P } from './plugins.mjs';
 import { busOn } from './bus.mjs';
 import { getJSON } from './util.mjs';
-import { packData } from './pack.mjs';
+import { packData } from './current-pack.mjs';
 import { createWalker, tickClock, DEFAULT_DUR_MS, DEFAULT_ROUND_MS } from '../core/walk.mjs';
 import { normSchedule, placesAt } from '../core/routine.mjs';
 import { normClock } from '../core/clock.mjs';
@@ -40,7 +40,7 @@ let sched = null, base = normClock(null), t0 = 0, rounds = -1, clock = base;
 let timer = 0, raf = 0;
 const reduced = () => !!rmq()?.matches;
 
-/** 地点名 → 当前图上的归一化坐标 [nx, ny]（与 chars.mjs 的 where() 同一条解析：hereRes → 标记锚点） */
+/** 地点名 → 当前图上的归一化坐标 [nx, ny]（与 characters-view.mjs 的 where() 同一条解析：hereRes → 标记锚点） */
 function coordsOf(place) {
   try {
     const r = typeof hereRes === 'function' ? hereRes(place) : null;
@@ -112,7 +112,7 @@ function glide(el, key) {
   setTimeout(() => { try { el.classList.remove('walk'); } catch (e) {} }, DUR + 60);
 }
 
-/** 扫一遍当前的人物标记：只处理新出现的（chars.mjs 每次重画都是全新元素） */
+/** 扫一遍当前的人物标记：只处理新出现的（characters-view.mjs 每次重画都是全新元素） */
 export function scanWander() {
   if (!on) return 0;
   let n = 0;

@@ -1,4 +1,4 @@
-// FROZEN COPY of map/tavern/events.mjs as of head #165 (S4-1 T4 oracle): the built-in taxonomy of the first pack (GROUPS, CATS, ALIAS_CAT, EXAMPLES, CLOSED, CFG.tag) and its classifier `catOf`,
+// FROZEN COPY of map/tavern/events-parse.mjs as of head #165 (S4-1 T4 oracle): the built-in taxonomy of the first pack (GROUPS, CATS, ALIAS_CAT, EXAMPLES, CLOSED, CFG.tag) and its classifier `catOf`,
 // kept only so tests/events_taxonomy_shadow.test.mjs can prove the pack's events block classifies every word the same way, and so tools/gen_eden_events_v2.mjs can derive that block.
 // Do not edit; do not import from the engine. Changes: the mvu import path, and ALIAS_CAT / CLOSED / CFG exported.
 // 天城事态：从聊天原文解析事件标签（纯函数，eden-map.js 与 node 单测共用；不碰 DOM、不碰酒馆接口）
@@ -11,7 +11,7 @@
 
 // 事件体系 v2：9 个大类（地图图例 9 种颜色，v2 加「人物」），具体类型靠图标字区分。稀有度：1 常见、2 少见、3 罕见、4 传说。完整设计见 docs/event-taxonomy.md
 // v1（8 类）的类型名全部保留，旧标签照常解析；v1 查看器里用过的旧名（结界事故、空域巡查、执法管控……）在 ALIAS_CAT 里。
-import { timeKey } from '../../map/tavern/mvu.mjs';
+import { timeKey } from '../../map/tavern/mvu-readers.mjs';
 export const GROUPS = {
   空防: '#d9a441', 气候: '#7fd6ff', 治安: '#3d7dff', 政治: '#6f9be0', 媒体: '#d03ca8', 民生: '#e8d08a', 军事: '#a3b18a', 灾害: '#ff5a2a', 人物: '#d7a6e8', 其他: '#cfd8e0',
 };

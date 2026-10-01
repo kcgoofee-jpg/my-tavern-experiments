@@ -1,6 +1,6 @@
 // 交互方式 (a)(d)(e)：状态行注入、空间坐标契约注入、检查点、地点冲突自检（S5-1 自 eden-map.js 原样搬出）。
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
-import { cdnFetch, thFn } from './host-th.mjs';
+import { cdnFetch, thFn } from './host-tavernhelper.mjs';
 export const DEPS = [
   'BR', 'CTX', 'SELF', 'chatId', 'life', 'lsGet', 'pushSoon', 'recomputeSoon', 'saveRoot', 'userName', 'BASE', 'clock', 'custom', 'customChat', 'here',
   'regNow', 'statSig',
@@ -8,12 +8,12 @@ export const DEPS = [
 export function createModesFlow(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('modes-flow: missing dep ' + k);
   const { BR, CTX, SELF, chatId, life, lsGet, pushSoon, recomputeSoon, saveRoot, userName } = host;
-  // ---------------- 交互方式 (a)(d)(e)（docs/interaction-modes.md；纯逻辑在 tavern/modes.mjs） ----------------
+  // ---------------- 交互方式 (a)(d)(e)（docs/interaction-modes.md；纯逻辑在 tavern/interaction-modes.mjs） ----------------
   // (a) 每次生成前把「地点、在场、时间、行程」压成一行（≤ 设置的 token 上限，默认 150）按固定 id、固定深度注入；重生 / swipe / 重载都覆盖同一条，不叠。
   //     数据没确认（pending / stale）时标「未确认」；卡的提示词里已经有的字段跳过；设置「数据与映射」开关（默认开），深度与上限在「高级」。
   // (e) 最小检查点：eden_map.检查点 = { 楼, swipe }（最后确认的楼层与 swipe），只在确认前进时写（幂等）；启动时对照，楼 / swipe 对不上就作废并从聊天记录重推。
   let stateNow = '', cardSkip = null, cardSkipChat = null, cp = null, cpResume = null;
-  const MDm = BR.modes;   // 纯逻辑模块（modes.mjs）经桥静态引入，求值即用（原来动态加载后补一次 stateInject，改在启动序列里）
+  const MDm = BR.modes;   // 纯逻辑模块（interaction-modes.mjs）经桥静态引入，求值即用（原来动态加载后补一次 stateInject，改在启动序列里）
   async function cardSkipFor() {   // 卡的提示词文本（角色描述、场景、系统提示、历史后指令、卡内世界书）里引用了哪些 stat_data 字段；每个聊天算一次
     const c = chatId(); if (cardSkipChat === c && cardSkip) return cardSkip; cardSkipChat = c; cardSkip = {};
     try { const d = await Promise.resolve(thFn('getCharData')?.('current')); const x = d?.data || d || {};
@@ -39,7 +39,7 @@ export function createModesFlow(host) {
     if (on && cardSkipChat !== chatId()) cardSkipFor().then(() => { stateNow = ''; stateInject(type); });
   }
   // 空间坐标契约（W1，docs/plans/llm-campaign.md）：当前地点 + 出口 / 守卫锥 / 邻近地标 → ≤120 token 的 JSON 契约
-  // （纯编译在 tavern/spatial.mjs；默认关 edenMapSpatial，上限 edenMapSpatialBudget）。与状态行同一轮注入。
+  // （纯编译在 tavern/spatial-contract.mjs；默认关 edenMapSpatial，上限 edenMapSpatialBudget）。与状态行同一轮注入。
   let SpatialM = null, spatialNow = '';
   const ptsCache = new Map();
   function pointsFor(mapId) {
@@ -50,7 +50,7 @@ export function createModesFlow(host) {
   }
   async function spatialInject() {
     if (life.dead || lsGet('edenMapSpatial') !== '1' || !host.regNow) return;
-    SpatialM ??= await import(SELF + 'tavern/spatial.mjs').catch(() => null); if (!SpatialM || life.dead) return;
+    SpatialM ??= await import(SELF + 'tavern/spatial-contract.mjs').catch(() => null); if (!SpatialM || life.dead) return;
     const loc = SpatialM.locate(host.regNow, host.here);
     if (!loc?.mapId) { if (spatialNow) { spatialNow = ''; SpatialM.applySpatial(thFn, '', 2); } return; }
     const pts = await pointsFor(loc.mapId);

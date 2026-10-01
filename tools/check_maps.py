@@ -104,7 +104,7 @@ for mid, m in maps.items():
         if m.get('viewer3d') and not exists(os.path.join(ROOT, 'props', m['viewer3d'], 'manifest.json')): err(f"{mid}: viewer3d 清单 props/{m['viewer3d']}/manifest.json 不存在")
         if not isinstance(m.get('alias'), list) or not m['alias']: err(f'{mid}: alias 应为非空列表（当前地点匹配房间用）')
         if m.get('group') and not (m.get('layer') or {}).get('name'): err(f'{mid}: 在 group 里要有 layer.name（层切换器显示）')
-        for f in ('rooms', 'rooms_en', 'areas', 'areas_en'):   # 当前地点 → 庄园房间 / 室外区域（map/app/here-v2.mjs）
+        for f in ('rooms', 'rooms_en', 'areas', 'areas_en'):   # 当前地点 → 庄园房间 / 室外区域（map/app/place-resolver.mjs）
             if f in m and not (isinstance(m[f], list) and all(isinstance(w, str) and w for w in m[f])): err(f'{mid}.{f} 应为非空字符串列表')
         both = set(m.get('rooms', [])) & set(m.get('areas', []))
         if both: err(f'{mid}: {sorted(both)} 同时在 rooms 与 areas 里（当前地点会落到哪里不确定）')
@@ -115,7 +115,7 @@ for mid, m in maps.items():
     if base.endswith('.dzi') and not isdir(os.path.join(ROOT, base[:-4] + '_files')): err(f'{mid}: 缺瓦片目录 {base[:-4]}_files/')
     alt = m.get('alt') or {}
     if alt and not exists(os.path.join(ROOT, alt.get('base', ''))): warn(f"{mid}: alt 底图 {alt.get('base')} 还没渲染（查看器里的开关会提示并自动关掉）")
-    for tod, pbase in (m.get('periods') or {}).items():   # 多时段底图（app/nav.mjs 按世界时钟档位自动换）：档位图与瓦片目录都要在
+    for tod, pbase in (m.get('periods') or {}).items():   # 多时段底图（app/map-switch.mjs 按世界时钟档位自动换）：档位图与瓦片目录都要在
         if not exists(os.path.join(ROOT, pbase)): err(f'{mid}.periods.{tod}: 缺底图 {pbase}')
         elif pbase.endswith('.dzi') and not isdir(os.path.join(ROOT, pbase[:-4] + '_files')): err(f'{mid}.periods.{tod}: 缺瓦片目录 {pbase[:-4]}_files/')
     ov = m.get('overlay') or {}
@@ -221,7 +221,7 @@ if len(i18n) == 2:
     # 事件体系（首个包的事件块 + 内核的中性分类）：每个大类、每种类型在首个包的英文地名表（packs/eden/names.en.json）里要有英文（英文界面的图例、事件卡用）
     import shutil, subprocess
     def run_node():
-        js = ("import('./map/tavern/events.mjs').then(async m=>{ const { packGeo } = await import('./tools/eden_geo.mjs'); const { DEFAULT_EVENTS: D } = await import('./map/core/events-default.mjs');"
+        js = ("import('./map/tavern/events-parse.mjs').then(async m=>{ const { packGeo } = await import('./tools/eden_geo.mjs'); const { DEFAULT_EVENTS: D } = await import('./map/core/events-default.mjs');"
               "const lab = tx => [...tx.groups.map(g=>g.label), ...Object.values(tx.types).map(t=>t.label)]; m.setGeo(packGeo('eden'));"
               "console.log(JSON.stringify([...lab(m.taxonomy()), ...lab(D)])) })")
         return subprocess.run(['node', '-e', js], capture_output=True, text=True, cwd=os.path.join(ROOT, '..'), timeout=30)
@@ -266,7 +266,7 @@ else:
     for mid, m in maps.items():
         for k, v in (m.get('markers') or {}).items():
             if added(v) and f'{mid}.{k}' not in refs: err(f'{mid}.{k}：wb_list:false / addon:true 的地点，addon_places.json 里没有对应条目（世界书附加条目缺它）')
-# v0.9.6 卡设定分层房间（map/data/eden_estate_rooms.json）↔ 当前地点词表（map/app/here-v2.mjs 的庄园房间）：
+# v0.9.6 卡设定分层房间（map/data/eden_estate_rooms.json）↔ 当前地点词表（map/app/place-resolver.mjs 的庄园房间）：
 # 每个房间名都要能落到 eden_estate 的房间（带 std）；卡房间名照抄卡原名（2026-09-28 用户决定，不用占位、不做运行时绑定）；每间卡房间都有编号（card_rooms）；
 # 仓库自编的旧名（受限房间 X、附属室 X 等）只能留在 retired_names；
 # 房间叫法不能和庄园室外区域 / 整座庄园的叫法重名（否则抢走区域落点）
@@ -298,7 +298,7 @@ if exists(er_path) and 'eden_estate' in maps:
     for w in (est.get('rooms') or []) + (est.get('alias') or []):
         if INVENTED.search(w) or w in retired: err(f"maps.json eden_estate：「{w}」是仓库以前自编的房间名（retired_names），要删掉")
     if shutil.which('node') is not None:
-        js = ("Promise.all([import('./map/app/here-v2.mjs'),import('./map/core/compat-v1-geo.mjs')]).then(([H,G])=>{const fs=require('fs'),J=f=>JSON.parse(fs.readFileSync('map/data/'+f,'utf8'));"
+        js = ("Promise.all([import('./map/app/place-resolver.mjs'),import('./map/core/compat-v1-geo.mjs')]).then(([H,G])=>{const fs=require('fs'),J=f=>JSON.parse(fs.readFileSync('map/data/'+f,'utf8'));"
               "const P=J('eden_estate_rooms.json'),m=J('maps.json').maps.eden_estate,i=H.makeHere({maps:J('maps.json'),world:J('world_markers.json'),plan:P}),bad=[];"
               "const clash=new Set([...(m.areas||[]),...(m.areas_en||[]),...i.tree.get(i.estate.id).alias]);"
               "for(const r of P.rooms){const x=i.here(r.name);if(!x||x.level!==1||x.map!==i.estate.id||!x.std)bad.push('认不出房间「'+r.name+'」');"
@@ -306,10 +306,10 @@ if exists(er_path) and 'eden_estate' in maps:
               "console.log(JSON.stringify([...new Set(bad)]))})")
         try:
             r = subprocess.run(['node', '-e', js], capture_output=True, text=True, cwd=os.path.join(ROOT, '..'), timeout=30)
-            if r.returncode != 0: err(f'here-v2.mjs 加载失败（node 退出码 {r.returncode}）')
+            if r.returncode != 0: err(f'place-resolver.mjs 加载失败（node 退出码 {r.returncode}）')
             else:
-                for b in json.loads(r.stdout): err(f'eden_estate_rooms ↔ here-v2.mjs：{b}')
-        except (ValueError, subprocess.TimeoutExpired) as e: err(f'here-v2.mjs 检查失败：{type(e).__name__}: {e}')
+                for b in json.loads(r.stdout): err(f'eden_estate_rooms ↔ place-resolver.mjs：{b}')
+        except (ValueError, subprocess.TimeoutExpired) as e: err(f'place-resolver.mjs 检查失败：{type(e).__name__}: {e}')
 # 外部事件数据源（map/events.js 定时拉取）：feeds: [{label, url, every}]
 feeds = reg.get('feeds', [])
 if not isinstance(feeds, list): err('feeds 应为列表')

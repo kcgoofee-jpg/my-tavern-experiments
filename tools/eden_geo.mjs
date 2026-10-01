@@ -1,4 +1,4 @@
-// Builder-side helper: the event geography of a shipped pack (its v1 files + overlay.v2.json) as a geo for tavern/events.mjs `setGeo`.
+// Builder-side helper: the event geography of a shipped pack (its v1 files + overlay.v2.json) as a geo for tavern/events-parse.mjs `setGeo`.
 //   import { packGeo } from './eden_geo.mjs';  E.setGeo(packGeo('eden'))          packGeo('town') works the same
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';

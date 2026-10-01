@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { resolveFollow } from '../map/tavern/follow.mjs';
+import { resolveFollow } from '../map/tavern/branch-follow.mjs';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const R = 'o/r', B = 'preview';
 const H = (build, c = 'a') => ({ build, sha: c.repeat(40) });

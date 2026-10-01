@@ -2,7 +2,7 @@
 // 1. 真的把查看器核心（app/boot.mjs 起的整张图）与全部外挂在 node 里求值一遍：DOM / 浏览器全局用「什么都接得住」的桩代替，
 //    所以只会因为模块自身的问题失败——求值期碰到还没求值的绑定（TDZ）、未声明的全局、import 的名字不存在。
 //    核心各块互相 import（成环），规则是求值期只碰 state / util / plugins 与自己的绑定；谁在顶层多调一个别的块的函数，这里就会炸。
-// 2. 兼容面 app/bridge.mjs 的全局名单固定（只加不减；要加就改这里）。
+// 2. 兼容面 app/legacy-globals.mjs 的全局名单固定（只加不减；要加就改这里）。
 // 3. viewer.html 里除两段首帧前置外没有内联脚本；核心模块都有 modulepreload。
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,15 +28,15 @@ test('核心与外挂模块在桩 DOM 下都能求值（没有 TDZ / 未声明�
   for (const k of ['setTimeout', 'setInterval', 'requestAnimationFrame']) set(k, () => 0);   // 求值期排的定时器不真的跑（不让 node 挂着）   // 求值期的 build.json 请求：永远挂起，不发网络
   try {
     await import('../map/app/boot.mjs');
-    for (const f of ['events', 'chars', 'custom', 'trips', 'unmapped', 'varmap', 'compose', 'security']) await import(`../map/${f}.mjs`);
-    for (const f of ['cardlinks', 'clouds', 'fog', 'storage-ui', 'scale']) await import(`../map/app/${f}.mjs`);
+    for (const f of ['events-view', 'characters-view', 'custom-names-view', 'trips-view', 'unmapped-place-picker', 'stat-path-mapping-view', 'compose-view', 'security']) await import(`../map/${f}.mjs`);
+    for (const f of ['card-links', 'clouds', 'fog', 'data-mapping-settings', 'scale-handoff']) await import(`../map/app/${f}.mjs`);
     const { P } = await import('../map/app/plugins.mjs');
     assert.deepEqual(Object.keys(P).sort(), ['TCChars', 'TCCompose', 'TCCustom', 'TCEvents', 'TCFog', 'TCSecurity', 'TCTrips', 'TCUnmapped', 'TCVarMap']);
   } finally { for (const [k, d] of Object.entries(keep)) d ? Object.defineProperty(globalThis, k, d) : delete globalThis[k]; }
 });
 
-test('兼容面 bridge.mjs 的全局名单固定', () => {
-  const names = [...rd('app/bridge.mjs').matchAll(/(\w+): \(\) => \1\b/g)].map(m => m[1]).sort();
+test('兼容面 legacy-globals.mjs 的全局名单固定', () => {
+  const names = [...rd('app/legacy-globals.mjs').matchAll(/(\w+): \(\) => \1\b/g)].map(m => m[1]).sort();
   assert.deepEqual(names, ['LANG', 'LS', 'M', 'REG', 'TCSettings', 'aspect', 'chatId', 'closeCard', 'cur', 'curData', 'esc', 'est', 'estFocus', 'fadeAway', 'go', 'hereRes',
     'jsonCache', 'jumpHere', 'lean', 'main', 'nm', 'openEstate', 'post', 'renderAbout', 'setEstFail', 'setTheme', 'showCard', 'showLay', 'showSet', 'sleeping', 't', 'tier', 'toImg', 'viewer'].sort());
 });
@@ -45,9 +45,9 @@ test('viewer.html 只剩标记与首帧前置；核心模块都 modulepreload；
   const v = rd('viewer.html');
   const inline = [...v.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   assert.ok(inline.every(s => s.length < 3000), `内联脚本应只是前置小段，最长 ${Math.max(...inline.map(s => s.length))} 字符`);
-  const core = readdirSync(new URL('../map/app/', import.meta.url)).filter(f => /\.mjs$/.test(f) && !['cardlinks.mjs', 'clouds.mjs', 'fog.mjs', 'storage-ui.mjs', 'scale.mjs'].includes(f));
+  const core = readdirSync(new URL('../map/app/', import.meta.url)).filter(f => /\.mjs$/.test(f) && !['card-links.mjs', 'clouds.mjs', 'fog.mjs', 'data-mapping-settings.mjs', 'scale-handoff.mjs'].includes(f));
   for (const f of core) assert.match(v, new RegExp(`<link rel="modulepreload" href="app/${f.replace('.', '\\.')}">`), f);
-  for (const f of ['events', 'chars', 'custom', 'trips', 'unmapped', 'security']) assert.match(v, new RegExp(`<script type="module" src="${f}\\.mjs"></script>`), f);
+  for (const f of ['events-view', 'characters-view', 'custom-names-view', 'trips-view', 'unmapped-place-picker', 'security']) assert.match(v, new RegExp(`<script type="module" src="${f}\\.mjs"></script>`), f);
   assert.doesNotMatch(v, /<script defer src="(events|chars|custom|trips|unmapped|varmap|compose|security)\.js"/);
-  assert.ok(v.indexOf('src="app/boot.mjs"') < v.indexOf('src="events.mjs"'), '核心先于外挂');
+  assert.ok(v.indexOf('src="app/boot.mjs"') < v.indexOf('src="events-view.mjs"'), '核心先于外挂');
 });

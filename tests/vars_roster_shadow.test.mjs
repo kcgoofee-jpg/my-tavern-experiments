@@ -8,9 +8,9 @@ import assert from 'node:assert/strict';
 import * as OAD from './helpers/adapter_v1_frozen.mjs';
 import * as OV from './helpers/mvu_v1_frozen.mjs';
 import * as OC from './helpers/characters_v1_frozen.mjs';
-import * as NAD from '../map/tavern/adapter.mjs';
-import * as NV from '../map/tavern/mvu.mjs';
-import * as NC from '../map/tavern/characters.mjs';
+import * as NAD from '../map/tavern/stat-path-mapping.mjs';
+import * as NV from '../map/tavern/mvu-readers.mjs';
+import * as NC from '../map/tavern/characters-parse.mjs';
 import { useEden } from './helpers/eden-profile.mjs';
 import { CORPUS, FALLBACK } from './helpers/roster-corpus.mjs';
 

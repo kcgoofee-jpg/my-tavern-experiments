@@ -1,10 +1,10 @@
-// The spatial contract the card script injects (map/tavern/spatial.mjs) for the places of the recorded session fixtures and a sweep of every
+// The spatial contract the card script injects (map/tavern/spatial-contract.mjs) for the places of the recorded session fixtures and a sweep of every
 // name and alias of the first pack, over the shipped registry and points files. `golden()` computes it; tests/fixtures/spatial_golden.json holds
 // what it gave before the contract was built from the node tree (S3-3 T2): the texts of the fixtures in full, the sweep as one hash per word.
 //   node tests/helpers/spatial-golden.mjs > tests/fixtures/spatial_golden.json      (only to re-pin on purpose)
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import * as S from '../../map/tavern/spatial.mjs';
+import * as S from '../../map/tavern/spatial-contract.mjs';
 import { fnv36 } from '../../map/core/lexicon.mjs';
 import { edenInputs } from './eden-inputs.mjs';
 import { sessionPlaces } from './session-places.mjs';

@@ -4,9 +4,9 @@
 import { REG, cur } from './app/state.mjs';
 import { esc } from './app/util.mjs';
 import { LANG } from './app/i18n.mjs';
-import { registry } from './app/layerhost.mjs';
+import { registry } from './app/layer-host.mjs';
 import { register } from './app/plugins.mjs';
-import { packData } from './app/pack.mjs';   // 安保数据是包级挂载点（manifest.data.security，通用化 v1）——内核与外挂都不写死 eden 的文件名
+import { packData } from './app/current-pack.mjs';   // 安保数据是包级挂载点（manifest.data.security，通用化 v1）——内核与外挂都不写死 eden 的文件名
 const TCSecurity = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const KEY = 'edenMapSecurity';
@@ -44,7 +44,7 @@ const TCSecurity = (() => {
     c.querySelector('.extra').before(box);
   }
   function set(on) { try { TCStore.set(KEY, on ? '1' : '0'); } catch (e) {} load().then(render); }
-  // P3-C：「安保」菜单行由 LayerRegistry 渲染（app/layerhost.mjs，行序在航线与行程之间，与旧 insertBefore 位置一致）；勾选 → setVisible → set()
+  // P3-C：「安保」菜单行由 LayerRegistry 渲染（app/layer-host.mjs，行序在航线与行程之间，与旧 insertBefore 位置一致）；勾选 → setVisible → set()
   registry.register({ id: 'security', slot: 'markers', order: 2, kind: 'osd', initialVisible: isOn(),
     menu: { order: 40, id: 'tgSec', boxId: 'tgSecBox', labelKey: 'sec.title', label: '安保', titleKey: 'sec.hint', title: '结界、监控、门禁规则（只列卡里写明的）' },
     setVisible: v => set(v) });

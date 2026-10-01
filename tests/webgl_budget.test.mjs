@@ -1,8 +1,8 @@
-// Part 3 §1：显存预算纯核心（map/core/budget.mjs）——设备档位、字节估算、水位迟滞、淘汰顺序与瓦片缓存容量。
+// Part 3 §1：显存预算纯核心（map/core/graphics-budget.mjs）——设备档位、字节估算、水位迟滞、淘汰顺序与瓦片缓存容量。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import * as B from '../map/core/budget.mjs';
+import * as B from '../map/core/graphics-budget.mjs';
 
 const MB = B.MB;
 
@@ -110,7 +110,7 @@ test('describe：固定键 + 纯度机检（core 叶子层：无 DOM / 宿主全
   assert.deepEqual(Object.keys(d).sort(), ['compressedTextures', 'deviceClass', 'evicted', 'evicting', 'geometries', 'highWater', 'limitBytes', 'lowWater', 'ratio', 'textures', 'tileCacheCount', 'usedBytes']);
   assert.equal(d.evicting, false); assert.equal(d.ratio > 0.58 && d.ratio < 0.59, true);
   // 纯度机检前先剥注释（评述里会提到 navigator / deviceMemory 这类探测项的名字）
-  const src = readFileSync(new URL('../map/core/budget.mjs', import.meta.url), 'utf8')
+  const src = readFileSync(new URL('../map/core/graphics-budget.mjs', import.meta.url), 'utf8')
     .split('\n').map(l => /^\s*(\/\/|\*|\/\*)/.test(l) ? '' : l).join('\n');   // 剥 // 与 /* */ 两种注释行
   for (const g of ['window', 'document', 'localStorage', 'sessionStorage', 'navigator', 'Mvu', 'SillyTavern'])
     assert.equal(src.includes(g), false, `不该出现 ${g}`);

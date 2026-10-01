@@ -16,7 +16,7 @@ const ok = (name, cond, extra = {}) => {
   res.push({ name, ok: !!cond, ...(k ? { known: k } : {}), ...extra }); if (!cond && !k) fail++;
 };
 const tax = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'map/packs/town/events.json'), 'utf8'));
-const EV = await import(path.join(REPO_ROOT, 'map/tavern/events.mjs'));
+const EV = await import(path.join(REPO_ROOT, 'map/tavern/events-parse.mjs'));
 EV.setGeo((await import(path.join(REPO_ROOT, 'tools/eden_geo.mjs'))).packGeo('town'));
 const items = EV.collect([{ floor: 5, text: '<span style="display:none">⌖火灾｜雾港镇·码头·鱼市｜2｜鱼市仓库起火｜巡夜队</span>' },
   { floor: 6, text: '<span style="display:none">⌖集市日｜山上·集市广场｜1｜周末集市开张</span>' }], 6);

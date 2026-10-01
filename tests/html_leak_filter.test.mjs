@@ -1,10 +1,10 @@
-// 任务三：泄露防御网（map/tavern/sanitize.mjs stripLeaks / hasLeak + map/tavern/th.mjs createLeakFence）。
+// 任务三：泄露防御网（map/tavern/sanitize.mjs stripLeaks / hasLeak + map/tavern/tavernhelper-api.mjs createLeakFence）。
 // 断言四件事：① 大段内联 HTML 状态栏源码与占位符 100% 被抹掉；② 正文的 Markdown / 换行 / 代码块一字不动；
 // ③ 变量块只清残片（闭合的机器块原样留着，那是卡自己的正则负责隐藏的）；④ 只动显示层，**不改写聊天记录**。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { stripLeaks, hasLeak } from '../map/tavern/sanitize.mjs';
-import { createLeakFence } from '../map/tavern/th.mjs';
+import { createLeakFence } from '../map/tavern/tavernhelper-api.mjs';
 
 const STATUS_HTML = '<div class="statusbar-container"><style>.sb{color:#c33}</style>'
   + '<script>window.__sb=1;</script><div class="sb"><div>日期 3/5</div><div>地点 中层·霓虹街</div></div></div>';

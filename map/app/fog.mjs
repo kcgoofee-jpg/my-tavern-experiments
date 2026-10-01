@@ -6,10 +6,10 @@
 //   用户从没动过开关时 on() 按登记的 def '1' 生效，与设置页默认勾选、KEYS 登记一致，原先镜像不套默认值导致默认开悄悄失效）。
 import { REG, cur, viewer } from './state.mjs';
 import { $, post } from './util.mjs';
-import { registry } from './layerhost.mjs';
+import { registry } from './layer-host.mjs';
 import { markHere } from './locate.mjs';
 import { norm, visit, known, count } from '../core/depth.mjs';
-import { cssFilter } from '../core/layers.mjs';
+import { cssFilter } from '../core/layer-registry.mjs';
 import * as TCStore from '../core/storage.mjs';
 import { register } from './plugins.mjs';
 const { FOG_KEY, FOG_LOCAL_KEY } = TCStore;
@@ -54,9 +54,9 @@ function here(r) {
 }
 const setFog = v => { TCStore.set(FOG_KEY, v ? '1' : '0'); if (v && typeof markHere === 'function') markHere($('#here').value); paint(); };
 registry.register({ id: 'fog', slot: 'fog', kind: 'canvas', initialVisible: on(), setVisible: setFog });   // P3-C：迷雾作为 fog 槽的 canvas 图层受 Registry 调度
-register('TCFog', {   // 经 P 注册（同名仍挂 window）：host.mjs 的回放静音走 P.TCFog
+register('TCFog', {   // 经 P 注册（同名仍挂 window）：host-messages.mjs 的回放静音走 P.TCFog
   paint, here, on, count: () => count(ex), raw: () => ex, setHaze,   // raw = 到访台账本体（纵深摘要算探索度用）
-  mute(v) { mute = !!v; },   // 回放期间静默探索记录（host.mjs 在 eden-map:here replay 时包住 markHere）
+  mute(v) { mute = !!v; },   // 回放期间静默探索记录（host-messages.mjs 在 eden-map:here replay 时包住 markHere）
   set(raw) { ex = norm(raw); paint(); },                 // 宿主推来（换聊天 / 加载）
   toggle(v) { registry.setVisible('fog', v); },
   reset() { ex = {}; if (embedded()) post({ type: 'eden-map:explore-reset' }); else TCStore.remove(FOG_LOCAL_KEY); paint(); },

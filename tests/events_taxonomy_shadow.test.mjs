@@ -1,10 +1,10 @@
 // Shadow parity of the event taxonomy (S4-1, docs/kernel-schema.md K-R49, K-R50, K-R54, Appendix A.5): every event the event tests and the two session fixtures feed in is
-// classified by the old built-in constants (tests/helpers/events_v1_frozen.mjs, a frozen copy of map/tavern/events.mjs at head #165) and by the first pack's events block
-// (typeOf over map/packs/eden/overlay.v2.json, through tavern/events.mjs). Compared: type, group, colour, icon, rarity, source, closing words, life, inject; the collected
+// classified by the old built-in constants (tests/helpers/events_v1_frozen.mjs, a frozen copy of map/tavern/events-parse.mjs at head #165) and by the first pack's events block
+// (typeOf over map/packs/eden/overlay.v2.json, through tavern/events-parse.mjs). Compared: type, group, colour, icon, rarity, source, closing words, life, inject; the collected
 // lists; the injected event lines (byte for byte).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import * as NEW from '../map/tavern/events.mjs';
+import * as NEW from '../map/tavern/events-parse.mjs';
 import * as OLD from './helpers/events_v1_frozen.mjs';
 import { edenGeo } from './helpers/eden-geo.mjs';
 import { recordEventsTest, fixtureFloors } from './helpers/events-corpus.mjs';
@@ -13,7 +13,7 @@ const g = edenGeo();
 NEW.setGeo(g); OLD.setGeo(g);   // the old code asks the same geo for placement; only the taxonomy differs
 
 const tapped = await recordEventsTest();
-NEW.setGeo(g);   // recording re-ran events.test.mjs, which installs the same geo; make it explicit
+NEW.setGeo(g);   // recording re-ran events-parse.test.mjs, which installs the same geo; make it explicit
 const fixtures = fixtureFloors(), fixtureTexts = fixtures.flat().map(m => m.text);
 const texts = [...tapped.raws.filter(x => typeof x === 'string'), ...fixtureTexts];
 const TAXF = e => [e.cat, e.grp, e.color, e.ch, e.rare, e.src];   // type, group, colour, icon, rarity, publisher

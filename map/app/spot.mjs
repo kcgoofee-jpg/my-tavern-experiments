@@ -1,5 +1,5 @@
 // Where a located place is drawn for a person or a trip end (docs/kernel-schema.md K-R24, K-R31, K-R51): the result of the current-location
-// engine (app/here-v2.mjs, it carries the `node`) becomes { map, marker } (a landmark on a flat map), { map, nx, ny, approx? } (a point), { map }
+// engine (app/place-resolver.mjs, it carries the `node`) becomes { map, marker } (a landmark on a flat map), { map, nx, ny, approx? } (a point), { map }
 // (only the map is known) or { map, estate: true } (a 3D page with no flat stand-in). Pure: the viewer passes what it knows in `env`.
 //   env.hasMap(id)      the registry has the map              env.isScene(id)   the map is a 3D page      env.standIn(id)   { map, marker } | null
 //   env.spot(node)      { x, y, map } when the node has its own point on a flat map (world places, districts) | null

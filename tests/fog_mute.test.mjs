@@ -1,4 +1,4 @@
-// 回放静音（Part 5-4）：host.mjs 经 P.TCFog?.mute?.() 调用；fog.mjs 必须把 API 注册进 P，否则这个调用是空操作。
+// 回放静音（Part 5-4）：host-messages.mjs 经 P.TCFog?.mute?.() 调用；fog.mjs 必须把 API 注册进 P，否则这个调用是空操作。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -24,6 +24,6 @@ test('host 的 P.TCFog.mute 调用能到达 fog 的 mute', async () => {
     assert.equal(typeof P.TCFog?.mute, 'function');
     assert.doesNotThrow(() => { P.TCFog.mute(true); P.TCFog.mute(false); });
   } finally { for (const [k, d] of Object.entries(keep)) d ? Object.defineProperty(globalThis, k, d) : delete globalThis[k]; }
-  const host = readFileSync(new URL('../map/app/host.mjs', import.meta.url), 'utf8');
+  const host = readFileSync(new URL('../map/app/host-messages.mjs', import.meta.url), 'utf8');
   assert.match(host, /P\.TCFog\?\.mute\?\.\(true\)/);
 });

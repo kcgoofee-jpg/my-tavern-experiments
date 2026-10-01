@@ -39,9 +39,9 @@ test('查看器与经典外挂脚本的本机读写都经 TCStore（core/storage
   const shimEnd = body.indexOf('})();') + 5;
   assert.doesNotMatch(body.slice(shimEnd), /\b(localStorage|sessionStorage)\.(get|set|remove)Item\(/);
   for (const f of readdirSync(new URL('../map/app/', import.meta.url)).filter(f => f.endsWith('.mjs'))) assert.doesNotMatch(rd('app/' + f), /\b(localStorage|sessionStorage)\.(get|set|remove)Item\(/, f);
-  for (const f of ['events.mjs', 'custom.mjs', 'trips.mjs', 'security.mjs']) assert.doesNotMatch(rd(f), /localStorage\.(get|set|remove)Item\(/, f);
-  // chars.mjs 只剩读状态栏自己的头像键（不是我们的键）
-  for (const l of rd('chars.mjs').split('\n').filter(l => /localStorage\.(get|set|remove)Item\(/.test(l))) assert.match(l, /eden_portrait|eden_custom_portraits/);
+  for (const f of ['events-view.mjs', 'custom-names-view.mjs', 'trips-view.mjs', 'security.mjs']) assert.doesNotMatch(rd(f), /localStorage\.(get|set|remove)Item\(/, f);
+  // characters-view.mjs 只剩读状态栏自己的头像键（不是我们的键）
+  for (const l of rd('characters-view.mjs').split('\n').filter(l => /localStorage\.(get|set|remove)Item\(/.test(l))) assert.match(l, /eden_portrait|eden_custom_portraits/);
   // 镜像里的 session 键 = KEYS 里 scope=session 的键
   const ses = Object.entries(S.KEYS).filter(([, o]) => o.scope === 'session').map(([k]) => k);
   assert.deepEqual(ses, [...v.matchAll(/ses = k => k === '([^']+)'/g)].map(m => m[1]));

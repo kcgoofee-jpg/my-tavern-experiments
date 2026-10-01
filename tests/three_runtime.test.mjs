@@ -3,9 +3,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { createRenderer, pickDpr, governor, TIERS } from '../map/three/ctx.mjs';
+import { createRenderer, pickDpr, governor, TIERS } from '../map/three/render-context.mjs';
 import { prepare, sphereOf, unionSpheres, distanceMetric } from '../map/three/culling.mjs';
-import { createLodController } from '../map/three/lod.mjs';
+import { createLodController } from '../map/three/lod-controller.mjs';
 import { batch, resolveInstance, writeMatrices } from '../map/three/instancing.mjs';
 import { detect, createTexRes } from '../map/three/texres.mjs';
 

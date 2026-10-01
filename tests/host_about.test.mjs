@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createAbout } from '../map/tavern/host-about.mjs';
-import * as SRC from '../map/tavern/sources.mjs';
+import * as SRC from '../map/tavern/data-source-registry.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LINES = [{ key: 'auto', name: '自动', host: 'cdn.jsdelivr.net' }, { key: 'cn', name: '有梯子', host: 'fastly.jsdelivr.net' }];

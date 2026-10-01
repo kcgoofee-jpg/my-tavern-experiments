@@ -1,6 +1,6 @@
 // 启动自检、开场自检卡、宿主提示、自动检查更新与版本切换（S5-1 自 eden-map.js 原样搬出）。
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
-import { cdnFetch, fnOk, hostFn, thFn } from './host-th.mjs';
+import { cdnFetch, fnOk, hostFn, thFn } from './host-tavernhelper.mjs';
 import { worldbookPrefix } from '../core/pack.mjs';
 export const DEPS = [
   'BR', 'HS', 'ID', 'LINES', 'LS', 'MAN', 'OWNER', 'PACK_ID', 'REPO', 'SCRIPT', 'SELF', 'VER', 'buildNow', 'channel', 'checkUpdate', 'conflictsNow',
@@ -19,7 +19,7 @@ export function createHostChecks(host) {
   let SC = null, checkP = null, checkFacts = null, checkItems = [], checkAt = 0, viewerVer = null, updInfo = null, toastEl = null;
   const UPD_KEY = 'edenMapUpdate', AUTO_UPD_KEY = 'edenMapAutoUpdate', TOAST_KEY = 'edenMapCheckToast';
   async function wbFacts() { try { return await SC.collectWorldbook(hostFn); } catch (e) { return null; } }
-  const wbBook = async () => { try { const man = await MAN, m = await import(SELF + 'tavern/wbsync.mjs'); if (man) m.setPrefix(worldbookPrefix(man, PACK_ID)); return man ? m.BOOK : ''; } catch (e) { return ''; } };   // 自检文案里的书名（= 世界书附加条目那本）
+  const wbBook = async () => { try { const man = await MAN, m = await import(SELF + 'tavern/worldbook-sync.mjs'); if (man) m.setPrefix(worldbookPrefix(man, PACK_ID)); return man ? m.BOOK : ''; } catch (e) { return ''; } };   // 自检文案里的书名（= 世界书附加条目那本）
   async function updateFacts() {   // 正式版才查；一天最多一次（不论成败），结果记在本机
     if (!VER || !swappable || !SC.swapVer(host.entryUrl, VER)) return null;
     let c = null; try { c = JSON.parse(lsGet(UPD_KEY)); } catch (e) {}
@@ -122,12 +122,12 @@ export function createHostChecks(host) {
   const updChannel = () => channel() === 'latest' && SCRIPT.locked ? 'locked' : channel();
   // 跟随分支预览（用户 2026-09-28）：打开时与面板开着每 10 分钟查分支最新提交；比加载的提交新 → 提示「有更新，刷新载入」（面板开着也弹，不自动刷新）
   let followSeen = null;
-  // 2026-09-28：没梯子时 GitHub 接口不通 → 改用 tavern/follow.mjs（分支 head.json：jsdmirror / jsDelivr / raw 取构建号最大的，最后才 GitHub），和加载器同一套
+  // 2026-09-28：没梯子时 GitHub 接口不通 → 改用 tavern/branch-follow.mjs（分支 head.json：jsdmirror / jsDelivr / raw 取构建号最大的，最后才 GitHub），和加载器同一套
   let FW = null;
   const fwGet = async u => { const c = new AbortController(), to = setTimeout(() => c.abort(), 5000);
     try { const r = await cdnFetch(u, { cache: 'no-store', signal: c.signal }); return r.ok ? await r.json() : null; } catch (e) { return null; } finally { clearTimeout(to); } };
   async function followHead() {
-    FW ??= await import(SELF + 'tavern/follow.mjs').catch(() => null); if (!FW || !SCRIPT.ref) return null;
+    FW ??= await import(SELF + 'tavern/branch-follow.mjs').catch(() => null); if (!FW || !SCRIPT.ref) return null;
     return FW.resolveFollow(REPO, SCRIPT.ref, fwGet, null).catch(() => null);
   }
   // 比加载的新：有构建号比构建号；老加载器（没有构建号）比提交号
@@ -190,7 +190,7 @@ export function createHostChecks(host) {
     import(url).catch(e => { console.warn('[eden-map] 切换到新版本失败', e); window.parent.__edenMapSwitch = switchedFrom; });
   }
   async function switchBranch(br) {   // 设置「更新与版本」→ 版本分支（main / preview 双轨）：本次会话从目标分支重载同一个脚本，新实例 takeOver 接管这一份；长期使用请重新导入该分支的脚本
-    if (!host.SRCm) { try { host.SRCm = await import(SELF + 'tavern/sources.mjs'); } catch (e) {} }
+    if (!host.SRCm) { try { host.SRCm = await import(SELF + 'tavern/data-source-registry.mjs'); } catch (e) {} }
     const url = host.SRCm ? host.SRCm.branchUrl(host.entryUrl, br) : null;
     if (!url || life.dead) return;
     window.parent.__edenMapSwitch = SELF;

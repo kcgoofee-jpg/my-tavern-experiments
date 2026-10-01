@@ -1,6 +1,6 @@
 // P2 解耦第一步：map/tavern/mvu-bridge.mjs（MVUBridge）的 node 单测——无浏览器，桩出 Mvu / SillyTavern 全局。
-// 1) 读取流水线行为与拆分前一致：快照选取（snapshot.mjs 语义）、变量映射（adapter.mjs）、here 三级兜底（MVU → 标签对账 → 表格数据库）、
-//    A-11 聊天变量读取、名册 / 立绘 / 阶段序（mvu.mjs）、read() 标准摘要形状；
+// 1) 读取流水线行为与拆分前一致：快照选取（mvu-snapshot.mjs 语义）、变量映射（stat-path-mapping.mjs）、here 三级兜底（MVU → 标签对账 → 表格数据库）、
+//    A-11 聊天变量读取、名册 / 立绘 / 阶段序（mvu-readers.mjs）、read() 标准摘要形状；
 // 2) 宿主隔离契约（机械检查）：map/tavern/ 的运行时代码里，字符串与注释之外出现 Mvu / SillyTavern 的只有 mvu-bridge.mjs。
 //    viewer 侧（map/app/settings.mjs 读自己窗口的 SillyTavern）不在宿主契约范围，见评审报告 §3。
 import test from 'node:test';
@@ -251,7 +251,7 @@ test('包的变量声明：桥取清单 + 叠加层，到了换默认并通知�
 });
 
 test('S4-3：桥把世界书名前缀交给 mvu.setWbName——第一个包得到「伊甸地图·自定义」（清单 worldbook.prefix），别的包用包标题；拿不到清单就不配', async () => {
-  const MVm = await import('../map/tavern/mvu.mjs'), man = JSON.parse(readFileSync(new URL('../map/packs/eden/manifest.json', import.meta.url), 'utf8'));
+  const MVm = await import('../map/tavern/mvu-readers.mjs'), man = JSON.parse(readFileSync(new URL('../map/packs/eden/manifest.json', import.meta.url), 'utf8'));
   const keep = MVm.WB_NAME;
   try {
     let asked = null;   // 内置的第一个包：桥自己按路径取清单

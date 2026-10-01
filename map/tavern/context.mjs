@@ -5,9 +5,9 @@
 // 纯数据进出：不碰酒馆全局、不碰 DOM、不发消息、不注入——发送 / 保存 / 提示 / 空闲调度都由宿主拿着返回值自己做。
 // 宿主只留调度（RFC §4：去抖、事件接线、restNow 空闲补做、注入与推送）。node 单测直接喂数据（tests/context.test.mjs）。
 import { parseText } from './msgtext.mjs';
-import { lostTags } from './shujuku.mjs';
+import { lostTags } from './tabledb-bridge.mjs';
 import { sanitize } from './sanitize.mjs';
-import * as MV from './mvu.mjs';
+import * as MV from './mvu-readers.mjs';
 
 /** 楼层原文指纹（FNV-1a，36 进制）：标签记录 / 楼层指纹用它识别「这一楼原文变了」 */
 export const hashText = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };

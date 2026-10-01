@@ -10,9 +10,9 @@
 //   经 system.use(source, provider) 登记。五个内置来源与优先级（冲突时高者为准）：
 //     'mvu'      MVU 变量名册（mvu-bridge.mjs rosters() 的提取；实时状态，最高优先）
 //     'chat'     聊天正文 ⌖人物 标签（context.mjs 流水线的消息窗口）
-//     'table-db' 表格数据库插件人物表（shujuku.mjs，只读持久化）
-//     'fallback' 卡片初始保底名册（mvu.mjs FALLBACK_MEMBERS；无数据场景的初始展示）
-//     'baibai'   柏宝绘外貌与立绘库（baibai.mjs characters().list）
+//     'table-db' 表格数据库插件人物表（tabledb-bridge.mjs，只读持久化）
+//     'fallback' 卡片初始保底名册（mvu-readers.mjs FALLBACK_MEMBERS；无数据场景的初始展示）
+//     'baibai'   柏宝绘外貌与立绘库（imagegen-bridge.mjs characters().list）
 //
 //   合并仲裁：同一人（标准化同名，或与已登记别名互认）合一行；字段级别高优先级来源的非空值胜出、空值让位给低优先级，
 //   tags 并集去重，raw 浅合并（高优先级键胜）。来源差异到行为止——UI / 查看器拿合并后的标准行，不再认来源。
@@ -27,7 +27,7 @@
 /** 内置来源与优先级序（下标越大优先级越高；baibai 只补别人没有的） */
 export const SOURCES = ['mvu', 'chat', 'table-db', 'fallback', 'baibai'];
 
-/** 标准化人名：空白归一、去首尾、40 字内截断（与人物栏 mvu.mjs 的名字上限一致） */
+/** 标准化人名：空白归一、去首尾、40 字内截断（与人物栏 mvu-readers.mjs 的名字上限一致） */
 export const normName = s => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, 40);
 const clean = v => { const s = String(v ?? '').trim(); return !s || s === 'undefined' || s === 'null' ? '' : s.slice(0, 200); };
 

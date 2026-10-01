@@ -1,5 +1,5 @@
 // FROZEN COPY of the first-pack constants that lived in the engine before S4-3 (head #184): the per-view theme CSS (map/ui/tokens.css), the legend (app/shell.mjs),
-// the CVD palettes (app/cvd.mjs), the world-map word table (app/locate.mjs), the worldbook names (tavern/wbsync.mjs), the tag examples and place prefix (tavern/modes.mjs),
+// the CVD palettes (app/color-vision-mode.mjs), the world-map word table (app/locate.mjs), the worldbook names (tavern/worldbook-sync.mjs), the tag examples and place prefix (tavern/interaction-modes.mjs),
 // the picker's tier table (tavern/picker.mjs) and the old predicates. Kept only so the S4-3 shadow tests can prove the pack data reproduces them, and so
 // tools/gen_eden_s43_data.mjs can derive that data. Do not edit; do not import from the engine.
 export const THEME_CSS_V1 = [
@@ -32,5 +32,5 @@ export const norm = s => clean(s).replace(/[\s·・.\-—_/／|｜]/g, '').repla
 export const TIER = { tc_upper: ['天城上层', 'Upper tier'], tc_mid: ['天城中层', 'Middle tier'], tc_low: ['天城下层', 'Lower tier'] };
 /** The glitch scope predicate of events.mjs applyGlitch before S4-3: a city-wide word, the map of the event, or the map the scope text resolves to. */
 export const glitchScopeV1 = (e, cur, mapOf, placeMap) => /全城|天城/.test(e.scope) || mapOf(e) === cur || (e.scope && placeMap(e.scope) === cur);
-/** The crumb label of the overview ring before S4-3 (scale.mjs crumb): the first group had its own key. */
+/** The crumb label of the overview ring before S4-3 (scale-handoff.mjs crumb): the first group had its own key. */
 export const ringLabelV1 = (gid, group, tx, nm) => (gid === 'tiancheng' ? tx('ring', '天城周边') : tx('ring_of', group.title + '周边', { name: nm(group, 'title') }));

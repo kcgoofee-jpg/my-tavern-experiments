@@ -9,7 +9,7 @@ try {
   const st = await P.page.evaluate(async base => {
     const S = await import(new URL('app/state.mjs', base).href);
     const L = await import(new URL('app/locate.mjs', base).href);
-    const I = await import(new URL('app/insets.mjs', base).href);
+    const I = await import(new URL('app/hires-inset-tiles.mjs', base).href);
     // 飞到伊甸庄园 marker 附近，比插图激活范围略大一点先看「切换前」
     const OSD = window.OpenSeadragon;
     S.viewer.viewport.fitBounds(new OSD.Rect(.46, .34 * S.aspect, .18, .18 * S.aspect), true);
@@ -21,7 +21,7 @@ try {
   await P.page.screenshot({ path: 'docs/drafts/tc_upper_eden_inset_before.jpg', quality: 90, type: 'jpeg' });
   const st2 = await P.page.evaluate(async base => {
     const S = await import(new URL('app/state.mjs', base).href);
-    const I = await import(new URL('app/insets.mjs', base).href);
+    const I = await import(new URL('app/hires-inset-tiles.mjs', base).href);
     const OSD = window.OpenSeadragon;
     S.viewer.viewport.zoomTo(S.viewer.viewport.getMaxZoom(), new OSD.Point(.55, .4573 * S.aspect), true);
     await new Promise(r => setTimeout(r, 900));
@@ -35,7 +35,7 @@ try {
   // 再缩出插图范围之外，确认插图被摘掉（省流量）
   const st3 = await P.page.evaluate(async base => {
     const S = await import(new URL('app/state.mjs', base).href);
-    const I = await import(new URL('app/insets.mjs', base).href);
+    const I = await import(new URL('app/hires-inset-tiles.mjs', base).href);
     S.viewer.viewport.fitBounds(new (window.OpenSeadragon).Rect(0, 0, 1, S.aspect), true);
     await new Promise(r => setTimeout(r, 800));
     I.updateInsets();

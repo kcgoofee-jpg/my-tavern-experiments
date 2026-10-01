@@ -1,4 +1,4 @@
-// S3-3 T2: the spatial contract the card script injects (tavern/spatial.mjs) is built over the node tree; what it says stays what the model has always seen.
+// S3-3 T2: the spatial contract the card script injects (tavern/spatial-contract.mjs) is built over the node tree; what it says stays what the model has always seen.
 // tests/fixtures/spatial_golden.json holds what the module gave when it resolved places with the v1 resolver (tests/helpers/spatial-golden.mjs):
 //   fixtures  the recorded sessions' places, the whole contract (location, full text, tight-budget text, JIT activation set) -> byte for byte
 //   sweep     every name and alias of the first pack (and "layer·landmark") -> one hash of that contract
@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { golden, contractOf } from './helpers/spatial-golden.mjs';
-import * as S from '../map/tavern/spatial.mjs';
+import * as S from '../map/tavern/spatial-contract.mjs';
 
 const GOLD = JSON.parse(fs.readFileSync(fileURLToPath(new URL('./fixtures/spatial_golden.json', import.meta.url)), 'utf8'));
 const now = await golden();
@@ -55,7 +55,7 @@ test('the six merged sites keep their short layer names: the contract says 圣�
 });
 
 test('no resolver of v1: the module builds its places from the node tree and stays pure', () => {
-  const raw = fs.readFileSync(fileURLToPath(new URL('../map/tavern/spatial.mjs', import.meta.url)), 'utf8');
+  const raw = fs.readFileSync(fileURLToPath(new URL('../map/tavern/spatial-contract.mjs', import.meta.url)), 'utf8');
   assert.doesNotMatch(raw, /here\.mjs|resolveHere|buildIndex/);
   assert.equal(S.locate({ maps: {} }, '无处'), null); assert.equal(S.coordView({ reg: { maps: {} }, here: '无处' }), '');
 });

@@ -8,9 +8,9 @@ import assert from 'node:assert/strict';
 import { parseText } from '../map/tavern/msgtext.mjs';
 import { DEFAULT_STRIP_TAGS, sanitize, stripBlocks, stripMarks, stripLeaks, hasLeak } from '../map/tavern/sanitize.mjs';
 import { ContextPipeline } from '../map/tavern/context.mjs';
-import { parseMarks } from '../map/tavern/events.mjs';
-import { patchPlace } from '../map/tavern/trips.mjs';
-import { flyTarget, MACROS } from '../map/tavern/th.mjs';
+import { parseMarks } from '../map/tavern/events-parse.mjs';
+import { patchPlace } from '../map/tavern/trips-parse.mjs';
+import { flyTarget, MACROS } from '../map/tavern/tavernhelper-api.mjs';
 
 const PRISM = '<!-- Prism 3/5 · reasoning cache -->';
 const UV_JSON = '\n{"op":"replace","path":"/世界/当前地点","value":"中层·霓虹街"}\n';

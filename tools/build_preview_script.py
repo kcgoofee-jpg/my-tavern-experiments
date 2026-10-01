@@ -118,8 +118,8 @@ def build_release(tag, pointer='main'):
 
 
 def follow_src():
-    """map/tavern/follow.mjs 的 resolveFollow（去掉 export 与注释行），原样嵌进加载器：加载器和地图里的 followCheck 用同一套解析顺序。"""
-    src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'map', 'tavern', 'follow.mjs'), encoding='utf-8').read()
+    """map/tavern/branch-follow.mjs 的 resolveFollow（去掉 export 与注释行），原样嵌进加载器：加载器和地图里的 followCheck 用同一套解析顺序。"""
+    src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'map', 'tavern', 'branch-follow.mjs'), encoding='utf-8').read()
     return '\n'.join(l for l in src.replace('export async function', 'async function').splitlines() if not l.startswith('//')).strip()
 
 

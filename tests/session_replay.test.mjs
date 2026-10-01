@@ -9,10 +9,10 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { ContextPipeline, exportSessionSnapshot, validateSessionSnapshot, perFloorStatOf, SNAPSHOT_VERSION } from '../map/tavern/context.mjs';
 import { parseText } from '../map/tavern/msgtext.mjs';
-import * as EVM from '../map/tavern/events.mjs';
-import * as CHM from '../map/tavern/characters.mjs';
-import * as TRm from '../map/tavern/trips.mjs';
-import { normCustom, rosters as mvuRosters } from '../map/tavern/mvu.mjs';
+import * as EVM from '../map/tavern/events-parse.mjs';
+import * as CHM from '../map/tavern/characters-parse.mjs';
+import * as TRm from '../map/tavern/trips-parse.mjs';
+import { normCustom, rosters as mvuRosters } from '../map/tavern/mvu-readers.mjs';
 import { MVUBridge } from '../map/tavern/mvu-bridge.mjs';
 import { createLife } from '../map/tavern/host-lifecycle.mjs';
 

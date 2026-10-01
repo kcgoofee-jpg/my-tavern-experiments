@@ -3,13 +3,13 @@
 // 注入酒馆页面：右下角悬浮按钮 + 地图面板；面板内用 srcdoc 加载 viewer.html（<base> 指回仓库，相对资源照常加载）。
 // 当前地点取 MVU 变量（路径由设定包的 vars 给出，缺了按字段名自动找），变量更新 / 切换聊天时推送给地图高亮。
 // 事态：从最近 80 楼原文解析事件标签（events.mjs，两种写法都认），推给地图落点；角色所在层的活跃事件压成一句注入给模型。
-// v0.9.3 MVU 联动（mvu.mjs）：只读 stat_data（世界时间、主角着装、在场人物）；自定义名称与用途存在聊天变量顶层键 eden_map（不进 stat_data，见 docs/content-compat.md）。
+// v0.9.3 MVU 联动（mvu-readers.mjs）：只读 stat_data（世界时间、主角着装、在场人物）；自定义名称与用途存在聊天变量顶层键 eden_map（不进 stat_data，见 docs/content-compat.md）。
 // C2 第 4 步（2026-09-28）拆成：入口（本文件：面板 / 查看器状态机、消息、MVU / 事态 / 自定义 / 自检 / 更新）+ host-routes.mjs（线路）
-// + host-lifecycle.mjs（接管旧实例、挂 DOM、监听登记、清理钩子）+ host-th.mjs（酒馆助手适配、偏好、世界书全自动）。见 docs/agent-brief.md「模块地图」。
+// + host-lifecycle.mjs（接管旧实例、挂 DOM、监听登记、清理钩子）+ host-tavernhelper.mjs（酒馆助手适配、偏好、世界书全自动）。见 docs/agent-brief.md「模块地图」。
 // S5-1（2026-10-01）再拆出八个 flow 模块（loot-flow / chars-flow / root-store / host-api / host-checks / llm-flow / modes-flow / timeline-flow，各是 createX(host)）：
 // 下面的 host 依赖袋是它们取入口变量与函数的唯一通道；入口留着面板 / 查看器状态机、重算调度、监听登记与清理。
 import '../core/logbuf.mjs'; // 反馈日志缓冲：最先 import，模块求值即安装，启动日志不丢（v0.9.6 报告「(none)」根因）
-import { cdnFetch, thFn, packNs, createPrefs } from './host-th.mjs';
+import { cdnFetch, thFn, packNs, createPrefs } from './host-tavernhelper.mjs';
 import { createRoutes, scoreText } from './host-routes.mjs';
 import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
 import { createAbout } from './host-about.mjs';
@@ -24,14 +24,14 @@ import { createModesFlow } from './modes-flow.mjs';
 import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）
 (() => {
   const SELF = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
-  // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-th.mjs
+  // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-tavernhelper.mjs
   const { PACK_IN, PACK_ID, MAN, wrapLS, LS, lsGet, lsSet } = packNs(SELF); let MANv = PACK_IN?.manifest || null; MAN.then(m => { MANv = m || MANv; }); const HS = (k, en) => hostStr(MANv, k, en ? 'en' : 'zh');   // MAN：包清单（Promise）；MANv = 到了之后的同步副本，HS = 宿主文案（清单 strings，没到 / 没写就是中性默认）
   const life = createLife(), { listen } = life;   // 监听登记与「死亡」标记（host-lifecycle.mjs）
   // 协议 v2（core/protocol.mjs，docs/design/arch-v2.md §3）：发出的消息盖 v；收到的消息按 schema 校验（模块没到时照旧处理）
   const PROTO = 2; let PRm = null;   // 与 core/protocol.mjs PROTO 一致（tests/protocol.test.mjs 检查）
   import(SELF + 'core/protocol.mjs').then(m => { PRm = m; }).catch(() => {});
   let FOGm = null, explored = {}; import(SELF + 'core/depth.mjs').then(m => { FOGm = m; explored = m.norm(explored); }).catch(() => {});   // 迷雾探索（eden_map.探索）
-  let SRCm = null; import(SELF + 'tavern/sources.mjs').then(m => { SRCm = m; }).catch(() => {});   // 数据源注册表（arch-v2 §6 第 8 步）
+  let SRCm = null; import(SELF + 'tavern/data-source-registry.mjs').then(m => { SRCm = m; }).catch(() => {});   // 数据源注册表（arch-v2 §6 第 8 步）
   // 线路 / 版本识别：host-routes.mjs
   const { PKG, REPO, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, LINE_TTL, LINE_AT, race, measure } = createRoutes({ SELF, PACK_IN, manifest: MAN });
   let line = null; try { line = (LS || localStorage).getItem(LINE_KEY); } catch (e) {}
@@ -45,7 +45,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   // 地基 A3：多实例身份用 getScriptId()（同一脚本换版本 / 重载 id 不变，不再误报「另一个地图脚本」）；没有这个接口时退回脚本地址。登记在 __edenMapIds { 身份: 地址 }
   const OWNER = (() => { try { const id = thFn('getScriptId')?.(); if (typeof id === 'string' && id) return 's:' + id; } catch (e) {} return 'u:' + SELF; })();
   try { (window.parent.__edenMapIds ||= {})[OWNER] = SELF; } catch (e) {}
-  // 地基 A4：偏好存脚本变量（host-th.mjs createPrefs；键表 = core/storage.mjs SCRIPT_KEYS）
+  // 地基 A4：偏好存脚本变量（host-tavernhelper.mjs createPrefs；键表 = core/storage.mjs SCRIPT_KEYS）
   const prefs = createPrefs(LS), prefSync = prefs.sync, onStorage = prefs.onStorage;
   { const pl = prefs.obj()?.edenMapLine; if (pl && pl !== line && LINES.some(l => l.key === pl)) { line = pl; BASE = baseFor(line); } }   // 线路在上面已按本机读过：脚本变量优先
   window.addEventListener('storage', onStorage);
@@ -266,7 +266,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     if (e.data?.type === 'eden-map:splash') showSplash();   // 设置「重新显示开场自检」
     if (e.data?.type === 'eden-map:varmap-set') setVarUser(e.data.user);   // v0.9.5 设置「变量映射」
     if (e.data?.type === 'eden-map:compose' && typeof e.data.text === 'string') composeIn(e.data.text);   // v0.9.6 地图 → 聊天：只填不发
-    if (e.data?.type === 'eden-map:action') injectAction(e.data);   // Part 6-4：点 POI → 注入动作（默认关，见 tavern/action.mjs）
+    if (e.data?.type === 'eden-map:action') injectAction(e.data);   // Part 6-4：点 POI → 注入动作（默认关，见 tavern/place-action-injection.mjs）
     if (e.data?.type === 'eden-map:loot') takeLoot(e.data);   // Part 5-1：点了地上的发光拾取物 → 先写背包，再按设置注入一句
     if (e.data?.type === 'eden-map:stealth') stealthCheck(e.data);   // Part 5-2：这次移动穿过了谁的视野 → 按难度注入一句检定
     if (e.data?.type === 'eden-map:th' && typeof e.data.op === 'string') onTh(e.data).catch(x => console.warn('[eden-map] 酒馆助手设置', x));   // 设置「数据与映射」「高级」：注入 / 类宏 / 世界书同步
@@ -293,24 +293,24 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
       actions: (Array.isArray(n.actions) ? n.actions : []).slice(0, 3).map(a => ({ label: String(a.label || ''), primary: !!a.primary, run: () => post({ type: 'eden-map:notice-act', key: n.key, id: a.id }) })) });
     NT ? push() : ntReady.then(push);
   }
-  // v0.9.6 地图 → 聊天（tavern/compose.mjs）：卡片上「去这里」「追问这件事」的句子填进酒馆输入框；从不调用发送
-  // ---------------- 任务三 泄露防御网（tavern/th.mjs createLeakFence）：只清显示，不动聊天记录 ----------------
+  // v0.9.6 地图 → 聊天（tavern/compose-templates.mjs）：卡片上「去这里」「追问这件事」的句子填进酒馆输入框；从不调用发送
+  // ---------------- 任务三 泄露防御网（tavern/tavernhelper-api.mjs createLeakFence）：只清显示，不动聊天记录 ----------------
   // 卡片没消费掉的占位符 / 模型整段吐出来的状态栏 HTML 源码会糊在聊天界面上。这里在**渲染之后**把那一楼
   // 元素里的泄露节点与泄露文本洗掉——纯净化函数在 sanitize.mjs（stripLeaks / hasLeak，纯字符串进出），
   // 本模块只负责取元素。**聊天记录一个字节都不动**（docs/rejected.md #8：不审核、不过滤用户聊天内容）。
-  let LKF = null;   // 在下面的 thReady 里装配（th.mjs 只加载一次）
+  let LKF = null;   // 在下面的 thReady 里装配（tavernhelper-api.mjs 只加载一次）
   const leakSweep = id => { try { return LKF ? LKF.sweep(id) : 0; } catch (e) { return 0; } };
 
   let CPm = null;
   async function composeIn(text) {
-    try { CPm ??= await import(SELF + 'tavern/compose.mjs'); } catch (e) { return; }
+    try { CPm ??= await import(SELF + 'tavern/compose-templates.mjs'); } catch (e) { return; }
     const how = CPm.insert(window.parent, text, typeof triggerSlash === 'function' ? triggerSlash : null);
     post({ type: 'eden-map:compose-done', ok: !!how, how });
   }
   // ---------------- Part 6-2 后台静默推演 ----------------
   // 面板关着时，隔一阵把新楼层以只读方式扫一遍（补齐事态 / 人物 / 行程的缓存），玩家再开地图就是热的。
   // 三条底线：只读（不写变量、不注入、不发消息给查看器）；面板活着或正在生成一律让路；每次只扫增量且封顶 60 楼。
-  // 调度判定纯函数在 tavern/tick.mjs（node 单测覆盖），这里只做取数与记账。
+  // 调度判定纯函数在 tavern/background-scan-scheduler.mjs（node 单测覆盖），这里只做取数与记账。
   let TICK = null, tickLed = null, tickT = 0;
   async function tickOnce() {
     const iv = TICK ? TICK.intervalOf(k => { try { return (LS || localStorage).getItem(k); } catch (e) { return null; } }) : 0;
@@ -329,7 +329,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     return 'ran';
   }
   async function startTick() {
-    try { TICK ??= await import(SELF + 'tavern/tick.mjs'); } catch (e) { TICK = null; return; }
+    try { TICK ??= await import(SELF + 'tavern/background-scan-scheduler.mjs'); } catch (e) { TICK = null; return; }
     clearInterval(tickT);
     tickT = setInterval(() => { tickOnce().catch(() => {}); }, 15000);   // 心跳 15 s，跑不跑由 plan() 决定
   }
@@ -373,7 +373,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   const LL = createLlmFlow(host), { jitRound, xtalRound } = LL;
 
   // W8 世界书 → 地图（{{eden_fly}} 宏的接收半边）：最新助手楼里出现 data-eden-fly 标记就解析落点、
-  // 经协议里一直登记却无发送方的 eden-map:fly 聚焦过去（app/host.mjs → TCCustom.flyTo，2D / 庄园房间 / 三维热点通吃）。
+  // 经协议里一直登记却无发送方的 eden-map:fly 聚焦过去（app/host-messages.mjs → TCCustom.flyTo，2D / 庄园房间 / 三维热点通吃）。
   // 每楼只飞一次（flyFloor 水位）；落点认不出就安静放过——绝不猜。
   // 任务二：提取走 th.flyTarget——除了已展开的隐藏标记，也认没被消费的字面宏 {{eden_fly: 地点}}，
   // 且外面裹着未闭合注释 / Prism 标记 / 截断标签时照样锚得住（正则在整段原文里扫，不依赖容器闭合）。
@@ -405,7 +405,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     lineKey: () => line, lang: () => (UL === 'en' ? 'en' : 'zh'), followHead: () => followHead(),
     followNewer: h => followNewer(h),   // 包一层：followNewer 是下面的 const，直接传绑定会在装配时就撞 TDZ
     loadSelfcheck: async () => (CK.SC ??= await import(SELF + 'tavern/selfcheck.mjs')),
-    loadSources: async () => (SRCm ??= await import(SELF + 'tavern/sources.mjs')) });
+    loadSources: async () => (SRCm ??= await import(SELF + 'tavern/data-source-registry.mjs')) });
   const sendAbout = () => AB.sendAbout(), checkUpdate = () => AB.checkUpdate(), followUpdate = () => AB.followUpdate();
   // 任务四：版权申明页的角色卡信息由这里（经桥的三级降级）取，推给查看器——面板不再自己摸 window.SillyTavern
   // （嵌在 iframe 里那个全局 100% 读不到，旧版于是永远报「未接入酒馆」的假错）。
@@ -454,10 +454,10 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   const badge = root.querySelector('.em-badge');
   let events = [], floorNow = -1, seen = -1, injected = '', EVM = null;
   // 事态模块单独加载：加载失败只是没有事态功能，地图照常可用
-  import(new URL('events.mjs', import.meta.url).href).then(async m => { try { m.setGeo(await (await import(new URL('event-geo-load.mjs', import.meta.url).href)).loadEventGeo({ fetchJSON: rel => cdnFetch(BASE + rel).then(r => r.ok ? r.json() : null).catch(() => null), packId: PACK_ID, manifest: await MAN, events: PACK_IN?.events })); } catch (e) { console.warn('[eden-map] 事态落点的节点树没建出来：事件只列出、不上图', e); } EVM = m; recompute(); }).catch(e => console.warn('[eden-map] 事态模块加载失败', e));
+  import(new URL('events-parse.mjs', import.meta.url).href).then(async m => { try { m.setGeo(await (await import(new URL('event-geo-load.mjs', import.meta.url).href)).loadEventGeo({ fetchJSON: rel => cdnFetch(BASE + rel).then(r => r.ok ? r.json() : null).catch(() => null), packId: PACK_ID, manifest: await MAN, events: PACK_IN?.events })); } catch (e) { console.warn('[eden-map] 事态落点的节点树没建出来：事件只列出、不上图', e); } EVM = m; recompute(); }).catch(e => console.warn('[eden-map] 事态模块加载失败', e));
   // 人物栏（v0.9.2）：人物位置标签 + MVU 人物表 → 每人最新位置；模块加载失败只是没有人物栏
   let CHM = null, chars = [], charSig = '', charsSent = null;   // charsSent：上一次发给地图的人物签名（没变就不重发）
-  import(new URL('characters.mjs', import.meta.url).href).then(m => { CHM = m; recompute(); }).catch(e => console.warn('[eden-map] 人物模块加载失败', e));
+  import(new URL('characters-parse.mjs', import.meta.url).href).then(m => { CHM = m; recompute(); }).catch(e => console.warn('[eden-map] 人物模块加载失败', e));
   const chatKey = () => 'edenMapSeen:' + chatId();
   function loadSeen() { try { seen = +(LS || localStorage).getItem(chatKey()); if (!Number.isFinite(seen)) seen = -1; } catch (e) { seen = -1; } }
   // A-3：每楼原文的解析按 (楼层, 原文) 缓存、整轮输入的签名没变就跳过——都在流水线里（tavern/context.mjs，node 单测）；
@@ -660,7 +660,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     { const wake = () => { if (pdoc.visibilityState !== 'hidden' && !life.dead) { statSig = ''; recomputeSoon(0); pushSoon(0); post({ type: 'eden-map:wake' }); } }; pdoc.addEventListener('visibilitychange', wake); window.parent.addEventListener('pageshow', wake); window.parent.addEventListener('online', wake);   // G3（P1）：切回前台顺手叫醒查看器（唤醒消息此前只用于休眠恢复）——宿主数据推送之外，查看器也能即时自刷新
       life.add(() => { pdoc.removeEventListener('visibilitychange', wake); window.parent.removeEventListener('pageshow', wake); window.parent.removeEventListener('online', wake); }); }
     if (tavern_events.GENERATION_AFTER_COMMANDS) listen(tavern_events.GENERATION_AFTER_COMMANDS, (type) => { clearTimeout(evT); recompute(true); MO.stateNow = ''; stateInject(typeof type === 'string' ? type : 'normal'); });   // (a) 重生 / swipe：用被替换那一楼之前的状态
-    push(); loadSeen(); recompute(); stateInject(); startTick();   // modes.mjs 经桥静态可用（原动态加载后补一次注入，改为启动序列里统一做）
+    push(); loadSeen(); recompute(); stateInject(); startTick();   // interaction-modes.mjs 经桥静态可用（原动态加载后补一次注入，改为启动序列里统一做）
     (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => { if (life.dead) return; afterGen(() => preload().catch(() => {})); try { budgetSweep(); } catch (e) {} setTimeout(() => { if (!life.dead) autoCheck().catch(() => {}); }, window.parent.__edenAutoCheckDelay ?? 6000); if (splashDue()) { lsSet('edenMapSplashSeen', String(VER || 'dev')); runCheck(); } else setTimeout(runCheck, 4000); setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动同步失败', e))); }, 8000); });   // 打开聊天后空闲时：测速选线 + 预加载；稍后自检一次
   })();
 

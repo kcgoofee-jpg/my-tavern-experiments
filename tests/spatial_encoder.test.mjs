@@ -1,12 +1,12 @@
-// W1 空间坐标契约（map/tavern/spatial.mjs）：确定性（同输入字节级同输出）、token 预算降级阶梯、
+// W1 空间坐标契约（map/tavern/spatial-contract.mjs）：确定性（同输入字节级同输出）、token 预算降级阶梯、
 // 坐标量化、邻接纪律（routes 不作邻接源）、JIT 激活集底座、注入守卫、模块纯度机检。
 // 夹具全中性合成数据。见 docs/plans/llm-campaign.md W1。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import * as S from '../map/tavern/spatial.mjs';
-import { tokens } from '../map/tavern/modes.mjs';
+import * as S from '../map/tavern/spatial-contract.mjs';
+import { tokens } from '../map/tavern/interaction-modes.mjs';
 
 const REG = { maps: {
   tc_mid: { kind: 'points', layer: { name: '中层', sub: '霓虹与执法' }, data: 'data/tc_mid.json',
@@ -98,7 +98,7 @@ test('applySpatial：先撤同 id 再注入；空内容只撤；没有 injectPro
 });
 
 test('模块纯度：不碰 DOM / 全局 / 存储 / 网络 / 酒馆（机械扫描源码，剥离注释后扫——与看门狗同口径）', () => {
-  const raw = readFileSync(fileURLToPath(new URL('../map/tavern/spatial.mjs', import.meta.url)), 'utf8');
+  const raw = readFileSync(fileURLToPath(new URL('../map/tavern/spatial-contract.mjs', import.meta.url)), 'utf8');
   const src = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
   assert.doesNotMatch(src, /\b(window|document|localStorage|sessionStorage|fetch|Mvu|SillyTavern|navigator)\b/);
   const lines = raw.split('\n').length;

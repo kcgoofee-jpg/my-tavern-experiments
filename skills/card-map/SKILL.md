@@ -76,8 +76,8 @@ python3 tools/draft_pack_from_card.py <S>/card/chara.json --layers 上层,中层
 对照 `digest.md` 手改草稿：
 - 把「未分层」挪进真正的层；每层可写 `"id"` 得到可读地图 id（否则是 `<id>_l1`…）。
 - 地点名、别名**照抄卡**；从人物住处、开局里补漏掉的地点；只在卡里出现一次的叫法也进 `alias`。
-- `vars`：MVU `stat_data` 路径（键见 `map/tavern/adapter.mjs` 的 `FIELDS`）；没认出就留空，用户可在地图设置「变量映射」里改。
-- 表格数据库插件（shujuku）：只读兼容已内置（`map/tavern/shujuku.mjs`，见 `docs/content-compat.md`「表格数据库插件」）；只需在 `digest.md` 记下卡是否依赖它，不写包字段。
+- `vars`：MVU `stat_data` 路径（键见 `map/tavern/stat-path-mapping.mjs` 的 `FIELDS`）；没认出就留空，用户可在地图设置「变量映射」里改。
+- 表格数据库插件（shujuku）：只读兼容已内置（`map/tavern/tabledb-bridge.mjs`，见 `docs/content-compat.md`「表格数据库插件」）；只需在 `digest.md` 记下卡是否依赖它，不写包字段。
 
 ```bash
 python3 tools/new_pack.py <id> --title <卡里的地名> --title-en <英文> --from-draft <S>/<id>.draft.json --extent <宽>x<高>   # 米；之后底图宽高比必须一致
@@ -138,7 +138,7 @@ bash tools/blender_run.sh --log <S>/x.log --asset <建筑> --kind draft --res 90
   #   每个名字 / 别名 / 「层·地点」必须落到自己的标记；--extra 放开场白与 MVU 初值里的真实地点写法（每行一条），逐条看落点
   ```
   解析不出或落错就补 `alias`。
-- **去这里 / 追问**：核心已内置（`map/tavern/compose.mjs`），只把「前往X。」「关于X，」填进输入框，**从不自动发送**。包不用写代码，只要名字对。
+- **去这里 / 追问**：核心已内置（`map/tavern/compose-templates.mjs`），只把「前往X。」「关于X，」填进输入框，**从不自动发送**。包不用写代码，只要名字对。
 
 ## 7. 世界书附加条目
 
@@ -193,7 +193,7 @@ python3 tools/build_preview_script.py --follow preview --pack <id>   # 跟随版
 |---|---|
 | `skills/card-map/export_card.py` | PNG / JSON 卡 → 可逐行读的文本 + 行数（拒绝写进仓库） |
 | `skills/card-map/coverage.py` | 读者报告的行号范围求并集，列出缺口 |
-| `skills/card-map/check_here.mjs` | 包的每个地点写法 → `map/app/here-v2.mjs` 落点自查 |
+| `skills/card-map/check_here.mjs` | 包的每个地点写法 → `map/app/place-resolver.mjs` 落点自查 |
 | `skills/card-map/blender_run.sh` | 等 GPU 空闲再起 Blender，记录自己的 PID |
 | `skills/card-map/templates/smoke_building.py` | 冒烟级单栋模型（纯色），验证建模 → 渲染链 |
 | `skills/card-map/HOW-IT-WORKS.md` | 流程图与读写清单（给人看） |

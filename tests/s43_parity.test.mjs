@@ -10,9 +10,9 @@ import { edenGeo } from './helpers/eden-geo.mjs';
 import { recordEventsTest, fixtureFloors } from './helpers/events-corpus.mjs';
 import { fromV1 } from '../map/core/compat-v1.mjs';
 import { makeRuntime, buildRuntime, inScope, eventLevel, worldGroup, groupPlaces, viewField } from '../map/app/nodes-runtime.mjs';
-import { makeHere } from '../map/app/here-v2.mjs';
+import { makeHere } from '../map/app/place-resolver.mjs';
 import { buildGroups } from '../map/tavern/picker.mjs';
-import * as EV from '../map/tavern/events.mjs';
+import * as EV from '../map/tavern/events-parse.mjs';
 
 const J = p => JSON.parse(readFileSync(new URL('../' + p, import.meta.url), 'utf8'));
 const I = edenInputs(), MAPS = I.maps, WORLD = I.world, ZH = edenDict('zh'), EN = edenDict('en');   // the dictionary as the first pack sees it (its manifest strings over the core words)

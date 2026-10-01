@@ -1,6 +1,6 @@
 // 圣都车流 / 悬浮流光（Part 4-3）的纯核心：把地图数据里的路线（data/*.json 的 routes，
 // 归一化坐标 `[[nx, ny], …]`）变成一帧里该画在哪些位置的光点。
-// 只算数据：不碰 DOM / 存储 / 酒馆全局（机检见 tools/check_architecture.py），画由 app/traffic.mjs 用 OSD 的
+// 只算数据：不碰 DOM / 存储 / 酒馆全局（机检见 tools/check_architecture.py），画由 app/traffic-view.mjs 用 OSD 的
 // pixelFromPoint 换算到屏幕。确定性：同一 (路线, 时间, 种子) 永远得到同一批车。
 import { rng } from './rng.mjs';
 

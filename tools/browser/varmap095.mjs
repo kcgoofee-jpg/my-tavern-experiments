@@ -4,7 +4,7 @@ import * as B from './lib.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { openHost } from './host_stub.mjs';
-import { FIELDS } from '../../map/tavern/adapter.mjs';   // 设置里每个可映射字段一个下拉框（v0.9.6 起 12 个，不写死）
+import { FIELDS } from '../../map/tavern/stat-path-mapping.mjs';   // 设置里每个可映射字段一个下拉框（v0.9.6 起 12 个，不写死）
 const OUT = process.argv[2]; if (!OUT || OUT.startsWith('--')) { console.log('用法：node tools/browser/varmap095.mjs <输出目录>'); process.exit(2); }
 const si = process.argv.indexOf('--shots'), SHOTS = si > 0 ? path.resolve(process.argv[si + 1]) : null;
 B.quietWait(); const srv = await B.ensureServer(); const rep = B.reporter(OUT);

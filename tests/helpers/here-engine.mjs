@@ -1,8 +1,8 @@
 // The place tests of the first versions (here, card_spec, canon0928, characters, omissions099, transit095, unmapped096) wrote their inputs as
-// `buildIndex(registry, world, names, custom, plan)` and `resolveHere(text, index)`. They now run through the node-tree engine (app/here-v2.mjs)
+// `buildIndex(registry, world, names, custom, plan)` and `resolveHere(text, index)`. They now run through the node-tree engine (app/place-resolver.mjs)
 // with the same inputs and the same expectations; the A.9 divergences of docs/kernel-schema.md are the only differences and are pinned in
 // tests/here_v2.test.mjs. This file only keeps the call shapes, so a test reads as it always did.
-import { makeHere } from '../../map/app/here-v2.mjs';
+import { makeHere } from '../../map/app/place-resolver.mjs';
 import { planWords } from '../../map/core/compat-v1-geo.mjs';
 import { edenInputs } from './eden-inputs.mjs';
 

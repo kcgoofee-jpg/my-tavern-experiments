@@ -1,14 +1,14 @@
 // S4-4 T5: the people page draws one section per entity group of the pack, in the pack's order (core/people.mjs), not the fixed present / members / targets.
-//   - a pack with four groups: four sections with their labels and rows, present group first; the roster reader (mvu.mjs rosters) gives one entry per group
+//   - a pack with four groups: four sections with their labels and rows, present group first; the roster reader (mvu-readers.mjs rosters) gives one entry per group
 //   - the first pack: the same three sections, in the same order, with the same labels and rows as the page drew before (tests/helpers/people_v1_frozen.mjs), over the roster corpus
 //   - an older host that sends the rosters only (no `groups`) gives the same sections
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { groupList, groupLabel, paneModel, everyone, tableRows } from '../map/core/people.mjs';
-import * as AD from '../map/tavern/adapter.mjs';
+import * as AD from '../map/tavern/stat-path-mapping.mjs';
 import { profileOf } from '../map/core/profile.mjs';
 import { setProfile } from '../map/tavern/pack-profile.mjs';
-import * as MV from '../map/tavern/mvu.mjs';
+import * as MV from '../map/tavern/mvu-readers.mjs';
 import * as RS from '../map/core/roster.mjs';
 import { MVUBridge } from '../map/tavern/mvu-bridge.mjs';
 import { edenProfile } from './helpers/eden-profile.mjs';

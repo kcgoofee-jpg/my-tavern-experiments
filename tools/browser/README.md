@@ -28,7 +28,7 @@ node tools/browser/accept.mjs /tmp/accept --only first,fly,estate
 | `openEstate(P)` / `estateFrame(page)` / `estateStats(frame)` / `wheelDriftEstate(page, x, y, frame)` | 庄园独立页第一帧、嵌入的庄园 iframe、draw calls（`?stats=1`）、庄园滚轮漂移 |
 | `deadZones(frame, {step})` | 网格 `elementFromPoint`：挡在画面上却不可交互的元素（如透明遮罩文字） |
 | `openInHost(P, src)` / `parentScrollY(page, x, y)` | 高且可滚的宿主页里嵌 iframe；在 iframe 上滚轮后宿主页 scrollY |
-| `postEvents(frame, texts, fly)` | 用卡内脚本的 `events.mjs` 解析聊天原文，推给查看器并飞过去 |
+| `postEvents(frame, texts, fly)` | 用卡内脚本的 `tavern/events-parse.mjs` 解析聊天原文，推给查看器并飞过去 |
 | `shot(page, dir, name)` / `reporter(dir)` | 截图；✓ / ✗ 记录与 results.json、summary.md |
 
 新脚本放 scratchpad 或 `tools/browser/` 下，`import * as B from './lib.mjs'`，结构照 `accept.mjs`。只开一个浏览器实例，跑完 `closeAll()`。

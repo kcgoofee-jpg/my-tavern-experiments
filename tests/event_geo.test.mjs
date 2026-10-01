@@ -1,10 +1,10 @@
-// Event placement through the node tree (core/event-geo.mjs, docs/kernel-schema.md K-R24, K-R51) and its use by tavern/events.mjs: the layer label, the
+// Event placement through the node tree (core/event-geo.mjs, docs/kernel-schema.md K-R24, K-R51) and its use by tavern/events-parse.mjs: the layer label, the
 // map, the place text, the spot; a place no node holds is listed without a pin (K-01 B). The parity against v1 is tests/events_geo_shadow.test.mjs.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeGeo, spotOf, hash01 } from '../map/core/event-geo.mjs';
 import { buildTree } from '../map/core/nodes.mjs';
-import * as EVM from '../map/tavern/events.mjs';
+import * as EVM from '../map/tavern/events-parse.mjs';
 import { edenGeo, townGeo } from './helpers/eden-geo.mjs';
 
 const eden = edenGeo(), town = townGeo();

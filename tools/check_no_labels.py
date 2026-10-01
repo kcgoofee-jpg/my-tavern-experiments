@@ -192,7 +192,7 @@ def self_test():
             for rel in ("map/data/x.json", "map/packs/p/manifest.json", "map/props/m/manifest.json", "map/world.html", "map/world_draft1.html", "map/estate/x.js", "tools/build_worldbook_addon.py"):
                 put(rel, f"text {ph} text\n")
                 check(f"phrase {i} is caught in {rel}", len(scan(root, [rel])) == 1)
-            for rel in ("map/tavern/ops.mjs", "tools/check_maps.py", "tests/x.test.mjs", "docs/a.md", "map/viewer.html"):
+            for rel in ("map/tavern/operation-dsl.mjs", "tools/check_maps.py", "tests/x.test.mjs", "docs/a.md", "map/viewer.html"):
                 put(rel, f"// {ph}\n")
                 check(f"phrase {i} is allowed in {rel}", scan(root, [rel]) == [])
         # 8 README parsing

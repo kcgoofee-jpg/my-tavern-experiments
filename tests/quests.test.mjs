@@ -83,10 +83,10 @@ test('摘要：条数 / 最急的三个 / 最高热度', () => {
 test('真实数据：上层事态的大类都在权重表上；纯核心身份', () => {
   const src = readFileSync(join(ROOT, 'map/core/quests.mjs'), 'utf8').replace(/\/\/[^\n]*/g, '');
   for (const g of ['window', 'document', 'localStorage', 'Mvu', 'SillyTavern']) assert.ok(!new RegExp(`\\b${g}\\b`).test(src), `不该出现 ${g}`);
-  const ev = JSON.parse(readFileSync(join(ROOT, 'map/tavern/events.mjs'), 'utf8').match(/export const CATS = \{[\s\S]*?\n\};/)?.[0] ? '{}' : '{}');
+  const ev = JSON.parse(readFileSync(join(ROOT, 'map/tavern/events-parse.mjs'), 'utf8').match(/export const CATS = \{[\s\S]*?\n\};/)?.[0] ? '{}' : '{}');
   assert.ok(Object.keys(SEVERITY).includes('其他'));
   assert.equal(typeof ev, 'object');
-  const groups = readFileSync(join(ROOT, 'map/tavern/events.mjs'), 'utf8').match(/GROUP_ORDER = \[([^\]]+)\]/)?.[1] || '';
+  const groups = readFileSync(join(ROOT, 'map/tavern/events-parse.mjs'), 'utf8').match(/GROUP_ORDER = \[([^\]]+)\]/)?.[1] || '';
   for (const g of groups.split(',').map(s => s.trim().replace(/'/g, '')).filter(Boolean)) {
     assert.ok(g in SEVERITY, `事态大类 ${g} 必须有权重`);
   }

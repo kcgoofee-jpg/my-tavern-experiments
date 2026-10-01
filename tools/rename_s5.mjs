@@ -21,8 +21,9 @@ const trackedSet = new Set(tracked);
 
 // ---- the moves: source -> target (repo-relative, posix) ------------------------------------------------------------
 const moves = new Map(), redirects = new Map();   // redirects: deleted forwarder -> module that replaces it
-for (const r of MAP.renames) moves.set(r.from, r.to);
-for (const d of MAP.deletes) redirects.set(d.from, d.redirect);
+// only sources that still exist: a second run finds none, so it plans nothing (idempotent)
+for (const r of MAP.renames) if (trackedSet.has(r.from)) moves.set(r.from, r.to);
+for (const d of MAP.deletes) if (trackedSet.has(d.from)) redirects.set(d.from, d.redirect);
 const baseOf = p => path.posix.basename(p).replace(/\.[^.]+$/, '');
 // paired tests: tests/<base>.test.mjs named after the module, kept only when it really loads that module
 const testMoves = new Map();
@@ -48,7 +49,7 @@ const SELF_FILES = new Set(['tools/rename_s5.mjs', 'tools/rename_s5_extract.py',
 const inScope = f => {
   if (SELF_FILES.has(f) || SKIP_DIR.test(f) || !TEXT_EXT.has(path.extname(f))) return false;
   if (/^docs\/naming(\.zh)?\.md$/.test(f)) return false;   // the rename map keeps old names as its "Current" column; rows are marked, not rewritten
-  return /^(map|tests|tools)\//.test(f) || /^docs\/ARCHITECTURE(\.zh)?\.md$/.test(f) || /^README(\.zh)?\.md$/.test(f);
+  return /^(map|tests|tools|skills)\//.test(f) || /^docs\/ARCHITECTURE(\.zh)?\.md$/.test(f) || /^README(\.zh)?\.md$/.test(f);
 };
 
 // ---- token matching ------------------------------------------------------------------------------------------------
@@ -62,31 +63,56 @@ const isSource = p => moves.has(p) || redirects.has(p);
 const targetOf = p => moves.get(p) ?? redirects.get(p);
 const ALIAS = MAP.specifiers.map(s => ({ ...s, dir: 'map/three/' }));   // import-map alias three/map/ -> map/three/
 
-/** Resolve a token seen in file `file` (old path); returns { src, style } or null. */
+/** Resolve a token seen in file `file` (old path); returns { src, base, alias? } or null. `base` says what the token was written
+ *  relative to: the importing file's folder, the repo root (scripts run from there), or map/ (the viewer's document base). */
 function resolve(file, tok, quoted) {
-  const dir = path.posix.dirname(file);
   const norm = p => path.posix.normalize(p);
-  if (tok.startsWith('./') || tok.startsWith('../')) { const r = norm(path.posix.join(dir, tok)); return isSource(r) ? { src: r, style: 'rel' } : null; }
-  for (const a of ALIAS) if (tok.startsWith(a.from)) return { src: a.dir + tok.slice(a.from.length), style: 'alias', alias: a };   // the whole alias moves, not only the moved files behind it
-  if (tok.includes('/')) {
-    if (isSource(tok)) return { src: tok, style: 'repo' };
-    if (isSource('map/' + tok)) return { src: 'map/' + tok, style: 'map' };
-    const r = norm(path.posix.join(dir, tok)); if (quoted && isSource(r)) return { src: r, style: 'bare' };
-    return null;
+  for (const a of ALIAS) if (tok.startsWith(a.from)) return { src: a.dir + tok.slice(a.from.length), base: 'alias', alias: a };   // the whole alias moves, not only the moved files behind it
+  const dotted = tok.startsWith('./') || tok.startsWith('../');
+  const bases = tok.startsWith('../') ? ['dir'] : dotted ? ['dir', 'repo', 'map'] : tok.includes('/') ? (quoted ? ['repo', 'map', 'dir'] : ['repo', 'map']) : quoted ? ['dir', 'map'] : [];
+  for (const base of bases) {
+    const r = norm(path.posix.join(BASE_DIR[base](file), tok));
+    if (!r.startsWith('..') && isSource(r)) return { src: r, base };
   }
-  if (quoted) { const r = norm(path.posix.join(dir, tok)); if (isSource(r)) return { src: r, style: 'bare' }; }
-  const u = uniqueSource.get(tok); return u ? { src: u, style: 'name' } : null;
+  if (!tok.includes('/')) { const u = uniqueSource.get(tok); if (u) return { src: u, base: 'name' }; }
+  return null;
 }
-function render(file, hit) {
-  const dst = targetOf(hit.src) ?? hit.src, dir = path.posix.dirname(file);
-  switch (hit.style) {
-    case 'repo': return dst;
-    case 'map': return dst.replace(/^map\//, '');
-    case 'alias': return hit.alias.to + dst.slice(hit.alias.dir.length);
-    case 'name': return path.posix.basename(dst);
-    case 'bare': return path.posix.relative(dir, dst);
-    default: { const r = path.posix.relative(dir, dst); return r.startsWith('.') ? r : './' + r; }
+const BASE_DIR = { dir: f => path.posix.dirname(f), repo: () => '', map: () => 'map' };
+function render(file, tok, hit) {
+  const dst = targetOf(hit.src) ?? hit.src;
+  if (hit.base === 'alias') return hit.alias.to + dst.slice(hit.alias.dir.length);
+  if (hit.base === 'name') return path.posix.basename(dst);
+  const rel = path.posix.relative(BASE_DIR[hit.base](file), dst);
+  return tok.startsWith('./') && !rel.startsWith('.') ? './' + rel : rel;
+}
+
+// regex-literal form of a path inside a test (`/tavern\/action\.mjs/`, `src="app\/cardlinks\.mjs"`): same resolution, re-escaped
+const TOKEN_ESC = /(?<![\w@\\-])((?:(?:\\\.){1,2}\\\/)*(?:[\w-]+\\\/)*[\w-]+)\\\.(mjs|js)(?![\w-])/g;
+const esc = t => t.replace(/([./])/g, '\\$1');
+
+/** docs/ARCHITECTURE*.md module map: rows are `| \`name.mjs\` | role |` under a "### 3.n map/<dir>" heading, so the folder comes from the
+ *  heading, not from the token. Renames the first cell, drops the row of a deleted forwarder, and keeps each table sorted. */
+const DOC_DIR = [[/^### 3\.\d+ map\/core\b/, 'map/core'], [/^### 3\.\d+ map\/app\b/, 'map/app'], [/^### 3\.\d+ map\/tavern\b/, 'map/tavern'],
+  [/^### 3\.\d+ map\/ui\b/, 'map/ui'], [/^### 3\.\d+ map\/three\b/, 'map/three'], [/^### 3\.\d+ map\/\*/, 'map']];
+function moduleMapRows(f, text, note) {
+  const lines = text.split('\n'); let dir = null, i = 0;
+  while (i < lines.length) {
+    const h = lines[i].startsWith('### ') ? DOC_DIR.find(([re]) => re.test(lines[i])) : null;
+    if (lines[i].startsWith('#')) dir = h ? h[1] : null;
+    if (!dir || !/^\| `[\w.-]+\.(mjs|js)` \|/.test(lines[i])) { i++; continue; }
+    let j = i; while (j < lines.length && /^\| `[\w.-]+\.(mjs|js)` \|/.test(lines[j])) j++;
+    const rows = [];
+    for (let k = i; k < j; k++) {
+      const m = lines[k].match(/^\| `([\w.-]+\.(?:mjs|js))` \|/), src = `${dir}/${m[1]}`;
+      if (redirects.has(src)) { note(k, m[1], '(row removed)'); continue; }
+      const dst = moves.get(src); let row = lines[k];
+      if (dst) { const nn = path.posix.basename(dst); row = row.replace('`' + m[1] + '`', '`' + nn + '`'); note(k, m[1], nn); }
+      rows.push(row);
+    }
+    const key = r => r.match(/^\| `([^`]+)`/)[1], sorted = [...rows].sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0));
+    lines.splice(i, j - i, ...sorted); i += sorted.length;
   }
+  return lines.join('\n');
 }
 
 const edits = [];   // { file, line, from, to }
@@ -95,14 +121,23 @@ for (const f of tracked) {
   if (!inScope(f)) continue;
   let text; try { if (statSync(path.join(ROOT, f)).size > 4 << 20) continue; text = readFileSync(path.join(ROOT, f), 'utf8'); } catch (e) { continue; }
   if (text.includes('\0')) continue;
-  const out = text.replace(TOKEN, (m, tok, off) => {
-    const q = text[off - 1], quoted = (q === "'" || q === '"' || q === '`') && text[off + m.length] === q;
+  const note = (off, from, to) => edits.push({ file: f, line: text.slice(0, off).split('\n').length, from, to });
+  if (/^docs\/ARCHITECTURE(\.zh)?\.md$/.test(f)) text = moduleMapRows(f, text, (k, from, to) => edits.push({ file: f, line: k + 1, from, to }));
+  const isMd = f.endsWith('.md'), QUOTES = isMd ? `'"` : `'"\``;   // in markdown a backtick is code formatting, not a string quote
+  let out = text.replace(TOKEN, (m, tok, off) => {
+    const q = text[off - 1], quoted = QUOTES.includes(q) && text[off + m.length] === q;
     const hit = resolve(f, tok, quoted); if (!hit) return m;
-    const nt = render(f, hit); if (nt === tok) return m;
-    edits.push({ file: f, line: text.slice(0, off).split('\n').length, from: tok, to: nt });
-    return nt;
+    const nt = render(f, tok, hit); if (nt === tok) return m;
+    note(off, tok, nt); return nt;
   });
-  if (out !== text) contents.set(f, out);
+  out = out.replace(TOKEN_ESC, (m, stem, ext, off) => {
+    const plain = (stem + '.' + ext).replace(/\\/g, ''), q = out[off - 1];
+    const hit = resolve(f, plain, QUOTES.includes(q));
+    if (!hit) return m;
+    const nt = render(f, plain, hit); if (nt === plain) return m;
+    note(off, m, esc(nt)); return esc(nt);
+  });
+  if (out !== readFileSync(path.join(ROOT, f), 'utf8')) contents.set(f, out);
 }
 // the engine alias line in the import map (directory form `three/map/`)
 for (const f of tracked) {

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>三维查看器</title>
 <!--
-  通用三维查看器：viewer3d.html?model=<id> 读 <id>/manifest.json（Estate3D Manifest 标准契约，map/core/estate3d.mjs：
+  通用三维查看器：viewer3d.html?model=<id> 读 <id>/manifest.json（Estate3D Manifest 标准契约，map/core/scene3d-manifest.mjs：
   glb 地址 / 档位兜底 / 热点 / 网格分组 / 相机都来自清单，代码不写死模型路径；model id 只来自数据）。
   渲染：随仓库的 three（../estate/vendor/），烘焙光照 → MeshBasicMaterial，无灯光、无阴影、无后处理。
   嵌入（viewer.html 的 kind=estate + viewer3d 字段）：blob iframe，<base> 指向本目录；模型 id 由注入的 window.__V3D_MODEL 给。
@@ -19,7 +19,7 @@
 <script defer src="../ui/icons.js"></script>
 <script defer src="../ui/sheet.js"></script>
 <script defer src="../ui/chrome3d.js"></script>
-<script type="importmap">{ "imports": { "three": "../estate/vendor/three.module.min.js", "three/addons/": "../estate/vendor/jsm/", "three/map/": "../three/" } }</script>
+<script type="importmap">{ "imports": { "three": "../estate/vendor/three.module.min.js", "three/addons/": "../estate/vendor/jsm/", "engine3d/": "../three/" } }</script>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font: var(--fs-body)/1.45 var(--font-ui); -webkit-font-smoothing: antialiased; }
   body { --inset: 0px; }
@@ -89,16 +89,16 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';   // Part 3 §5：KTX2 / Basis 备选贴图（用不上就退回 WebP）
 import { mountProgress } from '../ui/progress.mjs';   // fix3：统一加载进度组件
-import { Estate3D } from '../core/estate3d.mjs';   // Estate3D Manifest 标准契约（P3-A）：glb 地址与档位兜底都走清单，代码不写死模型路径
+import { Estate3D } from '../core/scene3d-manifest.mjs';   // Estate3D Manifest 标准契约（P3-A）：glb 地址与档位兜底都走清单，代码不写死模型路径
 import { nsKey } from '../core/pack.mjs';   // 通用化 v1：本机键按包换前缀（edenMapLang / 画质 / 提示卡……），与查看器同一规则
 import { createRenderGate, wireVisibility } from '../core/render-gate.mjs';   // Part 7-4：页面隐藏时渲染循环整个停掉
-// Part 3：共享三维运行时（上下文 / 剔除 / LOD / 实例化 / 贴图预算）——全仓只有 ctx.mjs 里 new WebGLRenderer
-import { createRenderer as createGpu, governor as createGovernor, pickDpr } from 'three/map/ctx.mjs';
-import { prepare as prepareCulling } from 'three/map/culling.mjs';
-import { createLodController } from 'three/map/lod.mjs';
-import { batch as batchInstances, writeMatrices } from 'three/map/instancing.mjs';
-import { createTexRes } from 'three/map/texres.mjs';
-import * as GB from '../core/budget.mjs';   // Part 3 §1：显存预算的纯策略（估算 / 水位 / 淘汰顺序）
+// Part 3：共享三维运行时（上下文 / 剔除 / LOD / 实例化 / 贴图预算）——全仓只有 render-context.mjs 里 new WebGLRenderer
+import { createRenderer as createGpu, governor as createGovernor, pickDpr } from 'engine3d/render-context.mjs';
+import { prepare as prepareCulling } from 'engine3d/culling.mjs';
+import { createLodController } from 'engine3d/lod-controller.mjs';
+import { batch as batchInstances, writeMatrices } from 'engine3d/instancing.mjs';
+import { createTexRes } from 'engine3d/texres.mjs';
+import * as GB from '../core/graphics-budget.mjs';   // Part 3 §1：显存预算的纯策略（估算 / 水位 / 淘汰顺序）
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer, prefersReducedMotion } from '../ui/camera-controls.js';   // 相机控制共用小件（预设/指北针/提示卡/空闲计时），与庄园页共用
 
 const Q = new URLSearchParams(location.search);
@@ -110,7 +110,7 @@ const post = m => { if (EMBED) try { parent.postMessage(m, '*'); } catch (e) {} 
 
 // ---------------- UI v2 外壳（ui/chrome3d.js）：视图分段 + 剖切高度二级条 + 控制列 + 唯一抽屉（部件 · 流向 · 说明）----------------
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const PID = window.__packId || 'eden';   // 宿主查看器注入（app/estate.mjs）；单独打开默认 eden
+const PID = window.__packId || 'eden';   // 宿主查看器注入（app/subpage3d-host.mjs）；单独打开默认 eden
 const NKEY = k => nsKey(k, PID);
 const LSg = k => { try { return localStorage.getItem(NKEY(k)); } catch (e) { return null; } };
 // 调试：显示帧率——本页多数时候是 blob: 载入的子 iframe，跟宿主不同源，读不到宿主 localStorage；开关靠宿主 estate:fps 消息（同源直开时 LSg 兜底）
@@ -152,7 +152,7 @@ let LANG = (Q.get('lang') || LSg('edenMapLang') || 'zh').startsWith('en') ? 'en'
 // manifest.flows 的颜色各建筑各写，这里不改每个 manifest，改用「按原色相桶归到色觉安全色板」的通用重映射，流向图例本来就有文字名（第二线索）
 let CVD = '0';
 const CVD_PAL = { rg: ['#e69f00', '#56b4e9', '#0072b2', '#009e73', '#cc79a7', '#f0e442', '#994455', '#d55e00'], by: ['#d7263d', '#9ad0f5', '#029e73', '#7a5195', '#e2903a', '#cc79a7', '#0072b2', '#994455'] };
-function cvdColor(hex) {   // K-R64 / I-09：只收 #rrggbb，别的一律白色（关色觉模式时也一样），这个值会进 style 与 THREE.Color；与 app/cvd.mjs hueBucket 同一算法
+function cvdColor(hex) {   // K-R64 / I-09：只收 #rrggbb，别的一律白色（关色觉模式时也一样），这个值会进 style 与 THREE.Color；与 app/color-vision-mode.mjs hueBucket 同一算法
   if (!/^#[0-9a-f]{6}$/i.test(hex || '')) return '#ffffff'; if (CVD === '0') return hex;
   const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
   let h = !d ? 0 : mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360;
@@ -185,7 +185,7 @@ const MSAA = TIER !== 'low';
 
 // ---------------- 场景 ----------------
 const canvas = $('#c');
-let renderer, gpu = null;   // gpu = 共享上下文句柄（map/three/ctx.mjs）
+let renderer, gpu = null;   // gpu = 共享上下文句柄（map/three/render-context.mjs）
 // ---------------- Part 3 §5：显存预算（估字节 → 吃紧就按优先级腾）----------------
 // 浏览器不给真实显存：这里用「贴图尺寸 + 几何属性」的确定性估算，配 renderer 的自报数，
 // 超了高水位就按 未激活 → 远 → 中 的顺序腾；正在看的近档永不淘汰。
@@ -825,7 +825,7 @@ const FT = []; let last = performance.now(), running = true;
 // 自适应像素比（2026-09-29 恶性卡顿）：桌面档不封顶 DPR + MSAA + 全部 DoubleSide，大场景（圣山 9MB）整页拖到 3fps。
 // 连续渲染的帧距持续 >55ms（<18fps）时像素比降一档（×0.7，下限 1），缓过来不回升（回升要用户在「三维画质」里自己改，避免来回震荡）。
 let govT = [], govHold = 0;
-function govFrame(dt, now) {   // Part 3 §3：策略搬到共享运行时（map/three/ctx.mjs），这里只负责落地
+function govFrame(dt, now) {   // Part 3 §3：策略搬到共享运行时（map/three/render-context.mjs），这里只负责落地
   const next = gov.sample(dt, now, renderer.getPixelRatio());
   if (next == null) return;
   gpu?.setDpr(next); renderer.setSize(innerWidth, innerHeight);

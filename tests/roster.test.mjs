@@ -2,7 +2,7 @@
 // 保底名册（通用化 v1）是包级数据（map/data/fallback_roster.json），rosters() 按参数收；这里显式传 eden 的保底名册当夹具
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import * as V from '../map/tavern/mvu.mjs';
+import * as V from '../map/tavern/mvu-readers.mjs';
 import { useEden } from './helpers/eden-profile.mjs';
 useEden();   // the first pack's variable and roster declarations (its overlay blocks); the engine itself names no card
 const FB = JSON.parse(readFileSync(new URL('../map/data/fallback_roster.json', import.meta.url), 'utf8')).members;
@@ -59,7 +59,7 @@ t('原作头像白名单的底线：https / 图片 / 白名单域名 / 不碰受
   assert.equal(V.portraitOk('https://cdn.jsdelivr.net/gh/Yehehua1311/repo@main/A/sfw/A_1.png'), true);
   assert.equal(V.portraitOk('https://picgocloud.com/i/2024/09/29/abcd.webp'), true);
 });
-import * as C from '../map/tavern/characters.mjs';
+import * as C from '../map/tavern/characters-parse.mjs';
 t('名字对齐：去 _idN；短名唯一对应「名·」全名；名字当姓用的不合并', () => {
   const known = ['甲·乙家', '丙', '丁·戊', '某人·丙'];
   assert.equal(C.canonName('甲_id9', known), '甲·乙家'); assert.equal(C.canonName('甲', known), '甲·乙家');

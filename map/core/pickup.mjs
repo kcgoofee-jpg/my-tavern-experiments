@@ -6,7 +6,7 @@
 //   ① 宁可漏不可误：只有「获取动词」和「具体物品名词」同时成立才产出；抽象名词（情绪 / 状态 / 关系）不要；
 //   ② 名词必须站得住：被引号包住、前面带量词、或命中调用方给的已知物品表（世界藏物表 / 现有仓库），三者至少一项；
 //   ③ 纯核心：不碰 DOM / 宿主全局 / 存储 / 网络，数据进、事实出；node 单测 tests/auto_stash.test.mjs。
-// 本模块不写任何东西——落盘一律由宿主经 ledger / varssync 的结算闸门做（时序纪律见 tavern/varsync.mjs）。
+// 本模块不写任何东西——落盘一律由宿主经 ledger / varssync 的结算闸门做（时序纪律见 tavern/settlement-guard.mjs）。
 
 export const MAX_FACTS = 6;         // 一条正文最多认几件（超出丢弃：宁可少记，也不把一段描写吸成清单）
 export const MAX_NAME = 20;         // 物品名的长度上限（更长多半是句子而不是名词）

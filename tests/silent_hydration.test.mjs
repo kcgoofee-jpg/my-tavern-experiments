@@ -3,7 +3,7 @@
 // 与 mvu-bridge.cardInfo（三级降级 + 「读不到 ≠ 未接入」的安全占位）。
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bindPlan } from '../map/tavern/wb_jit.mjs';
+import { bindPlan } from '../map/tavern/worldbook-jit.mjs';
 import { MVUBridge } from '../map/tavern/mvu-bridge.mjs';
 
 const API = { chat: true, char: true, global: true };

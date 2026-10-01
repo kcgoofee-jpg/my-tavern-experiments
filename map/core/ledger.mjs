@@ -6,7 +6,7 @@
 // docs/plans/llm-campaign.md §9）：
 //   ① 三个受限指令 OP_LOOT / OP_ROUTINE / OP_EVENT 以外的名字（含 OP_DEPTH 这类）一律丢弃——景深环境域
 //      **只由本地确定性计算喂入**（envEntry），底层物理不交给大模型（零 Token 优先）。
-//   ② throw-not-coerce（core/layers.mjs normChain 同一口径）：字段类型 / 范围不对该条直接丢，绝不猜着转换。
+//   ② throw-not-coerce（core/layer-registry.mjs normChain 同一口径）：字段类型 / 范围不对该条直接丢，绝不猜着转换。
 //   ③ 漏项审计只补**单项**缺口 patch，不重写整表；语义不明确（认不出的东西 / 不在册的人）走待结算
 //      （pending，保持旧值不猜值）。水位（claim）保证同一 patch 只发一次。
 //   ④ **事实权威阶梯**（AUTHORITY）：陈述带着来源，但来源不等于真理——只有 canon / committed / verified 三级
@@ -16,7 +16,7 @@
 //   ⑥ 待结算跨轮携带（carry，≤cap）与分支纪律（回退剪掉未来、同楼换分支作废本楼水位）。
 // 每条 patch 带 why（凭据：为什么允许这一次升格），写盘前用 stripWhy 剥掉——凭据只用于审计与日志。
 // 纯模块：数据进、计划出；不碰 DOM / 宿主全局 / 存储 / 网络（看门狗机检）；node 单测 tests/ledger_disentangle.test.mjs。
-import { SLOTS, slotZ } from './layers.mjs';
+import { SLOTS, slotZ } from './layer-registry.mjs';
 import { seedOf } from './rng.mjs';
 
 /** 四个结算子域（顺序即分账顺序，稳定输出用） */
@@ -57,7 +57,7 @@ export const slotOf = d => (DOMAINS.includes(d) ? SLOT_OF[d] : null);
 const clip = (v, n) => [...String(v ?? '').trim()].slice(0, n).join('');
 const isName = (v, n = MAX_TEXT) => typeof v === 'string' && clip(v, n).length >= 1;
 const q3 = n => Math.round(n * 1000) / 1000;
-/** 归一化坐标（0–1，y 向下；与 points / spatial.mjs 同一套）；非有限或出界 → null（绝不夹取猜测） */
+/** 归一化坐标（0–1，y 向下；与 points / spatial-contract.mjs 同一套）；非有限或出界 → null（绝不夹取猜测） */
 const c01 = v => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n <= 1 ? q3(n) : null; };
 /** 比率（0–1）：雾 / 霾浓度、DC 之外的强度量 */
 const r01 = v => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n <= 1 ? q3(n) : null; };

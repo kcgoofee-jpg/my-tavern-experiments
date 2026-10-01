@@ -1,17 +1,17 @@
 // MVUBridge（P2 解耦第一步，docs/reviews/architecture_and_stream_perf.md §3）：宿主脚本的数据流读取收口。
 // 原来散落在 eden-map.js 里的 mvuStat（A-3 微任务快照）、getHere（MVU → 标签对账 → 表格数据库三级兜底）、
-// refreshVarMap / setVarUser（tavern/adapter.mjs 变量映射编排）、readVars（A-11 聊天变量 → 本机退回）全部搬来这里，
-// 并统一编排 snapshot.mjs（快照选取）、shujuku.mjs（表格数据库只读）、mvu.mjs（时间 / 着装 / 名册 / 立绘，按需加载）。
+// refreshVarMap / setVarUser（tavern/stat-path-mapping.mjs 变量映射编排）、readVars（A-11 聊天变量 → 本机退回）全部搬来这里，
+// 并统一编排 mvu-snapshot.mjs（快照选取）、tabledb-bridge.mjs（表格数据库只读）、mvu-readers.mjs（时间 / 着装 / 名册 / 立绘，按需加载）。
 //
 // 宿主隔离契约：本模块是 map/tavern/ 里唯一允许直接触碰 Mvu / SillyTavern 全局变量的模块
 // （tests/mvu_bridge.test.mjs 按源码机械检查），其他业务模块一律经这里拿数据。
 // 桥自己不碰 DOM、不发消息、不做 UI——变化通过构造参数的回调（onMvuLoad / onTableUpdate / onRoster）告诉宿主；
 // 底层四个模块全是纯函数，node 单测桩出全局变量即可覆盖（无浏览器）。
-import { thFn, fnOk } from './host-th.mjs';
-import * as SNP from './snapshot.mjs';
-import * as AD from './adapter.mjs';
-import * as DB from './shujuku.mjs';
-import * as MDm from './modes.mjs';
+import { thFn, fnOk } from './host-tavernhelper.mjs';
+import * as SNP from './mvu-snapshot.mjs';
+import * as AD from './stat-path-mapping.mjs';
+import * as DB from './tabledb-bridge.mjs';
+import * as MDm from './interaction-modes.mjs';
 import * as SAN from './sanitize.mjs';
 import * as RS from '../core/roster.mjs';
 import { getProfile, setProfile } from './pack-profile.mjs';
@@ -52,9 +52,9 @@ export class MVUBridge {
     const manP = Promise.resolve(o.manifest ?? o.pack?.manifest ?? (typeof o.fetchJSON === 'function' ? o.fetchJSON('packs/' + (o.packId || 'eden') + '/manifest.json') : null)).catch(() => null);
     if (typeof o.fetchJSON === 'function') import(new URL('profile-load.mjs', import.meta.url).href).then(async m => m.loadPackProfile({ fetchJSON: o.fetchJSON, packId: o.packId || 'eden', manifest: await manP }))
       .then(p => { if (p && !o.life?.dead) { this.useProfile(p); o.onProfile?.(); } }).catch(e => { try { console.warn('[eden-map] 包的变量声明没读到：按字段名自动找', e); } catch (x) {} });
-    // mvu.mjs 按需加载（纯函数集；失败只是没有 MVU 联动功能）。设定包的聊天变量键 / 自定义世界书名在这里配置。
+    // mvu-readers.mjs 按需加载（纯函数集；失败只是没有 MVU 联动功能）。设定包的聊天变量键 / 自定义世界书名在这里配置。
     this.MV = null;
-    this.mvuReady = Promise.all([import(new URL('mvu.mjs', import.meta.url).href), manP]).then(([m, man]) => {
+    this.mvuReady = Promise.all([import(new URL('mvu-readers.mjs', import.meta.url).href), manP]).then(([m, man]) => {
       if (o.life?.dead) return null;
       if (o.pack) m.setVarRoot(o.pack.chatVar || 'tc_' + String(o.packId || 'pack').replace(/-/g, '_'));
       if (man) m.setWbName(worldbookPrefix(man, o.packId));   // 自定义世界书「<前缀>·自定义」：前缀 = 清单 worldbook.prefix / 包标题（第一个包也一样）；没取到清单就不建这本书
@@ -80,11 +80,11 @@ export class MVUBridge {
   #store() { try { return this.o.storage?.() ?? null; } catch (e) { return null; } }
 
   // ---------------- stat_data 快照 ----------------
-  /** 楼层读取（snapshot.mjs / modes.mjs 的 readFloor 契约）：该楼当前 swipe 的变量 + 隐藏 / 角色标注 */
+  /** 楼层读取（mvu-snapshot.mjs / interaction-modes.mjs 的 readFloor 契约）：该楼当前 swipe 的变量 + 隐藏 / 角色标注 */
   readFloor(i) { const c = SillyTavern?.chat?.[i]; return c ? { vars: c.variables?.[c.swipe_id ?? 0], system: !!c.is_system, role: c.is_user ? 'user' : 'assistant' } : null; }
   get pickStat() { return SNP.pickStat; }
   #statSnap;   // A-3：一轮（同一个同步任务）只取一次 stat_data 快照；微任务里作废。undefined = 本轮还没取
-  /** 最新楼的 stat_data（v0.9.9）：Mvu 全局读一仛建底，再按 snapshot.mjs 的规则往前找最近快照、标未确认 */
+  /** 最新楼的 stat_data（v0.9.9）：Mvu 全局读一仛建底，再按 mvu-snapshot.mjs 的规则往前找最近快照、标未确认 */
   mvuStat() {
     if (this.#statSnap !== undefined) return this.#statSnap;
     let v = null, stt = 'ok';
@@ -105,7 +105,7 @@ export class MVUBridge {
   /** Mvu 全局的 latest 原样读（自检用，不走快照选取） */
   rawLatestStat() { try { return this.#mvu()?.getMvuData?.({ type: 'message', message_id: 'latest' })?.stat_data ?? null; } catch (e) { return null; } }
 
-  // ---------------- 变量映射（adapter.mjs） ----------------
+  // ---------------- 变量映射（stat-path-mapping.mjs） ----------------
   /** 换卡 / 改映射后重算生效映射。返回「签名变了」（宿主据此发 eden-map:varmap） */
   refreshVarMap() {
     const card = this.cardKey(); if (card !== this.varCard) { this.varCard = card; this.varUser = AD.readUser(this.#store(), card); }
@@ -126,7 +126,7 @@ export class MVUBridge {
   varmode(hasMvu = this.mvuPresent()) { this.#ensure(); return AD.mode(hasMvu, this.mvuStat(), this.varMap); }
   /** adapter 读法取值（含 [值, 说明] 旧格式拆包） */
   getPath(st, p) { return AD.get(st, p); }
-  /** mvu.mjs 读法取值（行程用，与 getPath 同语义） */
+  /** mvu-readers.mjs 读法取值（行程用，与 getPath 同语义） */
   mvuGet(st, p) { return this.MV ? this.MV.get(st, p) : undefined; }
 
   // ---------------- 角色卡身份（任务四）：UI 面板只经这里取，绝不自己摸宿主全局 ----------------
@@ -171,7 +171,7 @@ export class MVUBridge {
     return v;
   }
 
-  // ---------------- 世界时间 / 着装 / 名册（mvu.mjs，加载后可用） ----------------
+  // ---------------- 世界时间 / 着装 / 名册（mvu-readers.mjs，加载后可用） ----------------
   /** 标题栏时钟：{ date, time, period, short, full, night, tod, pre }（缺字段是 ''；pre = 聊天只有开场白） */
   clock(st = this.mvuStat()) {
     const MV = this.MV; if (!MV) return null;
@@ -229,7 +229,7 @@ export class MVUBridge {
     return {};
   }
 
-  // ---------------- 表格数据库插件（shujuku.mjs，只读） ----------------
+  // ---------------- 表格数据库插件（tabledb-bridge.mjs，只读） ----------------
   #dbApiRef = null; #dbCb = null;
   #findApi() { return DB.findApi(this.o.wins()); }
   #dbHook(a) {   // 插件可能比地图晚加载：每次取接口时补登记一次更新回调

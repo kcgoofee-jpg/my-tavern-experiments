@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { normSchedule, whoWhere, nextMove, minuteOf } from '../map/tavern/routine.mjs';
+import { normSchedule, whoWhere, nextMove, minuteOf } from '../map/core/routine.mjs';
 
 test('normSchedule：中文键 / 英文键、坏行丢弃、跨零点拆两段、没写「到」默认 2 小时', () => {
   const s = normSchedule({ 默认: '书房', 人物: {

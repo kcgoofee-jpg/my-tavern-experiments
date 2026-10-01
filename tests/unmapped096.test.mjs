@@ -1,8 +1,8 @@
-// node tests/unmapped096.test.mjs —— v0.9.6（经 app/here-v2.mjs）：未上图（unmappedName）、地标 / 层 / 世界地名的自定义叫法、卡设定分层房间进第 1 级词表
+// node tests/unmapped096.test.mjs —— v0.9.6（经 app/place-resolver.mjs）：未上图（unmappedName）、地标 / 层 / 世界地名的自定义叫法、卡设定分层房间进第 1 级词表
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildIndex, resolveHere, unmappedName, planWords } from './helpers/here-engine.mjs';
-import { normCustom, setCustom, removeCustom, aliasMap } from '../map/tavern/mvu.mjs';
+import { normCustom, setCustom, removeCustom, aliasMap } from '../map/tavern/mvu-readers.mjs';
 import { edenNames } from './helpers/eden-names.mjs';
 
 const J = p => JSON.parse(readFileSync(new URL('../map/' + p, import.meta.url), 'utf8'));

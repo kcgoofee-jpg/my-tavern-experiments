@@ -1,13 +1,13 @@
 // 酒馆助手采纳（docs/tavernhelper-audit.md）+ 交互方式 (a)(d)(e)（docs/interaction-modes.md）在模拟宿主页里验收（桌面）：
 // 脚本按钮、getScriptId 身份与孤儿清扫、偏好写脚本变量、initializeGlobal、类宏、eden-map:moved 广播；
-// 世界书全自动（host-th.mjs createWbAuto，用户 2026-09-28）：打开聊天空闲时自动建书并挂到当前角色的附加世界书、
+// 世界书全自动（host-tavernhelper.mjs createWbAuto，用户 2026-09-28）：打开聊天空闲时自动建书并挂到当前角色的附加世界书、
 // 同版本静默不重写、版本变了静默同步且每个版本只提示一次、总开关关掉不自动做（删过书立墓碑也不再重建）；
 // 手动写入照常：看差异 → 第一次点只是「再点一次确认」→ 只写我们的书并按选择绑定；撤销（删书）也要二次确认。
 // 用法：node tools/browser/th_adopt.mjs <输出目录>
 import * as B from './lib.mjs';
 import { openHost } from './host_stub.mjs';
 import { readFileSync } from 'node:fs';
-import { shipped as wbShipped } from '../../map/tavern/wbsync.mjs';
+import { shipped as wbShipped } from '../../map/tavern/worldbook-sync.mjs';
 const OUT = process.argv[2]; if (!OUT || OUT.startsWith('--')) { console.log('用法：node tools/browser/th_adopt.mjs <输出目录>'); process.exit(2); }
 B.quietWait(); const srv = await B.ensureServer(); const rep = B.reporter(OUT);
 

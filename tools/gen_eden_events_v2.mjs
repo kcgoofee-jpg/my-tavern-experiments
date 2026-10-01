@@ -1,5 +1,5 @@
 // ONE-OFF (S4-1 T1). Generates the `events` block and the injected-line tag of map/packs/eden/overlay.v2.json (docs/kernel-schema.md K-R68, Appendix A.5)
-// from the taxonomy constants that lived in map/tavern/events.mjs before S4-1 (GROUPS, GROUP_ORDER, SHAPES, CATS, ALIAS_CAT, EXAMPLES, CLOSED, CFG.tag) and the
+// from the taxonomy constants that lived in map/tavern/events-parse.mjs before S4-1 (GROUPS, GROUP_ORDER, SHAPES, CATS, ALIAS_CAT, EXAMPLES, CLOSED, CFG.tag) and the
 // viewer's DEFAULT_OFF_TYPES. Those constants are deleted from the engine in the same step; tests/helpers/events_v1_frozen.mjs is the frozen copy this reads.
 // Kept for the record; there is nothing to re-run.
 //   node tools/gen_eden_events_v2.mjs [--write]      prints the block (or writes it into the overlay, after its nodes)
@@ -11,7 +11,7 @@ import { DEFAULT_LEVELS } from '../map/core/pack-v2.mjs';
 import * as V1 from '../tests/helpers/events_v1_frozen.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url)), FILE = ROOT + 'map/packs/eden/overlay.v2.json', REV = 'c89b5b2a';
-const viewer = execFileSync('git', ['-C', ROOT, 'show', `${REV}:map/events.mjs`], { encoding: 'utf8', maxBuffer: 1 << 26 });
+const viewer = execFileSync('git', ['-C', ROOT, 'show', `${REV}:map/events-view.mjs`], { encoding: 'utf8', maxBuffer: 1 << 26 });
 const offList = viewer.match(/const DEFAULT_OFF_TYPES = \[(.*?)\];/);
 if (!offList) throw new Error('DEFAULT_OFF_TYPES not found at ' + REV);
 const defaultOff = [...offList[1].matchAll(/'type:(.+?)'/g)].map(m => m[1]);

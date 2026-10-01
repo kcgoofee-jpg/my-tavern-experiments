@@ -3,7 +3,7 @@ import { M, REG, aspect, cur, curData, ovData, depthData, viewer } from './state
 import * as TCStore from '../core/storage.mjs';   // Part 6-4：动作注入模式（edenMapInject）从本机读
 import { $, esc, narrow, toImg } from './util.mjs';
 import { island as depthIsland, parallaxOn } from '../core/depth.mjs';
-import { declutter } from './tiers.mjs';
+import { declutter } from './sharpness-tiers.mjs';
 import { LANG, nm, t, tr } from './i18n.mjs';
 import { cardSheet } from './shell.mjs';
 import { P } from './plugins.mjs';
@@ -70,7 +70,7 @@ export function closeCard(user) {
   if (had && (user === true || inCard) && cardFrom?.isConnected) cardFrom.focus({ preventScroll: true });
   if (had) declutter();
 }
-// 卡片链接：通道 link / 三维 link3d / 图集（app/cardlinks.mjs）+ 注入入口；世界图地点卡与点位图地标卡共用
+// 卡片链接：通道 link / 三维 link3d / 图集（app/card-links.mjs）+ 注入入口；世界图地点卡与点位图地标卡共用
 // 动作注入入口（Part 6-4）：模式不是 off 才在卡片底部多一个链接；模式从本机存储读（默认 off）
 // 注入模式每次开卡重读（设置里改了立刻生效）
 const injMode = () => { try { return TCStore.get('edenMapInject') || 'off'; } catch (e) { return 'off'; } };
@@ -109,7 +109,7 @@ function smoothPath(P) {
   return d + 'Z';
 }
 // ---------------- 纵深（U16 视差 / 漂浮、U17 标签按远近） ----------------
-// 数据只有一份：map/data/<layer>_depth.json（maps.json 的 depth 字段，切层时由 nav.mjs 取来）；公式只在 core/depth.mjs，这里不再实现第二遍。
+// 数据只有一份：map/data/<layer>_depth.json（maps.json 的 depth 字段，切层时由 map-switch.mjs 取来）；公式只在 core/depth.mjs，这里不再实现第二遍。
 //   标签不透明度 = label 通道（近 1.0 → 远 0.65）；远岛（d ≥ FAR_D）平时只留图钉，悬停 / 聚焦 / 打开卡片才全显。
 //   视差 = parallax 通道（近 1.0 → 远 0.2），按底图屏幕位移累加；漂浮 ±2 px、周期 8–14 s（越远越慢）。
 //   开关：数据里 channels.parallax.enabled 是总开关；手机（narrow）与「减少动态效果」一律不晃（设定稿 §手机 375 px：手机视差默认关）。
@@ -186,7 +186,7 @@ export function pointOverlays() {
     viewer.addOverlay({ element: svg, location: new OpenSeadragon.Rect(0, 0, 1, aspect) });
   }
   // link：跨层通道（如中层检查点 ↔ 下层 7 号井），地点卡里给一个直达链接
-  // 卡片链接：通道 meta.link + 可选的三维 meta.link3d（app/cardlinks.mjs；模块没到时退回只渲染通道）
+  // 卡片链接：通道 meta.link + 可选的三维 meta.link3d（app/card-links.mjs；模块没到时退回只渲染通道）
   // 结算方式 / 消费档位（card-omissions C6 / C10 / C15）：标记自己的 econ 优先，否则用本层的 econ
   const econHtml = meta => { const e = nm(meta, 'econ') || nm(m, 'econ'); return e ? `<small class="econ"><b>${esc(t('econ'))}</b> ${esc(e)}</small>` : ''; };
   // 上层导出了标记锚点 ax / ay（岸边停靠平台或主楼旁的空地），图钉落在锚点上，不再压住岛心的主楼；聚焦、飞行也用它（B2 第 2 轮本机 P1）

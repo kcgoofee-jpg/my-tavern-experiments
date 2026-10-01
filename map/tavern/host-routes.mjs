@@ -1,6 +1,6 @@
 // 加载线路（CDN 节点）与版本识别：纯计算，不碰 DOM、不持有状态（C2 第 4 步从 eden-map.js 拆出，行为不变）。
 // 当前选中的线路（line / BASE / 页面缓存）与线路选择界面仍在入口 eden-map.js：它们和查看器的加载 / 卸载绑在一起。
-import { cdnFetch } from './host-th.mjs';
+import { cdnFetch } from './host-tavernhelper.mjs';
 
 /** 线路分数：字节 / 毫秒（读得越多、越快，分越高）。纯函数，测试直接断言。 */
 export function lineScore(bytes, ms) { return (bytes > 0 && ms > 0) ? bytes / ms : 0; }

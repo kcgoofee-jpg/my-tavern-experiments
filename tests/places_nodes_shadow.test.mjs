@@ -1,11 +1,11 @@
-// Shadow run (plan S3-3 T1): where a person or a trip end is drawn. The old rules (a frozen copy of map/chars.mjs `where` before the switch: registry `kind`
+// Shadow run (plan S3-3 T1): where a person or a trip end is drawn. The old rules (a frozen copy of map/characters-view.mjs `where` before the switch: registry `kind`
 // checks, the world place found by its name in the world list, the district by the written text) against app/spot.mjs `drawPlace` over the node tree.
 // Corpus: every place of the recorded session fixtures (who is where, the trip ends) and a wider sweep of every name and alias of both shipped packs.
 // Also the item places: every stash row names a landmark node that sits on the map the row names (K-R45), and a hidden row shows where the
 // current location places the player.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeHere } from '../map/app/here-v2.mjs';
+import { makeHere } from '../map/app/place-resolver.mjs';
 import { makeRuntime } from '../map/app/nodes-runtime.mjs';
 import { drawPlace } from '../map/app/spot.mjs';
 import { hash01 } from '../map/core/event-geo.mjs';
@@ -20,7 +20,7 @@ function setup(inputs) {
   const world = [...(inputs.world?.places || []), ...(inputs.world?.fiefs || [])];   // the old rule looked at places and fiefs only
   const zone = (mid, place) => { const p = g.place(place), sp = p && g.spot(p.node); return sp && sp.map === mid ? { nx: sp.x + (hash01(place) - .5) * .03, ny: sp.y + (hash01(place + '~') - .5) * .04, approx: true } : null; };   // app events `zoneXY`
   const env = { hasMap: id => !!maps[id], isScene: rt.isScene, standIn: rt.standIn, spot: n => g.spot(n), zone };
-  // the rules before the switch (map/chars.mjs `where`; the landmark's point is added by the caller in both worlds)
+  // the rules before the switch (map/characters-view.mjs `where`; the landmark's point is added by the caller in both worlds)
   const legacy = (r, text) => {
     if (!r || !maps[r.map]) return null;
     if (maps[r.map].kind === 'estate') { const s = rt.standIn(r.map); if (!s) return { map: r.map, estate: true }; r = { ...r, map: s.map, marker: s.marker }; }

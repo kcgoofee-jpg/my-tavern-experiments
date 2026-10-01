@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { fromV1 } from '../map/core/compat-v1.mjs';
 import { applyOverlay, applyOverlayEvents, applyOverlayLlm, applyOverlayVars, applyOverlayEntities } from '../map/core/overlay-v2.mjs';
 import { buildTree, describe } from '../map/core/nodes.mjs';
-import { makeHere } from '../map/app/here-v2.mjs';
+import { makeHere } from '../map/app/place-resolver.mjs';
 import { edenInputs } from './helpers/eden-inputs.mjs';
 
 const N = [{ id: 'a', name: 'A', alias: ['A', 'Aa'], hints: ['x'], at: { x: .1, y: .2 } }, { id: 'b', name: 'B', parent: 'a' }, { id: 'c', name: 'C', parent: 'a', alias: ['C'] }];

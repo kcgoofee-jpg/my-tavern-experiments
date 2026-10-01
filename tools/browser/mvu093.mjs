@@ -48,7 +48,7 @@ async function run(name, preset) {
     await vf.evaluate(() => go('tc_mid')); await B.wait(2000);
     rep.check(`${name} 夜色：中层夜档（有夜图则换底图、无则叠色调）、下层不加`, n1.tod === 'night' && n1.tint === !n1.swapped && !n2.tint && !n2.tod, JSON.stringify({ n1, n2 }));
     await jpg(p, `mvu_${name}_night`);
-    // 5 着装：fix3（用户 2026-09-28）起不再挂地点卡——改在人物页顶部「你（主角）」一行（chars.mjs .chme）
+    // 5 着装：fix3（用户 2026-09-28）起不再挂地点卡——改在人物页顶部「你（主角）」一行（characters-view.mjs .chme）
     const card = await vf.evaluate(() => { const el = [...document.querySelectorAll('.mk.here')][0]; if (!el) return null; el._open(); const c = document.querySelector('#card'); return { h: c.querySelector('h2').textContent, o: c.querySelector('.cu-outfit')?.textContent || '' }; });
     rep.check(`${name} 本人地点卡不再显示着装（着装属于人）`, card && card.o === '', JSON.stringify(card));
     await jpg(p, `mvu_${name}_outfit_card`);

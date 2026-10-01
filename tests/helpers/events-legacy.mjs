@@ -1,4 +1,4 @@
-// FROZEN COPY of how events were placed before S3-2 (tavern/events.mjs layerGuess + the viewer's mapOf / pos with RE_UP, RE_MID, RE_LOW,
+// FROZEN COPY of how events were placed before S3-2 (tavern/events-parse.mjs layerGuess + the viewer's mapOf / pos with RE_UP, RE_MID, RE_LOW,
 // RE_OUT, RE_RING, ZONES), kept only as the oracle of tests/events_geo_shadow.test.mjs. Nothing else imports it; the engine no longer has it.
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -57,7 +57,7 @@ export function legacyPos({ layer, place }, { key = 'k', cat = '', markers = {},
   for (const [re, x, y] of ZONES[mid] || []) if (re.test(place)) return { map: mid, nx: (x + 15) / 30 + (j - .5) * .04, ny: (9.375 - y) / 18.75 + (j2 - .5) * .06 };
   return { map: mid, nx: .2 + .6 * j, ny: .2 + .6 * j2, approx: true };
 }
-/** the old layer of a current-location text (tavern/events.mjs layerOf) */
+/** the old layer of a current-location text (tavern/events-parse.mjs layerOf) */
 export function legacyLayerOf(here) {
   if (!here) return '';
   const s = String(here);

@@ -1,4 +1,4 @@
-// W11 VARIABLE_UPDATE_ENDED 结算时序守卫（map/tavern/varsync.mjs + mvu-bridge.markVarUpdate）：
+// W11 VARIABLE_UPDATE_ENDED 结算时序守卫（map/tavern/settlement-guard.mjs + mvu-bridge.markVarUpdate）：
 // 地图侧的写入（账本补发 / 空间状态对账）只在同一轮末尾放行——读取期间不写变量、不落在主 MVU 的更新窗口里；
 // MVU 不在场立刻执行（不死等事件）；同键去重；换聊天丢弃；嵌套请求有上限；单个回调抛错不连坐。
 // 见 docs/plans/llm-campaign.md §W11；夹具全中性合成数据。
@@ -6,12 +6,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import * as V from '../map/tavern/varsync.mjs';
+import * as V from '../map/tavern/settlement-guard.mjs';
 import * as L from '../map/core/ledger.mjs';
-import * as INV from '../map/tavern/inventory.mjs';
+import * as INV from '../map/tavern/stash-store.mjs';
 import { createLife } from '../map/tavern/host-lifecycle.mjs';
 
-const src = () => readFileSync(fileURLToPath(new URL('../map/tavern/varsync.mjs', import.meta.url)), 'utf8');
+const src = () => readFileSync(fileURLToPath(new URL('../map/tavern/settlement-guard.mjs', import.meta.url)), 'utf8');
 
 test('MVU 不在场：请求立刻执行（没有争抢对象，不死等一个永远不来的事件）', () => {
   const gate = V.createGate({ hasMvu: () => false });

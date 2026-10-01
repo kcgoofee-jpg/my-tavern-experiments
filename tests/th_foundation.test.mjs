@@ -1,9 +1,9 @@
 // 酒馆助手地基修复（docs/tavernhelper-audit.md §6）：cdnFetch 唯一出口、父页面孤儿清扫、getScriptId 身份、偏好迁移到脚本变量、cleanup 与空闲预取。
-// 用假的 TavernHelper（只有用到的几个函数）驱动 map/tavern/th.mjs；eden-map.js 的内联副本按源码对照。
+// 用假的 TavernHelper（只有用到的几个函数）驱动 map/tavern/tavernhelper-api.mjs；eden-map.js 的内联副本按源码对照。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import * as T from '../map/tavern/th.mjs';
+import * as T from '../map/tavern/tavernhelper-api.mjs';
 import * as S from '../map/core/storage.mjs';
 import { HOST_SRC } from './_host_src.mjs';
 

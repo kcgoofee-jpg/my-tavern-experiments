@@ -1,12 +1,12 @@
-// 初始视角与当前地点：focusStart、markHere、当前地点的落点（app/here-v2.mjs：nodes.locate 落到节点树，再还原成原来的结果形状）、jumpHere。
+// 初始视角与当前地点：focusStart、markHere、当前地点的落点（app/place-resolver.mjs：nodes.locate 落到节点树，再还原成原来的结果形状）、jumpHere。
 import { M, REG, aspect, cur, curData, pendingFocus, pendingHome, setPendingFocus, setPendingHome, viewer } from './state.mjs';
 import { $, toImg } from './util.mjs';
-import { leanBg } from './tiers.mjs';
-import { go, groupView } from './nav.mjs';
-import { estFail, estateRoom, estateStandIn } from './estate.mjs';
-import { updateLayerBadges } from './layers.mjs';
-import { rebuildHere } from './extapi.mjs';
-import { activeInset } from './insets.mjs';
+import { leanBg } from './sharpness-tiers.mjs';
+import { go, groupView } from './map-switch.mjs';
+import { estFail, estateRoom, estateStandIn } from './subpage3d-host.mjs';
+import { updateLayerBadges } from './map-level-nav.mjs';
+import { rebuildHere } from './extension-api.mjs';
+import { activeInset } from './hires-inset-tiles.mjs';
 import { nm, t } from './i18n.mjs';
 import { P } from './plugins.mjs';
 import { isScene, eventGeo, groupPlaces } from './nodes-runtime.mjs';
@@ -19,7 +19,7 @@ const viewNorm = (m, key) => { const v = m.view; return v?.[key] && v.extent_m?.
 // 最大放大：按 view.min_width_m（最大放大时还能看见多宽）；没有 view 的图沿用全局的 maxZoomPixelRatio
 // 另加像素上限：最多放大到底图 1 像素 ≈ 1.5 个屏幕像素（CSS），再放大只是糊（2026-09-28 从 1.25 调到 1.5，配合局部高清插图收紧），取两者中更「远」的那个。
 // 放大到某个地方（伊甸庄园等）另外渲了一张局部高清插图（maps.json insets[]）时，这条像素上限改按插图自己的分辨率算，
-// 而不是按底图——插图分辨率够高，允许再多放大一些（目标：插图最深处约 1 源像素 ≈ 1 屏幕像素）；插图本身见 app/insets.mjs。
+// 而不是按底图——插图分辨率够高，允许再多放大一些（目标：插图最深处约 1 源像素 ≈ 1 屏幕像素）；插图本身见 app/hires-inset-tiles.mjs。
 export const MAX_PX = 1.5, INSET_MAX_PX = 1, RING_W = 10;
 export function applyZoomLimit() { if (REG.maps[cur]?.kind === 'estate') return; const it = viewer.world.getItemAt(0); if (!it) return;
   const mw = viewNorm(REG.maps[cur], 'min_width_m') || 0, cw = viewer.container.clientWidth;
@@ -107,11 +107,11 @@ export function markHere(v) {
   if (typeof P.TCUnmapped !== 'undefined') P.TCUnmapped.update(v);   // v0.9.6 未上图
   updateLayerBadges(); estateRoom(); if (typeof P.TCTrips !== 'undefined') P.TCTrips.render();   // v0.9.5 途中：两端之间的虚线弧
 }
-// ---------------- 自动跳到当前地点（app/here-v2.mjs 的落点；设置里可关，默认开） ----------------
+// ---------------- 自动跳到当前地点（app/place-resolver.mjs 的落点；设置里可关，默认开） ----------------
 // 庄园房间 / 区域 → 庄园（房间由 estate:room 高亮，切楼层由庄园页自己做）；地标 → 该层并打开地点卡；层 / 大区 / 天城 → 该层默认视野；世界地名 → 世界图；匹配不到不动。
 // 打开面板（或唤醒）后的第一条地点一定跳；之后只有地点变了才跳，不打断用户自己在别的图上浏览。
 export let estPlan = null;   // v0.9.6 map/data/eden_estate_rooms.json（卡设定分层房间，房间名照抄卡）
-export let hereIdx = null;   // app/here-v2.mjs 的 makeHere 结果（extapi.mjs rebuildHere 建；没建好之前认不出任何地点）
+export let hereIdx = null;   // app/place-resolver.mjs 的 makeHere 结果（extension-api.mjs rebuildHere 建；没建好之前认不出任何地点）
 export const hereRes = v => (hereIdx ? hereIdx.here(v) : null);
 // where a located place (a person, a trip end) is drawn: the node tree's answer for the place text, or for a result already placed (app/spot.mjs)
 export const drawnAt = (r, text) => drawPlace(r, text, { hasMap: id => !!REG?.maps[id], isScene, standIn: estateStandIn, spot: n => eventGeo()?.spot(n) ?? null, zone: (m, t) => P.TCEvents?.zoneXY?.(m, t) ?? null });

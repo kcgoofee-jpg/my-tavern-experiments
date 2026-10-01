@@ -10,8 +10,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { scan, names, itemId, isItemName, VERBS, NOT_ITEMS, MAX_FACTS } from '../map/core/pickup.mjs';
 import { slotProbe, slotDeclare, slotPut, slotSave, audit, claim } from '../map/core/ledger.mjs';
-import { createSlotSink } from '../map/tavern/varsync.mjs';
-import { norm as invNorm, put as invPut, rows as invRows, findRow, digestLine } from '../map/tavern/inventory.mjs';
+import { createSlotSink } from '../map/tavern/settlement-guard.mjs';
+import { norm as invNorm, put as invPut, rows as invRows, findRow, digestLine } from '../map/tavern/stash-store.mjs';
 import { HOST_SRC } from './_host_src.mjs';
 
 // ---------------- ① 探测本身 ----------------

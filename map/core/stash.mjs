@@ -1,5 +1,5 @@
 // 世界藏物表（Part 5-1 第二步，2026-09-30）：道具有真实的空间归属——哪张图、哪个地标标记、哪个暗格。
-// 与聊天变量 eden_map.仓库（tavern/inventory.mjs）的分工：
+// 与聊天变量 eden_map.仓库（tavern/stash-store.mjs）的分工：
 //   本表 = 世界里本来就藏着的东西（设定包作者写在 manifest.data.stash 指向的 JSON 里），
 //   仓库 = 玩家已经拿到手的东西。两边用同一个 id 对账：已经在手里了，地上就不再发光。
 // 数据形状（键一律 ASCII，tools/check_ascii.py 要查；显示名放值里）：
@@ -74,7 +74,7 @@ export function search(row, roll, mod = 0) {
 /** 呼吸系数 0–1（渲染层画发光拾取物用；纯函数才能对拍） */
 export const glow = (t, period = 2.4) => .5 + .5 * Math.sin((NUM(t, 0) / (NUM(period, 2.4) || 2.4)) * Math.PI * 2);
 
-/** 找到之后交给 inventory.put 的一行（英文参数，tavern/inventory.mjs 口径） */
+/** 找到之后交给 inventory.put 的一行（英文参数，tavern/stash-store.mjs 口径） */
 export function lootPut(row) {
   const where = row?.hidden ? `藏在${row.hidden}` : '';
   const note = [where, row?.note].filter(Boolean).join('：');

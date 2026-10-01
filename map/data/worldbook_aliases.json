@@ -1,5 +1,5 @@
 {
- "_note": "世界书附加条目别名表（单一来源）：条目稳定编号改名时在 ids 里加「旧编号: 新编号」，旧聊天 / 旧书里的条目按新编号合并，不会重复建条目。改完跑 python3 tools/build_worldbook_addon.py --ship。旧的带版本号书名由 wbsync.mjs LEGACY_RE 识别。",
+ "_note": "世界书附加条目别名表（单一来源）：条目稳定编号改名时在 ids 里加「旧编号: 新编号」，旧聊天 / 旧书里的条目按新编号合并，不会重复建条目。改完跑 python3 tools/build_worldbook_addon.py --ship。旧的带版本号书名由 worldbook-sync.mjs LEGACY_RE 识别。",
  "ids": {
   "地图联动规范": "map.link-rules",
   "地图事件类型": "map.event-types",

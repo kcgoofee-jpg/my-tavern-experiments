@@ -1,4 +1,4 @@
-// 纵深 × 图层系统闭环（Part 8-3）：core/haze.mjs 的滤镜换算 + 与 core/layers.mjs（LayerRegistry）的契约对拍。
+// 纵深 × 图层系统闭环（Part 8-3）：core/haze.mjs 的滤镜换算 + 与 core/layer-registry.mjs（LayerRegistry）的契约对拍。
 //   depth.describe().currentHaze → haze.chain() → registry.setFilters('depth-haze', …) → cssFilter / canvasFilter
 // 数学只在 core：滤镜参数由 haze.mjs 换算一次，谁都不许在渲染层再抄一遍 haze 公式。
 import { test } from 'node:test';
@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as Haze from '../map/core/haze.mjs';
 import { describe as depthDescribe } from '../map/core/depth.mjs';
-import { LayerRegistry, cssFilter, canvasFilter, SLOTS } from '../map/core/layers.mjs';
+import { LayerRegistry, cssFilter, canvasFilter, SLOTS } from '../map/core/layer-registry.mjs';
 
 const CFG = JSON.parse(readFileSync(new URL('./fixtures/depth_golden.json', import.meta.url), 'utf8')).cfg;
 

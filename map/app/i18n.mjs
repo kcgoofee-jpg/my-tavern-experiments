@@ -1,17 +1,17 @@
 // i18n 与主题：LANG/DICT/t/tr/nm、setLang、setTheme、postState；window.I18N 是外挂与子页共用的服务。
 import { REG, cur, viewer } from './state.mjs';
-import { PACK } from './pack.mjs';
+import { PACK } from './current-pack.mjs';
 import { $, esc, getJSON, post, tx } from './util.mjs';
-import { applyTier, drawOverlays, tierLabels } from './tiers.mjs';
-import { mapChrome } from './nav.mjs';
-import { estateLook } from './estate.mjs';
-import { renderNav } from './layers.mjs';
+import { applyTier, drawOverlays, tierLabels } from './sharpness-tiers.mjs';
+import { mapChrome } from './map-switch.mjs';
+import { estateLook } from './subpage3d-host.mjs';
+import { renderNav } from './map-level-nav.mjs';
 import { closeCard } from './markers.mjs';
 import { q3Pref, renderAbout, renderSelfCheck, rmPref, setPage, setPageNow } from './settings.mjs';
-import { emMapChanged, enNames } from './extapi.mjs';
+import { emMapChanged, enNames } from './extension-api.mjs';
 import { placeEmpty, stDotLabel } from './shell.mjs';
 import { P } from './plugins.mjs';
-import * as TCCvd from './cvd.mjs';
+import * as TCCvd from './color-vision-mode.mjs';
 // ---------------- 界面语言（中 / EN）与主题（自动 / 浅色 / 深色）----------------
 // 界面文字在 i18n/zh.json、en.json；地名的英文在 maps.json 的 *_en 字段，世界图地名在设定包清单 data.names.en 指向的对照表。地点卡正文不翻译。
 export let LANG = window.__lang || 'zh', DICT = {};

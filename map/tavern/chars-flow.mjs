@@ -3,7 +3,7 @@
 import { ContextPipeline } from './context.mjs';
 import { resolveTags } from './sanitize.mjs';
 import { MVUBridge } from './mvu-bridge.mjs';
-import { cdnFetch } from './host-th.mjs';
+import { cdnFetch } from './host-tavernhelper.mjs';
 export const DEPS = [
   'GEN', 'LS', 'MAN', 'PACK_ID', 'PACK_IN', 'SELF', 'UI', 'clockEl', 'emit', 'life', 'loadCustom', 'post', 'push', 'pushSoon', 'recomputeSoon',
   'runCheck', 'saveRoot', 'BASE', 'CHM', 'UL', 'alive', 'chars', 'checkP', 'custom', 'customChat', 'floorNow', 'rep', 'roster', 'transitMod',
@@ -16,7 +16,7 @@ export function createCharsFlow(host) {
   // 只读）、自定义数据的变量读写（A-11）全部收进 map/tavern/mvu-bridge.mjs——宿主脚本里唯一允许直接碰
   // Mvu / SillyTavern 全局的模块（隔离契约，tests/mvu_bridge.test.mjs 机械检查）。这里只留调度与 UI：
   // 桥经 onMvuLoad / onTableUpdate / onRoster 回调通知「变了」，宿主决定何时推送 / 重算。
-  let MV = null;   // mvu.mjs（纯函数集）由桥加载；这里拿模块引用给自定义 / 注入等纯调用用
+  let MV = null;   // mvu-readers.mjs（纯函数集）由桥加载；这里拿模块引用给自定义 / 注入等纯调用用
   const CTX = new ContextPipeline({   // 聊天上下文流水线（tavern/context.mjs）：先建（下面 BR 的标签对账要读它的消息缓存）
     stripTags: resolveTags(k => { try { return (LS || localStorage).getItem(k); } catch (e) { return null; } }),
   });
@@ -32,9 +32,9 @@ export function createCharsFlow(host) {
   // P3-B 名册装配（core/roster.mjs）：mvu / table-db / fallback 三个来源桥里已注册；chat / baibai 只有宿主有——
   // 聊天 ⌖人物 标签在流水线的消息窗口里、柏宝绘外貌库按需加载。临时名册拼装（known 名单 flatMap）由装配系统统一输出。
   BR.roster.use('chat', { rows: ctx => !host.CHM || !Array.isArray(ctx?.msgs) ? [] : ctx.msgs.flatMap(m => host.CHM.parseChars(m.text).map(c => ({ name: c.name, place: c.place, source: 'chat' }))) });
-  let BBm = null; import(SELF + 'tavern/baibai.mjs').then(m => { BBm = m; }).catch(() => {});   // 可选依赖：没装 / 加载失败只是没有柏宝绘来源
+  let BBm = null; import(SELF + 'tavern/imagegen-bridge.mjs').then(m => { BBm = m; }).catch(() => {});   // 可选依赖：没装 / 加载失败只是没有柏宝绘来源
   BR.roster.use('baibai', { rows: () => BBm ? BBm.characters().list : [] });
-  // 保底名册（Pack 0 数据挂载点 manifest.data.roster，通用化 v1 前是 mvu.mjs 的硬编码数组）：包声明了才取；
+  // 保底名册（Pack 0 数据挂载点 manifest.data.roster，通用化 v1 前是 mvu-readers.mjs 的硬编码数组）：包声明了才取；
   // eden（无注入的内置默认）走内置档路径。取不到就没有兜底行，不挡启动。
   MAN.then(man => { const rp = man?.data?.roster, rb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';   // 路径读自包清单 data.roster；没声明 = 没有兜底行
     if (rp) return cdnFetch(host.BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { if (BR.setFallbackMembers(j?.members || [])) { recomputeSoon(); sendChars(); } }); }).catch(() => {});
@@ -46,7 +46,7 @@ export function createCharsFlow(host) {
   function setVarUser(u) { if (BR.setVarUser(u)) sendVarMap(); recomputeSoon(50); push(); if (host.checkP) host.checkP.then(() => { host.checkP = null; runCheck(); }); }   // 自检重跑，读法跟着变
 
   // ---------------- v0.9.3：世界时间（标题栏 + 地图夜色）与主角着装（本人地点卡）；只读 stat_data，缺字段就不显示 ----------------
-  // mvu.mjs 的加载与设定包配置（setVarRoot / setWbName）在桥里；桥加载好后经 onMvuLoad 把模块交给这里（纯函数调用用）
+  // mvu-readers.mjs 的加载与设定包配置（setVarRoot / setWbName）在桥里；桥加载好后经 onMvuLoad 把模块交给这里（纯函数调用用）
   let clockSig = null, outfitSig = null, clock = null, outfitNow = null;
   function pushMvu() {
     if (!MV) return;
@@ -62,10 +62,10 @@ export function createCharsFlow(host) {
   let sentClock = null, sentOutfit = null;
 
   // v0.9.5 行程：最近 30 楼每楼的地点（MVU 那一楼的变量，拿不到就读原文里的 JSONPatch）+ 人物标签 → 最近 5 段（玩家、人物各 5），存进 eden_map.行程
-  let TRm = null; import(SELF + 'tavern/trips.mjs').then(m => { TRm = m; }).catch(() => {});
+  let TRm = null; import(SELF + 'tavern/trips-parse.mjs').then(m => { TRm = m; }).catch(() => {});
 
-  // NPC 日常漫游（Part 5-3，tavern/routine.mjs）：包数据 manifest.data.routine 的日程表；聊天没提到的人物按世界时刻落在该在的地方
-  let RTm = null, rtSched = null; import(SELF + 'tavern/routine.mjs').then(m => { RTm = m; if (rtCfg) { rtSched = m.normSchedule(rtCfg); sendRoutine(); recomputeSoon(50); } }).catch(() => {});
+  // NPC 日常漫游（Part 5-3，core/routine.mjs）：包数据 manifest.data.routine 的日程表；聊天没提到的人物按世界时刻落在该在的地方
+  let RTm = null, rtSched = null; import(SELF + 'core/routine.mjs').then(m => { RTm = m; if (rtCfg) { rtSched = m.normSchedule(rtCfg); sendRoutine(); recomputeSoon(50); } }).catch(() => {});
   let rtCfg = null;
   { const rp = PACK_IN?.manifest?.data?.routine; if (rp) { const rb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';   // 与保底名册同一算法：eden 的路径相对 map/，其它包相对 packs/<id>/
     cdnFetch(host.BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { rtCfg = j; if (RTm && j) { rtSched = RTm.normSchedule(j); sendRoutine(); recomputeSoon(50); } }).catch(() => {}); } }

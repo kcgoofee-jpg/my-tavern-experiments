@@ -213,10 +213,10 @@ export async function parentScrollY(page, x, y, n = 6) {
 }
 
 // ---------- 事件 ----------
-// 用卡内脚本同一套解析（map/tavern/events.mjs 的 collect）把聊天原文变成事态，发给查看器，并飞到 fly
+// 用卡内脚本同一套解析（map/tavern/events-parse.mjs 的 collect）把聊天原文变成事态，发给查看器，并飞到 fly
 // fly：true = 第一条；函数 = items.find(fly)；字符串 = 事件 id。返回 { items, fly }
 export async function postEvents(frame, texts, fly) {
-  const { collect, setGeo } = await import(path.join(REPO_ROOT, 'map/tavern/events.mjs')), { packGeo } = await import(path.join(REPO_ROOT, 'tools/eden_geo.mjs'));
+  const { collect, setGeo } = await import(path.join(REPO_ROOT, 'map/tavern/events-parse.mjs')), { packGeo } = await import(path.join(REPO_ROOT, 'tools/eden_geo.mjs'));
   setGeo(packGeo('eden'));   // 落点由节点树定（首个包的 v1 数据 + overlay.v2.json）
   const floor = Math.max(...texts.map(t => t.floor));
   const items = collect(texts, floor).map(e => ({ ...e, isNew: true }));

@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import * as W from '../map/tavern/wbsync.mjs';
+import * as W from '../map/tavern/worldbook-sync.mjs';
 
 const rd = p => JSON.parse(readFileSync(fileURLToPath(new URL(p, import.meta.url)), 'utf8'));
 const before = rd('./fixtures/worldbook_addon_before_s44b.json');

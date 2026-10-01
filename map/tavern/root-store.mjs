@@ -1,6 +1,6 @@
 // 地图在聊天变量里的根（eden_map）：自定义名称 / 用途的读写与迁移、本机存储预算、世界书同步、标签改名重放（S5-1 自 eden-map.js 原样搬出）。
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
-import { cdnFetch, fnOk, thFn } from './host-th.mjs';
+import { cdnFetch, fnOk, thFn } from './host-tavernhelper.mjs';
 export const DEPS = [
   'CTX', 'LS', 'MAN', 'PACK_ID', 'PACK_IN', 'SELF', 'chatId', 'checkpointResume', 'emit', 'hostToast', 'kfReset', 'life', 'panel', 'post', 'readVars',
   'recomputeSoon', 'wrapLS', 'BASE', 'FOGm', 'INVm', 'KFm', 'LEDm', 'MV', 'UL', 'WBJm', 'WBSm', 'alive', 'chars', 'cp', 'custVer', 'explored',
@@ -37,9 +37,9 @@ export function createRootStore(host) {
     if (varsFailed) { varsFailed = false; storeWarn('vars'); }   // UI 不能再说「已保存到聊天」却悄悄存在本机
     return true;
   }
-  // ---------------- A-13 本机存储预算（tavern/budget.mjs）：LRU 清旧聊天的地图键、头像上限；出问题时告诉用户（面板开着走地图的提示条，关着走宿主小提示） ----------------
+  // ---------------- A-13 本机存储预算（tavern/storage-budget.mjs）：LRU 清旧聊天的地图键、头像上限；出问题时告诉用户（面板开着走地图的提示条，关着走宿主小提示） ----------------
   let BG = null, varsFailed = false; const warnAt = {};
-  import(new URL('budget.mjs', import.meta.url).href).then(m => { BG = m; }).catch(() => {});
+  import(new URL('storage-budget.mjs', import.meta.url).href).then(m => { BG = m; }).catch(() => {});
   function storeWarn(reason) {
     if (life.dead || Date.now() - (warnAt[reason] || 0) < 60000) return; warnAt[reason] = Date.now();
     const msg = BG ? BG.warnText(reason, host.UL === 'en') : '本机存储写入失败'; console.warn('[eden-map]', msg);
@@ -101,8 +101,8 @@ export function createRootStore(host) {
    *  已有绑定一律不动（改了用户的选择 = 串味儿）；只在「一处都没挂」时补，失败 / 没接口 → null。 */
   async function silentBind(name) {
     try {
-      const W = host.WBSm ?? await import(SELF + 'tavern/wbsync.mjs').catch(() => null);
-      const J = host.WBJm ?? await import(SELF + 'tavern/wb_jit.mjs').catch(() => null);
+      const W = host.WBSm ?? await import(SELF + 'tavern/worldbook-sync.mjs').catch(() => null);
+      const J = host.WBJm ?? await import(SELF + 'tavern/worldbook-jit.mjs').catch(() => null);
       if (!W?.bindingOf || !J?.bindPlan) return null;
       const b = await W.bindingOf(thFn, name);
       const w = J.bindPlan(b, { api: { chat: fnOk('rebindChatWorldbook'), char: fnOk('rebindCharWorldbooks'), global: fnOk('rebindGlobalWorldbooks') } });

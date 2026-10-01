@@ -1,4 +1,4 @@
-// W2 检定失败报告环（map/tavern/failrep.mjs + action fail kind + stealth worst 协议）：
+// W2 检定失败报告环（map/tavern/check-failure-report.mjs + action fail kind + stealth worst 协议）：
 // 报告字段收严（不 coerce）、环形缓冲去重与上限、楼层水位（同一条只注入一次）、渲染格式、
 // 确定性掷骰（core/rng seedOf(chatId,floor,id) → 同骰同果）、协议增量兼容、模块纯度。
 // 见 docs/plans/llm-campaign.md W2；夹具全中性合成数据。
@@ -6,8 +6,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import * as F from '../map/tavern/failrep.mjs';
-import * as A from '../map/tavern/action.mjs';
+import * as F from '../map/tavern/check-failure-report.mjs';
+import * as A from '../map/tavern/place-action-injection.mjs';
 import * as P from '../map/core/protocol.mjs';
 import * as ST from '../map/core/stash.mjs';
 import { rng, seedOf } from '../map/core/rng.mjs';
@@ -87,7 +87,7 @@ test('协议兼容：stealth 带 worst 通过；worst 形状错会被拦（objec
 });
 
 test('模块纯度：failrep 不碰 DOM / 全局 / 存储 / 网络（剥注释后扫，与看门狗同口径）', () => {
-  const raw = readFileSync(fileURLToPath(new URL('../map/tavern/failrep.mjs', import.meta.url)), 'utf8');
+  const raw = readFileSync(fileURLToPath(new URL('../map/tavern/check-failure-report.mjs', import.meta.url)), 'utf8');
   const src = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
   assert.doesNotMatch(src, /\b(window|document|localStorage|sessionStorage|fetch|Mvu|SillyTavern|navigator)\b/);
   assert.ok(raw.split('\n').length < 400);

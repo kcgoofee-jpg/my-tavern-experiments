@@ -6,8 +6,8 @@
 ：只含地图条目的独立世界书 JSON（酒馆「导入世界书」直接用，不改角色卡）。
 
 内容从仓库数据生成，改了事件类型或地名后重跑即可保持一致：
-  - 事件类型、大类顺序、稀有度、示范原文：首个包的事件块（map/packs/eden/overlay.v2.json 的 events，经 map/tavern/events.mjs 的 taxonomy() 用 node 读取）
-  - 地标名、层名、庄园房间 / 区域：map/data/maps.json（与 map/app/here-v2.mjs 的当前地点解析同一份词表）
+  - 事件类型、大类顺序、稀有度、示范原文：首个包的事件块（map/packs/eden/overlay.v2.json 的 events，经 map/tavern/events-parse.mjs 的 taxonomy() 用 node 读取）
+  - 地标名、层名、庄园房间 / 区域：map/data/maps.json（与 map/app/place-resolver.mjs 的当前地点解析同一份词表）
 条目（全部常驻，位置「角色定义之后」）：
   1 地图联动规范 v3：标签两种写法、字段、地点写法、频率、连锁、示范
   2 地图事件类型 v2：9 大类 66 种 + 稀有度
@@ -34,7 +34,7 @@ RARE = {3: '罕', 4: '传'}
 
 
 def load_events():
-    js = ("import * as E from './map/tavern/events.mjs'; import { packGeo } from './tools/eden_geo.mjs';"
+    js = ("import * as E from './map/tavern/events-parse.mjs'; import { packGeo } from './tools/eden_geo.mjs';"
           "E.setGeo(packGeo('eden')); const tx = E.taxonomy(), gl = Object.fromEntries(tx.groups.map(g => [g.id, g.label]));"
           "console.log(JSON.stringify({cats: Object.fromEntries(Object.values(tx.types).map(t => [t.label, { g: gl[t.group], ch: t.icon, src: t.source || '', rare: t.rare || 1 }])),"
           " order: E.legend().map(g => g.label), ex: E.examples()}))")
@@ -218,7 +218,7 @@ def node_tree():
 def topo_block(reg, mid):
     """v17（W1，docs/plans/llm-campaign.md 裁决 12/13）：层连通性编译成 [TOPO] 声明块，取代「地图上的地标：…」散文列举。
     连接源只有三类：marker.link 显式跨层通道（出口）、同层地标全集（连通）、层级包含（路径前缀）；routes 不作邻接源。
-    与 map/tavern/spatial.mjs 的 topo 语义同一口径（运行时注入与世界书发布件两条路一个说法）。"""
+    与 map/tavern/spatial-contract.mjs 的 topo 语义同一口径（运行时注入与世界书发布件两条路一个说法）。"""
     m, tree = reg[mid], node_tree()
     body = '连通: ' + '、'.join(v['name'].replace(' ', '') for v in listed(m['markers']).values())
     links = []
@@ -330,13 +330,13 @@ def ship_categories(ents):
 
 
 def to_ship(book, version):
-    """随地图发到 CDN 的附加条目（map/tavern/wbsync.mjs 读，按酒馆助手 WorldbookEntry 形状）：id = 去掉「 vN」后缀的条目名（稳定编号），ver = 版本 + 内容指纹。
+    """随地图发到 CDN 的附加条目（map/tavern/worldbook-sync.mjs 读，按酒馆助手 WorldbookEntry 形状）：id = 去掉「 vN」后缀的条目名（稳定编号），ver = 版本 + 内容指纹。
     标准扩展接口（通用扩展契约预留）：顶层 `schema` = 发布物格式版本（与 pack.schema.json 的 schema 同一口径，改字段形状先升它）；
     `category` = 稳定编号 → 标准类别字典（rules / events / places / characters / lore，未登记回退 other），通用扩展宿主按类别挑条目。
-    wbsync.mjs 只读 ver / aliases / entries，多出的顶层键无害。"""
+    worldbook-sync.mjs 只读 ver / aliases / entries，多出的顶层键无害。"""
     import hashlib, os
     POS = {0: 'before_character_definition', 1: 'after_character_definition', 2: 'before_author_note', 3: 'after_author_note', 4: 'at_depth', 5: 'before_example_messages', 6: 'after_example_messages'}
-    # 旧对话兼容：条目别名表（旧编号 → 新编号）单一来源 map/data/worldbook_aliases.json，原样嵌进发布物（wbsync.mjs 合并前先换编号）。
+    # 旧对话兼容：条目别名表（旧编号 → 新编号）单一来源 map/data/worldbook_aliases.json，原样嵌进发布物（worldbook-sync.mjs 合并前先换编号）。
     # 发布的稳定编号 = 别名表里的英文点号编号（用户 2026-09-28）；条目名 / 关键词不变
     ap = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'map', 'data', 'worldbook_aliases.json')
     with open(ap, encoding='utf-8') as f: al = json.load(f)
@@ -374,13 +374,13 @@ def check(book, ref_path):
 
 
 def selftest(items):
-    """用 events.mjs / app/here-v2.mjs 自己核对：示范原文都不上图；【地点】里每个地标都能推断出层；当前地点示例能落点。"""
+    """用 events.mjs / app/place-resolver.mjs 自己核对：示范原文都不上图；【地点】里每个地标都能推断出层；当前地点示例能落点。"""
     import re
     rules, here = items[0][1], items[2][1]
     spans = re.findall(r'<span style="display:none"[^>]*>[^<]*</span>', rules)
     places = [(m.group(1), w) for m in re.finditer(r'^  (上层|中层|下层)（[^）]*）：(.+)$', rules, re.M) for w in m.group(2).split('、')]
     probes = {'伊甸庄园·书房': 'eden_estate', '伊甸庄园·玫瑰园': 'eden_estate', '天城·中层·天城执法局总局': 'tc_mid', '天城·下层·7号井黑市': 'tc_low', '中层 霓虹街': 'tc_mid'}
-    js = """import * as E from './map/tavern/events.mjs'; import { packGeo } from './tools/eden_geo.mjs'; import { packHere } from './tools/pack_here.mjs'; import fs from 'node:fs';
+    js = """import * as E from './map/tavern/events-parse.mjs'; import { packGeo } from './tools/eden_geo.mjs'; import { packHere } from './tools/pack_here.mjs'; import fs from 'node:fs';
 const a = JSON.parse(fs.readFileSync(0, 'utf8')); const reg = JSON.parse(fs.readFileSync('map/data/maps.json', 'utf8'));
 const idx = packHere('eden'); E.setGeo(packGeo('eden'));
 const out = { ex: a.spans.map(s => E.parseMarks(s).length),
@@ -410,7 +410,7 @@ def selftest_093(items):
     who, here = next(t for c, t, *_ in items if c.startswith('地图人物位置')), next(t for c, t, *_ in items if c.startswith('地图当前地点'))
     probes = ['天城·中层·天城执法局总局', '中层·霓虹街', '下层·废弃教堂区', '伊甸庄园·书房', '主卧', '天城·上层', ['中层·霓虹街', '[旧格式]'], '世界地图上的某地', '']
     js = MINI_EJS + """
-import * as C from './map/tavern/characters.mjs'; import * as V from './map/tavern/mvu.mjs'; import fs from 'node:fs';
+import * as C from './map/tavern/characters-parse.mjs'; import * as V from './map/tavern/mvu-readers.mjs'; import fs from 'node:fs';
 const a = JSON.parse(fs.readFileSync(0, 'utf8'));
 console.log(JSON.stringify({ tags: C.parseChars(a.who).length + V.parseCustomTags(a.here).length,
   out: a.probes.map(h => a.lore.map(([c, t]) => render(t, h).trim())) }));"""

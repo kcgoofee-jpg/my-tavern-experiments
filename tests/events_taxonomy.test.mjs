@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import * as EV from '../map/tavern/events.mjs';
+import * as EV from '../map/tavern/events-parse.mjs';
 import { DEFAULT_EVENTS, DEFAULT_CLOSED } from '../map/core/events-default.mjs';
 import { makeGeo } from '../map/core/event-geo.mjs';
 import { buildTree } from '../map/core/nodes.mjs';

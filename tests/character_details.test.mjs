@@ -1,10 +1,10 @@
 // v0.9.6 E13 其余字段：人物卡「更多资料」——adapter 的行内字段映射（默认名 / 按名自动找 / 关闭）与 mvu.rosters 的 more
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { detect, effective, defaults, MORE_FIELDS, NAME_FIELDS, OFF } from '../map/tavern/adapter.mjs';
+import { detect, effective, defaults, MORE_FIELDS, NAME_FIELDS, OFF } from '../map/tavern/stat-path-mapping.mjs';
 import { useEden } from './helpers/eden-profile.mjs';
 useEden();   // the first pack's variable and roster declarations (its overlay blocks); the engine itself names no card
-import { rosters } from '../map/tavern/mvu.mjs';
+import { rosters } from '../map/tavern/mvu-readers.mjs';
 
 const CARD = { 世界: { 当前地点: 'x' }, 主角: {}, 表一: { 甲: { 社会身份: '讲师', 园丁代号: '青鸟', 身高: 168, 体重: 52, 外界知情: false, 项圈: '银链' } } };
 const OTHER = { 世界: {}, 主角: {}, 名册: { 乙: { 身份: '园丁', 代号: 'K', height: '170', 饰物: '胸针' } } };

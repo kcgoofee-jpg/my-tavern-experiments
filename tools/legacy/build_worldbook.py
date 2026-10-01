@@ -6,7 +6,7 @@
 # 改动：
 #   「地图联动规范」加频率上限、状态更新、内容硬边界，以及紧凑写法（⌖）说明；
 #   「场景与社会渗透」加 [天城事态] 注入的用法（只作背景，亲密场景最多一句）。
-# 示范标签原文要与 map/tavern/events.mjs 的 EXAMPLES 一致（模型原样复述时不上图）。
+# 示范标签原文要与 map/tavern/events-parse.mjs 的 EXAMPLES 一致（模型原样复述时不上图）。
 import json, sys
 
 src, out = sys.argv[1], sys.argv[2]

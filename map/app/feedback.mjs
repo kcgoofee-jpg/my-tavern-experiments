@@ -6,7 +6,7 @@ import { $, esc, tx } from './util.mjs';
 import { about, selfCheck } from './settings.mjs';
 import { buildInfo } from './topbar.mjs';
 import { REG, cur } from './state.mjs';
-import { PACK } from './pack.mjs';
+import { PACK } from './current-pack.mjs';
 
 logbuf.install();
 

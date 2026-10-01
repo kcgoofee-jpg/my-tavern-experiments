@@ -1,6 +1,6 @@
 // 拾取与背包流：地图 → 动作注入、W2 掷骰 / 失败环、W11 结算闸门与漏项审计、W12 虚拟账本槽位、拾取扫描、空间化背包与世界藏物表（S5-1 自 eden-map.js 原样搬出）。
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
-import { cdnFetch } from './host-th.mjs';
+import { cdnFetch } from './host-tavernhelper.mjs';
 export const DEPS = [
   'LS', 'PACK_ID', 'PACK_IN', 'SELF', 'chatId', 'composeIn', 'life', 'lsGet', 'mvuStat', 'post', 'saveRoot', 'BASE', 'BR', 'UL', 'alive', 'floorNow',
 ];
@@ -11,7 +11,7 @@ export function createLootFlow(host) {
   // 模式默认 off——地图不该在玩家没点头的情况下替他说话；compose 只填不发（与「去这里」同一条底线），sys 走 /sys 静默注入。
   let ACm = null;
   async function injectAction(d) {
-    try { ACm ??= await import(SELF + 'tavern/action.mjs'); } catch (err) { return; }
+    try { ACm ??= await import(SELF + 'tavern/place-action-injection.mjs'); } catch (err) { return; }
     const get = k => { try { return (LS || localStorage).getItem(k); } catch (err) { return ''; } };
     const mode = ACm.modeOf(get);
     if (mode === 'off') return;
@@ -23,17 +23,17 @@ export function createLootFlow(host) {
   }
 
   // W2 检定失败环（docs/plans/llm-campaign.md）：掷骰口径 core/stash.search + core/rng 确定性种子；
-  // 失败报告环是会话级内存态（tavern/failrep.mjs，纯模块），经 eden-map-events 注入数组追加一行。
+  // 失败报告环是会话级内存态（tavern/check-failure-report.mjs，纯模块），经 eden-map-events 注入数组追加一行。
   // 开关 edenMapDice 默认关 = 行为与今天完全一致（不掷骰、必得手）。
   let RNGm = null, FRm = null; const frState = { list: [] };
   import(SELF + 'core/rng.mjs').then(m => { RNGm = m; }).catch(() => {});
-  import(SELF + 'tavern/failrep.mjs').then(m => { FRm = m; }).catch(() => {});
+  import(SELF + 'tavern/check-failure-report.mjs').then(m => { FRm = m; }).catch(() => {});
   const diceOn = () => lsGet('edenMapDice') === '1' && RNGm && FRm;
 
   // W11 四域结算账本 + 时序守卫（docs/plans/llm-campaign.md；对齐「领域分账 / 渐进纠错」口径）：
   // 地图侧的确定性物理事实（拾取）记进 lootFacts，每轮由 core/ledger.mjs 的漏项审计器与宿主**实际落盘**
   // 的仓库对账——确实缺了才补**单项**缺口 patch（不重写整表），认不出 / 不在表里的留待结算（旧值不动）。
-  // 写变量一律经 tavern/varsync.mjs 的闸门排队，放行点是本轮末尾：读取期间绝不写，杜绝与主 MVU / 卡内
+  // 写变量一律经 tavern/settlement-guard.mjs 的闸门排队，放行点是本轮末尾：读取期间绝不写，杜绝与主 MVU / 卡内
   // 状态引擎抢写（MVU 在场时那一拍就排在 VARIABLE_UPDATE_ENDED 收尾之后，见 mvu-bridge.markVarUpdate）。
   let LEDm = null, VSG = null, SSK = null;
   const lootFacts = [];                               // 本场会话的物理拾取事实（聊天维度：换聊天清空）
@@ -46,7 +46,7 @@ export function createLootFlow(host) {
   const slotDeclared = () => { slot = LEDm.slotDeclare(slot, LEDm.slotProbe(host.BR.mvuStat()), host.floorNow); return true; };
   const slotWrite = (key, rows) => { if (!slot) slotDeclared(); slot = LEDm.slotPut(slot, rows, host.floorNow); saveRoot(); return true; };
   import(SELF + 'core/ledger.mjs').then(m => { LEDm = m; }).catch(() => {});
-  import(SELF + 'tavern/varsync.mjs').then(m => {
+  import(SELF + 'tavern/settlement-guard.mjs').then(m => {
     VSG = m.createGate({ hasMvu: () => host.BR.mvuPresent(), epoch: () => host.BR.varUpdateSeq() });
     SSK = m.createSlotSink({ declare: slotDeclared, put: slotWrite });
   }).catch(() => {});
@@ -160,8 +160,8 @@ export function createLootFlow(host) {
     } catch (err) {}
   }
 
-  // 空间化背包（Part 5-1，tavern/inventory.mjs）：聊天变量 eden_map.仓库；地点卡显示 + 注入摘要，模型据此演「回房间取东西」
-  let INVm = null; import(SELF + 'tavern/inventory.mjs').then(m => { INVm = m; sendInv(); }).catch(() => {});
+  // 空间化背包（Part 5-1，tavern/stash-store.mjs）：聊天变量 eden_map.仓库；地点卡显示 + 注入摘要，模型据此演「回房间取东西」
+  let INVm = null; import(SELF + 'tavern/stash-store.mjs').then(m => { INVm = m; sendInv(); }).catch(() => {});
   let inv = { items: {}, seq: 0 };
   function sendInv() { if (host.alive) post({ type: 'eden-map:inv', items: INVm ? INVm.rows(inv) : [] }); }
   function changedInv(save = true) { if (save) saveRoot(); sendInv(); }

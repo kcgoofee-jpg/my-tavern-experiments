@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { slotProbe, slotDeclare, slotPut, slotLine, slotSave, audit } from '../map/core/ledger.mjs';
-import { createSlotSink } from '../map/tavern/varsync.mjs';
+import { createSlotSink } from '../map/tavern/settlement-guard.mjs';
 
 test('探路：认得出背包字段就用它（子表也认），值不是对象 / 一个都没有 → 虚拟槽位', () => {
   assert.deepEqual(slotProbe(null), { key: '物品栏', path: '', virtual: true });

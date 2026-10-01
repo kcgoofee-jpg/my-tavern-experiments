@@ -4,10 +4,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import * as PK from '../map/core/pack.mjs';
-import * as EV from '../map/tavern/events.mjs';
-import * as MV from '../map/tavern/mvu.mjs';
+import * as EV from '../map/tavern/events-parse.mjs';
+import * as MV from '../map/tavern/mvu-readers.mjs';
 import * as ST from '../map/core/storage.mjs';
-import * as AD from '../map/tavern/adapter.mjs';
+import * as AD from '../map/tavern/stat-path-mapping.mjs';
 import { profileFromV1 } from '../map/core/profile.mjs';
 import { setProfile } from '../map/tavern/pack-profile.mjs';
 import { HOST_SRC } from './_host_src.mjs';
@@ -116,7 +116,7 @@ test('多包隔离：同名键互不串；预算 LRU 经 nsStore 只见、只清
   assert.deepEqual([...mem.keys()].sort(), ['tcp.harbor.:chat:c1:fog', 'tcp.town.:chat:c1:fog', 'tcp.town.Seen:c1'], '两包的键物理上分开');
   assert.equal(town.getItem('edenMap:chat:c1:fog'), '{"w":"town"}'); assert.equal(harbor.getItem('edenMap:chat:c1:fog'), '{"w":"harbor"}');
   mem.set('edenMap:chat:c9:fog', '{}'); mem.set('edenMapSeen:c9', '1');   // eden 原生的按聊天数据
-  const BG = await import('../map/tavern/budget.mjs');
+  const BG = await import('../map/tavern/storage-budget.mjs');
   BG.touch(town, 'c1', 1000);
   assert.deepEqual(BG.sweep(town, 'c1', 1).dropped, [], '当前聊天不清');
   const r = BG.sweep(town, '', 0);

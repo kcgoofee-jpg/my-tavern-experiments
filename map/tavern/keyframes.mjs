@@ -6,7 +6,7 @@
 // （tests/keyframe_compression.test.mjs 零漂移对账锁死）；压缩是确定性的（同输入同输出、幂等）。
 // 截断显式标记（truncated + em-unsure 先例）：超出帧上限的最老历史丢弃并计数，回放不到就如实返回 null，
 // 绝不用邻近帧冒充。本模块不碰酒馆全局 / DOM / 存储（node 单测机械检查）。
-export const W_RECENT = 20;        // 近窗宽度：与 MVU 自己的 20 楼保留窗对齐（tavern/snapshot.mjs 注释）
+export const W_RECENT = 20;        // 近窗宽度：与 MVU 自己的 20 楼保留窗对齐（tavern/mvu-snapshot.mjs 注释）
 export const MAX_FRAMES = 50;      // 帧上限：50 帧 × 平均跨度 ≈ 覆盖数百楼；超出丢最老并记数
 const str = (v, n) => { try { return v == null ? '' : String(v).trim().slice(0, n); } catch (e) { return ''; } };
 

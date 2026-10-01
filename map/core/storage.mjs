@@ -1,7 +1,7 @@
 // 本机存储服务（大版本 2，docs/design/arch-v2.md §4）：查看器、宿主、庄园 / 三维子页同源，共用一份 localStorage。
 // KEYS = 全部键的唯一登记处（所有者、作用域、默认值）；tests/storage.test.mjs 静态清点仓库里出现的每个 edenMap* 键都必须在这里登记。
 // get / set / json / remove：带 try/catch（隐私模式、额度满、被禁用都不抛）。新代码用这里；旧的经典脚本逐步迁（arch-v2 §6 第 5 步）。
-// 以 edenMap 开头的键参与存储预算（tavern/budget.mjs）；edenEstateLabels 是历史遗留名，预算里也按我们的算。
+// 以 edenMap 开头的键参与存储预算（tavern/storage-budget.mjs）；edenEstateLabels 是历史遗留名，预算里也按我们的算。
 import { nsKey } from './pack.mjs';
 // 设定包命名空间（core/pack.mjs）：非 eden 包时 edenMap* 键实际读写 tcp.<id>.*；登记处仍按 edenMap* 写
 const N = k => nsKey(k, globalThis.__packId);
@@ -16,18 +16,18 @@ export const KEYS = {
   edenMapFps: { owner: 'viewer', def: '0' }, edenMapNoFx: { owner: 'viewer' }, edenMapCharStats: { owner: 'viewer' }, edenMapCharMore: { owner: 'viewer' },
   edenMapAutoCheck: { owner: 'viewer' }, edenMapAutoUpdate: { owner: 'viewer', def: '0' }, edenMapLockTag: { owner: 'viewer' }, edenMapRailW: { owner: 'viewer' }, edenMapHint: { owner: 'viewer' }, edenMapHintN: { owner: 'viewer' }, edenMapFog: { owner: 'app/fog.mjs', def: '1' },
   edenMapMinimap: { owner: 'viewer', def: '0' },   // U14（2026-09-28）：左下角小地图，默认关，设置「显示」可开
-  edenMapCvd: { owner: 'app/cvd.mjs', def: '0' },   // 色觉模式：0 关 / rg 红绿 / by 蓝黄（E7）
+  edenMapCvd: { owner: 'app/color-vision-mode.mjs', def: '0' },   // 色觉模式：0 关 / rg 红绿 / by 蓝黄（E7）
   edenMapEstateFail: { owner: 'viewer', scope: 'session' },
   // 查看器外挂脚本
   edenMapEvOff: { owner: 'events.js' }, edenMapLegHint: { owner: 'events.js' }, edenMapPortraits: { owner: 'chars.js' }, edenMapChGroups: { owner: 'chars.js' },
   edenMapCharMoreOpen: { owner: 'chars.js' }, edenMapNight: { owner: 'custom.js' }, edenMapTrips: { owner: 'trips.js' }, edenMapSecurity: { owner: 'security.js', def: '0' },
-  edenMapCompose: { owner: 'tavern/compose.mjs' },
-  edenMapInject: { owner: 'tavern/action.mjs', def: 'off' }, edenMapActionTpl: { owner: 'tavern/action.mjs' },   // Part 6-4 动作注入：模式（默认关）与模板
-  edenMapTick: { owner: 'tavern/tick.mjs', def: '1' },   // Part 6-2 后台静默推演：开 / 关（毫秒数也可，夹在 15 s–5 min）
+  edenMapCompose: { owner: 'tavern/compose-templates.mjs' },
+  edenMapInject: { owner: 'tavern/place-action-injection.mjs', def: 'off' }, edenMapActionTpl: { owner: 'tavern/place-action-injection.mjs' },   // Part 6-4 动作注入：模式（默认关）与模板
+  edenMapTick: { owner: 'tavern/background-scan-scheduler.mjs', def: '1' },   // Part 6-2 后台静默推演：开 / 关（毫秒数也可，夹在 15 s–5 min）
   // 按聊天分（参与 LRU 清理）
   'edenMap:chat:': { owner: 'shared', prefix: true, perChat: true }, 'edenMapSeen:': { owner: 'host', prefix: true, perChat: true },
-  'edenMap:varmap:': { owner: 'tavern/adapter.mjs', prefix: true }, 'edenMap:lru': { owner: 'tavern/budget.mjs' }, 'edenMap:custom': { owner: 'core/legacy-custom.mjs' },
-  'edenMap:chars': { owner: 'tavern/characters.mjs' }, 'edenMap:avatars': { owner: 'tavern/characters.mjs' },
+  'edenMap:varmap:': { owner: 'tavern/stat-path-mapping.mjs', prefix: true }, 'edenMap:lru': { owner: 'tavern/storage-budget.mjs' }, 'edenMap:custom': { owner: 'core/legacy-custom.mjs' },
+  'edenMap:chars': { owner: 'tavern/characters-parse.mjs' }, 'edenMap:avatars': { owner: 'tavern/characters-parse.mjs' },
   // 宿主（tavern/eden-map.js）
   edenMapLine: { owner: 'host', prefix: true }, edenMapFabPos: { owner: 'host' }, edenMapEvTip: { owner: 'host' }, edenMapUpdSkip: { owner: 'host' },
   edenMapCheckToast: { owner: 'host' }, edenMapUpdate: { owner: 'host' }, edenMapSplashSeen: { owner: 'tavern/splash.mjs' },
@@ -40,7 +40,7 @@ export const KEYS = {
   // 领航员网关（W5）：开关 / 节奏（'' 缺省=关）+ 端点配置 JSON {provider,key,base,model}（日志只出 llm.redact 脱敏）+ 首跑同意水位
   edenMapNav: { owner: 'host', def: '0' }, edenMapNavCfg: { owner: 'host' }, edenMapNavConsent: { owner: 'host', def: '0' },
   // 见闻录（Part 5-5）：钉在地标上的图与手记的索引（字节在图集 IndexedDB 里）；按聊天分，键 = edenMap:chat:<聊天 id>:scrap
-  'edenMapScrap': { owner: 'map/scrapbook.mjs', prefix: true, perChat: true },
+  'edenMapScrap': { owner: 'map/scrapbook-view.mjs', prefix: true, perChat: true },
   // 酒馆助手采纳（docs/tavernhelper-audit.md，docs/interaction-modes.md）：状态注入 (a)、类宏 B9、世界书附加条目同步 B1
   edenMapStateInj: { owner: 'host', def: '1' }, edenMapStateDepth: { owner: 'host', def: '2' }, edenMapStateBudget: { owner: 'host', def: '150' }, edenMapMacros: { owner: 'host', def: '0' },
   // 空间坐标契约注入（W1，docs/plans/llm-campaign.md）：edenMapSpatial 默认关；上限 token 数（裁决 5，默认 120）

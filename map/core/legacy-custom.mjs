@@ -1,5 +1,5 @@
 // The user's own room names of the first versions (<= 0.9.2), kept on this machine: with a chat id per chat under "edenMap:chat:<id>:custom", else
-// globally under "edenMap:custom"; the value is JSON { rooms: { name: room } }. Read-only here: tavern/mvu.mjs `migrateRooms` folds them into the chat variable.
+// globally under "edenMap:custom"; the value is JSON { rooms: { name: room } }. Read-only here: tavern/mvu-readers.mjs `migrateRooms` folds them into the chat variable.
 // store = an object with getItem (localStorage; a fake in tests). Nothing goes online; bad data never throws.
 export const customKey = chat => (chat ? `edenMap:chat:${chat}:custom` : 'edenMap:custom');
 export function readCustom(store, chat) {

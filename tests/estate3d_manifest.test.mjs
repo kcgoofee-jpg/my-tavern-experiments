@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { Estate3D } from '../map/core/estate3d.mjs';
+import { Estate3D } from '../map/core/scene3d-manifest.mjs';
 
 const root = new URL('../map/', import.meta.url);
 const rd = (p, base = root) => JSON.parse(readFileSync(new URL(p, base), 'utf8'));
@@ -87,10 +87,10 @@ test('S4-3：每个地标清单都有 maps.json 里的三维页（viewer3d = 目
 });
 test('Part 3：三维页用共享运行时（map/three/*），自己不再 new WebGLRenderer', () => {
   const v3d = readFileSync(new URL('props/viewer3d.html', root), 'utf8');
-  assert.doesNotMatch(v3d, /new\s+THREE\.WebGLRenderer\s*\(/, '渲染器只能由 map/three/ctx.mjs 建');
-  for (const m of ['three/map/ctx.mjs', 'three/map/culling.mjs', 'three/map/lod.mjs', 'three/map/instancing.mjs', 'three/map/texres.mjs'])
+  assert.doesNotMatch(v3d, /new\s+THREE\.WebGLRenderer\s*\(/, '渲染器只能由 map/three/render-context.mjs 建');
+  for (const m of ['engine3d/render-context.mjs', 'engine3d/culling.mjs', 'engine3d/lod-controller.mjs', 'engine3d/instancing.mjs', 'engine3d/texres.mjs'])
     assert.match(v3d, new RegExp(m.replace(/\//g, '\\/')), `缺共享运行时模块 ${m}`);
-  assert.match(v3d, /"three\/map\/":\s*"\.\.\/three\/"/, 'importmap 要能解析 three/map/');
+  assert.match(v3d, /"engine3d\/":\s*"\.\.\/three\/"/, 'importmap 要能解析 engine3d/');
   assert.match(v3d, /frustumCulled/, '显式打开视锥体裁剪（共享运行时里做）');
 });
 

@@ -47,7 +47,7 @@ async function collect(p, extra = {}) {
 async function dump() {
   fs.mkdirSync(OUT, { recursive: true });
   const srv = await B.ensureServer(); let n = 0; const errs = [];
-  const { packGeo } = await import(path.join(B.REPO_ROOT, 'tools/eden_geo.mjs')), EVM = await import(path.join(B.REPO_ROOT, 'map/tavern/events.mjs'));
+  const { packGeo } = await import(path.join(B.REPO_ROOT, 'tools/eden_geo.mjs')), EVM = await import(path.join(B.REPO_ROOT, 'map/tavern/events-parse.mjs'));
   const geo = packGeo(PACK), EVT = PACK === 'town' ? EV_TOWN : EV_EDEN;
   const P = await B.newPage('desktop', { lang: LANG, tier: 'save', scheme: 'dark', init: [o => { try { if (o.pack !== 'eden') { localStorage.setItem(`tcp.${o.pack}.Lang`, o.lang); localStorage.setItem(`tcp.${o.pack}.Hint`, '1'); localStorage.setItem(`tcp.${o.pack}.TierV2`, 'save'); } } catch (e) {} }, { pack: PACK, lang: LANG }] });
   const p = P.page;
@@ -60,7 +60,7 @@ async function dump() {
     // the whole dictionary, read through the service the add-on scripts use (pack strings first, as t() does)
     // {book} / {script} are filled the way the call sites fill them (the pack's worldbook prefix + the custom-book suffix; the pack's script name), so the dump does not depend on where a name lives
     const dict = await p.evaluate(async () => {
-      const d = await (await fetch('i18n/zh.json')).json(), o = {}, pk = (await import('./app/pack.mjs')).PACK, wp = (await import('./core/pack.mjs')).worldbookPrefix, sc = window.I18N.t('app.script');
+      const d = await (await fetch('i18n/zh.json')).json(), o = {}, pk = (await import('./app/current-pack.mjs')).PACK, wp = (await import('./core/pack.mjs')).worldbookPrefix, sc = window.I18N.t('app.script');
       const vars = { v: '{v}', book: wp(pk, pk?.id) + '·自定义', script: sc === 'app.script' ? '' : sc };
       for (const k of Object.keys(d).sort()) if (k !== 'names' && !k.startsWith('_')) o[k] = window.I18N.t(k, vars);   // `_…` keys are notes for the file's readers
       return o; });

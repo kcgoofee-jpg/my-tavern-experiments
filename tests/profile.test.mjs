@@ -6,9 +6,9 @@ import { bandOf, DEFAULT_PERIODS } from '../map/core/periods.mjs';
 import * as VOC from '../map/core/vocab.mjs';
 import { profileOf, profileFromV1, portraitOk, slotDef, KERNEL, SLOTS } from '../map/core/profile.mjs';
 import { setProfile } from '../map/tavern/pack-profile.mjs';
-import * as AD from '../map/tavern/adapter.mjs';
-import * as MV from '../map/tavern/mvu.mjs';
-import * as CH from '../map/tavern/characters.mjs';
+import * as AD from '../map/tavern/stat-path-mapping.mjs';
+import * as MV from '../map/tavern/mvu-readers.mjs';
+import * as CH from '../map/tavern/characters-parse.mjs';
 
 test('K-R39 periods: the longest period word wins, then the earliest band; else the hour, wrapping past midnight; else no band', () => {
   const P = [{ id: 'a', start: '06:00', words: ['early'] }, { id: 'b', start: '12:00', words: ['mid', 'midday'] }, { id: 'c', start: '22:00', dark: true, words: ['late'] }];

@@ -23,17 +23,17 @@ try {
     const before = await D.page.evaluate(() => (window.__reads || []).length);
     await B.wait(2000);
     const r = await D.page.evaluate(async () => {
-      const mod = await import(new URL('tavern/tick.mjs', window.__edenBase || document.baseURI).href).catch(() => null);
+      const mod = await import(new URL('tavern/background-scan-scheduler.mjs', window.__edenBase || document.baseURI).href).catch(() => null);
       return { mod: !!mod, reads: (window.__reads || []).slice(), before: 0 };
     });
     rep.metric('reads', { before, now: r.reads.length, sample: r.reads.slice(-3) });
-    rep.check('调度模块可取（tavern/tick.mjs）', r.mod, JSON.stringify({ mod: r.mod }));
+    rep.check('调度模块可取（tavern/background-scan-scheduler.mjs）', r.mod, JSON.stringify({ mod: r.mod }));
     rep.check('读的是楼层范围而非整本聊天', r.reads.every(s => /^\d+-\d+$/.test(s)), JSON.stringify(r.reads.slice(-3)));
   });
 
   await step('判定本身：面板活着让路、生成中让路、间隔没到等待', async () => {
     const r = await D.page.evaluate(async () => {
-      const m = await import(new URL('tavern/tick.mjs', document.baseURI).href);
+      const m = await import(new URL('tavern/background-scan-scheduler.mjs', document.baseURI).href);
       return {
         alive: m.plan(1e6, { lastAt: 0, intervalMs: 60000, alive: true }),
         gen: m.plan(1e6, { lastAt: 0, intervalMs: 60000, generating: true }),
@@ -51,7 +51,7 @@ try {
 
   await step('关掉开关（edenMapTick=0）就不跑', async () => {
     const r = await D.page.evaluate(async () => {
-      const m = await import(new URL('tavern/tick.mjs', document.baseURI).href);
+      const m = await import(new URL('tavern/background-scan-scheduler.mjs', document.baseURI).href);
       localStorage.setItem('edenMapTick', '0');
       const off = m.intervalOf(k => (k === 'edenMapTick' ? localStorage.getItem(k) : null));
       localStorage.removeItem('edenMapTick');

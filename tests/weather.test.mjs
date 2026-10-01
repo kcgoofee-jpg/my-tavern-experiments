@@ -88,6 +88,6 @@ test('纯核心身份：不碰 DOM / 存储 / 酒馆全局，且登记进看门�
     assert.ok(!new RegExp(`\\b${g}\\b`).test(src.replace(/\/\/[^\n]*/g, '')), `不该出现 ${g}`);
   }
   assert.doesNotMatch(src, /from '\.\.\//, 'core 是纯叶层，不许回引父目录');
-  const app = readFileSync(join(ROOT, 'map/app/weather.mjs'), 'utf8');
+  const app = readFileSync(join(ROOT, 'map/app/weather-view.mjs'), 'utf8');
   assert.ok(app.includes("slot: 'fx'"), '天气必须落在 LayerRegistry 的 fx 槽位');
 });

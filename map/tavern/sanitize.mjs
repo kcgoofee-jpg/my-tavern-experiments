@@ -11,7 +11,7 @@
  *
  * 收表的判据：块内**只可能是展示内容**，绝不承载地图自己的 ⌖ / data-tcmap 标签。
  * 明确**不收**的两个（与判据冲突，收进来会把地图标签一起吃掉）：
- *   htm1fenge —— ⌖ 事件标签就写在里面（tests/events.test.mjs 的 span() 夹具就是这个形状）；
+ *   htm1fenge —— ⌖ 事件标签就写在里面（tests/events-parse.test.mjs 的 span() 夹具就是这个形状）；
  *   now_plot  —— 块内是正文对话 / 旁白本体，剥掉等于把整段叙事从解析里删掉。
  */
 export const PRESET_BLOCK_TAGS = ['meow_fm', 'time_format', 'branches', 'aftertalk', 'parallel_world', 'variablecheck', 'finish', '状态面板', '角色状态面板'];

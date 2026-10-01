@@ -1,4 +1,4 @@
-// node tests/here.test.mjs —— 当前地点 → 落点（app/here-v2.mjs，节点树上的当前地点）六级单测，用仓库里真实的 maps.json / world_markers.json / en.json
+// node tests/here.test.mjs —— 当前地点 → 落点（app/place-resolver.mjs，节点树上的当前地点）六级单测，用仓库里真实的 maps.json / world_markers.json / en.json
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildIndex, resolveHere } from './helpers/here-engine.mjs';

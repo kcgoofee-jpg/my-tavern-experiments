@@ -1,10 +1,10 @@
-// The viewer's current location (app/here-v2.mjs: nodes.locate over the node tree, mapped to the result shape every consumer reads).
+// The viewer's current location (app/place-resolver.mjs: nodes.locate over the node tree, mapped to the result shape every consumer reads).
 // The place tests of the first versions (here, card_spec, canon0928, characters, omissions099, transit095, unmapped096) run their inputs through it;
 // this file pins what they do not: the intended divergences of docs/kernel-schema.md A.9 through the adapter, the public shapes (user names,
 // journeys, estate rooms, unmapped names, the layer word) and the places of the session fixtures.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeHere } from '../map/app/here-v2.mjs';
+import { makeHere } from '../map/app/place-resolver.mjs';
 import { readCustom } from '../map/core/legacy-custom.mjs';
 import { edenInputs } from './helpers/eden-inputs.mjs';
 import { sessionPlaces } from './helpers/session-places.mjs';

@@ -1,5 +1,5 @@
 // NPC 日常漫游 / 日程（Part 5-3 的纯计算，2026-09-30 下沉到 core：三维 / 二维前端都要按同一张日程表挪人，
-// 而 core 不许回引 map/tavern/，所以这份数学放在共享的叶子层；宿主侧 map/tavern/routine.mjs 原样转发）。
+// 而 core 不许回引 map/tavern/，所以这份数学放在共享的叶子层；宿主侧 map/core/routine.mjs 原样转发）。
 // 配置口径（包数据 manifest.data.routine 指向的 JSON，或聊天变量）：
 //   { "默认": "书房", "人物": { "名字或id": [ { "从": "08:00", "到": "12:00", "在": "书房" }, … ] } }
 // 键名兼容英文（default / npc / from / to / at）。纯函数、无依赖；node 单测 tests/routine.test.mjs / walk.test.mjs。

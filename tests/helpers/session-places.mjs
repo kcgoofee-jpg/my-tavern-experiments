@@ -3,10 +3,10 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { ContextPipeline, perFloorStatOf } from '../../map/tavern/context.mjs';
-import * as EVM from '../../map/tavern/events.mjs';
-import * as CHM from '../../map/tavern/characters.mjs';
-import * as TRm from '../../map/tavern/trips.mjs';
-import { rosters as mvuRosters } from '../../map/tavern/mvu.mjs';
+import * as EVM from '../../map/tavern/events-parse.mjs';
+import * as CHM from '../../map/tavern/characters-parse.mjs';
+import * as TRm from '../../map/tavern/trips-parse.mjs';
+import { rosters as mvuRosters } from '../../map/tavern/mvu-readers.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const J = p => JSON.parse(fs.readFileSync(ROOT + p, 'utf8'));

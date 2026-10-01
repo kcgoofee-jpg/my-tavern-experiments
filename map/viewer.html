@@ -9,7 +9,7 @@
 window.__packId = (() => { let id = null; try { id = (window.__tcPack && window.__tcPack.id) || new URLSearchParams(location.search).get('pack'); } catch (e) {} return id && /^[a-z][a-z0-9_-]{1,31}$/.test(id) ? id : 'eden'; })();
 window.__nsKey = k => (window.__packId !== 'eden' && typeof k === 'string' && k.startsWith('edenMap') ? 'tcp.' + window.__packId + '.' + k.slice(7) : k);
 // 启动预取（数据驱动，通用化 v1）：清单按包 id 取、与模块并行；清单 preload 列的数据文件由清单自己声明——
-// 宿主注入 __tcPack（清单同步在手）现在就注入 <link rel=preload>；单独打开先取清单（__manifestP，app/pack.mjs 复用），一到就注入。
+// 宿主注入 __tcPack（清单同步在手）现在就注入 <link rel=preload>；单独打开先取清单（__manifestP，app/current-pack.mjs 复用），一到就注入。
 // 世界底图预取（无 ?map= 时）只给有世界图的包：注入的看清单 data.world；单独打开的默认包（eden）照旧，别的包不白拉三个 404。dzi 带 crossorigin 才和 OSD 的请求对得上。
 (function () {
   const id = window.__packId, B = id === 'eden' ? '' : 'packs/' + id + '/', u = 'packs/' + id + '/manifest.json';
@@ -123,45 +123,45 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <!-- 核心模块图一次性预取（排在地图库之后）：boot.mjs 的 import 不再逐级发现 -->
 <link rel="modulepreload" href="app/state.mjs">
 <link rel="modulepreload" href="app/util.mjs">
-<link rel="modulepreload" href="app/tiers.mjs">
+<link rel="modulepreload" href="app/sharpness-tiers.mjs">
 <link rel="modulepreload" href="app/i18n.mjs">
 <link rel="modulepreload" href="app/topbar.mjs">
-<link rel="modulepreload" href="app/nav.mjs">
-<link rel="modulepreload" href="app/estate.mjs">
-<link rel="modulepreload" href="app/layers.mjs">
+<link rel="modulepreload" href="app/map-switch.mjs">
+<link rel="modulepreload" href="app/subpage3d-host.mjs">
+<link rel="modulepreload" href="app/map-level-nav.mjs">
 <link rel="modulepreload" href="app/markers.mjs">
 <link rel="modulepreload" href="app/locate.mjs">
-<link rel="modulepreload" href="app/insets.mjs">
+<link rel="modulepreload" href="app/hires-inset-tiles.mjs">
 <link rel="modulepreload" href="app/settings.mjs">
 <link rel="modulepreload" href="app/feedback.mjs">
 <link rel="modulepreload" href="app/feedback-report.mjs">
-<link rel="modulepreload" href="app/extapi.mjs">
+<link rel="modulepreload" href="app/extension-api.mjs">
 <link rel="modulepreload" href="app/shell.mjs">
-<link rel="modulepreload" href="app/host.mjs">
-<link rel="modulepreload" href="app/layerhost.mjs">
-<link rel="modulepreload" href="app/bridge.mjs">
-<link rel="modulepreload" href="app/fps.mjs"><link rel="modulepreload" href="app/loadprog.mjs"><link rel="modulepreload" href="ui/progress.mjs">
+<link rel="modulepreload" href="app/host-messages.mjs">
+<link rel="modulepreload" href="app/layer-host.mjs">
+<link rel="modulepreload" href="app/legacy-globals.mjs">
+<link rel="modulepreload" href="app/fps.mjs"><link rel="modulepreload" href="app/load-progress.mjs"><link rel="modulepreload" href="ui/progress.mjs">
 <link rel="modulepreload" href="app/visibility.mjs">
 <link rel="modulepreload" href="app/bus.mjs">
-<link rel="modulepreload" href="app/weather.mjs">
-<link rel="modulepreload" href="app/traffic.mjs">
-<link rel="modulepreload" href="app/quests.mjs">
-<link rel="modulepreload" href="app/loot.mjs">
-<link rel="modulepreload" href="app/vision.mjs">
+<link rel="modulepreload" href="app/weather-view.mjs">
+<link rel="modulepreload" href="app/traffic-view.mjs">
+<link rel="modulepreload" href="app/quests-view.mjs">
+<link rel="modulepreload" href="app/stash-markers.mjs">
+<link rel="modulepreload" href="app/vision-view.mjs">
 <link rel="modulepreload" href="app/wander.mjs">
-<link rel="modulepreload" href="app/depthhaze.mjs">
+<link rel="modulepreload" href="app/depth-haze.mjs">
 <link rel="modulepreload" href="app/plugins.mjs">
 <link rel="modulepreload" href="app/boot.mjs">
-<link rel="modulepreload" href="app/pack.mjs"><link rel="modulepreload" href="app/theme.mjs"><link rel="modulepreload" href="core/pack-v2-spec.mjs">
-<link rel="modulepreload" href="app/cvd.mjs">
+<link rel="modulepreload" href="app/current-pack.mjs"><link rel="modulepreload" href="app/theme.mjs"><link rel="modulepreload" href="core/pack-v2-spec.mjs">
+<link rel="modulepreload" href="app/color-vision-mode.mjs">
 <link rel="modulepreload" href="core/pack.mjs">
-<link rel="modulepreload" href="app/here-v2.mjs"><link rel="modulepreload" href="app/spot.mjs">
+<link rel="modulepreload" href="app/place-resolver.mjs"><link rel="modulepreload" href="app/spot.mjs">
 <link rel="modulepreload" href="core/protocol.mjs">
-<link rel="modulepreload" href="app/cardlinks.mjs">
+<link rel="modulepreload" href="app/card-links.mjs">
 <link rel="modulepreload" href="app/clouds.mjs">
-<link rel="modulepreload" href="app/scale.mjs">
-<link rel="modulepreload" href="app/storage-ui.mjs">
-<link rel="modulepreload" href="app/th-ui.mjs">
+<link rel="modulepreload" href="app/scale-handoff.mjs">
+<link rel="modulepreload" href="app/data-mapping-settings.mjs">
+<link rel="modulepreload" href="app/tavernhelper-settings.mjs">
 <link rel="modulepreload" href="app/fog.mjs">
 <link rel="modulepreload" href="app/nodes-runtime.mjs"><link rel="modulepreload" href="core/compat-v1.mjs"><link rel="modulepreload" href="core/compat-v1-geo.mjs"><link rel="modulepreload" href="core/compat-v1-views.mjs"><link rel="modulepreload" href="core/compat-v1-blocks.mjs"><link rel="modulepreload" href="core/nodes.mjs"><link rel="modulepreload" href="core/locate.mjs"><link rel="modulepreload" href="core/lexicon.mjs">
 <link rel="modulepreload" href="core/depth.mjs">
@@ -171,16 +171,16 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <link rel="modulepreload" href="app/dzi-worker-src.mjs">
 <!-- 查看器本体（arch-v2 §6）：app/boot.mjs 按原顺序拉起核心各块；功能外挂各自一个模块标签（加载失败只少那一块）。模块标签与 defer 同一队列、按文档顺序执行：地图库、抽屉 → 核心 → 外挂 → 叶子模块，之后 DOMContentLoaded → main() -->
 <script type="module" src="app/boot.mjs" onerror="var s=document.querySelector('#loading span');if(s)s.textContent='地图脚本没取到，检查网络后重试'"></script>
-<script type="module" src="events.mjs"></script>
-<script type="module" src="chars.mjs"></script>
-<script type="module" src="custom.mjs"></script>
-<script type="module" src="inv.mjs"></script>
-<script type="module" src="scrapbook.mjs"></script>
-<script type="module" src="wbpeek.mjs"></script>
-<script type="module" src="trips.mjs"></script>
-<script type="module" src="unmapped.mjs"></script>
+<script type="module" src="events-view.mjs"></script>
+<script type="module" src="characters-view.mjs"></script>
+<script type="module" src="custom-names-view.mjs"></script>
+<script type="module" src="stash-view.mjs"></script>
+<script type="module" src="scrapbook-view.mjs"></script>
+<script type="module" src="worldbook-peek-view.mjs"></script>
+<script type="module" src="trips-view.mjs"></script>
+<script type="module" src="unmapped-place-picker.mjs"></script>
 <!-- 按需（arch-v2 §6.3）：变量映射 / 填入聊天只在嵌进酒馆时有用（?compose=1 测试用）。解析期 document.write 出来的模块标签照样按文档顺序执行；单独打开查看器不下载这两个文件 -->
-<script>if (window.top !== window || /[?&]compose=1/.test(location.search)) document.write('<script type="module" src="varmap.mjs"><\/script><script type="module" src="compose.mjs"><\/script>');</script>
+<script>if (window.top !== window || /[?&]compose=1/.test(location.search)) document.write('<script type="module" src="stat-path-mapping-view.mjs"><\/script><script type="module" src="compose-view.mjs"><\/script>');</script>
 <script type="module" src="security.mjs"></script>
 <script>document.addEventListener('DOMContentLoaded', () => { if (window.top !== window) parent.postMessage({ type: 'eden-map:boot', pct: .6, v: 2 }, '*'); });   // 地图库已下载（启动进度 60%）</script>
 <style>
@@ -192,10 +192,10 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .ico { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-  /* ---------- 图层阶梯常量（P3-C，core/layers.mjs 的 CSS 镜像，tests/layer_registry.test.mjs 对拍） ----------
+  /* ---------- 图层阶梯常量（P3-C，core/layer-registry.mjs 的 CSS 镜像，tests/layer_registry.test.mjs 对拍） ----------
      页面上不允许再写裸 z-index 字面量：一律引用这里的名义常量。
      --zu-*：外层固定 UI 阶梯（顶栏 / 弹层 / 设置 / 控制列 / 庄园 iframe / 转场盖布）——永远在视口槽位之上，不进 LayerRegistry；
-     --zv-*：视口槽位阶梯（OSD 画布叠加上下文内由底至顶），与 core/layers.mjs 的 SLOTS 一一对应，z = (槽位序号 + 1) × 10。 */
+     --zv-*：视口槽位阶梯（OSD 画布叠加上下文内由底至顶），与 core/layer-registry.mjs 的 SLOTS 一一对应，z = (槽位序号 + 1) × 10。 */
   :root {
     --zu-snap: 2; --zu-sheet-sticky: 2; --zu-foot: 4; --zu-estate: 5; --zu-hint: 6; --zu-cover: 6; --zu-prog: 7; --zu-loading: 8; --zu-dock: 9; --zu-layers: 9;
     --zu-header: 12; --zu-pop: 13; --zu-setpop: 14;
@@ -317,7 +317,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #osd .navigator { border: 1px solid var(--line) !important; border-radius: var(--r-m); overflow: hidden; background: var(--bg) !important; box-shadow: var(--sh-2); margin: 0 var(--sp-5) var(--sp-5) 0 !important; }
   body.nominimap #osd .navigator { display: none !important; }   /* U14：小地图默认关，设置「显示」可开（2026-09-28） */
   #osd .displayregion { border: 1.5px solid var(--accent) !important; border-radius: 2px; }
-  /* ---------- 视口槽位容器（P3-C）：app/layerhost.mjs 在 OSD 画布叠加上下文里按 SLOTS 各挂一个 .vpslot ----------
+  /* ---------- 视口槽位容器（P3-C）：app/layer-host.mjs 在 OSD 画布叠加上下文里按 SLOTS 各挂一个 .vpslot ----------
      防线：容器默认 pointer-events: none（底层地图拖拽 / 滚轮 100% 不受阻挡），交互子元素显式 [data-hit] 才收回事件；
      isolation: isolate 合成隔离——槽内的 mix-blend-mode / backdrop-filter 不影响其他槽位的层叠次序。 */
   .vpslot { position: absolute; inset: 0; pointer-events: none; isolation: isolate; }
@@ -398,7 +398,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #loading.over:not(.done) .acts, #loading.over:not(.done) span { pointer-events: auto; }
 
   /* ---------- 地图叠加物 ---------- */
-  /* P3-C：叠加物的槽位归属由 --zv-* 阶梯常量决定（core/layers.mjs SLOTS），不再依赖 DOM 插入顺序 */
+  /* P3-C：叠加物的槽位归属由 --zv-* 阶梯常量决定（core/layer-registry.mjs SLOTS），不再依赖 DOM 插入顺序 */
   .barriers, .tc-ring { z-index: var(--zv-base); }
   #fogCv { z-index: var(--zv-fog); }
   .barriers :is(ellipse, path) { fill: rgba(120,220,255,.06); stroke: rgba(140,230,255,.75); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
@@ -640,7 +640,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   <script>if (window.__worldFirst) document.getElementById('loading').classList.add('thumb');</script>
 </div>
 <div id="layPop" class="pop" hidden role="dialog" data-i18n-aria="layers_menu" aria-label="图层"><div id="layList">
-  <!-- P3-C：行由 app/layerhost.mjs renderLayerMenu() 按 LayerRegistry 的菜单描述符渲染（元素 id / 存储键 / 默认勾选与旧静态行一致） -->
+  <!-- P3-C：行由 app/layer-host.mjs renderLayerMenu() 按 LayerRegistry 的菜单描述符渲染（元素 id / 存储键 / 默认勾选与旧静态行一致） -->
 </div></div>
 <div id="setPop" class="pop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置" aria-labelledby="setTitle">
   <div class="sheet-h"><button type="button" class="btn" id="setBack" hidden><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14.5 6l-6 6 6 6"/></svg><span class="lbl" data-i18n="settings_title">设置</span></button><b id="setTitle" data-i18n="settings_title">设置</b><button type="button" class="btn ic" id="setX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -693,15 +693,15 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <div id="sr" class="sr-only" aria-live="polite"></div>
 <div id="status"></div>
 <script>
-// 首帧前置 #2（arch-v2 §2）：核心模块（app/boot.mjs）在地图库下载完后才求值。嵌入标记现在就打（首帧布局与以前一致）；宿主早到的消息先排队，app/host.mjs 装好监听后按原顺序补处理
+// 首帧前置 #2（arch-v2 §2）：核心模块（app/boot.mjs）在地图库下载完后才求值。嵌入标记现在就打（首帧布局与以前一致）；宿主早到的消息先排队，app/host-messages.mjs 装好监听后按原顺序补处理
 if (window.top !== window) { document.body.classList.add('embed'); window.__earlyMsgs = []; addEventListener('message', window.__earlyTap = function (e) { if (window.__earlyMsgs) window.__earlyMsgs.push(e); }); }
 </script>
-<script type="module" src="app/cardlinks.mjs" onerror="console.warn('[地图] app/cardlinks.mjs 加载失败：地点卡只显示通道链接')"></script>
+<script type="module" src="app/card-links.mjs" onerror="console.warn('[地图] app/card-links.mjs 加载失败：地点卡只显示通道链接')"></script>
 <script type="module" src="app/clouds.mjs" onerror="console.warn('[地图] app/clouds.mjs 加载失败：切层转场与漂移云关闭')"></script>
 <script type="module" src="app/fog.mjs" onerror="console.warn('[地图] app/fog.mjs 加载失败：迷雾探索关闭')"></script>
-<script type="module" src="app/storage-ui.mjs" onerror="console.warn('[地图] app/storage-ui.mjs 加载失败：设置「数据与映射」不显示')"></script>
-<script type="module" src="app/th-ui.mjs" onerror="console.warn('[地图] app/th-ui.mjs 加载失败：设置里的世界书同步 / 状态注入不显示')"></script>
-<script type="module" src="app/scale.mjs" onerror="console.warn('[地图] app/scale.mjs 加载失败：世界 ↔ 分组缩放交接关闭')"></script>
-<script type="module" src="app/cvd.mjs" onerror="console.warn('[地图] app/cvd.mjs 加载失败：色觉模式关闭')"></script>
+<script type="module" src="app/data-mapping-settings.mjs" onerror="console.warn('[地图] app/data-mapping-settings.mjs 加载失败：设置「数据与映射」不显示')"></script>
+<script type="module" src="app/tavernhelper-settings.mjs" onerror="console.warn('[地图] app/tavernhelper-settings.mjs 加载失败：设置里的世界书同步 / 状态注入不显示')"></script>
+<script type="module" src="app/scale-handoff.mjs" onerror="console.warn('[地图] app/scale-handoff.mjs 加载失败：世界 ↔ 分组缩放交接关闭')"></script>
+<script type="module" src="app/color-vision-mode.mjs" onerror="console.warn('[地图] app/color-vision-mode.mjs 加载失败：色觉模式关闭')"></script>
 </body>
 </html>

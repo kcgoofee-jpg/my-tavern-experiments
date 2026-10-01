@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { FX_TYPES, FX_PRESETS, FX_SLOT, fxBudget, createFX, fxDescriptor, registerFX } from '../map/three/particles.mjs';
 import { UNIFORM_SETS, uniformsIn, PRECIP_VS, PRECIP_FS, AURORA_VS, AURORA_FS } from '../map/three/shaders.mjs';
-import { LayerRegistry, SLOTS } from '../map/core/layers.mjs';
+import { LayerRegistry, SLOTS } from '../map/core/layer-registry.mjs';
 
 // ---------------- 假 three ----------------
 class V3 { constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; } }

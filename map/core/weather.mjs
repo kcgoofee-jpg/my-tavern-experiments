@@ -1,5 +1,5 @@
 // 活体世界氛围（Part 4-1）：天气的纯核心——预设表、由剧情 / 时钟推当前天气、粒子场与闪电时序。
-// 只算数据：不碰 DOM / 存储 / 酒馆全局（机检见 tools/check_architecture.py），渲染由 app/weather.mjs 用这里的输出画。
+// 只算数据：不碰 DOM / 存储 / 酒馆全局（机检见 tools/check_architecture.py），渲染由 app/weather-view.mjs 用这里的输出画。
 // 确定性：同一 (预设, 尺寸, 时间片, 种子) 永远得到同一份粒子——回放与截图对比才站得住，也便于单测。
 
 /** 预设表。kind: rain | sand | snow | lightning | clear；filter 是给 LayerRegistry 的 css 滤镜链（底图压暗 / 偏色）。 */

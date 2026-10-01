@@ -24,20 +24,20 @@ exists today.
 
 | Term | Meaning | State today |
 |---|---|---|
-| **SpatialNode** | One place in the node tree: `{ id, name, alias[], hints[], parent, type, at?, view?, canon }`. The tree is the only geography; matching picks the longest alias and prefers the deeper node. | **Exists (S1–S3).** `core/nodes.mjs` builds and reads the tree; `core/compat-v1.mjs` converts the first packs' v1 files once at load and the pack's `overlay.v2.json` adds what the v1 files never held (districts, outskirts). Every place resolves through it: the current location (`app/here-v2.mjs`), events (`core/event-geo.mjs`), people and trip ends (`app/spot.mjs`), the injected spatial contract (`tavern/spatial.mjs`). The v1 resolver `map/here.mjs` is gone. Schema-2 packs load natively from **S4**. |
-| **PresentEntities** | The entities standing at the current node (characters first, later any entity kind), used by the characters tab at micro levels. | **Partly.** `map/chars.mjs` and `tavern/characters.mjs` compute "present" characters from chat tags and MVU variables; where a person is drawn is decided by the node tree (`app/spot.mjs`). The node-based presence list is **planned (S6)**. |
+| **SpatialNode** | One place in the node tree: `{ id, name, alias[], hints[], parent, type, at?, view?, canon }`. The tree is the only geography; matching picks the longest alias and prefers the deeper node. | **Exists (S1–S3).** `core/nodes.mjs` builds and reads the tree; `core/compat-v1.mjs` converts the first packs' v1 files once at load and the pack's `overlay.v2.json` adds what the v1 files never held (districts, outskirts). Every place resolves through it: the current location (`app/place-resolver.mjs`), events (`core/event-geo.mjs`), people and trip ends (`app/spot.mjs`), the injected spatial contract (`tavern/spatial-contract.mjs`). The v1 resolver `map/here.mjs` is gone. Schema-2 packs load natively from **S4**. |
+| **PresentEntities** | The entities standing at the current node (characters first, later any entity kind), used by the characters tab at micro levels. | **Partly.** `map/characters-view.mjs` and `tavern/characters-parse.mjs` compute "present" characters from chat tags and MVU variables; where a person is drawn is decided by the node tree (`app/spot.mjs`). The node-based presence list is **planned (S6)**. |
 | **WorldRoster** | Every known entity across all sources, merged into one standard row list. | **Exists.** `core/roster.mjs` (`RosterRow`, five sources, priority arbitration). Attribute fields are still fixed slots; the author-defined `entities` field list is **planned (S4)**. |
-| **Stash** | Items with a real spatial home (map, marker, hidden compartment), reconciled against what the player already carries. | **Two stores today:** `core/stash.mjs` (world stash from pack data) and the chat-variable inventory (`tavern/inventory.mjs`). The unified `eden_map.stash` store is **planned (S6, decision D4)**. |
+| **Stash** | Items with a real spatial home (map, marker, hidden compartment), reconciled against what the player already carries. | **Two stores today:** `core/stash.mjs` (world stash from pack data) and the chat-variable inventory (`tavern/stash-store.mjs`). The unified `eden_map.stash` store is **planned (S6, decision D4)**. |
 
 ## 2. Directory layers and dependency direction
 
 ```
 map/core      leaf layer: pure logic, imports nothing outside map/core
 map/three     three.js helpers          → core (THREE is passed in by the caller, never imported)
-map/ui        shared widgets            → core; the two gallery panels import the optional tavern/baibai.mjs bridge
+map/ui        shared widgets            → core; the two gallery panels import the optional tavern/imagegen-bridge.mjs bridge
 map/app       viewer modules            → core, ui
 map/*.mjs     viewer plugins (root)     → app, core, ui; load the shared pure tavern modules on demand
-map/tavern    host + pure pipelines     → core (spatial.mjs also builds its places with app/here-v2.mjs, the one engine that places a text)
+map/tavern    host + pure pipelines     → core (spatial-contract.mjs also builds its places with app/place-resolver.mjs, the one engine that places a text)
 map/packs, map/data    data only        (JSON; no code)
 map/estate, map/props  3D pages + assets → core, three, ui
 tools, tests, blender  builders, checks, tests (never shipped to the viewer)
@@ -71,16 +71,15 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 
 | Module | Role |
 |---|---|
-| `budget.mjs` | Graphics memory budget policy: decides the byte budget per device class and whether reported usage means pressure. |
 | `clock.mjs` | Zero-token deterministic world clock: world time is computed from turns advanced, never from the model or system time. |
 | `depth.mjs` | Depth-system math (JS twin of `blender/depth.py`, golden-file parity): depth from altitude, channel interpolation, clouds above an altitude. |
-| `estate3d.mjs` | Estate3D manifest contract: validates and resolves model URLs, data paths and tier fallbacks for the estate and prop 3D pages. |
 | `event-geo.mjs` | Where an event happens: its place text placed by `nodes.locate`, the map that draws it, the pin's spot (pure; every tier and district word is pack data); `geo.taxonomy()` carries the pack's events block. |
 | `events-default.mjs` | The kernel's neutral event taxonomy (K-R53): what a pack with no events block shows; closing words and injected-line tag defaults. |
+| `graphics-budget.mjs` | Graphics memory budget policy: decides the byte budget per device class and whether reported usage means pressure. |
 | `haze.mjs` | Aerial-perspective filter: turns the haze density of the current depth plane into a filter chain. |
-| `layers.mjs` | LayerRegistry core: the 10 viewport slots, layer registration and ordering, visibility, filter chains, `describe()` summary. |
+| `layer-registry.mjs` | LayerRegistry core: the 10 viewport slots, layer registration and ordering, visibility, filter chains, `describe()` summary. |
 | `ledger.mjs` | Four-domain settlement ledger: validates atomic instructions per domain (assets, NPC, events, depth) and drops anything unverified. |
-| `legacy-custom.mjs` | The user's room names of the first versions (<= 0.9.2), read from local storage; folded into the chat variable by `tavern/mvu.mjs`. |
+| `legacy-custom.mjs` | The user's room names of the first versions (<= 0.9.2), read from local storage; folded into the chat variable by `tavern/mvu-readers.mjs`. |
 | `listeners.mjs` | ListenerBus: the single registry for global listeners, idempotent per key, `offAll()` and `describe()`. |
 | `lod.mjs` | Graphics LOD policy: which detail state a model should be in, hysteresis, and which async loads are still valid. |
 | `logbuf.mjs` | Console ring buffer for feedback reports, split into sessions; installs its hooks on first evaluation. |
@@ -97,9 +96,10 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `rng.mjs` | Deterministic pseudo-random generator (mulberry32) shared by particles, traffic and clue nodes. |
 | `room-gallery-db.mjs` | IndexedDB wrapper for room gallery images (browser only). |
 | `room-gallery-logic.mjs` | Pure gallery logic: resize dimensions, quota checks, export bundle shape. |
-| `roster.mjs` | CharacterRosterSystem: five-source roster merged into standard `RosterRow`s with priority arbitration, aliases and portraits. |
 | `root-store.mjs` | The map's chat-variable root (`eden_map`): custom names and uses load / save / migrate, local storage budget, worldbook sync, tag-rename replay. `createRootStore(host)`. |
-| `routine.mjs` | NPC schedule math shared by host and viewer (the host's `tavern/routine.mjs` forwards here). |
+| `roster.mjs` | CharacterRosterSystem: five-source roster merged into standard `RosterRow`s with priority arbitration, aliases and portraits. |
+| `routine.mjs` | NPC schedule math shared by host and viewer. |
+| `scene3d-manifest.mjs` | Estate3D manifest contract: validates and resolves model URLs, data paths and tier fallbacks for the estate and prop 3D pages. |
 | `scrapbook.mjs` | Pinned-image-and-note index logic for landmarks (bytes live in the gallery database). |
 | `stash.mjs` | World stash table: where pack-defined items are hidden (map, marker, compartment) and reconciliation against carried items. |
 | `stash3d.mjs` | Pure mapping from stash entries to 3D scene positions, fed by the caller's room table. |
@@ -119,51 +119,51 @@ mutable state is written only by its declaring module through `set*()`.
 | Module | Role |
 |---|---|
 | `boot.mjs` | Startup: fetches registry, markers, derived data, dictionary and pack in parallel, builds OpenSeadragon, posts `ready`, failure exits. |
-| `bridge.mjs` | Compatibility face: read-only `window` getters for the old global names used by browser probes. |
 | `bus.mjs` | Viewer-side listener bus: every `window` / `document` listener is registered here and removed on unload. |
-| `cardlinks.mjs` | Links at the bottom of a place card (cross-layer channel, 3D link, gallery entry). |
+| `card-links.mjs` | Links at the bottom of a place card (cross-layer channel, 3D link, gallery entry). |
 | `clouds.mjs` | Drifting clouds and the layer-change transition cover. |
-| `cvd.mjs` | Colour-vision mode: safe palette, class/attribute switches, broadcast to sub-pages. |
-| `depthhaze.mjs` | Closes the depth → haze → `depth-haze` slot / fog canvas loop for the current depth plane. |
+| `color-vision-mode.mjs` | Colour-vision mode: safe palette, class/attribute switches, broadcast to sub-pages. |
+| `current-pack.mjs` | The current pack, resolved once at startup (live binding `PACK`, `packData(key)`). |
+| `data-mapping-settings.mjs` | Settings "data and mapping" page: local storage usage and current data sources (read only). |
+| `depth-haze.mjs` | Closes the depth → haze → `depth-haze` slot / fog canvas loop for the current depth plane. |
 | `dzi-worker-src.mjs` | Source string of the tile decode worker (exported as text so a blob worker works inside `srcdoc`). |
 | `dzi-worker.mjs` | Viewer-side client of the tile decode worker, with fallback to the stock image path. |
-| `estate.mjs` | Estate / 3D sub-page host: blob iframe with `<base>`, failure hook, sub-page messages, generic 3D viewer entry. |
-| `extapi.mjs` | Local extension interface `window.EdenMap` and the chat id. |
-| `here-v2.mjs` | The current location: `nodes.locate` over the node tree, mapped to the result shape the consumers read (`level`, `map`, `marker`, `room`, `node`, `transit`); also used by `tavern/spatial.mjs` and the builder tools. |
+| `extension-api.mjs` | Local extension interface `window.EdenMap` and the chat id. |
 | `feedback-report.mjs` | Pure feedback-report text assembly with a whitelist of fields. |
 | `feedback.mjs` | Feedback button: installs the log buffer, previews and copies / downloads the report. |
 | `fog.mjs` | Fog exploration overlay: unvisited places dimmed, visits recorded per chat. |
 | `fps.mjs` | Debug frame-rate readout and sub-page toggle. |
-| `host.mjs` | Host message interface: origin / token checks, protocol validation, dispatch by type. |
+| `hires-inset-tiles.mjs` | High-resolution inset tiles overlaid when zooming into an inset's area. |
+| `host-messages.mjs` | Host message interface: origin / token checks, protocol validation, dispatch by type. |
 | `i18n.mjs` | Language and theme: dictionary, `t` / `tr` / `nm`, `setLang`, `setTheme`. |
-| `insets.mjs` | High-resolution inset tiles overlaid when zooming into an inset's area. |
-| `layerhost.mjs` | Viewer-side LayerRegistry assembly: registry singleton, `.vpslot` slot containers, `window.TCLayers` summary. |
-| `layers.mjs` | Layer navigation: layer switcher strip, up one level, Esc handling, single-key shortcuts. |
-| `loadprog.mjs` | Progress of the full-screen loading layer, sharing `ui/progress.mjs`. |
-| `locate.mjs` | Initial view and current place: `focusStart`, `markHere`, `hereRes` (over `here-v2.mjs`), `drawnAt`, `jumpHere`. |
-| `loot.mjs` | Glowing pickup items on the map from the world stash; a click sends the pickup intent to the host. |
+| `layer-host.mjs` | Viewer-side LayerRegistry assembly: registry singleton, `.vpslot` slot containers, `window.TCLayers` summary. |
+| `legacy-globals.mjs` | Compatibility face: read-only `window` getters for the old global names used by browser probes. |
+| `load-progress.mjs` | Progress of the full-screen loading layer, sharing `ui/progress.mjs`. |
+| `locate.mjs` | Initial view and current place: `focusStart`, `markHere`, `hereRes` (over `place-resolver.mjs`), `drawnAt`, `jumpHere`. |
+| `map-level-nav.mjs` | Layer navigation: layer switcher strip, up one level, Esc handling, single-key shortcuts. |
+| `map-switch.mjs` | Map switching: `go` with registrable wrappers, snapshot, map chrome, alternate base map. |
 | `markers.mjs` | Markers and place cards: placement, tracking, show / close card, world-map and point-map overlays. |
-| `nav.mjs` | Map switching: `go` with registrable wrappers, snapshot, map chrome, alternate base map. |
 | `nodes-runtime.mjs` | The viewer's node tree: the loaded registry converted once by `core/compat-v1.mjs`; breadcrumb, up button, warm-up neighbours, estate stand-in and 3D-page test read it (no `parent` walking). |
-| `pack.mjs` | The current pack, resolved once at startup (live binding `PACK`, `packData(key)`). |
+| `place-resolver.mjs` | The current location: `nodes.locate` over the node tree, mapped to the result shape the consumers read (`level`, `map`, `marker`, `room`, `node`, `transit`); also used by `tavern/spatial-contract.mjs` and the builder tools. |
 | `plugins.mjs` | Plugin registry `P`: the only channel between app modules and root plugins. |
-| `quests.mjs` | Viewer rendering of dynamic clue nodes as breathing circles. |
-| `scale.mjs` | Scale hand-off between the world map and the city layers, plus the surrounding transition ring. |
+| `quests-view.mjs` | Viewer rendering of dynamic clue nodes as breathing circles. |
+| `scale-handoff.mjs` | Scale hand-off between the world map and the city layers, plus the surrounding transition ring. |
 | `settings.mjs` | Settings overlay: pages, section registration, search, about / update check, self-check. |
-| `spot.mjs` | Where a located place is drawn for a person or a trip end (stand-in landmark of a 3D page, landmark, the node's own point, district); pure, the viewer passes what it knows. |
+| `sharpness-tiers.mjs` | Sharpness tiers, data-saver decisions, load progress, overlay and label avoidance. |
 | `shell.mjs` | Shell: control column, the single drawer / right rail glue, notice layer, status dot, one-hand mode, double-click zoom. |
+| `spot.mjs` | Where a located place is drawn for a person or a trip end (stand-in landmark of a 3D page, landmark, the node's own point, district); pure, the viewer passes what it knows. |
+| `stash-markers.mjs` | Glowing pickup items on the map from the world stash; a click sends the pickup intent to the host. |
 | `state.mjs` | Core viewer state: current map, registry, OSD instance, focus request. |
-| `storage-ui.mjs` | Settings "data and mapping" page: local storage usage and current data sources (read only). |
-| `th-ui.mjs` | Settings for TavernHelper features: worldbook add-on sync, state injection, macros, injection depth. |
+| `subpage3d-host.mjs` | Estate / 3D sub-page host: blob iframe with `<base>`, failure hook, sub-page messages, generic 3D viewer entry. |
+| `tavernhelper-settings.mjs` | Settings for TavernHelper features: worldbook add-on sync, state injection, macros, injection depth. |
 | `theme.mjs` | Per-view theme from the pack (`ui.theme.views`, K-R70): one `<style id="packTheme">`, `body[data-glow]` for the view that defines a glow. |
-| `tiers.mjs` | Sharpness tiers, data-saver decisions, load progress, overlay and label avoidance. |
 | `topbar.mjs` | Top bar layout, background warm-up, version code. |
-| `traffic.mjs` | Viewer rendering of light streams on the `fx` slot canvas. |
+| `traffic-view.mjs` | Viewer rendering of light streams on the `fx` slot canvas. |
 | `util.mjs` | Constants and helpers: coordinate conversion, `$`, `esc`, `ico`, `post` (protocol version stamp), `getJSON`. |
 | `visibility.mjs` | Viewport visibility render throttling: pause switch with reference-counted reasons. |
-| `vision.mjs` | Viewer side of vision cones and stealth: draws fields of view, reports the hardest sighting on a move. |
+| `vision-view.mjs` | Viewer side of vision cones and stealth: draws fields of view, reports the hardest sighting on a move. |
 | `wander.mjs` | NPC wandering driven by the deterministic clock and schedule; walkers never teleport. |
-| `weather.mjs` | Viewer rendering of weather particles, tint and lightning on the `fx` slot. |
+| `weather-view.mjs` | Viewer rendering of weather particles, tint and lightning on the `fx` slot. |
 
 ### 3.3 map/tavern
 
@@ -171,59 +171,58 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 
 | Module | Role |
 |---|---|
-| `action.mjs` | Map-driven actions: a clicked point of interest becomes one sentence (off / compose / silent system injection). |
-| `adapter.mjs` | Variable mapping: which `stat_data` path holds location, time, date, presence; the pack's own paths first (`defaults`), then auto-discovery by field name. |
-| `baibai.mjs` | Optional bridge to the external image-generation extension; every function degrades quietly when absent. |
-| `budget.mjs` | Local storage budget: LRU per chat, avatar caps, quota-hit recovery; touches only the map's own keys. |
-| `characters.mjs` | Character bar: finds characters and their latest place from chat tags and MVU variables. |
+| `background-scan-scheduler.mjs` | Background quiet-derivation scheduler: read-only incremental scans that yield to a live panel or generation. |
+| `branch-follow.mjs` | Follow-branch resolution: newest build of a branch from `head.json` across CDN mirrors. |
+| `characters-parse.mjs` | Character bar: finds characters and their latest place from chat tags and MVU variables. |
 | `chars-flow.mjs` | Character and world-time flow of the host: ContextPipeline and MVUBridge assembly, world time and outfit, roster / portrait / trips / routine forwarding to the viewer. `createCharsFlow(host)`. |
-| `compose.mjs` | Chat-input templates ("go here", "ask about this"): fill the input box, never send. |
+| `check-failure-report.mjs` | Failed-check report ring: structured reports injected next turn so the story follows objective facts. |
+| `compose-templates.mjs` | Chat-input templates ("go here", "ask about this"): fill the input box, never send. |
 | `context.mjs` | ContextPipeline: message window normalization, round computation, custom tag replay, trips; pure data in and out. |
+| `data-source-registry.mjs` | Data source registry: where the host reads chat state from, for settings and `EdenMap.sources()`. |
 | `eden-map.js` | Host entry: floating button and panel, viewer state machine, message dispatch, recompute scheduling, cleanup assembly. |
-| `edenapi.mjs` | Machine-readable contract of the public `EdenMap` API exposed to the host page. |
-| `events.mjs` | Event parsing: reads event tags from chat text, classifies them through the pack's events block (`typeOf`, K-R50), merges (type + node, K-R54) and ages them (pure). |
-| `failrep.mjs` | Failed-check report ring: structured reports injected next turn so the story follows objective facts. |
-| `follow.mjs` | Follow-branch resolution: newest build of a branch from `head.json` across CDN mirrors. |
+| `events-parse.mjs` | Event parsing: reads event tags from chat text, classifies them through the pack's events block (`typeOf`, K-R50), merges (type + node, K-R54) and ages them (pure). |
+| `extension-api-contract.mjs` | Machine-readable contract of the public `EdenMap` API exposed to the host page. |
 | `host-about.mjs` | Version info and update check orchestration, all effects injected. |
 | `host-api.mjs` | The local `window.EdenMap` extension API (subscriptions, avatar shrinking) and the TavernHelper-side exposure: script buttons, macros, script info, worldbook automation. `createHostApi(host)`. |
 | `host-checks.mjs` | Startup self-check, first-run card, host toasts, auto update check and version switching. `createHostChecks(host)`. |
 | `host-lifecycle.mjs` | Host instance lifecycle: takeover of old instances, panel DOM mount, listener registration, cleanup hooks. |
 | `host-routes.mjs` | CDN route table, version inference and route race; pure computation. |
 | `host-strings.mjs` | The host's few product texts (map name, script name, "new events" toast) from the manifest `strings` (`hostStr`), else neutral defaults; pure. |
-| `host-th.mjs` | TavernHelper adapter: request wrapper, function probing, pack namespace, script-variable preferences, worldbook automation. |
-| `inventory.mjs` | Spatial inventory in the chat variable, summarized into one injected line (pure). |
+| `host-tavernhelper.mjs` | TavernHelper adapter: request wrapper, function probing, pack namespace, script-variable preferences, worldbook automation. |
+| `imagegen-bridge.mjs` | Optional bridge to the external image-generation extension; every function degrades quietly when absent. |
+| `interaction-modes.mjs` | Script ↔ card interaction modes: compact state injection, tag reconciliation, minimal checkpoint. |
 | `keyframes.mjs` | Long-horizon keyframe compression: per-floor state to change-point frames, a droppable cache. |
-| `llm.mjs` | Private API key gateway: computes how to call a provider; does no network or storage itself. |
 | `llm-flow.mjs` | Background flows that call a user endpoint or write the add-on worldbook: navigator (W5), just-in-time hydration (W6), fact crystallization (W7). `createLlmFlow(host)`. |
+| `llm-gateway.mjs` | Private API key gateway: computes how to call a provider; does no network or storage itself. |
 | `loot-flow.mjs` | Pickup and stash flow: map-driven action injection, check dice and failure ring (W2), settlement gate and leak audit (W11), virtual ledger slot (W12), pickup scan, spatial inventory and world stash. `createLootFlow(host)`. |
 | `modes-flow.mjs` | Interaction modes (a)(d)(e) on the host side: state line and spatial contract injection, checkpoint, location conflict check. `createModesFlow(host)`. |
-| `modes.mjs` | Script ↔ card interaction modes: compact state injection, tag reconciliation, minimal checkpoint. |
 | `msgtext.mjs` | Message text pre-processing: strips reasoning blocks and variable-update blocks before parsing. |
-| `mvu.mjs` | Pure readers for MVU data and the map's own custom data (names, outfit, roster rows through the pack's slot fields, portraits, time and period bands). |
 | `mvu-bridge.mjs` | MVUBridge: the only module allowed to touch `Mvu` / `SillyTavern`; snapshots, `getHere` fallbacks, chat variables, roster reads. |
-| `navigator.mjs` | Background navigator gateway: scheduling, input assembly and response gating for a private-key planner. |
-| `ops.mjs` | Restricted operation DSL sandbox: extracts, validates and normalizes atomic operation blocks. |
+| `mvu-readers.mjs` | Pure readers for MVU data and the map's own custom data (names, outfit, roster rows through the pack's slot fields, portraits, time and period bands). |
+| `mvu-snapshot.mjs` | MVU snapshot selection and generation-state rules. |
+| `operation-dsl.mjs` | Restricted operation DSL sandbox: extracts, validates and normalizes atomic operation blocks. |
 | `pack-profile.mjs` | The profile of the pack the script runs (`getProfile` / `setProfile`); the kernel profile until the pack's declarations arrive. |
 | `picker.mjs` | Pure helpers for the customization panel: grouped object list, search, fly-to targets. |
+| `place-action-injection.mjs` | Map-driven actions: a clicked point of interest becomes one sentence (off / compose / silent system injection). |
+| `planner-gateway.mjs` | Background navigator gateway: scheduling, input assembly and response gating for a private-key planner. |
 | `preset.mjs` | Reads semi-structured status fields written by community presets as location / time / presence fallbacks. |
 | `profile-load.mjs` | Fetches a pack's manifest and overlay and builds its profile (`loadPackProfile`); the caller passes the fetcher. |
-| `routine.mjs` | Host-side entry that forwards to `core/routine.mjs`. |
 | `sanitize.mjs` | Community-preset text sanitizer: strips reasoning / status blocks by tag table (pure). |
 | `selfcheck.mjs` | Startup self-check verdicts from facts the host collected (pure). |
-| `shujuku.mjs` | Read-only compatibility with the optional table-database extension. |
-| `snapshot.mjs` | MVU snapshot selection and generation-state rules. |
-| `sources.mjs` | Data source registry: where the host reads chat state from, for settings and `EdenMap.sources()`. |
-| `spatial.mjs` | Spatial coordinate contract compiler: current place plus surrounding geometry to a token-budgeted JSON. |
+| `settlement-guard.mjs` | Variable settlement timing guard: ledger reconciliation writes are queued until after the main update window. |
+| `spatial-contract.mjs` | Spatial coordinate contract compiler: current place plus surrounding geometry to a token-budgeted JSON. |
 | `splash.mjs` | First-run self-check card with a slow progress bar tied to real preloading. |
-| `th.mjs` | Thin TavernHelper wrappers: feature probing, unified external requests, display-only leak fence. |
-| `tick.mjs` | Background quiet-derivation scheduler: read-only incremental scans that yield to a live panel or generation. |
+| `stash-store.mjs` | Spatial inventory in the chat variable, summarized into one injected line (pure). |
+| `stat-path-mapping.mjs` | Variable mapping: which `stat_data` path holds location, time, date, presence; the pack's own paths first (`defaults`), then auto-discovery by field name. |
+| `storage-budget.mjs` | Local storage budget: LRU per chat, avatar caps, quota-hit recovery; touches only the map's own keys. |
+| `tabledb-bridge.mjs` | Read-only compatibility with the optional table-database extension. |
+| `tavernhelper-api.mjs` | Thin TavernHelper wrappers: feature probing, unified external requests, display-only leak fence. |
 | `timeline-flow.mjs` | Timeline replay (Part 5-4) and the keyframe cache wiring on the host side. `createTimelineFlow(host)`. |
 | `timeline.mjs` | Timeline replay core: what the map should show at floor N (location, time, who is where). |
-| `trips.mjs` | Trip derivation: "A to B" trips from per-floor places and character tags, styled by transport mode. |
-| `varsync.mjs` | Variable settlement timing guard: ledger reconciliation writes are queued until after the main update window. |
-| `wb_crystallize.mjs` | Story-fact crystallization into the add-on worldbook as keyword-triggered entries. |
-| `wb_jit.mjs` | Worldbook just-in-time hydration: only entries relevant to the current place are enabled. |
-| `wbsync.mjs` | Worldbook add-on write and auto-sync: touches only our own book and our own marked entries. |
+| `trips-parse.mjs` | Trip derivation: "A to B" trips from per-floor places and character tags, styled by transport mode. |
+| `worldbook-crystallize.mjs` | Story-fact crystallization into the add-on worldbook as keyword-triggered entries. |
+| `worldbook-jit.mjs` | Worldbook just-in-time hydration: only entries relevant to the current place are enabled. |
+| `worldbook-sync.mjs` | Worldbook add-on write and auto-sync: touches only our own book and our own marked entries. |
 
 ### 3.4 map/ui
 
@@ -235,7 +234,7 @@ Shared widgets, used by the viewer, the host and the 3D pages. Mostly plain scri
 | `chrome3d.js` | 3D viewer chrome (`window.UI3D`) shared by the estate page and the prop viewer. |
 | `gallery.js` | Generic room gallery viewer with lazy loading and swipe / key navigation. |
 | `icons.js` | The single icon set (`window.UIIcon`): grid, stroke and color rules. |
-| `illust-panel.js` | Room illustration panel driving the optional image-generation extension. |
+| `illustration-panel.js` | Room illustration panel driving the optional image-generation extension. |
 | `notice.mjs` | The single notification layer (P0 blocking, P1 banner, P2 toast). |
 | `progress.mjs` | Unified loading-progress component: determinate or elapsed-time, retry. |
 | `room-gallery-panel.js` | Room gallery UI: custom names, upload, resize, reorder, export bundle. |
@@ -248,13 +247,13 @@ fake THREE.
 
 | Module | Role |
 |---|---|
-| `ctx.mjs` | Shared 3D render-context factory: pixel ratio caps, context loss and restore, real dispose. |
 | `culling.mjs` | Frustum culling and bounding volumes for static matrices and instanced meshes. |
 | `daynight.mjs` | Dynamic day / night: world clock to four-period lighting, fog and emissive parameters with smoothing. |
 | `instancing.mjs` | GPU instancing of static meshes with an instance-to-mesh index map. |
-| `lod.mjs` | Dynamic LOD controller applying `core/lod.mjs` decisions to a three scene. |
+| `lod-controller.mjs` | Dynamic LOD controller applying `core/lod.mjs` decisions to a three scene. |
 | `particles.mjs` | `fx` slot particle renderer (weather, aurora): one draw call per effect, descriptors registered by the caller. |
 | `relief.mjs` | 2.5D relief material (normal, parallax, roughness) lit by the day / night state. |
+| `render-context.mjs` | Shared 3D render-context factory: pixel ratio caps, context loss and restore, real dispose. |
 | `shaders.mjs` | GLSL fragment library for particles, aurora and relief normals. |
 | `texres.mjs` | Texture resources: compressed-texture capability probing, KTX2 attachment, budget inputs. |
 
@@ -265,29 +264,29 @@ They import core state from `app/*` and reach each other only through `app/plugi
 
 | Module | Role |
 |---|---|
-| `chars.mjs` | Character tab and map avatars: placement, grouped stacks, per-person toggles, fly-to. |
-| `compose.mjs` | Place / event / character card buttons that send template sentences to the host input box (embedded only). |
-| `custom.mjs` | MVU-linked viewer part: custom names and uses and their dialog; the night tint, outfit line and rename hints live in the `custom-*` modules below. |
+| `characters-view.mjs` | Character tab and map avatars: placement, grouped stacks, per-person toggles, fly-to. |
+| `compose-view.mjs` | Place / event / character card buttons that send template sentences to the host input box (embedded only). |
 | `custom-dialog-view.mjs` | HTML builders of the names-and-uses dialog (list, picker, results, edit form); pure, state passed in per call. |
 | `custom-hints.mjs` | One-time rename hints (toast through the notice layer). |
+| `custom-names-view.mjs` | MVU-linked viewer part: custom names and uses and their dialog; the night tint, outfit line and rename hints live in the `custom-*` modules below. |
 | `custom-outfit.mjs` | The player's outfit text pushed by the host; asks the event bar to redraw. |
 | `custom-tint.mjs` | Night tint and period base-map switch from world time. |
-| `events.mjs` | Event layer: placement, icons, event list, fly-to; the screen effects and world-map badges are in `events-fx.mjs`. |
 | `events-fx.mjs` | Screen glitch effect declared by event types and the event count badge on the world-map city marker. |
-| `inv.mjs` | Spatial inventory on place cards (viewer side of the inventory). |
-| `scrapbook.mjs` | Viewer side of the landmark scrapbook: pinned images and notes on place cards. |
+| `events-view.mjs` | Event layer: placement, icons, event list, fly-to; the screen effects and world-map badges are in `events-fx.mjs`. |
+| `scrapbook-view.mjs` | Viewer side of the landmark scrapbook: pinned images and notes on place cards. |
 | `security.mjs` | Optional security overlay: shield chips on places and a rules row on cards. |
-| `trips.mjs` | Trip layer: draws recent trips and in-transit arcs by transport mode. |
-| `unmapped.mjs` | Unmapped places: small picker to assign an unrecognized place name to a node, marker or ignore it. |
-| `varmap.mjs` | Settings "variable mapping" page (embedded only). |
-| `wbpeek.mjs` | Worldbook peek capsule on place cards (read only). |
+| `stash-view.mjs` | Spatial inventory on place cards (viewer side of the inventory). |
+| `stat-path-mapping-view.mjs` | Settings "variable mapping" page (embedded only). |
+| `trips-view.mjs` | Trip layer: draws recent trips and in-transit arcs by transport mode. |
+| `unmapped-place-picker.mjs` | Unmapped places: small picker to assign an unrecognized place name to a node, marker or ignore it. |
+| `worldbook-peek-view.mjs` | Worldbook peek capsule on place cards (read only). |
 
 ### 3.7 Pages
 
 | File | Role |
 |---|---|
 | `map/viewer.html` | The viewer page: markup, inline tokens and the `--zu-*` / `--zv-*` ladders, preloads, startup scripts, plugin script tags. |
-| `map/props/viewer3d.html` | The generic 3D viewer (`?model=<id>`): loads `<id>/manifest.json` through `core/estate3d.mjs`, baked lighting, no runtime lights. |
+| `map/props/viewer3d.html` | The generic 3D viewer (`?model=<id>`): loads `<id>/manifest.json` through `core/scene3d-manifest.mjs`, baked lighting, no runtime lights. |
 
 ## 4. Data flow host → viewer
 
@@ -300,12 +299,12 @@ Mvu / SillyTavern globals
 MVUBridge ─────────► ContextPipeline (tavern/context.mjs; msgtext / sanitize / preset feed it)
                         │  pure data in / out: message window, round, roster, tags, trips
                         ▼
-        ledger (core/ledger.mjs) + varsync (tavern/varsync.mjs)
+        ledger (core/ledger.mjs) + varsync (tavern/settlement-guard.mjs)
                         │  settlement checks; writes queued until after the main update window
                         ▼
 host recompute (tavern/eden-map.js) ──► protocol SCHEMA (core/protocol.mjs) ──► postMessage
                         ▼
-viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layers.mjs + app/layerhost.mjs)
+viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-registry.mjs + app/layer-host.mjs)
 ```
 
 - **The host reads, the viewer draws.** `eden-map.js` schedules a recompute when variables or floors change,
@@ -331,15 +330,15 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layers.
 - **Roster**: `core/roster.mjs` merges five sources — MVU variables, chat tags, table database, fallback roster,
   image library — into standard `RosterRow`s (`name, role, location, status, tags, source, present`), highest
   priority wins per field, aliases recognized, portraits attached. `describe()` returns counts for probes.
-- **Current place**: `app/here-v2.mjs` places the chat location with `nodes.locate` over the node tree; the result keeps
+- **Current place**: `app/place-resolver.mjs` places the chat location with `nodes.locate` over the node tree; the result keeps
   the six-level shape the viewer reads (room, zone, landmark, layer, group, world place) and carries the node.
-- **Every place resolves through nodes** (S3): the current location (`app/here-v2.mjs`), people and trip ends
-  (`app/spot.mjs`), events (`core/event-geo.mjs`, `tavern/events.mjs` `setGeo`), the injected spatial contract
-  (`tavern/spatial.mjs`) and item places (a stash row names a landmark node; a hidden row shows where the current
+- **Every place resolves through nodes** (S3): the current location (`app/place-resolver.mjs`), people and trip ends
+  (`app/spot.mjs`), events (`core/event-geo.mjs`, `tavern/events-parse.mjs` `setGeo`), the injected spatial contract
+  (`tavern/spatial-contract.mjs`) and item places (a stash row names a landmark node; a hidden row shows where the current
   location places the player). Nothing matches a place by a registry `kind` or by a label any more.
-- **Events / characters / trips**: parsed from chat tags and MVU by `tavern/events.mjs`, `characters.mjs`,
-  `trips.mjs`; an event's type, group, icon, colour, effect and default-off come from the pack's events block (S4-1, K-R68); a pack without one gets the kernel's neutral taxonomy.
-- **Items**: `core/stash.mjs` (pack-defined world stash) and `tavern/inventory.mjs` (chat-variable inventory),
+- **Events / characters / trips**: parsed from chat tags and MVU by `tavern/events-parse.mjs`, `characters-parse.mjs`,
+  `trips-parse.mjs`; an event's type, group, icon, colour, effect and default-off come from the pack's events block (S4-1, K-R68); a pack without one gets the kernel's neutral taxonomy.
+- **Items**: `core/stash.mjs` (pack-defined world stash) and `tavern/stash-store.mjs` (chat-variable inventory),
   reconciled by item id; ledger discipline (`core/ledger.mjs`) governs what may be written.
 
 **Target (planned, by step).**
@@ -394,7 +393,7 @@ still loading. The English place-name table left the dictionary: the manifest `d
 (eden: `packs/eden/names.en.json`), a pack without it shows the Chinese text. The people page draws one section per
 entity group in the pack's order (`entities.groups`; the present group first; label = dictionary / pack string
 `ch.g_<id>`, else the group's `i18n` label, `label`, id): `core/profile.mjs` keys `tables` by group id and gives
-`groups` / `presentId` / `stageGroup`, `mvu.mjs rosters()` returns one entry per group, and `eden-map:chars` gains an
+`groups` / `presentId` / `stageGroup`, `mvu-readers.mjs rosters()` returns one entry per group, and `eden-map:chars` gains an
 optional `groups: [{ id, label, rows, present? }]` beside the unchanged `rosters`. The watchdog's term list now
 includes the English card words (`EN_TERMS`, case-sensitive).
 
@@ -413,7 +412,7 @@ includes the English card words (`EN_TERMS`, case-sensitive).
   entries marked `extra.eden_id` are ever written.
 - **Script variable**: user preferences listed in `SCRIPT_KEYS` are mirrored into the TavernHelper script variable
   `eden_prefs` so they survive a browser-storage wipe.
-- **Per-chat data and budget**: per-chat keys are LRU-ranked and capped by `tavern/budget.mjs`; it touches only
+- **Per-chat data and budget**: per-chat keys are LRU-ranked and capped by `tavern/storage-budget.mjs`; it touches only
   keys starting with the map's prefix. Images live in IndexedDB (`core/room-gallery-db.mjs`), never in the chat.
 - **Names kept until S10**: the `edenMap*` / `eden_map` / `EdenMap` / `window.TC*` names are external contracts.
   They are renamed only at S10, with a migration and a re-confirmation (decisions D5, D12).
@@ -422,7 +421,7 @@ includes the English card words (`EN_TERMS`, case-sensitive).
 
 - **Base maps**: OpenSeadragon (`map/vendor/openseadragon`) over DZI tile pyramids in `map/art/`. Tile decoding can
   run in a blob worker (`app/dzi-worker*.mjs`) with fallback to the stock path.
-- **LayerRegistry** (`core/layers.mjs`, assembled by `app/layerhost.mjs`): ten slots, bottom to top —
+- **LayerRegistry** (`core/layer-registry.mjs`, assembled by `app/layer-host.mjs`): ten slots, bottom to top —
   `base`, `depth-haze`, `fog`, `routes`, `trips`, `events`, `markers`, `labels`, `fx`, `interaction`. A slot's z
   value is `(index + 1) × 10`. Layers register `{ id, slot, kind, order, mount, unmount, … }`; filter chains
   (`css` / `canvas`) stack per layer. `window.TCLayers` exposes the standard summary.
@@ -432,8 +431,8 @@ includes the English card words (`EN_TERMS`, case-sensitive).
   z-index is forbidden outside the tokens (watchdog check 3).
 - **`map/three` runtime**: pure leaf helpers (context factory, culling, instancing, LOD, day / night, particles,
   relief, shaders, texture resources). THREE is injected by the caller.
-- **Estate page**: `map/estate/` (`index.html`, `main.js`) is the first pack's 3D page, loaded by `app/estate.mjs`
-  into a blob iframe. Its models come from `map/estate/model/manifest.json` through `core/estate3d.mjs`; the
+- **Estate page**: `map/estate/` (`index.html`, `main.js`) is the first pack's 3D page, loaded by `app/subpage3d-host.mjs`
+  into a blob iframe. Its models come from `map/estate/model/manifest.json` through `core/scene3d-manifest.mjs`; the
   generic viewer `map/props/viewer3d.html?model=<id>` serves each landmark's `manifest.json`. Both use baked
   lighting and the shared chrome in `map/ui`.
 - **Fx and day / night**: weather and aurora render into the `fx` slot; the world clock (`core/clock.mjs`) drives
@@ -478,12 +477,12 @@ Scan scope is `ENGINE_GLOBS`; `map/vendor`, `map/estate`, `map/props/*/**`, `map
 ## 10. Where to change what
 
 - **Add a layer** — register a `{ id, slot, kind, … }` descriptor with the registry from a module under `map/app/`
-  (see `app/fog.mjs`, `app/weather.mjs`); use only slots in `SLOTS`; take z values from the `--zv-*` tokens, never
+  (see `app/fog.mjs`, `app/weather-view.mjs`); use only slots in `SLOTS`; take z values from the `--zv-*` tokens, never
   a bare number; add menu / visibility wiring through the registry. Declarative author-defined layers are planned
   (S8).
 - **Add a protocol message** — add the entry with its direction tag to `SCHEMA` in `core/protocol.mjs`; send with
   `envelope` / `post`, receive through `accept`; add a case to `tests/protocol.test.mjs`; if a sub-page consumes
-  it, handle it in `app/estate.mjs` and the page.
+  it, handle it in `app/subpage3d-host.mjs` and the page.
 - **Add a storage key** — register it in `KEYS` in `core/storage.mjs` (owner, scope, default); read and write only
   through that module; default new toggles to off; add a per-chat flag when it is chat-scoped so budget cleaning
   sees it.
@@ -517,8 +516,8 @@ The whole path from source data to the running viewer, in one picture (moved her
 ┌──────────────────────────────▼──────── Runtime (inside the tavern) ──┐
 │ Host script map/tavern/eden-map.js (TavernHelper)                     │
 │   · floating button + panel in the host page, viewer via srcdoc/blob  │
-│   · current place: MVU variables → map/app/here-v2.mjs (node tree)    │
-│   · events: floor text → map/tavern/events.mjs → placement / banner   │
+│   · current place: MVU variables → map/app/place-resolver.mjs (node tree)    │
+│   · events: floor text → map/tavern/events-parse.mjs → placement / banner   │
 │   · situation injection: injectPrompts (in_chat, depth 4)             │
 │ Viewer map/viewer.html (OpenSeadragon 5, canvas)                      │
 │   · map registry map/data/maps.json · tokens map/ui/tokens.css        │

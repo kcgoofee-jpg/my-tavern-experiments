@@ -1,6 +1,6 @@
 // ONE-OFF (S3-2). Generated map/packs/eden/overlay.v2.json from the event geography constants that lived in code before
-// S3-2 (docs/kernel-schema.md Appendix A.5): RE_UP / RE_MID / RE_LOW / RE_OUT / RE_RING in map/tavern/events.mjs and the viewer's
-// ZONES in map/events.mjs. Those constants are deleted from the engine in the same step, so this script reads them from the
+// S3-2 (docs/kernel-schema.md Appendix A.5): RE_UP / RE_MID / RE_LOW / RE_OUT / RE_RING in map/tavern/events-parse.mjs and the viewer's
+// ZONES in map/events-view.mjs. Those constants are deleted from the engine in the same step, so this script reads them from the
 // last commit that still had them (e36aadd, head #144). Kept for the record; there is nothing to re-run.
 //   node tools/gen_eden_overlay_v2.mjs [--write]      prints the overlay (or writes it)
 import fs from 'node:fs';
@@ -14,7 +14,7 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url)), REV = 'e36aadd';
 const J = p => JSON.parse(fs.readFileSync(ROOT + p, 'utf8'));
 const old = p => execFileSync('git', ['-C', ROOT, 'show', `${REV}:${p}`], { encoding: 'utf8', maxBuffer: 1 << 26 });
 const words = (src, name) => { const m = src.match(new RegExp(`const ${name} = /(.+)/;`)); if (!m) throw new Error('missing ' + name); return m[1].split('|'); };
-const ev = old('map/tavern/events.mjs'), vw = old('map/events.mjs');
+const ev = old('map/tavern/events-parse.mjs'), vw = old('map/events-view.mjs');
 const RE = { up: words(ev, 'RE_UP'), mid: words(ev, 'RE_MID'), low: words(ev, 'RE_LOW'), out: words(ev, 'RE_OUT'), ring: words(vw, 'RE_RING') };
 const zonesOf = tier => [...vw.match(new RegExp(`${tier}: \\[(.*)\\],?\\n`))[1].matchAll(/\[\/(.+?)\/, (-?[\d.]+), (-?[\d.]+)\]/g)].map(m => ({ pieces: m[1].split('|'), x: +m[2], y: +m[3] }));
 

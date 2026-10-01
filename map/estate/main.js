@@ -1,5 +1,5 @@
 // 伊甸庄园 · 网页三维（estate2 r4 整岛 + round-3 主楼分层）：模型加载、外观 / 内透 / 剖切、楼层条、房间与室外热点、房间卡、缩放交互、嵌入协议（说明见 index.html 顶部注释）
-// 模型：加载由清单 model/manifest.json 驱动（Estate3D Manifest 标准契约，map/core/estate3d.mjs 校验 / 解析，代码里不写死资源路径）。
+// 模型：加载由清单 model/manifest.json 驱动（Estate3D Manifest 标准契约，map/core/scene3d-manifest.mjs 校验 / 解析，代码里不写死资源路径）。
 //   site.glb（整岛外观，烘焙光照，blender/estate2/export_web.py）+ house.glb（主楼室内体量 B2–F3，blender/estate2/house_web.py，进内透 / 剖切时才加载）。
 // 房间数据：清单 data.rooms → ../data/eden_estate_rooms.json（floorplans.py 生成的精确多边形）；室外热点：清单 data.zones → model/zones.json（web_zones.py）。
 import * as THREE from 'three';
@@ -10,7 +10,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { openGallery } from '../ui/gallery.js';
 import { roomCustomBlockHTML, bindRoomCustomEvents, getCustomName, setGalleryChatId } from '../ui/room-gallery-panel.js';
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer } from '../ui/camera-controls.js';
-import { Estate3D } from '../core/estate3d.mjs';   // Estate3D Manifest 标准契约（P3-A）：清单校验 / 路径解析 / describe 摘要
+import { Estate3D } from '../core/scene3d-manifest.mjs';   // Estate3D Manifest 标准契约（P3-A）：清单校验 / 路径解析 / describe 摘要
 import { createRenderGate, wireVisibility } from '../core/render-gate.mjs';   // Part 7-4：页面隐藏时渲染循环整个停掉
 import { spots as stashSpots, placeOf, propGlow, describe as describeStash, PROP_R } from '../core/stash3d.mjs';   // Part 8-1：世界藏物表 → 三维落点（纯映射）
 import { createWalker, tickClock, DEFAULT_ROUND_MS } from '../core/walk.mjs';   // Part 8-2：确定性时钟 + 三维插值（NPC 不瞬移）
@@ -18,7 +18,7 @@ import { normSchedule, placesAt } from '../core/routine.mjs';
 import { normClock } from '../core/clock.mjs';
 import { createCycle as createDayNight, apply as applyDayNight, applyGrade } from '../three/daynight.mjs';   // Part 9-1：昼夜环境（光 + 烘焙调色）
 import { registerFX } from '../three/particles.mjs';                                                          // Part 9-2：fx 槽位粒子（雨雪 / 以太极光）
-import { LayerRegistry } from '../core/layers.mjs';                                                           // P3-C：fx 槽位按注册表契约挂载
+import { LayerRegistry } from '../core/layer-registry.mjs';                                                           // P3-C：fx 槽位按注册表契约挂载
 
 const T0 = performance.now();
 const Q = new URLSearchParams(location.search);
@@ -420,7 +420,7 @@ function mkLabel(parent, x, y, z, cls) {
 /* ---------------- 三维藏物：地上的发光拾取物（Part 5-1 的三维一半，Part 8-1） ---------------- */
 // 数据 = 设定包的世界藏物表（core/stash.mjs），查看器经 estate:stash 推来；落在哪个房间 / 区域由 core/stash3d.mjs 按名字对账。
 // 拿到手的（estate:taken 的 id 集合）不再发光；点一下 = 拾起（发 estate:loot 给查看器，宿主写背包 + 按设置注入一句）。
-// 三维这一半不自己实现藏物规则：与二维发光点（app/loot.mjs）共用 core/stash.mjs 的口径，连呼吸周期都一样。
+// 三维这一半不自己实现藏物规则：与二维发光点（app/stash-markers.mjs）共用 core/stash.mjs 的口径，连呼吸周期都一样。
 const propG = new THREE.Group(); propG.name = 'stash'; scene.add(propG);
 const PROP_PLACES = ITEMS.map((it) => ({
   id: it.d.id, name: it.d.name,

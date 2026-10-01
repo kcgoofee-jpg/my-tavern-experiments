@@ -1,7 +1,7 @@
-// FROZEN COPY of map/tavern/mvu.mjs as of head #172 (S4-2 oracle): the first pack's variable paths, roster slots, core cuts, tier words, portrait rules and discovery regexes as they lived in engine code,
+// FROZEN COPY of map/tavern/mvu-readers.mjs as of head #172 (S4-2 oracle): the first pack's variable paths, roster slots, core cuts, tier words, portrait rules and discovery regexes as they lived in engine code,
 // kept only so tests/*_shadow.test.mjs can prove the pack data + kernel vocabulary read the same, and so tools/gen_eden_vars_v2.mjs can derive the pack's blocks.
 // Do not edit; do not import from the engine. Changes: the import paths; PORTRAIT_BAN exported.
-// MVU 读数与「地图.自定义」数据（v0.9.3）。纯函数：卡内脚本 eden-map.js、查看器 viewer.html、node 单测（tests/mvu.test.mjs）共用。
+// MVU 读数与「地图.自定义」数据（v0.9.3）。纯函数：卡内脚本 eden-map.js、查看器 viewer.html、node 单测（tests/mvu-readers.test.mjs）共用。
 // 只读 MVU（stat_data），从不写卡自己的变量。我们自己的状态放在酒馆助手「聊天变量」的顶层键 eden_map 里（eden-map.js 负责读写），
 // 不放进 stat_data：卡注册了 MVU zod 结构（z.object 默认丢掉未知键），stat_data 里多出来的键每次变量更新都会被删掉（docs/content-compat.md）。
 // 任何字段缺了都返回空值，调用方照常工作（功能不显示而已）。只做技术兼容：不按内容过滤任何文字。
@@ -20,7 +20,7 @@ const clean = s => String(s ?? '').replace(/\s+/g, ' ').trim();
 const clip = (s, n) => ([...s].length > n ? [...s].slice(0, n - 1).join('') + '…' : s);
 
 // ---------------- 1 在场人物的位置 ----------------
-// 注意：这张卡的 zod 结构里在场人物的对象没有「位置」，模型写进去也会被 MVU 删掉；所以人物位置的主来源是聊天标签（characters.mjs），
+// 注意：这张卡的 zod 结构里在场人物的对象没有「位置」，模型写进去也会被 MVU 删掉；所以人物位置的主来源是聊天标签（characters-parse.mjs），
 // 这里只是「作者以后加了位置字段」时直接可用（docs/author-compat.md）。
 export const PRESENT_KEYS = ['在场人物', '在场角色', '当前在场'];
 export const POS_KEY = '位置';

@@ -1,7 +1,7 @@
 // node tests/custom095.test.mjs —— v0.9.5「自定义」面板：同步到世界书默认开 + 旧数据迁移、来源（手动 / 剧情标签）、选择器分组 / 搜索、飞行目标、表单校验
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import * as V from '../map/tavern/mvu.mjs';
+import * as V from '../map/tavern/mvu-readers.mjs';
 import * as P from '../map/tavern/picker.mjs';
 import * as plan from '../map/estate/plan.js';
 

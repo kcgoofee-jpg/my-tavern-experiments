@@ -1,8 +1,8 @@
 // v0.9.6 E2 / E13：名册行内「等级 / 核心数值」——coreStage 5 档阈值、adapter 的 gradeField / coreField 自动发现、「关闭」('-')、rowFields()
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rosters } from '../map/tavern/mvu.mjs';
-import { detect, effective, rowFields, defaults, NAME_FIELDS, OFF } from '../map/tavern/adapter.mjs';
+import { rosters } from '../map/tavern/mvu-readers.mjs';
+import { detect, effective, rowFields, defaults, NAME_FIELDS, OFF } from '../map/tavern/stat-path-mapping.mjs';
 import { useEden } from './helpers/eden-profile.mjs';
 useEden();   // the first pack's variable and roster declarations (its overlay blocks); the engine itself names no card
 

@@ -1,5 +1,5 @@
 // ONE-OFF (S4-2 T1). Generates the `vars` and `entities` blocks of map/packs/eden/overlay.v2.json (docs/kernel-schema.md K-R69, Appendix A.7)
-// from the constants that lived in map/tavern/adapter.mjs, mvu.mjs and characters.mjs before S4-2: DEFAULT_MAP (the variable paths and roster field names), the period
+// from the constants that lived in map/tavern/stat-path-mapping.mjs, mvu-readers.mjs and characters-parse.mjs before S4-2: DEFAULT_MAP (the variable paths and roster field names), the period
 // words of todPhase, CORE_CUTS / CORE_NAMES / CORE_DEFAULT, tierText, PORTRAIT_HOSTS / PORTRAIT_BAN and the /sfw/ rule, PRESENT_KEYS / POS_KEY. Those are deleted from the engine
 // in the same step; tests/helpers/{adapter,mvu,characters}_v1_frozen.mjs are the frozen copies this reads. The three table names are the card's own (docs/card-digest.md §8).
 // Kept for the record; there is nothing to re-run.

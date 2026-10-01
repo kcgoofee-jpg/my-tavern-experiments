@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as L from '../map/core/ledger.mjs';
-import * as LY from '../map/core/layers.mjs';
+import * as LY from '../map/core/layer-registry.mjs';
 
 const src = () => readFileSync(fileURLToPath(new URL('../map/core/ledger.mjs', import.meta.url)), 'utf8');
 

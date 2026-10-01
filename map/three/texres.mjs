@@ -1,7 +1,7 @@
 // Part 3 §5：贴图资源（KTX2 / Basis 备选加载 + 显存预算的取数）。
 //   - 能力探测：有没有哪种压缩格式可用（ASTC / ETC2 / BC / PVRTC / BPTC）；没有就继续用现在的 WebP 贴图
 //   - KTX2Loader：只在真的能用且转码器在位时才挂到 GLTFLoader 上（转码器 404 / 探测不支持 → 原路径，绝不出现黑页）
-//   - 预算取数：把 renderer.info.memory（几何 / 贴图数）与贴图尺寸估成字节，交给 core/budget.mjs 决策
+//   - 预算取数：把 renderer.info.memory（几何 / 贴图数）与贴图尺寸估成字节，交给 core/graphics-budget.mjs 决策
 // 本模块不 import three / KTX2Loader：都由调用方传进来（子页的 importmap 各自解析；本模块可在 node 里测）。
 
 /** 探测压缩贴图能力（WebGL2 下 ETC1 不可用是 three 的既有结论） */
@@ -43,7 +43,7 @@ export function createTexRes(opts = {}) {
     } catch (e) { ktx2State = 'fallback'; return false; }
   }
 
-  /** 记一张贴图（换模型时重记；bytes 由 core/budget.mjs 的估算给出） */
+  /** 记一张贴图（换模型时重记；bytes 由 core/graphics-budget.mjs 的估算给出） */
   function track(texture, bytes) {
     if (!texture) return 0;
     textures.set(texture, Math.max(0, bytes | 0));

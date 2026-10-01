@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import * as PK from '../map/core/pack.mjs';
 import { buildGeo } from '../map/core/compat-v1-geo.mjs';
 import { fromV1 } from '../map/core/compat-v1.mjs';
-import { makeHere } from '../map/app/here-v2.mjs';
+import { makeHere } from '../map/app/place-resolver.mjs';
 import { edenNames } from './helpers/eden-names.mjs';
 import { edenInputs, townInputs } from './helpers/eden-inputs.mjs';
 

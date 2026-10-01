@@ -1,7 +1,7 @@
 // 本机扩展接口 window.EdenMap（E6）与酒馆助手侧的暴露：api 对象、订阅 / 广播、头像压缩、脚本按钮 / 类宏 / 脚本说明 / 世界书全自动（S5-1 自 eden-map.js 原样搬出）。
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
-import { createWbAuto, fnGuard, thFn } from './host-th.mjs';
-import { EDEN_API, guardApi } from './edenapi.mjs';
+import { createWbAuto, fnGuard, thFn } from './host-tavernhelper.mjs';
+import { EDEN_API, guardApi } from './extension-api-contract.mjs';
 export const DEPS = [
   'BR', 'HS', 'LS', 'MAN', 'PACK_ID', 'SCRIPT', 'SELF', 'VER', 'cardKey', 'changedInv', 'channel', 'chatId', 'customChanged', 'fab', 'frame',
   'hostToast', 'kindOf', 'life', 'listen', 'loadCustom', 'loadViewer', 'lsGet', 'lsSet', 'macroSet', 'openSettings', 'panel', 'pdoc', 'plainVer',
@@ -21,7 +21,7 @@ export function createHostApi(host) {
   function emit(ev, data) { for (const f of subs[ev]) { try { f(data); } catch (e) { console.warn('[EdenMap]', e); } } }
   const hx = () => (TRNm ??= import(SELF + 'core/transit.mjs'));   // 途中地点的切分与胶囊文字（核心的纯函数，不需要节点树）
   hx().then(m => { transitMod = m; setTimeout(push, 0); }).catch(() => {});
-  let CXm = null; const chx = () => (CXm ??= import(SELF + 'tavern/characters.mjs'));
+  let CXm = null; const chx = () => (CXm ??= import(SELF + 'tavern/characters-parse.mjs'));
   const inner = () => { if (!host.alive) return null; try { const w = frame.contentWindow; if (!w?.EdenMap) return null; fnGuard('EdenMap.__chat', w.__edenMapChat, 1)?.(chatId()); return w.EdenMap; } catch (e) { return null; } };   // G6：跨窗口拿到的是查看器的 EdenMap——每个调用点先过守卫（handoff 准则 1）
   function knowRooms() { try { const g = fnGuard('EdenMap.getRooms', inner()?.getRooms, 0); const r = g ? g().rooms : null; if (r?.length) roomsKnown = r; } catch (e) {} }
 
@@ -73,7 +73,7 @@ export function createHostApi(host) {
       const hasMvu = BR.mvuPresent(), mode = BR.varmode();
       const db = BR.dbFacts();
       const ctx = { hasMvu, mode, db, here: host.here, hereFromDb: BR.hereFromDb, chars: host.chars, varMap: { ...BR.varMap }, vars: varsOk() };
-      if (host.SRCm) return host.SRCm.summarize(ctx);   // 数据源注册表（tavern/sources.mjs）
+      if (host.SRCm) return host.SRCm.summarize(ctx);   // 数据源注册表（tavern/data-source-registry.mjs）
       const byc = {}; for (const c of host.chars) byc[c.src || 'infer'] = (byc[c.src || 'infer'] || 0) + 1;
       return { location: host.here ? (BR.hereFromDb ? 'db' : 'mvu') : 'none', mvu: { present: hasMvu, mode }, db, tags: true, characters: byc, varmap: { ...BR.varMap } };
     },
@@ -81,13 +81,13 @@ export function createHostApi(host) {
     on(ev, fn) { if (subs[ev] && typeof fn === 'function') subs[ev].add(fn); return api; },
     off(ev, fn) { if (subs[ev]) fn ? subs[ev].delete(fn) : subs[ev].clear(); return api; },
   });
-  const exposed = guardApi(api, EDEN_API);   // G6（P0）：暴露面逐项过守卫（类型 + 形参个数，契约在 tavern/edenapi.mjs）；内部调用仍走原 api
+  const exposed = guardApi(api, EDEN_API);   // G6（P0）：暴露面逐项过守卫（类型 + 形参个数，契约在 tavern/extension-api-contract.mjs）；内部调用仍走原 api
   window.parent.EdenMap = exposed;
 
   // ---------------- 酒馆助手采纳（docs/tavernhelper-audit.md §2，B1–B9）：全部功能探测，缺接口静默跳过 ----------------
   let THm = null, thBtns = null, cardId = null;
-  const thReady = import(SELF + 'tavern/th.mjs').then(m => { THm = m; thInit(); return m; }).catch(() => null);
-  // 任务三：泄露防御网装配（纯净化函数在 sanitize.mjs，th.mjs 只管取元素与洗净渲染结果）
+  const thReady = import(SELF + 'tavern/tavernhelper-api.mjs').then(m => { THm = m; thInit(); return m; }).catch(() => null);
+  // 任务三：泄露防御网装配（纯净化函数在 sanitize.mjs，tavernhelper-api.mjs 只管取元素与洗净渲染结果）
   thReady.then(m => { if (m) host.LKF = m.createLeakFence({ retrieve: id => { const f = thFn('retrieveDisplayedMessage'); return f ? f(id) : null; }, log: s => console.info('[eden-map]', s) }); }).catch(() => {});
   function thInit() {
     if (life.dead) return;
@@ -112,7 +112,7 @@ export function createHostApi(host) {
     if (!THm || !thFn('replaceScriptInfo')) return;
     MAN.then(() => { try { thFn('replaceScriptInfo')(THm.scriptInfo({ version: plainVer(VER) || SCRIPT.version, channel: channel(), build: SCRIPT.build, checkAt: host.checkAt, warns: host.checkItems.length ? host.checkItems.filter(i => i.status === 'warn').length : null, en: host.UL === 'en', name: HS('app.short', host.UL === 'en') })); } catch (e) {} });
   }
-  // B1 世界书附加条目 + 全自动 + eden-map:th 设置消息：host-th.mjs createWbAuto（整块原样搬过去，行为不变）
+  // B1 世界书附加条目 + 全自动 + eden-map:th 设置消息：host-tavernhelper.mjs createWbAuto（整块原样搬过去，行为不变）
   const { wbAuto, sendTh, onTh } = createWbAuto({ SELF, LS, lsGet, lsSet, life, manifest: MAN, packId: PACK_ID, base: () => host.BASE, alive: () => host.alive, UL: () => host.UL, thBtns: () => thBtns,
     chatId, cardKey, post, hostToast, stateInject, macroSet, prefSync });
   return {

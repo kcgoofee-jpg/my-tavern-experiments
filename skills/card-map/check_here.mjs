@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// 当前地点解析自查（card-map 第 6 步）：把包里每个地点的 name / alias / 「层·地点」写法都喂给 map/app/here-v2.mjs（节点树上的当前地点，与查看器同一套），
+// 当前地点解析自查（card-map 第 6 步）：把包里每个地点的 name / alias / 「层·地点」写法都喂给 map/app/place-resolver.mjs（节点树上的当前地点，与查看器同一套），
 // 核对落到正确的图和标记；再把 --extra 文件里的原文（每行一条，例如卡开场白 / MVU 初值里的地点写法）逐条解析并打印结果。
 // 用法：node skills/card-map/check_here.mjs <包 id> [--extra 地点写法.txt]
 // 失败（落错图 / 落错标记 / 解析不出）时退出码 1。路径一律经 fileURLToPath，含中文的仓库路径也能用。
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { makeHere } from '../../map/app/here-v2.mjs';
+import { makeHere } from '../../map/app/place-resolver.mjs';
 import { rebaseRegistry, resolve } from '../../map/core/pack.mjs';
 
 const MAP = fileURLToPath(new URL('../../map/', import.meta.url));

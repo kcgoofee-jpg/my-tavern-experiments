@@ -1,6 +1,6 @@
 // 宿主实例的生命周期：接管旧实例（幂等注入）、挂面板 DOM、事件监听登记与「死亡」标记、清理钩子（C2 第 4 步从 eden-map.js 拆出，行为不变）。
 // cleanup 本身仍在入口组装（它要停入口里的计时器 / 观察器），这里只负责登记到 window.parent.__edenMapCleanup 与 pagehide。
-import { fnOk, thFn } from './host-th.mjs';
+import { fnOk, thFn } from './host-tavernhelper.mjs';
 
 /** 换版本 / 关脚本时旧实例必须彻底停掉（2026-09-27 接手 review P1）。所有 eventOn 走 listen 登记句柄；kill() 之后旧实例的所有出口都变成空操作。 */
 export function createLife() {

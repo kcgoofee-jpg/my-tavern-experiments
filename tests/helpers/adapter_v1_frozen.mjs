@@ -1,4 +1,4 @@
-// FROZEN COPY of map/tavern/adapter.mjs as of head #172 (S4-2 oracle): the first pack's variable paths, roster slots, core cuts, tier words, portrait rules and discovery regexes as they lived in engine code,
+// FROZEN COPY of map/tavern/stat-path-mapping.mjs as of head #172 (S4-2 oracle): the first pack's variable paths, roster slots, core cuts, tier words, portrait rules and discovery regexes as they lived in engine code,
 // kept only so tests/*_shadow.test.mjs can prove the pack data + kernel vocabulary read the same, and so tools/gen_eden_vars_v2.mjs can derive the pack's blocks.
 // Do not edit; do not import from the engine. Changes: the import paths.
 // v0.9.5 变量映射（换卡兼容，docs/content-compat.md「换卡兼容」）：地图要读的东西 → stat_data 里的路径。
@@ -16,7 +16,7 @@ export const MORE_RX = { gradeField: /.等级$|^grade$|rank/i, coreField: /..值
 // 默认 = 这张卡的字段名（照抄卡）；不在名册行里时按字段名形状自动发现（MORE_RX），用户仍可在映射里另选
 export const DEFAULT_MAP = { location: '世界.当前地点', time: '世界.当前时刻', period: '世界.当日时段', date: '世界.当前日期', outfit: '主角.着装',
   present: '', members: '', targets: '', reputation: '', stageField: '', gradeField: '母畜等级', coreField: '母畜值',
-  codeField: '母畜代号', socialField: '社会身份', heightField: '身高', weightField: '体重', knownField: '外界知情', accessoryField: '项圈', tierField: '' };   // 空 = 按位置 / 通用字段名自动发现（mvu.mjs rosters / reputation）
+  codeField: '母畜代号', socialField: '社会身份', heightField: '身高', weightField: '体重', knownField: '外界知情', accessoryField: '项圈', tierField: '' };   // 空 = 按位置 / 通用字段名自动发现（mvu-readers.mjs rosters / reputation）
 /** 设定包（通用化）：换默认路径。非 eden 包先全部清空（按字段名自动发现），再套清单 vars 里给的（只收已知字段、字符串值） */
 export function useDefaults(vars) {
   for (const k of Object.keys(DEFAULT_MAP)) DEFAULT_MAP[k] = '';

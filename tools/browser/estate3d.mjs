@@ -93,7 +93,7 @@ try {
     // FPS 只留一份（U，2026-09-28）：开着庄园三维子页时，外层顶栏那个绿色读数该让位给子页自己画的那份
     const fpsDup = await V.evaluate(async () => {
       window.TCStore.set('edenMapFps', '1');
-      const [{ setFpsMeter }, { estateLook }] = await Promise.all([import('./app/fps.mjs'), import('./app/estate.mjs')]);
+      const [{ setFpsMeter }, { estateLook }] = await Promise.all([import('./app/fps.mjs'), import('./app/subpage3d-host.mjs')]);
       setFpsMeter(true); estateLook();
       await new Promise((r) => setTimeout(r, 300));
       const outer = document.getElementById('fpsMeter');

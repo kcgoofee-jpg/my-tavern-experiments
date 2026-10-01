@@ -1,4 +1,4 @@
-// node tests/transit095.test.mjs —— v0.9.5 途中地点：「A至B的…」「从A到B」「前往B」「A → B」（core/transit.mjs 切分，app/here-v2.mjs 落点）。例子都是中性的
+// node tests/transit095.test.mjs —— v0.9.5 途中地点：「A至B的…」「从A到B」「前往B」「A → B」（core/transit.mjs 切分，app/place-resolver.mjs 落点）。例子都是中性的
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as H from './helpers/here-engine.mjs';

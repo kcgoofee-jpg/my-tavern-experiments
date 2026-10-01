@@ -1,13 +1,13 @@
 // LayerRegistry 的 fx 槽位（第 9 槽）：天气 / 以太粒子渲染器（Part 9-2）。
 // 两条硬约束：① 一种效果一次 draw call（降水 = 一个 Points，极光 = 一个平面），关掉时开销瞬时归零
 // （不 update、不上传 uniform、对象摘出场景）；② 纯数据注册——描述符由本模块产出，交给调用方 register 进
-// core/layers.mjs 的 LayerRegistry，本模块不碰 DOM / 存储 / 酒馆全局（机检见 tests/fx_particles.test.mjs）。
+// core/layer-registry.mjs 的 LayerRegistry，本模块不碰 DOM / 存储 / 酒馆全局（机检见 tests/fx_particles.test.mjs）。
 // 确定性：粒子出生点用 core/rng.mjs（同一 seed 同一场雨，回放与截图对比站得住）。
 import { rng } from '../core/rng.mjs';
-import { SLOTS } from '../core/layers.mjs';
+import { SLOTS } from '../core/layer-registry.mjs';
 import { PRECIP_VS, PRECIP_FS, AURORA_VS, AURORA_FS } from './shaders.mjs';
 
-/** 第 9 槽位（core/layers.mjs SLOTS 的下标 8）：粒子只在自己这个槽里，不抢别的层 */
+/** 第 9 槽位（core/layer-registry.mjs SLOTS 的下标 8）：粒子只在自己这个槽里，不抢别的层 */
 export const FX_SLOT = 'fx';
 export const FX_TYPES = ['none', 'rain', 'snow', 'sand', 'aurora'];
 

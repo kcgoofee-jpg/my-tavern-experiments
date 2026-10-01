@@ -1,9 +1,9 @@
 // 顶栏布局、后台预热（另一版底图、其它地图）、版本编码。
 import { REG, cur, sleeping } from './state.mjs';
 import { $, getJSON, ico, post, tx } from './util.mjs';
-import { autoKey, effTier, leanBg, tier } from './tiers.mjs';
+import { autoKey, effTier, leanBg, tier } from './sharpness-tiers.mjs';
 import { t } from './i18n.mjs';
-import { narrowNow } from './estate.mjs';
+import { narrowNow } from './subpage3d-host.mjs';
 import { renderAbout, showLay } from './settings.mjs';
 import { placeLayers } from './shell.mjs';
 import { parentMap } from './nodes-runtime.mjs';

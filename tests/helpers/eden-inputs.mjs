@@ -1,4 +1,4 @@
-// The first pack's shipped v1 files plus its v2 overlay, as the inputs of compat-v1 `fromV1` (and of app/nodes-runtime.mjs, app/here-v2.mjs).
+// The first pack's shipped v1 files plus its v2 overlay, as the inputs of compat-v1 `fromV1` (and of app/nodes-runtime.mjs, app/place-resolver.mjs).
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 

@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import * as EVM from '../map/tavern/events.mjs';
+import * as EVM from '../map/tavern/events-parse.mjs';
 import { parseText } from '../map/tavern/msgtext.mjs';
 import { spotOf } from '../map/core/event-geo.mjs';
 import { legacyPlace, legacyPos, legacyLayerOf, reWords, MAPS } from './helpers/events-legacy.mjs';
@@ -20,7 +20,7 @@ const points = { tc_upper: pointsOf('tc_upper'), tc_mid: pointsOf('tc_mid'), tc_
 const legacyMarkers = Object.fromEntries(Object.entries(points).map(([id, m]) => [id, [...m].map(([k, v]) => ({ id: k, nx: v.nx, ny: v.ny }))]));
 const TOL = 0.002;   // of the map width: 6 px on the 3000 px render plane
 
-// ---- the corpus: tests/events.test.mjs (run against a recording copy of the events module) and the session fixtures ----
+// ---- the corpus: tests/events-parse.test.mjs (run against a recording copy of the events module) and the session fixtures ----
 const fixtureTexts = () => ['session_a.json', 'session_b.json'].flatMap(f => J(`tests/fixtures/sessions/${f}`).messages.map(m => m.raw ?? m.text));
 const marksIn = raws => { const m = new Map(); for (const raw of raws) for (const x of EVM.marksOf(raw)) m.set(JSON.stringify([x.loc, x.cat, x.xy]), { loc: x.loc, cat: x.cat, xy: x.xy || '' }); return [...m.values()]; };
 
@@ -53,7 +53,7 @@ const tally = rows => rows.reduce((m, r) => (m[r.cls] = (m[r.cls] || 0) + 1, m),
 const rows = corpus.map(m => { const r = both(m); return { ...r, cls: classify(r) }; });
 const locs = cls => rows.filter(r => r.cls === cls).map(r => r.loc).sort();
 
-test('corpus: events.test.mjs and the session fixtures are found', () => {
+test('corpus: events-parse.test.mjs and the session fixtures are found', () => {
   assert.ok(corpus.length > 250, `corpus ${corpus.length}`);
   assert.ok(here.length >= 10, `locations ${here.length}`);
   console.log('# corpus', corpus.length, 'distinct places; classes', JSON.stringify(tally(rows)), '; locations', here.length);
