@@ -16,12 +16,12 @@ export async function resolveFollow(repo, branch, getJson, stored) {
     ['testingcf', `https://testingcf.jsdelivr.net/gh/${repo}@${branch}/${P}?v=${t}`],
     ['raw', `https://raw.githubusercontent.com/${repo}/${branch}/${P}?t=${t}`],
   ];
-  const got = await Promise.all(srcs.map(([s, u]) => getJson(u).then(h => ok(h) ? { build: h.build, sha: h.sha, source: s } : null, () => null)));
+  const got = await Promise.all(srcs.map(([s, u]) => getJson(u).then(h => ok(h) ? { build: h.build, sha: h.sha, ...(h.at ? { at: h.at } : {}), source: s } : null, () => null)));
   let best = got.reduce((a, b) => (b && (!a || b.build > a.build) ? b : a), null);
   if (!best) {
     const g = await getJson(`https://api.github.com/repos/${repo}/contents/${P}?ref=${encodeURIComponent(branch)}`).catch(() => null);
     let h = null; try { h = g && g.content ? JSON.parse(atob(String(g.content).replace(/\s/g, ''))) : null; } catch (e) {}
-    if (ok(h)) best = { build: h.build, sha: h.sha, source: 'github' };
+    if (ok(h)) best = { build: h.build, sha: h.sha, ...(h.at ? { at: h.at } : {}), source: 'github' };
   }
   if (ok(stored) && (!best || stored.build > best.build)) best = { build: stored.build, sha: stored.sha, source: 'cache' };
   return best;

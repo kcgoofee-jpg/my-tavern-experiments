@@ -8,7 +8,7 @@
 // + host-lifecycle.mjs（接管旧实例、挂 DOM、监听登记、清理钩子）+ host-tavernhelper.mjs（酒馆助手适配、偏好、世界书全自动）。见 docs/agent-brief.md「模块地图」。
 // S5-1（2026-10-01）再拆出八个 flow 模块（stash-flow（S6-2 前叫 loot-flow）/ chars-flow / root-store / host-api / host-checks / llm-flow / modes-flow / timeline-flow，各是 createX(host)）：
 // 下面的 host 依赖袋是它们取入口变量与函数的唯一通道；入口留着面板 / 查看器状态机、重算调度、监听登记与清理。
-import '../core/logbuf.mjs'; // 反馈日志缓冲：最先 import，模块求值即安装，启动日志不丢（v0.9.6 报告「(none)」根因）
+import '../core/logbuf.mjs'; import { redirected } from './follow-gate.mjs'; // 反馈日志缓冲：最先 import，模块求值即安装，启动日志不丢（v0.9.6 报告「(none)」根因）
 import { cdnFetch, thFn, packNs, createPrefs } from './host-tavernhelper.mjs';
 import { createRoutes, scoreText } from './host-routes.mjs';
 import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
@@ -21,8 +21,8 @@ import { createHostApi } from './host-api.mjs';
 import { createRootStore } from './root-store.mjs';
 import { createHostChecks } from './host-checks.mjs';
 import { createModesFlow } from './modes-flow.mjs';
-import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）
-(() => {
+import { hostStr } from './host-strings.mjs'; import { updateChannel } from './follow-pin.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）
+(() => { if (redirected) return;   // 分支路径加载的旧入口：门卫已换成 @<sha> 的入口（follow-gate.mjs），这里什么也不挂
   const scriptBase = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-tavernhelper.mjs
   const { PACK_IN, PACK_ID, MAN, wrapLS, LS, lsGet, lsSet } = packNs(scriptBase); let MANv = PACK_IN?.manifest || null; MAN.then(m => { MANv = m || MANv; }); const HS = (k, en) => hostStr(MANv, k, en ? 'en' : 'zh');   // MAN：包清单（Promise）；MANv = 到了之后的同步副本，HS = 宿主文案（清单 strings，没到 / 没写就是中性默认）
@@ -270,7 +270,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     if (e.data?.type === 'eden-map:loot') takeLoot(e.data);   // Part 5-1：点了地上的发光拾取物 → 先写背包，再按设置注入一句
     if (e.data?.type === 'eden-map:stealth') stealthCheck(e.data);   // Part 5-2：这次移动穿过了谁的视野 → 按难度注入一句检定
     if (e.data?.type === 'eden-map:th' && typeof e.data.op === 'string') onTh(e.data).catch(x => console.warn('[eden-map] 酒馆助手设置', x));   // 设置「数据与映射」「高级」：注入 / 类宏 / 世界书同步
-    if (e.data?.type === 'eden-map:check-update') (channel() === 'follow' && SCRIPT.ref ? followUpdate() : checkUpdate()).then(r => post({ type: 'eden-map:update-result', ...r }));   // v0.9.6「检查更新」
+    if (e.data?.type === 'eden-map:check-update') (updateChannel({ channel: channel(), ref: SCRIPT.ref || AB.refOf() }) === 'follow' && (SCRIPT.ref || AB.refOf()) ? followUpdate() : checkUpdate()).then(r => post({ type: 'eden-map:update-result', ...r }));   // v0.9.6「检查更新」
   };
   window.parent.addEventListener('message', onMsg);
   // 合并顶栏：宿主栏的宽度告诉查看器，查看器顶栏右端让出这一段；线路按钮移进查看器设置「高级」
@@ -364,7 +364,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     get SCRIPT() { return SCRIPT; }, scriptInfo: (...a) => HA.scriptInfo(...a), get scriptBase() { return scriptBase; }, sendEvents: (...a) => sendEvents(...a),
     sendTrips: (...a) => CF.sendTrips(...a), showSplash: (...a) => CK.showSplash(...a),
     get SpatialM() { return MO.SpatialM; }, get spatialNow() { return MO.spatialNow; }, get dataSourceRegistryModule() { return dataSourceRegistryModule; }, set dataSourceRegistryModule(v) { dataSourceRegistryModule = v; },
-    stateInject: (...a) => MO.stateInject(...a), get statSig() { return statSig; }, set statSig(v) { statSig = v; }, store: (...a) => RS.store(...a),
+    stateInject: (...a) => MO.stateInject(...a), injectPreview: () => MO.injectPreview(), get statSig() { return statSig; }, set statSig(v) { statSig = v; }, store: (...a) => RS.store(...a),
     storeWarn: (...a) => RS.storeWarn(...a), get swappable() { return swappable; }, get switchedFrom() { return switchedFrom; }, get tavernhelperApiModule() { return HA.tavernhelperApiModule; },
     get tlWalk() { return TL.tlWalk; }, set tlWalk(v) { TL.tlWalk = v; }, get transitMod() { return HA.transitMod; }, get tripsParseModule() { return CF.tripsParseModule; }, get UI() { return UI; },
     get uiLang() { return uiLang; }, userName: (...a) => CF.userName(...a), varsOk: (...a) => RS.varsOk(...a), get VER() { return VER; }, get worldbookJitModule() { return LL.worldbookJitModule; },
@@ -409,7 +409,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   const sendAbout = () => AB.sendAbout(), checkUpdate = () => AB.checkUpdate(), followUpdate = () => AB.followUpdate();
   // 任务四：版权申明页的角色卡信息由这里（经桥的三级降级）取，推给查看器——面板不再自己摸 window.SillyTavern
   // （嵌在 iframe 里那个全局 100% 读不到，旧版于是永远报「未接入酒馆」的假错）。
-  const sendCardInfo = () => { mvuBridge.cardInfo().then(card => { if (!life.dead) post({ type: 'eden-map:cardinfo', card: card || null }); }).catch(() => {}); };
+  const sendCardInfo = () => { mvuBridge.cardInfo().then(card => { if (!life.dead) post({ type: 'eden-map:cardinfo', card: card || null, tried: mvuBridge.cardTried }); }).catch(() => {}); };
   const channel = () => AB.channel(), buildNow = () => AB.buildNow();   // 自检页与强制更新判断要用同一个口径
   const CF = createCharsFlow(host), { mvuBridge, contextPipeline, chatId, computeTrips, getHere, mvuStat, pushMvu, refreshVarMap, sendChars, sendRoutine, sendTrips, setVarUser, userName } = CF;
   // MVU 变量在流式输出时会连续更新：合并成一次，地点没变就不打扰地图

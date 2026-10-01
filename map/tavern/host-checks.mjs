@@ -2,6 +2,7 @@
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
 import { cdnFetch, fnOk, hostFn, thFn } from './host-tavernhelper.mjs';
 import { worldbookPrefix } from '../core/pack.mjs';
+import { parseScriptBase, contentBase, entryUrl, updateChannel } from './follow-pin.mjs';
 export const DEPS = [
   'mvuBridge', 'HS', 'ID', 'LINES', 'LS', 'MAN', 'scriptOwner', 'PACK_ID', 'REPO', 'SCRIPT', 'scriptBase', 'VER', 'buildNow', 'channel', 'checkUpdate', 'conflictsNow',
   'endGhost', 'fab', 'fallbackToast', 'fetchHtml', 'lean', 'life', 'loadViewer', 'lsGet', 'lsSet', 'ntReady', 'oldStyle', 'panel', 'pdoc', 'plainVer',
@@ -127,18 +128,26 @@ export function createHostChecks(host) {
   const fwGet = async u => { const c = new AbortController(), to = setTimeout(() => c.abort(), 5000);
     try { const r = await cdnFetch(u, { cache: 'no-store', signal: c.signal }); return r.ok ? await r.json() : null; } catch (e) { return null; } finally { clearTimeout(to); } };
   async function followHead() {
-    FW ??= await import(scriptBase + 'tavern/branch-follow.mjs').catch(() => null); if (!FW || !SCRIPT.ref) return null;
-    return FW.resolveFollow(REPO, SCRIPT.ref, fwGet, null).catch(() => null);
+    FW ??= await import(scriptBase + 'tavern/branch-follow.mjs').catch(() => null); const br = SCRIPT.ref || host.refOf?.(); if (!FW || !br) return null;
+    return FW.resolveFollow(REPO, br, fwGet, null).catch(() => null);
   }
   // 比加载的新：有构建号比构建号；老加载器（没有构建号）比提交号
   const followNewer = h => !!h && (Number.isInteger(SCRIPT.build) ? h.build > SCRIPT.build : !!SCRIPT.sha && !String(h.sha).startsWith(SCRIPT.sha));
   async function followCheck() {
-    if (life.dead || channel() !== 'follow' || !SCRIPT.ref) return;
+    if (life.dead || updateChannel({ channel: channel(), ref: SCRIPT.ref || host.refOf?.() }) !== 'follow' || !(SCRIPT.ref || host.refOf?.())) return;
     const h = await followHead(); if (!followNewer(h) || h.sha === followSeen || life.dead) return;
     followSeen = h.sha; const en = host.uiLang === 'en';
     hostToast(en ? 'Update available — reload to load it' : '有更新，刷新载入', [(en ? `Latest build #${h.build} · ` : `分支最新构建 #${h.build} · `) + String(h.sha).slice(0, 7)], 0, t => {
       t.classList.add('em-upd', 'em-follow'); const acts = pdoc.createElement('div'), b = pdoc.createElement('button'); acts.className = 'em-acts nt-acts'; b.className = 'nt-pri';
-      b.type = 'button'; b.textContent = en ? 'Reload' : '刷新载入'; b.onclick = () => window.parent.location.reload(); acts.append(b); t.append(acts); }, true);
+      b.type = 'button'; b.textContent = en ? 'Reload' : '刷新载入'; b.onclick = () => switchToHead(h); acts.append(b); t.append(acts); }, true);
+  }
+  // 发现更新的分支头：本次会话换成新提交号的入口（与 switchVersion / switchBranch 同一条接管路径，一个提交号里的文件不混用）；换不成就刷新页面（加载器会重新取头）
+  function switchToHead(h) {
+    const p = parseScriptBase(scriptBase), base = p && contentBase({ channel: 'follow', ref: p.ref, sha: h.sha, host: p.origin, repo: p.repo });
+    if (!base) { window.parent.location.reload(); return; }
+    const prev = { ...SCRIPT }; Object.assign(SCRIPT, { sha: String(h.sha).slice(0, 12), build: h.build, at: h.at || null, source: h.source || null });
+    window.parent.__edenMapSwitch = scriptBase;
+    import(entryUrl(base)).catch(e => { console.warn('[eden-map] 切换到新构建失败，刷新页面', e); Object.assign(SCRIPT, prev); window.parent.__edenMapSwitch = switchedFrom; try { window.parent.location.reload(); } catch (x) {} });
   }
   async function autoCheck() {
     SC ??= await import(scriptBase + 'tavern/selfcheck.mjs').catch(() => null); if (!SC?.autoCheckPlan || life.dead) return;

@@ -110,6 +110,27 @@ A real mainland route has to wait for the npm mirror (`registry.npmmirror.com`, 
 default). The old README, with its architecture diagram, tech-stack table and milestones, is kept as
 `docs/archive/README-2026-09-30.md`; the diagram now lives in `docs/ARCHITECTURE.md` §11.
 
+## Stale follow builds: cause and pinning (I-14, 2026-10-01)
+
+**Cause.** A branch path is mutable and every layer in front of it may keep it. Measured on 2026-10-01 against
+`kcgoofee-jpg/my-tavern-experiments`: `cdn.jsdelivr.net/gh/<repo>@preview/map/data/head.json` answers
+`cache-control: public, max-age=604800, s-maxage=43200` (the browser may reuse it for 7 days, the edge for 12 hours;
+`x-jsd-version-type: branch`); `cdn.jsdmirror.com` answers `max-age=300, stale-while-revalidate=86400` and ignores the
+query string (`?t=<now>` returned the same etag as no query). A script imported as `import('…@preview/map/tavern/eden-map.js')`
+(the "preview ref" script, About channel `ref`) cannot add a query to the entry or to the relative module imports behind
+it, and a page's module map never refetches a URL, so a tavern that follows `preview` this way keeps running whatever
+`@preview` returned last, for up to 7 days (browser) or a day (mirror stale window). The same URL at a commit
+(`…@<sha>/…`) answers `max-age=31536000, immutable` and is therefore always the content of that commit. The follow
+loader (`--follow preview`) already loaded the entry by sha, but nothing forced the ref-channel script, the
+in-session "Reload" action or the mirror/line switch to do the same.
+
+**Fix.** Content files (code, viewer page, data, pack files, tiles) always load from `@<sha>`; the branch path is read
+only for `map/data/head.json`. `map/tavern/follow-pin.mjs` holds the URL rules; `map/tavern/follow-gate.mjs` is imported
+first by the entry: a script that finds itself on a branch path resolves the head (same multi-source chain as the
+loader), and re-imports the entry from `@<head sha>` (the entry then mounts nothing). A running follow build that sees
+a newer head switches to that sha's entry through the existing takeover path instead of mixing files. The release
+channel (tag URLs, `latest.json`) is untouched. Test `tests/follow_pin.test.mjs`; probe `tools/browser/follow_pin.mjs`.
+
 ## History note
 
 The 2026-09 filter-repo rewrite made `main` and `feat/worldbook-auto` unrelated to the
