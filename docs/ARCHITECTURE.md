@@ -101,6 +101,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `people.mjs` | The people page's sections from the pack's entity groups (S4-4): `groupList`, `groupLabel` (dictionary / pack string `ch.g_<id>`, else the group's own label), `paneModel`; pure. |
 | `periods.mjs` | Periods of the day (K-R39): the band a world clock is in, by period words, else by the hour; default bands. |
 | `pickup.mjs` | Objective pickup probe (K-R77): a written physical acquisition action becomes a single ledger fact; normal and strict verb classes, forms that never count, the pack vocabulary (`scan(text, { vocab })`). |
+| `portrait-lookup.mjs` | The card-script portrait of a person (I-22): the viewer-side address shape check (the pack's host rule already ran in the host) and the lookup by full name, first segment or the one table key with the same first segment. |
 | `profile.mjs` | The run-time profile of a pack's variables and roster (K-R37–K-R44, K-R69): variable paths, period bands, tables, roster slots, portrait rules (`portraitOk`); the kernel profile of a pack that names nothing. |
 | `project.mjs` | Oblique projection (JS twin of `blender/project.py`, golden-file parity): world point to frame coordinates, label rule, anchors. |
 | `protocol.mjs` | Message protocol: `SCHEMA` of every host / viewer / sub-page message, envelope, `check` / `accept`, `createBus`. |
@@ -109,9 +110,9 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `rng.mjs` | Deterministic pseudo-random generator (mulberry32) shared by particles, traffic and clue nodes. |
 | `room-gallery-db.mjs` | IndexedDB wrapper for room gallery images (browser only). |
 | `room-gallery-logic.mjs` | Pure gallery logic: resize dimensions, quota checks, export bundle shape. |
-| `scene-header.mjs` | Scene header (K-R105): reads a floor's `<tag>place·date·time</tag>` block without a regex and decides one floor's place: this floor's variable patch, then the header place when it resolves, then the carried variable. |
 | `roster.mjs` | CharacterRosterSystem: five-source roster merged into standard `RosterRow`s with priority arbitration, aliases and portraits. |
 | `routine.mjs` | NPC schedule math shared by host and viewer. |
+| `scene-header.mjs` | Scene header (K-R105): reads a floor's `<tag>place·date·time</tag>` block without a regex and decides one floor's place: this floor's variable patch, then the header place when it resolves, then the carried variable. |
 | `scene3d-manifest.mjs` | Estate3D manifest contract: validates and resolves model URLs, data paths and tier fallbacks for the estate and prop 3D pages. |
 | `scrapbook.mjs` | Pinned-image-and-note index logic for landmarks (bytes live in the gallery database). |
 | `settlement-record.mjs` | The map's own settlement record for the npc and events domains (K-R78): `recordNorm`, `recordPut` (holes only), `recordLanded`, `describeRecord`; pure. |

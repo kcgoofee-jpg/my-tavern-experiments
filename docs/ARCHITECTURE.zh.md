@@ -82,6 +82,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `people.mjs` | 人物页按包的实体组分节（S4-4）：`groupList`、`groupLabel`（词典 / 包文案 `ch.g_<id>`，否则用组自己的标签）、`paneModel`；纯函数。 |
 | `periods.mjs` | 一天的时段（K-R39）：世界时钟落在哪个时段——先按时段词，再按钟点；默认时段。 |
 | `pickup.mjs` | 客观拾取探测（K-R77）：正文里写明的物理获取动作变成一条单项账目事实；普通与严格两类动词、永不算的句式、包的词表（`scan(text, { vocab })`）。 |
+| `portrait-lookup.mjs` | 人物的卡内立绘（I-22）：查看器侧只认图片地址的形状（包的域名规则已在宿主做过），按全名、第一段、或「第一段相同的唯一表键」查找。 |
 | `profile.mjs` | 设定包变量与名册的运行时档案（K-R37–K-R44、K-R69）：变量路径、时段、表、名册槽位、立绘规则（`portraitOk`）；什么都没写的包用内核档案。 |
 | `project.mjs` | 斜视投影（`blender/project.py` 的 JS 孪生，对拍 golden 文件）：世界点到画幅坐标、标签规则、锚点。 |
 | `protocol.mjs` | 消息协议：所有宿主 / 查看器 / 子页消息的 `SCHEMA`、信封、`check` / `accept`、`createBus`。 |
@@ -90,9 +91,9 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `rng.mjs` | 确定性伪随机（mulberry32），粒子、车流、线索节点共用。 |
 | `room-gallery-db.mjs` | 房间图集图片的 IndexedDB 薄封装（只在浏览器里跑）。 |
 | `room-gallery-logic.mjs` | 图集纯逻辑：缩放尺寸、配额检查、导出包结构。 |
-| `scene-header.mjs` | 场景头（K-R105）：不用正则读一楼的 `<tag>地点·日期·时间</tag>` 块，并决定一楼的地点：本楼变量补丁 > 认得出节点的头里地点 > 沿用的变量。 |
 | `roster.mjs` | CharacterRosterSystem：五源名册合并成标准 `RosterRow`，含优先级仲裁、别名互认、立绘挂载。 |
 | `routine.mjs` | 宿主与查看器共用的 NPC 日程表数学。 |
+| `scene-header.mjs` | 场景头（K-R105）：不用正则读一楼的 `<tag>地点·日期·时间</tag>` 块，并决定一楼的地点：本楼变量补丁 > 认得出节点的头里地点 > 沿用的变量。 |
 | `scene3d-manifest.mjs` | Estate3D 清单契约：校验并解析庄园页与道具页的模型地址、数据路径与档位兜底。 |
 | `scrapbook.mjs` | 钉在地标上的图与手记的索引逻辑（图的字节在图集数据库里）。 |
 | `settlement-record.mjs` | 地图自己的 npc 与事件两个域的结算记录（K-R78）：`recordNorm`、`recordPut`（只补空缺）、`recordLanded`、`describeRecord`（纯函数）。 |

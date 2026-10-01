@@ -17,6 +17,7 @@ import { packStorage, chatId } from './app/extension-api.mjs';
 import { plugins, register } from './app/plugins.mjs';
 import * as TCCvd from './app/color-vision-mode.mjs';
 import { uiTextOr } from './app/text-lookup.mjs';
+import { portraitFor, viewerUrlOk } from './core/portrait-lookup.mjs';
 import { RT } from './app/nodes-runtime.mjs';
 import { provideTab, saveTabSeen, tabContext, tabSeen } from './app/tabs.mjs';   // the drawer's tab registry (S6-1)
 import { peopleSections } from './core/entities.mjs';   // the present group's sections by level (K-R73)
@@ -30,13 +31,13 @@ const CharactersView = (() => {
   // 色觉模式（E7）：颜色只用来分组、不代表状态，但换一套色相表更容易在红绿 / 蓝黄色弱下彼此分开；每个框本来就有首字/头像做第二线索
   const color = n => CM ? CM.colorOf(n, TCCvd.charHues() || undefined) : '#888';
   const ini = n => CM ? CM.initials(n) : String(n)[0];
-  // 头像：本机设置的优先；否则「使用原作头像」开着时用卡自带的立绘表（只收作者 CDN 的 /sfw/ 地址，懒加载，失败退回首字）
+  // 头像：本机设置的优先；否则「使用原作头像」开着时用卡自带的立绘表（宿主按包的规则放行的地址，懒加载，失败退回首字）
   const PK_ = 'edenMapPortraits', portOn = () => { try { const v = LocalStore.get(PK_); return v == null ? !(typeof leanBg === 'function' && leanBg()) : v === '1'; } catch (e) { return true; } };
-  const okUrl = u => /^https:\/\/cdn\.jsdelivr\.net\/gh\/Yehehua1311\/[^?#]*\/sfw\/[^?#]+\.(png|jpe?g|webp)$/i.test(u || '');
+  const okUrl = viewerUrlOk;   // 地址放行由宿主按包的 avatar 规则做过（K-R43）；这里只认图片地址的形状（I-22：以前这里只放作者 CDN，别的图床的立绘被丢）
   // 状态栏里玩家自己设的头像（卡的状态栏存在同源 localStorage：eden_custom_portraits = { 名: 地址 }、eden_portrait_<名> = data URL），只读
   const barAv = n => { try { const short = String(n).split(/[·・]/)[0]; for (const k of [n, short]) { const d = localStorage.getItem('eden_portrait_' + k); if (d && d.startsWith('data:image/')) return d; }
     const m = JSON.parse(localStorage.getItem('eden_custom_portraits') || '{}'); const u = m[n] || m[short]; return typeof u === 'string' && /^(https:|data:image\/)/.test(u) ? u : ''; } catch (e) { return ''; } };
-  const cardPort = n => { const u = portraits[n] || portraits[String(n).split(/[·・]/)[0]]; return okUrl(u) ? u : ''; };
+  const cardPort = n => portraitFor(portraits, n);
   const avOf = n => avatars[n] || barAv(n) || (portOn() ? cardPort(n) : '');
   const avImg = n => { const u = avOf(n); return u ? `<img alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" src="${esc(u)}" data-i="${esc(ini(n))}" onerror="this.replaceWith(this.dataset.i)">` : ''; };
   const visible = c => prefs.show && !prefs.off.includes(c.name);
