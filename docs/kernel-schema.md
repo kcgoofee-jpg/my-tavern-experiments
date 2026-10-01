@@ -206,6 +206,17 @@ dropped as in K-R06):
 | nodes sharing one word | 8 |
 | `x-` keys | kept, counted in the size limit |
 
+**K-R98 — Export as pack.** "Export as pack" (Settings → Advanced → Map pack) writes one JSON file `<pack id>.pack.json`
+for a foreign pack (automatic, embedded, imported or a URL pack; `core/pack-export.mjs`): the current pack with every block
+inline, plus the grown nodes (as ordinary nodes; their `g_` ids are kept, K-R10), the user's own names for places as aliases
+of their nodes (Z-16; a name for a node that does not exist is dropped), and `credits.card` filled from the card info (K-R08).
+It never contains chat state (stash, fog, events, the ignore list, the ledger, `chat`), implicit views or a field the kernel
+reads only for shipped packs (`cdn`, `legacy`, `x-page`). The id is kept (Z-06). Keys are written in a canonical order, so
+exporting an imported file again is byte-identical. The file must pass `validate2` as foreign with no problem and stay under
+8 MB (`validate2` takes the limit as `maxBytes`); otherwise export lists the problems and writes nothing. A file whose compact
+form is under 1 MB is marked "fits in a card". A second button copies the compact text for a new worldbook entry titled
+`spatial_os:pack` (the pack box says: keep that entry disabled). The overlay export of a shipped pack (Z-15) is S9b.
+
 ## 3. nodes — the only geography
 
 ### 3.1 Node fields
@@ -384,7 +395,9 @@ part.
 ### 3.9 Zero-config growth (no nodes block)
 
 **K-R26 — Growing nodes from chat.** With no `nodes` block (or an empty one) the root is `__root`, named after the
-pack title (after S9: the card name). S9 implements this rule:
+pack title (after S9: the card name). S9 implements this rule for the automatic pack (K-R95), which runs it on top of its
+derived nodes under an explicit root node `root`; a segment is first tried as written and then with its article stripped (so a
+location variable "the inn" finds the alias "the inn" instead of growing "inn"). Authored packs never grow (Z-07):
 
 1. Input: every place text the kernel reads — the location variable, place tags, the places in character tags and
    event tags — in message order.
@@ -401,6 +414,59 @@ pack title (after S9: the card name). S9 implements this rule:
    unplaced.
 5. Deterministic: the same chat gives the same tree. The grown tree is a droppable cache in the chat variable,
    recomputable from the chat (brief rule 4). With a pack that has nodes, nothing grows.
+
+**K-R93 — Place candidates from the card's worldbook.** For each entry of the card's own books, in book and entry order:
+1. Skip: the embedded pack entry (K-R91), the variable-initialisation entry (a title with `initvar` in brackets), entries
+   carrying our ownership marker, titles longer than 40 code points, and titles equal (normalised) to a name in a
+   discovered roster table (K-R41).
+2. Strip one leading bracketed tag from the title (`[...]`, `［...］`, `【...】`) and split it into segments with the
+   separators of K-R26 step 2, outer to inner.
+3. The entry is a place when its innermost segment contains a word of the kernel's place-word list for the pack
+   language (`PLACE` in `core/vocab.mjs`, at most 60 words per language: Chinese suffixes matched as substrings, English
+   nouns matched as whole words), or one of its keys contains such a word, or its outer segment names a place that is
+   already a candidate (Z-04; repeated to a fixpoint).
+4. Node: id `w_` + `fnv36(normalised title)`; `name` = the innermost segment; `alias` = the name, the name without its
+   article (K-R16) and the keys that are plain words (1–20 code points, not shaped like a pattern `/.../`, no `*` or
+   `?`); parent = the candidate named by the outer segment, else the root.
+5. At most 150 candidates; later ones are dropped (one problem, `candidates-limit`).
+
+Only titles, keys and the initvar text are read: entry contents are never read, and nothing is decided by what a text
+means beyond these word lists (brief rule 8).
+
+**K-R94 — Variables, people, start view and language from the card.**
+- **vars**: the K-R38 discovery runs over the live `stat_data` when it has keys, else over the shape of the initvar entry
+  (`core/yaml-shape.mjs`: JSON, or a YAML subset of mappings, sequences, scalars and comments; anything else reads as no
+  shape). The discovered paths (location, time, period, date, outfit, reputation, inventory) are written into the
+  automatic pack's `vars`, so an export carries them; the user's variable mapping still wins (K-R38).
+- **entities**: the name-keyed tables with a place- or person-like row field are the roster (their names are not
+  places, K-R93); the table whose name means "present" becomes the `present` group (`members` and `targets` stay
+  discovered at run time), and the row fields that fit a text or tag slot (K-R42) are written as `fields` with `x-slot`.
+- **start** (`ui.start`, Z-08): the node that `locate` (K-R24, no `here`) finds in the first 400 code points of the
+  greeting; it only sets the opening view and is never the current location.
+- **lang** (Z-09): over the letters of name, greeting and entry titles (at least 20): Han ≥ 30 % → `zh`; else kana
+  ≥ 10 % → `ja`; else Hangul ≥ 30 % → `ko`; else `en`; fewer letters → the UI language. Languages other than `zh` and
+  `en` use the `en` kernel vocabulary (K-R07).
+
+**K-R95 — The automatic pack.** When no other source yields a pack, the host builds one from the card
+(`deriveAutoPack`): `{ id: 'c_' + fnv36(name + "\n" + avatar), schema: 2, title: <card name, cut to 80>, lang, nodes, vars,
+entities, ui: { start } }`. `nodes` = one explicit root node `root` named after the title, then the K-R93 candidates
+(hanging under it, so grown nodes always carry a `parent`). No views block (implicit schematic views, K-R96), no events
+block (neutral taxonomy, K-R53), no llm block. It is foreign (K-R63) and passes `validate2`. Its storage names follow the
+pack id through the existing derivation (`core/pack.mjs`). The derived pack and the grown nodes are a droppable cache in
+the pack's chat variable under the ASCII key `auto` = `{ v: 1, fp, pack, grown: [node], seen: [text] }`, written through
+the root store's save (never `stat_data`) and only once the root has been loaded. `fp` = `fnv36` of the card name, the
+avatar, the sorted normalised entry titles and the sorted key paths of the variable shape: with the same `fp` the cached
+pack is used as is, otherwise it is derived again (node ids are hashes of titles, so unchanged places keep their ids) and
+the grown nodes whose parent still exists are kept. The injected pack has `rev: 1` and `fp`.
+
+*Growth.* K-R26 runs for the automatic pack only (Z-07), over the derived plus grown nodes: every place text the host
+reads — the location variable (credited to the newest floor), place tags, the places of character and event tags — in
+floor order, once per text (`seen`, at most 400). New nodes go to `auto.grown`; when the set changes the host rebuilds
+its event geography and sends `eden-map:pack` `{ manifest, rev + 1, source: 'auto', trust: 'foreign' }`; the viewer
+validates it again as foreign, projects it and redraws (§4.6). *Recompute.* On chat load an absent `auto.grown` is
+rebuilt from nothing (`recomputeGrowth`) from the floors in the scan window; a present one is used, and the number of
+nodes live and recompute disagree on is kept as a drift count (never repaired silently). Live growth and the recompute
+give the same nodes for the same texts (tested like K-R75).
 
 ### 3.10 Limits and stable references
 
@@ -893,11 +959,10 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 
 **Added by S9-2:** K-R90, K-R91, K-R92 and K-R99 (§2.3), K-R103 (after K-R65).
 
+**Added by S9-3:** K-R93, K-R94 and K-R95 (§3.9, after K-R26: place candidates, variables / people / start view / language from the card, the automatic pack with its cache and growth), K-R98 (end of §2.4, export as pack), and the amendment of K-R26.
+
 **Planned in S9** (reserved by S9-design, `docs/zero-config.md`; full text lands with the step specs in its appendix):
-- K-R93 place candidates from the card's worldbook (S9-3);
-- K-R94 variables, people, start view and language from the card (S9-3);
-- K-R95 the automatic pack, its storage, stability and growth (S9-3);
-- K-R98 export as pack, and overlay export of a shipped pack (S9-3, S9b);
+- K-R98 overlay export of a shipped pack (S9b);
 - K-R100 edit mode and the draft (S9b);
 - K-R101 pack pictures: the media block, sources and limits (S9b);
 - K-R102 private pictures, never exported (S9b);
@@ -958,7 +1023,7 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 - **O-5 (S4).** The first pack's event types need ASCII ids; stored "type off" filters keep matching by label.
 - **O-6 (S3).** The world frame constants of v1 (1600 × 1000 canvas with margins) move from viewer code into compat
   (S1-impl-2) and then into the world view's region table (S3).
-- **O-7 (S9).** Zero-config details: the pack id of a card without a pack (`c_<hash of the card identity>`, kept on
+- **O-7 (S9) — closed by K-R95 (S9-3).** The pack id of a card without a pack is `c_<hash of name and avatar>`, kept on export (K-R98); growth under an authored tree is decided against (Z-07); the hostile-pack probe moves to S9b. Original text: zero-config details: the pack id of a card without a pack (`c_<hash of the card identity>`, kept on
   export, so user aliases, stash and fog survive embedding); an optional mode that keeps growing under an authored
   tree; a hostile fixture pack (markup, `</style>`, `javascript:` in every string) and a probe that asserts nothing is
   injected.

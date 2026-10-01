@@ -63,3 +63,17 @@ export function slotHit(slot, name, lang) {
 export const slotFind = (slot, keys, lang) => keys.find(k => slotHit(slot, k, lang)) || '';
 /** is the value one of the "not set" words? */
 export const isEmptyValue = v => { const s = low(v).trim(); return s === '' || flat(EXACT.empty).includes(s); };
+
+// ---- place words (docs/kernel-schema.md K-R93): the generic words that make a worldbook title or key a place candidate; a list per language, at most 60 each ----
+export const PLACE = {
+  zh: ['城', '市', '镇', '村', '街', '巷', '坊', '区', '港', '码头', '山', '谷', '岛', '湖', '河', '林', '殿', '宫', '堡', '塔', '寺', '庙', '院', '馆', '店', '铺', '楼', '阁', '厅', '室', '房', '屋', '学院', '学园', '学校', '广场', '市场', '酒馆', '旅店', '客栈', '桥', '园', '洞', '窟', '营', '站', '仓', '矿', '关'],
+  en: ['town', 'city', 'village', 'street', 'road', 'lane', 'alley', 'inn', 'tavern', 'pub', 'castle', 'hall', 'room', 'harbour', 'harbor', 'port', 'dock', 'docks', 'district', 'quarter', 'forest', 'woods', 'academy', 'school', 'market', 'square',
+    'bridge', 'tower', 'temple', 'church', 'garden', 'cellar', 'shop', 'store', 'house', 'manor', 'palace', 'island', 'lake', 'river', 'mountain', 'hill', 'valley', 'cave', 'camp', 'station', 'office', 'library', 'plaza', 'gate', 'bay', 'beach', 'farm', 'mine', 'keep', 'fort', 'ward'],
+};
+/** the place word `text` contains (Chinese: as a substring; other languages: as a whole word, a plural `s` allowed), else ''. `lang` selects the list (`zh`, else `en`). */
+export function placeWord(text, lang) {
+  const t = low(String(text ?? '').normalize('NFKC'));
+  if (/^zh/i.test(String(lang || ''))) return PLACE.zh.find(w => t.includes(w)) || '';
+  const toks = t.split(/[^\p{L}\p{N}']+/u).filter(Boolean);
+  return PLACE.en.find(w => toks.some(k => k === w || k === w + 's' || k === w + "'s")) || '';
+}

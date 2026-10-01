@@ -1,0 +1,114 @@
+{
+ "src": {
+  "name": "云岭城纪事",
+  "creator": "fixture",
+  "tags": [
+   "fixture"
+  ],
+  "avatar": "yunling.png",
+  "greeting": "清晨的钟声从钟楼传来，你站在云岭城的主街上，雾气还没有散。",
+  "books": [
+   {
+    "name": "云岭",
+    "entries": [
+     {
+      "title": "云岭城",
+      "keys": [
+       "云岭",
+       "主城"
+      ],
+      "enabled": true
+     },
+     {
+      "title": "云岭城·主街",
+      "keys": [
+       "主街"
+      ],
+      "enabled": true
+     },
+     {
+      "title": "云岭城·钟楼",
+      "keys": [
+       "钟楼"
+      ],
+      "enabled": true
+     },
+     {
+      "title": "[地点]听雨阁",
+      "keys": [
+       "听雨阁"
+      ],
+      "enabled": true
+     },
+     {
+      "title": "林三娘",
+      "keys": [
+       "三娘"
+      ],
+      "enabled": true
+     },
+     {
+      "title": "陆小七",
+      "keys": [],
+      "enabled": true
+     },
+     {
+      "title": "叙事规则",
+      "keys": [
+       "文风"
+      ],
+      "enabled": true
+     },
+     {
+      "title": "[initvar]变量初始化",
+      "keys": [],
+      "enabled": false
+     }
+    ]
+   }
+  ],
+  "stat": {},
+  "initvar": "世界:\n  当前地点: 云岭城·主街\n  时间: \"07:00\"\n  日期: 第1天\n在场人物:\n  林三娘:\n    位置: 听雨阁\n    身份: 掌柜\n  陆小七:\n    位置: 主街\n    身份: 学徒\n"
+ },
+ "expected": {
+  "lang": "zh",
+  "title": "云岭城纪事",
+  "nodes": [
+   [
+    "云岭城纪事",
+    null
+   ],
+   [
+    "云岭城",
+    "云岭城纪事"
+   ],
+   [
+    "主街",
+    "云岭城"
+   ],
+   [
+    "钟楼",
+    "云岭城"
+   ],
+   [
+    "听雨阁",
+    "云岭城纪事"
+   ]
+  ],
+  "start": "主街",
+  "vars": {
+   "location": "世界.当前地点",
+   "time": "世界.时间",
+   "date": "世界.日期"
+  },
+  "present": "在场人物",
+  "notNodes": [
+   "林三娘",
+   "陆小七",
+   "叙事规则"
+  ],
+  "fields": [
+   "身份"
+  ]
+ }
+}

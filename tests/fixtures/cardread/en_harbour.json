@@ -1,0 +1,128 @@
+{
+ "src": {
+  "name": "Saltmere Harbour Tales",
+  "creator": "fixture",
+  "tags": [
+   "fixture"
+  ],
+  "avatar": "saltmere.png",
+  "greeting": "You step off the ferry at Lantern Docks. The salt wind carries the smell of fish and tar, and the lamps are already lit along the quay.",
+  "books": [
+   {
+    "name": "Saltmere",
+    "entries": [
+     {
+      "title": "[Place] Lantern Docks",
+      "keys": [
+       "lantern docks",
+       "docks"
+      ],
+      "enabled": true
+     },
+     {
+      "title": "The Salty Anchor Inn",
+      "keys": [
+       "the inn",
+       "salty anchor"
+      ],
+      "enabled": true
+     },
+     {
+      "title": "Old Quarter",
+      "keys": [
+       "old quarter"
+      ],
+      "enabled": true
+     },
+     {
+      "title": "Old Quarter · Cooper Street",
+      "keys": [
+       "cooper street"
+      ],
+      "enabled": true
+     },
+     {
+      "title": "Old Quarter · Cooper Street · Bell Loft",
+      "keys": [],
+      "enabled": true
+     },
+     {
+      "title": "Mara Venn",
+      "keys": [
+       "mara"
+      ],
+      "enabled": true
+     },
+     {
+      "title": "Old Tomas",
+      "keys": [
+       "tomas"
+      ],
+      "enabled": true
+     },
+     {
+      "title": "Writing Rules",
+      "keys": [
+       "style"
+      ],
+      "enabled": true
+     },
+     {
+      "title": "[initvar] Variables",
+      "keys": [],
+      "enabled": false
+     }
+    ]
+   }
+  ],
+  "stat": {},
+  "initvar": "World:\n  Location: the inn\n  Time: \"08:30\"\n  Date: Day 1\nPlayer:\n  Name: Wren\n  Outfit:\n    Top: coat\nPresent:\n  Mara Venn:\n    Place: the inn\n    Role: Innkeeper\n    Height: 170cm\nMembers:\n  Old Tomas:\n    Place: Lantern Docks\n    Role: Boatman\n"
+ },
+ "expected": {
+  "lang": "en",
+  "title": "Saltmere Harbour Tales",
+  "nodes": [
+   [
+    "Saltmere Harbour Tales",
+    null
+   ],
+   [
+    "Lantern Docks",
+    "Saltmere Harbour Tales"
+   ],
+   [
+    "The Salty Anchor Inn",
+    "Saltmere Harbour Tales"
+   ],
+   [
+    "Old Quarter",
+    "Saltmere Harbour Tales"
+   ],
+   [
+    "Cooper Street",
+    "Old Quarter"
+   ],
+   [
+    "Bell Loft",
+    "Cooper Street"
+   ]
+  ],
+  "start": "Lantern Docks",
+  "vars": {
+   "location": "World.Location",
+   "time": "World.Time",
+   "date": "World.Date",
+   "outfit": "Player.Outfit"
+  },
+  "present": "Present",
+  "notNodes": [
+   "Mara Venn",
+   "Old Tomas",
+   "Writing Rules",
+   "[initvar] Variables"
+  ],
+  "fields": [
+   "Height"
+  ]
+ }
+}
