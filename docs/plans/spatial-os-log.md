@@ -1450,3 +1450,32 @@ open: none
 cleanup: done
 === END ===
 
+
+=== RESULT S7-1 ===
+status: DONE
+items: T0 ✓ T1 ✓ T2 ✓ T3 ✓ T4 ✓ T5 ✓ T6 ✓ T7 ✓ T7b ✓ T8 ✓
+commits:
+e8b70433 chore: freeze maps for S7-1 pack data
+2380ba2a test(browser): s7_shots probe, the S7 review screenshot set (states 1, 4-10, 12, in-tavern)
+966896a2 feat(settings): eight groups, pages built by settings-pages.mjs, moved rows
+7cdd5bc6 feat(ai): feature cards with health; status-line fields; AI advisor consent, endpoint form and test
+a7bb4c7d feat(nav): OP_ROUTE suggestions through routeOp (K-R130)
+03182541 i18n: settings hints and the AI advisor rename; pack portrait sentence
+d0038c99 fix(settings): N10 settings items, plain wording, layer descriptions, roster suffix; no-labels gate patterns
+2a553b45 fix(ai): advisor form labels left-aligned and stacked; settings init timing mark
+9fa2350e chore: unfreeze maps (S7-1 pack data done)
+0b643421 docs: settings IA in the module map, naming decision, todo
+05938de9 fix(ai): review fixes (nonce-bound connection test, own cadence pref, no health polling for a closed map, no-consent line, dice success, redact, disabled agree button)
+(shas before the push rebase)
+pushed: yes
+tests: node 1384 pass + 1 skipped / 1385 (base 1342; +42) | smoke PASS | arch PASS (ledger lowered: viewer.html 707 → 672, eden-map.js 675 → 664) | probes base → after: th_adopt 33/0 → 33/0, contrast_v2 12/0 → 12/0, v096 31/0 → 31/0, pack_switch 11/0 → 11/0, layers_ext 35/1 → 35/1 (same pre-existing check f), text_dump 86 → 88 states, s7_shots 34 shots no page errors
+n10: 11 ✓ · 12 ✓ (first-run hint 3 items) · 13 ✓ (layer description line) · 15 ✓ (roster suffix gone) · gate patterns + self-tests; allow-list `S7-3 removes` = tavern/picker.mjs, unmapped-place-picker.mjs, estate/main.js
+review: executed by a Sonnet executor with self-run gates R0/R1/R2 (shots in ~/eden-map-review/overnight/s7/s7-1-r0…r3); orchestrator review by an Opus reviewer (UX / privacy / engine): PASS-WITH-FIXES, 1 blocker (stale connection test could unlock consent) + 4 should-fix + 2 nits, all fixed in 05938de9, state 07 re-shot (r3) and checked
+text changes: only settings-ia §7 keys (text_dump diff in ~/eden-map-review/overnight/s7/s7-1-r1/text_dump_diff.txt); injected status line / spatial / digest byte-identical by default; only model-facing change is the OP_ROUTE line of the advisor prompt (user's own endpoint)
+files: settings-pages.mjs 106, settings-wire.mjs 67, feature-card.mjs 59, ai-cards.mjs 103, ai-nav-form.mjs 48, tavern/feature-health.mjs 63, locked-strings.mjs 12; viewer.html 707 → 672
+perf: accept first screen 527 → 525 ms, perf_v2 desktopCold 525 → 506 ms, long tasks 0 → 0, boot work 0.1 ms
+deviations: (1) gates not stopped (standing authority; orchestrator review instead). (2) T0 mockup skipped. (3) probes th_adopt, replay_i17, v096, layers_ext updated to the new IA. (4) debug FPS switch was never wired (its call sat in a comment); now wired. (5) cadence got its own host pref edenMapNavCadence (review fix 2).
+blocker: none
+open: none
+cleanup: done
+=== END ===
