@@ -1360,3 +1360,17 @@ blocker: none
 open: N14 (a) art cache key pin (needs bump_head / bootstrap / viewer change, user's call on the shape) · the white-field-with-small-base state is still unexplained; a user capture of `ViewerDebug.osdViewer.viewport.getBounds()` and `world.getItemAt(0).getBounds()` in that state would settle it
 cleanup: done
 === END ===
+
+=== RESULT B1-C02-3.3 ===
+status: DONE
+items: 3.2 (one-way window & kneeling platform) ✓ · 3.3 (multi-functional daybed & suspension rigging) ✓
+commits:
+cd4d0ae7 feat(estate): deepen Section 3.2 one-way observation window and kneeling platform in B1-C02
+1ef2cf81 feat(estate): deepen Section 3.3 multi-functional daybed in B1-C02
+pushed: yes
+tests: node 1334/1334 | smoke PASS | arch PASS | house.glb 683556 bytes (under 718930 cap)
+deviations: none
+blocker: none
+open: none
+cleanup: done
+=== END ===
