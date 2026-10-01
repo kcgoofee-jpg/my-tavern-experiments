@@ -1030,7 +1030,6 @@
    ],
    "fill": "specific",
    "depends": [],
-   "user_gate": true,
    "spec": {
     "res": 2000,
     "spp": 0
@@ -1055,7 +1054,6 @@
    ],
    "fill": "specific",
    "depends": [],
-   "user_gate": true,
    "spec": {
     "res": 3200,
     "spp": 128
@@ -1080,7 +1078,6 @@
    ],
    "fill": "specific",
    "depends": [],
-   "user_gate": true,
    "spec": {
     "res": 3200,
     "spp": 128
@@ -1091,7 +1088,7 @@
     "island_kit": "blender/islands/_kit.py",
     "outputs": "upper-map cutout via tools/isles_into_upper.py (island id eden); cover art/covers/eden_1600.jpg + eden_800.jpg; estate island inset"
    },
-   "notes": "The only item the user reviews. Setting: maps.json tc_upper marker eden `src` (card facts), docs/card-digest.md, docs/upper-setting.md, docs/upper-islands-checklist.md. Build a real-world reference board BEFORE modelling (neoclassical white-stone manor, front fountain court, rear lake, visitor landing, estate-wide barrier). At user-review: put board, setting summary (Chinese, <= 15 lines), and 4 final-preview angles in ~/eden-map-review/render/isle_eden/ and move on to other items; the user's verdict is recorded with --agent user; a send-back note lives in docs/reviews/campaign/isle_eden/user-<n>.md."
+   "notes": "Setting: maps.json tc_upper marker eden `src` (card facts), docs/card-digest.md, docs/upper-setting.md, docs/upper-islands-checklist.md. Build a real-world reference board BEFORE modelling (neoclassical white-stone manor, front fountain court, rear lake, visitor landing, estate-wide barrier). At user-review: put board, setting summary (Chinese, <= 15 lines), and 4 final-preview angles in ~/eden-map-review/render/isle_eden/ and move on to other items; the user's verdict is recorded with --agent user; a send-back note lives in docs/reviews/campaign/isle_eden/user-<n>.md."
   },
   {
    "id": "isle:silver_crown",

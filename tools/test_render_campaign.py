@@ -512,8 +512,7 @@ class RealItemList(unittest.TestCase):
         self.assertEqual(by['base:site_fief3']['spec'], {'res': 4000, 'spp': 128})
         self.assertEqual(by['estate:final']['spec'], {'res': 2000, 'spp': 32})
         self.assertFalse([i for i in self.items if 'rain' in i['id']], 'no weather variants')
-        self.assertEqual([i['id'] for i in self.items if i.get('user_gate')], ['layout:tc_upper', 'eden:r5', 'isle:eden'],
-                         'the user reviews only their own estate island and the upper layout')
+        self.assertEqual([i['id'] for i in self.items if i.get('user_gate')], [], 'N2: no item is gated on the user')
         self.assertEqual(by['layout:tc_upper']['targets'], ['tc_upper:*'])
         self.assertEqual(by['eden:r5']['spec'], {'res': 3200, 'spp': 128})
         self.assertEqual(by['eden:r5']['targets'], ['tc_upper:eden', 'eden_estate:cover', 'eden_estate:site'])
