@@ -157,6 +157,23 @@ export async function wheelDriftViewer(page, x, y, ticks = 5) {
 
 // ---------- 庄园（map/estate/index.html，three.js）----------
 // frame：庄园所在的 Frame（独立打开时就是 page.mainFrame()；嵌在查看器里用 estateFrame(page)）
+// 三维页热点编号：等 placePins 真跑过（#pins[data-placed]）且连续两次测量（间隔 ≥2 帧）一致才返回，最长 timeout；超时返回最后一次（调用方的数量 / 间距断言照常判失败）
+export const pinCenters = frame => frame.evaluate(() => [...document.querySelectorAll('.pin:not([hidden])')].map(e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+export async function settledPins(frame, timeout = 15000) {
+  const t0 = Date.now(); let prev = null, cur = [];
+  while (Date.now() - t0 < timeout) {
+    await frame.evaluate(() => document.fonts?.ready).catch(() => {});
+    if (await frame.evaluate(() => !!document.getElementById('pins')?.dataset.placed).catch(() => false)) {
+      await frame.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))).catch(() => {});
+      cur = await pinCenters(frame);
+      if (prev && prev.length === cur.length && cur.every((c, i) => c[0] === prev[i][0] && c[1] === prev[i][1])) return cur;
+      prev = cur;
+    }
+    await wait(100);
+  }
+  return cur;
+}
+export function minPinDist(pins) { let m = Infinity; for (let i = 0; i < pins.length; i++) for (let j = i + 1; j < pins.length; j++) m = Math.min(m, Math.hypot(pins[i][0] - pins[j][0], pins[i][1] - pins[j][1])); return m; }
 export const estateFrame = async page => (await page.$('#estate'))?.contentFrame() || null;   // 查看器里嵌着的庄园 iframe
 export async function openEstate(P, { stats = true, tier } = {}) {
   P.net.mark();

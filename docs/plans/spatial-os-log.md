@@ -1091,3 +1091,19 @@ blocker: none
 open: E-10 local glb props in 3D pages (not in S9b); E-11 remove ui/gallery.js; E-12 edit bar over the drawer on a phone; Q: should a place with no pack picture offer a "Pictures" entry to every user (today only places with pack pictures, and every place in edit mode)?
 cleanup: done (probe servers stopped by the probes; no background jobs of mine left; no .claude/launch.json entries; no FREEZE_MAPS created; worktree s9b-base removed, s9b left for the orchestrator)
 === END ===
+
+=== RESULT I-25 ===
+status: DONE
+items: find cause ✓ · reproduce locally ✓ · deterministic probe ✓ · forced-overlap proof ✓ · todo struck ✓ · step file ✓
+commits: (this commit) fix(browser): v3d_pins_no_overlap waits for placed pins, not a fixed sleep; pins hidden until first placement; RESULT I-25   (SHAs may change on rebase)
+pushed: yes (head #N in the chat report; this log copy is committed before the push)
+cause: buildPins() made all 13 pins visible with no transform (all at 0,0) and placePins() only ran on the first dirty render after the model build; the probe waited a fixed 800 ms after probe.ready, so on a slow CI runner (first render later than that) it measured 13 stacked pins, nearest 0 px. Not an overlap in the layout itself: placed pins are 33.3 px apart (4 visible at 375 px).
+fix: viewer3d.html (line count unchanged, 3 lines): pins start hidden, #pins gets data-placed once placePins has run. tools/browser/lib.mjs: settledPins() waits for data-placed plus fonts.ready plus two identical measurements >=2 frames apart (timeout 15 s, then returns the last measure so the count / distance assertion still fails); minPinDist(). v096.mjs uses them; the assertion (>=4 pins, nearest >=26 px) is unchanged.
+local runs: 0/6 before under a simulated 3.5 s render stall in the 3D frame (13 pins, 0 px each time; 12/12 without the stall, so the plain local run cannot show the race), 10/10 after under the same stall, 10/10 after without it
+forced overlap: all pins forced to one position with the render loop frozen: 0/3 pass (13 pins, 0 px), so the check still fails on a real overlap
+tests: node 1184/1185 pass (1 skipped, environment-dependent) | smoke PASS | arch PASS | probes: v096 v3d_pins_no_overlap=PASS (4 pins, 33 px)
+deviations: none
+blocker: none
+open: none
+cleanup: done (probe servers stopped by the scripts; scratch repro script deleted; no background jobs)
+=== END ===

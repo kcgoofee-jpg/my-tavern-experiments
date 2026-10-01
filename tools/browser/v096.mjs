@@ -83,9 +83,9 @@ const ev = (p, f, a) => p.evaluate(f, a);
   await snap(p, 'dairy_loading_375');
   const fr = await (async () => { for (let i = 0; i < 100; i++) { const f = await B.estateFrame(p); if (f && await f.evaluate(() => window.__viewer3dProbe?.ready).catch(() => false)) return f; await B.wait(200); } return null; })();
   if (fr) {
-    await B.wait(800);
-    const pins = await fr.evaluate(() => [...document.querySelectorAll('.pin:not([hidden])')].map(e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
-    let minD = Infinity; for (let i = 0; i < pins.length; i++) for (let j = i + 1; j < pins.length; j++) minD = Math.min(minD, Math.hypot(pins[i][0] - pins[j][0], pins[i][1] - pins[j][1]));
+    // I-25：不再睡固定 800 ms——等真实的放置信号：#pins[data-placed]（首次 placePins 跑过；未放置前整排隐藏），再要求相邻两次（间隔 ≥2 帧）测得的位置完全一致（相机 / 安全区 / 字体都落定）
+    const pins = await B.settledPins(fr);
+    const minD = B.minPinDist(pins);
     rep.check('v3d_pins_no_overlap', pins.length >= 4 && minD >= 26, `${pins.length} 个，最近 ${minD.toFixed(0)} px`);   // U12 + viewer3d 2026-09-29 小修：≤640px 上挤在一起的编号直接隐藏、编号圈收进 UI 安全区——手机可见数变少是设计避让；「不重叠（≥26px）」仍是硬约束
     const cam = await fr.evaluate(() => { const s = window.__viewer3dProbe; return { ok: Object.values(s).length > 0 }; });
     rep.check('v3d_ready', cam.ok);

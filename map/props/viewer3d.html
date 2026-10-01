@@ -631,8 +631,8 @@ function buildList() {
   document.querySelectorAll('.pin').forEach(p => { const h = HS.find(x => x.id === p.dataset.id); if (h) p.setAttribute('aria-label', L(h.name)); });
 }
 function buildPins() {
-  const box = $('#pins'); box.textContent = '';
-  for (const h of HS) { const b = document.createElement('button'); b.type = 'button'; b.className = 'pin'; b.dataset.id = h.id; b.innerHTML = `<span>${h.n}</span>`;
+  const box = $('#pins'); box.textContent = ''; delete box.dataset.placed;   // 未放置前整排隐藏（不叠在 0,0）；首次 placePins 后写 data-placed
+  for (const h of HS) { const b = document.createElement('button'); b.type = 'button'; b.className = 'pin'; b.hidden = true; b.dataset.id = h.id; b.innerHTML = `<span>${h.n}</span>`;
     b.setAttribute('aria-label', L(h.name)); b.onclick = e => { e.stopPropagation(); fly(h.id); }; box.appendChild(b); h.pin = b; }
 }
 const pv = new THREE.Vector3();
@@ -653,7 +653,7 @@ function uiSafe() {
 function placePins() {
   const w = canvas.clientWidth, h = canvas.clientHeight;
   // v0.9.6 标记避让：屏幕上离得太近（< 30 px）的标记沿一圈错开，不再叠成一个（7 压在 1 / 3 上）
-  const placed = [];
+  const placed = []; $('#pins').dataset.placed = '1';
   const S = uiSafe(), inSafe = ([x, y]) => [Math.min(Math.max(x, S.l), S.r), Math.min(Math.max(y, S.t), S.b)];   // 收参不闭包：x/y 在循环体内，箭头里引用外层会 ReferenceError
   for (const s of HS) { pv.copy(s.a || s.c); pv.project(camera);
     const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05 && !(mode === 'cut' && (s.a || s.c).y > cutY() + 0.2);
