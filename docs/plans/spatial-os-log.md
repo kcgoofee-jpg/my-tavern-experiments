@@ -1407,3 +1407,15 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+
+=== RESULT AC-0 ===
+status: DONE
+items: Q-23 ✓ · Q-24 ✓ · Q-25 ✓ (accepted, recommendation A) · N14 b ✓ · N14 c ✓
+commits: f95c350e fix(ac-0): N14 b/c and Q-23..25 accepted
+pushed: yes
+tests: node 1339 pass + 1 skipped / 1340 (baseline 1339; +1 here_v2 N14 b) | smoke PASS | arch PASS | probes: none relevant (data word + self-check text; unit-tested)
+deviations: (1) 地窖 went into the room's `synonyms`, not `words`: floorplans.py keeps `words` for card spellings only and `synonyms` for common names; both feed locate, the picker and maps.json identically. (2) floorplans.py gained `--data-only` (plot imports optional) so the generator runs here; before the edit it reproduced the committed JSON byte for byte. (3) Adding the word changes the injected 地图当前地点 worldbook entry by exactly 「地窖、」 (intended by N14 b; pinned in worldbook_rename_s44b, compat_v1 hints 153 → 154). (4) N14 c root cause: self-check read `Mvu latest` raw while the map and the mode line use the walked-back snapshot; `rawLatestStat` (only reader) removed.
+blocker: none
+open: none
+cleanup: done
+=== END ===
