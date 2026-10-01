@@ -46,7 +46,7 @@ const StashView = (() => {
 .itrow b { font-weight: 600; overflow-wrap: anywhere; }
 .itrow em { font-style: normal; font-family: var(--font-mono, monospace); opacity: .8; }
 .itrow small { flex: 1 1 100%; opacity: .75; overflow-wrap: anywhere; }
-.itrow button { margin-left: auto; min-height: 32px; padding: 0 var(--sp-4, 8px); border: 1px solid var(--line, rgba(255,255,255,.2)); border-radius: var(--r-2, 6px); background: var(--surface-2, transparent); color: inherit; cursor: pointer; font: inherit; }
+.itrow button { flex: none; white-space: nowrap; margin-left: auto; min-height: 32px; padding: 0 var(--sp-4, 8px); border: 1px solid var(--line, rgba(255,255,255,.2)); border-radius: var(--r-2, 6px); background: var(--surface-2, transparent); color: inherit; cursor: pointer; font: inherit; }
 .itrow button:disabled { opacity: .5; cursor: default; }
 .itrow button:focus-visible { outline: 2px solid var(--focus, #63b4be); outline-offset: 2px; }
 @media (pointer: coarse), (max-width: 640px) { .itrow button { min-height: 44px; min-width: 44px; } }`;

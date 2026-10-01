@@ -839,4 +839,21 @@ deviations: (1) the GLM backups were not usable: *.pre-v16C.png held the older p
 blocker: none
 open: the interim base shows faint cloud-patch seams where old islands were filled and the elite academy is a neutral rounded block until isle25 / base:tc_upper land; eden_hi bounds are now 0.331-0.669 x 0.298-0.703 (750 m x eden scale 1.35)
 cleanup: done (backups *.pre-v16C.* are git-ignored)
+=== RESULT S6-3 ===
+status: DONE
+items: T0 baseline ✓ · T1 contract K-R76 (tab), K-R77, K-R78, K-R46 sentence, O-1, schema verbs_strict ✓ · T2 pickup patterns, never-forms, I-08 ✓ · T3 per-pack vocabulary ✓ · T4 Items tab ✓ · T5 npc / events write paths and switch ✓ · T6 probe drawer_stash ✓ · T7 docs, todo, RESULT ✓
+commits: 774d711f feat(core): pickup sentence patterns, strict verbs, never-forms, pack vocabulary (K-R77, I-08)
+commits: 70aa82f5 feat(viewer): Items tab on the drawer registry (K-R76)
+commits: 42130b29 feat(host): settlement record for the npc and events domains behind a default-off switch (K-R78, I-04)
+commits: (this commit) test(browser): drawer_stash probe; docs; RESULT S6-3   (SHA may change on rebase)
+pushed: yes (head #N in the chat report; one push for all four commits; this log copy is committed before the push)
+tests: node 1002/1003 pass (1 skipped as in baseline; baseline 948/949, +54: pickup_s63 37, overlay_items 3, items_groups 4, settlement_record 8, drawer_tabs +1, protocol +1) | smoke PASS | arch PASS | probes: drawer_stash=PASS 15/15 accept=PASS e7_host=PASS th_adopt=PASS pack_town=PASS chars092=PASS text_dump=86 states (page error "reading 'min'" is identical on the untouched base; diff vs base: only the new hidden Items tab button in the drawer)
+pickup: 22 sentences changed, all in the table; positives kept 11/11 (tests/auto_stash.test.mjs and the table's unchanged rows)
+items tab: groups carried/here/other/card = 2/2/1/2 in the probe (desktop and 375 px); badge 2; buttons 44 px at 375 px
+switch: edenMapLedgerWrite default off, injected text identical with it off (S6-2 parity tests pass unchanged; with it off chars / events / roster are not even read; the ledger key never appears)
+probe drawer_stash: 15/15
+deviations: (1) one push for all four commits instead of one after commit 3 (the probe was not written yet at commit 3; brief: usually once per prompt). (2) Clause ends also include a full stop followed by whitespace (English prose has no other sentence end in the spec's list); it only removes blocks, never adds. (3) The English patterns use word boundaries and are case-insensitive. (4) Quoted names are also accepted after the English normal verbs only via the strict-class path (spec: strict verbs only); normal English verbs keep the unquoted form. (5) Known-name hits are blocked-checked from the last verb found in the 24-character window, and a blocked occurrence does not stop later occurrences of the same name. (6) The npc patch carries no node (the audit fact has none): the record's `node` is '' for npc entries. (7) Test files edited for new interfaces only, one for one: host_split (thPrefs gains ledgerWrite; stash-flow API gains ledgerRecord), stash_flow_s62 (host gets chars / events / roster), drawer_tabs (it row and the frozen-parity ids). (8) The take button of the probe is exercised inside a host iframe (the viewer posts only when embedded). (9) text_dump base diff was run against a fresh worktree at head #205.
+blocker: none
+open: none
+cleanup: done (probe servers of mine stopped; extra base worktree removed; no launch.json entries; worktree s6-3 left for the orchestrator)
 === END ===
