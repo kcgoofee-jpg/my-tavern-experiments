@@ -87,6 +87,9 @@ try {
   await ready('eden_estate');
   await waitPinned('dairy');
   rep.check('back_by_crumb_focuses_farm', (await pinnedZone()) === 'dairy', String(await pinnedZone()));
+  // 返回后宿主又推一次同一个当前地点（慢机器上常落在聚焦之后）：落点区域不能被当前地点盖掉
+  await p.evaluate(() => document.querySelector('#here').dispatchEvent(new Event('input'))); await B.wait(1500);   // 同值刷新：markHere → estateRoom
+  rep.check('focus_survives_location_refresh', (await pinnedZone()) === 'dairy', String(await pinnedZone()));
   // 直接返回上层不带落点：庄园之外的面包屑不带 data-focus
   await p.evaluate(() => ViewerDebug.go('tc_upper')); await p.waitForFunction(() => ViewerDebug.currentMapId === 'tc_upper', null, { timeout: T });
   rep.check('flat_crumbs_carry_no_focus', await p.evaluate(() => !document.querySelector('#crumbs a[data-focus]') && !document.getElementById('upBtn').dataset.focus));

@@ -225,7 +225,7 @@ export function estateNpcs() {
 }
 // S2-B：三维页里区域下的子地图 { 区域 id: [{ node, title }] }；从子地图返回（面包屑 / 上一级带 data-focus）时把落点区域聚焦
 const estateZones = id => Object.fromEntries(Object.entries(zoneChildren(id)).map(([z, ks]) => [z, ks.map(k => ({ node: k, title: localName(mapRegistry.maps[k], 'title') }))]));
-function estateFocusPending() { const f = pendingFocus; if (f) { setPendingFocus(null); estateFocus(f); } }
+function estateFocusPending() { const f = pendingFocus; if (f) { setPendingFocus(null); estFocus = f; estateFocus(f); } }   // 返回时的落点区域记进 estFocus：之后的当前地点刷新（estateRoom）不再把它盖掉，地点真的变了才清
 /**
  * 任务三：把某个名字交给三维页聚焦（地点卡里的【进入三维视口】指到的就是当前这张三维图时用）。
  * 三维页自己按房间名 / 别名 / 热点找人，找不到就安静不动。没开 / 没就绪 → false。
