@@ -70,6 +70,7 @@ export function registerCoreLayers() {
 /** 渲染 #layList：行 = 菜单描述符（menu.order → 注册先后），勾选态来自 registry（存储键与默认值不变） */
 export function renderLayerMenu() {
   const list = $('#layList'); if (!list) return;
+  if (!document.getElementById('lyDescCss')) { const st = document.createElement('style'); st.id = 'lyDescCss'; st.textContent = '.tg .lyt{display:flex;flex-direction:column;min-width:0}#layPop .tg .lyt small,#setPop .tg .lyt small{margin:0;color:var(--muted);font-size:var(--fs-micro);line-height:1.35}'; document.head.appendChild(st); }
   list.replaceChildren(...registry.menuRows().map(rec => {
     const m = rec.menu, lab = document.createElement('label'); lab.className = 'tg';
     if (m.id) lab.id = m.id;
@@ -83,7 +84,10 @@ export function renderLayerMenu() {
     const box = document.createElement('input'); box.type = 'checkbox'; box.setAttribute('role', 'switch');
     if (m.boxId) box.id = m.boxId;
     box.checked = registry.isVisible(rec.id);
-    lab.append(span, box);
+    const desc = document.createElement('small');   // N10 (13): one muted description line per layer (the row's title); none when the row has no title
+    if (tx) { desc.textContent = lab.title; if (m.titleKey && !m.i18n?.[LANG]?.title) desc.setAttribute('data-i18n', m.titleKey); }
+    const col = document.createElement('div'); col.className = 'lyt'; col.append(span); if (tx) col.append(desc);
+    lab.append(col, box);
     box.addEventListener('change', () => registry.setVisible(rec.id, box.checked));
     return lab;
   }));

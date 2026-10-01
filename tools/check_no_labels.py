@@ -14,6 +14,10 @@ Allowed exceptions (kept explicit, each with its reason below):
   * exact lines listed in ALLOW (the rule lines that forbid the words, and one append-only log line);
   * this file (it has to name the words) and the S0-F inventory (it quotes the words it counted).
 
+UI-text patterns (S7-1, N10 items 14 / 15): the wording that reads like a card-versus-invented note on screen ("（卡 30）" area suffixes,
+"原卡", "不描述", "未定", the " · 设定" suffix and their English forms) is banned in map/i18n/*.json, the packs' manifests and the string
+literals of the engine files (UI_ALLOW lists the files whose hits step S7-3 removes; S7-3 must empty it).
+
 Usage: python3 tools/check_no_labels.py [--self-test]
 """
 import hashlib
@@ -58,6 +62,31 @@ ALLOW = {
         "0379646f8aa1cda9d6d8f8343abfc64f8c4453ed8569b52da610ce31fec1cf4c": "append-only log: an old RESULT line that quotes the words (history is never rewritten)",
     },
 }
+
+
+# UI-text patterns (built from pieces like the words above)
+_P = ["（卡 ", "原卡", "不描述", "未定", " · 设定", "not described", "(card "]
+UI_PATTERN = re.compile("|".join(re.escape(w) for w in _P))
+UI_FILES = re.compile(r"^(map/i18n/[a-z]+\.json|map/packs/[^/]+/manifest\.json|map/(core|app|tavern|ui|three)/[^/]+\.m?js|map/[^/]+\.m?js|map/viewer\.html)$")
+# files whose UI-text hits step S7-3 removes (the estate page and the two pickers): S7-3 removes these entries
+UI_ALLOW = {
+    "map/tavern/picker.mjs": "S7-3 removes (the estate room picker)",
+    "map/unmapped-place-picker.mjs": "S7-3 removes (the unmapped-place picker)",
+    "map/estate/main.js": "S7-3 removes (the estate page)",
+}
+_LIT = re.compile(r"""'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`""")
+
+
+def ui_hits(path, text):
+    """[(line, excerpt)]: UI-text patterns inside string literals (JSON and HTML: anywhere on the line)."""
+    if path in UI_ALLOW or not (UI_FILES.match(path) or path == "map/estate/main.js"):
+        return []
+    out = []
+    for n, line in enumerate(text.split("\n"), 1):
+        parts = [line] if path.endswith((".json", ".html")) else _LIT.findall(line)
+        if any(UI_PATTERN.search(x) for x in parts):
+            out.append((n, line.strip()[:160]))
+    return out
 
 
 def digest(line):
@@ -131,6 +160,13 @@ def scan(root, files=None, allow=None):
             continue   # binary or missing: nothing to read
         for n, excerpt in scan_text(rel, text, allow):
             found.append((rel, n, excerpt))
+    for rel in files:   # UI-text patterns (also in files the label scan does not cover)
+        if UI_FILES.match(rel) or rel == "map/estate/main.js":
+            try:
+                text = (root / rel).read_bytes().decode("utf-8")
+            except (UnicodeDecodeError, OSError):
+                continue
+            found += [(rel, n, "UI text: " + ex) for n, ex in ui_hits(rel, text)]
     return found
 
 
@@ -195,6 +231,16 @@ def self_test():
             for rel in ("map/tavern/operation-dsl.mjs", "tools/check_maps.py", "tests/x.test.mjs", "docs/a.md", "map/viewer.html"):
                 put(rel, f"// {ph}\n")
                 check(f"phrase {i} is allowed in {rel}", scan(root, [rel]) == [])
+        # 7c UI-text patterns: caught in the dictionaries, pack manifests and string literals (not in comments); S7-3 files are allow-listed
+        for i, w in enumerate(_P):
+            for rel, body in (("map/i18n/zh.json", f'  "k": "a{w}b",\n'), ("map/packs/p/manifest.json", f'  "strings": "x{w}y",\n'), ("map/app/x.mjs", f"const t = 'a{w}b';\n"), ("map/viewer.html", f"<b>a{w}b</b>\n")):
+                put(rel, body)
+                check(f"UI pattern {i} is caught in {rel}", len(scan(root, [rel])) == 1)
+            put("map/app/c.mjs", f"// a comment with {w}\nconst t = 1;\n")
+            check(f"UI pattern {i} is allowed in a comment", scan(root, ["map/app/c.mjs"]) == [])
+            for rel in UI_ALLOW:
+                put(rel, f"const t = 'a{w}b';\n")
+                check(f"UI pattern {i} is allow-listed in {rel} (S7-3 removes)", scan(root, [rel]) == [])
         # 8 README parsing
         docs = current_docs(root)
         check("README links become docs (and zh editions)", {"docs/a.md", "docs/a.zh.md", "docs/plans/b.md", "docs/card-buildings.md"} <= docs and "docs/x.md" not in docs)
