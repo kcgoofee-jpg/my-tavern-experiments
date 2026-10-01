@@ -4,7 +4,7 @@
 // 纯函数在 tavern/mvu.mjs（数据）与 tavern/picker.mjs（v0.9.5 选择器分组、搜索、飞行目标、校验）。这里不过滤任何文字，原样显示（textContent / esc）。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 import { REG, aspect, cur, curData, pendingFocus, setPendingFocus, viewer } from './app/state.mjs';
-import { PACK, packData } from './app/pack.mjs'; import { worldbookPrefix } from './core/pack.mjs'; import { viewField } from './app/nodes-runtime.mjs';
+import { PACK, packData } from './app/pack.mjs'; import { worldbookPrefix } from './core/pack.mjs';
 import { esc, post } from './app/util.mjs';
 import { LANG } from './app/i18n.mjs';
 import { mountProgress } from './ui/progress.mjs';
@@ -15,10 +15,11 @@ import { estPlan, hereIdx, hereRes, markHere, setUserMoved, userMoved } from './
 import { TCSettings, showSet } from './app/settings.mjs';
 import { LS, chatId, rebuildHere } from './app/extapi.mjs';
 import { P, register } from './app/plugins.mjs';
+import { createTint, NIGHT_KEY } from './custom-tint.mjs'; import { createOutfit } from './custom-outfit.mjs'; import { createHints } from './custom-hints.mjs'; import { createDialogView } from './custom-dialog-view.mjs';
 const TCCustom = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const embed = window.top !== window;
-  let MV = null, data = { items: {}, 同步世界书: true }, host = null, clock = null, outfit = null, toastT = 0;
+  let MV = null, data = { items: {}, 同步世界书: true }, host = null, clock = null;
   const ready = import(new URL('tavern/mvu.mjs', document.baseURI).href).then(m => { MV = m; if (!host) loadLocal(); return m; }).catch(() => null);
   const lsKey = () => 'edenMap:chat:' + (typeof chatId === 'string' ? chatId : '') + ':custom2';
   // 单独打开（或宿主还没推来）：本机存储；旧版（core/legacy-custom.mjs readCustom）的房间叫法一并迁移进来显示
@@ -66,32 +67,12 @@ const TCCustom = (() => {
     // fix3（用户 2026-09-28）：着装属于人，不挂在地点卡上——改在人物页顶部「你（主角）」一行显示（chars.mjs）
   }
 
-  // ---------- 夜色（上层、中层；设置里可关，默认开） ----------
-  const NIGHT_KEY = 'edenMapNight';
-  const nightOn = () => { try { return TCStore.get(NIGHT_KEY) !== '0'; } catch (e) { return true; } };
-  // v0.9.6（B11 / C1）：按时段分四档（晨 / 日 / 暮 / 夜）；颜色只参考 docs/drafts/upper_tod_*.jpg 的整体色调，不另出图。夜档保留旧的 nighttint 类
-  // 有效档位（关掉开关 / 读不到世界时间时为 ''）也是多时段底图（maps.json periods，app/nav.mjs）的依据；已配底图的档位（昼 / 夜）不再叠色调，免得双重变暗
-  function todNow() { return nightOn() ? (clock?.tod || (clock?.night ? 'night' : '')) : ''; }
-  function night() { const m = document.body.dataset.map, tier = viewField(m, 'x-tint') === 'period', on = nightOn() && tier;
-    const tod = on ? (clock?.tod || (clock?.night ? 'night' : '')) : '';
-    const swapped = typeof REG !== 'undefined' && !!REG?.maps?.[m]?.periods?.[tod === 'day' || tod === 'night' ? tod : ''];
-    document.body.classList.toggle('nighttint', tod === 'night' && !swapped);
-    if (tod && tod !== 'day') document.body.dataset.tod = tod; else delete document.body.dataset.tod; }
-  new MutationObserver(night).observe(document.body, { attributes: true, attributeFilter: ['data-map'] });
-
-  // ---------- 剧情改名的一次性提示（地图顶部居中，5 秒；不压住展开的事态 / 人物列表） ----------
-  function toast(items) {   // UI v2：走唯一通知层（P2，嵌入时由宿主统一显示）；旧的 #cuToast 只在通知层不可用时兜底
-    const msg = items.join('；'); if (!msg) return;
-    if (typeof window.TCNotify === 'function') { window.TCNotify({ level: 2, key: 'cu-' + Date.now(), title: msg }); return; }
-    let el = document.getElementById('cuToast');
-    if (!el) { el = document.createElement('div'); el.id = 'cuToast'; el.setAttribute('role', 'status'); document.getElementById('stage').appendChild(el); }
-    el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, 5000);
-  }
+  // 夜色（custom-tint.mjs）、本人着装（custom-outfit.mjs）、剧情改名的一次性提示（custom-hints.mjs）、对话框 HTML 构件（custom-dialog-view.mjs）：S5-1 从本文件拆出
+  const { night, nightOn, todNow } = createTint({ getClock: () => clock }), OF = createOutfit(), { toast } = createHints(), V = createDialogView({ T }), { ic, IC, excerpt } = V;
 
   // ---------- 设置里的「自定义」一栏（入口 + 同步 / 存储 / 夜色）与「自定义」对话框（v0.9.5） ----------
   // 对话框三页：list 已有的自定义（卡片：原名 → 新名、用途摘要、来源；编辑 / 重置 / 在地图上看）→ pick 选择器（搜索 + 按层 / 楼层分组）→ edit 表单（校验、字数）。
   // 点卡片或选择器里的「在地图上看」= flyTo({ map, marker | room | area | character })。
-  const KIND = { room: ['cu.room', '房间'], area: ['cu.area', '区域'], landmark: ['cu.landmark', '地标'], character: ['cu.character', '人物'], layer: ['cu.layer', '层 / 大区'], world: ['cu.world', '世界地名'] };
   let listQ = '', PK = null, plan = null, view = 'list', editing = null, query = '', opener = null, resetArm = null, resetT = 0, flyMsg = '';
   const pk = () => (PK ? Promise.resolve(PK) : import(new URL('tavern/picker.mjs', document.baseURI).href).then(m => (PK = m)));
   const planP = () => (plan ? Promise.resolve(plan) : !packData('rooms') ? Promise.resolve(plan = {}) : Promise.all([import(new URL('estate/plan.js', document.baseURI).href).catch(() => ({})), fetch(new URL(packData('rooms'), document.baseURI)).then(r => (r.ok ? r.json() : null)).catch(() => null)])
@@ -161,70 +142,25 @@ const TCCustom = (() => {
     if (!(opener?.isConnected && opener.offsetParent)) { if (window.TCSettings) TCSettings.open('data'); else if (document.getElementById('setPop')?.hidden && typeof showSet === 'function') showSet(true); opener = document.querySelector('#cuBox .cu-open'); }
     opener?.focus({ preventScroll: true });
   }
-  const ic = d => `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="${d}"/></svg>`;
-  const IC = { x: 'M4 4l8 8M12 4l-8 8', back: 'M10 3L5 8l5 5', pin: 'M8 14s4.5-4.2 4.5-7.5a4.5 4.5 0 1 0-9 0C3.5 9.8 8 14 8 14zM8 8.2a1.7 1.7 0 1 0 0-3.4 1.7 1.7 0 0 0 0 3.4z', edit: 'M3 13h3l7-7-3-3-7 7v3z', plus: 'M8 3v10M3 8h10', undo: 'M4 6h6a3 3 0 0 1 0 6H6M4 6l3-3M4 6l3 3' };
-  const excerpt = (s, n = 42) => { const a = [...String(s || '')]; return a.length > n ? a.slice(0, n).join('') + '…' : a.join(''); };
   function renderDlg(focus) {
     const body = dlg.querySelector('.cu-body'), h = dlg.querySelector('h2'), back = dlg.querySelector('[data-back]'), x = dlg.querySelector('[data-close]');
     back.hidden = view === 'list'; back.innerHTML = ic(IC.back); back.setAttribute('aria-label', T('cu.back', '返回'));
     x.innerHTML = ic(IC.x); x.setAttribute('aria-label', T('close', '关闭'));
     h.textContent = view === 'pick' ? T('cu.pick_title', '选一个对象') : view === 'edit' ? (entry(editing) ? T('cu.edit_title', '编辑') : T('cu.add_title', '添加自定义')) : T('cu.dlg_title', '名称与用途');
-    if (view === 'list') body.innerHTML = listHtml();
-    else if (view === 'pick') { body.innerHTML = pickHtml(); pickResults(); }
-    else body.innerHTML = editHtml();
+    if (view === 'list') body.innerHTML = V.listHtml({ data, flyMsg, listQ, resetArm });
+    else if (view === 'pick') { body.innerHTML = V.pickHtml({ gs: groups(), query }); pickResults(); }
+    else body.innerHTML = V.editHtml({ editing, e: entry(editing) || {}, it: PK?.findItem(groups(), editing), kd: kindOf(editing), MV });
     if (focus) {
       const f = view === 'pick' ? (matchMedia('(pointer: coarse)').matches ? null : body.querySelector('input[type=search]')) : view === 'edit' ? body.querySelector('input[name=name]') : h;
       (f || h).focus({ preventScroll: true }); if (f?.select && view === 'edit') f.select();
     }
-  }
-  function listHtml() {
-    const items = Object.entries(data.items || {});
-    const add = `<button type="button" class="btn pri cu-add" data-pick="1">${ic(IC.plus)}<span>${esc(T('cu.add2', '添加：选房间、地标或人物'))}</span></button>`;
-    const msg = flyMsg ? `<p class="cu-msg" role="status">${esc(flyMsg)}</p>` : '';
-    if (!items.length) return add + msg + `<div class="cu-emptybox"><p>${esc(T('cu.empty2', '还没有自定义。可以给地点起个自己的叫法，或写一句用途；模型会把它当作背景。例如：'))}</p><ul>`
-      + [[T('cu.ex1a', '书房'), T('cu.ex1b', '星图室'), T('cu.ex1', '整理旧地图')], [T('cu.ex2a', '7 号井黑市'), T('cu.ex2b', '老井'), T('cu.ex2', '周五下午去补货')], [T('cu.ex3a', '温室'), '', T('cu.ex3', '冬天在这里喝茶')]]
-        .map(([a, b, c]) => `<li><b>${esc(a)}</b>${b ? ` → <b>${esc(b)}</b>` : ''}<small>${esc(T('cu.note', '用途'))}：${esc(c)}</small></li>`).join('') + `</ul></div>`;
-    const lq = listQ.trim().toLowerCase(), shown = lq ? items.filter(([k, e]) => [k, e.名, e.用途, ...(e.别名 || [])].some(s => s && s.toLowerCase().includes(lq))) : items;
-    const filt = items.length > 5 ? `<input type="search" id="cuLQ" class="cu-lq" autocomplete="off" aria-label="${esc(T('cu.list_search', '在已有的自定义里找'))}" placeholder="${esc(T('cu.list_search', '在已有的自定义里找'))}" value="${esc(listQ)}">` : '';
-    return add + msg + filt + `<ul class="cu-cards">` + shown.map(([k, e]) => {
-      const src = e.源 === '标签' ? ['tag', T('cu.src_tag', '剧情标签')] : ['man', T('cu.src_manual', '手动')], arm = resetArm === k;
-      return `<li class="cu-card"><button type="button" class="cu-main" data-fly="${esc(k)}" aria-label="${esc(T('cu.fly_aria', '在地图上看 {n}', { n: e.名 || k }))}">`
-        + `<span class="cu-names">${e.名 ? `<s>${esc(k)}</s><i aria-hidden="true">→</i><b>${esc(e.名)}</b>` : `<b>${esc(k)}</b>`}</span>`
-        + (e.用途 ? `<span class="cu-ex">${esc(excerpt(e.用途))}</span>` : '')
-        + `<span class="cu-tags"><em>${esc(T(...(KIND[e.类] || KIND.landmark)))}</em><em class="src-${src[0]}">${esc(src[1])}</em></span></button>`
-        + ((e.别名 || []).length ? `<span class="cu-al"><small>${esc(T('cu.aliases', '也叫'))}</small>${e.别名.map(a => `<button type="button" class="chip" data-unalias="${esc(k)}" data-a="${esc(a)}" aria-label="${esc(T('cu.unalias', '去掉叫法 {a}', { a }))}">${esc(a)} ×</button>`).join('')}</span>` : '')   // v0.9.6：叫法（含「未上图」指派的）可单独去掉
-        + `<span class="cu-acts"><button type="button" class="btn" data-edit="${esc(k)}">${ic(IC.edit)}<span>${esc(T('cu.edit', '编辑'))}</span></button>`
-        + `<button type="button" class="btn${arm ? ' warn' : ''}" data-reset="${esc(k)}">${ic(IC.undo)}<span>${esc(arm ? T('cu.reset_sure', '确认重置') : T('cu.reset', '重置'))}</span></button>`
-        + `<button type="button" class="btn" data-fly="${esc(k)}">${ic(IC.pin)}<span>${esc(T('cu.fly', '在地图上看'))}</span></button></span></li>`;
-    }).join('') + `</ul>`;
-  }
-  function pickHtml() {
-    const gs = groups();
-    return `<div class="cu-search"><input type="search" id="cuQ" autocomplete="off" enterkeyhint="search" aria-controls="cuRes" aria-label="${esc(T('cu.search', '搜索名称、叫法或用途'))}" placeholder="${esc(T('cu.search', '搜索名称、叫法或用途'))}" value="${esc(query)}"></div>`
-      + `<div class="cu-chips" role="group" aria-label="${esc(T('cu.groups', '分组'))}">${gs.map(g => `<button type="button" class="chip" data-jump="${esc(g.id)}">${esc(g.short || g.label)}</button>`).join('')}</div>`
-      + `<div id="cuRes" class="cu-res"></div>`;
   }
   function pickResults() {
     const box = dlg.querySelector('#cuRes'); if (!box) return;
     const gs = PK.filterGroups(groups(), query, data, T('cu.best', '最匹配'));
     if (!gs.length) { box.innerHTML = `<p class="cu-none">${esc(T('cu.no_match', '没有找到「{q}」。试试标准名、你起的名字或用途里的词', { q: query }))}</p>`; dlg.querySelector('.cu-chips').hidden = true; return; }
     dlg.querySelector('.cu-chips').hidden = !!query;
-    box.innerHTML = gs.map(g => `<section data-g="${esc(g.id)}"><h4>${esc(g.label)} <small>${g.items.length}</small></h4><ul>` + g.items.map(it => {
-      const e = entry(it.key);
-      return `<li><button type="button" class="cu-row" data-pickkey="${esc(it.key)}"><b>${esc(e?.名 || it.key)}</b>${e?.名 ? `<small>${esc(it.key)}</small>` : ''}${it.sub && !e?.用途 ? `<span>${esc(it.sub)}</span>` : ''}${e?.用途 ? `<span class="cu-u">${esc(T('cu.note', '用途'))}：${esc(excerpt(e.用途, 30))}</span>` : ''}</button>`
-        + `<button type="button" class="cu-ic" data-fly="${esc(it.key)}" aria-label="${esc(T('cu.fly_aria', '在地图上看 {n}', { n: e?.名 || it.key }))}" title="${esc(T('cu.fly', '在地图上看'))}">${ic(IC.pin)}</button></li>`;
-    }).join('') + `</ul></section>`).join('');
-  }
-  function editHtml() {
-    const e = entry(editing) || {}, it = PK?.findItem(groups(), editing), kd = kindOf(editing), nu = [...(e.用途 || '')].length;
-    return `<form class="cu-form" novalidate><p class="cu-target"><b>${esc(editing)}</b><em>${esc(T(...(KIND[kd] || KIND.landmark)))}</em>${it ? `<small>${esc(it.group)}</small>` : ''}`
-      + `<button type="button" class="btn" data-fly="${esc(editing)}">${ic(IC.pin)}<span>${esc(T('cu.fly', '在地图上看'))}</span></button></p>`
-      + `<label class="col" for="cuName"><span>${esc(T('cu.name', '显示名'))} <small>${esc(T('cu.name_hint', '留空 = 用标准名'))}</small></span></label>`
-      + `<input type="text" id="cuName" name="name" maxlength="${MV?.MAX_NAME || 40}" value="${esc(e.名 || '')}" placeholder="${esc(editing)}" aria-describedby="cuNameErr"><small class="cu-err" id="cuNameErr" aria-live="polite"></small>`
-      + `<label class="col" for="cuNote"><span>${esc(T('cu.note', '用途'))} <small>${esc(T('cu.note_hint', '一句话，模型会当作背景'))}</small></span></label>`
-      + `<textarea id="cuNote" name="note" rows="3" maxlength="${MV?.MAX_NOTE || 200}" aria-describedby="cuNoteCnt cuNoteErr">${esc(e.用途 || '')}</textarea>`
-      + `<div class="cu-cnt"><small class="cu-err" id="cuNoteErr" aria-live="polite"></small><small id="cuNoteCnt">${nu} / ${MV?.MAX_NOTE || 200}</small></div>`
-      + `<span class="cu-acts"><button type="submit" class="btn pri">${esc(T('cu.save', '保存'))}</button><button type="button" class="btn" data-back="1">${esc(T('cu.cancel', '取消'))}</button></span></form>`;
+    box.innerHTML = V.resultsHtml(gs, entry);
   }
   const ERR = { too_long: ['cu.err_long', '太长了'], dup_std: ['cu.err_dup_std', '和另一个地点 / 人物的标准名重名，地点匹配会分不清'], dup_name: ['cu.err_dup', '和另一项的显示名重名'], empty: ['cu.err_empty', '至少填一项（想恢复原样用「重置」）'] };
   function check(show) {
@@ -339,7 +275,6 @@ const TCCustom = (() => {
   function fromHost(d) { host = { vars: !!d.vars, wb: !!d.wb, wbState: d.wbState || '' }; ready.then(M => { if (!M) return; data = M.normCustom(d.data); apply(); }); }
   const preTag = () => document.body.classList.toggle('prestart', !!clock?.pre);   // 开局前（卡初始值）：宿主标题栏的时钟另有标注
   function setClock(c) { const was = !!clock?.pre; clock = c; night(); if (was !== !!c?.pre) { P.TCEvents?.renderBar?.(); preTag(); } }
-  function setOutfit(o) { outfit = o && o.text ? o : null; P.TCEvents?.renderBar?.(); }
   function chatChanged() { if (!host) ready.then(loadLocal); }
 
   const css = `
@@ -449,8 +384,8 @@ const TCCustom = (() => {
   @media (prefers-reduced-motion:reduce){body.nighttint #osd::after,body[data-tod] #osd::after{transition:none}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   document.addEventListener('DOMContentLoaded', () => renderUI());
-  return { name, entry, index, relabel, decorateCard, flyTo, openDlg, dlgKey, fromHost, setClock, setOutfit, toast, chatChanged, setCustom, removeCustom, setSync, renderUI, todNow, nightOn,
-    get data() { return MV ? MV.normCustom(data) : { items: {} }; }, get outfit() { return outfit ? { ...outfit } : null; }, get clock() { return clock ? { ...clock } : null; }, ready };
+  return { name, entry, index, relabel, decorateCard, flyTo, openDlg, dlgKey, fromHost, setClock, setOutfit: OF.setOutfit, toast, chatChanged, setCustom, removeCustom, setSync, renderUI, todNow, nightOn,
+    get data() { return MV ? MV.normCustom(data) : { items: {} }; }, get outfit() { return OF.outfit ? { ...OF.outfit } : null; }, get clock() { return clock ? { ...clock } : null; }, ready };
 })();
 register('TCCustom', TCCustom);
 export { TCCustom };

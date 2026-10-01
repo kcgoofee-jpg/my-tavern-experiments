@@ -2,7 +2,7 @@
 // 事件从哪来：①聊天里前端载体带的隐藏标签，由卡内脚本 eden-map.js 用 tavern/events.mjs 解析、合并、老化后发来（items）；
 //            ②可选的外部数据源（maps.json 的 feeds），也交给 events.mjs 解析，和聊天事件一起显示。
 // 一条事件（events.mjs 的输出）：{ id, key, cat, layer, place, lvl, text, src, code, time, scope, dur, xy, status, first, last, count, closed, tier, isNew }
-// 本文件只负责：落点（地名 → 坐标）、图标、事态列表、飞过去、按类型声明的屏幕特效（花屏）、世界图角标。类型、大类、图标、颜色、特效、默认隐藏都是设定包的数据（events 块，tavern/events.mjs 读取）。设计见 docs/map-events.md。
+// 本文件只负责：落点（地名 → 坐标）、图标、事态列表、飞过去；按类型声明的屏幕特效（花屏）与世界图角标在 events-fx.mjs。类型、大类、图标、颜色、特效、默认隐藏都是设定包的数据（events 块，tavern/events.mjs 读取）。设计见 docs/map-events.md。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 // 界面文字走查看器的 window.I18N（键在 i18n/*.json 的 ev.*）；类别、大类、层、状态名英文在设定包的英文地名表（清单 data.names.en）。事件标题、地点、发布方是剧情原文，不翻译。
 import { REG, aspect, cur, viewer } from './app/state.mjs';
@@ -15,10 +15,11 @@ import { cardFrom, closeCard, placeN, setCardFrom, showCard, trackEl, untrack } 
 import { setUserMoved, userMoved } from './app/locate.mjs';
 import { sheetVis } from './app/shell.mjs';
 import { P, register } from './app/plugins.mjs';
-import { eventGeo, eventLevel, inScope, worldGroup } from './app/nodes-runtime.mjs';
+import { eventGeo, eventLevel } from './app/nodes-runtime.mjs';
 import { hash01, spotOf } from './core/event-geo.mjs';
 import { chatId } from './app/extapi.mjs';
 import * as TCCvd from './app/cvd.mjs';
+import { createEventsFx } from './events-fx.mjs';
 // 抽屉标签角标的「看过」（用户 2026-09-28）：按聊天记在 edenMap:chat:<id>:tabseen（core/storage.mjs 按聊天前缀登记，参与 LRU）。
 // ev = 看过的「事件 id@最后更新」；ch = 看过的人物名。某个聊天第一次记录时把当前人物当作已看过，只有后来出现的才标红
 const seenKey = () => 'edenMap:chat:' + (chatId || '-') + ':tabseen';
@@ -45,7 +46,7 @@ const TCEvents = (() => {
   const off = new Set((() => { try { const v = TCStore.get(OFF_KEY); return v == null ? [] : JSON.parse(v) || []; } catch (e) { return []; } })());
   const grpOf = e => e.grp || '其他';
   const offed = e => off.has(grpOf(e)) || off.has('type:' + e.cat);   // 关掉的大类 / 类型
-  let taxFor = null /* 已取过的分类（events 块对象），换了才重取 */, tab = 'ev', items = [], floor = 0, feedItems = [], shown = true, flyId = null, EVM = null, lastFly = null, glitchLv = 0;
+  let taxFor = null /* 已取过的分类（events 块对象），换了才重取 */, tab = 'ev', items = [], floor = 0, feedItems = [], shown = true, flyId = null, EVM = null, lastFly = null;
   const said = new Set();   // 已经播报过的新事件（读屏）
   const markersOf = {};                                    // 地图 id → 点位数据（按需加载）
   const all = () => items.concat(feedItems);
@@ -256,23 +257,8 @@ const TCEvents = (() => {
     tg.querySelector('span').textContent = act ? T('ev.toggle_n', '事态 {n}', { n: act }) : T('ev.toggle', '事态');
     tg.hidden = !all().length;
   }
-  // 屏幕特效（花屏）：类型声明 fx 为 glitch 的事件，在它影响的层（或全城）持续期内「花屏」：间歇的色散、横向撕裂、马赛克块，强度随等级（预设给了 intensity 就按它）；配 ⚠ 与提示，一看就知道是剧情。持续楼数：事件的 duration，否则预设的 x-messages，否则 3
-  const fxOf = e => (e.fx !== undefined ? e.fx : EVM?.classify(e.cat).fx) || null;
-  const fxLevel = (e, f) => (typeof f.intensity === 'number' ? Math.round(f.intensity * 3) : Math.max(1, e.lvl));
-  function applyGlitch() {
-    const lv = !shown ? 0 : Math.max(0, ...all().filter(e => fxOf(e)?.block === 'glitch' && !e.closed && (e.feed || floor - e.last <= (e.dur || fxOf(e)['x-messages'] || 3)) &&
-      ((e.scope && inScope(e.scope, cur)) || mapOf(e) === cur || (e.scope && eventGeo()?.place(e.scope)?.map === cur))).map(e => fxLevel(e, fxOf(e))));
-    document.body.dataset.glitch = lv || '';
-    $('#glitchNote').hidden = !lv; $('#glitchNote').textContent = T('ev.glitch', '⚠ 数据链路受扰');
-    if (lv && !glitchLv && typeof announce === 'function') announce(T('ev.glitch', '⚠ 数据链路受扰').replace(/^⚠\s*/, ''));   // 花屏开始时播报一次
-    glitchLv = lv;
-  }
-  // 世界图：城内未解除的事件汇成城市标记上的一个数字角标
-  function worldBadge() {
-    const n = vis().filter(e => live(e) && mapOf(e) && mapOf(e) !== 'world').length;
-    const wg = worldGroup(REG), lab = [...document.querySelectorAll('.mk')].find(x => x.dataset.group === wg)?.querySelector('.lab');
-    if (lab) { if (n) lab.dataset.ev = n; else delete lab.dataset.ev; }
-  }
+  // 屏幕特效（花屏）与世界图事态数角标：events-fx.mjs（S5-1 拆出）
+  const { applyGlitch, worldBadge } = createEventsFx({ T, all, vis, live, mapOf, isShown: () => shown, floorNow: () => floor, evm: () => EVM });
 
   const css = `
   .ev{--c:#fff;position:relative;display:flex;align-items:center;gap:4px;transform:translate(-11px,-11px);pointer-events:auto;cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}

@@ -113,9 +113,12 @@ const mod = f => import('../map/tavern/' + f + '.mjs');
 // 什么都接得住的桩：函数、对象、promise 之外的依赖都用它（创建期只会被存起来或在回调里用）
 const anyStub = (() => { const f = function () {}; const p = new Proxy(f, { get: (t, k) => (k === Symbol.toPrimitive ? () => '' : k === Symbol.iterator ? function* () {} : k === 'then' ? undefined : p), apply: () => p, construct: () => p, set: () => true, has: () => true }); return p; })();
 
-test('S5-1 行数：入口 ≤ 800，flow 模块各 ≤ 400', () => {
+test('S5-1 行数：入口 ≤ 800、custom.mjs ≤ 400、events.mjs ≤ 400，新模块各 ≤ 400', () => {
   assert.ok(lines('map/tavern/eden-map.js') <= 800, 'eden-map.js ' + lines('map/tavern/eden-map.js'));
+  assert.ok(lines('map/custom.mjs') <= 400, 'custom.mjs ' + lines('map/custom.mjs'));
+  assert.ok(lines('map/events.mjs') <= 400, 'events.mjs ' + lines('map/events.mjs'));
   for (const f of Object.keys(FLOWS)) assert.ok(lines('map/tavern/' + f + '.mjs') <= 400, f);
+  for (const f of ['custom-tint', 'custom-outfit', 'custom-hints', 'custom-dialog-view', 'events-fx']) assert.ok(lines('map/' + f + '.mjs') <= 400, f);
 });
 
 test('S5-1 flow 模块契约：导出 DEPS + 工厂；入口的依赖袋给齐每个 DEPS 键；模块里的每个 host.X 都登记在 DEPS', async () => {
@@ -148,4 +151,18 @@ test('S5-1 flow 模块在桩依赖下能创建、返回约定接口；缺键就�
       assert.throws(() => M[factory]({}), new RegExp(f + ': missing dep'), f + ' 缺键报错');
     }
   } finally { hadWin ? Object.defineProperty(globalThis, 'window', hadWin) : delete globalThis.window; hadDoc ? Object.defineProperty(globalThis, 'document', hadDoc) : delete globalThis.document; }
+});
+
+test('S5-1 viewer 拆分：custom / events 拆出的小模块只导出自己的工厂；原文件只 import 它们', () => {
+  const want = { 'custom-tint': ['createTint', 'NIGHT_KEY'], 'custom-outfit': ['createOutfit'], 'custom-hints': ['createHints'], 'custom-dialog-view': ['createDialogView'], 'events-fx': ['createEventsFx'] };
+  for (const [f, names] of Object.entries(want)) {
+    const exported = [...rd('map/' + f + '.mjs').matchAll(/^export (?:function|const) (\w+)/gm)].map(m => m[1]);
+    assert.deepEqual(exported.sort(), names.sort(), f);
+  }
+  const C = rd('map/custom.mjs'), V = rd('map/events.mjs');
+  for (const f of ['custom-tint', 'custom-outfit', 'custom-hints', 'custom-dialog-view']) assert.ok(C.includes(`'./${f}.mjs'`), f);
+  assert.ok(V.includes("'./events-fx.mjs'"));
+  assert.match(C, /^register\('TCCustom', TCCustom\);$/m); assert.match(V, /^register\('TCEvents', TCEvents\);$/m);   // 插件名与登记方式不变
+  for (const s of ['function night()', 'function toast(', 'const KIND =', 'function listHtml', 'function editHtml', 'function setOutfit']) assert.ok(!C.includes(s), 'custom.mjs 不再带 ' + s);
+  for (const s of ['function applyGlitch', 'function worldBadge']) assert.ok(!V.includes(s), 'events.mjs 不再带 ' + s);
 });
