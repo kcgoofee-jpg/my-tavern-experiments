@@ -5,6 +5,7 @@ import { $, esc } from './dom-helpers.mjs';
 import { narrow } from './viewport-mode.mjs';
 import { toImg } from './coordinates.mjs';
 import { island as depthIsland, parallaxOn } from '../core/depth.mjs';
+import { routePaths } from '../core/layer-geometry.mjs';
 import { declutter } from './sharpness-tiers.mjs';
 import { LANG, localName, uiText, translateName } from './i18n.mjs';
 import { cardSheet } from './drawer-glue.mjs';
@@ -181,10 +182,8 @@ export function pointOverlays() {
     svg.setAttribute('viewBox', `0 0 ${VW} ${VH}`); svg.setAttribute('preserveAspectRatio', 'none'); svg.classList.add('routes');
     // U8（spec §2.6）：航线在地名标签、人物头像处断开——遮罩里的黑块由 routeGaps() 按标签实际位置更新
     svg.innerHTML = `<defs><mask id="rtGap" maskUnits="userSpaceOnUse" x="0" y="0" width="${VW}" height="${VH}"><rect x="0" y="0" width="${VW}" height="${VH}" fill="#fff"/><g class="gaps"></g></mask></defs><g mask="url(#rtGap)" class="rtg"></g>`;
-    const dOf = r => r.pts.map(([x, y], j) => `${j ? 'L' : 'M'}${(x * VW).toFixed(1)},${(y * VH).toFixed(1)}`).join('') + (r.kind !== 'lane' && r.from === r.to ? 'Z' : '');
-    for (const pass of ['halo', 'line']) for (const r of d.routes) { if (!(r.pts?.length > 1)) continue;
-      const e = document.createElementNS(ns, 'path'); e.setAttribute('d', dOf(r));
-      e.setAttribute('class', pass === 'halo' ? 'halo' : ['lane', 'patrol', 'patrol_city'].includes(r.kind) ? r.kind : 'lane'); svg.querySelector('.rtg').appendChild(e); }
+    for (const q of routePaths(d.routes, VW, VH)) {   // the line block's paths (core/layer-geometry.mjs; K-R80): every halo, then every line
+      const e = document.createElementNS(ns, 'path'); e.setAttribute('d', q.d); e.setAttribute('class', q.cls); svg.querySelector('.rtg').appendChild(e); }
     osdViewer.addOverlay({ element: svg, location: new OpenSeadragon.Rect(0, 0, 1, aspect) });
   }
   // link：跨层通道（如中层检查点 ↔ 下层 7 号井），地点卡里给一个直达链接

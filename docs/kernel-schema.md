@@ -9,7 +9,7 @@
 
 Every rule has a stable id `K-R01` … `K-R105`; later prompts and tests cite them. Ids never move: rules added after the
 first draft (K-R63–K-R70, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit; K-R71–K-R73
-were added by S6-1, K-R74–K-R76 by S6-2, K-R77–K-R78 by S6-3; K-R79–K-R89 and K-R104 are for S8 (K-R79, K-R81–K-R83, K-R85 and K-R104 added by S8-1; K-R80, K-R84, K-R86–K-R89 still planned), K-R90–K-R103 for S9 (planned lists at the end of §13); K-R105 was added by R0 (§5, the scene header). The choices left to the user
+were added by S6-1, K-R74–K-R76 by S6-2, K-R77–K-R78 by S6-3; K-R79–K-R89 and K-R104 are for S8 (K-R79, K-R81–K-R83, K-R85 and K-R104 added by S8-1; K-R86–K-R89 still planned; K-R80 and K-R84 added by S8-2), K-R90–K-R103 for S9 (planned lists at the end of §13); K-R105 was added by R0 (§5, the scene header). The choices left to the user
 are `K-01` … `K-09` (§0). Everything else was decided by the designer and is listed with its reason in §14.
 
 ## 0. Decisions for the user (review sheet)
@@ -796,6 +796,19 @@ switches it; the user's choice is kept in the storage key `edenMapLayers` (one J
 owner `app/layer-host.mjs`; read from S8-2), namespaced per pack by the storage service like every key. Kernel layers keep their existing keys. After
 the pack's rows are applied the menu is rendered once more.
 
+**K-R80 — Building blocks and style.** A declared layer is drawn by one of eight kernel blocks, chosen by its `type`; the pack gives geometry and
+style values only. `point` (an HTML element in the map overlay, constant screen size) and `label` (text, `tone` plain | chip, `size` micro | small | body)
+sit at a feature's `at` or `node`; `line` (`pts`, `closed`) and `area` (`pts` closed, or `at` + `r` as a circle, `r` a fraction of the width) share
+one SVG overlay per layer per view with non-scaling strokes; `flow` (dots with fading trails moving along `pts`, brighter and longer at night),
+`particles` (a kernel weather preset over the whole view) and `tint` (one translucent fill) draw on a canvas in the layer's slot; `sound` has no pixels
+(S8-3). Style keys, values and defaults: `color` (`#rrggbb`, `#rrggbbaa` or a kernel colour token name; default `--accent`), `opacity` 0..1, `by` (up to
+16 per-kind overrides), `size`, `icon` (a kernel icon name), `pulse`, `tone`, `width` 0.5..8, `dash` (up to 6 numbers), `halo`, `fill` and `fill_opacity`,
+`speed`, `density`, `trail`, `path` (a `flow` also draws its polyline, one layer for one thing the user sees), `preset`; every value is re-checked
+at run time and a failing one falls back to its default (K-R64); colours reach CSS only through custom properties and canvases through a value
+resolved from the page. A pack-declared animated layer draws nothing while `prefers-reduced-motion: reduce` is set (pulses become static); the data-saver
+tier halves the dots and particles, as the kernel's own traffic and weather layers do. Those two layers and the routes layer draw through the same
+renderers (`core/layer-geometry.mjs`, `app/block-canvas.mjs`, `app/block-overlay.mjs`), proved by recorded-call tests.
+
 ## 10. ui and llm
 
 ### 10.1 ui
@@ -812,6 +825,13 @@ tokens (`--accent*`, `--ink*`, `--bg*`, `--surface*`, `--line*`, `--muted`, `--g
 space-separated terms, each a hex colour, a numeric `rgb()` / `rgba()` / `hsl()` / `hsla()`, a number with an optional
 unit (`px`, `rem`, `em`, `%`, `vh`, `vw`), a keyword, or `var(--<kernel token>)`: no quotes, backslashes, `url(` or
 other functions (K-R64).
+
+**K-R84 — Legend rows from layers.** `legend = [{ label, desc?, i18n?, kind? }]` (at most 8 rows, K-R79). The drawer's legend tab lists the pack's
+`ui.legend` rows first (unchanged markup), then for each registered, visible and applicable layer in menu order a heading (the layer's menu label) and
+its rows; each row starts with a small swatch drawn from the layer's style (`kind` picks `style.by[kind]`): a stroke for `line` and `flow`, a filled
+square for `area` and `tint`, a dot for `point`, nothing for `label`, `particles` and `sound`; the colour is set through a CSS custom property after the
+K-R64 re-check. The tab shows when the open view is not a 3D page and either today's rule (depth data and `ui.legend` rows) or at least one layer
+legend row holds, so a pack without layer legends sees no change. The pane is rebuilt when a layer's visibility or applicability changes or the map changes.
 
 ### 10.2 llm
 
@@ -957,6 +977,8 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 
 **Added by S8-1:** K-R79, K-R81, K-R82 and K-R83 (§9, the layers block, sources and features, `applies`, menu rows and the visibility store), K-R85 (above, the overlay's `layers`) and K-R104 (§4.5, the 3D manifest schema).
 
+**Added by S8-2:** K-R80 (§9, building blocks and style keys, reduced motion and data saver) and K-R84 (§10.1, legend rows from layers and the legend tab's show rule).
+
 **Added by S9-2:** K-R90, K-R91, K-R92 and K-R99 (§2.3), K-R103 (after K-R65).
 
 **Added by S9-3:** K-R93, K-R94 and K-R95 (§3.9, after K-R26: place candidates, variables / people / start view / language from the card, the automatic pack with its cache and growth), K-R98 (end of §2.4, export as pack), and the amendment of K-R26.
@@ -967,8 +989,6 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 - K-R101 pack pictures: the media block, sources and limits (S9b);
 - K-R102 private pictures, never exported (S9b);
 **Planned in S8** (design `docs/layers-schema.md`; review sheet L-01 … L-15; the full text lands with S8-1 … S8-3):
-- K-R80 (§9) building blocks and style keys; reduced motion and data saver (S8-2).
-- K-R84 (§10.1) legend rows contributed by layers; the legend tab's show rule (S8-2).
 - K-R86 (§9) host-fed values: MVU paths, `applies.mvu`, navigator overlays (S8-3).
 - K-R87 (§9) local extension `EdenMap.addLayer` / `removeLayer` / `setLayerData` / `layers` (S8-3).
 - K-R88 (§9) local prop pack: store, validation, placements, `prop:` icons (S8-3).

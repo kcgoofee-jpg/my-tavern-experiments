@@ -11,7 +11,8 @@ export const LANE_KINDS = {
   patrol: { speed: .07, size: 1.8, density: 16, color: '150,205,235', trail: .006 },
   patrol_city: { speed: .05, size: 1.6, density: 12, color: '160,190,225', trail: .005 },
 };
-export const kindOf = k => LANE_KINDS[k] || LANE_KINDS.lane;
+// `kinds` is a table of the same shape (a flow layer of a pack passes its own: one entry per feature kind plus `default`)
+export const kindOf = (k, kinds = LANE_KINDS) => kinds[k] || kinds.default || kinds.lane;
 
 /** 折线度量：逐段长度（归一化单位）与累计弧长；点数不足返回 null（不画） */
 export function pathMetrics(pts) {
@@ -41,10 +42,10 @@ export function along(m, s) {
 }
 
 /** 一条路线上该放几辆车：按总长 × 密度 × 画质，封顶 40（一条路排太密就成实心条了） */
-export function carsFor(route, { quality = 1 } = {}) {
+export function carsFor(route, { quality = 1, kinds = LANE_KINDS } = {}) {
   const m = pathMetrics(route?.pts); if (!m) return 0;
   const q = Math.max(0, Math.min(1, Number(quality) || 0));
-  return Math.max(0, Math.min(40, Math.round(m.total * kindOf(route.kind).density * q)));
+  return Math.max(0, Math.min(40, Math.round(m.total * kindOf(route.kind, kinds).density * q)));
 }
 
 /**
@@ -54,13 +55,13 @@ export function carsFor(route, { quality = 1 } = {}) {
 /** 真正会画车的路线（点够、度量算得出）——渲染层要按这个顺序取度量，序号才与车上的 ri 对得上 */
 export const routeList = routes => (Array.isArray(routes) ? routes : []).filter(r => r?.pts?.length > 1 && pathMetrics(r.pts));
 
-export function trafficField(routes, { t = 0, seed = 1, quality = 1, night = false, cap = 300 } = {}) {
+export function trafficField(routes, { t = 0, seed = 1, quality = 1, night = false, cap = 300, kinds = LANE_KINDS } = {}) {
   const list = routeList(routes);
   const out = [];
   let i = 0;
   for (const r of list) {
     const m = pathMetrics(r.pts); if (!m) continue;
-    const k = kindOf(r.kind), n = carsFor(r, { quality });
+    const k = kindOf(r.kind, kinds), n = carsFor(r, { quality, kinds });
     const rnd = rng(seed + i * 7919); i++;
     for (let j = 0; j < n; j++) {
       if (out.length >= cap) break;
