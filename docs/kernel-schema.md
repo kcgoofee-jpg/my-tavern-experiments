@@ -9,7 +9,7 @@
 
 Every rule has a stable id `K-R01` … `K-R106`; later prompts and tests cite them. Ids never move: rules added after the
 first draft (K-R63–K-R70, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit; K-R71–K-R73
-were added by S6-1, K-R74–K-R76 by S6-2, K-R77–K-R78 by S6-3; K-R79–K-R89 and K-R104 are for S8 (K-R79, K-R81–K-R83, K-R85 and K-R104 added by S8-1; K-R86–K-R89 added by S8-3; K-R80 and K-R84 added by S8-2), K-R90–K-R103 for S9 (planned lists at the end of §13); K-R105 was added by R0 (§5, the scene header); K-R106 by S9b-2 (§6.6, the media source). The choices left to the user
+were added by S6-1, K-R74–K-R76 by S6-2, K-R77–K-R78 by S6-3; K-R79–K-R89 and K-R104 are for S8 (K-R79, K-R81–K-R83, K-R85 and K-R104 added by S8-1; K-R86–K-R89 added by S8-3; K-R80 and K-R84 added by S8-2), K-R90–K-R103 for S9 (planned lists at the end of §13); K-R105 was added by R0 (§5, the scene header); K-R106 by S9b-2 (§6.6, the media source). K-R107–K-R114 are reserved for S8-4 (transit network and routing, `docs/transit-schema.md`; planned list at the end of §13). The choices left to the user
 are `K-01` … `K-09` (§0). Everything else was decided by the designer and is listed with its reason in §14.
 
 ## 0. Decisions for the user (review sheet)
@@ -1053,6 +1053,16 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 **Added by S9b:** K-R100 (§4.6, edit mode and the draft), K-R101 and K-R102 (§2.4, pack pictures and private pictures), the amendments of K-R66 (limits by source, `media`), K-R67 (an overlay may carry `media` and node `media`) and K-R98 (the draft folded in, overlay export of a shipped pack).
 
 **Added by S8-3:** K-R86 (§9, host-fed card variables and the navigator overlays), K-R87 (§9, local layers), K-R88 (§9, the local prop pack) and K-R89 (§9, the `sound` block); with these every rule K-R79 – K-R89 and K-R104 of the S8 design is written.
+
+**Planned in S8-4** (reserved by S8-4-design, `docs/transit-schema.md`; full text lands with the step specs in its appendix):
+- K-R107 — the transit block: modes, stations, lines, links, districts, options, style, limits, healing (§9; S8-4a)
+- K-R108 — the overlay of a schema-1 pack may carry `transit`; where the viewer and the host read it; plan text templates (§13; S8-4a)
+- K-R109 — the router: graph, attachment, cost and tie-breaks, the plan, `checkPlan`, `planText`, `routeOp` (§9; S8-4a)
+- K-R110 — kernel layers `transit` and `route-plan`; the thematic drawing and label hierarchy; the `badge` style key (§9; S8-4b)
+- K-R111 — planning a route: the link, the plan card, re-planning, `eden-map:route-plan` / `eden-map:route`, the host's session state, `{{eden_route}}` (§10.2; S8-4b)
+- K-R112 — trips along the network (§9; S8-4b)
+- K-R113 — suggested routes: `eden-map:ops.routes`, drawing, adoption; the S7 split (§9; S8-4b)
+- K-R114 — thematic schematic for implicit views; function words; marker ranks (§4.6; S8-4b)
 
 
 ## 14. Designer decisions and open points

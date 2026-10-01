@@ -1179,4 +1179,18 @@ deviations: user authorized direct ship bypassing checkpoint (instruction #2); p
 blocker: none
 open: none
 cleanup: done
+
+=== RESULT S8-4-design ===
+status: DONE
+items: design doc docs/transit-schema.md + .zh.md (same headings; pair registered in tools/check_zh_mirror.py PAIRS) ✓ · review sheet T-01…T-16 at the top ✓ · docs/todo.md §3 one line per T-item (appended at the end of §3) + §0 S8-4-design / S8-4a / S8-4b lines ✓ · "Planned in S8-4" K-R list in kernel-schema en + zh §13 ✓ · appendix "Executable specs" S8-4a and S8-4b in the S6-1 section format ✓ · task text saved as docs/plans/steps/S8-4-design.md ✓
+commits: (this commit) docs(design): S8-4 transit network and routing; review sheet T-01…; S8-4a/b specs
+pushed: yes (head #N in the chat report; this log copy is committed before the push)
+tests: node not run separately (documents only; smoke runs node --test: 192 files green) | smoke PASS | arch PASS | zh mirror PASS (10 pairs) | doc language PASS | no-labels PASS | probes: none (documents only)
+sheet: T-01 transit block A · T-02 stations node or point A · T-03 pack modes over kernel walk/metro/maglev/air A · T-04 lines + links A · T-05 minutes + transfer penalty A · T-06 attachment node/inside/within/walk access A · T-07 cross-view edges A · T-08 viewer plans, host re-validates, session only A · T-09 eden_route prefix unchanged + plan line A · T-10 kernel layer transit default off + row-less route-plan A · T-11 thematic transit map from blocks A · T-12 trips along the network A · T-13 districts in the block A · T-14 tc_mid demo network A · T-15 routeOp API + eden-map:ops.routes A · T-16 thematic implicit schematic above a threshold A (all decided by default, autopilot; user may override)
+specs: S8-4a (contract K-R107-K-R109, transit.schema.json, core/transit-spec.mjs, core/router.mjs, core/transit-geometry.mjs, core/thematic.mjs, overlay merge, node tests; no probes) · S8-4b (contract K-R110-K-R114, kernel layers transit / route-plan, app/transit-env.mjs, app/transit-view.mjs, app/route-plan-view.mjs, tavern/route-flow.mjs, messages eden-map:route-plan / eden-map:route / ops.routes, eden_route plan line, trips along the network, thematic schematic, tc_mid demo + town networks, probe pack_routes; FREEZE_MAPS only around the data commit)
+new K-R ids: K-R107-K-R114 reserved (next free after S8-4: K-R115)
+deviations: none. Old decisions overturned (brief §3): none needed (the 2026-09-27 "routes delayed" decision was already voided by N5).
+blocker: none
+open: none (the T-items are working decisions the user may override)
+cleanup: done (no servers or background jobs started; worktree s84d left for the orchestrator)
 === END ===
