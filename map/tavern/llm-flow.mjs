@@ -3,8 +3,8 @@
 import { cdnFetch, thFn } from './host-th.mjs';
 import { resolveTags, stripBlocks } from './sanitize.mjs';
 export const DEPS = [
-  'GEN', 'SELF', 'hostToast', 'life', 'lsGet', 'lsSet', 'panel', 'pointsFor', 'sendEvents', 'CTX', 'FRm', 'MV', 'SpatialM', 'UL', 'events', 'floorNow',
-  'frState', 'here', 'regNow', 'spatialNow',
+  'GEN', 'SELF', 'hostToast', 'life', 'lsGet', 'lsSet', 'panel', 'pointsFor', 'sendEvents', 'CTX', 'FRm', 'MV', 'SpatialM', 'UL', 'floorNow',
+  'frState', 'here', 'regNow', 'spatialNow', 'eventsSummary',
 ];
 export function createLlmFlow(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('llm-flow: missing dep ' + k);
@@ -30,7 +30,7 @@ export function createLlmFlow(host) {
       lsSet(NAVm.CONSENT_KEY, '1');
     }
     const t0 = performance.now();
-    const msgs = NAVm.assemble({ here: host.here, floor: host.floorNow, spatial: host.spatialNow || '', eventsSummary: summarize(host.events, layerOf(hereNow)), failrep: host.FRm ? host.FRm.digest(host.frState) : '' });
+    const msgs = NAVm.assemble({ here: host.here, floor: host.floorNow, spatial: host.spatialNow || '', eventsSummary: host.eventsSummary(), failrep: host.FRm ? host.FRm.digest(host.frState) : '' });
     const req = LLMm.buildRequest(cfg, msgs, { maxTokens: 512 });
     let text = '';
     try {

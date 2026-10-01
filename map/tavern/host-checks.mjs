@@ -6,7 +6,7 @@ export const DEPS = [
   'BR', 'HS', 'ID', 'LINES', 'LS', 'MAN', 'OWNER', 'PACK_ID', 'REPO', 'SCRIPT', 'SELF', 'VER', 'buildNow', 'channel', 'checkUpdate', 'conflictsNow',
   'endGhost', 'fab', 'fallbackToast', 'fetchHtml', 'lean', 'life', 'loadViewer', 'lsGet', 'lsSet', 'ntReady', 'oldStyle', 'panel', 'pdoc', 'plainVer',
   'post', 'preP', 'preload', 'refreshVarMap', 'root', 'scriptInfo', 'swappable', 'switchedFrom', 'varsOk', 'BASE', 'MV', 'NT', 'SRCm', 'THm', 'UL',
-  'alive', 'cardId', 'cpResume', 'ghost', 'html', 'line', 'lineP',
+  'alive', 'cardId', 'cpResume', 'ghost', 'html', 'line', 'lineP', 'refOf',
 ];
 export function createHostChecks(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('host-checks: missing dep ' + k);
@@ -76,7 +76,7 @@ export function createHostChecks(host) {
     SPm ??= await import(SELF + 'tavern/splash.mjs').catch(() => null); if (!SPm) return false;
     const lite = lean(), get = f => cdnFetch(host.BASE + f, { cache: 'force-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
     const bi = await buildNow(); await MAN;
-    splash = SPm.openSplash({ root, id: ID, pdoc, ver: VER, en: host.UL === 'en', name: HS('app.name', host.UL === 'en'), about: { version: bi?.version || SCRIPT.version || VER, code: bi?.code || SCRIPT.code, channel: channel(), ref: SCRIPT.ref || refOf() }, store: localStorage, cap: window.parent.__edenSplashCap || 25,
+    splash = SPm.openSplash({ root, id: ID, pdoc, ver: VER, en: host.UL === 'en', name: HS('app.name', host.UL === 'en'), about: { version: bi?.version || SCRIPT.version || VER, code: bi?.code || SCRIPT.code, channel: channel(), ref: SCRIPT.ref || host.refOf() }, store: localStorage, cap: window.parent.__edenSplashCap || 25,
       checks: () => runCheck().then(() => checkItems),
       tasks: [
         { key: 'map', zh: '地图程序与当前一层的图块', en: 'Map program and current-layer tiles', run: () => { if (panel.hidden && !host.alive && !host.ghost) preload().catch(() => {}); return preP; } },
