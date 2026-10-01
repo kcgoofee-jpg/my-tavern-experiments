@@ -1501,3 +1501,17 @@ open: none
 cleanup: done
 === END ===
 
+
+=== RESULT S7-2 ===
+status: DONE
+items: T0 ✗ (mockup skipped) · T1–T10 ✓ · N10 5, 7, 8, 9, 10, 13, 14, 16, 17 ✓ · N9 not touched (spec assigns it to S7-3)
+commits: b224bd51 … be015aea on branch s7-2-visual (15 commits: tokens + z ladder, glass surfaces, layer greying + rAF pause, mobile U20/U22/U23/E-12, 3D I-05/I-06, N10 items, probes s7_hit / a11y_tree / raf_pause / pan_frame, docs); shas change in the push rebase
+pushed: yes
+tests: node 1412 pass + 1 skipped / 1413 (base 1384; +28) | smoke PASS | arch PASS (z-index ledger 31 → 0; viewer.html 672 → 618) | probes base → after: v096 31/0 → 31/0, pack_switch 11/0 → 11/0, pack_editor 22/0 → 22/0, layers_ext 35/1 → 35/1 (pre-existing f), pack_layers 1 ✗ → 0 ✗ (probe follows greying), accept 0 ✗, new s7_hit / a11y_tree / raf_pause / contrast_v2 all ✓; v2a and autoupd097 fail on the base (not re-checked)
+review: executor self-gates R1/R2 (~/eden-map-review/overnight/s7/s7-2-r1, -r2, 58 shots each); orchestrator re-ran node + smoke; no persona review (user asked to limit subagents for quota)
+perf: accept first screen median 606 → 527 ms (3 runs, not 5); perf_v2 desktopCold 507–525 → 506–508 ms; pan_frame p95 16.7 / p99 33.3 on base and after
+deviations: 3-run perf medians; partial s43 parity (39/144 shots, chrome-only pixel changes); new message estate:camera; desktop zoom column gains 看全区; shortcut 3 = F1 section view (assumed); estate page idle render ~10 fps is pre-existing (on-demand loop belongs to S7-3)
+blocker: none
+open: (1) key 3 in 3D; (2) 375 phone dock still a column; (3) v2a / autoupd097 base failures
+cleanup: done
+=== END ===
