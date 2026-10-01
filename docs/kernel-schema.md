@@ -8,7 +8,8 @@
 > stays frozen and keeps working through `map/core/compat-v1.mjs` (step S1-impl-2).
 
 Every rule has a stable id `K-R01` … `K-R70`; later prompts and tests cite them. Ids never move: rules added after the
-first draft (K-R63–K-R70, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit. The choices left to the user
+first draft (K-R63–K-R70, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit; K-R71–K-R78
+are reserved for S6 (list at the end of §13). The choices left to the user
 are `K-01` … `K-09` (§0). Everything else was decided by the designer and is listed with its reason in §14.
 
 ## 0. Decisions for the user (review sheet)
@@ -726,6 +727,25 @@ Settings → variable mapping use (§6.3); and `avatar.require` (path fragments)
 (`core/overlay-v2.mjs` `applyOverlayUi`): `views` by id, `tokens` / `light` key by key, `legend` replaced as a whole, any other key (`x-…`) overridden. Lenient like K-R67: a bad view id or token is dropped and listed in `problems`
 (`overlay-view-invalid`, `overlay-token-invalid`). The viewer re-checks every id and token at run time with `recheck` (`core/pack-v2-spec.mjs`: `hex`, `token`, `id`; each returns the value when it matches the exact schema pattern, else `null`, K-R64).
 `tools/check_overlay.mjs` runs the merged block through the kernel's schema (K-R06).
+
+**Planned in S6 (ids reserved; the full text lands with the step that implements each one, design in
+`docs/entity-protocol.md`).**
+- K-R71 — Entity protocol: people, items and events are entities `{ kind, id, name, node, place, source, msgIndex, present?,
+  data }` derived by pure adapters; `node` by reference (K-R28), else located (K-R24). S6-1.
+- K-R72 — Drawer tabs: the kernel tab set and default order (events, characters, items, places; legend last); `ui.tabs`
+  (K-R57) may also come from the overlay's `ui` block; `places` always present; the visibility rules. S6-1.
+- K-R73 — People by level: macro when the open view has child views, else micro; view field `x-people`; the present
+  group's sections. S6-1.
+- K-R74 — One stash store `<chat var>.stash`: shape, row fields, `carried`, `slot`, tombstones; one-way migration from the
+  v1 keys, which stay read only until S10 (refines K-R47). S6-2.
+- K-R75 — Reconciliation: the store equals the fold of the message scan from `since` plus the recorded actions, item for
+  item; a changed message is replayed. S6-2.
+- K-R76 — In-card inventory: optional `vars.inventory`, discovery by the kernel's inventory words, read only; the Items
+  tab's four groups. S6-2, S6-3.
+- K-R77 — Pickup sentences: normal and strict verb classes, forms that never count, the English determiner rule (O-1),
+  pack `verbs_strict`, overlay `items.pickup`. S6-3.
+- K-R78 — Settlement write paths: the npc and events domains write holes into `<chat var>.ledger` through the settlement
+  gate, behind a default-off switch (todo I-04). S6-3.
 
 ## 14. Designer decisions and open points
 

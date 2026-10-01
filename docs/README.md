@@ -7,6 +7,7 @@ Read in this order: agent-brief → ARCHITECTURE → naming → todo → handoff
 - [agent-brief.md](agent-brief.md) — the rules (CLAUDE.md is a symlink to it)
 - [ARCHITECTURE.md](ARCHITECTURE.md) — module map, data flow, entity protocol
 - [naming.md](naming.md) — naming rules, rename map, glossary
+- [entity-protocol.md](entity-protocol.md) — S6 design: entity protocol, drawer tabs, unified stash, Items tab (review sheet P-01…P-14)
 - [todo.md](todo.md) — the single tracker (state of the Spatial OS campaign in §0)
 - [handoff.md](handoff.md) — last session's handoff (history, dated 2026-09-29)
 - [plans/spatial-os.md](plans/spatial-os.md) — the plan of record

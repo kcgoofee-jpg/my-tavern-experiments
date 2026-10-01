@@ -7,7 +7,7 @@
 > `map/core/compat-v1.mjs`（S1-impl-2 步）继续可用。
 
 每条规则都有固定编号 `K-R01` … `K-R70`，后面的提示词和测试按编号引用。编号永不挪动：初稿之后补的规则（K-R63–K-R70，
-信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
+信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号；K-R71–K-R78 预留给 S6（清单在 §13 末尾）。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
 
 ## 0. 请你拍板
 
@@ -643,6 +643,19 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 （`core/overlay-v2.mjs` 的 `applyOverlayUi`）：`views` 按 id，`tokens` / `light` 逐键，`legend` 整体替换，其余键（`x-…`）覆盖。和 K-R67 一样宽容：坏的视图 id 或令牌被丢掉并记入 `problems`
 （`overlay-view-invalid`、`overlay-token-invalid`）。查看器运行时用 `recheck`（`core/pack-v2-spec.mjs`：`hex`、`token`、`id`，匹配精确 schema 模式就返回原值，否则 `null`，K-R64）再查每个 id 和令牌。
 `tools/check_overlay.mjs` 把合并后的块过一遍内核 schema（K-R06）。
+
+**S6 计划中（编号已预留；全文随实施它的步骤落地，设计见 `docs/entity-protocol.md`）。**
+- K-R71 —— 实体协议：人、物、事件是由纯适配器推导的实体 `{ kind, id, name, node, place, source, msgIndex, present?, data }`；
+  `node` 按引用（K-R28），否则定位（K-R24）。S6-1。
+- K-R72 —— 抽屉页签：内核页签集合与默认顺序（事态、人物、物品、地点；图例最后）；`ui.tabs`（K-R57）也可以来自叠加层的 `ui` 块；
+  `places` 永远在；显隐规则。S6-1。
+- K-R73 —— 按层级显示人物：打开的视图有子视图 = 宏观，否则微观；视图字段 `x-people`；在场组的分节。S6-1。
+- K-R74 —— 一个藏物库 `<聊天变量>.stash`：形状、行字段、`carried`、`slot`、墓碑；从 v1 键单向迁移，v1 键在 S10 之前只读
+  （细化 K-R47）。S6-2。
+- K-R75 —— 对账：库等于从 `since` 起的消息扫描折叠加上记录下的动作，逐项相等；文字变了的消息重放。S6-2。
+- K-R76 —— 卡内物品栏：可选的 `vars.inventory`，按内核物品栏词发现，只读；物品页签的四个分组。S6-2、S6-3。
+- K-R77 —— 拾取句式：普通与严格两类动词、永不算的句式、英文限定词规则（O-1）、包的 `verbs_strict`、叠加层的 `items.pickup`。S6-3。
+- K-R78 —— 结算写入路径：npc 与事件两个域把空洞写进 `<聊天变量>.ledger`，经结算闸门，默认关的开关之后（todo I-04）。S6-3。
 
 ## 14. 设计方的决定与遗留点
 
