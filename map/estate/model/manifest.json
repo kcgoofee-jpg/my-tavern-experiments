@@ -7,7 +7,7 @@
   "house": { "std": "house.glb", "low": "house.glb" }
  },
  "f1_z": 30.0,
- "v": "2026-10-01-b1b2-r10",
+ "v": "2026-10-01-b1b2-r11",
  "floors": ["B2", "B1", "F1", "F2", "F3"],
  "data": {
   "rooms": "../../data/eden_estate_rooms.json",
