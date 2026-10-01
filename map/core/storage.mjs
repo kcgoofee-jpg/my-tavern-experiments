@@ -60,7 +60,7 @@ export const KEYS = {
   // 三维
   edenEstateLabels: { owner: 'estate', legacy: true }, edenMap3dRailW: { owner: 'ui/chrome3d.js' },
   // 相机控制（U，2026-09-28）：视角预设/指北针/首次提示卡/空闲自动旋转，主场景页与通用三维查看器共用（ui/camera-controls.js）
-  edenEstateHintSeen: { owner: 'estate', legacy: true }, edenMapV3dHintSeen: { owner: 'props/viewer3d.html' }, edenMap3dAutoRotate: { owner: 'ui/camera-controls.js', def: '0' },
+  edenEstateHintSeen: { owner: 'estate', legacy: true }, edenMapV3dHintSeen: { owner: 'props/viewer3d.html' }, edenMap3dAutoRotate: { owner: 'ui/camera-controls.js', def: '0' }, edenMap3dWheelZoom: { owner: 'ui/camera-controls.js', def: '0' },
   // 反馈日志环形缓冲（core/logbuf.mjs）：当前会话滚动日志 + 上次会话归档（最多 4 份），0.9.7
   edenMapLogCur: { owner: 'core/logbuf.mjs' }, edenMapLogPast: { owner: 'core/logbuf.mjs' },
 };

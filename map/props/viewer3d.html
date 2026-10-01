@@ -99,7 +99,7 @@ import { createLodController } from 'engine3d/lod-controller.mjs';
 import { batch as batchInstances, writeMatrices } from 'engine3d/instancing.mjs';
 import { createTexRes } from 'engine3d/texres.mjs';
 import * as GB from '../core/graphics-budget.mjs';   // Part 3 §1：显存预算的纯策略（估算 / 水位 / 淘汰顺序）
-import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer, prefersReducedMotion } from '../ui/camera-controls.js';   // 相机控制共用小件（预设/指北针/提示卡/空闲计时），与主场景页共用
+import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer, prefersReducedMotion, wheelAction, rotateOn } from '../ui/camera-controls.js';   // 相机控制共用小件（预设/指北针/提示卡/空闲计时），与主场景页共用
 
 const Q = new URLSearchParams(location.search);
 const MODEL = window.__modelId || Q.get('model');   // 资产 id 只来自数据（maps.json 的 viewer3d 字段 / ?model=），不再内置默认模型
@@ -240,7 +240,7 @@ const scene = new THREE.Scene();
 setTheme(document.documentElement.classList.contains('light') ? 'light' : 'dark');
 const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 400);
 const controls = new OrbitControls(camera, canvas);
-const REDUCED_MOTION = prefersReducedMotion();
+const REDUCED_MOTION = prefersReducedMotion(); const CAM = { autoRotate: false, wheelZoom: false, rm: REDUCED_MOTION, idle: false };   // I-06: camera settings from the viewer (estate:camera) plus the runtime idle flag; nothing here writes a key
 controls.enableDamping = !REDUCED_MOTION; controls.dampingFactor = 0.09; controls.screenSpacePanning = false;
 controls.zoomToCursor = true; controls.rotateSpeed = coarse ? 0.7 : 0.9;
 controls.panSpeed = 0.9; controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
@@ -280,9 +280,10 @@ function wheelRotate(dx, dy) {
 }
 document.addEventListener('wheel', (e) => {
   if (!canvas.contains(e.target) && e.target !== canvas) return;
-  if (e.ctrlKey) return;   // 捏合缩放：交给 OrbitControls（zoomToCursor）
+  const act = wheelAction(e, CAM.wheelZoom); if (act === 'pinch') return;   // U-13 table in ui/camera-controls.js；捏合缩放：交给 OrbitControls（zoomToCursor）
   e.preventDefault(); e.stopPropagation(); tween = null; camTouched = true; idleTimer?.markActive();
-  if (e.altKey) wheelRotate(e.deltaX, e.deltaY); else wheelPan(e.deltaX, e.deltaY);
+  if (act === 'rotate') wheelRotate(e.deltaX, e.deltaY); else if (act === 'zoom') { const off = camera.position.clone().sub(controls.target), d = THREE.MathUtils.clamp(off.length() * Math.exp(THREE.MathUtils.clamp(e.deltaY * (e.deltaMode === 1 ? 16 : 1), -150, 150) * 0.0015), controls.minDistance, controls.maxDistance); camera.position.copy(controls.target).add(off.setLength(d)); dirty = true; }
+  else wheelPan(e.deltaX, e.deltaY);
 }, { capture: true, passive: false });
 
 // 3) 键盘：WASD / 方向键平移，Q/E 旋转，R/F 俯仰，+/- 缩放，0 复位
@@ -340,11 +341,9 @@ C.onInsets(i => { const b = i.bottom + 'px';
   ccBar.style.bottom = `calc(${b} + env(safe-area-inset-bottom, 0px) + 12px)`;
   hint.el.style.bottom = `calc(${b} + env(safe-area-inset-bottom, 0px) + 64px)`; });
 
-// 5) 空闲 30 s 自动旋转（默认关，设置项 edenMap3dAutoRotate 存在即开）
-let idleTimer = null;
-function setAutoRotate(on) { controls.autoRotate = on && !REDUCED_MOTION; controls.autoRotateSpeed = 0.5; try { localStorage.setItem(NKEY('edenMap3dAutoRotate'), on ? '1' : '0'); } catch (e) {} }
-setAutoRotate(LSg('edenMap3dAutoRotate') === '1');
-idleTimer = makeIdleTimer(30000, () => setAutoRotate(true), () => setAutoRotate(LSg('edenMap3dAutoRotate') === '1'));
+let idleTimer = null;   // 5) 空闲 30 s 自动旋转（默认关，设置项 edenMap3dAutoRotate 开 = 一直转）
+function applyRotate() { controls.autoRotate = rotateOn({ setting: CAM.autoRotate, idle: CAM.idle, rm: CAM.rm }); controls.autoRotateSpeed = 0.5; dirty = true; }   // I-06 / U-23: rotation is runtime state (setting or idle timer), never writes the key; reduced motion turns it off
+CAM.autoRotate = LSg('edenMap3dAutoRotate') === '1'; CAM.wheelZoom = LSg('edenMap3dWheelZoom') === '1'; applyRotate(); idleTimer = makeIdleTimer(30000, () => { CAM.idle = true; applyRotate(); }, () => { CAM.idle = false; applyRotate(); });
 ['pointerdown', 'wheel', 'keydown'].forEach((ev) => canvas.addEventListener(ev, () => idleTimer.markActive(), { passive: true }));
 idleTimer.markActive();
 
@@ -744,7 +743,7 @@ function fly(id, instant) {
   const dist = Math.max(controls.minDistance * 1.5, h.r / Math.sin(fitHalf()));
   const to = { t: h.c.clone(), p: h.c.clone().addScaledVector(dir, dist) };
   if (mode === 'cut' && h.c.y > cutY()) setCut(Math.min(+$('#cutH').max, h.c.y + 0.8));
-  if (instant || matchMedia('(prefers-reduced-motion: reduce)').matches) { controls.target.copy(to.t); camera.position.copy(to.p); controls.update(); dirty = true; return true; }
+  if (instant || CAM.rm) { controls.target.copy(to.t); camera.position.copy(to.p); controls.update(); dirty = true; return true; }
   tween = { t0: performance.now(), dur: 900, fp: camera.position.clone(), ft: controls.target.clone(), to };
   return true;
 }
@@ -874,6 +873,7 @@ addEventListener('message', e => {
     gpu?.setDpr(pickDprFor(d.q)); renderer.setSize(innerWidth, innerHeight); stats.dpr = renderer.getPixelRatio(); gov.reset(); dirty = true; }
   if (d.type === 'estate:inset') { document.body.style.setProperty('--inset', Math.max(0, (d.left | 0) - 8) + 'px'); }
   if (d.type === 'estate:cvd' && typeof d.mode === 'string') { CVD = d.mode; document.documentElement.classList.toggle('cvd', CVD !== '0'); document.documentElement.dataset.cvd = CVD; if (FL.length) buildFlows(); }
+  if (d.type === 'estate:dispose') { running = false; try { disposeRoot(); gpu ? gpu.dispose() : (renderer.dispose(), renderer.forceContextLoss?.()); } catch (x) {} post({ type: 'estate:disposed' }); }   if (d.type === 'estate:camera') { if (typeof d.autoRotate === 'boolean') CAM.autoRotate = d.autoRotate; if (typeof d.wheelZoom === 'boolean') CAM.wheelZoom = d.wheelZoom; if (typeof d.rm === 'boolean') { CAM.rm = d.rm || REDUCED_MOTION; controls.enableDamping = !CAM.rm; } applyRotate(); }   // I-06: settings and reduced motion without a reload
   if (d.type === 'estate:pause') running = false;   // 查看器休眠（宿主挂起）：停渲染循环，模型与 GPU 资源留着——与 estate/main.js 同一套；
   // 不接这条的话，blob iframe 只是 visibility:hidden，RAF 照跑：选中热点时每帧满分辨率渲染，把整个酒馆拖到个位数帧率（2026-09-29 恶性卡顿）
   if (d.type === 'estate:resume' && !running) { running = true; last = performance.now(); requestAnimationFrame(frame); dirty = true; }

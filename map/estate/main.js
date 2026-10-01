@@ -9,7 +9,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { nodePictures } from '../core/pack-media.mjs';   // 设定包图片（K-R101）：来源规则与查看器同一份
 import { roomCustomBlockHTML, bindRoomCustomEvents, getCustomName, setGalleryChatId } from '../ui/room-gallery-panel.js';
-import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer } from '../ui/camera-controls.js';
+import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer, wheelAction, rotateOn } from '../ui/camera-controls.js';
 import { Estate3D } from '../core/scene3d-manifest.mjs';   // Estate3D Manifest 标准契约（P3-A）：清单校验 / 路径解析 / describe 摘要
 import { createRenderer as createGpu } from '../three/render-context.mjs';   // 全仓唯一的渲染器工厂（stencil:true → WebKit 上 24 位深度，N12）
 import { fitNearFar, applyNearFar, depthLabel, sphereOfBox } from '../three/depth-fit.mjs';   // N12：near / far 贴合场景；调试叠层显示深度位数
@@ -28,6 +28,7 @@ const IN_FRAME = window.parent !== window;
 const EMBED = Q.get('embed') === '1' || location.protocol === 'about:' || location.protocol === 'blob:';
 let STATS = Q.get('stats') === '1';   // ?stats=1 或查看器「调试：显示帧率」设置（estate:fps 消息，实时开关）
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const CAM = { autoRotate: false, wheelZoom: false, rm: REDUCED, idle: false };   // I-06: camera settings from the viewer (estate:camera) plus the runtime idle flag; nothing here writes a key
 const COARSE = matchMedia('(pointer: coarse)').matches;
 const LS = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 let LANG = (Q.get('lang') || LS('edenMapLang') || 'zh').startsWith('en') ? 'en' : 'zh';
@@ -64,7 +65,7 @@ if (LS('edenMap3dQ') === '1') document.documentElement.classList.add('noblur'); 
 let lowRes = false;
 
 /* ---------------- 渲染器（烘焙光照：MeshBasic，无色调映射；室内体量用 Lambert + 两盏灯） ---------------- */
-const renderer = createGpu({ THREE, canvas: document.createElement('canvas'), tier: 'mid', alpha: true, powerPreference: 'high-performance' }).renderer;   // 抗锯齿开、不透明度通道开、stencil 在工厂里（强制 24 位深度）
+const gpu = createGpu({ THREE, canvas: document.createElement('canvas'), tier: 'mid', alpha: true, powerPreference: 'high-performance' }), renderer = gpu.renderer;   // 抗锯齿开、不透明度通道开、stencil 在工厂里（强制 24 位深度）
 renderer.setPixelRatio(DPR); renderer.setSize(innerWidth, innerHeight); renderer.setClearColor(0x000000, 0);
 renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.NoToneMapping; renderer.localClippingEnabled = true;
 app.prepend(renderer.domElement);
@@ -854,7 +855,7 @@ function findCard(c) {
 /* ---------------- 飞行动画 ---------------- */
 let tween = null;
 function flyTo(v, dur = 700) {
-  if (REDUCED) dur = 1;
+  if (CAM.rm) dur = 1;
   sph.setFromVector3(camera.position.clone().sub(controls.target));
   const to = { target: v.target.clone(), zoom: clamp(v.zoom, minZoom, maxZoom), theta: v.theta ?? sph.theta, phi: v.phi ?? sph.phi };
   let dt = to.theta - sph.theta; dt = Math.atan2(Math.sin(dt), Math.cos(dt));
@@ -908,8 +909,9 @@ function rotateBy(dx, dy) {
 window.addEventListener('wheel', (e) => { e.preventDefault(); }, { passive: false });
 app.addEventListener('wheel', (e) => {
   e.preventDefault(); e.stopPropagation(); tween = null; idleTimer?.markActive();
-  if (e.altKey) { rotateBy(e.deltaX, e.deltaY); return; }
-  if (!e.ctrlKey) { panBy(e.deltaX, e.deltaY); return; }
+  const act = wheelAction(e, CAM.wheelZoom);   // U-13: the mapping table is in ui/camera-controls.js
+  if (act === 'rotate') { rotateBy(e.deltaX, e.deltaY); return; }
+  if (act === 'pan') { panBy(e.deltaX, e.deltaY); return; }
   let dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 300 : 1);
   dy = clamp(dy, -150, 150);
   zoomAt(e.clientX, e.clientY, Math.exp(-dy * 0.011));
@@ -1045,8 +1047,10 @@ window.addEventListener('message', (e) => {
   else if (d.type === 'estate:children' && d.zones && typeof d.zones === 'object') { CHILDREN = d.zones; cardFor = null; tipFor = null; if (pinned) showCard(pinned); }
   else if (d.type === 'estate:floor') { const m = parseFloor(d.floor); if (m != null) setMode(m, { fly: true }); }
   else if (d.type === 'estate:inset' && Number.isFinite(d.left)) { document.documentElement.style.setProperty('--inset', Math.max(6, d.left) + 'px'); frustum(); needs = true; }
+  else if (d.type === 'estate:camera') { if (typeof d.autoRotate === 'boolean') CAM.autoRotate = d.autoRotate; if (typeof d.wheelZoom === 'boolean') CAM.wheelZoom = d.wheelZoom; if (typeof d.rm === 'boolean') { CAM.rm = d.rm || REDUCED; controls.enableDamping = !CAM.rm; } applyRotate(); }   // I-06: settings and reduced motion without a reload
   else if (d.type === 'estate:pause') { paused = true; }   // 查看器休眠：停渲染循环，模型与 GPU 资源留着
-  else if (d.type === 'estate:resume' && paused) { paused = false; resumeT = performance.now(); needs = true; requestAnimationFrame(loop); }
+  else if (d.type === 'estate:dispose') { disposeGpu(); post({ type: 'estate:disposed' }); }   // S7-2 I-05: the viewer is about to remove this parked frame: release the GL context now and say so
+  else if (d.type === 'estate:resume' && paused && !disposed) { paused = false; resumeT = performance.now(); needs = true; requestAnimationFrame(loop); }
   else if (d.type === 'estate:lang' && (d.lang === 'en' || d.lang === 'zh')) setLang(d.lang);
   else if (d.type === 'estate:quality' && typeof d.q === 'string') {   // 设置「三维画质」即时生效
     DPR = Math.min(window.devicePixelRatio || 1, d.q === '1' ? 1 : COARSE ? 2 : (window.devicePixelRatio || 2)); document.documentElement.classList.toggle('noblur', d.q === '1');
@@ -1068,7 +1072,10 @@ addEventListener('resize', () => { frustum(); renderer.setSize(innerWidth, inner
 /* ---------------- 循环（按需渲染） ---------------- */
 const statsEl = $('#stats'); if (STATS) statsEl.style.display = 'block';
 let frames = 0, fpsT = performance.now(), fps = 0, first = true, lastInfo = { calls: 0, triangles: 0 }, lastPulse = 0, lastPropPulse = 0, lastNpcTick = 0;
-let paused = false, resumeT = 0;
+let paused = false, resumeT = 0, disposed = false;
+/** I-05: stop the loop and release the renderer and its GL context (pagehide does not fire on a parked frame, so the viewer asks with estate:dispose) */
+function disposeGpu() { if (disposed) return; disposed = true; paused = true; try { gpu.dispose(); } catch (e) {} }
+addEventListener('pagehide', disposeGpu);
 // Part 7-4 视口可见性节流：页面切后台 / 视口不可见 → 停排帧（GPU 与循环全歇）；恢复时若没被休眠就重启循环
 const gate = createRenderGate({
   onResume: () => { if (!paused) { resumeT = performance.now(); needs = true; requestAnimationFrame(loop); } },
@@ -1108,7 +1115,7 @@ function loop(now) {
   renderer.render(scene, camera); lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
   labelR.render(scene, camera); cullLabels();
   if (cardFor && !cardAt) placeCard();
-  frames++;
+  frames++; window.__estate && (window.__estate.renders = (window.__estate.renders || 0) + 1);   // read by tools/browser/raf_pause.mjs (a still camera renders nothing)
   if (first) { first = false; onFirstFrame(); }
   if (resumeT) { window.__estate.resumeFrameMs = performance.now() - resumeT; resumeT = 0; }
   if (STATS && now - fpsT > 500) { fps = frames * 1000 / (now - fpsT); frames = 0; fpsT = now; statsEl.textContent = `T${tier} · ${fps.toFixed(0)} fps · ${depthLabel(renderer.getContext())}\n${lastInfo.calls} calls\n${(lastInfo.triangles / 1000).toFixed(0)}k tris\n${STAT.site}${STAT.house ? ' + ' + STAT.house : ''}`; }
@@ -1146,7 +1153,7 @@ window.__estate = {
   setMode: (m) => setMode(parseFloor(m) ?? m, { fly: true }), focus: (n) => { const it = findByName(n); if (it) focusItem(it); return !!it; },
   find: (n) => { const it = findByName(n); return it ? { kind: it.kind, name: it.d.name, id: it.d.id, floor: it.floor != null ? FLOORS[it.floor].id : null } : null; },
   focusCard: (c) => focusRoomMsg(c.name, c), mode: () => mode, houseState: () => houseState, pinned: () => pinned && { kind: pinned.kind, name: pinned.d.name, id: pinned.d.id },
-  tier: () => tier, dpr: () => DPR, paused: () => paused,
+  tier: () => tier, dpr: () => DPR, paused: () => paused, cam: () => ({ ...CAM, rotating: controls.autoRotate }),
   stats: () => ({ ...lastInfo, depth: depthLabel(renderer.getContext()), near: camera.near, far: camera.far, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length, tier, low: LOW, files: STAT, times: TB, firstFrameMs: window.__estate.firstFrameMs, tris: STAT.tris }),
   describe: () => Estate3D.describe(MAN, { base: M3D.base }),   // Estate3D 标准摘要（{ id, glbPath, floors, hotspots, budget, license }）
   props: { set: (raw) => { stashRaw = raw && Array.isArray(raw.items) ? raw : null; rebuildProps(); },   // 世界藏物表（探针 / 浏览器测试用）
@@ -1201,9 +1208,10 @@ function applyPreset(id) {
   else if (id === 'front') { sph.theta = 0; sph.phi = 1.15; }
   placeCam(controls.target, sph.theta, sph.phi); needs = true;
 }
-function setAutoRotate(on) { controls.autoRotate = on && !REDUCED; controls.autoRotateSpeed = 0.4; try { localStorage.setItem('edenMap3dAutoRotate', on ? '1' : '0'); } catch (e) {} }
-setAutoRotate(LS('edenMap3dAutoRotate') === '1');
-idleTimer = makeIdleTimer(30000, () => setAutoRotate(true), () => setAutoRotate(LS('edenMap3dAutoRotate') === '1'));
+/** I-06 / U-23: rotation is runtime state (the setting or the idle timer); it never writes the key, and reduced motion turns it off */
+function applyRotate() { controls.autoRotate = rotateOn({ setting: CAM.autoRotate, idle: CAM.idle, rm: CAM.rm }); controls.autoRotateSpeed = 0.4; needs = true; }
+CAM.autoRotate = LS('edenMap3dAutoRotate') === '1'; CAM.wheelZoom = LS('edenMap3dWheelZoom') === '1'; applyRotate();
+idleTimer = makeIdleTimer(30000, () => { CAM.idle = true; applyRotate(); }, () => { CAM.idle = false; applyRotate(); });
 ['pointerdown', 'wheel', 'keydown'].forEach((ev) => window.addEventListener(ev, () => { idleTimer.markActive(); presets?.setActive('free'); }, { passive: true, capture: true }));
 idleTimer.markActive();
 controls.addEventListener('start', () => idleTimer.markActive());

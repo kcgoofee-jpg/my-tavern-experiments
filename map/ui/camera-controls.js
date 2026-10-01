@@ -82,6 +82,16 @@ export function makeHintCard({ root = document.body, storageKey, lines, dismissL
   return { el: card, dismiss, shown: !seen, dispose() { card.remove(); } };
 }
 
+// 滚轮映射（U-13，docs/ui-refactor.md 7.2）：捏合（ctrlKey）永远是缩放；Alt = 旋转；「鼠标滚轮缩放」关（默认）时普通滚动 = 平移，开时普通滚动 = 缩放、Shift = 平移。
+export function wheelAction(e, wheelZoom = false) {
+  if (e.ctrlKey) return 'pinch';
+  if (e.altKey) return 'rotate';
+  if (wheelZoom) return e.shiftKey ? 'pan' : 'zoom';
+  return 'pan';
+}
+// 自动旋转（I-06 / U-23）：用户在设置里开了，或空闲计时器到点——只是运行时状态，不写任何键；减少动态效果下永不旋转。
+export const rotateOn = ({ setting = false, idle = false, rm = false } = {}) => !rm && (!!setting || !!idle);
+
 // 空闲计时器：idleMs 毫秒无交互后调 onIdle()；任何一次 markActive() 取消并重新计时，同时调 onActive()（如果之前已经 idle 过）。
 export function makeIdleTimer(idleMs, onIdle, onActive) {
   let t = 0, idle = false;

@@ -41,9 +41,22 @@ export function dropParked() { if (estParked) { estParked.frame.remove(); estPar
 // 所以每次发新租约前先把上一份彻底摘掉（weak frame 只摘不阻塞新页面加载），并在开新页面前同步清掉。
 export let live3d = 0;   // 当前活着的三维帧数（自检 / 浏览器探针用）
 let weak3d = null;       // 上一份租约的帧：新页面开始加载就摘掉（不等淡出）
+let fading3d = null;     // the frame leaving a 3D view (faded out by the caller of leaveEstate): a new lease takes it away too
+/** I-05 (docs/ui-refactor.md 7.1): ask a 3D frame to release its GL context (estate:dispose), wait for estate:disposed (at most 500 ms), then it may be removed */
+const disposeFrame = f => new Promise(done => {
+  let t = 0; const fin = () => { clearTimeout(t); removeEventListener('message', on); done(); }, on = e => { if (e.source === f.contentWindow && e.data?.type === 'estate:disposed') fin(); };
+  t = setTimeout(fin, 500); addEventListener('message', on);
+  try { f.contentWindow.postMessage({ type: 'estate:dispose' }, SUB_ORIGIN); } catch (e) { fin(); }
+});
+/** the explicit release before a different 3D page opens: every frame we still hold is disposed first, then removed */
+export async function release3dAsync() {
+  const frames = [estParked?.frame, weak3d, fading3d, subpageSession?.frame].filter(f => f?.isConnected);
+  await Promise.all([...new Set(frames)].map(disposeFrame)); release3d();
+}
 export function release3d() {
   dropParked();
   if (weak3d) { try { weak3d.remove(); } catch (e) {} weak3d = null; }
+  if (fading3d) { try { fading3d.remove(); } catch (e) {} fading3d = null; }
   if (subpageSession?.frame) { const f = subpageSession.frame; subpageSession = null; try { f.remove(); } catch (e) {} }
   live3d = 0;
 }
@@ -120,7 +133,7 @@ export async function openEstate(id, m, hadPrev) {
     return;
   }
   // Part 3 §3：发新租约前把上一份彻底摘掉（挂起的、淡出中的都算），保证任何时刻只有一个活着的三维上下文
-  if (estParked?.id !== id) { stopTileTo3d(false); release3d(); }
+  if (estParked?.id !== id) { stopTileTo3d(false); await release3dAsync(); if (currentMapId !== id) return; }
   applyCredit(m);   // 署名（ⓘ）：没有署名词条时收起来，不留空框（任务三）
   const ld = $('#loading'), ti = localName(m, 'title'); ld.classList.remove('done', 'thumb'); ld.classList.remove('over'); estateActs('');   // v0.9.6：三维页加载时用整屏加载页，不再露出上一张图 + 一个「加载中」小条
   if (m.cover) { ld.style.setProperty('--loading-cover', `url(${matchMedia('(max-width: 600px)').matches ? m.cover.src_800 || m.cover.src : m.cover.src})`); ld.classList.add('cover'); }
@@ -174,7 +187,7 @@ export function leaveEstate() {
   const f = subpageSession.frame, ready = subpageSession.ready; subpageSession = null; live3d = 0;
   if (weak3d === f) weak3d = null;
   if (!ready) { f.remove(); return null; }
-  return f;   // 调用方（nav.go）在新底图画出来后淡出移除；新的三维租约会在 release3d 里把它提前摘掉
+  fading3d = f; return f;   // 调用方（nav.go）在新底图画出来后淡出移除；新的三维租约会在 release3d 里把它提前摘掉
 }
 function estateInset() {
   if (!subpageSession?.ready) return;
@@ -190,6 +203,7 @@ export function estateLook() {
   w.postMessage({ type: 'estate:cvd', mode: TCCvd.mode() }, SUB_ORIGIN);   // 色觉模式（E7）：主场景 / 三维页换配色，不重载
   let fps = false; try { fps = window.LocalStore?.get('edenMapFps') === '1'; } catch (e) {}
   w.postMessage({ type: 'estate:fps', on: fps }, SUB_ORIGIN);   // 调试：显示帧率——三维子页自己画一份（画布角上，带 tier / draws），开着子页时外层顶栏那份就该让位，不然同时看到两个数字（U，2026-09-28）
+  { const ls = k => { try { return window.LocalStore?.get(k) === '1'; } catch (e) { return false; } }; w.postMessage({ type: 'estate:camera', autoRotate: ls('edenMap3dAutoRotate'), wheelZoom: ls('edenMap3dWheelZoom'), rm: !!window.__reducedMotion }, SUB_ORIGIN); }   // I-06: camera settings and reduced motion, no reload
   setFpsMeter(false);
   w.postMessage({ type: 'estate:children', zones: estateZones(subpageSession.id) }, SUB_ORIGIN);   // 区域下的子地图（运行时节点树）：三维页据此给区域卡加「进入三维」，语言切换时标题跟着重发
   w.postMessage({ type: 'estate:chat', id: chatId || '' }, SUB_ORIGIN);   // 房间图集「按聊天」作用域用：主场景页读不到 SillyTavern 上下文，靠这条消息拿 chatId

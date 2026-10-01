@@ -838,5 +838,7 @@
   "lyr.generic_view": "特定",
   "lyr.generic_place": "特定地点",
   "lyr.generic_period": "特定时段",
-  "edit.more": "编辑 ⋯"
+  "edit.more": "编辑 ⋯",
+  "s.rot3d": "三维：空闲 30 秒后自动旋转",
+  "s.wheel3d": "鼠标滚轮缩放（触控板捏合不受影响）"
 }

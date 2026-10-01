@@ -45,6 +45,15 @@ try {
     await vf.evaluate(() => ViewerDebug.go('eden_estate')); await B.wait(7000);   // a 3D view over the map
     const d3 = await measure(vf, 2000);
     rep.check('a 3D view open: 0 layer frames per second on the 2D side', d3.layer === 0, JSON.stringify(d3.frames));
+    // reduced motion reaches the 3D page (estate:camera { rm }): no idle rotation, so after 30 s idle nothing renders; without it the idle rotation renders
+    const ef = await (await vf.$('#estate')).contentFrame(), renders = () => ef.evaluate(() => window.__estate?.renders || 0);
+    await B.wait(31500); const a0 = await renders(); await B.wait(2000); const a1 = await renders();
+    rep.check('estate, reduced motion off: after 30 s idle the page rotates (renders > 0)', a1 - a0 > 10, String(a1 - a0));
+    await vf.evaluate(() => SettingsApi.open('map')); await B.wait(500); await vf.evaluate(() => document.querySelector('#rmSeg button[data-rm="on"]')?.click()); await B.wait(600); await vf.evaluate(() => ViewerDebug.showSet(false));
+    await ef.evaluate(() => document.dispatchEvent(new Event('pointerdown'))); await B.wait(31500); await ef.evaluate(() => { }); const b0 = await renders(); await B.wait(2500); const b1 = await renders();
+    const cam = await ef.evaluate(() => window.__estate.cam());
+    rep.check('estate, reduced motion on: after 30 s idle there is no idle rotation (runtime flag, no key written)', cam.rm === true && cam.idle === true && cam.rotating === false && await vf.evaluate(() => LocalStore.get('edenMap3dAutoRotate')) == null, JSON.stringify(cam));
+    console.log(`  info: estate renders in 2.5 s with reduced motion on, idle: ${b1 - b0} (a camera that reports a change every ~100 ms keeps the page drawing about 10 frames a second; the on-demand loop is S7-3's, docs/ui-refactor.md 3.8)`);
     rep.check('no page errors (host run)', P.errors.filter(e => !/404|favicon/.test(e)).length === 0, P.errors.slice(0, 3).join(' | '));
   } finally { await P.close(); }
   // the town pack: the danger layer is outside `applies` on town_hill -> greyed row with a reason, nothing drawn

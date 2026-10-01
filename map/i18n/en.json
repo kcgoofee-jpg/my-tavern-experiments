@@ -838,5 +838,7 @@
   "lyr.generic_view": "a certain",
   "lyr.generic_place": "a certain place",
   "lyr.generic_period": "a certain time",
-  "edit.more": "Edit ⋯"
+  "edit.more": "Edit ⋯",
+  "s.rot3d": "3D: rotate slowly after 30 s idle",
+  "s.wheel3d": "Mouse wheel zooms (trackpad pinch is unaffected)"
 }

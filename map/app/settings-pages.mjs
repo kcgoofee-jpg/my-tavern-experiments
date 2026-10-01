@@ -34,7 +34,8 @@ export const TABLE = [
     { k: 'minimap', o: 50, h: sw('optMinimap', 's.minimap', '左下角小地图', '地图角落显示当前视野在全图中的位置（默认关）', 's.minimap_hint') },
     { k: 'cvd', o: 70, h: seg('cvdSeg', 's.cvd', '色觉模式', b('cvd', '0', 's.cvd_off', '关') + b('cvd', 'rg', 's.cvd_rg', '红绿') + b('cvd', 'by', 's.cvd_by', '蓝黄')) + `<small data-i18n="s.cvd_hint">事态、图例、人物头像等换成色盲安全配色，并加形状 / 描边区分；同步给子页面与三维页</small>` },
     { k: 'd3', o: 80, h: `<h3 data-i18n="s.map3d">三维</h3>` + seg('q3Seg', 's.q3d', '三维画质', b('q', 'auto', 'tier_auto', '自动') + b('q', '1', 's.q_low', '省电') + b('q', '2', 's.q_high', '清晰')) + `<small data-i18n="s.q3d_hint">三维页的像素比上限：省电 = 1 倍，清晰 = 最多 2 倍（锯齿更少，更费电）</small>`
-      + sw('optAuto3d', 's.auto3d', '三维抽屉：拖动模型时自动收起', '', '') },
+      + sw('optAuto3d', 's.auto3d', '三维抽屉：拖动模型时自动收起', '', '')
+      + sw('opt3dRotate', 's.rot3d', '三维：空闲 30 秒后自动旋转', '', '') + sw('opt3dWheel', 's.wheel3d', '鼠标滚轮缩放（触控板捏合不受影响）', '', '') },
   ] },
   { page: 'people', rows: [
     { k: 'stats', o: 10, h: sw('optCharStats', 'char_stats', '人物栏显示数值', '名册里显示成员的等级与核心数值（字段在「变量映射」里指定或关闭）', 'char_stats_hint', ' checked') },

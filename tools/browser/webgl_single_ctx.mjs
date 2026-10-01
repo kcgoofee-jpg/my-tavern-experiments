@@ -27,7 +27,7 @@ try {
   };
   const go3d = async map => {
     await P.page.evaluate(m => ViewerDebug.go(m), map);
-    await P.page.waitForFunction(() => { const f = document.querySelector('#estate.on'); try { return f && f.contentWindow.__viewer3dProbe?.ready; } catch (e) { return false; } }, null, { timeout: 90000 });
+    await P.page.waitForFunction(() => { const f = document.querySelector('#estate.on'); try { return f && (f.contentWindow.__viewer3dProbe?.ready || f.contentWindow.__estateFirstFrame); } catch (e) { return false; } }, null, { timeout: 90000 });
   };
   await sample('world');
   await go3d('dairy'); await sample('dairy ready');
@@ -39,6 +39,17 @@ try {
   await P.page.evaluate(() => ViewerDebug.go('world'));
   await wait(1200); await sample('back to world');
   await go3d('dairy'); await sample('dairy again');
+  // S7-2 I-05: estate -> props viewer -> estate keeps <= 1 live context; five rounds: no "too many contexts" warning (an oldest context lost), JS heap growth <= 10 %
+  res.lostWarnings = 0; P.page.on('console', m => { if (/Too many active WebGL contexts|context lost|CONTEXT_LOST/i.test(m.text())) res.lostWarnings++; });
+  const heap = () => P.page.evaluate(() => performance.memory ? performance.memory.usedJSHeapSize : 0);
+  const heaps = []; res.estateEntryMs = [];   // the first and the second entry of the estate are timed (estate3d reports the same numbers on its own page)
+  for (let i = 0; i < 5; i++) {
+    { const t = Date.now(); await go3d('eden_estate'); res.estateEntryMs.push(Date.now() - t); } await sample(`round ${i} estate`); await go3d('dairy'); await sample(`round ${i} props`);
+    await P.page.evaluate(() => ViewerDebug.go('world')); await wait(800);
+    if (i >= 1) heaps.push(await heap());
+  }
+  res.heaps = heaps; res.heapGrowthPct = heaps.length > 1 && heaps[0] ? +(100 * (heaps[heaps.length - 1] - heaps[0]) / heaps[0]).toFixed(1) : null;
+  await go3d('dairy'); await sample('dairy after rounds');
   await P.page.evaluate(() => ViewerDebug.go('world'));
   await wait(1200); await sample('final world');
   res.errors = P.errors;
@@ -48,8 +59,8 @@ await closeAll(); srv.stop();
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, 'single_ctx.json'), JSON.stringify(res, null, 1));
 console.log(JSON.stringify(res, null, 1));
-if (crash || res.peak > 1 || (res.errors || []).length) {
-  console.error(`失败：peak=${res.peak} crash=${crash ? crash.split('\n')[0] : 'none'} errors=${(res.errors || []).join(' | ')}`);
+if (crash || res.peak > 1 || (res.errors || []).length || res.lostWarnings > 0 || (res.heapGrowthPct != null && res.heapGrowthPct > 10)) {
+  console.error(`失败：lostWarnings=${res.lostWarnings} heapGrowth=${res.heapGrowthPct}% peak=${res.peak} crash=${crash ? crash.split('\n')[0] : 'none'} errors=${(res.errors || []).join(' | ')}`);
   process.exit(1);
 }
 console.log('单上下文：任意采样时刻 #stage 里的三维帧 ≤ 1');

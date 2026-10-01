@@ -100,6 +100,8 @@ export const SCHEMA = {
   'estate:routine': [VIEWER_TO_SUBPAGE, { schedule: 'object?', clock: 'object?' }],   // Part 8-2：NPC 日程表 + 起点时钟（三维页按确定性时钟自己挪人）
   'estate:children': [VIEWER_TO_SUBPAGE, { zones: 'object' }],   // S2-B：宿主 → 三维页：{ 区域 id: [{ node, title }] }，该区域下挂着的子地图（来自运行时节点树）；三维页据此给区域卡加「进入三维」
   'estate:media': [VIEWER_TO_SUBPAGE, { rooms: 'object', remote: 'boolean?' }],   // S9b K-R101：宿主 → 三维页：{ 房间名: [{ id, item }] } 设定包给这个房间的图（来源规则由三维页再查一遍），remote = 「加载链接给出的图片」开关
+  'estate:dispose': [VIEWER_TO_SUBPAGE, {}],   // S7-2 I-05: release the GL context now (the viewer removes the frame next); answered by estate:disposed
+  'estate:camera': [VIEWER_TO_SUBPAGE, { autoRotate: 'boolean?', wheelZoom: 'boolean?', rm: 'boolean?' }],   // S7-2 I-06: the camera settings (auto-rotate, wheel zooms) and reduced motion (no idle rotation, camera moves jump) for the 3D pages
   'estate:pause': [VIEWER_TO_SUBPAGE, {}],
   'estate:resume': [VIEWER_TO_SUBPAGE, {}],
   'estate:floor': ['both', { floor: 'any' }],     // 下行 = 直嵌 / 调试接口；上行 = 用户切了楼层（直嵌时给外层页）
@@ -111,6 +113,7 @@ export const SCHEMA = {
   'v3d:budget': [SUBPAGE_TO_VIEWER, {}],                           // 直嵌接口：三维页自报的预算摘要
   'estate:go': [SUBPAGE_TO_VIEWER, { node: 'string' }],   // S2-B：三维页 → 宿主：进入区域下的子地图（node = 子地图 id，宿主只认当前图的子节点）
   'estate:ready': [SUBPAGE_TO_VIEWER, {}],
+  'estate:disposed': [SUBPAGE_TO_VIEWER, {}],   // S7-2 I-05: the answer to estate:dispose
   'estate:fail': [SUBPAGE_TO_VIEWER, { reason: 'string?' }],
   'estate:progress': [SUBPAGE_TO_VIEWER, { loaded: 'number', total: 'number?', what: 'string?' }],   // fix3：三维模型下载字节进度（total 0 = 不知道总大小）
   'estate:key': [SUBPAGE_TO_VIEWER, { key: 'string' }],
