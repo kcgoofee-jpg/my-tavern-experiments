@@ -2,6 +2,8 @@
 // S5-2 T2: file-rename codemod. Moves the files of tools/rename_s5_map.json with `git mv` and rewrites every path
 // reference (static / dynamic import, new URL, <script src>, string path lists, shell / python lists, doc paths).
 //   node tools/rename_s5.mjs --map tools/rename_s5_map.json [--dry-run] [--root <dir>]
+// S5-3 mode: `--globals tools/rename_s5_globals.json` renames window globals, plugin names and short identifiers (see rename_s5_globals.mjs;
+// it reuses this file's tracked-file list and scope test).
 // Matching is on path tokens that resolve to a moved file (relative to the importer, to map/, to the repo root, or
 // through the 3D import-map alias), never on bare words. Idempotent: after a run no token resolves to a source.
 import { execFileSync } from 'node:child_process';
@@ -13,11 +15,28 @@ const args = process.argv.slice(2);
 const flag = n => args.includes(n), opt = n => (args.includes(n) ? args[args.indexOf(n) + 1] : null);
 const ROOT = path.resolve(opt('--root') || fileURLToPath(new URL('..', import.meta.url)));
 const DRY = flag('--dry-run');
-const MAP = JSON.parse(readFileSync(path.resolve(ROOT, opt('--map') || 'tools/rename_s5_map.json'), 'utf8'));
+const GLOBALS = opt('--globals');
+const MAP = GLOBALS ? { renames: [], deletes: [], specifiers: [] } : JSON.parse(readFileSync(path.resolve(ROOT, opt('--map') || 'tools/rename_s5_map.json'), 'utf8'));
 
 const git = (...a) => execFileSync('git', a, { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 });
 const tracked = git('ls-files', '-z').split('\0').filter(Boolean);
 const trackedSet = new Set(tracked);
+
+// ---- scope ---------------------------------------------------------------------------------------------------------
+const TEXT_EXT = new Set(['.mjs', '.js', '.html', '.json', '.py', '.sh', '.md', '.css', '.txt', '.yml', '.yaml']);
+const SKIP_DIR = /^(map\/(vendor|estate\/vendor|shots|art|_proto)\/|tools\/browser\/node_modules\/|node_modules\/)/;
+const SELF_FILES = new Set(['tools/rename_s5.mjs', 'tools/rename_s5_extract.py', 'tools/rename_s5_map.json', 'tools/rename_s5_globals.mjs', 'tools/rename_s5_globals_extract.py', 'tools/rename_s5_globals.json', 'tests/rename_s5.test.mjs']);
+const inScope = f => {
+  if (SELF_FILES.has(f) || SKIP_DIR.test(f) || !TEXT_EXT.has(path.extname(f))) return false;
+  if (/^docs\/naming(\.zh)?\.md$/.test(f)) return false;   // the rename map keeps old names as its "Current" column; rows are marked, not rewritten
+  return /^(map|tests|tools|skills)\//.test(f) || /^docs\/ARCHITECTURE(\.zh)?\.md$/.test(f) || /^README(\.zh)?\.md$/.test(f);
+};
+
+if (GLOBALS) {
+  const { runGlobals } = await import('./rename_s5_globals.mjs');
+  runGlobals({ ROOT, tracked, inScope, DRY, mapFile: GLOBALS, verbose: flag('--verbose'), only: opt('--only') });
+  process.exit(0);
+}
 
 // ---- the moves: source -> target (repo-relative, posix) ------------------------------------------------------------
 const moves = new Map(), redirects = new Map();   // redirects: deleted forwarder -> module that replaces it
@@ -41,16 +60,6 @@ for (const [from, to] of moves) {
 }
 for (const [a, b] of testMoves) moves.set(a, b);
 for (const [a, b] of moves) if (trackedSet.has(b) && !moves.has(b)) throw new Error(`target exists: ${b} (from ${a})`);
-
-// ---- scope ---------------------------------------------------------------------------------------------------------
-const TEXT_EXT = new Set(['.mjs', '.js', '.html', '.json', '.py', '.sh', '.md', '.css', '.txt', '.yml', '.yaml']);
-const SKIP_DIR = /^(map\/(vendor|estate\/vendor|shots|art|_proto)\/|tools\/browser\/node_modules\/|node_modules\/)/;
-const SELF_FILES = new Set(['tools/rename_s5.mjs', 'tools/rename_s5_extract.py', 'tools/rename_s5_map.json', 'tests/rename_s5.test.mjs']);
-const inScope = f => {
-  if (SELF_FILES.has(f) || SKIP_DIR.test(f) || !TEXT_EXT.has(path.extname(f))) return false;
-  if (/^docs\/naming(\.zh)?\.md$/.test(f)) return false;   // the rename map keeps old names as its "Current" column; rows are marked, not rewritten
-  return /^(map|tests|tools|skills)\//.test(f) || /^docs\/ARCHITECTURE(\.zh)?\.md$/.test(f) || /^README(\.zh)?\.md$/.test(f);
-};
 
 // ---- token matching ------------------------------------------------------------------------------------------------
 const TOKEN = /(?<![\w@./-])((?:\.{1,2}\/)*(?:[\w.-]+\/)*[\w.-]+\.(?:mjs|js|html))(?![\w-])/g;
