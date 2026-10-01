@@ -1,0 +1,95 @@
+{
+  "note": "S6-2 stash stream: one message per round; the twelfth entry replaces message 10 (a swipe). Synthetic data.",
+  "messages": [
+    {
+      "msgIndex": 0,
+      "text": "你推开门。",
+      "place": "书房"
+    },
+    {
+      "msgIndex": 1,
+      "text": "他把黄铜钥匙拿到手，转身离开。",
+      "place": "书房"
+    },
+    {
+      "msgIndex": 2,
+      "text": "她捡到一枚银怀表。",
+      "place": "客厅"
+    },
+    {
+      "msgIndex": 3,
+      "text": "他拿到了机会。",
+      "place": "客厅"
+    },
+    {
+      "msgIndex": 4,
+      "text": "你走向书架。",
+      "place": "书房"
+    },
+    {
+      "msgIndex": 5,
+      "text": "翻找一阵，终于拿到旧地图。",
+      "place": "书房"
+    },
+    {
+      "msgIndex": 6,
+      "text": "拿到「锈迹斑斑的黄铜钥匙」。",
+      "place": "书房"
+    },
+    {
+      "msgIndex": 7,
+      "text": "你合上抽屉。",
+      "place": "书房"
+    },
+    {
+      "msgIndex": 8,
+      "text": "你环顾四周。",
+      "place": "客厅"
+    },
+    {
+      "msgIndex": 9,
+      "text": "她又捡到一枚银怀表。",
+      "place": "客厅"
+    },
+    {
+      "msgIndex": 10,
+      "text": "He picked up a sword.",
+      "place": "车库"
+    },
+    {
+      "msgIndex": 10,
+      "text": "He looked at the sword.",
+      "place": "车库"
+    }
+  ],
+  "world": [
+    {
+      "id": "swm01",
+      "map": "estate",
+      "marker": "study",
+      "name": "旧地图",
+      "place": "书房"
+    }
+  ],
+  "actions": [
+    {
+      "at": 4,
+      "kind": "take",
+      "id": "swm01"
+    },
+    {
+      "at": 7,
+      "kind": "setInv",
+      "name": "机密账本",
+      "patch": {
+        "place": "书房",
+        "hidden": true
+      }
+    },
+    {
+      "at": 8,
+      "kind": "removeInv",
+      "key": "银怀表"
+    }
+  ]
+}

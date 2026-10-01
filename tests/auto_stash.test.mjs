@@ -52,14 +52,14 @@ test('事实形状：id 稳定 ASCII、authority 恒为 verified（地图侧客�
 function hostRound({ stat, inv, facts, settled, floor }) {
   const probe = slotProbe(stat);                       // ① 探路：宿主 stat_data 里有没有背包字段
   const declared = slotDeclare(null, probe, floor);
-  const aud = audit(facts, { assets: Object.fromEntries(Object.entries(inv.items).map(([k, e]) => [k, e.名])) });
+  const aud = audit(facts, { assets: Object.fromEntries(Object.entries(inv.items).map(([k, e]) => [k, e.name])) });
   const cl = claim(settled, aud.patches.filter(p => p.domain === 'assets'), { floor, branch: `${floor}:0` });
   let next = inv, wrote = 0;
   const landed = [];
   for (const p of cl.fresh) {                          // 补的是**单项**：正文事实没有藏物表条目也照写（动作已经发生）
-    const r = invPut(next, { id: p.id, name: p.name, place: p.place || '', note: `正文拾取 · 第 ${floor} 楼`, qty: 1 });
+    const r = invPut(next, { id: p.id, name: p.name, place: p.place || '', note: `正文拾取 · 第 ${floor} 楼`, qty: 1, src: 'text', msgIndex: floor });
     if (!r.changed) continue;
-    next = r.inv; wrote++; landed.push(r.inv.items[p.id]);
+    next = r.stash; wrote++; landed.push(r.stash.items[p.id]);
   }
   const stored = {};
   const sink = createSlotSink({ declare: k => { stored[k] = {}; return true; }, put: (k, list) => { for (const x of list) stored[k][x.id] = { 名: x.名, 地点: x.地点 || '' }; return true; } });
@@ -76,20 +76,20 @@ test('空 stat_data：探到虚拟槽位 → 自建「物品栏」→ 正文拾�
   const r = hostRound({ stat, inv: invNorm(null), facts, settled: { claimed: [], floor: null, branch: null }, floor: 12 });
 
   assert.deepEqual(r.probe, { key: '物品栏', path: '', virtual: true });
-  assert.equal(r.declared.名, '物品栏'); assert.equal(r.declared.虚拟, true);
+  assert.equal(r.declared.name, '物品栏'); assert.equal(r.declared.virtual, true);
   assert.equal(r.aud.pending.length, 0, '认得出来 + 有视图 = 不进退而求其次的待结算');
   assert.equal(r.wrote, 2);
   // 抽屉与注入摘要读的是同一份仓库：两件都在，来源与楼号写进说明
   const rows = invRows(r.inv);
-  assert.deepEqual(rows.map(x => x.名).sort(), ['账本', '黄铜钥匙']);
-  assert.match(findRow(r.inv, '黄铜钥匙')[1].说明, /正文拾取 · 第 12 楼/);
-  assert.equal(findRow(r.inv, '账本')[1].地点, '书房');
+  assert.deepEqual(rows.map(x => x.name).sort(), ['账本', '黄铜钥匙']);
+  assert.match(findRow(r.inv, '黄铜钥匙')[1].note, /正文拾取 · 第 12 楼/);
+  assert.equal(findRow(r.inv, '账本')[1].place, '书房');
   assert.match(digestLine(r.inv), /黄铜钥匙/);
   // 虚拟槽位也真的落了盘（宿主 stat_data 一个字节都没写）
   assert.equal(r.fl.wrote, 2);
   assert.deepEqual(Object.keys(r.stored.物品栏).sort(), facts.map(f => f.id).sort());
   assert.deepEqual(stat, {}, '绝不往宿主 stat_data 里新开字段');
-  assert.equal(r.slot.件, 2);
+  assert.equal(Object.keys(r.slot.facts).length, 2);
 });
 
 test('幂等与水位：同一件只补一次；再用一轮同一件不会重新长出来（用掉道具不被审计器复活）', () => {
@@ -102,7 +102,7 @@ test('幂等与水位：同一件只补一次；再用一轮同一件不会重�
   assert.equal(b.wrote, 0); assert.equal(b.aud.ok, 1);
   assert.equal(invRows(b.inv).length, 1);
   // 玩家用掉 / 丢掉：仓库里删掉，水位仍在 → 审计器不会把它复活
-  const gone = { items: {}, seq: 1 };
+  const gone = { ...invNorm(null), seq: 1 };
   const c = hostRound({ stat, inv: gone, facts, settled, floor: 14 });
   assert.equal(c.wrote, 0, '水位记住补过了：删掉的东西不会被重新补回来');
   assert.equal(c.cl.repeated, 1, '同一件第二次出现 = 被水位判为重复（不再入账）');
@@ -113,10 +113,11 @@ test('幂等与水位：同一件只补一次；再用一轮同一件不会重�
 
 // ---------------- ③ 宿主接线（源码级守卫：接线断了这条测试先红） ----------------
 test('宿主接线：正文扫描接在本轮结算之前，且有界、按 id 去重、失败静默', () => {
-  const src = HOST_SRC;   // S5-1：拾取流搬进了 loot-flow.mjs
+  const src = HOST_SRC;   // S5-1：拾取流搬进了 stash-flow.mjs
   assert.match(src, /import\(scriptBase \+ 'core\/pickup\.mjs'\)/, '探测模块随宿主一起加载');
   assert.match(src, /scanPickups\(msgs, hereNow\);\s*\/\/[^\n]*\n\s*gate\(\)\?\.request\('sync', ledgerSync\)/, '先入账再放行结算闸门（读取期间不写变量）');
   assert.match(src, /lootFacts\.some\(x => x\?\.id === f\.id\)/, '同一件不重复入账');
   assert.match(src, /lootFacts\.length > 40/, '会话事实有界（长会话不涨内存）');
-  assert.match(src, /p\?\.name \? \{ id: p\.id, name: p\.name/, '藏物表里没有这一件时用正文事实补一行（不凭空造东西）');
+  assert.match(src, /stashRecomputeModule\.step\(rt\.stash, roundMsgs/, 'S6-2：正文窗口交给 stash-recompute 的折叠入账（同一份存储、可重算）');
+  assert.match(readFileSync(new URL('../map/tavern/stash-recompute.mjs', import.meta.url), 'utf8'), /src: 'text', carried: true, msgIndex: mi, mark/, '折叠只用正文事实补一行：动作确实发生了（不凭空造东西）');
 });

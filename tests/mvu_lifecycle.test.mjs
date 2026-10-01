@@ -116,19 +116,19 @@ test('时序契约：VARIABLE_UPDATE_ENDED 处理器按 invalidate → push → 
 test('端到端：漏项审计 → 入队 → 放行后按单项 patch 补进仓库（同键不再重发）', () => {
   const gate = V.createGate({ hasMvu: () => true });
   const state = { claimed: [], floor: null };
-  let inv = { items: {}, seq: 0 };
+  let inv = INV.empty(42);   // S6-2：统一背包（ASCII 键）
   const facts = [{ kind: 'loot', id: 'i1', name: '账本', place: '书房', floor: 42 }];
-  const landed = () => ({ assets: Object.fromEntries(Object.entries(inv.items).map(([id, e]) => [id, e.名])) });
+  const landed = () => ({ assets: Object.fromEntries(Object.entries(inv.items).map(([id, e]) => [id, e.name])) });
   const sync = () => {
     const cl = L.claim(state, L.audit(facts, landed()).patches, { floor: 42 });
-    for (const p of cl.fresh) { const r = INV.put(inv, { id: p.id, name: p.name, place: p.place }); inv = r.inv; }
+    for (const p of cl.fresh) { const r = INV.put(inv, { id: p.id, name: p.name, place: p.place, src: 'text', msgIndex: 42 }); inv = r.stash; }
     return cl.fresh.length;
   };
   assert.deepEqual(gate.request('sync', sync), { ran: 0, staged: 1, why: 'deferred' });
   assert.deepEqual(Object.keys(inv.items), []);                 // 放行前一个字节都没写
   gate.flush('ended');
   assert.deepEqual(Object.keys(inv.items), ['i1']);              // 补齐的正是缺的那一件（整表结构不变）
-  assert.equal(inv.items.i1.名, '账本');
+  assert.equal(inv.items.i1.name, '账本');
   gate.request('sync', sync);
   gate.flush('ended');
   assert.deepEqual(Object.keys(inv.items), ['i1']);              // 已落盘 + 水位：不重复写

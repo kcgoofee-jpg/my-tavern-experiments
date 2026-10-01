@@ -111,6 +111,19 @@ def main():
             f.write_text(text, encoding='utf-8')
         return d
 
+    # ---------------- S6-2：纯流水线可以引 core，不许引别的父级，也不许碰宿主全局 ----------------
+    def pipeline_layering():
+        ok = fake_root({'map/tavern/stash-store.mjs': "import { itemId } from '../core/pickup.mjs';\nexport const x = itemId;\n"})
+        assert not gate.check_layering(root=ok), f'流水线引 ../core 不该被拦：{gate.check_layering(root=ok)}'
+        up = fake_root({'map/tavern/stash-recompute.mjs': "import { x } from '../app/dom.mjs';\nexport const y = x;\n"})
+        bad = gate.check_layering(root=up)
+        assert bad and 'stash-recompute.mjs:1:' in bad[0], f'流水线引 ../app 没被拦：{bad}'
+        host = fake_root({'map/tavern/stash-store.mjs': "export const t = () => window.parent;\n"})
+        bad = gate.check_layering(root=host)
+        assert bad and 'window' in bad[0], f'流水线碰 window 没被拦：{bad}'
+        assert 'map/tavern/stash-store.mjs' in gate.PIPELINE and 'map/tavern/stash-recompute.mjs' in gate.PIPELINE
+    case('分层：流水线引 ../core 放行，引别的父级 / 碰宿主全局拦下', pipeline_layering)
+
     def new_file_with_term():
         root = fake_root({'map/app/newmod.mjs': "export const label = '欢迎来到庄园';\n"})
         bad, info = gate.check_terms(baseline={}, root=root)

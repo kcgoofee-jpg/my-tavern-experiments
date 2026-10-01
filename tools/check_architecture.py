@@ -8,7 +8,8 @@
   2. 分层单向纯净：
      - map/core/ 是最底层的纯叶模块：不许出现任何指向父目录的相对 import
        （反向 import '../tavern/…' 这类宿主层回引首当其冲）。
-     - core 与纯计算流水线（map/tavern/context.mjs、msgtext.mjs、sanitize.mjs、preset.mjs）的源码，
+     - core 与纯计算流水线（map/tavern/context.mjs、msgtext.mjs、sanitize.mjs、preset.mjs、stash-store.mjs、stash-recompute.mjs；
+       流水线可以 import ../core/，其余父级 import 仍拦）的源码，
        剥离注释与字符串字面量后不许出现宿主环境对象：
        window / document / localStorage / sessionStorage / navigator / Mvu / SillyTavern。
        唯一例外是下方 OWNERS 登记的全局单一属主，豁免按「文件 × 对象」最窄登记，
@@ -59,7 +60,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CORE = ROOT / 'map' / 'core'
 BASELINE_PATH = ROOT / 'tools' / 'arch_baseline.json'
-PIPELINE = ['map/tavern/context.mjs', 'map/tavern/msgtext.mjs', 'map/tavern/sanitize.mjs', 'map/tavern/preset.mjs']
+PIPELINE = ['map/tavern/context.mjs', 'map/tavern/msgtext.mjs', 'map/tavern/sanitize.mjs', 'map/tavern/preset.mjs', 'map/tavern/stash-store.mjs', 'map/tavern/stash-recompute.mjs']
 MAX_CORE_LINES = 400      # 旧名保留；现在是全引擎的单文件行数上限
 MAX_LINES = MAX_CORE_LINES
 CORE_PREFIX = 'map/core/'
@@ -284,17 +285,17 @@ def check_line_count(files=None, baseline=None, root=ROOT):
 
 # ---------------------------------------------------------------- 检查 2：分层（行为不变）
 
-def check_layering():
-    """core 零父级 import；core 与纯流水线禁触宿主全局（属主豁免表除外）。"""
+def check_layering(root=ROOT):
+    """core 零父级 import；core 与纯流水线禁触宿主全局（属主豁免表除外）。纯流水线（PIPELINE）可以 import ../core/（宿主层引核心层是正向）。"""
     bad = []
-    files = sorted(CORE.glob('*.mjs')) + [ROOT / f for f in PIPELINE]
+    files = sorted((root / 'map' / 'core').glob('*.mjs')) + [root / f for f in PIPELINE if (root / f).exists()]
     for p in files:
-        rel = str(p.relative_to(ROOT))
+        rel = str(p.relative_to(root))
         text = p.read_text(encoding='utf-8')
         code_keep_quotes = strip(text, literals=False)
         for m in IMPORT_RE.finditer(code_keep_quotes):
             spec = m.group(2) if m.group(2) is not None else m.group(4)
-            if spec.startswith('..'):
+            if spec.startswith('..') and not (rel in PIPELINE and spec.startswith('../core/')):
                 bad.append(f"{rel}:{line_of(code_keep_quotes, m.start())}: "
                            f"反向 import '{spec}'——core 是纯叶层，不许回引宿主层 / 上层目录")
         code = strip(text, literals=True)
