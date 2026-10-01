@@ -1299,7 +1299,7 @@ cleanup: done (probe servers stopped by the probe; no background jobs; no launch
 === RESULT N12 ===
 status: DONE
 items: (1) stencil:true everywhere (shared factory, estate/main.js moved onto it, closet page explicit) ✓ · (2) near/far fitted to scene bounds, per frame (estate ortho, viewer3d persp) ✓ · (3) depth/stencil bits in both debug fps overlays ✓ · (4) coplanar audit + todo E-13 for the builder change ✓ · probe estate_flicker + node test depth_fit ✓
-commits: ff6a2b08 fix(3d): 24-bit depth (stencil:true everywhere), near/far fitted to the scene, depth bits in the fps overlay (N12)
+commits: 098d1816 fix(3d): 24-bit depth (stencil:true everywhere), near/far fitted to the scene, depth bits in the fps overlay (N12)
 commits: (this commit) docs: N12 struck, E-13 filed; RESULT N12
 pushed: yes (head #N in the chat report; this log copy is committed before the push)
 tests: node 1301/1302 pass (1 skipped; +9: depth_fit 8, census 1) | smoke PASS | arch PASS | probes: estate_flicker=PASS (chromium + webkit) webgl_single_ctx=PASS v096=PASS (0 failures) estate3d=PASS p9_daynight_fx=PASS
