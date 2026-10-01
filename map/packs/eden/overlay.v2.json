@@ -376,6 +376,16 @@
       "hosts": ["cdn.jsdelivr.net/gh/Yehehua1311/","i.postimg.cc","picgocloud.com"],
       "require": { "cdn.jsdelivr.net/gh/Yehehua1311/": ["/sfw/"] },
       "deny": ["口交","性交","肛交","足交"]
+    },
+    "gallery": {
+      "id": "cg",
+      "from": "card-script",
+      "path": "tavern_helper.scripts.*.data.characters",
+      "name": "name",
+      "cover": "image",
+      "sets": "behaviors",
+      "tag": { "fields": ["name","category","number"], "open": "[", "close": "]", "categories": ["sfw","口交","性交","肛交","足交"], "digits": 4 },
+      "require": { "cdn.jsdelivr.net/gh/Yehehua1311/": ["/sfw/","/nsfw/"] }
     }
   },
   "ui": {
