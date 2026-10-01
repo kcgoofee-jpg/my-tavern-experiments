@@ -15,7 +15,7 @@ window.__packStorageKey = k => (window.__packId !== 'eden' && typeof k === 'stri
   const id = window.__packId, B = id === 'eden' ? '' : 'packs/' + id + '/', u = 'packs/' + id + '/manifest.json';
   const add = (h, as, co) => { const l = document.createElement('link'); l.rel = 'preload'; l.as = as || 'fetch'; l.href = h; if (co) l.crossOrigin = 'anonymous'; document.head.appendChild(l); };
   const put = m => { for (const p of m?.preload || []) add(B + p); };
-  add(u);
+  if (!window.__tcPack?.manifest) add(u);   // 宿主注入的包（含门卫解析出的外来 / 自动包，S9-2）清单已在手：没有 packs/<id>/manifest.json 可预取
   if (window.__tcPack?.manifest) put(window.__tcPack.manifest);
   else window.__manifestPromise = fetch(u, { credentials: 'omit', referrerPolicy: 'no-referrer' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(m => (put(m), m)).catch(() => {});
   window.__openWorldMapFirst = !new URLSearchParams(location.search).get('map');   // 总是先开世界图（用户 2026-09-28）
@@ -163,7 +163,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <link rel="modulepreload" href="app/data-mapping-settings.mjs">
 <link rel="modulepreload" href="app/tavernhelper-settings.mjs">
 <link rel="modulepreload" href="app/fog.mjs">
-<link rel="modulepreload" href="app/nodes-runtime.mjs"><link rel="modulepreload" href="app/nodes-runtime-v2.mjs"><link rel="modulepreload" href="core/compat-v1.mjs"><link rel="modulepreload" href="core/compat-v1-geo.mjs"><link rel="modulepreload" href="core/compat-v1-views.mjs"><link rel="modulepreload" href="core/compat-v1-blocks.mjs"><link rel="modulepreload" href="core/nodes.mjs"><link rel="modulepreload" href="core/locate.mjs"><link rel="modulepreload" href="core/lexicon.mjs">
+<link rel="modulepreload" href="app/nodes-runtime.mjs"><link rel="modulepreload" href="app/nodes-runtime-v2.mjs"><link rel="modulepreload" href="app/pack-settings.mjs"><link rel="modulepreload" href="core/compat-v1.mjs"><link rel="modulepreload" href="core/compat-v1-geo.mjs"><link rel="modulepreload" href="core/compat-v1-views.mjs"><link rel="modulepreload" href="core/compat-v1-blocks.mjs"><link rel="modulepreload" href="core/nodes.mjs"><link rel="modulepreload" href="core/locate.mjs"><link rel="modulepreload" href="core/lexicon.mjs">
 <link rel="modulepreload" href="core/depth.mjs"><link rel="modulepreload" href="core/exploration-ledger.mjs">
 <link rel="modulepreload" href="core/haze.mjs">   <!-- Part 8-3：空气透视滤镜（纵深霾浓度 → 图层滤镜链） -->
 <!-- Part 3 §2：瓦片后台解码（懒 import；源码串随模块走，起 worker 用 blob 地址） -->
@@ -675,7 +675,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   <section class="spage" data-page="update" hidden><div id="aboutBox"></div><div id="branchBox"></div><div class="hrow"><span data-i18n="s.build">版本编码</span><button type="button" id="build" class="btn" data-i18n-title="build_title" title="版本编码，点击复制诊断信息"></button></div></section>
   <section class="spage" data-page="license" hidden><div id="licBox"></div></section>
   <section class="spage" data-page="adv" hidden>
-    <div class="hrow" id="lineRow"><span data-i18n="s.line">加载线路</span><button type="button" class="btn" id="linePick" data-i18n="s.line_pick">选择线路</button></div><small id="lineNow" class="na"></small>
+    <div class="hrow" id="lineRow"><span data-i18n="s.line">加载线路</span><button type="button" class="btn" id="linePick" data-i18n="s.line_pick">选择线路</button></div><small id="lineNow" class="na"></small><div id="packBox"></div>
     <label class="row"><span data-i18n="s.auto3d">三维抽屉：拖动模型时自动收起</span><input type="checkbox" role="switch" id="optAuto3d"></label>
     <b data-i18n="s.kbd_group">快捷键</b>
     <label class="row"><span data-i18n="s.keys">单字母快捷键（L、M、/、? 与事态操作字母角标，默认关）</span><input type="checkbox" role="switch" id="optKeys"></label>

@@ -50,6 +50,10 @@ export const KEYS = {
   edenMapWbAuto: { owner: 'host', def: '0' }, edenMapWbOn: { owner: 'host', def: '1' }, edenMapWbTomb: { owner: 'host', def: '0' }, edenMapWbChars: { owner: 'host' }, edenMapWbNoticeVer: { owner: 'host' }, edenMapWbSync: { owner: 'host' }, edenMapWbWhere: { owner: 'host' },
   edenMapWbJit: { owner: 'host', def: '0' },   // W6 世界书 JIT 水合：人在哪只挂哪（默认关；只动附加书 extra.eden_id 条目）
   edenMapWbXtal: { owner: 'host', def: '0' }, edenMapWbXtalCfg: { owner: 'host' },   // W7 事实结晶：开关 + 水位/墓表 {tombstones, written}（默认关）
+  // 通用脚本的包选择（S9-2，docs/zero-config.md §11）：都在没有任何包之前就要读，所以是宿主的原始键、从不加包命名空间（K-R90 / K-R103）
+  edenMapPackPick: { owner: 'tavern/pack-gate.mjs' },   // JSON { <卡键>: 'index:<id>' | 'url:<https 地址>' | 'file' }；没有 = 自动
+  edenMapPackLlm: { owner: 'tavern/pack-gate.mjs', def: '{}' },
+  edenMapPacks: { owner: 'core/pack-store-db.mjs', idb: true },   // 不是 localStorage 键：IndexedDB 库名（store packs，键 = 卡键）；登记在这是为了静态清点认得它   // JSON { <包 id>: <模型文字 llm 块规范 JSON 的 fnv36> }（K-R103，默认关）
   // 三维
   edenEstateLabels: { owner: 'estate', legacy: true }, edenMap3dRailW: { owner: 'ui/chrome3d.js' },
   // 相机控制（U，2026-09-28）：视角预设/指北针/首次提示卡/空闲自动旋转，主场景页与通用三维查看器共用（ui/camera-controls.js）

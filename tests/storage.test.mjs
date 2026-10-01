@@ -46,3 +46,11 @@ test('查看器与经典外挂脚本的本机读写都经 LocalStore（core/stor
   const ses = Object.entries(S.KEYS).filter(([, o]) => o.scope === 'session').map(([k]) => k);
   assert.deepEqual(ses, [...v.matchAll(/ses = k => k === '([^']+)'/g)].map(m => m[1]));
 });
+
+test('S9-2：通用脚本的包选择键登记为宿主原始键（不加包命名空间）', () => {
+  for (const k of ['edenMapPackPick', 'edenMapPackLlm']) { assert.equal(S.KEYS[k].owner, 'tavern/pack-gate.mjs'); assert.ok(!S.KEYS[k].prefix && !S.KEYS[k].perChat); }
+  assert.equal(S.KEYS.edenMapPackLlm.def, '{}');
+  assert.equal(S.KEYS.edenMapPacks.idb, true, 'IndexedDB 库名也登记（静态清点认得它）');
+  const gate = readFileSync(new URL('../map/tavern/pack-gate.mjs', import.meta.url), 'utf8');
+  assert.match(gate, /'edenMapPackPick'/); assert.match(gate, /'edenMapPackLlm'/); assert.doesNotMatch(gate, /nsKey|wrapLS/, '读的时候还没有任何包：不套命名空间');
+});

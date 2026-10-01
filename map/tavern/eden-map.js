@@ -8,7 +8,7 @@
 // + host-lifecycle.mjs（接管旧实例、挂 DOM、监听登记、清理钩子）+ host-tavernhelper.mjs（酒馆助手适配、偏好、世界书全自动）。见 docs/agent-brief.md「模块地图」。
 // S5-1（2026-10-01）再拆出八个 flow 模块（stash-flow（S6-2 前叫 loot-flow）/ chars-flow / root-store / host-api / host-checks / llm-flow / modes-flow / timeline-flow，各是 createX(host)）：
 // 下面的 host 依赖袋是它们取入口变量与函数的唯一通道；入口留着面板 / 查看器状态机、重算调度、监听登记与清理。
-import '../core/logbuf.mjs'; import { redirected } from './follow-gate.mjs'; // 反馈日志缓冲：最先 import，模块求值即安装，启动日志不丢（v0.9.6 报告「(none)」根因）
+import '../core/logbuf.mjs'; import { redirected } from './follow-gate.mjs'; import './pack-gate.mjs'; // 反馈日志缓冲：最先 import，模块求值即安装，启动日志不丢（v0.9.6 报告「(none)」根因）
 import { cdnFetch, thFn, packNs, createPrefs } from './host-tavernhelper.mjs';
 import { createRoutes, scoreText } from './host-routes.mjs';
 import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
@@ -133,7 +133,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
       htmlProg = f => fab.style.setProperty('--p', Math.round(f * 80));
       // 省流预热清单（通用化 v1：按包取；数据文件 = 清单 preload 列，第一个包也一样）
       const pb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/', pf = (await MAN)?.preload || [];
-      try { await fetchHtml(); await Promise.all(['packs/' + PACK_ID + '/manifest.json', ...pf.map(p => pb + p)].map(u => cdnFetch(BASE + u).catch(() => null)));
+      try { await fetchHtml(); await Promise.all([...(PACK_IN?.manifest ? [] : ['packs/' + PACK_ID + '/manifest.json']), ...pf.map(p => pb + p)].map(u => cdnFetch(BASE + u).catch(() => null)));
         fab.classList.remove('prep'); fab.title = '世界地图'; }
       catch (e) { fab.classList.remove('prep'); fab.classList.add('fail'); fab.title = '地图预加载失败，点开重试'; }
       finally { htmlProg = null; preDone(); }
@@ -269,7 +269,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
     if (e.data?.type === 'eden-map:action') injectAction(e.data);   // Part 6-4：点 POI → 注入动作（默认关，见 tavern/place-action-injection.mjs）
     if (e.data?.type === 'eden-map:loot') takeLoot(e.data);   // Part 5-1：点了地上的发光拾取物 → 先写背包，再按设置注入一句
     if (e.data?.type === 'eden-map:stealth') stealthCheck(e.data);   // Part 5-2：这次移动穿过了谁的视野 → 按难度注入一句检定
-    if (e.data?.type === 'eden-map:th' && typeof e.data.op === 'string') onTh(e.data).catch(x => console.warn('[eden-map] 酒馆助手设置', x));   // 设置「数据与映射」「高级」：注入 / 类宏 / 世界书同步
+    if ((e.data?.type === 'eden-map:th' && typeof e.data.op === 'string') || e.data?.type === 'eden-map:pack-pick') onTh(e.data).catch(x => console.warn('[eden-map] 酒馆助手设置', x));   // 设置「数据与映射」「高级」：注入 / 类宏 / 世界书同步
     if (e.data?.type === 'eden-map:check-update') (updateChannel({ channel: channel(), ref: SCRIPT.ref || AB.refOf() }) === 'follow' && (SCRIPT.ref || AB.refOf()) ? followUpdate() : checkUpdate()).then(r => post({ type: 'eden-map:update-result', ...r }));   // v0.9.6「检查更新」
   };
   window.parent.addEventListener('message', onMsg);
@@ -454,7 +454,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
   const badge = root.querySelector('.em-badge');
   let events = [], floorNow = -1, seen = -1, injected = '', EVM = null;
   // 事态模块单独加载：加载失败只是没有事态功能，地图照常可用
-  import(new URL('events-parse.mjs', import.meta.url).href).then(async m => { try { m.setGeo(await (await import(new URL('event-geo-load.mjs', import.meta.url).href)).loadEventGeo({ fetchJSON: rel => cdnFetch(BASE + rel).then(r => r.ok ? r.json() : null).catch(() => null), packId: PACK_ID, manifest: await MAN, events: PACK_IN?.events })); } catch (e) { console.warn('[eden-map] 事态落点的节点树没建出来：事件只列出、不上图', e); } EVM = m; recompute(); }).catch(e => console.warn('[eden-map] 事态模块加载失败', e));
+  import(new URL('events-parse.mjs', import.meta.url).href).then(async m => { try { m.setGeo(await (await import(new URL('event-geo-load.mjs', import.meta.url).href)).loadEventGeo({ fetchJSON: rel => cdnFetch(BASE + rel).then(r => r.ok ? r.json() : null).catch(() => null), packId: PACK_ID, manifest: await MAN, events: PACK_IN?.events, lang: uiLang })); } catch (e) { try { m.setGeo(null); } catch (x) {} console.warn('[eden-map] 事态落点的节点树没建出来：事件只列出、不上图', e); } EVM = m; recompute(); }).catch(e => console.warn('[eden-map] 事态模块加载失败', e));
   // 人物栏（v0.9.2）：人物位置标签 + MVU 人物表 → 每人最新位置；模块加载失败只是没有人物栏
   let CHM = null, chars = [], charSig = '', charsSent = null;   // charsSent：上一次发给地图的人物签名（没变就不重发）
   import(new URL('characters-parse.mjs', import.meta.url).href).then(m => { CHM = m; recompute(); }).catch(e => console.warn('[eden-map] 人物模块加载失败', e));

@@ -18,6 +18,15 @@ import { pickPlace } from '../core/scene-header.mjs';
 import { getProfile, setProfile } from './pack-profile.mjs';
 import { profileFromV1 } from '../core/profile.mjs';
 import { worldbookPrefix } from '../core/pack.mjs';
+import { readCardBasics } from './card-source.mjs';
+import { profileFromV2 } from './pack-runtime-v2.mjs';
+
+/** 宿主接口的取法（S9-2 pack-gate / card-source 用：读角色卡与它自己的世界书）：本模块是 Mvu / SillyTavern 的唯一属主，所以取法在这里，card-source 只拿函数。 */
+export function hostAccess() {
+  const par = () => { try { return window.parent; } catch (e) { return null; } };
+  return { th: () => thFn('getCharData'), ctx: () => SillyTavern.getContext(), parentTh: () => par()?.TavernHelper?.getCharData, parentCtx: () => par()?.SillyTavern?.getContext?.(),
+    bookNames: () => thFn('getCharWorldbookNames')?.('current'), getBook: n => thFn('getWorldbook')?.(n) };
+}
 
 export class MVUBridge {
   /** o = { life?, pack?, packId?, lang?(): 'zh'|'en', isGenerating?(): bool, storage?(): StorageLike,
@@ -48,7 +57,7 @@ export class MVUBridge {
     this.roster.use('mvu', { rows: () => this.mvuReaders ? RS.mvuRows(this.rosters(), getProfile().presentId) : [] });
     this.roster.use('table-db', { rows: () => RS.placeRows(this.dbCharacters(), 'table-db') });
     this.roster.use('fallback', { rows: () => RS.fallbackRows(this.fallbackMembers) });
-    if (o.pack) setProfile(profileFromV1({ manifest: o.pack.manifest }));   // 设定包：默认映射路径按清单的 vars；叠加层里的 vars / entities 随后由 useProfile 换入（内置的第一个包全靠叠加层）
+    if (o.pack) setProfile(o.pack.schema === 2 ? profileFromV2(o.pack.manifest) : profileFromV1({ manifest: o.pack.manifest }));   // schema 2（S9-2）：块全内联，直接由 profileOf 出；换卡重启时上一个包的声明由门卫在重启前清掉（pack-gate.mjs）   // 设定包：默认映射路径按清单的 vars；叠加层里的 vars / entities 随后由 useProfile 换入（内置的第一个包全靠叠加层）
     // 包的变量与名册声明（core/profile.mjs：清单 vars + 叠加层 vars / entities，K-R69）：宿主给了取数函数就取；到了换默认并通知宿主重推（到之前一切按字段名自动找）
     // 清单只取一次（宿主给的 o.manifest：Promise | 对象；注入包自带；内置的第一个包按路径取）：变量声明、世界书名前缀都用它
     const manP = Promise.resolve(o.manifest ?? o.pack?.manifest ?? (typeof o.fetchJSON === 'function' ? o.fetchJSON('packs/' + (o.packId || 'eden') + '/manifest.json') : null)).catch(() => null);
@@ -142,20 +151,11 @@ export class MVUBridge {
    */
   cardTried = [];
   async cardInfo() {
-    const pick = (c, src) => {
-      const d = c?.data && typeof c.data === 'object' ? c.data : (c && typeof c === 'object' ? c : {});
-      const name = String(d.name || c?.name || '').trim();
-      if (!name && !d.creator && !d.character_version) return null;
-      return { name, creator: String(d.creator || '').trim(), version: String(d.character_version || '').trim(), avatar: String(c?.avatar || ''),
-        tags: Array.isArray(d.tags) ? d.tags.map(String).slice(0, 12) : [], notes: String(d.creator_notes || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200), src };
-    };
-    const tried = this.cardTried = [];   // 试过哪几档（有接口才算试过）：bridge = 酒馆助手，context = 酒馆上下文（含父窗口）；全空 = 一档也没有接口
-    try { const g = thFn('getCharData'); if (g) tried.push('bridge'); const r = pick(await g?.('current'), 'getCharData'); if (r) return r; } catch (e) {}
-    try { const c = this.stContext(); if (c) tried.push('context'); const r = pick(c?.characters?.[c.characterId], 'context'); if (r) return r; } catch (e) {}
-    const p = this.#parent();
-    try { const g = p?.TavernHelper?.getCharData; if (typeof g === 'function' && !tried.includes('bridge')) tried.push('bridge'); const r = typeof g === 'function' ? pick(await g('current'), 'parent-th') : null; if (r) return r; } catch (e) {}
-    try { const c = p?.SillyTavern?.getContext?.(); if (c && !tried.includes('context')) tried.push('context'); const r = pick(c?.characters?.[c.characterId], 'parent-st'); if (r) return r; } catch (e) {}
-    return null;
+    const acc = { ...hostAccess(), ctx: () => this.stContext(), parentTh: () => this.#parent()?.TavernHelper?.getCharData, parentCtx: () => this.#parent()?.SillyTavern?.getContext?.() };
+    const { card, tried } = await readCardBasics(acc);   // 三级降级的实现在 card-source.mjs（S9-2）；这里照旧给版权申明页（不含 spatialOs）
+    this.cardTried = tried;   // 试过哪几档（有接口才算试过）：bridge = 酒馆助手，context = 酒馆上下文（含父窗口）；全空 = 一档也没有接口
+    if (!card) return null;
+    const { spatialOs, ...rest } = card; return rest;
   }
 
   // ---------------- 当前地点（四级兜底） ----------------

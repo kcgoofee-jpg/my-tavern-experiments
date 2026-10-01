@@ -166,3 +166,11 @@ test('S5-1 viewer 拆分：custom / events 拆出的小模块只导出自己的�
   for (const s of ['function night()', 'function toast(', 'const KIND =', 'function listHtml', 'function editHtml', 'function setOutfit']) assert.ok(!C.includes(s), 'custom-names-view.mjs 不再带 ' + s);
   for (const s of ['function applyGlitch', 'function worldBadge']) assert.ok(!V.includes(s), 'events.mjs 不再带 ' + s);
 });
+
+test('S9-2：入口第一行 import 门卫；门卫、卡读取、v2 宿主模块不碰 Mvu / SillyTavern 全局（唯一属主是 mvu-bridge）', () => {
+  const entry = rd('map/tavern/eden-map.js');
+  assert.match(entry.split('\n')[10], /import '\.\/pack-gate\.mjs';/, 'pack-gate 在第 11 行已有的 import 上，入口不新增行');
+  for (const f of ['pack-gate', 'card-source', 'pack-runtime-v2']) assert.doesNotMatch(rd('map/tavern/' + f + '.mjs').replace(/\/\/.*$/gm, ''), /\b(Mvu|SillyTavern)\b/, f);
+  assert.match(rd('map/tavern/mvu-bridge.mjs'), /export function hostAccess/);
+  assert.match(rd('map/tavern/host-tavernhelper.mjs'), /d\.type === 'eden-map:pack-pick'/);
+});

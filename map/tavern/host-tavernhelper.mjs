@@ -27,7 +27,8 @@ export function fnGuard(name, fn, minArity = 0) {
 export function packNs(scriptBase = '') {
   // 设定包（通用化，core/pack.mjs）：tools/build_preview_script.py --pack <id> 生成的脚本在导入前写 window.__tcPack = { id, manifest, events }（解析好的清单与事件分类，同步可用）。
   // 没有 = 内置 eden：存储键、聊天变量、世界书名、事件分类都和以前一样（老用户的数据原样可读）。NS / LS 与 core/pack.mjs nsKey / nsStore 同一规则（tests/pack.test.mjs 对照）。
-  const PACK_IN = (() => { const p = window.__tcPack; return p && typeof p === 'object' && /^[a-z][a-z0-9_-]{1,31}$/.test(p.id || '') && p.id !== 'eden' ? p : null; })();
+  // S9-2：window.__tcPack 由 pack-gate.mjs（按卡解析）或脚本里烘进去的包写入；schema 2（foreign / 自动包 / 随地图发布的 v2 包）manifest 是块全内联的 v2 清单，id 规则不变。
+  const PACK_IN = (() => { const p = window.__tcPack; return p && typeof p === 'object' && /^[a-z][a-z0-9_-]{1,31}$/.test(p.id || '') && p.id !== 'eden' && (p.schema !== 2 || (p.manifest && typeof p.manifest === 'object')) ? p : null; })();
   const PACK_ID = PACK_IN ? PACK_IN.id : 'eden';
   const NS = k => (PACK_IN && typeof k === 'string' && k.startsWith('edenMap') ? 'tcp.' + PACK_ID + '.' + k.slice(7) : k);
   const wrapLS = get => ({ getItem: k => get().getItem(NS(k)), setItem: (k, v) => get().setItem(NS(k), v), removeItem: k => get().removeItem(NS(k)), key: i => { const k = get().key(i), p = 'tcp.' + PACK_ID + '.'; return typeof k !== 'string' ? k : k.startsWith(p) ? 'edenMap' + k.slice(p.length) : k.startsWith('edenMap') || k === 'edenEstateLabels' ? null : k; }, get length() { return get().length; } });
@@ -153,6 +154,10 @@ export function createWbAuto(deps) {
     nav: !!lsGet('edenMapNav') && lsGet('edenMapNav') !== '0', navCfg: !!String(lsGet('edenMapNavCfg') || '').trim() }; }
   async function sendTh(extra = {}) { if (!deps.alive()) return; post({ type: 'eden-map:th-state', prefs: thPrefs(), inject: (() => { try { return deps.injectPreview?.() ?? null; } catch (e) { return null; } })(), last: wbSaved(), api: { macros: !!thFn('registerMacroLike'), inject: !!thFn('injectPrompts'), buttons: !!deps.thBtns() }, ...extra }); }
   async function onTh(d) {
+    if (d.type === 'eden-map:pack-pick') {   // S9-2 K-R99：地图设置「地图包」的选择（门卫校验、存下、重启）；被拒绝只回一行被拒的原因，原来的包照旧
+      const G = await import(deps.scriptBase + 'tavern/pack-gate.mjs').catch(() => null), r = G ? await G.pick(d) : { ok: false, problems: [{ code: 'no-gate' }] };
+      return r.ok ? undefined : sendTh({ result: { pack: { ok: false, problems: (r.problems || []).map(p => String(p.code)) } } });
+    }
     const op = d.op;
     if (op === 'state') return sendTh();
     if (op === 'prefs' && d.prefs && typeof d.prefs === 'object') {
@@ -167,6 +172,7 @@ export function createWbAuto(deps) {
       if ('spatial' in P) put('edenMapSpatial', P.spatial ? '1' : '0');   // W1 空间坐标契约
       if ('wbJit' in P) put('edenMapWbJit', P.wbJit ? '1' : '0');   // W6 JIT 水合
       if ('wbXtal' in P) put('edenMapWbXtal', P.wbXtal ? '1' : '0');   // W7 事实结晶
+      if ('packLlm' in P) { const G = await import(deps.scriptBase + 'tavern/pack-gate.mjs').catch(() => null); if (G && await G.setLlm(!!P.packLlm)) return; }   // K-R103：外来包的模型文字开关（edenMapPackLlm 存哈希，门卫写；成功会重启实例）
       if ('nav' in P) put('edenMapNav', P.nav ? '1' : '0');   // W5 领航员（默认关；首跑另有同意水位）
       if ('navCfg' in P && typeof P.navCfg === 'string') { try { const o = JSON.parse(P.navCfg); if (o && typeof o === 'object' && !Array.isArray(o)) put('edenMapNavCfg', JSON.stringify({ provider: String(o.provider || ''), key: String(o.key || ''), base: String(o.base || ''), model: String(o.model || '') })); } catch (e) {} }
       prefSync(); if (typeof stateInject === 'function') stateInject(); return sendTh();

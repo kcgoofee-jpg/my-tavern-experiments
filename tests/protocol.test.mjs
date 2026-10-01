@@ -84,3 +84,12 @@ test('eden-map:th（S6-3）：prefs 登记为可缺的对象；op 必填；prefs
   assert.equal(check({ type: 'eden-map:th', op: 'prefs', prefs: 'x' }).why, 'field:prefs');
   assert.equal(check({ type: 'eden-map:th', prefs: {} }).why, 'field:op');
 });
+
+test('S9-2 K-R99：eden-map:pack-pick 登记在 SCHEMA（kind 必填，其余可缺）；宿主入口把它路由给 onTh', () => {
+  assert.ok(check({ type: 'eden-map:pack-pick', kind: 'automatic' }).ok);
+  assert.ok(check({ type: 'eden-map:pack-pick', kind: 'url', url: 'https://example.test/p.json' }).ok);
+  assert.equal(check({ type: 'eden-map:pack-pick', url: 'x' }).why, 'field:kind');
+  assert.equal(check({ type: 'eden-map:pack-pick', kind: 'file', text: 3 }).why, 'field:text');
+  assert.equal(SCHEMA['eden-map:pack-pick'][0], 'viewer→host');
+  assert.match(rd('map/tavern/eden-map.js'), /eden-map:pack-pick'\) onTh\(e\.data\)/);
+});
