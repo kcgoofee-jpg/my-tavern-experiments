@@ -130,9 +130,11 @@ mutable state is written only by its declaring module through `set*()`.
 
 | Module | Role |
 |---|---|
+| `about-build.mjs` | About page current-build line (head number, short sha, time). |
 | `boot.mjs` | Startup: fetches registry, markers, derived data, dictionary and pack in parallel, builds OpenSeadragon, posts `ready`, failure exits. |
 | `bus.mjs` | Viewer-side listener bus: every `window` / `document` listener is registered here and removed on unload. |
 | `card-links.mjs` | Links at the bottom of a place card (cross-layer channel, 3D link, gallery entry). |
+| `card-state.mjs` | Credits page card-info states: no host, host without card info, present. |
 | `clouds.mjs` | Drifting clouds and the layer-change transition cover. |
 | `color-vision-mode.mjs` | Colour-vision mode: safe palette, class/attribute switches, broadcast to sub-pages. |
 | `control-column.mjs` | Control column: the `#dock` next to the layer strip and zoom, the label toggle, the three actions of the settings home (up one level, current place, close map). |
@@ -170,8 +172,6 @@ mutable state is written only by its declaring module through `set*()`.
 | `scale-handoff.mjs` | Scale hand-off between the world map and the city layers, plus the surrounding transition ring. |
 | `screen-reader-announce.mjs` | Screen-reader announcements (aria-live): several same-moment lines merge into one sentence. |
 | `settings.mjs` | Settings overlay: pages, section registration, search, about / update check, self-check. |
-| `about-build.mjs` | About page current-build line (head number, short sha, time). |
-| `card-state.mjs` | Credits page card-info states: no host, host without card info, present. |
 | `sharpness-tiers.mjs` | Sharpness tiers, data-saver decisions, load progress, overlay and label avoidance. |
 | `spot.mjs` | Where a located place is drawn for a person or a trip end (stand-in landmark of a 3D page, landmark, the node's own point, district); pure, the viewer passes what it knows. |
 | `stash-markers.mjs` | Glowing pickup items on the map from the world stash; a click sends the pickup intent to the host. |
@@ -209,10 +209,9 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `event-geo-load.mjs` | The host script's event geography: fetches what a pack's node tree is built from (its v1 files and overlay) and returns a geo for `events.mjs setGeo`. Nothing here touches the host; the caller passes the fetcher. |
 | `events-parse.mjs` | Event parsing: reads event tags from chat text, classifies them through the pack's events block (`typeOf`, K-R50), merges (type + node, K-R54) and ages them (pure). |
 | `extension-api-contract.mjs` | Machine-readable contract of the public `EdenMap` API exposed to the host page. |
-| `host-about.mjs` | Version info and update check orchestration, all effects injected. |
-| `follow-pin.mjs` | Follow / branch load addresses pinned to the head sha; update-channel decision. |
 | `follow-gate.mjs` | Entry gate: a script loaded from a branch path reloads itself from the head sha. |
-| `model-texts.mjs` | Texts that reach the model (for the state line's skip rule) and the no-injection reasons. |
+| `follow-pin.mjs` | Follow / branch load addresses pinned to the head sha; update-channel decision. |
+| `host-about.mjs` | Version info and update check orchestration, all effects injected. |
 | `host-api.mjs` | The local `window.EdenMap` extension API (subscriptions, avatar shrinking) and the TavernHelper-side exposure: script buttons, macros, script info, worldbook automation. `createHostApi(host)`. |
 | `host-checks.mjs` | Startup self-check, first-run card, host toasts, auto update check and version switching. `createHostChecks(host)`. |
 | `host-lifecycle.mjs` | Host instance lifecycle: takeover of old instances, panel DOM mount, listener registration, cleanup hooks. |
@@ -224,6 +223,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `keyframes.mjs` | Long-horizon keyframe compression: per-floor state to change-point frames, a droppable cache. |
 | `llm-flow.mjs` | Background flows that call a user endpoint or write the add-on worldbook: navigator (W5), just-in-time hydration (W6), fact crystallization (W7). `createLlmFlow(host)`. |
 | `llm-gateway.mjs` | Private API key gateway: computes how to call a provider; does no network or storage itself. |
+| `model-texts.mjs` | Texts that reach the model (for the state line's skip rule) and the no-injection reasons. |
 | `modes-flow.mjs` | Interaction modes (a)(d)(e) on the host side: state line and spatial contract injection, checkpoint, location conflict check. `createModesFlow(host)`. |
 | `msgtext.mjs` | Message text pre-processing: strips reasoning blocks and variable-update blocks before parsing. |
 | `mvu-bridge.mjs` | MVUBridge: the only module allowed to touch `Mvu` / `SillyTavern`; snapshots, `getHere` fallbacks, chat variables, roster reads. |

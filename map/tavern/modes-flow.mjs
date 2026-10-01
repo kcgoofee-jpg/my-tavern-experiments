@@ -1,6 +1,7 @@
 // 交互方式 (a)(d)(e)：状态行注入、空间坐标契约注入、检查点、地点冲突自检（S5-1 自 eden-map.js 原样搬出）。
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
 import { cdnFetch, thFn } from './host-tavernhelper.mjs';
+import { modelTexts, injectReason } from './model-texts.mjs';
 export const DEPS = [
   'mvuBridge', 'contextPipeline', 'scriptBase', 'chatId', 'life', 'lsGet', 'pushSoon', 'recomputeSoon', 'saveRoot', 'userName', 'BASE', 'clock', 'custom', 'customChat', 'here',
   'regNow', 'statSig',
@@ -14,12 +15,20 @@ export function createModesFlow(host) {
   // (e) 最小检查点：eden_map.检查点 = { 楼, swipe }（最后确认的楼层与 swipe），只在确认前进时写（幂等）；启动时对照，楼 / swipe 对不上就作废并从聊天记录重推。
   let stateNow = '', cardSkip = null, cardSkipChat = null, cp = null, cpResume = null;
   const MDm = mvuBridge.modes;   // 纯逻辑模块（interaction-modes.mjs）经桥静态引入，求值即用（原来动态加载后补一次 stateInject，改在启动序列里）
-  async function cardSkipFor() {   // 卡的提示词文本（角色描述、场景、系统提示、历史后指令、卡内世界书）里引用了哪些 stat_data 字段；每个聊天算一次
+  async function cardSkipFor() {   // 会送到模型的文本（清单与理由见 model-texts.mjs；不含正则脚本 / 助手脚本 / 显示 HTML）里引用了哪些 stat_data 字段；每个聊天算一次
     const c = chatId(); if (cardSkipChat === c && cardSkip) return cardSkip; cardSkipChat = c; cardSkip = {};
-    try { const d = await Promise.resolve(thFn('getCharData')?.('current')); const x = d?.data || d || {};
-      const texts = [x.description, x.personality, x.scenario, x.system_prompt, x.post_history_instructions, x.mes_example, x.first_mes, ...((x.character_book?.entries) || []).map(e => e?.content)];
-      cardSkip = MDm ? MDm.cardHas(texts, mvuBridge.varMap) : {}; } catch (e) {}
+    const safe = async f => { try { return await f(); } catch (e) { return undefined; } };   // 每一类来源各自兜底：读不到一类不影响其余
+    const d = await safe(() => Promise.resolve(thFn('getCharData')?.('current'))), x = d?.data || d || {};
+    const books = [], bw = await safe(() => thFn('getCharWorldbookNames')?.('current'));
+    for (const n of [bw?.primary, ...(bw?.additional || [])].filter(Boolean)) { const b = await safe(() => thFn('getWorldbook')?.(n)); if (Array.isArray(b)) books.push(b); }
+    const note = await safe(() => (mvuBridge.stContext()?.chatMetadata?.note_prompt)), pre = await safe(() => thFn('getPreset')?.('in_use')?.prompts);
+    cardSkip = MDm ? MDm.cardHas(modelTexts({ card: x, books, note, preset: pre }), mvuBridge.varMap) : {};
     return cardSkip;
+  }
+  /** 设置「状态注入」的一行预览：下一轮会注入的原文，或不注入的原因（off / skipped / empty） */
+  function injectPreview() {
+    const on = lsGet('edenMapStateInj') !== '0', text = on ? stateText('normal') : '';
+    return { text, reason: injectReason({ on, text, skip: cardSkip }) };
   }
   function stateText(type) {
     const n = mvuBridge.chatLen(); if (!MDm || n < 0) return '';
@@ -81,6 +90,6 @@ export function createModesFlow(host) {
   return {
     get cardSkip() { return cardSkip; }, set cardSkip(v) { cardSkip = v; }, checkpointResume, checkpointStep, conflictsNow,
     get cp() { return cp; }, set cp(v) { cp = v; }, get cpResume() { return cpResume; }, MDm, pointsFor, spatialInject, get SpatialM() { return SpatialM; },
-    get spatialNow() { return spatialNow; }, stateInject, get stateNow() { return stateNow; }, set stateNow(v) { stateNow = v; },
+    get spatialNow() { return spatialNow; }, injectPreview, stateInject, get stateNow() { return stateNow; }, set stateNow(v) { stateNow = v; },
   };
 }

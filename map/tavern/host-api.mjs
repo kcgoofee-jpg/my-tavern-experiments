@@ -5,7 +5,7 @@ import { EDEN_API, guardApi } from './extension-api-contract.mjs';
 export const DEPS = [
   'mvuBridge', 'HS', 'LS', 'MAN', 'PACK_ID', 'SCRIPT', 'scriptBase', 'VER', 'cardKey', 'changedInv', 'channel', 'chatId', 'customChanged', 'fab', 'frame',
   'hostToast', 'kindOf', 'life', 'listen', 'loadCustom', 'loadViewer', 'lsGet', 'lsSet', 'macroSet', 'openSettings', 'panel', 'pdoc', 'plainVer',
-  'post', 'prefSync', 'push', 'reg', 'runCheck', 'showSplash', 'stateInject', 'store', 'storeWarn', 'varsOk', 'BASE', 'storageBudget', 'stashStoreModule', 'LKF', 'mvuReaders', 'dataSourceRegistryModule',
+  'post', 'prefSync', 'push', 'reg', 'runCheck', 'showSplash', 'stateInject', 'injectPreview', 'store', 'storeWarn', 'varsOk', 'BASE', 'storageBudget', 'stashStoreModule', 'LKF', 'mvuReaders', 'dataSourceRegistryModule',
   'uiLang', 'alive', 'chars', 'checkAt', 'checkItems', 'checkP', 'clock', 'custom', 'customChat', 'floorNow', 'flyQ', 'ghost', 'here', 'stash', 'outfitNow',
   'rep', 'roster', 'wbState',
 ];
@@ -114,7 +114,7 @@ export function createHostApi(host) {
   }
   // B1 世界书附加条目 + 全自动 + eden-map:th 设置消息：host-tavernhelper.mjs createWbAuto（整块原样搬过去，行为不变）
   const { wbAuto, sendTh, onTh } = createWbAuto({ scriptBase, LS, lsGet, lsSet, life, manifest: MAN, packId: PACK_ID, base: () => host.BASE, alive: () => host.alive, uiLang: () => host.uiLang, thBtns: () => thBtns,
-    chatId, cardKey, post, hostToast, stateInject, macroSet, prefSync });
+    chatId, cardKey, post, hostToast, stateInject, injectPreview: () => host.injectPreview(), macroSet, prefSync });
   return {
     api, get cardId() { return cardId; }, set cardId(v) { cardId = v; }, emit, emitMoved, exposed, inner, knowRooms, onTh, scriptInfo, sendTh, subs,
     get tavernhelperApiModule() { return tavernhelperApiModule; }, get transitMod() { return transitMod; }, wbAuto,

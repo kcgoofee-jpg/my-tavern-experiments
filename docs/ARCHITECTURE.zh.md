@@ -110,9 +110,11 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 
 | 模块 | 职责 |
 |---|---|
+| `about-build.mjs` | 「关于」页的当前构建行（构建号、提交号前七位、时间）。 |
 | `boot.mjs` | 启动：并行取注册表、标记、派生数据、字典与设定包，建 OpenSeadragon，发 `ready`，处理启动失败。 |
 | `bus.mjs` | 查看器侧监听器总线：所有 `window` / `document` 监听都登记在这，卸载时摘干净。 |
 | `card-links.mjs` | 地点卡底部的链接（跨层通道、三维链接、图集入口）。 |
+| `card-state.mjs` | 版权页角色卡信息的三种状态：没有宿主、宿主在但读不到、已读到。 |
 | `clouds.mjs` | 漂移云与切层转场盖布。 |
 | `color-vision-mode.mjs` | 色觉模式：安全色板、类 / 属性开关、广播给子页。 |
 | `control-column.mjs` | 控制列：层切换条与缩放旁的 `#dock`、标注开关、设置首页的三个动作（上一级、当前位置、关闭地图）。 |
@@ -150,8 +152,6 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `scale-handoff.mjs` | 世界图与城市层之间的尺度交接，以及周边过渡环。 |
 | `screen-reader-announce.mjs` | 读屏播报（aria-live）：同一时刻的几条合并成一句。 |
 | `settings.mjs` | 设置弹层：分页、分区注册、搜索、关于 / 检查更新、自检。 |
-| `about-build.mjs` | 「关于」页的当前构建行（构建号、提交号前七位、时间）。 |
-| `card-state.mjs` | 版权页角色卡信息的三种状态：没有宿主、宿主在但读不到、已读到。 |
 | `sharpness-tiers.mjs` | 清晰度档位、省流判断、加载进度、叠加层与标注避让。 |
 | `spot.mjs` | 一个已落点的地方对人物或行程端点画在哪里（三维页的平面替身地标、地标、节点自己的点、城区）；纯函数，查看器把它知道的递进去。 |
 | `stash-markers.mjs` | 地图上由世界藏物表画出的发光拾取物；点击把拾取意图发给宿主。 |
@@ -189,10 +189,9 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `event-geo-load.mjs` | 卡内脚本的事态地理：取回包的节点树所依据的东西（v1 文件与叠加层），返回给 `events.mjs setGeo` 用的 geo。这里不碰宿主；取数函数由调用方传入。 |
 | `events-parse.mjs` | 事态解析：从聊天正文读事件标签，按包的事件块分类（`typeOf`，K-R50），合并（类型 + 节点，K-R54）并老化（纯函数）。 |
 | `extension-api-contract.mjs` | 暴露给宿主页的公共 `EdenMap` API 的机读契约。 |
-| `host-about.mjs` | 版本信息与检查更新的编排，所有副作用由外部注入。 |
-| `follow-pin.mjs` | 跟随 / 分支加载地址钉到头提交号；检查更新走哪条链的判定。 |
 | `follow-gate.mjs` | 入口门卫：从分支路径加载的脚本，换成头提交号的入口重新加载。 |
-| `model-texts.mjs` | 会送到模型的文本清单（状态行「已有字段跳过」用）与不注入的原因。 |
+| `follow-pin.mjs` | 跟随 / 分支加载地址钉到头提交号；检查更新走哪条链的判定。 |
+| `host-about.mjs` | 版本信息与检查更新的编排，所有副作用由外部注入。 |
 | `host-api.mjs` | 本机扩展接口 `window.EdenMap`（订阅、头像压缩）与酒馆助手侧的暴露：脚本按钮、类宏、脚本说明、世界书全自动。`createHostApi(host)`。 |
 | `host-checks.mjs` | 启动自检、首次运行自检卡、宿主提示、自动检查更新与版本切换。`createHostChecks(host)`。 |
 | `host-lifecycle.mjs` | 宿主实例生命周期：接管旧实例、挂面板 DOM、登记监听器、清理钩子。 |
@@ -204,6 +203,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `keyframes.mjs` | 长程关键帧压缩：逐楼状态压成变更点关键帧，是可丢弃的缓存。 |
 | `llm-flow.mjs` | 后台调用用户端点或写附加世界书的流：领航员（W5）、世界书即时水合（W6）、剧情事实结晶（W7）。`createLlmFlow(host)`。 |
 | `llm-gateway.mjs` | 私有 API Key 网关：只算「该怎么发」，自己不碰网络也不碰存储。 |
+| `model-texts.mjs` | 会送到模型的文本清单（状态行「已有字段跳过」用）与不注入的原因。 |
 | `modes-flow.mjs` | 宿主侧的交互方式 (a)(d)(e)：状态行与空间坐标契约注入、检查点、地点冲突自检。`createModesFlow(host)`。 |
 | `msgtext.mjs` | 消息正文解析预处理：解析前剥掉思考块与变量更新块。 |
 | `mvu-bridge.mjs` | MVUBridge：唯一允许碰 `Mvu` / `SillyTavern` 的模块；快照、`getHere` 回退、聊天变量、名册读取。 |

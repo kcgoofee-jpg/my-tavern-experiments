@@ -71,6 +71,7 @@ function renderInj() {
   box.innerHTML = `<h3>${esc(uiTextOr('th.inj', '状态注入'))}</h3>`
     + `<label class="row"><input type="checkbox" id="thInjOn" ${P.inj !== false ? 'checked' : ''} ${A.inject === false ? 'disabled' : ''}> ${esc(uiTextOr('th.inj_on', '每次生成前注入一行当前状态（地点、在场、时间、行程）'))}</label>`
     + `<small>${esc(uiTextOr('th.inj_note', '约 150 token；卡的提示词里已有的字段自动跳过；数据还没确认时标「未确认」。深度和上限在「高级」'))}</small>`
+    + `<small id="thInjPreview"></small>`
     + `<label class="row"><input type="checkbox" id="thMacro" ${P.macros ? 'checked' : ''} ${A.macros === false ? 'disabled' : ''}> ${esc(uiTextOr('th.macros', '提供宏 {{eden_here}} / {{eden_route}}（给卡或预设作者引用）'))}</label>`
     + `<label class="row"><input type="checkbox" id="thDice" ${P.dice ? 'checked' : ''}> ${esc(uiTextOr('th.dice', '检定真掷骰：搜刮 / 潜行失手会真的失败并出失败报告（默认关 = 只提示不判定）'))}</label>`
     + `<label class="row"><input type="checkbox" id="thSpatial" ${P.spatial ? 'checked' : ''}> ${esc(uiTextOr('th.spatial', '向模型注入空间坐标契约（≤120 token 的坐标 JSON，取代方位散文）'))}</label>`
@@ -78,6 +79,8 @@ function renderInj() {
     + `<label class="row"><input type="checkbox" id="thWbXtal" ${P.wbXtal ? 'checked' : ''}> ${esc(uiTextOr('th.wbxtal', '剧情事实结晶：⌖事实 标签自动沉淀为附加书条目（LRU 上限，可在书里删）'))}</label>`
     + `<label class="row"><input type="checkbox" id="thNav" ${P.nav ? 'checked' : ''}> ${esc(uiTextOr('th.nav', '地图领航员（后台调用你配置的私有 API 推演态势建议，默认关）'))}</label>`
     + `<div class="hrow"><span></span><button type="button" class="btn" id="thNavCfg">${esc(uiTextOr('th.nav_cfg', '配置端点（JSON：provider / key / base / model）'))}</button></div>`;
+  { const pv = $('#thInjPreview'), I = S.inject;   // I-19：下一轮注入的原文，或不注入的原因（textContent，不拼 HTML）
+    if (pv && I) pv.textContent = I.text ? uiTextOr('th.inj_next', '下一轮将注入：{t}', { t: I.text }) : uiTextOr('th.inj_none', '当前不注入：{r}', { r: uiTextOr('th.inj_r_' + I.reason, I.reason, {}) }); }
   $('#thInjOn').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { inj: e.target.checked } });
   $('#thMacro').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { macros: e.target.checked } });
   $('#thDice').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { dice: e.target.checked } });
@@ -98,7 +101,7 @@ function renderInj() {
 }
 
 export function applyState(d) {
-  S = { ...S, prefs: d.prefs || S.prefs, last: d.last ?? S.last, api: d.api || S.api, wb: d.wb || S.wb, result: d.result || (d.wb ? null : S.result) };
+  S = { ...S, inject: d.inject || S.inject, prefs: d.prefs || S.prefs, last: d.last ?? S.last, api: d.api || S.api, wb: d.wb || S.wb, result: d.result || (d.wb ? null : S.result) };
   if (d.result) { diffShown = false; armed = 0; }
   renderInj(); renderWb();
 }

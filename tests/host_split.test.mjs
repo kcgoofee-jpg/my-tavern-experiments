@@ -107,7 +107,7 @@ const FLOWS = {   // 文件 → [工厂名, 返回的接口]
   'host-api': ['createHostApi', 'api cardId emit emitMoved exposed inner knowRooms onTh scriptInfo sendTh subs tavernhelperApiModule transitMod wbAuto'],
   'root-store': ['createRootStore', 'storageBudget budgetSweep custom customChanged customChat customTags kindOf loadCustom reg regNow saveRoot sendCustom store storeWarn varsOk wbState'],
   'host-checks': ['createHostChecks', 'autoCheck checkAt checkFacts checkItems checkP finishCheck followCheck followHead followNewer hostToast openSettings runCheck SC sendCheck setQ showSplash showUpdPrompt splash splashDue switchBranch switchVersion toastEl toastOnce toastWait updEl updPrompt updWait viewerVer'],
-  'modes-flow': ['createModesFlow', 'cardSkip checkpointResume checkpointStep conflictsNow cp cpResume MDm pointsFor spatialInject SpatialM spatialNow stateInject stateNow'],
+  'modes-flow': ['createModesFlow', 'cardSkip checkpointResume checkpointStep conflictsNow cp cpResume injectPreview MDm pointsFor spatialInject SpatialM spatialNow stateInject stateNow'],
 };
 const mod = f => import('../map/tavern/' + f + '.mjs');
 // 什么都接得住的桩：函数、对象、promise 之外的依赖都用它（创建期只会被存起来或在回调里用）
