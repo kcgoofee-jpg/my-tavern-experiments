@@ -80,7 +80,7 @@ def main():
     out = full.convert('RGBA'); out.alpha_composite(cut, (round(cx - cut.width / 2), round(cy - cut.height / 2)))
     dst = a.out or a.full
     out.convert('RGB').save(dst)
-    print('patched', dst, 'old-eden box', box, 'cut at', (round(cx), round(cy)))
+    print('patched', dst, 'old-eden box', None if a.no_inpaint else box, 'cut at', (round(cx), round(cy)))
     if a.dzi:
         subprocess.check_call([sys.executable, os.path.join(ROOT, 'tools/make_dzi.py'), dst, a.dzi])
 

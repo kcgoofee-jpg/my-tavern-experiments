@@ -1,10 +1,10 @@
 {
  "script": "blender/tiancheng_upper.py",
  "upper_depth": "77f113b71d797b8a",
- "tc_islands": "d0e2ee4b15011a76",
+ "tc_islands": "4781edb46b039ad2",
  "res": 8000,
- "samples": 64,
+ "samples": 128,
  "below": "city",
  "blender": "5.2.2 LTS",
- "composite": "tools/upper_layout_land.py v16 C（interim：既有岛图按新岛心重贴，正式底图待 base:tc_upper）"
+ "composite": "tools/upper_base_paste.py（岛体渲染 TC_EDEN_CUT=1 + 各岛抠图 + 伊甸 estate2 r5 抠图）"
 }

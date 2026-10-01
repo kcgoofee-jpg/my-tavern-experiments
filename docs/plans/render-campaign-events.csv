@@ -516,3 +516,11 @@ ts,id,stage,event,agent,gate,note
 2026-10-01T07:49:40Z,isle:isle25,integrate,done,hero-1,pass,"body-only crops (clouds + city, 0.2125,0,0.4025,0.25 at 8000/64) pasted at (1700,0) + cutout 480 m via isles_into_upper.py on layout C1; seams 1.5 / 2.8"
 2026-10-01T07:49:40Z,isle:isle25,ship,claim,hero-1,,
 2026-10-01T07:50:04Z,isle:isle25,ship,done,hero-1,pass,"integrated on layout C1 (crops + cutout), card-buildings row updated; isle5 cutout flag restored in tc_islands.json (the layout file had dropped it)"
+2026-10-01T07:50:19Z,base:tc_upper,audit,claim,hero-1,,
+2026-10-01T07:50:25Z,base:tc_upper,audit,done,hero-1,,"current base is an interim composite (64 spp renders + island sprites re-pasted on layout C1), not a 8000/128 render of the new layout: render"
+2026-10-01T07:50:25Z,base:tc_upper,render,claim,hero-1,,
+2026-10-01T07:50:32Z,base:tc_upper,render,done,hero-1,,submitted clouds 8000/128 (+ city twin) with --no-data 1 (keeps landed tc_upper.json)
+2026-10-01T08:07:35Z,base:tc_upper,tiles,claim,hero-1,,
+2026-10-01T08:07:39Z,base:tc_upper,tiles,done,hero-1,,"8000/128 body render (TC_EDEN_CUT=1, --no-data 1) + tools/upper_base_paste.py (7 cutouts + Eden r5 cut); city twin rendered 12.9 min; both DZI re-cut"
+2026-10-01T08:07:39Z,base:tc_upper,verify,done,hero-1,pass,"whole + mid-zoom looked at; check_maps, estate3d 10/10, accept 24/24 pass; faint white cloud halo at Eden rim"
+2026-10-01T08:07:39Z,base:tc_upper,ship,done,hero-1,pass,shipped with the bases pushed
