@@ -24,7 +24,7 @@ logs/
 blender/data/real3d/raw/
 # 浏览器测试依赖（cd tools/browser && npm install）
 tools/browser/node_modules/
-tools/browser/package-lock.json
+# tools/browser/package-lock.json 入库：CI 的 browser-smoke 用 npm ci，需要它
 blender/data/estate2/
 blender/data/props
 blender/data/props/

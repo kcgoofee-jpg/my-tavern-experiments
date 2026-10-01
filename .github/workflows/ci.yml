@@ -47,7 +47,7 @@ jobs:
         with:
           node-version: 'lts/*'
           cache: 'npm'
-          cache-dependency-path: tools/browser/package.json
+          cache-dependency-path: tools/browser/package-lock.json
       - run: npm ci --prefix tools/browser
       - run: npx --prefix tools/browser playwright install --with-deps chromium
       - run: node tools/browser/accept.mjs /tmp/accept
