@@ -25,7 +25,12 @@ importable JSON):
 import 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@preview/map/tavern/eden-map.js'
 ```
 
-The address follows the `preview` branch and does not expire; `tools/check_readme.py` keeps it correct in CI.
+The address follows the `preview` branch and does not expire; `tools/check_readme.py` keeps it correct in CI. The
+branch address is cached by CDNs and browsers (up to 7 days), so prefer the importable script
+`python3 tools/build_preview_script.py --follow preview`: it carries a small inline bootstrap that reads
+`map/data/head.json` fresh (no-store, per-minute query) and loads the entry pinned to that commit, falling back to the
+branch address only if every source fails. If you installed the one-line import earlier, re-import the script once;
+the one-line import keeps working (it redirects itself once loaded).
 
 ## Documentation
 

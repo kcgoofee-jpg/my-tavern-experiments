@@ -2,7 +2,7 @@
 """生成「地图预览」酒馆助手脚本：指向某个 git ref 的 map/tavern/eden-map.js，导入酒馆助手即可试用未发版的地图。
 
 用法：
-  python3 tools/build_preview_script.py <git ref>        # 例如提交号 aa16346、标签 map-v0.9.1
+  python3 tools/build_preview_script.py <git ref>        # 例如提交号 aa16346、标签 map-v0.9.1；分支名（preview / main）= 等同 --follow（带内联引导，I-20）
   python3 tools/build_preview_script.py <git ref> --out 目录
   python3 tools/build_preview_script.py --follow preview   # 可复用：每次打开时取该分支最新提交，推送后不用重新导入
   python3 tools/build_preview_script.py --tag map-v0.9.6            # 正式版加载器（0.9.6 起：每次加载最新正式版，离线退回该标签；小修补丁 map-v0.9.6.1；新系列 map-s2-v0.1.0）；：钉在发版标签（不改角色卡时随世界书附加条目一起发给用户）
@@ -153,6 +153,11 @@ def build_follow(branch, fallback, baked=None):
     const u = `https://${x}/gh/${REPO}@${s}/map/tavern/eden-map.js`;
     try { await imp(u); return; } catch (e) { console.warn('[地图] 线路不可用，换下一个', u); }
   }
+  // 提交号地址都加载不了（CDN 还没缓存到这个提交 / 全部线路不通）：退回分支路径；入口自带门卫，加载后会再按提交号重载一次
+  for (const x of HOSTS) {
+    const u = `https://${x}/gh/${REPO}@${BR}/map/tavern/eden-map.js`;
+    try { await imp(u); return; } catch (e) { console.warn('[地图] 分支路径不可用', u); }
+  }
 })();
 """ % {'b': json.dumps(branch), 'repo': json.dumps(REPO), 'hosts': json.dumps(HOSTS), 'baked': json.dumps({'build': baked['build'], 'sha': baked['sha']}),
        'resolve': follow_src().replace('\n', '\n  ')}
@@ -166,6 +171,20 @@ def build_follow(branch, fallback, baked=None):
     }
 
 
+def is_branch(ref):
+    """分支名：既不是提交号（7–40 位十六进制）也不是发版标签（map-v…）。与 map/tavern/follow-pin.mjs 的 refKind 同口径。"""
+    return not re.fullmatch(r'[0-9a-f]{7,40}', ref) and not re.fullmatch(r'map-(?:s\d+-)?v\d+\.\d+\.\d+(?:\.\d+)?', ref)
+
+
+def main_follow(branch, a):
+    fb = subprocess.run(['git', 'rev-parse', 'origin/' + branch], capture_output=True, text=True).stdout.strip() or branch
+    os.makedirs(a.out, exist_ok=True)
+    path = os.path.join(a.out, f"eden-map-preview-follow-{branch.replace('/', '-')}.json")
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(packed(build_follow(branch, fb, head_of('origin/' + branch)), a.pack), f, ensure_ascii=False, indent=2); f.write('\n')
+    print(f'写入 {path}（兜底提交 {fb[:12]}，构建 #{head_of("origin/" + branch).get("build", 0)}）')
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('ref', nargs='?', help='git 提交号 / 标签 / 分支名')
@@ -175,14 +194,7 @@ def main():
     ap.add_argument('--pack', help='设定包 id（map/packs/<id>；默认 eden = 原来的脚本）')
     ap.add_argument('--out', default=os.path.expanduser('~/Downloads/eden-map'), help='输出目录（默认 ~/Downloads/eden-map）')
     a = ap.parse_args()
-    if a.follow:
-        import subprocess
-        fb = subprocess.run(['git', 'rev-parse', 'origin/' + a.follow], capture_output=True, text=True).stdout.strip() or a.follow
-        os.makedirs(a.out, exist_ok=True)
-        path = os.path.join(a.out, f"eden-map-preview-follow-{a.follow.replace('/', '-')}.json")
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(packed(build_follow(a.follow, fb, head_of('origin/' + a.follow)), a.pack), f, ensure_ascii=False, indent=2); f.write('\n')
-        print(f'写入 {path}（兜底提交 {fb[:12]}，构建 #{head_of("origin/" + a.follow).get("build", 0)}）'); return
+    if a.follow: return main_follow(a.follow, a)
     if a.tag:
         import subprocess
         tag = a.tag.strip()
@@ -202,6 +214,8 @@ def main():
         print(f'写入 {path}'); return
     if not a.ref: ap.error('需要 ref、--follow 或 --tag')
     ref = a.ref.strip()
+    if is_branch(ref):   # I-20：分支名（preview / main）一律生成带内联引导的跟随脚本，不再直接 import 分支路径（浏览器会缓存它最长 7 天）
+        return main_follow(ref, a)
     if not ref or not re.fullmatch(r'[\w.\-/]+', ref):
         sys.exit(f'ref 只能包含字母、数字、. _ - /：{a.ref!r}')
     if '/' in ref:

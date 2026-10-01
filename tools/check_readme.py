@@ -7,7 +7,7 @@
 国内线路写「npmmirror（计划）」但其实早就用 `cdn.jsdmirror.com` 实现了）。所以放进 smoke 当门控。
 
 检查项（H1 重写后：README.md 英文为准，README.zh.md 是同结构中文版，两份都查）：
-  1. 必须有预览线 import 地址（ref = 预览分支）；发版线那条可选，出现就必须钉最新 `map-v*` 标签；
+  1. 必须有预览线 import 地址（ref = 预览分支）与 `--follow <预览分支>` 脚本生成命令；发版线那条可选，出现就必须钉最新 `map-v*` 标签；
   2. 地址里的仓库名 == git remote origin 的仓库名；
   3. 正文声明的版本（`0.9.7` 或 `当前发布版本 X`）与标签 `map-vY` 与 `VERSION` / 最新标签一致；
   4. 正文里出现的仓库相对路径（`map/…`、`tools/…`、`docs/…`、`blender/…`）与 markdown 链接的相对目标必须真实存在；
@@ -93,6 +93,8 @@ def main():
     prev = [m for m in urls if m.group(3) == PREVIEW_REF]
     if not prev:
         problems.append(f'缺「跟随开发（预览线）」那条：ref 必须是 `{PREVIEW_REF}`')
+    if '--follow ' + PREVIEW_REF not in text:   # I-20：安装小节要给出带内联引导的脚本生成命令
+        problems.append(f'安装小节缺 `build_preview_script.py --follow {PREVIEW_REF}`（带内联引导的脚本，I-20）')
     for m in urls:
         if m.group(2) != slug:
             problems.append(f'第 {text[:m.start()].count(chr(10)) + 1} 行的地址里仓库名是 `{m.group(2)}`，'
