@@ -104,6 +104,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `pack-v2.mjs` | Schema-2 packs: validation with per-item healing, trust and limits, block resolution, defaults. |
 | `pack.mjs` | Pack interface: manifest validation and resolution, pack id, storage prefix and chat-variable key derivation, registry rebasing. |
 | `people.mjs` | The people page's sections from the pack's entity groups (S4-4): `groupList`, `groupLabel` (dictionary / pack string `ch.g_<id>`, else the group's own label), `paneModel`; pure. |
+| `period-pick.mjs` | Which period base a map shows (K-R39, I-24): the current band's variant, else the nearest registered band by band order. |
 | `periods.mjs` | Periods of the day (K-R39): the band a world clock is in, by period words, else by the hour; default bands. |
 | `pickup.mjs` | Objective pickup probe (K-R77): a written physical acquisition action becomes a single ledger fact; normal and strict verb classes, forms that never count, the pack vocabulary (`scan(text, { vocab })`). |
 | `portrait-lookup.mjs` | The card-script portrait of a person (I-22): the viewer-side address shape check (the pack's host rule already ran in the host) and the lookup by full name, first segment or the one table key with the same first segment. |

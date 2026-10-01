@@ -195,7 +195,7 @@ export class MVUBridge {
     const mvuReaders = this.mvuReaders; if (!mvuReaders) return null;
     this.#ensure();
     const w = mvuReaders.worldTime(st, this.varMap), lb = mvuReaders.clockLabel(w, this.o.lang?.() === 'en' ? 'en' : 'zh');
-    const c = { ...w, ...lb, night: mvuReaders.isNight(w), tod: mvuReaders.todPhase?.(w) || '' };   // tod：时段色调（v0.9.6）
+    const c = { ...w, ...lb, night: mvuReaders.isNight(w), tod: mvuReaders.todPhase?.(w) || '', bands: mvuReaders.bandList?.() || [] };   // tod：时段色调（v0.9.6）
     try { c.pre = (thFn('getLastMessageId')?.() ?? 1) <= 0; } catch (e) { c.pre = false; }   // fix3：还没选开局 → 卡的 MVU 初始值
     return c;
   }

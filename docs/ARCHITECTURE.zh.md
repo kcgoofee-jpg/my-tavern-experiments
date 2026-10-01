@@ -85,6 +85,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `pack-v2.mjs` | schema 2 的包：逐项自愈的校验、信任与上限、块解析、默认值。 |
 | `pack.mjs` | 设定包接口：清单校验与解析、包 id、存储前缀与聊天变量键的推导、注册表改基址。 |
 | `people.mjs` | 人物页按包的实体组分节（S4-4）：`groupList`、`groupLabel`（词典 / 包文案 `ch.g_<id>`，否则用组自己的标签）、`paneModel`；纯函数。 |
+| `period-pick.mjs` | 地图显示哪个时段的底图（K-R39，I-24）：当前时段的变体，没有就取时段顺序上最近的已登记时段。 |
 | `periods.mjs` | 一天的时段（K-R39）：世界时钟落在哪个时段——先按时段词，再按钟点；默认时段。 |
 | `pickup.mjs` | 客观拾取探测（K-R77）：正文里写明的物理获取动作变成一条单项账目事实；普通与严格两类动词、永不算的句式、包的词表（`scan(text, { vocab })`）。 |
 | `portrait-lookup.mjs` | 人物的卡内立绘（I-22）：查看器侧只认图片地址的形状（包的域名规则已在宿主做过），按全名、第一段、或「第一段相同的唯一表键」查找。 |

@@ -2,6 +2,7 @@
 // 叠色的样式表留在 custom-names-view.mjs（z-index 账本）；这里只管判定与 body 上的类 / 数据属性。
 import { mapRegistry } from './app/state.mjs';
 import { viewField } from './app/nodes-runtime.mjs';
+import { pickPeriod } from './core/period-pick.mjs';
 export const NIGHT_KEY = 'edenMapNight';
 export function createTint({ getClock }) {
   const nightOn = () => { try { return LocalStore.get(NIGHT_KEY) !== '0'; } catch (e) { return true; } };
@@ -10,8 +11,9 @@ export function createTint({ getClock }) {
   function todNow() { const clock = getClock(); return nightOn() ? (clock?.tod || (clock?.night ? 'night' : '')) : ''; }
   function night() { const clock = getClock(), m = document.body.dataset.map, tier = viewField(m, 'x-tint') === 'period', on = nightOn() && tier;
     const tod = on ? (clock?.tod || (clock?.night ? 'night' : '')) : '';
-    const swapped = typeof mapRegistry !== 'undefined' && !!mapRegistry?.maps?.[m]?.periods?.[tod === 'day' || tod === 'night' ? tod : ''];
+    const swapped = pickPeriod(mapRegistry?.maps?.[m]?.periods, tod, clock?.bands).exact;   // 这档有自己的底图 → 不再叠色调（免得双重上色）；用的是邻档的底图时仍叠本档色调
     document.body.classList.toggle('nighttint', tod === 'night' && !swapped);
+    if (swapped) document.body.dataset.baseTod = tod; else delete document.body.dataset.baseTod;   // 底图本身就是这一档：CSS 不再叠这一档的色调
     if (tod && tod !== 'day') document.body.dataset.tod = tod; else delete document.body.dataset.tod; }
   new MutationObserver(night).observe(document.body, { attributes: true, attributeFilter: ['data-map'] });
   return { night, nightOn, todNow };

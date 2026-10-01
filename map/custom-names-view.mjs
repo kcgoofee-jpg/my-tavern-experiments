@@ -380,8 +380,8 @@ const CustomNamesView = (() => {
     background:var(--surface);color:var(--ink);border:1px solid var(--accent);box-shadow:0 6px 20px rgba(0,0,0,.3);font-size:var(--fs-micro);line-height:1.5}
   #cuToast[hidden]{display:none}
   body.nighttint #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 50% 40%,rgba(20,32,70,.18),rgba(6,10,28,.38));mix-blend-mode:multiply;transition:opacity .6s}
-  body[data-tod=dawn] #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;background:linear-gradient(180deg,rgba(255,196,200,.16),rgba(214,200,230,.10));mix-blend-mode:multiply;transition:opacity .6s}
-  body[data-tod=dusk] #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;background:linear-gradient(180deg,rgba(255,170,120,.22),rgba(200,140,150,.16));mix-blend-mode:multiply;transition:opacity .6s}
+  body[data-tod=dawn]:not([data-base-tod]) #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;background:linear-gradient(180deg,rgba(255,196,200,.16),rgba(214,200,230,.10));mix-blend-mode:multiply;transition:opacity .6s}
+  body[data-tod=dusk]:not([data-base-tod]) #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;background:linear-gradient(180deg,rgba(255,170,120,.22),rgba(200,140,150,.16));mix-blend-mode:multiply;transition:opacity .6s}
   @media (prefers-reduced-motion:reduce){body.nighttint #osd::after,body[data-tod] #osd::after{transition:none}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   document.addEventListener('DOMContentLoaded', () => renderUI());

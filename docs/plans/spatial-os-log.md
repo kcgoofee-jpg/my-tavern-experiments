@@ -986,3 +986,19 @@ blocker: none
 open: none
 cleanup: done (probe servers stopped by the probes; no background jobs of mine left; no .claude/launch.json entries; worktrees s8-1 and s8-1-base left for the orchestrator)
 === END ===
+
+=== RESULT I-24 ===
+status: DONE
+items: pick the map period from the pack's bands (K-R39) ✓ · nearest-band fallback, rule documented (kernel-schema K-R39 en + zh) ✓ · tint consistent with the chosen period ✓ · tests ✓ · probe period_maps ✓ · Q-23 filed ✓ · I-24 struck ✓
+commits: (this commit) feat(viewer): the map period follows the pack's bands, dawn and dusk bases show (I-24)   (SHA may change on rebase)
+pushed: yes (head #N in the chat report; this log copy is committed before the push)
+tests: node 1102/1104 pass (2 skipped as in baseline; +7 new in tests/period_pick.test.mjs) | smoke PASS | arch PASS | probes: period_maps=PASS 10/10, clouds=PASS, v097 tod=PASS, mvu093 night=PASS
+periods: tc_upper: dawn→art/tc_upper_dawn.dzi, day→art/tc_upper.dzi, dusk→art/tc_upper_dusk.dzi, night→art/tc_upper_night.dzi · tc_mid: dawn→art/tc_mid_dawn.dzi, day→art/tc_mid_day.dzi, dusk→art/tc_mid_dusk.dzi, night→art/tc_mid_night.dzi · tc_low: dawn→art/tc_low_dawn.dzi, day→art/tc_low_day.dzi, dusk→art/tc_low_dusk.dzi, night→art/tc_low_night.dzi · maps without variants (world, dairy, site_*): every band→their single base · fallback: nearest registered band by circular band order, tie → lighter (not dark) band, then earlier (day/night-only map: dawn→day, dusk→day)
+screenshots: ~/eden-map-review/i24/period_dawn.png, period_day.png, period_dusk.png, period_night.png
+parity: day and night files identical to before for every map (pinned in tests/period_pick.test.mjs); only dawn and dusk are new (Q-23, accept). The dawn / dusk colour wash is skipped when the band's own base is shown (data-base-tod); v097 and the tod check were updated for that.
+files: map/core/period-pick.mjs 22 · map/app/map-switch.mjs (periodOf) · map/custom-tint.mjs · map/custom-names-view.mjs (2 CSS selectors) · map/tavern/mvu-readers.mjs (bandList) · map/tavern/mvu-bridge.mjs (clock message carries bands) · tools/browser/period_maps.mjs · tests/period_pick.test.mjs
+deviations: (1) the host clock message gained a `bands` field ([{ id, dark? }], pack order) so the viewer knows the pack's band order for the fallback; an old host without it means the four default bands. (2) tools/browser/v097.mjs tod check updated (dawn / dusk now have bases, so no wash). maps.json not edited, no freeze.
+blocker: none
+open: Q-23 (accept)
+cleanup: done (probe servers stopped by the probes; no background jobs of mine left; no .claude/launch.json entries; worktree i24 left for the orchestrator)
+=== END ===

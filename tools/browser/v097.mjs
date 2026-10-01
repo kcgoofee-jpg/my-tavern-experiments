@@ -77,9 +77,9 @@ async function run(name, preset) {
       const res = {};
       for (const [per, want] of [['晨起', 'dawn'], ['日间', ''], ['侍寝时段', 'dusk'], ['就寝', 'night']]) {
         await H.setMsgs([], { ...STAT, 世界: { ...STAT.世界, 当日时段: per } }); await B.wait(900);
-        res[per] = await vf.evaluate(() => ({ tod: document.body.dataset.tod || '', night: document.body.classList.contains('nighttint'), swapped: !!ViewerDebug.mapRegistry?.maps?.tc_mid?.periods?.night, bg: getComputedStyle(document.getElementById('osd'), '::after').backgroundImage.slice(0, 40) }));
+        res[per] = await vf.evaluate(() => ({ tod: document.body.dataset.tod || '', night: document.body.classList.contains('nighttint'), swapped: !!ViewerDebug.mapRegistry?.maps?.tc_mid?.periods?.[document.body.dataset.tod || 'day'], bg: getComputedStyle(document.getElementById('osd'), '::after').backgroundImage.slice(0, 40) }));
         // 中层已登记夜间底图（maps.json periods.night，9ad6dfc）：夜档由底图 + data-tod 承担，不再叠 nighttint / 色调层；没登记夜图才叠（同 mvu093）
-        const tint = want === 'night' ? !res[per].swapped : !!want;
+        const tint = want ? !res[per].swapped : false;   // I-24: dawn / dusk have their own tc_mid bases now, so every band with a registered base carries no tint
         rep.check(`${name} 时段「${per}」→ 色调 ${want || '无'}`, res[per].tod === want && res[per].night === (want === 'night' && tint) && (tint ? res[per].bg !== 'none' : true), JSON.stringify(res[per]));
         if (want) await B.shot(p, OUT, `tod_${name}_${want}`);
       }

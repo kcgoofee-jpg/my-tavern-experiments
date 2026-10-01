@@ -10,13 +10,14 @@ import { closeCard } from './markers.mjs';
 import { focusMarker, setUserMoved, userMoved } from './locate.mjs';
 import { plugins } from './plugins.mjs';
 import { syncGlow } from './theme.mjs';
+import { pickPeriod } from '../core/period-pick.mjs';
 // ---------------- 地图切换 ----------------
 // alt：同一张图的另一版底图（上层默认云海，开关后显示下方城市）。只换底图，视角、标记、叠加层都不动；开关状态按地图记住
 export const ALT_KEY = 'edenMapAlt:';
 export const altOn = id => { try { return LocalStore.get(ALT_KEY + id) === '1'; } catch (e) { return false; } };
-// periods：多时段底图（maps.json，如中层的昼 / 夜两张）。按世界时钟的有效档位换（P.CustomNamesView.todNow，关掉时段色调时为空 = 恒用 base）；
-// 只认 day / night 两档（dawn / dusk 没有单独的渲染，继续用 base 叠色调）
-const periodOf = id => { const tod = plugins.CustomNamesView?.todNow?.() || ''; return mapRegistry.maps[id]?.periods?.[tod === 'day' || tod === 'night' ? tod : ''] || null; };
+// periods：多时段底图（maps.json）。按世界时钟的有效档位换（P.CustomNamesView.todNow，关掉时段色调时为空 = 恒用 base）；档位取自包的时段（K-R39，
+// 时钟消息带 bands）。地图没有该档位的底图时取顺序上最近的一档（core/period-pick.mjs；平手取不暗的、再取靠前的），一档都没有 = base
+const periodOf = id => { const c = plugins.CustomNamesView?.clock; return pickPeriod(mapRegistry.maps[id]?.periods, plugins.CustomNamesView?.todNow?.() || '', c?.bands).src; };
 export const srcKey = b => (b && typeof b === 'object' ? b.url : b);   // 底图可以是 DZI 路径，也可以是 { type: 'image', url }（schema-2 包的示意图 / 单张图，K-R96）
 const baseOf = id => { const m = mapRegistry.maps[id]; return m.alt && altOn(id) ? m.alt.base : (periodOf(id) || m.base); };
 let lastBase = null;   // 第 0 层当前用的底图地址（go 打开 / swapBase 换上时记；applyPeriod 拿它判断要不要换）

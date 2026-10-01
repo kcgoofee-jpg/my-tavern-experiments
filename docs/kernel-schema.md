@@ -515,6 +515,11 @@ dark }`. Resolution: the period text is matched against the bands' words (longes
 HH:MM read from the time text selects the band with `start ≤ time <` the next start, wrapping past midnight; else no
 band. Default: `dawn 05:00`, `day 07:00`, `dusk 17:00`, `night 20:00 (dark)`. `dark` drives night looks; tiles and
 image views may carry `variants` keyed by band id.
+The viewer shows the variant of the current band (the host clock message carries the band id as `tod` and the pack's bands in
+time order as `bands`, `[{ id, dark? }]`; an old host without `bands` means the four default bands). A map without that band's variant takes the nearest
+registered band by circular distance in band order (the day wraps); on a tie the lighter band (not `dark`) wins, then the earlier one; no
+variants, no current band, or no registered key that is a band of the pack = the map's single base. A band whose own variant is shown is not
+tinted again (`body[data-base-tod]`); a neighbour's variant keeps the current band's tint. `core/period-pick.mjs`.
 
 **K-R76 — The card's own item table.** `vars.inventory` (optional, a dot path, read only) names the table of the card's `stat_data` that holds the player's items; without it the kernel uses the field its inventory words find (`EXACT.inventory`: 物品栏, 背包, …, inventory, backpack, …) when that field really exists in the card;
 with neither there is no such table. `cardInventory(stat, path)` reads it as rows `{ name, qty?, text? }` (at most 100, names ≤ 60 code points, text ≤ 80): an object keyed by item name (a number is the quantity, a string the text, an object its first number and first string) or a list (strings are names; objects: the name field by the kernel's name words,

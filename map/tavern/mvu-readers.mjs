@@ -62,6 +62,8 @@ const hourOf = t => { const m = String(t || '').match(/(\d{1,2})\s*[:：时]\s*(
 export const isNight = w => !!(w && bandOf(getProfile().periods, w)?.dark);
 /** 时段色调：时段的 id（默认 dawn / day / dusk / night；包可以自起名、自带时段词），读不到返回 ''。时段文字里的词优先，否则按时刻落在哪个时段 */
 export const todPhase = w => (w ? bandOf(getProfile().periods, w)?.id || '' : '');
+/** 包的时段顺序：[{ id, dark? }]（按起点排；时钟消息的 bands，视图按它找邻近时段的底图） */
+export const bandList = () => [...getProfile().periods].sort((a, b) => String(a.start).localeCompare(String(b.start))).map(b => (b.dark ? { id: b.id, dark: true } : { id: b.id }));
 /** 标题栏里的紧凑写法：zh「1月1日 08:00」、en「Jan 1 08:00」（读起来是日期，用户 2026-09-28）；全文（带年份与时段）放在 title */
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 export function clockLabel(w, lang = 'zh') {
