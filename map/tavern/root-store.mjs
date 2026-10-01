@@ -3,8 +3,8 @@
 import { cdnFetch, fnOk, thFn } from './host-tavernhelper.mjs';
 export const DEPS = [
   'contextPipeline', 'LS', 'MAN', 'PACK_ID', 'PACK_IN', 'scriptBase', 'chatId', 'checkpointResume', 'emit', 'hostToast', 'kfReset', 'life', 'panel', 'post', 'readVars',
-  'recomputeSoon', 'wrapLS', 'BASE', 'explorationLedgerModule', 'stashStoreModule', 'keyframesModule', 'ledgerModule', 'mvuReaders', 'uiLang', 'worldbookJitModule', 'WBSm', 'alive', 'chars', 'cp', 'custVer', 'explored',
-  'floorNow', 'ghost', 'inv', 'kfView', 'slot', 'tlWalk',
+  'recomputeSoon', 'wrapLS', 'BASE', 'explorationLedgerModule', 'stashStoreModule', 'keyframesModule', 'mvuReaders', 'uiLang', 'worldbookJitModule', 'WBSm', 'alive', 'chars', 'cp', 'custVer', 'explored',
+  'floorNow', 'ghost', 'kfView', 'stash', 'tlWalk',
 ];
 export function createRootStore(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('root-store: missing dep ' + k);
@@ -50,7 +50,9 @@ export function createRootStore(host) {
     if (!storageBudget) return; const ls = store(); if (!ls) return;
     storageBudget.touch(ls, chatId()); const r = storageBudget.sweep(ls, chatId()); if (r.dropped.length) console.info('[eden-map] 清理旧聊天的地图数据', r.dropped.length, '个聊天', r.freed, '字节');
   }
-  const saveRoot = () => { const { inv, ledgerModule, slot, explored, cp, kfView } = host; return life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: contextPipeline.tag.floor, 标签记录: contextPipeline.tag.log, 楼层指纹: contextPipeline.tag.seen, 行程: contextPipeline.trips, 仓库: inv, ...(ledgerModule && ledgerModule.slotSave(slot) ? { 槽位: ledgerModule.slotSave(slot) } : {}), ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}), ...(kfView ? { 关键帧: kfView } : {}) }, customChat); };
+  // S6-2：背包存 stash（一份、ASCII 键）；旧键 仓库 / 槽位 只读——加载时迁移一次，之后原样随每次保存带回去（整块替换不能把它们丢了），没有旧键的聊天不会多出它们
+  let legacyKeep = {};
+  const saveRoot = () => { const { stash, explored, cp, kfView } = host; return life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: contextPipeline.tag.floor, 标签记录: contextPipeline.tag.log, 楼层指纹: contextPipeline.tag.seen, 行程: contextPipeline.trips, ...(stash ? { stash } : {}), ...legacyKeep, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}), ...(kfView ? { 关键帧: kfView } : {}) }, customChat); };
   // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
   // 只在这个聊天还没有 eden_map.自定义 时迁移一次（全局旧键不改名，靠这个条件避免每个聊天、每次刷新重复并入）
   async function migrateOld() {
@@ -72,8 +74,16 @@ export function createRootStore(host) {
       log: Array.isArray(v.标签记录) ? v.标签记录.filter(r => r && Number.isFinite(r.floor) && typeof r.key === 'string').slice(-30) : [],
       seen: v.楼层指纹 && typeof v.楼层指纹 === 'object' ? { ...v.楼层指纹 } : {} };
     host.explored = host.explorationLedgerModule ? host.explorationLedgerModule.norm(v.探索) : (v.探索 && typeof v.探索 === 'object' ? v.探索 : {});
-    host.inv = host.stashStoreModule ? host.stashStoreModule.norm(v.仓库) : { items: {}, seq: 0 };   // 空间化背包（Part 5-1）
-    host.slot = v.槽位 && typeof v.槽位 === 'object' && !Array.isArray(v.槽位) && typeof v.槽位.名 === 'string' ? v.槽位 : null;   // W12 虚拟账本槽位（任务一）
+    // 统一背包（S6-2，K-R74）：有 stash 就读；没有而有旧键（仓库 / 槽位）就迁移一次；旧键的值原样留着（legacyKeep），不改不删。
+    // 起点不取 floorNow（换聊天时它还是上一个聊天的值）：存储第一次扫描时对齐到最新一楼，和旧版「只看最新一楼」同一口径。
+    legacyKeep = {}; let migrated = false;
+    const SM = host.stashStoreModule ?? await import(new URL('stash-store.mjs', import.meta.url).href).catch(() => null);   // 模块还没到：等它，不能带着空的旧键保存
+    if (customChat !== id) return;
+    if (SM) {
+      const m = SM.migrate(v, { msgIndex: null, worldIds: new Set() });
+      host.stash = m.stash; migrated = m.migrated;
+      for (const k of [SM.V1_KEYS.inventory, SM.V1_KEYS.slot]) if (v[k] !== undefined) legacyKeep[k] = v[k];
+    }
     kfReset();   // W3 关键帧：换聊天 / 重载一律从零重建（可丢弃缓存；旧视图经 compress 重验证后接上）
     if (host.keyframesModule && v.关键帧 && typeof v.关键帧 === 'object' && Array.isArray(v.关键帧.frames)) {
       const top = Math.min(Math.round(+v.关键帧.top) || 0, host.floorNow >= 0 ? host.floorNow : Math.round(+v.关键帧.top) || 0);
@@ -85,6 +95,8 @@ export function createRootStore(host) {
     else if (v.自定义?.同步世界书 === false && !v.自定义.同步手动) {   // 0.9.3 的数据：建过这一本世界书 = 自己关掉的，保持关；否则按新默认（开）
       const had = await wbExists(host.mvuReaders.wbName(id)); if (customChat !== id) return;
       custom = host.mvuReaders.normCustom(host.mvuReaders.syncMigrate(v.自定义, had)); custom.同步手动 = true; await saveRoot(); }   // 迁移结果立刻写回（否则下次加载会把新建的世界书当成「自己关过」）
+    if (customChat !== id) return;
+    if (migrated) await saveRoot();   // 迁移结果落盘一次（内容没变时 writeVars 自己不写）
     if (customChat !== id) return;
     customChanged(false);
   }

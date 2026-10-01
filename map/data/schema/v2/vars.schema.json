@@ -13,6 +13,7 @@
     "period": { "$ref": "#/$defs/path", "description": "Named period of the day (text matched against periods[].words)." },
     "outfit": { "$ref": "#/$defs/path", "description": "Object of outfit slots shown on the player's place card." },
     "reputation": { "$ref": "#/$defs/path", "description": "Number 0..100." },
+    "inventory": { "$ref": "#/$defs/path", "description": "The card's own item table (read only): an object keyed by item name, or a list of names or rows. Shown in the Items tab; the map never writes it. Default: found by the kernel's inventory words." },
     "periods": {
       "type": "array", "minItems": 1, "maxItems": 12, "items": { "$ref": "#/$defs/period" },
       "description": "Author-named bands of the day in time order. Default: four bands dawn 05:00, day 07:00, dusk 17:00, night 20:00 (night dark). A band lasts until the next band's start; the last one wraps past midnight."

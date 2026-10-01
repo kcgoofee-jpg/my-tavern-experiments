@@ -101,7 +101,7 @@ test('入口只从 host-*.mjs 取，不再自带副本；worldbook 自动化的�
 const lines = f => rd(f).split('\n').length - (rd(f).endsWith('\n') ? 1 : 0);
 const FLOWS = {   // 文件 → [工厂名, 返回的接口]
   'llm-flow': ['createLlmFlow', 'jitRound opEvents worldbookJitModule WBSm xtalRound'],
-  'loot-flow': ['createLootFlow', 'changedInv FRm frState gate gateFlush injectAction inv stashStoreModule ledgerSync ledgerModule lootFacts scanPickups sendInv settleCarry settleState slot SSK stealthCheck takeLoot'],
+  'stash-flow': ['createStashFlow', 'changedInv FRm frState gate gateFlush injectAction stash stashStoreModule stashRecomputeModule ledgerSync ledgerModule lootFacts resetChat scanPickups sendInv settleCarry stealthCheck takeLoot'],
   'chars-flow': ['createCharsFlow', 'mvuBridge cardKey chatId clock computeTrips contextPipeline getHere mvuReaders mvuStat outfitNow pushMvu readVars refreshVarMap routineModule rtSched sendChars sendRoutine sendTrips sentClock sentOutfit setVarUser tripsParseModule userName'],
   'timeline-flow': ['createTimelineFlow', 'keyframesModule kfReset kfView tlBtn tlCache tlEl tlExit timelineModule tlOn tlWalk'],
   'host-api': ['createHostApi', 'api cardId emit emitMoved exposed inner knowRooms onTh scriptInfo sendTh subs tavernhelperApiModule transitMod wbAuto'],

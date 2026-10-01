@@ -38,7 +38,7 @@
         "patrol": { "$ref": "#/$defs/path", "description": "巡逻岗哨 / 机兵的视野锥 {walls?, guards: [...]}（Part 5-2，结构见 core/vision.mjs）" }
       } },
     "preload": { "type": "array", "items": { "$ref": "#/$defs/path" }, "description": "启动预取的数据文件（查看器首帧按包注入 <link rel=preload>；路径相对清单目录，eden 相对 map/）" },
-    "vars": { "type": "object", "additionalProperties": { "type": "string" }, "description": "MVU stat_data 默认路径（键 = tavern/stat-path-mapping.mjs FIELDS：location / time / date / outfit / present…）；没写的按字段名自动发现，用户仍可在设置「变量映射」里改" },
+    "vars": { "type": "object", "additionalProperties": { "type": "string" }, "properties": { "inventory": { "type": "string", "description": "路径：卡自己的物品表（只读，不写）；没写按内核的背包词表自动发现（K-R76）" } }, "description": "MVU stat_data 默认路径（键 = tavern/stat-path-mapping.mjs FIELDS：location / time / date / outfit / present…）；没写的按字段名自动发现，用户仍可在设置「变量映射」里改" },
     "cdn": { "type": "object", "additionalProperties": false,
       "properties": { "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", "description": "GitHub owner/repo（jsDelivr gh 线路）" }, "npm": { "type": "string" } } },
     "theme": { "type": "object", "additionalProperties": false,

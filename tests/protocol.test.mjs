@@ -42,7 +42,7 @@ test('envelope 盖版本；总线：来源检查 + 校验 + 分发 + dispose', (
   assert.ok(sameOrigin({ origin: 'null' }, self) && sameOrigin({ origin: 'https://o' }, self) && !sameOrigin({ origin: 'https://evil' }, self));
 });
 test('静态清点：仓库里每个发送的消息类型都登记在 SCHEMA', () => {
-  const files = ['map/viewer.html', 'map/tavern/eden-map.js', 'map/tavern/host-tavernhelper.mjs', 'map/tavern/host-routes.mjs', 'map/tavern/host-lifecycle.mjs', 'map/tavern/llm-flow.mjs', 'map/tavern/loot-flow.mjs', 'map/tavern/chars-flow.mjs', 'map/tavern/timeline-flow.mjs', 'map/tavern/host-api.mjs', 'map/tavern/root-store.mjs', 'map/tavern/host-checks.mjs', 'map/tavern/modes-flow.mjs', 'map/estate/main.js', 'map/estate/index.html', 'map/props/viewer3d.html',
+  const files = ['map/viewer.html', 'map/tavern/eden-map.js', 'map/tavern/host-tavernhelper.mjs', 'map/tavern/host-routes.mjs', 'map/tavern/host-lifecycle.mjs', 'map/tavern/llm-flow.mjs', 'map/tavern/stash-flow.mjs', 'map/tavern/chars-flow.mjs', 'map/tavern/timeline-flow.mjs', 'map/tavern/host-api.mjs', 'map/tavern/root-store.mjs', 'map/tavern/host-checks.mjs', 'map/tavern/modes-flow.mjs', 'map/estate/main.js', 'map/estate/index.html', 'map/props/viewer3d.html',
     ...readdirSync(new URL('../map/', import.meta.url)).filter(f => /\.(js|mjs)$/.test(f)).map(f => 'map/' + f),
     ...readdirSync(new URL('../map/app/', import.meta.url)).filter(f => f.endsWith('.mjs')).map(f => 'map/app/' + f)];
   const miss = new Set();
@@ -69,4 +69,11 @@ test('S2-B: estate:children (viewer → page) and estate:go (page → viewer) ar
   assert.ok(check(envelope('estate:go', { node: 'dairy' })).ok);
   assert.equal(check(envelope('estate:go', {})).why, 'field:node');
   assert.equal(check(envelope('estate:go', { node: 3 })).why, 'field:node');
+});
+
+test('eden-map:inv（S6-2）：新字段 stash / card 都带上过；stash 不是对象丢；只有 items 的旧载荷照收', () => {
+  assert.ok(check({ type: 'eden-map:inv', items: [], stash: { v: 1, rows: [], slot: null }, card: { path: 'a', rows: [] } }).ok);
+  assert.equal(check({ type: 'eden-map:inv', items: [], stash: [] }).why, 'field:stash');
+  assert.equal(check({ type: 'eden-map:inv', items: [], card: 'x' }).why, 'field:card');
+  assert.ok(check({ type: 'eden-map:inv', items: [{ id: 'i1' }] }).ok, '旧载荷（只有 items）仍然有效');
 });

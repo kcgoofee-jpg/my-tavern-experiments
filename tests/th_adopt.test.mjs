@@ -60,6 +60,6 @@ test('B5 脚本说明；B6 initializeGlobal + 旧别名；B8 只广播地点；B
 });
 
 test('不用的接口：installExtension / builtin / 角色卡写接口 / generate*', () => {
-  for (const f of ['map/tavern/eden-map.js', 'map/tavern/host-tavernhelper.mjs', 'map/tavern/host-routes.mjs', 'map/tavern/host-lifecycle.mjs', 'map/tavern/llm-flow.mjs', 'map/tavern/loot-flow.mjs', 'map/tavern/chars-flow.mjs', 'map/tavern/timeline-flow.mjs', 'map/tavern/host-api.mjs', 'map/tavern/root-store.mjs', 'map/tavern/host-checks.mjs', 'map/tavern/modes-flow.mjs', 'map/tavern/tavernhelper-api.mjs', 'map/tavern/worldbook-sync.mjs', 'map/tavern/interaction-modes.mjs'].map(p => { try { return readFileSync(new URL('../' + p, import.meta.url), 'utf8'); } catch (e) { return ''; } }))
+  for (const f of ['map/tavern/eden-map.js', 'map/tavern/host-tavernhelper.mjs', 'map/tavern/host-routes.mjs', 'map/tavern/host-lifecycle.mjs', 'map/tavern/llm-flow.mjs', 'map/tavern/stash-flow.mjs', 'map/tavern/chars-flow.mjs', 'map/tavern/timeline-flow.mjs', 'map/tavern/host-api.mjs', 'map/tavern/root-store.mjs', 'map/tavern/host-checks.mjs', 'map/tavern/modes-flow.mjs', 'map/tavern/tavernhelper-api.mjs', 'map/tavern/worldbook-sync.mjs', 'map/tavern/interaction-modes.mjs'].map(p => { try { return readFileSync(new URL('../' + p, import.meta.url), 'utf8'); } catch (e) { return ''; } }))
     assert.ok(!/installExtension\(|builtin\.|replaceCharacter\(|importRawCharacter\(|updateCharacterWith\(|\bgenerate(Raw)?\(/.test(f));
 });

@@ -6,7 +6,7 @@ export const DEPS = [
   'mvuBridge', 'HS', 'LS', 'MAN', 'PACK_ID', 'SCRIPT', 'scriptBase', 'VER', 'cardKey', 'changedInv', 'channel', 'chatId', 'customChanged', 'fab', 'frame',
   'hostToast', 'kindOf', 'life', 'listen', 'loadCustom', 'loadViewer', 'lsGet', 'lsSet', 'macroSet', 'openSettings', 'panel', 'pdoc', 'plainVer',
   'post', 'prefSync', 'push', 'reg', 'runCheck', 'showSplash', 'stateInject', 'store', 'storeWarn', 'varsOk', 'BASE', 'storageBudget', 'stashStoreModule', 'LKF', 'mvuReaders', 'dataSourceRegistryModule',
-  'uiLang', 'alive', 'chars', 'checkAt', 'checkItems', 'checkP', 'clock', 'custom', 'customChat', 'floorNow', 'flyQ', 'ghost', 'here', 'inv', 'outfitNow',
+  'uiLang', 'alive', 'chars', 'checkAt', 'checkItems', 'checkP', 'clock', 'custom', 'customChat', 'floorNow', 'flyQ', 'ghost', 'here', 'stash', 'outfitNow',
   'rep', 'roster', 'wbState',
 ];
 export function createHostApi(host) {
@@ -49,9 +49,9 @@ export function createHostApi(host) {
     async getRooms() { if (!host.mvuReaders || !host.custom) await loadCustom(); const rooms = roomsKnown || Object.values((await reg())?.maps || {}).find(m => m.kind === 'estate')?.rooms || [];
       return { rooms: [...rooms], alias: host.mvuReaders ? host.mvuReaders.aliasMap(host.custom, ['room']) : {}, chat: chatId() || null }; },
     // 空间化背包（Part 5-1）：setInv('机密账本', { place: '书房', map: 'estate', hidden: true, note: '塞在书架第三层' })；removeInv('机密账本')；getInv() 只读
-    async setInv(name, patch = {}) { if (!host.stashStoreModule) return false; const r = host.stashStoreModule.put(host.inv, { name, ...patch }); if (!r.changed) return false; host.inv = r.inv; changedInv(); return true; },
-    async removeInv(key) { if (!host.stashStoreModule) return false; const r = host.stashStoreModule.remove(host.inv, key); if (!r.changed) return false; host.inv = r.inv; changedInv(); return true; },
-    getInv: async () => (host.stashStoreModule ? host.stashStoreModule.rows(host.inv) : []),
+    async setInv(name, patch = {}) { if (!host.stashStoreModule || !host.stash) return false; const r = host.stashStoreModule.put(host.stash, { name, ...patch, src: 'api', msgIndex: host.floorNow }); if (!r.changed) return false; host.stash = r.stash; changedInv(); return true; },
+    async removeInv(key) { if (!host.stashStoreModule || !host.stash) return false; const r = host.stashStoreModule.remove(host.stash, key, host.floorNow); if (!r.changed) return false; host.stash = r.stash; changedInv(); return true; },
+    getInv: async () => (host.stashStoreModule ? host.stashStoreModule.wireRows(host.stash) : []),
     getOutfit: async () => ({ items: host.outfitNow ? { ...host.outfitNow } : null, text: host.mvuReaders ? host.mvuReaders.outfitText(host.outfitNow) : '' }),   // 主角着装（只读 MVU 的着装变量）
     getClock: async () => (host.clock ? { ...host.clock } : null),   // 世界时间（只读 MVU 的日期 / 时刻 / 时段变量）
     // 人物头像（v0.9.2）：只存本机 localStorage（按聊天，拿不到聊天 id 时全局），不上传、不进地址；src = data:image/… 或 http(s) 图片地址

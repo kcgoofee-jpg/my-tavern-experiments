@@ -4,14 +4,14 @@
 //   KERNEL                       the profile of a pack that names nothing: every path and field is discovered (K-R38, K-R42), default period bands (K-R39)
 //   slotDef(profile, slot)       the field definition of a roster slot (`x-slot`), or the kernel's default for its kind
 //   portraitOk(avatar, url)      K-R43: may this card-script portrait be loaded?
-// profile = { paths: { location, time, date, period, outfit, reputation }, periods, groups, presentId, stageGroup, tables, place, slots, fields, avatar }
+// profile = { paths: { location, time, date, period, outfit, reputation, inventory }, periods, groups, presentId, stageGroup, tables, place, slots, fields, avatar }
 //   groups   the pack's entity groups, the present one first and the others in the pack's order: [{ id, label?, mvu }]; a pack that declares none has the three discovered ones (present, members, targets)
 //   presentId  the id of the present group ('present' unless the pack flags another)    stageGroup  the id of the second group after the present one ('' = none): the one whose rows carry the stage order
 //   tables   the mvu table of each group by group id ('' = discovered)       place  the place field of the present group's rows
 import { DEFAULT_PERIODS } from './periods.mjs';
 import { applyOverlayVars, applyOverlayEntities } from './overlay-v2.mjs';
 
-export const PATH_KEYS = ['location', 'time', 'date', 'period', 'outfit', 'reputation'];
+export const PATH_KEYS = ['location', 'time', 'date', 'period', 'outfit', 'reputation', 'inventory'];
 export const SLOTS = ['stage', 'grade', 'core', 'code', 'social', 'height', 'weight', 'known', 'accessory', 'tier'];
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const str = v => typeof v === 'string';

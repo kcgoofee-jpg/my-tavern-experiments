@@ -333,3 +333,42 @@ export function findPortraits(texts) {
   }
   return out;
 }
+
+// ---------------- the card's own item table (K-R76, read only) ----------------
+const INV_ROWS = 100;
+const cut = (s, n) => [...s].slice(0, n).join('');
+const firstNum = o => { for (const v of Object.values(o)) { const x = val(v); if (typeof x === 'number' && Number.isFinite(x)) return x; } return undefined; };
+const firstStr = o => { for (const v of Object.values(o)) { const x = val(v); if (typeof x === 'string' && clean(x)) return clean(x); } return ''; };
+const plainObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+/** The table at `path` of the card's stat_data as rows `[{ name, qty?, text? }]` (at most 100; names <= 60 code points, text <= 80): `{ path, rows }`, or null when `path`
+ *  does not hold a table. An object keyed by item name (value: a number is the quantity, a string the text, an object its first number and first string) or a list
+ *  (strings are names; objects: the name field by the kernel's name words, else the first string field, and the first number as the quantity). MVU `[value, note]`
+ *  pairs are unwrapped; keys starting with `_` or `$` are skipped. Reads only: nothing is written to stat_data. */
+export function cardInventory(stat, path) {
+  if (typeof path !== 'string' || !path) return null;
+  const t = getByPath(stat, path);
+  if (!t || typeof t !== 'object') return null;
+  const rows = [], add = (name, qty, text) => {
+    const n = cut(clean(name), 60); if (!n || rows.length >= INV_ROWS) return;
+    rows.push({ name: n, ...(qty !== undefined ? { qty } : {}), ...(text ? { text: cut(clean(text), 80) } : {}) });
+  };
+  if (Array.isArray(t)) {
+    for (const it of t) {
+      const x = val(it);
+      if (typeof x === 'string') add(x);
+      else if (plainObj(x)) { const k = VOC.exactKey('name', x, undefined, v => typeof val(v) === 'string' && clean(val(v)) !== ''); add(k !== undefined ? val(x[k]) : firstStr(x), firstNum(x)); }
+    }
+  } else {
+    for (const [k, raw] of Object.entries(t)) {
+      if (k.startsWith('_') || k.startsWith('$')) continue;
+      const x = val(raw);
+      if (typeof x === 'number') add(k, Number.isFinite(x) ? x : undefined);
+      else if (typeof x === 'string') add(k, undefined, x);
+      else if (plainObj(x)) add(k, firstNum(x), firstStr(x));
+      else add(k);
+    }
+  }
+  return { path, rows };
+}
+/** The path of the card's item table: the pack's `vars.inventory`, else the real (not virtual) field the slot probe found (K-R76); '' = none. */
+export const inventoryPath = probe => getProfile().paths?.inventory || (probe && !probe.virtual && probe.path ? probe.path : '');

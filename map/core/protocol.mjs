@@ -51,7 +51,7 @@ export const SCHEMA = {
   'eden-map:chars': [HOST_TO_VIEWER, { items: 'array?', replay: 'boolean?', groups: 'array?' }],   // groups = [{ id, label, rows, present? }]：包声明的每个名册组一项（S4-4）；rosters 三表照旧，新查看器优先读 groups
   'eden-map:events': [HOST_TO_VIEWER, { items: 'array?' }],
   'eden-map:custom': [HOST_TO_VIEWER, {}],
-  'eden-map:inv': [HOST_TO_VIEWER, { items: 'array?' }],   // 空间化背包（Part 5-1）：聊天变量 eden_map.仓库 的行（地点卡「存放」行）
+  'eden-map:inv': [HOST_TO_VIEWER, { items: 'array?', stash: 'object?', card: 'object?' }],   // items = 旧形状的行（地点卡「存放」行，Part 5-1）；stash = 统一背包的行与槽位摘要（K-R74）；card = 卡自己的物品表，只读（K-R76）；三者互不依赖，旧查看器只认 items
   'eden-map:stash': [HOST_TO_VIEWER, { items: 'array?' }],   // 世界藏物表（Part 5-1）：设定包自带的藏物（带地图 / 标记 / 暗格），查看器据此画发光拾取物
   'eden-map:routine': [HOST_TO_VIEWER, { schedule: 'object?' }],   // Part 8-2：NPC 日程表（包数据 routine.json 原样推来，查看器按确定性时钟自己挪人）
   'eden-map:clock': [HOST_TO_VIEWER, {}],

@@ -6,7 +6,7 @@
 // v0.9.3 MVU 联动（mvu-readers.mjs）：只读 stat_data（世界时间、主角着装、在场人物）；自定义名称与用途存在聊天变量顶层键 eden_map（不进 stat_data，见 docs/content-compat.md）。
 // C2 第 4 步（2026-09-28）拆成：入口（本文件：面板 / 查看器状态机、消息、MVU / 事态 / 自定义 / 自检 / 更新）+ host-routes.mjs（线路）
 // + host-lifecycle.mjs（接管旧实例、挂 DOM、监听登记、清理钩子）+ host-tavernhelper.mjs（酒馆助手适配、偏好、世界书全自动）。见 docs/agent-brief.md「模块地图」。
-// S5-1（2026-10-01）再拆出八个 flow 模块（loot-flow / chars-flow / root-store / host-api / host-checks / llm-flow / modes-flow / timeline-flow，各是 createX(host)）：
+// S5-1（2026-10-01）再拆出八个 flow 模块（stash-flow（S6-2 前叫 loot-flow）/ chars-flow / root-store / host-api / host-checks / llm-flow / modes-flow / timeline-flow，各是 createX(host)）：
 // 下面的 host 依赖袋是它们取入口变量与函数的唯一通道；入口留着面板 / 查看器状态机、重算调度、监听登记与清理。
 import '../core/logbuf.mjs'; // 反馈日志缓冲：最先 import，模块求值即安装，启动日志不丢（v0.9.6 报告「(none)」根因）
 import { cdnFetch, thFn, packNs, createPrefs } from './host-tavernhelper.mjs';
@@ -14,7 +14,7 @@ import { createRoutes, scoreText } from './host-routes.mjs';
 import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
 import { createAbout } from './host-about.mjs';
 import { createLlmFlow } from './llm-flow.mjs';
-import { createLootFlow } from './loot-flow.mjs';
+import { createStashFlow } from './stash-flow.mjs';
 import { createCharsFlow } from './chars-flow.mjs';
 import { createTimelineFlow } from './timeline-flow.mjs';
 import { createHostApi } from './host-api.mjs';
@@ -349,8 +349,8 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     fetchHtml: (...a) => fetchHtml(...a), get floorNow() { return floorNow; }, get flyQ() { return flyQ; }, set flyQ(v) { flyQ = v; }, get explorationLedgerModule() { return explorationLedgerModule; },
     get frame() { return frame; }, get FRm() { return LF.FRm; }, get frState() { return LF.frState; }, get GEN() { return GEN; }, get ghost() { return ghost; },
     get here() { return here; }, hostToast: (...a) => CK.hostToast(...a), HS: (...a) => HS(...a), get html() { return html; }, get ID() { return ID; },
-    get inv() { return LF.inv; }, set inv(v) { LF.inv = v; }, get stashStoreModule() { return LF.stashStoreModule; }, get keyframesModule() { return TL.keyframesModule; }, kfReset: (...a) => TL.kfReset(...a),
-    get kfView() { return TL.kfView; }, set kfView(v) { TL.kfView = v; }, kindOf: (...a) => RS.kindOf(...a), lean: (...a) => lean(...a), get ledgerModule() { return LF.ledgerModule; },
+    get stash() { return LF.stash; }, set stash(v) { LF.stash = v; }, get stashStoreModule() { return LF.stashStoreModule; }, get keyframesModule() { return TL.keyframesModule; }, kfReset: (...a) => TL.kfReset(...a),
+    get kfView() { return TL.kfView; }, set kfView(v) { TL.kfView = v; }, kindOf: (...a) => RS.kindOf(...a), lean: (...a) => lean(...a),
     get life() { return life; }, get line() { return line; }, get lineP() { return lineP; }, get LINES() { return LINES; }, get listen() { return listen; },
     get LKF() { return LKF; }, set LKF(v) { LKF = v; }, loadCustom: (...a) => RS.loadCustom(...a), loadViewer: (...a) => loadViewer(...a), get LS() { return LS; },
     get lsGet() { return lsGet; }, get lsSet() { return lsSet; }, macroSet: (...a) => macroSet(...a), get MAN() { return MAN; }, get mvuReaders() { return CF.mvuReaders; },
@@ -362,7 +362,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     refreshVarMap: (...a) => CF.refreshVarMap(...a), refOf: (...a) => AB.refOf(...a), reg: (...a) => RS.reg(...a), get regNow() { return RS.regNow; }, get rep() { return rep; }, get REPO() { return REPO; },
     get root() { return root; }, get roster() { return roster; }, runCheck: (...a) => CK.runCheck(...a), saveRoot: (...a) => RS.saveRoot(...a),
     get SCRIPT() { return SCRIPT; }, scriptInfo: (...a) => HA.scriptInfo(...a), get scriptBase() { return scriptBase; }, sendEvents: (...a) => sendEvents(...a),
-    sendTrips: (...a) => CF.sendTrips(...a), showSplash: (...a) => CK.showSplash(...a), get slot() { return LF.slot; }, set slot(v) { LF.slot = v; },
+    sendTrips: (...a) => CF.sendTrips(...a), showSplash: (...a) => CK.showSplash(...a),
     get SpatialM() { return MO.SpatialM; }, get spatialNow() { return MO.spatialNow; }, get dataSourceRegistryModule() { return dataSourceRegistryModule; }, set dataSourceRegistryModule(v) { dataSourceRegistryModule = v; },
     stateInject: (...a) => MO.stateInject(...a), get statSig() { return statSig; }, set statSig(v) { statSig = v; }, store: (...a) => RS.store(...a),
     storeWarn: (...a) => RS.storeWarn(...a), get swappable() { return swappable; }, get switchedFrom() { return switchedFrom; }, get tavernhelperApiModule() { return HA.tavernhelperApiModule; },
@@ -395,7 +395,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   }
 
 
-  const LF = createLootFlow(host), { frState, gate, gateFlush, injectAction, ledgerSync, lootFacts, scanPickups, sendInv, settleCarry, settleState, stealthCheck, takeLoot } = LF;
+  const LF = createStashFlow(host), { frState, gate, gateFlush, injectAction, ledgerSync, lootFacts, scanPickups, sendInv, settleCarry, stealthCheck, takeLoot } = LF;
 
   // ---------------- v0.9.6 版本与检查更新（P2 解耦：实现在 tavern/host-about.mjs，这里只留装配） ----------------
   // 版本信息：预览 / 正式脚本在 import 前写 window.__edenMapScript = { version, code, channel: tag | follow | ref, ref, sha }（tools/build_preview_script.py 烘进去）；
@@ -505,8 +505,8 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     // W11：待结算跨轮携带（上一轮没结完的域）并进同一行——不开新通道，也不新增注入 id
     const carryLine = LF.ledgerModule ? LF.ledgerModule.carryLine(settleCarry) : '';
     // W12：虚拟账本槽位声明（任务一）——本卡变量里有没有背包栏、地图账上现记几件，一并回注成已知事实
-    const slotMsg = LF.ledgerModule ? LF.ledgerModule.slotLine(LF.slot) : '';
-    inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', CF.mvuReaders && RS.custom && !(RS.custom.同步世界书 && RS.wbState === 'bound') ? CF.mvuReaders.summarizeCustom(RS.custom) : '', LF.stashStoreModule && lsGet('edenMapInvInj') !== '0' ? LF.stashStoreModule.digestLine(LF.inv, 150) : '', slotMsg, frLine, carryLine].filter(Boolean).join('\n'));
+    const slotMsg = LF.ledgerModule ? LF.ledgerModule.slotLine(LF.stash?.slot) : '';
+    inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', CF.mvuReaders && RS.custom && !(RS.custom.同步世界书 && RS.wbState === 'bound') ? CF.mvuReaders.summarizeCustom(RS.custom) : '', LF.stashStoreModule && lsGet('edenMapInvInj') !== '0' ? LF.stashStoreModule.digestLine(LF.stash, 150) : '', slotMsg, frLine, carryLine].filter(Boolean).join('\n'));
     if (frLine) LF.FRm.markInjected(frState);
     scanPickups(msgs, hereNow);   // 任务一：本轮正文里的客观获取动作先入账，下面的结算闸门放行时一并补发（漏写变量也丢不了）
     gate()?.request('sync', ledgerSync);   // W11：本轮的结算（漏项审计 + 单项补发）入队，末尾才放行——读取期间不写变量
@@ -646,7 +646,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     listen(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     listen(tavern_events.CHAT_CHANGED, () => { clearTimeout(wbChatT); wbChatT = setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动', e))); }, 1500); });   // 换角色 / 聊天：新角色也挂上、聊天版本提醒
     listen(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    listen(tavern_events.CHAT_CHANGED, () => { try { RS.storageBudget?.touch(store(), chatId()); } catch (e) {} injected = null; MO.stateNow = ''; MO.cardSkip = null; MO.cp = null; contextPipeline.reset(); gate()?.drop('chat'); settleState.claimed = []; settleState.floor = null; settleState.branch = null; settleCarry.domains = []; settleCarry.floor = null; lootFacts.length = 0; LF.slot = null; LF.SSK?.reset(); loadSeen(); RS.custom = null; if (TL.tlOn) { TL.tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => { recomputeSoon(300); sendCardInfo(); }); });
+    listen(tavern_events.CHAT_CHANGED, () => { try { RS.storageBudget?.touch(store(), chatId()); } catch (e) {} injected = null; MO.stateNow = ''; MO.cardSkip = null; MO.cp = null; contextPipeline.reset(); gate()?.drop('chat'); LF.resetChat(); loadSeen(); RS.custom = null; if (TL.tlOn) { TL.tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => { recomputeSoon(300); sendCardInfo(); }); });
     // 通读 R1：开局菜单用 setChatMessage(swipe_id) 换开场白，不一定触发 SWIPED；渲染 / 编辑事件也听，地点跟着刷新
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) if (tavern_events[k]) listen(tavern_events[k], () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
     // 任务三：渲染之后再走一遍泄露防御网（占位符 / 整段状态栏 HTML 源码糊在界面上时抹掉；干净就什么都不做）

@@ -67,7 +67,7 @@ test('斜杠命令：只有 sys 模式才给 /sys，管道符要转义', () => {
 test('接线：协议表登记、宿主处理、查看器有入口与设置项', () => {
   const proto = readFileSync(join(ROOT, 'map/core/protocol.mjs'), 'utf8');
   assert.match(proto, /'eden-map:action': \[VIEWER_TO_HOST,/, '协议表要登记这条消息');
-  const host = HOST_SRC;   // S5-1：injectAction 搬进了 loot-flow.mjs
+  const host = HOST_SRC;   // S5-1：injectAction 搬进了 stash-flow.mjs（S6-2 前叫 loot-flow）
   assert.match(host, /eden-map:action'\)\s*injectAction|type === 'eden-map:action'/, '宿主必须处理这条消息');
   assert.match(host, /tavern\/place-action-injection\.mjs/, '实现走 tavern/place-action-injection.mjs');
   assert.match(host, /composeIn\(a\.text\)/, 'sys 没有 triggerSlash 时退回只填不发');

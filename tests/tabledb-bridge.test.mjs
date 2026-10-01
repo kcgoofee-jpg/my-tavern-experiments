@@ -64,7 +64,7 @@ t('lostTags：正文优化改写丢掉的 ⌖ 标签从原文补回，没丢的�
   assert.equal(lostTags('', 'x'), '');
 });
 t('eden-map.js 只调用插件的只读接口', () => {
-  const src = ['eden-map.js', 'host-tavernhelper.mjs', 'host-routes.mjs', 'host-lifecycle.mjs', 'mvu-bridge.mjs', 'llm-flow.mjs', 'loot-flow.mjs', 'chars-flow.mjs', 'timeline-flow.mjs', 'host-api.mjs', 'root-store.mjs', 'host-checks.mjs', 'modes-flow.mjs'].map(f => fs.readFileSync(fileURLToPath(new URL('../map/tavern/' + f, import.meta.url)), 'utf8')).join('\n');   // C2：宿主拆成入口 + host-*.mjs
+  const src = ['eden-map.js', 'host-tavernhelper.mjs', 'host-routes.mjs', 'host-lifecycle.mjs', 'mvu-bridge.mjs', 'llm-flow.mjs', 'stash-flow.mjs', 'chars-flow.mjs', 'timeline-flow.mjs', 'host-api.mjs', 'root-store.mjs', 'host-checks.mjs', 'modes-flow.mjs'].map(f => fs.readFileSync(fileURLToPath(new URL('../map/tavern/' + f, import.meta.url)), 'utf8')).join('\n');   // C2：宿主拆成入口 + host-*.mjs
   const used = new Set([...src.matchAll(/(?:dbApiRef|a|api)\??\.(\w+(?:TableAsJson|Update\w*|Callback))\b/g)].map(m => m[1]));
   for (const k of used) assert.ok(['exportTableAsJson', 'registerTableUpdateCallback', 'unregisterTableUpdateCallback'].includes(k), k);
   assert.doesNotMatch(src, /importTableAsJson|triggerUpdate|restoreTableAsJson/);
