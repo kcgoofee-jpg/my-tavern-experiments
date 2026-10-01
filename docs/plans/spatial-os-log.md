@@ -1151,3 +1151,20 @@ blocker: none
 open: Q-24 (accept)
 cleanup: done (probe servers stopped by the probes; no background jobs of mine left; no .claude/launch.json entries; worktree s8-3 left for the orchestrator)
 === END ===
+
+=== RESULT S9b-2 ===
+status: DONE
+items: person card gallery section by category, lazy, one switch default on, zh + en ✓ · chat tags resolved to floor / place (K-R105) / character / address, "scenes here" and per-person timeline, recomputed, nothing stored ✓ · no image inserted into messages ✓ · generic pack-declared source (entities.gallery, kernel-compiled grammar, no regex in packs), first pack declares it ✓ · K-R106 en + zh, v2 schema, pack-v2-spec ✓ · synthetic tests ✓ · cg_gallery probe ✓ · real-card check ✓ · E-09 struck ✓
+commits: 8ebceb01 feat(gallery): pack-declared media source ... (K-R106, S9b-2) (rebased: shas change)
+commits: chore: freeze maps for S9b-2 pack data edit (pushed as head #238 with the first)
+commits: feat(eden): declare the card gallery as the first pack media source ...; unfreeze maps
+commits: (this commit) docs: E-09 struck; RESULT S9b-2
+pushed: yes (log copy committed before the push)
+tests: node 1238/1239 (1 skipped, environment) from 1185 before (+14 gallery_source, +4 gallery_flow, +1 other; none dropped) | smoke PASS | arch PASS | probes: cg_gallery=PASS (desktop + 375 px)
+real card: 16 characters, 5 categories, 669 URLs (per category 131 / 150 / 168 / 146 / 74), 669 allowed by the hosts and folder rules, 16 covers; 16 of 16 table names resolve to roster rows of the pack's fallback roster; all on one CDN host, .png, no query strings (counts only; nothing of the card committed)
+new K-R: K-R106 (docs/kernel-schema.md + .zh.md section 6.6; map/data/schema/v2/entities.schema.json gallery; core/pack-v2-spec.mjs). Next free: K-R107
+deviations: (1) there was no existing place-card "log section": "scenes here" is a new block in the place card extra area (map/gallery-view.mjs decorate). (2) The host sends the place as text (K-R105 floorPlace); the node is resolved in the viewer with the same resolver as every place text, not on the host. (3) Image hosts: hosts come from entities.avatar.hosts, but the avatar require / deny are portrait rules (they would block four of the five categories), so the source has its own require / deny (first pack: /sfw/ and /nsfw/ folders on the author's CDN). (4) The switch is default on as the prompt says (brief section 2.6 says default off). (5) Tags in code blocks count, tags inside think blocks do not (matches the card script). (6) The scan reads the whole chat each round (debounced, per-floor cache), not the pipeline window. (7) FREEZE_MAPS pushed with head #238 before the pack-data commit; the shared-doc rebase conflicts (kernel-schema, profile, host_split) were resolved keeping both sides.
+blocker: none
+open: none
+cleanup: done (probe server stopped by the probe; no background jobs of mine; no launch.json entries; worktree s9b2 left)
+=== END ===
