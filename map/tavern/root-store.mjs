@@ -1,10 +1,11 @@
 // 地图在聊天变量里的根（eden_map）：自定义名称 / 用途的读写与迁移、本机存储预算、世界书同步、标签改名重放（S5-1 自 eden-map.js 原样搬出）。
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
 import { cdnFetch, fnOk, thFn } from './host-tavernhelper.mjs';
+import { recordNorm, describeRecord } from '../core/settlement-record.mjs';
 export const DEPS = [
   'contextPipeline', 'LS', 'MAN', 'PACK_ID', 'PACK_IN', 'scriptBase', 'chatId', 'checkpointResume', 'emit', 'hostToast', 'kfReset', 'life', 'panel', 'post', 'readVars',
   'recomputeSoon', 'wrapLS', 'BASE', 'explorationLedgerModule', 'stashStoreModule', 'keyframesModule', 'mvuReaders', 'uiLang', 'worldbookJitModule', 'WBSm', 'alive', 'chars', 'cp', 'custVer', 'explored',
-  'floorNow', 'ghost', 'kfView', 'stash', 'tlWalk',
+  'floorNow', 'ghost', 'kfView', 'stash', 'tlWalk', 'ledgerRecord',
 ];
 export function createRootStore(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('root-store: missing dep ' + k);
@@ -52,7 +53,8 @@ export function createRootStore(host) {
   }
   // S6-2：背包存 stash（一份、ASCII 键）；旧键 仓库 / 槽位 只读——加载时迁移一次，之后原样随每次保存带回去（整块替换不能把它们丢了），没有旧键的聊天不会多出它们
   let legacyKeep = {};
-  const saveRoot = () => { const { stash, explored, cp, kfView } = host; return life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: contextPipeline.tag.floor, 标签记录: contextPipeline.tag.log, 楼层指纹: contextPipeline.tag.seen, 行程: contextPipeline.trips, ...(stash ? { stash } : {}), ...legacyKeep, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}), ...(kfView ? { 关键帧: kfView } : {}) }, customChat); };
+  const ledgerOf = () => { const r = host.ledgerRecord, d = r && typeof r === 'object' ? describeRecord(r) : null; return d && (d.npc || d.events) ? { ledger: recordNorm(r) } : {}; };   // K-R78: the key only when there is an entry
+  const saveRoot = () => { const { stash, explored, cp, kfView } = host; return life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: contextPipeline.tag.floor, 标签记录: contextPipeline.tag.log, 楼层指纹: contextPipeline.tag.seen, 行程: contextPipeline.trips, ...(stash ? { stash } : {}), ...ledgerOf(), ...legacyKeep, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}), ...(kfView ? { 关键帧: kfView } : {}) }, customChat); };
   // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
   // 只在这个聊天还没有 eden_map.自定义 时迁移一次（全局旧键不改名，靠这个条件避免每个聊天、每次刷新重复并入）
   async function migrateOld() {
@@ -84,6 +86,7 @@ export function createRootStore(host) {
       host.stash = m.stash; migrated = m.migrated;
       for (const k of [SM.V1_KEYS.inventory, SM.V1_KEYS.slot]) if (v[k] !== undefined) legacyKeep[k] = v[k];
     }
+    host.ledgerRecord = v.ledger === undefined ? null : recordNorm(v.ledger);   // K-R78: the map's own settlement record (a droppable cache)
     kfReset();   // W3 关键帧：换聊天 / 重载一律从零重建（可丢弃缓存；旧视图经 compress 重验证后接上）
     if (host.keyframesModule && v.关键帧 && typeof v.关键帧 === 'object' && Array.isArray(v.关键帧.frames)) {
       const top = Math.min(Math.round(+v.关键帧.top) || 0, host.floorNow >= 0 ? host.floorNow : Math.round(+v.关键帧.top) || 0);

@@ -68,7 +68,7 @@ test('host-th createWbAuto：设置消息与总开关（搬家后自由变量都
   const W = createWbAuto({ scriptBase: new URL('../map/', import.meta.url).href, LS, lsGet, lsSet, life, base: () => 'http://127.0.0.1:9/map/', alive: () => true, uiLang: () => 'zh', thBtns: () => null,
     chatId: () => 'c1', cardKey: () => 'card', post: m => posts.push(m), hostToast: () => null, stateInject: () => injected++, macroSet: on => { macros = on; }, prefSync: () => synced++ });
   await W.onTh({ op: 'state' });
-  assert.equal(posts.at(-1).type, 'eden-map:th-state'); assert.deepEqual(posts.at(-1).prefs, { inj: true, depth: 2, budget: 150, macros: false, wbOn: true, wbTomb: false, wbWhere: null, dice: false, spatial: false, wbJit: false, wbXtal: false, nav: false, navCfg: false });
+  assert.equal(posts.at(-1).type, 'eden-map:th-state'); assert.deepEqual(posts.at(-1).prefs, { inj: true, depth: 2, budget: 150, macros: false, wbOn: true, wbTomb: false, wbWhere: null, dice: false, ledgerWrite: false, spatial: false, wbJit: false, wbXtal: false, nav: false, navCfg: false });
   await W.onTh({ op: 'prefs', prefs: { inj: false, depth: 99, budget: 5, macros: true, wbOn: false } });
   assert.equal(ls.get('edenMapStateInj'), '0'); assert.equal(ls.get('edenMapStateDepth'), '20'); assert.equal(ls.get('edenMapStateBudget'), '40');
   assert.equal(macros, true); assert.equal(injected, 1); assert.equal(synced, 1); assert.equal(ls.get('edenMapWbOn'), '0');
@@ -101,7 +101,7 @@ test('入口只从 host-*.mjs 取，不再自带副本；worldbook 自动化的�
 const lines = f => rd(f).split('\n').length - (rd(f).endsWith('\n') ? 1 : 0);
 const FLOWS = {   // 文件 → [工厂名, 返回的接口]
   'llm-flow': ['createLlmFlow', 'jitRound opEvents worldbookJitModule WBSm xtalRound'],
-  'stash-flow': ['createStashFlow', 'changedInv FRm frState gate gateFlush injectAction stash stashStoreModule stashRecomputeModule ledgerSync ledgerModule lootFacts resetChat scanPickups sendInv settleCarry stealthCheck takeLoot'],
+  'stash-flow': ['createStashFlow', 'changedInv FRm frState gate gateFlush injectAction stash stashStoreModule stashRecomputeModule ledgerSync ledgerModule ledgerRecord lootFacts resetChat scanPickups sendInv settleCarry stealthCheck takeLoot'],
   'chars-flow': ['createCharsFlow', 'mvuBridge cardKey chatId clock computeTrips contextPipeline getHere mvuReaders mvuStat outfitNow pushMvu readVars refreshVarMap routineModule rtSched sendChars sendRoutine sendTrips sentClock sentOutfit setVarUser tripsParseModule userName'],
   'timeline-flow': ['createTimelineFlow', 'keyframesModule kfReset kfView tlBtn tlCache tlEl tlExit timelineModule tlOn tlWalk'],
   'host-api': ['createHostApi', 'api cardId emit emitMoved exposed inner knowRooms onTh scriptInfo sendTh subs tavernhelperApiModule transitMod wbAuto'],

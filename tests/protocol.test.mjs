@@ -77,3 +77,10 @@ test('eden-map:inv（S6-2）：新字段 stash / card 都带上过；stash 不�
   assert.equal(check({ type: 'eden-map:inv', items: [], card: 'x' }).why, 'field:card');
   assert.ok(check({ type: 'eden-map:inv', items: [{ id: 'i1' }] }).ok, '旧载荷（只有 items）仍然有效');
 });
+
+test('eden-map:th（S6-3）：prefs 登记为可缺的对象；op 必填；prefs 不是对象丢；带 ledgerWrite 的偏好照收', () => {
+  assert.ok(check({ type: 'eden-map:th', op: 'prefs', prefs: { ledgerWrite: true, dice: false } }).ok);
+  assert.ok(check({ type: 'eden-map:th', op: 'state' }).ok, 'prefs 可缺');
+  assert.equal(check({ type: 'eden-map:th', op: 'prefs', prefs: 'x' }).why, 'field:prefs');
+  assert.equal(check({ type: 'eden-map:th', prefs: {} }).why, 'field:op');
+});

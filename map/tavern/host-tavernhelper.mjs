@@ -149,7 +149,7 @@ export function createWbAuto(deps) {
     try { await thFn('insertOrAssignVariables')({ eden_wb_ver: cur }, { type: 'chat' }); } catch (e) {}
   }
   function thPrefs() { return { inj: lsGet('edenMapStateInj') !== '0', depth: +(lsGet('edenMapStateDepth') || 2), budget: +(lsGet('edenMapStateBudget') || 150), macros: lsGet('edenMapMacros') === '1', wbOn: wbOn(), wbTomb: wbTomb(), wbWhere: lsGet('edenMapWbWhere') || null,
-    dice: lsGet('edenMapDice') === '1', spatial: lsGet('edenMapSpatial') === '1', wbJit: lsGet('edenMapWbJit') === '1', wbXtal: lsGet('edenMapWbXtal') === '1',
+    dice: lsGet('edenMapDice') === '1', ledgerWrite: lsGet('edenMapLedgerWrite') === '1', spatial: lsGet('edenMapSpatial') === '1', wbJit: lsGet('edenMapWbJit') === '1', wbXtal: lsGet('edenMapWbXtal') === '1',
     nav: !!lsGet('edenMapNav') && lsGet('edenMapNav') !== '0', navCfg: !!String(lsGet('edenMapNavCfg') || '').trim() }; }
   async function sendTh(extra = {}) { if (!deps.alive()) return; post({ type: 'eden-map:th-state', prefs: thPrefs(), inject: (() => { try { return deps.injectPreview?.() ?? null; } catch (e) { return null; } })(), last: wbSaved(), api: { macros: !!thFn('registerMacroLike'), inject: !!thFn('injectPrompts'), buttons: !!deps.thBtns() }, ...extra }); }
   async function onTh(d) {
@@ -163,6 +163,7 @@ export function createWbAuto(deps) {
       if ('macros' in P) { put('edenMapMacros', P.macros ? '1' : '0'); macroSet(!!P.macros); }
       if ('wbOn' in P) { put('edenMapWbOn', P.wbOn ? '1' : '0'); if (P.wbOn) setTimeout(() => { if (!life.dead) wbAuto().catch(() => {}); }, 300); }   // 总开关：关 = 不自动建、不同步、不提醒（手动按钮照常）
       if ('dice' in P) put('edenMapDice', P.dice ? '1' : '0');   // W2 检定掷骰
+      if ('ledgerWrite' in P) put('edenMapLedgerWrite', P.ledgerWrite ? '1' : '0');   // K-R78 结算记录
       if ('spatial' in P) put('edenMapSpatial', P.spatial ? '1' : '0');   // W1 空间坐标契约
       if ('wbJit' in P) put('edenMapWbJit', P.wbJit ? '1' : '0');   // W6 JIT 水合
       if ('wbXtal' in P) put('edenMapWbXtal', P.wbXtal ? '1' : '0');   // W7 事实结晶

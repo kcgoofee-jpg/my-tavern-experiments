@@ -181,14 +181,14 @@ const pendingRow = (f, key, why) => ({ domain: domainOfKind(f), kind: f.kind, ke
  * facts：物理事实行 [{ kind:'loot', id, name, place?, map?, hidden?, qty?, floor?, authority? } |
  *                        { kind:'routine', npc, room, floor? } | { kind:'event', type, level, at, floor? }]
  *   authority / src 走纪律 ④ 的权威阶梯（缺省 verified = 地图侧客观物理判定）；claim / hypothesis 不落盘。
- * landed：宿主状态视图 { assets:{ id: 名 }, npc:{ npc: 房间 }, events:{ key: true } }（缺省 = 那一域无数据，不做断定）
+ * landed：宿主状态视图 { assets:{ id: 名 }, npc:{ npc: 房间（'' = 空缺，会补）}, events:{ key（带 id 的事实用 id）: true } }（缺省 = 那一域无数据，不做断定）
  * 返回 { patches, pending, ok, keys }：
  *   - patches 只含**单项**缺口（资产域一行 / NPC 域一个位移 / 事件域一条），永不重写整表，每条带 why 凭据；
  *   - pending 是待结算（no-landed 那一域没视图 / not-promoted 来源不够 / unresolved 语义不明确 /
  *     unknown-npc 不在册 / stale-value 落盘里有值只是不一样）——保持旧值，不猜、不抢写；
  *   - ok = 已落盘无需补的条数；keys = 本轮考量的全部事实键（水位用）。
  */
-export function audit(facts, landed = {}) {
+export function audit(facts, landed = {}, opt = {}) {   // opt.anyEventType: the event type was resolved by the pack's events block (K-R50), any non-empty type string is accepted (K-R78)
   const A = landed?.assets && typeof landed.assets === 'object' ? landed.assets : null;
   const N = landed?.npc && typeof landed.npc === 'object' ? landed.npc : null;
   const E = landed?.events && typeof landed.events === 'object' ? landed.events : null;
@@ -209,17 +209,18 @@ export function audit(facts, landed = {}) {
       if (!N) { pending.push(pendingRow(f, key, 'no-landed')); continue; }
       if (Object.prototype.hasOwnProperty.call(N, npc)) {
         if (String(N[npc]) === room) { ok++; continue; }
+        if (N[npc] === '') { patches.push({ domain: 'npc', op: 'OP_ROUTINE', npc, room, key, why: '日程位置补空缺（verified）' }); continue; }   // K-R78: a landed '' is a hole, not a stale value
         pending.push(pendingRow(f, key, 'stale-value'));   // 纪律 ⑤：落盘里已有值（哪怕不一样）→ 不覆盖，等那头确认
         continue;
       }
       pending.push(pendingRow(f, key, 'unknown-npc'));   // 不在册的人：可能只是还没登场，不替世界造人
     } else if (f.kind === 'event') {
-      if (!EVENT_TYPES.includes(String(f.type))) { pending.push(pendingRow(f, key, 'unresolved')); continue; }
+      if (!(opt?.anyEventType === true ? typeof f.type === 'string' && f.type !== '' : EVENT_TYPES.includes(String(f.type)))) { pending.push(pendingRow(f, key, 'unresolved')); continue; }
       if (!E) { pending.push(pendingRow(f, key, 'no-landed')); continue; }
-      const k = [f.type, f.level ?? 0, Array.isArray(f.at) ? f.at.join(',') : ''].join('|');
+      const k = f.id ? String(f.id) : [f.type, f.level ?? 0, Array.isArray(f.at) ? f.at.join(',') : ''].join('|');   // a fact with an id lands under its id
       if (E[k]) { ok++; continue; }
       const at = Array.isArray(f.at) && f.at.length === 2 ? [c01(f.at[0]), c01(f.at[1])] : null;
-      patches.push({ domain: 'events', op: 'OP_EVENT', type: String(f.type), level: Number.isInteger(f.level) ? f.level : 0, at: at && at[0] != null && at[1] != null ? at : null, key, why: '地图事件落点（verified）' });
+      patches.push({ domain: 'events', op: 'OP_EVENT', type: String(f.type), level: Number.isInteger(f.level) ? f.level : 0, at: at && at[0] != null && at[1] != null ? at : null, ...(f.id ? { id: String(f.id), node: clip(f.node, 64) } : {}), key, why: '地图事件落点（verified）' });
     }
   }
   return { patches, pending, ok, keys };

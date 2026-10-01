@@ -349,7 +349,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
     fetchHtml: (...a) => fetchHtml(...a), get floorNow() { return floorNow; }, get flyQ() { return flyQ; }, set flyQ(v) { flyQ = v; }, get explorationLedgerModule() { return explorationLedgerModule; },
     get frame() { return frame; }, get FRm() { return LF.FRm; }, get frState() { return LF.frState; }, get GEN() { return GEN; }, get ghost() { return ghost; },
     get here() { return here; }, hostToast: (...a) => CK.hostToast(...a), HS: (...a) => HS(...a), get html() { return html; }, get ID() { return ID; },
-    get stash() { return LF.stash; }, set stash(v) { LF.stash = v; }, get stashStoreModule() { return LF.stashStoreModule; }, get keyframesModule() { return TL.keyframesModule; }, kfReset: (...a) => TL.kfReset(...a),
+    get stash() { return LF.stash; }, set stash(v) { LF.stash = v; }, get ledgerRecord() { return LF.ledgerRecord; }, set ledgerRecord(v) { LF.ledgerRecord = v; }, get stashStoreModule() { return LF.stashStoreModule; }, get keyframesModule() { return TL.keyframesModule; }, kfReset: (...a) => TL.kfReset(...a),
     get kfView() { return TL.kfView; }, set kfView(v) { TL.kfView = v; }, kindOf: (...a) => RS.kindOf(...a), lean: (...a) => lean(...a),
     get life() { return life; }, get line() { return line; }, get lineP() { return lineP; }, get LINES() { return LINES; }, get listen() { return listen; },
     get LKF() { return LKF; }, set LKF(v) { LKF = v; }, loadCustom: (...a) => RS.loadCustom(...a), loadViewer: (...a) => loadViewer(...a), get LS() { return LS; },

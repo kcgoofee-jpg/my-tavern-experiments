@@ -535,6 +535,7 @@
   "th.inj_on": "Inject one state line before each generation (location, present, time, trips)",
   "th.inj_note": "About 150 tokens; fields already in the card prompt are skipped; unconfirmed data is marked. Depth and budget are under Advanced.",
   "th.macros": "Provide macros {{eden_here}} / {{eden_route}} (for card or preset authors)",
+  "th.ledger_write": "Settlement record: keep schedule positions and chat events in the map's own chat variable (fills gaps only, never the card's variables; off by default)",
   "th.dice": "Roll real checks: failed searches / stealth actually fail and emit failure reports (default off = hints only)",
   "th.spatial": "Inject the spatial coordinate contract into the model (≤120-token coordinate JSON instead of prose)",
   "th.wbjit": "Worldbook JIT hydration: mount only the entries for where the player stands (unmount on leave)",

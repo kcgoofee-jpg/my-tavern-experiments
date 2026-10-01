@@ -74,6 +74,7 @@ function renderInj() {
     + `<small id="thInjPreview"></small>`
     + `<label class="row"><input type="checkbox" id="thMacro" ${P.macros ? 'checked' : ''} ${A.macros === false ? 'disabled' : ''}> ${esc(uiTextOr('th.macros', '提供宏 {{eden_here}} / {{eden_route}}（给卡或预设作者引用）'))}</label>`
     + `<label class="row"><input type="checkbox" id="thDice" ${P.dice ? 'checked' : ''}> ${esc(uiTextOr('th.dice', '检定真掷骰：搜刮 / 潜行失手会真的失败并出失败报告（默认关 = 只提示不判定）'))}</label>`
+    + `<label class="row"><input type="checkbox" id="thLedgerWrite" ${P.ledgerWrite ? 'checked' : ''}> ${esc(uiTextOr('th.ledger_write', '结算记录：把日程里的人物位置和聊天里的事件记进地图自己的聊天变量（只补空缺，不写卡的变量；默认关）'))}</label>`
     + `<label class="row"><input type="checkbox" id="thSpatial" ${P.spatial ? 'checked' : ''}> ${esc(uiTextOr('th.spatial', '向模型注入空间坐标契约（≤120 token 的坐标 JSON，取代方位散文）'))}</label>`
     + `<label class="row"><input type="checkbox" id="thWbJit" ${P.wbJit ? 'checked' : ''}> ${esc(uiTextOr('th.wbjit', '世界书 JIT 水合：人在哪只挂载哪儿的条目（离开自动卸载）'))}</label>`
     + `<label class="row"><input type="checkbox" id="thWbXtal" ${P.wbXtal ? 'checked' : ''}> ${esc(uiTextOr('th.wbxtal', '剧情事实结晶：⌖事实 标签自动沉淀为附加书条目（LRU 上限，可在书里删）'))}</label>`
@@ -84,6 +85,7 @@ function renderInj() {
   $('#thInjOn').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { inj: e.target.checked } });
   $('#thMacro').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { macros: e.target.checked } });
   $('#thDice').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { dice: e.target.checked } });
+  $('#thLedgerWrite').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { ledgerWrite: e.target.checked } });
   $('#thSpatial').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { spatial: e.target.checked } });
   $('#thWbJit').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { wbJit: e.target.checked } });
   $('#thWbXtal').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { wbXtal: e.target.checked } });

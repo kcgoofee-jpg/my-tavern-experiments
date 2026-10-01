@@ -4,6 +4,7 @@ import { cdnFetch } from './host-tavernhelper.mjs';
 import { getProfile } from './pack-profile.mjs';
 export const DEPS = [
   'LS', 'PACK_ID', 'PACK_IN', 'scriptBase', 'chatId', 'composeIn', 'life', 'lsGet', 'mvuStat', 'post', 'saveRoot', 'BASE', 'mvuBridge', 'mvuReaders', 'uiLang', 'alive', 'floorNow',
+  'chars', 'events', 'roster',   // K-R78: the schedule placements, the parsed events and the roster groups the settlement record reads (only with the switch on)
 ];
 export function createStashFlow(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('stash-flow: missing dep ' + k);
@@ -97,6 +98,7 @@ export function createStashFlow(host) {
     // 地图拾取的槽位事实比行晚一轮入账（与 v1 同一时点：事实先进 lootFacts，下一次结算才进账）
     const late = stashRecomputeModule.mapFactRows(stash, lootFacts);
     if (late.length) { stash = { ...stash, slot: stashRecomputeModule.captureSlot(stash, late, probe, host.floorNow) }; dirty = true; }
+    settleRecord();                                                    // K-R78: npc / events holes into <chat var>.ledger (the switch is off by default: nothing runs)
     if (dirty) changedInv();                                          // 写聊天变量 + 推地图（拿到手的光点消失）
     else if (JSON.stringify(cardRows()) !== sentCard) sendInv();      // 卡里自己的物品表变了：只重发
     if (!lootFacts.length) return { fixed: r.added, pending: 0, repeated: 0, slot: slotView() };
@@ -104,6 +106,24 @@ export function createStashFlow(host) {
     ledgerModule.carry(settleCarry, aud.pending);                              // 未决的域带进下一轮（≤4，跨轮携带）
     const cl = ledgerModule.claim(settleState, aud.patches.filter(p => p.domain === 'assets'), { floor: host.floorNow, branch: branchNow() });
     return { fixed: r.added, pending: aud.pending.length, repeated: cl.repeated, slot: slotView() };
+  }
+  // K-R78 结算记录（I-04）：开关 edenMapLedgerWrite 默认关——关着时不产生事实、不读任何东西。开着：日程里属于某个名册组的人的位置、聊天里解析出的事件，
+  // 经同一个漏项审计只补**空缺**，记进地图自己的聊天变量 <chat var>.ledger（从不写卡的 stat_data）；写入走和背包同一条保存（saveRoot），在结算闸门放行点。
+  let recordModule = null, ledgerRecord = null; import(scriptBase + 'core/settlement-record.mjs').then(m => { recordModule = m; }).catch(() => {});
+  function settleRecord() {
+    if (lsGet('edenMapLedgerWrite') !== '1' || !recordModule || !ledgerModule) return;
+    try {
+      const R = recordModule, floor = host.floorNow, places = new Map();
+      for (const g of Object.values(host.roster || {})) for (const it of g?.items || []) if (it?.name) places.set(it.name, it.place || '');
+      const facts = [];
+      for (const c of host.chars || []) if (c?.src === 'routine' && c.place && places.has(c.name)) facts.push({ kind: 'routine', npc: c.name, room: c.place, floor, authority: 'verified' });
+      for (const e of host.events || []) if (e?.id && e.type) facts.push({ kind: 'event', id: String(e.id), type: String(e.type), level: Number.isInteger(e.lvl) ? e.lvl : 0, node: e.node || '', floor: Number.isInteger(e.last) ? e.last : floor, authority: 'committed' });
+      if (!facts.length) return;
+      const L = R.recordLanded(ledgerRecord), npc = { ...L.npc };
+      for (const [n, p] of places) { if (p) npc[n] = p; else if (!(n in npc)) npc[n] = ''; }   // the card's place wins; a roster person without one is a hole
+      const put = R.recordPut(ledgerRecord, ledgerModule.audit(facts, { npc, events: L.events }, { anyEventType: true }).patches, floor);
+      if (put.added) { ledgerRecord = put.rec; saveRoot(); }
+    } catch (e) { /* the record is a cache: a failed round is simply skipped */ }
   }
   /** 分支身份（同一楼换分支 = swipe / 重生成 ⇒ 该楼水位作废重算）：楼层 + 那一楼的 swipe 号 */
   const branchNow = () => { try { return String(host.floorNow) + ':' + String(host.mvuBridge.swipeAt(host.floorNow) ?? 0); } catch (e) { return String(host.floorNow) + ':0'; } };
@@ -178,7 +198,7 @@ export function createStashFlow(host) {
   /** 换聊天：本场会话的结算状态清零（背包本身由 loadCustom 重新读） */
   function resetChat() {
     lootFacts.length = 0; settleState.claimed = []; settleState.floor = null; settleState.branch = null; settleCarry.domains = []; settleCarry.floor = null;
-    roundMsgs = []; sentCard = ''; stash = null;
+    roundMsgs = []; sentCard = ''; stash = null; ledgerRecord = null;
   }
   // 世界藏物表（Part 5-1，core/stash.mjs）：包数据 manifest.data.stash 的行整张推给查看器（它以当前图自己筛），
   // 拿到手的东西由背包的 id 对账——不再在地上发光。藏物表晚于迁移到达时，补一次 retag（旧行里认得出的升格为地图拾取）。
@@ -189,7 +209,7 @@ export function createStashFlow(host) {
     cdnFetch(host.BASE + sb + sp).then(r => r.ok ? r.json() : null).then(j => { worldRaw = j; if (worldModule && j) { world = worldModule.normStash(j); worldArrived(); } }).catch(() => {}); } }
   function sendStash() { if (host.alive && worldModule) post({ type: 'eden-map:stash', items: worldModule.rows(world || {}, {}) }); }
   return {
-    changedInv, get FRm() { return FRm; }, frState, gate, gateFlush, injectAction, get stash() { return stash; }, set stash(v) { stash = v; }, get stashStoreModule() { return stashStoreModule; },
+    changedInv, get FRm() { return FRm; }, frState, gate, gateFlush, injectAction, get stash() { return stash; }, set stash(v) { stash = v; }, get ledgerRecord() { return ledgerRecord; }, set ledgerRecord(v) { ledgerRecord = v; }, get stashStoreModule() { return stashStoreModule; },
     get stashRecomputeModule() { return stashRecomputeModule; }, ledgerSync, get ledgerModule() { return ledgerModule; }, lootFacts, resetChat, scanPickups, sendInv, settleCarry,
     stealthCheck, takeLoot,
   };

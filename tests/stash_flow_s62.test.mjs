@@ -15,7 +15,7 @@ async function setup({ stat = {}, floor = 2 } = {}) {
   const bridge = { mvuStat: () => st.stat, perFloorStat: () => null, mvuGet: () => undefined, varMap: { location: '世界.当前地点' }, mvuPresent: () => false, varUpdateSeq: () => 0, swipeAt: () => 0, rosters: () => null, presentId: 'present' };
   const MR = await import('../map/tavern/mvu-readers.mjs');
   const LS = { getItem: () => null, setItem() {}, removeItem() {} };
-  const host = { LS, PACK_ID: 'eden', PACK_IN: { manifest: { data: { stash: 'stash.json' } } }, scriptBase: BASE, chatId: () => 'c1', composeIn: () => {}, life: { dead: false }, lsGet: () => null,
+  const host = { LS, PACK_ID: 'eden', PACK_IN: { manifest: { data: { stash: 'stash.json' } } }, scriptBase: BASE, chatId: () => 'c1', composeIn: () => {}, life: { dead: false }, lsGet: () => null, chars: [], events: [], roster: null,
     mvuStat: () => st.stat, post: m => posts.push(m), saveRoot: () => { saves.push(1); return Promise.resolve(true); }, BASE: 'https://example.invalid/', mvuBridge: bridge, mvuReaders: MR, uiLang: 'zh', alive: true,
     get floorNow() { return st.floor; } };
   const LF = createStashFlow(host);
