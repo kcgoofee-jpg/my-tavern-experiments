@@ -779,6 +779,22 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 
 **Added by S6-3:** K-R77 (§7, pickup sentences, strict verbs, never-forms, pack vocabulary) and K-R78 (§7, settlement write paths for the npc and events domains); the Items tab is in K-R76 (§5).
 
+**Planned in S9** (reserved by S9-design, `docs/zero-config.md`; full text lands with the step specs in its appendix):
+- K-R90 pack resolution order and the legacy-default start (S9-2);
+- K-R91 a pack embedded in the card (S9-2);
+- K-R92 the shipped index and the match score (S9-2);
+- K-R93 place candidates from the card's worldbook (S9-3);
+- K-R94 variables, people, start view and language from the card (S9-3);
+- K-R95 the automatic pack, its storage, stability and growth (S9-3);
+- K-R96 opening a schema-2 pack: projection to the viewer registry and the v2 runtime (S9-1);
+- K-R97 schematic layout and picture (S9-1);
+- K-R98 export as pack, and overlay export of a shipped pack (S9-3, S9b);
+- K-R99 importing a pack by URL or file (S9-2);
+- K-R100 edit mode and the draft (S9b);
+- K-R101 pack pictures: the media block, sources and limits (S9b);
+- K-R102 private pictures, never exported (S9b);
+- K-R103 go-live of a foreign pack's model-facing text (K-08 B; S9-2).
+
 ## 14. Designer decisions and open points
 
 ### 14.1 Decided by the designer
