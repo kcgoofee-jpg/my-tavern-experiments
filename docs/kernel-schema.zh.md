@@ -7,7 +7,7 @@
 > `map/core/compat-v1.mjs`（S1-impl-2 步）继续可用。
 
 每条规则都有固定编号 `K-R01` … `K-R106`，后面的提示词和测试按编号引用。编号永不挪动：初稿之后补的规则（K-R63–K-R70，
-信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号；K-R71–K-R73 由 S6-1 补上，K-R74–K-R76 由 S6-2 补上，K-R77–K-R78 由 S6-3 补上；K-R79–K-R89 与 K-R104 属于 S8（K-R79、K-R81–K-R83、K-R85、K-R104 由 S8-1 补上；K-R86–K-R89 由 S8-3 补上；K-R80、K-R84 由 S8-2 补上），K-R90–K-R103 预留给 S9（清单在 §13 末尾）；K-R105 由 R0 补上（§5，场景头）；K-R106 由 S9b-2 补上（§6.6，媒体来源）。K-R107–K-R114 预留给 S8-4（交通网与路线规划，`docs/transit-schema.md`；清单在 §13 末尾）。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
+信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号；K-R71–K-R73 由 S6-1 补上，K-R74–K-R76 由 S6-2 补上，K-R77–K-R78 由 S6-3 补上；K-R79–K-R89 与 K-R104 属于 S8（K-R79、K-R81–K-R83、K-R85、K-R104 由 S8-1 补上；K-R86–K-R89 由 S8-3 补上；K-R80、K-R84 由 S8-2 补上），K-R90–K-R103 预留给 S9（清单在 §13 末尾）；K-R105 由 R0 补上（§5，场景头）；K-R106 由 S9b-2 补上（§6.6，媒体来源）。K-R107–K-R114 属于 S8-4（交通网与路线规划，`docs/transit-schema.md`；K-R107–K-R109 由 S8-4a 补上，其余的计划清单在 §13 末尾）。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
 
 ## 0. 请你拍板
 
@@ -750,6 +750,10 @@ v1 的中文字段名与英文名（`type`、`place`、`title`、`level`、`stat
 （打开这一行就是一次；已存的“开”要等第一次点击或按键），页面隐藏或没有任何 `sound` 图层处于生效状态（可见且适用）时挂起。场景集合跟随当前视图、昼夜时段（`eden-map:clock`）与天气，经消息触发的重算
 至多每 2 秒一次。任何地方都没有音频文件；`window.SoundApi.describe()` 列出每层正在播放的场景。
 
+**K-R107 —— transit 块。** `transit` 是可选的顶层块（内联，或像每个块一样写成由 `resolveBlocks` 解析的相对路径；schema-1 包把它放在叠加层里，K-R108），写明一个包的站点、线路、连接和城区；图层、路线器（K-R109）和宿主读的是同一份数据。没有它的包行为与以前完全一样。形状：`{ modes?, stations, lines?, links?, districts?, options?, style?, _…, x-… }`。**方式：** `modes.<id>`（id `^[a-z][a-z0-9_]{0,15}$`）= `{ label（≤ 24）, i18n?, trip: road | rail | underground | air | teleport, color?, dash? }`，按 id 合并到四个冻结的内核缺省 `walk`、`metro`、`maglev`、`air` 之上（内核 id 的行只能覆盖 `label`、`i18n`、`color`、`dash`，它的 `trip` 不变；新 id 必须有 `label` 和 `trip`）；总数至多 8。**站点**（1 … 300）：`{ id, node?, view?, at?, name?（≤ 40）, i18n?, district?, hidden? }`。节点站点指向包的树里的一个节点（位置就是查看器画这个节点的地方，名字就是节点的名字）；点站点有 `view`、`at`（占视图宽高的 0..1，K-R31）和 `name`；`hidden` 让站点只参与路线计算、不画点。**线路**（≤ 24）：`{ id, number?（1–3 位字母或数字）, name, i18n?, mode, color（`#rrggbb`，不收令牌）, stops（2 … 80 个站点 id，同一站在一条线里至多一次）, min, loop?, oneway?, wait?（0 … 30，缺省 0）}`；`min` 是对每一段都适用的一个数，或每段一个数的数组（`stops − 1` 个，`loop` 时 `stops` 个），每个值 0.1 … 600。**连接**（≤ 600）：`{ from, to, mode, min, oneway? }`（步行换乘与单跳）。线路的区段和连接都是双向的，除非 `oneway`。**城区**（≤ 64）：`{ id, name, i18n?, view, pts（3 … 200 个点）| node + r（占宽度的比例，缺省 0.06）, function, danger 0 … 3 }`；`function` 是 `civic commerce residential industry military religious education medical leisure transport nature restricted other` 之一（未知值变成 `other`，不拒绝）。**选项：** `transfer_min` 0 … 30（缺省 3）、`walk_m_per_min` 20 … 200（80）、`access_max_min` 0 … 60（12）、`detour` 1 … 2（1.25）。**样式：** `functions.<fn>.color`（十六进制或内核令牌，K-R58）、`width` 2 … 8（4）、`labels`（true）。**修复**按条进行（K-R06）：`core/transit-spec.mjs` 的 `normTransit(block, { nodes, views })`（`nodes` / `views` 是 id 判断函数或 null）丢掉坏的部分、列出 `{ code, id?, path? }`、保留其余；代码有 `transit-invalid`（不是对象，或一个站点都没剩下：整块为 null）、`transit-limit`、`transit-duplicate`、`transit-mode-invalid`、`transit-station-invalid`、`transit-station-node`、`transit-station-view`、`transit-line-invalid`、`transit-line-stop`、`transit-line-min`、`transit-link-invalid`、`transit-district-invalid`。被丢掉的站点会带走所有提到它的停靠和连接（被移除的停靠的分钟数并入相邻区段）；剩下不到 2 个停靠的线路被丢掉。修复过的块再修复还是它自己。整块至多 256 KB 的 JSON；外来包（K-R63）上限相同；每个字符串到页面上都是文本，每个颜色、数字和 id 运行时重新检查（K-R64）。`validate2` 在交叉检查之后用本包的节点 id 与视图 id（隐式视图也算，K-R96）再跑一次 `normTransit`；schema 是 `map/data/schema/v2/transit.schema.json`，由 `tools/check_pack.py` 检查。画交通网和路线的内核图层随 K-R110（S8-4b）到来。
+
+**K-R109 —— 路线器。** `core/router.mjs`（纯函数）在 transit 块上做规划。`buildGraph(transit)` 给每个线路区段（`ride`，带线路与分钟数）和每个连接（`link`）各生成一条边，双向，除非 `oneway`；邻接表按声明顺序（先线路，后连接）；另有 `linesAt` 和派生的换乘站（被两条线服务，或被一条线服务并有连接通到另一条线服务的站）。`attach(graph, end, env)` 把一个地点接入网络（`end = { node?, pos? }`，`env = { tree, pos(站点或端点), extent(视图) }`），按顺序、找到站点就停：**at**（同一节点上的站点，0 分钟）、**inside**（最近的祖先节点上的站点）、**within**（后代节点上的站点，全部）、**walk**（仅当有位置：同一视图上步行分钟 `距离_米 × detour / walk_m_per_min` 不超过 `access_max_min` 的站点，由近到远，至多 4 个；视图的 `extent_m` 给出米数）；什么都没找到 = 不在网络上。`planRoute(graph, from, to, { env, modes, src })` 在状态（站点、当前线路、是否已乘过）上做最短路搜索，从虚拟源点（起点候选，代价为接入分钟）到虚拟终点。代价是分钟：乘一段加该区段的分钟；上一条不同的线要加它的 `wait`，路径上已乘过时再加 `options.transfer_min`；连接加它的分钟并让当前线路清空；`modes` 去掉其他方式的乘车与连接边（接入段永远是步行）。平手依次比：总分钟、乘车段数、停靠数、声明顺序，所以同样的输入永远得到同样的路线。直接步行（两端在同一视图上都有位置，且不超过 2 × `access_max_min`）在不更慢时胜出；两端同一节点或一端在另一端里面，或无路可走，得到 `null`。**路线（plan）** 是 `{ v: 1, src: 'user' | 'op', from, to: { node, station, name }, legs: [{ kind: walk | ride | link, mode, line, stops, min }], min, changes, modes, danger }`：同一线路的连续乘车、同一方式的连续连接合并成一段；换乘与等候不是段；`min` 是整分钟（至少 1），`changes` = 乘车段数 − 1，`danger` = 路径上各站所在城区的最高危险等级（站点自己的 `district`，否则在它的节点或祖先上的城区），不知道时为 `null`。`checkPlan(graph, plan, { tree })` 是宿主的复核：站点存在、乘车的停靠在该线路上相邻且方向允许、连接段对得上该方式的连接、各段首尾相接、给出的节点存在；它按网络重算每一分钟，把接入步行限在 `access_max_min`（直接步行限在两倍），名字由树和站点重建，返回重建后的路线或 `null`。`planText(plan, { lang, templates, nameOf, modeLabel, lineName })` 填入包的 `llm.templates.<lang>` 里的 `route_plan`、`route_leg`、`route_danger`（内核缺省在 `KERNEL_TEMPLATES`，中英各一；占位符 `{legs} {min} {changes}`、`{from} {to} {how} {min}`、`{danger}`），各段用 `；` / `; ` 连起来，`danger ≥ 2` 时追加 `route_danger`，永不抛错（缺的名字是 `?`）。`routeOp(op, { graph, locate, here, floor, map, tree })` 校验“建议路线”操作行 `{ to（1 … 40 个字符）, from?（1 … 40）, why?（≤ 60）}`：两端都要能定位到节点（`from` 缺省为当前位置），两个节点要不同且互不包含，包里要有网络；结果带原样的文字、两个节点、`why`、`floor` 与 `map`，否则 `null`。这里没有任何函数碰 DOM、宿主或存储；绘制在 `core/transit-geometry.mjs` 与 `core/thematic.mjs`（S8-4b 接线）。
+
 ## 10. ui 与 llm
 
 ### 10.1 ui
@@ -773,7 +777,7 @@ v1 的中文字段名与英文名（`type`、`place`、`title`、`level`、`stat
 
 **K-R59 —— 与模型的接口。** `templates.<语言>` 带占位符（events：`{tag} {items}`；event_item：`{place} {source} {type} {severe} {text}`；
 state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.book` / `worldbook.entries[{ id, name, content, keys?, enabled? }]`。
-内核保留：注入预算、降级顺序、同意开关、条目的位置 / 深度 / 顺序 / 递归设置，以及「只写我们自己的附加书（K-R05）、只动带我们归属标记的条目」
+`templates.<语言>` 还可以带 `route_plan`、`route_leg`、`route_danger`，即计划路线的句子（K-R108、K-R109）。内核保留：注入预算、降级顺序、同意开关、条目的位置 / 深度 / 顺序 / 递归设置，以及「只写我们自己的附加书（K-R05）、只动带我们归属标记的条目」
 这条规矩。外来包的文字什么时候生效见 K-08。
 
 **K-R65 —— 外来包写给模型的文字。** 外来包的模板和世界书条目交给宿主之前，内核先把宿主会执行的语法中和掉——这是中和语法，不是过滤内容
@@ -890,6 +894,8 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 
 **K-R67（S9b 修订）—— 叠加层可以带 `media`。** `overlay.v2.json` 可以带 `media` 块（K-R101）与节点的 `media` 列表。`core/overlay-v2.mjs` 的 `applyOverlayMedia(media, overlay)` 按 id 把各项合并到转换出的块之上（叠加层逐字段优先；不是对象、没有字符串 `src`、或 id 不是 media id 的项被跳过，记为 `overlay-media-invalid`）；节点的 `media` 列表和其他节点字段一样整体替换。`compat-v1` 只在结果非空时才设 `pack.media`，所以带 `"media": {}` 的叠加层什么都不改。叠加层可以只有 `media`。`tools/check_overlay.mjs` 对合并后的块跑同一个函数和 `validate2`，并检查路径来源在包目录下确实存在。
 
+**K-R108 —— schema-1 包的叠加层可以带 `transit`。** `overlay.v2.json` 可以带 `transit` 块（K-R107）。`core/overlay-v2.mjs` 的 `applyOverlayTransit(overlay, { nodes, views })` 返回 `{ transit, problems }`：没有 = `transit` 为 undefined、无问题；不是对象 = `overlay-transit-invalid`；否则该块用转换后的节点 id 与视图 id 过一遍 `normTransit`，每个修复问题连同它的代码一并列出。`compat-v1` 在 `applyOverlayLayers` 之后调用它，结果非空就设 `pack.transit`；这个块整块采用、从不合并（schema-1 包没有转换出来的网络）。叠加层可以只带 `transit`。`tools/check_overlay.mjs` 严格运行同一个函数（任何问题都算错误）。查看器从运行时读网络（`RT.transit`，`app/nodes-runtime.mjs`），宿主从地理读（`geo.transit`，`core/event-geo.mjs` 的 `makeGeo`），schema-1 与 schema-2 的包一样；图每个包只建一次（`buildGraph`）。两个读取端随 S8-4b 落地。`llm.templates.<lang>` 可以带 `route_plan`、`route_leg`、`route_danger`（K-R59、K-R109）。
+
 **S9-1 新增：** K-R96 与 K-R97（§4.6，查看器里的 schema-2 包、隐式示意图视图、示意图布局与图）。
 
 **S8-1 新增：** K-R79、K-R81、K-R82、K-R83（§9，layers 块、来源与要素、`applies`、菜单行与可见性存储），K-R85（上，叠加层的 `layers`）与 K-R104（§4.5，3D 清单 schema）。
@@ -904,10 +910,9 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 
 **S8-3 新增：** K-R86（§9，宿主送的卡变量与领航员叠加）、K-R87（§9，本机图层）、K-R88（§9，本机道具包）与 K-R89（§9，`sound` 积木）；至此 S8 设计里的 K-R79 – K-R89 与 K-R104 全部写完。
 
+**S8-4a 新增：** K-R107、K-R109（§9）与 K-R108（§13）。
+
 **S8-4 计划**（由 S8-4-design 预留，`docs/transit-schema.md`；全文随它附录里的步骤说明落地）：
-- K-R107 —— transit 块：方式、站点、线路、连接、城区、选项、样式、上限、修复（§9；S8-4a）
-- K-R108 —— schema-1 包的叠加层可以带 `transit`；查看器与宿主从哪里读；路线文字模板（§13；S8-4a）
-- K-R109 —— 路线器：图、接入、代价与平手、路线、`checkPlan`、`planText`、`routeOp`（§9；S8-4a）
 - K-R110 —— 内核图层 `transit` 与 `route-plan`；主题绘制与标签层级；`badge` 样式键（§9；S8-4b）
 - K-R111 —— 规划路线：链接、路线卡、重新规划、`eden-map:route-plan` / `eden-map:route`、宿主的会话状态、`{{eden_route}}`（§10.2；S8-4b）
 - K-R112 —— 行程沿交通网（§9；S8-4b）

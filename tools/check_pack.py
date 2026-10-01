@@ -93,7 +93,7 @@ def check(pid):
     return errs
 
 
-BLOCKS2 = ('nodes', 'views', 'vars', 'entities', 'items', 'events', 'layers', 'ui', 'llm', 'media')
+BLOCKS2 = ('nodes', 'views', 'vars', 'entities', 'items', 'events', 'layers', 'ui', 'llm', 'media', 'transit')
 
 
 def check_overlay(pid, d, m):
@@ -134,6 +134,9 @@ def check_v2(pid, d, m):
     refs = [r.get('node') for r in (items.get('stash') or [])] + [r.get('node') for g in (ent.get('groups') or []) for r in (g.get('fallback') or [])]
     refs += [ui.get('start')] + [x for k, vs in (ui.get('levels') or {}).items() for x in [k, *vs]]
     refs += [x for v in views.values() if isinstance(v, dict) for x in [(v.get('home') or {}).get('focus')] + [i.get('node') for i in (v.get('insets') or [])]]
+    tr = b.get('transit') or {}   # K-R107: stations / districts name nodes and views of this pack
+    refs += [x.get('node') for x in (tr.get('stations') or []) + (tr.get('districts') or []) if isinstance(x, dict)]
+    errs += [f'{pid}: transit 引用了不存在的视图 {x.get("view")}' for x in (tr.get('stations') or []) + (tr.get('districts') or []) if isinstance(x, dict) and x.get('view') and views and x['view'] not in views]
     if nodes: errs += [f'{pid}: 引用了不存在的节点 {r}' for r in refs if r and r not in par]
     gs, fx = {g.get('id') for g in (ev.get('groups') or [])} | {'other'}, set(ev.get('fx_presets') or {}) | {'none', 'glitch', 'flash', 'shake', 'tint', 'pulse'}
     errs += [f'{pid}: 事件类型 {k} 的大类 {t.get("group")!r} 没声明' for k, t in (ev.get('types') or {}).items() if t.get('group') not in gs]

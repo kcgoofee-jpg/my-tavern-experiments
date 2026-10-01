@@ -7,9 +7,11 @@
 // K-R67 (S6-3): and an `items` block, of which only `pickup` is read (per language the word lists are united); other keys are ignored.
 // K-R70: and a `ui` block (per-view theme tokens re-checked by recheck.token, the legend, `x-…`); same rule.
 // K-R101: and a `media` block (pack pictures, merged by id; a node's own `media` list is replaced like any other node field).
+// K-R108: and a `transit` block (core/transit-spec.mjs normTransit, applyOverlayTransit); a schema-1 pack has no converted network, so the block is taken as a whole.
 // K-R85: and a `layers` array (declared layers, core/layer-spec.mjs); each row is healed by normLayer and added by id, the overlay wins.
 import { recheck } from './pack-v2-spec.mjs';
 import { normLayer } from './layer-spec.mjs';
+import { normTransit } from './transit-spec.mjs';
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const union = (a, b) => [...new Set([...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])])];
 const LISTS = ['alias', 'hints'];
@@ -18,7 +20,7 @@ const LISTS = ['alias', 'hints'];
 export function applyOverlay(nodes, overlay) {
   const out = nodes.map(n => ({ ...n })), byId = new Map(out.map(n => [n.id, n])), problems = [];
   if (overlay === null || overlay === undefined) return { nodes: out, problems };
-  if (!isObj(overlay) || overlay.schema !== 2 || !(Array.isArray(overlay.nodes) || (overlay.nodes === undefined && (isObj(overlay.events) || isObj(overlay.llm) || isObj(overlay.vars) || isObj(overlay.entities) || isObj(overlay.ui) || isObj(overlay.items) || isObj(overlay.media) || Array.isArray(overlay.layers))))) return { nodes: out, problems: [{ code: 'overlay-invalid' }] };
+  if (!isObj(overlay) || overlay.schema !== 2 || !(Array.isArray(overlay.nodes) || (overlay.nodes === undefined && (isObj(overlay.events) || isObj(overlay.llm) || isObj(overlay.vars) || isObj(overlay.entities) || isObj(overlay.ui) || isObj(overlay.items) || isObj(overlay.media) || Array.isArray(overlay.layers) || isObj(overlay.transit))))) return { nodes: out, problems: [{ code: 'overlay-invalid' }] };
   (overlay.nodes || []).forEach((o, index) => {
     if (!isObj(o) || typeof o.id !== 'string' || o.id === '') return problems.push({ code: 'overlay-node-invalid', index });
     const cur = byId.get(o.id);
@@ -219,4 +221,14 @@ export function applyOverlayMedia(media, overlay) {
     out[id] = { ...(isObj(out[id]) ? out[id] : {}), ...copy(o) };
   }
   return { media: out, problems };
+}
+
+/** applyOverlayTransit(overlay, { nodes, views }) -> { transit, problems } (K-R108): `overlay.transit` is healed by normTransit with the pack's node and view ids (predicates or null) and taken as a whole, never merged.
+ *  Absent = `transit` undefined and no problem; not an object = `overlay-transit-invalid`; each healing problem is listed with its code (`transit-…`). */
+export function applyOverlayTransit(overlay, { nodes = null, views = null } = {}) {
+  const raw = isObj(overlay) ? overlay.transit : undefined;
+  if (raw === undefined || raw === null) return { transit: undefined, problems: [] };
+  if (!isObj(raw)) return { transit: undefined, problems: [{ code: 'overlay-transit-invalid' }] };
+  const r = normTransit(raw, { nodes, views });
+  return { transit: r.transit || undefined, problems: r.problems };
 }

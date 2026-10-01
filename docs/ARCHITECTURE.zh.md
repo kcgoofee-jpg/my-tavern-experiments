@@ -44,7 +44,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 
 ## 3. 模块地图
 
-每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 210 个：`map/core` 59、`map/app` 59、`map/tavern` 56、`map/ui` 9、`map/three` 9、`map/*.mjs` 16，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
+每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 251 个：`map/core` 77、`map/app` 73、`map/tavern` 64、`map/ui` 9、`map/three` 9、`map/*.mjs` 17，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
 
 ### 3.1 map/core
 
@@ -109,6 +109,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `room-gallery-db.mjs` | 房间图集图片的 IndexedDB 薄封装（只在浏览器里跑）。 |
 | `room-gallery-logic.mjs` | 图集纯逻辑：缩放尺寸、配额检查、图片记录（`private` / `pack`）、图集文件的来源守卫。 |
 | `roster.mjs` | CharacterRosterSystem：五源名册合并成标准 `RosterRow`，含优先级仲裁、别名互认、立绘挂载。 |
+| `router.mjs` | 交通路线器（K-R109）：transit 块的图、地点接入（at / inside / within / walk）、最省路线（分钟，其次换乘、停靠数、声明顺序）、`checkPlan`、`planText`、`routeOp`。纯函数。 |
 | `routine.mjs` | 宿主与查看器共用的 NPC 日程表数学。 |
 | `scene-header.mjs` | 场景头（K-R105）：不用正则读一楼的 `<tag>地点·日期·时间</tag>` 块，并决定一楼的地点：本楼变量补丁 > 认得出节点的头里地点 > 沿用的变量。 |
 | `scene3d-manifest.mjs` | Estate3D 清单契约：校验并解析庄园页与道具页的模型地址、数据路径与档位兜底。 |
@@ -118,7 +119,10 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `stash.mjs` | 世界藏物表：包定义的物品藏在哪（图、标记、暗格），以及与已携带物品的对账。 |
 | `stash3d.mjs` | 藏物条目到三维场景坐标的纯映射，落点表由调用方喂入。 |
 | `storage.mjs` | 本机存储服务：`KEYS` 登记表、带包命名空间且从不抛错的 get / set / json / remove。 |
+| `thematic.mjs` | 地图的主题外观（K-R107）：功能色板、危险等级轮廓、`functionOf`、外扩凸包，以及自动示意图的主题模型（分支、枢纽、标签等级）。纯函数；S8-4b 接线。 |
 | `traffic.mjs` | 车流 / 流光数学：归一化路线点变成一帧的光点位置，确定性。 |
+| `transit-geometry.mjs` | 交通网与计划路线的八方向路径、平行偏移与合成图层声明，以及供行程使用的路线折线（K-R109）。纯函数；S8-4b 接线。 |
+| `transit-spec.mjs` | transit 块（K-R107）：内核方式、上限、`normTransit` 逐条修复、标签辅助函数。纯函数。不是 `transit.mjs`（那个解析写成地点的行程）。 |
 | `transit.mjs` | 写成地点的行程（「从 A 到 B」「A → B」）：两端与交通工具；卡内脚本用的纯句式。 |
 | `vision.mjs` | 视线锥几何：守卫视野被墙段截断、巡逻环、点是否被看见的判定。 |
 | `vocab.mjs` | 内核的发现词表（K-R38、K-R42）：变量、人物行、名册槽位的分语言字段名词表，不含任何卡的名字。 |

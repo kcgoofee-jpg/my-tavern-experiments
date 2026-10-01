@@ -5,7 +5,7 @@ import { buildGeo } from './compat-v1-geo.mjs';
 import { buildViews } from './compat-v1-views.mjs';
 import { legacyOf, stringsOf, eventsOf, rosterOf, stashOf, worldbookOf, customOf } from './compat-v1-blocks.mjs';
 import { normalise } from './lexicon.mjs';
-import { applyOverlay, applyOverlayEvents, applyOverlayLlm, applyOverlayVars, applyOverlayEntities, applyOverlayUi, applyOverlayLayers, applyOverlayMedia } from './overlay-v2.mjs';
+import { applyOverlay, applyOverlayEvents, applyOverlayLlm, applyOverlayVars, applyOverlayEntities, applyOverlayUi, applyOverlayLayers, applyOverlayMedia, applyOverlayTransit } from './overlay-v2.mjs';
 
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 /** A.7: v1 roster source names -> v2 (the image extension's library is `imagegen`); every other source keeps its name. */
@@ -66,6 +66,7 @@ export function fromV1({ manifest, maps, world = null, names = null, plan = null
   if (oly.layers.length) pack.layers = oly.layers;
   const omd = applyOverlayMedia(undefined, overlay); ov.problems.push(...omd.problems);   // K-R101: pack pictures of the overlay (empty = no block)
   if (omd.media && Object.keys(omd.media).length) pack.media = omd.media;
+  const otr = applyOverlayTransit(overlay, { nodes: has, views: id => Object.hasOwn(views, id) }); ov.problems.push(...otr.problems); if (otr.transit) pack.transit = otr.transit;   // K-R108
   const llm = {}, wb = worldbookOf(worldbook);
   if (ev?.tag) llm.templates = { [lang]: { tag: ev.tag } };
   if (wb.length) llm.worldbook = { entries: wb };

@@ -77,3 +77,25 @@ export function placeWord(text, lang) {
   const toks = t.split(/[^\p{L}\p{N}']+/u).filter(Boolean);
   return PLACE.en.find(w => toks.some(k => k === w || k === w + 's' || k === w + "'s")) || '';
 }
+
+// ---- function words (docs/kernel-schema.md K-R107, docs/transit-schema.md §8): the generic words that tint a branch of an automatic schematic by what its places are for; at most 12 per language ----
+export const FUNCTION = {
+  civic: L(['政府', '议会', '市政', '法院', '行政', '官署', '警局', '监狱'], ['government', 'council', 'court', 'parliament', 'senate', 'embassy', 'magistrate', 'courthouse']),
+  commerce: L(['商会', '市场', '集市', '商店', '店铺', '银行', '交易', '酒馆', '客栈', '旅店', '钱庄', '商业'], ['market', 'shop', 'store', 'bazaar', 'bank', 'tavern', 'inn', 'merchant', 'exchange', 'mall', 'emporium']),
+  residential: L(['住宅', '公寓', '宿舍', '民居', '别墅', '寓所', '居民', '街坊', '民宅', '小区'], ['apartment', 'house', 'home', 'dormitory', 'residence', 'cottage', 'villa', 'lodge', 'housing', 'dwelling', 'tenement']),
+  industry: L(['工厂', '工坊', '作坊', '矿场', '仓库', '车间', '冶炼', '工业', '锻造', '船坞'], ['factory', 'workshop', 'mine', 'warehouse', 'foundry', 'mill', 'forge', 'shipyard', 'plant', 'smithy']),
+  military: L(['兵营', '要塞', '哨所', '堡垒', '卫戍', '炮台', '营地', '岗哨', '军械', '校场', '军事'], ['barracks', 'fortress', 'garrison', 'fort', 'armory', 'armoury', 'military', 'camp', 'outpost', 'citadel', 'watchtower']),
+  religious: L(['教堂', '神殿', '寺院', '庙宇', '修道院', '神庙', '祭坛', '礼拜', '圣所', '道观', '教会'], ['church', 'temple', 'cathedral', 'chapel', 'monastery', 'abbey', 'shrine', 'mosque', 'sanctuary', 'convent', 'altar']),
+  education: L(['学院', '学校', '大学', '学园', '书院', '图书馆', '教室', '研究所', '学堂', '讲堂'], ['school', 'academy', 'university', 'college', 'library', 'institute', 'seminary', 'classroom', 'campus']),
+  medical: L(['医院', '诊所', '药房', '疗养', '医疗', '急救', '卫生', '护理', '医馆'], ['hospital', 'clinic', 'pharmacy', 'infirmary', 'hospice', 'sanatorium', 'medical', 'surgery', 'apothecary']),
+  leisure: L(['公园', '花园', '剧院', '浴场', '温泉', '游乐', '竞技场', '赌场', '娱乐', '酒吧', '俱乐部', '剧场'], ['park', 'garden', 'theatre', 'theater', 'spa', 'casino', 'arena', 'club', 'stadium', 'cinema', 'resort']),
+  transport: L(['车站', '站台', '码头', '港口', '机场', '渡口', '地铁', '轨道', '枢纽', '驿站', '航站'], ['station', 'terminal', 'port', 'harbour', 'harbor', 'airport', 'ferry', 'junction', 'platform', 'pier', 'metro', 'dock']),
+  nature: L(['森林', '山林', '湖泊', '河岸', '海岸', '草原', '峡谷', '荒野', '瀑布', '沼泽', '山谷'], ['forest', 'woods', 'mountain', 'lake', 'river', 'coast', 'meadow', 'canyon', 'wilderness', 'waterfall', 'swamp', 'valley']),
+  restricted: L(['禁区', '禁地', '地牢', '牢房', '隔离区', '封锁', '管制区', '刑场', '密室', '禁闭'], ['restricted', 'dungeon', 'quarantine', 'forbidden', 'vault', 'prohibited', 'lockdown', 'cell']),
+};
+/** the function (a key of FUNCTION, in its order) whose word `text` contains (Chinese: as a substring; other languages: as a whole word, a plural `s` allowed), else ''. */
+export function functionWord(text, lang) {
+  const t = low(String(text ?? '').normalize('NFKC')), zh = /^zh/i.test(String(lang || ''));
+  const toks = zh ? [] : t.split(/[^\p{L}\p{N}']+/u).filter(Boolean);
+  return Object.keys(FUNCTION).find(fn => (zh ? FUNCTION[fn].zh.some(w => t.includes(w)) : FUNCTION[fn].en.some(w => toks.some(k => k === w || k === w + 's' || k === w + "'s")))) || '';
+}

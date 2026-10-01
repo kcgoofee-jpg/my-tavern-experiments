@@ -3,6 +3,7 @@
 // tests/kernel_minimal.test.mjs checks these against tools/check_pack.py on the same broken packs.
 import { cpLen } from './lexicon.mjs';
 import { srcKind, decodedBytes, MAX_PICTURE, MAX_ITEMS } from './pack-media.mjs';
+import { normTransit } from './transit-spec.mjs';
 
 export const DROP = Symbol('drop');
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -164,6 +165,15 @@ export const eventsBlock = block(obj({
 
 export { layersBlock } from './layer-spec.mjs';   // K-R79: the layers block is validated by core/layer-spec.mjs (normLayer)
 
+/** K-R107: the transit block, a relative path (left for resolveBlocks) or the inline value; core/transit-spec.mjs normTransit heals it and each problem lands in the bad() channel. validate2 re-runs it with the pack's node and view ids. */
+export const transitBlock = (v, p, x) => {
+  if (typeof v === 'string') return str({ re: PATH_RE })(v, p, x);
+  if (!isObj(v)) return bad(x, p, 'type', 'object');
+  const { transit, problems } = normTransit(v);
+  for (const q of problems) x.problems.push({ code: q.code, path: q.path ? `${p}.${q.path}` : p, ...(q.id !== undefined ? { detail: q.id } : {}) });
+  return transit || DROP;
+};
+
 export const TERM = '(#[0-9a-fA-F]{3,8}|(rgb|rgba|hsl|hsla)\\([0-9., %/-]{1,40}\\)|-?[0-9]{0,4}\\.?[0-9]{1,4}(px|rem|em|%|vh|vw)?|[a-z][a-z-]{0,23}|var\\(--[a-z0-9-]{1,40}\\))';
 const TOKEN_NAME = re('^--(accent|ink|bg|surface|line|muted|gold|ok|alert|on|map-label|glow|focus|r|fs)(-[a-z0-9-]{1,30})?$');
 const GROUP = `${TERM}( ${TERM}){0,3}`;
@@ -198,7 +208,7 @@ export const uiBlock = block(obj({
 
 const tpl = str({ min: 1, re: NL(400) });
 export const llmBlock = block(obj({
-  templates: dict(LANG, obj({ tag: str({ re: NL(30) }), events: tpl, event_item: tpl, state: tpl, custom: tpl }, B)),
+  templates: dict(LANG, obj({ tag: str({ re: NL(30) }), events: tpl, event_item: tpl, state: tpl, custom: tpl, route_plan: tpl, route_leg: tpl, route_danger: tpl }, B)),
   worldbook: obj({ book: str({ re: NL(40) }), entries: arr(obj({ id: str({ re: ID }), name: str({ min: 1 }), content: str({ min: 1 }),
     keys: arr(str({ re: re('^(?!/.*/[a-z]*$)[^\\n]{1,80}$') })), enabled: bool }, { req: ['id', 'name', 'content'], ...B })) }),
 }, B), 'object');
@@ -219,4 +229,4 @@ export const MANIFEST = {
     fields: dict(re('^(location|time|period|date|outfit|reputation|name)$'), lexWords) }, { ext: '_' })),
   cdn: obj({ repo: str({ re: re('^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$') }), npm: str({ re: re('^(?!.*\\.\\.)[a-z0-9@][a-z0-9@/._-]{0,63}$') }) }),
 };
-export const BLOCKS = ['nodes', 'views', 'vars', 'entities', 'items', 'events', 'layers', 'ui', 'llm', 'media'];
+export const BLOCKS = ['nodes', 'views', 'vars', 'entities', 'items', 'events', 'layers', 'ui', 'llm', 'media', 'transit'];

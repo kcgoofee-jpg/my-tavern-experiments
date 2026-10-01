@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { fromV1 } from '../map/core/compat-v1.mjs';
 import { buildTree } from '../map/core/nodes.mjs';
-import { applyOverlay, applyOverlayEvents, applyOverlayVars, applyOverlayEntities, applyOverlayUi, applyOverlayItems, applyOverlayLayers, applyOverlayMedia } from '../map/core/overlay-v2.mjs';
+import { applyOverlay, applyOverlayEvents, applyOverlayVars, applyOverlayEntities, applyOverlayUi, applyOverlayItems, applyOverlayLayers, applyOverlayMedia, applyOverlayTransit } from '../map/core/overlay-v2.mjs';
 import { validate2 } from '../map/core/pack-v2.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url)), id = process.argv[2];
@@ -14,7 +14,7 @@ if (!id || !fs.existsSync(file)) process.exit(0);
 const manifest = J(dir + 'manifest.json'), base = id === 'eden' ? ROOT + 'map/' : dir, data = manifest?.data || {};
 const inputs = { manifest, maps: J(base + data.maps), world: J(base + data.world), plan: J(base + data.rooms), names: J(ROOT + 'map/packs/eden/names.en.json'), events: J(base + data.events) };
 const ov = J(file), errs = [], ID = /^[a-z][a-z0-9_]{0,63}$/, WORD = /^[^\n]{1,60}$/;
-const evOnly = ov && ov.nodes === undefined && ['events', 'llm', 'vars', 'entities', 'ui', 'items', 'layers', 'media'].some(k => ov[k] && typeof ov[k] === 'object');
+const evOnly = ov && ov.nodes === undefined && ['events', 'llm', 'vars', 'entities', 'ui', 'items', 'layers', 'media', 'transit'].some(k => ov[k] && typeof ov[k] === 'object');
 if (!ov || ov.schema !== 2 || !(Array.isArray(ov.nodes) || evOnly)) { console.log(`${id}: overlay.v2.json needs "schema": 2 and a "nodes" array`); process.exit(1); }
 ov.nodes ||= [];
 const baseNodes = fromV1(inputs).pack.nodes || [], have = new Set(baseNodes.map(n => n.id)), seen = new Set();
@@ -70,6 +70,10 @@ if (ov.media !== undefined) {   // K-R101: the merged media block goes through t
   for (const p of v.problems || []) if (String(p.path || '').startsWith('media')) errs.push(`${id}: overlay media: ${JSON.stringify(p)}`);
   for (const [k, it] of Object.entries(r.media || {})) if (!/^(data:|https:)/.test(it.src) && !fs.existsSync(base + it.src)) errs.push(`${id}: overlay media ${k}: ${it.src} is not under the pack folder`);
   for (const n of merged.nodes) for (const m of n.media || []) if (!(r.media || {})[m]) errs.push(`${id}: node ${n.id}: picture ${m} is not in the overlay media block`);
+}
+if (ov.transit !== undefined) {   // K-R108: the block goes through normTransit strictly (any problem is an error), with the merged node ids and the converted views
+  const views = new Set(Object.keys(fromV1(inputs).pack.views || {})), r = applyOverlayTransit(ov, { nodes: n => all.has(n), views: v => views.has(v) });
+  for (const p of r.problems) errs.push(`${id}: overlay transit problem ${JSON.stringify(p)}`);
 }
 const tree = buildTree(merged.nodes, { title: manifest?.title });
 for (const p of tree.problems) errs.push(`${id}: tree problem ${JSON.stringify(p)}`);

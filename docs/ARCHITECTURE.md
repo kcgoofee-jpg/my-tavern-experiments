@@ -61,8 +61,8 @@ Rules that follow:
 
 ## 3. Module map
 
-Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 210 files: `map/core` 59,
-`map/app` 59, `map/tavern` 56, `map/ui` 9, `map/three` 9, `map/*.mjs` 16, plus `map/viewer.html` and
+Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 251 files: `map/core` 77,
+`map/app` 73, `map/tavern` 64, `map/ui` 9, `map/three` 9, `map/*.mjs` 17, plus `map/viewer.html` and
 `map/props/viewer3d.html`. Roles were derived from each file's header comment and code.
 
 ### 3.1 map/core
@@ -128,6 +128,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `room-gallery-db.mjs` | IndexedDB wrapper for room gallery images (browser only). |
 | `room-gallery-logic.mjs` | Pure gallery logic: resize dimensions, quota checks, picture records (`private` / `pack`), the source guard for gallery files. |
 | `roster.mjs` | CharacterRosterSystem: five-source roster merged into standard `RosterRow`s with priority arbitration, aliases and portraits. |
+| `router.mjs` | The transit router (K-R109): graph of a transit block, attaching a place (at / inside / within / walk), cheapest plan (minutes, then changes, stops, declaration order), `checkPlan`, `planText`, `routeOp`. Pure. |
 | `routine.mjs` | NPC schedule math shared by host and viewer. |
 | `scene-header.mjs` | Scene header (K-R105): reads a floor's `<tag>place·date·time</tag>` block without a regex and decides one floor's place: this floor's variable patch, then the header place when it resolves, then the carried variable. |
 | `scene3d-manifest.mjs` | Estate3D manifest contract: validates and resolves model URLs, data paths and tier fallbacks for the estate and prop 3D pages. |
@@ -137,7 +138,10 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `stash.mjs` | World stash table: where pack-defined items are hidden (map, marker, compartment) and reconciliation against carried items. |
 | `stash3d.mjs` | Pure mapping from stash entries to 3D scene positions, fed by the caller's room table. |
 | `storage.mjs` | Local storage service: `KEYS` registry, pack-namespaced get / set / json / remove that never throw. |
+| `thematic.mjs` | The thematic look of a map (K-R107): function palette, danger outlines, `functionOf`, padded hulls, and the model of a thematic automatic schematic (branches, hubs, label ranks). Pure; wired in S8-4b. |
 | `traffic.mjs` | Traffic and light-stream math: normalized route points to a frame of light positions, deterministic. |
+| `transit-geometry.mjs` | Octilinear paths, parallel offsets and the synthetic layer declarations of a transit network and of a planned route, plus the route polyline for trips (K-R109). Pure; wired in S8-4b. |
+| `transit-spec.mjs` | The transit block (K-R107): kernel modes, limits, `normTransit` per-item healing, label helpers. Pure. Not `transit.mjs` (that one parses a journey written as a place). |
 | `transit.mjs` | A journey written as a place ("from A to B", "A → B"): its ends and the vehicle; the pure patterns the card script uses. |
 | `vision.mjs` | Vision-cone geometry: guard fields of view clipped by wall segments, patrol rings, point-visibility tests. |
 | `vocab.mjs` | The kernel's discovery vocabulary (K-R38, K-R42): per-language field-name words for variables, person rows and roster slots; no card names. |

@@ -21,13 +21,16 @@
     "tpl": { "type": "string", "minLength": 1, "pattern": "^[^\\n]{1,400}$" },
     "templates": {
       "type": "object", "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
-      "description": "Placeholders: events {tag} {items}; event_item {place} {source} {type} {severe} {text}; state {place} {time} {people}; custom {items}.",
+      "description": "Placeholders: events {tag} {items}; event_item {place} {source} {type} {severe} {text}; state {place} {time} {people}; custom {items}; route_plan {legs} {min} {changes}; route_leg {from} {to} {how} {min}; route_danger {danger} (K-R108).",
       "properties": {
         "tag": { "type": "string", "pattern": "^[^\\n]{1,30}$", "description": "Bracket tag of the event background line." },
         "events": { "$ref": "#/$defs/tpl" },
         "event_item": { "$ref": "#/$defs/tpl" },
         "state": { "$ref": "#/$defs/tpl" },
-        "custom": { "$ref": "#/$defs/tpl" }
+        "custom": { "$ref": "#/$defs/tpl" },
+        "route_plan": { "$ref": "#/$defs/tpl" },
+        "route_leg": { "$ref": "#/$defs/tpl" },
+        "route_danger": { "$ref": "#/$defs/tpl" }
       }
     },
     "entry": {

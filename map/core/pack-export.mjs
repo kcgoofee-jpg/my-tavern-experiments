@@ -11,7 +11,7 @@ import { applyDraft } from './pack-draft.mjs';
 export const MAX_EXPORT = 8 << 20, CARD_BYTES = 1 << 20;
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const clone = v => JSON.parse(JSON.stringify(v));
-const TOP = ['$schema', 'id', 'schema', 'title', 'lang', 'version', 'i18n', 'match', 'credits', 'features', 'lexicon', 'nodes', 'views', 'vars', 'entities', 'items', 'events', 'layers', 'ui', 'llm', 'media'];
+const TOP = ['$schema', 'id', 'schema', 'title', 'lang', 'version', 'i18n', 'match', 'credits', 'features', 'lexicon', 'nodes', 'views', 'vars', 'entities', 'items', 'events', 'layers', 'ui', 'llm', 'media', 'transit'];
 const NODE = ['id', 'name', 'type', 'parent', 'alias', 'hints', 'cite', 'sub', 'desc', 'at', 'anchor', 'enter', 'i18n', 'view', 'links', 'media'];
 const STATE = ['stash', 'fog', 'explored', 'ignore', 'ignored', 'ledger', 'chat'];   // chat state never belongs to a pack (a pack's own item rows live under `items`)
 

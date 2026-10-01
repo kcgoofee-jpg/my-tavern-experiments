@@ -2,6 +2,8 @@
 // (K-R63..K-R66), block resolution and defaults (K-R60). Pure. core/pack.mjs keeps rejecting schema 2.
 import { normalise, cpLen, cut } from './lexicon.mjs';
 import { buildTree } from './nodes.mjs';
+import { normTransit } from './transit-spec.mjs';
+import { viewsOf } from './pack-v2-view.mjs';
 import { LIFE, KERNEL_BLOCKS } from './pack-v2-rows.mjs';
 import * as S from './pack-v2-spec.mjs';
 import { DEFAULT_PERIODS as PERIODS0 } from './periods.mjs';
@@ -100,6 +102,11 @@ function crossCheck(pack, x, trusted) {   // what tools/check_pack.py checks bey
       else if (t.fx !== undefined && !fx.has(t.fx)) del(t, 'fx', `events.types.${k}`, x, 'ref-fx');
     }
   }
+  if (isObj(pack.transit)) {   // K-R107: stations, districts and links name nodes and views of this pack; what does not is dropped with a problem
+    const vs = viewsOf(pack), r = normTransit(pack.transit, { nodes: has, views: id => Object.hasOwn(vs, id) });
+    for (const q of r.problems) x.problems.push({ code: q.code, path: q.path ? `transit.${q.path}` : 'transit', ...(q.id !== undefined ? { detail: q.id } : {}) });
+    if (r.transit) pack.transit = r.transit; else delete pack.transit;
+  }
   if (pack.vars && pack.vars.periods) {
     let last = '';
     pack.vars.periods = pack.vars.periods.filter((q, i) => (q.start > last ? (last = q.start, true) : (bad(x, `vars.periods[${i}].start`, 'period-order', q.start), false)));
@@ -155,7 +162,7 @@ export function validate2(manifest, { trusted = false, shipped = [], reserved = 
   const head = S.obj(S.MANIFEST, { req: ['id', 'schema', 'title'], ext: 'b' })(Object.fromEntries(Object.entries(m).filter(([k]) => !BLOCKS.includes(k))), 'manifest', x);
   if (head === DROP) return { pack: null, problems: x.problems };
   if (!trusted && shipped.includes(head.id)) return refuse('trust-shipped-id', head.id);
-  const specs = { nodes: S.nodesBlock, views: S.viewsBlock, vars: S.varsBlock, entities: S.entitiesBlock(reserved), items: S.itemsBlock, events: S.eventsBlock, layers: S.layersBlock, ui: S.uiBlock, llm: S.llmBlock, media: S.mediaBlock };
+  const specs = { nodes: S.nodesBlock, views: S.viewsBlock, vars: S.varsBlock, entities: S.entitiesBlock(reserved), items: S.itemsBlock, events: S.eventsBlock, layers: S.layersBlock, ui: S.uiBlock, llm: S.llmBlock, media: S.mediaBlock, transit: S.transitBlock };
   for (const k of BLOCKS) {
     if (!(k in m)) continue;
     const v = k === 'nodes' && Array.isArray(m.nodes) ? fixIds(m.nodes, x) : m[k];

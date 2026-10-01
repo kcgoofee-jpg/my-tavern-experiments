@@ -30,7 +30,8 @@
     "layers": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "array" }], "description": "Declarative layers, reserved for S8 (v2/layers.schema.json). Absent = built-in default layers." },
     "ui": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "Strings, theme, legend, tabs, start node (v2/ui.schema.json)." },
     "llm": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "Injection templates and worldbook add-on entries (v2/llm.schema.json)." },
-    "media": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "Pack pictures: a table of media ids to sources (v2/media.schema.json, K-R101). Absent = no pictures." }
+    "media": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "Pack pictures: a table of media ids to sources (v2/media.schema.json, K-R101). Absent = no pictures." },
+    "transit": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "Transit network: modes, stations, lines, links, districts (v2/transit.schema.json, K-R107). Absent = no network." }
   },
   "$defs": {
     "path": { "type": "string", "minLength": 1, "pattern": "^(?!.*\\.\\.)[A-Za-z0-9_][A-Za-z0-9_./-]*\\.json$", "description": "Block file, relative to the manifest's folder: letters, digits, _ . / - only, no .. segment (so no scheme, no leading /, no %, no backslash)." },
