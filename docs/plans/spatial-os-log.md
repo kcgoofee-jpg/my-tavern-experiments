@@ -1239,3 +1239,18 @@ blocker: none
 open: none
 cleanup: done (no servers or background jobs started; worktree s84a left for the orchestrator)
 === END ===
+=== RESULT N10-P0 ===
+status: DONE
+items: base placed by view.extent_m regardless of DZI pixels (go, borders overlay, swapBase) ✓ · zoom limit recomputed on a period swap ✓ · swap-vs-open race closed + period reconciled after open ✓ · every period of tc_upper / tc_mid / tc_low, fresh load and both switch directions ✓ · probe period_bounds ✓ · helper test base_frame ✓ · ARCHITECTURE en + zh ✓ · todo N10 P0 marked, S7 items left open ✓
+commits: 44b42dc6 fix(viewer): the period base is placed by the view's extent; a clock change during a map open ends on the right period (N10-P0)
+commits: (this commit) docs(log): RESULT N10-P0; todo N10 P0 done   (SHAs may change on rebase)
+pushed: yes (head #N in the chat report; this log copy is committed before the push)
+tests: node 1240/1242 pass (2 skipped as in baseline; +3 new in tests/base_frame.test.mjs) | smoke PASS | arch PASS | probes: period_bounds=PASS 108/108 (new), period_maps=PASS 10/10, clouds=PASS
+cause: not reproduced on the stub host at head #241 (Chromium and WebKit, light and dark, every sharpness tier, slow tiles, hidden-panel open, minimap on): the base item bounds were already 0,0,1,0.625 for all 12 map x period cases, so no pixel-size-driven extent bug exists in the swap itself. What the probe did find, and what the fix closes: (1) swapBase kept the previous period's pixel size for the zoom limit (applyZoomLimit reads the base's contentSize and was not re-run), so tc_upper day (16000 px) and the 8000 px periods disagreed on max zoom; (2) a clock message that landed while go() was loading a map ran applyPeriod against the old map, its addTiledImage was dropped by the following open(), and nothing reconciled afterwards: the map stayed on the previous period's base (probe: tc_mid / tc_low race +0ms ended on the night base at day), which is the "wrong base for the clock" state; (3) the swapped-in item could land in a world that open() had already replaced. Bases and the borders overlay are now opened with explicit x 0, y 0, width 1 from view.extent_m (core/base-frame.mjs), so placement can never depend on a DZI's pixel count. The reported white field with pins outside the image (day only) is most likely the exploration fog / cloud ring seen with a stale or offset frame in the real tavern; it could not be captured here, so N10 P0 needs the user's check on a real chat.
+bounds: tc_upper dawn/day/dusk/night load pass/pass/pass/pass, switch pass; tc_mid same 4+4 pass; tc_low same 4+4 pass; markers inside the image on all 36 cases; day->night->day, dusk, dawn and back pass; clock-during-open race (0/40/120/300 ms) pass on 3 maps (2 of 12 failed before the fix)
+screenshots: ~/eden-map-review/n10/ (one per case: <map>_<period>_load.png, <map>_switch_<period>.png)
+deviations: (1) the P0 symptom did not reproduce, so the fix is the hardening above plus the race found by the probe, not a change of a wrong scale; (2) no data change, no DZI / maps.json edit, FREEZE_MAPS not used; (3) the probe checks both the default view and the home view (markers inside the image), and every period DZI's pixel shape against the view extent (also pinned in tests/base_frame.test.mjs).
+blocker: none
+open: user check of the real-tavern symptom after this head; if it persists, report with: fog on/off, minimap on/off, panel size at open, light or dark theme
+cleanup: done (probe servers stopped by the probes; no background jobs of mine; no .claude/launch.json entries; worktree n10p0 left for the orchestrator)
+=== END ===
