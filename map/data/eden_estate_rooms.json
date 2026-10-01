@@ -1,5 +1,5 @@
 {
-  "_note": "伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 有卡内编号的房间 / restricted 只写名字不描述（name 照抄卡原名）/ support 辅助 / circ 走廊 / open 未定用途的体量 / owner 主人专用 / medical 医疗中心。",
+  "_note": "伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 有卡内编号的房间（name 照抄卡原名）/ support 辅助与公共用房 / circ 走廊 / owner 主人专用 / medical 医疗中心。node = 房间在节点树里的 id（同名房间共用一个）。",
   "version": 1,
   "src": "docs/card-digest.md §6",
   "units": "m",
@@ -442,6 +442,7 @@
     {
       "no": null,
       "id": "B2-00",
+      "node": "room_b2_00",
       "floor": "B2",
       "name": "仆役核",
       "kind": "support",
@@ -476,6 +477,7 @@
     {
       "no": null,
       "id": "B2-01",
+      "node": "room_b2_01",
       "floor": "B2",
       "name": "主人通道",
       "kind": "owner",
@@ -510,6 +512,7 @@
     {
       "no": null,
       "id": "B2-02",
+      "node": "room_b2_02",
       "floor": "B2",
       "name": "走廊",
       "kind": "circ",
@@ -544,9 +547,10 @@
     {
       "no": null,
       "id": "B2-03",
+      "node": "room_b2_03",
       "floor": "B2",
       "name": "惩罚室",
-      "kind": "restricted",
+      "kind": "card",
       "block": "hall",
       "area": 40.0,
       "card_area": 40,
@@ -578,6 +582,7 @@
     {
       "no": null,
       "id": "B2-04",
+      "node": "room_b2_04",
       "floor": "B2",
       "name": "医疗与改造室",
       "kind": "card",
@@ -612,6 +617,7 @@
     {
       "no": null,
       "id": "B2-05",
+      "node": "room_b2_05",
       "floor": "B2",
       "name": "档案室",
       "kind": "card",
@@ -646,6 +652,7 @@
     {
       "no": null,
       "id": "B2-06",
+      "node": "room_b2_06",
       "floor": "B2",
       "name": "储藏室",
       "kind": "card",
@@ -680,6 +687,7 @@
     {
       "no": null,
       "id": "B2-07",
+      "node": "room_b2_07",
       "floor": "B2",
       "name": "设备间",
       "kind": "support",
@@ -714,6 +722,7 @@
     {
       "no": null,
       "id": "B2-08",
+      "node": "room_b2_07",
       "floor": "B2",
       "name": "设备间",
       "kind": "support",
@@ -748,6 +757,7 @@
     {
       "no": null,
       "id": "B2-09",
+      "node": "room_b2_09",
       "floor": "B2",
       "name": "疏散楼梯",
       "kind": "support",
@@ -782,6 +792,7 @@
     {
       "no": null,
       "id": "B2-10",
+      "node": "room_b2_10",
       "floor": "B2",
       "name": "机电设备间",
       "kind": "support",
@@ -816,6 +827,7 @@
     {
       "no": null,
       "id": "B2-11",
+      "node": "room_b2_11",
       "floor": "B2",
       "name": "仆役前室",
       "kind": "support",
@@ -850,6 +862,7 @@
     {
       "no": null,
       "id": "B2-12",
+      "node": "room_b2_02",
       "floor": "B2",
       "name": "走廊",
       "kind": "circ",
@@ -884,6 +897,7 @@
     {
       "no": null,
       "id": "B2-13",
+      "node": "room_b2_13",
       "floor": "B2",
       "name": "主人通道前室",
       "kind": "owner",
@@ -918,6 +932,7 @@
     {
       "no": null,
       "id": "B1-14",
+      "node": "room_b2_00",
       "floor": "B1",
       "name": "仆役核",
       "kind": "support",
@@ -952,6 +967,7 @@
     {
       "no": null,
       "id": "B1-15",
+      "node": "room_b2_01",
       "floor": "B1",
       "name": "主人通道",
       "kind": "owner",
@@ -986,6 +1002,7 @@
     {
       "no": null,
       "id": "B1-16",
+      "node": "room_b2_02",
       "floor": "B1",
       "name": "走廊",
       "kind": "circ",
@@ -1020,9 +1037,10 @@
     {
       "no": null,
       "id": "B1-17",
+      "node": "room_b1_17",
       "floor": "B1",
       "name": "主调教室",
-      "kind": "restricted",
+      "kind": "card",
       "block": "hall",
       "area": 80.0,
       "card_area": 80,
@@ -1054,9 +1072,10 @@
     {
       "no": null,
       "id": "B1-18",
+      "node": "room_b1_18",
       "floor": "B1",
       "name": "私人调教室",
-      "kind": "restricted",
+      "kind": "card",
       "block": "hall",
       "area": 30.0,
       "card_area": 30,
@@ -1088,9 +1107,10 @@
     {
       "no": null,
       "id": "B1-19",
+      "node": "room_b1_19",
       "floor": "B1",
       "name": "性技巧训练室",
-      "kind": "restricted",
+      "kind": "card",
       "block": "hall",
       "area": 25.2,
       "card_area": 25,
@@ -1122,6 +1142,7 @@
     {
       "no": null,
       "id": "B1-20",
+      "node": "room_b1_20",
       "floor": "B1",
       "name": "体能训练室",
       "kind": "card",
@@ -1158,6 +1179,7 @@
     {
       "no": null,
       "id": "B1-21",
+      "node": "room_b1_21",
       "floor": "B1",
       "name": "恒温酒窖",
       "kind": "card",
@@ -1196,6 +1218,7 @@
     {
       "no": null,
       "id": "B1-22",
+      "node": "room_b2_07",
       "floor": "B1",
       "name": "设备间",
       "kind": "support",
@@ -1230,6 +1253,7 @@
     {
       "no": null,
       "id": "B1-23",
+      "node": "room_b1_23",
       "floor": "B1",
       "name": "更衣 / 淋浴",
       "kind": "support",
@@ -1264,6 +1288,7 @@
     {
       "no": null,
       "id": "B1-24",
+      "node": "room_b2_09",
       "floor": "B1",
       "name": "疏散楼梯",
       "kind": "support",
@@ -1298,6 +1323,7 @@
     {
       "no": null,
       "id": "B1-25",
+      "node": "room_b2_07",
       "floor": "B1",
       "name": "设备间",
       "kind": "support",
@@ -1332,6 +1358,7 @@
     {
       "no": null,
       "id": "B1-26",
+      "node": "room_b2_10",
       "floor": "B1",
       "name": "机电设备间",
       "kind": "support",
@@ -1366,6 +1393,7 @@
     {
       "no": null,
       "id": "B1-27",
+      "node": "room_b2_02",
       "floor": "B1",
       "name": "走廊",
       "kind": "circ",
@@ -1400,6 +1428,7 @@
     {
       "no": null,
       "id": "B1-28",
+      "node": "room_b2_11",
       "floor": "B1",
       "name": "仆役前室",
       "kind": "support",
@@ -1434,6 +1463,7 @@
     {
       "no": null,
       "id": "B1-29",
+      "node": "room_b2_02",
       "floor": "B1",
       "name": "走廊",
       "kind": "circ",
@@ -1468,6 +1498,7 @@
     {
       "no": null,
       "id": "F1-30",
+      "node": "room_f1_30",
       "floor": "F1",
       "name": "主楼梯（塔楼）",
       "kind": "support",
@@ -1502,6 +1533,7 @@
     {
       "no": null,
       "id": "F1-31",
+      "node": "room_b2_00",
       "floor": "F1",
       "name": "仆役核",
       "kind": "support",
@@ -1536,6 +1568,7 @@
     {
       "no": null,
       "id": "F1-32",
+      "node": "room_b2_01",
       "floor": "F1",
       "name": "主人通道",
       "kind": "owner",
@@ -1570,6 +1603,7 @@
     {
       "no": null,
       "id": "F1-33",
+      "node": "room_f1_33",
       "floor": "F1",
       "name": "门廊（正门）",
       "kind": "support",
@@ -1604,6 +1638,7 @@
     {
       "no": null,
       "id": "F1-34",
+      "node": "room_f1_34",
       "floor": "F1",
       "name": "大厅",
       "kind": "card",
@@ -1641,6 +1676,7 @@
     {
       "no": null,
       "id": "F1-35",
+      "node": "room_f1_35",
       "floor": "F1",
       "name": "会客厅",
       "kind": "card",
@@ -1678,6 +1714,7 @@
     {
       "no": null,
       "id": "F1-36",
+      "node": "room_b2_13",
       "floor": "F1",
       "name": "主人通道前室",
       "kind": "owner",
@@ -1712,6 +1749,7 @@
     {
       "no": null,
       "id": "F1-37",
+      "node": "room_f1_37",
       "floor": "F1",
       "name": "塔楼前厅",
       "kind": "circ",
@@ -1746,6 +1784,7 @@
     {
       "no": null,
       "id": "F1-38",
+      "node": "room_f1_38",
       "floor": "F1",
       "name": "衣帽间 / 访客卫生间",
       "kind": "support",
@@ -1780,6 +1819,7 @@
     {
       "no": null,
       "id": "F1-39",
+      "node": "room_f1_39",
       "floor": "F1",
       "name": "主廊",
       "kind": "circ",
@@ -1814,6 +1854,7 @@
     {
       "no": null,
       "id": "F1-40",
+      "node": "room_f1_40",
       "floor": "F1",
       "name": "餐厅",
       "kind": "card",
@@ -1850,6 +1891,7 @@
     {
       "no": null,
       "id": "F1-41",
+      "node": "room_f1_41",
       "floor": "F1",
       "name": "独立食物准备间",
       "kind": "card",
@@ -1886,6 +1928,7 @@
     {
       "no": null,
       "id": "F1-42",
+      "node": "room_f1_42",
       "floor": "F1",
       "name": "服务过道",
       "kind": "circ",
@@ -1920,6 +1963,7 @@
     {
       "no": null,
       "id": "F1-43",
+      "node": "room_f1_43",
       "floor": "F1",
       "name": "北过厅",
       "kind": "circ",
@@ -1954,16 +1998,17 @@
     {
       "no": null,
       "id": "F1-44",
+      "node": "room_f1_44",
       "floor": "F1",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "一层公共休息厅",
+      "kind": "support",
       "block": "hall",
       "area": 198.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "",
-      "access": "",
+      "note": "一层公共区的休息与交谈厅：长沙发、矮桌与落地灯，正式住客白天可在此歇脚；南接主廊，北通北过厅和后庭园",
+      "access": "正式住客",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -1988,6 +2033,7 @@
     {
       "no": null,
       "id": "F1-45",
+      "node": "room_f1_45",
       "floor": "F1",
       "name": "厨房与后勤区",
       "kind": "card",
@@ -2024,6 +2070,7 @@
     {
       "no": null,
       "id": "F1-46",
+      "node": "room_f1_46",
       "floor": "F1",
       "name": "衣物清洗与维护间",
       "kind": "card",
@@ -2060,6 +2107,7 @@
     {
       "no": null,
       "id": "F1-47",
+      "node": "room_f1_47",
       "floor": "F1",
       "name": "道具清洗消毒间",
       "kind": "card",
@@ -2094,6 +2142,7 @@
     {
       "no": null,
       "id": "F1-48",
+      "node": "room_f1_48",
       "floor": "F1",
       "name": "物资仓库",
       "kind": "card",
@@ -2130,6 +2179,7 @@
     {
       "no": null,
       "id": "F1-49",
+      "node": "room_f1_49",
       "floor": "F1",
       "name": "服务走廊",
       "kind": "circ",
@@ -2164,6 +2214,7 @@
     {
       "no": null,
       "id": "F1-50",
+      "node": "room_f1_50",
       "floor": "F1",
       "name": "服务连廊",
       "kind": "circ",
@@ -2198,6 +2249,7 @@
     {
       "no": null,
       "id": "F1-51",
+      "node": "room_f1_51",
       "floor": "F1",
       "name": "北廊楼（通后庭）",
       "kind": "circ",
@@ -2232,16 +2284,17 @@
     {
       "no": null,
       "id": "F1-52",
+      "node": "room_f1_52",
       "floor": "F1",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "东连楼值班室",
+      "kind": "support",
       "block": "e_low",
       "area": 115.5,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "东侧动线的值班与交接处：门禁读卡台、钥匙柜和轮班登记簿；与东翼、东连廊相通",
+      "access": "仆从动线",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -2266,6 +2319,7 @@
     {
       "no": null,
       "id": "F1-53",
+      "node": "room_f1_53",
       "floor": "F1",
       "name": "东连廊",
       "kind": "circ",
@@ -2300,6 +2354,7 @@
     {
       "no": null,
       "id": "F2-54",
+      "node": "room_f1_30",
       "floor": "F2",
       "name": "主楼梯（塔楼）",
       "kind": "support",
@@ -2334,6 +2389,7 @@
     {
       "no": null,
       "id": "F2-55",
+      "node": "room_b2_00",
       "floor": "F2",
       "name": "仆役核",
       "kind": "support",
@@ -2368,6 +2424,7 @@
     {
       "no": null,
       "id": "F2-56",
+      "node": "room_b2_01",
       "floor": "F2",
       "name": "主人通道",
       "kind": "owner",
@@ -2402,6 +2459,7 @@
     {
       "no": null,
       "id": "F2-57",
+      "node": "room_f2_57",
       "floor": "F2",
       "name": "主人主卧",
       "kind": "card",
@@ -2452,6 +2510,7 @@
     {
       "no": null,
       "id": "F2-58",
+      "node": "room_f2_58",
       "floor": "F2",
       "name": "主人书房",
       "kind": "card",
@@ -2490,6 +2549,7 @@
     {
       "no": null,
       "id": "F2-59",
+      "node": "room_f2_59",
       "floor": "F2",
       "name": "书房前等候廊",
       "kind": "circ",
@@ -2524,6 +2584,7 @@
     {
       "no": null,
       "id": "F2-60",
+      "node": "room_f2_60",
       "floor": "F2",
       "name": "客房",
       "kind": "card",
@@ -2558,6 +2619,7 @@
     {
       "no": null,
       "id": "F2-61",
+      "node": "room_f2_60",
       "floor": "F2",
       "name": "客房",
       "kind": "card",
@@ -2592,6 +2654,7 @@
     {
       "no": null,
       "id": "F2-62",
+      "node": "room_f2_62",
       "floor": "F2",
       "name": "客房卫浴 ×2",
       "kind": "support",
@@ -2626,6 +2689,7 @@
     {
       "no": null,
       "id": "F2-63",
+      "node": "room_f2_63",
       "floor": "F2",
       "name": "布草 / 服务间",
       "kind": "support",
@@ -2660,6 +2724,7 @@
     {
       "no": null,
       "id": "F2-64",
+      "node": "room_f1_39",
       "floor": "F2",
       "name": "主廊",
       "kind": "circ",
@@ -2694,6 +2759,7 @@
     {
       "no": null,
       "id": "F2-65",
+      "node": "room_f2_65",
       "floor": "F2",
       "name": "女仆长寝室",
       "kind": "card",
@@ -2728,6 +2794,7 @@
     {
       "no": null,
       "id": "F2-66",
+      "node": "room_f2_66",
       "floor": "F2",
       "name": "女仆长卫浴",
       "kind": "support",
@@ -2762,16 +2829,17 @@
     {
       "no": null,
       "id": "F2-67",
+      "node": "room_f2_67",
       "floor": "F2",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "主人起居厅",
+      "kind": "owner",
       "block": "hall",
       "area": 264.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "北墙贴北廊楼，靠 F3 穹顶天窗井与北廊楼屋面高侧窗采光",
-      "access": "",
+      "note": "主人日常起居与会谈的大厅：壁炉、长沙发与茶几；北墙贴北廊楼，靠 F3 穹顶天窗井与北廊楼屋面高侧窗采光",
+      "access": "主人",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -2796,16 +2864,17 @@
     {
       "no": null,
       "id": "F2-68",
+      "node": "room_f2_68",
       "floor": "F2",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "主人茶室",
+      "kind": "owner",
       "block": "hall",
       "area": 44.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "",
-      "access": "",
+      "note": "起居厅东侧的小茶室：矮榻、茶具柜和一扇朝东的窗，早晨看云海",
+      "access": "主人",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -2830,6 +2899,7 @@
     {
       "no": null,
       "id": "F2-69",
+      "node": "room_b2_11",
       "floor": "F2",
       "name": "仆役前室",
       "kind": "support",
@@ -2864,16 +2934,17 @@
     {
       "no": null,
       "id": "F2-70",
+      "node": "room_f2_70",
       "floor": "F2",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "西翼管理办公室",
+      "kind": "support",
       "block": "w_wing_a",
       "area": 420.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "女仆长与管理人员的办公区：排班墙、物资与访客登记终端、文件柜；邻近西翼服务动线",
+      "access": "女仆长 / 管理人员",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -2898,6 +2969,7 @@
     {
       "no": null,
       "id": "F2-71",
+      "node": "room_f2_71",
       "floor": "F2",
       "name": "连廊",
       "kind": "circ",
@@ -2932,6 +3004,7 @@
     {
       "no": null,
       "id": "F2-72",
+      "node": "room_f2_71",
       "floor": "F2",
       "name": "连廊",
       "kind": "circ",
@@ -2966,6 +3039,7 @@
     {
       "no": null,
       "id": "F2-73",
+      "node": "room_f2_73",
       "floor": "F2",
       "name": "东翼走廊",
       "kind": "circ",
@@ -3000,16 +3074,17 @@
     {
       "no": null,
       "id": "F2-74",
+      "node": "room_f2_74",
       "floor": "F2",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "东翼休闲厅",
+      "kind": "support",
       "block": "e_wing_a",
       "area": 273.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "朝南的休闲厅：牌桌、沙发组和小吧台，客居的访客与值勤人员在此消遣；北接东翼走廊",
+      "access": "住客 / 访客",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -3034,6 +3109,7 @@
     {
       "no": null,
       "id": "F2-75",
+      "node": "room_f2_75",
       "floor": "F2",
       "name": "东侧长廊",
       "kind": "card",
@@ -3070,16 +3146,17 @@
     {
       "no": null,
       "id": "F2-76",
+      "node": "room_f2_76",
       "floor": "F2",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "东侧观景厅",
+      "kind": "support",
       "block": "e_wing_b",
       "area": 182.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "紧邻东侧长廊的观景休息厅：整面落地窗，沙发与矮桌，早上看云海，夜里看中层灯火",
+      "access": "住客 / 访客",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -3104,16 +3181,17 @@
     {
       "no": null,
       "id": "F2-77",
+      "node": "room_f2_77",
       "floor": "F2",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "二层北廊厅",
+      "kind": "support",
       "block": "n_link",
       "area": 198.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "",
-      "access": "",
+      "note": "通向北廊楼的二层廊厅：靠墙书架、阅读椅与长桌，北面落地窗采光",
+      "access": "住客",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -3138,6 +3216,7 @@
     {
       "no": null,
       "id": "F3-78",
+      "node": "room_f1_30",
       "floor": "F3",
       "name": "主楼梯（塔楼）",
       "kind": "support",
@@ -3172,6 +3251,7 @@
     {
       "no": null,
       "id": "F3-79",
+      "node": "room_b2_00",
       "floor": "F3",
       "name": "仆役核",
       "kind": "support",
@@ -3206,6 +3286,7 @@
     {
       "no": 1,
       "id": "F3-80",
+      "node": "room_f3_80",
       "floor": "F3",
       "name": "正式母畜个人寝室",
       "kind": "card",
@@ -3249,6 +3330,7 @@
     {
       "no": 2,
       "id": "F3-81",
+      "node": "room_f3_80",
       "floor": "F3",
       "name": "正式母畜个人寝室",
       "kind": "card",
@@ -3292,6 +3374,7 @@
     {
       "no": 3,
       "id": "F3-82",
+      "node": "room_f3_80",
       "floor": "F3",
       "name": "正式母畜个人寝室",
       "kind": "card",
@@ -3335,6 +3418,7 @@
     {
       "no": 4,
       "id": "F3-83",
+      "node": "room_f3_80",
       "floor": "F3",
       "name": "正式母畜个人寝室",
       "kind": "card",
@@ -3378,6 +3462,7 @@
     {
       "no": 5,
       "id": "F3-84",
+      "node": "room_f3_80",
       "floor": "F3",
       "name": "正式母畜个人寝室",
       "kind": "card",
@@ -3421,6 +3506,7 @@
     {
       "no": 6,
       "id": "F3-85",
+      "node": "room_f3_80",
       "floor": "F3",
       "name": "正式母畜个人寝室",
       "kind": "card",
@@ -3464,6 +3550,7 @@
     {
       "no": 7,
       "id": "F3-86",
+      "node": "room_f3_80",
       "floor": "F3",
       "name": "正式母畜个人寝室",
       "kind": "card",
@@ -3507,6 +3594,7 @@
     {
       "no": 8,
       "id": "F3-87",
+      "node": "room_f3_80",
       "floor": "F3",
       "name": "正式母畜个人寝室",
       "kind": "card",
@@ -3550,6 +3638,7 @@
     {
       "no": 9,
       "id": "F3-88",
+      "node": "room_f3_80",
       "floor": "F3",
       "name": "正式母畜个人寝室",
       "kind": "card",
@@ -3593,6 +3682,7 @@
     {
       "no": 10,
       "id": "F3-89",
+      "node": "room_f3_80",
       "floor": "F3",
       "name": "正式母畜个人寝室",
       "kind": "card",
@@ -3636,6 +3726,7 @@
     {
       "no": 11,
       "id": "F3-90",
+      "node": "room_f3_80",
       "floor": "F3",
       "name": "正式母畜个人寝室",
       "kind": "card",
@@ -3679,6 +3770,7 @@
     {
       "no": 12,
       "id": "F3-91",
+      "node": "room_f3_80",
       "floor": "F3",
       "name": "正式母畜个人寝室",
       "kind": "card",
@@ -3722,6 +3814,7 @@
     {
       "no": 13,
       "id": "F3-92",
+      "node": "room_f3_80",
       "floor": "F3",
       "name": "正式母畜个人寝室",
       "kind": "card",
@@ -3765,6 +3858,7 @@
     {
       "no": 14,
       "id": "F3-93",
+      "node": "room_f3_80",
       "floor": "F3",
       "name": "正式母畜个人寝室",
       "kind": "card",
@@ -3808,6 +3902,7 @@
     {
       "no": null,
       "id": "F3-94",
+      "node": "room_f3_94",
       "floor": "F3",
       "name": "新进公共寝区",
       "kind": "card",
@@ -3844,6 +3939,7 @@
     {
       "no": null,
       "id": "F3-95",
+      "node": "room_f3_95",
       "floor": "F3",
       "name": "三楼公共浴室",
       "kind": "card",
@@ -3885,6 +3981,7 @@
     {
       "no": null,
       "id": "F3-96",
+      "node": "room_f3_96",
       "floor": "F3",
       "name": "杂鱼女仆集体间",
       "kind": "card",
@@ -3924,6 +4021,7 @@
     {
       "no": null,
       "id": "F3-97",
+      "node": "room_f3_97",
       "floor": "F3",
       "name": "公共清洁间",
       "kind": "card",
@@ -3958,6 +4056,7 @@
     {
       "no": null,
       "id": "F3-98",
+      "node": "room_f3_98",
       "floor": "F3",
       "name": "集体间储物",
       "kind": "support",
@@ -3992,15 +4091,16 @@
     {
       "no": null,
       "id": "F3-99",
+      "node": "room_f3_99",
       "floor": "F3",
       "name": "三楼公共区",
-      "kind": "open",
+      "kind": "support",
       "block": "hall",
       "area": 230.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "卡只在权限表里提到「F3 公共区」，没写面积与功能；穹顶灯亭天窗采光",
+      "note": "三楼住客与新人共用的起居大厅：沙发区、长桌与阅读角；穹顶灯亭天窗采光",
       "access": "住客 / 新人",
       "words": [],
       "synonyms": [],
@@ -4026,6 +4126,7 @@
     {
       "no": null,
       "id": "F3-100",
+      "node": "room_f3_100",
       "floor": "F3",
       "name": "前廊",
       "kind": "circ",
@@ -4060,6 +4161,7 @@
     {
       "no": null,
       "id": "F3-101",
+      "node": "room_f3_101",
       "floor": "F3",
       "name": "后廊",
       "kind": "circ",
@@ -4094,6 +4196,7 @@
     {
       "no": null,
       "id": "F3-102",
+      "node": "room_f3_102",
       "floor": "F3",
       "name": "仆役前室 / 布草",
       "kind": "support",
@@ -4128,6 +4231,7 @@
     {
       "no": null,
       "id": "F3-103",
+      "node": "room_b2_02",
       "floor": "F3",
       "name": "走廊",
       "kind": "circ",
@@ -4162,6 +4266,7 @@
     {
       "no": null,
       "id": "F3-104",
+      "node": "room_f3_104",
       "floor": "F3",
       "name": "布草间",
       "kind": "support",
@@ -4196,6 +4301,7 @@
     {
       "no": null,
       "id": "F3-105",
+      "node": "room_b2_02",
       "floor": "F3",
       "name": "走廊",
       "kind": "circ",
@@ -4230,16 +4336,17 @@
     {
       "no": null,
       "id": "F3-106",
+      "node": "room_f3_106",
       "floor": "F3",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "西角亭静读室",
+      "kind": "support",
       "block": "w_pav",
       "area": 340.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "西角亭顶层的安静读书间：环形书架、阅读灯与窗边软榻，向西望云海",
+      "access": "住客",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -4264,16 +4371,17 @@
     {
       "no": null,
       "id": "F3-107",
+      "node": "room_f3_107",
       "floor": "F3",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "东角亭观星厅",
+      "kind": "support",
       "block": "e_pav",
       "area": 320.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "东角亭顶层的观星厅：圆形座席和一面朝天的玻璃穹顶，夜里看云海上的星",
+      "access": "住客",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -4298,16 +4406,17 @@
     {
       "no": null,
       "id": "F3-108",
+      "node": "room_f3_108",
       "floor": "F3",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "东望楼瞭望室",
+      "kind": "support",
       "block": "belvedere",
       "area": 64.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "东望楼顶层的小瞭望室：四面窗和一张环窗长凳，可望前庭花园与访客停靠平台",
+      "access": "主人 / 管理人员",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -4332,16 +4441,17 @@
     {
       "no": null,
       "id": "F1-109",
+      "node": "room_f1_109",
       "floor": "F1",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "西北翼仆役起居厅",
+      "kind": "support",
       "block": "w_wing_b",
       "area": 392.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "仆从休息、用餐与交接班的大厅：长桌、置物柜和茶水台；连通西翼服务走廊",
+      "access": "仆从动线",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -4366,16 +4476,17 @@
     {
       "no": null,
       "id": "F1-110",
+      "node": "room_f1_110",
       "floor": "F1",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "西角亭阅览厅",
+      "kind": "support",
       "block": "w_pav",
       "area": 340.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "西角亭底层的阅览厅：开架书墙、阅览长桌和影像终端，收藏庄园历年账册与资料",
+      "access": "住客 / 管理人员",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -4400,16 +4511,17 @@
     {
       "no": null,
       "id": "F1-111",
+      "node": "room_f1_111",
       "floor": "F1",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "东角亭琴房",
+      "kind": "support",
       "block": "e_pav",
       "area": 320.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "东角亭底层的琴房与小演奏厅：三角钢琴、谱架与折叠座椅，礼仪与才艺练习在此进行",
+      "access": "住客",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -4434,16 +4546,17 @@
     {
       "no": null,
       "id": "F1-112",
+      "node": "room_f1_112",
       "floor": "F1",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "东望楼门厅",
+      "kind": "support",
       "block": "belvedere",
       "area": 64.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "东望楼的底层门厅：登楼的螺旋楼梯、衣帽挂钩和一张小接待桌",
+      "access": "住客 / 管理人员",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -4468,16 +4581,17 @@
     {
       "no": null,
       "id": "F1-113",
+      "node": "room_f1_113",
       "floor": "F1",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "东翼会客偏厅",
+      "kind": "support",
       "block": "e_wing_a",
       "area": 390.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "主会客厅之外的接待偏厅：访客人数多时在此落座，备有茶点台和暗纹屏风",
+      "access": "主人 / 访客",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -4502,16 +4616,17 @@
     {
       "no": null,
       "id": "F1-114",
+      "node": "room_f1_114",
       "floor": "F1",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "东北翼花厅",
+      "kind": "support",
       "block": "e_wing_b",
       "area": 364.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "朝东的玻璃花厅：盆栽、藤椅和一张早茶长桌，晨光最好",
+      "access": "住客 / 访客",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -4536,16 +4651,17 @@
     {
       "no": null,
       "id": "F2-115",
+      "node": "room_f2_115",
       "floor": "F2",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "西北翼仆役宿舍",
+      "kind": "support",
       "block": "w_wing_b",
       "area": 392.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "仆从的住宿区：双层床、个人储物柜和公用洗漱间；与楼下的仆役起居厅同属一翼",
+      "access": "仆从动线",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -4570,16 +4686,17 @@
     {
       "no": null,
       "id": "F2-116",
+      "node": "room_f2_116",
       "floor": "F2",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "西角亭藏书廊",
+      "kind": "support",
       "block": "w_pav",
       "area": 340.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "西角亭二层的环形藏书廊：高书架、移动梯与一排阅读桌",
+      "access": "住客 / 管理人员",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -4604,16 +4721,17 @@
     {
       "no": null,
       "id": "F2-117",
+      "node": "room_f2_117",
       "floor": "F2",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "东角亭排练厅",
+      "kind": "support",
       "block": "e_pav",
       "area": 320.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "东角亭二层的排练厅：整面镜墙、把杆与地板音响，礼仪和舞蹈练习用",
+      "access": "住客",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -4638,16 +4756,17 @@
     {
       "no": null,
       "id": "F2-118",
+      "node": "room_f2_118",
       "floor": "F2",
-      "name": "未定用途体量",
-      "kind": "open",
+      "name": "东望楼观景室",
+      "kind": "support",
       "block": "belvedere",
       "area": 64.0,
       "card_area": null,
       "card_range": null,
       "card_id": null,
-      "note": "与相邻体块直接相通（门洞在两体块相接的墙上）",
-      "access": "",
+      "note": "东望楼二层的小观景室：沿窗矮榻和一张圆桌，与楼上的瞭望室上下相接",
+      "access": "住客 / 管理人员",
       "words": [],
       "synonyms": [],
       "poly": [
@@ -4672,6 +4791,7 @@
     {
       "no": null,
       "id": "B2-119",
+      "node": "room_b2_119",
       "floor": "B2",
       "name": "医疗中心前厅",
       "kind": "medical",
@@ -4706,6 +4826,7 @@
     {
       "no": null,
       "id": "B2-120",
+      "node": "room_b2_120",
       "floor": "B2",
       "name": "器械洗消间",
       "kind": "medical",
@@ -4740,6 +4861,7 @@
     {
       "no": null,
       "id": "B2-121",
+      "node": "room_b2_121",
       "floor": "B2",
       "name": "缓冲更衣间",
       "kind": "medical",
@@ -4774,6 +4896,7 @@
     {
       "no": null,
       "id": "B2-122",
+      "node": "room_b2_122",
       "floor": "B2",
       "name": "无菌处置室",
       "kind": "medical",

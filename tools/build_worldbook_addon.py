@@ -110,9 +110,9 @@ def build(version):
     est = reg['eden_estate']
     # 当前地点按包含关系匹配（节点匹配取最长词），含有更短已列词的叫法（主卧室 ⊃ 主卧）不必再列
     lean = lambda ws: [w for w in ws if len(w) >= 2 and not any(o != w and len(o) >= 2 and o in w for o in ws)]
-    # restricted 卡房间（B1/B2，nsfw_compat_audit P1①）：当前地点经 plan 认得，词表也教给模型；不进 maps.json 房间表（unmapped096 守卫）
+    # 地下两层里 maps.json 房间表没有的卡房间（nsfw_compat_audit P1①）：当前地点经 plan 认得，词表也教给模型；不进 maps.json 房间表（unmapped096 守卫）
     plan = json.load(open(os.path.join(ROOT, 'map/data/eden_estate_rooms.json'), encoding='utf-8'))
-    restr = [r['name'] for r in plan.get('rooms', []) if r.get('kind') == 'restricted']
+    restr = [r['name'] for r in plan.get('rooms', []) if r.get('kind') == 'card' and r.get('floor') in ('B1', 'B2') and r['name'] not in est['rooms']]
     rooms, areas = lean(est['rooms'] + restr), lean(est['areas'])
     here = f'''<地图当前地点>
 地图按当前地点落点；下面这些叫法地图都认得，越具体落得越准：

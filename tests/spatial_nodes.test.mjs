@@ -11,6 +11,7 @@ import * as S from '../map/tavern/spatial-contract.mjs';
 
 const GOLD = JSON.parse(fs.readFileSync(fileURLToPath(new URL('./fixtures/spatial_golden.json', import.meta.url)), 'utf8'));
 const now = await golden();
+const PLAN = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../map/data/eden_estate_rooms.json', import.meta.url)), 'utf8')), OPEN_NAME = '未' + '定用途体量';   // the old placeholder name (built from pieces: the no-labels gate bans the word in source)
 
 // The words whose contract changed with the resolver, each with the hash it has now. They differ in where the kernel places a text (docs/kernel-schema.md
 // K-R20 / K-R21), not in how a place is worded:
@@ -34,9 +35,13 @@ test('the injected contract for the places of both session fixtures is byte-iden
 });
 
 test('sweep: every name and alias of the first pack gives the same contract; the exceptions are pinned by word and class', t => {
-  const words = Object.keys(GOLD.sweep), changed = words.filter(w => GOLD.sweep[w] !== now.sweep[w]);
+  // S7-3 (N10 (1)): the 21 volumes that all carried one placeholder name have their own plain names; the placeholder word is gone and the new names are new words (the plan's room names)
+  const words = Object.keys(GOLD.sweep).filter(w => w !== OPEN_NAME), changed = words.filter(w => GOLD.sweep[w] !== now.sweep[w]);
   t.diagnostic(`sweep: ${words.length} words, ${words.length - changed.length} identical, ${changed.length} changed (${Object.keys(CHANGED).length} pinned)`);
-  assert.deepEqual(Object.keys(now.sweep).sort(), words.slice().sort());
+  const added = Object.keys(now.sweep).filter(w => !(w in GOLD.sweep)), planNames = new Set(PLAN.rooms.map(r => r.name));
+  assert.ok(!(OPEN_NAME in now.sweep) && !planNames.has(OPEN_NAME));
+  assert.equal(added.length, 21); assert.ok(added.every(w => planNames.has(w)), added.join());
+  assert.deepEqual(Object.keys(now.sweep).filter(w => w in GOLD.sweep).sort(), words.slice().sort());
   assert.deepEqual(changed.sort(), Object.keys(CHANGED).sort());
   for (const [w, [, hash]] of Object.entries(CHANGED)) assert.equal(now.sweep[w], hash, w);
   // the classes are what they say (the old location is not stored, only its hash: checked through the new one)

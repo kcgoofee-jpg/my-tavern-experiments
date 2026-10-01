@@ -23,10 +23,10 @@ t('卡设定分层房间：每个房间名都落到第 1 级，带 std；只在�
   assert.equal(resolveHere('伊甸庄园·女仆长寝室', idx).floor, 'F2');
   assert.equal(resolveHere('仆役核', idx).floor, undefined);   // 各层都有：不定楼层
 });
-t('只写名字的卡房间（restricted）：名字照抄卡，认得、带 restricted；不在 maps.json 的房间里', () => {
-  const idx = idxOf(), rs = PLAN.rooms.filter(r => r.kind === 'restricted');
-  assert.ok(rs.length);
-  for (const r of rs) { assert.ok(!/按原卡/.test(r.name)); assert.equal(resolveHere(r.name, idx)?.restricted, true, r.name); assert.ok(!REG.maps.eden_estate.rooms.includes(r.name)); }
+t('地下两层里 maps.json 没列的卡房间：名字照抄卡，认得（落到第 1 级、带楼层）；不在 maps.json 的房间里（S7-3：restricted 标记已删，它们是普通卡房间）', () => {
+  const idx = idxOf(), rs = PLAN.rooms.filter(r => r.kind === 'card' && /^B[12]$/.test(r.floor) && !REG.maps.eden_estate.rooms.includes(r.name));
+  assert.deepEqual(rs.map(r => r.name).sort(), ['主调教室', '性技巧训练室', '惩罚室', '私人调教室']);
+  for (const r of rs) { assert.ok(!/按原卡/.test(r.name)); const h = resolveHere(r.name, idx); assert.equal(h?.level, 1, r.name); assert.equal(h.floor, r.floor); assert.equal(h.restricted, undefined, r.name); assert.ok(!REG.maps.eden_estate.rooms.includes(r.name)); }
 });
 t('maps.json 房间 / 区域与卡房间不冲突（原有落点不变）', () => {
   const a = buildIndex(REG, W, EN), b = idxOf();

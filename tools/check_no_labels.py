@@ -16,7 +16,7 @@ Allowed exceptions (kept explicit, each with its reason below):
 
 UI-text patterns (S7-1, N10 items 14 / 15): the wording that reads like a card-versus-invented note on screen ("（卡 30）" area suffixes,
 "原卡", "不描述", "未定", the " · 设定" suffix and their English forms) is banned in map/i18n/*.json, the packs' manifests and the string
-literals of the engine files (UI_ALLOW lists the files whose hits step S7-3 removes; S7-3 must empty it).
+literals of the engine files and of the estate page (UI_ALLOW lists files whose hits a later step removes; empty since S7-3).
 
 Usage: python3 tools/check_no_labels.py [--self-test]
 """
@@ -68,12 +68,8 @@ ALLOW = {
 _P = ["（卡 ", "原卡", "不描述", "未定", " · 设定", "not described", "(card "]
 UI_PATTERN = re.compile("|".join(re.escape(w) for w in _P))
 UI_FILES = re.compile(r"^(map/i18n/[a-z]+\.json|map/packs/[^/]+/manifest\.json|map/(core|app|tavern|ui|three)/[^/]+\.m?js|map/[^/]+\.m?js|map/viewer\.html)$")
-# files whose UI-text hits step S7-3 removes (the estate page and the two pickers): S7-3 removes these entries
-UI_ALLOW = {
-    "map/tavern/picker.mjs": "S7-3 removes (the estate room picker)",
-    "map/unmapped-place-picker.mjs": "S7-3 removes (the unmapped-place picker)",
-    "map/estate/main.js": "S7-3 removes (the estate page)",
-}
+# files whose UI-text hits a later step removes: empty since S7-3 (the estate page and the two pickers carry no such wording any more)
+UI_ALLOW = {}
 _LIT = re.compile(r"""'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`""")
 
 
@@ -231,9 +227,9 @@ def self_test():
             for rel in ("map/tavern/operation-dsl.mjs", "tools/check_maps.py", "tests/x.test.mjs", "docs/a.md", "map/viewer.html"):
                 put(rel, f"// {ph}\n")
                 check(f"phrase {i} is allowed in {rel}", scan(root, [rel]) == [])
-        # 7c UI-text patterns: caught in the dictionaries, pack manifests and string literals (not in comments); S7-3 files are allow-listed
+        # 7c UI-text patterns: caught in the dictionaries, pack manifests, string literals (not in comments) and the estate page; UI_ALLOW is empty since S7-3
         for i, w in enumerate(_P):
-            for rel, body in (("map/i18n/zh.json", f'  "k": "a{w}b",\n'), ("map/packs/p/manifest.json", f'  "strings": "x{w}y",\n'), ("map/app/x.mjs", f"const t = 'a{w}b';\n"), ("map/viewer.html", f"<b>a{w}b</b>\n")):
+            for rel, body in (("map/i18n/zh.json", f'  "k": "a{w}b",\n'), ("map/packs/p/manifest.json", f'  "strings": "x{w}y",\n'), ("map/app/x.mjs", f"const t = 'a{w}b';\n"), ("map/estate/main.js", f"const t = 'a{w}b';\n"), ("map/viewer.html", f"<b>a{w}b</b>\n")):
                 put(rel, body)
                 check(f"UI pattern {i} is caught in {rel}", len(scan(root, [rel])) == 1)
             put("map/app/c.mjs", f"// a comment with {w}\nconst t = 1;\n")

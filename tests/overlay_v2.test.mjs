@@ -41,9 +41,9 @@ test('the first pack: the overlay adds exactly its new ids, everything else stay
   assert.deepEqual(full.pack.nodes.slice(0, plain.pack.nodes.length).map(n => n.id), plain.pack.nodes.map(n => n.id));   // declaration order of the old nodes is kept
   const tree = buildTree(full.pack.nodes, { title: full.pack.title });
   assert.deepEqual(tree.problems, []); assert.equal(tree.root, 'world');
-  // A.8 with the plan: 177 nodes, depth 4; the overlay's new nodes are the districts, the outskirts and the far outside
+  // A.8 with the plan: 197 nodes, depth 4 (S7-3: the open volumes got names); the overlay's new nodes are the districts, the outskirts and the far outside
   const d0 = describe(buildTree(plain.pack.nodes), plain.pack.views), d1 = describe(tree, full.pack.views);
-  assert.equal(d0.nodes, 177); assert.equal(d1.nodes, 177 + fresh.length); assert.equal(d1.depth, d0.depth);
+  assert.equal(d0.nodes, 197); assert.equal(d1.nodes, 197 + fresh.length); assert.equal(d1.depth, d0.depth);
   assert.deepEqual(fresh.map(n => n.id).filter(i => !i.startsWith('zone_')), ['beyond', 'outskirts']);
   assert.equal(fresh.filter(n => n.id.startsWith('zone_')).length, fresh.length - 2);
   assert.ok(fresh.every(n => typeof n.name === 'string' && n.name && tree.has(n.parent)));

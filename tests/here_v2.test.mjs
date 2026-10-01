@@ -11,7 +11,7 @@ import { sessionPlaces } from './helpers/session-places.mjs';
 
 const I = edenInputs(), MAPS = I.maps, WORLD = I.world, NAMES = I.names, MAN = I.manifest, PLAN = I.plan;
 const engine = (cfg = {}) => makeHere({ manifest: MAN, maps: MAPS, world: WORLD, names: NAMES, plan: cfg.plan ? PLAN : null, custom: cfg.custom });
-const FIELDS = ['level', 'map', 'marker', 'place', 'room', 'std', 'floor', 'restricted', 'custom'];
+const FIELDS = ['level', 'map', 'marker', 'place', 'room', 'std', 'floor', 'custom'];
 const pick = r => r && Object.fromEntries(FIELDS.filter(k => r[k] !== undefined).map(k => [k, r[k]]));
 
 test('every place of the session fixtures is placed (the locations of the floors, people, events, trip ends)', t => {

@@ -24,10 +24,10 @@ t('卡房间：稳定编号 + 卡原名；多边形与 card_rooms 同名', () =>
     assert.equal(PLAN.card_rooms.find(c => c.cid === cid).name, name, cid);
     for (const r of PLAN.rooms.filter(r => r.card_id === cid)) assert.equal(r.name, name, r.id);
   }
-  for (const r of PLAN.rooms.filter(r => r.kind === 'card' || r.kind === 'restricted')) assert.ok(cids.includes(r.card_id), r.id);
+  for (const r of PLAN.rooms.filter(r => r.kind === 'card')) assert.ok(cids.includes(r.card_id), r.id);
 });
-t('识别（当前地点的房间级）：卡原名落到房间，restricted 带标记与楼层', () => {
-  const x = resolveHere('伊甸庄园·主调教室', IDX); assert.equal(x.level, 1); assert.equal(x.std, '主调教室'); assert.equal(x.floor, 'B1'); assert.equal(x.restricted, true);
+t('识别（当前地点的房间级）：卡原名落到房间，带楼层', () => {
+  const x = resolveHere('伊甸庄园·主调教室', IDX); assert.equal(x.level, 1); assert.equal(x.std, '主调教室'); assert.equal(x.floor, 'B1'); assert.equal(x.restricted, undefined);   // S7-3 (N9): the flag is gone, the room is an ordinary card room
   assert.equal(resolveHere('惩罚室', IDX).floor, 'B2');
   assert.equal(resolveHere('个人寝室', IDX).std, '正式母畜个人寝室');   // 卡权限表的写法
   for (const w of ['受限房间 A', '附属室A', '受限房间', '附属室D', '（按原卡）']) assert.equal(resolveHere(w, IDX), null, w);   // 仓库以前自编的名字 / 占位不识别

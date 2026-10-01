@@ -43,7 +43,7 @@ const UnmappedPlacePicker = (() => {
     if (typeof mapRegistry === 'undefined' || !mapRegistry) return out;
     const E = placeIndex?.estate, eTitle = E ? (en && mapRegistry.maps[E.id]?.title_en) || mapRegistry.maps[E.id]?.title || '' : '';
     if (E) {
-      for (const r of estPlan?.rooms || []) if (r.name) add(r.name, 'room', `${eTitle} · ${r.floor}${r.kind === 'restricted' ? (en ? ' · not described' : ' · 不描述') : ''}`);
+      for (const r of estPlan?.rooms || []) if (r.name) add(r.name, 'room', `${eTitle} · ${r.floor}`);
       for (const r of mapRegistry.maps[E.id]?.rooms || []) add(r, 'room', eTitle);
       for (const a of mapRegistry.maps[E.id]?.areas || []) add(a, 'area', eTitle);
     }

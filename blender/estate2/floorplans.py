@@ -8,7 +8,7 @@ python3 blender/estate2/floorplans.py --data-only → 只写 map/data/eden_estat
 卡房间编号（card_id）= 楼层 + 卡内顺序（如 B1-C01），见 CARD_ROOMS；房间名一律照抄卡的原名（2026-09-28 用户决定：按原卡，不转换）。
 kind = restricted 的房间只写名字：只画空白框，不画任何家具、不描述。
 """
-import json, math, os, sys
+import json, math, os, re, sys
 import numpy as np
 try:   # 出图要 matplotlib；--data-only 只写 JSON，没有 matplotlib 也能跑
     import matplotlib
@@ -277,6 +277,52 @@ room('B2', '无菌处置室', R(8, 20, 1.5, 8), 'medical', note='急救 / 处置
      furn=[(13.1, 14.9, 3.8, 5.8), (8.3, 9.0, 3.0, 7.0)], **MED_U)
 
 
+# ======================================================================== 地图里看到的房间记录（N9 / N10 (1)）
+# 浏览器里的房间记录（map/data/eden_estate_rooms.json）和建模脚本用的 ROOMS 是同一份几何、两本账：建模脚本（house_web.py、plan2d.py、layout.py）按
+# ROOMS 里的旧 kind（restricted 空白房 / open 体量）推门洞、楼面色和家具，已出的模型不能因为这里改名而变，所以 ROOMS 不动；
+# 地图只认下面这张表：四间原 restricted 房间的 kind 改为 card（名字照抄卡，说明照常显示），22 间原 open 体量有了用途、名字和说明（kind 在 support / owner 里选）。
+# 键 = 房间 id（楼层 + 在 ROOMS 里的序号，与 JSON 的 id 同一个），值 = (名字, kind, 说明, 出入)。
+VIEW_ROOMS = {
+    'F1-44': ('一层公共休息厅', 'support', '一层公共区的休息与交谈厅：长沙发、矮桌与落地灯，正式住客白天可在此歇脚；南接主廊，北通北过厅和后庭园', '正式住客'),
+    'F1-52': ('东连楼值班室', 'support', '东侧动线的值班与交接处：门禁读卡台、钥匙柜和轮班登记簿；与东翼、东连廊相通', '仆从动线'),
+    'F2-67': ('主人起居厅', 'owner', '主人日常起居与会谈的大厅：壁炉、长沙发与茶几；北墙贴北廊楼，靠 F3 穹顶天窗井与北廊楼屋面高侧窗采光', '主人'),
+    'F2-68': ('主人茶室', 'owner', '起居厅东侧的小茶室：矮榻、茶具柜和一扇朝东的窗，早晨看云海', '主人'),
+    'F2-70': ('西翼管理办公室', 'support', '女仆长与管理人员的办公区：排班墙、物资与访客登记终端、文件柜；邻近西翼服务动线', '女仆长 / 管理人员'),
+    'F2-74': ('东翼休闲厅', 'support', '朝南的休闲厅：牌桌、沙发组和小吧台，客居的访客与值勤人员在此消遣；北接东翼走廊', '住客 / 访客'),
+    'F2-76': ('东侧观景厅', 'support', '紧邻东侧长廊的观景休息厅：整面落地窗，沙发与矮桌，早上看云海，夜里看中层灯火', '住客 / 访客'),
+    'F2-77': ('二层北廊厅', 'support', '通向北廊楼的二层廊厅：靠墙书架、阅读椅与长桌，北面落地窗采光', '住客'),
+    'F3-99': ('三楼公共区', 'support', '三楼住客与新人共用的起居大厅：沙发区、长桌与阅读角；穹顶灯亭天窗采光', '住客 / 新人'),
+    'F3-106': ('西角亭静读室', 'support', '西角亭顶层的安静读书间：环形书架、阅读灯与窗边软榻，向西望云海', '住客'),
+    'F3-107': ('东角亭观星厅', 'support', '东角亭顶层的观星厅：圆形座席和一面朝天的玻璃穹顶，夜里看云海上的星', '住客'),
+    'F3-108': ('东望楼瞭望室', 'support', '东望楼顶层的小瞭望室：四面窗和一张环窗长凳，可望前庭花园与访客停靠平台', '主人 / 管理人员'),
+    'F1-109': ('西北翼仆役起居厅', 'support', '仆从休息、用餐与交接班的大厅：长桌、置物柜和茶水台；连通西翼服务走廊', '仆从动线'),
+    'F1-110': ('西角亭阅览厅', 'support', '西角亭底层的阅览厅：开架书墙、阅览长桌和影像终端，收藏庄园历年账册与资料', '住客 / 管理人员'),
+    'F1-111': ('东角亭琴房', 'support', '东角亭底层的琴房与小演奏厅：三角钢琴、谱架与折叠座椅，礼仪与才艺练习在此进行', '住客'),
+    'F1-112': ('东望楼门厅', 'support', '东望楼的底层门厅：登楼的螺旋楼梯、衣帽挂钩和一张小接待桌', '住客 / 管理人员'),
+    'F1-113': ('东翼会客偏厅', 'support', '主会客厅之外的接待偏厅：访客人数多时在此落座，备有茶点台和暗纹屏风', '主人 / 访客'),
+    'F1-114': ('东北翼花厅', 'support', '朝东的玻璃花厅：盆栽、藤椅和一张早茶长桌，晨光最好', '住客 / 访客'),
+    'F2-115': ('西北翼仆役宿舍', 'support', '仆从的住宿区：双层床、个人储物柜和公用洗漱间；与楼下的仆役起居厅同属一翼', '仆从动线'),
+    'F2-116': ('西角亭藏书廊', 'support', '西角亭二层的环形藏书廊：高书架、移动梯与一排阅读桌', '住客 / 管理人员'),
+    'F2-117': ('东角亭排练厅', 'support', '东角亭二层的排练厅：整面镜墙、把杆与地板音响，礼仪和舞蹈练习用', '住客'),
+    'F2-118': ('东望楼观景室', 'support', '东望楼二层的小观景室：沿窗矮榻和一张圆桌，与楼上的瞭望室上下相接', '住客 / 管理人员'),
+}
+
+
+def view_room(r, rid):
+    """(name, kind, note, access) of a room as the viewer shows it (see VIEW_ROOMS); a builder-only kind is mapped: restricted → card."""
+    if rid in VIEW_ROOMS:
+        return VIEW_ROOMS[rid]
+    return r['name'], 'card' if r['kind'] == 'restricted' else r['kind'], r['note'], r['access']
+
+
+def room_nodes(rows):
+    """node id of each row: the node of the first room that has the name (the viewer's node tree has one node per room name, core/compat-v1-geo.mjs roomId)."""
+    first = {}
+    for rid, name in rows:
+        first.setdefault(name, 'room_' + re.sub(r'[^a-z0-9_]', '_', rid.lower()))
+    return [first[name] for _, name in rows]
+
+
 # ======================================================================== 输出
 INFER = lambda r: '未定用途体量'
 for _r in ROOMS:
@@ -473,9 +519,12 @@ def draw_sheets():
 
 def write_data():
     WORDS = {c: w for c, f, n, w in CARD_ROOMS}
+    ids = [f"{r['floor']}-{k:02d}" for k, r in enumerate(ROOMS)]
+    views = [view_room(r, rid) for r, rid in zip(ROOMS, ids)]
+    ROWS = list(zip(ROOMS, ids, views, room_nodes([(rid, v[0]) for rid, v in zip(ids, views)])))
     data = dict(
         _note='伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；'
-              '楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 有卡内编号的房间 / restricted 只写名字不描述（name 照抄卡原名）/ support 辅助 / circ 走廊 / open 未定用途的体量 / owner 主人专用 / medical 医疗中心。',
+              '楼层按卡：F1–F3 + B1–B2，穹顶与塔顶眺望亭是屋顶构筑物。kind：card 有卡内编号的房间（name 照抄卡原名）/ support 辅助与公共用房 / circ 走廊 / owner 主人专用 / medical 医疗中心。node = 房间在节点树里的 id（同名房间共用一个）。',
         version=1, src='docs/card-digest.md §6', units='m',
         floors=[dict(id=i, name=n, z=z) for i, n, z in FLOORS],
         blocks=[dict(id=b, name=BLK_CN[b], storeys=STOREYS[b], poly=blk_poly(b)) for b in BLK],
@@ -483,10 +532,10 @@ def write_data():
         cores=[dict(id='stair', name='主楼梯（塔楼）', floors=['F1', 'F2', 'F3'], poly=TOWER, access='主人 / 访客 / 住客'),
                dict(id='service', name='仆役核', floors=['B2', 'B1', 'F1', 'F2', 'F3'], poly=SVC, access='仆从动线；B2 门禁'),
                dict(id='owner', name='主人专用通道', floors=['B2', 'B1', 'F1', 'F2'], poly=OWN, access='仅主人')],
-        rooms=[dict(no=r.get('no'), id=f"{r['floor']}-{k:02d}", floor=r['floor'], name=r['name'], kind=r['kind'], block=r['block'], area=r['area'],
-                    card_area=r['card_area'], card_range=r['range'], card_id=r['card_id'], note=r['note'], access=r['access'],
+        rooms=[dict(no=r.get('no'), id=rid, node=nid, floor=r['floor'], name=v[0], kind=v[1], block=r['block'], area=r['area'],
+                    card_area=r['card_area'], card_range=r['range'], card_id=r['card_id'], note=v[2], access=v[3],
                     words=WORDS.get(r['card_id'], []), synonyms=SYNONYMS.get(r['card_id'], []), poly=[list(p) for p in r['poly']])
-               for k, r in enumerate(ROOMS)],
+               for k, (r, rid, v, nid) in enumerate(ROWS)],
         card_rooms=[dict(cid=c, floor=f, order=int(c[-2:]), name=n, words=w, synonyms=SYNONYMS.get(c, []),
                          poly_ids=[f"{r['floor']}-{k:02d}" for k, r in enumerate(ROOMS) if r['card_id'] == c]) for c, f, n, w in CARD_ROOMS],
         card_id_alias=CARD_ID_ALIAS, retired_names=RETIRED_NAMES,

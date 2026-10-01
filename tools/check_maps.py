@@ -247,7 +247,7 @@ else:
     refs = {r for p in ap for r in p.get('refs', [])}
     est = maps.get('eden_estate', {}); est_words = set(est.get('rooms', [])) | set(est.get('areas', []))
     _erp = os.path.join(ROOT, 'data', 'eden_estate_rooms.json')   # 分层房间（含用户设定房间，如地下医疗中心）也算庄园房间
-    if exists(_erp): est_words |= {r['name'] for r in load(_erp).get('rooms', []) if r.get('kind') != 'restricted'}
+    if exists(_erp): est_words |= {r['name'] for r in load(_erp).get('rooms', [])}
     for p in ap:
         for f in ('id', 'name', 'text'):
             if not p.get(f): err(f"addon_places.{p.get('id', '?')}: 缺 {f}")
@@ -280,7 +280,7 @@ if exists(er_path) and 'eden_estate' in maps:
     for r in er:
         if not r.get('name') or not r.get('floor'): err(f"eden_estate_rooms.{r.get('id', '?')}: 缺 name / floor")
         elif PH.search(r['name']): err(f"eden_estate_rooms.{r['id']}: 「{r['name']}」是占位，不是名字（照抄卡原名）")
-        if r.get('kind') in ('card', 'restricted') and r.get('card_id') not in cids: err(f"eden_estate_rooms.{r['id']}: 卡房间 card_id「{r.get('card_id')}」不在 card_rooms 里")
+        if r.get('kind') == 'card' and r.get('card_id') not in cids: err(f"eden_estate_rooms.{r['id']}: 卡房间 card_id「{r.get('card_id')}」不在 card_rooms 里")
         for w in [r.get('name') or '', *(r.get('words') or [])]:
             if INVENTED.search(w) or w in retired: err(f"eden_estate_rooms.{r['id']}: 「{w}」是仓库以前自编的名字（retired_names），不能再用")
     # 每间卡房间：有编号（楼层-C两位序号）、有卡原名（不是占位）；室内房间至少一个多边形

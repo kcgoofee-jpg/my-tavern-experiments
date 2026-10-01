@@ -2,7 +2,7 @@
 // nodes.locate over the node tree, then mapped back to the result shape every consumer of the app has always read
 // (locate, chars, trips, wander, fog, layers, estate). This is the one place that knows both vocabularies.
 //   makeHere({ manifest, maps, world, names, plan, custom, lang }) -> engine, same inputs as compat-v1 `fromV1`
-//   engine.here(text)      -> { level, map, word, node, via, marker?, place?, room?, std?, floor?, restricted?, custom?, transit? } | null
+//   engine.here(text)      -> { level, map, word, node, via, marker?, place?, room?, std?, floor?, custom?, transit? } | null
 //   engine.unmapped(text)  -> the name to offer as "unmapped" | null
 //   engine.estate          -> { id, std, alias } | null   the standard room names and the user's names for them
 //   engine.level(mapId)    -> the registry's layer name of a map ('' when it has none)       result.layer (level 4): the layer word the text holds, as written
@@ -48,7 +48,7 @@ export function makeHere(inputs = {}) {
     if (inEstate(id)) {
       const room = n.type === 'room';
       Object.assign(out, { level: room || (id === E && rooms.has(normalise(canonical || word))) ? 1 : 2, map: E, room: canonical || text });
-      if (room) { out.std = n.name; if (n['x-storey']) out.floor = n['x-storey']; if (n['x-plan-kind'] === 'restricted') out.restricted = true; }
+      if (room) { out.std = n.name; if (n['x-storey']) out.floor = n['x-storey']; }
       if (canonical) out.custom = true;
       return out;
     }

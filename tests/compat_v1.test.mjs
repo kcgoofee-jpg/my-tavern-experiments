@@ -47,10 +47,10 @@ test('S4-3: a world place whose card links to a 3D page shows that view (mkEntit
   assert.equal(eden.tree.get('oren').view, undefined);   // a realm or place without such a link shows nothing
   assert.equal(load({ manifest: MAN, maps: MAPS, world: { places: [{ ...WORLD.places.find(p => p.id === 'hunting_camp'), link: { map: 'world' } }] } }).tree.get('hunting_camp').view, undefined);   // a link to a flat map is no view
 });
-test('A.8 counts: eden + room plan 177 nodes, depth 4, 64 rooms and the dairy parlour under the estate', () => {
+test('A.8 counts: eden + room plan 197 nodes, depth 4, 84 room nodes (the 21 open volumes of S7-3 have names) and the dairy parlour under the estate', () => {
   const d = describe(edenPlan.tree, edenPlan.views);
-  assert.equal(d.nodes, 177); assert.equal(d.depth, 4); assert.equal(d.types.room, 64); assert.equal(d.types.zone, 1);
-  assert.equal(edenPlan.tree.children('eden_estate').length, 65);
+  assert.equal(d.nodes, 197); assert.equal(d.depth, 4); assert.equal(d.types.room, 84); assert.equal(d.types.zone, 1);
+  assert.equal(edenPlan.tree.children('eden_estate').length, 85);
   assert.equal(kinds(edenPlan.pack, 'tiles'), 13); assert.equal(kinds(edenPlan.pack, 'model3d'), LM.length + 1);
 });
 test('A.8 counts: eden maps only (no world data) 109 nodes, depth 4, root world', () => {
