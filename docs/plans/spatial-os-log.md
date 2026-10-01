@@ -1117,5 +1117,16 @@ house.glb size: 575,144 bytes baseline -> 673,968 bytes (+17.18%, within +25% li
 deviations: none
 blocker: none
 open: none
+
+=== RESULT I-26 ===
+status: DONE
+items: C-01 ✓ (card words count only next to a worldbook-title hit or the chat variable, for a pack that lists titles; docs Z-02 + K-R92 en/zh) · C-02 ✓ (role|name = person, divider and document-marked entries skipped) · C-03 ✓ (emoji and {{macro}} stripped, duplicates merged; K-R93 en/zh) · C-07 ✓ (start from the first long alternate greeting when first_mes is under 40 code points) · I-26 struck ✓
+commits: 82403b09 fix(core): author words alone no longer open a pack; automatic-pack candidates read people, dividers, emoji, duplicates and short-marker greetings (I-26)
+pushed: yes (head #N in the chat report)
+tests: node 1189/1190 pass, 0 fail (+7 new: pack_index x2, card_read x3, pack_gate/auto_pack name-only case) | smoke PASS | arch PASS | probes: autopack=PASS pack_switch=2 FAIL (the same 2 checks fail on origin/preview head #234 before this change: the automatic pack for the unknown card B reports a location variable path; not touched here)
+second card before -> after (local run on the real card, nothing copied into the repo): index match eden score 10 -> none (the real first-pack card scores 35 and still matches); automatic pack nodes 37 -> 23 (root + 22 places); wrong nodes 14 (7 people, 3 rule/social, 3 dividers, 1 duplicate street) -> 0; names without emoji or macro; start node none -> a real place from the first alternate greeting. The first pack's real card still matches (name word + worldbook titles).
+deviations: card words stay valid on their own for a pack that lists no worldbook titles (the example pack Brindle matches by name only), so the rule is "for a pack that lists titles"; the tests, probe pack_switch and auto_pack gate test that relied on a name word alone for the first pack now give the card a matching title. Document-emoji rule entries are skipped by a small emoji set; place words of the report (company, housekeeping, theatre) not added (C-03 vocab part left out: brief says the engine word list needs no card names, can be a later step). Leading possessive particle is dropped after a stripped macro.
+blocker: none
+open: pack_switch probe 2 pre-existing failures; C-04..C-06, C-08, C-09 of the report are unscheduled
 cleanup: done
 === END ===

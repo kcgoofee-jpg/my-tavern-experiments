@@ -38,7 +38,7 @@ try {
   ok('回到卡 A：示例包、tc_minimal、变量路径都回来，B 的什么都没留下', s.pack?.id === 'minimal' && s.root === 'tc_minimal' && s.loc === 'world.location' && s.roots === 1, s);
   v = await viewerPack(); ok('回到卡 A：查看器是示例包', v?.pack === 'minimal', v || {});
 
-  await switchTo(CARD('Some Yehehua Edition', 'e.png'));
+  await switchTo(CARD('Some Yehehua Edition', 'e.png'), { names: { primary: 'P', additional: [] }, books: { P: [{ name: '世界观', content: 'x', enabled: true, strategy: { keys: ['k'] } }] } });   // I-26: the author word needs a worldbook title next to it
   s = await state();
   ok('第一个包的卡（名字里有作者名）：不注入包对象，根键 eden_map，包声明的变量路径是第一个包的', s.pack === null && s.root === 'eden_map' && s.loc === '世界.当前地点' && s.roots === 1, s);
   v = await viewerPack(); ok('第一个包的卡：查看器是默认包', v?.pack === 'eden', v || {});
