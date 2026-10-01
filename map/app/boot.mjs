@@ -53,7 +53,7 @@ import { emEmit, enNames, rebuildHere, setEnNames } from './extension-api.mjs';
 import { firstRunHint } from './notice-layer.mjs';
 import { initE7 } from './one-hand-mode.mjs';
 import { initShell } from './drawer-glue.mjs';
-import { initLayerHost, registry, registerCoreLayers, renderLayerMenu } from './layer-host.mjs';
+import { initLayerHost, registry, registerCoreLayers, renderLayerMenu, applyPackLayers } from './layer-host.mjs';
 import { plugins } from './plugins.mjs';
 import { PACK, initPack, packData, packEvents, packNames, packOverlay, packTax, setOverlay, rebase, packV2, packProblems } from './current-pack.mjs';
 import { projectV2 } from '../core/pack-v2-view.mjs';   // schema-2 包到注册表形状的投影（K-R96）
@@ -83,7 +83,7 @@ async function mainInner() {
   jsonCache.set('i18n/' + LANG + '.json', Promise.resolve(DICT));
   setEnNames(enNamesP || null); rebuildHere();
   const nodes = v2 ? () => buildRuntimeV2(packV2, v2.registry) : plan => buildRuntime({ manifest: PACK, maps: mapRegistry, world: worldData, names: enNamesP || null, plan, overlay: packOverlay, events: packTax });
-  applyTheme(nodes(null)?.ui);
+  const rt0 = nodes(null); applyTheme(rt0?.ui); applyPackLayers(rt0?.layers || []);   // K-R79: the pack's layers rows adjust the kernel layers (registry.patch) and wait for S8-2 to draw
   if (packData('rooms')) getJSON(packData('rooms')).then(p => { if (!p?.rooms) return; setEstPlan(p); rebuildHere(); nodes(p); markHere($('#here').value); }).catch(() => {});   // v0.9.6：卡设定分层房间进当前地点词表（不挡启动）   // 当前地点 → 落点的词表（中英都认；加上本机自定义叫法）
   post({ type: 'eden-map:boot', pct: .9 });   // 数据文件已到
   // Blender 地形重新生成后，「旷野高地」取新地形在奥伦境内的最高点

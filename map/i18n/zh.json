@@ -186,7 +186,7 @@
   "theme_dark": "深色",
   "theme_title": "界面主题",
   "routes": "航线",
-  "routes_title": "上层航线（金色虚线）与银冠堡巡逻环（淡蓝点划线）",
+  "routes_title": "上层航线（金色虚线）与巡逻环（淡蓝点划线）",
   "settings_title": "设置",
   "here_go": "当前位置",
   "estate.loading": "加载 {title}…",

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { fromV1 } from '../map/core/compat-v1.mjs';
 import { buildTree } from '../map/core/nodes.mjs';
-import { applyOverlay, applyOverlayEvents, applyOverlayVars, applyOverlayEntities, applyOverlayUi, applyOverlayItems } from '../map/core/overlay-v2.mjs';
+import { applyOverlay, applyOverlayEvents, applyOverlayVars, applyOverlayEntities, applyOverlayUi, applyOverlayItems, applyOverlayLayers } from '../map/core/overlay-v2.mjs';
 import { validate2 } from '../map/core/pack-v2.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url)), id = process.argv[2];
@@ -14,7 +14,7 @@ if (!id || !fs.existsSync(file)) process.exit(0);
 const manifest = J(dir + 'manifest.json'), base = id === 'eden' ? ROOT + 'map/' : dir, data = manifest?.data || {};
 const inputs = { manifest, maps: J(base + data.maps), world: J(base + data.world), plan: J(base + data.rooms), names: J(ROOT + 'map/packs/eden/names.en.json'), events: J(base + data.events) };
 const ov = J(file), errs = [], ID = /^[a-z][a-z0-9_]{0,63}$/, WORD = /^[^\n]{1,60}$/;
-const evOnly = ov && ov.nodes === undefined && ['events', 'llm', 'vars', 'entities', 'ui', 'items'].some(k => ov[k] && typeof ov[k] === 'object');
+const evOnly = ov && ov.nodes === undefined && ['events', 'llm', 'vars', 'entities', 'ui', 'items', 'layers'].some(k => ov[k] && typeof ov[k] === 'object');
 if (!ov || ov.schema !== 2 || !(Array.isArray(ov.nodes) || evOnly)) { console.log(`${id}: overlay.v2.json needs "schema": 2 and a "nodes" array`); process.exit(1); }
 ov.nodes ||= [];
 const baseNodes = fromV1(inputs).pack.nodes || [], have = new Set(baseNodes.map(n => n.id)), seen = new Set();
@@ -56,6 +56,12 @@ if (ov.items !== undefined) {   // K-R67: only `items.pickup` is read; the merge
   for (const p of r.problems) errs.push(`${id}: overlay items problem ${JSON.stringify(p)}`);
   const v = validate2({ id, schema: 2, title: manifest?.title || id, items: r.items }, { trusted: true });
   for (const p of v.problems || []) if (String(p.path || '').startsWith('items')) errs.push(`${id}: overlay items: ${JSON.stringify(p)}`);
+}
+if (ov.layers !== undefined) {   // K-R85: the declared layers go through the kernel's own normLayer and the layers schema
+  const r = applyOverlayLayers(undefined, ov);
+  for (const p of r.problems) errs.push(`${id}: overlay layers problem ${JSON.stringify(p)}`);
+  const v = validate2({ id, schema: 2, title: manifest?.title || id, layers: r.layers }, { trusted: true });
+  for (const p of v.problems || []) if (String(p.path || '').startsWith('layers')) errs.push(`${id}: overlay layers: ${JSON.stringify(p)}`);
 }
 const tree = buildTree(merged.nodes, { title: manifest?.title });
 for (const p of tree.problems) errs.push(`${id}: tree problem ${JSON.stringify(p)}`);

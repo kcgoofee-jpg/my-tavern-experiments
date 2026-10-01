@@ -186,7 +186,7 @@
   "theme_dark": "Dark",
   "theme_title": "Theme",
   "routes": "Air lanes",
-  "routes_title": "Upper-tier air lanes (gold dashes) and Silvercrown patrol rings (pale-blue dash-dot)",
+  "routes_title": "Air lanes (gold dashes) and patrol rings (pale-blue dash-dot)",
   "settings_title": "Settings",
   "here_go": "My location",
   "estate.loading": "Loading {title}…",

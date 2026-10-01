@@ -6,7 +6,9 @@
 // K-R69: and a `vars` block (paths, periods by id) and an `entities` block (groups by id, fields by `field`, the avatar block); same rule.
 // K-R67 (S6-3): and an `items` block, of which only `pickup` is read (per language the word lists are united); other keys are ignored.
 // K-R70: and a `ui` block (per-view theme tokens re-checked by recheck.token, the legend, `x-…`); same rule.
+// K-R85: and a `layers` array (declared layers, core/layer-spec.mjs); each row is healed by normLayer and added by id, the overlay wins.
 import { recheck } from './pack-v2-spec.mjs';
+import { normLayer } from './layer-spec.mjs';
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const union = (a, b) => [...new Set([...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])])];
 const LISTS = ['alias', 'hints'];
@@ -15,7 +17,7 @@ const LISTS = ['alias', 'hints'];
 export function applyOverlay(nodes, overlay) {
   const out = nodes.map(n => ({ ...n })), byId = new Map(out.map(n => [n.id, n])), problems = [];
   if (overlay === null || overlay === undefined) return { nodes: out, problems };
-  if (!isObj(overlay) || overlay.schema !== 2 || !(Array.isArray(overlay.nodes) || (overlay.nodes === undefined && (isObj(overlay.events) || isObj(overlay.llm) || isObj(overlay.vars) || isObj(overlay.entities) || isObj(overlay.ui) || isObj(overlay.items))))) return { nodes: out, problems: [{ code: 'overlay-invalid' }] };
+  if (!isObj(overlay) || overlay.schema !== 2 || !(Array.isArray(overlay.nodes) || (overlay.nodes === undefined && (isObj(overlay.events) || isObj(overlay.llm) || isObj(overlay.vars) || isObj(overlay.entities) || isObj(overlay.ui) || isObj(overlay.items) || Array.isArray(overlay.layers))))) return { nodes: out, problems: [{ code: 'overlay-invalid' }] };
   (overlay.nodes || []).forEach((o, index) => {
     if (!isObj(o) || typeof o.id !== 'string' || o.id === '') return problems.push({ code: 'overlay-node-invalid', index });
     const cur = byId.get(o.id);
@@ -186,4 +188,20 @@ export function applyOverlayItems(items, overlay) {
   }
   if (!Object.keys(pk).length) delete out.pickup;
   return { items: Object.keys(out).length ? out : base, problems };
+}
+
+/** applyOverlayLayers(layers, overlay) -> { layers, problems } (K-R85): `overlay.layers` rows are healed by normLayer (the pack's trust) and appended to the converted rows by id
+ *  (an overlay row replaces a converted row of the same id; a schema-1 pack has none). A row that fails is `overlay-layer-invalid` (with the reason); a healed part is listed the same way. */
+export function applyOverlayLayers(layers, overlay) {
+  const base = Array.isArray(layers) ? copy(layers) : [], problems = [], add = isObj(overlay) ? overlay.layers : undefined;
+  if (add === undefined || add === null) return { layers: base, problems };
+  if (!Array.isArray(add)) return { layers: base, problems: [{ code: 'overlay-layer-invalid', reason: 'type' }] };
+  const out = new Map(base.map(l => [l.id, l]));
+  add.forEach((raw, index) => {
+    const { layer, problems: ps } = normLayer(raw);
+    for (const p of ps) problems.push({ code: 'overlay-layer-invalid', index, reason: p.code, ...(p.key ? { key: p.key } : {}) });
+    if (!layer) return;
+    const { origin, ...row } = layer; out.set(row.id, row);
+  });
+  return { layers: [...out.values()], problems };
 }

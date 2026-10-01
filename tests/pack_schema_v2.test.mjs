@@ -29,6 +29,7 @@ ok = [
   lambda x: N(x, 3).update({'alias': ['the inn'], 'hints': ['Gull & Lantern Inn']}),
   lambda x: x['ui']['theme'].update({'tokens': {'--accent': 'var(--ink)', '--r-s': '4px', '--fs-body': '1.1rem', '--line': '#c0c0c0'}}),
   lambda x: x['ui'].update({'levels': {'brindle': ['docks', 'market']}}),
+  lambda x: x.update({'layers': [{'id': 'patrol', 'type': 'flow', 'slot': 'routes', 'source': 'inline', 'applies': {'views': ['harrow']}, 'style': {'color': '#9ad0f5', 'speed': 0.05, 'path': {'width': 1.4, 'dash': [10, 4]}}, 'data': {'features': [{'view': 'harrow', 'pts': [[0.1, 0.1], [0.5, 0.5]]}]}, 'menu': {'label': 'Patrol', 'i18n': {'en': {'label': 'Patrol'}}}, 'legend': [{'label': 'Patrol'}]}, {'id': 'routes', 'menu': {'order': 5}, 'off': True}]}),
 ]
 bad = [
   lambda x: x.pop('title'),
@@ -61,11 +62,14 @@ bad = [
   lambda x: x['llm']['worldbook']['entries'][0].update({'keys': ['/a+/i']}),
   lambda x: x.update({'cdn': {'npm': '../evil'}}),
   lambda x: x.update({'layers': '%2e%2e/evil.json'}),
+  lambda x: x.update({'layers': [{'id': 'a', 'type': 'point', 'slot': 'markers', 'source': 'view:nope'}]}),
+  lambda x: x.update({'layers': [{'id': 'a', 'type': 'point', 'slot': 'markers', 'source': 'inline', 'menu': {'label': ''}}]}),
+  lambda x: x.update({'layers': [{'id': 'a', 'type': 'point', 'slot': 'markers', 'source': 'inline', 'style': {'color': 'red', 'surprise': 1}}]}),
 ]
 print(json.dumps({'ok': [run(f) for f in ok], 'bad': [run(f) for f in bad]}))`);
   r.ok.forEach((n, i) => assert.equal(n, 0, `合法例 ${i} 应通过`));
   r.bad.forEach((n, i) => assert.ok(n > 0, `坏例 ${i} 应被拦`));
-  assert.equal(r.bad.length, 30);
+  assert.equal(r.bad.length, 33);
 });
 
 test('v2 schema 只用 jsonschema_lite 认得的关键字', () => {
@@ -84,6 +88,21 @@ def walk(s, where):
 files = sorted(glob.glob('map/data/schema/v2/*.schema.json'))
 for f in files: walk(json.load(open(f, encoding='utf-8')), f)
 print(json.dumps({'n': len(files), 'bad': bad}))`);
-  assert.equal(bad.n, 10, '10 个 v2 schema 文件');
+  assert.equal(bad.n, 11, '11 个 v2 schema 文件（S8-1 加了 scene3d）');
   assert.deepEqual(bad.bad, []);
+});
+
+test('3D 清单 schema（K-R104）：随仓的每份清单都过，坏清单被拦', () => {
+  const r = py(`import json, glob, sys
+sys.path.insert(0, 'tools'); from jsonschema_lite import validate
+sch = json.load(open('map/data/schema/v2/scene3d.schema.json', encoding='utf-8'))
+files = ['map/estate/model/manifest.json'] + sorted(glob.glob('map/props/*/manifest.json'))
+errs = {f: validate(json.load(open(f, encoding='utf-8')), sch) for f in files}
+good = {'id': 'x', 'glb': {'site': {'std': 'a.glb', 'low': 'b.glb'}, 'house': {'std': 'c.glb'}}, 'floors': ['f1', {'id': 'f2'}], 'flows': [{'color': '#aabbcc'}], 'unknown': 1}
+bads = [{'glb': 'a.glb'}, {'id': 'x'}, {'id': 'x', 'glb': 5}, {'id': 'x', 'glb': {'site': {'low': 'b.glb'}}}, {'id': 'x', 'glb': 'a.glb', 'flows': [{'color': 'red'}]}, {'id': 'x', 'glb': 'a.glb', 'data': {'rooms': 3}}]
+print(json.dumps({'n': len(files), 'bad': {f: e for f, e in errs.items() if e}, 'good': validate(good, sch), 'bads': [len(validate(b, sch)) for b in bads]}))`);
+  assert.ok(r.n > 30, '主场景 + 每个地标');
+  assert.deepEqual(r.bad, {});
+  assert.deepEqual(r.good, []);
+  r.bads.forEach((n, i) => assert.ok(n > 0, `坏清单 ${i} 应被拦`));
 });

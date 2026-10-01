@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "v2/scene3d.schema.json",
+  "title": "3D scene manifest, schema 2: the generic 3D viewer's asset manifest (K-R104)",
+  "description": "docs/kernel-schema.md §4.5 (K-R104; promised by K-R64). The shape of map/estate/model/manifest.json and map/props/<id>/manifest.json, read from core/scene3d-manifest.mjs (validate / glbParts): `id` and one resolvable `glb` are the only hard requirements; every other field is optional and unknown fields are kept (additionalProperties true). Paths are relative to the manifest's own directory.",
+  "type": "object",
+  "required": [
+    "id",
+    "glb"
+  ],
+  "additionalProperties": true,
+  "$defs": {
+    "part": {
+      "type": "object",
+      "required": [
+        "std"
+      ],
+      "properties": {
+        "std": {
+          "type": "string",
+          "minLength": 1
+        },
+        "low": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Asset id (the main scene: the manifest's own id; a landmark: its directory name)."
+    },
+    "glb": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "description": "'x.glb': one part, the std tier."
+        },
+        {
+          "$ref": "#/$defs/part",
+          "description": "{ std, low? }: one part, two tiers."
+        },
+        {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "#/$defs/part"
+          },
+          "description": "{ <part>: { std, low? } }: several parts (the main scene: site / house)."
+        }
+      ],
+      "description": "The model file(s), three forms; the legacy landmark form is glb plus glb_low."
+    },
+    "glb_low": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Legacy landmark spelling: the low tier of the main part."
+    },
+    "floors": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        ]
+      },
+      "description": "Floor ids (checked against the room plan's floors)."
+    },
+    "hotspots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "description": "Landmark hotspots; the main scene's outdoor hotspots live in data.zones."
+    },
+    "budget": {
+      "type": "object",
+      "description": "Size / tier budget; the legacy per-group `budgets` is read as well."
+    },
+    "budgets": {
+      "type": "object"
+    },
+    "license": {
+      "type": "object",
+      "description": "Credit and licence; the legacy `credit` is read as { credit }."
+    },
+    "credit": {},
+    "data": {
+      "type": "object",
+      "description": "Data file paths, relative to the manifest's directory.",
+      "properties": {
+        "rooms": {
+          "type": "string"
+        },
+        "zones": {
+          "type": "string"
+        },
+        "galleries": {
+          "type": "string"
+        }
+      }
+    },
+    "flows": {
+      "type": "array",
+      "description": "Animated flow paths (dots along a polyline).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "pts": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

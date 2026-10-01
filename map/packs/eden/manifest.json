@@ -74,6 +74,8 @@
     "page_title@en": "Tiancheng Map",
     "ring": "天城周边",
     "ring@en": "Tiancheng outskirts",
+    "routes_title": "上层航线（金色虚线）与银冠堡巡逻环（淡蓝点划线）",
+    "routes_title@en": "Upper-tier air lanes (gold dashes) and Silvercrown patrol rings (pale-blue dash-dot)",
     "s.cvd_hint": "事态、图例、人物头像等换成色盲安全配色，并加形状 / 描边区分；同步给庄园与三维页",
     "s.cvd_hint@en": "Switches events, legends, character avatars etc. to a colorblind-safe palette and adds shape / outline cues; also sent to the estate and 3D pages",
     "s.lic_repo": "伊甸地图（开源）",

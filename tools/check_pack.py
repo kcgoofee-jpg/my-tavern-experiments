@@ -11,7 +11,7 @@
   overlay.v2.json（可选，包目录里）：schema-2 节点叠加层（清单 data.overlay 声明），交给 tools/check_overlay.mjs（K-R67）
 eden 包的数据仍由 tools/check_maps.py 校验（这里只查清单）。退出码：有错误 1。
 """
-import json, os, re, subprocess, sys
+import glob, json, os, re, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from jsonschema_lite import validate
 from make_dzi import verify as dzi_verify
@@ -164,6 +164,24 @@ def check_index():
     return errs
 
 
+def check_scene3d():
+    """K-R104：每份随仓 3D 清单（主场景 map/estate/model + 每个 map/props/<id>）过 map/data/schema/v2/scene3d.schema.json，并过 core/scene3d-manifest.mjs 的 validate（node）。清单数据这里不改，只报。"""
+    sch = json.load(open(os.path.join(MAP, 'data', 'schema', 'v2', 'scene3d.schema.json'), encoding='utf-8'))
+    files = [os.path.join(MAP, 'estate', 'model', 'manifest.json')] + sorted(glob.glob(os.path.join(MAP, 'props', '*', 'manifest.json')))
+    errs = []
+    for f in files:
+        rel = os.path.relpath(f, MAP)
+        try: m = json.load(open(f, encoding='utf-8'))
+        except Exception as e: errs.append(f'{rel}: 读不出来：{e}'); continue
+        errs += [f'{rel} {e}' for e in validate(m, sch)]
+    js = "import('./map/core/scene3d-manifest.mjs').then(async M=>{const fs=await import('node:fs');for(const f of process.argv.slice(1)){for(const e of M.validate(JSON.parse(fs.readFileSync(f,'utf8'))))console.log(f+': '+e)}})"
+    try:
+        r = subprocess.run(['node', '-e', js, *files], capture_output=True, text=True, timeout=60, cwd=ROOT)
+        errs += [os.path.relpath(x, MAP) if x.startswith(MAP) else x for x in r.stdout.splitlines() if x.strip()]
+    except Exception as e: errs.append(f'3D 清单没能过 core 校验：{e}')
+    return errs
+
+
 def main():
     ids = sys.argv[1:] or sorted(x for x in os.listdir(os.path.join(MAP, 'packs')) if os.path.isdir(os.path.join(MAP, 'packs', x)))
     bad = 0
@@ -175,6 +193,10 @@ def main():
         e = check(pid)
         for x in e: print('错误', x)
         print(f'{pid}：' + ('通过' if not e else f'{len(e)} 个问题')); bad += len(e)
+    if not sys.argv[1:]:
+        e = check_scene3d()
+        for x in e: print('错误', x)
+        print('3D 清单：' + ('通过' if not e else f'{len(e)} 个问题')); bad += len(e)
     sys.exit(1 if bad else 0)
 
 
