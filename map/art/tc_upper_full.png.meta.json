@@ -2,8 +2,8 @@
  "script": "blender/tiancheng_upper.py",
  "upper_depth": "77f113b71d797b8a",
  "tc_islands": "4781edb46b039ad2",
- "res": 16000,
- "samples": 512,
+ "res": 8000,
+ "samples": 128,
  "below": "clouds",
  "blender": "5.2.2 LTS",
  "composite": "tools/upper_base_paste.py（岛体渲染 TC_EDEN_CUT=1 + 各岛抠图 + 伊甸 estate2 r5 抠图）"

@@ -276,7 +276,7 @@ class Isle:
         elif k == 'fortress':                                # 要塞：更方、四角略凸（角楼位）
             g = 1 + .03 * np.cos(4 * (th - ph)) ** 7
         elif k == 'jagged':                                  # 冷峻锯齿：不规则尖角
-            g = 1 + .11 * np.abs(np.sin(5 * th + .7)) ** 3 - .06 * np.abs(np.sin(9 * th + 2.1)) + .05 * np.sin(23 * th)
+            g = 1 + .07 * np.abs(np.sin(5 * th + .7)) ** 3 - .04 * np.abs(np.sin(9 * th + 2.1)) + .03 * np.sin(23 * th)   # 尖角收小（2026-10-01：俯视像一团黑刺）
         return base * g
     def inside(self, lx, ly, s=1.0): return math.hypot(lx, ly) <= s * self.r(math.atan2(ly, lx))
     def sfrac(self, lx, ly): return math.hypot(lx, ly) / max(1e-6, self.r(math.atan2(ly, lx)))

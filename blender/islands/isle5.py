@@ -41,23 +41,23 @@ def spruce(B, M, x, y, z, h, r, rnd):
 # ============================================================ 岛面
 def top(ctx):
     S, K, M = ctx.S, ctx.K, ctx.M; R = S.R; rnd = random.Random(55)
-    M['litter5'] = K_.ground_v17('y5_litter', [(.07, .09, .06), (.1, .1, .07), (.08, .08, .07)], dry=(.2, .18, .14), soil=(.1, .09, .08), rock=(.09, .1, .12))
+    M['litter5'] = K_.ground_v17('y5_litter', [(.1, .15, .11), (.13, .17, .12), (.11, .14, .11)], dry=(.26, .25, .19), soil=(.18, .17, .16), rock=(.2, .22, .25))   # 俯视可读：苔灰绿地面，不再近黑
     M['bark5'] = C.flat('y5_bark', (.08, .07, .06), .9)
-    M['needle_a'] = C.flat('y5_needle_a', (.018, .04, .026), .85, noise=.5); M['needle_b'] = C.flat('y5_needle_b', (.025, .05, .03), .85, noise=.5)
-    M['needle_c'] = C.flat('y5_needle_c', (.03, .045, .028), .85, noise=.5)
-    M['rock5'] = C.flat('y5_rocktop', (.03, .031, .035), .96, noise=.6)
+    M['needle_a'] = C.flat('y5_needle_a', (.04, .095, .065), .9, noise=.5); M['needle_b'] = C.flat('y5_needle_b', (.06, .12, .085), .9, noise=.5)
+    M['needle_c'] = C.flat('y5_needle_c', (.075, .105, .07), .9, noise=.5)
+    M['rock5'] = C.flat('y5_rocktop', (.12, .125, .14), .96, noise=.6)
     M['wardrim5'] = C.glow('y5_wardrim', c=(.5, .72, 1.0), estr=1.4, alpha=.08); M['wardline5'] = C.glow('y5_wardline', c=(.55, .8, 1.0), estr=5.0)
-    M['blackstone'] = C.flat('y5_stone', (.035, .034, .036), .95, noise=.4)
-    M['slate5'] = C.flat('y5_slate', (.025, .026, .03), .92, noise=.3)
-    M['lane5'] = C.flat('y5_lane', (.22, .22, .23), .9, noise=.5)
+    M['blackstone'] = C.flat('y5_stone', (.2, .2, .21), .95, noise=.4)
+    M['slate5'] = C.flat('y5_slate', (.075, .08, .1), .92, noise=.3)
+    M['lane5'] = C.flat('y5_lane', (.34, .34, .35), .9, noise=.5)
     M['ward5'] = K_.hex_ward('y5_ward', cell=5.0, alpha=.04, estr=.6, c=(.55, .75, 1.0), rim=.35)
-    tr = K_.Terrain(S, noise=(3.0, 40), rough=(1.6, 14), ridges=[dict(pts=p, w=44, h=30) for p in RIDGES] + [dict(pts=[(-150, 90), (-80, 140)], w=30, h=-8)],
+    tr = K_.Terrain(S, noise=(3.0, 40), rough=(1.6, 14), ridges=[dict(pts=p, w=36, h=20) for p in RIDGES] + [dict(pts=[(-150, 90), (-80, 140)], w=30, h=-8)],
                     brow=(8, 3.0), ground='litter5')
     ctx.tr = tr; ctx.top_z = lambda x, y: tr.h(x * .999, y * .999)
     hx, hy = HOUSE; tr.flats.append((hx - 36, hx + 36, hy - 12, hy + 12, tr.base(hx, hy) + 16, 8))
     lane = [(hx + 10, hy + 14), (hx + 40, hy + 60), (hx + 30, hy + 120), S.edge(math.pi / 2 + .15, .9)]
     tr.path(lane, 4, 'lane5')
-    tr.fn(lambda x, y: any(K_.seg_dist(x, y, p) < 9 + 4 * MN.noise(Vector((x * .05, y * .05, 2.0))) for p in RIDGES), 'rock5')
+    tr.fn(lambda x, y: any(K_.seg_dist(x, y, p) < 5 + 3 * MN.noise(Vector((x * .05, y * .05, 2.0))) for p in RIDGES), 'rock5')
     tr.build(ctx.B('terrain'), M)
     zh = tr.h(hx, hy)
     ctx.anchor('outline', *S.edge(-.4, .95), tr.h(*S.edge(-.4, .9)) + 4); ctx.anchor('outline', *S.edge(2.6, .95), tr.h(*S.edge(2.6, .9)) + 4)
@@ -75,11 +75,11 @@ def top(ctx):
         xq = -R
         while xq < R:
             x, y = xq + rnd.uniform(-3.5, 3.5), yq + rnd.uniform(-3.5, 3.5); xq += step * rnd.uniform(.6, 1.4)
-            if MN.noise(Vector((x / 45, y / 45, 6.0))) < -.35: continue                            # 林窗
+            if MN.noise(Vector((x / 40, y / 40, 6.0))) < .03: continue                             # 林窗：大片空地，林冠成簇
             if S.frac(x, y) > .95 or (abs(x - hx) < 36 and abs(y - hy) < 13) or K_.seg_dist(x, y, lane) < 4: continue
             d = min(K_.seg_dist(x, y, p) for p in RIDGES)
-            if d < 11 or (d < 18 and rnd.random() < .6): continue                                    # 脊顶露黑岩
-            spruce(TB, M, x, y, tr.h(x, y), rnd.uniform(12, 30), rnd.uniform(2.4, 4.6), rnd); n += 1
+            if d < 7 or (d < 12 and rnd.random() < .5): continue                                     # 脊顶只露一窄条岩
+            spruce(TB, M, x, y, tr.h(x, y), rnd.uniform(12, 30), rnd.uniform(3.2, 5.6), rnd); n += 1
         yq += step
     print('isle5 trees', n)
     ctx.anchor('forest', *S.edge(-2.2, .6), tr.h(*S.edge(-2.2, .6)) + 24); ctx.anchor('lane', *lane[2], tr.h(*lane[2]) + 2)

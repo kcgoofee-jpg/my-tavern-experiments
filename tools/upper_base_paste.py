@@ -16,7 +16,7 @@ Image.MAX_IMAGE_PIXELS = None
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CUTS = [('silver_crown', 'silver_crown/cutout.png', 360 * 0.643), ('isle4', 'isle4/cutout.png', 520 * 0.6733),
-        ('isle5', 'isle5/cutout.png', 660), ('isle6', 'isle6/cutout2.png', 450), ('isle9', 'isle9/cutout.png', 410),
+        ('isle5', 'isle5/cutout_v4.png', 660), ('isle6', 'isle6/cutout2.png', 450), ('isle9', 'isle9/cutout.png', 410),
         ('isle10', 'isle10/cutout4.png', 390), ('isle25', 'isle25/cutout.png', 480), ('isle30', 'isle30/cutout.png', 470)]
 EDEN_CUT = 'logs/campaign/eden_r5/final_cut6000.png'
 
