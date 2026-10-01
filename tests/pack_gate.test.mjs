@@ -20,6 +20,7 @@ function stub(o = {}) {
     get: k => S.ls.get(k) ?? null, set: (k, v) => S.ls.set(k, v), chatKeys: async () => S.keys, reimport: u => { S.reimport.push(u); return Promise.resolve(); }, lang: () => 'en', budget: 300 };
   return { S, win, gate: createGate(env), key: () => cardKey({ name: S.card.data.name, avatar: S.card.avatar }) };
 }
+const EDEN_BOOK = { names: { primary: 'P', additional: [] }, books: { P: [{ name: '世界观', content: 'x', enabled: true, strategy: { keys: ['k'] } }] } };   // I-26: a name word needs a worldbook title next to it
 const pickKey = (T, v) => T.S.ls.set(PICK_KEY, JSON.stringify({ [T.key()]: v }));
 
 test('K-R90: choice beats embedded beats index beats automatic', async () => {
@@ -53,7 +54,7 @@ test('K-R91: a refused embedded pack falls through with one problem (bad JSON, s
 });
 
 test('K-R90: the legacy-default pack leaves window.__tcPack undefined (name word, chat variable, no card, index unreachable)', async () => {
-  for (const o of [{ card: card('Some Yehehua Edition V1.5') }, { card: card('Anything'), chatKeys: ['eden_map'] }, { card: null }, { card: card('Anything'), offline: true }]) {
+  for (const o of [{ card: card('Some Yehehua Edition V1.5'), ...EDEN_BOOK }, { card: card('Anything'), chatKeys: ['eden_map'] }, { card: null }, { card: card('Anything'), offline: true }]) {
     const T = stub(o); T.win.__tcPack = { id: 'stale', manifest: {} };
     const cur = await T.gate.start();
     assert.equal(T.win.__tcPack, undefined, JSON.stringify(o)); assert.equal(cur.id, 'eden');
@@ -87,6 +88,8 @@ test('card-source: the card reader keeps the three-level fallback and the card k
 });
 
 test('K-R90 / Z-19: a card switch resolves again and restarts only when the pack id or source changes (A -> B -> A)', async () => {
+  const nameOnly = await stub({ card: card('Some Yehehua Edition V1.5') }).gate.resolve();
+  assert.equal(nameOnly.source, 'auto', 'I-26: the author word alone does not open the first pack');
   const T = stub({ card: card('Brindle') });
   await T.gate.start(); assert.equal(T.win.__tcPack.id, 'minimal'); assert.equal(T.win.__tcPack.source, 'index');
   await T.gate.onChat(); assert.equal(T.S.reimport.length, 0, 'same card: nothing restarts');
@@ -96,7 +99,7 @@ test('K-R90 / Z-19: a card switch resolves again and restarts only when the pack
   assert.equal(T.win.__tcPack.id, 'minimal'); assert.equal(T.S.reimport.length, 2);
   assert.equal(new Set(T.S.reimport).size, 2, 'a fresh query each time, so the entry is evaluated again');
   assert.match(T.S.reimport[0], /\/tavern\/eden-map\.js\?k=k[0-9a-z]+&r=1$/);
-  T.S.card = card('Yehehua'); await T.gate.onChat(); assert.equal(T.win.__tcPack, undefined, 'to the legacy default: no pack object at all');
+  T.S.names = EDEN_BOOK.names; T.S.books = EDEN_BOOK.books; T.S.card = card('Yehehua'); await T.gate.onChat(); assert.equal(T.win.__tcPack, undefined, 'to the legacy default: no pack object at all');
 });
 
 test('K-R90: pack-gate over budget starts with the legacy default and corrects by a restart', async () => {

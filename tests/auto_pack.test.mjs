@@ -99,7 +99,8 @@ function gate(card, extra = {}) {
 }
 
 test('first pack: with it resolved, auto-pack.mjs is never loaded; an unfamiliar card loads it once and gets a derived pack with the cached growth', async () => {
-  const first = gate({ name: 'Some Yehehua Edition V1.5', avatar: 'a.png' }); let r = await first.g.start();
+  const first = gate({ name: 'Some Yehehua Edition V1.5', avatar: 'a.png', books: [{ name: '世界观', strategy: { keys: ['k'] }, enabled: true, content: 'x' }] });   // I-26: the name word needs a title next to it
+  let r = await first.g.start();
   assert.equal(r.id, 'eden'); assert.equal(first.win.__tcPack, undefined); assert.equal(first.calls.auto, 0);
   const chat = gate({ name: 'Anything', avatar: 'a.png' }, { chatKeys: ['eden_map'] }); await chat.g.start(); assert.equal(chat.calls.auto, 0);
   const a = resolveAuto(src(), {}), dock = a.base.nodes[1].id, cache = { v: 1, fp: a.fp, pack: a.base, grown: [{ id: 'g_q', name: 'Quay', alias: ['Quay'], parent: dock }], seen: [] };

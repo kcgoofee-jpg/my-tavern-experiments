@@ -18,7 +18,7 @@ card or the user's worldbooks, new switches default off, no blocking dialogs) ar
 | id | Question | Options | Consequences | Recommendation (working decision) |
 |---|---|---|---|---|
 | Z-01 | Order of the pack sources. | A: plan order — card-embedded → index match → user URL / file → automatic. B: the user's explicit choice for this card first (URL, file, a shipped pack, or "automatic"), then card-embedded → index match → automatic. | A: a broken or hostile embedded pack can never be replaced by the user; the URL / file tier is only reached for cards with no embedded pack and no index match. B: every automatic step keeps the plan order; the user can always override (kernel-schema §2.3 already decided this for safety). | **B** |
-| Z-02 | What counts as an index match. | A: a score per shipped pack: the pack's chat variable already present in this chat (100), a `match.card` word in the card's name, creator or tags (10 per field), a `match.worldbook` title equal to an entry title of the card's own books (5 each); a candidate needs ≥ 10; ties by index order. B: card name only. | A: chats that already used a shipped pack keep it whatever the card is called; a renamed card is still found by two of its entry titles; a single shared word never decides. B: a renamed or re-exported card silently loses its map. | **A** |
+| Z-02 | What counts as an index match. | A: a score per shipped pack: the pack's chat variable already present in this chat (100), a `match.card` word in the card's name, creator or tags (10 per field), a `match.worldbook` title equal to an entry title of the card's own books (5 each); a candidate needs ≥ 10; ties by index order. B: card name only. | A: chats that already used a shipped pack keep it whatever the card is called; a renamed card is still found by two of its entry titles; a single shared word never decides (I-26: card words count only next to a title hit for a pack that lists titles). B: a renamed or re-exported card silently loses its map. | **A** |
 | Z-03 | The standalone viewer (opened without a tavern, the repository's demo and test page). | A: it opens the index's `default` pack, as today. B: it opens a zero-config demo. | A: every existing probe and the public demo keep working; the default is data (`packs/index.json`), not code. The tavern host never uses it. B: rewrites the probe harness for no user benefit. | **A** |
 | Z-04 | Which worldbook entries of the card become place nodes. | A: only entries recognised as places (title or a key holds a kernel place word of the pack language, or a nested title whose outer part is already a place); other entries are ignored (growth may still add them when the chat names them). B: every entry is a candidate. C: none (growth only). | A: few false places (people, rules, factions stay out); some real places without a place word appear only once the chat names them. B: people and rule entries become map pins. C: the first screen of an unfamiliar card is empty. | **A** |
 | Z-05 | Stability of the automatic pack. | A: derived once per chat and stored in the chat variable; re-derived only when the card's fingerprint (name, avatar, entry titles, variable shape) changes; node ids are hashes of names, so unchanged places keep their ids and grown nodes survive. B: re-derived on every load. | A: what the user sees does not move between sessions; an edited card is picked up. B: an unrelated worldbook edit can reshuffle the map. | **A** |
@@ -122,7 +122,7 @@ packs. The score of a pack for the current card (Z-02):
 | a `match.card.tags` word equals one of the card's tags (normalised) | 10 |
 | each `match.worldbook` title equal (normalised) to an entry title of the card's own books | 5 |
 
-A pack is a candidate with ≥ 10 points; the highest score wins, ties by index order. Words are literal strings (no
+A pack is a candidate with ≥ 10 points; the highest score wins, ties by index order. *I-26:* the three `match.card` words count only when the pack lists no `match.worldbook` titles, or at least one of its titles is present (or its chat variable is); the author word shared by every card of an author can never open a pack alone. Words are literal strings (no
 patterns, K-R01). `default` is read only by the standalone viewer (Z-03).
 
 ### 2.6 User URL and local file (K-R99)
@@ -171,6 +171,10 @@ order:
 1. Skip: the embedded pack entry (K-R91), the variable-initialisation entry, entries carrying our ownership marker
    (`extra.eden_id` / `extra.spatial_id`), titles longer than 40 code points, and titles equal (normalised) to a name in
    a discovered roster table (K-R41).
+   *I-26:* names and keys are read without emoji and `{{...}}` macros (a leading possessive particle left behind is
+   dropped); a title with `|` is `role|name` (a person: not a place, its name is skipped elsewhere); a divider title
+   (framed by runs of `=`, `-`, `*`...) and a title led by a document emoji (rules, notes) are not places; two entries
+   with the same cleaned path are one node with both key sets.
 2. Strip one leading bracketed tag from the title (`[...]`, or full-width brackets) and split it into segments with the
    separators of K-R26 step 2, outer to inner.
 3. The entry is a place when its innermost segment contains a word of the kernel's place-word list for the pack
@@ -192,7 +196,7 @@ Nothing is decided by what a text means beyond these word lists (brief rule 8); 
   `vars`, so an export carries them; the user's variable mapping still wins (K-R38).
 - **entities**: groups by the K-R41 discovery (K-06 C) and fields by the K-R42 discovery, over the same shape.
 - **start** (`ui.start`, Z-08): the node that `locate` (K-R24, no `here`) finds in the first 400 code points of the
-  greeting; it only sets the opening view and is never the current location.
+  greeting; it only sets the opening view and is never the current location. When the first message is only a short marker (under 40 code points) the first alternate greeting that is longer is read instead (I-26).
 - **lang** (Z-09): over the letters of name, greeting and entry titles (at least 20): Han ≥ 30 % → `zh`; else kana
   ≥ 10 % → `ja`; else Hangul ≥ 30 % → `ko`; else `en`; fewer letters → the UI language. Languages other than `zh` and
   `en` use the `en` kernel vocabulary (K-R07).

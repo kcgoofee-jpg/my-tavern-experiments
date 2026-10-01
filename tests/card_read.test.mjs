@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { candidates, cardLang, deriveAutoPack, fingerprint, shapeOf, pathsOf, rosterTables } from '../map/core/card-read.mjs';
+import { candidates, greetingOf, cardLang, deriveAutoPack, fingerprint, shapeOf, pathsOf, rosterTables } from '../map/core/card-read.mjs';
 import { placeWord, PLACE } from '../map/core/vocab.mjs';
 import { validate2 } from '../map/core/pack-v2.mjs';
 
@@ -93,4 +93,38 @@ test('PLACE words: at most 60 per language; Chinese by substring, English by who
   assert.ok(PLACE.zh.length <= 60 && PLACE.en.length <= 60);
   assert.equal(placeWord('Lantern Docks', 'en'), 'dock'); assert.equal(placeWord('Innocent', 'en'), '', 'a word inside a longer word is not a place word'); assert.equal(placeWord('Harbour Office', 'en'), 'harbour');
   assert.equal(placeWord('云岭城', 'zh'), '城'); assert.equal(placeWord('陆小七', 'zh'), '');
+});
+
+// ---- I-26: a modern-city card shape (made-up text) ----
+const cityBook = { books: [{ name: 'b', entries: [
+  { title: '🏫北岸学院', keys: ['北岸'] }, { title: '🏫北岸学院', keys: ['学院区'] }, { title: '🛣️柳条路', keys: ['街道'] }, { title: '🏬灯火商城', keys: ['商城'] },
+  { title: '🏠{{user}}的住处', keys: ['{{user}}的房间', '住所'] }, { title: '董事长|周小满', keys: ['董事长'] }, { title: '店长|陈阿福', keys: ['店'] }, { title: '====👤北岸学院====', keys: [] },
+  { title: '=====🛣️柳条路===', keys: ['路'] }, { title: '---', keys: [] }, { title: '📑出行规定', keys: ['街道'] }, { title: '🌇社会文化|某某', keys: [] }, { title: '🏩星河剧场', keys: ['剧场'] }] }] };
+
+test('I-26: emoji and {{user}} leave the names; a place listed twice is one node with both key sets', () => {
+  const { nodes } = candidates(cityBook, { lang: 'zh' }), names = nodes.map(n => n.name);
+  assert.deepEqual(names, ['北岸学院', '柳条路', '灯火商城', '住处', '星河剧场']);
+  assert.deepEqual(nodes[0].alias, ['北岸学院', '北岸', '学院区']);
+  assert.ok(nodes.every(n => !/[{}]|\p{Extended_Pictographic}/u.test(n.name + n.alias.join('|'))));
+  assert.deepEqual(nodes[3].alias, ['住处', '房间', '住所']);
+});
+
+test('I-26: `role|name` entries are people, divider entries and document-marked rules are skipped; a person name is not a place elsewhere', () => {
+  const names = candidates(cityBook, { lang: 'zh' }).nodes.map(n => n.name);
+  for (const bad of ['周小满', '陈阿福', '董事长', '出行规定', '社会文化', '某某']) assert.ok(!names.some(n => n.includes(bad)), bad);
+  assert.ok(!names.some(n => /^[=\-]/.test(n)));
+  const withNamed = candidates({ books: [{ name: 'b', entries: [{ title: '管理员|北岸路', keys: [] }, { title: '北岸路', keys: [] }] }] }, { lang: 'zh' });
+  assert.deepEqual(withNamed.nodes, [], 'the name of a role|name title is a person');
+});
+
+test('I-26: the start node comes from the first real alternate greeting when the greeting is only a short marker', () => {
+  const nodes = [{ id: 'a', name: '北岸学院' }, { id: 'b', name: '柳条路' }];
+  const src = { name: '一座城的故事', greeting: '【开局标记】', alternates: ['【立绘】', '傍晚，你沿着柳条路慢慢走回家，路灯一盏一盏亮了起来，风里有桂花的味道，远处的钟声刚刚敲过六下，街角的店铺陆续拉下了卷帘门。'],
+    books: [{ name: 'b', entries: nodes.map(n => ({ title: n.name, keys: ['路', '学院'] })) }] };
+  assert.equal(greetingOf(src), src.alternates[1]);
+  const { pack } = deriveAutoPack(src, { uiLang: 'zh' }), nm = new Map(pack.nodes.map(n => [n.id, n.name]));
+  assert.equal(nm.get(pack.ui.start), '柳条路');
+  const real = '清晨的北岸学院还很安静，你推开教室的门，窗边的位置空着，阳光落在桌面上，像一张摊开的纸。';
+  assert.equal(greetingOf({ greeting: real, alternates: [src.alternates[1]] }), real, 'a real first_mes wins');
+  assert.equal(greetingOf({ greeting: '标记', alternates: [] }), '标记');
 });

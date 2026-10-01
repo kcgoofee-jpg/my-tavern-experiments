@@ -16,6 +16,7 @@ export function pick(c, src) {
   const out = { name, creator: String(d.creator || '').trim(), version: String(d.character_version || '').trim(), avatar: String(c?.avatar || ''),
     tags: Array.isArray(d.tags) ? d.tags.map(String).slice(0, 12) : [], notes: String(d.creator_notes || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200), src, spatialOs: ext };
   Object.defineProperty(out, 'first', { value: String(d.first_mes ?? c?.first_mes ?? '').slice(0, 2000), enumerable: false });   // the greeting, for the automatic pack (readCardSource); not enumerable, so the credits page's copy never carries it
+  Object.defineProperty(out, 'alts', { value: Array.isArray(d.alternate_greetings) ? d.alternate_greetings.slice(0, 4).map(a => String(a ?? '').slice(0, 800)) : [], enumerable: false });   // I-26: read only when the greeting is a short marker
   return out;
 }
 
@@ -69,6 +70,6 @@ export async function readCardSource(a = {}, known = null) {
   const card = known && known.card !== undefined ? known.card : (await readCardBasics(a)).card, raw = card ? await readCardBooks(a) : [];
   let stat = null; try { const s = a.stat?.(); stat = s && typeof s === 'object' ? s : null; } catch (e) {}
   const init = raw.flatMap(b => b.entries).find(e => typeof e.initvar === 'string');
-  return { name: card?.name || '', creator: card?.creator || '', tags: card?.tags || [], avatar: card?.avatar || '', greeting: card?.first || '',
+  return { name: card?.name || '', creator: card?.creator || '', tags: card?.tags || [], avatar: card?.avatar || '', greeting: card?.first || '', alternates: card?.alts || [],
     books: raw.map(b => ({ name: b.name, entries: b.entries.map(({ content, ...e }) => e) })), stat, initvar: init ? init.initvar : '' };
 }

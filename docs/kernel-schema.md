@@ -164,7 +164,7 @@ pack the row is the only place that holds it (`tools/check_pack.py` checks the i
 card: its chat variable present as a top-level key holding an object in the chat variables 100; a `match.card.name` word
 in the card name (normalised, K-R17, substring) 10; a `match.card.creator` word in the creator 10; a `match.card.tags`
 word equal to one of the card's tags 10; each `match.worldbook` title equal (normalised) to an entry title of the card's
-own books 5. A pack is a candidate with at least 10 points; the highest score wins, ties by index order. Words are
+own books 5. A pack is a candidate with at least 10 points; the highest score wins, ties by index order. *I-26:* the three `match.card` words count only when the pack lists no `match.worldbook` titles, or at least one of its titles is present (or its chat variable is); the author word shared by every card of an author can never open a pack alone. Words are
 literal strings (K-R01). `default` is read only by the standalone viewer.
 
 **K-R99 — Importing a pack.** From Settings the user gives an https URL or picks a file (message `eden-map:pack-pick`).
@@ -430,6 +430,10 @@ location variable "the inn" finds the alias "the inn" instead of growing "inn").
 1. Skip: the embedded pack entry (K-R91), the variable-initialisation entry (a title with `initvar` in brackets), entries
    carrying our ownership marker, titles longer than 40 code points, and titles equal (normalised) to a name in a
    discovered roster table (K-R41).
+   *I-26:* names and keys are read without emoji and `{{...}}` macros (a leading possessive particle left behind is
+   dropped); a title with `|` is `role|name` (a person: not a place, its name is skipped elsewhere); a divider title
+   (framed by runs of `=`, `-`, `*`...) and a title led by a document emoji (rules, notes) are not places; two entries
+   with the same cleaned path are one node with both key sets.
 2. Strip one leading bracketed tag from the title (`[...]`, `［...］`, `【...】`) and split it into segments with the
    separators of K-R26 step 2, outer to inner.
 3. The entry is a place when its innermost segment contains a word of the kernel's place-word list for the pack
@@ -453,7 +457,7 @@ means beyond these word lists (brief rule 8).
   places, K-R93); the table whose name means "present" becomes the `present` group (`members` and `targets` stay
   discovered at run time), and the row fields that fit a text or tag slot (K-R42) are written as `fields` with `x-slot`.
 - **start** (`ui.start`, Z-08): the node that `locate` (K-R24, no `here`) finds in the first 400 code points of the
-  greeting; it only sets the opening view and is never the current location.
+  greeting; it only sets the opening view and is never the current location. When the first message is only a short marker (under 40 code points) the first alternate greeting that is longer is read instead (I-26).
 - **lang** (Z-09): over the letters of name, greeting and entry titles (at least 20): Han ≥ 30 % → `zh`; else kana
   ≥ 10 % → `ja`; else Hangul ≥ 30 % → `ko`; else `en`; fewer letters → the UI language. Languages other than `zh` and
   `en` use the `en` kernel vocabulary (K-R07).

@@ -76,16 +76,25 @@ export function discoverEntities(tables) {
 
 // ---- K-R93: place candidates from the worldbook titles ----
 const plainKey = k => typeof k === 'string' && cpLen(k.trim()) >= 1 && cpLen(k.trim()) <= 20 && !/^\/.*\/[a-z]*$/.test(k.trim()) && !/[*?]/.test(k);
+// I-26: names are read without emoji and without `{{macro}}` text; a divider entry (a title framed by runs of `=` / `-` / `*` ...) and an entry led by a document emoji (rules, notes) are not places;
+// a title with a `|` is `role|name`, i.e. a person (never a place, its name is skipped as a person too).
+const EMOJI = /[\p{Extended_Pictographic}\p{Regional_Indicator}\uFE0F\u200D\u20E3]/gu, MACRO = /\{\{[^}]*\}\}/g, DIVIDER = /^\s*[=\-_*~#─—]{2,}.*[=\-_*~#─—]{2,}\s*$|^[\s=\-_*~#─—]+$/, DOC_MARK = /^\s*[\u{1F4D1}\u{1F4DC}\u{1F4CB}\u{1F4DD}\u{1F4D6}\u{1F4DA}\u2696]/u;
+const tidy = t => String(t ?? '').replace(MACRO, '\u0001').replace(EMOJI, '').replace(/^\u0001(的|['\u2019]s\s*)?/, '').replace(/\u0001/g, '').replace(/\s+/g, ' ').trim();
 /** candidates(src, { lang, people }) -> { nodes, problems }; `people` = names of the roster tables (their entries are not places). Nodes carry `parent` = the candidate named by the outer segment, else ROOT. */
 export function candidates(src, { lang, people = [] } = {}) {
-  const lx = lexicon(lang), ppl = new Set(people.map(normalise)), rows = [], seen = new Set();
-  for (const e of entriesOf(src)) {
-    const title = String(e.title ?? '').trim(), bare = title.replace(TAG, '').trim();
+  const lx = lexicon(lang), ppl = new Set(people.map(normalise)), rows = [], byPath = new Map(), pipes = [], entries = entriesOf(src);
+  for (const e of entries) { const t = String(e.title ?? ''); if (t.includes('|')) { const n = tidy(t.split('|').pop()); if (n) pipes.push(normalise(n)); } }
+  for (const n of pipes) ppl.add(n);
+  for (const e of entries) {
+    const title = String(e.title ?? '').trim(), bare = tidy(title.replace(TAG, ''));
     if (!title || title === EMBED || isInit(title) || e.ours === true || cpLen(title) > MAX_TITLE || ppl.has(normalise(title)) || ppl.has(normalise(bare))) continue;
+    if (title.includes('|') || DIVIDER.test(title) || DOC_MARK.test(title) || !bare) continue;
     const segs = bare.split(SEP).map(s => s.trim()).filter(Boolean); if (!segs.length) continue;
-    const id = 'w_' + fnv36(normalise(title)); if (seen.has(id)) continue; seen.add(id);
-    const keys = (Array.isArray(e.keys) ? e.keys : []).filter(plainKey).map(k => k.trim()), inner = segs[segs.length - 1];
-    rows.push({ id, segs, inner, keys, hit: !!(placeWord(inner, lang) || keys.some(k => placeWord(k, lang))) });
+    const keys = (Array.isArray(e.keys) ? e.keys : []).map(tidy).filter(plainKey).map(k => k.trim()), inner = segs[segs.length - 1], path = normalise(segs.join('\u0001'));
+    const dup = byPath.get(path);
+    if (dup) { dup.keys.push(...keys); dup.hit = dup.hit || keys.some(k => placeWord(k, lang)); continue; }   // the same place twice: one node, the keys of both
+    const row = { id: 'w_' + fnv36(normalise(title)), segs, inner, keys, hit: !!(placeWord(inner, lang) || keys.some(k => placeWord(k, lang))) };
+    byPath.set(path, row); rows.push(row);
   }
   const named = new Map();   // normalised name -> id of a candidate
   const mark = r => { if (!named.has(normalise(r.inner))) named.set(normalise(r.inner), r.id); };
@@ -124,6 +133,12 @@ export function startNode(tree, vocab, greeting, lang) {
   return r && r.node !== tree.root && tree.has(r.node) ? r.node : null;
 }
 
+/** I-26: the text the start view is read from: the greeting; when it is only a short marker (under 40 code points) the first alternate greeting that is longer. */
+export function greetingOf(src) {
+  const g = String(src?.greeting ?? ''), alts = Array.isArray(src?.alternates) ? src.alternates : [];
+  return cpLen(g.trim()) >= 40 ? g : (alts.find(a => typeof a === 'string' && cpLen(a.trim()) >= 40) ?? g);
+}
+
 // ---- K-R95 ----
 /** The identity of what the pack is made from: card name, avatar, the sorted normalised entry titles and the sorted key paths of the variable shape. */
 export function fingerprint(src) {
@@ -138,7 +153,7 @@ export function deriveAutoPack(src, { uiLang = 'zh' } = {}) {
   const title = cut(String(src?.name ?? '').trim() || (uiLang === 'en' ? 'Map' : '地图'), 80);
   const c = candidates(src, { lang, people: tables.flatMap(t => t.names) });
   const nodes = [{ id: ROOT, name: title }, ...c.nodes], vars = discoverVars(ps), ents = discoverEntities(tables);
-  const start = startNode(buildTree(nodes, { title }), vocabulary(buildTree(nodes, { title }), { lang }), src?.greeting, lang);
+  const start = startNode(buildTree(nodes, { title }), vocabulary(buildTree(nodes, { title }), { lang }), greetingOf(src), lang);
   const raw = { id: autoId(src), schema: 2, title, lang, nodes, ...(Object.keys(vars).length ? { vars } : {}), ...(ents ? { entities: ents } : {}), ...(start ? { ui: { start } } : {}) };
   const v = validate2(raw, { trusted: false });
   return { pack: v.pack || { id: raw.id, schema: 2, title, nodes: [{ id: ROOT, name: title }] }, fp: fingerprint(src), problems: [...c.problems, ...v.problems] };

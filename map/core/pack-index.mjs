@@ -13,7 +13,7 @@ const isRow = r => r && typeof r === 'object' && typeof r.id === 'string' && r.i
 /** The packs of an index, in display order (rows that are not objects with an id are skipped). */
 export const rowsOf = index => (Array.isArray(index?.packs) ? index.packs.filter(isRow) : []);
 
-/** Points of one index row for the current card: chat variable present (100), a `match.card` word per field name / creator / tags (10 each field), each `match.worldbook` title that is an entry title (5 each). */
+/** Points of one index row for the current card: chat variable present (100), a `match.card` word per field name / creator / tags (10 each field; for a row that lists worldbook titles only together with a title hit, I-26), each `match.worldbook` title that is an entry title (5 each). */
 export function scorePack(row, ev = {}) {
   if (!isRow(row)) return 0;
   let s = 0;
@@ -21,11 +21,14 @@ export function scorePack(row, ev = {}) {
   if (cv && keys.includes(cv)) s += POINTS.chatVar;
   const m = row.match && typeof row.match === 'object' ? row.match : {}, c = m.card && typeof m.card === 'object' ? m.card : {}, card = ev.card || {};
   const name = normalise(card.name), creator = normalise(card.creator), tags = list(card.tags);
-  if (name && list(c.name).some(w => name.includes(w))) s += POINTS.card;
-  if (creator && list(c.creator).some(w => creator.includes(w))) s += POINTS.card;
-  if (tags.length && list(c.tags).some(w => tags.includes(w))) s += POINTS.card;
-  const titles = new Set(list(ev.titles));
-  for (const t of new Set(list(m.worldbook))) if (titles.has(t)) s += POINTS.title;
+  let words = 0, hits = 0;
+  if (name && list(c.name).some(w => name.includes(w))) words += POINTS.card;
+  if (creator && list(c.creator).some(w => creator.includes(w))) words += POINTS.card;
+  if (tags.length && list(c.tags).some(w => tags.includes(w))) words += POINTS.card;
+  const titles = new Set(list(ev.titles)), declared = new Set(list(m.worldbook));
+  for (const t of declared) if (titles.has(t)) { s += POINTS.title; hits++; }
+  // I-26: name / creator / tag words are shared by every card of an author, so for a pack that declares worldbook titles they count only next to a title hit (or the chat variable above)
+  if (hits > 0 || s >= POINTS.chatVar || declared.size === 0) s += words;
   return s;
 }
 
