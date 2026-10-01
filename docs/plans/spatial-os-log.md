@@ -921,4 +921,19 @@ blocker: none
 open: none
 cleanup: done (probe servers of mine stopped; scratch worktrees removed except r0 which the orchestrator may remove; no launch.json entries)
 Please re-import the preview script once: generate it with `python3 tools/build_preview_script.py --follow preview` (or `preview`) and import it into TavernHelper over the old one, reload the tavern page, and re-run R0 (T-01, T-03, T-04, and floors 4-10 of the chat for the location).
+=== RESULT S9-1 ===
+status: DONE
+items: T1 contract K-R96 / K-R97 (kernel-schema 4.6 + zh, K-R60 views row) ✓ · T2 core/schematic.mjs ✓ · T3 core/pack-v2-view.mjs ✓ · T4 app/nodes-runtime-v2.mjs + buildRuntimeV2 ✓ · T5 loading path (pack.mjs, current-pack.mjs, boot.mjs, json-cache.mjs; viewer.html needs no first-frame change) ✓ · T6 image tile sources (map-switch.mjs, topbar.mjs) ✓ · T7 probe pack_minimal passes, known failure removed ✓ · T8 docs (ARCHITECTURE + zh, todo I-12 struck, §0 line, this RESULT) ✓
+commits: 5f853847 feat(core): schematic layout and the v2 pack projection (K-R96, K-R97)
+commits: bef1fcf2 feat(viewer): schema-2 packs open natively (I-12)
+commits: (this commit) docs: v2 viewer in the module map; RESULT S9-1   (SHA may change on rebase)
+pushed: yes (head #N in the chat report; this log copy is committed before the push)
+tests: node 1016/1017 pass (1 skipped as in baseline; baseline 1002/1003, +14: schematic 6, pack_v2_view 4, nodes_runtime_v2 3, pack +1; nothing removed) | smoke PASS | arch PASS | arch doc PASS | zh mirror PASS | doc language PASS | probes: pack_minimal=PASS (8/8, no known failure left) pack_town=PASS s43_parity=PASS (3 changed shots are animated-background noise)
+minimal: 8/8 checks passed; maps 1 (harrow, its schematic), nodes reachable 5 (5 markers on the open map; with no views block the same pack gives 3 maps and children are reached by entering)
+parity: s43 145 shots, identical 141 (changed 3: map_tc_upper_dark / map_tc_upper_light animated cloud sea, settings_license with a moving map behind it; text identical; two runs of the same tree differ the same way)
+files: map/core/schematic.mjs 80 · map/core/pack-v2-view.mjs 87 · map/app/nodes-runtime-v2.mjs 27 · tests/schematic.test.mjs · tests/pack_v2_view.test.mjs · tests/nodes_runtime_v2.test.mjs (viewer.html unchanged in length: 707; boot.mjs 205)
+deviations: (1) tests/pack_schema_v1.test.mjs asserted that a schema-2 manifest is rejected by core/pack.mjs validate; that is the behaviour T5 changes on purpose, so its assertion now uses schema 3 (still rejected) and tests/pack.test.mjs pins the new schema-2 behaviour; no other test touched. (2) viewer.html: no first-frame edit was needed (its preload already fetches only the manifest for a non-first pack and the world pictures only for packs with data.world); the one change is the modulepreload link for nodes-runtime-v2.mjs appended on the existing nodes-runtime line (required by tests/app_modules.test.mjs; line count unchanged). (3) pack problems are listed through console.warn plus the exported packProblems: the viewer's self-check list is host-supplied (settings.mjs selfCheck), outside this step's file set. (4) a projected map sets view.width_m = extent width so the viewer opens the whole picture instead of zooming on the start marker. (5) the ARCHITECTURE module-map rows are in the codemod's sorted order (tests/rename_s5.test.mjs checks it). (6) trust: a pack loaded from packs/<id>/ is validated as shipped until S9-2 adds packs/index.json.
+blocker: none
+open: none
+cleanup: done (probe servers stopped by the probes; no background jobs of mine left; no .claude/launch.json entries; worktree s9-1 left for the orchestrator)
 === END ===

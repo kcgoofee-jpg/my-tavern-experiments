@@ -15,7 +15,7 @@
 
 | 术语 | 含义 | 现状 |
 |---|---|---|
-| **SpatialNode** | 节点树里的一个地点：`{ id, name, alias[], hints[], parent, type, at?, view?, canon }`。这棵树是唯一的地理；匹配取最长别名、优先更深的节点。 | **已有（S1–S3）。** `core/nodes.mjs` 建树、读树；`core/compat-v1.mjs` 在加载时把头两个包的 v1 文件转一次，包里的 `overlay.v2.json` 补上 v1 文件里从没有的东西（城区、城郊）。所有地点都经它解析：当前地点（`app/place-resolver.mjs`）、事态（`core/event-geo.mjs`）、人物与行程端点（`app/spot.mjs`）、注入的空间契约（`tavern/spatial-contract.mjs`）。v1 的解析器 `map/here.mjs` 已删除。schema 2 的包经内核流水线（`core/pack-v2.mjs`）运行；查看器的包加载器目前只收 schema 1，所以 schema 2 的包要到 **S9** 才能在查看器里打开。 |
+| **SpatialNode** | 节点树里的一个地点：`{ id, name, alias[], hints[], parent, type, at?, view?, canon }`。这棵树是唯一的地理；匹配取最长别名、优先更深的节点。 | **已有（S1–S3）。** `core/nodes.mjs` 建树、读树；`core/compat-v1.mjs` 在加载时把头两个包的 v1 文件转一次，包里的 `overlay.v2.json` 补上 v1 文件里从没有的东西（城区、城郊）。所有地点都经它解析：当前地点（`app/place-resolver.mjs`）、事态（`core/event-geo.mjs`）、人物与行程端点（`app/spot.mjs`）、注入的空间契约（`tavern/spatial-contract.mjs`）。v1 的解析器 `map/here.mjs` 已删除。schema 2 的包经内核流水线（`core/pack-v2.mjs`）运行；在查看器里则经一份内存投影（到注册表的形状，`core/pack-v2-view.mjs`，**S9-1**，K-R96）打开。 |
 | **PresentEntities** | 站在当前节点上的实体（先是人物，之后是任意实体类型），人物页用它按层级给在场的人分组。 | **已有（S6-1）。** `core/entities.mjs`（`presentAt`、`peopleSections`、`levelMode`），实体由 `map/characters-view.mjs` 已拿到的行建出（`tavern/characters-parse.mjs` 从聊天标签和 MVU 变量算出）；人物画在哪里由节点树定（`app/spot.mjs`）。 |
 | **WorldRoster** | 所有来源里已知的全部实体，合并成一张标准行列表。 | **已有。** `core/roster.mjs`（`RosterRow`、五个来源、优先级仲裁）。属性字段仍是固定槽位；作者自定义的 `entities` 字段表**计划在 S4**。 |
 | **Stash** | 有真实空间归属（哪张图、哪个标记、哪个暗格）的物品，并与玩家已携带的对账。 | **已有（S6-2）：一个存储 `<聊天变量>.stash`**（`tavern/stash-store.mjs`，可由 `tavern/stash-recompute.mjs` 从聊天重算；v1 旧键迁移后在 S10 前只读），旁边是包数据里的世界藏物（`core/stash.mjs`）。物品页签（`stash-view.mjs`，K-R76）按 `core/entities.mjs` 的 `itemGroups` 分四组（随身、这里、其他地点、卡内）；拾取句式、严格动词与永不算的句式在 `core/pickup.mjs`（K-R77）。 |
@@ -44,7 +44,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 
 ## 3. 模块地图
 
-每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 200 个：`map/core` 51、`map/app` 58、`map/tavern` 55、`map/ui` 9、`map/three` 9、`map/*.mjs` 16，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
+每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 203 个：`map/core` 53、`map/app` 59、`map/tavern` 55、`map/ui` 9、`map/three` 9、`map/*.mjs` 16，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
 
 ### 3.1 map/core
 
@@ -77,7 +77,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `overlay-v2.mjs` | schema 1 包的 v2 叠加层（`overlay.v2.json`）：在 `compat-v1` 之后按节点 id 合并；宽容（坏条目跳过并记入 `problems`）。 |
 | `pack-v2-rows.mjs` | v2 包各块的运行期读取：事态类型、属性值、名册行、世界藏物行（由 `pack-v2.mjs` 再导出）。 |
 | `pack-v2-spec.mjs` | v2 各块的字段规格，对应 `map/data/schema/v2/*.schema.json`，逐项自愈。 |
-| `pack-v2.mjs` | schema 2 的包：逐项自愈的校验、信任与上限、块解析、默认值。`core/pack.mjs`（查看器的加载器）仍拒绝 schema 2。 |
+| `pack-v2-view.mjs` | 在查看器里打开 schema-2 包（K-R96）：隐式示意图视图，以及到查看器注册表（地图、标记、虚拟点位文件）的投影。纯函数。 |
+| `pack-v2.mjs` | schema 2 的包：逐项自愈的校验、信任与上限、块解析、默认值。 |
 | `pack.mjs` | 设定包接口：清单校验与解析、包 id、存储前缀与聊天变量键的推导、注册表改基址。 |
 | `people.mjs` | 人物页按包的实体组分节（S4-4）：`groupList`、`groupLabel`（词典 / 包文案 `ch.g_<id>`，否则用组自己的标签）、`paneModel`；纯函数。 |
 | `periods.mjs` | 一天的时段（K-R39）：世界时钟落在哪个时段——先按时段词，再按钟点；默认时段。 |
@@ -95,6 +96,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `routine.mjs` | 宿主与查看器共用的 NPC 日程表数学。 |
 | `scene-header.mjs` | 场景头（K-R105）：不用正则读一楼的 `<tag>地点·日期·时间</tag>` 块，并决定一楼的地点：本楼变量补丁 > 认得出节点的头里地点 > 沿用的变量。 |
 | `scene3d-manifest.mjs` | Estate3D 清单契约：校验并解析庄园页与道具页的模型地址、数据路径与档位兜底。 |
+| `schematic.mjs` | 示意图布局（`tree`、`list`、`grid`、`radial`）与生成的点线图（SVG 的 data 地址）（K-R97）。纯函数。 |
 | `scrapbook.mjs` | 钉在地标上的图与手记的索引逻辑（图的字节在图集数据库里）。 |
 | `settlement-record.mjs` | 地图自己的 npc 与事件两个域的结算记录（K-R78）：`recordNorm`、`recordPut`（只补空缺）、`recordLanded`、`describeRecord`（纯函数）。 |
 | `stash.mjs` | 世界藏物表：包定义的物品藏在哪（图、标记、暗格），以及与已携带物品的对账。 |
@@ -144,7 +146,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `map-level-nav.mjs` | 层导航：层切换条、上一级、Esc 处理、单字符快捷键。 |
 | `map-switch.mjs` | 地图切换：可注册包装的 `go`、快照、地图外壳、另一版底图。 |
 | `markers.mjs` | 标记与地点卡：落点、跟踪、打开 / 关闭卡片、世界图与点位图叠加。 |
-| `nodes-runtime.mjs` | 查看器的节点树：已加载的注册表经 `core/compat-v1.mjs` 转一次；面包屑、上一级、预热邻居、庄园替身和三维页判断都从它读（不再走 `parent`）。 |
+| `nodes-runtime-v2.mjs` | schema-2 包的同一套读法，由包自己的树与投影出的注册表建成（K-R96）。纯函数。 |
+| `nodes-runtime.mjs` | 查看器的节点树：已加载的注册表经 `core/compat-v1.mjs` 转一次；面包屑、上一级、预热邻居、庄园替身和三维页判断都从它读（不再走 `parent`）。`buildRuntimeV2` 把 schema-2 的运行时装进同一个槽。 |
 | `notice-layer.mjs` | 通知层（嵌入时交给宿主，单独打开时用 `ui/notice.mjs`）与首次打开提示。 |
 | `one-hand-mode.mjs` | 单手模式：惯用手切换与悬浮按钮跟随；拉起设置首页动作与单指缩放。 |
 | `place-resolver.mjs` | 当前地点：在节点树上跑 `nodes.locate`，再还原成使用方读的结果形状（`level`、`map`、`marker`、`room`、`node`、`transit`）；`tavern/spatial-contract.mjs` 与构建工具也用它。 |
@@ -363,6 +366,8 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 （附加世界书和条目叫 `<前缀>·…`，缺省 = 包标题）、`credits`（设置「关于」）以及宿主和查看器以前写死的数据路径（`roster`、`maps`、
 `galleries`、`worldbook_addon`、`gallery`、`routine`）；缺一个键，对应功能静默关掉。引擎里不出现任何视图、组、地点或书的名字。
 
+**schema-2 的包（S9-1）**：schema-2 的包用 `viewer.html?pack=<id>` 打开时，`app/current-pack.mjs` 跑 `resolveBlocks` + `validate2` + `withDefaults`，`core/pack-v2-view.mjs` 的 `projectV2` 把它投影成注册表的形状，并把虚拟点位文件（`v2/<包 id>/<地图 id>.json`）预先填进 JSON 缓存；`boot.mjs` 跳过 v1 数据文件，用 `buildRuntimeV2` 建运行时。没有 `views` 块的包得到隐式示意图视图（K-R96）；示意图地图是一张由线和点生成的图，作为单图来源打开（K-R97）。schema-1 的包走原来的路径、完全不变；schema-2 包的三维视图在自检里列为「暂不显示」。
+
 **抽屉页签与按层级显示人物（S6-1）**：抽屉的页签集合由内核固定（K-R72）；叠加层的 `ui.tabs`（或清单里的）给出子集和顺序，`places` 永远在、图例永远最后，
 `app/tabs.mjs` 跑每个归属模块的页签都要经过的那一次刷新。`maps.json` 的标记 `people` 变成视图字段 `x-people`（`macro` 或 `micro`，K-R73）；
 没写时，地图有子地图就是宏观，否则微观，人物页按节点树把在场组分成几节（`core/entities.mjs`）。
@@ -472,6 +477,6 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 
 - **引擎没有卡专有名词**，代码里与注释里都没有：看门狗数代码里的卡词（检查 4）与注释里的卡词（检查 8，逐文件，`map/core` 硬零），两者都是零；`tools/check_stage_a_grep.py` 在冒烟里跑计划 §8 的那条 grep（允许表里只有一行 S10 的行：某个包道具页的跳转桩）。卡词只出现在设定包数据与构建期工具里。
 - **设定包驱动主题、文案、名字与分组**：第一个包的叠加层（`overlay.v2.json`）与清单带着事态分类、变量与名册、分视图的主题令牌、图例、署名、世界书前缀、数据路径和词典覆盖（`strings`）；引擎经 `core/profile.mjs`、`app/theme.mjs`、`tavern/host-strings.mjs` 和包的 `entities.groups` 读取。中性措辞是每个包的默认。
-- **能跑的包**：`eden` 与 `town`（schema 1，由 `core/compat-v1.mjs` 在内存里转换，查看器与宿主都跑，`tools/browser/pack_town.mjs`），以及 `minimal`（schema 2，五个节点、没有底图）经内核流水线——`core/nodes.mjs`、`core/pack-v2.mjs`、`core/locate.mjs`——由 `tests/kernel_minimal.test.mjs` 与 `tools/browser/pack_minimal.mjs` 钉住。查看器自己的包加载器（`core/pack.mjs`）仍只收 schema 1，所以在查看器里开 `?pack=minimal` 看到的是重试卡；这个缺口登记为已知失败，归 S9。
+- **能跑的包**：`eden` 与 `town`（schema 1，由 `core/compat-v1.mjs` 在内存里转换，查看器与宿主都跑，`tools/browser/pack_town.mjs`），以及 `minimal`（schema 2，五个节点、没有底图）经内核流水线——`core/nodes.mjs`、`core/pack-v2.mjs`、`core/locate.mjs`——由 `tests/kernel_minimal.test.mjs` 与 `tools/browser/pack_minimal.mjs` 钉住。自 S9-1 起查看器也能开 `?pack=minimal`（它的示意图地图、五个节点；探针 `tools/browser/pack_minimal.mjs`）。
 - **S5 之后的模块地图**：第 3 节把每个引擎文件列了一次（三个超长文件已拆成 flow 模块、67 个文件按 `docs/naming.md` 改名、`window.TC*` 全局改成 `*Api` / `*View` 名，新增一个就失败）。有脚本核对第 3 节里点名的每个模块与路径都存在。
 - **探针**：完整扫一遍及各自结论在 `docs/plans/stage-a-probes.md`；已知失败登记在 `tools/browser/known-failures.json`。
