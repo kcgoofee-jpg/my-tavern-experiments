@@ -1295,4 +1295,19 @@ deviations: (1) no deferral to idle or lazy loading was needed: the profile show
 blocker: none
 open: user recheck of the stutter on TauriTavern with this head; if it persists, send the console `window.__perfSamples` or a Safari timeline
 cleanup: done (probe servers stopped by the probe; no background jobs; no launch.json entries; worktree i29 left for the orchestrator)
+
+=== RESULT N12 ===
+status: DONE
+items: (1) stencil:true everywhere (shared factory, estate/main.js moved onto it, closet page explicit) ✓ · (2) near/far fitted to scene bounds, per frame (estate ortho, viewer3d persp) ✓ · (3) depth/stencil bits in both debug fps overlays ✓ · (4) coplanar audit + todo E-13 for the builder change ✓ · probe estate_flicker + node test depth_fit ✓
+commits: ff6a2b08 fix(3d): 24-bit depth (stencil:true everywhere), near/far fitted to the scene, depth bits in the fps overlay (N12)
+commits: (this commit) docs: N12 struck, E-13 filed; RESULT N12
+pushed: yes (head #N in the chat report; this log copy is committed before the push)
+tests: node 1301/1302 pass (1 skipped; +9: depth_fit 8, census 1) | smoke PASS | arch PASS | probes: estate_flicker=PASS (chromium + webkit) webgl_single_ctx=PASS v096=PASS (0 failures) estate3d=PASS p9_daynight_fx=PASS
+depth bits: before 24 after 24 (WebKit, Chromium) — Playwright's WebKit and headless Chromium already give 24 with stencil:false, so the 16-bit buffer of TauriTavern's WKWebView could not be reproduced here; after the fix the contexts report DEPTH_BITS 24 + STENCIL_BITS 8 (stencil:true is what forces 24-bit on WKWebView), and the fitted range cuts the depth step from 5000/2^n to ~1060/2^n (estate near/far 1158..2219 vs 1..5000; viewer3d 0.25..124 vs 0.1..400)
+coplanar audit: tools/audit_coplanar.mjs (glTF parser, meshopt + quantization, world-space triangle pairs, parallel normals, plane distance <= 0.03 m, 2D overlap). house.glb 44 818 pairs (24 155 within 0.5 mm, 4 739 of those same-direction; 20 663 at 0.5-30 mm: B1/B2 floor layers 1-19 mm apart, F1/F2 slab planes); site.glb 48 023 (22 011 within 0.5 mm; house shell vs ground at the F1 floor 1-27 mm); site_low.glb 23 297; 55 prop glbs about 1.1 M pairs (holy_mountain out of memory), same pattern. Not fixed in the geometry: the 0.5-30 mm pairs are resolved by 24-bit depth + fitted near/far, the exact pairs are mostly hidden back-to-back faces, residual depth-flip pixels after the fix are 0-0.0016 % of the frame; builder change filed as todo E-13 (no Blender run in this step)
+frames identical: 30/30 pixel-identical per view, on Chromium and WebKit: estate exterior, B1, F2 section, viewer3d dairy (each also at 4 extra camera angles for the estate, 2 for viewer3d); depth-mapping sensitivity (near/far +-3 mm): estate worst 0.0000 % Chromium / 0.0016 % WebKit, viewer3d 0.0096 % / 0.0062 %, threshold 0.05 %
+deviations: (1) the aurora plane now sits at the near plane (camera-local z = -(near+5)) instead of 600 m, because a fitted near of about 1160 m would clip it; additive, no depth write, so the look is unchanged. (2) viewer3d perspective minNear is 0.25 (was 0.1); orbit minDistance is 0.6. (3) closet page keeps its own new WebGLRenderer (registered in the census) with an explicit stencil:true. (4) the 16-bit case is not reproducible with Playwright, see depth bits; the probe asserts 24+ and the depth-mapping sensitivity instead. (5) viewer3d.html stays at 916 lines (edits in place).
+blocker: none
+open: E-13 builder dedupe (needs a render-queue Blender run + --full warm-up); user to confirm on TauriTavern that the flicker is gone
+cleanup: done (probe servers stopped by the scripts; no background jobs; worktree n12 left)
 === END ===
