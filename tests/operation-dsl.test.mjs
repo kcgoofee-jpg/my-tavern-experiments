@@ -87,8 +87,8 @@ test('apply：纯描述（src=op / floor 透传 / 无副作用形状），空输
   assert.deepEqual(d.clues[0], { name: '脚印', nx: 0.2, ny: 0.3, urgency: 2, src: 'op' });
   assert.deepEqual(d.markers[0], { id: 'm1', nx: 0.8, ny: 0.9, label: '落点', src: 'op' });
   assert.deepEqual(d.suggests, ['先撤到二楼']);
-  assert.deepEqual(O.apply([], {}), { events: [], clues: [], markers: [], suggests: [] });
-  assert.deepEqual(O.apply(null), { events: [], clues: [], markers: [], suggests: [] });
+  assert.deepEqual(O.apply([], {}), { events: [], clues: [], markers: [], suggests: [], routes: [] });
+  assert.deepEqual(O.apply(null), { events: [], clues: [], markers: [], suggests: [], routes: [] });
 });
 
 test('前置 sanitize 契约：CoT 包裹的 op 由宿主剥除后才可能被解析——本模块对裸 <think> 文本也拒不产 op 时行为一致', () => {
@@ -105,4 +105,26 @@ test('模块纯度：不碰 DOM / 全局 / 存储 / 网络（剥注释后扫，�
   const src = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
   assert.doesNotMatch(src, /\b(window|document|localStorage|sessionStorage|fetch|Mvu|SillyTavern|navigator)\b/);
   assert.ok(raw.split('\n').length < 400);
+});
+
+// S7-1 K-R130: OP_ROUTE { to, from?, why? } (the row shape of routeOp, docs/transit-schema.md §3.5); at most one per response
+test('OP_ROUTE: a valid row; from and why optional; apply gives routes with src op', () => {
+  const r = O.parse(OP('OP_ROUTE', { to: '北门', from: '广场', why: '走大路更快' }) + '\n' + OP('OP_SUGGEST', { text: '留意北门' }));
+  assert.equal(r.dropped, 0); assert.deepEqual(r.ops[0], { op: 'OP_ROUTE', to: '北门', from: '广场', why: '走大路更快' });
+  assert.deepEqual(O.apply(r.ops).routes, [{ to: '北门', from: '广场', why: '走大路更快', src: 'op' }]);
+  assert.deepEqual(O.parse(OP('OP_ROUTE', { to: '北门' })).ops[0], { op: 'OP_ROUTE', to: '北门' });
+});
+test('OP_ROUTE: missing to, to over 40, why over 60, a bad type are dropped and counted', () => {
+  const long = n => 'x'.repeat(n);
+  for (const o of [{ from: '广场' }, { to: long(41) }, { to: '北门', why: long(61) }, { to: 5 }, { to: '北门', from: long(41) }]) { const r = O.parse(OP('OP_ROUTE', o)); assert.equal(r.ops.length, 0, JSON.stringify(o)); assert.equal(r.dropped, 1); }
+  assert.equal(O.parse(OP('OP_ROUTE', { to: long(40), why: long(60) })).ops.length, 1);
+});
+test('OP_ROUTE: two in one response keep the first and drop the second (counted); the counter resets per response', () => {
+  const r = O.parse(OP('OP_ROUTE', { to: '北门' }) + '\n' + OP('OP_ROUTE', { to: '南门' }));
+  assert.deepEqual(r.ops.map(o => o.to), ['北门']); assert.equal(r.dropped, 1);
+  assert.equal(O.parse(OP('OP_ROUTE', { to: '南门' })).ops.length, 1);
+});
+test('OP_ROUTE: a why that echoes an event example is dropped', () => {
+  const ex = examples()[0]; assert.ok(ex);
+  assert.equal(O.parse(OP('OP_ROUTE', { to: '北门', why: ex })).ops.length, 0);
 });

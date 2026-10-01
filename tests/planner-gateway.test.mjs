@@ -48,6 +48,7 @@ test('systemPrompt：确定性、锁 op 块文法、不出现任何具体卡词�
   const a = N.systemPrompt(), b = N.systemPrompt();
   assert.equal(a, b);
   assert.ok(a.includes('OP_EVENT') && a.includes('最多 3 条'));
+  assert.ok(a.includes('OP_ROUTE {…}') && a.includes('- OP_ROUTE {to, from?, why?}：建议的路线；地点必须用输入里出现过的写法'), 'S7-1: the route op is named in the op list and has its own line');
   assert.ok(!/[「」]{2,}/.test(a));
   assert.ok(!/伊甸|天城|庄园|维克多|凯莉/.test(a));   // 通用提示词：专有名词只能来自装配输入（看门狗第 4 道防线同口径）
 });

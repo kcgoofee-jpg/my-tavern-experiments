@@ -5,6 +5,7 @@
 //   OP_CLUE    {name, nx, ny, urgency?}          → 线索节点（core/quests 行形状）
 //   OP_MARKER  {id, nx, ny, label}               → 会话级叠加标记（不落任何持久层）
 //   OP_SUGGEST {text}                            → 文本建议（永不自动注入聊天，交给宿主 / 用户决定）
+//   OP_ROUTE   {to, from?, why?}                 → 建议路线（K-R130，S7-1）：交给宿主的 routeOp；每条响应最多一个，多的丢弃并计数
 // 校验纪律：**throw-not-coerce**（core/layer-registry.mjs normChain 同一口径）——字段类型不对该 op 直接丢弃并计数，
 // 绝不猜测转换；每条响应最多 MAX_OPS 个 op；文本命中 events 的示范原文（isExample）（模型复读世界书）→ 丢弃。
 // 纯模块：不碰全局 / DOM / 存储 / 网络；不执行任何副作用（apply 只产出描述，送达由宿主做）。
@@ -13,7 +14,7 @@
 import { classify, getGeo, isExample } from './events-parse.mjs';
 import { seedOf } from '../core/rng.mjs';
 
-export const PLANNER_OPS = ['OP_EVENT', 'OP_CLUE', 'OP_MARKER', 'OP_SUGGEST'];
+export const PLANNER_OPS = ['OP_EVENT', 'OP_CLUE', 'OP_MARKER', 'OP_SUGGEST', 'OP_ROUTE'];
 export const MAX_OPS = 3;
 export const MAX_TEXT = 120;
 
@@ -21,6 +22,7 @@ const clip = (v, n) => [...String(v)].slice(0, n).join('');
 const isStr = (v, lo, hi) => typeof v === 'string' && [...v].length >= lo && [...v].length <= hi;
 const isXY = v => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1;
 const bad = msg => { throw new TypeError(msg); };
+let routeSeen = 0;   // OP_ROUTE rows kept in the response being parsed (parse resets it)
 
 /** 各操作的字段校验（收严：缺 / 错类型就 throw，由 parse 捕获计 dropped；多余字段剥掉不报错） */
 const VALIDATE = {
@@ -47,6 +49,13 @@ const VALIDATE = {
     if (!isStr(o.label, 1, 40)) bad('label');
     return { op: 'OP_MARKER', id: clip(o.id, 40), nx: o.nx, ny: o.ny, label: clip(o.label, 40) };
   },
+  OP_ROUTE: o => {
+    if (!isStr(o.to, 1, 40)) bad('to');
+    if (o.from !== undefined && !isStr(o.from, 1, 40)) bad('from');
+    if (o.why !== undefined && !isStr(o.why, 0, 60)) bad('why');
+    if (routeSeen++) bad('only one OP_ROUTE per response');
+    return { op: 'OP_ROUTE', to: clip(o.to, 40), ...(o.from !== undefined ? { from: clip(o.from, 40) } : {}), ...(o.why ? { why: clip(o.why, 60) } : {}) };
+  },
   OP_SUGGEST: o => {
     if (!isStr(o.text, 1, MAX_TEXT)) bad('text');
     return { op: 'OP_SUGGEST', text: clip(o.text, MAX_TEXT) };
@@ -59,7 +68,7 @@ export function parse(text) {
   const s = String(text || '');
   const ops = [];
   let dropped = 0;
-  const re = /OP_(EVENT|CLUE|MARKER|SUGGEST)\s*\{/g;
+  const re = /OP_(EVENT|CLUE|MARKER|SUGGEST|ROUTE)\s*\{/g; routeSeen = 0;
   for (let m; (m = re.exec(s)) && ops.length <= MAX_OPS;) {
     const start = m.index + m[0].length - 1;   // 指向 {
     let depth = 0, end = -1, inStr = false, esc = false;
@@ -76,8 +85,7 @@ export function parse(text) {
     let obj = null;
     try { obj = JSON.parse(s.slice(start, end + 1)); } catch (e) { dropped++; continue; }
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) { dropped++; continue; }
-    const txt = obj.text;
-    if (typeof txt === 'string' && isExample(txt)) { dropped++; continue; }   // 回声黑名单：复读世界书示范原文
+    if ([obj.text, obj.why].some(t => typeof t === 'string' && isExample(t))) { dropped++; continue; }   // 回声黑名单：复读世界书示范原文
     try { ops.push(VALIDATE[name](obj)); } catch (e) { dropped++; }
   }
   return { ops: ops.slice(0, MAX_OPS), dropped: dropped + Math.max(0, ops.length - MAX_OPS), hash: s ? seedOf(s).toString(36) : '' };
@@ -87,12 +95,13 @@ export function parse(text) {
  *  takeLoot 同款：真实性核对在宿主）。ctx = { floor? }。src 一律 'op'（会话级叠加，非聊天记录真相）。 */
 export function apply(ops, ctx = {}) {
   const floor = Number.isInteger(+ctx?.floor) ? +ctx.floor : null;
-  const out = { events: [], clues: [], markers: [], suggests: [] };
+  const out = { events: [], clues: [], markers: [], suggests: [], routes: [] };
   for (const op of Array.isArray(ops) ? ops : []) switch (op?.op) {
     case 'OP_EVENT': out.events.push({ cat: op.cat, layer: op.layer || '', place: op.place, lvl: op.lvl, text: op.text, src: 'op', floor, xy: null }); break;
     case 'OP_CLUE': out.clues.push({ name: op.name, nx: op.nx, ny: op.ny, urgency: op.urgency, src: 'op' }); break;
     case 'OP_MARKER': out.markers.push({ id: op.id, nx: op.nx, ny: op.ny, label: op.label, src: 'op' }); break;
     case 'OP_SUGGEST': out.suggests.push(op.text); break;
+    case 'OP_ROUTE': out.routes.push({ to: op.to, ...(op.from !== undefined ? { from: op.from } : {}), ...(op.why ? { why: op.why } : {}), src: 'op' }); break;
   }
   return out;
 }

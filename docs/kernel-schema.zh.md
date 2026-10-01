@@ -762,6 +762,8 @@ v1 的中文字段名与英文名（`type`、`place`、`title`、`level`、`stat
 
 **K-R113 —— 建议路线。** 宿主在会话期内至多保留 3 条路线建议行（S7 校验过的 `routeOp` 结果，交给 `tavern/route-flow.mjs` 的 `addSuggestions(rows, { floor, map })`；行上盖玩家所在地点的楼层与地图章，20 条消息后以及换聊天时丢弃，与领航员的线索与标注放在同一份状态里），并在 `eden-map:ops` 里以可选字段 `routes` 发出（旧查看器忽略它）。查看器按两个节点规划每一行（`src: 'op'`，位置同用户的计划），在 `route-plan` 上用虚线画出；点它的终点打开「建议路线」卡，写出理由（`why`，只作文字）、计划摘要与「采用这条路线」（`rt.adopt`），采用即变成用户的计划（K-R111）。建议路线永远不进 `{{eden_route}}`、聊天或任何存储。S7 的操作本身（`OP_ROUTE`、它的 DSL 校验与提示词）归 S7；S8-4b 交付路线器 API 与这条送达线。
 
+**K-R130 —— AI 参谋的建议路线（`OP_ROUTE`）。** 后台参谋的受限操作 DSL（`tavern/operation-dsl.mjs`，K-R86 的沙盒）多一个操作 `OP_ROUTE { to, from?, why? }`：`to` 1–40 个字符的字符串（必填），`from` 1–40 个字符的字符串（可选；缺省 = 玩家当前地点），`why` 至多 60 个字符的字符串（可选）；类型或长度不对就丢弃该操作并计数（throw-not-coerce，与其它操作一致）。每条响应**最多保留一个** `OP_ROUTE`，第二个丢弃并计数（`MAX_OPS` 仍为 3）。`why` 复读事态示范原文时同样被丢弃。`apply` 交给宿主 `routes: [{ to, from?, why?, src: 'op' }]`。宿主（`tavern/llm-flow.mjs` 的 `planRoutes`）对每一行调用 `core/router.mjs` 的 `routeOp(row, { graph, locate, here, floor, map, tree })`：通过的结果进入 K-R113 的建议存储（至多 3 条，20 条消息后过期，经 `eden-map:ops.routes` 发出，由 `route-plan` 画成虚线，「采用这条路线」即采用）；路由器放不下的行在参谋账本里计为丢弃；包没有交通网时什么都不画，`why` 文字并入参谋的提示。这一行从不写到任何地方。参谋的系统提示词在操作清单里写出该操作并多一行说明（`- OP_ROUTE {to, from?, why?}：建议的路线；地点必须用输入里出现过的写法`）；这一行只送到用户自己的端点。
+
 ## 10. ui 与 llm
 
 ### 10.1 ui
@@ -924,7 +926,7 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 
 **S8-4b 新增：** K-R110、K-R112 与 K-R113（§9）、K-R111（§10.2）、K-R114（§4.6），以及 K-R80 的 `badge` 样式键；至此 S8-4 设计的 K-R107 – K-R114 全部写成正文。
 
-**S7 计划**（S7-design 预留，`docs/ui-refactor.md`；全文随所注步骤落地）：K-R130（§9，受限操作 DSL 里 AI 参谋的建议路线 `OP_ROUTE { to, from?, why? }`：校验、每次回复最多一条、交给 `routeOp`；送达与绘制按 K-R113；步骤 S7-1）；K-R131（§4.5，3D 清单里的 `room_kinds`：房间类型 → 颜色与名称作为包数据，N9）；K-R132（§4.5，3D 清单的 `building` 块：标题、题词、楼层名，N11）；K-R131、K-R132 随步骤 S7-3 落地。
+**S7-1 已加：** K-R130（§9，`OP_ROUTE`）。**S7 计划**（S7-design 预留，`docs/ui-refactor.md`；全文随所注步骤落地）：K-R131（§4.5，3D 清单里的 `room_kinds`：房间类型 → 颜色与名称作为包数据，N9）；K-R132（§4.5，3D 清单的 `building` 块：标题、题词、楼层名，N11）；K-R131、K-R132 随步骤 S7-3 落地。
 
 
 ## 14. 设计方的决定与遗留点
