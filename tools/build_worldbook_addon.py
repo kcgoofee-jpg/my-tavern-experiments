@@ -188,9 +188,9 @@ def city_facts(unplaced):
 
 
 def addon_places():
-    """地图补充的地点（map/data/addon_places.json）：每处一条关键词触发的条目；check_maps.py 保证与地图数据同步"""
+    """地图另行描述的地点（map/data/addon_places.json）：每处一条关键词触发的条目；check_maps.py 保证与地图数据同步"""
     ap = json.load(open(os.path.join(ROOT, 'map/data/addon_places.json'), encoding='utf-8'))['places']
-    return [(f'地点-{p["name"]}', f'<地图补充·{p["name"]}>\n{p["text"]}\n</地图补充·{p["name"]}>', 440 + i,
+    return [(f'地点-{p["name"]}', f'<地点·{p["name"]}>\n{p["text"]}\n</地点·{p["name"]}>', 440 + i,
              {**KW, 'key': [w for w in p['alias'] if len([*w]) >= 2]}) for i, p in enumerate(ap)]
 
 

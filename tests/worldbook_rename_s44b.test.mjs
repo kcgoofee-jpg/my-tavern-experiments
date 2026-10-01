@@ -13,7 +13,8 @@ const after = rd('../map/data/worldbook_addon.json');
 // 句子表：旧句 → 新句（只这些句子允许变）
 const SENTENCES = [['卡里没写层与位置，写到时只写机构名，不要自行定位。', '没有固定的层与位置，写到时只写机构名，不要自行定位。']];
 const renamed = n => n.replace(/^地图补充-/, '地点-').replace(/^天城常识-位置未写$/, '天城常识-其他机构');
-const applySentences = s => SENTENCES.reduce((t, [a, b]) => t.split(a).join(b), s);
+// 地点条目正文的包装标签同理改名：<地图补充·名> → <地点·名>（2026-10-01 编排复核补上）
+const applySentences = s => SENTENCES.reduce((t, [a, b]) => t.split(a).join(b), s).replace(/<(\/?)地图补充·/g, '<$1地点·');
 const { hashText } = W;
 
 test('条目编号集合前后相同，顺序相同', () => {
@@ -32,6 +33,7 @@ test('名字只按前缀规则变；其余字段（内容除句子表外）不�
   }
   assert.equal(n, 42);
   assert.ok(!after.entries.some(e => /^地图补充-/.test(e.name)));
+  assert.ok(!after.entries.some(e => /地图补充/.test(e.content)));
 });
 
 test('别名表：键只按前缀规则变，编号不变', () => {
