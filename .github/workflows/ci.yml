@@ -49,7 +49,10 @@ jobs:
           cache: 'npm'
           cache-dependency-path: tools/browser/package-lock.json
       - run: npm ci --prefix tools/browser
-      - run: npx --prefix tools/browser playwright install --with-deps chromium
+      - run: npx --prefix tools/browser playwright install --with-deps chromium webkit   # accept 的 iphone 检查用 WebKit
+      # 每个探针独立一步：前一个失败不挡后面的（!cancelled()），整个 job 仍按有失败算
       - run: node tools/browser/accept.mjs /tmp/accept
-      - run: node tools/browser/v096.mjs /tmp/v096
-      - run: node tools/browser/topo_dairy.mjs /tmp/topo_dairy
+      - if: ${{ !cancelled() }}
+        run: node tools/browser/v096.mjs /tmp/v096
+      - if: ${{ !cancelled() }}
+        run: node tools/browser/topo_dairy.mjs /tmp/topo_dairy
