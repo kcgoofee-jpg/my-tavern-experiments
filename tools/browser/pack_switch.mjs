@@ -29,7 +29,7 @@ try {
 
   await switchTo(CARD('Unknown Card', 'b.png'));
   s = await state();
-  ok('卡 B（没人认识）：自动包（c_ 开头，来源 auto，外来），根键换成它自己的，包声明的变量路径不留 A 的', s.pack?.source === 'auto' && /^c_/.test(s.pack.id) && s.pack.trust === 'foreign' && s.root === 'tc_' + s.pack.id && s.loc === '', s);
+  ok('卡 B（没人认识）：自动包（c_ 开头，来源 auto，外来），根键换成它自己的，变量路径是自动包从这张卡发现的（K-R95，zero-config §4），不留 A 的', s.pack?.source === 'auto' && /^c_/.test(s.pack.id) && s.pack.trust === 'foreign' && s.root === 'tc_' + s.pack.id && s.loc === '世界.当前地点', s);   // 自动包把发现的路径写进 vars（a8127c7e，S9-3）；桩宿主的 MVU 里就是 世界.当前地点，所以不再是空串，但绝不是 A 的 world.location
   ok('卡 B：宿主页上只有一套悬浮按钮（旧实例已清）', s.roots === 1 && s.fabs === 1, s);
   const idB = s.pack?.id; v = await viewerPack(); ok('卡 B：面板里的查看器是 B 的包，没有脚本错误', v?.pack === idB && !P.errors.length, { ...(v || {}), errors: P.errors }); await shot(pg, out, 'b');
 
@@ -44,7 +44,7 @@ try {
   v = await viewerPack(); ok('第一个包的卡：查看器是默认包', v?.pack === 'eden', v || {});
 
   await switchTo(CARD('Unknown Card', 'b.png'));
-  s = await state(); ok('再回到卡 B：自动包 id 与第一次相同（同一张卡同一个 id）', s.pack?.id === idB && s.root === 'tc_' + idB && s.loc === '', s);
+  s = await state(); ok('再回到卡 B：自动包 id 与第一次相同（同一张卡同一个 id）', s.pack?.id === idB && s.root === 'tc_' + idB && s.loc === '世界.当前地点', s);
   ok('整个过程没有脚本错误', !P.errors.length, { errors: P.errors });
 } catch (e) { ok('probe 自己没有抛错：' + e.message, false); }
 finally { await closeAll(); }

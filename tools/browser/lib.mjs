@@ -88,7 +88,7 @@ export async function newPage(preset = 'desktop', opts = {}) {
   const page = await ctx.newPage();
   const net = track(page);
   const errors = [];
-  page.on('pageerror', e => errors.push('pageerror ' + String(e).slice(0, 200)));
+  page.on('pageerror', e => errors.push('pageerror ' + String(e).slice(0, 200) + (e?.stack ? ' @ ' + String(e.stack).split('\n')[1]?.trim().slice(0, 160) : '')));
   page.on('console', m => { if (m.type() === 'error') errors.push('console ' + m.text().slice(0, 200)); });
   page.on('response', r => { if (r.status() >= 400) errors.push('http ' + r.status() + ' ' + r.url()); });
   return { page, ctx, net, errors, preset, async close() { await ctx.close(); } };

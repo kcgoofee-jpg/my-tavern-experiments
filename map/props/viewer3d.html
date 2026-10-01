@@ -782,8 +782,8 @@ function setMode(m) {
 let roofK = 0;
 const BLD = new THREE.Box3();
 function updateRoof(dt) {
-  if (!MAN) return;
-  const B = MAN.groups.building; BLD.min.set(...B.min); BLD.max.set(...B.max);
+  const B = MAN?.groups?.building; if (!B) return;   // a model with no building group (props, single objects) has no roof to lift
+  BLD.min.set(...B.min); BLD.max.set(...B.max);
   const d = BLD.distanceToPoint(camera.position), near = BLD.containsPoint(controls.target) && camera.position.distanceTo(controls.target) < 16;
   const want = mode !== 'ext' ? 1 : (near || d < 1.5 ? 1 : 0);
   const k2 = roofK + Math.sign(want - roofK) * Math.min(Math.abs(want - roofK), dt / 350);

@@ -285,7 +285,6 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 |---|---|
 | `camera-controls.js` | 三维相机共用小件：视角预设、指北针、首次提示卡、空闲计时器。 |
 | `chrome3d.js` | 庄园页与道具查看器共用的三维外壳（`window.UI3D`）。 |
-| `gallery.js` | 通用房间图集查看器：懒加载、滑动 / 按键切换。 |
 | `icons.js` | 唯一的图标集（`window.UIIcon`）：网格、描线与颜色规则。 |
 | `illustration-panel.js` | 房间配图面板，驱动可选的生图扩展。 |
 | `notice.mjs` | 唯一的通知层（P0 阻断、P1 横幅、P2 小提示）。 |

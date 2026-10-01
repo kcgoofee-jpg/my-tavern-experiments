@@ -305,7 +305,6 @@ Shared widgets, used by the viewer, the host and the 3D pages. Mostly plain scri
 |---|---|
 | `camera-controls.js` | Shared 3D camera helpers: view presets, compass, first-run hint card, idle timer. |
 | `chrome3d.js` | 3D viewer chrome (`window.UI3D`) shared by the estate page and the prop viewer. |
-| `gallery.js` | Generic room gallery viewer with lazy loading and swipe / key navigation. |
 | `icons.js` | The single icon set (`window.UIIcon`): grid, stroke and color rules. |
 | `illustration-panel.js` | Room illustration panel driving the optional image-generation extension. |
 | `notice.mjs` | The single notification layer (P0 blocking, P1 banner, P2 toast). |

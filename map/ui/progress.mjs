@@ -5,7 +5,7 @@
 //   p.label(文字)   p.set(loaded, total, unit?)（total 缺 = 不确定；unit 'bytes' 显示 MB）   p.pct(0–100)
 //   p.slow(文字?)   p.fail(文字?)   p.done()   p.reset(文字?)   p.el
 // labelEl：已有的标签元素（查看器 #loading span 等），组件接着用它写字，旧代码继续写那个元素也不冲突。
-// ES 模块；也挂到 window.UIProgress 给普通脚本（map/ui/gallery.js）用。纯 DOM，不发请求。
+// ES 模块；也挂到 window.UIProgress 给普通脚本用。纯 DOM，不发请求。
 const CSS = `
 .uiprog{display:grid;justify-items:center;gap:6px;min-width:min(260px,80vw);font-variant-numeric:tabular-nums}
 .uiprog-bar{position:relative;width:min(240px,70vw);height:4px;border-radius:2px;background:var(--line,rgba(255,255,255,.18));overflow:hidden}

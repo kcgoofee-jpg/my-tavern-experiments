@@ -9,7 +9,9 @@ const OUT = process.argv[2];
 if (!OUT || OUT.startsWith('--')) { console.log('用法：node tools/browser/accept.mjs <输出目录> [--only a,b,...]'); process.exit(2); }
 const oi = process.argv.indexOf('--only'), ONLY = oi > 0 ? new Set(process.argv[oi + 1].split(',')) : null;
 const on = k => !ONLY || ONLY.has(k);
-const FIRST_MS = +(process.env.FIRST_MS || 3000);
+// 本地 3 s；CI（GitHub 共享 2 核机，无 GPU）冷启动 + 软件渲染实测抖到 3009 ms（head #236），按 1.5 倍给 4.5 s：
+// 仍抓得住首屏真退化（体积 / 请求数翻倍会远超），又不被 runner 噪声误伤。显式 FIRST_MS 优先。（I-28）
+const FIRST_MS = +(process.env.FIRST_MS || (process.env.CI ? 4500 : 3000));
 
 B.quietWait();
 const srv = await B.ensureServer();
