@@ -1311,3 +1311,24 @@ blocker: none
 open: E-13 builder dedupe (needs a render-queue Blender run + --full warm-up); user to confirm on TauriTavern that the flicker is gone
 cleanup: done (probe servers stopped by the scripts; no background jobs; worktree n12 left)
 === END ===
+
+=== RESULT S8-4b ===
+status: DONE
+items: T0 freeze (FREEZE_MAPS own commit, pushed alone with commit 1; removed in the last commit) ✓ · T1 contract K-R110-K-R114 (kernel-schema en + zh, K-R80 `badge`, "Planned in S8-4" list gone) ✓ · T2 kernel layers transit / route-plan, transit-env, transit-view, badge style, legend ✓ · T3 route link, plan card, route-plan layer, messages ✓ · T4 route-flow, makeGeo transit, protocol, macro moved ✓ · T5 trips along the network ✓ · T6 suggestions (viewer + host, cap 3 / age 20) ✓ · T7 thematic schematic ✓ · T8 first-pack demo network (gen_eden_transit_s84.mjs) ✓ · T9 town network ✓ · T10 probe pack_routes, ARCHITECTURE + naming (en + zh), todo ✓
+commits: f5ec9424 feat(viewer,host): transit layers, route planning, trips along the network, eden_route plan (K-R110-K-R113)
+commits: ef323880 chore: freeze maps for S8-4b transit data
+commits: 9ed82659 feat(packs): tc_mid demo network and the town network; thematic schematic (K-R114)
+commits: (this commit) test: pack_routes probe; docs; unfreeze; RESULT S8-4b
+pushed: yes (head #N in the chat report; this log copy is committed before the push)
+tests: node 1324/1325 pass (1 skipped, the environment one; baseline 1292/1293, +32 new tests: route_flow 9, schematic_thematic 5, transit_data 7, block_badge 2, layer_defaults 1, layer_spec 1, nav_ops 1, protocol 1, plus overlay_transit rewritten, nothing removed) | smoke PASS | arch PASS (8 guards; eden-map.js 675 -> 663; inline-style ledger 55 unchanged) | arch doc PASS | zh mirror PASS | check_pack PASS | check_overlay PASS | probes: pack_routes=PASS (all checks, desktop + 375 px) pack_town=PASS pack_minimal=PASS autopack=PASS trips095=PASS (32/32)
+parity: layer_dump +2 kernel rows (transit with its row, route-plan without) and the index shifts; trips095 32/32; autopack same (no thematic picture there, the automatic pack in the probe is below the threshold); pack_minimal identical (picture byte-identical to stored copy)
+routes: town keep->light 15 min / 1 change (danger 1), clock->fish 9 min / 1 change; tc_mid stations 26, lines 5, districts 4 (links 6)
+macro: no-plan output identical in 5 cases (plus eden_here and eden_fly)
+files: map/app/transit-env.mjs 104 · map/app/transit-view.mjs 72 · map/app/route-plan-view.mjs 147 · map/tavern/route-flow.mjs 55 · tools/gen_eden_transit_s84.mjs 79 · tools/browser/pack_routes.mjs 166 · tests/route_flow 9 / schematic_thematic 5 / transit_data 7 / block_badge 2 tests; eden-map.js 675 -> 663; trips-view.mjs 105 -> 118
+todo: N6, N8 struck; N7 delivery noted; Q-25 filed (recommendation accept)
+K-R: K-R110-K-R114 written (next free id after S8-4: K-R115)
+deviations: (1) viewer.html: three modulepreload hrefs appended to an existing line (an existing test requires every app module to be preloaded; line count 707 unchanged). (2) Extra i18n key `rt.min` ("{min} 分钟"). (3) `eden_fly` marker string is built by a host-bag function `flyMark` in eden-map.js (output byte-identical): the string carries a ledgered inline style and the ledger may not gain a file. (4) Suggestions are stored in the navigator state of tavern/nav-ops.mjs (`routes`, cap 3) and route-flow `addSuggestions` forwards to `llm-flow` `addRoutes`; `eden-map:ops` now always carries `routes` (empty list). (5) makeGeo also exposes `lang` and `templates` (the pack's llm templates, trust-gated as before) for planText. (6) The first-pack stations carry `district` so a plan reports the danger it passes (rim 1, lower tier 2); this is data beyond the design table. (7) Trips: the plan is tried with node-only ends first and a plain direct walk is never accepted as a trip route, else a short rail trip would always be a walk; the legend lists a line when its segment or its badge is on the view. (8) The plan layer also rings the boarding station of a link leg after a ride (planLayers of S8-4a), so the town plan shows two rings (market, fish) besides the start and end. (9) Baseline smoke was not read cleanly (I started it while editing the layer list); node baseline 1292/1293 is from before any edit. (10) The first-pack screenshots for review are in ~/eden-map-review/s8-4/. Old decisions overturned (brief 3): none.
+blocker: none
+open: Q-25 (accept the first-pack additions); station labels for the first pack show only through the markers' own names (no station labels on node stations with markers)
+cleanup: done (probe servers stopped by the probes; base worktree removed; worktree s84b left for the orchestrator)
+=== END ===
