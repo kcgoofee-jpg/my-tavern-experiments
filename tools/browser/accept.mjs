@@ -156,12 +156,13 @@ try {
     // U15：手机 375 出现「看全区」，点它把视野拉到整层
     const Q = await B.newPage('phone', { tier: 'save' }); const q = Q.page;
     await B.openViewer(Q, { map: 'tc_upper' }); await B.wait(1300);
-    const z0 = await q.evaluate(() => { const b = document.querySelector('#zAll'), r = ViewerDebug.osdViewer.viewport.getBounds(true); return { h: b.getBoundingClientRect().height, vis: getComputedStyle(b).display !== 'none', w: r.width }; });
-    await q.evaluate(() => document.querySelector('#zAll').click()); await B.wait(1000);
+    await q.evaluate(() => SettingsApi.open('home')); await B.wait(700);   // S7-2 U-18: on phones 看全区 lives in the ⋯ page (#actAll), not in the zoom row
+    const z0 = await q.evaluate(() => { const b = document.querySelector('#actAll'), r = ViewerDebug.osdViewer.viewport.getBounds(true); return { h: b.getBoundingClientRect().height, vis: getComputedStyle(b).display !== 'none', w: r.width }; });
+    await q.evaluate(() => document.querySelector('#actAll').click()); await B.wait(1000);
     const z1 = await q.evaluate(() => ({ w: ViewerDebug.osdViewer.viewport.getBounds(true).width, flt: document.querySelectorAll('.mk.flt').length }));
     await B.shot(q, OUT, 'depth_phone_all');
     rep.metric('depth_phone', { ...z0, after: z1 });
-    rep.check('U15 手机「看全区」可见、热区 ≥ 44 px，点后视野 = 整层', z0.vis && z0.h >= 44 && z0.w < z1.w && z1.w > .95, JSON.stringify({ ...z0, after: z1 }));
+    rep.check('U15 / U-18 手机「看全区」在「⋯」页里可见、热区 ≥ 44 px，点后视野 = 整层', z0.vis && z0.h >= 44 && z0.w < z1.w && z1.w > .95, JSON.stringify({ ...z0, after: z1 }));
     rep.check('U16 手机不做视差 / 漂浮', z1.flt === 0, String(z1.flt));
     await Q.close();
   });
