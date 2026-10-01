@@ -18,6 +18,7 @@ import { MAINTAINER_MODE_KEY } from '../core/room-gallery-logic.mjs';
 import { PACK } from './current-pack.mjs';
 import { mountFeedbackButton } from './feedback.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
+import { renderPackBox } from './pack-settings.mjs';   // S9-2：高级页的「地图包」
 // ---------------- 设置（UI v2 §5）：首页 = 分组列表（+ 手机上的快捷：上一级、当前位置、关闭地图、切层、图层开关）；子页 显示 / 人物 / 数据与映射 / 更新与版本 / 高级 ----------------
 // 模块向指定页注册自己的一栏：SettingsApi.registerSection(page, el, { order })，不再 insertBefore(#selfCheck)。
 export let setPageNow = 'home', setPrev = null;
@@ -30,7 +31,7 @@ export function setPage(pg, quiet) {
   if (pg === 'update') renderSelfCheck();
   if (pg === 'license') renderLicense();
   if (pg === 'people') { const n = typeof plugins.CharactersView !== 'undefined' ? plugins.CharactersView.count() : 0; $('#chSrc').textContent = uiTextOr('s.ch_src_n', `当前聊天 ${n} 人`, { n }); }
-  if (pg === 'adv') renderLine();
+  if (pg === 'adv') { renderLine(); renderPackBox(); }
   if (pg === 'display') tierAvail();
   if (pg === 'data') { if (window.top !== window) { post({ type: 'eden-map:storage-info' }); post({ type: 'eden-map:th', op: 'state' }); } else window.renderStorageSettings?.(null); }
 }

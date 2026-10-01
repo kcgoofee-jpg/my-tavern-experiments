@@ -191,9 +191,10 @@ def main():
     ap.add_argument('--follow', metavar='分支', help='生成跟随分支最新提交的可复用预览脚本')
     ap.add_argument('--tag', metavar='标签', help='生成钉在发版标签的正式脚本（如 map-v0.9.1；不创建标签）')
     ap.add_argument('--pointer', help='--tag：latest.json 所在分支（默认当前分支；要和 tools/ship.sh --release 发版时的分支一致）')
-    ap.add_argument('--pack', help='设定包 id（map/packs/<id>；默认 eden = 原来的脚本）')
+    ap.add_argument('--pack', help='（已弃用，保留到 S10）设定包 id：烘进脚本，算用户的明确选择；不带 = 通用脚本，运行时按角色卡解析（docs/zero-config.md §2）')
     ap.add_argument('--out', default=os.path.expanduser('~/Downloads/eden-map'), help='输出目录（默认 ~/Downloads/eden-map）')
     a = ap.parse_args()
+    if a.pack: print('deprecated: packs are resolved at run time (docs/zero-config.md §2); kept until S10', file=sys.stderr)   # S9-2：不带 --pack 的脚本不烘包，运行时按卡解析；--pack 烘进去的包算用户的明确选择（Z-17）
     if a.follow: return main_follow(a.follow, a)
     if a.tag:
         import subprocess
