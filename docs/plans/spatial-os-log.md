@@ -1107,3 +1107,15 @@ blocker: none
 open: none
 cleanup: done (probe servers stopped by the scripts; scratch repro script deleted; no background jobs)
 === END ===
+=== RESULT R-B1B2 ===
+status: DONE
+items: a (ledger status) ✓ · b (setting list / checklist) ✓ · c (build floorplans, house_web, medical merge, meshopt) ✓ · d (previews and review note) ✓ · e (user checkpoint skipped per instruction) ✓ · f (verify, manifest bump, tests, gates, ship) ✓
+commits: (this commit) feat(estate): deepen B1/B2 interior models with retail showcase and dual-POV props (R-B1B2)
+pushed: yes (chat report: head #N)
+tests: node 1184/1185 pass (1 skipped: numpy in test_clean_card) | smoke PASS (all pass) | arch PASS (check_architecture 8/8 pass) | check_maps PASS (0 errors, 0 warnings) | check_no_labels PASS | probes: accept=PASS (24/24), estate3d=PASS
+house.glb size: 575,144 bytes baseline -> 673,968 bytes (+17.18%, within +25% limit < 718,930 bytes)
+deviations: none
+blocker: none
+open: none
+cleanup: done
+=== END ===
