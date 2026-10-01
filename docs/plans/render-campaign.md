@@ -2,12 +2,12 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-01T07:45:10Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-01T07:50:04Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
 | standard | 51 | 0 | 0 | 0 | 0 | 0 | 51 |
-| hero | 14 | 0 | 2 | 0 | 6 | 0 | 22 |
+| hero | 15 | 0 | 2 | 0 | 5 | 0 | 22 |
 
 Below-gate (user spot-check): none
 
@@ -80,9 +80,9 @@ Below-gate (user spot-check): none
 | 7 | `isle:isle6` | island | done | - |  |  | Rebuild island isle6 (pm_residence) |
 | 8 | `isle:isle9` | island | done | - |  |  | Rebuild island isle9 (league_club) |
 | 9 | `isle:isle10` | island | done | - |  |  | Rebuild island isle10 (kelly_residence) |
-| 10 | `isle:isle25` | island | open | integrate |  |  | Rebuild island isle25 (elite_academy) |
+| 10 | `isle:isle25` | island | done | - |  |  | Rebuild island isle25 (elite_academy) |
 | 11 | `isle:isle30` | island | done | - |  |  | Rebuild island isle30 (zaibatsu_estate) |
-| 12 | `base:tc_upper` | basemap | blocked | audit |  |  | Upper base map final |
+| 12 | `base:tc_upper` | basemap | open | audit |  |  | Upper base map final |
 | 13 | `var:tc_upper:16k` | variant | blocked | render |  |  | Upper map 16k final |
 | 14 | `var:tc_upper:dawn` | variant | blocked | render |  |  | Upper map dawn period |
 | 15 | `var:tc_upper:day` | variant | blocked | render |  |  | Upper map day period |

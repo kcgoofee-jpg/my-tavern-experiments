@@ -22,6 +22,7 @@ v16 预览（upper_layout_v16.py）只出方案与预览图；这里做真正的
 同时把合成前的旧岛心存成 map/art/tc_upper_full.pre-v16C.seeds.json——重跑时 tc_upper.json 已是新岛心，
 抠精灵的种子必须仍取旧岛心（备份图和 seeds 都是 git 忽略的临时文件，落地提交后可删）。
 精英学院（isle25）还没有俯视图：旧位置补云 / 补城，新位置贴中性圆角块（用户已确认的预览口径）。
+落地之后的岛屿集成（isle25 的身体裁片 + 抠图，tools/isles_into_upper.py）是贴在合成结果上的：之后不要再重跑 --write（会把占位块贴回去）。
 """
 import argparse, json, math, os, subprocess, sys
 import numpy as np

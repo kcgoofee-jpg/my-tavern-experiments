@@ -96,7 +96,7 @@
 | P3 其他 | tc_upper | `victor_estate` | 维克多庄园 | 🆕 | 岛资产 `blender/islands/isle4.py`（上层底图抠图） | 标准（campaign r2 7.5/6.5） | 2026-09-30 渲染战役：isle4 重建（旧宅 + 秋林 + 断锥），标记移到旧宅上 |
 | P3 其他 | tc_upper | `y_estate` | 「Y」的庄园 | 🆕 | 岛资产 `blender/islands/isle5.py`（上层底图抠图） | 标准（campaign r2 7.5/6.5） | 2026-10-01 渲染战役：isle5 重建（黑岩脊 + 针叶林 + 黑石宅屋脊 + 冷光结界边 + 吊灯尖刺），标记移到宅邸上 |
 | P3 其他 | tc_upper | `zaibatsu_estate` | 罗斯柴尔德庄园 | ✅ | 罗斯柴尔德庄园 `map/props/rothschild_estate/` | 标准（r2 7.5 / 7.5） | isle30；府邸 + 玻璃冬季宴会厅；上层底图岛面：`blender/islands/isle30.py` 抠图（campaign r1 7.5/6.0，2026-10-01） |
-| P3 其他 | tc_upper | `elite_academy` | 精英学院 | 🆕 | 精英学院 `map/props/elite_academy/` | 标准（r2 7.5 / 7.5） | isle25（Q11） |
+| P3 其他 | tc_upper | `elite_academy` | 精英学院 | 🆕 | 精英学院 `map/props/elite_academy/` | 标准（r2 7.5 / 7.5） | isle25（Q11）；岛体 标准（campaign r2 7.0 / 6.5，已贴上层底图） |
 | P3 其他 | world | `hunting_camp` | 猎季营地 | 🆕 | 猎季营地 `map/props/hunting_camp/` | 标准（r2 7.5 / 6；模型已备，世界图标记待引擎支持三维入口） |  |
 | P3 其他 | yuanyu_city | `city_gate` | 原域东门 | ✅ | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |
 | P3 其他 | yuanyu_city | `dome_quarter` | 穹顶区 | ✅ | 原域城区 `map/props/yuanyu_city/` | 标准（r2 7.5 / 6） |  |

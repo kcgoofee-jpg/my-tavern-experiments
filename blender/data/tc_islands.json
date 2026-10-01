@@ -175,7 +175,8 @@
         "core_e": 0,
         "rune": 0,
         "falls": []
-      }
+      },
+      "cutout": "y_estate"
     },
     {
       "id": "isle6",
