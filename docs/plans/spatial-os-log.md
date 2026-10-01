@@ -1573,3 +1573,16 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+
+=== RESULT AC-CHECK-1 ===
+status: DONE
+items: check of the estate work landed while AC-AUTOPILOT-2 was paused (f099a84f B1-C02 cross remake, 44f1f5ad B1-C05 cellar + B1 locker/shower, 53f73c2c B2-C01, 40ca1391 B2-C02) ✓ · CI red since S7-2 fixed ✓
+commits: test(browser): topo_dairy waits on the live estate iframe
+pushed: yes
+tests: node 1412 pass + 1 skipped / 1413 | smoke PASS | arch PASS | probes: topo_dairy 4/4 local runs ✓
+findings: the four estate commits are clean (node + smoke green; floorplans.py edits touch only furniture boxes used for the plan drawings, the room JSON regenerates byte-identical; house.glb 718 632 bytes under the 718 930 cap). CI failures on heads #266–#269 were not caused by them: topo_dairy has been flaky since S7-2 (stale frame handle in the probe), fixed here. House coplanar pairs grew to 51 661 (E-13 input).
+deviations: none
+blocker: none
+open: none
+cleanup: done
+=== END ===
