@@ -1253,4 +1253,17 @@ deviations: (1) the P0 symptom did not reproduce, so the fix is the hardening ab
 blocker: none
 open: user check of the real-tavern symptom after this head; if it persists, report with: fog on/off, minimap on/off, panel size at open, light or dark theme
 cleanup: done (probe servers stopped by the probes; no background jobs of mine; no .claude/launch.json entries; worktree n10p0 left for the orchestrator)
+=== RESULT S7-R0 ===
+status: DONE
+items: R0 findings answered (all 致命 + 重要 of P1–P6 and every U proposal; disposition table docs/ui-refactor.md §10 + zh) ✓ · review sheet changed in place with R0 notes + U-31…U-33 ✓ · ui-refactor.md + zh (§2.1–§2.3, §2.5, new §2.6 map labels, new §2.7 pack-author surface, §3 one top bar wireframe / popover / toolbar / drawer / settings / 3D, §4 panel-visibility pause, §5, §6, §7, §8 in-tavern R1 rule, §9, new §10) ✓ · settings-ia.md + zh (phone home order, lazy pages + search, health icons / idle / live region / template line / receipt, status-line field states, consent after a passing form test, nav-test with form values, watch + healthSum, cost wording, B2 note) ✓ · appendix specs S7-1 / S7-2 / S7-3 (tasks, checks, probes pan_frame / a11y_tree / estate_generic / estate_kbd, budgets, in-tavern review gates; observed bugs B1 / B2 as S7-2 T5 tasks with repro) ✓ · docs/todo.md §3 U-lines edited in place, U-31…U-33 appended, status line ✓
+commits: (this commit) docs(design): S7 revised after persona review R0
+pushed: yes (log copy committed before the push)
+tests: node 1238/1239 (1 skipped) | smoke PASS | arch PASS | zh mirror 12 pairs PASS | doc language PASS (ui-refactor 0.6 %, settings-ia 4.2 % CJK) | probes: none (documents only)
+R0: accepted 61, adapted 25, rejected 2 (88 rows = 59 findings + 29 U proposals; findings: accepted 41, adapted 18, rejected 0; proposals: accepted 20, adapted 7, rejected 2 — U-02 auto-follows-world-time default, P1's U-24 flash-pin variant)
+changed U: U-01 A→A′ · U-02 C (additions) · U-04 A→B′ · U-05 A (phone order, lazy) · U-07 A (field states) · U-08 A (watch / healthSum) · U-09 A (test before consent, locked keys) · U-11 A (form values) · U-14 A (reuse + dispose ack) · U-15 C (no aria-disabled, receipt, menu.when) · U-16 A (panel hidden, 3D, rm into 3D) · U-17 A (toggle, 44 px) · U-18 A (phone row, locate me) · U-19 A→A′ · U-21 A→A′ · U-24 A→A′ · U-25 A (focus, Esc) · U-26 A→A′ · U-27 A→A′ · U-28 A (cue) · U-29 A→A′ · U-30 A (keyboard room list)
+new U: U-31 3D 查看 action (A) · U-32 idle health state (A) · U-33 one top bar with slot ownership (A)
+deviations: (1) glass-1 token value 80 % in both themes (P5's light 80 % vs P4's 76 % floor: the stricter value is the token, the floors are the check). (2) per-element blur size cap (480 × 64) of P6-2 dropped: the header is full width; the count and area caps bound it. (3) WKWebView R1 screenshot (P6-11) not required: Mac first, iPhone fixes on reports. (4) U-04 B′ keeps one optional pack-wide chrome accent (`ui.theme.chrome`), so the K-R70 amendment is an S7-2 T1 task, not written here. (5) The dimmed-people cue is 「按日程」 rather than the reviewer's wording, to stay clear of provenance-style words.
+blocker: none
+open: none (every decision Decided by default 2026-10-01 (autopilot); user may override)
+cleanup: done
 === END ===
