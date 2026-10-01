@@ -200,5 +200,6 @@ export function mount(pdoc, ID, scriptOwner) {
 /** 登记清理钩子：下一次注入会先调它；pagehide（非 bfcache）时也清 */
 export function install(cleanup) {
   window.parent.__edenMapCleanup = cleanup;
-  window.addEventListener('pagehide', e => { if (!e.persisted) cleanup(); });   // bfcache（pageshow 回来）时别把界面拆了：模块不会重新求值，拆了就再也回不来（接手 review P2）
+  if (window.__edenPagehide) window.removeEventListener('pagehide', window.__edenPagehide);   // an in-place restart installs again: one handler per window, not one per restart
+  window.addEventListener('pagehide', window.__edenPagehide = e => { if (!e.persisted) cleanup(); });   // bfcache（pageshow 回来）时别把界面拆了：模块不会重新求值，拆了就再也回不来（接手 review P2）
 }

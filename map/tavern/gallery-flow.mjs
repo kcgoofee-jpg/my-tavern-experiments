@@ -54,7 +54,7 @@ export function createGalleryFlow(host) {
   function schedule(ms = 400) { if (timer) clearTimeout(timer); timer = setTimeout(run, ms); }
   /** The viewer asks (it loaded, or its switch was turned on): send everything again. */
   const force = () => { resend = true; sent = null; schedule(0); };
-  try { window.parent.addEventListener('message', e => { if (e.data?.type === 'eden-map:media-ask' && e.source === host.frame?.contentWindow && !host.life.dead) force(); }); } catch (e) { /* no page around (unit tests) */ }
+  try { const onAsk = e => { if (e.data?.type === 'eden-map:media-ask' && e.source === host.frame?.contentWindow && !host.life.dead) force(); }; window.parent.addEventListener('message', onAsk); host.life?.add?.(() => window.parent.removeEventListener('message', onAsk)); } catch (e) { /* no page around (unit tests) */ }
   /** A new chat: the card's table and the floors' scan input are read again. */
   function reset() { table = null; tableChat = null; cache.clear(); sent = null; sentTable = ''; resend = true; }
   return { schedule, force, reset, get table() { return table; }, get spec() { return spec; } };

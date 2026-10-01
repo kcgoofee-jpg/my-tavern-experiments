@@ -1331,4 +1331,19 @@ deviations: (1) viewer.html: three modulepreload hrefs appended to an existing l
 blocker: none
 open: Q-25 (accept the first-pack additions); station labels for the first pack show only through the markers' own names (no station labels on node stations with markers)
 cleanup: done (probe servers stopped by the probes; base worktree removed; worktree s84b left for the orchestrator)
+=== RESULT I-29 (addendum: in-place restart leaks) ===
+status: PARTIAL
+items: leak check in reload_perf (listeners / intervals / observers / iframes / WebGL canvases / host event handlers / prompt hooks after 1, 3, 5 in-place restarts, query restart and new-build "switch" import, Chromium + WebKit) ✓ · fix the registrations that grew ✓ · find the retainer of the leaked viewer document ✗
+commits: (this commit) fix(host): in-place restart no longer accumulates listeners and CHAT_CHANGED gates (I-29)
+pushed: yes (head #N in the chat report)
+tests: node all pass | smoke PASS | probes: reload_perf=PASS (chromium + webkit; restart and switch scenarios included)
+before: after 1/3/5 restarts window:message listeners 24/26/28 (gallery-flow, one anonymous listener per restart), window:pagehide +1 per restart (host-lifecycle install), host CHAT_CHANGED handlers 12/13/15/17 on a new-build restart (pack-gate evaluated again per build and never retired: every chat change then ran one gate per past build, each able to reimport its own old entry)
+after: listeners 91/91/91/91, handlers 12/12/12/12, intervals 6, observers 22, iframes 2, WebGL 0, owner nodes 1 (flat); long tasks per restart max 88 ms (query) / 108 ms (switch) at 4x CPU
+causes fixed: gallery-flow `message` listener now registered through life.add; host-lifecycle install keeps one pagehide handler per window; pack-gate start retires the previous gate via window.parent.__edenGateOff
+left: each in-place restart with the panel opened still retains one viewer document (~1950 nodes, ~8 MB JS heap; DOM documents 3/4/6/8 after 0/1/3/5 restarts, query and new-build alike; not a probe artifact, not reproduced by retry / sleep-wake / a bare srcdoc iframe remove). A heap snapshot shows the dead viewer realm (OpenSeadragon MouseTracker registry, markers) held through V8 internal weak-table / Blink frame roots, with no JS path from the host; the retainer is not found. Next step: bisect by disabling host-side calls into the viewer (post, inner(), subpage3d / estate hooks) between open and restart, or by heap-snapshot diff with the host realm only.
+reload button path: the "Reload" action of the followed-branch update toast (switchToHead in host-checks.mjs) and the version switch import the new entry in place (window.parent.__edenMapSwitch, takeover of the old instance); only when no base can be derived, or on an import failure, or for the plain "latest" channel notice, does it call window.parent.location.reload(). Before the in-place switch (I-14 / Z-19 / I-20 era) every reload refreshed the whole tavern page, which also dropped any retained instance. Recommendation: make the toast button do a full page reload again (cheap, drops the leaked viewer and old gates, costs one tavern reload, which the user used to get) until the retained viewer document is found; switchToHead stays for the silent card-switch path.
+deviations: the retention root cause is not fixed; the probe reports documents and heap but only gates the counts that are fixed
+blocker: none
+open: user decision on restoring the full page reload for the toast button (one-line change in host-checks.mjs switchToHead: call window.parent.location.reload()); retainer hunt for the viewer document
+cleanup: done
 === END ===
