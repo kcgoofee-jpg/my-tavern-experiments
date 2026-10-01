@@ -123,3 +123,10 @@
 - 下一步（重启后）：收 4 代理结果看图判定 → 用户确认白天版草稿＋圣都清单 → 中下层白天 8K 上云 → viewer3d 小修合入走 0.9.5.x。
 - 白天版第一轮草稿已出＋看图判定（/tmp/eden_wt_day/map/art/_mid_day_draft.png、_low_day_draft.png，分支 day-version-mid-low 提交 cad966f6）：结构/材质切换全部正确（霓虹变暗漆、轨道金属、灯圈关）；**共同问题：两张都偏暗、太阳天顶角 40° 太低、投影过长**——中层路面全黑像阴天傍晚，下层浊暖灰接近可用。下一步（重启后第一件事）：tc_common SUN_ROT 天顶角调到 55–65°＋天光/曝光 +0.3~0.5，重出两张 2000px 草稿，用户确认后中下层白天 8K×2 上云（云 ssh 链路正常，队列空、贴图 sync 齐全）。
 - ph0r（浏览器测试对齐）30 分钟超时被 watchdog 强杀（exit 143）：分支 fix-browser-tests-wbauto 原零提交，已代提交 WIP `0119734d`（th_adopt 半成品＋根因诊断：`runCheck` 的 `checkP ??=` memo 使自检只跑一次→书自动建好后红线按钮判定失效；`#wbUndo` 需 wb-inspect 后才渲染。修法：撤销检查挪到看差异后＋reload 新实例等首次自检含 6s 复查）。重启后重派时按此诊断直接修，先让现有 3 个失败测试过、场景页后补，别再 30 分钟里全做。✅ 2026-09-29：已按此诊断改好并实跑 `th_adopt.mjs` 全绿（见「C2 整理遗留」）。
+
+## 2026-10-02 AC-AUTOPILOT-2 stopped at a step boundary (usage limit)
+
+Done and pushed: step 0 (Q-23/24/25 accepted, N14 b 地窖, N14 c self-check), step 1 (N14 a art_sha stable art key, probe art_key), step 2 S7-1, step 3 S7-2 (RESULT blocks in docs/plans/spatial-os-log.md).
+Next: step 4 S7-3 (docs/ui-refactor.md appendix S7-3; includes N9, N11; estate render loop on demand), then 5 E-13 (house.glb audit now 48 837 pairs; builder file house_web.py belongs to the active B1/B2 line, so likely the documented-residual + polygonOffset route), 6 stage C acceptance, 7 R1 kit, 8 stage E (history rewrite needs all other sessions idle).
+Tools: blender/estate2/floorplans.py --data-only runs without matplotlib; a venv with numpy/matplotlib may be recreated in the scratchpad.
+User 2026-10-02: limit subagents (quota); resume when it refreshes.
