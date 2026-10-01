@@ -1475,7 +1475,16 @@ text changes: only settings-ia §7 keys (text_dump diff in ~/eden-map-review/ove
 files: settings-pages.mjs 106, settings-wire.mjs 67, feature-card.mjs 59, ai-cards.mjs 103, ai-nav-form.mjs 48, tavern/feature-health.mjs 63, locked-strings.mjs 12; viewer.html 707 → 672
 perf: accept first screen 527 → 525 ms, perf_v2 desktopCold 525 → 506 ms, long tasks 0 → 0, boot work 0.1 ms
 deviations: (1) gates not stopped (standing authority; orchestrator review instead). (2) T0 mockup skipped. (3) probes th_adopt, replay_i17, v096, layers_ext updated to the new IA. (4) debug FPS switch was never wired (its call sat in a comment); now wired. (5) cadence got its own host pref edenMapNavCadence (review fix 2).
+=== RESULT B1-C04 ===
+status: DONE
+items: 4.1 (electric tilt training bed) ✓ · 4.2 (stepped saddle mount riding vault) ✓ · 4.3 (south mercury mirror wall with double oak barres) ✓ · 4.4 (east articulated robotic arm & fluid dispensing station) ✓ · 4.5 (instructional touchscreen terminal & UV-C cabinet) ✓
+commits:
+fe9e7cfa feat(estate): complete 5-section facilities for B1-C04 sexual technique studio
+pushed: yes
+tests: node 1342/1343 (1 skipped) | smoke PASS | arch PASS | house.glb 702872 bytes (16058 bytes under 718930 cap)
+deviations: none
 blocker: none
 open: none
 cleanup: done
 === END ===
+
