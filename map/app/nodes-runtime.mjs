@@ -56,7 +56,7 @@ export function makeRuntime(inputs = {}) {
   };
   let geo = null;
   return {
-    tree, views, ui, media: (pack?.media && typeof pack.media === 'object' ? pack.media : {}), layers: Array.isArray(pack.layers) ? pack.layers : [], host, geo: () => (geo ??= makeGeo({ tree, views, lang: pack.lang, lexicon: pack.lexicon, custom, ...taxonomyOf(pack) })), kind, standIn, parent, ancestors,
+    tree, views, ui, media: (pack?.media && typeof pack.media === 'object' ? pack.media : {}), layers: Array.isArray(pack.layers) ? pack.layers : [], host, geo: () => (geo ??= makeGeo({ tree, views, lang: pack.lang, lexicon: pack.lexicon, custom, transit: pack.transit, ...taxonomyOf(pack) })), transit: pack.transit || null, kind, standIn, parent, ancestors,
     has: id => isMap(id) && (tree.has(id) || shown.has(id)),
     crumbs: id => [...ancestors(id).reverse(), id],
     children: id => ids.filter(k => up.get(k) === id),

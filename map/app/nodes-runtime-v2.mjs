@@ -16,7 +16,7 @@ export function makeRuntimeV2(pack, registry) {
   let geo = null;
   return {
     tree, views, ui, media: (pack?.media && typeof pack.media === 'object' ? pack.media : {}), layers: Array.isArray(pack?.layers) ? pack.layers : [], host: id => id, kind, parent, ancestors, standIn: () => null, zoneChildren: () => ({}), anchorIn: () => null,
-    geo: () => (geo ??= makeGeo({ tree, views, lang: pack.lang, lexicon: pack.lexicon, ...taxonomyOf(pack) })),
+    geo: () => (geo ??= makeGeo({ tree, views, lang: pack.lang, lexicon: pack.lexicon, transit: pack.transit, ...taxonomyOf(pack) })), transit: pack?.transit || null,
     has: isMap,
     crumbs: id => [...ancestors(id).reverse(), id],
     children: id => ids.filter(k => up.get(k) === id),

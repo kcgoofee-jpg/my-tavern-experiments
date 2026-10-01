@@ -21,10 +21,11 @@ export function createLlmFlow(host) {
   let navLed = { lastAt: 0 }, navSeen = { seen: [] }, navT = 0, opEvents = [], opOv = NO.EMPTY, opSent = NO.sig(NO.EMPTY);
   function sendOps(force) {   // K-R86: the session's clues and markers to the viewer's nav-ops layer, when they changed (force: a fresh viewer, only if there is something)
     opOv = NO.age(opOv, host.floorNow); const s = NO.sig(opOv);
-    if (!host.alive || (force ? !opOv.clues.length && !opOv.markers.length : s === opSent)) return;
-    opSent = s; host.post({ type: 'eden-map:ops', clues: opOv.clues, markers: opOv.markers });
+    if (!host.alive || (force ? !opOv.clues.length && !opOv.markers.length && !opOv.routes.length : s === opSent)) return;
+    opSent = s; host.post({ type: 'eden-map:ops', clues: opOv.clues, markers: opOv.markers, routes: opOv.routes });
   }
-  function resetOps() { const had = opOv.clues.length || opOv.markers.length; opOv = NO.EMPTY; if (had) { opSent = ''; sendOps(); } }
+  function resetOps() { const had = opOv.clues.length || opOv.markers.length || opOv.routes.length; opOv = NO.EMPTY; if (had) { opSent = ''; sendOps(); } }
+  function addRoutes(rows, ctx) { opOv = NO.add(opOv, { routes: rows }, { floor: ctx?.floor ?? host.floorNow, map: ctx?.map ?? null }); sendOps(); }   // S8-4b K-R113: the S7 route op's validated rows (route-flow addSuggestions)
   async function navRun() {
     if (!plannerGatewayModule || !LLMm || life.dead) return;
     const p = plannerGatewayModule.plan(Date.now(), { lastAt: navLed.lastAt, intervalMs: plannerGatewayModule.intervalOf(lsGet), alive: !panel.hidden, generating: GEN.generating, dead: life.dead });
@@ -138,6 +139,6 @@ export function createLlmFlow(host) {
     finally { xtalBusy = false; }
   }
   return {
-    jitRound, resetOps, sendOps, get opEvents() { return opEvents; }, set opEvents(v) { opEvents = v; }, get worldbookJitModule() { return worldbookJitModule; }, get WBSm() { return WBSm; }, xtalRound,
+    jitRound, resetOps, sendOps, addRoutes, get opEvents() { return opEvents; }, set opEvents(v) { opEvents = v; }, get worldbookJitModule() { return worldbookJitModule; }, get WBSm() { return WBSm; }, xtalRound,
   };
 }

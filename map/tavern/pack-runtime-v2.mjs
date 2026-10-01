@@ -16,7 +16,7 @@ export const profileFromV2 = pack => profileOf(pack);
 /** The node tree and event taxonomy of a schema-2 pack as the tavern script needs them (`lang`: the pack's own language, else the UI language). */
 export function geoFromV2(pack, { lang } = {}) {
   const p = withDefaults(pack);
-  return makeGeo({ tree: buildTree(Array.isArray(p.nodes) ? p.nodes : [], { title: p.title }), views: isObj(p.views) ? p.views : {}, lang: p.lang || lang, lexicon: p.lexicon, ...taxonomyOf(p) });
+  return makeGeo({ tree: buildTree(Array.isArray(p.nodes) ? p.nodes : [], { title: p.title }), views: isObj(p.views) ? p.views : {}, lang: p.lang || lang, lexicon: p.lexicon, transit: p.transit, ...taxonomyOf(p) });
 }
 
 // ---- K-R103 ----

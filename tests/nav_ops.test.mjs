@@ -83,3 +83,13 @@ test('protocol: eden-map:ops is a host→viewer message with two arrays; eden-ma
   assert.ok(check({ type: 'eden-map:layer-data', v: 2, values: { 'a.b': ['x'] } }).ok);
   assert.ok(!check({ type: 'eden-map:layer-data', v: 2, values: 'x' }).ok);
 });
+
+test('S8-4b (K-R113): the llm flow sends the suggested routes in eden-map:ops, resets them with the rest, and an older viewer\'s message shape still validates', () => {
+  const posts = [], host = Object.fromEntries(DEPS.map(k => [k, S])); host.alive = true; host.floorNow = 5; host.post = m => posts.push(m); host.scriptBase = 'file:///nonexistent/map/';
+  const L = createLlmFlow(host);
+  L.addRoutes([{ from: 'A', to: 'B', fromNode: 'a', toNode: 'b', why: 'w' }], { floor: 5, map: 'town_hill' });
+  assert.equal(posts.length, 1); assert.deepEqual(posts[0].routes, [{ from: 'A', to: 'B', fromNode: 'a', toNode: 'b', why: 'w', floor: 5, map: 'town_hill' }]); assert.deepEqual(posts[0].clues, []);
+  posts.length = 0; L.sendOps(true); assert.equal(posts.length, 1, 'a fresh viewer gets the held route');
+  posts.length = 0; L.resetOps(); assert.equal(posts.length, 1); assert.deepEqual(posts[0].routes, []);
+  assert.ok(check({ type: 'eden-map:ops', v: 2, clues: [], markers: [], routes: [] }).ok); assert.ok(!check({ type: 'eden-map:ops', v: 2, clues: [], markers: [], routes: 'x' }).ok);
+});

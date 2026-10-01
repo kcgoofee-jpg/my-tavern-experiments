@@ -14,6 +14,7 @@ import { createRoutes, scoreText } from './host-routes.mjs';
 import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
 import { createAbout } from './host-about.mjs';
 import { createLlmFlow } from './llm-flow.mjs';
+import { createRouteFlow } from './route-flow.mjs';
 import { createStashFlow } from './stash-flow.mjs';
 import { createCharsFlow } from './chars-flow.mjs';
 import { createTimelineFlow } from './timeline-flow.mjs';
@@ -229,7 +230,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
   const onMsg = e => {
     if (e.source !== frame.contentWindow || (protocolModule && !protocolModule.accept(e.data, '（查看器 → 宿主）'))) return;
     if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
-    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: uiLang }); sendBar(); sendAbout(); sendCardInfo(); alive = true; CF.sentClock = CF.sentOutfit = charsSent = null; CF.resetLayerSent(); LL.sendOps(true); HA.replayLayers(); knowRooms(); sendCheck(); sendCustom(); sendInv(); sendTrips(); sendRoutine(); sendTh(); mvuBridge.varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: uiLang }); sendBar(); sendAbout(); sendCardInfo(); alive = true; CF.sentClock = CF.sentOutfit = charsSent = null; CF.resetLayerSent(); LL.sendOps(true); RF.onReady(); HA.replayLayers(); knowRooms(); sendCheck(); sendCustom(); sendInv(); sendTrips(); sendRoutine(); sendTh(); mvuBridge.varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
     if (e.data?.type === 'eden-map:ready' && CK.setQ) { const q = CK.setQ; CK.setQ = null; setTimeout(() => post({ type: 'eden-map:settings', page: q }), 0); }
     if (e.data?.type === 'eden-map:ready' && flyQ) { const q = flyQ; flyQ = null; setTimeout(() => inner()?.flyTo?.(q), 0); }   // EdenMap.flyTo 排队的
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
@@ -260,6 +261,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
     // v0.9.3 自定义（地图设置里的「自定义」一栏）：地图只发请求，数据由这里写进聊天变量后再推回去
     if (e.data?.type === 'eden-map:custom-set') api.setCustom(e.data.key, e.data.patch || {});
     if (e.data?.type === 'eden-map:custom-reset') api.removeCustom(e.data.key);
+    if (e.data?.type === 'eden-map:route-plan') RF.onPlan(e.data);   // K-R111: the user's route plan (re-checked, held, echoed)
     if (e.data?.type === 'eden-map:explore' && explorationLedgerModule && RS.custom) { const r = explorationLedgerModule.visit(explored, e.data.map, e.data.name); if (r.changed) { explored = r.ex; saveRoot(); } }   // 迷雾探索：只在查看器开着迷雾时才发
     if (e.data?.type === 'eden-map:explore-reset' && RS.custom) { explored = {}; saveRoot(); post({ type: 'eden-map:fog', explored }); }
     if (e.data?.type === 'eden-map:custom-sync') api.setWorldbookSync(!!e.data.on);
@@ -353,7 +355,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
     get kfView() { return TL.kfView; }, set kfView(v) { TL.kfView = v; }, kindOf: (...a) => RS.kindOf(...a), lean: (...a) => lean(...a),
     get life() { return life; }, get line() { return line; }, get lineP() { return lineP; }, get LINES() { return LINES; }, get listen() { return listen; },
     get LKF() { return LKF; }, set LKF(v) { LKF = v; }, loadCustom: (...a) => RS.loadCustom(...a), loadViewer: (...a) => loadViewer(...a), get LS() { return LS; },
-    get lsGet() { return lsGet; }, get lsSet() { return lsSet; }, macroSet: (...a) => macroSet(...a), get MAN() { return MAN; }, get mvuReaders() { return CF.mvuReaders; },
+    get lsGet() { return lsGet; }, get lsSet() { return lsSet; }, macroSet: (...a) => RF.macroSet(...a), get MAN() { return MAN; }, get mvuReaders() { return CF.mvuReaders; },
     mvuStat: (...a) => CF.mvuStat(...a), get NT() { return NT; }, get ntReady() { return ntReady; }, get oldStyle() { return oldStyle; },
     openSettings: (...a) => CK.openSettings(...a), get outfitNow() { return CF.outfitNow; }, get scriptOwner() { return scriptOwner; }, get PACK_ID() { return PACK_ID; },
     get PACK_IN() { return PACK_IN; }, get panel() { return panel; }, get pdoc() { return pdoc; }, get plainVer() { return plainVer; },
@@ -368,9 +370,9 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
     storeWarn: (...a) => RS.storeWarn(...a), get swappable() { return swappable; }, get switchedFrom() { return switchedFrom; }, get tavernhelperApiModule() { return HA.tavernhelperApiModule; },
     get tlWalk() { return TL.tlWalk; }, set tlWalk(v) { TL.tlWalk = v; }, get transitMod() { return HA.transitMod; }, get tripsParseModule() { return CF.tripsParseModule; }, get UI() { return UI; },
     get uiLang() { return uiLang; }, userName: (...a) => CF.userName(...a), varsOk: (...a) => RS.varsOk(...a), get VER() { return VER; }, get worldbookJitModule() { return LL.worldbookJitModule; },
-    get WBSm() { return LL.WBSm; }, get wbState() { return RS.wbState; }, set wbState(v) { RS.wbState = v; }, get wrapLS() { return wrapLS; },
+    get WBSm() { return LL.WBSm; }, get wbState() { return RS.wbState; }, set wbState(v) { RS.wbState = v; }, get wrapLS() { return wrapLS; }, addRoutes: (...a) => LL.addRoutes(...a), flyMark: p => '<span style="display:none" data-eden-fly="' + p.replace(/"/g, '') + '"></span>',
   };
-  const LL = createLlmFlow(host), { jitRound, xtalRound } = LL;
+  const LL = createLlmFlow(host), { jitRound, xtalRound } = LL, RF = createRouteFlow(host);   // K-R111: the planned route and the class macros
 
   // W8 世界书 → 地图（{{eden_fly}} 宏的接收半边）：最新助手楼里出现 data-eden-fly 标记就解析落点、
   // 经协议里一直登记却无发送方的 eden-map:fly 聚焦过去（app/host-messages.mjs → CustomNamesView.flyTo，2D / 主场景房间 / 三维热点通吃）。
@@ -430,7 +432,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
     // bg：后台预加载中（面板不可见），地图据此不自动进主场景（E4 N03）
     if (!panel.hidden && alive) post({ type: 'eden-map:chat', id: chatId() });   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
     if (!panel.hidden && alive && here !== sent) { sent = here; post({ type: 'eden-map:here', value: here, bg: ghost }); }
-    if (here !== emHere) { emHere = here; emit('here', { value: here }); emitMoved(here); }
+    if (here !== emHere) { emHere = here; emit('here', { value: here }); emitMoved(here); RF.onHere(here); }
     pushMvu();
   }
   let pushT = 0;
@@ -530,7 +532,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
   function sendEvents() {
     if (!alive) return;
     const visible = !panel.hidden && !ghost;   // 后台预加载（ghost）只把面板设成 visibility:hidden，panel.hidden 仍是 false——不能算「用户在看」
-    LL.opEvents = LL.opEvents.filter(e => floorNow - e.floor <= 20); LL.sendOps();   // W5 领航员叠加事件：20 楼衰减，会话级不进真相
+    LL.opEvents = LL.opEvents.filter(e => floorNow - e.floor <= 20); LL.sendOps(); RF.onRound(floorNow);   // W5 领航员叠加事件：20 楼衰减，会话级不进真相
     const items = events.map(e => ({ ...e, isNew: e.last > seen })).concat(LL.opEvents.map(e => ({ ...e, isNew: false })));
     if (charSig !== charsSent) { charsSent = charSig; sendChars(); }
     // 人物没变就不重发：面板开着时每 4 秒重建一次覆盖层与横条（2026-09-27 接手 review P2）
@@ -567,20 +569,6 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
 
   const MO = createModesFlow(host), { MDm, checkpointStep, spatialInject, stateInject } = MO;
 
-  let macroOff = null;
-  // B9 类宏（默认关）：{{eden_here}} 当前地点、{{eden_route}} 最近一段行程、{{eden_fly 地点}}（W8）展开成隐藏 fly 标记；卡 / 预设作者自己引用
-  function macroSet(on) {
-    macroOff?.(); macroOff = null; if (!on || !HA.tavernhelperApiModule || life.dead) return;
-    macroOff = HA.tavernhelperApiModule.registerMacros(thFn, (k, m) => {
-      if (k === 'eden_here') return userName(here);
-      if (k === 'eden_fly') {
-        const place = String(m?.[1] || '').trim() || here;
-        return `<span style="display:none" data-eden-fly="${place.replace(/"/g, '')}"></span>${userName(place)}`;
-      }
-      const t = (contextPipeline.trips || []).filter(x => !x.who).at(-1);
-      return t ? `${t.from} → ${t.to}` : '';
-    });
-  }
   let wbChatT = 0;
 
   // 悬浮按钮可拖动（避开酒馆输入栏等位置），位置按屏幕比例记住；轻点才打开面板
@@ -646,7 +634,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
     listen(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     listen(tavern_events.CHAT_CHANGED, () => { clearTimeout(wbChatT); wbChatT = setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动', e))); }, 1500); });   // 换角色 / 聊天：新角色也挂上、聊天版本提醒
     listen(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    listen(tavern_events.CHAT_CHANGED, () => { try { RS.storageBudget?.touch(store(), chatId()); } catch (e) {} injected = null; MO.stateNow = ''; MO.cardSkip = null; MO.cp = null; contextPipeline.reset(); gate()?.drop('chat'); LF.resetChat(); LL.resetOps(); loadSeen(); RS.custom = null; if (TL.tlOn) { TL.tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => { recomputeSoon(300); sendCardInfo(); }); });
+    listen(tavern_events.CHAT_CHANGED, () => { try { RS.storageBudget?.touch(store(), chatId()); } catch (e) {} injected = null; MO.stateNow = ''; MO.cardSkip = null; MO.cp = null; contextPipeline.reset(); gate()?.drop('chat'); LF.resetChat(); LL.resetOps(); RF.onChat(); loadSeen(); RS.custom = null; if (TL.tlOn) { TL.tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => { recomputeSoon(300); sendCardInfo(); }); });
     // 通读 R1：开局菜单用 setChatMessage(swipe_id) 换开场白，不一定触发 SWIPED；渲染 / 编辑事件也听，地点跟着刷新
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) if (tavern_events[k]) listen(tavern_events[k], () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
     // 任务三：渲染之后再走一遍泄露防御网（占位符 / 整段状态栏 HTML 源码糊在界面上时抹掉；干净就什么都不做）
@@ -670,6 +658,6 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
     if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup;
     try { const R = window.parent.__edenMapIds; if (R && R[scriptOwner] === scriptBase) delete R[scriptOwner]; } catch (e) {}   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」
     try { for (const el of [...pdoc.querySelectorAll('[data-eden-owner]')]) if (el.getAttribute('data-eden-owner') === scriptOwner) el.remove(); } catch (e) {}
-    prefs.stop(); window.removeEventListener('storage', onStorage); try { macroOff?.(); } catch (e) {} try { MDm?.applyState(thFn, '', 0); } catch (e) {} };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）
+    prefs.stop(); window.removeEventListener('storage', onStorage); try { RF.macroSet(false); } catch (e) {} try { MDm?.applyState(thFn, '', 0); } catch (e) {} };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）
   install(cleanup);   // __edenMapCleanup + pagehide（host-lifecycle.mjs）
 })();

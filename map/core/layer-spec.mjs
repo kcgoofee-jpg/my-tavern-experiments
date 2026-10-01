@@ -59,7 +59,7 @@ export function normFeature(raw, type, { view, problems = [] } = {}) {
 
 const STYLE = {   // key -> [type, lo, hi]; ranges are design §4
   color: ['color'], opacity: ['num', 0, 1], size: ['size'], icon: ['icon'], pulse: ['bool'], tone: ['enum', ['plain', 'chip']], width: ['num', 0.5, 8], dash: ['dash'],
-  halo: ['bool'], fill: ['color'], fill_opacity: ['num', 0, 1], speed: ['num', 0.005, 1], density: ['int', 1, 64], trail: ['num', 0, 0.05], preset: ['enum', PRESETS], path: ['path'], by: ['by'],
+  halo: ['bool'], badge: ['bool'], fill: ['color'], fill_opacity: ['num', 0, 1], speed: ['num', 0.005, 1], density: ['int', 1, 64], trail: ['num', 0, 0.05], preset: ['enum', PRESETS], path: ['path'], by: ['by'],
 };
 const PATH_KEYS = ['color', 'width', 'dash', 'halo'];
 const coerce = ([t, a, b], v, type, o) => {

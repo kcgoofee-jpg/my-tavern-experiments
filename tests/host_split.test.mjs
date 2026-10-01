@@ -100,7 +100,8 @@ test('入口只从 host-*.mjs 取，不再自带副本；worldbook 自动化的�
 // ---------------------------------------------------------------------------------------------------------------------
 const lines = f => rd(f).split('\n').length - (rd(f).endsWith('\n') ? 1 : 0);
 const FLOWS = {   // 文件 → [工厂名, 返回的接口]
-  'llm-flow': ['createLlmFlow', 'jitRound opEvents resetOps sendOps worldbookJitModule WBSm xtalRound'],
+  'llm-flow': ['createLlmFlow', 'addRoutes jitRound opEvents resetOps sendOps worldbookJitModule WBSm xtalRound'],
+  'route-flow': ['createRouteFlow', 'addSuggestions held macroSet macroValue onChat onHere onPlan onReady onRound'],   // S8-4b K-R111: the planned route and the class macros
   'stash-flow': ['createStashFlow', 'changedInv FRm frState gate gateFlush injectAction stash stashStoreModule stashRecomputeModule ledgerSync ledgerModule ledgerRecord lootFacts resetChat scanPickups sendInv settleCarry stealthCheck takeLoot'],
   'chars-flow': ['createCharsFlow', 'mvuBridge gallery cardKey chatId clock computeTrips contextPipeline getHere mvuReaders mvuStat outfitNow pushMvu readVars refreshVarMap resetLayerSent routineModule rtSched sendChars sendRoutine sendTrips sentClock sentOutfit setVarUser tripsParseModule userName'],
   'timeline-flow': ['createTimelineFlow', 'keyframesModule kfReset kfView tlBtn tlCache tlEl tlExit timelineModule tlOn tlWalk'],

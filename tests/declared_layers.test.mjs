@@ -83,7 +83,7 @@ test('the kernel list alone yields no declared layer; the first pack declares ex
   const EDEN = { manifest: J('map/packs/eden/manifest.json'), maps: J('map/data/maps.json'), world: J('map/data/world_markers.json'), names: J('map/packs/eden/names.en.json'), plan: J('map/data/eden_estate_rooms.json') };
   const none = mergeLayers(KERNEL_LAYERS, makeRuntime(EDEN).layers);
   assert.deepEqual(none.layers.filter(l => l.origin !== 'kernel'), []);
-  assert.equal(none.layers.length, 19);   // the 17 of S8-1 and nav-ops, local-props (S8-3)
+  assert.equal(none.layers.length, 21);   // the 17 of S8-1, nav-ops and local-props (S8-3), transit and route-plan (S8-4b)
   const first = mergeLayers(KERNEL_LAYERS, makeRuntime({ ...EDEN, overlay: J('map/packs/eden/overlay.v2.json') }).layers);
   assert.deepEqual(first.layers.filter(l => l.origin === 'pack').map(l => l.id), ['estate_ward']);
   const TOWN = { manifest: J('map/packs/town/manifest.json'), maps: J('map/packs/town/maps.json'), events: J('map/packs/town/events.json'), overlay: J('map/packs/town/overlay.v2.json') };

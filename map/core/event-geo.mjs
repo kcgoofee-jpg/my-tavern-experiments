@@ -14,11 +14,12 @@
 // A point on a map (a node with an explicit `at`) belongs to the map that frames it; any other node belongs to its scope (K-R51).
 import { buildTree, vocabulary, locate, positionOf, scopeOf, viewIdsOf } from './nodes.mjs';
 import { fromV1 } from './compat-v1.mjs';
+import { buildGraph } from './router.mjs';
 
 const FLAT = new Set(['tiles', 'image']);
 const esc = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-export function makeGeo({ tree, views = {}, lang = 'zh', lexicon, custom, events, tag } = {}) {
+export function makeGeo({ tree, views = {}, lang = 'zh', lexicon, custom, events, tag, transit, templates } = {}) {
   const vocab = vocabulary(tree, { custom, lang, lexicon });
   const label = id => { const n = tree.get(id); return n ? (typeof n['x-layer'] === 'string' && n['x-layer'] ? n['x-layer'] : String(n.name ?? '')) : ''; };
   function home(id) {
@@ -50,17 +51,18 @@ export function makeGeo({ tree, views = {}, lang = 'zh', lexicon, custom, events
   const position = id => (tree.has(id) ? positionOf(tree, views, id) : null);
   const spot = id => { const p = position(id); return p && p.at && FLAT.has(views[p.view]?.kind) ? { x: p.at.x, y: p.at.y, map: p.view } : null; };
   const owners = () => tree.ids().filter(id => id !== tree.synth && FLAT.has(views[viewIdsOf(tree, views, id)[0]]?.kind)).map(label);
-  return { tree, views, vocab, label, home, place, placeNode, strip, spot, position, layerOf: text => place(text)?.layer ?? '', layers: () => [...new Set(owners())],
+  let graph; const net = transit && typeof transit === 'object' ? transit : null;   // S8-4b: the pack's transit network and its router graph (built on first use)
+  return { tree, views, vocab, label, transit: net, lang, templates, graph: () => (graph === undefined ? (graph = buildGraph(net)) : graph), home, place, placeNode, strip, spot, position, layerOf: text => place(text)?.layer ?? '', layers: () => [...new Set(owners())],
     taxonomy: () => ({ events, tag }) };   // the pack's event taxonomy (K-R49) and injected-line tag, as the tree's pack declared them (undefined: the kernel's neutral one, K-R53)
 }
 
 /** { events, tag } of a converted pack: its events block and the tag of its injected line (`llm.templates.<lang>.tag`). */
-export const taxonomyOf = pack => ({ events: pack.events, tag: pack.llm?.templates?.[pack.lang]?.tag });
+export const taxonomyOf = pack => ({ events: pack.events, tag: pack.llm?.templates?.[pack.lang]?.tag, templates: pack.llm?.templates });
 
 /** inputs of compat-v1 `fromV1` (manifest, maps, world, names, plan, events, overlay, ...) -> geo. */
 export function geoFromV1(inputs = {}) {
   const r = fromV1(inputs);
-  return makeGeo({ tree: buildTree(r.pack.nodes, { title: r.pack.title }), views: r.pack.views || {}, lang: r.pack.lang, lexicon: r.pack.lexicon, custom: r.custom, ...taxonomyOf(r.pack) });
+  return makeGeo({ tree: buildTree(r.pack.nodes, { title: r.pack.title }), views: r.pack.views || {}, lang: r.pack.lang, lexicon: r.pack.lexicon, custom: r.custom, transit: r.pack.transit, ...taxonomyOf(r.pack) });
 }
 
 /** A fixed number in [0, 1) for a string: the same event always lands on the same spot. */

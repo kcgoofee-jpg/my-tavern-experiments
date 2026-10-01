@@ -11,6 +11,7 @@ import { showCard, trackEl, untrack } from './app/markers.mjs';
 import { drawnAt, hereRes, userMoved } from './app/locate.mjs';
 import { plugins, register } from './app/plugins.mjs';
 import { uiTextOr } from './app/text-lookup.mjs';
+import { tripRoute } from './app/transit-env.mjs';   // K-R112: a trip along the pack's transit network
 const TripsView = (() => {
   let els = [], fitFor = null, trips = [];
   const TK = 'edenMapTrips', on = () => { try { return LocalStore.get(TK) !== '0'; } catch (e) { return true; } };
@@ -35,6 +36,18 @@ const TripsView = (() => {
     osdViewer.addOverlay({ element: svg, location: new OpenSeadragon.Rect(x0, y0, w, h) }); els.push(svg);
     return { svg, mid: { x: .25 * a.x + .5 * c.x + .25 * b.x, y: .25 * a.y + .5 * c.y + .25 * b.y } };
   }
+  // K-R112: the trip along the network: the path's points (OSD units) in the same svg.trip element as an arc; the hit point is the middle of the path's length
+  function poly(pts, { cls = '' } = {}) {
+    const xs = pts.map(p => p.x), ys = pts.map(p => p.y), pad = .004, x0 = Math.min(...xs) - pad, y0 = Math.min(...ys) - pad, w = Math.max(...xs) - Math.min(...xs) + 2 * pad, h = Math.max(...ys) - Math.min(...ys) + 2 * pad;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 1000 1000'); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('class', 'trip ' + cls); svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = `<path d="${pts.map((p, i) => `${i ? 'L' : 'M'}${((p.x - x0) / w) * 1000} ${((p.y - y0) / h) * 1000}`).join(' ')}" vector-effect="non-scaling-stroke"/>`;
+    osdViewer.addOverlay({ element: svg, location: new OpenSeadragon.Rect(x0, y0, w, h) }); els.push(svg);
+    const seg = pts.slice(1).map((p, i) => Math.hypot(p.x - pts[i].x, p.y - pts[i].y)); let half = seg.reduce((a, b) => a + b, 0) / 2, k = 0;
+    while (k < seg.length - 1 && half > seg[k]) half -= seg[k++];
+    const f = seg[k] ? half / seg[k] : 0, a = pts[k], b = pts[k + 1];
+    return { svg, mid: { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f } };
+  }
   function pin(p, html, cls, label, onOpen) {
     const el = document.createElement('div'); el.className = 'tripin ' + cls; el.innerHTML = html;
     el._open = onOpen; if (onOpen && typeof trackEl === 'function') trackEl(el, onOpen, label); else el.setAttribute('aria-hidden', 'true');
@@ -58,12 +71,12 @@ const TripsView = (() => {
     const n = trips.length;
     trips.forEach((t, i) => {
       const a = xy(hereRes(t.from)), b = xy(hereRes(t.to)); if (!a || !b || (a.x === b.x && a.y === b.y)) return;
-      const age = (n - 1 - i) / Math.max(1, n - 1), op = (1 - age * .65).toFixed(2), who = t.who ? dn(t.who) : uiTextOr('tr.you', '你');
+      const rp = tripRoute(t, render), age = (n - 1 - i) / Math.max(1, n - 1), op = (1 - age * .65).toFixed(2), who = t.who ? dn(t.who) : uiTextOr('tr.you', '你');
       const lab = uiTextOr('tr.trip', '{who}：{a} → {b}', { who, a: short(dn(t.from)), b: short(dn(t.to)) });
-      const open = () => showCard(null, lab, '', '', [uiTextOr('tr.floor', '第 {n} 楼', { n: t.floor }), t.time && esc(t.time), uiTextOr(...MODE_T[t.mode || ''])].filter(Boolean).join(' · '));
+      const open = () => showCard(null, lab, '', '', [uiTextOr('tr.floor', '第 {n} 楼', { n: t.floor }), t.time && esc(t.time), uiTextOr(...MODE_T[t.mode || '']), rp && uiTextOr('tr.along', '沿交通网（估计）')].filter(Boolean).join(' · '));
       const col = t.who && typeof plugins.CharactersView !== 'undefined' ? `--tc:${charColor(t.who)}` : '';
       if (t.mode === 'teleport') { for (const p of [a, b]) pin(p, '<i></i>', 'tp' + (t.who ? ' ch' : ''), lab, open); els.slice(-2).forEach(e => { e.style.opacity = op; if (col) e.setAttribute('style', e.getAttribute('style') + ';' + col); }); return; }
-      const st = STY[t.mode] || STY[''], { svg, mid } = arc(a, b, { cls: `hist m-${t.mode || 'x'}${t.who ? ' ch' : ''}`, bend: st.bend, dash: st.dash });
+      const st = STY[t.mode] || STY[''], cls = `hist m-${t.mode || 'x'}${t.who ? ' ch' : ''}`, { svg, mid } = rp ? poly(rp.pts, { cls }) : arc(a, b, { cls, bend: st.bend, dash: st.dash });
       svg.style.opacity = op; if (col) svg.setAttribute('style', svg.getAttribute('style') + ';' + col);
       pin(mid, '', 'hit', lab, open);
     });

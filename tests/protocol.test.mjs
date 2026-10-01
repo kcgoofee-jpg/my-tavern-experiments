@@ -107,3 +107,11 @@ test('S8-3 K-R86：eden-map:layer-data 与 eden-map:ops 登记在 SCHEMA（宿�
   assert.ok(check({ type: 'eden-map:layer-data', v: 2, values: {} }).ok); assert.ok(!check({ type: 'eden-map:layer-data', v: 2 }).ok);
   assert.ok(check({ type: 'eden-map:ops', v: 2, clues: [], markers: [] }).ok); assert.ok(!check({ type: 'eden-map:ops', v: 2, clues: 'x', markers: [] }).ok);
 });
+
+test('S8-4b K-R111: eden-map:route-plan (viewer to host) and eden-map:route (host to viewer) carry a plan object or null; shape only', () => {
+  assert.equal(SCHEMA['eden-map:route-plan'][0], 'viewer→host'); assert.equal(SCHEMA['eden-map:route'][0], 'host→viewer');
+  for (const type of ['eden-map:route-plan', 'eden-map:route']) {
+    assert.ok(check({ type, v: 2, plan: { v: 1, legs: [] } }).ok); assert.ok(check({ type, v: 2, plan: null }).ok); assert.ok(check({ type, v: 2 }).ok, 'a missing plan is a clear');
+    assert.ok(!check({ type, v: 2, plan: 'x' }).ok);
+  }
+});

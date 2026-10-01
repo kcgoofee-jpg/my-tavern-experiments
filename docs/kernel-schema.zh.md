@@ -7,7 +7,7 @@
 > `map/core/compat-v1.mjs`（S1-impl-2 步）继续可用。
 
 每条规则都有固定编号 `K-R01` … `K-R106`，后面的提示词和测试按编号引用。编号永不挪动：初稿之后补的规则（K-R63–K-R70，
-信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号；K-R71–K-R73 由 S6-1 补上，K-R74–K-R76 由 S6-2 补上，K-R77–K-R78 由 S6-3 补上；K-R79–K-R89 与 K-R104 属于 S8（K-R79、K-R81–K-R83、K-R85、K-R104 由 S8-1 补上；K-R86–K-R89 由 S8-3 补上；K-R80、K-R84 由 S8-2 补上），K-R90–K-R103 预留给 S9（清单在 §13 末尾）；K-R105 由 R0 补上（§5，场景头）；K-R106 由 S9b-2 补上（§6.6，媒体来源）。K-R107–K-R114 属于 S8-4（交通网与路线规划，`docs/transit-schema.md`；K-R107–K-R109 由 S8-4a 补上，其余的计划清单在 §13 末尾）。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
+信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号；K-R71–K-R73 由 S6-1 补上，K-R74–K-R76 由 S6-2 补上，K-R77–K-R78 由 S6-3 补上；K-R79–K-R89 与 K-R104 属于 S8（K-R79、K-R81–K-R83、K-R85、K-R104 由 S8-1 补上；K-R86–K-R89 由 S8-3 补上；K-R80、K-R84 由 S8-2 补上），K-R90–K-R103 预留给 S9（清单在 §13 末尾）；K-R105 由 R0 补上（§5，场景头）；K-R106 由 S9b-2 补上（§6.6，媒体来源）。K-R107–K-R114 属于 S8-4（交通网与路线规划，`docs/transit-schema.md`；K-R107–K-R109 由 S8-4a 补上，K-R110–K-R114 由 S8-4b 补上）。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
 
 ## 0. 请你拍板
 
@@ -512,6 +512,8 @@ v1 按固定的六级解析。改写成节点后，每一级都是树上的一�
 
 **K-R97 —— 示意图布局。** `layoutSchematic(tree, owner, { layout, depth })`（`core/schematic.mjs`）返回 0..1 内的 `{ <节点 id>: { x, y } }`，边距 0.06，确定性（同一棵树画出同一张图）。`tree`（默认）：所有者在 `{ x: 0.5, y: 0.08 }`；后代按层成行，直到 `depth`，一层一行，行距均匀、到 y 0.92 为止；每个节点占的宽度是它子树在深度内的叶子数，父节点居中在子节点上方；一行超过 12 个节点就折成几行等长的行。`list`：按声明顺序排成一列。`grid`：每行 ⌈√n⌉ 个。`radial`：所有者在中央，每层一圈。图 `schematicSvg(layout, tree)` 是 1600 × 1000 单位的 SVG，透明底，每条父子边一条线（两端都在布局里），每个节点一个半径 6 的点，用固定的中性灰；不含文字、不含任何包里的值（Z-11、K-R64），`schematicUrl` 把它编码成 `data:image/svg+xml` 地址。节点名走普通标记，所以搜索、卡片、事件与抽屉和别的地图一样工作。`image` 视图作为单张图打开（不切片），位置是图的比例（K-R31）。
 
+**K-R114 —— 主题示意图。** K-R96 / K-R97 的示意图有一个主题变体。**何时：** 隐式视图（K-R96）布局出的子树至少有 8 个节点且至少 2 个分支（分支 = 所有者的、在布局里还有子节点的孩子），或显式示意图视图带扩展字段 `x-style: "thematic"`（schema 不变；`"plain"` 或缺省 = 今天的图）；否则是朴素图，与 S8-4b 之前逐字节相同。**功能：** 每个分支取其节点名字经内核通用功能词（`core/vocab.mjs` 的 `FUNCTION`，中英，每个功能至多 12 个词）指向最多的那个功能；并列时按功能列表的顺序；都没有则 `other`；这些词是地点种类的名字，绝不是某张卡的。**画面**（`core/thematic.mjs` 的 `thematicModel`、`core/schematic.mjs` 的 `schematicSvg(layout, tree, model?)`；仍是不含任何文字的 SVG data URL）：每个分支其节点位置的凸包，外扩 0.04，以功能色 0.16 填充；分支自己的父子边画成一条彩色线（按分支顺序取 8 色调色板，线宽 6）；其余的边照旧是灰色；枢纽（布局里有子节点的节点）为带深色描边的白色圆环（r 9），叶子为圆点（r 6，取分支线色）。**标签：** 投影出来的标记在虚拟点位文件里带 `rank`（所有者与分支为 1，其他枢纽为 2，叶子为 3；朴素图没有），`app/markers.mjs` 把它写成标记上的 `data-rank`，由交通层的样式决定标签大小（1 级 `--fs-body` 粗体 700，2 级 `--fs-small`，3 级 `--fs-micro` 不透明度 0.85）。不为自动包编造网络（`transit` 图层在那里不适用）；带 `transit` 块的 schema-2 包会像在任何视图上一样把它画在示意图视图上。
+
 **K-R100 —— 编辑模式。** 设置 → 高级里的开关（「编辑模式」，`edenMapEdit`，默认关）打开编辑条和下面的操作；关着时什么都不画。改动记进每个包 id 一份的本机草稿（Z-14）= `{ v: 1, nodes: { <id>: { at?, parent?, alias_add? } }, add: [节点], views: { <id>: 视图 }, media: { <id>: 项 }, attach: { <节点 id>: [media id] }, start? }`（`core/pack-draft.mjs`；文字存在 `edenMap:edit:<包 id>`，图片字节存在图集 IndexedDB 的 `edit:<包 id>` 作用域；草稿里永远没有私有图片）。开关打开期间查看器显示套上草稿的包，套法就是 K-R67 的叠加层合并（叫法取并集、节点其他字段覆盖、图片按 id、没有 views 的包在加了视图后保留原来的隐式视图、`ui.start`）；schema-2 包每次改动后重新投影（`app/pack-live.mjs`）。草稿从不写进聊天、角色卡或世界书；「放弃草稿」把它清空。操作（`app/pack-edit.mjs`）：`move`（在 `tiles` 或 `image` 视图上拖动图钉；写 `at = { x, y, view }`，K-R31）、`reparent`（拒绝节点自己、它的后代和根：造不出环）、`addAlias`（1–60 字，K-R27）、`addPlace`（id 为 `e_<fnv36(名字 + 上级)>`，落在有画面的视图上点的那一点）、`setStart`、`addPicture` 与 `attach`（地点的图片；草稿里只收内嵌图）、`useAsMap`（「用一张图作这里的地图」：图重新编码为 WebP 0.82、长边至多 4096 像素、去掉元数据；节点得到 `views[<id>] = { kind: 'image', media }`，它的子节点当前的示意图位置成为新画面里的第一个 `at`）和 `discard`。schema-1 包（首个包）的版面保持不动：它的图钉不能在查看器里移动或改上级；可以给它的任何地点加图片并导出为叠加层。导出见 K-R98。
 
 ## 5. vars
@@ -714,7 +716,7 @@ v1 的中文字段名与英文名（`type`、`place`、`title`、`level`、`stat
 画圆，`r` 是宽度的比例）每层每视图共用一个 SVG 叠加层，描边不随缩放变粗；`flow`（沿 `pts` 移动、带渐隐尾迹的光点，夜里更亮更长）、`particles`（整个视图上的
 内核天气预设）与 `tint`（一次半透明填充）画在图层所在槽位的画布上；`sound` 没有像素（S8-3）。样式键、取值与缺省：`color`（`#rrggbb`、`#rrggbbaa` 或内核颜色
 令牌名；缺省 `--accent`）、`opacity` 0..1、`by`（至多 16 个按种类的覆盖）、`size`、`icon`（内核图标名）、`pulse`、`tone`、`width` 0.5..8、`dash`（至多 6 个数）、
-`halo`、`fill` 与 `fill_opacity`、`speed`、`density`、`trail`、`path`（`flow` 同时画自己的折线：一件用户看得见的东西就是一层）、`preset`；每个值运行时都重新检查，
+`halo`、`badge`（`label` 芯片用要素的颜色填充，K-R110）、`fill` 与 `fill_opacity`、`speed`、`density`、`trail`、`path`（`flow` 同时画自己的折线：一件用户看得见的东西就是一层）、`preset`；每个值运行时都重新检查，
 不合格的退回缺省（K-R64）；颜色只经 CSS 自定义属性进样式，画布用从页面解析出的值。包宣告的动画图层在 `prefers-reduced-motion: reduce` 下什么都不画（脉冲变静态）；
 省流档把光点和粒子减半，内核自己的车流层与天气层同样如此。这两层与航线层经同一批渲染器绘制（`core/layer-geometry.mjs`、`app/block-canvas.mjs`、
 `app/block-overlay.mjs`），由记录调用的测试证明。
@@ -754,6 +756,12 @@ v1 的中文字段名与英文名（`type`、`place`、`title`、`level`、`stat
 
 **K-R109 —— 路线器。** `core/router.mjs`（纯函数）在 transit 块上做规划。`buildGraph(transit)` 给每个线路区段（`ride`，带线路与分钟数）和每个连接（`link`）各生成一条边，双向，除非 `oneway`；邻接表按声明顺序（先线路，后连接）；另有 `linesAt` 和派生的换乘站（被两条线服务，或被一条线服务并有连接通到另一条线服务的站）。`attach(graph, end, env)` 把一个地点接入网络（`end = { node?, pos? }`，`env = { tree, pos(站点或端点), extent(视图) }`），按顺序、找到站点就停：**at**（同一节点上的站点，0 分钟）、**inside**（最近的祖先节点上的站点）、**within**（后代节点上的站点，全部）、**walk**（仅当有位置：同一视图上步行分钟 `距离_米 × detour / walk_m_per_min` 不超过 `access_max_min` 的站点，由近到远，至多 4 个；视图的 `extent_m` 给出米数）；什么都没找到 = 不在网络上。`planRoute(graph, from, to, { env, modes, src })` 在状态（站点、当前线路、是否已乘过）上做最短路搜索，从虚拟源点（起点候选，代价为接入分钟）到虚拟终点。代价是分钟：乘一段加该区段的分钟；上一条不同的线要加它的 `wait`，路径上已乘过时再加 `options.transfer_min`；连接加它的分钟并让当前线路清空；`modes` 去掉其他方式的乘车与连接边（接入段永远是步行）。平手依次比：总分钟、乘车段数、停靠数、声明顺序，所以同样的输入永远得到同样的路线。直接步行（两端在同一视图上都有位置，且不超过 2 × `access_max_min`）在不更慢时胜出；两端同一节点或一端在另一端里面，或无路可走，得到 `null`。**路线（plan）** 是 `{ v: 1, src: 'user' | 'op', from, to: { node, station, name }, legs: [{ kind: walk | ride | link, mode, line, stops, min }], min, changes, modes, danger }`：同一线路的连续乘车、同一方式的连续连接合并成一段；换乘与等候不是段；`min` 是整分钟（至少 1），`changes` = 乘车段数 − 1，`danger` = 路径上各站所在城区的最高危险等级（站点自己的 `district`，否则在它的节点或祖先上的城区），不知道时为 `null`。`checkPlan(graph, plan, { tree })` 是宿主的复核：站点存在、乘车的停靠在该线路上相邻且方向允许、连接段对得上该方式的连接、各段首尾相接、给出的节点存在；它按网络重算每一分钟，把接入步行限在 `access_max_min`（直接步行限在两倍），名字由树和站点重建，返回重建后的路线或 `null`。`planText(plan, { lang, templates, nameOf, modeLabel, lineName })` 填入包的 `llm.templates.<lang>` 里的 `route_plan`、`route_leg`、`route_danger`（内核缺省在 `KERNEL_TEMPLATES`，中英各一；占位符 `{legs} {min} {changes}`、`{from} {to} {how} {min}`、`{danger}`），各段用 `；` / `; ` 连起来，`danger ≥ 2` 时追加 `route_danger`，永不抛错（缺的名字是 `?`）。`routeOp(op, { graph, locate, here, floor, map, tree })` 校验“建议路线”操作行 `{ to（1 … 40 个字符）, from?（1 … 40）, why?（≤ 60）}`：两端都要能定位到节点（`from` 缺省为当前位置），两个节点要不同且互不包含，包里要有网络；结果带原样的文字、两个节点、`why`、`floor` 与 `map`，否则 `null`。这里没有任何函数碰 DOM、宿主或存储；绘制在 `core/transit-geometry.mjs` 与 `core/thematic.mjs`（S8-4b 接线）。
 
+**K-R110 —— 内核图层 `transit` 与 `route-plan`；主题绘制。** 内核图层清单（K-R79，`core/layer-defaults.mjs`）新增两层：`transit`（槽位 `routes`，kind `osd`，积木 `line`，order 2，`applies: { data: true }`，菜单行 order 32 `transit.layer`「交通网」/ "Transit network"，id `lyr-transit`）与 `route-plan`（槽位 `trips`，kind `osd`，积木 `line`，order 1，`applies: { data: true }`，没有菜单行）。两层只经 S8-2 的积木绘制：`core/transit-geometry.mjs` 为当前视图生成合成图层声明（`transitLayers`、`planLayers`），由 `app/block-overlay.mjs` 画出，两个模块自己都不画像素。`transit` **默认关**（选择存在 `edenMapLayers` 里，不新增存储键），菜单行只在当前视图有东西可画（站点、城区或跨图短桩）时出现；包可以像调整任何内核图层一样调整这两行（K-R79：label、`applies`、legend、`off`）。**城区：** 每个城区一个 `area`，kind `d-<功能>-<危险等级>`，填充为其功能的颜色（包的 `style.functions.<功能>.color`，否则取内核调色板：`civic #6c8ebf`、`commerce #e0a64b`、`residential #8fb86a`、`industry #9a8f86`、`military #b5654f`、`religious #c9b25e`、`education #5aa9a1`、`medical #d97a9a`、`leisure #a685d1`、`transport #7f9fb3`、`nature #5f9f63`、`restricted #c05050`、`other #8a919b`），填充不透明度 0.16，按危险等级描边（0：填充色 0.8 px；1：`--gold` 1.2 px 虚线 `[6, 4]`；2：`--alert` 1.6 px `[6, 3]`；3：`--alert` 2.4 px 实线），在形心处标注 `<名称> · <功能词>`，危险 1–3 再加 ` · <危险词>`。**线路：** 视图上画出的每个区段一条 `line`，kind `l-<线路 id>`，线路颜色，宽度 `style.width`（缺省 4），带描边；路径为**八方向**（水平、垂直或 45°，在更靠近线路上一站的一端有一个折点，按 y × 视图纵横比计算）；k 条线路共用的区段按声明顺序侧移 `(i − (k − 1) / 2) × 0.004`。连接按其方式的样子画；另一端在别的视图上的连接或区段在本视图的站点处留一个短桩芯片 `→ <站名> · <视图标题>`。**站点：** 每个可见站点一个圆点（`s`，大小 7），换乘站为白色圆环（`x`，大小 11）；**徽标：** 线路编号在本视图上的首站与末站（环线只在首站）各一枚，以线路色填充的芯片。**标签层级：** 1 城区名（`body`、plain），2 换乘站名（`small`、chip），3 其他站名（`micro`、plain），4 徽标与短桩；节点站的节点在本视图已有标记标签时不再加站名；`style.labels: false` 去掉 1–3 级；每次绘制之后照常做标签避让。**计划路线**（`route-plan`）：乘车段沿同样的路径，线路色，线宽 `width + 3`，带描边；连接按其方式的样子，线宽 `width + 1`；步行为 `--accent` 2 px 点线；点：`p-start`（`--ok`，12）、`p-end`（`--alert`，12，脉动）、`p-change`（白色圆环，12）；建议路线（K-R113）为虚线 `[8, 6]`、不透明度 0.8、不脉动；离开本视图的一段以短桩 `→ <视图标题>` 结束。**图例（K-R84）：** `transit` 图层可见时自己填写图例行：本视图上出现的每个功能、每个危险等级各一行，画出的每条线路一行，各带自己颜色的色块。**K-R80 修订：** `label` 积木新增样式键 `badge`（布尔，缺省 false）：芯片用要素的颜色填充（`--lc`），文字色在颜色较浅时为 `#14121a`、否则 `#ffffff`（`--lc-ink`）；令牌颜色保持白字。包与站点的文字只作为文字进入页面（K-R64）。
+
+**K-R112 —— 行程沿交通网。** 行程层画的每一段行程（玩家的与人物的），在包有交通网且两端都能挂上（K-R109，位置取自画出来的地点）时，查看器用 `modes` = 网络里 `trip` 类等于该行程方式的那些方式来规划路线（行程没有方式则用全部方式；内核的 `walk` 方式算 `road` 类）；`air` 与 `teleport` 类的行程永不规划。当前视图上有至少两个点的计划，用计划的路径（同样的八方向几何，不做并行偏移）取代弧线，画在该行程自己的 `svg.trip` 元素里（同样的 class、不透明度与颜色），点击目标在路径长度的中点，卡片多一行「沿交通网（估计）」（`tr.along`）。没有计划、没有网络、或某一端挂不上：照旧画弧，一字不改。计划按（起点、终点、方式）算一次，算完后重画行程；途中弧（「从 A 到 B 的途中」）不规划。
+
+**K-R113 —— 建议路线。** 宿主在会话期内至多保留 3 条路线建议行（S7 校验过的 `routeOp` 结果，交给 `tavern/route-flow.mjs` 的 `addSuggestions(rows, { floor, map })`；行上盖玩家所在地点的楼层与地图章，20 条消息后以及换聊天时丢弃，与领航员的线索与标注放在同一份状态里），并在 `eden-map:ops` 里以可选字段 `routes` 发出（旧查看器忽略它）。查看器按两个节点规划每一行（`src: 'op'`，位置同用户的计划），在 `route-plan` 上用虚线画出；点它的终点打开「建议路线」卡，写出理由（`why`，只作文字）、计划摘要与「采用这条路线」（`rt.adopt`），采用即变成用户的计划（K-R111）。建议路线永远不进 `{{eden_route}}`、聊天或任何存储。S7 的操作本身（`OP_ROUTE`、它的 DSL 校验与提示词）归 S7；S8-4b 交付路线器 API 与这条送达线。
+
 ## 10. ui 与 llm
 
 ### 10.1 ui
@@ -779,6 +787,8 @@ v1 的中文字段名与英文名（`type`、`place`、`title`、`level`、`stat
 state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.book` / `worldbook.entries[{ id, name, content, keys?, enabled? }]`。
 `templates.<语言>` 还可以带 `route_plan`、`route_leg`、`route_danger`，即计划路线的句子（K-R108、K-R109）。内核保留：注入预算、降级顺序、同意开关、条目的位置 / 深度 / 顺序 / 递归设置，以及「只写我们自己的附加书（K-R05）、只动带我们归属标记的条目」
 这条规矩。外来包的文字什么时候生效见 K-08。
+
+**K-R111 —— 规划路线。** *查看器里*（`app/route-plan-view.mjs`、`app/transit-env.mjs`）：地点卡打开时，查看器把当前地点（`#here`）与卡上的地点解析成两端（`{ node, pos }`：树里的节点，以及这个地点画在哪里——从它所在地图的点位文件里经 JSON 缓存读取，所以答案是异步的），运行 `planRoute`，有计划时给卡加一条链接「路线 · 约 {min} 分钟」（`rt.link`）；没有计划就没有链接，也不发消息（总纲规则 6）。选中它（点击或回车）即把计划变成用户的计划（`src: 'user'`），画在 `route-plan` 上，打开计划卡（标题 `<起点> → <终点>`；「约 {min} 分钟 · 换乘 {changes} 次」；逐段列表：线路色的线路徽标、线路或方式名、`起 → 止`、站数与分钟；每次换乘一行；`danger ≥ 2` 时一行「途经危险区域（等级 n）」；「清除路线」），并发出 `eden-map:route-plan { plan }`。用户的计划存在期间位置变化：新位置就是终点（或在终点之内）则清除计划（到达）；否则从新位置到同一终点重新规划，替换并发出；从那里无路则保持原样。宿主发来的 `eden-map:route { plan }` 替换本地计划（以宿主的那份为准；`null` 清除）；没有宿主（独立查看器）时本地计划保留。颜色只在 K-R64 复核之后经自定义属性进入卡片。*消息*（`core/protocol.mjs`）：`eden-map:route-plan`（查看器→宿主，`plan: object?`：用户选定了一个计划，`null` 表示清除）与 `eden-map:route`（宿主→查看器，`plan: object?`：宿主持有的计划）。*宿主*（`tavern/route-flow.mjs`，仅会话期，不持久化，不写聊天、聊天变量、`stat_data` 或世界书）：收到 `eden-map:route-plan`，计划对 `geo.transit` 过 `checkPlan`（K-R109），通过则连同选定时的楼层一起持有，并以重建后的版本回发（分钟与名字由宿主给）；被拒的计划不动已持有的那份（照样回发）；`null` 清除。新位置是计划的终点或在终点之内则清除，换聊天也清除，超过 20 条消息的计划同样清除。`eden-map:ready` 时把持有的计划再发一次。**`{{eden_route}}`**（仍在原有开关 `edenMapMacros` 之后，缺省关）是最近一段玩家行程 `from → to`（与今天的文字完全一样），持有计划时再加上 ` · `（仅当有行程）与 `planText` 按包的语言写的计划句，由 `llm.templates.<语言>` 的 `route_plan`、`route_leg`、`route_danger` 填充（内核缺省见 K-R109）；没有持有计划时，值与 S8-4b 之前逐字节相同（有测试钉住）。类宏函数在 `tavern/route-flow.mjs`（`eden_here` 与 `eden_fly` 不变）。
 
 **K-R65 —— 外来包写给模型的文字。** 外来包的模板和世界书条目交给宿主之前，内核先把宿主会执行的语法中和掉——这是中和语法，不是过滤内容
 （K-R52）：除 `{{user}}`、`{{char}}` 以外的 `{{…}}` 宏一律转义，`<%` 和 `%>` 也转义；形如正则（`/…/标志`）的关键词拒收。上限：16 条、
@@ -912,13 +922,7 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 
 **S8-4a 新增：** K-R107、K-R109（§9）与 K-R108（§13）。
 
-**S8-4 计划**（由 S8-4-design 预留，`docs/transit-schema.md`；全文随它附录里的步骤说明落地）：
-- K-R110 —— 内核图层 `transit` 与 `route-plan`；主题绘制与标签层级；`badge` 样式键（§9；S8-4b）
-- K-R111 —— 规划路线：链接、路线卡、重新规划、`eden-map:route-plan` / `eden-map:route`、宿主的会话状态、`{{eden_route}}`（§10.2；S8-4b）
-- K-R112 —— 行程沿交通网（§9；S8-4b）
-- K-R113 —— 建议路线：`eden-map:ops.routes`、绘制、采用；与 S7 的分工（§9；S8-4b）
-- K-R114 —— 隐式视图的主题示意图；功能词；标记分级（§4.6；S8-4b）
-
+**S8-4b 新增：** K-R110、K-R112 与 K-R113（§9）、K-R111（§10.2）、K-R114（§4.6），以及 K-R80 的 `badge` 样式键；至此 S8-4 设计的 K-R107 – K-R114 全部写成正文。
 
 **S7 计划**（S7-design 预留，`docs/ui-refactor.md`；全文随所注步骤落地）：K-R130（§9，受限操作 DSL 里 AI 参谋的建议路线 `OP_ROUTE { to, from?, why? }`：校验、每次回复最多一条、交给 `routeOp`；送达与绘制按 K-R113；步骤 S7-1）；K-R131（§4.5，3D 清单里的 `room_kinds`：房间类型 → 颜色与名称作为包数据，N9）；K-R132（§4.5，3D 清单的 `building` 块：标题、题词、楼层名，N11）；K-R131、K-R132 随步骤 S7-3 落地。
 

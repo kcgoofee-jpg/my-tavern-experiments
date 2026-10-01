@@ -54,6 +54,8 @@ import { firstRunHint } from './notice-layer.mjs';
 import { initE7 } from './one-hand-mode.mjs';
 import { initShell } from './drawer-glue.mjs';
 import { registerNavOpsLayer } from './nav-ops-view.mjs';   // K-R86: the navigator's clues and marks
+import { registerTransitLayer } from './transit-view.mjs';   // K-R110: the pack's transit network
+import { registerRoutePlanLayer } from './route-plan-view.mjs';   // K-R111: route planning
 import { registerLocalPropsLayer } from './local-props-view.mjs';   // K-R88: the user's own props on flat maps
 import { initDeclaredLayers } from './declared-layers.mjs';   // K-R80: the pack's declared layers draw with the kernel's building blocks
 import { initLayerHost, registry, registerCoreLayers, renderLayerMenu, applyPackLayers } from './layer-host.mjs';
@@ -101,7 +103,7 @@ async function mainInner() {
   const seg = $('#tiers');
   for (const x of [{ key: 'auto' }, ...TIERS]) { const b = document.createElement('button'); b.dataset.k = x.key;
     b.onclick = () => setTier(x.key); seg.appendChild(b); }
-  registerCoreLayers(); registerWeatherLayer(); registerTrafficLayer(); registerQuestLayer(); registerLootLayer(); registerVisionLayer(); registerWanderLayer(); registerDepthHazeLayer(); registerNavOpsLayer(); registerLocalPropsLayer(); initDeclaredLayers(); renderLayerMenu(); initShell(); layoutHeader(); busOn({ key: 'boot.resize', type: 'resize', fn: layoutHeader });   // P3-C：#layList 由 LayerRegistry 数据驱动，先于 shell 绑定 / applyI18n 渲染
+  registerCoreLayers(); registerWeatherLayer(); registerTrafficLayer(); registerQuestLayer(); registerLootLayer(); registerVisionLayer(); registerWanderLayer(); registerDepthHazeLayer(); registerNavOpsLayer(); registerLocalPropsLayer(); registerTransitLayer(); registerRoutePlanLayer(); initDeclaredLayers(); renderLayerMenu(); initShell(); layoutHeader(); busOn({ key: 'boot.resize', type: 'resize', fn: layoutHeader });   // P3-C：#layList 由 LayerRegistry 数据驱动，先于 shell 绑定 / applyI18n 渲染
   applyI18n(); $('#status').textContent = uiText('loading');
   $('#estRetry').onclick = retryEstate; $('#estPlan').onclick = estatePlan;
   // Tab 到视野外的地标 / 事件点：浏览器会去滚动 OSD 的容器（overflow:hidden），这里撤掉滚动、改为平移地图把它带进视野

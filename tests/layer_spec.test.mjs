@@ -194,3 +194,13 @@ test('local layers: the kernel ids cannot be declared or adjusted by a local lay
   const k = normLayer({ id: 'routes', type: 'line', slot: 'routes', data: { features: [] } }, { trust: 'local' });
   assert.equal(k.layer, null); assert.deepEqual(k.problems, [{ code: 'local-id' }]);   // the kernel's ids are not for local layers
 });
+
+test('S8-4b (K-R80): the label style key `badge` is a boolean; anything else is dropped', () => {
+  const p = [];
+  assert.deepEqual(normStyle({ color: '#e8b33a', size: 'small', tone: 'chip', badge: true }, 'label', {}, p), { color: '#e8b33a', size: 'small', tone: 'chip', badge: true });
+  assert.deepEqual(p, []);
+  const q = [];
+  assert.deepEqual(normStyle({ badge: 'yes' }, 'label', {}, q), {}); assert.deepEqual(codes(q), ['style-value']);
+  const r = normLayer({ id: 'chips', type: 'label', slot: 'labels', style: { by: { n: { badge: true, color: '#59b36b' } } }, data: { features: [{ view: 'v', at: [0.5, 0.5], label: '2', kind: 'n' }] } }, { trust: 'pack' });
+  assert.equal(r.layer.style.by.n.badge, true);
+});

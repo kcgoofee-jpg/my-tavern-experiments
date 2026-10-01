@@ -30,11 +30,12 @@ export function untrack(el) { const tk = el?._tk; if (!tk) return; el._tk = null
 export function untrackAll() { const all = trackers; trackers = []; for (const tk of all) { if (tk.element) tk.element._tk = null; tk.destroy(); } }
 export let cardFrom = null;   // 打开卡片的元素：卡片关闭后焦点回到这里
 // 开局编号：标签上连续的写成区间（开局一至五）；opening_dest = 该开局的目的地（起点在主场景书房），卡片里逐个列出
-function markerEl({ name, sub, cls = '', src, extra = '', alias, name_en, sub_en, openings, opening_dest, cover, group }) {
+function markerEl({ name, sub, cls = '', src, extra = '', alias, name_en, sub_en, openings, opening_dest, cover, group, rank }) {
   const el = document.createElement('div'); el.className = 'mk ' + cls;
   const dn = LANG === 'en' ? name_en || translateName(name) : name, ds = sub && (LANG === 'en' ? sub_en || translateName(sub) : sub);   // 显示名随语言；dataset.name 保持中文（当前地点匹配用）
   // U16 / U17：标签与图钉包一层 .mki，视差位移与漂浮只动这一层（.mk 自身的 transform 是 OSD 定位用的）
   el.innerHTML = `<div class="mki"><div class="lab">${esc(dn)}${ds ? '<small> · ' + esc(ds) + '</small>' : ''}</div><div class="pin"></div></div>`;
+  if (rank >= 1 && rank <= 3) el.dataset.rank = String(rank);   // K-R114: the label size rank of a thematic schematic (the transit style sizes it)
   el.dataset.name = name; if (alias) el.dataset.alias = alias.join('|'); if (group) el.dataset.group = group;   // group：这个世界图地点所代表的组（事态角标等按它找标记）
   // v0.9.6（用户 2026-09-27）：地图上不再显示「开局 N」金色标签与地点卡里的开局列表（地图跟随 MVU 当前地点，选了开局就跳过去）；openings 数据只留给自检与文档
   el._open = () => showCard(el, dn, src, extra, ds, cover);
@@ -62,6 +63,7 @@ export function showCard(el, name, src, extra, sub, cover, compose = !!el) {
   if (typeof plugins.ScrapbookView !== 'undefined') plugins.ScrapbookView.decorate(el, name);   // 见闻录（Part 5-5）：这里钉过的图与手记
   if (typeof plugins.SecurityView !== 'undefined') plugins.SecurityView.decorate(el, name);   // v0.9.6 安保叠加层开着时：结界 / 监控 / 门禁
   if (typeof plugins.GalleryView !== 'undefined') plugins.GalleryView.decorate(el, name);   // K-R106: the chat's tagged scenes at this place
+  if (typeof plugins.RoutePlanView !== 'undefined') plugins.RoutePlanView.decorate(el, name);   // K-R111: the route link (pack with a transit network)
   if (typeof plugins.WorldbookPeekView !== 'undefined') plugins.WorldbookPeekView.decorate(el, name);   // W8 世界书档案胶囊：附加书里这个地点的条目摘要（只读）
   if (typeof plugins.ComposeView !== 'undefined') plugins.ComposeView.attach(compose ? { go: el?.dataset?.name || name, ask: el?.dataset?.name || name } : null);   // v0.9.6 地图 → 聊天：地点卡；事件 / 人物卡由 events.js / chars.js 另挂
   declutter();
@@ -196,7 +198,7 @@ export function pointOverlays() {
   // 上层导出了标记锚点 ax / ay（岸边停靠平台或主楼旁的空地），图钉落在锚点上，不再压住岛心的主楼；聚焦、飞行也用它（B2 第 2 轮本机 P1）
   for (const k of d.markers || []) if (k.ax != null && k.ay != null) { k.nx = k.ax; k.ny = k.ay; }
   for (const k of d.markers || []) { const meta = m.markers?.[k.id]; if (!meta) continue;
-    const el = markerEl({ ...meta, sub: (meta.sub || '').replace(/\{\{user\}\}\s*/g, uiText('you')), extra: () => econHtml(meta) + links(meta) });
+    const el = markerEl({ ...meta, rank: k.rank, sub: (meta.sub || '').replace(/\{\{user\}\}\s*/g, uiText('you')), extra: () => econHtml(meta) + links(meta) });
     el.dataset.mid = k.id;   // the marker's id (a node id for a schema-2 pack): edit mode (pack-edit-view.mjs) finds the node through it
     if (k.id === (m.view?.focus || m.focus)) el.dataset.focus = '1'; if (meta.link) el.dataset.link = '1';   // 标签避让的优先级
     depthFx(el, meta); depthEls.push(el);

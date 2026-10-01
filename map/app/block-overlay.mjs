@@ -44,6 +44,7 @@ export const cssColor = c => (typeof c === 'string' && HEX8.test(c) ? c : rechec
 const color = (c, fallback = '--accent') => cssColor(c) || `var(${fallback})`;
 let propUrl = () => null;   // K-R88: a local layer's `icon: "prop:<id>"` is shown through the object URL of the user's own picture (set by prop-store.mjs); a pack cannot name one
 export const setPropResolver = fn => { propUrl = typeof fn === 'function' ? fn : () => null; };
+export const inkFor = c => { const m = HEX8.test(c) ? parseInt(c.slice(1, 7), 16) : null; return m !== null && (0.2126 * (m >> 16) + 0.7152 * ((m >> 8) & 255) + 0.0722 * (m & 255)) / 255 > 0.5 ? '#14121a' : '#ffffff'; };
 const text = (f, lang) => (f.i18n?.[lang]?.label ?? f.label ?? '');
 
 function pathEl(d, cls) { const e = document.createElementNS(NS, 'path'); e.setAttribute('d', d); if (cls) e.setAttribute('class', cls); return e; }
@@ -93,6 +94,9 @@ export function labelEl(f, s, lang = 'zh') {
   const el = document.createElement('div'), label = text(f, lang);
   el.className = 'lyr lyr-lb ' + (s.tone === 'plain' ? 'plain' : 'chip'); el.dataset.slot = 'labels';
   el.textContent = label; el.style.setProperty('--lo', String(s.opacity));
+  if (s.badge === true) {   // K-R80 (S8-4b): a chip filled with the feature's colour; the ink is picked for contrast (dark on a light colour); a token colour keeps white ink
+    const c = cssColor(s.color); el.classList.add('badge'); el.style.setProperty('--lc', c || 'var(--accent)'); el.style.setProperty('--lc-ink', c && inkFor(c));
+  }
   el.style.setProperty('--lfs', `var(--fs-${['micro', 'small', 'body'].includes(s.size) ? s.size : 'micro'})`);
   if (label) { el.setAttribute('role', 'img'); el.setAttribute('aria-label', label); } else el.setAttribute('aria-hidden', 'true');
   return el;

@@ -61,8 +61,8 @@ Rules that follow:
 
 ## 3. Module map
 
-Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 251 files: `map/core` 77,
-`map/app` 73, `map/tavern` 64, `map/ui` 9, `map/three` 9, `map/*.mjs` 17, plus `map/viewer.html` and
+Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 255 files: `map/core` 77,
+`map/app` 76, `map/tavern` 65, `map/ui` 9, `map/three` 9, `map/*.mjs` 17, plus `map/viewer.html` and
 `map/props/viewer3d.html`. Roles were derived from each file's header comment and code.
 
 ### 3.1 map/core
@@ -139,9 +139,9 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `stash.mjs` | World stash table: where pack-defined items are hidden (map, marker, compartment) and reconciliation against carried items. |
 | `stash3d.mjs` | Pure mapping from stash entries to 3D scene positions, fed by the caller's room table. |
 | `storage.mjs` | Local storage service: `KEYS` registry, pack-namespaced get / set / json / remove that never throw. |
-| `thematic.mjs` | The thematic look of a map (K-R107): function palette, danger outlines, `functionOf`, padded hulls, and the model of a thematic automatic schematic (branches, hubs, label ranks). Pure; wired in S8-4b. |
+| `thematic.mjs` | The thematic look of a map (K-R107): function palette, danger outlines, `functionOf`, padded hulls, and the model of a thematic automatic schematic (branches, hubs, label ranks). Pure. |
 | `traffic.mjs` | Traffic and light-stream math: normalized route points to a frame of light positions, deterministic. |
-| `transit-geometry.mjs` | Octilinear paths, parallel offsets and the synthetic layer declarations of a transit network and of a planned route, plus the route polyline for trips (K-R109). Pure; wired in S8-4b. |
+| `transit-geometry.mjs` | Octilinear paths, parallel offsets and the synthetic layer declarations of a transit network and of a planned route, plus the route polyline for trips (K-R109). Pure. |
 | `transit-spec.mjs` | The transit block (K-R107): kernel modes, limits, `normTransit` per-item healing, label helpers. Pure. Not `transit.mjs` (that one parses a journey written as a place). |
 | `transit.mjs` | A journey written as a place ("from A to B", "A → B"): its ends and the vehicle; the pure patterns the card script uses. |
 | `vision.mjs` | Vision-cone geometry: guard fields of view clipped by wall segments, patrol rings, point-visibility tests. |
@@ -208,6 +208,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `protocol-stamp.mjs` | Protocol version stamp and message exit: `PROTO`, `post`, `protocol`, the sub-page origin `SUB_ORIGIN`. |
 | `quests-view.mjs` | Viewer rendering of dynamic clue nodes as breathing circles. |
 | `quick-zoom.mjs` | Single-finger zoom (double-tap, hold, drag) on touch screens. |
+| `route-plan-view.mjs` | Route planning in the viewer (K-R111, K-R113): the route link on a place card, the plan card, the kernel layer `route-plan` (the user's plan solid, suggestions dashed), re-planning and arrival on `eden-map:here`, the host's echo `eden-map:route`; sends `eden-map:route-plan`. |
 | `scale-handoff.mjs` | Scale hand-off between the world map and the city layers, plus the surrounding transition ring. |
 | `screen-reader-announce.mjs` | Screen-reader announcements (aria-live): several same-moment lines merge into one sentence. |
 | `settings.mjs` | Settings overlay: pages, section registration, search, about / update check, self-check. |
@@ -224,6 +225,8 @@ mutable state is written only by its declaring module through `set*()`.
 | `theme.mjs` | Per-view theme from the pack (`ui.theme.views`, K-R70): one `<style id="packTheme">`, `body[data-glow]` for the view that defines a glow. |
 | `topbar.mjs` | Top bar layout, background warm-up, version code. |
 | `traffic-view.mjs` | Viewer rendering of light streams on the `fx` slot canvas. |
+| `transit-env.mjs` | The viewer's router environment (K-R109, K-R112): the transit graph of the open pack, where each station and place is drawn (tree answer, marker anchor from the points files through the JSON cache), `endOf`, `planBetween`, and the polyline of a trip along the network. |
+| `transit-view.mjs` | The kernel layer `transit` (K-R110): districts, lines, links, stations, badges and the label hierarchy drawn through the S8-2 blocks, legend rows, off by default; also the style of the marker label ranks (K-R114). |
 | `viewer-debug.mjs` | Debug face: one read-only `window.ViewerDebug` namespace (`mapRegistry`, `currentMapId`, `osdViewer`, `go`, …) that browser probes read instead of ad-hoc `window` globals. |
 | `viewport-mode.mjs` | Viewport and device flags: `narrow` (narrow panel), `coarse` (touch or low-memory device). |
 | `visibility.mjs` | Viewport visibility render throttling: pause switch with reference-counted reasons. |
@@ -283,6 +286,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `preset.mjs` | Reads semi-structured status fields written by community presets as location / time / presence fallbacks. |
 | `profile-load.mjs` | Fetches a pack's manifest and overlay and builds its profile (`loadPackProfile`); the caller passes the fetcher. |
 | `root-store.mjs` | The map's chat-variable root (`eden_map`): custom names and uses load / save / migrate, local storage budget, worldbook sync, tag-rename replay. `createRootStore(host)`. |
+| `route-flow.mjs` | The planned route on the host and the class macros (K-R111, K-R113): `eden-map:route-plan` re-checked with `checkPlan`, held for the session, echoed as `eden-map:route`; arrival, chat change and 20-message ageing clear it; `{{eden_route}}` carries it. `createRouteFlow(host)`. |
 | `sanitize.mjs` | Community-preset text sanitizer: strips reasoning / status blocks by tag table (pure). |
 | `selfcheck.mjs` | Startup self-check verdicts from facts the host collected (pure). |
 | `settlement-guard.mjs` | Variable settlement timing guard: ledger reconciliation writes are queued until after the main update window. |
@@ -469,7 +473,7 @@ applicable layers. S8-3 adds the host-fed sources: the host reads the card varia
 the navigator's clues and marks go in `eden-map:ops` to the kernel layer `nav-ops`; `EdenMap.addLayer` and friends add local
 layers (data only, ids `local-…`); the `sound` block plays a pack-declared ambience (`app/sound-block.mjs`, off until the user
 switches it on and clicks); the local prop pack keeps the user's own files in IndexedDB (`spatialProps`) and draws them on the
-kernel layer `local-props`. The engine names no layer of any pack.
+kernel layer `local-props`. S8-4 adds the transit network: a pack's `transit` block (K-R107; `RT.transit` in the viewer, `geo.transit` on the host) is drawn by the kernel layer `transit` (off by default), planned over by `core/router.mjs`, offered as a route link on place cards (`eden-map:route-plan` to the host, `eden-map:route` back) and as the path of trips between stations, and the host's `{{eden_route}}` carries the held plan. The engine names no layer of any pack.
 
 **The pack gate (S9-2)**: the entry imports `tavern/pack-gate.mjs` first; its top-level `await` resolves the pack of the current card (user choice or baked pack → pack embedded in the card → best match in `packs/index.json` → automatic) and sets `window.__tcPack` before the entry reads it; the legacy-default pack leaves it unset, so the first pack's start, texts and writes are unchanged. On a card switch the gate resolves again and, when the pack id or source changed, stops the instance (`__edenMapCleanup`), clears the profile and chat-variable root that modules keep, and imports the entry again under `?k=<card key>&r=<n>`. `eden-map:pack-pick` (Settings → Advanced) reaches it through `onTh`; the go-live switch of a foreign pack's model text is `eden-map:th` `prefs.packLlm`. Module-level state that survives a restart is listed in `docs/zero-config.md` §14.
 

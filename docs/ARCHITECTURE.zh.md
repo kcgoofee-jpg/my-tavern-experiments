@@ -44,7 +44,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 
 ## 3. 模块地图
 
-每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 251 个：`map/core` 77、`map/app` 73、`map/tavern` 64、`map/ui` 9、`map/three` 9、`map/*.mjs` 17，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
+每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 255 个：`map/core` 77、`map/app` 76、`map/tavern` 65、`map/ui` 9、`map/three` 9、`map/*.mjs` 17，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
 
 ### 3.1 map/core
 
@@ -120,9 +120,9 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `stash.mjs` | 世界藏物表：包定义的物品藏在哪（图、标记、暗格），以及与已携带物品的对账。 |
 | `stash3d.mjs` | 藏物条目到三维场景坐标的纯映射，落点表由调用方喂入。 |
 | `storage.mjs` | 本机存储服务：`KEYS` 登记表、带包命名空间且从不抛错的 get / set / json / remove。 |
-| `thematic.mjs` | 地图的主题外观（K-R107）：功能色板、危险等级轮廓、`functionOf`、外扩凸包，以及自动示意图的主题模型（分支、枢纽、标签等级）。纯函数；S8-4b 接线。 |
+| `thematic.mjs` | 地图的主题外观（K-R107）：功能色板、危险等级轮廓、`functionOf`、外扩凸包，以及自动示意图的主题模型（分支、枢纽、标签等级）。纯函数。 |
 | `traffic.mjs` | 车流 / 流光数学：归一化路线点变成一帧的光点位置，确定性。 |
-| `transit-geometry.mjs` | 交通网与计划路线的八方向路径、平行偏移与合成图层声明，以及供行程使用的路线折线（K-R109）。纯函数；S8-4b 接线。 |
+| `transit-geometry.mjs` | 交通网与计划路线的八方向路径、平行偏移与合成图层声明，以及供行程使用的路线折线（K-R109）。纯函数。 |
 | `transit-spec.mjs` | transit 块（K-R107）：内核方式、上限、`normTransit` 逐条修复、标签辅助函数。纯函数。不是 `transit.mjs`（那个解析写成地点的行程）。 |
 | `transit.mjs` | 写成地点的行程（「从 A 到 B」「A → B」）：两端与交通工具；卡内脚本用的纯句式。 |
 | `vision.mjs` | 视线锥几何：守卫视野被墙段截断、巡逻环、点是否被看见的判定。 |
@@ -188,6 +188,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `protocol-stamp.mjs` | 协议版本戳与消息出口：`PROTO`、`post`、`protocol`、子页 origin `SUB_ORIGIN`。 |
 | `quests-view.mjs` | 动态线索节点在查看器里的渲染：会呼吸的圈。 |
 | `quick-zoom.mjs` | 触屏单指缩放（双击后按住拖动）。 |
+| `route-plan-view.mjs` | 查看器里的路线规划（K-R111、K-R113）：地点卡上的路线链接、计划卡、内核图层 `route-plan`（用户的计划实线、建议路线虚线）、`eden-map:here` 时的重新规划与到达、宿主的回发 `eden-map:route`；发出 `eden-map:route-plan`。 |
 | `scale-handoff.mjs` | 世界图与城市层之间的尺度交接，以及周边过渡环。 |
 | `screen-reader-announce.mjs` | 读屏播报（aria-live）：同一时刻的几条合并成一句。 |
 | `settings.mjs` | 设置弹层：分页、分区注册、搜索、关于 / 检查更新、自检。 |
@@ -204,6 +205,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `theme.mjs` | 包的分视图主题（`ui.theme.views`，K-R70）：一个 `<style id="packTheme">`，带光晕的视图由 `body[data-glow]` 标出。 |
 | `topbar.mjs` | 顶栏布局、后台预热、版本编码。 |
 | `traffic-view.mjs` | 流光在 `fx` 槽位画布上的查看器渲染。 |
+| `transit-env.mjs` | 查看器的路线器环境（K-R109、K-R112）：当前包的交通图，每个站点与地点画在哪里（树的答案、经 JSON 缓存从点位文件取标记锚点），`endOf`、`planBetween`，以及沿交通网的行程折线。 |
+| `transit-view.mjs` | 内核图层 `transit`（K-R110）：经 S8-2 积木画出城区、线路、连接、站点、徽标与标签层级，图例行，默认关；同时带标记标签等级的样式（K-R114）。 |
 | `viewer-debug.mjs` | 调试面：一个只读的 `window.ViewerDebug` 命名空间（`mapRegistry`、`currentMapId`、`osdViewer`、`go` 等），浏览器探针读它，不再读散挂的 `window` 全局。 |
 | `viewport-mode.mjs` | 视口与设备标志：`narrow`（窄面板）、`coarse`（触屏或低内存设备）。 |
 | `visibility.mjs` | 视口可见性渲染节流：按原因引用计数的暂停开关。 |
@@ -263,6 +266,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `preset.mjs` | 把社区预设写的半结构化状态字段读成地点 / 时间 / 在场的兜底。 |
 | `profile-load.mjs` | 取包的清单与叠加层并建出它的档案（`loadPackProfile`）；取数函数由调用方给。 |
 | `root-store.mjs` | 地图在聊天变量里的根（`eden_map`）：自定义名称与用途的读写与迁移、本机存储预算、世界书同步、标签改名重放。`createRootStore(host)`。 |
+| `route-flow.mjs` | 宿主侧的计划路线与类宏（K-R111、K-R113）：`eden-map:route-plan` 经 `checkPlan` 复核、会话期持有、以 `eden-map:route` 回发；到达、换聊天与 20 条消息老化会清除它；`{{eden_route}}` 带上它。`createRouteFlow(host)`。 |
 | `sanitize.mjs` | 社区预设文本净化：按标签表剥思考块 / 状态块（纯函数）。 |
 | `selfcheck.mjs` | 由宿主收集的事实得出启动自检结论（纯函数）。 |
 | `settlement-guard.mjs` | 变量结算时序守卫：账本对账的写入排队到主更新窗口结束之后。 |
@@ -410,7 +414,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 S8-3 加上宿主送值的来源：宿主读包的图层点名的卡变量（`profile.layerPaths`，最多 8 个，只读），经 `eden-map:layer-data` 发给查看器
 （`mvu:<path>` 来源与 `applies.mvu`）；领航员的线索与标注经 `eden-map:ops` 进内核图层 `nav-ops`；`EdenMap.addLayer` 等加本机图层（只收数据，id 以 `local-` 开头）；
 `sound` 积木播放包声明的环境音（`app/sound-block.mjs`，用户打开开关并点一下之前绝不出声）；本机道具包把用户自己的文件存在 IndexedDB（`spatialProps`），画在内核图层
-`local-props` 上。引擎里不出现任何包的图层名。
+`local-props` 上。S8-4 加上交通网：包的 `transit` 块（K-R107；查看器里是 `RT.transit`，宿主里是 `geo.transit`）由内核图层 `transit`（默认关）画出，由 `core/router.mjs` 在上面规划，在地点卡上给出路线链接（`eden-map:route-plan` 发给宿主，`eden-map:route` 回来）并作为站点之间行程的路径，宿主的 `{{eden_route}}` 带上持有的计划。引擎里不出现任何包的图层名。
 
 **包门卫（S9-2）**：入口最先 import `tavern/pack-gate.mjs`；它的顶层 `await` 为当前卡解析出包（用户选择或烘入的包 → 卡内嵌的包 → `packs/index.json` 里的最佳匹配 → 自动包），在入口读取之前设好 `window.__tcPack`；旧默认包不设它，所以第一个包的启动、文字与写入都不变。换卡时门卫重新解析，包 id 或来源变了就停掉实例（`__edenMapCleanup`）、清掉模块里留着的变量声明与聊天变量根键，再用 `?k=<卡键>&r=<n>` 重新 import 入口。`eden-map:pack-pick`（设置 → 高级）经 `onTh` 到达；外来包模型文字的生效开关是 `eden-map:th` 的 `prefs.packLlm`。
 

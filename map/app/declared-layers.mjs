@@ -149,3 +149,5 @@ export function layerLegendRows() {
   return legendRowsOf(recs, LANG);
 }
 export const onLegendChange = fn => { listeners.add(fn); return () => listeners.delete(fn); };
+/** legendChanged(): a kernel layer that fills its legend rows itself (transit) tells the legend pane to rebuild. */
+export const legendChanged = () => { for (const fn of listeners) { try { fn(); } catch (e) {} } };
