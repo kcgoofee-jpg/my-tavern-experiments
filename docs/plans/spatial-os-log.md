@@ -887,4 +887,15 @@ deviations: (0) S9-design landed first and reserved K-R90–K-R103 (leaving K-R7
 blocker: none
 open: none (L-01…L-15 decided by default; the user may override any of them in docs/todo.md §3)
 cleanup: done (no servers or background jobs; worktree s8-design left for the orchestrator)
+=== RESULT R-LOOP hero hero-1 ===
+status: LANE-DONE (only estate:b1b2 left, waiting for the user's Eden r6)
+items finished this session: layout:tc_upper — final + ship (as layout-1; layout C1 landed) | isle:isle25 — integrate + ship | base:tc_upper — audit / render 8000/128 (clouds + city twin) / tiles / verify / ship | var:tc_upper:16k — render 16000/512 / tiles / register / ship (replaces the base, accept 24/24) | var:tc_upper:dawn, dusk, night — render 8000/128 / tiles / register / ship | var:tc_upper:day — render and tiles skipped (the base is the day render), register + ship
+items below gate: none
+waiting: estate:b1b2 — waits for the user's Eden r6 (claim released)
+pushed: yes (heads #205 #206 #208 #209; the last head bump follows this block)
+tests: check_maps PASS | estate3d_manifest PASS (10/10) | node 1002/1003 (1 skipped, unchanged) | smoke PASS | accept=PASS(24)
+blocker: none
+next: estate:b1b2 (wait)
+notes: (1) Commits: 3e4bafe5 landing tool + layout C1, d3d60e8a data landing, beeb29dc isle25, fa135651 base:tc_upper, d918ca5b 16k + tint option (+ the period commit). (2) GLM's *.pre-v16C.png backups held the pre-hero island art: always check a backup against the shipped DZI tiles before using it (the stale pair is in ~/eden-render/_stale_glm_pre-v16C/). (3) Layout files can silently drop fields: the landing overwrote isle5's `cutout` flag; diff tc_islands.json against HEAD apart from x / y after a layout swap. (4) Layout C was planned on sprite extents of the old plain islands; C1 nudges isle5 and isle9 so the integrated art fits the frame. (5) Final base recipe: render with `TC_EDEN_CUT=1 --no-data 1` (body only; without --no-data the script rewrites map/data points), then `python3 tools/upper_base_paste.py <render> <out> [--dzi ...]` (cutout widths: silver_crown 360 x 0.643 and isle4 520 x 0.6733 depth-scaled, fitted against the old base; the rest unscaled). Eight-K 128 spp takes 1.5 min, 16k / 512 spp 5 min, the city twin 13 min. A single island rebuild only needs its cutout re-rendered and the paste re-run; the body renders live in the git-ignored logs/campaign/full. (6) Period variants: islands are lit as day, so the paste tints each cutout by the body-render ratio tod / day (--tod-ref); shadows are not re-cast. periods.day points at the base pyramid. The viewer's periodOf only reads day / night (dawn / dusk need an engine change, see the earlier tc_mid note); the city twin has no periods. (7) Killing a queued job leaves a .retry file in the queue's pending dir: remove it or the job runs again. (8) numpy and PIL only in /usr/bin/python3. (9) build_worldbook_addon.py --ship also wrote its copy under ~/Downloads/酒馆/世界书/.
+cleanup: done (no Blender or server of mine left running; scratch outputs in logs/campaign/full are git-ignored)
 === END ===

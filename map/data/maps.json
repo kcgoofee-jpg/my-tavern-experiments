@@ -615,7 +615,13 @@
             4500
           ]
         }
-      ]
+      ],
+      "periods": {
+        "dawn": "art/tc_upper_dawn.dzi",
+        "day": "art/tc_upper.dzi",
+        "dusk": "art/tc_upper_dusk.dzi",
+        "night": "art/tc_upper_night.dzi"
+      }
     },
     "tc_mid": {
       "tint": "period",

@@ -529,3 +529,24 @@ ts,id,stage,event,agent,gate,note
 2026-10-01T08:16:00Z,var:tc_upper:16k,tiles,done,hero-1,,"16000x10000 / 512 spp body render (5.1 min) + island paste; pyramid 15 levels 866 tiles, 10 MB (was 3.2 MB)"
 2026-10-01T08:16:05Z,var:tc_upper:16k,register,done,hero-1,pass,"no maps.json change: the 16k pyramid replaces the base at the same path; accept 24/24 pass (first screen 2046 KB, phones 2.0 MB / <1 s); city twin stays 8k; 8k backup in logs/campaign/full/dzi8_backup"
 2026-10-01T08:16:05Z,var:tc_upper:16k,ship,done,hero-1,pass,replaced the tc_upper base
+2026-10-01T08:23:29Z,var:tc_upper:dawn,render,done,hero-1,,"8000/128 body render with --tod dawn, TC_EDEN_CUT=1"
+2026-10-01T08:23:29Z,var:tc_upper:dawn,tiles,done,hero-1,,islands pasted with per-island tod gain (tools/upper_base_paste.py --tod-ref); 226 tiles
+2026-10-01T08:23:29Z,var:tc_upper:dawn,register,done,hero-1,pass,periods.dawn in maps.json tc_upper
+2026-10-01T08:23:29Z,var:tc_upper:dawn,ship,done,hero-1,pass,shipped
+2026-10-01T08:23:29Z,var:tc_upper:dusk,render,done,hero-1,,"8000/128 body render with --tod dusk, TC_EDEN_CUT=1"
+2026-10-01T08:23:29Z,var:tc_upper:dusk,tiles,done,hero-1,,islands pasted with per-island tod gain (tools/upper_base_paste.py --tod-ref); 226 tiles
+2026-10-01T08:23:29Z,var:tc_upper:dusk,register,done,hero-1,pass,periods.dusk in maps.json tc_upper
+2026-10-01T08:23:30Z,var:tc_upper:dusk,ship,done,hero-1,pass,shipped
+2026-10-01T08:23:30Z,var:tc_upper:night,render,done,hero-1,,"8000/128 body render with --tod night, TC_EDEN_CUT=1"
+2026-10-01T08:23:30Z,var:tc_upper:night,tiles,done,hero-1,,islands pasted with per-island tod gain (tools/upper_base_paste.py --tod-ref); 226 tiles
+2026-10-01T08:23:30Z,var:tc_upper:night,register,done,hero-1,pass,periods.night in maps.json tc_upper
+2026-10-01T08:23:30Z,var:tc_upper:night,ship,done,hero-1,pass,shipped
+2026-10-01T08:23:30Z,var:tc_upper:day,render,claim,hero-1,,
+2026-10-01T08:23:34Z,var:tc_upper:day,render,done,hero-1,,"skipped: --tod day is the generator default, so the base (16k / 512 spp, higher than spec) already is the day render"
+2026-10-01T08:23:34Z,var:tc_upper:day,tiles,done,hero-1,,"skipped: periods.day points at art/tc_upper.dzi (the base pyramid, no duplicate tiles)"
+2026-10-01T08:23:34Z,var:tc_upper:day,register,done,hero-1,pass,periods.day = art/tc_upper.dzi
+2026-10-01T08:23:34Z,var:tc_upper:day,ship,done,hero-1,pass,shipped with the other periods
+2026-10-01T08:23:34Z,estate:b1b2,final,claim,hero-1,,
+2026-10-01T08:23:38Z,estate:b1b2,final,wait,hero-1,,waits for the user's Eden r6
+2026-10-01T08:23:38Z,estate:b1b2,final,claim,hero-1,,
+2026-10-01T08:23:44Z,estate:b1b2,final,release,hero-1,,

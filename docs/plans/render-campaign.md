@@ -2,12 +2,12 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-01T08:16:05Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-01T08:23:44Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
 | standard | 51 | 0 | 0 | 0 | 0 | 0 | 51 |
-| hero | 17 | 0 | 5 | 0 | 0 | 0 | 22 |
+| hero | 21 | 0 | 1 | 0 | 0 | 0 | 22 |
 
 Below-gate (user spot-check): none
 
@@ -84,10 +84,10 @@ Below-gate (user spot-check): none
 | 11 | `isle:isle30` | island | done | - |  |  | Rebuild island isle30 (zaibatsu_estate) |
 | 12 | `base:tc_upper` | basemap | done | - |  |  | Upper base map final |
 | 13 | `var:tc_upper:16k` | variant | done | - |  |  | Upper map 16k final |
-| 14 | `var:tc_upper:dawn` | variant | open | render |  |  | Upper map dawn period |
-| 15 | `var:tc_upper:day` | variant | open | render |  |  | Upper map day period |
-| 16 | `var:tc_upper:dusk` | variant | open | render |  |  | Upper map dusk period |
-| 17 | `var:tc_upper:night` | variant | open | render |  |  | Upper map night period |
+| 14 | `var:tc_upper:dawn` | variant | done | - |  |  | Upper map dawn period |
+| 15 | `var:tc_upper:day` | variant | done | - |  |  | Upper map day period |
+| 16 | `var:tc_upper:dusk` | variant | done | - |  |  | Upper map dusk period |
+| 17 | `var:tc_upper:night` | variant | done | - |  |  | Upper map night period |
 | 18 | `estate:b1b2` | estate | open | final |  |  | Estate basement B1 / B2 interior refinement |
 | 19 | `lm:round_table_hall` | landmark | done | - |  |  | New model: round table hall |
 | 20 | `lm:sun_arena` | landmark | done | - |  |  | New model: sun arena |
