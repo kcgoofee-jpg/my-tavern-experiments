@@ -25,7 +25,8 @@ import { profileFromV2 } from './pack-runtime-v2.mjs';
 export function hostAccess() {
   const par = () => { try { return window.parent; } catch (e) { return null; } };
   return { th: () => thFn('getCharData'), ctx: () => SillyTavern.getContext(), parentTh: () => par()?.TavernHelper?.getCharData, parentCtx: () => par()?.SillyTavern?.getContext?.(),
-    bookNames: () => thFn('getCharWorldbookNames')?.('current'), getBook: n => thFn('getWorldbook')?.(n) };
+    bookNames: () => thFn('getCharWorldbookNames')?.('current'), getBook: n => thFn('getWorldbook')?.(n),
+    stat: () => { try { return typeof Mvu !== 'undefined' ? Mvu.getMvuData?.({ type: 'message', message_id: 'latest' })?.stat_data ?? null : null; } catch (e) { return null; } } };   // read only (S9-3: the shape the automatic pack's variables are found in)
 }
 
 export class MVUBridge {

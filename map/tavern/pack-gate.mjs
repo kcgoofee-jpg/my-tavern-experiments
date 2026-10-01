@@ -1,13 +1,13 @@
 // The pack gate (docs/kernel-schema.md K-R90..K-R92, K-R99, K-R103; docs/zero-config.md §2): one script serves every card. The entry imports this module first (eden-map.js, line 11); its top-level
 // `await` resolves the pack of the current card and sets `window.__tcPack` before the entry's synchronous start reads it (exactly what a script with a baked pack gives today).
 // Order (K-R90): 0 the user's choice for this card, or a pack baked into the script; 1 a pack embedded in the card (K-R91); 2 the best index match (K-R92); 3 the automatic pack
-// (S9-3 fills it; until then a root-only schema-2 pack). The legacy-default pack (core/pack.mjs DEFAULT_ID) leaves `window.__tcPack` undefined: the host starts exactly as before S9.
+// (S9-3: derived from the card by auto-pack.mjs, loaded only here). The legacy-default pack (core/pack.mjs DEFAULT_ID) leaves `window.__tcPack` undefined: the host starts exactly as before S9.
 // A refused source falls through and leaves a problem in `window.__packProblems`; nothing blocks. Reads only the card (through mvu-bridge `hostAccess`), its own worldbooks, the top-level
 // keys of the chat variables, the shipped index and the user's choice; writes only this browser's `edenMapPackPick` / `edenMapPackLlm` and the pack store.
 import { redirected } from './follow-gate.mjs';
 import { cdnFetch, thFn } from './host-tavernhelper.mjs';
 import { hostAccess } from './mvu-bridge.mjs';
-import { readCardBasics, readCardBooks, cardKey, embeddedText } from './card-source.mjs';
+import { readCardBasics, readCardBooks, readCardSource, cardKey, embeddedText } from './card-source.mjs';
 import { parsePack, importPack, gateLlm, MAX_URL_BYTES } from './pack-runtime-v2.mjs';
 import { bestMatch, rowsOf } from '../core/pack-index.mjs';
 import { DEFAULT_ID, ID_RE, chatVarOf } from '../core/pack.mjs';
@@ -45,9 +45,15 @@ export function createGate(env) {
     const ev = man.data && man.data.events;   // built the way tools/build_preview_script.py pack_stamp builds it
     return { id, source, trust: 'shipped', problems: [], tc: { id, chatVar: chatVarOf(id, man), manifest: man, events: ev && ev !== 'builtin' ? await getJson(dir + ev) : null, schema: 1, source, trust: 'shipped' } };
   }
-  const auto = card => {   // tier 3 until S9-3: the empty automatic pack, root only
-    const name = card.name || '', id = 'c_' + fnv36(name + '\n' + card.avatar), v = validate2({ id, schema: 2, title: name ? cut(name, 80) : env.lang() === 'en' ? 'Map' : '地图' });
-    return foreign(v.pack, 'auto', v.problems);
+  const auto = async (card, known) => {   // tier 3 (K-R95): the automatic pack, derived from the card; loaded here and nowhere else, so the first pack never reaches auto-pack.mjs
+    try {
+      const A = await (env.loadAuto ? env.loadAuto() : import('./auto-pack.mjs')), src = await readCardSource(env.access, known);
+      const cache = await (env.chatAuto ? env.chatAuto('c_' + fnv36((card.name || '') + '\n' + card.avatar)) : null), r = A.resolveAuto(src, { uiLang: env.lang(), cache }), f = foreign(r.pack, 'auto', r.problems);
+      return { ...f, tc: { ...f.tc, fp: r.fp, rev: 1 } };   // rev 1 = the pack as injected; each growth sends the next one (eden-map:pack)
+    } catch (e) {   // a card that cannot be read still gets the root-only pack
+      const name = card.name || '', id = 'c_' + fnv36(name + '\n' + card.avatar), v = validate2({ id, schema: 2, title: name ? cut(name, 80) : env.lang() === 'en' ? 'Map' : '地图' });
+      return foreign(v.pack, 'auto', v.problems);
+    }
   };
 
   async function fromChoice(ch, key, idx, ids, note) {
@@ -75,7 +81,7 @@ export function createGate(env) {
     if (!idx) { note('index-unavailable', 'index'); return done({ id: DEFAULT_ID, source: 'default', trust: 'shipped', legacy: true }); }   // cannot tell which pack the card has: the legacy default, as before S9 (never an empty automatic pack because of a network hiccup)
     const m = bestMatch(idx, { card: card || {}, titles: src.titles, chatKeys: await env.chatKeys(), chatVarOf: id => chatVarOf(id) });
     if (m) { try { const r = await shipped(m.id, 'index', idx); if (r) return done(r); } catch (e) { note('index-pack-failed', 'index', m.id); } }
-    return done(card ? auto(card) : { id: DEFAULT_ID, source: 'default', trust: 'shipped', legacy: true });   // no card read: the legacy default, as before S9
+    return done(card ? await auto(card, { card }) : { id: DEFAULT_ID, source: 'default', trust: 'shipped', legacy: true });   // no card read: the legacy default, as before S9
   }
 
   function apply(r) {
@@ -131,6 +137,7 @@ const realEnv = () => {
   const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   return { win: window, base: new URL('../', import.meta.url).href, entry: import.meta.url, fetch: cdnFetch, access: hostAccess(), store: packStore, get,
     set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
+    chatAuto: async id => { try { const v = await thFn('getVariables')?.({ type: 'chat' }), o = v && v[chatVarOf(id)]; return isObj(o) ? o.auto : null; } catch (e) { return null; } },   // the droppable cache of the automatic pack (K-R95)
     chatKeys: async () => { try { const v = await thFn('getVariables')?.({ type: 'chat' }); return isObj(v) ? Object.keys(v).filter(k => isObj(v[k])) : []; } catch (e) { return []; } },
     reset: async () => { const [P, R] = await Promise.all([import('./pack-profile.mjs'), import('./mvu-readers.mjs')]); P.setProfile(null); R.setVarRoot('eden_map'); },   // the two modules that keep the running pack's declarations (the others are set again by the new instance's start)
     reimport: u => import(u), lang: () => (get('edenMapLang') === 'en' ? 'en' : 'zh'), budget: 300 };

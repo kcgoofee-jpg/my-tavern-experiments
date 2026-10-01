@@ -93,3 +93,11 @@ test('S9-2 K-R99：eden-map:pack-pick 登记在 SCHEMA（kind 必填，其余可
   assert.equal(SCHEMA['eden-map:pack-pick'][0], 'viewer→host');
   assert.match(rd('map/tavern/eden-map.js'), /eden-map:pack-pick'\) onTh\(e\.data\)/);
 });
+
+test('S9-3 K-R95：eden-map:pack 登记在 SCHEMA（宿主→查看器；manifest 与 rev 必填）；查看器入口按它重投影；宿主只在自动包时加载 auto-pack', () => {
+  assert.ok(check({ type: 'eden-map:pack', manifest: { id: 'c_x' }, rev: 2, source: 'auto', trust: 'foreign' }).ok);
+  assert.equal(check({ type: 'eden-map:pack', rev: 2 }).why, 'field:manifest'); assert.equal(check({ type: 'eden-map:pack', manifest: {} }).why, 'field:rev'); assert.equal(check({ type: 'eden-map:pack', manifest: {}, rev: '2' }).why, 'field:rev');
+  assert.equal(SCHEMA['eden-map:pack'][0], 'host→viewer');
+  assert.match(rd('map/app/host-messages.mjs'), /eden-map:pack'\) onPack\(e\.data\)/);
+  assert.match(rd('map/tavern/eden-map.js'), /PACK_IN\?\.source === 'auto'\) import\(new URL\('auto-pack\.mjs'/);
+});

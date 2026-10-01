@@ -4,6 +4,7 @@
 import { fnv36 } from '../core/lexicon.mjs';
 
 export const EMBED_TITLE = 'spatial_os:pack';   // K-R91: the title of the card's own worldbook entry that holds an embedded pack
+const INITVAR = /[[［][^\]］]*initvar[^\]］]*[\]］]/i;   // the variable-initialisation entry (K-R94): its content is the only entry content read besides the embedded pack's
 const OURS = e => !!(e && e.extra && typeof e.extra === 'object' && (e.extra.eden_id || e.extra.spatial_id));   // entries of our add-on book (ownership marker)
 
 /** One card object (the host's character record, with or without a `data` wrapper) -> { name, creator, version, avatar, tags, notes, src, spatialOs } or null when it names nothing. */
@@ -12,8 +13,10 @@ export function pick(c, src) {
   const name = String(d.name || c?.name || '').trim();
   if (!name && !d.creator && !d.character_version) return null;
   const ext = d.extensions && typeof d.extensions === 'object' ? d.extensions.spatial_os : undefined;
-  return { name, creator: String(d.creator || '').trim(), version: String(d.character_version || '').trim(), avatar: String(c?.avatar || ''),
+  const out = { name, creator: String(d.creator || '').trim(), version: String(d.character_version || '').trim(), avatar: String(c?.avatar || ''),
     tags: Array.isArray(d.tags) ? d.tags.map(String).slice(0, 12) : [], notes: String(d.creator_notes || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200), src, spatialOs: ext };
+  Object.defineProperty(out, 'first', { value: String(d.first_mes ?? c?.first_mes ?? '').slice(0, 2000), enumerable: false });   // the greeting, for the automatic pack (readCardSource); not enumerable, so the credits page's copy never carries it
+  return out;
 }
 
 /** The three-level fallback of the credits page: TavernHelper getCharData('current') -> the tavern context -> the parent window's same interfaces.
@@ -28,7 +31,7 @@ export async function readCardBasics(a = {}) {
 }
 
 /** The current character's own worldbooks (primary, then additional; never a global or chat book) -> [{ name, entries: [{ title, keys, enabled, content? }] }].
- *  `content` is kept only for the entry titled `spatial_os:pack`; entries of our add-on book are left out. A book or an interface that fails reads as nothing. */
+ *  `content` is kept only for the entry titled `spatial_os:pack` (and, as `initvar`, for the variable-initialisation entry); entries of our add-on book are left out. A book or an interface that fails reads as nothing. */
 export async function readCardBooks(a = {}) {
   let names = [];
   try { const n = await a.bookNames?.(); names = [...new Set([n?.primary, ...(Array.isArray(n?.additional) ? n.additional : [])].filter(x => typeof x === 'string' && x))]; } catch (e) { return []; }
@@ -40,7 +43,8 @@ export async function readCardBooks(a = {}) {
     for (const e of list) {
       if (!e || typeof e !== 'object' || OURS(e)) continue;
       const title = String(e.name ?? e.comment ?? '').trim(), keys = e.strategy?.keys ?? e.key ?? e.keys;
-      entries.push({ title, keys: Array.isArray(keys) ? keys.filter(k => typeof k === 'string') : [], enabled: e.enabled !== false, ...(title === EMBED_TITLE && typeof e.content === 'string' ? { content: e.content } : {}) });
+      entries.push({ title, keys: Array.isArray(keys) ? keys.filter(k => typeof k === 'string') : [], enabled: e.enabled !== false, ...(title === EMBED_TITLE && typeof e.content === 'string' ? { content: e.content } : {}),
+        ...(INITVAR.test(title) && typeof e.content === 'string' ? { initvar: e.content.slice(0, 60000) } : {}) });
     }
     out.push({ name, entries });
   }
@@ -57,4 +61,14 @@ export function embeddedText(basics, books) {
   else if (typeof f === 'string' && f.trim()) return { text: f, from: 'card' };
   for (const b of books || []) for (const e of b.entries) if (e.title === EMBED_TITLE && typeof e.content === 'string') return { text: e.content, from: 'worldbook' };
   return null;
+}
+
+/** K-R93 / K-R94: the plain `CardSource` the automatic pack is derived from: { name, creator, tags, avatar, greeting, books: [{ name, entries: [{ title, keys, enabled, initvar? }] }], stat, initvar }.
+ *  Entry contents are not passed on (only the initvar text); `stat` is the live MVU variable tree, read only (`access.stat`), or null. `known` = an already read { card } (the gate's). */
+export async function readCardSource(a = {}, known = null) {
+  const card = known && known.card !== undefined ? known.card : (await readCardBasics(a)).card, raw = card ? await readCardBooks(a) : [];
+  let stat = null; try { const s = a.stat?.(); stat = s && typeof s === 'object' ? s : null; } catch (e) {}
+  const init = raw.flatMap(b => b.entries).find(e => typeof e.initvar === 'string');
+  return { name: card?.name || '', creator: card?.creator || '', tags: card?.tags || [], avatar: card?.avatar || '', greeting: card?.first || '',
+    books: raw.map(b => ({ name: b.name, entries: b.entries.map(({ content, ...e }) => e) })), stat, initvar: init ? init.initvar : '' };
 }

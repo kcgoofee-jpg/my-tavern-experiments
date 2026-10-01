@@ -335,7 +335,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
   }
 
   // 依赖袋（S5-1）：拆出去的 flow 模块经它取宿主的变量 / 函数；活的变量是取存器，函数是晚绑定转发（模块先于定义被创建时也不会撞暂时性死区）
-  const host = { entryUrl: import.meta.url,
+  const host = { entryUrl: import.meta.url, autoCache: null,
     get alive() { return alive; }, get BASE() { return BASE; }, get storageBudget() { return RS.storageBudget; }, get mvuBridge() { return CF.mvuBridge; }, buildNow: (...a) => buildNow(...a),
     get cardId() { return HA.cardId; }, set cardId(v) { HA.cardId = v; }, cardKey: (...a) => CF.cardKey(...a), changedInv: (...a) => LF.changedInv(...a),
     channel: (...a) => channel(...a), get chars() { return chars; }, chatId: (...a) => CF.chatId(...a), get checkAt() { return CK.checkAt; },
@@ -473,7 +473,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
     if (!EVM || life.dead) return;
     const t0 = performance.now();
     const { summarize, layerOf } = EVM;
-    const msgs = readMsgs(), st = mvuStat(), hereNow = getHere();
+    const msgs = readMsgs(), st = mvuStat(), hereNow = getHere(); try { AP?.round(msgs, hereNow); } catch (e) { console.warn('[eden-map] automatic pack round', e); }
     let stSig = ''; try { stSig = JSON.stringify(st); } catch (e) {}
     // 一轮的纯计算（签名去重、事件收集、人物栏 / 名册、新事态数）在流水线里（tavern/context.mjs）；这里只做取数与副作用
     const r = contextPipeline.round({ floorNow, msgs, stSig, dbSig: mvuBridge.dbSig(), varSig: mvuBridge.varSig, custVer, customChat: RS.customChat, chatId: chatId(), seen, wbState: RS.wbState,
@@ -552,7 +552,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
 
   const HA = createHostApi(host), { api, emit, emitMoved, exposed, inner, knowRooms, onTh, sendTh, subs, wbAuto } = HA;
   let emHere = null, hereShown = null, emEvSig = '';
-  const RS = createRootStore(host), { budgetSweep, customTags, loadCustom, saveRoot, sendCustom, store } = RS;
+  const RS = createRootStore(host), { budgetSweep, customTags, loadCustom, saveRoot, sendCustom, store } = RS;  let AP = null; if (PACK_IN?.source === 'auto') import(new URL('auto-pack.mjs', import.meta.url).href).then(m => { AP = m.createAutoPack(host); recomputeSoon(0); }).catch(e => console.warn('[eden-map] automatic pack', e));   // S9-3: growth, only for the automatic pack
 
 
   const CK = createHostChecks(host), { autoCheck, finishCheck, followCheck, followHead, followNewer, hostToast, runCheck, sendCheck, showSplash, showUpdPrompt, splashDue, switchBranch, switchVersion, toastOnce } = CK;

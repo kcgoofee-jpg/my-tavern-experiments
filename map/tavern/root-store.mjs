@@ -5,7 +5,7 @@ import { recordNorm, describeRecord } from '../core/settlement-record.mjs';
 export const DEPS = [
   'contextPipeline', 'LS', 'MAN', 'PACK_ID', 'PACK_IN', 'scriptBase', 'chatId', 'checkpointResume', 'emit', 'hostToast', 'kfReset', 'life', 'panel', 'post', 'readVars',
   'recomputeSoon', 'wrapLS', 'BASE', 'explorationLedgerModule', 'stashStoreModule', 'keyframesModule', 'mvuReaders', 'uiLang', 'worldbookJitModule', 'WBSm', 'alive', 'chars', 'cp', 'custVer', 'explored',
-  'floorNow', 'ghost', 'kfView', 'stash', 'tlWalk', 'ledgerRecord',
+  'floorNow', 'ghost', 'kfView', 'stash', 'tlWalk', 'ledgerRecord', 'autoCache',
 ];
 export function createRootStore(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('root-store: missing dep ' + k);
@@ -54,7 +54,7 @@ export function createRootStore(host) {
   // S6-2：背包存 stash（一份、ASCII 键）；旧键 仓库 / 槽位 只读——加载时迁移一次，之后原样随每次保存带回去（整块替换不能把它们丢了），没有旧键的聊天不会多出它们
   let legacyKeep = {};
   const ledgerOf = () => { const r = host.ledgerRecord, d = r && typeof r === 'object' ? describeRecord(r) : null; return d && (d.npc || d.events) ? { ledger: recordNorm(r) } : {}; };   // K-R78: the key only when there is an entry
-  const saveRoot = () => { const { stash, explored, cp, kfView } = host; return life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: contextPipeline.tag.floor, 标签记录: contextPipeline.tag.log, 楼层指纹: contextPipeline.tag.seen, 行程: contextPipeline.trips, ...(stash ? { stash } : {}), ...ledgerOf(), ...legacyKeep, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}), ...(kfView ? { 关键帧: kfView } : {}) }, customChat); };
+  const saveRoot = () => { const { stash, explored, cp, kfView } = host; return life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: contextPipeline.tag.floor, 标签记录: contextPipeline.tag.log, 楼层指纹: contextPipeline.tag.seen, 行程: contextPipeline.trips, ...(stash ? { stash } : {}), ...ledgerOf(), ...legacyKeep, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}), ...(kfView ? { 关键帧: kfView } : {}), ...(host.autoCache ? { auto: host.autoCache } : {}) }, customChat); };   // `auto` = the automatic pack's droppable cache (K-R95, tavern/auto-pack.mjs)
   // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
   // 只在这个聊天还没有 eden_map.自定义 时迁移一次（全局旧键不改名，靠这个条件避免每个聊天、每次刷新重复并入）
   async function migrateOld() {
