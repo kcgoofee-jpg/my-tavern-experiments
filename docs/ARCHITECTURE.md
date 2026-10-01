@@ -98,6 +98,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `room-gallery-db.mjs` | IndexedDB wrapper for room gallery images (browser only). |
 | `room-gallery-logic.mjs` | Pure gallery logic: resize dimensions, quota checks, export bundle shape. |
 | `roster.mjs` | CharacterRosterSystem: five-source roster merged into standard `RosterRow`s with priority arbitration, aliases and portraits. |
+| `root-store.mjs` | The map's chat-variable root (`eden_map`): custom names and uses load / save / migrate, local storage budget, worldbook sync, tag-rename replay. `createRootStore(host)`. |
 | `routine.mjs` | NPC schedule math shared by host and viewer (the host's `tavern/routine.mjs` forwards here). |
 | `scrapbook.mjs` | Pinned-image-and-note index logic for landmarks (bytes live in the gallery database). |
 | `stash.mjs` | World stash table: where pack-defined items are hidden (map, marker, compartment) and reconciliation against carried items. |
@@ -175,6 +176,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `baibai.mjs` | Optional bridge to the external image-generation extension; every function degrades quietly when absent. |
 | `budget.mjs` | Local storage budget: LRU per chat, avatar caps, quota-hit recovery; touches only the map's own keys. |
 | `characters.mjs` | Character bar: finds characters and their latest place from chat tags and MVU variables. |
+| `chars-flow.mjs` | Character and world-time flow of the host: ContextPipeline and MVUBridge assembly, world time and outfit, roster / portrait / trips / routine forwarding to the viewer. `createCharsFlow(host)`. |
 | `compose.mjs` | Chat-input templates ("go here", "ask about this"): fill the input box, never send. |
 | `context.mjs` | ContextPipeline: message window normalization, round computation, custom tag replay, trips; pure data in and out. |
 | `eden-map.js` | Host entry: floating button and panel, viewer state machine, message dispatch, recompute scheduling, cleanup assembly. |
@@ -183,6 +185,8 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `failrep.mjs` | Failed-check report ring: structured reports injected next turn so the story follows objective facts. |
 | `follow.mjs` | Follow-branch resolution: newest build of a branch from `head.json` across CDN mirrors. |
 | `host-about.mjs` | Version info and update check orchestration, all effects injected. |
+| `host-api.mjs` | The local `window.EdenMap` extension API (subscriptions, avatar shrinking) and the TavernHelper-side exposure: script buttons, macros, script info, worldbook automation. `createHostApi(host)`. |
+| `host-checks.mjs` | Startup self-check, first-run card, host toasts, auto update check and version switching. `createHostChecks(host)`. |
 | `host-lifecycle.mjs` | Host instance lifecycle: takeover of old instances, panel DOM mount, listener registration, cleanup hooks. |
 | `host-routes.mjs` | CDN route table, version inference and route race; pure computation. |
 | `host-strings.mjs` | The host's few product texts (map name, script name, "new events" toast) from the manifest `strings` (`hostStr`), else neutral defaults; pure. |
@@ -190,6 +194,9 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `inventory.mjs` | Spatial inventory in the chat variable, summarized into one injected line (pure). |
 | `keyframes.mjs` | Long-horizon keyframe compression: per-floor state to change-point frames, a droppable cache. |
 | `llm.mjs` | Private API key gateway: computes how to call a provider; does no network or storage itself. |
+| `llm-flow.mjs` | Background flows that call a user endpoint or write the add-on worldbook: navigator (W5), just-in-time hydration (W6), fact crystallization (W7). `createLlmFlow(host)`. |
+| `loot-flow.mjs` | Pickup and stash flow: map-driven action injection, check dice and failure ring (W2), settlement gate and leak audit (W11), virtual ledger slot (W12), pickup scan, spatial inventory and world stash. `createLootFlow(host)`. |
+| `modes-flow.mjs` | Interaction modes (a)(d)(e) on the host side: state line and spatial contract injection, checkpoint, location conflict check. `createModesFlow(host)`. |
 | `modes.mjs` | Script ↔ card interaction modes: compact state injection, tag reconciliation, minimal checkpoint. |
 | `msgtext.mjs` | Message text pre-processing: strips reasoning blocks and variable-update blocks before parsing. |
 | `mvu.mjs` | Pure readers for MVU data and the map's own custom data (names, outfit, roster rows through the pack's slot fields, portraits, time and period bands). |
@@ -210,6 +217,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `splash.mjs` | First-run self-check card with a slow progress bar tied to real preloading. |
 | `th.mjs` | Thin TavernHelper wrappers: feature probing, unified external requests, display-only leak fence. |
 | `tick.mjs` | Background quiet-derivation scheduler: read-only incremental scans that yield to a live panel or generation. |
+| `timeline-flow.mjs` | Timeline replay (Part 5-4) and the keyframe cache wiring on the host side. `createTimelineFlow(host)`. |
 | `timeline.mjs` | Timeline replay core: what the map should show at floor N (location, time, who is where). |
 | `trips.mjs` | Trip derivation: "A to B" trips from per-floor places and character tags, styled by transport mode. |
 | `varsync.mjs` | Variable settlement timing guard: ledger reconciliation writes are queued until after the main update window. |
@@ -259,8 +267,13 @@ They import core state from `app/*` and reach each other only through `app/plugi
 |---|---|
 | `chars.mjs` | Character tab and map avatars: placement, grouped stacks, per-person toggles, fly-to. |
 | `compose.mjs` | Place / event / character card buttons that send template sentences to the host input box (embedded only). |
-| `custom.mjs` | MVU-linked viewer part: custom names and uses, night tint from world time, outfit line, rename hints. |
-| `events.mjs` | Event layer: placement, icons, event list, fly-to, screen effects, world-map badges. |
+| `custom.mjs` | MVU-linked viewer part: custom names and uses and their dialog; the night tint, outfit line and rename hints live in the `custom-*` modules below. |
+| `custom-dialog-view.mjs` | HTML builders of the names-and-uses dialog (list, picker, results, edit form); pure, state passed in per call. |
+| `custom-hints.mjs` | One-time rename hints (toast through the notice layer). |
+| `custom-outfit.mjs` | The player's outfit text pushed by the host; asks the event bar to redraw. |
+| `custom-tint.mjs` | Night tint and period base-map switch from world time. |
+| `events.mjs` | Event layer: placement, icons, event list, fly-to; the screen effects and world-map badges are in `events-fx.mjs`. |
+| `events-fx.mjs` | Screen glitch effect declared by event types and the event count badge on the world-map city marker. |
 | `inv.mjs` | Spatial inventory on place cards (viewer side of the inventory). |
 | `scrapbook.mjs` | Viewer side of the landmark scrapbook: pinned images and notes on place cards. |
 | `security.mjs` | Optional security overlay: shield chips on places and a rules row on cards. |
@@ -308,7 +321,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layers.
   filter checks shape only and never inspects text content.
 - **Transport**: the host mounts the viewer as a `srcdoc` iframe whose `<base>` points at the CDN, and sub-pages
   as blob iframes. `createBus` wraps one window-to-peer channel with origin / token checks.
-- **Host modules** (`host-routes`, `host-lifecycle`, `host-th`, `host-about`) hold the glue that used to live in
+- **Host modules** (`host-routes`, `host-lifecycle`, `host-th`, `host-about`) and the S5-1 flow modules (`loot-flow`, `chars-flow`, `root-store`, `host-api`, `host-checks`, `llm-flow`, `modes-flow`, `timeline-flow`; each `createX(host)`, the `host` deps bag is built once in the entry) hold the glue that used to live in
   `eden-map.js`; the entry keeps scheduling, side effects and cleanup assembly.
 
 ## 5. Entity protocol — target vs current state

@@ -79,6 +79,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `room-gallery-db.mjs` | 房间图集图片的 IndexedDB 薄封装（只在浏览器里跑）。 |
 | `room-gallery-logic.mjs` | 图集纯逻辑：缩放尺寸、配额检查、导出包结构。 |
 | `roster.mjs` | CharacterRosterSystem：五源名册合并成标准 `RosterRow`，含优先级仲裁、别名互认、立绘挂载。 |
+| `root-store.mjs` | 地图在聊天变量里的根（`eden_map`）：自定义名称与用途的读写与迁移、本机存储预算、世界书同步、标签改名重放。`createRootStore(host)`。 |
 | `routine.mjs` | 宿主与查看器共用的 NPC 日程表数学（宿主侧 `tavern/routine.mjs` 原样转发到这里）。 |
 | `scrapbook.mjs` | 钉在地标上的图与手记的索引逻辑（图的字节在图集数据库里）。 |
 | `stash.mjs` | 世界藏物表：包定义的物品藏在哪（图、标记、暗格），以及与已携带物品的对账。 |
@@ -155,6 +156,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `baibai.mjs` | 到可选外部生图扩展的桥；扩展不在时每个函数都安静降级。 |
 | `budget.mjs` | 本机存储预算：按聊天 LRU、头像上限、撞额度后的恢复；只碰地图自己的键。 |
 | `characters.mjs` | 人物栏：从聊天标签和 MVU 变量找出人物及其最新位置。 |
+| `chars-flow.mjs` | 宿主的人物与世界时间流：ContextPipeline 与 MVUBridge 装配、世界时间与着装、名册 / 立绘 / 行程 / 日程漫游转发给查看器。`createCharsFlow(host)`。 |
 | `compose.mjs` | 聊天输入模板（「去这里」「追问这件事」）：填进输入框，从不发送。 |
 | `context.mjs` | ContextPipeline：消息窗口规范化、轮次计算、自定义标签重放、行程；纯数据进出。 |
 | `eden-map.js` | 宿主入口：悬浮按钮与面板、查看器状态机、消息分派、重算调度、清理组装。 |
@@ -163,6 +165,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `failrep.mjs` | 检定失败报告环：结构化报告在下一轮注入，让剧情顺着客观事实走。 |
 | `follow.mjs` | 跟随分支解析：跨 CDN 镜像从 `head.json` 取分支的最新构建。 |
 | `host-about.mjs` | 版本信息与检查更新的编排，所有副作用由外部注入。 |
+| `host-api.mjs` | 本机扩展接口 `window.EdenMap`（订阅、头像压缩）与酒馆助手侧的暴露：脚本按钮、类宏、脚本说明、世界书全自动。`createHostApi(host)`。 |
+| `host-checks.mjs` | 启动自检、首次运行自检卡、宿主提示、自动检查更新与版本切换。`createHostChecks(host)`。 |
 | `host-lifecycle.mjs` | 宿主实例生命周期：接管旧实例、挂面板 DOM、登记监听器、清理钩子。 |
 | `host-routes.mjs` | CDN 线路表、版本推断与测速 race；纯计算。 |
 | `host-strings.mjs` | 宿主自己打印的几句产品文案（地图名、脚本名、「有新事态」提示）：读清单 `strings`（`hostStr`），没有就用中性默认；纯函数。 |
@@ -170,6 +174,9 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `inventory.mjs` | 聊天变量里的空间化背包，压成一行注入（纯函数）。 |
 | `keyframes.mjs` | 长程关键帧压缩：逐楼状态压成变更点关键帧，是可丢弃的缓存。 |
 | `llm.mjs` | 私有 API Key 网关：只算「该怎么发」，自己不碰网络也不碰存储。 |
+| `llm-flow.mjs` | 后台调用用户端点或写附加世界书的流：领航员（W5）、世界书即时水合（W6）、剧情事实结晶（W7）。`createLlmFlow(host)`。 |
+| `loot-flow.mjs` | 拾取与背包流：地图驱动的动作注入、检定掷骰与失败环（W2）、结算闸门与漏项审计（W11）、虚拟账本槽位（W12）、拾取扫描、空间化背包与世界藏物表。`createLootFlow(host)`。 |
+| `modes-flow.mjs` | 宿主侧的交互方式 (a)(d)(e)：状态行与空间坐标契约注入、检查点、地点冲突自检。`createModesFlow(host)`。 |
 | `modes.mjs` | 脚本 ↔ 卡的交互方式：紧凑状态注入、标签对账、最小检查点。 |
 | `msgtext.mjs` | 消息正文解析预处理：解析前剥掉思考块与变量更新块。 |
 | `mvu.mjs` | MVU 数据与地图自有自定义数据的纯读取器（名称、着装、按包的槽位字段读名册行、立绘、时间与时段）。 |
@@ -190,6 +197,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `splash.mjs` | 首次运行的自检卡，进度条缓慢前进并绑定真实预加载。 |
 | `th.mjs` | 酒馆助手的薄封装：功能探测、统一外部请求、只删显示的泄露清理。 |
 | `tick.mjs` | 后台静默推演调度器：只读的增量扫描，面板开着或正在生成时让路。 |
+| `timeline-flow.mjs` | 时间轴回放（Part 5-4）与关键帧缓存的宿主侧接线。`createTimelineFlow(host)`。 |
 | `timeline.mjs` | 时间轴回放核心：第 N 楼当时地图该显示什么（地点、时间、谁在哪）。 |
 | `trips.mjs` | 行程推导：从每楼地点与人物标签得出「A → B」，按交通方式分样式。 |
 | `varsync.mjs` | 变量结算时序守卫：账本对账的写入排队到主更新窗口结束之后。 |
@@ -237,8 +245,13 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 |---|---|
 | `chars.mjs` | 人物页与地图头像：落点、同处叠组、逐人开关、飞过去。 |
 | `compose.mjs` | 地点 / 事件 / 人物卡上把模板句发给宿主输入框的按钮（仅嵌入时）。 |
-| `custom.mjs` | MVU 联动的查看器部分：自定义名称与用途、世界时间夜色、着装行、改名提示。 |
-| `events.mjs` | 事态层：落点、图标、事态列表、飞过去、屏幕特效、世界图角标。 |
+| `custom.mjs` | MVU 联动的查看器部分：自定义名称与用途及其对话框；夜色、着装行、改名提示在下面几个 `custom-*` 模块里。 |
+| `custom-dialog-view.mjs` | 「名称与用途」对话框的 HTML 构件（列表、选择器、结果、编辑表单）；纯函数，状态逐次传入。 |
+| `custom-hints.mjs` | 剧情改名的一次性提示（经通知层）。 |
+| `custom-outfit.mjs` | 宿主推来的本人着装文字；通知事态栏重画。 |
+| `custom-tint.mjs` | 按世界时间的夜色与时段底图开关。 |
+| `events.mjs` | 事态层：落点、图标、事态列表、飞过去；屏幕特效与世界图角标在 `events-fx.mjs`。 |
+| `events-fx.mjs` | 按类型声明的屏幕花屏特效，与世界图城市标记上的事态数角标。 |
 | `inv.mjs` | 地点卡上的空间化背包（背包的查看器侧）。 |
 | `scrapbook.mjs` | 地标见闻录的查看器侧：地点卡上的钉图与手记。 |
 | `security.mjs` | 可选的安保叠加层：地点上的盾牌签与卡片里的规则行。 |
@@ -277,7 +290,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layers.
 - **聊天记录是唯一真相**（铁律 §2.4）：每个派生值（事态、人物、行程、关键帧）都能从聊天楼层重算；缓存随时可丢。地图自己的状态存在包的聊天变量里（伊甸是 `eden_map`），绝不写卡的 `stat_data`。
 - **协议**（`core/protocol.mjs`）：每条消息是信封 `{ type, v, … }`，由 `check` / `accept` 按 `SCHEMA` 检查。每个条目带方向标签：`H2V` 宿主 → 查看器、`V2H` 查看器 → 宿主、`V2S` 查看器 → 子页（庄园 / 三维）、`S2V` 子页 → 查看器，另有 `both` 给少数中继消息。更新版本协议发来的未知类型静默丢弃；同版本或更旧的未知类型丢弃并告警一次。过滤只查形状，从不看文字内容。
 - **传输**：宿主把查看器挂成 `<base>` 指向 CDN 的 `srcdoc` iframe，子页挂成 blob iframe。`createBus` 包装一对一的窗口通道，带来源 / 令牌检查。
-- **宿主模块**（`host-routes`、`host-lifecycle`、`host-th`、`host-about`）放着原来在 `eden-map.js` 里的胶水；入口只保留调度、副作用与清理组装。
+- **宿主模块**（`host-routes`、`host-lifecycle`、`host-th`、`host-about`）与 S5-1 的 flow 模块（`loot-flow`、`chars-flow`、`root-store`、`host-api`、`host-checks`、`llm-flow`、`modes-flow`、`timeline-flow`；各是 `createX(host)`，依赖袋 `host` 由入口建一次）放着原来在 `eden-map.js` 里的胶水；入口只保留调度、副作用与清理组装。
 
 ## 5. 实体协议 — 目标与现状
 
