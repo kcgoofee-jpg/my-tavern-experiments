@@ -1,0 +1,3 @@
+# Allow-list for tools/check_stage_a_grep.py (plan §8 grep). One line per hit: path:line<TAB>reason.
+# Only lines that belong to the first pack and move with it at the S10 repo split may be listed.
+map/props/dairy.html:1	S10: redirect stub of the first pack's dairy prop page (pack asset, moves with the eden pack)

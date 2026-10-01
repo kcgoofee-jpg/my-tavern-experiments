@@ -268,7 +268,7 @@ node --test tests/*.test.mjs
 bash tools/smoke.sh
 python3 tools/check_architecture.py && python3 tools/test_architecture_gate.py
 python3 tools/check_maps.py && python3 tools/check_pack.py
-git grep -nE '母畜|挤奶|庄园|伊甸|天城|外界知情|网络攻击|tiancheng' -- map ':!map/packs' ':!map/data' ':!map/estate' ':!map/props/*/' ':!map/section.js' ':!map/*.html'   # should be 0 at the end of stage A
+git grep -nE '母畜|挤奶|庄园|伊甸|天城|外界知情|网络攻击|tiancheng' -- map ':!map/packs' ':!map/data' ':!map/estate' ':!map/props/*/**' ':!map/art/**' ':!map/_proto/**' ':!map/section.js' ':(exclude,glob)map/*.html'   # 0 at the end of stage A; smoke gate: tools/check_stage_a_grep.py (allow-list tools/stage_a_grep_allow.txt, S10 lines only)
 ```
 
 - **Existing browser probes**: `accept`, `pack_town`, `v096`, `webgl_single_ctx`, `chars092`, `roster095`, `p5_sandbox`, `p6_action`, `e7_host`, `th_adopt`.

@@ -8,7 +8,7 @@
 #   5. 可选 --cdn <ref>：对该 ref 下 map/ 的一组文件（固定几个入口 + 随机瓦片）发 HEAD 到 jsDelivr，要求全部 200
 #   6. tools/*.sh + tools/**/*.sh lint：`$var` 紧跟非 ASCII 字符（macOS bash 3.2 下会被吞进变量名报 unbound variable）；
 #      裸 cat/ls（用户 shell 把 cat/ls 起了坏别名，脚本要用 `command cat`/`command ls`）
-#   7. 架构看门狗（tools/check_architecture.py，6 道防线 + tools/arch_baseline.json 只减不增账本）：
+#   7. 架构看门狗（tools/check_architecture.py，8 道防线（含注释卡词）+ tools/arch_baseline.json 只减不增账本）：
 #      引擎单文件 ≤400 行；core 零父级 import、core 与纯流水线不碰宿主全局（单一属主豁免表见脚本头）；
 #      禁裸 z-index 字面量、卡专有名词、内联外观样式（既有违规冻结在账本里，只许减少）
 #   7b. 无来源标签（tools/check_no_labels.py）：map / tools / blender / skills / tests 与现行文档里不得出现「卡里有 / 自己编」式来源标注
@@ -29,6 +29,8 @@ step "地图树不变量自测（无孤儿 / 无 test 字段 / anchor.zone 存�
 step "check_pack（设定包）" python3 tools/check_pack.py
 step "架构看门狗（引擎行数 / 分层纯净 / 裸 z-index / 卡专有名词 / 源码学术引用 / 内联样式，账本只减不增，见 tools/check_architecture.py）" python3 tools/check_architecture.py
 step "架构看门狗门控自测（引用与账本拦得住 / 机制术语放行 / 仓库现状干净，防空转）" python3 tools/test_architecture_gate.py
+step "计划 §8 卡词 grep（引擎含注释零命中，仅允许表里的 S10 行，见 tools/check_stage_a_grep.py）" python3 tools/check_stage_a_grep.py
+step "§8 grep 门控自测（词表 / 排除 / 允许表）" python3 tools/check_stage_a_grep.py --self-test
 step "树卫生（未跟踪大文件防 git add -A 误提交，见 tools/check_tree_hygiene.py）" python3 tools/check_tree_hygiene.py
 step "纵深数学对拍（python ↔ golden；JS 侧在 node --test）" python3 tools/test_depth.py
 step "斜视投影对拍（python ↔ golden）" python3 tools/test_project.py
