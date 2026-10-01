@@ -348,6 +348,11 @@
 | **prop pack（本机道具包）** | 用户自己的文件（glb、png、webp、svg）只存在这个浏览器里（IndexedDB `spatialProps`）：只做技术校验，可作本机图层的点图标（`prop:<id>`），并经内核图层 `local-props` 摆在平面地图上。从不上传，也不是聊天里的事实。 | `core/prop-pack.mjs`、`app/prop-store.mjs`、`app/local-props-view.mjs`（K-R88）。 | 设定包（描述一张卡世界的数据）。 |
 | **sound layer（声音图层）** | 设定包声明的 `sound` 积木图层，在它适用的视图里播放程序化环境音（滤波噪声、振荡器）。它的行默认关，用户打开并点一下之后才会出声。 | `app/sound-block.mjs`、`core/ambience.mjs`（K-R89）。 | 音频文件（没有）。 |
 | **navigator overlay（领航员叠加）** | 可选的后台领航员给出的线索与标注（`OP_CLUE`、`OP_MARKER`），只在会话里保留，画在内核图层 `nav-ops` 上；从不写进聊天、聊天变量或世界书。 | `tavern/nav-ops.mjs`、`app/nav-ops-view.mjs`（K-R86）。 | 事件（`OP_EVENT`），那是事态图层上另一种叠加。 |
+| **transit network（交通网）** | 包的 `transit` 块（K-R107）：方式、站点、线路、连接与城区，路线器在其上规划，主题地图据此绘制。可选；没有它的包没有路线。 | `core/transit-spec.mjs`、`core/router.mjs`；块写在 `overlay.v2.json`（schema 1）或 `manifest.transit`（schema 2）里。 | `routes` 图层，那是视图数据里的巡逻圈与航线；`core/transit.mjs`，那个解析写成地点的行程。 |
+| **station（站点）** | 交通网的一个停靠点：树里的一个节点（画在节点被画的地方），或视图上的一个自由点（K-R107）。 | `transit.stations`、`core/transit-spec.mjs`。 | 标记或节点（节点站点只是指向某个节点）；宿主的“藏物隔间”。 |
+| **line（线路）** | 一条交通线路：有序的停靠、每段分钟数、编号与颜色；它生成图里的乘车边。 | `transit.lines`、`core/router.mjs` 的 `buildGraph`。 | `line` 积木（画路径的宣告式图层积木）；文本里的一行。 |
+| **plan（路线）** | 路线器对一次出行给出的结果：各段、分钟、换乘、方式和沿途最高危险等级（K-R109）；即“计划路线”。 | `core/router.mjs` 的 `planRoute`、`checkPlan`、`planText`。 | 房间平面（`eden_estate_rooms.json`）与施工计划。 |
+| **district（城区）** | 交通网里的城区：视图上的多边形或圆，带功能与危险等级（K-R107）；绘制时给它上色。 | `transit.districts`、`core/thematic.mjs`。 | 节点树里的城区节点，它们是普通节点。 |
 | **view / parse / core (suffixes)** | 同名文件对的后缀：`-view` 在查看器里绘制，`-parse` 在宿主里从聊天正文推导数据，纯的共享核心保留裸名。 | 规则见本文；表 B 里落地。 | MVC 框架里的 view。 |
 | **ledger** | 这个词有两个互不相干的用法。(1) `core/ledger.mjs` 的结算账本：按域校验的原子指令。(2) 棘轮账本 `tools/arch_baseline.json`：只许减少的计数。 | 如上。 | 彼此；探索台账 `探索` 是第三个小的。 |
 | **head #N** | 集成分支的构建计数：`map/data/head.json` 的 `{ build, sha, at }`，由 `tools/push_preview.sh --head` 里的 `tools/bump_head.py` 递增。 | 提交标题 "head #101"；由 `tavern/follow.mjs` 读取。 | 发布版本号（`VERSION`）；重构期间不打 tag、不升版本。 |
