@@ -7,9 +7,9 @@
 > `tools/check_pack.py` (schema-2 branch) and `tests/pack_schema_v2.test.mjs`. Schema 1 (`docs/pack-schema-v1.md`)
 > stays frozen and keeps working through `map/core/compat-v1.mjs` (step S1-impl-2).
 
-Every rule has a stable id `K-R01` … `K-R70`; later prompts and tests cite them. Ids never move: rules added after the
-first draft (K-R63–K-R70, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit; K-R71–K-R78
-are reserved for S6 (list at the end of §13). The choices left to the user
+Every rule has a stable id `K-R01` … `K-R73`; later prompts and tests cite them. Ids never move: rules added after the
+first draft (K-R63–K-R70, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit; K-R71–K-R73
+were added by S6-1, K-R74–K-R78 are reserved for the rest of S6 (list at the end of §13). The choices left to the user
 are `K-01` … `K-09` (§0). Everything else was decided by the designer and is listed with its reason in §14.
 
 ## 0. Decisions for the user (review sheet)
@@ -728,14 +728,32 @@ Settings → variable mapping use (§6.3); and `avatar.require` (path fragments)
 (`overlay-view-invalid`, `overlay-token-invalid`). The viewer re-checks every id and token at run time with `recheck` (`core/pack-v2-spec.mjs`: `hex`, `token`, `id`; each returns the value when it matches the exact schema pattern, else `null`, K-R64).
 `tools/check_overlay.mjs` runs the merged block through the kernel's schema (K-R06).
 
+**K-R71 — Entity protocol.** People, items and events are **entities on nodes**: `{ kind: 'person' | 'item' | 'event', id, name, node, place, source, msgIndex, present?, data }`.
+`id` is the normalised name for a person (K-R40), the store or world row id for an item, the event id for an event; `name` is the display text, verbatim; `node` is a node id (K-R28) or `null` (place unknown);
+`place` is the place text as written (`''` = none); `source` names the channel the row came from (a person: `mvu`, `chat`, `table-db`, `fallback`, `imagegen`, `routine`, `infer`; an event: `chat`, `op`, `feed`) and carries no provenance wording;
+`msgIndex` is the chat message position of the fact, or `null` when it is not tied to one; `present` (person only) = with the player (K-R40); `data` is the original row, untouched.
+(1) **Pure adapters.** `core/entities.mjs` builds entities from the rows the host already sends (`personOf`, `eventOf`), imports nothing outside `map/core`, and takes a `nodeOf(text) -> id | null` function from the caller
+(viewer: the locator of K-R24; host: its event geography). An entity is derived, never stored as such. (2) **Node by reference.** A row may carry `node`; the receiver uses it when its own tree has that id, else it locates `place` (K-R24:
+aliases first, hints second, unknown last); a row with neither is `null`. The v1 fields `map` / `marker` stay accepted (K-R28). Rows inside the array fields of the messages `eden-map:chars`, `eden-map:events` and `eden-map:stash` may carry `node`;
+array contents are not shape-checked (no field changes in `core/protocol.mjs`). (3) **One entity per id and kind;** duplicates keep the first row in the sender's order. (4) **The chat log is the truth:** every entity is recomputable from the chat floors and the pack.
+(5) **No content filtering:** names and places are carried as written; an unknown type is "other". `presentAt(entities, here)` = the entities with `present` set or standing at node `here` (an unknown place is never "here"): the PresentEntities of the glossary.
+
+**K-R72 — Drawer tabs.** The tab set is fixed by the kernel (K-R02, UI row); the drawer ids stay the two-letter ids the probes use: `events` = `ev`, `characters` = `ch`, `places` = `pl`, `legend` = `lg` (`items` = `it` joins in S6-3).
+`events` and `characters` count for the drawer (`keepsDrawer`); the fallback order, used when the selected tab goes away, is `ev`, then `ch`. `ui.tabs` (K-R57) names a subset and the order, from the manifest's `ui` or from the overlay's `ui` block (`applyOverlayUi` carries it as any other key);
+names the kernel does not know are ignored, and a list with no known name is the default order. `places` is always present: when `ui.tabs` omits it, it is appended before the legend (it holds the place card). The legend is not orderable and always last, shown by its own rule.
+Without `ui.tabs` the order is `events`, `characters`, `places`, `legend`. The visibility rules are the v1 rules, unchanged: `ev` shows when the event list is not empty and the events layer is on; `ch` when the people tab has at least one person; `pl` when any tab that counts for the drawer shows,
+or the place card is open, or there is an unmapped place name; `lg` when the open view is not a 3D scene, has depth data, and the pack has legend items. The drawer hides when a 3D scene is open, or when no tab counts for it and there is no card, no layer chip on a narrow screen and no unmapped name.
+When the selected tab hides, or none is selected, the first tab that counts for the drawer in fallback order is selected; closing the place card does the same and collapses the drawer to its peek. `core/drawer-tabs.mjs` holds the pure rules (`KERNEL_TABS`, `tabOrder`, `applyTo`, `firstFallback`);
+`app/tabs.mjs` is the registry the owner modules provide their tab content to.
+
+**K-R73 — People by level.** The characters tab adapts to the level of the open view. The level is **macro** when the open map has at least one child map in the runtime tree (any kind), else **micro**; the view field `x-people` (`"macro"` | `"micro"`; v1: `maps.json` `people`, carried by compat-v1 as for `clouds`) wins.
+No runtime tree, or an owner node that is not in it, means no level and the tab is drawn flat. Only the **present group** is split into sections (every other roster group is unchanged); each person is listed once, in the first section that takes them:
+`here` (present, or standing at the player's node); macro only, one `n:<child>` section per child node of the view's owner node, in declaration order (the person's node is that child or inside it); `map` (macro: the owner node itself; micro: the owner or anything inside it);
+`else` (a node outside the owner's subtree, or one the tree does not have); `unknown` (no node). Empty sections are not drawn, and when fewer than two are left the rows are drawn flat. **Nothing is hidden:** a macro level opens every section;
+a micro level opens only `here` and keeps the rest as collapsed sections the user can open (the open state is remembered). Section headings are never list items; the tab's count, badges, switches, avatars and fly-to are unchanged.
+
 **Planned in S6 (ids reserved; the full text lands with the step that implements each one, design in
 `docs/entity-protocol.md`).**
-- K-R71 — Entity protocol: people, items and events are entities `{ kind, id, name, node, place, source, msgIndex, present?,
-  data }` derived by pure adapters; `node` by reference (K-R28), else located (K-R24). S6-1.
-- K-R72 — Drawer tabs: the kernel tab set and default order (events, characters, items, places; legend last); `ui.tabs`
-  (K-R57) may also come from the overlay's `ui` block; `places` always present; the visibility rules. S6-1.
-- K-R73 — People by level: macro when the open view has child views, else micro; view field `x-people`; the present
-  group's sections. S6-1.
 - K-R74 — One stash store `<chat var>.stash`: shape, row fields, `carried`, `slot`, tombstones; one-way migration from the
   v1 keys, which stay read only until S10 (refines K-R47). S6-2.
 - K-R75 — Reconciliation: the store equals the fold of the message scan from `since` plus the recorded actions, item for
@@ -841,6 +859,7 @@ manifest. Card names below are quoted verbatim.
 | `base`, `data` | `tiles.src`, `tiles.regions` (the points file) | auto |
 | `depth` | `x-depth` on the view | carried (S8: depth-haze layer) |
 | `clouds` (bool), `tint` (`"period"`) | `x-clouds`, `x-tint` on the view | carried (S4-3, K-R70: drifting clouds; night tint that follows the period band) |
+| `people` (`"macro"` \| `"micro"`) | `x-people` on the view | carried (S6-1, K-R73: how the people tab groups the present people) |
 | `view.extent_m` / `focus` / `width_m` / `min_width_m` / `phone`; `focus` | `extent`, `home.focus` (node id through the id map), `home.width`, `home.min_width`, `home.phone` | auto |
 | `overlay` `{ type, src?, label, label_en, from? }` | `overlays[0]` `{ kind: type, src, label, i18n.en.label, from }` (`from` = a view id) | auto |
 | `alt` `{ label, label_en, base }` | `alt` `{ src: base, label, i18n.en.label }` | auto |

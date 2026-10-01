@@ -6,8 +6,8 @@
 > （schema 2 分支）与 `tests/pack_schema_v2.test.mjs`。schema 1（`docs/pack-schema-v1.md`）保持冻结，经
 > `map/core/compat-v1.mjs`（S1-impl-2 步）继续可用。
 
-每条规则都有固定编号 `K-R01` … `K-R70`，后面的提示词和测试按编号引用。编号永不挪动：初稿之后补的规则（K-R63–K-R70，
-信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号；K-R71–K-R78 预留给 S6（清单在 §13 末尾）。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
+每条规则都有固定编号 `K-R01` … `K-R73`，后面的提示词和测试按编号引用。编号永不挪动：初稿之后补的规则（K-R63–K-R70，
+信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号；K-R71–K-R73 由 S6-1 补上，K-R74–K-R78 预留给 S6 其余部分（清单在 §13 末尾）。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
 
 ## 0. 请你拍板
 
@@ -644,12 +644,31 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 （`overlay-view-invalid`、`overlay-token-invalid`）。查看器运行时用 `recheck`（`core/pack-v2-spec.mjs`：`hex`、`token`、`id`，匹配精确 schema 模式就返回原值，否则 `null`，K-R64）再查每个 id 和令牌。
 `tools/check_overlay.mjs` 把合并后的块过一遍内核 schema（K-R06）。
 
+**K-R71 —— 实体协议。** 人、物、事件都是**节点上的实体**：`{ kind: 'person' | 'item' | 'event', id, name, node, place, source, msgIndex, present?, data }`。
+`id`：人 = 规范化后的名字（K-R40），物 = 库行或世界藏物行的 id，事件 = 事件 id；`name` 是显示文字，原样；`node` 是节点 id（K-R28）或 `null`（地点不明）；
+`place` 是写出来的地点文字（`''` = 没有）；`source` 说明这一行从哪条通道来（人：`mvu`、`chat`、`table-db`、`fallback`、`imagegen`、`routine`、`infer`；事件：`chat`、`op`、`feed`），不带任何出处标注字样；
+`msgIndex` 是这条事实在聊天里的消息位置，和消息无关则为 `null`；`present`（只有人）= 和玩家在一起（K-R40）；`data` 是原始行，原样不动。
+（1）**纯适配器。** `core/entities.mjs` 把宿主已经发来的行转成实体（`personOf`、`eventOf`），不 import `map/core` 之外的任何东西，并由调用方传入 `nodeOf(文字) -> id | null`
+（查看器：K-R24 的定位器；宿主：它的事件地理）。实体是推导出来的，从不以实体的形式存储。（2）**节点按引用。** 一行可以带 `node`；收方自己的树里有这个 id 就用它，否则按 `place` 定位（K-R24：先别名、再提示、最后未知）；
+两样都没有就是 `null`。v1 的 `map` / `marker` 字段仍然接受（K-R28）。消息 `eden-map:chars`、`eden-map:events`、`eden-map:stash` 的数组字段里的行可以带 `node`；数组内容不逐项检查（`core/protocol.mjs` 不改字段）。
+（3）**同一 id、同一种类只有一个实体**；重复时保留发送方顺序里的第一行。（4）**聊天记录是唯一的真相：** 每个实体都能从聊天楼层和设定包重算出来。（5）**不过滤内容：** 名字和地点按写的原样带着；不认识的类型归「其他」。
+`presentAt(entities, here)` = `present` 为真或站在节点 `here` 的实体（地点不明的人从不算「在这里」）：即词汇表里的 PresentEntities。
+
+**K-R72 —— 抽屉页签。** 页签集合由内核固定（K-R02，UI 一行）；抽屉 id 仍是探针用的两字母 id：`events` = `ev`、`characters` = `ch`、`places` = `pl`、`legend` = `lg`（`items` = `it` 在 S6-3 加入）。
+`events` 与 `characters` 算「撑住抽屉」（`keepsDrawer`）；选中页签消失时的回退顺序是先 `ev`、再 `ch`。`ui.tabs`（K-R57）给出子集和顺序，来自清单的 `ui` 或叠加层的 `ui` 块（`applyOverlayUi` 把它当作其他键带过来）；
+内核不认识的名字忽略，整张表里没有一个认识的名字就用默认顺序。`places` 永远在：`ui.tabs` 没写它时，它排在图例前面（地点卡在它里面）。图例不可排序、永远最后，按它自己的规则显示。
+没有 `ui.tabs` 时顺序是 `events`、`characters`、`places`、`legend`。显隐规则就是 v1 的规则，不变：`ev` 在事件列表不空且事态层开着时显示；`ch` 在人物页至少有一个人时显示；`pl` 在任一撑住抽屉的页签显示、或地点卡开着、或有未上图地名时显示；
+`lg` 在打开的视图不是三维场景、有纵深数据、且包里有图例条目时显示。三维场景打开时抽屉收起；或者没有任何页签撑住它、又没有卡、手机上没有层胶囊、也没有未上图地名时，抽屉收起。
+选中的页签隐藏、或没有选中页签时，按回退顺序选第一个撑住抽屉的页签；关地点卡同样处理并把抽屉收到最低一档。`core/drawer-tabs.mjs` 放纯规则（`KERNEL_TABS`、`tabOrder`、`applyTo`、`firstFallback`）；
+`app/tabs.mjs` 是各归属模块提供页签内容的注册表。
+
+**K-R73 —— 按层级显示人物。** 人物页签随打开视图的层级变化。打开的地图在运行时树里至少有一张子地图（任何种类）时层级是**宏观**，否则是**微观**；视图字段 `x-people`（`"macro"` | `"micro"`；v1：`maps.json` 的 `people`，由 compat-v1 像 `clouds` 一样带过来）优先。
+没有运行时树、或归属节点不在树里，就没有层级，人物页按平铺画。只有**在场组**分节（其余名册组不变）；每个人只列在第一个收他的分节里：
+`here`（在场，或站在玩家所在节点）；仅宏观：视图归属节点的每个子节点一节 `n:<子节点>`，按声明顺序（这个人的节点就是该子节点或在它里面）；`map`（宏观：归属节点本身；微观：归属节点或它里面的任何节点）；
+`else`（归属节点子树之外的节点，或树里没有的节点）；`unknown`（没有节点）。空分节不画，剩下不到两节时按平铺画。**什么都不隐藏：** 宏观全部展开；
+微观只展开 `here`，其余收成可由用户打开的折叠分节（开合状态会记住）。分节标题从不是列表项；页签的计数、角标、开关、头像和飞过去都不变。
+
 **S6 计划中（编号已预留；全文随实施它的步骤落地，设计见 `docs/entity-protocol.md`）。**
-- K-R71 —— 实体协议：人、物、事件是由纯适配器推导的实体 `{ kind, id, name, node, place, source, msgIndex, present?, data }`；
-  `node` 按引用（K-R28），否则定位（K-R24）。S6-1。
-- K-R72 —— 抽屉页签：内核页签集合与默认顺序（事态、人物、物品、地点；图例最后）；`ui.tabs`（K-R57）也可以来自叠加层的 `ui` 块；
-  `places` 永远在；显隐规则。S6-1。
-- K-R73 —— 按层级显示人物：打开的视图有子视图 = 宏观，否则微观；视图字段 `x-people`；在场组的分节。S6-1。
 - K-R74 —— 一个藏物库 `<聊天变量>.stash`：形状、行字段、`carried`、`slot`、墓碑；从 v1 键单向迁移，v1 键在 S10 之前只读
   （细化 K-R47）。S6-2。
 - K-R75 —— 对账：库等于从 `since` 起的消息扫描折叠加上记录下的动作，逐项相等；文字变了的消息重放。S6-2。
@@ -741,6 +760,7 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 | `base`、`data` | `tiles.src`、`tiles.regions`（点位文件） | 自动 |
 | `depth` | 视图上的 `x-depth` | 携带（S8：景深雾图层） |
 | `clouds`（布尔）、`tint`（`"period"`） | 视图上的 `x-clouds`、`x-tint` | 携带（S4-3，K-R70：漂移云；随时段的夜色） |
+| `people`（`"macro"` \| `"micro"`） | 视图上的 `x-people` | 携带（S6-1，K-R73：人物页签怎样给在场的人分组） |
 | `view.extent_m` / `focus` / `width_m` / `min_width_m` / `phone`；`focus` | `extent`、`home.focus`（经 id 对照表换成节点 id）、`home.width`、`home.min_width`、`home.phone` | 自动 |
 | `overlay` `{ type, src?, label, label_en, from? }` | `overlays[0]` `{ kind: type, src, label, i18n.en.label, from }`（`from` = 视图 id） | 自动 |
 | `alt` `{ label, label_en, base }` | `alt` `{ src: base, label, i18n.en.label }` | 自动 |
