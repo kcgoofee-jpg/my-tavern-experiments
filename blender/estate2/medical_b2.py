@@ -168,6 +168,11 @@ def shell(K, r, gaps):
                                         W=(x0 + t / 2, y0, x0 + t / 2, y1), E=(x1 - t / 2, y0, x1 - t / 2, y1)).items():
         wall(K, a0, b0, a1, b1, gaps.get(side, ()), t=t)
     ix0, ix1, iy0, iy1 = x0 + t, x1 - t, y0 + t, y1 - t
+    # 防滑地面面层（EQ-51）：无缝防滑 PVC 卷材上的微凸防滑条带
+    ny_steps = int((iy1 - iy0 - 0.6) / 1.2)
+    for i in range(ny_steps):
+        ny = iy0 + 0.3 + (i + 1) * (iy1 - iy0 - 0.6) / (ny_steps + 1)
+        K.box('vinyl_dk', ix0 + 0.2, ny - 0.015, 0.0, ix1 - 0.2, ny + 0.015, 0.002)
     for (a, b, c, d) in ((ix0, iy0, ix1, iy0 + 0.06), (ix0, iy1 - 0.06, ix1, iy1), (ix0, iy0, ix0 + 0.06, iy1), (ix1 - 0.06, iy0, ix1, iy1)):
         K.box('vinyl_dk', a, b, 0.0, c, d, 0.1)                            # 圆弧踢脚（上翻卷材）
     for x in _steps(ix0, ix1, 1.2):                                        # 墙板竖缝（1.2 m 模数）
@@ -523,6 +528,22 @@ def stretcher(K, x, y):
             K.cyl('dark', x + sx, y + sy, 0.0, 0.15, 0.075, seg=12)
 
 
+def emergency_kit_station(K, x, y, face=1):
+    """紧急医疗急救包专属挂站（EQ-51）：红色高可见外壳 + 白十字标 + 便携急救箱 + 医用氧气瓶。"""
+    d = 0.22
+    # 挂壁式急救站主柜
+    K.box('white', x - 0.38, y, 1.15, x + 0.38, y + face * d, 1.75)
+    K.box('red', x - 0.34, y + face * (d + 0.002), 1.2, x + 0.34, y + face * (d + 0.006), 1.7)
+    # 红底白十字标识
+    K.box('white', x - 0.14, y + face * (d + 0.008), 1.42, x + 0.14, y + face * (d + 0.012), 1.48)
+    K.box('white', x - 0.03, y + face * (d + 0.008), 1.31, x + 0.03, y + face * (d + 0.012), 1.59)
+    # 便携急救手提箱（放于站下托盘上）
+    K.box('red', x - 0.25, y + face * 0.04, 0.85, x + 0.25, y + face * (d - 0.02), 1.1)
+    K.box('white', x - 0.06, y + face * d, 0.95, x + 0.06, y + face * (d + 0.004), 1.0)
+    # 小型便携应急氧气筒
+    K.cyl('steel', x + 0.46, y + face * 0.1, 0.9, 1.45, 0.05)
+
+
 # ---------------------------------------------------------------- 组装
 def build(col=None, f1_z=None):
     """在 col（默认新建「B2_医疗中心」集合）里建四间房；返回对象列表。"""
@@ -568,6 +589,7 @@ def build(col=None, f1_z=None):
     pass_hatch(K, 11.0, y0, face=1)                                           # 南墙传递窗（洗消间 → 处置室）
     hermetic_door(K, 17.0, iy0 + 0.16, 'x', state='green')
     env_panel(K, 15.0, iy0, 1)
+    emergency_kit_station(K, 9.5, iy0, face=1)                                # 专属急救站（EQ-51）
     for ex, ey, fx, fy in ((ix0, iy0 + 0.4, 1, 0), (ix0, iy1 - 0.6, 1, 0), (ix1, iy1 - 0.6, -1, 0), (ix1, iy0 + 0.4, -1, 0)):
         extract_grille(K, ex, ey, fx, fy)
     K.box('brushed', ix1 - 0.06, 2.4, 0.0, ix1, 3.9, 0.1)                         # 东墙防撞条
@@ -590,6 +612,7 @@ def build(col=None, f1_z=None):
         extract_grille(K, ex, ey, fx, fy)
     gown_rack(K, ax0 + 0.02, -2.75, -1.05)                                   # 西墙开放式洁净服架（外侧 = 脏侧）
     scrub_sink(K, 14.3, 16.1, ay1, face=-1)                                   # 北墙西段刷手槽（进处置室前）
+    emergency_kit_station(K, 15.0, ay0, face=1)                               # 缓冲间急救站（EQ-51）
     K.box('steel', ax1 - 0.1, 0.0, 0.3, ax1, 1.2, 2.1)                        # 东墙风淋喷嘴板（洁侧）
     for i in range(9):
         for yy in (0.2, 1.0):
@@ -613,6 +636,7 @@ def build(col=None, f1_z=None):
     led_grid(K, 4.4, 7.6, -2.6, 7.6, 2, 7)
     reception(K, 4.4, 6.6, 3.2)
     stretcher(K, 6.9, 5.2)
+    emergency_kit_station(K, 4.4 + 0.1, 0.8, face=1)                           # 前厅急救站（EQ-51）
     hermetic_door(K, 7.65, 3.7, 'y', w=1.6)                             # 患者转运门（气密、互锁）→ 无菌处置室
     obs += K.done(M)
     return obs

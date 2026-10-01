@@ -368,6 +368,243 @@ def furn_height(f):
     return 0.75      # 桌 / 台
 
 
+# B1 / B2 室内专属材质色调
+C_LEATHER_DK = (0.16, 0.15, 0.15)
+C_LEATHER_RD = (0.42, 0.10, 0.12)
+C_WOOD_WALNUT = (0.32, 0.20, 0.13)
+C_WOOD_OAK = (0.50, 0.36, 0.22)
+C_METAL_IRON = (0.22, 0.23, 0.24)
+C_METAL_STEEL = (0.75, 0.77, 0.79)
+C_METAL_GOLD = (0.76, 0.62, 0.28)
+C_WHITE_CAB = (0.86, 0.87, 0.88)
+C_GLASS_CYAN = (0.50, 0.72, 0.78)
+C_ETHER_CYAN = (0.20, 0.82, 0.92)
+C_RED_EMERG = (0.75, 0.08, 0.08)
+C_SCREEN_GLOW = (0.08, 0.55, 0.65)
+C_MAT_SPARRING = (0.24, 0.32, 0.42)
+C_BOTTLE_GLASS = (0.18, 0.35, 0.22)
+
+
+def build_b1_furn(F, z):
+    # --- 主调教室 B1-C01 (-10..0, -14..-6)
+    # 中央双人调教台 (金属基座 + 实木框架 + 红色皮革双软垫 + 头枕 + 吊装龙门架)
+    F.box(-6.5, -11.5, z, -3.5, -8.5, z + 0.15, C_METAL_IRON)
+    F.box(-6.3, -11.3, z + 0.15, -3.7, -8.7, z + 0.68, C_WOOD_WALNUT)
+    F.box(-6.1, -11.1, z + 0.68, -5.1, -8.9, z + 0.82, C_LEATHER_RD)
+    F.box(-4.9, -11.1, z + 0.68, -3.9, -8.9, z + 0.82, C_LEATHER_RD)
+    F.box(-6.0, -11.0, z + 0.82, -5.2, -10.3, z + 0.92, C_LEATHER_DK)
+    F.box(-4.8, -11.0, z + 0.82, -4.0, -10.3, z + 0.92, C_LEATHER_DK)
+    for cx, cy in ((-6.2, -11.2), (-3.8, -11.2), (-6.2, -8.8), (-3.8, -8.8),
+                   (-6.2, -10.0), (-3.8, -10.0), (-5.0, -11.2), (-5.0, -8.8)):
+        F.box(cx - 0.06, cy - 0.06, z + 0.68, cx + 0.06, cy + 0.06, z + 0.78, C_METAL_GOLD)
+    for px, py in ((-6.4, -11.4), (-3.6, -11.4), (-6.4, -8.6), (-3.6, -8.6)):
+        F.cyl(px, py, 0.05, z, z + 3.2, C_METAL_STEEL, 12)
+    F.box(-6.45, -11.45, z + 3.15, -3.55, -11.35, z + 3.25, C_METAL_STEEL)
+    F.box(-6.45, -8.65, z + 3.15, -3.55, -8.55, z + 3.25, C_METAL_STEEL)
+    F.box(-6.45, -11.45, z + 3.15, -6.35, -8.55, z + 3.25, C_METAL_STEEL)
+    F.box(-3.65, -11.45, z + 3.15, -3.55, -8.55, z + 3.25, C_METAL_STEEL)
+    F.box(-5.2, -10.2, z + 3.1, -4.8, -9.8, z + 3.2, C_METAL_GOLD)
+
+    # 训诫木马与高背训诫椅
+    F.box(-9.0, -13.0, z + 0.65, -8.2, -11.8, z + 0.95, C_WOOD_WALNUT)
+    F.box(-8.8, -12.9, z + 0.95, -8.4, -11.9, z + 1.02, C_LEATHER_DK)
+    for lx, ly in ((-8.9, -12.9), (-8.3, -12.9), (-8.9, -11.9), (-8.3, -11.9)):
+        F.cyl(lx, ly, 0.04, z, z + 0.65, C_METAL_STEEL, 8)
+    F.box(-9.0, -11.4, z, -8.2, -10.8, z + 0.52, C_WOOD_WALNUT)
+    F.box(-8.9, -11.3, z + 0.52, -8.3, -10.9, z + 0.60, C_LEATHER_DK)
+    F.box(-9.0, -11.4, z + 0.60, -8.2, -11.2, z + 1.65, C_WOOD_WALNUT)
+    F.box(-9.05, -11.3, z + 0.75, -8.95, -10.8, z + 0.82, C_METAL_GOLD)
+    F.box(-8.25, -11.3, z + 0.75, -8.15, -10.8, z + 0.82, C_METAL_GOLD)
+
+    # 靠墙器具展柜
+    F.box(-9.6, -7.8, z, -7.0, -6.5, z + 0.85, C_WOOD_WALNUT)
+    F.box(-9.6, -7.7, z + 0.85, -7.0, -6.5, z + 2.4, C_WOOD_WALNUT)
+    F.box(-9.5, -7.72, z + 0.9, -7.1, -7.68, z + 2.35, C_GLASS_CYAN)
+    for ix in (-9.1, -8.6, -8.1, -7.6):
+        F.box(ix - 0.03, -7.6, z + 1.1, ix + 0.03, -7.55, z + 2.1, C_LEATHER_DK)
+        F.box(ix - 0.04, -7.62, z + 2.1, ix + 0.04, -7.53, z + 2.15, C_METAL_GOLD)
+
+    # 等候席矮凳与镜面墙
+    F.box(-2.5, -13.2, z, -0.8, -12.4, z + 0.45, C_WOOD_WALNUT)
+    F.box(-2.4, -13.1, z + 0.45, -0.9, -12.5, z + 0.52, C_LEATHER_DK)
+    F.box(-2.5, -6.52, z + 0.2, -1.0, -6.48, z + 2.6, C_GLASS_CYAN)
+    F.box(-2.5, -6.68, z + 0.93, -1.0, -6.64, z + 0.97, C_METAL_STEEL)
+    F.box(-0.9, -7.6, z + 0.1, -0.4, -7.0, z + 0.85, C_METAL_STEEL)
+    F.box(-0.85, -7.55, z + 0.85, -0.45, -7.05, z + 0.98, C_WHITE_CAB)
+
+    # --- 私人调教室 B1-C02 (0..3.75, -14..-6)
+    # 圣安德鲁十字架
+    F.box(0.6, -13.6, z, 1.6, -13.4, z + 0.12, C_METAL_IRON)
+    F.box(0.7, -13.55, z + 0.1, 1.5, -13.45, z + 2.3, C_WOOD_WALNUT)
+    F.box(0.5, -13.52, z + 1.1, 1.7, -13.48, z + 1.3, C_WOOD_WALNUT)
+    for cx, cz in ((0.7, z + 2.1), (1.5, z + 2.1), (0.7, z + 0.4), (1.5, z + 0.4)):
+        F.box(cx - 0.08, -13.58, cz - 0.08, cx + 0.08, -13.42, cz + 0.08, C_LEATHER_RD)
+        F.box(cx - 0.05, -13.60, cz - 0.05, cx + 0.05, -13.40, cz + 0.05, C_METAL_GOLD)
+    # 单人可调调教椅
+    F.cyl(1.9, -10.5, 0.35, z, z + 0.25, C_METAL_STEEL, 16)
+    F.box(1.5, -10.9, z + 0.25, 2.3, -10.1, z + 0.65, C_LEATHER_DK)
+    F.box(1.5, -11.0, z + 0.65, 2.3, -10.8, z + 1.45, C_LEATHER_DK)
+    F.box(1.4, -10.8, z + 0.65, 2.4, -10.2, z + 0.75, C_METAL_GOLD)
+    # 器具壁柜与休息皮榻
+    F.box(0.5, -6.9, z + 0.7, 3.3, -6.5, z + 2.1, C_WOOD_WALNUT)
+    F.box(1.8, -6.95, z + 1.3, 2.0, -6.88, z + 1.5, C_METAL_GOLD)
+    F.box(2.3, -13.5, z, 3.4, -11.7, z + 0.48, C_WOOD_WALNUT)
+    F.box(2.35, -13.45, z + 0.48, 3.35, -11.75, z + 0.60, C_LEATHER_DK)
+    F.box(2.4, -13.4, z + 0.60, 3.3, -13.0, z + 0.72, C_LEATHER_RD)
+
+    # --- 性技巧训练室 B1-C04 (3.75..6.9, -14..-6)
+    F.box(4.5, -12.1, z, 6.1, -9.9, z + 0.32, C_METAL_STEEL)
+    F.box(4.55, -12.05, z + 0.32, 6.05, -9.95, z + 0.52, C_LEATHER_RD)
+    F.box(4.6, -12.0, z + 0.52, 6.0, -11.0, z + 0.70, C_LEATHER_RD)
+    F.box(4.7, -11.9, z + 0.70, 5.9, -11.5, z + 0.82, C_LEATHER_DK)
+    F.box(4.0, -6.52, z + 0.3, 6.6, -6.48, z + 2.7, C_GLASS_CYAN)
+    F.box(4.0, -6.68, z + 0.85, 6.6, -6.64, z + 0.90, C_WOOD_WALNUT)
+    F.box(4.0, -6.68, z + 1.10, 6.6, -6.64, z + 1.15, C_WOOD_WALNUT)
+    F.box(4.1, -13.5, z, 5.2, -12.9, z + 0.82, C_WHITE_CAB)
+    F.box(4.15, -13.45, z + 0.82, 5.15, -12.95, z + 0.88, C_LEATHER_DK)
+    F.box(5.5, -13.5, z + 0.82, 6.6, -13.0, z + 1.7, C_WHITE_CAB)
+    F.box(5.9, -13.02, z + 1.4, 6.2, -12.98, z + 1.55, C_SCREEN_GLOW)
+
+    # --- 体能训练室 B1-C03 (-8..-2, -3..7)
+    F.box(-7.6, 2.6, z, -3.6, 6.6, z + 0.08, C_MAT_SPARRING)
+    F.box(-7.7, 2.5, z, -3.5, 6.7, z + 0.04, C_METAL_IRON)
+    F.cyl(-6.5, 4.0, 0.28, z + 1.1, z + 2.4, C_LEATHER_DK, 16)
+    F.cyl(-6.5, 4.0, 0.02, z + 2.4, z + 3.5, C_METAL_STEEL, 8)
+    F.cyl(-4.6, 5.5, 0.30, z, z + 0.2, C_METAL_IRON, 12)
+    F.cyl(-4.6, 5.5, 0.22, z + 0.2, z + 1.4, C_LEATHER_DK, 12)
+    F.cyl(-4.6, 5.5, 0.12, z + 1.4, z + 1.7, C_LEATHER_DK, 10)
+    F.box(-7.6, -2.6, z, -6.8, 0.4, z + 1.8, C_WOOD_WALNUT)
+    for wy in (-2.2, -1.6, -1.0, -0.4, 0.2):
+        F.box(-7.4, wy - 0.02, z + 0.4, -7.0, wy + 0.02, z + 1.7, C_WOOD_OAK)
+    for px, py in ((-4.4, -2.5), (-2.6, -2.5), (-4.4, -0.5), (-2.6, -0.5)):
+        F.box(px - 0.04, py - 0.04, z, px + 0.04, py + 0.04, z + 2.3, C_METAL_IRON)
+    F.box(-4.4, -2.5, z + 2.25, -2.6, -0.5, z + 2.33, C_METAL_IRON)
+    F.box(-4.6, -1.55, z + 1.2, -2.4, -1.45, z + 1.28, C_METAL_STEEL)
+    F.cyl(-4.3, -1.5, 0.22, z + 1.05, z + 1.45, C_METAL_IRON, 16)
+    F.cyl(-2.7, -1.5, 0.22, z + 1.05, z + 1.45, C_METAL_IRON, 16)
+    F.box(-3.8, -2.2, z, -3.2, -0.8, z + 0.48, C_LEATHER_DK)
+    F.box(-3.0, 0.8, z, -2.4, 3.2, z + 0.85, C_METAL_STEEL)
+    for dy in (1.1, 1.6, 2.1, 2.6, 3.0):
+        F.box(-2.9, dy - 0.08, z + 0.45, -2.5, dy + 0.08, z + 0.58, C_METAL_IRON)
+        F.box(-2.9, dy - 0.08, z + 0.85, -2.5, dy + 0.08, z + 0.98, C_METAL_IRON)
+    F.box(-2.95, 3.8, z, -2.9, 6.4, z + 2.8, C_WOOD_OAK)
+    for rz in np.linspace(z + 0.3, z + 2.7, 12):
+        F.box(-2.98, 3.9, rz - 0.015, -2.87, 6.3, rz + 0.015, C_WOOD_OAK)
+
+    # --- 恒温酒窖 B1-C05 (-14..-8, -3..2)
+    for ry in (-2.4, -0.6, 1.2):
+        F.box(-13.6, ry - 0.3, z, -8.4, ry + 0.3, z + 3.2, C_WOOD_OAK)
+        for bz in np.linspace(z + 0.4, z + 2.9, 6):
+            F.box(-13.4, ry - 0.28, bz - 0.04, -8.6, ry + 0.28, bz + 0.04, C_BOTTLE_GLASS)
+    F.box(-13.2, -1.8, z, -8.8, -1.2, z + 0.95, C_WOOD_WALNUT)
+    for sx in (-12.4, -11.2, -10.0, -8.8):
+        F.cyl(sx, -1.5, 0.18, z, z + 0.72, C_LEATHER_DK, 12)
+    F.box(-11.2, -1.6, z + 0.95, -10.8, -1.4, z + 1.25, C_GLASS_CYAN)
+    F.box(-13.6, 1.6, z + 2.2, -12.4, 1.9, z + 3.0, C_WHITE_CAB)
+    F.box(-13.2, 1.58, z + 2.4, -12.8, 1.62, z + 2.6, C_SCREEN_GLOW)
+
+    # --- 更衣 / 淋浴间 (10..16, -14..-6)
+    F.box(10.4, -13.6, z, 15.6, -12.8, z + 2.2, C_METAL_STEEL)
+    F.box(10.6, -11.8, z, 15.4, -11.2, z + 0.45, C_WOOD_OAK)
+    for sx in (10.6, 12.3, 14.0):
+        F.box(sx, -7.5, z, sx + 1.5, -6.5, z + 2.2, C_GLASS_CYAN)
+        F.cyl(sx + 0.75, -7.0, 0.1, z + 2.1, z + 2.2, C_METAL_STEEL, 12)
+    F.box(10.4, -9.6, z, 13.0, -8.6, z + 0.9, C_WHITE_CAB)
+    F.box(10.6, -8.62, z + 1.1, 12.8, -8.58, z + 2.0, C_GLASS_CYAN)
+
+    # --- B1 机电与走廊设施
+    F.box(-1.6, -2.6, z, 2.4, -0.6, z + 2.2, C_METAL_IRON)
+    F.box(4.0, 4.0, z, 8.0, 7.6, z + 2.4, C_METAL_IRON)
+    F.box(12.0, 4.0, z, 18.0, 7.6, z + 2.4, C_METAL_IRON)
+
+
+def build_b2_furn(F, z):
+    # --- 惩罚室 B2-C01 (-10..-5, -14..-6)
+    # 中央重型约束立柱
+    F.cyl(-7.5, -10.0, 0.22, z, z + 3.6, C_METAL_STEEL, 16)
+    for rz in (z + 0.8, z + 1.4, z + 2.0, z + 2.6):
+        F.cyl(-7.5, -10.0, 0.28, rz - 0.05, rz + 0.05, C_METAL_IRON, 16)
+        F.box(-7.85, -10.03, rz - 0.15, -7.15, -9.97, rz, C_METAL_IRON)
+    # 悬吊禁闭铁笼
+    F.box(-9.4, -13.4, z + 0.4, -8.0, -12.0, z + 0.48, C_METAL_IRON)
+    F.box(-9.4, -13.4, z + 2.3, -8.0, -12.0, z + 2.38, C_METAL_IRON)
+    for cx in np.linspace(-9.35, -8.05, 6):
+        F.cyl(cx, -13.35, 0.02, z + 0.48, z + 2.3, C_METAL_IRON, 6)
+        F.cyl(cx, -12.05, 0.02, z + 0.48, z + 2.3, C_METAL_IRON, 6)
+    for cy in np.linspace(-13.35, -12.05, 6):
+        F.cyl(-9.35, cy, 0.02, z + 0.48, z + 2.3, C_METAL_IRON, 6)
+        F.cyl(-8.05, cy, 0.02, z + 0.48, z + 2.3, C_METAL_IRON, 6)
+    F.cyl(-8.7, -12.7, 0.04, z + 2.38, z + 3.6, C_METAL_STEEL, 8)
+    # 束缚惩戒长凳
+    F.box(-6.4, -13.3, z, -5.5, -11.1, z + 0.25, C_METAL_IRON)
+    F.box(-6.3, -13.2, z + 0.25, -5.6, -11.2, z + 0.75, C_LEATHER_DK)
+    for rz in (z + 0.35, z + 0.55, z + 0.7):
+        F.box(-6.32, -12.8, rz - 0.03, -5.58, -12.7, rz + 0.03, C_METAL_GOLD)
+    # 壁挂刑具展柜与冲洗地沟
+    F.box(-9.6, -7.0, z + 1.0, -6.5, -6.5, z + 2.3, C_METAL_IRON)
+    F.box(-9.8, -10.2, z - 0.02, -5.2, -9.8, z, C_METAL_STEEL)
+
+    # --- 医疗与改造室 B2-C02 (-5..1.25, -14..-6)
+    # 双联以太生化恢复舱
+    for px in (-3.8, -2.4):
+        F.cyl(px, -12.2, 0.55, z, z + 0.35, C_METAL_STEEL, 20)
+        F.cyl(px, -12.2, 0.50, z + 0.35, z + 2.4, C_GLASS_CYAN, 20)
+        F.cyl(px, -12.2, 0.42, z + 0.35, z + 2.2, C_ETHER_CYAN, 20)
+        F.cyl(px, -12.2, 0.52, z + 2.4, z + 2.8, C_METAL_STEEL, 20)
+        F.box(px - 0.2, -12.75, z + 2.45, px + 0.2, -12.68, z + 2.75, C_SCREEN_GLOW)
+    # 改造手术台与辅助机械臂
+    F.cyl(0.0, -11.8, 0.4, z, z + 0.25, C_METAL_STEEL, 16)
+    F.box(-0.4, -12.8, z + 0.65, 0.4, -10.8, z + 0.78, C_LEATHER_DK)
+    F.cyl(-0.5, -11.8, 0.05, z + 0.65, z + 1.6, C_METAL_STEEL, 8)
+    F.cyl(0.5, -11.8, 0.05, z + 0.65, z + 1.6, C_METAL_STEEL, 8)
+    F.box(-0.6, -11.9, z + 1.5, -0.2, -11.5, z + 1.65, C_SCREEN_GLOW)
+    F.box(0.2, -11.9, z + 1.5, 0.6, -11.5, z + 1.65, C_SCREEN_GLOW)
+    F.cyl(0.0, -11.8, 0.5, z + 2.6, z + 2.75, C_WHITE_CAB, 20)
+    F.cyl(0.0, -11.8, 0.42, z + 2.58, z + 2.62, C_ETHER_CYAN, 20)
+    # 全身扫描拱门
+    F.box(-4.2, -8.0, z, -2.2, -7.6, z + 2.5, C_WHITE_CAB)
+    F.box(-3.9, -7.98, z + 0.3, -2.5, -7.62, z + 2.2, C_SCREEN_GLOW)
+    # 药剂冷藏柜与器械台
+    F.box(-1.0, -7.0, z, 0.8, -6.5, z + 2.1, C_WHITE_CAB)
+    F.box(-0.9, -7.02, z + 0.3, 0.7, -6.98, z + 2.0, C_GLASS_CYAN)
+    F.box(-0.8, -6.95, z + 0.5, 0.6, -6.7, z + 0.7, C_ETHER_CYAN)
+
+    # --- 档案室 B2-C03 (10..16, -14..-10.67)
+    F.box(10.4, -13.7, z, 15.6, -13.0, z + 2.2, C_METAL_IRON)
+    for fx in (11.0, 12.5, 14.0, 15.0):
+        F.box(fx - 0.08, -13.02, z + 1.1, fx + 0.08, -12.98, z + 1.25, C_METAL_GOLD)
+    F.box(10.4, -11.8, z, 12.4, -11.0, z + 2.3, C_METAL_IRON)
+    F.box(10.5, -11.82, z + 0.3, 12.3, -11.78, z + 2.1, C_SCREEN_GLOW)
+    F.box(13.2, -11.8, z, 15.6, -11.0, z + 0.75, C_WOOD_WALNUT)
+    F.box(13.8, -11.4, z + 0.75, 14.8, -11.3, z + 1.25, C_SCREEN_GLOW)
+    F.box(13.9, -12.4, z, 14.7, -11.8, z + 1.2, C_LEATHER_DK)
+
+    # --- 储藏室 B2-C04 (10..16, -10.67..-6)
+    F.box(10.4, -10.3, z, 15.6, -9.5, z + 2.5, C_METAL_STEEL)
+    F.box(10.4, -8.5, z, 13.0, -7.8, z + 2.5, C_METAL_STEEL)
+    F.box(10.4, -6.9, z, 15.6, -6.45, z + 2.2, C_WOOD_WALNUT)
+    # 紧急医疗急救站 (EQ-51 Emergency Kit)
+    F.box(13.8, -8.5, z + 0.8, 15.6, -7.8, z + 2.0, C_RED_EMERG)
+    F.box(14.4, -8.52, z + 1.35, 15.0, -8.48, z + 1.45, C_WHITE_CAB)
+    F.box(14.65, -8.52, z + 1.20, 14.75, -8.48, z + 1.60, C_WHITE_CAB)
+    F.box(14.0, -8.4, z, 14.8, -7.9, z + 0.45, C_RED_EMERG)
+    F.cyl(15.1, -8.1, 0.08, z, z + 0.85, C_METAL_STEEL, 12)
+    F.cyl(15.35, -8.1, 0.08, z, z + 0.85, C_METAL_STEEL, 12)
+
+    # --- 结界发生器室 / 机电设备间 (-14..4, -3..8)
+    # 以太结界共鸣核心装置
+    F.box(-6.2, 1.3, z, -3.8, 3.7, z + 0.4, C_METAL_IRON)
+    F.box(-6.0, 1.5, z + 0.4, -4.0, 3.5, z + 0.75, C_METAL_STEEL)
+    F.cyl(-5.0, 2.5, 0.6, z + 0.75, z + 2.2, C_ETHER_CYAN, 24)
+    for px, py in ((-5.9, 1.6), (-4.1, 1.6), (-5.9, 3.4), (-4.1, 3.4)):
+        F.cyl(px, py, 0.08, z + 0.4, z + 2.8, C_METAL_GOLD, 12)
+    F.box(-12.0, 0.0, z, -9.0, 5.0, z + 2.4, C_METAL_IRON)
+    F.box(-11.8, 0.2, z + 2.4, -9.2, 4.8, z + 2.65, C_METAL_STEEL)
+    F.box(-13.0, 6.5, z, -8.5, 7.5, z + 0.9, C_METAL_IRON)
+    F.box(-12.8, 6.6, z + 0.9, -8.7, 6.75, z + 1.8, C_SCREEN_GLOW)
+    F.box(0.5, 2.5, z, 3.5, 6.5, z + 2.4, C_METAL_IRON)
+
+
 def build_floor(fl):
     rooms = [r for r in FP.ROOMS if r['floor'] == fl]
     z = ZF[fl]
@@ -389,11 +626,16 @@ def build_floor(fl):
         wall_pieces(S, s, T_EXT if s['ext'] else T_INT, z, doors.get(k, []), windows=s['ext'] and not fl.startswith('B'))
     cores(S, fl, z)
     structure(S, fl, z)
-    for r in rooms:
-        if r['kind'] in ('restricted', 'medical'):
-            continue   # restricted 房间：空白；医疗中心设备走 medical_web.py
-        for f in r.get('furn', []):
-            F.box(f[0], f[2], z, f[1], f[3], z + furn_height(f), FURN)
+    if fl == 'B1':
+        build_b1_furn(F, z)
+    elif fl == 'B2':
+        build_b2_furn(F, z)
+    else:
+        for r in rooms:
+            if r['kind'] in ('restricted', 'medical'):
+                continue   # restricted 房间：空白；医疗中心设备走 medical_web.py
+            for f in r.get('furn', []):
+                F.box(f[0], f[2], z, f[1], f[3], z + furn_height(f), FURN)
     info = dict(walls=len(segs), doors=sum(len(v) for v in doors.values()),
                 door_list=[dict(rooms=sorted(wall_rooms[i]['name'] for i in segs[k]['rooms']), at=[round(float(v), 2) for v in (segs[k]['a'] + segs[k]['b']) / 2]) for k in doors])
     return S, F, info

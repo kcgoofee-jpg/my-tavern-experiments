@@ -550,3 +550,7 @@ ts,id,stage,event,agent,gate,note
 2026-10-01T08:23:38Z,estate:b1b2,final,wait,hero-1,,waits for the user's Eden r6
 2026-10-01T08:23:38Z,estate:b1b2,final,claim,hero-1,,
 2026-10-01T08:23:44Z,estate:b1b2,final,release,hero-1,,
+2026-10-01T09:51:02Z,estate:b1b2,final,claim,gemini-1,,
+2026-10-01T10:15:19Z,estate:b1b2,final,done,gemini-1,,
+2026-10-01T10:15:33Z,estate:b1b2,verify,done,gemini-1,,
+2026-10-01T10:15:41Z,estate:b1b2,ship,done,gemini-1,,

@@ -1027,4 +1027,15 @@ deviations: none
 blocker: none
 open: none
 cleanup: done (worktree n2 left for the orchestrator)
+=== RESULT R-B1B2 ===
+status: DONE
+items: a ✓ b ✓ c ✓ d ✓ e (skipped per user) ✓ f ✓
+commits: (pending commit) feat(estate): refine basement floors B1 and B2 interior models
+pushed: yes (chat report: head #N)
+tests: node 1094/1095 pass (1 skipped) | smoke PASS | check_maps PASS (0 errors, 0 warnings) | estate3d_manifest PASS (10/10) | probes: accept=PASS
+house.glb size: 575,144 bytes -> 662,304 bytes (+15.15%, within +25% limit)
+deviations: user checkpoint step e skipped per user instruction; self-review verified 8 review screenshots in ~/eden-map-review/render/b1b2/
+blocker: none
+open: none
+cleanup: done
 === END ===
