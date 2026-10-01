@@ -117,10 +117,12 @@ export function createRootStore(host) {
   async function silentBind(name) {
     try {
       const W = host.WBSm ?? await import(scriptBase + 'tavern/worldbook-sync.mjs').catch(() => null);
-      const J = host.worldbookJitModule ?? await import(scriptBase + 'tavern/worldbook-jit.mjs').catch(() => null);
-      if (!W?.bindingOf || !J?.bindPlan) return null;
+      if (!W?.bindingOf || !W?.customBindPlan) return null;
       const b = await W.bindingOf(thFn, name);
-      const w = J.bindPlan(b, { api: { chat: fnOk('rebindChatWorldbook'), char: fnOk('rebindCharWorldbooks'), global: fnOk('rebindGlobalWorldbooks') } });
+      let chatCur = null, hasChar = false;
+      try { chatCur = fnOk('getChatWorldbookName') ? await getChatWorldbookName('current') : null; } catch (e) {}
+      try { hasChar = !!(fnOk('getCharWorldbookNames') && await getCharWorldbookNames('current')); } catch (e) {}
+      const w = W.customBindPlan(b, name, { chatCur, hasChar, api: { chat: fnOk('rebindChatWorldbook'), char: fnOk('rebindCharWorldbooks'), global: fnOk('rebindGlobalWorldbooks') } });   // N15：聊天槽被别的书占着 → 角色附加书（不是聊天）
       if (w === 'none') return null;
       const ok = await W.bind(thFn, name, w);
       console.info('[eden-map] 世界书未绑定 → 静默水合：', name, w, ok ? 'ok' : 'fail');
@@ -137,7 +139,7 @@ export function createRootStore(host) {
       recursion: { prevent_incoming: true, prevent_outgoing: true } };
     if (fnOk('createOrReplaceWorldbook')) await createOrReplaceWorldbook(WBN, [entry]); else await createWorldbook(WBN, [entry]);
     if (!on) { wbState = ''; sendCustom(); return true; }
-    // 绑定：当前聊天没有聊天世界书时绑定到这个聊天；已有别的就不动（在地图设置里提示手动启用）
+    // 绑定：聊天槽空着绑到这个聊天；被别的书占着就退到角色附加世界书 / 全局（N15），别的绑定一律不动
     let bound = false;
     try { const cur = fnOk('getChatWorldbookName') ? getChatWorldbookName('current') : null;
       if (cur === WBN) bound = true; else if (!cur && fnOk('rebindChatWorldbook')) { await rebindChatWorldbook('current', WBN); bound = true; } } catch (e) {}

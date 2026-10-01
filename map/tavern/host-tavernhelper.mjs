@@ -74,12 +74,12 @@ export function createWbAuto(deps) {
   let JITm = null;
   const wbJit = async () => (JITm ??= await import(scriptBase + 'tavern/worldbook-jit.mjs').catch(() => null));
   /** 静默绑定代理（任务二，纯判定在 wb_jit.bindPlan）：书在那儿却没挂任何一处 = 条目不会生效。
-   *  自己按「聊天 > 角色附加书 > 全局」找一档挂上，只在开发日志留 trace——不再让玩家进世界书设置手动勾。 */
+   *  自己按「角色附加书 > 全局」找一档挂上（N15：附加书永不挂单个聊天），只在开发日志留 trace——不再让玩家进世界书设置手动勾。 */
   async function wbEnsureBound(W) {
     try {
-      const J = await wbJit(); if (!J) return null;
       const b = await W.bindingOf(thFn, W.BOOK);
-      const w = J.bindPlan(b, { api: { chat: fnOk('rebindChatWorldbook'), char: fnOk('rebindCharWorldbooks'), global: fnOk('rebindGlobalWorldbooks') } });
+      let hasChar = false; try { hasChar = !!(fnOk('getCharWorldbookNames') && await thFn('getCharWorldbookNames')('current')); } catch (e) {}
+      const w = W.addonBindPlan(b, { hasChar, api: { char: fnOk('rebindCharWorldbooks'), global: fnOk('rebindGlobalWorldbooks') } });
       if (w === 'none') return null;
       const ok = await W.bind(thFn, W.BOOK, w);
       console.info('[eden-map] 世界书附加条目未绑定：静默水合 →', w, ok ? 'ok' : 'fail');
@@ -106,16 +106,16 @@ export function createWbAuto(deps) {
   const wbTomb = () => gvar('eden_wb_tomb') === true || lsGet('edenMapWbTomb') === '1';
   const setTomb = on => { gset('eden_wb_tomb', !!on); lsSet('edenMapWbTomb', on ? '1' : '0'); };
   const boundChars = () => { const g = gvar('eden_wb_chars'); if (Array.isArray(g)) return g; try { return JSON.parse(lsGet('edenMapWbChars') || '[]'); } catch (e) { return []; } };
-  let wbBusy = null, wbAgain = false;
+  let wbBusy = null, wbAgain = false, wbMissAt = null;
   function wbAuto() { if (wbBusy) { wbAgain = true; return wbBusy; } return (wbBusy = wbAutoRun().finally(() => { wbBusy = null; if (wbAgain && !life.dead) { wbAgain = false; wbAuto(); } })); }
   async function wbAutoRun() {
     try { (LS || localStorage).removeItem('edenMapWbAuto'); } catch (e) {}   // 旧的手动「自动同步」开关（默认关）作废：新总开关默认开
     if (!wbOn() || life.dead) return null;
     const W = await wbMod(), ship = await wbShip(); if (!W || !ship) return null;
-    // 书不在、但本机记过同步（head #52 以前手动写过）→ 当作用户删的，立墓碑，不再自动建
+    // 书不在、本机成功同步过、且同一会话两次检查（间隔 ≥ 5 秒）都没看到 → 当作用户删的，立墓碑；单次没看到只重建
     let tomb = wbTomb();
     let r = await W.withLock('eden-map-wb', async () => {
-      if (!tomb && wbSaved()) { const st = await W.inspect(thFn, null); if (st.api && !st.exists) { setTomb(true); tomb = true; } }
+      if (!tomb && wbSaved()) { const st = await W.inspect(thFn, null), v = W.tombVerdict(wbMissAt, { now: Date.now(), exists: st.exists, api: st.api, saved: true }); wbMissAt = v.missAt; if (v.tomb) { setTomb(true); tomb = true; } }   // N15：相隔 ≥ 5 秒两次都没看到才立墓碑，单次没看到就重建
       return W.autoRun(thFn, ship, { on: wbOn(), tombstone: tomb, charKey: cardKey(), boundChars: boundChars() });
     });
     if (!r || life.dead) return r;

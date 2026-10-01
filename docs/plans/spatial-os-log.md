@@ -1396,6 +1396,13 @@ commits: see git log (fix(tavern): update toast Reload does a full page reload)
 pushed: yes
 tests: node see report | smoke see report | arch see report | probes: none relevant (no probe references switchToHead)
 deviations: no unit test added: switchToHead is a closure inside createHostChecks and is now a one-line reload; version switch (switchVersion/switchBranch) in-place path is unchanged
+=== RESULT N15 ===
+status: DONE
+items: 1 ✓ · 2 ✓ · 3 ✓ · 4 ✓ · 5 ✓ · 6 ✓
+commits: see git log n15-wb-bind (fix(worldbook): ... N15)
+pushed: yes (head #N in the chat report)
+tests: node 1339/1339 (baseline 1336) | smoke PASS | arch PASS | probes: th_adopt=PASS custom095=PASS mvu093=PASS
+deviations: th_adopt probe expectation changed (an unbound existing book is now bound to the character additional list, by design)
 blocker: none
 open: none
 cleanup: done

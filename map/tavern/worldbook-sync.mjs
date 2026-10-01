@@ -182,6 +182,34 @@ export function autoDecision(o) {
   if (o.tombstone) return 'tomb';
   return o.legacy && o.legacy.length ? 'migrate' : 'create';
 }
+/**
+ * N15 纯判定：附加书（我们的书）该挂哪儿。b = bindingOf 的结果；o = { hasChar: 有当前角色, api: { char, global } }。
+ * 已挂在任何一处 → 'none'（不改不重复）；否则有角色 → 'char'（角色附加世界书，换聊天 / 重新导入的卡都跟着走）；没有角色 → 'global'。
+ * 永远不挂到单个聊天，也不改 / 不重排别的绑定。
+ */
+export function addonBindPlan(b, o = {}) {
+  if (b && (b.global || b.char || b.chat)) return 'none';
+  const api = o.api || { char: true, global: true };
+  if (o.hasChar && api.char) return 'char';
+  return api.global ? 'global' : 'none';
+}
+/** N15 纯判定：每聊天自定义书。聊天槽空着 → 'chat'；已是这本 → 'none'；聊天槽被别的书占着 → 退到角色附加书，再退全局（不碰聊天槽）。o = { chatCur: 聊天世界书名 | null, hasChar, api: { chat, char, global } } */
+export function customBindPlan(b, name, o = {}) {
+  if (b && (b.global || b.char || b.chat)) return 'none';
+  const api = o.api || { chat: true, char: true, global: true };
+  if (api.chat && (!o.chatCur || o.chatCur === name)) return 'chat';
+  if (o.hasChar && api.char) return 'char';
+  return api.global ? 'global' : 'none';
+}
+export const TOMB_GAP_MS = 5000;
+/** N15 纯判定：书没在是不是用户删的。只有「同一次会话里相隔 ≥ 5 秒的两次检查都没看到书」且「本机确实成功同步过」才立墓碑；其余一律重建。
+ *  prev = 上次没看到书的时间戳（null = 没有）；o = { now, exists, api, saved }。返回 { tomb, missAt }。 */
+export function tombVerdict(prev, o = {}) {
+  if (!o.api || o.exists) return { tomb: false, missAt: null };
+  if (!o.saved) return { tomb: false, missAt: prev ?? o.now };
+  if (prev != null && o.now - prev >= TOMB_GAP_MS) return { tomb: true, missAt: prev };
+  return { tomb: false, missAt: prev ?? o.now };
+}
 /** 跨标签页互斥：navigator.locks（拿不到就跳过这一轮，别的标签页在做）；没有锁接口就直接跑——merge 幂等 + createWorldbook 不覆盖，重复跑也不会出重复书 / 条目 */
 export async function withLock(name, f, nav = globalThis.navigator) {
   const L = nav && nav.locks && typeof nav.locks.request === 'function' ? nav.locks : null;
@@ -191,11 +219,10 @@ export async function withLock(name, f, nav = globalThis.navigator) {
 /**
  * 一轮自动：o = { on, tombstone, charKey: 当前角色的稳定键（头像文件名）, boundChars: [我们自动绑过的角色键] }。
  * 返回 { action, ok, plan?, bound?, wrote?, boundChar? }。
- * create：新建书 → 绑到当前角色附加世界书（没有当前角色 → 当前聊天没有聊天世界书时绑聊天；都不行就不绑）。
+ * create：新建书 → 绑到当前角色附加世界书（没有当前角色 → 全局）。
  * migrate：有旧的带版本号的书 → 建新书并把旧书的每一处绑定换成新书（旧书留着），避免两本同时注入。
  * sync：书在 → 合并（没变化不写）。
- * 每个角色只自动绑一次：当前角色没绑、也没全局 / 聊天绑定、且不在 boundChars 里 → 绑到它的附加世界书并返回 boundChar；
- * 在 boundChars 里却没绑 = 用户自己解绑的，不再绑。
+ * N15：书在但哪儿都没挂 → 每次都挂到当前角色附加世界书（没有角色 → 全局），永不挂单个聊天；boundChars 只读不用。
  */
 export async function autoRun(fn, ship, o = {}) {
   const st = await inspect(fn, ship);
@@ -205,14 +232,14 @@ export async function autoRun(fn, ship, o = {}) {
   let hasChar = false; try { hasChar = !!(fn('getCharWorldbookNames') && await fn('getCharWorldbookNames')('current')); } catch (e) {}
   let r;
   if (act === 'sync' && !st.plan.changed) r = { ok: true, plan: st.plan, wrote: false, bound: st.where };
-  else r = await sync(fn, ship, { consent: true, auto: true, create: act !== 'sync', where: act === 'sync' ? null : hasChar ? 'char' : 'chat', migrate: act === 'migrate' ? st.legacy[0] : null });
+  else r = await sync(fn, ship, { consent: true, auto: true, create: act !== 'sync', where: act === 'sync' ? null : hasChar ? 'char' : 'global', migrate: act === 'migrate' ? st.legacy[0] : null });
   if (!r.ok) return { action: act, ...r };
-  const key = o.charKey || '', done = new Set(arr(o.boundChars));
-  if (hasChar && key) {
-    const b = await bindingOf(fn, BOOK);
-    if (b.char) r = { ...r, bound: r.bound || 'char', boundChar: done.has(key) ? undefined : key };      // 已绑（也记下，免得以后解绑又被绑回去）
-    else if (!b.global && !b.chat && !done.has(key)) { try { if (await bind(fn, BOOK, 'char')) r = { ...r, bound: 'char', boundChar: key }; } catch (e) {} }
-  }
+  // N15：每次都看一眼——书在却哪儿都没挂（含重新导入的卡、附加列表被重置）就挂回去；不再推断「记过的角色 = 用户解绑」
+  try {
+    const b = await bindingOf(fn, BOOK), w = addonBindPlan(b, { hasChar, api: { char: !!fn('rebindCharWorldbooks'), global: !!fn('rebindGlobalWorldbooks') } });
+    if (w !== 'none' && await bind(fn, BOOK, w)) r = { ...r, bound: w };
+    else if (b.char || b.global || b.chat) r = { ...r, bound: r.bound || where(b) };
+  } catch (e) {}
   return { action: act, ...r };
 }
 /** 每聊天版本提醒：prev = 这个聊天上次记下的版本（没有 = 新聊天 / 第一次）；返回要不要提醒 */

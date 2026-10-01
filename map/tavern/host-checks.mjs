@@ -20,6 +20,7 @@ export function createHostChecks(host) {
   let SC = null, checkP = null, checkFacts = null, checkItems = [], checkAt = 0, viewerVer = null, updInfo = null, toastEl = null;
   const UPD_KEY = 'edenMapUpdate', AUTO_UPD_KEY = 'edenMapAutoUpdate', TOAST_KEY = 'edenMapCheckToast';
   async function wbFacts() { try { return await SC.collectWorldbook(hostFn); } catch (e) { return null; } }
+  async function wbWhere() { try { const W = await import(scriptBase + 'tavern/worldbook-sync.mjs'), man = await MAN; if (!man) return undefined; W.setPrefix(worldbookPrefix(man, PACK_ID)); const b = await W.bindingOf(hostFn, W.BOOK); return b.char ? 'char' : b.global ? 'global' : b.chat ? 'chat' : 'none'; } catch (e) { return undefined; } }   // N15
   const wbBook = async () => { try { const man = await MAN, m = await import(scriptBase + 'tavern/worldbook-sync.mjs'); if (man) m.setPrefix(worldbookPrefix(man, PACK_ID)); return man ? m.BOOK : ''; } catch (e) { return ''; } };   // 自检文案里的书名（= 世界书附加条目那本）
   async function updateFacts() {   // 正式版才查；一天最多一次（不论成败），结果记在本机
     if (!VER || !swappable || !SC.swapVer(host.entryUrl, VER)) return null;
@@ -50,7 +51,7 @@ export function createHostChecks(host) {
         api: { getChatMessages: fnOk('getChatMessages'), eventOn: fnOk('eventOn'), injectPrompts: fnOk('injectPrompts'), tavern_events: typeof tavern_events === 'object' },
         vars: varsOk(), ejs: (() => { try { return typeof (window.parent.EjsTemplate || globalThis.EjsTemplate) === 'object'; } catch (e) { return false; } })(),
         db: mvuBridge.dbFacts(true),
-        mvu, varmode, dup: { others: loads, oldStyle, replaced: !root.isConnected }, line: ln, worldbook: await wbFacts(), wbBook: await wbBook(), version: { script: plainVer(VER), viewer: viewerVer }, update: await updateFacts(),
+        mvu, varmode, dup: { others: loads, oldStyle, replaced: !root.isConnected }, line: ln, worldbook: await wbFacts(), wbWhere: await wbWhere(), wbBook: await wbBook(), version: { script: plainVer(VER), viewer: viewerVer }, update: await updateFacts(),
         // B3 卡身份（getCharData，旧办法回退）、B4 宿主版本（只报告）、B7 角色卡正则（只读）
         card: host.tavernhelperApiModule ? await host.tavernhelperApiModule.cardIdentity(thFn, () => mvuBridge.stContext()).catch(() => null) : null, host: host.tavernhelperApiModule ? host.tavernhelperApiModule.hostVersions(thFn) : null,
         regex: host.tavernhelperApiModule && thFn('getTavernRegexes') ? await Promise.resolve(thFn('getTavernRegexes')({ type: 'character', name: 'current' })).then(l => host.tavernhelperApiModule.regexFacts(l), () => null) : null,

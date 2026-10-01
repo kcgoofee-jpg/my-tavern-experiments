@@ -139,6 +139,10 @@ export function evaluate(f) {
   else if (w.missing.length) out.push(item('worldbook', 'warn', `世界书附加条目缺少：${w.missing.join('、')}（导入${f.wbBook ? `「${f.wbBook}」` : '附加条目的世界书'}，并在世界书里设为全局、或绑定到当前角色 / 聊天；刚导入的话刷新一次页面）`,
     `Lorebook add-on entries missing: ${w.missing.join(', ')} (import ${f.wbBook ? `"${f.wbBook}"` : 'the add-on lorebook'} and activate it globally or bind it to this character / chat; refresh once after importing)`, { book: f.wbBook || '' }));
   else out.push(item('worldbook', 'ok', '世界书附加条目已启用', 'Lorebook add-on entries enabled'));
+  if (w && f.wbWhere !== undefined) {   // N15：附加书挂在哪儿（char / global / chat / none）；只显示，不改绑定
+    const W = { char: ['角色附加世界书', 'character additional books'], global: ['全局', 'global'], chat: ['当前聊天', 'this chat'], none: ['哪里都没挂', 'nowhere'] }, k = W[f.wbWhere] ? f.wbWhere : 'none';
+    out.push(item('worldbook-bound', k === 'none' ? 'info' : 'ok', `世界书附加条目绑定位置：${W[k][0]}`, `Lorebook add-on bound to: ${W[k][1]}`, { where: k }));
+  }
   if (w && w.lore && f.ejs === false) out.push(item('ejs', 'warn', '启用了「地图方位」条目，但没检测到「提示词模板」扩展：条目会原样发给模型（装上扩展，或关掉这几条）',
     'Map location lore entries enabled but the Prompt Template extension is missing: raw EJS would reach the model (install it or disable those entries)'));
 

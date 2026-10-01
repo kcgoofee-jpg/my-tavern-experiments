@@ -162,7 +162,7 @@ async function runUpd(name, preset) {
     const p = P.page;
     await p.waitForFunction(v => localStorage.getItem('edenMapWbNoticeVer') === v, SHIP_VER, { timeout: 30000 }).catch(() => {});
     const up = await p.evaluate(() => { const b = window.__th.books['伊甸地图·世界书附加条目'] || []; return { writes: window.__th.writes, ver: b[0]?.extra?.eden_ver, n: b.length, notice: localStorage.getItem('edenMapWbNoticeVer'), global: window.__th.global, charWb: window.__th.charWb, other: window.__th.books['卡自带世界书'] }; });
-    rep.check(`${name} 版本变了：静默同步到当前版本，只写这一本书、绑定不动`, up.writes.join() === '伊甸地图·世界书附加条目' && up.ver === SHIP_VER && up.n === SEED_OLD.length && !up.global.length && !(up.charWb?.additional || []).length && up.other[0].content === '原作', JSON.stringify({ writes: up.writes, ver: up.ver, n: up.n }));
+    rep.check(`${name} 版本变了：静默同步到当前版本，只写这一本书、没挂的附加书挂到角色附加世界书（N15，不挂聊天 / 全局）`, up.writes.join() === '伊甸地图·世界书附加条目' && up.ver === SHIP_VER && up.n === SEED_OLD.length && !up.global.length && (up.charWb?.additional || []).join() === '伊甸地图·世界书附加条目' && up.other[0].content === '原作', JSON.stringify({ writes: up.writes, ver: up.ver, n: up.n }));
     await p.waitForFunction(() => document.body.innerText.includes('地图世界书附加条目已更新'), null, { timeout: 6000 }).catch(() => {});
     const t1 = await p.evaluate(() => document.body.innerText.includes('地图世界书附加条目已更新'));
     rep.check(`${name} 更新提示只出这一次`, t1, String(t1));

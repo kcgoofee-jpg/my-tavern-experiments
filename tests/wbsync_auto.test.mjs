@@ -46,7 +46,7 @@ test('autoDecision：总开关 / 没接口 / 离线 / 墓碑 / 旧书 / 已有',
 test('打开地图：书没有 → 自动建好并挂到当前角色附加世界书，不用点；别的绑定不动', async () => {
   const t = fakeTH({ 卡书: [] }, { char: ['别的附加书'], global: ['全局书'] });
   const r = await W.autoRun(t.fn, S1, { charKey: 'a.png' });
-  assert.ok(r.ok); assert.equal(r.action, 'create'); assert.equal(r.bound, 'char'); assert.equal(r.boundChar, 'a.png');
+  assert.ok(r.ok); assert.equal(r.action, 'create'); assert.equal(r.bound, 'char');
   assert.equal(t.B[W.BOOK].length, 2);
   assert.deepEqual(t.G.char.additional, ['别的附加书', W.BOOK]); assert.deepEqual(t.G.global, ['全局书']);
   // 再跑：不写
@@ -61,9 +61,9 @@ test('总开关关 / 墓碑：什么都不写', async () => {
   }
 });
 
-test('没有当前角色（群聊等）：绑到当前聊天；没有 createWorldbook：自动模式不用 createOrReplace', async () => {
+test('没有当前角色（群聊等）：绑全局（N15，不绑聊天）；没有 createWorldbook：自动模式不用 createOrReplace', async () => {
   const t = fakeTH({}, {}, { noChar: true }); const r = await W.autoRun(t.fn, S1, {});
-  assert.ok(r.ok); assert.equal(t.G.chat, W.BOOK);
+  assert.ok(r.ok); assert.deepEqual(t.G.global, [W.BOOK]); assert.equal(t.G.chat, null);
   const t2 = fakeTH({}, {}, { noCreate: true }); const r2 = await W.autoRun(t2.fn, S1, { charKey: 'a' });
   assert.equal(r2.ok, false); assert.equal(t2.B[W.BOOK], undefined); assert.ok(!t2.writes.some(x => x[0] === 'createOrReplaceWorldbook'));
 });
@@ -96,13 +96,45 @@ test('旧书带版本号：自动迁移——建新书、旧书的绑定换成�
   assert.ok(!t.G.char.additional.includes(W.BOOK), '已全局生效，不再重复挂到角色');
 });
 
-test('每个角色只自动挂一次：用户解绑后不再挂回去；新角色会挂', async () => {
+test('N15：重新导入的卡（附加列表被重置）→ 下一轮挂回角色附加世界书；已知角色键不再被当成「用户解绑」', async () => {
   const t = fakeTH(); await W.autoRun(t.fn, S1, { charKey: 'a' });
-  t.G.char.additional = [];   // 用户解绑
-  let r = await W.autoRun(t.fn, S1, { charKey: 'a', boundChars: ['a'] });
-  assert.ok(r.ok); assert.deepEqual(t.G.char.additional, []);
-  r = await W.autoRun(t.fn, S1, { charKey: 'b', boundChars: ['a'] });   // 换了角色（假接口里是同一个附加列表）
-  assert.equal(r.boundChar, 'b'); assert.deepEqual(t.G.char.additional, [W.BOOK]);
+  t.G.char.additional = ['别的附加书'];   // 重新导入：列表重置
+  const r = await W.autoRun(t.fn, S1, { charKey: 'a', boundChars: ['a'] });
+  assert.ok(r.ok); assert.equal(r.bound, 'char'); assert.deepEqual(t.G.char.additional, ['别的附加书', W.BOOK]);
+  assert.equal(t.G.chat, null, '永不挂单个聊天');
+});
+
+test('N15：没有当前角色 → 挂全局；聊天槽空着也不用；已挂在聊天 / 全局的不改', async () => {
+  let t = fakeTH({}, {}, { noChar: true }); let r = await W.autoRun(t.fn, S1, { charKey: '' });
+  assert.ok(r.ok); assert.equal(r.bound, 'global'); assert.deepEqual(t.G.global, [W.BOOK]); assert.equal(t.G.chat, null);
+  t = fakeTH({ [W.BOOK]: [] }, { chat: W.BOOK }); await W.autoRun(t.fn, S1, { charKey: 'a' });
+  assert.equal(t.G.chat, W.BOOK); assert.deepEqual(t.G.char.additional, []); assert.deepEqual(t.G.global, []);
+});
+
+test('N15 addonBindPlan / customBindPlan / tombVerdict 纯判定', () => {
+  const none = { global: false, char: false, chat: false }, api = { chat: true, char: true, global: true };
+  assert.equal(W.addonBindPlan(none, { hasChar: true, api }), 'char');
+  assert.equal(W.addonBindPlan(none, { hasChar: false, api }), 'global');
+  assert.equal(W.addonBindPlan(none, { hasChar: true, api: { char: false, global: true } }), 'global');
+  assert.equal(W.addonBindPlan(none, { hasChar: false, api: { char: true, global: false } }), 'none', '附加书永不退到聊天');
+  assert.equal(W.addonBindPlan({ ...none, chat: true }, { hasChar: true, api }), 'none');
+  assert.equal(W.customBindPlan(none, 'X', { chatCur: null, hasChar: true, api }), 'chat');
+  assert.equal(W.customBindPlan(none, 'X', { chatCur: '别的书', hasChar: true, api }), 'char');
+  assert.equal(W.customBindPlan(none, 'X', { chatCur: '别的书', hasChar: false, api }), 'global');
+  assert.equal(W.customBindPlan({ ...none, global: true }, 'X', { chatCur: '别的书', hasChar: true, api }), 'none');
+  const o = { exists: false, api: true, saved: true };
+  let v = W.tombVerdict(null, { ...o, now: 1000 }); assert.deepEqual(v, { tomb: false, missAt: 1000 });
+  v = W.tombVerdict(1000, { ...o, now: 3000 }); assert.equal(v.tomb, false);
+  v = W.tombVerdict(1000, { ...o, now: 1000 + W.TOMB_GAP_MS }); assert.equal(v.tomb, true);
+  assert.equal(W.tombVerdict(1000, { ...o, saved: false, now: 99999 }).tomb, false, '没成功同步过：不立');
+  assert.deepEqual(W.tombVerdict(1000, { ...o, exists: true, now: 99999 }), { tomb: false, missAt: null });
+});
+
+test('N15：每聊天自定义书 —— 聊天槽被别的书占着 → 退到角色附加世界书（不碰聊天槽）', async () => {
+  const t = fakeTH({}, { chat: '别的聊天书' });
+  const b = await W.bindingOf(t.fn, '自定义书'), w = W.customBindPlan(b, '自定义书', { chatCur: t.G.chat, hasChar: true, api: { chat: true, char: true, global: true } });
+  assert.equal(w, 'char'); assert.ok(await W.bind(t.fn, '自定义书', w));
+  assert.equal(t.G.chat, '别的聊天书'); assert.deepEqual(t.G.char.additional, ['自定义书']);
 });
 
 test('绑定接口抛错：不抛出，书照样建好', async () => {
