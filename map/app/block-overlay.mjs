@@ -17,6 +17,11 @@ ${SLOTS.map(s => `.lyr[data-slot="${s}"] { z-index: var(--zv-${s}); }`).join('\n
 .lyr-pt { pointer-events: none; color: var(--lc); opacity: var(--lo); }
 .lyr-pt i { display: block; width: var(--ls); height: var(--ls); border-radius: 50%; background: currentColor; border: 1.5px solid var(--map-label-ink, #fff8); box-sizing: border-box; }
 .lyr-pt i.ic { background: none; border: 0; border-radius: 0; } .lyr-pt i.ic svg { width: 100%; height: 100%; display: block; }
+.lyr-pt i.ic img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.lyr-pt.lyr-tip { pointer-events: auto; }
+.lyr-prop { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.lyr-prop img { display: block; width: var(--ls, 32px); height: auto; max-height: 64px; object-fit: contain; }
+.lyr-prop span { font: 500 var(--fs-micro, 11px)/1.4 var(--font-ui, system-ui); color: var(--map-label-ink, #fff); text-shadow: 0 0 3px #000c; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lyr-pt.pulse i { animation: lyrPulse 2.4s ease-in-out infinite; }
 .lyr-lb { pointer-events: none; width: max-content; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--map-label-ink, #fff); opacity: var(--lo);
   font: 500 var(--lfs, var(--fs-micro, 11px))/1.5 var(--font-ui, system-ui); }
@@ -37,6 +42,8 @@ export function ensureCss() {
 /** cssColor(c) -> a value for a CSS custom property: `#rrggbb[aa]` as is, a kernel token name as var(--name), anything else null. */
 export const cssColor = c => (typeof c === 'string' && HEX8.test(c) ? c : recheck.tokenName(c) ? `var(${c})` : null);
 const color = (c, fallback = '--accent') => cssColor(c) || `var(${fallback})`;
+let propUrl = () => null;   // K-R88: a local layer's `icon: "prop:<id>"` is shown through the object URL of the user's own picture (set by prop-store.mjs); a pack cannot name one
+export const setPropResolver = fn => { propUrl = typeof fn === 'function' ? fn : () => null; };
 const text = (f, lang) => (f.i18n?.[lang]?.label ?? f.label ?? '');
 
 function pathEl(d, cls) { const e = document.createElementNS(NS, 'path'); e.setAttribute('d', d); if (cls) e.setAttribute('class', cls); return e; }
@@ -72,7 +79,8 @@ export function pointEl(f, s, lang = 'zh') {
   el.dataset.slot = 'markers';
   el.style.setProperty('--lc', color(s.color)); el.style.setProperty('--lo', String(s.opacity)); el.style.setProperty('--ls', `${s.size}px`);
   const dot = document.createElement('i');
-  if (typeof s.icon === 'string' && ICON.test(s.icon) && !s.icon.startsWith('prop:')) { const svg = iconSvg(s.icon); if (svg) { dot.className = 'ic'; dot.innerHTML = svg; } }   // kernel icon markup, chosen by a re-checked name
+  if (typeof s.icon === 'string' && /^prop:[A-Za-z0-9_-]{1,64}$/.test(s.icon)) { const u = propUrl(s.icon.slice(5)); if (u) { const im = document.createElement('img'); im.src = u; im.alt = ''; dot.className = 'ic'; dot.appendChild(im); } }
+  else if (typeof s.icon === 'string' && ICON.test(s.icon)) { const svg = iconSvg(s.icon); if (svg) { dot.className = 'ic'; dot.innerHTML = svg; } }   // kernel icon markup, chosen by a re-checked name
   el.appendChild(dot);
   const label = text(f, lang);
   if (label) { el.setAttribute('role', 'img'); el.setAttribute('aria-label', label); } else el.setAttribute('aria-hidden', 'true');

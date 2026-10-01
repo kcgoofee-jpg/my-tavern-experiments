@@ -32,7 +32,7 @@ test('(b) the first pack declares exactly the estate ward: an area on tc_upper, 
   assert.equal(l.legend.length, 1);
   const merged = mergeLayers(KERNEL_LAYERS, r.layers);
   assert.deepEqual(merged.problems, []); assert.deepEqual(merged.layers.filter(x => x.origin === 'pack').map(x => x.id), ['estate_ward']);
-  assert.equal(merged.layers.length, 18);
+  assert.equal(merged.layers.length, 20);
 });
 
 test('(b) the ward is the island rim grown 5 % and its edge look is the depth ward channel (strength near, cold-light edge)', () => {

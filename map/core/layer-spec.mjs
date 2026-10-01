@@ -137,7 +137,9 @@ export function normLayer(raw, { kernelIds = KERNEL_IDS, trust = 'pack' } = {}) 
   const id = raw.id, ks = kernelIds instanceof Set ? kernelIds : new Set(kernelIds);
   if (typeof id !== 'string' || !LID.test(id)) return no('layer-id');
   for (const k of Object.keys(raw)) if (!EXT(k) && !['id', 'type', 'slot', 'source', 'data', 'filter', 'applies', 'style', 'menu', 'legend', 'off'].includes(k)) problems.push({ code: 'unknown-key', key: k });
-  const kernel = ks.has(id), local = trust === 'local', layer = { id, origin: kernel ? 'kernel' : local ? 'local' : 'pack' };
+  const kernel = ks.has(id), local = trust === 'local';
+  if (kernel && local) return no('local-id');   // a local layer never adjusts a kernel layer (K-R87)
+  const layer = { id, origin: kernel ? 'kernel' : local ? 'local' : 'pack' };
   if (kernel) { if (['type', 'slot', 'source', 'style', 'data', 'filter'].some(k => raw[k] !== undefined)) problems.push({ code: 'layer-kernel-fixed', id }); }
   else {
     if (local && !id.startsWith('local-')) return no('local-id');

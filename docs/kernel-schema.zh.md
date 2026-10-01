@@ -7,7 +7,7 @@
 > `map/core/compat-v1.mjs`（S1-impl-2 步）继续可用。
 
 每条规则都有固定编号 `K-R01` … `K-R105`，后面的提示词和测试按编号引用。编号永不挪动：初稿之后补的规则（K-R63–K-R70，
-信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号；K-R71–K-R73 由 S6-1 补上，K-R74–K-R76 由 S6-2 补上，K-R77–K-R78 由 S6-3 补上；K-R79–K-R89 与 K-R104 属于 S8（K-R79、K-R81–K-R83、K-R85、K-R104 由 S8-1 补上；K-R86–K-R89 仍是计划；K-R80、K-R84 由 S8-2 补上），K-R90–K-R103 预留给 S9（清单在 §13 末尾）；K-R105 由 R0 补上（§5，场景头）。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
+信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号；K-R71–K-R73 由 S6-1 补上，K-R74–K-R76 由 S6-2 补上，K-R77–K-R78 由 S6-3 补上；K-R79–K-R89 与 K-R104 属于 S8（K-R79、K-R81–K-R83、K-R85、K-R104 由 S8-1 补上；K-R86–K-R89 由 S8-3 补上；K-R80、K-R84 由 S8-2 补上），K-R90–K-R103 预留给 S9（清单在 §13 末尾）；K-R105 由 R0 补上（§5，场景头）。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
 
 ## 0. 请你拍板
 
@@ -663,7 +663,7 @@ v1 的中文字段名与英文名（`type`、`place`、`title`、`level`、`stat
 
 **K-R79 —— layers 块。** 一个图层就是一行 `{ id, type?, slot?, source?, data?, filter?, applies?, style?, menu?, legend?, off? }`（schema
 `map/data/schema/v2/layers.schema.json`；`_…` 与 `x-…` 键保留，K-R04）。`id` 符合 `^[a-z][a-z0-9_-]{0,31}$`。引擎自带一份内核图层清单
-（`core/layer-defaults.mjs` 的 `KERNEL_LAYERS`：17 个视口图层，各带槽位、kind、order、菜单行与所用的绘制积木，内核代码自己画的 `type` 为 `null`）；
+（`core/layer-defaults.mjs` 的 `KERNEL_LAYERS`：17 个视口图层（S8-1）加上 S8-3 的 `nav-ops` 与 `local-props`，各带槽位、kind、order、菜单行与所用的绘制积木，内核代码自己画的 `type` 为 `null`）；
 各模块经自己的宣告注册（`app/layer-host.mjs` 的 `declared(id, impl)`），所以注册表里恰好是清单上的事实加模块自己的函数。生效清单 = 内核清单按 id
 并上设定包的行（`mergeLayers`，纯函数，`core/layer-spec.mjs`）：id 是内核图层的行是**调整**，只留 `menu`（label、title、`i18n`、`order`、`default`、
 `hidden`）、`applies`（与图层自己的代码规则取与）、`legend` 和 `off`（图层仍注册、变为不可见、没有菜单行）；它的 `type`、`slot`、`source`、`style`、
@@ -708,6 +708,37 @@ v1 的中文字段名与英文名（`type`、`place`、`title`、`level`、`stat
 不合格的退回缺省（K-R64）；颜色只经 CSS 自定义属性进样式，画布用从页面解析出的值。包宣告的动画图层在 `prefers-reduced-motion: reduce` 下什么都不画（脉冲变静态）；
 省流档把光点和粒子减半，内核自己的车流层与天气层同样如此。这两层与航线层经同一批渲染器绘制（`core/layer-geometry.mjs`、`app/block-canvas.mjs`、
 `app/block-overlay.mjs`），由记录调用的测试证明。
+
+**K-R86 —— 宿主送值。** （a）卡变量，只读：宿主读包的图层点名的变量——包的图层行里每个 `mvu:<path>` 来源与每个 `applies.mvu.path`（schema-1 包取叠加层的 `layers`），
+去重、至多 8 个、各自符合 vars 路径格式（`profile.layerPaths`，`core/profile.mjs`）。`MVUBridge.layerValues(paths)`（仍是唯一碰宿主全局的模块）从每轮一次的 `stat_data` 快照里经路径读取器
+读出（`[值, 说明]` 对会被拆开，所以恰好两个字符串的列表会被当成这样的对：写三项以上或写成对象；缺路径就缺省）；超过 4 KB 的 JSON 或超过 200 项的列表被截断并标 `…truncated`
+（`core/layer-values.mjs`）。值的 JSON 变了、以及每次 `eden-map:ready` 时，宿主发 `eden-map:layer-data { values: { <path>: 值 } }`；绝不写 `stat_data`。查看器保留最近一份：`mvu:<path>`
+来源把值变成点要素（列表的各项、对象的键、或一个字符串；各按普通地点文字定位，不画在当前地图上的丢弃；至多 200 个），`applies.mvu = { path, equals? | min? | max? | truthy? }` 在值存在且
+给出的每个键都成立时为真（`equals` 严格相等，`min` / `max` 按数值，`truthy` 按真值；`layerContext().mvu` = 这份值）。（b）领航员叠加（I-04）：领航员经校验的
+`OP_CLUE { name, nx, ny, urgency }` 与 `OP_MARKER { id, nx, ny, label }` 由宿主在会话里保留（`tavern/nav-ops.mjs`），每行盖 `{ floor, map }` 章（`map` = 玩家当前地点所在的地图，不知道就是
+`null`），超过 20 楼的行丢弃，每个列表最多 12 条，变了就发 `eden-map:ops { clues, markers }`，`eden-map:ready` 时有内容也发，换聊天时发空列表。内核图层 `nav-ops`（槽 `markers`、`point` 积木，
+默认开：领航员本身才是开关；选择存在 `edenMapLayers`）把线索画在它的名字在当前地图上被画出的位置，否则画在它盖章地图上的 `nx` / `ny`；线索会呼吸、按紧急度（1..3）变大；标注画在盖章
+地图的 `nx` / `ny` 并带标签；提示写明这是领航员的建议。它的行只在当前地图上有内容时才显示。绝不写进聊天、聊天变量或世界书。
+
+**K-R87 —— 本机图层。** `window.EdenMap` 新增 `addLayer(def)` → `{ ok, id, problems }`、`removeLayer(id)` → 布尔、`setLayerData(id, features)` → `{ ok, problems }` 与 `layers()` →
+`[{ id, type, slot, visible, applicable, source, count }]`（只加方法、不改名；`tavern/extension-api-contract.mjs` 的 `EDEN_API` 加这四项）。`def` 是一份图层声明，由与设定包同一个 `normLayer` 以信任
+“local”校验：id 以 `local-` 开头（内核 id 被拒），来源是 inline、`view:*`、`events`、`people`、`items` 或 `routine`（绝不 `file:`、`mvu:`、`ops`），本机图层至多 16 个；重复的本机 id 替换原来那层；
+没有菜单的本机图层得到一行以它的 id 为名的行；点样式可以写 `icon: "prop:<id>"`（K-R88）。本机图层用同样的积木绘制，只活在本次页面会话里（脚本加载时再加一次，就像它重新 `on` 订阅），只有可见性被记住
+（`edenMapLayers`）。在宿主页上，同样的方法在查看器开着时转发过去；宿主保留这些声明，并在每次 `eden-map:ready` 时重放。
+
+**K-R88 —— 本机道具包。** 用户自己的文件（glb、png、webp、svg）只存在这个浏览器里：IndexedDB 库 `spatialProps`、store `props`、键 `<包 id>::<道具 id>`，记录
+`{ id, name, type, bytes, w?, h?, createdAt, blob }`（`app/prop-store.mjs`）。校验只做技术层面（`core/prop-pack.mjs`）：glb = `glTF` 且版本 2、至多 8 MB；png = 8 字节签名；webp = `RIFF` .. `WEBP`；
+图片至多 1 MB 且能解码；svg = 以 `<svg` 为根的 UTF-8 文本、至多 256 KB，含 `<script`、`<foreignObject`、`on…=` 属性或 `javascript:` 链接则拒绝；每个包至多 64 个道具、64 MB。图片只经 `blob:`
+对象 URL 放进 `<img>`；绝不发给宿主、模型或任何 URL。`EdenMap` 的方法：`addProp(file, { name })` → `{ ok, id, problems }`、`removeProp(id)`、`props()` → `[{ id, name, type, bytes }]`、
+`placeProp(id, { map, at } | { pick: true })` → `{ ok, map, at }` 的 Promise（pick = 当前地图上的下一次点击，Esc 取消）与 `unplaceProp(id, map)`。摆放 `{ prop, map, at }`（至多 200 条，`at` = 视图宽高的
+比例）按聊天存在 `edenMap:chat:<聊天 id>:props`；内核图层 `local-props`（槽 `markers`、`point` 积木、默认开）把它们画在平面地图上（图片画成 `<img>`、glb 画成带名字的 `cube` 图标；当前地图上有摆放时才显示这一行）。
+它们是用户自己的装饰：本机的、不是聊天事实、从不注入。把 glb 摆进三维页面是编辑器（S9b）的事。
+
+**K-R89 —— `sound` 积木。** `sound` 图层（槽 `fx`，不画像素）播放程序化环境音：它的数据（内联 `data`，或 `file:` 来源的文件）是 `{ rules: [{ match, scenes }], recipes?, master? }`
+（`core/ambience.mjs`：滤波噪声与谐波振荡器的配方；第一条 `match` 的各键（`map`、`layer`、`place`、`weather`、`night`）都与上下文相等的规则生效；雨与暴雨再加一个雨场景）；`match.map` 是当前视图 id，
+`applies` 决定这一层在哪里才生效。声音绝不自己响起：不论 `menu.default` 写什么，`sound` 行都是关的，直到用户打开它（之后再来时存在 `edenMapLayers` 里的 `1` 会被采用）；AudioContext 只在用户手势之后才创建
+（打开这一行就是一次；已存的“开”要等第一次点击或按键），页面隐藏或没有任何 `sound` 图层处于生效状态（可见且适用）时挂起。场景集合跟随当前视图、昼夜时段（`eden-map:clock`）与天气，经消息触发的重算
+至多每 2 秒一次。任何地方都没有音频文件；`window.SoundApi.describe()` 列出每层正在播放的场景。
 
 ## 10. ui 与 llm
 
@@ -861,11 +892,8 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 
 **S9b 新增：** K-R100（§4.6，编辑模式与草稿）、K-R101 与 K-R102（§2.4，包图片与私有图片），以及对 K-R66（按来源的上限、`media`）、K-R67（叠加层可以带 `media` 与节点 `media`）、K-R98（并入草稿、内置包的叠加层导出）的修订。
 
-**S8 计划**（设计见 `docs/layers-schema.md`；审阅表 L-01 … L-15；全文随 S8-1 … S8-3 落地）：
-- K-R86（§9）宿主送值：MVU 路径、`applies.mvu`、领航员叠加（S8-3）。
-- K-R87（§9）本机扩展 `EdenMap.addLayer` / `removeLayer` / `setLayerData` / `layers`（S8-3）。
-- K-R88（§9）本机道具包：存储、校验、摆放、`prop:` 图标（S8-3）。
-- K-R89（§9）`sound` 积木与环境音数据（S8-3）。
+**S8-3 新增：** K-R86（§9，宿主送的卡变量与领航员叠加）、K-R87（§9，本机图层）、K-R88（§9，本机道具包）与 K-R89（§9，`sound` 积木）；至此 S8 设计里的 K-R79 – K-R89 与 K-R104 全部写完。
+
 
 ## 14. 设计方的决定与遗留点
 

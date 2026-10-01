@@ -344,7 +344,10 @@
 | **map level** | 多层地图的一层，例如城市的各层；用层切换条和「上一级」到达。 | `app/layers.mjs`（将改名 `map-level-nav`）、`REG.groups`。 | Layer slot。 |
 | **layer slot / LayerRegistry** | 视口内 10 个固定渲染槽位之一（`base` … `interaction`），各有 z 值；图层向槽位注册。 | `core/layers.mjs`（将改名 `layer-registry`）、`app/layerhost.mjs`、`window.TCLayers`。 | Map level。 |
 | **declared layer（宣告图层）** | 由 `layers` 块或内核清单里的一行给出的图层（K-R79）：id、绘制积木（`type`）、槽位、来源、applies 规则、菜单行与图例行。画在某个图层槽位里。 | `core/layer-spec.mjs`、`core/layer-defaults.mjs`、`app/layer-host.mjs`（`declared`、`applyPackLayers`）。 | 图层槽位（它画在哪里）与 map level。 |
-| **kernel layer（内核图层）** | 引擎自带的 17 个视口图层之一（天气、航线、迷雾、标记……），声明在 `KERNEL_LAYERS`；设定包可以调整它的菜单行、`applies`、图例或把它 `off`，但不能改它的槽位、积木或来源（K-R79）。 | `core/layer-defaults.mjs`。 | 设定包声明的图层（origin 为 `pack`）。 |
+| **kernel layer（内核图层）** | 引擎自带的 19 个视口图层之一（天气、航线、迷雾、标记……），声明在 `KERNEL_LAYERS`；设定包可以调整它的菜单行、`applies`、图例或把它 `off`，但不能改它的槽位、积木或来源（K-R79）。 | `core/layer-defaults.mjs`。 | 设定包声明的图层（origin 为 `pack`）。 |
+| **prop pack（本机道具包）** | 用户自己的文件（glb、png、webp、svg）只存在这个浏览器里（IndexedDB `spatialProps`）：只做技术校验，可作本机图层的点图标（`prop:<id>`），并经内核图层 `local-props` 摆在平面地图上。从不上传，也不是聊天里的事实。 | `core/prop-pack.mjs`、`app/prop-store.mjs`、`app/local-props-view.mjs`（K-R88）。 | 设定包（描述一张卡世界的数据）。 |
+| **sound layer（声音图层）** | 设定包声明的 `sound` 积木图层，在它适用的视图里播放程序化环境音（滤波噪声、振荡器）。它的行默认关，用户打开并点一下之后才会出声。 | `app/sound-block.mjs`、`core/ambience.mjs`（K-R89）。 | 音频文件（没有）。 |
+| **navigator overlay（领航员叠加）** | 可选的后台领航员给出的线索与标注（`OP_CLUE`、`OP_MARKER`），只在会话里保留，画在内核图层 `nav-ops` 上；从不写进聊天、聊天变量或世界书。 | `tavern/nav-ops.mjs`、`app/nav-ops-view.mjs`（K-R86）。 | 事件（`OP_EVENT`），那是事态图层上另一种叠加。 |
 | **view / parse / core (suffixes)** | 同名文件对的后缀：`-view` 在查看器里绘制，`-parse` 在宿主里从聊天正文推导数据，纯的共享核心保留裸名。 | 规则见本文；表 B 里落地。 | MVC 框架里的 view。 |
 | **ledger** | 这个词有两个互不相干的用法。(1) `core/ledger.mjs` 的结算账本：按域校验的原子指令。(2) 棘轮账本 `tools/arch_baseline.json`：只许减少的计数。 | 如上。 | 彼此；探索台账 `探索` 是第三个小的。 |
 | **head #N** | 集成分支的构建计数：`map/data/head.json` 的 `{ build, sha, at }`，由 `tools/push_preview.sh --head` 里的 `tools/bump_head.py` 递增。 | 提交标题 "head #101"；由 `tavern/follow.mjs` 读取。 | 发布版本号（`VERSION`）；重构期间不打 tag、不升版本。 |

@@ -9,7 +9,7 @@
 
 Every rule has a stable id `K-R01` … `K-R105`; later prompts and tests cite them. Ids never move: rules added after the
 first draft (K-R63–K-R70, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit; K-R71–K-R73
-were added by S6-1, K-R74–K-R76 by S6-2, K-R77–K-R78 by S6-3; K-R79–K-R89 and K-R104 are for S8 (K-R79, K-R81–K-R83, K-R85 and K-R104 added by S8-1; K-R86–K-R89 still planned; K-R80 and K-R84 added by S8-2), K-R90–K-R103 for S9 (planned lists at the end of §13); K-R105 was added by R0 (§5, the scene header). The choices left to the user
+were added by S6-1, K-R74–K-R76 by S6-2, K-R77–K-R78 by S6-3; K-R79–K-R89 and K-R104 are for S8 (K-R79, K-R81–K-R83, K-R85 and K-R104 added by S8-1; K-R86–K-R89 added by S8-3; K-R80 and K-R84 added by S8-2), K-R90–K-R103 for S9 (planned lists at the end of §13); K-R105 was added by R0 (§5, the scene header). The choices left to the user
 are `K-01` … `K-09` (§0). Everything else was decided by the designer and is listed with its reason in §14.
 
 ## 0. Decisions for the user (review sheet)
@@ -765,7 +765,7 @@ until the user first touches the legend filter.
 
 **K-R79 — The layers block.** A layer is one row `{ id, type?, slot?, source?, data?, filter?, applies?, style?, menu?, legend?, off? }` (schema
 `map/data/schema/v2/layers.schema.json`; `_…` and `x-…` keys are kept, K-R04). `id` matches `^[a-z][a-z0-9_-]{0,31}$`. The engine ships a kernel list
-of its own layers (`core/layer-defaults.mjs` `KERNEL_LAYERS`: the 17 viewport layers, each with its slot, kind, order, menu row and the building
+of its own layers (`core/layer-defaults.mjs` `KERNEL_LAYERS`: the 17 viewport layers of S8-1 plus `nav-ops` and `local-props` of S8-3, each with its slot, kind, order, menu row and the building
 block it draws through, `type: null` when kernel code draws it); each module registers through its declaration (`declared(id, impl)` in
 `app/layer-host.mjs`), so the registry holds exactly the facts of the list plus the module's functions. The effective list is the kernel list merged
 with the pack's rows by id (`mergeLayers`, pure, `core/layer-spec.mjs`): a row whose id is a kernel id **adjusts** that layer, keeping only `menu`
@@ -821,6 +821,45 @@ at run time and a failing one falls back to its default (K-R64); colours reach C
 resolved from the page. A pack-declared animated layer draws nothing while `prefers-reduced-motion: reduce` is set (pulses become static); the data-saver
 tier halves the dots and particles, as the kernel's own traffic and weather layers do. Those two layers and the routes layer draw through the same
 renderers (`core/layer-geometry.mjs`, `app/block-canvas.mjs`, `app/block-overlay.mjs`), proved by recorded-call tests.
+
+**K-R86 — Host-fed values.** (a) Card variables, read only: the host reads the variables a pack's layers name: each `mvu:<path>` source and each `applies.mvu.path`
+of the pack's layer rows (the overlay's `layers` for a schema-1 pack), distinct, at most 8, each matching the vars path pattern (`profile.layerPaths`, `core/profile.mjs`).
+`MVUBridge.layerValues(paths)` (still the only module that touches the host globals) reads them from the once-per-round `stat_data` snapshot through the path reader
+(a `[value, note]` pair is unwrapped, so a list of exactly two strings reads as such a pair: write three or more entries or an object; a missing path is absent); a value over
+4 KB of JSON, or a list over 200 items, is cut and marked `…truncated` (`core/layer-values.mjs`). The host posts `eden-map:layer-data { values: { <path>: value } }` when the
+JSON of the values changed and again on `eden-map:ready`; nothing is written to `stat_data`. The viewer keeps the last values: an `mvu:<path>` source yields point features from
+the value (a list's entries, an object's keys, or one string; each located like any place text, the ones not drawn on the open map are dropped; at most 200), and `applies.mvu =
+{ path, equals? | min? | max? | truthy? }` holds when the value exists and every key given holds (`equals` strict, `min` / `max` numeric, `truthy` by truthiness; `layerContext().mvu` = the
+values). (b) Navigator overlays (I-04): the navigator's validated `OP_CLUE { name, nx, ny, urgency }` and `OP_MARKER { id, nx, ny, label }` are kept by the host for the session
+(`tavern/nav-ops.mjs`), each row stamped `{ floor, map }` (`map` = the map of the player's current place, `null` when unknown), rows older than 20 messages dropped, each list capped at 12,
+and posted as `eden-map:ops { clues, markers }` when they change, on `eden-map:ready` when non-empty, and as empty lists on a chat change. The kernel layer `nav-ops` (slot `markers`, `point`
+block, on by default: the navigator is the opt-in; stored choice in `edenMapLayers`) draws a clue where its name is drawn on the open map, else at `nx` / `ny` on its stamped map; it pulses and
+grows with its urgency (1..3); a marker is drawn at `nx` / `ny` on its stamped map with its label; a tooltip says it is a navigator suggestion. Its row shows only while it holds something
+for the open map. Nothing is written to the chat, the chat variable or a worldbook.
+
+**K-R87 — Local layers.** `window.EdenMap` gains `addLayer(def)` → `{ ok, id, problems }`, `removeLayer(id)` → boolean, `setLayerData(id, features)` → `{ ok, problems }` and `layers()` →
+`[{ id, type, slot, visible, applicable, source, count }]` (methods are added, none renamed; `EDEN_API` in `tavern/extension-api-contract.mjs` gains the four). `def` is a layer
+declaration validated by the same `normLayer` as a pack's with trust "local": its id starts with `local-` (a kernel id is refused), its source is inline, `view:*`, `events`, `people`, `items`
+or `routine` (never `file:`, `mvu:`, `ops`), at most 16 local layers; a repeated local id replaces the previous layer; a local layer without a menu gets a row labelled with its id; a point
+style may say `icon: "prop:<id>"` (K-R88). A local layer is drawn by the same blocks, lives for the page session (a script re-adds it on load, as it re-subscribes with `on`) and only its
+visibility is remembered (`edenMapLayers`). On the host page the same methods forward to the viewer when it is open; the host keeps the declarations and replays them on every `eden-map:ready`.
+
+**K-R88 — The local prop pack.** The user's own files (glb, png, webp, svg) are kept in this browser only: IndexedDB database `spatialProps`, store `props`, key `<pack id>::<prop id>`,
+record `{ id, name, type, bytes, w?, h?, createdAt, blob }` (`app/prop-store.mjs`). Validation is technical only (`core/prop-pack.mjs`): glb = `glTF` and version 2, at most 8 MB; png = the
+8-byte signature; webp = `RIFF` .. `WEBP`; images at most 1 MB and decodable; svg = UTF-8 text with an `<svg` root, at most 256 KB, refused when it contains `<script`, `<foreignObject`, an
+`on…=` attribute or a `javascript:` link; at most 64 props and 64 MB per pack. Images are shown only through `blob:` object URLs in `<img>` elements; nothing is sent to the host, the model or
+any URL. Methods of `EdenMap`: `addProp(file, { name })` → `{ ok, id, problems }`, `removeProp(id)`, `props()` → `[{ id, name, type, bytes }]`, `placeProp(id, { map, at } | { pick: true })` →
+Promise of `{ ok, map, at }` (pick = the next click on the open map, Escape cancels) and `unplaceProp(id, map)`. Placements `{ prop, map, at }` (at most 200, `at` = fractions of the view's width
+and height) are per chat in `edenMap:chat:<chat id>:props`; the kernel layer `local-props` (slot `markers`, `point` block, on by default) draws them on flat maps (an image as `<img>`, a glb as the
+`cube` icon with its name; the row shows only while the open map holds one). They are the user's own decoration: local, never a chat fact, never injected. Placing a glb inside a 3D page is the
+editor's job (S9b).
+
+**K-R89 — The `sound` block.** A `sound` layer (slot `fx`, no pixels) plays procedural ambience: its data (inline `data`, or the file of a `file:` source) is `{ rules: [{ match, scenes }], recipes?,
+master? }` (`core/ambience.mjs`: recipes of filtered noise and harmonic oscillators, the first rule whose `match` keys (`map`, `layer`, `place`, `weather`, `night`) all equal the context wins, rain
+and storm add a rain scene); `match.map` is the open view id and `applies` decides where the layer is live at all. Audio never starts by itself: a sound row is off whatever `menu.default` says
+until the user switches it on (the stored choice `1` in `edenMapLayers` is honoured on a later visit), the AudioContext is created only after a user gesture (switching the row on is one; a stored
+"on" waits for the first click or key), and it is suspended while the page is hidden or no sound layer is live (visible and applicable). The scene set follows the open view, the day / night band
+(`eden-map:clock`) and the weather, replanned at most every 2 s on messages. No audio file exists anywhere; `window.SoundApi.describe()` lists each layer's live scenes.
 
 ## 10. ui and llm
 
@@ -1001,11 +1040,8 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 **Planned in S9** (reserved by S9-design, `docs/zero-config.md`; full text lands with the step specs in its appendix):
 **Added by S9b:** K-R100 (§4.6, edit mode and the draft), K-R101 and K-R102 (§2.4, pack pictures and private pictures), the amendments of K-R66 (limits by source, `media`), K-R67 (an overlay may carry `media` and node `media`) and K-R98 (the draft folded in, overlay export of a shipped pack).
 
-**Planned in S8** (design `docs/layers-schema.md`; review sheet L-01 … L-15; the full text lands with S8-1 … S8-3):
-- K-R86 (§9) host-fed values: MVU paths, `applies.mvu`, navigator overlays (S8-3).
-- K-R87 (§9) local extension `EdenMap.addLayer` / `removeLayer` / `setLayerData` / `layers` (S8-3).
-- K-R88 (§9) local prop pack: store, validation, placements, `prop:` icons (S8-3).
-- K-R89 (§9) the `sound` block and the ambience data (S8-3).
+**Added by S8-3:** K-R86 (§9, host-fed card variables and the navigator overlays), K-R87 (§9, local layers), K-R88 (§9, the local prop pack) and K-R89 (§9, the `sound` block); with these every rule K-R79 – K-R89 and K-R104 of the S8 design is written.
+
 
 ## 14. Designer decisions and open points
 

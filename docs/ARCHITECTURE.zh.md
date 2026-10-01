@@ -52,6 +52,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 
 | 模块 | 职责 |
 |---|---|
+| `ambience.mjs` | 程序化环境音（K-R89，Q-01）：滤波噪声与谐波振荡器的配方、按 `{ map, layer, place, weather, night }` 选场景的规则、混音计划。纯函数；数据来自 `sound` 图层。 |
 | `card-read.mjs` | 运行时读卡（K-R93、K-R94、K-R95）：从世界书标题取地点候选、语言、开场视图、变量形状，以及由一个朴素的卡来源造出的自动包；指纹。纯函数。 |
 | `clock.mjs` | 零 Token 的确定性世界时钟：世界时间由推进的轮数算出，不靠模型也不读系统时间。 |
 | `compat-v1-blocks.mjs` | v1 的旁路输入 → v2 块：事态、名册、藏物、世界书、旧名字、界面文案、用户的自定义名称。 |
@@ -71,6 +72,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `layer-geometry.mjs` | 宣告式图层的纯几何与样式（K-R80）：`line` 积木的航线路径（与旧循环的冻结副本对拍）、由视图数据到要素的转换、要素的解析样式、图例色块、流光性格表、首次可见规则。纯函数。 |
 | `layer-registry.mjs` | LayerRegistry 核心：10 个视口槽位、图层注册与排序、可见性、滤镜链、`patch` / `applicable`（K-R79、K-R82）、`describe()` 摘要。 |
 | `layer-spec.mjs` | 宣告式图层（K-R79、K-R81、K-R82）：来源解析、要素与图层的规整、设定包 `layers` 行与内核清单的合并、`applies` 求值、该块的 `validate2` 规格。纯函数。 |
+| `layer-values.mjs` | 宿主送给图层的值（K-R86）：`capValue`（4 KB / 200 项，截断标 `…truncated`）与按路径读快照的 `pickValues`。纯函数。 |
 | `ledger.mjs` | 四域结算账本：按域（资产、NPC、事件、纵深）校验原子指令，未验证的一概丢弃。 |
 | `legacy-custom.mjs` | 用户最早几个版本（≤ 0.9.2）里的房间叫法，从本机存储读出；由 `tavern/mvu-readers.mjs` 并进聊天变量。 |
 | `lexicon.mjs` | 契约 v2 的文本基元与内核词表：规范化、码点长度、截断、FNV 哈希、冠词、行程句式。纯函数，自成一体。 |
@@ -97,6 +99,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `portrait-lookup.mjs` | 人物的卡内立绘（I-22）：查看器侧只认图片地址的形状（包的域名规则已在宿主做过），按全名、第一段、或「第一段相同的唯一表键」查找。 |
 | `profile.mjs` | 设定包变量与名册的运行时档案（K-R37–K-R44、K-R69）：变量路径、时段、表、名册槽位、立绘规则（`portraitOk`）；什么都没写的包用内核档案。 |
 | `project.mjs` | 斜视投影（`blender/project.py` 的 JS 孪生，对拍 golden 文件）：世界点到画幅坐标、标签规则、锚点。 |
+| `prop-pack.mjs` | 本机道具包的规则（K-R88）：`sniff`（按字节认 glb / png / webp / svg）、`checkProp`（大小与 svg 拒绝项）、`propId`、`normPlacement`。纯函数。 |
 | `protocol.mjs` | 消息协议：所有宿主 / 查看器 / 子页消息的 `SCHEMA`、信封、`check` / `accept`、`createBus`。 |
 | `quests.mjs` | 动态线索节点：把事态按地点聚合、按楼层差衰减，得到确定性的「哪里在出事」节点。 |
 | `render-gate.mjs` | RenderGate：页面隐藏或视口不可见时，暂停按需渲染循环。 |
@@ -158,10 +161,12 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `json-cache.mjs` | `getJSON`：数据文件只取一次，失败不缓存。 |
 | `layer-host.mjs` | 查看器侧的 LayerRegistry 装配：注册表单例、`.vpslot` 槽位容器、`declared(id, impl)`（各模块经内核宣告注册）、`applyPackLayers`（设定包的行调整内核图层）、图层菜单、`window.LayerHostApi` 摘要。 |
 | `load-progress.mjs` | 整屏加载层的进度，共用 `ui/progress.mjs`。 |
+| `local-props-view.mjs` | 内核图层 `local-props` 与 `EdenMap` 的道具方法（K-R88）：按聊天存在 `edenMap:chat:<聊天 id>:props` 的摆放，平面地图上图片画成 `<img>`、glb 画成 `cube` 图标，点一下摆放。 |
 | `locate.mjs` | 初始视角与当前地点：`focusStart`、`markHere`、`hereRes`（基于 `place-resolver.mjs`）、`drawnAt`、`jumpHere`。 |
 | `map-level-nav.mjs` | 层导航：层切换条、上一级、Esc 处理、单字符快捷键。 |
 | `map-switch.mjs` | 地图切换：可注册包装的 `go`、快照、地图外壳、另一版底图。 |
 | `markers.mjs` | 标记与地点卡：落点、跟踪、打开 / 关闭卡片、世界图与点位图叠加。 |
+| `nav-ops-view.mjs` | 内核图层 `nav-ops`（K-R86，I-04）：来自 `eden-map:ops` 的领航员线索与标注，按地名或盖章地图上的坐标摆放；只在本次会话里存在。 |
 | `nodes-runtime-v2.mjs` | schema-2 包的同一套读法，由包自己的树与投影出的注册表建成（K-R96）。纯函数。 |
 | `nodes-runtime.mjs` | 查看器的节点树：已加载的注册表经 `core/compat-v1.mjs` 转一次；面包屑、上一级、预热邻居、庄园替身和三维页判断都从它读（不再走 `parent`）。`buildRuntimeV2` 把 schema-2 的运行时装进同一个槽。 |
 | `notice-layer.mjs` | 通知层（嵌入时交给宿主，单独打开时用 `ui/notice.mjs`）与首次打开提示。 |
@@ -172,6 +177,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `pack-settings.mjs` | 设置 → 高级 →「地图包」：当前包、选择列表、网址 / 文件导入、外来包模型文字的生效开关、导出为包（K-R98、K-R99、K-R103）。 |
 | `place-resolver.mjs` | 当前地点：在节点树上跑 `nodes.locate`，再还原成使用方读的结果形状（`level`、`map`、`marker`、`room`、`node`、`transit`）；`tavern/spatial-contract.mjs` 与构建工具也用它。 |
 | `plugins.mjs` | 外挂注册表 `plugins`：app 模块与根目录外挂之间唯一的通道。 |
+| `prop-store.mjs` | 本机道具仓库（K-R88）：IndexedDB 库 `spatialProps`（store `props`），与房间图集的 `edenRoomGallery` 并列；添加（识别、检查、配额）、移除、列出、对象 URL。文件不离开设备。 |
 | `protocol-stamp.mjs` | 协议版本戳与消息出口：`PROTO`、`post`、`protocol`、子页 origin `SUB_ORIGIN`。 |
 | `quests-view.mjs` | 动态线索节点在查看器里的渲染：会呼吸的圈。 |
 | `quick-zoom.mjs` | 触屏单指缩放（双击后按住拖动）。 |
@@ -179,6 +185,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `screen-reader-announce.mjs` | 读屏播报（aria-live）：同一时刻的几条合并成一句。 |
 | `settings.mjs` | 设置弹层：分页、分区注册、搜索、关于 / 检查更新、自检。 |
 | `sharpness-tiers.mjs` | 清晰度档位、省流判断、加载进度、叠加层与标注避让。 |
+| `sound-block.mjs` | `sound` 积木（K-R89）：把 `core/ambience.mjs` 的计划接到 Web Audio；没有用户的开关和一次手势绝不出声；`window.SoundApi`。 |
 | `spot.mjs` | 一个已落点的地方对人物或行程端点画在哪里（三维页的平面替身地标、地标、节点自己的点、城区）；纯函数，查看器把它知道的递进去。 |
 | `stash-markers.mjs` | 地图上由世界藏物表画出的发光拾取物；点击把拾取意图发给宿主。 |
 | `state.mjs` | 查看器核心状态：当前地图、注册表、OSD 实例、焦点请求。 |
@@ -237,6 +244,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `mvu-bridge.mjs` | MVUBridge：唯一允许碰 `Mvu` / `SillyTavern` 的模块；快照、`getHere` 回退、聊天变量、名册读取。 |
 | `mvu-readers.mjs` | MVU 数据与地图自有自定义数据的纯读取器（名称、着装、按包的槽位字段读名册行、立绘、时间与时段）。 |
 | `mvu-snapshot.mjs` | MVU 快照选取与生成状态规则。 |
+| `nav-ops.mjs` | 宿主侧的领航员叠加（K-R86）：给线索与标注盖楼层与地图章，20 楼后淘汰，每个列表最多 12 条。纯函数；只在会话里。 |
 | `operation-dsl.mjs` | 受限操作 DSL 沙盒：提取、校验并规范化原子操作块。 |
 | `pack-gate.mjs` | 包门卫（顶层 `await`，入口最先 import）：按卡解析一个包——选择、烘入、内嵌、索引、自动——设 `window.__tcPack`，换卡时重启实例（K-R90）。 |
 | `pack-profile.mjs` | 脚本当前跑的包的档案（`getProfile` / `setProfile`）；包的声明到之前是内核档案。 |
@@ -391,7 +399,10 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 `galleries`、`worldbook_addon`、`gallery`、`routine`）；缺一个键，对应功能静默关掉。引擎里不出现任何视图、组、地点或书的名字。`layers` 块（S8-1、S8-2）列出包自己的图层：
 `app/declared-layers.mjs` 把每一层登记到图层注册表（菜单行 `lyr-<id>`、排在内核行之后、可见性存 `edenMapLayers`），用
 `app/block-overlay.mjs`（point、label、line、area）或 `app/block-canvas.mjs`（flow、particles、tint）绘制；图例页列出可见且适用的图层的条目。
-引擎里不出现任何包的图层名。
+S8-3 加上宿主送值的来源：宿主读包的图层点名的卡变量（`profile.layerPaths`，最多 8 个，只读），经 `eden-map:layer-data` 发给查看器
+（`mvu:<path>` 来源与 `applies.mvu`）；领航员的线索与标注经 `eden-map:ops` 进内核图层 `nav-ops`；`EdenMap.addLayer` 等加本机图层（只收数据，id 以 `local-` 开头）；
+`sound` 积木播放包声明的环境音（`app/sound-block.mjs`，用户打开开关并点一下之前绝不出声）；本机道具包把用户自己的文件存在 IndexedDB（`spatialProps`），画在内核图层
+`local-props` 上。引擎里不出现任何包的图层名。
 
 **包门卫（S9-2）**：入口最先 import `tavern/pack-gate.mjs`；它的顶层 `await` 为当前卡解析出包（用户选择或烘入的包 → 卡内嵌的包 → `packs/index.json` 里的最佳匹配 → 自动包），在入口读取之前设好 `window.__tcPack`；旧默认包不设它，所以第一个包的启动、文字与写入都不变。换卡时门卫重新解析，包 id 或来源变了就停掉实例（`__edenMapCleanup`）、清掉模块里留着的变量声明与聊天变量根键，再用 `?k=<卡键>&r=<n>` 重新 import 入口。`eden-map:pack-pick`（设置 → 高级）经 `onTh` 到达；外来包模型文字的生效开关是 `eden-map:th` 的 `prefs.packLlm`。
 
@@ -420,7 +431,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 - **包命名空间**：登记的键统一写成 `edenMap*`，`core/pack.mjs nsKey` 把它映射到当前包：伊甸保持 `edenMap*`（老用户的键照旧可读），其它包用 `tcp.<id>.*`。
 - **每个包一个聊天变量**：地图自己的状态存在一个顶层聊天变量里——伊甸是 `eden_map`，其它包是 `tc_<id>`（或清单的 `chat.var`）。里面放自定义名称、行程、关键帧、藏物库（统一的物品存储；v1 旧键 `仓库` / `槽位` 在 S10 前只读）、探索，以及 `ledger`（npc 与事件两个域的结算记录，K-R78；只有 `edenMapLedgerWrite` 开关写进过条目才会出现）。卡自己的 `stat_data` 绝不写（它的 schema 会拒绝未知键）；能写的只有我们的附加世界书，以及带 `extra.eden_id` 标记的条目。
 - **脚本变量**：`SCRIPT_KEYS` 里列出的用户偏好会镜像进酒馆助手脚本变量 `eden_prefs`，浏览器存储被清空时也不丢。
-- **按聊天的数据与预算**：按聊天的键由 `tavern/storage-budget.mjs` 做 LRU 排序与封顶，它只碰以地图前缀开头的键。图片存在 IndexedDB（`core/room-gallery-db.mjs`），绝不进聊天。
+- **按聊天的数据与预算**：按聊天的键由 `tavern/storage-budget.mjs` 做 LRU 排序与封顶，它只碰以地图前缀开头的键。图片存在 IndexedDB（`core/room-gallery-db.mjs`），绝不进聊天。本机道具包（K-R88）有自己的库 `spatialProps`（`app/prop-store.mjs`），与房间图集的 `edenRoomGallery` 和包仓库并列；它的摆放是按聊天的键 `edenMap:chat:<聊天 id>:props`。
 - **命名保持到 S10**：`edenMap*` / `eden_map` / `EdenMap` / `window.TC*` 都是外部契约，只在 S10 带迁移并再次确认后才改名（决定 D5、D12）。
 
 ## 8. 渲染栈

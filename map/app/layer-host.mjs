@@ -76,7 +76,7 @@ export function renderLayerMenu() {
     const tx = m.i18n?.[LANG]?.title ?? m.title;   // 设定包的行文字优先（K-R83）；内核行仍走字典
     if (tx) lab.title = m.titleKey && !m.i18n?.[LANG]?.title ? uiTextOr(m.titleKey, tx) : tx;
     if (m.titleKey) lab.setAttribute('data-i18n-title', m.titleKey);
-    if (m.hidden) lab.hidden = true;
+    if (m.hidden || (rec.countNow && !rec.countNow())) lab.hidden = true;   // countNow: a kernel layer that shows its row only while it holds something (nav-ops, local-props)
     const span = document.createElement('span');
     span.textContent = m.i18n?.[LANG]?.label ?? (m.labelKey ? uiTextOr(m.labelKey, m.label || '') : (m.label || ''));
     if (m.labelKey) span.setAttribute('data-i18n', m.labelKey);

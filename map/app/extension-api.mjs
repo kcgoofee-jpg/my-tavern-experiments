@@ -11,9 +11,13 @@ import { readCustom } from '../core/legacy-custom.mjs';
 import { PACK, packOverlay, packTax } from './current-pack.mjs';
 import { selfCheck } from './settings.mjs';
 import { plugins } from './plugins.mjs';
+import { addLocalLayer, removeLocalLayer, setLocalData, layersNow } from './declared-layers.mjs';
+import * as PV from './local-props-view.mjs';
 // ---------------- 本机扩展接口 window.EdenMap（E6，docs/content-compat.md） ----------------
 // 只读写用户本机 localStorage，不联网、不上传、不进地址。酒馆里由卡内脚本 eden-map.js 在宿主页挂同名对象并转发到这里，并告诉地图当前聊天 id。
 //   setRoomAlias(自定义名, 标准房间名) → true / false；removeRoomAlias(自定义名)；getRooms() → { rooms: 标准房间名[], alias: { 自定义名: 标准房间名 }, chat }
+//   S8-3 (K-R87, K-R88): addLayer(def) → { ok, id, problems } · removeLayer(id) · setLayerData(id, features) · layers() → [{ id, type, slot, visible, applicable, source, count }];
+//   addProp(file, { name }) · removeProp(id) · props() · placeProp(id, { map, at } | { pick: true }) · unplaceProp(id, map) — 本机道具只存这台设备，不上传
 //   on('here' | 'events' | 'map', fn) / off(事件, fn?)：here {value, resolved}、events {items, floor, hereLayer}、map {map, title, kind}
 export let chatId = '', enNames = null, emMap = null;
 export const packStorage = (() => { try { return nsStore(localStorage, window.__packId); } catch (e) { return null; } })();   // 设定包命名空间（eden 原样）
@@ -38,6 +42,8 @@ window.EdenMap = Object.freeze({
   getOutfit() { return plugins.CustomNamesView.outfit; }, getClock() { return plugins.CustomNamesView.clock; },
   setAvatar(name, src) { return plugins.CharactersView.setAvatar(name, src); }, removeAvatar(name) { return plugins.CharactersView.removeAvatar(name); },   // 人物头像：只存本机（v0.9.2）
   selfcheck() { return selfCheck ? { items: selfCheck.items.map(i => ({ ...i })) } : null; },   // 嵌在酒馆里才有（卡内脚本发来）
+  addLayer(def) { return addLocalLayer(def); }, removeLayer(id) { return removeLocalLayer(String(id)); }, setLayerData(id, features) { return setLocalData(String(id), features); }, layers() { return layersNow(); },   // K-R87 本机图层（只收数据声明）
+  addProp(file, o) { return PV.addProp(file, o || {}); }, removeProp(id) { return PV.removeProp(String(id)); }, props() { return PV.props(); }, placeProp(id, t) { return PV.placeProp(String(id), t || {}); }, unplaceProp(id, map) { return PV.unplaceProp(String(id), String(map)); },   // K-R88 本机道具包
   getRooms() { return { rooms: [...(placeIndex?.estate?.std || [])], alias: { ...(placeIndex?.estate?.alias || {}) }, chat: chatId || null }; },
   on(ev, fn) { if (emSubs[ev] && typeof fn === 'function') emSubs[ev].add(fn); return this; },
   off(ev, fn) { if (emSubs[ev]) fn ? emSubs[ev].delete(fn) : emSubs[ev].clear(); return this; },

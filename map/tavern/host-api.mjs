@@ -36,7 +36,22 @@ export function createHostApi(host) {
       const w = c.toDataURL('image/webp', .82); return w.startsWith('data:image/webp') ? w : c.toDataURL('image/jpeg', .82);
     } catch (e) { return src; }
   }
+  // ---------------- S8-3 本机图层与本机道具（K-R87 / K-R88）：只收数据声明与用户自己的文件，逻辑全在查看器（app/declared-layers.mjs、app/local-props-view.mjs） ----------------
+  // 面板开着就转发；没开时图层声明记在 localLayers（每次 eden-map:ready 重放一遍：查看器重载也不丢），addProp / placeProp 排队（≤16，ready 后重放，没开过就一直等）；其余读写在面板关着时返回空 / false。
+  const localLayers = new Map(), propQ = [];
+  const via = (name, n) => { const v = inner(); return v ? fnGuard('EdenMap.' + name, v[name], n) : null; };
+  const queued = (name, args, n) => { const f = via(name, n); if (f) return f(...args); if (propQ.length >= 16) return Promise.resolve({ ok: false, problems: ['queue-full'] }); return new Promise(res => propQ.push({ name, args, n, res })); };
+  function replayLayers() {
+    for (const d of localLayers.values()) { try { via('addLayer', 1)?.(d); } catch (e) {} }
+    for (const j of propQ.splice(0)) { const f = via(j.name, j.n); if (f) Promise.resolve(f(...j.args)).then(j.res, () => j.res({ ok: false, problems: ['viewer-error'] })); else j.res({ ok: false, problems: ['viewer-closed'] }); }
+  }
   const api = Object.freeze({
+    async addLayer(def) { const id = def?.id; if (typeof id === 'string') localLayers.set(id, def); const f = via('addLayer', 1); return f ? f(def) : { ok: true, id: typeof id === 'string' ? id : null, problems: [], queued: true }; },
+    async removeLayer(id) { const had = localLayers.delete(String(id)), f = via('removeLayer', 1); return f ? f(id) : had; },
+    async setLayerData(id, features) { const d = localLayers.get(String(id)); if (d) localLayers.set(String(id), { ...d, data: { features } }); const f = via('setLayerData', 2); return f ? f(id, features) : { ok: !!d, problems: d ? [] : ['no-layer'] }; },
+    async layers() { const f = via('layers', 0); return f ? f() : []; },
+    addProp: (file, o) => queued('addProp', [file, o], 1), placeProp: (id, t) => queued('placeProp', [id, t], 2),
+    async removeProp(id) { const f = via('removeProp', 1); return f ? f(id) : false; }, async props() { const f = via('props', 0); return f ? f() : []; }, async unplaceProp(id, map) { const f = via('unplaceProp', 2); return f ? f(id, map) : false; },
     // v0.9.3 自定义名称与用途（聊天变量 eden_map.自定义）：key = 标准名（房间 / 区域 / 地标 / 人物）；patch = { name?, note?, kind? }，传 '' 清掉
     async setCustom(key, patch = {}) { if (!host.mvuReaders || !host.custom) await loadCustom(); if (!host.mvuReaders) return false; await reg(); const k = String(key || '').trim(), r = host.mvuReaders.setCustom(host.custom, k, { ...patch, kind: patch.kind || host.custom.items[k]?.类 || kindOf(k) }); if (!r) return false; host.custom = r; customChanged(true); return true; },
     async removeCustom(key) { if (!host.mvuReaders || !host.custom) await loadCustom(); if (!host.mvuReaders) return false; const r = host.mvuReaders.removeCustom(host.custom, host.mvuReaders.findKey(host.custom, key) || key); if (!r) return false; host.custom = r; customChanged(true); return true; },
@@ -116,7 +131,7 @@ export function createHostApi(host) {
   const { wbAuto, sendTh, onTh } = createWbAuto({ scriptBase, LS, lsGet, lsSet, life, manifest: MAN, packId: PACK_ID, base: () => host.BASE, alive: () => host.alive, uiLang: () => host.uiLang, thBtns: () => thBtns,
     chatId, cardKey, post, hostToast, stateInject, injectPreview: () => host.injectPreview(), macroSet, prefSync });
   return {
-    api, get cardId() { return cardId; }, set cardId(v) { cardId = v; }, emit, emitMoved, exposed, inner, knowRooms, onTh, scriptInfo, sendTh, subs,
+    api, get cardId() { return cardId; }, set cardId(v) { cardId = v; }, emit, emitMoved, exposed, inner, knowRooms, onTh, replayLayers, scriptInfo, sendTh, subs,
     get tavernhelperApiModule() { return tavernhelperApiModule; }, get transitMod() { return transitMod; }, wbAuto,
   };
 }

@@ -1,6 +1,7 @@
 // Declared layers, sources (docs/layers-schema.md §3.2, K-R81): where the features of a pack layer come from, for the open view.
 // inline (data.features) · file:<path> (read once, re-checked) · view:routes / view:markers (the open view's data) · events / people / items / routine
-// (what the entity adapters and the routine already hold; nothing is invented, brief rule 8). `mvu:` and `ops` are S8-3: no features, quietly.
+// (what the entity adapters and the routine already hold; nothing is invented, brief rule 8). `mvu:<path>` = the host-fed value of a card variable (K-R86): a list of place names,
+// an object's keys or one string, placed like the other place texts. `ops` belongs to the kernel layer nav-ops (its own module): no features here.
 // Every feature comes back in the 0..1 frame of the open view (`at` / `pts`) with `view` = the open view; a node feature is placed where the
 // current-location engine draws that node's name, and dropped when it is not drawn on this map.
 import { parseSource, normFeature, LIMITS } from '../core/layer-spec.mjs';
@@ -13,7 +14,15 @@ import { RT } from './nodes-runtime.mjs';
 import { getJSON } from './json-cache.mjs';
 import { routineNow } from './wander.mjs';
 
-const files = new Map();   // layer id -> the normalised features of its file, or null while loading / when it failed
+const files = new Map();   // layer id -> the normalised features of its file (a sound layer: its data object), or null while loading / when it failed
+let values = {};   // K-R86: the last `eden-map:layer-data` values { <path>: value }
+export const setValues = v => { values = v && typeof v === 'object' && !Array.isArray(v) ? v : {}; };
+export const hostValues = () => values;
+/** valueNames(v) -> the place names a host-fed value holds: a list (strings and numbers), an object's keys, or one string; at most 200, text only. */
+export const valueNames = v => { if (Array.isArray(v) && v.length === 2 && Array.isArray(v[0]) && typeof v[1] === 'string') v = v[0];   // an old-format [list, note] pair
+  return (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.keys(v) : v === undefined || v === null ? [] : [v]).filter(x => ['string', 'number'].includes(typeof x) && String(x).trim()).map(x => String(x).trim()).filter(x => !x.startsWith('…')).slice(0, 200); };
+/** soundData(layer) -> the ambience data of a sound layer: inline `data`, or the file loaded for its `file:` source. */
+export const soundData = layer => (parseSource(layer.source || 'inline')?.kind === 'file' ? files.get(layer.id) || null : layer.data || null);
 
 /** A place text -> [x, y] on the open view, or null (the path the trips layer uses: hereRes, then drawnAt, then the marker's anchor). */
 export function placeAt(text) {
@@ -37,7 +46,9 @@ export function loadFile(layer, base, onDone) {
   let url; try { url = new URL(src.arg, 'http://pack.invalid/' + (base || '')); } catch (e) { return; }
   if (!url.pathname.startsWith('/' + (base || ''))) return;
   getJSON((base || '') + src.arg).then(j => {
-    if (!j || !Array.isArray(j.features) || JSON.stringify(j).length > LIMITS.fileBytes) return;
+    if (!j || typeof j !== 'object' || JSON.stringify(j).length > LIMITS.fileBytes) return;
+    if (layer.type === 'sound') { files.set(layer.id, j); onDone?.(); return; }
+    if (!Array.isArray(j.features)) return;
     files.set(layer.id, j.features.slice(0, LIMITS.features).map(f => normFeature(f, layer.type, { view: layer.applies?.views?.length === 1 ? layer.applies.views[0] : undefined })).filter(Boolean));
     onDone?.();
   }).catch(() => {});
@@ -62,7 +73,8 @@ export function sourceFeatures(layer) {
       return [...a, ...b].filter(Boolean);
     }
     case 'routine': return routineNow().map(r => point(placeAt(r.place), r.name, r.id, r.name)).filter(Boolean);
-    default: return [];   // mvu:, ops: host-fed values arrive in S8-3
+    case 'mvu': return valueNames(values[src.arg]).map(n => point(placeAt(n), n, undefined, n)).filter(Boolean);
+    default: return [];   // ops: the kernel layer nav-ops draws the navigator's rows itself
   }
 }
 

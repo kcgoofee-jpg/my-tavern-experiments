@@ -9,7 +9,9 @@ export const EDEN_API = {
   setRoomAlias: 2, removeRoomAlias: 1, getRooms: 0,
   setInv: 1, removeInv: 1, getInv: 0,   // 空间化背包（Part 5-1）：setInv(name, patch) / removeInv(idOrName) / getInv()
   getOutfit: 0, getClock: 0, setAvatar: 2, storage: 0, removeAvatar: 1,
-  getCharacters: 0, flyTo: 1, sources: 0, selfcheck: 0, on: 2, off: 2,   // selfcheck 的 o 有默认值：fn.length = 0
+  getCharacters: 0, flyTo: 1, sources: 0, selfcheck: 0, on: 2, off: 2,
+  addLayer: 1, removeLayer: 1, setLayerData: 2, layers: 0,   // S8-3 K-R87 本机图层（只收数据声明；id 必须 local- 开头）
+  addProp: 1, removeProp: 1, props: 0, placeProp: 2, unplaceProp: 2,   // S8-3 K-R88 本机道具包（文件只存本机 IndexedDB，不上传）   // selfcheck 的 o 有默认值：fn.length = 0
 };
 
 /** 暴露面 = api 逐项过守卫：契约里的方法「是函数且形参够」才带出去（不符的单次告警并剔除）；契约外的字段（值字段等）原样带过。 */

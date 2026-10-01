@@ -20,6 +20,7 @@ import { profileFromV1 } from '../core/profile.mjs';
 import { worldbookPrefix } from '../core/pack.mjs';
 import { readCardBasics } from './card-source.mjs';
 import { profileFromV2 } from './pack-runtime-v2.mjs';
+import { pickValues } from '../core/layer-values.mjs';
 
 /** 宿主接口的取法（S9-2 pack-gate / card-source 用：读角色卡与它自己的世界书）：本模块是 Mvu / SillyTavern 的唯一属主，所以取法在这里，card-source 只拿函数。 */
 export function hostAccess() {
@@ -139,6 +140,8 @@ export class MVUBridge {
   varmode(hasMvu = this.mvuPresent()) { this.#ensure(); return AD.mode(hasMvu, this.mvuStat(), this.varMap); }
   /** adapter 读法取值（含 [值, 说明] 旧格式拆包） */
   getPath(st, p) { return AD.getByPath(st, p); }
+  /** K-R86: the values of the card variables a pack's layers name (profile.layerPaths), from this round's snapshot; read only, capped (core/layer-values.mjs); a missing path is absent */
+  layerValues(paths) { const st = this.mvuStat(); return st ? pickValues(st, paths, (s, p) => this.getPath(s, p)) : {}; }
   /** mvu-readers.mjs 读法取值（行程用，与 getPath 同语义） */
   mvuGet(st, p) { return this.mvuReaders ? this.mvuReaders.getByPath(st, p) : undefined; }
 

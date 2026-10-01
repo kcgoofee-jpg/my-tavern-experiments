@@ -1,4 +1,4 @@
-// The kernel's own layers as declarations (docs/layers-schema.md §8.1, K-R79): the facts of every viewport layer the engine registers
+// The kernel's own layers as declarations (docs/layers-schema.md §8.1, K-R79; S8-3 adds nav-ops and local-props): the facts of every viewport layer the engine registers
 // (slot, kind, order, menu row, drawing block) in one frozen list. The modules still own the code (mount, unmount, setVisible,
 // initialVisible); each registers `declared(id, impl)` (app/layer-host.mjs), so the registry holds exactly these facts plus the functions.
 // `type` is the building block the layer draws through (null = drawn by kernel code); `source: 'kernel'` marks the closed list.
@@ -21,6 +21,8 @@ export const KERNEL_LAYERS = Object.freeze([
   L('labels', 'labels', 'osd', null, { menu: { order: 60, boxId: 'tgLabels', labelKey: 'labels', label: '地名' } }),
   L('markers', 'markers', 'osd', null, { menu: { order: 70, boxId: 'tgMarkers', labelKey: 'markers', label: '标记' } }),
   L('events', 'events', 'osd', null, { menu: { order: 80, id: 'tgEvents', labelKey: 'ev.toggle', label: '事态' } }),
+  L('nav-ops', 'markers', 'osd', 'point', { order: 3, applies: { data: true }, menu: tgt(85, 'tgNavOps', 'nav.layer', '领航员标注', 'nav.layer_title', '后台领航员给出的线索与标注（只在本次会话里显示）', { id: 'lyr-nav-ops' }) }),   // S8-3, K-R86: the navigator's clues and marks (session only); the row shows while it holds something
+  L('local-props', 'markers', 'osd', 'point', { order: 4, applies: { data: true }, menu: tgt(86, 'tgProps', 'props.layer', '本机道具', 'props.layer_title', '你放在地图上的本机道具（只存在这台设备）', { id: 'lyr-local-props' }) }),   // S8-3, K-R88: the user's own props placed on flat maps (local to this device)
   L('fog', 'fog', 'canvas', null),
   L('clouds', 'depth-haze', 'dom', null),
   L('depth-haze', 'depth-haze', 'dom', null, { order: 0 }),

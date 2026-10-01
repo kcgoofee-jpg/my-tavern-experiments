@@ -101,3 +101,9 @@ test('S9-3 K-R95：eden-map:pack 登记在 SCHEMA（宿主→查看器；manifes
   assert.match(rd('map/app/host-messages.mjs'), /eden-map:pack'\) onPack\(e\.data\)/);
   assert.match(rd('map/tavern/eden-map.js'), /PACK_IN\?\.source === 'auto'\) import\(new URL\('auto-pack\.mjs'/);
 });
+
+test('S8-3 K-R86：eden-map:layer-data 与 eden-map:ops 登记在 SCHEMA（宿主→查看器）；宿主只经 mvu-bridge 读值、经 post 发', () => {
+  assert.equal(SCHEMA['eden-map:layer-data'][0], 'host→viewer'); assert.equal(SCHEMA['eden-map:ops'][0], 'host→viewer');
+  assert.ok(check({ type: 'eden-map:layer-data', v: 2, values: {} }).ok); assert.ok(!check({ type: 'eden-map:layer-data', v: 2 }).ok);
+  assert.ok(check({ type: 'eden-map:ops', v: 2, clues: [], markers: [] }).ok); assert.ok(!check({ type: 'eden-map:ops', v: 2, clues: 'x', markers: [] }).ok);
+});

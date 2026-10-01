@@ -3,6 +3,7 @@
 import { ContextPipeline } from './context.mjs';
 import { resolveTags } from './sanitize.mjs';
 import { MVUBridge } from './mvu-bridge.mjs';
+import { getProfile } from './pack-profile.mjs';
 import { cdnFetch } from './host-tavernhelper.mjs';
 export const DEPS = [
   'GEN', 'LS', 'MAN', 'PACK_ID', 'PACK_IN', 'scriptBase', 'UI', 'clockEl', 'emit', 'life', 'loadCustom', 'post', 'push', 'pushSoon', 'recomputeSoon',
@@ -62,8 +63,10 @@ export function createCharsFlow(host) {
     const o = mvuBridge.outfit(), os = JSON.stringify(o.items);
     if (os !== outfitSig) { outfitSig = os; outfitNow = o.items; emit('outfit', { items: o.items ? { ...o.items } : null, text: o.text }); sentOutfit = null; }
     if (host.alive && sentOutfit !== outfitSig) { sentOutfit = outfitSig; post({ type: 'eden-map:outfit', items: outfitNow, text: o.text }); }
+    const paths = getProfile().layerPaths || [];   // K-R86: values of the card variables the pack's layers read (read only); posted when their signature changes
+    if (paths.length || layerSig) { const lv = mvuBridge.layerValues(paths), ls = JSON.stringify(lv); if (ls !== layerSig) { layerSig = ls; sentLayer = null; } if (host.alive && sentLayer !== layerSig) { sentLayer = layerSig; post({ type: 'eden-map:layer-data', values: lv }); } }
   }
-  let sentClock = null, sentOutfit = null;
+  let sentClock = null, sentOutfit = null, layerSig = '', sentLayer = null;
 
   // v0.9.5 行程：最近 30 楼每楼的地点（MVU 那一楼的变量，拿不到就读原文里的 JSONPatch）+ 人物标签 → 最近 5 段（玩家、人物各 5），存进 eden_map.行程
   let tripsParseModule = null; import(scriptBase + 'tavern/trips-parse.mjs').then(m => { tripsParseModule = m; }).catch(() => {});
@@ -88,7 +91,7 @@ export function createCharsFlow(host) {
   return {
     mvuBridge, cardKey, chatId, get clock() { return clock; }, computeTrips, contextPipeline, getHere, get mvuReaders() { return mvuReaders; }, mvuStat, get outfitNow() { return outfitNow; }, pushMvu,
     readVars, refreshVarMap, get routineModule() { return routineModule; }, get rtSched() { return rtSched; }, sendChars, sendRoutine, sendTrips,
-    get sentClock() { return sentClock; }, set sentClock(v) { sentClock = v; }, get sentOutfit() { return sentOutfit; }, set sentOutfit(v) { sentOutfit = v; },
+    get sentClock() { return sentClock; }, set sentClock(v) { sentClock = v; }, get sentOutfit() { return sentOutfit; }, set sentOutfit(v) { sentOutfit = v; }, resetLayerSent() { sentLayer = null; },
     setVarUser, get tripsParseModule() { return tripsParseModule; }, userName,
   };
 }

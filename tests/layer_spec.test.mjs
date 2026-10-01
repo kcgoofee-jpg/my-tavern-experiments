@@ -169,3 +169,28 @@ test('the module is pure (no DOM, storage, host globals)', () => {
   assert.doesNotMatch(src, /\b(document|window|localStorage|sessionStorage|fetch|LocalStore|HTMLElement|navigator)\b/);
   assert.ok(src.split('\n').length <= 350);
 });
+
+// ---- S8-3 (K-R87, K-R88): local layers (trust "local") ----
+test('local layers: the id must start with local-; sources are inline / view / events / people / items / routine only; a prop: icon is allowed for a local layer and for nobody else', () => {
+  const D = (o = {}) => ({ id: 'local-a', type: 'point', slot: 'markers', data: { features: [{ view: 'v', at: [0.1, 0.2] }] }, ...o });
+  const L = (o, trust = 'local') => normLayer(D(o), { trust });
+  assert.ok(L({}).layer); assert.equal(L({}).layer.origin, 'local');
+  assert.deepEqual(L({ id: 'a' }).problems, [{ code: 'local-id' }]); assert.equal(L({ id: 'a' }).layer, null);
+  for (const source of ['inline', 'view:routes', 'view:markers', 'events', 'people', 'items', 'routine']) assert.ok(L({ source, data: undefined }).layer, source);
+  for (const source of ['mvu:a.b', 'file:x.json', 'ops', 'kernel', 'nonsense']) assert.equal(L({ source }).layer, null, source);
+  assert.equal(L({ style: { icon: 'prop:lantern-2' } }).layer.style.icon, 'prop:lantern-2');
+  assert.equal(L({ style: { icon: 'prop:lantern-2' } }, 'pack').layer.id === 'local-a' && L({ style: { icon: 'prop:lantern-2' } }, 'pack').layer.style.icon, undefined, 'a pack cannot name a user\'s file');
+  assert.ok(L({ style: { icon: 'prop:lantern-2' } }, 'pack').problems.some(p => p.code === 'style-value' && p.key === 'icon'));
+  assert.equal(L({ style: { icon: 'prop:a b' } }).layer.style.icon, undefined, 'the prop id is checked');
+  assert.equal(normLayer(D({ id: 'local-a', type: 'point', data: undefined, source: undefined }), { trust: 'local' }).layer, null, 'a layer needs a source or data');
+  assert.equal(LIMITS.local, 16);
+});
+
+test('local layers: the kernel ids cannot be declared or adjusted by a local layer; validation heals one part at a time', () => {
+  const r = normLayer({ id: 'local-b', type: 'area', slot: 'routes', data: { features: [{ view: 'v', pts: [[0, 0], [1, 0], [1, 1]] }, { view: 'v', pts: [[0, 0]] }, 'x'] }, style: { color: 'red', width: 3, bogus: 1 }, applies: { views: ['v'] } }, { trust: 'local' });
+  assert.equal(r.layer.data.features.length, 1, 'the bad features are dropped');
+  assert.equal(r.layer.style.width, 3); assert.equal(r.layer.style.color, undefined);
+  assert.deepEqual(r.problems.map(p => p.code).sort(), ['feature-geometry', 'feature-pts', 'feature-type', 'style-unknown', 'style-value']);
+  const k = normLayer({ id: 'routes', type: 'line', slot: 'routes', data: { features: [] } }, { trust: 'local' });
+  assert.equal(k.layer, null); assert.deepEqual(k.problems, [{ code: 'local-id' }]);   // the kernel's ids are not for local layers
+});

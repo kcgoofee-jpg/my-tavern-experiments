@@ -81,7 +81,8 @@ try {
     await p.goto(B.BASE + 'viewer.html', { waitUntil: 'commit' }); await ready(p);
     const e = await p.evaluate(() => ({ declared: window.DeclaredLayersApi?.describe().map(d => d.id), lyr: [...document.querySelectorAll('#layList > label[id^="lyr-"]')].map(l => l.id), rows: document.querySelectorAll('#layList > label').length,
       legendKids: [...(document.getElementById('legendPane')?.children || [])].map(c => c.tagName), canvases: document.querySelectorAll('canvas.lyr-cv').length, svgs: document.querySelectorAll('svg.lyr-svg').length }));
-    rep.check('first pack (world): the one declared layer is estate_ward; its row is there and hidden; 15 menu rows; nothing drawn', e.declared?.join() === 'estate_ward' && e.lyr.join() === 'lyr-estate_ward' && e.rows === 15 && !e.canvases && !e.svgs, JSON.stringify(e));
+    // S8-3 (pinned additions, K-R86 / K-R88): the kernel rows lyr-nav-ops and lyr-local-props are two more rows (hidden until they hold something): 17 rows
+    rep.check('first pack (world): the one declared layer is estate_ward; its row is there and hidden, after the two S8-3 kernel rows (hidden); 17 menu rows; nothing drawn', e.declared?.join() === 'estate_ward' && e.lyr.join() === 'lyr-nav-ops,lyr-local-props,lyr-estate_ward' && e.rows === 17 && !e.canvases && !e.svgs, JSON.stringify(e));
     rep.check('first pack: the legend pane markup is the old one (heading and one list)', e.legendKids.join() === 'H3,DL', JSON.stringify(e.legendKids));
     await p.evaluate(() => ViewerDebug.go('tc_upper')); await B.wait(3500);
     const u = await p.evaluate(() => { const r = document.getElementById('tgRoutes'), w = document.getElementById('lyr-estate_ward'), svg = document.querySelector('svg.routes');

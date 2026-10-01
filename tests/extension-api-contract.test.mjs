@@ -48,3 +48,14 @@ test('EdenMap 表面积接线（静态断言）：暴露点走 guardApi + EDEN_A
   for (const k of Object.keys(EDEN_API)) assert.match(body, new RegExp(`(?:^|[,\\n]\\s*(?:async\\s+)?)${k}\\s*[:=(]`), k);   // 契约方法都在 api 里（async 修饰也要越过）
   for (const m of ['EdenMap.setAvatar', 'EdenMap.removeAvatar', 'EdenMap.flyTo', 'EdenMap.getRooms', 'EdenMap.__chat']) assert.ok(src.includes(`'${m}'`), m);   // 跨窗口调用点
 });
+
+test('S8-3 K-R87 / K-R88：契约表只加不改——本机图层 4 个方法 + 本机道具 5 个方法；原有 21 项不变；查看器侧 EdenMap 带同名方法（形参够）', () => {
+  const NEW = { addLayer: 1, removeLayer: 1, setLayerData: 2, layers: 0, addProp: 1, removeProp: 1, props: 0, placeProp: 2, unplaceProp: 2 };
+  for (const [k, n] of Object.entries(NEW)) assert.equal(EDEN_API[k], n, k);
+  assert.equal(Object.keys(EDEN_API).length, 21 + 9, '30 个方法');
+  for (const k of ['setCustom', 'removeCustom', 'getCustom', 'setWorldbookSync', 'setRoomAlias', 'removeRoomAlias', 'getRooms', 'setInv', 'removeInv', 'getInv', 'getOutfit', 'getClock', 'setAvatar', 'storage', 'removeAvatar', 'getCharacters', 'flyTo', 'sources', 'selfcheck', 'on', 'off']) assert.ok(k in EDEN_API, k + ' 还在');
+  const viewer = rd('map/app/extension-api.mjs');
+  for (const k of Object.keys(NEW)) assert.match(viewer, new RegExp(`(?:^|[,\\n{]\\s*)${k}\\s*\\(`), '查看器 EdenMap.' + k);
+  const g = guardApi(Object.fromEntries(Object.keys(NEW).map(k => [k, (...a) => a])), EDEN_API, (n, f, len) => (typeof f === 'function' && f.length >= len ? f : null));
+  assert.deepEqual(Object.keys(g).sort(), ['layers', 'props'], '形参不足的（rest 参数 length 0）被守卫剔除，只剩契约要 0 个形参的两项');
+});

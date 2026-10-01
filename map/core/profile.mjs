@@ -4,7 +4,7 @@
 //   KERNEL                       the profile of a pack that names nothing: every path and field is discovered (K-R38, K-R42), default period bands (K-R39)
 //   slotDef(profile, slot)       the field definition of a roster slot (`x-slot`), or the kernel's default for its kind
 //   portraitOk(avatar, url)      K-R43: may this card-script portrait be loaded?
-// profile = { paths: { location, time, date, period, outfit, reputation, inventory }, header (K-R105: the scene header form { tag, sep, fields } or null), periods, groups, presentId, stageGroup, tables, place, slots, fields, avatar, pickup }
+// profile = { layerPaths (K-R86: the host-fed paths of the pack's layers, at most 8), paths: { location, time, date, period, outfit, reputation, inventory }, header (K-R105: the scene header form { tag, sep, fields } or null), periods, groups, presentId, stageGroup, tables, place, slots, fields, avatar, pickup }
 //   pickup   { verbs, verbs_strict, verbs_off, not_items }: the pack's pickup words merged over languages (K-R77), read by core/pickup.mjs scan({ vocab })
 //   groups   the pack's entity groups, the present one first and the others in the pack's order: [{ id, label?, mvu }]; a pack that declares none has the three discovered ones (present, members, targets)
 //   presentId  the id of the present group ('present' unless the pack flags another)    stageGroup  the id of the second group after the present one ('' = none): the one whose rows carry the stage order
@@ -21,6 +21,16 @@ const clone = v => JSON.parse(JSON.stringify(v));
 const PICKUP_LISTS = ['verbs', 'verbs_strict', 'verbs_off', 'not_items'];
 /** K-R77: the pack's pickup words, the union over languages of each list (an id once); kernel words are not repeated here. */
 const pickupOf = items => Object.fromEntries(PICKUP_LISTS.map(k => [k, [...new Set(Object.values(isObj(items?.pickup) ? items.pickup : {}).flatMap(o => (isObj(o) && Array.isArray(o[k]) ? o[k].filter(w => str(w) && w) : [])))]]));
+const VPATH = /^[^.\n][^\n]{0,79}$/;   // the vars path pattern (pack-v2-spec `vpath`)
+/** K-R86: the host-fed paths the pack's layers read: each `mvu:<path>` source and each `applies.mvu.path`, distinct, matching the vars path pattern, at most 8. */
+export function layerPathsOf(rows) {
+  const out = [];
+  for (const r of Array.isArray(rows) ? rows : []) {
+    if (!isObj(r)) continue;
+    for (const p of [str(r.source) && r.source.startsWith('mvu:') ? r.source.slice(4) : '', isObj(r.applies?.mvu) ? r.applies.mvu.path : '']) if (str(p) && VPATH.test(p) && !out.includes(p)) out.push(p);
+  }
+  return out.slice(0, 8);
+}
 const DEFAULT_GROUPS = [{ id: 'present' }, { id: 'members' }, { id: 'targets' }];   // what a pack that declares no entity group gets: three tables found by the kernel's words
 
 /** What a slot reads when the pack declares no field for it (a field found by the kernel's words, or picked in Settings). */
@@ -44,14 +54,14 @@ export function profileOf(pack) {
   const first = named.find(g => g.id === presentId) || { id: presentId }, list = [first, ...named.filter(g => g !== first)].map(g => ({ id: g.id, ...(str(g.label) && g.label ? { label: g.label } : {}), ...(isObj(g.i18n) ? { i18n: g.i18n } : {}), mvu: str(src(g).mvu) ? src(g).mvu : '' }));
   const tables = Object.fromEntries(list.map(g => [g.id, g.mvu])), after = list.filter(g => g.id !== presentId);
   return clone({ paths, header: headerSpec(v.header), periods: Array.isArray(v.periods) && v.periods.length ? v.periods : DEFAULT_PERIODS, groups: list, presentId, stageGroup: after[1]?.id || '', tables, place: (present && str(src(present).place) && src(present).place) || '',
-    slots, fields, avatar: isObj(e.avatar) ? e.avatar : {}, pickup: pickupOf(pack?.items) });
+    slots, fields, avatar: isObj(e.avatar) ? e.avatar : {}, pickup: pickupOf(pack?.items), layerPaths: layerPathsOf(pack?.layers) });
 }
 export const KERNEL = Object.freeze(profileOf({}));
 
 export function profileFromV1({ manifest, overlay } = {}) {
   const mv = isObj(manifest?.vars) ? manifest.vars : {}, base = {};
   for (const k of PATH_KEYS) if (str(mv[k]) && mv[k]) base[k] = mv[k];
-  return profileOf({ vars: applyOverlayVars(Object.keys(base).length ? base : undefined, overlay).vars, entities: applyOverlayEntities(undefined, overlay).entities, items: applyOverlayItems(undefined, overlay).items });
+  return profileOf({ vars: applyOverlayVars(Object.keys(base).length ? base : undefined, overlay).vars, entities: applyOverlayEntities(undefined, overlay).entities, items: applyOverlayItems(undefined, overlay).items, layers: overlay?.layers });
 }
 
 /** K-R43 for a card-script portrait: https, an image file, no query string or fragment; the host equals a `hosts` entry `host[/path-prefix]` (a prefix matches from the root, ignoring case,

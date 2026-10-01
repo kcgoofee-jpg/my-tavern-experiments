@@ -71,6 +71,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 
 | Module | Role |
 |---|---|
+| `ambience.mjs` | Procedural ambience (K-R89, Q-01): recipes of filtered noise and harmonic oscillators, scene rules over `{ map, layer, place, weather, night }`, the mixing plan. Pure; its data comes from a `sound` layer. |
 | `card-read.mjs` | Runtime card reading (K-R93, K-R94, K-R95): place candidates from worldbook titles, language, start view, the variable shape, and the automatic pack derived from a plain card source; the fingerprint. Pure. |
 | `clock.mjs` | Zero-token deterministic world clock: world time is computed from turns advanced, never from the model or system time. |
 | `compat-v1-blocks.mjs` | v1 side inputs → v2 blocks: events, roster, stash, worldbook, legacy names, ui strings, the user's custom names. |
@@ -90,6 +91,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `layer-geometry.mjs` | Declared layers, pure geometry and style (K-R80): the route paths of the `line` block (compared with a frozen copy of the old loop), converters from the view data to features, the resolved style of a feature, legend swatches, flow tables, the first-visibility rule. Pure. |
 | `layer-registry.mjs` | LayerRegistry core: the 10 viewport slots, layer registration and ordering, visibility, filter chains, `patch` / `applicable` (K-R79, K-R82), `describe()` summary. |
 | `layer-spec.mjs` | Declared layers (K-R79, K-R81, K-R82): source parsing, feature and layer normalisation, merge of a pack's `layers` rows with the kernel list, the `applies` evaluator, the `validate2` spec of the block. Pure. |
+| `layer-values.mjs` | Host-fed layer values (K-R86): `capValue` (4 KB / 200 items, marked `…truncated`) and `pickValues` over a stat snapshot. Pure. |
 | `ledger.mjs` | Four-domain settlement ledger: validates atomic instructions per domain (assets, NPC, events, depth) and drops anything unverified. |
 | `legacy-custom.mjs` | The user's room names of the first versions (<= 0.9.2), read from local storage; folded into the chat variable by `tavern/mvu-readers.mjs`. |
 | `lexicon.mjs` | Text primitives and kernel word lists of contract v2: normalise, code-point length, cut, FNV hash, articles, journey patterns. Pure and self-contained. |
@@ -116,6 +118,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `portrait-lookup.mjs` | The card-script portrait of a person (I-22): the viewer-side address shape check (the pack's host rule already ran in the host) and the lookup by full name, first segment or the one table key with the same first segment. |
 | `profile.mjs` | The run-time profile of a pack's variables and roster (K-R37–K-R44, K-R69): variable paths, period bands, tables, roster slots, portrait rules (`portraitOk`); the kernel profile of a pack that names nothing. |
 | `project.mjs` | Oblique projection (JS twin of `blender/project.py`, golden-file parity): world point to frame coordinates, label rule, anchors. |
+| `prop-pack.mjs` | The local prop pack's rules (K-R88): `sniff` (glb / png / webp / svg from the bytes), `checkProp` (size and svg refusals), `propId`, `normPlacement`. Pure. |
 | `protocol.mjs` | Message protocol: `SCHEMA` of every host / viewer / sub-page message, envelope, `check` / `accept`, `createBus`. |
 | `quests.mjs` | Dynamic clue nodes: aggregates events by place with per-floor decay into deterministic "something is happening here" nodes. |
 | `render-gate.mjs` | RenderGate: pauses on-demand render loops when the page is hidden or the viewport invisible. |
@@ -178,10 +181,12 @@ mutable state is written only by its declaring module through `set*()`.
 | `json-cache.mjs` | `getJSON`: data files fetched once, failures not cached. |
 | `layer-host.mjs` | Viewer-side LayerRegistry assembly: registry singleton, `.vpslot` slot containers, `declared(id, impl)` (every module registers through its kernel declaration), `applyPackLayers` (a pack's rows adjust kernel layers), the layer menu, `window.LayerHostApi` summary. |
 | `load-progress.mjs` | Progress of the full-screen loading layer, sharing `ui/progress.mjs`. |
+| `local-props-view.mjs` | The kernel layer `local-props` and the prop methods of `EdenMap` (K-R88): placements per chat in `edenMap:chat:<chat id>:props`, images as `<img>` and a glb as the `cube` icon on flat maps, click-to-place. |
 | `locate.mjs` | Initial view and current place: `focusStart`, `markHere`, `hereRes` (over `place-resolver.mjs`), `drawnAt`, `jumpHere`. |
 | `map-level-nav.mjs` | Layer navigation: layer switcher strip, up one level, Esc handling, single-key shortcuts. |
 | `map-switch.mjs` | Map switching: `go` with registrable wrappers, snapshot, map chrome, alternate base map. |
 | `markers.mjs` | Markers and place cards: placement, tracking, show / close card, world-map and point-map overlays. |
+| `nav-ops-view.mjs` | The kernel layer `nav-ops` (K-R86, I-04): the navigator's clues and marks from `eden-map:ops`, placed by place name or by coordinates on their stamped map; session only. |
 | `nodes-runtime-v2.mjs` | The same reads for a schema-2 pack, built from the pack's own tree and the projected registry (K-R96). Pure. |
 | `nodes-runtime.mjs` | The viewer's node tree: the loaded registry converted once by `core/compat-v1.mjs`; breadcrumb, up button, warm-up neighbours, estate stand-in and 3D-page test read it (no `parent` walking). `buildRuntimeV2` installs the schema-2 runtime into the same slot. |
 | `notice-layer.mjs` | Notice layer (handed to the host when embedded, `ui/notice.mjs` when standalone) and the first-run hint. |
@@ -192,6 +197,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `pack-settings.mjs` | Settings → Advanced "Map pack": the running pack, the choice list, URL / file import, the go-live switch of a foreign pack's model text, export as pack (K-R98, K-R99, K-R103). |
 | `place-resolver.mjs` | The current location: `nodes.locate` over the node tree, mapped to the result shape the consumers read (`level`, `map`, `marker`, `room`, `node`, `transit`); also used by `tavern/spatial-contract.mjs` and the builder tools. |
 | `plugins.mjs` | Plugin registry `plugins`: the only channel between app modules and root plugins. |
+| `prop-store.mjs` | The local prop store (K-R88): IndexedDB database `spatialProps` (store `props`) next to the room gallery's `edenRoomGallery`; add (sniff, check, quota), remove, list, object URLs. Nothing leaves the device. |
 | `protocol-stamp.mjs` | Protocol version stamp and message exit: `PROTO`, `post`, `protocol`, the sub-page origin `SUB_ORIGIN`. |
 | `quests-view.mjs` | Viewer rendering of dynamic clue nodes as breathing circles. |
 | `quick-zoom.mjs` | Single-finger zoom (double-tap, hold, drag) on touch screens. |
@@ -199,6 +205,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `screen-reader-announce.mjs` | Screen-reader announcements (aria-live): several same-moment lines merge into one sentence. |
 | `settings.mjs` | Settings overlay: pages, section registration, search, about / update check, self-check. |
 | `sharpness-tiers.mjs` | Sharpness tiers, data-saver decisions, load progress, overlay and label avoidance. |
+| `sound-block.mjs` | The `sound` building block (K-R89): Web Audio for a sound layer from the plan of `core/ambience.mjs`; never starts without the user's switch and a gesture; `window.SoundApi`. |
 | `spot.mjs` | Where a located place is drawn for a person or a trip end (stand-in landmark of a 3D page, landmark, the node's own point, district); pure, the viewer passes what it knows. |
 | `stash-markers.mjs` | Glowing pickup items on the map from the world stash; a click sends the pickup intent to the host. |
 | `state.mjs` | Core viewer state: current map, registry, OSD instance, focus request. |
@@ -257,6 +264,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `mvu-bridge.mjs` | MVUBridge: the only module allowed to touch `Mvu` / `SillyTavern`; snapshots, `getHere` fallbacks, chat variables, roster reads. |
 | `mvu-readers.mjs` | Pure readers for MVU data and the map's own custom data (names, outfit, roster rows through the pack's slot fields, portraits, time and period bands). |
 | `mvu-snapshot.mjs` | MVU snapshot selection and generation-state rules. |
+| `nav-ops.mjs` | Navigator overlays on the host (K-R86): stamps clues and markers with the floor and the map, ages them out after 20 messages, caps each list at 12. Pure; session only. |
 | `operation-dsl.mjs` | Restricted operation DSL sandbox: extracts, validates and normalizes atomic operation blocks. |
 | `pack-gate.mjs` | The pack gate (top-level `await`, imported first by the entry): resolves one pack per card — choice, baked, embedded, index, automatic — sets `window.__tcPack`, restarts the instance on a card switch (K-R90). |
 | `pack-profile.mjs` | The profile of the pack the script runs (`getProfile` / `setProfile`); the kernel profile until the pack's declarations arrive. |
@@ -448,7 +456,12 @@ data paths the host and the viewer used to hard-code (`roster`, `maps`, `galleri
 block (S8-1, S8-2) lists the pack's own layers: `app/declared-layers.mjs` registers each one on the LayerRegistry (menu
 row `lyr-<id>`, order after the kernel rows, visibility in `edenMapLayers`) and draws it with `app/block-overlay.mjs`
 (point, label, line, area) or `app/block-canvas.mjs` (flow, particles, tint); the legend tab lists the rows of the visible,
-applicable layers. The engine names no layer of any pack.
+applicable layers. S8-3 adds the host-fed sources: the host reads the card variables a pack's layers name
+(`profile.layerPaths`, at most 8, read only) and posts them in `eden-map:layer-data` (the `mvu:<path>` source and `applies.mvu`);
+the navigator's clues and marks go in `eden-map:ops` to the kernel layer `nav-ops`; `EdenMap.addLayer` and friends add local
+layers (data only, ids `local-…`); the `sound` block plays a pack-declared ambience (`app/sound-block.mjs`, off until the user
+switches it on and clicks); the local prop pack keeps the user's own files in IndexedDB (`spatialProps`) and draws them on the
+kernel layer `local-props`. The engine names no layer of any pack.
 
 **The pack gate (S9-2)**: the entry imports `tavern/pack-gate.mjs` first; its top-level `await` resolves the pack of the current card (user choice or baked pack → pack embedded in the card → best match in `packs/index.json` → automatic) and sets `window.__tcPack` before the entry reads it; the legacy-default pack leaves it unset, so the first pack's start, texts and writes are unchanged. On a card switch the gate resolves again and, when the pack id or source changed, stops the instance (`__edenMapCleanup`), clears the profile and chat-variable root that modules keep, and imports the entry again under `?k=<card key>&r=<n>`. `eden-map:pack-pick` (Settings → Advanced) reaches it through `onTh`; the go-live switch of a foreign pack's model text is `eden-map:th` `prefs.packLlm`. Module-level state that survives a restart is listed in `docs/zero-config.md` §14.
 
@@ -492,7 +505,7 @@ includes the English card words (`EN_TERMS`, case-sensitive).
 - **Script variable**: user preferences listed in `SCRIPT_KEYS` are mirrored into the TavernHelper script variable
   `eden_prefs` so they survive a browser-storage wipe.
 - **Per-chat data and budget**: per-chat keys are LRU-ranked and capped by `tavern/storage-budget.mjs`; it touches only
-  keys starting with the map's prefix. Images live in IndexedDB (`core/room-gallery-db.mjs`), never in the chat.
+  keys starting with the map's prefix. Images live in IndexedDB (`core/room-gallery-db.mjs`), never in the chat. The local prop pack (K-R88) has its own database `spatialProps` (`app/prop-store.mjs`), next to the room gallery's `edenRoomGallery` and the packs store; its placements are per-chat keys `edenMap:chat:<chat id>:props`.
 - **Names kept until S10**: the `edenMap*` / `eden_map` / `EdenMap` / `window.TC*` names are external contracts.
   They are renamed only at S10, with a migration and a re-confirmation (decisions D5, D12).
 

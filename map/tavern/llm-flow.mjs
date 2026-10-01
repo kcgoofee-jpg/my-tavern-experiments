@@ -2,9 +2,10 @@
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
 import { cdnFetch, thFn } from './host-tavernhelper.mjs';
 import { resolveTags, stripBlocks } from './sanitize.mjs';
+import * as NO from './nav-ops.mjs';
 export const DEPS = [
   'GEN', 'scriptBase', 'hostToast', 'life', 'lsGet', 'lsSet', 'panel', 'pointsFor', 'sendEvents', 'contextPipeline', 'FRm', 'mvuReaders', 'SpatialM', 'uiLang', 'floorNow',
-  'frState', 'here', 'regNow', 'spatialNow', 'eventsSummary',
+  'frState', 'here', 'regNow', 'spatialNow', 'eventsSummary', 'post', 'alive',
 ];
 export function createLlmFlow(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('llm-flow: missing dep ' + k);
@@ -12,12 +13,18 @@ export function createLlmFlow(host) {
   // ---------------- W5 领航员网关（tavern/planner-gateway.mjs 纯调度；HTTP 与副作用在这里） ----------------
   // 默认关（edenMapNav）；开着也只是「该跑时才打一次用户自己配的端点」，让路语义复用 tick.plan（面板活着 / 生成中不跑）。
   // 响应必须过 W4 op 沙盒（sanitize 链 → parse → 水位）才可能落到地图；OP_EVENT 是会话级叠加（src='op'，20 楼衰减），
-  // OP_SUGGEST 只弹提示永不自动进聊天流（裁决 2/3）；OP_CLUE / OP_MARKER 的查看器送达挂 T9（叠加图层）。
+  // OP_SUGGEST 只弹提示永不自动进聊天流（裁决 2/3）；OP_CLUE / OP_MARKER 经 tavern/nav-ops.mjs 盖楼层与地图章、会话级留存，发给查看器的 nav-ops 图层（K-R86）。
   let plannerGatewayModule = null, LLMm = null, MSGm = null;
   import(scriptBase + 'tavern/planner-gateway.mjs').then(m => { plannerGatewayModule = m; navSchedule(); }).catch(() => {});
   import(scriptBase + 'tavern/llm-gateway.mjs').then(m => { LLMm = m; }).catch(() => {});
   import(scriptBase + 'tavern/msgtext.mjs').then(m => { MSGm = m; }).catch(() => {});
-  let navLed = { lastAt: 0 }, navSeen = { seen: [] }, navT = 0, opEvents = [];
+  let navLed = { lastAt: 0 }, navSeen = { seen: [] }, navT = 0, opEvents = [], opOv = NO.EMPTY, opSent = NO.sig(NO.EMPTY);
+  function sendOps(force) {   // K-R86: the session's clues and markers to the viewer's nav-ops layer, when they changed (force: a fresh viewer, only if there is something)
+    opOv = NO.age(opOv, host.floorNow); const s = NO.sig(opOv);
+    if (!host.alive || (force ? !opOv.clues.length && !opOv.markers.length : s === opSent)) return;
+    opSent = s; host.post({ type: 'eden-map:ops', clues: opOv.clues, markers: opOv.markers });
+  }
+  function resetOps() { const had = opOv.clues.length || opOv.markers.length; opOv = NO.EMPTY; if (had) { opSent = ''; sendOps(); } }
   async function navRun() {
     if (!plannerGatewayModule || !LLMm || life.dead) return;
     const p = plannerGatewayModule.plan(Date.now(), { lastAt: navLed.lastAt, intervalMs: plannerGatewayModule.intervalOf(lsGet), alive: !panel.hidden, generating: GEN.generating, dead: life.dead });
@@ -46,6 +53,7 @@ export function createLlmFlow(host) {
       opEvents = opEvents.filter(e => host.floorNow - e.floor <= 20).concat(d.events.map(e => ({ ...e, last: host.floorNow }))).slice(-12);
       sendEvents();
     }
+    if (d.clues.length || d.markers.length) { opOv = NO.add(opOv, d, { floor: host.floorNow, map: host.SpatialM?.locate(host.regNow, host.here)?.mapId ?? null }); sendOps(); }
     if (d.suggests.length) hostToast(host.uiLang === 'en' ? 'Navigator' : '地图领航员', d.suggests, 12000);
   }
   function navSchedule() {
@@ -130,6 +138,6 @@ export function createLlmFlow(host) {
     finally { xtalBusy = false; }
   }
   return {
-    jitRound, get opEvents() { return opEvents; }, set opEvents(v) { opEvents = v; }, get worldbookJitModule() { return worldbookJitModule; }, get WBSm() { return WBSm; }, xtalRound,
+    jitRound, resetOps, sendOps, get opEvents() { return opEvents; }, set opEvents(v) { opEvents = v; }, get worldbookJitModule() { return worldbookJitModule; }, get WBSm() { return WBSm; }, xtalRound,
   };
 }

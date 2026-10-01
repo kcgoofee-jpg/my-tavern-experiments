@@ -55,7 +55,7 @@ test('runtime: the first pack and the town (no overlay layers) expose []; a sche
   const rt = makeRuntime({ ...TOWN, overlay: { schema: 2, layers: [ROW] } });
   assert.equal(rt.layers.length, 1);
   const merged = mergeLayers(KERNEL_LAYERS, rt.layers);
-  assert.equal(merged.layers.length, 18); assert.equal(merged.layers.at(-1).menu.order, 1000, 'a new layer follows the kernel rows');
+  assert.equal(merged.layers.length, 20); assert.equal(merged.layers.at(-1).menu.order, 1000, 'a new layer follows the kernel rows');
 });
 
 test('runtime of a schema-2 pack exposes the pack layers (S9-1 runtime)', () => {

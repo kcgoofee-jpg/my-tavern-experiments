@@ -1,4 +1,4 @@
-// S8-1: the kernel layer list (core/layer-defaults.mjs) equals the 17 descriptors the modules registered before it existed, plus `type` / `source`.
+// S8-1: the kernel layer list (core/layer-defaults.mjs) equals the 17 descriptors the modules registered before it existed, plus `type` / `source`; S8-3 added the two kernel layers nav-ops and local-props (19).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -7,13 +7,14 @@ import { SLOTS, KINDS } from '../map/core/layer-registry.mjs';
 import { LAYERS_V1 } from './helpers/layers_v1_frozen.mjs';
 
 const TYPES = { routes: 'line', traffic: 'flow', weather: 'particles' };
-const MENU_ORDER = { 'base-overlay': 10, 'alt-base': 20, routes: 30, security: 40, weather: 45, traffic: 46, quests: 47, loot: 48, vision: 49, wander: 50, trips: 50, labels: 60, markers: 70, events: 80 };
+const MENU_ORDER = { 'base-overlay': 10, 'alt-base': 20, routes: 30, security: 40, weather: 45, traffic: 46, quests: 47, loot: 48, vision: 49, wander: 50, trips: 50, labels: 60, markers: 70, events: 80, 'nav-ops': 85, 'local-props': 86 };
+const S83 = ['nav-ops', 'local-props'];   // added by S8-3 (K-R86, K-R88); everything else is the frozen list of S8-1
 
-test('the kernel list has the 17 layers, ids unique, slots and kinds valid', () => {
+test('the kernel list has the 17 layers and the two of S8-3, ids unique, slots and kinds valid', () => {
   assert.equal(LAYERS_V1.length, 17);
-  assert.equal(KERNEL_LAYERS.length, 17);
-  assert.equal(new Set(KERNEL_IDS).size, 17);
-  assert.deepEqual([...KERNEL_IDS].sort(), LAYERS_V1.map(l => l.id).sort());
+  assert.equal(KERNEL_LAYERS.length, 19);
+  assert.equal(new Set(KERNEL_IDS).size, 19);
+  assert.deepEqual(KERNEL_IDS.filter(id => !S83.includes(id)).sort(), LAYERS_V1.map(l => l.id).sort());
   for (const l of KERNEL_LAYERS) { assert.ok(SLOTS.includes(l.slot), l.id); assert.ok(KINDS.includes(l.kind), l.id); assert.equal(l.source, 'kernel'); }
 });
 
@@ -26,6 +27,12 @@ test('every kernel declaration equals the frozen descriptor plus type / source (
     assert.equal(type, TYPES[old.id] ?? null, `${old.id} type`);
   }
   assert.doesNotMatch(kernelDecl('routes').menu.title, /银冠堡/, 'the engine text names no place');
+});
+
+test('nav-ops and local-props: markers slot, point block, order 3 and 4, a row that shows while it holds something', () => {
+  const n = kernelDecl('nav-ops'), p = kernelDecl('local-props');
+  for (const [d, order, labelKey] of [[n, 3, 'nav.layer'], [p, 4, 'props.layer']]) { assert.equal(d.slot, 'markers'); assert.equal(d.kind, 'osd'); assert.equal(d.type, 'point'); assert.equal(d.order, order); assert.deepEqual(d.applies, { data: true }); assert.equal(d.menu.labelKey, labelKey); assert.equal(d.menu.hidden, undefined); }
+  assert.equal(n.menu.id, 'lyr-nav-ops'); assert.equal(p.menu.id, 'lyr-local-props');
 });
 
 test('menu orders are the table of the design (ties keep registration order)', () => {

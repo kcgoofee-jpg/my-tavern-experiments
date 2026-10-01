@@ -51,9 +51,33 @@
 
 暂缓（v0.9.1 不做，RP 价值研究 architect.md：价值 4.7，且有直播采到私人内容的风险）：
 - ~~`EdenMap.renameRoom(标准房间名, 显示名)`~~：v0.9.3 由 `setCustom` 实现（地点卡、地名标签显示自定义名）。
-- `EdenMap.registerOverlay({ id, map, draw(ctx) })` / `unregisterOverlay(id)`：用户自己的图层。
+- ~~`EdenMap.registerOverlay({ id, map, draw(ctx) })` / `unregisterOverlay(id)`：用户自己的图层。~~ 由数据声明的 `addLayer` / `removeLayer`（S8-3，见下面「Local layers and props」）取代：不收绘制回调。
 
 这些接口不联网、不上传、不写进地址；仓库里只有接口本身，没有任何用户数据。
+
+### Local layers and props (S8)
+
+Added by S8-3 (kernel rules K-R87 and K-R88; the methods below are added to `window.EdenMap`, nothing is renamed). Data only: no drawing callbacks, no network, nothing is uploaded.
+
+- `addLayer(def)` returns `{ ok, id, problems }`. `def` is a layer declaration (`id` starting with `local-`, `type`, `slot`, inline `data`, or a `view:*`, `events`, `people`, `items`, `routine` source; `style`, `applies`, `menu`, `legend` as in a pack). At most 16 local layers; adding the same id again replaces the layer. It lives for the page session; add it again when your script loads. The user's switch for the row is remembered.
+- `removeLayer(id)` returns a boolean (local layers only). `setLayerData(id, features)` replaces the features of an inline local layer. `layers()` lists every registered layer, read only: `{ id, type, slot, visible, applicable, source, count }`.
+- `addProp(file, { name })`, `removeProp(id)`, `props()`, `placeProp(id, { map, at } | { pick: true })` and `unplaceProp(id, map)` manage the user's own picture and model files (glb, png, webp, svg) kept in this browser only; the placements are per chat. A layer's point style may use `icon: "prop:<id>"`. An svg that contains a script, a foreignObject or an event handler is refused. Placing a glb inside a 3D page is not part of this step.
+- On the host page the methods forward to the map when it is open and queue until it is ready otherwise.
+
+Example: a polygon over a town view (coordinates are fractions of the view's width and height):
+
+```js
+const area = {
+  id: 'local-market-rain', type: 'area', slot: 'routes',
+  data: { features: [{ view: 'town_hill', pts: [[0.62, 0.55], [0.75, 0.55], [0.75, 0.7], [0.62, 0.7]] }] },
+  style: { color: '#9ad0f5', fill_opacity: 0.2, width: 1.2, dash: [6, 4] },
+  menu: { label: 'Market rain' },
+};
+await EdenMap.addLayer(area);                 // { ok: true, id: 'local-market-rain', problems: [] }
+await EdenMap.setLayerData('local-market-rain', [{ view: 'town_hill', pts: [[0.6, 0.5], [0.8, 0.5], [0.8, 0.72]] }]);
+await EdenMap.removeLayer('local-market-rain');
+```
+
 
 ## 地图 → 聊天（v0.9.6，2026-09-29 已发版）
 - 地点卡、事件卡、人物卡底部两个按钮「去这里」「追问这件事」：把一句中性模板句填进酒馆输入框，**从不自动发送**，用户自己改、自己发。只在嵌在酒馆里时显示。
