@@ -35,3 +35,23 @@ export function contentBase({ channel, ref, sha, host, repo, tag }) {
 
 /** head.json 的内容提交号 → 入口脚本地址（用于「加载新 sha 的入口」） */
 export function entryUrl(base) { return String(base || '') + 'tavern/eden-map.js'; }
+
+/** The build a pinned commit belongs to (I-23): head = { build, sha, at?, history?: [{ build, sha, at? }] } (the branch's head.json), sha = the commit the script was loaded at
+ *  (7–40 hex; a prefix of the recorded one, either way). → { build, at? } | null (older than the recorded history = unknown). */
+export function buildOfSha(head, sha) {
+  const s = String(sha || '').toLowerCase(); if (!SHA.test(s) || !head || typeof head !== 'object') return null;
+  const same = r => r && Number.isInteger(r.build) && SHA.test(String(r.sha || '').toLowerCase()) && (String(r.sha).toLowerCase().startsWith(s) || s.startsWith(String(r.sha).toLowerCase()));
+  const hit = [head, ...(Array.isArray(head.history) ? head.history : [])].find(same);
+  return hit ? { build: hit.build, ...(hit.at ? { at: hit.at } : {}) } : null;
+}
+
+/** What About says about how the script was loaded (I-23). loaded = the ref in the script's own address (a commit, a tag or a branch); SCRIPT = the loader's stamp.
+ *  kind: 'follow' (a bootstrap or a branch: the branch is `branch`; `sha` = the commit it loaded) | 'pinned' (loaded at a commit, nothing follows) | 'tag' | 'latest' | 'local'.
+ *  `selector` is what the branch selector shows: the branch for follow, 'pin' for a pinned commit (never the release channel), the release branch only for a tag. */
+export function loadInfo({ script = {}, loaded = '', ver = null, swappable = false } = {}) {
+  const ch = script.channel || (ver ? 'tag' : swappable ? 'ref' : 'local'), ref = String(script.ref || loaded || ''), kind = refKind(ref);
+  if (ch === 'follow' || (ch === 'ref' && kind === 'branch')) return { kind: 'follow', branch: kind === 'branch' ? ref : 'preview', sha: String(script.sha || (refKind(loaded) === 'sha' ? loaded : '')), selector: kind === 'branch' ? ref : 'preview' };
+  if (ch === 'ref' && (kind === 'sha' || refKind(loaded) === 'sha')) { const sha = kind === 'sha' ? ref : String(loaded); return { kind: 'pinned', sha, selector: 'pin' }; }
+  if (ch === 'tag' || ch === 'latest') return { kind: ch, sha: '', selector: 'main' };
+  return { kind: ch === 'ref' ? 'pinned' : 'local', sha: String(script.sha || ''), selector: ch === 'ref' ? 'pin' : '' };
+}

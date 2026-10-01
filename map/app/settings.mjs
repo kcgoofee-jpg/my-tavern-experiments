@@ -196,13 +196,13 @@ export function renderAbout() {
   const a = about || {}, ver = a.version || buildInfo?.version || '', code = a.code || buildInfo?.code || '';
   const ch = { tag: uiTextOr('about.ch_tag', `固定版本 ${a.ref || ''}`, { ref: a.ref || '' }), follow: uiTextOr('about.ch_follow', `跟随分支 ${a.ref || ''}（每次打开取最新提交）`, { ref: a.ref || '' }),
     latest: a.locked ? uiTextOr('about.ch_locked', `已锁定 ${a.ref || ''}`, { ref: a.ref || '' }) : uiTextOr('about.ch_latest', `自动用最新正式版（当前 ${a.ref || ''}）`, { ref: a.ref || '' }),
-    ref: uiTextOr('about.ch_ref', `预览提交 ${a.ref || ''}`, { ref: a.ref || '' }), local: uiTextOr('about.ch_local', '本地 / 单独打开') }[a.channel || (window.top === window ? 'local' : '')] || '';
+    ref: a.pinned ? uiTextOr('about.ch_pin', `固定提交 @${a.pinned}`, { sha: a.pinned }) : uiTextOr('about.ch_ref', `预览提交 ${a.ref || ''}`, { ref: a.ref || '' }), local: uiTextOr('about.ch_local', '本地 / 单独打开') }[a.channel || (window.top === window ? 'local' : '')] || '';
   const SRC = { jsdmirror: 'jsdmirror', jsdelivr: 'jsDelivr', raw: 'GitHub raw', github: 'GitHub API', cache: uiTextOr('about.src_cache', '本机缓存'), baked: uiTextOr('about.src_baked', '脚本内置') };
   // 跟随分支预览：标题直接说「跟随分支预览 · 构建 #N」，不挂正式版号（v0.9.5 之类），免得被当成已发版本（2026-09-28 修）
   let h = a.channel === 'follow' && a.build != null
     ? `<b>${esc(uiTextOr('about.title_follow', '跟随分支预览'))}</b> · ${esc(uiTextOr('about.follow_build', '构建 #{n} · 来源 {s}', { n: a.build, s: SRC[a.source] || a.source || '?' }))}`
     : `<b>${esc(uiTextOr('about.title', '地图版本'))}</b> v${esc(ver || '?')}${code ? ` · <span style="font-family:var(--font-mono)">${esc(code)}</span>` : ''}`;
-  if (ch) h += `<br>${esc(ch)}${a.sha ? ` · ${esc(String(a.sha).slice(0, 7))}` : ''}`;
+  if (ch) h += `<br>${esc(ch)}${a.sha && !a.pinned ? ` · ${esc(String(a.sha).slice(0, 7))}` : ''}`;
   { const bl = buildLine(a, uiTextOr, loadedAt); if (bl) h += `<br><span id="buildLine">${esc(bl)}</span>`; }   // I-15：始终说明正在跑哪个构建
   if (a.line) h += `<br>${esc(uiTextOr('about.line', '线路：{l}', { l: a.line }))}`;
   if (window.top !== window) h += `<br><button type="button" class="btn" id="updBtn" ${updBusy ? 'disabled' : ''}>${esc(updBusy ? uiTextOr('about.checking', '检查中…') : uiTextOr('about.check', '检查更新'))}</button>`;
@@ -232,6 +232,7 @@ export function renderAbout() {
     if (window.top !== window && (a.branches || []).length) {
       const h = document.createElement('div'); h.className = 'hrow';
       h.innerHTML = `<span>${esc(uiTextOr('s.branch', '版本分支'))}</span><select id="branchSel"${a.branchSw ? '' : ' disabled'}>` +
+        (a.branch === 'pin' ? `<option value="" selected>${esc(uiTextOr('about.ch_pin', `固定提交 @${a.pinned || ''}`, { sha: a.pinned || '' }))}</option>` : '') +   // I-23：钉在提交的脚本不属于任何分支，选择器如实显示，不冒充正式版通道
         a.branches.map(o => `<option value="${esc(o.id)}"${a.branch === o.id ? ' selected' : ''}>${esc(LANG === 'en' && o.label_en ? o.label_en : o.label)}</option>`).join('') + '</select>';
       if (!a.branchSw) h.title = uiTextOr('s.branch_na', '不可切换：当前脚本不是从分支地址加载');
       else h.querySelector('select').onchange = () => { const v = h.querySelector('select').value; if (v) post({ type: 'eden-map:switch-branch', branch: v }); };

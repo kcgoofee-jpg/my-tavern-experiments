@@ -309,6 +309,7 @@
   "about.title_follow": "跟随分支预览",
   "about.ch_tag": "固定版本 {ref}",
   "about.ch_follow": "跟随分支 {ref}（每次打开取最新提交）",
+  "about.ch_pin": "固定提交 @{sha}",
   "about.ch_ref": "预览提交 {ref}",
   "about.ch_local": "本地 / 单独打开",
   "about.line": "线路：{l}",

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""跟随分支的头指针：map/data/head.json = {build: 递增构建号, sha: 内容提交号, branch, at}，单独提交一次（消息「head #N」）。
+"""跟随分支的头指针：map/data/head.json = {build: 递增构建号, sha: 内容提交号, branch, at, history: 最近 40 个构建 [{build, sha, at}]}，单独提交一次（消息「head #N」）。
 为什么单独提交：文件写不进自己所在提交的提交号，所以 head.json 记的是它的父提交（内容提交）；两者只差 head.json 本身，按提交号加载内容完全一致。
 跟随分支加载器（build_preview_script.py --follow）从 jsdmirror / jsDelivr / raw.githubusercontent 读分支路径上的这个文件（国内不用梯子），取构建号最大的。
 
@@ -20,14 +20,30 @@ def drop_old_bump():
     if msg.startswith('head #') and files == [PATH]: git('reset', '-q', '--hard', 'HEAD^')
 
 
+HISTORY = 40
+
+
+def history_of(prev, h):
+    """I-23：最近 HISTORY 个构建的 {build, sha(12 位), at}（不含当前这一个，当前的在顶层）。按提交号加载（钉住的脚本）的人据此从提交号找回构建号。"""
+    rows = [r for r in (prev.get('history') or []) if isinstance(r, dict) and isinstance(r.get('build'), int) and r.get('sha')]
+    if isinstance(prev.get('build'), int) and prev.get('sha'): rows.append({'build': prev['build'], 'sha': prev['sha'][:12], **({'at': prev['at']} if prev.get('at') else {})})
+    seen, out = set(), []
+    for r in sorted(rows, key=lambda r: -r['build']):
+        if r['build'] in seen or r['build'] >= h['build']: continue
+        seen.add(r['build']); out.append({'build': r['build'], 'sha': str(r['sha'])[:12], **({'at': r['at']} if r.get('at') else {})})
+    return out[:HISTORY]
+
+
 def bump(branch):
     drop_old_bump()
-    try: n = json.loads(git('show', f'HEAD:{PATH}').stdout).get('build', 0)
-    except Exception: n = 0
+    try: prev = json.loads(git('show', f'HEAD:{PATH}').stdout)
+    except Exception: prev = {}
+    n = prev.get('build', 0) if isinstance(prev.get('build'), int) else 0
     try: rn = json.loads(git('show', f'origin/{branch}:{PATH}', check=False).stdout or '{}').get('build', 0)
     except Exception: rn = 0
     h = {'build': max(n, rn) + 1, 'sha': git('rev-parse', 'HEAD').stdout.strip(), 'branch': branch,
          'at': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}
+    h['history'] = history_of(prev, h)
     with open(PATH, 'w', encoding='utf-8') as f: json.dump(h, f, ensure_ascii=False); f.write('\n')
     git('add', PATH); git('commit', '-q', '-m', f"head #{h['build']}", '--', PATH)
     return h

@@ -10,7 +10,7 @@
 
 /** deps：{ cdnFetch, post, base(), REPO, scriptBase, VER, tagOf, LINES, swappable, SCRIPT,
  *    lineKey(), lang(), followHead(), followNewer(h), loadSelfcheck(), loadSources() } */
-import { refKind } from './follow-pin.mjs';
+import { refKind, loadInfo, buildOfSha } from './follow-pin.mjs';
 export function createAbout(d = {}) {
   const {
     cdnFetch = async () => null, post = () => {}, base = () => '', REPO = '', scriptBase = '', VER = null,
@@ -32,12 +32,17 @@ export function createAbout(d = {}) {
   async function sendAbout() {
     const b = await buildNow(), l = LINES.find(x => x.key === lineKey());
     const dataSourceRegistryModule = await loadSources().catch(() => null);
-    const br = dataSourceRegistryModule ? (dataSourceRegistryModule.branchOf(SCRIPT.ref) || dataSourceRegistryModule.branchOf(refOf()) || (VER ? 'main' : null)) : null;
+    const info = loadInfo({ script: SCRIPT, loaded: refOf(), ver: VER, swappable });   // I-23：真实的通道（钉在提交 / 跟随分支 / 标签），不再把没有标签的加载一律当正式版
+    const sha = SCRIPT.sha || (refKind(refOf()) === 'sha' ? refOf() : '') || info.sha || null;
+    let build = Number.isInteger(SCRIPT.build) ? SCRIPT.build : null, at = SCRIPT.at || null;
+    if (build === null && sha) { const hit = buildOfSha(await followHead('preview').catch(() => null), sha); if (hit) { build = hit.build; at = at || hit.at || null; } }   // 钉住提交的脚本没有构建号：从预览分支 head.json 的近期记录里找
+    const rel = info.kind === 'tag' || info.kind === 'latest';
+    const br = info.kind === 'pinned' ? 'pin' : dataSourceRegistryModule ? (dataSourceRegistryModule.branchOf(SCRIPT.ref) || dataSourceRegistryModule.branchOf(refOf()) || (rel ? 'main' : info.kind === 'follow' ? info.selector : null)) : null;
     const en = lang() === 'en';
     post({
       type: 'eden-map:about', version: b?.version || SCRIPT.version || VER || null, code: b?.code || SCRIPT.code || null,
-      channel: channel(), ref: SCRIPT.ref || (VER ? tagOf(VER) : refOf()), sha: SCRIPT.sha || (refKind(refOf()) === 'sha' ? refOf() : null), at: SCRIPT.at || null,
-      build: Number.isInteger(SCRIPT.build) ? SCRIPT.build : null, source: SCRIPT.source || null, locked: !!SCRIPT.locked,
+      channel: channel(), ref: SCRIPT.ref || (VER ? tagOf(VER) : refOf()), sha, at, pinned: info.kind === 'pinned' ? String(sha || '').slice(0, 7) : null,
+      build, source: SCRIPT.source || null, locked: !!SCRIPT.locked,
       line: l ? (en && l.name_en) || l.name : '', branch: br, branches: dataSourceRegistryModule ? dataSourceRegistryModule.BRANCHES : [],
       branchSw: !!dataSourceRegistryModule?.branchUrl(scriptBase || '', 'main'),
     });

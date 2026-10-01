@@ -127,8 +127,8 @@ export function createHostChecks(host) {
   let FW = null;
   const fwGet = async u => { const c = new AbortController(), to = setTimeout(() => c.abort(), 5000);
     try { const r = await cdnFetch(u, { cache: 'no-store', signal: c.signal }); return r.ok ? await r.json() : null; } catch (e) { return null; } finally { clearTimeout(to); } };
-  async function followHead() {
-    FW ??= await import(scriptBase + 'tavern/branch-follow.mjs').catch(() => null); const br = SCRIPT.ref || host.refOf?.(); if (!FW || !br) return null;
+  async function followHead(branch) {   // branch 缺省 = 脚本自己的 ref；钉在提交号的脚本问 About 要预览分支的头（I-23）
+    FW ??= await import(scriptBase + 'tavern/branch-follow.mjs').catch(() => null); const br = branch || SCRIPT.ref || host.refOf?.(); if (!FW || !br) return null;
     return FW.resolveFollow(REPO, br, fwGet, null).catch(() => null);
   }
   // 比加载的新：有构建号比构建号；老加载器（没有构建号）比提交号

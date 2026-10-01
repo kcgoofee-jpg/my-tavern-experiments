@@ -309,6 +309,7 @@
   "about.title_follow": "Following branch preview",
   "about.ch_tag": "Pinned release {ref}",
   "about.ch_follow": "Following branch {ref} (latest commit on each open)",
+  "about.ch_pin": "Pinned commit @{sha}",
   "about.ch_ref": "Preview commit {ref}",
   "about.ch_local": "Local / standalone",
   "about.line": "Route: {l}",
