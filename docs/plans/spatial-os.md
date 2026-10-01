@@ -189,6 +189,7 @@ I produce a 5-minute checklist and you test with the Eden card in the tavern; pr
   - Dark Frost Glass applied uniformly to the clock capsule, top bar, layer popover, toolbar, drawer and settings page;
   - layers get `applies()`: when inapplicable they are greyed out with a hint, and rAF is paused;
   - ⓘ / (i) / U21 click-through: re-check with a probe and fix if it reproduces.
+- **S7-3 One shell for 2D and 3D** (added 2026-10-01, user request, after S7-2; `docs/todo.md` N11): the estate 3D viewer joins the main shell (top bar, rail, shared place / room / character card), shows located characters as tokens in rooms, uses the same design tokens, and reads its title, floors, room kinds, colours and labels from pack data; occluded labels hidden.
 - **S8 Declarative layers: authors add their own layers** (about 16h):
   - `layers` data is rendered by generic building blocks: point / area / line / label / tint / particles / move-along-line;
   - data sources can be: data files, events, characters, items, schedules, MVU variables (read-only);
