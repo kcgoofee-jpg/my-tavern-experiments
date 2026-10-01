@@ -31,6 +31,8 @@ step "架构看门狗（引擎行数 / 分层纯净 / 裸 z-index / 卡专有名
 step "架构看门狗门控自测（引用与账本拦得住 / 机制术语放行 / 仓库现状干净，防空转）" python3 tools/test_architecture_gate.py
 step "计划 §8 卡词 grep（引擎含注释零命中，仅允许表里的 S10 行，见 tools/check_stage_a_grep.py）" python3 tools/check_stage_a_grep.py
 step "§8 grep 门控自测（词表 / 排除 / 允许表）" python3 tools/check_stage_a_grep.py --self-test
+step "架构文档模块地图（每个引擎文件恰好列一次、列出的路径都存在，见 tools/check_arch_doc.py）" python3 tools/check_arch_doc.py
+step "架构文档门控自测" python3 tools/check_arch_doc.py --self-test
 step "树卫生（未跟踪大文件防 git add -A 误提交，见 tools/check_tree_hygiene.py）" python3 tools/check_tree_hygiene.py
 step "纵深数学对拍（python ↔ golden；JS 侧在 node --test）" python3 tools/test_depth.py
 step "斜视投影对拍（python ↔ golden）" python3 tools/test_project.py

@@ -712,3 +712,24 @@ blocker: none
 open: none (S5 is closed: the stage-end `bash tools/sync_main.sh` is the orchestrator's; the host's `LS` / `NT` and the `TCCvd` alias are the only short names left of tables C and D)
 cleanup: done (servers and browsers started by me stopped; worktrees s5-3 and s5-3-base stay for the orchestrator; no launch.json entries)
 === END ===
+
+=== RESULT STAGE-A ===
+status: DONE
+items: T1 comment sweep + watchdog check 8 ✓ · T2 §8 grep pathspec + smoke gate ✓ · T3 th_adopt (real bug, fixed) + custom095 (probe out of date, updated) ✓ · T4 CI lock file, browser-smoke reaches the probes and is green ✓ · T5 full probe sweep + pack_minimal ✓ · T6 docs (ARCHITECTURE en + zh, todo) ✓
+commits: f5a116ef docs(engine): neutral comments; watchdog counts comment terms
+         03c72154 chore(gate): plan §8 grep as a smoke gate
+         c0a576bb fix(probes): th_adopt (real bug) and custom095 (probe out of date)
+         f29fcd15 ci: lock file for the browser probe job
+         fe51e23b ci: browser-smoke installs WebKit and runs every probe step
+         (this commit) docs: stage A probe sweep, architecture state, todo
+pushed: yes (f29fcd15 + fe51e23b pushed during the stage; this commit with the push below)
+tests: node 873/874 (1 skipped; baseline 872/873, +1 = the bridge.modes test) | smoke PASS | arch PASS (8 checks) | probes: 41 PASS, 1 KNOWN (pack_minimal), 0 FAIL, 13 N/A of 55; acceptance list accept, pack_town, v096, webgl_single_ctx, chars092, roster095, topo_dairy, e7_host, events_fx = PASS
+grep §8: 166 -> 1 (allow-listed: 1, map/props/dairy.html:1, a redirect stub of a pack prop page, S10)
+comment terms: 184 (48 files, the watchdog word list) -> 0
+probes: 41/1/0/13 of 55; acceptance list: all PASS
+ci browser-smoke: green (run 36808266262: npm ci from the lock file, chromium + webkit, accept, v096, topo_dairy); continue-on-error kept until a second consecutive green run (I-13)
+deviations: (1) T2 pathspec: the plain ':!map/*.html' also excludes map/props/viewer3d.html (git's * crosses /), so the gate uses ':(exclude,glob)map/*.html' and also excludes map/art/** and map/_proto/**; the plan §8 line (en + zh) carries the same string. (2) T3 th_adopt was a real bug, not a stale probe: MVUBridge never exposed `modes` (since P2, 2026-09-29), so the state line, checkpoint and tag reconciliation were silently off; restoring it makes the documented default-on state line inject again (filed as Q-18, recommendation keep). (3) T4 needed a second CI commit (fe51e23b): WebKit install for the iphone check, and `!cancelled()` on the probe steps; `.gitignore` no longer ignores the lock file. (4) T5: the viewer cannot open a schema-2 pack (core/pack.mjs accepts schema 1 only), so `pack_minimal` proves the kernel pipelines in a real browser and registers "viewer renders the minimal pack" as KNOWN (I-12, owner S9); a fifth probe, inset_eden, failed on the S5 rename (`S.viewer` -> `osdViewer`) and was fixed (names only). (5) T6: the module map was missing 11 engine files (compat-v1 x4, lexicon, locate, overlay-v2, pack-v2 x3 in core; event-geo-load in tavern), listed `root-store.mjs` under core instead of tavern, and counted 146 files (196 now): all fixed in both editions, and a new gate `tools/check_arch_doc.py` (in smoke) keeps it so; one doc claim ("Schema-2 packs load natively from S4") was wrong and corrected. (6) Extra files: tools/check_stage_a_grep.py, tools/stage_a_grep_allow.txt, tools/check_arch_doc.py, tools/browser/pack_minimal.mjs, docs/plans/stage-a-probes.md (+ zh). (7) The watchdog scans map/ui/*.css for comment terms too (tokens.css), via a separate list rather than ENGINE_GLOBS. No non-comment card term was found in engine code; the remaining S10 identifiers (eden_map, edenMap, eden-map:, eden-estate) are outside the term list.
+blocker: none
+open: Q-18 (state-line injection restored: keep on by default?); I-12 (viewer loads schema-2 packs, S9); I-13 (drop continue-on-error after the second green run)
+cleanup: done (my own probe server and probe runs stopped; no launch.json entries; worktree /private/tmp/claude-501/-Users-davidzhao-dev1-cctest1-eden-map/594c4795-e4d0-4aa7-8e0e-9c3e8d248163/scratchpad/stage-a left for the orchestrator; sync_main not run)
+=== END ===

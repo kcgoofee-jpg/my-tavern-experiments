@@ -15,7 +15,7 @@
 
 | 术语 | 含义 | 现状 |
 |---|---|---|
-| **SpatialNode** | 节点树里的一个地点：`{ id, name, alias[], hints[], parent, type, at?, view?, canon }`。这棵树是唯一的地理；匹配取最长别名、优先更深的节点。 | **已有（S1–S3）。** `core/nodes.mjs` 建树、读树；`core/compat-v1.mjs` 在加载时把头两个包的 v1 文件转一次，包里的 `overlay.v2.json` 补上 v1 文件里从没有的东西（城区、城郊）。所有地点都经它解析：当前地点（`app/place-resolver.mjs`）、事态（`core/event-geo.mjs`）、人物与行程端点（`app/spot.mjs`）、注入的空间契约（`tavern/spatial-contract.mjs`）。v1 的解析器 `map/here.mjs` 已删除。schema 2 的包从 **S4** 起原生加载。 |
+| **SpatialNode** | 节点树里的一个地点：`{ id, name, alias[], hints[], parent, type, at?, view?, canon }`。这棵树是唯一的地理；匹配取最长别名、优先更深的节点。 | **已有（S1–S3）。** `core/nodes.mjs` 建树、读树；`core/compat-v1.mjs` 在加载时把头两个包的 v1 文件转一次，包里的 `overlay.v2.json` 补上 v1 文件里从没有的东西（城区、城郊）。所有地点都经它解析：当前地点（`app/place-resolver.mjs`）、事态（`core/event-geo.mjs`）、人物与行程端点（`app/spot.mjs`）、注入的空间契约（`tavern/spatial-contract.mjs`）。v1 的解析器 `map/here.mjs` 已删除。schema 2 的包经内核流水线（`core/pack-v2.mjs`）运行；查看器的包加载器目前只收 schema 1，所以 schema 2 的包要到 **S9** 才能在查看器里打开。 |
 | **PresentEntities** | 站在当前节点上的实体（先是人物，之后是任意实体类型），微观层级的人物页用它。 | **部分有。** `map/characters-view.mjs` 与 `tavern/characters-parse.mjs` 从聊天标签和 MVU 变量算出「在场」人物；人物画在哪里由节点树定（`app/spot.mjs`）。基于节点的在场列表**计划在 S6**。 |
 | **WorldRoster** | 所有来源里已知的全部实体，合并成一张标准行列表。 | **已有。** `core/roster.mjs`（`RosterRow`、五个来源、优先级仲裁）。属性字段仍是固定槽位；作者自定义的 `entities` 字段表**计划在 S4**。 |
 | **Stash** | 有真实空间归属（哪张图、哪个标记、哪个暗格）的物品，并与玩家已携带的对账。 | **现在有两个存储：** `core/stash.mjs`（包数据里的世界藏物）和聊天变量里的背包（`tavern/stash-store.mjs`）。统一的 `eden_map.stash` **计划在 S6（决定 D4）**。 |
@@ -44,7 +44,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 
 ## 3. 模块地图
 
-每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 146 个：`map/core` 29、`map/app` 42、`map/tavern` 43、`map/ui` 9、`map/three` 9、`map/*.mjs` 12，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
+每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 196 个：`map/core` 49、`map/app` 57、`map/tavern` 54、`map/ui` 9、`map/three` 9、`map/*.mjs` 16，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
 
 ### 3.1 map/core
 
@@ -53,6 +53,10 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | 模块 | 职责 |
 |---|---|
 | `clock.mjs` | 零 Token 的确定性世界时钟：世界时间由推进的轮数算出，不靠模型也不读系统时间。 |
+| `compat-v1-blocks.mjs` | v1 的旁路输入 → v2 块：事态、名册、藏物、世界书、旧名字、界面文案、用户的自定义名称。 |
+| `compat-v1-geo.mjs` | v1 地图注册表 → v2 节点（按声明顺序，另给出其余 compat 文件读取的编号表与词表）。 |
+| `compat-v1-views.mjs` | v1 地图 → v2 视图：世界图 / 点位图各一张 tiles 视图、每个三维地标页一张 model3d 视图、庄园页一张。 |
+| `compat-v1.mjs` | schema 1 → schema 2 的内存转换：已加载的 v1 包（清单与数据文件）变成带内联块的 schema 2 包。纯函数，不取不写任何文件。由下面三个 `compat-v1-*` 文件组成。 |
 | `depth.mjs` | 纵深系统数学（`blender/depth.py` 的 JS 孪生，对拍 golden 文件）：由海拔得纵深、通道插值、某海拔之上的云；`describe` 读探索账本。 |
 | `event-geo.mjs` | 事态发生在哪里：地点文字经 `nodes.locate` 落点、画它的那张地图、图钉的位置（纯函数；层、城区、城郊的词全是包数据）；`geo.taxonomy()` 带来包的事件块。 |
 | `events-default.mjs` | 内核的中性事件分类（K-R53）：没有事件块的包显示的内容；关闭词与注入句标签的缺省。 |
@@ -62,10 +66,16 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `layer-registry.mjs` | LayerRegistry 核心：10 个视口槽位、图层注册与排序、可见性、滤镜链、`describe()` 摘要。 |
 | `ledger.mjs` | 四域结算账本：按域（资产、NPC、事件、纵深）校验原子指令，未验证的一概丢弃。 |
 | `legacy-custom.mjs` | 用户最早几个版本（≤ 0.9.2）里的房间叫法，从本机存储读出；由 `tavern/mvu-readers.mjs` 并进聊天变量。 |
+| `lexicon.mjs` | 契约 v2 的文本基元与内核词表：规范化、码点长度、截断、FNV 哈希、冠词、行程句式。纯函数，自成一体。 |
 | `listeners.mjs` | ListenerBus：全局监听器的唯一登记处，按键幂等，提供 `offAll()` 与 `describe()`。 |
+| `locate.mjs` | 契约 v2 的词汇表与落点：一套算法为每段提到地点的文字落点（最长别名、优先更深的节点），建立在 `nodes.mjs` 的树上。 |
 | `lod.mjs` | 图形 LOD 策略：一个模型该处在哪一档、滞回、哪些异步加载仍然有效。 |
 | `logbuf.mjs` | 反馈报告用的控制台环形缓冲，按会话分开；模块首次求值时自装钩子。 |
 | `nodes.mjs` | 节点树（内核契约 v2）：建树、读树、`vocabulary`、`locate`、视图、位置、范围、层级。 |
+| `overlay-v2.mjs` | schema 1 包的 v2 叠加层（`overlay.v2.json`）：在 `compat-v1` 之后按节点 id 合并；宽容（坏条目跳过并记入 `problems`）。 |
+| `pack-v2-rows.mjs` | v2 包各块的运行期读取：事态类型、属性值、名册行、世界藏物行（由 `pack-v2.mjs` 再导出）。 |
+| `pack-v2-spec.mjs` | v2 各块的字段规格，对应 `map/data/schema/v2/*.schema.json`，逐项自愈。 |
+| `pack-v2.mjs` | schema 2 的包：逐项自愈的校验、信任与上限、块解析、默认值。`core/pack.mjs`（查看器的加载器）仍拒绝 schema 2。 |
 | `pack.mjs` | 设定包接口：清单校验与解析、包 id、存储前缀与聊天变量键的推导、注册表改基址。 |
 | `people.mjs` | 人物页按包的实体组分节（S4-4）：`groupList`、`groupLabel`（词典 / 包文案 `ch.g_<id>`，否则用组自己的标签）、`paneModel`；纯函数。 |
 | `periods.mjs` | 一天的时段（K-R39）：世界时钟落在哪个时段——先按时段词，再按钟点；默认时段。 |
@@ -78,7 +88,6 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `rng.mjs` | 确定性伪随机（mulberry32），粒子、车流、线索节点共用。 |
 | `room-gallery-db.mjs` | 房间图集图片的 IndexedDB 薄封装（只在浏览器里跑）。 |
 | `room-gallery-logic.mjs` | 图集纯逻辑：缩放尺寸、配额检查、导出包结构。 |
-| `root-store.mjs` | 地图在聊天变量里的根（`eden_map`）：自定义名称与用途的读写与迁移、本机存储预算、世界书同步、标签改名重放。`createRootStore(host)`。 |
 | `roster.mjs` | CharacterRosterSystem：五源名册合并成标准 `RosterRow`，含优先级仲裁、别名互认、立绘挂载。 |
 | `routine.mjs` | 宿主与查看器共用的 NPC 日程表数学。 |
 | `scene3d-manifest.mjs` | Estate3D 清单契约：校验并解析庄园页与道具页的模型地址、数据路径与档位兜底。 |
@@ -172,6 +181,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `context.mjs` | ContextPipeline：消息窗口规范化、轮次计算、自定义标签重放、行程；纯数据进出。 |
 | `data-source-registry.mjs` | 数据来源注册表：宿主从哪些地方读聊天状态，供设置与 `EdenMap.sources()` 枚举。 |
 | `eden-map.js` | 宿主入口：悬浮按钮与面板、查看器状态机、消息分派、重算调度、清理组装。 |
+| `event-geo-load.mjs` | 卡内脚本的事态地理：取回包的节点树所依据的东西（v1 文件与叠加层），返回给 `events.mjs setGeo` 用的 geo。这里不碰宿主；取数函数由调用方传入。 |
 | `events-parse.mjs` | 事态解析：从聊天正文读事件标签，按包的事件块分类（`typeOf`，K-R50），合并（类型 + 节点，K-R54）并老化（纯函数）。 |
 | `extension-api-contract.mjs` | 暴露给宿主页的公共 `EdenMap` API 的机读契约。 |
 | `host-about.mjs` | 版本信息与检查更新的编排，所有副作用由外部注入。 |
@@ -199,6 +209,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `planner-gateway.mjs` | 后台领航员网关：调度、输入装配、响应门控（私有 key 驱动）。 |
 | `preset.mjs` | 把社区预设写的半结构化状态字段读成地点 / 时间 / 在场的兜底。 |
 | `profile-load.mjs` | 取包的清单与叠加层并建出它的档案（`loadPackProfile`）；取数函数由调用方给。 |
+| `root-store.mjs` | 地图在聊天变量里的根（`eden_map`）：自定义名称与用途的读写与迁移、本机存储预算、世界书同步、标签改名重放。`createRootStore(host)`。 |
 | `sanitize.mjs` | 社区预设文本净化：按标签表剥思考块 / 状态块（纯函数）。 |
 | `selfcheck.mjs` | 由宿主收集的事实得出启动自检结论（纯函数）。 |
 | `settlement-guard.mjs` | 变量结算时序守卫：账本对账的写入排队到主更新窗口结束之后。 |
@@ -376,7 +387,8 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 | 守卫 | 守什么 |
 |---|---|
 | `check_maps.py`、`check_pack.py` | 地图注册表 / 标记 / 瓦片一致性；设定包清单对 schema。 |
-| `check_architecture.py` | 下面六道看门狗防线加只减不增账本。 |
+| `check_architecture.py` | 下面八道看门狗防线加只减不增账本。 |
+| `check_stage_a_grep.py` | 计划 §8 的卡词 grep，扫 `map/` 里设定包数据与资产之外的全部内容；只有 `tools/stage_a_grep_allow.txt` 里登记的行（S10）允许命中。 |
 | `test_architecture_gate.py` | 证明看门狗咬得住（违规被拦、允许的写法放行、扫描面不为空）。 |
 | `check_tree_hygiene.py`、空文件守卫 | 不留大的未跟踪文件，不留 0 字节的已跟踪源文件。 |
 | `test_depth.py`、`test_project.py` | 纵深与投影的 Python ↔ golden 对拍（JS 侧在 `node --test`）。 |
@@ -386,7 +398,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 | `node --test tests/*.test.mjs` | 单测与契约测试，含源码扫描类测试（`mvu_bridge`、`storage`、`layer_registry`）。 |
 | `node --check`、JSON 解析 | 所有发布的脚本与数据 / i18n 文件都能解析。 |
 
-**六道看门狗防线**（`tools/check_architecture.py`）：
+**八道看门狗防线**（`tools/check_architecture.py`）：
 
 1. **行数**——每个引擎文件 ≤ 400 物理行。
 2. **分层**——`map/core` 没有指向父目录的 import；core 与纯流水线除登记属主外不碰宿主全局。
@@ -394,8 +406,10 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 4. **卡专有名词**——引擎代码与 i18n 词典的值里没有卡专有词（名册人名、地名与设定词、内部标识）。
 5. **引用**——`map/**` 与 `tests/**` 源码里没有论文名、期刊、arXiv、DOI。
 6. **内联外观样式**——外观不许用 `.style.<属性> =`、`cssText`、`style="…"`；几何属性与 `style.setProperty('--…')` 是许可通道。
+7. **旧 `TC*` 全局**——引擎代码里没有 `window.TC<大写>` / `P.TC<大写>`（硬零，不进账本）。
+8. **注释里的卡专有名词**——检查 4 的词表只数注释（另含 `map/ui/*.css`）；逐文件，`map/core` 硬零。
 
-**只减不增账本（ratchet）**：检查 1、3、4、6 按文件对 `tools/arch_baseline.json` 计数。现有违规由工具一次性记下，计数只许变小——新增违规或已登记文件变多都会失败。`map/core` 永远不能进账本（硬零）。`--update-baseline` 只下调条目，拒绝抬高任何数字或新增文件；`--init-baseline` 只在文件不存在时能跑。永远不要手改账本。扫描范围是 `ENGINE_GLOBS`；`map/vendor`、`map/estate`、`map/props/*/**`、`map/packs`、`map/data`、原型、`tests` 和 `tools` 从不扫描。
+**只减不增账本（ratchet）**：检查 1、3、4、6、8 按文件对 `tools/arch_baseline.json` 计数。现有违规由工具一次性记下，计数只许变小——新增违规或已登记文件变多都会失败。`map/core` 永远不能进账本（硬零）。`--update-baseline` 只下调条目，拒绝抬高任何数字或新增文件；`--init-baseline` 只在文件不存在时能跑。永远不要手改账本。扫描范围是 `ENGINE_GLOBS`；`map/vendor`、`map/estate`、`map/props/*/**`、`map/packs`、`map/data`、原型、`tests` 和 `tools` 从不扫描。
 
 ## 10. 改什么去哪儿
 
@@ -435,3 +449,13 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 │   · local extension: window.EdenMap (local only, no network)          │
 └───────────────────────────────────────────────────────────────────────┘
 ```
+
+## 12. 阶段 A 现状
+
+阶段 A（S0–S5）于 2026-10-01 收口。现在成立的是：
+
+- **引擎没有卡专有名词**，代码里与注释里都没有：看门狗数代码里的卡词（检查 4）与注释里的卡词（检查 8，逐文件，`map/core` 硬零），两者都是零；`tools/check_stage_a_grep.py` 在冒烟里跑计划 §8 的那条 grep（允许表里只有一行 S10 的行：某个包道具页的跳转桩）。卡词只出现在设定包数据与构建期工具里。
+- **设定包驱动主题、文案、名字与分组**：第一个包的叠加层（`overlay.v2.json`）与清单带着事态分类、变量与名册、分视图的主题令牌、图例、署名、世界书前缀、数据路径和词典覆盖（`strings`）；引擎经 `core/profile.mjs`、`app/theme.mjs`、`tavern/host-strings.mjs` 和包的 `entities.groups` 读取。中性措辞是每个包的默认。
+- **能跑的包**：`eden` 与 `town`（schema 1，由 `core/compat-v1.mjs` 在内存里转换，查看器与宿主都跑，`tools/browser/pack_town.mjs`），以及 `minimal`（schema 2，五个节点、没有底图）经内核流水线——`core/nodes.mjs`、`core/pack-v2.mjs`、`core/locate.mjs`——由 `tests/kernel_minimal.test.mjs` 与 `tools/browser/pack_minimal.mjs` 钉住。查看器自己的包加载器（`core/pack.mjs`）仍只收 schema 1，所以在查看器里开 `?pack=minimal` 看到的是重试卡；这个缺口登记为已知失败，归 S9。
+- **S5 之后的模块地图**：第 3 节把每个引擎文件列了一次（三个超长文件已拆成 flow 模块、67 个文件按 `docs/naming.md` 改名、`window.TC*` 全局改成 `*Api` / `*View` 名，新增一个就失败）。有脚本核对第 3 节里点名的每个模块与路径都存在。
+- **探针**：完整扫一遍及各自结论在 `docs/plans/stage-a-probes.md`；已知失败登记在 `tools/browser/known-failures.json`。

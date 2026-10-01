@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "probe": "pack_minimal",
+    "check": "viewer renders the minimal pack",
+    "since": "2026-10-01",
+    "reason": "The viewer's pack loader (core/pack.mjs) accepts schema 1 only; a schema-2 pack runs through the kernel pipelines (core/nodes.mjs, core/pack-v2.mjs) until the viewer is wired to them. Opening ?pack=minimal degrades to the retry card.",
+    "owner_step": "S9"
+  }
+]

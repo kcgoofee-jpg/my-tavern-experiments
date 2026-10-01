@@ -24,7 +24,7 @@ exists today.
 
 | Term | Meaning | State today |
 |---|---|---|
-| **SpatialNode** | One place in the node tree: `{ id, name, alias[], hints[], parent, type, at?, view?, canon }`. The tree is the only geography; matching picks the longest alias and prefers the deeper node. | **Exists (S1–S3).** `core/nodes.mjs` builds and reads the tree; `core/compat-v1.mjs` converts the first packs' v1 files once at load and the pack's `overlay.v2.json` adds what the v1 files never held (districts, outskirts). Every place resolves through it: the current location (`app/place-resolver.mjs`), events (`core/event-geo.mjs`), people and trip ends (`app/spot.mjs`), the injected spatial contract (`tavern/spatial-contract.mjs`). The v1 resolver `map/here.mjs` is gone. Schema-2 packs load natively from **S4**. |
+| **SpatialNode** | One place in the node tree: `{ id, name, alias[], hints[], parent, type, at?, view?, canon }`. The tree is the only geography; matching picks the longest alias and prefers the deeper node. | **Exists (S1–S3).** `core/nodes.mjs` builds and reads the tree; `core/compat-v1.mjs` converts the first packs' v1 files once at load and the pack's `overlay.v2.json` adds what the v1 files never held (districts, outskirts). Every place resolves through it: the current location (`app/place-resolver.mjs`), events (`core/event-geo.mjs`), people and trip ends (`app/spot.mjs`), the injected spatial contract (`tavern/spatial-contract.mjs`). The v1 resolver `map/here.mjs` is gone. Schema-2 packs run through the kernel pipelines (`core/pack-v2.mjs`); the viewer's pack loader still accepts schema 1 only, so a schema-2 pack opens in the viewer from **S9**. |
 | **PresentEntities** | The entities standing at the current node (characters first, later any entity kind), used by the characters tab at micro levels. | **Partly.** `map/characters-view.mjs` and `tavern/characters-parse.mjs` compute "present" characters from chat tags and MVU variables; where a person is drawn is decided by the node tree (`app/spot.mjs`). The node-based presence list is **planned (S6)**. |
 | **WorldRoster** | Every known entity across all sources, merged into one standard row list. | **Exists.** `core/roster.mjs` (`RosterRow`, five sources, priority arbitration). Attribute fields are still fixed slots; the author-defined `entities` field list is **planned (S4)**. |
 | **Stash** | Items with a real spatial home (map, marker, hidden compartment), reconciled against what the player already carries. | **Two stores today:** `core/stash.mjs` (world stash from pack data) and the chat-variable inventory (`tavern/stash-store.mjs`). The unified `eden_map.stash` store is **planned (S6, decision D4)**. |
@@ -61,8 +61,8 @@ Rules that follow:
 
 ## 3. Module map
 
-Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 146 files: `map/core` 29,
-`map/app` 42, `map/tavern` 43, `map/ui` 9, `map/three` 9, `map/*.mjs` 12, plus `map/viewer.html` and
+Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 196 files: `map/core` 49,
+`map/app` 57, `map/tavern` 54, `map/ui` 9, `map/three` 9, `map/*.mjs` 16, plus `map/viewer.html` and
 `map/props/viewer3d.html`. Roles were derived from each file's header comment and code.
 
 ### 3.1 map/core
@@ -72,6 +72,10 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | Module | Role |
 |---|---|
 | `clock.mjs` | Zero-token deterministic world clock: world time is computed from turns advanced, never from the model or system time. |
+| `compat-v1-blocks.mjs` | v1 side inputs → v2 blocks: events, roster, stash, worldbook, legacy names, ui strings, the user's custom names. |
+| `compat-v1-geo.mjs` | v1 map registry → v2 nodes (declaration order, plus the id map and word tables the other compat files read). |
+| `compat-v1-views.mjs` | v1 maps → v2 views: a tiles view per world / points map, a model3d view per 3D landmark page, one for the estate page. |
+| `compat-v1.mjs` | Schema 1 → schema 2 in memory: a loaded v1 pack (manifest and data files) becomes a schema-2 pack with inline blocks. Pure; nothing is fetched or written. Assembled from the three `compat-v1-*` files. |
 | `depth.mjs` | Depth-system math (JS twin of `blender/depth.py`, golden-file parity): depth from altitude, channel interpolation, clouds above an altitude; `describe` reads the exploration ledger. |
 | `event-geo.mjs` | Where an event happens: its place text placed by `nodes.locate`, the map that draws it, the pin's spot (pure; every tier and district word is pack data); `geo.taxonomy()` carries the pack's events block. |
 | `events-default.mjs` | The kernel's neutral event taxonomy (K-R53): what a pack with no events block shows; closing words and injected-line tag defaults. |
@@ -81,10 +85,16 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `layer-registry.mjs` | LayerRegistry core: the 10 viewport slots, layer registration and ordering, visibility, filter chains, `describe()` summary. |
 | `ledger.mjs` | Four-domain settlement ledger: validates atomic instructions per domain (assets, NPC, events, depth) and drops anything unverified. |
 | `legacy-custom.mjs` | The user's room names of the first versions (<= 0.9.2), read from local storage; folded into the chat variable by `tavern/mvu-readers.mjs`. |
+| `lexicon.mjs` | Text primitives and kernel word lists of contract v2: normalise, code-point length, cut, FNV hash, articles, journey patterns. Pure and self-contained. |
 | `listeners.mjs` | ListenerBus: the single registry for global listeners, idempotent per key, `offAll()` and `describe()`. |
+| `locate.mjs` | Vocabulary and locate for contract v2: one algorithm places every text that names a place (longest alias, deeper node preferred) over the tree from `nodes.mjs`. |
 | `lod.mjs` | Graphics LOD policy: which detail state a model should be in, hysteresis, and which async loads are still valid. |
 | `logbuf.mjs` | Console ring buffer for feedback reports, split into sessions; installs its hooks on first evaluation. |
 | `nodes.mjs` | The node tree (kernel contract v2): build, read, `vocabulary`, `locate`, views, positions, scope, levels. |
+| `overlay-v2.mjs` | The v2 overlay of a schema-1 pack (`overlay.v2.json`): merged by node id after `compat-v1`; lenient (a bad entry is skipped and listed in `problems`). |
+| `pack-v2-rows.mjs` | Run-time readers of a v2 pack's blocks: event types, attribute values, roster rows, world stash rows (re-exported by `pack-v2.mjs`). |
+| `pack-v2-spec.mjs` | Field specs of the v2 blocks, mirroring `map/data/schema/v2/*.schema.json`, healing each item. |
+| `pack-v2.mjs` | Schema-2 packs: validation with per-item healing, trust and limits, block resolution, defaults. `core/pack.mjs` (the viewer's loader) still rejects schema 2. |
 | `pack.mjs` | Pack interface: manifest validation and resolution, pack id, storage prefix and chat-variable key derivation, registry rebasing. |
 | `people.mjs` | The people page's sections from the pack's entity groups (S4-4): `groupList`, `groupLabel` (dictionary / pack string `ch.g_<id>`, else the group's own label), `paneModel`; pure. |
 | `periods.mjs` | Periods of the day (K-R39): the band a world clock is in, by period words, else by the hour; default bands. |
@@ -97,7 +107,6 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `rng.mjs` | Deterministic pseudo-random generator (mulberry32) shared by particles, traffic and clue nodes. |
 | `room-gallery-db.mjs` | IndexedDB wrapper for room gallery images (browser only). |
 | `room-gallery-logic.mjs` | Pure gallery logic: resize dimensions, quota checks, export bundle shape. |
-| `root-store.mjs` | The map's chat-variable root (`eden_map`): custom names and uses load / save / migrate, local storage budget, worldbook sync, tag-rename replay. `createRootStore(host)`. |
 | `roster.mjs` | CharacterRosterSystem: five-source roster merged into standard `RosterRow`s with priority arbitration, aliases and portraits. |
 | `routine.mjs` | NPC schedule math shared by host and viewer. |
 | `scene3d-manifest.mjs` | Estate3D manifest contract: validates and resolves model URLs, data paths and tier fallbacks for the estate and prop 3D pages. |
@@ -192,6 +201,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `context.mjs` | ContextPipeline: message window normalization, round computation, custom tag replay, trips; pure data in and out. |
 | `data-source-registry.mjs` | Data source registry: where the host reads chat state from, for settings and `EdenMap.sources()`. |
 | `eden-map.js` | Host entry: floating button and panel, viewer state machine, message dispatch, recompute scheduling, cleanup assembly. |
+| `event-geo-load.mjs` | The host script's event geography: fetches what a pack's node tree is built from (its v1 files and overlay) and returns a geo for `events.mjs setGeo`. Nothing here touches the host; the caller passes the fetcher. |
 | `events-parse.mjs` | Event parsing: reads event tags from chat text, classifies them through the pack's events block (`typeOf`, K-R50), merges (type + node, K-R54) and ages them (pure). |
 | `extension-api-contract.mjs` | Machine-readable contract of the public `EdenMap` API exposed to the host page. |
 | `host-about.mjs` | Version info and update check orchestration, all effects injected. |
@@ -219,6 +229,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `planner-gateway.mjs` | Background navigator gateway: scheduling, input assembly and response gating for a private-key planner. |
 | `preset.mjs` | Reads semi-structured status fields written by community presets as location / time / presence fallbacks. |
 | `profile-load.mjs` | Fetches a pack's manifest and overlay and builds its profile (`loadPackProfile`); the caller passes the fetcher. |
+| `root-store.mjs` | The map's chat-variable root (`eden_map`): custom names and uses load / save / migrate, local storage budget, worldbook sync, tag-rename replay. `createRootStore(host)`. |
 | `sanitize.mjs` | Community-preset text sanitizer: strips reasoning / status blocks by tag table (pure). |
 | `selfcheck.mjs` | Startup self-check verdicts from facts the host collected (pure). |
 | `settlement-guard.mjs` | Variable settlement timing guard: ledger reconciliation writes are queued until after the main update window. |
@@ -457,7 +468,8 @@ includes the English card words (`EN_TERMS`, case-sensitive).
 | Guard | Protects |
 |---|---|
 | `check_maps.py`, `check_pack.py` | Map registry / marker / tile consistency; pack manifests against the schema. |
-| `check_architecture.py` | The six watchdog checks below plus the ratchet ledger. |
+| `check_architecture.py` | The eight watchdog checks below plus the ratchet ledger. |
+| `check_stage_a_grep.py` | The plan §8 card-term grep over the whole of `map/` outside pack data and assets; only the lines listed in `tools/stage_a_grep_allow.txt` (S10) may match. |
 | `test_architecture_gate.py` | Proves the watchdog bites (violations caught, allowed forms pass, scan surface not empty). |
 | `check_tree_hygiene.py`, empty-file guard | No large untracked files, no zero-byte tracked sources. |
 | `test_depth.py`, `test_project.py` | Python ↔ golden-file parity for depth and projection (JS side in `node --test`). |
@@ -467,7 +479,7 @@ includes the English card words (`EN_TERMS`, case-sensitive).
 | `node --test tests/*.test.mjs` | Unit and contract tests, including source-scan tests (`mvu_bridge`, `storage`, `layer_registry`). |
 | `node --check`, JSON parse | Every shipped script and data / i18n file parses. |
 
-**The six watchdog checks** (`tools/check_architecture.py`):
+**The eight watchdog checks** (`tools/check_architecture.py`):
 
 1. **Lines** — every engine file ≤ 400 physical lines.
 2. **Layering** — `map/core` has no parent-directory import; core and the pure pipelines touch no host global
@@ -478,8 +490,10 @@ includes the English card words (`EN_TERMS`, case-sensitive).
 5. **Citations** — no paper names, venues, arXiv or DOI in `map/**` or `tests/**` source.
 6. **Inline appearance styles** — no `.style.<prop> =`, `cssText` or `style="…"` for appearance; geometry
    properties and `style.setProperty('--…')` are the allowed channels.
+7. **Old `TC*` globals** — no `window.TC<Upper>` / `P.TC<Upper>` in engine code (hard zero, no ledger).
+8. **Card terms in comments** — the check-4 word list counted in comments only (also `map/ui/*.css`); per file, `map/core` hard zero.
 
-**The ratchet**: checks 1, 3, 4 and 6 are counted per file against `tools/arch_baseline.json`. Existing offenders
+**The ratchet**: checks 1, 3, 4, 6 and 8 are counted per file against `tools/arch_baseline.json`. Existing offenders
 are recorded once by the tool, and a count may only go down — a new offender, or a recorded file that grows, fails.
 `map/core` can never be in the baseline (hard zero). `--update-baseline` lowers entries and refuses to raise any
 number or add a file; `--init-baseline` only runs when the file does not exist. Never hand-edit the baseline.
@@ -538,3 +552,13 @@ The whole path from source data to the running viewer, in one picture (moved her
 │   · local extension: window.EdenMap (local only, no network)          │
 └───────────────────────────────────────────────────────────────────────┘
 ```
+
+## 12. Stage A state
+
+Stage A (S0–S5) closed on 2026-10-01. What holds now:
+
+- **The engine is card-term free**, in code and in comments: the watchdog counts card words in code (check 4) and in comments (check 8, per file, `map/core` hard zero), both at zero, and `tools/check_stage_a_grep.py` runs the plan §8 grep in smoke (one allow-listed S10 line: a redirect stub of a pack prop page). Card words live in pack data and builder tools only.
+- **Packs drive the theme, the wording, the names and the groups**: the first pack's overlay (`overlay.v2.json`) and manifest carry the event taxonomy, variables and roster, per-view theme tokens, legend, credits, worldbook prefix, data paths and the dictionary overrides (`strings`); the engine reads them through `core/profile.mjs`, `app/theme.mjs`, `tavern/host-strings.mjs` and the pack's `entities.groups`. Neutral wording is the default for every pack.
+- **Packs that run**: `eden` and `town` (schema 1, converted in memory by `core/compat-v1.mjs`, viewer and host, `tools/browser/pack_town.mjs`), and `minimal` (schema 2, five nodes, no base map) through the kernel pipelines — `core/nodes.mjs`, `core/pack-v2.mjs`, `core/locate.mjs` — pinned by `tests/kernel_minimal.test.mjs` and `tools/browser/pack_minimal.mjs`. The viewer's own pack loader (`core/pack.mjs`) still accepts schema 1 only, so opening `?pack=minimal` in the viewer shows the retry card; that gap is a registered known failure owned by S9.
+- **Module map after S5**: section 3 lists every engine file once (the three oversized files are split into flow modules, 67 files renamed per `docs/naming.md`, the `window.TC*` globals are `*Api` / `*View` names and a gate fails on a new one). A script checks that every module and path named in section 3 exists.
+- **Probes**: the full sweep and its verdicts are in `docs/plans/stage-a-probes.md`; known failures are registered in `tools/browser/known-failures.json`.
