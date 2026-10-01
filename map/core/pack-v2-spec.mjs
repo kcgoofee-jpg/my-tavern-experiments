@@ -116,7 +116,7 @@ const group = obj({ id: str({ re: ID }), label: rl, i18n: i18n(['label']),
 export const entitiesBlock = reserved => {
   const pre = ['spatial', ...reserved.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))].join('|');
   const avatar = obj({ from: arr(oneOf(['card-script', 'card-storage', 'imagegen'])),
-    hosts: arr(str({ re: re('^[a-z0-9-]+(\\.[a-z0-9-]+)+(/[A-Za-z0-9_.~%/-]*)?$') })), require: arr(str({ min: 1 })), deny: arr(str({ min: 1 })),
+    hosts: arr(str({ re: re('^[a-z0-9-]+(\\.[a-z0-9-]+)+(/[A-Za-z0-9_.~%/-]*)?$') })), require: (v, p, x) => (Array.isArray(v) ? arr(str({ min: 1 }))(v, p, x) : dict(re('^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+(/[A-Za-z0-9_.~%/-]*)?$', 'i'), arr(str({ min: 1 })))(v, p, x)), deny: arr(str({ min: 1 })),
     storage: obj({ index: str({ re: re(`^(?!${pre})[^\\n]{1,80}$`) }), per_name: str({ re: re(`^(?!${pre})[^\\n]*\\{name\\}[^\\n]*$`) }) }) }, B);
   return block(obj({ groups: arr(group), fields: arr(field), avatar }, B), 'object');
 };

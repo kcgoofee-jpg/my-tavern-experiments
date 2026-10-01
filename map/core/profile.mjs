@@ -51,6 +51,11 @@ export function profileFromV1({ manifest, overlay } = {}) {
 
 /** K-R43 for a card-script portrait: https, an image file, no query string or fragment; the host equals a `hosts` entry `host[/path-prefix]` (a prefix matches from the root, ignoring case,
  *  and then one of `require`'s fragments must be in the path); no `deny` fragment anywhere in the path. A pack without `hosts` loads none. */
+/** Map-form `require` ({ "<host prefix>": [fragments] }): every prefix that the URL (host + path) falls under needs one of its fragments in the path; other hosts are not constrained. List form: no effect here. */
+const scopedOk = (req, hostPath, path) => !isObj(req) || Object.entries(req).every(([k, frags]) => {
+  const key = String(k).toLowerCase().replace(/^https?:\/\//, ''), need = Array.isArray(frags) ? frags.filter(str) : [];
+  return !hostPath.startsWith(key) || !need.length || need.some(f => path.includes(f));
+});
 export function portraitOk(avatar, url) {
   const a = isObj(avatar) ? avatar : {}, s = String(url ?? '');
   if (!/^https:\/\//i.test(s)) return false;
@@ -66,5 +71,5 @@ export function portraitOk(avatar, url) {
     if (host !== name || !low.startsWith(prefix || '/')) return false;
     const need = prefix && Array.isArray(a.require) ? a.require.filter(str) : [];
     return !need.length || need.some(f => path.includes(f));
-  });
+  }) && scopedOk(a.require, host + low, path);
 }

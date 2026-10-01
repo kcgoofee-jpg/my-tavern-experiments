@@ -167,11 +167,19 @@ export class RosterSystem {
   #attach(rows) {
     const p = this.#portraits;
     if (!p) return 0;
-    const left = new Map();
+    const left = new Map(), exact = new Set();
     for (const [k, v] of Object.entries(p)) { const n = normName(k); if (n && typeof v === 'string' && v) left.set(n, v); }
     for (const r of rows) {
       const hit = left.get(r.name) ?? (r.displayName ? left.get(r.displayName) : null);
-      if (hit) { r.portrait = hit; left.delete(r.name); if (r.displayName) left.delete(r.displayName); }
+      if (hit) { r.portrait = hit; exact.add(r); left.delete(r.name); if (r.displayName) left.delete(r.displayName); }
+    }
+    // 短名别名（I-18）：立绘表写「名」、名单写「名·姓」（或反过来）时，首段相同且双方都唯一就算同一个人；只增加挂载，不改已挂的
+    const seg = n => String(n).split(/[·・]/)[0], rowSeg = new Map();
+    for (const r of rows) rowSeg.set(seg(r.name), (rowSeg.get(seg(r.name)) || 0) + 1);
+    for (const r of rows) {
+      if (exact.has(r) || rowSeg.get(seg(r.name)) !== 1) continue;
+      const ks = [...left.keys()].filter(k => seg(k) === seg(r.name));
+      if (ks.length === 1) { r.portrait = left.get(ks[0]); left.delete(ks[0]); }
     }
     return left.size;
   }

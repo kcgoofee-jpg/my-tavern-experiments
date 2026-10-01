@@ -525,8 +525,10 @@ scripts), `card-storage` (local-storage keys the card's own UI writes, read only
 with `{name}`), `imagegen` (the optional image extension's library). Default: `imagegen` only. Kernel rules that a
 pack cannot relax: https only, image file types, no query string, and the user's switch turns every remote portrait
 off. `hosts` lists allowed `host[/path-prefix]` for card-script portraits: the host contains a dot and must equal the
-URL's host, and a path prefix ends at a `/`. `require` lists path fragments of which one must appear in a portrait URL
-that a prefixed entry allows (a shared CDN scoped to the author's folders, K-R69). `deny` lists path fragments never loaded. Storage keys may not start
+URL's host, and a path prefix ends at a `/`. `require` lists path fragments a portrait URL must contain. List form: one fragment must appear in a URL that a
+prefixed `hosts` entry allows (a shared CDN scoped to the author's folders, K-R69). Map form (amended 2026-10-01, I-18):
+`{ "<host prefix>": ["<fragment>", …] }` — a URL under that host prefix needs one of its fragments, other hosts are not
+constrained, so one image host's folder rule can never drop portraits that live on another host. `deny` lists path fragments never loaded. Storage keys may not start
 with the kernel's reserved prefixes (`spatial`, the legacy prefixes of shipped packs, the host's own keys).
 
 ### 6.5 Multi-source priority (fixed)

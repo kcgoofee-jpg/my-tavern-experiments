@@ -372,7 +372,7 @@
     "avatar": {
       "from": ["card-script","imagegen"],
       "hosts": ["cdn.jsdelivr.net/gh/Yehehua1311/","i.postimg.cc","picgocloud.com"],
-      "require": ["/sfw/"],
+      "require": { "cdn.jsdelivr.net/gh/Yehehua1311/": ["/sfw/"] },
       "deny": ["口交","性交","肛交","足交"]
     }
   },
