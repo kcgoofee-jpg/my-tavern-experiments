@@ -69,12 +69,12 @@ export function initShell() {
       const st = $('#stage').getBoundingClientRect(); dock.classList.remove('row');
       if (mode === 'sheet' && state === 'half' && h + dock.offsetHeight + 12 > st.height * .5 + 1) dock.classList.add('row');
       declutter();   // 控制列换了位置 / 排法：重新避让地名
-      if (tab === 'ch') refreshTabs('state');
+      if (tab === 'ch' || tab === 'it') refreshTabs('state');
       if (tab === 'ev') plugins.EventsView?.renderBar();   // repaints the events label and the fresh state, then refreshes the tabs
       post({ type: 'eden-map:chrome', bottom: h, top: $('header').offsetHeight }); noticeRefresh();
     } });
   S.label('pl', esc(uiTextOr('s.place', '地点')), {}); S.label('lg', esc(uiTextOr('s.legend', '图例')), {});
-  S.showTab('ev', false); S.showTab('ch', false); S.showTab('lg', false); S.hide(true);
+  S.showTab('ev', false); S.showTab('ch', false); S.showTab('it', false); S.showTab('lg', false); S.hide(true);
   initTabs(S, order);
   setTabEnv({ card: () => !$('#card').hidden, layChip: () => narrowNow() && !$('#layers').hidden, scene: () => document.body.classList.contains('estate'),
     legendOk: () => !document.body.classList.contains('estate') && !!depthData && legendItems().length > 0,   // 图例只在配了纵深数据的层出现，且包里写了图例条目（U18）

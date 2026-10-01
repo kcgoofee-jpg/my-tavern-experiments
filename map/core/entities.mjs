@@ -3,6 +3,8 @@
 //   Entity = { kind, id, name, node, place, source, msgIndex, present?, data }     node: node id | null (place unknown); data: the original row, untouched
 //   personOf(row, nodeOf) / eventOf(row, nodeOf)   adapters; nodeOf(text) -> node id | null, and may carry nodeOf.has(id) (does the receiver's tree know this id)
 //   presentAt(entities, here)                      PresentEntities: the entities with `present` set, or standing at node `here`
+//   itemOf(row, nodeOf, source)                    item adapter (store row, world-stash row or in-card row); source = the channel when the row does not carry `src`
+//   itemGroups({ store, legacy, world, card, here, hereMarker, taken, nodeOf })   the Items tab's four groups (K-R76): { carried, here, other: [{ place, rows }], card }
 //   levelMode({ children, viewField }, mapId)      'macro' | 'micro' | null: the level of the open view (K-R73)
 //   peopleSections({ people, tree, owner, here, mode })   the present group's sections, [{ key, node?, rows }]; [] = draw the flat list
 import { normName } from './roster.mjs';
@@ -64,4 +66,45 @@ export function peopleSections({ people, tree, owner, here, mode } = {}) {
   }
   const out = secs.filter(s => s.rows.length);
   return out.length < 2 ? [] : out.map(s => (s.node === undefined ? { key: s.key, rows: s.rows } : s));
+}
+
+/** Item entity. A store row carries `src` (text, map, api, legacy); a world-stash row is source 'world', an in-card row 'mvu'. A world row whose place text does not
+ *  locate falls back to its marker id when the receiver's tree has it (a marker is a node, K-R28). */
+export function itemOf(row, nodeOf, source) {
+  let node = nodeFor(row, nodeOf);
+  if (node === null && typeof row.marker === 'string' && nodeOf?.has?.(row.marker)) node = row.marker;
+  return { kind: 'item', id: row.id === undefined ? '' : String(row.id), name: row.name || '', node, place: row.place || '', source: row.src || source || 'legacy',
+    msgIndex: isInt(row.msgIndex) ? row.msgIndex : null, data: row };
+}
+
+// a legacy `eden-map:inv.items` row ({ id, 名, 地点, 层, 暗格, 说明?, 数量? }) as a store row that is not carried (an old host sends no `stash`)
+const fromLegacy = r => ({ id: r.id, name: r.名, place: r.地点 || '', map: r.层 || '', hidden: !!r.暗格, ...(r.说明 ? { note: r.说明 } : {}), ...(r.数量 > 1 ? { qty: r.数量 } : {}), src: 'legacy', carried: false, msgIndex: null });
+const byPlace = (a, b) => (a.place === '' ? 1 : b.place === '' ? -1 : a.place < b.place ? -1 : a.place > b.place ? 1 : 0);   // code-point order, "no place" last
+
+/**
+ * The Items tab's groups (docs/entity-protocol.md §6.1). store = `eden-map:inv.stash.rows` (null for an old host: `legacy` rows are used, none carried), world = the world-stash
+ * rows, card = the card's own rows (read only), taken = ids already in the store, here = the player's node, hereMarker = the landmark the location places the player at.
+ *   carried  store rows with carried: true
+ *   here     own rows (carried: false) at `here` + world rows at `here` that are not taken (a hidden one only on its own spot)
+ *   other    the remaining own rows, one { place, rows } per place (code-point order, '' last)
+ *   card     the in-card rows
+ */
+export function itemGroups({ store, legacy, world, card, here = null, hereMarker = '', taken, nodeOf } = {}) {
+  const own = (Array.isArray(store) ? store : (Array.isArray(legacy) ? legacy : []).map(fromLegacy)).map(r => itemOf(r, nodeOf, r.src));
+  const gone = new Set([...(taken || []), ...own.map(e => e.id)]);   // the store's ids are always taken
+  const out = { carried: [], here: [], other: [], card: [] }, places = new Map();
+  for (const e of own) {
+    if (e.data.carried === true) { out.carried.push(e); continue; }
+    if (here != null && e.node === here) { out.here.push(e); continue; }
+    if (!places.has(e.place)) places.set(e.place, []);
+    places.get(e.place).push(e);
+  }
+  for (const r of Array.isArray(world) ? world : []) {
+    if (!r || gone.has(r.id)) continue;
+    const e = itemOf(r, nodeOf, 'world');
+    if (here != null && e.node === here && (!r.hidden || r.marker === hereMarker)) out.here.push(e);
+  }
+  out.other = [...places].map(([place, rows]) => ({ place, rows })).sort(byPlace);
+  out.card = (Array.isArray(card) ? card : []).filter(r => r && r.name).map(r => itemOf(r, nodeOf, 'mvu'));
+  return out;
 }

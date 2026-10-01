@@ -12,6 +12,7 @@ import { aspect, currentMapId, currentMapData, osdViewer } from './state.mjs';
 import { plugins } from './plugins.mjs';
 import { busOn } from './bus.mjs';
 import { hereRes } from './locate.mjs';
+import { refreshTabs } from './tabs.mjs';
 
 const CSS_ID = 'lootCss';
 let stash = null, els = [], watch = null;
@@ -40,7 +41,7 @@ const takenIds = () => { try { return new Set((plugins.StashView?.rows || []).ma
 const hereNow = () => { try { return hereRes(String(document.getElementById('here')?.value || '').replace('{{user}}', ''))?.marker || ''; } catch (e) { return ''; } };
 
 /** 宿主推来的世界藏物表（原始 JSON：{ items: [...] }）→ 规范化存下，按当前图重画 */
-export function setLootStash(raw) { stash = normStash(raw); rebuildLoot(); }
+export function setLootStash(raw) { stash = normStash(raw); rebuildLoot(); refreshTabs('stash'); }   // the Items tab lists the same rows (K-R76)
 
 /** 当前图上该画出来的藏物：不看第十二层rif过滤之外的东西；暗格的只在「人就在这儿」时出现 */
 export function lootRows() {
