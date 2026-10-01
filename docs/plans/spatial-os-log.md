@@ -1280,3 +1280,19 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+=== RESULT I-29 ===
+status: DONE
+items: measure (cold open, page reload, in-map reload; Chromium longtask + long-animation-frame + CDP profile + trace, WebKit rAF gaps) ✓ · fix top causes ✓ · probe tools/browser/reload_perf.mjs with budgets ✓ · before/after numbers ✓
+commits: b219788a perf(reload): memoise normalise, compile stripBlocks regexes once; add reload_perf probe (I-29)
+commits: (this commit) docs(log): RESULT I-29; todo strike
+pushed: yes (head #N in the chat report)
+tests: node all pass (+1 file tests/reload_caches.test.mjs, 2 tests; nothing removed) | smoke PASS | arch PASS | probes: reload_perf=PASS (chromium + webkit), e7_host=PASS, accept=PASS
+before: Chromium, 3000-floor chat, CPU 4x, 3 runs: cold done 650-1170 ms, long tasks n=3-9 max 122-161 total 387-810 ms; page reload (open after reload) done 1050-1360 ms, max 240-263 total 678-975 ms; in-map reload done 920-1470 ms, max 100-149 total 200-539 ms. Unthrottled, 300 floors: max 67 ms, total 134-201 ms (nothing over 100 ms, so the stutter needs a slower CPU or a busy host page to show). WebKit (unthrottled, rAF gaps): no gap over 50 ms, done 530-710 ms.
+after: same setup, 3 runs: cold done 470-650 ms, n=3-6 max 50-64 total 150-342 ms; page reload done 810-1410 ms, max 72-93 total 144-375 ms; in-map reload done 870-990 ms, max 55-62 total 265-294 ms (one outlier run 233 ms, not reproduced). Budgets: no long task > 200 ms, total <= 600 ms, overlay done <= 3000 ms, CI factor x2 (env CI).
+causes fixed: (1) tavern/sanitize.mjs stripBlocks built two RegExp per tag per message on every round (about 20 tags x 80 floors, 40 ms at 4x) -> compiled once per tag, early return when the text has no '<'; (2) core/lexicon.mjs normalise (NFKC + 6 replaces) ran thousands of times in pack boot and place resolution (80-100 ms at 4x, top self-time in the profile) -> bounded memo.
+left: loadEventGeo + first recompute on the launcher side (about 70 ms at 4x, 18 ms real) and the viewer boot continuation (json-cache then-chain: fromV1, buildGeo, ~45 ms at 4x) are under 100 ms and stay; OpenSeadragon frame callbacks and canvas drawImage (about 15 ms per frame at 4x, vendor code, headless software draw) are not ours; no real-device WebKit trace (headless WebKit exposes no long-task API, only rAF gaps), so the user's own stutter needs a recheck on TauriTavern after this head.
+deviations: (1) no deferral to idle or lazy loading was needed: the profile showed pure recomputation, not scheduling, as the cost; (2) the in-map reload action is modelled by the loader's retry path (drop html, unloadViewer, loadViewer), the only in-map reload that exists besides the page reload; (3) the probe is not wired into smoke (long runtime); budgets are tuned for 4x CPU throttle, not a real WKWebView.
+blocker: none
+open: user recheck of the stutter on TauriTavern with this head; if it persists, send the console `window.__perfSamples` or a Safari timeline
+cleanup: done (probe servers stopped by the probe; no background jobs; no launch.json entries; worktree i29 left for the orchestrator)
+=== END ===
