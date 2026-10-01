@@ -211,6 +211,8 @@ mutable state is written only by its declaring module through `set*()`.
 | `route-plan-view.mjs` | Route planning in the viewer (K-R111, K-R113): the route link on a place card, the plan card, the kernel layer `route-plan` (the user's plan solid, suggestions dashed), re-planning and arrival on `eden-map:here`, the host's echo `eden-map:route`; sends `eden-map:route-plan`. |
 | `scale-handoff.mjs` | Scale hand-off between the world map and the city layers, plus the surrounding transition ring. |
 | `screen-reader-announce.mjs` | Screen-reader announcements (aria-live): several same-moment lines merge into one sentence. |
+| `settings-pages.mjs` | Settings page table (S7-1): the rows of every settings page, built the first time the page opens (never on the boot path), `onBuilt` / `onShow` hooks, the static search index. |
+| `settings-wire.mjs` | Handlers of the settings rows, attached when their page is built; the stored switches that must act at boot (reduce motion, no-glitch, minimap, action mode, edit mode) read storage directly. |
 | `settings.mjs` | Settings overlay: pages, section registration, search, about / update check, self-check. |
 | `sharpness-tiers.mjs` | Sharpness tiers, data-saver decisions, load progress, overlay and label avoidance. |
 | `sound-block.mjs` | The `sound` building block (K-R89): Web Audio for a sound layer from the plan of `core/ambience.mjs`; never starts without the user's switch and a gesture; `window.SoundApi`. |
@@ -254,6 +256,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `event-geo-load.mjs` | The host script's event geography: fetches what a pack's node tree is built from (its v1 files and overlay) and returns a geo for `events.mjs setGeo`. Nothing here touches the host; the caller passes the fetcher. |
 | `events-parse.mjs` | Event parsing: reads event tags from chat text, classifies them through the pack's events block (`typeOf`, K-R50), merges (type + node, K-R54) and ages them (pure). |
 | `extension-api-contract.mjs` | Machine-readable contract of the public `EdenMap` API exposed to the host page. |
+| `feature-health.mjs` | Feature health (S7-1, `docs/settings-ia.md` §4.5): `createFacts()` and the pure `healthOf(facts)` that says per AI-link card whether it is on, working, idle or not effective, with reason, last floor, text and tokens; `healthSum`. |
 | `follow-gate.mjs` | Entry gate: a script loaded from a branch path reloads itself from the head sha. |
 | `follow-pin.mjs` | Follow / branch load addresses pinned to the head sha; update-channel decision. |
 | `gallery-flow.mjs` | Host side of the media source (K-R106), made by `chars-flow`: reads the card's picture table once per chat, scans the chat floors' text for tags each round (the place of a floor via `MVUBridge.floorPlace`, K-R105), sends `eden-map:media`; answers `eden-map:media-ask`; the switch `edenMapGallery` (default on) turns it off; nothing is stored. |

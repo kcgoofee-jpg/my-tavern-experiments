@@ -17,6 +17,7 @@ import { packStorage, chatId } from './app/extension-api.mjs';
 import { plugins, register } from './app/plugins.mjs';
 import * as TCCvd from './app/color-vision-mode.mjs';
 import { uiTextOr } from './app/text-lookup.mjs';
+import { SettingsApi } from './app/settings.mjs';
 import { portraitFor, viewerUrlOk } from './core/portrait-lookup.mjs';
 import { RT } from './app/nodes-runtime.mjs';
 import { provideTab, saveTabSeen, tabContext, tabSeen } from './app/tabs.mjs';   // the drawer's tab registry (S6-1)
@@ -33,6 +34,12 @@ const CharactersView = (() => {
   const ini = n => CM ? CM.initials(n) : String(n)[0];
   // 头像：本机设置的优先；否则「使用原作头像」开着时用卡自带的立绘表（宿主按包的规则放行的地址，懒加载，失败退回首字）
   const PK_ = 'edenMapPortraits', portOn = () => { try { const v = LocalStore.get(PK_); return v == null ? !(typeof leanBg === 'function' && leanBg()) : v === '1'; } catch (e) { return true; } };
+  // 设置「人物与物品」里的「使用原作头像」一行（原先挂在自定义栏里）：读到了头像才出现；开关本身仍存本机（PK_）
+  function portRow() {
+    let box = document.getElementById('chPortBox');
+    if (!box) { box = document.createElement('div'); box.id = 'chPortBox'; SettingsApi.registerSection('people', box, { order: 40 }); box.addEventListener('change', e => { if (e.target.id === 'optPort') api.setPortOn(e.target.checked); }); }
+    box.innerHTML = Object.values(portraits).some(okUrl) ? `<label class="row"><span>${esc(uiTextOr('ch.port', '使用原作头像'))}</span><input type="checkbox" role="switch" id="optPort" ${portOn() ? 'checked' : ''}></label><small>${esc(uiTextOr('ch.port_hint', '人物没有自己设的头像时，用卡里自带的立绘（按需加载）；省流时默认关。取不到的人显示名字首字（不是故障，可以自己设头像）'))}</small>` : '';
+  }
   const okUrl = viewerUrlOk;   // 地址放行由宿主按包的 avatar 规则做过（K-R43）；这里只认图片地址的形状（I-22：以前这里只放作者 CDN，别的图床的立绘被丢）
   // 状态栏里玩家自己设的头像（卡的状态栏存在同源 localStorage：eden_custom_portraits = { 名: 地址 }、eden_portrait_<名> = data URL），只读
   const barAv = n => { try { const short = String(n).split(/[·・]/)[0]; for (const k of [n, short]) { const d = localStorage.getItem('eden_portrait_' + k); if (d && d.startsWith('data:image/')) return d; }
@@ -63,7 +70,7 @@ const CharactersView = (() => {
     const p = await markerXY(d.map, d.marker); return p ? { map: d.map, ...p } : { map: d.map };
   }
 
-  async function set(d) { await mod(); if (!Array.isArray(d.items)) return; const hadP = Object.values(portraits).some(okUrl); items = d.items.slice(0, 60); rosters = d.rosters || null; groups = Array.isArray(d.groups) ? d.groups : null; rep = Number.isFinite(d.rep) ? d.rep : null; stageOrder = Array.isArray(d.stageOrder) ? d.stageOrder : null; portraits = d.portraits && typeof d.portraits === 'object' ? d.portraits : {}; if (hadP !== Object.values(portraits).some(okUrl) && typeof plugins.CustomNamesView !== 'undefined') plugins.CustomNamesView.renderUI(); floor = d.floor || 0; loadPrefs(); await render(); bar(); if (flyName && currentMapId) fly(flyName); }
+  async function set(d) { await mod(); if (!Array.isArray(d.items)) return; const hadP = Object.values(portraits).some(okUrl); items = d.items.slice(0, 60); rosters = d.rosters || null; groups = Array.isArray(d.groups) ? d.groups : null; rep = Number.isFinite(d.rep) ? d.rep : null; stageOrder = Array.isArray(d.stageOrder) ? d.stageOrder : null; portraits = d.portraits && typeof d.portraits === 'object' ? d.portraits : {}; if (hadP !== Object.values(portraits).some(okUrl)) portRow(); floor = d.floor || 0; loadPrefs(); await render(); bar(); if (flyName && currentMapId) fly(flyName); }
   let seq = 0;
   async function render() {
     for (const el of els) { if (typeof untrack === 'function') untrack(el); osdViewer?.removeOverlay(el); } els = [];
@@ -285,7 +292,8 @@ const CharactersView = (() => {
   afterLoadIdle(mod);
   provideTab('ch', { hasData: () => count() > 0, label: chLabel, render: el => pane(el) });
   TCCvd.onChange(() => afterOpen());   // 换色觉模式（E7）后头像框重新取色
-  return { color, portOn, setMoreOn(on) { try { LocalStore.set(MO_KEY, on ? '1' : '0'); } catch (e) {} }, cardOf, setStatsOn(on) { try { LocalStore.set('edenMapCharStats', on ? '1' : '0'); } catch (e) {} bar(); }, get statsOn() { return statsOn(); }, setPortOn(on) { try { LocalStore.set(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
+  const api = { color, portOn, setMoreOn(on) { try { LocalStore.set(MO_KEY, on ? '1' : '0'); } catch (e) {} }, cardOf, setStatsOn(on) { try { LocalStore.set('edenMapCharStats', on ? '1' : '0'); } catch (e) {} bar(); }, get statsOn() { return statsOn(); }, setPortOn(on) { try { LocalStore.set(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
+  return api;
 })();
 register('CharactersView', CharactersView);
 export { CharactersView };

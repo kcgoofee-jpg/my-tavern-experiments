@@ -125,7 +125,7 @@ export function tierLabels() {
     b.textContent = uiText('tier_' + b.dataset.k);   // 像素数对玩家没意义，放进 title（E5 V21）
     const cap = (TIERS.find(x => x.key === b.dataset.k) || tt).cap;
     b.title = b.dataset.k === 'auto' ? uiText('tier_auto_title') + (tier === 'auto' ? ' · ' + uiText('tier_now', { px }) : '') : uiText('tier_cap', { px: cap }); });
-  if (currentMapId && mapRegistry?.maps[currentMapId]) $('#tiers').title = uiText(tier === 'auto' ? 'tier_status_auto' : 'tier_status', { title: localName(mapRegistry.maps[currentMapId], 'title'), px });
+  if (currentMapId && mapRegistry?.maps[currentMapId] && $('#tiers')) $('#tiers').title = uiText(tier === 'auto' ? 'tier_status_auto' : 'tier_status', { title: localName(mapRegistry.maps[currentMapId], 'title'), px });
   tierAvail();
 }
 // fix3（用户 2026-09-28）：不适用的档位不再悄悄消失，而是灰掉并写明原因——三维页（清晰度只管平面瓦片）/ 地图还没打开 / 本图原图不够大（和低一档一样）

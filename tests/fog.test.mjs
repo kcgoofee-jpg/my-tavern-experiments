@@ -17,8 +17,8 @@ test('visit：记一次、重复不变、限量、不改原对象', () => {
 });
 test('接线：默认开（2026-09-28 起）、按聊天存 eden_map.探索、协议登记', () => {
   const rd = f => readFileSync(new URL('../map/' + f, import.meta.url), 'utf8');
-  const v = rd('viewer.html'), h = HOST_SRC, p = rd('core/protocol.mjs'), s = rd('core/storage.mjs');
-  assert.match(v, /<script type="module" src="app\/fog\.mjs"/); assert.match(v, /id="optFog"(?![^>]*checked)/);
+  const v = rd('viewer.html'), sp = rd('app/settings-pages.mjs'), h = HOST_SRC, p = rd('core/protocol.mjs'), s = rd('core/storage.mjs');
+  assert.match(v, /<script type="module" src="app\/fog\.mjs"/); assert.match(sp, /id="optFog"|'optFog'/); assert.doesNotMatch(sp, /id="optFog"[^>]*checked/);
   assert.match(s, /edenMapFog: \{ owner: 'app\/fog\.mjs', def: '1' \}/);
   assert.match(h, /探索: explored/); assert.match(h, /eden-map:explore'/);
   for (const k of ['eden-map:explore', 'eden-map:explore-reset', 'eden-map:fog']) assert.ok(p.includes(`'${k}'`), k);

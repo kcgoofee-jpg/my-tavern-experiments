@@ -8,6 +8,8 @@ import { packOverlay, packV2 } from './app/current-pack.mjs';
 import { hereRes } from './app/locate.mjs';
 import { go } from './app/map-switch.mjs';
 import { post } from './app/protocol-stamp.mjs';
+import { SettingsApi } from './app/settings.mjs';
+import { esc } from './app/dom-helpers.mjs';
 import { viewerUrlOk } from './core/portrait-lookup.mjs';
 import { gallerySpec, galleryUrlOk } from './core/gallery-spec.mjs';
 import { scenesAt, timelineOf, categoryRows, charOf } from './core/gallery-scenes.mjs';
@@ -19,6 +21,12 @@ const GalleryView = (() => {
   const spec = () => gallerySpec(ent()?.gallery);
   /** the user's switch: default on */
   const on = () => { try { return window.LocalStore?.get(KEY) !== '0'; } catch (e) { return true; } };
+  /** the settings row on 人物与物品 (it used to sit in the custom-names box): shown once this chat's card had a picture table */
+  function galRow() {
+    let box = document.getElementById('galBox');
+    if (!box) { box = document.createElement('div'); box.id = 'galBox'; SettingsApi.registerSection('people', box, { order: 50 }); box.addEventListener('change', e => { if (e.target.id === 'optGal') setOn(e.target.checked); }); }
+    box.innerHTML = seen ? `<label class="row"><span>${esc(uiTextOr('ch.gal_opt', '显示图鉴与场景'))}</span><input type="checkbox" role="switch" id="optGal" ${on() ? 'checked' : ''}></label><small>${esc(uiTextOr('ch.gal_hint', '读取卡自带的图鉴脚本里的图（只读、不复制、不保存地址），人物卡里按类别列出，并把聊天里写出的图鉴标记在地点卡、人物卡里按楼层列出；不会往聊天消息里插图'))}</small>` : '';
+  }
   /** every address goes through here before an attribute: the image shape, then the pack's hosts and this source's folder rules once more */
   const okUrl = u => { const s = spec(); return typeof u === 'string' && !!u && viewerUrlOk(u) && !!s && galleryUrlOk(ent()?.avatar, s, u); };
   const clean = list => (Array.isArray(list) ? list : []).map(u => (okUrl(u) ? u : ''));
@@ -37,7 +45,7 @@ const GalleryView = (() => {
       if (Array.isArray(d.scenes)) scenes = d.scenes.slice(-600).map(s => ({ floor: Number.isInteger(s?.floor) ? s.floor : 0, i: Number.isInteger(s?.i) ? s.i : 0, place: str(s?.place, 80), node: str(s?.node, 80), name: str(s?.name, 40), who: str(s?.who, 40),
         cat: str(s?.cat, 20), n: Number.isInteger(s?.n) ? s.n : 0, url: okUrl(s?.url) ? s.url : '' })).filter(s => s.name);
     }
-    try { plugins.CustomNamesView?.renderUI?.(); } catch (e) { /* the settings box is not there yet */ }
+    try { galRow(); } catch (e) { /* the settings box is not there yet */ }
     redraw();
   }
   const has = () => !!table?.chars?.length;

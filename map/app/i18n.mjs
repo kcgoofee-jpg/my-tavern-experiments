@@ -28,6 +28,14 @@ export const localName = (o, k = 'name') => { const z = o?.[k] ?? ''; return LAN
 // 共享 i18n 服务（arch-v2 §6 第 6 步 i18n 块）：外挂脚本与 app/*.mjs 都走这里，不再各自带一份 T()。
 // tx(键, 中文兜底, 变量)：字典里有就用字典，没有（字典没到 / 键缺）就用兜底并代入变量
 window.I18N = { get lang() { return LANG; }, t: uiText, nm: localName, tr: translateName, fmt, tx: (k, zh, v) => { const r = uiText(k, v); return r && r !== k ? r : fmt(zh ?? k, v); } };
+/** applyI18nTo(root): 翻译一棵刚建出来的子树（设置页第一次打开时用；整页的 applyI18n 不必为它重跑） */
+export function applyI18nTo(root) {
+  root.querySelectorAll('[data-i18n]').forEach(e => { e.textContent = uiText(e.dataset.i18n); });
+  root.querySelectorAll('[data-i18n-title]').forEach(e => { e.title = uiText(e.dataset.i18nTitle); });
+  root.querySelectorAll('[data-i18n-ph]').forEach(e => { e.placeholder = uiText(e.dataset.i18nPh); });
+  root.querySelectorAll('[data-i18n-aria]').forEach(e => e.setAttribute('aria-label', uiText(e.dataset.i18nAria)));
+  paintSegs();
+}
 export function applyI18n() {
   document.title = uiText('page_title');
   try { if (typeof plugins.StatPathMappingView !== 'undefined') plugins.StatPathMappingView.render?.(); } catch (e) {}

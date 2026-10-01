@@ -41,8 +41,8 @@ import { $ } from './dom-helpers.mjs';
 import { protocol, PROTO, post, setProtocol, SUB_ORIGIN } from './protocol-stamp.mjs';
 import { coarse, narrow, setNarrow } from './viewport-mode.mjs';
 import { getJSON, jsonCache, seedJSON } from './json-cache.mjs';
-import { TIERS, autoTier, declutter, effTier, homeMode, initProgress, onOpen, refit, setTier } from './sharpness-tiers.mjs';
-import { DICT, LANG, applyI18n, postState, setDICT, setLANG, setLang, uiText } from './i18n.mjs';
+import { autoTier, declutter, effTier, homeMode, initProgress, onOpen, refit } from './sharpness-tiers.mjs';
+import { DICT, LANG, applyI18n, postState, setDICT, setLANG, uiText } from './i18n.mjs';
 import { layoutHeader, warmOthers } from './topbar.mjs';
 import { go, openPlaceholder } from './map-switch.mjs';
 import { subpageSession, estateLook, estatePlan, retryEstate } from './subpage3d-host.mjs';
@@ -100,9 +100,6 @@ async function mainInner() {
     const A = ALIAS[key] ??= [key];
     for (const k of g.layers || []) { A.push(...(mapRegistry.maps[k].alias || [])); for (const v of Object.values(mapRegistry.maps[k].markers || {})) A.push(...(v.alias || [])); } }
   setNarrow(innerWidth <= 640);   // 等 iframe 布局完成后再判断，脚本刚执行时宽度可能还是 0
-  const seg = $('#tiers');
-  for (const x of [{ key: 'auto' }, ...TIERS]) { const b = document.createElement('button'); b.dataset.k = x.key;
-    b.onclick = () => setTier(x.key); seg.appendChild(b); }
   registerCoreLayers(); registerWeatherLayer(); registerTrafficLayer(); registerQuestLayer(); registerLootLayer(); registerVisionLayer(); registerWanderLayer(); registerDepthHazeLayer(); registerNavOpsLayer(); registerLocalPropsLayer(); registerTransitLayer(); registerRoutePlanLayer(); initDeclaredLayers(); renderLayerMenu(); initShell(); layoutHeader(); busOn({ key: 'boot.resize', type: 'resize', fn: layoutHeader });   // P3-C：#layList 由 LayerRegistry 数据驱动，先于 shell 绑定 / applyI18n 渲染
   applyI18n(); $('#status').textContent = uiText('loading');
   $('#estRetry').onclick = retryEstate; $('#estPlan').onclick = estatePlan;
@@ -115,7 +112,6 @@ async function mainInner() {
     if (p.x < b.x + mx || p.x > b.x + b.width - mx || p.y < b.y + my || p.y > b.y + b.height - my) osdViewer.viewport.panTo(new OpenSeadragon.Point(p.x, p.y)); });
   // 工具栏换行（英文更宽、窄窗口）时，信息卡跟着工具栏的实际高度往下挪，不压住第二行
   const hdr = $('header'); new ResizeObserver(() => document.documentElement.style.setProperty('--hdr', hdr.offsetHeight + 'px')).observe(hdr);
-  document.querySelectorAll('#langSeg button').forEach(b => b.onclick = () => setLang(b.dataset.lang));
   matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => setTimeout(() => { estateLook(); postState(); }, 0));   // 自动主题跟随系统切换时
   // 画布像素密度随档位封顶：高分屏（手机 3x）上省流只画 1.25x，填充的像素少一半以上，选瓦片的层级也跟着降
   const devDpr = OpenSeadragon.getCurrentPixelDensityRatio;

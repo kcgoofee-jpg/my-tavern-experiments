@@ -67,7 +67,7 @@ function renderWb() {
 }
 
 function renderInj() {
-  const box = sec('data', 'thInj', 6), P = S.prefs || {}, A = S.api || {};
+  const box = sec('ai', 'thInj', 10), P = S.prefs || {}, A = S.api || {};
   box.innerHTML = `<h3>${esc(uiTextOr('th.inj', '状态注入'))}</h3>`
     + `<label class="row"><input type="checkbox" id="thInjOn" ${P.inj !== false ? 'checked' : ''} ${A.inject === false ? 'disabled' : ''}> ${esc(uiTextOr('th.inj_on', '每次生成前注入一行当前状态（地点、在场、时间、行程）'))}</label>`
     + `<small>${esc(uiTextOr('th.inj_note', '约 150 token；卡的提示词里已有的字段自动跳过；数据还没确认时标「未确认」。深度和上限在「高级」'))}</small>`

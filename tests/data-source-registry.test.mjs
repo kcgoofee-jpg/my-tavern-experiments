@@ -49,7 +49,7 @@ test('接线：分支切换的消息与界面都在（宿主 switchBranch / 设�
   assert.match(host, /eden-map:switch-branch/);
   assert.match(host, /function switchBranch\(/);
   assert.match(readFileSync(new URL('../map/app/settings.mjs', import.meta.url), 'utf8'), /branchSel/);
-  assert.match(readFileSync(new URL('../map/viewer.html', import.meta.url), 'utf8'), /branchBox/);
+  assert.match(readFileSync(new URL('../map/app/settings-pages.mjs', import.meta.url), 'utf8'), /branchBox/);   // the update page's rows come from the settings page table (S7-1)
   assert.ok('eden-map:switch-branch' in SCHEMA, '协议 SCHEMA 登记了 switch-branch');
   for (const l of ['zh', 'en']) { const d = JSON.parse(readFileSync(new URL(`../map/i18n/${l}.json`, import.meta.url), 'utf8')); for (const k of ['s.branch', 's.branch_hint', 's.branch_na']) assert.ok(d[k], l + ' ' + k); }
 });

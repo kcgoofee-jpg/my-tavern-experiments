@@ -136,7 +136,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <link rel="modulepreload" href="app/feedback.mjs">
 <link rel="modulepreload" href="app/feedback-report.mjs">
 <link rel="modulepreload" href="app/extension-api.mjs">
-<link rel="modulepreload" href="app/control-column.mjs"><link rel="modulepreload" href="app/drawer-glue.mjs"><link rel="modulepreload" href="app/notice-layer.mjs"><link rel="modulepreload" href="app/status-dot.mjs"><link rel="modulepreload" href="app/one-hand-mode.mjs"><link rel="modulepreload" href="app/quick-zoom.mjs">
+<link rel="modulepreload" href="app/control-column.mjs"><link rel="modulepreload" href="app/drawer-glue.mjs"><link rel="modulepreload" href="app/notice-layer.mjs"><link rel="modulepreload" href="app/status-dot.mjs"><link rel="modulepreload" href="app/one-hand-mode.mjs"><link rel="modulepreload" href="app/quick-zoom.mjs"><link rel="modulepreload" href="app/settings-pages.mjs"><link rel="modulepreload" href="app/settings-wire.mjs">
 <link rel="modulepreload" href="app/host-messages.mjs">
 <link rel="modulepreload" href="app/layer-host.mjs">
 <link rel="modulepreload" href="app/viewer-debug.mjs">
@@ -644,50 +644,15 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 </div></div>
 <div id="setPop" class="pop" hidden role="dialog" data-i18n-aria="settings_title" aria-label="设置" aria-labelledby="setTitle">
   <div class="sheet-h"><button type="button" class="btn" id="setBack" hidden><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14.5 6l-6 6 6 6"/></svg><span class="lbl" data-i18n="settings_title">设置</span></button><b id="setTitle" data-i18n="settings_title">设置</b><button type="button" class="btn ic" id="setX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-  <section class="spage" data-page="home">
-    <div class="acts" hidden><button type="button" class="btn" id="actUp" hidden></button><button type="button" class="btn" id="actHere" hidden data-i18n="here_go">当前位置</button><button type="button" class="btn" id="actClose" hidden data-i18n="act_close">关闭地图</button></div>
-    <input type="search" id="setQ" data-i18n-ph="s.search" placeholder="搜索设置" autocomplete="off">
-    <div id="setHits"></div>
-    <nav class="sgroups"><button type="button" data-page="display"><b data-i18n="s.display">显示</b><span data-i18n="s.display_sub">主题 · 语言 · 清晰度 · 惯用手 · 动态</span></button><button type="button" data-page="people"><b data-i18n="s.people">人物</b><span data-i18n="s.people_sub">数值 · 更多资料 · 来源</span></button><button type="button" data-page="data"><b data-i18n="s.data">数据与映射</b><span data-i18n="s.data_sub">变量映射 · 别名 · 模板 · 存储</span></button><button type="button" data-page="update"><b data-i18n="s.update">更新与版本</b><span id="updSub"></span></button><button type="button" data-page="license"><b data-i18n="s.license">版权申明</b><span data-i18n="s.license_sub">卡片来源 · 地图开源 · 免责</span></button><button type="button" data-page="adv"><b data-i18n="s.adv">高级</b><span data-i18n="s.adv_sub">线路 · 三维抽屉 · 快捷键 · 调试</span></button></nav>
-    <h3 class="qlab" data-i18n="s.quick_layers">切换层</h3><div class="qlayers"></div>
-    <h3 class="morelab" data-i18n="layers_menu">图层</h3><div class="more"></div>
-    <small class="orig" lang="zh">原作角色卡：Yehehua（类脑社区）· <a href="https://discord.com/channels/1380075940285124724/1534464824141025321" target="_blank" rel="noopener">原作发布帖</a>（地图为经作者同意的二次创作）</small>
-  </section>
-  <section class="spage" data-page="display" hidden>
-    <div class="hrow"><span id="themeLbl" data-i18n="theme_title">界面主题</span><div class="seg" id="themeSeg" role="group" aria-labelledby="themeLbl"><button type="button" data-th="auto" data-i18n="theme_auto">自动</button><button type="button" data-th="light" data-i18n="theme_light">浅色</button><button type="button" data-th="dark" data-i18n="theme_dark">深色</button></div></div>
-    <div class="hrow"><span id="langLbl" data-i18n="lang_title">界面语言</span><div class="seg" id="langSeg" role="group" aria-labelledby="langLbl"><button type="button" data-lang="zh">中</button><button type="button" data-lang="en">EN</button></div></div>
-    <div class="hrow"><span id="tierLbl" data-i18n="tier_group">清晰度</span><div class="seg" id="tiers" role="group" aria-labelledby="tierLbl"></div></div><small id="tierWhy" class="na" hidden></small>
-    <div class="hrow"><span id="handLbl" data-i18n="hand">惯用手</span><div class="seg" id="handSeg" role="group" aria-labelledby="handLbl"><button type="button" data-hand="auto" data-i18n="hand_auto">自动</button><button type="button" data-hand="left" data-i18n="hand_left">左手</button><button type="button" data-hand="right" data-i18n="hand_right">右手</button></div></div>
-    <div class="hrow"><span id="rmLbl" data-i18n="s.rm">减少动态</span><div class="seg" id="rmSeg" role="group" aria-labelledby="rmLbl"><button type="button" data-rm="auto" data-i18n="s.follow_sys">跟随系统</button><button type="button" data-rm="on" data-i18n="s.on">开</button><button type="button" data-rm="off" data-i18n="s.off">关</button></div></div>
-    <label class="row"><span data-i18n="no_fx">关闭花屏特效</span><input type="checkbox" role="switch" id="optNoFx"></label><small data-i18n="no_fx_hint">出现花屏时不再闪烁、撕裂，只显示「数据链路受扰」文字</small>
-    <label class="row"><span data-i18n="s.fog">迷雾探索</span><input type="checkbox" role="switch" id="optFog"></label><small data-i18n="s.fog_hint">没去过的地点变暗、盖一层薄雾；按聊天记住去过哪里（存在这个聊天的变量里）</small><div class="hrow" id="fogRow" hidden><span data-i18n="s.fog_reset_l">清空这个聊天的探索记录</span><button type="button" class="btn" id="fogReset" data-i18n="s.fog_reset">清空</button></div>
-    <label class="row"><span data-i18n="s.minimap">左下角小地图</span><input type="checkbox" role="switch" id="optMinimap"></label><small data-i18n="s.minimap_hint">地图角落显示当前视野在全图中的位置（默认关）</small>
-    <div class="hrow"><span id="injLbl" data-i18n="s.inject">动作注入</span><div class="seg" id="injSeg" role="group" aria-labelledby="injLbl"><button type="button" data-inj="off" data-i18n="inj.off">关</button><button type="button" data-inj="compose" data-i18n="inj.compose">填输入框</button><button type="button" data-inj="sys" data-i18n="inj.sys">系统指令</button></div></div><small data-i18n="s.inject_hint">点卡片上的入口时把一句话送进聊天流；默认关。填入输入框只填不发，注入系统指令走 /sys</small>
-    <div class="hrow"><span id="q3Lbl" data-i18n="s.q3d">三维画质</span><div class="seg" id="q3Seg" role="group" aria-labelledby="q3Lbl"><button type="button" data-q="auto" data-i18n="tier_auto">自动</button><button type="button" data-q="1" data-i18n="s.q_low">省电</button><button type="button" data-q="2" data-i18n="s.q_high">清晰</button></div></div><small data-i18n="s.q3d_hint">三维页的像素比上限：省电 = 1 倍，清晰 = 最多 2 倍（锯齿更少，更费电）</small>
-    <div class="hrow"><span id="cvdLbl" data-i18n="s.cvd">色觉模式</span><div class="seg" id="cvdSeg" role="group" aria-labelledby="cvdLbl"><button type="button" data-cvd="0" data-i18n="s.cvd_off">关</button><button type="button" data-cvd="rg" data-i18n="s.cvd_rg">红绿</button><button type="button" data-cvd="by" data-i18n="s.cvd_by">蓝黄</button></div></div><small data-i18n="s.cvd_hint">事态、图例、人物头像等换成色盲安全配色，并加形状 / 描边区分；同步给子页面与三维页</small>
-  </section>
-  <section class="spage" data-page="people" hidden>
-    <label class="row"><span data-i18n="char_stats">人物栏显示数值</span><input type="checkbox" role="switch" id="optCharStats" checked></label><small data-i18n="char_stats_hint">名册里显示成员的等级与核心数值（字段在「变量映射」里指定或关闭）</small>
-    <label class="row"><span data-i18n="char_more">人物卡显示更多资料</span><input type="checkbox" role="switch" id="optCharMore" checked></label><small data-i18n="char_more_hint">人物卡里可展开的一栏：代号、社会身份、身高 / 体重、知情度、饰物（字段在「变量映射」里指定或关闭）</small>
-    <div class="hrow"><span data-i18n="s.ch_src">人物来源</span><span id="chSrc" class="muted"></span></div>
-  </section>
-  <section class="spage" data-page="data" hidden><div id="storBox"></div></section>
-  <section class="spage" data-page="update" hidden><div id="aboutBox"></div><div id="branchBox"></div><div class="hrow"><span data-i18n="s.build">版本编码</span><button type="button" id="build" class="btn" data-i18n-title="build_title" title="版本编码，点击复制诊断信息"></button></div></section>
-  <section class="spage" data-page="license" hidden><div id="licBox"></div></section>
-  <section class="spage" data-page="adv" hidden>
-    <div class="hrow" id="lineRow"><span data-i18n="s.line">加载线路</span><button type="button" class="btn" id="linePick" data-i18n="s.line_pick">选择线路</button></div><small id="lineNow" class="na"></small><div id="packBox"></div>
-    <label class="row"><span data-i18n="s.auto3d">三维抽屉：拖动模型时自动收起</span><input type="checkbox" role="switch" id="optAuto3d"></label>
-    <b data-i18n="s.kbd_group">快捷键</b>
-    <label class="row"><span data-i18n="s.keys">单字母快捷键（L、M、/、? 与事态操作字母角标，默认关）</span><input type="checkbox" role="switch" id="optKeys"></label>
-    <label class="row"><span data-i18n="s.tick">后台静默推演</span><input type="checkbox" role="switch" id="optTick"></label><small data-i18n="s.tick_hint">面板关着时每 60 秒把新楼层只读扫一遍，缓存补齐——下次开地图就是热的；不写变量、不注入、生成中让路</small>
-    <div class="hrow"><span data-i18n="s.kbd">快捷键</span><button type="button" class="btn" id="kbdBtn" data-i18n="s.kbd_show">查看</button></div>
-    <div class="hrow"><span data-i18n="s.hint_again">上手提示</span><button type="button" class="btn" id="hintAgain" data-i18n="s.hint_show">再看一次</button></div>
-    <div id="kbdHelp" hidden></div>
-    <label class="row"><span data-i18n="s.fps">调试：显示帧率</span><input type="checkbox" role="switch" id="optFps"></label>
-    <b data-i18n="s.edit_group">编辑模式</b>
-    <label class="row" data-i18n-title="s.edit_hint" title="打开后可以拖动图钉、改上级、加叫法、给地点加图片，导出成设定包；草稿只在这台设备上，私人图片不会被导出"><span data-i18n="s.edit_mode">编辑模式（调整地图、加图片）</span><input type="checkbox" role="switch" id="optEdit"></label>
-    <label class="row"><span data-i18n="s.pack_remote">加载设定包里用链接给出的图片</span><input type="checkbox" role="switch" id="optPackRemote"></label>
-  </section>
+  <!-- S7-1：子页由 app/settings-pages.mjs 在第一次打开时按行表造出来；这里只有壳（地图页多三个容器：图层列表、切层按钮由 layoutHeader / renderNav 在启动时就要用） -->
+  <section class="spage" data-page="home"></section>
+  <section class="spage" data-page="map" hidden><h3 class="morelab" data-order="5" data-i18n="layers_menu">图层</h3><div class="more" data-order="6"></div><h3 class="qlab" data-order="7" data-i18n="s.quick_layers">切换层</h3><div class="qlayers" data-order="8"></div></section>
+  <section class="spage" data-page="people" hidden></section>
+  <section class="spage" data-page="ai" hidden></section>
+  <section class="spage" data-page="data" hidden></section>
+  <section class="spage" data-page="update" hidden></section>
+  <section class="spage" data-page="license" hidden></section>
+  <section class="spage" data-page="adv" hidden></section>
 </div>
 <div id="card" hidden role="region" aria-labelledby="cardTitle"><div class="top"><span class="tag"></span><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><img class="cover" hidden loading="lazy" decoding="async" alt=""><h2 id="cardTitle" tabindex="-1"></h2><div class="sub"></div><div class="src"></div><div class="extra"></div></div>
 <div id="sr" class="sr-only" aria-live="polite"></div>

@@ -8,6 +8,7 @@ import { localName, uiText } from './i18n.mjs';
 import { narrowNow } from './subpage3d-host.mjs';
 import { jumpHere } from './locate.mjs';
 import { showSet } from './settings.mjs';
+import { onBuilt } from './settings-pages.mjs';
 import { parentMap } from './nodes-runtime.mjs';
 // 控制列 #dock：手机 = ⋯（设置首页，含上一级 / 关闭地图 / 切层）+ 缩放；桌面 = 层切换 + 缩放 + 标注。位置跟着抽屉（--sheet-h）/ 右栏（--rail-w-now）
 export function makeDock() {
@@ -34,14 +35,16 @@ export function initLabelToggle() {
 
 export function initActs() {
   const tb = $('#thumbBtn'), pop = $('#setPop');
-  // 「⋯」：设置首页，顶上是够得着的「返回上一级」「当前位置」「关闭地图」（手机上顶栏和酒馆面板的 × 都在最上面）
+  // 「⋯」：设置首页，顶上是够得着的「返回上一级」「当前位置」「关闭地图」（手机上顶栏和酒馆面板的 × 都在最上面；这一行在首页第一次打开时才造）
   tb.onclick = e => { e.stopPropagation(); showSet(pop.hidden); };
-  $('#actUp').addEventListener('click', () => showSet(false));
-  $('#actHere').onclick = () => { showSet(false); jumpHere($('#here').value); };
-  $('#actClose').onclick = () => { showSet(false); post({ type: 'eden-map:esc' }); };   // 卡内脚本收到 esc 就关面板（旧版卡内脚本也认）
+  onBuilt('home', () => {
+    $('#actUp').addEventListener('click', () => showSet(false));
+    $('#actHere').onclick = () => { showSet(false); jumpHere($('#here').value); };
+    $('#actClose').onclick = () => { showSet(false); post({ type: 'eden-map:esc' }); };   // 卡内脚本收到 esc 就关面板（旧版卡内脚本也认）
+    setActs(); });
 }
 
-export function setActs() { const up = $('#actUp'), cl = $('#actClose'), hg = $('#actHere'), par = currentMapId && parentMap(currentMapId), nar = narrowNow();
+export function setActs() { const up = $('#actUp'), cl = $('#actClose'), hg = $('#actHere'), par = currentMapId && parentMap(currentMapId), nar = narrowNow(); if (!up) return;   // 首页还没建（设置没开过）：没有可摆的
   up.hidden = !(nar && par && mapRegistry.maps[par]); if (!up.hidden) { up.dataset.go = par; up.textContent = uiText('act_up', { title: localName(mapRegistry.maps[par], 'title') }); }
   hg.hidden = !(nar && !$('#hereGo').hidden);
   cl.hidden = !nar || window.top === window; $('#setPop .acts').hidden = up.hidden && cl.hidden && hg.hidden; }

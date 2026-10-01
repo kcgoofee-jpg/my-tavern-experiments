@@ -2,46 +2,57 @@
 import { $, esc } from './dom-helpers.mjs';
 import { post } from './protocol-stamp.mjs';
 import { uiTextOr } from './text-lookup.mjs';
-import { buildLine } from './about-build.mjs';
+import { buildDate, buildLine, buildTag, viewerHead } from './about-build.mjs';
 import { cardState, cardStateText } from './card-state.mjs';
 const loadedAt = Date.now();
-import { LANG, paintSegs, setTheme } from './i18n.mjs';
+import { LANG, applyI18nTo } from './i18n.mjs';
 import { buildInfo } from './topbar.mjs';
 import { tierAvail } from './sharpness-tiers.mjs';
-import { estateLook, narrowNow } from './subpage3d-host.mjs';
-import { firstRunHint, noticeRefresh } from './notice-layer.mjs';
+import { buildPage, isBuilt, pageEl, placeIn, runShow, searchIndex } from './settings-pages.mjs';
+import { bootEffects } from './settings-wire.mjs';
+import { narrowNow } from './subpage3d-host.mjs';
+import { noticeRefresh } from './notice-layer.mjs';
 import { setActs } from './control-column.mjs';
 import { plugins } from './plugins.mjs';
-import * as TCCvd from './color-vision-mode.mjs';
-import { setFpsMeter } from './fps.mjs';
 import { PACK } from './current-pack.mjs';
 import { mountFeedbackButton } from './feedback.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
 import { renderPackBox } from './pack-settings.mjs';   // S9-2：高级页的「地图包」
-import { setEdit, initEdit } from './pack-edit-view.mjs';   // S9b：编辑模式（K-R100）
-import { reproject } from './pack-live.mjs';
-// ---------------- 设置（UI v2 §5）：首页 = 分组列表（+ 手机上的快捷：上一级、当前位置、关闭地图、切层、图层开关）；子页 显示 / 人物 / 数据与映射 / 更新与版本 / 高级 ----------------
-// 模块向指定页注册自己的一栏：SettingsApi.registerSection(page, el, { order })，不再 insertBefore(#selfCheck)。
+// ---------------- 设置（S7-1，docs/settings-ia.md）：首页 = 常用 + 分组列表；子页 地图与图层 / 人物与物品 / AI 联动 / 数据与映射 / 更新与版本 / 高级 / 版权申明 ----------------
+// 子页第一次打开时才由 settings-pages.mjs 造出来；模块向指定页注册自己的一栏：SettingsApi.registerSection(page, el, { order })。display 是 map 的旧名（保留一版）。
 export let setPageNow = 'home', setPrev = null;
-const PAGES = { home: ['settings_title', '设置'], display: ['s.display', '显示'], people: ['s.people', '人物'], data: ['s.data', '数据与映射'], update: ['s.update', '更新与版本'], adv: ['s.adv', '高级'], license: ['s.license', '版权申明'] };
+const PAGES = { home: ['settings_title', '设置'], map: ['s.map', '地图与图层'], people: ['s.people', '人物与物品'], ai: ['s.ai', 'AI 联动'], data: ['s.data', '数据与映射'], update: ['s.update', '更新与版本'], adv: ['s.adv', '高级'], license: ['s.license', '版权申明'] };
+const ALIAS = { display: 'map' };
 export function setPage(pg, quiet) {
-  if (!PAGES[pg]) pg = 'home'; setPageNow = pg;
+  pg = ALIAS[pg] || pg; if (!PAGES[pg]) pg = 'home'; setPageNow = pg;
+  if (!quiet || !$('#setPop').hidden) buildPage(pg, applyI18nTo);   // 启动路径上不造页：只有设置开着才建
   document.querySelectorAll('#setPop .spage').forEach(x => { x.hidden = x.dataset.page !== pg; });
   $('#setBack').hidden = pg === 'home'; $('#setTitle').textContent = uiTextOr(...PAGES[pg]);
   if (!quiet) { $('#setPop').scrollTop = 0; const f = pg === 'home' ? ($('#setQ')?.offsetParent ? $('#setQ') : $('#setPop .sgroups button')) : $('#setBack'); f?.focus({ preventScroll: true }); }
-  if (pg === 'update') renderSelfCheck();
+  if (!isBuilt(pg)) return;
+  if (pg === 'home') renderHome();
+  if (pg === 'update') { renderAbout(); renderSelfCheck(); renderLine(); }
   if (pg === 'license') renderLicense();
   if (pg === 'people') { const n = typeof plugins.CharactersView !== 'undefined' ? plugins.CharactersView.count() : 0; $('#chSrc').textContent = uiTextOr('s.ch_src_n', `当前聊天 ${n} 人`, { n }); }
-  if (pg === 'adv') { renderLine(); renderPackBox(); }
-  if (pg === 'display') tierAvail();
+  if (pg === 'adv') renderPackBox();
+  if (pg === 'map') tierAvail();
+  if (pg === 'ai' && window.top !== window) post({ type: 'eden-map:th', op: 'state' });
+  runShow(pg);
   if (pg === 'data') { if (window.top !== window) { post({ type: 'eden-map:storage-info' }); post({ type: 'eden-map:th', op: 'state' }); } else window.renderStorageSettings?.(null); }
 }
 export const SettingsApi = window.SettingsApi = {
-  registerSection(page, el, o = {}) { const pg = document.querySelector(`#setPop .spage[data-page="${page}"]`) || document.querySelector('#setPop .spage[data-page="adv"]'); if (!pg || !el) return;
-    el.dataset.order = o.order ?? 50; const after = [...pg.children].find(c => c.dataset.order != null && +c.dataset.order > +el.dataset.order); after ? pg.insertBefore(el, after) : pg.appendChild(el); },
+  registerSection(page, el, o = {}) { const pg = pageEl(ALIAS[page] || page) || pageEl('adv'); if (!pg || !el) return; placeIn(pg, el, o.order ?? 50); },
   open(page = 'home') { showSet(true); setPage(page); },
   get page() { return setPageNow; },
 };
+// 首页的摘要：更新那行是构建行，AI 联动那行在嵌入时才有（健康摘要由宿主随 th-state 送来），图层行（手机）显示开着的层数
+export function renderHome() {
+  updSub();
+  const emb = window.top !== window, ai = $('#aiGroup'); if (ai) { ai.hidden = !emb; const s = $('#aiGroupSub'); if (s && emb) { const h = aiSum; s.textContent = h ? uiTextOr('s.ai_sub', `${h.n} 项开启 · ${h.m} 项未生效`, { n: h.n, m: h.m }) : uiTextOr('s.ai_sub0', '读取中…'); s.classList.toggle('warn', !!h?.m); } }
+  const n = $('#lyN'); if (n) { const k = document.querySelectorAll('#layPop #layList input:checked, #setPop .more #layList input:checked').length; n.textContent = uiTextOr('s.layers_n', `${k} 开`, { n: k }); }
+}
+export let aiSum = null;
+export function setAiSum(v) { aiSum = v && typeof v === 'object' ? { n: +v.n || 0, m: +v.m || 0 } : null; if (isBuilt('home')) renderHome(); }
 // 版权申明页：角色卡信息 + 地图项目与免责声明。不做真伪鉴定，只提示风险。
 // 卡信息**不在这里摸宿主全局**（任务四）：优先用卡内脚本经桥（mvu-bridge.cardInfo 的三级降级）推来的
 // eden-map:cardinfo；没有才自己探父级窗口（同源 srcdoc 才碰得到）；全都没有 = 安全占位。
@@ -80,29 +91,31 @@ function renderLicense() {
   { const cr = PACK?.credits, pk = cr?.pack?.[0];   // 署名取自包清单的 credits（K-R70 随附）：仓库、地图作者、原作者；包没写就不出这一行
     if (pk?.url) row(uiTextOr('s.lic_repo', '空间地图（开源）'), String(pk.url).replace(/^https:\/\//, ''));
     if (pk?.name) row(uiTextOr('s.lic_map_by', '地图开发'), pk.name);
-    if (cr?.card?.creator) row(uiTextOr('s.lic_orig', '原作角色卡'), uiTextOr('s.lic_orig_v', '{creator}（类脑社区）原创；地图是经授权的二次创作（2026-09-27 起）', { creator: cr.card.creator })); }
+    if (cr?.card?.creator) row(uiTextOr('s.lic_orig', '原作角色卡'), uiTextOr('s.lic_orig_v', '{creator}（类脑社区）原创；地图是经授权的二次创作（2026-09-27 起）', { creator: cr.card.creator }));
+    if (typeof cr?.card?.url === 'string' && /^https:\/\//.test(cr.card.url)) { const r = document.createElement('div'), a = document.createElement('a'); r.className = 'row'; a.href = cr.card.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = uiTextOr('s.lic_post_go', '打开');   // 原作发布帖的链接来自包的 credits.card.url（包数据；引擎里没有卡名）
+      r.append(Object.assign(document.createElement('span'), { textContent: uiTextOr('s.lic_post', '原作发布帖') }), a); box.appendChild(r); } }
   label(uiTextOr('s.lic_disc', '免责声明'));
   const p = document.createElement('small'); p.style.cssText = 'display:block;line-height:1.5;opacity:.75';
   p.textContent = uiTextOr('s.lic_disc_v', '地图为粉丝演绎：地点与形制以原作设定为准，地图仅作补充呈现，不对地图内容的准确性负责。三维模型的贴图与纹理来自 Poly Haven 与 ambientCG（CC0 协议）。');
   box.appendChild(p);
 }
 
-// 设置里的搜索（桌面首屏顶，§5）：按每一行的文字找，结果点一下进那一页并高亮那一行
+// 设置里的搜索（桌面首屏顶，§5）：静态索引（行表 + 卡片的名称 / 用途 / 子项文字，没打开过的页也搜得到）加上已在页里的栏；点一下建页、展开对应卡片并滚到那一行
 function setSearch(q) {
   const box = $('#setHits'); box.innerHTML = ''; q = q.trim().toLowerCase(); $('#setPop .sgroups').hidden = !!q; if (!q) return;
-  const rows = []; for (const pg of document.querySelectorAll('#setPop .spage:not([data-page="home"])'))
+  const hits = searchIndex().filter(e => e.text.toLowerCase().includes(q) && (e.page !== 'ai' || window.top !== window)).map(e => ({ ...e, label: e.label.slice(0, 40) }));
+  const seen = new Set(hits.map(h => h.page + '|' + h.label));
+  for (const pg of document.querySelectorAll('#setPop .spage:not([data-page="home"])'))
     for (const r of pg.querySelectorAll(':scope > .row, :scope > .hrow, :scope > label, details > summary, #aboutBox > label, #branchBox > .hrow, #licBox > label, #selfCheck > b, #cuBox .cu-open, #cmpBox > summary')) {
-      const txt = (r.textContent || '').trim(); if (txt && txt.toLowerCase().includes(q)) rows.push([pg.dataset.page, r, txt.slice(0, 40)]); }
-  if (!rows.length) { box.innerHTML = `<small>${esc(uiTextOr('s.no_hit', '没有找到'))}</small>`; return; }
-  for (const [pg, r, txt] of rows.slice(0, 12)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn';
-    b.innerHTML = `${esc(txt)}<small>${esc(uiTextOr(...PAGES[pg]))}</small>`;
-    b.onclick = () => { setPage(pg); r.closest('details')?.setAttribute('open', ''); r.scrollIntoView({ block: 'center' }); r.classList.add('found'); setTimeout(() => r.classList.remove('found'), 1600); (r.querySelector('input, button') || r).focus?.({ preventScroll: true }); };
+      const txt = (r.textContent || '').trim().slice(0, 40); if (txt && txt.toLowerCase().includes(q) && !seen.has(pg.dataset.page + '|' + txt)) { seen.add(pg.dataset.page + '|' + txt); hits.push({ page: pg.dataset.page, label: txt, el: r }); } }
+  if (!hits.length) { box.innerHTML = `<small>${esc(uiTextOr('s.no_hit', '没有找到'))}</small>`; return; }
+  for (const h of hits.slice(0, 12)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn';
+    b.innerHTML = `${esc(h.label)}<small>${esc(uiTextOr(...PAGES[h.page]))}</small>`;
+    b.onclick = () => { setPage(h.page); const root = pageEl(h.page), r = h.el?.isConnected ? h.el : (h.card && root.querySelector(`[data-card="${h.card}"]`)) || root.querySelector(`[data-rk="${h.key}"]`) || root;
+      r.closest?.('details')?.setAttribute('open', ''); if (h.card) r.setAttribute?.('open', ''); r.scrollIntoView({ block: 'center' }); r.classList.add('found'); setTimeout(() => r.classList.remove('found'), 1600); (r.querySelector?.('input, button') || r).focus?.({ preventScroll: true }); };
     box.appendChild(b); }
 }
-export const rmPref = () => { try { return LocalStore.get('edenMapRM') || 'auto'; } catch (e) { return 'auto'; } };
-export const q3Pref = () => { try { return LocalStore.get('edenMap3dQ') || 'auto'; } catch (e) { return 'auto'; } };
-const rmNow = () => rmPref() === 'on' || (rmPref() === 'auto' && matchMedia('(prefers-reduced-motion: reduce)').matches);
-function applyRM() { document.documentElement.classList.toggle('rm', rmPref() === 'on'); window.__reducedMotion = rmNow(); estateLook(); }
+export { rmPref, q3Pref } from './settings-wire.mjs';
 export function initSettings() {
   const btn = $('#setBtn'), pop = $('#setPop');
   const firstIn = el => el.querySelector('button:not([hidden]), input, [tabindex="0"]');
@@ -110,11 +123,11 @@ export function initSettings() {
   showSet = (on, page) => { const was = !pop.hidden; pop.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); $('#thumbBtn')?.setAttribute('aria-expanded', on ? 'true' : 'false');
     document.body.classList.toggle('setopen', !!on);
     if (on) { showLay(false); if (!was) { opener = document.activeElement; setPrev = window.ViewerDrawer ? { tab: ViewerDrawer.tab, top: ViewerDrawer.body.scrollTop } : null; setPage(page || 'home', true); pop.scrollTop = 0; firstIn(pop)?.focus({ preventScroll: true }); setActs(); } }
-    else if (was) { $('#setQ').value = ''; setSearch(''); if (setPrev && window.ViewerDrawer) { if (setPrev.tab) ViewerDrawer.setTab(setPrev.tab); ViewerDrawer.body.scrollTop = setPrev.top; } setPrev = null; noticeRefresh(); } };
+    else if (was) { if ($('#setQ')) { $('#setQ').value = ''; setSearch(''); } if (setPrev && window.ViewerDrawer) { if (setPrev.tab) ViewerDrawer.setTab(setPrev.tab); ViewerDrawer.body.scrollTop = setPrev.top; } setPrev = null; noticeRefresh(); } };
   $('#setX').onclick = e => { e.stopPropagation(); showSet(false); };
   $('#setBack').onclick = e => { e.stopPropagation(); setPage('home'); };
-  pop.querySelector('.sgroups').addEventListener('click', e => { const b = e.target.closest('button[data-page]'); if (b) setPage(b.dataset.page); });
-  $('#setQ').addEventListener('input', e => setSearch(e.target.value));
+  pop.addEventListener('click', e => { const b = e.target.closest('.sgroups button[data-page], .lyrow[data-page]'); if (b) setPage(b.dataset.page); });   // 首页的分组列表与手机的图层行（页是第一次点开时才建的，用委托）
+  pop.addEventListener('input', e => { if (e.target.id === 'setQ') setSearch(e.target.value); });
   btn.onclick = e => { e.stopPropagation(); showSet(pop.hidden); };
   // 目标已被重绘移出文档（如「检查更新」按钮点完即重绘）不算点在外面
   const gone = t => t instanceof Node && !t.isConnected;
@@ -132,41 +145,7 @@ export function initSettings() {
   busOn({ key: 'settings.layerOutsideClick', target: document, type: 'click', fn: e => { if (!lp.hidden && !gone(e.target) && !lp.contains(e.target) && !lb.contains(e.target)) showLay(false); } });
   // 表单正在编辑时通知先不出（§3）
   pop.addEventListener('focusin', noticeRefresh); pop.addEventListener('focusout', () => setTimeout(noticeRefresh, 0));
-  { const cs = $('#optCharStats'); try { cs.checked = LocalStore.get('edenMapCharStats') !== '0'; } catch (e) {} cs.onchange = () => plugins.CharactersView.setStatsOn(cs.checked); }   // v0.9.6 E2 / E13
-  { const cm = $('#optCharMore'); try { cm.checked = LocalStore.get('edenMapCharMore') !== '0'; } catch (e) {} cm.onchange = () => plugins.CharactersView.setMoreOn(cm.checked); }   // v0.9.6 E13 其余字段
-  // 关闭花屏特效：只停动画和滤镜，「⚠ 数据链路受扰」文字照常显示；系统开了「减少动态效果」时默认勾上（E4 N24）
-  const fx = $('#optNoFx'); let nofx = matchMedia('(prefers-reduced-motion: reduce)').matches || rmPref() === 'on';
-  try { const v = LocalStore.get('edenMapNoFx'); if (v !== null) nofx = v === '1'; } catch (e) {}
-  fx.checked = nofx; document.body.classList.toggle('nofx', nofx);
-  fx.onchange = () => { document.body.classList.toggle('nofx', fx.checked); try { LocalStore.set('edenMapNoFx', fx.checked ? '1' : '0'); } catch (e) {} };
-  // 显示：主题、减少动态（跟随系统 / 开 / 关）、三维画质（三维页像素比上限）
-  $('#themeSeg').addEventListener('click', e => { const b = e.target.closest('button[data-th]'); if (b) setTheme(b.dataset.th); });
-  $('#rmSeg').addEventListener('click', e => { const b = e.target.closest('button[data-rm]'); if (!b) return; try { LocalStore.set('edenMapRM', b.dataset.rm); } catch (x) {} applyRM(); paintSegs(); });
-  $('#q3Seg').addEventListener('click', e => { const b = e.target.closest('button[data-q]'); if (!b) return; try { LocalStore.set('edenMap3dQ', b.dataset.q); } catch (x) {} paintSegs(); estateLook(); });
-  $('#cvdSeg').addEventListener('click', e => { const b = e.target.closest('button[data-cvd]'); if (!b) return; TCCvd.setMode(b.dataset.cvd); paintSegs(); estateLook(); });
-  matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', applyRM); applyRM();
-  // 高级：三维抽屉自动收起（默认关，§10.5）、单字母快捷键（默认开）、调试帧率、线路（嵌入时由卡内脚本换线路）
-  const sw = (id, key, def, fn) => { const c = $(id); let on = def; try { const v = LocalStore.get(key); if (v !== null) on = v === '1'; } catch (e) {} c.checked = on;
-    c.onchange = () => { try { LocalStore.set(key, c.checked ? '1' : '0'); } catch (e) {} fn?.(c.checked); }; };
-  sw('#optFog', 'edenMapFog', true, v => { $('#fogRow').hidden = !v; window.FogApi?.toggle(v); }); $('#fogRow').hidden = LocalStore.get('edenMapFog') === '0';
-  $('#fogReset').onclick = () => window.FogApi?.reset();
-  // U14（2026-09-28）：左下角小地图默认关；实时切换靠 body.nominimap 这个 CSS 类（不用重开地图）
-  // Part 6-4 动作注入模式：默认 off（地图不替玩家说话）；切了要重画卡片才出现 / 消失入口
-  { const inj = $('#injSeg');
-    inj?.addEventListener('click', e => { const b = e.target.closest('button[data-inj]'); if (!b) return;
-      try { LocalStore.set('edenMapInject', b.dataset.inj); } catch (x) {}
-      window.__injectMode = b.dataset.inj;   // paintSegs 与卡片重画都读这个活值
-      paintSegs(); document.body.classList.toggle('inject', b.dataset.inj !== 'off'); window.MarkersApi?.closeCard?.(); });   // 入口是开卡时现算的：关掉当前卡，下次开就是新的
-    try { window.__injectMode = LocalStore.get('edenMapInject') || 'off'; } catch (e) { window.__injectMode = 'off'; } }
-  sw('#optMinimap', 'edenMapMinimap', false, v => document.body.classList.toggle('nominimap', !v));
-  document.body.classList.toggle('nominimap', LocalStore.get('edenMapMinimap') !== '1');
-  sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', false);
-  sw('#optTick', 'edenMapTick', true);   // Part 6-2 后台静默推演（宿主每 15 s 判一次，跑不跑由 background-scan-scheduler.mjs 的 plan 决定） sw('#optFps', 'edenMapFps', false, v => { setFpsMeter(v); estateLook(); });
-  sw('#optEdit', 'edenMapEdit', false, v => setEdit(v)); sw('#optPackRemote', 'edenMapPackRemote', false, () => reproject(true));   // S9b：编辑模式与「加载包里用链接给出的图片」（K-R100 / K-R101，默认关）
-  initEdit();
-  $('#linePick').onclick = () => { showSet(false); post({ type: 'eden-map:line-pick' }); };
-  $('#kbdBtn').onclick = () => kbdHelp($('#kbdHelp').hidden);
-  $('#hintAgain').onclick = () => { try { LocalStore.remove('edenMapHint'); LocalStore.remove('edenMapHintN'); } catch (e) {} showSet(false); firstRunHint(); };
+  bootEffects();
 }
 // 设置「数据与映射」→ app/data-mapping-settings.mjs（arch-v2 §6 第 6 步 settings-ui 的第一块）
 export function kbdHelp(on) {
@@ -195,7 +174,7 @@ export let about = null, updRes = null, updBusy = false;
 export let cardInfo = null, cardTried = null;   // 任务四：卡内脚本推来的角色卡信息（见 setCardInfo）
 export function renderAbout() {
   const box = $('#aboutBox'); if (!box) return; const en = LANG === 'en';
-  const a = about || {}, ver = a.version || buildInfo?.version || '', code = a.code || buildInfo?.code || '';
+  const a = about || {}, ver = a.version || buildInfo?.version || '';
   const ch = { tag: uiTextOr('about.ch_tag', `固定版本 ${a.ref || ''}`, { ref: a.ref || '' }), follow: uiTextOr('about.ch_follow', `跟随分支 ${a.ref || ''}（每次打开取最新提交）`, { ref: a.ref || '' }),
     latest: a.locked ? uiTextOr('about.ch_locked', `已锁定 ${a.ref || ''}`, { ref: a.ref || '' }) : uiTextOr('about.ch_latest', `自动用最新正式版（当前 ${a.ref || ''}）`, { ref: a.ref || '' }),
     ref: a.pinned ? uiTextOr('about.ch_pin', `固定提交 @${a.pinned}`, { sha: a.pinned }) : uiTextOr('about.ch_ref', `预览提交 ${a.ref || ''}`, { ref: a.ref || '' }), local: uiTextOr('about.ch_local', '本地 / 单独打开') }[a.channel || (window.top === window ? 'local' : '')] || '';
@@ -203,9 +182,10 @@ export function renderAbout() {
   // 跟随分支预览：标题直接说「跟随分支预览 · 构建 #N」，不挂正式版号（v0.9.5 之类），免得被当成已发版本（2026-09-28 修）
   let h = a.channel === 'follow' && a.build != null
     ? `<b>${esc(uiTextOr('about.title_follow', '跟随分支预览'))}</b> · ${esc(uiTextOr('about.follow_build', '构建 #{n} · 来源 {s}', { n: a.build, s: SRC[a.source] || a.source || '?' }))}`
-    : `<b>${esc(uiTextOr('about.title', '地图版本'))}</b> v${esc(ver || '?')}${code ? ` · <span style="font-family:var(--font-mono)">${esc(code)}</span>` : ''}`;
+    : `<b>${esc(uiTextOr('about.title', '地图版本'))}</b>`;
   if (ch) h += `<br>${esc(ch)}${a.sha && !a.pinned ? ` · ${esc(String(a.sha).slice(0, 7))}` : ''}`;
   { const bl = buildLine(a, uiTextOr, loadedAt); if (bl) h += `<br><span id="buildLine">${esc(bl)}</span>`; }   // I-15：始终说明正在跑哪个构建
+  { const vh = viewerHead(renderAbout); if (vh && Number.isInteger(a.build) && vh.build !== a.build) h += `<br><span id="buildMismatch">${esc(uiTextOr('about.build_mismatch', '地图文件构建 head #{n} · {d}（和脚本不一致）', { n: vh.build, d: buildDate(vh, loadedAt) }))}</span>`; }   // P2-3：脚本和地图文件的构建不一致时两行都给出
   if (a.line) h += `<br>${esc(uiTextOr('about.line', '线路：{l}', { l: a.line }))}`;
   if (window.top !== window) h += `<br><button type="button" class="btn" id="updBtn" ${updBusy ? 'disabled' : ''}>${esc(updBusy ? uiTextOr('about.checking', '检查中…') : uiTextOr('about.check', '检查更新'))}</button>`;
   const r = updRes;
@@ -246,11 +226,10 @@ export function renderAbout() {
 }
 // 设置里的「自检」一栏：✓ / ⚠ 列表（中 / EN）、新正式版的「本次切换」按钮、「自动更新到新正式版」开关（默认关，存本机 edenMapAutoUpdate）
 export let selfCheck = null;
-// 设置首页「更新与版本」那一行的摘要：版本号 + 自检 ⚠ 数
-export function updSub() { const el = $('#updSub'); if (!el) return; const w = (selfCheck?.items || []).filter(i => i.status === 'warn').length;
-  // 跟随分支：摘要行用「跟随 · 构建 #N」，不挂正式版号，和「更新与版本」页同一份 about 状态源（U13，2026-09-28 修）
-  const vPart = (about?.channel === 'follow' && about?.build != null) ? uiTextOr('s.follow_build', `跟随 · 构建 #{n}`, { n: about.build }) : (about?.version || buildInfo?.version ? 'v' + String(about?.version || buildInfo?.version).replace(/^S\d+:/, '') : '');
-  el.textContent = [vPart, w ? uiTextOr('s.sc_warn', `自检 ${w} 项 ⚠`, { n: w }) : uiTextOr('s.update_sub', '检查更新 · 自检')].filter(Boolean).join(' · '); el.classList.toggle('warn', !!w); }
+// 设置首页「更新与版本」那一行的摘要：构建行 head #N · 日期 + 自检 ⚠ 数（和更新页同一份 about 状态源）
+export function updSub() { const el = $('#updGroupSub'); if (!el) return; const w = (selfCheck?.items || []).filter(i => i.status === 'warn').length;
+  const tag = about && Number.isInteger(about.build) ? buildTag(about, uiTextOr, loadedAt) : '';
+  el.textContent = [tag || uiTextOr('s.update_sub0', '检查更新 · 自检'), w ? uiTextOr('s.sc_warn', `自检 ${w} 项 ⚠`, { n: w }) : ''].filter(Boolean).join(' · '); el.classList.toggle('warn', !!w); }
 export function renderSelfCheck() {
   if (!selfCheck?.items) return;
   let box = document.getElementById('selfCheck');

@@ -8,6 +8,7 @@ import { autoKey, effTier, leanBg, tier } from './sharpness-tiers.mjs';
 import { uiText } from './i18n.mjs';
 import { narrowNow } from './subpage3d-host.mjs';
 import { renderAbout, showLay } from './settings.mjs';
+import { onBuilt } from './settings-pages.mjs';
 import { placeLayers } from './drawer-glue.mjs';
 import { parentMap } from './nodes-runtime.mjs';
 // ---------------- 顶栏（UI v2 §2.1）：清晰度、语言、主题、版本号都在设置「显示 / 更新与版本」里，顶栏不再放 ----------------
@@ -69,17 +70,21 @@ function clientTail() {
 }
 let buildCode = '';
 export let buildInfo = null;
+// 版本编码在 高级 › 开发者 里（那一页第一次打开时才有 #build）：编码本身启动时就读好，按钮的文字与点击在页建好时接上
+const paintBuild = () => { const bt = $('#build'); if (bt) { bt.textContent = buildCode; if (buildNa) bt.title = uiText('build_na'); } };
+let buildNa = false;
 fetch('data/build.json').then(r => r.ok ? r.json() : null).then(b => { buildInfo = b; renderAbout();
   buildCode = ((b && b.code) || 'S0-0000-D-0000') + '-' + clientTail();
   post({ type: 'eden-map:build', version: b?.version || null, code: b?.code || null });   // 给卡内脚本的自检比对版本（E6）
-  $('#build').textContent = buildCode;
-}).catch(() => { buildCode = 'S0-0000-D-0000-' + clientTail(); $('#build').textContent = buildCode; $('#build').title = uiText('build_na'); });   // fix3：读不到 build.json 也显示诊断码（不留空白），原因在 title
-$('#build').addEventListener('click', () => {
+  paintBuild();
+}).catch(() => { buildCode = 'S0-0000-D-0000-' + clientTail(); buildNa = true; paintBuild(); });   // fix3：读不到 build.json 也显示诊断码（不留空白），原因在 title
+onBuilt('adv', () => { paintBuild(); $('#build').addEventListener('click', () => {
   const d = [buildCode, 'map=' + (currentMapId || sleeping), 'tier=' + tier + (tier === 'auto' ? ':' + autoKey : ''), 'dpr=' + devicePixelRatio,
     'view=' + innerWidth + 'x' + innerHeight, 'base=' + document.baseURI, 'ua=' + navigator.userAgent].join('\n');
   const done = () => { const b = $('#build'); b.textContent = uiText('copied'); setTimeout(() => b.textContent = buildCode, 1500); };
-  (navigator.clipboard ? navigator.clipboard.writeText(d) : Promise.reject()).then(done).catch(() => { prompt(uiText('copy_prompt'), d); });
-});
+  const show = () => { let t = $('#buildDiag'); if (!t) { t = document.createElement('textarea'); t.id = 'buildDiag'; t.readOnly = true; t.rows = 6; $('#build').closest('.hrow').after(t); } t.value = d; t.select(); };   // 剪贴板不可用：把诊断信息放进只读文本框让用户自己复制（不弹阻塞对话框）
+  (navigator.clipboard ? navigator.clipboard.writeText(d) : Promise.reject()).then(done).catch(show);
+}); });
 export const getText = url => { if (!textCache.has(url)) textCache.set(url, fetch(url).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }).catch(e => { textCache.delete(url); throw e; })); return textCache.get(url); };   // 失败不留在缓存里（接手 review P1）
 // 大版本 2（docs/perf/v2.md）：只预热「走一步就到」的图——同组各层、上级、直接下级（都从节点树读）。
 // 同组各层取到 L10（切层最常用），其余只取 L8–9（先有个粗底，真打开时 OSD 再补细层），冷开总流量约少三成。

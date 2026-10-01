@@ -12,3 +12,14 @@ export function buildLine(about, tx, loadedAt = Date.now()) {
   const when = ok ? stamp(at) : tx('about.build_loaded', '加载于 {t}', { t: stamp(new Date(loadedAt)) });
   return tx('about.build_line', '当前构建 head #{n} · {sha} · {t}', { n: hasN ? a.build : '?', sha: sha || '?', t: when });
 }
+
+/** buildDate(about, loadedAt) -> 'YYYY-MM-DD'（提交时间；没有就用加载时间） */
+export function buildDate(about, loadedAt = Date.now()) { const at = about?.at ? new Date(about.at) : null, d = at && !isNaN(at) ? at : new Date(loadedAt); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+/** buildTag(about, tx, loadedAt) -> 'head #N · 日期'（设置首页的一行摘要；没有构建号 = ''） */
+export function buildTag(about, tx, loadedAt = Date.now()) { return Number.isInteger(about?.build) ? tx('s.update_sub', 'head #{n} · {d}', { n: about.build, d: buildDate(about, loadedAt) }) : ''; }
+let head = null, headAsked = false;
+/** viewerHead(onLoad) -> 地图文件自己的 { build, at }（data/head.json，第一次问时才取；取到后调 onLoad 重画）；还没取到 = null */
+export function viewerHead(onLoad) {
+  if (!headAsked && typeof fetch === 'function') { headAsked = true; fetch('data/head.json').then(r => (r.ok ? r.json() : null)).then(j => { if (j && Number.isInteger(j.build)) { head = { build: j.build, at: j.at || null }; onLoad?.(); } }).catch(() => {}); }
+  return head;
+}

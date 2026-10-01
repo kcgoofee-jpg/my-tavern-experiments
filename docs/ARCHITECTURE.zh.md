@@ -191,6 +191,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `route-plan-view.mjs` | 查看器里的路线规划（K-R111、K-R113）：地点卡上的路线链接、计划卡、内核图层 `route-plan`（用户的计划实线、建议路线虚线）、`eden-map:here` 时的重新规划与到达、宿主的回发 `eden-map:route`；发出 `eden-map:route-plan`。 |
 | `scale-handoff.mjs` | 世界图与城市层之间的尺度交接，以及周边过渡环。 |
 | `screen-reader-announce.mjs` | 读屏播报（aria-live）：同一时刻的几条合并成一句。 |
+| `settings-pages.mjs` | 设置页的行表（S7-1）：每个子页的行第一次打开该页时才造（启动路径上不造），`onBuilt` / `onShow` 钩子，静态搜索索引。 |
+| `settings-wire.mjs` | 设置各行的处理器，页建好后才挂；启动就要生效的存储开关（减少动态、花屏特效、小地图、动作模式、编辑模式）直接读写存储。 |
 | `settings.mjs` | 设置弹层：分页、分区注册、搜索、关于 / 检查更新、自检。 |
 | `sharpness-tiers.mjs` | 清晰度档位、省流判断、加载进度、叠加层与标注避让。 |
 | `sound-block.mjs` | `sound` 积木（K-R89）：把 `core/ambience.mjs` 的计划接到 Web Audio；没有用户的开关和一次手势绝不出声；`window.SoundApi`。 |
@@ -234,6 +236,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `event-geo-load.mjs` | 卡内脚本的事态地理：取回包的节点树所依据的东西（v1 文件与叠加层），返回给 `events.mjs setGeo` 用的 geo。这里不碰宿主；取数函数由调用方传入。 |
 | `events-parse.mjs` | 事态解析：从聊天正文读事件标签，按包的事件块分类（`typeOf`，K-R50），合并（类型 + 节点，K-R54）并老化（纯函数）。 |
 | `extension-api-contract.mjs` | 暴露给宿主页的公共 `EdenMap` API 的机读契约。 |
+| `feature-health.mjs` | 功能健康（S7-1，`docs/settings-ia.md` §4.5）：`createFacts()` 与纯函数 `healthOf(facts)`，对每张 AI 联动卡片给出 开着 / 生效 / 待命 / 未生效、原因、上次生效楼层、文字与 token；`healthSum`。 |
 | `follow-gate.mjs` | 入口门卫：从分支路径加载的脚本，换成头提交号的入口重新加载。 |
 | `follow-pin.mjs` | 跟随 / 分支加载地址钉到头提交号；检查更新走哪条链的判定。 |
 | `gallery-flow.mjs` | 媒体来源的宿主侧（K-R106），由 `chars-flow` 创建：每个聊天读一次卡的图片表，每轮扫聊天楼层正文里的标记（一楼的地点经 `MVUBridge.floorPlace`，K-R105），发 `eden-map:media`；回应 `eden-map:media-ask`；开关 `edenMapGallery`（默认开）能关掉；什么都不存。 |

@@ -18,6 +18,16 @@ const T6 = {
   'ch.port_hint': 'tightened (> 160 characters)', 'th.wb_consent': 'tightened (> 160 characters)', 's.lic_disc_v': 'tightened (> 160 characters)',
   's.lic_unknown': 'tightened (> 160 characters)', 'hint.2': 'tightened (> 160 characters)', 'th.wb_on_hint': 'tightened (> 160 characters)', 'cu.sync_hint2': 'tightened (> 160 characters), takes {book}',
 };
+// S7-1 (docs/settings-ia.md §2, §6, §7, §8): the settings regrouping, the hint fixes and the AI advisor rename change these keys on purpose. A removed key must be gone; a changed key must
+// have exactly the value pinned here (zh, en) for the first pack. Every other key is still byte-identical to the frozen dictionaries.
+const S7 = {
+  removed: ['s.display', 's.display_sub'],
+  changed: {
+    's.people': ['人物与物品', 'People & items'], 's.people_sub': ['数值 · 更多资料 · 头像 · 图鉴', 'Stats · more info · portraits · gallery'],
+    's.adv_sub': ['地图包 · 编辑模式 · 快捷键 · 开发者', 'Map pack · edit mode · shortcuts · developer'], 's.update_sub': ['head #{n} · {d}', 'head #{n} · {d}'],
+    'cu.night': ['按时段给地图加色调、切换昼夜底图（清晨 / 傍晚 / 夜间）', 'Tint the map and switch day / night base maps by time (dawn / dusk / night)'],
+  },
+};
 const BOOK = '伊甸地图·自定义';   // what the viewer fills {book} with for the first pack (worldbook prefix + 「·自定义」, app/custom.mjs)
 const fill = (s, script) => String(s).split('{book}').join(BOOK).split('{script}').join(script);
 
@@ -27,7 +37,9 @@ for (const lang of ['zh', 'en']) {
     const miss = [], diff = [];
     for (const [k, old] of Object.entries(FZ[lang])) {
       if (k === 'names' || k.startsWith('_')) continue;   // `names` moved to the pack (names_pack.test.mjs); `_…` are notes for the file's readers, not text the viewer shows
+      if (S7.removed.includes(k)) { assert.ok(!(k in dict), k + ' is removed by S7-1'); continue; }
       if (!(k in dict)) { miss.push(k); continue; }
+      if (k in S7.changed) { assert.equal(dict[k], S7.changed[k][lang === 'zh' ? 0 : 1], k + ' has its S7-1 value'); continue; }
       const now = fill(dict[k], script), was = fill(old, script);   // the old zh text of a key that already took {book} still holds the placeholder
       if (lang === 'en' && k in T6) { assert.notEqual(now, was, `${k} is on the T6 list and must differ`); continue; }
       if (now !== was) diff.push(k);
