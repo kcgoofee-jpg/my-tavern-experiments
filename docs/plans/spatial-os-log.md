@@ -1437,7 +1437,16 @@ commits: aacdde86 feat(cdn): N14 a art at a stable key (head.json art_sha)
 pushed: yes
 tests: node 1342 pass + 1 skipped / 1343 (+3 art_key) | smoke PASS | arch PASS | probes: follow_pin=PASS tile_fail=PASS (98 ✓) art_key=PASS (new: two code-only heads request identical art URLs, route switch keeps the key, no stamp = old behaviour)
 deviations: (1) art keys use 12 hex digits, the same length the viewer requests (the content warm-up still warms the full sha; noted, not changed). (2) The first push with art_sha warms all 5134 map/art files once at the new key (detached, logs/warm_art.log). (3) Older installed loaders do not stamp `art` until re-imported; they keep the per-head key (the R1 kit ships a fresh loader). (4) Pack art (packs/<id>/art) is not covered by art_sha and stays at the content commit.
+=== RESULT B1-C01-P2 ===
+status: DONE
+items: 2.4 (southern Master Throne & edging control console) ✓ · 2.5 (eastern Armamentarium showcase) ✓ · 2.6 (northeastern supply bar, UV-C station, chastity vitrine & packaging island) ✓
+commits:
+10ac5355 feat(estate): complete Sections 2.4-2.6 and finalize B1-C01 master hall
+pushed: yes
+tests: node 1338/1340 (2 skipped) | smoke PASS | arch PASS | house.glb 715076 bytes (under 718930 cap)
+deviations: none
 blocker: none
 open: none
 cleanup: done
 === END ===
+
