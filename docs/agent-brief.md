@@ -48,6 +48,12 @@
 - **Parity divergences that only ADD placements or information and lose nothing** (no event, character, item or
   injected line disappears or changes) may proceed: pin each in a test, file it as a Q-item in `docs/todo.md` §3
   with a recommendation, continue. Stop only when something is lost or the injected text changes.
+- **Old decisions are background only** (user, 2026-10-01): decisions made before the Spatial OS refactor (before
+  2026-09-30) no longer bind. Old docs, `rejected.md` entries, the archived todo and handoff notes are background; overturn
+  them when a better design needs it and say so in one line in the RESULT.
+- **Old decisions are background only** (user, 2026-10-01): decisions made before the Spatial OS refactor (before
+  2026-09-30) no longer bind. Old docs, `rejected.md` entries, the archived todo and handoff notes are background; overturn
+  them when a better design needs it and say so in one line in the RESULT.
 - **Worktree, never the main checkout:** `git fetch`, then
   `git worktree add -b <name> <scratchpad>/<dir> origin/preview`. The main working tree may hold another line's
   uncommitted work — do not touch it. Never reset to a stale origin ref.
