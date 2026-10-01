@@ -35,13 +35,13 @@
 
 | 表 | 行数 | 内部 | 外部契约 | 批次 S5 | 批次 S6 | 批次 S10 | 不改 |
 |---|---|---|---|---|---|---|---|
-| A. 引擎文件 | 66 | 66 | 0 | 52 | 0 | 1 | 13 |
+| A. 引擎文件 | 66 | 66 | 0 | 52 | 1 | 1 | 12 |
 | B. 同名文件对 | 28 | 28 | 0 | 18 | 0 | 2 | 8 |
 | C. Window 全局变量 | 68 | 59 | 9 | 50 | 0 | 10 | 8 |
 | D. 短名与不透明标识符 | 28 | 28 | 0 | 28 | 0 | 0 | 0 |
 | E. 聊天变量键 | 16 | 0 | 16 | 0 | 3 | 13 | 0 |
 | F. 存储、协议、API 与分发名 | 24 | 2 | 22 | 2 | 0 | 21 | 1 |
-| 合计 | 230 | 183 | 47 | 150 | 3 | 47 | 30 |
+| 合计 | 230 | 183 | 47 | 150 | 4 | 47 | 29 |
 
 ### A. 引擎文件
 
@@ -102,7 +102,7 @@
 | `core/depth.mjs` (fog-visit part) | `map/core/depth.mjs:44` | 除了纵深数学（`blender/depth.py` 的 JS 孪生）外，这个文件还放着探索台账 `norm` / `visit` / `known` / `count`（到访过的地点迷雾）。 | `core/exploration-ledger.mjs` (the depth math keeps `depth.mjs`) | 内部 | S5 | 引用：map 6 个、测试 4 个（`eden-map.js` 只为探索台账加载它，别名 `FOGm`）。是拆分不是改名：纵深数学那一半必须保留原名，因为有黄金文件对拍测试。聊天键 `探索`（表 E）。 **已在 S5-2 拆分**：新文件 `core/exploration-ledger.mjs`（纵深数学留在原文件）。 |
 | `app/estate.mjs` | `map/app/estate.mjs:1` | 庄园 / 三维子页的宿主：带 `<base>` 的 blob iframe、失败钩子、子页消息、通用三维查看器入口。 | `app/subpage3d-host.mjs` | 内部 | S5 | 引用：map 15 个、测试 2 个。"estate"（庄园）是第一个设定包的内容，但引擎把它当作任意三维子页的名字：协议前缀 `estate:`（20 种）、地图 kind `estate`（表 F）、body 类 `estate`。术语表：「sub-page 子页」。 **已在 S5-2 改名。** |
 | `core/estate3d.mjs` | `map/core/estate3d.mjs:1` | 三维页的清单契约：校验并解析模型 URL、数据路径和档位回退。 | `core/scene3d-manifest.mjs` | 内部 | S5 | 引用：map 2 个（`estate/main.js`、`props/viewer3d.html`）、测试 1 个。与上一行同样的 "estate" 问题。 **已在 S5-2 改名。** |
-| `tavern/loot-flow.mjs` | `map/tavern/loot-flow.mjs:1` | 宿主流：地图驱动的动作注入、检定掷骰与失败环（W2）、结算闸门与漏项审计（W11）、虚拟账本槽位（W12）、拾取扫描、空间化背包与世界藏物表。 | `tavern/loot-flow.mjs` | 内部 | S5-1 | S5-1 新增，最终名字就是它自己。按计划叫 `loot-flow`，没有叫 `stash-flow`：词汇表只定概念（"Stash"），不改模块名；最终名字由 S6（stash 统一，D4）决定。 |
+| `tavern/loot-flow.mjs` | `map/tavern/stash-flow.mjs:1` | 宿主流：地图驱动的动作注入、检定掷骰与失败环（W2）、结算闸门与漏项审计（W11）、拾取扫描折叠进统一藏物库、扩展接口的行、卡内物品表、`eden-map:inv`、世界藏物表。 | `tavern/stash-flow.mjs` | 内部 | S6 | **已在 S6-2 改名**（P-11，2026-10-01 按默认决定）：S5-1 里叫 `loot-flow`；stash 统一（D4）把它重写了一遍，所以改用词汇表的名字 "Stash"。工厂 `createLootFlow` → `createStashFlow`。 |
 | `tavern/chars-flow.mjs` | `map/tavern/chars-flow.mjs:1` | 宿主流：ContextPipeline 与 MVUBridge 装配、世界时间与着装、名册 / 立绘 / 行程 / 日程漫游转发给查看器。 | `tavern/chars-flow.mjs` | 内部 | S5-1 | S5-1 新增，最终名字就是它自己。持有 `BR`、`CTX`、`MV`（表 D）。 |
 | `tavern/root-store.mjs` | `map/tavern/root-store.mjs:1` | 宿主流：地图在聊天变量里的根（`eden_map`）：自定义名称与用途的读写与迁移、本机存储预算、世界书同步、标签改名重放。 | `tavern/root-store.mjs` | 内部 | S5-1 | S5-1 新增，最终名字就是它自己。持有 `saveRoot`（聊天变量根的唯一写入者）与 `BG`。 |
 | `tavern/host-api.mjs` | `map/tavern/host-api.mjs:1` | 宿主流：本机扩展接口 `window.EdenMap`（订阅、头像压缩）与酒馆助手侧的暴露（脚本按钮、类宏、脚本说明、世界书全自动）。 | `tavern/host-api.mjs` | 内部 | S5-1 | S5-1 新增，最终名字就是它自己。暴露面仍由 `tavern/edenapi.mjs` 守卫。 |
@@ -240,7 +240,7 @@
 | `P` | `map/app/plugins.mjs:5` | 外挂注册表：应用模块与根外挂之间唯一的通道（`register(name, api)`）。 | `plugins` | 内部 | S5 | 被 21 个文件导入。另有 5 个文件把局部 `P` 用作别的东西（`ui/icons.js` 路径表、`host-th.mjs` 偏好、`follow.mjs` 路径、`trips.mjs` 投影、`markers.mjs` 点列）：批量替换必须识别 import。 **已在 S5-3 改名。** |
 | `BR` | `map/tavern/chars-flow.mjs:23` | 宿主脚本的 `MVUBridge` 实例。 | `mvuBridge` | 内部 | S5 | `eden-map.js` 里 `BR.` 有 64 处使用；S5 拆文件后变成跨模块标识符。 **已在 S5-3 改名。** |
 | `MV`, `CTX`, `BG` | `map/tavern/chars-flow.mjs:19` | `MV` = `tavern/mvu.mjs` 模块；`CTX` = ContextPipeline 实例；`BG` = `tavern/budget.mjs` 模块（存储预算）。 | `mvuReaders`, `contextPipeline`, `storageBudget` | 内部 | S5 | 与 `BR` 同理（S5 拆文件）。`BG` 也是模块句柄，但不符合下一行的 `<名>m` 模式。 **已在 S5-3 改名。** |
-| `INVm` and 20 siblings | `map/tavern/loot-flow.mjs:164` | 懒加载的模块句柄，模式为 `<缩写>m`（共 21 个）：`PRm` protocol、`FOGm` core/depth、`SRCm` sources、`CPm` compose、`NAVm` navigator、`WBJm` wb_jit、`XTMm` wb_crystallize、`ACm` action、`RNGm` rng、`LEDm` ledger、`PUm` pickup、`BBm` baibai、`TRm` trips、`INVm` inventory、`STm` stash、`RTm` routine、`TLm` timeline、`KFm` keyframes、`CXm` characters、`SPm` splash、`THm` th。 | `<module>Module`, e.g. `stashStoreModule` | 内部 | S5 | 名字随文件改名（表 A）。`MDm`（= `BR.modes`）是另一种句柄。无冲突：新名字在 `map/` 里现在都不存在。 按各自加载的模块命名（21 个名字，见 `tools/rename_s5_globals_extract.py` 的 `HANDLES`）；`MDm` 不动。 **已在 S5-3 改名。** |
+| `INVm` and 20 siblings | `map/tavern/stash-flow.mjs:1` | 懒加载的模块句柄，模式为 `<缩写>m`（共 21 个）：`PRm` protocol、`FOGm` core/depth、`SRCm` sources、`CPm` compose、`NAVm` navigator、`WBJm` wb_jit、`XTMm` wb_crystallize、`ACm` action、`RNGm` rng、`LEDm` ledger、`PUm` pickup、`BBm` baibai、`TRm` trips、`INVm` inventory、`STm` stash、`RTm` routine、`TLm` timeline、`KFm` keyframes、`CXm` characters、`SPm` splash、`THm` th。 | `<module>Module`, e.g. `stashStoreModule` | 内部 | S5 | 名字随文件改名（表 A）。`MDm`（= `BR.modes`）是另一种句柄。无冲突：新名字在 `map/` 里现在都不存在。 按各自加载的模块命名（21 个名字，见 `tools/rename_s5_globals_extract.py` 的 `HANDLES`）；`MDm` 不动。 **已在 S5-3 改名。** |
 | `SELF`, `OWNER`, `UL` | `map/tavern/eden-map.js:26` | `SELF` = 脚本所在的 `.../map/` 基础地址；`OWNER` = 脚本身份（`s:<id>` 或 `u:<SELF>`）；`UL` = 界面语言 `zh` / `en`。 | `scriptBase`, `scriptOwner`, `uiLang` | 内部 | S5 | `SELF` 还出现在 `edenapi.mjs` 和 `host-routes.mjs`（`createRoutes` 的参数）的注释里。 **已在 S5-3 改名。** |
 | `nm` | `map/app/i18n.mjs:23` | 对象的本地化名称：`name`、`name_en`，或查字典。 | `localName` | 内部 | S5 | 被 10 个文件导入；也在 `window.I18N` 里。`core/pickup`、`app/vision`、`host-th`、`spatial`、`inventory` 里的局部 `nm`（处理过的字符串）是另一回事。 **已在 S5-3 改名。** |
 | `t` | `map/app/i18n.mjs:21` | 界面文案查询：先看设定包的 `strings` 覆盖，再查字典；支持 `{var}` 代入。 | `uiText` | 内部 | S5 | 被 8 个文件导入。单字母，又是常见的局部变量名。 **已在 S5-3 改名。** |
@@ -273,14 +273,14 @@
 | `标签记录` | `map/tavern/root-store.mjs:71` | 最近 30 条标签回放记录 `{ floor, key, … }`：标签「撤销-重放」状态机的状态。 | `tagLog` | 外部契约 | S10 | 加载时只保留最近 30 条。 |
 | `楼层指纹` | `map/tavern/root-store.mjs:71` | 每层原文的指纹（FNV-1a、36 进制），用来发现某一层的原文被改过（`context.mjs:12`）。 | `msgFingerprints` | 外部契约 | S10 | 本质上是可丢弃的缓存：从聊天记录重算即可重建。 |
 | `行程` | `map/tavern/root-store.mjs:53` | 最近的行程：玩家最近 5 段、每个人物各 5 段（`CTX.trips`）。 | `trips` | 外部契约 | S10 | 派生值：可从聊天楼层重算（brief §2.4）。 |
-| `仓库` | `map/tavern/inventory.mjs:3` | 空间化背包物品（`{ items, seq }`），由地图写入，显示在地点卡上并汇总成一行注入。 | `stash` (merged, decision D4) | 外部契约 | S6 | 由 S6 与 `槽位` 一起自动迁移；读取在 `root-store.mjs:75`。这个词也是 `SLOT_KEYS`（`ledger.mjs:299`）里的候选名之一。 |
-| `槽位` | `map/core/ledger.mjs:298` | 卡里没有背包字段时，地图声明的虚拟账本槽位（`SLOT_ROOT`）：`{ 名, 件, … }`。是 `map/core` 里的一个中文字面量。 | `stash` (merged, decision D4) | 外部契约 | S6 | 字段 `名`（槽位名）和 `件`（件数）见下面的子键行。读取在 `root-store.mjs:76`。 |
+| `仓库` | `map/tavern/stash-store.mjs:11` | 空间化背包物品（`{ items, seq }`）：地图物品的 v1 存储。 | `stash` (merged, decision D4) | 外部契约 | S6 | **已在 S6-2 迁移（S10 前只读）。** 由 `stash-store.mjs migrate` 读一次（常量 `V1_KEYS.inventory`），每次保存原样带回，之后不再写；S10 随迁移一起删掉这个常量。这个词也是 `core/vocab.mjs` `EXACT.inventory` 里的背包词之一。 |
+| `槽位` | `map/tavern/stash-store.mjs:11` | 卡里没有背包字段时，地图声明的虚拟账本槽位：`{ 名, 件, … }`。 | `stash` (merged, decision D4) | 外部契约 | S6 | **已在 S6-2 迁移（S10 前只读）。** 现在是 ASCII 键的 `stash.slot`（`ledger.slotNorm`）；中文字面量 `SLOT_ROOT` 已离开 `map/core`（v1 的名字是 `V1_KEYS.slot`）。子键见下面的行。 |
 | `探索` | `map/tavern/eden-map.js:33` | 迷雾探索台账 `{ 地图 id: [地点名] }`（最多 40 张图、每图 300 个地点；`core/depth.mjs` 的 `norm` / `visit`）。 | `explored` | 外部契约 | S10 | 仅在非空时写入（`root-store.mjs:53`）。 |
 | `检查点` | `map/tavern/modes.mjs:105` | 最小检查点 `{ 楼, swipe }`：最后确认的楼层与 swipe；启动时对不上就作废并重算。 | `checkpoint` | 外部契约 | S10 | 子键 `楼` 见下。读取在 `root-store.mjs:83`。 |
 | `关键帧` | `map/tavern/keyframes.mjs:1` | 关键帧缓存 `{ v, top, frames, truncated }`：把逐层状态压缩成变更点；明确可丢弃。 | `keyframes` | 外部契约 | S10 | 删掉后重算必须逐项一致（战役裁决 7）。读取在 `root-store.mjs:78`。 |
 | `自定义.同步世界书`, `.同步手动`, `.忽略` | `map/tavern/mvu.mjs:118` | `自定义` 的子键：世界书同步开关（默认开）、「用户手动设置过」标志、最多 50 个被忽略的地点名。 | `syncWorldbook`, `syncManual`, `ignored` | 外部契约 | S10 | `同步手动` 守着 0.9.3 的一次迁移（`root-store.mjs:86`）；S10 的读取代码里要保留这条迁移路径。 |
 | `自定义.items[*].类`, `.名`, `.用途`, `.别名`, `.源` | `map/tavern/mvu.mjs:124` | 一个自定义项的字段：类别（`room` / `area` / `landmark` / `character` / `layer` / `world`）、显示名、用途文字、别名、来源。 | `kind`, `name`, `purpose`, `aliases`, `source` | 外部契约 | S10 | `源` 的取值也是中文：`标签`（来自标签）和 `手动`（手动）改成 `tag` / `manual`。同样的字段也出现在 `eden-map:custom` 的载荷里。 |
-| `槽位.名`, `.件` | `map/core/ledger.mjs:364` | 虚拟槽位里的槽位名与件数（`slotSave` 仅在有名字且件数大于 0 时才写）。 | disappear with the merge into `stash` | 外部契约 | S6 | 不用单独改名。 |
+| `槽位.名`, `.件` | `map/core/ledger.mjs:364` | 虚拟槽位里的槽位名与件数（`slotSave` 仅在有名字且件数大于 0 时才写）。 | disappear with the merge into `stash` | 外部契约 | S6 | **已在 S6-2 迁移（S10 前只读）：** `stash.slot.name` 与 `stash.slot.facts` 的条数（件数由它算出）；物品 `物` 变成 `facts`，`楼` 变成 `msgIndex`。 |
 | `检查点.楼` | `map/tavern/modes.mjs:105` | 检查点里的聊天消息序号。 | `msgIndex` | 外部契约 | S10 | 同级的 `swipe` 已经是 ASCII，保留。 |
 | `eden_wb_ver` (top-level chat variable) | `map/tavern/host-th.mjs:141` | 这个聊天上次见到的附加条目版本，用来让「附加条目有新版」的提示每个聊天只出现一次。 | `spatial_wb_ver` | 外部契约 | S10 | 放在根键旁边而不是里面。新聊天只记录、不提示。 |
 
@@ -331,7 +331,7 @@
 | **SpatialNode** | 节点树里的一个地点；节点树是唯一的地理结构（S1–S3）。 | `core/nodes.mjs`；节点树在加载时由 v1 文件建出（S4 起原生 schema 2）。所有地点都经它解析（S3）。 | DOM 节点；地图标记（一个节点可以有标记）。 |
 | **PresentEntities** | 站在当前节点的实体，先是人物。 | `core/entities.mjs` 的 `presentAt`（S6-1）；人物页用 `peopleSections` 按层级给在场的人分组。 | WorldRoster（所有已知的人，不限地点）。 |
 | **WorldRoster** | 所有来源里已知的全部实体，按来源优先级合并成标准 `RosterRow`。 | `core/roster.mjs`；「chars」「characters」「roster」是同一个概念的三个名字。 | PresentEntities。 |
-| **Stash** | 有真实空间归属的物品（地图、标记、暗格），并与玩家已携带的对账。一个概念，目前有五个名字：stash、pickup、loot、inventory、`inv`。 | `core/stash.mjs`、`core/pickup.mjs`、`app/loot.mjs`、`tavern/inventory.mjs`、`inv.mjs`；统一存储 `eden_map.stash` 计划在 S6（D4）。 | JS 栈，或账本的「槽位」（会并入 stash）。 |
+| **Stash** | 有真实空间归属的物品（地图、标记、暗格），并与玩家已携带的对账。一个概念，目前有五个名字：stash、pickup、loot、inventory、`inv`。 | `core/stash.mjs`、`core/pickup.mjs`、`app/loot.mjs`、`tavern/inventory.mjs`、`inv.mjs`；统一存储 `eden_map.stash`（S6-2，`tavern/stash-store.mjs`；由 `tavern/stash-recompute.mjs` 重算；宿主流是 `tavern/stash-flow.mjs`）。 | JS 栈，或账本的「槽位」（会并入 stash）。 |
 | **drawer tab** | 抽屉 / 右栏的内核页签之一（`events`、`characters`、`places`、`legend`；抽屉 id `ev`、`ch`、`pl`、`lg`）；包用 `ui.tabs` 给出子集和顺序（K-R72）。 | `core/drawer-tabs.mjs`（规则）、`app/tabs.mjs`（注册表）。 | 浏览器的标签页。 |
 | **place / current place** | 地图上一个有名字的位置；「当前地点」是聊天里说玩家所在的地方。代码里叫 `here`。 | `here-v2.mjs`、`hereRes`、`eden-map:here`。 | 标记（画出来的图钉）或节点。 |
 | **place card** | 点击标记时打开的面板。 | `app/markers.mjs` 的 `showCard`、`app/cardlinks.mjs`。 | 角色卡（酒馆里的对象）和「卡设定」数据。 |

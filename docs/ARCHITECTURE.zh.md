@@ -18,7 +18,7 @@
 | **SpatialNode** | 节点树里的一个地点：`{ id, name, alias[], hints[], parent, type, at?, view?, canon }`。这棵树是唯一的地理；匹配取最长别名、优先更深的节点。 | **已有（S1–S3）。** `core/nodes.mjs` 建树、读树；`core/compat-v1.mjs` 在加载时把头两个包的 v1 文件转一次，包里的 `overlay.v2.json` 补上 v1 文件里从没有的东西（城区、城郊）。所有地点都经它解析：当前地点（`app/place-resolver.mjs`）、事态（`core/event-geo.mjs`）、人物与行程端点（`app/spot.mjs`）、注入的空间契约（`tavern/spatial-contract.mjs`）。v1 的解析器 `map/here.mjs` 已删除。schema 2 的包经内核流水线（`core/pack-v2.mjs`）运行；查看器的包加载器目前只收 schema 1，所以 schema 2 的包要到 **S9** 才能在查看器里打开。 |
 | **PresentEntities** | 站在当前节点上的实体（先是人物，之后是任意实体类型），人物页用它按层级给在场的人分组。 | **已有（S6-1）。** `core/entities.mjs`（`presentAt`、`peopleSections`、`levelMode`），实体由 `map/characters-view.mjs` 已拿到的行建出（`tavern/characters-parse.mjs` 从聊天标签和 MVU 变量算出）；人物画在哪里由节点树定（`app/spot.mjs`）。 |
 | **WorldRoster** | 所有来源里已知的全部实体，合并成一张标准行列表。 | **已有。** `core/roster.mjs`（`RosterRow`、五个来源、优先级仲裁）。属性字段仍是固定槽位；作者自定义的 `entities` 字段表**计划在 S4**。 |
-| **Stash** | 有真实空间归属（哪张图、哪个标记、哪个暗格）的物品，并与玩家已携带的对账。 | **现在有两个存储：** `core/stash.mjs`（包数据里的世界藏物）和聊天变量里的背包（`tavern/stash-store.mjs`）。统一的 `eden_map.stash` **计划在 S6（决定 D4）**。 |
+| **Stash** | 有真实空间归属（哪张图、哪个标记、哪个暗格）的物品，并与玩家已携带的对账。 | **已有（S6-2）：一个存储 `<聊天变量>.stash`**（`tavern/stash-store.mjs`，可由 `tavern/stash-recompute.mjs` 从聊天重算；v1 旧键迁移后在 S10 前只读），旁边是包数据里的世界藏物（`core/stash.mjs`）。物品页签是 S6-3。 |
 
 ## 2. 目录分层与依赖方向
 
@@ -44,7 +44,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 
 ## 3. 模块地图
 
-每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 199 个：`map/core` 51、`map/app` 58、`map/tavern` 54、`map/ui` 9、`map/three` 9、`map/*.mjs` 16，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
+每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 200 个：`map/core` 51、`map/app` 58、`map/tavern` 55、`map/ui` 9、`map/three` 9、`map/*.mjs` 16，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
 
 ### 3.1 map/core
 
@@ -199,7 +199,6 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `keyframes.mjs` | 长程关键帧压缩：逐楼状态压成变更点关键帧，是可丢弃的缓存。 |
 | `llm-flow.mjs` | 后台调用用户端点或写附加世界书的流：领航员（W5）、世界书即时水合（W6）、剧情事实结晶（W7）。`createLlmFlow(host)`。 |
 | `llm-gateway.mjs` | 私有 API Key 网关：只算「该怎么发」，自己不碰网络也不碰存储。 |
-| `loot-flow.mjs` | 拾取与背包流：地图驱动的动作注入、检定掷骰与失败环（W2）、结算闸门与漏项审计（W11）、虚拟账本槽位（W12）、拾取扫描、空间化背包与世界藏物表。`createLootFlow(host)`。 |
 | `modes-flow.mjs` | 宿主侧的交互方式 (a)(d)(e)：状态行与空间坐标契约注入、检查点、地点冲突自检。`createModesFlow(host)`。 |
 | `msgtext.mjs` | 消息正文解析预处理：解析前剥掉思考块与变量更新块。 |
 | `mvu-bridge.mjs` | MVUBridge：唯一允许碰 `Mvu` / `SillyTavern` 的模块；快照、`getHere` 回退、聊天变量、名册读取。 |
@@ -218,7 +217,9 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `settlement-guard.mjs` | 变量结算时序守卫：账本对账的写入排队到主更新窗口结束之后。 |
 | `spatial-contract.mjs` | 空间坐标契约编译器：当前地点加周边几何，编成有 token 预算的 JSON。 |
 | `splash.mjs` | 首次运行的自检卡，进度条缓慢前进并绑定真实预加载。 |
-| `stash-store.mjs` | 聊天变量里的空间化背包，压成一行注入（纯函数）。 |
+| `stash-flow.mjs` | 拾取与背包流（原 `loot-flow`，S6-2 改名）：地图驱动的动作注入、检定掷骰与失败环（W2）、结算闸门与漏项审计（W11）、每轮把拾取扫描折叠进统一藏物库、扩展接口的行、卡内物品表、`eden-map:inv` 与世界藏物表。`createStashFlow(host)`。 |
+| `stash-recompute.mjs` | 藏物库从聊天消息重算与对账（K-R75）：实时折叠 `step`、`scanMessage` / `replayMessage`、`recompute`、`actionsOf`、`reconcile`（纯函数）。 |
+| `stash-store.mjs` | 统一藏物库 `<聊天变量>.stash`（K-R74）：norm、从 v1 键迁移、put / remove / retag、线上行与注入的摘要行（纯函数）。 |
 | `stat-path-mapping.mjs` | 变量映射：地点、时间、日期、在场各在 `stat_data` 的哪条路径；先用包自己声明的（`defaults`），再按字段名自动发现。 |
 | `storage-budget.mjs` | 本机存储预算：按聊天 LRU、头像上限、撞额度后的恢复；只碰地图自己的键。 |
 | `tabledb-bridge.mjs` | 与可选的表格数据库扩展的只读兼容。 |
@@ -315,7 +316,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 - **聊天记录是唯一真相**（铁律 §2.4）：每个派生值（事态、人物、行程、关键帧）都能从聊天楼层重算；缓存随时可丢。地图自己的状态存在包的聊天变量里（伊甸是 `eden_map`），绝不写卡的 `stat_data`。
 - **协议**（`core/protocol.mjs`）：每条消息是信封 `{ type, v, … }`，由 `check` / `accept` 按 `SCHEMA` 检查。每个条目带方向标签：`HOST_TO_VIEWER` 宿主 → 查看器、`VIEWER_TO_HOST` 查看器 → 宿主、`VIEWER_TO_SUBPAGE` 查看器 → 子页（庄园 / 三维）、`SUBPAGE_TO_VIEWER` 子页 → 查看器，另有 `both` 给少数中继消息。更新版本协议发来的未知类型静默丢弃；同版本或更旧的未知类型丢弃并告警一次。过滤只查形状，从不看文字内容。
 - **传输**：宿主把查看器挂成 `<base>` 指向 CDN 的 `srcdoc` iframe，子页挂成 blob iframe。`createBus` 包装一对一的窗口通道，带来源 / 令牌检查。
-- **宿主模块**（`host-routes`、`host-lifecycle`、`host-th`、`host-about`）与 S5-1 的 flow 模块（`loot-flow`、`chars-flow`、`root-store`、`host-api`、`host-checks`、`llm-flow`、`modes-flow`、`timeline-flow`；各是 `createX(host)`，依赖袋 `host` 由入口建一次）放着原来在 `eden-map.js` 里的胶水；入口只保留调度、副作用与清理组装。
+- **宿主模块**（`host-routes`、`host-lifecycle`、`host-th`、`host-about`）与 S5-1 的 flow 模块（`stash-flow`，原 `loot-flow`、`chars-flow`、`root-store`、`host-api`、`host-checks`、`llm-flow`、`modes-flow`、`timeline-flow`；各是 `createX(host)`，依赖袋 `host` 由入口建一次）放着原来在 `eden-map.js` 里的胶水；入口只保留调度、副作用与清理组装。
 
 ## 5. 实体协议 — 目标与现状
 
@@ -325,13 +326,13 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 - **当前地点**：`app/place-resolver.mjs` 在节点树上用 `nodes.locate` 解析聊天里的地点；结果保留查看器读的六级形状（房间、庄园区域、地标、层、组、世界地名）并带上节点。
 - **所有地点都经节点解析**（S3）：当前地点（`app/place-resolver.mjs`）、人物与行程端点（`app/spot.mjs`）、事态（`core/event-geo.mjs`、`tavern/events-parse.mjs` 的 `setGeo`）、注入的空间契约（`tavern/spatial-contract.mjs`）、物品地点（藏物行指向一个地标节点；暗格只在当前地点把玩家落在那里时显示）。没有任何地方再按注册表的 `kind` 或标签文字去匹配地点。
 - **事态 / 人物 / 行程**：由 `tavern/events-parse.mjs`、`characters-parse.mjs`、`trips-parse.mjs` 从聊天标签与 MVU 解析；事态的类型、大类、特效和默认隐藏来自包的事件块（S4-1，K-R68），没有事件块的包用内核的中性分类。
-- **物品**：`core/stash.mjs`（包定义的世界藏物）与 `tavern/stash-store.mjs`（聊天变量背包），按物品 id 对账；能写什么由账本纪律（`core/ledger.mjs`）管。
+- **物品**：`core/stash.mjs`（包定义的世界藏物）与 `tavern/stash-store.mjs`（统一的聊天变量藏物库，K-R74；由 `tavern/stash-recompute.mjs` 从消息重建，K-R75），按物品 id 对账；卡自己的物品表只读（`mvu-readers.cardInventory`，K-R76）；能写什么由账本纪律（`core/ledger.mjs`）管。
 
 **目标（计划，按步骤）。**
 
 - ~~**节点树** `SpatialNode` 作为唯一地理：契约在 **S1**（`core/nodes.mjs`、`core/compat-v1.mjs`、`docs/kernel-schema.md`），使用方在 **S2** 迁移，地点 / 事态 / 人物 / 物品的解析在 **S3** 统一，并带新旧路径对拍测试。~~ ✅ S1–S3（2026-10-01）。
 - **作者自定义实体**：**S4** 里 `vars` 与 `entities`（分组加属性字段表）取代固定槽位。
-- **实体协议与抽屉**：~~标签页注册表、按节点判在场~~ ✅ S6-1（2026-10-01）；统一的 `eden_map.stash`（旧的 `仓库` / `槽位` 键自动迁移）、物品页、按包扩展的拾取词表——**S6-2 / S6-3**。
+- **实体协议与抽屉**：~~标签页注册表、按节点判在场~~ ✅ S6-1（2026-10-01）；~~统一的 `eden_map.stash`（旧的 `仓库` / `槽位` 键自动迁移）~~ ✅ S6-2（2026-10-01；旧键在 S10 前只读）；物品页、按包扩展的拾取词表——**S6-3**。
 
 在包自带 schema 2 之前（**S4**），节点树在加载时由 v1 文件建出；代码经节点树读地点，不许假定包自己带树。
 
@@ -373,7 +374,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 
 - **本机存储**只有一个服务，`core/storage.mjs`。`KEYS` 是全部键的唯一登记处（所有者、作用域、默认值、`prefix` / `perChat` 标记）；仓库里用到却没登记的键会让 `tests/storage.test.mjs` 失败。`get` / `set` / `json` / `remove` 从不抛错（隐私模式、额度满、被禁用）。
 - **包命名空间**：登记的键统一写成 `edenMap*`，`core/pack.mjs nsKey` 把它映射到当前包：伊甸保持 `edenMap*`（老用户的键照旧可读），其它包用 `tcp.<id>.*`。
-- **每个包一个聊天变量**：地图自己的状态存在一个顶层聊天变量里——伊甸是 `eden_map`，其它包是 `tc_<id>`（或清单的 `chat.var`）。里面放自定义名称、行程、关键帧、背包、探索。卡自己的 `stat_data` 绝不写（它的 schema 会拒绝未知键）；能写的只有我们的附加世界书，以及带 `extra.eden_id` 标记的条目。
+- **每个包一个聊天变量**：地图自己的状态存在一个顶层聊天变量里——伊甸是 `eden_map`，其它包是 `tc_<id>`（或清单的 `chat.var`）。里面放自定义名称、行程、关键帧、藏物库（统一的物品存储；v1 旧键 `仓库` / `槽位` 在 S10 前只读）、探索。卡自己的 `stat_data` 绝不写（它的 schema 会拒绝未知键）；能写的只有我们的附加世界书，以及带 `extra.eden_id` 标记的条目。
 - **脚本变量**：`SCRIPT_KEYS` 里列出的用户偏好会镜像进酒馆助手脚本变量 `eden_prefs`，浏览器存储被清空时也不丢。
 - **按聊天的数据与预算**：按聊天的键由 `tavern/storage-budget.mjs` 做 LRU 排序与封顶，它只碰以地图前缀开头的键。图片存在 IndexedDB（`core/room-gallery-db.mjs`），绝不进聊天。
 - **命名保持到 S10**：`edenMap*` / `eden_map` / `EdenMap` / `window.TC*` 都是外部契约，只在 S10 带迁移并再次确认后才改名（决定 D5、D12）。

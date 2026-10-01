@@ -27,7 +27,7 @@ exists today.
 | **SpatialNode** | One place in the node tree: `{ id, name, alias[], hints[], parent, type, at?, view?, canon }`. The tree is the only geography; matching picks the longest alias and prefers the deeper node. | **Exists (S1–S3).** `core/nodes.mjs` builds and reads the tree; `core/compat-v1.mjs` converts the first packs' v1 files once at load and the pack's `overlay.v2.json` adds what the v1 files never held (districts, outskirts). Every place resolves through it: the current location (`app/place-resolver.mjs`), events (`core/event-geo.mjs`), people and trip ends (`app/spot.mjs`), the injected spatial contract (`tavern/spatial-contract.mjs`). The v1 resolver `map/here.mjs` is gone. Schema-2 packs run through the kernel pipelines (`core/pack-v2.mjs`); the viewer's pack loader still accepts schema 1 only, so a schema-2 pack opens in the viewer from **S9**. |
 | **PresentEntities** | The entities standing at the current node (characters first, later any entity kind), used by the characters tab to group the present people by level. | **Exists (S6-1).** `core/entities.mjs` (`presentAt`, `peopleSections`, `levelMode`) over entities built from the rows `map/characters-view.mjs` already gets (computed by `tavern/characters-parse.mjs` from chat tags and MVU variables); where a person is drawn is decided by the node tree (`app/spot.mjs`). |
 | **WorldRoster** | Every known entity across all sources, merged into one standard row list. | **Exists.** `core/roster.mjs` (`RosterRow`, five sources, priority arbitration). Attribute fields are still fixed slots; the author-defined `entities` field list is **planned (S4)**. |
-| **Stash** | Items with a real spatial home (map, marker, hidden compartment), reconciled against what the player already carries. | **Two stores today:** `core/stash.mjs` (world stash from pack data) and the chat-variable inventory (`tavern/stash-store.mjs`). The unified `eden_map.stash` store is **planned (S6, decision D4)**. |
+| **Stash** | Items with a real spatial home (map, marker, hidden compartment), reconciled against what the player already carries. | **Exists (S6-2): one store `<chat var>.stash`** (`tavern/stash-store.mjs`, recomputable from the chat by `tavern/stash-recompute.mjs`; the v1 keys migrate and stay read only until S10), next to the world stash from pack data (`core/stash.mjs`). The Items tab is S6-3. |
 
 ## 2. Directory layers and dependency direction
 
@@ -61,8 +61,8 @@ Rules that follow:
 
 ## 3. Module map
 
-Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 199 files: `map/core` 51,
-`map/app` 58, `map/tavern` 54, `map/ui` 9, `map/three` 9, `map/*.mjs` 16, plus `map/viewer.html` and
+Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 200 files: `map/core` 51,
+`map/app` 58, `map/tavern` 55, `map/ui` 9, `map/three` 9, `map/*.mjs` 16, plus `map/viewer.html` and
 `map/props/viewer3d.html`. Roles were derived from each file's header comment and code.
 
 ### 3.1 map/core
@@ -219,7 +219,6 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `keyframes.mjs` | Long-horizon keyframe compression: per-floor state to change-point frames, a droppable cache. |
 | `llm-flow.mjs` | Background flows that call a user endpoint or write the add-on worldbook: navigator (W5), just-in-time hydration (W6), fact crystallization (W7). `createLlmFlow(host)`. |
 | `llm-gateway.mjs` | Private API key gateway: computes how to call a provider; does no network or storage itself. |
-| `loot-flow.mjs` | Pickup and stash flow: map-driven action injection, check dice and failure ring (W2), settlement gate and leak audit (W11), virtual ledger slot (W12), pickup scan, spatial inventory and world stash. `createLootFlow(host)`. |
 | `modes-flow.mjs` | Interaction modes (a)(d)(e) on the host side: state line and spatial contract injection, checkpoint, location conflict check. `createModesFlow(host)`. |
 | `msgtext.mjs` | Message text pre-processing: strips reasoning blocks and variable-update blocks before parsing. |
 | `mvu-bridge.mjs` | MVUBridge: the only module allowed to touch `Mvu` / `SillyTavern`; snapshots, `getHere` fallbacks, chat variables, roster reads. |
@@ -238,7 +237,9 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `settlement-guard.mjs` | Variable settlement timing guard: ledger reconciliation writes are queued until after the main update window. |
 | `spatial-contract.mjs` | Spatial coordinate contract compiler: current place plus surrounding geometry to a token-budgeted JSON. |
 | `splash.mjs` | First-run self-check card with a slow progress bar tied to real preloading. |
-| `stash-store.mjs` | Spatial inventory in the chat variable, summarized into one injected line (pure). |
+| `stash-flow.mjs` | Pickup and stash flow (was `loot-flow`, renamed S6-2): map-driven action injection, check dice and failure ring (W2), settlement gate and leak audit (W11), pickup scan folded into the unified store each round, the extension-API rows, the in-card inventory, `eden-map:inv` and the world stash. `createStashFlow(host)`. |
+| `stash-recompute.mjs` | Recompute and reconciliation of the stash from the chat messages (K-R75): the live fold `step`, `scanMessage` / `replayMessage`, `recompute`, `actionsOf`, `reconcile` (pure). |
+| `stash-store.mjs` | The unified item store `<chat var>.stash` (K-R74): norm, migration from the v1 keys, put / remove / retag, the wire rows and the injected digest line (pure). |
 | `stat-path-mapping.mjs` | Variable mapping: which `stat_data` path holds location, time, date, presence; the pack's own paths first (`defaults`), then auto-discovery by field name. |
 | `storage-budget.mjs` | Local storage budget: LRU per chat, avatar caps, quota-hit recovery; touches only the map's own keys. |
 | `tabledb-bridge.mjs` | Read-only compatibility with the optional table-database extension. |
@@ -346,7 +347,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
   filter checks shape only and never inspects text content.
 - **Transport**: the host mounts the viewer as a `srcdoc` iframe whose `<base>` points at the CDN, and sub-pages
   as blob iframes. `createBus` wraps one window-to-peer channel with origin / token checks.
-- **Host modules** (`host-routes`, `host-lifecycle`, `host-th`, `host-about`) and the S5-1 flow modules (`loot-flow`, `chars-flow`, `root-store`, `host-api`, `host-checks`, `llm-flow`, `modes-flow`, `timeline-flow`; each `createX(host)`, the `host` deps bag is built once in the entry) hold the glue that used to live in
+- **Host modules** (`host-routes`, `host-lifecycle`, `host-th`, `host-about`) and the S5-1 flow modules (`stash-flow`, formerly `loot-flow`, `chars-flow`, `root-store`, `host-api`, `host-checks`, `llm-flow`, `modes-flow`, `timeline-flow`; each `createX(host)`, the `host` deps bag is built once in the entry) hold the glue that used to live in
   `eden-map.js`; the entry keeps scheduling, side effects and cleanup assembly.
 
 ## 5. Entity protocol — target vs current state
@@ -364,8 +365,9 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
   location places the player). Nothing matches a place by a registry `kind` or by a label any more.
 - **Events / characters / trips**: parsed from chat tags and MVU by `tavern/events-parse.mjs`, `characters-parse.mjs`,
   `trips-parse.mjs`; an event's type, group, icon, colour, effect and default-off come from the pack's events block (S4-1, K-R68); a pack without one gets the kernel's neutral taxonomy.
-- **Items**: `core/stash.mjs` (pack-defined world stash) and `tavern/stash-store.mjs` (chat-variable inventory),
-  reconciled by item id; ledger discipline (`core/ledger.mjs`) governs what may be written.
+- **Items**: `core/stash.mjs` (pack-defined world stash) and `tavern/stash-store.mjs` (the unified chat-variable store, K-R74;
+  rebuilt from the messages by `tavern/stash-recompute.mjs`, K-R75), reconciled by item id; the card's own item table is read
+  only (`mvu-readers.cardInventory`, K-R76); ledger discipline (`core/ledger.mjs`) governs what may be written.
 
 **Target (planned, by step).**
 
@@ -373,8 +375,8 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
   `docs/kernel-schema.md`), consumers migrate in **S2**, location / event / character / item resolution unify in
   **S3** with an old-vs-new parity test.~~ ✅ S1–S3 (2026-10-01).
 - **Author-defined entities**: `vars` and `entities` (groups plus attribute field list) replace fixed slots in **S4**.
-- **Entity protocol and drawer**: ~~tab registry, presence by node~~ ✅ S6-1 (2026-10-01); unified `eden_map.stash` with automatic migration
-  of the old `仓库` / `槽位` keys, an Items tab, per-pack pickup vocabulary — **S6-2 / S6-3**.
+- **Entity protocol and drawer**: ~~tab registry, presence by node~~ ✅ S6-1 (2026-10-01); ~~unified `eden_map.stash` with automatic migration
+  of the old `仓库` / `槽位` keys~~ ✅ S6-2 (2026-10-01; the old keys stay read only until S10); an Items tab, per-pack pickup vocabulary — **S6-3**.
 
 The node tree is built from the v1 files at load until packs carry schema 2 (**S4**); code reads places through the tree and never assumes a pack ships one itself.
 
@@ -439,7 +441,7 @@ includes the English card words (`EN_TERMS`, case-sensitive).
 - **Pack namespace**: registered keys are written as `edenMap*`. `core/pack.mjs nsKey` maps them to the active
   pack: eden keeps `edenMap*` (old users' keys stay readable), any other pack uses `tcp.<id>.*`.
 - **Chat variable per pack**: the map's own state lives in one top-level chat variable — `eden_map` for eden,
-  `tc_<id>` (or manifest `chat.var`) for others. It holds custom names, trips, keyframes, inventory, exploration.
+  `tc_<id>` (or manifest `chat.var`) for others. It holds custom names, trips, keyframes, the stash (the unified item store; the v1 keys `仓库` / `槽位` stay read only until S10), exploration.
   The card's own `stat_data` is never written (its schema rejects unknown keys); only our add-on worldbook and
   entries marked `extra.eden_id` are ever written.
 - **Script variable**: user preferences listed in `SCRIPT_KEYS` are mirrored into the TavernHelper script variable

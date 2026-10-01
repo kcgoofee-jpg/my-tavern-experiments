@@ -769,3 +769,25 @@ blocker: none
 open: none
 cleanup: done (my probe servers and the base worktree's probes stopped; a hung fix3 process of mine killed; no launch.json entries; worktree s6-1 left for the orchestrator, s6-1-base is a detached extra worktree for the base probes)
 === END ===
+
+=== RESULT S6-2 ===
+status: DONE
+items: T0 frozen copies ✓ · T1 K-R74–K-R76 in kernel-schema en + zh, K-R47, K-R38, A.6 ✓ · T2 stash-store.mjs rewrite ✓ · T3 slot functions in ASCII, EXACT.inventory ✓ · T4 stash-recompute.mjs ✓ · T5 loot-flow -> stash-flow ✓ · T6 root store migration, read-only v1 keys ✓ · T7 extension API ✓ · T8 cardInventory, vars.inventory, eden-map:inv fields ✓ · T9 tests ✓ · T10 docs, gates ✓
+commits: 1906a5d4 test: frozen v1 stash store, slot and loot round for the S6-2 parity tests
+commits: 46e90843 feat(stash): one ASCII store with migration from the v1 keys; slot functions in ASCII (K-R74)
+commits: c9dc11a2 feat(stash): recompute and reconciliation of the store from the messages (K-R75)
+commits: f81cc759 refactor(host): stash-flow on the unified store; read-only v1 keys; in-card inventory (K-R76)
+commits: (this commit) docs: stash in the module map, naming and todo; RESULT S6-2   (SHA may change on rebase)
+pushed: yes (head #N in the chat report; this log copy is committed before the push)
+tests: node 928/930 (2 skipped: eden/estate2 dock needs numpy, ensureServer default-port case; baseline 893/894, +36 new/updated cases) | smoke PASS | arch PASS (8 checks + gate self-test) | check_maps / check_pack / check_arch_doc PASS (in smoke) | probes: accept, e7_host, th_adopt, p8_pick_clock_depth, pack_town PASS (same as the untouched base), text_dump 86 states identical 86
+parity: digest/slot lines 11 rounds identical (stream rounds 0-10; rounds 0-8 byte-identical, rounds 9-10 differ only by the returned watch row, divergence (b)) + 2 session fixtures round by round + 30 generated v1 roots (digest, rows, slot line); divergences (a) swipe rebuild, (b) removed item returns, (c) skipped messages scanned, filed as Q-19, Q-20, Q-21 (recommendation accept)
+migration: 30 generated roots + 1 hand-built root, rows and ids preserved, v1 keys carried verbatim by every save (tests/stash_root_s62.test.mjs)
+reconcile: stream ok (live fold = recompute item for item, places compared, after every round except the one-round slot lag of the map pickup; dropped store recomputes the same)
+eden-map.js: 675 -> 675
+renamed: loot-flow.mjs -> stash-flow.mjs (14 references: entry import, 5 tests, smoke.sh, warm_cdn.sh, ARCHITECTURE en+zh, naming en+zh, comments)
+files: stash-store 92 -> 175, stash-recompute 149 (new), stash-flow 194 (was 180), ledger.mjs 379 -> 395, mvu-readers 335 -> 374
+deviations: (1) loadCustom passes msgIndex null, not host.floorNow (stale at CHAT_CHANGED, -1 at start, a user message may be last): the first step of a store without a start anchors on the newest message, like v1's newest-only scan. (2) A tombstone is kept when the item is picked up again (spec: deleted): it is the only record of the removal, and test (a) needs it for live = recompute. (3) The newest message is rescanned every round (v1 did; covers a swipe of a message that had no rows). (4) A map pickup's slot fact is captured one round after the row (spec T5 said at once): v1 did it at the next sync and the injected slot line must stay byte-identical; recompute applies it at the action. (5) step's changed ignores the scan position alone (no write per message); the host always keeps the returned store. (6) The newest message's place is the round's place even when it is not floorNow (v1 parity); older messages get a lazily read per-floor place. (7) tools/check_architecture.py: PIPELINE modules may import ../core/ (spec requires both the import and the PIPELINE entry); check_layering(root=) + a gate self-test case. (8) Extra exports: captureSlot, mapFactRows (stash-recompute), inventoryPath (mvu-readers). (9) The audit's patches are no longer applied (the fold is the only writer); claim and carry still run; stash-flow DEPS gains mvuReaders; SSK/settleState leave the returned API. (10) loadCustom awaits the stash-store module if it is not loaded yet, so a save never drops v1 keys; setInv/removeInv return false while the stash is not loaded. (11) First probe run was killed by the 10 min background cap (th_adopt base crashed on a closed browser); rerun per probe, all pass.
+blocker: none
+open: Q-19, Q-20, Q-21 (recommendation accept)
+cleanup: done (probe servers of mine killed, extra base worktree removed, no launch.json entries; worktree s6-2 left for the orchestrator)
+=== END ===
