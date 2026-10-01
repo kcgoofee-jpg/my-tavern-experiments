@@ -9,7 +9,7 @@ import { go } from './map-switch.mjs';
 import { narrowNow } from './subpage3d-host.mjs';
 import { closeCard } from './markers.mjs';
 import { focusStart, hereRes, setUserMoved, userMoved } from './locate.mjs';
-import { TCSettings, kbdHelp, showLay, showSet } from './settings.mjs';
+import { SettingsApi, kbdHelp, showLay, showSet } from './settings.mjs';
 import { NT } from './notice-layer.mjs';
 import { placeLayers } from './drawer-glue.mjs';
 import { toggleLabels } from './control-column.mjs';
@@ -48,7 +48,7 @@ export function updateLayerBadges() {
   const m = cur && REG.maps[cur], g = layerIds(m); if (!g.length) return;
   let others = 0; const r = hereRes($('#here').value), hk = r && r.level <= 4 && g.includes(r.map) ? r.map : null;
   document.querySelectorAll('#layers button').forEach(b => {
-    const k = b.dataset.go, n = P.TCEvents.countOn?.(k) || 0;
+    const k = b.dataset.go, n = P.EventsView.countOn?.(k) || 0;
     b.classList.toggle('here', k === hk && !n);   // 一个按钮只挂一种红色标记：有事态数就只显示数字，当前地点写进 aria / title（v0.9.2）
     b.querySelector('.evn').textContent = n ? (n > 9 ? '9+' : n) : '';
     b.querySelector('.evn').title = n ? tx('layers.events', `${n} 起未解除的事态`, { n }) : '';
@@ -68,14 +68,14 @@ function escTop() {
   if (!$('#setPop').hidden) { showSet(false); ($(narrowNow() ? '#thumbBtn' : '#setBtn'))?.focus(); return true; }
   if (!$('#layPop').hidden) { showLay(false); $('#layBtn').focus(); return true; }
   const lay = $('#layers'); if (narrowNow() && !lay.hidden && !lay.classList.contains('compact')) { lay.classList.add('compact'); lay.querySelector('button.on')?.focus(); return true; }
-  const S = window.TCSheet; if (S && !S.el.hidden && S.down()) { if (S.state === 'peek') S.el.querySelector('.uis-tog')?.focus({ preventScroll: true }); return true; }
+  const S = window.ViewerDrawer; if (S && !S.el.hidden && S.down()) { if (S.state === 'peek') S.el.querySelector('.uis-tog')?.focus({ preventScroll: true }); return true; }
   if (!$('#card').hidden) { closeCard(true); return true; }
   return false;
 }
 export function onEsc() { if (NT?.blocking) return; if (!escTop()) post({ type: 'eden-map:esc' }); }   // P0 阻断卡开着：Esc 不关任何东西
-const keysOn = () => { try { return TCStore.get('edenMapKeys') !== '0'; } catch (e) { return true; } };
+const keysOn = () => { try { return LocalStore.get('edenMapKeys') !== '0'; } catch (e) { return true; } };
 document.addEventListener('keydown', e => {
-  if (typeof P.TCCustom !== 'undefined' && P.TCCustom.dlgKey(e)) return;   // 「自定义」对话框开着：按键归它（Esc 逐页返回 / 关闭）
+  if (typeof P.CustomNamesView !== 'undefined' && P.CustomNamesView.dlgKey(e)) return;   // 「自定义」对话框开着：按键归它（Esc 逐页返回 / 关闭）
   if (e.isComposing || e.keyCode === 229) return;   // 输入法组字中
   if (e.key === 'Escape') {
     if (document.querySelector('#umDlg:not([hidden])')) return;   // 未上图选择器自己处理
@@ -93,9 +93,9 @@ document.addEventListener('keydown', e => {
   else if (k === '-' && vp && !estate) { setUserMoved(true); vp.zoomBy(1 / 1.5); vp.applyConstraints(); }
   else if (k === '0' && vp && !estate) { setUserMoved(false); setPendingHome(false); focusStart(false); }
   else if (k === 'l' && !estate) toggleLabels();
-  else if (k === 'm') { TCSettings.open('data'); setTimeout(() => { const v = $('#vmBox'); if (v) { v.open = true; v.querySelector('summary')?.focus(); v.scrollIntoView({ block: 'start' }); } }, 30); }
-  else if (k === '/') { TCSettings.open('home'); setTimeout(() => $('#setQ')?.focus(), 30); }
-  else if (k === '?') { TCSettings.open('adv'); kbdHelp(true); }
+  else if (k === 'm') { SettingsApi.open('data'); setTimeout(() => { const v = $('#vmBox'); if (v) { v.open = true; v.querySelector('summary')?.focus(); v.scrollIntoView({ block: 'start' }); } }, 30); }
+  else if (k === '/') { SettingsApi.open('home'); setTimeout(() => $('#setQ')?.focus(), 30); }
+  else if (k === '?') { SettingsApi.open('adv'); kbdHelp(true); }
   else return;
   e.preventDefault();
 }, true);

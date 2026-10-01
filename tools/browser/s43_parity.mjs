@@ -31,8 +31,8 @@ async function take(out) {
     for (const scheme of SCHEMES) {
       const P = await B.newPage('desktop', { scheme, tier: 'save' }), p = P.page;
       await B.openViewer(P, { map: 'world' }); await B.wait(1200);
-      await p.evaluate(s => { try { setTheme(s); } catch (e) {} }, scheme).catch(() => {});
-      const maps = await p.evaluate(() => Object.keys(REG.maps));
+      await p.evaluate(s => { try { ViewerDebug.setTheme(s); } catch (e) {} }, scheme).catch(() => {});
+      const maps = await p.evaluate(() => Object.keys(ViewerDebug.mapRegistry.maps));
       for (const m of maps) {
         if (!want(`map_${m}_${scheme}`)) continue;
         try { await B.goMap(p, m); } catch (e) { continue; }
@@ -42,19 +42,19 @@ async function take(out) {
       }
       if (scheme === 'dark') {
         await B.goMap(p, 'world'); await B.wait(1000);
-        const has = await p.evaluate(() => { const ph = REG.maps.world; return !!document.querySelector('.mk'); });
+        const has = await p.evaluate(() => { const ph = ViewerDebug.mapRegistry.maps.world; return !!document.querySelector('.mk'); });
         // world map with the hunting_camp card open (only exists once T7 landed)
         const opened = await p.evaluate(() => { const mk = [...document.querySelectorAll('.mk')].find(e => /hunting|猎季|猎营|狩猎/i.test((e.dataset.id || '') + (e.textContent || '') + (e.getAttribute('aria-label') || ''))); if (!mk) return false; (mk._open || (() => mk.click()))(); return true; });   // the marker's own opener (the OSD tracker does not hear a synthetic click)
-        if (opened) { await B.wait(700); await snap(p, 'world_hunting_camp_card'); await p.evaluate(() => { try { closeCard(); } catch (e) {} }); }
+        if (opened) { await B.wait(700); await snap(p, 'world_hunting_camp_card'); await p.evaluate(() => { try { ViewerDebug.closeCard(); } catch (e) {} }); }
         else console.log('  (no hunting_camp marker on the world map; shot skipped)', has);
-        for (const pg of ['update', 'license']) { await p.evaluate(g => { TCSettings.open(g); }, pg); await B.wait(500); await snap(p, `settings_${pg}`); await p.evaluate(() => showSet(false)); }
+        for (const pg of ['update', 'license']) { await p.evaluate(g => { SettingsApi.open(g); }, pg); await B.wait(500); await snap(p, `settings_${pg}`); await p.evaluate(() => ViewerDebug.showSet(false)); }
         await B.goMap(p, 'tc_mid'); await B.wait(1000);
-        await p.evaluate(() => { TCSheet.setTab('lg', 'half'); }); await B.wait(400); await snap(p, 'legend_panel');
-        await p.evaluate(() => { TCSheet.set('peek'); });
+        await p.evaluate(() => { ViewerDrawer.setTab('lg', 'half'); }); await B.wait(400); await snap(p, 'legend_panel');
+        await p.evaluate(() => { ViewerDrawer.set('peek'); });
         await B.postEvents(p.mainFrame(), GLITCH, true); await B.wait(800); await snap(p, 'glitch_active');
         await B.postEvents(p.mainFrame(), EV, true); await B.wait(800);
         await p.evaluate(() => { const b = document.querySelector('#cvdSeg button[data-cvd="rg"]'); b && b.click(); }); await B.wait(500);
-        await p.evaluate(() => { if (!TCSheet.button('ev').hidden) TCSheet.setTab('ev', 'half'); }); await B.wait(500); await snap(p, 'cvd_rg_events');
+        await p.evaluate(() => { if (!ViewerDrawer.button('ev').hidden) ViewerDrawer.setTab('ev', 'half'); }); await B.wait(500); await snap(p, 'cvd_rg_events');
       }
       if (P.errors.length) console.log('  page errors', scheme, P.errors.slice(0, 3));
       await P.close();

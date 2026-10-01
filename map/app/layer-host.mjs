@@ -2,10 +2,10 @@
 // 核心契约（槽位、排序、滤镜链、摘要）在 core/layer-registry.mjs（纯，测试机检）；这里只做查看器侧的事：
 // ① registry 单例——各图层模块（fog / clouds / markers / events / trips / security…）向它注册，菜单与可见性调度都经它；
 // ② initLayerHost——在 OSD 画布叠加上下文里按 SLOTS 挂 .vpslot 槽位容器（默认 pointer-events: none，见 viewer.html）；
-// ③ window.TCLayers——调试 / 探针 / 自检读标准摘要的窗口面。
+// ③ window.LayerHostApi——调试 / 探针 / 自检读标准摘要的窗口面。
 // 外层固定 UI（顶栏 / 弹层 / 设置 / 控制列）走 --zu-* 阶梯，不进注册中心。
 import { LayerRegistry, SLOTS, slotZ } from '../core/layer-registry.mjs';
-import * as TCStore from '../core/storage.mjs';
+import * as storage from '../core/storage.mjs';
 import { $ } from './dom-helpers.mjs';
 import { tx } from './text-lookup.mjs';
 import { REG, cur } from './state.mjs';
@@ -25,7 +25,7 @@ export function initLayerHost(viewer) {
   return true;
 }
 export function slotEl(slot) { return slots?.[slot] || null; }
-window.TCLayers = { registry, describe: () => registry.describe(), slotZ };
+window.LayerHostApi = { registry, describe: () => registry.describe(), slotZ };
 
 // ---------------- 核心图层登记 + #layList 数据驱动（P3-C 阶段 3）----------------
 // 菜单行由 registry.menuRows() 渲染（menu.order 定序），各行的元素 id / 存储键 / 默认勾选与旧静态 #layList 完全一致——
@@ -36,14 +36,14 @@ export function registerCoreLayers() {
   // 岛屿结界轮廓（barriers）默认关（用户 2026-09-27，和航线一样；两者永久推迟，不再打磨），开了记在本机；世界图国界（dzi）照旧默认开
   registry.register({ id: 'base-overlay', slot: 'base', kind: 'osd', initialVisible: true,
     menu: { order: 10, id: 'tgOverlay', boxId: 'tgBorders', label: '国界' },
-    setVisible: v => { if (REG.maps[cur]?.overlay?.type === 'barriers') { try { TCStore.set('edenMapBarriers', v ? '1' : '0'); } catch (e) {} } applyOverlayToggle(); } });
+    setVisible: v => { if (REG.maps[cur]?.overlay?.type === 'barriers') { try { storage.set('edenMapBarriers', v ? '1' : '0'); } catch (e) {} } applyOverlayToggle(); } });
   registry.register({ id: 'alt-base', slot: 'base', kind: 'osd', order: 1, initialVisible: false,
     menu: { order: 20, id: 'tgAlt', boxId: 'tgAltBox', label: '显示下方城市', titleKey: 'alt_title', title: '高级：换成带下方城市的底图（图更大）', hidden: true },
-    setVisible: v => { try { TCStore.set(ALT_KEY + cur, v ? '1' : '0'); } catch (e) {} return swapBase(); } });
-  const routesOn = TCStore.get('edenMapRoutes') === '1';
+    setVisible: v => { try { storage.set(ALT_KEY + cur, v ? '1' : '0'); } catch (e) {} return swapBase(); } });
+  const routesOn = storage.get('edenMapRoutes') === '1';
   registry.register({ id: 'routes', slot: 'routes', kind: 'osd', initialVisible: routesOn,
     menu: { order: 30, id: 'tgRoutes', boxId: 'tgRoutesBox', labelKey: 'routes', label: '航线', titleKey: 'routes_title', title: '上层航线（金色虚线）与银冠堡巡逻环（淡蓝点划线）', hidden: true },
-    setVisible: v => { document.body.classList.toggle('noroutes', !v); routeGaps(); try { TCStore.set('edenMapRoutes', v ? '1' : '0'); } catch (e) {} } });
+    setVisible: v => { document.body.classList.toggle('noroutes', !v); routeGaps(); try { storage.set('edenMapRoutes', v ? '1' : '0'); } catch (e) {} } });
   document.body.classList.toggle('noroutes', !routesOn);
   registry.register({ id: 'labels', slot: 'labels', kind: 'osd', initialVisible: true,
     menu: { order: 60, boxId: 'tgLabels', labelKey: 'labels', label: '地名' },

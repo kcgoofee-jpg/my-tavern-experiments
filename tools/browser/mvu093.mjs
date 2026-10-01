@@ -39,13 +39,13 @@ async function run(name, preset) {
     rep.check(`${name} 旧本机叫法迁移到聊天变量 eden_map（不在 stat_data）`, v0?.eden_map?.自定义?.items?.书房?.名 === '星图室' && !('stat_data' in (v0 || {})), JSON.stringify(v0).slice(0, 160));
     await H.open();
     const vf = await H.viewer();
-    await vf.evaluate(() => { closeCard(); go('tc_mid'); }); await B.wait(2500);
+    await vf.evaluate(() => { ViewerDebug.closeCard(); ViewerDebug.go('tc_mid'); }); await B.wait(2500);
     // 4 夜色：中层有、下层没有、开关关掉没有
     // 中层已登记夜间底图（maps.json periods.night，9ad6dfc）：夜档由底图 + data-tod 承担，不再叠 nighttint；没登记夜图的层才叠色调
-    const n1 = await vf.evaluate(() => ({ tint: document.body.classList.contains('nighttint'), tod: document.body.dataset.tod || '', swapped: !!REG?.maps?.tc_mid?.periods?.night }));
-    await vf.evaluate(() => go('tc_low')); await B.wait(2000);
+    const n1 = await vf.evaluate(() => ({ tint: document.body.classList.contains('nighttint'), tod: document.body.dataset.tod || '', swapped: !!ViewerDebug.mapRegistry?.maps?.tc_mid?.periods?.night }));
+    await vf.evaluate(() => ViewerDebug.go('tc_low')); await B.wait(2000);
     const n2 = await vf.evaluate(() => ({ tint: document.body.classList.contains('nighttint'), tod: document.body.dataset.tod || '' }));
-    await vf.evaluate(() => go('tc_mid')); await B.wait(2000);
+    await vf.evaluate(() => ViewerDebug.go('tc_mid')); await B.wait(2000);
     rep.check(`${name} 夜色：中层夜档（有夜图则换底图、无则叠色调）、下层不加`, n1.tod === 'night' && n1.tint === !n1.swapped && !n2.tint && !n2.tod, JSON.stringify({ n1, n2 }));
     await jpg(p, `mvu_${name}_night`);
     // 5 着装：fix3（用户 2026-09-28）起不再挂地点卡——改在人物页顶部「你（主角）」一行（characters-view.mjs .chme）
@@ -55,10 +55,10 @@ async function run(name, preset) {
     const go1 = await p.evaluate(() => window.EdenMap.getOutfit());
     rep.check(`${name} EdenMap.getOutfit()`, go1?.text === '深灰风衣 / 黑色长裤 / 短靴' && go1.items.鞋子 === '短靴', JSON.stringify(go1));
     // 1 人物来源
-    await vf.evaluate(() => { closeCard(); document.querySelector('#evbar .chtab')?.click(); }); await B.wait(400);
+    await vf.evaluate(() => { ViewerDebug.closeCard(); document.querySelector('#evbar .chtab')?.click(); }); await B.wait(400);
     const me = await vf.evaluate(() => { const el = document.querySelector('#evbar .chpane .chme'); return el ? { b: el.querySelector('b')?.textContent, o: el.querySelector('small')?.textContent || '' } : null; });
     rep.check(`${name} 人物页「你（主角）」行显示着装`, me?.b === '你（主角）' && /^着装：深灰风衣 \/ 黑色长裤 \/ 短靴/.test(me.o), JSON.stringify(me));
-    const src = await vf.evaluate(() => Object.fromEntries(TCChars.items.map(c => [c.name, c.src + '@' + c.place])));
+    const src = await vf.evaluate(() => Object.fromEntries(CharactersView.items.map(c => [c.name, c.src + '@' + c.place])));
     const lab = await vf.evaluate(() => [...document.querySelectorAll('#evbar .chpane .chsrc')].map(x => x.textContent));
     rep.check(`${name} 人物位置：MVU > 标签 > 同处（infer），列表标来源`, src.米拉 === 'mvu@下层·7号井' && src.卡尔 === 'tag@中层·霓虹街' && /^infer@/.test(src.奥托 || '') && ['MVU', '标签', '同处'].every(x => lab.includes(x)), JSON.stringify({ src, lab }));
     await jpg(p, `mvu_${name}_people`);
@@ -95,7 +95,7 @@ async function run(name, preset) {
     // 2 同步到世界书（v0.9.5 默认开：有自定义就已经建了、绑定了）
     const wb1 = await H.wb(), bn = Object.keys(wb1.books)[0] || '', e = wb1.books[bn]?.[0];
     rep.check(`${name} 同步到世界书（默认开）：建「伊甸地图·自定义·<聊天>」并绑定到聊天`, /^伊甸地图·自定义·[0-9a-f]{6}$/.test(bn) && e?.enabled && /东卧/.test(e.content) && wb1.chat === bn, JSON.stringify({ bn, chat: wb1.chat }));
-    await vf.evaluate(() => { showSet(true); document.querySelector('#cuSync').click(); }); await B.wait(900);
+    await vf.evaluate(() => { ViewerDebug.showSet(true); document.querySelector('#cuSync').click(); }); await B.wait(900);
     const wb2 = await H.wb();
     rep.check(`${name} 关掉同步：条目停用（不删世界书）`, wb2.books[bn]?.[0]?.enabled === false, JSON.stringify(wb2.books[bn]?.[0]?.enabled));
     // 文字原样显示、不当 HTML

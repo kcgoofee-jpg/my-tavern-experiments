@@ -2,7 +2,7 @@
 // 1. 真的把查看器核心（app/boot.mjs 起的整张图）与全部外挂在 node 里求值一遍：DOM / 浏览器全局用「什么都接得住」的桩代替，
 //    所以只会因为模块自身的问题失败——求值期碰到还没求值的绑定（TDZ）、未声明的全局、import 的名字不存在。
 //    核心各块互相 import（成环），规则是求值期只碰 state / util / plugins 与自己的绑定；谁在顶层多调一个别的块的函数，这里就会炸。
-// 2. 兼容面 app/legacy-globals.mjs 的全局名单固定（只加不减；要加就改这里）。
+// 2. 调试面 app/viewer-debug.mjs（window.ViewerDebug）的名单固定（只加不减；要加就改这里）。
 // 3. viewer.html 里除两段首帧前置外没有内联脚本；核心模块都有 modulepreload。
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,7 +18,7 @@ const rd = f => readFileSync(new URL('../map/' + f, import.meta.url), 'utf8');
 
 test('核心与外挂模块在桩 DOM 下都能求值（没有 TDZ / 未声明全局 / 不存在的导出）', async () => {
   const keep = {};
-  for (const k of ['window', 'document', 'navigator', 'location', 'matchMedia', 'addEventListener', 'removeEventListener', 'requestIdleCallback', 'OpenSeadragon', 'TCStore', 'self', 'parent', 'top', 'getComputedStyle', 'innerWidth', 'innerHeight', 'devicePixelRatio', 'MutationObserver', 'ResizeObserver', 'Image', 'CSS', 'localStorage', 'sessionStorage', 'fetch', 'setTimeout', 'setInterval', 'requestAnimationFrame'])
+  for (const k of ['window', 'document', 'navigator', 'location', 'matchMedia', 'addEventListener', 'removeEventListener', 'requestIdleCallback', 'OpenSeadragon', 'LocalStore', 'self', 'parent', 'top', 'getComputedStyle', 'innerWidth', 'innerHeight', 'devicePixelRatio', 'MutationObserver', 'ResizeObserver', 'Image', 'CSS', 'localStorage', 'sessionStorage', 'fetch', 'setTimeout', 'setInterval', 'requestAnimationFrame'])
     keep[k] = Object.getOwnPropertyDescriptor(globalThis, k);
   const set = (k, v) => Object.defineProperty(globalThis, k, { value: v, configurable: true, writable: true });
   set('window', win); for (const k of Object.keys(keep).filter(k => k !== 'window')) set(k, S);
@@ -31,14 +31,15 @@ test('核心与外挂模块在桩 DOM 下都能求值（没有 TDZ / 未声明�
     for (const f of ['events-view', 'characters-view', 'custom-names-view', 'trips-view', 'unmapped-place-picker', 'stat-path-mapping-view', 'compose-view', 'security']) await import(`../map/${f}.mjs`);
     for (const f of ['card-links', 'clouds', 'fog', 'data-mapping-settings', 'scale-handoff']) await import(`../map/app/${f}.mjs`);
     const { P } = await import('../map/app/plugins.mjs');
-    assert.deepEqual(Object.keys(P).sort(), ['TCChars', 'TCCompose', 'TCCustom', 'TCEvents', 'TCFog', 'TCSecurity', 'TCTrips', 'TCUnmapped', 'TCVarMap']);
+    assert.deepEqual(Object.keys(P).sort(), ['CharactersView', 'ComposeView', 'CustomNamesView', 'EventsView', 'FogApi', 'SecurityView', 'TripsView', 'UnmappedPlacePicker', 'StatPathMappingView'].sort());
   } finally { for (const [k, d] of Object.entries(keep)) d ? Object.defineProperty(globalThis, k, d) : delete globalThis[k]; }
 });
 
-test('兼容面 legacy-globals.mjs 的全局名单固定', () => {
-  const names = [...rd('app/legacy-globals.mjs').matchAll(/(\w+): \(\) => \1\b/g)].map(m => m[1]).sort();
-  assert.deepEqual(names, ['LANG', 'LS', 'M', 'REG', 'TCSettings', 'aspect', 'chatId', 'closeCard', 'cur', 'curData', 'esc', 'est', 'estFocus', 'fadeAway', 'go', 'hereRes',
-    'jsonCache', 'jumpHere', 'lean', 'main', 'nm', 'openEstate', 'post', 'renderAbout', 'setEstFail', 'setTheme', 'showCard', 'showLay', 'showSet', 'sleeping', 't', 'tier', 'toImg', 'viewer'].sort());
+test('调试面 viewer-debug.mjs 的名单固定（window.ViewerDebug.<名>，只读 getter）', () => {
+  const body = rd('app/viewer-debug.mjs'), names = [...body.slice(body.indexOf('const G = {'), body.indexOf('const debug')).matchAll(/(\w+): \(\) => /g)].map(m => m[1]).sort();
+  assert.deepEqual(names, ['LANG', 'aspect', 'chatId', 'closeCard', 'currentMapData', 'currentMapId', 'esc', 'estFocus', 'fadeAway', 'go', 'hereRes',
+    'jsonCache', 'jumpHere', 'lean', 'localName', 'main', 'mapRegistry', 'openEstate', 'osdViewer', 'packStorage', 'post', 'renderAbout', 'setEstFail', 'setTheme',
+    'showCard', 'showLay', 'showSet', 'sleeping', 'subpageSession', 'tier', 'toImg', 'uiText', 'worldData'].sort());
 });
 
 test('viewer.html 只剩标记与首帧前置；核心模块都 modulepreload；外挂是模块标签', () => {

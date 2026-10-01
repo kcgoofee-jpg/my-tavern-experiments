@@ -8,12 +8,12 @@
   通用三维查看器：viewer3d.html?model=<id> 读 <id>/manifest.json（Estate3D Manifest 标准契约，map/core/scene3d-manifest.mjs：
   glb 地址 / 档位兜底 / 热点 / 网格分组 / 相机都来自清单，代码不写死模型路径；model id 只来自数据）。
   渲染：随仓库的 three（../estate/vendor/），烘焙光照 → MeshBasicMaterial，无灯光、无阴影、无后处理。
-  嵌入（viewer.html 的 kind=estate + viewer3d 字段）：blob iframe，<base> 指向本目录；模型 id 由注入的 window.__V3D_MODEL 给。
+  嵌入（viewer.html 的 kind=estate + viewer3d 字段）：blob iframe，<base> 指向本目录；模型 id 由注入的 window.__modelId 给。
   消息（与旧庄园页同一套）：
     宿主 → 本页：estate:lang {lang} / estate:theme {theme} / estate:quality {q} / estate:inset {left} / v3d:fly {hotspot}
     本页 → 宿主：estate:ready（界面就绪，模型自己显示进度）/ estate:fail {reason} / v3d:state {mode, hotspot, flows}
     宿主 → 本页（续）：v3d:flows {on}（流向模式：manifest.flows 的示意折线 + 沿线移动的小球）
-  调试：window.__v3d（stats、setMode、fly、orbitBench）。?tier=low|high 强制档位，?lang=en。
+  调试：window.__viewer3dProbe（stats、setMode、fly、orbitBench）。?tier=low|high 强制档位，?lang=en。
 -->
 <link rel="stylesheet" href="../ui/tokens.css">
 <script defer src="../ui/icons.js"></script>
@@ -102,7 +102,7 @@ import * as GB from '../core/graphics-budget.mjs';   // Part 3 §1：显存预�
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer, prefersReducedMotion } from '../ui/camera-controls.js';   // 相机控制共用小件（预设/指北针/提示卡/空闲计时），与庄园页共用
 
 const Q = new URLSearchParams(location.search);
-const MODEL = window.__V3D_MODEL || Q.get('model');   // 资产 id 只来自数据（maps.json 的 viewer3d 字段 / ?model=），不再内置默认模型
+const MODEL = window.__modelId || Q.get('model');   // 资产 id 只来自数据（maps.json 的 viewer3d 字段 / ?model=），不再内置默认模型
 const EMBED = window.top !== window;
 const $ = s => document.querySelector(s);
 let dirty = true;
@@ -461,7 +461,7 @@ function onFirstModel() {
 
 async function load() {
   $('#load .acts').hidden = true; $('#load').classList.remove('done'); lp().reset(t('loading', { p: '' }).trim()); watch();
-  if (!MODEL) { fail('viewer3d: no model id (pass ?model= or window.__V3D_MODEL)'); return; }
+  if (!MODEL) { fail('viewer3d: no model id (pass ?model= or window.__modelId)'); return; }
   loadGen++;
   try {
     const mr = await fetch(`${MODEL}/manifest.json`, { cache: 'no-cache' }); if (!mr.ok) throw new Error('manifest ' + mr.status);
@@ -885,7 +885,7 @@ addEventListener('message', e => {
 });
 
 // 调试 / 测量接口
-window.__v3d = {
+window.__viewer3dProbe = {
   stats, get ft() { return FT.slice(); }, setMode, fly, select, setFlows, showFlow, get flows() { return flowOn; }, get mode() { return mode; }, get ready() { return !!root; }, info: () => renderer.info,
   // Part 3：LOD / 实例化 / 预算的自检面（浏览器探针与设置页诊断用）
   perf: () => ({

@@ -122,7 +122,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `host-messages.mjs` | 宿主消息接口：来源 / 令牌检查、协议校验、按类型分派。 |
 | `i18n.mjs` | 语言与主题：词典、`t` / `tr` / `nm`、`setLang`、`setTheme`。 |
 | `json-cache.mjs` | `getJSON`：数据文件只取一次，失败不缓存。 |
-| `layer-host.mjs` | 查看器侧的 LayerRegistry 装配：注册表单例、`.vpslot` 槽位容器、`window.TCLayers` 摘要。 |
+| `layer-host.mjs` | 查看器侧的 LayerRegistry 装配：注册表单例、`.vpslot` 槽位容器、`window.LayerHostApi` 摘要。 |
 | `legacy-globals.mjs` | 兼容面：给浏览器探针用的旧全局名，挂在 `window` 上的只读 getter。 |
 | `load-progress.mjs` | 整屏加载层的进度，共用 `ui/progress.mjs`。 |
 | `locate.mjs` | 初始视角与当前地点：`focusStart`、`markHere`、`hereRes`（基于 `place-resolver.mjs`）、`drawnAt`、`jumpHere`。 |
@@ -363,7 +363,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 ## 8. 渲染栈
 
 - **底图**：OpenSeadragon（`map/vendor/openseadragon`）加载 `map/art/` 里的 DZI 瓦片金字塔。瓦片解码可以放进 blob worker（`app/dzi-worker*.mjs`），失败时退回原生路径。
-- **LayerRegistry**（`core/layer-registry.mjs`，由 `app/layer-host.mjs` 装配）：十个槽位，由底至顶——`base`、`depth-haze`、`fog`、`routes`、`trips`、`events`、`markers`、`labels`、`fx`、`interaction`。槽位的 z 值是 `(序号 + 1) × 10`。图层注册 `{ id, slot, kind, order, mount, unmount, … }`；滤镜链（`css` / `canvas`）逐层叠加。`window.TCLayers` 暴露标准摘要。
+- **LayerRegistry**（`core/layer-registry.mjs`，由 `app/layer-host.mjs` 装配）：十个槽位，由底至顶——`base`、`depth-haze`、`fog`、`routes`、`trips`、`events`、`markers`、`labels`、`fx`、`interaction`。槽位的 z 值是 `(序号 + 1) × 10`。图层注册 `{ id, slot, kind, order, mount, unmount, … }`；滤镜链（`css` / `canvas`）逐层叠加。`window.LayerHostApi` 暴露标准摘要。
 - **`viewer.html` 里的两条 z-index 阶梯**：`--zv-*` 自定义属性镜像槽位值（在 OSD 叠加层叠上下文里，由测试与 `SLOTS` 对拍）；`--zu-*` 是外层固定 UI 阶梯（顶栏、弹层、设置、控制列、庄园 iframe、盖布），永远在槽位之上。令牌之外禁止裸数字 z-index（看门狗检查 3）。
 - **`map/three` 运行时**：纯叶子小件（上下文工厂、裁剪、实例化、LOD、昼夜、粒子、浮雕、着色器、贴图资源），THREE 由调用方注入。
 - **庄园页**：`map/estate/`（`index.html`、`main.js`）是第一个包的三维页，由 `app/subpage3d-host.mjs` 加载进 blob iframe。它的模型经 `core/scene3d-manifest.mjs` 取自 `map/estate/model/manifest.json`；通用查看器 `map/props/viewer3d.html?model=<id>` 服务每个地标的 `manifest.json`。两者都用烘焙光照和 `map/ui` 里的共享外壳。
@@ -402,7 +402,7 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 - **加一个图层**——在 `map/app/` 下的模块里向注册表登记 `{ id, slot, kind, … }` 描述符（参考 `app/fog.mjs`、`app/weather-view.mjs`）；只用 `SLOTS` 里的槽位；z 值取 `--zv-*` 令牌，绝不写裸数字；菜单与可见性接线走注册表。声明式的作者自定义图层属于计划（S8）。
 - **加一条协议消息**——在 `core/protocol.mjs` 的 `SCHEMA` 里加带方向标签的条目；发送用 `envelope` / `post`，接收走 `accept`；在 `tests/protocol.test.mjs` 加用例；子页要消费它就在 `app/subpage3d-host.mjs` 和对应页面里处理。
 - **加一个存储键**——在 `core/storage.mjs` 的 `KEYS` 里登记（所有者、作用域、默认值）；只经该模块读写；新开关默认关；按聊天的键要带按聊天标记，预算清理才看得见。
-- **加一个设置开关**——存储键如上；宿主需要知道就在 `SCHEMA` 加协议字段；界面写在 `app/settings.mjs`（或经 `TCSettings.registerSection` 注册的分区）；中英文案都进 `map/i18n/zh.json` 与 `en.json`，措辞中性。
+- **加一个设置开关**——存储键如上；宿主需要知道就在 `SCHEMA` 加协议字段；界面写在 `app/settings.mjs`（或经 `SettingsApi.registerSection` 注册的分区）；中英文案都进 `map/i18n/zh.json` 与 `en.json`，措辞中性。
 - **加一个包字段**——v1 已冻结：只许加**可选**字段，在 `docs/pack-schema-v1.md` 记一行、在 `map/data/schema/pack.schema.json` 补定义、在 `tests/pack_schema_v1.test.mjs` 覆盖。任何改变既有字段含义的事都等 schema 2（S1）。
 - **加一个查看器模块**——放在 `map/app/` 下的文件（或经 `app/plugins.mjs` 注册的根目录外挂）；状态走 `app/state.mjs`；监听器走总线；保持 ≤ 400 行且不含卡专有词，否则看门狗失败。
 - **下调账本**——先修掉违规，跑 `python3 tools/check_architecture.py --update-baseline`，把新账本和修复一起提交。

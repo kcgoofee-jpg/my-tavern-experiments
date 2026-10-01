@@ -38,13 +38,13 @@ try {
   await B.shot(P.page, OUT, 'open' + sfx);
   // 各层 / 地图打开时的取景：没有大块纯白
   for (const id of ['tc_upper', 'tc_mid', 'tc_low', 'world']) {
-    await vf.evaluate(i => go(i), id); await vf.waitForFunction(() => viewer?.world?.getItemCount() && viewer.world.getItemAt(0).getFullyLoaded?.(), null, { timeout: 30000 }).catch(() => {}); await B.wait(2500);
+    await vf.evaluate(i => ViewerDebug.go(i), id); await vf.waitForFunction(() => ViewerDebug.osdViewer?.world?.getItemCount() && ViewerDebug.osdViewer.world.getItemAt(0).getFullyLoaded?.(), null, { timeout: 30000 }).catch(() => {}); await B.wait(2500);
     const f = await whiteFrac(P.page); await B.shot(P.page, OUT, 'layer-' + id + sfx);
     rep.check('white-' + id, f < 0.03, `最大纯白连通块 ${(f * 100).toFixed(1)}%`);
   }
-  await vf.evaluate(() => go('tc_upper')); await B.wait(2500);
+  await vf.evaluate(() => ViewerDebug.go('tc_upper')); await B.wait(2500);
   // 人物页
-  await vf.evaluate(() => { TCSheet.setTab('ch'); TCSheet.set('full'); }); await B.wait(800); await B.shot(P.page, OUT, 'people' + sfx);
+  await vf.evaluate(() => { ViewerDrawer.setTab('ch'); ViewerDrawer.set('full'); }); await B.wait(800); await B.shot(P.page, OUT, 'people' + sfx);
   const dup = await vf.evaluate(() => { const n = [...document.querySelectorAll('#evbar .chpane .chgo b')].map(b => b.textContent); return n.filter((x, i) => n.indexOf(x) !== i); });
   rep.check('dup', !dup.length, '重复：' + dup.join('、'));
   const av = await vf.evaluate(() => { const a = document.querySelector('#evbar .chpane .chgo .av'); if (!a) return null; const s = getComputedStyle(a); return { w: a.offsetWidth, sh: s.boxShadow }; });
@@ -54,46 +54,46 @@ try {
   const me = await vf.evaluate(() => document.querySelector('#evbar .chpane .chme')?.textContent || '');
   rep.check('outfit-people', /黑色丝绸睡袍/.test(me), me);
   // 地点卡：世界图上的天城
-  await vf.evaluate(() => go('world')); await B.wait(2500);
+  await vf.evaluate(() => ViewerDebug.go('world')); await B.wait(2500);
   await vf.evaluate(() => { const m = [...document.querySelectorAll('.mk')].find(e => /天城/.test(e.dataset.name || '')) || document.querySelector('.mk.here') || document.querySelector('.mk'); m?._open?.(); }); await B.wait(800);
   await B.shot(P.page, OUT, 'placecard' + sfx);
   const oc = await vf.evaluate(() => !!document.querySelector('#card .cu-outfit'));
   rep.check('outfit-place', !oc, oc ? '地点卡还有着装' : '');
   // 设置：高级（线路）、显示（清晰度）、更新（版本）、数据（模板）、自定义
   const pages = ['display', 'adv', 'update', 'data'];
-  for (const pg of pages) { await vf.evaluate(p => TCSettings.open(p), pg); await B.wait(600); await B.shot(P.page, OUT, 'set-' + pg + sfx); }
+  for (const pg of pages) { await vf.evaluate(p => SettingsApi.open(p), pg); await B.wait(600); await B.shot(P.page, OUT, 'set-' + pg + sfx); }
   const rows = await vf.evaluate(() => {
-    TCSettings.open('adv'); const line = document.querySelector('#lineRow'); const lt = line && !line.hidden ? line.textContent + ' | ' + (document.querySelector('#lineNow')?.textContent || '') : '(hidden)';
-    TCSettings.open('display'); const q = document.querySelector('#tiers'); const qt = q && q.offsetParent ? q.querySelectorAll('button').length + ' 档 | ' + [...q.querySelectorAll('button')].map(b => b.textContent + (b.disabled ? '(灰)' : '')).join(' ') + ' | ' + (document.querySelector('#tierWhy')?.textContent || '') : '(none)';
-    TCSettings.open('update'); const v = document.querySelector('#aboutBox')?.textContent || '';
+    SettingsApi.open('adv'); const line = document.querySelector('#lineRow'); const lt = line && !line.hidden ? line.textContent + ' | ' + (document.querySelector('#lineNow')?.textContent || '') : '(hidden)';
+    SettingsApi.open('display'); const q = document.querySelector('#tiers'); const qt = q && q.offsetParent ? q.querySelectorAll('button').length + ' 档 | ' + [...q.querySelectorAll('button')].map(b => b.textContent + (b.disabled ? '(灰)' : '')).join(' ') + ' | ' + (document.querySelector('#tierWhy')?.textContent || '') : '(none)';
+    SettingsApi.open('update'); const v = document.querySelector('#aboutBox')?.textContent || '';
     return { lt, qt, v };
   });
   rep.check('line', /自动|手动|不可切换|不适用|等待/.test(rows.lt), rows.lt.slice(0, 120));
   rep.check('tier', /^4 档/.test(rows.qt), rows.qt.slice(0, 120));
   rep.check('version', !/版本编码\s*$/.test(rows.v), rows.v.slice(0, 120));
-  await vf.evaluate(() => { TCSettings.open('data'); document.querySelector('#cmpBox')?.setAttribute('open', ''); }); await B.wait(500);
+  await vf.evaluate(() => { SettingsApi.open('data'); document.querySelector('#cmpBox')?.setAttribute('open', ''); }); await B.wait(500);
   const tpl = await vf.evaluate(() => { const b = document.querySelector('#cmpBox'); b?.scrollIntoView(); return { ex: b?.querySelectorAll('.cmp-ex button').length || 0, pv: b?.querySelector('.cmp-pv')?.textContent || '' }; });
   await B.shot(P.page, OUT, 'set-template' + sfx);
   rep.check('tpl', tpl.ex >= 2 && tpl.pv.length > 0, JSON.stringify(tpl));
   // 自定义面板打开耗时
-  await vf.evaluate(() => TCSettings.open('data')); await B.wait(300);
+  await vf.evaluate(() => SettingsApi.open('data')); await B.wait(300);
   const ms = await vf.evaluate(async () => { const b = document.querySelector('#cuBox .cu-open') || document.querySelector('.cu-open'); if (!b) return -1; const t = performance.now(); b.click(); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); return performance.now() - t; });
   await B.shot(P.page, OUT, 'custom' + sfx);
   rep.check('custom-open', ms >= 0 && ms < 120, ms.toFixed?.(0) + ' ms');
   await vf.evaluate(() => document.querySelector('#cuDlg [data-close]')?.click());
   // 上层 ⓘ：只有一个提示；fps 不压顶栏
-  await vf.evaluate(() => { TCSettings.open('home'); document.querySelector('#setX')?.click(); go('tc_upper'); }); await B.wait(2000);
+  await vf.evaluate(() => { SettingsApi.open('home'); document.querySelector('#setX')?.click(); ViewerDebug.go('tc_upper'); }); await B.wait(2000);
   const cr = await vf.evaluate(() => { const els = [...document.querySelectorAll('[title]')].filter(e => /署名|credit|作者|渲染/i.test(e.title) && e.offsetParent); return els.map(e => e.id || e.className).join(','); });
   const crTip = await vf.evaluate(() => [...document.querySelectorAll('.credit, #credit, .cr-i')].filter(e => e.title && e.offsetParent && e.querySelector('[role=tooltip], .tip')).length);
   rep.check('credit', crTip === 0, cr);
   // 庄园 B2 剖切
   await P.page.evaluate(() => caches?.delete?.('eden-estate-glb')).catch(() => {});
-  await vf.evaluate(() => go('eden_estate')); await B.wait(900); await B.shot(P.page, OUT, 'estate-loading' + sfx);
+  await vf.evaluate(() => ViewerDebug.go('eden_estate')); await B.wait(900); await B.shot(P.page, OUT, 'estate-loading' + sfx);
   const lt = await vf.evaluate(() => document.querySelector('#loading .uiprog')?.getAttribute('aria-valuetext') || ''); rep.check('estate-progress', /已|%/.test(lt), lt);
   await vf.waitForFunction(() => document.querySelector('#estate.on'), null, { timeout: 90000 }).catch(() => {}); await B.wait(3000);
   await B.shot(P.page, OUT, 'estate' + sfx);
-  await vf.evaluate(() => TCSettings.open('display')); await B.wait(500); await B.shot(P.page, OUT, 'estate-set-display' + sfx);
-  const e3 = await vf.evaluate(() => ({ n: [...document.querySelectorAll('#tiers button')].filter(b => b.offsetParent && b.disabled).length, why: document.querySelector('#tierWhy')?.textContent || '', build: (TCSettings.open('update'), document.querySelector('#build')?.offsetParent ? document.querySelector('#build').textContent : '') }));
+  await vf.evaluate(() => SettingsApi.open('display')); await B.wait(500); await B.shot(P.page, OUT, 'estate-set-display' + sfx);
+  const e3 = await vf.evaluate(() => ({ n: [...document.querySelectorAll('#tiers button')].filter(b => b.offsetParent && b.disabled).length, why: document.querySelector('#tierWhy')?.textContent || '', build: (SettingsApi.open('update'), document.querySelector('#build')?.offsetParent ? document.querySelector('#build').textContent : '') }));
   await B.shot(P.page, OUT, 'estate-set-update' + sfx);
   rep.check('estate-tier', e3.n === 4 && /三维/.test(e3.why), JSON.stringify(e3));
   rep.check('estate-build', e3.build.length > 4, e3.build);

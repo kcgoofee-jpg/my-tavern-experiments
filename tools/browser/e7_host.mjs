@@ -42,9 +42,9 @@ try {
     await jpg(p, `${preset}_host_left_panel`);
     // 地图里改成右手：悬浮按钮挪到右边
     const vf = await (await p.$('#eden-map-root .em-frame')).contentFrame();
-    await vf.evaluate(() => { showSet(true); document.querySelector('#handSeg button[data-hand="right"]').click(); showSet(false); });
+    await vf.evaluate(() => { ViewerDebug.showSet(true); document.querySelector('#handSeg button[data-hand="right"]').click(); ViewerDebug.showSet(false); });
     await B.wait(400);
-    await vf.evaluate(() => closeCard());   // 打开时飞到新事态会开卡片，卡片抽屉开着时停靠栏让位
+    await vf.evaluate(() => ViewerDebug.closeCard());   // 打开时飞到新事态会开卡片，卡片抽屉开着时停靠栏让位
     await vf.locator('#thumbBtn').click(); await B.wait(300);
     const hasClose = await vf.evaluate(() => !document.querySelector('#actClose').hidden);
     await vf.locator('#actClose').click(); await B.wait(500);

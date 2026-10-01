@@ -82,7 +82,7 @@ async function run(name, preset) {
     rep.check(`${name} B1 同版本再自动一轮：不重写、不再提示`, auto2.writes === 1 && auto2.notice === SHIP_VER && auto2.at === auto1.sync.at, JSON.stringify(auto2));
     // 打开地图 → 设置「数据与映射」
     await H.open(); let vf = await H.viewer(); await B.wait(800);
-    await vf.evaluate(() => { try { closeCard(); } catch (e) {} TCSettings.open('data'); }); await B.wait(500);
+    await vf.evaluate(() => { try { ViewerDebug.closeCard(); } catch (e) {} SettingsApi.open('data'); }); await B.wait(500);
     const has = await vf.evaluate(() => ({ wb: !!document.querySelector('#thWb'), inj: !!document.querySelector('#thInj #thInjOn'), injOn: document.querySelector('#thInjOn')?.checked, adv: !!document.querySelector('#thAdv #thDepth') }));
     rep.check(`${name} 设置：世界书 / 状态注入两栏，注入默认开，深度在高级`, has.wb && has.inj && has.injOn && has.adv, JSON.stringify(has));
     // 全自动建好的书是当前版本：看差异 = 已是最新、没有变化，只写这一本书（看差异后书的状态才进设置，撤销按钮也在这时出现）
@@ -110,11 +110,11 @@ async function run(name, preset) {
     await p.evaluate(() => { window.__stub.here = '伊甸庄园·书房'; window.__th.chat[0].variables[0].stat_data.世界.当前地点 = '伊甸庄园·书房'; window.__fire('v'); });   // reload 把桩重置回了初始地点：重演 B8 的地点变化
     await p.evaluate(() => window.EdenMap.selfcheck());   // 等第一次自检跑完（含「世界书缺失」6 秒后的复查）
     await H.open(); vf = await H.viewer(); await B.wait(800);
-    await vf.evaluate(() => { TCSettings.open('update'); }); await B.wait(500);
+    await vf.evaluate(() => { SettingsApi.open('update'); }); await B.wait(500);
     const sc0 = await vf.evaluate(() => ({ warn: !!document.querySelector('#selfCheck li.warn'), go: !!document.querySelector('#scWbGo'), fb: document.querySelectorAll('.fb-open').length }));
     rep.check(`${name} 自检红线带「一键写入世界书」按钮；反馈按钮只有一个`, sc0.warn && sc0.go && sc0.fb === 1, JSON.stringify(sc0));
     await vf.evaluate(() => document.querySelector('#scWbGo').click()); await B.wait(500);
-    const back = await vf.evaluate(() => ({ page: TCSettings.page, wb: !!document.querySelector('#thWb .thdiff') }));
+    const back = await vf.evaluate(() => ({ page: SettingsApi.page, wb: !!document.querySelector('#thWb .thdiff') }));
     rep.check(`${name} 点「一键写入世界书」跳到数据与映射并打开看差异`, back.page === 'data' && back.wb, JSON.stringify(back));
     const diff1 = await vf.evaluate(() => document.querySelector('#thWb .thdiff')?.textContent || '');
     rep.check(`${name} B1 写前给差异（新建一本书）`, /新建一本书|New book/.test(diff1) && /只写这一本书|Only this book/.test(diff1), diff1.slice(0, 160));
@@ -137,10 +137,10 @@ async function run(name, preset) {
     // (a) 状态注入：固定 id 只有一条、默认深度 2；高级里改深度 → 同一条换深度；关掉 → 撤掉
     const inj1 = await p.evaluate(() => { window.__fire('g'); return Object.values(window.__th.inject).filter(x => x.id === 'eden-map-state'); });
     rep.check(`${name} (a) 状态注入：一条、深度 2、带地点与在场`, inj1.length === 1 && inj1[0].depth === 2 && /\[地图状态\] 地点：伊甸庄园·书房/.test(inj1[0].content) && /在场：安娜/.test(inj1[0].content), JSON.stringify(inj1));
-    await vf.evaluate(() => { TCSettings.open('adv'); const i = document.querySelector('#thDepth'); i.value = '4'; i.dispatchEvent(new Event('change')); }); await B.wait(600);
+    await vf.evaluate(() => { SettingsApi.open('adv'); const i = document.querySelector('#thDepth'); i.value = '4'; i.dispatchEvent(new Event('change')); }); await B.wait(600);
     const inj2 = await p.evaluate(() => { window.__fire('g'); window.__fire('g'); return Object.values(window.__th.inject).filter(x => x.id === 'eden-map-state'); });
     rep.check(`${name} (a) 改深度 4：仍只有一条`, inj2.length === 1 && inj2[0].depth === 4, JSON.stringify(inj2.map(x => x.depth)));
-    await vf.evaluate(() => { TCSettings.open('data'); const c = document.querySelector('#thInjOn'); c.checked = false; c.dispatchEvent(new Event('change')); }); await B.wait(600);
+    await vf.evaluate(() => { SettingsApi.open('data'); const c = document.querySelector('#thInjOn'); c.checked = false; c.dispatchEvent(new Event('change')); }); await B.wait(600);
     const inj3 = await p.evaluate(() => { window.__fire('g'); return Object.values(window.__th.inject).filter(x => x.id === 'eden-map-state').length; });
     rep.check(`${name} (a) 关掉 → 撤掉`, inj3 === 0, String(inj3));
     await vf.evaluate(() => { const c = document.querySelector('#thInjOn'); c.checked = true; c.dispatchEvent(new Event('change')); }); await B.wait(400);

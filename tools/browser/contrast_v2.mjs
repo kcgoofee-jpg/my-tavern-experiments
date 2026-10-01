@@ -30,11 +30,11 @@ try {
     await B.openViewer(P, { map: 'tc_mid' }); await B.wait(1200); await B.postEvents(P.page.mainFrame(), EV); await B.wait(800);
     for (const map of ['world', 'tc_upper', 'tc_mid', 'tc_low']) {
       await B.goMap(P.page, map).catch(() => {}); await B.wait(1200);
-      await P.page.evaluate(() => { if (!TCSheet.button('ev').hidden) TCSheet.setTab('ev', 'half'); }); await B.wait(400);
+      await P.page.evaluate(() => { if (!ViewerDrawer.button('ev').hidden) ViewerDrawer.setTab('ev', 'half'); }); await B.wait(400);
       const a = await P.page.evaluate(MEASURE);
-      await P.page.evaluate(() => { TCSheet.set('peek'); TCSettings.open('display'); }); await B.wait(300);
+      await P.page.evaluate(() => { ViewerDrawer.set('peek'); SettingsApi.open('display'); }); await B.wait(300);
       const b = await P.page.evaluate(MEASURE);
-      await P.page.evaluate(() => showSet(false));
+      await P.page.evaluate(() => ViewerDebug.showSet(false));
       const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]])), all = { ...pick(a, ['crumb', 'tab', 'tabSel', 'toggle', 'evRow', 'evSum', 'grip', 'tabSelBg']), ...pick(b, ['setRow', 'setSmall', 'setTitle', 'swBorder']) }, txtKeys = ['crumb', 'tab', 'tabSel', 'toggle', 'evRow', 'evSum', 'setRow', 'setSmall', 'setTitle'], nonKeys = ['grip', 'tabSelBg', 'swBorder'];
       const badT = txtKeys.filter(k => all[k] != null && all[k] < 4.5), badN = nonKeys.filter(k => all[k] != null && all[k] < 3);
       rep.metric(`${theme}_${map}`, all);

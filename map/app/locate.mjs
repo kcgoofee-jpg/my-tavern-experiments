@@ -28,7 +28,7 @@ export function applyZoomLimit() { if (REG.maps[cur]?.kind === 'estate') return;
   // 插图覆盖的范围只占底图的一小块（bounds 宽度），像素上限要按「那一小块在屏幕上能占多宽」折算，不能直接拿插图像素宽比整张底图宽
   const pw = ins ? cw / (ins.res_px[0] / (ins.bounds[2] - ins.bounds[0]) * INSET_MAX_PX) : cw / (it.getContentSize().x * MAX_PX);
   // v0.9.6「天城周边」：天城各层最远能缩到 RING_W 倍图宽（约 30 km），城边拖得出去（visibilityRatio 放宽），不再撞到硬边
-  const ring = window.TCScale?.isTier(cur); viewer.viewport.minZoomLevel = ring ? 1 / RING_W : null; viewer.viewport.visibilityRatio = ring ? .15 : 1;
+  const ring = window.ScaleHandoffApi?.isTier(cur); viewer.viewport.minZoomLevel = ring ? 1 / RING_W : null; viewer.viewport.visibilityRatio = ring ? .15 : 1;
   viewer.viewport.maxZoomLevel = 1 / Math.max(mw, pw); viewer.viewport.applyConstraints();
   zoomHint(ins);
 }
@@ -55,8 +55,8 @@ export function focusStart(immediately) {
   const home = pendingHome; setPendingHome(false);
   if (gv && gv.handoff && immediately && !pendingFocus && !home) { delete groupView[m.group]; fitIn(gv, true); userMoved = true; return; }
   let nx, ny, w;
-  if (m.kind === 'world' && window.__worldTC) {   // v0.9.6 从天城缩出来：世界图最大放大、天城居中
-    const pid = typeof window.__worldTC === 'string' ? window.__worldTC : m.view?.focus; window.__worldTC = false;   // 缩出来落在哪：那个组的地点，没有就是世界图的 view.focus
+  if (m.kind === 'world' && window.__worldFocusPlace) {   // v0.9.6 从天城缩出来：世界图最大放大、天城居中
+    const pid = typeof window.__worldFocusPlace === 'string' ? window.__worldFocusPlace : m.view?.focus; window.__worldFocusPlace = false;   // 缩出来落在哪：那个组的地点，没有就是世界图的 view.focus
     const p = [...M.places, ...M.fiefs].find(q => q.id === pid) || M.places.find(q => q.id === m.view?.focus) || M.places[0]; [nx, ny] = toImg(p.x, p.y);
     const w0 = (viewNorm(m, 'min_width_m') || .06) * (cs.y > cs.x ? cs.x / cs.y : 1), h0 = w0 * cs.y / cs.x;
     fitIn(new OpenSeadragon.Rect(nx - w0 / 2, ny * aspect - h0 / 2, w0, h0), immediately); return;
@@ -104,9 +104,9 @@ export function markHere(v) {
   document.querySelectorAll('.mk').forEach(e => { const n = e.dataset.name, al = e.dataset.alias ? e.dataset.alias.split('|') : ALIAS[n] || [];
     const hit = !!v && (extra.has(n) || v.includes(n) || n.includes(v) || al.some(k => v.includes(k)));
     e.classList.toggle('here', hit); });
-  if (r) window.TCFog?.here(r);   // 迷雾探索：记一次到访（开着时）
-  if (typeof P.TCUnmapped !== 'undefined') P.TCUnmapped.update(v);   // v0.9.6 未上图
-  updateLayerBadges(); estateRoom(); if (typeof P.TCTrips !== 'undefined') P.TCTrips.render();   // v0.9.5 途中：两端之间的虚线弧
+  if (r) window.FogApi?.here(r);   // 迷雾探索：记一次到访（开着时）
+  if (typeof P.UnmappedPlacePicker !== 'undefined') P.UnmappedPlacePicker.update(v);   // v0.9.6 未上图
+  updateLayerBadges(); estateRoom(); if (typeof P.TripsView !== 'undefined') P.TripsView.render();   // v0.9.5 途中：两端之间的虚线弧
 }
 // ---------------- 自动跳到当前地点（app/place-resolver.mjs 的落点；设置里可关，默认开） ----------------
 // 庄园房间 / 区域 → 庄园（房间由 estate:room 高亮，切楼层由庄园页自己做）；地标 → 该层并打开地点卡；层 / 大区 / 天城 → 该层默认视野；世界地名 → 世界图；匹配不到不动。
@@ -115,7 +115,7 @@ export let estPlan = null;   // v0.9.6 map/data/eden_estate_rooms.json（卡设�
 export let hereIdx = null;   // app/place-resolver.mjs 的 makeHere 结果（extension-api.mjs rebuildHere 建；没建好之前认不出任何地点）
 export const hereRes = v => (hereIdx ? hereIdx.here(v) : null);
 // where a located place (a person, a trip end) is drawn: the node tree's answer for the place text, or for a result already placed (app/spot.mjs)
-export const drawnAt = (r, text) => drawPlace(r, text, { hasMap: id => !!REG?.maps[id], isScene, standIn: estateStandIn, spot: n => eventGeo()?.spot(n) ?? null, zone: (m, t) => P.TCEvents?.zoneXY?.(m, t) ?? null });
+export const drawnAt = (r, text) => drawPlace(r, text, { hasMap: id => !!REG?.maps[id], isScene, standIn: estateStandIn, spot: n => eventGeo()?.spot(n) ?? null, zone: (m, t) => P.EventsView?.zoneXY?.(m, t) ?? null });
 export function jumpHere(v) {   // 只由「当前位置」按钮调用（不再在打开 / 地点更新时自动跳）
   let r = hereRes(v);
   if (!r || !REG?.maps[r.map] || REG.maps[r.map].status === 'planned') return false;

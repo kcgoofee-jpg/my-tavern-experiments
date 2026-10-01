@@ -76,7 +76,7 @@ export function createHostChecks(host) {
     SPm ??= await import(SELF + 'tavern/splash.mjs').catch(() => null); if (!SPm) return false;
     const lite = lean(), get = f => cdnFetch(host.BASE + f, { cache: 'force-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
     const bi = await buildNow(); await MAN;
-    splash = SPm.openSplash({ root, id: ID, pdoc, ver: VER, en: host.UL === 'en', name: HS('app.name', host.UL === 'en'), about: { version: bi?.version || SCRIPT.version || VER, code: bi?.code || SCRIPT.code, channel: channel(), ref: SCRIPT.ref || host.refOf() }, store: localStorage, cap: window.parent.__edenSplashCap || 25,
+    splash = SPm.openSplash({ root, id: ID, pdoc, ver: VER, en: host.UL === 'en', name: HS('app.name', host.UL === 'en'), about: { version: bi?.version || SCRIPT.version || VER, code: bi?.code || SCRIPT.code, channel: channel(), ref: SCRIPT.ref || host.refOf() }, store: localStorage, cap: window.parent.__splashCap || 25,
       checks: () => runCheck().then(() => checkItems),
       tasks: [
         { key: 'map', zh: '地图程序与当前一层的图块', en: 'Map program and current-layer tiles', run: () => { if (panel.hidden && !host.alive && !host.ghost) preload().catch(() => {}); return preP; } },

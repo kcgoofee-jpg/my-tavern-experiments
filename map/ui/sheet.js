@@ -85,7 +85,7 @@ html.rm .uis{transition:none}
     const mq = matchMedia(o.railMq || RAIL_MQ);
     const mode = () => (mq.matches ? 'rail' : 'sheet');
     const railKey = o.railKey || null;
-    let railW = 360; try { railW = +(window.TCStore ? TCStore.get(railKey) : localStorage.getItem(railKey)) || 360; } catch (e) {}
+    let railW = 360; try { railW = +(window.LocalStore ? LocalStore.get(railKey) : localStorage.getItem(railKey)) || 360; } catch (e) {}
     function addTab(t) {
       const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.id = (o.id || 'uis') + '-t-' + t.id;
       if (t.btnClass) b.className = t.btnClass; b.dataset.tab = t.id; b.setAttribute('aria-selected', 'false'); b.tabIndex = -1;
@@ -169,7 +169,7 @@ html.rm .uis{transition:none}
     };
     const end = e => {
       if (!dr || e.pointerId !== dr.id) return; const d = dr; dr = null; el.classList.remove('drag');
-      if (d.m === 'rail') { if (d.moved && d.nw) { railW = Math.round(d.nw); try { window.TCStore ? TCStore.set(railKey, String(railW)) : localStorage.setItem(railKey, String(railW)); } catch (x) {} if (state === 'peek') set('half'); else paint(); } return; }
+      if (d.m === 'rail') { if (d.moved && d.nw) { railW = Math.round(d.nw); try { window.LocalStore ? LocalStore.set(railKey, String(railW)) : localStorage.setItem(railKey, String(railW)); } catch (x) {} if (state === 'peek') set('half'); else paint(); } return; }
       const hh = el.getBoundingClientRect().height; el.style.height = '';
       if (!d.moved) return;
       const H = d.H, cand = [['peek', 56], ['half', H * .4], ['full', H * .8]];

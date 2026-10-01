@@ -12,7 +12,7 @@ export const setOverlay = v => (packOverlay = v && typeof v === 'object' ? v : n
 export async function initPack(getJSON) {
   const id = currentId(window);
   let injected = window.__tcPack;   // 宿主注入（清单同步在手）
-  if (!injected?.manifest) { try { injected = { manifest: await window.__manifestP }; } catch (e) {} }   // 单独打开：首帧脚本已在取清单（viewer.html，与模块并行）；失败不缓存，下面 load 自己再取
+  if (!injected?.manifest) { try { injected = { manifest: await window.__manifestPromise }; } catch (e) {} }   // 单独打开：首帧脚本已在取清单（viewer.html，与模块并行）；失败不缓存，下面 load 自己再取
   PACK = await load(id, { fetchJSON: async u => { const v = (await getJSON(u)) ?? (await getJSON(u)); if (!v) throw new Error('取不到 ' + u); return v; }, injected });   // 失败不缓存，重试一次
   if (id === DEFAULT_ID) return PACK;   // eden：不写 data-pack / --pack-accent（与以前一样）
   document.documentElement.dataset.pack = PACK.id;

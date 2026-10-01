@@ -27,9 +27,9 @@ import { createEventsFx } from './events-fx.mjs';
 // ev = 看过的「事件 id@最后更新」；ch = 看过的人物名。某个聊天第一次记录时把当前人物当作已看过，只有后来出现的才标红
 const seenKey = () => 'edenMap:chat:' + (chatId || '-') + ':tabseen';
 let seenMem = null, seenFor = null;
-function seenGet() { if (seenFor !== seenKey()) { seenFor = seenKey(); let o = null; try { o = JSON.parse(window.TCStore?.get(seenFor)); } catch (e) {} seenMem = o && typeof o === 'object' ? { ev: new Set(o.ev || []), ch: o.ch ? new Set(o.ch) : null } : { ev: new Set(), ch: null }; } return seenMem; }
-function seenSave() { const v = JSON.stringify({ ev: [...seenMem.ev].slice(-400), ch: [...(seenMem.ch || [])].slice(-200) }); try { window.TCStore?.set(seenFor, v); } catch (e) {} }
-const TCEvents = (() => {
+function seenGet() { if (seenFor !== seenKey()) { seenFor = seenKey(); let o = null; try { o = JSON.parse(window.LocalStore?.get(seenFor)); } catch (e) {} seenMem = o && typeof o === 'object' ? { ev: new Set(o.ev || []), ch: o.ch ? new Set(o.ch) : null } : { ev: new Set(), ch: null }; } return seenMem; }
+function seenSave() { const v = JSON.stringify({ ev: [...seenMem.ev].slice(-400), ch: [...(seenMem.ch || [])].slice(-200) }); try { window.LocalStore?.set(seenFor, v); } catch (e) {} }
+const EventsView = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const tn = z => (z && window.I18N?.tr?.(z)) || z || '';
   const where = e => [tn(e.layer), e.place].filter(Boolean).join('·');
@@ -46,7 +46,7 @@ const TCEvents = (() => {
   const shp = g => 'sh-' + (SHAPES[g] || 'square');
   const OFF_KEY = 'edenMapEvOff';
   // 类型级默认关（用户 2026-09-29）：设定包在类型上写 x-default-off；OFF_KEY 从没存过（用户没动过筛选）时由 taxNow 种入，不主动落盘——第一次点图例筛选后完全跟用户走。
-  const off = new Set((() => { try { const v = TCStore.get(OFF_KEY); return v == null ? [] : JSON.parse(v) || []; } catch (e) { return []; } })());
+  const off = new Set((() => { try { const v = LocalStore.get(OFF_KEY); return v == null ? [] : JSON.parse(v) || []; } catch (e) { return []; } })());
   const grpOf = e => e.grp || '其他';
   const offed = e => off.has(grpOf(e)) || off.has('type:' + e.cat);   // 关掉的大类 / 类型
   let taxFor = null /* 已取过的分类（events 块对象），换了才重取 */, tab = 'ev', items = [], floor = 0, feedItems = [], shown = true, flyId = null, EVM = null, lastFly = null;
@@ -55,7 +55,7 @@ const TCEvents = (() => {
   const all = () => items.concat(feedItems);
   const vis = () => all().filter(e => !offed(e));   // 筛选后看得见的
   // 落点由节点树定（core/event-geo.mjs，K-R24）：卡内脚本盖了 node 的用 node；老脚本只发 layer + place，就按文字再定位一次；node 为 null = 认不出地点，只列出、不上图（K-01 B）
-  const tierNow = () => { const S = window.TCScale; return S?.isTier(cur) ? cur : S?.lastTier || eventLevel(REG); };
+  const tierNow = () => { const S = window.ScaleHandoffApi; return S?.isTier(cur) ? cur : S?.lastTier || eventLevel(REG); };
   const memo = new WeakMap();
   function placeOf(e) {
     const g = eventGeo(); if (!g || e.node === null) return null;
@@ -107,7 +107,7 @@ const TCEvents = (() => {
     if (!EVM) return; geoSync(EVM);
     const tx = EVM.taxonomy(); if (tx === taxFor) return; taxFor = tx;
     GROUPS = Object.fromEntries(tx.groups.map(g => [g.label, g.color])); XCVD = Object.fromEntries(tx.groups.map(g => [g.label, g['x-cvd']])); SHAPES = Object.fromEntries(tx.groups.map(g => [g.label, g.shape])); ORDER = EVM.legend().map(g => g.label);
-    try { if (TCStore.get(OFF_KEY) == null) for (const n of EVM.defaultOff()) off.add('type:' + n); } catch (e) {}
+    try { if (LocalStore.get(OFF_KEY) == null) for (const n of EVM.defaultOff()) off.add('type:' + n); } catch (e) {}
   }
   const mod = () => EVM ? Promise.resolve(geoSync(EVM)) : import(new URL('tavern/events-parse.mjs', document.baseURI).href).then(m => geoSync(EVM = m)).catch(() => null);
   // 外部数据源：maps.json 顶层 feeds: [{label, url, every}]（url 返回 {events: [与标签相同的中文字段]}）；状态改成已解除前一直显示
@@ -160,7 +160,7 @@ const TCEvents = (() => {
     const rare = e.rare >= 4 ? T('ev.rare4', '（传说级）') : e.rare >= 3 ? T('ev.rare3', '（罕见）') : '';
     const lv = Math.max(1, e.lvl);
     showCard(null, e.text || tn(e.cat), '', '', `${tn(e.cat)}${rare}`);   // 大类只在顶上的色块里出现一次（v0.9.2）
-    if (typeof P.TCCompose !== 'undefined') P.TCCompose.attach({ go: e.place || '', ask: e.text || tn(e.cat) });   // v0.9.6 地图 → 聊天
+    if (typeof P.ComposeView !== 'undefined') P.ComposeView.attach({ go: e.place || '', ask: e.text || tn(e.cat) });   // v0.9.6 地图 → 聊天
     const rows = [
       [T('ev.k_place', '地点'), esc(whereHere(e)) + (p.approx ? `<br><small>${esc(placeOf(e) ? T('ev.approx', '（位置不详，按所在层大致标出）') : T('ev.unplaced', '（认不出地点：只列出，不上图）'))}</small>` : '')],
       [T('ev.k_state', '等级 / 状态'), `<span class="bars" aria-label="${esc(T('ev.k_lvl', '等级') + ' ' + lv + '/3')}">${'▮'.repeat(lv)}${'▯'.repeat(3 - lv)}</span>　${esc(st)}`],
@@ -217,23 +217,23 @@ const TCEvents = (() => {
 
   // ---------- 事态列表（底部横条，点开是列表） ----------
   // UI v2：事态 / 人物是唯一抽屉（ui/sheet.js，viewer.html 建）的两个标签页；抽屉三档由它管，这里只填内容和标签文字
-  const SH = () => window.TCSheet || null;
+  const SH = () => window.ViewerDrawer || null;
   const isOpenNow = () => !!SH()?.open;
   function renderBar() {
     const S = SH(); if (!S) return;
     const bar = S.el, every = all().filter(listed), list = every.filter(e => !offed(e));
     // 人物页（v0.9.2，chars.js）：和事态同一个抽屉，两个页签；地点页（卡片）由查看器管
-    const chN = typeof P.TCChars !== 'undefined' ? P.TCChars.count() : 0, hasEv = !!every.length && shown;
+    const chN = typeof P.CharactersView !== 'undefined' ? P.CharactersView.count() : 0, hasEv = !!every.length && shown;
     S.showTab('ev', hasEv); S.showTab('ch', !!chN);
     if (typeof sheetVis === 'function') sheetVis();
     if (!S.tab || S.button(S.tab)?.hidden) { const nx = hasEv ? 'ev' : chN ? 'ch' : null; if (nx) S.setTab(nx); }
     tab = S.tab || tab; const open = S.open;
-    const SEEN = seenGet(), chNames = chN ? (P.TCChars.items || []).map(c => c.name || c.名字 || '').filter(Boolean) : [];
+    const SEEN = seenGet(), chNames = chN ? (P.CharactersView.items || []).map(c => c.name || c.名字 || '').filter(Boolean) : [];
     if (!SEEN.ch) { SEEN.ch = new Set(chNames); seenSave(); }
     if (open && S.tab === 'ch' && chNames.some(n => !SEEN.ch.has(n))) { chNames.forEach(n => SEEN.ch.add(n)); seenSave(); }
     const chFresh = chNames.filter(n => !SEEN.ch.has(n)).length;
     S.label('ch', `<i class="shp sh-circle" aria-hidden="true"></i>${esc(T('ch.tab', '人物'))} <em>${chN}</em>${chFresh ? `<b class="nd" aria-hidden="true"></b>` : ''}`, { n: chN, fresh: chFresh });
-    if (open && S.tab === 'ch') P.TCChars.pane(bar.querySelector('.chpane'));
+    if (open && S.tab === 'ch') P.CharactersView.pane(bar.querySelector('.chpane'));
     taxNow();
     const n = list.filter(live).length, evk = e => e.id + '@' + (e.last || 0), fresh0 = list.filter(e => e.isNew && !SEEN.ev.has(evk(e))),
       fresh = open && S.tab === 'ev' ? (fresh0.forEach(e => SEEN.ev.add(evk(e))), fresh0.length && seenSave(), 0) : fresh0.length, hid = ORDER.filter(g => off.has(g)).length + (off.has('其他') ? 1 : 0) + [...off].filter(k => k.startsWith('type:')).length;
@@ -252,7 +252,7 @@ const TCEvents = (() => {
   }
   // 图例提示只在第一次展开时出现一行（之后在 title 里），不常驻占一行（v0.9.2）
   let hintSeen = null;
-  function hintOnce() { if (!isOpenNow()) return false; if (hintSeen === null) { try { hintSeen = !!TCStore.get('edenMapLegHint'); TCStore.set('edenMapLegHint', '1'); } catch (e) { hintSeen = true; } } return !hintSeen; }
+  function hintOnce() { if (!isOpenNow()) return false; if (hintSeen === null) { try { hintSeen = !!LocalStore.get('edenMapLegHint'); LocalStore.set('edenMapLegHint', '1'); } catch (e) { hintSeen = true; } } return !hintSeen; }
   function updateToggle() {
     // P3-C：「事态」行由 LayerRegistry 菜单渲染（app/layer-host.mjs renderLayerMenu）；这里只更新计数文案与显隐
     const tg = document.getElementById('tgEvents'); if (!tg) return;
@@ -374,9 +374,9 @@ const TCEvents = (() => {
     pc.classList.add('chpane'); pc.id = 'chpane';
     pe.querySelector('.evleg').setAttribute('aria-label', T('ev.legend_aria', '按大类筛选'));
     pe.querySelector('.evleg').addEventListener('click', e => { const b = e.target.closest('button[data-g]'); if (!b) return;
-      const g = b.dataset.g; off.has(g) ? off.delete(g) : off.add(g); try { TCStore.set(OFF_KEY, JSON.stringify([...off])); } catch (err) {}
+      const g = b.dataset.g; off.has(g) ? off.delete(g) : off.add(g); try { LocalStore.set(OFF_KEY, JSON.stringify([...off])); } catch (err) {}
       render(); renderBar(); badges(); });
-    pc.addEventListener('change', e => P.TCChars.onPane(e)); pc.addEventListener('click', e => P.TCChars.onPane(e));
+    pc.addEventListener('change', e => P.CharactersView.onPane(e)); pc.addEventListener('click', e => P.CharactersView.onPane(e));
     // 点列表项飞过去；卡片关闭（× / Esc）后焦点回到事态标签
     pe.querySelector('ol').addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (!b) return;
       kbdFly = e.detail === 0; if (typeof cardFrom !== 'undefined') setCardFrom(S.button('ev')); flyTo(b.dataset.id); });
@@ -394,5 +394,5 @@ const TCEvents = (() => {
     setVisible: v => { shown = v; document.body.classList.toggle('noevents', !v); renderBar(); applyGlitch(); } });
   return { init, set, zoneXY, renderBar: () => $('#evbar') && renderBar(), render: afterOpen, pollFeeds, flyTo, countOn, collapse, isOpen: () => isOpenNow() && !SH()?.el.hidden, get events() { return all(); } };
 })();
-register('TCEvents', TCEvents);
-export { TCEvents };
+register('EventsView', EventsView);
+export { EventsView };

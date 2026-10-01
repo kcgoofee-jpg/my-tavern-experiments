@@ -119,7 +119,7 @@ import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记（键重
     finally { busy = false; }
     return p;
   });
-  window.__clouds = { sync, state: () => ({ shown, drift: anims.length, busy, cover: !!document.querySelector('.tier-snap'), rm: RM(), lean: lean(), n: box ? box.querySelectorAll('img').length : 0,
+  window.__cloudsProbe = { sync, state: () => ({ shown, drift: anims.length, busy, cover: !!document.querySelector('.tier-snap'), rm: RM(), lean: lean(), n: box ? box.querySelectorAll('img').length : 0,
     visible: box && shown ? [...box.querySelectorAll('img')].filter(el => { const r = el.getBoundingClientRect(), s = viewer.container.getBoundingClientRect();
       return +getComputedStyle(el).opacity > .15 && r.right > s.left + r.width * .3 && r.left < s.right - r.width * .3 && r.bottom > s.top + r.height * .3 && r.top < s.bottom - r.height * .3; }).length : 0 }) };
   // P3-C：漂移云登记为 depth-haze 槽的 dom 图层（槽位容器 .vpslot[data-slot="depth-haze"] 挂好后由 boot 的 mountAll 调 mount）

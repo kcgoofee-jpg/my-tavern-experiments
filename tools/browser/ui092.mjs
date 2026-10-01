@@ -27,7 +27,7 @@ async function run(name, preset, opts = {}) {
     const H = await openHost(P, { here: HERE, msgs: MSGS, stat: STAT });
     await H.open();
     const p = P.page, vf = await H.viewer();
-    await vf.evaluate(() => go('tc_low')); await B.wait(2500);
+    await vf.evaluate(() => ViewerDebug.go('tc_low')); await B.wait(2500);
     await B.shot(p, OUT, `${name}_map`);
     // 打开事态卡：列表里点第一条
     await vf.evaluate(() => document.querySelector('#evbar .evtab').click()); await B.wait(300);

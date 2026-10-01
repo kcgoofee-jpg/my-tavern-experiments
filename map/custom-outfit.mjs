@@ -2,6 +2,6 @@
 import { P } from './app/plugins.mjs';
 export function createOutfit() {
   let outfit = null;
-  function setOutfit(o) { outfit = o && o.text ? o : null; P.TCEvents?.renderBar?.(); }
+  function setOutfit(o) { outfit = o && o.text ? o : null; P.EventsView?.renderBar?.(); }
   return { setOutfit, get outfit() { return outfit; } };
 }

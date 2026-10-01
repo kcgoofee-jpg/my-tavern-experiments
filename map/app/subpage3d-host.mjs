@@ -14,7 +14,7 @@ import { estPlan, hereRes } from './locate.mjs';
 import { q3Pref } from './settings.mjs';
 import * as TCCvd from './color-vision-mode.mjs';
 import { PACK } from './current-pack.mjs';   // 三维子页的包注入（__packId / __packStrings）：子页读不到清单，语言键与包内文案随页带进去
-import { P } from './plugins.mjs';   // 空间化背包 TCInv：三维发光道具的「拿到手」对账
+import { P } from './plugins.mjs';   // 空间化背包 StashView：三维发光道具的「拿到手」对账
 import { busOn } from './bus.mjs';
 import { chatId } from './extension-api.mjs';
 import { setFpsMeter } from './fps.mjs';
@@ -88,8 +88,8 @@ function startTileTo3d(f) {
 }
 // 本次会话里庄园三维加载失败过：之后「自动跳到当前地点」不再进庄园，改落上层的伊甸地标（记在会话存储，重试成功后清掉）
 const EST_FAIL_KEY = 'edenMapEstateFail';
-export let estFail = TCStore.get(EST_FAIL_KEY) === '1';
-export const setEstFail = on => { estFail = on; on ? TCStore.set(EST_FAIL_KEY, '1') : TCStore.remove(EST_FAIL_KEY); };
+export let estFail = LocalStore.get(EST_FAIL_KEY) === '1';
+export const setEstFail = on => { estFail = on; on ? LocalStore.set(EST_FAIL_KEY, '1') : LocalStore.remove(EST_FAIL_KEY); };
 // 三维页的「平面替身」：节点树里它（或包着它的地方）落在平面图上的位置（上层的「伊甸庄园」地标）
 export const estateStandIn = standIn;
 const THREE_CDN = /https:\/\/cdn\.(?:jsdelivr\.net|jsdmirror\.com)\/npm\/three@0\.160\.0\//g;
@@ -137,7 +137,7 @@ export async function openEstate(id, m, hadPrev) {
   // 用 blob: 地址而不是 srcdoc：Tauri Tavern 的 WKWebView 里第三层 srcdoc iframe（宿主 → 查看器 srcdoc → 庄园）永远不加载（TT 实测 P0）。
   // blob 由查看器自己的窗口创建（同源），<base> 照旧，相对资源按线路解析；加载完就回收。
   const packStr = PACK?.strings, hasStr = packStr && Object.keys(packStr).length;
-  const doc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">${EST_HOOK}<script>window.__packId=${JSON.stringify(PACK?.id || 'eden')}<\/script>${hasStr ? `<script>window.__packStrings=${JSON.stringify(packStr).replace(/</g, '\\u003c')}<\/script>` : ''}${m.viewer3d ? `<script>window.__V3D_MODEL=${JSON.stringify(String(m.viewer3d))}<\/script>` : ''}`)
+  const doc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">${EST_HOOK}<script>window.__packId=${JSON.stringify(PACK?.id || 'eden')}<\/script>${hasStr ? `<script>window.__packStrings=${JSON.stringify(packStr).replace(/</g, '\\u003c')}<\/script>` : ''}${m.viewer3d ? `<script>window.__modelId=${JSON.stringify(String(m.viewer3d))}<\/script>` : ''}`)
     .replace(/(["'])https:\/\/cdn\.(?:jsdelivr\.net|jsdmirror\.com)\/npm\/three@0\.160\.0\/build\/three\.module(?:\.min)?\.js\1/g, `$1${vend}three.module.min.js$1`)
     .replace(new RegExp(THREE_CDN.source + 'examples\\/jsm\\/', 'g'), vend + 'jsm/');
   const blob = URL.createObjectURL(new Blob([doc], { type: 'text/html' })); f.src = blob;
@@ -167,7 +167,7 @@ function onEstateReady() {
 // 离开庄园：返回 iframe，由调用方在新底图画出来后淡出移除
 export function leaveEstate() {
   document.body.classList.remove('estate'); estateActs('');
-  try { setFpsMeter(window.TCStore?.get('edenMapFps') === '1'); } catch (e) {}   // 三维子页关掉了，外层顶栏那份 FPS 读数回来（配 estateLook 的 setFpsMeter(false)）
+  try { setFpsMeter(window.LocalStore?.get('edenMapFps') === '1'); } catch (e) {}   // 三维子页关掉了，外层顶栏那份 FPS 读数回来（配 estateLook 的 setFpsMeter(false)）
   if (!est) return null;
   stopTileTo3d(false);
   const f = est.frame, ready = est.ready; est = null; live3d = 0;
@@ -187,7 +187,7 @@ export function estateLook() {
   w.postMessage({ type: 'estate:theme', theme: document.documentElement.classList.contains('light') ? 'light' : 'dark' }, SUB_ORIGIN);
   w.postMessage({ type: 'estate:quality', q: q3Pref() }, SUB_ORIGIN);   // 改画质不用重载
   w.postMessage({ type: 'estate:cvd', mode: TCCvd.mode() }, SUB_ORIGIN);   // 色觉模式（E7）：庄园 / 三维页换配色，不重载
-  let fps = false; try { fps = window.TCStore?.get('edenMapFps') === '1'; } catch (e) {}
+  let fps = false; try { fps = window.LocalStore?.get('edenMapFps') === '1'; } catch (e) {}
   w.postMessage({ type: 'estate:fps', on: fps }, SUB_ORIGIN);   // 调试：显示帧率——三维子页自己画一份（画布角上，带 tier / draws），开着子页时外层顶栏那份就该让位，不然同时看到两个数字（U，2026-09-28）
   setFpsMeter(false);
   w.postMessage({ type: 'estate:children', zones: estateZones(est.id) }, SUB_ORIGIN);   // 区域下的子地图（运行时节点树）：三维页据此给区域卡加「进入三维」，语言切换时标题跟着重发
@@ -197,15 +197,15 @@ export function estateLook() {
 // 三维页据此在房间 / 区域里放发光道具，点起来回 estate:loot，这里转成 eden-map:loot 交给宿主写背包。
 export function estateStash() {
   const w = est?.frame?.contentWindow; if (!w) return;
-  w.postMessage({ type: 'estate:stash', items: window.TCLoot?.all?.() || [] }, SUB_ORIGIN);
-  w.postMessage({ type: 'estate:taken', ids: (P.TCInv?.rows || []).map(r => r.id).filter(Boolean) }, SUB_ORIGIN);
+  w.postMessage({ type: 'estate:stash', items: window.StashMarkersApi?.all?.() || [] }, SUB_ORIGIN);
+  w.postMessage({ type: 'estate:taken', ids: (P.StashView?.rows || []).map(r => r.id).filter(Boolean) }, SUB_ORIGIN);
 }
 // Part 8-2：日程表 + 起点时钟下发给三维页（宿主 → 查看器 app/wander.mjs → 庄园）。
 // 三维页用同一套 core/walk.mjs 自己推进世界时刻，把人挪到下一段该在的地方（三维坐标插值，不瞬移）。
 export function estateNpcs() {
   const w = est?.frame?.contentWindow; if (!w) return;
-  const d = window.TCWander?.describe?.() || {};
-  w.postMessage({ type: 'estate:routine', schedule: window.TCWander?.scheduleOf?.() || null, clock: d.clock || null }, SUB_ORIGIN);
+  const d = window.WanderApi?.describe?.() || {};
+  w.postMessage({ type: 'estate:routine', schedule: window.WanderApi?.scheduleOf?.() || null, clock: d.clock || null }, SUB_ORIGIN);
 }
 // S2-B：三维页里区域下的子地图 { 区域 id: [{ node, title }] }；从子地图返回（面包屑 / 上一级带 data-focus）时把落点区域聚焦
 const estateZones = id => Object.fromEntries(Object.entries(zoneChildren(id)).map(([z, ks]) => [z, ks.map(k => ({ node: k, title: nm(REG.maps[k], 'title') }))]));
@@ -225,8 +225,9 @@ export function estateRoom() { if (!est?.ready) return; const v = ($('#here').va
   // v0.9.6：卡设定分层房间（r.std + r.floor）→ 按 { room, floor } 落点：庄园页切到该层并画框（受限房间只画素框）
   const cr = !estFocus && r?.std && r.floor ? estPlan?.rooms?.find(x => x.floor === r.floor && x.name === r.std) : null;
   const cc = cr ? { name: cr.name, floor: cr.floor, kind: cr.kind, area: cr.area, poly: cr.poly, z: (estPlan.floors.find(f => f.id === cr.floor) || {}).z } : null;
-  est.frame.contentWindow?.postMessage({ type: 'estate:room', name: estFocus || (cc ? cc.name : r?.custom ? r.room : v), card: estFocus && window.estCard?.name === estFocus ? window.estCard : cc }, SUB_ORIGIN); }   // 自定义叫法：庄园页收到的是对应的标准房间名
-window.TC3d = { live: () => live3d, release: release3d, snapping: () => snapping, stopSnap: stopTileTo3d, SNAP_MS };   // Part 3 §3：三维租约自检（tests / 浏览器探针）
+  const sel = estFocus && window.__selectedRoomPlan?.name === estFocus ? window.__selectedRoomPlan : null;   // 页面的消息体仍叫 floor（三维页的契约），这里的 storey 是查看器内部的叫法
+  est.frame.contentWindow?.postMessage({ type: 'estate:room', name: estFocus || (cc ? cc.name : r?.custom ? r.room : v), card: sel ? { name: sel.name, floor: sel.storey, kind: sel.kind, area: sel.area, poly: sel.poly, z: sel.z } : cc }, SUB_ORIGIN); }   // 自定义叫法：庄园页收到的是对应的标准房间名
+window.Lease3dApi = { live: () => live3d, release: release3d, snapping: () => snapping, stopSnap: stopTileTo3d, SNAP_MS };   // Part 3 §3：三维租约自检（tests / 浏览器探针）
 window.addEventListener('message', e => {
   if (!est || e.source !== est.frame.contentWindow || (PR && !PR.accept(e.data, '（子页 → 查看器）'))) return;
   if (e.data?.type === 'estate:ready') onEstateReady();
@@ -247,7 +248,7 @@ window.addEventListener('message', e => {
 });
 // 藏物表 / 背包有更新：庄园开着就再推一次（拿到手的东西从三维里消失）
 busOn({ key: 'estate.lootMsg', type: 'message', fn: e => {
-  if (!window.__fromHost?.(e)) return;
+  if (!window.__isFromHost?.(e)) return;
   const t = e.data?.type;
   if (t === 'eden-map:stash' || t === 'eden-map:inv') setTimeout(estateStash, 0);
   if (t === 'eden-map:routine' || t === 'eden-map:clock') setTimeout(estateNpcs, 0);   // 日程 / 时刻变了：三维里的人重新站位

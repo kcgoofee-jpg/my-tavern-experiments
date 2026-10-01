@@ -373,7 +373,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   const LL = createLlmFlow(host), { jitRound, xtalRound } = LL;
 
   // W8 世界书 → 地图（{{eden_fly}} 宏的接收半边）：最新助手楼里出现 data-eden-fly 标记就解析落点、
-  // 经协议里一直登记却无发送方的 eden-map:fly 聚焦过去（app/host-messages.mjs → TCCustom.flyTo，2D / 庄园房间 / 三维热点通吃）。
+  // 经协议里一直登记却无发送方的 eden-map:fly 聚焦过去（app/host-messages.mjs → CustomNamesView.flyTo，2D / 庄园房间 / 三维热点通吃）。
   // 每楼只飞一次（flyFloor 水位）；落点认不出就安静放过——绝不猜。
   // 任务二：提取走 th.flyTarget——除了已展开的隐藏标记，也认没被消费的字面宏 {{eden_fly: 地点}}，
   // 且外面裹着未闭合注释 / Prism 标记 / 截断标签时照样锚得住（正则在整段原文里扫，不依赖容器闭合）。
@@ -463,7 +463,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   // A-3：每楼原文的解析按 (楼层, 原文) 缓存、整轮输入的签名没变就跳过——都在流水线里（tavern/context.mjs，node 单测）；
   // 发送路径（GENERATION_AFTER_COMMANDS）只做注入需要的部分，标签改名 / 行程放到空闲时补做（restNow）。
   let restDue = false, restT = 0, custVer = 0;   // 调度状态：空闲补做与自定义版本号（轮次签名的输入）
-  const perf = (k, ms) => { const P = window.parent.__edenMapPerf; if (P) (P[k] ||= []).push(ms); };
+  const perf = (k, ms) => { const P = window.parent.__perfSamples; if (P) (P[k] ||= []).push(ms); };
   function readMsgs() {
     let list = null;
     try { floorNow = getLastMessageId(); if (floorNow >= 0) list = getChatMessages(`${Math.max(0, floorNow - CTX.SCAN)}-${floorNow}`, { role: 'assistant' }); } catch (e) { floorNow = -1; }
@@ -661,7 +661,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
       life.add(() => { pdoc.removeEventListener('visibilitychange', wake); window.parent.removeEventListener('pageshow', wake); window.parent.removeEventListener('online', wake); }); }
     if (tavern_events.GENERATION_AFTER_COMMANDS) listen(tavern_events.GENERATION_AFTER_COMMANDS, (type) => { clearTimeout(evT); recompute(true); MO.stateNow = ''; stateInject(typeof type === 'string' ? type : 'normal'); });   // (a) 重生 / swipe：用被替换那一楼之前的状态
     push(); loadSeen(); recompute(); stateInject(); startTick();   // interaction-modes.mjs 经桥静态可用（原动态加载后补一次注入，改为启动序列里统一做）
-    (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => { if (life.dead) return; afterGen(() => preload().catch(() => {})); try { budgetSweep(); } catch (e) {} setTimeout(() => { if (!life.dead) autoCheck().catch(() => {}); }, window.parent.__edenAutoCheckDelay ?? 6000); if (splashDue()) { lsSet('edenMapSplashSeen', String(VER || 'dev')); runCheck(); } else setTimeout(runCheck, 4000); setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动同步失败', e))); }, 8000); });   // 打开聊天后空闲时：测速选线 + 预加载；稍后自检一次
+    (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => { if (life.dead) return; afterGen(() => preload().catch(() => {})); try { budgetSweep(); } catch (e) {} setTimeout(() => { if (!life.dead) autoCheck().catch(() => {}); }, window.parent.__autoCheckDelay ?? 6000); if (splashDue()) { lsSet('edenMapSplashSeen', String(VER || 'dev')); runCheck(); } else setTimeout(runCheck, 4000); setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动同步失败', e))); }, 8000); });   // 打开聊天后空闲时：测速选线 + 预加载；稍后自检一次
   })();
 
   // 脚本被关闭或重载时清理注入的元素

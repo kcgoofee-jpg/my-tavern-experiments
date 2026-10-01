@@ -13,11 +13,11 @@ import { go } from './app/map-switch.mjs';
 import { estFail, estFocus, estateRoom, estateStandIn, setEstFocus } from './app/subpage3d-host.mjs';
 import { cardFrom, closeCard, setCardFrom } from './app/markers.mjs';
 import { estPlan, hereIdx, hereRes, markHere, setUserMoved, userMoved } from './app/locate.mjs'; import { readCustom } from './core/legacy-custom.mjs';
-import { TCSettings, showSet } from './app/settings.mjs';
+import { SettingsApi, showSet } from './app/settings.mjs';
 import { LS, chatId, rebuildHere } from './app/extension-api.mjs';
 import { P, register } from './app/plugins.mjs';
 import { createTint, NIGHT_KEY } from './custom-tint.mjs'; import { createOutfit } from './custom-outfit.mjs'; import { createHints } from './custom-hints.mjs'; import { createDialogView } from './custom-dialog-view.mjs';
-const TCCustom = (() => {
+const CustomNamesView = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const embed = window.top !== window;
   let MV = null, data = { items: {}, 同步世界书: true }, host = null, clock = null;
@@ -41,7 +41,7 @@ const TCCustom = (() => {
   function apply() {
     if (typeof rebuildHere === 'function') rebuildHere();
     relabel(); renderUI();
-    if (typeof P.TCChars !== 'undefined') { P.TCChars.render(); }
+    if (typeof P.CharactersView !== 'undefined') { P.CharactersView.render(); }
     if (typeof markHere === 'function' && typeof REG !== 'undefined' && REG) markHere(document.getElementById('here')?.value || '');
   }
   // 地图上的地名标签：有自定义显示名就换（dataset.name 仍是标准名，当前地点匹配不受影响）
@@ -59,7 +59,7 @@ const TCCustom = (() => {
     const key = title || el?.dataset?.name, e = entry(key), ex = c.querySelector('.extra'); ex.querySelectorAll('.cu-rep').forEach(n => n.remove());   // v16：按标题取条目（el 可能是上一张卡的标记），并清掉旧声望行
     if (e?.名) { c.querySelector('h2').textContent = e.名; const sb = c.querySelector('.sub'); sb.textContent = key + (sb.textContent ? ' · ' + sb.textContent : ''); }
     if (e?.用途) { const p = document.createElement('p'); p.className = 'cu-note'; p.innerHTML = `<b>${esc(T('cu.note', '用途'))}</b> `; p.append(document.createTextNode(e.用途)); ex.prepend(p); }
-    const rp = typeof P.TCChars !== 'undefined' ? P.TCChars.rep : null;
+    const rp = typeof P.CharactersView !== 'undefined' ? P.CharactersView.rep : null;
     if (homeMark(el?.dataset?.name) && rp != null) { const p = document.createElement('p'); p.className = 'cu-rep';   // v0.9.5 主角声望（只读，0–100）
       p.innerHTML = `<b>${esc(T('ch.rep', '声望'))}</b><meter min="0" max="100" low="30" high="70" optimum="100" value="${rp}"></meter><span>${Math.round(rp)}</span>`; ex.prepend(p); }
     if (roomNote && homeMark(el?.dataset?.name)) {
@@ -81,7 +81,7 @@ const TCCustom = (() => {
   const cardPlan = () => (typeof estPlan !== 'undefined' && estPlan) || plan?.CARD || null;
   function groups() {
     if (!PK || typeof REG === 'undefined' || !REG) return [];
-    return PK.buildGroups({ reg: REG, plan: plan && { ...plan, CARD: cardPlan() }, chars: typeof P.TCChars !== 'undefined' ? P.TCChars.items.map(c => c.name) : [], lang: typeof LANG !== 'undefined' ? LANG : 'zh' });
+    return PK.buildGroups({ reg: REG, plan: plan && { ...plan, CARD: cardPlan() }, chars: typeof P.CharactersView !== 'undefined' ? P.CharactersView.items.map(c => c.name) : [], lang: typeof LANG !== 'undefined' ? LANG : 'zh' });
   }
   const allKeys = () => groups().flatMap(g => g.items.map(i => i.key));
   function targetOf(key) {
@@ -96,7 +96,7 @@ const TCCustom = (() => {
   function renderUI() {
     const pop = document.getElementById('setPop'); if (!pop) return;
     let box = document.getElementById('cuBox');
-    if (!box) { box = document.createElement('div'); box.id = 'cuBox'; if (window.TCSettings) TCSettings.registerSection('data', box, { order: 20 }); else { const sc = document.getElementById('selfCheck'); sc ? pop.insertBefore(box, sc) : pop.appendChild(box); }
+    if (!box) { box = document.createElement('div'); box.id = 'cuBox'; if (window.SettingsApi) SettingsApi.registerSection('data', box, { order: 20 }); else { const sc = document.getElementById('selfCheck'); sc ? pop.insertBefore(box, sc) : pop.appendChild(box); }
       box.addEventListener('click', e => { const b = e.target.closest('[data-open]'); if (b) { e.stopPropagation(); openDlg(b); } }); box.addEventListener('change', onChange);
       for (const ev of ['pointerenter', 'focusin']) box.addEventListener(ev, () => { if (!depsOk) (window.requestIdleCallback || setTimeout)(warm); }, { once: true }); }
     const n = Object.keys(data.items || {}).length;
@@ -107,13 +107,13 @@ const TCCustom = (() => {
         : '')   // 任务二：书没绑上由卡内脚本静默水合（tavern/wb_jit.bindPlan + eden-map.js silentBind），前端不再提示玩家去后台手动勾
       + `<small>${esc(host ? (host.vars ? T('cu.store_chat', '存在这个聊天的变量里（换设备、导出聊天都跟着走）；摘要会作为背景发给模型') : T('cu.store_local', '酒馆助手没有变量接口：只存本机浏览器')) : T('cu.store_local2', '单独打开地图：只存本机浏览器'))}</small>`
       + `<label><span>${esc(T('cu.night', '按时段给上层、中层加色调与昼夜底图（清晨 / 傍晚 / 夜间）'))}</span><input type="checkbox" role="switch" id="optNight" ${nightOn() ? 'checked' : ''}></label>`
-      + (typeof P.TCChars !== 'undefined' && P.TCChars.hasPortraits ? `<label><span>${esc(T('ch.port', '使用原作头像'))}</span><input type="checkbox" role="switch" id="optPort" ${P.TCChars.portOn() ? 'checked' : ''}></label><small>${esc(T('ch.port_hint', '人物没有自己设的头像时，用卡里自带的原作立绘（作者 Yehehua，图片在作者 CDN 与作者用的另外两个图床上，按需加载）；省流时默认关。只取作者声明的立绘，且不碰卡里受限分类的图；取不到的人显示名字首字（不是故障，可以自己设头像）'))}</small>` : '');
+      + (typeof P.CharactersView !== 'undefined' && P.CharactersView.hasPortraits ? `<label><span>${esc(T('ch.port', '使用原作头像'))}</span><input type="checkbox" role="switch" id="optPort" ${P.CharactersView.portOn() ? 'checked' : ''}></label><small>${esc(T('ch.port_hint', '人物没有自己设的头像时，用卡里自带的原作立绘（作者 Yehehua，图片在作者 CDN 与作者用的另外两个图床上，按需加载）；省流时默认关。只取作者声明的立绘，且不碰卡里受限分类的图；取不到的人显示名字首字（不是故障，可以自己设头像）'))}</small>` : '');
     if (dlg && !dlg.hidden) renderDlg(false);
   }
   function onChange(ev) {
-    if (ev.target.id === 'optNight') { try { TCStore.set(NIGHT_KEY, ev.target.checked ? '1' : '0'); } catch (e) {} night(); }
+    if (ev.target.id === 'optNight') { try { LocalStore.set(NIGHT_KEY, ev.target.checked ? '1' : '0'); } catch (e) {} night(); }
     if (ev.target.id === 'cuSync') setSync(ev.target.checked);
-    if (ev.target.id === 'optPort') P.TCChars.setPortOn(ev.target.checked);
+    if (ev.target.id === 'optPort') P.CharactersView.setPortOn(ev.target.checked);
   }
 
   // ---------- 对话框 ----------
@@ -140,7 +140,7 @@ const TCCustom = (() => {
   function closeDlg(restore = true) {
     if (!dlg || dlg.hidden) return; dlg.hidden = true; document.body.classList.remove('cudlg');
     if (!restore) return;
-    if (!(opener?.isConnected && opener.offsetParent)) { if (window.TCSettings) TCSettings.open('data'); else if (document.getElementById('setPop')?.hidden && typeof showSet === 'function') showSet(true); opener = document.querySelector('#cuBox .cu-open'); }
+    if (!(opener?.isConnected && opener.offsetParent)) { if (window.SettingsApi) SettingsApi.open('data'); else if (document.getElementById('setPop')?.hidden && typeof showSet === 'function') showSet(true); opener = document.querySelector('#cuBox .cu-open'); }
     opener?.focus({ preventScroll: true });
   }
   function renderDlg(focus) {
@@ -236,8 +236,8 @@ const TCCustom = (() => {
     if (typeof closeCard === 'function') closeCard();
     if (t.character) {
       const norm = s => String(s || '').trim().toLowerCase(), want = norm(MV?.findKey(data, t.character) || t.character);
-      const c = typeof P.TCChars !== 'undefined' && P.TCChars.items.find(c => norm(c.name) === want); if (!c) return false;
-      P.TCChars.fly(c.name); return true;
+      const c = typeof P.CharactersView !== 'undefined' && P.CharactersView.items.find(c => norm(c.name) === want); if (!c) return false;
+      P.CharactersView.fly(c.name); return true;
     }
     if (t.room || t.area) {
       const name = t.room || t.area, eid = hereIdx?.estate?.id;
@@ -245,7 +245,7 @@ const TCCustom = (() => {
       if (!(typeof estFail !== 'undefined' && estFail) && REG.maps[eid].status !== 'planned') {
         roomNote = null; setEstFocus(name);
         const CP = cardPlan(), cr = t.floor && CP?.rooms?.find(r => r.floor === t.floor && (r.name === name || r.card_id === name));   // 卡设定分层房间：多边形随 estate:room 发给庄园页画框
-        window.estCard = cr ? { name, floor: cr.floor, kind: cr.kind, area: cr.area, poly: cr.poly, z: (CP.floors.find(f => f.id === cr.floor) || {}).z } : null; if (cur === eid) estateRoom(); else { setPendingFocus(null); go(eid); } return true;
+        window.__selectedRoomPlan = cr ? { name, storey: cr.floor, kind: cr.kind, area: cr.area, poly: cr.poly, z: (CP.floors.find(f => f.id === cr.floor) || {}).z } : null; if (cur === eid) estateRoom(); else { setPendingFocus(null); go(eid); } return true;
       }
       const s = estateStandIn(eid); if (!s) return false; roomNote = name; return flyMarker(s.map, s.marker);
     }
@@ -275,7 +275,7 @@ const TCCustom = (() => {
   // 宿主推来的
   function fromHost(d) { host = { vars: !!d.vars, wb: !!d.wb, wbState: d.wbState || '' }; ready.then(M => { if (!M) return; data = M.normCustom(d.data); apply(); }); }
   const preTag = () => document.body.classList.toggle('prestart', !!clock?.pre);   // 开局前（卡初始值）：宿主标题栏的时钟另有标注
-  function setClock(c) { const was = !!clock?.pre; clock = c; night(); if (was !== !!c?.pre) { P.TCEvents?.renderBar?.(); preTag(); } }
+  function setClock(c) { const was = !!clock?.pre; clock = c; night(); if (was !== !!c?.pre) { P.EventsView?.renderBar?.(); preTag(); } }
   function chatChanged() { if (!host) ready.then(loadLocal); }
 
   const css = `
@@ -388,5 +388,5 @@ const TCCustom = (() => {
   return { name, entry, index, relabel, decorateCard, flyTo, openDlg, dlgKey, fromHost, setClock, setOutfit: OF.setOutfit, toast, chatChanged, setCustom, removeCustom, setSync, renderUI, todNow, nightOn,
     get data() { return MV ? MV.normCustom(data) : { items: {} }; }, get outfit() { return OF.outfit ? { ...OF.outfit } : null; }, get clock() { return clock ? { ...clock } : null; }, ready };
 })();
-register('TCCustom', TCCustom);
-export { TCCustom };
+register('CustomNamesView', CustomNamesView);
+export { CustomNamesView };

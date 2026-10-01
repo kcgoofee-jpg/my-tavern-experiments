@@ -29,7 +29,7 @@ try {
   g = await glitch(); rep.check('closing the event turns the effect off', g.lv === '' && !g.note, JSON.stringify(g));
 
   const item = (over) => ({ id: 'x' + Math.random().toString(36).slice(2, 7), key: 'k', cat: '火灾', layer: '中层', place: '商业区', lvl: 2, text: 't', src: '', first: 60, last: 60, count: 1, closed: false, tier: 'live', isNew: true, ...over });
-  const post = items => p.evaluate(m => TCEvents.set(m), { type: 'eden-map:events', items, floor: 60 });
+  const post = items => p.evaluate(m => EventsView.set(m), { type: 'eden-map:events', items, floor: 60 });
   await post([item({ cat: '火灾', fx: { block: 'glitch' } })]); await B.wait(500);
   g = await glitch(); rep.check('an item that declares fx: glitch on another type triggers it (declaration, not name)', g.lv === '2' && g.note, JSON.stringify(g));
   await post([item({ cat: '网络攻击' })]); await B.wait(500);
@@ -43,7 +43,7 @@ try {
   s = await evs(); rep.check('touching the legend stores the user filter (no default any more)', s.off !== null, JSON.stringify(s));
 
   await post([{ cat: '火灾', layer: '中层', place: '商业区', lvl: 2, text: 'op', src: 'op', floor: 60, last: 60, first: 60, id: 'op1', key: 'op1', count: 1, closed: false, tier: 'live' }]); await B.wait(500);
-  const op = await p.evaluate(() => TCEvents.events.find(e => e.id === 'op1'));
+  const op = await p.evaluate(() => EventsView.events.find(e => e.id === 'op1'));
   rep.check('items without group / icon / colour are filled from the taxonomy', op && op.grp === '灾害' && op.ch === '火' && /^#/.test(op.color), JSON.stringify(op && [op.grp, op.ch, op.color]));
   rep.check('no page errors', P.errors.length === 0, P.errors.slice(0, 3).join(' | '));
 } finally { await B.closeAll(); srv.stop(); }

@@ -7,9 +7,9 @@
 <script>
 // 设定包：core/pack.mjs currentId / nsKey 的同步副本（tests/pack.test.mjs 对照）。宿主注入 window.__tcPack 或地址 ?pack=<id>；非 eden 包的 edenMap* 键换成 tcp.<id>.*（eden 原样，老用户的键不动）
 window.__packId = (() => { let id = null; try { id = (window.__tcPack && window.__tcPack.id) || new URLSearchParams(location.search).get('pack'); } catch (e) {} return id && /^[a-z][a-z0-9_-]{1,31}$/.test(id) ? id : 'eden'; })();
-window.__nsKey = k => (window.__packId !== 'eden' && typeof k === 'string' && k.startsWith('edenMap') ? 'tcp.' + window.__packId + '.' + k.slice(7) : k);
+window.__packStorageKey = k => (window.__packId !== 'eden' && typeof k === 'string' && k.startsWith('edenMap') ? 'tcp.' + window.__packId + '.' + k.slice(7) : k);
 // 启动预取（数据驱动，通用化 v1）：清单按包 id 取、与模块并行；清单 preload 列的数据文件由清单自己声明——
-// 宿主注入 __tcPack（清单同步在手）现在就注入 <link rel=preload>；单独打开先取清单（__manifestP，app/current-pack.mjs 复用），一到就注入。
+// 宿主注入 __tcPack（清单同步在手）现在就注入 <link rel=preload>；单独打开先取清单（__manifestPromise，app/current-pack.mjs 复用），一到就注入。
 // 世界底图预取（无 ?map= 时）只给有世界图的包：注入的看清单 data.world；单独打开的默认包（eden）照旧，别的包不白拉三个 404。dzi 带 crossorigin 才和 OSD 的请求对得上。
 (function () {
   const id = window.__packId, B = id === 'eden' ? '' : 'packs/' + id + '/', u = 'packs/' + id + '/manifest.json';
@@ -17,16 +17,16 @@ window.__nsKey = k => (window.__packId !== 'eden' && typeof k === 'string' && k.
   const put = m => { for (const p of m?.preload || []) add(B + p); };
   add(u);
   if (window.__tcPack?.manifest) put(window.__tcPack.manifest);
-  else window.__manifestP = fetch(u, { credentials: 'omit', referrerPolicy: 'no-referrer' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(m => (put(m), m)).catch(() => {});
-  window.__worldFirst = !new URLSearchParams(location.search).get('map');   // 总是先开世界图（用户 2026-09-28）
-  if (window.__worldFirst && (id === 'eden' || !!window.__tcPack?.manifest?.data?.world)) for (const [h, as, co] of [['art/world.dzi', 'fetch', 1], ['art/borders.dzi', 'fetch', 1], ['art/world_1k.jpg', 'image', 0]]) add(h, as, co);
+  else window.__manifestPromise = fetch(u, { credentials: 'omit', referrerPolicy: 'no-referrer' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(m => (put(m), m)).catch(() => {});
+  window.__openWorldMapFirst = !new URLSearchParams(location.search).get('map');   // 总是先开世界图（用户 2026-09-28）
+  if (window.__openWorldMapFirst && (id === 'eden' || !!window.__tcPack?.manifest?.data?.world)) for (const [h, as, co] of [['art/world.dzi', 'fetch', 1], ['art/borders.dzi', 'fetch', 1], ['art/world_1k.jpg', 'image', 0]]) add(h, as, co);
 })();
 
 </script>
 <script>
 // 本机存储（arch-v2 §4 / §6 第 5 步）：core/storage.mjs 的同步经典镜像——经典脚本要在首帧前同步读，不能 import 模块。
 // get 与 localStorage.getItem 同义（没有 = null，不套默认值）；set / remove 永不抛（隐私模式、额度满）。键都要在 core/storage.mjs 的 KEYS 登记（tests/storage.test.mjs）。
-window.TCStore = (() => { const A = s => { try { return s ? sessionStorage : localStorage; } catch (e) { return null; } }, ses = k => k === 'edenMapEstateFail', N = window.__nsKey;
+window.LocalStore = (() => { const A = s => { try { return s ? sessionStorage : localStorage; } catch (e) { return null; } }, ses = k => k === 'edenMapEstateFail', N = window.__packStorageKey;
   // 读的别名回退与 core/storage.mjs get 同一规则：包命名空间（tcp.<id>.*）空着时读 edenMap* 历史档；eden 键本来就是原名，跳过第二次读
   const rd = (k, s) => { const a = A(s); try { return a?.getItem(N(k)) ?? (window.__packId === 'eden' ? null : a?.getItem(k)) ?? null; } catch (e) { return null; } };
   return { key: N, get: k => rd(k, ses(k)),
@@ -36,22 +36,22 @@ window.TCStore = (() => { const A = s => { try { return s ? sessionStorage : loc
 // 主题（默认跟随系统）与界面语言（中 / EN）：首帧之前定好，避免先闪一下深色或中文。?theme=light|dark|auto、?lang=en 可覆盖
 (function () {
   const q = new URLSearchParams(location.search), d = document.documentElement; let th = 'auto', lg = 'zh';
-  try { th = q.get('theme') || TCStore.get('edenMapTheme') || 'auto'; lg = q.get('lang') || TCStore.get('edenMapLang') || 'zh'; } catch (e) {}
+  try { th = q.get('theme') || LocalStore.get('edenMapTheme') || 'auto'; lg = q.get('lang') || LocalStore.get('edenMapLang') || 'zh'; } catch (e) {}
   if (!['auto', 'light', 'dark'].includes(th)) th = 'auto'; if (!['zh', 'en'].includes(lg)) lg = 'zh';
   const mq = matchMedia('(prefers-color-scheme: light)');
   window.__theme = th; window.__lang = lg; d.lang = lg === 'en' ? 'en' : 'zh-CN';
   window.__applyTheme = () => d.classList.toggle('light', window.__theme === 'light' || (window.__theme === 'auto' && mq.matches));
   window.__applyTheme(); mq.addEventListener && mq.addEventListener('change', window.__applyTheme);
   // 单手（E7）：惯用手 auto / left / right → html[data-hand]；auto = 看酒馆悬浮按钮被拖到哪一半（同源 localStorage），没拖过按右手。记在本机，?hand= 可覆盖（测试用）
-  let hd = 'auto'; try { hd = q.get('hand') || TCStore.get('edenMapHand') || 'auto'; } catch (e) {}
+  let hd = 'auto'; try { hd = q.get('hand') || LocalStore.get('edenMapHand') || 'auto'; } catch (e) {}
   window.__hand = ['auto', 'left', 'right'].includes(hd) ? hd : 'auto';
   window.__applyHand = () => { let h = window.__hand;
-    if (h === 'auto') { h = 'right'; try { const p = JSON.parse(TCStore.get('edenMapFabPos')); if (p && p[0] < .5) h = 'left'; } catch (e) {} }
+    if (h === 'auto') { h = 'right'; try { const p = JSON.parse(LocalStore.get('edenMapFabPos')); if (p && p[0] < .5) h = 'left'; } catch (e) {} }
     d.dataset.hand = h; return h; };
   window.__applyHand();
-  window.__i18n = fetch('i18n/' + lg + '.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));   // 和启动数据并行取
+  window.__dictionaryPromise = fetch('i18n/' + lg + '.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));   // 和启动数据并行取
   if ((navigator.deviceMemory || 8) <= 4) d.classList.add('lowmem');   // 低内存：不用毛玻璃（backdrop-filter 很贵）
-  // __worldFirst 与启动预取（清单 / 数据 / 世界底图）在顶部首帧脚本里按包 gating
+  // __openWorldMapFirst 与启动预取（清单 / 数据 / 世界底图）在顶部首帧脚本里按包 gating
 })();
 </script>
 <!-- 设计令牌（E5）：map/ui/tokens.css 的逐字副本，内联进来——少一个会阻塞首帧的请求，令牌文件挂了也不散架（E5 r2 弱网 W2 / W3）。
@@ -139,7 +139,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <link rel="modulepreload" href="app/control-column.mjs"><link rel="modulepreload" href="app/drawer-glue.mjs"><link rel="modulepreload" href="app/notice-layer.mjs"><link rel="modulepreload" href="app/status-dot.mjs"><link rel="modulepreload" href="app/one-hand-mode.mjs"><link rel="modulepreload" href="app/quick-zoom.mjs">
 <link rel="modulepreload" href="app/host-messages.mjs">
 <link rel="modulepreload" href="app/layer-host.mjs">
-<link rel="modulepreload" href="app/legacy-globals.mjs">
+<link rel="modulepreload" href="app/viewer-debug.mjs">
 <link rel="modulepreload" href="app/fps.mjs"><link rel="modulepreload" href="app/load-progress.mjs"><link rel="modulepreload" href="ui/progress.mjs">
 <link rel="modulepreload" href="app/visibility.mjs">
 <link rel="modulepreload" href="app/bus.mjs">
@@ -637,7 +637,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   <div id="stage" role="main" data-i18n-aria="page_title" aria-label="空间地图"><div id="osd"></div><div id="foot"><button type="button" id="creditBtn" aria-expanded="false" aria-controls="credit" data-i18n-aria="credit_aria" aria-label="署名"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/></svg></button><div id="credit" hidden></div></div><nav id="layers" hidden data-i18n-aria="layers_aria" aria-label="楼层"></nav>
     <div id="zoom" role="group" data-i18n-aria="zoom_group" aria-label="缩放"><button type="button" id="zIn" data-i18n-aria="zoom_in" aria-label="放大" data-i18n-title="zoom_in" title="放大"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg></button><button type="button" id="zOut" data-i18n-aria="zoom_out" aria-label="缩小" data-i18n-title="zoom_out" title="缩小"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/></svg></button><button type="button" id="zHome" data-i18n-aria="zoom_home" aria-label="复位视野" data-i18n-title="zoom_home" title="复位视野"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"/><circle cx="12" cy="12" r="2.5"/></svg></button><button type="button" id="zAll" data-i18n="zoom_all" data-i18n-aria="zoom_all" aria-label="看全区" data-i18n-title="zoom_all" title="看全区">看全区</button><button type="button" id="lblTog" aria-pressed="true" data-i18n-aria="labels_tog" aria-label="显示标注" data-i18n-title="labels_tog_t" title="显示标注（L）"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 18l4.5-12L12 18M4.7 14h5.6"/><path d="M20.5 18v-5.2a2.6 2.6 0 0 0-5 0M20.5 15.2c-3.4-.4-5.5.4-5.5 1.6 0 .9.8 1.4 1.9 1.4 1.8 0 3.6-1.2 3.6-3"/></svg></button></div>
     <div id="prog" hidden><i></i></div><div id="zoomHint" hidden aria-live="polite"></div><div id="loading"><div><span data-i18n="loading">加载中…</span><div class="acts" hidden><button type="button" class="btn" id="estRetry" data-i18n="estate.retry">重试</button><button type="button" class="btn" id="estPlan" data-i18n="estate.plan">看平面图</button><button type="button" class="btn" id="tileRetry" hidden data-i18n="estate.retry">重试</button></div></div></div></div>
-  <script>if (window.__worldFirst) document.getElementById('loading').classList.add('thumb');</script>
+  <script>if (window.__openWorldMapFirst) document.getElementById('loading').classList.add('thumb');</script>
 </div>
 <div id="layPop" class="pop" hidden role="dialog" data-i18n-aria="layers_menu" aria-label="图层"><div id="layList">
   <!-- P3-C：行由 app/layer-host.mjs renderLayerMenu() 按 LayerRegistry 的菜单描述符渲染（元素 id / 存储键 / 默认勾选与旧静态行一致） -->
@@ -694,7 +694,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <div id="status"></div>
 <script>
 // 首帧前置 #2（arch-v2 §2）：核心模块（app/boot.mjs）在地图库下载完后才求值。嵌入标记现在就打（首帧布局与以前一致）；宿主早到的消息先排队，app/host-messages.mjs 装好监听后按原顺序补处理
-if (window.top !== window) { document.body.classList.add('embed'); window.__earlyMsgs = []; addEventListener('message', window.__earlyTap = function (e) { if (window.__earlyMsgs) window.__earlyMsgs.push(e); }); }
+if (window.top !== window) { document.body.classList.add('embed'); window.__bufferedHostMessages = []; addEventListener('message', window.__hostMessageTap = function (e) { if (window.__bufferedHostMessages) window.__bufferedHostMessages.push(e); }); }
 </script>
 <script type="module" src="app/card-links.mjs" onerror="console.warn('[地图] app/card-links.mjs 加载失败：地点卡只显示通道链接')"></script>
 <script type="module" src="app/clouds.mjs" onerror="console.warn('[地图] app/clouds.mjs 加载失败：切层转场与漂移云关闭')"></script>

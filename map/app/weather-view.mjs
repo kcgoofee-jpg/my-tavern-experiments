@@ -2,7 +2,7 @@
 // 画雨 / 沙尘 / 雪的粒子、全屏色调与雷暴雨的闪电。数学与预设表在 core/weather.mjs（纯，单测覆盖），这里只画。
 //
 // 驱动：宿主推来的事态（eden-map:events）经 weatherFromStory 判天气、时钟（eden-map:clock）判夜；
-// 两条消息都只认宿主（window.__fromHost，与 app/host-messages.mjs 同一道闸）。
+// 两条消息都只认宿主（window.__isFromHost，与 app/host-messages.mjs 同一道闸）。
 // 节拍：可见性守卫按下暂停位就停 rAF（P7-4），省流档粒子减半——面板关着 / 标签页在后台一帧都不画。
 import { registry, slotEl } from './layer-host.mjs';
 import { weatherOf, particleField, lightningAt, weatherFromStory, tintOf } from '../core/weather.mjs';
@@ -72,7 +72,7 @@ export function registerWeatherLayer() {
   });
   // 宿主消息：事态 → 天气、时钟 → 夜（只认宿主，与 app/host-messages.mjs 同一道闸）
   busOn({ key: 'weather.hostMsg', type: 'message', fn: e => {
-    if (!window.__fromHost?.(e)) return;
+    if (!window.__isFromHost?.(e)) return;
     const d = e.data; if (!d) return;
     if (d.type === 'eden-map:clock') night = !!d.night;
     if (d.type === 'eden-map:events' && Array.isArray(d.items)) {
@@ -81,6 +81,6 @@ export function registerWeatherLayer() {
   } });
   busOn({ key: 'weather.resize', type: 'resize', fn: () => size() });
   visibilityGuard.subscribe(paused => { paused ? stop() : (registry.isVisible('weather') && id !== 'clear' ? start() : null); });
-  window.TCWeather = { set: setWeather, fromStory: setWeatherFromStory, now: weatherNow, describe: () => weatherOf(id).id };
+  window.WeatherApi = { set: setWeather, fromStory: setWeatherFromStory, now: weatherNow, describe: () => weatherOf(id).id };
   return true;
 }

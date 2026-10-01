@@ -85,7 +85,7 @@ async function run(preset, tag) {
   rep.check(`${tag}：默认非维护者模式下不显示「投稿」「导出」`, !nonMaintainer.hasExport, JSON.stringify(nonMaintainer));
   await f.evaluate(() => document.querySelector('.rgp-x')?.click());
 
-  // ---------------- 打开维护者模式（设置里的开关，走 TCStore/localStorage） ----------------
+  // ---------------- 打开维护者模式（设置里的开关，走 LocalStore/localStorage） ----------------
   await f.evaluate(() => { try { localStorage.setItem('edenGalleryMaintainerMode', '1'); } catch (e) {} });
 
   // ---------------- 发 chatId，测「仅本聊天」作用域 ----------------

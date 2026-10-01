@@ -11,12 +11,12 @@ import { registry } from './layer-host.mjs';
 import { markHere } from './locate.mjs';
 import { norm, visit, known, count } from '../core/exploration-ledger.mjs';
 import { cssFilter } from '../core/layer-registry.mjs';
-import * as TCStore from '../core/storage.mjs';
+import * as storage from '../core/storage.mjs';
 import { register } from './plugins.mjs';
-const { FOG_KEY, FOG_LOCAL_KEY } = TCStore;
+const { FOG_KEY, FOG_LOCAL_KEY } = storage;
 const embedded = () => window.top !== window;
-let ex = embedded() ? {} : norm(TCStore.json(FOG_LOCAL_KEY, {}));
-const on = () => TCStore.get(FOG_KEY) === '1';
+let ex = embedded() ? {} : norm(storage.json(FOG_LOCAL_KEY, {}));
+const on = () => storage.get(FOG_KEY) === '1';
 // Part 8-3：空气透视滤镜链（core/haze.mjs 算的，depth-haze 槽那层挂同一条）——迷雾遮罩跟着当前纵深一起发灰发糊
 let hazeChain = [];
 const hazeCss = () => cssFilter(hazeChain);
@@ -50,15 +50,15 @@ function here(r) {
   if (mute || !on() || !r?.map || !r.marker) return;
   const name = REG?.maps?.[r.map]?.markers?.[r.marker]?.name; if (!name) return;
   const v = visit(ex, r.map, name); if (!v.changed) return; ex = v.ex;
-  if (embedded()) post({ type: 'eden-map:explore', map: r.map, name }); else TCStore.set(FOG_LOCAL_KEY, JSON.stringify(ex));
+  if (embedded()) post({ type: 'eden-map:explore', map: r.map, name }); else storage.set(FOG_LOCAL_KEY, JSON.stringify(ex));
   if (r.map === cur) paint();
 }
-const setFog = v => { TCStore.set(FOG_KEY, v ? '1' : '0'); if (v && typeof markHere === 'function') markHere($('#here').value); paint(); };
+const setFog = v => { storage.set(FOG_KEY, v ? '1' : '0'); if (v && typeof markHere === 'function') markHere($('#here').value); paint(); };
 registry.register({ id: 'fog', slot: 'fog', kind: 'canvas', initialVisible: on(), setVisible: setFog });   // P3-C：迷雾作为 fog 槽的 canvas 图层受 Registry 调度
-register('TCFog', {   // 经 P 注册（同名仍挂 window）：host-messages.mjs 的回放静音走 P.TCFog
+register('FogApi', {   // 经 P 注册（同名仍挂 window）：host-messages.mjs 的回放静音走 P.FogApi
   paint, here, on, count: () => count(ex), raw: () => ex, setHaze,   // raw = 到访台账本体（纵深摘要算探索度用）
   mute(v) { mute = !!v; },   // 回放期间静默探索记录（host-messages.mjs 在 eden-map:here replay 时包住 markHere）
   set(raw) { ex = norm(raw); paint(); },                 // 宿主推来（换聊天 / 加载）
   toggle(v) { registry.setVisible('fog', v); },
-  reset() { ex = {}; if (embedded()) post({ type: 'eden-map:explore-reset' }); else TCStore.remove(FOG_LOCAL_KEY); paint(); },
+  reset() { ex = {}; if (embedded()) post({ type: 'eden-map:explore-reset' }); else storage.remove(FOG_LOCAL_KEY); paint(); },
 });

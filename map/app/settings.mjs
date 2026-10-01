@@ -1,4 +1,4 @@
-// 设置弹层：分页、TCSettings.registerSection、搜索、initSettings、关于 / 检查更新、自检。
+// 设置弹层：分页、SettingsApi.registerSection、搜索、initSettings、关于 / 检查更新、自检。
 import { $, esc } from './dom-helpers.mjs';
 import { post } from './protocol-stamp.mjs';
 import { tx } from './text-lookup.mjs';
@@ -16,7 +16,7 @@ import { PACK } from './current-pack.mjs';
 import { mountFeedbackButton } from './feedback.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
 // ---------------- 设置（UI v2 §5）：首页 = 分组列表（+ 手机上的快捷：上一级、当前位置、关闭地图、切层、图层开关）；子页 显示 / 人物 / 数据与映射 / 更新与版本 / 高级 ----------------
-// 模块向指定页注册自己的一栏：TCSettings.registerSection(page, el, { order })，不再 insertBefore(#selfCheck)。
+// 模块向指定页注册自己的一栏：SettingsApi.registerSection(page, el, { order })，不再 insertBefore(#selfCheck)。
 export let setPageNow = 'home', setPrev = null;
 const PAGES = { home: ['settings_title', '设置'], display: ['s.display', '显示'], people: ['s.people', '人物'], data: ['s.data', '数据与映射'], update: ['s.update', '更新与版本'], adv: ['s.adv', '高级'], license: ['s.license', '版权申明'] };
 export function setPage(pg, quiet) {
@@ -26,12 +26,12 @@ export function setPage(pg, quiet) {
   if (!quiet) { $('#setPop').scrollTop = 0; const f = pg === 'home' ? ($('#setQ')?.offsetParent ? $('#setQ') : $('#setPop .sgroups button')) : $('#setBack'); f?.focus({ preventScroll: true }); }
   if (pg === 'update') renderSelfCheck();
   if (pg === 'license') renderLicense();
-  if (pg === 'people') { const n = typeof P.TCChars !== 'undefined' ? P.TCChars.count() : 0; $('#chSrc').textContent = tx('s.ch_src_n', `当前聊天 ${n} 人`, { n }); }
+  if (pg === 'people') { const n = typeof P.CharactersView !== 'undefined' ? P.CharactersView.count() : 0; $('#chSrc').textContent = tx('s.ch_src_n', `当前聊天 ${n} 人`, { n }); }
   if (pg === 'adv') renderLine();
   if (pg === 'display') tierAvail();
-  if (pg === 'data') { if (window.top !== window) post({ type: 'eden-map:storage-info' }); else window.renderStorage?.(null); }
+  if (pg === 'data') { if (window.top !== window) post({ type: 'eden-map:storage-info' }); else window.renderStorageSettings?.(null); }
 }
-export const TCSettings = window.TCSettings = {
+export const SettingsApi = window.SettingsApi = {
   registerSection(page, el, o = {}) { const pg = document.querySelector(`#setPop .spage[data-page="${page}"]`) || document.querySelector('#setPop .spage[data-page="adv"]'); if (!pg || !el) return;
     el.dataset.order = o.order ?? 50; const after = [...pg.children].find(c => c.dataset.order != null && +c.dataset.order > +el.dataset.order); after ? pg.insertBefore(el, after) : pg.appendChild(el); },
   open(page = 'home') { showSet(true); setPage(page); },
@@ -94,18 +94,18 @@ function setSearch(q) {
     b.onclick = () => { setPage(pg); r.closest('details')?.setAttribute('open', ''); r.scrollIntoView({ block: 'center' }); r.classList.add('found'); setTimeout(() => r.classList.remove('found'), 1600); (r.querySelector('input, button') || r).focus?.({ preventScroll: true }); };
     box.appendChild(b); }
 }
-export const rmPref = () => { try { return TCStore.get('edenMapRM') || 'auto'; } catch (e) { return 'auto'; } };
-export const q3Pref = () => { try { return TCStore.get('edenMap3dQ') || 'auto'; } catch (e) { return 'auto'; } };
+export const rmPref = () => { try { return LocalStore.get('edenMapRM') || 'auto'; } catch (e) { return 'auto'; } };
+export const q3Pref = () => { try { return LocalStore.get('edenMap3dQ') || 'auto'; } catch (e) { return 'auto'; } };
 const rmNow = () => rmPref() === 'on' || (rmPref() === 'auto' && matchMedia('(prefers-reduced-motion: reduce)').matches);
-function applyRM() { document.documentElement.classList.toggle('rm', rmPref() === 'on'); window.__rm = rmNow(); estateLook(); }
+function applyRM() { document.documentElement.classList.toggle('rm', rmPref() === 'on'); window.__reducedMotion = rmNow(); estateLook(); }
 export function initSettings() {
   const btn = $('#setBtn'), pop = $('#setPop');
   const firstIn = el => el.querySelector('button:not([hidden]), input, [tabindex="0"]');
   let opener = null;
   showSet = (on, page) => { const was = !pop.hidden; pop.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); $('#thumbBtn')?.setAttribute('aria-expanded', on ? 'true' : 'false');
     document.body.classList.toggle('setopen', !!on);
-    if (on) { showLay(false); if (!was) { opener = document.activeElement; setPrev = window.TCSheet ? { tab: TCSheet.tab, top: TCSheet.body.scrollTop } : null; setPage(page || 'home', true); pop.scrollTop = 0; firstIn(pop)?.focus({ preventScroll: true }); setActs(); } }
-    else if (was) { $('#setQ').value = ''; setSearch(''); if (setPrev && window.TCSheet) { if (setPrev.tab) TCSheet.setTab(setPrev.tab); TCSheet.body.scrollTop = setPrev.top; } setPrev = null; noticeRefresh(); } };
+    if (on) { showLay(false); if (!was) { opener = document.activeElement; setPrev = window.ViewerDrawer ? { tab: ViewerDrawer.tab, top: ViewerDrawer.body.scrollTop } : null; setPage(page || 'home', true); pop.scrollTop = 0; firstIn(pop)?.focus({ preventScroll: true }); setActs(); } }
+    else if (was) { $('#setQ').value = ''; setSearch(''); if (setPrev && window.ViewerDrawer) { if (setPrev.tab) ViewerDrawer.setTab(setPrev.tab); ViewerDrawer.body.scrollTop = setPrev.top; } setPrev = null; noticeRefresh(); } };
   $('#setX').onclick = e => { e.stopPropagation(); showSet(false); };
   $('#setBack').onclick = e => { e.stopPropagation(); setPage('home'); };
   pop.querySelector('.sgroups').addEventListener('click', e => { const b = e.target.closest('button[data-page]'); if (b) setPage(b.dataset.page); });
@@ -127,41 +127,41 @@ export function initSettings() {
   busOn({ key: 'settings.layerOutsideClick', target: document, type: 'click', fn: e => { if (!lp.hidden && !gone(e.target) && !lp.contains(e.target) && !lb.contains(e.target)) showLay(false); } });
   // 表单正在编辑时通知先不出（§3）
   pop.addEventListener('focusin', noticeRefresh); pop.addEventListener('focusout', () => setTimeout(noticeRefresh, 0));
-  { const cs = $('#optCharStats'); try { cs.checked = TCStore.get('edenMapCharStats') !== '0'; } catch (e) {} cs.onchange = () => P.TCChars.setStatsOn(cs.checked); }   // v0.9.6 E2 / E13
-  { const cm = $('#optCharMore'); try { cm.checked = TCStore.get('edenMapCharMore') !== '0'; } catch (e) {} cm.onchange = () => P.TCChars.setMoreOn(cm.checked); }   // v0.9.6 E13 其余字段
+  { const cs = $('#optCharStats'); try { cs.checked = LocalStore.get('edenMapCharStats') !== '0'; } catch (e) {} cs.onchange = () => P.CharactersView.setStatsOn(cs.checked); }   // v0.9.6 E2 / E13
+  { const cm = $('#optCharMore'); try { cm.checked = LocalStore.get('edenMapCharMore') !== '0'; } catch (e) {} cm.onchange = () => P.CharactersView.setMoreOn(cm.checked); }   // v0.9.6 E13 其余字段
   // 关闭花屏特效：只停动画和滤镜，「⚠ 数据链路受扰」文字照常显示；系统开了「减少动态效果」时默认勾上（E4 N24）
   const fx = $('#optNoFx'); let nofx = matchMedia('(prefers-reduced-motion: reduce)').matches || rmPref() === 'on';
-  try { const v = TCStore.get('edenMapNoFx'); if (v !== null) nofx = v === '1'; } catch (e) {}
+  try { const v = LocalStore.get('edenMapNoFx'); if (v !== null) nofx = v === '1'; } catch (e) {}
   fx.checked = nofx; document.body.classList.toggle('nofx', nofx);
-  fx.onchange = () => { document.body.classList.toggle('nofx', fx.checked); try { TCStore.set('edenMapNoFx', fx.checked ? '1' : '0'); } catch (e) {} };
+  fx.onchange = () => { document.body.classList.toggle('nofx', fx.checked); try { LocalStore.set('edenMapNoFx', fx.checked ? '1' : '0'); } catch (e) {} };
   // 显示：主题、减少动态（跟随系统 / 开 / 关）、三维画质（三维页像素比上限）
   $('#themeSeg').addEventListener('click', e => { const b = e.target.closest('button[data-th]'); if (b) setTheme(b.dataset.th); });
-  $('#rmSeg').addEventListener('click', e => { const b = e.target.closest('button[data-rm]'); if (!b) return; try { TCStore.set('edenMapRM', b.dataset.rm); } catch (x) {} applyRM(); paintSegs(); });
-  $('#q3Seg').addEventListener('click', e => { const b = e.target.closest('button[data-q]'); if (!b) return; try { TCStore.set('edenMap3dQ', b.dataset.q); } catch (x) {} paintSegs(); estateLook(); });
+  $('#rmSeg').addEventListener('click', e => { const b = e.target.closest('button[data-rm]'); if (!b) return; try { LocalStore.set('edenMapRM', b.dataset.rm); } catch (x) {} applyRM(); paintSegs(); });
+  $('#q3Seg').addEventListener('click', e => { const b = e.target.closest('button[data-q]'); if (!b) return; try { LocalStore.set('edenMap3dQ', b.dataset.q); } catch (x) {} paintSegs(); estateLook(); });
   $('#cvdSeg').addEventListener('click', e => { const b = e.target.closest('button[data-cvd]'); if (!b) return; TCCvd.setMode(b.dataset.cvd); paintSegs(); estateLook(); });
   matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', applyRM); applyRM();
   // 高级：三维抽屉自动收起（默认关，§10.5）、单字母快捷键（默认开）、调试帧率、线路（嵌入时由卡内脚本换线路）
-  const sw = (id, key, def, fn) => { const c = $(id); let on = def; try { const v = TCStore.get(key); if (v !== null) on = v === '1'; } catch (e) {} c.checked = on;
-    c.onchange = () => { try { TCStore.set(key, c.checked ? '1' : '0'); } catch (e) {} fn?.(c.checked); }; };
-  sw('#optFog', 'edenMapFog', true, v => { $('#fogRow').hidden = !v; window.TCFog?.toggle(v); }); $('#fogRow').hidden = TCStore.get('edenMapFog') === '0';
-  $('#fogReset').onclick = () => window.TCFog?.reset();
+  const sw = (id, key, def, fn) => { const c = $(id); let on = def; try { const v = LocalStore.get(key); if (v !== null) on = v === '1'; } catch (e) {} c.checked = on;
+    c.onchange = () => { try { LocalStore.set(key, c.checked ? '1' : '0'); } catch (e) {} fn?.(c.checked); }; };
+  sw('#optFog', 'edenMapFog', true, v => { $('#fogRow').hidden = !v; window.FogApi?.toggle(v); }); $('#fogRow').hidden = LocalStore.get('edenMapFog') === '0';
+  $('#fogReset').onclick = () => window.FogApi?.reset();
   // U14（2026-09-28）：左下角小地图默认关；实时切换靠 body.nominimap 这个 CSS 类（不用重开地图）
   // Part 6-4 动作注入模式：默认 off（地图不替玩家说话）；切了要重画卡片才出现 / 消失入口
   { const inj = $('#injSeg');
     inj?.addEventListener('click', e => { const b = e.target.closest('button[data-inj]'); if (!b) return;
-      try { TCStore.set('edenMapInject', b.dataset.inj); } catch (x) {}
-      window.__edenInject = b.dataset.inj;   // paintSegs 与卡片重画都读这个活值
-      paintSegs(); document.body.classList.toggle('inject', b.dataset.inj !== 'off'); window.TCMarkers?.closeCard?.(); });   // 入口是开卡时现算的：关掉当前卡，下次开就是新的
-    try { window.__edenInject = TCStore.get('edenMapInject') || 'off'; } catch (e) { window.__edenInject = 'off'; } }
+      try { LocalStore.set('edenMapInject', b.dataset.inj); } catch (x) {}
+      window.__injectMode = b.dataset.inj;   // paintSegs 与卡片重画都读这个活值
+      paintSegs(); document.body.classList.toggle('inject', b.dataset.inj !== 'off'); window.MarkersApi?.closeCard?.(); });   // 入口是开卡时现算的：关掉当前卡，下次开就是新的
+    try { window.__injectMode = LocalStore.get('edenMapInject') || 'off'; } catch (e) { window.__injectMode = 'off'; } }
   sw('#optMinimap', 'edenMapMinimap', false, v => document.body.classList.toggle('nominimap', !v));
-  document.body.classList.toggle('nominimap', TCStore.get('edenMapMinimap') !== '1');
+  document.body.classList.toggle('nominimap', LocalStore.get('edenMapMinimap') !== '1');
   sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', false);
   sw('#optTick', 'edenMapTick', true);   // Part 6-2 后台静默推演（宿主每 15 s 判一次，跑不跑由 background-scan-scheduler.mjs 的 plan 决定） sw('#optFps', 'edenMapFps', false, v => { setFpsMeter(v); estateLook(); });
-  // 房间图集「维护者模式」：经 TCStore（core/storage.mjs 的同步镜像，本文件不直接碰 localStorage）；纯设备级开关，只是给仓库所有者自己用的工作流开关，不是权限校验（见 viewer.html 里的说明文字）
+  // 房间图集「维护者模式」：经 LocalStore（core/storage.mjs 的同步镜像，本文件不直接碰 localStorage）；纯设备级开关，只是给仓库所有者自己用的工作流开关，不是权限校验（见 viewer.html 里的说明文字）
   sw('#optGalleryMaintainer', MAINTAINER_MODE_KEY, false);
   $('#linePick').onclick = () => { showSet(false); post({ type: 'eden-map:line-pick' }); };
   $('#kbdBtn').onclick = () => kbdHelp($('#kbdHelp').hidden);
-  $('#hintAgain').onclick = () => { try { TCStore.remove('edenMapHint'); TCStore.remove('edenMapHintN'); } catch (e) {} showSet(false); firstRunHint(); };
+  $('#hintAgain').onclick = () => { try { LocalStore.remove('edenMapHint'); LocalStore.remove('edenMapHintN'); } catch (e) {} showSet(false); firstRunHint(); };
 }
 // 设置「数据与映射」→ app/data-mapping-settings.mjs（arch-v2 §6 第 6 步 settings-ui 的第一块）
 export function kbdHelp(on) {
@@ -214,13 +214,13 @@ export function renderAbout() {
   box.innerHTML = h; updSub(); mountFeedbackButton(box);
   if (window.top !== window) {   // v0.9.6「自动检查更新」（默认开；卡内脚本启动时读 edenMapAutoCheck，同源 localStorage）
     const lb = document.createElement('label'); lb.innerHTML = `<span>${esc(tx('about.auto_check', '自动检查更新'))}</span><input type="checkbox" role="switch" id="optAutoCheck">`;
-    const cb = lb.querySelector('input'); let on = true; try { on = TCStore.get('edenMapAutoCheck') !== '0'; } catch (e) {}
-    cb.checked = on; cb.onchange = () => { try { TCStore.set('edenMapAutoCheck', cb.checked ? '1' : '0'); } catch (e) {} }; box.appendChild(lb);
+    const cb = lb.querySelector('input'); let on = true; try { on = LocalStore.get('edenMapAutoCheck') !== '0'; } catch (e) {}
+    cb.checked = on; cb.onchange = () => { try { LocalStore.set('edenMapAutoCheck', cb.checked ? '1' : '0'); } catch (e) {} }; box.appendChild(lb);
   }
   if (a.channel === 'latest' && a.ref) {   // 0.9.6 起的正式版加载器：「锁定当前版本」（高级，默认关）——加载器固定用这个标签，不再自动换新版
     const lb = document.createElement('label'); lb.innerHTML = `<span>${esc(tx('about.lock', '锁定当前版本'))}</span><input type="checkbox" role="switch" id="optLockVer">`;
-    const cb = lb.querySelector('input'); let on = false; try { on = !!TCStore.get('edenMapLockTag'); } catch (e) {}
-    cb.checked = on; cb.onchange = () => { try { if (cb.checked) TCStore.set('edenMapLockTag', a.ref); else TCStore.remove('edenMapLockTag'); } catch (e) {} }; box.appendChild(lb);
+    const cb = lb.querySelector('input'); let on = false; try { on = !!LocalStore.get('edenMapLockTag'); } catch (e) {}
+    cb.checked = on; cb.onchange = () => { try { if (cb.checked) LocalStore.set('edenMapLockTag', a.ref); else LocalStore.remove('edenMapLockTag'); } catch (e) {} }; box.appendChild(lb);
   }
   // 版本分支切换（main / preview 双轨，docs/branching.md）：宿主随 about 发 branches / branch（当前）/ branchSw（地址可换）。
   // 切换 = 本次会话立即从目标分支重载脚本（宿主 switchBranch，新实例接管旧的）；长期使用要重新导入该分支的脚本。
@@ -247,7 +247,7 @@ export function updSub() { const el = $('#updSub'); if (!el) return; const w = (
 export function renderSelfCheck() {
   if (!selfCheck?.items) return;
   let box = document.getElementById('selfCheck');
-  if (!box) { box = document.createElement('div'); box.id = 'selfCheck'; TCSettings.registerSection('update', box, { order: 80 }); }
+  if (!box) { box = document.createElement('div'); box.id = 'selfCheck'; SettingsApi.registerSection('update', box, { order: 80 }); }
   const L = LANG === 'en' ? 'en' : 'zh', mark = { ok: '✓', warn: '⚠', skip: '–', info: '↑' };
   // 世界书那一条红线（自检项 worldbook，warn）：加一个「一键写入世界书」按钮，跳到「数据与映射」页并打开看差异（跟点 wbLook/wbDiff 一样）；
   // API 不可用（自检文案已经只剩手动导入提示）时不出这个按钮，只留手动那行小字
@@ -265,8 +265,8 @@ export function renderSelfCheck() {
   }
   if (selfCheck.canUpdate) {
     const lb = document.createElement('label'); lb.innerHTML = `<span>${esc(tx('selfcheck.auto_update', '自动更新到新正式版'))}</span><input type="checkbox" role="switch" id="optAutoUpd">`;
-    const cb = lb.querySelector('input'); let on = !!selfCheck.autoUpdate; try { on = TCStore.get('edenMapAutoUpdate') === '1'; } catch (e) {}
-    cb.checked = on; cb.onchange = () => { try { TCStore.set('edenMapAutoUpdate', cb.checked ? '1' : '0'); } catch (e) {} };
+    const cb = lb.querySelector('input'); let on = !!selfCheck.autoUpdate; try { on = LocalStore.get('edenMapAutoUpdate') === '1'; } catch (e) {}
+    cb.checked = on; cb.onchange = () => { try { LocalStore.set('edenMapAutoUpdate', cb.checked ? '1' : '0'); } catch (e) {} };
     box.appendChild(lb);
   }
 }

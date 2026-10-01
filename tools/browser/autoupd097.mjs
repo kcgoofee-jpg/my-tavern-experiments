@@ -8,7 +8,7 @@ const q = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); ret
 
 async function page({ latest = 'map-v9.9.9', build = { version: '9.9.9', code: 'S1-9909-R-0001' }, channel = 'follow', ls = null, delay = 300 } = {}) {
   const P = await B.newPage('desktop', { tier: 'save' }), hits = { api: 0, build: 0 };
-  await P.ctx.addInitScript(([ch, d]) => { if (window.top === window) { window.__edenMapScript = { channel: ch, ref: 'cloud/test' }; window.__edenAutoCheckDelay = d; } }, [channel, delay]);
+  await P.ctx.addInitScript(([ch, d]) => { if (window.top === window) { window.__edenMapScript = { channel: ch, ref: 'cloud/test' }; window.__autoCheckDelay = d; } }, [channel, delay]);
   await P.ctx.route('https://data.jsdelivr.com/**', r => { hits.api++; r.fulfill({ contentType: 'application/json', body: JSON.stringify({ versions: [{ version: 'map-v0.9.5' }, { version: latest }] }) }); });
   await P.ctx.route(/\/gh\/.*@map-.*\/map\/data\/build\.json/, r => { hits.build++; r.fulfill({ contentType: 'application/json', body: JSON.stringify(build) }); });
   const H = await openHost(P, { here: '天城·中层·辉光大教堂', ls, chat: 'upd097' });
@@ -81,7 +81,7 @@ async function page({ latest = 'map-v9.9.9', build = { version: '9.9.9', code: '
 {
   const { P, p, H } = await page({ ls: { edenMapUpdSkip: '9.9.9' } });
   await H.open(); const vf = await H.viewer();
-  const sw = await vf.evaluate(() => { renderAbout(); const c = document.getElementById('optAutoCheck'); if (!c) return null; const was = c.checked; c.click(); return { was, ls: localStorage.getItem('edenMapAutoCheck') }; });
+  const sw = await vf.evaluate(() => { ViewerDebug.renderAbout(); const c = document.getElementById('optAutoCheck'); if (!c) return null; const was = c.checked; c.click(); return { was, ls: localStorage.getItem('edenMapAutoCheck') }; });
   rep.check('setting_toggle', sw && sw.was === true && sw.ls === '0', JSON.stringify(sw));
   await P.ctx.close();
 }
@@ -97,7 +97,7 @@ async function page({ latest = 'map-v9.9.9', build = { version: '9.9.9', code: '
 // 跟随分支（2026-09-28 起走 head.json 链）：GitHub 不通、jsDelivr 解析接口 null，jsdmirror 分支路径的 head.json 构建号更大 → 「有更新，刷新载入」；同构建不提示
 for (const [build, want] of [[81, true], [80, false]]) {
   const P = await B.newPage('desktop', { tier: 'save' });
-  await P.ctx.addInitScript(() => { if (window.top === window) { window.__edenMapScript = { channel: 'follow', ref: 'cloud/test', sha: 'aaaaaaaaaaaa', build: 80, source: 'jsdmirror' }; window.__edenAutoCheckDelay = 999999; } });
+  await P.ctx.addInitScript(() => { if (window.top === window) { window.__edenMapScript = { channel: 'follow', ref: 'cloud/test', sha: 'aaaaaaaaaaaa', build: 80, source: 'jsdmirror' }; window.__autoCheckDelay = 999999; } });
   await P.ctx.route('https://api.github.com/**', r => r.abort());
   await P.ctx.route('https://raw.githubusercontent.com/**', r => r.abort());
   await P.ctx.route('https://data.jsdelivr.com/**', r => r.fulfill({ contentType: 'application/json', body: '{"versions":[],"version":null}' }));

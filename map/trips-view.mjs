@@ -10,10 +10,10 @@ import { registry } from './app/layer-host.mjs';
 import { showCard, trackEl, untrack } from './app/markers.mjs';
 import { drawnAt, hereRes, userMoved } from './app/locate.mjs';
 import { P, register } from './app/plugins.mjs';
-const TCTrips = (() => {
+const TripsView = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let els = [], fitFor = null, trips = [];
-  const TK = 'edenMapTrips', on = () => { try { return TCStore.get(TK) !== '0'; } catch (e) { return true; } };
+  const TK = 'edenMapTrips', on = () => { try { return LocalStore.get(TK) !== '0'; } catch (e) { return true; } };
   // 落点 → 当前图上的归一化坐标（地标；庄园 → 它在上层的替身地标）；不在当前图返回 null
   function xy(r) {
     if (!r || typeof REG === 'undefined' || !REG || !cur) return null;
@@ -61,17 +61,17 @@ const TCTrips = (() => {
       const age = (n - 1 - i) / Math.max(1, n - 1), op = (1 - age * .65).toFixed(2), who = t.who ? dn(t.who) : T('tr.you', '你');
       const lab = T('tr.trip', '{who}：{a} → {b}', { who, a: short(dn(t.from)), b: short(dn(t.to)) });
       const open = () => showCard(null, lab, '', '', [T('tr.floor', '第 {n} 楼', { n: t.floor }), t.time && esc(t.time), T(...MODE_T[t.mode || ''])].filter(Boolean).join(' · '));
-      const col = t.who && typeof P.TCChars !== 'undefined' ? `--tc:${charColor(t.who)}` : '';
+      const col = t.who && typeof P.CharactersView !== 'undefined' ? `--tc:${charColor(t.who)}` : '';
       if (t.mode === 'teleport') { for (const p of [a, b]) pin(p, '<i></i>', 'tp' + (t.who ? ' ch' : ''), lab, open); els.slice(-2).forEach(e => { e.style.opacity = op; if (col) e.setAttribute('style', e.getAttribute('style') + ';' + col); }); return; }
       const st = STY[t.mode] || STY[''], { svg, mid } = arc(a, b, { cls: `hist m-${t.mode || 'x'}${t.who ? ' ch' : ''}`, bend: st.bend, dash: st.dash });
       svg.style.opacity = op; if (col) svg.setAttribute('style', svg.getAttribute('style') + ';' + col);
       pin(mid, '', 'hit', lab, open);
     });
   }
-  const dn = n => (typeof P.TCCustom !== 'undefined' ? P.TCCustom.name(n) : n);
-  const charColor = n => (typeof P.TCChars !== 'undefined' && P.TCChars.color ? P.TCChars.color(n) : '#888');
+  const dn = n => (typeof P.CustomNamesView !== 'undefined' ? P.CustomNamesView.name(n) : n);
+  const charColor = n => (typeof P.CharactersView !== 'undefined' && P.CharactersView.color ? P.CharactersView.color(n) : '#888');
   function set(items) { trips = Array.isArray(items) ? items.slice(-10) : []; render(); }
-  function setOn(v) { try { TCStore.set(TK, v ? '1' : '0'); } catch (e) {} render(); }
+  function setOn(v) { try { LocalStore.set(TK, v ? '1' : '0'); } catch (e) {} render(); }
   // P3-C：行程层登记为 trips 槽的 osd 图层；「行程」菜单行由 LayerRegistry 渲染（app/layer-host.mjs），存储键 edenMapTrips 与默认开不变
   registry.register({ id: 'trips', slot: 'trips', kind: 'osd', initialVisible: on(),
     menu: { order: 50, id: 'tgTrips', boxId: 'tgTripsBox', labelKey: 'trips', label: '行程' },
@@ -102,5 +102,5 @@ const TCTrips = (() => {
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   return { render, set, setOn, get items() { return trips.map(t => ({ ...t })); }, xy, arc, pin, clear };
 })();
-register('TCTrips', TCTrips);
-export { TCTrips };
+register('TripsView', TripsView);
+export { TripsView };

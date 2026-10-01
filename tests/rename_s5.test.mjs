@@ -12,9 +12,11 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const MAP = JSON.parse(readFileSync(path.join(ROOT, 'tools/rename_s5_map.json'), 'utf8'));
 const has = p => existsSync(path.join(ROOT, p));
 
+const RETIRED = new Set(['map/app/legacy-globals.mjs']);   // renamed in S5-2, retired in S5-3 (its getters became window.ViewerDebug, app/viewer-debug.mjs)
+
 test('S5-2 map: every target exists, no source is left, the forwarder is gone and its redirect exists', () => {
   assert.ok(MAP.renames.length >= 60, 'the table A / B rows of Wave S5');
-  for (const r of MAP.renames) { assert.ok(has(r.to), 'target ' + r.to); assert.ok(!has(r.from), 'source still there: ' + r.from); }
+  for (const r of MAP.renames) { assert.ok(has(r.to) || RETIRED.has(r.to), 'target ' + r.to); assert.ok(!has(r.from), 'source still there: ' + r.from); }
   for (const d of MAP.deletes) { assert.ok(!has(d.from), d.from); assert.ok(has(d.redirect), d.redirect); }
   for (const e of MAP.excluded) assert.ok(has(e.from), 'excluded file must stay where it is: ' + e.from);   // entry, viewer page, S10 rows
   const tgt = MAP.renames.map(r => r.to); assert.equal(new Set(tgt).size, tgt.length, 'targets are unique');

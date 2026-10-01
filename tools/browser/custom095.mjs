@@ -44,7 +44,7 @@ async function run(name, preset) {
     rep.check(`${name} 同步到世界书默认开；没有自定义时不建世界书`, c0.同步世界书 === true && !Object.keys(wb0.books).length, JSON.stringify({ s: c0.同步世界书, wb: Object.keys(wb0.books) }));
     await H.open();
     const vf = await H.viewer();
-    await vf.evaluate(() => { closeCard(); showSet(true); }); await B.wait(300);
+    await vf.evaluate(() => { ViewerDebug.closeCard(); ViewerDebug.showSet(true); }); await B.wait(300);
     const sync = await vf.evaluate(() => ({ on: document.querySelector('#cuSync')?.checked, hint: [...document.querySelectorAll('#cuBox small')].map(s => s.textContent).join('|') }));
     rep.check(`${name} 设置里「同步到世界书」勾着，说明写「默认开、第一项才建」`, sync.on === true && /默认开/.test(sync.hint) && /第一项/.test(sync.hint), JSON.stringify(sync));
     // 2 打开对话框：空状态
@@ -106,43 +106,43 @@ async function run(name, preset) {
     const closed = await vf.evaluate(() => ({ h: document.querySelector('#cuDlg').hidden, f: document.activeElement?.className }));
     rep.check(`${name} 键盘：Tab 不跑出对话框；Esc 编辑页 → 列表 → 关闭，焦点回入口`, trap > 3 && inDlg && back && closed.h && /cu-open/.test(closed.f || ''), JSON.stringify({ trap, inDlg, back, closed }));
     // 8 飞过去：地标（中层 → 下层 7 号井黑市）
-    await vf.evaluate(() => { showSet(true); document.querySelector('#cuBox .cu-open').click(); }); await B.wait(500);
+    await vf.evaluate(() => { ViewerDebug.showSet(true); document.querySelector('#cuBox .cu-open').click(); }); await B.wait(500);
     await vf.evaluate(() => document.querySelector('#cuDlg .cu-add').click()); await B.wait(300);
     await vf.locator('#cuQ').fill('7 号井'); await B.wait(150);
     await vf.evaluate(() => document.querySelector('#cuRes [data-fly]').click()); await B.wait(3500);
-    const f1 = await vf.evaluate(() => ({ cur, dlg: document.querySelector('#cuDlg').hidden, set: document.querySelector('#setPop').hidden, card: document.querySelector('#card').hidden ? '' : document.querySelector('#card h2').textContent }));
+    const f1 = await vf.evaluate(() => ({ cur: ViewerDebug.currentMapId, dlg: document.querySelector('#cuDlg').hidden, set: document.querySelector('#setPop').hidden, card: document.querySelector('#card').hidden ? '' : document.querySelector('#card h2').textContent }));
     rep.check(`${name} 选择器里点「在地图上看」：切到下层并打开 7 号井黑市的地点卡`, f1.cur === 'tc_low' && f1.dlg && f1.set && /7 号井/.test(f1.card), JSON.stringify(f1));
     await jpg(p, `cu_${name}_fly_marker`);
     // 人物
-    const f2ok = await vf.evaluate(() => TCCustom.flyTo({ character: '米拉' })); await B.wait(1500);
-    const f2 = await vf.evaluate(() => ({ cur, card: document.querySelector('#card').hidden ? '' : document.querySelector('#card h2').textContent }));
+    const f2ok = await vf.evaluate(() => CustomNamesView.flyTo({ character: '米拉' })); await B.wait(1500);
+    const f2 = await vf.evaluate(() => ({ cur: ViewerDebug.currentMapId, card: document.querySelector('#card').hidden ? '' : document.querySelector('#card h2').textContent }));
     rep.check(`${name} 人物：飞到米拉（人物栏的位置）`, f2ok && f2.cur === 'tc_low' && /米拉/.test(f2.card), JSON.stringify(f2));
-    const f3 = await vf.evaluate(() => TCCustom.flyTo({ character: '不在场的人' }));
+    const f3 = await vf.evaluate(() => CustomNamesView.flyTo({ character: '不在场的人' }));
     rep.check(`${name} 人物不在人物栏：flyTo 返回 false（面板里给提示）`, f3 === false);
     // 庄园房间：庄园不可用（本次会话失败过）→ 上层伊甸地点卡写房间
-    await vf.evaluate(() => { setEstFail(true); TCCustom.flyTo({ map: 'eden_estate', room: '主人书房' }); }); await B.wait(3500);
-    const f4 = await vf.evaluate(() => ({ cur, card: document.querySelector('#card').hidden ? '' : document.querySelector('#card h2').textContent, room: document.querySelector('#card .cu-room')?.textContent || '' }));
+    await vf.evaluate(() => { ViewerDebug.setEstFail(true); CustomNamesView.flyTo({ map: 'eden_estate', room: '主人书房' }); }); await B.wait(3500);
+    const f4 = await vf.evaluate(() => ({ cur: ViewerDebug.currentMapId, card: document.querySelector('#card').hidden ? '' : document.querySelector('#card h2').textContent, room: document.querySelector('#card .cu-room')?.textContent || '' }));
     rep.check(`${name} 庄园房间（庄园不可用）：落到上层伊甸，地点卡写「要看的房间 星图室（主人书房）」`, f4.cur === 'tc_upper' && /伊甸/.test(f4.card) && /星图室（主人书房）/.test(f4.room), JSON.stringify(f4));
     await jpg(p, `cu_${name}_fly_room_standin`);
     // 庄园可用：宿主 EdenMap.flyTo → 进庄园，estate:room 发的是这间房
-    await vf.evaluate(() => setEstFail(false));
+    await vf.evaluate(() => ViewerDebug.setEstFail(false));
     await p.evaluate(() => window.EdenMap.flyTo({ map: 'eden_estate', room: '主人书房' }));
-    const seen = []; for (let i = 0; i < 18 && !(await vf.evaluate(() => !!est?.ready)); i++) { await B.wait(500); seen.push(await vf.evaluate(() => cur)); }
-    const f5 = await vf.evaluate(() => ({ cur, focus: estFocus, ready: !!est?.ready })); f5.seen = [...new Set(seen)];
+    const seen = []; for (let i = 0; i < 18 && !(await vf.evaluate(() => !!ViewerDebug.subpageSession?.ready)); i++) { await B.wait(500); seen.push(await vf.evaluate(() => ViewerDebug.currentMapId)); }
+    const f5 = await vf.evaluate(() => ({ cur: ViewerDebug.currentMapId, focus: ViewerDebug.estFocus, ready: !!ViewerDebug.subpageSession?.ready })); f5.seen = [...new Set(seen)];
     rep.check(`${name} EdenMap.flyTo({map:'eden_estate', room}) → 进庄园并聚焦该房间`, f5.cur === 'eden_estate' && f5.focus === '主人书房', JSON.stringify(f5));
     if (f5.ready) await jpg(p, `cu_${name}_fly_room_estate`);
-    await vf.evaluate(() => go('tc_mid')); await B.wait(2500);
+    await vf.evaluate(() => ViewerDebug.go('tc_mid')); await B.wait(2500);
     // 面板关着时调 EdenMap.flyTo：先打开面板，再飞（不被「自动跳到当前地点」拉回）
     await p.evaluate(() => document.querySelector('#eden-map-root .em-close').click()); await B.wait(800);
     await p.evaluate(() => window.EdenMap.flyTo({ map: 'tc_low', marker: 'well7' })); await B.wait(4000);
-    const f6 = await vf.evaluate(() => ({ cur, card: document.querySelector('#card').hidden ? '' : document.querySelector('#card h2').textContent }));
+    const f6 = await vf.evaluate(() => ({ cur: ViewerDebug.currentMapId, card: document.querySelector('#card').hidden ? '' : document.querySelector('#card h2').textContent }));
     const shown = await p.evaluate(() => !document.querySelector('#eden-map-root .em-panel').hidden);
     rep.check(`${name} 面板关着时 EdenMap.flyTo：打开面板并落到目标（不被当前地点拉回）`, shown && f6.cur === 'tc_low' && /7 号井/.test(f6.card), JSON.stringify({ shown, ...f6 }));
     // 9 主题：切到浅色，宿主面板 / 查看器 / 对话框 / 输入框一起换；对比度 ≥ 4.5
-    await vf.evaluate(() => { TCSettings.open('data'); document.querySelector('#cuBox .cu-open').click(); }); await B.wait(400);   // UI v2：自定义在设置「数据与映射」页
+    await vf.evaluate(() => { SettingsApi.open('data'); document.querySelector('#cuBox .cu-open').click(); }); await B.wait(400);   // UI v2：自定义在设置「数据与映射」页
     await vf.evaluate(() => { document.querySelector('#cuDlg .cu-add').click(); }); await B.wait(300);
     for (const want of ['light', 'dark']) {
-      await vf.evaluate(w => setTheme(w), want); await B.wait(900);
+      await vf.evaluate(w => ViewerDebug.setTheme(w), want); await B.wait(900);
       const r = await vf.evaluate(src => { const C = eval(src); const q = s => document.querySelector(s);
         return { cs: getComputedStyle(document.documentElement).colorScheme, csb: getComputedStyle(document.body).colorScheme, inCs: getComputedStyle(q('#cuQ')).colorScheme,
           title: C(q('#cuDlgT')), row: C(q('#cuRes .cu-row b')), sub: C(q('#cuRes h4')), input: C(q('#cuQ')), chip: C(q('#cuDlg .chip')), set: C(q('#setPop .spage:not([hidden]) label span')), small: C(q('#cuBox small')) }; }, CONTRAST);
@@ -160,7 +160,7 @@ async function run(name, preset) {
       r.classList.remove('em-light'); const b = [C(t), C(t.querySelector('b')), getComputedStyle(t).backgroundColor]; t.remove(); return { a, b }; }, CONTRAST);
     rep.check(`${name} 自检提示跟主题换色（不再写死深色），对比度 ≥ 4.5`, tst.a[2] !== tst.b[2] && [tst.a[0], tst.a[1], tst.b[0], tst.b[1]].every(v => v >= 4.5), JSON.stringify(tst));
     // 10 关掉同步：记为手动关（刷新后保持关）
-    await vf.evaluate(() => { document.querySelector('#cuDlg [data-close]').click(); showSet(true); document.querySelector('#cuSync').click(); }); await B.wait(900);
+    await vf.evaluate(() => { document.querySelector('#cuDlg [data-close]').click(); ViewerDebug.showSet(true); document.querySelector('#cuSync').click(); }); await B.wait(900);
     const v3 = await H.vars(), wb3 = await H.wb();
     rep.check(`${name} 关掉同步：同步手动 = true、条目停用（不删世界书）`, v3.eden_map.自定义.同步世界书 === false && v3.eden_map.自定义.同步手动 === true && wb3.books[bn]?.[0]?.enabled === false, JSON.stringify(v3.eden_map.自定义));
     // 11 惯用手下面不再有说明文字

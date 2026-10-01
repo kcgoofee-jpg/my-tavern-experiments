@@ -35,7 +35,7 @@ test('describe：纯计算——同入参同结果、不改入参、模块源码
   assert.deepEqual(a, b);
   assert.deepEqual(ex, { upper: ['eden'] }, '不清洗入参对象本身（norm 产出新对象）');
   const src = readFileSync(new URL('../map/core/depth.mjs', import.meta.url), 'utf8');
-  assert.doesNotMatch(src, /\b(document|window|localStorage|sessionStorage|fetch|TCStore)\b/);
+  assert.doesNotMatch(src, /\b(document|window|localStorage|sessionStorage|fetch|LocalStore)\b/);
 });
 test('迷雾存储键收口：core/storage.mjs 唯一定义点，app/fog.mjs 不再写死键名', () => {
   assert.equal(S.FOG_KEY, 'edenMapFog');

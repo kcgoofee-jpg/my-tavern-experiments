@@ -5,9 +5,9 @@ import { nsStore } from './core/pack.mjs';
 import { esc } from './app/dom-helpers.mjs';
 import { post } from './app/protocol-stamp.mjs';
 import { LANG } from './app/i18n.mjs';
-import { TCSettings } from './app/settings.mjs';
+import { SettingsApi } from './app/settings.mjs';
 import { P, register } from './app/plugins.mjs';
-const TCCompose = (() => {
+const ComposeView = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let CM = null, open = false;
   const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/compose-templates.mjs', document.baseURI).href).then(m => (CM = m)).catch(() => null);
@@ -33,14 +33,14 @@ const TCCompose = (() => {
   }
   document.addEventListener('click', onClick);
   // 卡内脚本回话：填进去了没有
-  addEventListener('message', e => { if (e.data?.type !== 'eden-map:compose-done' || !window.__fromHost?.(e)) return;   // 只认宿主（arch-v2：以前任何窗口都能弹这条提示）
-    if (typeof P.TCCustom !== 'undefined') P.TCCustom.toast([e.data.ok ? T('cmp.done', '已填入聊天输入框（未发送）') : T('cmp.fail', '没找到酒馆输入框')]); });
+  addEventListener('message', e => { if (e.data?.type !== 'eden-map:compose-done' || !window.__isFromHost?.(e)) return;   // 只认宿主（arch-v2：以前任何窗口都能弹这条提示）
+    if (typeof P.CustomNamesView !== 'undefined') P.CustomNamesView.toast([e.data.ok ? T('cmp.done', '已填入聊天输入框（未发送）') : T('cmp.fail', '没找到酒馆输入框')]); });
   // ---------- 设置：填入聊天的模板 ----------
   async function renderUI() {
     const pop = document.getElementById('setPop'); if (!pop || !embedded()) return;
     const M = await mod(); if (!M) return;
     let box = document.getElementById('cmpBox');
-    if (!box) { box = document.createElement('details'); box.id = 'cmpBox'; if (window.TCSettings) TCSettings.registerSection('data', box, { order: 30 }); else { const at = document.getElementById('vmBox') || document.getElementById('selfCheck'); at ? pop.insertBefore(box, at) : pop.appendChild(box); }
+    if (!box) { box = document.createElement('details'); box.id = 'cmpBox'; if (window.SettingsApi) SettingsApi.registerSection('data', box, { order: 30 }); else { const at = document.getElementById('vmBox') || document.getElementById('selfCheck'); at ? pop.insertBefore(box, at) : pop.appendChild(box); }
       box.addEventListener('toggle', () => { open = box.open; }); box.addEventListener('change', onChange); box.addEventListener('click', ev => { if (ev.target.closest('[data-cmpreset]')) { ev.stopPropagation(); M.write(st(), {}); renderUI(); }
         const x = ev.target.closest('[data-cmpex]'); if (x) { ev.stopPropagation(); const e = EX[lang()][+x.dataset.cmpex]; M.write(st(), { go: e.go, ask: e.ask }); renderUI(); } });
       box.addEventListener('input', preview); }
@@ -89,5 +89,5 @@ const TCCompose = (() => {
   mod(); document.addEventListener('DOMContentLoaded', () => renderUI());
   return { attach, renderUI };
 })();
-register('TCCompose', TCCompose);
-export { TCCompose };
+register('ComposeView', ComposeView);
+export { ComposeView };

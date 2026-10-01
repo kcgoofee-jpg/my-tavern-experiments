@@ -7,12 +7,12 @@ import { LANG } from './app/i18n.mjs';
 import { registry } from './app/layer-host.mjs';
 import { register } from './app/plugins.mjs';
 import { packData } from './app/current-pack.mjs';   // 安保数据是包级挂载点（manifest.data.security，通用化 v1）——内核与外挂都不写死 eden 的文件名
-const TCSecurity = (() => {
+const SecurityView = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const KEY = 'edenMapSecurity';
   let data = null, loading = null;
   const en = () => typeof LANG !== 'undefined' && LANG === 'en';
-  const isOn = () => { try { return TCStore.get(KEY) === '1'; } catch (e) { return false; } };
+  const isOn = () => { try { return LocalStore.get(KEY) === '1'; } catch (e) { return false; } };
   const load = () => data ? Promise.resolve(data) : (loading ??= Promise.resolve(packData('security')).then(p => p ? fetch(new URL(p, document.baseURI)).then(r => r.ok ? r.json() : null) : null).then(d => (data = d)).catch(() => null));
   const kindName = k => { const n = data?.kinds?.[k]; return n ? (en() ? n[1] : n[0]) : k; };
   /** 当前图某个标记名（中文 dataset.name）的事实 */
@@ -43,7 +43,7 @@ const TCSecurity = (() => {
     box.innerHTML = `<b>${esc(T('sec.title', '安保'))}</b><dl class="fields">${f.map(x => `<dt>${esc(kindName(x.kind))}</dt><dd>${esc(en() ? x.text_en || x.text : x.text)}${x.src ? `<small>${esc(x.src)}</small>` : ''}</dd>`).join('')}</dl>`;
     c.querySelector('.extra').before(box);
   }
-  function set(on) { try { TCStore.set(KEY, on ? '1' : '0'); } catch (e) {} load().then(render); }
+  function set(on) { try { LocalStore.set(KEY, on ? '1' : '0'); } catch (e) {} load().then(render); }
   // P3-C：「安保」菜单行由 LayerRegistry 渲染（app/layer-host.mjs，行序在航线与行程之间，与旧 insertBefore 位置一致）；勾选 → setVisible → set()
   registry.register({ id: 'security', slot: 'markers', order: 2, kind: 'osd', initialVisible: isOn(),
     menu: { order: 40, id: 'tgSec', boxId: 'tgSecBox', labelKey: 'sec.title', label: '安保', titleKey: 'sec.hint', title: '结界、监控、门禁规则（只列卡里写明的）' },
@@ -58,5 +58,5 @@ const TCSecurity = (() => {
   const s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
   return { render, decorate, set, afterOpen, factsFor, get on() { return isOn(); } };
 })();
-register('TCSecurity', TCSecurity);
-export { TCSecurity };
+register('SecurityView', SecurityView);
+export { SecurityView };

@@ -16,7 +16,7 @@ import { drawnAt, hereRes, setUserMoved, userMoved } from './app/locate.mjs';
 import { LS, chatId } from './app/extension-api.mjs';
 import { P, register } from './app/plugins.mjs';
 import * as TCCvd from './app/color-vision-mode.mjs';
-const TCChars = (() => {
+const CharactersView = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let portraits = {}, rosters = null, groups = null, rep = null, stageOrder = null, items = [], floor = 0, CM = null, prefs = { show: true, off: [] }, avatars = {}, els = [], flyName = null;
   const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/characters-parse.mjs', document.baseURI).href).then(m => { CM = m; loadPrefs(); return m; }).catch(() => null);   // 首屏不取：页面 load 后空闲时预取，或第一次用到（有人物 / 改头像）时取；取到就读本机偏好
@@ -28,7 +28,7 @@ const TCChars = (() => {
   const color = n => CM ? CM.colorOf(n, TCCvd.charHues() || undefined) : '#888';
   const ini = n => CM ? CM.initials(n) : String(n)[0];
   // 头像：本机设置的优先；否则「使用原作头像」开着时用卡自带的立绘表（只收作者 CDN 的 /sfw/ 地址，懒加载，失败退回首字）
-  const PK_ = 'edenMapPortraits', portOn = () => { try { const v = TCStore.get(PK_); return v == null ? !(typeof leanBg === 'function' && leanBg()) : v === '1'; } catch (e) { return true; } };
+  const PK_ = 'edenMapPortraits', portOn = () => { try { const v = LocalStore.get(PK_); return v == null ? !(typeof leanBg === 'function' && leanBg()) : v === '1'; } catch (e) { return true; } };
   const okUrl = u => /^https:\/\/cdn\.jsdelivr\.net\/gh\/Yehehua1311\/[^?#]*\/sfw\/[^?#]+\.(png|jpe?g|webp)$/i.test(u || '');
   // 状态栏里玩家自己设的头像（卡的状态栏存在同源 localStorage：eden_custom_portraits = { 名: 地址 }、eden_portrait_<名> = data URL），只读
   const barAv = n => { try { const short = String(n).split(/[·・]/)[0]; for (const k of [n, short]) { const d = localStorage.getItem('eden_portrait_' + k); if (d && d.startsWith('data:image/')) return d; }
@@ -38,7 +38,7 @@ const TCChars = (() => {
   const avImg = n => { const u = avOf(n); return u ? `<img alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" src="${esc(u)}" data-i="${esc(ini(n))}" onerror="this.replaceWith(this.dataset.i)">` : ''; };
   const visible = c => prefs.show && !prefs.off.includes(c.name);
   // v0.9.3：显示名（自定义，custom.js）与位置来源：MVU（在场人物的位置字段）/ 标签（聊天里的人物标签）/ 同处（在场但没写位置，默认和你同处）
-  const dn = n => (typeof P.TCCustom !== 'undefined' ? P.TCCustom.name(n) : n);
+  const dn = n => (typeof P.CustomNamesView !== 'undefined' ? P.CustomNamesView.name(n) : n);
   const srcOf = c => c.src === 'mvu' ? T('ch.src_mvu', 'MVU') : c.src === 'tag' ? T('ch.src_tag', '标签') : c.src === 'routine' ? T('ch.src_routine', '日程') : T('ch.src_infer', '同处');
   // 2026-09-28 待查 1/2/6：开局前不按「和你在一起」显示；在场表久未变降级为未知；「同处」加悬停说明来源和楼层
   const when = c => c.prelude ? T('ch.pre', '开局前 · 卡初始值') : c.stale ? T('ch.stale', '未知 · 在场表 {n} 楼未变', { n: c.stale }) : c.present ? T('ch.with_you', '和你在一起') : T('ev.floor', '第 {n} 楼', { n: c.floor });
@@ -59,7 +59,7 @@ const TCChars = (() => {
     const p = await markerXY(d.map, d.marker); return p ? { map: d.map, ...p } : { map: d.map };
   }
 
-  async function set(d) { await mod(); if (!Array.isArray(d.items)) return; const hadP = Object.values(portraits).some(okUrl); items = d.items.slice(0, 60); rosters = d.rosters || null; groups = Array.isArray(d.groups) ? d.groups : null; rep = Number.isFinite(d.rep) ? d.rep : null; stageOrder = Array.isArray(d.stageOrder) ? d.stageOrder : null; portraits = d.portraits && typeof d.portraits === 'object' ? d.portraits : {}; if (hadP !== Object.values(portraits).some(okUrl) && typeof P.TCCustom !== 'undefined') P.TCCustom.renderUI(); floor = d.floor || 0; loadPrefs(); await render(); bar(); if (flyName && cur) fly(flyName); }
+  async function set(d) { await mod(); if (!Array.isArray(d.items)) return; const hadP = Object.values(portraits).some(okUrl); items = d.items.slice(0, 60); rosters = d.rosters || null; groups = Array.isArray(d.groups) ? d.groups : null; rep = Number.isFinite(d.rep) ? d.rep : null; stageOrder = Array.isArray(d.stageOrder) ? d.stageOrder : null; portraits = d.portraits && typeof d.portraits === 'object' ? d.portraits : {}; if (hadP !== Object.values(portraits).some(okUrl) && typeof P.CustomNamesView !== 'undefined') P.CustomNamesView.renderUI(); floor = d.floor || 0; loadPrefs(); await render(); bar(); if (flyName && cur) fly(flyName); }
   let seq = 0;
   async function render() {
     for (const el of els) { if (typeof untrack === 'function') untrack(el); viewer?.removeOverlay(el); } els = [];
@@ -79,14 +79,14 @@ const TCChars = (() => {
   }
   function card(list) {
     showCard(null, list.map(c => dn(c.name)).join('、'), '', '', list[0].place);
-    if (typeof P.TCCompose !== 'undefined') P.TCCompose.attach({ go: list[0].place || '', ask: list.length === 1 ? dn(list[0].name) : '' });   // v0.9.6 地图 → 聊天
+    if (typeof P.ComposeView !== 'undefined') P.ComposeView.attach({ go: list[0].place || '', ask: list.length === 1 ? dn(list[0].name) : '' });   // v0.9.6 地图 → 聊天
     const tg = document.querySelector('#card .tag'); tg.textContent = T('ch.tag', '人物'); tg.className = 'tag data'; tg.style.background = color(list[0].name);
     const sv = document.querySelector('#card .src'); delete sv.dataset.note;
-    const note = c => { const e = typeof P.TCCustom !== 'undefined' && P.TCCustom.entry(c.name); return e?.用途 ? ` · ${e.用途}` : ''; };
+    const note = c => { const e = typeof P.CustomNamesView !== 'undefined' && P.CustomNamesView.entry(c.name); return e?.用途 ? ` · ${e.用途}` : ''; };
     if (list.length === 1) { const c = list[0]; const id = identity(c.name), it = rosterItem(c.name);
       sv.innerHTML = `<dl class="fields">${id ? `<dt>${esc(T('ch.identity', '身份'))}</dt><dd>${esc(id)}</dd>` : ''}${it?.tier ? `<dt>${esc(T('ch.tier', '战力'))}</dt><dd><span class="chtier">${esc(it.tier)}</span></dd>` : ''}${c.roster ? (c.place ? `<dt>${esc(T('ev.k_place', '地点'))}</dt><dd>${esc(c.place)}</dd>` : '') : `<dt>${esc(T('ch.last', '最后出现'))}</dt><dd>${esc(lastSeen(c))}</dd><dt>${esc(T('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd>`}</dl>${moreHtml(it, id)}`;
       document.getElementById('card').classList.toggle('person2', !!sv.querySelector('details.chmore'));   // 桌面：有「更多资料」时人物卡两栏
-      sv.querySelector('details.chmore')?.addEventListener('toggle', e => { try { TCStore.set(MO_OPEN, e.target.open ? '1' : '0'); } catch (x) {} });
+      sv.querySelector('details.chmore')?.addEventListener('toggle', e => { try { LocalStore.set(MO_OPEN, e.target.open ? '1' : '0'); } catch (x) {} });
       return; }
     sv.innerHTML = `<dl class="fields">${list.map(c => `<dt>${esc(dn(c.name))}</dt><dd>${esc(when(c) + ' · ' + srcOf(c))}</dd>`).join('')}</dl>`;
   }
@@ -108,14 +108,14 @@ const TCChars = (() => {
   const glist = () => groupList({ groups, rosters, declared: packOverlay?.entities?.groups });   // 分组：宿主发来的 groups 优先；旧宿主只发 rosters 时按包声明的组
   const glabel = g => groupLabel(g, LANG, k => window.I18N.t(k));
   const count = () => everyone(glist(), items).size;   // fix3：同一人只算一次
-  function bar() { if (typeof P.TCEvents !== 'undefined') P.TCEvents.renderBar?.(); }
+  function bar() { if (typeof P.EventsView !== 'undefined') P.EventsView.renderBar?.(); }
   // v0.9.5 名册（只读，卡内脚本按表的位置发现）：身份、阶段；分组可折叠（折叠状态存本机）
   const identity = n => { for (const g of glist()) { const it = g.items.find(i => i.name === n); if (it?.identity) return it.identity; } return ''; };
   const rosterItem = n => { for (const g of glist()) { const it = g.items.find(i => i.name === n); if (it) return it; } return null; };
   // v0.9.6（E13 其余字段 / E16）：人物卡「更多资料」——代号、社会身份（公开身份）、身高 / 体重、知情度、饰物；只读，字段名走变量映射（可关闭）；设置「人物卡显示更多资料」（本机 edenMapCharMore，默认开）
   const MO_KEY = 'edenMapCharMore', MO_OPEN = 'edenMapCharMoreOpen';
-  const moreOn = () => { try { return TCStore.get(MO_KEY) !== '0'; } catch (e) { return true; } };
-  const moreOpen = () => { try { return TCStore.get(MO_OPEN) === '1'; } catch (e) { return false; } };
+  const moreOn = () => { try { return LocalStore.get(MO_KEY) !== '0'; } catch (e) { return true; } };
+  const moreOpen = () => { try { return LocalStore.get(MO_OPEN) === '1'; } catch (e) { return false; } };
   // 包给槽位字段起了名字（overlay entities.fields 的 label / i18n）就用包的名字；没给就走词典 ch.m_*（包文案可换）
   const slotLabel = slot => { const f = (packOverlay?.entities?.fields || []).find(x => x?.['x-slot'] === slot); return f?.i18n?.[LANG]?.label || (LANG === 'zh' ? f?.label : '') || ''; };
   function moreRows(it, id = '') {
@@ -130,7 +130,7 @@ const TCChars = (() => {
   }
   const moreHtml = (it, id) => { if (!moreOn()) return ''; const r = moreRows(it, id); if (!r.length) return '';
     return `<details class="chmore" ${moreOpen() ? 'open' : ''}><summary>${esc(T('ch.more_h', '更多资料'))}</summary><dl class="fields">${r.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></details>`; };
-  const GK = 'edenMapChGroups', closed = (() => { try { return new Set(JSON.parse(TCStore.get(GK) || '[]')); } catch (e) { return new Set(); } })();
+  const GK = 'edenMapChGroups', closed = (() => { try { return new Set(JSON.parse(LocalStore.get(GK) || '[]')); } catch (e) { return new Set(); } })();
   const stageChip = s => { if (!s) return ''; const i = stageOrder ? stageOrder.indexOf(s) : -1, n = stageOrder?.length || 0;
     return `<span class="chstage" ${i >= 0 ? `style="--p:${(i + 1) / n}" title="${esc(T('ch.stage_of', '第 {i} / {n} 步', { i: i + 1, n }))}"` : ''}>${i >= 0 ? `<i aria-hidden="true">${Array.from({ length: n }, (_, k) => `<b class="${k <= i ? 'on' : ''}"></b>`).join('')}</i>` : ''}${esc(s)}</span>`; };
   function row(c) {
@@ -139,7 +139,7 @@ const TCChars = (() => {
       + `<label class="chsw"><input type="checkbox" role="switch" data-n="${esc(c.name)}" aria-label="${esc(T('ch.toggle_one', '在地图上显示 {n}', { n: c.name }))}" ${prefs.off.includes(c.name) ? '' : 'checked'} ${prefs.show ? '' : 'disabled'}></label></li>`;
   }
   // v0.9.6（E2 / E13）：名册行的等级、核心数值与档位名（字段名由变量映射定，只读）；设置「人物栏显示数值」关掉就不显示（本机 edenMapCharStats，默认开）
-  const statsOn = () => { try { return TCStore.get('edenMapCharStats') !== '0'; } catch (e) { return true; } };
+  const statsOn = () => { try { return LocalStore.get('edenMapCharStats') !== '0'; } catch (e) { return true; } };
   const statChip = it => { if (!statsOn() || (!it.grade && it.core == null)) return '';
     const t = [it.grade, it.core != null ? `${it.coreStage ? it.coreStage + ' ' : ''}${it.core}` : ''].filter(Boolean).join(' · ');
     return `<span class="chstat" title="${esc([it.grade ? T('ch.grade', '等级') + ' ' + it.grade : '', it.core != null ? `${it.coreKey || ''} ${it.core}` : ''].filter(Boolean).join(' · '))}">${esc(t)}</span>`; };
@@ -158,7 +158,7 @@ const TCChars = (() => {
     // S4-4：分节来自包声明的名册组（core/people.mjs），不再是写死的在场 / 成员 / 目标三节
     const M = paneModel(glist(), items, glabel), extra = M.present.extra;
     const also = n => n ? ' · ' + T('ch.also_here', '另 {n} 人在场', { n }) : '';
-    const ck = typeof P.TCCustom !== 'undefined' ? P.TCCustom.clock : null, of = typeof P.TCCustom !== 'undefined' ? P.TCCustom.outfit : null;
+    const ck = typeof P.CustomNamesView !== 'undefined' ? P.CustomNamesView.clock : null, of = typeof P.CustomNamesView !== 'undefined' ? P.CustomNamesView.outfit : null;
     // fix3：还没选开局（聊天只有开场白那一楼）时，人物 / 时间 / 地点都来自卡的 MVU 初始值，明确标出来
     const pre = ck?.pre ? `<p class="chpre" role="note">${esc(T('ch.pre', '开局前 · 卡初始值'))}<small>${esc(T('ch.pre_tip', '还没选开局：下面是卡的 MVU 初始变量，选了开局后按剧情更新'))}</small></p>` : '';
     // fix3（用户 2026-09-28）：着装属于人（主角），放在人物页顶部「你」这一行，不再挂在地点卡上
@@ -166,7 +166,7 @@ const TCChars = (() => {
     el.innerHTML = pre + me + `<label class="tg chall"><span>${esc(T('ch.show', '在地图上显示人物'))}</span><input type="checkbox" role="switch" ${prefs.show ? 'checked' : ''}></label><div class="chgrps">`
       + group(M.present.id, M.present.label, items.length + extra.length, items.map(row).join('') + extra.map(rosterRow).join(''))
       + M.others.map(g => group(g.id, g.label, g.rest.length + also(g.also), g.rest.map(rosterRow).join(''))).join('') + '</div>';
-    for (const d of el.querySelectorAll('details.chgrp')) d.addEventListener('toggle', () => { d.open ? closed.delete(d.dataset.g) : closed.add(d.dataset.g); try { TCStore.set(GK, JSON.stringify([...closed])); } catch (e) {} });
+    for (const d of el.querySelectorAll('details.chgrp')) d.addEventListener('toggle', () => { d.open ? closed.delete(d.dataset.g) : closed.add(d.dataset.g); try { LocalStore.set(GK, JSON.stringify([...closed])); } catch (e) {} });
   }
   function onPane(e) {
     const inp = e.target.closest('input[type=checkbox]');
@@ -175,7 +175,7 @@ const TCChars = (() => {
       else { const n = inp.dataset.n; prefs.off = inp.checked ? prefs.off.filter(x => x !== n) : [...prefs.off, n]; }
       savePrefs(); render(); bar(); return;
     }
-    const b = e.type === 'click' && e.target.closest('button.chgo'); if (b) { if (typeof P.TCEvents !== 'undefined') P.TCEvents.collapse(); if (b.dataset.card) cardOf(b.dataset.card); else fly(b.dataset.n); }
+    const b = e.type === 'click' && e.target.closest('button.chgo'); if (b) { if (typeof P.EventsView !== 'undefined') P.EventsView.collapse(); if (b.dataset.card) cardOf(b.dataset.card); else fly(b.dataset.n); }
   }
   // 本机头像（EdenMap.setAvatar / removeAvatar 转到这里）
   // data URL 头像先压到 160 px 的 webp / jpeg（和状态栏共用 localStorage 额度，通读 R3）
@@ -187,7 +187,7 @@ const TCChars = (() => {
   }
   async function setAvatar(name, src) { src = await shrink(src); const C = await mod(); if (!C || !store()) return false;
     const r = C.setAvatarEx ? C.setAvatarEx(store(), chat(), name, src) : { ok: C.setAvatar(store(), chat(), name, src) }, ok = r.ok;
-    if (!ok && C.warnText && (r.reason === 'cap' || r.reason === 'quota') && typeof P.TCCustom !== 'undefined') P.TCCustom.toast([C.warnText(r.reason, typeof LANG !== 'undefined' && LANG === 'en')]);   // A-13：满了要说，不悄悄失败
+    if (!ok && C.warnText && (r.reason === 'cap' || r.reason === 'quota') && typeof P.CustomNamesView !== 'undefined') P.CustomNamesView.toast([C.warnText(r.reason, typeof LANG !== 'undefined' && LANG === 'en')]);   // A-13：满了要说，不悄悄失败
     if (ok) { loadPrefs(); render(); bar(); } return ok; }
   async function removeAvatar(name) { const C = await mod(); const ok = !!C && !!store() && C.removeAvatar(store(), chat(), name); if (ok) { loadPrefs(); render(); bar(); } return ok; }
   function chatChanged() { loadPrefs(); render(); bar(); }
@@ -256,7 +256,7 @@ const TCChars = (() => {
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   afterLoadIdle(mod);
   TCCvd.onChange(() => afterOpen());   // 换色觉模式（E7）后头像框重新取色
-  return { color, portOn, setMoreOn(on) { try { TCStore.set(MO_KEY, on ? '1' : '0'); } catch (e) {} }, cardOf, setStatsOn(on) { try { TCStore.set('edenMapCharStats', on ? '1' : '0'); } catch (e) {} bar(); }, get statsOn() { return statsOn(); }, setPortOn(on) { try { TCStore.set(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
+  return { color, portOn, setMoreOn(on) { try { LocalStore.set(MO_KEY, on ? '1' : '0'); } catch (e) {} }, cardOf, setStatsOn(on) { try { LocalStore.set('edenMapCharStats', on ? '1' : '0'); } catch (e) {} bar(); }, get statsOn() { return statsOn(); }, setPortOn(on) { try { LocalStore.set(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
 })();
-register('TCChars', TCChars);
-export { TCChars };
+register('CharactersView', CharactersView);
+export { CharactersView };

@@ -26,7 +26,7 @@ async function run(name, preset, charAsync = false) {
     const api = await p.evaluate(() => window.EdenMap.getCharacters());
     rep.check(`${name} EdenMap.getCharacters：rosters / reputation（只读）`, api.rosters?.members?.items?.length === MEMBERS && api.rosters.targets.items[0].stage === '第二步' && api.reputation === 62, JSON.stringify({ r: api.rosters?.targets, rep: api.reputation }));
     await H.open(); const vf = await H.viewer();
-    await vf.evaluate(() => { closeCard(); document.querySelector('#evbar .chtab').click(); }); await B.wait(500);
+    await vf.evaluate(() => { ViewerDebug.closeCard(); document.querySelector('#evbar .chtab').click(); }); await B.wait(500);
     const vis = await vf.evaluate(() => { const e = document.querySelector('#evbar .chgrp'); return !!e && e.getBoundingClientRect().height > 0; });
     rep.check(`${name} 人物页签展开可见`, vis);
     const g = await vf.evaluate(() => [...document.querySelectorAll('#evbar .chgrp')].map(d => ({ g: d.dataset.g, s: d.querySelector('summary').textContent, n: d.querySelectorAll('li').length, open: d.open })));
@@ -36,26 +36,26 @@ async function run(name, preset, charAsync = false) {
     await jpg(p, `ro_${name}_pane`);
     // v0.9.6 E2 / E13：成员的等级 / 核心数值（字段名走变量映射；这里的中性字段默认不认，映射后显示「档 n」），设置开关可关
     const st0 = await vf.evaluate(() => !!document.querySelector('#evbar .chstat'));
-    await vf.evaluate(() => post({ type: 'eden-map:varmap-set', user: { gradeField: '级别', coreField: '数值' } }));
+    await vf.evaluate(() => ViewerDebug.post({ type: 'eden-map:varmap-set', user: { gradeField: '级别', coreField: '数值' } }));
     await vf.waitForFunction(() => !!document.querySelector('#evbar .chgrp[data-g=members] .chstat'), null, { timeout: 8000 }).catch(() => {});
     const st1 = await vf.evaluate(() => document.querySelector('#evbar .chgrp[data-g=members] .chstat')?.textContent || '');
-    await vf.evaluate(() => { showSet(true); document.querySelector('#optCharStats').click(); showSet(false); }); await B.wait(300);
+    await vf.evaluate(() => { ViewerDebug.showSet(true); document.querySelector('#optCharStats').click(); ViewerDebug.showSet(false); }); await B.wait(300);
     const st2 = await vf.evaluate(() => !!document.querySelector('#evbar .chstat'));
-    await vf.evaluate(() => { showSet(true); document.querySelector('#optCharStats').click(); showSet(false); post({ type: 'eden-map:varmap-set', user: {} }); }); await B.wait(300);
+    await vf.evaluate(() => { ViewerDebug.showSet(true); document.querySelector('#optCharStats').click(); ViewerDebug.showSet(false); ViewerDebug.post({ type: 'eden-map:varmap-set', user: {} }); }); await B.wait(300);
     rep.check(`${name} 名册数值：映射前不显示；映射后「B · 档 4 72」；「人物栏显示数值」关掉即隐藏`, !st0 && st1 === 'B · 档 4 72' && !st2, JSON.stringify({ st0, st1, st2 }));
-    const lean0 = await vf.evaluate(() => TCChars.portOn());   // 省流档（测试用 save）默认关
-    await vf.evaluate(() => { showSet(true); document.querySelector('#optPort').click(); showSet(false); }); await B.wait(300);
+    const lean0 = await vf.evaluate(() => CharactersView.portOn());   // 省流档（测试用 save）默认关
+    await vf.evaluate(() => { ViewerDebug.showSet(true); document.querySelector('#optPort').click(); ViewerDebug.showSet(false); }); await B.wait(300);
     const av = await vf.evaluate(() => document.querySelector('#evbar .chgrp[data-g=members] img')?.getAttribute('src') || '');
-    await vf.evaluate(() => { showSet(true); document.querySelector('#optPort').click(); showSet(false); }); await B.wait(300);
+    await vf.evaluate(() => { ViewerDebug.showSet(true); document.querySelector('#optPort').click(); ViewerDebug.showSet(false); }); await B.wait(300);
     const av2 = await vf.evaluate(() => document.querySelector('#evbar .chgrp[data-g=members] .av').textContent);
-    await vf.evaluate(() => { showSet(true); document.querySelector('#optPort').click(); showSet(false); });
-    const dbg = await vf.evaluate(() => [TCChars.hasPortraits, TCChars.portOn(), document.querySelector('#evbar .chgrp[data-g=members] .av')?.outerHTML]);
+    await vf.evaluate(() => { ViewerDebug.showSet(true); document.querySelector('#optPort').click(); ViewerDebug.showSet(false); });
+    const dbg = await vf.evaluate(() => [CharactersView.hasPortraits, CharactersView.portOn(), document.querySelector('#evbar .chgrp[data-g=members] .av')?.outerHTML]);
     rep.check(`${name} 原作头像：卡里立绘表的 /sfw/ 地址；省流默认关；打开后用卡里立绘表的 /sfw/ 地址；关掉退回首字`, lean0 === false && av === PURL && av2 === '甲', JSON.stringify({ lean0, av, av2, dbg }));
     await vf.evaluate(() => document.querySelector('#evbar .chgrp[data-g=members] summary').click()); await B.wait(200);
     const cl = await vf.evaluate(() => [document.querySelector('#evbar .chgrp[data-g=members]').open, localStorage.getItem('edenMapChGroups')]);
     rep.check(`${name} 分组可折叠，折叠状态记在本机`, cl[0] === false && /members/.test(cl[1] || ''), JSON.stringify(cl));
     // 伊甸地点卡：声望条
-    await vf.evaluate(() => { TCEvents.collapse(); go('tc_upper'); }); await B.wait(2500);
+    await vf.evaluate(() => { EventsView.collapse(); ViewerDebug.go('tc_upper'); }); await B.wait(2500);
     const m = await vf.evaluate(() => { const el = [...document.querySelectorAll('.mk')].find(e => e.dataset.name === '伊甸庄园'); el._open(); const r = document.querySelector('#card .cu-rep'); return r ? { v: r.querySelector('meter').value, t: r.textContent } : null; });
     rep.check(`${name} 伊甸地点卡：庄园声望 62（meter）`, m?.v === 62 && /62/.test(m.t), JSON.stringify(m));
     await jpg(p, `ro_${name}_eden_rep`);

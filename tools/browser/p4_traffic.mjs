@@ -29,9 +29,9 @@ try {
     if (has) await p.evaluate(() => { try { window.go?.('tc_upper'); } catch (e) {} });
     await B.wait(1600);
     const st = await p.evaluate(() => {
-      const d = window.TCLayers?.describe?.() || {};
+      const d = window.LayerHostApi?.describe?.() || {};
       const fx = d.slots?.find(s => s.id === 'fx') || { layers: [] };
-      return { fx: fx.layers, box: !!document.getElementById('tgTraffic'), cars: window.TCTraffic?.cars?.() ?? -1, routes: (window.curData?.routes || []).length };
+      return { fx: fx.layers, box: !!document.getElementById('tgTraffic'), cars: window.TrafficApi?.cars?.() ?? -1, routes: (window.curData?.routes || []).length };
     });
     rep.metric('state', st);
     rep.check('fx 槽位有 weather + traffic 两层', st.fx.includes('traffic') && st.fx.includes('weather'), JSON.stringify(st.fx));
@@ -49,7 +49,7 @@ try {
     await B.wait(600);
     const r = await p.evaluate(() => {
       const cv = document.querySelector('.vpslot[data-slot="fx"] canvas.trcv');
-      return { hidden: cv?.style.display === 'none' || window.TCLayers?.registry?.isVisible?.('traffic') === false };
+      return { hidden: cv?.style.display === 'none' || window.LayerHostApi?.registry?.isVisible?.('traffic') === false };
     });
     rep.check('关掉开关后车流层不可见', r.hidden, JSON.stringify(r));
     await p.evaluate(() => { const b = document.getElementById('tgTraffic'); if (b) { b.checked = true; b.dispatchEvent(new Event('change')); } });

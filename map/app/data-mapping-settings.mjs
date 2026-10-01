@@ -1,10 +1,10 @@
 // 设置「数据与映射」页（从 viewer.html 内联脚本拆出，arch-v2 §6 第 6 步 settings-ui 第一块）：本机存储占用（EdenMap.storage()）、
 // 当前数据来源（EdenMap.sources()，数据源注册表 tavern/data-source-registry.mjs），只读；「清理旧聊天」只留最近 5 个聊天的地图数据。
-// $、esc、tx、post 从 app 下各自的小模块（dom-helpers / text-lookup / protocol-stamp）显式 import。查看器经 window.renderStorage 调用（模块在 main 之前执行）。
+// $、esc、tx、post 从 app 下各自的小模块（dom-helpers / text-lookup / protocol-stamp）显式 import。查看器经 window.renderStorageSettings 调用（模块在 main 之前执行）。
 import { $, esc } from './dom-helpers.mjs';
 import { post } from './protocol-stamp.mjs';
 import { tx } from './text-lookup.mjs';
-export function renderStorage(d) {
+export function renderStorageSettings(d) {
   const box = $('#storBox'); if (!box) return;
   const kb = n => (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB', s = d?.storage, src = d?.sources;
   if (!d) { box.innerHTML = `<h3>${esc(tx('s.stor', '存储与数据来源'))}</h3><small>${esc(tx('s.stor_local', '单独打开时没有聊天数据；嵌在酒馆里才显示'))}</small>`; return; }
@@ -26,4 +26,4 @@ export function renderStorage(d) {
     armed = Date.now(); cb.textContent = tx('s.stor_confirm', `再点一次确认：删除 ${old} 个旧聊天的地图数据（不能撤销）`, { n: old });
     setTimeout(() => { if (armed && Date.now() - armed >= 5000 && cb.isConnected) { armed = 0; cb.textContent = tx('s.stor_clean_btn', '清理'); } }, 5100); };
 }
-if (typeof window !== 'undefined') window.renderStorage = renderStorage;
+if (typeof window !== 'undefined') window.renderStorageSettings = renderStorageSettings;

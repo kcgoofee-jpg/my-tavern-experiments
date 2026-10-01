@@ -21,42 +21,42 @@ for (const preset of ['desktop', 'phone']) {   // 2026-09-28 用户决定：砍�
   if (preset === 'phone') { const cdp = await P.ctx.newCDPSession(P.page); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 }); r.cpuThrottle = 4; }
   const t0 = Date.now();
   await P.page.goto(`${BASE}props/viewer3d.html?model=${MODEL}`);
-  await P.page.waitForFunction(() => window.__v3d?.ready, null, { timeout: 120000 });
+  await P.page.waitForFunction(() => window.__viewer3dProbe?.ready, null, { timeout: 120000 });
   r.loadMs = Date.now() - t0;
   await wait(600);
-  r.stats = await P.page.evaluate(() => ({ ...__v3d.stats, calls: __v3d.info().render.calls, gl: (() => { const c = document.createElement('canvas').getContext('webgl2'); const e = c?.getExtension('WEBGL_debug_renderer_info'); return e ? c.getParameter(e.UNMASKED_RENDERER_WEBGL) : ''; })() }));
+  r.stats = await P.page.evaluate(() => ({ ...__viewer3dProbe.stats, calls: __viewer3dProbe.info().render.calls, gl: (() => { const c = document.createElement('canvas').getContext('webgl2'); const e = c?.getExtension('WEBGL_debug_renderer_info'); return e ? c.getParameter(e.UNMASKED_RENDERER_WEBGL) : ''; })() }));
   await shot(P.page, SHOTS, `${preset}_start`);
   r.modes = {};
   for (const [name, mode, hs] of [['exterior', 'ext', null], ['roof_lift', 'ext', 'cluster'], ['xray', 'xray', null], ['section', 'cut', null]]) {
-    await P.page.evaluate(([m, h]) => { __v3d.select(null); __v3d.setMode(m); if (h) __v3d.fly(h, true); else __v3d.home(); }, [mode, hs]);
+    await P.page.evaluate(([m, h]) => { __viewer3dProbe.select(null); __viewer3dProbe.setMode(m); if (h) __viewer3dProbe.fly(h, true); else __viewer3dProbe.home(); }, [mode, hs]);
     await wait(900);
-    const ft = await P.page.evaluate(() => __v3d.orbitBench(4000));
+    const ft = await P.page.evaluate(() => __viewer3dProbe.orbitBench(4000));
     r.modes[name] = { ...fpsOf(ft), frames: ft.length };
     await shot(P.page, SHOTS, `${preset}_${name}`);
   }
-  await P.page.evaluate(() => { __v3d.setMode('ext'); __v3d.fly('tank'); });
+  await P.page.evaluate(() => { __viewer3dProbe.setMode('ext'); __viewer3dProbe.fly('tank'); });
   await wait(1500); await shot(P.page, SHOTS, `${preset}_fly_tank`);
   if (preset === 'desktop') {   // 相机控制（U，2026-09-28）：滚轮缩放到光标（距离变化）、双击换目标、视角预设、提示卡/指北针、只有一个 FPS 元素
     r.checks = {};
-    await P.page.evaluate(() => { __v3d.setMode('ext'); __v3d.home(); });
+    await P.page.evaluate(() => { __viewer3dProbe.setMode('ext'); __viewer3dProbe.home(); });
     await wait(500);
     const box = await P.page.evaluate(() => { const r = document.getElementById('c').getBoundingClientRect(); return { x: Math.round(r.left + r.width * 0.5), y: Math.round(r.top + r.height * 0.5) }; });
     await P.page.mouse.move(box.x, box.y);
-    const distBefore = await P.page.evaluate(() => __v3d.camDist);
+    const distBefore = await P.page.evaluate(() => __viewer3dProbe.camDist);
     await P.page.keyboard.down('Control'); await P.page.mouse.wheel(0, -200); await P.page.keyboard.up('Control');
     await wait(300);
-    const distAfter = await P.page.evaluate(() => __v3d.camDist);
+    const distAfter = await P.page.evaluate(() => __viewer3dProbe.camDist);
     r.checks.wheelZoomChangesDistance = distAfter < distBefore - 1e-6;
     r.checks.presets = await P.page.evaluate(() => document.querySelectorAll('.cc-presets button').length);
     r.checks.hintCardPresent = await P.page.evaluate(() => !!document.querySelector('.cc-hint'));
     r.checks.compassPresent = await P.page.evaluate(() => !!document.querySelector('.cc-compass'));
-    await P.page.evaluate(() => { __v3d.setMode('ext'); __v3d.home(); });
+    await P.page.evaluate(() => { __viewer3dProbe.setMode('ext'); __viewer3dProbe.home(); });
     await wait(500);
     const pinBox = await P.page.evaluate(() => { const p = document.querySelector('.pin:not([hidden])'); if (!p) return null; const r = p.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; });
-    const tgBefore = await P.page.evaluate(() => __v3d.target);
-    if (pinBox) await P.page.mouse.dblclick(pinBox.x, pinBox.y); else await P.page.evaluate(() => __v3d.fly('tank'));
+    const tgBefore = await P.page.evaluate(() => __viewer3dProbe.target);
+    if (pinBox) await P.page.mouse.dblclick(pinBox.x, pinBox.y); else await P.page.evaluate(() => __viewer3dProbe.fly('tank'));
     await wait(900);
-    const tgAfter = await P.page.evaluate(() => __v3d.target);
+    const tgAfter = await P.page.evaluate(() => __viewer3dProbe.target);
     r.checks.dblclickChangesTarget = Math.hypot(...tgAfter.map((v, i) => v - tgBefore[i])) > 0.01;
     r.checks.singleFps = await P.page.evaluate(() => document.querySelectorAll('#fps, #fpsMeter').length <= 1);
     if (Object.values(r.checks).some((v) => v === false || (typeof v === 'number' && v < 1))) P.errors.push('camera-controls check failed: ' + JSON.stringify(r.checks));
@@ -74,10 +74,10 @@ for (const preset of ['desktop', 'phone']) {   // 2026-09-28 用户决定：砍�
   const heap = async () => { await cdp.send('HeapProfiler.collectGarbage'); await wait(300); await cdp.send('HeapProfiler.collectGarbage'); return (await cdp.send('Runtime.getHeapUsage')).usedSize / 1048576; };
   const series = [+(await heap()).toFixed(1)];
   for (let i = 0; i < 10; i++) {
-    await P.page.evaluate(() => go('dairy'));
-    await P.page.waitForFunction(() => { const f = document.querySelector('#estate.on'); try { return f && f.contentWindow.__v3d?.ready; } catch (e) { return false; } }, null, { timeout: 60000 });
+    await P.page.evaluate(() => ViewerDebug.go('dairy'));
+    await P.page.waitForFunction(() => { const f = document.querySelector('#estate.on'); try { return f && f.contentWindow.__viewer3dProbe?.ready; } catch (e) { return false; } }, null, { timeout: 60000 });
     if (i === 0) await shot(P.page, SHOTS, 'embedded_in_map');
-    await P.page.evaluate(() => go('world'));
+    await P.page.evaluate(() => ViewerDebug.go('world'));
     await wait(1500);
     series.push(+(await heap()).toFixed(1));
   }

@@ -29,20 +29,20 @@ try {
     await pg.waitForFunction(() => document.getElementById('loading')?.classList.contains('done'), null, { timeout: 30000, polling: 50 }).catch(() => {});
     await wait(1200);
     await pg.evaluate(() => localStorage.setItem('tcp.town.Hint', '1'));
-    const s1 = await pg.evaluate(() => ({ cur, pack: document.documentElement.dataset.pack, marks: document.querySelectorAll('.mk').length,
+    const s1 = await pg.evaluate(() => ({ cur: ViewerDebug.currentMapId, pack: document.documentElement.dataset.pack, marks: document.querySelectorAll('.mk').length,
       layers: [...document.querySelectorAll('#layers button')].map(b => b.dataset.go), names: [...document.querySelectorAll('.mk')].map(e => e.dataset.name) }));
     ok(`${preset}：首图 = town_hill，3 个地点，层切换器 2 层`, s1.cur === 'town_hill' && s1.pack === 'town' && s1.marks === 3 && s1.layers.length === 2, s1);
     await shot(pg, out, `town_hill_${preset}`);
-    await pg.evaluate(ev => TCEvents.set({ type: 'eden-map:events', items: ev, floor: 6 }), items.map(e => ({ ...e, isNew: true })));
+    await pg.evaluate(ev => EventsView.set({ type: 'eden-map:events', items: ev, floor: 6 }), items.map(e => ({ ...e, isNew: true })));
     await wait(800);
     const s2 = await pg.evaluate(() => ({ approx: document.querySelectorAll('.ev.approx').length, leg: [...document.querySelectorAll('.evleg button')].map(b => b.dataset.g), evs: document.querySelectorAll('.ev').length }));
     ok(`${preset}：事件图例是包的大类（有事件的 市政 / 灾害），山上的事件上图`, ['市政', '灾害'].every(g => s2.leg.includes(g)) && !s2.leg.includes('空防') && s2.evs >= 1, s2);
     await shot(pg, out, `town_events_${preset}`);
-    await pg.evaluate(() => go('town_harbour')); await wait(2000);
-    const s3 = await pg.evaluate(() => ({ cur, marks: [...document.querySelectorAll('.mk')].map(e => e.dataset.name) }));
+    await pg.evaluate(() => ViewerDebug.go('town_harbour')); await wait(2000);
+    const s3 = await pg.evaluate(() => ({ cur: ViewerDebug.currentMapId, marks: [...document.querySelectorAll('.mk')].map(e => e.dataset.name) }));
     ok(`${preset}：切到码头，2 个地点`, s3.cur === 'town_harbour' && s3.marks.length === 2, s3);
     await shot(pg, out, `town_harbour_${preset}`);
-    const s4 = await pg.evaluate(() => { TCStore.set('edenMapFog', '1'); return Object.keys(localStorage).filter(k => k.startsWith('tcp.town.') || k === 'edenMapFog'); });
+    const s4 = await pg.evaluate(() => { LocalStore.set('edenMapFog', '1'); return Object.keys(localStorage).filter(k => k.startsWith('tcp.town.') || k === 'edenMapFog'); });
     ok(`${preset}：本机存储在 tcp.town.* 命名空间`, s4.includes('tcp.town.Fog') && !s4.includes('edenMapFog'), { keys: s4 });
     ok(`${preset}：没有脚本错误 / 404`, !P.errors.length, { errors: P.errors });
     await P.ctx.close();
@@ -51,7 +51,7 @@ try {
     await E.page.goto(BASE + 'viewer.html', { waitUntil: 'commit' });
     await E.page.waitForFunction(() => document.getElementById('loading')?.classList.contains('done'), null, { timeout: 30000, polling: 50 }).catch(() => {});
     await wait(1200);
-    const e1 = await E.page.evaluate(() => ({ cur, pack: document.documentElement.dataset.pack || 'eden', n: document.querySelectorAll('.mk, .realm, .place').length }));
+    const e1 = await E.page.evaluate(() => ({ cur: ViewerDebug.currentMapId, pack: document.documentElement.dataset.pack || 'eden', n: document.querySelectorAll('.mk, .realm, .place').length }));
     ok(`${preset}：不带 pack = eden 世界图照旧`, e1.cur === 'world' && e1.pack === 'eden' && e1.n > 0 && !E.errors.length, { ...e1, errors: E.errors });
     await E.ctx.close();
   }
@@ -64,7 +64,7 @@ try {
     await H.open(); await wait(1500);
     const vf = await H.viewer();
     if (vf) { await vf.evaluate(() => document.getElementById('hereGo')?.click()); await wait(2500); }
-    const v = vf ? await vf.evaluate(() => ({ cur, pack: document.documentElement.dataset.pack, marks: document.querySelectorAll('.mk').length, here: document.querySelector('.mk.here')?.dataset.name || '' })) : null;
+    const v = vf ? await vf.evaluate(() => ({ cur: ViewerDebug.currentMapId, pack: document.documentElement.dataset.pack, marks: document.querySelectorAll('.mk').length, here: document.querySelector('.mk.here')?.dataset.name || '' })) : null;
     const inj = await H.injected(), vars = await H.vars();
     ok(`${preset} 宿主：面板里是包的地图；「当前位置」跳到码头并高亮鱼市`, v?.pack === 'town' && /^town_/.test(v.cur) && v.here === '鱼市', v || {});
     ok(`${preset} 宿主：注入句用包的分类与标签`, /雾港镇事态/.test(inj) && /火灾/.test(inj) && !/天城/.test(inj), { inj });

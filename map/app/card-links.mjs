@@ -84,4 +84,4 @@ if (typeof document !== 'undefined') {
   document.addEventListener('click', e => { const a = e.target.closest?.('[data-gallery]'); if (a) { e.preventDefault(); openGal(a); } });
   document.addEventListener('keydown', e => { const a = (e.key === 'Enter' || e.key === ' ') && e.target.closest?.('[data-gallery]'); if (a) { e.preventDefault(); openGal(a); } });
 }
-if (typeof window !== 'undefined') window.TCCardLinks = { linkHtml, linksHtml, galleryHtml, injectHtml };
+if (typeof window !== 'undefined') window.CardLinksApi = { linkHtml, linksHtml, galleryHtml, injectHtml };

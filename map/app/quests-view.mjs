@@ -37,7 +37,7 @@ export function questDay(clock) { const s = String(clock?.date || clock?.full ||
 function recalc() {
   const t = Date.now(); if (t - lastCalc < 2000) return;   // 事态不是每帧都变，2 s 一次够了
   lastCalc = t;
-  const events = (() => { try { return P.TCEvents?.events || []; } catch (e) { return []; } })();
+  const events = (() => { try { return P.EventsView?.events || []; } catch (e) { return []; } })();
   const places = placesNow();
   const floor = Number(curData?.floor ?? 0) || 0;
   let topFloor = floor;
@@ -84,8 +84,8 @@ export function registerQuestLayer() {
     setVisible: v => { if (!mounted) return; cv.style.display = v ? '' : 'none'; v ? start() : stop(); },
   });
   busOn({ key: 'quests.resize', type: 'resize', fn: () => size() });
-  busOn({ key: 'quests.hostMsg', type: 'message', fn: e => { if (window.__fromHost?.(e) && e.data?.type === 'eden-map:clock') setQuestDay(questDay(e.data)); } });
+  busOn({ key: 'quests.hostMsg', type: 'message', fn: e => { if (window.__isFromHost?.(e) && e.data?.type === 'eden-map:clock') setQuestDay(questDay(e.data)); } });
   visibilityGuard.subscribe(paused => { paused ? stop() : (registry.isVisible('quests') ? start() : null); });
-  window.TCQuests = { now: () => list.slice(), setDay: setQuestDay, recalc };
+  window.QuestsApi = { now: () => list.slice(), setDay: setQuestDay, recalc };
   return true;
 }

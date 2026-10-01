@@ -39,7 +39,7 @@ export function currentDepth() {
 export function depthSummary() {
   return depthDescribe(depthData, {
     depth: d, map: cur, markers: curData?.markers?.length || 0,
-    explored: window.TCFog?.raw?.() || {}, fogEnabled: window.TCFog?.on?.(),
+    explored: window.FogApi?.raw?.() || {}, fogEnabled: window.FogApi?.on?.(),
   });
 }
 
@@ -63,7 +63,7 @@ export function applyHaze() {
   for (const [k, v] of Object.entries(Haze.vars(haze))) root.style.setProperty(k, v);
   const css = lean() || !el ? '' : cssFilter(ch);   // 省流档：不花这份合成开销
   if (el) { el.style.backdropFilter = css; el.style.webkitBackdropFilter = css; el.style.display = css ? '' : 'none'; }
-  try { window.TCFog?.setHaze?.(ch); } catch (e) {}
+  try { window.FogApi?.setHaze?.(ch); } catch (e) {}
   return s;
 }
 
@@ -79,10 +79,10 @@ export function registerDepthHazeLayer() {
   // 切层 / 换图：body 的 data-map 变了就跟着重算（stash-markers.mjs 一个路子）；当前地点 / 迷雾数据由宿主消息带过来
   try { watch = new MutationObserver(() => setTimeout(applyHaze, 0)); watch.observe(document.body, { attributes: true, attributeFilter: ['data-map'] }); } catch (e) {}
   busOn({ key: 'depthhaze.hostMsg', type: 'message', fn: e => {
-    if (!window.__fromHost?.(e)) return;
+    if (!window.__isFromHost?.(e)) return;
     const t = e.data?.type;
     if (t === 'eden-map:here' || t === 'eden-map:fog' || t === 'eden-map:clock') setTimeout(applyHaze, 0);
   } });
-  window.TCHaze = { apply: applyHaze, summary: depthSummary, depth: currentDepth, chain: hazeChain, describe: () => Haze.describe(haze) };
+  window.DepthHazeApi = { apply: applyHaze, summary: depthSummary, depth: currentDepth, chain: hazeChain, describe: () => Haze.describe(haze) };
   return true;
 }

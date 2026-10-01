@@ -23,20 +23,20 @@ export function emMapChanged() { if (cur === emMap) return; emMap = cur; const m
 // v0.9.3：自定义叫法来自 custom.js（聊天变量 eden_map.自定义，或单独打开时的本机存储）；custom.js 还没就绪时退回旧版本机叫法
 export function rebuildHere() {
   if (!REG) return;
-  try { setHereIdx(makeHere({ manifest: PACK, maps: REG, world: M, names: enNames, plan: estPlan, overlay: packOverlay, events: packTax, custom: (typeof P.TCCustom !== 'undefined' && P.TCCustom.index()) || readCustom(LS, chatId) })); } catch (e) { setHereIdx(null); }   // 静默自愈：建不出词表就认不出地点，不弹框
+  try { setHereIdx(makeHere({ manifest: PACK, maps: REG, world: M, names: enNames, plan: estPlan, overlay: packOverlay, events: packTax, custom: (typeof P.CustomNamesView !== 'undefined' && P.CustomNamesView.index()) || readCustom(LS, chatId) })); } catch (e) { setHereIdx(null); }   // 静默自愈：建不出词表就认不出地点，不弹框
 }
-export function setChat(id) { id = String(id || ''); if (id === chatId) return; chatId = id; rebuildHere(); P.TCChars.chatChanged(); P.TCCustom.chatChanged(); if (REG) { markHere($('#here').value); } }
+export function setChat(id) { id = String(id || ''); if (id === chatId) return; chatId = id; rebuildHere(); P.CharactersView.chatChanged(); P.CustomNamesView.chatChanged(); if (REG) { markHere($('#here').value); } }
 window.__edenMapChat = setChat;   // 宿主页转发调用前先同步聊天 id（同源 srcdoc，直接调用）
 window.EdenMap = Object.freeze({
-  flyTo(o) { return o?.hotspot ? v3dFly(o) : P.TCCustom.flyTo(o); },   // viewer3d：{ map: 'dairy', hotspot: 'tank' }；v0.9.5 地图：{ map, marker | room | area | character }
+  flyTo(o) { return o?.hotspot ? v3dFly(o) : P.CustomNamesView.flyTo(o); },   // viewer3d：{ map: 'dairy', hotspot: 'tank' }；v0.9.5 地图：{ map, marker | room | area | character }
   // v0.9.3 自定义名称与用途（custom.js）；旧名 setRoomAlias / removeRoomAlias 保留：房间叫法 = 该房间的显示名
-  setCustom(key, patch) { return P.TCCustom.setCustom(key, patch || {}); }, removeCustom(key) { return P.TCCustom.removeCustom(key); }, getCustom() { return P.TCCustom.data; },
+  setCustom(key, patch) { return P.CustomNamesView.setCustom(key, patch || {}); }, removeCustom(key) { return P.CustomNamesView.removeCustom(key); }, getCustom() { return P.CustomNamesView.data; },
   setRoomAlias(name, room) { const std = hereIdx?.estate?.std || null; room = String(room || '').trim(); name = String(name || '').trim();
-    if (std && (!std.includes(room) || std.includes(name))) return false; return P.TCCustom.setCustom(room, { name, kind: 'room' }); },
-  removeRoomAlias(name) { const k = Object.entries(P.TCCustom.data.items).find(([, e]) => e.名 === String(name).trim())?.[0]; return k ? P.TCCustom.setCustom(k, { name: '' }) : false; },
-  getInv() { return (typeof P.TCInv !== 'undefined' && P.TCInv) ? P.TCInv.rows : []; },   // 空间化背包（Part 5-1）只读
-  getOutfit() { return P.TCCustom.outfit; }, getClock() { return P.TCCustom.clock; },
-  setAvatar(name, src) { return P.TCChars.setAvatar(name, src); }, removeAvatar(name) { return P.TCChars.removeAvatar(name); },   // 人物头像：只存本机（v0.9.2）
+    if (std && (!std.includes(room) || std.includes(name))) return false; return P.CustomNamesView.setCustom(room, { name, kind: 'room' }); },
+  removeRoomAlias(name) { const k = Object.entries(P.CustomNamesView.data.items).find(([, e]) => e.名 === String(name).trim())?.[0]; return k ? P.CustomNamesView.setCustom(k, { name: '' }) : false; },
+  getInv() { return (typeof P.StashView !== 'undefined' && P.StashView) ? P.StashView.rows : []; },   // 空间化背包（Part 5-1）只读
+  getOutfit() { return P.CustomNamesView.outfit; }, getClock() { return P.CustomNamesView.clock; },
+  setAvatar(name, src) { return P.CharactersView.setAvatar(name, src); }, removeAvatar(name) { return P.CharactersView.removeAvatar(name); },   // 人物头像：只存本机（v0.9.2）
   selfcheck() { return selfCheck ? { items: selfCheck.items.map(i => ({ ...i })) } : null; },   // 嵌在酒馆里才有（卡内脚本发来）
   getRooms() { return { rooms: [...(hereIdx?.estate?.std || [])], alias: { ...(hereIdx?.estate?.alias || {}) }, chat: chatId || null }; },
   on(ev, fn) { if (emSubs[ev] && typeof fn === 'function') emSubs[ev].add(fn); return this; },

@@ -2,22 +2,22 @@
 // 点开这个地标，除了卡里的原文，还能翻出「我上次在这里留下过什么」。
 // 存储按规矩分两处：字节进图集的 IndexedDB（core/room-gallery-db.mjs，roomId = 'sb:' + 地点，与房间图集互不串台），
 // 索引（谁钉在哪、第几楼、说明）进本机存储（按聊天分，键 = edenMap:chat:<聊天 id>:scrap，见 core/storage.mjs）。
-// 插件模式与 stash-view.mjs 一致（app/plugins.mjs 的 P.TCScrap；没加载时调用处带守卫）。
+// 插件模式与 stash-view.mjs 一致（app/plugins.mjs 的 P.ScrapbookView；没加载时调用处带守卫）。
 // 索引的全部规则（钉 / 摘 / 翻 / 统计）在纯核心 map/core/scrapbook.mjs，node 单测 tests/scrapbook.test.mjs。
 import * as SB from './core/scrapbook.mjs';
-import * as TCStore from './core/storage.mjs';
+import * as storage from './core/storage.mjs';
 import { chatId } from './app/extension-api.mjs';   // 当前聊天 id（let 活绑定：宿主换了聊天，键跟着换）
 import { esc } from './app/dom-helpers.mjs';
 import { register } from './app/plugins.mjs';
 
-const TCScrap = (() => {
+const ScrapbookView = (() => {
   const T = (k, zh) => window.I18N.tx(k, zh);   // 共享 i18n 服务（viewer.html window.I18N）
   let db = null, meta = SB.norm(null), openPlace = '';
 
   const cid = () => (typeof chatId === 'string' ? chatId : '');   // extapi 的 chatId 是字符串（活绑定），不是函数
   const key = () => 'edenMap:chat:' + cid() + ':scrap';   // 按聊天分（没有聊天 id = 全局那一份）
-  const load = () => { try { meta = SB.norm(JSON.parse(TCStore.get(key()) || 'null')); } catch (e) { meta = SB.norm(null); } return meta; };
-  const save = () => { try { TCStore.set(key(), JSON.stringify(SB.norm(meta))); return true; } catch (e) { return false; } };
+  const load = () => { try { meta = SB.norm(JSON.parse(storage.get(key()) || 'null')); } catch (e) { meta = SB.norm(null); } return meta; };
+  const save = () => { try { storage.set(key(), JSON.stringify(SB.norm(meta))); return true; } catch (e) { return false; } };
   const gallery = () => (db ??= import('./core/room-gallery-db.mjs').catch(() => null));
   const scope = () => (cid() ? 'chat:' + cid() : 'global');
 
@@ -62,7 +62,7 @@ const TCScrap = (() => {
     return out;
   }
 
-  /** 地点卡装饰（markers.mjs 在 TCInv.decorate 之后调） */
+  /** 地点卡装饰（markers.mjs 在 StashView.decorate 之后调） */
   function decorate(el, title) {
     const c = document.getElementById('card'); if (!c || c.hidden) return;
     const ex = c.querySelector('.extra'); if (!ex) return;
@@ -101,7 +101,7 @@ const TCScrap = (() => {
     openPlace = place;
   }
   function render(place) { const c = document.getElementById('card'); if (c && !c.hidden) decorate(null, place || openPlace); }
-  const toast = why => { try { window.TCNotify?.toast?.(T('sb.fail', '没钉上：{w}', { w: why || '' })); } catch (e) {} };
+  const toast = why => { try { window.showNotice?.toast?.(T('sb.fail', '没钉上：{w}', { w: why || '' })); } catch (e) {} };
 
   // 粘贴：卡片开着就把剪贴板里的图钉到当前地点（生图插件的图多数是直接复制出来的）
   if (typeof window !== 'undefined') window.addEventListener('paste', async e => {
@@ -129,4 +129,4 @@ const TCScrap = (() => {
     key,
   };
 })();
-register('TCScrap', TCScrap);
+register('ScrapbookView', ScrapbookView);

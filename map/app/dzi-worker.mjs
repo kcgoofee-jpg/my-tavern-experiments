@@ -185,6 +185,6 @@ export function describeWorker() {
   return { ...state, pending: jobs.size, ready: ready && !!worker, fails, sourceBytes: WORKER_SRC.length };
 }
 
-window.TCTileWorker = {
+window.TileWorkerApi = {
   ensureWorker, decodeTile, cancelTile, closeTile, instanceMatrices, installWorkerTiles, trimTileCache, disposeWorker, describe: describeWorker,
 };

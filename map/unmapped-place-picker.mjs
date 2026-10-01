@@ -12,7 +12,7 @@ import { estPlan, hereIdx, jumpHere } from './app/locate.mjs';
 import { showSet } from './app/settings.mjs';
 import { sheetVis } from './app/drawer-glue.mjs';
 import { P, register } from './app/plugins.mjs';
-const TCUnmapped = (() => {
+const UnmappedPlacePicker = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   const embed = window.top !== window;
   let sent = null, name = null, value = '', chip = null, dlg = null, q = '', waitFor = null, opener = null;
@@ -100,16 +100,16 @@ const TCUnmapped = (() => {
     box.innerHTML = h || `<p class="um-more">${esc(T('um.none', '没有找到'))}</p>`;
   }
   async function assign(key, kind) {
-    const n = name; if (!n || typeof P.TCCustom === 'undefined') return;
-    const ok = await P.TCCustom.setCustom(key, { alias: n, kind });
+    const n = name; if (!n || typeof P.CustomNamesView === 'undefined') return;
+    const ok = await P.CustomNamesView.setCustom(key, { alias: n, kind });
     if (!ok) { dlg.querySelector('.um-live').textContent = T('um.fail', '没存上，再试一次'); return; }
     waitFor = value; close();
     if (typeof announce === 'function') announce(T('um.done', '「{n}」→ {k}', { n, k: key }));
     update(value);   // 单独打开时已经生效；嵌在酒馆里等宿主推回新的自定义（apply → markHere → update）
   }
   async function ignore() {
-    const n = name; if (!n || typeof P.TCCustom === 'undefined') return;
-    await P.TCCustom.setCustom(n, { ignore: true }); close(); update(value);
+    const n = name; if (!n || typeof P.CustomNamesView === 'undefined') return;
+    await P.CustomNamesView.setCustom(n, { ignore: true }); close(); update(value);
   }
   function close() { if (!dlg || dlg.hidden) return; dlg.hidden = true; try { (opener && opener.isConnected ? opener : chip)?.focus?.({ preventScroll: true }); } catch (e) {} }
 
@@ -139,5 +139,5 @@ const TCUnmapped = (() => {
 
   return { update, open, close, get name() { return name; } };
 })();
-register('TCUnmapped', TCUnmapped);
-export { TCUnmapped };
+register('UnmappedPlacePicker', UnmappedPlacePicker);
+export { UnmappedPlacePicker };

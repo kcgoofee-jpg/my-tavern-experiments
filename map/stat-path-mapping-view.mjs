@@ -4,10 +4,10 @@
 import { esc } from './app/dom-helpers.mjs';
 import { post } from './app/protocol-stamp.mjs';
 import { LANG } from './app/i18n.mjs';
-import { TCSettings } from './app/settings.mjs';
+import { SettingsApi } from './app/settings.mjs';
 import { tableRows } from './core/people.mjs';
 import { register } from './app/plugins.mjs';
-const TCVarMap = (() => {
+const StatPathMappingView = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let d = null, open = false;
   const F = [['location', '当前地点', 'Location'], ['time', '时刻', 'Time'], ['period', '时段', 'Period'], ['date', '日期', 'Date'], ['outfit', '主角着装', 'Outfit'],
@@ -25,7 +25,7 @@ const TCVarMap = (() => {
     const pop = document.getElementById('setPop'); if (!pop) return;
     let box = document.getElementById('vmBox');
     if (!d) { box?.remove(); return; }
-    if (!box) { box = document.createElement('details'); box.id = 'vmBox'; if (window.TCSettings) TCSettings.registerSection('data', box, { order: 10 }); else { const at = document.getElementById('selfCheck'); at ? pop.insertBefore(box, at) : pop.appendChild(box); }
+    if (!box) { box = document.createElement('details'); box.id = 'vmBox'; if (window.SettingsApi) SettingsApi.registerSection('data', box, { order: 10 }); else { const at = document.getElementById('selfCheck'); at ? pop.insertBefore(box, at) : pop.appendChild(box); }
       box.addEventListener('toggle', () => { open = box.open; }); box.addEventListener('change', onChange); box.addEventListener('click', onClick); }
     box.open = open;
     const opt = (p, cur) => `<option value="${esc(p.path)}" ${p.path === cur ? 'selected' : ''}>${esc(p.path)}</option>`;
@@ -67,5 +67,5 @@ const TCVarMap = (() => {
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   return { set, render, get data() { return d; } };
 })();
-register('TCVarMap', TCVarMap);
-export { TCVarMap };
+register('StatPathMappingView', StatPathMappingView);
+export { StatPathMappingView };

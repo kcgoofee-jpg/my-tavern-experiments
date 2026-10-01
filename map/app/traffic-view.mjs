@@ -82,8 +82,8 @@ export function registerTrafficLayer() {
     setVisible: v => { if (!mounted) return; cv.style.display = v ? '' : 'none'; v ? start() : stop(); },
   });
   busOn({ key: 'traffic.resize', type: 'resize', fn: () => size() });
-  busOn({ key: 'traffic.hostMsg', type: 'message', fn: e => { if (window.__fromHost?.(e) && e.data?.type === 'eden-map:clock') night = !!e.data.night; } });
+  busOn({ key: 'traffic.hostMsg', type: 'message', fn: e => { if (window.__isFromHost?.(e) && e.data?.type === 'eden-map:clock') night = !!e.data.night; } });
   visibilityGuard.subscribe(paused => { paused ? stop() : (registry.isVisible('traffic') ? start() : null); });
-  window.TCTraffic = { running: trafficRunning, night: trafficNight, describe: () => ({ cars: trafficField(routeList(curData?.routes), { t: 0, seed, quality: quality(), night }).length, night }) };
+  window.TrafficApi = { running: trafficRunning, night: trafficNight, describe: () => ({ cars: trafficField(routeList(curData?.routes), { t: 0, seed, quality: quality(), night }).length, night }) };
   return true;
 }

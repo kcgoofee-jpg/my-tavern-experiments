@@ -76,8 +76,8 @@ try {
   {
     const P = await B.newPage('desktop');
     const V = await B.openInHost(P, B.BASE + 'viewer.html?map=tc_upper', { frameH: 760 });   // eden-map:* 只认宿主（parent）
-    await V.waitForFunction(() => typeof go === 'function' && REG, null, { timeout: 30000 });
-    await V.evaluate(() => go('eden_estate')); await V.waitForFunction(() => document.querySelector('#estate.on'), null, { timeout: 60000 });
+    await V.waitForFunction(() => typeof ViewerDebug !== 'undefined' && typeof ViewerDebug.go === 'function' && ViewerDebug.mapRegistry, null, { timeout: 30000 });
+    await V.evaluate(() => ViewerDebug.go('eden_estate')); await V.waitForFunction(() => document.querySelector('#estate.on'), null, { timeout: 60000 });
     const hostPost = (m) => P.page.evaluate((m) => document.getElementById('f').contentWindow.postMessage(m, '*'), m);
     await hostPost({ type: 'eden-map:sleep' }); await B.wait(800);
     const fr = P.page.frames().find((x) => x.parentFrame() === V);
@@ -85,14 +85,14 @@ try {
     await V.evaluate(() => { window.__ldSeen = false; const ld = document.getElementById('loading'); window.__mo = new MutationObserver(() => { if (!ld.classList.contains('done')) window.__ldSeen = true; }); window.__mo.observe(ld, { attributes: true }); });
     await hostPost({ type: 'eden-map:wake' }); await B.wait(800);
     const fr2 = P.page.frames().find((x) => x.parentFrame() === V);
-    const wk = await V.evaluate(() => ({ cur, ld: window.__ldSeen, vis: document.getElementById('estate')?.style.visibility || 'visible' }));
+    const wk = await V.evaluate(() => ({ cur: ViewerDebug.currentMapId, ld: window.__ldSeen, vis: document.getElementById('estate')?.style.visibility || 'visible' }));
     const rf = fr2 ? await fr2.evaluate(() => ({ same: !!window.__estate, resumeMs: Math.round(window.__estate.resumeFrameMs ?? -1), paused: window.__estate.paused() })) : null;
     rep.metric('sleep_wake', { sl, wk, rf });
     rep.check('休眠：庄园 iframe 保留并暂停渲染', sl.kept && sl.paused === true, JSON.stringify(sl));
     rep.check('唤醒：不出加载页，第一帧 < 100 ms', wk.cur === 'eden_estate' && !wk.ld && wk.vis !== 'hidden' && rf && !rf.paused && rf.resumeMs >= 0 && rf.resumeMs < 100, JSON.stringify({ wk, rf }));
     // FPS 只留一份（U，2026-09-28）：开着庄园三维子页时，外层顶栏那个绿色读数该让位给子页自己画的那份
     const fpsDup = await V.evaluate(async () => {
-      window.TCStore.set('edenMapFps', '1');
+      window.LocalStore.set('edenMapFps', '1');
       const [{ setFpsMeter }, { estateLook }] = await Promise.all([import('./app/fps.mjs'), import('./app/subpage3d-host.mjs')]);
       setFpsMeter(true); estateLook();
       await new Promise((r) => setTimeout(r, 300));

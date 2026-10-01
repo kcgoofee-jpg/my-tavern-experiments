@@ -35,7 +35,7 @@ function css() { if (document.getElementById(CSS_ID)) return;
   const s = document.createElement('style'); s.id = CSS_ID; s.textContent = CSS; document.head.appendChild(s); }
 
 const markerXY = id => (curData?.markers || []).find(k => k.id === id) || null;
-const takenIds = () => { try { return new Set((P.TCInv?.rows || []).map(r => r.id).filter(Boolean)); } catch (e) { return new Set(); } };
+const takenIds = () => { try { return new Set((P.StashView?.rows || []).map(r => r.id).filter(Boolean)); } catch (e) { return new Set(); } };
 // the landmark the current location places the player at (the node tree's answer, not the highlighted label): a hidden compartment shows only there
 const hereNow = () => { try { return hereRes(String(document.getElementById('here')?.value || '').replace('{{user}}', ''))?.marker || ''; } catch (e) { return ''; } };
 
@@ -94,12 +94,12 @@ export function registerLootLayer() {
   try { watch = new MutationObserver(() => setTimeout(rebuildLoot, 0)); watch.observe(document.body, { attributes: true, attributeFilter: ['data-map'] }); } catch (e) {}
   busOn({ key: 'loot.resize', type: 'resize', fn: () => rebuildLoot() });
   busOn({ key: 'loot.hostMsg', type: 'message', fn: e => {
-    if (!window.__fromHost?.(e)) return;
+    if (!window.__isFromHost?.(e)) return;
     const d = e.data; if (!d) return;
     if (d.type === 'eden-map:stash') setLootStash(d);
     else if (d.type === 'eden-map:inv' || d.type === 'eden-map:here' || d.type === 'eden-map:wake') setTimeout(rebuildLoot, 0);
   } });
-  window.TCLoot = { set: setLootStash, rebuild: rebuildLoot, rows: lootRows, now: () => els.length,
+  window.StashMarkersApi = { set: setLootStash, rebuild: rebuildLoot, rows: lootRows, now: () => els.length,
     all: () => stash?.items || [] };   // Part 8-1：整张藏物表（庄园三维页自己按房间 / 区域落点）
   return true;
 }

@@ -17,7 +17,7 @@ import { getText } from './topbar.mjs';
 import { go, groupView } from './map-switch.mjs';
 import { RING_W } from './locate.mjs';
 import { worldGroup } from './nodes-runtime.mjs';
-const TCScale = (() => {
+const ScaleHandoffApi = (() => {
   const W_M = 12e6;
   const grp = id => { const m = REG?.maps?.[id]; return m && m.kind === 'points' && m.status !== 'planned' && m.group && REG.groups[m.group]?.place ? m.group : null; };
   const isTier = id => !!grp(id);
@@ -95,11 +95,11 @@ const TCScale = (() => {
     const w = a.view?.phone ? a.view.phone[2] : 1, h = w * cs.y / cs.x;   // U2 / fix3：从世界图进城落在核心区（locate.mjs fitIn 再夹进图内），不再停在最远一档的周边云雾（白边）
     groupView[gid] = Object.assign(new OpenSeadragon.Rect(.5 + dx - w / 2, asp / 2 + dy - h / 2, w, h), { handoff: true });
     const sp = vp.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true);
-    window.__snapFx = { ox: sp.x, oy: sp.y, scale: 5 }; setPendingFocus(null); setPendingHome(false); go(id);
+    window.__zoomSnapEffect = { ox: sp.x, oy: sp.y, scale: 5 }; setPendingFocus(null); setPendingHome(false); go(id);
   }
   function handoffOut() {
     const vp = viewer.viewport, cs = vp.getContainerSize(), sp = vp.pixelFromPoint(new OpenSeadragon.Point(.5, aspect / 2), true);
-    window.__snapFx = { ox: sp.x || cs.x / 2, oy: sp.y || cs.y / 2, scale: .2 }; window.__worldTC = REG.groups[grp(cur)]?.place || true; setPendingFocus(null); go('world');
+    window.__zoomSnapEffect = { ox: sp.x || cs.x / 2, oy: sp.y || cs.y / 2, scale: .2 }; window.__worldFocusPlace = REG.groups[grp(cur)]?.place || true; setPendingFocus(null); go('world');
   }
   function onZoom(e) {
     if (busy || !REG || !cur || !viewer.world.getItemCount() || !e || !Number.isFinite(e.zoom)) return;
@@ -121,4 +121,4 @@ const TCScale = (() => {
   const t0 = setInterval(() => { if (typeof viewer !== 'undefined' && viewer && typeof viewer.addHandler === 'function') { clearInterval(t0); init(); } }, 100);
   return { isTier, ring, sync, handoffIn, handoffOut, get ringOn() { return ringOn; }, get lastTier() { return lastTier[lastG] || null; }, grp, places };
 })();
-window.TCScale = TCScale;
+window.ScaleHandoffApi = ScaleHandoffApi;

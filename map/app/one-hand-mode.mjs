@@ -10,7 +10,7 @@ export function initE7() {
   const hs = $('#handSeg');
   const paint = () => hs.querySelectorAll('button').forEach(b => { const on = b.dataset.hand === window.__hand; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
   hs.addEventListener('click', e => { const b = e.target.closest('button[data-hand]'); if (!b) return;
-    window.__hand = b.dataset.hand; try { TCStore.set('edenMapHand', window.__hand); } catch (err) {}
+    window.__hand = b.dataset.hand; try { LocalStore.set('edenMapHand', window.__hand); } catch (err) {}
     window.__applyHand(); paint(); postState(); });
   paint();
   busOn({ key: 'shell.storage', type: 'storage', fn: e => { if (e.key === 'edenMapFabPos' && window.__hand === 'auto') window.__applyHand(); } });   // 自动：悬浮按钮拖到另一边，地图跟着换

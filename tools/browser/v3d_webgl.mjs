@@ -15,10 +15,10 @@ try {
   const r = results[MODEL] = { errors: [] };
   const t0 = Date.now();
   await P.page.goto(`${BASE}props/viewer3d.html?model=${MODEL}`);
-  await P.page.waitForFunction(() => window.__v3d?.ready, null, { timeout: 120000 });
+  await P.page.waitForFunction(() => window.__viewer3dProbe?.ready, null, { timeout: 120000 });
   r.loadMs = Date.now() - t0;
   await wait(600);
-  const perf = await P.page.evaluate(() => window.__v3d.perf());
+  const perf = await P.page.evaluate(() => window.__viewer3dProbe.perf());
   r.perf = perf;
   r.checks = {
     oneContext: perf.gpu != null,
@@ -30,9 +30,9 @@ try {
     budgetSane: !!perf.budget && perf.budget.ratio >= 0 && perf.budget.ratio < 1,
   };
   // 拉远 / 拉近：LOD 档位随镜头变化（升到近档后 detail 应当是 high）
-  await P.page.evaluate(() => { __v3d.home(); });
+  await P.page.evaluate(() => { __viewer3dProbe.home(); });
   await wait(400);
-  const near = await P.page.evaluate(() => window.__v3d.perf());
+  const near = await P.page.evaluate(() => window.__viewer3dProbe.perf());
   r.detailNear = near.detail;
   r.checks.lodNearIsHigh = near.detail === 'high';
   r.errors = P.errors;

@@ -18,7 +18,7 @@ export const TIERS = [   // 名称在 i18n/*.json 的 tier_<key>
 ];
 const TIER_KEY = 'edenMapTierV2';   // 存过档位（省流 / 标准 / 清晰 / 自动）的继续沿用；没存过的默认自动
 export let tier = 'auto';
-try { tier = TCStore.get(TIER_KEY) || 'auto'; } catch (e) {}
+try { tier = LocalStore.get(TIER_KEY) || 'auto'; } catch (e) {}
 if (tier !== 'auto' && !TIERS.some(t => t.key === tier)) tier = 'auto';
 export let autoKey = 'save';   // 自动档当前实际用的一档（只升不降）
 export const effTier = () => TIERS.find(x => x.key === (tier === 'auto' ? autoKey : tier));
@@ -104,7 +104,7 @@ function capLevels(it) {
 }
 // setTier：用户选档（记下来）；applyTier：按实际生效的一档设上限（自动档升档时只调它，不改存档）
 export function setTier(key) {
-  tier = key; try { TCStore.set(TIER_KEY, key); } catch (e) {}
+  tier = key; try { LocalStore.set(TIER_KEY, key); } catch (e) {}
   if (key === 'auto') { autoTier(true); if (viewer?.world.getItemAt(0)) return; }
   applyTier();
 }
@@ -138,7 +138,7 @@ export function autoTier(force) {
   if (tier !== 'auto' || !viewer) return;
   const base = viewer.world.getItemAt(0); if (!base) return;
   const vis = Math.min(1, viewer.viewport.getBounds(true).width);   // 可见宽度 / 图宽（图宽 = 1）
-  const need = viewer.viewport.getContainerSize().x * (window.__devDpr?.() || devicePixelRatio || 1) / Math.max(vis, 1e-3);
+  const need = viewer.viewport.getContainerSize().x * (window.__deviceDpr?.() || devicePixelRatio || 1) / Math.max(vis, 1e-3);
   const max = TIERS.findIndex(x => x.key === autoMax());
   let j = TIERS.findIndex(x => x.cap >= need * .9); if (j < 0) j = TIERS.length - 1;
   j = Math.max(Math.min(j, max), TIERS.findIndex(x => x.key === autoKey));
@@ -174,9 +174,9 @@ export function onOpen() {
 export function drawOverlays() {
   untrackAll(); viewer.clearOverlays();
   if (REG.maps[cur].kind === 'world') worldOverlays(); else pointOverlays();
-  if (typeof P.TCSecurity !== 'undefined') P.TCSecurity.afterOpen();   // v0.9.6 安保叠加层
-  P.TCEvents.render(); P.TCChars.render(); P.TCCustom.relabel(); P.TCTrips.render();   // 自定义显示名（v0.9.3）；人物层（chars.js，v0.9.2）；事件层（events.js）：聊天前端里的事件标签、外部数据源
-  applyOverlayToggle(); markHere($('#here').value); tabOrder(); declutter(); window.TCFog?.paint();
+  if (typeof P.SecurityView !== 'undefined') P.SecurityView.afterOpen();   // v0.9.6 安保叠加层
+  P.EventsView.render(); P.CharactersView.render(); P.CustomNamesView.relabel(); P.TripsView.render();   // 自定义显示名（v0.9.3）；人物层（chars.js，v0.9.2）；事件层（events.js）：聊天前端里的事件标签、外部数据源
+  applyOverlayToggle(); markHere($('#here').value); tabOrder(); declutter(); window.FogApi?.paint();
 }
 // 竖屏（手机）：允许缩到整张图横向放进屏幕（上下留边），不再只能看到半张图（E4 N13）
 // v0.9.6：面板从预加载（桌面尺寸）变成手机全屏、横竖屏切换后，用户没动过就按新尺寸重新取景并居中（手机世界图偏到一边的 P1）

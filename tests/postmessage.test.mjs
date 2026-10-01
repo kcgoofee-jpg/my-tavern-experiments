@@ -22,7 +22,7 @@ test('viewer: host listener checks source, subframe posts use SUB_ORIGIN', () =>
 });
 
 test('compose.js 回执只认宿主（arch-v2 §6 第 3 步）', () => {
-  assert.match(rd('map/compose-view.mjs'), /eden-map:compose-done' \|\| !window\.__fromHost\?\.\(e\)\) return;/);
+  assert.match(rd('map/compose-view.mjs'), /eden-map:compose-done' \|\| !window\.__isFromHost\?\.\(e\)\) return;/);
 });
 test('eden-map.js：只收本面板 iframe 的消息并按协议校验', () => {
   assert.match(rd('map/tavern/eden-map.js'), /if \(e\.source !== frame\.contentWindow \|\| \(PRm && !PRm\.accept\(e\.data/);

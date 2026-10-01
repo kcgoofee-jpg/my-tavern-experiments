@@ -1,5 +1,5 @@
 // 启动：main / mainInner（并行取注册表、标记、派生数据、字典、core/protocol.mjs，建 OSD，发 ready）、启动失败出路。
-// 核心各块按原内联脚本的顺序求值（副作用：监听器、window.I18N / EdenMap / TCNotify…）；兼容面 legacy-globals.mjs 最后
+// 核心各块按原内联脚本的顺序求值（副作用：监听器、window.I18N / EdenMap / showNotice…）；调试面 viewer-debug.mjs 最后
 import './state.mjs';
 import './coordinates.mjs';
 import './dom-helpers.mjs';
@@ -25,7 +25,7 @@ import './status-dot.mjs';
 import './one-hand-mode.mjs';
 import './quick-zoom.mjs';
 import './host-messages.mjs';
-import './legacy-globals.mjs';
+import './viewer-debug.mjs';
 import { initFpsMeter, suspendFpsMeter } from './fps.mjs';
 import { initVisibilityGuard } from './visibility.mjs';
 import { registerWeatherLayer } from './weather-view.mjs';
@@ -69,7 +69,7 @@ async function mainInner() {
   let d, enNamesP, reg, mk, dict, overlay;
   await initPack(getJSON);   // 设定包（core/pack.mjs）：一律取清单（eden 的在 viewer.html preload）
   const opt = k => (packData(k) ? getJSON(packData(k)) : Promise.resolve(null));
-  [reg, mk, d, dict, enNamesP, , , overlay] = await Promise.all([getJSON(packData('maps')).then(rebase), opt('world'), opt('derived'), window.__i18n,
+  [reg, mk, d, dict, enNamesP, , , overlay] = await Promise.all([getJSON(packData('maps')).then(rebase), opt('world'), opt('derived'), window.__dictionaryPromise,
     packNames('en') ? getJSON(packNames('en')) : null,   // 包的英文地名表（清单 data.names.en）；没声明的包：英文下地名退回中文
     import(new URL('core/protocol.mjs', document.baseURI).href).then(m => { setPR(m); }, () => null), packEvents,
     opt('overlay')]);   // 包旁边的 v2 叠加层（K-R67），清单 data.overlay 声明了才取；没声明的包行为和以前一样
@@ -112,7 +112,7 @@ async function mainInner() {
   // 画布像素密度随档位封顶：高分屏（手机 3x）上省流只画 1.25x，填充的像素少一半以上，选瓦片的层级也跟着降
   const devDpr = OpenSeadragon.getCurrentPixelDensityRatio;
   OpenSeadragon.getCurrentPixelDensityRatio = () => Math.min(devDpr(), effTier().dpr);
-  window.__devDpr = devDpr;
+  window.__deviceDpr = devDpr;
   OpenSeadragon.pixelDensityRatio = OpenSeadragon.getCurrentPixelDensityRatio();
   setViewer(OpenSeadragon({
     element: $('#osd'), drawer: 'canvas', prefixUrl: 'vendor/openseadragon/images/',
@@ -168,7 +168,7 @@ async function mainInner() {
   } });
   { let ct = 0; const cb = $('#creditBtn'), cr = $('#credit');
     const show = on => { cr.hidden = !on; cb.setAttribute('aria-expanded', on); clearTimeout(ct); if (on) ct = setTimeout(() => show(false), 6000); };
-    cb.onclick = e => { e.stopPropagation(); show(cr.hidden); }; cr.onclick = () => show(false); window.__creditShow = show; }
+    cb.onclick = e => { e.stopPropagation(); show(cr.hidden); }; cr.onclick = () => show(false); window.__showCredits = show; }
   $('#cardX').onclick = () => closeCard(true);
   const qs = new URLSearchParams(location.search), q = qs.get('map');
   if (qs.get('here')) $('#here').value = qs.get('here');   // 调试：?here=主卧
@@ -176,7 +176,7 @@ async function mainInner() {
   else if (!startInScene()) go(REG.start);   // 用户 2026-09-28：总是先开世界图；跳到当前地点只在点「当前位置」时。
   // 唯一例外（任务三）：人**已经**在庄园（三维场景）里时跳过宏观世界层，直接下钻到庄园对应楼层——判定收在 locate.startInScene。
   $('#hereGo').onclick = () => jumpHere($('#here').value);
-  P.TCEvents.init(); P.TCEvents.pollFeeds();   // 事态横条与花屏提示；外部事件数据源（maps.json 的 feeds，默认没有）
+  P.EventsView.init(); P.EventsView.pollFeeds();   // 事态横条与花屏提示；外部事件数据源（maps.json 的 feeds，默认没有）
   post({ type: 'eden-map:ready', proto: PROTO });
   // 首张地图画出来后，空闲时预热其他地图：描述文件、点位数据、最粗的几层瓦片（切过去立刻有模糊版）
   let warmT = 0; const warmSoon = ms => (clearTimeout(warmT), warmT = setTimeout(() => (window.requestIdleCallback || (f => f()))(() => warmOthers(), { timeout: 3000 }), ms));

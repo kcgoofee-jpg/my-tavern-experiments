@@ -23,7 +23,7 @@ export function paintLbl() { const on = $('#tgLabels').checked, b = $('#lblTog')
 export function toggleLabels(on) {
   const cb = $('#tgLabels'); cb.checked = on ?? !cb.checked;
   // P3-C：地名层可见性统一走 LayerRegistry（descriptor 同步勾选框 / body 类 / 按钮涂装）；Registry 未就绪时退回原样
-  if (window.TCLayers) window.TCLayers.registry.setVisible('labels', cb.checked);
+  if (window.LayerHostApi) window.LayerHostApi.registry.setVisible('labels', cb.checked);
   else document.body.classList.toggle('nolabels', !cb.checked);
   paintLbl(); announce(tx(cb.checked ? 's.labels_on' : 's.labels_off', cb.checked ? '标注已显示' : '标注已隐藏'));
 }

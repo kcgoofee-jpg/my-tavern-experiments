@@ -12,7 +12,7 @@ await B.ensureServer();
 const rep = B.reporter(OUT);
 
 const snap = page => page.evaluate(() => ({
-  bus: window.__edenBus?.describe?.().count ?? -1,
+  bus: window.__listenerBus?.describe?.().count ?? -1,
   nodes: document.getElementsByTagName('*').length,
   heap: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : -1,
   items: window.viewer?.world?.getItemCount?.() ?? -1,
@@ -42,7 +42,7 @@ try {
   const b = await snap(p);
   rep.metric('after', { ...b, rounds: ROUNDS });
 
-  rep.check(`监听器台账不随切图增长（${a.bus} → ${b.bus}）`, a.bus > 0 && b.bus === a.bus, `总线登记 ${JSON.stringify(await p.evaluate(() => window.__edenBus?.describe?.() || null))}`);
+  rep.check(`监听器台账不随切图增长（${a.bus} → ${b.bus}）`, a.bus > 0 && b.bus === a.bus, `总线登记 ${JSON.stringify(await p.evaluate(() => window.__listenerBus?.describe?.() || null))}`);
   rep.check('叠加层节点数有界（切图不堆 DOM）', b.nodes - a.nodes <= 200, `${a.nodes} → ${b.nodes}`);
   rep.check(`堆增长 ≤ ${HEAP_MB} MB（${a.heap} → ${b.heap} MB）`, b.heap < 0 || b.heap - a.heap <= HEAP_MB, `${ROUNDS} 次切图`);
   rep.check('切图循环全程无控制台错误 / 404', D.errors.length === 0, D.errors.slice(0, 4).join(' | '));

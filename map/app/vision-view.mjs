@@ -112,12 +112,12 @@ export function registerVisionLayer() {
   });
   busOn({ key: 'vision.resize', type: 'resize', fn: () => size() });
   busOn({ key: 'vision.hostMsg', type: 'message', fn: e => {
-    if (!window.__fromHost?.(e)) return;
+    if (!window.__isFromHost?.(e)) return;
     const d = e.data; if (!d) return;
     if (d.type === 'eden-map:clock') night = !!d.night;
     if (d.type === 'eden-map:here') tryMove(d.value, { replay: !!d.replay });
   } });
   visibilityGuard.subscribe(paused => { paused ? stop() : (registry.isVisible('vision') ? start() : null); });
-  window.TCVision = { cones: conesNow, markerOf, tryMove, setWalls: w => ((walls = w || []), xyCache.clear()), getWalls: () => walls.slice(), night: () => night };
+  window.VisionApi = { cones: conesNow, markerOf, tryMove, setWalls: w => ((walls = w || []), xyCache.clear()), getWalls: () => walls.slice(), night: () => night };
   return true;
 }

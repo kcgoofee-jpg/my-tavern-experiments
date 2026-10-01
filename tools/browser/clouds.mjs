@@ -15,7 +15,7 @@ const open = async (preset, opts = {}) => {
   await B.openViewer(P, { map: 'tc_upper' }); await B.wait(1500);
   return P;
 };
-const st = pg => pg.evaluate(() => window.__clouds.state());
+const st = pg => pg.evaluate(() => window.__cloudsProbe.state());
 const R = {}; let bad = [];
 for (const preset of ['phone', 'iphone', 'desktop', 'desktopWk']) {
   const r = R[preset] = {};
@@ -25,11 +25,11 @@ for (const preset of ['phone', 'iphone', 'desktop', 'desktopWk']) {
   r.drift = await measure(pg, 3000);
   await B.shot(pg, OUT, `${preset}_drift`);
   const m = measure(pg, 2000); const t0 = Date.now();
-  await pg.evaluate(() => { window.__sw = go('tc_mid'); }); await B.wait(300); await B.shot(pg, OUT, `${preset}_cover`);
+  await pg.evaluate(() => { window.__sw = ViewerDebug.go('tc_mid'); }); await B.wait(300); await B.shot(pg, OUT, `${preset}_cover`);
   r.coc = await m; await pg.evaluate(() => window.__sw); r.cocMs = Date.now() - t0;
-  r.afterMid = await st(pg); r.map = await pg.evaluate(() => cur);
+  r.afterMid = await st(pg); r.map = await pg.evaluate(() => ViewerDebug.currentMapId);
   // 跳过：扫入中点一下
-  const t1 = Date.now(); await pg.evaluate(() => { window.__sw = go('tc_upper'); }); await B.wait(150);
+  const t1 = Date.now(); await pg.evaluate(() => { window.__sw = ViewerDebug.go('tc_upper'); }); await B.wait(150);
   const vs = pg.viewportSize(); await pg.mouse.click(vs.width / 2, vs.height / 2); await pg.evaluate(() => window.__sw); r.skipMs = Date.now() - t1;
   await B.wait(400); r.backUpper = await st(pg);
   // 云开关：勾「显示下方城市」→ 漂移云消失；取消 → 回来
@@ -40,10 +40,10 @@ for (const preset of ['phone', 'iphone', 'desktop', 'desktopWk']) {
   r.errors = P.errors; await P.close();
   // 减少动态
   const Q = await open(preset, { rm: true }); r.rm = await st(Q.page);
-  const t2 = Date.now(); await Q.page.evaluate(() => go('tc_mid')); r.rm.swapMs = Date.now() - t2; r.rm.cover = await Q.page.evaluate(() => !!document.getElementById('clCover')); await Q.close();
+  const t2 = Date.now(); await Q.page.evaluate(() => ViewerDebug.go('tc_mid')); r.rm.swapMs = Date.now() - t2; r.rm.cover = await Q.page.evaluate(() => !!document.getElementById('clCover')); await Q.close();
   // 省流
   const L = await open(preset, { tier: 'save' }); r.lean = await st(L.page);
-  const t3 = Date.now(); await L.page.evaluate(() => go('tc_mid')); r.lean.swapMs = Date.now() - t3;
+  const t3 = Date.now(); await L.page.evaluate(() => ViewerDebug.go('tc_mid')); r.lean.swapMs = Date.now() - t3;
   r.lean.puffRequests = L.net.list.filter(x => /puff/.test(x[0])).length; await L.close();
   if (!r.state.shown || r.state.visible < 5 || r.state.visible > 8   /* 中位数 */) bad.push(`${preset} 可见云团 ${r.state.visible}`);
   if (r.map !== 'tc_mid' || r.afterMid.shown) bad.push(`${preset} 切层后 ${r.map} shown=${r.afterMid.shown}`);

@@ -2,7 +2,7 @@
 // 地点卡多一枚「世界书档案」胶囊——点一下把当前地点名发给宿主（eden-map:th {op:'wb-peek'}），
 // 宿主在附加书里按触发词 / 名字匹配条目、回 eden-map:wb-peek（条目名 + 摘要），这里渲染进卡片抽屉。
 // 只读：不写任何条目、不发请求；宿主没这本书 / 没这接口时点了就显示「附加书不可用」。摘要只取前 300 字。
-// 插件模式与 scrapbook.mjs 一致（app/plugins.mjs 的 P.TCWb；没加载时 markers.mjs 调用处带守卫）。
+// 插件模式与 scrapbook.mjs 一致（app/plugins.mjs 的 P.WorldbookPeekView；没加载时 markers.mjs 调用处带守卫）。
 import { esc } from './app/dom-helpers.mjs';
 import { post } from './app/protocol-stamp.mjs';
 import { busOn } from './app/bus.mjs';
@@ -10,7 +10,7 @@ import { register } from './app/plugins.mjs';
 
 const TRIM = 300;
 const T = (k, zh) => { try { return window.I18N.tx(k, zh); } catch (e) { return zh; } };   // 共享 i18n 服务（viewer.html window.I18N）
-const TCWb = (() => {
+const WorldbookPeekView = (() => {
   let openPlace = null, box = null;
 
   function render(items, name) {
@@ -39,9 +39,9 @@ const TCWb = (() => {
   }
 
   busOn({ key: 'wbpeek.hostMsg', type: 'message', fn: e => {
-    try { if (window.__fromHost?.(e) && e.data?.type === 'eden-map:wb-peek') render(e.data.items || [], e.data.name || ''); } catch (x) {}
+    try { if (window.__isFromHost?.(e) && e.data?.type === 'eden-map:wb-peek') render(e.data.items || [], e.data.name || ''); } catch (x) {}
   } });
 
   return { decorate, show: render };
 })();
-register('TCWb', TCWb);
+register('WorldbookPeekView', WorldbookPeekView);

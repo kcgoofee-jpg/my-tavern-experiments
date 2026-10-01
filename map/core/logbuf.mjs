@@ -65,8 +65,8 @@ export function install(target = (typeof console !== 'undefined' ? console : nul
     target[level] = (...args) => { try { push(level, args); } catch (e) {} orig(...args); };
   }
   // 全局错误与未处理的 Promise 拒绝：报障最常见的就是这两类，之前完全没抓
-  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function' && !window.__edenLogErrHook) {
-    window.__edenLogErrHook = true;
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function' && !window.__logHooksInstalled) {
+    window.__logHooksInstalled = true;
     window.addEventListener('error', e => push('error', ['Uncaught: ' + (e?.message || e) + ' @ ' + (e?.filename || '') + ':' + (e?.lineno ?? '')]));
     window.addEventListener('unhandledrejection', e => push('error', ['Unhandled rejection: ' + (e?.reason?.stack || e?.reason || e)]));
     window.addEventListener('pagehide', flush);           // 关页前兜底存一次（同步 API，来得及）

@@ -25,19 +25,19 @@ try {
 
   await step('天气层在 fx 槽位，菜单行渲染出来', async () => {
     const st = await p.evaluate(() => {
-      const d = window.TCLayers?.describe() || {};
+      const d = window.LayerHostApi?.describe() || {};
       const slot = d.slots?.find(s => s.id === 'fx') || null;
       return { slot, box: !!document.getElementById('tgWeather'), cv: !!document.querySelector('.vpslot[data-slot="fx"] canvas.wxcv'),
-        api: typeof window.TCWeather?.set === 'function' };
+        api: typeof window.WeatherApi?.set === 'function' };
     });
     rep.check('fx 槽位登记了 weather 层', !!st.slot?.layers?.includes('weather'), JSON.stringify(st.slot));
     rep.check('图层菜单有「天气」开关', st.box);
     rep.check('fx 槽位里有天气 canvas', st.cv);
-    rep.check('调试面 window.TCWeather 可用', st.api);
+    rep.check('调试面 window.WeatherApi 可用', st.api);
   });
 
   await step('切到雷暴雨：canvas 真的画出了东西', async () => {
-    await p.evaluate(() => window.TCWeather.set('storm'));
+    await p.evaluate(() => window.WeatherApi.set('storm'));
     await B.wait(700);
     const r = await p.evaluate(() => {
       const cv = document.querySelector('.vpslot[data-slot="fx"] canvas.wxcv');
@@ -55,7 +55,7 @@ try {
 
   await step('可见性守卫：隐藏即暂停，回前台恢复', async () => {
     const r = await p.evaluate(async () => {
-      const bus = window.__edenBus;
+      const bus = window.__listenerBus;
       const before = bus?.describe?.().count ?? -1;
       Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
       document.dispatchEvent(new Event('visibilitychange'));
@@ -75,7 +75,7 @@ try {
   // 这时瓦片全失败，查看器必须留在页面上给出「卡住了 / 重试」，而不是白屏或静默转圈（Part 1-5）。
   const errsBefore = D.errors.length;   // 断网这一步必然刷出网络错误，只比对它之前的基线
   await step('离线降级：断网切图后仍有明确出路，不是白屏', async () => {
-    await p.evaluate(() => window.TCWeather?.set('clear'));
+    await p.evaluate(() => window.WeatherApi?.set('clear'));
     await D.ctx.setOffline(true);
     await p.evaluate(() => { try { window.go?.('tc_upper'); } catch (e) {} });
     await B.wait(25000);   // 卡住判定：8 s 提示网络慢、20 s 出「重试」（tools/browser 的卡住提示节奏）

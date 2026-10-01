@@ -162,7 +162,7 @@ test('S5-1 viewer 拆分：custom / events 拆出的小模块只导出自己的�
   const C = rd('map/custom-names-view.mjs'), V = rd('map/events-view.mjs');
   for (const f of ['custom-tint', 'custom-outfit', 'custom-hints', 'custom-dialog-view']) assert.ok(C.includes(`'./${f}.mjs'`), f);
   assert.ok(V.includes("'./events-fx.mjs'"));
-  assert.match(C, /^register\('TCCustom', TCCustom\);$/m); assert.match(V, /^register\('TCEvents', TCEvents\);$/m);   // 插件名与登记方式不变
+  assert.match(C, /^register\('CustomNamesView', CustomNamesView\);$/m); assert.match(V, /^register\('EventsView', EventsView\);$/m);   // 插件名与登记方式不变
   for (const s of ['function night()', 'function toast(', 'const KIND =', 'function listHtml', 'function editHtml', 'function setOutfit']) assert.ok(!C.includes(s), 'custom-names-view.mjs 不再带 ' + s);
   for (const s of ['function applyGlitch', 'function worldBadge']) assert.ok(!V.includes(s), 'events.mjs 不再带 ' + s);
 });

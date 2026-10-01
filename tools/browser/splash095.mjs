@@ -11,7 +11,7 @@ const jpg = async (page, name) => { await B.shot(page, OUT, name); if (!SHOTS) r
 async function run(name, preset, scheme = 'dark') {
   const P = await B.newPage(preset, { tier: 'std', scheme });
   try {
-    await P.ctx.addInitScript(() => { if (window.top === window) window.__edenSplashCap = 8; });
+    await P.ctx.addInitScript(() => { if (window.top === window) window.__splashCap = 8; });
     // 云图故意慢 20 秒：看进度卡在 100 以下
     await P.page.route('**/art/clouds/puff1.png', async r => { await new Promise(x => setTimeout(x, 20000)); r.continue().catch(() => {}); });
     const H = await openHost(P, { here: '天城·中层·天城执法局总局', msgs: [], stat: {}, chat: 's95-' + name, splash: true });
@@ -36,7 +36,7 @@ async function run(name, preset, scheme = 'dark') {
     rep.check(`${name} 「开始」：关卡、打开地图`, opened.gone && opened.panel, JSON.stringify(opened));
     const again = await p.evaluate(async () => { await window.EdenMap.selfcheck({ show: true }); await new Promise(r => setTimeout(r, 400)); return !!document.querySelector('#eden-map-root .em-splash'); });
     await p.evaluate(() => document.querySelector('#eden-map-root .em-splash .x').click());
-    const vf = await H.viewer(); await vf.evaluate(() => { showSet(true); document.querySelector('#splashAgain').click(); }); await B.wait(600);
+    const vf = await H.viewer(); await vf.evaluate(() => { ViewerDebug.showSet(true); document.querySelector('#splashAgain').click(); }); await B.wait(600);
     const again2 = await p.evaluate(() => !!document.querySelector('#eden-map-root .em-splash'));
     rep.check(`${name} EdenMap.selfcheck({show:true}) 与设置「重新显示开场自检」都能再开`, again && again2);
     const seen = await p.evaluate(() => localStorage.getItem('edenMapSplashSeen'));

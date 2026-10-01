@@ -66,41 +66,41 @@ async function dump() {
       return o; });
     fs.writeFileSync(path.join(OUT, 'dict.json'), JSON.stringify({ title: '', lines: Object.entries(dict).map(([k, v]) => `${k} = ${v}`), attrs: [], i18n: [] }, null, 1)); n++;
     if (ONLY?.join() === 'dict') return;   // --only dict: just the dictionary (seconds), for comparing a tree without waiting for the maps
-    const maps = await p.evaluate(() => Object.keys(REG.maps));
+    const maps = await p.evaluate(() => Object.keys(ViewerDebug.mapRegistry.maps));
     for (const m of maps) { try { await B.goMap(p, m); } catch (e) { continue; } await B.wait(1000); await state('map_' + m); }
     // drawer tabs on the first flat map
-    const flat = await p.evaluate(() => Object.keys(REG.maps).find(k => REG.maps[k].kind !== 'estate' && k !== 'world') || Object.keys(REG.maps)[0]);
+    const flat = await p.evaluate(() => Object.keys(ViewerDebug.mapRegistry.maps).find(k => ViewerDebug.mapRegistry.maps[k].kind !== 'estate' && k !== 'world') || Object.keys(ViewerDebug.mapRegistry.maps)[0]);
     await B.goMap(p, flat); await B.wait(800);
     // events + roster, posted the way the host posts them
     const items = (() => { EVM.setGeo(geo); const r = EVM.collect(EVT.map((text, i) => ({ floor: 100 + i, text })), 102).map(e => ({ ...e, isNew: true })); EVM.setGeo(null); return r; })();
-    await p.evaluate(m => TCEvents.set(m), { type: 'eden-map:events', items, floor: 102 }); await B.wait(700);
-    await p.evaluate(m => TCChars.set(m), CHARS); await B.wait(700);
+    await p.evaluate(m => EventsView.set(m), { type: 'eden-map:events', items, floor: 102 }); await B.wait(700);
+    await p.evaluate(m => CharactersView.set(m), CHARS); await B.wait(700);
     for (const tab of ['pl', 'ev', 'ch', 'lg']) {
-      const vis = await p.evaluate(t => { try { const b = TCSheet.button(t); if (!b || b.hidden) return false; TCSheet.setTab(t, 'half'); return true; } catch (e) { return false; } }, tab);
+      const vis = await p.evaluate(t => { try { const b = ViewerDrawer.button(t); if (!b || b.hidden) return false; ViewerDrawer.setTab(t, 'half'); return true; } catch (e) { return false; } }, tab);
       if (vis) { await B.wait(500); await state('tab_' + tab); }
     }
-    await p.evaluate(() => TCSheet.set('peek'));
+    await p.evaluate(() => ViewerDrawer.set('peek'));
     // a person card (the "more data" rows)
-    await p.evaluate(() => { try { TCChars.cardOf('甲一'); } catch (e) {} }); await B.wait(700); await state('card_person');
-    await p.evaluate(() => { try { closeCard(); } catch (e) {} });
+    await p.evaluate(() => { try { CharactersView.cardOf('甲一'); } catch (e) {} }); await B.wait(700); await state('card_person');
+    await p.evaluate(() => { try { ViewerDebug.closeCard(); } catch (e) {} });
     // a glitch (the notice text), then back to the plain events
     if (PACK === 'eden') await B.postEvents(p.mainFrame(), [{ floor: 50, text: GLITCH }], true).catch(() => {});
-    else await p.evaluate(m => TCEvents.set(m), { type: 'eden-map:events', items: (() => { EVM.setGeo(geo); const r = EVM.collect([{ floor: 50, text: GLITCH_TOWN }], 50).map(e => ({ ...e, isNew: true })); EVM.setGeo(null); return r; })(), floor: 50 }).catch(() => {}); await B.wait(700); await state('glitch');
-    await p.evaluate(m => TCEvents.set(m), { type: 'eden-map:events', items, floor: 102 }); await B.wait(500);
+    else await p.evaluate(m => EventsView.set(m), { type: 'eden-map:events', items: (() => { EVM.setGeo(geo); const r = EVM.collect([{ floor: 50, text: GLITCH_TOWN }], 50).map(e => ({ ...e, isNew: true })); EVM.setGeo(null); return r; })(), floor: 50 }).catch(() => {}); await B.wait(700); await state('glitch');
+    await p.evaluate(m => EventsView.set(m), { type: 'eden-map:events', items, floor: 102 }); await B.wait(500);
     // settings: every page, every <details> open
     const pages = await p.evaluate(() => [...document.querySelectorAll('#setPop .spage')].map(e => e.dataset.page));
     for (const pg of pages) {
-      await p.evaluate(g => { TCSettings.open(g); document.querySelectorAll('#setPop details').forEach(d => { d.open = true; }); }, pg); await B.wait(500);
+      await p.evaluate(g => { SettingsApi.open(g); document.querySelectorAll('#setPop details').forEach(d => { d.open = true; }); }, pg); await B.wait(500);
       await state('settings_' + pg);
     }
-    await p.evaluate(() => showSet(false));
+    await p.evaluate(() => ViewerDebug.showSet(false));
     // the custom-names panel and the unmapped panel
-    await p.evaluate(() => { try { TCCustom.openDlg(null, 'list'); } catch (e) {} }); await B.wait(900); await state('custom_dlg');
+    await p.evaluate(() => { try { CustomNamesView.openDlg(null, 'list'); } catch (e) {} }); await B.wait(900); await state('custom_dlg');
     await p.evaluate(() => { try { document.querySelector('#cuDlg .cu-x, #cuDlg [data-close]')?.click(); } catch (e) {} }); await p.keyboard.press('Escape'); await B.wait(300);
-    await p.evaluate(() => { try { TCUnmapped.open(); } catch (e) {} }); await B.wait(700); await state('unmapped_dlg');
+    await p.evaluate(() => { try { UnmappedPlacePicker.open(); } catch (e) {} }); await B.wait(700); await state('unmapped_dlg');
     await p.keyboard.press('Escape'); await B.wait(300);
     // the feedback report: the text area, without the clock and the log lines
-    await p.evaluate(() => { TCSettings.open('update'); }); await B.wait(400);
+    await p.evaluate(() => { SettingsApi.open('update'); }); await B.wait(400);
     await p.evaluate(() => { document.querySelector('.fb-open')?.click(); }); await B.wait(700);
     const rep = await p.evaluate(() => document.querySelector('#fbText')?.value || '');
     const repLines = rep.split('\n').filter(l => !/^(时间 \/ time|\[\d\d:\d\d:\d\d\])/.test(l));

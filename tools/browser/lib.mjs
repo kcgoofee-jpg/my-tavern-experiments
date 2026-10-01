@@ -127,8 +127,8 @@ export async function openViewer(P, { map, here, timeout = 30000 } = {}) {
   return { loadingDoneMs, firstTileMs: P.net.firstTileAt, bytes: P.net.bytes, requests: P.net.n };
 }
 export const viewerState = page => page.evaluate(() => ({
-  map: typeof cur !== 'undefined' ? cur : document.body.dataset.map,
-  base: (() => { try { const s = viewer.world.getItemAt(0)?.source; return s?.tilesUrl || s?.url || ''; } catch (e) { return ''; } })(),
+  map: typeof ViewerDebug !== 'undefined' ? ViewerDebug.currentMapId : document.body.dataset.map,
+  base: (() => { try { const s = ViewerDebug.osdViewer.world.getItemAt(0)?.source; return s?.tilesUrl || s?.url || ''; } catch (e) { return ''; } })(),
   card: document.querySelector('#card')?.hidden === false ? document.querySelector('#card h2')?.textContent || '' : null,
   estateOn: !!document.querySelector('#estate.on'),
   layers: [...document.querySelectorAll('#layers button')].map(b => ({ go: b.dataset.go, on: b.classList.contains('on'), disabled: b.disabled })),
@@ -136,21 +136,21 @@ export const viewerState = page => page.evaluate(() => ({
 // 切到某张图，等底图第一张瓦片画出（庄园等 #estate.on）；返回用时 ms
 export async function goMap(page, id, timeout = 30000) {
   const t0 = Date.now();
-  const k = await page.evaluate(id => cur === id ? 'same' : REG.maps[id]?.kind === 'estate' ? 'estate' : REG.maps[id] ? 'map' : 'none', id);
+  const k = await page.evaluate(id => ViewerDebug.currentMapId === id ? 'same' : ViewerDebug.mapRegistry.maps[id]?.kind === 'estate' ? 'estate' : ViewerDebug.mapRegistry.maps[id] ? 'map' : 'none', id);
   if (k === 'same') return 0;
   if (k === 'none') throw new Error('没有地图 ' + id);
-  if (k === 'estate') { await page.evaluate(id => go(id), id); await page.waitForFunction(() => document.querySelector('#estate.on'), null, { timeout }).catch(() => {}); }
+  if (k === 'estate') { await page.evaluate(id => ViewerDebug.go(id), id); await page.waitForFunction(() => document.querySelector('#estate.on'), null, { timeout }).catch(() => {}); }
   else await page.evaluate(([id, to]) => new Promise(res => { let d = false; const fin = () => { if (!d) { d = true; res(); } };
-    viewer.addOnceHandler('open', () => viewer.addOnceHandler('tile-drawn', fin)); go(id); setTimeout(fin, to); }), [id, timeout]);
+    ViewerDebug.osdViewer.addOnceHandler('open', () => ViewerDebug.osdViewer.addOnceHandler('tile-drawn', fin)); ViewerDebug.go(id); setTimeout(fin, to); }), [id, timeout]);
   return Date.now() - t0;
 }
 
 // 滚轮以光标为中心（OpenSeadragon）：记下光标处图像坐标，滚轮后投影回屏幕，看偏移像素
 export async function wheelDriftViewer(page, x, y, ticks = 5) {
-  const before = await page.evaluate(([x, y]) => { const v = viewer.viewport, r = viewer.container.getBoundingClientRect();
+  const before = await page.evaluate(([x, y]) => { const v = ViewerDebug.osdViewer.viewport, r = ViewerDebug.osdViewer.container.getBoundingClientRect();
     window.__wp = v.pointFromPixel(new OpenSeadragon.Point(x - r.left, y - r.top), true); return v.getZoom(true); }, [x, y]);
   await page.mouse.move(x, y); for (let i = 0; i < ticks; i++) { await page.mouse.wheel(0, -120); await wait(60); } await wait(1500);
-  const after = await page.evaluate(() => { const v = viewer.viewport, r = viewer.container.getBoundingClientRect(); const p = v.pixelFromPoint(window.__wp, true);
+  const after = await page.evaluate(() => { const v = ViewerDebug.osdViewer.viewport, r = ViewerDebug.osdViewer.container.getBoundingClientRect(); const p = v.pixelFromPoint(window.__wp, true);
     return { zoom: v.getZoom(true), sx: p.x + r.left, sy: p.y + r.top }; });
   return { zoom0: +before.toFixed(3), zoom1: +after.zoom.toFixed(3), drift_px: +Math.hypot(after.sx - x, after.sy - y).toFixed(2) };
 }
@@ -221,8 +221,8 @@ export async function postEvents(frame, texts, fly) {
   const floor = Math.max(...texts.map(t => t.floor));
   const items = collect(texts, floor).map(e => ({ ...e, isNew: true }));
   const id = fly === true ? items[0]?.id : typeof fly === 'function' ? items.find(fly)?.id : fly;
-  // 嵌入时走 postMessage（卡内脚本的协议）；独立打开的查看器不监听 message，直接交给 TCEvents.set
-  await frame.evaluate(m => window.top !== window ? window.postMessage(m, '*') : TCEvents.set(m), { type: 'eden-map:events', items, floor, fly: id });
+  // 嵌入时走 postMessage（卡内脚本的协议）；独立打开的查看器不监听 message，直接交给 EventsView.set
+  await frame.evaluate(m => window.top !== window ? window.postMessage(m, '*') : EventsView.set(m), { type: 'eden-map:events', items, floor, fly: id });
   return { items, fly: id };
 }
 

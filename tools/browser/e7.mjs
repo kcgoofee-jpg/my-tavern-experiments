@@ -31,15 +31,15 @@ async function jpg(page, name) {
 // UI v2：控制列 #dock 只有 ⋯ + − ⌂（层切换在抽屉摘要行的层名胶囊里）
 const dockBoxes = page => page.evaluate(() => [...document.querySelectorAll('#dock button')].filter(e => e.offsetParent && getComputedStyle(e).visibility !== 'hidden')
   .map(e => { const r = e.getBoundingClientRect(); return { id: e.id || e.dataset.go || e.getAttribute('aria-label'), l: r.left, r: r.right, t: r.top, b: r.bottom }; }));
-const osdCenter = page => page.evaluate(() => { const r = viewer.container.getBoundingClientRect(); return { x: r.left + r.width * .5, y: r.top + r.height * .4 }; });
+const osdCenter = page => page.evaluate(() => { const r = ViewerDebug.osdViewer.container.getBoundingClientRect(); return { x: r.left + r.width * .5, y: r.top + r.height * .4 }; });
 // 合成触摸指针事件（两个引擎都能跑）：点在 OSD 画布上
 const touch = (page, type, x, y, id = 7) => page.evaluate(([type, x, y, id]) => {
   const el = document.elementFromPoint(x, y);
   el.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y, bubbles: true, cancelable: true, composed: true, buttons: type === 'pointerup' ? 0 : 1 }));
 }, [type, x, y, id]);
-const zoomNow = page => page.evaluate(() => viewer.viewport.getZoom(true));
-const pixOf = (page, p) => page.evaluate(p => { const q = viewer.viewport.pixelFromPoint(new OpenSeadragon.Point(p.x, p.y), true), r = viewer.container.getBoundingClientRect(); return { x: q.x + r.left, y: q.y + r.top }; }, p);
-const ptAt = (page, x, y) => page.evaluate(([x, y]) => { const r = viewer.container.getBoundingClientRect(); const p = viewer.viewport.pointFromPixel(new OpenSeadragon.Point(x - r.left, y - r.top), true); return { x: p.x, y: p.y }; }, [x, y]);
+const zoomNow = page => page.evaluate(() => ViewerDebug.osdViewer.viewport.getZoom(true));
+const pixOf = (page, p) => page.evaluate(p => { const q = ViewerDebug.osdViewer.viewport.pixelFromPoint(new OpenSeadragon.Point(p.x, p.y), true), r = ViewerDebug.osdViewer.container.getBoundingClientRect(); return { x: q.x + r.left, y: q.y + r.top }; }, p);
+const ptAt = (page, x, y) => page.evaluate(([x, y]) => { const r = ViewerDebug.osdViewer.container.getBoundingClientRect(); const p = ViewerDebug.osdViewer.viewport.pointFromPixel(new OpenSeadragon.Point(x - r.left, y - r.top), true); return { x: p.x, y: p.y }; }, [x, y]);
 
 async function phone(preset, hand, tag) {
   const P = await B.newPage(preset, { tier: 'save', init: [h => { try { localStorage.setItem('edenMapHand', h); } catch (e) {} }, hand] });
@@ -70,8 +70,8 @@ async function phone(preset, hand, tag) {
   rep.check(`${tag} 底部菜单按钮打开抽屉（含「返回上一级」）`, menu.open && menu.up && menu.exp === 'true', `「${menu.up}」，抽屉顶 ${Math.round(menu.top)} px，按钮 x ${menu.upBox.slice(0, 2).map(Math.round).join('–')}`);
   await p.evaluate(() => document.querySelector('#handSeg').scrollIntoView({ block: 'center' })); await B.wait(200);
   await jpg(p, `${tag}_menu`);
-  await p.locator('#actUp').click(); await p.waitForFunction(() => cur === 'world', null, { timeout: 15000 }).catch(() => {});
-  rep.check(`${tag} 「返回上一级」到世界图`, await p.evaluate(() => cur === 'world' && document.querySelector('#setPop').hidden));
+  await p.locator('#actUp').click(); await p.waitForFunction(() => ViewerDebug.currentMapId === 'world', null, { timeout: 15000 }).catch(() => {});
+  rep.check(`${tag} 「返回上一级」到世界图`, await p.evaluate(() => ViewerDebug.currentMapId === 'world' && document.querySelector('#setPop').hidden));
   await B.goMap(p, 'tc_mid'); await B.wait(1000);
   // 3. 单指缩放：点一下，再按住往下拖 120 px → 放大约 2 倍，按下点不漂；双击不拖 → 放大 2 倍；往上拖 → 缩小
   const c = await osdCenter(p);
@@ -98,17 +98,17 @@ async function phone(preset, hand, tag) {
   await touch(p, 'pointerdown', c.x, c.y); for (let d = 10; d <= 80; d += 10) { await touch(p, 'pointermove', c.x + d, c.y); await B.wait(16); } await touch(p, 'pointerup', c.x + 80, c.y); await B.wait(700);
   rep.check(`${tag} 普通单指拖动不缩放`, Math.abs(await zoomNow(p) / zb - 1) < .02);
   // 4. 卡片抽屉：打开一个事态卡，关闭按钮在拇指侧，往下拖把手关闭
-  await p.evaluate(() => { const e = TCEvents.events[0]; TCEvents.flyTo(e.id); }); await p.waitForFunction(() => !document.querySelector('#card').hidden, null, { timeout: 8000 }).catch(() => {});
+  await p.evaluate(() => { const e = EventsView.events[0]; EventsView.flyTo(e.id); }); await p.waitForFunction(() => !document.querySelector('#card').hidden, null, { timeout: 8000 }).catch(() => {});
   await B.wait(900);
   const xb = await p.evaluate(() => { const r = document.querySelector('#cardX').getBoundingClientRect(); return r.left + r.width / 2; });
   rep.check(`${tag} 卡片关闭按钮在${eff === 'left' ? '左' : '右'}侧`, eff === 'left' ? xb < W / 2 : xb > W / 2, `x ${Math.round(xb)}`);
   await jpg(p, `${tag}_card`);
   // UI v2：卡片在唯一抽屉的「地点」页；拖柄往下 = 抽屉降到收起（地点页留着，点「地点」再展开）
-  const g = await p.evaluate(() => { const r = document.querySelector('#evbar .uis-grip').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, st: TCSheet.state }; });
+  const g = await p.evaluate(() => { const r = document.querySelector('#evbar .uis-grip').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, st: ViewerDrawer.state }; });
   await touch(p, 'pointerdown', g.x, g.y, 9); for (let d = 20; d <= 240; d += 20) { await touch(p, 'pointermove', g.x, g.y + d, 9); await B.wait(16); } await touch(p, 'pointerup', g.x, g.y + 240, 9); await B.wait(400);
-  rep.check(`${tag} 抽屉往下拖收起（${g.st} → 收起）`, await p.evaluate(() => TCSheet.state === 'peek'));
+  rep.check(`${tag} 抽屉往下拖收起（${g.st} → 收起）`, await p.evaluate(() => ViewerDrawer.state === 'peek'));
   await p.locator('#evbar .uis-tog').click(); await B.wait(300);
-  rep.check(`${tag} 文字按钮「展开」再打开（WCAG 2.5.7）`, await p.evaluate(() => TCSheet.state === 'half' && document.querySelector('#evbar .uis-tog').getAttribute('aria-expanded') === 'true'));
+  rep.check(`${tag} 文字按钮「展开」再打开（WCAG 2.5.7）`, await p.evaluate(() => ViewerDrawer.state === 'half' && document.querySelector('#evbar .uis-tog').getAttribute('aria-expanded') === 'true'));
   rep.metric(tag + '_errors', P.errors.slice(0, 10));
   rep.check(`${tag} 无脚本错误`, !P.errors.filter(e => !/http 404/.test(e)).length, P.errors.slice(0, 3).join(' | '));
   await P.close();

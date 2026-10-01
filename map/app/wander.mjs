@@ -62,7 +62,7 @@ function tick() {
 /** 日程表 → 目标坐标：聊天写过位置的人（known）不动，认不出坐标的（在别的图 / 没解析出来）不动 */
 function retarget() {
   const now = performance.now();
-  const known = (P.TCChars?.items || []).filter(c => c.src && c.src !== 'routine').map(c => c.name);
+  const known = (P.CharactersView?.items || []).filter(c => c.src && c.src !== 'routine').map(c => c.name);
   let started = false;
   for (const { name, place } of placesAt(sched, clock, known)) {
     const p = coordsOf(place); if (!p) continue;
@@ -150,7 +150,7 @@ export function registerWanderLayer() {
   // 省流档与「减少动态效果」：不滑（标记照常更新位置）
   on = !lean() && !rmq()?.matches;
   busOn({ key: 'wander.hostMsg', type: 'message', fn: e => {
-    if (!window.__fromHost?.(e)) return;
+    if (!window.__isFromHost?.(e)) return;
     const d = e.data; if (!d) return;
     if (d.type === 'eden-map:routine') setWanderSchedule(d.schedule);
     else if (d.type === 'eden-map:clock') setWanderClock(d);
@@ -158,7 +158,7 @@ export function registerWanderLayer() {
   } });
   // 单独打开（没宿主推日程）时，按包里那份日程表走（清单 data.routine；包没声明 = 没有）
   setTimeout(() => { if (!sched && packData('routine')) getJSON(packData('routine')).then(v => { if (v && !sched) setWanderSchedule(v); }).catch(() => {}); }, 0);
-  window.TCWander = { scan: scanWander, reset: resetWander, now: () => last.size, schedule: setWanderSchedule, clock: setWanderClock, tick, retarget, walker,
+  window.WanderApi = { scan: scanWander, reset: resetWander, now: () => last.size, schedule: setWanderSchedule, clock: setWanderClock, tick, retarget, walker,
     scheduleOf: () => sched,   // 日程表本体（庄园三维页要同一张表挪人）
     describe: () => ({ ...walker.describe(), on, clock, rounds, scheduled: !!sched, reduced: reduced() }) };
   return true;

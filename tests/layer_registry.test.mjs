@@ -125,7 +125,7 @@ test('describe：{ slots, activeLayers, filterSummary } 标准摘要', () => {
 
 test('纯度机检：核心模块不碰 DOM / 全局 / 存储 / 网络', () => {
   const src = readFileSync(new URL('../map/core/layer-registry.mjs', import.meta.url), 'utf8');
-  assert.doesNotMatch(src, /\b(document|window|localStorage|sessionStorage|fetch|TCStore|HTMLElement|navigator)\b/);
+  assert.doesNotMatch(src, /\b(document|window|localStorage|sessionStorage|fetch|LocalStore|HTMLElement|navigator)\b/);
 });
 
 // ---------- 阶段 2（查看器）：CSS 镜像与字面量清零 ----------

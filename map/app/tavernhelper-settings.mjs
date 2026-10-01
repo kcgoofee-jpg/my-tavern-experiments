@@ -12,7 +12,7 @@ let S = { prefs: null, wb: null, last: null, result: null, api: null }, diffShow
 function sec(page, id, order) {
   let el = document.getElementById(id);
   if (!el) { el = document.createElement('div'); el.id = id; el.className = 'thbox'; }
-  if (!el.isConnected) window.TCSettings?.registerSection(page, el, { order });   // 设置模块比本模块晚求值时：下一次状态到了再挂
+  if (!el.isConnected) window.SettingsApi?.registerSection(page, el, { order });   // 设置模块比本模块晚求值时：下一次状态到了再挂
   return el;
 }
 const when = t => { try { return new Date(t).toLocaleString(); } catch (e) { return ''; } };
@@ -107,6 +107,6 @@ if (typeof window !== 'undefined' && window.top !== window) {
   const css = document.createElement('style');
   css.textContent = '.thbox .thdiff,.thbox .thconsent{margin:6px 0;padding:8px 10px;border:1px solid var(--line-2,#8886);border-radius:10px;font-size:12.5px;line-height:1.5}.thbox .thdiff div{overflow-wrap:anywhere}.thbox .thwhere{border:0;margin:6px 0;padding:0;display:flex;flex-wrap:wrap;gap:4px 12px}.thbox .thwhere legend{padding:0;margin-bottom:2px}.thbox input[type=number]{width:5em}';
   document.head.appendChild(css);
-  busOn({ key: 'th-ui.hostMsg', type: 'message', fn: e => { if (e.data?.type === 'eden-map:th-state' && (window.__fromHost ? window.__fromHost(e) : e.source === window.parent)) applyState(e.data); } });
+  busOn({ key: 'th-ui.hostMsg', type: 'message', fn: e => { if (e.data?.type === 'eden-map:th-state' && (window.__isFromHost ? window.__isFromHost(e) : e.source === window.parent)) applyState(e.data); } });
   // 状态由卡内脚本在 eden-map:ready 后主动推（sendTh）；不读 CDN，差异要点「看差异」才取
 }

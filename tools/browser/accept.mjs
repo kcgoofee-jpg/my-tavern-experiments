@@ -38,10 +38,10 @@ try {
     const layers = (await B.viewerState(p)).layers.filter(l => !l.disabled);
     const res = [];
     for (const L of layers) {
-      const kind = await p.evaluate(id => REG.maps[id].kind, L.go);
+      const kind = await p.evaluate(id => ViewerDebug.mapRegistry.maps[id].kind, L.go);
       if (kind === 'estate') continue;                               // 庄园单独测
       const t0 = Date.now();
-      await p.evaluate(id => { window.__drawn = cur === id; viewer.addOnceHandler('open', () => viewer.addOnceHandler('tile-drawn', () => { window.__drawn = true; })); }, L.go);
+      await p.evaluate(id => { window.__drawn = ViewerDebug.currentMapId === id; ViewerDebug.osdViewer.addOnceHandler('open', () => ViewerDebug.osdViewer.addOnceHandler('tile-drawn', () => { window.__drawn = true; })); }, L.go);
       await p.locator(`#layers button[data-go="${L.go}"]`).click().catch(() => {});
       await p.waitForFunction(() => window.__drawn, null, { timeout: 15000 }).catch(() => {});
       await B.wait(300);
@@ -57,13 +57,13 @@ try {
     await B.goMap(p, 'tc_upper');
     const b0 = (await B.viewerState(p)).base;
     // E5：图层开关收进「图层 ▾」弹层（窄屏在「⋯」里），先打开
-    const openLay = () => p.evaluate(() => { if (!document.querySelector('#tgAlt').offsetParent) showLay(true); });
+    const openLay = () => p.evaluate(() => { if (!document.querySelector('#tgAlt').offsetParent) ViewerDebug.showLay(true); });
     await openLay();
     await p.locator('#tgAlt').click(); await B.wait(2500);
     const b1 = (await B.viewerState(p)).base; await B.shot(p, OUT, 'desk_cloud_city');
     await openLay(); await p.locator('#tgAlt').click(); await B.wait(2000);
     const b2 = (await B.viewerState(p)).base;
-    await p.evaluate(() => showLay(false));
+    await p.evaluate(() => ViewerDebug.showLay(false));
     rep.check('云雾开关（上层 ↔ 显示下方城市）', !/upper_city/.test(b0) && /upper_city/.test(b1) && !/upper_city/.test(b2), [b0, b1, b2].map(x => x.replace(/\/$/, '').split('/').pop()).join(' → '));
   });
 
@@ -73,9 +73,9 @@ try {
       { floor: 100, text: '⌖火灾｜下层·7号井黑市｜3｜仓库起火' },
       { floor: 101, text: '⌖盗窃｜中层·霓虹街｜2｜珠宝店失窃' },
     ], e => JSON.stringify(e).includes('7号井'));
-    await B.wait(800); rep.check('事态到达不自动飞（用户 2026-09-28）', await p.evaluate(() => cur) === 'tc_upper', '');
-    await p.evaluate(() => TCEvents.flyTo(TCEvents.events.find(e => JSON.stringify(e).includes('7号井')).id));   // 模拟点事件
-    await p.waitForFunction(() => cur === 'tc_low' && document.querySelector('#card') && !document.querySelector('#card').hidden, null, { timeout: 15000 }).catch(() => {});
+    await B.wait(800); rep.check('事态到达不自动飞（用户 2026-09-28）', await p.evaluate(() => ViewerDebug.currentMapId) === 'tc_upper', '');
+    await p.evaluate(() => EventsView.flyTo(EventsView.events.find(e => JSON.stringify(e).includes('7号井')).id));   // 模拟点事件
+    await p.waitForFunction(() => ViewerDebug.currentMapId === 'tc_low' && document.querySelector('#card') && !document.querySelector('#card').hidden, null, { timeout: 15000 }).catch(() => {});
     await B.wait(1200);
     const s = await B.viewerState(p);
     await B.shot(p, OUT, 'desk_fly');
@@ -144,7 +144,7 @@ try {
     rep.check('U18 纵深层的抽屉出现「图例」页', dsk.legend, String(dsk.legend));
     rep.check('U15「看全区」在桌面不出现（桌面复位视野已是全区）', dsk.dz === 'none', dsk.dz);
     // 视差：拖动后标记与底图位移不同（换成「有偏移量」的代理断言：--px/--py 被写上且非 0）
-    await p.evaluate(() => { viewer.viewport.panBy(new OpenSeadragon.Point(.12, .09)); }); await B.wait(700);
+    await p.evaluate(() => { ViewerDebug.osdViewer.viewport.panBy(new OpenSeadragon.Point(.12, .09)); }); await B.wait(700);
     const par = await p.evaluate(() => [...document.querySelectorAll('.mk')].filter(e => (e.style.getPropertyValue('--px') || '0px') !== '0px').length);
     rep.check('U16 拖动后标记有视差位移（--px/--py）', par >= 1, String(par));
     await B.goMap(p, 'tc_mid'); await B.wait(1100);
@@ -154,9 +154,9 @@ try {
     // U15：手机 375 出现「看全区」，点它把视野拉到整层
     const Q = await B.newPage('phone', { tier: 'save' }); const q = Q.page;
     await B.openViewer(Q, { map: 'tc_upper' }); await B.wait(1300);
-    const z0 = await q.evaluate(() => { const b = document.querySelector('#zAll'), r = viewer.viewport.getBounds(true); return { h: b.getBoundingClientRect().height, vis: getComputedStyle(b).display !== 'none', w: r.width }; });
+    const z0 = await q.evaluate(() => { const b = document.querySelector('#zAll'), r = ViewerDebug.osdViewer.viewport.getBounds(true); return { h: b.getBoundingClientRect().height, vis: getComputedStyle(b).display !== 'none', w: r.width }; });
     await q.evaluate(() => document.querySelector('#zAll').click()); await B.wait(1000);
-    const z1 = await q.evaluate(() => ({ w: viewer.viewport.getBounds(true).width, flt: document.querySelectorAll('.mk.flt').length }));
+    const z1 = await q.evaluate(() => ({ w: ViewerDebug.osdViewer.viewport.getBounds(true).width, flt: document.querySelectorAll('.mk.flt').length }));
     await B.shot(q, OUT, 'depth_phone_all');
     rep.metric('depth_phone', { ...z0, after: z1 });
     rep.check('U15 手机「看全区」可见、热区 ≥ 44 px，点后视野 = 整层', z0.vis && z0.h >= 44 && z0.w < z1.w && z1.w > .95, JSON.stringify({ ...z0, after: z1 }));

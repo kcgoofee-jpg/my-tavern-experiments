@@ -15,4 +15,4 @@ export const busOffAll = () => bus.offAll();
 /** 台账（自检 / 浏览器探针对泄漏）：{ count, byType, targets } */
 export const busDescribe = () => bus.describe();
 
-if (typeof window !== 'undefined') window.__edenBus = bus;   // 探针与自检的读取口（只读台账）
+if (typeof window !== 'undefined') window.__listenerBus = bus;   // 探针与自检的读取口（只读台账）

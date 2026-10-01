@@ -2,7 +2,7 @@
 // 存储键登记在 core/storage.mjs（edenMapCvd）。开着时：html 加 .cvd .cvd-rg/.cvd-by 类 + data-cvd 属性，
 // 事态大类、图例、人物头像色相改用本文件的 CVD 安全色板（Okabe-Ito 为底），并广播 cvd-change 事件让各模块重画。
 // 同一个 mode 也经协议 estate:cvd 转给庄园 / 三维子页（map/core/protocol.mjs、map/app/subpage3d-host.mjs）。
-import * as TCStore from '../core/storage.mjs';
+import * as storage from '../core/storage.mjs';
 import { recheck } from '../core/pack-v2-spec.mjs';
 
 export const MODES = ['0', 'rg', 'by'];
@@ -24,9 +24,9 @@ export function hueBucket(hex, m) {
 // 人物头像色相（沿用哈希取色，只换色相表，避开该模式下容易混的两组）
 export const CHAR_HUES_CVD = { rg: [35, 200, 210, 280, 340, 15, 55], by: [15, 340, 200, 45, 280, 5, 165] };
 
-export function mode() { try { const v = TCStore.get('edenMapCvd'); return MODES.includes(v) ? v : '0'; } catch (e) { return '0'; } }
+export function mode() { try { const v = storage.get('edenMapCvd'); return MODES.includes(v) ? v : '0'; } catch (e) { return '0'; } }
 export function on() { return mode() !== '0'; }
-export function setMode(v) { try { TCStore.set('edenMapCvd', MODES.includes(v) ? v : '0'); } catch (e) {} if (typeof document !== 'undefined') apply(); }
+export function setMode(v) { try { storage.set('edenMapCvd', MODES.includes(v) ? v : '0'); } catch (e) {} if (typeof document !== 'undefined') apply(); }
 
 const listeners = new Set();
 export function onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); }

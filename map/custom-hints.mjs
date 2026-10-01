@@ -4,7 +4,7 @@ export function createHints() {
   let toastT = 0;
   function toast(items) {   // UI v2：走唯一通知层（P2，嵌入时由宿主统一显示）；旧的 #cuToast 只在通知层不可用时兜底
     const msg = items.join('；'); if (!msg) return;
-    if (typeof window.TCNotify === 'function') { window.TCNotify({ level: 2, key: 'cu-' + Date.now(), title: msg }); return; }
+    if (typeof window.showNotice === 'function') { window.showNotice({ level: 2, key: 'cu-' + Date.now(), title: msg }); return; }
     let el = document.getElementById('cuToast');
     if (!el) { el = document.createElement('div'); el.id = 'cuToast'; el.setAttribute('role', 'status'); document.getElementById('stage').appendChild(el); }
     el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, 5000);

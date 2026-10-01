@@ -1,6 +1,6 @@
 // 标记与地点卡：placeN、trackEl、marker、showCard / closeCard、世界图与点位图叠加。
 import { M, REG, aspect, cur, curData, ovData, depthData, viewer } from './state.mjs';
-import * as TCStore from '../core/storage.mjs';   // Part 6-4：动作注入模式（edenMapInject）从本机读
+import * as storage from '../core/storage.mjs';   // Part 6-4：动作注入模式（edenMapInject）从本机读
 import { $, esc } from './dom-helpers.mjs';
 import { narrow } from './viewport-mode.mjs';
 import { toImg } from './coordinates.mjs';
@@ -56,12 +56,12 @@ export function showCard(el, name, src, extra, sub, cover, compose = !!el) {
   // extra 也接受函数：开卡那一刻才算（Part 6-4 的注入入口要跟着设置实时出现 / 消失，
   // 不必重画整层标记——重画会重复 addOverlay，标记会叠一层）
   c.querySelector('.extra').innerHTML = (typeof extra === 'function' ? extra() : extra) || '';
-  if (typeof P.TCCustom !== 'undefined') P.TCCustom.decorateCard(el, name);   // v0.9.3：自定义显示名 / 用途；本人地点卡的着装
-  if (typeof P.TCInv !== 'undefined') P.TCInv.decorate(el, name);   // 空间化背包（Part 5-1）：这里存放的东西
-  if (typeof P.TCScrap !== 'undefined') P.TCScrap.decorate(el, name);   // 见闻录（Part 5-5）：这里钉过的图与手记
-  if (typeof P.TCSecurity !== 'undefined') P.TCSecurity.decorate(el, name);   // v0.9.6 安保叠加层开着时：结界 / 监控 / 门禁
-  if (typeof P.TCWb !== 'undefined') P.TCWb.decorate(el, name);   // W8 世界书档案胶囊：附加书里这个地点的条目摘要（只读）
-  if (typeof P.TCCompose !== 'undefined') P.TCCompose.attach(compose ? { go: el?.dataset?.name || name, ask: el?.dataset?.name || name } : null);   // v0.9.6 地图 → 聊天：地点卡；事件 / 人物卡由 events.js / chars.js 另挂
+  if (typeof P.CustomNamesView !== 'undefined') P.CustomNamesView.decorateCard(el, name);   // v0.9.3：自定义显示名 / 用途；本人地点卡的着装
+  if (typeof P.StashView !== 'undefined') P.StashView.decorate(el, name);   // 空间化背包（Part 5-1）：这里存放的东西
+  if (typeof P.ScrapbookView !== 'undefined') P.ScrapbookView.decorate(el, name);   // 见闻录（Part 5-5）：这里钉过的图与手记
+  if (typeof P.SecurityView !== 'undefined') P.SecurityView.decorate(el, name);   // v0.9.6 安保叠加层开着时：结界 / 监控 / 门禁
+  if (typeof P.WorldbookPeekView !== 'undefined') P.WorldbookPeekView.decorate(el, name);   // W8 世界书档案胶囊：附加书里这个地点的条目摘要（只读）
+  if (typeof P.ComposeView !== 'undefined') P.ComposeView.attach(compose ? { go: el?.dataset?.name || name, ask: el?.dataset?.name || name } : null);   // v0.9.6 地图 → 聊天：地点卡；事件 / 人物卡由 events.js / chars.js 另挂
   declutter();
 }
 // user = 用户主动关闭（× / Esc）：焦点回到打开卡片的元素
@@ -75,12 +75,12 @@ export function closeCard(user) {
 // 卡片链接：通道 link / 三维 link3d / 图集（app/card-links.mjs）+ 注入入口；世界图地点卡与点位图地标卡共用
 // 动作注入入口（Part 6-4）：模式不是 off 才在卡片底部多一个链接；模式从本机存储读（默认 off）
 // 注入模式每次开卡重读（设置里改了立刻生效）
-const injMode = () => { try { return TCStore.get('edenMapInject') || 'off'; } catch (e) { return 'off'; } };
+const injMode = () => { try { return storage.get('edenMapInject') || 'off'; } catch (e) { return 'off'; } };
 const ctx = () => ({ REG, nm, t, esc, mode: injMode(), cur, scene: isScene });   // Part 6-4：注入模式每次开卡重读；cur = 三维视口入口判据③（人已经在三维场景里）
 export const links = meta => { const linkCtx = ctx();   // 每次开卡重算：注入模式改了立刻生效；世界图地点卡（worldOverlays）与点位图地标卡用同一个
-  return (window.TCCardLinks ? window.TCCardLinks.linksHtml(meta, linkCtx)
+  return (window.CardLinksApi ? window.CardLinksApi.linksHtml(meta, linkCtx)
     : meta.link && REG.maps[meta.link.map] && REG.maps[meta.link.map].status !== 'planned' ? `<a data-go="${esc(meta.link.map)}" data-focus="${esc(meta.link.marker || '')}" role="button" tabindex="0">${esc(nm(meta.link, 'label') || t('goto', { title: nm(REG.maps[meta.link.map], 'title') }))}</a>` : '')
-    + (window.TCCardLinks?.injectHtml?.(meta, linkCtx) || ''); };
+    + (window.CardLinksApi?.injectHtml?.(meta, linkCtx) || ''); };
 export function worldOverlays() {
   for (const r of M.realms) { const el = document.createElement('div'); el.className = 'realm ' + r.id;
     el.innerHTML = `<b>${esc(tr(r.name))}</b><span>${esc(tr(r.sub))}</span>`;
@@ -148,12 +148,12 @@ function hookDepth() {
 }
 // Part 6-4：改了注入模式后关掉当前卡片即可——入口是开卡时现算的（见 showCard 的 extra），
 // 不走「重画整层标记」那条路：pointOverlays 只加不清，重画会把标记叠一层。
-window.TCMarkers = { closeCard: () => { try { closeCard(); } catch (e) {} } };
+window.MarkersApi = { closeCard: () => { try { closeCard(); } catch (e) {} } };
 // 渲染脚本导出的点位地图（天城各层）：标记 + 结界圈（或别的地图的岛屿轮廓，如中层的「上层投影」）
 export function pointOverlays() {
   const m = REG.maps[cur], d = curData || { markers: [], islands: [] }, od = ovData || {};
   depthEls = []; depthAcc = { x: 0, y: 0, last: null }; hookDepth();   // 切层：视差累加归零，重新收集有纵深的标记
-  window.TCScale?.ring();   // v0.9.6：城外一圈（最先加，排在标记下面）
+  window.ScaleHandoffApi?.ring();   // v0.9.6：城外一圈（最先加，排在标记下面）
   if (m.overlay?.type === 'barriers' && od.islands?.length) {
     const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg'), VW = 1000, VH = 1000 * aspect;
     svg.setAttribute('viewBox', `0 0 ${VW} ${VH}`); svg.setAttribute('preserveAspectRatio', 'none'); svg.classList.add('barriers');

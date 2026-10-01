@@ -25,18 +25,18 @@ try {
     for (const preset of ['phone', 'desktop']) {
       const P = await newPage(preset);
       await P.page.goto(`${BASE}props/viewer3d.html?model=${model}`);
-      await P.page.waitForFunction(() => window.__v3d?.ready, null, { timeout: 120000 });
+      await P.page.waitForFunction(() => window.__viewer3dProbe?.ready, null, { timeout: 120000 });
       await wait(1800);
       const c0 = await coverage(P.page);
       console.log(`${model} ${preset} 默认浮层占比 ${(c0 * 100).toFixed(1)}%`);
       if (preset === 'phone') ok(c0 < 0.25, `${model} 手机默认遮挡 < 25%（${(c0 * 100).toFixed(1)}%）`);
       // 用户报告的状态：开流向 + 选一个热点（截图用这个状态；两版都能跑）
-      await P.page.evaluate(() => { __v3d.setFlows(true); __v3d.fly(document.querySelector('.pin').dataset.id, true); });
+      await P.page.evaluate(() => { __viewer3dProbe.setFlows(true); __viewer3dProbe.fly(document.querySelector('.pin').dataset.id, true); });
       await wait(800);
       const c1 = await coverage(P.page);
       console.log(`${model} ${preset} 流向+热点时浮层占比 ${(c1 * 100).toFixed(1)}%`);
       if (model === 'dairy') await shot(P.page, OUT, `props_u12_${TAG}_${preset === 'phone' ? '375' : 'desktop'}`);
-      await P.page.evaluate(() => { __v3d.setFlows(false); __v3d.select?.(null); document.querySelector('#c3sheet .uis-tog') && (document.querySelector('#c3sheet').dataset.state !== 'peek') && document.querySelector('#c3sheet .uis-tog').click(); });
+      await P.page.evaluate(() => { __viewer3dProbe.setFlows(false); __viewer3dProbe.select?.(null); document.querySelector('#c3sheet .uis-tog') && (document.querySelector('#c3sheet').dataset.state !== 'peek') && document.querySelector('#c3sheet .uis-tog').click(); });
       await wait(300);
       if (TAG === 'after' && preset === 'phone') {   // UI v2：部件 / 流向 / 说明是唯一抽屉的三页（ui/chrome3d.js）
         const st = () => P.page.evaluate(() => document.getElementById('c3sheet').dataset.state);
@@ -48,14 +48,14 @@ try {
         const hasFlow = await P.page.evaluate(() => !document.querySelector('#c3sheet .flowsTab').hidden);
         if (hasFlow) {
           await P.page.click('#c3sheet .flowsTab'); await wait(300);
-          ok(await P.page.evaluate(() => __v3d.flows), `${model} 打开「流向」页即显示流向线`);
+          ok(await P.page.evaluate(() => __viewer3dProbe.flows), `${model} 打开「流向」页即显示流向线`);
           await P.page.click('#flows li button'); await wait(300);
           ok(await P.page.evaluate(() => !document.getElementById('card').hidden || true), `${model} 选流向显示说明`);
           await P.page.click('#c3sheet .partsTab'); await wait(300);
-          ok(await P.page.evaluate(() => !__v3d.flows), `${model} 离开「流向」页流向线隐藏（未固定）`);
+          ok(await P.page.evaluate(() => !__viewer3dProbe.flows), `${model} 离开「流向」页流向线隐藏（未固定）`);
           await P.page.keyboard.press('Escape'); await wait(200);
         }
-        await P.page.evaluate(() => __v3d.fly(document.querySelector('.pin').dataset.id, true)); await wait(500);
+        await P.page.evaluate(() => __viewer3dProbe.fly(document.querySelector('.pin').dataset.id, true)); await wait(500);
         const r = await P.page.evaluate(() => { const c = document.getElementById('c3sheet'); return { h: c.getBoundingClientRect().height / innerHeight, tab: document.querySelector('#c3sheet [aria-selected=true]')?.className, vis: !document.getElementById('card').hidden }; });
         ok(r.vis && /infoTab/.test(r.tab) && r.h <= 0.42, `${model} 点热点 → 抽屉半开到「说明」，高 ${(r.h * 100).toFixed(0)}% ≤ 42%`);
         await P.page.click('#card .x'); await wait(200);

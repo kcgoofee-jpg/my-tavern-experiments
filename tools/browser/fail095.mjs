@@ -55,13 +55,13 @@ try {
     await P.page.evaluate(() => { window.__tiles = 0; const o = window.Image; window.Image = function (...a) { window.__tiles++; return new o(...a); }; window.Image.prototype = o.prototype; });
     await P.page.evaluate(() => window.postMessage({ type: 'eden-map:sleep' }, '*'));
     await wait(600);
-    const afterSleep = await P.page.evaluate(() => ({ tiles: window.__tiles, cur: typeof cur !== 'undefined' ? cur : 'x' }));
+    const afterSleep = await P.page.evaluate(() => ({ tiles: window.__tiles, cur: typeof ViewerDebug !== 'undefined' ? ViewerDebug.currentMapId : 'x' }));
     await P.page.evaluate(() => window.postMessage({ type: 'eden-map:here', value: '天城执法局总局' }, '*'));
     await wait(2500);
-    const afterHere = await P.page.evaluate(() => ({ tiles: window.__tiles, cur: typeof cur !== 'undefined' ? cur : 'x', sleeping: typeof sleeping !== 'undefined' ? sleeping : 'x' }));
+    const afterHere = await P.page.evaluate(() => ({ tiles: window.__tiles, cur: typeof ViewerDebug !== 'undefined' ? ViewerDebug.currentMapId : 'x', sleeping: typeof ViewerDebug !== 'undefined' ? ViewerDebug.sleeping : 'x' }));
     await P.page.evaluate(() => window.postMessage({ type: 'eden-map:wake', fly: { character: '不存在的人' } }, '*'));
     await wait(2500);
-    const afterWake = await P.page.evaluate(() => ({ cur: typeof cur !== 'undefined' ? cur : 'x', mk: document.querySelectorAll('.mk').length, loading: document.querySelector('#loading')?.className || '' }));
+    const afterWake = await P.page.evaluate(() => ({ cur: typeof ViewerDebug !== 'undefined' ? ViewerDebug.currentMapId : 'x', mk: document.querySelectorAll('.mk').length, loading: document.querySelector('#loading')?.className || '' }));
     rep.metric('sleep_wake', { afterSleep, afterHere, afterWake });
     rep.check('休眠中不因 here 拉瓦片', afterHere.tiles <= afterSleep.tiles + 2, `休眠后 ${afterSleep.tiles} → here 之后 ${afterHere.tiles}`);
     rep.check('唤醒后仍显示原图（不是空舞台）', !!afterWake.cur, JSON.stringify(afterWake));

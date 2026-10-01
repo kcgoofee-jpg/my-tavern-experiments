@@ -142,7 +142,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `host-messages.mjs` | Host message interface: origin / token checks, protocol validation, dispatch by type. |
 | `i18n.mjs` | Language and theme: dictionary, `t` / `tr` / `nm`, `setLang`, `setTheme`. |
 | `json-cache.mjs` | `getJSON`: data files fetched once, failures not cached. |
-| `layer-host.mjs` | Viewer-side LayerRegistry assembly: registry singleton, `.vpslot` slot containers, `window.TCLayers` summary. |
+| `layer-host.mjs` | Viewer-side LayerRegistry assembly: registry singleton, `.vpslot` slot containers, `window.LayerHostApi` summary. |
 | `legacy-globals.mjs` | Compatibility face: read-only `window` getters for the old global names used by browser probes. |
 | `load-progress.mjs` | Progress of the full-screen loading layer, sharing `ui/progress.mjs`. |
 | `locate.mjs` | Initial view and current place: `focusStart`, `markHere`, `hereRes` (over `place-resolver.mjs`), `drawnAt`, `jumpHere`. |
@@ -436,7 +436,7 @@ includes the English card words (`EN_TERMS`, case-sensitive).
 - **LayerRegistry** (`core/layer-registry.mjs`, assembled by `app/layer-host.mjs`): ten slots, bottom to top —
   `base`, `depth-haze`, `fog`, `routes`, `trips`, `events`, `markers`, `labels`, `fx`, `interaction`. A slot's z
   value is `(index + 1) × 10`. Layers register `{ id, slot, kind, order, mount, unmount, … }`; filter chains
-  (`css` / `canvas`) stack per layer. `window.TCLayers` exposes the standard summary.
+  (`css` / `canvas`) stack per layer. `window.LayerHostApi` exposes the standard summary.
 - **Two z-index ladders** in `viewer.html`: `--zv-*` custom properties mirror the slot values (inside the OSD
   overlay stacking context, checked against `SLOTS` by a test); `--zu-*` is the outer fixed-UI ladder (header,
   popovers, settings, control column, estate iframe, cover) that always sits above the slots. Bare numeric
@@ -499,7 +499,7 @@ Scan scope is `ENGINE_GLOBS`; `map/vendor`, `map/estate`, `map/props/*/**`, `map
   through that module; default new toggles to off; add a per-chat flag when it is chat-scoped so budget cleaning
   sees it.
 - **Add a settings toggle** — storage key as above; protocol field in `SCHEMA` if the host must know; UI in
-  `app/settings.mjs` (or a section registered through `TCSettings.registerSection`); strings in both
+  `app/settings.mjs` (or a section registered through `SettingsApi.registerSection`); strings in both
   `map/i18n/zh.json` and `en.json`, neutral wording.
 - **Add a pack field** — v1 is frozen: only new **optional** fields, documented in `docs/pack-schema-v1.md`, defined
   in `map/data/schema/pack.schema.json`, covered in `tests/pack_schema_v1.test.mjs`. Anything that changes the

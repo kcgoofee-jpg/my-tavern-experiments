@@ -20,7 +20,7 @@ async function run(name, preset) {
     const ch = await p.evaluate(() => window.EdenMap.getCharacters());
     rep.check(`${name} 自动找到在场表 present`, ch.items.some(c => c.name === 'Ann'), JSON.stringify(ch.items));
     await H.open(); const vf = await H.viewer(); await B.wait(800);
-    await vf.evaluate(() => { closeCard(); showSet(true); document.querySelector('#vmBox').open = true; }); await B.wait(200);
+    await vf.evaluate(() => { ViewerDebug.closeCard(); ViewerDebug.showSet(true); document.querySelector('#vmBox').open = true; }); await B.wait(200);
     const ui = await vf.evaluate(() => ({ mode: document.querySelector('#vmBox summary small')?.textContent, n: document.querySelectorAll('#vmBox select').length, auto: document.querySelector('#vmBox select[data-f=location] option')?.textContent }));
     rep.check(`${name} 设置「变量映射」：读法 MVU、自动 = world.location`, ui.mode === 'MVU' && ui.n === FIELDS.length && /world\.location/.test(ui.auto || ''), JSON.stringify(ui));
     await jpg(p, `vm_${name}_settings`);

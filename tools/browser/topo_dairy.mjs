@@ -11,11 +11,11 @@ const rep = B.reporter(out);
 const T = 90000;
 const P = await B.newPage('desktop'), p = P.page;
 const snap = async name => { if (SHOTS) await B.shot(p, SHOTS, name); };
-// 三维页就绪：庄园（__estate）或通用三维查看器（__v3d.ready）
-const ready = id => p.waitForFunction(id => { if (cur !== id || document.querySelectorAll('#stage iframe').length !== 1) return false; const f = document.querySelector('#estate.on'); try { return !!(f && (f.contentWindow.__estate || f.contentWindow.__v3d?.ready)); } catch (e) { return false; } }, id, { timeout: T });
+// 三维页就绪：庄园（__estate）或通用三维查看器（__viewer3dProbe.ready）
+const ready = id => p.waitForFunction(id => { if (ViewerDebug.currentMapId !== id || document.querySelectorAll('#stage iframe').length !== 1) return false; const f = document.querySelector('#estate.on'); try { return !!(f && (f.contentWindow.__estate || f.contentWindow.__viewer3dProbe?.ready)); } catch (e) { return false; } }, id, { timeout: T });
 const frame = () => B.estateFrame(p);
 const crumbs = () => p.evaluate(() => ({ links: [...document.querySelectorAll('#crumbs a')].map(a => a.dataset.go), here: document.querySelector('#crumbs b')?.textContent || '' }));
-const live = () => p.evaluate(() => ({ frames: document.querySelectorAll('#stage iframe').length, lease: window.TC3d?.live() }));
+const live = () => p.evaluate(() => ({ frames: document.querySelectorAll('#stage iframe').length, lease: window.Lease3dApi?.live() }));
 const focusZone = id => p.evaluate(id => document.querySelector('#estate').contentWindow.postMessage({ type: 'estate:room', name: id }, '*'), id);   // 宿主发给三维页的那条消息，按区域 id
 const pinnedZone = async () => (await frame()).evaluate(() => window.__estate.pinned()?.id ?? null);
 
@@ -23,20 +23,20 @@ try {
   // ---- 拓扑：没有孤立入口 ----
   await B.openViewer(P, { map: 'world' });
   const topo = await p.evaluate(() => {
-    const M = REG.maps, links = [];
+    const M = ViewerDebug.mapRegistry.maps, links = [];
     for (const [k, m] of Object.entries(M)) for (const [mk, v] of Object.entries(m.markers || {})) if (v?.link?.map === 'dairy') links.push(k + '/' + mk);
     return { links, test: M.dairy.test, parent: M.dairy.parent, group: M.dairy.group ?? null, goEls: document.querySelectorAll('[data-go="dairy"]').length };
   });
   rep.check('no_marker_links_to_dairy', topo.links.length === 0, JSON.stringify(topo.links));
   rep.check('dairy_is_child_of_estate', topo.parent === 'eden_estate' && topo.test === undefined && topo.group === null, JSON.stringify(topo));
   rep.check('no_top_level_link_on_world', topo.goEls === 0, String(topo.goEls));
-  await p.evaluate(() => TCSettings.open('home')); await p.waitForSelector('#setPop:not([hidden])', { timeout: 5000 }).catch(() => {});
+  await p.evaluate(() => SettingsApi.open('home')); await p.waitForSelector('#setPop:not([hidden])', { timeout: 5000 }).catch(() => {});
   const setHas = await p.evaluate(() => { const t = document.getElementById('setPop')?.innerHTML || ''; return { go: /data-go="dairy"/.test(t), name: /挤奶厅|Dairy parlour/i.test(t), test: /测试入口|test entry/i.test(t) }; });
   rep.check('no_settings_entry', !setHas.go && !setHas.name && !setHas.test, JSON.stringify(setHas));
   await p.keyboard.press('Escape');
 
   // ---- 进入庄园：农场区域卡带「进入三维」----
-  await p.evaluate(() => go('eden_estate')); await ready('eden_estate');
+  await p.evaluate(() => ViewerDebug.go('eden_estate')); await ready('eden_estate');
   const F = await frame();
   await focusZone('dairy');
   await F.waitForSelector('#card .enter3d', { timeout: 10000 }).catch(() => {});
@@ -52,7 +52,7 @@ try {
   await F.locator('#card .enter3d').click();
   await ready('dairy');
   let c = await crumbs();
-  rep.check('enter_by_button_breadcrumb', JSON.stringify(c.links) === '["world","tc_upper","eden_estate"]' && c.here === (await p.evaluate(() => REG.maps.dairy.title)), JSON.stringify(c));
+  rep.check('enter_by_button_breadcrumb', JSON.stringify(c.links) === '["world","tc_upper","eden_estate"]' && c.here === (await p.evaluate(() => ViewerDebug.mapRegistry.maps.dairy.title)), JSON.stringify(c));
   let l = await live(); rep.check('single_gl_context_in_dairy', l.frames === 1 && l.lease === 1, JSON.stringify(l));
   await snap('dairy_view');
 
@@ -79,24 +79,24 @@ try {
   await p.waitForFunction(() => document.getElementById('upBtn'), null, { timeout: 5000 });
   await p.mouse.dblclick(off.x + xy.x, off.y + xy.y);
   await ready('dairy').catch(() => {});
-  rep.check('enter_by_double_click', await p.evaluate(() => cur === 'dairy'), JSON.stringify(xy));
+  rep.check('enter_by_double_click', await p.evaluate(() => ViewerDebug.currentMapId === 'dairy'), JSON.stringify(xy));
   // ---- 返回：面包屑里的伊甸庄园 ----
   await p.locator('#crumbs a[data-go="eden_estate"]').click();
   await ready('eden_estate');
   await (await frame()).waitForFunction(() => window.__estate.pinned()?.id === 'dairy', null, { timeout: 15000 }).catch(() => {});
   rep.check('back_by_crumb_focuses_farm', (await pinnedZone()) === 'dairy', String(await pinnedZone()));
   // 直接返回上层不带落点：庄园之外的面包屑不带 data-focus
-  await p.evaluate(() => go('tc_upper')); await p.waitForFunction(() => cur === 'tc_upper', null, { timeout: T });
+  await p.evaluate(() => ViewerDebug.go('tc_upper')); await p.waitForFunction(() => ViewerDebug.currentMapId === 'tc_upper', null, { timeout: T });
   rep.check('flat_crumbs_carry_no_focus', await p.evaluate(() => !document.querySelector('#crumbs a[data-focus]') && !document.getElementById('upBtn').dataset.focus));
   // 375 px 一次
   await p.setViewportSize({ width: 375, height: 812 });
-  await p.evaluate(() => go('eden_estate')); await ready('eden_estate');
+  await p.evaluate(() => ViewerDebug.go('eden_estate')); await ready('eden_estate');
   const F3 = await frame(); await focusZone('dairy');
   await F3.waitForSelector('#card .enter3d', { state: 'attached', timeout: 10000 }).catch(() => {});
   rep.check('phone_card_has_action', await F3.evaluate(() => !!document.querySelector('#card .enter3d')));
   await snap('estate_farm_card_375');
   await F3.evaluate(() => document.querySelector('#card .enter3d').click()); await ready('dairy');
-  rep.check('phone_enter_ok', await p.evaluate(() => cur === 'dairy'));
+  rep.check('phone_enter_ok', await p.evaluate(() => ViewerDebug.currentMapId === 'dairy'));
   await snap('dairy_view_375');
 } catch (e) { rep.check('probe_ran', false, String(e.message).split('\n')[0]); }
 const errs = P.errors.filter(x => !/favicon|ERR_BLOCKED|net::/i.test(x));

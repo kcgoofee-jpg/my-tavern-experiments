@@ -29,9 +29,9 @@ try {
     await vf.evaluate(() => { try { window.go?.('tc_mid'); } catch (e) {} });
     await B.wait(2500);
     const r = await vf.evaluate(() => ({
-      ids: window.TCLayers?.registry?.ordered?.().map(x => x.id) || [],
+      ids: window.LayerHostApi?.registry?.ordered?.().map(x => x.id) || [],
       menu: [...document.querySelectorAll('#layList span')].map(s => s.textContent.trim()),
-      api: { loot: !!window.TCLoot, vision: !!window.TCVision, wander: !!window.TCWander },
+      api: { loot: !!window.StashMarkersApi, vision: !!window.VisionApi, wander: !!window.WanderApi },
     }));
     rep.check('图层注册：藏物 / 视野锥 / 漫游', ['loot', 'vision', 'wander'].every(k => r.ids.includes(k)), r.ids.filter(i => ['loot', 'vision', 'wander'].includes(i)).join());
     rep.check('图层菜单里有这三行', ['藏物', '视野锥', '漫游'].every(k => r.menu.includes(k)), r.menu.join('/'));
@@ -65,11 +65,11 @@ try {
     await vf.evaluate(() => { try { window.go?.('tc_upper'); } catch (e) {} });
     await B.wait(2800);
     const r = await vf.evaluate(() => {
-      const a = window.TCVision?.cones?.(0) || [], b = window.TCVision?.cones?.(6) || [];
+      const a = window.VisionApi?.cones?.(0) || [], b = window.VisionApi?.cones?.(6) || [];
       const moved = a.length && b.length ? Math.hypot(b[0].x - a[0].x, b[0].y - a[0].y) : 0;
       // 走过锥的判定（几何与难度在 core/vision.mjs，单测覆盖）：这里只验接线——接口在、地标认得出
-      const api = { move: typeof window.TCVision?.tryMove === 'function', of: typeof window.TCVision?.markerOf === 'function' };
-      const hit = window.TCVision?.markerOf?.('银冠堡');   // 上层的一个地标
+      const api = { move: typeof window.VisionApi?.tryMove === 'function', of: typeof window.VisionApi?.markerOf === 'function' };
+      const hit = window.VisionApi?.markerOf?.('银冠堡');   // 上层的一个地标
       return { n: a.length, moved, api, hit: hit?.id || '' };
     });
     rep.check('巡逻环上有锥', r.n > 0, `共 ${r.n} 个`);
@@ -78,15 +78,15 @@ try {
   });
 
   await step('③ 漫游层在册：有位置记录表，切图会清', async () => {
-    const r = await vf.evaluate(() => ({ size: window.TCWander?.now?.() ?? -1, reset: typeof window.TCWander?.reset === 'function' }));
+    const r = await vf.evaluate(() => ({ size: window.WanderApi?.now?.() ?? -1, reset: typeof window.WanderApi?.reset === 'function' }));
     rep.check('漫游补间接上了', r.reset && r.size >= 0, `记录 ${r.size} 条`);
   });
 
   await step('④ 见闻录：钉一条手记，地点卡里翻得到', async () => {
     await vf.evaluate(() => { try { window.go?.('tc_mid'); } catch (e) {} });
     await B.wait(2200);
-    const pinned = await vf.evaluate(async () => { await window.TCScrap?.pinNote?.('天城执法局总局', '探针：门口换了新锁');
-      return { count: window.TCScrap?.count?.('天城执法局总局'), key: window.TCScrap?.key?.(), raw: (window.TCStore?.get?.(window.TCScrap?.key?.()) || '').slice(0, 120), desc: window.TCScrap?.describe?.() }; });
+    const pinned = await vf.evaluate(async () => { await window.ScrapbookView?.pinNote?.('天城执法局总局', '探针：门口换了新锁');
+      return { count: window.ScrapbookView?.count?.('天城执法局总局'), key: window.ScrapbookView?.key?.(), raw: (window.LocalStore?.get?.(window.ScrapbookView?.key?.()) || '').slice(0, 120), desc: window.ScrapbookView?.describe?.() }; });
     rep.check('钉进去了（索引 + 本机存储里都有）', pinned?.count?.notes >= 1 && /新锁/.test(pinned.raw || ''), JSON.stringify(pinned.count) + ' ' + pinned.raw);
     const card = await vf.evaluate(() => {
       const el = [...document.querySelectorAll('.mk')].find(e => e.dataset.name === '天城执法局总局');

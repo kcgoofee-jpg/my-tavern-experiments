@@ -2,7 +2,7 @@
 // 用法：node tools/browser/webgl_single_ctx.mjs <输出目录>
 // 为什么在宿主侧数帧：庄园 / 三维页跑在 blob iframe 里，node 单测看不到运行时；而「同一时刻有几个活着的三维帧」
 // 正是这条要求的验收口径。路线：世界图 → 三维 A → 三维 B → 世界图 → 三维 A，全程高频采样 #stage 里的三维帧数，
-// 并让三维页报一次自己的上下文状态（__v3d.perf().gpu）。
+// 并让三维页报一次自己的上下文状态（__viewer3dProbe.perf().gpu）。
 import fs from 'node:fs';
 import path from 'node:path';
 import { newPage, closeAll, wait, BASE, ensureServer } from './lib.mjs';
@@ -17,8 +17,8 @@ try {
   await P.page.waitForFunction(() => document.getElementById('loading')?.classList.contains('done'), null, { timeout: 60000 });
   const count = () => P.page.evaluate(() => ({
     n: document.querySelectorAll('#stage iframe').length,
-    lease: window.TC3d?.live() ?? null,
-    snapping: window.TC3d?.snapping?.() ?? null,
+    lease: window.Lease3dApi?.live() ?? null,
+    snapping: window.Lease3dApi?.snapping?.() ?? null,
   }));
   const sample = async label => {
     const c = await count();
@@ -26,20 +26,20 @@ try {
     res.steps.push({ label, ...c });
   };
   const go3d = async map => {
-    await P.page.evaluate(m => go(m), map);
-    await P.page.waitForFunction(() => { const f = document.querySelector('#estate.on'); try { return f && f.contentWindow.__v3d?.ready; } catch (e) { return false; } }, null, { timeout: 90000 });
+    await P.page.evaluate(m => ViewerDebug.go(m), map);
+    await P.page.waitForFunction(() => { const f = document.querySelector('#estate.on'); try { return f && f.contentWindow.__viewer3dProbe?.ready; } catch (e) { return false; } }, null, { timeout: 90000 });
   };
   await sample('world');
   await go3d('dairy'); await sample('dairy ready');
-  const gpu = await P.page.evaluate(() => { try { return document.querySelector('#estate').contentWindow.__v3d.perf().gpu; } catch (e) { return null; } });
+  const gpu = await P.page.evaluate(() => { try { return document.querySelector('#estate').contentWindow.__viewer3dProbe.perf().gpu; } catch (e) { return null; } });
   res.gpu = gpu;
   await go3d('holy_mountain');
   for (let i = 0; i < 6; i++) { await sample('during switch ' + i); await wait(120); }   // 切三维时高频采样：旧帧未摘就是 2
   await sample('holy_mountain ready');
-  await P.page.evaluate(() => go('world'));
+  await P.page.evaluate(() => ViewerDebug.go('world'));
   await wait(1200); await sample('back to world');
   await go3d('dairy'); await sample('dairy again');
-  await P.page.evaluate(() => go('world'));
+  await P.page.evaluate(() => ViewerDebug.go('world'));
   await wait(1200); await sample('final world');
   res.errors = P.errors;
   await P.close();

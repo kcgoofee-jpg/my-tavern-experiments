@@ -1,6 +1,6 @@
 // A-3 每轮重算代价基准：81 楼（每楼约 3.5 KB，带事件 / 人物标签和 JSONPatch）、MVU 名册 + 卡脚本文本（阶段顺序找不到的失败路径）。
 // 量「发送路径」：宿主同步触发 GENERATION_AFTER_COMMANDS 的耗时（酒馆在这之后才发请求）。
-//   same：两轮之间什么都没变；changed：最后一楼原文刚被改（debounce 还没跑）。另记闲时补做的部分（__edenMapPerf.rest）。
+//   same：两轮之间什么都没变；changed：最后一楼原文刚被改（debounce 还没跑）。另记闲时补做的部分（__perfSamples.rest）。
 // 用法：[CPU=4] EDEN_PORT=5391 node tools/browser/perf_a3.mjs [轮数=30]
 import * as B from './lib.mjs';
 import { openHost } from './host_stub.mjs';
@@ -19,13 +19,13 @@ const CPU = +(process.env.CPU || 4); if (CPU > 1) { const c = await P.ctx.newCDP
 await B.wait(4000);   // 模块加载、自定义读入、第一次重算
 const res = await p.evaluate(async N => {
   const S = window.__stub, med = a => a.slice().sort((x, y) => x - y)[a.length >> 1], idle = () => new Promise(r => setTimeout(r, 400));
-  const same = [], changed = []; window.__edenMapPerf = {};
+  const same = [], changed = []; window.__perfSamples = {};
   for (let i = 0; i < N; i++) { const t = performance.now(); window.__fire('g'); same.push(performance.now() - t); await new Promise(r => setTimeout(r, 20)); }
   for (let i = 0; i < N; i++) {
     const last = S.msgs[S.msgs.length - 1]; S.msgs = [...S.msgs.slice(0, -1), { ...last, message: last.message + ' 续' + i }];
     const t = performance.now(); window.__fire('g'); changed.push(performance.now() - t); await idle();
   }
-  const P = window.__edenMapPerf, m2 = a => a?.length ? +med(a).toFixed(2) : null;   // 新版才有：lite = 发送路径那一段，rest = 空闲时补做的标签 / 行程
+  const P = window.__perfSamples, m2 = a => a?.length ? +med(a).toFixed(2) : null;   // 新版才有：lite = 发送路径那一段，rest = 空闲时补做的标签 / 行程
   return { same: +med(same).toFixed(2), sameMax: +Math.max(...same).toFixed(2), changed: +med(changed).toFixed(2), changedMax: +Math.max(...changed).toFixed(2), lite: m2(P.lite), rest: m2(P.rest), injected: (window.__injected || '').length };
 }, N);
 console.log(JSON.stringify(res));

@@ -29,8 +29,8 @@ async function run(name, preset) {
     const H = await openHost(P, { here: HERE, msgs: MSGS, stat: STAT, chat: 'c-' + name });
     await H.open();
     const p = P.page, vf = await H.viewer();
-    await vf.evaluate(() => { closeCard(); go('tc_low'); }); await B.wait(2500);
-    const s0 = await vf.evaluate(() => ({ n: TCChars.count(), names: TCChars.items.map(c => c.name + '@' + c.place + '#' + c.floor), chm: document.querySelectorAll('.chm').length, groups: [...document.querySelectorAll('.chm')].map(e => e.dataset.chars) }));
+    await vf.evaluate(() => { ViewerDebug.closeCard(); ViewerDebug.go('tc_low'); }); await B.wait(2500);
+    const s0 = await vf.evaluate(() => ({ n: CharactersView.count(), names: CharactersView.items.map(c => c.name + '@' + c.place + '#' + c.floor), chm: document.querySelectorAll('.chm').length, groups: [...document.querySelectorAll('.chm')].map(e => e.dataset.chars) }));
     rep.check(`${name} 自动发现 4 人（标签最新楼为准 + MVU 在场；另有兜底名册 ${FALLBACK_MEMBERS.length} 人）`, s0.n === 4 + FALLBACK_MEMBERS.length && s0.names.includes('艾琳@中层·霓虹街#41'), JSON.stringify(s0.names));
     rep.check(`${name} 下层画出头像框，同处多人成一组`, s0.groups.includes('雷恩') && s0.groups.some(g => g.includes('米拉') && g.includes('卡尔')), JSON.stringify(s0.groups));
     const shape = await vf.evaluate(() => { const a = document.querySelector('.chm .av'), e = document.querySelector('.ev i'); return { av: getComputedStyle(a).borderRadius, ev: e ? getComputedStyle(e).width : null }; });
@@ -49,7 +49,7 @@ async function run(name, preset) {
     rep.check(`${name} 逐人关掉后地图上不再显示`, off1);
     // 总开关 + 按聊天记住
     await vf.evaluate(() => { const i = document.querySelector('#evbar .chpane .chall input'); i.checked = false; i.dispatchEvent(new Event('change', { bubbles: true })); }); await B.wait(400);
-    const off2 = await vf.evaluate(() => ({ n: document.querySelectorAll('.chm').length, ls: localStorage.getItem('edenMap:chat:' + chatId + ':chars') }));
+    const off2 = await vf.evaluate(() => ({ n: document.querySelectorAll('.chm').length, ls: localStorage.getItem('edenMap:chat:' + ViewerDebug.chatId + ':chars') }));
     rep.check(`${name} 总开关关掉：地图无人物，存本机（按聊天）`, off2.n === 0 && /"show":false/.test(off2.ls || '') && /雷恩/.test(off2.ls), JSON.stringify(off2));
     await vf.evaluate(() => { const i = document.querySelector('#evbar .chpane .chall input'); i.checked = true; i.dispatchEvent(new Event('change', { bubbles: true })); const j = document.querySelector('#evbar .chpane input[data-n="雷恩"]'); j.checked = true; j.dispatchEvent(new Event('change', { bubbles: true })); }); await B.wait(400);
     // 头像（宿主页 EdenMap）
@@ -60,14 +60,14 @@ async function run(name, preset) {
     rep.check(`${name} EdenMap.setAvatar：本机头像显示；非图片地址拒绝`, okA && img && !bad, JSON.stringify({ okA, img, bad }));
     // 飞过去：艾琳在中层
     await vf.evaluate(() => document.querySelector('#evbar .chpane button.chgo[data-n="艾琳"]').click()); await B.wait(4000);
-    const fl = await vf.evaluate(() => ({ cur, chm: [...document.querySelectorAll('.chm')].map(e => e.dataset.chars), card: document.querySelector('#card').hidden ? null : document.querySelector('#card h2').textContent }));
+    const fl = await vf.evaluate(() => ({ cur: ViewerDebug.currentMapId, chm: [...document.querySelectorAll('.chm')].map(e => e.dataset.chars), card: document.querySelector('#card').hidden ? null : document.querySelector('#card h2').textContent }));
     rep.check(`${name} 点人物飞到中层并开卡`, fl.cur === 'tc_mid' && fl.chm.includes('艾琳') && fl.card === '艾琳', JSON.stringify(fl));
     await jpg(p, `chars_${name}_fly`);
     const inj = await H.injected();
     rep.check(`${name} 注入摘要含人物位置（同处合并）`, /人物位置/.test(inj) && /与你同处：/.test(inj) && /艾琳@中层·霓虹街/.test(inj), inj.slice(0, 160));
     // 新人物自动加入
     await H.setMsgs([...MSGS, { message_id: 42, message: '⌖人物 奥托 @ 中层·C区检查点' }]); await B.wait(800);
-    const n2 = await vf.evaluate(() => TCChars.count());
+    const n2 = await vf.evaluate(() => CharactersView.count());
     rep.check(`${name} 新楼出现新人物：自动加入`, n2 === 5 + FALLBACK_MEMBERS.length, 'n=' + n2);
     const on = await p.evaluate(() => new Promise(r => { window.EdenMap.on('characters', d => r(d.items.length)); window.__stub.msgs.push({ message_id: 43, message: '⌖人物 米娅 @ 上层·银冠堡' }); window.__fire('r'); setTimeout(() => r(-1), 3000); }));
     rep.check(`${name} on('characters') 推送`, on === 6, 'items=' + on);

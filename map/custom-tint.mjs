@@ -4,7 +4,7 @@ import { REG } from './app/state.mjs';
 import { viewField } from './app/nodes-runtime.mjs';
 export const NIGHT_KEY = 'edenMapNight';
 export function createTint({ getClock }) {
-  const nightOn = () => { try { return TCStore.get(NIGHT_KEY) !== '0'; } catch (e) { return true; } };
+  const nightOn = () => { try { return LocalStore.get(NIGHT_KEY) !== '0'; } catch (e) { return true; } };
   // v0.9.6（B11 / C1）：按时段分四档（晨 / 日 / 暮 / 夜）；颜色只参考 docs/drafts/upper_tod_*.jpg 的整体色调，不另出图。夜档保留旧的 nighttint 类
   // 有效档位（关掉开关 / 读不到世界时间时为 ''）也是多时段底图（maps.json periods，app/map-switch.mjs）的依据；已配底图的档位（昼 / 夜）不再叠色调，免得双重变暗
   function todNow() { const clock = getClock(); return nightOn() ? (clock?.tod || (clock?.night ? 'night' : '')) : ''; }

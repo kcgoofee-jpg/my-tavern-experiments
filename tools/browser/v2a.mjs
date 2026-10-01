@@ -23,7 +23,7 @@ async function clean(preset) {
   const P = await B.newPage(preset, { tier: 'save' });
   try {
     const H = await openHost(P, { here: '天城·下层·7 号井黑市', chat: 'v2a-clean', ls: LS }); await H.open(); const vf = await H.viewer(); await B.wait(800);
-    await vf.evaluate(() => TCSettings.open('data')); await B.wait(1200);
+    await vf.evaluate(() => SettingsApi.open('data')); await B.wait(1200);
     const btn = vf.locator('#storClean');
     rep.check(`${preset} 清理按钮可点（有旧聊天）`, !(await btn.isDisabled()));
     await btn.click(); await B.wait(200);
@@ -35,7 +35,7 @@ async function clean(preset) {
     const left = await P.page.evaluate(() => Object.keys(localStorage).filter(k => /^edenMap:chat:old/.test(k)).length);
     rep.check(`${preset} 只留最近 5 个聊天`, left <= 5, 'left=' + left);
     // 10 秒内再发一次：宿主回 limited，界面说「请 N 秒后再试」
-    await vf.evaluate(() => post({ type: 'eden-map:storage-clean' })); await B.wait(1200);
+    await vf.evaluate(() => ViewerDebug.post({ type: 'eden-map:storage-clean' })); await B.wait(1200);
     const st2 = await vf.evaluate(() => document.querySelector('#storBox [role=status]')?.textContent || '');
     rep.check(`${preset} 10 秒内再清：明确提示稍后再试`, /秒后再试/.test(st2), st2);
     await B.shot(P.page, OUT, `clean_${preset}`);
@@ -75,12 +75,12 @@ async function unmap(preset) {
   const P = await B.newPage(preset, { tier: 'save' });
   try {
     await B.openViewer(P, { map: 'tc_mid', here: '一个地图上没有的小酒馆' }); await B.wait(2000); const p = P.page;
-    const r = await p.evaluate(() => ({ name: typeof TCUnmapped !== 'undefined' && TCUnmapped.name, hidden: TCSheet.el.hidden, pl: !TCSheet.button('pl').hidden,
+    const r = await p.evaluate(() => ({ name: typeof UnmappedPlacePicker !== 'undefined' && UnmappedPlacePicker.name, hidden: ViewerDrawer.el.hidden, pl: !ViewerDrawer.button('pl').hidden,
       btn: document.querySelector('#cardEmpty button')?.textContent || '' }));
     if (!r.name) { rep.check(`${preset} 未上图（这个地点被认出来了，跳过）`, true, JSON.stringify(r)); return; }
     rep.check(`${preset} 未上图时抽屉 / 右栏不藏`, !r.hidden && r.pl, JSON.stringify(r));
     rep.check(`${preset} 「地点」页有「放到地图上」`, r.btn === '放到地图上', r.btn);
-    await p.evaluate(() => TCSheet.setTab('pl', 'half')); await B.wait(400);
+    await p.evaluate(() => ViewerDrawer.setTab('pl', 'half')); await B.wait(400);
     await B.shot(p, OUT, `unmap_${preset}`);
   } finally { await P.ctx.close(); }
 }
@@ -103,7 +103,7 @@ async function fog(preset) {
     const P = await B.newPage(preset, { tier: 'save' });
     try {
       const H = await openHost(P, { here: '天城·下层·7 号井黑市', chat: 'v2a-fog-' + onFog, ls: { edenMapFog: onFog ? '1' : '0' }, vars: { eden_map: { 探索: { tc_low: ['货运站'] } } } });
-      await H.open(); const vf = await H.viewer(); await vf.evaluate(() => go('tc_low')); await B.wait(6000);
+      await H.open(); const vf = await H.viewer(); await vf.evaluate(() => ViewerDebug.go('tc_low')); await B.wait(6000);
       const st = await vf.evaluate(() => ({ on: document.body.classList.contains('fogon'), cv: !!document.getElementById('fogCv'), fogged: document.querySelectorAll('.mk.fogged').length,
         all: document.querySelectorAll('.mk').length, hereFog: !!document.querySelector('.mk.here.fogged'), opt: document.getElementById('optFog').checked }));
       const ex = await P.page.evaluate(() => window.__vars?.eden_map?.探索 || null);
@@ -145,8 +145,8 @@ async function link3d() {
   try {
     await B.openViewer(P, { map: 'tc_mid' }); await B.wait(1200); const p = P.page;
     const r = await p.evaluate(async () => {
-      const [id, meta] = Object.entries(REG.maps.tc_mid.markers).find(([, v]) => v.link) || []; if (!id) return { skip: true };
-      meta.link3d = { map: meta.link.map === 'lm_pm_residence' ? 'lm_cathedral' : 'lm_pm_residence' }; await go('tc_upper'); await new Promise(r => setTimeout(r, 800)); await go('tc_mid'); await new Promise(r => setTimeout(r, 1500));
+      const [id, meta] = Object.entries(ViewerDebug.mapRegistry.maps.tc_mid.markers).find(([, v]) => v.link) || []; if (!id) return { skip: true };
+      meta.link3d = { map: meta.link.map === 'lm_pm_residence' ? 'lm_cathedral' : 'lm_pm_residence' }; await ViewerDebug.go('tc_upper'); await new Promise(r => setTimeout(r, 800)); await ViewerDebug.go('tc_mid'); await new Promise(r => setTimeout(r, 1500));
       const mk = document.querySelector(`.mk[data-name="${meta.name}"]`); mk?._open?.(); await new Promise(r => setTimeout(r, 400));
       const ex = document.querySelector('#card .extra');
       return { id, n: ex ? ex.querySelectorAll('a[data-go]').length : 0, t: ex?.querySelector('a[data-link3d]')?.textContent || '' };

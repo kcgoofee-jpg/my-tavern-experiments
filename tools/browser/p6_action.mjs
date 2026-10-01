@@ -27,7 +27,7 @@ try {
     const r = await vf.evaluate(() => {
       document.querySelector('.mk')?._open?.();
       const a = document.querySelector('#card [data-inject]');
-      return { mode: window.TCStore?.get?.('edenMapInject'), n: document.querySelectorAll('#card [data-inject]').length, name: a?.dataset.name || '', label: (a?.textContent || '').trim() };
+      return { mode: window.LocalStore?.get?.('edenMapInject'), n: document.querySelectorAll('#card [data-inject]').length, name: a?.dataset.name || '', label: (a?.textContent || '').trim() };
     });
     rep.metric('entry', r);
     rep.check('模式是 compose（宿主页注入的 localStorage）', r.mode === 'compose', JSON.stringify(r));
@@ -58,8 +58,8 @@ try {
 
   await step('默认关时不注入：清掉设置后宿主不再收到 action', async () => {
     await vf.evaluate(() => {
-      try { window.TCStore.set('edenMapInject', 'off'); window.__edenInject = 'off'; } catch (e) {}
-      window.TCMarkers?.closeCard?.();
+      try { window.LocalStore.set('edenMapInject', 'off'); window.__injectMode = 'off'; } catch (e) {}
+      window.MarkersApi?.closeCard?.();
     });
     await B.wait(600);
     const n = await vf.evaluate(() => { document.querySelector('.mk')?._open?.(); return document.querySelectorAll('#card [data-inject]').length; });

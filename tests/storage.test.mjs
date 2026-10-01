@@ -33,9 +33,9 @@ test('静态清点：仓库里出现的每个 edenMap* / edenEstate* 键都登�
   const miss = [...out].filter(k => k !== 'edenMap' && !S.known(k));
   assert.deepEqual(miss, []);
 });
-test('查看器与经典外挂脚本的本机读写都经 TCStore（core/storage.mjs 的同步镜像）', () => {
+test('查看器与经典外挂脚本的本机读写都经 LocalStore（core/storage.mjs 的同步镜像）', () => {
   const rd = f => readFileSync(new URL('../map/' + f, import.meta.url), 'utf8');
-  const v = rd('viewer.html'), body = v.slice(v.indexOf('window.TCStore'));
+  const v = rd('viewer.html'), body = v.slice(v.indexOf('window.LocalStore'));
   const shimEnd = body.indexOf('})();') + 5;
   assert.doesNotMatch(body.slice(shimEnd), /\b(localStorage|sessionStorage)\.(get|set|remove)Item\(/);
   for (const f of readdirSync(new URL('../map/app/', import.meta.url)).filter(f => f.endsWith('.mjs'))) assert.doesNotMatch(rd('app/' + f), /\b(localStorage|sessionStorage)\.(get|set|remove)Item\(/, f);

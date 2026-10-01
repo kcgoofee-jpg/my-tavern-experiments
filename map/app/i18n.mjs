@@ -30,8 +30,8 @@ export const nm = (o, k = 'name') => { const z = o?.[k] ?? ''; return LANG === '
 window.I18N = { get lang() { return LANG; }, t, nm, tr, fmt, tx: (k, zh, v) => { const r = t(k, v); return r && r !== k ? r : fmt(zh ?? k, v); } };
 export function applyI18n() {
   document.title = t('page_title');
-  try { if (typeof P.TCVarMap !== 'undefined') P.TCVarMap.render?.(); } catch (e) {}
-  try { if (typeof P.TCCompose !== 'undefined') P.TCCompose.renderUI(); } catch (e) {}   // v0.9.6 填入聊天的模板   // 变量映射面板：手机「⋯」抽屉里切语言时也要跟着换（接手 review P2）
+  try { if (typeof P.StatPathMappingView !== 'undefined') P.StatPathMappingView.render?.(); } catch (e) {}
+  try { if (typeof P.ComposeView !== 'undefined') P.ComposeView.renderUI(); } catch (e) {}   // v0.9.6 填入聊天的模板   // 变量映射面板：手机「⋯」抽屉里切语言时也要跟着换（接手 review P2）
   document.querySelectorAll('[data-i18n]').forEach(e => e.textContent = t(e.dataset.i18n));
   document.querySelectorAll('[data-i18n-title]').forEach(e => e.title = t(e.dataset.i18nTitle));
   document.querySelectorAll('[data-i18n-ph]').forEach(e => e.placeholder = t(e.dataset.i18nPh));
@@ -40,28 +40,28 @@ export function applyI18n() {
   paintSegs();
   $('#setBtn').setAttribute('aria-label', tx('settings_title', '设置'));
   $('#upBtn').setAttribute('aria-label', tx('s.up', '上一级')); $('#upBtn').title = tx('s.up', '上一级');
-  window.TCSheet?.text({ expand: tx('s.expand', '展开'), collapse: tx('s.collapse', '收起'), region: tx('s.sheet', '事态、人物与地点') });
-  if (window.TCSheet) { TCSheet.label('pl', esc(tx('s.place', '地点')), {}); $('#cardEmpty').dataset.um = '-'; placeEmpty(typeof P.TCUnmapped !== 'undefined' ? P.TCUnmapped.name : null); }
+  window.ViewerDrawer?.text({ expand: tx('s.expand', '展开'), collapse: tx('s.collapse', '收起'), region: tx('s.sheet', '事态、人物与地点') });
+  if (window.ViewerDrawer) { ViewerDrawer.label('pl', esc(tx('s.place', '地点')), {}); $('#cardEmpty').dataset.um = '-'; placeEmpty(typeof P.UnmappedPlacePicker !== 'undefined' ? P.UnmappedPlacePicker.name : null); }
   stDotLabel(); renderSelfCheck(); renderAbout(); setPage(setPageNow, true);
 }
 export async function setLang(l) {
   if (l === LANG) return;
   const dict = await getJSON('i18n/' + l + '.json'); if (!dict) return;
   LANG = l; DICT = dict; document.documentElement.lang = l === 'en' ? 'en' : 'zh-CN';
-  try { TCStore.set('edenMapLang', l); } catch (e) {}
+  try { LocalStore.set('edenMapLang', l); } catch (e) {}
   applyI18n(); closeCard(); estateLook();
   if (cur) { mapChrome(REG.maps[cur]); renderNav(); if (viewer.world.getItemCount()) { drawOverlays(); applyTier(); } postState(); }
 }
 export function setTheme(th) {
   if (!['auto', 'light', 'dark'].includes(th)) return; window.__theme = th;
-  try { TCStore.set('edenMapTheme', window.__theme); } catch (e) {}
+  try { LocalStore.set('edenMapTheme', window.__theme); } catch (e) {}
   window.__applyTheme(); paintSegs(); estateLook(); postState();
 }
 // 设置「显示」页的分段控件：主题、减少动态、三维画质（语言、清晰度、惯用手各自有 paint）
 export function paintSegs() {
   const on = (sel, attr, v) => document.querySelectorAll(sel).forEach(b => { const x = b.dataset[attr] === v; b.classList.toggle('on', x); b.setAttribute('aria-pressed', x); });
   on('#themeSeg button', 'th', window.__theme); on('#rmSeg button', 'rm', rmPref()); on('#q3Seg button', 'q', q3Pref()); on('#cvdSeg button', 'cvd', TCCvd.mode());
-  on('#injSeg button', 'inj', window.__edenInject || 'off');   // Part 6-4 动作注入模式
+  on('#injSeg button', 'inj', window.__injectMode || 'off');   // Part 6-4 动作注入模式
   document.querySelectorAll('#langSeg button').forEach(b => { b.classList.toggle('on', b.dataset.lang === LANG); b.setAttribute('aria-pressed', b.dataset.lang === LANG); });
 }
 const themeNow = () => document.documentElement.classList.contains('light') ? 'light' : 'dark';

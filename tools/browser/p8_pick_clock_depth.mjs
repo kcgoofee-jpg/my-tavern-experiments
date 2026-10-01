@@ -28,12 +28,12 @@ try {
     await vf.evaluate(() => { try { window.go?.('tc_upper'); } catch (e) {} });
     await B.wait(3000);
     const base = await vf.evaluate(() => ({
-      ids: window.TCLayers?.registry?.ordered?.().map(x => x.id) || [],
-      haze: !!window.TCHaze, sum: window.TCHaze?.summary?.(),
+      ids: window.LayerHostApi?.registry?.ordered?.().map(x => x.id) || [],
+      haze: !!window.DepthHazeApi, sum: window.DepthHazeApi?.summary?.(),
       veil: !!document.querySelector('.hazeveil'),
     }));
     rep.check('depth-haze 图层注册进 LayerRegistry', base.ids.includes('depth-haze'), base.ids.filter(i => i.includes('haze') || i === 'fog').join('/'));
-    rep.check('窗口面在（TCHaze）', base.haze, JSON.stringify(base.sum || {}));
+    rep.check('窗口面在（DepthHazeApi）', base.haze, JSON.stringify(base.sum || {}));
     rep.check('槽位里挂着 .hazeveil 元素', base.veil, String(base.veil));
     // 逐个地点当「当前地点」：纵深越远 → 霾越浓 → 滤镜链越厚
     const rows = await vf.evaluate(() => {
@@ -41,10 +41,10 @@ try {
       for (const el of document.querySelectorAll('.mk')) {
         document.querySelectorAll('.mk.here').forEach(e => e.classList.remove('here'));
         el.classList.add('here');
-        window.TCHaze?.apply?.();
-        const s = window.TCHaze.summary(), ch = window.TCHaze.chain();
+        window.DepthHazeApi?.apply?.();
+        const s = window.DepthHazeApi.summary(), ch = window.DepthHazeApi.chain();
         const veil = document.querySelector('.hazeveil');
-        out.push({ name: el.dataset.name, d: window.TCHaze.depth(), haze: s.currentHaze, n: ch.length,
+        out.push({ name: el.dataset.name, d: window.DepthHazeApi.depth(), haze: s.currentHaze, n: ch.length,
           filter: veil?.style?.backdropFilter || '', fog: document.getElementById('fogCv')?.style?.filter || '' });
       }
       return out;
@@ -65,12 +65,12 @@ try {
     const sched = { default: '大厅', npcs: [{ name: '探针甲', slots: [{ from: '08:00', to: '12:00', at: '书房' }, { from: '13:00', to: '18:00', at: '花园' }] }] };
     await toViewer({ type: 'eden-map:routine', v: 2, schedule: sched });
     await toViewer({ type: 'eden-map:clock', v: 2, day: 1, min: 9 * 60, time: '09:00', night: false });
-    const st = await vf.evaluate(() => window.TCWander?.describe?.() || null);
+    const st = await vf.evaluate(() => window.WanderApi?.describe?.() || null);
     rep.check('日程表与起点时钟都接住了', !!st && st.scheduled === true, JSON.stringify(st));
     rep.check('时钟是确定性推进的（rounds 有账）', !!st && typeof st.rounds === 'number' && st.clock?.min === 540, JSON.stringify(st?.clock));
     // 插值引擎在页面里跑一段：中途必须在两点之间，到点必须到位（不瞬移）
     const walk = await vf.evaluate(() => {
-      const w = window.TCWander.walker, t = performance.now();
+      const w = window.WanderApi.walker, t = performance.now();
       w.clear();
       w.to('探针甲', [0.1, 0.2], t);          // 第一次出现：直接落位
       const first = w.at('探针甲', t);

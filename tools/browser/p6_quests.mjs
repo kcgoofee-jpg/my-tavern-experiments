@@ -19,7 +19,7 @@ try {
   await step('没事态时不画节点（不许硬造线索）', async () => {
     await vf.evaluate(() => { try { window.go?.('tc_upper'); } catch (e) {} });
     await B.wait(2500);
-    const r = await vf.evaluate(() => ({ n: window.TCQuests?.now?.()?.length ?? -1, fx: (window.TCLayers?.describe?.()?.slots || []).find(s => s.id === 'fx')?.layers }));
+    const r = await vf.evaluate(() => ({ n: window.QuestsApi?.now?.()?.length ?? -1, fx: (window.LayerHostApi?.describe?.()?.slots || []).find(s => s.id === 'fx')?.layers }));
     rep.metric('empty', r);
     rep.check('fx 槽位有 quests 层', (r.fx || []).includes('quests'), JSON.stringify(r.fx));
     rep.check('没有事态 → 零节点', r.n === 0, JSON.stringify(r));
