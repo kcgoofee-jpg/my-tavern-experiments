@@ -1,12 +1,12 @@
 // 层导航与键盘：层切换条、上一级、Esc 分层、单字符快捷键。
 import { mapRegistry, currentMapId, pendingFocus, pendingHome, setPendingFocus, setPendingHome, osdViewer } from './state.mjs';
 import { $, esc } from './dom-helpers.mjs';
-import { post } from './protocol-stamp.mjs';
+import { post, SUB_ORIGIN } from './protocol-stamp.mjs';
 import { uiTextOr } from './text-lookup.mjs';
 import { localName } from './i18n.mjs';
 import { layoutHeader } from './topbar.mjs';
 import { go } from './map-switch.mjs';
-import { narrowNow } from './subpage3d-host.mjs';
+import { narrowNow, subpageSession } from './subpage3d-host.mjs';
 import { closeCard } from './markers.mjs';
 import { focusStart, hereRes, setUserMoved, userMoved } from './locate.mjs';
 import { SettingsApi, kbdHelp, showLay, showSet } from './settings.mjs';
@@ -66,10 +66,10 @@ export function stepLayer(d) {
 // Esc 只作用于最上面一层（§10.6）：对话框 > 设置 > 图层菜单 > 展开的层列表 > 抽屉降一档 > 地点卡；都没有时交给酒馆（关面板）。嵌入时不冒泡给酒馆
 function escTop() {
   if (!$('#setPop').hidden) { showSet(false); ($(narrowNow() ? '#thumbBtn' : '#setBtn'))?.focus(); return true; }
+  if (!$('#card').hidden) { closeCard(true); return true; }   // S7-2 (docs/ui-refactor.md 6): card -> popover -> drawer (half -> peek)
   if (!$('#layPop').hidden) { showLay(false); $('#layBtn').focus(); return true; }
   const lay = $('#layers'); if (narrowNow() && !lay.hidden && !lay.classList.contains('compact')) { lay.classList.add('compact'); lay.querySelector('button.on')?.focus(); return true; }
   const S = window.ViewerDrawer; if (S && !S.el.hidden && S.down()) { if (S.state === 'peek') S.el.querySelector('.uis-tog')?.focus({ preventScroll: true }); return true; }
-  if (!$('#card').hidden) { closeCard(true); return true; }
   return false;
 }
 export function onEsc() { if (noticeLayer?.blocking) return; if (!escTop()) post({ type: 'eden-map:esc' }); }   // P0 阻断卡开着：Esc 不关任何东西
@@ -94,6 +94,8 @@ document.addEventListener('keydown', e => {
   else if (k === '0' && vp && !estate) { setUserMoved(false); setPendingHome(false); focusStart(false); }
   else if (k === 'l' && !estate) toggleLabels();
   else if (k === 'm') { SettingsApi.open('data'); setTimeout(() => { const v = $('#vmBox'); if (v) { v.open = true; v.querySelector('summary')?.focus(); v.scrollIntoView({ block: 'start' }); } }, 30); }
+  else if (k === ',') SettingsApi.open('home');   // S7-2: settings
+  else if ((k === '1' || k === '2' || k === '3') && estate && subpageSession?.frame) subpageSession.frame.contentWindow?.postMessage({ type: 'estate:floor', floor: { 1: 'ext', 2: 'xray', 3: 'F1' }[k] }, SUB_ORIGIN);   // S7-2: 3D view modes (exterior / x-ray / section)
   else if (k === '/') { SettingsApi.open('home'); setTimeout(() => $('#setQ')?.focus(), 30); }
   else if (k === '?') { SettingsApi.open('adv'); kbdHelp(true); }
   else return;

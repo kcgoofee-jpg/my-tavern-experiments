@@ -19,10 +19,27 @@ const MEASURE = () => {
     crumb: txt('#crumbs b'), tab: txt('#evbar [role=tab][aria-selected=false]:not([hidden])'), tabSel: txt('#evbar [role=tab][aria-selected=true]'), toggle: txt('#evbar .uis-tog'),
     evRow: txt('#evbar li b'), evSum: txt('#evbar .evsum .sum'),
     grip: (() => { const i = document.querySelector('#evbar .uis-grip i'); if (!i || !i.getClientRects().length) return null; const bg = bgOf(document.querySelector('#evbar')), c = rgb(getComputedStyle(i).backgroundColor); return +ratio(mix(c, bg), bg).toFixed(2); })(),
-    tabSelBg: non('#evbar [role=tab][aria-selected=true]', 'backgroundColor', '#evbar'),
+    tabSelBg: (() => { const el = document.querySelector('#evbar [role=tab][aria-selected=true]'); if (!el || !el.getClientRects().length) return null; const m = getComputedStyle(el).boxShadow.match(/(rgba?\([^)]*\)|color\(srgb[^)]*\))/); const c = m && rgb(m[1]); return c ? +ratio(c, bgOf(document.querySelector('#evbar'))).toFixed(2) : null; })(),   // S7-2 selection grammar: the accent bar on the leading edge is the non-text cue (3 px inset shadow)
     setRow: txt('#setPop:not([hidden]) .spage:not([hidden]) .hrow span'), setSmall: txt('#setPop:not([hidden]) .spage:not([hidden]) small'), setTitle: txt('#setPop:not([hidden]) #setTitle'),
     swBorder: non('#setPop:not([hidden]) .spage:not([hidden]) input[type=checkbox]:not(:checked)', 'borderTopColor', '#setPop'),
   };
+};
+// S7-2 (P4-1): every glass surface over black, over white and over the 95th-percentile-luminance pixel of the shown map; --ink / --ink-2 >= 4.5, the accent and the focus ring >= 3 on the glass-1
+// composites, --muted >= 4.5 on glass-2 (opaque; muted never sits on glass-1). The chrome token set is the same in every view, so a pair that passes here passes on every pack view.
+const GLASS = () => {
+  const cv = document.createElement('canvas').getContext('2d'), col = v => { const el = document.createElement('i'); el.style.color = v; document.body.appendChild(el); const c = getComputedStyle(el).color; el.remove(); cv.fillStyle = '#000'; cv.clearRect(0, 0, 1, 1); const m = c.match(/[\d.]+/g).map(Number), k = /^color\(srgb/.test(c) ? 255 : 1; return m.length >= 3 ? [m[0] * k, m[1] * k, m[2] * k, m[3] ?? 1] : [0, 0, 0, 1]; };   // color-mix() computes to color(srgb 0..1 ...)
+  const f = c => { c /= 255; return c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; }, L = ([r, g, b]) => .2126 * f(r) + .7152 * f(g) + .0722 * f(b), R = (a, b) => { const x = L(a), y = L(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  const over = (fg, bg) => { const a = fg[3] ?? 1; return [0, 1, 2].map(i => fg[i] * a + bg[i] * (1 - a)); };
+  let p95 = [128, 128, 128]; try { const c = document.querySelector('.openseadragon-canvas canvas'), g = c.getContext('2d'), px = []; for (let k = 0; k < 600; k++) { const d = g.getImageData(Math.floor(Math.random() * c.width), Math.floor(Math.random() * c.height), 1, 1).data; px.push([d[0], d[1], d[2]]); } px.sort((a, b) => L(a) - L(b)); p95 = px[Math.floor(px.length * .95)]; } catch (e) {}
+  const g1 = col('var(--glass-1)'), g2 = col('var(--glass-2)'), ink = col('var(--ink)'), ink2 = col('var(--ink-2)'), muted = col('var(--muted)'), acc = col('var(--accent)'), foc = col('var(--focus)');
+  const out = { p95: p95.map(Math.round).join(',') }, bad = [];
+  for (const [nm, back] of [['black', [0, 0, 0]], ['white', [255, 255, 255]], ['p95', p95]]) {
+    const bg = over(g1, back);
+    const r = { ink: R(over(ink, bg), bg), ink2: R(over(ink2, bg), bg), accent: R(acc, bg), focus: R(foc, bg) }; out[nm] = Object.fromEntries(Object.entries(r).map(([k, v]) => [k, +v.toFixed(2)]));
+    if (r.ink < 4.5 || r.ink2 < 4.5) bad.push(`${nm}: ink ${r.ink.toFixed(2)} / ink-2 ${r.ink2.toFixed(2)}`); if (r.accent < 3 || r.focus < 3) bad.push(`${nm}: accent ${r.accent.toFixed(2)} / focus ${r.focus.toFixed(2)}`);
+  }
+  const m2 = R(muted, g2); out.mutedOnGlass2 = +m2.toFixed(2); if (m2 < 4.5) bad.push('muted on glass-2 ' + m2.toFixed(2));
+  return { out, bad };
 };
 try {
   for (const [theme, scheme, contrast] of [['dark', 'dark', 'no-preference'], ['light', 'light', 'no-preference'], ['hc', 'dark', 'more']]) {
@@ -38,6 +55,7 @@ try {
       const pick = (o, ks) => Object.fromEntries(ks.map(k => [k, o[k]])), all = { ...pick(a, ['crumb', 'tab', 'tabSel', 'toggle', 'evRow', 'evSum', 'grip', 'tabSelBg']), ...pick(b, ['setRow', 'setSmall', 'setTitle', 'swBorder']) }, txtKeys = ['crumb', 'tab', 'tabSel', 'toggle', 'evRow', 'evSum', 'setRow', 'setSmall', 'setTitle'], nonKeys = ['grip', 'tabSelBg', 'swBorder'];
       const badT = txtKeys.filter(k => all[k] != null && all[k] < 4.5), badN = nonKeys.filter(k => all[k] != null && all[k] < 3);
       rep.metric(`${theme}_${map}`, all);
+      const gl = await P.page.evaluate(GLASS); rep.check(`${theme} × ${map}：毛玻璃叠在黑 / 白 / 地图 95 分位亮度上，ink ≥ 4.5、强调色与焦点环 ≥ 3、muted 在 glass-2 上 ≥ 4.5`, !gl.bad.length, JSON.stringify(gl.out) + (gl.bad.length ? ' 不足：' + gl.bad.join('; ') : ''));
       rep.check(`${theme} × ${map}：文字 ≥ 4.5、非文字 ≥ 3`, !badT.length && !badN.length, JSON.stringify(all) + (badT.length || badN.length ? ' 不足：' + [...badT, ...badN].join(',') : ''));
     }
     await P.close();

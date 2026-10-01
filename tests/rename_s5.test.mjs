@@ -169,7 +169,7 @@ test('S5-3 host family: the deps-bag names are renamed together (keys, DEPS list
 test('S5-3 ViewerDebug: it exposes every getter the probes read, nothing reads the old ad-hoc window getters, and legacy-globals.mjs is gone', () => {
   assert.ok(!has('map/app/legacy-globals.mjs') && has('map/app/viewer-debug.mjs'));
   const body = rd('map/app/viewer-debug.mjs'), exposed = new Set([...body.slice(body.indexOf('const G = {'), body.indexOf('const debug')).matchAll(/(\w+): \(\) => /g)].map(m => m[1]));
-  const ADDED = ['tabs', 'raf'];   // getters added after S5-3 (the list only grows): S6-1 `tabs` (the drawer tab registry), S7-2 `raf` (the activity counter of the pause probes); they are not in the frozen S5 globals map
+  const ADDED = ['tabs', 'raf', 'declutterMs'];   // getters added after S5-3 (the list only grows): S6-1 `tabs` (the drawer tab registry), S7-2 `raf` (the activity counter of the pause probes); they are not in the frozen S5 globals map
   assert.deepEqual([...exposed].filter(k => !ADDED.includes(k)).sort(), GLOBALS.entries.filter(e => e.kind === 'debug').map(e => e.to).sort(), 'the map and the module agree');
   for (const k of ADDED) assert.ok(exposed.has(k), k);
   const used = new Set(); let n = 0;

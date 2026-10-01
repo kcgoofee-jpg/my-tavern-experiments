@@ -1,4 +1,5 @@
 // 清晰度档位、省流判断、加载进度、叠加层与标注避让（原内联主脚本「清晰度上限」「加载进度」两区 + 档位常量）。
+import { labelCaps, tierOf } from '../core/label-tiers.mjs';
 import { visibilityGuard } from './visibility.mjs';
 import { loadingProgress } from './load-progress.mjs';
 import { mapRegistry, aspect, currentMapId, pendingFocus, setAspect, setCurrentMapId, setPendingFocus, osdViewer } from './state.mjs';
@@ -210,7 +211,9 @@ export function tabOrder() {
 let declT = 0;
 // E5（R14 / L2）：事态点也参加避让。事态图标是可点的，永远保留并当作障碍：压在图标上的普通地标名隐藏（当前地点、首府除外）；
 // 世界图国名（.realm）排在首府之后保留，「中小国」小字最后；事态的文字标签和已保留的标签重叠时收起，只留图标
+export let declutterMs = 0;   // the duration of the last pass (read through the debug surface)
 export function declutter() { clearTimeout(declT); declT = setTimeout(() => {
+  const t0 = performance.now();
   const mks = [...document.querySelectorAll('.mk')], evs = [...document.querySelectorAll('.ev, .chm')], words = [...document.querySelectorAll('.realm, .minor')];
   if (!mks.length && !evs.length) return;
   const rank = e => e.classList.contains('here') || e.classList.contains('active') ? 0 : e.classList.contains('capital') || e.classList.contains('op') ? 1 : e.dataset.focus ? 2 : e.dataset.link ? 3 : 4;
@@ -219,10 +222,12 @@ export function declutter() { clearTimeout(declT); declT = setTimeout(() => {
   const seen = new Map(), box = e => { if (!e) return null; if (seen.has(e)) return seen.get(e); const r = e.getBoundingClientRect(), v = r.width ? r : null; seen.set(e, v); return v; };   // 同一轮只量一次，routeGaps 复用
   const ic = evs.flatMap(e => [...e.querySelectorAll(':scope > i, :scope > .chg > i')].map(i => [e, box(i)])).filter(x => x[1]), icons = ic.map(x => x[1]), kept = [];
   const place = (e, r, avoidIcons) => { if (!r) return; if (kept.some(k => hit(r, k)) || (avoidIcons && icons.some(k => hit(r, k, 0)))) e.classList.add('lhide'); else kept.push(r); };
-  const sorted = mks.sort((a, b) => rank(a) - rank(b));
+  const sorted = mks.sort((a, b) => rank(a) - rank(b)), caps = labelCaps(innerWidth <= 640); let placed = 0;
+  const tier = e => { if (e.classList.contains('lhide')) return; const lr = box(e.querySelector('.lab')); if (lr && (lr.right < 0 || lr.left > innerWidth || lr.bottom < 0 || lr.top > innerHeight)) return; const t = tierOf(++placed, caps); e.classList.toggle('l1', t === 'l1'); if (!t && rank(e) > 0) e.classList.add('lhide'); };   // L1 names stay visible on far islands (the upper tier shows its major places at the default zoom); the caps hide the rest
   // 控制列（手机半开抽屉时横排贴在抽屉上沿）当障碍：压在它下面的地名收起，不再被按钮盖住（v2 门控遗留）
   const dk = $('#dock'), dockR = []; if (dk && !dk.hidden && getComputedStyle(dk).display !== 'none') for (const c of dk.children) { const r = c.offsetParent && box(c); if (r) { kept.push(r); dockR.push(r); } }
-  for (const e of sorted.filter(e => rank(e) <= 1)) place(e, box(e.querySelector('.lab')), false);
+  for (const sel of ['#foot', '#hereGo', 'header']) { const x = $(sel), r = x && x.offsetParent !== null && box(x); if (r) kept.push(r); }   // more HUD rects are obstacles (N10 9): the level strip and the zoom column are in the dock above
+  for (const e of sorted.filter(e => rank(e) <= 1)) { place(e, box(e.querySelector('.lab')), false); if (rank(e) === 0) e.classList.remove('lhide'); tier(e); }   // the player's place and the open card are never hidden
   for (const e of words.filter(e => e.classList.contains('realm'))) { const r = box(e.querySelector('b')); if (r) kept.push(r); }
   // v0.9.2：事态标题先于普通地名：事态点所在的地名收起，只留一条标签（事态标题）
   for (const e of evs.sort((a, b) => (+b.className.match(/sev(\d)/)?.[1] || 0) - (+a.className.match(/sev(\d)/)?.[1] || 0))) {
@@ -231,9 +236,10 @@ export function declutter() { clearTimeout(declT); declT = setTimeout(() => {
   }
   for (const e of sorted.filter(e => rank(e) > 1)) { const r = box(e.querySelector('.lab')), pin = box(e.querySelector('.pin'));
     if (pin && icons.some(k => hit(pin, k, 6))) e.classList.add('lhide'); else place(e, r, true);
+    tier(e);
     e.classList.toggle('undock', !!(pin && dockR.some(k => hit(pin, k, 4)))); }   // 图钉压在控制列下：整个标记让开（免得点到按钮下面的图钉）
   for (const e of words.filter(e => e.classList.contains('minor'))) place(e, box(e), true);
-  routeGaps(box);
+  routeGaps(box); declutterMs = performance.now() - t0;
 }, 80); }
 // measure：declutter 同一轮已量过的标签框（带缓存的 box），避让后直接复用，不再对每个标签二次 getBoundingClientRect
 export function routeGaps(measure) {

@@ -7,7 +7,7 @@ import { jsonCache } from './json-cache.mjs';
 import { post } from './protocol-stamp.mjs';
 import { toImg } from './coordinates.mjs';
 import { worldData, mapRegistry, aspect, currentMapId, currentMapData, sleeping, osdViewer } from './state.mjs';
-import { lean, tier } from './sharpness-tiers.mjs';
+import { lean, tier, declutterMs } from './sharpness-tiers.mjs';
 import { LANG, localName, setTheme, uiText } from './i18n.mjs';
 import { main } from './boot.mjs';
 import { fadeAway, go } from './map-switch.mjs';
@@ -24,7 +24,7 @@ const G = {
   LANG: () => LANG, localName: () => localName, uiText: () => uiText, setTheme: () => setTheme, main: () => main, fadeAway: () => fadeAway, go: () => go,
   subpageSession: () => subpageSession, setEstFail: () => setEstFail, openEstate: () => openEstate, estFocus: () => estFocus, closeCard: () => closeCard,
   showCard: () => showCard, hereRes: () => hereRes, jumpHere: () => jumpHere, showSet: () => showSet, showLay: () => showLay,
-  chatId: () => chatId, packStorage: () => packStorage, renderAbout: () => renderAbout, lean: () => lean, tabs: () => describeTabs, raf: () => raf,
+  chatId: () => chatId, packStorage: () => packStorage, renderAbout: () => renderAbout, lean: () => lean, tabs: () => describeTabs, raf: () => raf, declutterMs: () => declutterMs,
 };
 const debug = {};
 for (const [k, g] of Object.entries(G)) Object.defineProperty(debug, k, { get: g, enumerable: true });
