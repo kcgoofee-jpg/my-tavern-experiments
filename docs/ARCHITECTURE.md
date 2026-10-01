@@ -61,8 +61,8 @@ Rules that follow:
 
 ## 3. Module map
 
-Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 205 files: `map/core` 55,
-`map/app` 59, `map/tavern` 55, `map/ui` 9, `map/three` 9, `map/*.mjs` 16, plus `map/viewer.html` and
+Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 210 files: `map/core` 59,
+`map/app` 59, `map/tavern` 56, `map/ui` 9, `map/three` 9, `map/*.mjs` 16, plus `map/viewer.html` and
 `map/props/viewer3d.html`. Roles were derived from each file's header comment and code.
 
 ### 3.1 map/core
@@ -71,6 +71,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 
 | Module | Role |
 |---|---|
+| `card-read.mjs` | Runtime card reading (K-R93, K-R94, K-R95): place candidates from worldbook titles, language, start view, the variable shape, and the automatic pack derived from a plain card source; the fingerprint. Pure. |
 | `clock.mjs` | Zero-token deterministic world clock: world time is computed from turns advanced, never from the model or system time. |
 | `compat-v1-blocks.mjs` | v1 side inputs → v2 blocks: events, roster, stash, worldbook, legacy names, ui strings, the user's custom names. |
 | `compat-v1-geo.mjs` | v1 map registry → v2 nodes (declaration order, plus the id map and word tables the other compat files read). |
@@ -83,6 +84,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `events-default.mjs` | The kernel's neutral event taxonomy (K-R53): what a pack with no events block shows; closing words and injected-line tag defaults. |
 | `exploration-ledger.mjs` | Exploration ledger (fog of visited places): `norm` / `visit` / `known` / `count` over `{ mapId: [placeNames] }`, shared by the host and the viewer. |
 | `graphics-budget.mjs` | Graphics memory budget policy: decides the byte budget per device class and whether reported usage means pressure. |
+| `grow.mjs` | Growing nodes from chat (K-R26): place texts become `g_` nodes under the tree; recompute from nothing. Pure. |
 | `haze.mjs` | Aerial-perspective filter: turns the haze density of the current depth plane into a filter chain. |
 | `layer-defaults.mjs` | The kernel's own layers as declarations (K-R79): slot, kind, order, menu row and drawing block of the 17 viewport layers in one frozen list; `kernelDecl(id)`. Pure. |
 | `layer-registry.mjs` | LayerRegistry core: the 10 viewport slots, layer registration and ordering, visibility, filter chains, `patch` / `applicable` (K-R79, K-R82), `describe()` summary. |
@@ -96,6 +98,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `logbuf.mjs` | Console ring buffer for feedback reports, split into sessions; installs its hooks on first evaluation. |
 | `nodes.mjs` | The node tree (kernel contract v2): build, read, `vocabulary`, `locate`, views, positions, scope, levels. |
 | `overlay-v2.mjs` | The v2 overlay of a schema-1 pack (`overlay.v2.json`): merged by node id after `compat-v1`; lenient (a bad entry is skipped and listed in `problems`). |
+| `pack-export.mjs` | Export as pack (K-R98): grown nodes, the user's names and card credits folded in, canonical order, size limits. Pure. |
 | `pack-index.mjs` | The shipped pack index and the match score (K-R92). Pure. |
 | `pack-store-db.mjs` | Browser store of imported packs (IndexedDB `edenMapPacks`, key = card key; K-R99). Every call is wrapped. |
 | `pack-v2-rows.mjs` | Run-time readers of a v2 pack's blocks: event types, attribute values, roster rows, world stash rows (re-exported by `pack-v2.mjs`). |
@@ -132,6 +135,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `vocab.mjs` | The kernel's discovery vocabulary (K-R38, K-R42): per-language field-name words for variables, person rows and roster slots; no card names. |
 | `walk.mjs` | Deterministic clock tick and an N-dimensional interpolating walker (no teleporting; reduced motion snaps). |
 | `weather.mjs` | Weather core: preset table, weather from story and clock, particle field and lightning timing. |
+| `yaml-shape.mjs` | The shape of a card's variable initialisation text: JSON or a small YAML subset, nothing else (K-R94). Pure. |
 
 ### 3.2 map/app
 
@@ -175,7 +179,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `nodes-runtime.mjs` | The viewer's node tree: the loaded registry converted once by `core/compat-v1.mjs`; breadcrumb, up button, warm-up neighbours, estate stand-in and 3D-page test read it (no `parent` walking). `buildRuntimeV2` installs the schema-2 runtime into the same slot. |
 | `notice-layer.mjs` | Notice layer (handed to the host when embedded, `ui/notice.mjs` when standalone) and the first-run hint. |
 | `one-hand-mode.mjs` | One-hand mode: handedness switch with the floating button following it; starts the settings-home actions and quick zoom. |
-| `pack-settings.mjs` | Settings → Advanced "Map pack": the running pack, the choice list, URL / file import, the go-live switch of a foreign pack's model text (K-R99, K-R103). |
+| `pack-settings.mjs` | Settings → Advanced "Map pack": the running pack, the choice list, URL / file import, the go-live switch of a foreign pack's model text, export as pack (K-R98, K-R99, K-R103). |
 | `place-resolver.mjs` | The current location: `nodes.locate` over the node tree, mapped to the result shape the consumers read (`level`, `map`, `marker`, `room`, `node`, `transit`); also used by `tavern/spatial-contract.mjs` and the builder tools. |
 | `plugins.mjs` | Plugin registry `plugins`: the only channel between app modules and root plugins. |
 | `protocol-stamp.mjs` | Protocol version stamp and message exit: `PROTO`, `post`, `protocol`, the sub-page origin `SUB_ORIGIN`. |
@@ -209,9 +213,10 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 
 | Module | Role |
 |---|---|
+| `auto-pack.mjs` | The automatic pack on the host (K-R95): derive / reuse the cache, grow from each round's place texts, recompute on chat load, `eden-map:pack`; loaded only for the automatic pack. |
 | `background-scan-scheduler.mjs` | Background quiet-derivation scheduler: read-only incremental scans that yield to a live panel or generation. |
 | `branch-follow.mjs` | Follow-branch resolution: newest build of a branch from `head.json` across CDN mirrors. |
-| `card-source.mjs` | Reads the current card and its own worldbooks for the pack gate (K-R90, K-R91); host interfaces come in through `mvu-bridge.mjs hostAccess`. |
+| `card-source.mjs` | Reads the current card and its own worldbooks for the pack gate (K-R90, K-R91) and builds the plain card source for the automatic pack (`readCardSource`, K-R94); host interfaces come in through `mvu-bridge.mjs hostAccess`. |
 | `characters-parse.mjs` | Character bar: finds characters and their latest place from chat tags and MVU variables. |
 | `chars-flow.mjs` | Character and world-time flow of the host: ContextPipeline and MVUBridge assembly, world time and outfit, roster / portrait / trips / routine forwarding to the viewer. `createCharsFlow(host)`. |
 | `check-failure-report.mjs` | Failed-check report ring: structured reports injected next turn so the story follows objective facts. |
@@ -432,6 +437,8 @@ data paths the host and the viewer used to hard-code (`roster`, `maps`, `galleri
 `routine`); a missing key quietly switches the feature off. The engine names no view, group, place or book.
 
 **The pack gate (S9-2)**: the entry imports `tavern/pack-gate.mjs` first; its top-level `await` resolves the pack of the current card (user choice or baked pack → pack embedded in the card → best match in `packs/index.json` → automatic) and sets `window.__tcPack` before the entry reads it; the legacy-default pack leaves it unset, so the first pack's start, texts and writes are unchanged. On a card switch the gate resolves again and, when the pack id or source changed, stops the instance (`__edenMapCleanup`), clears the profile and chat-variable root that modules keep, and imports the entry again under `?k=<card key>&r=<n>`. `eden-map:pack-pick` (Settings → Advanced) reaches it through `onTh`; the go-live switch of a foreign pack's model text is `eden-map:th` `prefs.packLlm`. Module-level state that survives a restart is listed in `docs/zero-config.md` §14.
+
+**The automatic pack (S9-3)**: when the gate reaches its last tier, `tavern/auto-pack.mjs` (loaded only then; the first pack never reaches it) derives the pack from the card source (`readCardSource`): `core/card-read.mjs` turns worldbook titles into place nodes under a root named after the card, reads the variable paths and roster from `stat_data` or the initvar shape (`core/yaml-shape.mjs`), and finds the language and the opening view; the droppable cache `auto` in the pack's chat variable keeps the derived pack, the grown nodes and the seen texts (written by the root store's save). Each round the host passes the place texts (place tag, event and character tags, the location variable) to `core/grow.mjs`; new `g_` nodes rebuild the host's event geography and go to the viewer as `eden-map:pack` (rev + 1), where `app/host-messages.mjs` validates the pack again, projects it, swaps the registry and runtime and redraws the open schematic at the same zoom. Settings → Advanced exports the pack (`core/pack-export.mjs`, K-R98) as a file or as the text of a worldbook entry.
 
 **Schema-2 packs (S9-1)**: `viewer.html?pack=<id>` for a schema-2 pack runs `resolveBlocks` + `validate2` + `withDefaults` (`app/current-pack.mjs`), projects the pack with `projectV2` (`core/pack-v2-view.mjs`) into the registry shape and seeds the JSON cache with the virtual point files (`v2/<pack id>/<map id>.json`); `boot.mjs` skips the v1 data files and builds the runtime with `buildRuntimeV2`. A pack with no `views` block gets implicit schematic views (K-R96); a schematic map is a generated picture of lines and dots opened as a single-image source (K-R97). Schema-1 packs take the old path unchanged; 3D views of a schema-2 pack are listed in the self-check as not shown yet.
 

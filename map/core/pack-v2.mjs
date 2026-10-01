@@ -123,9 +123,9 @@ function trustFilter(pack, x) {   // K-R63, K-R65, K-R66 for a foreign pack
   }
 }
 
-/** Manifest (blocks inline) -> { pack, problems }; pack is null when the pack is refused. opts: trusted (default false),
+/** Manifest (blocks inline) -> { pack, problems }; pack is null when the pack is refused. opts: trusted (default false), maxBytes (document limit, default 1 MB),
  *  shipped (ids of shipped packs), reserved (storage prefixes), reservedNames (legacy names). */
-export function validate2(manifest, { trusted = false, shipped = [], reserved = [], reservedNames = [] } = {}) {
+export function validate2(manifest, { trusted = false, shipped = [], reserved = [], reservedNames = [], maxBytes = LIMITS.bytes } = {}) {
   const x = { problems: [], repaired: new Set() };
   x.ref = (v, p) => {
     const r = repairId(v);
@@ -137,7 +137,7 @@ export function validate2(manifest, { trusted = false, shipped = [], reserved = 
   if (!isObj(manifest)) return refuse('type', 'object');
   let m;
   try {
-    if (!trusted && new TextEncoder().encode(JSON.stringify(manifest)).length > LIMITS.bytes) return refuse('limit-size');
+    if (!trusted && new TextEncoder().encode(JSON.stringify(manifest)).length > maxBytes) return refuse('limit-size');   // maxBytes: 1 MB unless the caller reads a URL / file pack or exports (Z-12)
     m = trusted ? clone(manifest) : limit(manifest, 0, 'manifest', x);
   } catch (e) { return refuse(e.message === 'depth' ? 'limit-depth' : 'invalid'); }
   const head = S.obj(S.MANIFEST, { req: ['id', 'schema', 'title'], ext: 'b' })(Object.fromEntries(Object.entries(m).filter(([k]) => !BLOCKS.includes(k))), 'manifest', x);

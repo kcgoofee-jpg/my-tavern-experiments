@@ -652,5 +652,14 @@
   "pack.why_index": "no such pack",
   "pack.llm": "Use this pack's text for the model",
   "pack.llm_hint": "Off by default. Off, the kernel's neutral text is used and no worldbook entry is written.",
-  "pack.llm_changed": "The pack's text changed since you confirmed it: confirm again before it is used"
+  "pack.llm_changed": "The pack's text changed since you confirmed it: confirm again before it is used",
+  "pack.export": "Export as pack",
+  "pack.export_copy": "Copy as worldbook entry",
+  "pack.export_done": "Saved {name} ({kb} KB). {fits}",
+  "pack.export_fits": "It fits in a card.",
+  "pack.export_nofit": "It is over 1 MB: too large to live in a card.",
+  "pack.export_fail": "Not exported: {why}",
+  "pack.copy_done": "Copied. Paste it into a new worldbook entry titled spatial_os:pack and keep that entry disabled.",
+  "pack.copy_fail": "Could not copy; use Export as pack instead.",
+  "pack.export_note": "The file holds the places the map found and grew, your own names for them and the card credits; no chat state."
 }

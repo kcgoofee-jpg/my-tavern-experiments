@@ -336,6 +336,8 @@
 | **place / current place** | 地图上一个有名字的位置；「当前地点」是聊天里说玩家所在的地方。代码里叫 `here`。 | `here-v2.mjs`、`hereRes`、`eden-map:here`。 | 标记（画出来的图钉）或节点。 |
 | **place card** | 点击标记时打开的面板。 | `app/markers.mjs` 的 `showCard`、`app/cardlinks.mjs`。 | 角色卡（酒馆里的对象）和「卡设定」数据。 |
 | **character card / card** | 故事所用的酒馆角色卡。地图从不生成或修改角色卡。 | brief §3 和 §7；设定包数据里的 `stat_data` 路径。 | 地点卡（上一条）。 |
+| **automatic pack** | 宿主为没人写过包的卡造出来的 schema-2 包：以卡名命名的根、从世界书标题里找到的地点、从变量形状里找到的变量路径和人物，以及从聊天里长出来的节点（K-R93–K-R95）。外来包、可丢弃的缓存、可导出（K-R98）。 | `core/card-read.mjs`、`core/grow.mjs`、`tavern/auto-pack.mjs`；包来源 `auto`；聊天变量键 `auto`。 | 随地图发布的包（`eden`、`town`、`minimal`）；第一个包。 |
+| **card source** | 宿主为包门卫和自动包从当前卡读出的朴素对象：名字、作者、标签、头像、开场白、世界书标题与关键词、变量树和 initvar 文本。条目正文不在其中（K-R94）。 | `tavern/card-source.mjs` 的 `readCardSource`；`core/card-read.mjs` 是它的纯函数。 | 角色卡本身，地图从不编辑它。 |
 | **map level** | 多层地图的一层，例如城市的各层；用层切换条和「上一级」到达。 | `app/layers.mjs`（将改名 `map-level-nav`）、`REG.groups`。 | Layer slot。 |
 | **layer slot / LayerRegistry** | 视口内 10 个固定渲染槽位之一（`base` … `interaction`），各有 z 值；图层向槽位注册。 | `core/layers.mjs`（将改名 `layer-registry`）、`app/layerhost.mjs`、`window.TCLayers`。 | Map level。 |
 | **declared layer（宣告图层）** | 由 `layers` 块或内核清单里的一行给出的图层（K-R79）：id、绘制积木（`type`）、槽位、来源、applies 规则、菜单行与图例行。画在某个图层槽位里。 | `core/layer-spec.mjs`、`core/layer-defaults.mjs`、`app/layer-host.mjs`（`declared`、`applyPackLayers`）。 | 图层槽位（它画在哪里）与 map level。 |

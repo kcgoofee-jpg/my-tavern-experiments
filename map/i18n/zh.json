@@ -652,5 +652,14 @@
   "pack.why_index": "没有这个包",
   "pack.llm": "使用这个包提供的模型文字",
   "pack.llm_hint": "默认关。关着时用内核的中性文字，不写入任何世界书条目。",
-  "pack.llm_changed": "包的文字自你确认后变过：需要重新确认才会使用"
+  "pack.llm_changed": "包的文字自你确认后变过：需要重新确认才会使用",
+  "pack.export": "导出为设定包",
+  "pack.export_copy": "复制为世界书条目",
+  "pack.export_done": "已保存 {name}（{kb} KB）。{fits}",
+  "pack.export_fits": "可以放进角色卡。",
+  "pack.export_nofit": "超过 1 MB：太大，放不进角色卡。",
+  "pack.export_fail": "没有导出：{why}",
+  "pack.copy_done": "已复制。粘贴到一个新的世界书条目，标题写 spatial_os:pack，并让这个条目保持停用。",
+  "pack.copy_fail": "复制失败；请改用「导出为设定包」。",
+  "pack.export_note": "文件里是地图找到并长出来的地点、你给它们起的叫法和角色卡署名；不含聊天状态。"
 }
