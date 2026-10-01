@@ -7,6 +7,7 @@
   "data": {
     "maps": "maps.json",
     "events": "events.json",
+    "overlay": "overlay.v2.json",
     "worldbook": "worldbook.json"
   },
   "theme": {

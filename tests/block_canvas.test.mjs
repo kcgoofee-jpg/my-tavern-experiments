@@ -30,7 +30,7 @@ const ROUTES = [
 ];
 const toScreenOf = (W, H) => (nx, ny) => ((nx * 0.37 + ny * 0.11) % 0.97 > 0.93 ? null : { x: nx * W * 1.1 - 20, y: ny * H * 1.1 - 20 });
 
-test('drawFlow gives the same recorded calls as the old traffic frame (20 seeded inputs)', () => {
+test('drawFlow gives the same recorded calls as the old traffic frame (20 seeded inputs)', t => {
   let calls = 0;
   for (let i = 0; i < 20; i++) {
     const r = mulberry(1000 + i), W = 600 + Math.floor(r() * 900), H = 400 + Math.floor(r() * 500);
@@ -39,11 +39,11 @@ test('drawFlow gives the same recorded calls as the old traffic frame (20 seeded
     trafficFrameV1(a.cx, input); drawFlow(b.cx, input);
     assert.deepEqual(b.log, a.log, `input ${i}`); calls += a.log.length;
   }
-  assert.ok(calls > 500, `a real frame was compared (${calls} calls)`);
+  assert.ok(calls > 500, `a real frame was compared (${calls} calls)`); t.diagnostic(`flow calls ${calls}/${calls}`);
   const none = recorder(); drawFlow(none.cx, { routes: [], t: 0, seed: 1, quality: 1, night: false, toScreen: () => null, W: 10, H: 10 }); assert.deepEqual(none.log, []);
 });
 
-test('drawParticles gives the same recorded calls as the old weather frame (20 seeded inputs)', () => {
+test('drawParticles gives the same recorded calls as the old weather frame (20 seeded inputs)', t => {
   let calls = 0;
   for (let i = 0; i < 20; i++) {
     const r = mulberry(5000 + i), W = 500 + Math.floor(r() * 1200), H = 300 + Math.floor(r() * 700);
@@ -52,7 +52,7 @@ test('drawParticles gives the same recorded calls as the old weather frame (20 s
     weatherFrameV1(a.cx, input); drawParticles(b.cx, { preset: input.id, t: input.t, seed: input.seed, quality: input.quality, W, H });
     assert.deepEqual(b.log, a.log, `input ${i} ${input.id}`); calls += a.log.length;
   }
-  assert.ok(calls > 1000, `a real frame was compared (${calls} calls)`);
+  assert.ok(calls > 1000, `a real frame was compared (${calls} calls)`); t.diagnostic(`particles calls ${calls}/${calls}`);
 });
 
 test('drawFlow with a kinds table: the pack colour and density are used; without `kinds` the lane table is unchanged', () => {

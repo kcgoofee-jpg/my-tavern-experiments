@@ -67,3 +67,17 @@ test('runtime of a schema-2 pack exposes the pack layers (S9-1 runtime)', () => 
 test('the shipped overlays and manifests declare no layer problems (first pack and town)', () => {
   assert.equal(readFileSync(ROOT + 'map/packs/eden/manifest.json', 'utf8').includes('"layers"'), false, 'the first pack declares none');
 });
+
+test('S8-2: the town overlay declares two layers (patrol, danger), no problems; the runtime and the merged list carry them', () => {
+  const ov = J('map/packs/town/overlay.v2.json');
+  assert.equal(J('map/packs/town/manifest.json').data.overlay, 'overlay.v2.json');
+  const r = applyOverlayLayers(undefined, ov);
+  assert.deepEqual(r.problems, []);
+  assert.deepEqual(r.layers.map(l => [l.id, l.type, l.slot]), [['patrol', 'flow', 'routes'], ['danger', 'area', 'routes']]);
+  const rt = makeRuntime({ ...TOWN, overlay: ov });
+  const merged = mergeLayers(KERNEL_LAYERS, rt.layers);
+  assert.deepEqual(merged.problems, []);
+  assert.deepEqual(merged.layers.filter(l => l.origin === 'pack').map(l => l.id), ['patrol', 'danger']);
+  const shipped = JSON.stringify(ov);
+  assert.ok(!/"mvu:|"ops"|"sound"/.test(shipped), 'only the sources and blocks of S8-2');
+});

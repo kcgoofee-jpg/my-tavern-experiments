@@ -68,6 +68,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `grow.mjs` | 从聊天里长节点（K-R26）：地点文字变成树下的 `g_` 节点；从零重算。纯函数。 |
 | `haze.mjs` | 空气透视滤镜：把当前纵深平面的霾浓度换成一条滤镜链。 |
 | `layer-defaults.mjs` | 内核自带图层的宣告（K-R79）：17 个视口图层的槽位、kind、order、菜单行与所用绘制积木，收在一份冻结清单里；`kernelDecl(id)`。纯函数。 |
+| `layer-geometry.mjs` | 宣告式图层的纯几何与样式（K-R80）：`line` 积木的航线路径（与旧循环的冻结副本对拍）、由视图数据到要素的转换、要素的解析样式、图例色块、流光性格表、首次可见规则。纯函数。 |
 | `layer-registry.mjs` | LayerRegistry 核心：10 个视口槽位、图层注册与排序、可见性、滤镜链、`patch` / `applicable`（K-R79、K-R82）、`describe()` 摘要。 |
 | `layer-spec.mjs` | 宣告式图层（K-R79、K-R81、K-R82）：来源解析、要素与图层的规整、设定包 `layers` 行与内核清单的合并、`applies` 求值、该块的 `validate2` 规格。纯函数。 |
 | `ledger.mjs` | 四域结算账本：按域（资产、NPC、事件、纵深）校验原子指令，未验证的一概丢弃。 |
@@ -125,6 +126,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | 模块 | 职责 |
 |---|---|
 | `about-build.mjs` | 「关于」页的当前构建行（构建号、提交号前七位、时间）。 |
+| `block-canvas.mjs` | 画布积木（K-R80）：`canvasLayer`（槽位画布、rAF、尺寸、可见性守卫）与车流层、天气层和宣告式图层共用的帧体 `drawFlow`、`drawParticles`、`drawTint`。 |
+| `block-overlay.mjs` | 叠加层积木（K-R80）：`point`、`label`、`line`、`area` 要素画成地图叠加物（每层一个 SVG，点与标签是 HTML 元素），注入样式与图例色块样式。 |
 | `boot.mjs` | 启动：并行取注册表、标记、派生数据、字典与设定包，建 OpenSeadragon，发 `ready`，处理启动失败。 |
 | `bus.mjs` | 查看器侧监听器总线：所有 `window` / `document` 监听都登记在这，卸载时摘干净。 |
 | `card-links.mjs` | 地点卡底部的链接（跨层通道、三维链接、图集入口）。 |
@@ -135,6 +138,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `coordinates.mjs` | 坐标换算：代码地图坐标（1600 × 1000）→ 底图归一化坐标（`toImg`）。 |
 | `current-pack.mjs` | 当前设定包，启动时解析一次（活绑定 `PACK`、`packData(键)`）。 |
 | `data-mapping-settings.mjs` | 设置「数据与映射」页：本机存储占用与当前数据来源（只读）。 |
+| `declared-layers.mjs` | 宣告式图层宿主（K-R79–K-R84）：把设定包的新图层登记到图层注册表、问 `registry.applicable`、用积木绘制、可见性存在 `edenMapLayers`、给图例供条目。 |
+| `declared-sources.mjs` | 宣告式图层的来源（K-R81）：inline、`file:`、`view:routes` / `view:markers`、事态、人物、物品、日程，按当前视图取要素；`mvu:` 与 `ops` 到 S8-3 之前不出要素。 |
 | `depth-haze.mjs` | 为当前纵深平面闭合「纵深 → 霾 → `depth-haze` 槽位 / 迷雾画布」这一环。 |
 | `dom-helpers.mjs` | DOM 小工具：`$`、`esc`、`iconSvg`、`afterLoadIdle`。 |
 | `drawer-glue.mjs` | 唯一抽屉 / 右栏：层切换器落点、抽屉可见性、图例页、「地点」页空态、点地点卡时的开合。 |
@@ -378,7 +383,10 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 `maps.json` 的 `clouds` / `tint` 标记变成视图字段 `x-clouds` / `x-tint`（漂移云、随时段的夜色），`tier_label` 给选择器里的层命名；
 事态大类自带色觉安全色（`x-cvd`）；世界图地点带 `here_words`，国家带 `label_dy`，还有 `overseas` 大牌。清单带 `worldbook.prefix`
 （附加世界书和条目叫 `<前缀>·…`，缺省 = 包标题）、`credits`（设置「关于」）以及宿主和查看器以前写死的数据路径（`roster`、`maps`、
-`galleries`、`worldbook_addon`、`gallery`、`routine`）；缺一个键，对应功能静默关掉。引擎里不出现任何视图、组、地点或书的名字。
+`galleries`、`worldbook_addon`、`gallery`、`routine`）；缺一个键，对应功能静默关掉。引擎里不出现任何视图、组、地点或书的名字。`layers` 块（S8-1、S8-2）列出包自己的图层：
+`app/declared-layers.mjs` 把每一层登记到图层注册表（菜单行 `lyr-<id>`、排在内核行之后、可见性存 `edenMapLayers`），用
+`app/block-overlay.mjs`（point、label、line、area）或 `app/block-canvas.mjs`（flow、particles、tint）绘制；图例页列出可见且适用的图层的条目。
+引擎里不出现任何包的图层名。
 
 **包门卫（S9-2）**：入口最先 import `tavern/pack-gate.mjs`；它的顶层 `await` 为当前卡解析出包（用户选择或烘入的包 → 卡内嵌的包 → `packs/index.json` 里的最佳匹配 → 自动包），在入口读取之前设好 `window.__tcPack`；旧默认包不设它，所以第一个包的启动、文字与写入都不变。换卡时门卫重新解析，包 id 或来源变了就停掉实例（`__edenMapCleanup`）、清掉模块里留着的变量声明与聊天变量根键，再用 `?k=<卡键>&r=<n>` 重新 import 入口。`eden-map:pack-pick`（设置 → 高级）经 `onTh` 到达；外来包模型文字的生效开关是 `eden-map:th` 的 `prefs.packLlm`。
 

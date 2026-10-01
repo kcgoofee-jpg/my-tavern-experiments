@@ -87,6 +87,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `grow.mjs` | Growing nodes from chat (K-R26): place texts become `g_` nodes under the tree; recompute from nothing. Pure. |
 | `haze.mjs` | Aerial-perspective filter: turns the haze density of the current depth plane into a filter chain. |
 | `layer-defaults.mjs` | The kernel's own layers as declarations (K-R79): slot, kind, order, menu row and drawing block of the 17 viewport layers in one frozen list; `kernelDecl(id)`. Pure. |
+| `layer-geometry.mjs` | Declared layers, pure geometry and style (K-R80): the route paths of the `line` block (compared with a frozen copy of the old loop), converters from the view data to features, the resolved style of a feature, legend swatches, flow tables, the first-visibility rule. Pure. |
 | `layer-registry.mjs` | LayerRegistry core: the 10 viewport slots, layer registration and ordering, visibility, filter chains, `patch` / `applicable` (K-R79, K-R82), `describe()` summary. |
 | `layer-spec.mjs` | Declared layers (K-R79, K-R81, K-R82): source parsing, feature and layer normalisation, merge of a pack's `layers` rows with the kernel list, the `applies` evaluator, the `validate2` spec of the block. Pure. |
 | `ledger.mjs` | Four-domain settlement ledger: validates atomic instructions per domain (assets, NPC, events, depth) and drops anything unverified. |
@@ -145,6 +146,8 @@ mutable state is written only by its declaring module through `set*()`.
 | Module | Role |
 |---|---|
 | `about-build.mjs` | About page current-build line (head number, short sha, time). |
+| `block-canvas.mjs` | Canvas building blocks (K-R80): `canvasLayer` (slot canvas, rAF, resize, visibility guard) and the frame bodies `drawFlow`, `drawParticles`, `drawTint` shared by the traffic and weather layers and by declared layers. |
+| `block-overlay.mjs` | Overlay building blocks (K-R80): `point`, `label`, `line` and `area` features as map overlays (one SVG per layer, HTML elements for points and labels), the injected style, legend swatch style. |
 | `boot.mjs` | Startup: fetches registry, markers, derived data, dictionary and pack in parallel, builds OpenSeadragon, posts `ready`, failure exits. |
 | `bus.mjs` | Viewer-side listener bus: every `window` / `document` listener is registered here and removed on unload. |
 | `card-links.mjs` | Links at the bottom of a place card (cross-layer channel, 3D link, gallery entry). |
@@ -155,6 +158,8 @@ mutable state is written only by its declaring module through `set*()`.
 | `coordinates.mjs` | Coordinate conversion: code map coordinates (1600 × 1000) to normalized base-map coordinates (`toImg`). |
 | `current-pack.mjs` | The current pack, resolved once at startup (live binding `PACK`, `packData(key)`). |
 | `data-mapping-settings.mjs` | Settings "data and mapping" page: local storage usage and current data sources (read only). |
+| `declared-layers.mjs` | The declared-layer host (K-R79..K-R84): registers a pack's new layers on the LayerRegistry, asks `registry.applicable`, draws through the blocks, keeps the visibility in `edenMapLayers`, feeds the legend rows. |
+| `declared-sources.mjs` | Sources of declared layers (K-R81): inline, `file:`, `view:routes` / `view:markers`, events, people, items, routine, for the open view; `mvu:` and `ops` give no features until S8-3. |
 | `depth-haze.mjs` | Closes the depth → haze → `depth-haze` slot / fog canvas loop for the current depth plane. |
 | `dom-helpers.mjs` | DOM helpers: `$`, `esc`, `iconSvg`, `afterLoadIdle`. |
 | `drawer-glue.mjs` | The single drawer / right rail: where the layer switcher sits, drawer visibility, legend page, empty place page, opening on a place card. |
@@ -434,7 +439,11 @@ tint) and `tier_label` names a tier in the picker; event groups carry their colo
 markers carry `here_words`, the realm `label_dy` and the `overseas` card. The manifest carries `worldbook.prefix` (the
 add-on book and its entries are named `<prefix>·…`, default the pack title), `credits` (Settings → about) and the
 data paths the host and the viewer used to hard-code (`roster`, `maps`, `galleries`, `worldbook_addon`, `gallery`,
-`routine`); a missing key quietly switches the feature off. The engine names no view, group, place or book.
+`routine`); a missing key quietly switches the feature off. The engine names no view, group, place or book. The `layers`
+block (S8-1, S8-2) lists the pack's own layers: `app/declared-layers.mjs` registers each one on the LayerRegistry (menu
+row `lyr-<id>`, order after the kernel rows, visibility in `edenMapLayers`) and draws it with `app/block-overlay.mjs`
+(point, label, line, area) or `app/block-canvas.mjs` (flow, particles, tint); the legend tab lists the rows of the visible,
+applicable layers. The engine names no layer of any pack.
 
 **The pack gate (S9-2)**: the entry imports `tavern/pack-gate.mjs` first; its top-level `await` resolves the pack of the current card (user choice or baked pack → pack embedded in the card → best match in `packs/index.json` → automatic) and sets `window.__tcPack` before the entry reads it; the legacy-default pack leaves it unset, so the first pack's start, texts and writes are unchanged. On a card switch the gate resolves again and, when the pack id or source changed, stops the instance (`__edenMapCleanup`), clears the profile and chat-variable root that modules keep, and imports the entry again under `?k=<card key>&r=<n>`. `eden-map:pack-pick` (Settings → Advanced) reaches it through `onTh`; the go-live switch of a foreign pack's model text is `eden-map:th` `prefs.packLlm`. Module-level state that survives a restart is listed in `docs/zero-config.md` §14.
 

@@ -67,9 +67,9 @@ test('the current location: the overlay changes no text that placed before, exce
 });
 
 test('the first pack declares its overlay in the manifest (data.overlay, relative to map/); a pack that declares none is fetched for none', async () => {
-  const man = edenInputs().manifest, town = JSON.parse((await import('node:fs')).readFileSync(new URL('../map/packs/town/manifest.json', import.meta.url), 'utf8'));
+  const man = edenInputs().manifest, other = JSON.parse((await import('node:fs')).readFileSync(new URL('../map/packs/minimal/manifest.json', import.meta.url), 'utf8'));   // S8-2: the town now declares its layers overlay (acceptance data), so the pack that declares none is the minimal one
   assert.equal(man.data.overlay, 'packs/eden/overlay.v2.json');
-  assert.equal(town.data.overlay, undefined);
+  assert.equal(other.data?.overlay, undefined);
 });
 
 // ---- K-R68: the overlay may carry an events block and llm.templates ----
