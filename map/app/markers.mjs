@@ -64,6 +64,7 @@ export function showCard(el, name, src, extra, sub, cover, compose = !!el) {
   if (typeof plugins.SecurityView !== 'undefined') plugins.SecurityView.decorate(el, name);   // v0.9.6 安保叠加层开着时：结界 / 监控 / 门禁
   if (typeof plugins.GalleryView !== 'undefined') plugins.GalleryView.decorate(el, name);   // K-R106: the chat's tagged scenes at this place
   if (typeof plugins.RoutePlanView !== 'undefined') plugins.RoutePlanView.decorate(el, name);   // K-R111: the route link (pack with a transit network)
+  if (typeof plugins.EstateShell !== 'undefined') plugins.EstateShell.decorate?.(el, name);   // S7-3: a building with a 3D page: its rooms by floor
   if (typeof plugins.WorldbookPeekView !== 'undefined') plugins.WorldbookPeekView.decorate(el, name);   // W8 世界书档案胶囊：附加书里这个地点的条目摘要（只读）
   if (typeof plugins.ComposeView !== 'undefined') plugins.ComposeView.attach(compose ? { go: el?.dataset?.name || name, ask: el?.dataset?.name || name } : null);   // v0.9.6 地图 → 聊天：地点卡；事件 / 人物卡由 events.js / chars.js 另挂
   declutter();

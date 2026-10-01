@@ -72,6 +72,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `graphics-budget.mjs` | 图形内存预算策略：按设备档位定字节预算，并判断上报的用量算不算吃紧。 |
 | `grow.mjs` | 从聊天里长节点（K-R26）：地点文字变成树下的 `g_` 节点；从零重算。纯函数。 |
 | `haze.mjs` | 空气透视滤镜：把当前纵深平面的霾浓度换成一条滤镜链。 |
+| `estate-people.mjs` | 3D 建筑里显示的人物（S7-3）：人物行 + 房间 + 节点解析 → `estate:people` 列表（头像过滤、至多 30 个、与二维人物页同一批人）。纯函数。 |
 | `kind-palette.mjs` | 3D 清单没有声明的房间类别所用的生成颜色（K-R131）：八个对色觉友好的颜色，按类别 id 的稳定哈希挑选。纯函数。 |
 | `label-tiers.mjs` | 地图标签分档（S7-2，`docs/ui-refactor.md` 2.6）：`labelCaps(narrow)` 与 `tierOf(n, caps)`：第 n 个放得下的标签，前 12 个（手机 6 个）是 L1，之后到 30 个（15 个）是 L2，再多的隐藏。 |
 | `layer-defaults.mjs` | 内核自带图层的宣告（K-R79）：17 个视口图层的槽位、kind、order、菜单行与所用绘制积木，收在一份冻结清单里；`kernelDecl(id)`。纯函数。 |
@@ -208,6 +209,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `stash-markers.mjs` | 地图上由世界藏物表画出的发光拾取物；点击把拾取意图发给宿主。 |
 | `state.mjs` | 查看器核心状态：当前地图、注册表、OSD 实例、焦点请求。 |
 | `status-dot.mjs` | 状态点：加载 / 档位状态的圆点与读屏标签。 |
+| `estate-shell.mjs` | 打开 3D 建筑时，一体外壳在查看器这一半（S7-3）：视图分段与菜单、层条里的楼层、工具栏 / 键盘 / Esc 转给 3D 页、页面所报内容的卡片、发给页面的人物（`estate:*`）。 |
+| `estate-cards.mjs` | 3D 建筑在共用地点卡里的各种卡：房间（类别块、面积、用途、出入、图片、自定义块）、区域或载具、建筑的「关于」与按楼层的房间列表。DOM 构建，只用 `textContent`。 |
 | `subpage3d-host.mjs` | 庄园 / 三维子页宿主：带 `<base>` 的 blob iframe、失败钩子、子页消息、通用三维查看器入口。 |
 | `tabs.mjs` | 抽屉的页签注册表：归属模块提供页签内容，一次刷新决定按钮、抽屉、标签和当前打开的页签；页签角标背后的按聊天「看过」集合（K-R72）。 |
 | `tavernhelper-settings.mjs` | 设置里的酒馆助手功能：世界书附加条目同步、状态注入、类宏、注入深度。 |

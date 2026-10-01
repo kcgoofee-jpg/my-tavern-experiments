@@ -91,6 +91,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `graphics-budget.mjs` | Graphics memory budget policy: decides the byte budget per device class and whether reported usage means pressure. |
 | `grow.mjs` | Growing nodes from chat (K-R26): place texts become `g_` nodes under the tree; recompute from nothing. Pure. |
 | `haze.mjs` | Aerial-perspective filter: turns the haze density of the current depth plane into a filter chain. |
+| `estate-people.mjs` | The people a 3D building shows (S7-3): rows + rooms + node resolution -> the `estate:people` list (avatar filter, at most 30, same people as the 2D tab). Pure. |
 | `kind-palette.mjs` | The generated colours of room kinds a 3D manifest does not declare (K-R131): eight colour-vision-safe colours picked by a stable hash of the kind id. Pure. |
 | `label-tiers.mjs` | Map label tiers (S7-2, `docs/ui-refactor.md` 2.6): `labelCaps(narrow)` and `tierOf(n, caps)`: the n-th placed label is L1 up to 12 (6 on phones), L2 up to 30 (15), then hidden. |
 | `layer-defaults.mjs` | The kernel's own layers as declarations (K-R79): slot, kind, order, menu row and drawing block of the 17 viewport layers in one frozen list; `kernelDecl(id)`. Pure. |
@@ -228,6 +229,8 @@ mutable state is written only by its declaring module through `set*()`.
 | `stash-markers.mjs` | Glowing pickup items on the map from the world stash; a click sends the pickup intent to the host. |
 | `state.mjs` | Core viewer state: current map, registry, OSD instance, focus request. |
 | `status-dot.mjs` | Status dot: load / tier state as a dot with a screen-reader label. |
+| `estate-shell.mjs` | The viewer's half of the one shell while a 3D building is open (S7-3): view segment and menu, the building's floors in the level strip, toolbar / keys / Esc to the page, cards for what the page reports, the people sent to the page (`estate:*`). |
+| `estate-cards.mjs` | Cards of a 3D building in the shared place card: a room (kind chip, area, use, access, pictures, custom block), a zone or vehicle, the building's about section and its rooms by floor. DOM builders, `textContent` only. |
 | `subpage3d-host.mjs` | Estate / 3D sub-page host: blob iframe with `<base>`, failure hook, sub-page messages, generic 3D viewer entry. |
 | `tabs.mjs` | The drawer's tab registry: owner modules provide a tab's content, one refresh decides the buttons, the drawer, the labels and the open tab; the per-chat "seen" sets behind the tab badges (K-R72). |
 | `tavernhelper-settings.mjs` | Settings for TavernHelper features: worldbook add-on sync, state injection, macros, injection depth. |

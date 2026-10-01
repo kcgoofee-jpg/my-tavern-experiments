@@ -20,6 +20,7 @@ import { chatId } from './extension-api.mjs';
 import { setFpsMeter } from './fps.mjs';
 import { standIn, zoneChildren } from './nodes-runtime.mjs';
 import { visibilityGuard } from './visibility.mjs';
+import * as EstateShell from './estate-shell.mjs';   // S7-3: the viewer's half of the one shell (view segment, floors, cards, people)
 import { trimTileCache } from './dzi-worker.mjs';   // Part 3 §5：吃紧时收紧 OSD 解码瓦片缓存
 let lastTileCache = 1e9;   // 只减不增：三维页报的目标张数单调收紧，避免来回抖
 // ---------------- 主场景剖面（kind=estate） ----------------
@@ -33,6 +34,8 @@ let lastTileCache = 1e9;   // 只减不增：三维页报的目标张数单调�
 export let subpageSession = null;   // { id, frame, ready }
 // 休眠时把画好的主场景留着（隐藏 + 暂停渲染，GPU 资源不放）：再打开面板直接接着用，不再「加载 主场景…」。
 // 宿主 SLEEP_MS（3 分钟）后整页卸载时才真正释放；省流 / 低内存（lean()）照旧休眠即拆。
+/** the message to the open 3D page (the shell's only way down) */
+const send3d = m => { try { subpageSession?.frame?.contentWindow?.postMessage(m, SUB_ORIGIN); } catch (e) {} };
 export let estParked = null;
 export function dropParked() { if (estParked) { estParked.frame.remove(); estParked = null; } }
 // ---------------- Part 3 §3：三维上下文的排他租约 ----------------
@@ -126,6 +129,7 @@ export async function openEstate(id, m, hadPrev) {
   document.body.classList.add('estate'); document.documentElement.classList.add('view3d'); visibilityGuard.set('covered', true); renderNav();
   if (estParked?.id === id) {   // 从休眠里接回来：取消隐藏、恢复渲染，走一遍 ready 之后的同步
     subpageSession = estParked; estParked = null; const f = subpageSession.frame; f.style.visibility = ''; live3d = 1;
+    EstateShell.attach(send3d); if (subpageSession.readyMsg) EstateShell.ready(subpageSession.readyMsg);
     $('#loading').classList.add('done'); estateActs('');
     f.contentWindow?.postMessage({ type: 'estate:resume' }, SUB_ORIGIN);
     applyCredit(m);   // 署名（ⓘ）：没有署名词条时收起来，不留空框（任务三）
@@ -146,19 +150,19 @@ export async function openEstate(id, m, hadPrev) {
   if (currentMapId !== id) return;
   if (!html) { estateActs('fail'); loadingProgress().fail(uiTextOr('estate.fail', '三维页面加载失败')); return; }
   const old = subpageSession?.frame; if (old && old.parentNode) old.remove(); weak3d = old || null;   // 旧帧留个引用：新页面一就绪就摘（不等淡出）
-  const f = document.createElement('iframe'); f.id = 'estate'; f.title = localName(m, 'title');
+  const f = document.createElement('iframe'); f.id = 'estate'; f.title = localName(m, 'title'); if (!m.viewer3d) f.tabIndex = -1;   // S7-3 U-25: the page is a canvas in the viewer's shell; the keyboard goes through the viewer
   const vend = new URL('vendor/', url).href;
   // 用 blob: 地址而不是 srcdoc：Tauri Tavern 的 WKWebView 里第三层 srcdoc iframe（宿主 → 查看器 srcdoc → 主场景）永远不加载（TT 实测 P0）。
   // blob 由查看器自己的窗口创建（同源），<base> 照旧，相对资源按线路解析；加载完就回收。
   const packStr = PACK?.strings, hasStr = packStr && Object.keys(packStr).length;
-  const doc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">${EST_HOOK}<script>window.__packId=${JSON.stringify(PACK?.id || 'eden')}<\/script>${hasStr ? `<script>window.__packStrings=${JSON.stringify(packStr).replace(/</g, '\\u003c')}<\/script>` : ''}${m.viewer3d ? `<script>window.__modelId=${JSON.stringify(String(m.viewer3d))}<\/script>` : ''}`)
+  const doc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">${EST_HOOK}<script>window.__packId=${JSON.stringify(PACK?.id || 'eden')}<\/script>${hasStr ? `<script>window.__packStrings=${JSON.stringify(packStr).replace(/</g, '\\u003c')}<\/script>` : ''}${m.viewer3d ? `<script>window.__modelId=${JSON.stringify(String(m.viewer3d))}<\/script>` : `<script>window.__shell='host'${m.scene3d ? `;window.__sceneManifest=${JSON.stringify(new URL(m.scene3d, document.baseURI).href)}` : ''}<\/script>`}`)
     .replace(/(["'])https:\/\/cdn\.(?:jsdelivr\.net|jsdmirror\.com)\/npm\/three@0\.160\.0\/build\/three\.module(?:\.min)?\.js\1/g, `$1${vend}three.module.min.js$1`)
     .replace(new RegExp(THREE_CDN.source + 'examples\\/jsm\\/', 'g'), vend + 'jsm/');
   const blob = URL.createObjectURL(new Blob([doc], { type: 'text/html' })); f.src = blob;
   f.addEventListener('load', () => { setTimeout(() => URL.revokeObjectURL(blob), 0); if (subpageSession?.frame === f) { estateLook(); startTileTo3d(f); } });   // 首帧前就带上语言与主题，并开始递底图
   $('#stage').appendChild(f);
   subpageSession = { id, frame: f, ready: false };
-  live3d = 1;
+  live3d = 1; if (!m.viewer3d) EstateShell.attach(send3d);
   // 12 秒还没画出第一帧：给出路（重试 / 看平面图），主场景继续在后台加载，画好了照常切过去
   setTimeout(() => { if (subpageSession?.frame === f && f.isConnected && !subpageSession.ready && !subpageSession.failed) estateActs('slow'); }, 12000);
 }
@@ -168,8 +172,8 @@ function onEstateFail(reason) {
   if (reason === 'timeout') return estateActs('slow');   // 只是慢（主场景页自己的超时），不说成「连不上三维库」（E5 r2 弱网 W4）
   subpageSession.failed = true; setEstFail(true); estateActs('fail');
 }
-function onEstateReady() {
-  const f = subpageSession.frame; subpageSession.ready = true; if (estFail) setEstFail(false);
+function onEstateReady(d = {}) {
+  const f = subpageSession.frame; subpageSession.ready = true; if (EstateShell.active()) { subpageSession.readyMsg = d; EstateShell.ready(d); } if (estFail) setEstFail(false);
   if (weak3d && weak3d !== f) { try { weak3d.remove(); } catch (e) {} weak3d = null; }   // 上一份租约在这里收尾
   stopTileTo3d(true);   // 三维页已经接管画面：不再上传底图快照
   f.classList.add('on'); estateActs(''); loadingProgress().done(); $('#loading').classList.add('done'); focusAfterGo();
@@ -183,7 +187,7 @@ export function leaveEstate() {
   document.body.classList.remove('estate'); document.documentElement.classList.remove('view3d'); visibilityGuard.set('covered', false); estateActs('');
   try { setFpsMeter(window.LocalStore?.get('edenMapFps') === '1'); } catch (e) {}   // 三维子页关掉了，外层顶栏那份 FPS 读数回来（配 estateLook 的 setFpsMeter(false)）
   if (!subpageSession) return null;
-  stopTileTo3d(false);
+  stopTileTo3d(false); EstateShell.detach();
   const f = subpageSession.frame, ready = subpageSession.ready; subpageSession = null; live3d = 0;
   if (weak3d === f) weak3d = null;
   if (!ready) { f.remove(); return null; }
@@ -197,7 +201,7 @@ export const narrowNow = () => innerWidth <= 640;
 // 主场景页的语言与主题跟着查看器（主场景页在 srcdoc 里读不到 URL 参数，所以载入后与切换时发消息）
 export function estateLook() {
   const w = subpageSession?.frame.contentWindow; if (!w) return;
-  w.postMessage({ type: 'estate:lang', lang: LANG }, SUB_ORIGIN);
+  w.postMessage({ type: 'estate:lang', lang: LANG }, SUB_ORIGIN); EstateShell.language();
   w.postMessage({ type: 'estate:theme', theme: document.documentElement.classList.contains('light') ? 'light' : 'dark' }, SUB_ORIGIN);
   w.postMessage({ type: 'estate:quality', q: q3Pref() }, SUB_ORIGIN);   // 改画质不用重载
   w.postMessage({ type: 'estate:cvd', mode: TCCvd.mode() }, SUB_ORIGIN);   // 色觉模式（E7）：主场景 / 三维页换配色，不重载
@@ -246,7 +250,9 @@ export function estateRoom() { if (!subpageSession?.ready) return; const v = ($(
 window.Lease3dApi = { live: () => live3d, release: release3d, snapping: () => snapping, stopSnap: stopTileTo3d, SNAP_MS };   // Part 3 §3：三维租约自检（tests / 浏览器探针）
 window.addEventListener('message', e => {
   if (!subpageSession || e.source !== subpageSession.frame.contentWindow || (protocol && !protocol.accept(e.data, '（子页 → 查看器）'))) return;
-  if (e.data?.type === 'estate:ready') onEstateReady();
+  if (e.data?.type === 'estate:ready') onEstateReady(e.data);
+  if (/^estate:(select|person|view|floor)$/.test(e.data?.type) && EstateShell.active()) EstateShell.fromPage(e.data);   // S7-3: the page reports what was picked / changed; the viewer draws the cards
+  if (e.data?.type === 'estate:esc') onEsc();
   if (e.data?.type === 'estate:go' && typeof e.data.node === 'string' && Object.values(zoneChildren(subpageSession.id)).flat().includes(e.data.node)) go(e.data.node);   // 只认当前三维页区域下的子地图
   if (e.data?.type === 'estate:fail') onEstateFail(e.data.reason);
   if (e.data?.type === 'estate:progress' && !subpageSession.ready) loadingProgress().set(e.data.loaded, e.data.total, 'bytes');   // fix3：glb 字节进度

@@ -7,7 +7,7 @@ import { linkHtml, linksHtml } from '../map/app/card-links.mjs';
 const REG = { maps: { tc_low: { title: '天城下层' }, lm_x: { title: '某地标', kind: 'estate', viewer3d: 'x' }, plan: { title: '规划中', status: 'planned' } } };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const nm = (o, k = 'title') => o?.[k] || '';
-const t = (k, v = {}) => ({ goto: '前往{title}', view3d: '查看三维模型' }[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
+const t = (k, v = {}) => ({ goto: '前往{title}', 'v3.enter': '3D 查看' }[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
 const ctx = { REG, nm, t, esc };
 
 test('只有 link：一个通道链接（和以前一样）', () => {
@@ -19,7 +19,7 @@ test('link + link3d：两个链接，通道在前、三维在后', () => {
   const h = linksHtml({ link: { map: 'tc_low', marker: 'w7' }, link3d: { map: 'lm_x' } }, ctx);
   assert.equal((h.match(/<a /g) || []).length, 2);
   assert.ok(h.indexOf('data-go="tc_low"') < h.indexOf('data-go="lm_x"'));
-  assert.match(h, /data-go="lm_x" data-focus="" data-link3d="1"[^>]*>查看三维模型</);
+  assert.match(h, /data-go="lm_x" data-focus="" data-link3d="1"[^>]*>3D 查看</);
 });
 test('只有 link3d；自定义文案去掉尾箭头；转义', () => {
   assert.match(linksHtml({ link3d: { map: 'lm_x', label: '看模型 →' } }, ctx), />看模型</);

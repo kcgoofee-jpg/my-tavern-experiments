@@ -21,12 +21,15 @@ import { normSchedule, placesAt } from '../core/routine.mjs';
 import { normClock } from '../core/clock.mjs';
 import { createCycle as createDayNight, apply as applyDayNight, applyGrade } from '../three/daynight.mjs';   // Part 9-1：昼夜环境（光 + 烘焙调色）
 import { registerFX } from '../three/particles.mjs';                                                          // Part 9-2：fx 槽位粒子（雨雪 / 以太极光）
+import { createPresence } from './presence.js';   // S7-3：人物头像（聊天里落在房间里的人 + 日程里的人）
+import { createLabelGuard, separateTags } from './labels.js';   // S7-3：被楼体挡住的标注隐掉；X 光视图的楼层签不重叠
 import { LayerRegistry } from '../core/layer-registry.mjs';                                                           // P3-C：fx 槽位按注册表契约挂载
 
 const T0 = performance.now();
 const Q = new URLSearchParams(location.search);
 const IN_FRAME = window.parent !== window;
 const EMBED = Q.get('embed') === '1' || location.protocol === 'about:' || location.protocol === 'blob:';
+const SHELL = window.__shell === 'host';   // 壳模式（S7-3）：查看器的顶栏、楼层条、工具栏、抽屉与卡片就是这页的控件；本页只画画布、画布里的标注和人物头像
 let STATS = Q.get('stats') === '1';   // ?stats=1 或查看器「调试：显示帧率」设置（estate:fps 消息，实时开关）
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const CAM = { autoRotate: false, wheelZoom: false, rm: REDUCED, idle: false };   // I-06: camera settings from the viewer (estate:camera) plus the runtime idle flag; nothing here writes a key
@@ -34,26 +37,29 @@ const COARSE = matchMedia('(pointer: coarse)').matches;
 const LS = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 let LANG = (Q.get('lang') || LS('edenMapLang') || 'zh').startsWith('en') ? 'en' : 'zh';
 let THEME = Q.get('theme') === 'light' ? 'light' : 'dark';
-document.body.classList.toggle('embed', EMBED);
+document.body.classList.toggle('embed', EMBED); document.body.classList.toggle('shell', SHELL);
 document.documentElement.dataset.theme = THEME; document.documentElement.classList.toggle('light', THEME === 'light');
 const $ = (s) => document.querySelector(s);
 const app = $('#app');
 // ---------------- UI v2 外壳（ui/chrome3d.js，spec §4）：视图分段 外观 / 内透 / 剖切，剖切楼层是二级条；控制列 标注 + − ⟲；抽屉 房间 · 关于（默认收起）；色标只在剖切视图里（kindsEl）----------------
 document.getElementById('zoom')?.remove();
 const aboutEl = document.createElement('div'); aboutEl.id = 'about';
-const roomEl = document.createElement('div'); roomEl.id = 'roomPane'; roomEl.append(document.getElementById('card')); { const e = document.createElement('p'); e.id = 'cardEmpty'; roomEl.append(e); }
-const C3 = window.UI3D.create({ embed: EMBED, views: [{ id: 'ext', label: '外观' }, { id: 'xray', label: '内透' }, { id: 'sect', label: '剖切' }], view: 'ext', sub: document.getElementById('floors'),
+const roomEl = document.createElement('div'); roomEl.id = 'roomPane'; if (!SHELL) roomEl.append(document.getElementById('card')); { const e = document.createElement('p'); e.id = 'cardEmpty'; roomEl.append(e); }
+/** 壳模式的外壳替身：没有任何 DOM；查看器经 estate:inset 告诉本页它的右栏 / 抽屉盖住了多少 */
+const shellChrome = () => { const ins = { right: 0, bottom: 0 }, subs = new Set(), no = () => {}; return { root: document.body, insets: () => ({ ...ins }), onInsets: (f) => subs.add(f), setInsets: (m) => { Object.assign(ins, m); subs.forEach((f) => f()); },
+  sheet: { tab: '', open: false, state: 'peek', mode: 'sheet', setTab: no, set: no, label: no, down: () => false }, setView: no, setViews: no, showSub: no, setText: no, setTitle: no, setAuto: no, dragStart: no, dragEnd: no }; };
+const C3 = SHELL ? shellChrome() : window.UI3D.create({ embed: EMBED, views: [{ id: 'ext', label: '外观' }, { id: 'xray', label: '内透' }, { id: 'sect', label: '剖切' }], view: 'ext', sub: document.getElementById('floors'),
   onView: (v) => setMode(v === 'sect' ? (isFloor(mode) ? mode : lastFloor) : v, { fly: true, user: true }),
   controls: [{ id: 'lblBtn', icon: 'labels', pressed: true }, { id: 'zin', icon: 'in' }, { id: 'zout', icon: 'out' }, { id: 'zreset', icon: 'reset' }],
   tabs: [{ id: 'room', btnClass: 'roomTab', panel: roomEl }, { id: 'about', btnClass: 'aboutTab', panel: aboutEl }],
   onEsc: () => { if (IN_FRAME) post({ type: 'estate:key', key: 'Escape' }); else if (pinned) unpin(); } });
-C3.setAuto(LS('edenMap3dAuto') === '1');
-let lastFloor = 2;
+C3.setAuto(LS('edenMap3dAuto') === '1');   // 独立打开时的抽屉自动收起（高级设置，默认关）
+let lastFloor = 0;   // 最近一次剖切的楼层（下标），FLOORS 读出后取第一层地上楼
 const kindsEl = document.createElement('div'); kindsEl.id = 'kinds'; kindsEl.className = 'g1'; kindsEl.hidden = true; C3.root.append(kindsEl);   // 色标：只在剖切视图里，当前楼层有哪几类房间就几枚
 const url = (p) => new URL(p, document.baseURI).href;   // 查看器用 blob + <base> 载入本页：相对地址按 <base> 解析
 const kick = (phase) => { try { window.__estateKick && window.__estateKick(phase); } catch (e) { } };
 const clamp = THREE.MathUtils.clamp;
-let needs = true;
+let needs = true, rafId = 0, running = false, labelWait = 0, ctlLive = false, dragging = false, zoomedNow = null;   // 按需渲染的状态（见 wake / loop）
 
 /* ---------------- 档位：低档 = 省流 / 慢网 / 内存 ≤ 4 GB（地图「省流」档 edenMapTierV2 = save 也算）；新款手机（iPhone 不报内存、安卓 ≥ 6 GB）走标准档 ---------------- */
 const qTier = Q.get('tier');
@@ -90,6 +96,8 @@ const [CARD, ZDATA, EXTRAS] = await Promise.all([getJSON(M3D.data.rooms, { floor
 const F1Y = MAN.f1_z ?? 30;                                  // F1 地坪的世界标高（layout z）
 const FLOORS = (CARD.floors || []).map((f) => ({ ...f, y: F1Y + f.z }));   // bottom to top
 const FI = Object.fromEntries(FLOORS.map((f, i) => [f.id, i]));
+const GROUND = Math.max(0, FLOORS.findIndex((f) => f.z >= 0));   // 第一层地上楼的下标：内透视图显示它和它以上
+lastFloor = GROUND;
 const CUT = 1.5;                                             // 剖切高度（楼面以上）
 const V = (x, y, z) => new THREE.Vector3(x, z, -y);          // layout (x 东, y 北, z 上) → three
 // 房间的英文叫法（搜索用）、可点的子区域、室外载具：清单的 data.extras（包数据）
@@ -142,8 +150,8 @@ const HC = V((HOUSE_BOX.x0 + HOUSE_BOX.x1) / 2, (HOUSE_BOX.y0 + HOUSE_BOX.y1) / 
 
 /* ---------------- UI 文案 ---------------- */
 const TXT = {
-  zh: { ext: '外观', xray: '内透', sect: '剖切', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', estate: '室外', alias: '别名', where: '位置', orig: '原名', loading: '加载中…', loadingP: '加载模型 {p}', houseLoading: '载入室内…', enter3d: '进入三维' },
-  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', size: 'Area', use: 'Notes', access: 'Access', estate: 'Grounds', alias: 'Aliases', where: 'Where', orig: 'Original name', loading: 'Loading…', loadingP: 'Loading model {p}', houseLoading: 'Loading interior…', enter3d: 'Enter 3D' },
+  zh: { ext: '外观', xray: '内透', sect: '剖切', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', canvas: '{b}，{f}，{n} 人', schedule: '按日程', more: '还有 {n} 人', person: '{name}，{room}', estate: '室外', alias: '别名', where: '位置', orig: '原名', loading: '加载中…', loadingP: '加载模型 {p}', houseLoading: '载入室内…', enter3d: '进入三维' },
+  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', size: 'Area', use: 'Notes', access: 'Access', canvas: '{b}, {f}, {n} people', schedule: 'By schedule', more: '{n} more', person: '{name}, {room}', estate: 'Grounds', alias: 'Aliases', where: 'Where', orig: 'Original name', loading: 'Loading…', loadingP: 'Loading model {p}', houseLoading: 'Loading interior…', enter3d: 'Enter 3D' },
 };
 const tx = (k, v = {}) => (TXT[LANG][k] || TXT.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
 const FL = () => Estate3D.floorList(MAN, LANG);   // K-R132: id + label (the id when the manifest gives none)
@@ -224,7 +232,7 @@ function paintSky() {
   if (!skyTex) { skyTex = new THREE.CanvasTexture(c); skyTex.colorSpace = THREE.SRGBColorSpace; } else skyTex.needsUpdate = true;
   scene.background = skyTex;
   if (cloudMat) { const L = THEME === 'light'; cloudMat.uniforms.cHi.value.set(L ? '#fdfbf6' : '#cfc8bd'); cloudMat.uniforms.cLo.value.set(L ? '#d3dbe4' : '#7a7d8a'); cloudMat.uniforms.cFar.value.set(hor); }
-  needs = true;
+  wake();
 }
 let SPH = null;   // 整岛包围球（near / far 取景用，addBackdrop 里量一次）
 function addBackdrop(root) {
@@ -298,14 +306,14 @@ siteG.traverse((o) => {
 GROUNDS.forEach(splitWalls);
 scene.add(siteG);
 addBackdrop(siteG);
-const SHELL = Object.values(MESH).filter((m) => m.name.startsWith('house_shell'));
+const HOUSE_SHELL = Object.values(MESH).filter((m) => m.name.startsWith('house_shell'));
 const SITE_MESHES = Object.values(MESH).filter((m) => !m.name.startsWith('house_shell'));
 
 /* ---------------- Part 9-1 / 9-2：昼夜调色与 fx 槽位粒子 ---------------- */
 // 外观这批是烘焙光照的 MeshBasic（不吃灯），昼夜只能靠调色：把每件材质的基准色记下来，按环境参数改 tint。
 // 室内体量是真灯（Lambert），走 applyDayNight 的太阳 / 半球光那一支。
 const GRADE_TARGETS = [];
-for (const o of [...SITE_MESHES, ...SHELL, ...SITE_EXTRA]) {
+for (const o of [...SITE_MESHES, ...HOUSE_SHELL, ...SITE_EXTRA]) {
   const m = o?.material; if (m?.color?.setRGB) GRADE_TARGETS.push({ material: m, base: [m.color.r, m.color.g, m.color.b] });
 }
 // 粒子按 LayerRegistry 契约注册在 fx 槽位（第 9 槽）；绘制仍用本页的渲染器 / 场景。
@@ -357,14 +365,14 @@ function loadHouse() {
       const m = o.name.match(/^f_(B[12]|F[123])_/); if (m) houseFloors[FI[m[1]]].push(o);
       STAT.tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
     });
-    scene.add(root); houseState = 2; TB.house = performance.now() - t0; applyMode(); needs = true;
+    scene.add(root); houseState = 2; TB.house = performance.now() - t0; applyMode(); wake();
   }).catch((e) => { console.warn('estate: house.glb', e); houseState = -1; });
 }
 
 /* ---------------- 房间（精确多边形）与室外热点 ---------------- */
 const pickMat = new THREE.MeshBasicMaterial({ visible: false });
 const roomG = FLOORS.map((f, i) => { const g = new THREE.Group(); g.name = 'rooms_' + f.id; g.visible = false; scene.add(g); return g; });
-const ITEMS = [];
+const ITEMS = [], ROOM_BY_NODE = new Map();   // node id → 它的（第一间）房间项
 const polyShape = (poly) => new THREE.Shape(poly.map(([x, y]) => new THREE.Vector2(x, y)));
 const flatGeo = (poly, y) => { const g = new THREE.ShapeGeometry(polyShape(poly)); g.rotateX(-Math.PI / 2); g.translate(0, y, 0); return g; };   // (x, y) → (x, y0, −y)
 const bboxOf = (poly) => { const xs = poly.map((p) => p[0]), ys = poly.map((p) => p[1]); return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) }; };
@@ -383,6 +391,7 @@ const plates = FLOORS.map(() => []);
   const c = V((bb.x0 + bb.x1) / 2, (bb.y0 + bb.y1) / 2, f.y);
   const rank = r.sub ? 1 : KIND(r.kind).rank;
   const it = { kind: 'room', d: r, floor: fi, poly: r.poly, cx: c.x, cz: c.z, w: bb.x1 - bb.x0, dd: bb.y1 - bb.y0, y: f.y, rank, pick };
+  if (r.node && !ROOM_BY_NODE.has(r.node)) ROOM_BY_NODE.set(r.node, it);   // 同一个节点的几间房：第一间代表它
   pick.userData.item = it;
   it.label = mkLabel(roomG[fi], c.x, f.y + 1.2, c.z, 'room');
   it.pri = (4 - rank) * 10000 + (r.area || 0);
@@ -439,7 +448,7 @@ let stashRaw = null, propTaken = new Set(), props = [];
 /** 这一层 / 这个模式下该不该亮：剖切看本层，内透看楼上，外观只亮室外的（与 itemVisible 同一条口径） */
 function propVisible(p) {
   const fi = p.floor != null ? FI[p.floor] : null;
-  return isFloor(mode) ? fi === mode : mode === 'xray' ? fi != null && fi >= 2 : fi == null;
+  return isFloor(mode) ? fi === mode : mode === 'xray' ? fi != null && fi >= GROUND : fi == null;
 }
 function clearProps() {
   for (const g of props) { propG.remove(g); g.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
@@ -458,7 +467,7 @@ function rebuildProps() {
     g.visible = propVisible(p); g.userData = { prop: p, pick: pk };
     props.push(g);
   }
-  needs = true;
+  wake();
   return props.length;
 }
 /** 呼吸：一帧一次缩放 + 光晕明暗（与 core/stash.mjs 的 glow 同频；省流档 / 减少动态效果不呼吸，静态发光） */
@@ -467,7 +476,7 @@ function pulseProps(now) {
   const k = propGlow(now / 1000);
   haloMat.opacity = 0.18 + 0.26 * k;
   for (const g of props) g.scale.setScalar(0.86 + 0.28 * k);
-  needs = true;
+  wake();
 }
 /** 射线先打发光道具：命中就拾起（道具比房间小，先判它才不会点一下变成选中房间） */
 function pickProp(cx, cy) {
@@ -492,30 +501,23 @@ function showPropTip(p, x, y) {
 // 与二维查看器（app/wander.mjs）同一套零件：core/routine.mjs 的日程表 + core/walk.mjs 的 tickClock / createWalker，
 // 只是坐标是三维的 [x, y, z]——插值引擎按分量算，二维三维走同一条公式。
 // 时刻由「页面开着多久」推出来（不读系统时间、不问模型、不等宿主推 MVU 变动），换地方走一段过去，减少动态效果一步到位。
+const PRES = createPresence({ THREE, CSS2DObject, scene, tx, wake, aria, onPerson: (name, dim) => post({ type: 'estate:person', name, dim }),
+  roomOf: (node) => { const it = ROOM_BY_NODE.get(node); return it && { cx: it.cx, cz: it.cz, y: it.y, floor: it.d.floor, name: it.d.name }; },
+  visibleOn: (floorId) => { const fi = FI[floorId]; return fi != null && (isFloor(mode) ? fi === mode : mode === 'xray' && fi >= GROUND); } });
+/** estate:people：聊天里位置落在这座楼里的人（查看器按和二维人物页同一条结果算好；只在列表变了才发）。日程里的同名者让位。 */
+function setPeople(items) {
+  const list = items.filter((p) => p && typeof p.name === 'string' && typeof p.room === 'string').slice(0, 30).map((p) => ({ name: p.name, room: p.room, floor: p.floor, color: p.color, avatar: p.avatar }));
+  LOCATED = new Set(list.map((p) => p.name));
+  for (const [n, e] of [...npcs]) if (LOCATED.has(n)) { try { e.o.element.remove(); } catch (err) {} npcG.remove(e.g); npcs.delete(n); }
+  PRES.set(list); if (npcSched) npcRetarget(); wake();
+}
 const npcG = new THREE.Group(); npcG.name = 'npcs'; scene.add(npcG);
 const npcWalker = createWalker({ reduced: REDUCED });
 let npcSched = null, npcBase = normClock(null), npcT0 = 0, npcRounds = -1, npcClock = npcBase;
 const npcs = new Map();   // 名字 → { el（CSS2D 头像）, floor }
-const NPC_CSS = `.npc { display: flex; align-items: center; gap: 4px; pointer-events: none; }
-.npc i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex: none;
-  font: 600 11px/1 var(--font-ui, system-ui); color: #fff; background: var(--c, #7a6a4a); border: 1.5px solid #fff8; }
-.npc b { padding: 1px 6px; border-radius: var(--r-pill, 999px); background: var(--map-label-bg, #14121ae6); border: 1px solid var(--map-label-line, #ffffff26);
-  font: 500 var(--fs-micro, 11px)/1.5 var(--font-ui, system-ui); color: var(--map-label-ink, #fff); white-space: nowrap; }`;
-function npcCss() { if (document.getElementById('npcCss')) return;
-  const s = document.createElement('style'); s.id = 'npcCss'; s.textContent = NPC_CSS; document.head.appendChild(s); }
-/** 头像底色：名字哈希（同一个人在两张图上同色；不看卡、不查表） */
-const npcColor = s => { let h = 2166136261; for (const c of String(s || '?')) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return `hsl(${h % 360} 30% 42%)`; };
-/** 头像（CSS2D：跟着三维坐标走，缩放时自动跟着投影） */
-function npcChip(name) {
-  npcCss();
-  const el = document.createElement('div'); el.className = 'npc';
-  const av = document.createElement('i'); av.textContent = [...name][0] || '?'; av.style.setProperty('--c', npcColor(name));
-  const b = document.createElement('b'); b.textContent = LANG === 'en' ? name : name;
-  el.append(av, b);
-  const o = new CSS2DObject(el); o.position.set(0, 1.9, 0); o.center.set(0.5, 0.5);
-  const g = new THREE.Group(); g.add(o); npcG.add(g);
-  return { g, el, o };
-}
+let LOCATED = new Set();   // 聊天里位置落在这座楼的人（estate:people）：他们由头像组画，日程里的同名者不再画
+/** 日程里的人的头像（presence.js：同一套按钮头像，虚线淡色 = 按日程站位） */
+const npcChip = (name) => { const e = PRES.routineChip(name); npcG.add(e.g); return e; };
 /** 一次时钟 tick：到了下一轮就按日程表重派站位 */
 function npcTick() {
   if (!npcSched) return;
@@ -530,13 +532,13 @@ function npcTick() {
 function npcRetarget() {
   const now = performance.now(); let started = false;
   for (const { name, place } of placesAt(npcSched, npcClock, [])) {
-    const p = placeOf(PROP_PLACES, place); if (!p) continue;
+    const p = placeOf(PROP_PLACES, place); if (!p || LOCATED.has(name)) continue;
     let e = npcs.get(name); if (!e) { e = npcChip(name); npcs.set(name, e); }
     e.floor = p.floor;
     if (npcWalker.to(name, [p.x, p.y + 1.9, p.z], now)) started = true;
     else if (!npcWalker.has(name)) npcWalker.snap(name, [p.x, p.y + 1.9, p.z]);
   }
-  if (started || npcWalker.moving()) needs = true;
+  if (started || npcWalker.moving()) wake();
 }
 /** 渲染循环里的一步：插值落位 + 跟着当前楼层显隐（剖切看本层、内透看楼上、外观看室外） */
 function npcStep(now) {
@@ -546,15 +548,15 @@ function npcStep(now) {
     const p = npcWalker.at(name, now); if (!p || p.length < 3) continue;
     e.g.position.set(p[0], p[1], p[2]);
     const fi = e.floor != null ? FI[e.floor] : null;
-    e.g.visible = isFloor(mode) ? fi === mode : mode === 'xray' ? fi != null && fi >= 2 : fi == null;
+    e.g.visible = isFloor(mode) ? fi === mode : mode === 'xray' ? fi != null && fi >= GROUND : fi == null;
   }
-  if (npcWalker.moving()) needs = true;
+  if (npcWalker.moving()) wake();
 }
 /** 日程表 / 起点时钟（查看器推来；没推就不画人） */
 function setNpcRoutine(schedule, clock) {
   npcSched = schedule ? normSchedule(schedule) : null;
   if (!npcSched?.byName || !Object.keys(npcSched.byName).length) npcSched = null;
-  if (!npcSched) { clearNpcs(); needs = true; return; }
+  if (!npcSched) { clearNpcs(); wake(); return; }
   npcBase = normClock(clock); npcT0 = 0; npcRounds = -1; npcClock = npcBase;
   npcTick();
 }
@@ -578,17 +580,18 @@ const floorsEl = $('#floors'); const BTN = {};
 function buildNav() {
   floorsEl.innerHTML = ''; for (const k of Object.keys(BTN)) delete BTN[k];
   C3.setViews([{ id: 'ext', label: tx('ext') }, { id: 'xray', label: tx('xray') }, { id: 'sect', label: tx('sect') }]);
-  for (let i = 0; i < FLOORS.length; i++) { const b = document.createElement('button'); b.type = 'button'; b.textContent = FLOORS[i].id; b.title = floorLabel(i);
+  for (let i = 0; i < FLOORS.length && !SHELL; i++) { const b = document.createElement('button'); b.type = 'button'; b.textContent = FLOORS[i].id; b.title = floorLabel(i);
     b.onclick = () => setMode(i, { fly: true, user: true }); floorsEl.appendChild(b); BTN[i] = b; }
   const zh = LANG === 'zh';
   C3.setText({ expand: zh ? '展开' : 'Expand', collapse: zh ? '收起' : 'Collapse', region: zh ? '房间与关于' : 'Room and about' });
   C3.sheet.label('room', zh ? '房间' : 'Room', zh ? '房' : 'R'); C3.sheet.label('about', zh ? '关于' : 'About', zh ? '关' : 'A');
-  $('#cardEmpty').textContent = zh ? '点模型上的房间或区域，这里显示说明' : 'Tap a room or area on the model to see it here';
+  roomEl.querySelector('#cardEmpty').textContent = zh ? '点模型上的房间或区域，这里显示说明' : 'Tap a room or area on the model to see it here';
   const bd = BLD(); aboutEl.replaceChildren(...[['h2', bd.title], ['div', bd.subtitle, 'motto'], ['p', bd.summary], ['p', tx('hint')]].filter(([, t]) => t).map(([tag, t, c]) => { const e = document.createElement(tag); e.textContent = t; if (c) e.className = c; return e; }));
   C3.setTitle(bd.title);
   syncNav(); renderKinds();
-  $('#lblBtn').title = (LANG === 'en' ? 'Show labels' : '显示标注') + ' (L)'; $('#lblBtn').setAttribute('aria-label', $('#lblBtn').title);
-  for (const k of ['zin', 'zout', 'zreset']) { $('#' + k).title = tx(k); $('#' + k).setAttribute('aria-label', tx(k)); } document.documentElement.lang = LANG === 'en' ? 'en' : 'zh-CN';
+  if (!SHELL) { $('#lblBtn').title = (LANG === 'en' ? 'Show labels' : '显示标注') + ' (L)'; $('#lblBtn').setAttribute('aria-label', $('#lblBtn').title);
+    for (const k of ['zin', 'zout', 'zreset']) { $('#' + k).title = tx(k); $('#' + k).setAttribute('aria-label', tx(k)); } }
+  document.documentElement.lang = LANG === 'en' ? 'en' : 'zh-CN'; aria();
 }
 /** 色标（N9）：剖切视图里，当前楼层出现的每类房间一枚（颜色 + 名字，都来自清单的 room_kinds） */
 function renderKinds() {
@@ -620,11 +623,11 @@ function viewFor(m) {
 }
 function applyMode() {
   const m = mode, fl = isFloor(m);
-  const under = fl && m <= 1;
+  const under = fl && FLOORS[m].z < 0;
   for (const s of SITE_MESHES) s.visible = !under;
   for (const s of SITE_EXTRA) if (s.name === 'ground_walls') s.visible = !under;
   // 主楼外壳：外观原样；内透半透明；剖切切在楼面以上 1.5 m（地下层不显示）
-  for (const s of SHELL) {
+  for (const s of HOUSE_SHELL) {
     s.visible = !under;
     const mt = s.material, xr = m === 'xray';
     if (mt.transparent !== xr) { mt.transparent = xr; mt.needsUpdate = true; }
@@ -632,15 +635,18 @@ function applyMode() {
   }
   shellClip.constant = fl && !under ? FLOORS[m].y + CUT : 1e5;
   houseClip.constant = fl ? FLOORS[m].y + CUT : 1e5;
-  roomG.forEach((g, i) => { g.visible = fl ? i === m : m === 'xray' && i >= 2; });
+  PRES.refresh();
+  roomG.forEach((g, i) => { g.visible = fl ? i === m : m === 'xray' && i >= GROUND; });
   plates.forEach((ps, i) => ps.forEach((p) => { p.visible = fl ? i === m : m === 'xray'; }));
   for (const mt of Object.values(plateMats)) mt.opacity = m === 'xray' ? 0.35 : 0.55;
-  houseFloors.forEach((ms, i) => ms.forEach((o) => { o.visible = fl ? i === m : m === 'xray' && i >= 2; }));
+  houseFloors.forEach((ms, i) => ms.forEach((o) => { o.visible = fl ? i === m : m === 'xray' && i >= GROUND; }));
   zoneG.visible = m === 'ext'; carG.visible = m === 'ext';
   for (const g of props) g.visible = propVisible(g.userData.prop);   // 藏物跟着模式走（剖切看本层、内透看楼上、外观只亮室外）
-  floorTags.forEach((o, i) => { o.visible = m === 'xray' && i >= 2; });
-  needs = true;
+  floorTags.forEach((o, i) => { o.visible = m === 'xray' && i >= GROUND; });
+  wake();
 }
+/** 画布是一张有名字的图：<建筑>，<楼层 / 视图>，<n> 人（U-25：iframe 不进 Tab 序，键盘走查看器） */
+function aria() { const c = renderer.domElement; c.setAttribute('role', 'img'); c.setAttribute('aria-label', tx('canvas', { b: BLD().title, f: isFloor(mode) ? floorName(mode) : tx(mode), n: PRES.count() })); }
 function setMode(m, o = {}) {
   if (typeof m === 'string' && /^\d$/.test(m)) m = +m;
   mode = m;
@@ -651,11 +657,13 @@ function setMode(m, o = {}) {
   syncNav(); renderKinds(); updateLabelSet();
   if (o.fly) flyTo(viewFor(m));
   if (o.user) post({ type: 'estate:floor', floor: modeKey(m) });
+  else if (SHELL && !o.quiet) post(isFloor(mode) ? { type: 'estate:floor', floor: FLOORS[mode].id } : { type: 'estate:view', mode });   // the viewer's strip and segment follow the page
+  aria();
 }
 const modeKey = (m) => (isFloor(m) ? FLOORS[m].id : m);
 function itemVisible(it) {
   if (it.kind === 'area' || it.kind === 'car') return mode === 'ext';
-  return mode === it.floor || (mode === 'xray' && it.floor >= 2);
+  return mode === it.floor || (mode === 'xray' && it.floor >= GROUND);
 }
 function parseFloor(f) {
   if (f == null) return null; const s = String(f).trim().toLowerCase();
@@ -672,10 +680,15 @@ function parseFloor(f) {
 let labelSet = [];
 function updateLabelSet() {
   labelSet = [];
-  for (const it of ITEMS) { const on = itemVisible(it); it.label.visible = on; if (on) labelSet.push(it); }
+  for (const it of ITEMS) { const on = itemVisible(it); it.label.visible = on; it.label.element.classList.remove('occl'); if (on) labelSet.push(it); }
+  guard.dirty(); wake();
 }
+const guard = createLabelGuard({ THREE, camera, floors: FLOORS.map((f) => ({ y: f.y, z: f.z })), building: { x0: HOUSE_BOX.x0, x1: HOUSE_BOX.x1, z0: -HOUSE_BOX.y1, z1: -HOUSE_BOX.y0 }, mode: () => mode,
+  labels: () => labelSet.map((it) => ({ el: it.label.element, anchor: it.label, hot: it === pinned || it === hover })) });   // 一条射线对几个包围盒：不碰模型网格
+const FTAGS = floorTags.map((o) => ({ el: o.element, span: o.element.firstChild }));
+const tagPass = () => { if (mode === 'xray') separateTags(FTAGS); };
 const _v = new THREE.Vector3();
-const topBarEl = C3.root.querySelector('.c3-top');
+const topBarEl = C3.root.querySelector?.('.c3-top');
 function cullLabels() {
   const W = innerWidth, H = innerHeight, placed = [];
   const topGuard = (topBarEl?.getBoundingClientRect().bottom || 0) + 4;   // 剖切等模式下二级条会加高顶栏：标签顶到顶栏下沿再留 4px，别被挡住（U11 修）
@@ -723,7 +736,7 @@ const hiPin = mkHi('#e6c36a', 1, 0.3), hiHover = mkHi('#f3dfa2', 0.8, 0.14);
 function clearHi(h) { for (const c of [...h.children]) { h.remove(c); c.geometry.dispose(); } }
 function showHi(h, it) {
   clearHi(h);
-  if (!it) { h.visible = false; needs = true; return; }
+  if (!it) { h.visible = false; wake(); return; }
   const u = h.userData;
   let poly, y;
   if (it.kind === 'room') { poly = it.poly; y = it.y + 0.12; }
@@ -735,7 +748,7 @@ function showHi(h, it) {
   const up = it.kind === 'room' ? 2.6 : 0;
   h.add(fill, line);
   if (up) { const pts2 = pts.map((p) => p.clone().setY(p.y + up)); h.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts2), u.lm)); }
-  h.visible = true; needs = true;
+  h.visible = true; wake();
 }
 
 /* ---------------- 房间卡 ---------------- */
@@ -782,6 +795,7 @@ let tipFor = null;
 function showCard(it, x, y) {
   if (x != null && it !== pinned) { if (tipFor !== it) { tip.textContent = info(it).title; tipFor = it; } cardAt = [x, y]; placeCard(); tip.classList.add('on'); return; }   // 悬停：只有名字的一枚小标签
   tip.classList.remove('on'); tipFor = null;
+  if (SHELL) return;   // 壳模式：卡片是查看器的共用地点卡（estate:select）
   if (cardFor !== it) { card.innerHTML = cardHTML(it); cardFor = it; }
   cardAt = null; card.classList.add('on', 'pinned');
   if (it === pinned && C3.sheet.tab !== 'room' || !C3.sheet.open) C3.sheet.setTab('room', C3.sheet.state === 'full' ? 'full' : 'half');   // 点选 → 抽屉半开到「房间」
@@ -817,8 +831,8 @@ function pickAt(cx, cy) {
   return hits[0].object.userData.item;
 }
 let pinned = null, hover = null, pinT = 0;
-function pin(it, fly) { pinned = it; pinT = performance.now(); showHi(hiPin, it); showHi(hiHover, null); cardFor = null; showCard(it); needs = true; if (fly) focusView(it); }
-function unpin() { pinned = null; showHi(hiPin, null); hideCard(true); needs = true; }
+function pin(it, fly) { pinned = it; pinT = performance.now(); showHi(hiPin, it); showHi(hiHover, null); cardFor = null; showCard(it); wake(); if (fly) focusView(it); }
+function unpin(quiet) { const had = pinned; pinned = null; showHi(hiPin, null); hideCard(true); wake(); if (SHELL && had && !quiet) post({ type: 'estate:select', name: null }); }   // quiet = the viewer asked for it (it closed its card itself)
 const sph = new THREE.Spherical();
 function focusView(it) {
   sph.setFromVector3(camera.position.clone().sub(controls.target));
@@ -875,7 +889,7 @@ function flyTo(v, dur = 700) {
   const to = { target: v.target.clone(), zoom: clamp(v.zoom, minZoom, maxZoom), theta: v.theta ?? sph.theta, phi: v.phi ?? sph.phi };
   let dt = to.theta - sph.theta; dt = Math.atan2(Math.sin(dt), Math.cos(dt));
   tween = { t0: performance.now(), dur, from: { target: controls.target.clone(), zoom: camera.zoom, theta: sph.theta, phi: sph.phi }, to, dt, ease: v.ease };
-  needs = true;
+  wake();
 }
 function stepTween(now) {
   if (!tween) return false;
@@ -900,7 +914,7 @@ function zoomAt(cx, cy, f) {
   camera.zoom = z; camera.updateProjectionMatrix();
   _p1.set(nx, ny, 0).unproject(camera);
   _p0.sub(_p1); camera.position.add(_p0); controls.target.add(_p0);
-  keepTargetY(); touchInteract(); needs = true;
+  keepTargetY(); touchInteract(); wake();
 }
 let targetY = 12;
 function keepTargetY() {
@@ -914,12 +928,12 @@ function panBy(dx, dy) {
   const right = new THREE.Vector3(camera.matrixWorld.elements[0], 0, camera.matrixWorld.elements[2]).normalize();
   const fwd = new THREE.Vector3(camera.matrixWorld.elements[8], 0, camera.matrixWorld.elements[10]).normalize();
   const off = right.multiplyScalar(-dx * k).add(fwd.multiplyScalar(dy * k));
-  camera.position.add(off); controls.target.add(off); touchInteract(); needs = true; idleTimer?.markActive();
+  camera.position.add(off); controls.target.add(off); touchInteract(); wake(); idleTimer?.markActive();
 }
 function rotateBy(dx, dy) {
   sph.setFromVector3(camera.position.clone().sub(controls.target));
   sph.theta -= dx * 0.0025; sph.phi = clamp(sph.phi + dy * 0.0025, controls.minPolarAngle, controls.maxPolarAngle);
-  placeCam(controls.target, sph.theta, sph.phi); touchInteract(); needs = true; idleTimer?.markActive();
+  placeCam(controls.target, sph.theta, sph.phi); touchInteract(); wake(); idleTimer?.markActive();
 }
 window.addEventListener('wheel', (e) => { e.preventDefault(); }, { passive: false });
 app.addEventListener('wheel', (e) => {
@@ -960,17 +974,23 @@ const resetView = () => { unpin(); flyTo(viewFor(mode)); };
 let labelsOn = LS('edenEstateLabels') !== '0';
 function setLabels(on) {
   labelsOn = on; document.body.classList.toggle('nolabels', !on);
-  const b = $('#lblBtn'); b.setAttribute('aria-pressed', String(on)); b.title = (LANG === 'en' ? 'Show labels' : '显示标注') + ' (L)';
+  const b = $('#lblBtn'); if (b) { b.setAttribute('aria-pressed', String(on)); b.title = (LANG === 'en' ? 'Show labels' : '显示标注') + ' (L)'; }
   try { localStorage.setItem('edenEstateLabels', on ? '1' : '0'); } catch (e) { }
-  needs = true;
+  wake();
 }
-$('#lblBtn').onclick = () => setLabels(!labelsOn);
+if (!SHELL) $('#lblBtn').onclick = () => setLabels(!labelsOn);
 setLabels(labelsOn);
-$('#zin').onclick = () => zoomBtn(1.6); $('#zout').onclick = () => zoomBtn(1 / 1.6); $('#zreset').onclick = resetView;
+if (!SHELL) { $('#zin').onclick = () => zoomBtn(1.6); $('#zout').onclick = () => zoomBtn(1 / 1.6); $('#zreset').onclick = resetView; }
 
 /* ---------------- 指针 ---------------- */
 let down = null, lastTap = null, tapTimer = 0;
-const postSelect = (it) => post({ type: 'estate:select', name: it.d.name, floor: it.floor != null ? FLOORS[it.floor].id : null });
+/** 点选 / 双击：告诉查看器选中了什么（它开共用的地点卡）：房间带 node 与 room，区域和载具带 zone（卡的标题、副标题、行与动作） */
+function postSelect(it) {
+  const fl = it.floor != null ? FLOORS[it.floor].id : null, m = { type: 'estate:select', name: it.d.name, floor: fl };
+  if (it.kind === 'room') Object.assign(m, { node: it.d.node, room: { name: it.d.name, floor: fl, kind: it.d.kind, area: it.d.area, note: it.d.note || '', access: it.d.access || '' } });
+  else { const o = info(it); m.name = o.title; m.zone = { title: o.title, sub: o.sub, rows: o.rows, acts: o.acts }; }
+  post(m);
+}
 const cancelTap = () => { if (tapTimer) { clearTimeout(tapTimer); tapTimer = 0; } };
 function tapPin(it) { if (it) { pin(it, false); postSelect(it); } else if (pinned) unpin(); }
 // 拖动旋转前先把按下的那一点定为新轨道中心（挪 target 时相机同步挪同一位移，画面不跳）；命中不到（点在天空 / 空处）就不改
@@ -981,7 +1001,7 @@ function retargetAt(cx, cy) {
   else { const rc = renderer.domElement.getBoundingClientRect(); ndc.set(((cx - rc.left) / rc.width) * 2 - 1, -((cy - rc.top) / rc.height) * 2 + 1); ray.setFromCamera(ndc, camera);
     const hit = ray.intersectObjects(SITE_MESHES, false)[0]; if (hit) p = hit.point; }
   if (!p) return;
-  _dir.subVectors(p, controls.target); controls.target.copy(p); camera.position.add(_dir); needs = true;
+  _dir.subVectors(p, controls.target); controls.target.copy(p); camera.position.add(_dir); wake();
 }
 renderer.domElement.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: performance.now(), type: e.pointerType }; tween = null; idleTimer?.markActive();
   if (e.pointerType === 'mouse' && e.button === 0) retargetAt(e.clientX, e.clientY); });
@@ -1008,9 +1028,9 @@ let hoverEv = null, hoverRaf = 0;
 function doHover() {
   hoverRaf = 0; const e = hoverEv; if (!e) return;
   const pr = pickProp(e.clientX, e.clientY);
-  if (pr) { if (hover) { hover = null; showHi(hiHover, null); needs = true; } renderer.domElement.style.cursor = 'pointer'; showPropTip(pr, e.clientX + 16, e.clientY + 14); return; }
+  if (pr) { if (hover) { hover = null; showHi(hiHover, null); wake(); } renderer.domElement.style.cursor = 'pointer'; showPropTip(pr, e.clientX + 16, e.clientY + 14); return; }
   const it = pickAt(e.clientX, e.clientY);
-  if (it !== hover) { hover = it; showHi(hiHover, it && it !== pinned ? it : null); needs = true; }
+  if (it !== hover) { hover = it; showHi(hiHover, it && it !== pinned ? it : null); wake(); }
   if (it) showCard(it, e.clientX + 16, e.clientY + 14); else hideCard();
   renderer.domElement.style.cursor = it ? 'pointer' : '';
 }
@@ -1018,22 +1038,23 @@ renderer.domElement.addEventListener('pointermove', (e) => {
   if (e.pointerType !== 'mouse' || e.buttons) return;
   hoverEv = { clientX: e.clientX, clientY: e.clientY }; if (!hoverRaf) hoverRaf = requestAnimationFrame(doHover);
 });
-renderer.domElement.addEventListener('pointerleave', () => { hoverEv = null; hover = null; showHi(hiHover, null); hideCard(); needs = true; });
-controls.addEventListener('start', () => { tween = null; setLowRes(true); C3.dragStart(); });
-controls.addEventListener('end', () => C3.dragEnd());
-C3.onInsets(() => { frustum(); needs = true; });
-controls.addEventListener('change', () => { needs = true; touchInteract(); });
+renderer.domElement.addEventListener('pointerleave', () => { hoverEv = null; hover = null; showHi(hiHover, null); hideCard(); wake(); });
+controls.addEventListener('start', () => { tween = null; dragging = true; ctlLive = true; setLowRes(true); C3.dragStart(); wake(); });
+controls.addEventListener('end', () => { dragging = false; C3.dragEnd(); wake(); });
+C3.onInsets(() => { frustum(); wake(); });
+controls.addEventListener('change', () => { wake(); touchInteract(); });
 let lastInteract = 0;
 function touchInteract() { lastInteract = performance.now(); }
 function setLowRes(on) {
   touchInteract();
   if (on === lowRes) return; lowRes = on;
-  renderer.setPixelRatio(on ? Math.max(1, DPR * 0.75) : DPR); renderer.setSize(innerWidth, innerHeight); needs = true;
+  renderer.setPixelRatio(on ? Math.max(1, DPR * 0.75) : DPR); renderer.setSize(innerWidth, innerHeight); wake();
 }
 
 /* ---------------- 键盘 / 消息 ---------------- */
 const SEQ = [...FLOORS.map((f, i) => i), 'xray', 'ext'];
 window.addEventListener('keydown', (e) => {
+  if (SHELL && !e.isComposing) { if (e.key === 'Escape') { post({ type: 'estate:esc' }); return; } if (['1', '2', '3'].includes(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) { post({ type: 'estate:key', key: e.key }); return; } }   // the viewer owns Esc and the view keys
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (['+', '=', '-', '_', '0'].includes(e.key)) { e.preventDefault(); if (e.key === '0') resetView(); else zoomBtn(e.key === '+' || e.key === '=' ? 1.6 : 1 / 1.6); return; }
   if ((e.key === 'l' || e.key === 'L') && !e.target.closest?.('input,textarea')) { setLabels(!labelsOn); return; }
@@ -1060,19 +1081,24 @@ window.addEventListener('message', (e) => {
   const d = e.data; if (!d || typeof d !== 'object' || typeof d.type !== 'string' || !d.type.startsWith('estate:')) return;
   if (d.type === 'estate:room') focusRoomMsg(d.name, d.card);
   else if (d.type === 'estate:children' && d.zones && typeof d.zones === 'object') { CHILDREN = d.zones; cardFor = null; tipFor = null; if (pinned) showCard(pinned); }
-  else if (d.type === 'estate:floor') { const m = parseFloor(d.floor); if (m != null) setMode(m, { fly: true }); }
-  else if (d.type === 'estate:inset' && Number.isFinite(d.left)) { document.documentElement.style.setProperty('--inset', Math.max(6, d.left) + 'px'); frustum(); needs = true; }
+  else if (d.type === 'estate:floor') { const m = parseFloor(d.floor); if (m != null) setMode(m, { fly: true, quiet: true }); }
+  else if (d.type === 'estate:view' && ['ext', 'xray', 'sect'].includes(d.mode)) setMode(d.mode === 'sect' ? (isFloor(mode) ? mode : lastFloor) : d.mode, { fly: true, quiet: true });   // S7-3: the viewer's segment / keys 1 2 3
+  else if (d.type === 'estate:cam') { if (d.op === 'in') zoomBtn(1.6); else if (d.op === 'out') zoomBtn(1 / 1.6); else if (d.op === 'reset') resetView(); }   // the viewer's toolbar
+  else if (d.type === 'estate:labels' && typeof d.on === 'boolean') setLabels(d.on);
+  else if (d.type === 'estate:select') { const it = typeof d.node === 'string' ? ITEMS.find((x) => x.kind === 'room' && x.d.node === d.node) : null; if (it) { focusItem(it); postSelect(it); } else if (pinned) unpin(true); }   // a room from the viewer's list (by node id), or the viewer closed its card
+  else if (d.type === 'estate:people' && Array.isArray(d.items)) setPeople(d.items);
+  else if (d.type === 'estate:inset') { if (Number.isFinite(d.left)) document.documentElement.style.setProperty('--inset', Math.max(6, d.left) + 'px'); if (SHELL) C3.setInsets({ right: Math.max(0, d.right | 0), bottom: Math.max(0, d.bottom | 0) }); frustum(); wake(); }
   else if (d.type === 'estate:camera') { if (typeof d.autoRotate === 'boolean') CAM.autoRotate = d.autoRotate; if (typeof d.wheelZoom === 'boolean') CAM.wheelZoom = d.wheelZoom; if (typeof d.rm === 'boolean') { CAM.rm = d.rm || REDUCED; controls.enableDamping = !CAM.rm; } applyRotate(); }   // I-06: settings and reduced motion without a reload
   else if (d.type === 'estate:pause') { paused = true; }   // 查看器休眠：停渲染循环，模型与 GPU 资源留着
   else if (d.type === 'estate:dispose') { disposeGpu(); post({ type: 'estate:disposed' }); }   // S7-2 I-05: the viewer is about to remove this parked frame: release the GL context now and say so
-  else if (d.type === 'estate:resume' && paused && !disposed) { paused = false; resumeT = performance.now(); needs = true; requestAnimationFrame(loop); }
+  else if (d.type === 'estate:resume' && paused && !disposed) { paused = false; resumeT = performance.now(); wake(); }
   else if (d.type === 'estate:lang' && (d.lang === 'en' || d.lang === 'zh')) setLang(d.lang);
   else if (d.type === 'estate:quality' && typeof d.q === 'string') {   // 设置「三维画质」即时生效
     DPR = Math.min(window.devicePixelRatio || 1, d.q === '1' ? 1 : COARSE ? 2 : (window.devicePixelRatio || 2)); document.documentElement.classList.toggle('noblur', d.q === '1');
-    renderer.setPixelRatio(lowRes ? Math.max(1, DPR * 0.75) : DPR); renderer.setSize(innerWidth, innerHeight); needs = true; }
+    renderer.setPixelRatio(lowRes ? Math.max(1, DPR * 0.75) : DPR); renderer.setSize(innerWidth, innerHeight); wake(); }
   else if (d.type === 'estate:theme' && (d.theme === 'light' || d.theme === 'dark')) { THEME = d.theme; document.documentElement.dataset.theme = THEME; document.documentElement.classList.toggle('light', THEME === 'light'); paintSky(); }
   else if (d.type === 'estate:cvd' && typeof d.mode === 'string') { document.documentElement.dataset.cvd = d.mode; document.documentElement.classList.toggle('cvd', d.mode !== '0'); }   // 色觉模式（E7）：本页当前没有按类别上色的材质，只留 CSS 钩子给以后加
-  else if (d.type === 'estate:fps' && typeof d.on === 'boolean') { STATS = d.on; statsEl.style.display = d.on ? 'block' : 'none'; if (!d.on) statsEl.textContent = ''; frames = 0; fpsT = performance.now(); needs = true; }
+  else if (d.type === 'estate:fps' && typeof d.on === 'boolean') { STATS = d.on; statsEl.style.display = d.on ? 'block' : 'none'; if (!d.on) statsEl.textContent = ''; frames = 0; fpsT = performance.now(); wake(); }
   else if (d.type === 'estate:chat' && typeof d.id === 'string') setGalleryChatId(d.id);   // 房间图集「仅本聊天」作用域
   else if (d.type === 'estate:media' && d.rooms && typeof d.rooms === 'object') {   // K-R101：包图片按房间名；https 的只在宿主说开关开着时才给地址
     PICS = Object.fromEntries(Object.entries(d.rooms).map(([name, p]) => [name, Array.isArray(p) ? p.filter((x) => x && typeof x.id === 'string').map((x) => ({ id: x.id, item: x.item, url: nodePictures({ [x.id]: x.item }, [x.id], { base: '', remoteOn: d.remote === true })[0]?.url ?? null })) : []]));
@@ -1081,35 +1107,37 @@ window.addEventListener('message', (e) => {
   else if (d.type === 'estate:taken') { propTaken = new Set(Array.isArray(d.ids) ? d.ids.filter((x) => typeof x === 'string') : []); rebuildProps(); }   // 已经在手里的：地上不再发光
   else if (d.type === 'estate:routine') setNpcRoutine(d.schedule, d.clock);   // Part 8-2：日程表 + 起点时钟 → 三维里的人自己去该去的地方
 });
-function setLang(l) { LANG = l; card.dataset.lang = LANG; buildNav(); relabel(); frustum(); const it = cardFor; cardFor = null; if (it) showCard(it, cardAt?.[0], cardAt?.[1]); needs = true; }
-addEventListener('resize', () => { frustum(); renderer.setSize(innerWidth, innerHeight); labelR.setSize(innerWidth, innerHeight); camera.zoom = clamp(camera.zoom, minZoom, maxZoom); camera.updateProjectionMatrix(); needs = true; });
+function setLang(l) { LANG = l; card.dataset.lang = LANG; buildNav(); relabel(); frustum(); const it = cardFor; cardFor = null; if (it) showCard(it, cardAt?.[0], cardAt?.[1]); wake(); }
+addEventListener('resize', () => { frustum(); renderer.setSize(innerWidth, innerHeight); labelR.setSize(innerWidth, innerHeight); camera.zoom = clamp(camera.zoom, minZoom, maxZoom); camera.updateProjectionMatrix(); wake(); });
 
 /* ---------------- 循环（按需渲染） ---------------- */
 const statsEl = $('#stats'); if (STATS) statsEl.style.display = 'block';
-let frames = 0, fpsT = performance.now(), fps = 0, first = true, lastInfo = { calls: 0, triangles: 0 }, lastPulse = 0, lastPropPulse = 0, lastNpcTick = 0;
+let frames = 0, fpsT = performance.now(), fps = 0, first = true, lastInfo = { calls: 0, triangles: 0 }, lastPulse = 0, lastPropPulse = 0;
 let paused = false, resumeT = 0, disposed = false;
 /** I-05: stop the loop and release the renderer and its GL context (pagehide does not fire on a parked frame, so the viewer asks with estate:dispose) */
 function disposeGpu() { if (disposed) return; disposed = true; paused = true; try { gpu.dispose(); } catch (e) {} }
 addEventListener('pagehide', disposeGpu);
 // Part 7-4 视口可见性节流：页面切后台 / 视口不可见 → 停排帧（GPU 与循环全歇）；恢复时若没被休眠就重启循环
 const gate = createRenderGate({
-  onResume: () => { if (!paused) { resumeT = performance.now(); needs = true; requestAnimationFrame(loop); } },
+  onResume: () => { if (!paused) { resumeT = performance.now(); wake(); } },
 });
 wireVisibility(gate, document);
+/** 按需渲染（U-16）：画一帧的理由才排下一帧——相机在动 / 飞行 / 缓动 / 过渡 / 自动旋转 / 有人在走 / 标注一轮没做完；什么都没有时一个 rAF 也不排（空闲 = 0 帧）。wake()：有事要重画 */
+function wake() { needs = true; if (running && !rafId) rafId = requestAnimationFrame(loop); }
 function loop(now) {
+  rafId = 0;
   if (paused || gate.hidden) return;
-  requestAnimationFrame(loop);
   let moving = stepTween(now);
-  if (!moving) moving = controls.update(); else controls.update();
+  if (ctlLive || controls.autoRotate || moving) { const ch = controls.update(); moving = moving || ch; if (!ch && !dragging && !controls.autoRotate) ctlLive = false; }
   const tg = controls.target; const cx = clamp(tg.x, -360, 360), cz = clamp(tg.z, -300, 300);
   if (cx !== tg.x || cz !== tg.z) { camera.position.x += cx - tg.x; camera.position.z += cz - tg.z; tg.x = cx; tg.z = cz; }
   if (!tween) targetY = tg.y;
-  const mpp = (camera.right - camera.left) / camera.zoom / Math.max(1, innerWidth);
-  document.body.classList.toggle('zoomed', mode !== 'ext' || mpp < 0.1);
+  const mpp = (camera.right - camera.left) / camera.zoom / Math.max(1, innerWidth), zoomed = mode !== 'ext' || mpp < 0.1;
+  if (zoomed !== zoomedNow) { zoomedNow = zoomed; document.body.classList.toggle('zoomed', zoomed); }
+  let anim = false;
   if (pinned && now - pinT < 2000 && now - lastPulse > 66) { lastPulse = now; const k = 0.6 + 0.4 * Math.abs(Math.sin((now - pinT) / 420 * Math.PI)); hiPin.userData.fm.opacity = hiPin.userData.fillOp * (0.5 + k * 0.7); needs = true; }
-  if (now - lastPropPulse > 66) { lastPropPulse = now; pulseProps(now); }   // 发光拾取物的呼吸（core/stash3d.mjs 的 propGlow）
-  npcStep(now);   // NPC 头像：插值落位 + 跟着当前楼层显隐
-  if (now - lastNpcTick > Math.min(15000, DEFAULT_ROUND_MS)) { lastNpcTick = now; npcTick(); }   // 世界时钟的节拍（暂停 / 隐藏时不跑）
+  if (pinned && now - pinT < 2000) anim = true;
+  npcStep(now);   // 日程里的人的头像：插值落位 + 跟着当前楼层显隐
   // Part 9-1 / 9-2：昼夜环境与粒子。过渡期间（世界时钟刚跳过一档）每帧都要重画，稳定后只在换时段时改一次。
   const dm = dayNightT ? Math.min(.1, (now - dayNightT) / 1000) : 0; dayNightT = now;
   const env9 = dayNight.update(dm);
@@ -1121,19 +1149,26 @@ function loop(now) {
     attachAurora();                                                            // 极光天幕：挂到相机上，绕岛怎么转都在
     needs = true;
   }
-  const fr9 = fx3d?.update(dm);                                                 // 粒子在动（关掉时这里是零开销早退）
-  if (fr9?.drawCalls) { needs = true; if (fr9.type === 'aurora') attachAurora(); }
+  const fr9 = fx3d?.update(dm);                                                 // 粒子只在别的原因画帧时才前进（空闲时不为它排帧）
+  if (fr9?.drawCalls && fr9.type === 'aurora') attachAurora();
   if (lowRes && !down && !pinch && now - lastInteract > 150) setLowRes(false);
-  if (!(needs || moving || STATS)) return;
-  needs = false;
-  adapt(now, moving); fitDepth();
-  renderer.render(scene, camera); lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
-  labelR.render(scene, camera); cullLabels();
-  if (cardFor && !cardAt) placeCard();
-  frames++; window.__estate && (window.__estate.renders = (window.__estate.renders || 0) + 1);   // read by tools/browser/raf_pause.mjs (a still camera renders nothing)
-  if (first) { first = false; onFirstFrame(); }
-  if (resumeT) { window.__estate.resumeFrameMs = performance.now() - resumeT; resumeT = 0; }
-  if (STATS && now - fpsT > 500) { fps = frames * 1000 / (now - fpsT); frames = 0; fpsT = now; statsEl.textContent = `T${tier} · ${fps.toFixed(0)} fps · ${depthLabel(renderer.getContext())}\n${lastInfo.calls} calls\n${(lastInfo.triangles / 1000).toFixed(0)}k tris\n${STAT.site}${STAT.house ? ' + ' + STAT.house : ''}`; }
+  const again = moving || !!tween || !dayNight.settled || npcWalker.moving() || lowRes || anim || controls.autoRotate || ctlLive || STATS;
+  if (needs || moving || STATS) {
+    needs = false;
+    if (now - lastPropPulse > 66) { lastPropPulse = now; pulseProps(now); }   // 发光拾取物的呼吸：只在这一帧本来就要画时跟着变（core/stash3d.mjs 的 propGlow）
+    adapt(now, moving); fitDepth();
+    renderer.render(scene, camera); lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
+    labelR.render(scene, camera); cullLabels(); tagPass();
+    if (cardFor && !cardAt) placeCard();
+    frames++; window.__estate && (window.__estate.renders = (window.__estate.renders || 0) + 1);   // read by tools/browser/raf_pause.mjs (a still camera renders nothing)
+    if (first) { first = false; onFirstFrame(); }
+    if (resumeT) { window.__estate.resumeFrameMs = performance.now() - resumeT; resumeT = 0; }
+    if (STATS && now - fpsT > 500) { fps = frames * 1000 / (now - fpsT); frames = 0; fpsT = now; statsEl.textContent = `T${tier} · ${fps.toFixed(0)} fps · ${depthLabel(renderer.getContext())}\n${lastInfo.calls} calls\n${(lastInfo.triangles / 1000).toFixed(0)}k tris\n${STAT.site}${STAT.house ? ' + ' + STAT.house : ''}`; }
+  }
+  // 标注的遮挡一轮（≤ 4 Hz，分帧做完；相机停了也要把最后一轮做完）
+  const w = guard.tick(now);
+  if (w > 0 && !labelWait) labelWait = setTimeout(() => { labelWait = 0; wake(); }, w);
+  if ((again || w < 0) && !rafId) rafId = requestAnimationFrame(loop);   // wake() may already have queued the next frame during this one
 }
 /** near / far 贴合整岛包围球（正交深度线性：range 越小分辨率越高）；缩得很远时云海要看到更深，远侧按视野放宽。随缩放 / 视角 / 平移每帧重算，变化小于 0.5 m 不动投影 */
 function fitDepth() {
@@ -1154,10 +1189,7 @@ function onFirstFrame() {
   window.__estateFirstFrame = true; if (window.__estateWatchdog) window.__estateWatchdog();
   loadEl.classList.add('done'); setTimeout(() => { loadEl.innerHTML = ''; loadEl.hidden = true; }, 500);
   window.__estate.firstFrameMs = performance.now() - T0;
-  const seen = new Set();
-  const rooms = ITEMS.filter((it) => it.kind === 'room' && it.d.kind === 'card' && !seen.has(it.d.floor + it.d.name) && seen.add(it.d.floor + it.d.name))
-    .map((it) => ({ name: it.d.name, en: enName(it.d), floor: it.d.floor, alias: ALIAS[it.d.name] || [] }));
-  post({ type: 'estate:ready', floors: FLOORS.map((f) => f.id), rooms: rooms.concat(ITEMS.filter((it) => it.kind === 'area').map((it) => ({ name: it.d.name, en: it.d.en, floor: 'ext', alias: it.d.alias }))) });
+  post({ type: 'estate:ready', floors: FL(), rooms: (CARD.rooms || []).map((r) => ({ name: r.name, node: r.node, floor: r.floor, kind: r.kind, area: r.area })), building: BLD(), kinds: [...new Set((CARD.rooms || []).map((r) => r.kind))].map(KIND) });
   if (mode === 'ext' && !EMBED && !REDUCED && !tween) { const v = viewFor('ext'); v.ease = 'out'; flyTo(v, 2000); }
   // 空闲时预取室内体量（低档不预取，等进内透 / 剖切再取）
   if (!LOW) (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => loadHouse(), { timeout: 4000 });
@@ -1186,6 +1218,10 @@ window.__estate = {
   dayNight: { setClock: (c) => dayNight.setClock(c), describe: () => ({ ...dayNight.describe(), graded: GRADE_TARGETS.length }) },   // Part 9-1（探针 / 浏览器测试用）
   fx: { set: (type, intensity) => fx3d?.setFXType(type, intensity) || null, describe: () => fx3d?.describe() || null,
     layers: () => FX_REG.describe(), mounted: () => !!fx3d?.object?.parent },                                                        // Part 9-2
+  people: { set: setPeople, list: () => PRES.list, chips: () => [...document.querySelectorAll('.pc')].map((b) => b.dataset.name || b.textContent), count: () => PRES.count(), located: () => [...LOCATED] },   // S7-3（探针用）
+  rect: (node) => { const it = ROOM_BY_NODE.get(node); if (!it) return null; const f = FLOORS[it.floor], b = bboxOf(it.poly), pts = [[b.x0, b.y0], [b.x1, b.y0], [b.x1, b.y1], [b.x0, b.y1]].map(([x, y]) => V(x, y, f.y + 1.9).project(camera));   // 房间在屏幕上的外包（探针用）
+    const xs = pts.map((v) => (v.x + 1) / 2 * innerWidth), ys = pts.map((v) => (1 - v.y) / 2 * innerHeight); return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) }; },
+  labels: { guard, hits: (node) => { const it = ROOM_BY_NODE.get(node); return it && it.label.element.classList.contains('occl'); } },
   camera, controls, renderer, scene, setLang, fit: fitDepth,   // fit：探针换机位后手动重算 near / far（正式交互走 loop）
 };
 buildNav(); relabel(); frustum();
@@ -1221,10 +1257,10 @@ function applyPreset(id) {
   if (id === 'top') { sph.theta = AZ; sph.phi = 0.18; }
   else if (id === 'iso') { sph.theta = AZ; sph.phi = 0.98; }
   else if (id === 'front') { sph.theta = 0; sph.phi = 1.15; }
-  placeCam(controls.target, sph.theta, sph.phi); needs = true;
+  placeCam(controls.target, sph.theta, sph.phi); wake();
 }
 /** I-06 / U-23: rotation is runtime state (the setting or the idle timer); it never writes the key, and reduced motion turns it off */
-function applyRotate() { controls.autoRotate = rotateOn({ setting: CAM.autoRotate, idle: CAM.idle, rm: CAM.rm }); controls.autoRotateSpeed = 0.4; needs = true; }
+function applyRotate() { controls.autoRotate = rotateOn({ setting: CAM.autoRotate, idle: CAM.idle, rm: CAM.rm }); controls.autoRotateSpeed = 0.4; wake(); }
 CAM.autoRotate = LS('edenMap3dAutoRotate') === '1'; CAM.wheelZoom = LS('edenMap3dWheelZoom') === '1'; applyRotate();
 idleTimer = makeIdleTimer(30000, () => { CAM.idle = true; applyRotate(); }, () => { CAM.idle = false; applyRotate(); });
 ['pointerdown', 'wheel', 'keydown'].forEach((ev) => window.addEventListener(ev, () => { idleTimer.markActive(); presets?.setActive('free'); }, { passive: true, capture: true }));
@@ -1232,4 +1268,5 @@ idleTimer.markActive();
 controls.addEventListener('start', () => idleTimer.markActive());
 
 kick('render');
-requestAnimationFrame(loop);
+running = true; wake();
+setInterval(() => { if (!paused && !gate.hidden && npcSched) { npcTick(); wake(); } }, Math.min(15000, DEFAULT_ROUND_MS));   // 世界时钟的节拍（暂停 / 隐藏时不跑）

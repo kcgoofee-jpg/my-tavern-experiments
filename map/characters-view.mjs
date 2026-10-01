@@ -74,6 +74,7 @@ const CharactersView = (() => {
   let seq = 0;
   async function render() {
     for (const el of els) { if (typeof untrack === 'function') untrack(el); osdViewer?.removeOverlay(el); } els = [];
+    plugins.EstateShell?.people();   // a 3D building open: the same people, drawn in its rooms (S7-3; it sends only when the list changed)
     if (!osdViewer || !currentMapId || !osdViewer.world.getItemCount() || mapRegistry.maps[currentMapId]?.kind === 'estate' || !CM) return;
     const my = ++seq, groups = new Map();
     for (const c of items.filter(visible)) { const w = await where(c); if (my !== seq) return; if (!w || w.map !== currentMapId || w.nx == null) continue;
@@ -114,6 +115,8 @@ const CharactersView = (() => {
   }
   /** 名册里的人（不一定在图上）开人物卡 */
   function cardOf(name) { const c = items.find(x => x.name === name); if (c) return fly(name); if (!rosterItem(name)) return; card([{ name, place: '', floor: 0, roster: true }]); }
+  /** the person's card where the viewer already is (the 3D view's chip: no flying to the 2D map) */
+  function cardHere(name) { const c = items.find(x => x.name === name) || (rosterItem(name) ? { name, place: '', floor: 0, roster: true } : null); if (c) card([c]); }
   function afterOpen() { render().then(() => { if (flyName) fly(flyName); }); }
 
   // ---------- 横条里的「人物」页 ----------
@@ -294,7 +297,7 @@ const CharactersView = (() => {
   afterLoadIdle(mod);
   provideTab('ch', { hasData: () => count() > 0, label: chLabel, render: el => pane(el) });
   TCCvd.onChange(() => afterOpen());   // 换色觉模式（E7）后头像框重新取色
-  const api = { color, portOn, setMoreOn(on) { try { LocalStore.set(MO_KEY, on ? '1' : '0'); } catch (e) {} }, cardOf, setStatsOn(on) { try { LocalStore.set('edenMapCharStats', on ? '1' : '0'); } catch (e) {} bar(); }, get statsOn() { return statsOn(); }, setPortOn(on) { try { LocalStore.set(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); } };
+  const api = { cardHere, color, portOn, setMoreOn(on) { try { LocalStore.set(MO_KEY, on ? '1' : '0'); } catch (e) {} }, cardOf, setStatsOn(on) { try { LocalStore.set('edenMapCharStats', on ? '1' : '0'); } catch (e) {} bar(); }, get statsOn() { return statsOn(); }, setPortOn(on) { try { LocalStore.set(PK_, on ? '1' : '0'); } catch (e) {} render(); bar(); }, get hasPortraits() { return Object.values(portraits).some(okUrl); }, get rep() { return rep; }, identity, set, render: afterOpen, fly, count, pane, onPane, setAvatar, removeAvatar, chatChanged, get items() { return items.map(c => ({ ...c })); }, get rows() { return items.map(c => ({ name: c.name, place: c.place, color: color(c.name), avatar: avOf(c.name), shown: visible(c) })); } };   // rows: what the 3D view draws (S7-3)
   return api;
 })();
 register('CharactersView', CharactersView);

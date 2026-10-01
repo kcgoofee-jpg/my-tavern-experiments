@@ -1,12 +1,12 @@
 // 层导航与键盘：层切换条、上一级、Esc 分层、单字符快捷键。
 import { mapRegistry, currentMapId, pendingFocus, pendingHome, setPendingFocus, setPendingHome, osdViewer } from './state.mjs';
 import { $, esc } from './dom-helpers.mjs';
-import { post, SUB_ORIGIN } from './protocol-stamp.mjs';
+import { post } from './protocol-stamp.mjs';
 import { uiTextOr } from './text-lookup.mjs';
 import { localName } from './i18n.mjs';
 import { layoutHeader } from './topbar.mjs';
 import { go } from './map-switch.mjs';
-import { narrowNow, subpageSession } from './subpage3d-host.mjs';
+import { narrowNow } from './subpage3d-host.mjs';
 import { closeCard } from './markers.mjs';
 import { focusStart, hereRes, setUserMoved, userMoved } from './locate.mjs';
 import { SettingsApi, kbdHelp, showLay, showSet } from './settings.mjs';
@@ -15,6 +15,7 @@ import { placeLayers } from './drawer-glue.mjs';
 import { toggleLabels } from './control-column.mjs';
 import { plugins } from './plugins.mjs';
 import { anchorIn, crumbs, parentMap, strip } from './nodes-runtime.mjs';
+import * as EstateShell from './estate-shell.mjs';   // S7-3: while a 3D page is open the strip shows the building's floors
 // v0.9.6 手机层切换器：收起时点当前层 = 展开；展开后点任一层 = 切过去并收起；点别处收起
 $('#layers').addEventListener('click', e => { if (!narrowNow()) return; const nav = $('#layers'), b = e.target.closest('button');
   if (nav.classList.contains('compact')) { if (b) { e.stopPropagation(); e.preventDefault(); nav.classList.remove('compact'); } return; }
@@ -31,10 +32,10 @@ export function renderNav() {
   const zone = k => anchorIn(k) ? ` data-focus="${esc(anchorIn(k))}"` : '';   // 返回一张三维页时，落到我在它里面所挂的区域上（S2-B）
   $('#crumbs').innerHTML = chain.map((k, i) => { const ti = localName(mapRegistry.maps[k], 'title');
     return i < chain.length - 1 ? `<a data-go="${k}"${zone(chain[i + 1])} role="button" tabindex="0">${esc(ti)}</a><span class="sep" aria-hidden="true">›</span>` : `<b aria-current="page">${esc(ti)}</b>`; }).join('');
-  const g = layerIds(m), nav = $('#layers');
-  nav.hidden = !g.length;
+  const g = layerIds(m), nav = $('#layers'), floors = EstateShell.stripFloors(nav);   // floors = the 3D shell drew the strip
+  if (!floors) nav.hidden = !g.length;
   nav.title = uiTextOr('layers.keys', 'PageUp / PageDown 或 [ ] 切换上下层');
-  if (g.length) nav.innerHTML = g.map(k => { const L = mapRegistry.maps[k], planned = L.status === 'planned';
+  if (g.length && !floors) nav.innerHTML = g.map(k => { const L = mapRegistry.maps[k], planned = L.status === 'planned';
     return `<button type="button" data-go="${k}" class="${k === currentMapId ? 'on' : ''}" ${k === currentMapId ? 'aria-current="page"' : ''} ${planned ? `disabled title="${esc(uiTextOr('layers.planned', '制作中'))}"` : ''}>${esc(localName(L.layer))}<i class="hd" title="${esc(uiTextOr('layers.here', '当前地点在这一层'))}"></i><em class="evn"></em><small>${esc(planned ? uiTextOr('layers.planned', '制作中') : localName(L.layer, 'alt'))}</small></button>`; }).join('');
   nav.classList.add('compact');
   // 上一级（桌面顶栏 ‹）与「⋯」首页的切层快捷（手机、三维页）
@@ -45,9 +46,9 @@ export function renderNav() {
   if (!narrowNow()) requestAnimationFrame(layoutHeader);   // 面包屑变长（切到更深的图）后重新量工具栏放不放得下（E5 r3 设计 D8 / 无障碍 F-14）
 }
 export function updateLayerBadges() {
-  const m = currentMapId && mapRegistry.maps[currentMapId], g = layerIds(m); if (!g.length) return;
-  let others = 0; const r = hereRes($('#here').value), hk = r && r.level <= 4 && g.includes(r.map) ? r.map : null;
-  document.querySelectorAll('#layers button').forEach(b => {
+  const m = currentMapId && mapRegistry.maps[currentMapId], g = layerIds(m), r = hereRes($('#here').value); EstateShell.stripAction($('#layers'), r); if (!g.length || EstateShell.active()) return;   // the 3D shell's floor buttons carry no badges
+  let others = 0; const hk = r && r.level <= 4 && g.includes(r.map) ? r.map : null;
+  document.querySelectorAll('#layers button[data-go]:not([data-act])').forEach(b => {
     const k = b.dataset.go, n = plugins.EventsView.countOn?.(k) || 0;
     b.classList.toggle('here', k === hk && !n);   // 一个按钮只挂一种红色标记：有事态数就只显示数字，当前地点写进 aria / title（v0.9.2）
     b.querySelector('.evn').textContent = n ? (n > 9 ? '9+' : n) : '';
@@ -59,6 +60,7 @@ export function updateLayerBadges() {
 }
 // 键盘切层：PageUp / [ 往上，PageDown / ] 往下（跳过制作中的层）
 export function stepLayer(d) {
+  if (EstateShell.active()) { EstateShell.stepFloor(d); return; }   // in 3D PageUp / PageDown step the building's floors
   const g = d ? layerIds(mapRegistry.maps[currentMapId]) : []; if (!g.length) return;
   for (let j = g.indexOf(currentMapId) + d; j >= 0 && j < g.length; j += d)
     if (mapRegistry.maps[g[j]].status !== 'planned') { setPendingFocus(null); go(g[j]); return; }
@@ -95,7 +97,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'l' && !estate) toggleLabels();
   else if (k === 'm') { SettingsApi.open('data'); setTimeout(() => { const v = $('#vmBox'); if (v) { v.open = true; v.querySelector('summary')?.focus(); v.scrollIntoView({ block: 'start' }); } }, 30); }
   else if (k === ',') SettingsApi.open('home');   // S7-2: settings
-  else if ((k === '1' || k === '2' || k === '3') && estate && subpageSession?.frame) subpageSession.frame.contentWindow?.postMessage({ type: 'estate:floor', floor: { 1: 'ext', 2: 'xray', 3: 'F1' }[k] }, SUB_ORIGIN);   // S7-2: 3D view modes (exterior / x-ray / section)
+  else if ((k === '1' || k === '2' || k === '3') && estate && EstateShell.onKey(k)) { /* S7-3: 3D view modes 1 exterior, 2 x-ray, 3 section (the last floor) */ }
   else if (k === '/') { SettingsApi.open('home'); setTimeout(() => $('#setQ')?.focus(), 30); }
   else if (k === '?') { SettingsApi.open('adv'); kbdHelp(true); }
   else return;

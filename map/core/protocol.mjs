@@ -88,7 +88,7 @@ export const SCHEMA = {
   'eden-map:fly': [HOST_TO_VIEWER, {}],                     // 同上
   // 查看器 ↔ 主场景 / 三维子页
   'estate:room': [VIEWER_TO_SUBPAGE, { name: 'any' }],
-  'estate:inset': [VIEWER_TO_SUBPAGE, { left: 'number?' }],
+  'estate:inset': [VIEWER_TO_SUBPAGE, { left: 'number?', right: 'number?', bottom: 'number?' }],   // S7-3: what the viewer's rail (right) and sheet (bottom) cover: the page frames the model around them
   'estate:lang': [VIEWER_TO_SUBPAGE, { lang: 'string' }],
   'estate:theme': [VIEWER_TO_SUBPAGE, { theme: 'string' }],
   'estate:cvd': [VIEWER_TO_SUBPAGE, { mode: 'string' }],        // 色觉模式：0 关 / rg 红绿 / by 蓝黄，同步给主场景 / 三维子页（E7）
@@ -117,12 +117,12 @@ export const SCHEMA = {
   'estate:fail': [SUBPAGE_TO_VIEWER, { reason: 'string?' }],
   'estate:progress': [SUBPAGE_TO_VIEWER, { loaded: 'number', total: 'number?', what: 'string?' }],   // fix3：三维模型下载字节进度（total 0 = 不知道总大小）
   'estate:key': [SUBPAGE_TO_VIEWER, { key: 'string' }],
-  'estate:select': ['both', { name: 'string?', node: 'string?', floor: 'string?', room: 'object?', zone: 'object?', car: 'object?' }],   // up (S7-3): the user picked a room { name, floor, kind, area, note } with its node, an outdoor zone or a vehicle (the viewer opens the shared place card); down: select and fly to the room of node `node`
+  'estate:select': ['both', { name: 'string?', node: 'string?', floor: 'string?', room: 'object?', zone: 'object?' }],   // up (S7-3): the user picked a room { name, floor, kind, area, note } with its node, an outdoor zone or a vehicle { title, sub, rows, acts } (the viewer opens the shared place card); down: select and fly to the room of node `node`
   'estate:view': ['both', { mode: 'string' }],                  // S7-3: the view mode 'ext' | 'xray' | 'sect' (down: the viewer's segment / keys 1 2 3; up: the page changed it itself)
   'estate:cam': [VIEWER_TO_SUBPAGE, { op: 'string' }],          // S7-3: the toolbar's 'in' | 'out' | 'reset'
   'estate:labels': [VIEWER_TO_SUBPAGE, { on: 'boolean' }],      // S7-3: the toolbar's label switch
   'estate:people': [VIEWER_TO_SUBPAGE, { items: 'array' }],     // S7-3 U-27 / U-28: the people the chat places in rooms of this building [{ name, room (node id), floor, color, avatar?, dim? }]; sent only when the list changes
-  'estate:person': [SUBPAGE_TO_VIEWER, { name: 'string' }],     // S7-3: a presence chip was tapped (the viewer opens the shared character card)
+  'estate:person': [SUBPAGE_TO_VIEWER, { name: 'string', dim: 'boolean?' }],     // S7-3: a presence chip was tapped (the viewer opens the shared character card)
   'estate:esc': [SUBPAGE_TO_VIEWER, {}],                        // S7-3: Esc inside the frame (the viewer closes its top layer)
   'estate:loot': [SUBPAGE_TO_VIEWER, { id: 'string', name: 'string', place: 'string?', hidden: 'boolean?', floor: 'string?' }],   // Part 8-1：三维里点起了一枚发光道具（查看器转成 eden-map:loot 给宿主）
   'v3d:state': [SUBPAGE_TO_VIEWER, {}],                        // 直嵌接口

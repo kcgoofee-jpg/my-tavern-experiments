@@ -6,7 +6,7 @@
 // 点击走查看器全局的 [data-go] 委托（document click → go(map)，data-focus = 落点标记）。
 export function linkHtml(l, { REG, nm, t, esc }, kind = 'go') {
   if (!l || typeof l !== 'object' || !REG?.maps?.[l.map] || REG.maps[l.map].status === 'planned') return '';
-  const fallback = kind === '3d' ? t('view3d', { title: nm(REG.maps[l.map], 'title') }) : t('goto', { title: nm(REG.maps[l.map], 'title') });
+  const fallback = kind === '3d' ? t('v3.enter') : t('goto', { title: nm(REG.maps[l.map], 'title') });
   const label = (nm(l, 'label') || fallback).replace(/\s*[→›>]\s*$/, '');
   return `<a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}"${kind === '3d' ? ' data-link3d="1"' : ''} role="button" tabindex="0">${esc(label)}</a>`;
 }
@@ -34,8 +34,7 @@ export function scene3dOf(meta, ctx = {}) {
 export function scene3dHtml(meta, ctx) {
   const s = scene3dOf(meta, ctx);
   if (!s?.map) return '';
-  const title = ctx.nm(ctx.REG?.maps?.[s.map], 'title');
-  const label = ctx.t('view3d', { title: title ? `· ${title}` : '' }).replace(/\s*·\s*$/, '');
+  const label = ctx.t('v3.enter');   // S7-3 U-31: the one primary action 「3D 查看」 / "View in 3D" of a place that has a 3D page (the page's title is the card's own)
   return `<a data-go="${ctx.esc(s.map)}" data-focus="${ctx.esc(s.focus || '')}" data-link3d="1"${s.map === ctx.cur ? ' data-same="1"' : ''} role="button" tabindex="0">${ctx.esc(label)}</a>`;
 }
 /** 卡片的全部链接：通道 + 三维 + 常驻三维视口入口（同一目标只出一个）+ 图集 */

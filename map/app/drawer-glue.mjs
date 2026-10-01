@@ -59,7 +59,7 @@ function fillLegend(box) {
 function legendEl() { const box = document.createElement('div'); box.className = 'lg'; box.id = 'legendPane'; fillLegend(box); return box; }
 
 export function placeEmpty(um) {
-  const e = $('#cardEmpty'); if (!e || e.dataset.um === (um || '')) return; e.dataset.um = um || '';
+  const e = $('#cardEmpty'); if (!e || e.dataset.um === (um || '') || (document.body.classList.contains('shell3d') && e.dataset.um === '3d')) return;   // a 3D building fills this pane itself (estate-shell.mjs) e.dataset.um = um || '';
   if (!um) { e.textContent = ''; e.textContent = uiTextOr('s.place_empty', '点地图上的地点，这里显示它的介绍'); return; }
   let s = e.querySelector('span.umq'), b = e.querySelector('button');
   if (!s) { e.textContent = ''; s = document.createElement('span'); s.className = 'umq'; b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.onclick = () => plugins.UnmappedPlacePicker.open(); e.append(s, ' ', b); announce(uiTextOr('um.empty', '当前地点「{n}」还不在地图上。', { n: um })); }
@@ -95,7 +95,7 @@ export function initShell() {
   S.showTab('ev', false); S.showTab('ch', false); S.showTab('it', false); S.showTab('lg', false); S.hide(true);
   initTabs(S, order);
   onLegendChange(() => { fillLegend(panels.lg); refreshTabs('legend'); });   // a layer became visible / applicable, or the map changed: rebuild the pane
-  setTabEnv({ card: () => !$('#card').hidden, layChip: () => narrowNow() && !$('#layers').hidden, scene: () => document.body.classList.contains('estate'),
+  setTabEnv({ card: () => !$('#card').hidden, layChip: () => narrowNow() && !$('#layers').hidden, scene: () => document.body.classList.contains('estate') && !document.body.classList.contains('shell3d'),   // S7-3: a 3D building keeps the main drawer
     legendOk: () => !document.body.classList.contains('estate') && ((!!depthData && legendItems().length > 0) || layerLegendRows().length > 0),   // 图例：配了纵深数据的层且包里写了图例条目（U18），或有图层带图例条目（K-R84）
     // 未上图（v2 门控遗留）：当前地点认不出时，抽屉 / 桌面收起的右栏条也留着，「地点」页给出「放到地图上」入口
     um: () => (typeof plugins.UnmappedPlacePicker !== 'undefined' ? plugins.UnmappedPlacePicker.name : null), beforeRefresh: () => placeEmpty(typeof plugins.UnmappedPlacePicker !== 'undefined' ? plugins.UnmappedPlacePicker.name : null) });
