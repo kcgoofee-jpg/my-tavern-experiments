@@ -52,8 +52,9 @@ test('fromV1 with an overlay transit sets pack.transit; a bad block is reported;
   assert.ok(!('transit' in fromV1({ ...TOWN, overlay: { schema: 2, transit: { stations: [{ id: 'q', node: 'nowhere' }] } } }).pack), 'no station survives: no block');
 });
 
-test('the first pack has no transit block yet (S8-4b adds the demo network); packs are unchanged', () => {
-  for (const id of ['eden', 'town', 'minimal']) { const f = `map/packs/${id}/overlay.v2.json`; if (fs.existsSync(ROOT + f)) assert.equal(J(f).transit, undefined, id); }
+test('S8-4b: the first pack and the town carry a transit block in their overlays (tests/transit_data.test.mjs); the minimal pack has none', () => {
+  for (const id of ['eden', 'town']) assert.equal(typeof J(`map/packs/${id}/overlay.v2.json`).transit, 'object', id);
+  assert.ok(!fs.existsSync(ROOT + 'map/packs/minimal/overlay.v2.json') || J('map/packs/minimal/overlay.v2.json').transit === undefined, 'minimal');
 });
 
 const NODES = [{ id: 'town', name: 'Town' }, { id: 'a', parent: 'town', name: 'A' }, { id: 'b', parent: 'town', name: 'B' }];

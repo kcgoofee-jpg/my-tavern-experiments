@@ -75,6 +75,11 @@ export const planBetween = (from, to, opts = {}) => { const g = graphNow(); retu
 /** the ends of a plan as the router saw them: where each place is drawn on `view` (for the start and end markers) */
 export const endPosOn = (ends, view) => k => { const p = ends?.[k]?.pos; return p && p.view === view ? [p.x, p.y] : null; };
 
+/** a trip's plan: by the places' nodes first (no direct walk can win over the ride), else with positions but never a plain walk (the trip's own class asked for the network) */
+function tripPlan(a, b, modes) {
+  const bare = e => e && { ...e, pos: undefined }, p = planBetween(bare(a), bare(b), { modes }) || planBetween(a, b, { modes });
+  return p && p.legs.some(l => l.kind !== 'walk') ? p : null;
+}
 const classModes = (g, cls) => (cls ? Object.entries(g.modes).filter(([id, m]) => id !== 'walk' && m.trip === cls || id === 'walk' && cls === 'road').map(([id]) => id) : null);
 /**
  * tripRoute(trip, onDone) -> { pts } | null | undefined (K-R112): the polyline of a trip along the network on the open view (OSD units: y x aspect), null when the trip is not routed
@@ -87,7 +92,7 @@ export function tripRoute(trip, onDone) {
     T.set(key, undefined);   // pending
     Promise.all([endOf(trip.from), endOf(trip.to)]).then(([a, b]) => {
       const modes = trip.mode ? classModes(g, trip.mode) : null;
-      T.set(key, modes && !modes.length ? null : planBetween(a, b, { modes })); if (T === trips) onDone?.();
+      T.set(key, modes && !modes.length ? null : tripPlan(a, b, modes)); if (T === trips) onDone?.();
     }).catch(() => { T.set(key, null); });
     return undefined;
   }

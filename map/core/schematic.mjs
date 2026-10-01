@@ -65,15 +65,29 @@ export function layoutSchematic(tree, owner, { layout = 'tree', depth = 2 } = {}
   return out;
 }
 
-/** The diagram of a layout: 1600 x 1000 units, one line per parent-child edge, one dot per node; fixed neutral greys, no text. */
-export function schematicSvg(layout, tree) {
-  const X = v => +(v * 1600).toFixed(1), Y = v => +(v * 1000).toFixed(1), ids = Object.keys(layout || {});
+/**
+ * The diagram of a layout: 1600 x 1000 units, one line per parent-child edge, one dot per node; fixed neutral greys, no text.
+ * With a thematic model (core/thematic.mjs thematicModel, `model.on`; K-R114) the picture is tinted: per branch a padded hull filled with its function colour at 0.16, the branch's own edges as one
+ * coloured line (width 6), the other edges grey as before, hubs (nodes with children) as white rings (r 9), leaves as dots (r 6). Without a model, or with `model.on` false, the output is byte-identical to the plain picture.
+ */
+export function schematicSvg(layout, tree, model) {
+  const X = v => +(v * 1600).toFixed(1), Y = v => +(v * 1000).toFixed(1), ids = Object.keys(layout || {}), th = model?.on === true;
+  const inBranch = new Set(th ? model.branches.flatMap(b => b.edges.map(e => e[1])) : []), branchOf = new Map(th ? model.branches.flatMap(b => b.nodes.map(n => [n, b])) : []), hubs = new Set(th ? model.hubs : []);
   let s = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000">';
+  if (th) for (const b of model.branches) if (b.hull.length >= 3) s += `<polygon points="${b.hull.map(([x, y]) => `${X(x)},${Y(y)}`).join(' ')}" fill="${b.color}" fill-opacity="0.16"/>`;
   for (const id of ids) {
     const p = tree.parent(id);
-    if (p !== null && Object.hasOwn(layout, p)) s += `<line x1="${X(layout[p].x)}" y1="${Y(layout[p].y)}" x2="${X(layout[id].x)}" y2="${Y(layout[id].y)}" stroke="#8a919b" stroke-opacity="0.55" stroke-width="2"/>`;
+    if (p !== null && Object.hasOwn(layout, p) && !inBranch.has(id)) s += `<line x1="${X(layout[p].x)}" y1="${Y(layout[p].y)}" x2="${X(layout[id].x)}" y2="${Y(layout[id].y)}" stroke="#8a919b" stroke-opacity="0.55" stroke-width="2"/>`;
   }
-  for (const id of ids) s += `<circle cx="${X(layout[id].x)}" cy="${Y(layout[id].y)}" r="6" fill="#aab0b9"/>`;
+  if (th) for (const b of model.branches) {
+    const d = b.edges.filter(([p, c]) => Object.hasOwn(layout, p) && Object.hasOwn(layout, c)).map(([p, c]) => `M${X(layout[p].x)} ${Y(layout[p].y)}L${X(layout[c].x)} ${Y(layout[c].y)}`).join('');
+    if (d) s += `<path d="${d}" fill="none" stroke="${b.line}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  for (const id of ids) {
+    const cx = X(layout[id].x), cy = Y(layout[id].y);
+    if (th && hubs.has(id)) s += `<circle cx="${cx}" cy="${cy}" r="9" fill="#ffffff" stroke="#2a2d34" stroke-width="3"/>`;
+    else s += `<circle cx="${cx}" cy="${cy}" r="6" fill="${th && branchOf.has(id) ? branchOf.get(id).line : '#aab0b9'}"/>`;
+  }
   return s + '</svg>';
 }
 /** The picture as a source the viewer can open (a data URL). */

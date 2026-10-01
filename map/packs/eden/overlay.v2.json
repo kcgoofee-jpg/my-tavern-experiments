@@ -460,5 +460,495 @@
       "menu": {"label": "全域结界", "title": "覆盖整座庄园岛的外层结界（冷光细边），默认关闭", "default": false, "i18n": {"en": {"label": "Estate ward", "title": "The outer ward over the whole estate island (thin cold-light edge); off by default"}}},
       "legend": [{"label": "全域结界", "desc": "庄园岛缘外扩一圈的冷光细边", "i18n": {"en": {"label": "Estate ward", "desc": "A thin cold-light edge just outside the estate island's rim"}}}]
     }
-  ]
+  ],
+  "transit": {
+    "modes": {
+      "maglev": {
+        "label": "悬浮轨道",
+        "i18n": {
+          "en": {
+            "label": "Maglev rail"
+          }
+        }
+      },
+      "metro": {
+        "label": "地铁",
+        "i18n": {
+          "en": {
+            "label": "Metro"
+          }
+        }
+      },
+      "air": {
+        "label": "出租悬浮车",
+        "i18n": {
+          "en": {
+            "label": "Hover taxi"
+          }
+        }
+      },
+      "walkway": {
+        "label": "步行连廊",
+        "i18n": {
+          "en": {
+            "label": "Skywalk"
+          }
+        },
+        "trip": "road",
+        "dash": [
+          1,
+          4
+        ]
+      }
+    },
+    "stations": [
+      {
+        "id": "enforcement_hq",
+        "node": "enforcement_hq",
+        "district": "core"
+      },
+      {
+        "id": "radiance_cathedral",
+        "node": "radiance_cathedral",
+        "district": "high"
+      },
+      {
+        "id": "iron_cradle",
+        "node": "iron_cradle",
+        "district": "high"
+      },
+      {
+        "id": "barracks_ring",
+        "node": "barracks_ring",
+        "district": "rim"
+      },
+      {
+        "id": "starabyss_univ",
+        "node": "starabyss_univ"
+      },
+      {
+        "id": "checkpoint_c",
+        "node": "checkpoint_c",
+        "district": "low"
+      },
+      {
+        "id": "council",
+        "node": "council",
+        "district": "core"
+      },
+      {
+        "id": "old_apartment",
+        "node": "old_apartment",
+        "district": "low"
+      },
+      {
+        "id": "tiancheng_univ",
+        "node": "tiancheng_univ",
+        "district": "high"
+      },
+      {
+        "id": "knights_camp",
+        "node": "knights_camp",
+        "district": "rim"
+      },
+      {
+        "id": "supreme_court",
+        "node": "supreme_court",
+        "district": "high"
+      },
+      {
+        "id": "victoria_apartment",
+        "node": "victoria_apartment",
+        "district": "high"
+      },
+      {
+        "id": "merc_guild",
+        "node": "merc_guild",
+        "district": "low"
+      },
+      {
+        "id": "mid_monastery",
+        "node": "mid_monastery",
+        "district": "high"
+      },
+      {
+        "id": "mid_hospital",
+        "node": "mid_hospital",
+        "district": "high"
+      },
+      {
+        "id": "mid_care_home",
+        "node": "mid_care_home",
+        "district": "high"
+      },
+      {
+        "id": "mage_tower",
+        "node": "mage_tower"
+      },
+      {
+        "id": "schneider_clinic",
+        "node": "schneider_clinic",
+        "district": "high"
+      },
+      {
+        "id": "rebirth_workshop",
+        "node": "rebirth_workshop",
+        "district": "low"
+      },
+      {
+        "id": "butler_academy",
+        "node": "butler_academy",
+        "district": "high"
+      },
+      {
+        "id": "executive_office",
+        "node": "executive_office",
+        "district": "core"
+      },
+      {
+        "id": "admin_council",
+        "node": "admin_council",
+        "district": "core"
+      },
+      {
+        "id": "reserve_office",
+        "node": "reserve_office",
+        "district": "core"
+      },
+      {
+        "id": "culture_office",
+        "node": "culture_office",
+        "district": "core"
+      },
+      {
+        "id": "military_academy",
+        "node": "military_academy",
+        "district": "rim"
+      },
+      {
+        "id": "storm_hall",
+        "node": "storm_hall",
+        "district": "core"
+      }
+    ],
+    "lines": [
+      {
+        "id": "l1",
+        "number": "1",
+        "name": "悬浮轨道 1 号线",
+        "i18n": {
+          "en": {
+            "name": "Maglev Line 1"
+          }
+        },
+        "mode": "maglev",
+        "color": "#e8b33a",
+        "stops": [
+          "barracks_ring",
+          "military_academy",
+          "storm_hall",
+          "enforcement_hq",
+          "reserve_office",
+          "admin_council",
+          "schneider_clinic",
+          "victoria_apartment",
+          "mid_care_home"
+        ],
+        "min": [
+          1.5,
+          3,
+          2,
+          1.5,
+          2,
+          2,
+          2,
+          2
+        ]
+      },
+      {
+        "id": "l2",
+        "number": "2",
+        "name": "悬浮轨道 2 号线",
+        "i18n": {
+          "en": {
+            "name": "Maglev Line 2"
+          }
+        },
+        "mode": "maglev",
+        "color": "#3fa7d6",
+        "stops": [
+          "starabyss_univ",
+          "mage_tower",
+          "enforcement_hq",
+          "executive_office",
+          "council",
+          "old_apartment",
+          "merc_guild",
+          "checkpoint_c"
+        ],
+        "min": [
+          2,
+          2,
+          2,
+          1.5,
+          1.5,
+          2,
+          2
+        ]
+      },
+      {
+        "id": "l3",
+        "number": "3",
+        "name": "悬浮轨道 3 号线",
+        "i18n": {
+          "en": {
+            "name": "Maglev Line 3"
+          }
+        },
+        "mode": "maglev",
+        "color": "#59b36b",
+        "stops": [
+          "butler_academy",
+          "mid_hospital",
+          "tiancheng_univ",
+          "admin_council",
+          "culture_office",
+          "merc_guild",
+          "rebirth_workshop"
+        ],
+        "min": [
+          2,
+          2,
+          2,
+          1.5,
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "id": "l4",
+        "number": "4",
+        "name": "悬浮轨道 4 号线（环线）",
+        "i18n": {
+          "en": {
+            "name": "Maglev Line 4 (loop)"
+          }
+        },
+        "mode": "maglev",
+        "color": "#b07cd8",
+        "stops": [
+          "iron_cradle",
+          "butler_academy",
+          "radiance_cathedral",
+          "supreme_court",
+          "victoria_apartment",
+          "mid_care_home",
+          "mid_monastery",
+          "schneider_clinic",
+          "tiancheng_univ",
+          "mid_hospital"
+        ],
+        "loop": true,
+        "min": [
+          1.5,
+          1.5,
+          1.5,
+          1.5,
+          2,
+          2,
+          2,
+          1.5,
+          2,
+          2.5
+        ]
+      },
+      {
+        "id": "m",
+        "number": "M",
+        "name": "地铁 M 线",
+        "i18n": {
+          "en": {
+            "name": "Metro Line M"
+          }
+        },
+        "mode": "metro",
+        "color": "#e0736a",
+        "stops": [
+          "knights_camp",
+          "rebirth_workshop",
+          "old_apartment",
+          "council",
+          "culture_office",
+          "mid_monastery"
+        ],
+        "min": [
+          2.5,
+          2,
+          2,
+          1.5,
+          2.5
+        ]
+      }
+    ],
+    "links": [
+      {
+        "from": "reserve_office",
+        "to": "executive_office",
+        "mode": "walkway",
+        "min": 2.5
+      },
+      {
+        "from": "executive_office",
+        "to": "council",
+        "mode": "walkway",
+        "min": 3
+      },
+      {
+        "from": "tiancheng_univ",
+        "to": "supreme_court",
+        "mode": "walkway",
+        "min": 5.5
+      },
+      {
+        "from": "mid_monastery",
+        "to": "mid_care_home",
+        "mode": "walkway",
+        "min": 5
+      },
+      {
+        "from": "enforcement_hq",
+        "to": "victoria_apartment",
+        "mode": "air",
+        "min": 4
+      },
+      {
+        "from": "checkpoint_c",
+        "to": "enforcement_hq",
+        "mode": "air",
+        "min": 4
+      }
+    ],
+    "districts": [
+      {
+        "id": "core",
+        "name": "核心区",
+        "i18n": {
+          "en": {
+            "name": "Core district"
+          }
+        },
+        "view": "tc_mid",
+        "function": "civic",
+        "danger": 0,
+        "pts": [
+          [
+            0.27,
+            0.564
+          ],
+          [
+            0.369,
+            0.383
+          ],
+          [
+            0.605,
+            0.527
+          ],
+          [
+            0.623,
+            0.684
+          ]
+        ]
+      },
+      {
+        "id": "high",
+        "name": "中层高区",
+        "i18n": {
+          "en": {
+            "name": "Upper mid tier"
+          }
+        },
+        "view": "tc_mid",
+        "function": "residential",
+        "danger": 0,
+        "pts": [
+          [
+            0.585,
+            0.377
+          ],
+          [
+            0.647,
+            0.208
+          ],
+          [
+            0.875,
+            0.12
+          ],
+          [
+            0.893,
+            0.635
+          ],
+          [
+            0.77,
+            0.606
+          ]
+        ]
+      },
+      {
+        "id": "rim",
+        "name": "外围",
+        "i18n": {
+          "en": {
+            "name": "Outer rim"
+          }
+        },
+        "view": "tc_mid",
+        "function": "military",
+        "danger": 1,
+        "pts": [
+          [
+            0.011,
+            0.48
+          ],
+          [
+            0.082,
+            0.36
+          ],
+          [
+            0.2,
+            0.828
+          ]
+        ]
+      },
+      {
+        "id": "low",
+        "name": "中层低区",
+        "i18n": {
+          "en": {
+            "name": "Lower mid tier"
+          }
+        },
+        "view": "tc_mid",
+        "function": "industry",
+        "danger": 2,
+        "pts": [
+          [
+            0.321,
+            0.853
+          ],
+          [
+            0.425,
+            0.689
+          ],
+          [
+            0.592,
+            0.754
+          ],
+          [
+            0.681,
+            0.879
+          ]
+        ]
+      }
+    ]
+  }
 }

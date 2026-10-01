@@ -2,6 +2,7 @@
 // viewer already draws (maps, markers, virtual point files); the viewer's modules do not read schema 2 themselves. Pure: no DOM, no fetch.
 import { buildTree, viewIdsOf, positionOf, viewOf, ROOT_ID } from './nodes.mjs';
 import { layoutSchematic, schematicSvg, schematicUrl } from './schematic.mjs';
+import { thematicModel } from './thematic.mjs';
 import { recheck } from './pack-v2-spec.mjs';
 import { under, mediaUrl } from './pack-media.mjs';
 
@@ -34,7 +35,7 @@ const clamp01 = v => Math.min(1, Math.max(0, v));
  *  An image view whose frame is a pack picture (`media`) opens it through `mediaUrl`: a data URL, a path under the base, or an https link while the switch is on; refused = problem `view-media`.
  */
 export function projectV2(pack, { base = '', remoteOn = false } = {}) {
-  const tree = buildTree(pack?.nodes, { title: pack?.title }), views = viewsOf(pack), ui = isObj(pack?.ui) ? pack.ui : {};
+  const tree = buildTree(pack?.nodes, { title: pack?.title }), views = viewsOf(pack), implicit = !(isObj(pack?.views) && Object.keys(pack.views).length), ui = isObj(pack?.ui) ? pack.ui : {};
   const registry = { start: '', groups: {}, maps: {} }, files = {}, problems = [], pid = str(pack?.id) || 'pack';
   const prim = id => { const v = viewIdsOf(tree, views, id)[0]; return v ? views[v] : null; };
   const owners = new Map();   // node id -> its view (projected kinds only)
@@ -52,11 +53,13 @@ export function projectV2(pack, { base = '', remoteOn = false } = {}) {
   };
   for (const [owner, v] of owners) {
     const extent = Array.isArray(v.extent) && v.extent.length === 2 && v.extent.every(n => typeof n === 'number' && n > 0) ? v.extent : SIZE;
-    let source = null, spots = {};
+    let source = null, spots = {}, ranks = null;
     if (v.kind === 'schematic') {
       spots = layoutSchematic(tree, owner, { layout: v.layout, depth: v.depth });
       for (const id of Object.keys(spots)) if (!safeId(id)) delete spots[id];
-      source = { type: 'image', url: schematicUrl(schematicSvg(spots, tree)) };
+      const model = v['x-style'] === 'thematic' || (implicit && v['x-style'] !== 'plain') ? thematicModel(tree, owner, spots, { lang: pack?.lang }) : null;   // K-R114: tinted branches for a big enough tree
+      if (model?.on) ranks = model.ranks;
+      source = { type: 'image', url: schematicUrl(schematicSvg(spots, tree, model?.on ? model : undefined)) };
     } else {
       const media = v.kind === 'image' && v.media !== undefined ? mediaUrl(pack?.media?.[v.media], { base, remoteOn }) : null, path = v.src === undefined ? null : under(base, v.src);
       if (v.kind === 'image' && v.media !== undefined) { if (media) source = { type: 'image', url: media }; else problems.push({ code: 'view-media', id: owner }); }
@@ -73,7 +76,7 @@ export function projectV2(pack, { base = '', remoteOn = false } = {}) {
     }
     if (!source) continue;
     const path = `v2/${pid}/${owner}.json`, ids = Object.keys(spots);
-    files[path] = { extent_m: extent, markers: ids.map(id => ({ id, nx: spots[id].x, ny: spots[id].y, r: DOT_R })) };
+    files[path] = { extent_m: extent, markers: ids.map(id => ({ id, nx: spots[id].x, ny: spots[id].y, r: DOT_R, ...(ranks?.[id] ? { rank: ranks[id] } : {}) })) };
     registry.maps[owner] = { title: nameOf(owner), ...(en(owner) ? { title_en: en(owner) } : {}), kind: 'points', base: source, data: path, view: { extent_m: extent, width_m: extent[0] }, markers: Object.fromEntries(ids.map(id => [id, meta(id, owner)])) };
   }
   const ok = id => Object.hasOwn(registry.maps, id);

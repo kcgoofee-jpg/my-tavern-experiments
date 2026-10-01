@@ -31,5 +31,35 @@
       "menu": { "label": "港口环境声", "title": "港口的风声与远处的噼啪声（默认关，打开后才会出声）",
                 "i18n": { "en": { "label": "Harbour ambience", "title": "Wind and a distant crackle around the harbour (off until you switch it on)" } } }
     }
-  ]
+  ],
+  "transit": {
+    "modes": {
+      "tram":  { "label": "山道电车", "i18n": { "en": { "label": "Hill tram" } }, "trip": "rail" },
+      "cable": { "label": "缆车", "i18n": { "en": { "label": "Funicular" } }, "trip": "rail", "dash": [8, 3] }
+    },
+    "stations": [
+      { "id": "keep", "node": "keep" }, { "id": "market", "node": "market" }, { "id": "clock", "node": "clock" },
+      { "id": "fish", "node": "fish" }, { "id": "light", "node": "light" },
+      { "id": "pier", "view": "town_harbour", "at": [0.43, 0.86], "name": "栈桥", "i18n": { "en": { "name": "Pier" } } }
+    ],
+    "lines": [
+      { "id": "cable", "number": "1", "name": "缆车线", "i18n": { "en": { "name": "Funicular" } }, "mode": "cable",
+        "color": "#63b4be", "stops": ["market", "fish"], "min": 4 },
+      { "id": "tram", "number": "2", "name": "山道电车", "i18n": { "en": { "name": "Hill tram" } }, "mode": "tram",
+        "color": "#e8b33a", "stops": ["keep", "market", "clock"], "min": [3, 2] }
+    ],
+    "links": [
+      { "from": "fish", "to": "pier", "mode": "walk", "min": 2 },
+      { "from": "pier", "to": "light", "mode": "walk", "min": 3 },
+      { "from": "clock", "to": "keep", "mode": "walk", "min": 4 }
+    ],
+    "districts": [
+      { "id": "old_town", "name": "旧城", "i18n": { "en": { "name": "Old Town" } }, "view": "town_hill", "function": "civic",
+        "danger": 0, "pts": [[0.60, 0.57], [0.79, 0.60], [0.78, 0.69], [0.62, 0.71]] },
+      { "id": "fish_docks", "name": "鱼市仓库", "i18n": { "en": { "name": "Fish-market warehouses" } }, "view": "town_harbour",
+        "function": "commerce", "danger": 2, "pts": [[0.47, 0.80], [0.58, 0.79], [0.60, 0.88], [0.49, 0.90]] },
+      { "id": "cape", "name": "灯塔岬", "i18n": { "en": { "name": "Lighthouse Cape" } }, "view": "town_harbour",
+        "function": "nature", "danger": 1, "node": "light", "r": 0.05 }
+    ]
+  }
 }

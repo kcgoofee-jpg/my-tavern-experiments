@@ -46,7 +46,7 @@ async function draw() {
     if (at) {   // a tap target on the suggestion's end point
       const el = document.createElement('div'); el.className = 'tripin hit';
       osdViewer.addOverlay({ element: el, location: new OpenSeadragon.Point(at[0], at[1] * aspect), placement: OpenSeadragon.Placement.CENTER });
-      trackEl(el, () => openCard(it, true), uiText('rt.suggested')); hits.push(el);
+      const open = () => openCard(it, true); el._open = open; trackEl(el, open, uiText('rt.suggested')); hits.push(el);
     }
   }
   row();
