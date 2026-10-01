@@ -143,9 +143,34 @@ def check_v2(pid, d, m):
     return errs
 
 
+def check_index():
+    """map/packs/index.json（K-R92）：每个列出的包都在、id 不重复、default 在列表里、schema 与清单一致、schema-2 行的 match 等于清单的 match。"""
+    ip = os.path.join(MAP, 'packs', 'index.json')
+    if not os.path.exists(ip): return ['packs/index.json: 不存在']
+    try: ix = json.load(open(ip, encoding='utf-8'))
+    except Exception as e: return [f'packs/index.json: 读不了：{e}']
+    errs, rows = [], ix.get('packs') if isinstance(ix, dict) else None
+    if not isinstance(ix, dict) or ix.get('schema') != 1 or not isinstance(rows, list) or not rows: return ['packs/index.json: 要是 {schema: 1, default, packs: [...]}']
+    ids = [r.get('id') for r in rows if isinstance(r, dict)]
+    errs += [f'packs/index.json: id 重复 {i}' for i in sorted({i for i in ids if ids.count(i) > 1})]
+    if ix.get('default') not in ids: errs.append(f'packs/index.json: default {ix.get("default")!r} 不在 packs 里')
+    for r in rows:
+        if not isinstance(r, dict) or not r.get('id') or not r.get('title'): errs.append('packs/index.json: 每一行要有 id 与 title'); continue
+        mp = os.path.join(MAP, 'packs', r['id'], 'manifest.json')
+        if not os.path.exists(mp): errs.append(f'packs/index.json: {r["id"]} 没有对应的包目录'); continue
+        m = json.load(open(mp, encoding='utf-8'))
+        if r.get('schema') != m.get('schema'): errs.append(f'packs/index.json: {r["id"]} 的 schema {r.get("schema")!r} 与清单 {m.get("schema")!r} 不一致')
+        if m.get('schema') == 2 and r.get('match') != m.get('match'): errs.append(f'packs/index.json: {r["id"]} 的 match 与清单不一致（schema 2 的 match 以清单为准）')
+    return errs
+
+
 def main():
     ids = sys.argv[1:] or sorted(x for x in os.listdir(os.path.join(MAP, 'packs')) if os.path.isdir(os.path.join(MAP, 'packs', x)))
     bad = 0
+    if not sys.argv[1:]:
+        e = check_index()
+        for x in e: print('错误', x)
+        print('index：' + ('通过' if not e else f'{len(e)} 个问题')); bad += len(e)
     for pid in ids:
         e = check(pid)
         for x in e: print('错误', x)

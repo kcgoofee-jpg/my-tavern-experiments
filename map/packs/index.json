@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "default": "eden",
+  "packs": [
+    {
+      "id": "eden",
+      "schema": 1,
+      "title": "伊甸庄园 · 天城",
+      "i18n": {
+        "en": {
+          "title": "Eden Manor · Tiancheng"
+        }
+      },
+      "match": {
+        "card": {
+          "name": [
+            "Yehehua"
+          ]
+        },
+        "worldbook": [
+          "世界观",
+          "虚灵古派",
+          "角色速览",
+          "杂鱼女仆团",
+          "CG生成指导"
+        ]
+      }
+    },
+    {
+      "id": "town",
+      "schema": 1,
+      "title": "雾港镇",
+      "i18n": {
+        "en": {
+          "title": "Mistport"
+        }
+      }
+    },
+    {
+      "id": "minimal",
+      "schema": 2,
+      "title": "Brindle",
+      "i18n": {
+        "zh": {
+          "title": "布林德尔"
+        }
+      },
+      "match": {
+        "card": {
+          "name": [
+            "Brindle"
+          ]
+        }
+      }
+    }
+  ]
+}
