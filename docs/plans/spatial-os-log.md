@@ -827,3 +827,16 @@ blocker: none
 open: none
 cleanup: done (probe server stopped; no launch.json entries; worktree i17 left for the orchestrator)
 === END ===
+
+=== RESULT R-LAYOUT (T3 landed by hero-1, taking over from the GLM runner) ===
+status: DONE
+items: T3 ✓ (layout:tc_upper final + ship recorded as layout-1)
+commits: 84288518 feat(layout): upper layout landing tool + layout C1 (C fitted to the integrated island art)
+         (this commit) data(layout): land upper layout C1 (islands, markers, routes, eden_hi frame, interim 8K bases + DZI, worldbook)
+pushed: with this commit's head bump
+tests: node 948/949 (1 skipped, unchanged; was 944 + 4 pinned failures before the re-pin) | check_maps PASS | estate3d_manifest 10/10 | smoke PASS | probes: accept=PASS(24)
+deviations: (1) the GLM backups were not usable: *.pre-v16C.png held the older plain island art from before the hero integrations (isle5/6/9/10/30, head #186), so landing from it would have reverted them; *.ghost-20261001.png matched the shipped DZI exactly and became the input (the stale pair is parked in ~/eden-render/_stale_glm_pre-v16C/). (2) layout C was planned on the old sprite extents; the integrated islands are larger (isle5 half-width 3.15 vs 1.9 units) and isle5 clipped the left frame edge, isle9 the bottom edge → layout C1 = C with isle5 (-11.45, 3.05) and isle9 y -6.88, _sprite_extent measured. (3) tools/upper_layout_land.py: re-runs read old island centres from a git-ignored seeds file (it was not idempotent), climate tower cut as a disc (the morphology cut missed it), leftover rim around the old tower and old lift pods removed by a wider hole, patrol / patrol_city points clamped inside the frame (spline overshoot failed check_maps), make_dzi call fixed (--verify is a separate mode). (4) pinned contracts re-pinned on purpose because the upper coordinates changed: tests/fixtures/spatial_golden.json (1 fixture, 44 sweep words; the 14 pinned exceptions untouched), tests/spatial_nodes.test.mjs silver_crown position, worldbook_addon_before_s44b.json bearing.upper content (neighbour lists follow the new distances).
+blocker: none
+open: the interim base shows faint cloud-patch seams where old islands were filled and the elite academy is a neutral rounded block until isle25 / base:tc_upper land; eden_hi bounds are now 0.331-0.669 x 0.298-0.703 (750 m x eden scale 1.35)
+cleanup: done (backups *.pre-v16C.* are git-ignored)
+=== END ===

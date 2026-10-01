@@ -510,3 +510,5 @@ ts,id,stage,event,agent,gate,note
 2026-09-30T22:15:16Z,isle:isle9,ship,done,hero-1,,"shipped: tiles, card-buildings row, worldbook --ship; check_maps + estate3d_manifest pass"
 2026-09-30T22:15:16Z,isle:isle10,ship,done,hero-1,,"shipped: tiles, card-buildings row, worldbook --ship; check_maps + estate3d_manifest pass; kelly_residence marker onto the villa (0.6826, 0.7216)"
 2026-09-30T22:15:16Z,isle:isle30,ship,done,hero-1,,"shipped: tiles, card-buildings row, worldbook --ship; check_maps + estate3d_manifest pass"
+2026-10-01T07:45:10Z,layout:tc_upper,final,done,layout-1,pass,"layout C1 (user choice C; isle5/isle9 nudged to fit the integrated hero sprites) landed by tools/upper_layout_land.py: tc_islands.json, tc_upper.json, maps.json eden_hi bounds, interim 8K bases + DZI; check_maps/node/accept/smoke pass"
+2026-10-01T07:45:10Z,layout:tc_upper,ship,done,layout-1,pass,shipped; base:tc_upper must re-render on this layout

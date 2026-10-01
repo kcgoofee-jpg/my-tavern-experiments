@@ -30,7 +30,7 @@ test('the injected contract for the places of both session fixtures is byte-iden
   assert.deepEqual(Object.keys(GOLD.fixtures).sort(), Object.keys(now.fixtures).sort());
   for (const [place, g] of Object.entries(GOLD.fixtures)) assert.deepEqual(now.fixtures[place], g, place);
   const hq = now.fixtures['上层·银冠堡'];   // a landmark with an exit, guards and neighbours: the full shape
-  assert.ok(hq.coord.startsWith('[地图空间] {"L":"上层","p":["银冠堡",0.167,0.184],"e":[["伊甸庄园",'));
+  assert.ok(hq.coord.startsWith('[地图空间] {"L":"上层","p":["银冠堡",0.877,0.918],"e":[["伊甸庄园",'));
 });
 
 test('sweep: every name and alias of the first pack gives the same contract; the exceptions are pinned by word and class', t => {

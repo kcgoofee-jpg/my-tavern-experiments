@@ -605,10 +605,10 @@
           "marker": "eden",
           "base": "art/tc_upper_eden.dzi",
           "bounds": [
-            0.43,
-            0.304,
-            0.661,
-            0.582
+            0.33125,
+            0.2975,
+            0.66875,
+            0.7025
           ],
           "res_px": [
             6000,
@@ -652,7 +652,12 @@
       },
       "kind": "points",
       "base": "art/tc_mid.dzi",
-      "periods": { "dawn": "art/tc_mid_dawn.dzi", "day": "art/tc_mid_day.dzi", "dusk": "art/tc_mid_dusk.dzi", "night": "art/tc_mid_night.dzi" },
+      "periods": {
+        "dawn": "art/tc_mid_dawn.dzi",
+        "day": "art/tc_mid_day.dzi",
+        "dusk": "art/tc_mid_dusk.dzi",
+        "night": "art/tc_mid_night.dzi"
+      },
       "credit": "城市骨架 © OpenStreetMap contributors (ODbL)；核心区建筑几何：NYC 3-D Building Model（2014），© City of New York / Office of Technology and Innovation，NYC Open Data；经投影、旋转、缩放并叠加生成内容",
       "credit_en": "City layout © OpenStreetMap contributors (ODbL); Core-district building geometry: NYC 3-D Building Model (2014), City of New York / Office of Technology and Innovation, via NYC Open Data; reprojected, rotated, scaled and combined with generated content",
       "data": "data/tc_mid.json",
@@ -996,7 +1001,13 @@
             "施奈德精密改造诊所",
             "施奈德诊所",
             "施奈德生物改造诊所"
-          ], "link": {"map": "lm_schneider_clinic", "label": "查看三维模型", "label_en": "View 3D model"}},
+          ],
+          "link": {
+            "map": "lm_schneider_clinic",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "rebirth_workshop": {
           "name": "新生工坊",
           "sub": "天城最大的同类改造中心",
@@ -1006,7 +1017,13 @@
           "src": "人物·伊薇特：天城最大的同类改造中心",
           "alias": [
             "新生工坊"
-          ], "link": {"map": "lm_rebirth_workshop", "label": "查看三维模型", "label_en": "View 3D model"}},
+          ],
+          "link": {
+            "map": "lm_rebirth_workshop",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "butler_academy": {
           "name": "天城贵族管家学院",
           "sub": "绫濑遥毕业并任顾问",
@@ -1163,7 +1180,12 @@
       },
       "kind": "points",
       "base": "art/tc_low.dzi",
-      "periods": { "dawn": "art/tc_low_dawn.dzi", "day": "art/tc_low_day.dzi", "dusk": "art/tc_low_dusk.dzi", "night": "art/tc_low_night.dzi" },
+      "periods": {
+        "dawn": "art/tc_low_dawn.dzi",
+        "day": "art/tc_low_day.dzi",
+        "dusk": "art/tc_low_dusk.dzi",
+        "night": "art/tc_low_night.dzi"
+      },
       "credit": "城市骨架 © OpenStreetMap contributors (ODbL)",
       "credit_en": "City layout © OpenStreetMap contributors (ODbL)",
       "data": "data/tc_low.json",
@@ -1229,7 +1251,13 @@
             "血肉磨坊",
             "黑拳场",
             "拳场"
-          ], "link": {"map": "lm_blood_mill", "label": "查看三维模型", "label_en": "View 3D model"}},
+          ],
+          "link": {
+            "map": "lm_blood_mill",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "enforcement_low": {
           "name": "执法局下层分局",
           "sub": "名义六处，实际只运转三处",
@@ -1329,7 +1357,13 @@
             "货运",
             "铁路",
             "轨道枢纽"
-          ], "link": {"map": "lm_freight_yard", "label": "查看三维模型", "label_en": "View 3D model"}},
+          ],
+          "link": {
+            "map": "lm_freight_yard",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "tin_shacks": {
           "name": "铁皮屋区",
           "name_en": "Tin-shack Quarter",
@@ -1368,7 +1402,13 @@
           "alias": [
             "下层区酒吧",
             "下层酒吧"
-          ], "link": {"map": "lm_lower_bar", "label": "查看三维模型", "label_en": "View 3D model"}},
+          ],
+          "link": {
+            "map": "lm_lower_bar",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "slums": {
           "name": "贫民窟",
           "sub": "瑞秋的出生地",
@@ -1379,7 +1419,13 @@
           "alias": [
             "贫民窟",
             "下层贫民窟"
-          ], "link": {"map": "lm_slums", "label": "查看三维模型", "label_en": "View 3D model"}},
+          ],
+          "link": {
+            "map": "lm_slums",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "prison": {
           "name": "监狱",
           "sub": "维多利亚的弟弟被送进这里",
@@ -1399,28 +1445,315 @@
         }
       }
     },
-    "lm_schneider_clinic": {"title": "施奈德精密改造诊所（三维）", "title_en": "Schneider Precision Clinic", "parent": "tc_mid", "kind": "estate", "viewer3d": "schneider_clinic", "src": "props/viewer3d.html", "alias": ["施奈德精密改造诊所（三维）"], "src_note": "施奈德精密改造诊所三维（标准版：标准档 + 低档 glb）；从 tc_mid.schneider_clinic 标记的「查看三维模型」进。源：blender/landmarks/schneider_clinic/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_rebirth_workshop": {"title": "新生工坊（三维）", "title_en": "Rebirth Workshop", "parent": "tc_mid", "kind": "estate", "viewer3d": "rebirth_workshop", "src": "props/viewer3d.html", "alias": ["新生工坊（三维）"], "src_note": "新生工坊三维（标准版：标准档 + 低档 glb）；从 tc_mid.rebirth_workshop 标记的「查看三维模型」进。源：blender/landmarks/rebirth_workshop/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_slums": {"title": "贫民窟（三维）", "title_en": "Slums", "parent": "tc_low", "kind": "estate", "viewer3d": "slums", "src": "props/viewer3d.html", "alias": ["贫民窟（三维）"], "src_note": "贫民窟三维（标准版：标准档 + 低档 glb）；从 tc_low.slums 标记的「查看三维模型」进。源：blender/landmarks/slums/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_lower_bar": {"title": "下层区酒吧（三维）", "title_en": "Lower-tier Bar", "parent": "tc_low", "kind": "estate", "viewer3d": "lower_bar", "src": "props/viewer3d.html", "alias": ["下层区酒吧（三维）"], "src_note": "下层区酒吧三维（标准版：标准档 + 低档 glb）；从 tc_low.lower_bar 标记的「查看三维模型」进。源：blender/landmarks/lower_bar/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_freight_yard": {"title": "货运站（三维）", "title_en": "Freight Yard", "parent": "tc_low", "kind": "estate", "viewer3d": "freight_yard", "src": "props/viewer3d.html", "alias": ["货运站（三维）"], "src_note": "货运站三维（标准版：标准档 + 低档 glb）；从 tc_low.freight_yard 标记的「查看三维模型」进。源：blender/landmarks/freight_yard/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_blood_mill": {"title": "血肉磨坊（三维）", "title_en": "The Bloodmill (3D)", "parent": "tc_low", "kind": "estate", "viewer3d": "blood_mill", "src": "props/viewer3d.html", "alias": ["血肉磨坊（三维）"], "src_note": "血肉磨坊三维（标准版：标准档 + 低档 glb）；从 tc_low.blood_mill 标记的「查看三维模型」进。源：blender/landmarks/blood_mill/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_arms_rnd": {"title": "魔导军工研发中心（三维）", "title_en": "Magitech Arms R&D Centre", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "arms_rnd", "src": "props/viewer3d.html", "alias": ["魔导军工研发中心（三维）"], "src_note": "魔导军工研发中心三维（标准版：标准档 + 低档 glb）；从 site_kavalierki.arms_rnd 标记的「查看三维模型」进。源：blender/landmarks/arms_rnd/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_linguang_post": {"title": "临光家族外城驻所（三维）", "title_en": "Linguang Outer Residence", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "linguang_post", "src": "props/viewer3d.html", "alias": ["临光家族外城驻所（三维）"], "src_note": "临光家族外城驻所三维（标准版：标准档 + 低档 glb）；从 site_kavalierki.linguang_post 标记的「查看三维模型」进。源：blender/landmarks/linguang_post/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_free_knight_camp": {"title": "独立骑士黑市营地（三维）", "title_en": "Free Knights Camp", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "free_knight_camp", "src": "props/viewer3d.html", "alias": ["独立骑士黑市营地（三维）"], "src_note": "独立骑士黑市营地三维（标准版：标准档 + 低档 glb）；从 site_kavalierki.free_knight_camp 标记的「查看三维模型」进。源：blender/landmarks/free_knight_camp/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_clearing_depot": {"title": "清算转运站（三维）", "title_en": "Clearing Depot", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "clearing_depot", "src": "props/viewer3d.html", "alias": ["清算转运站（三维）"], "src_note": "清算转运站三维（标准版：标准档 + 低档 glb）；从 site_kavalierki.clearing_depot 标记的「查看三维模型」进。源：blender/landmarks/clearing_depot/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_rust_outskirts": {"title": "铁锈与落败领（三维）", "title_en": "Rust and the Fallen", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "rust_outskirts", "src": "props/viewer3d.html", "alias": ["铁锈与落败领（三维）"], "src_note": "铁锈与落败领三维（标准版：标准档 + 低档 glb）；从 site_kavalierki.rust_outskirts 标记的「查看三维模型」进。源：blender/landmarks/rust_outskirts/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_contest_corridor": {"title": "竞赛与狂欢回廊（三维）", "title_en": "Contest & Revelry Arcade (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "contest_corridor", "src": "props/viewer3d.html", "alias": ["竞赛与狂欢回廊（三维）"], "src_note": "竞赛与狂欢回廊三维；从 site_kavalierki.contest_corridor 标记的「查看三维模型」进。源：blender/landmarks/contest_corridor/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_ether_dome": {"title": "以太穹顶（三维）", "title_en": "Ether Dome (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "ether_dome", "src": "props/viewer3d.html", "alias": ["以太穹顶（三维）"], "src_note": "以太穹顶三维；从 site_kavalierki.ether_dome 标记的「查看三维模型」进。源：blender/landmarks/ether_dome/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_glory_crown": {"title": "荣光冠冕（三维）", "title_en": "Glory Crown (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "glory_crown", "src": "props/viewer3d.html", "alias": ["荣光冠冕（三维）"], "src_note": "荣光冠冕三维；从 site_kavalierki.glory_crown 标记的「查看三维模型」进。源：blender/landmarks/glory_crown/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_elite_club": {"title": "顶级贵族与财阀会所（三维）", "title_en": "Elite Club (3D)", "parent": "site_kavalierki", "kind": "estate", "viewer3d": "elite_club", "src": "props/viewer3d.html", "alias": ["顶级贵族与财阀会所（三维）"], "src_note": "顶级贵族与财阀会所三维（标准版：标准档 + 低档 glb）；从 site_kavalierki.elite_club 标记的「查看三维模型」进。源：blender/landmarks/elite_club/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_holy_mountain": {"title": "原域·悬浮圣山（三维）", "title_en": "Origin Domain: the Floating Holy Mountain (3D)", "parent": "yuanyu_sanctum", "kind": "estate", "viewer3d": "holy_mountain", "src": "props/viewer3d.html", "alias": ["原域·悬浮圣山（三维）", "悬浮圣山（三维）"], "src_note": "原域·悬浮圣山三维；从 yuanyu_sanctum 四个标记的「查看三维模型」进。源：blender/world/out/yuanyu_holy_mount.blend", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_fief1": {"title": "第一席封地（三维）", "title_en": "First Seat Fief (3D)", "parent": "site_fief1", "kind": "estate", "viewer3d": "fief1", "src": "props/viewer3d.html", "alias": ["第一席封地（三维）"], "src_note": "第一席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief1 的 fief1_castle / fief1_order / fief1_village / fief1_fields 标记的「查看三维模型」进。源：blender/landmarks/fief1/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_fief2": {"title": "第二席封地（三维）", "title_en": "Second Seat Fief (3D)", "parent": "site_fief2", "kind": "estate", "viewer3d": "fief2", "src": "props/viewer3d.html", "alias": ["第二席封地（三维）"], "src_note": "第二席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief2 的 fief2_castle / fief2_order / fief2_village / fief2_fields 标记的「查看三维模型」进。源：blender/landmarks/fief2/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_fief3": {"title": "第三席封地（三维）", "title_en": "Third Seat Fief (3D)", "parent": "site_fief3", "kind": "estate", "viewer3d": "fief3", "src": "props/viewer3d.html", "alias": ["第三席封地（三维）"], "src_note": "第三席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief3 的 fief3_castle / fief3_order / fief3_village / fief3_fields 标记的「查看三维模型」进。源：blender/landmarks/fief3/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_fief4": {"title": "第四席封地（三维）", "title_en": "Fourth Seat Fief (3D)", "parent": "site_fief4", "kind": "estate", "viewer3d": "fief4", "src": "props/viewer3d.html", "alias": ["第四席封地（三维）"], "src_note": "第四席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief4 的 fief4_castle / fief4_order / fief4_village / fief4_fields 标记的「查看三维模型」进。源：blender/landmarks/fief4/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_fief5": {"title": "第五席封地（三维）", "title_en": "Fifth Seat Fief (3D)", "parent": "site_fief5", "kind": "estate", "viewer3d": "fief5", "src": "props/viewer3d.html", "alias": ["第五席封地（三维）"], "src_note": "第五席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief5 的 fief5_castle / fief5_order / fief5_village / fief5_fields / fief5_lists 标记的「查看三维模型」进。源：blender/landmarks/fief5/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
-    "lm_yuanyu_city": {"title": "原域城区（三维）", "title_en": "Yuanyu City District (3D)", "parent": "yuanyu_city", "kind": "estate", "viewer3d": "yuanyu_city", "src": "props/viewer3d.html", "alias": ["原域城区（三维）"], "src_note": "原域城区三维场景（标准版：标准档 + 低档 glb）；从 yuanyu_city 的 pilgrim_plaza / spire_quarter / dome_quarter / city_gate 标记的「查看三维模型」进。源：blender/landmarks/yuanyu_city/", "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"},
+    "lm_schneider_clinic": {
+      "title": "施奈德精密改造诊所（三维）",
+      "title_en": "Schneider Precision Clinic",
+      "parent": "tc_mid",
+      "kind": "estate",
+      "viewer3d": "schneider_clinic",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "施奈德精密改造诊所（三维）"
+      ],
+      "src_note": "施奈德精密改造诊所三维（标准版：标准档 + 低档 glb）；从 tc_mid.schneider_clinic 标记的「查看三维模型」进。源：blender/landmarks/schneider_clinic/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_rebirth_workshop": {
+      "title": "新生工坊（三维）",
+      "title_en": "Rebirth Workshop",
+      "parent": "tc_mid",
+      "kind": "estate",
+      "viewer3d": "rebirth_workshop",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "新生工坊（三维）"
+      ],
+      "src_note": "新生工坊三维（标准版：标准档 + 低档 glb）；从 tc_mid.rebirth_workshop 标记的「查看三维模型」进。源：blender/landmarks/rebirth_workshop/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_slums": {
+      "title": "贫民窟（三维）",
+      "title_en": "Slums",
+      "parent": "tc_low",
+      "kind": "estate",
+      "viewer3d": "slums",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "贫民窟（三维）"
+      ],
+      "src_note": "贫民窟三维（标准版：标准档 + 低档 glb）；从 tc_low.slums 标记的「查看三维模型」进。源：blender/landmarks/slums/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_lower_bar": {
+      "title": "下层区酒吧（三维）",
+      "title_en": "Lower-tier Bar",
+      "parent": "tc_low",
+      "kind": "estate",
+      "viewer3d": "lower_bar",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "下层区酒吧（三维）"
+      ],
+      "src_note": "下层区酒吧三维（标准版：标准档 + 低档 glb）；从 tc_low.lower_bar 标记的「查看三维模型」进。源：blender/landmarks/lower_bar/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_freight_yard": {
+      "title": "货运站（三维）",
+      "title_en": "Freight Yard",
+      "parent": "tc_low",
+      "kind": "estate",
+      "viewer3d": "freight_yard",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "货运站（三维）"
+      ],
+      "src_note": "货运站三维（标准版：标准档 + 低档 glb）；从 tc_low.freight_yard 标记的「查看三维模型」进。源：blender/landmarks/freight_yard/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_blood_mill": {
+      "title": "血肉磨坊（三维）",
+      "title_en": "The Bloodmill (3D)",
+      "parent": "tc_low",
+      "kind": "estate",
+      "viewer3d": "blood_mill",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "血肉磨坊（三维）"
+      ],
+      "src_note": "血肉磨坊三维（标准版：标准档 + 低档 glb）；从 tc_low.blood_mill 标记的「查看三维模型」进。源：blender/landmarks/blood_mill/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_arms_rnd": {
+      "title": "魔导军工研发中心（三维）",
+      "title_en": "Magitech Arms R&D Centre",
+      "parent": "site_kavalierki",
+      "kind": "estate",
+      "viewer3d": "arms_rnd",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "魔导军工研发中心（三维）"
+      ],
+      "src_note": "魔导军工研发中心三维（标准版：标准档 + 低档 glb）；从 site_kavalierki.arms_rnd 标记的「查看三维模型」进。源：blender/landmarks/arms_rnd/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_linguang_post": {
+      "title": "临光家族外城驻所（三维）",
+      "title_en": "Linguang Outer Residence",
+      "parent": "site_kavalierki",
+      "kind": "estate",
+      "viewer3d": "linguang_post",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "临光家族外城驻所（三维）"
+      ],
+      "src_note": "临光家族外城驻所三维（标准版：标准档 + 低档 glb）；从 site_kavalierki.linguang_post 标记的「查看三维模型」进。源：blender/landmarks/linguang_post/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_free_knight_camp": {
+      "title": "独立骑士黑市营地（三维）",
+      "title_en": "Free Knights Camp",
+      "parent": "site_kavalierki",
+      "kind": "estate",
+      "viewer3d": "free_knight_camp",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "独立骑士黑市营地（三维）"
+      ],
+      "src_note": "独立骑士黑市营地三维（标准版：标准档 + 低档 glb）；从 site_kavalierki.free_knight_camp 标记的「查看三维模型」进。源：blender/landmarks/free_knight_camp/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_clearing_depot": {
+      "title": "清算转运站（三维）",
+      "title_en": "Clearing Depot",
+      "parent": "site_kavalierki",
+      "kind": "estate",
+      "viewer3d": "clearing_depot",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "清算转运站（三维）"
+      ],
+      "src_note": "清算转运站三维（标准版：标准档 + 低档 glb）；从 site_kavalierki.clearing_depot 标记的「查看三维模型」进。源：blender/landmarks/clearing_depot/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_rust_outskirts": {
+      "title": "铁锈与落败领（三维）",
+      "title_en": "Rust and the Fallen",
+      "parent": "site_kavalierki",
+      "kind": "estate",
+      "viewer3d": "rust_outskirts",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "铁锈与落败领（三维）"
+      ],
+      "src_note": "铁锈与落败领三维（标准版：标准档 + 低档 glb）；从 site_kavalierki.rust_outskirts 标记的「查看三维模型」进。源：blender/landmarks/rust_outskirts/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_contest_corridor": {
+      "title": "竞赛与狂欢回廊（三维）",
+      "title_en": "Contest & Revelry Arcade (3D)",
+      "parent": "site_kavalierki",
+      "kind": "estate",
+      "viewer3d": "contest_corridor",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "竞赛与狂欢回廊（三维）"
+      ],
+      "src_note": "竞赛与狂欢回廊三维；从 site_kavalierki.contest_corridor 标记的「查看三维模型」进。源：blender/landmarks/contest_corridor/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_ether_dome": {
+      "title": "以太穹顶（三维）",
+      "title_en": "Ether Dome (3D)",
+      "parent": "site_kavalierki",
+      "kind": "estate",
+      "viewer3d": "ether_dome",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "以太穹顶（三维）"
+      ],
+      "src_note": "以太穹顶三维；从 site_kavalierki.ether_dome 标记的「查看三维模型」进。源：blender/landmarks/ether_dome/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_glory_crown": {
+      "title": "荣光冠冕（三维）",
+      "title_en": "Glory Crown (3D)",
+      "parent": "site_kavalierki",
+      "kind": "estate",
+      "viewer3d": "glory_crown",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "荣光冠冕（三维）"
+      ],
+      "src_note": "荣光冠冕三维；从 site_kavalierki.glory_crown 标记的「查看三维模型」进。源：blender/landmarks/glory_crown/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_elite_club": {
+      "title": "顶级贵族与财阀会所（三维）",
+      "title_en": "Elite Club (3D)",
+      "parent": "site_kavalierki",
+      "kind": "estate",
+      "viewer3d": "elite_club",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "顶级贵族与财阀会所（三维）"
+      ],
+      "src_note": "顶级贵族与财阀会所三维（标准版：标准档 + 低档 glb）；从 site_kavalierki.elite_club 标记的「查看三维模型」进。源：blender/landmarks/elite_club/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_holy_mountain": {
+      "title": "原域·悬浮圣山（三维）",
+      "title_en": "Origin Domain: the Floating Holy Mountain (3D)",
+      "parent": "yuanyu_sanctum",
+      "kind": "estate",
+      "viewer3d": "holy_mountain",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "原域·悬浮圣山（三维）",
+        "悬浮圣山（三维）"
+      ],
+      "src_note": "原域·悬浮圣山三维；从 yuanyu_sanctum 四个标记的「查看三维模型」进。源：blender/world/out/yuanyu_holy_mount.blend",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_fief1": {
+      "title": "第一席封地（三维）",
+      "title_en": "First Seat Fief (3D)",
+      "parent": "site_fief1",
+      "kind": "estate",
+      "viewer3d": "fief1",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "第一席封地（三维）"
+      ],
+      "src_note": "第一席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief1 的 fief1_castle / fief1_order / fief1_village / fief1_fields 标记的「查看三维模型」进。源：blender/landmarks/fief1/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_fief2": {
+      "title": "第二席封地（三维）",
+      "title_en": "Second Seat Fief (3D)",
+      "parent": "site_fief2",
+      "kind": "estate",
+      "viewer3d": "fief2",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "第二席封地（三维）"
+      ],
+      "src_note": "第二席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief2 的 fief2_castle / fief2_order / fief2_village / fief2_fields 标记的「查看三维模型」进。源：blender/landmarks/fief2/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_fief3": {
+      "title": "第三席封地（三维）",
+      "title_en": "Third Seat Fief (3D)",
+      "parent": "site_fief3",
+      "kind": "estate",
+      "viewer3d": "fief3",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "第三席封地（三维）"
+      ],
+      "src_note": "第三席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief3 的 fief3_castle / fief3_order / fief3_village / fief3_fields 标记的「查看三维模型」进。源：blender/landmarks/fief3/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_fief4": {
+      "title": "第四席封地（三维）",
+      "title_en": "Fourth Seat Fief (3D)",
+      "parent": "site_fief4",
+      "kind": "estate",
+      "viewer3d": "fief4",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "第四席封地（三维）"
+      ],
+      "src_note": "第四席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief4 的 fief4_castle / fief4_order / fief4_village / fief4_fields 标记的「查看三维模型」进。源：blender/landmarks/fief4/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_fief5": {
+      "title": "第五席封地（三维）",
+      "title_en": "Fifth Seat Fief (3D)",
+      "parent": "site_fief5",
+      "kind": "estate",
+      "viewer3d": "fief5",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "第五席封地（三维）"
+      ],
+      "src_note": "第五席封地三维场景（标准版：标准档 + 低档 glb）；从 site_fief5 的 fief5_castle / fief5_order / fief5_village / fief5_fields / fief5_lists 标记的「查看三维模型」进。源：blender/landmarks/fief5/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
+    "lm_yuanyu_city": {
+      "title": "原域城区（三维）",
+      "title_en": "Yuanyu City District (3D)",
+      "parent": "yuanyu_city",
+      "kind": "estate",
+      "viewer3d": "yuanyu_city",
+      "src": "props/viewer3d.html",
+      "alias": [
+        "原域城区（三维）"
+      ],
+      "src_note": "原域城区三维场景（标准版：标准档 + 低档 glb）；从 yuanyu_city 的 pilgrim_plaza / spire_quarter / dome_quarter / city_gate 标记的「查看三维模型」进。源：blender/landmarks/yuanyu_city/",
+      "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+      "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
+    },
     "lm_victoria_apartment": {
       "title": "维多利亚的公寓（三维）",
       "title_en": "Victoria's Apartment (3D)",
@@ -1876,10 +2209,15 @@
       "title_en": "Dairy parlour",
       "parent": "eden_estate",
       "kind": "estate",
-      "anchor": { "zone": "dairy" },
+      "anchor": {
+        "zone": "dairy"
+      },
       "viewer3d": "dairy",
       "src": "props/viewer3d.html",
-      "alias": ["挤奶厅", "Dairy parlour"],
+      "alias": [
+        "挤奶厅",
+        "Dairy parlour"
+      ],
       "src_note": "通用三维查看器（props/viewer3d.html + props/<viewer3d>/manifest.json）的页面；挂在伊甸庄园下，落在庄园农场区域 dairy（map/estate/model/zones.json）。伊甸庄园切到新查看器 = 给 eden_estate 加一行 \"viewer3d\": \"eden\"（props/eden/manifest.json 就位后），见 docs/model-sources.md",
       "credit": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
       "credit_en": "Own model; textures Poly Haven / ambientCG (CC0)"
@@ -1929,7 +2267,13 @@
           ],
           "sub": "核心区",
           "sub_en": "Core ring",
-          "cls": "capital", "link": {"map": "lm_glory_crown", "label": "查看三维模型", "label_en": "View 3D model"}},
+          "cls": "capital",
+          "link": {
+            "map": "lm_glory_crown",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "union_tower": {
           "name": "商业联合会联合大厦",
           "name_en": "Commercial Union Tower",
@@ -1940,7 +2284,13 @@
             "商业联合会大厦"
           ],
           "sub": "商业联合会",
-          "sub_en": "Commercial Union", "link": {"map": "lm_glory_crown", "label": "查看三维模型", "label_en": "View 3D model"}},
+          "sub_en": "Commercial Union",
+          "link": {
+            "map": "lm_glory_crown",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "sun_arena": {
           "name": "太阳骑士大竞技场",
           "name_en": "Sun Knights Grand Arena",
@@ -1950,7 +2300,13 @@
             "大竞技场"
           ],
           "sub": "容 30 万人",
-          "sub_en": "Seats 300,000", "link": {"map": "lm_glory_crown", "label": "查看三维模型", "label_en": "View 3D model"}},
+          "sub_en": "Seats 300,000",
+          "link": {
+            "map": "lm_glory_crown",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "round_table_hall": {
           "name": "圆桌骑士议事殿",
           "name_en": "Round Table Hall",
@@ -1960,7 +2316,13 @@
             "议事殿"
           ],
           "sub": "圆桌骑士",
-          "sub_en": "Round Table", "link": {"map": "lm_glory_crown", "label": "查看三维模型", "label_en": "View 3D model"}},
+          "sub_en": "Round Table",
+          "link": {
+            "map": "lm_glory_crown",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "elite_club": {
           "name": "顶级贵族与财阀会所",
           "name_en": "Elite Clubs",
@@ -1970,7 +2332,13 @@
             "财阀会所",
             "贵族会所",
             "顶级会所"
-          ], "link": {"map": "lm_elite_club", "label": "查看三维模型", "label_en": "View 3D model"}},
+          ],
+          "link": {
+            "map": "lm_elite_club",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "ether_dome": {
           "name": "以太穹顶",
           "name_en": "Aether Dome",
@@ -1978,7 +2346,14 @@
           "alias": [
             "以太穹顶",
             "穹顶"
-          ], "addon": true, "link": {"map": "lm_ether_dome", "label": "查看三维模型", "label_en": "View 3D model"}},
+          ],
+          "addon": true,
+          "link": {
+            "map": "lm_ether_dome",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "contest_corridor": {
           "name": "竞赛与狂欢回廊",
           "name_en": "Corridor of Contest and Revelry",
@@ -1997,7 +2372,13 @@
             "母畜体验馆"
           ],
           "sub": "中环",
-          "sub_en": "Middle ring", "link": {"map": "lm_contest_corridor", "label": "查看三维模型", "label_en": "View 3D model"}},
+          "sub_en": "Middle ring",
+          "link": {
+            "map": "lm_contest_corridor",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "rust_outskirts": {
           "name": "铁锈与落败领",
           "name_en": "Rust and the Fallen",
@@ -2007,7 +2388,13 @@
             "落败领"
           ],
           "sub": "外环",
-          "sub_en": "Outer ring", "link": {"map": "lm_rust_outskirts", "label": "查看三维模型", "label_en": "View 3D model"}},
+          "sub_en": "Outer ring",
+          "link": {
+            "map": "lm_rust_outskirts",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "clearing_depot": {
           "name": "清算转运站",
           "name_en": "Clearing Depot",
@@ -2017,7 +2404,13 @@
             "资产清算转运站",
             "清算转运站",
             "转运站"
-          ], "link": {"map": "lm_clearing_depot", "label": "查看三维模型", "label_en": "View 3D model"}},
+          ],
+          "link": {
+            "map": "lm_clearing_depot",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "free_knight_camp": {
           "name": "独立骑士黑市营地",
           "name_en": "Free Knights Camp",
@@ -2026,7 +2419,13 @@
             "独立骑士黑市营地",
             "黑市营地",
             "独立骑士营地"
-          ], "link": {"map": "lm_free_knight_camp", "label": "查看三维模型", "label_en": "View 3D model"}},
+          ],
+          "link": {
+            "map": "lm_free_knight_camp",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "linguang_post": {
           "name": "临光家族外城驻所",
           "name_en": "Linguang Outer Residence",
@@ -2034,7 +2433,13 @@
           "alias": [
             "临光家族外城驻所",
             "外城驻所"
-          ], "link": {"map": "lm_linguang_post", "label": "查看三维模型", "label_en": "View 3D model"}},
+          ],
+          "link": {
+            "map": "lm_linguang_post",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "arms_rnd": {
           "name": "魔导军工研发中心",
           "sub": "以太回路装甲 · 智能锁",
@@ -2045,7 +2450,13 @@
           "alias": [
             "魔导军工研发中心",
             "军工研发中心"
-          ], "link": {"map": "lm_arms_rnd", "label": "查看三维模型", "label_en": "View 3D model"}}
+          ],
+          "link": {
+            "map": "lm_arms_rnd",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        }
       }
     },
     "yuanyu_sanctum": {
@@ -2090,7 +2501,13 @@
           ],
           "sub": "最高议事地",
           "sub_en": "Supreme council",
-          "cls": "capital", "link": {"map": "lm_holy_mountain", "label": "查看三维模型", "label_en": "View 3D model"}},
+          "cls": "capital",
+          "link": {
+            "map": "lm_holy_mountain",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "holy_mountain": {
           "name": "悬浮圣山",
           "name_en": "Floating Holy Mountain",
@@ -2098,7 +2515,13 @@
           "alias": [
             "悬浮圣山",
             "圣山"
-          ], "link": {"map": "lm_holy_mountain", "label": "查看三维模型", "label_en": "View 3D model"}},
+          ],
+          "link": {
+            "map": "lm_holy_mountain",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "shrine_ring": {
           "name": "圣山神龛环",
           "name_en": "Shrine ring",
@@ -2106,7 +2529,13 @@
           "alias": [
             "神龛环"
           ],
-          "wb_list": false, "link": {"map": "lm_holy_mountain", "label": "查看三维模型", "label_en": "View 3D model"}},
+          "wb_list": false,
+          "link": {
+            "map": "lm_holy_mountain",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        },
         "pilgrim_stair": {
           "name": "朝圣步道",
           "name_en": "Pilgrim way",
@@ -2114,7 +2543,13 @@
           "alias": [
             "朝圣步道"
           ],
-          "wb_list": false, "link": {"map": "lm_holy_mountain", "label": "查看三维模型", "label_en": "View 3D model"}}
+          "wb_list": false,
+          "link": {
+            "map": "lm_holy_mountain",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
+        }
       }
     },
     "yuanyu_city": {
@@ -2157,7 +2592,11 @@
             "朝圣广场"
           ],
           "wb_list": false,
-          "link": {"map": "lm_yuanyu_city", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_yuanyu_city",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "spire_quarter": {
           "name": "尖塔区",
@@ -2167,7 +2606,11 @@
             "尖塔区"
           ],
           "wb_list": false,
-          "link": {"map": "lm_yuanyu_city", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_yuanyu_city",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "dome_quarter": {
           "name": "穹顶区",
@@ -2177,7 +2620,11 @@
             "穹顶区"
           ],
           "wb_list": false,
-          "link": {"map": "lm_yuanyu_city", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_yuanyu_city",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "city_gate": {
           "name": "原域东门",
@@ -2187,7 +2634,11 @@
             "原域东门"
           ],
           "wb_list": false,
-          "link": {"map": "lm_yuanyu_city", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_yuanyu_city",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         }
       }
     },
@@ -2312,7 +2763,11 @@
           "sub": "圆桌第一席封地",
           "sub_en": "First Seat Fief",
           "cls": "capital",
-          "link": {"map": "lm_fief1", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief1",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief1_order": {
           "name": "第一席骑士团驻地",
@@ -2323,7 +2778,11 @@
             "第一席骑士团"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief1", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief1",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief1_village": {
           "name": "第一席领地城镇",
@@ -2334,7 +2793,11 @@
             "第一席领地村镇"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief1", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief1",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief1_fields": {
           "name": "第一席领地农田",
@@ -2344,7 +2807,11 @@
             "第一席领地农田"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief1", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief1",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         }
       }
     },
@@ -2389,7 +2856,11 @@
           "sub": "圆桌第五席封地",
           "sub_en": "Fifth Seat Fief",
           "cls": "capital",
-          "link": {"map": "lm_fief5", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief5",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief5_order": {
           "name": "第五席骑士团驻地",
@@ -2400,7 +2871,11 @@
             "第五席骑士团"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief5", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief5",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief5_village": {
           "name": "第五席领地城镇",
@@ -2411,7 +2886,11 @@
             "第五席领地村镇"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief5", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief5",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief5_fields": {
           "name": "第五席领地农田",
@@ -2421,7 +2900,11 @@
             "第五席领地农田"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief5", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief5",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief5_lists": {
           "name": "第五席比武场",
@@ -2431,7 +2914,11 @@
             "第五席比武场"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief5", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief5",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         }
       }
     },
@@ -2476,7 +2963,11 @@
           "sub": "圆桌第二席封地",
           "sub_en": "Second Seat Fief",
           "cls": "capital",
-          "link": {"map": "lm_fief2", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief2",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief2_order": {
           "name": "第二席骑士团驻地",
@@ -2487,7 +2978,11 @@
             "第二席骑士团"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief2", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief2",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief2_village": {
           "name": "第二席领地城镇",
@@ -2498,7 +2993,11 @@
             "第二席领地村镇"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief2", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief2",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief2_fields": {
           "name": "第二席领地农田",
@@ -2508,7 +3007,11 @@
             "第二席领地农田"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief2", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief2",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         }
       }
     },
@@ -2553,7 +3056,11 @@
           "sub": "圆桌第三席封地",
           "sub_en": "Third Seat Fief",
           "cls": "capital",
-          "link": {"map": "lm_fief3", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief3",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief3_order": {
           "name": "第三席骑士团驻地",
@@ -2564,7 +3071,11 @@
             "第三席骑士团"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief3", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief3",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief3_village": {
           "name": "第三席领地城镇",
@@ -2575,7 +3086,11 @@
             "第三席领地村镇"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief3", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief3",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief3_fields": {
           "name": "第三席领地农田",
@@ -2585,7 +3100,11 @@
             "第三席领地农田"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief3", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief3",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         }
       }
     },
@@ -2630,7 +3149,11 @@
           "sub": "圆桌第四席封地",
           "sub_en": "Fourth Seat Fief",
           "cls": "capital",
-          "link": {"map": "lm_fief4", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief4",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief4_order": {
           "name": "第四席骑士团驻地",
@@ -2641,7 +3164,11 @@
             "第四席骑士团"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief4", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief4",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief4_village": {
           "name": "第四席领地城镇",
@@ -2652,7 +3179,11 @@
             "第四席领地村镇"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief4", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief4",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         },
         "fief4_fields": {
           "name": "第四席领地农田",
@@ -2662,7 +3193,11 @@
             "第四席领地农田"
           ],
           "wb_list": false,
-          "link": {"map": "lm_fief4", "label": "查看三维模型", "label_en": "View 3D model"}
+          "link": {
+            "map": "lm_fief4",
+            "label": "查看三维模型",
+            "label_en": "View 3D model"
+          }
         }
       }
     }
