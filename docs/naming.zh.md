@@ -365,7 +365,7 @@
 | **chat / script / global variable** | 我们用到的酒馆助手三种变量作用域：聊天（`eden_map`、`eden_wb_ver`）、脚本（`eden_prefs`）、全局（`eden_wb_*`）。 | 表 E 和表 F。 | 浏览器 `localStorage` 键（`edenMap*`）。 |
 | **worldbook add-on** | 我们自己的世界书（名字前缀 `伊甸地图·`），条目带 `extra.eden_id`；是我们唯一会写的世界书。 | `tavern/wbsync.mjs`、`wb_jit.mjs`、`wb_crystallize.mjs`。 | 卡自带的世界书和用户的世界书（永不触碰）。 |
 | **crystallization / JIT hydration** | 结晶：把坐实的剧情事实沉淀成附加条目。JIT 水合：只启用与当前地点相关的条目。 | `wb_crystallize.mjs`、`wb_jit.mjs`。 | 彼此：一个写条目，一个切换 `enabled`。 |
-| **planner (navigator)** | 由用户自己的 API key 驱动的可选后台规划器；只返回操作块、不返回自由文本。 | `tavern/navigator.mjs`、`llm.mjs`、`ops.mjs`。 | 浏览器的 `navigator` 对象。 |
+| **AI advisor (planner)（AI 参谋）** | 由用户自己的 API key 驱动的可选后台规划器，对用户叫「AI 参谋」/ “AI advisor”（N7，S7-1）；只返回操作块、不返回自由文本。内部仍叫 “planner” / “navigator”。 | `tavern/navigator.mjs`、`llm.mjs`、`ops.mjs`。 | 浏览器的 `navigator` 对象；旧的面向用户名称「地图领航员」。 |
 | **keyframe / checkpoint** | 关键帧：把逐层状态压缩成变更点，可丢弃的缓存。检查点：最后确认的楼层与 swipe，启动时用来作废过期状态。 | `keyframes.mjs`、`modes.mjs`；键 `关键帧`、`检查点`。 | 故事的存档点。 |
 | **tier / lean / inset** | 档位：瓦片加载的清晰度上限。lean：省流判断。插图：高倍放大时叠加的单独高分辨率瓦片图。 | `app/tiers.mjs`、`app/insets.mjs`。 | 价格档位；`insets[]` 是数据侧的字段。 |
 | **probe** | `tools/browser/` 下驱动查看器的浏览器脚本，或为它加的 `window.__…` 接口。 | `tools/browser/` 下 51 个文件；探针接口见表 C。 | 网络探测或能力探测（`hostFns` 的功能探测）。 |
@@ -406,3 +406,5 @@
 (d) **聊天消息位置叫 `msgIndex`；建筑楼层叫 `storey`；标识符里不再使用 “floor” 这个词。** 相关表格行和词汇表条目已同步；`楼` 之类的中文键随 S10 外部批次处理。关闭待办第 7 条。
 
 (e) **`baibai.mjs` 改为 `imagegen-bridge.mjs`**（不用 `appearance-bridge`）。关闭待办第 8 条。
+
+(f) **面向用户的「地图领航员」改称「AI 参谋」/ “AI advisor”（N7，S7-1）。** 内部标识不变：`nav-ops`、`edenMapNav*`、`planner-gateway.mjs`、`NavOpsApi`、操作名与送给模型的系统提示词角色行。词汇表条目 **AI advisor (planner)** 取代 “planner (navigator)” 的面向用户措辞。
