@@ -46,6 +46,13 @@ node tools/browser/s43_parity.mjs --diff <前目录> <后目录> [--out <差异�
 ```
 桌面 1440×900：`REG.maps` 每张图的深 / 浅色截图，加世界图上猎季营地的卡、设置「更新」「版权」页、图例面板、花屏中、色觉 rg 下的事态列表。动画与加载状态文字冻结。`--diff` 在页面画布里逐像素比（亮度差 > 12），每张一行 `名 changed=<n> (<百分比>)`，有差异的写差异 PNG 和 `parity.json`。同一棵树跑两遍量噪声（云、花屏）。
 
+## 图层对拍（S8-1）
+```bash
+node tools/browser/layer_dump.mjs <输出.json> [--pack eden|town]
+node tools/browser/layer_dump.mjs --diff <前.json> <后.json>
+```
+桌面 1440×900：每个包（缺省先第一个包再 `?pack=town`）的 `LayerHostApi.describe()`、图层菜单每一行（id、勾选框 id、文字、勾选、隐藏）与 `.vpslot` 槽位；`--diff` 忽略新增的 `describe.declared` 字段，有差异退出码 1。
+
 ## 文字对拍（S4-4）
 ```bash
 node tools/browser/text_dump.mjs --out <目录> [--pack eden|town] [--lang zh|en] [--only dict]
