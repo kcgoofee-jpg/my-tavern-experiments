@@ -32,9 +32,7 @@
       "description": "schema-2 节点叠加层 overlay.v2.json（K-R67，docs/kernel-schema.md）：紧挨清单的文件，声明了才取；层词、城区、城郊等 v2 数据"
     },
     "routine": { "$ref": "#/$defs/path", "description": "NPC 日程表（Part 5-3，结构见 core/routine.mjs）；键与 id 一律 ASCII，中文只允许出现在值里" },
-        "galleries": { "$ref": "#/$defs/path", "description": "房间图库索引（三维庄园类包）；缺省 = 这项功能不开（K-R70 随附）" },
         "worldbook_addon": { "$ref": "#/$defs/path", "description": "世界书附加条目成品 JSON（tools/build_worldbook_addon.py 的产物，宿主自检与 JIT 读）" },
-        "gallery": { "$ref": "#/$defs/path", "description": "标记图集数据（卡片里的图集）" },
         "patrol": { "$ref": "#/$defs/path", "description": "巡逻岗哨 / 机兵的视野锥 {walls?, guards: [...]}（Part 5-2，结构见 core/vision.mjs）" }
       } },
     "preload": { "type": "array", "items": { "$ref": "#/$defs/path" }, "description": "启动预取的数据文件（查看器首帧按包注入 <link rel=preload>；路径相对清单目录，eden 相对 map/）" },

@@ -58,7 +58,7 @@ test('账实对拍：庄园清单的 glb / data 文件都真实存在，floors �
   assert.deepEqual(estateManifest.floors, rooms.floors.map(f => f.id), '清单 floors = 房间数据的楼层顺序');
   const n = Estate3D.normalize(estateManifest, { base: estateBase });
   for (const p of ['site', 'house']) for (const t of ['std', 'low']) assert.ok(existsSync(new URL(n.parts[p][t])), `estate ${p}.${t}`);
-  for (const k of ['rooms', 'zones', 'galleries']) assert.ok(existsSync(new URL(n.data[k])), `estate data.${k}`);
+  for (const k of ['rooms', 'zones']) assert.ok(existsSync(new URL(n.data[k])), `estate data.${k}`);
 });
 test('账实对拍：55 个地标清单全部合格——id = 目录名、glb 文件在盘、热点 id 唯一', () => {
   const dirs = readdirSync(new URL('props/', root)).filter(d => !d.endsWith('.html') && !d.startsWith('.'));

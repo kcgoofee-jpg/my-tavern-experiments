@@ -1,3 +1,0 @@
-{
-  "_note": "旧机制：仓库自带渲染图的房间图集（曾用于衣帽间）。衣帽间渲染图已移出通用图集，改走 closet/ 的三维 / 热点入口；这里先清空，留给以后要挂仓库渲染图的房间用。用户自己上传的图片走 map/core/room-gallery-logic.mjs + IndexedDB（本地）与 map/data/gallery.json（公开投稿清单），两套互不影响。"
-}

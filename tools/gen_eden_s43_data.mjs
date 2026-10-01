@@ -4,7 +4,7 @@
 //   map/packs/eden/overlay.v2.json   ui (K-R70: theme.views, legend, x-event-level), events.groups[].x-cvd, node tiancheng hint 全城, llm.x-tag-examples
 //   map/data/maps.json               clouds / tint / tier_label(_en) on the tier maps; the lm_hunting_camp 3D entry (T7)
 //   map/data/world_markers.json      here_words (tiancheng), realms[].label_dy, overseas {at,name,sub,src}, hunting_camp link (T7)
-//   map/packs/eden/manifest.json     worldbook.prefix, credits, data.galleries / worldbook_addon / gallery
+//   map/packs/eden/manifest.json     worldbook.prefix, credits, data.worldbook_addon
 // Every value is read from the frozen copies or the existing files, never retyped. Idempotent: running it twice changes nothing. Kept for the record.
 //   node tools/gen_eden_s43_data.mjs [--write]      prints what would change (or writes it)
 import fs from 'node:fs';
@@ -94,7 +94,7 @@ const man = J('map/packs/eden/manifest.json');
 man.worldbook = { addon: man.worldbook.addon, prefix: '伊甸地图' };
 man.credits = { card: { creator: 'Yehehua' }, pack: [{ name: 'kcgoofee-jpg', role: 'map', url: 'https://github.com/kcgoofee-jpg/my-tavern-experiments' }],
   assets: [{ name: 'Poly Haven', license: 'CC0', url: 'https://polyhaven.com' }, { name: 'ambientCG', license: 'CC0', url: 'https://ambientcg.com' }] };
-Object.assign(man.data, { galleries: 'data/room_galleries.json', worldbook_addon: 'data/worldbook_addon.json', gallery: 'data/gallery.json' });
+Object.assign(man.data, { worldbook_addon: 'data/worldbook_addon.json' });   // S9b: the galleries moved into the pack's media (K-R101)
 out['map/packs/eden/manifest.json'] = JSON.stringify(man, null, 2) + '\n';
 
 for (const [p, text] of Object.entries(out)) {

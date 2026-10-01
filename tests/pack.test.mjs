@@ -21,7 +21,7 @@ test('eden 清单是唯一定义（没有内置 EDEN 常量）；eden 的键与�
   assert.equal(PK.EDEN, undefined); assert.equal(PK.EDEN_RESOLVED, undefined);
   let asked = null; const R = await PK.load('eden', { fetchJSON: async u => { asked = u; return m; } });
   assert.equal(asked, 'packs/eden/manifest.json'); assert.equal(R.base, ''); assert.equal(R.chatVar, 'eden_map'); assert.equal(R.prefix, 'edenMap');
-  assert.deepEqual(R.data, { maps: 'data/maps.json', world: 'data/world_markers.json', derived: 'data/derived.json', rooms: 'data/eden_estate_rooms.json', security: 'data/security.json', roster: 'data/fallback_roster.json', events: 'builtin', stash: 'data/stash.json', routine: 'data/routine.json', overlay: 'packs/eden/overlay.v2.json', names: { en: 'packs/eden/names.en.json' }, galleries: 'data/room_galleries.json', worldbook_addon: 'data/worldbook_addon.json', gallery: 'data/gallery.json' });
+  assert.deepEqual(R.data, { maps: 'data/maps.json', world: 'data/world_markers.json', derived: 'data/derived.json', rooms: 'data/eden_estate_rooms.json', security: 'data/security.json', roster: 'data/fallback_roster.json', events: 'builtin', stash: 'data/stash.json', routine: 'data/routine.json', overlay: 'packs/eden/overlay.v2.json', names: { en: 'packs/eden/names.en.json' }, worldbook_addon: 'data/worldbook_addon.json' });
   assert.deepEqual(R.preload, ['data/maps.json', 'data/world_markers.json', 'data/derived.json']);
   // 启动预取数据驱动（通用化 v1）：viewer.html 不再写死 eden 的数据预取，按包 id 注入清单链接 + 清单 preload 列
   const v = rd('map/viewer.html');

@@ -11,8 +11,7 @@
  "floors": ["B2", "B1", "F1", "F2", "F3"],
  "data": {
   "rooms": "../../data/eden_estate_rooms.json",
-  "zones": "zones.json",
-  "galleries": "../../data/room_galleries.json"
+  "zones": "zones.json"
  },
  "budget": { "anisotropy": 8, "anisotropy_low": 4, "low_device_memory_gb": 4 },
  "license": { "credit": { "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "en": "Own model; textures Poly Haven / ambientCG (CC0)" } }

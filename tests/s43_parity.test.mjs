@@ -129,7 +129,7 @@ test('credits and data paths: the first pack\'s manifest carries the author cred
   assert.deepEqual(man.credits.assets.map(a => [a.name, a.license]), [['Poly Haven', 'CC0'], ['ambientCG', 'CC0']]);
   assert.deepEqual(R.credits, man.credits); assert.deepEqual(R.worldbook, man.worldbook); assert.equal(R.worldbook.prefix, '伊甸地图');
   assert.equal(PK.resolve(J('map/packs/town/manifest.json')).credits, null);   // a pack without credits shows no credit rows
-  for (const k of ['galleries', 'worldbook_addon', 'gallery', 'roster', 'maps', 'routine']) assert.ok(man.data[k], k);
+  for (const k of ['worldbook_addon', 'roster', 'maps', 'routine']) assert.ok(man.data[k], k);
   // the dictionary sentences take the creator / the book name by placeholder; the values that came out are the old words
   assert.equal(ZH['s.lic_orig_v'].replace('{creator}', man.credits.card.creator), 'Yehehua（类脑社区）原创；地图是经授权的二次创作（2026-09-27 起）');
   assert.equal(EN['s.lic_orig_v'].replace('{creator}', man.credits.card.creator), 'Created by Yehehua (the Leinao community); the map is an authorized derivative work (since 2026-09-27)');   // S4-4 T6: the Chinese community name is an English one now

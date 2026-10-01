@@ -24,6 +24,7 @@ test('an overlay may hold media alone, and a node\'s media list is replaced like
 });
 test('compat: an overlay media block becomes pack.media and node media; the first pack\'s overlay with "media": {} changes nothing', () => {
   const eden = J('packs/eden/overlay.v2.json'), a = fromV1({ ...inputs(), overlay: eden });
+  assert.deepEqual(eden.media, {}, 'the migration put an empty media block into the first pack\'s overlay');
   const without = { ...eden }; delete without.media; const b = fromV1({ ...inputs(), overlay: without });
   assert.deepEqual(a.pack, b.pack); assert.equal(a.pack.media, undefined); assert.deepEqual(a.problems, b.problems);
   const c = fromV1({ ...inputs(), overlay: { ...without, media: { pic: { src: 'art/a.webp' } }, nodes: [...without.nodes, { id: a.pack.nodes[0].id, media: ['pic'] }] } });

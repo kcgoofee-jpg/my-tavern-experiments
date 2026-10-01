@@ -19,9 +19,7 @@
     "stash": "data/stash.json",
     "routine": "data/routine.json",
     "overlay": "packs/eden/overlay.v2.json",
-    "galleries": "data/room_galleries.json",
     "worldbook_addon": "data/worldbook_addon.json",
-    "gallery": "data/gallery.json",
     "names": {
       "en": "packs/eden/names.en.json"
     }

@@ -182,14 +182,12 @@ for mid, m in maps.items():
     de = data.get(mid, {}).get('extent_m')
     if de and [round(x) for x in de] != [round(x) for x in ext]: err(f'{mid}.view.extent_m {ext} 与渲染数据的 extent_m {de} 不一致')
 # 跨层通道
-GALLERIES = {k for k in json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'map', 'data', 'room_galleries.json'), encoding='utf-8')) if not k.startswith('_')}
 for mid, m in maps.items():
     for i, v in (m.get('markers') or {}).items():
         l3 = v.get('link3d')   # 可选的三维链接（与 link 并存）
         if l3 and l3.get('map') not in maps: err(f"{mid}.{i}.link3d → 地图 {l3.get('map')} 不存在")
         if l3 and not (maps.get(l3.get('map'), {}).get('viewer3d')): err(f"{mid}.{i}.link3d → {l3.get('map')} 不是 viewer3d 三维条目")
-        g = v.get('gallery')   # 可选的房间图集入口（data/room_galleries.json 的键）
-        if g and g.get('id') not in GALLERIES: err(f"{mid}.{i}.gallery → 图集 {g.get('id')} 不在 room_galleries.json")
+        if 'gallery' in v: err(f"{mid}.{i}.gallery：标记上的图集入口已取消（S9b / E-08）：地点的图放在设定包的 media 块与节点 media 列表里（K-R101）")
         l = v.get('link')
         if not l: continue
         if l.get('map') not in maps: err(f"{mid}.{i}.link → 地图 {l.get('map')} 不存在"); continue
@@ -319,38 +317,6 @@ else:
         if not f.get('label'): warn(f'feeds[{j}] 没有 label（地点卡里的「来源」会空着）')
         if 'every' in f and not (isinstance(f['every'], (int, float)) and f['every'] >= 60): err(f'feeds[{j}].every 应为 ≥ 60 的秒数')
 
-# 房间图集公开清单（map/data/gallery.json）：每条 rooms.<roomId>.images[] 必须指向 map/art/gallery/<roomId>/<file>，
-# 类型白名单 webp/jpg/jpeg/png，单文件 ≤ GALLERY_MAX_BYTES——防止 gallery.json 被改成指向仓库外/任意路径的图（查看器只信这里通过检查的清单）。
-GALLERY_MAX_BYTES = 3 * 1024 * 1024
-GALLERY_EXT = {'.webp', '.jpg', '.jpeg', '.png'}
-def _filesize(p):
-    if REV is None: return os.path.getsize(p)
-    r = _sp.run(['git', 'cat-file', '-s', f'{REV}:{_rel(p)}'], cwd=os.path.join(ROOT, '..'), capture_output=True, text=True)
-    if r.returncode: return -1
-    try: return int(r.stdout.strip())
-    except ValueError: return -1
-_gal_path = os.path.join(ROOT, 'data', 'gallery.json')
-if exists(_gal_path):
-    try: gal = load(_gal_path)
-    except (json.JSONDecodeError, FileNotFoundError) as e: gal = None; err(f'gallery.json 读取失败：{e}')
-    if gal is not None:
-        if not isinstance(gal.get('rooms'), dict): err('gallery.json: rooms 应为对象')
-        else:
-            for rid, rr in gal['rooms'].items():
-                imgs = (rr or {}).get('images')
-                if not isinstance(imgs, list): err(f'gallery.json.rooms.{rid}: images 应为列表'); continue
-                for i, im in enumerate(imgs):
-                    fn = (im or {}).get('file')
-                    if not fn or not isinstance(fn, str) or '/' in fn or '\\' in fn or fn.startswith('.'):
-                        err(f'gallery.json.rooms.{rid}[{i}]: file 必须是仅文件名（不能带路径/以.开头）：{fn!r}'); continue
-                    ext = os.path.splitext(fn)[1].lower()
-                    if ext not in GALLERY_EXT: err(f'gallery.json.rooms.{rid}[{i}]: 文件类型 {ext} 不在白名单 {sorted(GALLERY_EXT)}'); continue
-                    fp = os.path.join(ROOT, 'art', 'gallery', rid, fn)
-                    if not exists(fp): err(f'gallery.json.rooms.{rid}[{i}]: 找不到文件 map/art/gallery/{rid}/{fn}'); continue
-                    sz = _filesize(fp)
-                    if sz < 0: err(f'gallery.json.rooms.{rid}[{i}]: 读不到文件大小 map/art/gallery/{rid}/{fn}')
-                    elif sz > GALLERY_MAX_BYTES: err(f'gallery.json.rooms.{rid}[{i}]: 文件 {sz} 字节超过上限 {GALLERY_MAX_BYTES}（map/art/gallery/{rid}/{fn}）')
-
 # C3 命名门控：map/ 下的文件路径、以及数据里的 id 类字段（地图 id、标记 id、房间 id、世界书条目 id、图集 roomId）
 # 必须是 ASCII（显示字段 name/tag/词表不在检查之列，白名单见 docs/project-design.md §5.1）。
 def _nonascii(x): return re.search(r'[^\x00-\x7f]', str(x))
@@ -371,12 +337,6 @@ _wb = os.path.join(ROOT, 'data', 'worldbook_addon.json')
 if exists(_wb):
     for _e in (load(_wb).get('entries') or []):
         if _nonascii(_e.get('id', '')): err(f"worldbook_addon.json: 条目 id 非 ASCII：{_e.get('id')!r}")
-if exists(_gal_path):
-    try: _gal2 = load(_gal_path)
-    except (json.JSONDecodeError, FileNotFoundError): _gal2 = None
-    if isinstance(_gal2, dict):
-        for _rid in _gal2.get('rooms', {}):
-            if _nonascii(_rid): err(f'gallery.json: roomId 非 ASCII：{_rid!r}')
 
 for w in warns: print('警告', w)
 for e in errors: print('错误', e)

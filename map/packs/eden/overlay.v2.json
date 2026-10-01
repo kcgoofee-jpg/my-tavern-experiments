@@ -1,6 +1,7 @@
 {
   "_note": "Schema-2 overlay of the schema-1 eden pack (docs/kernel-schema.md K-R67): tier hints, the outskirts and beyond nodes, district nodes with `at`. Nodes generated once by tools/gen_eden_overlay_v2.mjs from the pre-S3-2 event constants; the events block (K-R68: taxonomy, glitch preset, closed words, examples) and the injected-line tag by tools/gen_eden_events_v2.mjs from the pre-S4-1 constants.",
   "schema": 2,
+  "media": {},
   "nodes": [
     {
       "id": "silver_crown",

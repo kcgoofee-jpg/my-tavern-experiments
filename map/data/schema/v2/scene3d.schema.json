@@ -121,9 +121,6 @@
         },
         "zones": {
           "type": "string"
-        },
-        "galleries": {
-          "type": "string"
         }
       }
     },

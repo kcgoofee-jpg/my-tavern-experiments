@@ -49,8 +49,6 @@
       "properties": { "map": { "$ref": "#/$defs/id" }, "marker": { "$ref": "#/$defs/id" }, "label": { "type": "string" }, "label_en": { "type": "string" } } },
     "link3d": { "type": "object", "required": ["map"], "additionalProperties": false, "description": "三维模型入口（指向 viewer3d 条目，与 link 并存）",
       "properties": { "map": { "$ref": "#/$defs/id" }, "label": { "type": "string" }, "label_en": { "type": "string" } } },
-    "gallery": { "type": "object", "required": ["id"], "additionalProperties": false, "description": "房间图集入口（data/room_galleries.json 的键）",
-      "properties": { "id": { "$ref": "#/$defs/str" }, "label": { "type": "string" }, "label_en": { "type": "string" } } },
     "inset": { "type": "object", "required": ["id", "base", "bounds", "res_px"], "additionalProperties": false, "description": "局部高清插图：只在放大到某个小范围（如一座庄园）时叠加一张更高分辨率的瓦片图，避免整张底图为了这一小块而放大到糊",
       "properties": {
         "id": { "$ref": "#/$defs/id" },
@@ -70,7 +68,7 @@
         "opening_dest": { "type": "boolean" },
         "econ": { "type": "string" }, "econ_en": { "type": "string" },
         "island": { "$ref": "#/$defs/id", "description": "该标记对应的岛表 id（blender/data/tc_islands.json 的 id）：纵深数据按岛算 d，前端据此调标签不透明度（label 通道）与视差（parallax 通道）" },
-        "link": { "$ref": "#/$defs/link" }, "link3d": { "$ref": "#/$defs/link3d" }, "gallery": { "$ref": "#/$defs/gallery" }, "cover": { "$ref": "#/$defs/cover" } } },
+        "link": { "$ref": "#/$defs/link" }, "link3d": { "$ref": "#/$defs/link3d" }, "cover": { "$ref": "#/$defs/cover" } } },
     "map": { "type": "object", "required": ["title", "kind"], "additionalProperties": false, "patternProperties": { "^_": {} },
       "properties": {
         "title": { "$ref": "#/$defs/str" }, "title_en": { "type": "string" },

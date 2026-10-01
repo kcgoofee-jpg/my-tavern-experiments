@@ -10,7 +10,7 @@
 //   hotspots 可选。[{ id, … }]（地标热点；主场景的室外热点在 data.zones 文件里，不进清单）
 //   budget   可选。体积 / 档位预算（旧地标的 per-group budgets 也认，describe 原样带出）
 //   license  可选。署名与许可（旧地标的 credit 也认 → { credit }）
-//   data     可选。{ rooms?, zones?, galleries? } 数据文件路径，相对清单所在目录解析
+//   data     可选。{ rooms?, zones? } 数据文件路径，相对清单所在目录解析
 //   其余字段原样保留（容错：未知字段不报错、不丢——_说明 / v / f1_z / groups / camera / section / flows 都走这条）
 // 路径解析：给了 base（清单 URL）就解析成绝对地址；档位兜底：low 档缺失回落 std。
 const okPart = g => typeof g === 'string' ? { std: g }
@@ -46,7 +46,7 @@ export function normalize(raw, { base = null } = {}) {
   const errors = validate(raw), parts = glbParts(raw), out = {};
   for (const [k, g] of Object.entries(parts)) out[k] = { std: resolvePath(g.std, base), ...(g.low != null ? { low: resolvePath(g.low, base) } : {}) };
   const d = raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : {}, data = {};
-  for (const k of ['rooms', 'zones', 'galleries']) if (typeof d[k] === 'string') data[k] = resolvePath(d[k], base);
+  for (const k of ['rooms', 'zones']) if (typeof d[k] === 'string') data[k] = resolvePath(d[k], base);
   return { ok: !errors.length, errors, id: raw?.id ?? null, parts: out, data, base, manifest: raw && typeof raw === 'object' ? raw : null };
 }
 /** 标准化摘要（上下文预算 / 多卡通用契约）：{ id, glbPath, floors, hotspots, budget, license }，固定六键。
