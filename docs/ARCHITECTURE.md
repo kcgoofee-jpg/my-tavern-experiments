@@ -109,6 +109,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `rng.mjs` | Deterministic pseudo-random generator (mulberry32) shared by particles, traffic and clue nodes. |
 | `room-gallery-db.mjs` | IndexedDB wrapper for room gallery images (browser only). |
 | `room-gallery-logic.mjs` | Pure gallery logic: resize dimensions, quota checks, export bundle shape. |
+| `scene-header.mjs` | Scene header (K-R105): reads a floor's `<tag>place·date·time</tag>` block without a regex and decides one floor's place: this floor's variable patch, then the header place when it resolves, then the carried variable. |
 | `roster.mjs` | CharacterRosterSystem: five-source roster merged into standard `RosterRow`s with priority arbitration, aliases and portraits. |
 | `routine.mjs` | NPC schedule math shared by host and viewer. |
 | `scene3d-manifest.mjs` | Estate3D manifest contract: validates and resolves model URLs, data paths and tier fallbacks for the estate and prop 3D pages. |

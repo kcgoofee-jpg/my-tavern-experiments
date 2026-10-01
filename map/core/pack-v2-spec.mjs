@@ -104,7 +104,8 @@ export const viewsBlock = block(dict(ID, view), 'object');
 const vpath = str({ re: re('^[^.\\n][^\\n]{0,79}$') });
 const period = obj({ id: str({ re: re('^[a-z][a-z0-9_]{0,31}$') }), label: str({ min: 1 }), i18n: i18n(['label']), start: str({ re: re('^([01][0-9]|2[0-3]):[0-5][0-9]$') }),
   words: arr(str({ re: NL(40) })), dark: bool }, { req: ['id', 'start'], ...B });
-export const varsBlock = block(obj({ location: vpath, time: vpath, date: vpath, period: vpath, outfit: vpath, reputation: vpath, inventory: vpath, periods: arr(period, { min: 1, max: 12 }) }, B), 'object');
+export const varsBlock = block(obj({ location: vpath, time: vpath, date: vpath, period: vpath, outfit: vpath, reputation: vpath, inventory: vpath, periods: arr(period, { min: 1, max: 12 }),
+  header: obj({ tag: str({ re: re('^[A-Za-z][A-Za-z0-9_-]{0,31}$') }), sep: str({ re: re('^[^<\\n]{1,8}$') }), fields: arr(oneOf(['place', 'date', 'time']), { min: 1, max: 3 }) }, { req: ['tag', 'fields'] }) }, B), 'object');
 
 const rl = label(40), n40 = str({ re: NL(40) }), step = obj({ label: rl, i18n: i18n(['label']), up_to: num(), match: arr(n40) }, { req: ['label'], ...B });
 const field = obj({ field: str({ min: 1, re: NL(40) }), label: rl, i18n: i18n(['label']), kind: oneOf(['text', 'gauge', 'ladder', 'tag']), min: num(), max: num(),

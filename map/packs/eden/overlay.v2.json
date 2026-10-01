@@ -344,6 +344,7 @@
     "date": "世界.当前日期",
     "period": "世界.当日时段",
     "outfit": "主角.着装",
+    "header": {"tag":"time","sep":"·","fields":["place","date","time"]},
     "periods": [
       {"id":"dawn","start":"05:00","words":["晨","黎明","清晨","早","dawn","morning"]},
       {"id":"day","start":"07:00","words":["日间","白天","午","day","noon","afternoon"]},

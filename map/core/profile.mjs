@@ -4,12 +4,13 @@
 //   KERNEL                       the profile of a pack that names nothing: every path and field is discovered (K-R38, K-R42), default period bands (K-R39)
 //   slotDef(profile, slot)       the field definition of a roster slot (`x-slot`), or the kernel's default for its kind
 //   portraitOk(avatar, url)      K-R43: may this card-script portrait be loaded?
-// profile = { paths: { location, time, date, period, outfit, reputation, inventory }, periods, groups, presentId, stageGroup, tables, place, slots, fields, avatar, pickup }
+// profile = { paths: { location, time, date, period, outfit, reputation, inventory }, header (K-R105: the scene header form { tag, sep, fields } or null), periods, groups, presentId, stageGroup, tables, place, slots, fields, avatar, pickup }
 //   pickup   { verbs, verbs_strict, verbs_off, not_items }: the pack's pickup words merged over languages (K-R77), read by core/pickup.mjs scan({ vocab })
 //   groups   the pack's entity groups, the present one first and the others in the pack's order: [{ id, label?, mvu }]; a pack that declares none has the three discovered ones (present, members, targets)
 //   presentId  the id of the present group ('present' unless the pack flags another)    stageGroup  the id of the second group after the present one ('' = none): the one whose rows carry the stage order
 //   tables   the mvu table of each group by group id ('' = discovered)       place  the place field of the present group's rows
 import { DEFAULT_PERIODS } from './periods.mjs';
+import { headerSpec } from './scene-header.mjs';
 import { applyOverlayVars, applyOverlayEntities, applyOverlayItems } from './overlay-v2.mjs';
 
 export const PATH_KEYS = ['location', 'time', 'date', 'period', 'outfit', 'reputation', 'inventory'];
@@ -42,7 +43,7 @@ export function profileOf(pack) {
   const named = groups.length ? groups.filter((g, i) => groups.findIndex(x => x.id === g.id) === i) : DEFAULT_GROUPS;   // pack order, an id once
   const first = named.find(g => g.id === presentId) || { id: presentId }, list = [first, ...named.filter(g => g !== first)].map(g => ({ id: g.id, ...(str(g.label) && g.label ? { label: g.label } : {}), ...(isObj(g.i18n) ? { i18n: g.i18n } : {}), mvu: str(src(g).mvu) ? src(g).mvu : '' }));
   const tables = Object.fromEntries(list.map(g => [g.id, g.mvu])), after = list.filter(g => g.id !== presentId);
-  return clone({ paths, periods: Array.isArray(v.periods) && v.periods.length ? v.periods : DEFAULT_PERIODS, groups: list, presentId, stageGroup: after[1]?.id || '', tables, place: (present && str(src(present).place) && src(present).place) || '',
+  return clone({ paths, header: headerSpec(v.header), periods: Array.isArray(v.periods) && v.periods.length ? v.periods : DEFAULT_PERIODS, groups: list, presentId, stageGroup: after[1]?.id || '', tables, place: (present && str(src(present).place) && src(present).place) || '',
     slots, fields, avatar: isObj(e.avatar) ? e.avatar : {}, pickup: pickupOf(pack?.items) });
 }
 export const KERNEL = Object.freeze(profileOf({}));

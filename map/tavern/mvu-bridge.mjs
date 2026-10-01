@@ -14,6 +14,7 @@ import * as DB from './tabledb-bridge.mjs';
 import * as MDm from './interaction-modes.mjs';
 import * as SAN from './sanitize.mjs';
 import * as RS from '../core/roster.mjs';
+import { pickPlace } from '../core/scene-header.mjs';
 import { getProfile, setProfile } from './pack-profile.mjs';
 import { profileFromV1 } from '../core/profile.mjs';
 import { worldbookPrefix } from '../core/pack.mjs';
@@ -34,7 +35,8 @@ export class MVUBridge {
     // 变量映射（adapter）：按角色卡存本机的用户映射 + 生效映射 + 变化签名（宿主 round 签名引用 varSig）
     this.varCard = ''; this.varUser = {}; this.varMap = {}; this.varSig = '';
     // here 的来源标注：'mvu' | 'tag'（正文标签兜底，交互方式 d）| 'preset'（社区预设状态栏兜底，Part 7）；hereFromDb = 地点读自表格数据库插件
-    this.hereSrc = 'mvu'; this.hereFromDb = false;
+    // I-21：包声明了场景头（vars.header，K-R105）时再加 'header'（本楼标头里的地点）；hereWhy = 'patch' | 'header' | 'carried' | ''（没有场景头 = ''）
+    this.hereSrc = 'mvu'; this.hereFromDb = false; this.hereWhy = '';
     // 名册附属（每聊天读一次卡文本，A-3）：原作默认立绘表 + 阶段先后序
     this.portraits = {}; this.stageOrder = null;
     // 名册装配系统（P3-B，core/roster.mjs）：桥注册它拥有的三个来源；宿主再补 chat / baibai（聊天原文与扩展接口在宿主）。
@@ -165,13 +167,26 @@ export class MVUBridge {
     const { snapState, snapFloor, snapTop } = this;   // mvuStat() 更新的快照状态
     let v = '';
     try { const st = this.mvuStat(), p = this.varMap.location; v = p ? String(AD.getByPath(st, p) ?? '') : ''; } catch (e) {}
-    this.hereFromDb = false; this.hereSrc = 'mvu';
+    this.hereFromDb = false; this.hereSrc = 'mvu'; this.hereWhy = '';
+    // I-21 场景头（K-R105）：本楼变量补丁写了地点 > 本楼标头里的地点（认得出节点才算）> 往楼沿用下来的变量值；没有场景头 = 原样不动
+    if (getProfile().header && snapTop >= 0 && floorNow >= snapTop && raw != null) {
+      const r = pickPlace({ mvu: v, raw, spec: getProfile().header, path: this.varMap.location, resolves: this.o.resolves });
+      this.hereWhy = r.source === 'mvu' ? 'carried' : r.source === 'none' ? '' : r.source;
+      if (r.source === 'header') { this.hereSrc = 'header'; return r.place; }
+    }
     // 标签对账：MVU 为准；本楼 MVU 还没有快照（生成中 / 缺快照）或读不到地点时，改用最新一楼正文里明确写的地点标签（⌖地点 …），标「来自正文」
     if (MDm && (snapState !== 'ok' || !v.trim()) && snapTop >= 0 && floorNow >= snapTop) { const t = raw != null ? MDm.parseHereTag(raw) : null;
       if (t && floorNow > snapFloor) { const r = MDm.reconcile({ place: v, state: snapState }, t); if (r.source === 'tag') { v = r.place; this.hereSrc = 'tag'; } } }
     if (!v.trim()) { const d = this.#dbData(); if (d) { v = DB.protagonist(d).location; this.hereFromDb = !!v; } }
     if (!v.trim() && raw) { const h = SAN.presetHereHint(raw); if (h.here) { v = h.here; this.hereSrc = 'preset'; } }   // Part 7：社区预设状态栏的「地点：…」也认（兜底链最后一级）
     return v;
+  }
+
+  /** I-21：一楼自己的地点与来源 { place, source }（source = 'patch' | 'header' | 'mvu' | 'none'）。没有场景头 = 那一楼变量里的值（与旧行为一致）。raw = 那一楼的原文。 */
+  floorPlace(i, raw) {
+    this.#ensure(); let mvu = '';
+    try { const v = this.mvuGet(this.perFloorStat(i), this.varMap.location); mvu = typeof v === 'string' ? v : ''; } catch (e) {}
+    return pickPlace({ mvu, raw, spec: getProfile().header, path: this.varMap.location, resolves: this.o.resolves });
   }
 
   // ---------------- 世界时间 / 着装 / 名册（mvu-readers.mjs，加载后可用） ----------------

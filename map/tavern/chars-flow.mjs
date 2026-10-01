@@ -6,7 +6,7 @@ import { MVUBridge } from './mvu-bridge.mjs';
 import { cdnFetch } from './host-tavernhelper.mjs';
 export const DEPS = [
   'GEN', 'LS', 'MAN', 'PACK_ID', 'PACK_IN', 'scriptBase', 'UI', 'clockEl', 'emit', 'life', 'loadCustom', 'post', 'push', 'pushSoon', 'recomputeSoon',
-  'runCheck', 'saveRoot', 'BASE', 'CHM', 'uiLang', 'alive', 'chars', 'checkP', 'custom', 'customChat', 'floorNow', 'rep', 'roster', 'transitMod',
+  'runCheck', 'saveRoot', 'BASE', 'CHM', 'uiLang', 'alive', 'chars', 'checkP', 'custom', 'customChat', 'floorNow', 'rep', 'roster', 'transitMod', 'reg', 'regNow',
 ];
 export function createCharsFlow(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('chars-flow: missing dep ' + k);
@@ -20,8 +20,11 @@ export function createCharsFlow(host) {
   const contextPipeline = new ContextPipeline({   // 聊天上下文流水线（tavern/context.mjs）：先建（下面 mvuBridge 的标签对账要读它的消息缓存）
     stripTags: resolveTags(k => { try { return (LS || localStorage).getItem(k); } catch (e) { return null; } }),
   });
+  // I-21：场景头里的地点认不认得出节点（K-R105）：节点树定位模块与注册表都到了才算；之前一律「认不出」= 沿用变量值（旧行为），到了再推一次
+  let locateM = null;
+  const resolves = place => { try { return !!(locateM && host.regNow && locateM.locate(host.regNow, place)); } catch (e) { return false; } };
   const mvuBridge = new MVUBridge({
-    life, pack: PACK_IN, packId: PACK_ID, manifest: MAN,
+    life, pack: PACK_IN, packId: PACK_ID, manifest: MAN, resolves,
     lang: () => (host.uiLang === 'en' ? 'en' : 'zh'), isGenerating: () => GEN.generating,
     storage: () => LS || localStorage,
     floorNow: () => host.floorNow, lastRaw: () => (host.floorNow >= 0 ? contextPipeline.msgCache.get(host.floorNow)?.m?.raw ?? null : null),
@@ -29,6 +32,7 @@ export function createCharsFlow(host) {
     onTableUpdate: () => { pushSoon(); recomputeSoon(); },
     onRoster: () => sendChars(), fetchJSON: rel => cdnFetch(host.BASE + rel).then(r => r.ok ? r.json() : null).catch(() => null), onProfile: () => { sendVarMap(); push(); recomputeSoon(); sendChars(); },   // 包的变量与名册声明（清单 vars + 叠加层，K-R69）由桥取；到之前按字段名自动找
   });
+  Promise.all([import(scriptBase + 'tavern/spatial-contract.mjs'), host.reg?.()]).then(([m]) => { locateM = m; if (!life.dead) push(); }).catch(() => {});
   // P3-B 名册装配（core/roster.mjs）：mvu / table-db / fallback 三个来源桥里已注册；chat / baibai 只有宿主有——
   // 聊天 ⌖人物 标签在流水线的消息窗口里、柏宝绘外貌库按需加载。临时名册拼装（known 名单 flatMap）由装配系统统一输出。
   mvuBridge.roster.use('chat', { rows: ctx => !host.CHM || !Array.isArray(ctx?.msgs) ? [] : ctx.msgs.flatMap(m => host.CHM.parseChars(m.text).map(c => ({ name: c.name, place: c.place, source: 'chat' }))) });

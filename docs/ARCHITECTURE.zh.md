@@ -90,6 +90,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `rng.mjs` | 确定性伪随机（mulberry32），粒子、车流、线索节点共用。 |
 | `room-gallery-db.mjs` | 房间图集图片的 IndexedDB 薄封装（只在浏览器里跑）。 |
 | `room-gallery-logic.mjs` | 图集纯逻辑：缩放尺寸、配额检查、导出包结构。 |
+| `scene-header.mjs` | 场景头（K-R105）：不用正则读一楼的 `<tag>地点·日期·时间</tag>` 块，并决定一楼的地点：本楼变量补丁 > 认得出节点的头里地点 > 沿用的变量。 |
 | `roster.mjs` | CharacterRosterSystem：五源名册合并成标准 `RosterRow`，含优先级仲裁、别名互认、立绘挂载。 |
 | `routine.mjs` | 宿主与查看器共用的 NPC 日程表数学。 |
 | `scene3d-manifest.mjs` | Estate3D 清单契约：校验并解析庄园页与道具页的模型地址、数据路径与档位兜底。 |

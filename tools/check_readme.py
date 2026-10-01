@@ -93,7 +93,7 @@ def main():
     prev = [m for m in urls if m.group(3) == PREVIEW_REF]
     if not prev:
         problems.append(f'缺「跟随开发（预览线）」那条：ref 必须是 `{PREVIEW_REF}`')
-    if '--follow ' + PREVIEW_REF not in text:   # I-20：安装小节要给出带内联引导的脚本生成命令
+    if os.path.dirname(target) == ROOT and os.path.basename(target) in ('README.md', 'README.zh.md') and '--follow ' + PREVIEW_REF not in text:   # I-20：安装小节要给出带内联引导的脚本生成命令
         problems.append(f'安装小节缺 `build_preview_script.py --follow {PREVIEW_REF}`（带内联引导的脚本，I-20）')
     for m in urls:
         if m.group(2) != slug:

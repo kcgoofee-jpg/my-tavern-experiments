@@ -64,12 +64,12 @@ export function createStashFlow(host) {
   const worldNames = () => { try { return worldModule && world ? worldModule.rows(world, {}).map(r => r?.name).filter(Boolean) : []; } catch (e) { return []; } };
   const worldIds = () => { try { return new Set(worldModule && world ? worldModule.rows(world, {}).map(r => r?.id).filter(Boolean) : []); } catch (e) { return new Set(); } };
   /** 那一楼自己的变量里的地点（older 楼的地点；没有就空）：只在那一楼真要扫描时才取（惰性） */
-  const placeAt = i => { try { const b = host.mvuBridge, v = b.mvuGet(b.perFloorStat(i), b.varMap.location); return typeof v === 'string' ? v : ''; } catch (e) { return ''; } };
+  const placeAt = (i, raw) => { try { return host.mvuBridge.floorPlace(i, raw).place || ''; } catch (e) { return ''; } };   // I-21：没有场景头时与以前一样（那一楼变量里的值）
   let roundMsgs = [];   // 本轮的楼层窗口：[{ msgIndex, text, place }]，ledgerSync 折叠它
   /** 本轮的正文窗口记下来（折叠在放行点跑），最新一楼的拾取事实照旧入 lootFacts（W11 审计与携带用）。返回新增条数 */
   function scanPickups(msgs, place) {
     if (!pickupModule || !host.alive || life.dead) return 0;
-    roundMsgs = (msgs || []).map((m, i, a) => { let at = null; return { msgIndex: m.floor, text: m.text, get place() { return at ??= (i === a.length - 1 || m.floor === host.floorNow ? place : placeAt(m.floor)); } }; });
+    roundMsgs = (msgs || []).map((m, i, a) => { let at = null; return { msgIndex: m.floor, text: m.text, get place() { return at ??= (i === a.length - 1 || m.floor === host.floorNow ? place : placeAt(m.floor, m.raw)); } }; });
     const last = msgs?.[msgs.length - 1]; if (!last?.text) return 0;
     let facts = []; try { facts = pickupModule.scan(last.text, { known: knownItems(), floor: last.floor, place, vocab: vocab() }); } catch (e) { return 0; }
     let n = 0;

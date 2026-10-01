@@ -35,7 +35,8 @@ export function createModesFlow(host) {
     const r = MDm.snapFor(mvuBridge.pickStat, i => mvuBridge.readFloor(i), n - 1, { type });
     const st = r.stat, get = p => (st ? mvuBridge.getPath(st, p) : undefined);
     let place = String(get(mvuBridge.varMap.location) ?? '').trim(), state = r.state;
-    if (mvuBridge.hereSrc === 'tag' && type !== 'swipe' && type !== 'regenerate') { place = host.here; }   // (d) 正文标签兜底的地点
+    const hereNow = host.here;   // 先取，来源标注（hereSrc）与它同一次读取
+    if ((mvuBridge.hereSrc === 'tag' || mvuBridge.hereSrc === 'header') && type !== 'swipe' && type !== 'regenerate') { place = hereNow; }   // (d) 正文标签兜底的地点；I-21：本楼标头里的地点（往楼沿用下来的变量值与它冲突时，注入的行写本楼正文说的）
     const pres = st ? mvuBridge.presentNames(st) : [];
     const wt = st ? mvuBridge.worldTimeOf(st) : null, time = wt ? [wt.date, wt.time, wt.period].filter(Boolean).join(' ') : '';
     return MDm.stateLine({ here: userName(place), present: pres, time, trips: (contextPipeline.trips || []).map(t => ({ ...t })), state, skip: cardSkip || {} }, +(lsGet('edenMapStateBudget') || 150));
