@@ -9,7 +9,7 @@
 
 Every rule has a stable id `K-R01` … `K-R78`; later prompts and tests cite them. Ids never move: rules added after the
 first draft (K-R63–K-R70, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit; K-R71–K-R73
-were added by S6-1, K-R74–K-R76 by S6-2, K-R77–K-R78 by S6-3. The choices left to the user
+were added by S6-1, K-R74–K-R76 by S6-2, K-R77–K-R78 by S6-3; K-R79–K-R89 and K-R104 are reserved for S8, K-R90–K-R103 for S9 (planned lists at the end of §13). The choices left to the user
 are `K-01` … `K-09` (§0). Everything else was decided by the designer and is listed with its reason in §14.
 
 ## 0. Decisions for the user (review sheet)
@@ -794,6 +794,19 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 - K-R101 pack pictures: the media block, sources and limits (S9b);
 - K-R102 private pictures, never exported (S9b);
 - K-R103 go-live of a foreign pack's model-facing text (K-08 B; S9-2).
+**Planned in S8** (design `docs/layers-schema.md`; review sheet L-01 … L-15; the full text lands with S8-1 … S8-3):
+- K-R79 (§9) the layers block: one declaration, the kernel layer list, merge by id, menu order, `off`, limits (S8-1).
+- K-R80 (§9) building blocks and style keys; reduced motion and data saver (S8-2).
+- K-R81 (§9) sources and the feature shape; trust per source (S8-1).
+- K-R82 (§9) `applies`: keys, evaluation, the split with S7 (S8-1).
+- K-R83 (§9) layer menu rows and the visibility store `edenMapLayers` (S8-1).
+- K-R84 (§10.1) legend rows contributed by layers; the legend tab's show rule (S8-2).
+- K-R85 (§13) the overlay of a schema-1 pack may carry `layers` (S8-1).
+- K-R86 (§9) host-fed values: MVU paths, `applies.mvu`, navigator overlays (S8-3).
+- K-R87 (§9) local extension `EdenMap.addLayer` / `removeLayer` / `setLayerData` / `layers` (S8-3).
+- K-R88 (§9) local prop pack: store, validation, placements, `prop:` icons (S8-3).
+- K-R89 (§9) the `sound` block and the ambience data (S8-3).
+- K-R104 (§4.5) the v2 schema of the generic 3D viewer's manifest (S8-1; K-R90–K-R103 are S9's block).
 
 ## 14. Designer decisions and open points
 

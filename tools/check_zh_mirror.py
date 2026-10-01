@@ -18,6 +18,7 @@ PAIRS = [
     ("docs/kernel-schema.md", "docs/kernel-schema.zh.md"),
     ("docs/entity-protocol.md", "docs/entity-protocol.zh.md"),
     ("docs/zero-config.md", "docs/zero-config.zh.md"),
+    ("docs/layers-schema.md", "docs/layers-schema.zh.md"),
 ]
 HEADING = re.compile(r"^(#{1,6})\s")
 

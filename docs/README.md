@@ -9,6 +9,7 @@ Read in this order: agent-brief → ARCHITECTURE → naming → todo → handoff
 - [naming.md](naming.md) — naming rules, rename map, glossary
 - [entity-protocol.md](entity-protocol.md) — S6 design: entity protocol, drawer tabs, unified stash, Items tab (review sheet P-01…P-14)
 - [zero-config.md](zero-config.md) — S9 / S9b design: universal script, runtime card reading, automatic pack, schema-2 packs in the viewer, export, edit mode, pack pictures (review sheet Z-01…Z-19; specs S9-1…S9-3, S9b)
+- [layers-schema.md](layers-schema.md) — S8 design: declarative layers, building blocks, sources, legend, local layers and props, sound layers (review sheet L-01…L-15; step specs S8-1…S8-3)
 - [todo.md](todo.md) — the single tracker (state of the Spatial OS campaign in §0)
 - [handoff.md](handoff.md) — last session's handoff (history, dated 2026-09-29)
 - [plans/spatial-os.md](plans/spatial-os.md) — the plan of record
