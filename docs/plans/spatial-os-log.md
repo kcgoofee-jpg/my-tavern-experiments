@@ -1016,3 +1016,15 @@ blocker: none
 open: Q: the recompute cannot see an old floor's MVU location (only tags); if a card moves the player by variable only, growth from old floors needs per-floor variable snapshots (S9b or later). S9b: validate2 limits by source for URL / file imports.
 cleanup: done (probe servers stopped by the probes; no background jobs of mine left; no .claude/launch.json entries; worktree s9-3 left for the orchestrator)
 === END ===
+=== RESULT N2 ===
+status: DONE
+items: (1) render_campaign.py: stages_of ignores user_gate, user-review stage / waiting-on-user / user-only record rule removed, old user-review events still replay (skipped as an unknown stage) ✓ · no item was waiting at user-review (layout:tc_upper, eden:r5, isle:eden were all already done), so no release / ledger event was needed ✓ · (2) user_gate removed from the 3 items in render-campaign.items.json (the generator never emitted it) ✓ · (3) tests: gating tests replaced by NoUserGate (legacy flag not stopped, no user-review stage, old events still read), gated-set test now expects empty ✓ · (4) render-loop.md user-review hand-off text dropped ✓ · (5) agent-brief / .zh / CLAUDE.md: no mention of user review of renders, unchanged ✓ · (6) todo N2 struck ✓
+commits: 550e0419 chore(render-campaign): drop user_gate from the three gated items (N2)
+commits: (this commit) feat(render-campaign): remove the user-review stage (N2); RESULT N2
+pushed: yes
+tests: test_render_campaign 45/45 (was 48: UserGate's 5 gating tests became NoUserGate's 3, the removed ones tested the retired stage) | smoke see chat report
+deviations: none
+blocker: none
+open: none
+cleanup: done (worktree n2 left for the orchestrator)
+=== END ===

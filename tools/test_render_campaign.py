@@ -75,57 +75,35 @@ class Base(unittest.TestCase):
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
 
-class UserGate(Base):
+class NoUserGate(Base):
+    """N2 (2026-10-01): no user review in the render line; a legacy user_gate flag is ignored."""
+
     def setUp(self):
         super().setUp()
-        gated = dict(item('G1', 'hero', 'island'), user_gate=True)
-        self.set_items([gated, item('H1', 'hero', 'island')])
+        legacy = dict(item('G1', 'hero', 'island'), user_gate=True)
+        self.set_items([legacy, item('H1', 'hero', 'island')])
 
-    def to_gate(self, agent='a'):
-        self.walk('G1', ['setting', 'draft', 'board', 'review-r1'], agent, gates={'review-r1': 'pass'})
-
-    def test_gated_item_stops_before_final_and_is_never_offered(self):
-        self.assertEqual(self.picked(self.next('hero', 'a'))[0], 'G1')
-        self.to_gate()
+    def test_legacy_gated_item_is_not_stopped(self):
+        self.walk('G1', ['setting', 'draft', 'board', 'review-r1'], gates={'review-r1': 'pass'})
         s = self.status()['G1']
-        self.assertEqual((s['stage'], s['status']), ('user-review', 'waiting'))
-        self.assertIn('waiting-on-user', s['flags'])
-        self.assertEqual(self.picked(self.next('hero', 'a'))[0], 'H1', 'its own claimant moves on to other work')
-        self.assertEqual(self.next('hero', 'b').returncode, 4, 'H1 is claimed by a, G1 waits for the user')
-
-    def test_only_the_user_can_approve(self):
-        self.to_gate()
-        self.assertEqual(self.rec('done', 'G1', 'user-review', 'a').returncode, 2)
-        self.assertEqual(self.rec('done', 'G1', 'user-review', 'user').returncode, 0)
+        self.assertEqual((s['stage'], s['status']), ('final', 'open'))
+        self.assertNotIn('waiting-on-user', s['flags'])
         self.assertEqual(self.picked(self.next('hero', 'a')), ('G1', 'final'))
 
-    def test_user_send_back_reopens_fix_and_review_r2_then_asks_again(self):
-        self.to_gate()
-        self.assertEqual(self.rec('fail', 'G1', 'user-review', 'user', '--note', 'bigger lake').returncode, 0)
-        self.assertEqual(self.picked(self.next('hero', 'a')), ('G1', 'fix'))
-        self.walk('G1', ['fix', 'review-r2'], gates={'review-r2': 'pass'})
-        self.assertEqual(self.status()['G1']['stage'], 'user-review')
-        self.assertEqual(self.rec('done', 'G1', 'user-review', 'user').returncode, 0)
-        self.assertEqual(self.status()['G1']['stage'], 'final')
-
-    def test_lane_with_only_a_gated_item_reports_waiting_not_done(self):
-        self.set_items([dict(item('G1', 'hero', 'island'), user_gate=True)])
-        self.to_gate()
-        self.assertEqual(self.next('hero', 'a').returncode, 4)
-
-    def test_layout_type_asks_the_user_between_options_and_final(self):
+    def test_no_user_review_stage_for_any_type(self):
+        self.assertEqual(self.rec('done', 'G1', 'user-review', 'user').returncode, 2)
+        self.assertNotIn('user-review', self.rec('done', 'H1', 'nonsense').stderr.split('one of:')[1])
         self.set_items([dict(item('L1', 'hero', 'layout'), user_gate=True)])
-        self.assertEqual(self.picked(self.next('hero', 'a')), ('L1', 'options'))
-        self.walk('L1', ['options'], 'a')
-        s = self.status()['L1']
-        self.assertEqual((s['stage'], s['status']), ('user-review', 'waiting'))
-        self.assertEqual(self.rec('done', 'L1', 'user-review', 'user', '--note', 'B').returncode, 0)
-        self.assertEqual(self.picked(self.next('hero', 'a')), ('L1', 'final'))
-        self.walk('L1', ['final', 'ship'], 'a')
+        self.walk('L1', ['options', 'final', 'ship'], 'a')
         self.assertEqual(self.status()['L1']['status'], 'done')
 
-    def test_ungated_items_keep_their_stage_list(self):
-        self.assertNotIn('user-review', self.rec('done', 'H1', 'nonsense').stderr.split('one of:')[1])
+    def test_old_user_review_events_are_still_read(self):
+        self.walk('G1', ['setting', 'draft', 'board', 'review-r1'], gates={'review-r1': 'pass'})
+        self.rec('done', 'G1', 'user-review', 'user')   # refused now; an old ledger row is simulated below
+        with open(self.events, 'a') as f:
+            f.write('2026-09-30T16:09:09Z,G1,user-review,done,user,pass,old approval\n')
+            f.write('2026-09-30T16:09:10Z,G1,user-review,fail,user,,old send-back\n')
+        self.assertEqual(self.status()['G1']['stage'], 'final')
 
 
 class Replay(Base):
