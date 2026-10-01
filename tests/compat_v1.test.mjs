@@ -67,7 +67,7 @@ test('A.8 fixed facts: estate node, root hints, enter, levels, passages, no stro
   const e = eden.tree.get('eden_estate');
   assert.equal(eden.tree.parent('eden_estate'), 'tc_upper');
   assert.deepEqual(e.alias, ['伊甸庄园', 'Eden Manor', '伊甸', '庄园']);
-  assert.equal(e.hints.length, 153);
+  assert.equal(e.hints.length, 154);   // N14 b: + 地窖
   assert.deepEqual(e.hints.slice(0, 3), [...MAPS.maps.eden_estate.rooms, ...MAPS.maps.eden_estate.rooms_en].slice(0, 3));   // rooms first, then areas
   assert.ok(e.hints.indexOf(MAPS.maps.eden_estate.areas[0]) > e.hints.indexOf(MAPS.maps.eden_estate.rooms[0]));
   const root = eden.tree.get('world');

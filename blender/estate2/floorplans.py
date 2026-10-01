@@ -2,6 +2,7 @@
 
 python3 blender/estate2/floorplans.py            → docs/drafts/eden2_plan_{B2,B1,F1,F2,F3}.png + eden2_plans_sheet.png
                                                   + map/data/eden_estate_rooms.json
+python3 blender/estate2/floorplans.py --data-only → 只写 map/data/eden_estate_rooms.json（没有 matplotlib 时自动如此）
 坐标与 layout.py 相同：x 向东、y 向北（−y 是正面 / 入口），单位 m；体块取 layout.MAIN（外观一致）。
 规则：卡里的房间用卡的名字；楼梯 / 电梯 / 走廊 / 卫生间 / 机房这类建筑必需空间标「辅助」；没有指定用途的体量留白，不编用途。
 卡房间编号（card_id）= 楼层 + 卡内顺序（如 B1-C01），见 CARD_ROOMS；房间名一律照抄卡的原名（2026-09-28 用户决定：按原卡，不转换）。
@@ -9,11 +10,14 @@ kind = restricted 的房间只写名字：只画空白框，不画任何家具�
 """
 import json, math, os, sys
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-from matplotlib import font_manager as fm
-from matplotlib.patches import Polygon, Circle, Rectangle, FancyBboxPatch
+try:   # 出图要 matplotlib；--data-only 只写 JSON，没有 matplotlib 也能跑
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib import font_manager as fm
+    from matplotlib.patches import Polygon, Circle, Rectangle, FancyBboxPatch
+except ImportError:
+    plt = None
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -21,7 +25,7 @@ import layout as L
 
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 for f in ('/System/Library/Fonts/Hiragino Sans GB.ttc', '/System/Library/Fonts/STHeiti Medium.ttc'):
-    if os.path.exists(f):
+    if plt is not None and os.path.exists(f):
         fm.fontManager.addfont(f); plt.rcParams['font.family'] = fm.FontProperties(fname=f).get_name(); break
 
 # ---------------------------------------------------------------- 卡房间表（卡「庄园布局」条目的房间，按卡内顺序编号）
@@ -45,7 +49,7 @@ CARD_ROOMS = [
 SYNONYMS = {'F1-C01': ['门厅', '玄关'], 'F1-C02': ['饭厅'], 'F1-C04': ['客厅', '沙龙'], 'F1-C08': ['仓库'], 'F1-C06': ['洗衣房'],
             'F2-C01': ['主卧室', '卧室', '衣帽间', '私人衣帽间', '更衣室'], 'F2-C02': ['图书室'], 'F2-C06': ['长廊'],
             'F3-C01': ['寝室', '寝', '宿舍'], 'F3-C03': ['公共浴室', '浴室', '浴池', '盥洗室'], 'F3-C04': ['集体宿舍', '女仆宿舍'],
-            'B1-C03': ['健身房']}
+            'B1-C03': ['健身房'], 'B1-C05': ['地窖']}
 # 旧编号 → 新编号（v0.9.6 及以前存进聊天的自定义叫法 / 飞行目标仍能落点）
 CARD_ID_ALIAS = {'B2-受限': 'B2-C01', 'B2-医疗室': 'B2-C02', 'B2-档案室': 'B2-C03', 'B2-储藏室': 'B2-C04',
                  'B1-受限A': 'B1-C01', 'B1-受限B': 'B1-C02', 'B1-体能训练室': 'B1-C03', 'B1-受限C': 'B1-C04', 'B1-酒窖': 'B1-C05',
@@ -433,10 +437,18 @@ NOTE = ('房间名、面积、功能只取 docs/card-digest.md §6（地上 3 �
         '未定用途的体量留白，不编用途；家具只画中性色块。')
 
 
-def main():
+def main(data_only=False):
     bad = check()
     if bad:
         print('核对未过：'); [print('  ', b) for b in bad]
+    if not data_only:
+        draw_sheets()
+    write_data()
+    n = sum(1 for r in ROOMS if r['kind'] in ('card', 'restricted'))
+    print(f'{"只写数据" if data_only else "出图 5 张 + 总图"}；卡房间 {n} 间；核对问题 {len(bad)} 条')
+
+
+def draw_sheets():
     out = os.path.join(ROOT, 'docs', 'drafts')
     for fl, *_ in FLOORS:
         big = fl.startswith('F')
@@ -456,7 +468,9 @@ def main():
     fig.text(0.01, 0.985, '伊甸庄园主楼 · 分层平面（B2–F3）', fontsize=18, va='top')
     fig.text(0.40, 0.985, NOTE, fontsize=8, va='top', color='#555', wrap=True)
     fig.savefig(os.path.join(out, 'eden2_plans_sheet.png'), facecolor='white'); plt.close(fig)
-    # 数据
+
+
+def write_data():
     WORDS = {c: w for c, f, n, w in CARD_ROOMS}
     data = dict(
         _note='伊甸主楼分层房间多边形（blender/estate2/floorplans.py 生成，不要手改）。坐标与 blender/estate2/layout.py 相同：x 东、y 北、米，−y 是正门；'
@@ -478,9 +492,7 @@ def main():
     )
     with open(os.path.join(ROOT, 'map', 'data', 'eden_estate_rooms.json'), 'w') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    n = sum(1 for r in ROOMS if r['kind'] in ('card', 'restricted'))
-    print(f'出图 5 张 + 总图；卡房间 {n} 间；核对问题 {len(bad)} 条')
 
 
 if __name__ == '__main__':
-    main()
+    main(data_only='--data-only' in sys.argv[1:] or plt is None)

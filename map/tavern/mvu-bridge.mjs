@@ -116,8 +116,6 @@ export class MVUBridge {
   varUpdateSeq() { return this.varEpoch; }
   /** 某一楼的 stat_data（行程 / 冲突对账用；那一楼没有返回 null） */
   perFloorStat(floor) { try { return this.#mvu()?.getMvuData?.({ type: 'message', message_id: floor })?.stat_data || null; } catch (e) { return null; } }
-  /** Mvu 全局的 latest 原样读（自检用，不走快照选取） */
-  rawLatestStat() { try { return this.#mvu()?.getMvuData?.({ type: 'message', message_id: 'latest' })?.stat_data ?? null; } catch (e) { return null; } }
 
   // ---------------- 变量映射（stat-path-mapping.mjs） ----------------
   /** 换卡 / 改映射后重算生效映射。返回「签名变了」（宿主据此发 eden-map:varmap） */

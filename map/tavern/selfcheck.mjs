@@ -78,7 +78,7 @@ export async function collectWorldbook(f) {
 /**
  * f = {
  *   api: { getChatMessages, eventOn, injectPrompts, tavern_events }（true / false）,
- *   mvu: null（没有 MVU）| { stat: 能不能读到 stat_data, here: 当前地点路径是否存在, candidates: [像地点的路径] },
+ *   mvu: null（没有 MVU）| { stat: 能不能读到 stat_data（与地图同一份快照：最新楼没有就往前找）, snap: { floor, top, state }, here: 当前地点路径是否存在, candidates: [像地点的路径] },
  *   dup: { others: 本页加载过的其他地图脚本地址[], oldStyle: 有不带清理钩子的旧版脚本（v0.6.1）, replaced: 我们的按钮被别的脚本换掉 },
  *   line: { swappable, ok: true / false / null（还不知道）, name },
  *   worldbook: null（查不了）| { missing: [条目名], lore: 启用了「地图方位」EJS 条目 },
@@ -104,7 +104,10 @@ export function evaluate(f) {
     const c = (m.candidates || []).join('、');
     out.push(item('mvu', 'warn', `MVU 里没有${HPz}${c ? `（是不是改名成了 ${c}？）` : ''}：地图无法跟随当前地点`,
       `MVU has no ${HPe}${c ? ` (renamed to ${(m.candidates || []).join(', ')}?)` : ''}: the map cannot follow the current location`));
-  } else out.push(item('mvu', 'ok', `MVU${HPz}可读`, `MVU ${HPe} readable`));
+  } else {
+    const sn = m.snap, back = sn && sn.floor >= 0 && sn.top > sn.floor;   // 最新楼没有快照，用的是更早一楼的（与地图同一份）
+    out.push(item('mvu', 'ok', `MVU${HPz}可读${back ? `（最新一楼还没有变量快照，用第 ${sn.floor} 楼的）` : ''}`, `MVU ${HPe} readable${back ? ` (the latest floor has no snapshot yet; using floor ${sn.floor})` : ''}`));
+  }
   if (m && m.stat && m.fields) {   // v0.9.3：人物栏 / 世界时间 / 着装读的字段；缺了不算错，只说明哪些功能不显示
     const F = [['present', '在场人物', 'present characters', '人物栏只用聊天标签', 'panel uses chat tags only'], ['clock', '世界时间', 'world clock', '不显示世界时间与夜色', 'no clock or night tint'], ['outfit', '着装', 'outfit', '不显示着装', 'no outfit line']];
     const miss = F.filter(f => !m.fields[f[0]]);

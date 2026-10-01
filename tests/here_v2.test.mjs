@@ -64,3 +64,10 @@ test('the adapter keeps the public shapes: user names, transit ends, the estate 
   store.setItem('edenMap:chat:c1:custom', JSON.stringify({ rooms: { 书斋: '书房', bad: 3 } }));
   assert.deepEqual(readCustom(store, 'c1'), { rooms: { 书斋: '书房' } }); assert.deepEqual(readCustom(store, ''), { rooms: {} });
 });
+
+test('N14 b: 「南侧地窖」 lands on the one cellar (恒温酒窖, B1) through its synonym 地窖, with and without the plan', () => {
+  for (const t of ['南侧地窖', '地窖', '伊甸庄园 地窖']) {
+    assert.equal(engine().here(t).map, 'eden_estate', t);
+    const r = engine({ plan: true }).here(t); assert.deepEqual([r.std, r.floor, r.node], ['恒温酒窖', 'B1', 'room_b1_21'], t);
+  }
+});

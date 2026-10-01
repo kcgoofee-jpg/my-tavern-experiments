@@ -1171,7 +1171,9 @@
       "words": [
         "酒窖"
       ],
-      "synonyms": [],
+      "synonyms": [
+        "地窖"
+      ],
       "poly": [
         [
           -14,
@@ -5131,7 +5133,9 @@
       "words": [
         "酒窖"
       ],
-      "synonyms": [],
+      "synonyms": [
+        "地窖"
+      ],
       "poly_ids": [
         "B1-21"
       ]

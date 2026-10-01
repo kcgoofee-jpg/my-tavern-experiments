@@ -39,9 +39,9 @@ export function createHostChecks(host) {
       SC = await import(scriptBase + 'tavern/selfcheck.mjs');
       try { await Promise.race([mvuBridge.whenMvu(), new Promise(r => setTimeout(r, 3000))]); } catch (e) {}
       let mvu = null;
-      try { if (mvuBridge.mvuUsable()) { const st = mvuBridge.rawLatestStat();
+      try { if (mvuBridge.mvuUsable()) { mvuBridge.invalidate(); const st = mvuBridge.mvuStat();   // N14 c：与地图、读法同一份快照（最新楼没有就往前找），不另读 latest
         refreshVarMap(); const hp = mvuBridge.varMap.location || '';
-        mvu = { stat: !!st && typeof st === 'object', path: hp, here: !!st && SC.getPath(st, hp) !== undefined, candidates: st ? SC.findPaths(st).filter(p => p !== hp) : [],
+        mvu = { stat: !!st && typeof st === 'object', snap: { floor: mvuBridge.snapFloor, top: mvuBridge.snapTop, state: mvuBridge.snapState }, path: hp, here: !!st && SC.getPath(st, hp) !== undefined, candidates: st ? SC.findPaths(st).filter(p => p !== hp) : [],
           fields: st && host.mvuReaders ? { present: !!host.mvuReaders.presentList(st, mvuBridge.varMap.present), clock: !!host.mvuReaders.worldTime(st, mvuBridge.varMap).time, outfit: !!mvuBridge.varMap.outfit && host.mvuReaders.getByPath(st, mvuBridge.varMap.outfit) !== undefined } : null }; } } catch (e) { mvu = { stat: false }; }
       const varmode = mvuBridge.varmode(mvuBridge.mvuUsable());
       const loads = [...new Set(Object.entries(window.parent.__edenMapIds || {}).filter(([k, u]) => k !== scriptOwner && u !== switchedFrom).map(([, u]) => u))];   // A3：按脚本身份，不按地址

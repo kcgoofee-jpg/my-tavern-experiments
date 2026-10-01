@@ -11,7 +11,8 @@ const before = rd('./fixtures/worldbook_addon_before_s44b.json');
 const after = rd('../map/data/worldbook_addon.json');
 
 // 句子表：旧句 → 新句（只这些句子允许变）
-const SENTENCES = [['卡里没写层与位置，写到时只写机构名，不要自行定位。', '没有固定的层与位置，写到时只写机构名，不要自行定位。']];
+const SENTENCES = [['卡里没写层与位置，写到时只写机构名，不要自行定位。', '没有固定的层与位置，写到时只写机构名，不要自行定位。'],
+  ['健身房、酒窖、医疗与改造室', '健身房、酒窖、地窖、医疗与改造室']];   // N14 b（2026-10-01）：酒窖的叫法「地窖」进了房间词表
 const renamed = n => n.replace(/^地图补充-/, '地点-').replace(/^天城常识-位置未写$/, '天城常识-其他机构');
 // 地点条目正文的包装标签同理改名：<地图补充·名> → <地点·名>（2026-10-01 编排复核补上）
 const applySentences = s => SENTENCES.reduce((t, [a, b]) => t.split(a).join(b), s).replace(/<(\/?)地图补充·/g, '<$1地点·');
@@ -56,5 +57,5 @@ test('wbsync：旧名字的已装书按 eden_id 原地更新，不重复，用�
     assert.equal(e.uid, 10 + i, `${b.id} uid 保持（原地更新）`);
   }
   const p = W.plan(installed, after);
-  assert.equal(p.add.length, 0); assert.equal(p.retire.length, 0); assert.equal(p.update.length, 42);
+  assert.equal(p.add.length, 0); assert.equal(p.retire.length, 0); assert.equal(p.update.length, 43);   // 42 renamed + the 当前地点 entry (N14 b word 地窖)
 });
