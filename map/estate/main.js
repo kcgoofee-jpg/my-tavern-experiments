@@ -7,7 +7,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { openGallery } from '../ui/gallery.js';
+import { nodePictures } from '../core/pack-media.mjs';   // 设定包图片（K-R101）：来源规则与查看器同一份
 import { roomCustomBlockHTML, bindRoomCustomEvents, getCustomName, setGalleryChatId } from '../ui/room-gallery-panel.js';
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer } from '../ui/camera-controls.js';
 import { Estate3D } from '../core/scene3d-manifest.mjs';   // Estate3D Manifest 标准契约（P3-A）：清单校验 / 路径解析 / describe 摘要
@@ -98,7 +98,7 @@ const ALIAS = {
   '三楼公共浴室': ['Bathroom'], '恒温酒窖': ['Wine Cellar'], '衣物清洗与维护间': ['Laundry'], '东侧长廊': ['Gallery'], '体能训练室': ['Gym'],
   '主人通道': ['主人专用通道'], '储藏室': ['Storeroom'],
 };
-const GALLERY = {};   // 房间图集（map/data/room_galleries.json）：衣帽间渲染图已移出，改走 closet/ 的三维入口（U，2026-09-28）；这里留空给以后要挂仓库渲染图的房间用
+let PICS = {};   // 房间名 -> 这个房间的包图片 [{ id, item, url }]：宿主按运行时节点树发来（estate:media），地址经 pack-media 的来源规则；没有 = 空
 // 主卧套间内的子区域（卡：主卧「带衣帽间和独立浴室」，主人通道 F2 开进衣帽间）：单独做一个可点的热点，点开就是衣帽间图集
 const SUBS = [{ parent: 'F2-57', id: 'F2-57w', name: '衣帽间', en: 'Walk-in Wardrobe', alias: ['私人衣帽间', '步入式衣帽间', '更衣室', 'Dressing Room', 'Walk-in Wardrobe'], floor: 'F2', kind: 'card', sub: true,
   note: '主卧套间内的步入式衣帽间；东侧门通主人专用通道', poly: [[12, -10], [16, -10], [16, -6], [12, -6]] }];
@@ -143,8 +143,8 @@ const HC = V((HOUSE_BOX.x0 + HOUSE_BOX.x1) / 2, (HOUSE_BOX.y0 + HOUSE_BOX.y1) / 
 
 /* ---------------- UI 文案 ---------------- */
 const TXT = {
-  zh: { ext: '外观', xray: '内透', sect: '剖切', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '浮岛庄园 · 主楼地上三层 + 地下两层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', estate: '室外', loading: '加载中…', loadingP: '加载模型 {p}', gallery: '衣帽间图集', restricted: '不描述', houseLoading: '载入室内…', enter3d: '进入三维' },
-  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Floating-isle estate · house: 3 floors + 2 basements', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', size: 'Area', use: 'Notes', access: 'Access', estate: 'Grounds', loading: 'Loading…', loadingP: 'Loading model {p}', gallery: 'Wardrobe photos', restricted: 'Not described', houseLoading: 'Loading interior…', enter3d: 'Enter 3D' },
+  zh: { ext: '外观', xray: '内透', sect: '剖切', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '浮岛庄园 · 主楼地上三层 + 地下两层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', estate: '室外', loading: '加载中…', loadingP: '加载模型 {p}', restricted: '不描述', houseLoading: '载入室内…', enter3d: '进入三维' },
+  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Floating-isle estate · house: 3 floors + 2 basements', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', size: 'Area', use: 'Notes', access: 'Access', estate: 'Grounds', loading: 'Loading…', loadingP: 'Loading model {p}', restricted: 'Not described', houseLoading: 'Loading interior…', enter3d: 'Enter 3D' },
 };
 const tx = (k, v = {}) => (TXT[LANG][k] || TXT.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
 const floorName = (i) => LANG === 'en' ? `${FLOORS[i].id} · ${FLOOR_EN[FLOORS[i].id]}` : `${FLOORS[i].id} · ${FLOORS[i].name}`;
@@ -752,7 +752,6 @@ function cardHTML(it) {
   h += `<div class="row"><em>${tx('size')}</em>${esc(area)}</div>`;
   if (zh && d.note) h += `<div class="row"><em>${tx('use')}</em>${esc(d.note)}</div>`;
   if (zh && d.access) h += `<div class="row"><em>${tx('access')}</em>${esc(d.access)}</div>`;
-  if (GALLERY[d.name]) h += `<div class="acts"><button class="gal" type="button">${tx('gallery')} ›</button></div>`;
   return h + roomCustomBlockHTML(d.name, LANG);
 }
 // 区域下挂着的子地图（宿主按运行时节点树发来的 estate:children）：有子节点的区域，卡片带「进入三维」、双击直接进
@@ -770,15 +769,8 @@ function showCard(it, x, y) {
 }
 card.addEventListener('click', (e) => { const b = e.target.closest('.enter3d'); if (!b) return; e.stopPropagation(); post({ type: 'estate:go', node: b.dataset.node }); });
 card.addEventListener('click', (e) => { if (!e.target.closest('.garage')) return; e.stopPropagation(); const g = ITEMS.find((it) => it.kind === 'area' && it.d.id === 'garage'); if (g) focusItem(g); });
-let GALS = null;
-card.addEventListener('click', async (e) => {
-  if (!e.target.closest('.gal') || !cardFor) return; e.stopPropagation();
-  const id = GALLERY[cardFor.d.name]; if (!id) return;
-  GALS ||= await fetch(M3D.data.galleries).then((r) => r.json()).catch(() => ({}));
-  openGallery(GALS[id], { lang: LANG, base: url('../') });
-});
 card.dataset.lang = LANG;
-bindRoomCustomEvents(card, { base: url('../'), onOpenGallery: { refresh: () => { if (cardFor) { const it = cardFor; cardFor = null; showCard(it); } } } });
+bindRoomCustomEvents(card, { base: url('../'), pictures: (name) => PICS[name] || [], onOpenGallery: { refresh: () => { if (cardFor) { const it = cardFor; cardFor = null; showCard(it); } } } });
 function placeCard() {
   if (!tipFor || !cardAt) return; let x, y;
   const w = tip.offsetWidth, h = tip.offsetHeight;
@@ -1060,6 +1052,9 @@ window.addEventListener('message', (e) => {
   else if (d.type === 'estate:cvd' && typeof d.mode === 'string') { document.documentElement.dataset.cvd = d.mode; document.documentElement.classList.toggle('cvd', d.mode !== '0'); }   // 色觉模式（E7）：本页当前没有按类别上色的材质，只留 CSS 钩子给以后加
   else if (d.type === 'estate:fps' && typeof d.on === 'boolean') { STATS = d.on; statsEl.style.display = d.on ? 'block' : 'none'; if (!d.on) statsEl.textContent = ''; frames = 0; fpsT = performance.now(); needs = true; }
   else if (d.type === 'estate:chat' && typeof d.id === 'string') setGalleryChatId(d.id);   // 房间图集「仅本聊天」作用域
+  else if (d.type === 'estate:media' && d.rooms && typeof d.rooms === 'object') {   // K-R101：包图片按房间名；https 的只在宿主说开关开着时才给地址
+    PICS = Object.fromEntries(Object.entries(d.rooms).map(([name, p]) => [name, Array.isArray(p) ? p.filter((x) => x && typeof x.id === 'string').map((x) => ({ id: x.id, item: x.item, url: nodePictures({ [x.id]: x.item }, [x.id], { base: '', remoteOn: d.remote === true })[0]?.url ?? null })) : []]));
+  }
   else if (d.type === 'estate:stash') { stashRaw = Array.isArray(d.items) ? { items: d.items } : null; rebuildProps(); }   // Part 8-1：世界藏物表
   else if (d.type === 'estate:taken') { propTaken = new Set(Array.isArray(d.ids) ? d.ids.filter((x) => typeof x === 'string') : []); rebuildProps(); }   // 已经在手里的：地上不再发光
   else if (d.type === 'estate:routine') setNpcRoutine(d.schedule, d.clock);   // Part 8-2：日程表 + 起点时钟 → 三维里的人自己去该去的地方

@@ -15,7 +15,7 @@ export function makeRuntimeV2(pack, registry) {
   const kind = id => { const v = viewIdsOf(tree, views, id)[0]; return v ? views[v].kind : null; };
   let geo = null;
   return {
-    tree, views, ui, layers: Array.isArray(pack?.layers) ? pack.layers : [], host: id => id, kind, parent, ancestors, standIn: () => null, zoneChildren: () => ({}), anchorIn: () => null,
+    tree, views, ui, media: (pack?.media && typeof pack.media === 'object' ? pack.media : {}), layers: Array.isArray(pack?.layers) ? pack.layers : [], host: id => id, kind, parent, ancestors, standIn: () => null, zoneChildren: () => ({}), anchorIn: () => null,
     geo: () => (geo ??= makeGeo({ tree, views, lang: pack.lang, lexicon: pack.lexicon, ...taxonomyOf(pack) })),
     has: isMap,
     crumbs: id => [...ancestors(id).reverse(), id],

@@ -163,7 +163,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 <link rel="modulepreload" href="app/data-mapping-settings.mjs">
 <link rel="modulepreload" href="app/tavernhelper-settings.mjs">
 <link rel="modulepreload" href="app/fog.mjs">
-<link rel="modulepreload" href="app/nodes-runtime.mjs"><link rel="modulepreload" href="app/nodes-runtime-v2.mjs"><link rel="modulepreload" href="app/pack-settings.mjs"><link rel="modulepreload" href="app/block-canvas.mjs"><link rel="modulepreload" href="app/block-overlay.mjs"><link rel="modulepreload" href="app/declared-layers.mjs"><link rel="modulepreload" href="app/declared-sources.mjs"><link rel="modulepreload" href="core/compat-v1.mjs"><link rel="modulepreload" href="core/compat-v1-geo.mjs"><link rel="modulepreload" href="core/compat-v1-views.mjs"><link rel="modulepreload" href="core/compat-v1-blocks.mjs"><link rel="modulepreload" href="core/nodes.mjs"><link rel="modulepreload" href="core/locate.mjs"><link rel="modulepreload" href="core/lexicon.mjs">
+<link rel="modulepreload" href="app/nodes-runtime.mjs"><link rel="modulepreload" href="app/pack-edit.mjs"><link rel="modulepreload" href="app/pack-edit-view.mjs"><link rel="modulepreload" href="app/pack-live.mjs"><link rel="modulepreload" href="app/nodes-runtime-v2.mjs"><link rel="modulepreload" href="app/pack-settings.mjs"><link rel="modulepreload" href="app/block-canvas.mjs"><link rel="modulepreload" href="app/block-overlay.mjs"><link rel="modulepreload" href="app/declared-layers.mjs"><link rel="modulepreload" href="app/declared-sources.mjs"><link rel="modulepreload" href="core/compat-v1.mjs"><link rel="modulepreload" href="core/compat-v1-geo.mjs"><link rel="modulepreload" href="core/compat-v1-views.mjs"><link rel="modulepreload" href="core/compat-v1-blocks.mjs"><link rel="modulepreload" href="core/nodes.mjs"><link rel="modulepreload" href="core/locate.mjs"><link rel="modulepreload" href="core/lexicon.mjs">
 <link rel="modulepreload" href="core/depth.mjs"><link rel="modulepreload" href="core/exploration-ledger.mjs">
 <link rel="modulepreload" href="core/haze.mjs">   <!-- Part 8-3：空气透视滤镜（纵深霾浓度 → 图层滤镜链） -->
 <!-- Part 3 §2：瓦片后台解码（懒 import；源码串随模块走，起 worker 用 blob 地址） -->
@@ -684,9 +684,9 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     <div class="hrow"><span data-i18n="s.hint_again">上手提示</span><button type="button" class="btn" id="hintAgain" data-i18n="s.hint_show">再看一次</button></div>
     <div id="kbdHelp" hidden></div>
     <label class="row"><span data-i18n="s.fps">调试：显示帧率</span><input type="checkbox" role="switch" id="optFps"></label>
-    <b data-i18n="s.gallery_group">房间图集</b>
-    <label class="row"><span data-i18n="s.gallery_maintainer">维护者模式（仅仓库所有者自用）</span><input type="checkbox" role="switch" id="optGalleryMaintainer"></label>
-    <small data-i18n="s.gallery_maintainer_hint">打开后，房间图集里才会出现「投稿到公开图集」「导出」——这不是权限校验，只是方便仓库所有者自己整理投稿；谁能真的把图收进公开图集，由 GitHub 仓库权限把关（只有仓库所有者能提交 map/data/gallery.json）。普通用户不需要、也看不到这个开关，你的图片始终只留在本机。</small>
+    <b data-i18n="s.edit_group">编辑模式</b>
+    <label class="row" data-i18n-title="s.edit_hint" title="打开后可以拖动图钉、改上级、加叫法、给地点加图片，导出成设定包；草稿只在这台设备上，私人图片不会被导出"><span data-i18n="s.edit_mode">编辑模式（调整地图、加图片）</span><input type="checkbox" role="switch" id="optEdit"></label>
+    <label class="row"><span data-i18n="s.pack_remote">加载设定包里用链接给出的图片</span><input type="checkbox" role="switch" id="optPackRemote"></label>
   </section>
 </div>
 <div id="card" hidden role="region" aria-labelledby="cardTitle"><div class="top"><span class="tag"></span><button type="button" class="x" id="cardX" data-i18n-aria="close" aria-label="关闭"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><img class="cover" hidden loading="lazy" decoding="async" alt=""><h2 id="cardTitle" tabindex="-1"></h2><div class="sub"></div><div class="src"></div><div class="extra"></div></div>

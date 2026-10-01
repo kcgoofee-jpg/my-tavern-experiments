@@ -41,7 +41,7 @@ test('validate2: the media block is checked item by item; a bad item is dropped 
   assert.deepEqual(r.pack.nodes[1].media, ['ok'], 'only existing, valid items stay in a node list');
   for (const p of ['media.bad1.src', 'media.bad2.src', 'media.bad3.src']) assert.ok(r.problems.some(x => x.path === p), p);
   assert.ok(codes.includes('limit-media:media.bad3.src') && codes.some(c => c.startsWith('key:media.Bad')) && codes.includes('missing:media.nosrc'));
-  assert.ok(codes.includes('ref-media:nodes[1].media[1]') && codes.includes('ref-media:nodes[1].media[2]'));
+  assert.ok(!codes.includes('ref-media:nodes[1].media[1]') && codes.includes('ref-media:nodes[1].media[2]'), 'a reference to an item that was just dropped adds no second problem; one to an id that never existed does');
   assert.ok(!JSON.stringify(r.problems).includes('base64'), 'a problem never carries a picture');
 });
 test('validate2: an image view needs src or media; media must exist; the string cap does not cut a data URL but the size limit counts it', () => {

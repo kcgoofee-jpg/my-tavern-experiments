@@ -89,6 +89,7 @@ export const SCHEMA = {
   'estate:taken': [VIEWER_TO_SUBPAGE, { ids: 'array?' }],       // Part 8-1：已经在手里的藏物 id（背包的 id 对账）：地上不再发光
   'estate:routine': [VIEWER_TO_SUBPAGE, { schedule: 'object?', clock: 'object?' }],   // Part 8-2：NPC 日程表 + 起点时钟（三维页按确定性时钟自己挪人）
   'estate:children': [VIEWER_TO_SUBPAGE, { zones: 'object' }],   // S2-B：宿主 → 三维页：{ 区域 id: [{ node, title }] }，该区域下挂着的子地图（来自运行时节点树）；三维页据此给区域卡加「进入三维」
+  'estate:media': [VIEWER_TO_SUBPAGE, { rooms: 'object', remote: 'boolean?' }],   // S9b K-R101：宿主 → 三维页：{ 房间名: [{ id, item }] } 设定包给这个房间的图（来源规则由三维页再查一遍），remote = 「加载链接给出的图片」开关
   'estate:pause': [VIEWER_TO_SUBPAGE, {}],
   'estate:resume': [VIEWER_TO_SUBPAGE, {}],
   'estate:floor': ['both', { floor: 'any' }],     // 下行 = 直嵌 / 调试接口；上行 = 用户切了楼层（直嵌时给外层页）

@@ -52,10 +52,10 @@ function fixIds(list, x) {   // node ids: repaired, unrepairable and duplicate o
 }
 
 function crossCheck(pack, x, trusted) {   // what tools/check_pack.py checks beyond the schemas, healed per item
-  const nodes = Array.isArray(pack.nodes) ? pack.nodes : null, views = isObj(pack.views) ? pack.views : {}, pic = isObj(pack.media) ? pack.media : {};
+  const nodes = Array.isArray(pack.nodes) ? pack.nodes : null, views = isObj(pack.views) ? pack.views : {}, pic = isObj(pack.media) ? pack.media : {}, gone = new Set(x.problems.map(q => /^media\.([^.[]+)/.exec(q.path || '')?.[1]).filter(Boolean));   // `gone`: media items already dropped with their own problem (a reference to one is dropped silently)
   const ids = new Set((nodes || []).map(n => n.id)), has = nodes && nodes.length ? id => ids.has(id) : () => true;
   for (const [k, v] of Object.entries(views)) if (v.kind === 'image') {   // K-R101: the frame is `src` or a picture of the media block; a view with neither is dropped (before nodes refer to it)
-    if (v.media !== undefined && !Object.hasOwn(pic, v.media)) del(v, 'media', `views.${k}`, x, 'ref-media');
+    if (v.media !== undefined && !Object.hasOwn(pic, v.media)) { if (gone.has(v.media)) delete v.media; else del(v, 'media', `views.${k}`, x, 'ref-media'); }
     if (v.src === undefined && v.media === undefined) { delete views[k]; bad(x, `views.${k}`, 'missing', 'src'); }
   }
   if (nodes) {
@@ -66,7 +66,7 @@ function crossCheck(pack, x, trusted) {   // what tools/check_pack.py checks bey
       if (Array.isArray(n.links)) n.links = n.links.filter((l, j) => ids.has(l.to) || (bad(x, `${p}.links[${j}]`, 'ref-node', l.to), false));
       if (Array.isArray(n.alias) && !n.alias.concat(n.hints || []).some(w => normalise(w) === normalise(n.name))) bad(x, `${p}.alias`, 'alias-name');
       if (Array.isArray(n.media)) {   // K-R101: a node's picture ids must name items of the media block
-        const keep = n.media.filter((m, j) => Object.hasOwn(pic, m) || (bad(x, `${p}.media[${j}]`, 'ref-media', m), false));
+        const keep = n.media.filter((m, j) => Object.hasOwn(pic, m) || (gone.has(m) ? false : (bad(x, `${p}.media[${j}]`, 'ref-media', m), false)));
         if (keep.length) n.media = keep; else delete n.media;
       }
       if (n.view !== undefined) {

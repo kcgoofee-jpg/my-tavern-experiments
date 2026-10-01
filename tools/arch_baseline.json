@@ -18,7 +18,6 @@
     "map/ui/gallery.js": 1,
     "map/ui/illustration-panel.js": 1,
     "map/ui/notice.mjs": 1,
-    "map/ui/room-gallery-panel.js": 1,
     "map/ui/sheet.js": 2,
     "map/unmapped-place-picker.mjs": 1
   },
@@ -47,8 +46,7 @@
     "map/trips-view.mjs": 2,
     "map/ui/camera-controls.js": 1,
     "map/ui/illustration-panel.js": 5,
-    "map/ui/notice.mjs": 1,
-    "map/ui/room-gallery-panel.js": 1
+    "map/ui/notice.mjs": 1
   },
   "comment_terms": {}
 }

@@ -48,7 +48,7 @@ export function projectV2(pack, { base = '', remoteOn = false } = {}) {
   const en = id => str(tree.get(id)?.i18n?.en?.name);
   const meta = (id, at) => {
     const n = tree.get(id), alias = [...new Set([nameOf(id), ...(Array.isArray(n.alias) ? n.alias : []), ...Object.values(isObj(n.i18n) ? n.i18n : {}).map(l => l?.name)].filter(str))];
-    return { name: nameOf(id), ...(en(id) ? { name_en: en(id) } : {}), ...(str(n.sub) ? { sub: n.sub } : {}), alias, ...(id !== at && owners.has(id) ? { link: { map: id, marker: id } } : {}) };
+    return { name: nameOf(id), ...(en(id) ? { name_en: en(id) } : {}), ...(str(n.sub) ? { sub: n.sub } : {}), alias, ...(id !== at && owners.has(id) ? { link: { map: id, marker: id } } : {}), ...(Array.isArray(n.media) && n.media.length ? { gallery: { id } } : {}) };
   };
   for (const [owner, v] of owners) {
     const extent = Array.isArray(v.extent) && v.extent.length === 2 && v.extent.every(n => typeof n === 'number' && n > 0) ? v.extent : SIZE;

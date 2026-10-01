@@ -15,7 +15,7 @@ const NEW_KEYS = ['app.name', 'app.short', 'app.script', 'app.report', 'ev.toast
 const T6 = {
   'cu.ex1a': 'Chinese left in an English value', 'cu.ex3a': 'Chinese left in an English value', 'vm.fantasy': 'Chinese example words translated', 's.lic_orig_v': 'Chinese community name',
   'hint.4': '"buildings" / "history floors" for chat messages', 's.tick_hint': '"floors" for chat messages', 'selfcheck.wb_manual': 'takes {book} like the Chinese text',
-  'ch.port_hint': 'tightened (> 160 characters)', 's.gallery_maintainer_hint': 'tightened (> 160 characters)', 'th.wb_consent': 'tightened (> 160 characters)', 's.lic_disc_v': 'tightened (> 160 characters)',
+  'ch.port_hint': 'tightened (> 160 characters)', 'th.wb_consent': 'tightened (> 160 characters)', 's.lic_disc_v': 'tightened (> 160 characters)',
   's.lic_unknown': 'tightened (> 160 characters)', 'hint.2': 'tightened (> 160 characters)', 'th.wb_on_hint': 'tightened (> 160 characters)', 'cu.sync_hint2': 'tightened (> 160 characters), takes {book}',
 };
 const BOOK = '伊甸地图·自定义';   // what the viewer fills {book} with for the first pack (worldbook prefix + 「·自定义」, app/custom.mjs)

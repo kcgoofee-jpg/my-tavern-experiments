@@ -166,6 +166,9 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `nodes-runtime.mjs` | 查看器的节点树：已加载的注册表经 `core/compat-v1.mjs` 转一次；面包屑、上一级、预热邻居、庄园替身和三维页判断都从它读（不再走 `parent`）。`buildRuntimeV2` 把 schema-2 的运行时装进同一个槽。 |
 | `notice-layer.mjs` | 通知层（嵌入时交给宿主，单独打开时用 `ui/notice.mjs`）与首次打开提示。 |
 | `one-hand-mode.mjs` | 单手模式：惯用手切换与悬浮按钮跟随；拉起设置首页动作与单指缩放。 |
+| `pack-edit-view.mjs` | 编辑模式的界面（K-R100）：编辑条、图钉拖动、地点卡上的控件、图片与「用一张图作这里的地图」。只在开关打开时绘制。 |
+| `pack-edit.mjs` | 编辑模式的模型（K-R100）：`createEditor` 与它的操作（移动、改上级、叫法、新地点、起点、图片、底图、放弃）和草稿存储（文字在 LocalStore，图片字节在图集 IndexedDB 的 `edit:<包 id>` 作用域）。 |
+| `pack-live.mjs` | 不重载地显示 schema-2 包（K-R95、K-R100）：投影、换注册表与节点运行时、重画当前地图；编辑草稿作为过滤器装在这里。 |
 | `pack-settings.mjs` | 设置 → 高级 →「地图包」：当前包、选择列表、网址 / 文件导入、外来包模型文字的生效开关、导出为包（K-R98、K-R99、K-R103）。 |
 | `place-resolver.mjs` | 当前地点：在节点树上跑 `nodes.locate`，再还原成使用方读的结果形状（`level`、`map`、`marker`、`room`、`node`、`transit`）；`tavern/spatial-contract.mjs` 与构建工具也用它。 |
 | `plugins.mjs` | 外挂注册表 `plugins`：app 模块与根目录外挂之间唯一的通道。 |

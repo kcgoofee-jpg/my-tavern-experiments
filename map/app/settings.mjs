@@ -14,11 +14,12 @@ import { setActs } from './control-column.mjs';
 import { plugins } from './plugins.mjs';
 import * as TCCvd from './color-vision-mode.mjs';
 import { setFpsMeter } from './fps.mjs';
-import { MAINTAINER_MODE_KEY } from '../core/room-gallery-logic.mjs';
 import { PACK } from './current-pack.mjs';
 import { mountFeedbackButton } from './feedback.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
 import { renderPackBox } from './pack-settings.mjs';   // S9-2：高级页的「地图包」
+import { setEdit, initEdit } from './pack-edit-view.mjs';   // S9b：编辑模式（K-R100）
+import { reproject } from './pack-live.mjs';
 // ---------------- 设置（UI v2 §5）：首页 = 分组列表（+ 手机上的快捷：上一级、当前位置、关闭地图、切层、图层开关）；子页 显示 / 人物 / 数据与映射 / 更新与版本 / 高级 ----------------
 // 模块向指定页注册自己的一栏：SettingsApi.registerSection(page, el, { order })，不再 insertBefore(#selfCheck)。
 export let setPageNow = 'home', setPrev = null;
@@ -161,8 +162,8 @@ export function initSettings() {
   document.body.classList.toggle('nominimap', LocalStore.get('edenMapMinimap') !== '1');
   sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook()); sw('#optKeys', 'edenMapKeys', false);
   sw('#optTick', 'edenMapTick', true);   // Part 6-2 后台静默推演（宿主每 15 s 判一次，跑不跑由 background-scan-scheduler.mjs 的 plan 决定） sw('#optFps', 'edenMapFps', false, v => { setFpsMeter(v); estateLook(); });
-  // 房间图集「维护者模式」：经 LocalStore（core/storage.mjs 的同步镜像，本文件不直接碰 localStorage）；纯设备级开关，只是给仓库所有者自己用的工作流开关，不是权限校验（见 viewer.html 里的说明文字）
-  sw('#optGalleryMaintainer', MAINTAINER_MODE_KEY, false);
+  sw('#optEdit', 'edenMapEdit', false, v => setEdit(v)); sw('#optPackRemote', 'edenMapPackRemote', false, () => reproject(true));   // S9b：编辑模式与「加载包里用链接给出的图片」（K-R100 / K-R101，默认关）
+  initEdit();
   $('#linePick').onclick = () => { showSet(false); post({ type: 'eden-map:line-pick' }); };
   $('#kbdBtn').onclick = () => kbdHelp($('#kbdHelp').hidden);
   $('#hintAgain').onclick = () => { try { LocalStore.remove('edenMapHint'); LocalStore.remove('edenMapHintN'); } catch (e) {} showSet(false); firstRunHint(); };

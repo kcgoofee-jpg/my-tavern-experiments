@@ -1,25 +1,23 @@
 // 宿主消息接口：来源 / 令牌检查、协议校验、按类型分派。
-import { mapRegistry, currentMapId, setCurrentMapId, setMapRegistry, setSleeping, sleeping, osdViewer } from './state.mjs';
+import { mapRegistry, currentMapId, setCurrentMapId, setSleeping, sleeping, osdViewer } from './state.mjs';
 import { $ } from './dom-helpers.mjs';
 import { protocol, SUB_ORIGIN } from './protocol-stamp.mjs';
 import { lean } from './sharpness-tiers.mjs';
 import { setLang } from './i18n.mjs';
 import { setSlowStop, slowStop, slowWarmAlt } from './topbar.mjs';
-import { go, saveView, applyPeriod, srcKey } from './map-switch.mjs';
+import { go, saveView, applyPeriod } from './map-switch.mjs';
 import { dropParked, subpageSession, estFocus, estParked, estateLook, narrowNow, setEst, setEstFocus, setEstParked } from './subpage3d-host.mjs';
 import { onEsc } from './map-level-nav.mjs';
 import { untrackAll } from './markers.mjs';
 import { hereRes, markHere, startInScene, userMoved } from './locate.mjs';
 import { SettingsApi, setLine, about, renderAbout, renderSelfCheck, selfCheck, setAbout, setCardInfo, setSelfCheck, setUpdBusy, setUpdRes, updBusy, updRes, updSub } from './settings.mjs';
-import { emEmit, setChat, rebuildHere } from './extension-api.mjs';
+import { emEmit, setChat } from './extension-api.mjs';
 import { flashOk } from './status-dot.mjs';
 import { ntActs } from './notice-layer.mjs';
 import { plugins } from './plugins.mjs';
 import { busOn } from './bus.mjs';
 import { validate2, withDefaults } from '../core/pack-v2.mjs';
-import { projectV2 } from '../core/pack-v2-view.mjs';
-import { seedJSON } from './json-cache.mjs';
-import { buildRuntimeV2 } from './nodes-runtime.mjs';
+import { swapPack } from './pack-live.mjs';
 // 嵌入酒馆（悬浮按钮面板）的消息接口：
 //   酒馆 → 地图：eden-map:here {value}（当前地点）、eden-map:open {map}（直接打开某张地图）
 //   地图 → 酒馆：eden-map:ready（可以撤掉加载遮罩）、eden-map:state {map, title}（当前地图，用于面板标题）
@@ -32,20 +30,14 @@ function fromHost(e) {
   return !!tok && e.data.t === tok;
 }
 window.__isFromHost = fromHost;
-// K-R95 / K-R96: the automatic pack grew (eden-map:pack, rev + 1): validate again as a foreign pack, project it, swap the registry and the node runtime, and draw the open map again at the same zoom
-// when its picture or its markers changed; the current place is resolved again (a place text may now name a grown node). A stale or repeated rev, a schema-1 pack and a bad pack change nothing.
+// K-R95 / K-R96: the automatic pack grew (eden-map:pack, rev + 1): validate again as a foreign pack and show it (app/pack-live.mjs: project, swap the registry and the node runtime, draw the open map
+// again at the same zoom when its picture or its markers changed, resolve the current place again). A stale or repeated rev, a schema-1 pack and a bad pack change nothing.
 let packRev = Math.max(0, +(window.__tcPack && window.__tcPack.rev) || 0);
-const layoutSig = m => (m ? JSON.stringify([srcKey(m.base), Object.keys(m.markers || {})]) : '');
 async function onPack(d) {
   if (!(d.rev > packRev) || !d.manifest || window.__tcPack?.schema !== 2 || !mapRegistry) return;
-  const r = validate2(d.manifest, { trusted: false }); if (!r.pack) return;
-  const pack = withDefaults(r.pack), v2 = projectV2(pack, { base: '' }), cur = currentMapId, was = cur ? layoutSig(mapRegistry.maps[cur]) : '', b = cur && osdViewer?.viewport?.getBounds?.(true);
-  packRev = d.rev; window.__tcPack.manifest = d.manifest; seedJSON(v2.files); setMapRegistry(v2.registry); buildRuntimeV2(pack, v2.registry); rebuildHere();
-  if (cur && !sleeping && was !== layoutSig(v2.registry.maps[cur])) {
-    setCurrentMapId(null);
-    if (v2.registry.maps[cur]) { await go(cur); if (b) osdViewer.addOnceHandler('open', () => osdViewer.viewport.fitBounds(b, true)); } else await go(v2.registry.start);
-  }
-  markHere($('#here').value || '');
+  const r = validate2(d.manifest, { trusted: false, source: window.__tcPack?.source === 'card' ? 'card' : 'file' }); if (!r.pack) return;
+  packRev = d.rev; window.__tcPack.manifest = d.manifest;
+  await swapPack(withDefaults(r.pack), { base: '' });
 }
 /**
  * 任务三（b）「人已经在主场景里就别再从宏观世界层过一遍」：宿主第一次推地点时若落点在三维场景

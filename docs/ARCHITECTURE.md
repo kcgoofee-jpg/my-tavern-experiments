@@ -186,6 +186,9 @@ mutable state is written only by its declaring module through `set*()`.
 | `nodes-runtime.mjs` | The viewer's node tree: the loaded registry converted once by `core/compat-v1.mjs`; breadcrumb, up button, warm-up neighbours, estate stand-in and 3D-page test read it (no `parent` walking). `buildRuntimeV2` installs the schema-2 runtime into the same slot. |
 | `notice-layer.mjs` | Notice layer (handed to the host when embedded, `ui/notice.mjs` when standalone) and the first-run hint. |
 | `one-hand-mode.mjs` | One-hand mode: handedness switch with the floating button following it; starts the settings-home actions and quick zoom. |
+| `pack-edit-view.mjs` | Edit mode on screen (K-R100): the edit bar, marker drag, the controls on a place card, pictures and "use a picture as this place's map". Drawn only while the switch is on. |
+| `pack-edit.mjs` | Edit mode model (K-R100): `createEditor` with its operations (move, reparent, alias, new place, start, pictures, base map, discard) and the draft's storage (text in LocalStore, picture bytes in the gallery IndexedDB under `edit:<pack id>`). |
+| `pack-live.mjs` | Shows a schema-2 pack without a reload (K-R95, K-R100): project, swap the registry and the node runtime, redraw the open map; the edit draft is installed as a filter. |
 | `pack-settings.mjs` | Settings → Advanced "Map pack": the running pack, the choice list, URL / file import, the go-live switch of a foreign pack's model text, export as pack (K-R98, K-R99, K-R103). |
 | `place-resolver.mjs` | The current location: `nodes.locate` over the node tree, mapped to the result shape the consumers read (`level`, `map`, `marker`, `room`, `node`, `transit`); also used by `tavern/spatial-contract.mjs` and the builder tools. |
 | `plugins.mjs` | Plugin registry `plugins`: the only channel between app modules and root plugins. |

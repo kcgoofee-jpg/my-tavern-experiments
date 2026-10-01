@@ -192,6 +192,7 @@ export function estateLook() {
   setFpsMeter(false);
   w.postMessage({ type: 'estate:children', zones: estateZones(subpageSession.id) }, SUB_ORIGIN);   // 区域下的子地图（运行时节点树）：三维页据此给区域卡加「进入三维」，语言切换时标题跟着重发
   w.postMessage({ type: 'estate:chat', id: chatId || '' }, SUB_ORIGIN);   // 房间图集「按聊天」作用域用：主场景页读不到 SillyTavern 上下文，靠这条消息拿 chatId
+  import('./pack-live.mjs').then(m => w.postMessage({ type: 'estate:media', rooms: m.roomMedia(), remote: m.remoteOn() }, SUB_ORIGIN)).catch(() => {});   // K-R101：节点的包图片按房间名下发（没有 = 空）
 }
 // Part 8-1：世界藏物表下发给三维页（宿主 → 查看器 app/stash-markers.mjs → 主场景）；已在手里的 id 一并下发给它对账。
 // 三维页据此在房间 / 区域里放发光道具，点起来回 estate:loot，这里转成 eden-map:loot 交给宿主写背包。

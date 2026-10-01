@@ -1,7 +1,7 @@
 // 地点卡底部的链接（大版本 2，从 viewer.html 内联脚本拆出；docs/design/arch-v2.md §6）：
 //   meta.link   = 跨层 / 下钻通道 { map, marker?, label?, label_en? }（有些标记拿它做跨层跳转）
 //   meta.link3d = 可选的第二个链接：看这个地点的三维模型 { map, label?, label_en? }，map 通常是 kind=estate（带 viewer3d）的地图
-//   meta.gallery = 可选的房间图集入口 { id, label?, label_en? }，id 是 data/room_galleries.json 的键；点开直接在地图面板里看图集（不用先进三维主场景）
+//   meta.gallery = 可选的图集入口 { id, label?, label_en? }，id 是节点 id；有包图片（K-R101）的地点才有；点开在地图面板里看这个地点的图集（包图片在前、你自己的私人图在后）
 // 两个都有就都显示（通道在前）；目标图不存在或 status=planned 的不显示。纯函数：依赖通过 ctx 传入，node 单测 tests/card-links.test.mjs。
 // 点击走查看器全局的 [data-go] 委托（document click → go(map)，data-focus = 落点标记）。
 export function linkHtml(l, { REG, nm, t, esc }, kind = 'go') {
@@ -45,7 +45,7 @@ export function linksHtml(meta, ctx) {
   const covered = new Set([meta?.link?.map, meta?.link3d?.map].filter(Boolean));   // 上面两条已经指到的地方不重复给入口
   const scene = scene3dOf(meta, ctx);
   const c = scene && !covered.has(scene.map) ? scene3dHtml(meta, ctx) : '';
-  return a + b + c + galleryHtml(meta?.gallery, ctx);
+  return a + b + c + galleryHtml(ctx.galleryOf ? ctx.galleryOf(meta) : meta?.gallery, ctx);
 }
 /** 房间图集入口（衣帽间等）：标签默认「图集」 */
 export function galleryHtml(g, { nm, t, esc }) {
@@ -53,15 +53,10 @@ export function galleryHtml(g, { nm, t, esc }) {
   const label = (nm(g, 'label') || t('gallery')).replace(/\s*[→›>]\s*$/, '');
   return `<a data-gallery="${esc(g.id)}" role="button" tabindex="0">${esc(label)}</a>`;
 }
-// 点开图集：懒加载 ui/gallery.js 与清单 data.galleries 指的图集索引（按 <base> 解析，srcdoc 里也安全）；关掉后焦点回到入口
-let GALS = null;
+// 点开图集：懒加载编辑模块里的 openPictures（它按节点 id 取包图片 + 私人图，开面板）；关掉后焦点回到入口
 async function openGal(a) {
-  const base = new URL('.', document.baseURI).href;   // 目录（图集按 base + dir + 文件名拼地址）
-  const gp = (await import('./current-pack.mjs')).packData('galleries'); if (!gp) return;   // 图集索引的路径来自清单 data.galleries；包没声明 = 这个功能静默关着
-  const [{ openGallery }, sets] = await Promise.all([import(new URL('ui/gallery.js', base).href),
-    GALS ? Promise.resolve(GALS) : fetch(new URL(gp, base)).then(r => r.ok ? r.json() : null).catch(() => null)]);
-  if (sets) GALS = sets; const set = sets?.[a.dataset.gallery]; if (!set) return;
-  openGallery(set, { lang: window.I18N?.lang || 'zh', base, onClose: () => { if (a.isConnected) a.focus({ preventScroll: true }); } });
+  const { openPictures } = await import('./pack-edit-view.mjs');
+  openPictures(a.dataset.gallery, '', { onClose: () => { if (a.isConnected) a.focus({ preventScroll: true }); } });
 }
 // ---------------- Part 6-4：卡片上的「动作注入」入口 ----------------
 // 查看器只说「点了哪个地点、想做什么」：post 一条 eden-map:action，文案与注入方式由宿主（tavern/place-action-injection.mjs）

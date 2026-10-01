@@ -10,7 +10,7 @@ import { declutter } from './sharpness-tiers.mjs';
 import { LANG, localName, uiText, translateName } from './i18n.mjs';
 import { cardSheet } from './drawer-glue.mjs';
 import { plugins } from './plugins.mjs';
-import { isScene } from './nodes-runtime.mjs';
+import { isScene, RT } from './nodes-runtime.mjs';
 // ---------------- 标记 ----------------
 export function placeN(el, nx, ny, placement = OpenSeadragon.Placement.TOP_LEFT) {
   osdViewer.addOverlay({ element: el, location: new OpenSeadragon.Point(nx, ny * aspect), placement });
@@ -77,7 +77,9 @@ export function closeCard(user) {
 // 动作注入入口（Part 6-4）：模式不是 off 才在卡片底部多一个链接；模式从本机存储读（默认 off）
 // 注入模式每次开卡重读（设置里改了立刻生效）
 const injMode = () => { try { return storage.get('edenMapInject') || 'off'; } catch (e) { return 'off'; } };
-const ctx = () => ({ REG: mapRegistry, nm: localName, t: uiText, esc, mode: injMode(), cur: currentMapId, scene: isScene });   // Part 6-4：注入模式每次开卡重读；cur = 三维视口入口判据③（人已经在三维场景里）
+// 图集入口（K-R101）：投影已经给了 meta.gallery（schema-2 包）；否则按名字找节点，节点带包图片才出入口
+const galleryOf = meta => meta?.gallery || (() => { const n = meta?.name && RT?.geo?.().place(meta.name)?.node; return n && RT.tree.get(n)?.media?.length ? { id: n } : null; })();
+const ctx = () => ({ REG: mapRegistry, nm: localName, t: uiText, esc, mode: injMode(), cur: currentMapId, scene: isScene, galleryOf });   // Part 6-4：注入模式每次开卡重读；cur = 三维视口入口判据③（人已经在三维场景里）
 export const links = meta => { const linkCtx = ctx();   // 每次开卡重算：注入模式改了立刻生效；世界图地点卡（worldOverlays）与点位图地标卡用同一个
   return (window.CardLinksApi ? window.CardLinksApi.linksHtml(meta, linkCtx)
     : meta.link && mapRegistry.maps[meta.link.map] && mapRegistry.maps[meta.link.map].status !== 'planned' ? `<a data-go="${esc(meta.link.map)}" data-focus="${esc(meta.link.marker || '')}" role="button" tabindex="0">${esc(localName(meta.link, 'label') || uiText('goto', { title: localName(mapRegistry.maps[meta.link.map], 'title') }))}</a>` : '')
@@ -194,6 +196,7 @@ export function pointOverlays() {
   for (const k of d.markers || []) if (k.ax != null && k.ay != null) { k.nx = k.ax; k.ny = k.ay; }
   for (const k of d.markers || []) { const meta = m.markers?.[k.id]; if (!meta) continue;
     const el = markerEl({ ...meta, sub: (meta.sub || '').replace(/\{\{user\}\}\s*/g, uiText('you')), extra: () => econHtml(meta) + links(meta) });
+    el.dataset.mid = k.id;   // the marker's id (a node id for a schema-2 pack): edit mode (pack-edit-view.mjs) finds the node through it
     if (k.id === (m.view?.focus || m.focus)) el.dataset.focus = '1'; if (meta.link) el.dataset.link = '1';   // 标签避让的优先级
     depthFx(el, meta); depthEls.push(el);
     placeN(el, k.nx, k.ny); }

@@ -1,9 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import * as LOGIC from '../map/core/room-gallery-logic.mjs';
 import {
-  fitSize, scopeKey, imageRecordKey, checkQuota, makeImageMeta, reorder, buildExportManifest, buildIssueUrl, MAX_DIM,
-  isValidGalleryFile, safeGalleryImagePath, readMaintainerMode, MAINTAINER_MODE_KEY,
+  fitSize, scopeKey, imageRecordKey, checkQuota, makeImageMeta, reorder, MAX_DIM,
+  isValidGalleryFile, safeGalleryImagePath,
 } from '../map/core/room-gallery-logic.mjs';
+import { createEditor } from '../map/app/pack-edit.mjs';
+import { exportPack } from '../map/core/pack-export.mjs';
+import { overlayText } from '../map/core/pack-draft.mjs';
+import { PNG, PNG2, base } from './helpers/pack_pics.mjs';
 
 test('fitSize 不放大小图，长边封顶 1600', () => {
   assert.deepEqual(fitSize(800, 600), { w: 800, h: 600 });
@@ -27,10 +34,12 @@ test('checkQuota 超限返回 over > 0', () => {
   const bad = checkQuota(95, 10, 100); assert.equal(bad.ok, false); assert.equal(bad.over, 5);
 });
 
-test('makeImageMeta 校验 visibility 并默认自用', () => {
+test('makeImageMeta 校验 visibility 并默认私人', () => {
   const m = makeImageMeta({ id: 'i1', roomId: 'bedroom', order: 0, w: 800, h: 600, bytes: 1000 });
   assert.equal(m.visibility, 'private');
   assert.throws(() => makeImageMeta({ id: 'i1', roomId: 'bedroom', visibility: 'weird' }));
+  assert.equal(makeImageMeta({ id: 'i1', roomId: 'bedroom', visibility: 'public' }).visibility, 'private', 'a stored "public" reads as private (K-R102)');
+  assert.equal(makeImageMeta({ id: 'i1', roomId: 'bedroom', visibility: 'pack' }).visibility, 'pack');
   assert.throws(() => makeImageMeta({ id: '', roomId: 'bedroom' }));
 });
 
@@ -43,33 +52,6 @@ test('reorder 移动到新位置并重编号，无空洞', () => {
   const moved = reorder(list, 'c', 0);
   assert.deepEqual(moved.map(x => x.id), ['c', 'a', 'b']);
   assert.deepEqual(moved.map(x => x.order), [0, 1, 2]);
-});
-
-test('buildExportManifest 只导出公开图，文件名带序号', () => {
-  const images = [
-    makeImageMeta({ id: 'p1', roomId: 'bedroom', order: 0, visibility: 'public', w: 1600, h: 900 }),
-    makeImageMeta({ id: 's1', roomId: 'bedroom', order: 1, visibility: 'private', w: 1600, h: 900 }),
-    makeImageMeta({ id: 'p2', roomId: 'bedroom', order: 2, visibility: 'public', w: 1200, h: 1600 }),
-  ];
-  const { manifest, files, count } = buildExportManifest({ roomId: 'bedroom', images, author: 'kc' });
-  assert.equal(count, 2);
-  assert.equal(files.length, 2);
-  assert.equal(files[0].file, 'bedroom_01.webp');
-  assert.equal(files[1].file, 'bedroom_02.webp');
-  assert.equal(manifest.room, 'bedroom');
-  assert.equal(manifest.images.length, 2);
-});
-
-test('buildExportManifest 无公开图时 count 为 0', () => {
-  const images = [makeImageMeta({ id: 's1', roomId: 'bedroom', order: 0, visibility: 'private' })];
-  const { count, files } = buildExportManifest({ roomId: 'bedroom', images });
-  assert.equal(count, 0); assert.deepEqual(files, []);
-});
-
-test('buildIssueUrl 生成预填 GitHub issue 链接', () => {
-  const url = buildIssueUrl({ repo: 'someone/eden-map', roomId: 'bedroom', count: 3 });
-  assert.match(url, /^https:\/\/github\.com\/someone\/eden-map\/issues\/new\?title=/);
-  assert.match(url, /bedroom/);
 });
 
 test('isValidGalleryFile 只认扁平文件名 + 白名单类型', () => {
@@ -91,12 +73,32 @@ test('safeGalleryImagePath 只拼 map/art/gallery/<roomId>/<file>，非法输入
   assert.equal(safeGalleryImagePath('bedroom', 'https://evil.example/a.png'), null);
 });
 
-test('readMaintainerMode 默认关闭，只在本机 localStorage 显式打开时为 true', () => {
-  const store = new Map();
-  const ls = { getItem: k => (store.has(k) ? store.get(k) : null) };
-  assert.equal(readMaintainerMode(ls), false);
-  store.set(MAINTAINER_MODE_KEY, '1');
-  assert.equal(readMaintainerMode(ls), true);
-  assert.equal(readMaintainerMode(null), false);
-  assert.equal(readMaintainerMode(undefined), false);
+test('the maintainer workflow is gone: no issue link, no export manifest, no maintainer switch (E-08)', () => {
+  for (const k of ['buildIssueUrl', 'buildExportManifest', 'MAINTAINER_MODE_KEY', 'readMaintainerMode']) assert.equal(k in LOGIC, false, k);
+  for (const f of ['map/ui/room-gallery-panel.js', 'map/app/settings.mjs', 'map/core/room-gallery-logic.mjs']) {
+    const src = readFileSync(fileURLToPath(new URL('../' + f, import.meta.url)), 'utf8');
+    assert.doesNotMatch(src, /Maintainer|maintainer|issues\/new|buildIssueUrl|gallery_maintainer|github\.com/, f);
+  }
+  const html = readFileSync(fileURLToPath(new URL('../map/viewer.html', import.meta.url)), 'utf8');
+  assert.doesNotMatch(html, /optGalleryMaintainer|gallery_maintainer|gallery_group/);
+});
+
+test('K-R102: a private record is never in the output of exportPack or of the overlay export, whatever is passed along', () => {
+  const secret = { ...makeImageMeta({ id: 'iSECRET', roomId: 'n:alpha', order: 0, w: 1, h: 1, bytes: 9, note: 'my private note' }), scope: 'global', key: 'global::n:alpha::iSECRET', blob: 'SECRET-BYTES-0123456789' };
+  const e = createEditor({ pack: base() }), m = e.addPicture({ src: PNG, w: 1, h: 1 }); e.attach('alpha', m.id); e.addPicture({ src: PNG2 });
+  const opts = { draft: e.draft, card: { name: 'Tide' }, privateRecords: [secret], private: [secret], images: [secret], gallery: [secret], records: [secret] };
+  const a = exportPack(base(), opts), o = overlayText(e.draft, base());
+  assert.deepEqual(a.problems, []);
+  for (const text of [a.text, a.compact, o]) for (const needle of ['iSECRET', 'SECRET-BYTES', 'my private note', 'n:alpha', 'global::']) assert.ok(!text.includes(needle), needle);
+  assert.ok(a.text.includes(PNG.slice(30, 60)), 'a picture the author put into the pack on purpose is there');
+  for (const f of ['map/core/pack-export.mjs', 'map/core/pack-draft.mjs', 'map/core/pack-media.mjs']) assert.doesNotMatch(readFileSync(fileURLToPath(new URL('../' + f, import.meta.url)), 'utf8'), /room-gallery/, f + ' does not touch the private picture store');
+  // "add to pack" copies the picture (a new pack item); the private record itself is untouched and still private
+  const copy = e.addPicture({ src: PNG2, w: 1, h: 1 }); assert.ok(copy.ok); assert.equal(secret.visibility, 'private');
+});
+
+test('an image outside the allowed sources is refused: the guard of the shared gallery folder and the pack picture rules agree', () => {
+  assert.equal(safeGalleryImagePath('bedroom', 'https://evil.example/a.png'), null); assert.equal(isValidGalleryFile('a.svg'), false);
+  const e = createEditor({ pack: base() });
+  for (const src of ['https://evil.example/a.png', 'http://evil.example/a.png', 'javascript:alert(1)', 'data:image/svg+xml;base64,PHN2Zz4=', 'data:text/html;base64,PGI+', '../a.png', 'a.png']) assert.equal(e.addPicture({ src }).ok, false, src);
+  assert.deepEqual(e.draft.media, {});
 });

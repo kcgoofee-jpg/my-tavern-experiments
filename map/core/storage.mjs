@@ -54,6 +54,8 @@ export const KEYS = {
   edenMapPackPick: { owner: 'tavern/pack-gate.mjs' },   // JSON { <卡键>: 'index:<id>' | 'url:<https 地址>' | 'file' }；没有 = 自动
   edenMapPackLlm: { owner: 'tavern/pack-gate.mjs', def: '{}' },
   edenMapPacks: { owner: 'core/pack-store-db.mjs', idb: true },   // 不是 localStorage 键：IndexedDB 库名（store packs，键 = 卡键）；登记在这是为了静态清点认得它   // JSON { <包 id>: <模型文字 llm 块规范 JSON 的 fnv36> }（K-R103，默认关）
+  // 编辑模式与包图片（S9b，K-R100 / K-R101）：开关默认关；草稿按包 id 存（图片字节在图集 IndexedDB 的 edit:<包 id> 作用域，不在这里）
+  edenMapEdit: { owner: 'viewer', def: '0' }, edenMapPackRemote: { owner: 'viewer', def: '0' }, 'edenMap:edit:': { owner: 'app/pack-edit.mjs', prefix: true },
   // 三维
   edenEstateLabels: { owner: 'estate', legacy: true }, edenMap3dRailW: { owner: 'ui/chrome3d.js' },
   // 相机控制（U，2026-09-28）：视角预设/指北针/首次提示卡/空闲自动旋转，主场景页与通用三维查看器共用（ui/camera-controls.js）
