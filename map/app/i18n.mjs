@@ -1,5 +1,6 @@
 // i18n 与主题：LANG/DICT/t/tr/nm、setLang、setTheme、postState；window.I18N 是外挂与子页共用的服务。
 import { mapRegistry, currentMapId, osdViewer } from './state.mjs';
+import { lookup } from '../core/locked-strings.mjs';
 import { PACK } from './current-pack.mjs';
 import { $, esc } from './dom-helpers.mjs';
 import { getJSON } from './json-cache.mjs';
@@ -22,7 +23,7 @@ export let LANG = window.__lang || 'zh', DICT = {};
 const fmt = (s, v) => { for (const [a, b] of Object.entries(v || {})) s = String(s).split('{' + a + '}').join(b); return s; };
 // 包内文案（manifest.strings，通用化 v1 接入）：键 = i18n 键、值不分语言；英文变体写「键@en」（缺了退回无后缀值）。
 // 包没配的键照旧走核心字典——用来换掉核心文案里带本卡口径的说法（如占位提示里的 MVU 路径）。
-export const uiText = (k, v) => { const s = PACK?.strings, o = s && (LANG === 'en' ? s[k + '@en'] ?? s[k] : s[k]); return fmt(o != null && o !== '' ? o : DICT[k] ?? k, v); };
+export const uiText = (k, v) => fmt(lookup(DICT, PACK?.strings, LANG, k), v);   // core/locked-strings.mjs: consent wording, health reasons, cost lines and the disclaimer ignore the pack
 export const translateName = z => LANG === 'en' ? (enNames?.[z] || z) : z;   // 英文地名来自包的对照表（清单 data.names.en，boot 读入 extapi 的 enNames）；没有就是中文原文
 export const localName = (o, k = 'name') => { const z = o?.[k] ?? ''; return LANG === 'en' ? (o?.[k + '_en'] || translateName(z)) : z; };
 // 共享 i18n 服务（arch-v2 §6 第 6 步 i18n 块）：外挂脚本与 app/*.mjs 都走这里，不再各自带一份 T()。

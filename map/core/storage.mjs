@@ -45,9 +45,9 @@ export const KEYS = {
   // 见闻录（Part 5-5）：钉在地标上的图与手记的索引（字节在图集 IndexedDB 里）；按聊天分，键 = edenMap:chat:<聊天 id>:scrap
   'edenMapScrap': { owner: 'map/scrapbook-view.mjs', prefix: true, perChat: true },
   // 酒馆助手采纳（docs/tavernhelper-audit.md，docs/interaction-modes.md）：状态注入 (a)、类宏 B9、世界书附加条目同步 B1
-  edenMapStateInj: { owner: 'host', def: '1' }, edenMapStateDepth: { owner: 'host', def: '2' }, edenMapStateBudget: { owner: 'host', def: '150' }, edenMapMacros: { owner: 'host', def: '0' },
+  edenMapStateInj: { owner: 'host', def: '1' }, edenMapStateDepth: { owner: 'host', def: '2' }, edenMapStateBudget: { owner: 'host', def: '150' }, edenMapStateOmit: { owner: 'host', def: '[]' }, edenMapMacros: { owner: 'host', def: '0' },
   // 空间坐标契约注入（W1，docs/plans/llm-campaign.md）：edenMapSpatial 默认关；上限 token 数（裁决 5，默认 120）
-  edenMapSpatial: { owner: 'host', def: '0' }, edenMapSpatialBudget: { owner: 'host', def: '120' },
+  edenMapSpatial: { owner: 'host', def: '0' }, edenMapSpatialBudget: { owner: 'host', def: '120' }, edenMapSpatialDepth: { owner: 'host', def: '2' },
   edenMapWbAuto: { owner: 'host', def: '0' }, edenMapWbOn: { owner: 'host', def: '1' }, edenMapWbTomb: { owner: 'host', def: '0' }, edenMapWbChars: { owner: 'host' }, edenMapWbNoticeVer: { owner: 'host' }, edenMapWbSync: { owner: 'host' }, edenMapWbWhere: { owner: 'host' },
   edenMapWbJit: { owner: 'host', def: '0' },   // W6 世界书 JIT 水合：人在哪只挂哪（默认关；只动附加书 extra.eden_id 条目）
   edenMapWbXtal: { owner: 'host', def: '0' }, edenMapWbXtalCfg: { owner: 'host' },   // W7 事实结晶：开关 + 水位/墓表 {tombstones, written}（默认关）
@@ -66,7 +66,7 @@ export const KEYS = {
 };
 // 地基 A4：这些偏好的真相在酒馆助手脚本变量（type:'script'，变量名 eden_prefs）：读脚本变量优先、本机回退，本版两边都写（下一版再去掉本机这份）。
 // 宿主 tavern/eden-map.js PREF_KEYS 是同一份（tests/storage.test.mjs 对照）；查看器仍读写本机，宿主在启动时把脚本变量写回本机、本机一变就同步回脚本变量。
-export const SCRIPT_KEYS = ['edenMapLine', 'edenMapHand', 'edenMapLang', 'edenMapTheme', 'edenMapFabPos', 'edenMapStateInj', 'edenMapStateDepth', 'edenMapStateBudget', 'edenMapMacros', 'edenMapWbOn', 'edenMapWbSync', 'edenMapWbWhere'];
+export const SCRIPT_KEYS = ['edenMapLine', 'edenMapHand', 'edenMapLang', 'edenMapTheme', 'edenMapFabPos', 'edenMapStateInj', 'edenMapStateDepth', 'edenMapStateBudget', 'edenMapStateOmit', 'edenMapMacros', 'edenMapWbOn', 'edenMapWbSync', 'edenMapWbWhere'];
 export const SCRIPT_VAR = 'eden_prefs';
 /** 键是否登记（前缀键按前缀匹配；edenMapLine 覆盖 edenMapLineManual / edenMapLineAt） */
 export function known(k) {

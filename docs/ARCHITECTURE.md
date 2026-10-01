@@ -61,8 +61,8 @@ Rules that follow:
 
 ## 3. Module map
 
-Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 255 files: `map/core` 77,
-`map/app` 76, `map/tavern` 65, `map/ui` 9, `map/three` 9, `map/*.mjs` 17, plus `map/viewer.html` and
+Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 264 files: `map/core` 79,
+`map/app` 81, `map/tavern` 67, `map/ui` 8, `map/three` 10, `map/*.mjs` 17, plus `map/viewer.html` and
 `map/props/viewer3d.html`. Roles were derived from each file's header comment and code.
 
 ### 3.1 map/core
@@ -100,6 +100,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `lexicon.mjs` | Text primitives and kernel word lists of contract v2: normalise, code-point length, cut, FNV hash, articles, journey patterns. Pure and self-contained. |
 | `listeners.mjs` | ListenerBus: the single registry for global listeners, idempotent per key, `offAll()` and `describe()`. |
 | `locate.mjs` | Vocabulary and locate for contract v2: one algorithm places every text that names a place (longest alias, deeper node preferred) over the tree from `nodes.mjs`. |
+| `locked-strings.mjs` | The texts a pack may not override (AI advisor consent, health reasons, cost lines, disclaimer): `isLocked`, `ignoredKeys` and the dictionary `lookup` the viewer uses. Pure. |
 | `lod.mjs` | Graphics LOD policy: which detail state a model should be in, hysteresis, and which async loads are still valid. |
 | `logbuf.mjs` | Console ring buffer for feedback reports, split into sessions; installs its hooks on first evaluation. |
 | `nodes.mjs` | The node tree (kernel contract v2): build, read, `vocabulary`, `locate`, views, positions, scope, levels. |
@@ -158,6 +159,8 @@ mutable state is written only by its declaring module through `set*()`.
 | Module | Role |
 |---|---|
 | `about-build.mjs` | About page current-build line (head number, short sha, time). |
+| `ai-cards.mjs` | The AI link settings page (S7-1): the ten feature cards (digest, status line, macros, dice, settlement records, spatial contract, worldbook JIT, fact crystallisation, AI advisor, map actions) with their prefs keys and sub-options, patched from the host's `th-state`; loaded when the page first opens. |
+| `ai-nav-form.mjs` | The AI advisor card's sub-options: endpoint form, test connection, consent block (agree only after a passing test), cadence, stats line. The key is only posted to the host. |
 | `block-canvas.mjs` | Canvas building blocks (K-R80): `canvasLayer` (slot canvas, rAF, resize, visibility guard) and the frame bodies `drawFlow`, `drawParticles`, `drawTint` shared by the traffic and weather layers and by declared layers. |
 | `block-overlay.mjs` | Overlay building blocks (K-R80): `point`, `label`, `line` and `area` features as map overlays (one SVG per layer, HTML elements for points and labels), the injected style, legend swatch style. |
 | `boot.mjs` | Startup: fetches registry, markers, derived data, dictionary and pack in parallel, builds OpenSeadragon, posts `ready`, failure exits. |
@@ -178,6 +181,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `dzi-worker-src.mjs` | Source string of the tile decode worker (exported as text so a blob worker works inside `srcdoc`). |
 | `dzi-worker.mjs` | Viewer-side client of the tile decode worker, with fallback to the stock image path. |
 | `extension-api.mjs` | Local extension interface `window.EdenMap` and the chat id. |
+| `feature-card.mjs` | The feature card component (S7-1): pure `cardModel` (icon, health line, text, tokens) and `featureCard` that draws it with textContent and patches it in place. |
 | `feedback-report.mjs` | Pure feedback-report text assembly with a whitelist of fields. |
 | `feedback.mjs` | Feedback button: installs the log buffer, previews and copies / downloads the report. |
 | `fog.mjs` | Fog exploration overlay: unvisited places dimmed, visits recorded per chat. |

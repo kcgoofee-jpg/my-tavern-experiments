@@ -21,13 +21,25 @@ MAP = os.path.join(ROOT, 'map')
 SCH = {n: json.load(open(os.path.join(MAP, 'data', 'schema', n + '.schema.json'), encoding='utf-8')) for n in ('pack', 'maps', 'points', 'events', 'depth')}
 
 
+LOCKED = [re.compile(x) for x in (r'^fc\.nav\.consent', r'^fc\.reason\.', r'^fc\.[A-Za-z]+\.cost$', r'^lic\.disclaimer$', r'^s\.lic_disc_v$')]   # docs/ui-refactor.md §2.7 (core/locked-strings.mjs): texts a pack may not override
+
+
+def locked_strings(pid, m):
+    flat = dict(m.get('strings') or {})
+    for v in ((m.get('ui') or {}).get('strings') or {}).values():
+        if isinstance(v, dict): flat.update(v)
+    flat.update({k: 1 for k in ((m.get('ui') or {}).get('strings') or {}) if not isinstance((m.get('ui') or {}).get('strings')[k], dict)})
+    return [f'{pid}: strings 里的 {k} 是内核固定文字（同意说明、健康原因、费用行、免责声明），包不能改' for k in sorted(flat) if any(r.match(k.replace('@en', '')) for r in LOCKED)]
+
+
 def check(pid):
     errs = []
     d = os.path.join(MAP, 'packs', pid)
     mp = os.path.join(d, 'manifest.json')
     if not os.path.exists(mp): return [f'{pid}: 没有 manifest.json']
     m = json.load(open(mp, encoding='utf-8'))
-    if m.get('schema') == 2: return check_v2(pid, d, m)
+    if m.get('schema') == 2: return locked_strings(pid, m) + check_v2(pid, d, m)
+    errs += locked_strings(pid, m)
     errs += [f'{pid}/manifest.json {e}' for e in validate(m, SCH['pack'])]
     if m.get('id') != pid: errs.append(f'{pid}: 清单 id {m.get("id")!r} 与目录名不一致')
     base = MAP if pid == 'eden' else d   # eden 的路径相对 map/

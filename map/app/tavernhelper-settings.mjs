@@ -1,10 +1,11 @@
 // 设置里的酒馆助手功能（docs/tavernhelper-audit.md B1 / B9，docs/interaction-modes.md (a)）：
-// 「数据与映射」：世界书附加条目（写入 / 自动同步，写前看差异）、状态注入开关、类宏开关；「高级」：注入深度与 token 上限。
+// 「数据与映射」：世界书附加条目（写入 / 自动同步，写前看差异）；状态注入、类宏等开关在「AI 联动」页的功能卡片里（app/ai-cards.mjs）。
 // 真正读写都在卡内脚本（tavern/eden-map.js onTh）；这里只发 eden-map:th 请求、画 eden-map:th-state。单独打开（不在酒馆里）时整栏不显示。
 import { $, esc } from './dom-helpers.mjs';
 import { post } from './protocol-stamp.mjs';
 import { uiTextOr } from './text-lookup.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
+import { setAiSum } from './settings.mjs';
 
 const W = { global: ['th.wb_global', '全局'], char: ['th.wb_char', '当前角色的附加世界书'], chat: ['th.wb_chat', '当前聊天'] };
 let S = { prefs: null, wb: null, last: null, result: null, api: null }, diffShown = false, armed = 0, delArmed = '';
@@ -66,46 +67,18 @@ function renderWb() {
   for (const b of box.querySelectorAll('button[data-del]')) b.onclick = () => { const n = b.dataset.del; if (delArmed !== n) { delArmed = n; renderWb(); return; } delArmed = ''; b.disabled = true; post({ type: 'eden-map:th', op: 'wb-del-legacy', name: n }); };
 }
 
-function renderInj() {
-  const box = sec('ai', 'thInj', 10), P = S.prefs || {}, A = S.api || {};
-  box.innerHTML = `<h3>${esc(uiTextOr('th.inj', '状态注入'))}</h3>`
-    + `<label class="row"><input type="checkbox" id="thInjOn" ${P.inj !== false ? 'checked' : ''} ${A.inject === false ? 'disabled' : ''}> ${esc(uiTextOr('th.inj_on', '每次生成前注入一行当前状态（地点、在场、时间、行程）'))}</label>`
-    + `<small>${esc(uiTextOr('th.inj_note', '约 150 token；卡的提示词里已有的字段自动跳过；数据还没确认时标「未确认」。深度和上限在「高级」'))}</small>`
-    + `<small id="thInjPreview"></small>`
-    + `<label class="row"><input type="checkbox" id="thMacro" ${P.macros ? 'checked' : ''} ${A.macros === false ? 'disabled' : ''}> ${esc(uiTextOr('th.macros', '提供宏 {{eden_here}} / {{eden_route}}（给卡或预设作者引用）'))}</label>`
-    + `<label class="row"><input type="checkbox" id="thDice" ${P.dice ? 'checked' : ''}> ${esc(uiTextOr('th.dice', '检定真掷骰：搜刮 / 潜行失手会真的失败并出失败报告（默认关 = 只提示不判定）'))}</label>`
-    + `<label class="row"><input type="checkbox" id="thLedgerWrite" ${P.ledgerWrite ? 'checked' : ''}> ${esc(uiTextOr('th.ledger_write', '结算记录：把日程里的人物位置和聊天里的事件记进地图自己的聊天变量（只补空缺，不写卡的变量；默认关）'))}</label>`
-    + `<label class="row"><input type="checkbox" id="thSpatial" ${P.spatial ? 'checked' : ''}> ${esc(uiTextOr('th.spatial', '向模型注入空间坐标契约（≤120 token 的坐标 JSON，取代方位散文）'))}</label>`
-    + `<label class="row"><input type="checkbox" id="thWbJit" ${P.wbJit ? 'checked' : ''}> ${esc(uiTextOr('th.wbjit', '世界书 JIT 水合：人在哪只挂载哪儿的条目（离开自动卸载）'))}</label>`
-    + `<label class="row"><input type="checkbox" id="thWbXtal" ${P.wbXtal ? 'checked' : ''}> ${esc(uiTextOr('th.wbxtal', '剧情事实结晶：⌖事实 标签自动沉淀为附加书条目（LRU 上限，可在书里删）'))}</label>`
-    + `<label class="row"><input type="checkbox" id="thNav" ${P.nav ? 'checked' : ''}> ${esc(uiTextOr('th.nav', '地图领航员（后台调用你配置的私有 API 推演态势建议，默认关）'))}</label>`
-    + `<div class="hrow"><span></span><button type="button" class="btn" id="thNavCfg">${esc(uiTextOr('th.nav_cfg', '配置端点（JSON：provider / key / base / model）'))}</button></div>`;
-  { const pv = $('#thInjPreview'), I = S.inject;   // I-19：下一轮注入的原文，或不注入的原因（textContent，不拼 HTML）
-    if (pv && I) pv.textContent = I.text ? uiTextOr('th.inj_next', '下一轮将注入：{t}', { t: I.text }) : uiTextOr('th.inj_none', '当前不注入：{r}', { r: uiTextOr('th.inj_r_' + I.reason, I.reason, {}) }); }
-  $('#thInjOn').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { inj: e.target.checked } });
-  $('#thMacro').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { macros: e.target.checked } });
-  $('#thDice').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { dice: e.target.checked } });
-  $('#thLedgerWrite').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { ledgerWrite: e.target.checked } });
-  $('#thSpatial').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { spatial: e.target.checked } });
-  $('#thWbJit').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { wbJit: e.target.checked } });
-  $('#thWbXtal').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { wbXtal: e.target.checked } });
-  $('#thNav').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { nav: e.target.checked } });
-  $('#thNavCfg')?.addEventListener('click', () => {
-    const cur = prompt(uiTextOr('th.nav_cfg', '配置端点（JSON：provider / key / base / model）'), JSON.stringify({ provider: 'openai', key: '', base: 'https://api.deepseek.com/v1', model: 'deepseek-chat' }));
-    if (cur && cur.trim()) post({ type: 'eden-map:th', op: 'prefs', prefs: { navCfg: cur } });
-  });
-  const adv = sec('adv', 'thAdv', 80);
-  adv.innerHTML = `<h3>${esc(uiTextOr('th.inj', '状态注入'))}</h3>`
-    + `<div class="hrow"><label for="thDepth">${esc(uiTextOr('th.depth', '注入深度（楼层，0 = 最后）'))}</label><input id="thDepth" type="number" min="0" max="20" step="1" value="${+P.depth || 2}"></div>`
-    + `<div class="hrow"><label for="thBudget">${esc(uiTextOr('th.budget', 'token 上限'))}</label><input id="thBudget" type="number" min="40" max="400" step="10" value="${+P.budget || 150}"></div>`;
-  $('#thDepth').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { depth: +e.target.value } });
-  $('#thBudget').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { budget: +e.target.value } });
-}
-
+let lastTh = {};
+const thListeners = new Set();
+/** onThState(fn): the cards get the last prefs / health now and every later th-state (the module is only loaded when the AI link page first opens) */
+export function onThState(fn) { thListeners.add(fn); fn(lastTh); }
 export function applyState(d) {
-  S = { ...S, inject: d.inject || S.inject, prefs: d.prefs || S.prefs, last: d.last ?? S.last, api: d.api || S.api, wb: d.wb || S.wb, result: d.result || (d.wb ? null : S.result) };
-  if (d.result) { diffShown = false; armed = 0; }
-  renderInj(); renderWb();
+  const wbRes = d.result && !d.result.navTest ? d.result : null;   // the AI advisor's test answer rides in `result` too: it is not a worldbook result
+  S = { ...S, inject: d.inject || S.inject, prefs: d.prefs || S.prefs, last: d.last ?? S.last, api: d.api || S.api, wb: d.wb || S.wb, result: wbRes || (d.wb || d.result ? null : S.result) };
+  if (wbRes) { diffShown = false; armed = 0; }
+  if (d.healthSum) setAiSum(d.healthSum);
+  lastTh = { ...lastTh, ...Object.fromEntries(['prefs', 'health', 'providers'].filter(k => d[k]).map(k => [k, d[k]])), ...(d.result?.navTest ? { navTest: d.result.navTest } : {}) };
+  for (const f of thListeners) try { f(lastTh); } catch (e) {}   // the AI link page (ai-cards.mjs, loaded on demand) subscribes here
+  renderWb();
 }
 
 if (typeof window !== 'undefined' && window.top !== window) {

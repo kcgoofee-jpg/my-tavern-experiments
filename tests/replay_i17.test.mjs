@@ -43,8 +43,8 @@ test('clock and status line follow each floor (line for the last floor: [地图�
   try {
     const B = new MVUBridge({ life: createLife(), storage: LS, wins: () => [globalThis], fallbackMembers: [], floorNow: () => chat.length - 1, lastRaw: () => null });
     await B.mvuReady; B.refreshVarMap();
-    const { createModesFlow } = await import('../map/tavern/modes-flow.mjs');
-    const MO = createModesFlow({ mvuBridge: B, contextPipeline: { trips: [] }, scriptBase: '', chatId: () => 'i17', life: createLife(), lsGet: () => null,
+    const { createModesFlow } = await import('../map/tavern/modes-flow.mjs'), { createFacts } = await import('../map/tavern/feature-health.mjs');
+    const MO = createModesFlow({ facts: createFacts(), floorNow: 0, mvuBridge: B, contextPipeline: { trips: [] }, scriptBase: '', chatId: () => 'i17', life: createLife(), lsGet: () => null,
       pushSoon() {}, recomputeSoon() {}, saveRoot() {}, userName: s => s, BASE: '', clock: {}, custom: null, customChat: null, here: PLACE, regNow: null, statSig: '' });
     chat.push({ is_user: true, swipe_id: 0, variables: [] });
     for (const f of FLOORS) {

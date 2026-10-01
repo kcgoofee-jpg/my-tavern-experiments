@@ -273,13 +273,32 @@ test('stage A T3：桥暴露 interaction-modes 模块（modes），状态行注�
   try {
     const B = makeBridge({ floorNow: () => 0, lastRaw: () => null }); await B.mvuReady; B.refreshVarMap();
     assert.ok(B.modes && typeof B.modes.stateLine === 'function' && typeof B.modes.applyState === 'function', 'bridge.modes 缺失 = 状态行注入 / 检查点静默失效');
-    const { createModesFlow } = await import('../map/tavern/modes-flow.mjs');
-    const MO = createModesFlow({ mvuBridge: B, contextPipeline: { trips: [] }, scriptBase: '', chatId: () => 'c1', life: createLife(), lsGet: () => null,
+    const { createModesFlow } = await import('../map/tavern/modes-flow.mjs'), { createFacts } = await import('../map/tavern/feature-health.mjs');
+    const MO = createModesFlow({ facts: createFacts(), floorNow: 0, mvuBridge: B, contextPipeline: { trips: [] }, scriptBase: '', chatId: () => 'c1', life: createLife(), lsGet: () => null,
       pushSoon() {}, recomputeSoon() {}, saveRoot() {}, userName: s => s, BASE: '', clock: {}, custom: null, customChat: null, here: '书房', regNow: null, statSig: '' });
     MO.stateInject();
     const inj = calls.filter(c => c[0] === 'in');
     assert.equal(inj.length, 1, `应注入一条：${JSON.stringify(calls)}`);
     assert.equal(inj[0][1].id, B.modes.STATE_ID); assert.equal(inj[0][1].depth, 2);
     assert.match(inj[0][1].content, /^\[地图状态\] 地点：书房/);
+  } finally { delete globalThis.injectPrompts; delete globalThis.uninjectPrompts; done(); }
+});
+
+// S7-1 T4: edenMapStateOmit (the fields the user leaves out of the status line) and edenMapSpatialDepth; empty omit list and depth 2 = today's text and depth, byte for byte
+test('S7-1 T4：状态行：不要的字段（edenMapStateOmit）只去掉那一段；空表 = 原样；字段状态进健康事实', async () => {
+  const done = stubEnv({ chat: [msg('书房')], vars: {} });
+  globalThis.injectPrompts = a => calls.push(...a); globalThis.uninjectPrompts = () => {}; const calls = [];
+  try {
+    const B = makeBridge({ floorNow: () => 0, lastRaw: () => null }); await B.mvuReady; B.refreshVarMap();
+    const { createModesFlow } = await import('../map/tavern/modes-flow.mjs'), { createFacts } = await import('../map/tavern/feature-health.mjs');
+    const mk = ls => { const facts = createFacts(); return { facts, MO: createModesFlow({ facts, floorNow: 0, mvuBridge: B, contextPipeline: { trips: [{ from: '甲', to: '乙' }] }, scriptBase: '', chatId: () => 'c1', life: createLife(), lsGet: k => ls[k] ?? null,
+      pushSoon() {}, recomputeSoon() {}, saveRoot() {}, userName: x => x, BASE: '', clock: {}, custom: null, customChat: null, here: '书房', regNow: null, statSig: '' }) }; };
+    const base = mk({}); base.MO.stateInject(); const frozen = calls.at(-1).content;
+    assert.match(frozen, /^\[地图状态\] 地点：书房/); assert.match(frozen, /行程：甲→乙/);
+    const same = mk({ edenMapStateOmit: '[]' }); same.MO.stateInject(); assert.equal(calls.at(-1).content, frozen, 'empty omit list: byte-identical');
+    const om = mk({ edenMapStateOmit: '["trips","bogus"]' }); om.MO.stateInject(); const cut = calls.at(-1).content;
+    assert.ok(!cut.includes('行程') && cut.startsWith('[地图状态] 地点：书房'), cut);
+    assert.deepEqual(om.facts.state.fields, { here: 'sent', present: 'sent', time: 'sent', trips: 'omitted' });
+    assert.equal(base.facts.state.text, frozen);
   } finally { delete globalThis.injectPrompts; delete globalThis.uninjectPrompts; done(); }
 });

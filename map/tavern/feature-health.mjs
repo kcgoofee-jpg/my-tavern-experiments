@@ -52,7 +52,7 @@ export function healthOf(facts = {}) {
     : x.floor === null && !x.written ? idle() : ok({ ...(num(x.floor) !== null ? { floor: num(x.floor) } : {}), ...(x.last ? { text: cap(x.last) } : {}), stats: { written: x.written | 0 } });
   // C9 AI advisor (the user's own endpoint)
   const n = f.nav, st = { lastAt: n.lastAt || 0, runs: n.runs | 0, kept: n.lastN | 0, dropped: n.lastDropped | 0, nextAt: n.nextAt || 0, tokens: n.lastTokens | 0 };
-  out.nav = !P.nav ? off : n.consent === false ? bad('no-consent') : n.cfgOk === false ? bad('no-config') : n.lastStatus !== null && !(n.lastStatus >= 200 && n.lastStatus < 300) ? bad('endpoint', { stats: { ...st, status: n.lastStatus } })
+  out.nav = !P.nav ? off : n.consent === false ? bad('no-consent') : n.cfgOk === false ? bad('no-config') : (n.lastStatus ?? null) !== null && !(n.lastStatus >= 200 && n.lastStatus < 300) ? bad('endpoint', { stats: { ...st, status: n.lastStatus } })
     : n.generating ? idle('waiting', { stats: st }) : n.runs > 0 ? ok({ stats: st }) : idle('', { stats: st });
   // C10 map actions into chat
   const i = f.inject;

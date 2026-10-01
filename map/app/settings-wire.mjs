@@ -53,11 +53,8 @@ onBuilt('people', () => {
   cs.checked = get('edenMapCharStats') !== '0'; cs.onchange = () => plugins.CharactersView.setStatsOn(cs.checked);   // v0.9.6 E2 / E13
   cm.checked = get('edenMapCharMore') !== '0'; cm.onchange = () => plugins.CharactersView.setMoreOn(cm.checked);
 });
-onBuilt('ai', () => {   // 动作注入（C10）：默认 off；切了要重画卡片才出现 / 消失入口
-  $('#injSeg')?.addEventListener('click', e => { const b = e.target.closest('button[data-inj]'); if (!b) return;
-    put('edenMapInject', b.dataset.inj); window.__injectMode = b.dataset.inj;
-    paintSegs(); document.body.classList.toggle('inject', b.dataset.inj !== 'off'); window.MarkersApi?.closeCard?.(); });
-});
+/** 动作注入模式（C10，AI 联动页的卡片里）：默认 off（地图不替玩家说话）；切了要重画卡片才出现 / 消失入口 */
+export function setInjectMode(v) { put('edenMapInject', v); window.__injectMode = v; paintSegs(); document.body.classList.toggle('inject', v !== 'off'); window.MarkersApi?.closeCard?.(); }
 onBuilt('update', () => { $('#linePick').onclick = () => { showSet(false); post({ type: 'eden-map:line-pick' }); }; });
 onBuilt('adv', () => {
   sw('#optEdit', 'edenMapEdit', false, v => setEdit(v)); sw('#optPackRemote', 'edenMapPackRemote', false, () => reproject(true));   // S9b：编辑模式与「加载包里用链接给出的图片」（K-R100 / K-R101，默认关）

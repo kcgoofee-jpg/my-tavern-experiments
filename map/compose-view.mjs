@@ -40,7 +40,7 @@ const ComposeView = (() => {
     const pop = document.getElementById('setPop'); if (!pop || !embedded()) return;
     const M = await mod(); if (!M) return;
     let box = document.getElementById('cmpBox');
-    if (!box) { box = document.createElement('details'); box.id = 'cmpBox'; if (window.SettingsApi) SettingsApi.registerSection('ai', box, { order: 30 }); else { const at = document.getElementById('vmBox') || document.getElementById('selfCheck'); at ? pop.insertBefore(box, at) : pop.appendChild(box); }
+    if (!box) { box = document.createElement('details'); box.id = 'cmpBox'; { const card = document.querySelector('#setPop [data-card="inject"] .fcbody'); if (card) card.appendChild(box); else if (window.SettingsApi) SettingsApi.registerSection('ai', box, { order: 30 }); }   // inside the AI link page's map-actions card when that is built else { const at = document.getElementById('vmBox') || document.getElementById('selfCheck'); at ? pop.insertBefore(box, at) : pop.appendChild(box); }
       box.addEventListener('toggle', () => { open = box.open; }); box.addEventListener('change', onChange); box.addEventListener('click', ev => { if (ev.target.closest('[data-cmpreset]')) { ev.stopPropagation(); M.write(st(), {}); renderUI(); }
         const x = ev.target.closest('[data-cmpex]'); if (x) { ev.stopPropagation(); const e = EX[lang()][+x.dataset.cmpex]; M.write(st(), { go: e.go, ask: e.ask }); renderUI(); } });
       box.addEventListener('input', preview); }

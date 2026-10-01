@@ -3,7 +3,7 @@
 import { cdnFetch } from './host-tavernhelper.mjs';
 import { getProfile } from './pack-profile.mjs';
 export const DEPS = [
-  'LS', 'PACK_ID', 'PACK_IN', 'scriptBase', 'chatId', 'composeIn', 'life', 'lsGet', 'mvuStat', 'post', 'saveRoot', 'BASE', 'mvuBridge', 'mvuReaders', 'uiLang', 'alive', 'floorNow',
+  'facts', 'LS', 'PACK_ID', 'PACK_IN', 'scriptBase', 'chatId', 'composeIn', 'life', 'lsGet', 'mvuStat', 'post', 'saveRoot', 'BASE', 'mvuBridge', 'mvuReaders', 'uiLang', 'alive', 'floorNow',
   'chars', 'events', 'roster',   // K-R78: the schedule placements, the parsed events and the roster groups the settlement record reads (only with the switch on)
 ];
 export function createStashFlow(host) {
@@ -122,6 +122,7 @@ export function createStashFlow(host) {
       const L = R.recordLanded(ledgerRecord), npc = { ...L.npc };
       for (const [n, p] of places) { if (p) npc[n] = p; else if (!(n in npc)) npc[n] = ''; }   // the card's place wins; a roster person without one is a hole
       const put = R.recordPut(ledgerRecord, ledgerModule.audit(facts, { npc, events: L.events }, { anyEventType: true }).patches, floor);
+      host.facts.ledger = { rows: put.added || 0, floor };   // health: this round's written rows
       if (put.added) { ledgerRecord = put.rec; saveRoot(); }
     } catch (e) { /* the record is a cache: a failed round is simply skipped */ }
   }
@@ -138,9 +139,9 @@ export function createStashFlow(host) {
       if (!row) return;
       if (diceOn()) {   // 真掷骰：seed = 聊天 + 楼层 + 藏物 id（同一楼同一件永远同一骰，回放一致）；失手不入包、出失败报告
         const roll = 1 + Math.floor(rngModule.rng(rngModule.seedOf(chatId(), host.floorNow, d.id))() * 20);
-        const sr = worldModule.search(row, roll);
+        const sr = worldModule.search(row, roll); host.facts.dice = { ...host.facts.dice, floor: host.floorNow };
         if (!sr.found) {
-          FRm.push(frState, FRm.failureReport({ kind: 'search', place: row.place || d.place || '', dc: sr.dc, roll, margin: sr.dc - roll, floor: host.floorNow }));
+          { const rp = FRm.failureReport({ kind: 'search', place: row.place || d.place || '', dc: sr.dc, roll, margin: sr.dc - roll, floor: host.floorNow }); FRm.push(frState, rp); host.facts.dice = { last: FRm.render(rp), floor: host.floorNow }; }   // health: the last check
           injectAction({ kind: 'fail', name: row.place || d.place || '', vars: { dc: sr.dc, roll, what: '搜刮失手' } });
           return;
         }
@@ -163,9 +164,9 @@ export function createStashFlow(host) {
       const dc = Math.round(+d?.dc);
       if (!Number.isFinite(dc) || dc <= 0) return;
       if (diceOn()) {   // 真掷骰：seed 含起讫地标；没躲过（roll < DC）出失败报告（带 worst 的目击者与坐标），驱动围捕 / 质询剧情
-        const roll = 1 + Math.floor(rngModule.rng(rngModule.seedOf(chatId(), host.floorNow, 'stealth', d?.from || '', d?.to || ''))() * 20);
+        const roll = 1 + Math.floor(rngModule.rng(rngModule.seedOf(chatId(), host.floorNow, 'stealth', d?.from || '', d?.to || ''))() * 20); host.facts.dice = { ...host.facts.dice, floor: host.floorNow };
         if (roll < dc) {
-          FRm.push(frState, FRm.failureReport({ kind: 'stealth', place: d?.to || '', at: d?.worst?.at, dc, roll, margin: dc - roll, witnesses: d?.worst?.name ? [d.worst.name] : [], floor: host.floorNow }));
+          { const rp = FRm.failureReport({ kind: 'stealth', place: d?.to || '', at: d?.worst?.at, dc, roll, margin: dc - roll, witnesses: d?.worst?.name ? [d.worst.name] : [], floor: host.floorNow }); FRm.push(frState, rp); host.facts.dice = { last: FRm.render(rp), floor: host.floorNow }; }
           injectAction({ kind: 'fail', name: d?.to || '', vars: { dc, roll, what: '潜行被目击' } });
           return;
         }

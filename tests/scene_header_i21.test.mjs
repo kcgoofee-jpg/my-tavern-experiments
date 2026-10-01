@@ -113,8 +113,8 @@ test('status line: a carried-over variable that conflicts with the header is rep
     const raw = hdr(PLATFORM, '03:18') + patchTime('03:18'); chat.push(mk(raw, STUDY, '03:18'));
     const B = new MVUBridge({ life: createLife(), storage: LS, wins: () => [globalThis], fallbackMembers: [], floorNow: () => 1, lastRaw: () => raw, resolves });
     await B.mvuReady; B.refreshVarMap();
-    const { createModesFlow } = await import('../map/tavern/modes-flow.mjs');
-    const MO = createModesFlow({ mvuBridge: B, contextPipeline: { trips: [] }, scriptBase: '', chatId: () => 'i21', life: createLife(), lsGet: () => null,
+    const { createModesFlow } = await import('../map/tavern/modes-flow.mjs'), { createFacts } = await import('../map/tavern/feature-health.mjs');
+    const MO = createModesFlow({ facts: createFacts(), floorNow: 0, mvuBridge: B, contextPipeline: { trips: [] }, scriptBase: '', chatId: () => 'i21', life: createLife(), lsGet: () => null,
       pushSoon() {}, recomputeSoon() {}, saveRoot() {}, userName: s => s, BASE: '', clock: {}, custom: null, customChat: null, get here() { return B.here(); }, regNow: null, statSig: '' });
     B.invalidate(); B.refreshVarMap(); MO.stateInject();
     const line = calls[calls.length - 1].content;

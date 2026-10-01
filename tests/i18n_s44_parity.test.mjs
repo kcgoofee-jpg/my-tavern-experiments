@@ -25,6 +25,7 @@ const S7 = {
   changed: {
     's.people': ['人物与物品', 'People & items'], 's.people_sub': ['数值 · 更多资料 · 头像 · 图鉴', 'Stats · more info · portraits · gallery'],
     's.adv_sub': ['地图包 · 编辑模式 · 快捷键 · 开发者', 'Map pack · edit mode · shortcuts · developer'], 's.update_sub': ['head #{n} · {d}', 'head #{n} · {d}'],
+    'th.nav': ['AI 参谋', 'AI advisor'], 'nav.layer': ['AI 参谋标注', 'AI advisor marks'], 'nav.layer_title': ['AI 参谋在后台给出的线索与标注（只在本次会话里显示）', 'Clues and marks from the AI advisor (shown for this session only)'], 'nav.hint': ['AI 参谋建议', 'AI advisor suggestion'],
     'cu.night': ['按时段给地图加色调、切换昼夜底图（清晨 / 傍晚 / 夜间）', 'Tint the map and switch day / night base maps by time (dawn / dusk / night)'],
   },
 };

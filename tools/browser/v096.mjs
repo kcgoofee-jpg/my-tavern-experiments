@@ -92,10 +92,11 @@ const ev = (p, f, a) => p.evaluate(f, a);
   } else rep.check('v3d_ready', false, '三维页没就绪');
   await B.wait(500); await snap(p, 'dairy_375');
   await p.click('#setBtn'); await B.wait(400);   // UI v2：三维页上查看器的「⋯」在顶栏（控制列让给三维外壳）
+  await ev(p, () => SettingsApi.open('update')); await B.wait(400);   // S7-1: the about box is on the update page, built when that page first opens
   const sh = await ev(p, () => ({ open: !document.getElementById('setPop').hidden, x: !!document.getElementById('setX')?.offsetParent, top: document.getElementById('setPop').scrollTop,
     about: document.getElementById('aboutBox').textContent }));
   rep.check('sheet_header_close', sh.open && sh.x && sh.top === 0, JSON.stringify(sh));
-  rep.check('about_version', /v\d+\.\d+\.\d+/.test(sh.about), sh.about);
+  rep.check('about_version', /地图版本/.test(sh.about) && !/v\d+\.\d+\.\d+/.test(sh.about), sh.about);   // S7-1: no v0.9.x anywhere in the sheet during the refactor (the build line replaces it)
   await snap(p, 'menu_375');
   await p.click('#setX'); await B.wait(200);
   rep.check('sheet_closes', await ev(p, () => document.getElementById('setPop').hidden));
@@ -126,8 +127,9 @@ const ev = (p, f, a) => p.evaluate(f, a);
   const lang = await vf.evaluate(() => ({ lang: ViewerDebug.LANG, crumb: document.getElementById('crumbs').textContent }));
   rep.check('embed_lang_consistent', lang.lang === 'zh' && !/World/.test(lang.crumb), JSON.stringify(lang));
   await vf.evaluate(() => { document.getElementById('thumbBtn').click(); document.querySelector('#setPop .sgroups button[data-page="update"]').click(); }); await B.wait(500);   // UI v2：版本与检查更新在「更新与版本」页
+  await vf.evaluate(() => SettingsApi.open('update')); await B.wait(400);
   const ab = await vf.evaluate(() => document.getElementById('aboutBox').textContent);
-  rep.check('embed_about', /地图版本 v/.test(ab) && /检查更新/.test(ab), ab);
+  rep.check('embed_about', /地图版本/.test(ab) && /检查更新/.test(ab) && !/地图版本 v\d/.test(ab), ab);
   await vf.locator('#updBtn').click();   // 真实点击：按钮点完即重绘，设置弹层不能因此关掉
   rep.check('embed_update_keeps_sheet', await vf.evaluate(() => !document.getElementById('setPop').hidden));
   await vf.waitForFunction(() => /有新版|已是最新|检查失败/.test(document.getElementById('aboutBox').textContent), null, { timeout: 15000 }).catch(() => {});

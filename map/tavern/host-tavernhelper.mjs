@@ -3,6 +3,7 @@
 // 模块地图见 docs/agent-brief.md「模块地图」。
 // 地基 A1（docs/tavernhelper-audit.md §6）：所有外部请求走这一个包装——不带凭据、不带 Referer；与 tavern/tavernhelper-api.mjs cdnFetch 同一规则（tests/cdnfetch.test.mjs 对照、并禁止裸 fetch）
 import { worldbookPrefix } from '../core/pack.mjs';
+import { healthOf, healthSum } from './feature-health.mjs';
 export const cdnFetch = (u, o = {}) => fetch(u, { ...o, credentials: 'omit', referrerPolicy: 'no-referrer' });
 // 窗口函数取法（地基 A3）：全局优先，其次 TavernHelper 命名空间
 export const thFn = n => { try { const g = window[n] ?? globalThis[n]; if (typeof g === 'function') return g; const t = window.TavernHelper; return typeof t?.[n] === 'function' ? t[n].bind(t) : null; } catch (e) { return null; } };
@@ -44,7 +45,7 @@ export function packNs(scriptBase = '') {
 export function createPrefs(LS) {
   // 地基 A4：偏好存脚本变量（type:'script'，随酒馆设置同步，浏览器存储被清也不丢）。读：脚本变量优先，本机回退；写：两边都写（本版双写，下一版再去本机）。
   // 查看器与本机同源读 localStorage，所以启动时先把脚本变量里的值写回本机；只在本机有的补进脚本变量。键表登记在 core/storage.mjs SCRIPT_KEYS（同一份，tests/storage.test.mjs 对照）
-  const PREF_KEYS = ['edenMapLine', 'edenMapHand', 'edenMapLang', 'edenMapTheme', 'edenMapFabPos', 'edenMapStateInj', 'edenMapStateDepth', 'edenMapStateBudget', 'edenMapMacros', 'edenMapWbOn', 'edenMapWbSync', 'edenMapWbWhere'];
+  const PREF_KEYS = ['edenMapLine', 'edenMapHand', 'edenMapLang', 'edenMapTheme', 'edenMapFabPos', 'edenMapStateInj', 'edenMapStateDepth', 'edenMapStateBudget', 'edenMapStateOmit', 'edenMapMacros', 'edenMapWbOn', 'edenMapWbSync', 'edenMapWbWhere'];
   let prefObj = null;
   const lsRaw = () => { try { return (LS || localStorage); } catch (e) { return null; } };
   try { const gv = thFn('getVariables'); if (gv) { const v = gv({ type: 'script' })?.eden_prefs; prefObj = v && typeof v === 'object' && !Array.isArray(v) ? { ...v } : {}; let add = false;
@@ -61,7 +62,7 @@ export function createPrefs(LS) {
 
 /**
  * B1 世界书附加条目：写入 / 自动同步（tavern/worldbook-sync.mjs）+ 全自动（用户 2026-09-28）+ 每聊天版本提醒 + 设置「数据与映射」「高级」的 eden-map:th 消息。
- * deps = { scriptBase, LS, lsGet, lsSet, life, base(), alive(), uiLang(), thBtns(), chatId, cardKey, post, hostToast, stateInject, macroSet, prefSync }
+ * deps = { scriptBase, LS, lsGet, lsSet, life, base(), alive(), uiLang(), thBtns(), chatId, cardKey, post, hostToast, stateInject, macroSet, prefSync, facts, navFacts(), macroVal(), navSchedule(), xtalClear() }
  */
 export function createWbAuto(deps) {
   const { scriptBase, LS, lsGet, lsSet, life, chatId, cardKey, post, hostToast, stateInject, macroSet, prefSync } = deps;
@@ -149,10 +150,46 @@ export function createWbAuto(deps) {
     if (W?.chatReminder(prev, cur)) setTimeout(() => { if (!life.dead && id === chatId()) hostToast(deps.uiLang() === 'en' ? 'Map worldbook changed since this chat' : '这个聊天之后地图世界书换了版本', [deps.uiLang() === 'en' ? `${prev} → ${cur}. Old places / names still work; retired entries were only lowered in priority.` : `${prev} → ${cur}。旧地名照样认；新版不再用的条目只降了优先级，没删。`], 8000); }, late ? 9500 : 0);
     try { await thFn('insertOrAssignVariables')({ eden_wb_ver: cur }, { type: 'chat' }); } catch (e) {}
   }
-  function thPrefs() { return { inj: lsGet('edenMapStateInj') !== '0', depth: +(lsGet('edenMapStateDepth') || 2), budget: +(lsGet('edenMapStateBudget') || 150), macros: lsGet('edenMapMacros') === '1', wbOn: wbOn(), wbTomb: wbTomb(), wbWhere: lsGet('edenMapWbWhere') || null,
+  const FIELDS = ['here', 'present', 'time', 'trips'], CADENCE = [120000, 300000, 600000];
+  const jget = (k, d) => { try { const v = JSON.parse(lsGet(k) || ''); return v ?? d; } catch (e) { return d; } };
+  const navSaved = () => { const o = jget('edenMapNavCfg', {}); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; };
+  const navOn = () => !!lsGet('edenMapNav') && lsGet('edenMapNav') !== '0';
+  function thPrefs() { const nc = navSaved(), nv = +lsGet('edenMapNav'); return { inj: lsGet('edenMapStateInj') !== '0', depth: +(lsGet('edenMapStateDepth') || 2), budget: +(lsGet('edenMapStateBudget') || 150), macros: lsGet('edenMapMacros') === '1', wbOn: wbOn(), wbTomb: wbTomb(), wbWhere: lsGet('edenMapWbWhere') || null,
     dice: lsGet('edenMapDice') === '1', ledgerWrite: lsGet('edenMapLedgerWrite') === '1', spatial: lsGet('edenMapSpatial') === '1', wbJit: lsGet('edenMapWbJit') === '1', wbXtal: lsGet('edenMapWbXtal') === '1',
-    nav: !!lsGet('edenMapNav') && lsGet('edenMapNav') !== '0', navCfg: !!String(lsGet('edenMapNavCfg') || '').trim() }; }
-  async function sendTh(extra = {}) { if (!deps.alive()) return; post({ type: 'eden-map:th-state', prefs: thPrefs(), inject: (() => { try { return deps.injectPreview?.() ?? null; } catch (e) { return null; } })(), last: wbSaved(), api: { macros: !!thFn('registerMacroLike'), inject: !!thFn('injectPrompts'), buttons: !!deps.thBtns() }, ...extra }); }
+    invInj: lsGet('edenMapInvInj') !== '0', nav: navOn(), navCfg: { provider: String(nc.provider || ''), base: String(nc.base || ''), model: String(nc.model || ''), hasKey: !!String(nc.key || '').trim() },   // the key never leaves the host
+    stateOmit: (Array.isArray(jget('edenMapStateOmit', [])) ? jget('edenMapStateOmit', []) : []).filter(k => FIELDS.includes(k)), spatialDepth: +(lsGet('edenMapSpatialDepth') ?? 2), spatialBudget: +(lsGet('edenMapSpatialBudget') || 120),
+    navConsent: lsGet('edenMapNavConsent') === '1', navCadence: CADENCE.includes(nv) ? nv : 120000 }; }
+  // S7-1 health (feature-health.mjs): the full payload only while the viewer watches the AI page (op 'watch'), at most one th-state per second; otherwise just the small { n, m } summary
+  let watching = false, lastSend = -1e9, sendT = 0, pend = {}, watchT = 0, providers = null, testBusy = false;
+  const healthNow = () => { const f = deps.facts, P = thPrefs(); return healthOf({ ...f, prefs: P, api: { inject: !!thFn('injectPrompts'), macros: !!thFn('registerMacroLike'), worldbook: !!(thFn('getWorldbook') && thFn('updateWorldbookWith')) },
+    macros: { here: deps.macroVal('eden_here'), route: deps.macroVal('eden_route') }, nav: deps.navFacts(), inject: { ...f.inject, mode: lsGet('edenMapInject') || 'off' }, jit: { ...f.jit }, xtal: { ...f.xtal, book: f.xtal.book ?? f.jit.book } }); };
+  async function sendTh(extra = {}) {
+    if (!deps.alive()) return;
+    pend = { ...pend, ...extra };
+    if (watching && Date.now() - lastSend < 1000) { if (!sendT) sendT = setTimeout(() => { sendT = 0; sendTh(); }, 1000 - (Date.now() - lastSend)); return; }
+    clearTimeout(sendT); sendT = 0; lastSend = Date.now(); const ex = pend; pend = {};
+    const h = healthNow(); if (watching && !providers) providers = await import(deps.scriptBase + 'tavern/llm-gateway.mjs').then(m => m.PROVIDERS.map(p => ({ id: p.id, base: p.base, model: p.model }))).catch(() => []);
+    post({ type: 'eden-map:th-state', prefs: thPrefs(), inject: (() => { try { return deps.injectPreview?.() ?? null; } catch (e) { return null; } })(), last: wbSaved(), api: { macros: !!thFn('registerMacroLike'), inject: !!thFn('injectPrompts'), buttons: !!deps.thBtns() }, healthSum: healthSum(h), ...(watching ? { health: h, providers } : {}), ...ex });
+  }
+  const FACT_OF = { dice: 'dice', ledgerWrite: 'ledger', spatial: 'spatial', wbJit: 'jit', wbXtal: 'xtal' };   // a switch change makes the feature "idle" again until its next round
+  /** the AI advisor's test connection: one tiny request with the form's current values (used once in memory, never stored, the key never echoed) */
+  async function navTest(c) {
+    if (testBusy) return; testBusy = true; const t0 = performance.now(), saved = navSaved(); let key = '', out;
+    try {
+      const L = await import(deps.scriptBase + 'tavern/llm-gateway.mjs'), o = c && typeof c === 'object' ? c : {};
+      key = String(o.key || saved.key || '');
+      const cfg = { provider: String(o.provider || saved.provider || ''), base: String(o.base ?? saved.base ?? ''), model: String(o.model ?? saved.model ?? ''), key }, chk = L.checkConfig(cfg);
+      if (!chk.ok) out = { ok: false, status: 0, ms: 0, error: 'config: ' + chk.errors.join(', ') };
+      else {
+        const req = L.buildRequest(cfg, [{ role: 'user', content: 'ping' }], { maxTokens: 8 }), ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 15000);
+        const res = await cdnFetch(req.url, { method: 'POST', headers: req.headers, body: JSON.stringify(req.body), signal: ctl.signal }).finally(() => clearTimeout(to));
+        out = { ok: res.ok, status: res.status, ms: Math.round(performance.now() - t0), error: res.ok ? '' : 'HTTP ' + res.status };
+      }
+    } catch (e) { out = { ok: false, status: 0, ms: Math.round(performance.now() - t0), error: String(e?.name === 'AbortError' ? 'timeout' : e?.message || 'error') }; }
+    finally { testBusy = false; }
+    if (key) out.error = String(out.error).split(key).join('••••');
+    return sendTh({ result: { navTest: out } });
+  }
   async function onTh(d) {
     if (d.type === 'eden-map:pack-pick') {   // S9-2 K-R99：地图设置「地图包」的选择（门卫校验、存下、重启）；被拒绝只回一行被拒的原因，原来的包照旧
       const G = await import(deps.scriptBase + 'tavern/pack-gate.mjs').catch(() => null), r = G ? await G.pick(d) : { ok: false, problems: [{ code: 'no-gate' }] };
@@ -160,21 +197,32 @@ export function createWbAuto(deps) {
     }
     const op = d.op;
     if (op === 'state') return sendTh();
+    if (op === 'nav-test') return navTest(d.cfg);
+    if (op === 'xtal-clear') { deps.xtalClear?.(); return sendTh(); }
+    if (op === 'watch') { watching = !!d.ai; lastSend = -1e9; clearInterval(watchT); if (watching) { watchT = setInterval(() => { if (life.dead || !deps.alive()) { clearInterval(watchT); watching = false; } else sendTh(); }, 2000); } return sendTh(); }
     if (op === 'prefs' && d.prefs && typeof d.prefs === 'object') {
       const P = d.prefs, put = (k, v) => { if (v !== undefined) lsSet(k, String(v)); };
       if ('inj' in P) put('edenMapStateInj', P.inj ? '1' : '0');
       if ('depth' in P) put('edenMapStateDepth', Math.max(0, Math.min(20, Math.round(+P.depth) || 0)));
       if ('budget' in P) put('edenMapStateBudget', Math.max(40, Math.min(400, Math.round(+P.budget) || 150)));
+      if ('invInj' in P) put('edenMapInvInj', P.invInj ? '1' : '0');   // C1: the carried-items line of the digest (takes effect on the next round)
       if ('macros' in P) { put('edenMapMacros', P.macros ? '1' : '0'); macroSet(!!P.macros); }
       if ('wbOn' in P) { put('edenMapWbOn', P.wbOn ? '1' : '0'); if (P.wbOn) setTimeout(() => { if (!life.dead) wbAuto().catch(() => {}); }, 300); }   // 总开关：关 = 不自动建、不同步、不提醒（手动按钮照常）
+      for (const [k, f] of Object.entries(FACT_OF)) if (k in P) { const o = deps.facts[f]; for (const x of Object.keys(o)) if (x === 'floor' || x === 'rows' || x === 'placed') o[x] = null; }
       if ('dice' in P) put('edenMapDice', P.dice ? '1' : '0');   // W2 检定掷骰
       if ('ledgerWrite' in P) put('edenMapLedgerWrite', P.ledgerWrite ? '1' : '0');   // K-R78 结算记录
       if ('spatial' in P) put('edenMapSpatial', P.spatial ? '1' : '0');   // W1 空间坐标契约
       if ('wbJit' in P) put('edenMapWbJit', P.wbJit ? '1' : '0');   // W6 JIT 水合
       if ('wbXtal' in P) put('edenMapWbXtal', P.wbXtal ? '1' : '0');   // W7 事实结晶
       if ('packLlm' in P) { const G = await import(deps.scriptBase + 'tavern/pack-gate.mjs').catch(() => null); if (G && await G.setLlm(!!P.packLlm)) return; }   // K-R103：外来包的模型文字开关（edenMapPackLlm 存哈希，门卫写；成功会重启实例）
-      if ('nav' in P) put('edenMapNav', P.nav ? '1' : '0');   // W5 领航员（默认关；首跑另有同意水位）
-      if ('navCfg' in P && typeof P.navCfg === 'string') { try { const o = JSON.parse(P.navCfg); if (o && typeof o === 'object' && !Array.isArray(o)) put('edenMapNavCfg', JSON.stringify({ provider: String(o.provider || ''), key: String(o.key || ''), base: String(o.base || ''), model: String(o.model || '') })); } catch (e) {} }
+      if ('nav' in P) put('edenMapNav', P.nav ? '1' : '0');   // W5 领航员（默认关；同意在卡片里给）
+      if ('navCadence' in P && CADENCE.includes(+P.navCadence) && navOn()) put('edenMapNav', +P.navCadence);   // 节奏：存成毫秒（intervalOf 的数字形态）
+      if ('navConsent' in P) { put('edenMapNavConsent', P.navConsent ? '1' : '0'); if (!P.navConsent) put('edenMapNav', '0'); }
+      if ('navCfg' in P && typeof P.navCfg === 'string') { try { const o = JSON.parse(P.navCfg), sv = navSaved(); if (o && typeof o === 'object' && !Array.isArray(o)) put('edenMapNavCfg', JSON.stringify({ provider: String(o.provider || ''), key: String(o.key || sv.key || ''), base: String(o.base || ''), model: String(o.model || '') })); } catch (e) {} }   // 表单里没填钥匙 = 沿用存着的
+      if ('stateOmit' in P && Array.isArray(P.stateOmit)) put('edenMapStateOmit', JSON.stringify(P.stateOmit.filter(k => FIELDS.includes(k))));   // 状态行：不要的字段
+      if ('spatialDepth' in P) put('edenMapSpatialDepth', Math.max(0, Math.min(20, Math.round(+P.spatialDepth) || 0)));
+      if ('spatialBudget' in P) put('edenMapSpatialBudget', Math.max(60, Math.min(240, Math.round(+P.spatialBudget) || 120)));
+      if (('nav' in P || 'navCadence' in P || 'navConsent' in P) && typeof deps.navSchedule === 'function') deps.navSchedule();
       prefSync(); if (typeof stateInject === 'function') stateInject(); return sendTh();
     }
     if (op === 'wb-inspect') return sendTh({ wb: await wbStatus(true) });

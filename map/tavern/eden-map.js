@@ -308,7 +308,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   async function composeIn(text) {
     try { composeTemplatesModule ??= await import(scriptBase + 'tavern/compose-templates.mjs'); } catch (e) { return; }
     const how = composeTemplatesModule.insert(window.parent, text, typeof triggerSlash === 'function' ? triggerSlash : null);
-    post({ type: 'eden-map:compose-done', ok: !!how, how });
+    post({ type: 'eden-map:compose-done', ok: !!how, how }); HA.facts.inject = { ...HA.facts.inject, lastOk: !!how, floor: floorNow };   // health: the host input was (not) found
   }
   // ---------------- Part 6-2 后台静默推演 ----------------
   // 面板关着时，隔一阵把新楼层以只读方式扫一遍（补齐事态 / 人物 / 行程的缓存），玩家再开地图就是热的。
@@ -371,7 +371,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     storeWarn: (...a) => RS.storeWarn(...a), get swappable() { return swappable; }, get switchedFrom() { return switchedFrom; }, get tavernhelperApiModule() { return HA.tavernhelperApiModule; },
     get tlWalk() { return TL.tlWalk; }, set tlWalk(v) { TL.tlWalk = v; }, get transitMod() { return HA.transitMod; }, get tripsParseModule() { return CF.tripsParseModule; }, get UI() { return UI; },
     get uiLang() { return uiLang; }, userName: (...a) => CF.userName(...a), varsOk: (...a) => RS.varsOk(...a), get VER() { return VER; }, get worldbookJitModule() { return LL.worldbookJitModule; },
-    get WBSm() { return LL.WBSm; }, get wbState() { return RS.wbState; }, set wbState(v) { RS.wbState = v; }, get wrapLS() { return wrapLS; }, addRoutes: (...a) => LL.addRoutes(...a), flyMark: p => '<span style="display:none" data-eden-fly="' + p.replace(/"/g, '') + '"></span>',
+    get WBSm() { return LL.WBSm; }, get wbState() { return RS.wbState; }, set wbState(v) { RS.wbState = v; }, get wrapLS() { return wrapLS; }, addRoutes: (...a) => LL.addRoutes(...a), get facts() { return HA.facts; }, navFacts: () => LL.navFacts(), navSchedule: () => LL.navSchedule(), xtalClear: () => LL.xtalClear(), macroVal: (...a) => RF.macroValue(...a), flyMark: p => '<span style="display:none" data-eden-fly="' + p.replace(/"/g, '') + '"></span>',
   };
   const LL = createLlmFlow(host), { jitRound, xtalRound } = LL, RF = createRouteFlow(host);   // K-R111: the planned route and the class macros
 
@@ -522,7 +522,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   }
   function restNow() { restDue = false; const t0 = performance.now(); customTags(contextPipeline.lastMsgs); computeTrips(contextPipeline.lastMsgs); perf('rest', performance.now() - t0); }
   function inject(text) {
-    if (life.dead) return;
+    if (life.dead) return; HA.facts.digest = { text, floor: floorNow };   // health (feature-health.mjs): what the digest sent this round
     if (text === injected) return; injected = text;
     try {
       uninjectPrompts([INJECT_ID]);

@@ -44,7 +44,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 
 ## 3. 模块地图
 
-每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 255 个：`map/core` 77、`map/app` 76、`map/tavern` 65、`map/ui` 9、`map/three` 9、`map/*.mjs` 17，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
+每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 264 个：`map/core` 79、`map/app` 81、`map/tavern` 67、`map/ui` 8、`map/three` 10、`map/*.mjs` 17，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
 
 ### 3.1 map/core
 
@@ -81,6 +81,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `lexicon.mjs` | 契约 v2 的文本基元与内核词表：规范化、码点长度、截断、FNV 哈希、冠词、行程句式。纯函数，自成一体。 |
 | `listeners.mjs` | ListenerBus：全局监听器的唯一登记处，按键幂等，提供 `offAll()` 与 `describe()`。 |
 | `locate.mjs` | 契约 v2 的词汇表与落点：一套算法为每段提到地点的文字落点（最长别名、优先更深的节点），建立在 `nodes.mjs` 的树上。 |
+| `locked-strings.mjs` | 包不能改的文字（AI 参谋同意说明、健康原因、费用行、免责声明）：`isLocked`、`ignoredKeys` 与查看器用的字典查找 `lookup`。纯函数。 |
 | `lod.mjs` | 图形 LOD 策略：一个模型该处在哪一档、滞回、哪些异步加载仍然有效。 |
 | `logbuf.mjs` | 反馈报告用的控制台环形缓冲，按会话分开；模块首次求值时自装钩子。 |
 | `nodes.mjs` | 节点树（内核契约 v2）：建树、读树、`vocabulary`、`locate`、视图、位置、范围、层级。 |
@@ -138,6 +139,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | 模块 | 职责 |
 |---|---|
 | `about-build.mjs` | 「关于」页的当前构建行（构建号、提交号前七位、时间）。 |
+| `ai-cards.mjs` | 「AI 联动」设置页（S7-1）：十张功能卡片（事态摘要、状态行、宏、检定掷骰、结算记录、空间坐标契约、世界书按需挂载、事实结晶、AI 参谋、地图动作入聊天）及其偏好键与子项，随宿主的 `th-state` 原地更新；页第一次打开时才加载。 |
+| `ai-nav-form.mjs` | AI 参谋卡片的子项：端点表单、测试连接、同意块（测试通过后才能同意）、运行间隔、统计行。密钥只发给宿主。 |
 | `block-canvas.mjs` | 画布积木（K-R80）：`canvasLayer`（槽位画布、rAF、尺寸、可见性守卫）与车流层、天气层和宣告式图层共用的帧体 `drawFlow`、`drawParticles`、`drawTint`。 |
 | `block-overlay.mjs` | 叠加层积木（K-R80）：`point`、`label`、`line`、`area` 要素画成地图叠加物（每层一个 SVG，点与标签是 HTML 元素），注入样式与图例色块样式。 |
 | `boot.mjs` | 启动：并行取注册表、标记、派生数据、字典与设定包，建 OpenSeadragon，发 `ready`，处理启动失败。 |
@@ -158,6 +161,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `dzi-worker-src.mjs` | 瓦片解码线程的源码串（以文本导出，这样 `srcdoc` 里也能起 blob worker）。 |
 | `dzi-worker.mjs` | 瓦片解码线程的查看器侧客户端，失败时退回原生图片路径。 |
 | `extension-api.mjs` | 本机扩展接口 `window.EdenMap` 与聊天 id。 |
+| `feature-card.mjs` | 功能卡片组件（S7-1）：纯函数 `cardModel`（图标、健康行、文字、token）与用 textContent 绘制并原地更新的 `featureCard`。 |
 | `feedback-report.mjs` | 反馈报告文本的纯函数组装，字段白名单。 |
 | `feedback.mjs` | 反馈按钮：装日志环形缓冲、预览并复制 / 下载报告。 |
 | `fog.mjs` | 迷雾探索叠加层：没到过的地点变暗，到访按聊天记录。 |

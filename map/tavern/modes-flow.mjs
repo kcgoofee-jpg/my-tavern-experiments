@@ -3,7 +3,7 @@
 import { cdnFetch, thFn } from './host-tavernhelper.mjs';
 import { modelTexts, injectReason } from './model-texts.mjs';
 export const DEPS = [
-  'mvuBridge', 'contextPipeline', 'scriptBase', 'chatId', 'life', 'lsGet', 'pushSoon', 'recomputeSoon', 'saveRoot', 'userName', 'BASE', 'clock', 'custom', 'customChat', 'here',
+  'facts', 'floorNow', 'mvuBridge', 'contextPipeline', 'scriptBase', 'chatId', 'life', 'lsGet', 'pushSoon', 'recomputeSoon', 'saveRoot', 'userName', 'BASE', 'clock', 'custom', 'customChat', 'here',
   'regNow', 'statSig',
 ];
 export function createModesFlow(host) {
@@ -14,6 +14,8 @@ export function createModesFlow(host) {
   //     数据没确认（pending / stale）时标「未确认」；卡的提示词里已经有的字段跳过；设置「数据与映射」开关（默认开），深度与上限在「高级」。
   // (e) 最小检查点：eden_map.检查点 = { 楼, swipe }（最后确认的楼层与 swipe），只在确认前进时写（幂等）；启动时对照，楼 / swipe 对不上就作废并从聊天记录重推。
   let stateNow = '', cardSkip = null, cardSkipChat = null, cp = null, cpResume = null;
+  const FIELDS = ['here', 'present', 'time', 'trips'];   // S7-1 U-07: edenMapStateOmit = JSON list of the fields the user leaves out (empty = today's line)
+  const omitted = () => { try { const a = JSON.parse(lsGet('edenMapStateOmit') || '[]'); return Array.isArray(a) ? a.filter(k => FIELDS.includes(k)) : []; } catch (e) { return []; } };
   const MDm = mvuBridge.modes;   // 纯逻辑模块（interaction-modes.mjs）经桥静态引入，求值即用（原来动态加载后补一次 stateInject，改在启动序列里）
   async function cardSkipFor() {   // 会送到模型的文本（清单与理由见 model-texts.mjs；不含正则脚本 / 助手脚本 / 显示 HTML）里引用了哪些 stat_data 字段；每个聊天算一次
     const c = chatId(); if (cardSkipChat === c && cardSkip) return cardSkip; cardSkipChat = c; cardSkip = {};
@@ -39,11 +41,14 @@ export function createModesFlow(host) {
     if ((mvuBridge.hereSrc === 'tag' || mvuBridge.hereSrc === 'header') && type !== 'swipe' && type !== 'regenerate') { place = hereNow; }   // (d) 正文标签兜底的地点；I-21：本楼标头里的地点（往楼沿用下来的变量值与它冲突时，注入的行写本楼正文说的）
     const pres = st ? mvuBridge.presentNames(st) : [];
     const wt = st ? mvuBridge.worldTimeOf(st) : null, time = wt ? [wt.date, wt.time, wt.period].filter(Boolean).join(' ') : '';
-    return MDm.stateLine({ here: userName(place), present: pres, time, trips: (contextPipeline.trips || []).map(t => ({ ...t })), state, skip: cardSkip || {} }, +(lsGet('edenMapStateBudget') || 150));
+    const om = omitted(), skip = { ...(cardSkip || {}), ...Object.fromEntries(om.map(k => [k, true])) };   // the omitted fields join the card's own (stateLine itself is unchanged)
+    host.facts.state.fields = Object.fromEntries(FIELDS.map(k => [k, om.includes(k) ? 'omitted' : cardSkip?.[k] ? 'card' : 'sent']));
+    return MDm.stateLine({ here: userName(place), present: pres, time, trips: (contextPipeline.trips || []).map(t => ({ ...t })), state, skip }, +(lsGet('edenMapStateBudget') || 150));
   }
   function stateInject(type = 'normal') {
     if (life.dead || !MDm) return;
     const on = lsGet('edenMapStateInj') !== '0', text = on ? stateText(type) : '', depth = +(lsGet('edenMapStateDepth') ?? 2);
+    Object.assign(host.facts.state, { text, reason: injectReason({ on, text, skip: cardSkip }), floor: host.floorNow });   // health (feature-health.mjs): what the status line did this round
     const key = text + '|' + depth; if (key === stateNow) return; stateNow = key;
     MDm.applyState(thFn, text, depth);
     if (on && cardSkipChat !== chatId()) cardSkipFor().then(() => { stateNow = ''; stateInject(type); });
@@ -61,13 +66,14 @@ export function createModesFlow(host) {
   async function spatialInject() {
     if (life.dead || lsGet('edenMapSpatial') !== '1' || !host.regNow) return;
     SpatialM ??= await import(scriptBase + 'tavern/spatial-contract.mjs').catch(() => null); if (!SpatialM || life.dead) return;
-    const loc = SpatialM.locate(host.regNow, host.here);
-    if (!loc?.mapId) { if (spatialNow) { spatialNow = ''; SpatialM.applySpatial(thFn, '', 2); } return; }
+    const loc = SpatialM.locate(host.regNow, host.here), dv = lsGet('edenMapSpatialDepth'), depth = dv === null || dv === '' ? 2 : +dv;   // edenMapSpatialDepth: floors from the end, default 2 (today's fixed depth)
+    if (!loc?.mapId) { Object.assign(host.facts.spatial, { text: '', floor: host.floorNow, placed: false }); if (spatialNow) { spatialNow = ''; SpatialM.applySpatial(thFn, '', depth); } return; }
     const pts = await pointsFor(loc.mapId);
     const mm = /^(\d{1,2}):(\d{2})/.exec(String(host.clock?.time || '')), t = mm ? (+mm[1] * 60 + +mm[2]) / 1440 : 0;
     const text = SpatialM.coordView({ reg: host.regNow, here: host.here, pointsByMap: { [loc.mapId]: pts }, t, budget: +(lsGet('edenMapSpatialBudget') || 120) });
+    Object.assign(host.facts.spatial, { text, floor: host.floorNow, placed: true });
     if (text === spatialNow) return; spatialNow = text;
-    SpatialM.applySpatial(thFn, text, 2);
+    SpatialM.applySpatial(thFn, text, depth);
   }
   function checkpointStep() {   // 确认前进时写检查点（内容没变不写）
     if (!MDm || !host.custom || host.customChat !== chatId()) return;

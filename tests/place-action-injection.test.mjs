@@ -75,7 +75,7 @@ test('接线：协议表登记、宿主处理、查看器有入口与设置项',
   assert.match(links, /data-inject/, '卡片要有注入入口');
   assert.match(links, /type: 'eden-map:action'/, '点了发 eden-map:action');
   const html = ['map/viewer.html', 'map/app/settings-pages.mjs', 'map/app/ai-cards.mjs'].map(f => { try { return readFileSync(join(ROOT, f), 'utf8'); } catch (e) { return ''; } }).join('\n');   // the switch lives on the AI link page (S7-1)
-  assert.match(html, /id="injSeg"/, '设置页要有模式开关');
+  assert.match(html, /injSeg/, '设置页要有模式开关');
   for (const f of ['map/i18n/zh.json', 'map/i18n/en.json']) {
     const j = JSON.parse(readFileSync(join(ROOT, f), 'utf8'));
     for (const k of ['s.inject', 's.inject_hint', 'inj.off', 'inj.compose', 'inj.sys', 'act.compose', 'act.sys']) assert.ok(j[k], `${f} 缺 ${k}`);

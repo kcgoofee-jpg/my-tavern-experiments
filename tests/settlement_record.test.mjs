@@ -1,4 +1,5 @@
 // S6-3 (K-R78, I-04): the settlement record of the npc and events domains: the pure module, the audit's hole rule, the host switch, the saved key.
+import { createFacts } from '../map/tavern/feature-health.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { recordNorm, recordPut, recordLanded, describeRecord, CAP } from '../map/core/settlement-record.mjs';
@@ -72,7 +73,7 @@ async function flow({ on }) {
   const events = [{ id: 'e1', type: 'fire', lvl: 2, node: 'hall', last: 5 }];
   const roster = { present: { items: [{ name: '甲', place: '' }, { name: '乙', place: '花园' }] } };
   const bridge = { mvuStat: () => ({}), perFloorStat: () => null, mvuGet: () => undefined, varMap: { location: '世界.当前地点' }, mvuPresent: () => false, varUpdateSeq: () => 0, swipeAt: () => 0, rosters: () => null, presentId: 'present' };
-  const host = { LS: { getItem: () => null }, PACK_ID: 'eden', PACK_IN: null, scriptBase: BASE, chatId: () => 'c1', composeIn() {}, life: { dead: false }, lsGet: k => (on && k === 'edenMapLedgerWrite' ? '1' : null),
+  const host = { facts: createFacts(), LS: { getItem: () => null }, PACK_ID: 'eden', PACK_IN: null, scriptBase: BASE, chatId: () => 'c1', composeIn() {}, life: { dead: false }, lsGet: k => (on && k === 'edenMapLedgerWrite' ? '1' : null),
     mvuStat: () => ({}), post: m => posts.push(m), saveRoot: () => { saves.push(1); return Promise.resolve(true); }, BASE: 'https://example.invalid/', mvuBridge: bridge, mvuReaders: MR, uiLang: 'zh', alive: true, floorNow: 6,
   };
   for (const [k, v] of [['chars', chars], ['events', events], ['roster', roster]]) Object.defineProperty(host, k, { get() { reads.push(k); return v; }, enumerable: true });

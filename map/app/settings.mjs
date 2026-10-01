@@ -8,13 +8,14 @@ const loadedAt = Date.now();
 import { LANG, applyI18nTo } from './i18n.mjs';
 import { buildInfo } from './topbar.mjs';
 import { tierAvail } from './sharpness-tiers.mjs';
-import { buildPage, isBuilt, pageEl, placeIn, runShow, searchIndex } from './settings-pages.mjs';
+import { buildPage, isBuilt, pageEl, placeIn, runLeave, runShow, searchIndex } from './settings-pages.mjs';
 import { bootEffects } from './settings-wire.mjs';
 import { narrowNow } from './subpage3d-host.mjs';
 import { noticeRefresh } from './notice-layer.mjs';
 import { setActs } from './control-column.mjs';
 import { plugins } from './plugins.mjs';
 import { PACK } from './current-pack.mjs';
+import { ignoredKeys } from '../core/locked-strings.mjs';
 import { mountFeedbackButton } from './feedback.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
 import { renderPackBox } from './pack-settings.mjs';   // S9-2：高级页的「地图包」
@@ -23,14 +24,16 @@ import { renderPackBox } from './pack-settings.mjs';   // S9-2：高级页的「
 export let setPageNow = 'home', setPrev = null;
 const PAGES = { home: ['settings_title', '设置'], map: ['s.map', '地图与图层'], people: ['s.people', '人物与物品'], ai: ['s.ai', 'AI 联动'], data: ['s.data', '数据与映射'], update: ['s.update', '更新与版本'], adv: ['s.adv', '高级'], license: ['s.license', '版权申明'] };
 const ALIAS = { display: 'map' };
+const LAZY = { ai: () => import('./ai-cards.mjs') }, lazy = {};   // 页的代码也按需加载（AI 联动页的卡片模块）：加载完再建页
 export function setPage(pg, quiet) {
-  pg = ALIAS[pg] || pg; if (!PAGES[pg]) pg = 'home'; setPageNow = pg;
-  if (!quiet || !$('#setPop').hidden) buildPage(pg, applyI18nTo);   // 启动路径上不造页：只有设置开着才建
+  pg = ALIAS[pg] || pg; if (!PAGES[pg]) pg = 'home'; if (pg !== setPageNow) runLeave(setPageNow); setPageNow = pg;
+  if (LAZY[pg] && !lazy[pg]) { lazy[pg] = 1; LAZY[pg]().then(() => { lazy[pg] = 2; if (setPageNow === pg) setPage(pg, quiet); }).catch(() => { lazy[pg] = 0; }); }
+  if ((!quiet || !$('#setPop').hidden) && (!LAZY[pg] || lazy[pg] === 2)) buildPage(pg, applyI18nTo);   // 启动路径上不造页：只有设置开着才建
   document.querySelectorAll('#setPop .spage').forEach(x => { x.hidden = x.dataset.page !== pg; });
   $('#setBack').hidden = pg === 'home'; $('#setTitle').textContent = uiTextOr(...PAGES[pg]);
   if (!quiet) { $('#setPop').scrollTop = 0; const f = pg === 'home' ? ($('#setQ')?.offsetParent ? $('#setQ') : $('#setPop .sgroups button')) : $('#setBack'); f?.focus({ preventScroll: true }); }
   if (!isBuilt(pg)) return;
-  if (pg === 'home') renderHome();
+  if (pg === 'home') { renderHome(); tierAvail(); if (window.top !== window && !aiSum) post({ type: 'eden-map:th', op: 'state' }); }   // 首页的 AI 联动摘要要宿主的 healthSum
   if (pg === 'update') { renderAbout(); renderSelfCheck(); renderLine(); }
   if (pg === 'license') renderLicense();
   if (pg === 'people') { const n = typeof plugins.CharactersView !== 'undefined' ? plugins.CharactersView.count() : 0; $('#chSrc').textContent = uiTextOr('s.ch_src_n', `当前聊天 ${n} 人`, { n }); }
@@ -123,7 +126,7 @@ export function initSettings() {
   showSet = (on, page) => { const was = !pop.hidden; pop.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); $('#thumbBtn')?.setAttribute('aria-expanded', on ? 'true' : 'false');
     document.body.classList.toggle('setopen', !!on);
     if (on) { showLay(false); if (!was) { opener = document.activeElement; setPrev = window.ViewerDrawer ? { tab: ViewerDrawer.tab, top: ViewerDrawer.body.scrollTop } : null; setPage(page || 'home', true); pop.scrollTop = 0; firstIn(pop)?.focus({ preventScroll: true }); setActs(); } }
-    else if (was) { if ($('#setQ')) { $('#setQ').value = ''; setSearch(''); } if (setPrev && window.ViewerDrawer) { if (setPrev.tab) ViewerDrawer.setTab(setPrev.tab); ViewerDrawer.body.scrollTop = setPrev.top; } setPrev = null; noticeRefresh(); } };
+    else if (was) { runLeave(setPageNow); if ($('#setQ')) { $('#setQ').value = ''; setSearch(''); } if (setPrev && window.ViewerDrawer) { if (setPrev.tab) ViewerDrawer.setTab(setPrev.tab); ViewerDrawer.body.scrollTop = setPrev.top; } setPrev = null; noticeRefresh(); } };
   $('#setX').onclick = e => { e.stopPropagation(); showSet(false); };
   $('#setBack').onclick = e => { e.stopPropagation(); setPage('home'); };
   pop.addEventListener('click', e => { const b = e.target.closest('.sgroups button[data-page], .lyrow[data-page]'); if (b) setPage(b.dataset.page); });   // 首页的分组列表与手机的图层行（页是第一次点开时才建的，用委托）
@@ -232,13 +235,14 @@ export function updSub() { const el = $('#updGroupSub'); if (!el) return; const 
   el.textContent = [tag || uiTextOr('s.update_sub0', '检查更新 · 自检'), w ? uiTextOr('s.sc_warn', `自检 ${w} 项 ⚠`, { n: w }) : ''].filter(Boolean).join(' · '); el.classList.toggle('warn', !!w); }
 export function renderSelfCheck() {
   if (!selfCheck?.items) return;
+  const items = [...selfCheck.items, ...ignoredKeys(PACK?.strings).map(k => ({ id: 'locked:' + k, status: 'info', zh: `包的文案 ${k} 被忽略：这条文字由内核固定`, en: `The pack's text for ${k} is ignored: the core fixes this text` }))];   // §2.7：一个被忽略的键一行
   let box = document.getElementById('selfCheck');
   if (!box) { box = document.createElement('div'); box.id = 'selfCheck'; SettingsApi.registerSection('update', box, { order: 80 }); }
   const L = LANG === 'en' ? 'en' : 'zh', mark = { ok: '✓', warn: '⚠', skip: '–', info: '↑' };
   // 世界书那一条红线（自检项 worldbook，warn）：加一个「一键写入世界书」按钮，跳到「数据与映射」页并打开看差异（跟点 wbLook/wbDiff 一样）；
   // API 不可用（自检文案已经只剩手动导入提示）时不出这个按钮，只留手动那行小字
-  const wbWarn = selfCheck.items.find(i => i.id === 'worldbook' && i.status === 'warn');
-  box.innerHTML = `<b>${esc(uiTextOr('selfcheck.title', '自检'))}</b><ul>${selfCheck.items.map(i => `<li class="${esc(i.status)}">${mark[i.status] || ''} ${esc(i[L] || i.zh)}`
+  const wbWarn = items.find(i => i.id === 'worldbook' && i.status === 'warn');
+  box.innerHTML = `<b>${esc(uiTextOr('selfcheck.title', '自检'))}</b><ul>${items.map(i => `<li class="${esc(i.status)}">${mark[i.status] || ''} ${esc(i[L] || i.zh)}`
     + (i === wbWarn ? `<div class="hrow"><span></span><button type="button" class="btn primary" id="scWbGo">${esc(uiTextOr('selfcheck.wb_go', '一键写入世界书'))}</button></div><small>${esc(uiTextOr('selfcheck.wb_manual', '也可以照旧手动导入「{book}」并在世界书里设为全局', { book: wbWarn.book || '' }))}</small>` : '') + `</li>`).join('')}</ul>`;
   { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'splashAgain'; b.textContent = uiTextOr('selfcheck.splash', '重新显示开场自检');   // v0.9.5
     b.onclick = () => { showSet(false); post({ type: 'eden-map:splash' }); }; box.appendChild(b); }

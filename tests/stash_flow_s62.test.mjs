@@ -1,5 +1,6 @@
 // S6-2：宿主流 stash-flow（原 loot-flow）在假宿主上的行为：一轮 = scanPickups 记窗口 → ledgerSync 折叠入统一背包 → 推 eden-map:inv（旧形状 + stash + card）；
 // 地图拾取（takeLoot）进同一份背包、槽位事实晚一轮入账；卡自己的物品表变了只重发；换聊天清空；背包没加载（null）时什么都不写。
+import { createFacts } from '../map/tavern/feature-health.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStashFlow } from '../map/tavern/stash-flow.mjs';
@@ -15,7 +16,7 @@ async function setup({ stat = {}, floor = 2 } = {}) {
   const bridge = { mvuStat: () => st.stat, perFloorStat: () => null, mvuGet: () => undefined, varMap: { location: '世界.当前地点' }, mvuPresent: () => false, varUpdateSeq: () => 0, swipeAt: () => 0, rosters: () => null, presentId: 'present' };
   const MR = await import('../map/tavern/mvu-readers.mjs');
   const LS = { getItem: () => null, setItem() {}, removeItem() {} };
-  const host = { LS, PACK_ID: 'eden', PACK_IN: { manifest: { data: { stash: 'stash.json' } } }, scriptBase: BASE, chatId: () => 'c1', composeIn: () => {}, life: { dead: false }, lsGet: () => null, chars: [], events: [], roster: null,
+  const host = { facts: createFacts(), LS, PACK_ID: 'eden', PACK_IN: { manifest: { data: { stash: 'stash.json' } } }, scriptBase: BASE, chatId: () => 'c1', composeIn: () => {}, life: { dead: false }, lsGet: () => null, chars: [], events: [], roster: null,
     mvuStat: () => st.stat, post: m => posts.push(m), saveRoot: () => { saves.push(1); return Promise.resolve(true); }, BASE: 'https://example.invalid/', mvuBridge: bridge, mvuReaders: MR, uiLang: 'zh', alive: true,
     get floorNow() { return st.floor; } };
   const LF = createStashFlow(host);

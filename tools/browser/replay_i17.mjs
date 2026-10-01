@@ -28,7 +28,7 @@ try {
     named: [...document.querySelectorAll('.mk.here')].map(e => e.dataset.name), unmapped: !!document.querySelector('#umBtn:not([hidden]), .um-chip:not([hidden])') }));
   console.log('  location label:', JSON.stringify(loc));
   rep.check('location: label keeps the text as written, realm placed (current-position button shown, not unmapped)', loc.here === PLACE && loc.hereGo, JSON.stringify(loc));
-  await vf.evaluate(() => SettingsApi.open('data')); await B.wait(1500);
+  await vf.evaluate(() => SettingsApi.open('ai')); await B.wait(2000);   // S7-1: the preview is the status line card's text block
   const pv = await vf.evaluate(() => document.querySelector('#thInjPreview')?.textContent || '');
   console.log('  injection preview:', pv); console.log('  injected:', JSON.stringify(await H.injected()));
   rep.check('settings preview carries 地点 and 时间', /地点：光辉联邦废弃据点/.test(pv) && /时间：.*03:18/.test(pv), pv);

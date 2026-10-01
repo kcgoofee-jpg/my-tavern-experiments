@@ -37,7 +37,7 @@ export function drawNavOps() {
   const row = document.getElementById('lyr-' + ID); if (row) row.hidden = count < 1;
   if (!count || !registry.get(ID)?.visible) return;
   ensureCss();
-  const tip = uiTextOr('nav.hint', '领航员建议'), P = OpenSeadragon.Placement;
+  const tip = uiTextOr('nav.hint', 'AI 参谋建议'), P = OpenSeadragon.Placement;
   for (const f of feats) {
     const clue = f.kind === 'clue', el = pointEl({ label: f.label }, { color: clue ? '#ffd68c' : '--accent', opacity: 1, size: clue ? 8 + 4 * f.urgency : 10, pulse: clue }, LANG);
     el.classList.add('lyr-tip'); el.title = tip; el.dataset.nav = f.kind; put(el, f.at, P.CENTER);

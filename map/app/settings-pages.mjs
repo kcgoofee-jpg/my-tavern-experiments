@@ -57,9 +57,7 @@ export const TABLE = [
     { k: 'dev', o: 90, h: `<details id="devBox"><summary data-i18n="s.dev">开发者</summary><div class="hrow"><span data-i18n="s.build">版本编码</span><button type="button" id="build" class="btn" data-i18n-title="build_title" title="版本编码，点击复制诊断信息"></button></div>`
       + `<label class="row"><span data-i18n="s.fps">调试：显示帧率</span><input type="checkbox" role="switch" id="optFps"></label><div class="hrow" id="hereRow"><label for="hereDev" data-i18n="here">当前地点</label><input id="hereDev" data-i18n-ph="here_ph" placeholder="模拟 MVU：世界.当前地点" value=""></div></details>` },
   ] },
-  { page: 'ai', rows: [
-    { k: 'inject', o: 20, h: `<div class="hrow"><span id="injLbl" data-i18n="s.inject">动作注入</span><div class="seg" id="injSeg" role="group" aria-labelledby="injLbl"><button type="button" data-inj="off" data-i18n="inj.off">关</button><button type="button" data-inj="compose" data-i18n="inj.compose">填输入框</button><button type="button" data-inj="sys" data-i18n="inj.sys">系统指令</button></div></div><small data-i18n="s.inject_hint">点卡片上的入口时把一句话送进聊天流；默认关。填入输入框只填不发，注入系统指令走 /sys</small>` },
-  ] },
+  { page: 'ai', rows: [] },
 ];
 
 const CSS = `#setPop .scom{margin:var(--sp-5) 0 var(--sp-2)}#setPop .lyrow{display:flex;width:100%;justify-content:space-between;align-items:center;min-height:var(--hit,44px);margin-bottom:var(--sp-4)}#setPop .lyrow em{font-style:normal;color:var(--muted)}#setPop .lyrow::after{content:'›';color:var(--muted)}
@@ -68,7 +66,7 @@ const CSS = `#setPop .scom{margin:var(--sp-5) 0 var(--sp-2)}#setPop .lyrow{displ
 #setPop .kbdrow label{flex:1 1 auto;min-width:0;white-space:normal;min-height:0}#setPop .kbdrow .kbdctl{flex:none;display:flex;align-items:center;gap:var(--sp-4)}#setPop .kbdrow .btn{min-height:36px}
 #devBox summary{min-height:var(--hit,44px);display:flex;align-items:center;cursor:pointer;font-weight:600}#devBox .hrow input{min-width:0;width:11em}`;
 
-const built = new Set(), hooks = {}, shows = {};
+const built = new Set(), hooks = {}, shows = {}, leaves = {};
 export const isBuilt = pg => built.has(pg);
 export const pageEl = pg => document.querySelector(`#setPop .spage[data-page="${pg}"]`);
 /** 把一栏按 order 放进页里（registerSection 与建页共用：夹在已有的带顺序的栏之间） */
@@ -78,6 +76,9 @@ export function onBuilt(pg, fn) { if (built.has(pg)) fn(pageEl(pg)); else (hooks
 /** onShow(page, fn): 每次这一页（已建好）被显示时跑（页内容随状态变的栏在这里重画）；runShow 由 settings.mjs 的 setPage 调 */
 export const onShow = (pg, fn) => { (shows[pg] ||= []).push(fn); };
 export const runShow = pg => { for (const f of shows[pg] || []) try { f(); } catch (e) { console.warn('[settings] page show', pg, e); } };
+/** onLeave(page, fn): when another page (or nothing: the sheet closed) replaces this one; runLeave is called by settings.mjs */
+export const onLeave = (pg, fn) => { (leaves[pg] ||= []).push(fn); };
+export const runLeave = pg => { for (const f of leaves[pg] || []) try { f(); } catch (e) { console.warn('[settings] page leave', pg, e); } };
 /** buildPage(page, translate): 第一次调用造出这页的行并跑接线；之后什么都不做。返回页元素。 */
 export function buildPage(pg, translate) {
   const root = pageEl(pg); if (!root || built.has(pg)) return root;

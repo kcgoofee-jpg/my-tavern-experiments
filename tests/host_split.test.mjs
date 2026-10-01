@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { createRoutes, lineScore, scoreText, probeVerdict, PROBE_MIN_BYTES } from '../map/tavern/host-routes.mjs';
 import { createLife } from '../map/tavern/host-lifecycle.mjs';
 import { createWbAuto, createPrefs, fnOk, thFn } from '../map/tavern/host-tavernhelper.mjs';
+import { createFacts } from '../map/tavern/feature-health.mjs';
 
 const rd = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 
@@ -66,15 +67,15 @@ test('host-th createWbAuto：设置消息与总开关（搬家后自由变量都
   const lsGet = k => LS.getItem(k), lsSet = (k, v) => LS.setItem(k, v);
   const posts = [], life = createLife(); let injected = 0, macros = null, synced = 0;
   const W = createWbAuto({ scriptBase: new URL('../map/', import.meta.url).href, LS, lsGet, lsSet, life, base: () => 'http://127.0.0.1:9/map/', alive: () => true, uiLang: () => 'zh', thBtns: () => null,
-    chatId: () => 'c1', cardKey: () => 'card', post: m => posts.push(m), hostToast: () => null, stateInject: () => injected++, macroSet: on => { macros = on; }, prefSync: () => synced++ });
+    chatId: () => 'c1', cardKey: () => 'card', post: m => posts.push(m), hostToast: () => null, stateInject: () => injected++, macroSet: on => { macros = on; }, prefSync: () => synced++, facts: createFacts(), navFacts: () => ({}), macroVal: () => '', navSchedule() {} });
   await W.onTh({ op: 'state' });
-  assert.equal(posts.at(-1).type, 'eden-map:th-state'); assert.deepEqual(posts.at(-1).prefs, { inj: true, depth: 2, budget: 150, macros: false, wbOn: true, wbTomb: false, wbWhere: null, dice: false, ledgerWrite: false, spatial: false, wbJit: false, wbXtal: false, nav: false, navCfg: false });
+  assert.equal(posts.at(-1).type, 'eden-map:th-state'); assert.deepEqual(posts.at(-1).prefs, { inj: true, depth: 2, budget: 150, macros: false, wbOn: true, wbTomb: false, wbWhere: null, dice: false, ledgerWrite: false, spatial: false, wbJit: false, wbXtal: false, invInj: true, nav: false, navCfg: { provider: '', base: '', model: '', hasKey: false }, stateOmit: [], spatialDepth: 2, spatialBudget: 120, navConsent: false, navCadence: 120000 });
   await W.onTh({ op: 'prefs', prefs: { inj: false, depth: 99, budget: 5, macros: true, wbOn: false } });
   assert.equal(ls.get('edenMapStateInj'), '0'); assert.equal(ls.get('edenMapStateDepth'), '20'); assert.equal(ls.get('edenMapStateBudget'), '40');
   assert.equal(macros, true); assert.equal(injected, 1); assert.equal(synced, 1); assert.equal(ls.get('edenMapWbOn'), '0');
   assert.equal(await W.wbAuto(), null, '总开关关着：不自动建');
   const n = posts.length; const dead = createLife(); dead.kill();
-  const W2 = createWbAuto({ scriptBase: '', LS, lsGet, lsSet, life: dead, base: () => '', alive: () => false, uiLang: () => 'en', thBtns: () => null, chatId: () => '', cardKey: () => '', post: m => posts.push(m), hostToast: () => null, stateInject() {}, macroSet() {}, prefSync() {} });
+  const W2 = createWbAuto({ scriptBase: '', LS, lsGet, lsSet, life: dead, base: () => '', alive: () => false, uiLang: () => 'en', thBtns: () => null, chatId: () => '', cardKey: () => '', post: m => posts.push(m), hostToast: () => null, stateInject() {}, macroSet() {}, prefSync() {}, facts: createFacts(), navFacts: () => ({}), macroVal: () => '', navSchedule() {} });
   await W2.sendTh(); assert.equal(posts.length, n, '面板没开不发');
 });
 
@@ -100,12 +101,12 @@ test('入口只从 host-*.mjs 取，不再自带副本；worldbook 自动化的�
 // ---------------------------------------------------------------------------------------------------------------------
 const lines = f => rd(f).split('\n').length - (rd(f).endsWith('\n') ? 1 : 0);
 const FLOWS = {   // 文件 → [工厂名, 返回的接口]
-  'llm-flow': ['createLlmFlow', 'addRoutes jitRound opEvents resetOps sendOps worldbookJitModule WBSm xtalRound'],
+  'llm-flow': ['createLlmFlow', 'addRoutes jitRound navFacts navSchedule opEvents planRoutes resetOps sendOps worldbookJitModule WBSm xtalClear xtalRound'],
   'route-flow': ['createRouteFlow', 'addSuggestions held macroSet macroValue onChat onHere onPlan onReady onRound'],   // S8-4b K-R111: the planned route and the class macros
   'stash-flow': ['createStashFlow', 'changedInv FRm frState gate gateFlush injectAction stash stashStoreModule stashRecomputeModule ledgerSync ledgerModule ledgerRecord lootFacts resetChat scanPickups sendInv settleCarry stealthCheck takeLoot'],
   'chars-flow': ['createCharsFlow', 'mvuBridge gallery cardKey chatId clock computeTrips contextPipeline getHere mvuReaders mvuStat outfitNow pushMvu readVars refreshVarMap resetLayerSent routineModule rtSched sendChars sendRoutine sendTrips sentClock sentOutfit setVarUser tripsParseModule userName'],
   'timeline-flow': ['createTimelineFlow', 'keyframesModule kfReset kfView tlBtn tlCache tlEl tlExit timelineModule tlOn tlWalk'],
-  'host-api': ['createHostApi', 'api cardId emit emitMoved exposed inner knowRooms onTh replayLayers scriptInfo sendTh subs tavernhelperApiModule transitMod wbAuto'],
+  'host-api': ['createHostApi', 'api cardId emit emitMoved exposed facts inner knowRooms onTh replayLayers scriptInfo sendTh subs tavernhelperApiModule transitMod wbAuto'],
   'root-store': ['createRootStore', 'storageBudget budgetSweep custom customChanged customChat customTags kindOf loadCustom reg regNow saveRoot sendCustom store storeWarn varsOk wbState'],
   'host-checks': ['createHostChecks', 'autoCheck checkAt checkFacts checkItems checkP finishCheck followCheck followHead followNewer hostToast openSettings runCheck SC sendCheck setQ showSplash showUpdPrompt splash splashDue switchBranch switchVersion toastEl toastOnce toastWait updEl updPrompt updWait viewerVer'],
   'modes-flow': ['createModesFlow', 'cardSkip checkpointResume checkpointStep conflictsNow cp cpResume injectPreview MDm pointsFor spatialInject SpatialM spatialNow stateInject stateNow'],
