@@ -30,6 +30,7 @@
 - **类别** — *内部*：只有我们自己的代码看得到。*外部契约*：被持久化、或在查看器页面之外被看到的（聊天变量、存储键、协议类型、`window.EdenMap`、入口文件、世界书 `extra` 字段、npm 包名、CDN 路径）。
 - **批次** — `S5` 内部批次；`S6` 随 stash 统一迁移（D4）；`S10` 外部批次；`—` 不改；`S5-1` S5-1 按最终名字新建的文件（计入「不改」）。
 - **备注** — "refs"（引用）是在 `map/`、`tests/`、`tools/` 里提到该项的文件数（导入、script 标签、登记字符串、`window` 读取），在 head #101 用脚本统计。它说明脚本化改名会波及多远；不是调用点个数，可能差几个。注释和属主字符串也算在内。
+- **S5-2 进度** — 备注以「S5-2」结尾的行（改名、删除或拆分）已完成；「当前 / 位置」两列特意保留 head #101 时的名字。`util.mjs` 与 `shell.mjs` 在同一步按职责拆分（决定 (c)）：`coordinates`、`dom-helpers`、`viewport-mode`、`protocol-stamp`、`screen-reader-announce`、`json-cache`、`text-lookup`；`control-column`、`drawer-glue`、`notice-layer`、`status-dot`、`one-hand-mode`、`quick-zoom`。
 
 | 表 | 行数 | 内部 | 外部契约 | 批次 S5 | 批次 S6 | 批次 S10 | 不改 |
 |---|---|---|---|---|---|---|---|
@@ -47,59 +48,59 @@
 
 | 当前名 | 位置 | 含义 | 建议新名 | 类别 | 批次 | 备注 |
 |---|---|---|---|---|---|---|
-| `tavern/baibai.mjs` | `map/tavern/baibai.mjs:1` | 可选依赖：外部绘图扩展的桥。读它的角色外貌库、经它的并发闸门出图、拼提示词；扩展不存在时每个函数都安静降级。 | `tavern/imagegen-bridge.mjs` | 内部 | S5 | 拼音（扩展自己的名字）。引用：map 3 个文件、测试 1 个。计划草案写的是 `appearance-bridge`；这个模块的主要写路径是出图，所以本表用 `imagegen-bridge`（已确认，决定 e）。`eden-map.js` 里的别名 `BBm` 跟着改；`docs/baibai-bridge.md` 是文档名，本次不动。 |
-| `tavern/shujuku.mjs` | `map/tavern/shujuku.mjs:1` | 只读兼容可选的「表格数据库」扩展：读它导出的表来取当前地点、时间和「姓名 + 位置」人物表；从不写入。 | `tavern/tabledb-bridge.mjs` | 内部 | S5 | 拼音（数据库）。引用：map 2 个文件（`context.mjs`、`mvu-bridge.mjs`）、测试 1 个（`tests/shujuku.test.mjs`，随之改名）。 |
-| `tavern/th.mjs` | `map/tavern/th.mjs:1` | 酒馆助手的薄封装：功能探测（`hostFns`）、`cdnFetch`、类宏、只作用于显示层的泄露栅栏。 | `tavern/tavernhelper-api.mjs` | 内部 | S5 | "th" = TavernHelper（酒馆助手）。引用：map 1 个、测试 4 个。`cdnFetch` 有三份（这里、`host-th.mjs`、`eden-map.js` 内联；有测试对拍）。 |
-| `tavern/host-th.mjs` | `map/tavern/host-th.mjs:1` | 宿主脚本的酒馆助手适配层：请求包装、函数探测（`thFn`、`fnOk`、`hostFn`、`fnGuard`）、设定包命名空间、脚本变量偏好、世界书自动化。 | `tavern/host-tavernhelper.mjs` | 内部 | S5 | 引用：map 5 个、测试 5 个。与 `th.mjs` 重叠：「取酒馆助手函数」这件事有 `hostFns`、`thFn`、`hostFn` 三个版本。S5 抽 `host-api` 时可合并。 |
-| `app/cvd.mjs` | `map/app/cvd.mjs:1` | 色觉模式（关 / 红绿 / 蓝黄）：安全色板、类与属性开关、向子页广播。 | `app/color-vision-mode.mjs` | 内部 | S5 | CVD = 色觉缺陷。引用：map 7 个文件（部分只是字符串里提到）、测试 1 个。3 个文件里的导入别名 `TCCvd` 改为 `colorVision`。色板的键是设定包的事态大类（已计入卡名词棘轮）。存储键 `edenMapCvd` 见表 F。 |
-| `tavern/failrep.mjs` | `map/tavern/failrep.mjs:1` | 会话级的检定失败报告环（潜行被发现、搜刮失手），下一轮作为客观事实注入。 | `tavern/check-failure-report.mjs` | 内部 | S5 | "failrep" = failure report（失败报告）。引用：map 1 个（`eden-map.js`）、测试 1 个（`tests/action_reflection.test.mjs`）。 |
-| `tavern/ops.mjs` | `map/tavern/ops.mjs:1` | 受限操作 DSL 沙盒：从后台领航员的回复里提取、校验并规范化四种原子操作块（`OP_EVENT`、`OP_CLUE`、`OP_MARKER`、`OP_SUGGEST`）。 | `tavern/operation-dsl.mjs` | 内部 | S5 | 引用：map 1 个（`navigator.mjs` 转出口）、测试 1 个。它导出的 `OPS` 与 `core/ledger.mjs` 的 `OPS` 重名（见表 D）。 |
-| `wbpeek.mjs` | `map/wbpeek.mjs:1` | 地点卡上只读的「世界书档案」胶囊：发 `eden-map:th {op:'wb-peek'}`，把宿主的回复画进卡片抽屉。 | `worldbook-peek-view.mjs` | 内部 | S5 | "wb" = worldbook（世界书）。引用：map 1 个（`viewer.html`）。全局 `TCWb` 见表 C。 |
-| `tavern/tick.mjs` | `map/tavern/tick.mjs:1` | 面板关闭时的后台静默扫描调度器：只读、增量，默认 60 秒、下限 15 秒、每次最多扫 60 层。 | `tavern/background-scan-scheduler.mjs` | 内部 | S5 | 引用：map 3 个（含 `storage.mjs` 里的属主字符串）、测试 1 个、工具 1 个。"tick" 还指 `core/walk.mjs` 的时钟步进和 `TCWander.tick`：三个含义。存储键 `edenMapTick` 在这里导出为 `KEY`（见表 D）。 |
-| `custom.mjs` | `map/custom.mjs:1` | 与 MVU 联动的查看器部分：自定义名称与用途、按世界时间的夜色、本人地点卡的着装行、一次性改名提示（四件事）。 | `custom-names-view.mjs` | 内部 | S5 | 456 行（上限 400，已在棘轮账本里）。S5 本来就要拆：夜色、着装行、改名提示拆走，只有自定义名称留在这个文件。引用：map 1 个（`viewer.html`）。全局 `TCCustom` 是所有外挂里调用最多的（`P.TCCustom` 46 处，见表 C）。文件头注释里出现卡名（棘轮账本已计）。 |
-| `app/tiers.mjs` | `map/app/tiers.mjs:1` | 清晰度档位、省流判断（`lean`）、加载进度、叠加层、标注避让（`declutter`）、航线间隙测量。 | `app/sharpness-tiers.mjs` | 内部 | S5 | 引用：map 20 个文件（改名文件里被引用最多的，务必脚本化改名）。新名字只覆盖第一件事；`declutter` 和叠加层以后可拆成 `label-declutter.mjs`（当前未排期）。存储键 `edenMapTierV2` 见表 F。 |
-| `app/insets.mjs` | `map/app/insets.mjs:1` | 视图放大到插图覆盖的范围时叠一张单独的高分辨率瓦片图（`maps.json` 的 `insets[]`），缩出去就摘掉。 | `app/hires-inset-tiles.mjs` | 内部 | S5 | 引用：map 4 个、工具 1 个。数据字段 `insets` 属于设定包数据（schema v2 在 S1 定），本次不动。 |
+| `tavern/baibai.mjs` | `map/tavern/baibai.mjs:1` | 可选依赖：外部绘图扩展的桥。读它的角色外貌库、经它的并发闸门出图、拼提示词；扩展不存在时每个函数都安静降级。 | `tavern/imagegen-bridge.mjs` | 内部 | S5 | 拼音（扩展自己的名字）。引用：map 3 个文件、测试 1 个。计划草案写的是 `appearance-bridge`；这个模块的主要写路径是出图，所以本表用 `imagegen-bridge`（已确认，决定 e）。`eden-map.js` 里的别名 `BBm` 跟着改；`docs/baibai-bridge.md` 是文档名，本次不动。 **已在 S5-2 改名。** |
+| `tavern/shujuku.mjs` | `map/tavern/shujuku.mjs:1` | 只读兼容可选的「表格数据库」扩展：读它导出的表来取当前地点、时间和「姓名 + 位置」人物表；从不写入。 | `tavern/tabledb-bridge.mjs` | 内部 | S5 | 拼音（数据库）。引用：map 2 个文件（`context.mjs`、`mvu-bridge.mjs`）、测试 1 个（`tests/shujuku.test.mjs`，随之改名）。 **已在 S5-2 改名。** |
+| `tavern/th.mjs` | `map/tavern/th.mjs:1` | 酒馆助手的薄封装：功能探测（`hostFns`）、`cdnFetch`、类宏、只作用于显示层的泄露栅栏。 | `tavern/tavernhelper-api.mjs` | 内部 | S5 | "th" = TavernHelper（酒馆助手）。引用：map 1 个、测试 4 个。`cdnFetch` 有三份（这里、`host-th.mjs`、`eden-map.js` 内联；有测试对拍）。 **已在 S5-2 改名。** |
+| `tavern/host-th.mjs` | `map/tavern/host-th.mjs:1` | 宿主脚本的酒馆助手适配层：请求包装、函数探测（`thFn`、`fnOk`、`hostFn`、`fnGuard`）、设定包命名空间、脚本变量偏好、世界书自动化。 | `tavern/host-tavernhelper.mjs` | 内部 | S5 | 引用：map 5 个、测试 5 个。与 `th.mjs` 重叠：「取酒馆助手函数」这件事有 `hostFns`、`thFn`、`hostFn` 三个版本。S5 抽 `host-api` 时可合并。 **已在 S5-2 改名。** |
+| `app/cvd.mjs` | `map/app/cvd.mjs:1` | 色觉模式（关 / 红绿 / 蓝黄）：安全色板、类与属性开关、向子页广播。 | `app/color-vision-mode.mjs` | 内部 | S5 | CVD = 色觉缺陷。引用：map 7 个文件（部分只是字符串里提到）、测试 1 个。3 个文件里的导入别名 `TCCvd` 改为 `colorVision`。色板的键是设定包的事态大类（已计入卡名词棘轮）。存储键 `edenMapCvd` 见表 F。 **已在 S5-2 改名。** |
+| `tavern/failrep.mjs` | `map/tavern/failrep.mjs:1` | 会话级的检定失败报告环（潜行被发现、搜刮失手），下一轮作为客观事实注入。 | `tavern/check-failure-report.mjs` | 内部 | S5 | "failrep" = failure report（失败报告）。引用：map 1 个（`eden-map.js`）、测试 1 个（`tests/action_reflection.test.mjs`）。 **已在 S5-2 改名。** |
+| `tavern/ops.mjs` | `map/tavern/ops.mjs:1` | 受限操作 DSL 沙盒：从后台领航员的回复里提取、校验并规范化四种原子操作块（`OP_EVENT`、`OP_CLUE`、`OP_MARKER`、`OP_SUGGEST`）。 | `tavern/operation-dsl.mjs` | 内部 | S5 | 引用：map 1 个（`navigator.mjs` 转出口）、测试 1 个。它导出的 `OPS` 与 `core/ledger.mjs` 的 `OPS` 重名（见表 D）。 **已在 S5-2 改名。** |
+| `wbpeek.mjs` | `map/wbpeek.mjs:1` | 地点卡上只读的「世界书档案」胶囊：发 `eden-map:th {op:'wb-peek'}`，把宿主的回复画进卡片抽屉。 | `worldbook-peek-view.mjs` | 内部 | S5 | "wb" = worldbook（世界书）。引用：map 1 个（`viewer.html`）。全局 `TCWb` 见表 C。 **已在 S5-2 改名。** |
+| `tavern/tick.mjs` | `map/tavern/tick.mjs:1` | 面板关闭时的后台静默扫描调度器：只读、增量，默认 60 秒、下限 15 秒、每次最多扫 60 层。 | `tavern/background-scan-scheduler.mjs` | 内部 | S5 | 引用：map 3 个（含 `storage.mjs` 里的属主字符串）、测试 1 个、工具 1 个。"tick" 还指 `core/walk.mjs` 的时钟步进和 `TCWander.tick`：三个含义。存储键 `edenMapTick` 在这里导出为 `KEY`（见表 D）。 **已在 S5-2 改名。** |
+| `custom.mjs` | `map/custom.mjs:1` | 与 MVU 联动的查看器部分：自定义名称与用途、按世界时间的夜色、本人地点卡的着装行、一次性改名提示（四件事）。 | `custom-names-view.mjs` | 内部 | S5 | 456 行（上限 400，已在棘轮账本里）。S5 本来就要拆：夜色、着装行、改名提示拆走，只有自定义名称留在这个文件。引用：map 1 个（`viewer.html`）。全局 `TCCustom` 是所有外挂里调用最多的（`P.TCCustom` 46 处，见表 C）。文件头注释里出现卡名（棘轮账本已计）。 **已在 S5-2 改名。** |
+| `app/tiers.mjs` | `map/app/tiers.mjs:1` | 清晰度档位、省流判断（`lean`）、加载进度、叠加层、标注避让（`declutter`）、航线间隙测量。 | `app/sharpness-tiers.mjs` | 内部 | S5 | 引用：map 20 个文件（改名文件里被引用最多的，务必脚本化改名）。新名字只覆盖第一件事；`declutter` 和叠加层以后可拆成 `label-declutter.mjs`（当前未排期）。存储键 `edenMapTierV2` 见表 F。 **已在 S5-2 改名。** |
+| `app/insets.mjs` | `map/app/insets.mjs:1` | 视图放大到插图覆盖的范围时叠一张单独的高分辨率瓦片图（`maps.json` 的 `insets[]`），缩出去就摘掉。 | `app/hires-inset-tiles.mjs` | 内部 | S5 | 引用：map 4 个、工具 1 个。数据字段 `insets` 属于设定包数据（schema v2 在 S1 定），本次不动。 **已在 S5-2 改名。** |
 | `section.js` | `map/section.js:1` | 第一个设定包的纵剖面原型绘制（SVG；`validateSection`、`normSection`、`drawSection`）；不在引擎扫描范围内，里面有卡的条目名。 | `vertical-section.js` (moves with the first pack) | 内部 | S10 | 引用：1 个页面（`map/tiancheng.html`）、测试 3 个、工具 1 个。不是引擎代码，S10 随第一个设定包搬进它的仓库（计划风险表），到时再改名。 |
-| `here-v2.mjs` | `map/app/here-v2.mjs:1` | 当前地点引擎：聊天里的地点字符串经 `nodes.locate` 在节点树上落点，再还原成使用方读的结果形状；查看器、`tavern/spatial.mjs` 与构建工具共用。 | `place-resolver.mjs` | 内部 | S5 | v1 的解析器 `map/here.mjs` 已在 S3-3 删除。`here` 还是一个 DOM 输入框、一个解析结果和一类消息的名字；术语表：「当前地点」。 |
-| `inv.mjs` | `map/inv.mjs:1` | 空间化背包的查看器侧：这个地点存放 / 藏着的东西，显示在地点卡上。 | `stash-view.mjs` | 内部 | S5 | 同一个概念现在有五个名字（`core/stash`、`core/pickup`、`app/loot`、`tavern/inventory` 和本文件）：见术语表「Stash」。引用：map 1 个。全局 `TCInv`（表 C）。内容在 S6 改。 |
-| `unmapped.mjs` | `map/unmapped.mjs:1` | 小选择器：把一个认不出的地点名指派给节点、标记、房间，或选「忽略」。 | `unmapped-place-picker.mjs` | 内部 | S5 | 引用：map 1 个。全局 `TCUnmapped`（`P.` 引用 9 处）和消息 `eden-map:unmapped`（表 F）。 |
-| `tavern/wb_crystallize.mjs` | `map/tavern/wb_crystallize.mjs:1` | 剧情事实结晶：把坐实的长期事实（来自 `⌖事实` 标签）沉淀成我们附加书里按关键词触发的条目。 | `tavern/worldbook-crystallize.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。与 `wb_jit.mjs` 是仅有的两个用下划线的引擎文件，其余都是短横线。 |
-| `tavern/wb_jit.mjs` | `map/tavern/wb_jit.mjs:1` | 世界书即时水合：只启用与当前地点相关的附加条目，其余无损关闭。 | `tavern/worldbook-jit.mjs` | 内部 | S5 | 引用：map 2 个、测试 2 个。标记字段 `extra.eden_jit` / `eden_jit_ignore` 见表 F。 |
-| `tavern/wbsync.mjs` | `map/tavern/wbsync.mjs:1` | 世界书附加条目的写入与自动同步；只动我们自己的书和带 `extra.eden_id` 的条目。 | `tavern/worldbook-sync.mjs` | 内部 | S5 | 引用：map 2 个、测试 3 个、工具 1 个。书名前缀和 `eden_*` 标记字段见表 F。 |
-| `tavern/edenapi.mjs` | `map/tavern/edenapi.mjs:1` | 公开 `EdenMap` API 的机读契约（`EDEN_API`：21 个方法及最少形参数）；宿主暴露时逐项按它做守卫。 | `tavern/extension-api-contract.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。文件名里带卡名；API 名字本身（`EdenMap`）是外部契约，S10 再改（表 C）。 |
-| `app/extapi.mjs` | `map/app/extapi.mjs:1` | 本机扩展接口的查看器侧：定义冻结的 `window.EdenMap` 和聊天 id。 | `app/extension-api.mjs` | 内部 | S5 | 引用：map 11 个文件（`chatId`、`LS` 都从它导入）、测试 0 个。 |
-| `tavern/adapter.mjs` | `map/tavern/adapter.mjs:1` | 变量映射：地点、时间、日期、在场分别在 `stat_data` 的哪条路径；按字段名自动发现；用户覆盖按卡存储。 | `tavern/stat-path-mapping.mjs` | 内部 | S5 | 引用：map 2 个、测试 4 个、工具 1 个。"adapter" 没说清它干什么。它的设置页是 `varmap.mjs`（下一行）。 |
-| `varmap.mjs` | `map/varmap.mjs:1` | 设置里的「变量映射」页（仅嵌入时显示）：每个映射项一个下拉，选项来自实际的变量树。 | `stat-path-mapping-view.mjs` | 内部 | S5 | 引用：map 1 个。全局 `TCVarMap`（表 C）。与 `adapter.mjs` 一起改名。 |
-| `tavern/varsync.mjs` | `map/tavern/varsync.mjs:1` | 变量结算时序守卫：账本对账写入先排队，等主变量更新窗口结束后才放行。 | `tavern/settlement-guard.mjs` | 内部 | S5 | 引用：map 1 个、测试 3 个。别与 `varmap` / `adapter` 混淆（它们管路径映射；这个管写入顺序）。 |
-| `tavern/action.mjs` | `map/tavern/action.mjs:1` | 地图驱动的动作：点一个兴趣点就变成一句话，按模式（关 / 填入输入框 / 静默注入）送出。 | `tavern/place-action-injection.mjs` | 内部 | S5 | 引用：map 2 个（含 `storage.mjs` 属主字符串）、测试 2 个。存储键 `edenMapInject`、`edenMapActionTpl`（表 F）。 |
-| `tavern/modes.mjs` | `map/tavern/modes.mjs:1` | 脚本与卡的交互方式：(a) 紧凑状态注入、(d) 标签对账、(e) 最小检查点。 | `tavern/interaction-modes.mjs` | 内部 | S5 | 与文档 `docs/interaction-modes.md` 同名。引用：map 2 个、测试 3 个。导出 `STATE_ID`（注入 id，表 F）。 |
-| `tavern/sources.mjs` | `map/tavern/sources.mjs:1` | 数据源登记表：宿主从哪些地方读聊天状态（供设置页和 `EdenMap.sources()` 用）。 | `tavern/data-source-registry.mjs` | 内部 | S5 | 引用：map 1 个、测试 2 个。 |
-| `tavern/spatial.mjs` | `map/tavern/spatial.mjs:1` | 把当前地点加周边几何编译成有 token 预算的 JSON 坐标契约；还提供 `activationOf`，世界书 JIT 在用。 | `tavern/spatial-contract.mjs` | 内部 | S5 | 引用：map 1 个、测试 2 个。注入 id `eden-map-spatial`（表 F）。"spatial" 单独一个词同时是产品名，所以文件名写清它的职责。 |
-| `tavern/mvu.mjs` | `map/tavern/mvu.mjs:1` | MVU 数据与地图自有自定义数据的纯读取函数（名称、着装、名册、头像、时间）；含 `normCustom`；持有聊天变量根键 `VAR_ROOT`。 | `tavern/mvu-readers.mjs` | 内部 | S5 | 引用：map 5 个、测试 11 个、工具 2 个。容易和 `mvu-bridge.mjs`（唯一允许碰 `Mvu` 全局的模块）混淆。里面的 `get` 和 `val` 在 `adapter.mjs` 里又抄了一份（见表 D）。 |
-| `tavern/navigator.mjs` | `map/tavern/navigator.mjs:1` | 后台「领航员」网关：为私有 key 的规划器做调度、输入装配和回复门控（网络请求由宿主发）。 | `tavern/planner-gateway.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。和浏览器全局 `navigator` 撞名；术语表：「规划器 planner」。存储键 `edenMapNav`、`edenMapNavCfg`、`edenMapNavConsent`（表 F）。 |
-| `tavern/llm.mjs` | `map/tavern/llm.mjs:1` | 私有 API key 网关：只算「该怎么调用某个提供方」，自己不联网、不存储。 | `tavern/llm-gateway.mjs` | 内部 | S5 | 引用：map 1 个、测试 2 个。与 `navigator.mjs` 一起改名。 |
-| `tavern/follow.mjs` | `map/tavern/follow.mjs:1` | 跟随分支解析：跨 CDN 镜像从 `head.json` 取某分支的最新构建。 | `tavern/branch-follow.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。读 `map/data/head.json`（外部 CDN 路径，表 F）。 |
-| `tavern/snapshot.mjs` | `map/tavern/snapshot.mjs:1` | MVU 快照选取与生成状态规则（纯函数）。 | `tavern/mvu-snapshot.mjs` | 内部 | S5 | 引用：map 1 个（`mvu-bridge.mjs`）、测试 2 个。"snapshot" 还是 `nav.mjs` 里 `snapshot`（切图快照）的名字；加前缀后消歧。 |
-| `app/bridge.mjs` | `map/app/bridge.mjs:14` | 兼容面：为旧全局名（`cur`、`REG`、`go` 等）挂的 34 个只读 `window` getter，浏览器探针仍在读。 | `app/legacy-globals.mjs` | 内部 | S5 | 引用：map 2 个、测试 1 个。"bridge" 还是 `MVUBridge` 和绘图桥的名字：三个互不相干的含义。这 34 个名字在表 C 里合成一行。 |
-| `app/host.mjs` | `map/app/host.mjs:1` | 查看器侧处理宿主消息的模块：来源与令牌检查、协议校验、按类型分派。 | `app/host-messages.mjs` | 内部 | S5 | 引用：map 2 个、测试 1 个。它在查看器里，而 `tavern/host-*.mjs` 在宿主侧：「host」一词两个方向都在用。 |
-| `app/nav.mjs` | `map/app/nav.mjs:1` | 地图切换：带可注册包装的 `go`、快照、地图外壳、另一版底图。 | `app/map-switch.mjs` | 内部 | S5 | 引用：map 15 个文件。"nav" 与 `navigator`、`app/layers.mjs` 的层导航都撞名。 |
-| `app/scale.mjs` | `map/app/scale.mjs:1` | 世界图与城市各层之间的尺度衔接，以及外围的过渡环。 | `app/scale-handoff.mjs` | 内部 | S5 | 引用：map 1 个。常量与全局 `TCScale`（表 C）。 |
-| `app/th-ui.mjs` | `map/app/th-ui.mjs:1` | 酒馆助手功能的设置页：世界书附加条目同步、状态注入、类宏、注入深度。 | `app/tavernhelper-settings.mjs` | 内部 | S5 | 引用：map 1 个。 |
-| `app/storage-ui.mjs` | `map/app/storage-ui.mjs:1` | 设置里的「数据与映射」页：本机存储占用与当前数据源（只读）。 | `app/data-mapping-settings.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。设置了 `window.renderStorage`（表 C）。 |
-| `tavern/inventory.mjs` | `map/tavern/inventory.mjs:1` | 聊天变量里的空间化背包（键 `仓库`），汇总成一行注入（纯函数）。 | `tavern/stash-store.mjs` | 内部 | S5 | 引用：map 1 个、测试 3 个。S6 会把它与世界 stash 统一到 `eden_map.stash`（决定 D4）；从 S5 起就用这个文件名，避免 S6 再改一次。术语表：「Stash」。 |
-| `app/loot.mjs` | `map/app/loot.mjs:1` | 地图上的发光拾取物，来自世界 stash；点击时向宿主发拾取意图（`eden-map:loot`）。 | `app/stash-markers.mjs` | 内部 | S5 | 引用：map 2 个。全局 `TCLoot`（表 C）；消息 `eden-map:loot`（表 F）。 |
-| `chars.mjs` | `map/chars.mjs:1` | 人物页与地图头像：落点、成组叠放、逐人开关、飞往。 | `characters-view.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。与 `tavern/characters.mjs`（下一行）成对：「chars」和「characters」是同一概念的两种拼法，`core/roster.mjs` 又是第三个名字。全局 `TCChars`（`P.` 引用 33 处）。 |
-| `tavern/characters.mjs` | `map/tavern/characters.mjs:1` | 人物栏：从聊天标签和 MVU 变量里找出人物及其最新位置（纯函数）。 | `tavern/characters-parse.mjs` | 内部 | S5 | 引用：map 3 个、测试 6 个。 |
-| `ui/illust-panel.js` | `map/ui/illust-panel.js:1` | 房间插图面板，驱动可选的绘图扩展。 | `ui/illustration-panel.js` | 内部 | S5 | 缩写 "illust"。引用：map 1 个（`room-gallery-panel.js`）。 |
-| `three/ctx.mjs` | `map/three/ctx.mjs:1` | 共享的三维渲染上下文工厂：像素比封顶、上下文丢失与恢复、真正的释放；全仓唯一创建 WebGL 渲染器的地方。 | `three/render-context.mjs` | 内部 | S5 | 通过 import-map 别名 `three/map/ctx.mjs` 加载（下一行）：没有直接的相对导入、测试 2 个。"ctx" 还指流水线上下文（`CTX`，见表 D）。 |
+| `here-v2.mjs` | `map/app/here-v2.mjs:1` | 当前地点引擎：聊天里的地点字符串经 `nodes.locate` 在节点树上落点，再还原成使用方读的结果形状；查看器、`tavern/spatial.mjs` 与构建工具共用。 | `place-resolver.mjs` | 内部 | S5 | v1 的解析器 `map/here.mjs` 已在 S3-3 删除。`here` 还是一个 DOM 输入框、一个解析结果和一类消息的名字；术语表：「当前地点」。 **已在 S5-2 改名。** |
+| `inv.mjs` | `map/inv.mjs:1` | 空间化背包的查看器侧：这个地点存放 / 藏着的东西，显示在地点卡上。 | `stash-view.mjs` | 内部 | S5 | 同一个概念现在有五个名字（`core/stash`、`core/pickup`、`app/loot`、`tavern/inventory` 和本文件）：见术语表「Stash」。引用：map 1 个。全局 `TCInv`（表 C）。内容在 S6 改。 **已在 S5-2 改名。** |
+| `unmapped.mjs` | `map/unmapped.mjs:1` | 小选择器：把一个认不出的地点名指派给节点、标记、房间，或选「忽略」。 | `unmapped-place-picker.mjs` | 内部 | S5 | 引用：map 1 个。全局 `TCUnmapped`（`P.` 引用 9 处）和消息 `eden-map:unmapped`（表 F）。 **已在 S5-2 改名。** |
+| `tavern/wb_crystallize.mjs` | `map/tavern/wb_crystallize.mjs:1` | 剧情事实结晶：把坐实的长期事实（来自 `⌖事实` 标签）沉淀成我们附加书里按关键词触发的条目。 | `tavern/worldbook-crystallize.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。与 `wb_jit.mjs` 是仅有的两个用下划线的引擎文件，其余都是短横线。 **已在 S5-2 改名。** |
+| `tavern/wb_jit.mjs` | `map/tavern/wb_jit.mjs:1` | 世界书即时水合：只启用与当前地点相关的附加条目，其余无损关闭。 | `tavern/worldbook-jit.mjs` | 内部 | S5 | 引用：map 2 个、测试 2 个。标记字段 `extra.eden_jit` / `eden_jit_ignore` 见表 F。 **已在 S5-2 改名。** |
+| `tavern/wbsync.mjs` | `map/tavern/wbsync.mjs:1` | 世界书附加条目的写入与自动同步；只动我们自己的书和带 `extra.eden_id` 的条目。 | `tavern/worldbook-sync.mjs` | 内部 | S5 | 引用：map 2 个、测试 3 个、工具 1 个。书名前缀和 `eden_*` 标记字段见表 F。 **已在 S5-2 改名。** |
+| `tavern/edenapi.mjs` | `map/tavern/edenapi.mjs:1` | 公开 `EdenMap` API 的机读契约（`EDEN_API`：21 个方法及最少形参数）；宿主暴露时逐项按它做守卫。 | `tavern/extension-api-contract.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。文件名里带卡名；API 名字本身（`EdenMap`）是外部契约，S10 再改（表 C）。 **已在 S5-2 改名。** |
+| `app/extapi.mjs` | `map/app/extapi.mjs:1` | 本机扩展接口的查看器侧：定义冻结的 `window.EdenMap` 和聊天 id。 | `app/extension-api.mjs` | 内部 | S5 | 引用：map 11 个文件（`chatId`、`LS` 都从它导入）、测试 0 个。 **已在 S5-2 改名。** |
+| `tavern/adapter.mjs` | `map/tavern/adapter.mjs:1` | 变量映射：地点、时间、日期、在场分别在 `stat_data` 的哪条路径；按字段名自动发现；用户覆盖按卡存储。 | `tavern/stat-path-mapping.mjs` | 内部 | S5 | 引用：map 2 个、测试 4 个、工具 1 个。"adapter" 没说清它干什么。它的设置页是 `varmap.mjs`（下一行）。 **已在 S5-2 改名。** |
+| `varmap.mjs` | `map/varmap.mjs:1` | 设置里的「变量映射」页（仅嵌入时显示）：每个映射项一个下拉，选项来自实际的变量树。 | `stat-path-mapping-view.mjs` | 内部 | S5 | 引用：map 1 个。全局 `TCVarMap`（表 C）。与 `adapter.mjs` 一起改名。 **已在 S5-2 改名。** |
+| `tavern/varsync.mjs` | `map/tavern/varsync.mjs:1` | 变量结算时序守卫：账本对账写入先排队，等主变量更新窗口结束后才放行。 | `tavern/settlement-guard.mjs` | 内部 | S5 | 引用：map 1 个、测试 3 个。别与 `varmap` / `adapter` 混淆（它们管路径映射；这个管写入顺序）。 **已在 S5-2 改名。** |
+| `tavern/action.mjs` | `map/tavern/action.mjs:1` | 地图驱动的动作：点一个兴趣点就变成一句话，按模式（关 / 填入输入框 / 静默注入）送出。 | `tavern/place-action-injection.mjs` | 内部 | S5 | 引用：map 2 个（含 `storage.mjs` 属主字符串）、测试 2 个。存储键 `edenMapInject`、`edenMapActionTpl`（表 F）。 **已在 S5-2 改名。** |
+| `tavern/modes.mjs` | `map/tavern/modes.mjs:1` | 脚本与卡的交互方式：(a) 紧凑状态注入、(d) 标签对账、(e) 最小检查点。 | `tavern/interaction-modes.mjs` | 内部 | S5 | 与文档 `docs/interaction-modes.md` 同名。引用：map 2 个、测试 3 个。导出 `STATE_ID`（注入 id，表 F）。 **已在 S5-2 改名。** |
+| `tavern/sources.mjs` | `map/tavern/sources.mjs:1` | 数据源登记表：宿主从哪些地方读聊天状态（供设置页和 `EdenMap.sources()` 用）。 | `tavern/data-source-registry.mjs` | 内部 | S5 | 引用：map 1 个、测试 2 个。 **已在 S5-2 改名。** |
+| `tavern/spatial.mjs` | `map/tavern/spatial.mjs:1` | 把当前地点加周边几何编译成有 token 预算的 JSON 坐标契约；还提供 `activationOf`，世界书 JIT 在用。 | `tavern/spatial-contract.mjs` | 内部 | S5 | 引用：map 1 个、测试 2 个。注入 id `eden-map-spatial`（表 F）。"spatial" 单独一个词同时是产品名，所以文件名写清它的职责。 **已在 S5-2 改名。** |
+| `tavern/mvu.mjs` | `map/tavern/mvu.mjs:1` | MVU 数据与地图自有自定义数据的纯读取函数（名称、着装、名册、头像、时间）；含 `normCustom`；持有聊天变量根键 `VAR_ROOT`。 | `tavern/mvu-readers.mjs` | 内部 | S5 | 引用：map 5 个、测试 11 个、工具 2 个。容易和 `mvu-bridge.mjs`（唯一允许碰 `Mvu` 全局的模块）混淆。里面的 `get` 和 `val` 在 `adapter.mjs` 里又抄了一份（见表 D）。 **已在 S5-2 改名。** |
+| `tavern/navigator.mjs` | `map/tavern/navigator.mjs:1` | 后台「领航员」网关：为私有 key 的规划器做调度、输入装配和回复门控（网络请求由宿主发）。 | `tavern/planner-gateway.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。和浏览器全局 `navigator` 撞名；术语表：「规划器 planner」。存储键 `edenMapNav`、`edenMapNavCfg`、`edenMapNavConsent`（表 F）。 **已在 S5-2 改名。** |
+| `tavern/llm.mjs` | `map/tavern/llm.mjs:1` | 私有 API key 网关：只算「该怎么调用某个提供方」，自己不联网、不存储。 | `tavern/llm-gateway.mjs` | 内部 | S5 | 引用：map 1 个、测试 2 个。与 `navigator.mjs` 一起改名。 **已在 S5-2 改名。** |
+| `tavern/follow.mjs` | `map/tavern/follow.mjs:1` | 跟随分支解析：跨 CDN 镜像从 `head.json` 取某分支的最新构建。 | `tavern/branch-follow.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。读 `map/data/head.json`（外部 CDN 路径，表 F）。 **已在 S5-2 改名。** |
+| `tavern/snapshot.mjs` | `map/tavern/snapshot.mjs:1` | MVU 快照选取与生成状态规则（纯函数）。 | `tavern/mvu-snapshot.mjs` | 内部 | S5 | 引用：map 1 个（`mvu-bridge.mjs`）、测试 2 个。"snapshot" 还是 `nav.mjs` 里 `snapshot`（切图快照）的名字；加前缀后消歧。 **已在 S5-2 改名。** |
+| `app/bridge.mjs` | `map/app/bridge.mjs:14` | 兼容面：为旧全局名（`cur`、`REG`、`go` 等）挂的 34 个只读 `window` getter，浏览器探针仍在读。 | `app/legacy-globals.mjs` | 内部 | S5 | 引用：map 2 个、测试 1 个。"bridge" 还是 `MVUBridge` 和绘图桥的名字：三个互不相干的含义。这 34 个名字在表 C 里合成一行。 **已在 S5-2 改名。** |
+| `app/host.mjs` | `map/app/host.mjs:1` | 查看器侧处理宿主消息的模块：来源与令牌检查、协议校验、按类型分派。 | `app/host-messages.mjs` | 内部 | S5 | 引用：map 2 个、测试 1 个。它在查看器里，而 `tavern/host-*.mjs` 在宿主侧：「host」一词两个方向都在用。 **已在 S5-2 改名。** |
+| `app/nav.mjs` | `map/app/nav.mjs:1` | 地图切换：带可注册包装的 `go`、快照、地图外壳、另一版底图。 | `app/map-switch.mjs` | 内部 | S5 | 引用：map 15 个文件。"nav" 与 `navigator`、`app/layers.mjs` 的层导航都撞名。 **已在 S5-2 改名。** |
+| `app/scale.mjs` | `map/app/scale.mjs:1` | 世界图与城市各层之间的尺度衔接，以及外围的过渡环。 | `app/scale-handoff.mjs` | 内部 | S5 | 引用：map 1 个。常量与全局 `TCScale`（表 C）。 **已在 S5-2 改名。** |
+| `app/th-ui.mjs` | `map/app/th-ui.mjs:1` | 酒馆助手功能的设置页：世界书附加条目同步、状态注入、类宏、注入深度。 | `app/tavernhelper-settings.mjs` | 内部 | S5 | 引用：map 1 个。 **已在 S5-2 改名。** |
+| `app/storage-ui.mjs` | `map/app/storage-ui.mjs:1` | 设置里的「数据与映射」页：本机存储占用与当前数据源（只读）。 | `app/data-mapping-settings.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。设置了 `window.renderStorage`（表 C）。 **已在 S5-2 改名。** |
+| `tavern/inventory.mjs` | `map/tavern/inventory.mjs:1` | 聊天变量里的空间化背包（键 `仓库`），汇总成一行注入（纯函数）。 | `tavern/stash-store.mjs` | 内部 | S5 | 引用：map 1 个、测试 3 个。S6 会把它与世界 stash 统一到 `eden_map.stash`（决定 D4）；从 S5 起就用这个文件名，避免 S6 再改一次。术语表：「Stash」。 **已在 S5-2 改名。** |
+| `app/loot.mjs` | `map/app/loot.mjs:1` | 地图上的发光拾取物，来自世界 stash；点击时向宿主发拾取意图（`eden-map:loot`）。 | `app/stash-markers.mjs` | 内部 | S5 | 引用：map 2 个。全局 `TCLoot`（表 C）；消息 `eden-map:loot`（表 F）。 **已在 S5-2 改名。** |
+| `chars.mjs` | `map/chars.mjs:1` | 人物页与地图头像：落点、成组叠放、逐人开关、飞往。 | `characters-view.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。与 `tavern/characters.mjs`（下一行）成对：「chars」和「characters」是同一概念的两种拼法，`core/roster.mjs` 又是第三个名字。全局 `TCChars`（`P.` 引用 33 处）。 **已在 S5-2 改名。** |
+| `tavern/characters.mjs` | `map/tavern/characters.mjs:1` | 人物栏：从聊天标签和 MVU 变量里找出人物及其最新位置（纯函数）。 | `tavern/characters-parse.mjs` | 内部 | S5 | 引用：map 3 个、测试 6 个。 **已在 S5-2 改名。** |
+| `ui/illust-panel.js` | `map/ui/illust-panel.js:1` | 房间插图面板，驱动可选的绘图扩展。 | `ui/illustration-panel.js` | 内部 | S5 | 缩写 "illust"。引用：map 1 个（`room-gallery-panel.js`）。 **已在 S5-2 改名。** |
+| `three/ctx.mjs` | `map/three/ctx.mjs:1` | 共享的三维渲染上下文工厂：像素比封顶、上下文丢失与恢复、真正的释放；全仓唯一创建 WebGL 渲染器的地方。 | `three/render-context.mjs` | 内部 | S5 | 通过 import-map 别名 `three/map/ctx.mjs` 加载（下一行）：没有直接的相对导入、测试 2 个。"ctx" 还指流水线上下文（`CTX`，见表 D）。 **已在 S5-2 改名。** |
 | import-map alias `three/map/` | `map/props/viewer3d.html:22` | import-map 里的一条：把说明符 `three/map/…` 指向目录 `map/three/`；三维页面通过它导入我们自己的辅助模块。 | `engine3d/` | 内部 | S5 | 读起来像 `three` 库的一部分。`viewer3d.html` 有 5 处导入，测试里也有路径清单。与文件改名同批处理。 |
-| `app/layerhost.mjs` | `map/app/layerhost.mjs:1` | 查看器侧的 LayerRegistry 装配：registry 单例、`.vpslot` 槽位容器、`window.TCLayers` 摘要。 | `app/layer-host.mjs` | 内部 | S5 | 引用：map 14 个、测试 1 个。连写词（`layerhost`、`loadprog`、`depthhaze`、`cardlinks`）与别处的短横线不一致：接下来三行是同一种修法。 |
-| `app/loadprog.mjs` | `map/app/loadprog.mjs:1` | 整屏加载层的进度，与 `ui/progress.mjs` 共用。 | `app/load-progress.mjs` | 内部 | S5 | 引用：map 3 个。导出 `lp`（表 D）。 |
-| `app/depthhaze.mjs` | `map/app/depthhaze.mjs:1` | 为当前纵深平面闭合「纵深 → 雾霾 → depth-haze 槽位 / 迷雾画布」这条回路。 | `app/depth-haze.mjs` | 内部 | S5 | 引用：map 2 个。全局 `TCHaze`（表 C）。 |
-| `app/cardlinks.mjs` | `map/app/cardlinks.mjs:1` | 地点卡底部的链接（跨层通道、三维链接、图集入口）。 | `app/card-links.mjs` | 内部 | S5 | 引用：map 1 个、测试 2 个。这里的「card」是地点卡；在 `chars.mjs` 里 card 指角色卡。术语表：「place card」。 |
-| `core/depth.mjs` (fog-visit part) | `map/core/depth.mjs:44` | 除了纵深数学（`blender/depth.py` 的 JS 孪生）外，这个文件还放着探索台账 `norm` / `visit` / `known` / `count`（到访过的地点迷雾）。 | `core/exploration-ledger.mjs` (the depth math keeps `depth.mjs`) | 内部 | S5 | 引用：map 6 个、测试 4 个（`eden-map.js` 只为探索台账加载它，别名 `FOGm`）。是拆分不是改名：纵深数学那一半必须保留原名，因为有黄金文件对拍测试。聊天键 `探索`（表 E）。 |
-| `app/estate.mjs` | `map/app/estate.mjs:1` | 庄园 / 三维子页的宿主：带 `<base>` 的 blob iframe、失败钩子、子页消息、通用三维查看器入口。 | `app/subpage3d-host.mjs` | 内部 | S5 | 引用：map 15 个、测试 2 个。"estate"（庄园）是第一个设定包的内容，但引擎把它当作任意三维子页的名字：协议前缀 `estate:`（20 种）、地图 kind `estate`（表 F）、body 类 `estate`。术语表：「sub-page 子页」。 |
-| `core/estate3d.mjs` | `map/core/estate3d.mjs:1` | 三维页的清单契约：校验并解析模型 URL、数据路径和档位回退。 | `core/scene3d-manifest.mjs` | 内部 | S5 | 引用：map 2 个（`estate/main.js`、`props/viewer3d.html`）、测试 1 个。与上一行同样的 "estate" 问题。 |
+| `app/layerhost.mjs` | `map/app/layerhost.mjs:1` | 查看器侧的 LayerRegistry 装配：registry 单例、`.vpslot` 槽位容器、`window.TCLayers` 摘要。 | `app/layer-host.mjs` | 内部 | S5 | 引用：map 14 个、测试 1 个。连写词（`layerhost`、`loadprog`、`depthhaze`、`cardlinks`）与别处的短横线不一致：接下来三行是同一种修法。 **已在 S5-2 改名。** |
+| `app/loadprog.mjs` | `map/app/loadprog.mjs:1` | 整屏加载层的进度，与 `ui/progress.mjs` 共用。 | `app/load-progress.mjs` | 内部 | S5 | 引用：map 3 个。导出 `lp`（表 D）。 **已在 S5-2 改名。** |
+| `app/depthhaze.mjs` | `map/app/depthhaze.mjs:1` | 为当前纵深平面闭合「纵深 → 雾霾 → depth-haze 槽位 / 迷雾画布」这条回路。 | `app/depth-haze.mjs` | 内部 | S5 | 引用：map 2 个。全局 `TCHaze`（表 C）。 **已在 S5-2 改名。** |
+| `app/cardlinks.mjs` | `map/app/cardlinks.mjs:1` | 地点卡底部的链接（跨层通道、三维链接、图集入口）。 | `app/card-links.mjs` | 内部 | S5 | 引用：map 1 个、测试 2 个。这里的「card」是地点卡；在 `chars.mjs` 里 card 指角色卡。术语表：「place card」。 **已在 S5-2 改名。** |
+| `core/depth.mjs` (fog-visit part) | `map/core/depth.mjs:44` | 除了纵深数学（`blender/depth.py` 的 JS 孪生）外，这个文件还放着探索台账 `norm` / `visit` / `known` / `count`（到访过的地点迷雾）。 | `core/exploration-ledger.mjs` (the depth math keeps `depth.mjs`) | 内部 | S5 | 引用：map 6 个、测试 4 个（`eden-map.js` 只为探索台账加载它，别名 `FOGm`）。是拆分不是改名：纵深数学那一半必须保留原名，因为有黄金文件对拍测试。聊天键 `探索`（表 E）。 **已在 S5-2 拆分**：新文件 `core/exploration-ledger.mjs`（纵深数学留在原文件）。 |
+| `app/estate.mjs` | `map/app/estate.mjs:1` | 庄园 / 三维子页的宿主：带 `<base>` 的 blob iframe、失败钩子、子页消息、通用三维查看器入口。 | `app/subpage3d-host.mjs` | 内部 | S5 | 引用：map 15 个、测试 2 个。"estate"（庄园）是第一个设定包的内容，但引擎把它当作任意三维子页的名字：协议前缀 `estate:`（20 种）、地图 kind `estate`（表 F）、body 类 `estate`。术语表：「sub-page 子页」。 **已在 S5-2 改名。** |
+| `core/estate3d.mjs` | `map/core/estate3d.mjs:1` | 三维页的清单契约：校验并解析模型 URL、数据路径和档位回退。 | `core/scene3d-manifest.mjs` | 内部 | S5 | 引用：map 2 个（`estate/main.js`、`props/viewer3d.html`）、测试 1 个。与上一行同样的 "estate" 问题。 **已在 S5-2 改名。** |
 | `tavern/loot-flow.mjs` | `map/tavern/loot-flow.mjs:1` | 宿主流：地图驱动的动作注入、检定掷骰与失败环（W2）、结算闸门与漏项审计（W11）、虚拟账本槽位（W12）、拾取扫描、空间化背包与世界藏物表。 | `tavern/loot-flow.mjs` | 内部 | S5-1 | S5-1 新增，最终名字就是它自己。按计划叫 `loot-flow`，没有叫 `stash-flow`：词汇表只定概念（"Stash"），不改模块名；最终名字由 S6（stash 统一，D4）决定。 |
 | `tavern/chars-flow.mjs` | `map/tavern/chars-flow.mjs:1` | 宿主流：ContextPipeline 与 MVUBridge 装配、世界时间与着装、名册 / 立绘 / 行程 / 日程漫游转发给查看器。 | `tavern/chars-flow.mjs` | 内部 | S5-1 | S5-1 新增，最终名字就是它自己。持有 `BR`、`CTX`、`MV`（表 D）。 |
 | `tavern/root-store.mjs` | `map/tavern/root-store.mjs:1` | 宿主流：地图在聊天变量里的根（`eden_map`）：自定义名称与用途的读写与迁移、本机存储预算、世界书同步、标签改名重放。 | `tavern/root-store.mjs` | 内部 | S5-1 | S5-1 新增，最终名字就是它自己。持有 `saveRoot`（聊天变量根的唯一写入者）与 `BG`。 |
@@ -120,32 +121,32 @@
 
 | 当前名 | 位置 | 含义 | 建议新名 | 类别 | 批次 | 备注 |
 |---|---|---|---|---|---|---|
-| `core/budget.mjs` | `map/core/budget.mjs:1` | 不同概念。图形内存预算策略：按设备档位给字节预算，并判断上报用量是否算压力。 | `core/graphics-budget.mjs` | 内部 | S5 | 引用：map 1 个（`viewer3d.html`）、测试 1 个。不是 view/core 成对：两个文件毫无关系。 |
-| `tavern/budget.mjs` | `map/tavern/budget.mjs:1` | 不同概念。本机存储预算：按聊天做 LRU、头像上限、额度超限恢复；只碰地图自己的键。 | `tavern/storage-budget.mjs` | 内部 | S5 | 引用：map 3 个（含 `storage.mjs` 属主字符串）、测试 2 个。`eden-map.js` 里的 `BG` 就是这个模块（表 D）。 |
-| `compose.mjs` | `map/compose.mjs:1` | view（查看器侧）。地点 / 事件 / 人物卡上的按钮，把模板句发给宿主的输入框（仅嵌入时）。 | `compose-view.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。全局 `TCCompose`（表 C）。 |
-| `tavern/compose.mjs` | `map/tavern/compose.mjs:1` | 宿主侧。模板句本身以及把它填进聊天输入框的代码（从不发送）。除 `insert` 外是纯函数。 | `tavern/compose-templates.mjs` | 内部 | S5 | 引用：map 3 个、测试 1 个。导出 `KEY` 和 `MAX`（表 D）。 |
-| `events.mjs` | `map/events.mjs:1` | view（查看器侧）。事态层：落点、图标、事件列表、飞往、屏幕效果、世界图角标。 | `events-view.mjs` | 内部 | S5 | 428 行（超出上限；S5 要拆）。引用：map 1 个、测试 1 个。全局 `TCEvents`（`P.` 引用 16 处）。 |
-| `tavern/events.mjs` | `map/tavern/events.mjs:1` | parse（解析）。从聊天正文读事件标签、合并并老化（纯函数）；含内置事态大类。 | `tavern/events-parse.mjs` | 内部 | S5 | 引用：map 5 个、测试 10 个、工具 2 个（本表被测试引用最多）。含标签属性 `data-tcmap`（表 F），并且是棘轮里卡名词数最多的文件（87）。 |
-| `core/layers.mjs` | `map/core/layers.mjs:1` | core（核心）。LayerRegistry：10 个视口槽位、图层注册与排序、可见性、滤镜链。 | `core/layer-registry.mjs` | 内部 | S5 | 引用：map 6 个、测试 4 个。这里的 "layer" = 渲染槽位；在 `app/layers.mjs` 里指城市的一层。术语表：「layer slot」对「map level」。 |
-| `app/layers.mjs` | `map/app/layers.mjs:1` | view（查看器侧）。层导航与键盘：层切换条、上一级、Esc 分层、单键快捷键。 | `app/map-level-nav.mjs` | 内部 | S5 | 引用：map 9 个。与 `core/layers.mjs` 是不同概念（见那一行）。 |
+| `core/budget.mjs` | `map/core/budget.mjs:1` | 不同概念。图形内存预算策略：按设备档位给字节预算，并判断上报用量是否算压力。 | `core/graphics-budget.mjs` | 内部 | S5 | 引用：map 1 个（`viewer3d.html`）、测试 1 个。不是 view/core 成对：两个文件毫无关系。 **已在 S5-2 改名。** |
+| `tavern/budget.mjs` | `map/tavern/budget.mjs:1` | 不同概念。本机存储预算：按聊天做 LRU、头像上限、额度超限恢复；只碰地图自己的键。 | `tavern/storage-budget.mjs` | 内部 | S5 | 引用：map 3 个（含 `storage.mjs` 属主字符串）、测试 2 个。`eden-map.js` 里的 `BG` 就是这个模块（表 D）。 **已在 S5-2 改名。** |
+| `compose.mjs` | `map/compose.mjs:1` | view（查看器侧）。地点 / 事件 / 人物卡上的按钮，把模板句发给宿主的输入框（仅嵌入时）。 | `compose-view.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。全局 `TCCompose`（表 C）。 **已在 S5-2 改名。** |
+| `tavern/compose.mjs` | `map/tavern/compose.mjs:1` | 宿主侧。模板句本身以及把它填进聊天输入框的代码（从不发送）。除 `insert` 外是纯函数。 | `tavern/compose-templates.mjs` | 内部 | S5 | 引用：map 3 个、测试 1 个。导出 `KEY` 和 `MAX`（表 D）。 **已在 S5-2 改名。** |
+| `events.mjs` | `map/events.mjs:1` | view（查看器侧）。事态层：落点、图标、事件列表、飞往、屏幕效果、世界图角标。 | `events-view.mjs` | 内部 | S5 | 428 行（超出上限；S5 要拆）。引用：map 1 个、测试 1 个。全局 `TCEvents`（`P.` 引用 16 处）。 **已在 S5-2 改名。** |
+| `tavern/events.mjs` | `map/tavern/events.mjs:1` | parse（解析）。从聊天正文读事件标签、合并并老化（纯函数）；含内置事态大类。 | `tavern/events-parse.mjs` | 内部 | S5 | 引用：map 5 个、测试 10 个、工具 2 个（本表被测试引用最多）。含标签属性 `data-tcmap`（表 F），并且是棘轮里卡名词数最多的文件（87）。 **已在 S5-2 改名。** |
+| `core/layers.mjs` | `map/core/layers.mjs:1` | core（核心）。LayerRegistry：10 个视口槽位、图层注册与排序、可见性、滤镜链。 | `core/layer-registry.mjs` | 内部 | S5 | 引用：map 6 个、测试 4 个。这里的 "layer" = 渲染槽位；在 `app/layers.mjs` 里指城市的一层。术语表：「layer slot」对「map level」。 **已在 S5-2 改名。** |
+| `app/layers.mjs` | `map/app/layers.mjs:1` | view（查看器侧）。层导航与键盘：层切换条、上一级、Esc 分层、单键快捷键。 | `app/map-level-nav.mjs` | 内部 | S5 | 引用：map 9 个。与 `core/layers.mjs` 是不同概念（见那一行）。 **已在 S5-2 改名。** |
 | `core/lod.mjs` | `map/core/lod.mjs:1` | core（核心）。图形 LOD 策略：模型该处于哪个细节档、迟滞、哪些异步加载仍有效。 | (keep) | 内部 | — | 引用：map 1 个（`three/lod.mjs`）、测试 1 个。纯核心保留裸名。 |
-| `three/lod.mjs` | `map/three/lod.mjs:1` | 控制器。把 `core/lod.mjs` 的决策应用到 three 场景上。 | `three/lod-controller.mjs` | 内部 | S5 | 引用：没有相对导入；通过 import-map 别名加载（表 A）、测试 1 个。 |
+| `three/lod.mjs` | `map/three/lod.mjs:1` | 控制器。把 `core/lod.mjs` 的决策应用到 three 场景上。 | `three/lod-controller.mjs` | 内部 | S5 | 引用：没有相对导入；通过 import-map 别名加载（表 A）、测试 1 个。 **已在 S5-2 改名。** |
 | `core/pack.mjs` | `map/core/pack.mjs:1` | core（核心）。设定包接口：清单校验与解析、包 id、存储前缀与聊天变量键的推导。 | (keep) | 内部 | — | 引用：map 6 个、测试 2 个、工具 1 个。里面写死了默认值 `edenMap` 和 `eden_map`（表 F）。 |
-| `app/pack.mjs` | `map/app/pack.mjs:1` | view（查看器侧）。当前设定包，启动时解析一次（活绑定 `PACK`、`packData(键)`）。 | `app/current-pack.mjs` | 内部 | S5 | 引用：map 7 个。 |
+| `app/pack.mjs` | `map/app/pack.mjs:1` | view（查看器侧）。当前设定包，启动时解析一次（活绑定 `PACK`、`packData(键)`）。 | `app/current-pack.mjs` | 内部 | S5 | 引用：map 7 个。 **已在 S5-2 改名。** |
 | `core/quests.mjs` | `map/core/quests.mjs:1` | core（核心）。动态线索节点：按地点聚合事件并随楼层衰减。 | (keep) | 内部 | — | 引用：map 1 个、测试 1 个、工具 1 个。 |
-| `app/quests.mjs` | `map/app/quests.mjs:1` | view（查看器侧）。把线索节点画成会呼吸的圈。 | `app/quests-view.mjs` | 内部 | S5 | 引用：map 2 个。全局 `TCQuests`（表 C）。 |
+| `app/quests.mjs` | `map/app/quests.mjs:1` | view（查看器侧）。把线索节点画成会呼吸的圈。 | `app/quests-view.mjs` | 内部 | S5 | 引用：map 2 个。全局 `TCQuests`（表 C）。 **已在 S5-2 改名。** |
 | `core/routine.mjs` | `map/core/routine.mjs:1` | core（核心）。宿主与查看器共用的 NPC 日程数学。 | (keep) | 内部 | — | 引用：map 3 个（含 `estate/main.js`）、测试 1 个。 |
-| `tavern/routine.mjs` | `map/tavern/routine.mjs:1` | 转发器。四行代码，为宿主重新导出 `core/routine.mjs`。 | (delete) | 内部 | S5 | 引用：map 1 个（`eden-map.js` 的句柄 `RTm`）、测试 1 个（`tests/routine.test.mjs`）；都改为直接引 `core/routine.mjs`。没有调用方需要这个转发器。 |
+| `tavern/routine.mjs` | `map/tavern/routine.mjs:1` | 转发器。四行代码，为宿主重新导出 `core/routine.mjs`。 | (delete) | 内部 | S5 | 引用：map 1 个（`eden-map.js` 的句柄 `RTm`）、测试 1 个（`tests/routine.test.mjs`）；都改为直接引 `core/routine.mjs`。没有调用方需要这个转发器。 **已在 S5-2 删除**（宿主与测试改 import `core/routine.mjs`）。 |
 | `core/scrapbook.mjs` | `map/core/scrapbook.mjs:1` | core（核心）。地标上钉图与手记的索引逻辑（字节存在图集数据库里）。 | (keep) | 内部 | — | 引用：map 1 个、测试 1 个。 |
-| `scrapbook.mjs` | `map/scrapbook.mjs:1` | view（查看器侧）。地点卡上的钉图与手记。 | `scrapbook-view.mjs` | 内部 | S5 | 引用：map 2 个（含 `storage.mjs` 属主字符串）。全局 `TCScrap`（表 C）。 |
+| `scrapbook.mjs` | `map/scrapbook.mjs:1` | view（查看器侧）。地点卡上的钉图与手记。 | `scrapbook-view.mjs` | 内部 | S5 | 引用：map 2 个（含 `storage.mjs` 属主字符串）。全局 `TCScrap`（表 C）。 **已在 S5-2 改名。** |
 | `core/traffic.mjs` | `map/core/traffic.mjs:1` | core（核心）。车流与流光数学：路线点 → 一帧里的光点位置，确定性。 | (keep) | 内部 | — | 引用：map 2 个、测试 1 个。 |
-| `app/traffic.mjs` | `map/app/traffic.mjs:1` | view（查看器侧）。在 `fx` 槽位的画布上画流光。 | `app/traffic-view.mjs` | 内部 | S5 | 引用：map 2 个。全局 `TCTraffic`（表 C）。 |
-| `trips.mjs` | `map/trips.mjs:1` | view（查看器侧）。行程层：按交通方式画最近行程和在途弧线。 | `trips-view.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。全局 `TCTrips`（表 C）。聊天键 `行程`（表 E）。 |
-| `tavern/trips.mjs` | `map/tavern/trips.mjs:1` | parse（解析）。从逐层地点和人物标签推出「A 到 B」的行程，按交通方式分样式（纯函数）。 | `tavern/trips-parse.mjs` | 内部 | S5 | 引用：map 1 个、测试 4 个。`eden-map.js` 里的句柄 `TRm`。 |
+| `app/traffic.mjs` | `map/app/traffic.mjs:1` | view（查看器侧）。在 `fx` 槽位的画布上画流光。 | `app/traffic-view.mjs` | 内部 | S5 | 引用：map 2 个。全局 `TCTraffic`（表 C）。 **已在 S5-2 改名。** |
+| `trips.mjs` | `map/trips.mjs:1` | view（查看器侧）。行程层：按交通方式画最近行程和在途弧线。 | `trips-view.mjs` | 内部 | S5 | 引用：map 1 个、测试 1 个。全局 `TCTrips`（表 C）。聊天键 `行程`（表 E）。 **已在 S5-2 改名。** |
+| `tavern/trips.mjs` | `map/tavern/trips.mjs:1` | parse（解析）。从逐层地点和人物标签推出「A 到 B」的行程，按交通方式分样式（纯函数）。 | `tavern/trips-parse.mjs` | 内部 | S5 | 引用：map 1 个、测试 4 个。`eden-map.js` 里的句柄 `TRm`。 **已在 S5-2 改名。** |
 | `core/vision.mjs` | `map/core/vision.mjs:1` | core（核心）。视线锥几何：被墙段截断的视野、巡逻环、点可见性判断。 | (keep) | 内部 | — | 引用：map 2 个、测试 1 个。 |
-| `app/vision.mjs` | `map/app/vision.mjs:1` | view（查看器侧）。画视野锥，并在移动时报告最难躲过的一次被发现。 | `app/vision-view.mjs` | 内部 | S5 | 引用：map 2 个。全局 `TCVision`（表 C）。 |
+| `app/vision.mjs` | `map/app/vision.mjs:1` | view（查看器侧）。画视野锥，并在移动时报告最难躲过的一次被发现。 | `app/vision-view.mjs` | 内部 | S5 | 引用：map 2 个。全局 `TCVision`（表 C）。 **已在 S5-2 改名。** |
 | `core/weather.mjs` | `map/core/weather.mjs:1` | core（核心）。天气核心：预设表、由剧情与时钟推天气、粒子场与闪电时序。 | (keep) | 内部 | — | 引用：map 1 个、测试 2 个。 |
-| `app/weather.mjs` | `map/app/weather.mjs:1` | view（查看器侧）。在 `fx` 槽位画粒子、色调和闪电。 | `app/weather-view.mjs` | 内部 | S5 | 引用：map 2 个、测试 1 个。全局 `TCWeather`（表 C）。 |
+| `app/weather.mjs` | `map/app/weather.mjs:1` | view（查看器侧）。在 `fx` 槽位画粒子、色调和闪电。 | `app/weather-view.mjs` | 内部 | S5 | 引用：map 2 个、测试 1 个。全局 `TCWeather`（表 C）。 **已在 S5-2 改名。** |
 | `estate/main.js` | `map/estate/main.js:1` | 第一个设定包的三维庄园页控制器：模型加载、外观 / 内透 / 剖切、楼层条、房间与室外热点。 | `estate/estate-page.js` | 内部 | S10 | 1203 行。引用：1 个页面（`estate/index.html`）、测试 4 个、工具 1 个。属于设定包页面，不在引擎范围，S10 随第一个设定包搬走。`index.html` 也有两份（`estate/`、`estate/closet/`），由目录区分，不改名。 |
 | `estate/closet/main.js` | `map/estate/closet/main.js:1` | 衣帽间样板间页面：场景、灯光、交互、A / B 切换。 | `estate/closet/closet-page.js` | 内部 | S10 | 235 行。引用：1 个页面、测试 1 个。处理方式同上一行。 |
 

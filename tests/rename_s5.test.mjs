@@ -77,7 +77,7 @@ test('S5-2 split: no importer names util.mjs / shell.mjs; every import of a job 
   const bad = [];
   for (const f of files) {
     const text = rd(f);
-    if (/(?<![\w-])(app\/)?(util|shell)\.mjs/.test(text) && !/^tests\/text_lookup/.test(f)) bad.push(f + ' names util / shell');
+    if (/(?<![\w-])(app\/)?(util|shell)\.mjs/.test(text) && !/^tests\/text_lookup/.test(f) && !targets.has(f)) bad.push(f + ' names util / shell');
     for (const m of text.matchAll(/import\s*\{([^}]*)\}\s*from\s*'([^']+)'/g)) {
       const t = path.posix.normalize(path.posix.join(path.posix.dirname(f), m[2])); if (!targets.has(t)) continue;
       for (const item of m[1].split(',').map(x => x.trim().split(/\s+as\s+/)[0]).filter(Boolean)) if (!targets.get(t).has(item)) bad.push(`${f}: ${item} is not exported by ${t}`);

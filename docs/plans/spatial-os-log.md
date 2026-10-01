@@ -674,3 +674,22 @@ blocker: none
 open: I-10 (navRun in llm-flow calls summarize / layerOf / hereNow that are not in its scope: pre-existing ReferenceError, moved verbatim), I-11 (showSplash in host-checks calls undeclared refOf when SCRIPT.ref is empty: pre-existing, makes the first-run card never open for release tags and local builds; probe splash095 fails on it on the untouched tree) — both in docs/todo.md §1
 cleanup: done (probe servers started by me stopped; no launch.json entries; worktrees s5-1 and s5-1-snap stay for the orchestrator)
 === END ===
+
+=== RESULT S5-2 ===
+status: DONE
+items: T0 ✓ (I-11 ✓, I-10 ✓) T1 ✓ T2 ✓ T3 ✓ T4 ✓ T5 ✓
+commits: 387d3f4a fix(host): first-run card without a branch ref; navigator round inputs (I-10, I-11)
+         1afe044b chore(tools): S5 rename map and codemod
+         856be9fc refactor: rename engine files and same-name pairs per naming.md (S5 wave)
+         16154a05 refactor(viewer): split util.mjs and shell.mjs by job
+         (this commit) chore: lists, ledger, docs for the S5 renames   (T4, T5, this block)   (SHAs may change on rebase)
+pushed: yes (head #N in the chat report; this log copy is committed before the push; commit 1 was pushed earlier as head #195)
+tests: node 866 total / 865 pass / 1 skipped (baseline 857 / 856 / 1: +2 in tests/host_fixes_s52.test.mjs, +7 in tests/rename_s5.test.mjs, none removed; util_tx.test.mjs is now text_lookup.test.mjs, 22 more test files renamed with their module) | smoke PASS | arch PASS (ledger totals unchanged: lines 2298, z-index 33, inline style 59, card terms 0; only the keys moved)
+renamed: 67 files (A 50, B 17) + 22 paired tests, 1 forwarder deleted (tavern/routine.mjs -> core/routine.mjs), import-map alias three/map/ -> engine3d/ (folder map/three/ keeps its name); excluded: tavern/eden-map.js (the imported entry), viewer.html, world.html, tiancheng.html (pages a saved page fetches; S10 if anything), section.js, estate/main.js, estate/closet/main.js (Wave S10); core/lod, pack, quests, routine, scrapbook, traffic, vision, weather (bare name stays with the core, Wave —); tests lod / pack / quests / scrapbook / traffic / vision / weather stay with the core side
+split: util.mjs -> coordinates, dom-helpers, viewport-mode, protocol-stamp, screen-reader-announce, json-cache, text-lookup; shell.mjs -> control-column, drawer-glue, notice-layer, status-dot, one-hand-mode, quick-zoom; core/depth.mjs (fog part) -> core/exploration-ledger.mjs (depth math keeps depth.mjs)
+probes: accept=PASS pack_town=PASS v096=PASS webgl_single_ctx=PASS chars092=PASS roster095=PASS (base had 3 phone ✗, flaky; now none) topo_dairy=PASS e7_host=PASS events_fx=PASS splash095=PASS (base 5 ✗ = I-11; fixed by T0) th_adopt=BASE-SAME (2 ✗: desk (a) state injection x2) custom095=BASE-SAME (1 ✗: mig old data) p5_sandbox=PASS p6_action=PASS
+deviations: (1) naming.md has no name that conflicted with an S5-1 file; no proposed name was changed. (2) Row `core/depth.mjs` (fog-visit part) is a split, done in the T3 commit with tools/split_s5.mjs, not in the codemod; the alias row is a specifier rewrite, not a file move. (3) The codemod does not rewrite docs/naming*.md (its Current / Where columns keep the head #101 names); rows got "renamed S5-2" notes by a one-off script. (4) The ratchet baseline needed no teaching in check_architecture.py: arch_baseline.json is under tools/ so the codemod rewrote its keys. (5) Stem lists and three regex literals in tests were fixed by hand (app_modules, listeners, estate3d_manifest, host_split, renderer_census); `skills/card-map` was added to the codemod scope. (6) Other docs outside the brief's list (docs/*.md guides, CHANGELOG, history) still cite old paths, untouched on purpose. (7) The T0 strike of I-10 / I-11 in docs/todo.md is in this last commit, with the sha of the fix.
+blocker: none
+open: none (Q-items: none new; window globals, short identifiers, dead hooks and owner strings are S5-3)
+cleanup: done (probe servers and browsers started by me stopped by the probes themselves; no launch.json entries; the CDN warm-up of the first push was detached by push_preview; worktrees s5-2 and s5-2-base stay for the orchestrator)
+=== END ===
