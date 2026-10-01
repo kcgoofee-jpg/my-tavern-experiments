@@ -3,6 +3,7 @@
 import { buildTree, viewIdsOf, positionOf, viewOf, ROOT_ID } from './nodes.mjs';
 import { layoutSchematic, schematicSvg, schematicUrl } from './schematic.mjs';
 import { recheck } from './pack-v2-spec.mjs';
+import { under, mediaUrl } from './pack-media.mjs';
 
 const MAP_KINDS = new Set(['tiles', 'image', 'schematic']), isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const str = v => (typeof v === 'string' && v !== '' ? v : '');
@@ -20,12 +21,6 @@ export function implicitViews(pack) {
 export const viewsOf = pack => (isObj(pack?.views) && Object.keys(pack.views).length ? pack.views : implicitViews(pack));
 
 const safeId = id => id === ROOT_ID || recheck.id(id) !== null;
-/** A path of the pack under its base folder, or null (K-R64: no scheme, no absolute path, no way up). */
-function under(base, p) {
-  if (!str(p) || /^[a-z][a-z0-9+.-]*:|^[/\\]|\\/i.test(p)) return null;
-  const root = 'https://pack.invalid/b/';
-  try { const u = new URL(p, root); return u.href.startsWith(root) && !/(^|\/)\.\.?(\/|$)/.test(p) ? base + p : null; } catch (e) { return null; }
-}
 const unknownSpot = i => ({ x: +(0.5 + 0.06 * Math.cos(i * 2.4)).toFixed(4), y: +(0.5 + 0.06 * Math.sin(i * 2.4)).toFixed(4) });
 const clamp01 = v => Math.min(1, Math.max(0, v));
 
@@ -35,9 +30,10 @@ const clamp01 = v => Math.min(1, Math.max(0, v));
  *             each map { title, title_en?, kind: 'points', base, data, view: { extent_m }, markers: { id: { name, name_en?, sub?, alias, link? } } }
  *   files     { 'v2/<pack id>/<map id>.json': { extent_m, markers: [{ id, nx, ny, r }] } } (the viewer's JSON cache is seeded with them)
  *   problems  [{ code, id }]: view-tiles-no-base, view-image-no-base, view-path, view-3d-not-shown
- * `base` is the folder of the pack's pictures relative to the viewer ('' = none: card and file packs, no tiles or pictures by path).
+ * `base` is the folder of the pack's pictures relative to the viewer ('' = none: card and file packs, no tiles or pictures by path). `remoteOn`: the switch for pictures given by https link (K-R101).
+ *  An image view whose frame is a pack picture (`media`) opens it through `mediaUrl`: a data URL, a path under the base, or an https link while the switch is on; refused = problem `view-media`.
  */
-export function projectV2(pack, { base = '' } = {}) {
+export function projectV2(pack, { base = '', remoteOn = false } = {}) {
   const tree = buildTree(pack?.nodes, { title: pack?.title }), views = viewsOf(pack), ui = isObj(pack?.ui) ? pack.ui : {};
   const registry = { start: '', groups: {}, maps: {} }, files = {}, problems = [], pid = str(pack?.id) || 'pack';
   const prim = id => { const v = viewIdsOf(tree, views, id)[0]; return v ? views[v] : null; };
@@ -62,8 +58,9 @@ export function projectV2(pack, { base = '' } = {}) {
       for (const id of Object.keys(spots)) if (!safeId(id)) delete spots[id];
       source = { type: 'image', url: schematicUrl(schematicSvg(spots, tree)) };
     } else {
-      const path = under(base, v.src);
-      if (v.kind === 'tiles' && !base) problems.push({ code: 'view-tiles-no-base', id: owner });
+      const media = v.kind === 'image' && v.media !== undefined ? mediaUrl(pack?.media?.[v.media], { base, remoteOn }) : null, path = v.src === undefined ? null : under(base, v.src);
+      if (v.kind === 'image' && v.media !== undefined) { if (media) source = { type: 'image', url: media }; else problems.push({ code: 'view-media', id: owner }); }
+      else if (v.kind === 'tiles' && !base) problems.push({ code: 'view-tiles-no-base', id: owner });
       else if (v.kind === 'image' && !base) problems.push({ code: 'view-image-no-base', id: owner });
       else if (!path) problems.push({ code: 'view-path', id: owner });
       else source = v.kind === 'tiles' ? path : { type: 'image', url: path };

@@ -2,6 +2,7 @@
 // a spec is (value, path, ctx) => healed value | DROP; every repair or drop is one entry in ctx.problems.
 // tests/kernel_minimal.test.mjs checks these against tools/check_pack.py on the same broken packs.
 import { cpLen } from './lexicon.mjs';
+import { srcKind, decodedBytes, MAX_PICTURE, MAX_ITEMS } from './pack-media.mjs';
 
 export const DROP = Symbol('drop');
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -73,7 +74,7 @@ const NODE = obj({
   cite: str({ min: 1 }), sub: str(), desc: str(), at: nodeAt, anchor: str({ re: REGION }), enter: idRef,
   i18n: dict(LANG, obj({ name: str({ min: 1 }), sub: str(), desc: str() })),
   view: (v, p, x) => (typeof v === 'string' ? str({ re: ID })(v, p, x) : arr(str({ re: ID }), { min: 1 })(v, p, x)),
-  links: arr(link),
+  links: arr(link), media: arr(str({ re: ID }), { max: 32 }),   // K-R101: the node's pictures, ids of the media block (unknown ids are dropped by the cross check)
 }, { req: ['id', 'name'], ext: 'b' });
 export const nodesBlock = block(arr(NODE, { max: 5000 }), 'array');
 
@@ -93,12 +94,28 @@ const VIEWS = {
     alt: obj({ src: dzi, label: str(), i18n: vi18n }, { req: ['src'] }),
     overlays: arr(obj({ kind: oneOf(['dzi', 'barriers']), src: file, from: str({ re: ID }), label: str(), i18n: vi18n }, { req: ['kind'], ...B })),
     insets: arr(obj({ id: str({ re: ID }), node: idRef, src: dzi, bounds: unit4, px: size }, { req: ['id', 'src', 'bounds', 'px'], ...B })) }, { req: ['kind', 'src'], ...B }),
-  image: obj({ kind: oneOf(['image']), open, src: pic, extent: size, regions, home, variants: dict(ID, pic), credit: str(), i18n: vi18n }, { req: ['kind', 'src'], ...B }),
+  image: obj({ kind: oneOf(['image']), open, src: pic, media: str({ re: ID }), extent: size, regions, home, variants: dict(ID, pic), credit: str(), i18n: vi18n }, { req: ['kind'], ...B }),   // `src` or `media` (K-R101): the cross check drops an image view with neither
   schematic: obj({ kind: oneOf(['schematic']), open, layout: oneOf(['tree', 'radial', 'grid', 'list']), depth: num({ int: true, min: 1, max: 6 }) }, { req: ['kind'], ...B }),
   model3d: obj({ kind: oneOf(['model3d']), open, manifest: str({ re: re(`^(?=.*manifest\\.json$)${FILE}$`) }), regions, credit: str(), i18n: vi18n }, { req: ['kind'], ...B }),
 };
 const view = (v, p, x) => (isObj(v) && typeof v.kind === 'string' && Object.hasOwn(VIEWS, v.kind) ? VIEWS[v.kind](v, p, x) : bad(x, p, 'kind', v?.kind));
 export const viewsBlock = block(dict(ID, view), 'object');
+
+// ---- media (K-R101) ----
+/** A `media.*.src`: path, data URL (at most 3 MB decoded) or https address; the page re-checks it with pack-media.mjs before use. A bad value drops the item with one problem. */
+const mediaSrc = (v, p, x) => {
+  const k = typeof v === 'string' ? srcKind(v) : null;
+  if (typeof v !== 'string') return bad(x, p, 'type', 'string');
+  if (k === null) return bad(x, p, 'pattern', v.slice(0, 40));
+  return k === 'data' && decodedBytes(v) > MAX_PICTURE ? bad(x, p, 'limit-media', decodedBytes(v)) : v;
+};
+const MEDIA = dict(ID, obj({ src: mediaSrc, w: num({ int: true, min: 1, max: 65535 }), h: num({ int: true, min: 1, max: 65535 }), note: str(), i18n: i18n(['note']), credit: str() }, { req: ['src'], ext: 'b' }));
+export const mediaBlock = block((v, p, x) => {
+  const r = MEDIA(v, p, x); if (r === DROP) return r;
+  const ids = Object.keys(r);
+  if (ids.length > MAX_ITEMS) { bad(x, p, 'too-many', ids.length); return Object.fromEntries(ids.slice(0, MAX_ITEMS).map(k => [k, r[k]])); }
+  return r;
+}, 'object');
 
 // ---- vars, entities, items, events, layers, ui, llm ----
 const vpath = str({ re: re('^[^.\\n][^\\n]{0,79}$') });
@@ -197,4 +214,4 @@ export const MANIFEST = {
     fields: dict(re('^(location|time|period|date|outfit|reputation|name)$'), lexWords) }, { ext: '_' })),
   cdn: obj({ repo: str({ re: re('^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$') }), npm: str({ re: re('^(?!.*\\.\\.)[a-z0-9@][a-z0-9@/._-]{0,63}$') }) }),
 };
-export const BLOCKS = ['nodes', 'views', 'vars', 'entities', 'items', 'events', 'layers', 'ui', 'llm'];
+export const BLOCKS = ['nodes', 'views', 'vars', 'entities', 'items', 'events', 'layers', 'ui', 'llm', 'media'];

@@ -29,7 +29,7 @@ export const rebase = reg => rebaseRegistry(reg, PACK.base);
 // schema-2 包（K-R96）：块文件相对包目录取；校验按「随引擎发布」算（packs/<id>/ 在仓库里；S9-2 加 packs/index.json 后改查名单）。被拒绝 = 抛错，走启动失败的重试卡
 async function openV2(getJSON) {
   const { manifest, problems } = await resolveBlocks(PACK.v2, p => getJSON(PACK.base + p));
-  const r = validate2(manifest, { trusted: window.__tcPack?.trust !== 'foreign' });   // S9-2：宿主交来的外来包（K-R63）按不受信再校验一遍；其余随引擎发布
+  const r = validate2(manifest, { trusted: window.__tcPack?.trust !== 'foreign', source: window.__tcPack?.source === 'card' ? 'card' : 'file' });   // S9-2：宿主交来的外来包（K-R63）按不受信再校验一遍；其余随引擎发布
   if (!r.pack) throw new Error('设定包被拒绝：' + r.problems.map(x => x.code).join(','));
   packV2 = withDefaults(r.pack); packProblems = [...problems, ...r.problems];
   const accent = packV2.ui?.theme?.accent; if (typeof accent === 'string') PACK.theme = { ...PACK.theme, accent };

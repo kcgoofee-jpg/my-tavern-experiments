@@ -204,20 +204,31 @@ trust: shipped | foreign, schema, manifest }`；只有随地图发布的索引�
 
 | 项目 | 上限 |
 |---|---|
-| 解析完块文件后的整个文档 | 1 MB |
+| 解析完块文件后的整个文档 | 内嵌在角色卡里 1 MB；从网址或文件读取、或由导出写出时 8 MB（Z-12） |
 | JSON 嵌套深度 | 16 |
 | 任何数组（规则另有写明的除外） | 1000 项 |
 | 任何字符串（`desc`、世界书 `content` 见 K-R65） | 4000 字 |
 | 词表里不同的词 | 20 000 个 |
 | 共用同一个词的节点 | 8 个 |
 | `x-` 键 | 保留，计入大小上限 |
+| `media` | 至多 200 项；`media.*.src` 里的 data URL 不受字符串上限限制、但计入文档大小；单张图解码后至多 3 MB（K-R101） |
+
+`validate2` 按来源取文档上限：`source: 'card'` 为 1 MB，`'url'`、`'file'`、`'export'` 为 8 MB，显式的 `maxBytes` 优先；两者都没给时是 1 MB。加载方传入自己读取的来源（`importPack`：请求的种类；查看器：内嵌在卡里的包是 `card`，其余是 `file`）。
 
 **K-R98 —— 导出为包。** 对外来包（自动包、内嵌包、导入包或网址包），「导出为设定包」（设置 → 高级 → 地图包）写出一个 JSON 文件 `<包 id>.pack.json`
 （`core/pack-export.mjs`）：当前的包，所有块内联，再加上长出来的节点（当作普通节点，`g_` id 保留，K-R10）、用户给地点起的叫法（作为对应节点的叫法，Z-16；
 节点不存在的叫法丢掉），以及按卡信息填好的 `credits.card`（K-R08）。文件里没有聊天状态（藏物、迷雾、事件、忽略名单、账本、`chat`）、没有隐式视图，
 也没有内核只对随引擎发布的包才读的字段（`cdn`、`legacy`、`x-page`）。id 保留（Z-06）。键按固定顺序写出，所以把导入的文件再导出一次，字节完全相同。
 文件必须按外来包过 `validate2` 且没有任何问题，并且不超过 8 MB（`validate2` 用 `maxBytes` 取这个上限）；否则导出列出问题、什么也不写。紧凑形式小于 1 MB 的
-标「放得进角色卡」。第二个按钮复制紧凑文本，用来新建标题为 `spatial_os:pack` 的世界书条目（包设置里提示：这个条目要保持停用）。随引擎发布的包的叠加层导出（Z-15）归 S9b。
+标「放得进角色卡」。第二个按钮复制紧凑文本，用来新建标题为 `spatial_os:pack` 的世界书条目（包设置里提示：这个条目要保持停用）。编辑草稿（K-R100）并入（`exportPack(pack, { draft })`），包图片（K-R101）作为 data URL 内联随包走；私有图片永远不走（K-R102）。**叠加层导出（Z-15）：** 随引擎发布的包把草稿写成 `<包 id>.overlay.json`，形状同 K-R67（`schema`、带 `id` 与改动过的 `at`、`parent`、`alias`、`media` 的 `nodes`，新地点带名字，`media`，`ui.start`；没有 views）：只含改动，交给维护者合并进 `map/packs/<id>/overlay.v2.json`，旧的图集维护者流程由此取消。
+
+**K-R101 —— 包图片。** 可选的第十个块 `media`（在 schema 2 内新增，K-R62；`map/data/schema/v2/media.schema.json`）= `{ <media id>: { src, w?, h?, note?, i18n?: { <语言>: { note } }, credit? } }`（id 为 `^[a-z][a-z0-9_]{0,63}$`，至多 200 项），外加节点字段 `media: [<media id>]`（这个节点的图集，按顺序，至多 32 张；块里没有的 id 记为 `ref-media` 并丢掉）和 `image` 视图字段 `media`（`src` 的替代：image 视图二者必有其一）。`src` 只有三种（`core/pack-media.mjs`）：
+1. 包根目录下、以 `.webp`、`.png`、`.jpg` 或 `.jpeg` 结尾的相对路径（随引擎发布的包与网址包；不能有 `..`、协议、反斜杠；按网址解析后必须仍在根目录下；卡内包与文件包没有根目录，路径一律拒绝）；
+2. `data:image/(webp|png|jpeg);base64,` 加 base64 文本，解码后至多 3 MB（任何包）；
+3. 带图片文件类型、没有查询串和片段的 `https://` 地址，只在查看器开关「加载设定包里用链接给出的图片」（`edenMapPackRemote`，默认关，Z-13）打开时才加载；关着时这一项留作占位，只显示它的说明文字。
+其他一切（`javascript:`、`http:`、`data:text/html`、`data:image/svg+xml`、查询串、超过 3 MB）都拒绝：这一项连同一条问题（`pattern` 或 `limit-media`）被丢掉，永远到不了页面。页面运行时再按同样的正则查每个值（K-R64）：`checkMedia`、`mediaUrl`、`nodePictures`。说明与署名一律作文字显示。画面是包图片的 image 视图由查看器经 `mediaUrl` 打开（被拒绝时记 `view-media`）。
+
+**K-R102 —— 私有图片。** 用户可以给任何地点加只给自己看的图片。它们只在这个浏览器里（图集 IndexedDB，记录按作用域、`n:<节点 id>` 与图片 id 存放；作用域「本聊天」「全部聊天」同以前），**永远**不会被导出、内嵌、发给宿主或放进网址：没有任何导出函数读它们（`exportPack` 只读它文档写明的选项）。地点的图集先显示包图片、再显示私有图片；S9b 之前按房间名存的记录通过节点的名字找到（Z-18）；存着的可见性 `public` 读作 `private`。编辑模式下可以把一张私有图片复制进包（「加入设定包」），这会在草稿里新建一张包图片；私有记录仍然是私有的。
 
 ## 3. nodes —— 唯一的地理
 
@@ -498,6 +509,8 @@ v1 按固定的六级解析。改写成节点后，每一级都是树上的一�
 - **运行时。** `makeRuntimeV2(pack, registry)`（`app/nodes-runtime-v2.mjs`）按包自己的树给出 schema-1 运行时的全部读法：地图 id 是投影出的地图，地图自己就是宿主，`parent` 是最近的、本身是地图的祖先，`levels` 按 K-R35 在这些地图上算，`kind` 是主视图的种类，`geo()` 是这棵树的事件地理。`standIn`、`zoneChildren`、`anchorIn` 为空。
 
 **K-R97 —— 示意图布局。** `layoutSchematic(tree, owner, { layout, depth })`（`core/schematic.mjs`）返回 0..1 内的 `{ <节点 id>: { x, y } }`，边距 0.06，确定性（同一棵树画出同一张图）。`tree`（默认）：所有者在 `{ x: 0.5, y: 0.08 }`；后代按层成行，直到 `depth`，一层一行，行距均匀、到 y 0.92 为止；每个节点占的宽度是它子树在深度内的叶子数，父节点居中在子节点上方；一行超过 12 个节点就折成几行等长的行。`list`：按声明顺序排成一列。`grid`：每行 ⌈√n⌉ 个。`radial`：所有者在中央，每层一圈。图 `schematicSvg(layout, tree)` 是 1600 × 1000 单位的 SVG，透明底，每条父子边一条线（两端都在布局里），每个节点一个半径 6 的点，用固定的中性灰；不含文字、不含任何包里的值（Z-11、K-R64），`schematicUrl` 把它编码成 `data:image/svg+xml` 地址。节点名走普通标记，所以搜索、卡片、事件与抽屉和别的地图一样工作。`image` 视图作为单张图打开（不切片），位置是图的比例（K-R31）。
+
+**K-R100 —— 编辑模式。** 设置 → 高级里的开关（「编辑模式」，`edenMapEdit`，默认关）打开编辑条和下面的操作；关着时什么都不画。改动记进每个包 id 一份的本机草稿（Z-14）= `{ v: 1, nodes: { <id>: { at?, parent?, alias_add? } }, add: [节点], views: { <id>: 视图 }, media: { <id>: 项 }, attach: { <节点 id>: [media id] }, start? }`（`core/pack-draft.mjs`；文字存在 `edenMap:edit:<包 id>`，图片字节存在图集 IndexedDB 的 `edit:<包 id>` 作用域；草稿里永远没有私有图片）。开关打开期间查看器显示套上草稿的包，套法就是 K-R67 的叠加层合并（叫法取并集、节点其他字段覆盖、图片按 id、没有 views 的包在加了视图后保留原来的隐式视图、`ui.start`）；schema-2 包每次改动后重新投影（`app/pack-live.mjs`）。草稿从不写进聊天、角色卡或世界书；「放弃草稿」把它清空。操作（`app/pack-edit.mjs`）：`move`（在 `tiles` 或 `image` 视图上拖动图钉；写 `at = { x, y, view }`，K-R31）、`reparent`（拒绝节点自己、它的后代和根：造不出环）、`addAlias`（1–60 字，K-R27）、`addPlace`（id 为 `e_<fnv36(名字 + 上级)>`，落在有画面的视图上点的那一点）、`setStart`、`addPicture` 与 `attach`（地点的图片；草稿里只收内嵌图）、`useAsMap`（「用一张图作这里的地图」：图重新编码为 WebP 0.82、长边至多 4096 像素、去掉元数据；节点得到 `views[<id>] = { kind: 'image', media }`，它的子节点当前的示意图位置成为新画面里的第一个 `at`）和 `discard`。schema-1 包（首个包）的版面保持不动：它的图钉不能在查看器里移动或改上级；可以给它的任何地点加图片并导出为叠加层。导出见 K-R98。
 
 ## 5. vars
 
@@ -834,6 +847,8 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 
 **K-R85 —— schema-1 包的叠加层可以带 `layers`。** `overlay.v2.json` 可以带 `layers` = 图层行的数组（K-R79、K-R81–K-R83）。`core/overlay-v2.mjs` 的 `applyOverlayLayers(layers, overlay)` 让每一行过 `normLayer`（设定包的信任级别），把修好的行按 id 接在转换出来的行后面（叠加层的行替换同 id 的转换行；schema-1 包没有转换行）；失败的部分丢弃并记为 `overlay-layer-invalid`（带原因），其余照常生效（宽容，K-R06）。结果非空时 `compat-v1` 设置 `pack.layers`。叠加层可以只带 `layers`。`tools/check_overlay.mjs` 跑同一个函数，再对合并后的块跑 `validate2`。
 
+**K-R67（S9b 修订）—— 叠加层可以带 `media`。** `overlay.v2.json` 可以带 `media` 块（K-R101）与节点的 `media` 列表。`core/overlay-v2.mjs` 的 `applyOverlayMedia(media, overlay)` 按 id 把各项合并到转换出的块之上（叠加层逐字段优先；不是对象、没有字符串 `src`、或 id 不是 media id 的项被跳过，记为 `overlay-media-invalid`）；节点的 `media` 列表和其他节点字段一样整体替换。`compat-v1` 只在结果非空时才设 `pack.media`，所以带 `"media": {}` 的叠加层什么都不改。叠加层可以只有 `media`。`tools/check_overlay.mjs` 对合并后的块跑同一个函数和 `validate2`，并检查路径来源在包目录下确实存在。
+
 **S9-1 新增：** K-R96 与 K-R97（§4.6，查看器里的 schema-2 包、隐式示意图视图、示意图布局与图）。
 
 **S8-1 新增：** K-R79、K-R81、K-R82、K-R83（§9，layers 块、来源与要素、`applies`、菜单行与可见性存储），K-R85（上，叠加层的 `layers`）与 K-R104（§4.5，3D 清单 schema）。
@@ -844,11 +859,8 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 
 **S9-3 新增：** K-R93、K-R94、K-R95（§3.9，K-R26 之后：地点候选；从卡里取变量、人物、开场视图与语言；自动包及其缓存与生长）、K-R98（§2.4 末尾，导出为包），以及对 K-R26 的修订。
 
-**S9 计划新增**（S9-design 预留，见 `docs/zero-config.md`；全文随其附录里的步骤规格落地）：
-- K-R98 内置包的叠加层导出（S9b）；
-- K-R100 编辑模式与草稿（S9b）；
-- K-R101 包图片：media 块、来源与上限（S9b）；
-- K-R102 私有图片，永不导出（S9b）；
+**S9b 新增：** K-R100（§4.6，编辑模式与草稿）、K-R101 与 K-R102（§2.4，包图片与私有图片），以及对 K-R66（按来源的上限、`media`）、K-R67（叠加层可以带 `media` 与节点 `media`）、K-R98（并入草稿、内置包的叠加层导出）的修订。
+
 **S8 计划**（设计见 `docs/layers-schema.md`；审阅表 L-01 … L-15；全文随 S8-1 … S8-3 落地）：
 - K-R86（§9）宿主送值：MVU 路径、`applies.mvu`、领航员叠加（S8-3）。
 - K-R87（§9）本机扩展 `EdenMap.addLayer` / `removeLayer` / `setLayerData` / `layers`（S8-3）。

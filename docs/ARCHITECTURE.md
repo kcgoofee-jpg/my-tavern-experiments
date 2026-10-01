@@ -99,8 +99,10 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `logbuf.mjs` | Console ring buffer for feedback reports, split into sessions; installs its hooks on first evaluation. |
 | `nodes.mjs` | The node tree (kernel contract v2): build, read, `vocabulary`, `locate`, views, positions, scope, levels. |
 | `overlay-v2.mjs` | The v2 overlay of a schema-1 pack (`overlay.v2.json`): merged by node id after `compat-v1`; lenient (a bad entry is skipped and listed in `problems`). |
+| `pack-draft.mjs` | The edit draft (K-R100): its shape, applying it over a pack with the K-R67 overlay merge, and the overlay text of a shipped pack's draft (K-R98). Pure. |
 | `pack-export.mjs` | Export as pack (K-R98): grown nodes, the user's names and card credits folded in, canonical order, size limits. Pure. |
 | `pack-index.mjs` | The shipped pack index and the match score (K-R92). Pure. |
+| `pack-media.mjs` | Pack pictures (K-R101): the three allowed sources (path, data URL up to 3 MB, https), `checkMedia`, `mediaUrl`, `nodePictures`. Pure. |
 | `pack-store-db.mjs` | Browser store of imported packs (IndexedDB `edenMapPacks`, key = card key; K-R99). Every call is wrapped. |
 | `pack-v2-rows.mjs` | Run-time readers of a v2 pack's blocks: event types, attribute values, roster rows, world stash rows (re-exported by `pack-v2.mjs`). |
 | `pack-v2-spec.mjs` | Field specs of the v2 blocks, mirroring `map/data/schema/v2/*.schema.json`, healing each item. |

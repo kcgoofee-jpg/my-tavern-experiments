@@ -46,9 +46,10 @@
       }
     },
     "image": {
-      "type": "object", "required": ["kind", "src"], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
+      "type": "object", "required": ["kind"], "anyOf": [{ "required": ["src"] }, { "required": ["media"] }], "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
       "properties": {
         "kind": { "const": "image" },
+        "media": { "$ref": "#/$defs/id", "description": "A picture of the media block (K-R101) as the frame: an alternative to src. Needs src or media." },
         "open": { "enum": ["locate", "enter"], "description": "locate (default): opens whenever its node is the target; enter: only when the user enters the node, e.g. a landmark's 3D model (K-R33, K-R34)." },
         "src": { "$ref": "#/$defs/pic" },
         "extent": { "$ref": "#/$defs/size" },

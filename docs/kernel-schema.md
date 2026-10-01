@@ -198,13 +198,16 @@ dropped as in K-R06):
 
 | What | Limit |
 |---|---|
-| whole document after resolving block files | 1 MB |
+| whole document after resolving block files | 1 MB embedded in a card; 8 MB read from a URL or a file or written by export (Z-12) |
 | JSON nesting depth | 16 |
 | any array, unless a rule says otherwise | 1000 items |
 | any string (`desc`, worldbook `content`: K-R65) | 4000 code points |
 | distinct vocabulary words | 20 000 |
 | nodes sharing one word | 8 |
 | `x-` keys | kept, counted in the size limit |
+| `media` | at most 200 items; a data URL in `media.*.src` is exempt from the string cap but counts in the document size; one picture at most 3 MB decoded (K-R101) |
+
+`validate2` takes the document limit by source: `source: 'card'` is 1 MB, `'url'`, `'file'` and `'export'` are 8 MB, and an explicit `maxBytes` wins; without either it is 1 MB. The loaders pass the source they read from (`importPack`: the kind of the request; the viewer: `card` for a pack embedded in the card, else `file`).
 
 **K-R98 — Export as pack.** "Export as pack" (Settings → Advanced → Map pack) writes one JSON file `<pack id>.pack.json`
 for a foreign pack (automatic, embedded, imported or a URL pack; `core/pack-export.mjs`): the current pack with every block
@@ -215,7 +218,15 @@ reads only for shipped packs (`cdn`, `legacy`, `x-page`). The id is kept (Z-06).
 exporting an imported file again is byte-identical. The file must pass `validate2` as foreign with no problem and stay under
 8 MB (`validate2` takes the limit as `maxBytes`); otherwise export lists the problems and writes nothing. A file whose compact
 form is under 1 MB is marked "fits in a card". A second button copies the compact text for a new worldbook entry titled
-`spatial_os:pack` (the pack box says: keep that entry disabled). The overlay export of a shipped pack (Z-15) is S9b.
+`spatial_os:pack` (the pack box says: keep that entry disabled). The edit draft (K-R100) is folded in (`exportPack(pack, { draft })`) and pack pictures (K-R101) travel inline as data URLs; private pictures never do (K-R102). **Overlay export (Z-15):** for a shipped pack the draft is written as `<pack id>.overlay.json` in the K-R67 shape (`schema`, `nodes` with `id` and the changed `at`, `parent`, `alias` and `media`, new places with a name, `media`, `ui.start`; no views): changes only, for a maintainer to merge into `map/packs/<id>/overlay.v2.json`, so the old gallery maintainer workflow is gone.
+
+**K-R101 — Pack pictures.** An optional tenth block `media` (added within schema 2, K-R62; `map/data/schema/v2/media.schema.json`) = `{ <media id>: { src, w?, h?, note?, i18n?: { <lang>: { note } }, credit? } }` (ids `^[a-z][a-z0-9_]{0,63}$`, at most 200 items), plus the node field `media: [<media id>]` (the node's gallery, in order, at most 32; an id the block does not have is dropped as `ref-media`) and the `image` view field `media` (an alternative to `src`: an image view needs one of the two). `src` is one of three kinds (`core/pack-media.mjs`):
+1. a relative path under the pack base ending in `.webp`, `.png`, `.jpg` or `.jpeg` (shipped and URL packs; no `..`, no scheme, no backslash; it must still lie under the base after URL resolution; a card or file pack has no base, so a path is refused there);
+2. `data:image/(webp|png|jpeg);base64,` + base64 text, at most 3 MB decoded (any pack);
+3. an `https://` address with an image file type and no query string or fragment, loaded only while the viewer switch "load pictures from links in packs" (`edenMapPackRemote`, default off, Z-13) is on; off, the item stays as a placeholder with its note.
+Anything else (`javascript:`, `http:`, `data:text/html`, `data:image/svg+xml`, a query string, more than 3 MB) is refused: the item is dropped with one problem (`pattern` or `limit-media`) and never reaches the page. The page re-checks every value against the same patterns at run time (K-R64): `checkMedia`, `mediaUrl`, `nodePictures`. Captions and credits are shown as text. The viewer opens an image view whose frame is a pack picture through `mediaUrl` (problem `view-media` when refused).
+
+**K-R102 — Private pictures.** A user may add pictures to any place for themselves. They live only in this browser (the gallery IndexedDB, records keyed by scope, `n:<node id>` and picture id; scopes "this chat" and "all chats" as before) and are **never** exported, embedded, sent to the host or put in a URL: no export function reads them (`exportPack` ignores everything but its documented options). A place's gallery shows the pack's pictures first, then the private ones; records stored before S9b under a room name are found through the node's name (Z-18); a stored visibility `public` reads as `private`. In edit mode a private picture can be copied into the pack ("add to pack"), which creates a pack picture in the draft; the private record stays private.
 
 ## 3. nodes — the only geography
 
@@ -563,6 +574,8 @@ arbitrary code on the tavern page.
 - **Runtime.** `makeRuntimeV2(pack, registry)` (`app/nodes-runtime-v2.mjs`) gives the reads of the schema-1 runtime from the pack's own tree: map ids are the projected maps, a map is its own host, `parent` is the nearest ancestor that is a map, `levels` follow K-R35 over the maps, `kind` is the primary view's kind, and `geo()` is the event geography of the tree. `standIn`, `zoneChildren` and `anchorIn` are empty.
 
 **K-R97 — Schematic layout.** `layoutSchematic(tree, owner, { layout, depth })` (`core/schematic.mjs`) returns `{ <node id>: { x, y } }` in 0..1 with margins of 0.06, deterministic (the same tree gives the same picture). `tree` (default): the owner at `{ x: 0.5, y: 0.08 }`; its descendants down to `depth` in rows, one row per level, rows evenly spaced down to y 0.92; each node's width share is the number of leaves of its subtree within the depth, and a parent is centred over its children; a row of more than 12 nodes wraps into several rows of equal length. `list`: one column in declaration order. `grid`: rows of ⌈√n⌉. `radial`: the owner in the middle and one ring per level. The picture, `schematicSvg(layout, tree)`, is an SVG of 1600 × 1000 units, transparent, with one line per parent-child edge (both ends in the layout) and one dot of radius 6 per node, in fixed neutral greys; it contains no text and no pack value (Z-11, K-R64), and `schematicUrl` encodes it as a `data:image/svg+xml` URL. Node names are the normal markers, so search, cards, events and the drawer work as on any map. An `image` view opens as a single picture (no slicing) and positions are fractions of it (K-R31).
+
+**K-R100 — Edit mode.** A switch in Settings → Advanced ("Edit mode", `edenMapEdit`, default off) turns on an edit bar and the operations below; off, nothing of it is drawn. Changes go into a local draft per pack id (Z-14) = `{ v: 1, nodes: { <id>: { at?, parent?, alias_add? } }, add: [node], views: { <id>: view }, media: { <id>: item }, attach: { <node id>: [media id] }, start? }` (`core/pack-draft.mjs`; text in `edenMap:edit:<pack id>`, picture bytes in the gallery IndexedDB under scope `edit:<pack id>`; a private picture is never in it). While the switch is on the viewer shows the pack with the draft applied, by the K-R67 overlay merge (aliases united, other node fields overridden, pictures by id, a pack with no views keeps its implicit ones once a view is added, `ui.start`); a schema-2 pack is projected again after every change (`app/pack-live.mjs`). The draft is never written to the chat, the card or a worldbook; "Discard draft" empties it. Operations (`app/pack-edit.mjs`): `move` (drag a pin on a `tiles` or `image` view; writes `at = { x, y, view }`, K-R31), `reparent` (refuses the node itself, a descendant and the root: no cycle can be made), `addAlias` (1–60 code points, K-R27), `addPlace` (id `e_<fnv36(name + parent)>`, at a tapped point of a framed view), `setStart`, `addPicture` + `attach` (pictures of a place; only inline pictures enter a draft), `useAsMap` ("use a picture as this place's map": the picture is re-encoded to WebP 0.82, long side at most 4096 px, metadata dropped; the node gets `views[<id>] = { kind: 'image', media }` and its children's schematic positions become their first `at` in the new frame) and `discard`. A schema-1 pack (the first pack) keeps its layout: its pins cannot be moved or reparented in the viewer; pictures can be added to any of its places and exported as an overlay. Export: K-R98.
 
 ## 5. vars
 
@@ -973,6 +986,8 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 
 **K-R85 — The overlay of a schema-1 pack may carry `layers`.** `overlay.v2.json` may carry `layers` = an array of layer rows (K-R79, K-R81–K-R83). `applyOverlayLayers(layers, overlay)` in `core/overlay-v2.mjs` runs each row through `normLayer` (the pack's trust) and appends the healed rows to the converted ones by id (an overlay row replaces a converted row with the same id; a schema-1 pack has no converted rows); a part that fails is dropped and listed as `overlay-layer-invalid` with the reason, the rest applies (lenient, K-R06). `compat-v1` sets `pack.layers` when the result is not empty. An overlay may hold `layers` alone. `tools/check_overlay.mjs` runs the same function and `validate2` over the merged block.
 
+**K-R67 (amended by S9b) — An overlay may carry `media`.** `overlay.v2.json` may carry a `media` block (K-R101) and node `media` lists. `applyOverlayMedia(media, overlay)` in `core/overlay-v2.mjs` merges the items by id over the converted block (the overlay wins field by field; an item that is not an object with a string `src`, or whose id is not a media id, is skipped as `overlay-media-invalid`); a node's `media` list is replaced like any other node field. `compat-v1` sets `pack.media` only when the result is not empty, so an overlay with `"media": {}` changes nothing. An overlay may hold `media` alone. `tools/check_overlay.mjs` runs the same function and `validate2` over the merged block and checks that path sources exist under the pack folder.
+
 **Added by S9-1:** K-R96 and K-R97 (§4.6, schema-2 packs in the viewer, implicit schematic views, schematic layout and picture).
 
 **Added by S8-1:** K-R79, K-R81, K-R82 and K-R83 (§9, the layers block, sources and features, `applies`, menu rows and the visibility store), K-R85 (above, the overlay's `layers`) and K-R104 (§4.5, the 3D manifest schema).
@@ -984,10 +999,8 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 **Added by S9-3:** K-R93, K-R94 and K-R95 (§3.9, after K-R26: place candidates, variables / people / start view / language from the card, the automatic pack with its cache and growth), K-R98 (end of §2.4, export as pack), and the amendment of K-R26.
 
 **Planned in S9** (reserved by S9-design, `docs/zero-config.md`; full text lands with the step specs in its appendix):
-- K-R98 overlay export of a shipped pack (S9b);
-- K-R100 edit mode and the draft (S9b);
-- K-R101 pack pictures: the media block, sources and limits (S9b);
-- K-R102 private pictures, never exported (S9b);
+**Added by S9b:** K-R100 (§4.6, edit mode and the draft), K-R101 and K-R102 (§2.4, pack pictures and private pictures), the amendments of K-R66 (limits by source, `media`), K-R67 (an overlay may carry `media` and node `media`) and K-R98 (the draft folded in, overlay export of a shipped pack).
+
 **Planned in S8** (design `docs/layers-schema.md`; review sheet L-01 … L-15; the full text lands with S8-1 … S8-3):
 - K-R86 (§9) host-fed values: MVU paths, `applies.mvu`, navigator overlays (S8-3).
 - K-R87 (§9) local extension `EdenMap.addLayer` / `removeLayer` / `setLayerData` / `layers` (S8-3).

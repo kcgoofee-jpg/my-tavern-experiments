@@ -6,6 +6,7 @@
 // K-R69: and a `vars` block (paths, periods by id) and an `entities` block (groups by id, fields by `field`, the avatar block); same rule.
 // K-R67 (S6-3): and an `items` block, of which only `pickup` is read (per language the word lists are united); other keys are ignored.
 // K-R70: and a `ui` block (per-view theme tokens re-checked by recheck.token, the legend, `x-…`); same rule.
+// K-R101: and a `media` block (pack pictures, merged by id; a node's own `media` list is replaced like any other node field).
 // K-R85: and a `layers` array (declared layers, core/layer-spec.mjs); each row is healed by normLayer and added by id, the overlay wins.
 import { recheck } from './pack-v2-spec.mjs';
 import { normLayer } from './layer-spec.mjs';
@@ -17,7 +18,7 @@ const LISTS = ['alias', 'hints'];
 export function applyOverlay(nodes, overlay) {
   const out = nodes.map(n => ({ ...n })), byId = new Map(out.map(n => [n.id, n])), problems = [];
   if (overlay === null || overlay === undefined) return { nodes: out, problems };
-  if (!isObj(overlay) || overlay.schema !== 2 || !(Array.isArray(overlay.nodes) || (overlay.nodes === undefined && (isObj(overlay.events) || isObj(overlay.llm) || isObj(overlay.vars) || isObj(overlay.entities) || isObj(overlay.ui) || isObj(overlay.items) || Array.isArray(overlay.layers))))) return { nodes: out, problems: [{ code: 'overlay-invalid' }] };
+  if (!isObj(overlay) || overlay.schema !== 2 || !(Array.isArray(overlay.nodes) || (overlay.nodes === undefined && (isObj(overlay.events) || isObj(overlay.llm) || isObj(overlay.vars) || isObj(overlay.entities) || isObj(overlay.ui) || isObj(overlay.items) || isObj(overlay.media) || Array.isArray(overlay.layers))))) return { nodes: out, problems: [{ code: 'overlay-invalid' }] };
   (overlay.nodes || []).forEach((o, index) => {
     if (!isObj(o) || typeof o.id !== 'string' || o.id === '') return problems.push({ code: 'overlay-node-invalid', index });
     const cur = byId.get(o.id);
@@ -204,4 +205,18 @@ export function applyOverlayLayers(layers, overlay) {
     const { origin, ...row } = layer; out.set(row.id, row);
   });
   return { layers: [...out.values()], problems };
+}
+
+/** applyOverlayMedia(media, overlay) -> { media, problems } (K-R101): `overlay.media` items are merged over the converted block (may be undefined) by id; the overlay wins field by field.
+ *  An item that is not an object with a string `src`, or whose id is not a media id, is skipped and listed as `overlay-media-invalid`. The value of `src` is checked by validate2 / pack-media.mjs. */
+export function applyOverlayMedia(media, overlay) {
+  const base = isObj(media) ? copy(media) : undefined, problems = [], add = isObj(overlay) ? overlay.media : undefined;
+  if (add === undefined || add === null) return { media: base, problems };
+  if (!isObj(add)) return { media: base, problems: [{ code: 'overlay-media-invalid' }] };
+  const out = base || {};
+  for (const [id, o] of Object.entries(add)) {
+    if (recheck.id(id) === null || !isObj(o) || typeof o.src !== 'string' || o.src === '') { problems.push({ code: 'overlay-media-invalid', id }); continue; }
+    out[id] = { ...(isObj(out[id]) ? out[id] : {}), ...copy(o) };
+  }
+  return { media: out, problems };
 }

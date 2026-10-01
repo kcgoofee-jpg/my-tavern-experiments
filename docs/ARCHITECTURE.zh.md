@@ -80,8 +80,10 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `logbuf.mjs` | 反馈报告用的控制台环形缓冲，按会话分开；模块首次求值时自装钩子。 |
 | `nodes.mjs` | 节点树（内核契约 v2）：建树、读树、`vocabulary`、`locate`、视图、位置、范围、层级。 |
 | `overlay-v2.mjs` | schema 1 包的 v2 叠加层（`overlay.v2.json`）：在 `compat-v1` 之后按节点 id 合并；宽容（坏条目跳过并记入 `problems`）。 |
+| `pack-draft.mjs` | 编辑草稿（K-R100）：形状、用 K-R67 叠加层的合并规则套到包上、随包发布的包的草稿叠加层文本（K-R98）。纯函数。 |
 | `pack-export.mjs` | 导出为包（K-R98）：并入长出来的节点、用户的叫法与卡署名，固定键序，大小上限。纯函数。 |
 | `pack-index.mjs` | 内置包索引与匹配得分（K-R92）。纯函数。 |
+| `pack-media.mjs` | 包图片（K-R101）：三种允许的来源（路径、至多 3 MB 的 data URL、https）、`checkMedia`、`mediaUrl`、`nodePictures`。纯函数。 |
 | `pack-store-db.mjs` | 导入的包的本机存储（IndexedDB `edenMapPacks`，键 = 卡键；K-R99）。每个调用都包了一层，不抛错。 |
 | `pack-v2-rows.mjs` | v2 包各块的运行期读取：事态类型、属性值、名册行、世界藏物行（由 `pack-v2.mjs` 再导出）。 |
 | `pack-v2-spec.mjs` | v2 各块的字段规格，对应 `map/data/schema/v2/*.schema.json`，逐项自愈。 |

@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "v2/media.schema.json",
+  "title": "media block, schema 2: pack pictures",
+  "description": "docs/kernel-schema.md K-R101 (docs/zero-config.md §8). An object keyed by media id (at most 200 items). Nodes list their pictures in node.media, an image view may use one as its frame (views.<id>.media). src is one of three kinds: a relative path under the pack folder ending in .webp / .png / .jpg / .jpeg (shipped and URL packs), a data:image/(webp|png|jpeg);base64 URL (at most 3 MB decoded: pack-media.mjs checks the size, a schema cannot), or an https address with an image file type and no query string (loaded only while the viewer's switch for pictures from links is on, K-R101). Anything else is refused. The viewer re-checks every src against the same patterns before use (K-R64). Private pictures a user keeps in this browser are never part of a pack (K-R102).",
+  "type": "object",
+  "propertyNames": {
+    "$ref": "#/$defs/id"
+  },
+  "additionalProperties": {
+    "$ref": "#/$defs/item"
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "lang": {
+      "type": "string",
+      "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+    },
+    "src": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^(?!.*\\.\\.)[A-Za-z0-9_][A-Za-z0-9_./-]*\\.(webp|png|jpe?g)$",
+          "description": "A path under the pack folder (no scheme, no .. segment); after URL resolution it must still lie under the pack's base (K-R64)."
+        },
+        {
+          "type": "string",
+          "pattern": "^data:image/(webp|png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$",
+          "description": "An inline picture, at most 3 MB decoded; counted in the document limit (K-R66), exempt from the string cap."
+        },
+        {
+          "type": "string",
+          "pattern": "^https://[a-z0-9-]+(\\.[a-z0-9-]+)+(:[0-9]{1,5})?(/[A-Za-z0-9_.~%-]+)*/[A-Za-z0-9_.~%-]+\\.(webp|png|jpe?g)$",
+          "description": "An https address with an image file type and no query string or fragment; loaded only behind the viewer's switch."
+        }
+      ]
+    },
+    "item": {
+      "type": "object",
+      "required": [
+        "src"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_": {},
+        "^x-": {}
+      },
+      "properties": {
+        "src": {
+          "$ref": "#/$defs/src"
+        },
+        "w": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "h": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "note": {
+          "type": "string",
+          "description": "Caption, shown as text (K-R64)."
+        },
+        "i18n": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/lang"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "note": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "credit": {
+          "type": "string",
+          "description": "Who made the picture, shown as text."
+        }
+      }
+    }
+  }
+}

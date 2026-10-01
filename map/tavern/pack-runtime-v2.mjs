@@ -40,13 +40,13 @@ export function parsePack(text, { cap = MAX_EMBED_BYTES, inline = false, shipped
   if (typeof text !== 'string' || !text.trim()) return fail('empty');
   if (new TextEncoder().encode(text).length > cap) return fail('limit-size');
   let m; try { m = JSON.parse(text); } catch (e) { return fail('json'); }
-  return checkManifest(m, { inline, shipped });
+  return checkManifest(m, { inline, shipped, maxBytes: cap });   // Z-12: the document limit is the read cap (1 MB embedded, 8 MB for a stored URL / file pack)
 }
-export function checkManifest(m, { inline = false, shipped = [] } = {}) {
+export function checkManifest(m, { inline = false, shipped = [], maxBytes, source } = {}) {
   if (!isObj(m)) return fail('type', 'object');
   if (m.schema !== 2) return fail('schema', m.schema);
   if (inline) for (const k of BLOCKS) if (typeof m[k] === 'string') return fail('not-inline', k);
-  return validate2(m, { trusted: false, shipped });
+  return validate2(m, { trusted: false, shipped, maxBytes, source });
 }
 
 /** Reads a fetch Response as text with a streaming cap: throws `limit-size` once more than `cap` bytes arrive (the rest is cancelled). */
@@ -92,6 +92,6 @@ export async function importPack(src, env) {
     const r = await resolveBlocks(m, get); m = r.manifest; problems.push(...r.problems);
     text = JSON.stringify(m);   // the copy kept for offline starts holds every block
   }
-  const v = checkManifest(m, { shipped });
+  const v = checkManifest(m, { shipped, source: src.kind });   // K-R66 by source: a URL / file pack may be 8 MB
   return { pack: v.pack, problems: [...problems, ...v.problems], text };
 }

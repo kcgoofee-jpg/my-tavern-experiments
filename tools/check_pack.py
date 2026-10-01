@@ -93,7 +93,7 @@ def check(pid):
     return errs
 
 
-BLOCKS2 = ('nodes', 'views', 'vars', 'entities', 'items', 'events', 'layers', 'ui', 'llm')
+BLOCKS2 = ('nodes', 'views', 'vars', 'entities', 'items', 'events', 'layers', 'ui', 'llm', 'media')
 
 
 def check_overlay(pid, d, m):
@@ -138,8 +138,30 @@ def check_v2(pid, d, m):
     gs, fx = {g.get('id') for g in (ev.get('groups') or [])} | {'other'}, set(ev.get('fx_presets') or {}) | {'none', 'glitch', 'flash', 'shake', 'tint', 'pulse'}
     errs += [f'{pid}: 事件类型 {k} 的大类 {t.get("group")!r} 没声明' for k, t in (ev.get('types') or {}).items() if t.get('group') not in gs]
     errs += [f'{pid}: 事件类型 {k} 的特效 {t.get("fx")!r} 既不是预设也不是内核积木' for k, t in (ev.get('types') or {}).items() if t.get('fx') and t['fx'] not in fx]
+    errs += check_media(pid, d, b.get('media') or {}, nodes, views)
     st = [str(p.get('start')) for p in ((b.get('vars') or {}).get('periods') or []) if isinstance(p, dict)]
     if st != sorted(set(st)): errs.append(f'{pid}: vars.periods 的 start 要从早到晚、不重复')
+    return errs
+
+
+def check_media(pid, d, media, nodes, views):
+    """K-R101 pack pictures: at most 200 items; a path source exists under the pack folder; data URLs stay within 3 MB decoded; node.media and an image view's media name items of the block; an image view has src or media."""
+    errs = []
+    if not isinstance(media, dict): return errs
+    if len(media) > 200: errs.append(f'{pid}: media 最多 200 项，现在 {len(media)}')
+    for k, it in media.items():
+        src = it.get('src') if isinstance(it, dict) else None
+        if not isinstance(src, str): continue
+        if src.startswith('data:'):
+            n = len(src) - src.find(',') - 1
+            if n * 3 // 4 > 3 << 20: errs.append(f'{pid}: media.{k} 的内嵌图超过 3 MB')
+        elif not src.startswith('https://') and not os.path.exists(os.path.join(d, src)): errs.append(f'{pid}: media.{k} 的图 {src} 不在包目录里')
+    for n in nodes:
+        errs += [f'{pid}: 节点 {n.get("id")} 的 media {m} 不在 media 块里' for m in (n.get('media') or []) if m not in media]
+    for vk, v in views.items():
+        if not isinstance(v, dict) or v.get('kind') != 'image': continue
+        if v.get('media') is not None and v['media'] not in media: errs.append(f'{pid}: 视图 {vk} 的 media {v["media"]} 不在 media 块里')
+        if v.get('src') is None and v.get('media') is None: errs.append(f'{pid}: image 视图 {vk} 要有 src 或 media')
     return errs
 
 

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "v2/manifest.schema.json",
   "title": "Pack manifest, schema 2 (map/packs/<id>/manifest.json)",
-  "description": "Kernel contract v2, docs/kernel-schema.md §2 (rules K-R01..K-R09, K-R63..K-R66). One pack = one JSON document. Only id, schema and title are required. Every block (nodes, views, vars, entities, items, events, layers, ui, llm) is either written inline here or given as a relative path to a JSON file that holds exactly that block; the block's own schema (v2/<block>.schema.json) validates it in both cases. cdn, legacy and x-page are honoured only for packs shipped with the engine; foreign packs (embedded, URL, file) have them ignored and pass extra limits (K-R63, K-R66). Keys starting with _ are comments; keys starting with x- are author extensions the kernel carries but never reads. Schema 1 (map/data/schema/pack.schema.json) stays frozen beside this one.",
+  "description": "Kernel contract v2, docs/kernel-schema.md §2 (rules K-R01..K-R09, K-R63..K-R66). One pack = one JSON document. Only id, schema and title are required. Every block (nodes, views, vars, entities, items, events, layers, ui, llm, media) is either written inline here or given as a relative path to a JSON file that holds exactly that block; the block's own schema (v2/<block>.schema.json) validates it in both cases. cdn, legacy and x-page are honoured only for packs shipped with the engine; foreign packs (embedded, URL, file) have them ignored and pass extra limits (K-R63, K-R66). Keys starting with _ are comments; keys starting with x- are author extensions the kernel carries but never reads. Schema 1 (map/data/schema/pack.schema.json) stays frozen beside this one.",
   "type": "object",
   "required": ["id", "schema", "title"],
   "additionalProperties": false,
@@ -29,7 +29,8 @@
     "events": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "Event taxonomy, what only (v2/events.schema.json). Absent = neutral default taxonomy." },
     "layers": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "array" }], "description": "Declarative layers, reserved for S8 (v2/layers.schema.json). Absent = built-in default layers." },
     "ui": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "Strings, theme, legend, tabs, start node (v2/ui.schema.json)." },
-    "llm": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "Injection templates and worldbook add-on entries (v2/llm.schema.json)." }
+    "llm": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "Injection templates and worldbook add-on entries (v2/llm.schema.json)." },
+    "media": { "anyOf": [{ "$ref": "#/$defs/path" }, { "type": "object" }], "description": "Pack pictures: a table of media ids to sources (v2/media.schema.json, K-R101). Absent = no pictures." }
   },
   "$defs": {
     "path": { "type": "string", "minLength": 1, "pattern": "^(?!.*\\.\\.)[A-Za-z0-9_][A-Za-z0-9_./-]*\\.json$", "description": "Block file, relative to the manifest's folder: letters, digits, _ . / - only, no .. segment (so no scheme, no leading /, no %, no backslash)." },
