@@ -40,6 +40,9 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument('full'); ap.add_argument('out'); ap.add_argument('--dzi', default='')
     ap.add_argument('--tod-ref', default='')
     a = ap.parse_args(); py = sys.executable
+    probe = Image.open(a.full).convert('RGB'); W_, H_ = probe.size   # 渲染 GPU 显存不足时守卫仍报 ok、整图却是全黑（16k 整图出过）：四角与中心全黑就不贴
+    if max(max(probe.getpixel((int(W_ * fx), int(H_ * fy)))) for fx in (.02, .5, .98) for fy in (.02, .5, .98)) < 8:
+        sys.exit(f'{a.full}: 整图是黑的（渲染日志里找 "out of GPU memory"；16k 请分块渲 --crop）')
     cuts, eden = [(i, os.path.join(ROOT, 'logs/campaign', p), w) for i, p, w in CUTS], os.path.join(ROOT, EDEN_CUT)
     if a.tod_ref:
         tmp = a.out + '.tint'; os.makedirs(tmp, exist_ok=True)

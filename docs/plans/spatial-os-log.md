@@ -937,3 +937,16 @@ blocker: none
 open: none
 cleanup: done (probe servers stopped by the probes; no background jobs of mine left; no .claude/launch.json entries; worktree s9-1 left for the orchestrator)
 === END ===
+
+=== RESULT R-LOOP hero hero-1 (addendum: isle5 redesign + 16k fix) ===
+status: DONE
+items finished this session: isle:isle5 redesigned at the user's request (docs: it read as a black blob from above) — lighter mossy ground, spruce in clusters with clearings, lighter ridges / house stone, softer jagged outline (blender/islands/isle5.py, jagged in blender/tc_estates.py), cutout_v4 pasted into all variants | var:tc_upper:16k re-done
+items below gate: none
+waiting: estate:b1b2 — waits for the user's Eden r6
+pushed: yes (see the head bump after this block)
+tests: check_maps PASS | estate3d_manifest PASS (10/10) | smoke PASS | accept=PASS(24)
+blocker: none
+next: estate:b1b2 (wait)
+notes: (1) The first 16k ship (d918ca5b, head #209) had a BLACK cloud background: "System is out of GPU memory" in the log (guiding-pass preprocessing at 16000x10000), the guard still said status=ok, and the accept probe only measures timing. It was live for a short while; the base was put back to 8k (head after c7), and the 16k is now rendered as four --crop quadrants (8000x5000 each, 512 spp, ~1.5 min each) and stitched (seam diff 0.6-0.8 vs 0.46 neighbouring pixels). Always LOOK at a render, and grep its log for "out of GPU memory": the guard misreports this. tools/upper_base_paste.py now refuses an all-black render. (2) Reopen note: the ledger still shows var:tc_upper:16k shipped; the shipped content is now the corrected 16k. (3) Changing isle5's silhouette changes its body in every variant: re-render the bodies (8k 1.5 min, city 13 min, 3 periods) then re-paste.
+cleanup: done
+=== END ===
